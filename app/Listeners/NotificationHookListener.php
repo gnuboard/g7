@@ -6,6 +6,7 @@ use App\Contracts\Extension\HookListenerInterface;
 use App\Extension\HookListenerRegistrar;
 use App\Extension\HookManager;
 use App\Models\NotificationDefinition;
+use App\Models\User;
 use App\Notifications\GenericNotification;
 use App\Services\NotificationDefinitionService;
 use App\Services\NotificationLogService;
@@ -175,6 +176,13 @@ class NotificationHookListener implements HookListenerInterface
             }
 
             foreach ($notifiables as $notifiable) {
+                // 탈퇴 회원에게 바깥 채널로 보내지 않는다 — 조용히 거르지는 않는다.
+                if ($this->shouldSkipWithdrawnRecipient($notifiable, $template->channel)) {
+                    $this->logWithdrawnRecipient($definition, $template->channel, $notifiable);
+
+                    continue;
+                }
+
                 try {
                     $notifiableData = $this->personalize($data, $notifiable, $definition, $context, $args);
 
@@ -244,6 +252,74 @@ class NotificationHookListener implements HookListenerInterface
         );
 
         return is_array($personalized) ? $personalized : $data;
+    }
+
+    /**
+     * 탈퇴 회원에게 **바깥 채널**로 보내야 하는지 판정합니다.
+     *
+     * 탈퇴 처리는 이름·이메일·닉네임을 익명화합니다(`…@example.test_deleted_20260921_1733`).
+     * 그 주소는 더 이상 존재하지 않는 우편함이므로, 그대로 보내면 운영에서는 매번 바운스가
+     * 나고 발송 평판이 깎입니다(#599 세션A 실측 2026-09-22 — 탈퇴 회원의 `refund_approved`
+     * 4행이 익명화된 주소로 생성됨. 그 환경은 SMTP 가 없어 가려졌을 뿐입니다).
+     *
+     * `database`(알림함)는 막지 않습니다 — 바깥으로 나가지 않고, 관리자가 탈퇴 회원의
+     * 이력을 화면에서 보는 근거가 됩니다.
+     *
+     * 회원이 아닌 수신자(비회원 주문 알림의 임시 notifiable 등)는 탈퇴 개념이 없으므로
+     * 판정 대상이 아닙니다.
+     *
+     * @param  mixed  $notifiable  수신자
+     * @param  string  $channel  채널
+     * @return bool 발송을 건너뛰면 true
+     */
+    private function shouldSkipWithdrawnRecipient(mixed $notifiable, string $channel): bool
+    {
+        if (! $notifiable instanceof User) {
+            return false;
+        }
+
+        if ($channel === 'database') {
+            return false;
+        }
+
+        return $notifiable->isWithdrawn();
+    }
+
+    /**
+     * 탈퇴 회원 제외를 발송 이력에 skipped 로 기록합니다.
+     *
+     * 수신자 0명과 같은 규율입니다 — **조용한 것은 의도가 아닙니다.** 운영자가 발송 이력에서
+     * "왜 안 갔지" 를 답할 수 있어야 합니다.
+     *
+     * @param  NotificationDefinition  $definition  알림 정의
+     * @param  string  $channel  채널
+     * @param  User  $user  탈퇴 회원
+     * @return void 반환값 없음
+     */
+    private function logWithdrawnRecipient(
+        NotificationDefinition $definition,
+        string $channel,
+        User $user,
+    ): void {
+        try {
+            app(NotificationLogService::class)->logSkipped([
+                'channel' => $channel,
+                'notification_type' => $definition->type,
+                'extension_type' => $definition->extension_type,
+                'extension_identifier' => $definition->extension_identifier,
+                'recipient_user_id' => $user->id,
+                'recipient_identifier' => (string) ($user->email ?? ''),
+                'error_message' => __('notification.skipped.withdrawn_recipient'),
+                'source' => 'notification',
+                'sent_at' => now(),
+            ]);
+        } catch (\Throwable $e) {
+            Log::warning('NotificationHookListener: 탈퇴 회원 제외 로그 기록 실패', [
+                'type' => $definition->type,
+                'channel' => $channel,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**

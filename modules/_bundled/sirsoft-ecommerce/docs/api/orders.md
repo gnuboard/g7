@@ -3389,6 +3389,7 @@ Authorization: Bearer {YOUR_TOKEN}
 | settings.return_requestable_statuses | string[] | `["delivered","confirmed"]` | 반품 신청이 열리는 주문 옵션 상태 |
 | settings.instant_cancel_statuses | string[] | `["pending_order","pending_payment","payment_complete"]` | 취소·환불 신청이 **자동 전이**로 처리되는 상태 (`claim.instant_cancel_statuses`). 이 상태의 상품도 환불신청서를 만들고, 승인·환불완료까지 자동으로 진행한다 |
 | settings.refund_request_statuses | string[] | `["preparing","shipping_ready"]` | 취소·환불 신청이 환불신청서(운영자 승인)로 접수되는 상태 (`claim.refund_request_statuses`) |
+| refund_auto_approved | boolean | `false` | 이 주문의 환불이 **사람 손 없이 끝나는지** (P16·P17). 판정은 결제수단 카탈로그(`PaymentMethodResolver::autoApprovesRefund()`)가 소유하며, 운영자가 클레임 정책 탭에서 고른 목록(`claim.auto_approve_refund_payment_methods`)과 플러그인 선언을 함께 본다. **분기(`resolved_type`·`refund_branch`)와 다른 축이다** — 무통장·가상계좌는 분기가 `auto` 여도 이 값이 거짓이라 접수 뒤 `requested` 에서 멈추고 운영자 승인 → [환불하기] 를 기다린다. 거짓이면 신청서는 「자동 처리」가 아니라 「판매자 확인」 문구로 안내해야 한다 |
 | refund_account.required | boolean | `false` | 이 주문의 환불이 **계좌 이체**로 나가는지 (`PaymentMethodResolver::refundMethod()` 판정 = `bank`). 참이면 취소·환불 신청서가 환불 계좌 입력칸을 세운다. 어느 결제수단이 계좌 환불인지는 확장 결제수단이 자기 카탈로그에 선언하므로 화면이 결제수단 코드로 재현하지 않는다 |
 | refund_account.banks | array | `[{"code":"004","name":{"ko":"국민은행"}}]` | 운영자가 주문설정에 등록한 은행 목록 (`order_settings.banks`). `required` 가 거짓이면 빈 배열이다. `name` 은 다국어 맵이라 라벨은 `$localized(name)` 로 푼다 |
 | refund_account.prefill | object\|null | `{"bank_code":"004","account_number":"110234567890","holder":"홍길동"}` | 주문 시 등록해 둔 환불 계좌의 **원문**. 신청서가 입력칸을 채우는 데 쓴다. 세 값이 모두 있을 때만 실리고 그 밖에는 `null` 이다. 표시용 응답(`ClaimResource`·`OrderPaymentResource`)은 계좌번호 뒤 4자리·예금주 첫 글자만 내보내므로, 그 마스킹 값을 입력칸에 채우면 손대지 않은 제출에서 별표가 섞인 계좌가 저장된다 — 프리필은 이 필드만 쓴다. `required` 가 거짓이면 실리지 않는다 |
@@ -3432,6 +3433,7 @@ Authorization: Bearer {YOUR_TOKEN}
             "instant_cancel_statuses": ["pending_order", "pending_payment", "payment_complete"],
             "refund_request_statuses": ["preparing", "shipping_ready"]
         },
+        "refund_auto_approved": true,
         "refund_account": { "required": false, "banks": [], "prefill": null },
         "pending_images": []
     }

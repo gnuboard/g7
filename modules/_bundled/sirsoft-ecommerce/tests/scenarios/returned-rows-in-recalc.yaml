@@ -45,12 +45,50 @@ description: |
   1회차와 2회차는 서로 다른 `order_option_id` 를 가리키므로, 계약은 「한 줄로 합쳐지는가」가
   아니라 **「총 반품 수량이 누적되는가」**다. 줄 수로 단언하면 거짓 실패가 난다.
 
+  **후속 결함 (S-B-D7 · 2026-09-21 세션B 실측 · 수정 완료)**
+
+  위 「선택지 ②」가 재계산 기준선을 주문 전체 누적으로 바꾸면서, 그 **누적 결과가 신규
+  환불신청서의 금액·상품 행에 그대로 실리는** 부작용이 생겼다. 앞 신청서가 이미 환불한
+  몫을 두 번째 신청서가 다시 담는다.
+
+  실측(주문 1500 · 2026-09-21): 후드티 1개 반품으로 42,000원을 **실제 환불 완료**한 뒤
+  단종상품 1개(단독 15,000원)를 반품하자 환불신청서가 **60,000원**으로 만들어졌고, 그
+  옵션 행에 **1회차 상품(`order_option_id` 1990, 41,702.50원)이 다시 들어 있었다.**
+  실행했다면 45,000원 과다 환불이다.
+
+  **고친 방법** — 재계산(`completedClaimItems()`)은 누적 그대로 두고, 신규 환불신청서에는
+  **차분**만 싣는다: `otherReturnsCompletedClaimItems()` 로 다른 신청서 몫을 모아 기준선을
+  한 번 더 계산하고(`priorReturnsAdjustment()`, 회수비 0), `refundDeltaAgainstPrior()` 가
+  누적에서 그만큼 뺀다. 상품 행도 `ownCompletedClaimItems()` 로 이 신청서 몫만 남긴다.
+  한 신청서를 여러 라운드로 나눠 완료하는 경우는 차분에서 빠지지 않으므로
+  「환불신청서는 신청서당 한 건」 계약은 그대로다.
+
+  **후속 결함 (S-B-D16 · 2026-09-22 세션B 실측 · 수정 완료)**
+
+  같은 뿌리(공용 경로가 `RETURNED` 를 잔여로 센다)에서 **환불 실행 가드** 쪽으로도 새어 나왔다.
+  완료 처리는 누적을 넘기는데 `CancellableAmountCalculator::calculateForRefund()` 만
+  **이번 신청서 몫**을 넘겨, 저장 시점과 실행 시점이 서로 다른 금액을 냈다.
+
+  실측(주문 1519 · 2026-09-22): 5상품 주문에서 1회차 반품 3,000원을 환불 완료한 뒤 잔여를
+  전량 반품하자 시스템이 환불신청서를 **194,500원**으로 만들었는데, 그 신청서의 실행이
+  **422** 로 막혔다 — 「환불액(194,500원)이 취소 가능 금액(188,500원)을 초과합니다.」
+  결제수단 잔여는 194,500 으로 충분했고 막은 것은 도메인 축이다. 차이 6,000 은 1회차에
+  전량 반품된 상품과 **그 상품만 쓰던 배송정책의 배송비**가 잔여로 남은 몫이다.
+  시스템이 만든 환불신청서를 시스템이 거부해 그 금액이 **영구 미환불**로 남는다.
+
+  **고친 방법** — 공용 경로는 그대로 두고, 가드도 완료 처리와 **같은 누적**을 넘긴다
+  (`accumulatedReturnItems()` · `accumulatedDeductedCollectionFee()`). 과다 환불은 이 축이
+  아니라 `remainingPg`·`remainingPoints`(이미 나간 돈을 뺀 수단별 잔여)가 막으므로 누적으로
+  올려도 두 번 나가지 않는다.
+
 axes:
   return_round:
     - single
     - sequential
     - incomplete_excluded
     - shared_path_unchanged
+    - refund_request_delta
+    - refund_execution_guard
 
 effects:
   # 순차 회차의 재계산이 앞 회차 완료분을 함께 센다 (본체)
@@ -64,9 +102,19 @@ effects:
   - incomplete_returns_are_not_counted_as_returned
   # 공용 재계산 경로는 그대로다 — 여기에 RETURNED 제외가 더해지면 이중 제외가 된다.
   - shared_recalc_path_still_counts_returned_rows
+  # S-B-D7 — 신규 환불신청서는 **이 신청서 몫**만 담는다. 누적을 그대로 실으면 앞 신청서가
+  # 이미 환불한 금액을 다시 담아 과다 환불이 된다(실측: 15,000원이어야 할 건이 60,000원).
+  - sequential_return_refund_request_carries_only_its_own_share
+  # S-B-D16 — 환불 실행 가드는 저장 시점과 같은 누적으로 한도를 계산한다. 단건 기준으로
+  # 계산하면 앞 회차 상품과 그 배송비가 잔여로 남아, 시스템이 만든 신청서를 시스템이 거부한다.
+  - refund_execution_guard_accepts_the_amount_it_filed
 
 test_files:
   # 고친 자리 — completedClaimItems() 의 반환값
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/ReturnedRowsExcludedFromRecalcTest.php
   # 증상 종단 — 쿠폰 복원 훅이 실제로 발화하는가
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/SequentialReturnRestoresCouponTest.php
+  # S-B-D7 — 회차별 환불신청서가 자기 몫만 담는가 (금액 + 상품 행)
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/SequentialReturnRefundShareTest.php
+  # S-B-D16 — 실행 가드가 자기가 만든 금액을 허용하는가 + 결제 총액 상한은 살아 있는가
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/RefundExecutionGuardMatchesFiledAmountTest.php

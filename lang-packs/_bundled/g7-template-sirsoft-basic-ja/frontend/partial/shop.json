@@ -564,7 +564,7 @@
     "modal_title": "クーポンダウンロード",
     "loading": "クーポンを読み込み中...",
     "empty": "ダウンロード可能なクーポンがありません。",
-    "currency_unit": "円",
+    "currency_unit": "ウォン",
     "off": "割引",
     "min_order_amount": "最小注文金額",
     "valid_until": "有効期限：",

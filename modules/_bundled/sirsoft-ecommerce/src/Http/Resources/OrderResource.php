@@ -142,7 +142,7 @@ class OrderResource extends BaseApiResource
             'total_deposit_used_amount' => $this->roundToOrderCurrency($this->total_deposit_used_amount, $orderCurrency),
             'total_deposit_used_amount_formatted' => $this->formatOrderCurrency($this->total_deposit_used_amount, $orderCurrency),
             'total_earned_points_amount' => $this->roundToOrderCurrency($this->total_earned_points_amount, $orderCurrency),
-            'total_earned_points_amount_formatted' => $this->formatOrderCurrency($this->total_earned_points_amount, $orderCurrency),
+            'total_earned_points_amount_formatted' => $this->formatEarnedPoints($this->total_earned_points_amount),
 
             // 다중 통화 금액 (주문 시점 스냅샷)
             'mc_subtotal_amount' => $this->formatStoredMultiCurrency($this->mc_subtotal_amount),

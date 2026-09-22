@@ -73,7 +73,7 @@ class OrderListResource extends BaseApiResource
             'total_points_used_amount' => $this->roundToOrderCurrency($this->total_points_used_amount, $orderCurrency),
             'total_points_used_amount_formatted' => $this->formatOrderCurrency($this->total_points_used_amount, $orderCurrency),
             'total_earned_points_amount' => $this->roundToOrderCurrency($this->total_earned_points_amount, $orderCurrency),
-            'total_earned_points_amount_formatted' => $this->formatOrderCurrency($this->total_earned_points_amount, $orderCurrency),
+            'total_earned_points_amount_formatted' => $this->formatEarnedPoints($this->total_earned_points_amount),
 
             // 일시 — raw ISO 와 사용자 타임존 변환된 *_formatted 를 함께 제공 (OrderResource 와 동일 패턴)
             'ordered_at' => $this->ordered_at?->toIso8601String(), // audit:allow datetime-display-user-timezone reason: paired with *_formatted user-tz field
@@ -276,6 +276,8 @@ class OrderListResource extends BaseApiResource
 
     /**
      * 소유자 필드명을 반환합니다.
+     *
+     * @return string|null 소유자 컬럼명
      */
     protected function ownerField(): ?string
     {
@@ -286,6 +288,7 @@ class OrderListResource extends BaseApiResource
      * 스냅샷 기반 배송방법 라벨을 해석합니다.
      *
      * @param  OrderShipping|null  $shipping  배송 레코드
+     * @return string|null 배송방법 라벨 (없으면 null)
      */
     private function resolveSnapshotMethodLabel(?OrderShipping $shipping): ?string
     {

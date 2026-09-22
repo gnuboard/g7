@@ -1,0 +1,46 @@
+feature: 통화 기호·단위 — 어느 로케일에서도 그 돈이 무엇인지 어긋나지 않는다
+
+description: |
+  상점은 기준 통화 하나로 정산하고 화면은 보조 통화를 함께 늘어놓는다. 그래서 금액 옆의
+  글자는 **그 돈이 무엇인가**만 말해야 한다 — 보는 사람의 언어가 그 글자를 바꾸면, 같은
+  화면에서 두 통화가 같은 글자를 쓰게 되고 구매자는 어느 쪽이 참인지 알 수 없다.
+
+  조용히 깨지는 지점이 둘이다.
+
+  ① **기호 충돌** — 일본 엔과 중국 위안이 둘 다 `¥` 를 쓰면 다국적 구매자가 가격을 오인한다.
+     위안화는 `元` 으로 갈라 둔다. 관리자가 기호를 비운 채 저장하면 표준 매핑으로 보충된다.
+
+  ② **로케일 번역이 통화를 바꿔 버리는 것** — ja 언어팩이 원화(KRW)의 접미사를 `円` 으로
+     두고 있었다. 6,000원이 **6,000엔**으로 읽히고, 같은 화면 보조 통화 줄의 실제 엔화
+     (`¥690`)와 정면으로 모순된다(#599 세션A 실측 2026-09-21 · ja 주문서).
+     원화의 ja 표기는 `ウォン` 이다.
+
+  ②의 테스트는 **언어팩 파일의 값과 런타임 번역 둘 다**를 본다. 테스트 DB 에는 ja 언어팩이
+  설치돼 있지 않아 `__()` 는 ko 로 폴백하고, 그러면 `円` 이 없으니 결함이 있는 채로 초록이
+  된다 — 실제로 그렇게 한 번 통과했다.
+
+# axis 의미: 갈라지는 축은 «어느 통화인가» 하나다. 로케일은 축이 아니다 — 통화 표기는
+# 보는 언어와 무관해야 한다는 것이 곧 이 계약이고, 그 불변은 KRW 케이스가 ko·en·ja 를
+# 한 테스트 안에서 모두 돌며 잠근다. 로케일을 축으로 세우면 «ja 에서 THB 는?» 같은,
+# 계약이 애초에 갈리지 않는 칸을 채우라고 요구하게 된다.
+axes:
+  currency: [KRW, CNY, THB]
+
+effects:
+  - currency_symbol_is_persisted_as_entered        # 운영자가 입력한 기호는 그대로 보존된다
+  - missing_currency_symbol_is_backfilled_from_defaults  # 비워 저장하면 표준 기호로 보충된다
+  - cny_symbol_stays_distinct_from_jpy             # 위안 元 ↔ 엔 ¥ 가 갈린다
+  - krw_amount_never_formats_as_yen                # 원화에 엔화 글자(円)가 붙지 않는다
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Admin/EcommerceSettingsCurrencySymbolTest.php
+
+validation:
+  audit_rule: backend-change-requires-test
+  browser_check: |
+    #599 세션A 실측(2026-09-21 · ja 로케일 주문서). 수정 전 주 통화 `6,000円` ↔ 보조 통화 `¥690`.
+    수정 후 원화 접미사는 `ウォン` 이며 보조 통화 `¥` 와 구분된다.
+  note: |
+    언어팩은 별도 확장이라 `_bundled` 원본과 설치 사본 두 곳을 함께 고치고
+    `language-pack:update` 로 반영한다. 프론트 쪽 `currency_unit`(템플릿 ja 팩)도 같은 이유로
+    `円` → `ウォン` 이다 — 쿠폰 다운로드 모달이 다통화 포맷을 못 받을 때 쓰는 폴백 자리다.

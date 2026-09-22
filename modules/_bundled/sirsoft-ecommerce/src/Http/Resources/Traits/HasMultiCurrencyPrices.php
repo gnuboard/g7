@@ -332,6 +332,25 @@ trait HasMultiCurrencyPrices
     }
 
     /**
+     * 적립 마일리지를 포인트 단위로 포맷팅합니다.
+     *
+     * 마일리지는 화폐가 아니라 포인트이므로 통화 기호를 붙이지 않습니다. 통화로 포맷하면
+     * 같은 값이 화면마다 갈립니다 — 장바구니·주문서는 `Summary::mileage_formatted` 가
+     * `710P` 로 내는데 주문완료·비회원 주문상세·관리자 주문목록은 `710원` 으로 나와,
+     * 구매자가 한 클릭 사이에 단위가 바뀌는 것을 봅니다(#599 세션A 실측 2026-09-21 ·
+     * 주문 20260921-1536333520 · PO 확정 2026-09-22 「P 로 통일」).
+     *
+     * 표기 관례(천 단위 구분)는 `Summary` 와 같은 식을 쓰므로 두 경로가 같은 문자열을 냅니다.
+     *
+     * @param  float|int|null  $points  적립 포인트 (null 은 0 으로 처리)
+     * @return string `710P` 형태의 포인트 표기
+     */
+    protected function formatEarnedPoints(float|int|null $points): string
+    {
+        return number_format((float) ($points ?? 0)).'P';
+    }
+
+    /**
      * 주문 모델에서 스냅샷 기준 통화 코드를 추출합니다.
      *
      * `currency_snapshot.base_currency` (주문 시점 시스템 기본 통화)를 우선 사용하고,
@@ -544,6 +563,8 @@ trait HasMultiCurrencyPrices
      * 테스트 또는 설정 변경 시 캐시를 리셋해야 할 때 사용합니다.
      * 실제 보관소는 CurrencySettingsCache 단일 클래스이므로, 어느 사용 클래스에서
      * 호출하든 전체가 비워집니다.
+     *
+     * @return void 반환값 없음
      */
     public static function clearCurrencySettingsCache(): void
     {

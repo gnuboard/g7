@@ -557,16 +557,37 @@ describe('_apply_summary.json — 요약 + 청구 2축 (D6·P13)', () => {
   });
 
   /** @effects claim_apply_total_charge_row_hidden_for_refund */
-  it('총 청구액 줄은 취소·환불에 서지 않는다 (§6-3 — 청구가 발생하지 않는 유형)', () => {
+  it('총 청구액 줄은 취소·환불과 「환불금에서 차감」에 서지 않는다 (§6-3)', () => {
     // 회귀(2026-08-31 3차 계획 검증): 형제 줄(청구 2축·환불 예정액)에는 유형 가드가
     // 있는데 이 줄만 없어 취소 신청서에 "총 청구액 0원" 이 섰다. 서버가 그 유형에 총액
     // 필드를 주지 않아 포맷터가 0 으로 떨어진 값이다.
+    //
+    // 두 번째 조건은 2026-09-21 세션B 실측(S-B-D6 · PO 확정 「감추기」)이 더했다.
+    // `deduct_from_refund` 는 회수비를 환불액에서 이미 뺐으므로 따로 낼 돈이 없는데,
+    // 바로 위 「회수 배송비 차감 −3,000원」 아래에 「총 청구액 3,000원」이 서면 같은 돈을
+    // 두 번 내는 것으로 읽힌다.
+    //
+    // 조건 문자열을 통째로 비교하면 새 조건이 **덧붙기만 해도** 통과한다 — 두 축이
+    // 각각 살아 있는지를 따로 확인한다.
     const loop = flatten(summary).find((n) => n.iteration?.item_var === 'totalChargeCurrency');
     const row = flatten(summary).find((n) =>
       flattenChildren(n).some((c) => c === loop) && typeof n.if === 'string' && n.if.includes('claimType')
     );
 
-    expect(row?.if).toBe("{{_local.claimType !== 'refund'}}");
+    const guard = String(row?.if);
+
+    // ① 유형 축 — 취소·환불에는 서지 않는다.
+    expect(guard).toContain("_local.claimType !== 'refund'");
+
+    // ② 청구방식 축 — 「환불금에서 차감」에는 서지 않는다. 신청 중에는 서버 미리보기가
+    // 아직 방식을 돌려주지 않을 수 있어 화면 선택값(`claimChargeMethod`)을 폴백으로 읽는다.
+    expect(guard).toContain("!== 'deduct_from_refund'");
+    expect(guard).toContain('_local.claimEstimate?.charge_method');
+    expect(guard).toContain('_local.claimChargeMethod');
+
+    // 두 축은 함께 만족해야 한다 — OR 로 이어지면 한쪽만 맞아도 줄이 서서 가드가 무너진다.
+    expect(guard).toMatch(/&amp;&amp;|&&/);
+    expect(guard).not.toMatch(/\|\|/);
   });
 
   /** @effects claim_apply_amounts_use_server_formatted_strings */

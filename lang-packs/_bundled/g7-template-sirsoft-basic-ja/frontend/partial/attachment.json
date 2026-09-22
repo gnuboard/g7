@@ -1,6 +1,7 @@
 {
   "drop_or_click": "ファイルをドラッグするか、クリックしてアップロード",
   "upload_limit": "最大 {{maxFiles}}個、各 {{maxSize}}MB まで",
+  "upload_limit_count": "最大 {{maxFiles}}個まで",
   "delete_confirm_title": "添付ファイル削除",
   "delete_confirm_message": "このファイルを削除しますか?",
   "deleting": "削除中...",

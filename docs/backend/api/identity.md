@@ -2413,10 +2413,13 @@ HTTP/1.1 201
 | 401 | Unauthenticated | Bearer 토큰을 보냈으나 만료/무효인 경우 (비회원은 헤더 생략 가능) |
 | 403 | Forbidden | 요구 권한(`core.identity.request`)이 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터 검증 실패, 또는 비로그인 상태에서 `target.email`·`target.phone` 이 모두 비어 있는 경우 (`인증 대상(이메일·전화번호)이 필요합니다.`), 선택한 프로바이더가 해당 목적을 지원하지 않는 경우(`선택된 프로바이더는 이 목적을 지원하지 않습니다.`), 프로바이더 사용 불가(`본인인증 프로바이더를 사용할 수 없습니다.`) |
+| 502 | Bad Gateway | challenge 는 만들어졌으나 **코드 전달이 실패**한 경우 (`인증 코드를 보내지 못했습니다. 잠시 후 다시 시도하시거나 다른 인증 수단을 이용해주세요.`) |
 
 <!-- @generated:end -->
 
 **설명** 본인인증 challenge(인증 시도) 를 시작합니다. `auth:sanctum` + `core.identity.request` 권한이 필요합니다. 로그인 사용자는 인증 대상이 자동으로 본인이 되며, 비로그인 게스트(Mode B 가입 흐름) 는 `target.email` 또는 `target.phone` 을 반드시 제공해야 하고 없으면 422(missing_target) 를 반환합니다. `provider_id` 미지정 시 목적에 매핑된 기본 프로바이더가 선택됩니다. `IdentityVerificationService::start` 가 IP·User-Agent 등 컨텍스트와 함께 challenge 를 생성하고 성공 시 201 로 challenge 리소스(render_hint 등 포함) 를 반환합니다. 확장은 `core.identity.request_validation_rules` 필터 훅으로 파라미터를 추가할 수 있습니다.
+
+**발송 실패는 성공으로 포장하지 않습니다(#599 세션A).** challenge 생성과 코드 전달은 다른 일이라, 전달이 실패해도 challenge 행은 남습니다. 그대로 201 을 주면 화면이 「전송된 코드를 입력하세요」와 카운트다운을 띄워 사용자가 오지 않을 코드를 기다리게 됩니다. 그래서 생성 직후 `IdentityVerificationService::getStatus()`(공개 폴링과 같은 판정)로 상태를 확인하고, `failed` 이면 **502** 와 `identity.errors.challenge_dispatch_failed` 를 반환합니다. 요청 자체는 올바르고 권한도 있으므로 4xx 가 아니라 바깥 전달 경로의 실패를 뜻하는 5xx 를 씁니다.
 
 
 ### GET /api/identity/challenges/{challenge}

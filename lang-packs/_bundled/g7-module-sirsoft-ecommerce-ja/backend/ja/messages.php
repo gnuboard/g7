@@ -223,7 +223,7 @@ return [
     ],
     'currency' => [
         'suffix' => [
-            'KRW' => '円',
+            'KRW' => 'ウォン',
             'JPY' => '',
             'CNY' => '',
             'USD' => '',

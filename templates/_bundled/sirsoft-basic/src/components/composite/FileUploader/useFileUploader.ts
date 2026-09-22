@@ -55,7 +55,7 @@ export interface UseFileUploaderOptions {
   attachmentableId?: number;
   collection: string;
   maxFiles: number;
-  maxSize: number;
+  maxSize?: number;
   maxConcurrentUploads: number;
   accept?: string;
   imageCompression?: FileUploaderProps['imageCompression'];
@@ -251,8 +251,10 @@ export function useFileUploader(options: UseFileUploaderOptions): UseFileUploade
       }
 
       for (const file of filesToAdd) {
-        // 크기 검증
-        if (file.size > maxSize * 1024 * 1024) {
+        // 크기 검증 — 호출부가 상한을 선언했을 때만 돈다. 미선언이면 컴포지트가 조용히
+        // 걸러 내지 않고 파일을 그대로 넘겨, 호출부 핸들러가 자기 기준(서버 설정)으로
+        // 판정하고 그 자리에서 문구를 띄운다(S2-D10 · SA-D5).
+        if (maxSize != null && file.size > maxSize * 1024 * 1024) {
           onUploadError?.(
             `[${file.name}] 파일 크기(${formatFileSize(file.size)})가 최대 허용 크기(${maxSize}MB)를 초과합니다.`,
             file

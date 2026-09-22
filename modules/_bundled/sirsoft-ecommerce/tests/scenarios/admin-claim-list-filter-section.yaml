@@ -59,6 +59,10 @@ effects:
   - search_axes_not_duplicated_in_detail_filter
   # 각 검색 축이 실제로 맞는 컬럼을 짚는다 — 되돌리면 빈 결과가 아니라 SQL 예외가 난다
   - requester_search_reads_orderer_name_from_shipping_address
+  # 회원구분 축도 같은 계열이다 — 신청자 컬럼(`requested_by`·`cancelled_by`)은 비회원 신청과
+  # **운영자 대리 접수**가 똑같이 null 이라 회원 주문의 운영자 접수 건이 「비회원」 목록에 선다.
+  # 판정은 주문의 주인(`order.user_id`)이 한다 — 모델 `isGuestRequest()` 와 같은 기준(#599 세션A).
+  - claim_list_requester_filter_reads_order_owner
   # 상품명은 다국어 JSON — 평문 like 는 한글을 영영 못 만난다(영문만 걸려 결함이 가려진다)
   - product_name_search_matches_korean_not_only_ascii
   # 목록 컨텍스트 왕복

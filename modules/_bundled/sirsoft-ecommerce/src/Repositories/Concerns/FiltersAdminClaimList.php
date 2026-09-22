@@ -73,12 +73,16 @@ trait FiltersAdminClaimList
             $query->where($columns['reason'], $filters['reason_code']);
         }
 
-        // 회원구분 — 클레임 테이블에는 user_id 가 없고 신청자 컬럼(비회원 NULL)이 회원 여부의
-        // 단일 근거다 (`isGuestRequest()` 와 같은 판정).
+        // 회원구분 — 판정은 **주문의 주인**이 한다 (`isGuestRequest()` 와 같은 기준).
+        //
+        // 신청자 컬럼(`requested_by`·`cancelled_by`)으로 가르면 안 된다: 비회원 신청과
+        // **운영자 대리 접수**가 똑같이 null 이라, 회원 주문의 운영자 접수 건이 「비회원」
+        // 목록에 선다 — 운영자는 연락 수단을 잘못 고른다(#599 세션A 실측 2026-09-21:
+        // 회원 주문 20260921-1316400577 의 RF20260921-1412250846·RF20260921-1416278729).
         if (($filters['requester_type'] ?? null) === 'member') {
-            $query->whereNotNull($columns['requester']);
+            $query->whereHas('order', fn ($q) => $q->whereNotNull('user_id'));
         } elseif (($filters['requester_type'] ?? null) === 'guest') {
-            $query->whereNull($columns['requester']);
+            $query->whereHas('order', fn ($q) => $q->whereNull('user_id'));
         }
 
         $this->applyAdminClaimAmountRange($query, $filters, $columns);

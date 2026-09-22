@@ -180,6 +180,52 @@ class UserClaimApiTest extends ModuleTestCase
     }
 
     /**
+     * 무통장 주문의 신청 가능 옵션은 «자동으로 끝나지 않는다» 는 사실을 함께 낸다. (P16·P17)
+     *
+     * 즉시취소 분기(`refund_branch=auto`)와 결제수단 게이트는 다른 축이다. 무통장·가상계좌는
+     * 분기가 auto 여도 접수 뒤 `requested` 에서 멈추고 운영자 승인 → [환불하기] 를 기다린다.
+     * 그 사실이 응답에 없으면 신청서는 분기만 보고 「자동 처리」라고 안내하게 되고, 구매자는
+     * 곧 돈이 돌아온다고 읽는다(실측 2026-09-21: 주문 20260921-1316400577 배지 「자동 처리」 ·
+     * 안내 「승인·환불완료까지 자동으로 진행됩니다」 → 실제 RF232 는 `requested` 정지).
+     *
+     * @scenario claim_type=refund, charge_method=none, refund_branch=auto
+     *
+     * @effects claim_refund_auto_approval_gate_declared_by_server
+     *
+     * @return void 반환값 없음
+     */
+    public function test_claimable_options_declares_that_bank_transfer_refunds_are_not_auto_approved(): void
+    {
+        $order = $this->deliveredClaimOrder(paymentOverrides: ['payment_method' => PaymentMethodEnum::DBANK->value]);
+        $order->forceFill(['user_id' => $this->user->id])->save();
+
+        $this->actingAs($this->user)->getJson($this->base()."/orders/{$order->id}/claimable-options")
+            ->assertOk()
+            ->assertJsonPath('data.refund_auto_approved', false);
+    }
+
+    /**
+     * 카드 주문은 반대로 자동 승인 대상이라고 낸다. (P16·P17 대조군)
+     *
+     * 대조군이 없으면 「언제나 false」 로 굳어도 테스트가 통과한다.
+     *
+     * @scenario claim_type=refund, charge_method=none, refund_branch=auto
+     *
+     * @effects claim_refund_auto_approval_gate_declared_by_server
+     *
+     * @return void 반환값 없음
+     */
+    public function test_claimable_options_declares_that_card_refunds_are_auto_approved(): void
+    {
+        $order = $this->deliveredClaimOrder(paymentOverrides: ['payment_method' => PaymentMethodEnum::CARD->value]);
+        $order->forceFill(['user_id' => $this->user->id])->save();
+
+        $this->actingAs($this->user)->getJson($this->base()."/orders/{$order->id}/claimable-options")
+            ->assertOk()
+            ->assertJsonPath('data.refund_auto_approved', true);
+    }
+
+    /**
      * 남의 주문의 신청 가능 옵션은 404 (존재 비노출)
      *
      * @effects claim_endpoints_scope_to_the_requesting_member

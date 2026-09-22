@@ -20,7 +20,7 @@ export interface FileUploaderContextValue {
 
   // 설정
   maxFiles: number;
-  maxSize: number;
+  maxSize?: number;
   accept?: string;
   endpoints: ApiEndpoints;
   confirmBeforeRemove: boolean;

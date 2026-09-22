@@ -51,6 +51,14 @@ class ClaimControllerTest extends ModuleTestCase
 
     protected User $admin;
 
+    /**
+     * 클레임 권한 2종만 가진 운영자와 첨부 저장소 모의를 세웁니다.
+     *
+     * 운영자에게 `settings.read` 를 주지 않는 것이 이 클래스의 전제다 — 기본 역할 `manager`
+     * 의 실제 권한 구성이고, 설정 응답에 기대는 계약이 그 운영자에게 도달하는지를 재기 위함이다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -70,6 +78,11 @@ class ClaimControllerTest extends ModuleTestCase
         $this->app->when(ClaimAttachmentService::class)->needs(StorageInterface::class)->give(fn () => $storage);
     }
 
+    /**
+     * 통화 설정과 Mockery 기대치를 되돌립니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         $this->clearTestCurrencySettings();
@@ -77,6 +90,11 @@ class ClaimControllerTest extends ModuleTestCase
         parent::tearDown();
     }
 
+    /**
+     * 관리자 API 의 공통 접두 경로를 돌려줍니다.
+     *
+     * @return string 관리자 라우트 접두 경로
+     */
     protected function base(): string
     {
         return '/api/modules/sirsoft-ecommerce/admin';
@@ -84,6 +102,10 @@ class ClaimControllerTest extends ModuleTestCase
 
     /**
      * 반품 신청서를 서비스 경로로 접수합니다. (기본: 환불금 차감 — 자동 승인 없이 REQUESTED 유지)
+     *
+     * @param  Order|null  $order  대상 주문 (없으면 배송완료 주문을 새로 만든다)
+     * @param  ClaimChargeMethodEnum|string|null  $chargeMethod  청구 방식
+     * @return OrderReturn 접수된 반품 신청서
      */
     protected function makeReturn(?Order $order = null, ClaimChargeMethodEnum|string|null $chargeMethod = ClaimChargeMethodEnum::DEDUCT_FROM_REFUND): OrderReturn
     {
@@ -98,6 +120,10 @@ class ClaimControllerTest extends ModuleTestCase
 
     /**
      * 교환 신청서를 서비스 경로로 접수합니다. (동일 옵션 교환 — 왕복 배송비 청구)
+     *
+     * @param  Order|null  $order  대상 주문 (없으면 배송완료 주문을 새로 만든다)
+     * @param  ClaimChargeMethodEnum|string|null  $chargeMethod  청구 방식
+     * @return OrderExchange 접수된 교환 신청서
      */
     protected function makeExchange(?Order $order = null, ClaimChargeMethodEnum|string|null $chargeMethod = ClaimChargeMethodEnum::PAY_ON_APPROVAL): OrderExchange
     {
@@ -112,6 +138,9 @@ class ClaimControllerTest extends ModuleTestCase
 
     /**
      * 직접 환불신청서를 서비스 경로로 접수합니다. (상품준비중 — 환불신청 분기)
+     *
+     * @param  Order|null  $order  대상 주문 (없으면 정책 배송비가 붙은 상품준비중 주문을 만든다)
+     * @return OrderRefund 접수된 환불 신청서
      */
     protected function makeRefundRequest(?Order $order = null): OrderRefund
     {
@@ -131,6 +160,9 @@ class ClaimControllerTest extends ModuleTestCase
 
     /**
      * 반품 신청서를 회수도착까지 진행시킵니다. (완료 직전 상태)
+     *
+     * @param  OrderReturn  $return  진행시킬 반품 신청서
+     * @return OrderReturn 회수도착 상태의 반품 신청서
      */
     protected function moveReturnToCollected(OrderReturn $return): OrderReturn
     {
@@ -147,7 +179,12 @@ class ClaimControllerTest extends ModuleTestCase
     // ================================================================
 
     /**
+     * 목록 행은 축소 표현이다 — 상품 전량·첨부까지 실으면 한 화면이 수백 건을 나르고, 서브탭
+     * 건수·페이지네이션이 그 행 수와 어긋나면 운영자는 없는 페이지를 넘긴다.
+     *
      * @effects list_returns_subtab_rows_with_counts_and_pagination
+     *
+     * @return void 반환값 없음
      */
     public function test_list_returns_subtab_rows_with_counts_and_pagination(): void
     {
@@ -175,7 +212,12 @@ class ClaimControllerTest extends ModuleTestCase
     }
 
     /**
+     * 유형을 지정하지 않은 진입은 교환 탭이다. 기본이 흔들리면 북마크·뒤로가기로 들어온
+     * 운영자가 같은 주소에서 매번 다른 목록을 본다.
+     *
      * @effects list_defaults_to_the_exchange_subtab
+     *
+     * @return void 반환값 없음
      */
     public function test_list_defaults_to_the_exchange_subtab(): void
     {
@@ -189,7 +231,12 @@ class ClaimControllerTest extends ModuleTestCase
     }
 
     /**
+     * 상태 어휘는 유형마다 다르다. 다른 유형의 상태를 조용히 무시하면 오타가 「결과 없음」으로
+     * 위장하므로 422 로 끊는다.
+     *
      * @effects list_filters_by_status_array_and_gates_vocabulary_per_type
+     *
+     * @return void 반환값 없음
      */
     public function test_list_filters_by_status_array_and_gates_vocabulary_per_type(): void
     {
@@ -208,7 +255,12 @@ class ClaimControllerTest extends ModuleTestCase
     }
 
     /**
+     * 클레임번호 검색이 그 번호의 행 하나만 집는지 잠근다 — 부분일치로 번져도 화면에는
+     * 그냥 여러 건으로 보일 뿐이다.
+     *
      * @effects list_searches_by_claim_number
+     *
+     * @return void 반환값 없음
      */
     public function test_list_searches_by_claim_number(): void
     {
@@ -223,7 +275,80 @@ class ClaimControllerTest extends ModuleTestCase
     }
 
     /**
+     * 회원 구분 필터는 **주문의 주인**으로 가른다 — 운영자 대리 접수는 비회원이 아니다.
+     *
+     * `requested_by` 는 비회원 신청과 운영자 대리 접수가 똑같이 `null` 이다. 그 값으로 가르면
+     * **회원 주문의 운영자 접수 건이 「비회원」 목록에 선다** — 운영자는 연락 수단을 잘못 고른다.
+     * 모델의 `isGuestRequest()` 는 이미 주문의 `user_id` 로 판정한다(같은 판정을 목록도 쓴다).
+     *
+     * 실측(#599 세션A 2026-09-21): `?type=refund&requester_type=guest` 에
+     * 회원 주문 `20260921-1316400577` 의 운영자 접수 `RF20260921-1412250846`·`RF20260921-1416278729` 가 잡혔다.
+     *
+     * @scenario claim_type=refund, requester=admin_on_behalf
+     *
+     * @effects claim_list_requester_filter_reads_order_owner
+     *
+     * @return void 반환값 없음
+     */
+    public function test_list_requester_filter_does_not_treat_admin_filed_member_claims_as_guest(): void
+    {
+        $refund = $this->makeRefundRequest();
+
+        // 운영자 대리 접수 — 신청자 컬럼이 비고 주문 주인만 남는다.
+        $refund->forceFill(['requested_by' => null, 'refund_source_type' => 'admin'])->save();
+
+        $this->assertNotNull($refund->order->user_id, '회원 주문이어야 이 축이 성립한다');
+
+        // 비회원 목록에 서면 안 된다.
+        $this->actingAs($this->admin)
+            ->getJson($this->base().'/claims?type=refund&requester_type=guest')
+            ->assertOk()
+            ->assertJsonMissing(['id' => $refund->id]);
+
+        // 회원 목록에는 서야 한다.
+        $this->actingAs($this->admin)
+            ->getJson($this->base().'/claims?type=refund&requester_type=member')
+            ->assertOk()
+            ->assertJsonFragment(['id' => $refund->id]);
+    }
+
+    /**
+     * 비회원 주문의 신청서는 비회원 목록에 선다. (대조군)
+     *
+     * 대조군이 없으면 「언제나 회원」 으로 굳어도 위 케이스가 통과한다.
+     *
+     * @scenario claim_type=refund, requester=guest
+     *
+     * @effects claim_list_requester_filter_reads_order_owner
+     *
+     * @return void 반환값 없음
+     */
+    public function test_list_requester_filter_lists_guest_order_claims_as_guest(): void
+    {
+        $refund = $this->makeRefundRequest();
+
+        // 비회원 주문 — 주문의 주인이 없다.
+        $refund->order->forceFill(['user_id' => null])->save();
+        $refund->forceFill(['requested_by' => null])->save();
+
+        $this->actingAs($this->admin)
+            ->getJson($this->base().'/claims?type=refund&requester_type=guest')
+            ->assertOk()
+            ->assertJsonFragment(['id' => $refund->id]);
+
+        $this->actingAs($this->admin)
+            ->getJson($this->base().'/claims?type=refund&requester_type=member')
+            ->assertOk()
+            ->assertJsonMissing(['id' => $refund->id]);
+    }
+
+    /**
+     * 그 유형에 없는 축(취소의 귀책 · 환불의 청구 방식)을 조용히 무시하면 **필터가 걸리지 않은
+     * 목록이 필터 결과로 보인다**. 그래서 무시가 아니라 422 다.
+     *
      * @effects list_prohibits_type_foreign_filter_axes
+     *
+     * @return void 반환값 없음
      */
     public function test_list_prohibits_type_foreign_filter_axes(): void
     {
@@ -237,7 +362,12 @@ class ClaimControllerTest extends ModuleTestCase
     }
 
     /**
+     * 금액 축은 목록 「금액」 컬럼이 그리는 값과 같은 컬럼을 봐야 한다. 최대 < 최소 는 결과가
+     * 늘 비는 조합이라 게이트가 막는다 — 빈 목록으로 위장하지 않게.
+     *
      * @effects amount_range_reads_the_column_the_list_amount_shows, max_amount_alone_is_a_valid_combination
+     *
+     * @return void 반환값 없음
      */
     public function test_list_filters_by_amount_range_per_type(): void
     {
@@ -263,7 +393,12 @@ class ClaimControllerTest extends ModuleTestCase
     }
 
     /**
+     * 환불의 목록 금액은 「환불액 + 환불 마일리지」 합이다. 한쪽만 보면 운영자가 화면에 보이는
+     * 값으로 걸었는데 걸리지 않는다.
+     *
      * @effects refund_amount_range_sums_pg_and_mileage
+     *
+     * @return void 반환값 없음
      */
     public function test_refund_amount_range_sums_pg_and_mileage(): void
     {
@@ -291,7 +426,12 @@ class ClaimControllerTest extends ModuleTestCase
     }
 
     /**
+     * 취소의 금액은 자기 컬럼이 아니라 **연결된 환불 행**에 있다. 자기 테이블만 보면 취소 탭의
+     * 금액 필터가 언제나 0 건이 된다.
+     *
      * @effects cancel_amount_range_reads_the_linked_refund
+     *
+     * @return void 반환값 없음
      */
     public function test_cancel_amount_range_reads_the_linked_refund(): void
     {
@@ -327,7 +467,12 @@ class ClaimControllerTest extends ModuleTestCase
     }
 
     /**
+     * 통화 필터는 그 통화로 기록된 건만 집고, 등록되지 않은 코드는 빈 목록이 아니라 422 다 —
+     * 오타가 「결과 없음」으로 위장하지 않게.
+     *
      * @effects amount_range_reads_the_column_the_list_amount_shows
+     *
+     * @return void 반환값 없음
      */
     public function test_list_filters_by_currency(): void
     {
@@ -348,6 +493,8 @@ class ClaimControllerTest extends ModuleTestCase
      * 필터 조합으로도 도달 불가가 되고 그 통화가 실린 URL 은 목록 전체를 422 로 만든다.
      *
      * @effects currency_gate_accepts_codes_recorded_on_claims_even_when_settings_dropped_them, currency_gate_rejects_codes_never_used
+     *
+     * @return void 반환값 없음
      */
     public function test_list_accepts_currency_that_was_removed_from_settings(): void
     {
@@ -398,6 +545,8 @@ class ClaimControllerTest extends ModuleTestCase
      * 그 통화로 동결된 신청서를 다시 도달 불가로 만든다. 마지막 근거는 실제로 기록된 값이다.
      *
      * @effects currency_gate_accepts_codes_recorded_on_claims_even_when_settings_dropped_them, currency_gate_rejects_codes_never_used
+     *
+     * @return void 반환값 없음
      */
     public function test_list_accepts_currency_the_admin_added_and_then_removed(): void
     {
@@ -457,6 +606,8 @@ class ClaimControllerTest extends ModuleTestCase
      * 통과한다. 길이만 검사하면 오타가 조용히 0건으로 통과해 필터가 걸린 것처럼 보인다.
      *
      * @effects charge_payment_gate_accepts_methods_recorded_on_claim_payments, charge_payment_gate_rejects_methods_never_used
+     *
+     * @return void 반환값 없음
      */
     public function test_list_gates_charge_payment_method_by_settings_then_records(): void
     {
@@ -491,7 +642,12 @@ class ClaimControllerTest extends ModuleTestCase
     }
 
     /**
+     * 추가결제 수단 필터는 결제 행을 가진 건만 집는다. 추가결제가 성립하지 않는 유형(환불·취소)
+     * 에는 축 자체가 없어 422 다.
+     *
      * @effects list_filters_by_charge_payment_method
+     *
+     * @return void 반환값 없음
      */
     public function test_list_filters_by_charge_payment_method(): void
     {
@@ -525,7 +681,12 @@ class ClaimControllerTest extends ModuleTestCase
     }
 
     /**
+     * 취소는 REQUESTED 로 생성돼 파이프라인 완료 시 COMPLETED 로 간다. 중간·실패 경로의 미종결
+     * 행이 목록에서 종결로 보이면 운영자가 처리할 건을 지나친다.
+     *
      * @effects cancel_subtab_reports_is_final_from_the_cancel_status
+     *
+     * @return void 반환값 없음
      */
     public function test_cancel_subtab_reports_is_final_from_the_cancel_status(): void
     {
@@ -549,7 +710,11 @@ class ClaimControllerTest extends ModuleTestCase
     }
 
     /**
+     * 클레임 읽기 권한이 없는 운영자에게 목록은 403 이다.
+     *
      * @effects list_requires_the_claims_read_permission
+     *
+     * @return void 반환값 없음
      */
     public function test_list_requires_the_claims_read_permission(): void
     {
@@ -567,6 +732,8 @@ class ClaimControllerTest extends ModuleTestCase
      * 재고 복구를 꺼 두어도 모달은 켜진 채 열리고 그대로 실행된다(오류 없음).
      *
      * @effects completion_defaults_reach_claims_read_operator
+     *
+     * @return void 반환값 없음
      */
     public function test_list_carries_completion_defaults_for_a_claims_scoped_operator(): void
     {
@@ -586,6 +753,8 @@ class ClaimControllerTest extends ModuleTestCase
      * 설정이 비어 있어도 계약 기본값(둘 다 참)이 실린다 — 화면이 형태를 분기하지 않게.
      *
      * @effects completion_defaults_reach_claims_read_operator
+     *
+     * @return void 반환값 없음
      */
     public function test_list_completion_defaults_fall_back_to_the_contract_defaults(): void
     {
@@ -605,6 +774,8 @@ class ClaimControllerTest extends ModuleTestCase
      * 것으로" 라, 운영자가 꺼 둔 재고 복구·환불신청서가 의도 없이 실행된다.
      *
      * @effects completion_defaults_reach_claims_read_operator
+     *
+     * @return void 반환값 없음
      */
     public function test_list_completion_defaults_coerce_non_boolean_stored_values(): void
     {
@@ -637,7 +808,12 @@ class ClaimControllerTest extends ModuleTestCase
     // ================================================================
 
     /**
+     * 관리자 확장 필드는 **추가만** 된다 — 같은 리소스를 쓰는 사용자 화면의 키가 빠지면 이쪽을
+     * 넓히는 작업이 저쪽을 조용히 깬다.
+     *
      * @effects show_returns_admin_fields_and_payment_block
+     *
+     * @return void 반환값 없음
      */
     public function test_show_returns_admin_fields_and_payment_block(): void
     {
@@ -659,7 +835,11 @@ class ClaimControllerTest extends ModuleTestCase
     }
 
     /**
+     * 없는 신청서의 상세는 404 다.
+     *
      * @effects show_is_404_for_a_missing_claim
+     *
+     * @return void 반환값 없음
      */
     public function test_show_is_404_for_a_missing_claim(): void
     {
@@ -671,7 +851,12 @@ class ClaimControllerTest extends ModuleTestCase
     // ================================================================
 
     /**
+     * 청구가 없는 신청서의 승인은 승인으로 끝나고 처리자가 기록된다 — 결제 요청이 함께 일어나면
+     * 청구액 0 원짜리 결제 대기 건이 목록에 선다.
+     *
      * @effects status_approves_a_claim_without_outstanding_charge
+     *
+     * @return void 반환값 없음
      */
     public function test_status_approves_a_claim_without_outstanding_charge(): void
     {
@@ -688,7 +873,12 @@ class ClaimControllerTest extends ModuleTestCase
     }
 
     /**
+     * 승인 시 청구 건은 승인이 아니라 **결제 요청**으로 간다. 승인 시각이 비어 있어야 미수납 건이
+     * 승인된 것으로 서지 않는다.
+     *
      * @effects status_approve_with_pay_on_approval_outstanding_routes_to_payment_request
+     *
+     * @return void 반환값 없음
      */
     public function test_status_approve_with_pay_on_approval_outstanding_routes_to_payment_request(): void
     {
@@ -712,7 +902,12 @@ class ClaimControllerTest extends ModuleTestCase
     }
 
     /**
+     * 신청 시점 미수납 건을 승인하면 청구액이 회수되지 않은 채 진행된다 — 거절이 정답이고,
+     * 상태도 그대로 남아야 한다.
+     *
      * @effects status_approve_with_pay_on_request_outstanding_is_rejected
+     *
+     * @return void 반환값 없음
      */
     public function test_status_approve_with_pay_on_request_outstanding_is_rejected(): void
     {
@@ -735,7 +930,11 @@ class ClaimControllerTest extends ModuleTestCase
     }
 
     /**
+     * 환불금 차감 신청서에는 결제할 청구가 없다 — 결제 요청은 paymentNotRequired 로 거절된다.
+     *
      * @effects status_payment_pending_without_charge_is_payment_not_required
+     *
+     * @return void 반환값 없음
      */
     public function test_status_payment_pending_without_charge_is_payment_not_required(): void
     {
@@ -751,7 +950,12 @@ class ClaimControllerTest extends ModuleTestCase
     }
 
     /**
+     * `paid` 는 결제 확정이, `withdrawn` 은 신청자 행위가 소유한다. 전용 경로가 있는 상태를 직접
+     * 지정하면 그 경로의 부수 처리를 건너뛴 채 상태만 바뀐다.
+     *
      * @effects status_write_gate_rejects_owned_path_statuses
+     *
+     * @return void 반환값 없음
      */
     public function test_status_write_gate_rejects_owned_path_statuses(): void
     {
@@ -768,7 +972,12 @@ class ClaimControllerTest extends ModuleTestCase
     }
 
     /**
+     * 쓰기 게이트를 지난 뒤에도 전이 게이트가 한 번 더 선다 — 두 층을 하나로 합치면 한쪽이
+     * 열려도 초록이 된다.
+     *
      * @effects status_transition_gate_rejects_an_impossible_jump
+     *
+     * @return void 반환값 없음
      */
     public function test_status_transition_gate_rejects_an_impossible_jump(): void
     {
@@ -784,7 +993,11 @@ class ClaimControllerTest extends ModuleTestCase
     }
 
     /**
+     * 거절 사유가 저장돼야 신청자가 왜 거절됐는지 본다 — 저장되지 않아도 거절 자체는 성공한다.
+     *
      * @effects rejecting_a_return_stores_its_reason
+     *
+     * @return void 반환값 없음
      */
     public function test_status_rejection_stores_the_reject_reason(): void
     {
@@ -804,7 +1017,12 @@ class ClaimControllerTest extends ModuleTestCase
     // ================================================================
 
     /**
+     * 완료 페이로드(재고 복구·환불신청서 생성) 없는 완료는 422 다. 받아 주면 운영자가 고르지
+     * 않은 기본값으로 되돌릴 수 없는 처리가 일어난다.
+     *
      * @effects status_completed_requires_the_completion_payload
+     *
+     * @return void 반환값 없음
      */
     public function test_status_completed_requires_the_completion_payload(): void
     {
@@ -818,7 +1036,12 @@ class ClaimControllerTest extends ModuleTestCase
     }
 
     /**
+     * 운영자가 환불신청서를 끄고 완료하면 환불 행이 생기지 않는다 — 끈 것이 켜지면 이중 환불의
+     * 입구가 된다.
+     *
      * @effects status_completed_without_refund_request_creates_no_order_refund
+     *
+     * @return void 반환값 없음
      */
     public function test_status_completed_without_refund_request_creates_no_order_refund(): void
     {
@@ -839,7 +1062,11 @@ class ClaimControllerTest extends ModuleTestCase
     }
 
     /**
+     * 켜고 완료하면 환불 행이 **하나** 생기고 신청서가 그것을 가리킨다.
+     *
      * @effects status_completed_with_refund_request_creates_the_order_refund
+     *
+     * @return void 반환값 없음
      */
     public function test_status_completed_with_refund_request_creates_the_order_refund(): void
     {
@@ -865,7 +1092,12 @@ class ClaimControllerTest extends ModuleTestCase
     // ================================================================
 
     /**
+     * 일괄 전이는 **부분 성공이 정상 결과**다. 건너뛴 건과 그 사유를 돌려주지 않으면 운영자는
+     * 전건 성공으로 읽고, 남은 건은 아무도 다시 보지 않는다.
+     *
      * @effects bulk_status_reports_partial_success_with_skip_reasons
+     *
+     * @return void 반환값 없음
      */
     public function test_bulk_status_reports_partial_success_with_skip_reasons(): void
     {
@@ -895,7 +1127,11 @@ class ClaimControllerTest extends ModuleTestCase
     }
 
     /**
+     * 읽기 권한만 가진 운영자는 일괄 전이를 할 수 없다.
+     *
      * @effects bulk_status_requires_the_update_permission
+     *
+     * @return void 반환값 없음
      */
     public function test_bulk_status_requires_the_update_permission(): void
     {
@@ -913,7 +1149,11 @@ class ClaimControllerTest extends ModuleTestCase
     // ================================================================
 
     /**
+     * 다른 신청서의 상품 행은 서비스의 무음 탈락(「0 건 처리됨」)에 닿기 전에 422 로 드러난다.
+     *
      * @effects option_bulk_rejects_items_of_another_claim_with_422
+     *
+     * @return void 반환값 없음
      */
     public function test_option_bulk_rejects_items_of_another_claim_with_422(): void
     {
@@ -930,7 +1170,12 @@ class ClaimControllerTest extends ModuleTestCase
     }
 
     /**
+     * 상품 행이 전이되면 헤더가 따라간다(syncHeaderFromOptions) — 따라가지 않으면 목록의 상태와
+     * 상세의 상품 상태가 갈린다.
+     *
      * @effects option_bulk_transitions_items_and_syncs_the_header
+     *
+     * @return void 반환값 없음
      */
     public function test_option_bulk_transitions_items_and_syncs_the_header(): void
     {
@@ -950,7 +1195,12 @@ class ClaimControllerTest extends ModuleTestCase
     }
 
     /**
+     * 옵션 단위 완료도 단건과 같은 완료 페이로드를 따른다 — 입구마다 계약이 다르면 그 입구로
+     * 들어온 완료만 환불신청서 없이 끝난다.
+     *
      * @effects option_bulk_completed_completes_the_selected_items
+     *
+     * @return void 반환값 없음
      */
     public function test_option_bulk_completed_completes_the_selected_items(): void
     {
@@ -977,6 +1227,8 @@ class ClaimControllerTest extends ModuleTestCase
      * 섞여도 아무 데도 드러나지 않는다.
      *
      * @effects option_bulk_rejects_a_scalar_item_array_with_422
+     *
+     * @return void 반환값 없음
      */
     public function test_option_bulk_rejects_a_scalar_item_array_with_422(): void
     {
@@ -994,6 +1246,8 @@ class ClaimControllerTest extends ModuleTestCase
      * 같은 행을 두 줄로 보내면 각 줄이 따로 잔여를 보고 통과한 뒤 합계가 넘는다.
      *
      * @effects option_bulk_rejects_duplicate_item_ids_with_422
+     *
+     * @return void 반환값 없음
      */
     public function test_option_bulk_rejects_duplicate_item_ids_with_422(): void
     {
@@ -1014,6 +1268,8 @@ class ClaimControllerTest extends ModuleTestCase
      * 우연히 같은 ID 가 있으면 남의 행을 통과시켰다.
      *
      * @effects option_bulk_transitions_refund_items_in_their_own_scope
+     *
+     * @return void 반환값 없음
      */
     public function test_option_bulk_transitions_refund_items_in_their_own_scope(): void
     {
@@ -1030,7 +1286,11 @@ class ClaimControllerTest extends ModuleTestCase
     }
 
     /**
+     * 환불 축에서도 스코프는 따로 선다 — 한 유형에서 통과한 것이 다른 유형을 보증하지 않는다.
+     *
      * @effects option_bulk_rejects_refund_items_of_another_claim_with_422
+     *
+     * @return void 반환값 없음
      */
     public function test_option_bulk_rejects_refund_items_of_another_claim_with_422(): void
     {
@@ -1049,6 +1309,8 @@ class ClaimControllerTest extends ModuleTestCase
      * 수량을 실으면 그 행이 갈라지고, 응답이 `split` 로 갈린 결과를 돌려준다.
      *
      * @effects option_bulk_splits_an_item_by_quantity
+     *
+     * @return void 반환값 없음
      */
     public function test_option_bulk_splits_an_item_by_quantity(): void
     {
@@ -1077,6 +1339,8 @@ class ClaimControllerTest extends ModuleTestCase
      * 잠가 두지 않으면 한 유형에서만 스코프가 깨져도 드러나지 않는다.
      *
      * @effects option_bulk_splits_an_exchange_item_by_quantity
+     *
+     * @return void 반환값 없음
      */
     public function test_option_bulk_splits_an_exchange_item_by_quantity(): void
     {
@@ -1103,6 +1367,8 @@ class ClaimControllerTest extends ModuleTestCase
      * 스코프 분기는 유형마다 따로 서므로 한 유형에서 통과한 것이 다른 유형을 보증하지 않는다.
      *
      * @effects option_bulk_rejects_exchange_items_of_another_claim_with_422
+     *
+     * @return void 반환값 없음
      */
     public function test_option_bulk_rejects_exchange_items_of_another_claim_with_422(): void
     {
@@ -1121,6 +1387,8 @@ class ClaimControllerTest extends ModuleTestCase
      * 취소신청서는 전이 축이 없다 — 라우트 어휘에도 없지만 컨트롤러가 한 번 더 세운다.
      *
      * @effects option_bulk_is_not_available_for_cancel_claims
+     *
+     * @return void 반환값 없음
      */
     public function test_option_bulk_is_not_available_for_cancel_claims(): void
     {
@@ -1134,6 +1402,8 @@ class ClaimControllerTest extends ModuleTestCase
      * 상품 행 리소스가 **행별** 전이 선택지를 싣는다 — 화면이 상태 어휘를 리터럴로 들지 않게.
      *
      * @effects claim_detail_items_carry_their_own_transition_options
+     *
+     * @return void 반환값 없음
      */
     public function test_claim_detail_items_carry_their_own_transition_options(): void
     {
@@ -1165,6 +1435,8 @@ class ClaimControllerTest extends ModuleTestCase
      * 완료 축이 빠져도 전 스위트가 green 이었다 — 그 경로만 페이로드를 무시해도 드러나지 않는다.
      *
      * @effects bulk_status_completed_honors_the_same_completion_payload
+     *
+     * @return void 반환값 없음
      */
     public function test_bulk_status_completed_honors_the_same_completion_payload(): void
     {
@@ -1193,6 +1465,8 @@ class ClaimControllerTest extends ModuleTestCase
      * 일괄 전이도 '접수하지 않음' 을 그대로 존중한다 (자동 접수 금지 — D26).
      *
      * @effects bulk_status_completed_without_refund_request_creates_no_order_refund
+     *
+     * @return void 반환값 없음
      */
     public function test_bulk_status_completed_without_refund_request_creates_no_order_refund(): void
     {
@@ -1221,6 +1495,8 @@ class ClaimControllerTest extends ModuleTestCase
      * 운영자가 고르지 않은 재고 복구·환불 접수가 조용히 실행된다.
      *
      * @effects every_completion_entry_point_requires_the_completion_payload
+     *
+     * @return void 반환값 없음
      */
     public function test_every_completion_entry_point_requires_the_completion_payload(): void
     {
@@ -1255,7 +1531,12 @@ class ClaimControllerTest extends ModuleTestCase
     // ================================================================
 
     /**
+     * 회수 송장 등록은 등록과 회수중 전이를 한 번에 한다 — 둘이 갈리면 송장은 있는데 상태는
+     * 회수준비중인 건이 남는다.
+     *
      * @effects collection_tracking_registers_and_moves_to_collecting
+     *
+     * @return void 반환값 없음
      */
     public function test_collection_tracking_registers_and_moves_to_collecting(): void
     {
@@ -1279,7 +1560,11 @@ class ClaimControllerTest extends ModuleTestCase
     }
 
     /**
+     * 재발송 송장도 같은 형태다 — 교환 축에서 등록과 재발송중 전이가 함께 일어난다.
+     *
      * @effects redelivery_tracking_registers_and_moves_to_redelivering
+     *
+     * @return void 반환값 없음
      */
     public function test_redelivery_tracking_registers_and_moves_to_redelivering(): void
     {
@@ -1318,7 +1603,11 @@ class ClaimControllerTest extends ModuleTestCase
     }
 
     /**
+     * 택배사와 송장번호는 **쌍**이다 — 한쪽만 받으면 조회 불가능한 송장이 등록된 것으로 선다.
+     *
      * @effects collection_tracking_rejects_an_incomplete_pair
+     *
+     * @return void 반환값 없음
      */
     public function test_collection_tracking_rejects_an_incomplete_pair(): void
     {
@@ -1335,7 +1624,12 @@ class ClaimControllerTest extends ModuleTestCase
     // ================================================================
 
     /**
+     * 운영자 대리 첨부의 업로드와 일괄 정리가 실제 첨부 목록에 반영되는지 잠근다 — 응답만
+     * 성공하고 목록이 그대로면 화면에서는 지워진 것처럼 보인다.
+     *
      * @effects admin_uploads_and_clears_claim_attachments
+     *
+     * @return void 반환값 없음
      */
     public function test_admin_uploads_and_clears_claim_attachments(): void
     {
@@ -1359,7 +1653,11 @@ class ClaimControllerTest extends ModuleTestCase
     }
 
     /**
+     * 없는 신청서에 첨부를 올리면 404 다 — 받아 주면 주인 없는 첨부가 저장소에 쌓인다.
+     *
      * @effects image_upload_is_404_for_a_missing_claim
+     *
+     * @return void 반환값 없음
      */
     public function test_image_upload_is_404_for_a_missing_claim(): void
     {
@@ -1372,6 +1670,8 @@ class ClaimControllerTest extends ModuleTestCase
      * 공용 업로더는 파일을 `file` 로 보낸다 — 종전 계약(`image`)만 받으면 무조건 422 다.
      *
      * @effects admin_upload_accepts_the_shared_uploader_field_name
+     *
+     * @return void 반환값 없음
      */
     public function test_admin_upload_accepts_the_shared_uploader_field_name(): void
     {
@@ -1392,6 +1692,8 @@ class ClaimControllerTest extends ModuleTestCase
      * 운영자가 올린 첨부는 **운영자 업로드**로 기록된다.
      *
      * @effects admin_upload_is_recorded_as_a_staff_upload
+     *
+     * @return void 반환값 없음
      */
     public function test_admin_upload_is_recorded_as_a_staff_upload(): void
     {
@@ -1409,6 +1711,8 @@ class ClaimControllerTest extends ModuleTestCase
      * 첨부 한 장만 지운다 — 전체 삭제만 있으면 개인정보 사진 하나를 지우려고 정상 증빙까지 잃는다.
      *
      * @effects admin_deletes_a_single_attachment
+     *
+     * @return void 반환값 없음
      */
     public function test_admin_deletes_a_single_attachment(): void
     {
@@ -1437,6 +1741,8 @@ class ClaimControllerTest extends ModuleTestCase
      * 신청서 상세에서나 남의 첨부를 지울 수 있다.
      *
      * @effects deleting_an_attachment_of_another_claim_is_404
+     *
+     * @return void 반환값 없음
      */
     public function test_deleting_an_attachment_of_another_claim_is_404(): void
     {
@@ -1460,6 +1766,8 @@ class ClaimControllerTest extends ModuleTestCase
      * 순간 화면과 서버가 갈린다.
      *
      * @effects claim_detail_carries_attachment_settings
+     *
+     * @return void 반환값 없음
      */
     public function test_claim_detail_carries_attachment_settings(): void
     {

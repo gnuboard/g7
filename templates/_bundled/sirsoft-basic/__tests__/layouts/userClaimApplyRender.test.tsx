@@ -281,6 +281,11 @@ describe('클레임 신청서 — 금액·오류 자리 렌더', () => {
     active = null;
   });
 
+  /**
+   * @scenario exchange_mode=change, preview_result=ok
+   *
+   * @effects claim_apply_total_charge_shows_secondary_currency
+   */
   it('교환 요약의 총 청구액·배송비 보조통화가 글자로 나온다 (3차 C1 회귀)', async () => {
     const { utils, container } = await renderPartial('_apply_summary.json', estimateState());
     active = utils;
@@ -295,6 +300,11 @@ describe('클레임 신청서 — 금액·오류 자리 렌더', () => {
     // 환불 예정액은 교환에서 그리지 않는다(§6-3) — 그 줄의 보조통화는 아래 반품 케이스가 잰다.
   });
 
+  /**
+   * @scenario exchange_mode=change, preview_result=ok
+   *
+   * @effects claim_apply_total_charge_shows_secondary_currency
+   */
   it('보조통화 재료가 서버 원형이면 그 줄은 비되 값이 새지 않는다', async () => {
     // 핸들러가 편 배열이 아니라 서버 원형(`{통화코드: 숫자}`)이 들어오면 그 줄은 비어야 한다 —
     // 조용히 `[object Object]` 가 새어 나오면 그것이 더 나쁘다.
@@ -315,6 +325,11 @@ describe('클레임 신청서 — 금액·오류 자리 렌더', () => {
     expect(text).not.toContain('[object Object]');
   });
 
+  /**
+   * @scenario claim_type=refund, refund_branch=request
+   *
+   * @effects claim_apply_charge_axes_hidden_for_refund
+   */
   it('취소·환불은 총 청구액 줄이 서지 않고 환불 예정액 보조통화가 나온다 (3차 A1 회귀)', async () => {
     const { utils, container } = await renderPartial(
       '_apply_summary.json',
@@ -331,6 +346,11 @@ describe('클레임 신청서 — 금액·오류 자리 렌더', () => {
     expect(text).toContain('$19.50');
   });
 
+  /**
+   * @scenario exchange_mode=change, preview_result=rejected
+   *
+   * @effects claim_apply_preview_rejection_stays_on_screen
+   */
   it('미리보기 거절은 화면에 남고 금액은 지워진다 (P13)', async () => {
     const { utils, container } = await renderPartial(
       '_apply_summary.json',
@@ -348,6 +368,11 @@ describe('클레임 신청서 — 금액·오류 자리 렌더', () => {
     expect(text).not.toContain('9,000원');
   });
 
+  /**
+   * @scenario exchange_mode=change, preview_result=rejected
+   *
+   * @effects claim_apply_error_channel_splits_by_fixability
+   */
   it('청구 2축의 거절 사유가 그 축 아래에 나온다', async () => {
     const { utils, container } = await renderPartial(
       '_apply_summary.json',
@@ -368,6 +393,11 @@ describe('클레임 신청서 — 금액·오류 자리 렌더', () => {
     expect(text).toContain('선택한 결제 수단은 사용할 수 없습니다.');
   });
 
+  /**
+   * @scenario exchange_mode=change, preview_result=ok
+   *
+   * @effects claim_apply_option_price_difference_broken_down_per_item
+   */
   it('상품 줄 단가의 보조통화가 글자로 나온다', async () => {
     const { utils, container } = await renderPartial('_apply_items.json', itemState());
     active = utils;
@@ -378,6 +408,11 @@ describe('클레임 신청서 — 금액·오류 자리 렌더', () => {
     expect(text).toContain('$4.25');
   });
 
+  /**
+   * @scenario exchange_mode=change, preview_result=rejected
+   *
+   * @effects claim_apply_error_channel_splits_by_fixability
+   */
   it('항목별 거절 사유가 그 상품 줄에 나온다', async () => {
     const base = itemState();
     const { utils, container } = await renderPartial(
@@ -393,6 +428,11 @@ describe('클레임 신청서 — 금액·오류 자리 렌더', () => {
     expect(container.textContent ?? '').toContain('신청 수량이 남은 수량을 넘습니다.');
   });
 
+  /**
+   * @scenario exchange_mode=change, preview_result=rejected
+   *
+   * @effects claim_apply_error_channel_splits_by_fixability
+   */
   it('첨부 거절 사유가 첨부 칸 아래에 나온다', async () => {
     const { utils, container } = await renderPartial('_apply_reason.json', {
       claimType: 'exchange',
@@ -404,6 +444,11 @@ describe('클레임 신청서 — 금액·오류 자리 렌더', () => {
     expect(container.textContent ?? '').toContain('사진은 최대 2장까지 첨부할 수 있습니다.');
   });
 
+  /**
+   * @scenario exchange_mode=change, preview_result=rejected
+   *
+   * @effects claim_apply_error_channel_splits_by_fixability
+   */
   it('재발송지 거절 사유가 재발송지 카드에 나온다', async () => {
     const { utils, container } = await renderPartial('_apply_redelivery.json', {
       claimType: 'exchange',
@@ -567,7 +612,20 @@ describe('클레임 신청서 — 금액·오류 자리 렌더', () => {
     const text = container.textContent ?? '';
 
     expect(text).toContain('-3,000원');
-    expect(text).toContain('$2.25');
+
+    // S-B-D5(2026-09-21 세션B 실측) — 보조통화도 **같은 부호**로 적는다. 기준통화만 '-' 를
+    // 붙이면 한 줄 안에서 「−3,000원 / $2.25」처럼 부호가 갈려, 차감인지 추가 청구인지
+    // 읽히지 않는다. 서버가 주는 문자열에는 부호가 없으므로 화면이 붙인다.
+    expect(text, '보조통화 차감액에 부호가 없다(S-B-D5)').toContain('-$2.25');
+    expect(text, '부호 없는 보조통화가 그대로 남았다(S-B-D5)').not.toMatch(/(?<!-)\$2\.25/);
+
+    // S-B-D6(같은 실측 · PO 확정 「감추기」) — 이 방식은 회수비를 환불액에서 이미 뺐으므로
+    // 따로 낼 돈이 없다. 차감 줄 아래에 「총 청구액」이 서면 같은 돈을 두 번 내는 것으로
+    // 읽힌다. 0원으로 그려도 오해가 남으므로 **줄의 부재**를 잰다.
+    expect(text, '「환불액에서 차감」인데 총 청구액 줄이 섰다(S-B-D6)').not.toContain('claim.apply.total_charge');
+
+    // 같은 이유로 결제 수단 칸도 서지 않는다 — 종전에는 회색+disabled 로 남겼었다.
+    expect(text, '「환불액에서 차감」인데 결제 수단 칸이 섰다(S-B-D6)').not.toContain('claim.apply.payment_method_title');
   });
 
   /**
@@ -712,6 +770,11 @@ describe('클레임 신청서 — 금액·오류 자리 렌더', () => {
     expect(text).not.toContain('claim.apply.notice_refund');
   });
 
+  /**
+   * @scenario claim_type=refund, refund_branch=request
+   *
+   * @effects claim_apply_refund_account_shown_only_for_bank_refunds
+   */
   it('환불계좌 — 계좌 환불 주문에서만 카드가 선다', async () => {
     const { utils, container } = await renderPartial('_apply_refund_account.json', {
       claimType: 'refund',
@@ -734,6 +797,11 @@ describe('클레임 신청서 — 금액·오류 자리 렌더', () => {
     expect(inputs.every((input) => (input.value ?? '') === '')).toBe(true);
   });
 
+  /**
+   * @scenario claim_type=refund, refund_branch=request
+   *
+   * @effects claim_apply_refund_account_shown_only_for_bank_refunds
+   */
   it('환불계좌 — PG 환불 주문에서는 카드가 서지 않는다 (쓸모없는 정보를 요구하지 않는다)', async () => {
     const { utils, container } = await renderPartial('_apply_refund_account.json', {
       claimType: 'refund',
@@ -744,6 +812,11 @@ describe('클레임 신청서 — 금액·오류 자리 렌더', () => {
     expect(container.textContent ?? '').not.toContain('claim.apply.refund_account_title');
   });
 
+  /**
+   * @scenario claim_type=return, charge_method=deduct_from_refund
+   *
+   * @effects claim_apply_refund_account_shown_only_for_bank_refunds
+   */
   it('환불계좌 — 반품에서도 선다 (§6-3 \"무통장 원결제면 환불계좌 입력\")', async () => {
     const { utils, container } = await renderPartial('_apply_refund_account.json', {
       claimType: 'return',
@@ -756,6 +829,11 @@ describe('클레임 신청서 — 금액·오류 자리 렌더', () => {
     expect(container.textContent ?? '').toContain('claim.apply.refund_account_title');
   });
 
+  /**
+   * @scenario exchange_mode=same, preview_result=ok
+   *
+   * @effects claim_apply_refund_account_shown_only_for_bank_refunds
+   */
   it('환불계좌 — 차액이 돌아오지 않는 교환에서는 서지 않는다 (대조군)', async () => {
     const { utils, container } = await renderPartial('_apply_refund_account.json', {
       claimType: 'exchange',
@@ -767,6 +845,11 @@ describe('클레임 신청서 — 금액·오류 자리 렌더', () => {
     expect(container.textContent ?? '').not.toContain('claim.apply.refund_account_title');
   });
 
+  /**
+   * @scenario exchange_mode=change, preview_result=ok
+   *
+   * @effects claim_apply_refund_account_shown_only_for_bank_refunds
+   */
   it('환불계좌 — 저가 옵션 교환으로 차액이 돌아오면 선다 (2026-08-31 확정)', async () => {
     const { utils, container } = await renderPartial('_apply_refund_account.json', {
       claimType: 'exchange',
@@ -778,6 +861,11 @@ describe('클레임 신청서 — 금액·오류 자리 렌더', () => {
     expect(container.textContent ?? '').toContain('claim.apply.refund_account_title');
   });
 
+  /**
+   * @scenario claim_type=refund, refund_branch=request
+   *
+   * @effects claim_refund_account_prefills_the_registered_account
+   */
   it('환불계좌 — 주문 시 등록해 둔 계좌가 채워진 상태로 열린다 (2026-08-31 확정)', async () => {
     const { utils, container } = await renderPartial('_apply_refund_account.json', {
       claimType: 'refund',
@@ -797,6 +885,11 @@ describe('클레임 신청서 — 금액·오류 자리 렌더', () => {
     expect(values.some((v) => v.includes('*'))).toBe(false);
   });
 
+  /**
+   * @scenario claim_type=refund, refund_branch=request
+   *
+   * @effects claim_apply_refund_bank_error_renders_beside_the_card
+   */
   it('환불계좌 — 제출 거절 사유가 그 카드 아래에 나온다 (§6-3 P13)', async () => {
     const { utils, container } = await renderPartial('_apply_refund_account.json', {
       claimType: 'refund',
@@ -808,6 +901,11 @@ describe('클레임 신청서 — 금액·오류 자리 렌더', () => {
     expect(container.textContent ?? '').toContain('은행·계좌번호·예금주를 모두 입력해 주세요.');
   });
 
+  /**
+   * @scenario claim_type=refund, refund_branch=auto
+   *
+   * @effects claim_apply_refund_branch_locks_cross_branch_items
+   */
   it('상품 줄 — 취소·환불에서 분기 배지가 나오고 다른 분기의 체크는 잠긴다', async () => {
     const { utils, container } = await renderPartial(
       '_apply_items.json',
@@ -859,6 +957,11 @@ describe('클레임 신청서 — 금액·오류 자리 렌더', () => {
     expect(checkboxes[2].disabled).toBe(true);
   });
 
+  /**
+   * @scenario exchange_mode=change, preview_result=ok
+   *
+   * @effects claim_apply_refund_branch_unset_shows_no_branch_notice
+   */
   it('상품 줄 — 교환에서는 분기 배지도 혼재 안내도 서지 않는다 (대조군)', async () => {
     const { utils, container } = await renderPartial('_apply_items.json', itemState());
     active = utils;
@@ -870,6 +973,11 @@ describe('클레임 신청서 — 금액·오류 자리 렌더', () => {
     expect(text).not.toContain('claim.apply.refund_branch_mixed_notice');
   });
 
+  /**
+   * @scenario claim_type=refund, refund_branch=request
+   *
+   * @effects claim_withdraw_uses_the_shell_supplied_base
+   */
   it('철회 모달 — 대상 번호와 되돌릴 수 없다는 안내·환급 안내가 함께 나온다', async () => {
     const { utils, container } = await renderPartial(
       '_modal_withdraw.json',
@@ -892,6 +1000,11 @@ describe('클레임 신청서 — 금액·오류 자리 렌더', () => {
     expect(text).toContain('claim.withdraw.payment_refund_notice');
   });
 
+  /**
+   * @scenario claim_type=refund, refund_branch=request
+   *
+   * @effects claim_withdraw_requires_a_target
+   */
   it('철회 모달 — 거절 사유가 모달 안에 남는다 (토스트만 띄우면 사라진 뒤 화면에 없다)', async () => {
     const { utils, container } = await renderPartial('_modal_withdraw.json', {
       withdrawClaimNumber: 'RT20260901-0001',
@@ -904,6 +1017,11 @@ describe('클레임 신청서 — 금액·오류 자리 렌더', () => {
     expect(container.textContent ?? '').toContain('승인된 신청은 철회할 수 없습니다.');
   });
 
+  /**
+   * @scenario claim_type=refund, refund_branch=request
+   *
+   * @effects claim_withdraw_requires_a_target
+   */
   it('철회 모달 — 대상이 없으면 확인 버튼이 잠긴다 (아무것도 가리키지 않는 실행을 막는다)', async () => {
     const { utils, container } = await renderPartial('_modal_withdraw.json', {
       withdrawClaimNumber: null,

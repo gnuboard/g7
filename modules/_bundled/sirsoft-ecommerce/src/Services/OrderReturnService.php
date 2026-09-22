@@ -1049,6 +1049,10 @@ class OrderReturnService
             // 담지 못한다(환불신청서는 신청서당 한 건이다).
             $return->load('returnOptions');
             $claimItems = $this->completedClaimItems($return);
+            // 다른 신청서가 이미 완료한 몫 — 재계산 기준선에는 들어가지만 이 신청서의
+            // 환불신청서에는 들어가면 안 된다(중복 환불). 차분의 뺄 값으로만 쓴다.
+            $priorItems = $this->otherReturnsCompletedClaimItems($return);
+            $ownItems = $this->ownCompletedClaimItems($claimItems, $priorItems);
 
             $adjustment = new ReturnAdjustment(
                 returnItems: $claimItems,
@@ -1057,6 +1061,16 @@ class OrderReturnService
             );
 
             $result = $this->adjustmentService->calculate($order, $adjustment);
+            $priorResult = $this->priorReturnsAdjustment($order, $priorItems);
+            // 차분의 나누는 값도 같은 기준(상한 없음)이어야 이중 차감이 안 난다.
+            $grossResult = $this->uncappedAdjustment(
+                $order,
+                $claimItems,
+                (int) round((float) $return->claim_shipping_fee),
+                $return->charge_method,
+                $result,
+                $priorItems !== [],
+            );
 
             $isFullyCompleted = $this->allItemsCompleted($return);
 
@@ -1069,7 +1083,7 @@ class OrderReturnService
             $refund = null;
 
             if ($options->createRefundRequest) {
-                $refund = $this->createRefundRequest($order, $return, $claimItems, $result, $processedBy);
+                $refund = $this->createRefundRequest($order, $return, $ownItems, $result, $processedBy, $priorResult, $grossResult);
             }
 
             $updates = [
@@ -1144,6 +1158,10 @@ class OrderReturnService
                 $this->returnRepository->findById($return->id) ?? $return
             );
 
+            // 완료 경로와 같은 차분 규약을 쓴다 — 이 경로만 누적을 실으면 같은 결함이 남는다.
+            $priorItems = $this->otherReturnsCompletedClaimItems($return);
+            $ownItems = $this->ownCompletedClaimItems($claimItems, $priorItems);
+
             $adjustment = new ReturnAdjustment(
                 returnItems: $claimItems,
                 collectionFee: (int) round((float) $return->claim_shipping_fee),
@@ -1151,7 +1169,17 @@ class OrderReturnService
             );
 
             $result = $this->adjustmentService->calculate($order, $adjustment);
-            $refund = $this->createRefundRequest($order, $return, $claimItems, $result, $processedBy);
+            $priorResult = $this->priorReturnsAdjustment($order, $priorItems);
+            // 차분의 나누는 값도 같은 기준(상한 없음)이어야 이중 차감이 안 난다.
+            $grossResult = $this->uncappedAdjustment(
+                $order,
+                $claimItems,
+                (int) round((float) $return->claim_shipping_fee),
+                $return->charge_method,
+                $result,
+                $priorItems !== [],
+            );
+            $refund = $this->createRefundRequest($order, $return, $ownItems, $result, $processedBy, $priorResult, $grossResult);
 
             $this->returnRepository->update($return, ['refund_id' => $refund->id]);
 
@@ -1217,6 +1245,21 @@ class OrderReturnService
         );
 
         $result = $this->adjustmentService->calculate($order, $adjustment);
+        // 실제 접수(`createRefundRequest`)와 같은 차분 규약으로 예고한다 — 여기만 누적을
+        // 보여 주면 모달이 예고한 금액과 접수된 금액이 갈린다.
+        $priorItems = $this->otherReturnsCompletedClaimItems($return);
+        $priorResult = $this->priorReturnsAdjustment($order, $priorItems);
+        $grossResult = $this->uncappedAdjustment(
+            $order,
+            $claimItems,
+            (int) round((float) $return->claim_shipping_fee),
+            $return->charge_method,
+            $result,
+            $priorItems !== [],
+        );
+        $delta = $this->clampDeltaToRemaining($order, $this->refundDeltaAgainstPrior($grossResult, $priorResult));
+        // 상품 환불 몫의 기준선 — 앞 신청서가 이미 빼 간 상태의 소계에서 출발해야 한다.
+        $priorResultSnapshot = $priorResult?->recalculatedSnapshot ?? $result->originalSnapshot;
 
         // 가정 완료 후 전건 완료 여부 — 살아 있는(비종결) 상품이 전부 대상에 들어왔는가.
         $targetIds = array_map(fn (OrderReturnOption $item) => (int) $item->id, $targets);
@@ -1236,14 +1279,15 @@ class OrderReturnService
             'completable_item_ids' => $targetIds,
             'already_filed' => $alreadyFiled,
             'blocked_reason' => $alreadyFiled ? 'claim_refund_request_exists' : null,
-            'refund_amount' => (float) $result->refundAmount,
-            'refund_points_amount' => (float) $result->refundPointsAmount,
+            'refund_amount' => $delta['refund_amount'],
+            'refund_points_amount' => $delta['refund_points_amount'],
             // 환불 예정액의 가산 두 축 — 합계만 내려주면 화면이 '왜 이 금액인가' 를 말할 수
             // 없고, 화면이 역산하면 같은 금액의 두 번째 출처가 된다. 재계산이 이미 만든 값을
             // 그대로 싣는다 (상품 = 재계산 전후 소계 차 / 배송비 = 배송비 재판정 차).
-            'refund_product_amount' => (float) (($result->originalSnapshot['subtotal_amount'] ?? 0)
+            // 두 축도 합계와 같은 차분 기준이어야 한다 — 합계만 차분이면 두 축의 합이 합계를 넘는다.
+            'refund_product_amount' => (float) (($priorResultSnapshot['subtotal_amount'] ?? ($result->originalSnapshot['subtotal_amount'] ?? 0))
                 - ($result->recalculatedSnapshot['subtotal_amount'] ?? 0)),
-            'refund_shipping_amount' => (float) $result->shippingDifference,
+            'refund_shipping_amount' => $delta['refund_shipping_amount'],
             'deducted_shipping_fee' => $deductedFee,
             'coupon_restore' => $fullyCompleted && $result->restoredCouponIssueIds !== [],
             'fully_completed' => $fullyCompleted,
@@ -1947,11 +1991,18 @@ class OrderReturnService
      * 발생 출처는 polymorphic 축(refund_source_type/refund_source_id)에 기록한다. 취소 발
      * 환불과 달리 order_cancel_id 는 채우지 않는다 — 그 컬럼은 취소 이력을 가리키는 자리다.
      *
+     * 금액은 **이 신청서 몫**만 싣는다. 재계산(`$result`)은 같은 주문에서 앞 신청서가 이미
+     * 완료한 몫까지 누적한 값이라, 그대로 실으면 앞 신청서가 이미 환불한 금액을 다시 담아
+     * 과다 환불이 된다(2026-09-21 실측 · 세션B S-B-D7). `$priorResult` 가 주어지면 그만큼
+     * 뺀 차분을 싣고, 상품 행(`$claimItems`)도 호출부가 이 신청서 몫만 넘긴다.
+     *
      * @param  Order  $order  주문
      * @param  OrderReturn  $return  반품 신청서
-     * @param  array  $claimItems  대상 아이템 [{order_option_id, cancel_quantity}]
-     * @param  AdjustmentResult  $result  계산 결과
+     * @param  array  $claimItems  **이 신청서 몫** 아이템 [{order_option_id, cancel_quantity}]
+     * @param  AdjustmentResult  $result  누적 계산 결과 (스냅샷·쿠폰 축의 SSoT)
      * @param  int|null  $processedBy  처리 관리자 ID
+     * @param  AdjustmentResult|null  $priorResult  다른 신청서 몫만의 기준선 (차분의 뺄 값)
+     * @param  AdjustmentResult|null  $grossResult  기왕 환불액 상한을 끈 누적 결과 (차분의 나누는 값). 없으면 `$result`
      * @return OrderRefund 생성된 환불 신청서
      */
     protected function createRefundRequest(
@@ -1960,7 +2011,11 @@ class OrderReturnService
         array $claimItems,
         AdjustmentResult $result,
         ?int $processedBy,
+        ?AdjustmentResult $priorResult = null,
+        ?AdjustmentResult $grossResult = null,
     ): OrderRefund {
+        $delta = $this->clampDeltaToRemaining($order, $this->refundDeltaAgainstPrior($grossResult ?? $result, $priorResult));
+
         $refund = $this->refundRepository->create([
             'order_id' => $order->id,
             'refund_source_type' => RefundSourceTypeEnum::RETURN,
@@ -1972,12 +2027,12 @@ class OrderReturnService
             'reason_detail' => $return->reason_detail,
             'fault_type' => $return->fault_type,
             'requested_by' => $return->requested_by,
-            'refund_amount' => $result->refundAmount,
-            'refund_points_amount' => $result->refundPointsAmount,
-            'refund_shipping_amount' => $result->shippingDifference,
-            'mc_refund_amount' => $result->mcRefundAmount,
-            'mc_refund_points_amount' => $result->mcRefundPointsAmount,
-            'mc_refund_shipping_amount' => $result->mcRefundShippingAmount,
+            'refund_amount' => $delta['refund_amount'],
+            'refund_points_amount' => $delta['refund_points_amount'],
+            'refund_shipping_amount' => $delta['refund_shipping_amount'],
+            'mc_refund_amount' => $delta['mc_refund_amount'],
+            'mc_refund_points_amount' => $delta['mc_refund_points_amount'],
+            'mc_refund_shipping_amount' => $delta['mc_refund_shipping_amount'],
             'original_calculation_snapshot' => $result->originalSnapshot,
             'recalculated_snapshot' => $result->recalculatedSnapshot,
             'processed_by' => $processedBy,
@@ -2073,6 +2128,278 @@ class OrderReturnService
         );
 
         return $own->concat($others);
+    }
+
+    /**
+     * 같은 주문의 **다른 신청서**에서 이미 완료된 상품 행만 모읍니다.
+     *
+     * 재계산 기준선(`completedClaimItems()`)은 주문 전체 누적이어야 쿠폰 탈락·배송비 재판정이
+     * 맞는다. 그러나 그 누적 결과를 신규 환불신청서의 금액·상품 행으로 그대로 쓰면 앞 신청서가
+     * 이미 환불한 몫을 다시 담아 **과다 환불**이 된다(실측 2026-09-21: 15,000원이어야 할
+     * 환불신청서가 60,000원으로 생성, 앞 회차 상품 행이 중복 포함). 그래서 이 메서드가 내는
+     * "다른 신청서 몫"으로 기준선을 한 번 더 계산해 **차분**을 내고, 그 차분만 신규 환불신청서에
+     * 싣는다. 이 신청서 안에서 여러 라운드로 나눠 완료하는 경우는 차분에서 빠지지 않으므로
+     * 「환불신청서는 신청서당 한 건」이라는 기존 계약도 그대로 유지된다.
+     *
+     * @param  OrderReturn  $return  기준 반품 신청서
+     * @return array<int, array{order_option_id: int, cancel_quantity: int}> 다른 신청서의 완료 상품 몫
+     */
+    protected function otherReturnsCompletedClaimItems(OrderReturn $return): array
+    {
+        $quantities = [];
+
+        foreach ($this->returnOptionRepository->listCompletedByOrderId(
+            (int) $return->order_id,
+            excludeReturnId: (int) $return->id,
+        ) as $item) {
+            $optionId = (int) $item->order_option_id;
+            $quantities[$optionId] = ($quantities[$optionId] ?? 0) + (int) $item->return_quantity;
+        }
+
+        $items = [];
+
+        foreach ($quantities as $optionId => $quantity) {
+            $items[] = [
+                'order_option_id' => $optionId,
+                'cancel_quantity' => $quantity,
+            ];
+        }
+
+        return $items;
+    }
+
+    /**
+     * 누적 목록에서 다른 신청서 몫을 빼 **이 신청서 몫**만 남깁니다. (환불신청서 상품 행용)
+     *
+     * 같은 상품옵션을 두 신청서가 나눠 반품한 경우가 있으므로 수량 단위로 뺀다 — 옵션 ID 로
+     * 통째 제외하면 이 신청서 몫까지 사라진다.
+     *
+     * @param  array<int, array{order_option_id: int, cancel_quantity: int}>  $all  주문 전체 누적 몫
+     * @param  array<int, array{order_option_id: int, cancel_quantity: int}>  $prior  다른 신청서 몫
+     * @return array<int, array{order_option_id: int, cancel_quantity: int}> 이 신청서 몫
+     */
+    protected function ownCompletedClaimItems(array $all, array $prior): array
+    {
+        $priorQuantities = [];
+
+        foreach ($prior as $item) {
+            $optionId = (int) $item['order_option_id'];
+            $priorQuantities[$optionId] = ($priorQuantities[$optionId] ?? 0) + (int) $item['cancel_quantity'];
+        }
+
+        $items = [];
+
+        foreach ($all as $item) {
+            $optionId = (int) $item['order_option_id'];
+            $quantity = (int) $item['cancel_quantity'] - ($priorQuantities[$optionId] ?? 0);
+
+            if ($quantity <= 0) {
+                continue;
+            }
+
+            $items[] = [
+                'order_option_id' => $optionId,
+                'cancel_quantity' => $quantity,
+            ];
+        }
+
+        return $items;
+    }
+
+    /**
+     * 다른 신청서 몫만으로 재계산한 기준선을 냅니다. (차분의 뺄 값)
+     *
+     * 회수배송비는 **이 신청서**의 것이므로 기준선 계산에서는 0 으로 둔다 — 앞 신청서의
+     * 회수비는 그 신청서의 환불신청서에서 이미 차감됐다.
+     *
+     * @param  Order  $order  주문
+     * @param  array<int, array{order_option_id: int, cancel_quantity: int}>  $priorItems  다른 신청서 완료 몫
+     * @return AdjustmentResult|null 앞 신청서가 없으면 null
+     */
+    protected function priorReturnsAdjustment(Order $order, array $priorItems): ?AdjustmentResult
+    {
+        if ($priorItems === []) {
+            return null;
+        }
+
+        return $this->withoutPriorRefundCap(
+            $order,
+            fn () => $this->adjustmentService->calculate($order, new ReturnAdjustment(
+                returnItems: $priorItems,
+                collectionFee: 0,
+                chargeMethod: null,
+            )),
+        );
+    }
+
+    /**
+     * **기왕 환불액 상한을 끈 채** 계산합니다. (차분 산출 전용)
+     *
+     * `OrderAdjustmentService` 는 `min($totalRefundable, $originalPaid - total_refunded_amount)`
+     * 로 결과를 잘라낸다. 그 상한은 실행 단계의 안전장치로는 옳지만, **차분**을 낼 때는
+     * 빼는 값(앞 신청서 몫)에 이미 들어 있는 기왕 환불액이 나누는 값에서 한 번 더 깎여
+     * 이중 차감이 된다.
+     *
+     * 실측(주문 1500 · 2026-09-21): 전량 반품 회차에서 산정 166,000원이 상한 132,500원으로
+     * 잘린 뒤 앞 신청서 몫 60,000원을 또 빼 **64,000원**이 나왔다 — 올바른 값은 106,000원이다.
+     * 상한을 끄고 A·B 를 같은 기준으로 내면 회차 합이 실제 환불 총액과 정확히 맞는다
+     * (42,000 + 15,000 + 106,000 = 163,000 = 결제 174,500 − 회수비 11,500).
+     *
+     * 상한 자체는 환불 **실행** 경로가 그대로 들고 있으므로 여기서 꺼도 과다 지급은 막힌다.
+     * 모델 속성만 잠시 0 으로 두며 저장하지 않는다.
+     *
+     * @template T
+     *
+     * @param  Order  $order  주문
+     * @param  callable():T  $callback  계산 클로저
+     * @return T 계산 결과
+     */
+    protected function withoutPriorRefundCap(Order $order, callable $callback): mixed
+    {
+        $refunded = $order->total_refunded_amount;
+        $refundedPoints = $order->total_refunded_points_amount;
+
+        $order->total_refunded_amount = 0;
+        $order->total_refunded_points_amount = 0;
+
+        try {
+            return $callback();
+        } finally {
+            $order->total_refunded_amount = $refunded;
+            $order->total_refunded_points_amount = $refundedPoints;
+        }
+    }
+
+    /**
+     * 누적 재계산 결과를 **상한 없이** 다시 냅니다. (차분의 나누는 값)
+     *
+     * 앞 신청서가 없으면 상한도 걸리지 않으므로 원 결과를 그대로 쓴다.
+     *
+     * @param  Order  $order  주문
+     * @param  array<int, array{order_option_id: int, cancel_quantity: int}>  $claimItems  주문 전체 누적 몫
+     * @param  int  $collectionFee  이 신청서의 회수배송비
+     * @param  ClaimChargeMethodEnum|null  $chargeMethod  이 신청서의 청구 방식
+     * @param  AdjustmentResult  $fallback  앞 신청서가 없을 때 쓸 원 결과
+     * @param  bool  $hasPrior  앞 신청서 존재 여부
+     * @return AdjustmentResult 상한 없는 누적 결과
+     */
+    protected function uncappedAdjustment(
+        Order $order,
+        array $claimItems,
+        int $collectionFee,
+        ?ClaimChargeMethodEnum $chargeMethod,
+        AdjustmentResult $fallback,
+        bool $hasPrior,
+    ): AdjustmentResult {
+        if (! $hasPrior) {
+            return $fallback;
+        }
+
+        return $this->withoutPriorRefundCap(
+            $order,
+            fn () => $this->adjustmentService->calculate($order, new ReturnAdjustment(
+                returnItems: $claimItems,
+                collectionFee: $collectionFee,
+                chargeMethod: $chargeMethod,
+            )),
+        );
+    }
+
+    /**
+     * 누적 재계산 결과에서 앞 신청서 몫을 뺀 금액을 냅니다.
+     *
+     * @param  AdjustmentResult  $full  이 신청서까지 포함한 누적 결과
+     * @param  AdjustmentResult|null  $prior  다른 신청서 몫만의 기준선
+     * @return array{refund_amount: float, refund_points_amount: float, refund_shipping_amount: float, mc_refund_amount: array|null, mc_refund_points_amount: array|null, mc_refund_shipping_amount: array|null} 이 신청서 몫
+     */
+    protected function refundDeltaAgainstPrior(AdjustmentResult $full, ?AdjustmentResult $prior): array
+    {
+        if (! $prior instanceof AdjustmentResult) {
+            return [
+                'refund_amount' => (float) $full->refundAmount,
+                'refund_points_amount' => (float) $full->refundPointsAmount,
+                'refund_shipping_amount' => (float) $full->shippingDifference,
+                'mc_refund_amount' => $full->mcRefundAmount,
+                'mc_refund_points_amount' => $full->mcRefundPointsAmount,
+                'mc_refund_shipping_amount' => $full->mcRefundShippingAmount,
+            ];
+        }
+
+        return [
+            'refund_amount' => max(0.0, (float) $full->refundAmount - (float) $prior->refundAmount),
+            'refund_points_amount' => max(0.0, (float) $full->refundPointsAmount - (float) $prior->refundPointsAmount),
+            'refund_shipping_amount' => (float) $full->shippingDifference - (float) $prior->shippingDifference,
+            'mc_refund_amount' => $this->subtractMoneyMap($full->mcRefundAmount, $prior->mcRefundAmount),
+            'mc_refund_points_amount' => $this->subtractMoneyMap($full->mcRefundPointsAmount, $prior->mcRefundPointsAmount),
+            'mc_refund_shipping_amount' => $this->subtractMoneyMap($full->mcRefundShippingAmount, $prior->mcRefundShippingAmount, allowNegative: true),
+        ];
+    }
+
+    /**
+     * 차분 결과를 **실제 지급 가능한 잔여**에 맞춥니다. (합계는 유지하고 배분만 옮긴다)
+     *
+     * `withoutPriorRefundCap()` 은 차분을 내기 위해 기왕 환불액 상한을 껐다. 그 상태의 배분은
+     * 마일리지 몫을 "이 주문에서 원래 쓴 만큼" 까지 잡으므로, 앞 회차가 이미 마일리지를
+     * 전액 돌려준 뒤에는 **낼 수 없는 마일리지 환불액**이 남는다.
+     *
+     * 실측(주문 1507 · 2026-09-22): 마일리지 10,000원을 쓴 주문에서 앞 회차가 10,000원을 모두
+     * 복원한 뒤, 마지막 회차의 환불신청서가 `refund_points_amount = 2,500` 으로 만들어져
+     * 실행이 422 「마일리지 환불액(2,500원)이 그 수단의 잔여(0원)를 초과합니다」로 막혔다.
+     *
+     * 그래서 총액(현금 + 마일리지)은 그대로 두고 **마일리지를 잔여까지만 잡은 뒤 나머지를
+     * 현금으로 옮긴다.** 총액까지 잘라 내면 이번 회차가 덜 환불되어 잔여가 0 으로 떨어지지 않는다.
+     *
+     * @param  Order  $order  주문 (기왕 환불액의 SSoT)
+     * @param  array{refund_amount: float, refund_points_amount: float, refund_shipping_amount: float, mc_refund_amount: array|null, mc_refund_points_amount: array|null, mc_refund_shipping_amount: array|null}  $delta  차분 결과
+     * @return array 잔여에 맞춘 차분 결과
+     */
+    protected function clampDeltaToRemaining(Order $order, array $delta): array
+    {
+        $remainingPoints = max(0.0, (float) $order->total_points_used_amount - (float) $order->total_refunded_points_amount);
+        $remainingCash = max(0.0, (float) $order->total_paid_amount - (float) $order->total_refunded_amount);
+
+        $total = (float) $delta['refund_amount'] + (float) $delta['refund_points_amount'];
+        $points = min((float) $delta['refund_points_amount'], $remainingPoints);
+        $cash = min($total - $points, $remainingCash);
+
+        if ($points === (float) $delta['refund_points_amount'] && $cash === (float) $delta['refund_amount']) {
+            return $delta;
+        }
+
+        $delta['refund_amount'] = $cash;
+        $delta['refund_points_amount'] = $points;
+
+        // 통화별 맵은 기준통화 배분을 따라간다 — 마일리지 몫이 0 이 되면 그 맵도 0 이어야
+        // 화면(다통화 병기)과 실행 게이트가 같은 값을 본다.
+        if ($points <= 0.0 && is_array($delta['mc_refund_points_amount'])) {
+            $delta['mc_refund_points_amount'] = array_map(fn () => 0.0, $delta['mc_refund_points_amount']);
+        }
+
+        return $delta;
+    }
+
+    /**
+     * 통화별 금액 맵끼리 뺍니다.
+     *
+     * @param  array<string, float|int>|null  $full  빼일 값
+     * @param  array<string, float|int>|null  $prior  뺄 값
+     * @param  bool  $allowNegative  음수를 허용할지 (배송비 차액은 음수가 뜻을 가진다)
+     * @return array<string, float>|null 차분 맵 (원본이 null 이면 null)
+     */
+    protected function subtractMoneyMap(?array $full, ?array $prior, bool $allowNegative = false): ?array
+    {
+        if ($full === null) {
+            return null;
+        }
+
+        $out = [];
+
+        foreach ($full as $code => $amount) {
+            $delta = (float) $amount - (float) ($prior[$code] ?? 0);
+            $out[$code] = $allowNegative ? $delta : max(0.0, $delta);
+        }
+
+        return $out;
     }
 
     /**

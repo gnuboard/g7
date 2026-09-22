@@ -1,6 +1,7 @@
 {
   "drop_or_click": "Drag files or click to upload",
   "upload_limit": "Max {{maxFiles}} files, {{maxSize}}MB each",
+  "upload_limit_count": "Max {{maxFiles}} files",
   "delete_confirm_title": "Delete Attachment",
   "delete_confirm_message": "Are you sure you want to delete this file?",
   "deleting": "Deleting...",

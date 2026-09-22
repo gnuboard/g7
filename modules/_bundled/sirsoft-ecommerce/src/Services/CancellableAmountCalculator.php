@@ -21,6 +21,7 @@ use Modules\Sirsoft\Ecommerce\Models\OrderRefund;
 use Modules\Sirsoft\Ecommerce\Models\OrderReturn;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderExchangeRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderRefundRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderReturnOptionRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderReturnRepositoryInterface;
 
 /**
@@ -77,6 +78,7 @@ class CancellableAmountCalculator
      * @param  OrderRefundRepositoryInterface  $refundRepository  환불신청서 Repository
      * @param  OrderReturnRepositoryInterface  $returnRepository  반품 신청서 Repository
      * @param  OrderExchangeRepositoryInterface  $exchangeRepository  교환 신청서 Repository
+     * @param  OrderReturnOptionRepositoryInterface  $returnOptionRepository  반품 상품행 Repository (누적 완료분 조회)
      */
     public function __construct(
         protected OrderAdjustmentService $adjustmentService,
@@ -84,6 +86,7 @@ class CancellableAmountCalculator
         protected OrderRefundRepositoryInterface $refundRepository,
         protected OrderReturnRepositoryInterface $returnRepository,
         protected OrderExchangeRepositoryInterface $exchangeRepository,
+        protected OrderReturnOptionRepositoryInterface $returnOptionRepository,
     ) {}
 
     /**
@@ -173,13 +176,32 @@ class CancellableAmountCalculator
             if ($sourceReturn !== null) {
                 $excludeClaims[ClaimTypeEnum::RETURN->value] = [$sourceReturn->id];
 
+                // 재계산(`buildRecalcInput()`)은 반품완료(`RETURNED`) 행을 **잔여로 센다** —
+                // 교환과 달리 승계 행이 없어 그렇게 설계돼 있고, 그 독블록이 그렇게 선언한다.
+                // 그래서 이번 신청서 몫만 넘기면 앞 회차에 이미 반품된 상품이 여전히 주문에
+                // 남아 있다고 계산되어, 그 상품과 **그 상품만 쓰던 배송정책의 배송비**가
+                // 환불 한도에서 통째로 빠진다.
+                //
+                // 완료 처리 경로가 `completedClaimItems()` 로 **누적**을 넘기는 것과 같은 이유다
+                // (S2-D5 선택지 ②). 저장이 그 규칙으로 금액을 만들었는데 실행 가드만 단건
+                // 기준이면 두 값이 어긋나 **시스템이 만든 환불신청서를 시스템이 거부한다**
+                // (S-B-D16 실측: 생성 194,500 · 가드 188,500 · 차이 6,000 = 전량 반품된
+                // 상품이 혼자 쓰던 정책의 배송비). 여기도 같은 누적을 넘겨 두 시점을 맞춘다.
+                //
+                // 과다 환불은 이 축이 아니라 `remainingPg`·`remainingPoints`(이미 나간 돈을 뺀
+                // 수단별 잔여)가 막는다 — 누적으로 올려도 이미 환불된 몫은 다시 나가지 않는다.
+                $accumulatedItems = $this->accumulatedReturnItems($order, $sourceReturn, $items);
+                $accumulatedFee = $this->accumulatedDeductedCollectionFee($order, $sourceReturn);
+
                 $adjustment = new ReturnAdjustment(
-                    returnItems: $items,
-                    collectionFee: (int) round((float) $sourceReturn->claim_shipping_fee),
-                    chargeMethod: $sourceReturn->charge_method,
+                    returnItems: $accumulatedItems,
+                    collectionFee: $accumulatedFee,
+                    chargeMethod: $accumulatedFee > 0
+                        ? ClaimChargeMethodEnum::DEDUCT_FROM_REFUND
+                        : $sourceReturn->charge_method,
                 );
 
-                return $this->calculate($order, $items, ClaimTypeEnum::RETURN, $adjustment, $excludeClaims, $refundPriority);
+                return $this->calculate($order, $accumulatedItems, ClaimTypeEnum::RETURN, $adjustment, $excludeClaims, $refundPriority);
             }
         }
 
@@ -570,6 +592,65 @@ class CancellableAmountCalculator
         return $orderReturn->charge_method === ClaimChargeMethodEnum::DEDUCT_FROM_REFUND
             ? (int) round((float) $orderReturn->claim_shipping_fee)
             : 0;
+    }
+
+    /**
+     * 이 신청서 몫에 **같은 주문의 다른 완료 반품 몫**을 합산합니다. (S-B-D16)
+     *
+     * 재계산이 `RETURNED` 행을 잔여로 세기 때문에, 환불 실행 가드도 완료 처리 경로와 똑같이
+     * 누적을 넘겨야 두 시점이 같은 금액을 낸다. 판단 기준은 **상품행의 완료 여부**다 —
+     * 신청서 헤더가 아직 완료로 닫히지 않았어도 이미 완료된 상품행은 주문에서 빠진 몫이다.
+     *
+     * 자기 신청서는 `$items` 로 이미 들어와 있으므로 조회에서 제외한다 — 빼지 않으면 같은
+     * 수량이 두 번 더해져 환불 한도가 실제보다 커진다.
+     *
+     * @param  Order  $order  대상 주문
+     * @param  OrderReturn  $sourceReturn  이 환불신청서의 출처 반품
+     * @param  array<int, array{order_option_id: int, cancel_quantity: int}>  $items  이 신청서 몫
+     * @return array<int, array{order_option_id: int, cancel_quantity: int}> 누적 아이템
+     */
+    protected function accumulatedReturnItems(Order $order, OrderReturn $sourceReturn, array $items): array
+    {
+        $others = [];
+
+        foreach ($this->returnOptionRepository->listCompletedByOrderId($order->id, $sourceReturn->id) as $option) {
+            $others[] = [
+                'order_option_id' => (int) $option->order_option_id,
+                'cancel_quantity' => (int) $option->return_quantity,
+            ];
+        }
+
+        return $this->mergeClaimItems($items, $others);
+    }
+
+    /**
+     * 누적 대상이 된 다른 완료 반품들의 **환불금 차감 회수배송비**를 이 신청서 몫에 더합니다.
+     *
+     * 아이템만 누적하고 회수비를 두면 앞 회차가 환불금에서 이미 뺀 회수비가 이번 한도에
+     * 되살아나 한도가 그만큼 커진다 — 아이템과 같은 집합에 대해 같은 차감을 적용한다.
+     *
+     * @param  Order  $order  대상 주문
+     * @param  OrderReturn  $sourceReturn  이 환불신청서의 출처 반품
+     * @return int 차감 대상 회수배송비 합계
+     */
+    protected function accumulatedDeductedCollectionFee(Order $order, OrderReturn $sourceReturn): int
+    {
+        $total = $this->deductedCollectionFeeOf($sourceReturn);
+
+        $completedReturnIds = $this->returnOptionRepository
+            ->listCompletedByOrderId($order->id, $sourceReturn->id)
+            ->pluck('order_return_id')
+            ->unique();
+
+        foreach ($completedReturnIds as $returnId) {
+            $other = $this->returnRepository->findById((int) $returnId);
+
+            if ($other !== null) {
+                $total += $this->deductedCollectionFeeOf($other);
+            }
+        }
+
+        return $total;
     }
 
     /**

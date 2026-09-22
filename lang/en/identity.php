@@ -26,6 +26,7 @@ return [
         'target_mismatch' => 'The verified target does not match the requested one.',
         'purpose_not_supported' => 'The selected provider does not support this purpose.',
         'provider_unavailable' => 'Identity verification provider is not available.',
+        'challenge_dispatch_failed' => 'We could not send the verification code. Please try again shortly or use another verification method.',
         'generic' => 'Identity verification failed.',
         'missing_scope_or_target' => 'Both scope and target are required to resolve a policy.',
         'admin_policy_has_no_default' => 'Admin-created policies do not have a declared default.',

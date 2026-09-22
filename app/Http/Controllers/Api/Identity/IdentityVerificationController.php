@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\Identity;
 
 use App\Enums\IdentityOriginType;
 use App\Enums\IdentityVerificationPurpose;
+use App\Enums\IdentityVerificationStatus;
 use App\Extension\IdentityVerification\IdentityVerificationManager;
 use App\Http\Controllers\Api\Base\PublicBaseController;
 use App\Http\Requests\Identity\CancelChallengeRequest;
@@ -76,6 +77,20 @@ class IdentityVerificationController extends PublicBaseController
             ],
             providerId: $providerId,
         );
+
+        // 발송이 실패로 끝났으면 성공으로 포장하지 않는다.
+        //
+        // 코드 전달이 실패해도 챌린지 자체는 만들어진다. 그 상태로 201 을 돌려주면 화면은
+        // 「전송된 6자리 코드를 입력해주세요」와 카운트다운을 띄우고, 사용자는 **영영 오지 않을
+        // 코드**를 기다린다(#599 세션A 실측 2026-09-22 · 회원 탈퇴 경로 — 챌린지가 생성 2초 뒤
+        // `failed` 인데 API 는 201 을 냈다. 코드는 해시로만 남아 복구할 수 없어 그 환경에서는
+        // 회원이 스스로 탈퇴할 방법이 없었다).
+        //
+        // 상태는 공개 폴링과 같은 판정을 쓴다 — 두 곳에서 따로 재면 갈린다.
+        $status = $this->service->getStatus($challenge->id);
+        if (($status['status'] ?? null) === IdentityVerificationStatus::Failed->value) {
+            return $this->error('identity.errors.challenge_dispatch_failed', 502);
+        }
 
         return $this->success(
             'identity.messages.challenge_requested',
@@ -267,6 +282,9 @@ class IdentityVerificationController extends PublicBaseController
      * `return` 쿼리 URL 이 같은 origin 인지 검증 — open redirect 차단.
      *
      * 절대 URL 이면 host 가 현재 앱 host 와 일치해야 통과, 상대 경로(`/...`) 는 통과.
+     *
+     * @param  string  $url  검사할 복귀 URL
+     * @return bool 같은 origin 이면 true
      */
     private function isSafeReturnUrl(string $url): bool
     {
@@ -334,7 +352,8 @@ class IdentityVerificationController extends PublicBaseController
      * - 다국어 배열 (`['ko' => ..., 'en' => ...]`) → 현재 로케일 우선, en 폴백
      * - 일반 문자열 → 그대로 반환
      *
-     * @param  mixed  $value
+     * @param  mixed  $value  i18n 키 문자열 · 다국어 배열 · 일반 문자열
+     * @return string 현재 로케일로 풀이한 문구
      */
     private function resolvePurposeText($value): string
     {

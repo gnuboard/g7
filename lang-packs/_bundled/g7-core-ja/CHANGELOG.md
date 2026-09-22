@@ -4,6 +4,14 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [작업 중]
+
+### Added
+
+- 코어에 새로 생긴 두 안내의 일본어 문구를 채웠습니다 — 본인확인 코드 발송 실패
+  (`identity.errors.challenge_dispatch_failed`) · 탈퇴 회원 외부 채널 발송 제외
+  (`notification.skipped.withdrawn_recipient`). 없으면 ja 화면에 원문 키가 그대로 보입니다.
+
 ## [1.1.0] - 2026-09-14
 
 ### Added

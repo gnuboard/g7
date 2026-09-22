@@ -80,7 +80,8 @@ PC 에서 카드는 sticky(top-24) 다. 비교표가 들어가 카드가 뷰포�
         <div class="text-right">
           <span class="text-gray-900 dark:text-white">{{'-' + (_local.claimEstimateFormatted?.deducted_shipping_fee ?? '')}}</span>
           <div data-each="deductedFeeCurrency in {{_local.claimEstimateFormatted?.mc_deducted_shipping_fee ?? []}}" class="flex flex-wrap gap-x-2 justify-end mt-0.5">
-            <span class="text-xs text-gray-400 dark:text-gray-500">{{deductedFeeCurrency.formatted ?? ''}}</span>
+            <!-- 보조통화도 기준통화와 **같은 부호**로 적는다 — 기준통화만 '-' 를 붙이면 같은 줄에서 '−3,000원 / $3.00' 처럼 부호가 갈려 차감인지 청구인지 읽히지 않는다(2026-09-21 세션B 실측 S-B-D5). -->
+            <span class="text-xs text-gray-400 dark:text-gray-500">{{'-' + (deductedFeeCurrency.formatted ?? '')}}</span>
           </div>
         </div>
       </div>
@@ -94,8 +95,9 @@ PC 에서 카드는 sticky(top-24) 다. 비교표가 들어가 카드가 뷰포�
           </div>
         </div>
       </div>
-      <!-- 총 청구액 — 취소·환불은 회수 배송이 없어 청구가 발생하지 않으므로 그리지 않는다(§6-3). 형제 줄(청구 2축·환불 예정액)과 같은 유형 가드다 — 이 줄만 가드가 없으면 취소 신청서에 '총 청구액 0원' 이 선다. -->
-      <div data-if="{{_local.claimType !== 'refund'}}" class="flex items-center justify-between pt-3 mt-1 border-t border-gray-200 dark:border-gray-700">
+      <!-- 총 청구액 — 취소·환불은 회수 배송이 없어 청구가 발생하지 않으므로 그리지 않는다(§6-3). 형제 줄(청구 2축·환불 예정액)과 같은 유형 가드다 — 이 줄만 가드가 없으면 취소 신청서에 '총 청구액 0원' 이 선다.
+           '환불금에서 차감'(`deduct_from_refund`)도 그리지 않는다 — 그 방식은 회수비를 환불액에서 이미 뺐으므로 따로 낼 돈이 없는데, 바로 위 '회수 배송비 차감 −3,000원' 아래에 '총 청구액 3,000원' 이 서면 같은 3,000원을 두 번 내는 것으로 읽힌다(2026-09-21 세션B 실측 S-B-D6 · PO 확정 「감추기」). 차감액은 위 세 줄(환불 예정액 / 차감 / 최종 환불액)이 이미 말한다. -->
+      <div data-if="{{_local.claimType !== 'refund' &amp;&amp; (_local.claimEstimate?.charge_method ?? _local.claimChargeMethod) !== 'deduct_from_refund'}}" class="flex items-center justify-between pt-3 mt-1 border-t border-gray-200 dark:border-gray-700">
         <span class="text-gray-900 dark:text-white font-medium">$t:claim.apply.total_charge</span>
         <!-- 기준통화 표기 + 보조통화 병기(§6-3 · §5-4). 보조통화 값은 서버 미리보기가 주문 통화 스냅샷의 동결 환율로 낸 것을 핸들러가 그 통화로 포맷한 것이다 — 화면이 환산하면 예고와 청구의 근거가 갈린다. 미리보기 응답의 다통화 값은 `{통화코드: 숫자}` 라 주문 리소스의 `{amount, formatted}` 와 형태가 다르므로 `.formatted` 로 직접 읽지 않는다(2026-08-31 3차 검증 실측 — 그렇게 읽으면 오류 없이 빈 줄이 된다). 스냅샷이 없는 주문은 서버가 값을 주지 않으므로 이 줄이 나타나지 않는다. -->
         <div class="text-right">
@@ -111,7 +113,7 @@ PC 에서 카드는 sticky(top-24) 다. 비교표가 들어가 카드가 뷰포�
     <!-- 취소·환불 분기 안내 (§6-3) — 같은 작성 셸이지만 서버는 두 파이프라인으로 갈린다. 즉시취소는 승인 없이 바로 환불되고 환불신청서는 판매자 확인을 거친다 — 금액은 같아도 언제 돈이 돌아오는지가 다르므로 신청 전에 밝힌다. 분기는 서버 판정(resolved_type)이 아니라 **지금 고른 상품**을 따른다 — 두 분기가 섞인 주문에서 서버 판정은 'mixed' 라, 그 값으로 안내하면 결제완료 상품만 골라 즉시 취소되는데도 판매자 확인을 거친다고 말하게 된다. -->
     <div data-if="{{_local.claimType === 'refund' &amp;&amp; !!(_local.claimResolvedBranch ?? (_local.claimableSnapshot ?? claimable?.data)?.resolved_type) &amp;&amp; (_local.claimResolvedBranch ?? (_local.claimableSnapshot ?? claimable?.data)?.resolved_type) !== 'mixed'}}" class="flex items-start gap-2 p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
       <icon name="circle-info" class="text-base text-blue-600 dark:text-blue-400 flex-shrink-0"/>
-      <p class="text-xs text-blue-700 dark:text-blue-300 min-w-0">{{(_local.claimResolvedBranch ?? (_local.claimableSnapshot ?? claimable?.data)?.resolved_type) === 'auto' ? $t('claim.apply.notice_cancel') : $t('claim.apply.notice_refund')}}</p>
+      <p class="text-xs text-blue-700 dark:text-blue-300 min-w-0">{{((_local.claimResolvedBranch ?? (_local.claimableSnapshot ?? claimable?.data)?.resolved_type) === 'auto' &amp;&amp; (_local.claimableSnapshot ?? claimable?.data)?.refund_auto_approved !== false) ? $t('claim.apply.notice_cancel') : $t('claim.apply.notice_refund')}}</p>
     </div>
     <!-- 환불 우선순위 (#599 후속 P3-③) — 마일리지를 쓴 주문에서만 뜻이 있다(포인트 사용액 0 이면 미노출). 교환은 저가 교환(차액 환불)일 때만. 바꾸면 미리보기를 다시 부른다(수량 변경과 같은 debounce·세대 가드). 수정 화면은 우선순위를 바꿀 수 없어 읽기 전용 텍스트다. -->
     <div data-if="{{_local.claimEstimateLoading !== true &amp;&amp; !!_local.claimEstimate &amp;&amp; (_local.claimType !== 'exchange' || (_local.claimEstimate?.refund_product_amount ?? 0) > 0) &amp;&amp; (_local.claimEstimate?.adjustment?.original_snapshot?.total_points_used_amount ?? 0) > 0}}" class="pt-3 border-t border-gray-200 dark:border-gray-700" data-testid="claim-refund-priority">
@@ -155,8 +157,9 @@ PC 에서 카드는 sticky(top-24) 다. 비교표가 들어가 카드가 뷰포�
     </div>
     <!-- 축1 거절 사유 (§6-3 P13) — 운영자가 허용 목록을 바꾼 뒤 제출하면 서버가 `charge_method` 를 거절한다. 그 사유를 요약 카드 맨 아래에만 남기면 어느 라디오가 막혔는지 알 수 없다. -->
     <p data-if="{{!!_local.claimFieldErrors?.charge_method}}" class="text-xs text-red-500 dark:text-red-400 mt-1">{{_local.claimFieldErrors?.charge_method ?? ''}}</p>
-    <!-- 축2 결제 수단 — '환불금에서 차감' 을 고르면 쓰이지 않으므로 비활성으로 표시한다. -->
-    <div data-if="{{_local.claimEditMode !== true &amp;&amp; _local.claimType !== 'refund' &amp;&amp; ((_local.claimableSnapshot ?? claimable?.data)?.settings?.charge_payment_methods ?? []).length > 0}}" class="pt-3 border-t border-gray-200 dark:border-gray-700">
+    <!-- 축2 결제 수단 — '환불금에서 차감' 을 고르면 낼 돈이 없어 이 칸이 쓰이지 않으므로 **감춘다**(2026-09-21 세션B 실측 S-B-D6 · PO 확정). 종전에는 회색 + disabled 로 남겼으나, 비활성이어도 칸이 서 있으면 '카드로 결제해야 하나' 로 읽힌다. -->
+    <div data-if="{{_local.claimEditMode !== true &amp;&amp; _local.claimType !== 'refund' &amp;&amp; (_local.claimEstimate?.charge_method ?? _local.claimChargeMethod) !== 'deduct_from_refund' &amp;&amp; ((_local.claimableSnapshot ?? claimable?.data)?.settings?.charge_payment_methods ?? []).length > 0}}" class="pt-3 border-t border-gray-200 dark:border-gray-700">
+      <!-- 안쪽의 `_local.claimChargeMethod === 'deduct_from_refund'` 분기(제목 회색 · 라디오 disabled · 라벨 회색)는 죽은 코드가 아니다 — 바깥 가드는 **서버 미리보기 값을 우선**(`claimEstimate?.charge_method ?? claimChargeMethod`)하고 안쪽은 **화면 선택값**만 본다. 사용자가 '환불금에서 차감' 을 고른 직후 미리보기 응답이 아직 이전 방식을 들고 있는 왕복 구간에서 이 블록이 한 프레임 더 서고, 그때 회색으로 전환되어 곧 사라진다. 지우면 그 구간에 활성처럼 보였다가 통째로 없어져 깜빡임이 커진다. -->
       <p class="{{_local.claimChargeMethod === 'deduct_from_refund' ? 'text-sm font-medium text-gray-400 dark:text-gray-500 mb-2' : 'text-sm font-medium text-gray-900 dark:text-white mb-2'}}">$t:claim.apply.payment_method_title</p>
       <div data-each="chargePaymentMethod in {{(_local.claimableSnapshot ?? claimable?.data)?.settings?.charge_payment_methods ?? []}}" class="space-y-1">
         <label class="flex items-center gap-2 p-2 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700">

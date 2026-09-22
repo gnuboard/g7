@@ -1,6 +1,7 @@
 {
   "drop_or_click": "파일을 드래그하거나 클릭하여 업로드",
   "upload_limit": "최대 {{maxFiles}}개, 각 {{maxSize}}MB까지",
+  "upload_limit_count": "최대 {{maxFiles}}개까지",
   "delete_confirm_title": "첨부파일 삭제",
   "delete_confirm_message": "이 파일을 삭제하시겠습니까?",
   "deleting": "삭제 중...",

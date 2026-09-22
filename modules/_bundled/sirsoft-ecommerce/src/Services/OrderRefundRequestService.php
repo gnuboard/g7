@@ -603,7 +603,18 @@ class OrderRefundRequestService
         }
 
         // 접수 훅이 이미 억제를 걸었으므로 여기서 1통을 보낸다 — 판정은 같은 술어에서 나온다.
-        return $this->transition($refund, RefundStatusEnum::APPROVED, ['processed_by' => $processedBy]);
+        //
+        // 주체(`processed_by`)는 **일부러 비운다**. 이 전이를 누른 사람은 없다 — `claim.
+        // auto_approve_refund_request` 설정이 한 일이다. 접수자를 그대로 실어 나르면 활동로그
+        // 「환불 신청서 상태 변경(환불신청 → 환불승인)」의 작업자가 고객 이름으로 남아,
+        // 나중에 「누가 승인했나」를 물을 때 고객이 자기 신청을 승인한 것처럼 읽힌다
+        // (#599 세션A 실측 2026-09-21 · RF20260921-1616082573 · PO 확정 2026-09-22).
+        //
+        // 새 라벨을 만들지 않고 저장소가 이미 쓰는 관례에 합류한다 — 1-T 입금기한 만료
+        // 자동취소도 작업자를 NULL 로 남기고 화면이 그것을 시스템으로 읽는다.
+        // 바로 위 `autoAdvance` 는 **관리자가 [주문취소]를 눌러** 시작한 경로라 주체가 있고,
+        // 그 책임 추적을 지우면 안 되므로 `$processedBy` 를 그대로 넘긴다.
+        return $this->transition($refund, RefundStatusEnum::APPROVED);
     }
 
     /**

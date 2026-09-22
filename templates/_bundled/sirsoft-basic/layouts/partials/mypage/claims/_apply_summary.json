@@ -426,12 +426,13 @@
                                     },
                                     "children": [
                                         {
+                                            "comment": "보조통화도 기준통화와 **같은 부호**로 적는다 — 기준통화만 '-' 를 붙이면 같은 줄에서 '−3,000원 / $3.00' 처럼 부호가 갈려 차감인지 청구인지 읽히지 않는다(2026-09-21 세션B 실측 S-B-D5).",
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
                                                 "className": "text-xs text-gray-400 dark:text-gray-500"
                                             },
-                                            "text": "{{deductedFeeCurrency.formatted ?? ''}}"
+                                            "text": "{{'-' + (deductedFeeCurrency.formatted ?? '')}}"
                                         }
                                     ]
                                 }
@@ -497,10 +498,10 @@
                     ]
                 },
                 {
-                    "comment": "총 청구액 — 취소·환불은 회수 배송이 없어 청구가 발생하지 않으므로 그리지 않는다(§6-3). 형제 줄(청구 2축·환불 예정액)과 같은 유형 가드다 — 이 줄만 가드가 없으면 취소 신청서에 '총 청구액 0원' 이 선다.",
+                    "comment": "총 청구액 — 취소·환불은 회수 배송이 없어 청구가 발생하지 않으므로 그리지 않는다(§6-3). 형제 줄(청구 2축·환불 예정액)과 같은 유형 가드다 — 이 줄만 가드가 없으면 취소 신청서에 '총 청구액 0원' 이 선다.\n           '환불금에서 차감'(`deduct_from_refund`)도 그리지 않는다 — 그 방식은 회수비를 환불액에서 이미 뺐으므로 따로 낼 돈이 없는데, 바로 위 '회수 배송비 차감 −3,000원' 아래에 '총 청구액 3,000원' 이 서면 같은 3,000원을 두 번 내는 것으로 읽힌다(2026-09-21 세션B 실측 S-B-D6 · PO 확정 「감추기」). 차감액은 위 세 줄(환불 예정액 / 차감 / 최종 환불액)이 이미 말한다.",
                     "type": "basic",
                     "name": "Div",
-                    "if": "{{_local.claimType !== 'refund'}}",
+                    "if": "{{_local.claimType !== 'refund' && (_local.claimEstimate?.charge_method ?? _local.claimChargeMethod) !== 'deduct_from_refund'}}",
                     "props": {
                         "className": "flex items-center justify-between pt-3 mt-1 border-t border-gray-200 dark:border-gray-700"
                     },
@@ -583,7 +584,7 @@
                     "props": {
                         "className": "text-xs text-blue-700 dark:text-blue-300 min-w-0"
                     },
-                    "text": "{{(_local.claimResolvedBranch ?? (_local.claimableSnapshot ?? claimable?.data)?.resolved_type) === 'auto' ? $t('claim.apply.notice_cancel') : $t('claim.apply.notice_refund')}}"
+                    "text": "{{((_local.claimResolvedBranch ?? (_local.claimableSnapshot ?? claimable?.data)?.resolved_type) === 'auto' && (_local.claimableSnapshot ?? claimable?.data)?.refund_auto_approved !== false) ? $t('claim.apply.notice_cancel') : $t('claim.apply.notice_refund')}}"
                 }
             ]
         },
@@ -790,15 +791,16 @@
             "text": "{{_local.claimFieldErrors?.charge_method ?? ''}}"
         },
         {
-            "comment": "축2 결제 수단 — '환불금에서 차감' 을 고르면 쓰이지 않으므로 비활성으로 표시한다.",
+            "comment": "축2 결제 수단 — '환불금에서 차감' 을 고르면 낼 돈이 없어 이 칸이 쓰이지 않으므로 **감춘다**(2026-09-21 세션B 실측 S-B-D6 · PO 확정). 종전에는 회색 + disabled 로 남겼으나, 비활성이어도 칸이 서 있으면 '카드로 결제해야 하나' 로 읽힌다.",
             "type": "basic",
             "name": "Div",
-            "if": "{{_local.claimEditMode !== true && _local.claimType !== 'refund' && ((_local.claimableSnapshot ?? claimable?.data)?.settings?.charge_payment_methods ?? []).length > 0}}",
+            "if": "{{_local.claimEditMode !== true && _local.claimType !== 'refund' && (_local.claimEstimate?.charge_method ?? _local.claimChargeMethod) !== 'deduct_from_refund' && ((_local.claimableSnapshot ?? claimable?.data)?.settings?.charge_payment_methods ?? []).length > 0}}",
             "props": {
                 "className": "pt-3 border-t border-gray-200 dark:border-gray-700"
             },
             "children": [
                 {
+                    "comment": "안쪽의 `_local.claimChargeMethod === 'deduct_from_refund'` 분기(제목 회색 · 라디오 disabled · 라벨 회색)는 죽은 코드가 아니다 — 바깥 가드는 **서버 미리보기 값을 우선**(`claimEstimate?.charge_method ?? claimChargeMethod`)하고 안쪽은 **화면 선택값**만 본다. 사용자가 '환불금에서 차감' 을 고른 직후 미리보기 응답이 아직 이전 방식을 들고 있는 왕복 구간에서 이 블록이 한 프레임 더 서고, 그때 회색으로 전환되어 곧 사라진다. 지우면 그 구간에 활성처럼 보였다가 통째로 없어져 깜빡임이 커진다.",
                     "type": "basic",
                     "name": "P",
                     "props": {

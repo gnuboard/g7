@@ -60,6 +60,7 @@ return [
     'skipped' => [
         'no_recipient_resolved' => '수신자 규칙(:rules)으로 받을 사람을 찾지 못해 발송하지 않았습니다.',
         'guest_email_empty' => '비회원 수신자의 이메일이 없어 발송하지 않았습니다. (수신자 규칙: :rules)',
+        'withdrawn_recipient' => '탈퇴한 회원이라 바깥 채널(메일·SMS·알림톡)로는 발송하지 않았습니다. 탈퇴 시 연락처가 익명화되어 받을 수 있는 주소가 없습니다.',
     ],
 
     // 사용자 알림

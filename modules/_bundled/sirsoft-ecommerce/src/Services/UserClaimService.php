@@ -143,6 +143,11 @@ class UserClaimService
                 ClaimTypeEnum::REFUND->value => $this->claimReasonRepository->getUserSelectableReasons(ClaimTypeEnum::REFUND->value),
             ],
             'settings' => $this->publicSettings($isGuest),
+            // 접수 뒤 «자동으로 끝나는가» — 분기(`refund_branch`)와는 다른 축이다(P16·P17).
+            // 무통장·가상계좌는 분기가 auto 여도 `requested` 에서 멈추고 운영자 승인을 기다린다.
+            // 이 사실을 싣지 않으면 신청서는 분기만 보고 「자동 처리」라고 안내하게 되고,
+            // 구매자는 곧 돈이 돌아온다고 읽는다. 판정은 결제수단 카탈로그가 소유한다.
+            'refund_auto_approved' => $this->refundAutoApproved($order),
             'refund_account' => $this->refundAccountRequirement($order),
             'pending_images' => $this->attachmentService->listPendingFor($order),
         ];
@@ -207,6 +212,29 @@ class UserClaimService
                 ))
                 : [],
         ];
+    }
+
+    /**
+     * 이 주문의 환불이 사람 손을 거치지 않고 자동으로 끝나는지 돌려줍니다. (P16·P17)
+     *
+     * 판정 SSoT 는 결제수단 카탈로그(`PaymentMethodResolver::autoApprovesRefund`)다 — 운영자가
+     * 클레임 정책 탭에서 고른 목록과 플러그인 선언을 함께 본다. 화면이 결제수단 코드로 재현하면
+     * 운영자가 목록을 바꿔도 안내만 옛 규칙으로 남는다.
+     *
+     * @param  Order  $order  주문
+     * @return bool 자동 승인 대상이면 true
+     */
+    protected function refundAutoApproved(Order $order): bool
+    {
+        $order->loadMissing('payment');
+
+        $methodId = $order->payment?->paymentMethodId();
+
+        if (! is_string($methodId) || $methodId === '') {
+            return false;
+        }
+
+        return app(PaymentMethodResolver::class)->autoApprovesRefund($methodId);
     }
 
     /**

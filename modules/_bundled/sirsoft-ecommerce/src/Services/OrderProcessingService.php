@@ -296,10 +296,34 @@ class OrderProcessingService
     }
 
     /**
+     * 이 주문의 결제가 **PG 를 거쳐** 완료됐는지 판정합니다 (결제완료 시점 기준).
+     *
+     * `orderRequiresPgPayment()` 와 묻는 것이 다르다 — 그쪽은 주문 «생성» 시점에 설정을 읽어
+     * 「이 주문이 PG 를 타야 하는가」를 정한다. 결제완료 시점에는 결제행에 **실제로 무엇을
+     * 탔는지**가 이미 기록돼 있고(무통장은 `manual`), 그 뒤 설정이 바뀌어도 사실은 변하지
+     * 않는다. 설정을 다시 읽으면 PG 플러그인을 끈 사이트에서 카드 주문의 관리자 알림이
+     * 조용히 사라진다.
+     *
+     * 금액은 보지 않는다 — 이 메서드는 결제완료 «뒤»에 불리고 그때 `total_due_amount` 는 이미
+     * 0 이다. 결제액 0원 주문은 애초에 이 경로(completePayment)로 오지 않고
+     * `fireZeroAmountPaymentCompleteHooks` 가 따로 처리한다.
+     *
+     * @param  Order  $order  주문
+     * @return bool PG 경유 결제면 true
+     */
+    protected function paymentWentThroughPg(Order $order): bool
+    {
+        $provider = $order->payment?->pg_provider;
+
+        return $provider !== null
+            && $provider !== ''
+            && ! in_array($provider, ['manual', 'internal', 'none'], true);
+    }
+
+    /**
      * 결제액 0원(전액 비현금 충당) 주문의 결제완료 DB 상태를 확정합니다 (트랜잭션 내부 호출).
      *
      * @param  Order  $order  대상 주문
-     *
      * @return void 반환값 없음
      */
     protected function finalizeZeroAmountPayment(Order $order): void
@@ -355,7 +379,6 @@ class OrderProcessingService
      *
      * @param  string  $paymentMethod  결제 수단
      * @param  int  $finalAmount  최종 결제액(마일리지 차감 후). 0 이면 전액 마일리지 결제.
-     *
      * @return OrderStatusEnum 반환값
      */
     protected function determineInitialStatus(string $paymentMethod, int $finalAmount = 0): OrderStatusEnum
@@ -382,10 +405,9 @@ class OrderProcessingService
      *
      * @param  OrderCalculationResult  $calculationResult  계산 결과
      * @param  float  $expectedAmount  프론트엔드 결제예정금액
+     * @return void 반환값 없음
      *
      * @throws PaymentAmountMismatchException 금액 불일치 시
-     *
-     * @return void 반환값 없음
      */
     protected function validateOrderAmount(OrderCalculationResult $calculationResult, float $expectedAmount): void
     {
@@ -474,10 +496,9 @@ class OrderProcessingService
      *
      * @param  array  $currencySnapshot  주문 시점 통화 스냅샷
      * @param  float|int  $baseFinalAmount  결제예정 base 통화 금액
+     * @return void 반환값 없음
      *
      * @throws UnsupportedPaymentCurrencyException 결제 통화로 청구할 수 없는 경우
-     *
-     * @return void 반환값 없음
      */
     protected function assertPaymentCurrencyChargeable(array $currencySnapshot, float|int $baseFinalAmount): void
     {
@@ -1308,7 +1329,6 @@ class OrderProcessingService
      *
      * @param  object|null  $shippingPolicy  배송 정책
      * @param  TempOrder  $tempOrder  임시 주문
-     *
      * @return string 결과 문자열
      */
     protected function determineShippingType(?object $shippingPolicy, TempOrder $tempOrder): string
@@ -1369,10 +1389,9 @@ class OrderProcessingService
      * 비회원은 코어 guest 역할로 판정합니다.
      *
      * @param  TempOrder  $tempOrder  임시 주문
+     * @return void 반환값 없음
      *
      * @throws CartUnavailableException 구매 권한이 없는 상품이 있는 경우
-     *
-     * @return void 반환값 없음
      */
     protected function validatePurchaseEligibility(TempOrder $tempOrder): void
     {
@@ -1415,10 +1434,9 @@ class OrderProcessingService
      *
      * @param  TempOrder  $tempOrder  임시 주문
      * @param  string|null  $countryCode  제출된 배송국가 코드 (없으면 KR)
+     * @return void 반환값 없음
      *
      * @throws CartUnavailableException 미지원 배송국가 상품이 1개 이상이면
-     *
-     * @return void 반환값 없음
      */
     protected function validateShippingCountrySupported(TempOrder $tempOrder, ?string $countryCode): void
     {
@@ -1462,7 +1480,6 @@ class OrderProcessingService
      * 아니므로 항상 false 로 처리합니다.
      *
      * @param  int|null  $userId  회원 ID (비회원은 null)
-     *
      * @return bool 판정 결과
      */
     protected function isFirstOrder(?int $userId): bool
@@ -1511,10 +1528,9 @@ class OrderProcessingService
      *
      * @param  TempOrder  $tempOrder  임시 주문
      * @param  OrderCalculationResult  $calculationResult  재계산 결과
+     * @return void 반환값 없음
      *
      * @throws MileageValidationException 정책 위반 시
-     *
-     * @return void 반환값 없음
      */
     protected function validateMileageUsagePolicy(TempOrder $tempOrder, OrderCalculationResult $calculationResult): void
     {
@@ -1539,7 +1555,6 @@ class OrderProcessingService
      * TempOrderService::getTempOrderWithCalculation()의 패턴을 따릅니다.
      *
      * @param  TempOrder  $tempOrder  임시 주문
-     *
      * @return CalculationInput 반환값
      */
     protected function buildCalculationInputFromTempOrder(TempOrder $tempOrder): CalculationInput
@@ -1578,7 +1593,6 @@ class OrderProcessingService
      * 적용된 프로모션 스냅샷을 구성합니다.
      *
      * @param  OrderCalculationResult  $result  계산 결과
-     *
      * @return array 결과 배열
      */
     protected function buildPromotionsAppliedSnapshot(OrderCalculationResult $result): array
@@ -1601,7 +1615,6 @@ class OrderProcessingService
      *
      * @param  OrderCalculationResult  $result  계산 결과
      * @param  array  $shippingInfo  주문서가 보낸 배송지 정보 (국가·우편번호가 정책 선택에 쓰인다)
-     *
      * @return array 결과 배열
      */
     protected function buildShippingPolicyAppliedSnapshot(OrderCalculationResult $result, array $shippingInfo = []): array
@@ -1633,7 +1646,6 @@ class OrderProcessingService
      * 주문 메타데이터를 구성합니다.
      *
      * @param  TempOrder  $tempOrder  임시 주문
-     *
      * @return array 결과 배열
      */
     protected function buildOrderMeta(TempOrder $tempOrder): array
@@ -1661,7 +1673,6 @@ class OrderProcessingService
      * 장바구니 수량 <= 주문 수량: 삭제
      *
      * @param  Order  $order  주문
-     *
      * @return void 반환값 없음
      */
     protected function clearOrderedCartItems(Order $order): void
@@ -1824,7 +1835,14 @@ class OrderProcessingService
 
         // 관리자 신규주문 알림 — 카드(PG) 주문은 주문 생성 시점이 아니라 결제완료 시점에 발송한다.
         // (무통장/비-PG/0원 주문은 각자 다른 시점에 이미 발화하므로 여기서 발화하지 않는다)
-        HookManager::doAction('sirsoft-ecommerce.order.after_admin_notify', $order);
+        //
+        // 조건은 생성 시점(createFromTempOrder)의 분기와 **대칭**이어야 한다. 거기서 발화한
+        // 주문이 여기서 또 발화하면 운영자 알림함에 같은 「새로운 주문이 접수되었습니다」가
+        // 한 주문으로 두 번 선다 — 어느 쪽이 새 주문인지 구분할 수 없다. 결제완료에 도달한
+        // 사실은 바로 위 `order.after_confirm` 이 `order_confirmed_admin` 으로 따로 알린다.
+        if ($this->paymentWentThroughPg($order)) {
+            HookManager::doAction('sirsoft-ecommerce.order.after_admin_notify', $order);
+        }
 
         // 임시주문 정리 (PG 결제 완료 시점에 삭제, 이미 삭제된 경우 no-op)
         if ($order->user_id) {
@@ -1938,10 +1956,9 @@ class OrderProcessingService
      *
      * @param  Order  $order  주문
      * @param  float  $amount  입금 금액
+     * @return void 반환값 없음
      *
      * @throws PaymentAmountMismatchException 입금액이 결제예정금액과 불일치 시
-     *
-     * @return void 반환값 없음
      */
     protected function recordDepositPayment(Order $order, float $amount): void
     {
@@ -1980,10 +1997,9 @@ class OrderProcessingService
      *
      * @param  Order  $order  주문
      * @param  int  $pgAmount  PG사에서 전달받은 결제금액
+     * @return void 반환값 없음
      *
      * @throws PaymentAmountMismatchException 금액 불일치 시
-     *
-     * @return void 반환값 없음
      */
     protected function validatePaymentAmount(Order $order, int $pgAmount): void
     {
@@ -2112,7 +2128,6 @@ class OrderProcessingService
      *
      * @param  Order  $order  주문
      * @param  int  $usedPoints  사용 마일리지
-     *
      * @return void 반환값 없음
      */
     protected function deductMileageForOrder(Order $order, int $usedPoints): void
@@ -2134,7 +2149,6 @@ class OrderProcessingService
      *
      * @param  Order  $order  대상 주문
      * @param  OrderStatusEnum  $newStatus  동기화할 상태
-     *
      * @return void 반환값 없음
      */
     protected function syncOptionStatuses(Order $order, OrderStatusEnum $newStatus): void

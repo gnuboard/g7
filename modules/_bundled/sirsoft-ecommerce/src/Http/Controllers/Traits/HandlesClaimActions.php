@@ -91,6 +91,8 @@ trait HandlesClaimActions
                     $payload['reasons'],
                 ),
                 'settings' => $payload['settings'],
+                // 접수 뒤 자동으로 끝나는지(P16·P17) — 분기와 다른 축이라 따로 싣는다.
+                'refund_auto_approved' => $payload['refund_auto_approved'],
                 'refund_account' => $payload['refund_account'],
                 'pending_images' => ClaimImageResource::collection($payload['pending_images'])->toArray(request()),
             ]);

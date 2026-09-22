@@ -118,7 +118,7 @@ class OrderOptionResource extends BaseApiResource
             'subtotal_deposit_used_amount' => $this->roundToOrderCurrency($this->subtotal_deposit_used_amount),
             'subtotal_deposit_used_amount_formatted' => $this->formatOrderCurrency($this->subtotal_deposit_used_amount),
             'subtotal_earned_points_amount' => $this->roundToOrderCurrency($this->subtotal_earned_points_amount),
-            'subtotal_earned_points_amount_formatted' => $this->formatOrderCurrency($this->subtotal_earned_points_amount),
+            'subtotal_earned_points_amount_formatted' => $this->formatEarnedPoints($this->subtotal_earned_points_amount),
 
             // 프로모션 스냅샷
             'promotions_applied_snapshot' => $this->promotions_applied_snapshot,

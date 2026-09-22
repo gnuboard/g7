@@ -4,6 +4,7 @@
     "layout_name": "shop/order_complete",
     "extends": "_user_base",
     "meta": {
+        "_e2e_allow": "e2e:allow SA-D2 — 「이 배송지를 저장하기」 버튼의 **요청 본문 키만** 서버 계약(StoreUserAddressRequest)에 맞춘 변경이다. 화면 구조·노출 조건·동작 흐름은 그대로이고, 바뀐 것은 어떤 키로 보내는가 하나다. 그 계약은 레이아웃 계약 테스트가 잠근다 — __tests__/layouts/shop-order-complete-save-address-payload.test.ts (6케이스 · 되돌리면 4 failed 대조 확인). 서버 쪽 required 규칙은 StoreUserAddressRequest 가 소유한다. Playwright 로 재현하려면 「로그인 회원 + 장바구니 상품 + 완료된 주문」 상태가 필요해 기존 주문서 spec 의 시드로는 세울 수 없다(형제 시나리오 checkout-default-address-prefill 과 같은 사유). 브라우저 검수는 Chrome MCP 실측으로 기록했다 — 수정 전 POST /user/addresses 422 · 배송지 행 증가 0 → 수정 후 200 · 토스트 「배송지가 저장되었습니다.」 · 행 name=배송지 주소·상세 정합 · 재클릭 시 서버 중복 가드 문구.",
         "title": "$t:shop.order_complete.page_title",
         "description": "주문 완료/결제 완료 화면"
     },
@@ -941,7 +942,7 @@
                                                 ]
                                             },
                                             {
-                                                "comment": "배송지 저장 버튼 (로그인 사용자만)",
+                                                "comment": "배송지 저장 버튼 (로그인 사용자만).\n                 본문 키는 서버 계약(`StoreUserAddressRequest`)을 그대로 따른다 — `name` 필수,\n                 국내는 `address`/`address_detail`, 해외는 `address_line_1`+`intl_*`.\n                 `address1`/`address2` 는 서버에 없는 키라 어떤 주문에서 눌러도 422 였다(#599 세션A 실측).\n                 배송지명은 주문완료 화면에 입력칸이 없어 「배송지」 라벨을 그대로 쓴다 —\n                 같은 이름이 이미 있으면 서버가 중복으로 거절하고 그 문구를 토스트로 보여 준다.\n                 라벨은 `$t:` 접두가 아니라 `{{$t('…')}}` 표현식이어야 한다 — 전자는 화면 문구에만\n                 치환되고 API 본문 값으로는 원문 키가 그대로 저장된다(실측: 배송지명 `$t:shop.…`).",
                                                 "type": "basic",
                                                 "name": "Button",
                                                 "if": "{{_global.currentUser?.uuid}}",
@@ -954,14 +955,18 @@
                                                         "params": {
                                                             "method": "POST",
                                                             "body": {
+                                                                "name": "{{$t('shop.order_complete.shipping_address')}}",
                                                                 "recipient_name": "{{orderData?.data?.shipping_address?.recipient_name}}",
                                                                 "recipient_phone": "{{orderData?.data?.shipping_address?.recipient_phone}}",
                                                                 "country_code": "{{orderData?.data?.shipping_address?.recipient_country_code ?? 'KR'}}",
-                                                                "zipcode": "{{orderData?.data?.shipping_address?.zipcode}}",
-                                                                "address1": "{{orderData?.data?.shipping_address?.address}}",
-                                                                "address2": "{{orderData?.data?.shipping_address?.address_detail ?? ''}}",
-                                                                "city": "{{orderData?.data?.shipping_address?.city ?? ''}}",
-                                                                "state": "{{orderData?.data?.shipping_address?.state ?? ''}}",
+                                                                "zipcode": "{{orderData?.data?.shipping_address?.zipcode ?? ''}}",
+                                                                "address": "{{orderData?.data?.shipping_address?.address ?? ''}}",
+                                                                "address_detail": "{{orderData?.data?.shipping_address?.address_detail ?? ''}}",
+                                                                "address_line_1": "{{orderData?.data?.shipping_address?.address_line_1 ?? ''}}",
+                                                                "address_line_2": "{{orderData?.data?.shipping_address?.address_line_2 ?? ''}}",
+                                                                "intl_city": "{{orderData?.data?.shipping_address?.intl_city ?? ''}}",
+                                                                "intl_state": "{{orderData?.data?.shipping_address?.intl_state ?? ''}}",
+                                                                "intl_postal_code": "{{orderData?.data?.shipping_address?.intl_postal_code ?? ''}}",
                                                                 "is_default": false
                                                             }
                                                         },
