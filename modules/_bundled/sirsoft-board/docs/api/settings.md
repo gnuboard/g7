@@ -46,6 +46,7 @@ _단건 응답: `data` 객체의 필드._
 | report_policy | object | `{"auto_hide_threshold":5,"auto_hide_target":"both","daily…` | 신고 정책 카테고리. 자동 숨김 임계치(auto_hide_threshold)와 대상(auto_hide_target: post/comment/both), 사용자별 일일 신고 한도, 신고 거부 누적 제한(횟수/기간), 관리자·작성자 신고 알림 발송 여부와 채널을 포함합니다. |
 | spam_security | object | `{"post_cooldown_seconds":0,"comment_cooldown_seconds":0,"…` | 스팸·보안 카테고리. 글·댓글·신고 작성 사이의 도배 방지 쿨다운 시간(초)과 조회수 캐시 TTL을 포함합니다. |
 | display | object | `{"date_display_format":"standard"}` | 표시 설정 카테고리. 날짜 표시 형식(date_display_format: standard 절대 표기 / relative 상대 표기)을 포함합니다. |
+| privacy_retention | object | `{"enabled":false,"ip_retention_days":365,"guest_retention_days":0,"guest_mode":"anonymize"}` | 개인정보 보유기간 카테고리(이슈 #636). 자동 파기 사용 여부(enabled, 기본 false), 작성 IP 보유기간(ip_retention_days, 일), 비회원 작성자 정보 보유기간(guest_retention_days, 일 — 0 은 미적용), 비회원 글 처리 방식(guest_mode: anonymize/delete)을 포함합니다. |
 | seo | object | `{"meta_boards_title":"{site_name}","meta_boards_descripti…` | SEO 메타 태그 설정 카테고리. 게시판 목록/개별 게시판/글 상세 페이지의 메타 제목·설명 템플릿과 각 페이지의 SEO 생성 활성화 여부(seo_boards, seo_board, seo_post_detail)를 포함합니다. |
 | notifications | object | `{"channels":[{"id":"mail","is_active":true,"sort_order":0…` | 알림 채널 설정 카테고리. 각 채널(mail, database 등)의 식별자, 활성화 여부(is_active), 정렬 순서(sort_order)를 담은 channels 배열을 포함합니다. |
 | report_permissions | object | `{"view_roles":["admin","manager"],"manage_roles":["admin"]}` | 신고 관리 권한 역할. 신고 내역을 조회할 수 있는 역할(view_roles)과 신고를 처리·관리할 수 있는 역할(manage_roles)의 식별자 배열이며, 설정값이 아닌 DB 권한 데이터로 관리됩니다. |
@@ -399,6 +400,11 @@ HTTP/1.1 200
 | attachment_settings | body | array | 아니오 | — | 첨부 정리 정책 카테고리 값. 삭제된 첨부의 물리 파일을 언제 파기할지 정합니다. |
 | attachment_settings.purge_enabled | body | boolean | 아니오 | — | 삭제 첨부 영구 정리 활성화 여부. **기본 false** — 사용자 파일을 실제로 파기하므로 운영자가 직접 켜야 동작합니다. 예약 작업(`sirsoft-board:prune-attachments --scheduled`)이 이 값을 false 폴백으로 재확인합니다. |
 | attachment_settings.purge_retention_days | body | integer | 아니오 | min 1, max 3650 | 삭제 첨부 보존기간(일, 기본 30). 게시글을 휴지통에서 복원하면 이 기간 안의 첨부는 함께 복원되므로, 휴지통 복원 가능 기간과 같게 유지해야 합니다. 하한·상한은 `config('sirsoft-board.limits')` 가 정하며 화면 입력도 같은 값을 읽습니다. |
+| privacy_retention | body | array | 아니오 | — | 개인정보 보유기간 카테고리 값(이슈 #636). 「일반」 탭 저장이 함께 보냅니다. 코어 보유기간 커맨드(`privacy:process-retention`)가 게시판 핸들러 두 개(`sirsoft-board.ip`·`sirsoft-board.guest`)를 통해 이 값을 읽어 실행합니다. |
+| privacy_retention.enabled | body | boolean | 아니오 | — | 보유기간 자동 파기 사용 여부. **기본 false** — 되돌릴 수 없는 파기라 운영자가 직접 켜야 동작하고, 각 핸들러가 실행 시점에 이 값을 false 폴백으로 다시 읽습니다. |
+| privacy_retention.ip_retention_days | body | integer | 아니오 | min 1, max 3650 | 작성 IP 보유기간(일, 기본 365). 회원 글을 포함한 모든 게시글·댓글(휴지통 포함)의 `ip_address` 를 작성 후 이 기간이 지나면 NULL 로 지웁니다. 판독부 바닥값도 1일입니다. |
+| privacy_retention.guest_retention_days | body | integer | 아니오 | min 0, max 3650 | 비회원 작성자 정보 보유기간(일, 기본 0). 0 이면 비회원 축을 쓰지 않으며 `enabled` 가 켜져 있어도 그 축은 「꺼짐」으로 보고됩니다. |
+| privacy_retention.guest_mode | body | string | 아니오 | `anonymize`, `delete` | 비회원 글 처리 방식(기본 `anonymize`). `anonymize` 는 작성자명만 고정 치환값(`***`)으로 바꿉니다. `delete` 는 게시판 삭제 경로로 지운 뒤(답글·댓글 연쇄 삭제, 알림 없음) 행에 남은 작성자명·비밀번호·IP·제목·본문을 파기하고 첨부는 파일째 즉시 지웁니다. 두 방식 모두 신고 로그 스냅샷의 사본도 함께 덮습니다. |
 
 **요청 예시**
 
@@ -896,6 +902,68 @@ _단건 응답: `data` 객체의 필드. 성공(전체 적용 완료) 시와 중
 <!-- @generated:end -->
 
 **설명** 환경설정의 기본값을 기존 게시판들에 일괄 적용합니다. `auth:sanctum` 인증과 `sirsoft-board.settings.update` 권한이 필요합니다. `fields`(적용할 필드, 최소 1개)와 `apply_all`(전체 적용 여부)을 받으며, `apply_all`이 false이면 `board_ids`로 대상을 지정하고 `override_values`로 값을 재정의할 수 있습니다. 적용 도중 실패하면 전체가 롤백되며, 이 경우에도 HTTP 200으로 `rolled_back: true`와 실패 지점 정보를 반환하여 프론트에서 안내 처리합니다.
+
+
+### GET /api/modules/sirsoft-board/admin/settings/privacy-retention-preview
+<!-- @generated:start:api.modules.sirsoft-board.admin.settings.privacy-retention-preview -->
+- **라우트명**: `api.modules.sirsoft-board.admin.settings.privacy-retention-preview`
+- **컨트롤러**: `Modules\Sirsoft\Board\Http\Controllers\Admin\BoardSettingsController@privacyRetentionPreview`
+- **인증/권한**: `auth:sanctum` + `permission:sirsoft-board.settings.read`
+
+**요청 파라미터**
+
+_요청 파라미터 없음._
+
+**요청 예시**
+
+```http
+GET /api/modules/sirsoft-board/admin/settings/privacy-retention-preview HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+```
+
+**응답 필드** (`data` 내부)
+
+_단건 응답: `data` 객체의 필드._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| ip | integer | `128` | 작성 IP 축의 처리 대상 건수(게시글 + 댓글, 휴지통 포함). **꺼져 있어도 센다** |
+| guest | integer | `12` | 비회원 작성자 정보 축의 처리 대상 건수(게시글 + 댓글). 꺼져 있어도 세며, 비회원 보유기간이 0(미적용)이면 `0` |
+| ip_enabled | boolean | `false` | 작성 IP 축이 켜져 있는지 |
+| guest_enabled | boolean | `false` | 비회원 축이 켜져 있는지(기능 켜짐 + 보유기간 1일 이상) |
+| can_view_targets | boolean | `true` | 요청 관리자가 「더보기」 명단을 볼 권한(`sirsoft-board.settings.read` + `sirsoft-board.boards.read`)이 있는지. 명단은 코어 `GET /api/admin/privacy/retention-targets/sirsoft-board.ip`·`sirsoft-board.guest` |
+| guest_mode | string | `anonymize` | 저장된 비회원 글 처리 방식(`anonymize`/`delete`). 알 수 없는 값은 `anonymize` 로 떨어집니다 |
+
+**응답 예시**
+
+```json
+{
+    "success": true,
+    "message": "sirsoft-board::messages.settings.fetch_success",
+    "data": {
+        "ip": 128,
+        "guest": 12,
+        "ip_enabled": false,
+        "guest_enabled": false,
+        "guest_mode": "anonymize",
+        "can_view_targets": true
+    }
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`sirsoft-board.settings.read`)이 없는 경우 |
+| 500 | Internal Server Error | 건수 조회 중 오류가 발생한 경우 (`messages.settings.fetch_failed`) |
+
+<!-- @generated:end -->
+
+**설명** 개인정보 보유기간 처리 대상 건수를 미리 조회합니다(이슈 #636). 「일반」 탭 보유기간 카드의 대상 건수 뱃지가 쓰는 값이며, 코어 보유기간 커맨드의 `--dry-run` 과 **같은 조건식**(각 핸들러의 `preview()`)을 지나므로 화면 숫자와 실제 처리 건수가 같습니다. **저장된 설정 기준**이라 화면에서 값을 바꾼 뒤 저장하기 전에는 이전 설정의 건수입니다. **꺼진 축도 건수를 셉니다** — 켜기 전에 규모를 확인하는 자리입니다. 「꺼짐」과 「대상 0건」은 `ip_enabled`·`guest_enabled` 로 구분합니다. 명단은 코어의 공통 대상 목록 API 가 두 핸들러(`sirsoft-board.ip`·`sirsoft-board.guest`)를 식별자로 찾아 내려주며, 게시판 관리 읽기 권한이 없으면 403 입니다.
 
 
 ### POST /api/modules/sirsoft-board/admin/settings/clear-cache

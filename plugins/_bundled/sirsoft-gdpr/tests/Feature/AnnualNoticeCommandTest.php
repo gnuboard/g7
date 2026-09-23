@@ -3,12 +3,15 @@
 namespace Plugins\Sirsoft\Gdpr\Tests\Feature;
 
 use App\Contracts\Notifications\ChannelReadinessCheckerInterface;
+use App\Enums\PermissionType;
 use App\Enums\UserStatus;
 use App\Extension\Helpers\NotificationSyncHelper;
 use App\Extension\HookListenerRegistrar;
 use App\Extension\HookManager;
 use App\Listeners\NotificationHookListener;
 use App\Models\NotificationTemplate;
+use App\Models\Permission;
+use App\Models\Role;
 use App\Models\User;
 use App\Notifications\GenericNotification;
 use App\Services\NotificationTemplateService;
@@ -17,6 +20,7 @@ use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Str;
 use Plugins\Sirsoft\Gdpr\Console\Commands\SendAnnualNotices;
 use Plugins\Sirsoft\Gdpr\Enums\PrivacyNoticeStatus;
 use Plugins\Sirsoft\Gdpr\Listeners\GdprAnnualNoticeListener;
@@ -32,7 +36,7 @@ use Plugins\Sirsoft\Gdpr\Tests\PluginTestCase;
  *
  * @scenario flow=scheduled
  *
- * @effects notice_queued, channel_result_appended, duplicate_prevented
+ * @effects notice_queued, channel_result_appended, duplicate_prevented, annual_notice_targets_match_the_dispatch_decision
  */
 class AnnualNoticeCommandTest extends PluginTestCase
 {
@@ -89,6 +93,39 @@ class AnnualNoticeCommandTest extends PluginTestCase
     }
 
     /**
+     * 지정한 관리자 권한만 가진 전용 역할의 관리자를 만듭니다.
+     *
+     * 공유 `admin` 역할을 쓰지 않는다 — 기준 DB 의 그 역할은 회원 읽기를 이미 가질 수 있어
+     * 「통지 조회만 있는 관리자」를 만들 수 없다.
+     *
+     * @param  array<int, string>  $permissions  권한 식별자 목록
+     * @param  array<string, string>  $scopes  권한 식별자 => 적용 범위(`self`·`role`) — 없으면 전체
+     * @return User 관리자
+     */
+    private function adminWith(array $permissions, array $scopes = []): User
+    {
+        $role = Role::create([
+            'identifier' => 'gdpr_target_test_'.uniqid(),
+            'name' => ['ko' => '시험 관리자', 'en' => 'Test admin'],
+            'description' => ['ko' => '시험 관리자', 'en' => 'Test admin'],
+            'is_active' => true,
+        ]);
+        $role->permissions()->sync(collect($permissions)->map(fn (string $identifier) => Permission::firstOrCreate(
+            ['identifier' => $identifier],
+            ['name' => ['ko' => $identifier, 'en' => $identifier], 'type' => PermissionType::Admin],
+        )->id)->all());
+
+        foreach ($scopes as $identifier => $scope) {
+            $role->permissions()->updateExistingPivot(Permission::where('identifier', $identifier)->value('id'), ['scope_type' => $scope]);
+        }
+
+        $user = User::factory()->create();
+        $user->roles()->attach($role->id);
+
+        return $user;
+    }
+
+    /**
      * 연간 통지 대상이 될 가입 경과 회원을 생성합니다.
      *
      * @param  array  $attributes  테스트 회원 속성
@@ -97,6 +134,77 @@ class AnnualNoticeCommandTest extends PluginTestCase
     private function oldUser(array $attributes = []): User
     {
         return User::factory()->create(array_merge(['status' => UserStatus::Active, 'created_at' => now()->subYears(2)], $attributes));
+    }
+
+    /**
+     * 대상 건수·명단(관리자 화면)이 발송 판정(후보 + 회원별 발송할 채널)과 같은 모집단이다.
+     * 꺼져 있어도 세고, 명단은 통지 조회 + 회원 읽기가 있어야 본다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario flow=scheduled
+     *
+     * @effects annual_notice_targets_match_the_dispatch_decision
+     */
+    public function test_due_count_and_targets_match_the_dispatch_decision(): void
+    {
+        $this->configure(false, 500, ['mail', 'database']);
+
+        $never = $this->oldUser();
+        $both = $this->oldUser();
+        $mailOnly = $this->oldUser();
+        $pendingBoth = $this->oldUser();
+        $this->oldUser(['status' => UserStatus::Blocked]);
+        User::factory()->create(['status' => UserStatus::Active, 'created_at' => now()->subMonths(3)]);
+
+        $log = fn (User $user, PrivacyNoticeStatus $status, array $channels, ?\DateTimeInterface $sentAt = null, ?string $attempt = null) => GdprPrivacyNoticeLog::query()->create([
+            'user_id' => $user->id, 'attempt_id' => $attempt ?? (string) Str::uuid(), 'status' => $status,
+            'channels' => $channels, 'is_test' => false, 'sent_at' => $sentAt, 'snapshot' => [],
+        ]);
+        $log($both, PrivacyNoticeStatus::Sent, ['mail', 'database'], now()->subMonths(2));
+        $log($mailOnly, PrivacyNoticeStatus::Sent, ['mail'], now()->subMonths(2));
+        $log($pendingBoth, PrivacyNoticeStatus::Queued, ['mail', 'database']);
+
+        $repository = app(GdprPrivacyNoticeRepositoryInterface::class);
+        $service = app(GdprAnnualNoticeService::class);
+
+        // 발송 판정 그대로 — 후보마다 발송할 채널이 남았는지.
+        $expected = [];
+        foreach ($repository->candidates() as $candidate) {
+            if ($repository->dueChannels($candidate->id, ['mail', 'database']) !== []) {
+                $expected[] = $candidate->id;
+            }
+        }
+        sort($expected);
+
+        $actual = $repository->dueQuery(['mail', 'database'])->pluck('id')->sort()->values()->all();
+        $this->assertSame($expected, $actual, '관리자 화면 모집단 = 발송 판정');
+        $this->assertContains($never->id, $actual);
+        $this->assertContains($mailOnly->id, $actual, '사이트 알림 몫이 남았다');
+        $this->assertNotContains($both->id, $actual);
+        $this->assertNotContains($pendingBoth->id, $actual, '결과가 나지 않은 접수가 있으면 대상이 아니다');
+        $this->assertSame(count($expected), $service->dueCount(), '꺼져 있어도 건수를 센다');
+        $this->assertSame([], $repository->dueQuery([])->pluck('id')->all(), '채널이 없으면 아무도 대상이 아니다');
+
+        $settingsOnly = $this->adminWith(['sirsoft-gdpr.privacy.view']);
+        $this->actingAs($settingsOnly)->getJson('/api/plugins/sirsoft-gdpr/admin/annual-notice/preview')
+            ->assertOk()
+            ->assertJsonPath('data.enabled', false)
+            ->assertJsonPath('data.count', count($expected))
+            ->assertJsonPath('data.can_view_targets', false);
+        $this->actingAs($settingsOnly)->getJson('/api/plugins/sirsoft-gdpr/admin/annual-notice/targets')->assertForbidden();
+
+        // 회원 조회를 본인 범위로 위임받은 관리자 — 권한은 있지만 명단은 전체 회원이라 열지 않는다.
+        $scoped = $this->adminWith(['sirsoft-gdpr.privacy.view', 'core.users.read'], ['core.users.read' => 'self']);
+        $this->actingAs($scoped)->getJson('/api/plugins/sirsoft-gdpr/admin/annual-notice/preview')
+            ->assertOk()
+            ->assertJsonPath('data.can_view_targets', false);
+        $this->actingAs($scoped)->getJson('/api/plugins/sirsoft-gdpr/admin/annual-notice/targets')->assertForbidden();
+
+        $viewer = $this->adminWith(['sirsoft-gdpr.privacy.view', 'core.users.read']);
+        $list = $this->actingAs($viewer)->getJson('/api/plugins/sirsoft-gdpr/admin/annual-notice/targets?per_page=100')->assertOk();
+        $this->assertSame($expected, collect($list->json('data.data'))->pluck('id')->sort()->values()->all());
+        $this->assertSame(['title', 'subtitle', 'date'], array_keys($list->json('data.columns')));
     }
 
     /**

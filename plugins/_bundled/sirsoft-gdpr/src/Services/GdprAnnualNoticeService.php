@@ -7,6 +7,7 @@ use App\Enums\UserStatus;
 use App\Extension\HookManager;
 use App\Models\User;
 use App\Notifications\BaseNotification;
+use App\Privacy\PrivacyRetentionTarget;
 use App\Services\NotificationChannelService;
 use App\Services\NotificationTemplateService;
 use App\Services\PluginSettingsService;
@@ -54,6 +55,74 @@ class GdprAnnualNoticeService
     }
 
     /**
+     * 설정된 발송 채널(메일·사이트 알림 중 켜진 것)을 반환합니다.
+     *
+     * @return array<int, string> 채널 목록
+     */
+    public function configuredChannels(): array
+    {
+        return array_values(array_intersect(['mail', 'database'], (array) $this->settings->get('sirsoft-gdpr', 'annual_notice.channels', ['mail', 'database'])));
+    }
+
+    /**
+     * 연간 통지가 켜져 있는지 반환합니다.
+     *
+     * @return bool 활성 여부
+     */
+    public function isEnabled(): bool
+    {
+        return (bool) $this->settings->get('sirsoft-gdpr', 'annual_notice.enabled', false);
+    }
+
+    /**
+     * 이번 주기 통지 대상 회원 수를 반환합니다 (데이터를 바꾸지 않음).
+     *
+     * **꺼져 있어도 셉니다** — 켜기 전에 규모를 확인하는 자리다. 한 번 실행에 보내는 수는 발송
+     * 상한(`batch_size`)으로 잘리므로 이 숫자가 한 번에 다 나가지는 않는다.
+     *
+     * @return int 대상 회원 수
+     */
+    public function dueCount(): int
+    {
+        return $this->notices->dueCount($this->configuredChannels());
+    }
+
+    /**
+     * 이번 주기 통지 대상 명단의 한 페이지를 반환합니다 (데이터를 바꾸지 않음).
+     *
+     * 회원 ID 순 — 발송 루프(`candidates()` 의 ID 순)와 같은 방향이라 먼저 보이는 회원부터 나간다.
+     *
+     * @param  int  $page  페이지 번호 (1부터)
+     * @param  int  $perPage  페이지 크기
+     * @return LengthAwarePaginator<int, PrivacyRetentionTarget> 대상 행 페이지
+     */
+    public function dueTargets(int $page, int $perPage): LengthAwarePaginator
+    {
+        return $this->notices->duePage($this->configuredChannels(), $page, $perPage)
+            ->through(fn (User $user) => new PrivacyRetentionTarget(
+                id: $user->id,
+                title: (string) $user->name,
+                subtitle: $user->email,
+                date: $user->created_at,
+                url: '/admin/users/'.$user->uuid,
+            ));
+    }
+
+    /**
+     * 통지 대상 명단의 열 라벨을 반환합니다.
+     *
+     * @return array<string, string> 열 이름 => 라벨
+     */
+    public function targetColumns(): array
+    {
+        return [
+            'title' => __('sirsoft-gdpr::messages.annual_notice.target_columns.name'),
+            'subtitle' => __('sirsoft-gdpr::messages.annual_notice.target_columns.email'),
+            'date' => __('sirsoft-gdpr::messages.annual_notice.target_columns.joined_at'),
+        ];
+    }
+
+    /**
      * 자신의 시험 발송은 가입일·정기 실행 토글과 독립이며 정기 발송일을 바꾸지 않습니다.
      *
      * @param  User  $user  수신 회원
@@ -82,7 +151,7 @@ class GdprAnnualNoticeService
                 return null;
             }
 
-            $channels = array_values(array_intersect(['mail', 'database'], (array) $this->settings->get('sirsoft-gdpr', 'annual_notice.channels', ['mail', 'database'])));
+            $channels = $this->configuredChannels();
             $channels = $test ? $channels : $this->notices->dueChannels($userId, $channels);
             if ($channels === []) {
                 return null;

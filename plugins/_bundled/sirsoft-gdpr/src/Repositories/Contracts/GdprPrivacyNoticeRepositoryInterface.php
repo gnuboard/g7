@@ -4,6 +4,7 @@ namespace Plugins\Sirsoft\Gdpr\Repositories\Contracts;
 
 use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\LazyCollection;
 use Plugins\Sirsoft\Gdpr\Models\GdprPrivacyNoticeLog;
 
@@ -16,6 +17,35 @@ interface GdprPrivacyNoticeRepositoryInterface
      * @return LazyCollection 처리 결과
      */
     public function candidates(): LazyCollection;
+
+    /**
+     * 이번 주기에 통지를 받을 회원 쿼리 — 후보 조건에 더해 설정 채널 중 하나라도 발송할 몫이 남은 회원.
+     *
+     * `candidates()` + 회원별 `dueChannels()` 판정을 한 쿼리로 옮긴 것이다. 관리자 화면의 대상 건수와
+     * 명단이 이 쿼리를 쓰므로, 발송 판정과 어긋나면 화면 숫자가 실제 발송 대상과 달라진다.
+     *
+     * @param  array<int, string>  $channels  설정된 발송 채널
+     * @return Builder<User> 대상 회원 쿼리
+     */
+    public function dueQuery(array $channels): Builder;
+
+    /**
+     * 이번 주기 통지 대상 회원 수를 셉니다 ({@see dueQuery()} 와 같은 모집단).
+     *
+     * @param  array<int, string>  $channels  설정된 발송 채널
+     * @return int 대상 회원 수
+     */
+    public function dueCount(array $channels): int;
+
+    /**
+     * 이번 주기 통지 대상 회원을 ID 순으로 한 페이지 조회합니다 ({@see dueQuery()} 와 같은 모집단).
+     *
+     * @param  array<int, string>  $channels  설정된 발송 채널
+     * @param  int  $page  페이지 번호 (1부터)
+     * @param  int  $perPage  페이지 크기
+     * @return LengthAwarePaginator<int, User> 대상 회원 페이지 (id·uuid·name·email·created_at)
+     */
+    public function duePage(array $channels, int $page, int $perPage): LengthAwarePaginator;
 
     /**
      * 통지 접수 중인 회원 행을 잠급니다.

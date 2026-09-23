@@ -3,10 +3,30 @@
  * @scenario flow=browser
  * @effects settings_validated, self_test_only, history_paginated
  */
+import { execSync } from 'node:child_process';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { test, expect, authenticatePage } from '../../fixtures/gdpr-auth';
 import type { Page } from '@playwright/test';
 
 test.describe.configure({ mode: 'serial' });
+
+/** 코어 루트 — 시드 커맨드(artisan)는 코어에 있다. */
+const CORE_ROOT = process.env.G7_ROOT || resolve(dirname(fileURLToPath(import.meta.url)), '../../../../../../../');
+
+/**
+ * 실측 시드 커맨드를 실행한다(3중 가드 — CLI · G7_PLAYWRIGHT_BYPASS · 시드 전용 표지).
+ *
+ * @param command artisan 커맨드와 인자
+ * @returns 표준 출력
+ */
+function artisanSeed(command: string): string {
+  return execSync(`php artisan ${command}`, {
+    cwd: CORE_ROOT,
+    encoding: 'utf-8',
+    env: { ...process.env, G7_PLAYWRIGHT_BYPASS: '1' },
+  });
+}
 
 async function settingsApi(page: Page, annual?: unknown) {
     return page.evaluate(async (value) => {
@@ -119,4 +139,32 @@ test('알림 템플릿 카드가 이 화면에서 자기 정의를 보여 준다
     expect((await preview).status()).toBe(200);
     // 저장 경로도 살아 있어야 한다 — 실제 저장은 하지 않고 버튼이 열려 있는지만 본다.
     await expect(modal.getByRole('button', { name: '저장' })).toBeEnabled();
+});
+
+// @scenario flow=scheduled
+// @effects annual_notice_targets_match_the_dispatch_decision
+test('이번 주기 대상 회원 수가 보이고 「대상 보기」 창이 그 회원을 보인다', async ({ page, privacyManageToken }) => {
+  // 가입 1년이 지난 활동 회원 1명 — 통지 이력이 없으니 이번 주기 대상이다.
+  test.setTimeout(90_000); // artisan 시드 + reload(networkidle) + 창 열기·목록 대기 합산 — 기본 30s 부족(실측 타임아웃 1회)
+  artisanSeed('playwright:seed-dormant --stage=convertible --count=1');
+
+  try {
+    await authenticatePage(page, privacyManageToken);
+    await page.goto('/admin/plugins/sirsoft-gdpr/settings');
+    await page.waitForLoadState('networkidle', { timeout: 30_000 });
+
+    const badge = page.locator('#annual_notice_targets .badge');
+    await expect(badge).toBeVisible({ timeout: 20_000 });
+    await expect(badge).not.toContainText(/대상 0명|: 0$/);
+
+    await page.locator('#view_annual_notice_targets').click();
+    const rows = page.locator('#privacy_targets_list tbody tr');
+    await expect(rows.first()).toBeVisible({ timeout: 20_000 });
+    await expect(rows.first().locator('a').first()).toHaveAttribute('href', /^\/admin\/users\//);
+
+    await page.locator('#privacy_targets_footer button').click();
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+  } finally {
+    artisanSeed('playwright:seed-dormant --purge-users');
+  }
 });

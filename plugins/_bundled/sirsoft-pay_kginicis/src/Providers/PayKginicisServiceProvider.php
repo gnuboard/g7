@@ -6,10 +6,12 @@ namespace Plugins\Sirsoft\PayKginicis\Providers;
 
 use App\Extension\BasePluginServiceProvider;
 use Illuminate\Cookie\Middleware\EncryptCookies;
-use Plugins\Sirsoft\PayKginicis\Repositories\CbtReconciliationRepository;
-use Plugins\Sirsoft\PayKginicis\Repositories\CbtReconciliationRepositoryInterface;
 use Plugins\Sirsoft\PayKginicis\Repositories\CbtCvsOperationsRepository;
 use Plugins\Sirsoft\PayKginicis\Repositories\CbtCvsOperationsRepositoryInterface;
+use Plugins\Sirsoft\PayKginicis\Repositories\CbtReconciliationRepository;
+use Plugins\Sirsoft\PayKginicis\Repositories\CbtReconciliationRepositoryInterface;
+use Plugins\Sirsoft\PayKginicis\Repositories\EscrowDeliveryRepository;
+use Plugins\Sirsoft\PayKginicis\Repositories\EscrowDeliveryRepositoryInterface;
 
 class PayKginicisServiceProvider extends BasePluginServiceProvider
 {
@@ -23,6 +25,7 @@ class PayKginicisServiceProvider extends BasePluginServiceProvider
     protected array $repositories = [
         CbtReconciliationRepositoryInterface::class => CbtReconciliationRepository::class,
         CbtCvsOperationsRepositoryInterface::class => CbtCvsOperationsRepository::class,
+        EscrowDeliveryRepositoryInterface::class => EscrowDeliveryRepository::class,
     ];
 
     /**

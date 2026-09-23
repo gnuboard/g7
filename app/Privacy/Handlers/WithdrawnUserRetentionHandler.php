@@ -6,6 +6,8 @@ use App\Enums\UserStatus;
 use App\Extension\HookManager;
 use App\Models\User;
 use App\Privacy\Contracts\PrivacyRetentionHandlerInterface;
+use App\Privacy\PrivacyRetentionTarget;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Log;
 
@@ -113,6 +115,44 @@ class WithdrawnUserRetentionHandler implements PrivacyRetentionHandlerInterface
     public function preview(): int
     {
         return $this->targetQuery()->count();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function targets(int $page, int $perPage): LengthAwarePaginator
+    {
+        return $this->targetQuery()
+            ->orderBy('withdrawn_at')
+            ->orderBy('id')
+            ->paginate($perPage, ['id', 'uuid', 'name', 'email', 'withdrawn_at'], 'page', $page)
+            ->through(fn (User $user) => new PrivacyRetentionTarget(
+                id: $user->id,
+                title: (string) $user->name,
+                subtitle: $user->email,
+                date: $user->withdrawn_at,
+                url: '/admin/users/'.$user->uuid,
+            ));
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function targetColumns(): array
+    {
+        return [
+            'title' => __('privacy.targets.columns.name'),
+            'subtitle' => __('privacy.targets.columns.email'),
+            'date' => __('privacy.targets.columns.withdrawn_at'),
+        ];
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function targetPermissions(): array
+    {
+        return ['core.settings.read', 'core.users.read'];
     }
 
     /**

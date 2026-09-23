@@ -5,11 +5,11 @@
 ## 발행 훅
 
 <!-- @generated:hooks-published START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-발행 훅 518종 / 호출 지점 560곳. 이 중 516종은 `getHooks()` 선언에 없어 소스에서 자동 감지한 것입니다 — 선언에 추가하면 유형과 설명이 함께 실립니다. 훅 이름이 상수·변수로 조립된 호출이 5곳 있어 호출 위치가 표에 다 실리지 않을 수 있습니다.
+발행 훅 521종 / 호출 지점 563곳. 이 중 519종은 `getHooks()` 선언에 없어 소스에서 자동 감지한 것입니다 — 선언에 추가하면 유형과 설명이 함께 실립니다. 훅 이름이 상수·변수로 조립된 호출이 5곳 있어 호출 위치가 표에 다 실리지 않을 수 있습니다.
 
 | 훅 이름 | 유형 | 설명 | 발행 위치 |
 |---|---|---|---|
-| `core.module_settings.after_save` | action | — | `src/Http/Controllers/Admin/EcommerceSettingsController.php:188` 외 2곳 |
+| `core.module_settings.after_save` | action | — | `src/Http/Controllers/Admin/EcommerceSettingsController.php:190` 외 2곳 |
 | `sirsoft-ecommerce.adjustment.filter_restore_promotions` | filter | — | `src/Services/OrderAdjustmentService.php:375` |
 | `sirsoft-ecommerce.admin.user_currency.changed` | action | — | `src/Services/UserCurrencyService.php:72` |
 | `sirsoft-ecommerce.admin.user_shipping_country.changed` | action | — | `src/Services/UserShippingCountryService.php:74` |
@@ -227,7 +227,7 @@
 | `sirsoft-ecommerce.mileage.notify_expiring` | action | — | `src/Console/Commands/NotifyExpiringMileageCommand.php:88` |
 | `sirsoft-ecommerce.mileage.restore` | action | — | `src/Services/OrderCancellationService.php:1105` |
 | `sirsoft-ecommerce.mileage.use` | action | — | `src/Services/OrderProcessingService.php:2020` |
-| `sirsoft-ecommerce.notification.channels` | filter | — | `src/Http/Controllers/Admin/EcommerceSettingsController.php:538` |
+| `sirsoft-ecommerce.notification.channels` | filter | — | `src/Http/Controllers/Admin/EcommerceSettingsController.php:540` |
 | `sirsoft-ecommerce.option.after_bulk_update` | action | — | `src/Services/ProductOptionService.php:297` |
 | `sirsoft-ecommerce.option.before_bulk_update` | action | — | `src/Services/ProductOptionService.php:197` |
 | `sirsoft-ecommerce.option.bulk_update_validation_rules` | filter | — | `src/Http/Requests/Admin/BulkUpdateOptionsRequest.php:72` |
@@ -235,6 +235,7 @@
 | `sirsoft-ecommerce.order-option.after_confirm` | action | — | `src/Services/OrderOptionService.php:258` 외 1곳 |
 | `sirsoft-ecommerce.order-option.before_confirm` | action | — | `src/Services/OrderService.php:786` |
 | `sirsoft-ecommerce.order.after_admin_notify` | action | — | `src/Services/OrderProcessingService.php:240` 외 2곳 |
+| `sirsoft-ecommerce.order.after_anonymize` | action | — | `src/Services/OrderPrivacyRetentionService.php:85` |
 | `sirsoft-ecommerce.order.after_bulk_shipping_update` | action | — | `src/Services/OrderService.php:577` |
 | `sirsoft-ecommerce.order.after_bulk_status_update` | action | — | `src/Services/OrderService.php:542` |
 | `sirsoft-ecommerce.order.after_bulk_update` | action | — | `src/Services/OrderService.php:466` |
@@ -243,6 +244,7 @@
 | `sirsoft-ecommerce.order.after_delete` | action | — | `src/Services/OrderService.php:376` |
 | `sirsoft-ecommerce.order.after_deposit_recorded` | action | — | `src/Services/OrderProcessingService.php:1878` |
 | `sirsoft-ecommerce.order.after_payment_complete` | action | — | `src/Services/OrderProcessingService.php:313` 외 1곳 |
+| `sirsoft-ecommerce.order.after_prune` | action | — | `src/Privacy/OrderRetentionHandler.php:227` |
 | `sirsoft-ecommerce.order.after_purchase_confirmed` | action | — | `src/Services/OrderOptionService.php:776` 외 1곳 |
 | `sirsoft-ecommerce.order.after_read` | action | — | `src/Services/OrderService.php:136` 외 1곳 |
 | `sirsoft-ecommerce.order.after_reset_guest_password` | action | — | `src/Services/OrderService.php:859` |
@@ -257,6 +259,7 @@
 | `sirsoft-ecommerce.order.before_create` | action | — | `src/Services/OrderProcessingService.php:112` |
 | `sirsoft-ecommerce.order.before_delete` | action | — | `src/Services/OrderService.php:362` |
 | `sirsoft-ecommerce.order.before_payment_complete` | action | — | `src/Services/OrderProcessingService.php:306` 외 1곳 |
+| `sirsoft-ecommerce.order.before_prune` | action | — | `src/Privacy/OrderRetentionHandler.php:203` |
 | `sirsoft-ecommerce.order.before_reset_guest_password` | action | — | `src/Services/OrderService.php:853` |
 | `sirsoft-ecommerce.order.before_update` | action | — | `src/Services/OrderService.php:173` |
 | `sirsoft-ecommerce.order.before_update_shipping_address` | action | — | `src/Services/OrderService.php:687` |
@@ -337,10 +340,10 @@
 | `sirsoft-ecommerce.product-notice-template.filter_show_result` | filter | — | `src/Services/ProductNoticeTemplateService.php:85` |
 | `sirsoft-ecommerce.product-notice-template.filter_update_data` | filter | — | `src/Services/ProductNoticeTemplateService.php:149` |
 | `sirsoft-ecommerce.product-notice-template.update_validation_rules` | filter | — | `src/Http/Requests/Admin/UpdateProductNoticeTemplateRequest.php:43` |
-| `sirsoft-ecommerce.product-review.after_bulk_delete` | action | — | `src/Services/ProductReviewService.php:310` |
+| `sirsoft-ecommerce.product-review.after_bulk_delete` | action | — | `src/Services/ProductReviewService.php:340` |
 | `sirsoft-ecommerce.product-review.after_create` | action | — | `src/Services/ProductReviewService.php:165` |
 | `sirsoft-ecommerce.product-review.after_delete` | action | — | `src/Services/ProductReviewService.php:253` |
-| `sirsoft-ecommerce.product-review.before_bulk_delete` | action | — | `src/Services/ProductReviewService.php:288` |
+| `sirsoft-ecommerce.product-review.before_bulk_delete` | action | — | `src/Services/ProductReviewService.php:318` |
 | `sirsoft-ecommerce.product-review.before_create` | action | — | `src/Services/ProductReviewService.php:146` |
 | `sirsoft-ecommerce.product-review.before_delete` | action | — | `src/Services/ProductReviewService.php:234` |
 | `sirsoft-ecommerce.product.after_bulk_price_update` | action | — | `src/Services/ProductService.php:573` |
@@ -422,7 +425,7 @@
 | `sirsoft-ecommerce.search_preset.list_validation_rules` | filter | — | `src/Http/Requests/Admin/SearchPresetListRequest.php:32` |
 | `sirsoft-ecommerce.sequence.after_generate` | action | — | `src/Services/SequenceService.php:57` 외 1곳 |
 | `sirsoft-ecommerce.sequence.before_generate` | action | — | `src/Services/SequenceService.php:44` |
-| `sirsoft-ecommerce.settings.after_save` | action | — | `src/Http/Controllers/Admin/EcommerceSettingsController.php:182` 외 1곳 |
+| `sirsoft-ecommerce.settings.after_save` | action | — | `src/Http/Controllers/Admin/EcommerceSettingsController.php:184` 외 1곳 |
 | `sirsoft-ecommerce.settings.filter_available_payment_methods` | filter | — | `src/Services/EcommerceSettingsService.php:851` |
 | `sirsoft-ecommerce.shipping.calculate_fee` | filter | — | `src/Services/OrderCalculationService.php:2127` |
 | `sirsoft-ecommerce.shipping_carrier.after_create` | action | — | `src/Services/ShippingCarrierService.php:101` |
@@ -554,6 +557,12 @@ FormRequest 쪽 `{동작}_validation_rules`(filter). `brand.*` 19종을 한 번 
 
 훅 이름이 상수·변수로 조립되는 호출이 5곳 있어 표에 위치가 다 실리지 않습니다. 그 자리를 정확히
 알아야 하면 소스에서 `HookManager::` 호출부를 직접 확인합니다.
+
+`sirsoft-ecommerce.order.before_prune`(보존일) / `.after_prune`(보존일, 건수)는 종결 주문 개인정보
+보유기간 핸들러(이슈 #636)가 코어 prune 훅 규약(7.0.7)에 따라 발행합니다. **`--dry-run` 에서는
+발행하지 않습니다.** 주문 단위 `order.before_delete`/`after_delete` 는 발화하지 않습니다 — 그 훅들은
+관리자 삭제(소프트 삭제·스코프 판정) 흐름의 계약이고, 보유기간 삭제는 참조 행까지 영구 삭제하는
+별개의 시스템 처리입니다. 주문 단위로 반응해야 하는 확장은 prune 훅 전후로 자기 자료를 정리합니다.
 <!-- @intent END -->
 
 ## 구독 훅
@@ -570,6 +579,8 @@ FormRequest 쪽 `{동작}_validation_rules`(filter). `brand.*` 19종을 한 번 
 | `core.frontend.filter_app_config` | filter | `InjectAppConfigDeviceListener` | `injectDeviceFlags` | 20 |
 | `core.module_settings.after_save` | action (미선언) | `SeoSettingsCacheListener` | `onModuleSettingsSave` | 20 |
 | `core.notification.filter_default_definitions` | filter | `EcommerceNotificationDataListener` | `contributeDefaultDefinitions` | 20 |
+| `core.privacy.notice_sections` | filter | `PrivacyRetentionListener` | `addOrderNoticeSection` | 20 |
+| `core.privacy.retention_handlers` | filter | `PrivacyRetentionListener` | `addOrderHandler` | 20 |
 | `core.search.build_response` | filter | `SearchProductsListener` | `buildProductsResponse` | 20 |
 | `core.search.index_validation_rules` | filter | `SearchProductsListener` | `addValidationRules` | 20 |
 | `core.search.results` | filter | `SearchProductsListener` | `searchProducts` | 20 |
@@ -752,6 +763,7 @@ FormRequest 쪽 `{동작}_validation_rules`(filter). `brand.*` 19종을 한 번 
 | `MileageTransactionListener` | 5개 | 명시 등록 | ✅ | `src/Listeners/MileageTransactionListener.php` |
 | `OrderActivityLogListener` | 21개 | 명시 등록 | ✅ | `src/Listeners/OrderActivityLogListener.php` |
 | `OrderStatusNotificationListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/OrderStatusNotificationListener.php` |
+| `PrivacyRetentionListener` | 2개 | 명시 등록 | ✅ | `src/Listeners/PrivacyRetentionListener.php` |
 | `ProductActivityLogListener` | 7개 | 명시 등록 | ✅ | `src/Listeners/ProductActivityLogListener.php` |
 | `ProductInquiryBoardListener` | 5개 | 명시 등록 | ✅ | `src/Listeners/ProductInquiryBoardListener.php` |
 | `PurgeCashReceiptIdentifierListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/PurgeCashReceiptIdentifierListener.php` |

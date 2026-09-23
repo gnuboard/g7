@@ -3,12 +3,17 @@
  * @scenario flow=layout
  * @effects settings_validated, self_test_only, history_paginated
  */
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import React from 'react';
 import { describe, expect, it } from 'vitest';
+import { actionsOf, callbacksOf } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 import { createLayoutTest, screen } from '@core/template-engine/__tests__/utils/layoutTestUtils';
 import { ComponentRegistry } from '@core/template-engine/ComponentRegistry';
 import settings from '../../../layouts/admin/plugin_settings.json';
 import history from '../../../layouts/admin/gdpr_notice_log.json';
+import targetsModal from '../../../layouts/admin/partials/plugin_settings/_modal_privacy_targets.json';
 import { findById, type AnyNode } from './helpers';
 import ko from '../../../lang/ko.json';
 import en from '../../../lang/en.json';
@@ -105,7 +110,7 @@ describe('개인정보 연간 통지', () => {
     // @scenario flow=layout
     // @effects settings_validated, self_test_only, history_paginated
     it('모든 통지 화면 문구에 한국어와 영어가 있다', () => {
-        const keys = [...JSON.stringify([settings, history]).matchAll(/sirsoft-gdpr\.annual_notice\.([a-z_]+)/g)].map(match => match[1]);
+        const keys = [...JSON.stringify([settings, history]).matchAll(/sirsoft-gdpr.annual_notice.([a-z_]+)/g)].map(match => match[1]);
         for (const key of keys) {
             expect((ko.annual_notice as Record<string, string>)[key], key).toBeTruthy();
             expect((en.annual_notice as Record<string, string>)[key], key).toBeTruthy();
@@ -134,4 +139,179 @@ it('이력 API 응답의 행과 서버 페이지 수를 실제 렌더러에 전�
         helper.cleanup();
         target.registry = original;
     }
+});
+
+/**
+ * 레이아웃 트리에서 조건을 만족하는 노드를 조상 경로와 함께 모두 모은다.
+ *
+ * @param node 탐색 시작 노드
+ * @param predicate 노드 판정 함수
+ * @param ancestors 지금까지의 조상 노드
+ * @returns [노드, 조상 목록] 쌍 목록
+ */
+function collectWithAncestors(node: any, predicate: (n: any) => boolean, ancestors: any[] = []): Array<[any, any[]]> {
+    if (!node || typeof node !== 'object') return [];
+    const found: Array<[any, any[]]> = predicate(node) ? [[node, ancestors]] : [];
+    const children = Array.isArray(node) ? node : [...(node.components ?? []), ...(node.children ?? [])];
+    for (const child of children) {
+        found.push(...collectWithAncestors(child, predicate, Array.isArray(node) ? ancestors : [...ancestors, node]));
+    }
+
+    return found;
+}
+
+/**
+ * 점 경로로 중첩 객체 값을 읽는다.
+ *
+ * @param source 원본 객체
+ * @param dotted 점으로 이은 경로
+ * @returns 값 또는 undefined
+ */
+function readPath(source: any, dotted: string): any {
+    return dotted.split('.').reduce((acc, key) => (acc == null ? undefined : acc[key]), source);
+}
+
+/**
+ * plugin.json 을 가진 확장 루트를 위로 훑어 찾는다.
+ *
+ * @returns 확장 루트 절대경로
+ */
+function pluginRoot(): string {
+    let current = path.dirname(fileURLToPath(import.meta.url));
+
+    for (let depth = 0; depth < 10; depth++) {
+        if (fs.existsSync(path.join(current, 'plugin.json'))) {
+            return current;
+        }
+        current = path.dirname(current);
+    }
+
+    throw new Error('plugin.json 을 가진 루트를 찾지 못했습니다.');
+}
+
+/**
+ * 로케일별 다국어 묶음을 돌려준다.
+ *
+ * @param locale 로케일
+ * @returns 다국어 JSON
+ */
+function gdprLang(locale: string): any {
+    return locale === 'ko' ? ko : en;
+}
+
+const annualCard = findById(settings as AnyNode, 'card_annual_notice');
+
+describe('개인정보 조치 대상 — 건수 상시 노출 + 대상 목록 창 (#636 §1-E)', () => {
+    const viewButtons = collectWithAncestors(annualCard, (n) => /^view_.*targets$/.test(n.id ?? ''));
+
+    /**
+     * @scenario flow=scheduled
+     *
+     * @effects annual_notice_targets_match_the_dispatch_decision
+     */
+    it('「대상 보기」 버튼이 있고, 모두 권한·건수로 게이트되며 기능 토글 안에 갇히지 않는다', () => {
+        // 모집단은 레이아웃에서 파생한다 — 버튼이 하나도 없으면 이 단언 자체가 공허해진다.
+        expect(viewButtons.length).toBe(1);
+
+        for (const [button, ancestors] of viewButtons) {
+            expect(button.if, button.id).toContain('can_view_targets');
+            expect(button.if, button.id).toMatch(/> 0/);
+            // 켜기 전에 규모와 명단을 보는 자리다 — 조상에 기능 켜짐 조건이 걸리면 꺼진 상태에서 사라진다.
+            for (const ancestor of ancestors) {
+                expect(String(ancestor.if ?? ''), `${button.id} 조상 ${ancestor.id ?? ancestor.name}`).not.toMatch(/enabled/);
+            }
+        }
+    });
+
+    /**
+     * @scenario flow=scheduled
+     *
+     * @effects annual_notice_targets_match_the_dispatch_decision
+     */
+    it('버튼은 목록 상태를 첫 쪽으로 되돌리고 → 제목 → 명단 재조회 → 창 열기 순서로 동작한다', () => {
+        for (const [button] of viewButtons) {
+            const click = actionsOf(button).find((a: any) => a.type === 'click');
+            const steps = actionsOf(click).map((a: any) => a.handler);
+
+            expect(steps, button.id).toEqual(['setState', 'setState', 'refetchDataSource', 'openModal']);
+            expect(actionsOf(click)[0].params.privacyTargets, button.id).toContain('currentPage: 1');
+            expect(actionsOf(click)[0].params.privacyTargets, button.id).toContain('hasMore: true');
+            expect(actionsOf(click)[1].params['privacyTargets.title'], button.id).toMatch(/^\$t:/);
+            expect(actionsOf(click)[2].params.dataSourceId).toBe('privacyTargets');
+            expect(actionsOf(click)[3].target).toBe('privacy_targets_modal');
+        }
+    });
+
+    /**
+     * @scenario flow=scheduled
+     *
+     * @effects annual_notice_targets_match_the_dispatch_decision
+     */
+    it('명단 데이터소스는 스스로 조회하지 않고 한 쪽 20건을 받는다', () => {
+        const dataSource = (settings as any).data_sources.find((d: any) => d.id === 'privacyTargets');
+
+        expect(dataSource).toBeTruthy();
+        expect(dataSource.endpoint.startsWith('/api/plugins/sirsoft-gdpr/admin/annual-notice/targets')).toBe(true);
+        expect(dataSource.auto_fetch).toBe(false);
+        expect(dataSource.params.per_page).toBe(20);
+        expect(JSON.stringify(settings)).toContain('_modal_privacy_targets.json');
+    });
+
+    /**
+     * @scenario flow=scheduled
+     *
+     * @effects annual_notice_targets_match_the_dispatch_decision
+     */
+    it('창은 스크롤 끝에서 다음 쪽을 이어 붙이고, 마지막 쪽·진행 중에는 부르지 않는다', () => {
+        const [[list]] = collectWithAncestors(targetsModal, (n) => n.id === 'privacy_targets_list');
+        const scroll = actionsOf(list).find((a: any) => a.type === 'scroll');
+        const sw = actionsOf(scroll).find((a: any) => a.handler === 'switch');
+        const steps = actionsOf(sw.cases.true);
+        const api = steps.find((a: any) => a.handler === 'apiCall');
+
+        expect(sw.params.value).toContain('has_more_pages === true');
+        expect(sw.params.value).toContain('!_global.privacyTargets?.isLoadingMore');
+        expect(api.target.startsWith('/api/plugins/sirsoft-gdpr/admin/annual-notice/targets')).toBe(true);
+        expect(api.params.query.page).toContain('currentPage');
+        expect(callbacksOf(api, 'onSuccess')[0]).toMatchObject({ handler: 'appendDataSource', params: { dataSourceId: 'privacyTargets', dataPath: 'data.data' } });
+        expect(JSON.stringify(callbacksOf(api, 'onSuccess'))).toContain('has_more_pages');
+        // 실패해도 진행 중 표시를 끈다 — 남으면 다시는 다음 쪽을 부르지 않는다.
+        expect(JSON.stringify(callbacksOf(api, 'onError'))).toContain('privacyTargets.isLoadingMore');
+    });
+
+    /**
+     * @scenario flow=scheduled
+     *
+     * @effects annual_notice_targets_match_the_dispatch_decision
+     */
+    it('창은 명단 행을 반복하고 상세를 새 탭으로 열며, 비면 빈 상태를 보인다', () => {
+        const raw = JSON.stringify(targetsModal);
+        const [[row]] = collectWithAncestors(targetsModal, (n) => n.iteration?.source?.includes('privacyTargets?.data?.data'));
+        const [[empty]] = collectWithAncestors(targetsModal, (n) => n.id === 'privacy_targets_empty');
+
+        expect(row.iteration.item_var).toBe('target');
+        expect(raw).toContain('"target":"_blank"');
+        expect(empty.if).toContain('length === 0');
+    });
+
+    /**
+     * @scenario flow=scheduled
+     *
+     * @effects annual_notice_targets_match_the_dispatch_decision
+     */
+    it('버튼·창이 쓰는 대상 문구가 ko/en 모두에 있고 편집기 샘플이 명단 데이터소스를 가진다', () => {
+        const raw = JSON.stringify(annualCard) + JSON.stringify(targetsModal);
+        const keys = [...new Set([...raw.matchAll(/\$t:(sirsoft-gdpr\.annual_notice\.targets\.[a-z0-9_.]+)/g)].map((m) => m[1]))];
+
+        expect(keys.length).toBeGreaterThan(3);
+        for (const locale of ['ko', 'en']) {
+            const bundle = gdprLang(locale);
+            for (const key of keys) {
+                expect(typeof readPath(bundle, key.replace(/^sirsoft-gdpr\./, '')), `${locale}:${key}`).toBe('string');
+            }
+        }
+
+        const spec = fs.readFileSync(path.join(pluginRoot(), 'editor-spec.json'), 'utf-8');
+        expect(spec).toContain('"privacyTargets"');
+    });
 });

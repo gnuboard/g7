@@ -1195,8 +1195,23 @@ return [
         ],
     ],
 
+    // 개인정보 조치 대상 목록 조회
+    'privacy_targets' => [
+        'page' => [
+            'integer' => '페이지 번호는 숫자여야 합니다.',
+            'min' => '페이지 번호는 1 이상이어야 합니다.',
+        ],
+        'per_page' => [
+            'integer' => '페이지 크기는 숫자여야 합니다.',
+            'min' => '페이지 크기는 1 이상이어야 합니다.',
+            'max' => '페이지 크기는 최대 :max건입니다.',
+        ],
+    ],
+
     // 검증 속성명 (validation.attributes)
     'attributes' => [
+        'page' => '페이지 번호',
+        'per_page' => '페이지 크기',
         'ids' => 'ID 목록',
         'user_ids' => '사용자 ID 목록',
         'user_id' => '사용자 ID',

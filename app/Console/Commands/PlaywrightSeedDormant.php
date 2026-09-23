@@ -28,6 +28,7 @@ use Illuminate\Support\Str;
  *
  * 호출 예시 (PowerShell):
  *   $env:G7_PLAYWRIGHT_BYPASS='1'; php artisan playwright:seed-dormant --stage=dormant
+ *   $env:G7_PLAYWRIGHT_BYPASS='1'; php artisan playwright:seed-dormant --stage=convertible --count=25
  *   $env:G7_PLAYWRIGHT_BYPASS='1'; php artisan playwright:seed-dormant --purge-users
  */
 class PlaywrightSeedDormant extends Command
@@ -40,6 +41,7 @@ class PlaywrightSeedDormant extends Command
     protected $signature = 'playwright:seed-dormant
         {--stage=dormant : 만들 상태 (pre_notice|convertible|dormant)}
         {--password= : 생성 계정의 비밀번호 (기본값 Passw0rd!dorm)}
+        {--count=1 : 같은 단계 계정을 몇 개 만들지 (대상 목록 창의 무한 스크롤 실측용, 최대 200)}
         {--purge-users : 이 커맨드가 만든 테스트 계정을 전부 제거 (실측 종료 직후 호출)}';
 
     /**
@@ -94,10 +96,13 @@ class PlaywrightSeedDormant extends Command
             return self::FAILURE;
         }
 
-        $user = $this->createUserForStage($stage);
+        // 대상 목록 창은 한 쪽 20건이라, 다음 쪽 이어 붙이기를 재려면 한 쪽을 넘는 대상이 필요하다.
+        $count = max(1, min(200, (int) $this->option('count')));
 
-        // 실측 스크립트가 파싱할 수 있도록 이메일·비밀번호를 그대로 출력한다.
-        $this->line($user->email);
+        // 실측 스크립트가 파싱할 수 있도록 이메일을 한 줄씩, 마지막에 비밀번호를 그대로 출력한다.
+        for ($i = 0; $i < $count; $i++) {
+            $this->line($this->createUserForStage($stage)->email);
+        }
         $this->line((string) ($this->option('password') ?: self::DEFAULT_PASSWORD));
 
         return self::SUCCESS;
@@ -150,7 +155,13 @@ class PlaywrightSeedDormant extends Command
             default => [],
         });
 
-        return User::query()->create($attributes);
+        // forceFill — `created_at` 은 대량 할당 대상이 아니라 create() 가 **조용히 버리고** 지금 시각을 넣는다.
+        // 그러면 「가입한 지 오래된 계정」이 방금 가입한 계정이 되어, 가입 경과를 보는 대상(연간 통지 등)에서
+        // 빠진다(#636 §1-E 실측으로 잡은 결함).
+        $user = new User;
+        $user->forceFill($attributes)->save();
+
+        return $user;
     }
 
     /**

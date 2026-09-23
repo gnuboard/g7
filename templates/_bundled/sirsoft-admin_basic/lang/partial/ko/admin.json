@@ -2139,6 +2139,25 @@
         "withdraw_days_hint": "휴면 전환일로부터 이 기간이 지나면 탈퇴 예정 안내를 보내고, 안내 기간이 지난 뒤 탈퇴 처리합니다. 기본 365일.",
         "withdraw_warning": "탈퇴 처리된 계정은 되돌릴 수 없습니다. 관리자 계정은 자동 탈퇴 대상에서 제외됩니다.",
         "restore_hint": "휴면 회원이 로그인하면 자동으로 해제되며, 별도의 신청 절차는 없습니다."
+      },
+      "targets": {
+        "view_withdrawn": "대상 보기",
+        "view_pre_notice": "안내 대상 보기",
+        "view_convert": "전환 대상 보기",
+        "view_withdraw_notice": "탈퇴 예고 대상 보기",
+        "view_withdraw": "탈퇴 대상 보기",
+        "title": {
+          "withdrawn": "탈퇴 회원 잔여정보 파기 대상",
+          "pre_notice": "휴면 사전 안내 대상",
+          "convert": "휴면 전환 대상",
+          "withdraw_notice": "휴면 탈퇴 예고 대상",
+          "withdraw": "휴면 자동 탈퇴 대상"
+        },
+        "hint": "건수와 명단은 저장된 설정 기준입니다. 기능이 꺼져 있어도 켜면 처리될 대상을 미리 보여 줍니다.",
+        "total": "총 {{count}}건",
+        "empty": "대상이 없습니다.",
+        "loading": "불러오는 중...",
+        "close": "닫기"
       }
     }
   },

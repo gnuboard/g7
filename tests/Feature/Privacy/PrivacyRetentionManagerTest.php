@@ -6,7 +6,10 @@ use App\Extension\HookManager;
 use App\Privacy\Contracts\PrivacyRetentionHandlerInterface;
 use App\Privacy\Handlers\WithdrawnUserRetentionHandler;
 use App\Privacy\PrivacyRetentionManager;
+use App\Privacy\PrivacyRetentionTarget;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Pagination\LengthAwarePaginator as Paginator;
 use Illuminate\Support\Facades\Log;
 use Tests\TestCase;
 
@@ -134,8 +137,11 @@ class PrivacyRetentionManagerTest extends TestCase
         $this->assertSame('disabled', $results['user-withdrawn']['status']);
         $this->assertSame(0, $results['user-withdrawn']['count']);
 
+        // 미리보기는 꺼져 있어도 건수를 센다(켜기 전에 규모를 본다, 2026-09-23 확정) —
+        // 「꺼짐」과 「0건」은 건수를 가리는 대신 enabled 로 구분한다.
         $preview = app(PrivacyRetentionManager::class)->preview();
-        $this->assertNull($preview['user-withdrawn'], '꺼진 핸들러의 미리보기는 건수가 아니라 null 이다');
+        $this->assertFalse($preview['user-withdrawn']['enabled'], '꺼진 핸들러는 enabled=false 로 보고된다');
+        $this->assertIsInt($preview['user-withdrawn']['count'], '꺼져 있어도 건수는 숫자로 센다');
     }
 
     /**
@@ -185,6 +191,99 @@ class PrivacyRetentionManagerTest extends TestCase
 
         $this->assertSame(['fake-domain'], array_keys($results));
     }
+
+    /**
+     * B8: 확장 핸들러의 식별자 조회가 던져도 수집이 죽지 않고 코어 파기는 계속된다 (S5 D36).
+     *
+     * 생성·활성 판독·라벨 조회만 가드하고 식별자를 맨몸으로 부르면 확장 하나의 `id()` 가
+     * 커맨드 전체를 죽여 **코어 회원 파기까지 멈춘다**. 가드를 걷으면 이 테스트가 예외로 red.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario toggle=off, row_age=beyond_retention, run_mode=real_run
+     *
+     * @effects retention_handlers_are_collected_from_core_and_extensions
+     */
+    public function test_handler_whose_id_throws_is_skipped_and_core_continues(): void
+    {
+        Log::shouldReceive('warning')
+            ->atLeast()->once()
+            ->withArgs(fn (string $message) => str_contains($message, '식별자 조회 실패'));
+
+        HookManager::addFilter(PrivacyRetentionManager::HANDLERS_FILTER, function (array $handlers) {
+            $handlers[] = IdThrowingRetentionHandler::class;
+            $handlers[] = FakeRetentionHandler::class;
+
+            return $handlers;
+        });
+
+        $results = app(PrivacyRetentionManager::class)->process(dryRun: true);
+
+        $this->assertSame(['user-withdrawn', 'fake-domain'], array_keys($results), '식별자를 못 읽은 핸들러만 빠지고 앞뒤 도메인은 모두 실행된다');
+    }
+
+    /**
+     * B9: 커맨드의 `--handler=`(빈 값)은 전 핸들러 실행이 아니라 실패다 (S5 D63).
+     *
+     * 확장 핸들러가 붙으면 빈 값의 해석이 곧 파기 범위다 — 한 도메인만 돌리려던 빈 변수 치환이
+     * 코어와 모든 확장의 파기로 번지면 안 된다. 시험 핸들러의 `process()` 가 불리지 않았음을
+     * 호출 기록으로 본다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario toggle=off, row_age=beyond_retention, run_mode=real_run
+     *
+     * @effects retention_handlers_are_collected_from_core_and_extensions
+     */
+    public function test_command_rejects_empty_handler_option_instead_of_running_all(): void
+    {
+        CountingRetentionHandler::$calls = 0;
+
+        HookManager::addFilter(PrivacyRetentionManager::HANDLERS_FILTER, function (array $handlers) {
+            $handlers[] = CountingRetentionHandler::class;
+
+            return $handlers;
+        });
+
+        $this->artisan('privacy:process-retention', ['--handler' => ''])
+            ->expectsOutputToContain('--handler 에 핸들러 식별자를 지정하세요')
+            ->assertExitCode(1);
+
+        $this->assertSame(0, CountingRetentionHandler::$calls, '빈 --handler 로는 어떤 핸들러도 실행되지 않는다');
+    }
+
+    /**
+     * B10: 커맨드가 확장 핸들러를 실행하고 도메인별 건수·실패를 종료 코드와 함께 보고한다 (S5 D40·D64).
+     *
+     * Manager 단위 테스트만 있고 커맨드를 실제로 도는 테스트가 없던 자리다. 한 도메인의 실패가
+     * 다른 도메인 보고를 지우지 않고, 실패가 있으면 종료 코드가 1 이다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario toggle=off, row_age=beyond_retention, run_mode=real_run
+     *
+     * @effects retention_handlers_are_collected_from_core_and_extensions, disabled_handler_is_reported_separately_from_zero_targets
+     */
+    public function test_command_reports_each_domain_and_fails_when_one_domain_fails(): void
+    {
+        HookManager::addFilter(PrivacyRetentionManager::HANDLERS_FILTER, function (array $handlers) {
+            $handlers[] = FakeRetentionHandler::class;
+            $handlers[] = ThrowingRetentionHandler::class;
+
+            return $handlers;
+        });
+
+        $this->artisan('privacy:process-retention')
+            // 한 줄은 기대 하나만 만족시킨다(Mockery) — 도메인 이름과 상태를 한 문자열로 본다.
+            ->expectsOutputToContain('): 꺼져 있어 실행하지 않았습니다')
+            ->expectsOutputToContain('fake-domain (시험 도메인): 7건 (anonymize)')
+            ->expectsOutputToContain('throwing-domain (터지는 도메인): 실패')
+            ->assertExitCode(1);
+
+        $this->artisan('privacy:process-retention', ['--handler' => 'fake-domain', '--dry-run' => true])
+            ->expectsOutputToContain('[DRY RUN] fake-domain (시험 도메인): 7건')
+            ->assertExitCode(0);
+    }
 }
 
 /**
@@ -222,6 +321,32 @@ class FakeRetentionHandler implements PrivacyRetentionHandlerInterface
     public function preview(): int
     {
         return 7;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function targets(int $page, int $perPage): LengthAwarePaginator
+    {
+        $rows = collect(range(1, 7))->map(fn (int $i) => new PrivacyRetentionTarget(id: $i, title: '대상 '.$i));
+
+        return new Paginator($rows->forPage($page, $perPage)->values(), 7, $perPage, $page);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function targetColumns(): array
+    {
+        return ['title' => '이름'];
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function targetPermissions(): array
+    {
+        return ['core.settings.read', 'core.users.read'];
     }
 
     /**
@@ -273,6 +398,30 @@ class ThrowingRetentionHandler implements PrivacyRetentionHandlerInterface
     /**
      * {@inheritDoc}
      */
+    public function targets(int $page, int $perPage): LengthAwarePaginator
+    {
+        throw new \RuntimeException('의도된 목록 실패');
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function targetColumns(): array
+    {
+        return [];
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function targetPermissions(): array
+    {
+        return ['core.settings.read'];
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     public function process(bool $dryRun): array
     {
         throw new \RuntimeException('의도된 실패');
@@ -292,5 +441,46 @@ class NotAHandler
     public function id(): string
     {
         return 'not-a-handler';
+    }
+}
+
+/**
+ * 시험용 핸들러 — 식별자 조회에서 예외를 던진다.
+ */
+class IdThrowingRetentionHandler extends FakeRetentionHandler
+{
+    /**
+     * {@inheritDoc}
+     */
+    public function id(): string
+    {
+        throw new \RuntimeException('식별자 조회 실패');
+    }
+}
+
+/**
+ * 시험용 핸들러 — 실행 호출 횟수를 센다.
+ */
+class CountingRetentionHandler extends FakeRetentionHandler
+{
+    /** 실행 호출 횟수 */
+    public static int $calls = 0;
+
+    /**
+     * {@inheritDoc}
+     */
+    public function id(): string
+    {
+        return 'counting-domain';
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function process(bool $dryRun): array
+    {
+        self::$calls++;
+
+        return parent::process($dryRun);
     }
 }

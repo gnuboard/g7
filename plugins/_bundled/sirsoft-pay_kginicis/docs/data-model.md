@@ -63,6 +63,8 @@ _Enum 이 없습니다._
 | `CbtCvsOperationsRepositoryInterface` | 인터페이스 | - |
 | `CbtReconciliationRepository` | 구현 | - |
 | `CbtReconciliationRepositoryInterface` | 인터페이스 | - |
+| `EscrowDeliveryRepository` | 구현 | - |
+| `EscrowDeliveryRepositoryInterface` | 인터페이스 | - |
 <!-- @generated:repositories END -->
 
 <!-- @intent START -->

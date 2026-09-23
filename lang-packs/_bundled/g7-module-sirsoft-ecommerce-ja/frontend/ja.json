@@ -441,7 +441,9 @@
       "wishlists": "お気に入り一覧",
       "carts": "カート一覧",
       "addresses": "会員配送先一覧",
-      "inquiries": "商品問い合わせ一覧"
+      "inquiries": "商品問い合わせ一覧",
+      "ecommercePrivacyRetentionPreview": "イーコマース個人情報保有期間対象件数",
+      "privacyTargets": "保有期間処理対象注文一覧"
     },
     "action": {
       "request_pg_payment": {

@@ -2139,6 +2139,25 @@
         "withdraw_warning": "退会処理されたアカウントは取り戻せません。管理者アカウントは自動退会対象から除外されます。",
         "restore_hint": "休眠会員がログインすると自動的に解除され、別途の申請手続きはありません。",
         "withdraw_stage_counts": "退会予告 {{notice}}名 · 退会対象 {{withdraw}}名"
+      },
+      "targets": {
+        "view_withdrawn": "対象を表示",
+        "view_pre_notice": "案内対象を表示",
+        "view_convert": "転換対象を表示",
+        "view_withdraw_notice": "退会予告対象を表示",
+        "view_withdraw": "退会対象を表示",
+        "title": {
+          "withdrawn": "退会会員残存情報破棄対象",
+          "pre_notice": "休眠事前案内対象",
+          "convert": "休眠転換対象",
+          "withdraw_notice": "休眠退会予告対象",
+          "withdraw": "休眠自動退会対象"
+        },
+        "hint": "件数と名簿は保存された設定基準です。機能がオフでも、オンにすれば処理される対象を事前に表示します。",
+        "total": "合計 {{count}}件",
+        "empty": "対象がありません。",
+        "loading": "読み込み中...",
+        "close": "閉じる"
       }
     }
   },

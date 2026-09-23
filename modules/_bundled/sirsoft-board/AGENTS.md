@@ -103,9 +103,9 @@
 <!-- @generated:extension-points-summary START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 확장점 | 수 | 상세 |
 |---|---|---|
-| 발행 훅 | 98개 | [발행 훅](docs/extension-points.md#발행-훅) |
-| 구독 훅 | 82개 | [구독 훅](docs/extension-points.md#구독-훅) |
-| 훅 리스너 | 18개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
+| 발행 훅 | 102개 | [발행 훅](docs/extension-points.md#발행-훅) |
+| 구독 훅 | 83개 | [구독 훅](docs/extension-points.md#구독-훅) |
+| 훅 리스너 | 19개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
 | 레이아웃 확장 | 7개 | [레이아웃 확장](docs/extension-points.md#레이아웃-확장) |
 | 미들웨어 | 0개 | [미들웨어](docs/extension-points.md#미들웨어) |
 | 브로드캐스트 채널 | 0개 | [브로드캐스트 채널](docs/extension-points.md#브로드캐스트-채널) |
@@ -138,6 +138,7 @@ CRUD 흐름 자체를 **자기 도메인으로 대체**하는 가장 무거운 �
 - [ ] `boards`/`board_posts`/`board_comments` 의 count 컬럼(`posts_count`/`comments_count`/`replies_count`/`attachments_count`)은 훅 리스너(`*CountSyncListener`)가 갱신 — Service 에서 직접 증감 금지
 - [ ] 게시판 삭제 시 `getDynamicPermissionIdentifiers()`/`getDynamicRoleIdentifiers()`/`getDynamicMenuSlugs()` 가 최신 상태를 반영하도록 동일 트랜잭션에서 정리 (module.php `uninstall()` 의 `chunkById` 패턴 참고 — OFFSET 순회로 삭제 금지)
 - [ ] 레이아웃·컴포넌트·`data_source` 를 건드렸다면 [`docs/editor-spec.md`](docs/editor-spec.md) 의 동반 의무 표를 따라 `editor-spec.json` 을 함께 갱신 — 샘플이 없는 `data_source` 는 편집기 캔버스에서만 빈 화면이 되고 실제 화면은 정상이라 오류도 경고도 남지 않는다. 반영은 `php artisan module:update sirsoft-board --force`
+- [ ] 개인정보 보유기간 핸들러(`src/Privacy/`)를 고칠 때는 건수(`preview()`)·대상 명단(`targets()`)·실행(`process()`)이 **같은 조건식**을 쓰는지, 명단 권한(`targetPermissions()` = 설정 읽기 + 게시판 관리 읽기)과 식별 최소 열(본문·첨부 제외)을 지키는지 확인 — 계약 전체는 [코어 개인정보 보유기간 처리 가이드](../../../docs/backend/privacy-retention.md)
 
 ## 6. 금지 패턴
 
@@ -157,10 +158,10 @@ CRUD 흐름 자체를 **자기 도메인으로 대체**하는 가장 무거운 �
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 181개 | `modules/_bundled/sirsoft-board/tests` |
-| Vitest | 47개 | `vitest.config.ts` |
-| Playwright | 32개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 52개 | `tests/scenarios` |
+| PHPUnit | 184개 | `modules/_bundled/sirsoft-board/tests` |
+| Vitest | 48개 | `vitest.config.ts` |
+| Playwright | 33개 | `tests/Playwright` |
+| 시나리오 매니페스트 | 53개 | `tests/scenarios` |
 
 기저 TestCase: `tests/ModuleTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

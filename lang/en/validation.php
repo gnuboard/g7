@@ -1202,8 +1202,23 @@ return [
         ],
     ],
 
+    // Privacy target list
+    'privacy_targets' => [
+        'page' => [
+            'integer' => 'The page number must be a number.',
+            'min' => 'The page number must be at least 1.',
+        ],
+        'per_page' => [
+            'integer' => 'The page size must be a number.',
+            'min' => 'The page size must be at least 1.',
+            'max' => 'The page size may not exceed :max.',
+        ],
+    ],
+
     // Validation attribute names (validation.attributes)
     'attributes' => [
+        'page' => 'page number',
+        'per_page' => 'page size',
         'ids' => 'ID list',
         'user_ids' => 'user ID list',
         'user_id' => 'user ID',

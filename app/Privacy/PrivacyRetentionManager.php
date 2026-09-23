@@ -2,7 +2,9 @@
 
 namespace App\Privacy;
 
+use App\Enums\PermissionType;
 use App\Extension\HookManager;
+use App\Models\User;
 use App\Privacy\Contracts\PrivacyRetentionHandlerInterface;
 use App\Privacy\Handlers\WithdrawnUserRetentionHandler;
 use Illuminate\Support\Facades\Log;
@@ -90,7 +92,11 @@ class PrivacyRetentionManager
                 continue;
             }
 
-            $id = $instance->id();
+            $id = $this->identify($instance);
+
+            if ($id === null) {
+                continue;
+            }
 
             if ($id === '' || isset($handlers[$id])) {
                 Log::warning('개인정보 보유기간 핸들러 식별자가 비었거나 중복되어 건너뜀', [
@@ -119,28 +125,25 @@ class PrivacyRetentionManager
     }
 
     /**
-     * 활성 핸들러의 대상 건수를 미리 봅니다.
+     * 모든 핸들러의 활성 여부와 대상 건수를 미리 봅니다.
      *
-     * 꺼진 핸들러는 건수 대신 `null` 로 담습니다 — "꺼져 있음" 과 "대상 0건" 은
-     * 운영자에게 전혀 다른 정보입니다.
+     * **꺼진 핸들러도 건수를 셉니다** — 운영자는 켜기 전에 규모를 확인해야 합니다(되돌릴 수
+     * 없는 파기다). "꺼져 있음" 과 "대상 0건" 은 여전히 다른 정보이므로 `enabled` 로 함께
+     * 알립니다. `count` 가 `null` 이면 그 핸들러의 미리보기가 실패한 것입니다(로그 참조).
      *
-     * @return array<string, int|null> 식별자 => 건수(꺼져 있으면 null)
+     * @return array<string, array{enabled: bool, count: int|null}> 식별자 => 활성 여부·건수
      */
     public function preview(): array
     {
         $result = [];
 
         foreach ($this->handlers() as $id => $handler) {
-            if (! $this->isEnabled($handler)) {
-                $result[$id] = null;
-
-                continue;
-            }
+            $enabled = $this->isEnabled($handler);
 
             try {
-                $result[$id] = $handler->preview();
+                $result[$id] = ['enabled' => $enabled, 'count' => $handler->preview()];
             } catch (Throwable $e) {
-                $result[$id] = null;
+                $result[$id] = ['enabled' => $enabled, 'count' => null];
                 Log::warning('개인정보 보유기간 미리보기 실패', [
                     'handler' => $id,
                     'error' => $e->getMessage(),
@@ -149,6 +152,70 @@ class PrivacyRetentionManager
         }
 
         return $result;
+    }
+
+    /**
+     * 관리자가 이 핸들러의 대상 목록을 볼 수 있는지 판정합니다.
+     *
+     * 핸들러가 선언한 권한(설정 읽기 + 도메인 읽기)을 **모두** 가져야 한다. 선언이 비었거나
+     * 선언 조회가 실패하면 거부한다 — 명단에는 개인정보가 그대로 나오므로 모르면 막는다.
+     *
+     * @param  PrivacyRetentionHandlerInterface  $handler  핸들러
+     * @param  User|null  $user  요청 관리자
+     * @return bool 열람 가능 여부
+     */
+    public function canViewTargets(PrivacyRetentionHandlerInterface $handler, ?User $user): bool
+    {
+        if ($user === null) {
+            return false;
+        }
+
+        try {
+            $permissions = array_values(array_filter(
+                $handler->targetPermissions(),
+                fn ($permission) => is_string($permission) && $permission !== '',
+            ));
+        } catch (Throwable $e) {
+            Log::warning('개인정보 보유기간 핸들러 목록 권한 조회 실패 — 거부', [
+                'handler' => $this->identify($handler) ?? get_class($handler),
+                'error' => $e->getMessage(),
+            ]);
+
+            return false;
+        }
+
+        return $this->canViewTargetList($permissions, $user);
+    }
+
+    /**
+     * 권한 목록으로 대상 명단 열람 가능 여부를 판정합니다 — 코어 휴면·확장 명단도 이 판정을 씁니다.
+     *
+     * 권한을 **모두** 가져야 하고, 각 권한의 적용 범위가 **전체**여야 한다. 회원·주문·게시판 목록은
+     * 범위(`self`·`role`)를 걸어 본인·같은 역할 것만 보이는데, 명단은 도메인 전체를 모은 것이라
+     * 범위를 걸 수 없다 — 범위가 좁은 관리자에게 열면 설정 화면을 거쳐 목록 화면보다 넓은 명단을
+     * 보게 된다(2026-09-23 확정 「전체 범위만 명단 허용」). 건수는 이 판정과 무관하게 보인다.
+     *
+     * @param  array<int, string>  $permissions  필요한 권한 식별자 목록
+     * @param  User|null  $user  요청 관리자
+     * @return bool 열람 가능 여부
+     */
+    public function canViewTargetList(array $permissions, ?User $user): bool
+    {
+        if ($user === null || $permissions === []) {
+            return false;
+        }
+
+        if (! $user->hasPermissions($permissions, true, PermissionType::Admin)) {
+            return false;
+        }
+
+        foreach ($permissions as $permission) {
+            if ($user->getEffectiveScopeForPermission($permission) !== null) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**
@@ -265,7 +332,7 @@ class PrivacyRetentionManager
             return $handler->isEnabled();
         } catch (Throwable $e) {
             Log::warning('개인정보 보유기간 핸들러 활성 판독 실패 — 꺼진 것으로 처리', [
-                'handler' => $handler->id(),
+                'handler' => $this->identify($handler) ?? get_class($handler),
                 'error' => $e->getMessage(),
             ]);
 
@@ -284,7 +351,32 @@ class PrivacyRetentionManager
         try {
             return $handler->label();
         } catch (Throwable) {
+            return $this->identify($handler) ?? get_class($handler);
+        }
+    }
+
+    /**
+     * 핸들러 식별자를 안전하게 조회합니다.
+     *
+     * 식별자 조회도 확장 코드다 — 생성·활성 판독·라벨 조회를 전부 가드해 두고 이것만
+     * 맨몸으로 부르면, 확장 핸들러 하나의 `id()` 가 던지는 순간 수집 자체가 죽어 **코어
+     * 회원 파기까지 멈춘다**(이 클래스 docblock 이 금지한 바로 그 상황). 위 두 가드의
+     * catch 블록도 여기를 거친다 — catch 안에서 다시 맨몸으로 부르면 가드가 무의미하다.
+     *
+     * @param  PrivacyRetentionHandlerInterface  $handler  핸들러
+     * @return string|null 식별자 (조회 실패 시 null — 기록 후 그 핸들러를 건너뛴다)
+     */
+    private function identify(PrivacyRetentionHandlerInterface $handler): ?string
+    {
+        try {
             return $handler->id();
+        } catch (Throwable $e) {
+            Log::warning('개인정보 보유기간 핸들러 식별자 조회 실패 — 건너뜀', [
+                'class' => get_class($handler),
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
         }
     }
 }

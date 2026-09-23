@@ -9,6 +9,7 @@ use App\Enums\UserStatus;
 use App\Extension\HookManager;
 use App\Models\User;
 use App\Services\UserService;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
@@ -55,6 +56,23 @@ class DormantAccountService
 
     /** 한 번에 읽어 처리할 행 수 */
     private const CHUNK_SIZE = 200;
+
+    /**
+     * 대상 목록을 볼 수 있는 관리자 권한 — 설정 읽기 + 회원 읽기 (모두 필요).
+     *
+     * 목록에 회원 이름·이메일이 그대로 나오므로 설정 화면 권한만으로 회원 명단을 보는
+     * 우회 경로를 막는다. 보유기간 핸들러의 `targetPermissions()` 와 같은 규칙이다.
+     *
+     * @var array<int, string>
+     */
+    public const TARGET_PERMISSIONS = ['core.settings.read', 'core.users.read'];
+
+    /**
+     * 단계 식별자 목록 — 미리보기 응답 키·목록 API 경로 값과 같다.
+     *
+     * @var array<int, string>
+     */
+    public const STAGES = ['pre_notice', 'convert', 'withdraw_notice', 'withdraw'];
 
     /**
      * 휴면 서비스를 생성합니다.
@@ -116,15 +134,116 @@ class DormantAccountService
     /**
      * 각 단계의 대상 건수를 미리 봅니다 (데이터를 바꾸지 않음).
      *
+     * **기능이 꺼져 있어도 네 단계를 모두 셉니다** — 운영자는 켜기 전에 규모를 봐야 합니다
+     * (자동 탈퇴는 되돌릴 수 없다). 꺼짐 여부는 호출자가 `isEnabled()`·`isWithdrawEnabled()`
+     * 로 함께 알린다. 실제 처리(커맨드)는 여전히 토글을 본다.
+     *
      * @return array{pre_notice: int, convert: int, withdraw_notice: int, withdraw: int} 단계별 건수
      */
     public function preview(): array
     {
+        $counts = [];
+
+        foreach (self::STAGES as $stage) {
+            $counts[$stage] = $this->stageQuery($stage)->count();
+        }
+
+        return $counts;
+    }
+
+    /**
+     * 단계 식별자로 그 단계의 대상 쿼리를 돌려줍니다.
+     *
+     * 미리보기·대상 목록·커맨드가 **같은 쿼리 메서드**를 쓰도록 한 곳에서 고른다.
+     *
+     * @param  string  $stage  단계 식별자 ({@see STAGES})
+     * @return Builder<User> 대상 쿼리
+     *
+     * @throws \InvalidArgumentException 알 수 없는 단계
+     */
+    public function stageQuery(string $stage): Builder
+    {
+        return match ($stage) {
+            'pre_notice' => $this->preNoticeQuery(),
+            'convert' => $this->convertQuery(),
+            'withdraw_notice' => $this->withdrawNoticeQuery(),
+            'withdraw' => $this->withdrawQuery(),
+            default => throw new \InvalidArgumentException("Unknown dormant stage: {$stage}"),
+        };
+    }
+
+    /**
+     * 한 단계의 대상 목록 한 페이지를 돌려줍니다 (데이터를 바꾸지 않음).
+     *
+     * 건수와 같은 쿼리를 쓴다 — 모달에서 본 명단이 곧 배치가 처리할 명단이다. 기준일은
+     * 앞 두 단계가 마지막 활동일(판정과 같이 로그인·없으면 가입일과 토큰 마지막 사용 중 늦은 쪽),
+     * 뒤 두 단계가 휴면 전환일이다.
+     * 가장 먼저 대상이 된 회원부터 보인다.
+     *
+     * @param  string  $stage  단계 식별자 ({@see STAGES})
+     * @param  int  $page  페이지 번호 (1부터)
+     * @param  int  $perPage  페이지 크기
+     * @return LengthAwarePaginator<int, PrivacyRetentionTarget> 대상 행 페이지
+     */
+    public function stageTargets(string $stage, int $page, int $perPage): LengthAwarePaginator
+    {
+        $byDormantAt = in_array($stage, ['withdraw_notice', 'withdraw'], true);
+        $query = $this->stageQuery($stage);
+
+        $query->select(['id', 'uuid', 'name', 'email', 'last_login_at', 'created_at', 'dormant_at']);
+
+        if ($byDormantAt) {
+            $query->orderBy('dormant_at');
+        } else {
+            // 기준일 = 판정과 같은 「마지막 활동」 — 로그인(없으면 가입)과 토큰 마지막 사용 중 늦은 쪽
+            // (§1-D 14). 로그인 시각만 보이면 토큰으로 쓰던 회원이 실제보다 오래 쉰 것처럼 보인다.
+            $query->withMax('tokens', 'last_used_at')
+                ->orderByRaw('GREATEST(COALESCE(last_login_at, created_at), COALESCE(tokens_max_last_used_at, last_login_at, created_at))');
+        }
+
+        return $query->orderBy('id')
+            ->paginate($perPage, ['*'], 'page', $page)
+            ->through(fn (User $user) => new PrivacyRetentionTarget(
+                id: $user->id,
+                title: (string) $user->name,
+                subtitle: $user->email,
+                date: $byDormantAt ? $user->dormant_at : $this->lastActivityAt($user),
+                url: '/admin/users/'.$user->uuid,
+            ));
+    }
+
+    /**
+     * 목록 행의 마지막 활동 시각 — 로그인(없으면 가입)과 토큰 마지막 사용 중 늦은 쪽.
+     *
+     * @param  User  $user  `tokens_max_last_used_at` 을 함께 읽은 회원
+     * @return Carbon|null 마지막 활동 시각
+     */
+    private function lastActivityAt(User $user): ?Carbon
+    {
+        $base = $user->last_login_at ?? $user->created_at;
+        $tokenAt = $user->tokens_max_last_used_at !== null ? Carbon::parse($user->tokens_max_last_used_at) : null;
+
+        if ($tokenAt !== null && ($base === null || $tokenAt->greaterThan($base))) {
+            return $tokenAt;
+        }
+
+        return $base;
+    }
+
+    /**
+     * 한 단계의 대상 목록 열 라벨을 돌려줍니다.
+     *
+     * @param  string  $stage  단계 식별자 ({@see STAGES})
+     * @return array<string, string> 열 이름 => 라벨
+     */
+    public function stageColumns(string $stage): array
+    {
         return [
-            'pre_notice' => $this->preNoticeQuery()->count(),
-            'convert' => $this->convertQuery()->count(),
-            'withdraw_notice' => $this->isWithdrawEnabled() ? $this->withdrawNoticeQuery()->count() : 0,
-            'withdraw' => $this->isWithdrawEnabled() ? $this->withdrawQuery()->count() : 0,
+            'title' => __('privacy.targets.columns.name'),
+            'subtitle' => __('privacy.targets.columns.email'),
+            'date' => in_array($stage, ['withdraw_notice', 'withdraw'], true)
+                ? __('privacy.targets.columns.dormant_at')
+                : __('privacy.targets.columns.last_activity_at'),
         ];
     }
 

@@ -73,5 +73,74 @@
         </input>
       </div>
     </div>
+    <!-- 개인정보 보유기간 (이슈 #636) — 네 칸 모두 `name` 바인딩만 쓴다(코어 개인정보 탭과 같은 패턴). 토글에만 명시 set-state 를 섞으면 방식 라디오의 이름 바인딩이 그 카테고리를 옛 값으로 되써 토글이 꺼지고 기간 칸이 사라진다(E2E 실측). 작성 IP 축(회원 글 포함 전 게시물)과 비회원 작성자 정보 축을 기간을 따로 두어 나눈다. 켜는 순간부터 되돌릴 수 없는 파기가 일어나므로 처리방침 사전 안내 의무와 삭제 방식의 연쇄 영향을 함께 적는다. 대상 건수는 저장된 설정 기준(코어 보유기간 커맨드의 dry-run 과 같은 조건식)이고, 꺼진 축은 서버가 null 을 내려 뱃지가 숨는다 -->
+    <div data-ref="privacy_retention_section" class="admin-card mt-6">
+      <h2 class="card-title">$t:sirsoft-board.admin.settings.privacy_retention.title</h2>
+      <div class="card-description">$t:sirsoft-board.admin.settings.privacy_retention.description</div>
+      <div data-ref="privacy_retention_enabled_field" class="mt-4">
+        <label class="form-label">$t:sirsoft-board.admin.settings.privacy_retention.enabled</label>
+        <p class="text-tertiary">$t:sirsoft-board.admin.settings.privacy_retention.enabled_hint</p>
+        <toggle name="privacy_retention.enabled" disabled="{{_computed.isReadOnly}}"/>
+      </div>
+      <!-- 두 축의 대상 건수 — 꺼져 있어도 보인다(켜기 전에 규모를 본다, #636). 기간 칸은 켰을 때만 보이므로 건수를 그 안에 두지 않는다.
+        옆 버튼은 대상 창을 여는데, 게시판 관리 읽기 권한이 있고 대상이 있을 때만 그린다. 비회원 기간 0(미적용)이면 비회원 건수는 0 이다. -->
+      <div data-ref="privacy_retention_targets" data-if="{{boardPrivacyRetentionPreview?.data?.ip !== null &amp;&amp; boardPrivacyRetentionPreview?.data?.ip !== undefined}}" class="mt-3 flex flex-wrap items-center gap-2">
+        <span class="badge badge-yellow">$t:sirsoft-board.admin.settings.privacy_retention.targets.ip_count|count={{boardPrivacyRetentionPreview?.data?.ip ?? 0}}</span>
+        <button data-ref="view_ip_targets" data-if="{{boardPrivacyRetentionPreview?.data?.can_view_targets &amp;&amp; (boardPrivacyRetentionPreview?.data?.ip ?? 0) > 0}}" type="button" class="btn btn-sm btn-outline">
+          <on type="click">
+            <sequence>
+              <set-state target="global" privacyTargets="{{({ path: 'retention-targets/sirsoft-board.ip', currentPage: 1, hasMore: true, isLoadingMore: false })}}"/>
+              <set-state target="global" privacyTargets.title="$t:sirsoft-board.admin.settings.privacy_retention.targets.title_ip"/>
+              <refetch-data-source dataSourceId="privacyTargets"/>
+              <open-modal target="privacy_targets_modal"/>
+            </sequence>
+          </on>
+          $t:sirsoft-board.admin.settings.privacy_retention.targets.view_ip
+        </button>
+        <span class="badge badge-yellow">$t:sirsoft-board.admin.settings.privacy_retention.targets.guest_count|count={{boardPrivacyRetentionPreview?.data?.guest ?? 0}}</span>
+        <button data-ref="view_guest_targets" data-if="{{boardPrivacyRetentionPreview?.data?.can_view_targets &amp;&amp; (boardPrivacyRetentionPreview?.data?.guest ?? 0) > 0}}" type="button" class="btn btn-sm btn-outline">
+          <on type="click">
+            <sequence>
+              <set-state target="global" privacyTargets="{{({ path: 'retention-targets/sirsoft-board.guest', currentPage: 1, hasMore: true, isLoadingMore: false })}}"/>
+              <set-state target="global" privacyTargets.title="$t:sirsoft-board.admin.settings.privacy_retention.targets.title_guest"/>
+              <refetch-data-source dataSourceId="privacyTargets"/>
+              <open-modal target="privacy_targets_modal"/>
+            </sequence>
+          </on>
+          $t:sirsoft-board.admin.settings.privacy_retention.targets.view_guest
+        </button>
+      </div>
+      <div data-ref="privacy_retention_axes" data-if="{{!!_local.form?.privacy_retention?.enabled}}" class="mt-4 space-y-6">
+        <div data-ref="privacy_ip_retention_days_field">
+          <div class="flex-center">
+            <label class="form-label">$t:sirsoft-board.admin.settings.privacy_retention.ip_retention_days</label>
+          </div>
+          <p class="text-tertiary">$t:sirsoft-board.admin.settings.privacy_retention.ip_retention_days_hint</p>
+          <input type="number" name="privacy_retention.ip_retention_days" min="{{_local?.form?._meta?.limits?.privacy_ip_retention_days_min ?? 1}}" max="{{_local?.form?._meta?.limits?.privacy_ip_retention_days_max ?? 3650}}" class="input w-40 {{_local.errors?.['privacy_retention.ip_retention_days'] ? 'input-error' : ''}}" disabled="{{_computed.isReadOnly}}"/>
+          <span data-if="{{_local.errors?.['privacy_retention.ip_retention_days']}}" class="form-error">{{_local.errors?.['privacy_retention.ip_retention_days']?.[0] ?? ''}}</span>
+        </div>
+        <div data-ref="privacy_guest_retention_days_field">
+          <div class="flex-center">
+            <label class="form-label">$t:sirsoft-board.admin.settings.privacy_retention.guest_retention_days</label>
+          </div>
+          <p class="text-tertiary">$t:sirsoft-board.admin.settings.privacy_retention.guest_retention_days_hint</p>
+          <input type="number" name="privacy_retention.guest_retention_days" min="{{_local?.form?._meta?.limits?.privacy_guest_retention_days_min ?? 0}}" max="{{_local?.form?._meta?.limits?.privacy_guest_retention_days_max ?? 3650}}" class="input w-40 {{_local.errors?.['privacy_retention.guest_retention_days'] ? 'input-error' : ''}}" disabled="{{_computed.isReadOnly}}"/>
+          <span data-if="{{_local.errors?.['privacy_retention.guest_retention_days']}}" class="form-error">{{_local.errors?.['privacy_retention.guest_retention_days']?.[0] ?? ''}}</span>
+        </div>
+        <div data-ref="privacy_guest_mode_field" class="space-y-2">
+          <label class="form-label">$t:sirsoft-board.admin.settings.privacy_retention.guest_mode</label>
+          <radio-group name="privacy_retention.guest_mode" :inline="true" size="md" disabled="{{_computed.isReadOnly}}">
+            <prop name="options">
+              <item value="anonymize" label="$t:sirsoft-board.admin.settings.privacy_retention.modes.anonymize"/>
+              <item value="delete" label="$t:sirsoft-board.admin.settings.privacy_retention.modes.delete"/>
+            </prop>
+          </radio-group>
+          <p class="text-tertiary">$t:sirsoft-board.admin.settings.privacy_retention.guest_mode_hint</p>
+          <p data-ref="privacy_guest_delete_warning" data-if="{{_local.form?.privacy_retention?.guest_mode === 'delete'}}" class="text-error-soft">$t:sirsoft-board.admin.settings.privacy_retention.delete_warning</p>
+        </div>
+        <p class="text-hint">$t:sirsoft-board.admin.settings.privacy_retention.preview_hint</p>
+      </div>
+      <p data-ref="privacy_withdrawn_notice" class="text-hint mt-4">$t:sirsoft-board.admin.settings.privacy_retention.withdrawn_notice</p>
+    </div>
   </div>
 </partial>

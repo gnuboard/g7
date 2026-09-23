@@ -1,5 +1,5 @@
 {
-    "comment": "개인정보 탭 — 보유기간이 지난 개인정보 파기와 휴면 계정 생명주기를 켜고 끄는 자리다.\n  전 기능 기본 꺼짐이고, 켜는 순간부터 **되돌릴 수 없는 파기**가 일어나므로 각 카드에\n  법령 근거와 사전 안내 의무를 함께 적는다.\n  기간 입력은 토글이 켜져 있을 때만 보여 준다 — 꺼진 채로 보이면 값을 고쳐도 아무 일이\n  없어 설정이 먹히지 않는 것처럼 읽힌다(보안 탭의 적용 범위 칸과 같은 결).\n  저장값이 boolean 이 아닐 수 있어(미저장이면 null) 조건은 느슨하게 참 판정한다.",
+    "comment": "개인정보 탭 — 보유기간이 지난 개인정보 파기와 휴면 계정 생명주기를 켜고 끄는 자리다.\n  전 기능 기본 꺼짐이고, 켜는 순간부터 **되돌릴 수 없는 파기**가 일어나므로 각 카드에\n  법령 근거와 사전 안내 의무를 함께 적는다.\n  기간 입력은 토글이 켜져 있을 때만 보여 준다 — 꺼진 채로 보이면 값을 고쳐도 아무 일이\n  없어 설정이 먹히지 않는 것처럼 읽힌다(보안 탭의 적용 범위 칸과 같은 결).\n  저장값이 boolean 이 아닐 수 있어(미저장이면 null) 조건은 느슨하게 참 판정한다.\n  대상 건수는 **기능이 꺼져 있어도** 보인다(켜기 전에 규모와 명단을 확인하는 자리). 건수 옆 버튼은\n  명단 창(`_modal_privacy_targets`)을 여는데, 명단을 볼 권한(설정 읽기 + 회원 읽기)이 있고 대상이 있을 때만 그린다.",
     "meta": {
         "is_partial": true,
         "description": "환경설정 개인정보 탭 콘텐츠"
@@ -54,6 +54,14 @@
                                         "className": "text-label-subtle mt-1"
                                     },
                                     "text": "$t:admin.settings.privacy.policy_notice_desc"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-hint mt-1"
+                                    },
+                                    "text": "$t:admin.settings.privacy.targets.hint"
                                 }
                             ]
                         }
@@ -108,7 +116,7 @@
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "flex-center"
+                                                "className": "flex-wrap-center gap-2"
                                             },
                                             "children": [
                                                 {
@@ -122,11 +130,54 @@
                                                 {
                                                     "type": "basic",
                                                     "name": "Span",
-                                                    "if": "{{privacyPreview?.data?.retention?.['user-withdrawn'] !== null && privacyPreview?.data?.retention?.['user-withdrawn'] !== undefined}}",
+                                                    "if": "{{privacyPreview?.data?.retention?.['user-withdrawn']?.count !== null && privacyPreview?.data?.retention?.['user-withdrawn']?.count !== undefined}}",
                                                     "props": {
-                                                        "className": "badge badge-yellow ml-2"
+                                                        "className": "badge badge-yellow"
                                                     },
-                                                    "text": "$t:admin.settings.privacy.target_count|count={{privacyPreview?.data?.retention?.['user-withdrawn'] ?? 0}}"
+                                                    "text": "$t:admin.settings.privacy.target_count|count={{privacyPreview?.data?.retention?.['user-withdrawn']?.count ?? 0}}"
+                                                },
+                                                {
+                                                    "id": "view_withdrawn_targets",
+                                                    "type": "basic",
+                                                    "name": "Button",
+                                                    "if": "{{privacyPreview?.data?.retention?.['user-withdrawn']?.can_view_targets && (privacyPreview?.data?.retention?.['user-withdrawn']?.count ?? 0) > 0}}",
+                                                    "actions": [
+                                                        {
+                                                            "type": "click",
+                                                            "handler": "sequence",
+                                                            "actions": [
+                                                                {
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "global",
+                                                                        "privacyTargets": "{{({ path: 'retention-targets/user-withdrawn', currentPage: 1, hasMore: true, isLoadingMore: false })}}"
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "global",
+                                                                        "privacyTargets.title": "$t:admin.settings.privacy.targets.title.withdrawn"
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "refetchDataSource",
+                                                                    "params": {
+                                                                        "dataSourceId": "privacyTargets"
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "openModal",
+                                                                    "target": "privacy_targets_modal"
+                                                                }
+                                                            ]
+                                                        }
+                                                    ],
+                                                    "props": {
+                                                        "type": "button",
+                                                        "className": "btn btn-sm btn-outline"
+                                                    },
+                                                    "text": "$t:admin.settings.privacy.targets.view_withdrawn"
                                                 }
                                             ]
                                         },
@@ -268,7 +319,7 @@
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "flex-center"
+                                                "className": "flex-wrap-center gap-2"
                                             },
                                             "children": [
                                                 {
@@ -284,9 +335,95 @@
                                                     "name": "Span",
                                                     "if": "{{privacyPreview?.data?.dormant}}",
                                                     "props": {
-                                                        "className": "badge badge-yellow ml-2"
+                                                        "className": "badge badge-yellow"
                                                     },
                                                     "text": "$t:admin.settings.privacy.dormant.stage_counts|notice={{privacyPreview?.data?.dormant?.pre_notice ?? 0}}|convert={{privacyPreview?.data?.dormant?.convert ?? 0}}"
+                                                },
+                                                {
+                                                    "id": "view_pre_notice_targets",
+                                                    "type": "basic",
+                                                    "name": "Button",
+                                                    "if": "{{privacyPreview?.data?.dormant?.can_view_targets && (privacyPreview?.data?.dormant?.pre_notice ?? 0) > 0}}",
+                                                    "actions": [
+                                                        {
+                                                            "type": "click",
+                                                            "handler": "sequence",
+                                                            "actions": [
+                                                                {
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "global",
+                                                                        "privacyTargets": "{{({ path: 'dormant-targets/pre_notice', currentPage: 1, hasMore: true, isLoadingMore: false })}}"
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "global",
+                                                                        "privacyTargets.title": "$t:admin.settings.privacy.targets.title.pre_notice"
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "refetchDataSource",
+                                                                    "params": {
+                                                                        "dataSourceId": "privacyTargets"
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "openModal",
+                                                                    "target": "privacy_targets_modal"
+                                                                }
+                                                            ]
+                                                        }
+                                                    ],
+                                                    "props": {
+                                                        "type": "button",
+                                                        "className": "btn btn-sm btn-outline"
+                                                    },
+                                                    "text": "$t:admin.settings.privacy.targets.view_pre_notice"
+                                                },
+                                                {
+                                                    "id": "view_convert_targets",
+                                                    "type": "basic",
+                                                    "name": "Button",
+                                                    "if": "{{privacyPreview?.data?.dormant?.can_view_targets && (privacyPreview?.data?.dormant?.convert ?? 0) > 0}}",
+                                                    "actions": [
+                                                        {
+                                                            "type": "click",
+                                                            "handler": "sequence",
+                                                            "actions": [
+                                                                {
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "global",
+                                                                        "privacyTargets": "{{({ path: 'dormant-targets/convert', currentPage: 1, hasMore: true, isLoadingMore: false })}}"
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "global",
+                                                                        "privacyTargets.title": "$t:admin.settings.privacy.targets.title.convert"
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "refetchDataSource",
+                                                                    "params": {
+                                                                        "dataSourceId": "privacyTargets"
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "openModal",
+                                                                    "target": "privacy_targets_modal"
+                                                                }
+                                                            ]
+                                                        }
+                                                    ],
+                                                    "props": {
+                                                        "type": "button",
+                                                        "className": "btn btn-sm btn-outline"
+                                                    },
+                                                    "text": "$t:admin.settings.privacy.targets.view_convert"
                                                 }
                                             ]
                                         },
@@ -317,6 +454,111 @@
                                         "size": "md",
                                         "disabled": "{{_computed.isReadOnly}}"
                                     }
+                                }
+                            ]
+                        },
+                        {
+                            "id": "dormant_withdraw_targets",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{privacyPreview?.data?.dormant}}",
+                            "props": {
+                                "className": "flex-wrap-center gap-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "badge badge-red"
+                                    },
+                                    "text": "$t:admin.settings.privacy.dormant.withdraw_stage_counts|notice={{privacyPreview?.data?.dormant?.withdraw_notice ?? 0}}|withdraw={{privacyPreview?.data?.dormant?.withdraw ?? 0}}"
+                                },
+                                {
+                                    "id": "view_withdraw_notice_targets",
+                                    "type": "basic",
+                                    "name": "Button",
+                                    "if": "{{privacyPreview?.data?.dormant?.can_view_targets && (privacyPreview?.data?.dormant?.withdraw_notice ?? 0) > 0}}",
+                                    "actions": [
+                                        {
+                                            "type": "click",
+                                            "handler": "sequence",
+                                            "actions": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "privacyTargets": "{{({ path: 'dormant-targets/withdraw_notice', currentPage: 1, hasMore: true, isLoadingMore: false })}}"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "privacyTargets.title": "$t:admin.settings.privacy.targets.title.withdraw_notice"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "refetchDataSource",
+                                                    "params": {
+                                                        "dataSourceId": "privacyTargets"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "openModal",
+                                                    "target": "privacy_targets_modal"
+                                                }
+                                            ]
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "button",
+                                        "className": "btn btn-sm btn-outline"
+                                    },
+                                    "text": "$t:admin.settings.privacy.targets.view_withdraw_notice"
+                                },
+                                {
+                                    "id": "view_withdraw_targets",
+                                    "type": "basic",
+                                    "name": "Button",
+                                    "if": "{{privacyPreview?.data?.dormant?.can_view_targets && (privacyPreview?.data?.dormant?.withdraw ?? 0) > 0}}",
+                                    "actions": [
+                                        {
+                                            "type": "click",
+                                            "handler": "sequence",
+                                            "actions": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "privacyTargets": "{{({ path: 'dormant-targets/withdraw', currentPage: 1, hasMore: true, isLoadingMore: false })}}"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "privacyTargets.title": "$t:admin.settings.privacy.targets.title.withdraw"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "refetchDataSource",
+                                                    "params": {
+                                                        "dataSourceId": "privacyTargets"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "openModal",
+                                                    "target": "privacy_targets_modal"
+                                                }
+                                            ]
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "button",
+                                        "className": "btn btn-sm btn-outline"
+                                    },
+                                    "text": "$t:admin.settings.privacy.targets.view_withdraw"
                                 }
                             ]
                         },
@@ -445,16 +687,6 @@
                                                         "className": "text-heading"
                                                     },
                                                     "text": "$t:admin.settings.privacy.dormant.withdraw_enabled"
-                                                },
-                                                {
-                                                    "comment": "되돌릴 수 없는 자동 탈퇴를 켜는 자리라 규모를 먼저 보여 준다. 응답의 두 건수는 자동 탈퇴가 꺼져 있으면 서버가 0 으로 내려주므로(DormantAccountService::preview), 꺼진 상태에서 대상 인원이 있는 것처럼 보이지 않는다.",
-                                                    "type": "basic",
-                                                    "name": "Span",
-                                                    "if": "{{privacyPreview?.data?.dormant}}",
-                                                    "props": {
-                                                        "className": "badge badge-red ml-2"
-                                                    },
-                                                    "text": "$t:admin.settings.privacy.dormant.withdraw_stage_counts|notice={{privacyPreview?.data?.dormant?.withdraw_notice ?? 0}}|withdraw={{privacyPreview?.data?.dormant?.withdraw ?? 0}}"
                                                 }
                                             ]
                                         },

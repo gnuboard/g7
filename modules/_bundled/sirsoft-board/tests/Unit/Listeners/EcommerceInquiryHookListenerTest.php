@@ -32,11 +32,22 @@ class EcommerceInquiryHookListenerTest extends BoardTestCase
 {
     private EcommerceInquiryHookListener $listener;
 
+    /**
+     * 이 테스트 전용 게시판 슬러그를 반환합니다.
+     *
+     * @return string 게시판 슬러그
+     */
     protected function getTestBoardSlug(): string
     {
         return 'ecommerce-inquiry-hook';
     }
 
+    /**
+     * 테스트 게시판의 기본 속성을 반환합니다.
+     *
+     * @param  string  $slug  게시판 슬러그
+     * @return array<string, mixed> 게시판 속성
+     */
     protected function getDefaultBoardAttributes(string $slug): array
     {
         return [
@@ -56,6 +67,11 @@ class EcommerceInquiryHookListenerTest extends BoardTestCase
         ];
     }
 
+    /**
+     * 리스너 인스턴스를 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -68,6 +84,10 @@ class EcommerceInquiryHookListenerTest extends BoardTestCase
 
     /**
      * 8개 훅이 모두 등록되어 있고, 모두 filter 타입이어야 합니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @effects listener_subscribes_every_inquiry_filter_hook
      */
     public function test_subscribed_hooks_registers_all_eight_filter_hooks(): void
     {
@@ -98,6 +118,10 @@ class EcommerceInquiryHookListenerTest extends BoardTestCase
 
     /**
      * createAndReturn: 정상 데이터로 게시글 생성 → post_id와 inquirable_type 반환
+     *
+     * @return void 반환값 없음
+     *
+     * @effects listener_creates_board_post_for_inquiry
      */
     public function test_create_and_return_returns_post_id_and_inquirable_type(): void
     {
@@ -116,6 +140,10 @@ class EcommerceInquiryHookListenerTest extends BoardTestCase
 
     /**
      * createAndReturn: title 없으면 content 앞부분으로 자동 생성
+     *
+     * @return void 반환값 없음
+     *
+     * @effects listener_creates_board_post_for_inquiry
      */
     public function test_create_and_return_auto_generates_title_from_content(): void
     {
@@ -134,6 +162,10 @@ class EcommerceInquiryHookListenerTest extends BoardTestCase
 
     /**
      * createAndReturn: parent_id 있으면 부모 제목에 Re: 접두사 붙임
+     *
+     * @return void 반환값 없음
+     *
+     * @effects listener_creates_board_post_for_inquiry
      */
     public function test_create_and_return_prepends_re_prefix_for_reply(): void
     {
@@ -159,6 +191,8 @@ class EcommerceInquiryHookListenerTest extends BoardTestCase
      * (`listener_ip_boundary`)로 두고 여기서는 효과만 마킹한다 — 매니페스트 axes 에 없는
      * 축을 @scenario 에 적으면 어떤 cross product 조합도 커버하지 못하는 죽은 마커가 된다.
      *
+     * @return void 반환값 없음
+     *
      * @effects listener_uses_service_provided_ip_not_request
      */
     public function test_create_and_return_persists_ip_from_payload(): void
@@ -174,14 +208,17 @@ class EcommerceInquiryHookListenerTest extends BoardTestCase
     }
 
     /**
-     * createAndReturn: payload 에 ip_address 가 없으면 '0.0.0.0' 폴백을 쓰고 request()->ip() 로
+     * createAndReturn: payload 에 ip_address 가 없으면 NULL 로 저장하고 request()->ip() 로
      * 되돌아가지 않는다(입력 우회 방지 경계 — 정정2 회귀 가드).
      *
-     * request IP 를 **비-0.0.0.0** 으로 세팅한 상태에서 폴백값(0.0.0.0)이 나와야 한다. Listener 가
-     * request()->ip() 를 재도입하면 이 테스트가 request IP('203.0.113.99')를 잡아 fail 한다.
-     * (테스트 기본 request IP 0.0.0.0 으로는 재도입해도 폴백과 같아 silent green — 그래서 비-0 IP 사용)
+     * request IP 를 실제 IP 로 세팅한 상태에서 NULL 이 나와야 한다. Listener 가 request()->ip() 를
+     * 재도입하면 이 테스트가 request IP('203.0.113.99')를 잡아 fail 한다. 자리표시값 '0.0.0.0' 을
+     * 되살려도 fail 한다 — board_posts.ip_address 가 nullable 이 된 뒤(이슈 #636) 그 값은 보유기간
+     * 파기가 개인정보가 남은 행으로 세는 가짜 IP 다.
      *
      * 축이 아닌 sub_flow (`listener_ip_boundary`) 소속이라 효과만 마킹한다.
+     *
+     * @return void 반환값 없음
      *
      * @effects listener_does_not_reach_into_request_for_ip
      */
@@ -198,15 +235,18 @@ class EcommerceInquiryHookListenerTest extends BoardTestCase
         ]);
 
         $post = Post::find($result['post_id']);
-        $this->assertSame(
-            '0.0.0.0',
+        $this->assertNull(
             $post->ip_address,
-            'ip_address 미제공 시 폴백(0.0.0.0)이어야 하며 request()->ip() 로 되돌아가면 안 됩니다'
+            'ip_address 미제공 시 NULL 이어야 하며 request()->ip() 나 자리표시값(0.0.0.0)으로 채우면 안 됩니다'
         );
     }
 
     /**
      * createAndReturn: 존재하지 않는 slug → 예외 발생하지 않고 null 반환
+     *
+     * @return void 반환값 없음
+     *
+     * @effects listener_degrades_to_carry_when_board_missing
      */
     public function test_create_and_return_returns_null_on_exception(): void
     {
@@ -224,6 +264,10 @@ class EcommerceInquiryHookListenerTest extends BoardTestCase
      *
      * 2차 방어(게시판 실데이터 기준): 피벗 is_answered 플래그가 어긋난 경우에도
      * 게시판에 중복 답변이 쌓이지 않아야 합니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @effects listener_blocks_duplicate_child
      */
     public function test_create_and_return_returns_duplicate_marker_when_parent_already_has_reply(): void
     {
@@ -253,6 +297,10 @@ class EcommerceInquiryHookListenerTest extends BoardTestCase
      * createAndReturn: 기존 답변이 soft delete 된 뒤에는 답변 재등록이 허용된다.
      *
      * 중복 차단 판정은 살아있는 답변만 대상으로 해야 합니다 (SoftDeletes 기본 스코프).
+     *
+     * @return void 반환값 없음
+     *
+     * @effects listener_blocks_duplicate_child
      */
     public function test_create_and_return_allows_reply_after_previous_reply_soft_deleted(): void
     {
@@ -284,6 +332,10 @@ class EcommerceInquiryHookListenerTest extends BoardTestCase
 
     /**
      * getByIds: 빈 ids → carry 그대로 반환
+     *
+     * @return void 반환값 없음
+     *
+     * @effects listener_maps_posts_by_ids
      */
     public function test_get_by_ids_returns_carry_when_ids_empty(): void
     {
@@ -295,6 +347,10 @@ class EcommerceInquiryHookListenerTest extends BoardTestCase
 
     /**
      * getByIds: 유효한 IDs → 필수 필드 포함 배열 반환
+     *
+     * @return void 반환값 없음
+     *
+     * @effects listener_maps_posts_by_ids
      */
     public function test_get_by_ids_returns_mapped_array_for_valid_ids(): void
     {
@@ -318,6 +374,10 @@ class EcommerceInquiryHookListenerTest extends BoardTestCase
 
     /**
      * getByIds: ids에 없는 ID 포함해도 예외 없이 조회된 것만 반환
+     *
+     * @return void 반환값 없음
+     *
+     * @effects listener_maps_posts_by_ids
      */
     public function test_get_by_ids_ignores_nonexistent_ids(): void
     {
@@ -334,6 +394,8 @@ class EcommerceInquiryHookListenerTest extends BoardTestCase
 
     /**
      * getByIds: 비밀글은 비열람자에게 content/title/reply/attachments 가 마스킹된다 (KVE-2026-1914 A-1)
+     *
+     * @return void 반환값 없음
      *
      * @scenario layer=hook, viewer=non_viewer
      *
@@ -366,6 +428,8 @@ class EcommerceInquiryHookListenerTest extends BoardTestCase
 
     /**
      * getByIds: 작성자 본인에게는 비밀글 원문이 그대로 노출된다 (회귀 방지)
+     *
+     * @return void 반환값 없음
      *
      * @scenario layer=hook, viewer=owner
      *
@@ -400,6 +464,10 @@ class EcommerceInquiryHookListenerTest extends BoardTestCase
 
     /**
      * getBoardSettings: 존재하지 않는 slug → carry 그대로 반환
+     *
+     * @return void 반환값 없음
+     *
+     * @effects listener_degrades_to_carry_when_board_missing
      */
     public function test_get_board_settings_returns_carry_for_nonexistent_slug(): void
     {
@@ -411,6 +479,10 @@ class EcommerceInquiryHookListenerTest extends BoardTestCase
 
     /**
      * getBoardSettings: 유효한 slug → 게시판 설정 필드 포함 배열 반환
+     *
+     * @return void 반환값 없음
+     *
+     * @effects listener_reads_board_settings
      */
     public function test_get_board_settings_returns_config_for_valid_slug(): void
     {
@@ -434,6 +506,10 @@ class EcommerceInquiryHookListenerTest extends BoardTestCase
 
     /**
      * deletePost: 성공 → carry 반환
+     *
+     * @return void 반환값 없음
+     *
+     * @effects inquiry_delete_removes_reply_posts
      */
     public function test_delete_post_returns_carry_on_success(): void
     {
@@ -451,6 +527,10 @@ class EcommerceInquiryHookListenerTest extends BoardTestCase
      *
      * 훅 경유 삭제는 cascade_replies 옵션으로 게시판 답글 삭제 정책과 무관하게
      * 시스템 생성 답변을 함께 정리해야 합니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @effects inquiry_delete_removes_reply_posts
      */
     public function test_delete_post_soft_deletes_reply_children_too(): void
     {
@@ -469,6 +549,10 @@ class EcommerceInquiryHookListenerTest extends BoardTestCase
 
     /**
      * deletePost: 존재하지 않는 postId → RuntimeException
+     *
+     * @return void 반환값 없음
+     *
+     * @effects listener_delete_fails_loudly_for_missing_post
      */
     public function test_delete_post_throws_runtime_exception_for_nonexistent_post(): void
     {
@@ -483,6 +567,10 @@ class EcommerceInquiryHookListenerTest extends BoardTestCase
 
     /**
      * deleteReplyPost: 부모 게시글에 reply 없음 → RuntimeException
+     *
+     * @return void 반환값 없음
+     *
+     * @effects listener_delete_fails_loudly_for_missing_post
      */
     public function test_delete_reply_post_throws_runtime_exception_when_no_reply(): void
     {
@@ -495,6 +583,10 @@ class EcommerceInquiryHookListenerTest extends BoardTestCase
 
     /**
      * deleteReplyPost: reply 있음 → 삭제 성공 + carry 반환
+     *
+     * @return void 반환값 없음
+     *
+     * @effects reply_delete_recomputes_answered
      */
     public function test_delete_reply_post_returns_carry_on_success(): void
     {
@@ -514,6 +606,10 @@ class EcommerceInquiryHookListenerTest extends BoardTestCase
 
     /**
      * countReplies: 살아있는 자식만 집계한다 (soft delete 된 답변 제외).
+     *
+     * @return void 반환값 없음
+     *
+     * @effects reply_delete_recomputes_answered
      */
     public function test_count_replies_counts_only_live_children(): void
     {

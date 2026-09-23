@@ -1724,6 +1724,7 @@
     "trustedProxy": "신뢰 프록시 진단",
     "user": "사용자",
     "users": "사용자 목록",
-    "privacyPreview": "개인정보 처리 대상 건수"
+    "privacyPreview": "개인정보 처리 대상 건수",
+    "privacyTargets": "개인정보 조치 대상 목록"
   }
 }

@@ -13,7 +13,11 @@ description: |
       `process()` 는 수집기가 이미 걸러 주더라도 자기 토글을 다시 본다 — 되돌릴 수 없는
       파기라 호출자를 믿지 않는다.
     - **"꺼짐" 과 "대상 0건" 을 구분해 보고한다.** 둘을 같은 0 으로 뭉개면 운영자가 켠 줄
-      아는 기능이 놀고 있어도 알아챌 수 없다.
+      아는 기능이 놀고 있어도 알아챌 수 없다. 단 **건수는 꺼져 있어도 센다**(2026-09-23
+      확정) — 켜기 전에 규모를 봐야 하므로 건수를 null 로 가리지 않고 `enabled` 로 구분한다.
+    - **관리자가 대상 명단을 모달로 본다.** 명단은 건수·배치와 같은 쿼리에서 나오고, 볼 권한은
+      공급자가 선언한 「설정 읽기 + 도메인 읽기」를 코어 목록 API 가 요청 시점에 검사한다.
+      확장 핸들러는 필터 훅 등록만으로 그 API 에 붙는다.
     - **한 도메인의 실패가 다른 도메인의 법정 파기를 멈추지 않는다.** 대신 조용히 버리지도
       않는다 — 건너뛴 사실이 로그에 남지 않으면 그 도메인이 처리되고 있다고 믿게 된다.
     - **미리보기와 실행이 같은 조건식을 공유한다.** 어긋나면 화면에서 본 숫자와 실제로
@@ -56,10 +60,18 @@ effects:
   - period_field_appears_only_when_its_toggle_is_on
   - preview_badges_render_the_same_counts_the_api_returns
   - saved_privacy_settings_survive_a_browser_reload
+  - target_list_matches_the_preview_population
+  - target_list_requires_domain_read_permission
+  - extension_handler_targets_are_served_by_the_core_api
+  - target_list_pages_until_has_more_pages_is_false
+  - target_list_modal_pages_with_infinite_scroll
+  - target_buttons_wrap_on_narrow_viewports
 
 test_files:
   - tests/Feature/Privacy/PrivacyRetentionManagerTest.php
   - tests/Feature/Privacy/WithdrawnUserRetentionTest.php
+  - tests/Feature/Privacy/PrivacyTargetApiTest.php
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-settings-privacy-targets.test.ts
   - tests/Playwright/specs/admin/settings-privacy-retention.spec.ts
 
 rules_layer_coverage:

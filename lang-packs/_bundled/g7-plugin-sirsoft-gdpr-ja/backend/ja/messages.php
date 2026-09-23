@@ -17,6 +17,11 @@ return [
             'page' => 'ページ',
             'per_page' => 'ページ当たりの件数',
         ],
+        'target_columns' => [
+            'name' => '名前',
+            'email' => 'メールアドレス',
+            'joined_at' => '登録日',
+        ],
     ],
     'consent' => [
         'granted' => '同意が保存されました。',

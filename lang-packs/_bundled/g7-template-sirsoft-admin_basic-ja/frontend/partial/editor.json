@@ -1646,7 +1646,8 @@
     "staticCacheStatus": "初期画面静的ファイル状態",
     "layout_search": "レイアウト コンテンツ検索",
     "memberNotifications": "会員通知箱",
-    "privacyPreview": "個人情報処理対象件数"
+    "privacyPreview": "個人情報処理対象件数",
+    "privacyTargets": "個人情報対策対象リスト"
   },
   "array_group": {
     "chart_labels": "項目ラベル",

@@ -80,6 +80,13 @@ Route::prefix('admin')->name('admin.')->middleware('auth:sanctum')->group(functi
     Route::get('/notice-log', [GdprAdminNoticeController::class, 'index'])
         ->middleware('permission:admin,sirsoft-gdpr.privacy.view')->name('notice-log.index');
 
+    // 연간 통지 대상 건수·명단 (#636) — 건수는 통지 조회, 명단은 회원 읽기까지 (명단에 이름·이메일이 나온다)
+    Route::get('/annual-notice/preview', [GdprAdminNoticeController::class, 'preview'])
+        ->middleware('permission:admin,sirsoft-gdpr.privacy.view')->name('annual-notice.preview');
+
+    Route::get('/annual-notice/targets', [GdprAdminNoticeController::class, 'targets'])
+        ->middleware('permission:admin,sirsoft-gdpr.privacy.view|core.users.read')->name('annual-notice.targets');
+
     Route::post('/annual-notice/test', [GdprAdminNoticeController::class, 'sendTest'])
         ->middleware(['permission:admin,sirsoft-gdpr.privacy.update', 'throttle:6,1,gdpr-annual-notice:'])->name('annual-notice.test');
 

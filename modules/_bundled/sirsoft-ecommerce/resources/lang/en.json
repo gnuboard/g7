@@ -27,6 +27,7 @@
             "ecommerceIdentityPolicies": "Ecommerce Identity Policies",
             "ecommerceIdentityPurposes": "Ecommerce Identity Purposes",
             "ecommerceNotificationDefinitions": "Ecommerce Notification Definitions",
+            "ecommercePrivacyRetentionPreview": "E-commerce Privacy Retention Targets",
             "ecommerce_settings": "Ecommerce Settings",
             "extra_fee_templates": "Extra Fee Templates",
             "identityProviders": "Identity Providers",
@@ -50,7 +51,8 @@
             "wishlists": "Wishlists",
             "carts": "Carts",
             "addresses": "Member addresses",
-            "inquiries": "Product inquiries"
+            "inquiries": "Product inquiries",
+            "privacyTargets": "Orders due for retention processing"
         }
     },
     "common": {

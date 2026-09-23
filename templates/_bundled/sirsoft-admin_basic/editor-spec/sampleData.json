@@ -14642,13 +14642,56 @@
     "privacyPreview": {
       "data": {
         "retention": {
-          "user-withdrawn": 3
+          "user-withdrawn": {
+            "enabled": false,
+            "count": 3,
+            "can_view_targets": true
+          }
         },
         "dormant": {
+          "enabled": false,
+          "withdraw_enabled": false,
+          "can_view_targets": true,
           "pre_notice": 12,
           "convert": 4,
-          "withdraw_notice": 0,
-          "withdraw": 0
+          "withdraw_notice": 2,
+          "withdraw": 1
+        }
+      }
+    },
+    "privacyTargets": {
+      "data": {
+        "data": [
+          {
+            "id": 12,
+            "title": "홍길동_탈퇴_20250101",
+            "subtitle": "gildong_withdrawn_20250101@example.com",
+            "context": null,
+            "date": "2025-01-01",
+            "url": "/admin/users/00000000-0000-4000-8000-000000000012"
+          },
+          {
+            "id": 15,
+            "title": "김철수_탈퇴_20250214",
+            "subtitle": "chulsoo_withdrawn_20250214@example.com",
+            "context": null,
+            "date": "2025-02-14",
+            "url": "/admin/users/00000000-0000-4000-8000-000000000015"
+          }
+        ],
+        "columns": {
+          "title": "이름",
+          "subtitle": "이메일",
+          "date": "탈퇴일"
+        },
+        "pagination": {
+          "current_page": 1,
+          "per_page": 20,
+          "from": 1,
+          "to": 2,
+          "has_more_pages": false,
+          "last_page": 1,
+          "total": 2
         }
       }
     }

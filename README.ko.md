@@ -395,6 +395,18 @@ HookManager::doAction('sirsoft-ecommerce.order.after_confirm', $order);
 
 > 상세: [docs/backend/identity-policies.md](docs/backend/identity-policies.md), [docs/backend/identity-providers.md](docs/backend/identity-providers.md), [docs/backend/identity-messages.md](docs/backend/identity-messages.md)
 
+#### 7. 개인정보 보유기간 처리
+
+보유기간이 지난 개인정보를 도메인별로 파기·익명화합니다. 코어는 수집·매일 새벽 배치·대상 건수·대상 명단·권한 검사라는 공통 절차를 맡고, 각 도메인 소유자(코어 회원, 이커머스 모듈, 게시판 모듈 …)는 무엇이 대상이고 어떻게 지우는지만 구현합니다.
+
+- **핸들러 계약** — 모듈·플러그인이 `PrivacyRetentionHandlerInterface` 를 구현해 `core.privacy.retention_handlers` 필터로 등록하면, 매일 새벽 `privacy:process-retention` 배치·대상 건수·대상 명단 API 가 코어 수정 없이 그 도메인을 함께 다룹니다
+- **기본 꺼짐** — 모든 핸들러가 자기 설정을 `false` 폴백으로 읽고, 배치는 되돌릴 수 없는 처리 직전에 토글을 다시 확인합니다
+- **켜기 전에 확인** — 각 설정 화면이 기능이 꺼져 있어도 처리될 건수를 보여 주고, 「대상 보기」가 배치가 처리할 바로 그 명단을 무한 스크롤 목록으로 엽니다(설정 읽기 + 도메인 읽기 권한 필요)
+- **같은 모집단** — 건수·명단·배치가 하나의 조건식을 공유하므로 화면의 숫자가 실제로 처리되는 양입니다
+- **휴면 계정** — 코어 전용 생명주기(사전 안내 → 휴면 전환 → 탈퇴 예고 → 자동 탈퇴)이며 같은 건수·명단 화면을 갖습니다
+
+> 상세: [docs/backend/privacy-retention.md](docs/backend/privacy-retention.md), [docs/backend/api/privacy.md](docs/backend/api/privacy.md)
+
 ---
 
 ## 빠른 시작

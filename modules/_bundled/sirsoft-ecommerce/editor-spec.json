@@ -3956,6 +3956,52 @@
           }
         }
       },
+      "ecommercePrivacyRetentionPreview": {
+        "data": {
+          "orders": 42,
+          "enabled": false,
+          "mode": "anonymize",
+          "retention_years": 5,
+          "can_view_targets": true
+        }
+      },
+      "privacyTargets": {
+        "data": {
+          "data": [
+            {
+              "id": 101,
+              "title": "ORD-20200315-0001",
+              "subtitle": "홍길동",
+              "context": "구매확정",
+              "date": "2020-03-20",
+              "url": "/admin/ecommerce/orders/ORD-20200315-0001"
+            },
+            {
+              "id": 102,
+              "title": "ORD-20200402-0007",
+              "subtitle": "김철수",
+              "context": "취소",
+              "date": "2020-04-03",
+              "url": "/admin/ecommerce/orders/ORD-20200402-0007"
+            }
+          ],
+          "columns": {
+            "title": "주문번호",
+            "subtitle": "주문자",
+            "context": "주문 상태",
+            "date": "종결일"
+          },
+          "pagination": {
+            "current_page": 1,
+            "per_page": 20,
+            "from": 1,
+            "to": 2,
+            "has_more_pages": false,
+            "last_page": 1,
+            "total": 2
+          }
+        }
+      },
       "seoStats": {
         "data": {
           "count": 0,

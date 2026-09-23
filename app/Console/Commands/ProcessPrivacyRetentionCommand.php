@@ -64,7 +64,18 @@ class ProcessPrivacyRetentionCommand extends Command
     {
         $isDryRun = (bool) $this->option('dry-run');
         $only = $this->option('handler');
-        $only = ($only === null || $only === '') ? null : (string) $only;
+
+        // `--handler=`(빈 값)을 「전 핸들러」로 해석하지 않는다 — 한 도메인만 돌리려던 운영자의
+        // 오타·빈 변수 치환이 코어와 모든 확장의 되돌릴 수 없는 파기로 번진다. 옵션을 아예
+        // 주지 않은 것만 전 핸들러 실행이다.
+        if ($only !== null && trim((string) $only) === '') {
+            $this->error('--handler 에 핸들러 식별자를 지정하세요. 전 핸들러를 실행하려면 옵션을 빼세요.');
+            $this->line('등록된 핸들러: '.(implode(', ', array_keys($this->manager->handlers())) ?: '없음'));
+
+            return Command::FAILURE;
+        }
+
+        $only = $only === null ? null : trim((string) $only);
 
         if ($only !== null && $this->manager->handler($only) === null) {
             $this->error("등록되지 않은 보유기간 핸들러입니다: {$only}");

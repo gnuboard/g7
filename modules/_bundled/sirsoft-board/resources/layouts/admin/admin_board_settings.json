@@ -30,6 +30,37 @@
             "comment": "설정 본체 — 유일하게 탭 조건 없이 항상 읽고 `_local.form` 을 채운다(모든 탭이 이 한 폼을 나눠 쓴다)"
         },
         {
+            "id": "boardPrivacyRetentionPreview",
+            "label_key": "$t:sirsoft-board.editor.data_source.boardPrivacyRetentionPreview",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-board/admin/settings/privacy-retention-preview",
+            "method": "GET",
+            "if": "{{(query.tab || _global.activeBoardSettingsTab || 'general') === 'general'}}",
+            "auto_fetch": true,
+            "auth_required": true,
+            "fallback": {
+                "data": {
+                    "ip": null,
+                    "guest": null
+                }
+            },
+            "comment": "개인정보 보유기간 대상 건수 — 「일반」 탭의 보유기간 카드 뱃지가 읽는다. 저장된 설정 기준이라 저장 성공 뒤 다시 읽고, 꺼진 축은 서버가 null 을 준다"
+        },
+        {
+            "id": "privacyTargets",
+            "label_key": "$t:sirsoft-board.editor.data_source.privacyTargets",
+            "type": "api",
+            "endpoint": "/api/admin/privacy/{{_global.privacyTargets?.path ?? 'retention-targets/sirsoft-board.ip'}}",
+            "method": "GET",
+            "auto_fetch": false,
+            "auth_required": true,
+            "loading_strategy": "progressive",
+            "params": {
+                "per_page": 20
+            },
+            "comment": "개인정보 보유기간 대상 창 — 작성 IP·비회원 두 축이 함께 쓴다. 여는 버튼이 목록 경로를 `_global.privacyTargets.path` 에\n       넣고 다시 받은 뒤 연다. 명단은 코어 공통 대상 목록 API 가 두 핸들러를 식별자로 찾아 내려준다."
+        },
+        {
             "id": "boards_list",
             "label_key": "$t:sirsoft-board.editor.data_source.boards_list",
             "type": "api",
@@ -214,6 +245,7 @@
     "transition_overlay": {
         "wait_for": [
             "settings",
+            "boardPrivacyRetentionPreview",
             "boards_list",
             "roles",
             "board_types",
@@ -646,7 +678,7 @@
                                                         "auth_required": true,
                                                         "params": {
                                                             "method": "PUT",
-                                                            "body": "{{(function() { const tab = _global.activeBoardSettingsTab || query.tab || 'general'; const form = _local.form || {}; if (tab === 'general') { return { _tab: 'general', display: form.display || {}, attachment_settings: form.attachment_settings || {} }; } if (tab === 'report_policy') { return { _tab: 'report_policy', report_policy: form.report_policy || {}, spam_security: form.spam_security || {}, report_permissions: form.report_permissions || {} }; } if (tab === 'spam_security') { return { _tab: 'spam_security', spam_security: form.spam_security || {} }; } if (tab === 'seo') { return { _tab: 'seo', seo: form.seo || {} }; } if (tab === 'notification_definitions') { return { _tab: 'notifications', notifications: { channels: form.notifications?.channels || [] } }; } return { _tab: 'basic_defaults', basic_defaults: form.basic_defaults || {}, notifications: form.notifications || {} }; })()}}"
+                                                            "body": "{{(function() { const tab = _global.activeBoardSettingsTab || query.tab || 'general'; const form = _local.form || {}; if (tab === 'general') { return { _tab: 'general', display: form.display || {}, attachment_settings: form.attachment_settings || {}, privacy_retention: form.privacy_retention || {} }; } if (tab === 'report_policy') { return { _tab: 'report_policy', report_policy: form.report_policy || {}, spam_security: form.spam_security || {}, report_permissions: form.report_permissions || {} }; } if (tab === 'spam_security') { return { _tab: 'spam_security', spam_security: form.spam_security || {} }; } if (tab === 'seo') { return { _tab: 'seo', seo: form.seo || {} }; } if (tab === 'notification_definitions') { return { _tab: 'notifications', notifications: { channels: form.notifications?.channels || [] } }; } return { _tab: 'basic_defaults', basic_defaults: form.basic_defaults || {}, notifications: form.notifications || {} }; })()}}"
                                                         },
                                                         "onSuccess": [
                                                             {
@@ -679,6 +711,12 @@
                                                                 "handler": "refetchDataSource",
                                                                 "params": {
                                                                     "dataSourceId": "board_types"
+                                                                }
+                                                            },
+                                                            {
+                                                                "handler": "refetchDataSource",
+                                                                "params": {
+                                                                    "dataSourceId": "boardPrivacyRetentionPreview"
                                                                 }
                                                             },
                                                             {
@@ -776,6 +814,10 @@
         {
             "comment": "본인인증 정책 삭제 확인",
             "partial": "partials/admin_board_settings/_modal_identity_policy_delete.json"
+        },
+        {
+            "comment": "개인정보 보유기간 대상 창(일반 탭 보유기간 카드) — 작성 IP·비회원 두 축이 함께 쓴다.",
+            "partial": "partials/admin_board_settings/_modal_privacy_targets.json"
         }
     ]
 }

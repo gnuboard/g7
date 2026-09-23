@@ -1,0 +1,68 @@
+<!-- 쇼핑몰 설정 — 개인정보 보유기간 탭 (이슈 #636). 종결 주문(구매확정·취소, 진행 중 환불 없음)의 주문자·수령인 정보를 보유기간이 지나면 익명화하거나 주문째 삭제한다.
+  켜는 순간부터 되돌릴 수 없는 처리가 매일 돌므로 법령 안내(전자상거래법 5년 보존)와 처리방침 사전 안내 의무를 맨 위에 두고, 두 방식이 각각 무엇을 잃게 하는지(익명화 — 비회원 주문조회·관리자 이름 검색 / 삭제 — 상품 리뷰·결제 영수증 조회·쿠폰·마일리지 주문 연결)를 방식별로 적는다.
+  세 칸 모두 `name` 바인딩만 쓴다(코어 개인정보 탭과 같은 패턴) — 토글에만 명시 set-state 를 섞으면 방식 라디오의 이름 바인딩이 카테고리를 옛 값으로 되써 토글이 꺼진다(게시판 E2E 실측).
+  대상 건수는 저장된 설정 기준(코어 보유기간 커맨드의 dry-run 과 같은 조건식)이고 **꺼져 있어도** 보인다(켜기 전에 규모를 본다 — #636).
+  건수 옆 버튼은 대상 주문 창을 여는데, 주문 읽기 권한이 있고 대상이 있을 때만 그린다. -->
+<partial description="쇼핑몰 설정 개인정보 보유기간 탭 콘텐츠">
+  <div data-ref="tab_content_privacy_retention" data-if="{{(_global.activeEcommerceSettingsTab || query.tab || 'basic_info') === 'privacy_retention'}}" class="card-stack">
+    <div data-ref="privacy_retention_notice" class="alert-info">
+      <div class="flex gap-3">
+        <icon name="circle-info" class="text-xl flex-shrink-0 mt-0.5"/>
+        <div>
+          <h3 class="text-heading">$t:sirsoft-ecommerce.admin.settings.privacy_retention.notice_title</h3>
+          <p class="text-label-subtle mt-1">$t:sirsoft-ecommerce.admin.settings.privacy_retention.notice_desc</p>
+        </div>
+      </div>
+    </div>
+    <div data-ref="privacy_retention_card" class="admin-card">
+      <h3 class="card-title">$t:sirsoft-ecommerce.admin.settings.privacy_retention.title</h3>
+      <div class="card-description">$t:sirsoft-ecommerce.admin.settings.privacy_retention.description</div>
+      <div class="row-stack">
+        <div data-ref="privacy_retention_enabled_field" class="flex-between">
+          <div>
+            <div class="flex-wrap-center gap-2">
+              <span class="text-heading">$t:sirsoft-ecommerce.admin.settings.privacy_retention.enabled</span>
+              <span data-if="{{ecommercePrivacyRetentionPreview?.data?.orders !== null &amp;&amp; ecommercePrivacyRetentionPreview?.data?.orders !== undefined}}" class="badge badge-yellow">$t:sirsoft-ecommerce.admin.settings.privacy_retention.target_count|count={{ecommercePrivacyRetentionPreview?.data?.orders ?? 0}}</span>
+              <button data-ref="view_privacy_retention_targets" data-if="{{ecommercePrivacyRetentionPreview?.data?.can_view_targets &amp;&amp; (ecommercePrivacyRetentionPreview?.data?.orders ?? 0) > 0}}" type="button" class="btn btn-sm btn-outline">
+                <on type="click">
+                  <sequence>
+                    <set-state target="global" privacyTargets="{{({ path: 'retention-targets/sirsoft-ecommerce.order', currentPage: 1, hasMore: true, isLoadingMore: false })}}"/>
+                    <set-state target="global" privacyTargets.title="$t:sirsoft-ecommerce.admin.settings.privacy_retention.targets.title"/>
+                    <refetch-data-source dataSourceId="privacyTargets"/>
+                    <open-modal target="privacy_targets_modal"/>
+                  </sequence>
+                </on>
+                $t:sirsoft-ecommerce.admin.settings.privacy_retention.targets.view
+              </button>
+            </div>
+            <p class="text-label-subtle">$t:sirsoft-ecommerce.admin.settings.privacy_retention.enabled_hint</p>
+          </div>
+          <toggle name="privacy_retention.enabled" disabled="{{_computed.isReadOnly}}"/>
+        </div>
+        <div data-ref="privacy_retention_fields" data-if="{{!!_local.form?.privacy_retention?.enabled}}" class="space-y-6">
+          <div data-ref="privacy_retention_years_field">
+            <label class="form-label">$t:sirsoft-ecommerce.admin.settings.privacy_retention.retention_years</label>
+            <div class="flex-center gap-2">
+              <input type="number" name="privacy_retention.retention_years" min="{{_local?.form?._meta?.limits?.privacy_retention_years_min ?? 5}}" max="{{_local?.form?._meta?.limits?.privacy_retention_years_max ?? 20}}" step="1" class="input w-20 {{_local.errors?.['privacy_retention.retention_years'] ? 'input-error' : ''}}" disabled="{{_computed.isReadOnly}}"/>
+              <span class="text-body">$t:sirsoft-ecommerce.admin.settings.privacy_retention.years_unit</span>
+            </div>
+            <span data-if="{{_local.errors?.['privacy_retention.retention_years']}}" class="form-error">{{_local.errors?.['privacy_retention.retention_years']?.[0] ?? ''}}</span>
+            <p class="form-hint">$t:sirsoft-ecommerce.admin.settings.privacy_retention.retention_years_hint</p>
+          </div>
+          <div data-ref="privacy_retention_mode_field" class="space-y-2">
+            <label class="form-label">$t:sirsoft-ecommerce.admin.settings.privacy_retention.mode</label>
+            <radio-group name="privacy_retention.mode" :inline="true" size="md" disabled="{{_computed.isReadOnly}}">
+              <prop name="options">
+                <item value="anonymize" label="$t:sirsoft-ecommerce.admin.settings.privacy_retention.modes.anonymize"/>
+                <item value="delete" label="$t:sirsoft-ecommerce.admin.settings.privacy_retention.modes.delete"/>
+              </prop>
+            </radio-group>
+            <p data-ref="privacy_retention_anonymize_notice" data-if="{{(_local.form?.privacy_retention?.mode ?? 'anonymize') === 'anonymize'}}" class="form-hint">$t:sirsoft-ecommerce.admin.settings.privacy_retention.anonymize_notice</p>
+            <p data-ref="privacy_retention_delete_warning" data-if="{{_local.form?.privacy_retention?.mode === 'delete'}}" class="text-error-soft">$t:sirsoft-ecommerce.admin.settings.privacy_retention.delete_warning</p>
+          </div>
+          <p class="text-hint">$t:sirsoft-ecommerce.admin.settings.privacy_retention.preview_hint</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</partial>

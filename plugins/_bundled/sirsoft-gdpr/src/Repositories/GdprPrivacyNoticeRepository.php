@@ -6,6 +6,7 @@ use App\Enums\UserStatus;
 use App\Models\User;
 use App\Repositories\Concerns\PaginatesWithDeferredJoin;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\LazyCollection;
 use Plugins\Sirsoft\Gdpr\Enums\PrivacyNoticeStatus;
 use Plugins\Sirsoft\Gdpr\Models\GdprPrivacyNoticeLog;
@@ -26,6 +27,75 @@ class GdprPrivacyNoticeRepository implements GdprPrivacyNoticeRepositoryInterfac
         return User::query()->where('status', UserStatus::Active)
             ->where('created_at', '<=', now()->subYearNoOverflow())
             ->select(['id'])->lazyById(100);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * 채널마다 「최근 1년 안에 발송 완료 기록이 없고, 결과가 나지 않은 접수 기록도 없음」을 보고
+     * 그런 채널이 하나라도 있으면 대상이다 — `dueChannels()` 의 두 조건과 같은 식이다. 채널이 비면
+     * 아무도 대상이 아니다.
+     */
+    public function dueQuery(array $channels): Builder
+    {
+        $table = (new GdprPrivacyNoticeLog)->getTable();
+        $query = User::query()->where('status', UserStatus::Active)
+            ->where('created_at', '<=', now()->subYearNoOverflow());
+
+        if ($channels === []) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        $userTable = (new User)->getTable();
+
+        return $query->where(function (Builder $due) use ($channels, $table, $userTable) {
+            foreach ($channels as $channel) {
+                $due->orWhere(function (Builder $channelDue) use ($channel, $table, $userTable) {
+                    $channelDue
+                        ->whereNotExists(function ($sent) use ($channel, $table, $userTable) {
+                            $sent->selectRaw('1')->from($table)
+                                ->whereColumn($table.'.user_id', $userTable.'.id')
+                                ->where('is_test', false)
+                                ->whereJsonContains('channels', $channel)
+                                ->where('status', PrivacyNoticeStatus::Sent->value)
+                                ->where('sent_at', '>', now()->subYearNoOverflow());
+                        })
+                        ->whereNotExists(function ($pending) use ($channel, $table, $userTable) {
+                            $pending->selectRaw('1')->from($table)
+                                ->whereColumn($table.'.user_id', $userTable.'.id')
+                                ->where('is_test', false)
+                                ->whereJsonContains('channels', $channel)
+                                ->where('status', PrivacyNoticeStatus::Queued->value)
+                                ->whereNotExists(function ($result) use ($channel, $table) {
+                                    $result->selectRaw('1')->from($table.' as results')
+                                        ->whereColumn('results.attempt_id', $table.'.attempt_id')
+                                        ->whereIn('results.status', [PrivacyNoticeStatus::Sent->value, PrivacyNoticeStatus::Failed->value])
+                                        ->whereJsonContains('results.channels', $channel);
+                                });
+                        });
+                });
+            }
+        });
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function dueCount(array $channels): int
+    {
+        return $this->dueQuery($channels)->count();
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * 회원 ID 순 — 발송 루프(`candidates()` 의 ID 순)와 같은 방향이라 먼저 보이는 회원부터 나간다.
+     */
+    public function duePage(array $channels, int $page, int $perPage): LengthAwarePaginator
+    {
+        return $this->dueQuery($channels)
+            ->orderBy('id')
+            ->paginate($perPage, ['id', 'uuid', 'name', 'email', 'created_at'], 'page', $page);
     }
 
     /**
@@ -119,9 +189,9 @@ class GdprPrivacyNoticeRepository implements GdprPrivacyNoticeRepositoryInterfac
     {
         return $this->paginateWithDeferredJoin(
             GdprPrivacyNoticeLog::query(),
-            ['id', 'user_id', 'attempt_id', 'status', 'channels', 'is_test', 'sent_at', 'created_at'],
-            [['column' => 'id', 'direction' => 'desc']],
-            $perPage,
+            columns: ['id', 'user_id', 'attempt_id', 'status', 'channels', 'is_test', 'sent_at', 'created_at'],
+            sort: [['column' => 'id', 'direction' => 'desc']],
+            perPage: $perPage,
         );
     }
 

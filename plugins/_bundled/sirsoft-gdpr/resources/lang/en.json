@@ -10,7 +10,9 @@
             "gdprPolicyVersionSnapshot": "Policy Version Snapshot",
             "gdprPublicSettings": "GDPR Public Settings",
             "gdprSettings": "GDPR Settings",
-            "gdprNoticeLog": "Privacy notice log"
+            "gdprNoticeLog": "Privacy notice log",
+            "gdprAnnualNoticePreview": "Annual notice target count",
+            "privacyTargets": "Annual notice target members"
         }
     },
     "consent": {
@@ -382,7 +384,17 @@
         "status": "Status",
         "kind": "Kind",
         "test": "Test",
-        "scheduled": "Scheduled"
+        "scheduled": "Scheduled",
+        "targets": {
+            "count": "Due this cycle: {{count}}",
+            "view": "View targets",
+            "title": "Members due for the annual notice",
+            "hint": "Shows how many members would be notified even while this is off. Each run sends at most the send limit.",
+            "total": "{{count}} in total",
+            "empty": "There are no targets.",
+            "loading": "Loading...",
+            "close": "Close"
+        }
     },
     "edit_template": "Edit template",
     "reset": "Restore defaults",

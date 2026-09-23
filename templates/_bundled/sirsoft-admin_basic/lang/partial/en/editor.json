@@ -1724,6 +1724,7 @@
     "trustedProxy": "Trusted proxy diagnostic",
     "user": "User",
     "users": "Users",
-    "privacyPreview": "Privacy processing target counts"
+    "privacyPreview": "Privacy processing target counts",
+    "privacyTargets": "Privacy action target list"
   }
 }

@@ -103,8 +103,8 @@
       </field>
     </fallback>
   </data-source>
-  <!-- 개인정보 탭의 dry-run 건수 뱃지 — 커맨드의 `--dry-run` 과 같은 조건식을 지나므로
-       화면 숫자와 실제 처리 건수가 어긋나지 않는다. -->
+  <!-- 개인정보 탭의 대상 건수 뱃지 — 커맨드의 `--dry-run` 과 같은 조건식을 지나므로
+       화면 숫자와 실제 처리 건수가 어긋나지 않는다. 기능이 꺼져 있어도 건수를 보여 준다(#636). -->
   <data-source id="privacyPreview" label_key="$t:editor.data_source.privacyPreview" type="api" endpoint="/api/admin/settings/privacy-preview" method="GET" if="{{(query.tab || _global.activeSettingsTab || 'general') === 'privacy'}}" :auto_fetch="true" :auth_required="true">
     <fallback>
       <field name="data">
@@ -112,6 +112,11 @@
         <field name="dormant" :value="null"/>
       </field>
     </fallback>
+  </data-source>
+  <!-- 개인정보 조치 대상 명단 창 — 여는 버튼이 목록 경로(보유기간 핸들러·휴면 단계)를 `_global.privacyTargets.path` 에
+       넣고 다시 받은 뒤 창을 연다. 스스로 조회하지 않고, 다음 쪽은 창의 스크롤이 이어 붙인다. -->
+  <data-source id="privacyTargets" label_key="$t:editor.data_source.privacyTargets" type="api" endpoint="/api/admin/privacy/{{_global.privacyTargets?.path ?? 'retention-targets/user-withdrawn'}}" method="GET" :auto_fetch="false" :auth_required="true" loading_strategy="progressive">
+    <params :per_page="20"/>
   </data-source>
   <!-- 애플리케이션 키 — 보안 탭에서만 받는다. 값이 민감해 그 탭을 실제로 열기 전에는 부르지 않는다. -->
   <data-source id="appKey" label_key="$t:editor.data_source.appKey" type="api" endpoint="/api/admin/settings/app-key" method="GET" if="{{(query.tab || _global.activeSettingsTab || 'general') === 'security'}}" :auto_fetch="true" :auth_required="true">
@@ -360,7 +365,9 @@
                  다른 유일한 자리다.
                  맨 앞의 이벤트는 아직 올라가지 않은 로고 파일을 먼저 올리라는 신호다 — 그 조각이 받아
                  처리하므로 여기서 파일을 다루지 않는다.
-                 성공 뒤 설정을 다시 받는 것은 서버가 정규화한 값으로 폼을 되맞추기 위함이다. -->
+                 성공 뒤 설정을 다시 받는 것은 서버가 정규화한 값으로 폼을 되맞추기 위함이다.
+                 개인정보 탭이면 대상 건수도 다시 받는다 — 저장한 기간으로 센 숫자가 즉시 보여야 방금 켠 기능이
+                 처리할 규모를 옛 숫자로 오독하지 않는다(#636 브라우저 실측으로 잡은 결함, 이커머스 탭과 같은 방식). -->
             <sequence>
               <emit-event event="upload:site_logo"/>
               <set-state target="local" :isSaving="true" :errors="null"/>
@@ -370,6 +377,7 @@
                   <set-state target="global" settings="{{result.data.settings}}" uploadSettings="{{result.data.settings.upload}}"/>
                   <toast type="success" message="$t:admin.settings.save_success"/>
                   <refetch-data-source dataSourceId="settings"/>
+                  <refetch-data-source if="{{(_global.activeSettingsTab || query.tab) === 'privacy'}}" dataSourceId="privacyPreview"/>
                 </success>
                 <fail>
                   <set-state target="local" :isSaving="false" errors="{{error.errors}}"/>
@@ -436,4 +444,6 @@
   <modal src="partials/admin_settings/_modal_identity_message_definition_delete.g7.html"/>
   <!-- 인증 메시지 정의를 기본값으로 되돌리는 확인 창. -->
   <modal src="partials/admin_settings/_modal_identity_message_definition_reset.g7.html"/>
+  <!-- 개인정보 조치 대상 명단 창(개인정보 탭) — 탈퇴 잔여정보 파기와 휴면 네 단계가 함께 쓴다. -->
+  <modal src="partials/admin_settings/_modal_privacy_targets.g7.html"/>
 </layout>

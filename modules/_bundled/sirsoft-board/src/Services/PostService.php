@@ -21,6 +21,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Modules\Sirsoft\Board\Enums\PostStatus;
 use Modules\Sirsoft\Board\Enums\ReplyDeletePolicy;
+use Modules\Sirsoft\Board\Enums\TriggerType;
 use Modules\Sirsoft\Board\Exceptions\PostHasRepliesException;
 use Modules\Sirsoft\Board\Models\Board;
 use Modules\Sirsoft\Board\Models\Post;
@@ -437,6 +438,33 @@ class PostService
         HookManager::doAction('sirsoft-board.post.before_delete', $post, $slug);
 
         return $this->executeDelete($slug, $id, $options, $triggerType);
+    }
+
+    /**
+     * 개인정보 보유기간 처리로 게시글을 삭제합니다 (이슈 #636 — 시스템 삭제).
+     *
+     * 관리자·작성자의 삭제와 같은 실행 본체({@see executeDelete()})를 지나므로 답글·댓글·첨부
+     * 연쇄 삭제와 after_delete 리스너(건수 동기화·연동 확장 정리·활동 로그)가 똑같이 돈다.
+     * 다른 점은 둘이다.
+     *
+     * - **항목별 before_delete 를 발화하지 않는다.** 그 훅에는 본인인증(IDV) 정책이 걸릴 수
+     *   있는데, 무인 배치에는 인증할 사람이 없어 운영자가 정책을 켜는 순간 법정 파기가 전부
+     *   428 로 멈춘다. 일괄 처리 경로(bulkAction)가 항목별 훅을 건너뛰는 것과 같은 판단이다.
+     * - **답글 삭제 정책과 무관하게 연쇄 삭제**하고 알림을 보내지 않는다 — 보유기간이 지난
+     *   글의 삭제를 작성자·관리자에게 알릴 이유가 없다.
+     *
+     * @param  string  $slug  게시판 슬러그
+     * @param  int  $id  게시글 ID
+     * @return Post 삭제된 게시글
+     */
+    public function deleteForRetention(string $slug, int $id): Post
+    {
+        return $this->executeDelete(
+            $slug,
+            $id,
+            ['skip_notification' => true, 'cascade_replies' => true, 'privacy_retention' => true],
+            TriggerType::System->value,
+        );
     }
 
     /**

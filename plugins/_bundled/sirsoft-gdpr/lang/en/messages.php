@@ -1,7 +1,7 @@
 <?php
 
 return [
-    'annual_notice' => ['attributes' => ['page' => 'page', 'per_page' => 'items per page'], 'collection_summary' => 'Name, email and account information provided during registration and service use', 'purpose' => 'Member identification, service delivery and support', 'retention' => 'Retained until withdrawal, except records subject to statutory retention periods.', 'queued_count' => ':count recipients queued', 'test_queued' => 'Test queued. Check the log for results.', 'unavailable' => 'Check active member status and delivery channels.', 'status' => ['queued' => 'Queued', 'sent' => 'Sent', 'failed' => 'Failed']],
+    'annual_notice' => ['target_columns' => ['name' => 'Name', 'email' => 'Email', 'joined_at' => 'Joined on'], 'attributes' => ['page' => 'page', 'per_page' => 'items per page'], 'collection_summary' => 'Name, email and account information provided during registration and service use', 'purpose' => 'Member identification, service delivery and support', 'retention' => 'Retained until withdrawal, except records subject to statutory retention periods.', 'queued_count' => ':count recipients queued', 'test_queued' => 'Test queued. Check the log for results.', 'unavailable' => 'Check active member status and delivery channels.', 'status' => ['queued' => 'Queued', 'sent' => 'Sent', 'failed' => 'Failed']],
     'consent' => [
         'granted' => 'Consent has been saved.',
         'granted_again' => 'Consent has been renewed.',

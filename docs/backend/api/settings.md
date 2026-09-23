@@ -619,12 +619,17 @@ _단건 응답: `data` 객체의 필드._
 
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
-| retention | object | `{"user-withdrawn": null}` | 보유기간 핸들러 식별자 => 대상 건수. **꺼진 핸들러는 건수가 아니라 `null`** — "꺼짐" 과 "대상 0건" 은 다른 정보다. 확장이 등록한 핸들러도 같은 객체에 실린다 |
-| dormant | object\|null | `null` | 휴면 단계별 대상 건수. 휴면 기능이 꺼져 있으면 객체 전체가 `null` |
+| retention | object | `{"user-withdrawn": {…}}` | 보유기간 핸들러 식별자 => 상태 객체. 확장이 등록한 핸들러도 같은 객체에 실린다 |
+| retention.{id}.enabled | boolean | `false` | 그 핸들러의 기능이 켜져 있는지 |
+| retention.{id}.count | integer\|null | `2` | 대상 건수 — **꺼져 있어도 센다**(저장된 기간값 기준). `null` 은 미리보기 실패(로그 참조) |
+| retention.{id}.can_view_targets | boolean | `true` | 요청 관리자가 대상 목록(「더보기」)을 볼 권한이 있는지 — 핸들러가 선언한 설정 읽기 + 도메인 읽기 |
+| dormant.enabled | boolean | `false` | 휴면 기능이 켜져 있는지 |
+| dormant.withdraw_enabled | boolean | `false` | 휴면 자동 탈퇴가 켜져 있는지 |
+| dormant.can_view_targets | boolean | `true` | 휴면 대상 목록을 볼 권한(`core.settings.read` + `core.users.read`) |
 | dormant.pre_notice | integer | `0` | 사전 안내 대상 건수 |
 | dormant.convert | integer | `0` | 휴면 전환 대상 건수 (안내 후 통지 기간 경과분만) |
-| dormant.withdraw_notice | integer | `0` | 탈퇴 예정 안내 대상 건수 (자동 탈퇴가 꺼져 있으면 0) |
-| dormant.withdraw | integer | `0` | 탈퇴 처리 대상 건수 (자동 탈퇴가 꺼져 있으면 0) |
+| dormant.withdraw_notice | integer | `0` | 탈퇴 예정 안내 대상 건수 (자동 탈퇴가 꺼져 있어도 센다) |
+| dormant.withdraw | integer | `0` | 탈퇴 처리 대상 건수 (자동 탈퇴가 꺼져 있어도 센다) |
 
 **응답 예시**
 
@@ -638,9 +643,21 @@ HTTP/1.1 200
     "message": "성공적으로 처리되었습니다.",
     "data": {
         "retention": {
-            "user-withdrawn": null
+            "user-withdrawn": {
+                "enabled": false,
+                "count": 2,
+                "can_view_targets": true
+            }
         },
-        "dormant": null
+        "dormant": {
+            "enabled": false,
+            "withdraw_enabled": false,
+            "can_view_targets": true,
+            "pre_notice": 0,
+            "convert": 0,
+            "withdraw_notice": 0,
+            "withdraw": 0
+        }
     }
 }
 ```
@@ -656,11 +673,11 @@ HTTP/1.1 200
 
 **설명**
 
-개인정보 보유기간·휴면의 **처리 대상 건수를 미리** 돌려줍니다. 관리자 > 환경설정 > 개인정보 탭의 dry-run 뱃지가 이 값을 씁니다. 읽기 전용이며 데이터를 바꾸지 않습니다.
+개인정보 보유기간·휴면의 **처리 대상 건수를 미리** 돌려줍니다. 관리자 > 환경설정 > 개인정보 탭의 「대상 N건」 배지가 이 값을 씁니다. 읽기 전용이며 데이터를 바꾸지 않습니다.
 
 건수는 커맨드(`privacy:process-retention --dry-run` · `privacy:process-dormant --dry-run`)와 **같은 조건식**을 지납니다 — 화면에서 본 숫자와 실제 처리 건수가 어긋나면 운영자가 규모를 오판한 채 기능을 켜게 되고, 그 처리는 되돌릴 수 없습니다.
 
-`retention` 의 값이 `null` 인 항목은 **그 핸들러가 꺼져 있다**는 뜻이고, `0` 은 **켜져 있으나 대상이 없다**는 뜻입니다. 둘을 같은 0 으로 뭉개면 운영자가 켠 줄 아는 기능이 실제로는 놀고 있어도 알아챌 수 없으므로 화면도 두 상태를 구분해 그립니다.
+**기능이 꺼져 있어도 건수를 돌려줍니다.** 운영자는 켜기 **전에** 규모와 명단을 확인해야 하기 때문입니다. "꺼짐" 과 "대상 0건" 은 `enabled` 로 구분합니다. 명단은 [개인정보 조치 대상 API](privacy.md)로 한 페이지씩 받으며, `can_view_targets` 가 `false` 면 화면이 「더보기」 버튼을 그리지 않습니다.
 
 
 ### GET /api/admin/settings/app-key

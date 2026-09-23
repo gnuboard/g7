@@ -233,7 +233,7 @@ CSS 가 아닌 자산은 바이트 그대로 서빙됩니다. 정적 게시본(`
 ## 코어 API 레퍼런스
 
 <!-- @generated:start:api-readme-index -->
-- **문서 수**: 36 · **엔드포인트 수**: 328
+- **문서 수**: 37 · **엔드포인트 수**: 330
 
 | 문서 | 도메인 | 엔드포인트 |
 | --- | --- | --- |
@@ -263,6 +263,7 @@ CSS 가 아닌 자산은 바이트 그대로 서빙됩니다. 정적 게시본(`
 | [password.md](password.md) | `password` | 1 |
 | [permissions.md](permissions.md) | `permissions` | 1 |
 | [plugins.md](plugins.md) | `plugins` | 27 |
+| [privacy.md](privacy.md) | `privacy` | 2 |
 | [profile.md](profile.md) | `profile` | 4 |
 | [roles.md](roles.md) | `roles` | 7 |
 | [schedules.md](schedules.md) | `schedules` | 12 |

@@ -2135,6 +2135,25 @@
         "withdraw_days_hint": "After this period a withdrawal notice is sent, and the account is withdrawn once the notice period has passed. Default 365 days.",
         "withdraw_warning": "A withdrawn account cannot be restored. Administrator accounts are excluded from automatic withdrawal.",
         "restore_hint": "Dormancy is lifted automatically when the member signs in — no application is required."
+      },
+      "targets": {
+        "view_withdrawn": "View targets",
+        "view_pre_notice": "View notice targets",
+        "view_convert": "View conversion targets",
+        "view_withdraw_notice": "View withdrawal notice targets",
+        "view_withdraw": "View withdrawal targets",
+        "title": {
+          "withdrawn": "Withdrawn members to be purged",
+          "pre_notice": "Members to receive the dormancy notice",
+          "convert": "Members to be converted to dormant",
+          "withdraw_notice": "Dormant members to receive the withdrawal notice",
+          "withdraw": "Dormant members to be withdrawn"
+        },
+        "hint": "Counts and lists follow the saved settings. Even while a feature is off, they show what would be processed once it is turned on.",
+        "total": "{{count}} in total",
+        "empty": "There are no targets.",
+        "loading": "Loading...",
+        "close": "Close"
       }
     }
   },

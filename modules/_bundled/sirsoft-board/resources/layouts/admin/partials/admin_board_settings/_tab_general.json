@@ -355,6 +355,371 @@
                     ]
                 }
             ]
+        },
+        {
+            "comment": "개인정보 보유기간 (이슈 #636) — 네 칸 모두 `name` 바인딩만 쓴다(코어 개인정보 탭과 같은 패턴). 토글에만 명시 set-state 를 섞으면 방식 라디오의 이름 바인딩이 그 카테고리를 옛 값으로 되써 토글이 꺼지고 기간 칸이 사라진다(E2E 실측). 작성 IP 축(회원 글 포함 전 게시물)과 비회원 작성자 정보 축을 기간을 따로 두어 나눈다. 켜는 순간부터 되돌릴 수 없는 파기가 일어나므로 처리방침 사전 안내 의무와 삭제 방식의 연쇄 영향을 함께 적는다. 대상 건수는 저장된 설정 기준(코어 보유기간 커맨드의 dry-run 과 같은 조건식)이고, 꺼진 축은 서버가 null 을 내려 뱃지가 숨는다",
+            "id": "privacy_retention_section",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "admin-card mt-6"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "H2",
+                    "props": {
+                        "className": "card-title"
+                    },
+                    "text": "$t:sirsoft-board.admin.settings.privacy_retention.title"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "card-description"
+                    },
+                    "text": "$t:sirsoft-board.admin.settings.privacy_retention.description"
+                },
+                {
+                    "id": "privacy_retention_enabled_field",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "mt-4"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "form-label"
+                            },
+                            "text": "$t:sirsoft-board.admin.settings.privacy_retention.enabled"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-tertiary"
+                            },
+                            "text": "$t:sirsoft-board.admin.settings.privacy_retention.enabled_hint"
+                        },
+                        {
+                            "type": "composite",
+                            "name": "Toggle",
+                            "props": {
+                                "name": "privacy_retention.enabled",
+                                "disabled": "{{_computed.isReadOnly}}"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "comment": "두 축의 대상 건수 — 꺼져 있어도 보인다(켜기 전에 규모를 본다, #636). 기간 칸은 켰을 때만 보이므로 건수를 그 안에 두지 않는다.\n        옆 버튼은 대상 창을 여는데, 게시판 관리 읽기 권한이 있고 대상이 있을 때만 그린다. 비회원 기간 0(미적용)이면 비회원 건수는 0 이다.",
+                    "id": "privacy_retention_targets",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{boardPrivacyRetentionPreview?.data?.ip !== null && boardPrivacyRetentionPreview?.data?.ip !== undefined}}",
+                    "props": {
+                        "className": "mt-3 flex flex-wrap items-center gap-2"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "badge badge-yellow"
+                            },
+                            "text": "$t:sirsoft-board.admin.settings.privacy_retention.targets.ip_count|count={{boardPrivacyRetentionPreview?.data?.ip ?? 0}}"
+                        },
+                        {
+                            "id": "view_ip_targets",
+                            "type": "basic",
+                            "name": "Button",
+                            "if": "{{boardPrivacyRetentionPreview?.data?.can_view_targets && (boardPrivacyRetentionPreview?.data?.ip ?? 0) > 0}}",
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "privacyTargets": "{{({ path: 'retention-targets/sirsoft-board.ip', currentPage: 1, hasMore: true, isLoadingMore: false })}}"
+                                            }
+                                        },
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "privacyTargets.title": "$t:sirsoft-board.admin.settings.privacy_retention.targets.title_ip"
+                                            }
+                                        },
+                                        {
+                                            "handler": "refetchDataSource",
+                                            "params": {
+                                                "dataSourceId": "privacyTargets"
+                                            }
+                                        },
+                                        {
+                                            "handler": "openModal",
+                                            "target": "privacy_targets_modal"
+                                        }
+                                    ]
+                                }
+                            ],
+                            "props": {
+                                "type": "button",
+                                "className": "btn btn-sm btn-outline"
+                            },
+                            "text": "$t:sirsoft-board.admin.settings.privacy_retention.targets.view_ip"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "badge badge-yellow"
+                            },
+                            "text": "$t:sirsoft-board.admin.settings.privacy_retention.targets.guest_count|count={{boardPrivacyRetentionPreview?.data?.guest ?? 0}}"
+                        },
+                        {
+                            "id": "view_guest_targets",
+                            "type": "basic",
+                            "name": "Button",
+                            "if": "{{boardPrivacyRetentionPreview?.data?.can_view_targets && (boardPrivacyRetentionPreview?.data?.guest ?? 0) > 0}}",
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "privacyTargets": "{{({ path: 'retention-targets/sirsoft-board.guest', currentPage: 1, hasMore: true, isLoadingMore: false })}}"
+                                            }
+                                        },
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "privacyTargets.title": "$t:sirsoft-board.admin.settings.privacy_retention.targets.title_guest"
+                                            }
+                                        },
+                                        {
+                                            "handler": "refetchDataSource",
+                                            "params": {
+                                                "dataSourceId": "privacyTargets"
+                                            }
+                                        },
+                                        {
+                                            "handler": "openModal",
+                                            "target": "privacy_targets_modal"
+                                        }
+                                    ]
+                                }
+                            ],
+                            "props": {
+                                "type": "button",
+                                "className": "btn btn-sm btn-outline"
+                            },
+                            "text": "$t:sirsoft-board.admin.settings.privacy_retention.targets.view_guest"
+                        }
+                    ]
+                },
+                {
+                    "id": "privacy_retention_axes",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{!!_local.form?.privacy_retention?.enabled}}",
+                    "props": {
+                        "className": "mt-4 space-y-6"
+                    },
+                    "children": [
+                        {
+                            "id": "privacy_ip_retention_days_field",
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex-center"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "form-label"
+                                            },
+                                            "text": "$t:sirsoft-board.admin.settings.privacy_retention.ip_retention_days"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-tertiary"
+                                    },
+                                    "text": "$t:sirsoft-board.admin.settings.privacy_retention.ip_retention_days_hint"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "props": {
+                                        "type": "number",
+                                        "name": "privacy_retention.ip_retention_days",
+                                        "min": "{{_local?.form?._meta?.limits?.privacy_ip_retention_days_min ?? 1}}",
+                                        "max": "{{_local?.form?._meta?.limits?.privacy_ip_retention_days_max ?? 3650}}",
+                                        "className": "input w-40 {{_local.errors?.['privacy_retention.ip_retention_days'] ? 'input-error' : ''}}",
+                                        "disabled": "{{_computed.isReadOnly}}"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{_local.errors?.['privacy_retention.ip_retention_days']}}",
+                                    "props": {
+                                        "className": "form-error"
+                                    },
+                                    "text": "{{_local.errors?.['privacy_retention.ip_retention_days']?.[0] ?? ''}}"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "privacy_guest_retention_days_field",
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex-center"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "form-label"
+                                            },
+                                            "text": "$t:sirsoft-board.admin.settings.privacy_retention.guest_retention_days"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-tertiary"
+                                    },
+                                    "text": "$t:sirsoft-board.admin.settings.privacy_retention.guest_retention_days_hint"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "props": {
+                                        "type": "number",
+                                        "name": "privacy_retention.guest_retention_days",
+                                        "min": "{{_local?.form?._meta?.limits?.privacy_guest_retention_days_min ?? 0}}",
+                                        "max": "{{_local?.form?._meta?.limits?.privacy_guest_retention_days_max ?? 3650}}",
+                                        "className": "input w-40 {{_local.errors?.['privacy_retention.guest_retention_days'] ? 'input-error' : ''}}",
+                                        "disabled": "{{_computed.isReadOnly}}"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{_local.errors?.['privacy_retention.guest_retention_days']}}",
+                                    "props": {
+                                        "className": "form-error"
+                                    },
+                                    "text": "{{_local.errors?.['privacy_retention.guest_retention_days']?.[0] ?? ''}}"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "privacy_guest_mode_field",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "space-y-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "form-label"
+                                    },
+                                    "text": "$t:sirsoft-board.admin.settings.privacy_retention.guest_mode"
+                                },
+                                {
+                                    "type": "composite",
+                                    "name": "RadioGroup",
+                                    "props": {
+                                        "name": "privacy_retention.guest_mode",
+                                        "inline": true,
+                                        "size": "md",
+                                        "disabled": "{{_computed.isReadOnly}}",
+                                        "options": [
+                                            {
+                                                "value": "anonymize",
+                                                "label": "$t:sirsoft-board.admin.settings.privacy_retention.modes.anonymize"
+                                            },
+                                            {
+                                                "value": "delete",
+                                                "label": "$t:sirsoft-board.admin.settings.privacy_retention.modes.delete"
+                                            }
+                                        ]
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-tertiary"
+                                    },
+                                    "text": "$t:sirsoft-board.admin.settings.privacy_retention.guest_mode_hint"
+                                },
+                                {
+                                    "id": "privacy_guest_delete_warning",
+                                    "type": "basic",
+                                    "name": "P",
+                                    "if": "{{_local.form?.privacy_retention?.guest_mode === 'delete'}}",
+                                    "props": {
+                                        "className": "text-error-soft"
+                                    },
+                                    "text": "$t:sirsoft-board.admin.settings.privacy_retention.delete_warning"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-hint"
+                            },
+                            "text": "$t:sirsoft-board.admin.settings.privacy_retention.preview_hint"
+                        }
+                    ]
+                },
+                {
+                    "id": "privacy_withdrawn_notice",
+                    "type": "basic",
+                    "name": "P",
+                    "props": {
+                        "className": "text-hint mt-4"
+                    },
+                    "text": "$t:sirsoft-board.admin.settings.privacy_retention.withdrawn_notice"
+                }
+            ]
         }
     ]
 }

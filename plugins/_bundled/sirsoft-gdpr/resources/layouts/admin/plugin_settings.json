@@ -25,6 +25,35 @@
             "comment": "현재 설정값. 폼에 깊은 병합으로 실어 화면에서 만진 값과 서버 값이 항목 단위로 합쳐지게 한다"
         },
         {
+            "id": "gdprAnnualNoticePreview",
+            "label_key": "$t:sirsoft-gdpr.editor.data_source.gdprAnnualNoticePreview",
+            "type": "api",
+            "endpoint": "/api/plugins/sirsoft-gdpr/admin/annual-notice/preview",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "fallback": {
+                "data": {
+                    "count": null
+                }
+            },
+            "comment": "연간 통지 대상 건수 — 발송 판정과 같은 조건이며 꺼져 있어도 센다(켜기 전에 규모를 본다, #636). 저장 뒤 다시 받는다"
+        },
+        {
+            "id": "privacyTargets",
+            "label_key": "$t:sirsoft-gdpr.editor.data_source.privacyTargets",
+            "type": "api",
+            "endpoint": "/api/plugins/sirsoft-gdpr/admin/annual-notice/targets",
+            "method": "GET",
+            "auto_fetch": false,
+            "auth_required": true,
+            "loading_strategy": "progressive",
+            "params": {
+                "per_page": 20
+            },
+            "comment": "연간 통지 대상 명단 — 창을 여는 버튼이 다시 받는다(스스로 조회하지 않음). 다음 쪽은 창의 스크롤이 이어 붙인다"
+        },
+        {
             "id": "gdprPolicyVersionCurrent",
             "label_key": "$t:sirsoft-gdpr.editor.data_source.gdprPolicyVersionCurrent",
             "type": "api",
@@ -2581,6 +2610,77 @@
                                                 ]
                                             },
                                             {
+                                                "comment": "이번 주기 대상 회원 수 — 꺼져 있어도 보인다(켜기 전에 규모를 본다, #636). 옆 버튼은 명단 창을 여는데,\n                 회원 읽기 권한이 있고 대상이 있을 때만 그린다.",
+                                                "id": "annual_notice_targets",
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "if": "{{gdprAnnualNoticePreview?.data?.count !== null && gdprAnnualNoticePreview?.data?.count !== undefined}}",
+                                                "props": {
+                                                    "className": "flex flex-wrap items-center gap-2"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "badge badge-yellow"
+                                                        },
+                                                        "text": "$t:sirsoft-gdpr.annual_notice.targets.count|count={{gdprAnnualNoticePreview?.data?.count ?? 0}}"
+                                                    },
+                                                    {
+                                                        "id": "view_annual_notice_targets",
+                                                        "type": "basic",
+                                                        "name": "Button",
+                                                        "if": "{{gdprAnnualNoticePreview?.data?.can_view_targets && (gdprAnnualNoticePreview?.data?.count ?? 0) > 0}}",
+                                                        "actions": [
+                                                            {
+                                                                "type": "click",
+                                                                "handler": "sequence",
+                                                                "actions": [
+                                                                    {
+                                                                        "handler": "setState",
+                                                                        "params": {
+                                                                            "target": "global",
+                                                                            "privacyTargets": "{{({ currentPage: 1, hasMore: true, isLoadingMore: false })}}"
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "handler": "setState",
+                                                                        "params": {
+                                                                            "target": "global",
+                                                                            "privacyTargets.title": "$t:sirsoft-gdpr.annual_notice.targets.title"
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "handler": "refetchDataSource",
+                                                                        "params": {
+                                                                            "dataSourceId": "privacyTargets"
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "handler": "openModal",
+                                                                        "target": "privacy_targets_modal"
+                                                                    }
+                                                                ]
+                                                            }
+                                                        ],
+                                                        "props": {
+                                                            "type": "button",
+                                                            "className": "btn btn-sm btn-outline"
+                                                        },
+                                                        "text": "$t:sirsoft-gdpr.annual_notice.targets.view"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "P",
+                                                        "props": {
+                                                            "className": "form-hint w-full"
+                                                        },
+                                                        "text": "$t:sirsoft-gdpr.annual_notice.targets.hint"
+                                                    }
+                                                ]
+                                            },
+                                            {
                                                 "comment": "토글이 꺼지면 하위 입력을 비활성화한다. 서버(UpdateAdminSettingsRequest)도 같은\n                 조건에서 채널·상한을 강제하지 않는다 — 한쪽만 고치면 \"끌 수 없는 설정\"이 된다.\n                 조건식은 느슨한 참 판정(저장값이 '0'·'1' 문자열일 수 있음, 보안 탭 scope 선례와 동일).",
                                                 "type": "basic",
                                                 "name": "Div",
@@ -3374,6 +3474,12 @@
                                                         }
                                                     },
                                                     {
+                                                        "handler": "refetchDataSource",
+                                                        "params": {
+                                                            "dataSourceId": "gdprAnnualNoticePreview"
+                                                        }
+                                                    },
+                                                    {
                                                         "handler": "toast",
                                                         "params": {
                                                             "type": "success",
@@ -3456,6 +3562,10 @@
         {
             "comment": "정책 버전 스냅샷 창 — 동의 이력 화면과 같은 조각을 쓴다",
             "partial": "partials/_shared/_policy_version_snapshot_modal.json"
+        },
+        {
+            "comment": "연간 통지 대상 회원 창(연간 통지 카드).",
+            "partial": "partials/plugin_settings/_modal_privacy_targets.json"
         }
     ]
 }

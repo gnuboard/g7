@@ -9,20 +9,29 @@
  *     이 교차 검증이 없으면 사전 안내 없이 전환·통지가 같은 날 일어난다(법정 사전 안내 소실)
  *  4. 화면의 dry-run 건수는 커맨드와 **같은 판정**을 지난 값이다 — 미리보기 API 와 화면이 어긋나면
  *     운영자가 규모를 오판한 채 되돌릴 수 없는 파기를 켠다
+ *  5. (#636 §1-E) 건수는 **꺼져 있어도** 보이고, 「대상 보기」가 명단 창을 연다. 창은 한 쪽 20건을
+ *     먼저 보이고 스크롤 끝에서 다음 쪽을 이어 붙인다. 닫았다 다시 열면 첫 쪽부터다.
+ *     회원 읽기 권한이 없는 관리자는 건수만 보고 버튼·명단 API(403)는 막힌다.
  *
  * **사이트 상태 안전**: 시작 시 privacy 설정을 통째로 떠 두고 매 테스트 뒤·전체 종료 시 그대로
- * 되돌린다. 이 spec 은 회원 데이터를 건드리지 않는다 — 켜는 것은 설정 토글뿐이고 파기 커맨드를
- * 실행하지 않으므로 어떤 회원도 처리되지 않는다.
+ * 되돌린다. 이 spec 은 회원 데이터를 처리하지 않는다 — 켜는 것은 설정 토글뿐이고 파기 커맨드를
+ * 실행하지 않으므로 어떤 회원도 처리되지 않는다. 명단 창 실측만 시험 계정 25명을 심고
+ * (`playwright:seed-dormant --stage=convertible --count=25`) 끝나면 `--purge-users` 로 지운다.
  *
  * 이미 개인정보 기능을 쓰고 있는 사이트(둘 중 하나라도 켜져 있음)에서는 **건드리지 않고
  * 건너뛴다** — 남의 운영 설정을 시험 삼아 덮어쓰지 않는다.
  *
  * @scenario toggle=off, toggle=on, row_age=beyond_retention, run_mode=dry_run
  *
- * @effects settings_tab_opens_with_every_feature_off, period_field_appears_only_when_its_toggle_is_on, disabled_handler_is_reported_separately_from_zero_targets, core_settings_mirror_exposes_the_privacy_category
+ * @effects settings_tab_opens_with_every_feature_off, period_field_appears_only_when_its_toggle_is_on, disabled_handler_is_reported_separately_from_zero_targets, core_settings_mirror_exposes_the_privacy_category, target_list_modal_pages_with_infinite_scroll, target_list_requires_domain_read_permission
  */
-import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';
+import { execSync } from 'node:child_process';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { test, expect, issueToken, issueScopedToken, authenticatePage } from '../../fixtures/auth';
 import type { Page } from '@playwright/test';
+
+const CORE_ROOT = process.env.G7_ROOT || resolve(dirname(fileURLToPath(import.meta.url)), '../../../../');
 
 const WITHDRAWN_TOGGLE = 'input[name="privacy.withdrawn_retention_enabled"]';
 const DORMANT_TOGGLE = 'input[name="privacy.dormant_enabled"]';
@@ -92,8 +101,23 @@ async function restore(page: Page): Promise<void> {
 }
 
 test.beforeAll(() => {
-  token = issueToken('core.settings.read', 'core.settings.update');
+  // 명단 창은 회원 읽기까지 있어야 열린다(명단에 이름·이메일이 나온다).
+  token = issueToken('core.settings.read', 'core.settings.update', 'core.users.read');
 });
+
+/**
+ * 휴면 시험 계정 시드 커맨드를 실행한다(3중 가드 — CLI · G7_PLAYWRIGHT_BYPASS · 테스트 계정 접두사).
+ *
+ * @param args 커맨드 인자
+ * @returns 표준 출력
+ */
+function seedDormant(args: string): string {
+  return execSync(`php artisan playwright:seed-dormant ${args}`, {
+    cwd: CORE_ROOT,
+    encoding: 'utf-8',
+    env: { ...process.env, G7_PLAYWRIGHT_BYPASS: '1' },
+  });
+}
 
 test.beforeEach(async ({ page }) => {
   await authenticatePage(page, token);
@@ -175,16 +199,19 @@ test('사전 안내 기간이 전환 기간보다 짧지 않으면 저장되지 
 test('dry-run 건수 API 는 꺼짐과 대상 0건을 구분해 돌려준다', async ({ page }) => {
   test.skip(alreadyInUse, '이 사이트는 이미 개인정보 기능을 쓰고 있어 설정을 건드리지 않는다');
 
-  // 전부 꺼진 상태: 핸들러 건수는 null(=꺼짐), 휴면 묶음도 null.
+  // 전부 꺼진 상태: 건수는 **그래도 센다**(켜기 전에 규모를 본다 — #636 §1-E), 꺼짐은 enabled 로 알린다.
   const off = await api(page, '/api/admin/settings/privacy-preview');
   expect(off.status).toBe(200);
-  expect(off.body?.data?.retention?.['user-withdrawn']).toBeNull();
-  expect(off.body?.data?.dormant).toBeNull();
+  expect(off.body?.data?.retention?.['user-withdrawn']?.enabled).toBe(false);
+  expect(typeof off.body?.data?.retention?.['user-withdrawn']?.count).toBe('number');
+  expect(off.body?.data?.dormant?.enabled).toBe(false);
+  expect(typeof off.body?.data?.dormant?.convert).toBe('number');
 
-  // 켜면 같은 자리가 숫자가 된다 — "꺼짐" 과 "0건" 이 같은 0 으로 뭉개지지 않는다.
+  // 켜면 enabled 만 바뀐다 — "꺼짐" 과 "0건" 이 같은 0 으로 뭉개지지 않는다.
   await savePrivacy(page, { ...snapshot, withdrawn_retention_enabled: true });
   const on = await api(page, '/api/admin/settings/privacy-preview');
-  expect(typeof on.body?.data?.retention?.['user-withdrawn']).toBe('number');
+  expect(on.body?.data?.retention?.['user-withdrawn']?.enabled).toBe(true);
+  expect(typeof on.body?.data?.retention?.['user-withdrawn']?.count).toBe('number');
 });
 
 // @scenario toggle=on, row_age=beyond_retention, run_mode=dry_run
@@ -204,10 +231,10 @@ test('카드의 dry-run 뱃지는 미리보기 API 가 돌려준 바로 그 숫�
   const preview = await api(page, '/api/admin/settings/privacy-preview');
   expect(preview.status).toBe(200);
 
-  const withdrawnCount = preview.body?.data?.retention?.['user-withdrawn'];
+  const withdrawnCount = preview.body?.data?.retention?.['user-withdrawn']?.count;
   const dormant = preview.body?.data?.dormant;
   expect(typeof withdrawnCount).toBe('number');
-  expect(dormant).not.toBeNull();
+  expect(dormant?.enabled).toBe(true);
 
   await page.reload();
   await page.waitForLoadState('domcontentloaded', { timeout: 30_000 });
@@ -216,7 +243,8 @@ test('카드의 dry-run 뱃지는 미리보기 API 가 돌려준 바로 그 숫�
   // 뱃지가 실제로 그려져야 한다 — 존재하지 않는 색 토큰으로 무색 렌더되던 전례가 있다.
   const withdrawnBadge = page.locator('#toggle_withdrawn_retention .badge');
   const dormantBadge = page.locator('#toggle_dormant .badge');
-  const withdrawBadge = page.locator('#toggle_dormant_withdraw .badge');
+  // 탈퇴 단계 건수는 휴면 토글 바로 아래 줄에 있다 — 탈퇴 토글 줄은 휴면이 꺼지면 사라지므로 그 안에 두지 않는다.
+  const withdrawBadge = page.locator('#dormant_withdraw_targets .badge');
 
   await expect(withdrawnBadge).toBeVisible();
   await expect(dormantBadge).toBeVisible();
@@ -229,6 +257,45 @@ test('카드의 dry-run 뱃지는 미리보기 API 가 돌려준 바로 그 숫�
   await expect(dormantBadge).toContainText(String(dormant.convert));
   await expect(withdrawBadge).toContainText(String(dormant.withdraw_notice));
   await expect(withdrawBadge).toContainText(String(dormant.withdraw));
+});
+
+// @scenario toggle=on, row_age=beyond_retention, run_mode=dry_run
+// @effects preview_badges_render_the_same_counts_the_api_returns
+test('화면에서 기간을 바꿔 저장하면 새로고침 없이 뱃지가 새 기간으로 센 숫자로 바뀐다', async ({ page }) => {
+  test.skip(alreadyInUse, '이 사이트는 이미 개인정보 기능을 쓰고 있어 설정을 건드리지 않는다');
+  test.setTimeout(90_000); // artisan 시드 + reload + 화면 저장 왕복 합산 — 기본 30s 부족
+
+  // 기본 전환 기준(730일)을 넘긴 전환 대상을 심는다 — 기준을 3650일로 올리면 대상에서 빠진다.
+  seedDormant('--stage=convertible --count=2');
+
+  try {
+    await page.reload();
+    await page.waitForLoadState('domcontentloaded', { timeout: 30_000 });
+
+    const convertButton = page.locator('#view_convert_targets');
+    const dormantBadge = page.locator(`${DORMANT_ROW} .badge`);
+    await expect(convertButton).toBeVisible({ timeout: 20_000 });
+
+    // 저장 버튼을 실제로 눌러 저장한다 — API 로 저장하고 새로고침하면 이 결함이 보이지 않는다(#636 브라우저 실측).
+    await page.locator(`${DORMANT_ROW} .toggle-switch-wrapper`).first().click();
+    await page.locator(DORMANT_DAYS).fill('3650');
+
+    const saved = page.waitForResponse((response) => response.url().endsWith('/api/admin/settings') && response.request().method() === 'POST');
+    const refetched = page.waitForRequest((request) => request.url().includes('/api/admin/settings/privacy-preview'));
+    await page.locator('#save_button').click();
+    expect((await saved).status()).toBe(200);
+    await refetched;
+
+    const after = await api(page, '/api/admin/settings/privacy-preview');
+    const convert: number = after.body?.data?.dormant?.convert;
+    // 시드 2명은 3650일 기준에서 빠진다 — 숫자가 그대로면 이 단언은 공허하다.
+    expect(convert).toBe(0);
+
+    await expect(dormantBadge).toContainText(new RegExp(`전환 대상 ${convert}명|${convert} to convert`), { timeout: 20_000 });
+    await expect(convertButton).toHaveCount(0);
+  } finally {
+    seedDormant('--purge-users');
+  }
 });
 
 // @scenario toggle=on, row_age=beyond_retention, run_mode=dry_run
@@ -257,4 +324,89 @@ test('새로고침해도 저장한 개인정보 설정이 화면에 그대로 �
   await expect(page.locator(WITHDRAWN_DAYS)).toHaveValue('400');
   await expect(page.locator(DORMANT_DAYS)).toHaveValue('800');
   await expect(page.locator(NOTICE_DAYS)).toHaveValue('45');
+});
+
+// @scenario toggle=off, row_age=beyond_retention, run_mode=dry_run
+// @effects target_list_modal_pages_with_infinite_scroll
+test('「대상 보기」 명단 창은 꺼진 상태에서도 열리고 스크롤 끝에서 다음 쪽을 이어 붙인다', async ({ page }) => {
+  test.skip(alreadyInUse, '이 사이트는 이미 개인정보 기능을 쓰고 있어 설정을 건드리지 않는다');
+
+  // 한 쪽(20건)을 넘도록 전환 대상 25명을 심는다 — 휴면 기능은 꺼진 그대로다.
+  seedDormant('--stage=convertible --count=25');
+
+  try {
+    const preview = await api(page, '/api/admin/settings/privacy-preview');
+    const total: number = preview.body?.data?.dormant?.convert ?? 0;
+    expect(preview.body?.data?.dormant?.enabled).toBe(false);
+    expect(total).toBeGreaterThanOrEqual(25);
+
+    await page.reload();
+    await page.waitForLoadState('domcontentloaded', { timeout: 30_000 });
+
+    const openButton = page.locator('#view_convert_targets');
+    await expect(openButton).toBeVisible({ timeout: 20_000 });
+    await openButton.click();
+
+    // 창의 data-ref 는 대화상자 자체에 id 로 실리지 않는다 — 창 안 목록의 id 로 찾는다.
+    const modal = page.getByRole('dialog');
+    const list = page.locator('#privacy_targets_list');
+    const rows = list.locator('tbody tr');
+    await expect(rows).toHaveCount(20, { timeout: 20_000 });
+
+    // 상세 링크는 새 탭으로 연다.
+    const firstLink = rows.first().locator('a').first();
+    await expect(firstLink).toHaveAttribute('target', '_blank');
+    await expect(firstLink).toHaveAttribute('href', /^\/admin\/users\//);
+
+    // 스크롤 끝 → 다음 쪽(page=2)을 부르고 이어 붙인다.
+    const nextPage = page.waitForRequest((request) => request.url().includes('/api/admin/privacy/dormant-targets/convert') && request.url().includes('page=2'));
+    await list.evaluate((el) => el.scrollTo(0, el.scrollHeight));
+    await nextPage;
+    await expect(rows).toHaveCount(Math.min(total, 40), { timeout: 20_000 });
+
+    // 닫고 다시 열면 첫 쪽부터다(목록 상태를 되돌린다).
+    await page.locator('#privacy_targets_footer button').click();
+    await expect(modal).toHaveCount(0);
+    await openButton.click();
+    await expect(rows).toHaveCount(20, { timeout: 20_000 });
+  } finally {
+    seedDormant('--purge-users');
+  }
+});
+
+// @scenario toggle=off, row_age=beyond_retention, run_mode=dry_run
+// @effects target_list_requires_domain_read_permission
+test('회원 읽기 권한이 없으면 건수는 보이되 「대상 보기」가 없고 명단 API 는 403 이다', async ({ browser }) => {
+  test.skip(alreadyInUse, '이 사이트는 이미 개인정보 기능을 쓰고 있어 설정을 건드리지 않는다');
+
+  // `issueToken` 은 전체 권한의 admin 역할을 함께 주므로 권한 경계를 잴 수 없다 — 지정 권한만 가진 토큰을 쓴다.
+  const settingsOnly = issueScopedToken('core.settings.read');
+  // 버튼이 「대상이 없어서」가 아니라 「권한이 없어서」 사라지는지 보려면 대상이 있어야 한다.
+  seedDormant('--stage=convertible --count=1');
+  const context = await browser.newContext();
+  const page = await context.newPage();
+
+  try {
+    await authenticatePage(page, settingsOnly);
+    await page.goto('/admin/settings?tab=privacy');
+    await page.waitForLoadState('domcontentloaded', { timeout: 30_000 });
+
+    const dormantBadge = page.locator('#toggle_dormant .badge');
+    await expect(dormantBadge).toBeVisible({ timeout: 20_000 });
+    await expect(dormantBadge).not.toContainText('전환 대상 0명');
+    await expect(page.locator('#view_convert_targets')).toHaveCount(0);
+    await expect(page.locator('#view_withdrawn_targets')).toHaveCount(0);
+
+    const status = await page.evaluate(async (bearer) => {
+      const response = await fetch('/api/admin/privacy/retention-targets/user-withdrawn', {
+        headers: { Authorization: `Bearer ${bearer}`, Accept: 'application/json' },
+      });
+
+      return response.status;
+    }, settingsOnly);
+    expect(status).toBe(403);
+  } finally {
+    await context.close();
+    seedDormant('--purge-users');
+  }
 });

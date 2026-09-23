@@ -161,6 +161,16 @@
 주문 계열(`ecommerce_orders` · `ecommerce_order_*`)과 상품·리뷰·문의 계열은 SoftDeletes 를
 씁니다. 목록 쿼리를 새로 만들 때 `withTrashed()` 를 습관적으로 붙이면 취소·삭제된 행이 매출
 집계에 섞이므로 주의합니다.
+
+**개인정보 보유기간 처리(이슈 #636)의 흔적**: 익명화된 주문은 `order_meta` 에 `privacy_anonymized_at`
+(ISO 8601)을 남깁니다 — 스키마를 바꾸지 않고 멱등 표지로 쓰며, 주소 테이블의 NOT NULL 칸에는
+`***` 가 들어갑니다. 삭제 모드는 주문과 참조 행을 **영구 삭제**합니다(소프트 삭제가 아님). 이때
+지우는 테이블 전수: `ecommerce_order_shippings` · `_refund_options` · `_refunds` · `_cancel_options` ·
+`_cancels` · `_tax_invoices` · `_cash_receipts` · `_payments` · `_options` · `_addresses` · `ecommerce_orders`,
+그리고 주문 옵션에 묶인 `ecommerce_product_reviews`·`_review_images`(파일 포함). `ecommerce_promotion_coupon_issues`
+·`ecommerce_mileage_transactions` 는 행을 남기고 `order_id` 만 NULL 로 끊습니다(nullOnDelete 와 같은 결과를
+명시적으로). 새 테이블이 `ecommerce_orders`·`ecommerce_order_options` 를 참조하면 `OrderPrivacyRetentionService::purge()`
+의 이 목록에도 더해야 합니다 — 빠지면 삭제가 FK 오류로 그 주문에서 멈춥니다(건별 격리로 다른 주문은 계속됨).
 <!-- @intent END -->
 
 ## 마이그레이션
@@ -408,6 +418,8 @@ Enum 49종이 이 도메인의 **어휘 전체**입니다. 상태·분류를 문
 | `OrderOptionRepositoryInterface` | 인터페이스 | 주문 옵션 리포지토리 인터페이스 |
 | `OrderPaymentRepository` | 구현 | 주문 결제 Repository 구현체 |
 | `OrderPaymentRepositoryInterface` | 인터페이스 | 주문 결제 Repository 인터페이스 |
+| `OrderPrivacyRetentionRepository` | 구현 | 종결 주문 개인정보 보유기간 처리 Repository (이슈 #636) |
+| `OrderPrivacyRetentionRepositoryInterface` | 인터페이스 | 종결 주문 개인정보 보유기간 처리 Repository 인터페이스 (이슈 #636) |
 | `OrderRefundOptionRepository` | 구현 | 주문 환불 옵션 리포지토리 구현체 |
 | `OrderRefundOptionRepositoryInterface` | 인터페이스 | 주문 환불 옵션 리포지토리 인터페이스 |
 | `OrderRefundRepository` | 구현 | 주문 환불 리포지토리 구현체 |

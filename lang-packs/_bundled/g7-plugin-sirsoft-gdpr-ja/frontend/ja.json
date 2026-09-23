@@ -10,7 +10,9 @@
       "gdprPolicyVersionSnapshot": "ポリシーバージョンスナップショット",
       "gdprPublicSettings": "GDPR公開設定",
       "gdprSettings": "GDPR設定",
-      "gdprNoticeLog": "個人情報通知履歴"
+      "gdprNoticeLog": "個人情報通知履歴",
+      "gdprAnnualNoticePreview": "年間通知対象件数",
+      "privacyTargets": "年間通知対象会員一覧"
     }
   },
   "consent": {
@@ -382,7 +384,17 @@
     "status": "ステータス",
     "kind": "区分",
     "test": "テスト",
-    "scheduled": "定期"
+    "scheduled": "定期",
+    "targets": {
+      "count": "今回のサイクル対象{{count}}名",
+      "view": "対象を表示",
+      "title": "年間通知対象会員",
+      "hint": "有効になっていなくても、有効にすると通知する会員数を事前に表示します。1回の実行で送信する数は送信上限でカットされます。",
+      "total": "合計{{count}}件",
+      "empty": "対象がありません。",
+      "loading": "読み込み中...",
+      "close": "閉じる"
+    }
   },
   "edit_template": "テンプレート編集",
   "reset": "デフォルト値を復元",

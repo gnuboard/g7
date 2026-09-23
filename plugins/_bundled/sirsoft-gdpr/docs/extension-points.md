@@ -9,10 +9,10 @@
 
 | 훅 이름 | 유형 | 설명 | 발행 위치 |
 |---|---|---|---|
-| `core.privacy.notice_sections` | filter | — | `src/Services/GdprAnnualNoticeService.php:93` |
+| `core.privacy.notice_sections` | filter | — | `src/Services/GdprAnnualNoticeService.php:162` |
 | `sirsoft-gdpr.consent.granted` | action | 동의 부여 시 발화 | 선언 (호출 위치 미확인) |
 | `sirsoft-gdpr.consent.revoked` | action | 동의 철회 시 발화 | 선언 (호출 위치 미확인) |
-| `sirsoft-gdpr.privacy.annual_notice_due` | action | 개인정보 연간 통지 접수 후 발화 | `src/Services/GdprAnnualNoticeService.php:112` |
+| `sirsoft-gdpr.privacy.annual_notice_due` | action | 개인정보 연간 통지 접수 후 발화 | `src/Services/GdprAnnualNoticeService.php:181` |
 <!-- @generated:hooks-published END -->
 
 <!-- @intent START -->

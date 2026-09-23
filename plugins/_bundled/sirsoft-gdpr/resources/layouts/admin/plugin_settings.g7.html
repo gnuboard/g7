@@ -8,6 +8,18 @@
       <field name="form" value="settings"/>
     </init-local>
   </data-source>
+  <!-- 연간 통지 대상 건수 — 발송 판정과 같은 조건이며 꺼져 있어도 센다(켜기 전에 규모를 본다, #636). 저장 뒤 다시 받는다 -->
+  <data-source id="gdprAnnualNoticePreview" label_key="$t:sirsoft-gdpr.editor.data_source.gdprAnnualNoticePreview" type="api" endpoint="/api/plugins/sirsoft-gdpr/admin/annual-notice/preview" method="GET" :auto_fetch="true" :auth_required="true">
+    <fallback>
+      <field name="data">
+        <field name="count" :value="null"/>
+      </field>
+    </fallback>
+  </data-source>
+  <!-- 연간 통지 대상 명단 — 창을 여는 버튼이 다시 받는다(스스로 조회하지 않음). 다음 쪽은 창의 스크롤이 이어 붙인다 -->
+  <data-source id="privacyTargets" label_key="$t:sirsoft-gdpr.editor.data_source.privacyTargets" type="api" endpoint="/api/plugins/sirsoft-gdpr/admin/annual-notice/targets" method="GET" :auto_fetch="false" :auth_required="true" loading_strategy="progressive">
+    <params :per_page="20"/>
+  </data-source>
   <!-- 현재 유효한 정책 버전 — 화면 상단 배지의 근거 -->
   <data-source id="gdprPolicyVersionCurrent" label_key="$t:sirsoft-gdpr.editor.data_source.gdprPolicyVersionCurrent" type="api" endpoint="/api/plugins/sirsoft-gdpr/admin/policy-versions/current" method="GET" :auto_fetch="true" :auth_required="true" :refetchOnMount="true"/>
   <!-- 정책 버전 이력 — 페이지는 _local.policyHistoryPage 로 관리하고 페이저가 setState + refetchDataSource 로 이동시킨다. -->
@@ -528,6 +540,23 @@
               <label class="form-label">$t:sirsoft-gdpr.annual_notice.enabled</label>
               <toggle name="annual_notice.enabled"/>
             </div>
+            <!-- 이번 주기 대상 회원 수 — 꺼져 있어도 보인다(켜기 전에 규모를 본다, #636). 옆 버튼은 명단 창을 여는데,
+                 회원 읽기 권한이 있고 대상이 있을 때만 그린다. -->
+            <div data-ref="annual_notice_targets" data-if="{{gdprAnnualNoticePreview?.data?.count !== null &amp;&amp; gdprAnnualNoticePreview?.data?.count !== undefined}}" class="flex flex-wrap items-center gap-2">
+              <span class="badge badge-yellow">$t:sirsoft-gdpr.annual_notice.targets.count|count={{gdprAnnualNoticePreview?.data?.count ?? 0}}</span>
+              <button data-ref="view_annual_notice_targets" data-if="{{gdprAnnualNoticePreview?.data?.can_view_targets &amp;&amp; (gdprAnnualNoticePreview?.data?.count ?? 0) > 0}}" type="button" class="btn btn-sm btn-outline">
+                <on type="click">
+                  <sequence>
+                    <set-state target="global" privacyTargets="{{({ currentPage: 1, hasMore: true, isLoadingMore: false })}}"/>
+                    <set-state target="global" privacyTargets.title="$t:sirsoft-gdpr.annual_notice.targets.title"/>
+                    <refetch-data-source dataSourceId="privacyTargets"/>
+                    <open-modal target="privacy_targets_modal"/>
+                  </sequence>
+                </on>
+                $t:sirsoft-gdpr.annual_notice.targets.view
+              </button>
+              <p class="form-hint w-full">$t:sirsoft-gdpr.annual_notice.targets.hint</p>
+            </div>
             <!-- 토글이 꺼지면 하위 입력을 비활성화한다. 서버(UpdateAdminSettingsRequest)도 같은
                  조건에서 채널·상한을 강제하지 않는다 — 한쪽만 고치면 "끌 수 없는 설정"이 된다.
                  조건식은 느슨한 참 판정(저장값이 '0'·'1' 문자열일 수 있음, 보안 탭 scope 선례와 동일). -->
@@ -733,6 +762,7 @@
                 <success>
                   <set-state target="local" :isSaving="false" :hasChanges="false"/>
                   <refetch-data-source dataSourceId="gdprSettings"/>
+                  <refetch-data-source dataSourceId="gdprAnnualNoticePreview"/>
                   <toast type="success" message="$t:sirsoft-gdpr.settings.save_success"/>
                 </success>
                 <fail>
@@ -757,4 +787,6 @@
   <modal src="partials/plugin_settings/_modal_notification_definition_reset.g7.html"/>
   <!-- 정책 버전 스냅샷 창 — 동의 이력 화면과 같은 조각을 쓴다 -->
   <modal src="partials/_shared/_policy_version_snapshot_modal.g7.html"/>
+  <!-- 연간 통지 대상 회원 창(연간 통지 카드). -->
+  <modal src="partials/plugin_settings/_modal_privacy_targets.g7.html"/>
 </layout>

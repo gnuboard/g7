@@ -1589,6 +1589,16 @@
           }
         }
       },
+      "boardPrivacyRetentionPreview": {
+        "data": {
+          "ip": 128,
+          "guest": 12,
+          "guest_mode": "anonymize",
+          "ip_enabled": false,
+          "guest_enabled": false,
+          "can_view_targets": true
+        }
+      },
       "boardNotificationDefinitions": {
         "data": {
           "data": [
@@ -1981,6 +1991,43 @@
               "slug": "temp"
             }
           ]
+        }
+      },
+      "privacyTargets": {
+        "data": {
+          "data": [
+            {
+              "id": "post-2761",
+              "title": "오래된 비회원 글",
+              "subtitle": "홍길동",
+              "context": "자유게시판 · 글",
+              "date": "2015-06-01",
+              "url": "/board/free/2761"
+            },
+            {
+              "id": "comment-904",
+              "title": "오래된 비회원 글",
+              "subtitle": "김철수",
+              "context": "자유게시판 · 댓글",
+              "date": "2015-06-02",
+              "url": "/board/free/2761"
+            }
+          ],
+          "columns": {
+            "title": "제목",
+            "subtitle": "작성자",
+            "context": "게시판 · 구분",
+            "date": "작성일"
+          },
+          "pagination": {
+            "current_page": 1,
+            "per_page": 20,
+            "from": 1,
+            "to": 2,
+            "has_more_pages": false,
+            "last_page": 1,
+            "total": 2
+          }
         }
       }
     },

@@ -18,6 +18,7 @@ effects:
   - history_anonymized
   - disabled_toggle_releases_dependent_fields
   - notification_templates_are_editable_in_plugin_settings
+  - annual_notice_targets_match_the_dispatch_decision
 test_files:
   - plugins/_bundled/sirsoft-gdpr/tests/Feature/AnnualNoticeMigrationTest.php
   - plugins/_bundled/sirsoft-gdpr/tests/Unit/Listeners/GdprUserDeleteListenerTest.php

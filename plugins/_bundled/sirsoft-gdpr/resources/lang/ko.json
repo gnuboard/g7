@@ -10,7 +10,9 @@
             "gdprPolicyVersionSnapshot": "정책 버전 스냅샷",
             "gdprPublicSettings": "GDPR 공개 설정",
             "gdprSettings": "GDPR 설정",
-            "gdprNoticeLog": "개인정보 통지 이력"
+            "gdprNoticeLog": "개인정보 통지 이력",
+            "gdprAnnualNoticePreview": "연간 통지 대상 건수",
+            "privacyTargets": "연간 통지 대상 회원 목록"
         }
     },
     "consent": {
@@ -382,7 +384,17 @@
         "status": "상태",
         "kind": "구분",
         "test": "시험",
-        "scheduled": "정기"
+        "scheduled": "정기",
+        "targets": {
+            "count": "이번 주기 대상 {{count}}명",
+            "view": "대상 보기",
+            "title": "연간 통지 대상 회원",
+            "hint": "켜져 있지 않아도 켜면 통지할 회원 수를 미리 보여 줍니다. 한 번 실행에 보내는 수는 발송 상한으로 잘립니다.",
+            "total": "총 {{count}}건",
+            "empty": "대상이 없습니다.",
+            "loading": "불러오는 중...",
+            "close": "닫기"
+        }
     },
     "edit_template": "템플릿 편집",
     "reset": "기본값 되돌리기",

@@ -9,6 +9,20 @@
       </on-code>
     </error-handling>
   </data-source>
+  <!-- 개인정보 보유기간 대상 건수 — 「일반」 탭의 보유기간 카드 뱃지가 읽는다. 저장된 설정 기준이라 저장 성공 뒤 다시 읽고, 꺼진 축은 서버가 null 을 준다 -->
+  <data-source id="boardPrivacyRetentionPreview" label_key="$t:sirsoft-board.editor.data_source.boardPrivacyRetentionPreview" type="api" endpoint="/api/modules/sirsoft-board/admin/settings/privacy-retention-preview" method="GET" if="{{(query.tab || _global.activeBoardSettingsTab || 'general') === 'general'}}" :auto_fetch="true" :auth_required="true">
+    <fallback>
+      <field name="data">
+        <field name="ip" :value="null"/>
+        <field name="guest" :value="null"/>
+      </field>
+    </fallback>
+  </data-source>
+  <!-- 개인정보 보유기간 대상 창 — 작성 IP·비회원 두 축이 함께 쓴다. 여는 버튼이 목록 경로를 `_global.privacyTargets.path` 에
+       넣고 다시 받은 뒤 연다. 명단은 코어 공통 대상 목록 API 가 두 핸들러를 식별자로 찾아 내려준다. -->
+  <data-source id="privacyTargets" label_key="$t:sirsoft-board.editor.data_source.privacyTargets" type="api" endpoint="/api/admin/privacy/{{_global.privacyTargets?.path ?? 'retention-targets/sirsoft-board.ip'}}" method="GET" :auto_fetch="false" :auth_required="true" loading_strategy="progressive">
+    <params :per_page="20"/>
+  </data-source>
   <!-- 「기본값」 탭의 게시판 선택지 — 셀렉트 하나를 채우는 용도라 페이지를 나누지 않고 필요한 두 칸만 받는다 -->
   <data-source id="boards_list" label_key="$t:sirsoft-board.editor.data_source.boards_list" type="api" endpoint="/api/modules/sirsoft-board/admin/boards?per_page=999&amp;fields=id,title" method="GET" if="{{(query.tab || _global.activeBoardSettingsTab || 'general') === 'basic_defaults'}}" :auto_fetch="true" :auth_required="true">
     <fallback>
@@ -113,6 +127,7 @@
   </permissions>
   <transition-overlay>
     <wait-for>settings</wait-for>
+    <wait-for>boardPrivacyRetentionPreview</wait-for>
     <wait-for>boards_list</wait-for>
     <wait-for>roles</wait-for>
     <wait-for>board_types</wait-for>
@@ -215,13 +230,14 @@
               <!-- 저장 — 폼 전체가 아니라 «지금 탭이 소유한 구획만» 골라 보낸다(`_tab` 이 서버에 어느 구획인지 알린다). 한 폼을 여섯 탭이 나눠 쓰므로 통째로 보내면 열어 보지도 않은 탭의 값이 함께 덮어써진다 -->
               <sequence>
                 <set-state target="local" :isSaving="true" :errors="null"/>
-                <api-call target="/api/modules/sirsoft-board/admin/settings" :auth_required="true" method="PUT" body="{{(function() { const tab = _global.activeBoardSettingsTab || query.tab || 'general'; const form = _local.form || {}; if (tab === 'general') { return { _tab: 'general', display: form.display || {}, attachment_settings: form.attachment_settings || {} }; } if (tab === 'report_policy') { return { _tab: 'report_policy', report_policy: form.report_policy || {}, spam_security: form.spam_security || {}, report_permissions: form.report_permissions || {} }; } if (tab === 'spam_security') { return { _tab: 'spam_security', spam_security: form.spam_security || {} }; } if (tab === 'seo') { return { _tab: 'seo', seo: form.seo || {} }; } if (tab === 'notification_definitions') { return { _tab: 'notifications', notifications: { channels: form.notifications?.channels || [] } }; } return { _tab: 'basic_defaults', basic_defaults: form.basic_defaults || {}, notifications: form.notifications || {} }; })()}}">
+                <api-call target="/api/modules/sirsoft-board/admin/settings" :auth_required="true" method="PUT" body="{{(function() { const tab = _global.activeBoardSettingsTab || query.tab || 'general'; const form = _local.form || {}; if (tab === 'general') { return { _tab: 'general', display: form.display || {}, attachment_settings: form.attachment_settings || {}, privacy_retention: form.privacy_retention || {} }; } if (tab === 'report_policy') { return { _tab: 'report_policy', report_policy: form.report_policy || {}, spam_security: form.spam_security || {}, report_permissions: form.report_permissions || {} }; } if (tab === 'spam_security') { return { _tab: 'spam_security', spam_security: form.spam_security || {} }; } if (tab === 'seo') { return { _tab: 'seo', seo: form.seo || {} }; } if (tab === 'notification_definitions') { return { _tab: 'notifications', notifications: { channels: form.notifications?.channels || [] } }; } return { _tab: 'basic_defaults', basic_defaults: form.basic_defaults || {}, notifications: form.notifications || {} }; })()}}">
                   <success>
                     <set-state target="local" :isSaving="false" :hasChanges="false"/>
                     <refetch-data-source dataSourceId="settings"/>
                     <refetch-data-source dataSourceId="boards_list"/>
                     <refetch-data-source dataSourceId="roles"/>
                     <refetch-data-source dataSourceId="board_types"/>
+                    <refetch-data-source dataSourceId="boardPrivacyRetentionPreview"/>
                     <toast type="success" message="$t:sirsoft-board.admin.settings.save_success"/>
                   </success>
                   <fail>
@@ -253,4 +269,6 @@
   <modal src="partials/admin_board_settings/_modal_identity_policy_form.g7.html"/>
   <!-- 본인인증 정책 삭제 확인 -->
   <modal src="partials/admin_board_settings/_modal_identity_policy_delete.g7.html"/>
+  <!-- 개인정보 보유기간 대상 창(일반 탭 보유기간 카드) — 작성 IP·비회원 두 축이 함께 쓴다. -->
+  <modal src="partials/admin_board_settings/_modal_privacy_targets.g7.html"/>
 </layout>

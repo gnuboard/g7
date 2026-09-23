@@ -610,6 +610,11 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
         ->middleware('permission:admin,sirsoft-ecommerce.settings.read')
         ->name('admin.settings.seo-cache-info');
 
+    // GET  /api/modules/sirsoft-ecommerce/admin/settings/privacy-retention-preview - 보유기간 처리 대상 건수 (이슈 #636)
+    Route::get('settings/privacy-retention-preview', [EcommerceSettingsController::class, 'privacyRetentionPreview'])
+        ->middleware('permission:admin,sirsoft-ecommerce.settings.read')
+        ->name('admin.settings.privacy-retention-preview');
+
     Route::get('settings/{category}', [EcommerceSettingsController::class, 'show'])
         ->middleware('permission:admin,sirsoft-ecommerce.settings.read')
         ->name('admin.settings.show');

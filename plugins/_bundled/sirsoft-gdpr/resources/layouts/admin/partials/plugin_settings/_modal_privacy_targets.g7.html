@@ -1,0 +1,71 @@
+<!-- 연간 통지 대상 회원 창 (#636) — 연간 통지 카드의 대상 건수 옆 버튼이 연다.
+  명단은 발송 판정과 같은 조건(활성 · 가입 1년 경과 · 설정 채널 중 최근 1년 미발송)이라 여기 보이는 회원이
+  다음 정기 실행이 통지할 회원이다(한 번에 보내는 수는 발송 상한으로 잘린다). 행 형태는 코어 개인정보
+  조치 대상 목록과 같다. 무한 스크롤은 도서산간 추가배송비 템플릿 창과 같은 방식이다. -->
+<partial description="GDPR 설정 연간 통지 카드 - 통지 대상 회원 목록 모달">
+  <modal data-ref="privacy_targets_modal" title="{{_global.privacyTargets?.title ?? ''}}" width="800px" class="max-w-[calc(100vw-2rem)]">
+    <div data-ref="privacy_targets_content" class="space-y-3">
+      <div class="flex-between">
+        <span class="text-label">$t:sirsoft-gdpr.annual_notice.targets.total|count={{privacyTargets?.data?.pagination?.total ?? 0}}</span>
+      </div>
+      <div data-ref="privacy_targets_table" data-if="{{(privacyTargets?.data?.data ?? []).length > 0}}" class="border border-gray-200 dark:border-gray-700 rounded-lg">
+        <div data-ref="privacy_targets_list" class="max-h-96 overflow-y-auto overflow-x-auto">
+          <on type="scroll">
+            <sequence :debounce="200">
+              <switch on="{{$event.target.scrollHeight - $event.target.scrollTop <= $event.target.clientHeight + 100 &amp;&amp; _global.privacyTargets?.hasMore !== false &amp;&amp; privacyTargets?.data?.pagination?.has_more_pages === true &amp;&amp; !_global.privacyTargets?.isLoadingMore}}">
+                <case when="true">
+                  <set-state target="global" :privacyTargets.isLoadingMore="true"/>
+                  <scroll-into-view selector="#privacy_targets_loading" scrollContainer="#privacy_targets_list" behavior="smooth" block="end" :waitForElement="true" :timeout="2000"/>
+                  <api-call :auth_required="true" target="/api/plugins/sirsoft-gdpr/admin/annual-notice/targets" method="GET">
+                    <success>
+                      <append-data-source dataSourceId="privacyTargets" dataPath="data.data" newData="{{response.data.data}}"/>
+                      <set-state target="global" privacyTargets.currentPage="{{response.data?.pagination?.current_page ?? ((_global.privacyTargets?.currentPage ?? 1) + 1)}}" privacyTargets.hasMore="{{response.data?.pagination?.has_more_pages ?? false}}" :privacyTargets.isLoadingMore="false"/>
+                    </success>
+                    <fail>
+                      <set-state target="global" :privacyTargets.isLoadingMore="false"/>
+                    </fail>
+                    <query page="{{(_global.privacyTargets?.currentPage ?? 1) + 1}}" :per_page="20"/>
+                  </api-call>
+                </case>
+              </switch>
+            </sequence>
+          </on>
+          <table class="table whitespace-nowrap">
+            <thead class="sticky top-0 z-10 bg-white dark:bg-gray-800">
+              <tr>
+                <th>{{privacyTargets?.data?.columns?.title ?? ''}}</th>
+                <th data-if="{{privacyTargets?.data?.columns?.subtitle}}">{{privacyTargets?.data?.columns?.subtitle ?? ''}}</th>
+                <th data-if="{{privacyTargets?.data?.columns?.context}}">{{privacyTargets?.data?.columns?.context ?? ''}}</th>
+                <th data-if="{{privacyTargets?.data?.columns?.date}}" class="w-28">{{privacyTargets?.data?.columns?.date ?? ''}}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr data-each="target in {{privacyTargets?.data?.data ?? []}}">
+                <td>
+                  <a data-if="{{target.url}}" href="{{target.url}}" target="_blank" class="text-blue-600 dark:text-blue-400 hover:underline">{{target.title}}</a>
+                  <span data-if="{{!target.url}}">{{target.title}}</span>
+                </td>
+                <td data-if="{{privacyTargets?.data?.columns?.subtitle}}">{{target.subtitle ?? ''}}</td>
+                <td data-if="{{privacyTargets?.data?.columns?.context}}">{{target.context ?? ''}}</td>
+                <td data-if="{{privacyTargets?.data?.columns?.date}}" class="tabular-nums">{{target.date ?? ''}}</td>
+              </tr>
+            </tbody>
+          </table>
+          <loading-spinner data-ref="privacy_targets_loading" data-if="{{_global.privacyTargets?.isLoadingMore}}" size="sm" text="$t:sirsoft-gdpr.annual_notice.targets.loading" color="text-blue-600 dark:text-blue-400" class="py-3"/>
+        </div>
+      </div>
+      <div data-ref="privacy_targets_empty" data-if="{{(privacyTargets?.data?.data ?? []).length === 0}}" class="text-center text-gray-400 dark:text-gray-500 py-6">
+        <icon name="inbox" class="text-4xl mx-auto mb-3"/>
+        <span class="text-sm">$t:sirsoft-gdpr.annual_notice.targets.empty</span>
+      </div>
+    </div>
+    <div data-ref="privacy_targets_footer" class="flex justify-end mt-6">
+      <button type="button" class="btn btn-secondary">
+        <on type="click">
+          <close-modal/>
+        </on>
+        $t:sirsoft-gdpr.annual_notice.targets.close
+      </button>
+    </div>
+  </modal>
+</partial>

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Api\Base\AdminBaseController;
+use App\Http\Requests\Settings\PrivacyPreviewRequest;
 use App\Http\Requests\Settings\RegenerateAppKeyRequest;
 use App\Http\Requests\Settings\RestoreSettingsRequest;
 use App\Http\Requests\Settings\SaveSettingsRequest;
@@ -210,23 +211,39 @@ class SettingsController extends AdminBaseController
     /**
      * 개인정보 보유기간·휴면의 처리 대상 건수를 미리 조회합니다 (#636).
      *
-     * 화면의 dry-run 뱃지가 쓰는 값이며, 커맨드의 `--dry-run` 과 **같은 조건식**을 지납니다 —
+     * 화면의 「대상 N건」 배지가 쓰는 값이며, 커맨드의 `--dry-run` 과 **같은 조건식**을 지납니다 —
      * 화면에서 본 숫자와 실제 처리 건수가 어긋나면 운영자가 규모를 오판한 채 켜게 됩니다.
      *
-     * 꺼진 핸들러는 건수 대신 `null` 로 돌려줍니다. "꺼짐" 과 "대상 0건" 은 전혀 다른
-     * 정보이고, 둘을 같은 0 으로 뭉개면 켠 줄 아는 기능이 놀고 있어도 알 수 없습니다.
+     * **기능이 꺼져 있어도 건수를 돌려줍니다** — 켜기 전에 규모와 명단을 확인하는 자리이기
+     * 때문입니다(2026-09-23 확정). "꺼짐" 과 "대상 0건" 은 `enabled` 로 구분합니다.
+     * `can_view_targets` 는 요청 관리자가 「더보기」 목록을 볼 권한(설정 읽기 + 도메인 읽기)을
+     * 가졌는지다 — 없으면 화면이 버튼을 그리지 않는다.
      *
-     * 읽기 전용이며 입력이 없어 FormRequest 를 두지 않습니다 (`trustedProxy` 와 동형).
+     * 읽기 전용이며 입력은 없습니다 — FormRequest 는 요청 관리자를 얻는 자리입니다.
      *
+     * @param  PrivacyPreviewRequest  $request  현재 요청 (목록 권한 판정용, 입력 없음)
      * @return JsonResponse 핸들러별·휴면 단계별 대상 건수 JSON 응답
      */
-    public function privacyPreview(): JsonResponse
+    public function privacyPreview(PrivacyPreviewRequest $request): JsonResponse
     {
+        $user = $request->user();
+        $retention = [];
+
+        foreach ($this->privacyRetentionManager->preview() as $id => $row) {
+            $handler = $this->privacyRetentionManager->handler($id);
+            $retention[$id] = $row + [
+                'can_view_targets' => $handler !== null && $this->privacyRetentionManager->canViewTargets($handler, $user),
+            ];
+        }
+
         return $this->success('common.success', [
-            'retention' => $this->privacyRetentionManager->preview(),
-            'dormant' => $this->dormantAccountService->isEnabled()
-                ? $this->dormantAccountService->preview()
-                : null,
+            'retention' => $retention,
+            'dormant' => [
+                'enabled' => $this->dormantAccountService->isEnabled(),
+                'withdraw_enabled' => $this->dormantAccountService->isWithdrawEnabled(),
+                'can_view_targets' => $this->privacyRetentionManager->canViewTargetList(DormantAccountService::TARGET_PERMISSIONS, $user),
+                ...$this->dormantAccountService->preview(),
+            ],
         ]);
     }
 

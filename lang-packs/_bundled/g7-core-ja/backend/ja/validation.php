@@ -1248,12 +1248,25 @@ return [
         'privacy_dormant_withdraw_enabled' => '休眠状態のアカウント自動退会',
         'privacy_dormant_withdraw_days' => '休眠状態後の退会期間',
         'settings_tab_privacy' => '個人情報設定',
+        'page' => 'ページ番号',
+        'per_page' => 'ページサイズ',
     ],
     'layout_version' => [
         'limit' => [
             'integer' => '閲覧数は数字である必要があります。',
             'min' => '閲覧数は1以上である必要があります。',
             'max' => '閲覧数は最大:max件です。',
+        ],
+    ],
+    'privacy_targets' => [
+        'page' => [
+            'integer' => 'ページ番号は数字である必要があります。',
+            'min' => 'ページ番号は1以上である必要があります。',
+        ],
+        'per_page' => [
+            'integer' => 'ページサイズは数字である必要があります。',
+            'min' => 'ページサイズは1以上である必要があります。',
+            'max' => 'ページサイズは最大:max件です。',
         ],
     ],
 ];

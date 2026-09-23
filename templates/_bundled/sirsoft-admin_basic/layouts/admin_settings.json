@@ -171,7 +171,21 @@
                     "dormant": null
                 }
             },
-            "comment": "개인정보 탭의 dry-run 건수 뱃지 — 커맨드의 `--dry-run` 과 같은 조건식을 지나므로\n       화면 숫자와 실제 처리 건수가 어긋나지 않는다."
+            "comment": "개인정보 탭의 대상 건수 뱃지 — 커맨드의 `--dry-run` 과 같은 조건식을 지나므로\n       화면 숫자와 실제 처리 건수가 어긋나지 않는다. 기능이 꺼져 있어도 건수를 보여 준다(#636)."
+        },
+        {
+            "id": "privacyTargets",
+            "label_key": "$t:editor.data_source.privacyTargets",
+            "type": "api",
+            "endpoint": "/api/admin/privacy/{{_global.privacyTargets?.path ?? 'retention-targets/user-withdrawn'}}",
+            "method": "GET",
+            "auto_fetch": false,
+            "auth_required": true,
+            "loading_strategy": "progressive",
+            "params": {
+                "per_page": 20
+            },
+            "comment": "개인정보 조치 대상 명단 창 — 여는 버튼이 목록 경로(보유기간 핸들러·휴면 단계)를 `_global.privacyTargets.path` 에\n       넣고 다시 받은 뒤 창을 연다. 스스로 조회하지 않고, 다음 쪽은 창의 스크롤이 이어 붙인다."
         },
         {
             "id": "appKey",
@@ -870,7 +884,7 @@
                                 "name": "Button",
                                 "actions": [
                                     {
-                                        "comment": "저장 — **지금 보고 있는 탭 몫만** 잘라 보낸다(한꺼번에 보내면 안 본 탭까지 덮어쓴다).\n                 알림 정의 탭만 예외로 다른 이름(`notifications`)의 묶음을 만든다 — 탭 이름과 저장 키가\n                 다른 유일한 자리다.\n                 맨 앞의 이벤트는 아직 올라가지 않은 로고 파일을 먼저 올리라는 신호다 — 그 조각이 받아\n                 처리하므로 여기서 파일을 다루지 않는다.\n                 성공 뒤 설정을 다시 받는 것은 서버가 정규화한 값으로 폼을 되맞추기 위함이다.",
+                                        "comment": "저장 — **지금 보고 있는 탭 몫만** 잘라 보낸다(한꺼번에 보내면 안 본 탭까지 덮어쓴다).\n                 알림 정의 탭만 예외로 다른 이름(`notifications`)의 묶음을 만든다 — 탭 이름과 저장 키가\n                 다른 유일한 자리다.\n                 맨 앞의 이벤트는 아직 올라가지 않은 로고 파일을 먼저 올리라는 신호다 — 그 조각이 받아\n                 처리하므로 여기서 파일을 다루지 않는다.\n                 성공 뒤 설정을 다시 받는 것은 서버가 정규화한 값으로 폼을 되맞추기 위함이다.\n                 개인정보 탭이면 대상 건수도 다시 받는다 — 저장한 기간으로 센 숫자가 즉시 보여야 방금 켠 기능이\n                 처리할 규모를 옛 숫자로 오독하지 않는다(#636 브라우저 실측으로 잡은 결함, 이커머스 탭과 같은 방식).",
                                         "type": "click",
                                         "handler": "sequence",
                                         "actions": [
@@ -924,6 +938,13 @@
                                                         "handler": "refetchDataSource",
                                                         "params": {
                                                             "dataSourceId": "settings"
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "refetchDataSource",
+                                                        "if": "{{(_global.activeSettingsTab || query.tab) === 'privacy'}}",
+                                                        "params": {
+                                                            "dataSourceId": "privacyPreview"
                                                         }
                                                     }
                                                 ],
@@ -1078,6 +1099,10 @@
         {
             "comment": "인증 메시지 정의를 기본값으로 되돌리는 확인 창.",
             "partial": "partials/admin_settings/_modal_identity_message_definition_reset.json"
+        },
+        {
+            "comment": "개인정보 조치 대상 명단 창(개인정보 탭) — 탈퇴 잔여정보 파기와 휴면 네 단계가 함께 쓴다.",
+            "partial": "partials/admin_settings/_modal_privacy_targets.json"
         }
     ]
 }

@@ -21,6 +21,9 @@ class ProductReviewRepository implements ProductReviewRepositoryInterface
 {
     use PaginatesWithDeferredJoin;
 
+    /**
+     * @param  ProductReview  $model  리뷰 모델
+     */
     public function __construct(
         protected ProductReview $model
     ) {}
@@ -421,5 +424,31 @@ class ProductReviewRepository implements ProductReviewRepositoryInterface
             ->orderByDesc('created_at')
             ->limit($limit)
             ->get();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function getWithTrashedByOrderOptionIds(array $orderOptionIds): Collection
+    {
+        if ($orderOptionIds === []) {
+            return new Collection;
+        }
+
+        return ProductReview::withTrashed()
+            ->with(['images' => fn ($query) => $query->withTrashed()])
+            ->whereIn('order_option_id', $orderOptionIds)
+            ->get();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function forceDeleteWithImages(ProductReview $review): bool
+    {
+        // 이미지 레코드를 먼저 — DB CASCADE 에 기대지 않고 명시 삭제한다.
+        $review->images()->withTrashed()->forceDelete();
+
+        return (bool) $review->forceDelete();
     }
 }

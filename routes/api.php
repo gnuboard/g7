@@ -32,6 +32,7 @@ use App\Http\Controllers\Api\Admin\NotificationTemplateController as AdminNotifi
 use App\Http\Controllers\Api\Admin\PermissionController as AdminPermissionController;
 use App\Http\Controllers\Api\Admin\PluginController as AdminPluginController;
 use App\Http\Controllers\Api\Admin\PluginSettingsController as AdminPluginSettingsController;
+use App\Http\Controllers\Api\Admin\PrivacyTargetController as AdminPrivacyTargetController;
 use App\Http\Controllers\Api\Admin\RoleController as AdminRoleController;
 use App\Http\Controllers\Api\Admin\ScheduleController as AdminScheduleController;
 use App\Http\Controllers\Api\Admin\SeoBotPreviewController;
@@ -679,6 +680,14 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
             ->where('type', 'plugin|module|template')
             ->middleware('permission:admin,core.extensions.custom_assets.manage')
             ->name('api.admin.extensions.custom-assets.destroy');
+    });
+
+    // 개인정보 조치 대상 목록 (#636) — 설정 화면 「대상 N건」 옆 「더보기」 모달이 부른다.
+    // 권한은 대상 공급자가 선언한 「설정 읽기 + 도메인 읽기」를 컨트롤러가 요청 시점에 검사한다 —
+    // 확장 핸들러는 필터 훅으로 동적으로 붙으므로 라우트가 그 권한을 정적으로 알 수 없다.
+    Route::prefix('privacy')->group(function () {
+        Route::get('retention-targets/{handler}', [AdminPrivacyTargetController::class, 'retention'])->name('api.admin.privacy.retention-targets');
+        Route::get('dormant-targets/{stage}', [AdminPrivacyTargetController::class, 'dormant'])->name('api.admin.privacy.dormant-targets');
     });
 
     // 환경설정 관리

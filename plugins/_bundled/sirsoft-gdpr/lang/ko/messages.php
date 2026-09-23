@@ -1,7 +1,7 @@
 <?php
 
 return [
-    'annual_notice' => ['attributes' => ['page' => '페이지', 'per_page' => '페이지당 건수'], 'collection_summary' => '회원 가입·서비스 이용 시 제공한 이름, 이메일 및 계정 정보', 'purpose' => '회원 식별, 서비스 제공 및 이용 문의 처리', 'retention' => '회원 탈퇴 시까지 보유하며, 법령상 보존 대상은 해당 보존 기간을 따릅니다.', 'queued_count' => ':count명 통지 접수', 'test_queued' => '시험 발송을 접수했습니다. 이력에서 결과를 확인하세요.', 'unavailable' => '발송 가능한 활성 회원과 채널 설정을 확인하세요.', 'status' => ['queued' => '접수', 'sent' => '발송 완료', 'failed' => '발송 실패']],
+    'annual_notice' => ['target_columns' => ['name' => '이름', 'email' => '이메일', 'joined_at' => '가입일'], 'attributes' => ['page' => '페이지', 'per_page' => '페이지당 건수'], 'collection_summary' => '회원 가입·서비스 이용 시 제공한 이름, 이메일 및 계정 정보', 'purpose' => '회원 식별, 서비스 제공 및 이용 문의 처리', 'retention' => '회원 탈퇴 시까지 보유하며, 법령상 보존 대상은 해당 보존 기간을 따릅니다.', 'queued_count' => ':count명 통지 접수', 'test_queued' => '시험 발송을 접수했습니다. 이력에서 결과를 확인하세요.', 'unavailable' => '발송 가능한 활성 회원과 채널 설정을 확인하세요.', 'status' => ['queued' => '접수', 'sent' => '발송 완료', 'failed' => '발송 실패']],
     'consent' => [
         'granted' => '동의가 저장되었습니다.',
         'granted_again' => '동의가 갱신되었습니다.',

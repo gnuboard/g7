@@ -77,7 +77,7 @@ HookManager::addFilter('core.privacy.retention_handlers', function (array $handl
 });
 ```
 
-계약을 구현하지 않았거나 생성에 실패한 클래스는 **기록 후 건너뜁니다** — 확장 하나의
+계약을 구현하지 않았거나 생성·식별자 조회(`id()`)에 실패한 클래스는 **기록 후 건너뜁니다** — 확장 하나의
 잘못된 등록이 다른 도메인의 법정 파기를 함께 멈추면 안 되기 때문입니다. 반대로 조용히
 버리지도 않습니다: 건너뛴 사실이 로그에 남지 않으면 운영자는 그 도메인이 처리되고 있다고
 믿게 됩니다. 같은 `id()` 가 둘이면 먼저 등록된 쪽만 남습니다.
@@ -88,14 +88,24 @@ HookManager::addFilter('core.privacy.retention_handlers', function (array $handl
   사실만으로 회원 데이터가 지워지면 안 됩니다.
 - `process()`는 수집기가 이미 걸러 주더라도 **자기 토글을 다시 봅니다.** 되돌릴 수 없는
   파기라 호출자를 믿지 않습니다.
-- `preview()`와 `process()`는 **같은 조건식**을 공유합니다. 어긋나면 운영자가 화면에서 본
-  숫자와 실제로 지워진 양이 달라집니다. 멱등(이미 처리된 행 제외)도 그 조건식이 책임집니다.
+- `preview()`·`targets()`·`process()`는 **같은 조건식**을 공유합니다. 어긋나면 운영자가 화면에서 본
+  숫자·명단과 실제로 지워진 양이 달라집니다. 멱등(이미 처리된 행 제외)도 그 조건식이 책임집니다.
+- `preview()`·`targets()`는 기능이 **꺼져 있어도** 저장된 기간값으로 셉니다 — 운영자는 켜기 전에
+  규모와 명단을 확인합니다. 꺼짐 여부는 수집기가 `enabled` 로 따로 알립니다.
+- `targets()`는 대상 명단 한 쪽(`LengthAwarePaginator`, 항목은 `App\Privacy\PrivacyRetentionTarget`)을,
+  `targetColumns()`는 쓰는 열의 라벨을, `targetPermissions()`는 명단을 볼 권한(**설정 읽기 + 그 도메인
+  읽기**, 모두 필요)을 돌려줍니다. 코어의 대상 명단 API(`GET /api/admin/privacy/retention-targets/{handler}`)가
+  핸들러를 식별자로 찾아 그 권한을 요청 시점에 검사하므로, 확장은 등록만으로 설정 화면의 「대상 보기」
+  모달을 얻습니다.
 - 대량 순회는 `chunkById`입니다 — 처리하면서 조건에서 빠지는 행을 다루므로 OFFSET 순회는
   커서가 밀려 건을 건너뜁니다.
 
 각 핸들러는 처리 전후로 자기 도메인 prune 훅을 발행합니다(7.0.7 규약):
 `{prefix}.before_prune`(보존일) / `{prefix}.after_prune`(보존일, 건수).
+**`--dry-run` 에서는 발행하지 않습니다** — 리허설에서 자기 리스너가 돌았다고 착각하지 않도록
+실제 처리 때만 발행합니다. 번들 핸들러의 접두사 전수는 아래 「보존 기간 자동 파기」 카탈로그에 있습니다.
 코어 탈퇴 회원 핸들러의 접두사는 `core.privacy.withdrawn_user`입니다.
+구현 예시·규약 표·검증 매트릭스는 [개인정보 보유기간 처리 가이드](../backend/privacy-retention.md)에 있습니다.
 
 ### 휴면 계정 생명주기 알림 훅
 
@@ -213,6 +223,14 @@ core.storage.filter_url
 core.activity_log.before_prune          core.activity_log.after_prune
 core.notification_log.before_prune      core.notification_log.after_prune
 core.schedule.before_prune_history      core.schedule.after_prune_history
+
+# 개인정보 보유기간 파기 (7.1.0, privacy:process-retention) — 핸들러마다 자기 접두사로 발행한다.
+# 같은 (보존일) / (보존일, 처리건수) 인자 규약이다. --dry-run 에서는 발행하지 않는다 —
+# 리허설에서 리스너가 돌았다고 착각하지 않도록 실제 처리 때만 발행한다.
+core.privacy.withdrawn_user.before_prune        core.privacy.withdrawn_user.after_prune
+sirsoft-ecommerce.order.before_prune            sirsoft-ecommerce.order.after_prune
+sirsoft-board.author_ip.before_prune            sirsoft-board.author_ip.after_prune
+sirsoft-board.guest_author.before_prune         sirsoft-board.guest_author.after_prune
 
 # 본문 첫 내부 이미지 썸네일 캐시 (Filter, 공개#22) — 각 모델 saving 이벤트가 발행.
 # 값 = 추출된 첫 내부 이미지 URL(없으면 null), 인자 = (값, 모델, 전체 후보 src 배열).
