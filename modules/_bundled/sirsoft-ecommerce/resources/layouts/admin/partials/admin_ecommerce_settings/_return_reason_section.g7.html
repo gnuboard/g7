@@ -2,7 +2,9 @@
 <partial>
   <div class="admin-card">
     <div class="card-header">
-      <div class="flex-between">
+      <!-- `card-header` 는 justify 를 걸지 않는 가로 flex 라, 이 줄이 w-full 없이는
+        내용 폭으로 줄어 「추가」 버튼이 제목에 달라붙는다. -->
+      <div class="flex-between w-full">
         <div>
           <h3 class="card-title">$t:sirsoft-ecommerce.admin.settings.claim.return_reasons.section_title</h3>
         </div>

@@ -118,6 +118,9 @@
                     "id": "timeline_list",
                     "type": "basic",
                     "name": "Div",
+                    "props": {
+                        "className": "stack-tight"
+                    },
                     "children": [
                         {
                             "id": "timeline_item_success",
@@ -313,7 +316,7 @@
                                                             "name": "Button",
                                                             "props": {
                                                                 "type": "button",
-                                                                "className": "flex-center gap-1 text-sm text-secondary hover:text-primary"
+                                                                "className": "flex-center gap-1 text-sm text-secondary hover:text-gray-900 dark:hover:text-white"
                                                             },
                                                             "children": [
                                                                 {

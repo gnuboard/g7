@@ -28,6 +28,13 @@ _`getSettingsSchema()` 선언이 없습니다._
 추가할 때는 이 셋 중 어디까지 손댈지를 먼저 정합니다 — `_meta.categories` 에만 넣고 `defaults`
 를 빠뜨리면 그 그룹은 화면에 뜨지만 저장할 값이 없습니다.
 
+클레임 탭의 사유 카탈로그 3종(교환·반품·환불)은 **하위 탭**으로 한 번에 하나만 그립니다. 어느
+하위 탭인지는 URL 쿼리 `sub_tab`(`exchange` · `return` · `refund`, 없거나 모르는 값이면 `exchange`)
+이 정하므로 `?tab=claim&sub_tab=return` 처럼 링크로 특정 카탈로그를 열 수 있습니다. 세 카탈로그는
+같은 폼(`claim.*_reasons`) 안의 배열이라 하위 탭을 옮겨도 편집 내용은 남고 페이지 [저장] 한 번에
+함께 저장됩니다. 하위 탭을 옮길 때는 열려 있던 사유 추가 폼을 비웁니다 — 저장 가드가 그 폼
+플래그를 하위 탭과 무관하게 읽어, 남겨 두면 보이지 않는 폼 때문에 저장이 막힙니다.
+
 설정 값을 코드에서 읽을 때는 `EcommerceSettingsService` 를 거칩니다. 통화 설정처럼 요청마다
 여러 번 읽히는 값은 `CurrencySettingsCache` 가 따로 캐시하며, 설정 저장 후 캐시를 비우는 것은
 `core.module_settings.after_save` 훅을 받는 리스너들입니다 — 설정을 직접 파일에서 읽으면 그

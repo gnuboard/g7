@@ -18,7 +18,7 @@
                 "index_var": "rIdx"
             },
             "props": {
-                "className": "excel-card"
+                "className": "excel-card mb-3"
             },
             "children": [
                 {

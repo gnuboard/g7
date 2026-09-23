@@ -242,6 +242,9 @@
                                                 "item_var": "feeItem",
                                                 "index_var": "feeIdx"
                                             },
+                                            "props": {
+                                                "className": "mb-3"
+                                            },
                                             "children": [
                                                 {
                                                     "type": "basic",

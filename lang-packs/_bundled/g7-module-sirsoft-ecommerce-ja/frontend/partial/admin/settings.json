@@ -268,6 +268,11 @@
   },
   "claim": {
     "title": "クレーム設定",
+    "reason_tabs": {
+      "exchange": "交換理由",
+      "return": "返品理由",
+      "refund": "返金理由"
+    },
     "refund_reasons": {
       "section_title": "返金理由管理",
       "add_button": "理由追加",

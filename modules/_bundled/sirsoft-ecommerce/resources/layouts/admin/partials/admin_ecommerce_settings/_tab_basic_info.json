@@ -511,8 +511,12 @@
                                     "name": "Div",
                                     "children": [
                                         {
+                                            "comment": "우편번호 줄·기본주소·상세주소가 세로로 쌓이는 묶음 — 줄 사이 간격이 없으면 입력칸 테두리가 서로 붙는다.",
                                             "type": "basic",
                                             "name": "Div",
+                                            "props": {
+                                                "className": "stack-tight"
+                                            },
                                             "children": [
                                                 {
                                                     "type": "basic",
@@ -1167,9 +1171,6 @@
                     "id": "inquiry_settings_body",
                     "type": "basic",
                     "name": "Div",
-                    "props": {
-                        "className": "card-body"
-                    },
                     "children": [
                         {
                             "type": "extension_point",

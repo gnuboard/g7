@@ -1,6 +1,7 @@
-<!-- 쇼핑몰 설정 — 클레임 탭의 정책 카드들. 신청 조건·추가결제·첨부 값은 고객 신청 화면의 안내와 서버의 접수 판정이 같은 설정을 함께 읽고, 자동 승인 값은 서버 판정에만, 완료 처리 기본값은 관리자 완료 처리 창의 첫 선택값으로만 쓰인다. -->
+<!-- 쇼핑몰 설정 — 클레임 탭의 정책 카드들. 신청 조건·추가결제·첨부 값은 고객 신청 화면의 안내와 서버의 접수 판정이 같은 설정을 함께 읽고, 자동 승인 값은 서버 판정에만, 완료 처리 기본값은 관리자 완료 처리 창의 첫 선택값으로만 쓰인다.
+  카드 묶음이라 row-stack 을 쓰지 않는다 — row-stack 의 자식 py-2·첫 pt-0·끝 pb-0 이 같은 components 레이어의 admin-card p-4 를 덮어, 마지막 카드(완료 처리 기본값)의 하단 여백이 0 이 되어 문구가 테두리에 붙었다. 카드 사이 간격은 admin-card 의 mb-6 이 맡는다(다른 탭과 같은 구성). -->
 <partial description="쇼핑몰 설정 클레임 탭 - 클레임 정책 (신청 가능 조건 / 추가결제 / 자동 승인 / 첨부 / 완료 처리 기본값)">
-  <div data-ref="claim_policy_sections" class="row-stack">
+  <div data-ref="claim_policy_sections">
     <div data-ref="claim_requestable_card" class="admin-card">
       <h3 class="card-title">$t:sirsoft-ecommerce.admin.settings.claim.policy.requestable.title</h3>
       <div class="card-description">$t:sirsoft-ecommerce.admin.settings.claim.policy.requestable.description</div>

@@ -316,7 +316,8 @@
                                             "isAddingCurrency": false,
                                             "form.newCurrency": null,
                                             "isAddingMileageCurrency": false,
-                                            "form.newMileageCurrency": null
+                                            "form.newMileageCurrency": null,
+                                            "claimReasonTab": null
                                         }
                                     },
                                     {

@@ -1,7 +1,7 @@
 <!-- 쇼핑몰 설정 — 교환 사유 목록의 좁은 화면용 카드. 넓은 화면의 표와 같은 배열을 고치며, 고객이 교환을 신청할 때 고르는 사유와 그 귀책(교환 왕복 배송비를 누가 내는가)을 여기서 관리한다. -->
 <partial description="교환 사유 관리 - Mobile 카드 뷰">
   <div data-ref="exchange_reason_cards_container">
-    <div data-ref="exchange_reason_card_{{rIdx}}" data-each="reason, rIdx in (_local.form?.claim?.exchange_reasons ?? []).map((r, i) => ({...r, _idx: i}))" class="excel-card">
+    <div data-ref="exchange_reason_card_{{rIdx}}" data-each="reason, rIdx in (_local.form?.claim?.exchange_reasons ?? []).map((r, i) => ({...r, _idx: i}))" class="excel-card mb-3">
       <div class="excel-card-header">
         <div class="flex-center gap-2 min-w-0">
           <div class="min-w-0">

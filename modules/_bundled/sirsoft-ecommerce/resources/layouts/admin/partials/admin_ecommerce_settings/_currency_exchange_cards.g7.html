@@ -12,7 +12,7 @@
   기본 통화는 지울 수 없다 — 버튼이 잠기는 것이 아니라 클래스만 바뀌므로 판정은 그 식에 있다. -->
 <partial description="환율 설정 - Mobile 카드 뷰">
   <div data-ref="exchange_cards_container">
-    <div data-ref="currency_card_{{currencyIndex}}" data-each="currency, currencyIndex in (Array.isArray(_local.form?.language_currency?.currencies) ? _local.form.language_currency.currencies : []).map((c, i) => ({...c, _idx: i})).sort((a, b) => { const defaultCurrency = _local.form?.language_currency?.default_currency; if (a.code === defaultCurrency) return -1; if (b.code === defaultCurrency) return 1; return 0; })" class="excel-card">
+    <div data-ref="currency_card_{{currencyIndex}}" data-each="currency, currencyIndex in (Array.isArray(_local.form?.language_currency?.currencies) ? _local.form.language_currency.currencies : []).map((c, i) => ({...c, _idx: i})).sort((a, b) => { const defaultCurrency = _local.form?.language_currency?.default_currency; if (a.code === defaultCurrency) return -1; if (b.code === defaultCurrency) return 1; return 0; })" class="excel-card mb-3">
       <div class="excel-card-header">
         <div data-if="{{_local.editingCurrencyIdx !== currency._idx}}" class="flex-center gap-2">
           <span class="{{'fi fi-' + (_defines?.currencyToFlag?.[currency.code] ?? 'xx') + ' fis rounded text-xl'}}"/>

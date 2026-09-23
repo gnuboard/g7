@@ -258,6 +258,7 @@ exports[`BindingShape 라우팅 diff 하네스 > 표현식/경로 판정: 구 �
       "modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_promotion_coupon_list/_partial_coupon_datagrid.json",
       "modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_promotion_coupon_list/_partial_filter_section.json",
       "modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_settings/_modal_notification_template_edit.json",
+      "modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_settings/_tab_claim.json",
       "modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_settings/_tab_notification_definitions.json",
       "modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_shipping_policy_list/_partial_datagrid.json",
       "modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_user_address_index/_partial_address_datagrid.json",

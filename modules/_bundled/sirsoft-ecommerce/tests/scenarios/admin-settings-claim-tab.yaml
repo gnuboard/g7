@@ -44,6 +44,10 @@ effects:
   - settings_claim_seeder_preserves_used_and_removes_unused_reasons
   # 탭 구성
   - settings_claim_tab_composes_policy_and_three_catalogs
+  # 사유 카탈로그 3종은 하위 탭으로 한 번에 하나만 보인다. 어느 하위 탭인지는 URL `sub_tab` 이 정해
+  # 새로고침·링크 공유 뒤에도 같은 하위 탭이 서고, 탭 강조와 보이는 표가 같은 판정을 한다. 하위 탭을
+  # 옮기면 열린 추가 폼을 비운다 — 저장 가드가 하위 탭과 무관하게 그 플래그를 읽기 때문이다.
+  - settings_claim_reason_sub_tab_follows_url
   - settings_claim_policy_exposes_every_scalar_axis
   - settings_claim_policy_limits_come_from_server
   - settings_claim_complete_defaults_declared_as_modal_seed

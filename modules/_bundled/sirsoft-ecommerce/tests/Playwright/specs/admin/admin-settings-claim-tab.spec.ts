@@ -5,14 +5,15 @@
  *
  *  ① **사유 카탈로그 3종이 각자의 표를 그리는가.** 세 블록은 같은 정본을 복제한 것이라
  *     상태 키가 한 곳이라도 남으면 세 표가 같은 목록을 편집하게 된다. 구조 검사는 파일
- *     단위로만 보고, 세 표가 **같은 화면에 함께 있을 때** 무엇을 그리는지는 여기서만 보인다.
+ *     단위로만 보고, 세 표가 **같은 화면에서** 무엇을 그리는지는 여기서만 보인다. 세 표는
+ *     URL `sub_tab` 으로 고르는 하위 탭에 하나씩 놓이므로, 하위 탭마다 자기 표만 서는지도 본다.
  *  ② **저장 → 재진입 영속.** 설정 저장은 탭 단위 부분 저장이라, 다른 탭의 값을 함께 보내
  *     덮어쓰거나 클레임 섹션만 빠뜨려도 응답은 200 이고 화면은 성공으로 보인다.
  *  ③ **사유명이 언어별로 저장되는가** (D23). 단일 Input 으로 되돌아가면 ko 만 남고 나머지
  *     언어는 조용히 사라진다.
  *
  * @scenario reason_type=exchange
- * @effects settings_claim_tab_renders_three_reason_catalogs, settings_claim_policy_persists_across_reentry, settings_claim_reason_name_is_multilingual
+ * @effects settings_claim_tab_renders_three_reason_catalogs, settings_claim_policy_persists_across_reentry, settings_claim_reason_name_is_multilingual, settings_claim_reason_sub_tab_follows_url
  */
 import { test, expect, authenticatePage } from '../../fixtures/ecommerce-auth';
 
@@ -66,22 +67,85 @@ test.describe('설정 클레임 탭', () => {
     // 14차 정정 — 재시도가 걸려 있던 것은 `not.toHaveCount(0)`(= 하나라도 있으면 통과)뿐이고
     // 계약값 8 은 바로 아래에서 재시도 없이 즉시 평가됐다. 진단한 결함을 그 재시도가 덮지
     // 못한 채, 메시지만 "8개 이상" 을 말하고 있었다. 계약값 자체를 재시도 단언으로 옮긴다.
+    //
+    // 사유 카탈로그가 하위 탭으로 갈린 뒤에는 한 번에 한 유형만 그려진다 — 정책 5 + 사유 1.
     await expect
       .poll(async () => page.locator('#tab_content_claim .admin-card').count(), {
         timeout: 20_000,
-        message: '클레임 탭 카드가 8개 이상 그려져야 한다 (정책 5 + 사유 3)',
+        message: '클레임 탭 카드가 6개 이상 그려져야 한다 (정책 5 + 보이는 사유 1)',
       })
-      .toBeGreaterThanOrEqual(8);
+      .toBeGreaterThanOrEqual(6);
 
     // 세 유형이 각자의 표를 그린다. 종전 단언은 `배열.length + 0 >= 0` 이라 항상 참이었고,
     // 그래서 표가 하나도 안 그려져도 통과했을 뿐 아니라 데이터가 도착할 때까지 기다리지도
     // 않았다. 자동 재시도 단언으로 바꿔 "정확히 1개"(0=미렌더 / 2 이상=블록 중복)를 못박는다.
-    const listIds = ['exchange_reason_list', 'return_reason_list', 'refund_reason_list'];
-    for (const id of listIds) {
-      await expect(page.locator(`#${id}`), `${id} 가 정확히 1개 그려져야 한다`).toHaveCount(1, {
-        timeout: 20_000,
-      });
+    // 하위 탭마다 자기 표 하나만 있고 나머지 둘은 없어야 한다 — 두 표가 함께 보이면 하위 탭이
+    // 구분하지 못하는 것이고, 하나도 없으면 탭이 패널을 잃은 것이다.
+    const listIds = { exchange: 'exchange_reason_list', return: 'return_reason_list', refund: 'refund_reason_list' } as const;
+    const tabLabels = { exchange: /교환 사유|Exchange reasons|交換理由/, return: /반품 사유|Return reasons|返品理由/, refund: /환불 사유|Refund reasons|返金理由/ } as const;
+    for (const subTab of ['return', 'refund', 'exchange'] as const) {
+      await page.locator('#claim_reason_sub_tabs').getByRole('tab', { name: tabLabels[subTab] }).click();
+      await expect(page.locator('#claim_reason_sub_tabs').getByRole('tab', { name: tabLabels[subTab] })).toHaveAttribute('aria-selected', 'true');
+      await expect(page).toHaveURL(new RegExp(`[?&]sub_tab=${subTab}(&|$)`), { timeout: 15_000 });
+      await expect(page).toHaveURL(/[?&]tab=claim(&|$)/);
+      for (const [type, id] of Object.entries(listIds)) {
+        await expect(page.locator(`#${id}`), `sub_tab=${subTab} 에서 ${id} 는 ${type === subTab ? '1' : '0'}개여야 한다`).toHaveCount(type === subTab ? 1 : 0, {
+          timeout: 20_000,
+        });
+      }
     }
+  });
+
+  /**
+   * @scenario reason_type=return
+   * @effects settings_claim_reason_sub_tab_follows_url
+   */
+  test('사유 하위 탭은 URL 로 진입·새로고침해도 같은 유형이 선다', async ({ page, settingsToken }) => {
+    test.setTimeout(120_000);
+
+    await authenticatePage(page, settingsToken);
+    await page.goto(`${SETTINGS_URL}&sub_tab=return`);
+    await waitForClaimTab(page);
+    await expect(page.locator('#return_reason_list')).toHaveCount(1, { timeout: 20_000 });
+    await expect(page.locator('#exchange_reason_list')).toHaveCount(0);
+
+    await page.reload();
+    await waitForClaimTab(page);
+    await expect(page.locator('#return_reason_list')).toHaveCount(1, { timeout: 20_000 });
+    await expect(page.locator('#refund_reason_list')).toHaveCount(0);
+
+    // 하위 탭을 옮겨도 저장 전 편집 내용은 남는다 — 세 카탈로그는 한 폼 안의 배열이고, 하위 탭 전환은
+    // 같은 레이아웃 안의 URL 교체라 설정을 다시 받아 폼을 덮지 않는다. 저장하지 않고 새로고침으로 버린다.
+    await page.goto(`${SETTINGS_URL}&sub_tab=exchange`);
+    await waitForClaimTab(page);
+    const firstName = page.locator('#exchange_reason_list input[type="text"]').first();
+    await expect(firstName).toBeVisible({ timeout: 20_000 });
+    const edited = `${await firstName.inputValue()} (편집중)`;
+    await firstName.fill(edited);
+    await firstName.blur();
+    // 하위 탭 전환이 설정을 다시 받으면(navigate) initLocal 이 폼을 서버값으로 덮는다 — 요청 수로 잠근다.
+    let settingsGets = 0;
+    const consoleErrors: string[] = [];
+    page.on('request', (r) => {
+      if (r.method() === 'GET' && r.url().includes('/sirsoft-ecommerce/admin/settings') && !r.url().includes('seo-cache')) settingsGets++;
+    });
+    page.on('console', (m) => { if (m.type() === 'error') consoleErrors.push(m.text()); });
+    const tabs = page.locator('#claim_reason_sub_tabs');
+    await tabs.getByRole('tab', { name: /반품 사유|Return reasons|返品理由/ }).click();
+    await expect(page).toHaveURL(/[?&]sub_tab=return(&|$)/, { timeout: 15_000 });
+    await tabs.getByRole('tab', { name: /교환 사유|Exchange reasons|交換理由/ }).click();
+    await expect(page).toHaveURL(/[?&]sub_tab=exchange(&|$)/, { timeout: 15_000 });
+    await expect(page.locator('#exchange_reason_list input[type="text"]').first(), '하위 탭을 다녀오면 편집 내용이 사라진다').toHaveValue(edited);
+    test.info().annotations.push({ type: 'measured', description: JSON.stringify({ settingsGetsDuringSubTabSwitch: settingsGets, consoleErrors }) });
+    expect(settingsGets, '하위 탭 전환이 설정을 다시 받았다 — 저장 전 편집이 서버값으로 덮인다').toBe(0);
+    expect(consoleErrors).toEqual([]);
+    await page.reload();
+    await waitForClaimTab(page);
+
+    // 모르는 값은 교환으로 떨어진다 — 빈 화면(패널 0개)이 되면 운영자는 사유 관리가 사라졌다고 읽는다.
+    await page.goto(`${SETTINGS_URL}&sub_tab=bogus`);
+    await waitForClaimTab(page);
+    await expect(page.locator('#exchange_reason_list')).toHaveCount(1, { timeout: 20_000 });
   });
 
   /**

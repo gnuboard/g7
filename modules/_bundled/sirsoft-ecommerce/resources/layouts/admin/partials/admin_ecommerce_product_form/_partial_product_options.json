@@ -622,7 +622,7 @@
                                                                             ],
                                                                             "props": {
                                                                                 "type": "number",
-                                                                                "className": "input input-sm text-right",
+                                                                                "className": "input text-right",
                                                                                 "value": "{{opt.list_price ?? 0}}",
                                                                                 "min": "0",
                                                                                 "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
@@ -669,7 +669,7 @@
                                                                                             ],
                                                                                             "props": {
                                                                                                 "type": "number",
-                                                                                                "className": "{{ _local.errors?.['options.' + optIdx + '.selling_price'] ? 'input input-sm input-error w-24 text-right' : 'input input-sm w-24 text-right' }}",
+                                                                                                "className": "{{ _local.errors?.['options.' + optIdx + '.selling_price'] ? 'input input-error w-24 text-right' : 'input w-24 text-right' }}",
                                                                                                 "value": "{{opt.selling_price ?? 0}}",
                                                                                                 "min": "0",
                                                                                                 "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
@@ -748,7 +748,7 @@
                                                                             ],
                                                                             "props": {
                                                                                 "type": "text",
-                                                                                "className": "input input-sm",
+                                                                                "className": "input",
                                                                                 "value": "{{opt.sku ?? ''}}",
                                                                                 "placeholder": "-",
                                                                                 "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
@@ -788,7 +788,7 @@
                                                                                     ],
                                                                                     "props": {
                                                                                         "type": "number",
-                                                                                        "className": "{{ _local.errors?.['options.' + optIdx + '.stock_quantity'] ? 'input input-sm input-error w-full text-right' : 'input input-sm w-full text-right' }}",
+                                                                                        "className": "{{ _local.errors?.['options.' + optIdx + '.stock_quantity'] ? 'input input-error w-full text-right' : 'input w-full text-right' }}",
                                                                                         "value": "{{opt.stock_quantity ?? 0}}",
                                                                                         "min": "0",
                                                                                         "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
@@ -832,7 +832,7 @@
                                                                             ],
                                                                             "props": {
                                                                                 "type": "number",
-                                                                                "className": "input input-sm text-right",
+                                                                                "className": "input text-right",
                                                                                 "value": "{{opt.safe_stock_quantity ?? 0}}",
                                                                                 "min": "0",
                                                                                 "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
@@ -865,7 +865,7 @@
                                                                             ],
                                                                             "props": {
                                                                                 "type": "number",
-                                                                                "className": "input input-sm text-right",
+                                                                                "className": "input text-right",
                                                                                 "value": "{{opt.weight ?? 0}}",
                                                                                 "min": "0",
                                                                                 "step": "0.01",
@@ -899,7 +899,7 @@
                                                                             ],
                                                                             "props": {
                                                                                 "type": "number",
-                                                                                "className": "input input-sm text-right",
+                                                                                "className": "input text-right",
                                                                                 "value": "{{opt.volume ?? 0}}",
                                                                                 "min": "0",
                                                                                 "step": "0.01",
@@ -940,7 +940,7 @@
                                                                                     ],
                                                                                     "props": {
                                                                                         "type": "number",
-                                                                                        "className": "input input-sm w-16 text-right",
+                                                                                        "className": "input w-16 text-right",
                                                                                         "value": "{{opt.mileage_value ?? 0}}",
                                                                                         "min": "0",
                                                                                         "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
@@ -962,7 +962,7 @@
                                                                                         }
                                                                                     ],
                                                                                     "props": {
-                                                                                        "className": "select select-sm w-16",
+                                                                                        "className": "select w-16",
                                                                                         "value": "{{opt.mileage_type ?? 'percent'}}",
                                                                                         "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
                                                                                     },
@@ -1121,6 +1121,9 @@
                                     "if": "{{false}}"
                                 }
                             },
+                            "props": {
+                                "className": "stack-tight"
+                            },
                             "children": [
                                 {
                                     "type": "basic",
@@ -1272,7 +1275,7 @@
                                                             ],
                                                             "props": {
                                                                 "type": "number",
-                                                                "className": "input input-sm",
+                                                                "className": "input",
                                                                 "value": "{{opt.list_price ?? 0}}",
                                                                 "min": "0",
                                                                 "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
@@ -1313,7 +1316,7 @@
                                                             ],
                                                             "props": {
                                                                 "type": "number",
-                                                                "className": "{{ _local.errors?.['options.' + optIdx + '.selling_price'] ? 'input input-sm input-error w-full' : 'input input-sm w-full' }}",
+                                                                "className": "{{ _local.errors?.['options.' + optIdx + '.selling_price'] ? 'input input-error w-full' : 'input w-full' }}",
                                                                 "value": "{{opt.selling_price ?? 0}}",
                                                                 "min": "0",
                                                                 "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
@@ -1363,7 +1366,7 @@
                                                             ],
                                                             "props": {
                                                                 "type": "text",
-                                                                "className": "input input-sm",
+                                                                "className": "input",
                                                                 "value": "{{opt.sku ?? ''}}",
                                                                 "placeholder": "SKU",
                                                                 "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
@@ -1404,7 +1407,7 @@
                                                             ],
                                                             "props": {
                                                                 "type": "number",
-                                                                "className": "{{ _local.errors?.['options.' + optIdx + '.stock_quantity'] ? 'input input-sm input-error w-full' : 'input input-sm w-full' }}",
+                                                                "className": "{{ _local.errors?.['options.' + optIdx + '.stock_quantity'] ? 'input input-error w-full' : 'input w-full' }}",
                                                                 "value": "{{opt.stock_quantity ?? 0}}",
                                                                 "min": "0",
                                                                 "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
@@ -1454,7 +1457,7 @@
                                                             ],
                                                             "props": {
                                                                 "type": "number",
-                                                                "className": "input input-sm",
+                                                                "className": "input",
                                                                 "value": "{{opt.safe_stock_quantity ?? 0}}",
                                                                 "min": "0",
                                                                 "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
@@ -1495,7 +1498,7 @@
                                                             ],
                                                             "props": {
                                                                 "type": "number",
-                                                                "className": "input input-sm",
+                                                                "className": "input",
                                                                 "value": "{{opt.weight ?? 0}}",
                                                                 "min": "0",
                                                                 "step": "0.01",
@@ -1537,7 +1540,7 @@
                                                             ],
                                                             "props": {
                                                                 "type": "number",
-                                                                "className": "input input-sm",
+                                                                "className": "input",
                                                                 "value": "{{opt.volume ?? 0}}",
                                                                 "min": "0",
                                                                 "step": "0.01",
@@ -1586,7 +1589,7 @@
                                                                     ],
                                                                     "props": {
                                                                         "type": "number",
-                                                                        "className": "input input-sm flex-1",
+                                                                        "className": "input flex-1",
                                                                         "value": "{{opt.mileage_value ?? 0}}",
                                                                         "min": "0",
                                                                         "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
@@ -1608,7 +1611,7 @@
                                                                         }
                                                                     ],
                                                                     "props": {
-                                                                        "className": "select select-sm w-20",
+                                                                        "className": "select w-20",
                                                                         "value": "{{opt.mileage_type ?? 'percent'}}",
                                                                         "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
                                                                     },
@@ -1749,10 +1752,11 @@
                                         "handle": "[data-drag-handle]"
                                     },
                                     "itemTemplate": {
+                                        "comment": "그룹 사이 간격은 항목의 mb-3 이 맡는다 — sortable 노드는 자기 요소를 그리지 않고 항목을 부모에 곧바로 펼치므로 그 노드에 준 gap 클래스는 화면에 닿지 않는다.",
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "{{_local.errors?.['additional_options.' + addIdx + '.values'] ? 'flex flex-col gap-3 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg border-2 border-red-400 dark:border-red-500' : 'flex flex-col gap-3 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg'}}"
+                                            "className": "{{_local.errors?.['additional_options.' + addIdx + '.values'] ? 'flex flex-col gap-3 p-4 mb-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg border-2 border-red-400 dark:border-red-500' : 'flex flex-col gap-3 p-4 mb-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg'}}"
                                         },
                                         "children": [
                                             {
@@ -2040,7 +2044,7 @@
                                                                                 ],
                                                                                 "props": {
                                                                                     "type": "number",
-                                                                                    "className": "{{_local.errors?.['additional_options.' + addIdx + '.values.' + addValIdx + '.price_adjustment'] ? 'input input-sm input-error w-full text-right' : 'input input-sm w-full text-right'}}",
+                                                                                    "className": "{{_local.errors?.['additional_options.' + addIdx + '.values.' + addValIdx + '.price_adjustment'] ? 'input input-error w-full text-right' : 'input w-full text-right'}}",
                                                                                     "value": "{{addVal.price_adjustment ?? 0}}",
                                                                                     "min": "0",
                                                                                     "step": "1",
@@ -2265,7 +2269,7 @@
                                                         ],
                                                         "props": {
                                                             "type": "button",
-                                                            "className": "btn btn-outline btn-xs"
+                                                            "className": "btn btn-outline"
                                                         },
                                                         "text": "+ $t:sirsoft-ecommerce.admin.product.options.add_additional_value"
                                                     },

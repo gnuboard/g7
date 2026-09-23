@@ -33,7 +33,7 @@
         </div>
         <div data-ref="template_recipients_section" class="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-700 rounded-lg p-4 space-y-3">
           <h4 class="text-sm font-medium text-purple-800 dark:text-purple-200">$t:admin.settings.notification_definitions.recipients.title</h4>
-          <div class="row-stack">
+          <div class="stack-tight">
             <div data-each="rcpt, rcptIdx in {{_global.notification_template_form_modal?.recipients ?? []}}" class="bg-white dark:bg-gray-800 border border-purple-200 dark:border-purple-600 rounded-lg p-3 space-y-2">
               <div class="flex-between">
                 <span class="text-xs font-medium text-purple-700 dark:text-purple-300">$t:admin.settings.notification_definitions.recipients.rule_label|index={{rcptIdx + 1}}</span>

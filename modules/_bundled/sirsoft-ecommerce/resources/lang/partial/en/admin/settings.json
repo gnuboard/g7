@@ -272,6 +272,11 @@
   },
   "claim": {
     "title": "Claims Settings",
+    "reason_tabs": {
+      "exchange": "Exchange reasons",
+      "return": "Return reasons",
+      "refund": "Refund reasons"
+    },
     "policy": {
       "days_unit": "days",
       "images_unit": "images",

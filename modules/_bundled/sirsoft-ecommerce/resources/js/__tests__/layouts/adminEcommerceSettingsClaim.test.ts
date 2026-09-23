@@ -99,15 +99,87 @@ describe('설정 클레임 탭 — 구성', () => {
    * @scenario reason_type=exchange
    * @effects settings_claim_tab_composes_policy_and_three_catalogs
    */
-  it('클레임 탭은 정책 + 교환/반품/환불 사유 4블록을 이 순서로 싣는다', () => {
-    const partials = ((tabClaim as any).children ?? []).map((c: any) => c.partial);
+  it('클레임 탭은 정책 → 사유 하위 탭 → 교환/반품/환불 사유 패널을 이 순서로 싣는다', () => {
+    const children = (tabClaim as any).children ?? [];
 
-    expect(partials).toEqual([
-      '_claim_policy_section.json',
-      '_exchange_reason_section.json',
-      '_return_reason_section.json',
-      '_refund_reason_section.json',
+    expect(children[0].partial).toBe('_claim_policy_section.json');
+    expect(children[1].id).toBe('claim_reason_sub_tabs');
+    // 패널마다 자기 사유 조각 하나만 싣는다 — 한 패널에 둘이 들어가면 하위 탭을 골라도 두 표가 함께 보인다.
+    expect(children.slice(2).map((c: any) => [c.id, (c.children ?? []).map((k: any) => k.partial)])).toEqual([
+      ['claim_exchange_reason_panel', ['_exchange_reason_section.json']],
+      ['claim_return_reason_panel', ['_return_reason_section.json']],
+      ['claim_refund_reason_panel', ['_refund_reason_section.json']],
     ]);
+  });
+
+  /**
+   * @effects settings_claim_reason_sub_tab_follows_url
+   */
+  it('사유 하위 탭은 고른 값(_local)이 먼저, 진입·새로고침 때는 URL 쿼리 sub_tab 이 정하고, 모르는 값·부재는 교환으로 떨어진다', () => {
+    const children = (tabClaim as any).children ?? [];
+    const tabs = children[1];
+
+    expect(tabs.props.tabs.map((t: any) => t.id)).toEqual(['exchange', 'return', 'refund']);
+    expect(tabs.props.activeTabId).toContain('query.sub_tab');
+    expect(tabs.props.activeTabId).toContain('_local.claimReasonTab');
+
+    // 패널 표시 조건과 활성 탭 식이 같은 판정을 해야 탭 강조와 보이는 표가 어긋나지 않는다.
+    const visibleFor = (subTab: unknown, picked: unknown = undefined) => {
+      const query = { sub_tab: subTab };
+      const _local = { claimReasonTab: picked };
+      return children.slice(2).filter((panel: any) => {
+        const expr = String(panel.if).replace(/^\{\{|\}\}$/g, '');
+        // eslint-disable-next-line no-new-func
+        return new Function('query', '_local', `return (${expr});`)(query, _local);
+      }).map((panel: any) => panel.id);
+    };
+    const activeFor = (subTab: unknown, picked: unknown = undefined) => {
+      const expr = String(tabs.props.activeTabId).replace(/^\{\{|\}\}$/g, '');
+      // eslint-disable-next-line no-new-func
+      return new Function('query', '_local', `return (${expr});`)({ sub_tab: subTab }, { claimReasonTab: picked });
+    };
+
+    expect([visibleFor(undefined), activeFor(undefined)]).toEqual([['claim_exchange_reason_panel'], 'exchange']);
+    expect([visibleFor('return'), activeFor('return')]).toEqual([['claim_return_reason_panel'], 'return']);
+    expect([visibleFor('refund'), activeFor('refund')]).toEqual([['claim_refund_reason_panel'], 'refund']);
+    expect([visibleFor('bogus'), activeFor('bogus')]).toEqual([['claim_exchange_reason_panel'], 'exchange']);
+    // 탭을 고르면 URL 은 replace-url 로만 바뀌어 query 가 갱신되지 않는다 — 고른 값이 query 보다 먼저다.
+    expect([visibleFor('return', 'refund'), activeFor('return', 'refund')]).toEqual([['claim_refund_reason_panel'], 'refund']);
+    expect([visibleFor('refund', 'exchange'), activeFor('refund', 'exchange')]).toEqual([['claim_exchange_reason_panel'], 'exchange']);
+    // 상위 탭 전환이 null 로 비우면 다시 URL 을 따른다.
+    expect([visibleFor('return', null), activeFor('return', null)]).toEqual([['claim_return_reason_panel'], 'return']);
+  });
+
+  /**
+   * @effects settings_claim_reason_sub_tab_follows_url
+   */
+  it('하위 탭 전환은 열린 사유 추가 폼 3종을 비우고, 설정을 다시 받지 않는 replaceUrl 로 tab=claim 을 지킨 채 sub_tab 만 URL 에 남긴다', () => {
+    const tabs = ((tabClaim as any).children ?? [])[1];
+    const seq = tabs.actions.find((a: any) => a.event === 'onTabChange');
+    const [clear, nav] = seq.actions;
+
+    // 페이지 [저장] 가드가 이 플래그를 하위 탭과 무관하게 읽는다 — 남기면 안 보이는 폼 때문에 저장이 막힌다.
+    expect(clear.handler).toBe('setState');
+    for (const key of ['isAddingExchangeReason', 'isAddingReturnReason', 'isAddingRefundReason']) {
+      expect(clear.params[key]).toBe(false);
+    }
+    for (const key of ['exchangeReasonForm', 'returnReasonForm', 'refundReasonForm', 'exchangeReasonFormErrors', 'returnReasonFormErrors', 'refundReasonFormErrors']) {
+      expect(clear.params[key]).toBeNull();
+    }
+
+    expect(clear.params.claimReasonTab).toBe('{{$args[0]}}');
+    // navigate 는 라우트를 다시 풀어 설정을 다시 받고 initLocal 로 폼을 덮는다 — 하위 탭을 옮기는 순간 저장 전 편집이 사라진다.
+    expect(nav.handler).toBe('replaceUrl');
+    expect(nav.params).toMatchObject({ mergeQuery: true, query: { tab: 'claim', sub_tab: '{{$args[0]}}' } });
+  });
+
+  /**
+   * @effects settings_claim_reason_sub_tab_follows_url
+   */
+  it('상위 탭 전환은 고른 하위 탭을 비워, 다시 돌아오면 주소(sub_tab 없음)와 화면(교환)이 어긋나지 않는다', () => {
+    const onTabChange = findNode(settingsShell, (n) => n?.id === 'tab_navigation').actions.find((a: any) => a.event === 'onTabChange');
+    const clear = onTabChange.actions.find((a: any) => a.handler === 'setState' && a.params?.target === 'local');
+    expect(clear.params).toHaveProperty('claimReasonTab', null);
   });
 
   /**

@@ -272,6 +272,11 @@
   },
   "claim": {
     "title": "클레임 설정",
+    "reason_tabs": {
+      "exchange": "교환 사유",
+      "return": "반품 사유",
+      "refund": "환불 사유"
+    },
     "policy": {
       "days_unit": "일",
       "images_unit": "장",
