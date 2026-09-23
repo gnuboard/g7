@@ -85,6 +85,11 @@ return [
         'ip_blocked' => 'IP Access Blocked',
         'ip_restriction_disabled' => 'IP Restriction Disabled',
 
+        // Dormant accounts (user.dormant_*)
+        'dormant_restored' => 'Dormancy Lifted',
+        'dormant_converted' => 'Marked Dormant',
+        'dormant_withdrawn' => 'Dormant Account Withdrawn',
+
         // Ecommerce/Board common
     ],
 
@@ -163,6 +168,9 @@ return [
 
         // Security — IP access restriction
         'security_ip_blocked' => 'IP access blocked (:ip → :path)',
+        'user_dormant_restored' => 'Dormancy lifted by sign-in (ID: :user_id)',
+        'user_dormant_converted' => 'Marked dormant after long inactivity (ID: :user_id)',
+        'user_dormant_withdrawn' => 'Withdrawn after the dormancy period (ID: :user_id)',
         'security_ip_restriction_disabled' => 'IP access restriction emergency-disabled (console)',
 
         // Schedule management

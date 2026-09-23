@@ -122,7 +122,7 @@
             <div class="grid-2col-responsive">
               <div data-ref="field_status">
                 <label class="text-label-subtle block font-medium mb-1">$t:admin.users.form.fields.status</label>
-                <span class="{{user?.data?.status_variant === 'success' ? 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : user?.data?.status_variant === 'secondary' ? 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200' : user?.data?.status_variant === 'danger' ? 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' : 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'}}">{{user?.data?.status_label ?? '-'}}</span>
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{({success: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200', secondary: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200', danger: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200', warning: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200', info: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'})[user?.data?.status_variant] ?? 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'}}">{{user?.data?.status_label ?? '-'}}</span>
               </div>
               <div data-ref="field_email_verified">
                 <label class="text-label-subtle block font-medium mb-1">$t:admin.users.detail.email_verification</label>
@@ -258,6 +258,11 @@
             <div data-ref="field_blocked_at">
               <label class="text-label-subtle block font-medium mb-1">$t:admin.users.detail.blocked_at</label>
               <div class="text-primary text-sm">{{user?.data?.blocked_at ?? '-'}}</div>
+            </div>
+            <!-- 휴면 전환 시각 — 해제되면 서버가 NULL 로 되돌리므로 값이 있으면 "지금 휴면" 이라는 뜻이다. 자동 탈퇴는 이 시각 + 설정 기간으로 판정하므로 운영자가 남은 기간을 셀 수 있어야 한다. -->
+            <div data-ref="field_dormant_at">
+              <label class="text-label-subtle block font-medium mb-1">$t:admin.users.detail.dormant_at</label>
+              <div class="text-primary text-sm">{{user?.data?.dormant_at ?? '-'}}</div>
             </div>
           </div>
         </div>

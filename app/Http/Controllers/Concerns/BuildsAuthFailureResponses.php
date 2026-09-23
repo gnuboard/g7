@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers\Concerns;
 
+use App\Enums\IdentityVerificationChannel;
 use App\Exceptions\Auth\AccountLockedException;
+use App\Extension\IdentityVerification\IdentityVerificationManager;
 use Illuminate\Http\JsonResponse;
 
 /**
@@ -66,6 +68,29 @@ trait BuildsAuthFailureResponses
     }
 
     /**
+     * 관리자 권한 거절 문구를 고릅니다 — 휴면이 풀린 로그인이면 그 사실까지 알립니다.
+     *
+     * 관리자 로그인에 비관리자 휴면 회원이 들어오면 비밀번호 확인은 성공하므로
+     * `AuthService::issueLoginSession()` 이 **먼저** 휴면을 해제하고 활동 로그를 남긴다.
+     * 그 뒤 권한 판정이 403 으로 거절하면서 발급분만 회수하는데, 403 응답에는
+     * `dormancy_restored` 가 실리지 않아 그 플래그에 묶인 토스트도 뜨지 않는다.
+     * 그대로 두면 회원은 **로그인이 실패한 줄 알지만 실제로는 휴면이 해제된** 상태가 된다 —
+     * 계획서가 약속한 「해제 + 활동 로그 + 안내」 중 안내만 사라지는 자리다.
+     *
+     * 상태를 되돌리지 않고 문구로 알리는 이유: 비밀번호 확인 성공은 그 자체가 본인확인이라
+     * 해제 요건을 이미 충족했고, 되돌리면 그 회원이 일반 로그인으로 다시 풀어야 한다.
+     *
+     * @param  array<string, mixed>  $login  login/completeTwoFactor 반환 페이로드
+     * @return string 번역 키
+     */
+    protected function adminRequiredMessageKey(array $login): string
+    {
+        return ($login['dormancy_restored'] ?? false)
+            ? 'auth.admin_required_dormancy_restored'
+            : 'auth.admin_required';
+    }
+
+    /**
      * challenge 를 발행한 수단에 맞는 안내 메시지 키를 고릅니다.
      *
      * 기본 문구("인증번호를 보냈습니다")는 메일을 전제로 한 안내다. 인증 앱(TOTP)은
@@ -84,7 +109,7 @@ trait BuildsAuthFailureResponses
             return 'auth.two_factor_required';
         }
 
-        $manager = app(\App\Extension\IdentityVerification\IdentityVerificationManager::class);
+        $manager = app(IdentityVerificationManager::class);
 
         if (! $manager->has($providerId)) {
             return 'auth.two_factor_required';
@@ -92,7 +117,7 @@ trait BuildsAuthFailureResponses
 
         $channels = $manager->get($providerId)->getChannels();
 
-        return in_array(\App\Enums\IdentityVerificationChannel::App->value, $channels, true)
+        return in_array(IdentityVerificationChannel::App->value, $channels, true)
             ? 'auth.two_factor_required_app'
             : 'auth.two_factor_required';
     }

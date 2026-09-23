@@ -21,7 +21,7 @@
 <!-- @generated:start:api.plugins.sirsoft-verification_nhnkcp.me.identity.nhnkcp.show -->
 - **라우트명**: `api.plugins.sirsoft-verification_nhnkcp.me.identity.nhnkcp.show`
 - **컨트롤러**: `Plugins\Sirsoft\VerificationNhnkcp\Http\Controllers\MyKcpIdentityShowController@show`
-- **인증/권한**: `auth:sanctum` + `check.user_status:active` (로그인 + 활성 상태 필수)
+- **인증/권한**: `auth:sanctum` + `check.user_status` (로그인 + 활성 상태 필수 — 비활성·차단·휴면·탈퇴는 403)
 
 **요청 파라미터**
 
@@ -109,7 +109,7 @@ CI/DI 및 그 해시, 평문 이름·휴대폰·생년월일은 응답에 **포�
 | 상태 | 조건 | 비고 |
 | --- | --- | --- |
 | 401 | 비로그인 요청 | 코어 인증 미들웨어가 차단 |
-| 403 | 정지·탈퇴 등 비활성 사용자 | `check.user_status:active` |
+| 403 | 비활성·차단·휴면·탈퇴 사용자 | `check.user_status` |
 
 <!-- @generated:end -->
 

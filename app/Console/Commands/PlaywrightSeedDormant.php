@@ -1,0 +1,171 @@
+<?php
+
+namespace App\Console\Commands;
+
+use App\Enums\UserStatus;
+use App\Models\User;
+use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
+
+/**
+ * Playwright·Chrome MCP 실측용 휴면 계정 픽스처 커맨드 (이슈 #636 S4).
+ *
+ * 휴면 축은 **시간이 흘러야** 재현되는 상태다. 730일을 기다릴 수 없으므로 마지막 활동
+ * 시각과 통지 표지를 직접 심어 각 단계의 화면을 즉시 만들어 낸다. 검증 대상은 날짜 계산이
+ * 아니라 화면·전환 동작이다.
+ *
+ * 만들 수 있는 상태 (`--stage`):
+ *   - `pre_notice` : 사전 안내 대상 (활성 · 전환 임박 · 미통지)
+ *   - `convertible`: 전환 대상 (활성 · 안내 완료 · 통지 기간 경과)
+ *   - `dormant`    : 이미 휴면 (해제 축 실측용)
+ *
+ * 보안 가드 (3중, `playwright:seed-two-factor` 와 동형):
+ *   ① CLI 한정 — `php_sapi_name() === 'cli'`. production 웹 요청에서 도달 불가
+ *   ② 명시 옵트인 — `G7_PLAYWRIGHT_BYPASS=1` 환경변수 필수
+ *   ③ APP_DEBUG 강제 — production + debug=false 환경에서도 픽스처 조작 허용
+ *
+ * 호출 예시 (PowerShell):
+ *   $env:G7_PLAYWRIGHT_BYPASS='1'; php artisan playwright:seed-dormant --stage=dormant
+ *   $env:G7_PLAYWRIGHT_BYPASS='1'; php artisan playwright:seed-dormant --purge-users
+ */
+class PlaywrightSeedDormant extends Command
+{
+    /**
+     * 커맨드 이름 및 시그니처
+     *
+     * @var string
+     */
+    protected $signature = 'playwright:seed-dormant
+        {--stage=dormant : 만들 상태 (pre_notice|convertible|dormant)}
+        {--password= : 생성 계정의 비밀번호 (기본값 Passw0rd!dorm)}
+        {--purge-users : 이 커맨드가 만든 테스트 계정을 전부 제거 (실측 종료 직후 호출)}';
+
+    /**
+     * 커맨드 설명
+     *
+     * @var string
+     */
+    protected $description = 'Playwright·Chrome MCP 실측용 휴면 계정 픽스처를 만듭니다.';
+
+    /** 테스트 전용 계정 이메일 접두사 — 정리 대상 판정에도 쓴다 */
+    private const TEST_EMAIL_PREFIX = 'playwright_dormant_';
+
+    /** 기본 비밀번호 */
+    private const DEFAULT_PASSWORD = 'Passw0rd!dorm';
+
+    /**
+     * 커맨드를 실행합니다.
+     *
+     * @return int 종료 코드
+     */
+    public function handle(): int
+    {
+        // ① CLI 한정 — production 웹 요청에서 절대 도달 불가
+        if (php_sapi_name() !== 'cli') {
+            $this->error('CLI 전용 커맨드입니다. (현재 SAPI: '.php_sapi_name().')');
+
+            return self::FAILURE;
+        }
+
+        // ② 명시 옵트인 — 환경변수 없이는 production 호출 실수 차단.
+        // 여기의 `env()` 는 호출자가 그 자리에서 넘기는 프로세스 환경변수라 config:cache 무관.
+        if (env('G7_PLAYWRIGHT_BYPASS') !== '1') {
+            $this->error('G7_PLAYWRIGHT_BYPASS=1 환경변수가 필요합니다. (예: PowerShell — $env:G7_PLAYWRIGHT_BYPASS=\'1\')');
+
+            return self::FAILURE;
+        }
+
+        // ③ APP_DEBUG 강제 — production + debug=false 환경에서도 픽스처 조작 허용
+        Config::set('app.debug', true);
+
+        if ($this->option('purge-users')) {
+            $this->purgeTestUsers();
+
+            return self::SUCCESS;
+        }
+
+        $stage = (string) $this->option('stage');
+
+        if (! in_array($stage, ['pre_notice', 'convertible', 'dormant'], true)) {
+            $this->error("알 수 없는 단계입니다: {$stage} (pre_notice|convertible|dormant)");
+
+            return self::FAILURE;
+        }
+
+        $user = $this->createUserForStage($stage);
+
+        // 실측 스크립트가 파싱할 수 있도록 이메일·비밀번호를 그대로 출력한다.
+        $this->line($user->email);
+        $this->line((string) ($this->option('password') ?: self::DEFAULT_PASSWORD));
+
+        return self::SUCCESS;
+    }
+
+    /**
+     * 단계에 맞는 테스트 계정을 만듭니다.
+     *
+     * 기간 설정을 읽어 그 설정에 맞는 시각을 심는다 — 리터럴 일수를 박으면 운영자가 기간을
+     * 바꾼 사이트에서 픽스처가 대상에서 빠져 "화면이 비었다" 로 오판하게 된다.
+     *
+     * @param  string  $stage  만들 단계
+     * @return User 생성된 회원
+     */
+    private function createUserForStage(string $stage): User
+    {
+        $dormantDays = max(1, (int) g7_core_settings('privacy.dormant_days', 730));
+        $noticeDays = max(1, (int) g7_core_settings('privacy.dormant_notice_days', 30));
+
+        $attributes = [
+            'uuid' => Str::orderedUuid()->toString(),
+            'name' => '휴면 실측 회원',
+            'email' => self::TEST_EMAIL_PREFIX.$stage.'_'.Str::lower(Str::random(6)).'@example.test',
+            'password' => Hash::make((string) ($this->option('password') ?: self::DEFAULT_PASSWORD)),
+            'email_verified_at' => now(),
+            'status' => UserStatus::Active->value,
+            'created_at' => now()->subDays($dormantDays + 60),
+        ];
+
+        // `+=` 가 아니라 array_merge 다 — `+=` 는 **이미 있는 키를 덮지 않으므로** 기본값으로 둔
+        // `status` 가 그대로 남아 `--stage=dormant` 가 활성 계정을 만든다(실측으로 잡은 결함).
+        $attributes = array_merge($attributes, match ($stage) {
+            // 전환 예정일이 코앞이지만 아직 안내를 받지 않은 상태.
+            'pre_notice' => [
+                'last_login_at' => now()->subDays($dormantDays - $noticeDays + 1),
+                'dormant_notified_at' => null,
+            ],
+            // 안내를 받았고 통지 기간까지 지난 상태 — 다음 실행에서 전환된다.
+            'convertible' => [
+                'last_login_at' => now()->subDays($dormantDays + 1),
+                'dormant_notified_at' => now()->subDays($noticeDays + 1),
+            ],
+            // 이미 휴면 — 로그인 해제 축 실측용.
+            'dormant' => [
+                'last_login_at' => now()->subDays($dormantDays + 1),
+                'status' => UserStatus::Dormant->value,
+                'dormant_at' => now()->subDays(1),
+                'dormant_notified_at' => null,
+            ],
+            default => [],
+        });
+
+        return User::query()->create($attributes);
+    }
+
+    /**
+     * 이 커맨드가 만든 테스트 계정을 제거합니다.
+     *
+     * 알려진 비밀번호를 가진 계정을 실측 뒤에 남기지 않는다.
+     *
+     * @return void
+     */
+    private function purgeTestUsers(): void
+    {
+        $deleted = User::query()
+            ->where('email', 'like', self::TEST_EMAIL_PREFIX.'%')
+            ->delete();
+
+        $this->info("휴면 실측 테스트 계정 {$deleted}건을 제거했습니다.");
+    }
+}

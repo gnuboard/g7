@@ -266,13 +266,18 @@ return [
 
 ## 알림 정의 관리
 
-### 코어 3종
+### 코어 정의
+
+전수는 `config/core.php` 의 `notification_definitions` 가 단독으로 소유한다 — 아래는 그중 인증·휴면 계열이다.
 
 | type | hooks | 채널 |
 |------|-------|------|
 | welcome | core.auth.after_register | mail, database |
 | reset_password | core.auth.after_reset_password_request | mail, database |
 | password_changed | core.auth.after_password_changed | mail, database |
+| dormant_pre_notice | core.privacy.dormant_pre_notice | mail, database |
+| dormant_converted | core.privacy.dormant_converted | mail, database |
+| dormant_withdraw_notice | core.privacy.dormant_withdraw_notice | mail, database |
 
 ### Board 7종
 

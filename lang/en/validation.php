@@ -1147,6 +1147,15 @@ return [
         'identity_max_attempts_integer' => 'Maximum attempts must be an integer.',
         'identity_max_attempts_min' => 'Maximum attempts must be at least 1.',
         'identity_max_attempts_max' => 'Maximum attempts may not be greater than 20.',
+
+        // Privacy retention / dormant accounts
+        'privacy_days_integer' => 'The period must be an integer number of days.',
+        'privacy_retention_days_min' => 'The retention period must be at least 1 day.',
+        'privacy_retention_days_max' => 'The retention period may not be greater than 3650 days (10 years).',
+        'privacy_dormant_days_min' => 'The dormancy period must be at least 30 days.',
+        'privacy_dormant_notice_days_min' => 'The advance notice period must be at least 1 day.',
+        'privacy_dormant_notice_days_max' => 'The advance notice period may not be greater than 365 days.',
+        'privacy_dormant_notice_days_lt_dormant_days' => 'The advance notice period must be shorter than the dormancy period. If it is equal or longer, the notice and the transition happen on the same day, leaving no advance notice at all.',
     ],
 
     // Identity verification policy validation messages
@@ -1212,6 +1221,13 @@ return [
         'identity_purpose_providers' => 'purpose-to-provider mapping',
         'identity_challenge_ttl_minutes' => 'challenge TTL',
         'identity_max_attempts' => 'maximum attempts',
+        'privacy_withdrawn_retention_enabled' => 'withdrawn member data erasure',
+        'privacy_withdrawn_retention_days' => 'withdrawn member data retention period',
+        'privacy_dormant_enabled' => 'dormant account transition',
+        'privacy_dormant_days' => 'dormancy period',
+        'privacy_dormant_notice_days' => 'dormancy advance notice period',
+        'privacy_dormant_withdraw_enabled' => 'automatic withdrawal of dormant accounts',
+        'privacy_dormant_withdraw_days' => 'period before withdrawing a dormant account',
         // Identity verification policy fields
         'identity_policy_key' => 'policy key',
         'identity_policy_scope' => 'scope',
@@ -1300,6 +1316,7 @@ return [
         'settings_tab_advanced' => 'advanced settings',
         'settings_tab_notifications' => 'notification settings',
         'settings_tab_identity' => 'identity verification settings',
+        'settings_tab_privacy' => 'privacy settings',
         'notification_channel_id' => 'notification channel id',
         'notification_channel_is_active' => 'notification channel active flag',
         'notification_channel_sort_order' => 'notification channel sort order',

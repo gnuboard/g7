@@ -185,6 +185,15 @@
                                                     }
                                                 },
                                                 {
+                                                    "comment": "휴면이 풀린 로그인에만 실린다 — 관리자 계정도 휴면 전환 대상이다(자동 탈퇴만\n                     제외된다). 사용자 템플릿에만 이 안내를 두면 관리자는 자기 계정이 잠겼다 풀린\n                     사실을 끝내 모른 채 되돌아간다.",
+                                                    "handler": "toast",
+                                                    "if": "{{!response.two_factor_required && response.dormancy_restored}}",
+                                                    "params": {
+                                                        "type": "info",
+                                                        "message": "$t:auth.dormancy_restored"
+                                                    }
+                                                },
+                                                {
                                                     "handler": "navigate",
                                                     "if": "{{!response.two_factor_required}}",
                                                     "params": {
@@ -219,6 +228,15 @@
                                                         "target": "local",
                                                         "isLoggingIn": false,
                                                         "twoFactor": null
+                                                    }
+                                                },
+                                                {
+                                                    "comment": "2단계 인증을 쓰는 관리자도 같은 안내를 받는다 — 한쪽에만 두면 사이트 설정에\n                     따라 해제 사실이 보이기도 하고 안 보이기도 한다.",
+                                                    "handler": "toast",
+                                                    "if": "{{response.dormancy_restored}}",
+                                                    "params": {
+                                                        "type": "info",
+                                                        "message": "$t:auth.dormancy_restored"
                                                     }
                                                 },
                                                 {

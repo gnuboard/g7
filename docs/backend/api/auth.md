@@ -197,7 +197,7 @@ _단건 응답: `data` 객체의 필드._
 | language | string | `ko` | 사용자 언어 설정 (ko: 한국어, en: 영어) |
 | language_label | string | `한국어` | 언어 코드의 현지화 라벨 (user.language.{code} 번역) |
 | country | null | `null` | 국가 코드 (ISO 3166-1 alpha-2) |
-| status | string | `active` | 계정 상태 (active: 활성, inactive: 비활성, blocked: 차단, withdrawn: 탈퇴) |
+| status | string | `active` | 계정 상태 (active: 활성, inactive: 비활성, blocked: 차단, withdrawn: 탈퇴, dormant: 휴면) |
 | status_label | string | `활성` | 상태의 사람이 읽는 라벨 (상태 Enum label() 산물) |
 | status_variant | string | `success` | 상태 표시 색상/스타일 변형 키 (상태 Enum variant() 산물 — UI 배지용) |
 | is_admin | boolean | `true` | 관리자 역할 보유 여부 (User::isAdmin() — 역할 관계 기반 파생) |
@@ -1111,7 +1111,7 @@ _단건 응답: `data` 객체의 필드._
 | language | string | `ko` | 사용자 언어 설정 (ko: 한국어, en: 영어) |
 | language_label | string | `한국어` | 언어 코드의 현지화 라벨 (user.language.{code} 번역) |
 | country | null | `null` | 국가 코드 (ISO 3166-1 alpha-2) |
-| status | string | `active` | 계정 상태 (active: 활성, inactive: 비활성, blocked: 차단, withdrawn: 탈퇴) |
+| status | string | `active` | 계정 상태 (active: 활성, inactive: 비활성, blocked: 차단, withdrawn: 탈퇴, dormant: 휴면) |
 | status_label | string | `활성` | 상태의 사람이 읽는 라벨 (상태 Enum label() 산물) |
 | status_variant | string | `success` | 상태 표시 색상/스타일 변형 키 (상태 Enum variant() 산물 — UI 배지용) |
 | is_admin | boolean | `true` | 관리자 역할 보유 여부 (User::isAdmin() — 역할 관계 기반 파생) |
@@ -1484,7 +1484,7 @@ _단건 응답: `data` 객체의 필드. 컨트롤러 메서드가 공용 `GET /
 | nickname | string \| null | `song.hyunji` | 닉네임 (미설정 시 null) |
 | email | string | `apidoc-sample-user@example.com` | 이메일 주소 |
 | language | string | `ko` | 사용자 언어 설정 |
-| status | string | `active` | 계정 상태 (active / inactive / blocked / withdrawn / pending_verification) |
+| status | string | `active` | 계정 상태 (active / inactive / blocked / withdrawn / pending_verification / dormant) |
 | is_admin | boolean | `false` | 관리자 역할 보유 여부 |
 | roles | array | `[{"id":2,"identifier":"user","name":"일반회원"}]` | 부여된 역할 목록 (id/identifier/name) |
 | permissions | array | `[{"id":81,"identifier":"sirsoft-ecommerce.user-products.read","name":"상품 조회"}]` | 역할 경유 권한 목록 (id/identifier/name) |

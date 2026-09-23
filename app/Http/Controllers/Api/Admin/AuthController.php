@@ -69,7 +69,7 @@ class AuthController extends AdminBaseController
                 // 관리자가 아닌 사용자가 응답만 403 을 받을 뿐 세션은 그대로 유효해진다.
                 $this->authService->revokeIssuedSession($user, $data['token']);
 
-                return $this->forbidden('auth.admin_required');
+                return $this->forbidden($this->adminRequiredMessageKey($data));
             }
 
             // 사용자 정보는 Resource로, 토큰은 그대로
@@ -114,7 +114,7 @@ class AuthController extends AdminBaseController
                 // 사용자가 유효한 세션을 손에 쥔 채 응답만 403 을 받는다.
                 $this->authService->revokeIssuedSession($user, $data['token']);
 
-                return $this->forbidden('auth.admin_required');
+                return $this->forbidden($this->adminRequiredMessageKey($data));
             }
 
             $data['user'] = new UserResource($user);

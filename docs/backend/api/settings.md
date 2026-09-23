@@ -105,6 +105,7 @@ _단건 응답: `data` 객체의 필드._
 | geoip | object | `{"geoip_enabled":false,"geoip_license_key":null,"geoip_au…` | GeoIP 원본 카테고리 (GeoIP 사용 여부·MaxMind 라이선스 키·DB 자동 갱신 사용). advanced 탭에 병합된 파생 뷰 |
 | notifications | object | `{"channels":[{"id":"mail","is_active":true,"sort_order":1…` | 알림 탭 설정 그룹. channels 는 알림 채널 목록으로 각 원소가 id(채널 식별자)·is_active(활성 여부)·sort_order(표시 순서)를 가짐 |
 | identity | object | `{"default_provider":"g7:core.mail","purpose_providers":{"…` | 본인인증(IDV) 탭 설정 그룹 (기본 provider·목적별 provider 매핑(purpose_providers)·챌린지 유효시간(분)·최대 시도 횟수) |
+| privacy | object | `{"withdrawn_retention_enabled":false,"withdrawn_retention_…` | 개인정보 탭 설정 그룹 (탈퇴 회원 잔여정보 2차 파기 사용 여부·보유일, 휴면 전환 사용 여부·전환 기준일·사전 통지 선행일, 휴면 후 자동 탈퇴 사용 여부·기준일). 전 항목 기본 꺼짐 |
 | available_drivers | object | `{"storage":[{"id":"local","label":{"ko":"로컬","en":"Local"…` | 드라이버 선택지 카탈로그 (DriverRegistryService 산물). 종류별(storage/public_asset/cache/session/queue 등) 선택 가능한 드라이버 목록을 id/다국어 label 형태로 제공. `public_asset` 은 공개 자산 직접 URL 서빙 디스크 선택지 (코어 none/public/s3 + 플러그인 훅 등록분) |
 | _meta | object | `{"limits":{"upload_max_file_size_min":1,"upload_max_file_…` | 설정값이 아니라 화면이 쓰는 메타. 조회(GET)와 저장(POST) 응답이 같은 모양으로 동봉한다. 아래 세 필드로 구성 |
 | _meta.limits | object | `{"upload_max_file_size_min":1,"upload_max_file_size_max":1024,…}` | 각 설정 항목의 min/max 경계값 맵 (`config/core.php` 의 `settings_limits` 가 SSoT, 화면 입력 힌트와 FormRequest 검증이 같은 값을 공유) |
@@ -200,7 +201,7 @@ HTTP/1.1 200
 
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
-| _tab | body | string | 아니오 | — | 활성 탭 식별자 (general/mail/upload/seo/security/drivers/advanced/notifications/identity). 지정 시 해당 탭 필드만 필수 검증되고 나머지 탭은 nullable 처리되어 탭 단위 부분 저장을 가능케 함 |
+| _tab | body | string | 아니오 | — | 활성 탭 식별자 (general/mail/upload/seo/security/drivers/advanced/notifications/identity/privacy). 지정 시 해당 탭 필드만 필수 검증되고 나머지 탭은 nullable 처리되어 탭 단위 부분 저장을 가능케 함 |
 | general | body | array | 아니오 | — | 일반 탭 설정 묶음 (사이트명·URL·설명·관리자 이메일·타임존·기본 언어·통화·점검 모드·사이트 로고) |
 | mail | body | array | 아니오 | — | 메일 탭 설정 묶음 (메일러 종류·SMTP 호스트/포트/인증·암호화·발신자 정보·Mailgun/SES 자격 정보) |
 | upload | body | array | 아니오 | — | 업로드 탭 설정 묶음 (최대 파일 크기·허용 확장자·이미지 최대 크기 및 품질) |
@@ -210,6 +211,7 @@ HTTP/1.1 200
 | advanced | body | array | 아니오 | — | 고급 탭 설정 묶음 (캐시·디버그·코어 업데이트·GeoIP 설정) |
 | notifications | body | array | 아니오 | — | 알림 탭 설정 묶음. channels 배열로 각 알림 채널의 id·is_active(활성 여부)·sort_order(표시 순서)를 저장 |
 | identity | body | array | 아니오 | — | 본인인증(IDV) 탭 설정 묶음 (기본 provider·목적별 provider 매핑·챌린지 유효시간·최대 시도 횟수) |
+| privacy | body | array | 아니오 | — | 개인정보 탭 설정 묶음 (탈퇴 회원 잔여정보 파기·휴면 전환·휴면 후 자동 탈퇴의 사용 여부와 기간) |
 | notifications.channels | body | array | 아니오 | — | 알림 채널 목록. 각 원소는 `id`(채널 식별자, 필수·최대 50자)·`is_active`(활성 여부, 필수 boolean)·`sort_order`(표시 순서, 0 이상 정수) 로 구성 |
 | general.site_name | body | string | 예 | max 100 | general.site 이름 (식별자) |
 | general.site_url | body | string | 예 | max 255 | 사이트 기본 URL |
@@ -333,6 +335,13 @@ HTTP/1.1 200
 | identity.purpose_providers | body | array | 아니오 | — | 본인인증 목적(Purpose)별 프로바이더 매핑. 미지정 목적은 기본 프로바이더를 사용 |
 | identity.challenge_ttl_minutes | body | integer | 아니오 | min 1, max 1440 | 발급된 인증 코드/링크(challenge)의 유효시간 (분) |
 | identity.max_attempts | body | integer | 아니오 | min 1, max 20 | challenge 최대 시도 횟수 (연속 실패 시 잠금 — 재전송 필요) |
+| privacy.withdrawn_retention_enabled | body | boolean | 아니오 | — | 탈퇴 회원 잔여 개인정보의 2차 파기 사용 여부 (기본 false). 켜면 매일 배치가 보유기간이 지난 탈퇴 회원의 연락처·주소·본인인증 식별자를 되돌릴 수 없게 지운다 |
+| privacy.withdrawn_retention_days | body | integer | 아니오 | min 1, max 3650 | 탈퇴 시점부터 잔여 정보를 보유할 일수 (기본 365). 경과분만 파기 대상 |
+| privacy.dormant_enabled | body | boolean | 아니오 | — | 장기 미접속 회원의 휴면 전환 사용 여부 (기본 false). 활동 기준은 `max(users.last_login_at, personal_access_tokens.last_used_at)` |
+| privacy.dormant_days | body | integer | 아니오 | min 30, max 3650 | 휴면 전환 기준 미접속 일수 (기본 730) |
+| privacy.dormant_notice_days | body | integer | 아니오 | min 1, max 365 | 휴면 전환 사전 통지를 며칠 전에 보낼지 (기본 30). **`privacy.dormant_days` 보다 작아야 하며**, 같거나 크면 422 (`validation.settings.privacy_dormant_notice_days_lt_dormant_days`). 통지 후 이 일수가 지나야 실제 전환된다 |
+| privacy.dormant_withdraw_enabled | body | boolean | 아니오 | — | 휴면이 오래 이어진 계정의 자동 탈퇴 사용 여부 (기본 false). 관리자 역할 보유자와 슈퍼 관리자는 예고·탈퇴 대상에서 모두 제외된다 |
+| privacy.dormant_withdraw_days | body | integer | 아니오 | min 1, max 3650 | 휴면 전환 시점부터 자동 탈퇴까지의 일수 (기본 365). 이때도 `privacy.dormant_notice_days` 만큼 앞서 탈퇴 예고를 보낸다 |
 
 > 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.settings.save_validation_rules`, `core.search.engine_drivers`).
 
@@ -583,6 +592,75 @@ _단건 응답: `data` 객체의 필드._
 **설명**
 
 통합 환경설정 화면에서 한 탭의 설정을 일괄 저장합니다. `_tab` 으로 활성 탭을 지정하면 해당 탭의 필드만 필수 검증되고 다른 탭 필드는 nullable 로 처리되므로, 탭 단위로 부분 저장할 수 있습니다. 저장 성공 시 응답 `data.settings` 에 갱신된 전체 설정과 `available_drivers` 를 함께 반환하여, 프론트엔드가 새로고침 없이 전역 상태를 갱신할 수 있습니다. 검증 실패 시 422, 그 외 오류 시 500 을 반환합니다.
+
+
+### GET /api/admin/settings/privacy-preview
+<!-- @generated:start:api.admin.settings.privacy-preview -->
+- **라우트명**: `api.admin.settings.privacy-preview`
+- **컨트롤러**: `App\Http\Controllers\Api\Admin\SettingsController@privacyPreview`
+- **인증/권한**: `auth:sanctum` + `permission:core.settings.read`
+
+**요청 파라미터**
+
+_요청 파라미터 없음._
+
+**요청 예시**
+
+```http
+GET /api/admin/settings/privacy-preview HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+```
+
+**응답 필드** (`data` 내부)
+
+_단건 응답: `data` 객체의 필드._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| retention | object | `{"user-withdrawn": null}` | 보유기간 핸들러 식별자 => 대상 건수. **꺼진 핸들러는 건수가 아니라 `null`** — "꺼짐" 과 "대상 0건" 은 다른 정보다. 확장이 등록한 핸들러도 같은 객체에 실린다 |
+| dormant | object\|null | `null` | 휴면 단계별 대상 건수. 휴면 기능이 꺼져 있으면 객체 전체가 `null` |
+| dormant.pre_notice | integer | `0` | 사전 안내 대상 건수 |
+| dormant.convert | integer | `0` | 휴면 전환 대상 건수 (안내 후 통지 기간 경과분만) |
+| dormant.withdraw_notice | integer | `0` | 탈퇴 예정 안내 대상 건수 (자동 탈퇴가 꺼져 있으면 0) |
+| dormant.withdraw | integer | `0` | 탈퇴 처리 대상 건수 (자동 탈퇴가 꺼져 있으면 0) |
+
+**응답 예시**
+
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "성공적으로 처리되었습니다.",
+    "data": {
+        "retention": {
+            "user-withdrawn": null
+        },
+        "dormant": null
+    }
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`core.settings.read`)이 없는 경우 |
+
+<!-- @generated:end -->
+
+**설명**
+
+개인정보 보유기간·휴면의 **처리 대상 건수를 미리** 돌려줍니다. 관리자 > 환경설정 > 개인정보 탭의 dry-run 뱃지가 이 값을 씁니다. 읽기 전용이며 데이터를 바꾸지 않습니다.
+
+건수는 커맨드(`privacy:process-retention --dry-run` · `privacy:process-dormant --dry-run`)와 **같은 조건식**을 지납니다 — 화면에서 본 숫자와 실제 처리 건수가 어긋나면 운영자가 규모를 오판한 채 기능을 켜게 되고, 그 처리는 되돌릴 수 없습니다.
+
+`retention` 의 값이 `null` 인 항목은 **그 핸들러가 꺼져 있다**는 뜻이고, `0` 은 **켜져 있으나 대상이 없다**는 뜻입니다. 둘을 같은 0 으로 뭉개면 운영자가 켠 줄 아는 기능이 실제로는 놀고 있어도 알아챌 수 없으므로 화면도 두 상태를 구분해 그립니다.
 
 
 ### GET /api/admin/settings/app-key

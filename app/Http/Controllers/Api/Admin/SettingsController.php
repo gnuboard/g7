@@ -11,6 +11,8 @@ use App\Http\Requests\Settings\TestMailRequest;
 use App\Http\Requests\Settings\TestOutboundProxyRequest;
 use App\Http\Requests\Settings\UpdateSettingRequest;
 use App\Http\Resources\SettingsResource;
+use App\Privacy\DormantAccountService;
+use App\Privacy\PrivacyRetentionManager;
 use App\Services\DriverConnectionTester;
 use App\Services\DriverRegistryService;
 use App\Services\ExtensionStaticCacheService;
@@ -29,12 +31,25 @@ use Illuminate\Validation\ValidationException;
  */
 class SettingsController extends AdminBaseController
 {
+    /**
+     * 설정 컨트롤러를 생성합니다.
+     *
+     * @param  SettingsService  $settingsService  설정 조회·저장 서비스
+     * @param  DriverConnectionTester  $driverConnectionTester  드라이버 연결 테스트
+     * @param  DriverRegistryService  $driverRegistryService  사용 가능 드라이버 카탈로그
+     * @param  OutboundProxyTester  $outboundProxyTester  아웃바운드 프록시 테스트
+     * @param  ExtensionStaticCacheService  $staticCacheService  초기 화면 정적 게시
+     * @param  PrivacyRetentionManager  $privacyRetentionManager  개인정보 보유기간 처리 진입점
+     * @param  DormantAccountService  $dormantAccountService  휴면 계정 생명주기 서비스
+     */
     public function __construct(
         private SettingsService $settingsService,
         private DriverConnectionTester $driverConnectionTester,
         private DriverRegistryService $driverRegistryService,
         private OutboundProxyTester $outboundProxyTester,
-        private ExtensionStaticCacheService $staticCacheService
+        private ExtensionStaticCacheService $staticCacheService,
+        private PrivacyRetentionManager $privacyRetentionManager,
+        private DormantAccountService $dormantAccountService
     ) {
         parent::__construct();
     }
@@ -190,6 +205,29 @@ class SettingsController extends AdminBaseController
     public function trustedProxy(): JsonResponse
     {
         return $this->success('common.success', TrustedProxyDiagnostic::forRequest(request()));
+    }
+
+    /**
+     * 개인정보 보유기간·휴면의 처리 대상 건수를 미리 조회합니다 (#636).
+     *
+     * 화면의 dry-run 뱃지가 쓰는 값이며, 커맨드의 `--dry-run` 과 **같은 조건식**을 지납니다 —
+     * 화면에서 본 숫자와 실제 처리 건수가 어긋나면 운영자가 규모를 오판한 채 켜게 됩니다.
+     *
+     * 꺼진 핸들러는 건수 대신 `null` 로 돌려줍니다. "꺼짐" 과 "대상 0건" 은 전혀 다른
+     * 정보이고, 둘을 같은 0 으로 뭉개면 켠 줄 아는 기능이 놀고 있어도 알 수 없습니다.
+     *
+     * 읽기 전용이며 입력이 없어 FormRequest 를 두지 않습니다 (`trustedProxy` 와 동형).
+     *
+     * @return JsonResponse 핸들러별·휴면 단계별 대상 건수 JSON 응답
+     */
+    public function privacyPreview(): JsonResponse
+    {
+        return $this->success('common.success', [
+            'retention' => $this->privacyRetentionManager->preview(),
+            'dormant' => $this->dormantAccountService->isEnabled()
+                ? $this->dormantAccountService->preview()
+                : null,
+        ]);
     }
 
     /**

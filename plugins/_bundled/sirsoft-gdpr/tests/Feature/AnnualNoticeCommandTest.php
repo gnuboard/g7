@@ -434,7 +434,8 @@ class AnnualNoticeCommandTest extends PluginTestCase
      */
     public function test_mail_log_contains_domain_section_and_both_channels_succeed(): void
     {
-        $path = base_path('.codex/tmp/s3-mail-probe.log');
+        // 실행마다 새 경로를 쓴다 — 이전 실행의 로그가 남아 있으면 발송이 없어도 아래 단언이 통과한다.
+        $path = sys_get_temp_dir().DIRECTORY_SEPARATOR.'g7-gdpr-mail-probe-'.uniqid().'.log';
         config(['mail.default' => 'log', 'mail.mailers.log.channel' => 's3_mail_probe',
             'logging.channels.s3_mail_probe' => ['driver' => 'single', 'path' => $path]]);
         app('mail.manager')->purge('log');
@@ -448,5 +449,6 @@ class AnnualNoticeCommandTest extends PluginTestCase
         $this->assertSame(2, GdprPrivacyNoticeLog::where('attempt_id', $attempt)->where('status', PrivacyNoticeStatus::Sent)->count());
         $this->assertFileExists($path);
         $this->assertStringContainsString('S3 retention verification', file_get_contents($path));
+        @unlink($path);
     }
 }

@@ -1027,6 +1027,13 @@ return [
         'ip_restriction_rule_enabled_boolean' => '規則の使用有無は true または false 値である必要があります。',
         'ip_restriction_self_lockout' => '現在のアクセス IP(:ip)が管理者エリア許可リストにありません。このまま保存すると、このページを含む管理者エリアに再度入ることができません — 現在の IP をリストに追加してから保存してください。',
         'ip_restriction_self_lockout_rule' => '規則 ":pattern" が現在のアクセス IP(:ip)をブロックしています。このまま保存するとこのページに再度入ることができません — その規則の許可 IP に現在の IP を追加するか、規則をオフにしてから保存してください。',
+        'privacy_days_integer' => '期間は日単位の整数である必要があります。',
+        'privacy_retention_days_min' => '保有期間は1日以上である必要があります。',
+        'privacy_retention_days_max' => '保有期間は最大3650日（10年）を超えることはできません。',
+        'privacy_dormant_days_min' => '休眠状態への変更期間は30日以上である必要があります。',
+        'privacy_dormant_notice_days_min' => '事前通知期間は1日以上である必要があります。',
+        'privacy_dormant_notice_days_max' => '事前通知期間は最大365日を超えることはできません。',
+        'privacy_dormant_notice_days_lt_dormant_days' => '事前通知期間は休眠状態への変更期間より短い必要があります。同じか長い場合、事前通知なしに変更と通知が同じ日に行われます。',
     ],
     'identity_policy' => [
         'key_required' => 'ポリシーキーを入力してください。',
@@ -1233,6 +1240,14 @@ return [
         'notification_channel_id' => '通知チャネル識別子',
         'notification_channel_is_active' => '通知チャネル使用有無',
         'notification_channel_sort_order' => '通知チャネルソート順序',
+        'privacy_withdrawn_retention_enabled' => '退会会員残存情報削除',
+        'privacy_withdrawn_retention_days' => '退会会員残存情報保有期間',
+        'privacy_dormant_enabled' => '休眠状態のアカウント変更',
+        'privacy_dormant_days' => '休眠状態への変更期間',
+        'privacy_dormant_notice_days' => '休眠状態への事前通知期間',
+        'privacy_dormant_withdraw_enabled' => '休眠状態のアカウント自動退会',
+        'privacy_dormant_withdraw_days' => '休眠状態後の退会期間',
+        'settings_tab_privacy' => '個人情報設定',
     ],
     'layout_version' => [
         'limit' => [

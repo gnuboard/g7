@@ -62,6 +62,61 @@ G7의 훅 시스템은 WordPress 스타일로 구현되어 코어 수정 없이 
 반환 텍스트는 소비자가 HTML 이스케이프합니다. 개인 식별정보를 포함하지 않습니다.
 통지 플러그인 설치 여부와 관계없이 확장이 구독할 수 있으며 통지 발행자는 독립적으로 선택합니다.
 
+### 개인정보 보유기간 핸들러 계약
+
+`core.privacy.retention_handlers`는 코어 소유 필터이며 보유기간 처리 진입점
+(`App\Privacy\PrivacyRetentionManager`)이 호출합니다. 입력·반환 모두
+`array<int, class-string>`(핸들러 클래스명 목록)이고, 각 클래스는
+`App\Privacy\Contracts\PrivacyRetentionHandlerInterface`를 구현해야 합니다.
+
+```php
+HookManager::addFilter('core.privacy.retention_handlers', function (array $handlers) {
+    $handlers[] = OrderRetentionHandler::class;
+
+    return $handlers;
+});
+```
+
+계약을 구현하지 않았거나 생성에 실패한 클래스는 **기록 후 건너뜁니다** — 확장 하나의
+잘못된 등록이 다른 도메인의 법정 파기를 함께 멈추면 안 되기 때문입니다. 반대로 조용히
+버리지도 않습니다: 건너뛴 사실이 로그에 남지 않으면 운영자는 그 도메인이 처리되고 있다고
+믿게 됩니다. 같은 `id()` 가 둘이면 먼저 등록된 쪽만 남습니다.
+
+구현 시 지켜야 할 것:
+
+- `isEnabled()`는 **자기 도메인 설정을 기본 false 폴백으로** 읽습니다. 확장을 설치했다는
+  사실만으로 회원 데이터가 지워지면 안 됩니다.
+- `process()`는 수집기가 이미 걸러 주더라도 **자기 토글을 다시 봅니다.** 되돌릴 수 없는
+  파기라 호출자를 믿지 않습니다.
+- `preview()`와 `process()`는 **같은 조건식**을 공유합니다. 어긋나면 운영자가 화면에서 본
+  숫자와 실제로 지워진 양이 달라집니다. 멱등(이미 처리된 행 제외)도 그 조건식이 책임집니다.
+- 대량 순회는 `chunkById`입니다 — 처리하면서 조건에서 빠지는 행을 다루므로 OFFSET 순회는
+  커서가 밀려 건을 건너뜁니다.
+
+각 핸들러는 처리 전후로 자기 도메인 prune 훅을 발행합니다(7.0.7 규약):
+`{prefix}.before_prune`(보존일) / `{prefix}.after_prune`(보존일, 건수).
+코어 탈퇴 회원 핸들러의 접두사는 `core.privacy.withdrawn_user`입니다.
+
+### 휴면 계정 생명주기 알림 훅
+
+`core.privacy.dormant_pre_notice` · `core.privacy.dormant_converted` ·
+`core.privacy.dormant_withdraw_notice`는 코어 소유 액션 훅이며 인자는 `(User $user, array $extra)`
+입니다. 코어 알림 정의 3종이 이 훅을 구독하고, 치환값은 `core.privacy.notification.extract_data`
+필터(`CorePrivacyNotificationDataListener`)가 채웁니다.
+
+`$extra`의 내용은 **훅마다 다릅니다** — 구독 측은 키가 있다고 가정하지 말고 없을 때를 함께
+다루십시오.
+
+| 훅                                     | `$extra`                                                    |
+| -------------------------------------- | ----------------------------------------------------------- |
+| `core.privacy.dormant_pre_notice`      | `dormant_days` · `scheduled_date`                            |
+| `core.privacy.dormant_converted`       | 없음(빈 배열) — 전환은 이미 일어난 일이라 예정일이 없습니다  |
+| `core.privacy.dormant_withdraw_notice` | `scheduled_date`                                             |
+
+예정일은 커맨드가 계산해 실어 보냅니다 — 리스너가 다시 계산하면 하루 차이로 어긋나
+"오늘 전환된다" 는 메일을 받은 다음 날 전환되는 식의 불일치가 생깁니다. 계산 기준은 **집행
+쿼리와 같은 시점**(통지 시각 + `privacy.dormant_notice_days`)입니다.
+
 ### 알림 추출의 선택 채널
 
 `{hookPrefix}.notification.extract_data` 반환의 `context.channels`에 채널 ID 배열을 지정하면

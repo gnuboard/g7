@@ -85,6 +85,13 @@ return [
         'ip_blocked' => 'IP 접근 차단',
         'ip_restriction_disabled' => 'IP 접근 제한 해제',
 
+        // 휴면 계정 (user.dormant_*) — 2단 키(namespace.verb_phrase)로 두고 verb_phrase 를
+        // 기존 세그먼트와 겹치지 않는 복합어로 만든다. `restored`·`converted` 처럼 흔한 낱말을
+        // 쓰면 4단계 "마지막 세그먼트" 조회가 무관한 라벨을 조용히 붙인다.
+        'dormant_restored' => '휴면 해제',
+        'dormant_converted' => '휴면 전환',
+        'dormant_withdrawn' => '휴면 계정 탈퇴 처리',
+
         // 이커머스/게시판 공용
     ],
 
@@ -163,6 +170,9 @@ return [
 
         // 보안 — IP 접근 제한
         'security_ip_blocked' => 'IP 접근 차단 (:ip → :path)',
+        'user_dormant_restored' => '로그인으로 휴면 해제 (ID: :user_id)',
+        'user_dormant_converted' => '장기 미접속으로 휴면 전환 (ID: :user_id)',
+        'user_dormant_withdrawn' => '휴면 기간 경과로 탈퇴 처리 (ID: :user_id)',
         'security_ip_restriction_disabled' => 'IP 접근 제한 비상 해제 (콘솔)',
 
         // 스케줄 관리

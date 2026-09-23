@@ -7,6 +7,10 @@ return [
         'inactive' => '비활성',
         'blocked' => '차단',
         'withdrawn' => '탈퇴',
+        // pending_verification 은 Enum 에는 있었지만 이 배열에 없어 화면에 원시 키가 그대로
+        // 나오고 있었다 — 휴면을 더하면서 함께 채운다(라벨 배열은 Enum 전 case 를 덮어야 한다).
+        'pending_verification' => '가입대기',
+        'dormant' => '휴면',
     ],
 
     // 언어 라벨

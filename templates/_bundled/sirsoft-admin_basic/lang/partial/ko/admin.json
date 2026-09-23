@@ -297,7 +297,9 @@
         "active": "활성",
         "inactive": "비활성",
         "blocked": "차단",
-        "withdrawn": "탈퇴"
+        "withdrawn": "탈퇴",
+        "dormant": "휴면",
+        "pending_verification": "가입대기"
       },
       "timezone_options": {
         "Asia/Seoul": "아시아/서울 (UTC+9)",
@@ -338,6 +340,7 @@
       "disabled": "비활성",
       "withdrawn_at": "탈퇴일",
       "blocked_at": "차단일",
+      "dormant_at": "휴면 전환일",
       "consent_type": {
         "terms": "이용약관",
         "privacy": "개인정보처리방침"
@@ -1330,7 +1333,8 @@
       "notification_definitions": "알림 설정",
       "language_packs": "언어팩",
       "identity": "본인인증",
-      "info": "정보"
+      "info": "정보",
+      "privacy": "개인정보"
     },
     "general": {
       "site_info": "사이트 정보",
@@ -1963,7 +1967,10 @@
         "reset_password": "비밀번호 재설정",
         "password_changed": "비밀번호 변경 알림",
         "sitemap_regenerated": "사이트맵 재생성 완료",
-        "sitemap_regenerate_failed": "사이트맵 재생성 실패"
+        "sitemap_regenerate_failed": "사이트맵 재생성 실패",
+        "dormant_pre_notice": "휴면 전환 사전 안내",
+        "dormant_converted": "휴면 전환 완료",
+        "dormant_withdraw_notice": "휴면 계정 탈퇴 예정 안내"
       },
       "channels_label": "채널:",
       "edit_modal": {
@@ -2101,7 +2108,39 @@
     "unsaved_changes": "저장되지 않은 변경사항이 있습니다.",
     "validation_error": "입력 정보를 확인해주세요",
     "app_key_regenerated": "어플리케이션 키가 재생성되었습니다.",
-    "cache_cleared": "모든 캐시가 삭제되었습니다."
+    "cache_cleared": "모든 캐시가 삭제되었습니다.",
+    "privacy": {
+      "policy_notice_title": "켜기 전에 개인정보 처리방침을 먼저 고치세요",
+      "policy_notice_desc": "아래 기능은 회원의 개인정보를 되돌릴 수 없게 파기하거나 계정 상태를 바꿉니다. 법은 사전 안내 후 운영할 것을 요구하므로, 처리방침에 보유기간·휴면 정책을 먼저 적고 공지한 뒤에 켜세요.",
+      "target_count": "대상 {{count}}명",
+      "withdrawn": {
+        "title": "탈퇴 회원 잔여정보 파기",
+        "desc": "탈퇴 시에는 분쟁 대응을 위해 이름·이메일의 원값이 접미사 형태로 남습니다. 보유기간이 지나면 그 잔여 정보까지 실제로 지웁니다.",
+        "enabled": "보유기간 경과 시 자동 파기",
+        "enabled_desc": "기본 꺼짐. 켜면 매일 새벽 배치가 대상을 처리합니다.",
+        "days": "탈퇴 후 보유기간 (일)",
+        "days_hint": "탈퇴일로부터 이 기간이 지난 회원이 대상입니다. 기본 365일.",
+        "irreversible_warning": "연락처·주소·자기소개와 본인인증 식별자까지 지워지며 되돌릴 수 없습니다. 이름은 「탈퇴회원」, 이메일은 식별 불가 형태로 바뀝니다."
+      },
+      "dormant": {
+        "title": "휴면 계정",
+        "desc": "장기 미접속 회원을 사전 안내 후 휴면으로 전환합니다. 휴면 회원이 로그인하면 그 자체를 본인확인으로 보고 곧바로 원래대로 되돌립니다.",
+        "enabled": "휴면 계정 전환",
+        "enabled_desc": "기본 꺼짐. 켜면 사전 안내 → 전환 순서로 진행됩니다.",
+        "stage_counts": "안내 대상 {{notice}}명 · 전환 대상 {{convert}}명",
+        "withdraw_stage_counts": "탈퇴 예고 {{notice}}명 · 탈퇴 대상 {{withdraw}}명",
+        "days": "휴면 전환 기준 미접속 기간 (일)",
+        "days_hint": "마지막 활동(로그인 또는 앱·토큰 사용)으로부터 이 기간이 지나면 전환 대상입니다. 기본 730일.",
+        "notice_days": "사전 안내 기간 (일)",
+        "notice_days_hint": "전환 예정일 며칠 전에 안내를 보낼지 정합니다. 전환 기간보다 짧아야 하며, 안내를 보낸 뒤 이 기간이 지나야 실제로 전환됩니다.",
+        "withdraw_enabled": "휴면 기간이 지나면 탈퇴 처리",
+        "withdraw_enabled_desc": "기본 꺼짐. 켜면 휴면 상태가 오래 이어진 계정을 탈퇴 처리합니다.",
+        "withdraw_days": "휴면 후 탈퇴까지 기간 (일)",
+        "withdraw_days_hint": "휴면 전환일로부터 이 기간이 지나면 탈퇴 예정 안내를 보내고, 안내 기간이 지난 뒤 탈퇴 처리합니다. 기본 365일.",
+        "withdraw_warning": "탈퇴 처리된 계정은 되돌릴 수 없습니다. 관리자 계정은 자동 탈퇴 대상에서 제외됩니다.",
+        "restore_hint": "휴면 회원이 로그인하면 자동으로 해제되며, 별도의 신청 절차는 없습니다."
+      }
+    }
   },
   "templates": {
     "page_title": "템플릿 관리",

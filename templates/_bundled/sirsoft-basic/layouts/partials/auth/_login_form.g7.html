@@ -29,6 +29,10 @@
             <!-- 로그인 직전에 비회원으로 발급받은 주문 조회 토큰은 회원 컨텍스트에 무효 — 잔존 시 동일 브라우저로 회원/비회원 페이지 동시 열람 가능. sessionStorage 3개 키 (token/orderNumber/expiresAt) 와 _global.guestOrderToken 을 한 번에 정리하는 모듈 커스텀 핸들러 사용. -->
             <action handler="clearGuestOrderToken" if="{{!response.two_factor_required}}"/>
             <toast if="{{!response.two_factor_required}}" type="success" message="$t:auth.login_success"/>
+            <!-- 휴면이 풀린 로그인에만 실린다 — 서버가 해제했을 때만 이 키를 보내므로
+                 평시 로그인에는 뜨지 않는다. 안내 없이 되돌리면 회원은 자기 계정이 잠겼다
+                 풀린 사실을 끝내 모른다. -->
+            <toast if="{{!response.two_factor_required &amp;&amp; response.dormancy_restored}}" type="info" message="$t:auth.dormancy_restored"/>
             <navigate if="{{!response.two_factor_required}}" path="{{query.redirect ?? '/'}}"/>
           </success>
           <fail>
@@ -41,6 +45,9 @@
             <set-state target="global" currentUser="{{response.user}}" :isLoggingIn="false" :twoFactor="null"/>
             <action handler="clearGuestOrderToken"/>
             <toast type="success" message="$t:auth.login_success"/>
+            <!-- 2단계 인증 사이트도 같은 안내를 받는다 — 한쪽에만 두면 사이트 설정에 따라
+                 해제 사실이 보이기도 하고 안 보이기도 한다. -->
+            <toast if="{{response.dormancy_restored}}" type="info" message="$t:auth.dormancy_restored"/>
             <navigate path="{{query.redirect ?? '/'}}"/>
           </success>
           <fail>

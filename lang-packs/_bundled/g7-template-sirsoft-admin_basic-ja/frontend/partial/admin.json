@@ -296,7 +296,9 @@
         "active": "有効",
         "inactive": "無効",
         "blocked": "ブロック",
-        "withdrawn": "退会"
+        "withdrawn": "退会",
+        "dormant": "休眠中",
+        "pending_verification": "登録待機中"
       },
       "timezone_options": {
         "Asia/Seoul": "アジア/ソウル (UTC+9)",
@@ -360,7 +362,8 @@
         "total": "総通知数",
         "unread": "未読",
         "view_inbox": "通知ボックスを表示"
-      }
+      },
+      "dormant_at": "休眠転換日"
     },
     "bulk_status_change": "ステータス変更"
   },
@@ -1330,7 +1333,8 @@
       "notification_definitions": "通知設定",
       "language_packs": "言語パック",
       "identity": "本人認証",
-      "info": "情報"
+      "info": "情報",
+      "privacy": "個人情報"
     },
     "general": {
       "site_info": "サイト情報",
@@ -1963,7 +1967,10 @@
         "reset_password": "パスワード再設定",
         "password_changed": "パスワード変更通知",
         "sitemap_regenerated": "サイトマップ再生成完了",
-        "sitemap_regenerate_failed": "サイトマップ再生成失敗"
+        "sitemap_regenerate_failed": "サイトマップ再生成失敗",
+        "dormant_pre_notice": "休眠転換事前通知",
+        "dormant_converted": "休眠転換完了",
+        "dormant_withdraw_notice": "休眠アカウント退会予定通知"
       },
       "channels_label": "チャネル:",
       "edit_modal": {
@@ -2101,7 +2108,39 @@
     "unsaved_changes": "保存されていない変更があります。",
     "validation_error": "入力情報を確認してください",
     "app_key_regenerated": "アプリケーションキーが再生成されました。",
-    "cache_cleared": "すべてのキャッシュが削除されました。"
+    "cache_cleared": "すべてのキャッシュが削除されました。",
+    "privacy": {
+      "policy_notice_title": "有効化する前に、個人情報処理方針を先に修正してください",
+      "policy_notice_desc": "以下の機能は、会員の個人情報を取り戻せない形で削除するか、アカウント状態を変更します。法律では事前告知の後に運営することを要求しているため、処理方針に保有期間・休眠ポリシーを先に記載し、告知した後に有効化してください。",
+      "target_count": "対象 {{count}}名",
+      "withdrawn": {
+        "title": "退会会員の残存情報削除",
+        "desc": "退会時には紛争対応のため、名前·メールアドレスの原値がサフィックス形式で残ります。保有期間が経過したら、その残存情報まで実際に削除します。",
+        "enabled": "保有期間経過時の自動削除",
+        "enabled_desc": "デフォルトで無効。有効にすると毎日未明にバッチが対象を処理します。",
+        "days": "退会後の保有期間（日）",
+        "days_hint": "退会日からこの期間が経過した会員が対象です。デフォルトは365日です。",
+        "irreversible_warning": "連絡先·住所·自己紹介と本人認証識別子まで削除され、取り戻せません。名前は「退会会員」に、メールアドレスは識別不可形式に変わります。"
+      },
+      "dormant": {
+        "title": "休眠アカウント",
+        "desc": "長期間アクセスのない会員に事前告知の後、休眠に転換します。休眠会員がログインすると、それ自体を本人確認と見なし、すぐに元の状態に戻します。",
+        "enabled": "休眠アカウント転換",
+        "enabled_desc": "デフォルトで無効。有効にすると事前告知→転換の順序で進行します。",
+        "stage_counts": "告知対象 {{notice}}名 · 転換対象 {{convert}}名",
+        "days": "休眠転換基準アクセスなし期間（日）",
+        "days_hint": "最後のアクティビティ（ログインまたはアプリ·トークン使用）からこの期間が経過すると転換対象です。デフォルトは730日です。",
+        "notice_days": "事前告知期間（日）",
+        "notice_days_hint": "転換予定日の何日前に告知を送るかを定めます。転換期間より短くなければならず、告知を送った後、この期間が経過して初めて実際に転換されます。",
+        "withdraw_enabled": "休眠期間が経過したら退会処理",
+        "withdraw_enabled_desc": "デフォルトで無効。有効にすると休眠状態が長く続いたアカウントを退会処理します。",
+        "withdraw_days": "休眠後の退会までの期間（日）",
+        "withdraw_days_hint": "休眠転換日からこの期間が経過すると退会予定告知を送り、告知期間が経過した後、退会処理します。デフォルトは365日です。",
+        "withdraw_warning": "退会処理されたアカウントは取り戻せません。管理者アカウントは自動退会対象から除外されます。",
+        "restore_hint": "休眠会員がログインすると自動的に解除され、別途の申請手続きはありません。",
+        "withdraw_stage_counts": "退会予告 {{notice}}名 · 退会対象 {{withdraw}}名"
+      }
+    }
   },
   "templates": {
     "page_title": "テンプレート管理",

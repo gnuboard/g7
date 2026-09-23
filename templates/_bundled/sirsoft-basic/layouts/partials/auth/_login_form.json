@@ -90,6 +90,15 @@
                             }
                         },
                         {
+                            "comment": "휴면이 풀린 로그인에만 실린다 — 서버가 해제했을 때만 이 키를 보내므로\n                 평시 로그인에는 뜨지 않는다. 안내 없이 되돌리면 회원은 자기 계정이 잠겼다\n                 풀린 사실을 끝내 모른다.",
+                            "handler": "toast",
+                            "if": "{{!response.two_factor_required && response.dormancy_restored}}",
+                            "params": {
+                                "type": "info",
+                                "message": "$t:auth.dormancy_restored"
+                            }
+                        },
+                        {
                             "handler": "navigate",
                             "if": "{{!response.two_factor_required}}",
                             "params": {
@@ -135,6 +144,15 @@
                             "params": {
                                 "type": "success",
                                 "message": "$t:auth.login_success"
+                            }
+                        },
+                        {
+                            "comment": "2단계 인증 사이트도 같은 안내를 받는다 — 한쪽에만 두면 사이트 설정에 따라\n                 해제 사실이 보이기도 하고 안 보이기도 한다.",
+                            "handler": "toast",
+                            "if": "{{response.dormancy_restored}}",
+                            "params": {
+                                "type": "info",
+                                "message": "$t:auth.dormancy_restored"
                             }
                         },
                         {

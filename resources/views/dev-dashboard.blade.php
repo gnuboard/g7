@@ -1161,6 +1161,22 @@ if (isset($_GET['ajax_action'])) {
                                     <span>스토리지 잔존물 정리 (실행)</span>
                                     <span class="text-[10px] opacity-60">(storage:prune-leftovers)</span>
                                 </button>
+                                <button onclick="runCommand('privacy:process-retention --dry-run')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded transition-colors">
+                                    <span>보유기간 경과 개인정보 (미리보기)</span>
+                                    <span class="text-[10px] opacity-60">(privacy:process-retention --dry-run)</span>
+                                </button>
+                                <button onclick="runCommand('privacy:process-retention')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded transition-colors">
+                                    <span>보유기간 경과 개인정보 (실행)</span>
+                                    <span class="text-[10px] opacity-60">(privacy:process-retention)</span>
+                                </button>
+                                <button onclick="runCommand('privacy:process-dormant --dry-run')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded transition-colors">
+                                    <span>휴면 계정 처리 (미리보기)</span>
+                                    <span class="text-[10px] opacity-60">(privacy:process-dormant --dry-run)</span>
+                                </button>
+                                <button onclick="runCommand('privacy:process-dormant')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded transition-colors">
+                                    <span>휴면 계정 처리 (실행)</span>
+                                    <span class="text-[10px] opacity-60">(privacy:process-dormant)</span>
+                                </button>
                                 <button onclick="runCommand('identity:expire-challenges')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded transition-colors">
                                     <span>본인인증 challenge 만료 처리</span>
                                     <span class="text-[10px] opacity-60">(identity:expire-challenges)</span>

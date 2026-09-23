@@ -26,6 +26,14 @@ use Illuminate\Validation\ValidationException;
 
 class UserService
 {
+    /**
+     * 사용자 서비스를 생성합니다.
+     *
+     * @param  UserRepositoryInterface  $userRepository  사용자 저장소
+     * @param  RoleRepositoryInterface  $roleRepository  역할 저장소
+     * @param  AttachmentService  $attachmentService  첨부파일 서비스 (아바타 정리)
+     * @param  PermissionEscalationGuard  $escalationGuard  역할 부여 상한 가드
+     */
     public function __construct(
         private UserRepositoryInterface $userRepository,
         private RoleRepositoryInterface $roleRepository,
@@ -96,6 +104,19 @@ class UserService
                 $roleIds = $defaultRoleId ? [$defaultRoleId] : null;
             } else {
                 $this->escalationGuard->assertRoleAssignmentWithinActorCeiling($roleIds);
+            }
+
+            // 상태에 딸린 시각 컬럼을 생성 시점에도 채운다 — 검증은 Enum 전체를 허용하므로
+            // (`Rule::in(UserStatus::values())`) 관리자가 `status=dormant` 로 바로 만들 수 있다.
+            // 그때 `dormant_at` 이 비어 있으면 휴면 후 탈퇴 전환이 기준점을 잃어(그 쿼리가
+            // `whereNotNull('dormant_at')` 이다) 그 회원만 영원히 전환되지 않는다.
+            // 수정 경로(`updateUser`)·일괄 경로(`bulkUpdateStatus`)·로그인 해제 경로
+            // (`AuthService::restoreDormantAccount()`)와 **같은 한 곳**(`transitionTimestamps()`)
+            // 을 읽는다. 탈퇴 상태로의 직접 생성은 익명화·훅을 건너뛰므로 시각만 맞춰 둔다.
+            $statusEnum = isset($data['status']) ? UserStatus::tryFrom((string) $data['status']) : null;
+
+            if ($statusEnum !== null) {
+                $data = array_merge($data, $statusEnum->transitionTimestamps());
             }
 
             $user = $this->userRepository->create($data);
@@ -238,13 +259,15 @@ class UserService
 
             if ($newStatus && $newStatus !== $oldStatus) {
                 $newStatusEnum = UserStatus::from($newStatus);
-                $data = match ($newStatusEnum) {
-                    UserStatus::Blocked => array_merge($data, ['blocked_at' => now()]),
-                    // 탈퇴는 위 위임 경로(withdrawUser)가 전담하므로 여기로는 도달하지 않는다.
-                    UserStatus::Withdrawn => $data,
-                    UserStatus::Active => array_merge($data, ['blocked_at' => null, 'withdrawn_at' => null]),
-                    UserStatus::Inactive => $data,
-                };
+                // 짝 컬럼의 정의는 Enum 한 곳(`transitionTimestamps()`)이 소유한다 — 생성·일괄·
+                // 로그인 해제 경로가 같은 표를 읽어야 어휘가 갈라지지 않는다. 이전에는 이 자리가
+                // `dormant_notified_at` 을 빠뜨려, 관리자가 푼 회원이 안내 없이 다시 잠겼다.
+                //
+                // 탈퇴만 예외로 건너뛴다 — 위 위임 경로(withdrawUser)가 익명화·훅과 함께
+                // 전담하므로 여기로는 도달하지 않는다.
+                if ($newStatusEnum !== UserStatus::Withdrawn) {
+                    $data = array_merge($data, $newStatusEnum->transitionTimestamps());
+                }
             }
 
             // 스냅샷 캡처 (ChangeDetector용)
@@ -326,6 +349,7 @@ class UserService
      * 쓰도록 한 곳에 둡니다 — 한쪽만 느슨하면 그 경로가 우회로가 됩니다.
      *
      * @param  User  $user  검사 대상 사용자
+     * @return void 차단 대상이면 예외를 던진다
      *
      * @throws CannotDeleteSuperAdminException 슈퍼 관리자인 경우
      * @throws ValidationException 관리자 역할을 가진 경우
@@ -375,6 +399,7 @@ class UserService
      *
      * @param  User  $user  탈퇴 처리된 사용자 모델
      * @param  Attachment|null  $avatarAttachment  탈퇴 전 캡처한 아바타 첨부
+     * @return void
      */
     private function runWithdrawAfterEffects(User $user, $avatarAttachment): void
     {
@@ -719,9 +744,9 @@ class UserService
     /**
      * 여러 사용자의 상태를 일괄 변경합니다.
      *
-     * @param  array<int>  $ids  사용자 ID 배열
-     * @param  string  $status  변경할 상태 (active, inactive)
-     * @return array{updated_count: int} 업데이트 결과
+     * @param  array<int, string>  $uuids  대상 사용자 UUID 배열
+     * @param  string  $status  변경할 상태 ({@see UserStatus} 의 값)
+     * @return array{updated_count: int, failed_count: int, failed_reasons: array<int, mixed>} 업데이트 결과
      */
     public function bulkUpdateStatus(array $uuids, string $status): array
     {
@@ -771,13 +796,13 @@ class UserService
         $updatedCount = DB::transaction(function () use ($userIds, $statusEnum) {
             // 타임스탬프 자동 설정
             $updateData = ['status' => $statusEnum->value];
-            $updateData = match ($statusEnum) {
-                UserStatus::Blocked => array_merge($updateData, ['blocked_at' => now()]),
-                // 탈퇴는 위에서 건별 withdrawUser() 로 분기하므로 여기로는 도달하지 않는다.
-                UserStatus::Withdrawn => $updateData,
-                UserStatus::Active => array_merge($updateData, ['blocked_at' => null, 'withdrawn_at' => null]),
-                UserStatus::Inactive => $updateData,
-            };
+            // 개별 경로(updateUser)와 **같은 표**(`transitionTimestamps()`)를 읽는다 — 한쪽만
+            // 고치면 일괄은 통과하고 개별은 거부하는(또는 그 반대) 강도 비대칭이 된다.
+            //
+            // 탈퇴는 위에서 건별 withdrawUser() 로 분기하므로 여기로는 도달하지 않는다.
+            if ($statusEnum !== UserStatus::Withdrawn) {
+                $updateData = array_merge($updateData, $statusEnum->transitionTimestamps());
+            }
 
             $count = $this->userRepository->updateManyByIds($userIds, $updateData);
 
@@ -920,6 +945,9 @@ class UserService
         [$showAvatar, $showBio, $showCreatedAt] = match ($status) {
             UserStatus::Active => [true, true, true],
             UserStatus::Inactive => [true, false, true],
+            // 휴면은 "정책상 비활성" 이라 비활성과 같게 둔다 — default 로 흘려보내면 차단 회원과
+            // 같은 취급이 되어, 돌아오면 원래대로 보일 프로필이 공개 화면에서 통째로 사라진다.
+            UserStatus::Dormant => [true, false, true],
             default => [false, false, false], // blocked 등
         };
 

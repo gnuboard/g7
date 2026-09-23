@@ -157,6 +157,23 @@
             "comment": "리버스 프록시 진단 — 고급 탭과 보안 탭에서 받는다. 신뢰 프록시 설정 여부와 이 요청이 지나온 전달 헤더·클라이언트 IP 를 서버가 판정해 돌려주고, 응답이 없으면 fallback 의 status=not_applicable 로 「진단 불가」를 그린다.\n       보안 탭의 접근 제한 카드는 이 값으로 현재 접속 IP 를 보여 주고 프록시 경고를 띄운다 — 저장 검증이 자기 잠금을 판정할 때 쓰는 IP 와 같은 해석(신뢰 프록시 반영)이라, 화면에 보이는 IP 를 넣으면 그 검증을 통과한다."
         },
         {
+            "id": "privacyPreview",
+            "label_key": "$t:editor.data_source.privacyPreview",
+            "type": "api",
+            "endpoint": "/api/admin/settings/privacy-preview",
+            "method": "GET",
+            "if": "{{(query.tab || _global.activeSettingsTab || 'general') === 'privacy'}}",
+            "auto_fetch": true,
+            "auth_required": true,
+            "fallback": {
+                "data": {
+                    "retention": null,
+                    "dormant": null
+                }
+            },
+            "comment": "개인정보 탭의 dry-run 건수 뱃지 — 커맨드의 `--dry-run` 과 같은 조건식을 지나므로\n       화면 숫자와 실제 처리 건수가 어긋나지 않는다."
+        },
+        {
             "id": "appKey",
             "label_key": "$t:editor.data_source.appKey",
             "type": "api",
@@ -402,7 +419,8 @@
             "language_packs",
             "sitemap_status",
             "staticCacheStatus",
-            "trustedProxy"
+            "trustedProxy",
+            "privacyPreview"
         ]
     },
     "init_actions": [
@@ -650,6 +668,10 @@
                                             "label": "$t:admin.settings.tabs.identity"
                                         },
                                         {
+                                            "id": "privacy",
+                                            "label": "$t:admin.settings.tabs.privacy"
+                                        },
+                                        {
                                             "id": "info",
                                             "label": "$t:admin.settings.tabs.info"
                                         }
@@ -800,6 +822,9 @@
                             },
                             {
                                 "partial": "partials/admin_settings/_tab_identity.json"
+                            },
+                            {
+                                "partial": "partials/admin_settings/_tab_privacy.json"
                             },
                             {
                                 "partial": "partials/admin_settings/_tab_info.json"

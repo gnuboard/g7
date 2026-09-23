@@ -293,7 +293,9 @@
         "active": "Active",
         "inactive": "Inactive",
         "blocked": "Blocked",
-        "withdrawn": "Withdrawn"
+        "withdrawn": "Withdrawn",
+        "dormant": "Dormant",
+        "pending_verification": "Pending Verification"
       },
       "timezone_options": {
         "Asia/Seoul": "Asia/Seoul (UTC+9)",
@@ -334,6 +336,7 @@
       "disabled": "Disabled",
       "withdrawn_at": "Withdrawn At",
       "blocked_at": "Blocked At",
+      "dormant_at": "Dormant Since",
       "consent_type": {
         "terms": "Terms of Service",
         "privacy": "Privacy Policy"
@@ -1326,7 +1329,8 @@
       "notification_definitions": "Notifications",
       "language_packs": "Language Packs",
       "identity": "Identity",
-      "info": "Info"
+      "info": "Info",
+      "privacy": "Privacy"
     },
     "general": {
       "site_info": "Site Information",
@@ -1959,7 +1963,10 @@
         "reset_password": "Password Reset",
         "password_changed": "Password Changed",
         "sitemap_regenerated": "Sitemap Regeneration Complete",
-        "sitemap_regenerate_failed": "Sitemap Regeneration Failed"
+        "sitemap_regenerate_failed": "Sitemap Regeneration Failed",
+        "dormant_pre_notice": "Dormancy Advance Notice",
+        "dormant_converted": "Dormancy Applied",
+        "dormant_withdraw_notice": "Dormant Account Withdrawal Notice"
       },
       "channels_label": "Channels:",
       "edit_modal": {
@@ -2097,7 +2104,39 @@
     "unsaved_changes": "You have unsaved changes.",
     "validation_error": "Please check your input",
     "app_key_regenerated": "Application key has been regenerated.",
-    "cache_cleared": "All cache has been cleared."
+    "cache_cleared": "All cache has been cleared.",
+    "privacy": {
+      "policy_notice_title": "Update your privacy policy before turning these on",
+      "policy_notice_desc": "The settings below irreversibly erase members’ personal data or change account status. The law requires advance notice, so document the retention and dormancy policy and announce it before enabling.",
+      "target_count": "{{count}} member(s) affected",
+      "withdrawn": {
+        "title": "Erasing residual data of withdrawn members",
+        "desc": "On withdrawal the original name and email are kept with a suffix so disputes can still be handled. Once the retention period passes, that residual data is actually erased.",
+        "enabled": "Erase automatically after the retention period",
+        "enabled_desc": "Off by default. When on, the nightly batch processes matching members.",
+        "days": "Retention period after withdrawal (days)",
+        "days_hint": "Members whose withdrawal is older than this are affected. Default 365 days.",
+        "irreversible_warning": "Contact details, address, bio and identity-verification identifiers are erased and cannot be recovered. The name becomes a fixed placeholder and the email an unidentifiable form."
+      },
+      "dormant": {
+        "title": "Dormant accounts",
+        "desc": "Long-inactive members become dormant after an advance notice. When a dormant member signs in, that sign-in counts as identity confirmation and the account is restored immediately.",
+        "enabled": "Move long-inactive members to dormant",
+        "enabled_desc": "Off by default. When on, an advance notice is sent first, then the transition follows.",
+        "stage_counts": "{{notice}} to notify · {{convert}} to convert",
+        "withdraw_stage_counts": "{{notice}} pending notice · {{withdraw}} to withdraw",
+        "days": "Inactivity before dormancy (days)",
+        "days_hint": "Counted from the last activity — sign-in or app/token use. Default 730 days.",
+        "notice_days": "Advance notice period (days)",
+        "notice_days_hint": "How many days before the transition the notice goes out. It must be shorter than the dormancy period, and the transition only happens after this period has passed since the notice.",
+        "withdraw_enabled": "Withdraw accounts that stay dormant",
+        "withdraw_enabled_desc": "Off by default. When on, long-dormant accounts are withdrawn.",
+        "withdraw_days": "Days from dormancy to withdrawal",
+        "withdraw_days_hint": "After this period a withdrawal notice is sent, and the account is withdrawn once the notice period has passed. Default 365 days.",
+        "withdraw_warning": "A withdrawn account cannot be restored. Administrator accounts are excluded from automatic withdrawal.",
+        "restore_hint": "Dormancy is lifted automatically when the member signs in — no application is required."
+      }
+    }
   },
   "templates": {
     "page_title": "Template Management",

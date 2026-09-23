@@ -141,6 +141,48 @@ class SaveSettingsRequest extends FormRequest
 
         $this->normalizeAllowedExtensions();
         $this->normalizeIpRestrictionLists();
+        $this->normalizePrivacyIntegerFields();
+    }
+
+    /**
+     * 개인정보 탭의 기간 입력을 정수로 정규화합니다.
+     *
+     * 브라우저의 숫자 입력칸은 값을 **문자열로** 보냅니다. 그대로 저장하면
+     * `storage/app/settings/privacy.json` 에 `"100"` 이 찍혀 `defaults.json` 이 선언한 정수 타입과
+     * 어긋납니다 — 판독부가 `(int)` 로 캐스팅하므로 동작은 같지만, 같은 파일 안에서 기본값은
+     * 숫자이고 저장값은 문자열인 상태가 남아 JSON 을 직접 읽는 소비자가 타입으로 분기할 때
+     * 조용히 갈립니다. 형식 검사(`integer`)는 숫자 문자열을 통과시키므로 여기서 맞춰 둡니다.
+     *
+     * 빈 문자열·비수치는 건드리지 않고 남겨 검증이 잡게 합니다.
+     *
+     * @return void 입력을 제자리에서 고친다
+     */
+    private function normalizePrivacyIntegerFields(): void
+    {
+        $privacy = $this->input('privacy');
+
+        if (! is_array($privacy)) {
+            return;
+        }
+
+        $changed = false;
+
+        foreach (['withdrawn_retention_days', 'dormant_days', 'dormant_notice_days', 'dormant_withdraw_days'] as $field) {
+            if (! array_key_exists($field, $privacy)) {
+                continue;
+            }
+
+            $value = $privacy[$field];
+
+            if (is_string($value) && $value !== '' && ctype_digit($value)) {
+                $privacy[$field] = (int) $value;
+                $changed = true;
+            }
+        }
+
+        if ($changed) {
+            $this->merge(['privacy' => $privacy]);
+        }
     }
 
     /**
@@ -289,7 +331,8 @@ class SaveSettingsRequest extends FormRequest
 
         $rules = [
             // 탭 식별자
-            '_tab' => ['nullable', 'string', Rule::in(['general', 'mail', 'upload', 'seo', 'security', 'drivers', 'advanced', 'notifications', 'identity'])],
+            // 여기 빠진 탭 이름으로 저장하면 본문이 아무리 올바라도 422 다 — 탭을 신설하면 반드시 함께 넣는다.
+            '_tab' => ['nullable', 'string', Rule::in(['general', 'mail', 'upload', 'seo', 'security', 'drivers', 'advanced', 'notifications', 'identity', 'privacy'])],
 
             // 각 탭의 컨테이너
             'general' => ['sometimes', 'array'],
@@ -301,6 +344,7 @@ class SaveSettingsRequest extends FormRequest
             'advanced' => ['sometimes', 'array'],
             'notifications' => ['sometimes', 'array'],
             'identity' => ['sometimes', 'array'],
+            'privacy' => ['sometimes', 'array'],
             'notifications.channels' => ['sometimes', 'array'],
             'notifications.channels.*.id' => ['required_with:notifications.channels', 'string', 'max:50'],
             'notifications.channels.*.is_active' => ['required_with:notifications.channels', 'boolean'],
@@ -501,6 +545,16 @@ class SaveSettingsRequest extends FormRequest
             'identity.purpose_providers' => ['sometimes', 'array'],
             'identity.challenge_ttl_minutes' => $this->getTabRules($tab, 'identity', 'integer|min:'.config('core.settings_limits.identity_challenge_ttl_minutes_min', 1).'|max:'.config('core.settings_limits.identity_challenge_ttl_minutes_max', 1440)),
             'identity.max_attempts' => $this->getTabRules($tab, 'identity', 'integer|min:'.config('core.settings_limits.identity_max_attempts_min', 1).'|max:'.config('core.settings_limits.identity_max_attempts_max', 20)),
+
+            // 개인정보 보유기간·휴면 — 전 항목 기본 꺼짐. 토글은 false 가 정상값이라 required 를 붙이지 않는다.
+            // 기간 하한을 1일로 두는 것은 0 을 허용하면 "켠 즉시 전원 대상" 이 되기 때문이다.
+            'privacy.withdrawn_retention_enabled' => ['nullable', 'boolean'],
+            'privacy.withdrawn_retention_days' => $this->getTabRules($tab, 'privacy', 'integer|min:'.config('core.settings_limits.privacy_retention_days_min', 1).'|max:'.config('core.settings_limits.privacy_retention_days_max', 3650)),
+            'privacy.dormant_enabled' => ['nullable', 'boolean'],
+            'privacy.dormant_days' => $this->getTabRules($tab, 'privacy', 'integer|min:'.config('core.settings_limits.privacy_dormant_days_min', 30).'|max:'.config('core.settings_limits.privacy_retention_days_max', 3650)),
+            'privacy.dormant_notice_days' => $this->getTabRules($tab, 'privacy', 'integer|min:'.config('core.settings_limits.privacy_dormant_notice_days_min', 1).'|max:'.config('core.settings_limits.privacy_dormant_notice_days_max', 365)),
+            'privacy.dormant_withdraw_enabled' => ['nullable', 'boolean'],
+            'privacy.dormant_withdraw_days' => $this->getTabRules($tab, 'privacy', 'integer|min:'.config('core.settings_limits.privacy_retention_days_min', 1).'|max:'.config('core.settings_limits.privacy_retention_days_max', 3650)),
         ];
 
         // 모듈/플러그인이 validation rules를 동적으로 추가할 수 있도록 훅 제공
@@ -707,7 +761,60 @@ class SaveSettingsRequest extends FormRequest
             }
 
             $this->validateIpRestrictionSelfLockout($validator);
+            $this->validatePrivacyDormantThresholds($validator);
         });
+    }
+
+    /**
+     * 휴면 기간 3필드의 순서가 성립하는지 검사합니다.
+     *
+     * 사전 통지는 "전환 며칠 전" 이므로 전환일보다 짧아야 뜻이 있습니다. 통지일이 전환일과
+     * 같거나 길면 통지 대상 조건(`last_login_at <= now - (전환일 - 통지일)`)이 미래·현재로 접혀
+     * **전환과 통지가 같은 날 한꺼번에 일어납니다** — 법이 요구하는 사전 안내가 사라지는데
+     * 커맨드는 정상 종료하므로 아무 경고가 없습니다. 그래서 저장 단계에서 막습니다.
+     *
+     * 저장은 탭 몫만 보내므로 제출분만으로는 판정할 수 없습니다(통지일만 고친 저장). 저장 경로와
+     * 같은 병합(저장값 위에 제출분)으로 "저장 후 설정" 을 재구성해 봅니다.
+     *
+     * @param  Validator  $validator  검증기 인스턴스
+     * @return void 검증기에 오류를 직접 더한다
+     */
+    private function validatePrivacyDormantThresholds(Validator $validator): void
+    {
+        if ($this->input('_tab') !== 'privacy') {
+            return;
+        }
+
+        $submitted = $this->input('privacy');
+
+        if (! is_array($submitted)) {
+            return;
+        }
+
+        // 형식 오류가 있으면 그것부터 고치게 한다 — 깨진 값으로 순서를 재면 엉뚱한 안내가 된다.
+        foreach (array_keys($validator->errors()->messages()) as $field) {
+            if (str_starts_with($field, 'privacy.')) {
+                return;
+            }
+        }
+
+        $stored = app(ConfigRepositoryInterface::class)->getCategory('privacy');
+        $effective = array_merge(is_array($stored) ? $stored : [], $submitted);
+
+        // 휴면을 켜지 않았으면 기간 순서는 아직 아무 일도 하지 않는다 — 켤 때 막는다.
+        if (! filter_var($effective['dormant_enabled'] ?? false, FILTER_VALIDATE_BOOLEAN)) {
+            return;
+        }
+
+        $dormantDays = (int) ($effective['dormant_days'] ?? 0);
+        $noticeDays = (int) ($effective['dormant_notice_days'] ?? 0);
+
+        if ($noticeDays >= $dormantDays) {
+            $validator->errors()->add(
+                'privacy.dormant_notice_days',
+                __('validation.settings.privacy_dormant_notice_days_lt_dormant_days')
+            );
+        }
     }
 
     /**
@@ -1108,6 +1215,19 @@ class SaveSettingsRequest extends FormRequest
             'identity.max_attempts.integer' => __('validation.settings.identity_max_attempts_integer'),
             'identity.max_attempts.min' => __('validation.settings.identity_max_attempts_min'),
             'identity.max_attempts.max' => __('validation.settings.identity_max_attempts_max'),
+            // 개인정보 보유기간·휴면
+            'privacy.withdrawn_retention_days.integer' => __('validation.settings.privacy_days_integer'),
+            'privacy.withdrawn_retention_days.min' => __('validation.settings.privacy_retention_days_min'),
+            'privacy.withdrawn_retention_days.max' => __('validation.settings.privacy_retention_days_max'),
+            'privacy.dormant_days.integer' => __('validation.settings.privacy_days_integer'),
+            'privacy.dormant_days.min' => __('validation.settings.privacy_dormant_days_min'),
+            'privacy.dormant_days.max' => __('validation.settings.privacy_retention_days_max'),
+            'privacy.dormant_notice_days.integer' => __('validation.settings.privacy_days_integer'),
+            'privacy.dormant_notice_days.min' => __('validation.settings.privacy_dormant_notice_days_min'),
+            'privacy.dormant_notice_days.max' => __('validation.settings.privacy_dormant_notice_days_max'),
+            'privacy.dormant_withdraw_days.integer' => __('validation.settings.privacy_days_integer'),
+            'privacy.dormant_withdraw_days.min' => __('validation.settings.privacy_retention_days_min'),
+            'privacy.dormant_withdraw_days.max' => __('validation.settings.privacy_retention_days_max'),
         ];
     }
 
@@ -1138,6 +1258,14 @@ class SaveSettingsRequest extends FormRequest
             'identity.purpose_providers' => __('validation.attributes.identity_purpose_providers'),
             'identity.challenge_ttl_minutes' => __('validation.attributes.identity_challenge_ttl_minutes'),
             'identity.max_attempts' => __('validation.attributes.identity_max_attempts'),
+            // 개인정보 보유기간·휴면 필드
+            'privacy.withdrawn_retention_enabled' => __('validation.attributes.privacy_withdrawn_retention_enabled'),
+            'privacy.withdrawn_retention_days' => __('validation.attributes.privacy_withdrawn_retention_days'),
+            'privacy.dormant_enabled' => __('validation.attributes.privacy_dormant_enabled'),
+            'privacy.dormant_days' => __('validation.attributes.privacy_dormant_days'),
+            'privacy.dormant_notice_days' => __('validation.attributes.privacy_dormant_notice_days'),
+            'privacy.dormant_withdraw_enabled' => __('validation.attributes.privacy_dormant_withdraw_enabled'),
+            'privacy.dormant_withdraw_days' => __('validation.attributes.privacy_dormant_withdraw_days'),
             // 탭 묶음 자체 — 페이로드가 배열이 아닐 때 "general 필드는 배열이어야 합니다" 로
             // 키가 그대로 노출되던 자리다(운영자 화면 라벨은 한국어인데 문구만 영문 키).
             'general' => __('validation.attributes.settings_tab_general'),
@@ -1149,6 +1277,7 @@ class SaveSettingsRequest extends FormRequest
             'advanced' => __('validation.attributes.settings_tab_advanced'),
             'notifications' => __('validation.attributes.settings_tab_notifications'),
             'identity' => __('validation.attributes.settings_tab_identity'),
+            'privacy' => __('validation.attributes.settings_tab_privacy'),
             // 배열 항목 — 인덱스가 붙은 원시 키(seo.bot_user_agents.0 …)가 문구에 실리지 않도록
             // 와일드카드 한 줄로 전 인덱스를 덮는다.
             'general.site_logo.*' => __('validation.attributes.site_logo'),

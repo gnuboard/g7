@@ -8,6 +8,8 @@
 
 ### Added
 
+- 휴면 계정과 개인정보 보유기간 파기 관련 코어 문구의 일본어 번역을 추가했습니다 — 휴면 전환·해제·자동 탈퇴가 남는 활동 로그 문구와 설명(`activity_log.action.dormant_*`·`activity_log.description.user_dormant_*`), 휴면 계정이 기존 토큰으로 API 를 부를 때 받는 안내(`auth.account_dormant`), 회원 상태 라벨 「휴면」과 「가입대기」(`user.status.dormant`·`pending_verification`), 환경설정 > 개인정보 탭의 검증 문구와 항목명(`validation.settings.privacy_*`·`validation.attributes.privacy_*`), 그리고 파기 핸들러 이름을 담은 `privacy.php`(`privacy.handlers.user_withdrawn`) 입니다. 없으면 일본어 로케일에서 이 문구들이 한국어로 남습니다. 휴면 해제 안내는 코어가 아니라 템플릿 문구(`auth.dormancy_restored`)라 `g7-template-sirsoft-basic-ja` 팩이 담당합니다.
+- 휴면 생명주기 알림 3종(전환 사전 안내·전환 완료·탈퇴 예정)의 일본어 메일·사이트내 알림 템플릿을 시드에 추가했습니다. 없으면 일본어 사이트의 회원이 법정 사전 안내와 탈퇴 예고를 한국어로 받습니다.
 - 환경설정 저장 오류 문구의 항목명 일본어 번역을 추가했습니다 — 탭 묶음 10건(`validation.attributes.settings_tab*`)과 알림 채널 3건(`validation.attributes.notification_channel_*`)입니다. 없으면 일본어 로케일에서 저장 오류 문구에 화면 라벨 대신 내부 필드 이름이 그대로 나옵니다.
 - IP 접근 제한 문구의 일본어 번역을 추가했습니다 — 허용되지 않은 IP 가 받는 403 화면의 제목·설명·접속 IP 표시(`errors.ip_restricted.*`), 환경설정 > 보안에서 목록·규칙을 저장할 때의 검증 문구와 항목명(`validation.settings.ip_*`·`validation.attributes.*`), 차단과 비상 해제가 남는 활동 로그 문구(`activity_log.action.ip_blocked`·`ip_restriction_disabled`와 그 설명)입니다. 없으면 일본어 로케일에서 차단 화면과 저장 오류가 한국어로 남습니다.
 - 인증 앱(OTP) 2단계 인증 관련 코어 문구의 일본어 번역을 추가했습니다 — 인증 앱으로 코드를 받을 때의 로그인 안내(`auth.two_factor_required_app`), 인증 앱 등록이 필요해 로그인이 막혔을 때의 안내(`auth.two_factor_enrollment_required`), 본인인증 채널 「인증 앱」 이름(`identity.channels.app`), 환경설정의 2단계 인증 적용 범위 항목명(`validation.attributes.two_factor_scope`) 입니다. 없으면 일본어 로케일에서 이 문구들이 한국어로 남습니다.
@@ -58,6 +60,10 @@
 ### Removed
 
 - 더 이상 사용하지 않는 검사 문구를 정리했습니다 — 항목명이 바뀌었거나 검사 자체가 없어진 자리입니다.
+
+### Changed
+
+- 휴면을 가리키는 일본어 낱말을 「休眠」 하나로 맞췄습니다 — 회원 상태 라벨(`user.status.dormant`), 휴면 전환·해제·자동 탈퇴 활동 로그 문구(`activity_log.action.dormant_*`·`activity_log.description.user_dormant_*`), 환경설정 > 개인정보의 검증 문구와 항목명(`validation.settings.privacy_dormant_*`·`validation.attributes.privacy_dormant_*`)이 「休止」였습니다. 알림 시드와 `auth.account_dormant` 는 이미 「休眠」이라, 일본어 회원이 메일로는 「休眠アカウントに転換されました」를 받고 화면에서는 「休止中」을 보는 상태였습니다. 휴면은 법정 사전 안내가 붙는 흐름이라, 받은 고지와 화면 표시가 같은 낱말이어야 되돌릴 기회(로그인 한 번)를 놓치지 않습니다.
 
 ## [1.0.10] - 2026-09-09
 

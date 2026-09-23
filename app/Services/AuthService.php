@@ -2,14 +2,16 @@
 
 namespace App\Services;
 
+use App\ActivityLog\Traits\ResolvesActivityLogType;
+use App\Contracts\Extension\IdentityVerificationInterface;
+use App\Contracts\Extension\MailFallbackAwareProviderInterface;
+use App\Contracts\Extension\UserScopedIdentityProviderInterface;
 use App\Contracts\Repositories\IdentityVerificationLogRepositoryInterface;
 use App\Contracts\Repositories\PasswordResetTokenRepositoryInterface;
 use App\Contracts\Repositories\RoleRepositoryInterface;
 use App\Contracts\Repositories\UserConsentRepositoryInterface;
 use App\Contracts\Repositories\UserRepositoryInterface;
-use App\Contracts\Extension\IdentityVerificationInterface;
-use App\Contracts\Extension\MailFallbackAwareProviderInterface;
-use App\Contracts\Extension\UserScopedIdentityProviderInterface;
+use App\Enums\ActivityLogType;
 use App\Enums\ConsentType;
 use App\Enums\IdentityVerificationPurpose;
 use App\Enums\IdentityVerificationStatus;
@@ -31,6 +33,8 @@ use Laravel\Sanctum\PersonalAccessToken;
 
 class AuthService
 {
+    use ResolvesActivityLogType;
+
     /**
      * 코어 메일 프로바이더 id — 2단계 인증의 최후 폴백 수단.
      */
@@ -140,8 +144,13 @@ class AuthService
 
         $user = Auth::user();
 
-        // 사용자 상태 체크 - Active만 로그인 허용
-        if ($user->status !== UserStatus::Active->value) {
+        // 사용자 상태 체크 — Active 와 Dormant 만 로그인 허용
+        //
+        // 휴면은 **막는 상태가 아니라 되돌리는 상태**다. 로그인 성공(비밀번호 확인, 2FA 사이트는
+        // 코드 확인까지) 자체가 본인확인이므로 통과시키고, 세션을 여는 자리에서 Active 로
+        // 복귀시킨다({@see issueLoginSession()}). 여기서 막으면 휴면 회원에게 해제 경로가
+        // 아예 없고, 열거 방지 문구가 사유를 삼켜 "비밀번호가 틀렸다" 로만 안내된다.
+        if (! $this->isLoginAllowedStatus($user->status)) {
             Auth::logout();
 
             $messageKey = match ($user->status) {
@@ -159,11 +168,16 @@ class AuthService
         // 2단계 인증이 켜져 있으면 여기서 토큰을 발급하지 않는다.
         // 비밀번호 확인만으로 세션이 열리면 2단계가 없는 것과 같으므로, 인증 코드를 확인할
         // 때까지 로그인 상태를 만들지 않고 challenge 만 돌려준다.
+        // 판정보다 **먼저** 회수한다 — `resolveTwoFactorProviderId()` 는 수단이 없고 메일
+        // 폴백이 꺼진 계정에 `TwoFactorEnrollmentRequiredException` 을 던진다. 회수를 판정
+        // 뒤에 두면 그 경로만 `Auth::attempt()` 가 연 세션을 닫지 못하고, 컨트롤러가 그
+        // 예외를 정상 응답으로 바꾸므로 세션 쿠키가 그대로 발급된다.
+        // `issueLoginSession()` 이 자기 자리에서 다시 로그인시키므로 성공 경로는 불변이다.
+        Auth::logout();
+
         $twoFactorProviderId = $this->resolveTwoFactorProviderId($user);
 
         if ($twoFactorProviderId !== null) {
-            Auth::logout();
-
             return $this->startTwoFactorChallenge($user, $email, $twoFactorProviderId);
         }
 
@@ -180,7 +194,6 @@ class AuthService
      * 초기화해 흔적도 남지 않습니다.
      *
      * @param  User|null  $user  검사 대상 사용자 (없으면 검사 대상 아님)
-     *
      * @return void
      *
      * @throws AccountLockedException 계정이 잠겨 있을 때
@@ -444,7 +457,9 @@ class AuthService
 
         $user = $identity->resolveVerifiedUser($challengeId, IdentityVerificationPurpose::Login->value);
 
-        if (! $user || $user->status !== UserStatus::Active->value) {
+        // 휴면도 통과시킨다 — 여기서 막으면 2FA 사이트의 휴면 회원은 해제가 구조적으로
+        // 불가능하고, 응답이 "잘못된 challenge" 라 사유조차 알 수 없다.
+        if (! $user || ! $this->isLoginAllowedStatus($user->status)) {
             throw ValidationException::withMessages([
                 'challenge_id' => [__('auth.two_factor_invalid_challenge')],
             ]);
@@ -500,7 +515,9 @@ class AuthService
 
         $user = $log->user_id === null ? null : $this->userRepository->findById((int) $log->user_id);
 
-        if (! $user || $user->status !== UserStatus::Active->value) {
+        // 휴면도 통과시킨다 — 여기서 막으면 2FA 사이트의 휴면 회원은 해제가 구조적으로
+        // 불가능하고, 응답이 "잘못된 challenge" 라 사유조차 알 수 없다.
+        if (! $user || ! $this->isLoginAllowedStatus($user->status)) {
             throw ValidationException::withMessages([
                 'challenge_id' => [__('auth.two_factor_invalid_challenge')],
             ]);
@@ -531,7 +548,6 @@ class AuthService
      *
      * @param  User  $user  대상 사용자
      * @param  string  $plainTextToken  방금 발급한 평문 토큰 ({id}|{token} 형식)
-     *
      * @return void
      */
     public function revokeIssuedSession(User $user, string $plainTextToken): void
@@ -553,6 +569,10 @@ class AuthService
      */
     private function issueLoginSession(User $user, string $email): array
     {
+        // 세션을 여는 **유일한 자리**에서 휴면을 해제한다 — 비밀번호 경로와 2FA 경로가
+        // 둘 다 여기로 모이므로 한 곳만 고쳐도 두 경로가 같은 강도를 갖는다.
+        $dormancyRestored = $this->restoreDormantAccount($user);
+
         $token = $user->createToken('auth-token', ['*'], $this->getTokenExpiresAt())->plainTextToken;
 
         // 세션에 사용자 저장 (/dev 대시보드 인증용)
@@ -569,11 +589,89 @@ class AuthService
             'user_agent' => request()->userAgent(),
         ]);
 
-        return [
+        $result = [
             'user' => $user,
             'token' => $token,
             'token_type' => 'Bearer',
         ];
+
+        // 해제됐을 때만 실어 보낸다 — 평시 응답에 `false` 를 늘 담으면 화면이 그 키의 존재를
+        // 조건으로 쓰다가 언제나 참이 되어 매 로그인마다 안내가 뜬다.
+        if ($dormancyRestored) {
+            $result['dormancy_restored'] = true;
+        }
+
+        return $result;
+    }
+
+    /**
+     * 로그인을 허용하는 상태인지 판정합니다.
+     *
+     * 휴면은 "막을 상태" 가 아니라 "되돌릴 상태" 라서 통과 목록에 든다 — 판정을 한 곳에 두어
+     * 비밀번호 경로·2FA 완료 경로·재발송 경로가 같은 어휘를 쓰게 한다.
+     *
+     * @param  string|null  $status  사용자 상태 값
+     * @return bool 로그인 허용 여부
+     */
+    private function isLoginAllowedStatus(?string $status): bool
+    {
+        return in_array($status, [
+            UserStatus::Active->value,
+            UserStatus::Dormant->value,
+        ], true);
+    }
+
+    /**
+     * 휴면 계정이면 활성으로 되돌립니다.
+     *
+     * 로그인 성공을 본인확인으로 보는 2단계형 휴면 정책(설계 확정)의 해제 단계입니다.
+     * 설정(`privacy.dormant_enabled`)을 보지 않는 이유: 운영자가 기능을 끈 뒤에도 이미 휴면인
+     * 회원은 남아 있고, 설정을 조건으로 걸면 그 회원들이 되돌릴 방법 없이 갇힙니다.
+     *
+     * @param  User  $user  로그인한 사용자
+     * @return bool 해제 여부 (원래 휴면이 아니었으면 false)
+     */
+    private function restoreDormantAccount(User $user): bool
+    {
+        if ($user->status !== UserStatus::Dormant->value) {
+            // 아직 휴면이 아닌데 통지 표지가 남은 회원 — 사전 안내를 받고 **안내대로 로그인한**
+            // 바로 그 회원이다. 상태가 바뀌지 않으므로 아래 짝 표를 거치지 않고, 표지를 비우는
+            // 다른 자리(Enum 짝 표·전환 단계)는 전부 「상태가 바뀔 때만」 도달한다. 그대로 두면
+            // 사전 안내 쿼리(`whereNull`)가 이 회원을 영구히 배제하는 동안 전환 쿼리
+            // (`whereNotNull` + 기한 경과)는 즉시 잡아, 다시 장기 미접속이 됐을 때 **2년 전에
+            // 발송된 이미 취소된 안내가 마지막 통지인 채로** 예고 없이 휴면으로 넘어간다.
+            // 로그인은 그 자체가 활동이므로 표지를 무효로 본다 — 그 회원은 다음 주기에
+            // 사전 안내 대상으로 정상 복귀한다.
+            if ($user->dormant_notified_at !== null) {
+                $this->userRepository->update($user, ['dormant_notified_at' => null]);
+            }
+
+            return false;
+        }
+
+        // 짝 컬럼(`dormant_at`·`dormant_notified_at` 등)의 정의는 Enum 한 곳이 소유한다 —
+        // 관리자 경로(`UserService` 의 생성·수정·일괄)와 같은 표를 읽어야 어휘가 갈라지지
+        // 않는다. 통지 표지를 남겨 두면 이 회원이 다시 장기 미접속이 됐을 때 사전 안내를
+        // 이미 받은 것으로 판정되어 예고 없이 휴면으로 넘어간다.
+        $this->userRepository->update($user, array_merge(
+            ['status' => UserStatus::Active->value],
+            UserStatus::Active->transitionTimestamps(),
+        ));
+
+        $this->logActivity('user.dormant_restored', [
+            'log_type' => ActivityLogType::User,
+            'description_key' => 'activity_log.description.user_dormant_restored',
+            // 형제 `user.withdraw` 와 같은 어휘(uuid) — 휴면 3키는 개인정보 파기 생명주기의
+            // 기록이라 실명 사본을 남기지 않는다. {@see DormantAccountService::convertToDormant()}
+            'description_params' => ['user_id' => (string) $user->uuid],
+            'user_id' => $user->id,
+            'properties' => [
+                'user_uuid' => (string) $user->uuid,
+                'restored_by' => 'login',
+            ],
+        ]);
+
+        return true;
     }
 
     /**
@@ -665,7 +763,6 @@ class AuthService
      * 사용자를 로그아웃시키고 현재 디바이스의 인증 토큰만 삭제합니다.
      *
      * @param  User  $user  로그아웃할 사용자
-     *
      * @return void
      */
     public function logout(User $user): void
@@ -750,7 +847,6 @@ class AuthService
      * 모든 디바이스에서 사용자를 로그아웃시킵니다.
      *
      * @param  User  $user  로그아웃할 사용자
-     *
      * @return void
      */
     public function logoutFromAllDevices(User $user): void
@@ -767,10 +863,9 @@ class AuthService
      *
      * @param  string  $email  사용자 이메일
      * @param  string|null  $redirectPrefix  리다이렉트 경로 접두사 (예: 'admin')
+     * @return void
      *
      * @throws ValidationException 등록되지 않은 이메일일 때
-     *
-     * @return void
      */
     public function forgotPassword(string $email, ?string $redirectPrefix = null): void
     {
@@ -862,10 +957,9 @@ class AuthService
      * @param  string  $token  비밀번호 재설정 토큰
      * @param  string  $email  사용자 이메일
      * @param  string  $password  새로운 비밀번호
+     * @return void
      *
      * @throws ValidationException 등록되지 않은 이메일이거나 토큰이 유효하지 않을 때
-     *
-     * @return void
      */
     public function resetPassword(string $token, string $email, string $password): void
     {
@@ -934,7 +1028,6 @@ class AuthService
      * @param  User  $user  가입 완료된 사용자
      * @param  array  $data  요청 데이터
      * @param  Carbon  $agreedAt  동의 일시
-     *
      * @return void
      */
     private function recordConsents(User $user, array $data, Carbon $agreedAt): void

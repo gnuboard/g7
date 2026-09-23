@@ -1140,6 +1140,15 @@ return [
         'identity_max_attempts_integer' => '최대 시도 횟수는 정수여야 합니다.',
         'identity_max_attempts_min' => '최대 시도 횟수는 최소 1회 이상이어야 합니다.',
         'identity_max_attempts_max' => '최대 시도 횟수는 최대 20회를 초과할 수 없습니다.',
+
+        // 개인정보 보유기간·휴면
+        'privacy_days_integer' => '기간은 일 단위 정수여야 합니다.',
+        'privacy_retention_days_min' => '보유기간은 1일 이상이어야 합니다.',
+        'privacy_retention_days_max' => '보유기간은 최대 3650일(10년)을 초과할 수 없습니다.',
+        'privacy_dormant_days_min' => '휴면 전환 기간은 30일 이상이어야 합니다.',
+        'privacy_dormant_notice_days_min' => '사전 통지 기간은 1일 이상이어야 합니다.',
+        'privacy_dormant_notice_days_max' => '사전 통지 기간은 최대 365일을 초과할 수 없습니다.',
+        'privacy_dormant_notice_days_lt_dormant_days' => '사전 통지 기간은 휴면 전환 기간보다 짧아야 합니다. 같거나 길면 사전 안내 없이 전환과 통지가 같은 날 일어납니다.',
     ],
 
     // 본인인증 정책 검증 메시지
@@ -1205,6 +1214,13 @@ return [
         'identity_purpose_providers' => '목적별 프로바이더',
         'identity_challenge_ttl_minutes' => 'Challenge 만료 시간',
         'identity_max_attempts' => '최대 시도 횟수',
+        'privacy_withdrawn_retention_enabled' => '탈퇴 회원 잔여정보 파기',
+        'privacy_withdrawn_retention_days' => '탈퇴 회원 잔여정보 보유기간',
+        'privacy_dormant_enabled' => '휴면 계정 전환',
+        'privacy_dormant_days' => '휴면 전환 기간',
+        'privacy_dormant_notice_days' => '휴면 사전 통지 기간',
+        'privacy_dormant_withdraw_enabled' => '휴면 계정 자동 탈퇴',
+        'privacy_dormant_withdraw_days' => '휴면 후 탈퇴 기간',
         // 본인인증 정책 필드
         'identity_policy_key' => '정책 키',
         'identity_policy_scope' => 'Scope',
@@ -1293,6 +1309,7 @@ return [
         'settings_tab_advanced' => '고급 설정',
         'settings_tab_notifications' => '알림 설정',
         'settings_tab_identity' => '본인인증 설정',
+        'settings_tab_privacy' => '개인정보 설정',
         'notification_channel_id' => '알림 채널 식별자',
         'notification_channel_is_active' => '알림 채널 사용 여부',
         'notification_channel_sort_order' => '알림 채널 정렬 순서',

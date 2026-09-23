@@ -73,6 +73,9 @@ return [
         'reset' => '初期化',
         'ip_blocked' => 'IPアクセスブロック',
         'ip_restriction_disabled' => 'IPアクセス制限解除',
+        'dormant_restored' => '休眠解除',
+        'dormant_converted' => '休眠に変更',
+        'dormant_withdrawn' => '休眠アカウント退会処理',
     ],
     'description' => [
         'user_index' => 'ユーザーリスト閲覧',
@@ -219,6 +222,9 @@ return [
         'member_notification_bulk_delete' => '会員通知ボックス一括削除 (:count件)',
         'security_ip_blocked' => 'IPアクセスブロック (:ip → :path)',
         'security_ip_restriction_disabled' => 'IPアクセス制限緊急解除 (コンソール)',
+        'user_dormant_restored' => 'ログインで休眠解除 (ID: :user_id)',
+        'user_dormant_converted' => '長期未アクセスで休眠に変更 (ID: :user_id)',
+        'user_dormant_withdrawn' => '休眠期間経過による退会処理 (ID: :user_id)',
     ],
     'fields' => [
         'name' => '名前',

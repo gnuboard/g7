@@ -14638,6 +14638,19 @@
           "timestamp": "2026-06-21T15:55:00+09:00"
         }
       ]
+    },
+    "privacyPreview": {
+      "data": {
+        "retention": {
+          "user-withdrawn": 3
+        },
+        "dormant": {
+          "pre_notice": 12,
+          "convert": 4,
+          "withdraw_notice": 0,
+          "withdraw": 0
+        }
+      }
     }
   }
 }

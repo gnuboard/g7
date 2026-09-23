@@ -103,6 +103,16 @@
       </field>
     </fallback>
   </data-source>
+  <!-- 개인정보 탭의 dry-run 건수 뱃지 — 커맨드의 `--dry-run` 과 같은 조건식을 지나므로
+       화면 숫자와 실제 처리 건수가 어긋나지 않는다. -->
+  <data-source id="privacyPreview" label_key="$t:editor.data_source.privacyPreview" type="api" endpoint="/api/admin/settings/privacy-preview" method="GET" if="{{(query.tab || _global.activeSettingsTab || 'general') === 'privacy'}}" :auto_fetch="true" :auth_required="true">
+    <fallback>
+      <field name="data">
+        <field name="retention" :value="null"/>
+        <field name="dormant" :value="null"/>
+      </field>
+    </fallback>
+  </data-source>
   <!-- 애플리케이션 키 — 보안 탭에서만 받는다. 값이 민감해 그 탭을 실제로 열기 전에는 부르지 않는다. -->
   <data-source id="appKey" label_key="$t:editor.data_source.appKey" type="api" endpoint="/api/admin/settings/app-key" method="GET" if="{{(query.tab || _global.activeSettingsTab || 'general') === 'security'}}" :auto_fetch="true" :auth_required="true">
     <fallback>
@@ -230,6 +240,7 @@
     <wait-for>sitemap_status</wait-for>
     <wait-for>staticCacheStatus</wait-for>
     <wait-for>trustedProxy</wait-for>
+    <wait-for>privacyPreview</wait-for>
   </transition-overlay>
   <init>
     <!-- 확장 목록 보기 방식(갤러리/목록) 복원 — 4화면이 같은 키를 공유한다.
@@ -283,6 +294,7 @@
             <item id="notification_definitions" label="$t:admin.settings.tabs.notification_definitions"/>
             <item id="language_packs" label="$t:admin.settings.tabs.language_packs"/>
             <item id="identity" label="$t:admin.settings.tabs.identity"/>
+            <item id="privacy" label="$t:admin.settings.tabs.privacy"/>
             <item id="info" label="$t:admin.settings.tabs.info"/>
           </prop>
           <on type="change" event="onTabChange">
@@ -331,6 +343,7 @@
         <include src="partials/admin_settings/_tab_notification_definitions.g7.html"/>
         <include src="partials/admin_settings/_tab_language_packs.g7.html"/>
         <include src="partials/admin_settings/_tab_identity.g7.html"/>
+        <include src="partials/admin_settings/_tab_privacy.g7.html"/>
         <include src="partials/admin_settings/_tab_info.g7.html"/>
       </div>
       <div data-ref="footer_buttons" data-if="{{!_computed.isReadOnly &amp;&amp; (_global.activeSettingsTab || query.tab || 'general') !== 'info' &amp;&amp; (_global.activeSettingsTab || query.tab || 'general') !== 'language_packs'}}" class="sticky-footer-buttons">

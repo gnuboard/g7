@@ -19,6 +19,9 @@ return [
     'invalid_credentials' => '잘못된 인증 정보입니다.',
     'admin_login_success' => '관리자 로그인이 성공했습니다.',
     'admin_required' => '관리자 권한이 필요합니다.',
+    // 휴면이었던 비관리자 회원이 관리자 로그인으로 들어온 경우 — 비밀번호 확인은 성공해
+    // 휴면은 이미 해제됐다. 그 사실을 알리지 않으면 회원은 로그인이 실패한 줄로만 안다.
+    'admin_required_dormancy_restored' => '관리자 권한이 필요합니다. 휴면 상태였던 계정은 해제되었으니 일반 로그인 화면을 이용해 주세요.',
     'unauthenticated' => '인증이 필요합니다.',
     'permission_denied' => '해당 권한이 없습니다.',
     'layout_permission_denied' => '레이아웃 접근 권한이 없습니다. (필요 권한: :required_permissions)',
@@ -38,6 +41,7 @@ return [
     'account_blocked' => '차단된 계정입니다. 관리자에게 문의해주세요.',
     'account_withdrawn' => '탈퇴한 계정입니다.',
     'account_pending_verification' => '본인인증이 완료되지 않은 계정입니다. 이메일 인증을 완료해주세요.',
+    'account_dormant' => '장기 미접속으로 휴면 상태인 계정입니다. 본인확인 후 이용하실 수 있습니다.',
     'account_locked' => '로그인 시도 횟수 초과로 계정이 잠겼습니다. :minutes분 후 다시 시도해주세요.',
     'account_locked_permanently' => '로그인 시도 횟수 초과로 계정이 잠겼습니다. 관리자에게 문의해주세요.',
     'too_many_attempts' => '요청이 너무 잦습니다. :seconds초 후에 다시 시도해주세요.',

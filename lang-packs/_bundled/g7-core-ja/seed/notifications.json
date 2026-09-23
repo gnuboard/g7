@@ -78,5 +78,53 @@
         "body": "ご依頼いただいたサイトマップの再生成に失敗しました。エラー: {error}"
       }
     }
+  },
+  "dormant_pre_notice": {
+    "definition": {
+      "name": "休眠転換事前通知",
+      "description": "長期未接続により間もなく休眠転換されるユーザーに事前に送信される通知"
+    },
+    "templates": {
+      "mail": {
+        "subject": "[{app_name}] {scheduled_date} 休眠アカウント転換予定のお知らせ",
+        "body": "<h1>{name}様、こんにちは。</h1><p>{app_name}に<strong>{dormant_days}日</strong>以上アクセスされていないため、<strong>{scheduled_date}</strong>にお客様のアカウントが休眠状態に転換される予定です。</p><p>その前に一度ログインしていただければ、休眠転換がキャンセルされます。休眠に転換された後でもログインいただければ、すぐに元の状態に復旧されます。</p><table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"margin: 24px 0;\"><tr><td align=\"center\"><a href=\"{action_url}\" style=\"display: inline-block; padding: 12px 32px; background-color: #2d3748; color: #ffffff; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 14px;\">今すぐログインする</a></td></tr></table><p>ご利用ありがとうございます。<br><a href=\"{site_url}\">{app_name}</a></p>"
+      },
+      "database": {
+        "subject": "休眠アカウント転換予定のお知らせ",
+        "body": "{dormant_days}日以上未接続のため、{scheduled_date}に休眠アカウントに転換されます。ログインすると転換がキャンセルされます。"
+      }
+    }
+  },
+  "dormant_converted": {
+    "definition": {
+      "name": "休眠転換完了",
+      "description": "休眠アカウントに転換されたことをお知らせする通知"
+    },
+    "templates": {
+      "mail": {
+        "subject": "[{app_name}] 休眠アカウントに転換されました",
+        "body": "<h1>{name}様、こんにちは。</h1><p>長期未接続のため、{app_name}のアカウントが<strong>休眠状態</strong>に転換されました。</p><p>休眠状態ではサービスの利用が制限されますが、<strong>ログインするだけですぐに元の状態に復旧</strong>されます。特別な申請手続きは不要です。</p><table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"margin: 24px 0;\"><tr><td align=\"center\"><a href=\"{action_url}\" style=\"display: inline-block; padding: 12px 32px; background-color: #2d3748; color: #ffffff; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 14px;\">ログインして復旧する</a></td></tr></table><p>ご利用ありがとうございます。<br><a href=\"{site_url}\">{app_name}</a></p>"
+      },
+      "database": {
+        "subject": "休眠アカウントに転換されました",
+        "body": "長期未接続のため休眠アカウントになりました。ログインするとすぐに復旧されます。"
+      }
+    }
+  },
+  "dormant_withdraw_notice": {
+    "definition": {
+      "name": "休眠アカウント退会予定通知",
+      "description": "休眠期間を経過し退会処理される予定であることを事前にお知らせする通知"
+    },
+    "templates": {
+      "mail": {
+        "subject": "[{app_name}] {scheduled_date} 会員退会処理予定のお知らせ",
+        "body": "<h1>{name}様、こんにちは。</h1><p>休眠状態が継続しているため、<strong>{scheduled_date}</strong>にお客様の{app_name}アカウントが退会処理される予定です。</p><p><strong>退会処理後は、アカウントと個人情報を復元することはできません。</strong>アカウントを引き続き利用される場合は、その前にログインしてください。ログインすると、休眠が解除され、退会予定もキャンセルされます。</p><table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"margin: 24px 0;\"><tr><td align=\"center\"><a href=\"{action_url}\" style=\"display: inline-block; padding: 12px 32px; background-color: #2d3748; color: #ffffff; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 14px;\">今すぐログインする</a></td></tr></table><p>ご利用ありがとうございます。<br><a href=\"{site_url}\">{app_name}</a></p>"
+      },
+      "database": {
+        "subject": "会員退会処理予定のお知らせ",
+        "body": "休眠状態が継続しているため、{scheduled_date}に退会処理されます。復元できないため、引き続き利用される場合はログインしてください。"
+      }
+    }
   }
 }
