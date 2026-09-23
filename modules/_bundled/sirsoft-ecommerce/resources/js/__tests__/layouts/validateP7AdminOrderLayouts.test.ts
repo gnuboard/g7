@@ -90,7 +90,7 @@ describe('10-#3 배송정책 폼 재진입 — 앞 정책의 회수지·저장 i
     /**
      * 같은 레이아웃 SPA 이동에서 `savedPolicyId` 가 남으면 신규 POST 가 이전 정책 PUT 으로 나간다.
      *
-     * @scenario surface=shipping_policy_form defect=reentry_keeps_claim_state
+     * @scenario surface=shipping_policy_form, defect=reentry_keeps_claim_state
      * @effects shipping_policy_form_reentry_resets_claim_state
      */
     it('init 이 claimAddresses·claimAddressesDirty·savedPolicyId 를 초기화한다', () => {
@@ -115,7 +115,7 @@ describe('10-#4 회원 배송지 PC 행 메뉴 — 회원 없는 행·관리 권
     /**
      * member 가 null 인 행의 「이 회원으로 검색」 은 `user_uuids[]=[undefined]` → 422 → 본문 전체 오류였다.
      *
-     * @scenario surface=user_address_index defect=row_actions_without_member
+     * @scenario surface=user_address_index, defect=row_actions_without_member
      * @effects address_row_actions_disabled_without_member
      */
     it('회원 항목은 member.uuid 가 없으면 비활성, 삭제는 관리 권한이 없으면 비활성', () => {
@@ -131,7 +131,7 @@ describe('10-#4 회원 배송지 PC 행 메뉴 — 회원 없는 행·관리 권
 
 describe('10-#6 · #7 · #8 주문 상세 클레임 축', () => {
     /**
-     * @scenario surface=order_detail_cancel defect=navigate_without_claim_permission
+     * @scenario surface=order_detail_cancel, defect=navigate_without_claim_permission
      * @effects order_cancel_navigates_only_with_claim_access
      */
     it('취소 실행이 클레임 열람 가능 여부를 넘긴다', () => {
@@ -144,7 +144,7 @@ describe('10-#6 · #7 · #8 주문 상세 클레임 축', () => {
     /**
      * 서브탭은 서버 `counts` 를, 탭 라벨은 배열 길이를 세면 상한이 걸린 응답에서 두 숫자가 갈린다.
      *
-     * @scenario surface=order_detail defect=tab_count_from_array_length
+     * @scenario surface=order_detail, defect=tab_count_from_array_length
      * @effects order_claim_tab_count_from_counts
      */
     it('클레임 탭 건수는 counts 합이다', () => {
@@ -155,7 +155,7 @@ describe('10-#6 · #7 · #8 주문 상세 클레임 축', () => {
     });
 
     /**
-     * @scenario surface=order_detail defect=order_claims_500_propagates
+     * @scenario surface=order_detail, defect=order_claims_500_propagates
      * @effects order_claims_failure_stays_in_section
      */
     it('orderClaims 는 403 외 실패도 억제한다(섹션이 unavailable 을 말한다)', () => {
@@ -170,7 +170,7 @@ describe('10-#10 · #11 회원 자동완성 늦은 응답 가드', () => {
     /**
      * 서버는 검색어를 trim 해 돌려준다 — 앞뒤 공백이 있는 입력과 `===` 로 견주면 결과가 영영 숨는다.
      *
-     * @scenario surface=member_autocomplete defect=keyword_compare_without_trim
+     * @scenario surface=member_autocomplete, defect=keyword_compare_without_trim
      * @effects member_search_guard_compares_trimmed_keyword
      */
     it('두 창의 가드가 입력값을 trim 해 견준다', () => {
@@ -179,7 +179,7 @@ describe('10-#10 · #11 회원 자동완성 늦은 응답 가드', () => {
     });
 
     /**
-     * @scenario surface=user_address_index defect=member_filter_without_stale_guard
+     * @scenario surface=user_address_index, defect=member_filter_without_stale_guard
      * @effects address_member_filter_renders_only_current_keyword
      */
     it('회원 배송지 필터가 응답 검색어로 도장하고 지금 검색어일 때만 후보를 보인다', () => {
@@ -195,7 +195,7 @@ describe('10-#12 클레임 신청일 from > to — 목록 전체가 422 가 되�
     /**
      * URL 에 남은 뒤집힌 구간은 새로고침해도 그대로라, 데이터소스가 직접 바로잡아야 빠져나온다.
      *
-     * @scenario surface=order_list defect=claim_date_range_inverted_422
+     * @scenario surface=order_list, defect=claim_date_range_inverted_422
      * @effects order_claim_date_range_is_normalized
      */
     it('데이터소스와 검색 이동이 뒤집힌 구간을 바로잡는다', () => {
@@ -208,7 +208,7 @@ describe('10-#12 클레임 신청일 from > to — 목록 전체가 422 가 되�
     });
 
     /**
-     * @scenario surface=order_list defect=stale_filter_comment
+     * @scenario surface=order_list, defect=stale_filter_comment
      * @effects order_filter_comments_match_behavior
      */
     it('필터 주석이 "화면은 막지 않고 서버가 거부한다" 를 더 말하지 않는다', () => {
@@ -219,7 +219,7 @@ describe('10-#12 클레임 신청일 from > to — 목록 전체가 422 가 되�
 
 describe('10-#14 · #15 · #16 · #19 표기·주석 정합', () => {
     /**
-     * @scenario surface=order_detail_cancel defect=undefined_class_text_caption
+     * @scenario surface=order_detail_cancel, defect=undefined_class_text_caption
      * @effects cancel_modal_uses_defined_text_class
      */
     it('취소 모달에 text-caption 이 없다', () => {
@@ -229,7 +229,7 @@ describe('10-#14 · #15 · #16 · #19 표기·주석 정합', () => {
     /**
      * `<prop name="comment">` 는 props.comment 로 구워져 컴포넌트에 모르는 prop 으로 넘어간다.
      *
-     * @scenario surface=admin_modals defect=comment_prop_leaks
+     * @scenario surface=admin_modals, defect=comment_prop_leaks
      * @effects comment_is_node_comment_not_prop
      */
     it('comment 가 컴포넌트 props 로 새지 않는다', () => {
@@ -241,7 +241,7 @@ describe('10-#14 · #15 · #16 · #19 표기·주석 정합', () => {
     /**
      * 필터 노출 저장은 FilterVisibilitySelector 가 `g7_filters_{id}_{사용자}` 키로 직접 한다.
      *
-     * @scenario surface=admin_list_filters defect=stale_filter_comment
+     * @scenario surface=admin_list_filters, defect=stale_filter_comment
      * @effects order_filter_comments_match_behavior
      */
     it('필터 머리 주석이 사라진 저장 키·동반 저장을 말하지 않는다', () => {
@@ -259,7 +259,7 @@ describe('10-#14 · #15 · #16 · #19 표기·주석 정합', () => {
     /**
      * 번역 파서는 키에 콜론을 받지 않는다 — `$t:…mobile.target_type:` 는 키가 `mobile.target_type` 이다.
      *
-     * @scenario surface=coupon_list defect=colon_in_translation_key
+     * @scenario surface=coupon_list, defect=colon_in_translation_key
      * @effects coupon_mobile_labels_resolve
      */
     it('쿠폰 모바일 카드 라벨이 실재하는 _label 키를 쓰고, 콜론 키가 lang 에 남지 않는다', () => {
@@ -280,7 +280,7 @@ describe('10-#14 · #15 · #16 · #19 표기·주석 정합', () => {
 
 describe('선행 audit 신호 — 손댄 김에 정리', () => {
     /**
-     * @scenario surface=shipping_policy_form defect=undefined_class_input_sm
+     * @scenario surface=shipping_policy_form, defect=undefined_class_input_sm
      * @effects admin_layouts_use_defined_classes
      */
     it('input-sm 이 없다', () => {
@@ -288,7 +288,7 @@ describe('선행 audit 신호 — 손댄 김에 정리', () => {
     });
 
     /**
-     * @scenario surface=settings_currency defect=unstyled_text_input
+     * @scenario surface=settings_currency, defect=unstyled_text_input
      * @effects currency_inputs_are_styled
      */
     it('통화 카드의 소수 자릿수 입력이 input 외형을 갖는다', () => {
@@ -301,7 +301,7 @@ describe('선행 audit 신호 — 손댄 김에 정리', () => {
     });
 
     /**
-     * @scenario surface=admin_lists defect=darkmode_pair_missing
+     * @scenario surface=admin_lists, defect=darkmode_pair_missing
      * @effects admin_layouts_have_dark_pairs
      */
     it('결제 실패 이력·주문 프리셋의 연한 ring/배경에 dark 짝이 있다', () => {

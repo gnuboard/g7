@@ -107,7 +107,7 @@ describe('#3 설정 게이트 목록 소스 — claims.read 만 가진 운영자
      * 사유 카탈로그·쇼핑몰 설정은 `settings.read` 게이트다. 화면은 `claims.read` 라서 기본 역할
      * manager 는 두 소스 모두 403 을 받고, 억제가 없으면 진입·탭 전환마다 오류 토스트가 뜬다.
      *
-     * @scenario surface=claim_list defect=settings_gate_403_toast
+     * @scenario surface=claim_list, defect=settings_gate_403_toast
      * @effects claim_list_settings_gated_sources_suppress_403
      */
     it('settings.read 게이트인 ecommerce_settings 만 403 을 suppress 한다', () => {
@@ -124,7 +124,7 @@ describe('#3 설정 게이트 목록 소스 — claims.read 만 가진 운영자
 
 describe('#4 첨부 일괄 정리 — 되돌릴 수 없는 삭제는 확인 창을 거친다', () => {
     /**
-     * @scenario surface=claim_detail defect=bulk_image_clear_without_confirm
+     * @scenario surface=claim_detail, defect=bulk_image_clear_without_confirm
      * @effects claim_image_bulk_clear_requires_confirm_modal
      */
     it('정리 버튼은 삭제를 직접 부르지 않고 확인 창을 연다', () => {
@@ -137,7 +137,7 @@ describe('#4 첨부 일괄 정리 — 되돌릴 수 없는 삭제는 확인 창�
     });
 
     /**
-     * @scenario surface=claim_detail defect=bulk_image_clear_without_confirm
+     * @scenario surface=claim_detail, defect=bulk_image_clear_without_confirm
      * @effects claim_image_bulk_clear_requires_confirm_modal
      */
     it('확인 창이 셸에 등록되고 그 창의 확인 버튼이 삭제를 부른다', () => {
@@ -155,7 +155,7 @@ describe('#5 Select 는 placeholder 를 그리지 않는다 — 빈 선택지를
     /**
      * 택배사를 한 번 고르면 비울 수 없어 「둘 다 비우고 저장하면 송장 삭제」가 화면에서 불가능했다.
      *
-     * @scenario surface=claim_detail defect=select_placeholder_ignored
+     * @scenario surface=claim_detail, defect=select_placeholder_ignored
      * @effects claim_selects_lead_with_empty_option
      */
     it.each([
@@ -171,7 +171,7 @@ describe('#5 Select 는 placeholder 를 그리지 않는다 — 빈 선택지를
     });
 
     /**
-     * @scenario surface=claim_detail defect=select_placeholder_ignored
+     * @scenario surface=claim_detail, defect=select_placeholder_ignored
      * @effects claim_carrier_empty_option_is_selectable
      */
     it('택배사 빈 선택지는 고를 수 있다(disabled 아님) — 비워야 송장이 지워진다', () => {
@@ -183,7 +183,7 @@ describe('#5 Select 는 placeholder 를 그리지 않는다 — 빈 선택지를
 
 describe('#6 · #7 정의 없는 클래스·prop 을 걷어낸다', () => {
     /**
-     * @scenario surface=claim_list defect=btn_square_undefined
+     * @scenario surface=claim_list, defect=btn_square_undefined
      * @effects list_back_button_uses_defined_classes
      */
     it('btn-square 가 클레임·주문 목록에 없다', () => {
@@ -196,7 +196,7 @@ describe('#6 · #7 정의 없는 클래스·prop 을 걷어낸다', () => {
     /**
      * DataGrid 에는 `loading`·`columnSelectorId` prop 이 없다(조용히 버려진다).
      *
-     * @scenario surface=admin_datagrids defect=datagrid_undefined_props
+     * @scenario surface=admin_datagrids, defect=datagrid_undefined_props
      * @effects datagrids_carry_only_defined_props
      */
     it('DataGrid 에 loading·columnSelectorId 를 넘기지 않는다', () => {
@@ -215,7 +215,7 @@ describe('#8 검색어 칸 최소 폭 — 빌드된 클래스 + 좁은 화면 �
     /**
      * `min-w-64` 는 관리자 빌드 CSS 에 없고, 좁은 화면에서 `w-80` 셀렉트와 합쳐 375px 를 넘긴다.
      *
-     * @scenario surface=claim_list defect=search_row_overflow_375
+     * @scenario surface=claim_list, defect=search_row_overflow_375
      * @effects claim_search_row_fits_portable
      */
     it.each([
@@ -235,7 +235,7 @@ describe('#8 검색어 칸 최소 폭 — 빌드된 클래스 + 좁은 화면 �
 
 describe('#9 상세 재진입 — 신청서 단위 전이 선택을 비운다', () => {
     /**
-     * @scenario surface=claim_detail defect=transition_choice_survives_reentry
+     * @scenario surface=claim_detail, defect=transition_choice_survives_reentry
      * @effects claim_detail_init_resets_transition_choice
      */
     it('init 과 initLocal 이 claimBulkStatus·claimRejectReason 을 초기화한다', () => {
@@ -250,7 +250,7 @@ describe('#9 상세 재진입 — 신청서 단위 전이 선택을 비운다', 
 
 describe('#10 프리셋 적용 — 페이지 크기 셀렉트와 실제 조회 크기가 같다', () => {
     /**
-     * @scenario surface=claim_list defect=preset_drops_per_page
+     * @scenario surface=claim_list, defect=preset_drops_per_page
      * @effects claim_preset_keeps_per_page
      */
     it('프리셋 이동이 per_page 를 싣는다', () => {
@@ -265,7 +265,7 @@ describe('#14 환불 합계 — 부동소수 덧셈을 그대로 그리지 않�
     /**
      * `0.1 + 0.2` 가 `0.30000000000000004` 로 찍히던 자리다.
      *
-     * @scenario surface=claim_detail defect=float_refund_total
+     * @scenario surface=claim_detail, defect=float_refund_total
      * @effects claim_refund_total_rounded
      */
     it('상세 입력 합계는 자릿수를 고정한 computed 를 읽는다', () => {
@@ -277,7 +277,7 @@ describe('#14 환불 합계 — 부동소수 덧셈을 그대로 그리지 않�
     });
 
     /**
-     * @scenario surface=claim_detail defect=float_refund_total
+     * @scenario surface=claim_detail, defect=float_refund_total
      * @effects claim_refund_total_rounded
      */
     it('실행 확인 창 합계는 핸들러가 반올림해 넘긴 값을 읽는다', () => {
@@ -289,7 +289,7 @@ describe('#14 환불 합계 — 부동소수 덧셈을 그대로 그리지 않�
 
 describe('#15 환불 계좌 은행 — 자유 입력이 아니라 은행 목록에서 고른다', () => {
     /**
-     * @scenario surface=claim_detail defect=bank_code_free_text
+     * @scenario surface=claim_detail, defect=bank_code_free_text
      * @effects claim_refund_bank_code_is_select
      */
     it('은행 칸이 공개 결제 설정의 은행 목록을 선택지로 쓰는 Select 다', () => {
@@ -306,7 +306,7 @@ describe('#16 다크모드 짝 — hover 배경의 dark 짝은 dark:hover 다', 
     /**
      * `hover:bg-gray-50 dark:bg-gray-800` 는 다크에서만 배경이 늘 켜진다.
      *
-     * @scenario surface=claim_screens defect=dark_hover_pair
+     * @scenario surface=claim_screens, defect=dark_hover_pair
      * @effects claim_dark_hover_pairs_are_hover
      */
     it('클레임 화면에 hover 짝이 base 로 박힌 클래스가 없다', () => {
@@ -322,7 +322,7 @@ describe('#16 다크모드 짝 — hover 배경의 dark 짝은 dark:hover 다', 
 
 describe('#17 수동 송금 안내 — 버튼 줄 밖에 선다', () => {
     /**
-     * @scenario surface=claim_detail defect=manual_transfer_notice_in_button_row
+     * @scenario surface=claim_detail, defect=manual_transfer_notice_in_button_row
      * @effects claim_manual_transfer_notice_above_buttons
      */
     it('안내 박스와 [환불하기] 버튼이 같은 부모에 있지 않다', () => {
@@ -341,7 +341,7 @@ describe('#18 탭 스크롤 내비 — 컴포넌트가 모르는 onChange 를 �
      * 갱신이 꺼져 클릭한 탭 표시가 따라오지 않으므로(activeTabId 는 초기값 전용), 형제
      * 선례(상품·게시판 폼)처럼 컴포넌트에 맡긴다.
      *
-     * @scenario surface=claim_detail defect=dead_tab_change_binding
+     * @scenario surface=claim_detail, defect=dead_tab_change_binding
      * @effects detail_tab_nav_has_no_dead_binding
      */
     it.each([
@@ -359,7 +359,7 @@ describe('#20 · #21 사유 카드 폴백', () => {
     /**
      * 설정이 비면 `maxSize` 가 0 이 되어 업로더가 모든 파일을 거절했다.
      *
-     * @scenario surface=claim_detail defect=uploader_max_size_zero
+     * @scenario surface=claim_detail, defect=uploader_max_size_zero
      * @effects claim_uploader_max_size_from_server_mb
      */
     it('업로더 상한은 서버 MB 값을 읽고 0 으로 떨어지지 않는다', () => {
@@ -370,7 +370,7 @@ describe('#20 · #21 사유 카드 폴백', () => {
     });
 
     /**
-     * @scenario surface=claim_detail defect=empty_reason_detail
+     * @scenario surface=claim_detail, defect=empty_reason_detail
      * @effects claim_empty_reason_detail_shows_placeholder
      */
     it('빈 문자열 사유 상세도 안내 문구로 떨어진다', () => {
@@ -382,7 +382,7 @@ describe('#20 · #21 사유 카드 폴백', () => {
 
 describe('#22 활동 로그 ID 라벨 — 다국어 키', () => {
     /**
-     * @scenario surface=claim_detail defect=hardcoded_id_label
+     * @scenario surface=claim_detail, defect=hardcoded_id_label
      * @effects claim_activity_log_id_label_translated
      */
     it('ID: 를 하드코딩하지 않는다', () => {
@@ -399,7 +399,7 @@ describe('P7 후속 — 서버가 확정한 응답 필드로 옮긴다', () => {
     /**
      * 관리자 회원 화면은 uuid 로 연다 — 숫자 id 링크는 404 였다(11-#1). 응답이 `requester_user_uuid` 를 싣는다.
      *
-     * @scenario surface=claim_detail defect=requester_link_numeric_id
+     * @scenario surface=claim_detail, defect=requester_link_numeric_id
      * @effects claim_requester_link_uses_uuid
      */
     it('신청자 링크가 requester_user_uuid 로 조건·경로를 만든다', () => {
@@ -417,7 +417,7 @@ describe('P7 후속 — 서버가 확정한 응답 필드로 옮긴다', () => {
      * 적립 포인트 표기는 서버 formatted(「1,000P」)다 — 화면이 `| number`·`toLocaleString()` + 'P' 로 만들면
      * 로케일·단위가 화면마다 갈린다. 필드가 없는 옛 응답만 종전 표기로 떨어진다.
      *
-     * @scenario surface=claim_detail defect=client_formatted_points
+     * @scenario surface=claim_detail, defect=client_formatted_points
      * @effects claim_earned_points_render_server_formatted
      */
     it('결제 카드와 비교표가 적립 포인트 formatted 를 먼저 읽는다', () => {
@@ -431,7 +431,7 @@ describe('P7 후속 — 서버가 확정한 응답 필드로 옮긴다', () => {
     });
 
     /**
-     * @scenario surface=claim_refund_execute_modal defect=dead_lang_key
+     * @scenario surface=claim_refund_execute_modal, defect=dead_lang_key
      * @effects claim_refund_bank_placeholder_key_removed
      */
     it('쓰이지 않는 refund_bank_code_placeholder 키가 ko·en·ja 에서 빠졌다', () => {

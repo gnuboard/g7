@@ -96,7 +96,7 @@ describe('11-#11 취소신청서의 상품 단위 전이 — 전용 안내', () 
     /**
      * 「변경할 상품을 선택해주세요」 는 고른 상품이 있는데도 떴다 — 막힌 이유가 선택이 아니다.
      *
-     * @scenario surface=claim_detail defect=cancel_item_transition_wrong_notice
+     * @scenario surface=claim_detail, defect=cancel_item_transition_wrong_notice
      * @effects cancel_item_transition_uses_dedicated_key
      */
     it('cancel 유형은 cancel_not_transitionable 키로 안내한다', async () => {
@@ -111,7 +111,7 @@ describe('11-#11 취소신청서의 상품 단위 전이 — 전용 안내', () 
     });
 
     /**
-     * @scenario surface=claim_detail defect=cancel_item_transition_wrong_notice
+     * @scenario surface=claim_detail, defect=cancel_item_transition_wrong_notice
      * @effects cancel_item_transition_uses_dedicated_key
      */
     it('전용 키가 ko·en·ja 에 있다', () => {
@@ -125,7 +125,7 @@ describe('11-#12 완료 처리 모달 — 조기 종료는 실패로 끝난다',
     /**
      * 조기 return 은 레이아웃의 success 갈래를 태워 모달을 닫았다(오류 토스트와 함께 닫히기도 했다).
      *
-     * @scenario surface=claim_complete_modal defect=early_return_closes_modal
+     * @scenario surface=claim_complete_modal, defect=early_return_closes_modal
      * @effects claim_completion_early_exit_rejects
      */
     it('미리보기가 도는 중이면 reject 한다', async () => {
@@ -136,7 +136,7 @@ describe('11-#12 완료 처리 모달 — 조기 종료는 실패로 끝난다',
     });
 
     /**
-     * @scenario surface=claim_complete_modal defect=early_return_closes_modal
+     * @scenario surface=claim_complete_modal, defect=early_return_closes_modal
      * @effects claim_completion_early_exit_rejects
      */
     it('대상이 없으면 오류를 알리고 reject 한다', async () => {
@@ -150,7 +150,7 @@ describe('11-#12 완료 처리 모달 — 조기 종료는 실패로 끝난다',
 
 describe('11-#14 환불 실행 확인 창 — 합계는 부동소수 오차 없이 넘긴다', () => {
     /**
-     * @scenario surface=claim_refund_execute_modal defect=float_refund_total
+     * @scenario surface=claim_refund_execute_modal, defect=float_refund_total
      * @effects claim_refund_total_rounded
      */
     it('0.1 + 0.2 가 0.3 으로 실린다', async () => {
@@ -167,7 +167,7 @@ describe('11-#19 모듈 핸들러 문구 — 모듈 접두사 키 + 번역 없�
     /**
      * 접두사 없는 키는 sirsoft-basic 템플릿 lang 에만 있어 다른 템플릿에서 키 원문이 노출됐다.
      *
-     * @scenario surface=user_claim_handlers defect=template_scoped_keys
+     * @scenario surface=user_claim_handlers, defect=template_scoped_keys
      * @effects claim_user_handlers_use_module_keys
      */
     it('철회 성공 안내는 모듈 키를 쓰고, 번역이 없으면 키 원문 대신 폴백 문구를 띄운다', async () => {
@@ -183,7 +183,7 @@ describe('11-#19 모듈 핸들러 문구 — 모듈 접두사 키 + 번역 없�
     });
 
     /**
-     * @scenario surface=user_claim_handlers defect=template_scoped_keys
+     * @scenario surface=user_claim_handlers, defect=template_scoped_keys
      * @effects claim_user_handlers_use_module_keys
      */
     it('마일리지 즉시 결제 성공 안내도 모듈 키다', async () => {
@@ -195,7 +195,7 @@ describe('11-#19 모듈 핸들러 문구 — 모듈 접두사 키 + 번역 없�
     });
 
     /**
-     * @scenario surface=user_claim_handlers defect=template_scoped_keys
+     * @scenario surface=user_claim_handlers, defect=template_scoped_keys
      * @effects claim_user_handlers_use_module_keys
      */
     it('첨부 용량 초과 안내는 모듈 키이고 번역이 없으면 폴백한다', () => {
@@ -209,7 +209,7 @@ describe('11-#19 모듈 핸들러 문구 — 모듈 접두사 키 + 번역 없�
     });
 
     /**
-     * @scenario surface=user_claim_handlers defect=template_scoped_keys
+     * @scenario surface=user_claim_handlers, defect=template_scoped_keys
      * @effects claim_user_handlers_use_module_keys
      */
     it('옮긴 키 8개가 ko·en·ja 모듈 lang 에 있다', () => {
@@ -226,7 +226,7 @@ describe('11-#19 모듈 핸들러 문구 — 모듈 접두사 키 + 번역 없�
     });
 
     /**
-     * @scenario surface=user_claim_handlers defect=template_scoped_keys
+     * @scenario surface=user_claim_handlers, defect=template_scoped_keys
      * @effects claim_user_handlers_use_module_keys
      */
     it('두 핸들러 파일에 접두사 없는 t() 키가 남지 않는다', () => {
@@ -241,7 +241,7 @@ describe('10-#1 「환불까지 한 번에 처리」 — 모달을 다시 열면
     /**
      * 한 번 켠 체크가 같은 화면의 다음 취소 모달에 남아 의도치 않은 PG 실환불이 나갈 수 있었다.
      *
-     * @scenario surface=order_detail_cancel defect=auto_advance_sticks
+     * @scenario surface=order_detail_cancel, defect=auto_advance_sticks
      * @effects order_cancel_auto_advance_resets_on_open
      */
     it('취소 모달을 여는 초기화가 autoAdvanceRefund 를 false 로 되돌린다', () => {
@@ -257,7 +257,7 @@ describe('10-#1 「환불까지 한 번에 처리」 — 모달을 다시 열면
 
 describe('10-#1 · #5 · #6 취소 성공 뒤 — 초기화·재조회·권한별 이동', () => {
     /**
-     * @scenario surface=order_detail_cancel defect=auto_advance_sticks
+     * @scenario surface=order_detail_cancel, defect=auto_advance_sticks
      * @effects order_cancel_auto_advance_resets_after_success
      */
     it('성공 뒤 autoAdvanceRefund 를 끄고 orderClaims 를 다시 읽는다', async () => {
@@ -274,7 +274,7 @@ describe('10-#1 · #5 · #6 취소 성공 뒤 — 초기화·재조회·권한�
     /**
      * 클레임 권한이 없는 운영자(orderClaims 403 → unavailable)를 신청서 상세로 보내면 403 화면에 떨어진다.
      *
-     * @scenario surface=order_detail_cancel defect=navigate_without_claim_permission
+     * @scenario surface=order_detail_cancel, defect=navigate_without_claim_permission
      * @effects order_cancel_navigates_only_with_claim_access
      */
     it('클레임을 볼 수 없으면 이동하지 않고 번호를 담은 안내를 띄운다', async () => {
@@ -289,7 +289,7 @@ describe('10-#1 · #5 · #6 취소 성공 뒤 — 초기화·재조회·권한�
     });
 
     /**
-     * @scenario surface=order_detail_cancel defect=navigate_without_claim_permission
+     * @scenario surface=order_detail_cancel, defect=navigate_without_claim_permission
      * @effects order_cancel_navigates_only_with_claim_access
      */
     it('볼 수 있으면 방금 만든 신청서로 이동한다', async () => {
@@ -306,7 +306,7 @@ describe('10-#1 · #5 · #6 취소 성공 뒤 — 초기화·재조회·권한�
     /**
      * 자동 전이가 켜졌는데 취소가 확정되지 않았다면 승인에서 멈춘 것이다 — 「승인·환불완료를 거쳐야」 는 사실과 다르다.
      *
-     * @scenario surface=order_detail_cancel defect=auto_branch_wrong_message
+     * @scenario surface=order_detail_cancel, defect=auto_branch_wrong_message
      * @effects order_cancel_message_follows_branch
      */
     it('자동 전이가 승인에서 멈춘 경우 전용 문구를 띄운다', async () => {
@@ -319,7 +319,7 @@ describe('10-#1 · #5 · #6 취소 성공 뒤 — 초기화·재조회·권한�
     });
 
     /**
-     * @scenario surface=order_detail_cancel defect=auto_branch_wrong_message
+     * @scenario surface=order_detail_cancel, defect=auto_branch_wrong_message
      * @effects order_cancel_message_follows_branch
      */
     it('새 안내 키와 누락돼 있던 키 2개가 ko·en·ja 에 있다', () => {
@@ -342,7 +342,7 @@ describe('P7 후속 — [주문취소] 안내는 서버 문구를 쓴다', () =>
      * 서버가 `data.claim.cancelled` 에 따라 문구를 둘로 가른다(`messages.orders.cancelled` /
      * `messages.orders.cancel_refund_requested`). 화면이 제 문구를 따로 들면 두 출처가 갈린다.
      *
-     * @scenario surface=order_detail_cancel defect=client_authored_cancel_message
+     * @scenario surface=order_detail_cancel, defect=client_authored_cancel_message
      * @effects order_cancel_message_from_server_by_cancelled
      */
     it.each([
@@ -362,7 +362,7 @@ describe('P7 후속 — [주문취소] 안내는 서버 문구를 쓴다', () =>
     });
 
     /**
-     * @scenario surface=order_detail_cancel defect=client_authored_cancel_message
+     * @scenario surface=order_detail_cancel, defect=client_authored_cancel_message
      * @effects order_cancel_message_from_server_by_cancelled
      */
     it('응답 message 가 없으면 cancelled 로 갈라 모듈 키로 떨어진다', async () => {
