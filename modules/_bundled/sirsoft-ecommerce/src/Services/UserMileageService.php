@@ -605,69 +605,43 @@ class UserMileageService
     }
 
     /**
-     * 적립 회수 (취소 전이 시 기적립건 회수 — §2 부족 회수 정책)
+     * 적립 회수 — **이미 적립이 끝난 건은 회수하지 않는다.** (PO 결정 2026-09-23)
+     *
+     * 원장에 확정된 적립은 되돌리지 않는다. 운영자가 반품·교환·취소를 늦게 처리해 적립이 먼저
+     * 나갔다면 그것은 운영의 책임이고, 뒤늦게 회수하면 **회원이 이미 쓰거나 소멸시킨 적립을
+     * 살아 있는 다른 적립에서 대신 빼 오게 된다.**
+     *
+     * 왜 그렇게 되는가 — 회수액 기준이 lot 의 `amount`(원 적립액)인데, 그 lot 의 `remaining_amount`
+     * 는 사용·만료로 이미 줄어 있을 수 있다. 모자란 만큼은 `recoverPoints()` 가 **다른 lot 에서
+     * FIFO 로** 가져갔고, 전액을 가져가면 `shortfall` 이 0 이라 `metadata` 에 흔적조차 남지 않았다.
+     * (2026-09-22 #599 3차 실측 L-1 · T2-D13: 만료로 잔여 0 이 된 1,260원 적립을 회수하자
+     *  관리자 지급 lot 이 34,000 → 32,740 으로 깎였다. 회원은 같은 1,260원을 소멸과 회수로 두 번 잃었다.)
+     *
+     * 부분 반품에서 과다 회수되던 것도 함께 사라진다 — 주문옵션이 분할돼도 적립 lot 은 분할 전
+     * 금액을 그대로 들고 있었고(`applyDeltaToExistingEarnLot()` 이 증액 전용이라 줄지 않는다),
+     * 회수가 그 값을 기준으로 돌아 수량 2 반품에 3개분이 빠졌다. 회수 자체를 하지 않으므로 무관해진다.
+     *
+     * 적립 **전**이면 lot 이 없어 아래 존재 확인에서 그대로 `null` 을 돌려주므로 별도 분기가 없다.
+     * 적립 예정분이 나가지 않게 막는 것은 이 메서드가 아니라 **주문옵션의 상태**가 한다 —
+     * 적립 대상 조회(`getEarnableOptions()`)가 `option_status` 를 보므로, 반품완료(`returned`)·
+     * 교환완료(`exchanged`)·취소(`cancelled`)로 바뀐 옵션은 스케줄러 대상에서 자동으로 빠진다.
+     *
+     * 호출부(주문옵션 취소 전이 · 교환 완료 · 반품 완료) 3곳은 그대로 두었다 — 정책이 바뀌면
+     * 이 한 곳만 되돌리면 되고, 호출 흐름을 지우면 되살릴 때 세 곳을 다시 찾아야 한다.
      *
      * @param  Order  $order  주문
      * @param  OrderOption  $option  주문옵션
-     * @return MileageTransaction|null 회수 거래 (회수 대상 없으면 null)
+     * @return MileageTransaction|null 항상 null (회수하지 않는다)
      */
     public function cancelEarnForOption(Order $order, OrderOption $option): ?MileageTransaction
     {
-        if ($order->user_id === null) {
-            return null;
-        }
-
-        // 해당 옵션 적립건 존재 확인 (실제 회수 대상은 트랜잭션 안에서 잠금과 함께 되읽는다)
-        if ($this->ledger->findEarnLotForOption($option->id) === null) {
-            return null;
-        }
-
-        $currency = $this->baseCurrencyForOrder($order);
-
-        return DB::transaction(function () use ($order, $option, $currency) {
-            // 회수액은 잠근 행의 커밋된 금액 기준이어야 한다 — 트랜잭션 밖에서 읽은 값을 쓰면
-            // 그 사이 반영된 적립 증액분이 회수에서 누락된다.
-            $earnLot = $this->ledger->findEarnLotForOptionForUpdate($option->id);
-
-            if ($earnLot === null) {
-                return null;
-            }
-
-            $toRecover = (float) $earnLot->amount;
-
-            $shortfall = $this->recoverPoints($order->user_id, $currency, $toRecover, $earnLot);
-
-            $tx = $this->ledger->createTransaction([
-                'user_id' => $order->user_id,
-                'currency' => $currency,
-                'type' => MileageTransactionTypeEnum::EARN_CANCEL->value,
-                'amount' => -($toRecover - $shortfall),
-                'remaining_amount' => 0,
-                'balance_after' => $this->ledger->getBalanceByCurrency($order->user_id, $currency),
-                'order_id' => $order->id,
-                'order_option_id' => $option->id,
-                'source_transaction_id' => $earnLot->id,
-                'metadata' => $shortfall > 0 ? ['shortfall' => $shortfall] : null,
-                'description' => __('sirsoft-ecommerce::activity_log.description.mileage_earn_cancel', ['amount' => ecommerce_format_price($toRecover, $currency)]),
-            ]);
-
-            $this->cache->recalculateForUser($order->user_id, $currency);
-            $this->cache->recalculatePending($order->user_id, $currency);
-
-            $this->logActivity('mileage.earn_cancel', [
-                'loggable' => $tx,
-                'description_key' => 'sirsoft-ecommerce::activity_log.description.mileage_earn_cancel',
-                'description_params' => ['amount' => ecommerce_format_price((int) $toRecover, $currency)],
-                'properties' => [
-                    'order_id' => $order->id,
-                    'order_option_id' => $option->id,
-                    'currency' => $currency,
-                    'shortfall' => $shortfall,
-                ],
-            ]);
-
-            return $tx;
-        });
+        // 적립이 끝났든(lot 존재) 아직이든(lot 없음) 결과는 같다 — 아무것도 하지 않는다.
+        // 시그니처와 호출부 3곳은 유지한다: 정책이 바뀌면 이 본문만 되돌리면 된다.
+        //
+        // `EARN_CANCEL` 거래 유형과 그 언어팩(`activity_log.description.mileage_earn_cancel`)은
+        // 남겨 둔다 — 이 결정 전에 쌓인 회수 기록을 마이페이지·관리자 내역이 계속 보여 줘야 한다
+        // (PO 결정 2026-09-23: 「앞으로만 막고 지나간 건은 둔다」).
+        return null;
     }
 
     /**
@@ -904,6 +878,7 @@ class UserMileageService
      * 거래/캐시 행은 이후 cascade 또는 명시 삭제로 함께 사라집니다.
      *
      * @param  int  $userId  탈퇴 사용자 ID
+     * @return void 반환값 없음
      */
     public function recordWithdrawalExpiry(int $userId): void
     {
@@ -938,6 +913,7 @@ class UserMileageService
      * (탈퇴는 soft 상태 변경이라 cascadeOnDelete 가 발화하지 않으므로 명시 삭제 필수).
      *
      * @param  int  $userId  탈퇴/삭제 회원 ID
+     * @return void 반환값 없음
      */
     public function purgeForUser(int $userId): void
     {
@@ -1074,45 +1050,10 @@ class UserMileageService
         });
     }
 
-    /**
-     * 적립 회수 시 lot 잔여를 우선 차감 → 타 lot FIFO → 부족분 반환 (§2 정책)
-     *
-     * @param  int  $userId  사용자 ID
-     * @param  string  $currency  통화 코드
-     * @param  float  $amount  회수액
-     * @param  MileageTransaction  $earnLot  대상 적립건
-     * @return float 회수하지 못한 부족액
-     */
-    private function recoverPoints(int $userId, string $currency, float $amount, MileageTransaction $earnLot): float
-    {
-        $remaining = $amount;
-
-        // 1) 해당 earn lot 잔여 우선 차감
-        $fromSelf = min((float) $earnLot->remaining_amount, $remaining);
-        if ($fromSelf > 0) {
-            $this->ledger->decrementRemaining($earnLot, $fromSelf);
-            $remaining -= $fromSelf;
-        }
-
-        // 2) 타 lot FIFO 차감
-        if ($remaining > 0) {
-            $lots = $this->ledger->getActiveLotsForUpdate($userId, $currency);
-            foreach ($lots as $lot) {
-                if ($remaining <= 0) {
-                    break;
-                }
-                if ($lot->id === $earnLot->id) {
-                    continue;
-                }
-                $take = min((float) $lot->remaining_amount, $remaining);
-                $this->ledger->decrementRemaining($lot, $take);
-                $remaining -= $take;
-            }
-        }
-
-        // 3) 부족분 반환 (음수 잔액 구조적 불가)
-        return max(0, $remaining);
-    }
+    // 적립 회수 계산(`recoverPoints()`)은 제거했다 — `cancelEarnForOption()` 이 유일한 호출부였고
+    // 그 메서드가 더 이상 회수하지 않는다(PO 결정 2026-09-23). 되살릴 일이 생기면 git 이력에서
+    // 꺼낸다. 남겨 두면 「자기 lot 잔여 → 타 lot FIFO」 라는 잠식 규칙이 호출부 없이 살아 있어,
+    // 다음에 회수를 되살리는 사람이 같은 결함을 그대로 다시 켜게 된다.
 
     /**
      * 적립 만료일을 설정값 기준으로 계산합니다.

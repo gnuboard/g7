@@ -26,6 +26,7 @@ use Modules\Sirsoft\Ecommerce\Models\OrderExchange;
 use Modules\Sirsoft\Ecommerce\Models\OrderRefund;
 use Modules\Sirsoft\Ecommerce\Models\OrderReturn;
 use Modules\Sirsoft\Ecommerce\Services\ClaimAttachmentService;
+use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
 use Modules\Sirsoft\Ecommerce\Services\UserClaimService;
 use Modules\Sirsoft\Ecommerce\Tests\Concerns\BuildsClaimFlowOrders;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
@@ -47,6 +48,14 @@ class UserClaimApiTest extends ModuleTestCase
 
     protected User $user;
 
+    /**
+     * 통화·사유를 심고 회원을 만든 뒤, PG 환불 훅과 첨부 저장소를 성공으로 고정합니다.
+     *
+     * 이 클래스가 재는 것은 API 계약이지 PG·디스크가 붙었는가가 아니다 — 고정하지 않으면
+     * 전 축이 환경 때문에 같은 이유로 실패해 축이 무의미해진다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -67,6 +76,11 @@ class UserClaimApiTest extends ModuleTestCase
         $this->app->when(ClaimAttachmentService::class)->needs(StorageInterface::class)->give(fn () => $storage);
     }
 
+    /**
+     * 테스트가 심은 통화 설정과 목(mock)을 정리합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         $this->clearTestCurrencySettings();
@@ -74,6 +88,11 @@ class UserClaimApiTest extends ModuleTestCase
         parent::tearDown();
     }
 
+    /**
+     * 회원 클레임 API 의 접두 경로를 돌려줍니다.
+     *
+     * @return string API 접두 경로
+     */
     protected function base(): string
     {
         return '/api/modules/sirsoft-ecommerce/user';
@@ -81,6 +100,10 @@ class UserClaimApiTest extends ModuleTestCase
 
     /**
      * 이 회원의 배송완료 주문을 만듭니다.
+     *
+     * @param  int  $quantity  주문옵션 수량
+     * @param  int  $returnFee  회수 배송비(반품 축의 청구액 기준)
+     * @return Order 배송완료 주문 (options·shippingAddress 로드됨)
      */
     protected function myDeliveredOrder(int $quantity = 1, int $returnFee = 3000): Order
     {
@@ -94,6 +117,7 @@ class UserClaimApiTest extends ModuleTestCase
      * 이 회원의 결제완료 주문을 만듭니다.
      *
      * @param  array  $paymentOverrides  OrderPayment 오버라이드 (결제수단 게이트 축 — P16)
+     * @return Order 결제완료 주문 (options 로드됨)
      */
     protected function myPaidOrder(array $paymentOverrides = []): Order
     {
@@ -103,6 +127,13 @@ class UserClaimApiTest extends ModuleTestCase
         return $order->fresh(['options']);
     }
 
+    /**
+     * 주문의 첫 옵션 하나를 신청 항목 배열로 만듭니다.
+     *
+     * @param  Order  $order  대상 주문
+     * @param  int  $quantity  신청 수량
+     * @return array<int, array{order_option_id: int, quantity: int}> 신청 항목 배열
+     */
     protected function items(Order $order, int $quantity = 1): array
     {
         return [['order_option_id' => $order->options->first()->id, 'quantity' => $quantity]];
@@ -114,6 +145,8 @@ class UserClaimApiTest extends ModuleTestCase
 
     /**
      * 신청 가능 옵션 응답이 유형·사유·설정·대기 첨부를 한 묶음으로 낸다
+     *
+     * @return void 반환값 없음
      *
      * @effects claimable_options_lists_types_reasons_and_settings
      */
@@ -140,6 +173,8 @@ class UserClaimApiTest extends ModuleTestCase
      * 결제수단이 자기 카탈로그에 선언한 환불 수단과 갈리고, 어긋난 쪽은 오류 없이 계좌
      * 입력칸이 없는 계좌 환불이 되거나 쓸모없는 계좌를 요구한다.
      *
+     * @return void 반환값 없음
+     *
      * @scenario claim_type=refund, charge_method=none, refund_branch=request
      *
      * @effects claim_refund_account_requirement_declared_by_server
@@ -157,6 +192,8 @@ class UserClaimApiTest extends ModuleTestCase
 
     /**
      * 무통장 결제 주문은 환불계좌를 요구하고, 운영자가 등록한 은행 목록을 함께 낸다.
+     *
+     * @return void 반환값 없음
      *
      * @scenario claim_type=refund, charge_method=none, refund_branch=auto
      *
@@ -177,6 +214,45 @@ class UserClaimApiTest extends ModuleTestCase
         $this->assertNotEmpty($banks, '운영자 주문설정의 은행 목록이 화면에 도달해야 계좌 선택칸이 선다');
         $this->assertArrayHasKey('code', $banks[0]);
         $this->assertArrayHasKey('name', $banks[0]);
+    }
+
+    /**
+     * 운영자가 은행 목록을 비워 두어도 **계좌를 고를 수 있어야 한다** — 모듈 기본 목록으로 떨어진다.
+     *
+     * 계좌 환불 주문은 계좌 없이 접수되지 않는다(T2-D5). 그런데 선택지가 0개면 구매자는 칸을 채울
+     * 방법이 없어 **환불 신청 자체가 영영 막힌다** — 2026-09-23 재실측에서 개발 상점의
+     * `order_settings.banks` 가 빈 배열이라 [주문 취소하기] 가 계좌를 적어도 풀리지 않았다
+     * (은행 선택 칸에 자리표시자만 있었다). 필수 칸을 만든 이상 그 칸을 채울 길도 함께 보장한다.
+     *
+     * 기본 목록은 모듈이 싣고 있는 것(`config/settings/defaults.json`)이다 — 운영자가 한 곳이라도
+     * 등록하면 그 목록을 그대로 쓴다(위 테스트).
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario claim_type=refund, charge_method=none, refund_branch=auto
+     *
+     * @effects claim_refund_account_banks_fall_back_to_the_module_defaults
+     */
+    public function test_refund_account_banks_fall_back_to_the_module_defaults_when_the_operator_list_is_empty(): void
+    {
+        $settings = app(EcommerceSettingsService::class);
+        $previous = $settings->getSetting('order_settings.banks');
+        $settings->setSetting('order_settings.banks', []);
+
+        try {
+            $order = $this->deliveredClaimOrder(paymentOverrides: ['payment_method' => PaymentMethodEnum::DBANK->value]);
+            $order->forceFill(['user_id' => $this->user->id])->save();
+
+            $banks = $this->actingAs($this->user)->getJson($this->base()."/orders/{$order->id}/claimable-options")
+                ->assertOk()
+                ->assertJsonPath('data.refund_account.required', true)
+                ->json('data.refund_account.banks');
+
+            $this->assertNotEmpty($banks, '필수인 계좌 칸에 고를 은행이 하나도 없다 — 환불 신청이 영영 막힌다');
+            $this->assertContains('004', array_column($banks, 'code'));
+        } finally {
+            app(EcommerceSettingsService::class)->setSetting('order_settings.banks', $previous);
+        }
     }
 
     /**
@@ -228,6 +304,8 @@ class UserClaimApiTest extends ModuleTestCase
     /**
      * 남의 주문의 신청 가능 옵션은 404 (존재 비노출)
      *
+     * @return void 반환값 없음
+     *
      * @effects claim_endpoints_scope_to_the_requesting_member
      */
     public function test_claimable_options_is_404_for_someone_elses_order(): void
@@ -239,6 +317,8 @@ class UserClaimApiTest extends ModuleTestCase
 
     /**
      * 미리보기가 청구액·배송비 추정을 내고, 대상이 아닌 상품은 신청과 같은 사유로 422
+     *
+     * @return void 반환값 없음
      *
      * @effects claim_preview_returns_the_estimate_and_rejects_ineligible_items
      */
@@ -268,6 +348,8 @@ class UserClaimApiTest extends ModuleTestCase
 
     /**
      * 교환 접수가 대기 첨부를 신청서에 붙이고 결제대기 + PG 결제 계약을 낸다
+     *
+     * @return void 반환값 없음
      *
      * @effects exchange_request_attaches_images_and_enters_payment_pending
      */
@@ -303,6 +385,8 @@ class UserClaimApiTest extends ModuleTestCase
     /**
      * 환불금 차감 반품은 접수 상태로 서고 결제 건을 만들지 않는다
      *
+     * @return void 반환값 없음
+     *
      * @effects return_request_with_deduct_from_refund_creates_no_payment
      */
     public function test_return_request_with_deduct_from_refund_needs_no_payment(): void
@@ -329,6 +413,8 @@ class UserClaimApiTest extends ModuleTestCase
      *
      * 주문 결제행은 **실제 송금 대상**이라 신청 접수만으로는 바뀌지 않는다. 접수 때 덮어쓰면 아직
      * 나가지도 않은 신청이 주문 전체의 송금 대상을 바꾼다 — 그 갱신은 환불을 실행하는 시점의 일이다.
+     *
+     * @return void 반환값 없음
      *
      * @scenario claim_type=return, charge_method=deduct_from_refund, refund_branch=none
      *
@@ -366,6 +452,8 @@ class UserClaimApiTest extends ModuleTestCase
      * 환불과 같은 자리·같은 강도로 받아야 한다. 교환만 받지 않으면 그 차액을 어느 계좌로 보낼지가
      * 주문 당시 값뿐이라, 구매자가 계좌를 바꾼 경우 운영자가 따로 물어야 한다.
      *
+     * @return void 반환값 없음
+     *
      * @scenario claim_type=exchange, charge_method=pay_on_request, refund_branch=none
      *
      * @effects claim_refund_account_recorded_on_the_claim_itself
@@ -397,6 +485,8 @@ class UserClaimApiTest extends ModuleTestCase
      *
      * 형제 경로(취소·환불·반품)가 이미 같은 규칙을 갖는다 — 한 유형만 약하면 그 유형이 우회로가 된다.
      *
+     * @return void 반환값 없음
+     *
      * @scenario claim_type=exchange, charge_method=pay_on_request, refund_branch=none
      *
      * @effects claim_refund_account_requires_all_three_fields
@@ -420,6 +510,8 @@ class UserClaimApiTest extends ModuleTestCase
      * 반품의 환불계좌도 세 필드가 함께 와야 한다. (하나만 오면 계좌 없는 무통장 환불이 승인된다)
      *
      * 취소·환불이 이미 같은 규칙을 갖는다 — 형제 경로의 강도가 다르면 약한 쪽이 우회로가 된다.
+     *
+     * @return void 반환값 없음
      *
      * @scenario claim_type=return, charge_method=deduct_from_refund, refund_branch=none
      *
@@ -445,6 +537,8 @@ class UserClaimApiTest extends ModuleTestCase
      * 표시용 응답은 계좌번호·예금주를 마스킹하므로(`MasksRefundBankAccount`), 화면이 그 값을
      * 입력칸에 채우면 구매자가 손대지 않고 제출했을 때 별표가 섞인 계좌번호가 저장된다 —
      * 검증은 통과하고 환불 실행 때가 되어서야 드러난다. 프리필은 이 통로만 쓴다.
+     *
+     * @return void 반환값 없음
      *
      * @scenario claim_type=refund, charge_method=none, refund_branch=auto
      *
@@ -472,6 +566,8 @@ class UserClaimApiTest extends ModuleTestCase
     /**
      * 등록된 계좌가 없으면 프리필은 비어 있다. (대조군 — 화면은 빈 칸을 연다)
      *
+     * @return void 반환값 없음
+     *
      * @scenario claim_type=refund, charge_method=none, refund_branch=auto
      *
      * @effects claim_refund_account_prefills_the_registered_account
@@ -489,6 +585,8 @@ class UserClaimApiTest extends ModuleTestCase
 
     /**
      * 다른 주문의 상품을 담으면 422, 남의 주문에 접수하면 404
+     *
+     * @return void 반환값 없음
      *
      * @effects claim_request_rejects_items_outside_the_order_with_422, claim_endpoints_scope_to_the_requesting_member
      */
@@ -512,6 +610,8 @@ class UserClaimApiTest extends ModuleTestCase
      * 회귀 잠금(#599): 예전에는 환불신청서 없이 취소 기록만 남았고, 그 환불 행은 목록에서
      * 배제돼 고객에게 **환불 이력이 아예 보이지 않았다**. 접수 결과가 언제나 환불신청서라야
      * 화면이 그 경과를 보여 줄 수 있다.
+     *
+     * @return void 반환값 없음
      *
      * @scenario item_selection=single_full, payment_state=card_paid
      *
@@ -541,6 +641,8 @@ class UserClaimApiTest extends ModuleTestCase
      * 예전에는 즉시취소 분기에 귀속할 신청서가 없어 첨부를 말없이 지웠다. 고객이 증빙으로
      * 올린 사진이 접수 직후 사라지고, 그 사실은 응답에도 로그에도 남지 않았다 — 나중에 분쟁이
      * 나면 근거가 없다. 새 모델은 자동 전이 분기도 환불신청서를 만들므로 귀속 대상이 있다.
+     *
+     * @return void 반환값 없음
      *
      * @scenario claim_type=refund, charge_method=none, refund_branch=auto
      *
@@ -580,6 +682,13 @@ class UserClaimApiTest extends ModuleTestCase
      * `request` 로 바꾸면 화면이 "배송 준비 중이라 신청합니다" 로 잘못 안내하고, 종착점을
      * `completed` 로 두면 돈이 나가기 전에 환불완료 알림이 간다.
      *
+     * 계좌를 실어 보내는 것은 이 축과 **직교하는 다른 계약**이다 — 돈이 계좌로 돌아가는 주문은
+     * 접수 시점에 받을 계좌가 있어야 한다(T2-D5, PO 결정 2026-09-23). 무통장은 바로 그런
+     * 주문이라 계좌 없이는 422 로 막히고, 그 경로는
+     * `UserClaimRefundBranchTest::test_bank_refund_is_rejected_without_an_account` 가 잠근다.
+     *
+     * @return void 반환값 없음
+     *
      * @scenario gate_case=stopped_method_user_api
      *
      * @effects stopped_payment_method_holds_refund_at_requested
@@ -589,7 +698,9 @@ class UserClaimApiTest extends ModuleTestCase
         $order = $this->myPaidOrder(['payment_method' => 'dbank']);
 
         $this->actingAs($this->user)->postJson($this->base()."/orders/{$order->id}/refund-requests", [
-            'items' => $this->items($order), 'reason_code' => 'changed_mind',
+            'items' => $this->items($order),
+            'reason_code' => 'changed_mind',
+            'refund_bank' => ['bank_code' => '003', 'account_number' => '01012345678', 'holder' => 'MEAS599'],
         ])->assertCreated()
             // 입구는 그대로 즉시취소 분기다 — 결제완료 상품이므로.
             ->assertJsonPath('data.branch', 'auto')
@@ -613,6 +724,8 @@ class UserClaimApiTest extends ModuleTestCase
      * 실측(주문 20260915-0631411217 · RF20260915-0824214349): 계좌 없이 접수 201 → 승인 200 →
      * 실행 **422** `환불 실행에 실패했습니다.` · 로그 `MISSING_REFUND_ACCOUNT`.
      *
+     * @return void 반환값 없음
+     *
      * @scenario gate_case=vbank_paid_requires_refund_bank
      *
      * @effects refund_bank_required_before_intake_for_paid_vbank
@@ -631,6 +744,8 @@ class UserClaimApiTest extends ModuleTestCase
 
     /**
      * 환불 계좌를 실어 보내면 가상계좌 주문도 정상 접수된다. (S1-D8)
+     *
+     * @return void 반환값 없음
      *
      * @scenario gate_case=vbank_paid_with_refund_bank
      *
@@ -659,6 +774,8 @@ class UserClaimApiTest extends ModuleTestCase
     /**
      * 배송 전(준비중) 상품은 request 분기의 환불신청서가 되고 승인 전에는 취소신청서가 없다
      *
+     * @return void 반환값 없음
+     *
      * @effects refund_request_files_a_direct_refund_for_pre_shipping_items
      */
     public function test_refund_request_files_a_refund_request_for_preparing_items(): void
@@ -684,6 +801,8 @@ class UserClaimApiTest extends ModuleTestCase
     /**
      * 배송완료 상품의 환불신청은 422 + 상태를 밝힌 문구
      *
+     * @return void 반환값 없음
+     *
      * @effects refund_request_of_a_delivered_item_is_422
      */
     public function test_refund_request_with_a_delivered_item_is_422(): void
@@ -702,6 +821,8 @@ class UserClaimApiTest extends ModuleTestCase
 
     /**
      * 목록이 내 건만 유형별로 페이지네이션해 내고, 어휘 밖 유형은 422
+     *
+     * @return void 반환값 없음
      *
      * @effects user_claim_index_lists_only_my_claims_by_type_with_pagination
      */
@@ -743,6 +864,8 @@ class UserClaimApiTest extends ModuleTestCase
      *
      * 네 유형 전부를 늘 싣는다 — 키 부재를 0 으로 읽으면 "세지 않음" 과 "0건" 이 구분되지 않는다.
      *
+     * @return void 반환값 없음
+     *
      * @scenario claim_type=return, charge_method=deduct_from_refund, refund_branch=none
      *
      * @effects user_claim_index_returns_type_counts
@@ -773,6 +896,8 @@ class UserClaimApiTest extends ModuleTestCase
      * 상태는 유형 종속 어휘라 다른 탭에 걸 수 없다 — 반품 상태를 교환 탭 건수에 걸면 그 탭이
      * 언제나 0 이 된다. 그래서 기간만 전 탭에 걸고 상태는 현재 탭만 다시 센다.
      *
+     * @return void 반환값 없음
+     *
      * @scenario claim_type=return, charge_method=deduct_from_refund, refund_branch=none
      *
      * @effects user_claim_index_counts_apply_status_to_current_tab_only
@@ -793,6 +918,8 @@ class UserClaimApiTest extends ModuleTestCase
 
     /**
      * 상세가 결제 블록을 싣고 타인·없는 신청번호는 404
+     *
+     * @return void 반환값 없음
      *
      * @effects claim_detail_carries_payment_block_and_hides_other_members, claim_endpoints_scope_to_the_requesting_member
      */
@@ -822,6 +949,8 @@ class UserClaimApiTest extends ModuleTestCase
      * 관리자 응답에만 있던 배열이라 회원 화면은 상태 뱃지 하나로만 단계를 읽어야 했다. 배열을
      * 화면이 다시 적으면 그 사본이 어휘의 두 번째 출처가 되므로 서버가 한 곳에서 만든다.
      * 칸마다 아이콘·색이 실리고 헤더의 `status_icon` 도 같은 Enum 값이다.
+     *
+     * @return void 반환값 없음
      *
      * @scenario claim_type=return, charge_method=pay_on_request, refund_branch=none
      *
@@ -863,6 +992,8 @@ class UserClaimApiTest extends ModuleTestCase
      *
      * 상품 행(`items`)은 남는다 — 목록 카드가 상품마다 썸네일·옵션·수량·금액을 그리므로
      * 그것은 낭비가 아니라 화면이 요구하는 값이다. 그 구분이 이 테스트의 요지다.
+     *
+     * @return void 반환값 없음
      *
      * @scenario claim_type=return, charge_method=pay_on_request, refund_branch=none
      *
@@ -919,6 +1050,8 @@ class UserClaimApiTest extends ModuleTestCase
      * 응답은 200 이고 키도 그대로 있어 어긋난 흔적이 어디에도 남지 않는다 — S13 이 상세
      * 화면을 만들며 찾은 결함의 회귀 가드다.
      *
+     * @return void 반환값 없음
+     *
      * @scenario claim_type=return, charge_method=deduct_from_refund, refund_branch=none
      *
      * @effects claim_detail_loads_the_relations_the_screen_draws
@@ -946,6 +1079,8 @@ class UserClaimApiTest extends ModuleTestCase
     /**
      * 승인 전에는 사유·귀책·청구액이 다시 계산되고, 승인 뒤 수정은 422
      *
+     * @return void 반환값 없음
+     *
      * @effects claim_update_changes_the_reason_before_approval_only
      */
     public function test_update_changes_the_reason_before_approval_and_is_422_after(): void
@@ -969,6 +1104,10 @@ class UserClaimApiTest extends ModuleTestCase
     }
 
     /**
+     * 수정 저장이 구매자가 새로 적은 환불 계좌를 신청서에 반영한다.
+     *
+     * @return void 반환값 없음
+     *
      * @scenario claim_type=refund, charge_method=none, refund_branch=request
      *
      * @effects claim_edit_saves_the_refund_account
@@ -1001,6 +1140,13 @@ class UserClaimApiTest extends ModuleTestCase
     }
 
     /**
+     * 계좌 칸을 비운 채 저장하면 이미 기록된 계좌를 그대로 둔다.
+     *
+     * 수정 화면은 마스킹 때문에 칸을 빈 채로 연다 — 그 빈 값을 반영하면 사유만 고친 저장
+     * 한 번이 계좌를 지운다.
+     *
+     * @return void 반환값 없음
+     *
      * @scenario claim_type=refund, charge_method=none, refund_branch=request
      *
      * @effects claim_edit_keeps_the_recorded_refund_account
@@ -1032,6 +1178,10 @@ class UserClaimApiTest extends ModuleTestCase
     }
 
     /**
+     * 세 칸 중 일부만 채운 계좌는 저장이 거절하고 옛 값을 건드리지 않는다.
+     *
+     * @return void 반환값 없음
+     *
      * @scenario claim_type=refund, charge_method=none, refund_branch=request
      *
      * @effects claim_edit_rejects_a_partly_filled_refund_account
@@ -1059,6 +1209,10 @@ class UserClaimApiTest extends ModuleTestCase
     }
 
     /**
+     * 구매자에게 보이지 않는 사유는 수정으로도 고를 수 없다.
+     *
+     * @return void 반환값 없음
+     *
      * @effects claim_update_rejects_reasons_hidden_from_users
      */
     public function test_update_cannot_pick_a_reason_that_is_hidden_from_users(): void
@@ -1099,6 +1253,10 @@ class UserClaimApiTest extends ModuleTestCase
     }
 
     /**
+     * 첨부 상한 초과는 신청서를 **고치기 전에** 거절한다 — 반쯤 바뀐 상태를 남기지 않는다.
+     *
+     * @return void 반환값 없음
+     *
      * @effects claim_update_validates_attachments_before_mutating_anything
      */
     public function test_update_rejects_over_limit_attachments_before_it_changes_anything(): void
@@ -1144,6 +1302,8 @@ class UserClaimApiTest extends ModuleTestCase
     /**
      * 철회가 신청서를 닫고 결제된 마일리지를 환불하며, 두 번째 철회는 422
      *
+     * @return void 반환값 없음
+     *
      * @effects claim_withdraw_closes_and_refunds_the_paid_charge
      */
     public function test_withdraw_closes_the_claim_and_refunds_the_mileage_payment(): void
@@ -1171,6 +1331,8 @@ class UserClaimApiTest extends ModuleTestCase
     /**
      * 첨부 업로드·삭제 왕복 — 이미지 아닌 파일은 422, 남의 첨부 삭제는 404
      *
+     * @return void 반환값 없음
+     *
      * @effects claim_image_upload_delete_round_trip_with_type_gate, claim_endpoints_scope_to_the_requesting_member
      */
     public function test_image_upload_and_delete_round_trip(): void
@@ -1196,6 +1358,8 @@ class UserClaimApiTest extends ModuleTestCase
 
     /**
      * PG 승인 콜백과 마일리지 결제가 결제행을 paid 로 만들고, 남의 결제 건은 404
+     *
+     * @return void 반환값 없음
      *
      * @effects claim_payment_pay_and_pg_approve_round_trip, claim_endpoints_scope_to_the_requesting_member
      */
@@ -1226,6 +1390,10 @@ class UserClaimApiTest extends ModuleTestCase
     }
 
     /**
+     * 서명된 첨부 주소는 세션 없이도 파일을 내주고, 서명 없는 해시는 열람 권한을 요구한다.
+     *
+     * @return void 반환값 없음
+     *
      * @effects claim_attachment_signed_url_serves_without_session
      */
     public function test_signed_attachment_url_serves_the_file_and_the_bare_hash_needs_a_viewer(): void
@@ -1262,6 +1430,8 @@ class UserClaimApiTest extends ModuleTestCase
     /**
      * 주문 상세가 클레임 추가결제 합계를 금액·표기 두 키로 낸다
      *
+     * @return void 반환값 없음
+     *
      * @effects order_detail_exposes_claim_additional_paid_total
      */
     public function test_order_detail_exposes_the_claim_additional_paid_total(): void
@@ -1277,6 +1447,10 @@ class UserClaimApiTest extends ModuleTestCase
     }
 
     /**
+     * 클레임 결제 금액은 응답 어느 자리에서든 주문 시점 통화 스냅샷의 소수 자릿수를 따른다.
+     *
+     * @return void 반환값 없음
+     *
      * @effects claim_payment_amounts_follow_the_order_currency_snapshot
      */
     public function test_claim_payment_amounts_use_the_order_currency_snapshot_in_every_response_slot(): void
@@ -1326,6 +1500,8 @@ class UserClaimApiTest extends ModuleTestCase
     /**
      * 도메인 예외는 422 + 그 사유 문구
      *
+     * @return void 반환값 없음
+     *
      * @effects claim_domain_exception_is_422_infrastructure_is_500
      */
     public function test_domain_exception_is_422(): void
@@ -1342,6 +1518,10 @@ class UserClaimApiTest extends ModuleTestCase
 
     // 라우터가 컨트롤러 인스턴스를 Route 객체에 캐시하므로, 한 테스트 안에서 두 번째 mock 은 첫 요청의 컨트롤러에 닿지 않는다 — 메서드를 나눈다.
     /**
+     * 인프라 예외는 500 이며 드라이버 메시지를 응답에 흘리지 않는다.
+     *
+     * @return void 반환값 없음
+     *
      * @effects claim_domain_exception_is_422_infrastructure_is_500
      */
     public function test_infrastructure_exception_is_500_without_leaking_the_message(): void
@@ -1360,6 +1540,8 @@ class UserClaimApiTest extends ModuleTestCase
 
     /**
      * 비인증 요청은 401
+     *
+     * @return void 반환값 없음
      *
      * @effects claim_endpoints_require_authentication
      */
@@ -1418,6 +1600,8 @@ class UserClaimApiTest extends ModuleTestCase
     /**
      * user-claims.read 가 없으면 목록이 403
      *
+     * @return void 반환값 없음
+     *
      * @effects claim_routes_carry_their_user_claims_permission
      */
     public function test_claim_read_requires_the_read_permission(): void
@@ -1429,6 +1613,8 @@ class UserClaimApiTest extends ModuleTestCase
 
     /**
      * user-claims.request 가 없으면 미리보기가 403
+     *
+     * @return void 반환값 없음
      *
      * @effects claim_routes_carry_their_user_claims_permission
      */
@@ -1447,6 +1633,8 @@ class UserClaimApiTest extends ModuleTestCase
 
     /**
      * user-claims.withdraw 가 없으면 403 이고 철회가 반영되지 않는다
+     *
+     * @return void 반환값 없음
      *
      * @effects claim_routes_carry_their_user_claims_permission, claim_permission_denial_leaves_no_side_effect
      */
@@ -1471,6 +1659,8 @@ class UserClaimApiTest extends ModuleTestCase
 
     /**
      * user-claims.pay 가 없으면 403 이고 결제행·마일리지 원장이 그대로다
+     *
+     * @return void 반환값 없음
      *
      * @effects claim_routes_carry_their_user_claims_permission, claim_permission_denial_leaves_no_side_effect
      */
@@ -1506,6 +1696,10 @@ class UserClaimApiTest extends ModuleTestCase
     }
 
     /**
+     * 목록의 상태 필터는 요청한 유형의 어휘 안에서만 통과한다.
+     *
+     * @return void 반환값 없음
+     *
      * @effects user_claim_index_status_filter_gated_by_type_vocabulary
      */
     public function test_index_status_filter_is_gated_by_the_vocabulary_of_the_requested_type(): void
@@ -1529,6 +1723,10 @@ class UserClaimApiTest extends ModuleTestCase
     }
 
     /**
+     * 기간 필터의 종료일은 시각이 붙어 있어도 그날 전체를 덮는다.
+     *
+     * @return void 반환값 없음
+     *
      * @effects user_claim_index_end_date_covers_the_whole_day
      */
     public function test_index_end_date_covers_the_whole_day_even_when_a_time_is_given(): void
@@ -1564,6 +1762,10 @@ class UserClaimApiTest extends ModuleTestCase
     }
 
     /**
+     * 없는 결제번호는 신청서 부재와 구분되는 결제 전용 문구의 404 다.
+     *
+     * @return void 반환값 없음
+     *
      * @effects missing_claim_payment_is_404_with_its_own_message
      */
     public function test_missing_payment_is_404_with_the_payment_specific_message(): void
@@ -1594,6 +1796,8 @@ class UserClaimApiTest extends ModuleTestCase
      * `previewRefund()` 의 클레임 가드가 기본 적용되면서 회원 면에도 새 422 경로가 생겼다.
      * 관리자 면만 단언하면 이 컨트롤러의 매핑(`OrderCancellationException` → 422)이
      * 끊겨도 회귀가 초록으로 남는다 — 세 면이 각각 다른 메시지 키를 쓰기 때문에 더 그렇다.
+     *
+     * @return void 반환값 없음
      *
      * @effects user_estimate_refund_is_422_for_claim_course_items
      */
@@ -1629,6 +1833,8 @@ class UserClaimApiTest extends ModuleTestCase
     /**
      * 목록 pagination 이 7키 계약을 지킨다 (기존 4키 + from/to/has_more_pages)
      *
+     * @return void 반환값 없음
+     *
      * @effects user_claim_pagination_meta_contract
      */
     public function test_claim_list_pagination_carries_the_pagination_meta_contract(): void
@@ -1663,6 +1869,8 @@ class UserClaimApiTest extends ModuleTestCase
     /**
      * 회원 목록·비회원 주문상세 섹션과 같은 계약(유형 서브탭 하나 · 페이지)이며, 이 주문의 것만 싣는다.
      *
+     * @return void 반환값 없음
+     *
      * @scenario surface=member, has_image=no
      *
      * @effects order_claim_section_lists_only_this_orders_requests
@@ -1695,6 +1903,8 @@ class UserClaimApiTest extends ModuleTestCase
     /**
      * 본인 주문이 아니면 존재를 드러내지 않고 404 다 — 형제 자원(claimable-options)과 같은 규칙.
      *
+     * @return void 반환값 없음
+     *
      * @scenario surface=member, has_image=yes
      *
      * @effects order_claim_section_hides_other_members_orders
@@ -1716,6 +1926,8 @@ class UserClaimApiTest extends ModuleTestCase
      * 유형을 지정하지 않으면 접수 건이 있는 첫 유형이 열린다 — 종전에는 늘 교환이라 취소만 있는
      * 주문에서 빈 안내가 먼저 보였다. 응답은 고른 유형(`claim_type`)과 유형별 건수(`counts`)를
      * 싣는다 — 화면은 그 둘로 활성 서브탭과 뱃지를 세운다.
+     *
+     * @return void 반환값 없음
      *
      * @scenario surface=member, has_image=yes
      *
@@ -1768,6 +1980,8 @@ class UserClaimApiTest extends ModuleTestCase
     /**
      * 우선순위는 교환 → 반품 → 취소 → 환불이다 (설계 결정 2026-09-09). 화면 서브탭의 배열 순서
      * (교환·반품·환불·취소)와 다르므로 배열 위치로 고르면 취소·환불이 둘 다 있을 때 갈린다.
+     *
+     * @return void 반환값 없음
      *
      * @scenario surface=member, has_image=no
      *

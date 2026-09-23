@@ -793,6 +793,39 @@ class ClaimPaymentService
     }
 
     /**
+     * 이 신청자가 클레임 추가결제에 쓸 수 있는 수단 목록을 반환합니다.
+     *
+     * 결제 대기 건의 수단은 접수 시점에 확정되지만 그 뒤에 **낼 수 없게 되는 경우**가 있다 —
+     * 마일리지 잔액이 모자라거나, 운영자가 그 수단을 `claim.charge_payment_methods` 에서 내리거나.
+     * 두 경우 모두 `pay()` 가 거절하므로, 화면이 다른 수단을 고를 수 있어야 사용자가 신청서를
+     * 철회하지 않고 빠져나갈 수 있다(#599 3차 실측 F-1·F-2).
+     *
+     * 허용 목록의 단일 출처는 전역 모듈 설정이다 — 신청 화면이 `claimable` 응답에서 읽는 것도
+     * 같은 설정의 사본이라, 신청서 상세가 데이터소스를 더 들 필요가 없다. 판정은 `pay()` 가
+     * 쓰는 `allowedPaymentMethods()` · `assertPaymentMethodAvailableToRequester()` 와 **같은 두
+     * 게이트**다 — 화면 옵션 ⊆ 게이트 ⊆ 서비스를 유지해야 고를 수 있는데 누르면 막히는 칸이
+     * 생기지 않는다.
+     *
+     * @param  int|null  $userId  신청자 회원 ID (비회원이면 null)
+     * @return array<int, string> 쓸 수 있는 결제 수단
+     */
+    public function availablePaymentMethodsFor(?int $userId): array
+    {
+        return array_values(array_filter(
+            $this->allowedPaymentMethods(),
+            function (string $method) use ($userId): bool {
+                try {
+                    $this->assertPaymentMethodAvailableToRequester($method, $userId);
+                } catch (OrderClaimException) {
+                    return false;
+                }
+
+                return true;
+            },
+        ));
+    }
+
+    /**
      * 신청서의 미수납 청구액을 반환합니다. (청구액 − 실수납액)
      *
      * 관리자 목록의 `ClaimAdminListResource::outstandingFromLoadedPayments()` 가 이 식의
@@ -809,6 +842,22 @@ class ClaimPaymentService
 
         // audit:allow service-config-value-clamp reason: 미수납액은 도메인 불변식으로 음수가 될 수 없다(초과 수납은 settleChargeDifference 가 환급으로 해소) — 설정 한계값 재클램프가 아니다
         return max(0.0, round((float) $claim->total_charge_amount - $this->paymentRepository->sumPaidAmount($claim->claimType()->value, $claim->id), 2));
+    }
+
+    /**
+     * 신청서에 **실제로 들어온 돈**을 반환합니다. (부분 환급을 뺀 실수납 합계)
+     *
+     * `outstandingAmount()` 는 청구액에서 이것을 빼 0 으로 클램프하므로 「아직 아무것도 내지
+     * 않았는가」를 그 값으로는 알 수 없다 — 청구액이 0 이어도 0 이 나온다. 운영자의 금액 수정을
+     * 어디까지 결제행에 반영할지 가르는 판정(`AdminClaimService::updateAmounts()`)에는 수납액
+     * 자체가 필요해 별도로 노출한다.
+     *
+     * @param  OrderExchange|OrderReturn  $claim  신청서
+     * @return float 실수납 합계 (0 이상)
+     */
+    public function paidAmount(OrderExchange|OrderReturn $claim): float
+    {
+        return $this->paymentRepository->sumPaidAmount($claim->claimType()->value, $claim->id);
     }
 
     /**

@@ -77,6 +77,8 @@ effects:
   - refund_branch_matrix_covers_every_refund_method      # 수단 모집단을 enum 에서 파생해 전수 검산
   - refund_branch_matrix_covers_every_configured_status  # 상태 모집단을 설정에서 파생해 전수 검산
   - refund_branch_terminus_is_decided_by_the_refund_method  # PG·POINTS 완료 / BANK 승인
+  # T2-D5 (#599 3차 실측 L-8) — 돈이 계좌로 돌아가는데 받을 계좌가 없으면 접수 자체를 막는다
+  - refund_request_requires_a_bank_account_when_money_returns_by_transfer
   - refund_branch_is_decided_by_the_item_status          # 상품 상태가 auto/request 를 정한다
   # U2/U20② — 0원·미입금 부분취소 허용 (PHPUnit Unit + DTO)
   - partial_cancel_allowed_for_unpaid_order      # 미입금 부분취소 허용
@@ -210,6 +212,9 @@ test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/ClaimCancellationRecordTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/PaymentMethodRefundPathTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/User/UserClaimRefundBranchTest.php
+  # 취소신청서 생성 시점(=환불완료 순간) 축을 회원·비회원 입구에서도 잠근다
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/User/UserClaimApiTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Public/GuestClaimApiTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Feature/Console/CancelPendingPaymentOrdersTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/OrderAdjustmentServiceTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Admin/OrderCancellationControllerTest.php

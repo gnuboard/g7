@@ -1,6 +1,6 @@
 <?php
 
-// audit:allow api-doc-coverage reason: protected 훅 메서드 2개(withValidator·failedValidation)에 누락됐던 `@return` PHPDoc 만 채운 내부 수정이다. 검증 규칙·응답 형태 모두 불변이라 docs/api 에 반영할 표면 변화가 없다(`api:docgen --scope=module:sirsoft-ecommerce --check` drift 0 확인).
+// audit:allow api-doc-coverage reason: 접수 시 환불 계좌 요건(T2-D5)은 docs/api/claims.md 「접수 시 환불 계좌 요건」 절에 422 키·문구·판정 술어까지 적었다. 생성 문서에는 반영할 표면 변화가 없다 — 라우트·요청 키·응답 형태가 모두 그대로이고 추가된 것은 기존 `refund_bank` 키의 필수 조건뿐이다(`api:docgen --scope=module:sirsoft-ecommerce --check` drift 0 확인, 2026-09-23).
 
 namespace Modules\Sirsoft\Ecommerce\Http\Requests\User;
 
@@ -10,19 +10,20 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimTypeEnum;
-use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
-use Modules\Sirsoft\Ecommerce\Enums\PaymentStatusEnum;
+use Modules\Sirsoft\Ecommerce\Enums\RefundMethodEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundPriorityEnum;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Concerns\ResolvesClaimOrder;
 use Modules\Sirsoft\Ecommerce\Models\ClaimReason;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Services\ClaimAttachmentService;
+use Modules\Sirsoft\Ecommerce\Services\OrderRefundRequestService;
 
 /**
  * 취소·환불 신청 요청 (회원 · 비회원 공용 — D2 자동 분기)
  *
  * 즉시취소 / 환불신청서 분기는 서비스(`OrderRefundRequestService::request`)가 상품 상태로 판정한다.
- * 여기서는 형태·주문 소속·환불 계좌 쌍(무통장 원결제)만 본다.
+ * 여기서는 형태·주문 소속·환불 계좌만 본다 — 세 칸이 짝을 이루는가와, 돈이 계좌로 돌아가는
+ * 주문인데 계좌가 비었는가다. 뒤쪽 판정은 신청 화면이 계좌 칸을 세울 때 쓰는 술어를 그대로 부른다.
  */
 class StoreRefundRequestRequest extends FormRequest
 {
@@ -129,7 +130,8 @@ class StoreRefundRequestRequest extends FormRequest
             // 막지 않으면 계좌 없이 접수·승인까지 통과한 뒤 마지막 [환불하기] 에서 PG 가
             // `MISSING_REFUND_ACCOUNT` 로 거절한다 — 그때는 이미 승인된 신청서라 화면에
             // 계좌를 넣을 자리가 없어 **운영자가 되돌릴 수 없다**.
-            // 판정은 관리자 [주문취소] 와 같은 규칙이다(CancelOrderRequest::requiresRefundBank).
+            // 판정은 신청 화면이 계좌 칸을 세울 때 쓰는 것과 **같은 술어**다
+            // (OrderRefundRequestService::refundsToBankAccount).
             $this->validateRefundBankRequired($validator, $order, $bank);
         });
     }
@@ -137,10 +139,15 @@ class StoreRefundRequestRequest extends FormRequest
     /**
      * 환불받을 계좌가 필요한 주문인데 비어 있으면 접수를 막습니다. (S1-D8)
      *
-     * **가상계좌(입금 완료)** 에만 건다. 사람이 송금하는 수단(무통장 등)은 계좌가 없어도 접수를
-     * 받고 `requested` 에서 멈춰(P16) 운영자가 승인 전에 계좌를 채운다 — 접수를 막으면 「돈은
-     * 받았는데 환불 신청조차 못 하는」 상태가 된다. 가상계좌는 PG 가 취소 호출 시점에 계좌를
-     * 요구하므로(`MISSING_REFUND_ACCOUNT`) 접수에서 막아야 되돌릴 자리가 남는다.
+     * **돈이 계좌로 돌아가는 주문 전부**에 건다 — 사람이 송금하는 수단(무통장입금 등)과
+     * 입금이 끝난 가상계좌 둘 다다. 판정은 `OrderRefundRequestService::refundsToBankAccount()`
+     * 하나뿐이다 — 신청 화면이 계좌 칸을 세울지 정할 때 쓰는 값(`refund_account.required`)과
+     * 같은 술어여서, 「칸은 없는데 서버가 막는다」·「칸은 있는데 빈 채로 통과한다」가 생기지 않는다.
+     *
+     * 예전에는 가상계좌에만 걸었다. 무통장은 「운영자가 승인 전에 계좌를 채운다」는 전제였는데
+     * **그 입력란이 화면에 없어서** 계좌가 빈 채로 승인·[환불하기]를 지나 송금 없이 장부만
+     * `completed` 로 닫혔다(2026-09-22 #599 3차 실측 L-8 · T2-D5).
+     *
      * 주문 시점에 환불계좌를 넣어 둔 주문(`order_payments.refund_bank_code`)은 그것을 쓴다.
      *
      * @param  Validator  $validator  검증기
@@ -156,27 +163,20 @@ class StoreRefundRequestRequest extends FormRequest
             return;
         }
 
-        // **가상계좌(입금 완료)만** 접수에서 막는다.
+        // **돈이 계좌로 돌아가는 주문은 계좌 없이 접수하지 않는다.** 두 축이다 —
+        // ⓐ 사람이 송금하는 수단(`refundMethod() === BANK`, 무통장입금 등)
+        // ⓑ PG 가 환불받을 계좌를 요구하는 수단(입금완료된 가상계좌)
         //
-        // 사람이 송금하는 수단(무통장 등)은 계좌가 없어도 접수는 받는다 — 그 건은 `requested`
-        // 에서 멈추고(P16) 운영자가 승인 전에 계좌를 채워 넣을 수 있다. 접수를 막으면
-        // 「돈은 받았는데 환불 신청 자체를 못 하는」 상태가 된다.
-        // 가상계좌는 다르다 — PG 가 취소 API 호출 시점에 계좌를 요구하므로(`MISSING_REFUND_ACCOUNT`),
-        // 접수를 통과시키면 승인까지 간 뒤 실행에서만 실패하고 되돌릴 자리가 없다.
-        $method = $payment->payment_method instanceof PaymentMethodEnum
-            ? $payment->payment_method
-            : PaymentMethodEnum::tryFrom((string) $payment->payment_method);
-
-        if ($method !== PaymentMethodEnum::VBANK) {
-            return;
-        }
-
-        $status = $payment->payment_status instanceof PaymentStatusEnum
-            ? $payment->payment_status
-            : PaymentStatusEnum::tryFrom((string) $payment->payment_status);
-
-        // 입금 전이면 PG 가 환불받을 계좌를 요구하지 않는다(미입금 취소).
-        if ($status === null || $status->isAwaitingDeposit()) {
+        // 예전에는 ⓑ 만 막았다. 무통장은 「운영자가 승인 전에 계좌를 채워 넣을 수 있다」는 전제로
+        // 접수를 받았는데, **그 자리가 화면에 없었다** — 클레임 상세에도 주문 상세에도 계좌 입력
+        // 요소가 하나도 없다. 그래서 계좌 3칸이 비어 있는 채 접수·승인을 지나 [환불하기]에서
+        // 송금 없이 장부만 `completed` 로 닫혔고, 되돌릴 경로도 남지 않았다
+        // (2026-09-22 #599 3차 실측 L-8 · T2-D5·D6).
+        //
+        // 수단 코드를 여기서 다시 열거하지 않는다. 같은 규칙을 세 벌(이 요청 · 화면에 내려 주는
+        // `refund_account.required` · 관리자 [주문취소])로 두면 확장 결제수단이 늘 때 판정이
+        // 갈리고, 어긋난 쪽은 오류 없이 「계좌 칸 없는 계좌 환불」 또는 「쓸모없는 계좌 요구」가 된다.
+        if (! app(OrderRefundRequestService::class)->refundsToBankAccount($order)) {
             return;
         }
 
@@ -189,19 +189,24 @@ class StoreRefundRequestRequest extends FormRequest
             return;
         }
 
-        $validator->errors()->add(
-            'refund_bank',
-            __('sirsoft-ecommerce::validation.order.refund_bank_required_for_vbank')
-        );
+        // 사유가 수단마다 다르다 — 「사람이 송금해야 한다」와 「가상계좌라서 PG 가 요구한다」는
+        // 구매자가 할 일은 같아도 왜 요구받는지가 달라, 한 문구로 뭉뚱그리면 카드로 결제한 줄
+        // 알았던 사람이 이유를 납득하지 못한다. 관리자 [주문취소]가 쓰는 문구 두 벌을 그대로
+        // 쓴다 — 같은 상황에 두 화면이 다른 말을 하지 않게 한다.
+        $messageKey = $payment->refundMethod() === RefundMethodEnum::BANK
+            ? 'sirsoft-ecommerce::validation.order.refund_bank_required_for_manual_transfer'
+            : 'sirsoft-ecommerce::validation.order.refund_bank_required_for_vbank';
+
+        $validator->errors()->add('refund_bank', __($messageKey));
     }
 
     /**
      * 검증 실패 시 응답 커스터마이징
      *
      * @param  Validator  $validator  검증기
+     * @return void 반환값 없음
      *
      * @throws ValidationException
-     * @return void 반환값 없음
      */
     protected function failedValidation(Validator $validator): void
     {

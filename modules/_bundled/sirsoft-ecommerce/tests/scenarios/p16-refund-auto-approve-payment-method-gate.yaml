@@ -24,6 +24,8 @@ axes:
     - stopped_method_admin_auto_advance   # 정지 수단 + 관리자 자동 전이 체크 → requested 정지
     - stopped_method_user_api             # 회원 접수 API 의 분기·상태 응답
     - stopped_method_guest_api            # 비회원 접수 API 의 분기·상태 응답
+    - vbank_paid_requires_refund_bank     # 입금완료 가상계좌는 계좌 없이 접수되지 않는다 (S1-D8)
+    - vbank_paid_with_refund_bank         # 계좌를 실으면 정상 접수된다 (대조군)
     - allowed_method_auto_branch          # 허용 수단은 종전대로 완료까지 (비회귀)
     - allowed_method_admin_auto_advance   # 관리자 경로의 허용 수단 (비회귀)
     - operator_allows_stopped_method      # 운영자가 목록에 넣으면 그 수단도 자동 전이
@@ -35,6 +37,11 @@ axes:
 
 effects:
   - stopped_payment_method_holds_refund_at_requested          # 정지 수단은 접수에서 멈춘다
+  - refund_bank_required_before_intake_for_paid_vbank         # 입금완료 가상계좌는 계좌가 있어야 접수된다
+  # T2-D6 (#599 3차 실측 L-8) — 관리자 [환불하기]도 같은 술어로 계좌를 요구한다
+  - admin_refund_execution_requires_a_bank_account            # 계좌 없이 실행하면 422
+  - admin_refund_execution_records_the_bank_account_it_was_given  # 실행하며 적은 계좌가 신청서에 남는다
+  - admin_refund_execution_allows_forcing_without_a_bank_account  # 동의하면 직권 실행 (PO 결정)
   - stopped_payment_method_sends_one_requested_notification   # 자동 전이가 없으니 접수 알림 1통
   - stopped_payment_method_ignores_auto_approve_toggle        # D8 토글도 게이트를 못 넘는다
   - stopped_payment_method_ignores_admin_auto_advance         # 관리자 자동 전이도 마찬가지
@@ -51,5 +58,6 @@ test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/PaymentMethodResolverTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/User/UserClaimApiTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Public/GuestClaimApiTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Admin/AdminRefundExecuteRequiresBankTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Admin/OrderCancellationControllerTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Admin/EcommerceSettingsClaimTest.php

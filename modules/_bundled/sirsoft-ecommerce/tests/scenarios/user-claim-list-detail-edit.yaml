@@ -117,11 +117,29 @@ effects:
   - claim_edit_replaces_submit_with_save
   - claim_edit_save_sends_only_editable_fields
   - claim_edit_attached_image_removal_defers_to_save
+  - claim_edit_does_not_resend_attached_images_as_new  # 귀속된 첨부를 add 로 되보내면 저장 전체가 422 (T3-D1)
+  - claim_edit_restores_saved_refund_priority          # 마일리지 환불액이 있으면 수정 화면이 마일리지 우선으로 열린다 (S1-D13)
+  - claim_edit_blocks_a_claim_that_is_no_longer_editable # 승인 이후 신청서의 /edit 은 폼 대신 안내 후 상세로 (T2-D7)
+  - claim_detail_order_shipping_is_read_only            # 신청서 상세의 배송지 카드는 조회 전용 — 변경 모달이 없는 화면에 [배송지 변경]이 서지 않는다
+  - claim_detail_payment_provider_blocks_follow_the_shared_card # PG 제공 블록(입금 안내·영수증)은 레이아웃 이름이 아니라 결제 정보 카드를 따라간다
   - claim_edit_rejection_stays_on_screen
   # 철회 — 진입점이 이 세션에서 붙는다 (확인 절차는 S12 산출)
   - claim_withdraw_entry_points_exist_on_list_and_detail
   # 미수납 추가결제 — 승인 시점 결제의 진입점 (2026-09-01 2차 계획 검증 확정)
   - claim_detail_outstanding_payment_has_an_entry_point
+
+  # 클레임 핸들러의 채널·주소 계약 (프론트 단위 — 셸이 준 앞부분에 번호만 잇는다)
+  - claim_withdraw_modal_target_lifecycle          # 철회 모달의 대상 세우기·지우기
+  - claim_withdraw_handler_channel_contract        # 철회 전송·중복 차단·4xx 화면 / 5xx 토스트
+  - claim_pay_handler_address_and_guards           # 결제 주소 조립 금지·중복 차단·PG 위임
+
+  # 대기 결제행의 수단을 다시 고르는 축 (#599 3차 실측 F-1·F-2 — T1-D6)
+  # 접수 때 확정한 수단이 뒤에 낼 수 없게 되는 경우가 둘 있다: 마일리지 잔액 부족, 운영자가
+  # 그 수단을 카탈로그에서 내림. 고를 자리가 없으면 출구가 신청서 철회뿐이다.
+  - claim_payment_method_choices_follow_the_setting          # 선택지는 전역 설정을 따른다
+  - claim_payment_method_choices_exclude_mileage_for_guests  # 비회원에겐 마일리지를 권하지 않는다
+  - claim_detail_pending_payment_method_can_be_rechosen      # 둘 이상이면 상세에서 다시 고른다
+  - claim_pay_handler_sends_the_chosen_method                # 고른 수단이 서버로 간다
 
   # 접수 시점 주문금액 비교표 — 저장 스냅샷 (#599 후속 P4)
   - claim_detail_comparison_renders_from_frozen_snapshot
@@ -166,6 +184,7 @@ effects:
 test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/User/UserClaimApiTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Support/ClaimPaymentRedirectTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/ClaimPaymentMethodChoicesTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Support/ClaimProgressStepsTest.php
   - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/handlers/claimEditHandlers.test.ts
   - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/handlers/claimListHandlers.test.ts

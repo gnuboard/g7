@@ -122,7 +122,8 @@
       "title": "返金の優先順位",
       "pg_first": "PG優先で返金",
       "points_first": "マイレージ優先で返金"
-    }
+    },
+    "refund_account_required_to_submit": "返金を受け取る口座を入力する必要があります。この注文は口座に返金されます。"
   },
   "change_product": {
     "title": "交換商品変更",
@@ -135,13 +136,15 @@
     "difference_notice": "オプション差額は申請要約で確定されます。",
     "load_failed": "交換可能なオプションを読み込めませんでした。",
     "apply": "適用",
-    "cancel": "キャンセル"
+    "cancel": "キャンセル",
+    "unavailable": "選択したオプションは現在交換を受けることができません。別のオプションを選んでください。"
   },
   "image": {
     "upload_failed": "写真アップロードに失敗しました。",
     "limit_exceeded": "写真は最大 {{max}}枚まで添付できます。",
     "size_exceeded": "写真1枚は {{size}}KB を超えることはできません。",
-    "remove_failed": "添付削除に失敗しました。"
+    "remove_failed": "添付削除に失敗しました。",
+    "upload_partial_failed": "写真 {{total}}枚中 {{failed}}枚をアップロードできませんでした。申請書で再度添付してください。"
   },
   "withdraw": {
     "title": "申請取り下げ",
@@ -277,6 +280,7 @@
     "refund_account_hint": "口座を変更する場合は以下に再度入力してください。空欄にすると現在記録されている口座がそのまま維持されます。",
     "save": "保存",
     "save_success": "申請内容が編集されました。",
-    "save_failed": "申請内容の編集に失敗しました。"
+    "save_failed": "申請内容の編集に失敗しました。",
+    "not_editable": "承認後は申請内容を修正することができません。変更が必要な場合はカスタマーセンターにお問い合わせください。"
   }
 }

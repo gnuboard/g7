@@ -30,7 +30,11 @@ axes:
 effects:
   - dropzone_states_only_the_limit_it_enforces   # 지키지 않는 상한을 광고하지 않는다
   - composite_filters_only_when_limit_declared   # 미선언이면 컴포지트가 조용히 거르지 않는다
-  - claim_form_keeps_limit_out_of_composite      # 클레임 신청서는 상한을 컴포지트에 넘기지 않는다(S2-D10 유지)
+  # 2026-09-23(T2-D2) — 종전 `claim_form_keeps_limit_out_of_composite` 를 대체한다. 상한을
+  # 넘기지 않던 근거는 「넘기면 컴포지트가 먼저 걸러 화면에 아무 변화가 없다」였는데, 실은
+  # 컴포지트가 `onUploadError` 를 부르고 있었고 화면이 그 이벤트를 받지 않았을 뿐이다.
+  # 넘기지 않은 대가가 더 컸다 — 거절된 파일이 목록에 남아 첨부된 것처럼 보였다.
+  - claim_form_declares_the_limit_and_takes_the_rejection  # 상한을 넘기고 거절 사유를 받는다
   - count_only_copy_exists_in_all_locales        # 장수 전용 문구가 ko·en·ja 에 모두 있다
 
 test_files:

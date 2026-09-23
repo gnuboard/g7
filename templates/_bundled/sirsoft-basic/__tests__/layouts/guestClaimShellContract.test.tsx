@@ -268,6 +268,11 @@ describe('셸 계약값 — 비회원은 주문 스코프가 붙는다', () => {
     expect(String(editInit.params.claimApiBase)).toContain('_global.guestOrderNumber');
     expect(JSON.stringify(editInit.params)).not.toContain('_local');
 
+    // 승인 이후 신청서의 `/edit` 은 비회원 상세로 돌려보낸다(#599 T2-D7) — 상점 기준 경로가 앞에 붙는다.
+    expect(String(editInit.params.detailPath)).toContain("'/guest/claims/'");
+    expect(String(editInit.params.detailPath)).toContain('_global.shopBase');
+    expect(String(editInit.params.detailPath)).toContain('route.claim_number');
+
     // 어떤 conditions 분기에도 확장 핸들러를 중첩하지 않는다.
     const nested = JSON.stringify(
       (guestApply.init_actions ?? []).filter((a: any) => a.handler === 'conditions')

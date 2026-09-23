@@ -110,6 +110,9 @@ effects:
   - settings_claim_reason_label_follows_viewer_locale
   - settings_claim_charge_payment_methods_accept_extension_ids
   - settings_claim_charge_payment_method_options_derive_from_order_settings
+  # 3차 실측 T1-D1: 선택지를 주문 카탈로그의 is_active 로 거르면 이미 저장된 비활성 수단이
+  # 라벨을 잃고(원문 키 노출) 한 번 지우면 이 화면에서 다시 고를 수 없다.
+  - settings_claim_charge_payment_method_options_do_not_filter_by_order_catalog_active
   - settings_claim_status_vocabulary_matches_server_gate
   # 9차: 저장 한 번에 '꺼둔 것이 켜지는' 축과, 두 경로로 갈렸던 코드 형식.
   # 셋 다 예외도 로그도 없이 운영자 의도와 반대로 동작하거나 탭을 영구 저장 불가로 만든다.
@@ -127,6 +130,8 @@ effects:
   - instant_cancel_statuses_default_includes_pending_states # 기본값에 미결제 2종이 들어 있다
   - auto_approve_refund_statuses_is_editable                # 자동승인 대상 상태 MultiSelect 가 화면에 있다 (D8)
   - auto_approve_refund_statuses_is_disabled_when_toggle_off # 토글이 꺼져 있으면 비활성
+  # 같은 축의 브라우저 실측(E2E) — 레이아웃 JSON 만 봐서는 두 노드가 같은 화면에서 어떤 상태로 서는지 알 수 없다.
+  - settings_claim_auto_approve_statuses_disabled_until_toggle_on
   - auto_approve_refund_statuses_rejects_unknown_values      # 허용 어휘 밖 값은 422
   - instant_cancel_hint_describes_auto_advance               # 문구가 D2 의미(자동 전이)를 말한다
 

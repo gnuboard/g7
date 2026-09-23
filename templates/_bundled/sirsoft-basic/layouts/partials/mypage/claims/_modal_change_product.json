@@ -317,6 +317,25 @@
                     ]
                 },
                 {
+                    "comment": "고른 조합을 지금 살 수 없을 때의 안내 (T2-D10 · #599 3차 실측 L-4). 옵션 찾기(`findMatchingOption`)는 판매중지(`is_active=false`) 옵션을 건너뛰므로, 모든 그룹을 골랐는데도 찾은 옵션이 없으면 **그 조합은 지금 교환받을 수 없다**는 뜻이다. 종전에는 이 경우 가격 줄도 안내도 없이 [적용]만 조용히 잠겨, 같은 화면의 재고 0(「선택한 옵션의 재고가 없습니다.」)과 달리 왜 안 되는지 알 수 없었다. 서버도 같은 조합을 거절한다(T2-D11 — 교환 대상은 지금 살 수 있는 옵션만).",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{_local.changeProductMode === 'change' && !_local.changeProductMatched && (_local.changeProductProduct?.option_groups ?? []).length > 0 && (_local.changeProductProduct?.option_groups ?? []).every(g => !!_local.changeProductSelections?.[g.name_localized])}}",
+                    "props": {
+                        "className": "p-3 rounded-lg bg-red-50 dark:bg-red-900/20"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-xs text-red-600 dark:text-red-400 font-medium"
+                            },
+                            "text": "$t:claim.change_product.unavailable"
+                        }
+                    ]
+                },
+                {
                     "comment": "선택된 옵션 요약 — 재고가 없으면 서버가 exchange_target_out_of_stock 으로 거절하므로 여기서 먼저 드러낸다. 차액은 신청서 요약(서버 미리보기)이 확정하므로 여기서는 안내만 한다.",
                     "type": "basic",
                     "name": "Div",

@@ -133,7 +133,7 @@ return [
     'claim_new_option_out_of_stock' => '교환할 옵션의 재고가 부족합니다.',
     'claim_redelivery_country_change_not_allowed' => '교환 재발송지는 주문 배송지와 같은 국가만 지정할 수 있습니다. (교환 해외배송 미지원)',
     'claim_refund_not_applicable' => '환불이 발생하지 않는 신청 건이라 환불신청서를 접수할 수 없습니다.',
-    'claim_not_editable' => '승인 이후에는 신청 내용을 수정할 수 없습니다. 철회 후 다시 신청해 주세요.',
+    'claim_not_editable' => '승인 이후에는 신청 내용을 수정할 수 없습니다. 변경이 필요하면 고객센터로 문의해 주세요.',
     'claim_refund_branch_mixed' => '즉시 취소할 수 있는 상품과 환불 신청이 필요한 상품을 한 번에 신청할 수 없습니다. 나누어 신청해 주세요.',
     'claim_refund_not_requestable' => '현재 상품 상태(:status)에서는 취소·환불을 신청할 수 없습니다.',
     'claim_payment_not_found' => '결제 건을 찾을 수 없습니다.',

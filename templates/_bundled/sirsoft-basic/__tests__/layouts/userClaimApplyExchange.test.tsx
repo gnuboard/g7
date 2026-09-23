@@ -352,11 +352,34 @@ describe('_apply_reason.json — 사유', () => {
   it('첨부 상한은 운영자 설정에서 읽는다 (리터럴 금지)', () => {
     const uploader = flatten(reason).find((n) => n.name === 'FileUploader');
     expect(String(uploader.props.maxFiles)).toContain('claimableSnapshot ?? claimable?.data)?.settings?.max_images');
-    // S2-D10: maxSize 는 컴포지트에 넘기지 않는다(넘기면 초과 파일이 change 전에 걸러져 핸들러·토스트가 0건).
-    // 용량 상한은 안내 문구(P)가 같은 설정값으로 보여 주고, 판정은 setClaimImageFiles 가 한다.
-    expect(uploader.props.maxSize).toBeUndefined();
     const hint = flatten(reason).find((n) => n.name === 'P' && String(n.text).includes('claim.apply.images_hint'));
     expect(String(hint.text)).toContain('image_max_size_kb');
+  });
+
+  /**
+   * 용량 상한도 컴포지트에 넘긴다. (T2-D2 · #599 3차 실측)
+   *
+   * 넘기지 않던 동안에는 용량을 넘은 파일이 컴포지트 목록에 `big.jpg 8.52 MB` ·
+   * `1/5개 첨부됨` 으로 **첨부된 것처럼 남았다** — 핸들러가 걸러 실제로 올라가지는 않지만,
+   * 토스트가 5초 뒤 사라지면 화면과 실제가 갈린다.
+   *
+   * 종전 판단은 「넘기면 컴포지트가 조용히 걸러 아무 일도 없어 보인다」였는데, 실은 컴포지트가
+   * `onUploadError` 를 부르고 있었고 **이 화면이 그 이벤트를 받지 않았을 뿐**이다. 그래서
+   * 상한을 넘기고 그 이벤트를 함께 받는다.
+   *
+   * 값은 **같은 설정값**(`image_max_size_kb`)에서 나온다 — 컴포지트가 MB 를 받으므로 서버가 같은 상한을 MB 로도 내려 준다 — 화면이
+   * 나눈다. 리터럴을 쓰면 운영자가 상한을 바꿨을 때 안내 문구와 거절선이 갈린다.
+   *
+   * @effects claim_image_limits_come_from_operator_settings
+   */
+  it('용량 상한을 컴포지트에 넘기고 거절 사유를 받는다 (T2-D2)', () => {
+    const uploader = flatten(reason).find((n) => n.name === 'FileUploader');
+
+    expect(String(uploader.props.maxSize)).toContain('image_max_size_mb');
+
+    const onError = (uploader.actions ?? []).find((a: any) => a.event === 'onUploadError');
+    expect(onError).toBeTruthy();
+    expect(JSON.stringify(onError)).toContain('toast');
   });
 
   /** @effects claim_image_upload_defers_to_submit_and_keeps_uploaded_on_retry */
@@ -660,6 +683,41 @@ describe('_modal_change_product.json — 교환상품 변경 모달 (D29)', () =
       .filter((v): v is string => typeof v === 'string');
 
     expect(bindings.filter((b) => b.includes('_local.changeProduct')).length).toBeGreaterThan(0);
+  });
+
+  /**
+   * 고른 조합을 지금 살 수 없으면 **그 이유를 말한다**. (T2-D10 · #599 3차 실측 L-4)
+   *
+   * 옵션 찾기(`findMatchingOption`)는 판매중지 옵션을 건너뛴다. 그래서 블랙/M 이 판매중지면
+   * 두 그룹을 다 골라도 찾은 옵션이 없고, 종전에는 가격 줄도 안내도 없이 [적용]만 잠겼다 —
+   * 같은 화면의 재고 0 은 「선택한 옵션의 재고가 없습니다.」라고 말하는데 이 경우만 침묵했다.
+   *
+   * 조건식을 직접 평가해 세 경우를 가른다. 모달 루트는 열린 상태에서만 그려져 렌더 하네스로는
+   * 이 분기를 열 수 없기 때문이다.
+   *
+   * @effects claim_apply_change_product_explains_an_unavailable_combination
+   */
+  it('모든 그룹을 골랐는데 살 수 있는 옵션이 없으면 이유를 말한다 (T2-D10)', () => {
+    const notice = flatten(changeProduct).find(
+      (n) => typeof n.if === 'string'
+        && JSON.stringify(n.children ?? []).includes('claim.change_product.unavailable'),
+    );
+    expect(notice).toBeTruthy();
+
+    const expr = String(notice.if).replace(/^\{\{|\}\}$/g, '');
+    // eslint-disable-next-line no-new-func
+    const evaluate = new Function('_local', `return (${expr});`) as (l: any) => boolean;
+    const groups = [{ name_localized: '색상' }, { name_localized: '사이즈' }];
+    const base = { changeProductMode: 'change', changeProductProduct: { option_groups: groups } };
+
+    // 두 그룹을 다 골랐는데 찾은 옵션이 없다 → 판매중지 조합 → 안내한다.
+    expect(evaluate({ ...base, changeProductSelections: { 색상: '블랙', 사이즈: 'M' }, changeProductMatched: null })).toBe(true);
+    // 아직 한 그룹만 골랐다 → 고르는 중이지 불가가 아니다 → 안내하지 않는다.
+    expect(evaluate({ ...base, changeProductSelections: { 색상: '블랙' }, changeProductMatched: null })).toBe(false);
+    // 살 수 있는 옵션을 찾았다 → 안내하지 않는다(재고 문구는 요약 카드가 따로 말한다).
+    expect(evaluate({ ...base, changeProductSelections: { 색상: '블랙', 사이즈: 'L' }, changeProductMatched: { id: 7 } })).toBe(false);
+    // 동일상품 교환 모드에서는 옵션을 고르지 않으므로 안내하지 않는다.
+    expect(evaluate({ ...base, changeProductMode: 'same', changeProductSelections: {}, changeProductMatched: null })).toBe(false);
   });
 
   /** @effects claim_apply_change_product_apply_locked_without_a_valid_option */

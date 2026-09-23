@@ -528,6 +528,12 @@
 - **관리자 취소 모달은 `auto_advance_refund` 를 보냅니다**(기본 꺼짐). 종전의 `cancelPg` 는
   없앴습니다 — 끈 채로 카드 취소를 하면 PG 를 부르지 않고도 환불이 완료로 찍혀 고객 카드는
   그대로인데 장부만 환불완료가 됐습니다.
+- **수정 화면의 첨부는 `add_image_ids` 로 되돌려 보내지 않습니다.** `add_image_ids` 가 받는
+  것은 **아직 신청서에 귀속되지 않은**(주문에 임시로 묶인) 첨부뿐입니다. 수정 화면은 이미
+  귀속된 첨부로 목록을 채워 열리므로(`buildClaimEditImages()` 가 `attached: true` 를 세웁니다),
+  `uploadPendingClaimFiles()` 는 그 표식이 선 것을 빼고 돌려줍니다. 빼지 않으면 서버가 귀속분을
+  "이 주문의 미귀속 첨부" 로 찾다가 실패해 저장 전체가 422 로 떨어지고, 첨부가 한 장이라도 있는
+  신청서는 **사유조차 고칠 수 없게** 됩니다. 귀속분의 삭제는 `remove_image_ids` 가 맡습니다.
 
 핸들러 TS 를 고치면 **빌드가 필요합니다** — `php artisan module:build` 후
 `module:update --force`. 커밋되는 `dist/` 는 배포 산출물이므로 `--production` 으로 굽고

@@ -489,6 +489,7 @@ return [
         'list_retrieved' => 'Claim history retrieved.',
         'retrieved' => 'Claim retrieved.',
         'updated' => 'The request has been updated.',
+        'rejected' => 'The request has been rejected.',
         'withdrawn' => 'The request has been withdrawn.',
         'image_uploaded' => 'Image attached.',
         'image_deleted' => 'Attached image deleted.',

@@ -65,6 +65,8 @@ effects:
   - exchange_mixed_net_refund_is_frozen_at_request_time
   - exchange_new_option_must_belong_to_the_same_product
   - exchange_new_option_without_stock_is_rejected
+  - exchange_same_option_is_rejected_when_inactive    # 동일옵션 경로도 판매중지 옵션을 거절한다
+  - exchange_new_option_must_be_purchasable_now       # 지금 살 수 없는 상품(품절·판매중지·출시예정·미노출·등급제한)은 교환 대상이 못 된다
   # 배송비 · 청구 방식
   - exchange_round_trip_fee_and_total_charge_are_frozen
   - exchange_seller_fault_charges_only_the_difference
@@ -92,6 +94,20 @@ effects:
   - exchange_redelivery_address_must_stay_in_the_same_country
   - exchange_auto_approval_needs_a_zero_charge
 
+  # 교환 옵션 치환 2-패스 재계산 · 접수 스냅샷 동결 (#599 후속 B1·B2)
+  - exchange_preview_two_pass_keeps_refund_math
+  # S3-D3 재정의(2026-09-17 실측 주문 1497): 저가 옵션 교환 완료 뒤 후속 행 취소 환불액이 승계 단가로 나와
+  # 차액이 두 번 나갔다. 재계산에서만 후속 행을 신규 옵션 단가로 본다 — 다른 상품 취소는 종전과 같고,
+  # 차액이 돌아가지 않은 교환(접수하지 않음)은 승계 단가 그대로다.
+  - exchanged_successor_row_refunds_at_new_option_price
+  - exchanged_successor_pricing_keeps_other_item_refunds
+  - exchanged_successor_pricing_requires_a_refunded_difference
+  - exchange_request_freezes_calculation_snapshots
+  - exchange_substitution_inherits_shipping_policy_and_coupons
+  # #599 후속 D13 — 차액 환불완료 시 취소신청서가 생긴다
+  - exchange_refund_completion_records_a_cancellation
+  - exchange_refund_option_rows_announce_their_creation   # 그 취소신청서의 옵션 행도 함께 선언된다
+
 sub_flows:
   - id: transition_gate
     description: |
@@ -115,6 +131,7 @@ sub_flows:
       - exchange_approval_fails_when_the_new_option_ran_out
       - exchange_completion_restores_original_stock_only_for_checked_items
       - exchange_redelivery_tracking_creates_the_successor_option
+      - exchange_completion_keeps_the_earned_mileage   # 확정된 적립은 교환완료로도 회수하지 않는다
 
   - id: completion_refund
     description: |
@@ -131,19 +148,12 @@ sub_flows:
       - exchange_update_request_recalculates_the_fee_when_the_reason_changes
       - exchange_update_request_is_blocked_after_approval
 
-  # 교환 옵션 치환 2-패스 재계산 · 접수 스냅샷 동결 (#599 후속 B1·B2)
-  - exchange_preview_two_pass_keeps_refund_math
-  # S3-D3 재정의(2026-09-17 실측 주문 1497): 저가 옵션 교환 완료 뒤 후속 행 취소 환불액이 승계 단가로 나와
-  # 차액이 두 번 나갔다. 재계산에서만 후속 행을 신규 옵션 단가로 본다 — 다른 상품 취소는 종전과 같고,
-  # 차액이 돌아가지 않은 교환(접수하지 않음)은 승계 단가 그대로다.
-  - exchanged_successor_row_refunds_at_new_option_price
-  - exchanged_successor_pricing_keeps_other_item_refunds
-  - exchanged_successor_pricing_requires_a_refunded_difference
-  - exchange_request_freezes_calculation_snapshots
-  - exchange_substitution_inherits_shipping_policy_and_coupons
-
-  # ── #599 후속 D13 — 교환 완료 → 차액 환불 → 취소신청서 ─────────────────
-  - exchange_refund_completion_records_a_cancellation   # 차액 환불완료 시 취소신청서가 생긴다
+  # ── 아래는 `sub_flows` 리스트에 문자열로 놓여 있던 잔여 항목이다. 그 자리는 YAML 상
+  #    「하위 흐름 하나」의 자리라 커버리지 규칙이 **선언으로 세지 않았고**, 그래서 테스트가
+  #    쓰던 이름들이 「소유 매니페스트에 없다」로 잡혔다. 실제로 테스트가 쓰는 것은 위
+  #    `effects:` 로 올렸고(2026-09-23), 여기에는 **아직 어느 테스트도 검증하지 않는** 것만
+  #    남긴다 — 올리면 그 자리에서 미검증으로 잡히므로, 테스트가 생길 때 함께 올린다.
+  #    (#599 후속 D13 활동로그 축 — 교환 완료 → 차액 환불 → 취소신청서)
   - exchanged_items_keep_the_exchanged_status           # 상품 상태는 `exchanged` 를 유지한다
   - exchange_originated_refund_fires_the_requested_hook # 교환 차액 환불신청서도 접수 훅을 쏜다 (B8)
   - exchange_header_transition_logs_item_transitions    # 헤더 전이가 끌고 간 상품 전이 (C1)

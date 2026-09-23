@@ -552,6 +552,74 @@ describe('클레임 신청서 상세 — 렌더', () => {
   });
 
   /**
+   * 결제 대기 건의 수단은 접수 때 확정되지만 그 뒤에 낼 수 없게 될 수 있다 — 마일리지 잔액이
+   * 모자라거나, 운영자가 그 수단을 `claim.charge_payment_methods` 에서 내리거나. 두 경우 모두
+   * 서버가 거절하는데 화면에 고를 자리가 없으면 사용자는 「미수납 ○○원 + 결제하기」를 보면서
+   * 누를 때마다 같은 거절을 받고, 빠져나갈 길이 신청서 철회뿐이다.
+   *
+   * 회귀 배경 (#599 3차 실측 F-1·F-2, 2026-09-22): 카탈로그에서 `point` 를 내리자 이미 `point` 로
+   * 만들어진 대기 건이 계속 「포인트결제」를 안내하며 422 만 돌려줬다.
+   *
+   * @scenario claim_type=exchange, screen=detail, entry=none
+   * @effects claim_detail_pending_payment_method_can_be_rechosen
+   */
+  it('클레임 정보 — 낼 수 있는 수단이 둘 이상이면 다시 고를 수 있다', async () => {
+    const { utils, container } = await renderDetail(
+      ['_detail_claim_info.json'],
+      exchangeDetail({
+        outstanding_amount: 4000,
+        outstanding_amount_formatted: '4,000원',
+        available_payment_methods: ['card', 'point'],
+        pending_payment: {
+          payment_number: 'CP20260901-0003',
+          payment_method: 'point',
+          payment_method_label: '포인트결제',
+          total_amount_formatted: '4,000원',
+        },
+      })
+    );
+    active = utils;
+
+    const radios = Array.from(
+      container.querySelectorAll<HTMLInputElement>('input[type=radio][name=claimPayMethod]')
+    );
+
+    expect(radios.map((r) => r.value)).toEqual(['card', 'point']);
+    // 손대기 전에는 서버가 확정해 둔 수단이 골라져 있어야 한다 — 화면이 안내하는 값과
+    // 실제로 나가는 값이 어긋나면 고른 적 없는 수단으로 결제가 시작된다.
+    expect(radios.find((r) => r.value === 'point')?.checked).toBe(true);
+  });
+
+  /**
+   * 선택지가 하나뿐이면 고르는 시늉만 시키지 않는다 — 종전 표시 전용 동작을 지킨다.
+   *
+   * @scenario claim_type=exchange, screen=detail, entry=none
+   * @effects claim_detail_pending_payment_method_can_be_rechosen
+   */
+  it('클레임 정보 — 낼 수 있는 수단이 하나뿐이면 표시만 한다', async () => {
+    const { utils, container } = await renderDetail(
+      ['_detail_claim_info.json'],
+      exchangeDetail({
+        outstanding_amount: 4000,
+        outstanding_amount_formatted: '4,000원',
+        available_payment_methods: ['card'],
+        pending_payment: {
+          payment_number: 'CP20260901-0004',
+          payment_method: 'card',
+          payment_method_label: '신용카드',
+          total_amount_formatted: '4,000원',
+        },
+      })
+    );
+    active = utils;
+
+    expect(
+      container.querySelectorAll('input[type=radio][name=claimPayMethod]')
+    ).toHaveLength(0);
+    expect(container.textContent ?? '').toContain('신용카드');
+  });
+
+  /**
    * @scenario claim_type=refund, screen=detail, entry=none
    * @effects claim_detail_refund_account_reads_the_claim_row
    */

@@ -226,6 +226,156 @@
                     ]
                 },
                 {
+                    "comment": "환불받을 계좌 (T2-D6 · #599 3차 실측 L-8) — 계좌로 송금해야 끝나는 환불인데 신청서에 계좌가 없을 때만 선다. 종전에는 이 창이 계좌를 **보여 주기만** 해서, 계좌가 비어 있어도 [환불하기]가 그대로 눌렸고 돈은 나가지 않았는데 신청서만 환불완료로 닫혔다 — 그 뒤에는 되돌릴 경로도 계좌를 적을 자리도 없었다. 「필요한가」는 서버가 실행 게이트와 같은 술어로 판정해 `refund_account_required` 로 내려준다(화면이 결제수단 코드로 재현하면 확장 결제수단에서 갈린다).",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{_global.claimRefundExecuteContext?.refundAccountRequired === true}}",
+                    "props": {
+                        "className": "rounded-lg border border-gray-200 dark:border-gray-700 p-4 space-y-3"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-primary text-sm font-medium"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.refund_bank_input_title"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-hint"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.refund_bank_input_hint"
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "세 칸은 함께 와야 한다 — 은행만 바뀌고 계좌번호가 옛 값으로 남으면 운영자가 없는 계좌로 이체한다(접수·수정 경로와 같은 등식). 서버가 일부만 실린 계좌를 422 로 거절하고, 이 창은 셋이 다 차기 전에는 실행 버튼을 잠근다.",
+                            "type": "basic",
+                            "name": "Input",
+                            "actions": [
+                                {
+                                    "type": "change",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "claimRefundExecuteBankCode": "{{$event.target.value}}"
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "type": "text",
+                                "value": "{{_global.claimRefundExecuteBankCode ?? ''}}",
+                                "placeholder": "$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.refund_bank_code_placeholder",
+                                "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 disabled:opacity-50 disabled:cursor-not-allowed",
+                                "disabled": "{{_global.isProcessing || _global.claimRefundExecuteForce === true}}"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Input",
+                            "actions": [
+                                {
+                                    "type": "change",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "claimRefundExecuteBankAccount": "{{$event.target.value}}"
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "type": "text",
+                                "value": "{{_global.claimRefundExecuteBankAccount ?? ''}}",
+                                "placeholder": "$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.refund_bank_account_placeholder",
+                                "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 disabled:opacity-50 disabled:cursor-not-allowed",
+                                "disabled": "{{_global.isProcessing || _global.claimRefundExecuteForce === true}}"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Input",
+                            "actions": [
+                                {
+                                    "type": "change",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "claimRefundExecuteBankHolder": "{{$event.target.value}}"
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "type": "text",
+                                "value": "{{_global.claimRefundExecuteBankHolder ?? ''}}",
+                                "placeholder": "$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.refund_bank_holder_placeholder",
+                                "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 disabled:opacity-50 disabled:cursor-not-allowed",
+                                "disabled": "{{_global.isProcessing || _global.claimRefundExecuteForce === true}}"
+                            }
+                        },
+                        {
+                            "comment": "계좌 없이 직권으로 완료를 찍는 동의 (PO 결정 2026-09-23) — 운영상 필요하기 때문에 길 자체는 남기되, **모르고 눌러 닫히는 것**과 알고 누르는 것을 가른다. 체크박스 한 칸 + 결과를 말하는 힌트라는 형태는 주문 상세의 「원 주문서도 결제완료로 처리」(`mark_order_complete`)와 같다. 체크하면 위 계좌 칸은 잠긴다 — 둘을 함께 보내면 무엇이 실행됐는지 창이 두 가지로 읽힌다.",
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "flex items-start gap-2 cursor-pointer"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "actions": [
+                                        {
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "claimRefundExecuteForce": "{{$event.target.checked}}"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "checkbox",
+                                        "name": "force_without_refund_bank",
+                                        "className": "mt-0.5",
+                                        "checked": "{{_global.claimRefundExecuteForce ?? false}}",
+                                        "disabled": "{{_global.isProcessing}}"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-primary text-sm font-medium block"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.force_without_bank"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-hint block"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.force_without_bank_hint"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
                     "id": "crm_006_irreversible_notice",
                     "type": "basic",
                     "name": "P",
@@ -304,7 +454,7 @@
                             "props": {
                                 "type": "button",
                                 "className": "btn btn-primary",
-                                "disabled": "{{!_global.claimRefundExecuteContext || _global.isProcessing}}"
+                                "disabled": "{{!_global.claimRefundExecuteContext || _global.isProcessing || (_global.claimRefundExecuteContext?.refundAccountRequired === true && _global.claimRefundExecuteForce !== true && !((_global.claimRefundExecuteBankCode ?? '').trim() && (_global.claimRefundExecuteBankAccount ?? '').trim() && (_global.claimRefundExecuteBankHolder ?? '').trim()))}}"
                             },
                             "children": [
                                 {

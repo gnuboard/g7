@@ -133,12 +133,12 @@
                                                 }
                                             },
                                             "onSuccess": {
-                                                "comment": "결과를 만든 키워드를 함께 적는다 — 늦게 온 옛 키워드 응답이 목록을 덮어써도 화면이 그것을 그리지 않게 한다",
+                                                "comment": "결과를 만든 키워드는 **응답이 실어 온 값**(`meta.keyword`)을 쓴다 — `$event.target.value` 로 찍으면 그것은 **응답이 도착한 순간의 입력칸**이라, 가장 큰 옛 응답(한 글자가 부른 전체 회원)이 가장 늦게 와서 현재 키워드의 것으로 둔갑한다. 아래 가드가 그대로 통과해 엉뚱한 목록이 그려졌다(2026-09-22 #599 3차 실측 T2-D1 — `MEAS599T-S2` 를 친 화면에 전체 회원 83행). 서버가 자기 키워드를 답하므로 화면은 그것과 지금 입력값을 견주기만 한다.",
                                                 "handler": "setState",
                                                 "params": {
                                                     "target": "global",
                                                     "mileageManual.memberSearchResults": "{{response?.data ?? []}}",
-                                                    "mileageManual.memberSearchResultsKeyword": "{{$event.target.value}}"
+                                                    "mileageManual.memberSearchResultsKeyword": "{{response?.meta?.keyword ?? ''}}"
                                                 }
                                             }
                                         }

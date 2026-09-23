@@ -1746,10 +1746,10 @@
                     },
                     "children": [
                         {
-                            "comment": "결제 수단은 서버가 결제 대기 건을 만들 때 확정한 값이다 — 화면은 표시만 하고 다시 고르게 하지 않는다(수단 카탈로그는 주문 스코프 응답이라 이 화면이 읽지 않는다).",
+                            "comment": "고를 수단이 하나뿐이면 표시만 한다 — 선택지가 한 칸인 라디오는 고르는 시늉만 시킨다.",
                             "type": "basic",
                             "name": "Div",
-                            "if": "{{!!claim.data?.claim?.pending_payment?.payment_method_label}}",
+                            "if": "{{!!claim.data?.claim?.pending_payment?.payment_method_label && (claim.data?.claim?.available_payment_methods ?? []).length < 2}}",
                             "props": {
                                 "className": "flex items-baseline justify-between gap-2"
                             },
@@ -1773,16 +1773,85 @@
                             ]
                         },
                         {
+                            "comment": "수단이 둘 이상이면 **다시 고를 수 있어야 한다.** 대기 건의 수단은 접수 때 확정되지만 그 뒤에 낼 수 없게 될 수 있다 — 마일리지 잔액이 모자라거나, 운영자가 그 수단을 `claim.charge_payment_methods` 에서 내리거나. 두 경우 모두 서버가 거절하는데 고를 자리가 없으면 사용자는 「미수납 ○○원 + 결제하기」를 보면서 누를 때마다 같은 거절을 받고, 빠져나갈 길이 신청서 철회뿐이다(#599 3차 실측 F-1·F-2). 선택지는 서버가 `available_payment_methods` 로 준다 — 화면 옵션 ⊆ 게이트 ⊆ 서비스라 고를 수 있는데 누르면 막히는 칸이 생기지 않는다.",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{(claim.data?.claim?.available_payment_methods ?? []).length >= 2}}",
+                            "props": {
+                                "className": "space-y-1"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-sm text-gray-500 dark:text-gray-400"
+                                    },
+                                    "text": "$t:claim.detail.pay_method"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "iteration": {
+                                        "source": "{{claim.data?.claim?.available_payment_methods ?? []}}",
+                                        "item_var": "claimPayMethodOption"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "flex items-center gap-2 p-2 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700"
+                                            },
+                                            "children": [
+                                                {
+                                                    "comment": "처음 그릴 때는 서버가 확정해 둔 수단이 골라져 있다 — 사용자가 바꾸기 전까지 화면이 안내하는 값과 실제로 나가는 값이 같아야 한다.",
+                                                    "type": "basic",
+                                                    "name": "Input",
+                                                    "actions": [
+                                                        {
+                                                            "type": "change",
+                                                            "handler": "sirsoft-ecommerce.setClaimPaymentMethod",
+                                                            "params": {
+                                                                "value": "{{claimPayMethodOption}}"
+                                                            }
+                                                        }
+                                                    ],
+                                                    "props": {
+                                                        "type": "radio",
+                                                        "name": "claimPayMethod",
+                                                        "value": "{{claimPayMethodOption}}",
+                                                        "checked": "{{(_local.claimPaymentMethod ?? claim.data?.claim?.pending_payment?.payment_method) === claimPayMethodOption}}",
+                                                        "className": "text-blue-600"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-sm text-gray-700 dark:text-gray-300"
+                                                    },
+                                                    "text": "{{claimPayMethodOption === 'point' ? $t('claim.apply.payment_method_point') : $t('claim.apply.payment_method_card')}}"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
                             "comment": "미수납 추가결제를 내는 자리 — PG 결제면 결제창으로 넘어가며 진행 표시를 켠 채 두어 같은 건으로 두 번 진입하지 않게 하고, 마일리지 결제는 그 자리에서 끝난 뒤 신청서를 다시 읽는다.",
                             "type": "basic",
                             "name": "Button",
                             "actions": [
                                 {
+                                    "comment": "고른 수단을 함께 보낸다 — 고르지 않았으면(선택지가 하나뿐이거나 손대지 않았으면) 빈 값이라 서버가 대기 건에 확정해 둔 값을 그대로 쓴다.",
                                     "type": "click",
                                     "handler": "sirsoft-ecommerce.payClaimOutstanding",
                                     "params": {
                                         "payApiBase": "{{_local.claimPayApiBase}}",
                                         "paymentNumber": "{{claim.data?.claim?.pending_payment?.payment_number}}",
+                                        "paymentMethod": "{{(claim.data?.claim?.available_payment_methods ?? []).length >= 2 ? (_local.claimPaymentMethod ?? '') : ''}}",
                                         "isGuest": "{{_local.isGuest === true}}",
                                         "refreshDataSourceId": "claim"
                                     }

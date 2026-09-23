@@ -140,9 +140,15 @@ function claimSettings(G7Core: any): { max_images?: number; image_max_size_kb?: 
  * 성공분만 `_local.claimImages` 에 누적한다 — 실패를 이유로 이미 올라간 첨부를 버리면
  * 재시도에서 다시 올라가 장수 상한을 소진한다.
  *
+ * 돌려주는 것은 **아직 신청서에 귀속되지 않은** 첨부의 ID 뿐이다. 수정 화면은 이미 귀속된
+ * 첨부로 `_local.claimImages` 를 채워 열리는데(`buildClaimEditImages()` 가 `attached: true`
+ * 를 세운다), 그 ID 까지 돌려주면 호출부가 `add_image_ids` 로 실어 보내고 서버는 그것을
+ * "이 주문의 미귀속 첨부" 로 찾다가 실패해 422 를 던진다 — 첨부가 한 장이라도 있는 신청서는
+ * 사유조차 고칠 수 없게 된다.
+ *
  * @param G7Core G7Core 인스턴스
  * @param options 업로드 옵션 (claimApiBase / isGuest)
- * @returns 신청서에 귀속시킬 첨부 ID 목록
+ * @returns 신청서에 새로 귀속시킬(아직 미귀속인) 첨부 ID 목록
  */
 export async function uploadPendingClaimFiles(
     G7Core: any,
@@ -153,7 +159,7 @@ export async function uploadPendingClaimFiles(
     const files = extractClaimFiles(local.claimImageFiles ?? []);
 
     if (files.length === 0) {
-        return already.map((image) => Number(image.id)).filter((id) => id > 0);
+        return pendingImageIds(already);
     }
 
     const settings = claimSettings(G7Core);
@@ -175,6 +181,9 @@ export async function uploadPendingClaimFiles(
 
     const config = claimRequestConfig(options.isGuest);
     const uploaded: ClaimPendingImage[] = [];
+    let failed = 0;
+    /** 서버가 준 첫 거절 사유 — 요약에 덧붙인다(같은 사유가 반복되는 것이 보통이다). */
+    let firstFailureMessage: string | null = null;
 
     for (const file of accepted) {
         const formData = new FormData();
@@ -194,14 +203,31 @@ export async function uploadPendingClaimFiles(
                 uploaded.push(response.data as ClaimPendingImage);
             }
         } catch (error: any) {
+            // 파일마다 띄우지 않고 **끝나고 한 번** 장수와 함께 알린다 — 아래 요약 참조.
             logger.error('[uploadPendingClaimFiles] 실패:', error);
-            G7Core.toast?.error?.(
-                error?.response?.data?.message
+            failed += 1;
+            firstFailureMessage = firstFailureMessage
+                ?? error?.response?.data?.message
                 ?? error?.data?.message
-                ?? G7Core.t?.('claim.image.upload_failed')
-                ?? '사진 업로드에 실패했습니다.'
-            );
+                ?? null;
         }
+    }
+
+    // **몇 장 중 몇 장이 빠졌는지** 한 줄로 말한다 (T2-D4 · #599 3차 실측).
+    //
+    // 종전에는 실패한 파일마다 같은 문구를 한 번씩 띄웠고, 그 문구가 장수를 말하지 않았다.
+    // 접수는 성공하므로 마지막에 남는 토스트는 「신청이 접수되었습니다.」였고, 구매자는 사진이
+    // 다 붙은 줄 알았다 — 3장 중 1장이 빠진 것을 알 방법이 화면 어디에도 없었다.
+    //
+    // 서버가 사유를 줬으면 그것을 덧붙인다(용량·형식 등 구매자가 고칠 수 있는 사유다).
+    // 다시 붙이는 자리는 이미 있으므로, 빠졌다는 사실과 장수만 알면 스스로 빠져나올 수 있다.
+    if (failed > 0) {
+        // 분모는 **올리려 한 장수**(`accepted`)다. 고른 장수를 쓰면 상한으로 이미 제외된 것까지
+        // 「못 올렸다」로 세어, 바로 위에서 이유를 말한 그 파일을 두 번 세는 셈이 된다.
+        const summary = G7Core.t?.('claim.image.upload_partial_failed', { failed, total: accepted.length })
+            ?? `사진 ${accepted.length}장 중 ${failed}장을 올리지 못했습니다.`;
+
+        G7Core.toast?.error?.(firstFailureMessage ? `${summary} (${firstFailureMessage})` : summary);
     }
 
     // await 뒤의 로컬 상태는 다시 읽는다 — 업로드 도중 다른 편집이 있었으면 캡처본이 낡았다.
@@ -210,7 +236,24 @@ export async function uploadPendingClaimFiles(
 
     G7Core.state.setLocal({ claimImages: merged, claimImageFiles: [] });
 
-    return merged.map((image) => Number(image.id)).filter((id) => id > 0);
+    return pendingImageIds(merged);
+}
+
+/**
+ * 아직 신청서에 귀속되지 않은 첨부의 ID 만 골라 돌려줍니다.
+ *
+ * 수정 화면이 채워 둔 귀속분은 `attached: true` 로 표시돼 있다. 서버의 `add_image_ids` 는
+ * 미귀속 첨부만 받으므로 그 표식이 선 것은 제외한다. 귀속분의 삭제는 이 목록이 아니라
+ * `remove_image_ids` 가 맡는다.
+ *
+ * @param images 화면이 들고 있는 첨부 목록
+ * @returns 미귀속 첨부 ID 목록
+ */
+function pendingImageIds(images: ClaimPendingImage[]): number[] {
+    return images
+        .filter((image) => (image as Record<string, any>).attached !== true)
+        .map((image) => Number(image.id))
+        .filter((id) => id > 0);
 }
 
 /**
@@ -239,7 +282,7 @@ export function setClaimImageFilesHandler(
     const local = G7Core.state.getLocal();
     const already: ClaimPendingImage[] = local.claimImages ?? [];
     const settings = claimSettings(G7Core);
-    const { countExceeded, sizeExceeded } = filterClaimFilesByLimits(files, already.length, settings);
+    const { accepted, countExceeded, sizeExceeded } = filterClaimFilesByLimits(files, already.length, settings);
 
     if (sizeExceeded) {
         G7Core.toast?.warning?.(
@@ -255,7 +298,12 @@ export function setClaimImageFilesHandler(
         );
     }
 
-    G7Core.state.setLocal({ claimImageFiles: action.params?.files ?? [] });
+    // **거른 결과를 담는다** — 고른 원본을 그대로 담으면 `_local.claimImageFiles` 가
+    // 「고른 것」과 「보낼 것」 둘을 뜻하게 되고, 그 차이가 화면 어디에도 드러나지 않는다.
+    // 업로드 경로(`uploadPendingClaimFiles`)가 같은 술어로 한 번 더 거르므로 실제로 올라가는
+    // 파일은 종전에도 옳았지만, 상태가 거짓을 들고 있으면 그 값을 읽는 다음 화면이 틀린다
+    // (2026-09-22 #599 3차 실측 T2-D2 — 거절된 파일이 첨부된 것처럼 남았다).
+    G7Core.state.setLocal({ claimImageFiles: accepted });
 }
 
 /**

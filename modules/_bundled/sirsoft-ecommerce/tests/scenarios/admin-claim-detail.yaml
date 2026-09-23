@@ -174,6 +174,27 @@ effects:
   - claim_detail_handler_fallback_keys_resolve
   - detail_controls_gated_by_write_abilities
 
+  # 2026-09-23 — 테스트가 쓰는데 어느 매니페스트에도 선언되지 않아 역매핑이 비어 있던 항목들.
+  # 선언이 없으면 그 테스트를 지워도 커버리지가 초록으로 남는다(마킹이 어디에도 계상되지 않는다).
+  # 첨부 업로더
+  - claim_attachment_limits_come_from_the_server          # 첨부 상한은 서버가 내려 준 값을 쓴다
+  - claim_attachment_messages_exist_in_both_locales       # 첨부 문구가 ko/en 양쪽에 있다
+  - claim_attachment_origin_strip_hides_unknown_badges    # 모르는 출처 배지는 그리지 않는다
+  - claim_attachment_upload_handler_is_gone               # 옛 업로드 핸들러가 남아 있지 않다
+  - claim_attachment_uploader_actions_declare_event_names # 업로더 액션이 이벤트 이름을 선언한다
+  - claim_attachment_uploader_blocks_the_core_reorder_endpoint # 코어 재정렬 엔드포인트를 쓰지 않는다
+  - claim_attachment_uploader_serializes_uploads          # 업로드를 순차로 보낸다
+  # 상세 화면 공통 규약
+  - claim_detail_tab_content_loads_four_partials_in_order # 탭 본문이 네 파샬을 순서대로 싣는다
+  - claim_detail_change_actions_bind_a_value              # change 액션이 값을 바인딩한다
+  - claim_detail_change_actions_population_is_not_empty   # 모집단이 비면 red (가짜 초록 방지)
+  - claim_detail_change_actions_read_event_target_value   # change 액션이 이벤트 대상의 값을 읽는다
+  - claim_detail_message_key_collection_is_not_empty      # 문구 키 모집단이 비면 red
+  - claim_detail_transition_bar_state_key_round_trips     # 전이 바의 상태 키가 왕복한다
+  - claim_detail_uses_no_unknown_handler_alias            # 등록되지 않은 핸들러 별칭을 쓰지 않는다
+  - claim_item_transition_network_error_shows_localized_message # 통신 실패도 번역된 문구로 알린다
+  - claim_refund_execute_disabled_unless_approved         # [환불하기]는 승인된 건에서만 눌린다
+
 test_files:
   - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminClaimDetail.test.ts
   - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminClaimDetailRender.test.tsx

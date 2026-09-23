@@ -44,6 +44,14 @@ class UserClaimRefundBranchTest extends ModuleTestCase
 
     protected User $user;
 
+    /**
+     * 통화 설정·클레임 사유를 심고 PG 환불 훅을 성공으로 고정합니다.
+     *
+     * 이 클래스가 재는 것은 **어느 종착점에서 멈추는가**이지 PG 가 성공하는가가 아니다 —
+     * 훅을 고정하지 않으면 PG 미설정 환경에서 전 축이 같은 이유로 실패해 축이 무의미해진다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -56,12 +64,22 @@ class UserClaimRefundBranchTest extends ModuleTestCase
         ]);
     }
 
+    /**
+     * 테스트가 심은 통화 설정을 지웁니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         $this->clearTestCurrencySettings();
         parent::tearDown();
     }
 
+    /**
+     * 회원 클레임 API 의 접두 경로를 돌려줍니다.
+     *
+     * @return string API 접두 경로
+     */
     protected function base(): string
     {
         return '/api/modules/sirsoft-ecommerce/user';
@@ -73,7 +91,7 @@ class UserClaimRefundBranchTest extends ModuleTestCase
      * `completes` 는 자동 전이가 완료까지 가는지다. 계좌(BANK)만 승인에서 멈춘다 —
      * 사람이 송금해야 하고, 운영자의 [환불하기]가 곧 송금 완료 선언이다.
      *
-     * @return array<string, array{0: string, 1: string, 2: RefundMethodEnum, 3: bool}>
+     * @return array<string, array{0: string, 1: string, 2: RefundMethodEnum, 3: bool}> 결제수단·PG·기대 환불수단·기대 환불상태 네 값의 조합
      */
     public static function refundMethodMatrix(): array
     {
@@ -90,7 +108,7 @@ class UserClaimRefundBranchTest extends ModuleTestCase
     /**
      * 상품 상태 축 — 설정 목록과 기대 분기.
      *
-     * @return array<string, array{0: OrderStatusEnum, 1: string}>
+     * @return array<string, array{0: OrderStatusEnum, 1: string}> 주문옵션 상태와 그 상태가 만드는 기대 분기
      */
     public static function statusMatrix(): array
     {
@@ -104,6 +122,15 @@ class UserClaimRefundBranchTest extends ModuleTestCase
         ];
     }
 
+    /**
+     * 이 테스트 회원이 결제를 마친 주문을 만들고 결제수단·PG 를 갈아 끼웁니다.
+     *
+     * 종착점을 정하는 것이 결제수단이므로, 축마다 같은 주문에 수단만 바꿔 끼운다.
+     *
+     * @param  string  $paymentMethod  결제수단 코드 (card·dbank·point 등)
+     * @param  string  $pgProvider  PG 식별자 (PG 를 타지 않는 수단은 빈 문자열)
+     * @return Order 결제완료 주문 (options·payment·shippings 로드됨)
+     */
     protected function myPaidOrder(string $paymentMethod = 'card', string $pgProvider = 'testpg'): Order
     {
         $order = $this->paidClaimOrder();
@@ -116,6 +143,13 @@ class UserClaimRefundBranchTest extends ModuleTestCase
         return $order->fresh(['options', 'payment', 'shippings']);
     }
 
+    /**
+     * 주문의 첫 옵션 하나를 신청 항목 배열로 만듭니다.
+     *
+     * @param  Order  $order  대상 주문
+     * @param  int  $quantity  신청 수량
+     * @return array<int, array{order_option_id: int, quantity: int}> 신청 항목 배열
+     */
     protected function items(Order $order, int $quantity = 1): array
     {
         return [['order_option_id' => $order->options->first()->id, 'quantity' => $quantity]];
@@ -130,6 +164,8 @@ class UserClaimRefundBranchTest extends ModuleTestCase
      *
      * 수단이 하나 늘면 이 테스트가 red 가 된다 — 새 수단의 종착점을 아무도 정하지 않은 채
      * 자동 전이가 그 수단을 만나는 일을 막는다.
+     *
+     * @return void 반환값 없음
      *
      * @scenario item_selection=single_full, payment_method=card, verify_stage=refund_record
      *
@@ -153,6 +189,8 @@ class UserClaimRefundBranchTest extends ModuleTestCase
 
     /**
      * 매트릭스가 설정 두 목록의 상태 **전수**를 덮는다.
+     *
+     * @return void 반환값 없음
      *
      * @scenario item_selection=single_full, payment_method=card, verify_stage=refund_record
      *
@@ -187,7 +225,46 @@ class UserClaimRefundBranchTest extends ModuleTestCase
     // ================================================================
 
     /**
+     * 계좌로 환불되는 주문은 **계좌 없이는 접수되지 않는다.**
+     *
+     * 화면은 「은행·계좌번호·예금주를 모두 입력해 주세요」라고 적어 두고도 [환불 신청하기] 를
+     * 막지 않았고, 서버도 가상계좌에만 계좌를 요구해 **무통장 주문이 계좌 3칸 공란으로 접수**됐다.
+     * 그렇게 접수된 건은 운영자가 [환불하기] 를 누르면 송금 없이 장부만 `completed` 로 닫히고,
+     * 계좌를 채울 자리가 관리자 화면에 없어 되돌릴 수도 없었다
+     * (2026-09-22 #599 3차 실측 L-8 · T2-D5·D6).
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario item_selection=single_full, refund_branch=auto, verify_stage=refund_record
+     *
+     * @effects refund_request_requires_a_bank_account_when_money_returns_by_transfer
+     */
+    public function test_bank_refund_is_rejected_without_an_account(): void
+    {
+        $order = $this->myPaidOrder('dbank', '');
+
+        $this->actingAs($this->user)
+            ->postJson($this->base()."/orders/{$order->id}/refund-requests", [
+                'items' => $this->items($order),
+                'reason_code' => 'changed_mind',
+            ])
+            ->assertStatus(422);
+
+        $this->assertSame(
+            0,
+            OrderRefund::where('order_id', $order->id)->count(),
+            '계좌 없이 환불신청서가 만들어졌다 — 돈이 갈 곳 없이 장부만 닫히는 길이 열린다',
+        );
+    }
+
+    /**
      * 수단별 종착점과 두 문서의 유무·상태. (P16 · B14 · P12)
+     *
+     * @param  string  $paymentMethod  결제수단 코드
+     * @param  string  $pgProvider  PG 식별자
+     * @param  RefundMethodEnum  $expectedMethod  기대 환불수단
+     * @param  RefundStatusEnum  $expectedStatus  기대 환불상태(=종착점)
+     * @return void 반환값 없음
      *
      * @scenario item_selection=single_full, refund_branch=auto, verify_stage=refund_record
      *
@@ -242,6 +319,10 @@ class UserClaimRefundBranchTest extends ModuleTestCase
 
     /**
      * 상품 상태가 분기를 정한다. (§4-1)
+     *
+     * @param  OrderStatusEnum  $status  주문·주문옵션에 심을 상태
+     * @param  string  $expectedBranch  그 상태가 만드는 기대 분기
+     * @return void 반환값 없음
      *
      * @scenario item_selection=single_full, payment_method=card, verify_stage=order_status
      *

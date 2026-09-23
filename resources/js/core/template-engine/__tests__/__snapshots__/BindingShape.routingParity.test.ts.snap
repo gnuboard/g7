@@ -310,6 +310,7 @@ exports[`BindingShape 라우팅 diff 하네스 > 표현식/경로 판정: 구 �
       "templates/_bundled/sirsoft-basic/layouts/partials/mypage/board/_my_posts.json",
       "templates/_bundled/sirsoft-basic/layouts/partials/mypage/board/_my_reactions.json",
       "templates/_bundled/sirsoft-basic/layouts/partials/mypage/board/_my_reports.json",
+      "templates/_bundled/sirsoft-basic/layouts/partials/mypage/claims/_apply_reason.json",
       "templates/_bundled/sirsoft-basic/layouts/partials/mypage/claims/_list.json",
       "templates/_bundled/sirsoft-basic/layouts/partials/mypage/inquiries/_list.json",
       "templates/_bundled/sirsoft-basic/layouts/partials/mypage/mileage/_list.json",

@@ -31,6 +31,8 @@ axes:
 effects:
   - claim_attachment_selection_only_queues
   - claim_attachment_upload_happens_once_before_submit
+  # T2-D4 (#599 3차 실측 L-3) — 일부만 실패하면 몇 장 중 몇 장인지 한 번에 말한다
+  - claim_attachment_partial_failure_reports_the_count
   - claim_attachment_guest_requests_carry_the_order_token
   - claim_attachment_delete_updates_the_list_only_on_success
 

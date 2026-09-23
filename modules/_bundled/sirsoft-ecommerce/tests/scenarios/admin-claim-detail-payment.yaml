@@ -89,6 +89,11 @@ effects:
   - claim_refund_execute_requires_confirm_modal
   - claim_refund_modal_does_not_read_parent_local
   - claim_refund_execute_seeds_modal_context
+  # T2-D6 (#599 3차 실측 L-8) — 계좌 없이 「환불완료」가 찍히던 길을 창에서 먼저 막는다
+  - claim_refund_execute_modal_gates_on_the_bank_account
+  - claim_refund_execute_modal_clears_the_bank_inputs_on_open
+  - claim_refund_execute_body_carries_the_typed_bank_account
+  - claim_refund_execute_body_carries_the_force_consent
   - claim_refund_execute_requires_identity
   - claim_refund_execute_requires_seeded_context
   - claim_refund_execute_body_carries_edited_amounts
@@ -155,3 +160,20 @@ notes: |
   **브라우저 실측의 선행 조건**은 S9a 와 같다 — `playwright:seed-ecommerce` 의 클레임 축이
   아직 stub 이라(계획서 이월 4) spec 은 목록 API 로 신청서를 발견해 진행하고, 한 건도 없으면
   그 사실을 드러내며 건너뛴다.
+
+validation:
+  audit_rule: frontend-change-requires-e2e
+  browser_check: Playwright MCP   # #599 3차 실측 세션2 — 실제 주문·신청으로 재실측
+  note: |
+    T2-D6(계좌도 동의도 없으면 [환불하기]가 잠긴다)의 브라우저 축은 Playwright MCP 재실측이
+    덮는다. spec 을 새로 두지 않는 이유는 이 축이 **무통장 결제 → 배송완료 → 환불신청 → 승인**
+    까지 실제 상태를 만들어야 성립하는데, 이 모듈의 spec 들은 클레임 시드가 stub 이라(위 선행
+    조건) 승인된 무통장 환불신청서를 만들지 못하고, 그 상태에서 재현하면 창이 아예 뜨지 않아
+    **잠금이 아니라 부재를 재게 되기 때문이다**(가짜 초록 — 게이트를 지워도 통과한다).
+
+    대신 세 겹으로 받친다. ① 레이아웃 테스트가 창의 게이트와 입력 칸을 정적으로 잠근다
+    (`adminClaimDetail.test.ts` 2건). ② 핸들러 테스트가 본문에 실리는 값을 잠근다
+    (`claimDetailHandlers.test.ts` 3건 — 게이트를 빼면 red 임을 실측 확인). ③ 서버가 같은
+    술어로 422 를 낸다(`AdminRefundExecuteRequiresBankTest` 7건). 화면과 서버가 같은 판정
+    (`refund_account_required` ← `OrderRefundRequestService::refundsToBankAccount()`)을 쓰므로
+    한쪽만 통과하는 상태가 생기지 않는다.

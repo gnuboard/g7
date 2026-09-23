@@ -222,11 +222,18 @@ export async function withdrawClaimHandler(
  * 신청서를 결제대기로 옮긴다. 그 뒤 낼 사람은 구매자인데, 그 자리가 없으면 상세는 미수납
  * 금액만 보여 주고 결제는 영원히 완결되지 않는다 — 운영자가 그 청구 방식을 허용해도 그렇다.
  *
- * 결제 수단은 **보내지 않는다**. 서버가 결제 대기 건을 만들 때 이미 상점의 허용 수단으로
- * 확정해 두었고(`resolveDefaultPaymentMethodFor` — 신청 시점 결제·차액 정산과 같은 게이트),
- * 화면은 그 수단을 표시만 한다. 여기서 수단을 다시 고르게 하면 신청서 작성 화면이 쓰는
- * 카탈로그(`claimable-options`)를 이 화면도 읽어야 하는데, 그 응답은 주문 스코프라 상세가
- * 데이터소스를 하나 더 들어야 한다. 수단 변경은 별개 결정으로 남긴다.
+ * 결제 수단은 **화면이 고른 경우에만** 보낸다. 대기 건의 수단은 서버가 만들 때 상점의 허용
+ * 수단으로 확정해 두므로(`resolveDefaultPaymentMethodFor`) 평소에는 빈 본문으로 충분하다.
+ *
+ * 그러나 확정 **뒤에 낼 수 없게 되는 경우**가 있다 — 마일리지 잔액이 모자라거나, 운영자가 그
+ * 수단을 `claim.charge_payment_methods` 에서 내리거나. 두 경우 모두 `pay()` 가 거절하는데, 화면이
+ * 수단을 다시 고를 수 없으면 사용자는 「미수납 ○○원 + 결제하기」를 보면서 누를 때마다 같은 422 를
+ * 받는다(#599 3차 실측 F-1·F-2 — 출구가 신청서 철회뿐이었다).
+ *
+ * 종전 주석은 수단 변경을 미루는 이유로 「카탈로그(`claimable-options`)가 주문 스코프라 상세가
+ * 데이터소스를 하나 더 들어야 한다」를 들었으나 **그것은 사실이 아니었다** — 허용 목록의 단일
+ * 출처는 전역 모듈 설정이고 신청 화면이 읽는 것도 그 사본이다. 그래서 상세 응답의
+ * `available_payment_methods` 로 같은 목록을 싣고, 화면이 고른 값을 여기서 실어 보낸다.
  *
  * 결제 주소의 앞부분(`payApiBase`)은 철회와 같은 이유로 **셸이 통째로 준다**:
  *
@@ -251,6 +258,7 @@ export async function payClaimOutstandingHandler(
     action: ActionWithParams<{
         payApiBase?: string;
         paymentNumber?: string;
+        paymentMethod?: string;
         isGuest?: boolean;
         refreshDataSourceId?: string;
     }>,
@@ -280,9 +288,15 @@ export async function payClaimOutstandingHandler(
     G7Core.state.setLocal({ isPayingClaim: true, claimPayError: null });
 
     try {
+        // 화면이 수단을 골랐으면 그것을 실어 보낸다 — 대기 건의 수단은 접수 때 확정되지만
+        // 그 뒤에 낼 수 없게 될 수 있고(마일리지 잔액 부족, 운영자가 수단을 내림), 그때 화면이
+        // 다른 수단을 골라도 보내지 않으면 서버는 옛 수단으로 판정해 같은 거절을 돌려준다.
+        // 고르지 않았으면 종전대로 빈 본문이다 — 서버가 대기 건에 확정해 둔 값을 쓴다.
+        const paymentMethod = String(action.params?.paymentMethod ?? '').trim();
+
         const response = await G7Core.api.post(
             payApiBase + '/' + encodeURIComponent(paymentNumber) + '/pay',
-            {},
+            paymentMethod ? { payment_method: paymentMethod } : {},
             claimRequestConfig(isGuest)
         );
 

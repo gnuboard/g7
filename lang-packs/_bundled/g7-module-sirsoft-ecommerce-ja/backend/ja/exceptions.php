@@ -121,7 +121,6 @@ return [
     'claim_new_option_out_of_stock' => '交換するオプションの在庫が不足しています。',
     'claim_redelivery_country_change_not_allowed' => '交換の再配送先は注文の配送先と同じ国のみ指定できます。(交換の海外配送は未対応)',
     'claim_refund_not_applicable' => '返金が発生しない申請のため、返金申請書を受け付けることができません。',
-    'claim_not_editable' => '承認後は申請内容を修正できません。取り消してから再度申請してください。',
     'claim_refund_branch_mixed' => '即時キャンセルできる商品と返金申請が必要な商品を一度に申請することはできません。分けて申請してください。',
     'claim_refund_not_requestable' => '現在の商品ステータス(:status)ではキャンセル・返金を申請できません。',
     'claim_payment_not_found' => '決済情報が見つかりません。',
@@ -140,4 +139,5 @@ return [
     'claim_item_not_splittable' => 'この商品は数量を分けて処理することができません。全体数量で処理してください。',
     'claim_refund_method_unavailable' => 'この注文の決済方法としては、選択された返金方法は使用できません。',
     'exchange_rate_save_failed' => '為替レート設定を保存できませんでした。',
+    'claim_not_editable' => '承認後は申請内容を修正することはできません。変更が必要な場合は、カスタマーサポートにお問い合わせください。',
 ];

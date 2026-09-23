@@ -1420,6 +1420,17 @@ class OrderRefundRequestService
             $updates['refund_method'] = $method;
         }
 
+        // 실행하며 적어 넣은 환불 계좌 (T2-D6) — 계좌로 송금해야 끝나는 환불인데 신청서에
+        // 계좌가 없을 때 운영자가 [환불하기] 창에서 채운 값이다. 실행과 같은 트랜잭션에 넣어야
+        // 「계좌는 저장됐는데 실행은 실패한」 반쪽 상태가 생기지 않는다. 셋이 짝을 이루는지는
+        // 요청(`ExecuteRefundRequest::validateRefundBank`)이 이미 걸렀으므로 여기 오는 값은
+        // 세 칸이 모두 찼거나 아예 없다.
+        foreach (['refund_bank_code', 'refund_bank_account', 'refund_bank_holder'] as $column) {
+            if (array_key_exists($column, $amounts) && filled($amounts[$column])) {
+                $updates[$column] = (string) $amounts[$column];
+            }
+        }
+
         return $updates;
     }
 

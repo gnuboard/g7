@@ -68,14 +68,35 @@ describe('FileUploader — 선언하지 않은 용량 상한을 말하지 않는
     }
   });
 
-  // @scenario max_size_declared=omitted
-  // @effects claim_form_keeps_limit_out_of_composite
-  it('클레임 신청서는 용량 상한을 컴포지트에 넘기지 않는다 (S2-D10 유지)', () => {
+  /**
+   * 클레임 신청서는 **장수와 용량을 둘 다** 넘기고, 컴포지트가 거절한 사유를 받는다. (T2-D2)
+   *
+   * 종전(S2-D10)에는 용량을 넘기지 않았다. 근거는 「넘기면 컴포지트가 초과 파일을 먼저 걸러
+   * change 를 쏘지 않아, 사용자는 사진을 골랐는데 화면에 아무 변화가 없다」였다. 그런데 실은
+   * 컴포지트가 그 자리에서 `onUploadError` 를 부르고 있었고 **화면이 그 이벤트를 받지 않았을
+   * 뿐**이다 — 받으면 사유가 그 자리에 뜨므로 그 근거가 사라진다.
+   *
+   * 넘기지 않은 쪽의 대가가 더 컸다. 거절된 파일이 컴포지트 목록에 `big.jpg 8.52 MB` ·
+   * `1/5개 첨부됨` 으로 남아 **첨부된 것처럼 보였고**, 토스트가 5초 뒤 사라지면 화면과 실제가
+   * 갈렸다(2026-09-22 #599 3차 실측 T2-D2).
+   *
+   * 위 SA-D5 가 리터럴 기본값 10 을 없애고 드롭존을 「상한이 있을 때만 용량을 말한다」로
+   * 바꿔 둔 덕에, 지금 넘기는 값은 **서버 설정 그대로**(2MB)라 안내와 거절선이 갈리지 않는다.
+   */
+  // @scenario max_size_declared=declared
+  // @effects claim_form_declares_the_limit_and_takes_the_rejection
+  it('클레임 신청서는 용량 상한을 넘기고 거절 사유를 받는다 (T2-D2)', () => {
     const layout = read('layouts/partials/mypage/claims/_apply_reason.g7.html');
     const tag = layout.match(/<file-uploader[^>]*>/)?.[0] ?? '';
 
     expect(tag).toBeTruthy();
-    expect(tag).not.toMatch(/maxSize/);
     expect(tag).toMatch(/maxFiles/);
+    // 리터럴이 아니라 같은 설정값에서 온다 — 컴포지트가 MB 를 받으므로 서버가 같은 상한을 MB 로도 내려 준다.
+    expect(tag).toMatch(/maxSize/);
+    expect(tag).toContain('image_max_size_mb');
+
+    // 거절 사유를 받지 않으면 종전 근거(「아무 일도 없어 보인다」)가 되살아난다.
+    const block = layout.slice(layout.indexOf('<file-uploader'), layout.indexOf('</file-uploader>'));
+    expect(block).toContain('onUploadError');
   });
 });

@@ -68,14 +68,35 @@ final class ClaimPaymentCallback
     /**
      * 클레임 결제 예외를 리다이렉트 쿼리용 짧은 코드로 바꿉니다.
      *
-     * `claim_payment_amount_mismatch` → `amount_mismatch` 처럼 예외 키의 마지막 조각을 쓴다 —
-     * PG 원문 메시지는 리다이렉트 주소에 싣지 않는다 (로그·결제행 컬럼에만 남는다).
+     * 싣지 않기로 한 것은 PG **원문 메시지**뿐이고 **코드는 싣는다** — 이 클래스 헤더와
+     * `ClaimPaymentService::approvePgPayment()` 가 같은 문장을 계약으로 적고 있다. 원문은
+     * 상점 MID·PG 내부 상태를 담을 수 있어 로그·결제행 컬럼에만 남기지만, 코드는 구매자가
+     * 받는 유일한 실패 식별자이자 고객센터가 건을 특정하는 값이다.
+     *
+     * 그래서 **파라미터가 코드를 들고 있으면 그쪽이 이긴다.** 키 조각만 보면
+     * `OrderClaimException::paymentFailed('PG_API_ERROR')` 가 `failed` 로 뭉개진다 — 그 키의
+     * 마지막 조각이 상수 `failed` 이고 진짜 코드는 치환 파라미터에 따로 실려 있기 때문이다.
+     * 그러면 서로 다른 PG 거절이 전부 같은 토큰으로 수렴한다(2026-09-22 #599 3차 실측 F-5:
+     * 결제행에는 `PG_API_ERROR` 와 한국어 사유가 남았는데 화면은 「실패 코드 failed」였다).
+     *
+     * 파라미터가 없는 예외는 기존대로 키의 마지막 조각을 쓴다 — `claim_payment_amount_mismatch`
+     * → `amount_mismatch` 처럼 그 조각 자체가 사유인 경우다(모듈이 내린 판정이라 PG 코드가 없다).
+     *
+     * 코드 모양이 아닌 값은 받지 않는다. 이 값은 배너에 그대로 그려지므로, PG 가 코드 자리에
+     * 문장·태그·줄바꿈을 담아 보내면 그것이 구매자가 읽는 문구가 된다 — 원문 메시지를 싣지
+     * 않기로 한 이유가 그대로 적용된다.
      *
      * @param  OrderClaimException  $e  모듈 예외
      * @return string 오류 코드
      */
     public static function errorCode(OrderClaimException $e): string
     {
+        $error = $e->getMessageParams()['error'] ?? null;
+
+        if (is_string($error) && preg_match('/^[A-Za-z0-9_.-]{1,50}$/', $error) === 1) {
+            return $error;
+        }
+
         $key = $e->getMessageKey();
         $marker = 'claim_payment_';
         $pos = strrpos($key, $marker);

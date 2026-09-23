@@ -224,7 +224,15 @@
       },
       "refund_bank_name": "환불 은행",
       "refund_bank_account": "환불 계좌번호",
-      "refund_bank_holder": "예금주"
+      "refund_bank_holder": "예금주",
+      "refund_bank_input_title": "환불받을 계좌",
+      "refund_bank_input_hint": "이 환불은 운영자가 계좌로 송금해야 끝납니다. 신청서에 계좌가 없어 여기서 적을 수 있습니다 — 적은 값은 신청서에도 함께 남습니다.",
+      "refund_bank_code_placeholder": "은행 코드 (예: 004)",
+      "refund_bank_account_placeholder": "계좌번호 (- 없이)",
+      "refund_bank_holder_placeholder": "예금주",
+      "force_without_bank": "계좌 없이 완료로 기록합니다",
+      "force_without_bank_hint": "송금은 일어나지 않고 신청서만 환불완료로 닫힙니다. 이미 다른 경로로 보냈거나 지급하지 않기로 한 건에만 쓰세요 — 되돌릴 수 없습니다.",
+      "refund_bank_required": "환불받을 계좌를 적거나, 계좌 없이 완료로 기록하는 데 동의해야 실행할 수 있습니다."
     },
     "transition": {
       "title": "신청서 상태 변경",

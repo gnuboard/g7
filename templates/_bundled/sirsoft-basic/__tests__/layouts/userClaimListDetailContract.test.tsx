@@ -256,6 +256,11 @@ describe('철회·수정 진입점 — 목록과 상세 두 곳에 있다', () =
     expect(editInit.params.claimApiBase).toBe('/api/modules/sirsoft-ecommerce/user/claims');
     expect(JSON.stringify(editInit.params)).not.toContain('_local');
 
+    // 승인 이후 신청서의 `/edit` 은 상세로 돌려보낸다(#599 T2-D7) — 돌아갈 주소는 셸이 준다.
+    // 핸들러가 조립하면 회원·비회원 주소 모양이 달라 한쪽이 404 가 된다(claimApiBase 와 같은 근거).
+    expect(String(editInit.params.detailPath)).toContain("'/mypage/claims/'");
+    expect(String(editInit.params.detailPath)).toContain('route.claim_number');
+
     // 셸이 렌더 이후 쓰는 값과 같아야 한다 — 두 값이 갈리면 진입과 저장이 다른 주소를 쓴다.
     expect(applyShell.initLocal.claimEditApiBase).toBe(editInit.params.claimApiBase);
 

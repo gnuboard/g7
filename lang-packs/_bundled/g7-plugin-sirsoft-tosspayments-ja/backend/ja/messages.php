@@ -23,6 +23,7 @@ return [
         'invalid_callback' => 'クレーム決済承認に必要なコールバックパラメータ(paymentKey, orderId, amount)がありません。',
         'order_id_mismatch' => 'コールバックの注文番号が承認対象クレーム決済番号と一致しません。',
         'deposit_not_supported' => 'クレーム追加決済は入金待機方式(仮想口座)をサポートしていません。',
+        'amount_mismatch' => '決済画面を開いた後に請求額が変更されました。申請書から決済をやり直してください。',
         'amount_mismatch_cancel_reason' => 'クレーム決済承認金額不一致による自動キャンセル',
     ],
 ];

@@ -54,6 +54,11 @@ class OrderReturnServiceTest extends ModuleTestCase
 
     protected OrderReturnService $service;
 
+    /**
+     * 통화 설정을 심고 반품 서비스와 클레임 사유를 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -62,6 +67,11 @@ class OrderReturnServiceTest extends ModuleTestCase
         $this->seedReturnReasons();
     }
 
+    /**
+     * 테스트가 심은 통화 설정을 지웁니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         $this->clearTestCurrencySettings();
@@ -76,6 +86,8 @@ class OrderReturnServiceTest extends ModuleTestCase
      * 반품 사유 카탈로그를 시드합니다.
      *
      * 코어 TestingSeeder 는 취소(refund) 사유만 시드하므로 반품 축은 테스트가 만든다.
+     *
+     * @return void 반환값 없음
      */
     protected function seedReturnReasons(): void
     {
@@ -170,6 +182,7 @@ class OrderReturnServiceTest extends ModuleTestCase
      *
      * @param  ShippingPolicy  $policy  배송정책
      * @param  float  $fee  편도 회수비
+     * @return void 반환값 없음
      */
     protected function setReturnFixedFee(ShippingPolicy $policy, float $fee): void
     {
@@ -300,6 +313,15 @@ class OrderReturnServiceTest extends ModuleTestCase
     // 신청
     // ================================================================
 
+    /**
+     * 반품 접수가 신청번호와 `requested` 상태의 신청서를 만든다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario quantity=full, charge_method=none, refund_chain=none
+     *
+     * @effects return_shipping_fee_and_charge_amount_are_frozen
+     */
     public function test_request_creates_return_with_number_and_requested_status(): void
     {
         $order = $this->deliveredOrder();
@@ -312,6 +334,15 @@ class OrderReturnServiceTest extends ModuleTestCase
         $this->assertCount(1, $return->returnOptions);
     }
 
+    /**
+     * 접수 시점의 사유 코드와 귀책 유형을 신청서에 그대로 굳힌다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario quantity=full, charge_method=none, refund_chain=none
+     *
+     * @effects return_shipping_fee_and_charge_amount_are_frozen
+     */
     public function test_request_snapshots_reason_and_fault_type(): void
     {
         $order = $this->deliveredOrder();
@@ -322,6 +353,15 @@ class OrderReturnServiceTest extends ModuleTestCase
         $this->assertSame(ClaimReasonFaultTypeEnum::SELLER, $return->fault_type);
     }
 
+    /**
+     * 접수는 대상 주문옵션을 「반품 진행중」으로 옮긴다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario quantity=full, charge_method=none, refund_chain=none
+     *
+     * @effects return_request_records_the_original_option_status_for_revert
+     */
     public function test_request_moves_order_option_into_return_in_progress(): void
     {
         $order = $this->deliveredOrder();
@@ -335,7 +375,14 @@ class OrderReturnServiceTest extends ModuleTestCase
     }
 
     /**
+     * 되돌릴 때 쓸 원래 상태를 항목마다 기록해 둔다.
+     *
+     *
+     * @return void 반환값 없음
+     *
      * @effects return_request_records_the_original_option_status_for_revert
+     *
+     * @scenario quantity=full, charge_method=none, refund_chain=none
      */
     public function test_request_records_original_option_status_for_revert(): void
     {
@@ -350,7 +397,14 @@ class OrderReturnServiceTest extends ModuleTestCase
     }
 
     /**
+     * 수량 일부만 반품하면 주문옵션이 반품분과 잔여분으로 갈라진다.
+     *
+     *
+     * @return void 반환값 없음
+     *
      * @effects return_request_splits_the_order_option_for_a_partial_quantity
+     *
+     * @scenario quantity=partial, charge_method=none, refund_chain=none
      */
     public function test_request_splits_order_option_for_partial_quantity(): void
     {
@@ -374,7 +428,14 @@ class OrderReturnServiceTest extends ModuleTestCase
     }
 
     /**
+     * 갈라진 뒤에도 원래 주문 수량을 감사용으로 남긴다.
+     *
+     *
+     * @return void 반환값 없음
+     *
      * @effects return_request_keeps_the_original_quantity_for_audit
+     *
+     * @scenario quantity=partial, charge_method=none, refund_chain=none
      */
     public function test_request_keeps_original_quantity_for_audit(): void
     {
@@ -386,6 +447,15 @@ class OrderReturnServiceTest extends ModuleTestCase
         $this->assertSame(1, (int) $return->returnOptions->first()->return_quantity);
     }
 
+    /**
+     * 접수만으로는 재고를 되돌리지 않는다 — 상품이 아직 돌아오지 않았다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario quantity=full, charge_method=none, refund_chain=none
+     *
+     * @effects return_completion_restores_stock_only_for_checked_items
+     */
     public function test_request_does_not_restore_stock_on_acceptance(): void
     {
         $order = $this->deliveredOrder();
@@ -398,6 +468,15 @@ class OrderReturnServiceTest extends ModuleTestCase
         $this->assertTrue((bool) $order->options->first()->fresh()->is_stock_deducted);
     }
 
+    /**
+     * 같은 주문에 반품을 두 번 걸어도 두 신청서의 행이 한 줄로 합쳐지지 않는다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario quantity=partial, charge_method=none, refund_chain=none
+     *
+     * @effects return_request_splits_the_order_option_for_a_partial_quantity
+     */
     public function test_request_does_not_merge_course_rows_of_two_returns(): void
     {
         $order = $this->deliveredOrder(29000, 3);
@@ -429,6 +508,15 @@ class OrderReturnServiceTest extends ModuleTestCase
         );
     }
 
+    /**
+     * 신청할 수 없는 상태의 주문옵션은 접수를 거절한다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario quantity=full, charge_method=none, refund_chain=none
+     *
+     * @effects return_request_period_is_measured_from_delivery
+     */
     public function test_request_rejects_option_not_in_requestable_status(): void
     {
         $order = $this->createSingleItemClaimOrder(); // payment_complete 상태
@@ -436,6 +524,15 @@ class OrderReturnServiceTest extends ModuleTestCase
         $this->assertClaimException('claim_option_not_claimable', fn () => $this->service->requestReturn($order, $this->payload($order)));
     }
 
+    /**
+     * 주문 수량보다 많은 수량은 접수를 거절한다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario quantity=full, charge_method=none, refund_chain=none
+     *
+     * @effects return_request_rejects_a_quantity_locked_by_another_claim
+     */
     public function test_request_rejects_quantity_over_order_quantity(): void
     {
         $order = $this->deliveredOrder(29000, 2);
@@ -443,6 +540,15 @@ class OrderReturnServiceTest extends ModuleTestCase
         $this->assertClaimException('claim_quantity_invalid', fn () => $this->service->requestReturn($order, $this->payload($order, quantity: 3)));
     }
 
+    /**
+     * 수량 0 인 항목은 접수를 거절한다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario quantity=full, charge_method=none, refund_chain=none
+     *
+     * @effects return_request_rejects_a_quantity_locked_by_another_claim
+     */
     public function test_request_rejects_zero_quantity(): void
     {
         $order = $this->deliveredOrder();
@@ -450,6 +556,15 @@ class OrderReturnServiceTest extends ModuleTestCase
         $this->assertClaimException('claim_quantity_invalid', fn () => $this->service->requestReturn($order, $this->payload($order, quantity: 0)));
     }
 
+    /**
+     * 항목이 하나도 없는 접수는 거절한다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario quantity=full, charge_method=none, refund_chain=none
+     *
+     * @effects return_request_rejects_a_quantity_locked_by_another_claim
+     */
     public function test_request_rejects_empty_items(): void
     {
         $order = $this->deliveredOrder();
@@ -460,6 +575,15 @@ class OrderReturnServiceTest extends ModuleTestCase
         ]));
     }
 
+    /**
+     * 같은 주문옵션을 두 줄로 실으면 거절한다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario quantity=full, charge_method=none, refund_chain=none
+     *
+     * @effects return_request_rejects_a_quantity_locked_by_another_claim
+     */
     public function test_request_rejects_duplicate_option_lines(): void
     {
         $order = $this->deliveredOrder(29000, 2);
@@ -474,6 +598,15 @@ class OrderReturnServiceTest extends ModuleTestCase
         ]));
     }
 
+    /**
+     * 이 주문에 없는 주문옵션을 지목하면 거절한다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario quantity=full, charge_method=none, refund_chain=none
+     *
+     * @effects return_request_rejects_a_quantity_locked_by_another_claim
+     */
     public function test_request_rejects_unknown_option(): void
     {
         $order = $this->deliveredOrder();
@@ -484,6 +617,15 @@ class OrderReturnServiceTest extends ModuleTestCase
         ]));
     }
 
+    /**
+     * 비활성 사유는 접수를 거절한다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario quantity=full, charge_method=none, refund_chain=none
+     *
+     * @effects return_shipping_fee_and_charge_amount_are_frozen
+     */
     public function test_request_rejects_inactive_reason(): void
     {
         $order = $this->deliveredOrder();
@@ -491,6 +633,15 @@ class OrderReturnServiceTest extends ModuleTestCase
         $this->assertClaimException('claim_reason_unavailable', fn () => $this->service->requestReturn($order, $this->payload($order, 'retired_reason')));
     }
 
+    /**
+     * 없는 사유 코드는 접수를 거절한다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario quantity=full, charge_method=none, refund_chain=none
+     *
+     * @effects return_shipping_fee_and_charge_amount_are_frozen
+     */
     public function test_request_rejects_unknown_reason(): void
     {
         $order = $this->deliveredOrder();
@@ -506,6 +657,12 @@ class OrderReturnServiceTest extends ModuleTestCase
      * `ClaimQuantityGuard` 의 잠금 분기(`claim_quantity_locked`)는 이 경로에서 실행되지
      * 않는다. 잠금 분기는 분할이 없는 **취소 경로**와 가드 단위 테스트가 덮는다
      * (`ClaimQuantityGuardTest::test_resolve_rejects_a_locked_quantity`).
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario quantity=partial, charge_method=none, refund_chain=none
+     *
+     * @effects return_request_splits_the_order_option_for_a_partial_quantity
      */
     public function test_request_rejects_quantity_over_the_remaining_row_after_a_split(): void
     {
@@ -524,7 +681,14 @@ class OrderReturnServiceTest extends ModuleTestCase
     }
 
     /**
+     * 「승인 후 결제」 청구 방식을 받아들인다.
+     *
+     *
+     * @return void 반환값 없음
+     *
      * @effects return_pay_on_approval_does_not_ask_for_payment_at_request_time
+     *
+     * @scenario quantity=full, charge_method=pay_on_approval, refund_chain=none
      */
     public function test_request_accepts_pay_on_approval_charge_method(): void
     {
@@ -545,7 +709,14 @@ class OrderReturnServiceTest extends ModuleTestCase
     }
 
     /**
+     * 보조 통화 금액은 주문 시점 통화 스냅샷으로 환산해 기록한다.
+     *
+     *
+     * @return void 반환값 없음
+     *
      * @effects return_multi_currency_amounts_come_from_the_order_snapshot
+     *
+     * @scenario quantity=full, charge_method=none, refund_chain=none
      */
     public function test_request_records_multi_currency_amounts_from_the_order_snapshot(): void
     {
@@ -579,7 +750,14 @@ class OrderReturnServiceTest extends ModuleTestCase
     }
 
     /**
+     * 회수 배송비와 청구액을 접수 시점 값으로 굳힌다.
+     *
+     *
+     * @return void 반환값 없음
+     *
      * @effects return_shipping_fee_and_charge_amount_are_frozen
+     *
+     * @scenario quantity=full, charge_method=pay_on_request, refund_chain=none
      */
     public function test_request_freezes_shipping_fee_and_charge_amount(): void
     {
@@ -599,7 +777,14 @@ class OrderReturnServiceTest extends ModuleTestCase
     }
 
     /**
+     * 판매자 귀책이면 아무것도 청구하지 않는다.
+     *
+     *
+     * @return void 반환값 없음
+     *
      * @effects return_seller_fault_charges_nothing
+     *
+     * @scenario quantity=full, charge_method=none, refund_chain=none
      */
     public function test_request_charges_nothing_for_seller_fault(): void
     {
@@ -614,7 +799,14 @@ class OrderReturnServiceTest extends ModuleTestCase
     }
 
     /**
+     * 회수비가 있으면 청구 방식을 요구한다.
+     *
+     *
+     * @return void 반환값 없음
+     *
      * @effects return_charge_method_is_required_when_a_fee_remains
+     *
+     * @scenario quantity=full, charge_method=pay_on_request, refund_chain=none
      */
     public function test_request_requires_charge_method_when_fee_is_positive(): void
     {
@@ -626,7 +818,14 @@ class OrderReturnServiceTest extends ModuleTestCase
     }
 
     /**
+     * 회수비가 0 이면 청구 방식을 비운다.
+     *
+     *
+     * @return void 반환값 없음
+     *
      * @effects return_charge_method_is_cleared_when_the_fee_is_zero
+     *
+     * @scenario quantity=full, charge_method=none, refund_chain=none
      */
     public function test_request_nulls_charge_method_when_fee_is_zero(): void
     {
@@ -642,7 +841,14 @@ class OrderReturnServiceTest extends ModuleTestCase
     }
 
     /**
+     * 설정이 허용하지 않는 청구 방식은 거절한다.
+     *
+     *
+     * @return void 반환값 없음
+     *
      * @effects return_charge_method_outside_the_allowed_list_is_rejected
+     *
+     * @scenario quantity=full, charge_method=pay_on_request, refund_chain=none
      */
     public function test_request_rejects_charge_method_not_allowed_by_settings(): void
     {
@@ -662,7 +868,14 @@ class OrderReturnServiceTest extends ModuleTestCase
     }
 
     /**
+     * 환불액이 회수비를 덮지 못하면 「환불금에서 차감」을 거절한다.
+     *
+     *
+     * @return void 반환값 없음
+     *
      * @effects return_deduct_from_refund_requires_a_covering_refund
+     *
+     * @scenario quantity=full, charge_method=deduct_from_refund, refund_chain=none
      */
     public function test_request_rejects_deduct_from_refund_when_refund_cannot_cover_fee(): void
     {
@@ -677,7 +890,14 @@ class OrderReturnServiceTest extends ModuleTestCase
     }
 
     /**
+     * 환불액이 회수비를 덮으면 「환불금에서 차감」을 받아들인다.
+     *
+     *
+     * @return void 반환값 없음
+     *
      * @effects return_deduct_from_refund_requires_a_covering_refund
+     *
+     * @scenario quantity=full, charge_method=deduct_from_refund, refund_chain=none
      */
     public function test_request_accepts_deduct_from_refund_when_refund_covers_fee(): void
     {
@@ -694,7 +914,14 @@ class OrderReturnServiceTest extends ModuleTestCase
     }
 
     /**
+     * 부분 수량 반품도 회수비를 따로 결제하는 방식을 고를 수 있다.
+     *
+     *
+     * @return void 반환값 없음
+     *
      * @effects return_request_splits_the_order_option_for_a_partial_quantity
+     *
+     * @scenario quantity=partial, charge_method=pay_on_request, refund_chain=none
      */
     public function test_request_can_charge_a_partial_quantity_separately(): void
     {
@@ -720,7 +947,14 @@ class OrderReturnServiceTest extends ModuleTestCase
     }
 
     /**
+     * 회수 주소는 배송정책에서 굳힌다.
+     *
+     *
+     * @return void 반환값 없음
+     *
      * @effects return_address_comes_from_the_shipping_policy
+     *
+     * @scenario quantity=full, charge_method=none, refund_chain=none
      */
     public function test_request_snapshots_return_address_from_policy(): void
     {
@@ -744,6 +978,15 @@ class OrderReturnServiceTest extends ModuleTestCase
         $this->assertSame('06236', $return->return_address_snapshot['zipcode']);
     }
 
+    /**
+     * 정책에 회수 주소가 없으면 신청서의 회수 주소를 비워 둔다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario quantity=full, charge_method=none, refund_chain=none
+     *
+     * @effects return_address_comes_from_the_shipping_policy
+     */
     public function test_request_leaves_return_address_null_when_policy_has_none(): void
     {
         $order = $this->deliveredOrder();
@@ -754,7 +997,14 @@ class OrderReturnServiceTest extends ModuleTestCase
     }
 
     /**
+     * 신청 기간이 지나면 접수를 거절한다.
+     *
+     *
+     * @return void 반환값 없음
+     *
      * @effects return_request_period_is_measured_from_delivery
+     *
+     * @scenario quantity=full, charge_method=none, refund_chain=none
      */
     public function test_request_rejects_after_request_period(): void
     {
@@ -766,6 +1016,15 @@ class OrderReturnServiceTest extends ModuleTestCase
         $this->assertClaimException('claim_request_period_expired', fn () => $this->service->requestReturn($order->fresh(['options', 'shippings', 'payment']), $this->payload($order)));
     }
 
+    /**
+     * 배송완료 시각이 없으면 구매확정 시각을 신청 기간 기준으로 쓴다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario quantity=full, charge_method=none, refund_chain=none
+     *
+     * @effects return_request_period_is_measured_from_delivery
+     */
     public function test_request_falls_back_to_confirmed_at_when_delivered_at_is_missing(): void
     {
         // `배송중 → 구매확정` 직접 전이가 허용되므로 `delivered_at` 이 영영 null 인 옵션이 실재한다.
@@ -784,6 +1043,15 @@ class OrderReturnServiceTest extends ModuleTestCase
         );
     }
 
+    /**
+     * 기준 시각이 모두 기간 안이면 접수가 통과한다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario quantity=full, charge_method=none, refund_chain=none
+     *
+     * @effects return_request_period_is_measured_from_delivery
+     */
     public function test_request_is_allowed_when_no_timestamp_is_stale(): void
     {
         // 두 시각이 모두 없는 구형 주문(컬럼이 생기기 전)은 마지막 변경 시각으로 내려간다 —
@@ -801,6 +1069,15 @@ class OrderReturnServiceTest extends ModuleTestCase
         $this->assertSame(ReturnStatusEnum::REQUESTED, $return->return_status);
     }
 
+    /**
+     * 접수는 주문옵션만 움직이고 주문 헤더 상태는 건드리지 않는다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario quantity=full, charge_method=none, refund_chain=none
+     *
+     * @effects return_request_records_the_original_option_status_for_revert
+     */
     public function test_request_does_not_change_order_status(): void
     {
         $order = $this->deliveredOrder();
@@ -812,6 +1089,15 @@ class OrderReturnServiceTest extends ModuleTestCase
         $this->assertSame(OrderStatusEnum::DELIVERED, $order->fresh()->order_status);
     }
 
+    /**
+     * 접수가 `requested` 훅을 발행한다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario quantity=full, charge_method=none, refund_chain=none
+     *
+     * @effects return_transition_follows_the_status_gate
+     */
     public function test_request_fires_requested_hook(): void
     {
         $fired = 0;
@@ -825,6 +1111,15 @@ class OrderReturnServiceTest extends ModuleTestCase
         $this->assertSame(1, $fired);
     }
 
+    /**
+     * 자동 승인이 꺼져 있으면 접수에서 멈춘다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario quantity=full, charge_method=none, refund_chain=none
+     *
+     * @effects return_auto_approval_needs_a_zero_charge
+     */
     public function test_request_stays_requested_when_auto_approve_is_off(): void
     {
         // 기본값이 false 이므로 설정을 켜지 않은 신청은 승인 대기로 남는다 — 아래 두 케이스의 대조군.
@@ -838,7 +1133,14 @@ class OrderReturnServiceTest extends ModuleTestCase
     }
 
     /**
+     * 설정이 켜져 있고 청구액이 0 이면 자동 승인한다.
+     *
+     *
+     * @return void 반환값 없음
+     *
      * @effects return_auto_approval_needs_a_zero_charge
+     *
+     * @scenario quantity=full, charge_method=none, refund_chain=none
      */
     public function test_request_auto_approves_when_charge_is_zero_and_setting_is_on(): void
     {
@@ -854,7 +1156,14 @@ class OrderReturnServiceTest extends ModuleTestCase
     }
 
     /**
+     * 청구액이 남으면 자동 승인하지 않는다.
+     *
+     *
+     * @return void 반환값 없음
+     *
      * @effects return_auto_approval_needs_a_zero_charge
+     *
+     * @scenario quantity=full, charge_method=pay_on_request, refund_chain=none
      */
     public function test_request_does_not_auto_approve_when_a_charge_remains(): void
     {
@@ -874,6 +1183,15 @@ class OrderReturnServiceTest extends ModuleTestCase
         $this->assertSame(ReturnStatusEnum::REQUESTED, $return->return_status);
     }
 
+    /**
+     * 자동 승인된 접수는 `requested` 와 `approved` 훅을 모두 발행한다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario quantity=full, charge_method=none, refund_chain=none
+     *
+     * @effects return_auto_approval_needs_a_zero_charge
+     */
     public function test_auto_approved_request_fires_both_requested_and_approved_hooks(): void
     {
         $sequence = [];
@@ -905,7 +1223,11 @@ class OrderReturnServiceTest extends ModuleTestCase
      *
      * 그래서 두 방향을 함께 잠근다 — 주인이 없는 주문만 비회원이다.
      *
+     * @return void 반환값 없음
+     *
      * @effects return_guest_flag_reads_the_order_owner
+     *
+     * @scenario quantity=full, charge_method=none, refund_chain=none
      */
     public function test_guest_flag_reads_the_order_owner(): void
     {
@@ -945,7 +1267,14 @@ class OrderReturnServiceTest extends ModuleTestCase
     // ================================================================
 
     /**
+     * 미리보기 금액이 실제 접수 금액과 같다.
+     *
+     *
+     * @return void 반환값 없음
+     *
      * @effects return_preview_matches_the_requested_amounts
+     *
+     * @scenario quantity=full, charge_method=none, refund_chain=none
      */
     public function test_preview_matches_requested_amounts(): void
     {
@@ -969,6 +1298,15 @@ class OrderReturnServiceTest extends ModuleTestCase
         $this->assertSame((float) $return->total_charge_amount, $preview['total_charge_amount']);
     }
 
+    /**
+     * 미리보기는 어떤 기록도 쓰지 않는다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario quantity=full, charge_method=none, refund_chain=none
+     *
+     * @effects return_preview_matches_the_requested_amounts
+     */
     public function test_preview_does_not_write_any_record(): void
     {
         $order = $this->deliveredOrder();
@@ -983,6 +1321,15 @@ class OrderReturnServiceTest extends ModuleTestCase
         $this->assertSame(OrderStatusEnum::DELIVERED, $order->options->first()->fresh()->option_status);
     }
 
+    /**
+     * 판매자 귀책의 미리보기는 회수비를 0 으로 답한다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario quantity=full, charge_method=none, refund_chain=none
+     *
+     * @effects return_seller_fault_charges_nothing
+     */
     public function test_preview_seller_fault_has_zero_fee(): void
     {
         $policy = $this->createClaimShippingPolicy(ChargePolicyEnum::FREE, 0);
@@ -999,6 +1346,15 @@ class OrderReturnServiceTest extends ModuleTestCase
         $this->assertFalse($preview['requires_payment']);
     }
 
+    /**
+     * 「환불금에서 차감」 미리보기는 환불액에서 회수비를 뺀 값을 답한다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario quantity=full, charge_method=deduct_from_refund, refund_chain=none
+     *
+     * @effects return_preview_reports_the_refund_before_the_fee_is_deducted
+     */
     public function test_preview_deduct_from_refund_reduces_refund_by_fee(): void
     {
         $policy = $this->createClaimShippingPolicy(ChargePolicyEnum::FREE, 0);
@@ -1019,6 +1375,15 @@ class OrderReturnServiceTest extends ModuleTestCase
     // 철회 / 반려 / 복귀
     // ================================================================
 
+    /**
+     * 접수 상태의 신청서는 철회된다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario quantity=full, charge_method=none, refund_chain=none
+     *
+     * @effects return_withdraw_reverts_the_order_option
+     */
     public function test_withdraw_from_requested(): void
     {
         $order = $this->deliveredOrder();
@@ -1034,7 +1399,14 @@ class OrderReturnServiceTest extends ModuleTestCase
     }
 
     /**
+     * 승인 뒤에는 철회할 수 없다.
+     *
+     *
+     * @return void 반환값 없음
+     *
      * @effects return_withdraw_is_blocked_after_approval
+     *
+     * @scenario quantity=full, charge_method=none, refund_chain=none
      */
     public function test_withdraw_is_blocked_after_approval(): void
     {
@@ -1048,7 +1420,14 @@ class OrderReturnServiceTest extends ModuleTestCase
     }
 
     /**
+     * 철회는 주문옵션을 원래 상태로 되돌린다.
+     *
+     *
+     * @return void 반환값 없음
+     *
      * @effects return_withdraw_reverts_the_order_option
+     *
+     * @scenario quantity=full, charge_method=none, refund_chain=none
      */
     public function test_withdraw_reverts_order_option_to_original_status(): void
     {
@@ -1060,6 +1439,15 @@ class OrderReturnServiceTest extends ModuleTestCase
         $this->assertSame(OrderStatusEnum::DELIVERED, $order->options->first()->fresh()->option_status);
     }
 
+    /**
+     * 반려는 주문옵션을 원래 상태로 되돌리고 반려 사유를 남긴다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario quantity=full, charge_method=none, refund_chain=none
+     *
+     * @effects return_reject_reverts_each_item_to_its_own_original_status
+     */
     public function test_reject_reverts_order_option_and_records_reason(): void
     {
         $order = $this->deliveredOrder();
@@ -1075,7 +1463,14 @@ class OrderReturnServiceTest extends ModuleTestCase
     }
 
     /**
+     * 되돌림은 항목마다 자기 원래 상태로 복원한다.
+     *
+     *
+     * @return void 반환값 없음
+     *
      * @effects return_reject_reverts_each_item_to_its_own_original_status
+     *
+     * @scenario quantity=full, charge_method=none, refund_chain=none
      */
     public function test_revert_restores_each_item_to_its_own_original_status(): void
     {
@@ -1122,6 +1517,15 @@ class OrderReturnServiceTest extends ModuleTestCase
         );
     }
 
+    /**
+     * 되돌림이 재고를 다시 빼지 않는다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario quantity=full, charge_method=none, refund_chain=none
+     *
+     * @effects return_reject_reverts_each_item_to_its_own_original_status
+     */
     public function test_revert_does_not_deduct_stock_again(): void
     {
         $order = $this->deliveredOrder();
@@ -1136,6 +1540,15 @@ class OrderReturnServiceTest extends ModuleTestCase
         $this->assertSame($before, (int) ProductOption::find($productOptionId)->stock_quantity);
     }
 
+    /**
+     * 부분 수량을 되돌려도 갈라진 주문옵션 행은 따로 남는다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario quantity=partial, charge_method=none, refund_chain=none
+     *
+     * @effects return_request_splits_the_order_option_for_a_partial_quantity
+     */
     public function test_revert_of_partial_quantity_keeps_rows_separate(): void
     {
         $order = $this->deliveredOrder(29000, 3);
@@ -1159,7 +1572,14 @@ class OrderReturnServiceTest extends ModuleTestCase
     // ================================================================
 
     /**
+     * 전이가 게이트를 따라 앞으로만 간다.
+     *
+     *
+     * @return void 반환값 없음
+     *
      * @effects return_transition_follows_the_status_gate
+     *
+     * @scenario quantity=full, charge_method=none, refund_chain=none
      */
     public function test_transition_follows_the_gate_forward(): void
     {
@@ -1177,6 +1597,15 @@ class OrderReturnServiceTest extends ModuleTestCase
         }
     }
 
+    /**
+     * 게이트 밖 상태로의 전이는 막는다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario quantity=full, charge_method=none, refund_chain=none
+     *
+     * @effects return_transition_follows_the_status_gate
+     */
     public function test_transition_blocks_a_target_outside_the_gate(): void
     {
         $order = $this->deliveredOrder();
@@ -1186,7 +1615,14 @@ class OrderReturnServiceTest extends ModuleTestCase
     }
 
     /**
+     * 완료로의 직접 전이는 막는다 — 완료는 완료 처리의 소유다.
+     *
+     *
+     * @return void 반환값 없음
+     *
      * @effects return_completion_is_not_reachable_by_a_plain_transition
+     *
+     * @scenario quantity=full, charge_method=none, refund_chain=none
      */
     public function test_transition_to_completed_is_blocked(): void
     {
@@ -1200,7 +1636,14 @@ class OrderReturnServiceTest extends ModuleTestCase
     }
 
     /**
+     * 승인·보류 전이가 각각의 시각을 찍는다.
+     *
+     *
+     * @return void 반환값 없음
+     *
      * @effects return_on_hold_and_approval_times_are_stamped
+     *
+     * @scenario quantity=full, charge_method=none, refund_chain=none
      */
     public function test_transition_stamps_approved_and_on_hold_times(): void
     {
@@ -1214,6 +1657,15 @@ class OrderReturnServiceTest extends ModuleTestCase
         $this->assertNotNull($approved->approved_at);
     }
 
+    /**
+     * 회수완료 전이가 회수완료 시각을 남긴다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario quantity=full, charge_method=none, refund_chain=none
+     *
+     * @effects return_transition_follows_the_status_gate
+     */
     public function test_transition_records_collection_completed_at(): void
     {
         $order = $this->deliveredOrder();
@@ -1225,6 +1677,15 @@ class OrderReturnServiceTest extends ModuleTestCase
         $this->assertNotNull($return->collection_completed_at);
     }
 
+    /**
+     * 헤더 전이가 신청 항목들의 상태를 맞춘다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario quantity=full, charge_method=none, refund_chain=none
+     *
+     * @effects return_item_level_transition_moves_the_header_only_when_items_agree
+     */
     public function test_transition_syncs_item_statuses(): void
     {
         $order = $this->deliveredOrder();
@@ -1238,6 +1699,15 @@ class OrderReturnServiceTest extends ModuleTestCase
         );
     }
 
+    /**
+     * 전이가 공통 상태변경 훅과 그 상태 전용 훅을 함께 발행한다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario quantity=full, charge_method=none, refund_chain=none
+     *
+     * @effects return_transition_follows_the_status_gate
+     */
     public function test_transition_fires_status_changed_and_specific_hooks(): void
     {
         $changed = [];
@@ -1260,6 +1730,15 @@ class OrderReturnServiceTest extends ModuleTestCase
         $this->assertSame(1, $approved);
     }
 
+    /**
+     * 일괄 전이는 건너뛴 건을 결과에 적어 돌려준다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario quantity=full, charge_method=none, refund_chain=none
+     *
+     * @effects return_transition_follows_the_status_gate
+     */
     public function test_bulk_transition_reports_skipped_entries(): void
     {
         $orderA = $this->deliveredOrder();
@@ -1286,6 +1765,15 @@ class OrderReturnServiceTest extends ModuleTestCase
         );
     }
 
+    /**
+     * 일괄 전이는 없는 신청서를 결과에 적어 돌려준다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario quantity=full, charge_method=none, refund_chain=none
+     *
+     * @effects return_transition_follows_the_status_gate
+     */
     public function test_bulk_transition_reports_missing_records(): void
     {
         $result = $this->service->bulkTransition([999999], ReturnStatusEnum::APPROVED);
@@ -1305,6 +1793,15 @@ class OrderReturnServiceTest extends ModuleTestCase
     // 상품 단위 전이 (D25)
     // ================================================================
 
+    /**
+     * 상품 단위 전이는 선택한 항목만 옮긴다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario quantity=full, charge_method=none, refund_chain=none
+     *
+     * @effects return_item_level_transition_moves_the_header_only_when_items_agree
+     */
     public function test_transition_option_moves_only_selected_items(): void
     {
         // 신청 상품이 둘이어야 "선택한 것만" 을 잴 수 있다 — 1행이면 인자를 무시하고 전부
@@ -1320,6 +1817,15 @@ class OrderReturnServiceTest extends ModuleTestCase
         $this->assertSame(ReturnStatusEnum::APPROVED, $return->fresh()->return_status);
     }
 
+    /**
+     * 상품 단위 전이는 잘못된 목표를 건너뛰었다고 답한다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario quantity=full, charge_method=none, refund_chain=none
+     *
+     * @effects return_item_level_transition_moves_the_header_only_when_items_agree
+     */
     public function test_transition_option_reports_skip_for_invalid_target(): void
     {
         $order = $this->deliveredOrder();
@@ -1338,6 +1844,15 @@ class OrderReturnServiceTest extends ModuleTestCase
         );
     }
 
+    /**
+     * 상품 단위 전이로는 완료로 옮기지 않는다 — 완료는 완료 처리의 소유다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario quantity=full, charge_method=none, refund_chain=none
+     *
+     * @effects return_completion_is_not_reachable_by_a_plain_transition
+     */
     public function test_transition_option_blocks_completed_target(): void
     {
         $order = $this->deliveredOrder();
@@ -1347,7 +1862,14 @@ class OrderReturnServiceTest extends ModuleTestCase
     }
 
     /**
+     * 상품들이 모두 같은 상태가 되면 헤더도 따라간다.
+     *
+     *
+     * @return void 반환값 없음
+     *
      * @effects return_item_level_transition_moves_the_header_only_when_items_agree
+     *
+     * @scenario quantity=full, charge_method=none, refund_chain=none
      */
     public function test_transition_option_moves_header_when_all_items_agree(): void
     {
@@ -1359,6 +1881,15 @@ class OrderReturnServiceTest extends ModuleTestCase
         $this->assertSame(ReturnStatusEnum::APPROVED, $return->fresh()->return_status);
     }
 
+    /**
+     * 헤더 전이는 반려된 항목을 빼고 나머지로 판정한다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario quantity=full, charge_method=none, refund_chain=none
+     *
+     * @effects return_item_level_transition_moves_the_header_only_when_items_agree
+     */
     public function test_transition_option_moves_header_ignoring_rejected_items(): void
     {
         [$return, $itemA, $itemB] = $this->twoItemReturn();
@@ -1376,6 +1907,15 @@ class OrderReturnServiceTest extends ModuleTestCase
         $this->assertSame(ReturnStatusEnum::APPROVED, $return->fresh()->return_status);
     }
 
+    /**
+     * 모든 상품이 반려되면 신청서 헤더도 따라 반려로 간다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario quantity=full, charge_method=none, refund_chain=none
+     *
+     * @effects return_item_level_transition_moves_the_header_only_when_items_agree
+     */
     public function test_transition_option_moves_header_when_every_item_is_rejected(): void
     {
         [$return, $itemA, $itemB] = $this->twoItemReturn();
@@ -1388,6 +1928,15 @@ class OrderReturnServiceTest extends ModuleTestCase
         $this->assertSame(ReturnStatusEnum::REJECTED, $return->fresh()->return_status);
     }
 
+    /**
+     * 전 항목 반려는 주문옵션들을 원래 상태로 되돌린다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario quantity=full, charge_method=none, refund_chain=none
+     *
+     * @effects return_reject_reverts_each_item_to_its_own_original_status
+     */
     public function test_transition_option_rejecting_every_item_reverts_order_options(): void
     {
         [$return, $itemA, $itemB] = $this->twoItemReturn();
@@ -1407,6 +1956,15 @@ class OrderReturnServiceTest extends ModuleTestCase
     // 회수 송장
     // ================================================================
 
+    /**
+     * 회수 송장을 등록하면 회수중으로 옮긴다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario quantity=full, charge_method=none, refund_chain=none
+     *
+     * @effects return_transition_follows_the_status_gate
+     */
     public function test_register_tracking_moves_to_collecting(): void
     {
         $order = $this->deliveredOrder();
@@ -1431,6 +1989,15 @@ class OrderReturnServiceTest extends ModuleTestCase
         $this->assertSame(ReturnStatusEnum::COLLECTING, $tracked->return_status);
     }
 
+    /**
+     * 송장은 택배사와 번호를 함께 넣어야 등록된다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario quantity=full, charge_method=none, refund_chain=none
+     *
+     * @effects return_transition_follows_the_status_gate
+     */
     public function test_register_tracking_requires_both_fields(): void
     {
         $order = $this->deliveredOrder();
@@ -1444,7 +2011,14 @@ class OrderReturnServiceTest extends ModuleTestCase
     // ================================================================
 
     /**
+     * 금액 수정이 회수비를 따라 총 청구액을 옮긴다.
+     *
+     *
+     * @return void 반환값 없음
+     *
      * @effects return_update_amounts_moves_the_total_charge_with_the_fee
+     *
+     * @scenario quantity=full, charge_method=pay_on_request, refund_chain=none
      */
     public function test_update_amounts_moves_total_charge_with_the_fee(): void
     {
@@ -1463,6 +2037,15 @@ class OrderReturnServiceTest extends ModuleTestCase
         $this->assertTrue($updated->shipping_fee_snapshot['admin_adjusted']);
     }
 
+    /**
+     * 음수 회수비는 금액 수정이 거절한다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario quantity=full, charge_method=pay_on_request, refund_chain=none
+     *
+     * @effects return_update_amounts_moves_the_total_charge_with_the_fee
+     */
     public function test_update_amounts_rejects_negative_fee(): void
     {
         $order = $this->deliveredOrder();
@@ -1471,6 +2054,15 @@ class OrderReturnServiceTest extends ModuleTestCase
         $this->assertClaimException('claim_amount_invalid', fn () => $this->service->updateAmounts($return, ['claim_shipping_fee' => -1]));
     }
 
+    /**
+     * 회수비가 0 이 되면 청구 방식을 비운다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario quantity=full, charge_method=pay_on_request, refund_chain=none
+     *
+     * @effects return_charge_method_is_cleared_when_the_fee_is_zero
+     */
     public function test_update_amounts_clears_charge_method_when_fee_becomes_zero(): void
     {
         $policy = $this->createClaimShippingPolicy(ChargePolicyEnum::FREE, 0);
@@ -1490,6 +2082,12 @@ class OrderReturnServiceTest extends ModuleTestCase
     /**
      * 청구 방식이 없는 신청서(접수 시 청구 0원)의 청구액을 양수로 올리면 거절한다 — 결제할 수 없는
      * 청구가 남는다. 청구 방식을 함께 정하는 금액 수정 API 가 그 경로다(교환과 같은 규칙).
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario quantity=full, charge_method=pay_on_request, refund_chain=none
+     *
+     * @effects return_charge_method_is_required_when_a_fee_remains
      */
     public function test_update_amounts_refuses_to_raise_a_charge_without_a_charge_method(): void
     {
@@ -1506,6 +2104,15 @@ class OrderReturnServiceTest extends ModuleTestCase
     // 완료 처리 (D26)
     // ================================================================
 
+    /**
+     * 완료는 신청 항목과 주문옵션을 반품완료로 찍는다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario quantity=full, charge_method=none, refund_chain=none
+     *
+     * @effects return_completion_refund_is_filed_only_when_asked
+     */
     public function test_complete_marks_item_and_order_option_returned(): void
     {
         $order = $this->deliveredOrder();
@@ -1536,6 +2143,8 @@ class OrderReturnServiceTest extends ModuleTestCase
      *
      * 한 반품이 반품·환불·취소 세 탭에 서는 것이 정상이다(D14) — 문서 셋이 각각 다른 일을
      * 기록한다.
+     *
+     * @return void 반환값 없음
      *
      * @scenario claim_type=return, charge_method=deduct_from_refund, refund_branch=none
      *
@@ -1572,12 +2181,17 @@ class OrderReturnServiceTest extends ModuleTestCase
     }
 
     /**
-     * 완료 시 반품 상품의 적립예정 마일리지를 회수한다 — 상품이 주문에서 빠졌으므로 그 적립도
-     * 남으면 안 된다. (교환 축 `OrderExchangeServiceTest` 의 같은 이름 단언과 한 벌)
+     * 완료해도 반품 상품의 **이미 확정된 적립**은 회수하지 않는다 — 원장에 기록이 남은 적립을
+     * 되돌리면, 회원이 그 포인트를 이미 쓰거나 소멸시킨 경우 살아 있는 다른 적립에서 대신
+     * 빠져나간다. (교환 축 `OrderExchangeServiceTest` 의 같은 이름 단언과 한 벌)
      *
-     * @effects return_completion_cancels_the_pending_earn
+     * @effects return_completion_keeps_the_earned_mileage
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario quantity=full, charge_method=none, refund_chain=none
      */
-    public function test_complete_cancels_the_pending_earn_of_the_returned_option(): void
+    public function test_complete_keeps_the_earned_mileage_of_the_returned_option(): void
     {
         $order = $this->deliveredOrder();
         $return = $this->advanceTo(
@@ -1586,7 +2200,7 @@ class OrderReturnServiceTest extends ModuleTestCase
         );
         $orderOptionId = (int) $return->returnOptions->first()->order_option_id;
 
-        MileageTransaction::create([
+        $earnLot = MileageTransaction::create([
             'user_id' => $order->user_id,
             'currency' => 'KRW',
             'type' => MileageTransactionTypeEnum::PURCHASE_EARN->value,
@@ -1599,16 +2213,30 @@ class OrderReturnServiceTest extends ModuleTestCase
 
         $this->service->completeReturn($return, [], $this->completionOptions($return, false, false));
 
+        // PO 결정 2026-09-23 — 원장에 확정된 적립은 반품완료로도 되돌리지 않는다.
+        // 회수하면 회원이 이미 쓰거나 소멸시킨 적립을 살아 있는 다른 적립에서 대신 빼 오게 된다
+        // (#599 3차 실측 L-1 · T2-D13).
         $this->assertSame(
-            1,
+            0,
             MileageTransaction::where('order_option_id', $orderOptionId)
                 ->where('type', MileageTransactionTypeEnum::EARN_CANCEL->value)
                 ->count(),
-            '반품 상품의 적립 lot 이 회수되어야 한다.'
+            '적립이 끝난 건은 반품완료로 회수하지 않아야 한다.'
+        );
+
+        $this->assertSame(
+            '500.00',
+            (string) $earnLot->fresh()->remaining_amount,
+            '적립 lot 의 잔여가 그대로여야 한다 — 자기 lot 에서 빼는 것도 회수다.'
         );
     }
 
     /**
+     * 환불신청서를 고르지 않은 완료는 환불신청서를 만들지 않는다.
+     *
+     *
+     * @return void 반환값 없음
+     *
      * @scenario quantity=full, charge_method=none, refund_chain=none
      *
      * @effects return_completion_refund_is_filed_only_when_asked
@@ -1632,6 +2260,11 @@ class OrderReturnServiceTest extends ModuleTestCase
     }
 
     /**
+     * 환불신청서 접수를 고르면 환불신청서가 정확히 한 건 생긴다.
+     *
+     *
+     * @return void 반환값 없음
+     *
      * @scenario quantity=full, charge_method=none, refund_chain=at_completion
      *
      * @effects return_completion_refund_is_filed_exactly_once
@@ -1662,6 +2295,8 @@ class OrderReturnServiceTest extends ModuleTestCase
      * 새로 생기는 행이라 이전 값은 `null` 이다(교환 재발송 신규행과 같은 표기).
      *
      * 되돌리면 red — 생성 지점에서 상품 축 훅 발행을 빼면 수집된 배열이 빈다.
+     *
+     * @return void 반환값 없음
      *
      * @scenario quantity=full, charge_method=none, refund_chain=at_completion
      *
@@ -1712,6 +2347,15 @@ class OrderReturnServiceTest extends ModuleTestCase
         );
     }
 
+    /**
+     * 완료가 만든 환불신청서는 출처를 반품으로 기록한다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario quantity=full, charge_method=none, refund_chain=at_completion
+     *
+     * @effects return_completion_refund_is_filed_exactly_once
+     */
     public function test_complete_refund_records_return_as_its_source(): void
     {
         $order = $this->deliveredOrder();
@@ -1735,6 +2379,15 @@ class OrderReturnServiceTest extends ModuleTestCase
         $this->assertSame($return->reason_code, $refund->reason_code);
     }
 
+    /**
+     * 완료가 만든 환불신청서에 옵션 행이 함께 생긴다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario quantity=full, charge_method=none, refund_chain=at_completion
+     *
+     * @effects return_completion_refund_is_filed_exactly_once
+     */
     public function test_complete_refund_creates_option_rows(): void
     {
         $order = $this->deliveredOrder();
@@ -1752,6 +2405,15 @@ class OrderReturnServiceTest extends ModuleTestCase
         $this->assertSame(1, OrderRefundOption::where('order_refund_id', $completed->refund_id)->count());
     }
 
+    /**
+     * 환불액이 반품한 상품의 몫을 덮는다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario quantity=full, charge_method=none, refund_chain=at_completion
+     *
+     * @effects return_completion_refund_is_filed_exactly_once
+     */
     public function test_complete_refund_amount_covers_the_returned_item(): void
     {
         $order = $this->deliveredOrder(29000, 1);
@@ -1772,7 +2434,14 @@ class OrderReturnServiceTest extends ModuleTestCase
     }
 
     /**
+     * 완료는 체크한 상품의 재고만 되돌린다.
+     *
+     *
+     * @return void 반환값 없음
+     *
      * @effects return_completion_restores_stock_only_for_checked_items
+     *
+     * @scenario quantity=full, charge_method=none, refund_chain=none
      */
     public function test_complete_restores_stock_only_for_checked_items(): void
     {
@@ -1802,6 +2471,12 @@ class OrderReturnServiceTest extends ModuleTestCase
      * 재고를 여전히 점유하므로 `is_stock_deducted` 가 참이어야 하고, 나중에 그 취소를
      * 되살릴 때 재차감 대상이 되면 안 된다. 반품 복구가 그 표시를 함께 내리면
      * 되돌린 적 없는 재고가 다시 차감돼 재고가 조용히 줄어든다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario quantity=full, charge_method=none, refund_chain=none
+     *
+     * @effects return_completion_restores_stock_only_for_checked_items
      */
     public function test_complete_stock_restore_keeps_flags_of_unrestored_cancelled_rows(): void
     {
@@ -1840,6 +2515,15 @@ class OrderReturnServiceTest extends ModuleTestCase
         );
     }
 
+    /**
+     * 체크하지 않은 상품의 재고는 완료에서 건드리지 않는다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario quantity=full, charge_method=none, refund_chain=none
+     *
+     * @effects return_completion_restores_stock_only_for_checked_items
+     */
     public function test_complete_leaves_stock_untouched_when_not_checked(): void
     {
         $order = $this->deliveredOrder();
@@ -1870,7 +2554,11 @@ class OrderReturnServiceTest extends ModuleTestCase
      * 두 상품의 재고를 각각 단언해 그 사각을 닫는다. 헤더 `is_stock_restored` 가
      * "하나라도 복구되면 true" 임도 같은 케이스가 고정한다.
      *
+     * @return void 반환값 없음
+     *
      * @effects return_completion_stock_choice_can_differ_per_item
+     *
+     * @scenario quantity=full, charge_method=none, refund_chain=none
      */
     public function test_complete_restores_stock_per_item_when_the_choice_differs(): void
     {
@@ -1919,7 +2607,14 @@ class OrderReturnServiceTest extends ModuleTestCase
     }
 
     /**
+     * 완료 실행은 설정 기본값이 아니라 요청이 체크한 것만 본다.
+     *
+     *
+     * @return void 반환값 없음
+     *
      * @effects return_completion_ignores_the_settings_default
+     *
+     * @scenario quantity=full, charge_method=none, refund_chain=none
      */
     public function test_complete_ignores_settings_defaults(): void
     {
@@ -1944,6 +2639,15 @@ class OrderReturnServiceTest extends ModuleTestCase
         $this->assertSame($before, (int) ProductOption::find($productOptionId)->stock_quantity);
     }
 
+    /**
+     * 일부 상품만 완료하면 신청서 헤더는 열린 채로 둔다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario quantity=full, charge_method=none, refund_chain=none
+     *
+     * @effects return_item_level_transition_moves_the_header_only_when_items_agree
+     */
     public function test_complete_of_some_items_keeps_the_header_open(): void
     {
         $policy = $this->createClaimShippingPolicy();
@@ -1973,7 +2677,14 @@ class OrderReturnServiceTest extends ModuleTestCase
     }
 
     /**
+     * 뒤 회차에서 만든 환불신청서가 그때까지 완료된 전 항목을 덮는다.
+     *
+     *
+     * @return void 반환값 없음
+     *
      * @effects return_later_round_refund_covers_every_completed_item
+     *
+     * @scenario quantity=full, charge_method=none, refund_chain=after_completion
      */
     public function test_refund_created_in_a_later_round_covers_every_completed_item(): void
     {
@@ -2007,6 +2718,15 @@ class OrderReturnServiceTest extends ModuleTestCase
         $this->assertSame(30000.0, (float) OrderRefund::find($completed->refund_id)->refund_amount);
     }
 
+    /**
+     * 회수되지 않은 상품은 완료 처리를 거절한다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario quantity=full, charge_method=none, refund_chain=none
+     *
+     * @effects return_completion_refund_is_filed_only_when_asked
+     */
     public function test_complete_rejects_items_that_are_not_collected(): void
     {
         $order = $this->deliveredOrder();
@@ -2016,7 +2736,14 @@ class OrderReturnServiceTest extends ModuleTestCase
     }
 
     /**
+     * 두 번째 환불신청서 접수는 거절한다.
+     *
+     *
+     * @return void 반환값 없음
+     *
      * @effects return_second_refund_request_is_rejected
+     *
+     * @scenario quantity=full, charge_method=none, refund_chain=at_completion
      */
     public function test_complete_rejects_a_second_refund_request(): void
     {
@@ -2048,6 +2775,12 @@ class OrderReturnServiceTest extends ModuleTestCase
      * 읽은 뒤 차례로 저장돼 두 건이 생긴다. 헤더 `refund_id` 는 나중 것만 남으므로 앞 건은
      * 취소 가능 금액의 선점액 집계에서 빠지고, 그만큼 한도가 실제보다 넓게 계산된다 —
      * 예외도 로그도 남지 않는다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario quantity=full, charge_method=none, refund_chain=at_completion
+     *
+     * @effects return_second_refund_request_is_rejected
      */
     public function test_complete_rejects_a_refund_request_created_by_a_concurrent_round(): void
     {
@@ -2076,6 +2809,11 @@ class OrderReturnServiceTest extends ModuleTestCase
     }
 
     /**
+     * 완료 뒤에도 환불신청서를 접수할 수 있다.
+     *
+     *
+     * @return void 반환값 없음
+     *
      * @scenario quantity=full, charge_method=none, refund_chain=after_completion
      *
      * @effects return_refund_can_be_filed_after_completion
@@ -2101,6 +2839,11 @@ class OrderReturnServiceTest extends ModuleTestCase
     }
 
     /**
+     * 환불신청서 없이 완료해도 차감하기로 한 회수비는 남는다.
+     *
+     *
+     * @return void 반환값 없음
+     *
      * @scenario quantity=full, charge_method=deduct_from_refund, refund_chain=none
      *
      * @effects return_deducted_fee_is_carried_into_a_later_refund_request
@@ -2175,6 +2918,11 @@ class OrderReturnServiceTest extends ModuleTestCase
     }
 
     /**
+     * 신청 시 결제한 전량 반품도 환불신청서 없이 완료할 수 있다.
+     *
+     *
+     * @return void 반환값 없음
+     *
      * @scenario quantity=full, charge_method=pay_on_request, refund_chain=none
      *
      * @effects return_completion_refund_is_filed_only_when_asked
@@ -2188,6 +2936,11 @@ class OrderReturnServiceTest extends ModuleTestCase
     }
 
     /**
+     * 신청 시 결제한 전량 반품은 완료 시점에 환불신청서를 접수한다.
+     *
+     *
+     * @return void 반환값 없음
+     *
      * @scenario quantity=full, charge_method=pay_on_request, refund_chain=at_completion
      *
      * @effects return_completion_refund_is_filed_exactly_once
@@ -2201,6 +2954,11 @@ class OrderReturnServiceTest extends ModuleTestCase
     }
 
     /**
+     * 신청 시 결제한 전량 반품은 완료 뒤에도 환불신청서를 접수할 수 있다.
+     *
+     *
+     * @return void 반환값 없음
+     *
      * @scenario quantity=full, charge_method=pay_on_request, refund_chain=after_completion
      *
      * @effects return_refund_can_be_filed_after_completion
@@ -2218,6 +2976,11 @@ class OrderReturnServiceTest extends ModuleTestCase
     }
 
     /**
+     * 승인 후 결제한 전량 반품도 환불신청서 없이 완료할 수 있다.
+     *
+     *
+     * @return void 반환값 없음
+     *
      * @scenario quantity=full, charge_method=pay_on_approval, refund_chain=none
      *
      * @effects return_completion_refund_is_filed_only_when_asked
@@ -2231,6 +2994,11 @@ class OrderReturnServiceTest extends ModuleTestCase
     }
 
     /**
+     * 승인 후 결제한 전량 반품은 완료 시점에 환불신청서를 접수한다.
+     *
+     *
+     * @return void 반환값 없음
+     *
      * @scenario quantity=full, charge_method=pay_on_approval, refund_chain=at_completion
      *
      * @effects return_completion_refund_is_filed_exactly_once
@@ -2244,6 +3012,11 @@ class OrderReturnServiceTest extends ModuleTestCase
     }
 
     /**
+     * 승인 후 결제한 전량 반품은 완료 뒤에도 환불신청서를 접수할 수 있다.
+     *
+     *
+     * @return void 반환값 없음
+     *
      * @scenario quantity=full, charge_method=pay_on_approval, refund_chain=after_completion
      *
      * @effects return_refund_can_be_filed_after_completion
@@ -2261,6 +3034,11 @@ class OrderReturnServiceTest extends ModuleTestCase
     }
 
     /**
+     * 회수비를 차감하는 전량 반품은 완료 시점에 환불신청서를 접수한다.
+     *
+     *
+     * @return void 반환값 없음
+     *
      * @scenario quantity=full, charge_method=deduct_from_refund, refund_chain=at_completion
      *
      * @effects return_deducted_fee_is_carried_into_a_later_refund_request
@@ -2275,6 +3053,11 @@ class OrderReturnServiceTest extends ModuleTestCase
     }
 
     /**
+     * 회수비를 차감하는 전량 반품은 완료 뒤에도 환불신청서를 접수할 수 있다.
+     *
+     *
+     * @return void 반환값 없음
+     *
      * @scenario quantity=full, charge_method=deduct_from_refund, refund_chain=after_completion
      *
      * @effects return_deducted_fee_is_carried_into_a_later_refund_request
@@ -2291,6 +3074,11 @@ class OrderReturnServiceTest extends ModuleTestCase
     }
 
     /**
+     * 신청 시 결제한 부분 반품도 환불신청서 없이 완료할 수 있다.
+     *
+     *
+     * @return void 반환값 없음
+     *
      * @scenario quantity=partial, charge_method=pay_on_request, refund_chain=none
      *
      * @effects return_completion_refund_is_filed_only_when_asked
@@ -2304,6 +3092,11 @@ class OrderReturnServiceTest extends ModuleTestCase
     }
 
     /**
+     * 신청 시 결제한 부분 반품은 반품한 수량 몫의 환불신청서를 접수한다.
+     *
+     *
+     * @return void 반환값 없음
+     *
      * @scenario quantity=partial, charge_method=pay_on_request, refund_chain=at_completion
      *
      * @effects return_completion_refund_is_filed_exactly_once
@@ -2320,6 +3113,11 @@ class OrderReturnServiceTest extends ModuleTestCase
     }
 
     /**
+     * 신청 시 결제한 부분 반품은 완료 뒤에도 환불신청서를 접수할 수 있다.
+     *
+     *
+     * @return void 반환값 없음
+     *
      * @scenario quantity=partial, charge_method=pay_on_request, refund_chain=after_completion
      *
      * @effects return_refund_can_be_filed_after_completion
@@ -2336,6 +3134,11 @@ class OrderReturnServiceTest extends ModuleTestCase
     }
 
     /**
+     * 청구가 없는 부분 반품도 환불신청서 없이 완료할 수 있다.
+     *
+     *
+     * @return void 반환값 없음
+     *
      * @scenario quantity=partial, charge_method=none, refund_chain=none
      *
      * @effects return_completion_refund_is_filed_only_when_asked
@@ -2349,6 +3152,11 @@ class OrderReturnServiceTest extends ModuleTestCase
     }
 
     /**
+     * 청구가 없는 부분 반품은 반품한 수량 몫의 환불신청서를 접수한다.
+     *
+     *
+     * @return void 반환값 없음
+     *
      * @scenario quantity=partial, charge_method=none, refund_chain=at_completion
      *
      * @effects return_completion_refund_is_filed_exactly_once
@@ -2365,6 +3173,11 @@ class OrderReturnServiceTest extends ModuleTestCase
     }
 
     /**
+     * 청구가 없는 부분 반품은 완료 뒤에도 환불신청서를 접수할 수 있다.
+     *
+     *
+     * @return void 반환값 없음
+     *
      * @scenario quantity=partial, charge_method=none, refund_chain=after_completion
      *
      * @effects return_refund_can_be_filed_after_completion
@@ -2380,6 +3193,15 @@ class OrderReturnServiceTest extends ModuleTestCase
         $this->assertCount(1, $refund->refundOptions, '나뉜 행 하나만 환불에 실린다.');
     }
 
+    /**
+     * 이미 환불신청서가 있으면 사후 접수를 막는다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario quantity=full, charge_method=none, refund_chain=after_completion
+     *
+     * @effects return_second_refund_request_is_rejected
+     */
     public function test_late_refund_request_is_blocked_when_one_exists(): void
     {
         $order = $this->deliveredOrder();
@@ -2397,6 +3219,15 @@ class OrderReturnServiceTest extends ModuleTestCase
         $this->assertClaimException('claim_refund_request_exists', fn () => $this->service->createRefundRequestForCompleted($completed));
     }
 
+    /**
+     * 사후 환불신청서는 완료된 상품이 있어야 접수된다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario quantity=full, charge_method=none, refund_chain=after_completion
+     *
+     * @effects return_refund_can_be_filed_after_completion
+     */
     public function test_late_refund_request_requires_completed_items(): void
     {
         $order = $this->deliveredOrder();
@@ -2405,6 +3236,15 @@ class OrderReturnServiceTest extends ModuleTestCase
         $this->assertClaimException('claim_completion_items_invalid', fn () => $this->service->createRefundRequestForCompleted($return));
     }
 
+    /**
+     * 완료가 `completed` 훅을 한 번만 발행한다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario quantity=full, charge_method=none, refund_chain=none
+     *
+     * @effects return_completion_refund_is_filed_only_when_asked
+     */
     public function test_complete_fires_completed_hook_once(): void
     {
         $fired = 0;
@@ -2423,6 +3263,15 @@ class OrderReturnServiceTest extends ModuleTestCase
         $this->assertSame(1, $fired);
     }
 
+    /**
+     * 완료된 반품은 진행 중 클레임 수량에서 빠진다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario quantity=full, charge_method=none, refund_chain=none
+     *
+     * @effects return_completion_refund_is_filed_only_when_asked
+     */
     public function test_completed_return_is_excluded_from_active_claim_quantity(): void
     {
         $order = $this->deliveredOrder(29000, 2);
@@ -2456,6 +3305,12 @@ class OrderReturnServiceTest extends ModuleTestCase
      *
      * 한 단계만 추종하면 A 가 회수중까지 간 뒤 B 가 뒤따라 회수중이 되는 순간 헤더는
      * 승인 → 회수중 게이트에 막혀 영구히 승인에 남고, 회수 3단계 알림이 영영 나가지 않는다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario quantity=full, charge_method=none, refund_chain=none
+     *
+     * @effects return_item_level_transition_moves_the_header_only_when_items_agree
      */
     public function test_header_follows_items_through_intermediate_steps_after_staggered_progress(): void
     {
@@ -2497,6 +3352,12 @@ class OrderReturnServiceTest extends ModuleTestCase
      * 관리자 금액 수정은 다통화 표기도 함께 움직인다 (확정 2026-08-22 6차 ②).
      *
      * 환율은 현재 설정이 아니라 주문 `currency_snapshot` 의 동결 환율이다 — 접수 시점과 같은 규칙.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario quantity=full, charge_method=pay_on_request, refund_chain=none
+     *
+     * @effects return_multi_currency_amounts_come_from_the_order_snapshot
      */
     public function test_update_amounts_moves_multi_currency_columns_with_the_order_snapshot(): void
     {
@@ -2539,6 +3400,12 @@ class OrderReturnServiceTest extends ModuleTestCase
      * 반품의 청구는 회수 배송비 하나뿐이라 접수 시 박제되는 값과 같은 출처(`ClaimShippingFee::mcFee`)를
      * 쓴다. 이 단언이 없으면 그 필드를 지워도 어떤 테스트도 red 가 되지 않고, 화면에서는 그 줄이
      * 오류 없이 사라진다 (2026-08-31 3차 검증이 남긴 구멍).
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario quantity=full, charge_method=none, refund_chain=none
+     *
+     * @effects return_multi_currency_amounts_come_from_the_order_snapshot
      */
     public function test_preview_reports_multi_currency_charge_matching_the_request(): void
     {
@@ -2581,6 +3448,8 @@ class OrderReturnServiceTest extends ModuleTestCase
      * `adjustment.refund_total` 은 회수비를 이미 뺀 뒤의 금액이라, 화면이 그것만 받으면 §6-3 이
      * 요구하는 첫 줄(환불 예정액)을 세울 근거가 없다. 화면이 되더하면 예고와 청구의 근거가 갈린다.
      *
+     * @return void 반환값 없음
+     *
      * @scenario claim_type=return, charge_method=deduct_from_refund, refund_branch=none
      *
      * @effects claim_return_preview_reports_refund_before_deduction, return_preview_reports_the_refund_before_the_fee_is_deducted
@@ -2614,6 +3483,8 @@ class OrderReturnServiceTest extends ModuleTestCase
      * 확정 환불액에 회수비를 되더하는 방식은 이 조합에서 실제보다 큰 금액을 내놓는다 —
      * 환불액이 0 으로 바닥쳐 있어 `0 + 회수비` 가 되기 때문이다. 세 줄의 뺄셈은 그래도
      * 맞아떨어지므로 화면만 보고는 첫 줄이 부풀었다는 것을 알 수 없다.
+     *
+     * @return void 반환값 없음
      *
      * @scenario claim_type=return, charge_method=deduct_from_refund, refund_branch=none
      *
@@ -2650,6 +3521,8 @@ class OrderReturnServiceTest extends ModuleTestCase
      * 이 방식에서 차감액이 0 이 아니면 화면이 "환불 예정액"과 "최종"을 다르게 그려, 실제로는
      * 전액 환불되는데 구매자는 배송비만큼 덜 받는 것으로 읽는다.
      *
+     * @return void 반환값 없음
+     *
      * @scenario claim_type=return, charge_method=pay_on_request, refund_branch=none
      *
      * @effects claim_return_preview_reports_no_deduction_when_charged_separately
@@ -2677,6 +3550,8 @@ class OrderReturnServiceTest extends ModuleTestCase
      * 차감 전 금액의 보조통화도 주문 스냅샷의 동결 환율로 낸다. (§5-4)
      *
      * 화면이 스스로 환산하면 예고와 청구의 근거가 갈린다.
+     *
+     * @return void 반환값 없음
      *
      * @scenario claim_type=return, charge_method=deduct_from_refund, refund_branch=none
      *
@@ -2736,7 +3611,15 @@ class OrderReturnServiceTest extends ModuleTestCase
         );
     }
 
-    /** 스냅샷이 없으면 차감 전 금액의 보조통화도 null 이다 (형제 줄과 같은 규약). */
+    /**
+     * 스냅샷이 없으면 차감 전 금액의 보조통화도 null 이다 (형제 줄과 같은 규약).
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario quantity=full, charge_method=none, refund_chain=none
+     *
+     * @effects return_multi_currency_amounts_come_from_the_order_snapshot
+     */
     public function test_preview_reports_null_multi_currency_for_refund_before_deduction_without_a_snapshot(): void
     {
         $policy = $this->createClaimShippingPolicy();
@@ -2755,7 +3638,15 @@ class OrderReturnServiceTest extends ModuleTestCase
         $this->assertNull($preview['mc_refund_before_deduction']);
     }
 
-    /** 통화 스냅샷이 없는 주문은 보조통화를 낼 근거가 없으므로 null 이다 (화면이 그 줄을 세우지 않는다). */
+    /**
+     * 통화 스냅샷이 없는 주문은 보조통화를 낼 근거가 없으므로 null 이다 (화면이 그 줄을 세우지 않는다).
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario quantity=full, charge_method=none, refund_chain=none
+     *
+     * @effects return_multi_currency_amounts_come_from_the_order_snapshot
+     */
     public function test_preview_reports_null_multi_currency_when_the_order_has_no_snapshot(): void
     {
         $policy = $this->createClaimShippingPolicy();
@@ -2775,6 +3666,12 @@ class OrderReturnServiceTest extends ModuleTestCase
 
     /**
      * 다통화 스냅샷이 없는 주문은 금액 수정 후에도 mc 컬럼이 비어 있다 (대조군).
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario quantity=full, charge_method=pay_on_request, refund_chain=none
+     *
+     * @effects return_multi_currency_amounts_come_from_the_order_snapshot
      */
     public function test_update_amounts_leaves_multi_currency_empty_without_a_snapshot(): void
     {
@@ -2797,6 +3694,12 @@ class OrderReturnServiceTest extends ModuleTestCase
 
     /**
      * 상품 단위 전이에 처리자가 없으면 신청 상품 행의 기존 처리자를 지우지 않는다 (6차 ④).
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario quantity=full, charge_method=none, refund_chain=none
+     *
+     * @effects return_item_level_transition_moves_the_header_only_when_items_agree
      */
     public function test_transition_option_keeps_the_existing_processor_when_none_is_given(): void
     {
@@ -2813,6 +3716,12 @@ class OrderReturnServiceTest extends ModuleTestCase
 
     /**
      * 완료 처리에 처리자가 없으면 신청 상품 행의 기존 처리자를 지우지 않는다 (6차 ④).
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario quantity=full, charge_method=none, refund_chain=none
+     *
+     * @effects return_completion_refund_is_filed_only_when_asked
      */
     public function test_complete_keeps_the_existing_processor_when_none_is_given(): void
     {
@@ -2833,6 +3742,12 @@ class OrderReturnServiceTest extends ModuleTestCase
 
     /**
      * 송장 저장과 회수중 전환은 한 묶음이다 — 전환이 실패하면 송장도 남지 않는다 (6차 ⑤).
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario quantity=full, charge_method=none, refund_chain=none
+     *
+     * @effects return_transition_follows_the_status_gate
      */
     public function test_register_tracking_does_not_persist_tracking_when_the_transition_fails(): void
     {
@@ -2869,6 +3784,12 @@ class OrderReturnServiceTest extends ModuleTestCase
 
     /**
      * 상품 하나만 반려하면 그 상품만 원 주문옵션이 복귀하고 나머지는 코스에 남는다 (6차 ⑧).
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario quantity=full, charge_method=none, refund_chain=none
+     *
+     * @effects return_reject_reverts_each_item_to_its_own_original_status
      */
     public function test_transition_option_rejecting_one_item_reverts_only_that_item(): void
     {
@@ -2888,6 +3809,12 @@ class OrderReturnServiceTest extends ModuleTestCase
      *
      * 거부하지 않으면 `syncOptionStatuses` 는 앞선 상품을 건너뛰는데 `revertOrderOptions` 는 전 상품을
      * 되돌려, 상품 행은 승인·회수중인데 주문옵션은 코스를 벗어난 어긋남이 생긴다(교환과 같은 규칙).
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario quantity=full, charge_method=none, refund_chain=none
+     *
+     * @effects return_item_level_transition_moves_the_header_only_when_items_agree
      */
     public function test_header_rejection_is_refused_while_an_item_has_moved_past_the_gate(): void
     {
@@ -2905,6 +3832,12 @@ class OrderReturnServiceTest extends ModuleTestCase
     /**
      * 끝난 상품(반려·철회·완료)에 같은 상태를 다시 지시하면 건너뛰고 보고한다 — 자기 전이는 게이트가
      * 언제나 허용하므로 막지 않으면 처리자·상태가 다시 쓰인다(교환과 같은 규칙).
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario quantity=full, charge_method=none, refund_chain=none
+     *
+     * @effects return_item_level_transition_moves_the_header_only_when_items_agree
      */
     public function test_transition_option_skips_an_item_that_is_already_finished(): void
     {
@@ -2923,6 +3856,12 @@ class OrderReturnServiceTest extends ModuleTestCase
 
     /**
      * 상품 하나만 철회해도 같은 규칙이다 — 철회된 상품만 복귀 (6차 ⑧).
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario quantity=full, charge_method=none, refund_chain=none
+     *
+     * @effects return_withdraw_reverts_the_order_option
      */
     public function test_transition_option_withdrawing_one_item_reverts_only_that_item(): void
     {
@@ -2941,6 +3880,15 @@ class OrderReturnServiceTest extends ModuleTestCase
     // 미리보기 자격 가드 (S5) / 승인 전 수정 (D13)
     // ================================================================
 
+    /**
+     * 신청할 수 없는 상태의 상품은 미리보기가 거절한다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario quantity=full, charge_method=none, refund_chain=none
+     *
+     * @effects return_preview_matches_the_requested_amounts
+     */
     public function test_preview_rejects_an_item_that_is_not_in_a_requestable_status(): void
     {
         $order = $this->createSingleItemClaimOrder(29000, 1, $this->createClaimShippingPolicy());
@@ -2953,7 +3901,14 @@ class OrderReturnServiceTest extends ModuleTestCase
     }
 
     /**
+     * 살아 있는 환불신청서가 잠근 수량은 미리보기가 거절한다.
+     *
+     *
+     * @return void 반환값 없음
+     *
      * @effects return_request_rejects_a_quantity_locked_by_another_claim
+     *
+     * @scenario quantity=full, charge_method=none, refund_chain=none
      */
     public function test_preview_rejects_a_quantity_locked_by_a_live_refund_request(): void
     {
@@ -2969,6 +3924,15 @@ class OrderReturnServiceTest extends ModuleTestCase
         ));
     }
 
+    /**
+     * 수정 중인 반품 자신은 수량 잠금에서 제외한다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario quantity=full, charge_method=none, refund_chain=none
+     *
+     * @effects return_request_rejects_a_quantity_locked_by_another_claim
+     */
     public function test_preview_excludes_the_return_being_edited_from_the_lock(): void
     {
         $order = $this->deliveredOrder(29000, 2);
@@ -2984,6 +3948,15 @@ class OrderReturnServiceTest extends ModuleTestCase
         $this->assertSame(0.0, (float) $preview['total_charge_amount']);
     }
 
+    /**
+     * 옛 키 이름(`cancel_quantity`)으로 보낸 수량도 미리보기가 받아들인다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario quantity=full, charge_method=none, refund_chain=none
+     *
+     * @effects return_preview_matches_the_requested_amounts
+     */
     public function test_preview_still_accepts_cancel_quantity_as_the_quantity_key(): void
     {
         $order = $this->deliveredOrder();
@@ -2998,7 +3971,14 @@ class OrderReturnServiceTest extends ModuleTestCase
     }
 
     /**
+     * 사유가 바뀌면 수정이 회수비를 다시 계산한다.
+     *
+     *
+     * @return void 반환값 없음
+     *
      * @effects return_update_request_recalculates_the_fee_when_the_reason_changes
+     *
+     * @scenario quantity=full, charge_method=none, refund_chain=none
      */
     public function test_update_request_recalculates_the_fee_when_the_reason_changes(): void
     {
@@ -3015,6 +3995,15 @@ class OrderReturnServiceTest extends ModuleTestCase
         $this->assertNull($updated->charge_method);
     }
 
+    /**
+     * 수정으로 청구액이 생기면 청구 방식을 요구한다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario quantity=full, charge_method=pay_on_request, refund_chain=none
+     *
+     * @effects return_charge_method_is_required_when_a_fee_remains
+     */
     public function test_update_request_requires_a_charge_method_when_the_charge_becomes_positive(): void
     {
         $policy = $this->createClaimShippingPolicy();
@@ -3031,7 +4020,14 @@ class OrderReturnServiceTest extends ModuleTestCase
     }
 
     /**
+     * 승인 뒤에는 신청서를 수정할 수 없다.
+     *
+     *
+     * @return void 반환값 없음
+     *
      * @effects return_update_request_is_blocked_after_approval
+     *
+     * @scenario quantity=full, charge_method=none, refund_chain=none
      */
     public function test_update_request_is_blocked_after_approval(): void
     {
@@ -3046,6 +4042,8 @@ class OrderReturnServiceTest extends ModuleTestCase
      * 접수는 미리보기와 같은 재료로 계산한 전/후 스냅샷을 신청서에 동결한다. (#599 후속 — 상세 비교표의 근거)
      *
      * 2개 중 1개 반품: 전 58,000 → 후 29,000. 저장값은 미리보기와 같은 형태(`formatted`·`base_currency` 포함)다.
+     *
+     * @return void 반환값 없음
      *
      * @scenario claim_type=return
      *

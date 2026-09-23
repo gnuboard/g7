@@ -288,6 +288,10 @@
                                                 "pathSegment": "{{claim?.data?.claim_path_segment ?? ''}}",
                                                 "claimType": "{{claim?.data?.claim?.claim_type ?? ''}}",
                                                 "claimId": "{{claim?.data?.claim?.id ?? null}}"
+                                            },
+                                            "onError": {
+                                                "comment": "실패 사유는 핸들러가 이미 띄운다(서버 사유 우선 + 다국어 폴백). onError 를 두지 않으면 기본 에러 정책이 같은 실패를 한 번 더 알려 같은 문구가 두 번 뜬다 — 2026-09-22 #599 3차 실측 T2-D12 에서 승인 실패 「교환할 옵션의 재고가 부족합니다.」가 2개 겹쳐 떴다. 형제 자리(_partial_claim_shipping·_modal_claim_refund_execute)와 같은 규율이다.",
+                                                "handler": "suppress"
                                             }
                                         }
                                     ],

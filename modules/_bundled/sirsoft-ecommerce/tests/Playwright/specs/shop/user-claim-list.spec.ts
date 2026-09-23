@@ -108,9 +108,11 @@ test.describe('구매자 클레임 신청내역', () => {
     await authenticatePage(page, memberToken);
   });
 
+  /**
+   * @scenario claim_type=exchange, screen=list, entry=none
+   * @effects claim_list_empty_state_and_pagination
+   */
   test('신청서가 없는 회원에게도 서브탭 4종과 빈 안내가 선다', async ({ page }) => {
-    // @scenario claim_type=exchange, screen=list, entry=none
-    // @effects claim_list_empty_state_and_pagination
     await openList(page);
 
     for (const label of ['교환', '반품', '환불', '취소']) {
@@ -124,9 +126,11 @@ test.describe('구매자 클레임 신청내역', () => {
     expect(await screenText(page), '빈 목록에서 나갈 곳이 없다').toContain('주문내역 보기');
   });
 
+  /**
+   * @scenario claim_type=return, screen=list, entry=none
+   * @effects claim_list_type_tabs_follow_the_query
+   */
   test('활성 탭은 주소를 단일 출처로 삼는다', async ({ page }) => {
-    // @scenario claim_type=return, screen=list, entry=none
-    // @effects claim_list_type_tabs_follow_the_query
     await openList(page, '?type=return');
 
     // 활성 판정을 로컬 상태로 이중화하면 새로고침·뒤로가기에서 주소와 화면이 갈린다.
@@ -135,9 +139,11 @@ test.describe('구매자 클레임 신청내역', () => {
     await expect(tab(page, '교환'), '주소가 지목하지 않은 탭이 활성이다').not.toHaveClass(/border-gray-900/);
   });
 
+  /**
+   * @scenario claim_type=refund, screen=list, entry=none
+   * @effects claim_list_tab_switch_does_not_inherit_the_previous_page
+   */
   test('서브탭 전환은 앞 유형의 페이지 번호를 물려받지 않는다', async ({ page }) => {
-    // @scenario claim_type=refund, screen=list, entry=none
-    // @effects claim_list_tab_switch_does_not_inherit_the_previous_page
     await openList(page, '?type=exchange&page=3');
 
     await tab(page, '반품').click();
@@ -152,9 +158,11 @@ test.describe('구매자 클레임 신청내역', () => {
     ).toBe('1');
   });
 
+  /**
+   * @scenario claim_type=return, screen=list, entry=none
+   * @effects claim_list_amount_column_branches_by_type, claim_list_return_row_omits_refund_amount
+   */
   test('금액 열은 유형마다 다르게 서고 반품 행에는 환불액이 없다', async ({ page }) => {
-    // @scenario claim_type=return, screen=list, entry=none
-    // @effects claim_list_amount_column_branches_by_type, claim_list_return_row_omits_refund_amount
     await mockClaimList(page, {
       exchange: [
         claimRow({
@@ -204,9 +212,11 @@ test.describe('구매자 클레임 신청내역', () => {
     ).not.toContain('환불액');
   });
 
+  /**
+   * @scenario claim_type=exchange, screen=list, entry=none
+   * @effects claim_list_row_actions_follow_server_flags
+   */
   test('[수정]·[철회]는 서버 판정에서만 선다', async ({ page }) => {
-    // @scenario claim_type=exchange, screen=list, entry=none
-    // @effects claim_list_row_actions_follow_server_flags
     await mockClaimList(page, {
       exchange: [
         claimRow({ claim_number: 'EX20260902-0201', is_editable: true, is_withdrawable: true }),
@@ -243,9 +253,11 @@ test.describe('구매자 클레임 신청내역', () => {
     ).toHaveCount(0);
   });
 
+  /**
+   * @scenario claim_type=return, screen=detail, entry=none
+   * @effects claim_list_page_and_detail_round_trip_keeps_the_list_state
+   */
   test('목록 → 상세 왕복은 서브탭과 페이지를 그대로 물려준다', async ({ page }) => {
-    // @scenario claim_type=return, screen=detail, entry=none
-    // @effects claim_list_page_and_detail_round_trip_keeps_the_list_state
     await mockClaimList(page, {
       return: [
         claimRow({
@@ -287,9 +299,11 @@ test.describe('구매자 클레임 신청내역', () => {
     expect(detailQuery.get('page'), '상세로 가며 페이지가 사라졌다').toBe('1');
   });
 
+  /**
+   * @scenario claim_type=exchange, screen=detail, entry=none
+   * @effects claim_detail_progress_stepper_renders_server_steps
+   */
   test('신청서 상세는 관리자와 같은 진행 단계를 그리고 모바일에서 스크롤 없이 줄바꿈한다', async ({ page }) => {
-    // @scenario claim_type=exchange, screen=detail, entry=none
-    // @effects claim_detail_progress_stepper_renders_server_steps
     const progress = [
       { value: 'requested', label: '교환신청', state: 'done', icon: 'status-request', variant: 'secondary' },
       { value: 'approved', label: '교환승인', state: 'done', icon: 'status-approved', variant: 'info' },
@@ -343,9 +357,11 @@ test.describe('구매자 클레임 신청내역', () => {
     expect(doc.scroll).toBeLessThanOrEqual(doc.client + 1);
   });
 
+  /**
+   * @scenario claim_type=exchange, screen=detail, entry=none
+   * @effects claim_payment_result_banner_distinguishes_three_outcomes, claim_payment_result_banner_absent_without_the_query
+   */
   test('결제 결과 배너는 세 결과를 구분하고, 쿼리가 없으면 서지 않는다', async ({ page }) => {
-    // @scenario claim_type=exchange, screen=detail, entry=none
-    // @effects claim_payment_result_banner_distinguishes_three_outcomes, claim_payment_result_banner_absent_without_the_query
     await mockClaimDetail(page, {
       claim_number: 'EX20260902-0400',
       claim_type: 'exchange',
@@ -397,11 +413,69 @@ test.describe('구매자 클레임 신청내역', () => {
     expect(plain, '쿼리 없이 성공 배너가 섰다').not.toContain('추가 결제가 완료되었습니다');
     expect(plain, '쿼리 없이 취소 배너가 섰다').not.toContain('결제를 취소하셨습니다');
   });
+  /**
+   * 대기 결제행의 수단은 접수 때 확정되지만 그 뒤에 낼 수 없게 될 수 있다 — 마일리지 잔액이
+   * 모자라거나, 운영자가 그 수단을 카탈로그에서 내리거나. 고를 자리가 없으면 사용자는
+   * 「미수납 ○○원 + 결제하기」를 보면서 누를 때마다 같은 거절을 받고 출구가 철회뿐이다
+   * (#599 3차 실측 F-1·F-2 — T1-D6).
+   *
+   * @scenario claim_type=exchange, screen=detail, entry=none
+   * @effects claim_detail_pending_payment_method_can_be_rechosen
+   */
+  test('낼 수 있는 수단이 둘 이상이면 상세에서 결제 수단을 다시 고를 수 있다', async ({ page }) => {
+    await mockClaimDetail(page, {
+      claim_number: 'EX20260902-0500',
+      claim_type: 'exchange',
+      claim_type_label: '교환',
+      order_number: MOCK_ORDER.number,
+      status: 'payment_pending',
+      status_label: '교환결제대기',
+      status_variant: 'warning',
+      currency_code: 'KRW',
+      requested_at_formatted: '2026-09-02 10:00',
+      is_editable: false,
+      is_withdrawable: false,
+      items: [],
+      images: [],
+      outstanding_amount: 4000,
+      outstanding_amount_formatted: '4,000원',
+      available_payment_methods: ['card', 'point'],
+      pending_payment: {
+        payment_number: 'CP20260902-0500',
+        payment_method: 'point',
+        payment_method_label: '포인트결제',
+        total_amount_formatted: '4,000원',
+      },
+    });
+
+    await page.goto('/mypage/claims/EX20260902-0500');
+    await waitForApp(page);
+
+    const methods = page.locator('input[type="radio"][name="claimPayMethod"]');
+
+    await expect(methods, '낼 수 있는 수단이 둘인데 고를 자리가 없다').toHaveCount(2, {
+      timeout: 20_000,
+    });
+    // 손대기 전에는 서버가 확정해 둔 수단이 골라져 있어야 한다 — 화면이 안내하는 값과 실제로
+    // 나가는 값이 어긋나면 고른 적 없는 수단으로 결제가 시작된다.
+    await expect(
+      methods.filter({ has: page.locator('[value="point"]') }).or(page.locator('input[value="point"][name="claimPayMethod"]')),
+      '서버가 확정한 수단이 선택돼 있지 않다',
+    ).toBeChecked();
+
+    // 다른 수단으로 갈아탈 수 있어야 한다 — 이 클릭이 막히면 출구가 신청서 철회뿐이다.
+    await page.locator('input[value="card"][name="claimPayMethod"]').check();
+    await expect(page.locator('input[value="card"][name="claimPayMethod"]')).toBeChecked();
+  });
+
+  /**
+   * claim_edit_locks_items_and_quantity, claim_edit_replaces_submit_with_save,
+   * claim_edit_hides_charge_axes_and_shows_the_recorded_method
+   *
+   * @scenario claim_type=exchange, screen=edit, entry=list
+   * @effects claim_edit_route_resolves_number_by_position, claim_edit_seeds_items_from_the_claim,
+   */
   test('목록의 [수정]으로 들어가면 수정 모드로 서고 품목·수량·청구 방식이 잠긴다', async ({ page }) => {
-    // @scenario claim_type=exchange, screen=edit, entry=list
-    // @effects claim_edit_route_resolves_number_by_position, claim_edit_seeds_items_from_the_claim,
-    //   claim_edit_locks_items_and_quantity, claim_edit_replaces_submit_with_save,
-    //   claim_edit_hides_charge_axes_and_shows_the_recorded_method
     await mockClaimList(page, {
       exchange: [claimRow({ claim_number: EDITABLE.claim_number, is_editable: true, is_withdrawable: true })],
     });
@@ -447,11 +521,14 @@ test.describe('구매자 클레임 신청내역', () => {
     ).toHaveCount(0);
   });
 
+  /**
+   * 진입 축(entry)은 수정·철회 **화면**에만 걸린다 — 목록은 도착지라 `none` 이 그 셀이다
+   * (매니페스트 exclusions: screen [list, detail] × entry [list, detail]).
+   *
+   * @scenario claim_type=exchange, screen=list, entry=none
+   * @effects claim_withdraw_entry_points_exist_on_list_and_detail
+   */
   test('목록의 [철회]는 곧바로 실행하지 않고 대상과 결과를 밝히는 확인 절차를 연다', async ({ page }) => {
-    // 진입 축(entry)은 수정·철회 **화면**에만 걸린다 — 목록은 도착지라 `none` 이 그 셀이다
-    // (매니페스트 exclusions: screen [list, detail] × entry [list, detail]).
-    // @scenario claim_type=exchange, screen=list, entry=none
-    // @effects claim_withdraw_entry_points_exist_on_list_and_detail
     await mockClaimList(page, {
       exchange: [claimRow({ claim_number: EDITABLE.claim_number, is_editable: true, is_withdrawable: true })],
     });

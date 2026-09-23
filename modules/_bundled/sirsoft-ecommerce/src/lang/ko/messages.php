@@ -493,6 +493,7 @@ return [
         'list_retrieved' => '신청 내역을 조회했습니다.',
         'retrieved' => '신청서를 조회했습니다.',
         'updated' => '신청 내용이 수정되었습니다.',
+        'rejected' => '신청이 반려되었습니다.',
         'withdrawn' => '신청이 철회되었습니다.',
         'image_uploaded' => '이미지를 첨부했습니다.',
         'image_deleted' => '첨부 이미지를 삭제했습니다.',

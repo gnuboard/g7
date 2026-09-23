@@ -1172,6 +1172,7 @@ return [
         'list_retrieved' => '申請履歴を照会しました。',
         'retrieved' => '申請書を照会しました。',
         'updated' => '申請内容が修正されました。',
+        'rejected' => '申請が却下されました。',
         'withdrawn' => '申請が撤回されました。',
         'image_uploaded' => '画像を添付しました。',
         'image_deleted' => '添付画像を削除しました。',

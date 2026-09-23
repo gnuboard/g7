@@ -282,7 +282,7 @@
 | refund_shipping_amount / refund_shipping_amount_formatted | number\|null / string\|null | `0` / `0원` | 환불 예정액의 배송비 몫 (반품만 — 교환은 `null`) |
 | blocked_reason | string\|null | `claim_refund_request_exists` | 접수 불가 사유. `claim_refund_request_exists` 이미 접수됨 / `claim_refund_not_applicable` 환불 대상 없음 — 둘은 뜻이 달라 화면이 구분해 알린다 |
 | already_filed | boolean | `false` | 이 신청서에 살아 있는 환불신청서가 있는지 |
-| earn_recovery | boolean | `true` | 완료 시 적립 예정이 차감되는지 (회원 주문 + 완료 대상 존재) |
+| earn_recovery | boolean | `true` | 완료 시 적립 예정분이 사라지는지 — 회원 주문이고, 완료 대상 중 **아직 적립이 나가지 않은** 주문옵션이 있을 때만 `true`. 이미 적립된 상품은 완료해도 되돌리지 않으므로(#599 T2-D13) `false` |
 | currency_code | string | `KRW` | 표기 통화 (거래 시점 동결) |
 
 **progress_steps 항목**
@@ -396,6 +396,7 @@
 | 미수납 청구 있음 + `pay_on_request` | `status=approved` | `422` `claim_payment_outstanding` — 결제 완료 후 다시 승인 |
 | 청구 없음(전액 수납·환불금 차감 포함) | `status=payment_pending` | `422` `claim_payment_not_required` |
 | 청구 있음 | `status=payment_pending` | 결제 건 생성(없으면) + 결제대기 전이, `payment_requested=true` |
+| 결제 건 있음(대기·결제완료) | `status=rejected` | 반려 전이 직후 **구매자 철회와 같은 정리** — 대기 건은 취소(`cancelled`), 결제된 건은 환급한다(`ClaimPaymentService::refundPaymentsForClaim()`). 반려된 신청서에 결제가 열린 채 남지 않게 하는 계약이다. 환급이 PG 를 거치면 응답이 그 왕복만큼 늦어지고, 환급이 실패하면 신청서는 반려된 채 오류가 돌아온다(철회와 같은 설계) |
 
 **응답 예시 (200)**
 
@@ -908,6 +909,25 @@ Authorization: Bearer {YOUR_TOKEN}
 | refund_amount | number | 아니오 | PG 환불액 (min 0) |
 | refund_points_amount | number | 아니오 | 마일리지 환불액 (min 0 — 비회원 주문 422) |
 | refund_method | string | 아니오 | 환불 수단 (`pg`/`bank`/`points`) |
+| refund_bank | object | 아니오 | 실행하며 적어 넣는 환불 계좌 — `bank_code`(max 10) · `account_number`(max 50) · `holder`(max 50). **세 값이 함께** 와야 하며 일부만 실으면 `validation.claims.refund_bank.incomplete` 로 거절됩니다. 실행과 같은 트랜잭션에서 신청서에 저장되므로 「계좌는 저장됐는데 실행은 실패한」 반쪽 상태가 생기지 않습니다 |
+| force_without_refund_bank | boolean | 아니오 | 계좌 없이 완료로 기록하겠다는 **명시 동의**. 참이면 계좌 게이트를 통과합니다 — 이미 다른 경로로 송금했거나 지급하지 않기로 한 건을 위한 길이며, 송금은 일어나지 않고 신청서만 닫힙니다 |
+
+#### 환불 계좌 게이트 (T2-D6)
+
+**계좌로 송금해야 끝나는 환불은 보낼 계좌가 있어야 실행됩니다.** 없으면 `422` 이고 오류 키는
+`refund_bank` 입니다. 세 조건을 모두 만족할 때만 요구합니다.
+
+1. 신청서에 계좌가 아직 없다 (`refund_bank_code` 가 비었다)
+2. 계좌로 나갈 **현금이 있다** (`refund_amount` > 0 — 마일리지로만 돌려주는 환불은 회원 원장으로
+   들어가 보낼 계좌가 없습니다)
+3. 이 주문이 계좌로 환불되는 주문이다 — 판정은 구매자 접수·신청 화면과 같은 술어
+   (`OrderRefundRequestService::refundsToBankAccount()`)입니다
+
+같은 판정을 상세 응답이 `claim.refund_account_required` 로 미리 답해 주므로, 화면은 결제수단
+코드로 규칙을 재현하지 않고 그 값으로 계좌 입력 칸과 실행 버튼 잠금을 정합니다.
+
+막지 않던 동안에는 계좌가 빈 채로 실행돼 **돈은 나가지 않았는데 신청서만 `completed` 로
+닫혔고**, 그 뒤에는 되돌릴 경로도 계좌를 적을 자리도 없었습니다(2026-09-22 #599 3차 실측 L-8).
 
 **응답 예시 (200)**
 
@@ -927,7 +947,7 @@ Authorization: Bearer {YOUR_TOKEN}
 | --- | --- |
 | `404` | 환불신청서 부재 |
 | `409` | 이미 실행됐거나 실행 중 (`claim_refund_already_executed` — 더블클릭). 화면은 새로고침을 안내한다 |
-| `422` | 승인 전 상태(`claim_transition_not_allowed`) / D19 상한 초과(`claim_refund_exceeds_cancellable` — 실행 직전 재계산 가드) / 환불수단이 결제행과 어긋남(`claims.refund_method.payment_mismatch`) / PG 환불 거절(`errors.detail` 에 PG 사유 — 관리자 전용 면의 조치 근거) |
+| `422` | 환불 계좌 부재(`refund_bank` — 계좌도 동의도 없이 계좌 환불을 실행) / 일부만 실린 계좌(`validation.claims.refund_bank.incomplete`) / 승인 전 상태(`claim_transition_not_allowed`) / D19 상한 초과(`claim_refund_exceeds_cancellable` — 실행 직전 재계산 가드) / 환불수단이 결제행과 어긋남(`claims.refund_method.payment_mismatch`) / PG 환불 거절(`errors.detail` 에 PG 사유 — 관리자 전용 면의 조치 근거) |
 
 ---
 

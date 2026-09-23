@@ -76,6 +76,7 @@
     "refund_account_number_placeholder": "Account number (digits only)",
     "refund_account_holder_placeholder": "Account holder",
     "refund_account_all_required": "Please enter the bank, account number and account holder.",
+    "refund_account_required_to_submit": "Please enter the account to be refunded. This order is refunded by bank transfer.",
     "submit_cancel": "Cancel order",
     "submit_refund": "Request refund",
     "comparison": {
@@ -132,6 +133,7 @@
     "select_option_required": "Select the option you want to receive.",
     "custom_options": "Additional options",
     "out_of_stock": "The selected option is out of stock.",
+    "unavailable": "The selected option is not available for exchange right now. Please choose another option.",
     "difference_notice": "The price difference is confirmed in the summary.",
     "load_failed": "Exchangeable options could not be loaded.",
     "apply": "Apply",
@@ -139,6 +141,7 @@
   },
   "image": {
     "upload_failed": "The photo could not be uploaded.",
+    "upload_partial_failed": "{{failed}} of {{total}} photos could not be uploaded. Please attach them again on the request form.",
     "limit_exceeded": "You can attach up to {{max}} photos.",
     "size_exceeded": "Each photo must be {{size}}KB or smaller.",
     "remove_failed": "The attachment could not be removed."
@@ -277,6 +280,7 @@
     "refund_account_hint": "To change the account, enter it again below. Leave the fields blank to keep the account on record.",
     "save": "Save",
     "save_success": "The request has been updated.",
-    "save_failed": "Could not update the request."
+    "save_failed": "Could not update the request.",
+    "not_editable": "A request cannot be changed after it has been approved. Please contact customer support if you need a change."
   }
 }

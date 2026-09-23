@@ -16,6 +16,8 @@ use Modules\Sirsoft\Ecommerce\Enums\ClaimTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ExchangeStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\OrderOptionSourceTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
+use Modules\Sirsoft\Ecommerce\Enums\ProductDisplayStatus;
+use Modules\Sirsoft\Ecommerce\Enums\ProductSalesStatus;
 use Modules\Sirsoft\Ecommerce\Enums\RefundPriorityEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundSourceTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundStatusEnum;
@@ -112,6 +114,7 @@ class OrderExchangeService
      * @param  OrderOptionService  $orderOptionService  주문 옵션 서비스 (코스 상태 전이·수량 분할)
      * @param  RefundExecutionService  $refundExecutionService  환불 실행 서비스 (환불수단 판정)
      * @param  UserMileageService  $mileageService  마일리지 서비스 (적립 회수)
+     * @param  PurchaseEligibilityService  $purchaseEligibility  구매 자격 판정 서비스 (교환 대상 상품의 구매등급 제한)
      * @param  StockService  $stockService  재고 서비스
      * @param  SequenceService  $sequenceService  채번 서비스
      * @param  EcommerceSettingsService  $settingsService  이커머스 설정 서비스
@@ -136,6 +139,7 @@ class OrderExchangeService
         protected OrderOptionService $orderOptionService,
         protected RefundExecutionService $refundExecutionService,
         protected UserMileageService $mileageService,
+        protected PurchaseEligibilityService $purchaseEligibility,
         protected StockService $stockService,
         protected SequenceService $sequenceService,
         protected EcommerceSettingsService $settingsService,
@@ -1273,21 +1277,83 @@ class OrderExchangeService
     {
         $isOptionChange = $newProductOptionId !== null && $newProductOptionId !== (int) $option->product_option_id;
 
-        // 옵션을 바꾸면 신규 단가(`getFinalPrice()` = 상품 판매가 + 옵션 조정액)를 읽어야 하므로
-        // 상품까지 한 번에 싣는다 — 관계를 불러올지는 Repository 가 정하고, 모델 안에서 지연 로드하지 않는다.
+        // 두 경로 모두 **상품까지 싣는다.** 동일옵션 경로가 상품 없이 옵션만 읽던 탓에 아래 상품
+        // 단위 판정(판매·전시·구매제한)을 할 수 없었다. 신규 단가(`getFinalPrice()` = 상품 판매가 +
+        // 옵션 조정액)도 상품을 필요로 한다 — 관계를 불러올지는 Repository 가 정하고, 모델 안에서
+        // 지연 로드하지 않는다.
         $target = $isOptionChange
             ? $this->productOptionRepository->findByIdWithProduct($newProductOptionId)
-            : $this->productOptionRepository->findById((int) $option->product_option_id);
+            : $this->productOptionRepository->findByIdWithProduct((int) $option->product_option_id);
 
         if (! $target) {
             throw OrderClaimException::newOptionInvalid();
         }
 
-        if ($isOptionChange && (! $target->is_active || (int) $target->product_id !== (int) $option->product_id)) {
+        // 다른 상품의 옵션은 받지 않는다 — 배송정책·과세·적립 정책이 달라 차액 하나로 정산할 수 없다.
+        if ($isOptionChange && (int) $target->product_id !== (int) $option->product_id) {
             throw OrderClaimException::newOptionInvalid();
         }
 
+        $this->assertTargetOptionIsPurchasable($target, $option);
+
         return [$target, $isOptionChange];
+    }
+
+    /**
+     * 교환받을 옵션이 **지금 살 수 있는 상태**인지 검사합니다.
+     *
+     * 교환은 그 옵션을 새로 한 번 더 내보내는 일이라, 지금 판매하지 않는 것을 보내 달라는 신청은
+     * 받을 수 없다. 예전에는 옵션의 `is_active` 만, 그것도 **옵션을 바꾸는 경로에서만** 봤다 —
+     * 그래서 ① 판매 중지한 옵션으로 **동일옵션 교환**이 접수되고(2026-09-22 #599 3차 실측 L-4 ·
+     * T2-D11: `is_active=false` 인 원 옵션으로 낸 동일옵션 교환이 201 로 통과했다) ② 품절·판매중지·
+     * 출시예정·미노출·구매등급제한 **상품**으로도 교환이 접수됐다.
+     *
+     * 재고는 여기서 보지 않는다 — 수량과 함께 판정해야 해서 `assertRedeliveryStock()` 이 따로 맡는다.
+     *
+     * @param  ProductOption  $target  교환받을 상품옵션 (상품 관계 포함)
+     * @param  OrderOption  $option  원 주문옵션 (신청자 해석용)
+     * @return void 반환값 없음
+     *
+     * @throws OrderClaimException 지금 구매할 수 없는 옵션·상품
+     */
+    protected function assertTargetOptionIsPurchasable(ProductOption $target, OrderOption $option): void
+    {
+        if (! $target->is_active) {
+            throw OrderClaimException::newOptionInvalid();
+        }
+
+        $product = $target->product;
+
+        if (! $product) {
+            throw OrderClaimException::newOptionInvalid();
+        }
+
+        // 판매 상태 — 판매중만 통과(품절·판매중지·출시예정 거절).
+        // 모델이 enum 으로 캐스팅하지만 캐스트가 없는 경로에서도 같은 판정이 나오도록 값으로 비교한다.
+        $salesStatus = $product->sales_status instanceof ProductSalesStatus
+            ? $product->sales_status
+            : ProductSalesStatus::tryFrom((string) $product->sales_status);
+
+        if ($salesStatus !== ProductSalesStatus::ON_SALE) {
+            throw OrderClaimException::newOptionInvalid();
+        }
+
+        // 전시 상태 — 숨긴 상품은 구매 자체가 막혀 있다.
+        $displayStatus = $product->display_status instanceof ProductDisplayStatus
+            ? $product->display_status
+            : ProductDisplayStatus::tryFrom((string) $product->display_status);
+
+        if ($displayStatus !== ProductDisplayStatus::VISIBLE) {
+            throw OrderClaimException::newOptionInvalid();
+        }
+
+        // 구매 대상 제한 — 신청자가 살 수 없는 상품이면 교환도 받을 수 없다.
+        // 신청자는 주문의 주인이다(비회원 주문은 null → 비회원 역할로 해석된다).
+        $orderer = $option->order?->user;
+
+        if (! $this->purchaseEligibility->isPurchasableBy($product, $this->purchaseEligibility->resolveRoleIds($orderer))) {
+            throw OrderClaimException::newOptionInvalid();
+        }
     }
 
     /**

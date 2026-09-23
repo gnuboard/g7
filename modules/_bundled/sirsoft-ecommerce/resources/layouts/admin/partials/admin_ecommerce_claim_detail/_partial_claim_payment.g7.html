@@ -241,7 +241,12 @@ partial 안의 partial 은 같은 디렉터리 기준 상대 경로여야 한다
             <!-- 금액을 싣지 않고 접수만 요청한다 — 무엇을 얼마나 환불할지는 서버가 이 신청서를 보고 정하고, 화면은 성공 뒤 상세와 활동 로그를 다시 읽는다. -->
             <button type="button" class="btn btn-secondary" disabled="{{claim?.data?.abilities?.can_update_status !== true || _local.isFilingRefundRequest === true}}">
               <on type="click">
-                <action handler="sirsoft-ecommerce.storeClaimRefundRequest" pathSegment="{{claim?.data?.claim_path_segment ?? ''}}" claimType="{{claim?.data?.claim?.claim_type ?? ''}}" claimId="{{claim?.data?.claim?.id ?? null}}"/>
+                <action handler="sirsoft-ecommerce.storeClaimRefundRequest" pathSegment="{{claim?.data?.claim_path_segment ?? ''}}" claimType="{{claim?.data?.claim?.claim_type ?? ''}}" claimId="{{claim?.data?.claim?.id ?? null}}">
+                  <fail>
+                    <!-- 실패 사유는 핸들러가 이미 띄운다(서버 사유 우선 + 다국어 폴백). onError 를 두지 않으면 기본 에러 정책이 같은 실패를 한 번 더 알려 같은 문구가 두 번 뜬다 — 2026-09-22 #599 3차 실측 T2-D12 에서 승인 실패 「교환할 옵션의 재고가 부족합니다.」가 2개 겹쳐 떴다. 형제 자리(_partial_claim_shipping·_modal_claim_refund_execute)와 같은 규율이다. -->
+                    <suppress/>
+                  </fail>
+                </action>
               </on>
               $t:sirsoft-ecommerce.admin.claim.detail.settlement.file_refund_request
             </button>
@@ -381,7 +386,7 @@ partial 안의 partial 은 같은 디렉터리 기준 상대 경로여야 한다
               <button data-ref="cre_014_execute_button" type="button" class="btn btn-primary" disabled="{{claim?.data?.abilities?.can_execute_refund !== true || _local.isExecutingRefund === true || (claim?.data?.claim?.status ?? '') !== 'approved'}}">
                 <on type="click">
                   <!-- 환불은 되돌릴 수 없는 처리라 곧바로 실행하지 않고 확인 모달을 연다. 모달은 부모 화면의 `_local` 을 해석하지 못하므로(별도 컨텍스트) 이 핸들러가 지금 입력된 값을 `_global` 문맥으로 넘긴다 — 모달 표시와 실행 본문이 그 하나를 함께 읽어야 예고한 값과 실행하는 값이 같다. -->
-                  <action handler="sirsoft-ecommerce.openClaimRefundExecute" pathSegment="{{claim?.data?.claim_path_segment ?? ''}}" claimId="{{claim?.data?.claim?.id ?? null}}" claimNumber="{{claim?.data?.claim?.claim_number ?? ''}}" currencyCode="{{claim?.data?.cancellable?.currency ?? claim?.data?.claim?.currency_code ?? ''}}" refundAmount="{{_local.refundAmount ?? ''}}" refundPointsAmount="{{_local.refundPointsAmount ?? ''}}" refundMethod="{{_local.refundMethod ?? ''}}" refundMethods="{{claim?.data?.refund_methods ?? []}}" refundBankName="{{claim?.data?.claim?.refund_bank_name ?? ''}}" refundBankAccount="{{claim?.data?.claim?.refund_bank_account ?? ''}}" refundBankHolder="{{claim?.data?.claim?.refund_bank_holder ?? ''}}"/>
+                  <action handler="sirsoft-ecommerce.openClaimRefundExecute" pathSegment="{{claim?.data?.claim_path_segment ?? ''}}" claimId="{{claim?.data?.claim?.id ?? null}}" claimNumber="{{claim?.data?.claim?.claim_number ?? ''}}" currencyCode="{{claim?.data?.cancellable?.currency ?? claim?.data?.claim?.currency_code ?? ''}}" refundAmount="{{_local.refundAmount ?? ''}}" refundPointsAmount="{{_local.refundPointsAmount ?? ''}}" refundMethod="{{_local.refundMethod ?? ''}}" refundMethods="{{claim?.data?.refund_methods ?? []}}" refundBankName="{{claim?.data?.claim?.refund_bank_name ?? ''}}" refundBankAccount="{{claim?.data?.claim?.refund_bank_account ?? ''}}" refundBankHolder="{{claim?.data?.claim?.refund_bank_holder ?? ''}}" refundAccountRequired="{{claim?.data?.claim?.refund_account_required === true}}"/>
                 </on>
                 $t:sirsoft-ecommerce.admin.claim.detail.refund_execute.execute
               </button>

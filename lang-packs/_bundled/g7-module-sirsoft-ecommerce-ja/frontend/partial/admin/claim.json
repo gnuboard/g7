@@ -196,7 +196,15 @@
       "method_limit_hint": "{{method}} 残高 {{amount}}",
       "refund_bank_name": "返金銀行",
       "refund_bank_account": "返金口座番号",
-      "refund_bank_holder": "口座名義人"
+      "refund_bank_holder": "口座名義人",
+      "refund_bank_input_title": "返金を受け取る口座",
+      "refund_bank_input_hint": "この返金は、運営者が口座に送金することで完了します。申請書に口座がない場合は、ここで入力できます。入力した値は申請書にも記録されます。",
+      "refund_bank_code_placeholder": "銀行コード（例：004）",
+      "refund_bank_account_placeholder": "口座番号（ハイフンなし）",
+      "refund_bank_holder_placeholder": "預金者名",
+      "force_without_bank": "口座なしで完了として記録します",
+      "force_without_bank_hint": "送金は行われず、申請書のみ返金完了として閉じられます。既に別の方法で送金済みまたは支払い不要の場合にのみ使用してください。取り消すことはできません。",
+      "refund_bank_required": "返金を受け取る口座を入力するか、口座なしで完了として記録することに同意する必要があります。"
     },
     "comparison": {
       "title": "受付時点の注文金額比較",

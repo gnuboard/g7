@@ -1074,6 +1074,33 @@ class EcommerceSettingsService implements ModuleSettingsInterface
     }
 
     /**
+     * 은행 목록을 반환합니다 — 운영자가 비워 두었으면 모듈 기본 목록으로 떨어집니다.
+     *
+     * 무통장 입금 계좌와 환불 계좌가 이 목록을 함께 쓴다. 환불 계좌는 계좌로 돈이 돌아가는 주문에서
+     * **필수**다(#599 T2-D5) — 그런데 운영자가 목록을 비우면 필수 칸에 고를 은행이 0개가 되어
+     * 구매자는 환불 신청을 영영 할 수 없다(2026-09-23 재실측: 개발 상점의 목록이 빈 배열이라
+     * [주문 취소하기] 가 계좌를 적어도 풀리지 않았다). 운영자가 한 곳이라도 등록하면 그 목록을
+     * 그대로 쓰고, 비었을 때만 `config/settings/defaults.json` 의 기본 목록을 쓴다.
+     *
+     * @return array<int, array{code: string, name: mixed}> 코드가 있는 은행만 담은 목록
+     */
+    public function getBankList(): array
+    {
+        $valid = fn ($banks) => array_values(array_filter(
+            is_array($banks) ? $banks : [],
+            fn ($bank) => is_array($bank) && filled($bank['code'] ?? null),
+        ));
+
+        $configured = $valid($this->getSetting('order_settings.banks'));
+
+        if ($configured !== []) {
+            return $configured;
+        }
+
+        return $valid(Arr::get($this->getDefaults(), 'defaults.order_settings.banks', []));
+    }
+
+    /**
      * 은행코드로 은행명을 조회합니다.
      *
      * 환경설정의 은행 목록(order_settings.banks)에서 현재 로케일의 표시명을 찾습니다.
@@ -1084,8 +1111,7 @@ class EcommerceSettingsService implements ModuleSettingsInterface
      */
     public function resolveBankName(string $bankCode): string
     {
-        $banks = $this->getSetting('order_settings.banks');
-        $bank = collect(is_array($banks) ? $banks : [])->firstWhere('code', $bankCode);
+        $bank = collect($this->getBankList())->firstWhere('code', $bankCode);
 
         if (! $bank) {
             return $bankCode;

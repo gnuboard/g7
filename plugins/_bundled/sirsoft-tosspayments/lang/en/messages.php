@@ -11,6 +11,7 @@ return [
         'invalid_callback' => 'The callback parameters required to approve the claim payment (paymentKey, orderId, amount) are missing.',
         'order_id_mismatch' => 'The callback order id does not match the claim payment number being approved.',
         'deposit_not_supported' => 'Claim additional payments do not support deposit-pending methods (virtual account).',
+        'amount_mismatch' => 'The charge changed after the payment window was opened. Please start the payment again from the claim.',
         'amount_mismatch_cancel_reason' => 'Automatically cancelled due to a claim payment approval amount mismatch',
     ],
     'refund' => [

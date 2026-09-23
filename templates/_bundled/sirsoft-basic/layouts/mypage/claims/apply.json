@@ -97,7 +97,8 @@
             "if": "{{!!route.claim_number}}",
             "params": {
                 "claimApiBase": "/api/modules/sirsoft-ecommerce/user/claims",
-                "isGuest": false
+                "isGuest": false,
+                "detailPath": "{{'/mypage/claims/' + (route.claim_number ?? '')}}"
             }
         },
         {

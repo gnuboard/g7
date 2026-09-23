@@ -15,6 +15,8 @@ use Modules\Sirsoft\Ecommerce\Enums\MileageTransactionTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\OrderOptionSourceTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
+use Modules\Sirsoft\Ecommerce\Enums\ProductDisplayStatus;
+use Modules\Sirsoft\Ecommerce\Enums\ProductSalesStatus;
 use Modules\Sirsoft\Ecommerce\Enums\RefundMethodEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundPriorityEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundSourceTypeEnum;
@@ -66,6 +68,11 @@ class OrderExchangeServiceTest extends ModuleTestCase
 
     protected OrderExchangeService $service;
 
+    /**
+     * 통화 설정을 심고 교환 서비스와 클레임 사유를 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -74,6 +81,11 @@ class OrderExchangeServiceTest extends ModuleTestCase
         $this->seedExchangeReasons();
     }
 
+    /**
+     * 테스트가 심은 통화 설정을 지웁니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         $this->clearTestCurrencySettings();
@@ -86,6 +98,8 @@ class OrderExchangeServiceTest extends ModuleTestCase
 
     /**
      * 교환 사유 카탈로그를 시드합니다.
+     *
+     * @return void 반환값 없음
      */
     protected function seedExchangeReasons(): void
     {
@@ -216,6 +230,7 @@ class OrderExchangeServiceTest extends ModuleTestCase
      *
      * @param  ShippingPolicy  $policy  배송정책
      * @param  float  $fee  왕복 교환비
+     * @return void 반환값 없음
      */
     protected function setExchangeFixedFee(ShippingPolicy $policy, float $fee): void
     {
@@ -535,6 +550,15 @@ class OrderExchangeServiceTest extends ModuleTestCase
     // 신청 — 기본
     // ================================================================
 
+    /**
+     * 교환 접수가 EX 로 시작하는 신청번호와 `requested` 상태의 신청서를 만든다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario price_delta=equal, charge_method=none, additional_options=unchanged
+     *
+     * @effects exchange_request_freezes_calculation_snapshots
+     */
     public function test_request_creates_exchange_with_number_and_requested_status(): void
     {
         $order = $this->deliveredOrder();
@@ -547,6 +571,15 @@ class OrderExchangeServiceTest extends ModuleTestCase
         $this->assertCount(1, $exchange->exchangeOptions);
     }
 
+    /**
+     * 접수 시점의 사유 코드와 귀책 유형을 신청서에 그대로 굳힌다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario price_delta=equal, charge_method=none, additional_options=unchanged
+     *
+     * @effects exchange_request_freezes_calculation_snapshots
+     */
     public function test_request_snapshots_reason_and_fault_type(): void
     {
         $order = $this->deliveredOrder();
@@ -557,6 +590,15 @@ class OrderExchangeServiceTest extends ModuleTestCase
         $this->assertSame(ClaimReasonFaultTypeEnum::SELLER, $exchange->fault_type);
     }
 
+    /**
+     * 접수는 대상 주문옵션을 「교환 진행중」으로 옮긴다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario price_delta=equal, charge_method=none, additional_options=unchanged
+     *
+     * @effects exchange_request_freezes_calculation_snapshots
+     */
     public function test_request_moves_order_option_into_exchange_in_progress(): void
     {
         $order = $this->deliveredOrder();
@@ -566,6 +608,15 @@ class OrderExchangeServiceTest extends ModuleTestCase
         $this->assertSame(OrderStatusEnum::EXCHANGE_IN_PROGRESS, $order->options->first()->fresh()->option_status);
     }
 
+    /**
+     * 되돌릴 때 쓸 원래 상태를 항목마다 기록해 둔다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario price_delta=equal, charge_method=none, additional_options=unchanged
+     *
+     * @effects exchange_reject_reverts_each_item_to_its_own_original_status
+     */
     public function test_request_records_original_option_status_for_revert(): void
     {
         $order = $this->deliveredOrder();
@@ -575,6 +626,15 @@ class OrderExchangeServiceTest extends ModuleTestCase
         $this->assertSame(OrderStatusEnum::DELIVERED, $exchange->exchangeOptions->first()->original_option_status);
     }
 
+    /**
+     * 수량 일부만 교환하면 주문옵션이 교환분과 잔여분으로 갈라진다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario price_delta=equal, charge_method=none, additional_options=unchanged
+     *
+     * @effects exchange_request_freezes_calculation_snapshots
+     */
     public function test_request_splits_order_option_for_partial_quantity(): void
     {
         $order = $this->deliveredOrder(29000, 3);
@@ -592,6 +652,15 @@ class OrderExchangeServiceTest extends ModuleTestCase
         $this->assertSame(3, (int) $exchange->exchangeOptions->first()->original_quantity);
     }
 
+    /**
+     * 접수만으로는 재고를 되돌리지 않는다 — 상품이 아직 돌아오지 않았다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario price_delta=equal, charge_method=none, additional_options=unchanged
+     *
+     * @effects exchange_completion_restores_original_stock_only_for_checked_items
+     */
     public function test_request_does_not_restore_stock_on_acceptance(): void
     {
         $order = $this->deliveredOrder();
@@ -604,6 +673,15 @@ class OrderExchangeServiceTest extends ModuleTestCase
         $this->assertTrue((bool) $order->options->first()->fresh()->is_stock_deducted);
     }
 
+    /**
+     * 같은 주문에 교환을 두 번 걸어도 두 신청서의 행이 한 줄로 합쳐지지 않는다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario price_delta=equal, charge_method=none, additional_options=unchanged
+     *
+     * @effects exchange_request_freezes_calculation_snapshots
+     */
     public function test_request_does_not_merge_course_rows_of_two_exchanges(): void
     {
         $order = $this->deliveredOrder(29000, 3);
@@ -630,6 +708,15 @@ class OrderExchangeServiceTest extends ModuleTestCase
         );
     }
 
+    /**
+     * 접수는 주문옵션만 움직이고 주문 헤더 상태는 건드리지 않는다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario price_delta=equal, charge_method=none, additional_options=unchanged
+     *
+     * @effects exchange_request_freezes_calculation_snapshots
+     */
     public function test_request_does_not_change_order_status(): void
     {
         $order = $this->deliveredOrder();
@@ -645,7 +732,11 @@ class OrderExchangeServiceTest extends ModuleTestCase
      * `requested_by` 는 비회원 신청·운영자 대리 접수·시스템 자동 취소가 모두 null 이라(§4-3-1),
      * 그 값으로 가르면 **회원 주문의 운영자 접수 건이 「비회원」으로 표시된다**(2026-09-12 실측).
      *
+     * @return void 반환값 없음
+     *
      * @effects exchange_guest_flag_reads_the_order_owner
+     *
+     * @scenario price_delta=equal, charge_method=none, additional_options=unchanged
      */
     public function test_guest_flag_reads_the_order_owner(): void
     {
@@ -678,6 +769,15 @@ class OrderExchangeServiceTest extends ModuleTestCase
     // 신청 — 자격 / 수량 잠금
     // ================================================================
 
+    /**
+     * 신청할 수 없는 상태의 주문옵션은 접수를 거절한다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario price_delta=equal, charge_method=none, additional_options=unchanged
+     *
+     * @effects exchange_request_period_is_measured_from_delivery
+     */
     public function test_request_rejects_option_not_in_requestable_status(): void
     {
         $order = $this->createSingleItemClaimOrder();
@@ -685,6 +785,15 @@ class OrderExchangeServiceTest extends ModuleTestCase
         $this->assertClaimException('claim_option_not_claimable', fn () => $this->service->requestExchange($order, $this->payload($order)));
     }
 
+    /**
+     * 주문 수량보다 많은 수량은 접수를 거절한다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario price_delta=equal, charge_method=none, additional_options=unchanged
+     *
+     * @effects exchange_request_freezes_calculation_snapshots
+     */
     public function test_request_rejects_quantity_over_order_quantity(): void
     {
         $order = $this->deliveredOrder();
@@ -692,6 +801,15 @@ class OrderExchangeServiceTest extends ModuleTestCase
         $this->assertClaimException('claim_quantity_invalid', fn () => $this->service->requestExchange($order, $this->payload($order, quantity: 2)));
     }
 
+    /**
+     * 항목이 하나도 없는 접수는 거절한다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario price_delta=equal, charge_method=none, additional_options=unchanged
+     *
+     * @effects exchange_request_freezes_calculation_snapshots
+     */
     public function test_request_rejects_empty_items(): void
     {
         $order = $this->deliveredOrder();
@@ -702,6 +820,15 @@ class OrderExchangeServiceTest extends ModuleTestCase
         ]));
     }
 
+    /**
+     * 이 주문에 없는 주문옵션을 지목하면 거절한다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario price_delta=equal, charge_method=none, additional_options=unchanged
+     *
+     * @effects exchange_request_freezes_calculation_snapshots
+     */
     public function test_request_rejects_unknown_option(): void
     {
         $order = $this->deliveredOrder();
@@ -712,6 +839,15 @@ class OrderExchangeServiceTest extends ModuleTestCase
         ]));
     }
 
+    /**
+     * 비활성 사유와 없는 사유 코드는 접수를 거절한다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario price_delta=equal, charge_method=none, additional_options=unchanged
+     *
+     * @effects exchange_request_freezes_calculation_snapshots
+     */
     public function test_request_rejects_inactive_and_unknown_reason(): void
     {
         $order = $this->deliveredOrder();
@@ -720,6 +856,15 @@ class OrderExchangeServiceTest extends ModuleTestCase
         $this->assertClaimException('claim_reason_unavailable', fn () => $this->service->requestExchange($order, $this->payload($order, 'nope')));
     }
 
+    /**
+     * 다른 클레임이 이미 잠근 수량은 접수를 거절한다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario price_delta=equal, charge_method=none, additional_options=unchanged
+     *
+     * @effects exchange_request_freezes_calculation_snapshots
+     */
     public function test_request_rejects_quantity_locked_by_another_claim(): void
     {
         $order = $this->deliveredOrder(29000, 3);
@@ -734,7 +879,14 @@ class OrderExchangeServiceTest extends ModuleTestCase
     }
 
     /**
+     * 신청 기간이 지나면 접수를 거절한다.
+     *
+     *
+     * @return void 반환값 없음
+     *
      * @effects exchange_request_period_is_measured_from_delivery
+     *
+     * @scenario price_delta=equal, charge_method=none, additional_options=unchanged
      */
     public function test_request_rejects_after_request_period(): void
     {
@@ -748,6 +900,15 @@ class OrderExchangeServiceTest extends ModuleTestCase
         ));
     }
 
+    /**
+     * 배송완료 시각이 없으면 구매확정 시각을 신청 기간 기준으로 쓴다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario price_delta=equal, charge_method=none, additional_options=unchanged
+     *
+     * @effects exchange_request_period_is_measured_from_delivery
+     */
     public function test_request_falls_back_to_confirmed_at_when_delivered_at_is_missing(): void
     {
         // `배송중 → 구매확정` 직접 전이가 허용되므로 `delivered_at` 이 영영 null 인 옵션이 실재한다.
@@ -766,6 +927,15 @@ class OrderExchangeServiceTest extends ModuleTestCase
         ));
     }
 
+    /**
+     * 기준 시각이 모두 기간 안이면 접수가 통과한다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario price_delta=equal, charge_method=none, additional_options=unchanged
+     *
+     * @effects exchange_request_period_is_measured_from_delivery
+     */
     public function test_request_is_allowed_when_no_timestamp_is_stale(): void
     {
         // 두 시각이 모두 없는 구형 주문(컴럼이 생기기 전)은 마지막 변경 시각으로 내려간다 —
@@ -788,6 +958,11 @@ class OrderExchangeServiceTest extends ModuleTestCase
     // ================================================================
 
     /**
+     * 대상 옵션을 주지 않으면 차액 0 의 동일상품 교환이 된다.
+     *
+     *
+     * @return void 반환값 없음
+     *
      * @scenario price_delta=equal, charge_method=none, additional_options=unchanged
      *
      * @effects exchange_same_product_request_has_zero_difference
@@ -809,6 +984,15 @@ class OrderExchangeServiceTest extends ModuleTestCase
         $this->assertNull($exchange->charge_method);
     }
 
+    /**
+     * 같은 옵션 ID 를 지목하면 동일상품 교환으로 다룬다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario price_delta=equal, charge_method=none, additional_options=unchanged
+     *
+     * @effects exchange_same_product_request_has_zero_difference
+     */
     public function test_request_treats_the_same_option_id_as_same_product_exchange(): void
     {
         $order = $this->deliveredOrder();
@@ -823,6 +1007,11 @@ class OrderExchangeServiceTest extends ModuleTestCase
     }
 
     /**
+     * 비싼 옵션으로 바꾸면 그 차액을 청구한다.
+     *
+     *
+     * @return void 반환값 없음
+     *
      * @scenario price_delta=higher, charge_method=pay_on_request, additional_options=unchanged
      *
      * @effects exchange_higher_priced_option_charges_the_difference
@@ -853,6 +1042,11 @@ class OrderExchangeServiceTest extends ModuleTestCase
     }
 
     /**
+     * 싼 옵션으로 바꾸면 돌려줄 차액으로 기록한다.
+     *
+     *
+     * @return void 반환값 없음
+     *
      * @scenario price_delta=lower, charge_method=none, additional_options=unchanged
      *
      * @effects exchange_lower_priced_option_freezes_a_refundable_difference
@@ -873,6 +1067,11 @@ class OrderExchangeServiceTest extends ModuleTestCase
     }
 
     /**
+     * 오르고 내린 차액이 섞이면 항목 전체를 상계해 낸다.
+     *
+     *
+     * @return void 반환값 없음
+     *
      * @scenario price_delta=mixed, charge_method=pay_on_request, additional_options=unchanged
      *
      * @effects exchange_mixed_items_are_netted_into_one_charge
@@ -916,7 +1115,14 @@ class OrderExchangeServiceTest extends ModuleTestCase
     }
 
     /**
+     * 다른 상품의 옵션으로는 교환할 수 없다.
+     *
+     *
+     * @return void 반환값 없음
+     *
      * @effects exchange_new_option_must_belong_to_the_same_product
+     *
+     * @scenario price_delta=equal, charge_method=none, additional_options=unchanged
      */
     public function test_request_rejects_an_option_of_another_product(): void
     {
@@ -929,6 +1135,15 @@ class OrderExchangeServiceTest extends ModuleTestCase
         ));
     }
 
+    /**
+     * 비활성이거나 없는 교환 대상 옵션은 거절한다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario price_delta=equal, charge_method=none, additional_options=unchanged
+     *
+     * @effects exchange_same_option_is_rejected_when_inactive
+     */
     public function test_request_rejects_an_inactive_or_unknown_option(): void
     {
         $order = $this->deliveredOrder();
@@ -940,7 +1155,72 @@ class OrderExchangeServiceTest extends ModuleTestCase
     }
 
     /**
+     * 동일옵션 교환도 판매 중지된 옵션이면 거절한다.
+     *
+     * 옵션을 바꾸는 경로만 `is_active` 를 보고 **동일옵션 경로는 그 검사를 건너뛰던** 것을 막는다 —
+     * 판매를 접은 옵션을 그대로 다시 보내 달라는 신청이 접수됐다(2026-09-22 #599 3차 실측 L-4 · T2-D11:
+     * 원 옵션을 `is_active=false` 로 두고 동일옵션 교환을 내자 201 로 접수됐다).
+     *
+     * @return void 반환값 없음
+     *
+     * @effects exchange_same_option_is_rejected_when_inactive
+     *
+     * @scenario price_delta=equal, charge_method=none, additional_options=unchanged
+     */
+    public function test_request_rejects_the_same_option_when_it_is_inactive(): void
+    {
+        $order = $this->deliveredOrder();
+        $orderedOption = $order->options->first()->productOption;
+        $orderedOption->forceFill(['is_active' => false])->save();
+
+        // newProductOptionId 를 보내지 않는 동일옵션 교환
+        $this->assertClaimException(
+            'claim_new_option_invalid',
+            fn () => $this->service->requestExchange($order, $this->payload($order))
+        );
+    }
+
+    /**
+     * 지금 살 수 없는 상품으로는 교환받을 수 없다 — 상품 단위 조건 4종.
+     *
+     * 옵션의 `is_active` 만 보던 검사가 **상품의 판매·전시·구매제한 상태를 보지 않아**, 품절·판매중지·
+     * 출시예정·구매등급제한 상품으로도 교환이 접수됐다(2026-09-22 #599 3차 실측 L-4 · T2-D11 후속 조사).
+     *
+     * @return void 반환값 없음
+     *
+     * @effects exchange_new_option_must_be_purchasable_now
+     *
+     * @scenario price_delta=equal, charge_method=none, additional_options=unchanged
+     */
+    public function test_request_rejects_when_the_product_is_not_purchasable(): void
+    {
+        foreach ([
+            ['sales_status' => ProductSalesStatus::SOLD_OUT->value],
+            ['sales_status' => ProductSalesStatus::SUSPENDED->value],
+            ['sales_status' => ProductSalesStatus::COMING_SOON->value],
+            ['display_status' => ProductDisplayStatus::HIDDEN->value],
+            ['purchase_restriction' => 'restricted', 'allowed_roles' => ['nobody']],
+        ] as $override) {
+            $order = $this->deliveredOrder();
+            $sibling = $this->siblingOption($order, 0);
+            $sibling->product->forceFill($override)->save();
+
+            $this->assertClaimException(
+                'claim_new_option_invalid',
+                fn () => $this->service->requestExchange($order, $this->payload($order, newProductOptionId: $sibling->id)),
+            );
+        }
+    }
+
+    /**
+     * 새 옵션에 재고가 없으면 접수를 거절한다.
+     *
+     *
+     * @return void 반환값 없음
+     *
      * @effects exchange_new_option_without_stock_is_rejected
+     *
+     * @scenario price_delta=equal, charge_method=none, additional_options=unchanged
      */
     public function test_request_rejects_when_the_new_option_has_no_stock(): void
     {
@@ -954,6 +1234,15 @@ class OrderExchangeServiceTest extends ModuleTestCase
         $this->assertSame(OrderStatusEnum::DELIVERED, $order->options->first()->fresh()->option_status, '거절된 신청은 코스 상태를 남기지 않는다.');
     }
 
+    /**
+     * 구매자가 적어 넣은 주문제작 입력값을 스냅샷에 남긴다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario price_delta=equal, charge_method=none, additional_options=unchanged
+     *
+     * @effects exchange_request_freezes_calculation_snapshots
+     */
     public function test_request_keeps_custom_option_inputs_in_the_snapshot(): void
     {
         $order = $this->deliveredOrder();
@@ -970,7 +1259,14 @@ class OrderExchangeServiceTest extends ModuleTestCase
     // ================================================================
 
     /**
+     * 왕복 배송비와 총 청구액을 접수 시점 값으로 굳힌다.
+     *
+     *
+     * @return void 반환값 없음
+     *
      * @effects exchange_round_trip_fee_and_total_charge_are_frozen
+     *
+     * @scenario price_delta=equal, charge_method=none, additional_options=unchanged
      */
     public function test_request_freezes_round_trip_fee_and_total_charge(): void
     {
@@ -994,7 +1290,14 @@ class OrderExchangeServiceTest extends ModuleTestCase
     }
 
     /**
+     * 판매자 귀책이면 배송비 없이 차액만 청구한다.
+     *
+     *
+     * @return void 반환값 없음
+     *
      * @effects exchange_seller_fault_charges_only_the_difference
+     *
+     * @scenario price_delta=higher, charge_method=pay_on_request, additional_options=unchanged
      */
     public function test_request_charges_only_the_difference_for_seller_fault(): void
     {
@@ -1015,7 +1318,14 @@ class OrderExchangeServiceTest extends ModuleTestCase
     }
 
     /**
+     * 총 청구액이 있으면 청구 방식을 요구한다.
+     *
+     *
+     * @return void 반환값 없음
+     *
      * @effects exchange_charge_method_is_required_when_a_charge_remains
+     *
+     * @scenario price_delta=higher, charge_method=pay_on_request, additional_options=unchanged
      */
     public function test_request_requires_charge_method_when_total_charge_is_positive(): void
     {
@@ -1029,7 +1339,14 @@ class OrderExchangeServiceTest extends ModuleTestCase
     }
 
     /**
+     * 총 청구액이 0 이면 청구 방식을 비운다.
+     *
+     *
+     * @return void 반환값 없음
+     *
      * @effects exchange_charge_method_is_cleared_when_nothing_is_charged
+     *
+     * @scenario price_delta=equal, charge_method=none, additional_options=unchanged
      */
     public function test_request_nulls_charge_method_when_total_charge_is_zero(): void
     {
@@ -1042,7 +1359,14 @@ class OrderExchangeServiceTest extends ModuleTestCase
     }
 
     /**
+     * 설정이 허용하지 않는 청구 방식은 거절한다.
+     *
+     *
+     * @return void 반환값 없음
+     *
      * @effects exchange_charge_method_outside_the_allowed_list_is_rejected
+     *
+     * @scenario price_delta=higher, charge_method=pay_on_request, additional_options=unchanged
      */
     public function test_request_rejects_charge_method_not_allowed_by_settings(): void
     {
@@ -1057,6 +1381,11 @@ class OrderExchangeServiceTest extends ModuleTestCase
     }
 
     /**
+     * 차액을 더 내야 하는 교환에는 「환불금에서 차감」을 쓸 수 없다.
+     *
+     *
+     * @return void 반환값 없음
+     *
      * @scenario price_delta=higher, charge_method=deduct_from_refund, additional_options=unchanged
      *
      * @effects exchange_deduct_from_refund_requires_a_covering_refundable_difference
@@ -1074,6 +1403,11 @@ class OrderExchangeServiceTest extends ModuleTestCase
     }
 
     /**
+     * 돌려줄 차액이 배송비를 덮으면 「환불금에서 차감」을 받아들인다.
+     *
+     *
+     * @return void 반환값 없음
+     *
      * @scenario price_delta=lower, charge_method=deduct_from_refund, additional_options=unchanged
      *
      * @effects exchange_deduct_from_refund_requires_a_covering_refundable_difference
@@ -1097,6 +1431,15 @@ class OrderExchangeServiceTest extends ModuleTestCase
         $this->assertFalse($exchange->requiresAdditionalPayment(), '환불금 차감은 별도 결제 대상이 아니다.');
     }
 
+    /**
+     * 환불 차액보다 회수비가 크면 「환불금에서 차감」을 거절한다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario price_delta=lower, charge_method=none, additional_options=unchanged
+     *
+     * @effects exchange_deduct_from_refund_requires_a_covering_refundable_difference
+     */
     public function test_request_rejects_deduct_from_refund_when_the_fee_exceeds_the_refundable_difference(): void
     {
         $policy = $this->createClaimShippingPolicy();
@@ -1111,6 +1454,11 @@ class OrderExchangeServiceTest extends ModuleTestCase
     }
 
     /**
+     * 같은 가격의 옵션으로 바꿔도 왕복 배송비는 청구한다.
+     *
+     *
+     * @return void 반환값 없음
+     *
      * @scenario price_delta=equal, charge_method=pay_on_request, additional_options=unchanged
      *
      * @effects exchange_round_trip_fee_and_total_charge_are_frozen
@@ -1135,6 +1483,11 @@ class OrderExchangeServiceTest extends ModuleTestCase
     }
 
     /**
+     * 차액이 0 인 교환에는 「환불금에서 차감」을 쓸 수 없다.
+     *
+     *
+     * @return void 반환값 없음
+     *
      * @scenario price_delta=equal, charge_method=deduct_from_refund, additional_options=unchanged
      *
      * @effects exchange_deduct_from_refund_requires_a_covering_refundable_difference
@@ -1153,6 +1506,11 @@ class OrderExchangeServiceTest extends ModuleTestCase
     }
 
     /**
+     * 저가 교환에서도 배송비를 따로 결제하는 방식을 고를 수 있다.
+     *
+     *
+     * @return void 반환값 없음
+     *
      * @scenario price_delta=lower, charge_method=pay_on_request, additional_options=unchanged
      *
      * @effects exchange_lower_priced_option_freezes_a_refundable_difference
@@ -1179,6 +1537,11 @@ class OrderExchangeServiceTest extends ModuleTestCase
     }
 
     /**
+     * 차액이 섞인 교환은 굳혀 둔 순 환불액에서 배송비를 뺀다.
+     *
+     *
+     * @return void 반환값 없음
+     *
      * @scenario price_delta=mixed, charge_method=deduct_from_refund, additional_options=unchanged
      *
      * @effects exchange_mixed_net_refund_is_frozen_at_request_time
@@ -1199,6 +1562,11 @@ class OrderExchangeServiceTest extends ModuleTestCase
      * @effects exchange_multi_currency_amounts_come_from_the_order_snapshot
      */
     /**
+     * 차액 0 교환도 「승인 후 결제」를 받아들인다.
+     *
+     *
+     * @return void 반환값 없음
+     *
      * @scenario price_delta=equal, charge_method=pay_on_approval, additional_options=unchanged
      *
      * @effects exchange_pay_on_approval_does_not_ask_for_payment_at_request_time
@@ -1222,6 +1590,11 @@ class OrderExchangeServiceTest extends ModuleTestCase
     }
 
     /**
+     * 고가 교환도 「승인 후 결제」를 받아들인다.
+     *
+     *
+     * @return void 반환값 없음
+     *
      * @scenario price_delta=higher, charge_method=pay_on_approval, additional_options=unchanged
      *
      * @effects exchange_pay_on_approval_does_not_ask_for_payment_at_request_time
@@ -1245,6 +1618,11 @@ class OrderExchangeServiceTest extends ModuleTestCase
     }
 
     /**
+     * 저가 교환도 「승인 후 결제」를 받아들인다.
+     *
+     *
+     * @return void 반환값 없음
+     *
      * @scenario price_delta=lower, charge_method=pay_on_approval, additional_options=unchanged
      *
      * @effects exchange_pay_on_approval_does_not_ask_for_payment_at_request_time
@@ -1270,6 +1648,11 @@ class OrderExchangeServiceTest extends ModuleTestCase
     }
 
     /**
+     * 차액이 섞인 교환도 「승인 후 결제」를 받아들인다.
+     *
+     *
+     * @return void 반환값 없음
+     *
      * @scenario price_delta=mixed, charge_method=pay_on_approval, additional_options=unchanged
      *
      * @effects exchange_pay_on_approval_does_not_ask_for_payment_at_request_time
@@ -1284,6 +1667,15 @@ class OrderExchangeServiceTest extends ModuleTestCase
         $this->assertSame(3000.0, (float) $exchange->total_charge_amount, '상계 순액이 환불이라 청구는 배송비뿐이다.');
     }
 
+    /**
+     * 보조 통화 금액은 주문 시점 통화 스냅샷으로 환산해 기록한다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario price_delta=equal, charge_method=none, additional_options=unchanged
+     *
+     * @effects exchange_multi_currency_amounts_come_from_the_order_snapshot
+     */
     public function test_request_records_multi_currency_amounts_from_the_order_snapshot(): void
     {
         $policy = $this->createClaimShippingPolicy();
@@ -1320,6 +1712,15 @@ class OrderExchangeServiceTest extends ModuleTestCase
     // 신청 — 회수지 / 재발송지 (D14 3축)
     // ================================================================
 
+    /**
+     * 회수 주소는 교환 정책의 클레임 주소에서 굳힌다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario price_delta=equal, charge_method=none, additional_options=unchanged
+     *
+     * @effects exchange_redelivery_address_defaults_to_the_order_shipping_address
+     */
     public function test_request_snapshots_return_address_from_the_exchange_claim_address(): void
     {
         $policy = $this->createClaimShippingPolicy();
@@ -1344,7 +1745,14 @@ class OrderExchangeServiceTest extends ModuleTestCase
     }
 
     /**
+     * 재발송지를 주지 않으면 주문 배송지를 기본으로 쓴다.
+     *
+     *
+     * @return void 반환값 없음
+     *
      * @effects exchange_redelivery_address_defaults_to_the_order_shipping_address
+     *
+     * @scenario price_delta=equal, charge_method=none, additional_options=unchanged
      */
     public function test_request_defaults_redelivery_address_to_the_order_shipping_address(): void
     {
@@ -1365,6 +1773,12 @@ class OrderExchangeServiceTest extends ModuleTestCase
      *
      * 우편번호가 바뀌면 산정 근거의 `redelivery_changed` 가 참이 된다. 전달하지 않으면 산정기가
      * 원 배송지로 두 구간을 같게 보고 조용히 "변경 안 함" 으로 처리한다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario price_delta=equal, charge_method=none, additional_options=unchanged
+     *
+     * @effects exchange_redelivery_address_defaults_to_the_order_shipping_address
      */
     public function test_request_passes_the_redelivery_address_to_the_fee_calculation(): void
     {
@@ -1384,6 +1798,12 @@ class OrderExchangeServiceTest extends ModuleTestCase
 
     /**
      * D14 ⓑ — 값이 같아도 고객이 손댔다는 신호는 그대로 저장된다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario price_delta=equal, charge_method=none, additional_options=unchanged
+     *
+     * @effects exchange_redelivery_address_defaults_to_the_order_shipping_address
      */
     public function test_request_stores_changed_by_user_even_when_the_address_is_unchanged(): void
     {
@@ -1401,7 +1821,11 @@ class OrderExchangeServiceTest extends ModuleTestCase
     /**
      * D14 ⓒ — 국가 변경은 서비스도 막는다 (교환 해외배송 미지원).
      *
+     * @return void 반환값 없음
+     *
      * @effects exchange_redelivery_address_must_stay_in_the_same_country
+     *
+     * @scenario price_delta=equal, charge_method=none, additional_options=unchanged
      */
     public function test_request_rejects_a_redelivery_address_in_another_country(): void
     {
@@ -1414,6 +1838,15 @@ class OrderExchangeServiceTest extends ModuleTestCase
         $this->assertSame(OrderStatusEnum::DELIVERED, $order->options->first()->fresh()->option_status);
     }
 
+    /**
+     * 국가 코드의 대소문자가 달라도 같은 나라로 받아들인다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario price_delta=equal, charge_method=none, additional_options=unchanged
+     *
+     * @effects exchange_redelivery_address_must_stay_in_the_same_country
+     */
     public function test_request_accepts_the_same_country_in_any_letter_case(): void
     {
         $order = $this->deliveredOrder();
@@ -1427,6 +1860,15 @@ class OrderExchangeServiceTest extends ModuleTestCase
     // 신청 — 훅 / 자동 승인
     // ================================================================
 
+    /**
+     * 접수가 `requested` 훅을 발행한다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario price_delta=equal, charge_method=none, additional_options=unchanged
+     *
+     * @effects exchange_request_freezes_calculation_snapshots
+     */
     public function test_request_fires_requested_hook(): void
     {
         $fired = 0;
@@ -1441,7 +1883,14 @@ class OrderExchangeServiceTest extends ModuleTestCase
     }
 
     /**
+     * 설정이 켜져 있고 청구액이 0 이면 자동 승인하며 새 옵션 재고를 뺀다.
+     *
+     *
+     * @return void 반환값 없음
+     *
      * @effects exchange_auto_approval_needs_a_zero_charge
+     *
+     * @scenario price_delta=equal, charge_method=none, additional_options=unchanged
      */
     public function test_request_auto_approves_zero_charge_and_deducts_new_stock_when_the_setting_is_on(): void
     {
@@ -1460,7 +1909,14 @@ class OrderExchangeServiceTest extends ModuleTestCase
     }
 
     /**
+     * 자동 승인이 꺼져 있거나 청구액이 남으면 접수에서 멈춘다.
+     *
+     *
+     * @return void 반환값 없음
+     *
      * @effects exchange_auto_approval_needs_a_zero_charge
+     *
+     * @scenario price_delta=higher, charge_method=pay_on_request, additional_options=unchanged
      */
     public function test_request_stays_requested_when_auto_approve_is_off_or_a_charge_remains(): void
     {
@@ -1485,6 +1941,12 @@ class OrderExchangeServiceTest extends ModuleTestCase
      *
      * 접수 훅은 신청 커밋 뒤·자동 승인 전에 발화하므로, 그 틈에 다른 주문이 마지막 재고를 가져간
      * 상황을 훅으로 재현한다. 예외가 그대로 올라오면 신청서는 남아 있는데 고객은 실패 응답을 받는다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario price_delta=equal, charge_method=none, additional_options=unchanged
+     *
+     * @effects exchange_auto_approval_needs_a_zero_charge
      */
     public function test_request_keeps_the_requested_state_when_auto_approval_loses_the_last_stock(): void
     {
@@ -1508,7 +1970,14 @@ class OrderExchangeServiceTest extends ModuleTestCase
     // ================================================================
 
     /**
+     * 미리보기 금액이 실제 접수 금액과 같다.
+     *
+     *
+     * @return void 반환값 없음
+     *
      * @effects exchange_preview_matches_the_requested_amounts
+     *
+     * @scenario price_delta=equal, charge_method=none, additional_options=unchanged
      */
     public function test_preview_matches_requested_amounts(): void
     {
@@ -1535,6 +2004,12 @@ class OrderExchangeServiceTest extends ModuleTestCase
      * 이 값이 없으면 보조통화를 쓰는 구매자는 신청 화면에서 자기 통화의 청구액을 볼 수 없고
      * 결제 단계에 가서야 실제 금액을 알게 된다. 화면이 스스로 환산하는 것은 답이 아니다 —
      * 예고와 청구의 근거가 갈린다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario price_delta=equal, charge_method=none, additional_options=unchanged
+     *
+     * @effects exchange_multi_currency_amounts_come_from_the_order_snapshot
      */
     public function test_preview_reports_multi_currency_charge_matching_the_request(): void
     {
@@ -1576,7 +2051,15 @@ class OrderExchangeServiceTest extends ModuleTestCase
         $this->assertSame(0, $preview['mc_refund_product_amount']['KRW']);
     }
 
-    /** 통화 스냅샷이 없는 주문은 보조통화를 낼 근거가 없으므로 null 이다 (화면이 그 줄을 세우지 않는다). */
+    /**
+     * 통화 스냅샷이 없는 주문은 보조통화를 낼 근거가 없으므로 null 이다 (화면이 그 줄을 세우지 않는다).
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario price_delta=equal, charge_method=none, additional_options=unchanged
+     *
+     * @effects exchange_multi_currency_amounts_come_from_the_order_snapshot
+     */
     public function test_preview_reports_null_multi_currency_when_the_order_has_no_snapshot(): void
     {
         $order = $this->deliveredOrder();
@@ -1588,6 +2071,15 @@ class OrderExchangeServiceTest extends ModuleTestCase
         $this->assertNull($preview['mc_total_charge_amount']);
     }
 
+    /**
+     * 미리보기는 어떤 기록도 쓰지 않는다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario price_delta=equal, charge_method=none, additional_options=unchanged
+     *
+     * @effects exchange_preview_matches_the_requested_amounts
+     */
     public function test_preview_does_not_write_any_record(): void
     {
         $order = $this->deliveredOrder();
@@ -1599,6 +2091,15 @@ class OrderExchangeServiceTest extends ModuleTestCase
         $this->assertSame(OrderStatusEnum::DELIVERED, $order->options->first()->fresh()->option_status);
     }
 
+    /**
+     * 저가 옵션으로 바꾸는 교환의 미리보기는 돌려줄 차액을 답한다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario price_delta=lower, charge_method=none, additional_options=unchanged
+     *
+     * @effects exchange_preview_matches_the_requested_amounts
+     */
     public function test_preview_lower_price_exchange_reports_a_refund(): void
     {
         $order = $this->deliveredOrder();
@@ -1617,6 +2118,12 @@ class OrderExchangeServiceTest extends ModuleTestCase
      *
      * 미리보기는 입력 원본을, 신청은 주문 배송지와 병합한 스냅샷을 넘기므로 두 경로의 산정
      * 근거가 갈리면 고객이 본 배송비와 신청서에 기록된 배송비가 달라진다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario price_delta=equal, charge_method=none, additional_options=unchanged
+     *
+     * @effects exchange_preview_matches_the_requested_amounts
      */
     public function test_preview_passes_the_redelivery_address_like_the_request(): void
     {
@@ -1647,7 +2154,14 @@ class OrderExchangeServiceTest extends ModuleTestCase
     // ================================================================
 
     /**
+     * 철회는 주문옵션을 원래 상태로 되돌린다.
+     *
+     *
+     * @return void 반환값 없음
+     *
      * @effects exchange_withdraw_reverts_the_order_option
+     *
+     * @scenario price_delta=equal, charge_method=none, additional_options=unchanged
      */
     public function test_withdraw_reverts_order_option_to_original_status(): void
     {
@@ -1662,7 +2176,14 @@ class OrderExchangeServiceTest extends ModuleTestCase
     }
 
     /**
+     * 승인 뒤에는 철회할 수 없다.
+     *
+     *
+     * @return void 반환값 없음
+     *
      * @effects exchange_withdraw_is_blocked_after_approval
+     *
+     * @scenario price_delta=equal, charge_method=none, additional_options=unchanged
      */
     public function test_withdraw_is_blocked_after_approval(): void
     {
@@ -1672,6 +2193,15 @@ class OrderExchangeServiceTest extends ModuleTestCase
         $this->assertClaimException('claim_not_withdrawable', fn () => $this->service->withdraw($exchange));
     }
 
+    /**
+     * 반려는 주문옵션을 원래 상태로 되돌리고 반려 사유를 남긴다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario price_delta=equal, charge_method=none, additional_options=unchanged
+     *
+     * @effects exchange_reject_reverts_each_item_to_its_own_original_status
+     */
     public function test_reject_reverts_order_option_and_records_reason(): void
     {
         $order = $this->deliveredOrder();
@@ -1686,7 +2216,14 @@ class OrderExchangeServiceTest extends ModuleTestCase
     }
 
     /**
+     * 되돌림은 항목마다 자기 원래 상태로 복원한다.
+     *
+     *
+     * @return void 반환값 없음
+     *
      * @effects exchange_reject_reverts_each_item_to_its_own_original_status
+     *
+     * @scenario price_delta=equal, charge_method=none, additional_options=unchanged
      */
     public function test_revert_restores_each_item_to_its_own_original_status(): void
     {
@@ -1718,6 +2255,15 @@ class OrderExchangeServiceTest extends ModuleTestCase
         $this->assertSame([OrderStatusEnum::DELIVERED->value, OrderStatusEnum::SHIPPING->value], $statuses);
     }
 
+    /**
+     * 되돌림은 재고를 건드리지 않는다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario price_delta=equal, charge_method=none, additional_options=unchanged
+     *
+     * @effects exchange_reject_reverts_each_item_to_its_own_original_status
+     */
     public function test_revert_does_not_touch_stock(): void
     {
         $order = $this->deliveredOrder();
@@ -1735,7 +2281,14 @@ class OrderExchangeServiceTest extends ModuleTestCase
     // ================================================================
 
     /**
+     * 전이가 생애주기 전 구간에서 게이트를 따른다.
+     *
+     *
+     * @return void 반환값 없음
+     *
      * @effects exchange_transition_follows_the_status_gate
+     *
+     * @scenario price_delta=equal, charge_method=none, additional_options=unchanged
      */
     public function test_transition_follows_the_gate_through_the_whole_lifecycle(): void
     {
@@ -1759,6 +2312,15 @@ class OrderExchangeServiceTest extends ModuleTestCase
         );
     }
 
+    /**
+     * 게이트 밖 상태로의 전이는 막는다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario price_delta=equal, charge_method=none, additional_options=unchanged
+     *
+     * @effects exchange_transition_follows_the_status_gate
+     */
     public function test_transition_blocks_a_target_outside_the_gate(): void
     {
         $order = $this->deliveredOrder();
@@ -1769,7 +2331,14 @@ class OrderExchangeServiceTest extends ModuleTestCase
     }
 
     /**
+     * 완료로의 직접 전이는 막는다 — 완료는 완료 처리의 소유다.
+     *
+     *
+     * @return void 반환값 없음
+     *
      * @effects exchange_completion_is_not_reachable_by_a_plain_transition
+     *
+     * @scenario price_delta=equal, charge_method=none, additional_options=unchanged
      */
     public function test_transition_to_completed_is_blocked(): void
     {
@@ -1780,7 +2349,14 @@ class OrderExchangeServiceTest extends ModuleTestCase
     }
 
     /**
+     * 보류 전이가 보류 시각을 찍는다.
+     *
+     *
+     * @return void 반환값 없음
+     *
      * @effects exchange_on_hold_is_stamped_and_released_through_the_gate
+     *
+     * @scenario price_delta=equal, charge_method=none, additional_options=unchanged
      */
     public function test_transition_stamps_on_hold_time(): void
     {
@@ -1792,7 +2368,14 @@ class OrderExchangeServiceTest extends ModuleTestCase
     }
 
     /**
+     * 승인이 새 옵션의 재고를 뺀다.
+     *
+     *
+     * @return void 반환값 없음
+     *
      * @effects exchange_approval_deducts_the_new_option_stock
+     *
+     * @scenario price_delta=equal, charge_method=none, additional_options=unchanged
      */
     public function test_approve_deducts_stock_of_the_new_option(): void
     {
@@ -1811,7 +2394,14 @@ class OrderExchangeServiceTest extends ModuleTestCase
     }
 
     /**
+     * 접수 뒤 새 옵션이 품절되면 승인이 실패한다.
+     *
+     *
+     * @return void 반환값 없음
+     *
      * @effects exchange_approval_fails_when_the_new_option_ran_out
+     *
+     * @scenario price_delta=equal, charge_method=none, additional_options=unchanged
      */
     public function test_approve_fails_when_the_new_option_ran_out_of_stock_after_the_request(): void
     {
@@ -1829,6 +2419,15 @@ class OrderExchangeServiceTest extends ModuleTestCase
         $this->assertFalse((bool) $fresh->exchangeOptions->first()->is_new_stock_deducted);
     }
 
+    /**
+     * 전이가 공통 상태변경 훅과 그 상태 전용 훅을 함께 발행한다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario price_delta=equal, charge_method=none, additional_options=unchanged
+     *
+     * @effects exchange_transition_follows_the_status_gate
+     */
     public function test_transition_fires_status_changed_and_specific_hooks(): void
     {
         $changed = [];
@@ -1847,6 +2446,15 @@ class OrderExchangeServiceTest extends ModuleTestCase
         $this->assertSame(1, $approved);
     }
 
+    /**
+     * 일괄 전이는 건너뛴 건과 없는 건을 결과에 적어 돌려준다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario price_delta=equal, charge_method=none, additional_options=unchanged
+     *
+     * @effects exchange_transition_follows_the_status_gate
+     */
     public function test_bulk_transition_reports_skipped_and_missing_entries(): void
     {
         $order = $this->deliveredOrder();
@@ -1867,7 +2475,14 @@ class OrderExchangeServiceTest extends ModuleTestCase
     // ================================================================
 
     /**
+     * 선택한 상품만 옮기고, 전부 같은 상태가 되면 헤더도 따라간다.
+     *
+     *
+     * @return void 반환값 없음
+     *
      * @effects exchange_item_level_transition_moves_the_header_only_when_items_agree
+     *
+     * @scenario price_delta=equal, charge_method=none, additional_options=unchanged
      */
     public function test_transition_option_moves_only_selected_items_and_header_when_all_agree(): void
     {
@@ -1885,6 +2500,15 @@ class OrderExchangeServiceTest extends ModuleTestCase
         $this->assertSame(ExchangeStatusEnum::APPROVED, $exchange->fresh()->exchange_status);
     }
 
+    /**
+     * 상품 단위 전이는 잘못된 목표를 건너뛰고 완료로는 옮기지 않는다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario price_delta=equal, charge_method=none, additional_options=unchanged
+     *
+     * @effects exchange_item_level_transition_moves_the_header_only_when_items_agree
+     */
     public function test_transition_option_reports_skip_for_invalid_target_and_blocks_completed(): void
     {
         [$exchange, $itemA] = $this->twoItemExchange();
@@ -1901,6 +2525,12 @@ class OrderExchangeServiceTest extends ModuleTestCase
      *
      * 자기 전이는 게이트가 언제나 허용하므로(일괄 전이에 이미 그 상태인 건이 섞여도 실패하지
      * 않기 위한 규약), 종결 상품은 게이트가 아니라 이 가드가 막는다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario price_delta=equal, charge_method=none, additional_options=unchanged
+     *
+     * @effects exchange_item_level_transition_moves_the_header_only_when_items_agree
      */
     public function test_transition_option_skips_an_item_that_is_already_finished(): void
     {
@@ -1917,6 +2547,15 @@ class OrderExchangeServiceTest extends ModuleTestCase
         $this->assertEquals($rejected->updated_at, OrderExchangeOption::find($itemA)->updated_at, '종결 상품은 다시 쓰이지 않는다.');
     }
 
+    /**
+     * 한 상품만 반려하면 그 상품만 되돌아간다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario price_delta=equal, charge_method=none, additional_options=unchanged
+     *
+     * @effects exchange_reject_reverts_each_item_to_its_own_original_status
+     */
     public function test_transition_option_rejecting_one_item_reverts_only_that_item(): void
     {
         [$exchange, $itemA, $itemB] = $this->twoItemExchange();
@@ -1933,6 +2572,12 @@ class OrderExchangeServiceTest extends ModuleTestCase
      *
      * 거부하지 않으면 앞선 상품은 살아 있는데 신청서만 종결되어 어디로도 못 가고, 재고 차감·후속 옵션의
      * 근거가 사라진다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario price_delta=equal, charge_method=none, additional_options=unchanged
+     *
+     * @effects exchange_item_level_transition_moves_the_header_only_when_items_agree
      */
     public function test_header_rejection_is_refused_while_an_item_has_moved_past_the_gate(): void
     {
@@ -1951,6 +2596,15 @@ class OrderExchangeServiceTest extends ModuleTestCase
         $this->assertSame(ExchangeStatusEnum::APPROVED, $exchange->fresh()->exchange_status, '살아 있는 상품이 승인 하나뿐이면 헤더가 따라간다.');
     }
 
+    /**
+     * 모든 상품이 반려되면 신청서 헤더도 따라 반려로 간다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario price_delta=equal, charge_method=none, additional_options=unchanged
+     *
+     * @effects exchange_item_level_transition_moves_the_header_only_when_items_agree
+     */
     public function test_transition_option_moves_header_when_every_item_is_rejected(): void
     {
         [$exchange, $itemA, $itemB] = $this->twoItemExchange();
@@ -1960,6 +2614,15 @@ class OrderExchangeServiceTest extends ModuleTestCase
         $this->assertSame(ExchangeStatusEnum::REJECTED, $exchange->fresh()->exchange_status);
     }
 
+    /**
+     * 새 옵션이 품절인 상품은 건너뛰고 나머지는 승인한다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario price_delta=equal, charge_method=none, additional_options=unchanged
+     *
+     * @effects exchange_approval_fails_when_the_new_option_ran_out
+     */
     public function test_transition_option_skips_an_item_whose_new_option_is_out_of_stock_and_approves_the_rest(): void
     {
         $policy = $this->createClaimShippingPolicy();
@@ -1990,6 +2653,15 @@ class OrderExchangeServiceTest extends ModuleTestCase
         $this->assertSame(ExchangeStatusEnum::REQUESTED, $exchange->fresh()->exchange_status, '한 상품이 막혀 있으면 헤더는 움직이지 않는다.');
     }
 
+    /**
+     * 상품들이 시차를 두고 진행돼도 헤더가 중간 단계를 따라간다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario price_delta=equal, charge_method=none, additional_options=unchanged
+     *
+     * @effects exchange_item_level_transition_moves_the_header_only_when_items_agree
+     */
     public function test_header_follows_items_through_intermediate_steps_after_staggered_progress(): void
     {
         $changed = [];
@@ -2019,6 +2691,15 @@ class OrderExchangeServiceTest extends ModuleTestCase
         $this->assertNotNull(OrderExchangeOption::find($itemB)->new_order_option_id);
     }
 
+    /**
+     * 처리자를 주지 않은 전이는 기존 처리자를 그대로 둔다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario price_delta=equal, charge_method=none, additional_options=unchanged
+     *
+     * @effects exchange_item_level_transition_moves_the_header_only_when_items_agree
+     */
     public function test_transition_option_keeps_the_existing_processor_when_none_is_given(): void
     {
         [$exchange, $itemA] = $this->twoItemExchange();
@@ -2033,6 +2714,15 @@ class OrderExchangeServiceTest extends ModuleTestCase
     // 송장 — 회수 / 재발송
     // ================================================================
 
+    /**
+     * 회수 송장을 등록하면 회수중으로 옮긴다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario price_delta=equal, charge_method=none, additional_options=unchanged
+     *
+     * @effects exchange_transition_follows_the_status_gate
+     */
     public function test_register_collection_tracking_moves_to_collecting(): void
     {
         $order = $this->deliveredOrder();
@@ -2046,6 +2736,15 @@ class OrderExchangeServiceTest extends ModuleTestCase
         $this->assertSame($carrier->id, $tracked->collection_carrier_id);
     }
 
+    /**
+     * 송장은 택배사와 번호를 함께 넣어야 등록된다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario price_delta=equal, charge_method=none, additional_options=unchanged
+     *
+     * @effects exchange_transition_follows_the_status_gate
+     */
     public function test_register_tracking_requires_both_fields(): void
     {
         $order = $this->deliveredOrder();
@@ -2056,7 +2755,14 @@ class OrderExchangeServiceTest extends ModuleTestCase
     }
 
     /**
+     * 재발송 송장 등록이 재발송중으로 옮기고 후속 주문옵션을 만든다.
+     *
+     *
+     * @return void 반환값 없음
+     *
      * @effects exchange_redelivery_tracking_creates_the_successor_option
+     *
+     * @scenario price_delta=equal, charge_method=none, additional_options=unchanged
      */
     public function test_register_redelivery_tracking_moves_to_redelivering_and_creates_the_successor_option(): void
     {
@@ -2096,6 +2802,15 @@ class OrderExchangeServiceTest extends ModuleTestCase
         $this->assertSame($carrier->id, $shipping->carrier_id);
     }
 
+    /**
+     * 후속 주문옵션은 금액 컬럼을 물려받고 식별 값만 새 옵션으로 바뀐다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario price_delta=equal, charge_method=none, additional_options=unchanged
+     *
+     * @effects exchange_substitution_inherits_shipping_policy_and_coupons
+     */
     public function test_successor_option_inherits_money_columns_and_only_changes_identity(): void
     {
         $order = $this->deliveredOrder();
@@ -2120,6 +2835,15 @@ class OrderExchangeServiceTest extends ModuleTestCase
         $this->assertSame(32000.0, (float) $exchange->exchangeOptions->first()->new_unit_price);
     }
 
+    /**
+     * 후속 주문옵션은 한 번만 만들어지고 도착 시 배송완료가 된다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario price_delta=equal, charge_method=none, additional_options=unchanged
+     *
+     * @effects exchange_redelivery_tracking_creates_the_successor_option
+     */
     public function test_successor_option_is_created_once_and_delivered_on_arrival(): void
     {
         [$exchange, $order, $successor] = $this->redeliveredExchange();
@@ -2134,6 +2858,15 @@ class OrderExchangeServiceTest extends ModuleTestCase
     // 금액 수정
     // ================================================================
 
+    /**
+     * 금액 수정이 회수비를 따라 총 청구액을 옮기고 옵션 차액은 그대로 둔다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario price_delta=higher, charge_method=pay_on_request, additional_options=unchanged
+     *
+     * @effects exchange_round_trip_fee_and_total_charge_are_frozen
+     */
     public function test_update_amounts_moves_total_charge_with_the_fee_and_keeps_the_difference(): void
     {
         $policy = $this->createClaimShippingPolicy();
@@ -2153,6 +2886,15 @@ class OrderExchangeServiceTest extends ModuleTestCase
         $this->assertSame(ClaimChargeMethodEnum::PAY_ON_REQUEST, $updated->charge_method);
     }
 
+    /**
+     * 청구할 것이 하나도 남지 않을 때만 청구 방식을 비운다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario price_delta=equal, charge_method=none, additional_options=unchanged
+     *
+     * @effects exchange_charge_method_is_cleared_when_nothing_is_charged
+     */
     public function test_update_amounts_clears_charge_method_only_when_nothing_remains_to_charge(): void
     {
         $policy = $this->createClaimShippingPolicy();
@@ -2170,6 +2912,12 @@ class OrderExchangeServiceTest extends ModuleTestCase
     /**
      * 청구 방식이 없는 신청서(접수 시 청구 0원)의 청구액을 양수로 올리면 거절한다 — 결제할 수 없는
      * 청구가 남는다. 청구 방식을 함께 정하는 금액 수정 API 가 그 경로다(반품과 같은 규칙).
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario price_delta=higher, charge_method=pay_on_request, additional_options=unchanged
+     *
+     * @effects exchange_charge_method_is_required_when_a_charge_remains
      */
     public function test_update_amounts_refuses_to_raise_a_charge_without_a_charge_method(): void
     {
@@ -2186,6 +2934,15 @@ class OrderExchangeServiceTest extends ModuleTestCase
     // 완료 (D26)
     // ================================================================
 
+    /**
+     * 완료는 신청 항목과 주문옵션을 교환완료로 찍는다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario price_delta=equal, charge_method=none, additional_options=unchanged
+     *
+     * @effects exchange_completion_refund_is_filed_only_when_asked
+     */
     public function test_complete_marks_item_and_order_option_exchanged(): void
     {
         [$exchange, $order] = $this->redeliveredExchange();
@@ -2204,15 +2961,22 @@ class OrderExchangeServiceTest extends ModuleTestCase
     }
 
     /**
-     * 완료 시 원 옵션의 적립예정 마일리지를 회수한다 — 후속 옵션이 구매확정될 때 다시 적립되므로
-     * 회수하지 않으면 한 구매에 두 번 적립된다.
+     * 완료해도 원 옵션의 **이미 확정된 적립**은 회수하지 않는다 — 교환은 매출이 신규 옵션으로
+     * 승계되므로, 후속 옵션이 구매확정에 닿으면 그쪽에서 적립이 다시 계산된다. 원 옵션의 적립은
+     * 이미 원장에 확정된 기록이라 되돌리지 않는다.
+     *
+     * @return void 반환값 없음
+     *
+     * @effects exchange_completion_keeps_the_earned_mileage
+     *
+     * @scenario price_delta=equal, charge_method=none, additional_options=unchanged
      */
-    public function test_complete_cancels_the_pending_earn_of_the_original_option(): void
+    public function test_complete_keeps_the_earned_mileage_of_the_original_option(): void
     {
         [$exchange, $order] = $this->redeliveredExchange();
         $orderOptionId = (int) $exchange->exchangeOptions->first()->order_option_id;
 
-        MileageTransaction::create([
+        $earnLot = MileageTransaction::create([
             'user_id' => $order->user_id,
             'currency' => 'KRW',
             'type' => MileageTransactionTypeEnum::PURCHASE_EARN->value,
@@ -2225,15 +2989,33 @@ class OrderExchangeServiceTest extends ModuleTestCase
 
         $this->service->completeExchange($exchange, [], $this->completionOptions($exchange, false, false));
 
+        // PO 결정 2026-09-23 — 원장에 확정된 적립은 교환완료로도 되돌리지 않는다.
+        // 교환은 매출이 신규 옵션으로 승계되므로, 새 옵션이 구매확정에 도달하면 그쪽에서 적립이
+        // 다시 계산된다. 원 옵션의 적립을 여기서 빼면 이미 확정된 기록만 깨진다.
         $this->assertSame(
-            1,
+            0,
             MileageTransaction::where('order_option_id', $orderOptionId)
                 ->where('type', MileageTransactionTypeEnum::EARN_CANCEL->value)
                 ->count(),
-            '원 옵션의 적립 lot 이 회수되어야 한다.'
+            '적립이 끝난 건은 교환완료로 회수하지 않아야 한다.'
+        );
+
+        $this->assertSame(
+            '500.00',
+            (string) $earnLot->fresh()->remaining_amount,
+            '적립 lot 의 잔여가 그대로여야 한다 — 자기 lot 에서 빼는 것도 회수다.'
         );
     }
 
+    /**
+     * 도착하지 않은 상품은 완료 처리를 거절한다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario price_delta=equal, charge_method=none, additional_options=unchanged
+     *
+     * @effects exchange_completion_refund_is_filed_only_when_asked
+     */
     public function test_complete_rejects_items_that_have_not_arrived(): void
     {
         $order = $this->deliveredOrder();
@@ -2243,7 +3025,14 @@ class OrderExchangeServiceTest extends ModuleTestCase
     }
 
     /**
+     * 완료는 체크한 상품의 원래 재고만 되돌린다.
+     *
+     *
+     * @return void 반환값 없음
+     *
      * @effects exchange_completion_restores_original_stock_only_for_checked_items
+     *
+     * @scenario price_delta=equal, charge_method=none, additional_options=unchanged
      */
     public function test_complete_restores_original_stock_only_for_checked_items(): void
     {
@@ -2258,6 +3047,15 @@ class OrderExchangeServiceTest extends ModuleTestCase
         $this->assertFalse((bool) $order->options->first()->fresh()->is_stock_deducted);
     }
 
+    /**
+     * 체크하지 않은 상품의 재고는 완료에서 건드리지 않는다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario price_delta=equal, charge_method=none, additional_options=unchanged
+     *
+     * @effects exchange_completion_restores_original_stock_only_for_checked_items
+     */
     public function test_complete_leaves_stock_untouched_when_not_checked(): void
     {
         [$exchange, $order] = $this->redeliveredExchange();
@@ -2271,6 +3069,15 @@ class OrderExchangeServiceTest extends ModuleTestCase
         $this->assertTrue((bool) $order->options->first()->fresh()->is_stock_deducted);
     }
 
+    /**
+     * 완료 실행은 설정 기본값이 아니라 요청이 체크한 것만 본다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario price_delta=equal, charge_method=none, additional_options=unchanged
+     *
+     * @effects exchange_completion_restores_original_stock_only_for_checked_items
+     */
     public function test_complete_ignores_settings_defaults(): void
     {
         app(EcommerceSettingsService::class)->setSetting('claim.complete_defaults', ['create_refund_request' => true, 'restore_stock' => true]);
@@ -2284,7 +3091,14 @@ class OrderExchangeServiceTest extends ModuleTestCase
     }
 
     /**
+     * 환불신청서를 고르지 않은 완료는 환불신청서를 만들지 않는다.
+     *
+     *
+     * @return void 반환값 없음
+     *
      * @effects exchange_completion_refund_is_filed_only_when_asked
+     *
+     * @scenario price_delta=lower, charge_method=none, additional_options=unchanged
      */
     public function test_complete_without_refund_request_creates_no_refund(): void
     {
@@ -2303,6 +3117,8 @@ class OrderExchangeServiceTest extends ModuleTestCase
      * 새로 생기는 행이라 이전 값은 `null` 이다(교환 재발송 신규행과 같은 표기).
      *
      * 되돌리면 red — 생성 지점에서 상품 축 훅 발행을 빼면 수집된 배열이 빈다.
+     *
+     * @return void 반환값 없음
      *
      * @scenario exchange_mode=change, preview_result=ok
      *
@@ -2347,6 +3163,15 @@ class OrderExchangeServiceTest extends ModuleTestCase
         );
     }
 
+    /**
+     * 환불신청서 접수를 고르면 차액에 대한 환불신청서가 정확히 한 건 생긴다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario price_delta=lower, charge_method=none, additional_options=unchanged
+     *
+     * @effects exchange_completion_refund_is_filed_only_when_asked
+     */
     public function test_complete_with_refund_request_creates_exactly_one_refund_for_the_difference(): void
     {
         [$exchange, $order] = $this->redeliveredExchange(-4000);
@@ -2379,6 +3204,8 @@ class OrderExchangeServiceTest extends ModuleTestCase
      * 금액 축도 다르다. 교환 차액 환불은 상품이 주문에 **남으므로** 취소 기록이 주문 합계를
      * 재계산하지 않는다 — 재계산하면 고객이 가진 물건의 값이 주문에서 사라진다(§12-B B2).
      *
+     * @return void 반환값 없음
+     *
      * @scenario exchange_mode=change, preview_result=ok
      *
      * @effects exchange_refund_completion_records_a_cancellation
@@ -2408,6 +3235,15 @@ class OrderExchangeServiceTest extends ModuleTestCase
         );
     }
 
+    /**
+     * 「환불금에서 차감」이면 완료 시 환불액에서 왕복 배송비를 뺀다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario price_delta=lower, charge_method=none, additional_options=unchanged
+     *
+     * @effects exchange_round_trip_fee_is_deducted_once_across_refund_rounds
+     */
     public function test_complete_refund_deducts_the_round_trip_fee_when_charged_from_the_refund(): void
     {
         $policy = $this->createClaimShippingPolicy();
@@ -2431,6 +3267,12 @@ class OrderExchangeServiceTest extends ModuleTestCase
      *
      * 반품의 환불신청서가 재계산 결과의 배분(PG 우선)을 싣는 것과 같은 규칙을 동결 차액에 적용한다.
      * 전액을 PG 칸에 실으면 환불 수단은 마일리지인데 금액은 PG 환불액인 어긋난 신청서가 된다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario price_delta=lower, charge_method=none, additional_options=unchanged
+     *
+     * @effects exchange_refund_request_splits_by_what_the_order_paid
      */
     public function test_refund_request_puts_the_difference_on_points_when_the_order_was_paid_with_points_only(): void
     {
@@ -2451,7 +3293,14 @@ class OrderExchangeServiceTest extends ModuleTestCase
     }
 
     /**
+     * 차액 환불은 주문이 실제로 낸 방식대로 PG 분을 먼저 나눈다.
+     *
+     *
+     * @return void 반환값 없음
+     *
      * @effects exchange_refund_request_splits_by_what_the_order_paid
+     *
+     * @scenario price_delta=lower, charge_method=none, additional_options=unchanged
      */
     public function test_refund_request_splits_the_difference_pg_first_by_what_the_order_paid(): void
     {
@@ -2471,6 +3320,15 @@ class OrderExchangeServiceTest extends ModuleTestCase
         $this->assertSame(4000.0, (float) $refund->refund_amount + (float) $refund->refund_points_amount, '두 칸의 합은 동결 차액과 같다.');
     }
 
+    /**
+     * 돌려줄 돈이 없으면 환불신청서 접수를 거절한다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario price_delta=equal, charge_method=none, additional_options=unchanged
+     *
+     * @effects exchange_completion_refund_is_filed_only_when_asked
+     */
     public function test_complete_with_refund_request_is_rejected_when_nothing_is_refundable(): void
     {
         [$exchange, $order] = $this->redeliveredExchange(3000);
@@ -2481,6 +3339,15 @@ class OrderExchangeServiceTest extends ModuleTestCase
         $this->assertSame(0, OrderRefund::where('order_id', $order->id)->count());
     }
 
+    /**
+     * 두 번째 환불신청서는 거절하고 사후 접수는 한 번만 된다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario price_delta=lower, charge_method=none, additional_options=unchanged
+     *
+     * @effects exchange_completion_refund_is_filed_only_when_asked
+     */
     public function test_complete_rejects_a_second_refund_request_and_late_request_works_once(): void
     {
         [$exchange, $order] = $this->redeliveredExchange(-4000);
@@ -2495,6 +3362,12 @@ class OrderExchangeServiceTest extends ModuleTestCase
 
     /**
      * 완료 라운드마다 그 라운드의 저가 상품으로 환불신청서를 접수한다 — 신청서당 N건.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario price_delta=lower, charge_method=none, additional_options=unchanged
+     *
+     * @effects exchange_completion_refund_is_filed_only_when_asked
      */
     public function test_each_completion_round_can_file_its_own_refund_request(): void
     {
@@ -2525,6 +3398,12 @@ class OrderExchangeServiceTest extends ModuleTestCase
 
     /**
      * 반려된 환불신청서에 담겼던 상품은 다시 접수할 수 있다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario price_delta=lower, charge_method=none, additional_options=unchanged
+     *
+     * @effects exchange_completion_refund_is_filed_only_when_asked
      */
     public function test_a_rejected_refund_request_lets_the_same_items_be_filed_again(): void
     {
@@ -2545,7 +3424,11 @@ class OrderExchangeServiceTest extends ModuleTestCase
     /**
      * '환불금 차감' 의 왕복 배송비는 신청서 전체에서 한 번만 뺀다.
      *
+     * @return void 반환값 없음
+     *
      * @effects exchange_round_trip_fee_is_deducted_once_across_refund_rounds
+     *
+     * @scenario price_delta=lower, charge_method=none, additional_options=unchanged
      */
     public function test_the_round_trip_fee_is_deducted_only_once_across_refund_requests(): void
     {
@@ -2564,6 +3447,12 @@ class OrderExchangeServiceTest extends ModuleTestCase
 
     /**
      * 이번 라운드 차액이 남은 배송비에 못 미치면 접수하지 않고, 다음 라운드가 앞 라운드 상품까지 함께 담는다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario price_delta=lower, charge_method=none, additional_options=unchanged
+     *
+     * @effects exchange_round_trip_fee_is_deducted_once_across_refund_rounds
      */
     public function test_a_round_whose_difference_cannot_cover_the_fee_is_filed_with_the_next_round(): void
     {
@@ -2590,6 +3479,12 @@ class OrderExchangeServiceTest extends ModuleTestCase
      *
      * 상품별 음수 차액만 더하면 상계로 사라진 양수 차액만큼 더 나간다 — 고객은 이미 상계된
      * 순액을 청구받았기 때문이다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario price_delta=mixed, charge_method=deduct_from_refund, additional_options=unchanged
+     *
+     * @effects exchange_completion_refund_is_filed_only_when_asked
      */
     public function test_a_mixed_exchange_that_nets_to_an_additional_charge_cannot_file_a_refund(): void
     {
@@ -2609,6 +3504,8 @@ class OrderExchangeServiceTest extends ModuleTestCase
 
     /**
      * 순환불 혼합 건은 **동결된 순액**까지만 접수한다 (음수 차액 합이 아니다).
+     *
+     * @return void 반환값 없음
      *
      * @scenario price_delta=mixed, charge_method=none, additional_options=unchanged
      *
@@ -2634,6 +3531,12 @@ class OrderExchangeServiceTest extends ModuleTestCase
 
     /**
      * 상계분은 저가 상품이 둘 이상일 때 **차액 비율로 안분**되고, 행 합계는 신청서 금액과 같다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario price_delta=mixed, charge_method=deduct_from_refund, additional_options=unchanged
+     *
+     * @effects exchange_mixed_items_are_netted_into_one_charge
      */
     public function test_a_mixed_exchange_spreads_the_offset_across_the_lower_priced_items(): void
     {
@@ -2669,6 +3572,12 @@ class OrderExchangeServiceTest extends ModuleTestCase
 
     /**
      * 한 주문서의 상품 일부는 교환, 일부는 반품 상태일 수 있다 — 수량 잠금(D15)은 상품 단위다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario price_delta=equal, charge_method=none, additional_options=unchanged
+     *
+     * @effects exchange_request_freezes_calculation_snapshots
      */
     public function test_one_order_can_hold_an_exchange_and_a_return_on_different_items(): void
     {
@@ -2713,6 +3622,15 @@ class OrderExchangeServiceTest extends ModuleTestCase
         $this->assertSame(OrderStatusEnum::RETURN_IN_PROGRESS, $rowB->fresh()->option_status);
     }
 
+    /**
+     * 사후 환불신청서는 완료된 상품이 있어야 접수된다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario price_delta=lower, charge_method=none, additional_options=unchanged
+     *
+     * @effects exchange_completion_refund_is_filed_only_when_asked
+     */
     public function test_late_refund_request_requires_completed_items(): void
     {
         $order = $this->deliveredOrder();
@@ -2721,6 +3639,15 @@ class OrderExchangeServiceTest extends ModuleTestCase
         $this->assertClaimException('claim_completion_items_invalid', fn () => $this->service->createRefundRequestForCompleted($exchange));
     }
 
+    /**
+     * 일부 상품만 완료하면 신청서 헤더는 열린 채로 둔다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario price_delta=equal, charge_method=none, additional_options=unchanged
+     *
+     * @effects exchange_item_level_transition_moves_the_header_only_when_items_agree
+     */
     public function test_complete_of_some_items_keeps_the_header_open(): void
     {
         [$exchange, $itemA, $itemB] = $this->twoItemExchange();
@@ -2740,6 +3667,12 @@ class OrderExchangeServiceTest extends ModuleTestCase
      * D26 건별 재고 복구 — 한 신청서 안에서 상품마다 선택이 다를 수 있다.
      *
      * 전건 동일 적용 헬퍼로는 `ClaimCompletionOptions` 의 행 단위 분기가 검증되지 않는다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario price_delta=equal, charge_method=none, additional_options=unchanged
+     *
+     * @effects exchange_completion_restores_original_stock_only_for_checked_items
      */
     public function test_complete_restores_stock_only_for_the_items_checked_in_a_multi_item_exchange(): void
     {
@@ -2763,6 +3696,15 @@ class OrderExchangeServiceTest extends ModuleTestCase
         $this->assertSame(ExchangeStatusEnum::COMPLETED, $completed->exchange_status);
     }
 
+    /**
+     * 완료된 교환은 진행 중 클레임 수량에서 빠진다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario price_delta=equal, charge_method=none, additional_options=unchanged
+     *
+     * @effects exchange_completion_refund_is_filed_only_when_asked
+     */
     public function test_completed_exchange_is_excluded_from_active_claim_quantity(): void
     {
         [$exchange, $order] = $this->redeliveredExchange();
@@ -2785,6 +3727,12 @@ class OrderExchangeServiceTest extends ModuleTestCase
      *
      * 원 행(EXCHANGED)과 후속 행이 둘 다 잔여로 잡히면 환불액이 교환 상품 금액만큼 작아지고,
      * 후속 행이 신규 단가를 실으면 차액만큼 어긋난다 — 둘 다 오류 없이 금액만 틀어진다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario price_delta=equal, charge_method=none, additional_options=unchanged
+     *
+     * @effects exchanged_successor_row_refunds_at_new_option_price
      */
     public function test_partial_cancel_after_an_exchange_refunds_only_the_cancelled_item(): void
     {
@@ -2824,6 +3772,15 @@ class OrderExchangeServiceTest extends ModuleTestCase
     // 미리보기 자격 가드 (S5) / 승인 전 수정 (D13 · D14)
     // ================================================================
 
+    /**
+     * 신청할 수 없는 상태의 상품은 미리보기가 거절한다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario price_delta=equal, charge_method=none, additional_options=unchanged
+     *
+     * @effects exchange_preview_matches_the_requested_amounts
+     */
     public function test_preview_rejects_an_item_that_is_not_in_a_requestable_status(): void
     {
         $order = $this->createSingleItemClaimOrder(29000, 1, $this->createClaimShippingPolicy());
@@ -2835,6 +3792,15 @@ class OrderExchangeServiceTest extends ModuleTestCase
         ));
     }
 
+    /**
+     * 살아 있는 환불신청서가 잠근 수량은 미리보기가 거절한다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario price_delta=equal, charge_method=none, additional_options=unchanged
+     *
+     * @effects exchange_preview_matches_the_requested_amounts
+     */
     public function test_preview_rejects_a_quantity_locked_by_a_live_refund_request(): void
     {
         $order = $this->deliveredOrder(29000, 2);
@@ -2849,6 +3815,15 @@ class OrderExchangeServiceTest extends ModuleTestCase
         ));
     }
 
+    /**
+     * 수정 중인 교환 자신은 수량 잠금에서 제외한다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario price_delta=equal, charge_method=none, additional_options=unchanged
+     *
+     * @effects exchange_preview_matches_the_requested_amounts
+     */
     public function test_preview_excludes_the_exchange_being_edited_from_the_lock(): void
     {
         $order = $this->deliveredOrder(29000, 2);
@@ -2864,6 +3839,15 @@ class OrderExchangeServiceTest extends ModuleTestCase
         $this->assertSame(2, $preview['items'][0]['quantity']);
     }
 
+    /**
+     * 신청 기간이 지난 건은 미리보기가 거절한다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario price_delta=equal, charge_method=none, additional_options=unchanged
+     *
+     * @effects exchange_request_period_is_measured_from_delivery
+     */
     public function test_preview_rejects_a_request_after_the_request_period(): void
     {
         app(EcommerceSettingsService::class)->setSetting('claim.request_period_days', 3);
@@ -2878,7 +3862,14 @@ class OrderExchangeServiceTest extends ModuleTestCase
     }
 
     /**
+     * 사유가 바뀌면 수정이 배송비를 다시 계산한다.
+     *
+     *
+     * @return void 반환값 없음
+     *
      * @effects exchange_update_request_recalculates_the_fee_when_the_reason_changes
+     *
+     * @scenario price_delta=equal, charge_method=none, additional_options=unchanged
      */
     public function test_update_request_recalculates_the_fee_when_the_reason_changes(): void
     {
@@ -2899,6 +3890,15 @@ class OrderExchangeServiceTest extends ModuleTestCase
         $this->assertSame('불량', $updated->reason_detail);
     }
 
+    /**
+     * 수정이 재발송지를 바꾸고 국가는 그대로 유지한다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario price_delta=equal, charge_method=none, additional_options=unchanged
+     *
+     * @effects exchange_redelivery_address_must_stay_in_the_same_country
+     */
     public function test_update_request_changes_the_redelivery_address_and_keeps_the_country(): void
     {
         $order = $this->deliveredOrder();
@@ -2917,6 +3917,15 @@ class OrderExchangeServiceTest extends ModuleTestCase
         ]));
     }
 
+    /**
+     * 다른 칸만 고친 수정은 앞서 고친 값을 지우지 않는다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario price_delta=equal, charge_method=none, additional_options=unchanged
+     *
+     * @effects exchange_redelivery_address_must_stay_in_the_same_country
+     */
     public function test_update_request_keeps_the_previous_partial_edit_when_another_field_is_patched(): void
     {
         $order = $this->deliveredOrder();
@@ -2937,6 +3946,15 @@ class OrderExchangeServiceTest extends ModuleTestCase
         $this->assertTrue($second->redelivery_address_snapshot['changed_by_user']);
     }
 
+    /**
+     * 수정으로 청구액이 생기면 청구 방식을 요구한다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario price_delta=higher, charge_method=pay_on_request, additional_options=unchanged
+     *
+     * @effects exchange_charge_method_is_required_when_a_charge_remains
+     */
     public function test_update_request_requires_a_charge_method_when_the_charge_becomes_positive(): void
     {
         $policy = $this->createClaimShippingPolicy();
@@ -2954,7 +3972,14 @@ class OrderExchangeServiceTest extends ModuleTestCase
     }
 
     /**
+     * 승인 뒤에는 신청서를 수정할 수 없다.
+     *
+     *
+     * @return void 반환값 없음
+     *
      * @effects exchange_update_request_is_blocked_after_approval
+     *
+     * @scenario price_delta=equal, charge_method=none, additional_options=unchanged
      */
     public function test_update_request_is_blocked_after_approval(): void
     {
@@ -2965,6 +3990,15 @@ class OrderExchangeServiceTest extends ModuleTestCase
         $this->assertClaimException('claim_not_editable', fn () => $this->service->updateRequest($approved, ['reason_detail' => 'x']));
     }
 
+    /**
+     * 바뀐 것이 없는 수정은 신청서를 그대로 돌려준다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario price_delta=equal, charge_method=none, additional_options=unchanged
+     *
+     * @effects exchange_update_request_recalculates_the_fee_when_the_reason_changes
+     */
     public function test_update_request_without_changes_returns_the_exchange_untouched(): void
     {
         $order = $this->deliveredOrder();
@@ -3014,6 +4048,11 @@ class OrderExchangeServiceTest extends ModuleTestCase
     }
 
     /**
+     * 구매자가 고른 추가 옵션 값을 청구에 싣는다.
+     *
+     *
+     * @return void 반환값 없음
+     *
      * @scenario price_delta=equal, charge_method=pay_on_request, additional_options=picked
      *
      * @effects exchange_additional_options_picked_are_charged
@@ -3035,6 +4074,11 @@ class OrderExchangeServiceTest extends ModuleTestCase
     }
 
     /**
+     * 교환이 추가 옵션을 버리면 원래 추가 옵션 값을 돌려준다.
+     *
+     *
+     * @return void 반환값 없음
+     *
      * @scenario price_delta=equal, charge_method=none, additional_options=dropped
      *
      * @effects exchange_additional_options_dropped_are_returned
@@ -3056,6 +4100,11 @@ class OrderExchangeServiceTest extends ModuleTestCase
      * @effects exchange_additional_option_names_and_prices_are_frozen
      */
     /**
+     * 「승인 후 결제」에서도 고른 추가 옵션을 청구한다.
+     *
+     *
+     * @return void 반환값 없음
+     *
      * @scenario price_delta=equal, charge_method=pay_on_approval, additional_options=picked
      *
      * @effects exchange_additional_options_picked_are_charged
@@ -3077,6 +4126,15 @@ class OrderExchangeServiceTest extends ModuleTestCase
         $this->assertSame(ExchangeStatusEnum::REQUESTED, $exchange->exchange_status);
     }
 
+    /**
+     * 추가 옵션의 이름과 가격을 접수 시점에 스냅샷으로 굳힌다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario price_delta=equal, charge_method=pay_on_request, additional_options=picked
+     *
+     * @effects exchange_additional_option_names_and_prices_are_frozen
+     */
     public function test_request_freezes_additional_option_names_and_prices_in_the_snapshot(): void
     {
         // 예전에는 선택 ID 만 남아 이름을 복원할 방법이 없었고, 그래서 신청 후 화면에 추가옵션이
@@ -3098,6 +4156,11 @@ class OrderExchangeServiceTest extends ModuleTestCase
     }
 
     /**
+     * 다른 상품의 추가 옵션은 무시한다.
+     *
+     *
+     * @return void 반환값 없음
+     *
      * @scenario price_delta=equal, charge_method=none, additional_options=foreign
      *
      * @effects exchange_additional_options_of_another_product_are_ignored
@@ -3120,7 +4183,14 @@ class OrderExchangeServiceTest extends ModuleTestCase
     }
 
     /**
+     * 미리보기와 접수가 같은 추가 옵션을 같은 값으로 청구한다.
+     *
+     *
+     * @return void 반환값 없음
+     *
      * @effects exchange_preview_and_request_charge_the_same_additional_options
+     *
+     * @scenario price_delta=equal, charge_method=pay_on_request, additional_options=picked
      */
     public function test_preview_and_request_charge_the_same_additional_options(): void
     {
@@ -3150,6 +4220,8 @@ class OrderExchangeServiceTest extends ModuleTestCase
     /**
      * 미리보기의 재계산 스냅샷은 신규 옵션 단가를 반영한다. ("교환 후" 열 — 전 = 후가 아니다)
      *
+     * @return void 반환값 없음
+     *
      * @scenario exchange_mode=change, preview_result=ok
      *
      * @effects claim_apply_exchange_after_column_reflects_substitution
@@ -3177,6 +4249,8 @@ class OrderExchangeServiceTest extends ModuleTestCase
     /**
      * 고가 교환의 표시 스냅샷은 후열이 커지지만 취소 차단으로 읽히지 않는다.
      *
+     * @return void 반환값 없음
+     *
      * @scenario exchange_mode=change, preview_result=ok
      *
      * @effects claim_apply_exchange_after_column_reflects_substitution
@@ -3197,6 +4271,8 @@ class OrderExchangeServiceTest extends ModuleTestCase
 
     /**
      * 접수는 미리보기와 같은 재료로 계산한 전/후 스냅샷을 신청서에 동결한다. (치환 근거 행 포함)
+     *
+     * @return void 반환값 없음
      *
      * @scenario price_delta=higher, charge_method=pay_on_request, additional_options=unchanged
      *

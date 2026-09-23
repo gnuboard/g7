@@ -1,3 +1,4 @@
+// e2e:allow 수정 진입 핸들러 단위 테스트 — 브라우저 흐름은 Playwright MCP 라이브 재실측으로 덮었다: 승인 건 RF20260922-1155163369 /edit 진입(SPA·직접 입력) → 안내 후 상세·[저장] 0, 승인 전 건은 수정 화면 유지. (#599 3차 실측 T2-D7, 2026-09-23).
 /**
  * 클레임 신청서 **수정(edit) 모드** 핸들러 테스트 (#599 S13)
  *
@@ -20,6 +21,7 @@
  *   claim_edit_seeds_items_from_the_claim,
  *   claim_edit_preview_excludes_its_own_lock,
  *   claim_edit_attached_image_removal_defers_to_save,
+ *   claim_edit_does_not_resend_attached_images_as_new,
  *   claim_edit_save_sends_only_editable_fields
  *
  * @vitest-environment jsdom
@@ -58,6 +60,7 @@ const mockG7Core = {
 };
 
 const MEMBER_CLAIM_BASE = '/api/modules/sirsoft-ecommerce/user/claims';
+const MEMBER_ORDER_BASE = '/api/modules/sirsoft-ecommerce/user/orders/1521';
 
 function setPath(pathname: string): void {
     Object.defineProperty(window, 'location', {
@@ -297,6 +300,62 @@ describe('클레임 수정 — 진입', () => {
     });
 
     /**
+     * 승인 이후의 신청서는 구매자가 수정 화면을 열지 못한다 (#599 T2-D7 · PO 결정 2026-09-23)
+     *
+     * 서버는 승인 이후 수정을 422(`claim_not_editable`)로 막는다. 그런데 주소에 `/edit` 을 붙이면
+     * 수정 폼이 그대로 열리고 [저장]도 활성이라, 구매자는 다 고쳐 쓴 뒤에야 거절을 받았다
+     * (2026-09-22 실측). 화면이 신청서 응답의 `is_editable` 을 먼저 보고 상세로 돌려보낸다.
+     * 관리자 수정은 별도 화면(관리자 클레임 상세의 금액·상태 수정)이라 이 게이트와 무관하다.
+     *
+     * @scenario claim_type=exchange, screen=edit, entry=detail
+     *
+     * @effects claim_edit_blocks_a_claim_that_is_no_longer_editable
+     */
+    it('수정할 수 없는 신청서는 폼을 세우지 않고 안내 후 상세로 돌려보낸다', async () => {
+        mockG7Core.api.get.mockResolvedValue({
+            success: true,
+            data: { claim: { claim_number: 'EX20260901-0001', claim_type: 'exchange', order_number: '20260812-0000123', is_editable: false } },
+        });
+
+        await initClaimEditHandler(
+            { handler: 'initClaimEdit', params: { claimApiBase: MEMBER_CLAIM_BASE, isGuest: false, detailPath: '/mypage/claims/EX20260901-0001' } },
+            {} as any
+        );
+
+        expect(mockLocalState.claimEditSnapshot).toBeUndefined();
+        expect(mockLocalState.claimEditMode).toBe(false);
+        expect(mockG7Core.toast.warning).toHaveBeenCalledWith('claim.edit.not_editable');
+        expect(mockG7Core.dispatch).toHaveBeenCalledWith({
+            handler: 'navigate',
+            params: { path: '/mypage/claims/EX20260901-0001' },
+        });
+        expect(mockG7Core.dispatch).not.toHaveBeenCalledWith(expect.objectContaining({ handler: 'refetchDataSource' }));
+    });
+
+    /**
+     * 승인 전 신청서(`is_editable: true`)는 그대로 수정 화면을 연다 — 위 게이트의 대조군.
+     *
+     * @scenario claim_type=exchange, screen=edit, entry=detail
+     *
+     * @effects claim_edit_blocks_a_claim_that_is_no_longer_editable
+     */
+    it('수정할 수 있는 신청서는 그대로 수정 화면을 연다', async () => {
+        mockG7Core.api.get.mockResolvedValue({
+            success: true,
+            data: { claim: { claim_number: 'EX20260901-0001', claim_type: 'exchange', order_number: '20260812-0000123', is_editable: true } },
+        });
+
+        await initClaimEditHandler(
+            { handler: 'initClaimEdit', params: { claimApiBase: MEMBER_CLAIM_BASE, isGuest: false, detailPath: '/mypage/claims/EX20260901-0001' } },
+            {} as any
+        );
+
+        expect(mockLocalState.claimEditSnapshot?.claim_number).toBe('EX20260901-0001');
+        expect(mockG7Core.toast.warning).not.toHaveBeenCalled();
+        expect(mockG7Core.dispatch).not.toHaveBeenCalledWith(expect.objectContaining({ handler: 'navigate' }));
+    });
+
+    /**
      * @scenario claim_type=exchange, screen=edit, entry=list
      *
      * @effects claim_edit_shell_sets_api_base_on_the_order_response
@@ -527,6 +586,38 @@ describe('클레임 수정 — 저장', () => {
         );
 
         expect(mockG7Core.api.patch.mock.calls[0][1].redelivery_address).toBeUndefined();
+    });
+
+    /**
+     * @scenario claim_type=return, screen=edit, entry=detail
+     *
+     * @effects claim_edit_does_not_resend_attached_images_as_new
+     */
+    it('이미 귀속된 첨부는 add_image_ids 로 다시 보내지 않는다 (서버가 미귀속 첨부만 받는다)', async () => {
+        // 수정 화면의 `claimImages` 는 **이미 신청서에 붙은** 첨부로 채워져 열린다. 그 id 를
+        // `add_image_ids` 로 실으면 서버는 그것을 "이 주문의 미귀속 첨부" 로 찾다가 실패해
+        // 422 `claim_image_not_found` 를 던지고, 첨부가 한 장이라도 있는 신청서는 사유조차
+        // 고칠 수 없게 된다.
+        mockLocalState.claimImages = [
+            { id: 37, attached: true, original_name: 'a.png' },
+            { id: 38, attached: true, original_name: 'b.png' },
+        ];
+        mockLocalState.claimImageFiles = [];
+        mockLocalState.claimRemoveImageIds = [37];
+        mockG7Core.api.patch.mockResolvedValue({ success: true, data: {} });
+
+        await saveClaimEditHandler(
+            {
+                handler: 'saveClaimEdit',
+                params: { claimEditApiBase: MEMBER_CLAIM_BASE, claimApiBase: MEMBER_ORDER_BASE, isGuest: false },
+            },
+            {} as any
+        );
+
+        const body = mockG7Core.api.patch.mock.calls[0][1];
+
+        expect(body.add_image_ids).toBeUndefined();
+        expect(body.remove_image_ids).toEqual([37]);
     });
 
     /**

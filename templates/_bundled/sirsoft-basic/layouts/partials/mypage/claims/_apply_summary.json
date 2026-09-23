@@ -965,6 +965,25 @@
             ]
         },
         {
+            "comment": "환불 계좌 미입력 안내 (T2-D5 · #599 3차 실측 L-8) — 계좌로 돈이 돌아가는 주문인데 계좌가 비면 제출을 막고 그 이유를 버튼 위에 남긴다. 막기만 하면 구매자는 버튼이 왜 회색인지 알 수 없다. 판정은 계좌 카드가 서는 조건과 **같은 값**을 쓴다((claimableSnapshot ?? claimable).refund_account.required + 교환은 돌려줄 돈이 있을 때만) — 다른 값을 쓰면 칸은 없는데 버튼만 잠기거나 그 반대가 되고, 둘 다 오류를 남기지 않는다. 서버도 같은 규칙으로 422 를 낸다(StoreRefundRequestRequest::requiresRefundBank).",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{(((_local.claimableSnapshot ?? claimable?.data)?.refund_account?.required === true) && (_local.claimType !== 'exchange' || (_local.claimEstimate?.refund_product_amount ?? 0) > 0) && !((_local.claimRefundBankCode ?? '').trim() && (_local.claimRefundBankAccount ?? '').trim() && (_local.claimRefundBankHolder ?? '').trim()))}}",
+            "props": {
+                "className": "p-3 rounded-lg bg-amber-50 dark:bg-yellow-900/20 border border-amber-200 dark:border-yellow-800"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "P",
+                    "props": {
+                        "className": "text-xs text-amber-800 dark:text-yellow-200"
+                    },
+                    "text": "$t:claim.apply.refund_account_required_to_submit"
+                }
+            ]
+        },
+        {
             "comment": "제출 — 미리보기가 성공하지 않았으면(=신청 자격이 확인되지 않았으면) 누를 수 없다. 화면이 예고하는 금액과 실제 청구가 어긋난 채 제출되는 창을 없앤다. 수정 화면에는 서지 않는다(그 자리는 아래 [저장]이다).",
             "type": "basic",
             "name": "Button",
@@ -985,7 +1004,7 @@
             "props": {
                 "type": "button",
                 "className": "w-full py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-bold hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
-                "disabled": "{{(_local.claimItems ?? []).filter(i => i.selected).length === 0 || !_local.claimReason || _local.claimEstimateLoading === true || !!_local.claimEstimateError || !_local.claimEstimate || _local.claimEstimate?.adjustment?.cancel_blocked === true || _local.isSubmittingClaim === true}}"
+                "disabled": "{{(_local.claimItems ?? []).filter(i => i.selected).length === 0 || !_local.claimReason || _local.claimEstimateLoading === true || !!_local.claimEstimateError || !_local.claimEstimate || _local.claimEstimate?.adjustment?.cancel_blocked === true || _local.isSubmittingClaim === true || (((_local.claimableSnapshot ?? claimable?.data)?.refund_account?.required === true) && (_local.claimType !== 'exchange' || (_local.claimEstimate?.refund_product_amount ?? 0) > 0) && !((_local.claimRefundBankCode ?? '').trim() && (_local.claimRefundBankAccount ?? '').trim() && (_local.claimRefundBankHolder ?? '').trim()))}}"
             },
             "children": [
                 {

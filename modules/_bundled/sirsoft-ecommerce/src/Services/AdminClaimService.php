@@ -20,6 +20,7 @@ use Modules\Sirsoft\Ecommerce\Models\OrderExchange;
 use Modules\Sirsoft\Ecommerce\Models\OrderRefund;
 use Modules\Sirsoft\Ecommerce\Models\OrderReturn;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ClaimActivityLogRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Repositories\Contracts\MileageTransactionRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderCancelRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderExchangeRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderRefundRepositoryInterface;
@@ -64,6 +65,7 @@ class AdminClaimService
      * @param  OrderRefundRepositoryInterface  $refundRepository  환불 Repository
      * @param  OrderCancelRepositoryInterface  $cancelRepository  취소 Repository
      * @param  PaymentMethodResolver  $paymentMethodResolver  결제수단 카탈로그 해석기 (라벨 SSoT)
+     * @param  MileageTransactionRepositoryInterface  $mileageRepository  마일리지 원장 Repository (적립 차감 예고 — 적립 여부 판정)
      */
     public function __construct(
         protected OrderExchangeService $exchangeService,
@@ -80,6 +82,7 @@ class AdminClaimService
         protected OrderRefundRepositoryInterface $refundRepository,
         protected OrderCancelRepositoryInterface $cancelRepository,
         protected PaymentMethodResolver $paymentMethodResolver,
+        protected MileageTransactionRepositoryInterface $mileageRepository,
     ) {}
 
     // ───────────────────────────────────────────────
@@ -390,6 +393,30 @@ class AdminClaimService
             $claim instanceof OrderReturn => $this->returnService->transition($claim, ReturnStatusEnum::from($target), $context),
             default => $this->refundRequestService->transition($claim, RefundStatusEnum::from($target), $context),
         };
+
+        // **종결은 돈을 닫는 자리다.** 철회(`UserClaimService::withdraw()`)는 종결 직후 같은 정리를
+        // 부른다 — 대기 건을 취소하고 낸 돈을 환급한다. 반려도 같은 종결인데 그 정리를 빠뜨리면
+        // **이미 반려된 신청서에 구매자가 돈을 낼 수 있다**: 결제 가드가 보는 것은 결제행의
+        // `isPending()` 뿐이고 신청서 상태가 아니다(`ClaimPaymentService::pay():250`). 그렇게 들어온
+        // 돈은 되돌릴 경로도 없다 — 반려는 이미 끝난 전이라 환급을 부를 자리가 남지 않는다.
+        // (2026-09-22 #599 3차 실측 F-9: 반려 직후 구매자 상세에 [결제하기]가 그대로 서 있었고
+        //  누르자 PG 결제창이 열렸다.)
+        //
+        // 고아 정리 배치도 이 정리를 전제로 적혀 있다 — `CancelOrphanClaimPaymentsCommand` 헤더의
+        // 「종결 경로는 대기 건을 함께 취소하므로」. 여기서 하지 않으면 그 전제가 깨지고 배치의
+        // 보존 기간 동안 결제가 열린 채로 남는다.
+        if ($updated instanceof OrderExchange || $updated instanceof OrderReturn) {
+            $isRejected = $updated instanceof OrderExchange
+                ? $updated->exchange_status === ExchangeStatusEnum::REJECTED
+                : $updated->return_status === ReturnStatusEnum::REJECTED;
+
+            if ($isRejected) {
+                $this->paymentService->refundPaymentsForClaim(
+                    $updated,
+                    __('sirsoft-ecommerce::messages.claims.rejected'),
+                );
+            }
+        }
 
         return ['claim' => $updated, 'payment_requested' => false];
     }
@@ -736,6 +763,26 @@ class AdminClaimService
 
         $after = $this->amountSnapshot($updated);
 
+        // **아직 한 푼도 내지 않은 청구는 고친 금액을 따라가야 한다.**
+        //
+        // 예전에는 금액 컬럼만 갱신하고 결제행을 그대로 뒀다. 그래서 운영자가 회수비 3,000원을
+        // 0원으로 낮춰도 구매자 화면에는 3,000원 결제 버튼이 남아 **안 받기로 한 돈을 받을 수**
+        // 있었고, 반대로 청구 0원 신청서를 4,000원으로 올리면 화면은 「미수납 4,000원」이라 적는데
+        // 결제행이 없어 **낼 자리가 없었다**(2026-09-22 #599 3차 실측 L-6·L-7).
+        //
+        // **이미 결제한 건은 건드리지 않는다**(PO 결정 2026-09-23). 초과 수납이 생겨도 자동
+        // 환급하지 않고 운영이 처리한다 — 관리자 금액 수정에 자동 환급을 하기로 한 합의가 없고
+        // (`modules/_bundled/sirsoft-ecommerce/docs/api/admin-claims.md` 의 `updateAmounts` 응답에 환급 기술이 없다), 운영자가 금액을
+        // 고치는 것은 대개 운영상의 판단이기 때문이다.
+        //
+        // 그래서 수납액이 0 일 때만 부른다. 그 조건에서 `settleChargeDifference()` 의 차액은
+        // `total − 0` 이라 **음수가 될 수 없어** 환급 경로(`refundDifference()`)를 구조적으로 타지
+        // 않는다 — 금액을 내리면 대기 건이 갱신·취소되고, 올리면 그 금액으로 만들어진다.
+        if (($updated instanceof OrderExchange || $updated instanceof OrderReturn)
+            && $this->paymentService->paidAmount($updated) <= 0.0) {
+            $this->paymentService->settleChargeDifference($updated);
+        }
+
         if ($before !== $after) {
             $hookType = match (true) {
                 $claim instanceof OrderExchange => ClaimTypeEnum::EXCHANGE->value,
@@ -1004,8 +1051,8 @@ class AdminClaimService
             'blocked_reason' => $preview['blocked_reason'],
             'already_filed' => (bool) ($preview['already_filed']
                 ?? ($preview['blocked_reason'] === 'claim_refund_request_exists')),
-            // 적립 차감은 회원 주문의 완료 대상이 있을 때만 일어난다 (완료 미리보기와 같은 판정).
-            'earn_recovery' => $claim->order?->user_id !== null && $completableIds !== [],
+            // 적립 차감 예고는 완료 미리보기와 같은 판정이다 (`dropsPendingEarn()`).
+            'earn_recovery' => $this->dropsPendingEarn($claim, $completableIds),
             'currency_code' => $currency,
         ];
     }
@@ -1139,7 +1186,7 @@ class AdminClaimService
                 'has_stock_restore_target' => $completion->hasStockRestoreTarget(),
                 'stock_restore_count' => $restoreCount,
                 'stock_discard_count' => max(0, count($completableIds) - $restoreCount),
-                'earn_recovery' => $claim->order?->user_id !== null && $completableIds !== [],
+                'earn_recovery' => $this->dropsPendingEarn($claim, $completableIds),
                 'coupon_restore' => $couponRestore,
                 'refund' => $refund,
             ];
@@ -1344,6 +1391,35 @@ class AdminClaimService
     protected function reload(OrderExchange|OrderReturn $claim): OrderExchange|OrderReturn
     {
         return $claim->fresh([$claim instanceof OrderExchange ? 'exchangeOptions' : 'returnOptions']);
+    }
+
+    /**
+     * 완료하면 **아직 나가지 않은 적립 예정분**이 사라지는 상품이 있는지 판정합니다.
+     *
+     * 「적립 차감」 예고(완료 모달 요약 · 상세 정산 카드)의 근거다. 반품·교환을 완료하면 주문옵션
+     * 상태가 바뀌어 적립 대상 조회에서 빠지므로, 적립 **전**인 상품은 예정분이 나가지 않는다 —
+     * 예고가 맞다. 반면 이미 적립이 나간 상품은 되돌리지 않는다(#599 T2-D13 · PO 결정 2026-09-23
+     * — `UserMileageService::cancelEarnForOption()`). 예전 판정(회원 주문 + 완료 대상 존재)은 그
+     * 결정 뒤에도 남아, 120원이 이미 적립된 상품의 반품에 **일어나지 않을 차감**을 예고했다
+     * (2026-09-23 재실측: 반품 완료 뒤 `earn_cancel` 0건 · 적립 lot 그대로).
+     *
+     * @param  OrderExchange|OrderReturn  $claim  신청서
+     * @param  array<int, int>  $completableIds  완료 대상 신청 상품 행 ID
+     * @return bool 완료 대상 중 적립 전인 주문옵션이 하나라도 있으면 true (비회원 주문은 false)
+     */
+    protected function dropsPendingEarn(OrderExchange|OrderReturn $claim, array $completableIds): bool
+    {
+        if ($claim->order?->user_id === null || $completableIds === []) {
+            return false;
+        }
+
+        $items = $claim instanceof OrderReturn
+            ? $claim->loadMissing('returnOptions')->returnOptions
+            : $claim->loadMissing('exchangeOptions')->exchangeOptions;
+
+        return $items
+            ->filter(fn ($item) => in_array((int) $item->id, $completableIds, true))
+            ->contains(fn ($item) => ! $this->mileageRepository->existsEarnForOption((int) $item->order_option_id));
     }
 
     /**

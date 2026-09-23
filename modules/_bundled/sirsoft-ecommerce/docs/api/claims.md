@@ -35,6 +35,22 @@
 [환불하기]로 송금을 마친다. 자동 전이가 없으므로 그 건의 고객 알림은 `refund_requested`
 1통이 정상이다(자동 전이 건은 마지막 상태에서 1통).
 
+### 접수 시 환불 계좌 요건
+
+**돈이 계좌로 돌아가는 주문은 `refund_bank` 없이 접수되지 않는다** — 무통장입금처럼 사람이
+송금하는 수단과 입금이 끝난 가상계좌 둘 다다. 비면 `422` 이고 오류 키는 `refund_bank`,
+문구는 사람이 송금하는 수단이면 `validation.order.refund_bank_required_for_manual_transfer`,
+가상계좌면 `validation.order.refund_bank_required_for_vbank` 다(관리자 [주문취소]와 같은 두 벌).
+세 칸 중 일부만 채우면 `validation.claims.refund_bank.incomplete` 로 거절된다. 주문 시점에 등록해 둔 계좌
+(`order_payments.refund_bank_code`)가 있으면 그것으로 충분해 요청에 다시 싣지 않아도 된다.
+
+판정은 `claimable-options` 응답의 `refund_account.required` 와 **같은 술어**
+(`OrderRefundRequestService::refundsToBankAccount()`)다. 화면은 그 값으로 계좌 칸을 세우므로,
+칸이 선 주문은 반드시 이 게이트를 지나고 칸이 없는 주문은 이 게이트에 걸리지 않는다.
+
+막지 않으면 계좌가 빈 채로 승인·[환불하기]까지 지나 **돈은 나가지 않았는데 장부만
+`completed`** 로 닫힌다(2026-09-22 #599 3차 실측 L-8).
+
 **돈이 수납된 주문은 예외 없이 환불신청서를 거친다.** 환불할 돈이 없는 주문(미결제·0원)만
 환불신청서 없이 취소신청서가 즉시 생기고, 그때는 `data.claim` 이 취소신청서(`CN…`)다.
 
@@ -203,6 +219,7 @@
 | outstanding_amount_formatted | string | `3,000원` | 미수납액 표기 |
 | pending_payment | object\|null | — | 결제 대기 중인 건 (없으면 `null`) |
 | payment_entry | object\|null | — | 결제 대기 건이 있으면 결제 진입 4키(`requires_pg_payment`, `pg_provider`, `pg_payment_handler`, `pg_payment_data`) — [claim-payments.md](claim-payments.md) 참조 |
+| available_payment_methods | array | `["card", "point"]` | 대기 건을 **지금 낼 수 있는** 결제 수단 값 목록(라벨은 화면이 붙인다). 허용 목록 `claim.charge_payment_methods` 를 신청자 자격(비회원은 마일리지 제외)으로 거른 것으로 `pay()` 와 같은 게이트다. 대기 건이 없으면 `[]`. 대기 건의 수단을 더는 낼 수 없게 됐을 때(마일리지 잔액 부족·운영자가 수단을 내림) 화면이 다른 수단을 골라 `pay` 에 `payment_method` 로 싣는 근거다 |
 
 **주문금액 비교 블록** (상세 응답 전용 — 목록 행에는 키 자체가 없다)
 
@@ -459,7 +476,7 @@ Authorization: Bearer {YOUR_TOKEN}
 
 | 필드 | 타입 | 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
-| claim | object | — | 신청서 상세 ([ClaimResource](#claim-resource)) — 교환·반품은 결제 블록(`payments`, `outstanding_amount`, `pending_payment`, `payment_entry`) 포함 |
+| claim | object | — | 신청서 상세 ([ClaimResource](#claim-resource)) — 교환·반품은 결제 블록(`payments`, `outstanding_amount`, `pending_payment`, `payment_entry`, `available_payment_methods`) 포함 |
 | progress_steps | array | — | 진행단계 스텝퍼. 관리자 상세(`admin/claims/{claimNumber}`)와 **같은 배열**을 같은 규칙으로 만든다 — 항목 필드는 [admin-claims.md](admin-claims.md#progress_steps-항목) 참조 (`value` / `label` / `state` / `icon` / `variant`). 취소는 신청 → 완료 두 칸 |
 
 **응답 예시**

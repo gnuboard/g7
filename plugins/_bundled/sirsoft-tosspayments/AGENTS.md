@@ -164,7 +164,7 @@
 | PHPUnit | 17개 | `plugins/_bundled/sirsoft-tosspayments/tests` |
 | Vitest | 6개 | `vitest.config.ts` |
 | Playwright | 0개 | — |
-| 시나리오 매니페스트 | 4개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 5개 | `tests/scenarios` |
 
 기저 TestCase: `tests/PluginTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

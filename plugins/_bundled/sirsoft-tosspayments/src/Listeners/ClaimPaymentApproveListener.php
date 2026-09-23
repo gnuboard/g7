@@ -7,6 +7,8 @@ namespace Plugins\Sirsoft\Tosspayments\Listeners;
 use App\Contracts\Extension\HookListenerInterface;
 use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Ecommerce\Models\ClaimPayment;
+use Modules\Sirsoft\Ecommerce\Services\ClaimPaymentService;
+use Plugins\Sirsoft\Tosspayments\Exceptions\TossPaymentsApiException;
 use Plugins\Sirsoft\Tosspayments\Services\TossPaymentsApiService;
 
 /**
@@ -43,6 +45,7 @@ class ClaimPaymentApproveListener implements HookListenerInterface
      * 기본 핸들러 (미사용 — 개별 메서드에서 처리)
      *
      * @param  mixed  ...$args  훅 인수
+     * @return void 반환값 없음
      */
     public function handle(...$args): void {}
 
@@ -72,6 +75,30 @@ class ClaimPaymentApproveListener implements HookListenerInterface
         // 이 결제 건에 붙이는 교차 승인을 Confirm 호출 전에 차단한다.
         if ($orderId !== $payment->payment_number) {
             return $this->failure('ORDER_ID_MISMATCH', __('sirsoft-tosspayments::messages.claim.order_id_mismatch'));
+        }
+
+        // 결제창이 열려 있는 동안 청구액은 바뀔 수 있다 — 신청서 수정(사유가 바뀌면 귀책이
+        // 바뀌어 왕복 배송비가 청구에서 빠진다)·관리자 재산정이 모두 `settleChargeDifference()`
+        // 로 결제행 `amount` 를 갱신한다. 낡은 창으로 결제하면 PG 는 옛 금액을 승인한다.
+        //
+        // 그 대조를 승인 **뒤**로 미루면(모듈의 `paidAmountMatches()`) 고객 돈이 실제로 빠져나갔다가
+        // 망취소로 돌아오는 왕복이 생기고, 보상이 실패하면 화면은 실패인데 PG 는 청구된 채 남는다.
+        // 모듈이 통화 축에 이미 같은 원칙을 적어 두었다 — 「진입도 같은 판정으로 닫는다 — 열어
+        // 두면 PG 승인이 확정된 **뒤**에 금액 불일치로 거절되어 망취소 보상이 필요해진다」.
+        // 형제 플러그인 3종(kginicis·nhnkcp·nicepayments)도 승인/서명 전에 같은 대조를 한다.
+        //
+        // 기준을 세울 수 없으면(주문 삭제 등 통화 스냅샷 부재) 통과시키지 않는다 — 근거 없는
+        // "일치" 로 승인을 부르면 그 결과를 되돌릴 방법이 없다.
+        $charge = app(ClaimPaymentService::class)->resolvePaymentCharge($payment);
+
+        if ($charge === null || $amount !== (int) $charge['minor_unit_amount']) {
+            Log::warning('토스페이먼츠 클레임 결제 승인 전 금액 불일치', [
+                'payment_number' => $payment->payment_number,
+                'callback_amount' => $amount,
+                'expected' => $charge['minor_unit_amount'] ?? null,
+            ]);
+
+            return $this->failure('AMOUNT_MISMATCH', __('sirsoft-tosspayments::messages.claim.amount_mismatch'));
         }
 
         try {
@@ -115,13 +142,24 @@ class ClaimPaymentApproveListener implements HookListenerInterface
                 'error_message' => null,
             ];
         } catch (\Exception $e) {
+            // 토스가 거절 코드를 줬으면 그것을 올린다 — 이 값이 결제행 `pg_error_code` 가 되고
+            // 다시 신청서 상세의 「실패 코드 {code}」가 된다. 일반 토큰으로 접으면 한도 초과·
+            // 분실 카드·세션 만료가 전부 같은 실패로 보여, 구매자는 무엇을 바꿔 다시 시도할지
+            // 알 수 없고 관리자도 건을 구분하지 못한다 (#599 3차 실측 F-5).
+            //
+            // 응답을 얻지 못한 실패(네트워크 단절 등)에는 코드가 없다 — 그때만 `PG_API_ERROR`
+            // 다. 그 자리는 「거절당했다」가 아니라 「PG 와 통신 자체가 실패했다」는 별개의 사실이다.
+            $pgCode = $e instanceof TossPaymentsApiException ? $e->getPgCode() : null;
+            $pgBody = $e instanceof TossPaymentsApiException ? $e->getPgBody() : null;
+
             Log::error('토스페이먼츠 클레임 결제 승인 실패', [
                 'payment_number' => $payment->payment_number,
                 'payment_key' => $paymentKey,
+                'pg_code' => $pgCode,
                 'error' => $e->getMessage(),
             ]);
 
-            return $this->failure('PG_API_ERROR', $e->getMessage());
+            return $this->failure($pgCode ?? 'PG_API_ERROR', $e->getMessage(), $pgBody);
         }
     }
 

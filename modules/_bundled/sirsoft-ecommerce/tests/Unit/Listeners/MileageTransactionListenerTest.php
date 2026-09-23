@@ -18,6 +18,11 @@ class MileageTransactionListenerTest extends ModuleTestCase
 {
     private MileageTransactionListener $listener;
 
+    /**
+     * 리스너와 마일리지 설정을 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -25,6 +30,11 @@ class MileageTransactionListenerTest extends ModuleTestCase
         $this->listener = app(MileageTransactionListener::class);
     }
 
+    /**
+     * 테스트가 쓴 마일리지 설정 파일을 지웁니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         $file = storage_path('framework/testing/modules/sirsoft-ecommerce/settings/mileage.json');
@@ -38,6 +48,7 @@ class MileageTransactionListenerTest extends ModuleTestCase
      * 마일리지 설정 파일을 작성합니다.
      *
      * @param  array  $overrides  덮어쓸 값
+     * @return void 반환값 없음
      */
     private function writeMileageSettings(array $overrides = []): void
     {
@@ -64,7 +75,7 @@ class MileageTransactionListenerTest extends ModuleTestCase
      *
      * @param  array  $orderOverrides  주문 덮어쓸 값
      * @param  float  $earnAmount  적립 예정액
-     * @return array{0: Order, 1: OrderOption}
+     * @return array{0: Order, 1: OrderOption} 주문과 적립 대상 주문옵션 한 쌍
      */
     private function makeOrderWithOption(array $orderOverrides = [], float $earnAmount = 200): array
     {
@@ -77,6 +88,12 @@ class MileageTransactionListenerTest extends ModuleTestCase
 
     /**
      * trigger=confirmed + delay=0 → after_confirm 즉시 적립.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario event=confirm_with_confirmed_trigger
+     *
+     * @effects mileage_earns_on_confirm_when_trigger_is_confirmed
      */
     public function test_earns_on_after_confirm_when_trigger_confirmed(): void
     {
@@ -92,6 +109,12 @@ class MileageTransactionListenerTest extends ModuleTestCase
 
     /**
      * trigger=delivered → after_confirm 은 적립하지 않는다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario event=confirm_with_delivered_trigger
+     *
+     * @effects mileage_skips_confirm_earn_when_trigger_is_delivered
      */
     public function test_does_not_earn_on_confirm_when_trigger_delivered(): void
     {
@@ -109,6 +132,12 @@ class MileageTransactionListenerTest extends ModuleTestCase
 
     /**
      * delay>0 → after_confirm 즉시 적립 스킵 (스케줄러 담당).
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario event=confirm_with_delay
+     *
+     * @effects mileage_defers_immediate_earn_when_delay_is_positive
      */
     public function test_skips_immediate_earn_when_delay_positive(): void
     {
@@ -125,6 +154,12 @@ class MileageTransactionListenerTest extends ModuleTestCase
 
     /**
      * trigger=delivered → 배송완료 상태 변경 시 적립.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario event=delivered_with_delivered_trigger
+     *
+     * @effects mileage_earns_on_delivered_when_trigger_is_delivered
      */
     public function test_earns_on_delivered_status_change_when_trigger_delivered(): void
     {
@@ -141,9 +176,23 @@ class MileageTransactionListenerTest extends ModuleTestCase
     }
 
     /**
-     * 취소 전이 시 기적립 회수(earn_cancel).
+     * 이미 적립이 끝난 건은 취소 전이에서도 회수하지 않는다. (PO 결정 2026-09-23)
+     *
+     * 원장에 기록이 확정된 적립은 되돌리지 않는다 — 운영자가 반품·교환·취소를 늦게 처리해
+     * 적립이 먼저 나간 것은 운영의 책임이고, 그 뒤 회수를 시도하면 **이미 소멸했거나 쓴 적립을
+     * 살아 있는 다른 적립에서 대신 빼 오게 된다**(2026-09-22 #599 3차 실측 L-1 · T2-D13:
+     * 만료로 잔여 0 이 된 1,260원 lot 을 회수하자 관리자 지급 lot 이 34,000 → 32,740 으로 깎였다).
+     *
+     * 부분 반품에서 적립 lot 이 분할 전 금액을 그대로 들고 있어 과다 회수되던 것도 함께 사라진다 —
+     * 회수 자체를 하지 않기 때문이다. 적립 **전**이면 lot 이 없어 원래부터 no-op 이라 분기가 필요 없다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario event=cancel_transition_after_earn
+     *
+     * @effects mileage_cancel_transition_keeps_the_earned_mileage
      */
-    public function test_cancels_earn_on_cancelled_status_change(): void
+    public function test_does_not_cancel_earn_on_cancelled_status_change(): void
     {
         [$order, $option] = $this->makeOrderWithOption();
         // 먼저 적립
@@ -153,17 +202,35 @@ class MileageTransactionListenerTest extends ModuleTestCase
             'type' => MileageTransactionTypeEnum::PURCHASE_EARN->value,
         ]);
 
-        // 취소 전이 → 회수
+        $earnLot = MileageTransaction::query()
+            ->where('order_option_id', $option->id)
+            ->where('type', MileageTransactionTypeEnum::PURCHASE_EARN->value)
+            ->firstOrFail();
+
+        // 취소 전이 → 회수하지 않는다
         $this->listener->handleAfterStatusChange($option, OrderStatusEnum::CANCELLED, null);
 
-        $this->assertDatabaseHas('ecommerce_mileage_transactions', [
+        $this->assertDatabaseMissing('ecommerce_mileage_transactions', [
             'order_option_id' => $option->id,
             'type' => MileageTransactionTypeEnum::EARN_CANCEL->value,
         ]);
+
+        // 적립 lot 의 잔여도 그대로여야 한다 — 자기 lot 에서 빼는 것도 회수다.
+        $this->assertSame(
+            (float) $earnLot->remaining_amount,
+            (float) $earnLot->fresh()->remaining_amount,
+            '적립 lot 의 잔여가 바뀌었다 — 회수가 일어났다',
+        );
     }
 
     /**
      * 사용 차감 핸들러가 FIFO 차감을 수행한다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario event=use_deduction
+     *
+     * @effects mileage_use_deducts_the_balance_in_fifo_order
      */
     public function test_handle_use_deducts_balance(): void
     {
@@ -184,6 +251,12 @@ class MileageTransactionListenerTest extends ModuleTestCase
 
     /**
      * 복원 핸들러 — order_cancel_id 부재 시 무시.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario event=restore_without_cancel_id
+     *
+     * @effects mileage_restore_is_ignored_without_a_cancel_id
      */
     public function test_handle_restore_ignores_when_no_cancel_id(): void
     {
@@ -200,6 +273,12 @@ class MileageTransactionListenerTest extends ModuleTestCase
 
     /**
      * getSubscribedHooks 가 5개 훅을 구독한다 (mileage.earn 미구독).
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario event=subscribed_hooks
+     *
+     * @effects mileage_listener_subscribes_the_declared_hooks
      */
     public function test_subscribed_hooks(): void
     {

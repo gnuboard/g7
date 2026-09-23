@@ -11,6 +11,7 @@ return [
         'invalid_callback' => '클레임 결제 승인에 필요한 콜백 파라미터(paymentKey, orderId, amount)가 없습니다.',
         'order_id_mismatch' => '콜백의 주문번호가 승인 대상 클레임 결제번호와 일치하지 않습니다.',
         'deposit_not_supported' => '클레임 추가결제는 입금 대기 방식(가상계좌)을 지원하지 않습니다.',
+        'amount_mismatch' => '결제창을 연 뒤 청구액이 변경되었습니다. 신청서에서 결제를 다시 시작해 주세요.',
         'amount_mismatch_cancel_reason' => '클레임 결제 승인 금액 불일치에 따른 자동 취소',
     ],
     'refund' => [

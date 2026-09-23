@@ -263,8 +263,13 @@ export async function claimApplyOrderMissingHandler(
  * @example
  * {
  *   "handler": "sirsoft-ecommerce.initClaimEdit",
- *   "params": { "claimApiBase": "/api/modules/sirsoft-ecommerce/user/claims", "isGuest": false }
+ *   "params": { "claimApiBase": "/api/modules/sirsoft-ecommerce/user/claims", "isGuest": false, "detailPath": "/mypage/claims/EX20260901-0001" }
  * }
+ *
+ * 승인 이후의 신청서(`is_editable: false`)는 수정 폼을 세우지 않는다 — 안내 토스트를 띄우고
+ * `detailPath`(신청서 상세)로 돌려보낸다(#599 T2-D7 · PO 결정 2026-09-23: 승인 이후 수정은
+ * 구매자는 못 하고 관리자만 한다). 서버도 같은 경우를 422(`claim_not_editable`)로 막지만,
+ * 화면이 먼저 막지 않으면 구매자는 다 고쳐 쓴 뒤에야 거절을 받는다.
  *
  * @param action 액션 객체
  * @param _context 액션 컨텍스트
@@ -285,7 +290,7 @@ function resolveRefundPriorityFromClaim(claim: any): string {
 }
 
 export async function initClaimEditHandler(
-    action: ActionWithParams<{ claimApiBase?: string; isGuest?: boolean }>,
+    action: ActionWithParams<{ claimApiBase?: string; isGuest?: boolean; detailPath?: string }>,
     _context: ActionContext
 ): Promise<void> {
     const G7Core = (window as any).G7Core;
@@ -318,6 +323,24 @@ export async function initClaimEditHandler(
 
         if (!claim) {
             throw new Error(response?.message ?? 'Claim not found');
+        }
+
+        // 승인 이후의 신청서는 구매자가 고칠 수 없다(T2-D7) — 폼을 세우지 않고 상세로 돌려보낸다.
+        // `=== false` 로 본다: 필드가 없는 응답(구버전 서버)은 지금처럼 열고 서버 422 에 맡긴다.
+        if (claim.is_editable === false) {
+            G7Core.state.setLocal({ claimEditMode: false, claimEditLoading: false });
+            G7Core.toast?.warning?.(
+                G7Core.t?.('claim.edit.not_editable')
+                    ?? '승인 이후에는 신청 내용을 수정할 수 없습니다.'
+            );
+
+            const detailPath = String(action.params?.detailPath ?? '');
+
+            if (detailPath) {
+                await G7Core.dispatch?.({ handler: 'navigate', params: { path: detailPath } });
+            }
+
+            return;
         }
 
         G7Core.state.setLocal({

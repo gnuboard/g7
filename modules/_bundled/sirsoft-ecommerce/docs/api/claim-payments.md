@@ -263,7 +263,14 @@ Content-Type: application/json
    `claim_payment.approve` 필터가 발화하므로, 플러그인의 승인 구현은 필터 리스너 **한 곳**이면
    서버 콜백 경로와 API 승인 경로(`claim-payments/{no}/approve`)를 모두 받칩니다. 실패는
    `OrderClaimException` 으로 옵니다 — 승인 금액 불일치(`claim_payment_amount_mismatch`)처럼 PG
-   승인이 확정된 뒤의 거절은 플러그인이 망취소 등으로 보상해야 합니다.
+   승인이 확정된 뒤의 거절은 플러그인이 망취소 등으로 보상해야 합니다. 그래서 콜백 금액은
+   **승인 API 를 부르기 전에** `resolvePaymentCharge($payment)['minor_unit_amount']` 와 대조해 다르면
+   승인 없이 실패(`error_code` 예: `AMOUNT_MISMATCH`)로 돌려주는 편이 맞습니다 — 결제창을 연 사이
+   청구액이 바뀌면 낡은 창의 금액이 들어오고, 뒤에서 거절하면 돈이 빠져나갔다가 돌아오는 왕복이
+   생깁니다(토스페이먼츠·KG 이니시스·NHN KCP·나이스페이먼츠 모두 승인 전에 대조합니다).
+   필터 결과의 `error_code` 는 코드 모양(`[A-Za-z0-9_.-]{1,50}`)이면 **그대로** 아래 `?error=` 가
+   됩니다 — PG 가 준 거절 코드를 싣고, 응답을 받지 못한 통신 실패에만 일반 코드를 쓰십시오.
+   코드 모양이 아닌 값은 받지 않고 `failed` 로 바뀝니다(배너에 그대로 그려지는 값이라서입니다).
 3. **복귀** — 처리 후 브라우저는 주문 완료 화면이 아니라 신청서 상세로 돌려보냅니다.
    `Modules\Sirsoft\Ecommerce\Support\ClaimPaymentRedirect::success($payment)` /
    `::fail($payment, $errorCode)` 가 회원(`/mypage/claims/{번호}`)·비회원(상점 경로의

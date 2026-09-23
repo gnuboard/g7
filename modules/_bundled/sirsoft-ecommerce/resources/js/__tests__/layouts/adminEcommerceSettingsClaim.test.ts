@@ -288,6 +288,25 @@ describe('클레임 정책 — defaults 의 스칼라 축 전부가 편집 통�
                 .not.toContain(`"value":"${builtin}"`);
         }
     });
+
+    /**
+     * @effects settings_claim_charge_payment_method_options_do_not_filter_by_order_catalog_active
+     */
+    it('추가결제 수단 선택지는 주문 카탈로그의 is_active 로 거르지 않는다', () => {
+        // 클레임 추가결제 수단은 주문 결제수단과 **다른 키**(`claim.charge_payment_methods`)이고,
+        // 서버도 `PaymentMethodResolver::allValidIds()` 로만 검증해 활성 여부를 보지 않는다.
+        // 화면만 `is_active` 로 거르면 두 가지가 동시에 깨진다:
+        //   ① 이미 저장된 비활성 수단이 선택지 모집단 밖이라 라벨을 못 찾아 **원문 키**로 찍힌다
+        //      (2026-09-22 실측: 기본값 `point` 가 「포인트결제」 대신 `point` 로 노출).
+        //   ② 운영자가 그 태그를 ✕ 로 한 번 지우면 선택지에도 없어 **이 화면에서 다시 고를 수 없다**
+        //      — 마일리지 추가결제 경로가 화면에서 사라지고, 주문설정 탭을 먼저 켜라는 안내도 없다.
+        // 같은 파일의 「환불 자동 승인 결제수단」이 `is_active` 로 거르지 않는 것과 같은 이유다.
+        const node = findNode(claimPolicy, (n: any) => n?.props?.name === 'claim.charge_payment_methods');
+
+        expect(node).toBeDefined();
+        expect(String(node.props.options), '선택지가 주문 카탈로그의 is_active 로 걸러진다')
+            .not.toContain('is_active');
+    });
 });
 
 /**

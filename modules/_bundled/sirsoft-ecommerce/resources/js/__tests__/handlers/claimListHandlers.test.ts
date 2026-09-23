@@ -65,6 +65,7 @@ describe('claimListHandlers', () => {
         (window as any).G7Core = mockG7Core;
     });
 
+    /** @effects claim_withdraw_modal_target_lifecycle */
     it('열기 — 대상 클레임 번호를 세우고 모달을 연다', () => {
         openClaimWithdrawHandler(
             { handler: 'openClaimWithdraw', params: { claimNumber: 'RT20260901-0001', claimLabel: '반품' } },
@@ -77,6 +78,7 @@ describe('claimListHandlers', () => {
         expect(mockG7Core.modal.open).toHaveBeenCalledWith('modal_claim_withdraw');
     });
 
+    /** @effects claim_withdraw_modal_target_lifecycle */
     it('열기 — 대상이 없으면 열지 않는다 (확인 버튼이 아무것도 가리키지 않는 모달을 만들지 않는다)', () => {
         openClaimWithdrawHandler({ handler: 'openClaimWithdraw', params: {} }, {} as any);
 
@@ -84,6 +86,7 @@ describe('claimListHandlers', () => {
         expect(mockLocalState.withdrawClaimNumber).toBeUndefined();
     });
 
+    /** @effects claim_withdraw_modal_target_lifecycle */
     it('닫기 — 대상·오류를 함께 지운다 (다음에 다른 신청서로 열 때 앞 대상이 남지 않는다)', () => {
         mockLocalState = {
             withdrawClaimNumber: 'RT20260901-0001',
@@ -101,6 +104,7 @@ describe('claimListHandlers', () => {
         expect(mockG7Core.modal.close).toHaveBeenCalledWith('modal_claim_withdraw');
     });
 
+    /** @effects claim_withdraw_handler_channel_contract */
     it('철회 — 성공하면 모달을 닫고 목록을 다시 부른다', async () => {
         mockLocalState = { withdrawClaimNumber: 'RT20260901-0001' };
         mockG7Core.api.post.mockResolvedValue({ success: true, message: '철회되었습니다.' });
@@ -128,6 +132,7 @@ describe('claimListHandlers', () => {
         });
     });
 
+    /** @effects claim_withdraw_handler_channel_contract */
     it('비회원 철회는 주문 스코프 주소를 그대로 쓴다 (셸이 준 앞부분에 번호만 잇는다)', async () => {
         mockLocalState = { withdrawClaimNumber: 'RT20260901-0001' };
         mockG7Core.state.get = vi.fn(() => ({ guestOrderToken: 'guest-token-1' })) as any;
@@ -143,6 +148,7 @@ describe('claimListHandlers', () => {
         );
     });
 
+    /** @effects claim_withdraw_handler_channel_contract */
     it('철회 — 셸이 주소를 주지 않으면 보내지 않는다 (잘못된 주소로 보내는 것보다 낫다)', async () => {
         mockLocalState = { withdrawClaimNumber: 'RT20260901-0001' };
 
@@ -151,6 +157,7 @@ describe('claimListHandlers', () => {
         expect(mockG7Core.api.post).not.toHaveBeenCalled();
     });
 
+    /** @effects claim_withdraw_handler_channel_contract */
     it('철회 — 대상이 없으면 아무것도 보내지 않는다', async () => {
         mockLocalState = {};
 
@@ -162,6 +169,7 @@ describe('claimListHandlers', () => {
         expect(mockG7Core.api.post).not.toHaveBeenCalled();
     });
 
+    /** @effects claim_withdraw_handler_channel_contract */
     it('철회 — 진행 중이면 두 번째 클릭은 나가지 않는다 (성공한 철회 뒤에 실패 안내가 뜨지 않는다)', async () => {
         mockLocalState = { withdrawClaimNumber: 'RT20260901-0001', isWithdrawingClaim: true };
 
@@ -173,6 +181,7 @@ describe('claimListHandlers', () => {
         expect(mockG7Core.api.post).not.toHaveBeenCalled();
     });
 
+    /** @effects claim_withdraw_handler_channel_contract */
     it('철회 거절(409) — 사유를 모달 안에 남기고 토스트는 띄우지 않는다', async () => {
         mockLocalState = { withdrawClaimNumber: 'RT20260901-0001' };
         mockG7Core.api.post.mockRejectedValue({
@@ -192,6 +201,7 @@ describe('claimListHandlers', () => {
         expect(mockLocalState.withdrawClaimNumber).toBe('RT20260901-0001');
     });
 
+    /** @effects claim_pay_handler_address_and_guards */
     it('서버 장애(500) — 화면에 남길 상태가 아니므로 토스트로만 알린다', async () => {
         mockLocalState = { withdrawClaimNumber: 'RT20260901-0001' };
         mockG7Core.api.post.mockRejectedValue({
@@ -207,6 +217,7 @@ describe('claimListHandlers', () => {
         expect(mockG7Core.toast.error).toHaveBeenCalledWith('Server Error');
     });
 
+    /** @effects claim_withdraw_handler_channel_contract */
     it('비회원 — 셸이 선언한 값으로만 토큰 헤더가 붙는다 (핸들러가 로그인 여부를 판단하지 않는다)', async () => {
         mockLocalState = { withdrawClaimNumber: 'RT20260901-0001' };
         mockG7Core.state.get = vi.fn(() => ({ guestOrderToken: 'guest-token-1' })) as any;
@@ -226,6 +237,7 @@ describe('claimListHandlers', () => {
     // 미수납 추가결제 (승인 시점 결제)
     // ───────────────────────────────────────────────
 
+    /** @effects claim_pay_handler_address_and_guards */
     it('결제 — 셸이 준 앞부분에 결제번호만 잇는다 (핸들러가 주소를 조립하지 않는다)', async () => {
         mockG7Core.api.post.mockResolvedValue({ success: true, data: { requires_pg_payment: false } });
 
@@ -237,6 +249,7 @@ describe('claimListHandlers', () => {
         expect(mockG7Core.api.post.mock.calls[0][0]).toBe(MEMBER_PAY_BASE + '/CP20260901-0001/pay');
     });
 
+    /** @effects claim_pay_handler_address_and_guards */
     it('결제 — 비회원 앞부분도 그대로 쓴다 (주문 스코프가 붙은 모양)', async () => {
         mockG7Core.api.post.mockResolvedValue({ success: true, data: { requires_pg_payment: false } });
 
@@ -248,7 +261,8 @@ describe('claimListHandlers', () => {
         expect(mockG7Core.api.post.mock.calls[0][0]).toBe(GUEST_PAY_BASE + '/CP20260901-0001/pay');
     });
 
-    it('결제 — 결제 수단을 실어 보내지 않는다 (서버가 결제 대기 건에 확정해 둔 값을 쓴다)', async () => {
+    /** @effects claim_pay_handler_sends_the_chosen_method */
+    it('결제 — 수단을 주지 않으면 빈 본문으로 보낸다 (서버가 결제 대기 건에 확정해 둔 값을 쓴다)', async () => {
         mockG7Core.api.post.mockResolvedValue({ success: true, data: { requires_pg_payment: false } });
 
         await payClaimOutstandingHandler(
@@ -259,6 +273,30 @@ describe('claimListHandlers', () => {
         expect(mockG7Core.api.post.mock.calls[0][1]).toEqual({});
     });
 
+    /**
+     * 화면이 고른 수단을 서버로 넘기는 축.
+     *
+     * 대기 건의 수단은 접수 때 확정되지만 그 뒤에 낼 수 없게 될 수 있다 — 마일리지 잔액 부족,
+     * 운영자가 그 수단을 내림. 그때 화면이 다른 수단을 골라도 핸들러가 실어 보내지 않으면 서버는
+     * 여전히 대기 건의 옛 수단으로 판정해 같은 거절을 돌려준다(#599 3차 실측 F-1·F-2).
+     * @effects claim_pay_handler_sends_the_chosen_method
+     *
+     */
+    it('결제 — 화면이 고른 수단은 실어 보낸다 (수단을 바꿔 다시 낼 수 있어야 한다)', async () => {
+        mockG7Core.api.post.mockResolvedValue({ success: true, data: { requires_pg_payment: false } });
+
+        await payClaimOutstandingHandler(
+            {
+                handler: 'payClaimOutstanding',
+                params: { payApiBase: MEMBER_PAY_BASE, paymentNumber: 'CP20260901-0001', paymentMethod: 'card' },
+            },
+            {} as any
+        );
+
+        expect(mockG7Core.api.post.mock.calls[0][1]).toEqual({ payment_method: 'card' });
+    });
+
+    /** @effects claim_pay_handler_address_and_guards */
     it('결제 — 주소나 결제번호가 없으면 보내지 않는다', async () => {
         await payClaimOutstandingHandler(
             { handler: 'payClaimOutstanding', params: { payApiBase: '', paymentNumber: 'CP20260901-0001' } },
@@ -272,6 +310,7 @@ describe('claimListHandlers', () => {
         expect(mockG7Core.api.post).not.toHaveBeenCalled();
     });
 
+    /** @effects claim_pay_handler_address_and_guards */
     it('결제 — PG 가 필요하면 그 플러그인 핸들러로 파라미터를 넘긴다', async () => {
         mockG7Core.api.post.mockResolvedValue({
             success: true,
@@ -297,6 +336,7 @@ describe('claimListHandlers', () => {
         expect(mockG7Core.dispatch).toHaveBeenCalledTimes(1);
     });
 
+    /** @effects claim_pay_handler_address_and_guards */
     it('결제 — 마일리지 즉시 결제는 그 자리에서 끝나고 상세를 다시 읽는다', async () => {
         mockG7Core.api.post.mockResolvedValue({
             success: true,
@@ -317,6 +357,7 @@ describe('claimListHandlers', () => {
         });
     });
 
+    /** @effects claim_pay_handler_address_and_guards */
     it('결제 — 더블클릭으로 두 번 나가지 않는다', async () => {
         mockLocalState = { isPayingClaim: true };
 
@@ -328,6 +369,7 @@ describe('claimListHandlers', () => {
         expect(mockG7Core.api.post).not.toHaveBeenCalled();
     });
 
+    /** @effects claim_withdraw_handler_channel_contract */
     it('결제 — 4xx 는 화면에 남기고 5xx 는 토스트로 알린다 (철회와 같은 채널 규약)', async () => {
         mockG7Core.api.post.mockRejectedValue({ response: { status: 422, data: { message: '결제할 수 있는 상태가 아닙니다.' } } });
 

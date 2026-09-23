@@ -967,6 +967,8 @@ describe('환불 실행 (D18·D19)', () => {
             refundBankName: '',
             refundBankAccount: '',
             refundBankHolder: '',
+            // 계좌가 필요한지는 서버가 답한다 — 파라미터가 없으면 「필요 없음」이다.
+            refundAccountRequired: false,
         });
         expect(mockG7Core.modal.open).toHaveBeenCalledWith('modal_claim_refund_execute');
     });
@@ -1000,6 +1002,118 @@ describe('환불 실행 (D18·D19)', () => {
             refundBankAccount: '110234567890',
             refundBankHolder: '홍길동',
         });
+    });
+
+    /**
+     * 창을 열 때마다 계좌 칸과 동의를 **비운다**. (T2-D6)
+     *
+     * 전역 상태라 앞 신청서에서 적은 값이 그대로 남는다 — 비우지 않으면 운영자가 손대지 않고
+     * [환불하기]를 눌렀을 때 **엉뚱한 계좌로 송금 기록이 남고**, 켜 둔 동의가 다음 건에서
+     * 그대로 살아 있어 계좌를 적지 않은 건이 조용히 직권 완료된다.
+     *
+     * @scenario claim_type=refund, cancellable=present
+     * @effects claim_refund_execute_modal_clears_the_bank_inputs_on_open
+     */
+    it('창을 열 때 앞 건의 계좌 입력과 동의를 비운다', async () => {
+        mockGlobalState.claimRefundExecuteBankCode = '004';
+        mockGlobalState.claimRefundExecuteBankAccount = '110234567890';
+        mockGlobalState.claimRefundExecuteBankHolder = '홍길동';
+        mockGlobalState.claimRefundExecuteForce = true;
+
+        await openClaimRefundExecuteHandler(
+            { handler: 'sirsoft-ecommerce.openClaimRefundExecute', params: REFUND_TARGET },
+            mockContext,
+        );
+
+        expect(mockGlobalState.claimRefundExecuteBankCode).toBe('');
+        expect(mockGlobalState.claimRefundExecuteBankAccount).toBe('');
+        expect(mockGlobalState.claimRefundExecuteBankHolder).toBe('');
+        expect(mockGlobalState.claimRefundExecuteForce).toBe(false);
+    });
+
+    /**
+     * 서버가 「계좌가 필요하다」고 답하면 그 사실을 모달 문맥에 싣는다. (T2-D6)
+     *
+     * 화면이 결제수단 코드로 재현하면 확장 결제수단에서 갈린다 — 판정은 서버 것 하나다.
+     *
+     * @scenario claim_type=refund, cancellable=present
+     * @effects claim_refund_execute_seeds_modal_context
+     */
+    it('서버가 계좌를 요구하면 그 사실을 모달 문맥에 싣는다', async () => {
+        await openClaimRefundExecuteHandler(
+            {
+                handler: 'sirsoft-ecommerce.openClaimRefundExecute',
+                params: { ...REFUND_TARGET, refundMethod: 'bank', refundAccountRequired: true },
+            },
+            mockContext,
+        );
+
+        expect(mockGlobalState.claimRefundExecuteContext).toMatchObject({ refundAccountRequired: true });
+    });
+
+    /**
+     * 창에서 적은 계좌가 실행 본문에 실린다. (T2-D6)
+     *
+     * 따로 저장 왕복을 시키면 「계좌는 저장됐는데 실행은 실패한」 반쪽 상태가 생긴다 —
+     * 한 번의 실행 본문으로 보내 서버가 같은 트랜잭션에 넣는다.
+     *
+     * @scenario claim_type=refund, cancellable=present
+     * @effects claim_refund_execute_body_carries_the_typed_bank_account
+     */
+    it('창에서 적은 계좌를 실행 본문에 싣는다', async () => {
+        mockGlobalState.claimRefundExecuteContext = {
+            claimId: 12,
+            refundAmount: 10000,
+            refundPointsAmount: 0,
+            refundMethod: 'bank',
+            refundAccountRequired: true,
+        };
+        mockGlobalState.claimRefundExecuteBankCode = '004';
+        mockGlobalState.claimRefundExecuteBankAccount = '110234567890';
+        mockGlobalState.claimRefundExecuteBankHolder = '홍길동';
+
+        await executeClaimRefundHandler(
+            { handler: 'sirsoft-ecommerce.executeClaimRefund', params: {} },
+            mockContext,
+        );
+
+        const [, body] = mockG7Core.api.post.mock.calls.at(-1) ?? [];
+        expect(body).toMatchObject({
+            refund_bank: { bank_code: '004', account_number: '110234567890', holder: '홍길동' },
+        });
+        expect(body).not.toHaveProperty('force_without_refund_bank');
+    });
+
+    /**
+     * 동의를 켜면 계좌 대신 **동의만** 실린다. (T2-D6 · PO 결정 2026-09-23)
+     *
+     * 둘을 함께 보내면 무엇이 실행됐는지 기록이 두 가지로 읽힌다 — 계좌를 적어 송금한 건인지
+     * 계좌 없이 장부만 닫은 건인지 뒤에 가려낼 수 없다.
+     *
+     * @scenario claim_type=refund, cancellable=present
+     * @effects claim_refund_execute_body_carries_the_force_consent
+     */
+    it('동의를 켜면 계좌 대신 동의만 싣는다', async () => {
+        mockGlobalState.claimRefundExecuteContext = {
+            claimId: 12,
+            refundAmount: 10000,
+            refundPointsAmount: 0,
+            refundMethod: 'bank',
+            refundAccountRequired: true,
+        };
+        mockGlobalState.claimRefundExecuteBankCode = '004';
+        mockGlobalState.claimRefundExecuteBankAccount = '110234567890';
+        mockGlobalState.claimRefundExecuteBankHolder = '홍길동';
+        mockGlobalState.claimRefundExecuteForce = true;
+
+        await executeClaimRefundHandler(
+            { handler: 'sirsoft-ecommerce.executeClaimRefund', params: {} },
+            mockContext,
+        );
+
+        const [, body] = mockG7Core.api.post.mock.calls.at(-1) ?? [];
+        expect(body).toMatchObject({ force_without_refund_bank: true });
+        expect(body).not.toHaveProperty('refund_bank');
     });
 
     /**

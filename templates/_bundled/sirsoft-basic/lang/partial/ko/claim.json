@@ -76,6 +76,7 @@
     "refund_account_number_placeholder": "계좌번호 (- 없이 숫자만)",
     "refund_account_holder_placeholder": "예금주",
     "refund_account_all_required": "은행·계좌번호·예금주를 모두 입력해 주세요.",
+    "refund_account_required_to_submit": "환불받을 계좌를 입력해야 신청할 수 있습니다. 이 주문은 계좌로 환불됩니다.",
     "submit_cancel": "주문 취소하기",
     "submit_refund": "환불 신청하기",
     "comparison": {
@@ -132,6 +133,7 @@
     "select_option_required": "교환받을 옵션을 선택해 주세요.",
     "custom_options": "추가 옵션",
     "out_of_stock": "선택한 옵션의 재고가 없습니다.",
+    "unavailable": "선택한 옵션은 지금 교환받을 수 없습니다. 다른 옵션을 골라 주세요.",
     "difference_notice": "옵션 차액은 신청 요약에서 확정됩니다.",
     "load_failed": "교환 가능한 옵션을 불러오지 못했습니다.",
     "apply": "적용",
@@ -139,6 +141,7 @@
   },
   "image": {
     "upload_failed": "사진 업로드에 실패했습니다.",
+    "upload_partial_failed": "사진 {{total}}장 중 {{failed}}장을 올리지 못했습니다. 신청서에서 다시 첨부해 주세요.",
     "limit_exceeded": "사진은 최대 {{max}}장까지 첨부할 수 있습니다.",
     "size_exceeded": "사진 1장은 {{size}}KB 를 넘을 수 없습니다.",
     "remove_failed": "첨부 삭제에 실패했습니다."
@@ -277,6 +280,7 @@
     "refund_account_hint": "계좌를 바꾸려면 아래에 다시 입력해 주세요. 비워 두면 지금 기록된 계좌가 그대로 유지됩니다.",
     "save": "저장",
     "save_success": "신청 내용이 수정되었습니다.",
-    "save_failed": "신청 내용 수정에 실패했습니다."
+    "save_failed": "신청 내용 수정에 실패했습니다.",
+    "not_editable": "승인 이후에는 신청 내용을 수정할 수 없습니다. 변경이 필요하면 고객센터로 문의해 주세요."
   }
 }

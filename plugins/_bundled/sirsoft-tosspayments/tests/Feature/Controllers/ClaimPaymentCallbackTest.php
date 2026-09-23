@@ -31,6 +31,11 @@ class ClaimPaymentCallbackTest extends PluginTestCase
 {
     private static int $sequence = 0;
 
+    /**
+     * 테스트마다 이 플러그인의 승인 리스너를 훅에 다시 겁니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -44,6 +49,11 @@ class ClaimPaymentCallbackTest extends PluginTestCase
         );
     }
 
+    /**
+     * 플러그인 설정을 테스트 모드 고정값으로 대체합니다.
+     *
+     * @return void 반환값 없음
+     */
     private function mockPluginSettings(): void
     {
         $settingsMock = $this->createMock(PluginSettingsService::class);
@@ -61,7 +71,7 @@ class ClaimPaymentCallbackTest extends PluginTestCase
      * 결제 대기 클레임 결제 건을 만듭니다. (반품 신청서 + 주문 통화 스냅샷 동반)
      *
      * @param  bool  $guest  비회원 주문 여부
-     * @return array{order: Order, return: OrderReturn, payment: ClaimPayment}
+     * @return array{order: Order, return: OrderReturn, payment: ClaimPayment} 주문·신청서·결제 대기 건
      */
     private function makePendingClaimPayment(bool $guest = false): array
     {
@@ -101,6 +111,14 @@ class ClaimPaymentCallbackTest extends PluginTestCase
         return ['order' => $order, 'return' => $return, 'payment' => $payment];
     }
 
+    /**
+     * 토스 Confirm API 응답을 가짜로 세웁니다.
+     *
+     * @param  string  $paymentKey  승인 응답에 실을 결제 키
+     * @param  string  $orderId  승인 응답에 실을 주문 식별자 (CP 채번)
+     * @param  int  $amount  승인 금액
+     * @return void 반환값 없음
+     */
     private function fakeConfirmApi(string $paymentKey, string $orderId, int $amount): void
     {
         Http::fake([
@@ -113,6 +131,13 @@ class ClaimPaymentCallbackTest extends PluginTestCase
         ]);
     }
 
+    /**
+     * CP 채번 성공 콜백이 주문 분기를 타지 않고 클레임 결제를 확정하는지 검증합니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @effects claim_payment_callback_resolves_cp_number_without_order
+     */
     public function test_success_callback_with_a_claim_payment_number_confirms_the_claim_payment_without_an_order(): void
     {
         $this->mockPluginSettings();
@@ -133,6 +158,13 @@ class ClaimPaymentCallbackTest extends PluginTestCase
         $this->assertSame('pk_claim_cb_1', $fresh->transaction_id);
     }
 
+    /**
+     * 비회원 주문의 클레임 결제는 주문 조회 화면으로 돌아가는지 검증합니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @effects claim_payment_callback_returns_guest_to_order_lookup
+     */
     public function test_success_callback_for_a_guest_order_redirects_to_the_guest_claim_detail(): void
     {
         $this->mockPluginSettings();
@@ -149,6 +181,13 @@ class ClaimPaymentCallbackTest extends PluginTestCase
         $this->assertSame(ClaimPaymentStatusEnum::PAID, $payment->fresh()->payment_status);
     }
 
+    /**
+     * 승인 거절 시 토스가 준 코드를 복귀 주소와 결제행에 남기는지 검증합니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @effects claim_payment_callback_carries_pg_code_to_claim_detail
+     */
     public function test_confirm_failure_redirects_to_the_claim_detail_with_an_error_code(): void
     {
         $this->mockPluginSettings();
@@ -166,10 +205,26 @@ class ClaimPaymentCallbackTest extends PluginTestCase
             'amount' => 3000,
         ]));
 
-        $response->assertRedirect("/mypage/claims/{$return->return_number}?claim_payment=failed&error=failed&claim_number={$return->return_number}");
+        // 테스트 이름이 약속한 「with an error code」 는 **토스가 준 그 코드**다. 여기가 일반
+        // 토큰이면 모든 승인 거절이 같은 주소로 수렴해, 구매자 배너는 사유를 말하지 못하고
+        // 고객센터도 건을 특정할 값을 받지 못한다 (#599 3차 실측 F-5 로 실거래에서 확인).
+        $response->assertRedirect("/mypage/claims/{$return->return_number}?claim_payment=failed&error=REJECT_CARD_COMPANY&claim_number={$return->return_number}");
         $this->assertSame(ClaimPaymentStatusEnum::PENDING, $payment->fresh()->payment_status);
+
+        // 사유는 결제행에도 남아야 한다 — 화면에는 코드만 싣고 원문은 여기에만 남기기 때문이다.
+        $fresh = $payment->fresh();
+        $this->assertSame('REJECT_CARD_COMPANY', $fresh->pg_error_code);
+        $this->assertSame('declined', $fresh->pg_error_message);
+        $this->assertNotNull($fresh->raw_response, '실패 건에 PG 원본 응답이 남지 않아 대사할 근거가 없다');
     }
 
+    /**
+     * 사용자가 결제창을 닫은 중단은 오류 안내 없이 복귀하는지 검증합니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @effects claim_payment_user_cancel_returns_without_error
+     */
     public function test_fail_callback_with_a_user_cancel_code_returns_to_the_claim_detail_without_an_error(): void
     {
         $this->mockPluginSettings();

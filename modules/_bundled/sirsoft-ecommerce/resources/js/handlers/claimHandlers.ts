@@ -1709,6 +1709,14 @@ interface ClaimRefundExecuteContext {
     refundMethod: string;
     /** 환불 수단 라벨 (서버가 준 선택지에서 해석) */
     refundMethodLabel: string;
+    /**
+     * 이 환불을 실행하려면 **보낼 계좌가 있어야 하는가** (T2-D6).
+     *
+     * 서버가 실행 게이트와 같은 술어로 판정해 내려 준다(`refund_account_required`). 화면이
+     * 결제수단 코드로 재현하면 확장 결제수단에서 갈리고, 어긋난 쪽은 오류 없이 「계좌 칸이
+     * 없는 계좌 환불」 또는 「PG 환불인데 계좌를 요구」가 된다.
+     */
+    refundAccountRequired: boolean;
     /** 환불 계좌 은행명 (계좌 이체 환불일 때만) */
     refundBankName: string;
     /** 환불 계좌번호 (열람 권한이 없으면 마스킹된 값) */
@@ -1852,6 +1860,7 @@ export async function openClaimRefundExecuteHandler(
         refundBankName?: string | null;
         refundBankAccount?: string | null;
         refundBankHolder?: string | null;
+        refundAccountRequired?: boolean | string | null;
     }>,
     _context?: ActionContext,
 ): Promise<void> {
@@ -1887,9 +1896,21 @@ export async function openClaimRefundExecuteHandler(
         refundBankName: (params.refundBankName ?? '').trim(),
         refundBankAccount: (params.refundBankAccount ?? '').trim(),
         refundBankHolder: (params.refundBankHolder ?? '').trim(),
+        refundAccountRequired: params.refundAccountRequired === true || params.refundAccountRequired === 'true',
     };
 
-    G7Core.state.set({ claimRefundExecuteContext: context, isProcessing: false });
+    // 계좌 칸·동의는 **창을 열 때마다 비운다**. 남겨 두면 앞 신청서에 적은 계좌가 다음 건의
+    // 칸에 들어앉아, 운영자가 손대지 않고 [환불하기]를 눌렀을 때 엉뚱한 계좌로 송금 기록이
+    // 남는다. 동의도 마찬가지로, 한 번 켠 뒤 다음 건에서 그대로 켜져 있으면 계좌를 적지 않은
+    // 건이 조용히 직권 완료된다.
+    G7Core.state.set({
+        claimRefundExecuteContext: context,
+        isProcessing: false,
+        claimRefundExecuteBankCode: '',
+        claimRefundExecuteBankAccount: '',
+        claimRefundExecuteBankHolder: '',
+        claimRefundExecuteForce: false,
+    });
     G7Core.modal?.open?.('modal_claim_refund_execute');
 }
 
@@ -1936,6 +1957,24 @@ export async function executeClaimRefundHandler(
             body.refund_method = context.refundMethod;
         }
 
+        // 이 창에서 적은 환불 계좌 / 계좌 없이 완료로 기록하겠다는 동의 (T2-D6).
+        // 둘 중 하나가 없으면 서버가 422 로 막는다 — 창의 실행 버튼도 같은 조건으로 잠그므로
+        // 정상 경로에서는 이 거절을 보지 않지만, 게이트는 서버가 정본이다.
+        const state = G7Core.state.get() ?? {};
+        const bankCode = String(state.claimRefundExecuteBankCode ?? '').trim();
+        const bankAccount = String(state.claimRefundExecuteBankAccount ?? '').trim();
+        const bankHolder = String(state.claimRefundExecuteBankHolder ?? '').trim();
+
+        if (state.claimRefundExecuteForce === true) {
+            body.force_without_refund_bank = true;
+        } else if (bankCode && bankAccount && bankHolder) {
+            body.refund_bank = {
+                bank_code: bankCode,
+                account_number: bankAccount,
+                holder: bankHolder,
+            };
+        }
+
         const response = await G7Core.api.post(`${REFUND_EXECUTE_URL}/${context.claimId}/execute`, body);
 
         if (response?.success === false) {
@@ -1946,7 +1985,13 @@ export async function executeClaimRefundHandler(
             t('sirsoft-ecommerce.admin.claim.detail.refund_execute.executed', '환불을 실행했습니다.'),
         );
 
-        G7Core.state.set({ claimRefundExecuteContext: null });
+        G7Core.state.set({
+            claimRefundExecuteContext: null,
+            claimRefundExecuteBankCode: '',
+            claimRefundExecuteBankAccount: '',
+            claimRefundExecuteBankHolder: '',
+            claimRefundExecuteForce: false,
+        });
         refetchSources(DETAIL_REFETCH_SOURCES);
     } catch (error: any) {
         const status = error?.response?.status ?? error?.status ?? null;

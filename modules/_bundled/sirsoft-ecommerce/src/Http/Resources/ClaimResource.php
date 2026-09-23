@@ -17,6 +17,7 @@ use Modules\Sirsoft\Ecommerce\Models\OrderExchange;
 use Modules\Sirsoft\Ecommerce\Models\OrderRefund;
 use Modules\Sirsoft\Ecommerce\Models\OrderReturn;
 use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
+use Modules\Sirsoft\Ecommerce\Services\OrderRefundRequestService;
 use Modules\Sirsoft\Ecommerce\Services\RefundExecutionService;
 use Modules\Sirsoft\Ecommerce\Support\CalculationSnapshotPresenter;
 
@@ -369,6 +370,13 @@ class ClaimResource extends BaseApiResource
                 // 운영자는 카드 결제 건에 왜 계좌 송금을 하라는지 알 수 없고, 근거는 애플리케이션
                 // 로그에만 남는다. 그 사실을 그 자리에서 말해 준다.
                 'refund_fell_back_to_manual' => $this->refundFellBackToManual($claim),
+                // 이 환불을 실행하려면 **보낼 계좌가 있어야 하는가** (T2-D6).
+                //
+                // 화면이 결제수단 코드로 재현하면 안 된다 — 확장 결제수단이 자기 카탈로그에
+                // 선언한 환불 수단과 갈리고, 어긋난 쪽은 오류 없이 「계좌 칸 없는 계좌 환불」
+                // (운영자가 계좌를 못 적어 영영 못 끝낸다) 또는 「PG 환불인데 계좌를 요구」
+                // (카드 환불이 잠긴다)가 된다. 서버가 실행 게이트와 같은 술어로 답한다.
+                'refund_account_required' => $this->refundAccountRequired($claim),
                 'refund_amount' => $this->roundToOrderCurrency((float) $claim->refund_amount, $currency),
                 'refund_amount_formatted' => $this->formatOrderCurrency((float) $claim->refund_amount, $currency),
                 'refund_points_amount' => $this->roundToOrderCurrency((float) $claim->refund_points_amount, $currency),
@@ -446,6 +454,9 @@ class ClaimResource extends BaseApiResource
                 ? (new ClaimPaymentResource($this->paymentBlock['pending_payment']))->withOrderCurrency($currency)->withCurrencySnapshot($snapshot)
                 : null;
             $data['payment_entry'] = $this->paymentBlock['payment_entry'];
+            // 대기 건을 낼 수 있는 수단 — 화면이 수단을 다시 고르게 하는 근거다. 값만 싣고
+            // 라벨은 화면이 붙인다(신청 화면이 `charge_payment_methods` 를 그리는 방식과 같다).
+            $data['available_payment_methods'] = $this->paymentBlock['available_payment_methods'] ?? [];
         }
 
         return $data;
@@ -590,6 +601,35 @@ class ClaimResource extends BaseApiResource
         }
 
         return app(EcommerceSettingsService::class)->resolveBankName($bankCode);
+    }
+
+    /**
+     * 이 환불을 실행하려면 보낼 계좌가 있어야 하는지 답합니다. (T2-D6)
+     *
+     * 실행 게이트(`ExecuteRefundRequest::validateRefundBank()`)와 **같은 두 조건**이다 —
+     * 계좌로 나갈 현금이 있는가(마일리지로만 돌려주는 환불은 회원 원장으로 들어가 보낼 계좌가
+     * 없다)와, 이 주문이 계좌로 환불되는 주문인가(`refundsToBankAccount()` — 구매자 접수·신청
+     * 화면이 쓰는 그 술어다).
+     *
+     * 이미 적혀 있으면 요구하지 않는다 — 운영자가 다시 적을 일이 없다.
+     *
+     * @param  OrderRefund  $claim  환불신청서
+     * @return bool 계좌가 있어야 실행되는지 여부
+     */
+    protected function refundAccountRequired(OrderRefund $claim): bool
+    {
+        if (filled($claim->refund_bank_code)) {
+            return false;
+        }
+
+        if ((float) $claim->refund_amount <= 0) {
+            return false;
+        }
+
+        $order = $claim->order;
+
+        return $order !== null
+            && app(OrderRefundRequestService::class)->refundsToBankAccount($order);
     }
 
     /**

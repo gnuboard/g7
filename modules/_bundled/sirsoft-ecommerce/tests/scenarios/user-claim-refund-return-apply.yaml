@@ -93,7 +93,15 @@ effects:
   # 환불계좌 (§6-3 — 무통장 원결제)
   - claim_refund_account_requirement_declared_by_server
   - claim_refund_account_banks_come_from_operator_settings
+  # 2026-09-23 재실측 — 운영자가 목록을 비우면 필수 칸에 선택지가 0개가 되어 환불 신청이 영영 막힌다
+  - claim_refund_account_banks_fall_back_to_the_module_defaults
   - claim_apply_refund_account_shown_only_for_bank_refunds
+  # 서버가 분기 판정을 내려 준다는 계약 — 화면이 결제수단 코드로 재현하면 갈린다
+  - claim_refund_auto_approval_gate_declared_by_server
+  # 자동 전이 분기가 구매자 첨부를 지우지 않는다
+  - auto_branch_keeps_the_buyer_attachments
+  # T2-D5 (#599 3차 실측 L-8) — 계좌가 빈 채로는 신청 자체를 누를 수 없다
+  - claim_apply_submit_blocked_until_the_refund_account_is_filled
   - claim_apply_refund_account_never_prefills_masked_values
   - claim_refund_account_prefills_the_registered_account
   - claim_refund_account_recorded_on_the_claim_itself
@@ -163,3 +171,20 @@ notes: |
   결제 플러그인이 갖는 축이라 `claim-additional-payment.yaml` 이 덮고, 이 화면이 하는 일은
   응답이 지목한 핸들러를 그대로 dispatch 하는 것뿐이다(S11 이 덮은
   `claim_apply_submit_dispatches_server_named_pg_handler`).
+
+validation:
+  audit_rule: frontend-change-requires-e2e
+  browser_check: Playwright MCP   # #599 3차 실측 세션2 — 실제 주문·신청으로 재실측
+  note: |
+    T2-D5(계좌가 비면 [환불 신청하기]가 잠긴다)의 브라우저 축은 Playwright MCP 재실측이 덮는다.
+    Playwright spec 을 새로 두지 않는 이유는 이 축이 **주문 → 결제(무통장) → 배송완료 → 환불신청**
+    까지 실제 상태를 만들어야 성립하는데, 이 템플릿의 spec 들은 그 앞단 결제 왕복을 만들지 못해
+    spec 안에서 재현하면 계좌 칸 자체가 서지 않아 **잠금이 아니라 부재를 재게 되기 때문이다**
+    (가짜 초록 — 게이트를 지워도 통과한다).
+
+    대신 두 겹으로 받친다. ① 레이아웃 렌더 테스트가 게이트를 정적으로 잠근다
+    (`userClaimApplyRender.test.tsx` 3건: 비면 disabled·채우면 해제·PG 주문은 애초에 미대상 —
+    게이트를 빼면 첫 건이 red). ② 서버가 같은 술어로 422 를 낸다
+    (`UserClaimRefundBranchTest::test_bank_refund_is_rejected_without_an_account`).
+    화면과 서버가 같은 술어(`OrderRefundRequestService::refundsToBankAccount()`)를 쓰므로
+    한쪽만 통과하는 상태가 생기지 않는다.

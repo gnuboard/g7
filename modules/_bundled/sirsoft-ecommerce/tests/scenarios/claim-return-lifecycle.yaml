@@ -67,9 +67,17 @@ effects:
   - return_multi_currency_amounts_come_from_the_order_snapshot
   - return_address_comes_from_the_shipping_policy
   - return_auto_approval_needs_a_zero_charge
-  - return_guest_request_has_no_requester
+  # 비회원 판정은 주문의 주인(`order.user_id`)이 정한다 — `requested_by` 가 아니다.
+  # 옛 이름(`return_guest_request_has_no_requester`)은 "신청자 칸이 비면 비회원" 을 뜻했는데,
+  # 그 칸은 운영자 대리 접수·시스템 자동 처리도 비운다(§4-3-1). 교환 축이 같은 이유로 이미
+  # 이름을 바꿨고(`exchange_guest_flag_reads_the_order_owner`), 반품만 옛 이름으로 남아 있어
+  # 테스트가 쓰는 이름과 갈려 있었다.
+  - return_guest_flag_reads_the_order_owner
   - return_preview_matches_the_requested_amounts
   - return_preview_reports_the_refund_before_the_fee_is_deducted
+  # #599 후속 D13 — 환불완료 시 취소신청서가 생긴다
+  - return_refund_completion_records_a_cancellation
+  - return_refund_option_rows_announce_their_creation   # 그 취소신청서의 옵션 행도 함께 선언된다
   # 환불 접수 시점 (D26) — 축이 잰 칸 위에서 이어지는 규칙
   - return_completion_refund_is_filed_only_when_asked
   - return_completion_refund_is_filed_exactly_once
@@ -95,13 +103,15 @@ sub_flows:
   - id: stock_restore
     description: |
       재고 복원은 완료 처리에서 **운영자가 상품별로 체크한 것만** 되돌린다 — 설정 기본값은
-      모달의 초기 표시를 정할 뿐 서비스 동작을 바꾸지 않는다(D26). 반품 상품의 적립 대기분은
-      완료 시 회수된다.
+      모달의 초기 표시를 정할 뿐 서비스 동작을 바꾸지 않는다(D26). 반품 상품에 **이미 확정된
+      적립은 회수하지 않는다**(PO 결정 2026-09-23) — 되돌리면 회원이 이미 쓰거나 소멸시킨 적립을
+      살아 있는 다른 적립에서 대신 빼 오게 된다. 아직 적립 전이면 반품완료로 옵션 상태가 바뀌어
+      적립 대상 조회에서 자동으로 빠진다.
     effects:
       - return_completion_restores_stock_only_for_checked_items
       - return_completion_stock_choice_can_differ_per_item
       - return_completion_ignores_the_settings_default
-      - return_completion_cancels_the_pending_earn
+      - return_completion_keeps_the_earned_mileage
 
   - id: update_request
     description: 승인 전까지의 신청서·금액 수정 — 사유가 바뀌면 회수비를 다시 계산한다.
@@ -111,8 +121,12 @@ sub_flows:
       - return_update_amounts_moves_the_total_charge_with_the_fee
 
 
-  # ── #599 후속 D13 — 반품 완료 → 환불 → 취소신청서 ───────────────────────
-  - return_refund_completion_records_a_cancellation   # 환불완료 시 취소신청서가 생긴다
+  # ── 아래는 `sub_flows` 리스트에 문자열로 놓여 있던 잔여 항목이다. 그 자리는 YAML 상
+  #    「하위 흐름 하나」의 자리라 커버리지 규칙이 **선언으로 세지 않았고**, 그래서 테스트가
+  #    쓰던 이름이 「소유 매니페스트에 없다」로 잡혔다. 실제로 테스트가 쓰는 것은 위
+  #    `effects:` 로 올렸고(2026-09-23), 여기에는 **아직 어느 테스트도 검증하지 않는** 것만
+  #    남긴다 — 올리면 그 자리에서 미검증으로 잡히므로, 테스트가 생길 때 함께 올린다.
+  #    (#599 후속 D13 활동로그 축 — 반품 완료 → 환불 → 취소신청서)
   - returned_items_keep_the_returned_status           # 상품 상태는 `returned` 를 유지한다
   - return_originated_refund_fires_the_requested_hook # 반품 발 환불신청서도 접수 훅을 쏜다 (B9)
   - return_originated_refund_is_not_buyer_editable    # 구매자 [수정]/[철회] 가 서지 않는다 (F3)

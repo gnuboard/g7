@@ -56,7 +56,12 @@
           <!-- 올린 사람과 무관하게 이 신청서의 첨부를 파일째 전부 지운다 — 개별 삭제와 달리 확인창을 거치지 않는다. -->
           <button data-ref="cr_007_image_clear" data-if="{{(claim?.data?.claim?.images ?? []).length > 0}}" type="button" class="btn btn-secondary btn-sm" disabled="{{claim?.data?.abilities?.can_update_status !== true || _local.isClearingClaimImages === true}}">
             <on type="click">
-              <action handler="sirsoft-ecommerce.clearClaimImages" pathSegment="{{claim?.data?.claim_path_segment ?? ''}}" claimType="{{claim?.data?.claim?.claim_type ?? ''}}" claimId="{{claim?.data?.claim?.id ?? null}}"/>
+              <action handler="sirsoft-ecommerce.clearClaimImages" pathSegment="{{claim?.data?.claim_path_segment ?? ''}}" claimType="{{claim?.data?.claim?.claim_type ?? ''}}" claimId="{{claim?.data?.claim?.id ?? null}}">
+                <fail>
+                  <!-- 실패 사유는 핸들러가 이미 띄운다(서버 사유 우선 + 다국어 폴백). onError 를 두지 않으면 기본 에러 정책이 같은 실패를 한 번 더 알려 같은 문구가 두 번 뜬다 — 2026-09-22 #599 3차 실측 T2-D12 에서 승인 실패 「교환할 옵션의 재고가 부족합니다.」가 2개 겹쳐 떴다. 형제 자리(_partial_claim_shipping·_modal_claim_refund_execute)와 같은 규율이다. -->
+                  <suppress/>
+                </fail>
+              </action>
             </on>
             $t:sirsoft-ecommerce.admin.claim.detail.reason.images_clear
           </button>

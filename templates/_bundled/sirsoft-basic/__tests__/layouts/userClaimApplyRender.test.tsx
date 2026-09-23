@@ -29,6 +29,7 @@
  *   claim_apply_return_summary_shows_gross_deduction_and_final,
  *   claim_apply_refund_branch_drives_notice_and_submit_label,
  *   claim_apply_refund_account_shown_only_for_bank_refunds,
+ *   claim_apply_submit_blocked_until_the_refund_account_is_filled,
  *   claim_apply_refund_branch_locks_cross_branch_items,
  *   claim_withdraw_modal_states_consequences
  *
@@ -193,6 +194,22 @@ function comparisonState(overrides: Record<string, any> = {}, adjustmentOverride
 }
 
 /** 요약이 금액을 그리는 데 필요한 최소 상태. 값은 서버 응답 형태를 그대로 흉내낸다. */
+/**
+ * 요약 카드에서 **제출** 버튼 하나를 집어냅니다.
+ *
+ * 이 파샬에는 버튼이 둘이다(작성의 [신청하기], 수정의 [저장]). 라벨 키로 고른다 —
+ * `querySelector('button')` 로 첫 번째를 집으면 화면이 바뀔 때 조용히 다른 버튼을 재게 된다.
+ *
+ * @param container 렌더 결과 컨테이너
+ * @returns 제출 버튼 (없으면 null)
+ */
+function findSubmitButton(container: HTMLElement): HTMLButtonElement | null {
+  const buttons = Array.from(container.querySelectorAll('button')) as HTMLButtonElement[];
+  return (
+    buttons.find((button) => (button.textContent ?? '').includes('claim.apply.submit')) ?? null
+  );
+}
+
 function estimateState(overrides: Record<string, any> = {}): Record<string, any> {
   return {
     claimType: 'exchange',
@@ -1269,5 +1286,88 @@ describe('클레임 신청서 — 금액·오류 자리 렌더', () => {
     expect(toggle?.textContent).not.toContain('collapse');
     // 제목은 접혀 있어도 보인다 — 무엇이 접혀 있는지 알 수 있어야 한다.
     expect(container.textContent).toContain('주문금액 비교');
+  });
+  /**
+   * 계좌로 돈이 돌아가는 주문인데 계좌가 비어 있으면 **제출 버튼이 잠긴다**. (T2-D5)
+   *
+   * 2026-09-22 #599 3차 실측 L-8 — 무통장으로 10,000원을 낸 주문의 환불을 계좌 세 칸을 비운 채
+   * 신청해도 접수됐다. 그 뒤 운영자 화면에는 계좌를 적을 자리가 없어, 승인·[환불하기]를 지나
+   * **송금 없이 장부만 `completed`** 로 닫혔고 되돌릴 경로도 없었다.
+   *
+   * 서버가 422 로 막는 것(`StoreRefundRequestRequest::requiresRefundBank`)만으로는 부족하다 —
+   * 구매자는 다 적었다고 생각하고 누른 뒤에야 거절을 본다. 화면이 먼저 막고 이유를 남긴다.
+   *
+   * @scenario claim_type=refund, charge_method=none, refund_branch=auto
+   * @effects claim_apply_submit_blocked_until_the_refund_account_is_filled
+   */
+  it('환불계좌 — 계좌가 비면 제출 버튼이 잠기고 이유가 남는다', async () => {
+    const { utils, container } = await renderPartial(
+      '_apply_summary.json',
+      estimateState({
+        claimType: 'refund',
+        claimItems: [{ order_option_id: 430, selected: true }],
+        claimReason: 'changed_mind',
+        claimEstimate: { price_difference: 0, adjustment: { refund_total: 10000 } },
+        claimableSnapshot: { refund_account: { required: true, banks: [] } },
+      })
+    );
+    active = utils;
+
+    const submit = findSubmitButton(container);
+    expect(submit).not.toBeNull();
+    expect(submit?.disabled).toBe(true);
+    expect(container.textContent ?? '').toContain('claim.apply.refund_account_required_to_submit');
+  });
+
+  /**
+   * 대조군 ① — 세 칸을 채우면 잠금이 풀린다. 잠기기만 하면 아무도 신청할 수 없다.
+   *
+   * @scenario claim_type=refund, charge_method=none, refund_branch=auto
+   * @effects claim_apply_submit_blocked_until_the_refund_account_is_filled
+   */
+  it('환불계좌 — 세 칸을 채우면 제출 버튼이 풀린다 (대조군)', async () => {
+    const { utils, container } = await renderPartial(
+      '_apply_summary.json',
+      estimateState({
+        claimType: 'refund',
+        claimItems: [{ order_option_id: 431, selected: true }],
+        claimReason: 'changed_mind',
+        claimEstimate: { price_difference: 0, adjustment: { refund_total: 10000 } },
+        claimableSnapshot: { refund_account: { required: true, banks: [] } },
+        claimRefundBankCode: '004',
+        claimRefundBankAccount: '01012345678',
+        claimRefundBankHolder: '홍길동',
+      })
+    );
+    active = utils;
+
+    expect(findSubmitButton(container)?.disabled).toBe(false);
+    expect(container.textContent ?? '').not.toContain('claim.apply.refund_account_required_to_submit');
+  });
+
+  /**
+   * 대조군 ② — PG 로 되돌아가는 주문은 계좌가 없어도 막지 않는다.
+   *
+   * 게이트를 계좌 카드와 다른 값으로 재현하면 카드는 없는데 버튼만 잠겨 **영원히 신청할 수 없는
+   * 주문**이 생긴다. 카드가 서는 조건(`refund_account.required`)과 같은 값을 쓴다는 잠금이다.
+   *
+   * @scenario claim_type=refund, charge_method=none, refund_branch=auto
+   * @effects claim_apply_submit_blocked_until_the_refund_account_is_filled
+   */
+  it('환불계좌 — PG 환불 주문은 계좌가 없어도 제출할 수 있다 (대조군)', async () => {
+    const { utils, container } = await renderPartial(
+      '_apply_summary.json',
+      estimateState({
+        claimType: 'refund',
+        claimItems: [{ order_option_id: 432, selected: true }],
+        claimReason: 'changed_mind',
+        claimEstimate: { price_difference: 0, adjustment: { refund_total: 10000 } },
+        claimableSnapshot: { refund_account: { required: false, banks: [] } },
+      })
+    );
+    active = utils;
+
+    expect(findSubmitButton(container)?.disabled).toBe(false);
+    expect(container.textContent ?? '').not.toContain('claim.apply.refund_account_required_to_submit');
   });
 });

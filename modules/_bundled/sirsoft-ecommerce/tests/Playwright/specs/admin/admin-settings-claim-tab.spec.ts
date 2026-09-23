@@ -37,6 +37,10 @@ async function waitForClaimTab(page: import('@playwright/test').Page): Promise<v
 test.describe.configure({ mode: 'serial' });
 
 test.describe('설정 클레임 탭', () => {
+  /**
+   * @scenario reason_type=exchange
+   * @effects settings_claim_tab_renders_three_reason_catalogs
+   */
   test('정책 카드와 사유 카탈로그 3종이 각자의 표로 그려진다', async ({ page, settingsToken }) => {
     test.setTimeout(120_000);
 
@@ -80,6 +84,10 @@ test.describe('설정 클레임 탭', () => {
     }
   });
 
+  /**
+   * @scenario reason_type=exchange
+   * @effects settings_claim_policy_persists_across_reentry
+   */
   test('정책 값을 바꿔 저장하면 새로고침 후에도 그 값이 남는다', async ({ page, settingsToken, request }) => {
     // 이 케이스는 **라이브 설정에 쓴다** — 원복은 `finally` 가 맡는데, 기본 30초 타임아웃을
     // 넘기면 그 `finally` 자체가 도달하지 않아 개발 사이트에 측정값이 남는다. 케이스가 담는
@@ -210,6 +218,62 @@ test.describe('설정 클레임 탭', () => {
     await expect(page.locator('#claim_auto_approve_card #claim_auto_approve_refund_statuses_field')).toHaveCount(1);
   });
 
+  /**
+   * 추가결제 수단 태그가 **라벨로** 서고, 한 번 지워도 선택지에서 다시 고를 수 있는지 본다.
+   *
+   * 선택지를 주문 카탈로그의 `is_active` 로 거르면 두 가지가 동시에 깨지는데, 둘 다 레이아웃
+   * JSON 이나 API 응답으로는 보이지 않는다 — 저장된 값은 그대로이고 서버도 200 이다.
+   *  ① 이미 저장된 비활성 수단은 선택지 모집단 밖이라 라벨을 못 찾아 **원문 키**로 찍힌다
+   *     (2026-09-22 실측: 기본값 `point` 가 「포인트결제」 대신 `point`).
+   *  ② 운영자가 그 태그를 ✕ 로 지우면 선택지에도 없어 **이 화면에서 다시 고를 수 없다.**
+   *     마일리지 추가결제 경로가 화면에서 사라지고, 주문설정 탭을 먼저 켜라는 안내도 없다.
+   *
+   * 이 테스트는 저장하지 않는다 — 지운 뒤 선택지만 보고 새로고침으로 버린다.
+   *
+   * @scenario reason_type=exchange
+   * @effects settings_claim_charge_payment_method_options_do_not_filter_by_order_catalog_active
+   */
+  test('추가결제 수단은 라벨로 서고 지워도 다시 고를 수 있다', async ({ page, settingsToken }) => {
+    test.setTimeout(120_000);
+
+    await authenticatePage(page, settingsToken);
+    await page.goto(SETTINGS_URL);
+    await waitForClaimTab(page);
+
+    const field = page.locator('#claim_charge_payment_methods_field');
+    await expect(field, '추가결제 수단 입력이 추가결제 카드에 서야 한다').toHaveCount(1, {
+      timeout: 20_000,
+    });
+
+    // ① 태그가 원문 키로 서면 안 된다. 기본값 `card`·`point` 는 라벨을 가진다.
+    const tagText = (await field.innerText()).replace(/\s+/g, ' ');
+    expect(tagText, '추가결제 수단 태그가 원문 키로 노출된다').not.toMatch(/\bpoint\b/);
+    expect(tagText, '추가결제 수단 태그가 원문 키로 노출된다').not.toMatch(/\bcard\b/);
+
+    // ② 태그를 하나 지운 뒤 선택지를 연다. 지운 값이 선택지에 남아 있어야 되돌릴 수 있다.
+    const removeButtons = field.locator('button[aria-label^="Remove"]');
+    const before = await removeButtons.count();
+    expect(before, '지울 태그가 있어야 이 축을 잴 수 있다').toBeGreaterThan(0);
+
+    const removedLabel = (await removeButtons.last().getAttribute('aria-label'))!.replace(/^Remove\s*/, '');
+    await removeButtons.last().click();
+    await expect(removeButtons, '태그가 지워져야 한다').toHaveCount(before - 1, { timeout: 10_000 });
+
+    await field.locator('input[role="combobox"], [role="combobox"]').first().click();
+    await expect(
+      page.locator('[role="option"]', { hasText: removedLabel }).first(),
+      `지운 「${removedLabel}」 이(가) 선택지에서도 사라져 이 화면에서 되돌릴 수 없다`
+    ).toBeVisible({ timeout: 10_000 });
+
+    // 저장하지 않는다 — 전역 설정 파일을 건드리지 않고 화면만 버린다.
+    await page.reload();
+    await waitForClaimTab(page);
+  });
+
+  /**
+   * @scenario reason_type=exchange
+   * @effects settings_claim_reason_name_is_multilingual
+   */
   test('사유명은 언어별 입력으로 그려진다 (단일 Input 금지 — D23)', async ({ page, settingsToken }) => {
     test.setTimeout(120_000);
 

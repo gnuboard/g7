@@ -1131,6 +1131,52 @@ describe('환불 실행 — 취소 가능 금액과 실행 (D18·D19)', () => {
   });
 
   /**
+   * 계좌가 없으면 [환불하기] 가 잠긴다 — 계좌를 적거나 동의를 켜야 풀린다. (T2-D6)
+   *
+   * 2026-09-22 #599 3차 실측 L-8 — 이 창은 계좌를 **보여 주기만** 해서, 무통장으로 10,000원을
+   * 받은 주문의 환불을 계좌 세 칸이 빈 채로 실행할 수 있었다. 돈은 한 푼도 나가지 않았는데
+   * 신청서만 `completed` 로 닫혔고, 그 뒤에는 되돌릴 경로도 계좌를 적을 자리도 없었다.
+   *
+   * 서버측 계약은 `AdminRefundExecuteRequiresBankTest` 가 잠근다. 이 케이스는 **화면이 그
+   * 계약을 미리 보여 주는지**를 잰다 — 세 조건 중 하나라도 빠지면 red 가 된다.
+   *
+   * @scenario claim_type=refund, cancellable=present
+   * @effects claim_refund_execute_modal_gates_on_the_bank_account
+   */
+  it('확인 모달의 [환불하기] 가 계좌도 동의도 없으면 잠긴다 (T2-D6)', () => {
+    const disabled = strings(refundExecuteModal).filter((v) => v.includes('claimRefundExecuteForce'));
+
+    expect(disabled.length).toBeGreaterThan(0);
+    const gate = disabled.join(' ');
+    // 판정은 서버가 내려 준다 — 화면이 결제수단 코드로 재현하지 않는다.
+    expect(gate).toContain('refundAccountRequired');
+    expect(gate).toContain('claimRefundExecuteBankCode');
+    expect(gate).toContain('claimRefundExecuteBankAccount');
+    expect(gate).toContain('claimRefundExecuteBankHolder');
+  });
+
+  /**
+   * 계좌를 **적을 자리**가 그 창에 있다. (T2-D6)
+   *
+   * 막기만 하고 적을 자리를 주지 않으면 그 건은 어느 화면에서도 끝낼 수 없다 — 클레임 상세에도
+   * 주문 상세에도 환불 계좌 입력 요소가 하나도 없던 것이 L-8 의 절반이었다.
+   *
+   * @scenario claim_type=refund, cancellable=present
+   * @effects claim_refund_execute_modal_gates_on_the_bank_account
+   */
+  it('확인 모달에 환불 계좌 입력 세 칸과 동의 체크박스가 있다 (T2-D6)', () => {
+    const values = strings(refundExecuteModal).join(' ');
+
+    expect(values).toContain('refund_bank_input_title');
+    expect(values).toContain('refund_bank_code_placeholder');
+    expect(values).toContain('refund_bank_account_placeholder');
+    expect(values).toContain('refund_bank_holder_placeholder');
+    // 동의는 결과를 말하는 힌트와 한 쌍이다 (주문 상세 `mark_order_complete` 와 같은 형태).
+    expect(values).toContain('force_without_bank');
+    expect(values).toContain('force_without_bank_hint');
+  });
+
+  /**
    * 모달은 부모 화면과 다른 컨텍스트라 `_local` 표현식을 해석하지 못한다 — 그대로 두면
    * 값이 비어 보이는데 오류는 나지 않는다.
    *

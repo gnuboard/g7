@@ -1,0 +1,75 @@
+# audit:allow test-scenario-coverage[cross_product,effects] reason: 축이 서로 다른 계층에 격리 검증된다 —
+#   failure_source 는 리스너 단위 테스트가 PG 응답을 가짜로 세워, redirect_target 은 콜백 기능 테스트가
+#   실제 라우트를 타서 각각 단언한다. 한 메서드가 세 축 조합을 동시에 재현하지 않으므로 cross product
+#   조합을 docblock @scenario 로 나열하면 거짓 매핑이 된다(같은 플러그인의 S4·S5 매니페스트 선례 동일).
+#   effects 는 전부 실제 검증 메서드에 @effects 로 매핑되어 있으며 그것이 실질 커버리지다.
+# 시나리오 매니페스트 — 클레임 추가결제가 실패할 때 사유가 어디까지 남는가 (#599 3차 실측 F-5·F-6)
+# 참조: docs/testing-guide.md "기능 단위 시나리오 매트릭스"
+
+feature: claim_payment_approval_failure_reason
+
+description: >-
+  클레임 추가결제(CP 채번)가 실패하면 구매자는 「실패 코드 {code}」 배너 하나만 받는다 —
+  PG 원문 메시지는 상점 MID·PG 내부 상태를 담을 수 있어 의도적으로 화면에 싣지 않기 때문이다.
+  그래서 **그 코드가 사유를 구분하는 유일한 값**이고, 코드가 일반 토큰으로 접히면 한도 초과·
+  분실 카드·세션 만료가 전부 같은 실패로 보인다.
+
+  2026-09-22 실측에서 두 겹이 동시에 무너져 있었다. 토스 API 서비스가 응답의 `code` 를 로그에만
+  남기고 예외에서 뺐고, 리스너는 모든 실패를 `PG_API_ERROR` 로 접었으며 실패 건의 원본 응답도
+  버렸다. 그 위에서 모듈의 코드 변환기가 예외 **키**의 마지막 조각만 읽어 최종적으로 `failed`
+  가 됐다.
+
+  또 하나의 축은 금액이다. 결제창이 열려 있는 동안 청구액은 바뀔 수 있다 — 신청서 수정(사유가
+  바뀌면 귀책이 바뀌어 왕복 배송비가 청구에서 빠진다)과 관리자 재산정이 결제행 `amount` 를
+  갱신한다. 낡은 창으로 결제하면 PG 는 옛 금액을 승인하므로, 그 대조를 승인 **뒤**로 미루면
+  고객 돈이 실제로 빠져나갔다가 망취소로 돌아오는 왕복이 생기고 보상이 실패하면 청구가 남는다.
+  형제 플러그인 3종(kginicis·nhnkcp·nicepayments)은 이미 승인/서명 전에 대조한다.
+
+test_files:
+  - plugins/_bundled/sirsoft-tosspayments/tests/Unit/Listeners/ClaimPaymentApproveListenerTest.php
+  - plugins/_bundled/sirsoft-tosspayments/tests/Feature/Controllers/ClaimPaymentCallbackTest.php
+
+coverage_strategy: pairwise
+
+# 입력 axis — 승인 실패의 모양과 그 뒤의 경로에 영향을 주는 변수
+axes:
+  failure_source:
+    - pg_rejection      # 토스가 코드와 사유를 준 거절 (REJECT_CARD_COMPANY 등)
+    - transport_error   # 응답 자체를 못 얻은 실패 (네트워크 단절)
+    - stale_amount      # 결제창을 연 뒤 청구액이 바뀐 상태
+    - cross_payment_key # 다른 건의 결제 키를 붙인 교차 승인
+    - none              # 정상 승인
+
+  claim_owner:
+    - member            # 회원 신청서 — 마이페이지 상세로 복귀
+    - guest             # 비회원 주문 — 주문 조회 화면으로 복귀
+
+  payment_method_kind:
+    - immediate         # 카드·간편결제 — 즉시 확정
+    - deposit_pending   # 가상계좌 — 클레임 결제에는 대기 상태가 없어 거절
+
+exclusions:
+  - { failure_source: cross_payment_key, claim_owner: guest, reason: "교차 승인 차단은 결제번호 대조만 보므로 회원/비회원 축이 결과에 영향을 주지 않는다" }
+  - { failure_source: transport_error, payment_method_kind: deposit_pending, reason: "응답을 못 얻으면 가상계좌 발급 여부 자체를 알 수 없어 수단 축이 성립하지 않는다" }
+
+effects:
+  # 승인 전 차단 — 돈이 나가기 전에 닫히는 축
+  - claim_approve_listener_subscribes_the_filter
+  - claim_approval_skips_other_providers
+  - claim_approval_rejects_incomplete_callback
+  - claim_approval_blocks_cross_payment_key_before_confirm
+  - claim_approval_rejects_stale_window_amount_before_confirm
+  - claim_approval_confirms_when_amount_unchanged
+  # 승인 결과 — 성공·거절이 남기는 것
+  - claim_approval_returns_transaction_and_paid_amount
+  - claim_approval_cancels_deposit_pending_issue
+  - claim_approval_failure_keeps_pg_code_and_raw_response
+  - claim_approval_transport_failure_uses_generic_code
+  # 콜백 종단 — 화면까지 도달하는 값
+  - claim_payment_callback_resolves_cp_number_without_order
+  - claim_payment_callback_returns_guest_to_order_lookup
+  - claim_payment_callback_carries_pg_code_to_claim_detail
+  - claim_payment_user_cancel_returns_without_error
+
+validation:
+  audit_rule: test-scenario-coverage

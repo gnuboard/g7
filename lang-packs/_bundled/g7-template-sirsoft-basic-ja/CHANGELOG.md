@@ -6,6 +6,16 @@
 
 ## [작업 중]
 
+### Added
+
+- 환불 신청서에서 **환불받을 계좌를 채우라고 안내하는 문구**의 일본어 번역을 추가했습니다
+  (`claim.apply.refund_account_required_to_submit`). 계좌로 환불되는 주문에서 세 칸이 비면
+  [환불 신청하기]가 잠기는데, 종전에는 그 이유를 알리는 자리가 일본어 로케일에 없었습니다.
+- 사진 첨부 일부 실패를 **몇 장 중 몇 장**으로 알리는 문구(`claim.image.upload_partial_failed`)와,
+  교환 옵션에서 **지금 교환받을 수 없는 조합**을 골랐을 때의 안내(`claim.change_product.unavailable`)의
+  일본어 번역을 추가했습니다(`build-language-pack.cjs --locale=ja` 생성).
+- 승인된 신청서의 수정 주소로 들어왔을 때의 안내(`claim.edit.not_editable`) 일본어 번역을 추가했습니다.
+
 ### Fixed
 
 - 쿠폰 다운로드 창의 금액 단위가 원화인데 **엔화(円)로 표시되던 것**을 「ウォン」으로 바로잡았습니다.

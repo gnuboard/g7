@@ -224,7 +224,15 @@
       },
       "refund_bank_name": "Refund bank",
       "refund_bank_account": "Refund account",
-      "refund_bank_holder": "Account holder"
+      "refund_bank_holder": "Account holder",
+      "refund_bank_input_title": "Account to refund to",
+      "refund_bank_input_hint": "This refund is completed by a manual bank transfer. The claim has no account on file, so you can enter it here — the value is saved to the claim as well.",
+      "refund_bank_code_placeholder": "Bank code (e.g. 004)",
+      "refund_bank_account_placeholder": "Account number (no hyphens)",
+      "refund_bank_holder_placeholder": "Account holder",
+      "force_without_bank": "Record as completed without an account",
+      "force_without_bank_hint": "No transfer happens; only the claim is closed as refunded. Use this only when the money was already sent another way or will not be paid — it cannot be undone.",
+      "refund_bank_required": "Enter the account to refund to, or consent to recording it as completed without an account."
     },
     "transition": {
       "title": "Change request status",

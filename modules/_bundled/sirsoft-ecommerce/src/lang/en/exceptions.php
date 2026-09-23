@@ -130,7 +130,7 @@ return [
     'claim_new_option_out_of_stock' => 'The selected exchange option is out of stock.',
     'claim_redelivery_country_change_not_allowed' => 'The exchange redelivery address must be in the same country as the order shipping address. (International exchange is not supported.)',
     'claim_refund_not_applicable' => 'A refund request cannot be created because this claim does not produce a refund.',
-    'claim_not_editable' => 'The request can no longer be edited after approval. Withdraw it and submit a new request.',
+    'claim_not_editable' => 'A request cannot be changed after it has been approved. Please contact customer support if you need a change.',
     'claim_refund_branch_mixed' => 'Items eligible for instant cancellation and items that require a refund request cannot be submitted together. Please submit them separately.',
     'claim_refund_not_requestable' => 'A cancellation or refund cannot be requested for an item in the :status state.',
     'claim_payment_not_found' => 'The payment could not be found.',

@@ -96,7 +96,12 @@
         <!-- 고른 상태로 신청서 전체를 옮긴다(상품 하나하나는 아래 목록의 일괄 바가 맡는다). 완료는 재고 복구·환불 접수 선택이 딸려 있어 이 경로로 보내지 않고 완료 처리 모달로 안내하며, 반려는 사유가 비면 보내지 않는다. -->
         <button data-ref="cts_003_apply" type="button" class="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{claim?.data?.abilities?.can_update_status !== true || (_local.claimBulkStatus ?? '') === '' || _local.isTransitioningClaim === true}}">
           <on type="click">
-            <action handler="sirsoft-ecommerce.executeClaimStatusTransition" pathSegment="{{claim?.data?.claim_path_segment ?? ''}}" claimType="{{claim?.data?.claim?.claim_type ?? ''}}" claimId="{{claim?.data?.claim?.id ?? null}}" status="{{_local.claimBulkStatus ?? ''}}" rejectReason="{{_local.claimRejectReason ?? ''}}"/>
+            <action handler="sirsoft-ecommerce.executeClaimStatusTransition" pathSegment="{{claim?.data?.claim_path_segment ?? ''}}" claimType="{{claim?.data?.claim?.claim_type ?? ''}}" claimId="{{claim?.data?.claim?.id ?? null}}" status="{{_local.claimBulkStatus ?? ''}}" rejectReason="{{_local.claimRejectReason ?? ''}}">
+              <fail>
+                <!-- 실패 사유는 핸들러가 이미 띄운다(서버 사유 우선 + 다국어 폴백). onError 를 두지 않으면 기본 에러 정책이 같은 실패를 한 번 더 알려 같은 문구가 두 번 뜬다 — 2026-09-22 #599 3차 실측 T2-D12 에서 승인 실패 「교환할 옵션의 재고가 부족합니다.」가 2개 겹쳐 떴다. 형제 자리(_partial_claim_shipping·_modal_claim_refund_execute)와 같은 규율이다. -->
+                <suppress/>
+              </fail>
+            </action>
           </on>
           $t:sirsoft-ecommerce.admin.claim.bulk.apply
         </button>

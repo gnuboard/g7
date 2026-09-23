@@ -165,6 +165,89 @@ describe('claimImageHandlers', () => {
     });
 
     /**
+     * 대기열에는 **보낼 것만** 담는다. (T2-D2 · #599 3차 실측)
+     *
+     * 고른 원본을 그대로 담으면 `_local.claimImageFiles` 가 「고른 것」과 「보낼 것」 둘을
+     * 뜻하게 되고, 그 차이가 화면 어디에도 드러나지 않는다 — 실측에서 용량 초과로 거절된
+     * 파일이 `1/5개 첨부됨` 으로 남아 첨부된 것처럼 보였다. 업로드 경로가 같은 술어로 한 번 더
+     * 거르므로 **올라가는 파일은 종전에도 옳았지만**, 상태가 거짓을 들고 있으면 그 값을 읽는
+     * 다음 화면이 틀린다.
+     *
+     * @scenario attachment_lifecycle=queue_on_select
+     *
+     * @effects claim_attachment_selection_only_queues
+     */
+    it('선택 변경 — 상한을 넘은 파일은 대기열에 담지 않는다 (T2-D2)', () => {
+        const ok = makeFile('ok.png', 10);
+        const tooBig = makeFile('big.jpg', 4096);
+
+        setClaimImageFilesHandler(
+            { handler: 'setClaimImageFiles', params: { files: [ok, tooBig] } },
+            {} as any
+        );
+
+        expect(mockLocalState.claimImageFiles).toEqual([ok]);
+        expect(mockG7Core.toast.warning).toHaveBeenCalled();
+    });
+
+    /**
+     * 일부만 실패하면 **몇 장이 빠졌는지** 한 번에 알린다. (T2-D4 · #599 3차 실측)
+     *
+     * 종전에는 실패한 파일마다 같은 문구를 한 번씩 띄웠다. 3장 중 1장이 실패하면 토스트가
+     * 하나 뜨는데 그것이 **몇 장 중 몇 장인지 말하지 않았고**, 접수는 성공하므로 마지막에
+     * 남는 것은 「신청이 접수되었습니다.」였다 — 구매자는 사진 3장이 다 붙은 줄 알았다.
+     *
+     * 장수를 말하는 요약 한 줄로 바꾼다. 다시 붙일 수 있는 화면은 이미 있으므로,
+     * **빠졌다는 사실과 몇 장인지**만 알면 스스로 빠져나올 수 있다.
+     *
+     * @scenario attachment_lifecycle=upload_before_submit
+     *
+     * @effects claim_attachment_partial_failure_reports_the_count
+     */
+    it('제출 직전 업로드 — 일부 실패는 몇 장 중 몇 장인지 한 번에 알린다 (T2-D4)', async () => {
+        // 시드 상한(2장)을 넘기면 상한 가드가 먼저 잘라 「업로드 실패」 축을 재지 못한다.
+        mockDataSources.claimable.data.settings.max_images = 3;
+        mockLocalState.claimImageFiles = [makeFile('a.png', 10), makeFile('b.png', 10), makeFile('c.png', 10)];
+        mockG7Core.api.post
+            .mockResolvedValueOnce({ success: true, data: { id: 1, original_name: 'a.png' } })
+            .mockRejectedValueOnce(new Error('boom'))
+            .mockResolvedValueOnce({ success: true, data: { id: 3, original_name: 'c.png' } });
+
+        await uploadPendingClaimFiles(mockG7Core, { claimApiBase: '/api/x', isGuest: false });
+
+        // 파일마다 같은 문구를 되풀이하지 않는다 — 요약 한 번이다.
+        expect(mockG7Core.toast.error).toHaveBeenCalledTimes(1);
+        const [message] = mockG7Core.toast.error.mock.calls.at(-1) ?? [];
+        expect(String(message)).toContain('claim.image.upload_partial_failed');
+        // 몇 장 중 몇 장인지 문구 파라미터로 넘긴다.
+        expect(mockG7Core.t).toHaveBeenCalledWith(
+            'claim.image.upload_partial_failed',
+            expect.objectContaining({ failed: 1, total: 3 }),
+        );
+        // 성공분은 그대로 남는다 — 빠진 것만 다시 붙이면 된다.
+        expect((mockLocalState.claimImages ?? []).map((i: any) => i.id)).toEqual([1, 3]);
+    });
+
+    /**
+     * 전량 실패도 **화면에 남는다**. 종전에는 로그만 남고 토스트가 없었다.
+     *
+     * @scenario attachment_lifecycle=upload_before_submit
+     *
+     * @effects claim_attachment_partial_failure_reports_the_count
+     */
+    it('제출 직전 업로드 — 전량 실패도 장수를 말한다 (T2-D4)', async () => {
+        mockLocalState.claimImageFiles = [makeFile('a.png', 10), makeFile('b.png', 10)];
+        mockG7Core.api.post.mockRejectedValue(new Error('boom'));
+
+        await uploadPendingClaimFiles(mockG7Core, { claimApiBase: '/api/x', isGuest: false });
+
+        expect(mockG7Core.t).toHaveBeenCalledWith(
+            'claim.image.upload_partial_failed',
+            expect.objectContaining({ failed: 2, total: 2 }),
+        );
+    });
+
+    /**
      * @scenario attachment_lifecycle=upload_before_submit
      *
      * @effects claim_attachment_upload_happens_once_before_submit

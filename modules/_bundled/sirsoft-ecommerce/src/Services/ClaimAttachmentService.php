@@ -180,6 +180,13 @@ class ClaimAttachmentService
         return [
             'max_images' => $this->maxImages(),
             'image_max_size_kb' => $this->maxSizeKb(),
+            // 같은 상한의 MB 표기 — 첨부 컴포지트가 MB 로 상한을 받는다(T2-D2).
+            //
+            // 화면에서 `kb / 1024` 를 하지 않는 이유는 둘이다. ⓐ 상한은 설정 한 곳에서 나와야
+            // 하는데 나눗셈이 화면에 흩어지면 반올림 규칙이 화면마다 갈린다. ⓑ 레이아웃 식에
+            // 산술이 들어가면 바인딩 판정 경로가 달라져(엔진 `BindingShape` 라우팅) 같은 식이
+            // prop 과 `if` 에서 다르게 읽히는 자리가 늘어난다.
+            'image_max_size_mb' => round($this->maxSizeKb() / 1024, 3),
             'allowed_extensions' => self::ALLOWED_EXTENSIONS,
             // 화면 파일 선택창이 그대로 쓰는 문자열 — `image/*` 로 두면 서버가 받지 않는
             // 확장자를 고를 수 있고, 고르면 이유 없이 422 가 된다.

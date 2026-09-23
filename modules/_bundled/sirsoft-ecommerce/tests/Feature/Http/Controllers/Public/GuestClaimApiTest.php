@@ -43,6 +43,14 @@ class GuestClaimApiTest extends ModuleTestCase
 
     private const PHONE = '010-1234-5678';
 
+    /**
+     * 통화·사유를 심고, PG 환불 훅과 첨부 저장소를 성공으로 고정합니다.
+     *
+     * 비회원 축이 재는 것은 **토큰이 지키는가·같은 계약을 쓰는가**이지 PG·디스크가 붙었는가가
+     * 아니다 — 고정하지 않으면 전 축이 환경 때문에 같은 이유로 실패해 축이 무의미해진다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -62,6 +70,11 @@ class GuestClaimApiTest extends ModuleTestCase
         $this->app->when(ClaimAttachmentService::class)->needs(StorageInterface::class)->give(fn () => $storage);
     }
 
+    /**
+     * 테스트가 심은 통화 설정과 목(mock)을 정리합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         $this->clearTestCurrencySettings();
@@ -73,6 +86,8 @@ class GuestClaimApiTest extends ModuleTestCase
      * 배송완료 비회원 주문과 유효 토큰을 만듭니다.
      *
      * @param  OrderStatusEnum  $status  주문 상태
+     * @param  int  $quantity  주문옵션 수량
+     * @param  array  $paymentOverrides  결제행에 덮어쓸 값 (결제수단 등)
      * @return array{0: Order, 1: string} [주문, 토큰]
      */
     protected function guestOrderWithToken(
@@ -95,17 +110,37 @@ class GuestClaimApiTest extends ModuleTestCase
         return [$order->fresh(['options', 'shippingAddress']), $token];
     }
 
+    /**
+     * 그 주문의 비회원 API 접두 경로를 돌려줍니다.
+     *
+     * @param  Order  $order  대상 주문
+     * @return string API 접두 경로
+     */
     protected function base(Order $order): string
     {
         return "/api/modules/sirsoft-ecommerce/guest/orders/{$order->order_number}";
     }
 
+    /**
+     * 주문의 첫 옵션 하나를 신청 항목 배열로 만듭니다.
+     *
+     * @param  Order  $order  대상 주문
+     * @param  int  $quantity  신청 수량
+     * @return array<int, array{order_option_id: int, quantity: int}> 신청 항목 배열
+     */
     protected function items(Order $order, int $quantity = 1): array
     {
         return [['order_option_id' => $order->options->first()->id, 'quantity' => $quantity]];
     }
 
     /**
+     * 토큰 없이·잘못된 토큰으로는 비회원 클레임 경로 전부가 404 다.
+     *
+     * 한 경로만 열려 있어도 주문번호만 아는 사람이 그 주문의 클레임을 읽고 만들 수 있다.
+     * 404 인 것은 의도다 — 403 이면 그 주문번호가 실재한다는 사실이 새어 나간다.
+     *
+     * @return void 반환값 없음
+     *
      * @scenario claim_type=exchange, entry=without_token, screen=order_section
      *
      * @effects guest_claim_routes_are_token_protected
@@ -128,6 +163,8 @@ class GuestClaimApiTest extends ModuleTestCase
      *
      * 이 둘은 작성 화면이 그려지기 전에 부르는 유일한 쌍이다 — 한쪽만 살아 있으면 화면은
      * 상품 목록을 그리고 금액 칸만 빈다.
+     *
+     * @return void 반환값 없음
      *
      * @scenario claim_type=return, entry=with_token, screen=apply
      *
@@ -155,6 +192,8 @@ class GuestClaimApiTest extends ModuleTestCase
      *
      * `requested_by` 가 비는 것이 비회원 신청의 정의다 — 회원 경로와 서비스를 공유하므로
      * 이 자리에 값이 들어가면 남의 신청서가 된다.
+     *
+     * @return void 반환값 없음
      *
      * @scenario claim_type=return, entry=with_token, screen=detail
      *
@@ -203,6 +242,8 @@ class GuestClaimApiTest extends ModuleTestCase
     /**
      * 비회원 교환 접수는 왕복 배송비 청구로 결제 진입 4키와 함께 `payment_pending` 이 된다.
      *
+     * @return void 반환값 없음
+     *
      * @scenario claim_type=exchange, entry=with_token, screen=apply
      *
      * @effects guest_claim_routes_allow_guest_and_use_claim_number
@@ -233,6 +274,8 @@ class GuestClaimApiTest extends ModuleTestCase
 
     /**
      * 비회원 추가결제의 승인 콜백이 결제를 확정한다 — 이 라우트가 죽어도 red 가 나지 않던 면.
+     *
+     * @return void 반환값 없음
      *
      * @scenario claim_type=exchange, entry=with_token, screen=apply
      *
@@ -269,6 +312,12 @@ class GuestClaimApiTest extends ModuleTestCase
     }
 
     /**
+     * 비회원 카드 결제완료 주문의 환불신청은 `auto` 분기로 접수와 동시에 취소까지 간다.
+     *
+     * PG 로 되돌아가는 수단은 사람이 손댈 일이 없어 멈출 자리가 없다 — 회원 축과 같은 판정이다.
+     *
+     * @return void 반환값 없음
+     *
      * @scenario item_selection=single_full, payment_state=card_paid
      *
      * @effects cancellation_record_is_created_only_on_refund_completion
@@ -292,6 +341,11 @@ class GuestClaimApiTest extends ModuleTestCase
      * 비회원 경로가 회원 경로와 같은 술어를 지나는지 잠근다 — 접수 서비스는 하나지만 입구가
      * 둘이라, 한쪽만 게이트를 지나면 비회원 무통장 주문이 조용히 자동 완료된다.
      *
+     * 계좌는 이 축과 직교한다 — 돈이 계좌로 돌아가는 주문이라 접수 시점에 받을 계좌가 있어야
+     * 한다(T2-D5, PO 결정 2026-09-23). 여기서는 계좌를 채워 `auto`/`requested` 축만 본다.
+     *
+     * @return void 반환값 없음
+     *
      * @scenario gate_case=stopped_method_guest_api
      *
      * @effects stopped_payment_method_holds_refund_at_requested
@@ -304,7 +358,9 @@ class GuestClaimApiTest extends ModuleTestCase
         );
 
         $this->postJson($this->base($order).'/refund-requests', [
-            'items' => $this->items($order), 'reason_code' => 'changed_mind',
+            'items' => $this->items($order),
+            'reason_code' => 'changed_mind',
+            'refund_bank' => ['bank_code' => '003', 'account_number' => '01012345678', 'holder' => 'MEAS599'],
         ], ['X-Guest-Order-Token' => $token])
             ->assertCreated()
             ->assertJsonPath('data.branch', 'auto')
@@ -322,6 +378,8 @@ class GuestClaimApiTest extends ModuleTestCase
      *
      * 두 값 모두 정상 서식이라 옆 필드가 흘러들어도 화면에 흔적이 남지 않는다 —
      * 소계는 2026-09-01, 단가는 S3-D6 실측에서 각각 드러났다.
+     *
+     * @return void 반환값 없음
      *
      * @scenario claim_type=exchange, entry=with_token, screen=edit
      *
@@ -396,6 +454,8 @@ class GuestClaimApiTest extends ModuleTestCase
     /**
      * 토큰과 주문번호가 어긋나면 미들웨어가 신청서에 닿기 전에 404 로 막는다.
      *
+     * @return void 반환값 없음
+     *
      * @scenario claim_type=return, entry=with_token, screen=detail
      *
      * @effects guest_claim_routes_are_token_protected
@@ -419,6 +479,8 @@ class GuestClaimApiTest extends ModuleTestCase
      *
      * 접수가 자체 트랜잭션으로 커밋된 뒤 첨부 귀속에서 거절하면 사용자는 422 를 보는데
      * 신청서는 살아남아 그 상품의 수량을 잠근다(재신청 불가).
+     *
+     * @return void 반환값 없음
      *
      * @scenario claim_type=return, entry=with_token, screen=apply
      *
@@ -454,6 +516,8 @@ class GuestClaimApiTest extends ModuleTestCase
 
     /**
      * 주문상세의 「이 주문의 클레임」 목록이 상품명을 싣고, 사유 카탈로그를 1회만 읽는다.
+     *
+     * @return void 반환값 없음
      *
      * @scenario claim_type=return, entry=with_token, screen=order_section
      *
@@ -521,6 +585,8 @@ class GuestClaimApiTest extends ModuleTestCase
     /**
      * 비회원은 마일리지로 추가결제를 낼 수 없고, 거절된 요청은 결제행을 건드리지 않는다.
      *
+     * @return void 반환값 없음
+     *
      * @scenario claim_type=return, entry=with_token, screen=apply
      *
      * @effects guest_claim_options_hide_the_payment_method_the_server_refuses
@@ -550,6 +616,8 @@ class GuestClaimApiTest extends ModuleTestCase
      *
      * 가드가 결제행을 만든 뒤에만 서면 그 결제행은 다시 열리지 않는다.
      *
+     * @return void 반환값 없음
+     *
      * @scenario claim_type=return, entry=with_token, screen=apply
      *
      * @effects guest_claim_options_hide_the_payment_method_the_server_refuses
@@ -578,6 +646,8 @@ class GuestClaimApiTest extends ModuleTestCase
      * 비회원 섹션도 회원 목록과 같이 배송사 관계와 주문번호를 싣는다.
      *
      * 빠지면 오류 없이 전 행 null 이 되어 배송조회 열만 비고, 응답은 정상으로 보인다.
+     *
+     * @return void 반환값 없음
      *
      * @scenario claim_type=return, entry=with_token, screen=order_section
      *
@@ -615,6 +685,8 @@ class GuestClaimApiTest extends ModuleTestCase
      *
      * 한 경로만 가리면 나머지가 그대로 우회로가 된다.
      *
+     * @return void 반환값 없음
+     *
      * @scenario claim_type=refund, entry=with_token, screen=detail
      *
      * @effects guest_claim_cards_keep_shared_values
@@ -642,6 +714,10 @@ class GuestClaimApiTest extends ModuleTestCase
     }
 
     /**
+     * 한 주문의 신청 목록은 유형별로 나뉘고 페이지 단위로 끊어 온다.
+     *
+     * @return void 반환값 없음
+     *
      * @scenario claim_type=return, entry=with_token, screen=order_section
      *
      * @effects guest_order_claim_list_is_paginated_by_type
@@ -700,6 +776,8 @@ class GuestClaimApiTest extends ModuleTestCase
      * 결제완료 주문의 취소·환불 신청은 즉시취소로 분기하므로 취소만 있는 주문이 된다 — 실사용 화면의
      * 스크린샷으로 지적된 바로 그 형태(취소 1건인데 교환 탭의 빈 안내가 먼저 보이던 것)다.
      *
+     * @return void 반환값 없음
+     *
      * @scenario claim_type=cancel, entry=with_token, screen=order_section
      *
      * @effects guest_order_claim_list_default_type_is_first_with_requests
@@ -748,6 +826,10 @@ class GuestClaimApiTest extends ModuleTestCase
     }
 
     /**
+     * 어휘 밖 유형은 422 로 거절하고, 유형을 생략하면 기본 서브탭으로 연다.
+     *
+     * @return void 반환값 없음
+     *
      * @scenario claim_type=cancel, entry=with_token, screen=order_section
      *
      * @effects guest_order_claim_list_rejects_a_type_outside_the_vocabulary
@@ -779,6 +861,10 @@ class GuestClaimApiTest extends ModuleTestCase
     }
 
     /**
+     * 비회원에게는 쓸 수 없는 마일리지가 청구 결제수단 목록에서 빠진다.
+     *
+     * @return void 반환값 없음
+     *
      * @scenario claim_type=return, entry=with_token, screen=apply
      *
      * @effects guest_claim_options_hide_the_payment_method_the_server_refuses
@@ -803,6 +889,10 @@ class GuestClaimApiTest extends ModuleTestCase
     }
 
     /**
+     * 토큰 없는 404 는 돌아갈 조회 화면 주소를 함께 실어 온다.
+     *
+     * @return void 반환값 없음
+     *
      * @scenario claim_type=exchange, entry=without_token, screen=detail
      *
      * @effects guest_claim_screens_clear_the_token_and_return_to_lookup
@@ -832,6 +922,10 @@ class GuestClaimApiTest extends ModuleTestCase
     }
 
     /**
+     * TTL 이 지난 토큰은 더 이상 클레임 경로에 닿지 않는다.
+     *
+     * @return void 반환값 없음
+     *
      * @scenario claim_type=exchange, entry=expired_token, screen=order_section
      *
      * @effects guest_claim_routes_are_token_protected
@@ -855,6 +949,8 @@ class GuestClaimApiTest extends ModuleTestCase
 
     /**
      * 없는 결제번호는 결제 전용 문구의 404 다 — 회원 축과 같은 트레이트를 쓰므로 함께 잠근다.
+     *
+     * @return void 반환값 없음
      *
      * @scenario claim_type=exchange, entry=with_token, screen=detail
      *
@@ -890,6 +986,8 @@ class GuestClaimApiTest extends ModuleTestCase
      * 회원 축과 같은 이유다 — `previewRefund()` 기본 가드가 세 면에 새 422 경로를 만들었는데
      * 비회원 컨트롤러는 관리자와 다른 메시지 키(`order_cancel_failed`)를 쓴다. 이 면을
      * 단언하지 않으면 매핑이 끊겨도 회귀가 초록으로 남는다.
+     *
+     * @return void 반환값 없음
      *
      * @scenario claim_type=refund, entry=with_token, screen=apply
      *
