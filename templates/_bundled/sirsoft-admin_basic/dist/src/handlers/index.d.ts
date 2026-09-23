@@ -4,6 +4,7 @@ import { initMenuFromUrlHandler } from './initMenuFromUrlHandler';
 import { initFilterVisibilityHandler, saveFilterVisibilityHandler, toggleFilterVisibilityHandler, resetFilterVisibilityHandler } from './filterVisibilityHandler';
 import { saveMultilingualTagHandler, cancelMultilingualTagHandler, updateMultilingualTagValueHandler } from './multilingualTagHandler';
 import { setDateRangeHandler } from './setDateRangeHandler';
+import { setAnalyticsPeriodHandler } from './setAnalyticsPeriodHandler';
 import { toggleSidebarHandler, initSidebarHandler } from './sidebarHandler';
 import { downloadAttachmentHandler } from './downloadAttachment';
 import { downloadMarkupFileHandler } from './downloadMarkupFile';
@@ -32,6 +33,7 @@ export declare const handlerMap: {
     readonly cancelMultilingualTag: typeof cancelMultilingualTagHandler;
     readonly updateMultilingualTagValue: typeof updateMultilingualTagValueHandler;
     readonly setDateRange: typeof setDateRangeHandler;
+    readonly setAnalyticsPeriod: typeof setAnalyticsPeriodHandler;
     readonly toggleSidebar: typeof toggleSidebarHandler;
     readonly initSidebar: typeof initSidebarHandler;
     readonly downloadAttachment: typeof downloadAttachmentHandler;

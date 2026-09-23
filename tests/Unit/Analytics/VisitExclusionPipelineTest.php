@@ -260,8 +260,10 @@ class VisitExclusionPipelineTest extends TestCase
         $headless = $this->request(['userAgent' => 'Mozilla/5.0 (X11; Linux x86_64) HeadlessChrome/128.0.0.0 Safari/537.36']);
         $webdriver = $this->request(['webdriver' => true]);
 
-        $this->assertSame(ExclusionReason::Headless, $this->evaluate($headless));
-        $this->assertSame(ExclusionReason::Headless, $this->evaluate($webdriver));
+        // 토글을 명시한다 — 운영자가 저장해 둔 설정이 config 미러로 올라오므로 기본값에 기대면
+        // 그 사이트에서만 빨갛게 된다(이 저장소 실측에서 실제로 겪었다).
+        $this->assertSame(ExclusionReason::Headless, $this->evaluate($headless, ['block_headless' => true]));
+        $this->assertSame(ExclusionReason::Headless, $this->evaluate($webdriver, ['block_headless' => true]));
         $this->assertNull($this->evaluate($webdriver, ['block_headless' => false]), '토글을 끄면 세어야 한다');
     }
 

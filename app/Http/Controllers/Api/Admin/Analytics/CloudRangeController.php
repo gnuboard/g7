@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\Admin\Analytics;
 
+use App\Analytics\AnalyticsClock;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use App\Services\Analytics\CloudIpRangeService;
 use Illuminate\Http\JsonResponse;
@@ -39,6 +40,10 @@ class CloudRangeController extends AdminBaseController
             // 버리면 그 순간부터 모든 데이터센터 요청이 사람으로 집계된다.
             return $this->error('analytics.cloud_ranges.refresh_failed', 502);
         }
+
+        // 갱신 시각은 설정·진단 응답과 **같은 기준**으로 내보낸다 — 오프셋을 실으면 화면의
+        // `| datetime` 이 브라우저 시간대로 다시 옮긴다(#682 S3 라운드 7).
+        $result['updated_at'] = AnalyticsClock::storedToSiteDateTimeString($result['updated_at'] ?? null);
 
         return $this->success('analytics.cloud_ranges.refresh_success', $result);
     }

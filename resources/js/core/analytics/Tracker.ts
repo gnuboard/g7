@@ -21,6 +21,16 @@ const OPT_OUT_ENDPOINT = '/api/admin/analytics/opt-out';
 /** 직전 페이지 체류 시간 상한 (초) — 서버도 같은 값으로 자른다 */
 const MAX_TIME_SPENT_SECONDS = 1800;
 
+/** 같은 화면으로의 되풀이 이동을 한 번으로 보는 창 (ms) — 링크 클릭 중복 억제와 같은 값 */
+const PAGEVIEW_DEDUPE_WINDOW_MS = 1000;
+
+/**
+ * 동의 조회가 끝나기 전에 들고 있을 비콘 수의 상한.
+ *
+ * 조회는 부팅 직후 한 번이라 보통 첫 화면 1건뿐이다. 조회가 오래 걸려도 무한히 쌓지 않는다.
+ */
+const MAX_HELD_BEACONS = 5;
+
 /** 비콘 페이로드 */
 export interface BeaconPayload {
   /** 액션 종류 */
@@ -84,8 +94,14 @@ export class AnalyticsTracker {
   /** 직전 페이지뷰를 보낸 시각 (ms) */
   private lastPageviewAt: number | null = null;
 
+  /** 직전 페이지뷰의 화면 키 (주소 + 라우트 경로) */
+  private lastPageviewKey: string | null = null;
+
   /** 확장이 넣어 둔 차원 값 */
   private dimensions: Record<string, string> = {};
+
+  /** 동의 조회가 끝나기 전에 온 비콘(직렬화본) — 조회가 끝나면 동의일 때만 보낸다 */
+  private held: string[] = [];
 
   /**
    * 트래커를 만듭니다.
@@ -108,6 +124,7 @@ export class AnalyticsTracker {
    */
   async start(): Promise<void> {
     await this.consent.start();
+    this.flushHeld();
   }
 
   /**
@@ -127,6 +144,17 @@ export class AnalyticsTracker {
    */
   trackPageview(route: TitleSource | null): void {
     const now = Date.now();
+
+    // 같은 화면으로의 되풀이 이동(메뉴 더블클릭 등)이 창 안에 다시 오면 한 번으로 센다 —
+    // 라우터는 같은 주소로의 이동도 매번 알리므로 그대로 보내면 한 번 본 화면이 2건이 된다.
+    const key = `${this.currentUrl()}|${route?.path ?? ''}`;
+    if (this.lastPageviewKey === key
+      && this.lastPageviewAt !== null
+      && now - this.lastPageviewAt < PAGEVIEW_DEDUPE_WINDOW_MS) {
+      return;
+    }
+    this.lastPageviewKey = key;
+
     const prev = this.lastPageviewAt === null
       ? undefined
       : Math.min(MAX_TIME_SPENT_SECONDS, Math.round((now - this.lastPageviewAt) / 1000));
@@ -149,6 +177,10 @@ export class AnalyticsTracker {
   /**
    * 파일 내려받기를 알립니다.
    *
+   * 이미 받아 둔 내용을 임시 링크로 저장시키는 `blob:`·`data:` 주소는 이 탭 안에서만 뜻이 있다.
+   * 서버는 URL 이 아니라며 거절하고(게시판 첨부처럼 파일을 받아 blob 으로 저장시키는 화면에서는
+   * 내려받기가 통째로 빠진다) 리포트에도 쓸 데가 없으므로 주소 없이 표시 이름만 보낸다.
+   *
    * @param url 파일 주소
    * @param name 표시 이름
    * @returns 없음
@@ -156,7 +188,9 @@ export class AnalyticsTracker {
   trackDownload(url: string, name?: string): void {
     if (this.options.settings.track_downloads === false) return;
 
-    this.send({ t: 'download', url: this.currentUrl(), target: url, name });
+    const target = /^(blob|data):/i.test(url) ? undefined : url;
+
+    this.send({ t: 'download', url: this.currentUrl(), target, name });
   }
 
   /**
@@ -274,6 +308,17 @@ export class AnalyticsTracker {
   private send(payload: BeaconPayload): void {
     try {
       if (shouldSkip(payload.url, this.options.settings) !== null) return;
+
+      // 동의를 아직 못 읽었으면 버리지 않고 들고 있는다 — 첫 화면 비콘은 동의 조회보다 먼저
+      // 나가서, 버리면 동의한 방문자의 진입 화면·새로고침이 전부 빠진다(#682 S3 라운드 13).
+      if (this.consent.isPending()) {
+        if (this.held.length < MAX_HELD_BEACONS) {
+          this.held.push(JSON.stringify(this.decorate(payload)));
+        }
+
+        return;
+      }
+
       if (!this.consent.allowsSending()) return;
 
       const body = JSON.stringify(this.decorate(payload));
@@ -281,6 +326,23 @@ export class AnalyticsTracker {
       setTimeout(() => this.dispatch(body), 0);
     } catch {
       // 트래커는 어떤 경우에도 호출자에게 예외를 돌려주지 않는다.
+    }
+  }
+
+  /**
+   * 동의 조회가 끝난 뒤 들고 있던 비콘을 처리합니다.
+   *
+   * 동의로 확인되면 보내고, 미동의·조회 실패면 버립니다.
+   *
+   * @returns 없음
+   */
+  private flushHeld(): void {
+    const held = this.held.splice(0);
+
+    if (held.length === 0 || !this.consent.allowsSending()) return;
+
+    for (const body of held) {
+      this.dispatch(body);
     }
   }
 

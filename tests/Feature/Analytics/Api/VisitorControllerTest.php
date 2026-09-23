@@ -2,7 +2,10 @@
 
 namespace Tests\Feature\Analytics\Api;
 
+use App\Enums\Analytics\ActionType;
 use App\Enums\Analytics\VisitorType;
+use App\Models\Analytics\AnalyticsAction;
+use App\Models\User;
 use App\Services\Analytics\CsvExporter;
 use Illuminate\Support\Carbon;
 
@@ -124,6 +127,104 @@ class VisitorControllerTest extends AnalyticsApiTestCase
     }
 
     /**
+     * 방문 타임라인이 전체 유입 주소를 싣는지 확인합니다.
+     *
+     * 집계표는 유입처를 호스트까지만 쌓아 「naver.com 에서 왔다」까지만 말한다. 어느 검색
+     * 결과에서 왔는지는 원장의 `referrer_url` 에만 있는데, 이 값은 모으기만 하고 어느 화면·
+     * 응답에도 실리지 않아 운영자가 볼 길이 없었다(#682 라운드 4, 검수 지적 ⑥).
+     *
+     * @return void 없음
+     *
+     * @scenario endpoint=visitors, role=privacy, period=valid
+     *
+     * @effects visitor_detail_carries_the_full_referrer_url
+     */
+    public function test_the_detail_carries_the_full_referrer_url(): void
+    {
+        $key = str_repeat('e', 32);
+        $this->visit([
+            'visitor_key' => $key,
+            'referrer_name' => 'google.com',
+            'referrer_url' => 'https://google.com/search?q=gnuboard7',
+        ]);
+
+        $response = $this->actingAs($this->privacyAdmin())
+            ->getJson('/api/admin/analytics/visitors/'.$key);
+
+        $response->assertOk();
+        $visit = $response->json('data.visits.0');
+
+        $this->assertArrayHasKey('referrer_url', $visit, '전체 주소가 응답에 없으면 화면이 그릴 수 없다');
+        $this->assertSame('https://google.com/search?q=gnuboard7', $visit['referrer_url']);
+        $this->assertSame('google.com', $visit['referrer_name'], '호스트 요약도 함께 남는다');
+    }
+
+    /**
+     * 회원 방문자에 회원 정보가 붙는지 확인합니다.
+     *
+     * 목록은 방문자 키와 회원 번호만 실어 「누가 왔는지」를 답하지 못했다. 화면이 이름을
+     * 쓰고 「회원 정보 보기」로 건너뛰려면 이름과 uuid 가 응답에 있어야 한다. 비회원은
+     * 붙일 것이 없으므로 null 이다(#682 라운드 4, 검수 지적 ⑦).
+     *
+     * @return void 없음
+     *
+     * @scenario endpoint=visitors, role=privacy, period=valid
+     *
+     * @effects visitor_list_carries_member_identity_for_logged_in_visitors
+     */
+    public function test_the_list_carries_member_identity(): void
+    {
+        $member = User::factory()->create(['name' => '방문한 회원']);
+
+        $memberKey = str_repeat('f', 32);
+        $guestKey = str_repeat('0', 32);
+        $this->visit(['visitor_key' => $memberKey, 'user_id' => $member->id]);
+        $this->visit(['visitor_key' => $guestKey, 'user_id' => null]);
+
+        $response = $this->actingAs($this->privacyAdmin())
+            ->getJson('/api/admin/analytics/visitors?preset=today');
+
+        $response->assertOk();
+        $rows = collect($response->json('data.data'));
+
+        $memberRow = $rows->firstWhere('visitor_key', $memberKey);
+        $this->assertNotNull($memberRow['user'], '회원 방문에는 회원이 붙는다');
+        $this->assertSame('방문한 회원', $memberRow['user']['name']);
+        $this->assertSame((string) $member->uuid, $memberRow['user']['uuid'], 'uuid 가 없으면 회원 화면으로 갈 수 없다');
+        $this->assertSame($member->email, $memberRow['user']['email']);
+
+        $guestRow = $rows->firstWhere('visitor_key', $guestKey);
+        $this->assertNull($guestRow['user'], '비회원 방문에 붙일 회원은 없다');
+    }
+
+    /**
+     * 지워진 회원의 기록에는 회원이 붙지 않는지 확인합니다.
+     *
+     * 번호는 원장에 남지만 회원 행은 사라진다 — 그때 이름을 지어내면 안 되고, 목록이
+     * 터져서도 안 된다. 화면은 이 경우 번호만 보인다.
+     *
+     * @return void 없음
+     *
+     * @scenario endpoint=visitors, role=privacy, period=valid
+     *
+     * @effects visitor_list_leaves_member_null_when_the_account_is_gone
+     */
+    public function test_a_removed_member_leaves_only_the_number(): void
+    {
+        $key = str_repeat('9', 32);
+        $this->visit(['visitor_key' => $key, 'user_id' => 987654]);
+
+        $response = $this->actingAs($this->privacyAdmin())
+            ->getJson('/api/admin/analytics/visitors?preset=today');
+
+        $response->assertOk();
+        $row = collect($response->json('data.data'))->firstWhere('visitor_key', $key);
+
+        $this->assertSame(987654, $row['user_id']);
+        $this->assertNull($row['user']);
+    }
+
+    /**
      * 단건 조회가 경로의 방문자 키로 그 사람의 활동을 펼치는지 확인합니다.
      *
      * @return void 없음
@@ -148,6 +249,44 @@ class VisitorControllerTest extends AnalyticsApiTestCase
     }
 
     /**
+     * 타임라인이 화면에서 읽히는 이름을 함께 싣는지 확인합니다.
+     *
+     * 저장 이름은 정보주체 내보내기 파일이 그대로 싣는 값이라 손대지 않고, 화면이 쓸 이름만 덧붙입니다 —
+     * 한국어 주소가 「%EB%B0%A9…」로 보이면 운영자가 읽을 수 없습니다(브라우저 실측 §8 M5-T3).
+     *
+     * @return void 없음
+     *
+     * @scenario endpoint=visitors, role=privacy, period=valid
+     *
+     * @effects page_labels_are_readable_for_display
+     */
+    public function test_the_timeline_carries_a_readable_name_for_the_screen(): void
+    {
+        config(['g7_settings.core.general.site_url' => 'https://example.test']);
+
+        $key = str_repeat('6', 32);
+        $visit = $this->visit(['visitor_key' => $key]);
+        $raw = 'example.test/search?q=%EB%B0%A9%EB%AC%B8%EC%9E%90';
+
+        AnalyticsAction::factory()->create([
+            'visit_id' => $visit->id,
+            'visitor_key' => $key,
+            'action_type' => ActionType::Pageview,
+            'action_name_id' => $this->actionName('url', $raw)->id,
+            'occurred_at' => Carbon::now('UTC'),
+        ]);
+
+        $response = $this->actingAs($this->privacyAdmin())
+            ->getJson('/api/admin/analytics/visitors/'.$key);
+
+        $response->assertOk();
+        $actions = $response->json('data.visits.0.actions');
+
+        $this->assertContains($raw, array_column($actions, 'name'), '저장 이름은 그대로 — 내보내기 파일이 읽는 값이다');
+        $this->assertContains('/search?q=방문자', array_column($actions, 'name_display'));
+    }
+
+    /**
      * 방문자 활동 내역을 CSV 로 내려받을 수 있는지 확인합니다.
      *
      * 정보주체가 열람을 요구하면 운영자는 그 사람의 기록을 건네줘야 합니다. 화면으로만
@@ -163,7 +302,11 @@ class VisitorControllerTest extends AnalyticsApiTestCase
     public function test_the_detail_can_be_downloaded_as_csv(): void
     {
         $key = str_repeat('7', 32);
-        $this->visit(['visitor_key' => $key, 'referrer_name' => 'naver.com']);
+        $this->visit([
+            'visitor_key' => $key,
+            'referrer_name' => 'naver.com',
+            'referrer_url' => 'https://search.naver.com/search.naver?query=g7',
+        ]);
 
         $response = $this->actingAs($this->privacyAdmin())
             ->get('/api/admin/analytics/visitors/'.$key.'?format=csv');
@@ -178,12 +321,15 @@ class VisitorControllerTest extends AnalyticsApiTestCase
         $body = $response->streamedContent();
 
         $this->assertStringStartsWith(CsvExporter::BOM, $body, 'BOM 이 없으면 엑셀에서 한글이 전부 깨진다');
+        // 전체 유입 주소는 집계표에 없는 값이라 CSV 에도 실어야 한다 — 호스트만으로는
+        // 어느 글에서 왔는지 알 수 없다(#682 라운드 4, 검수 지적 ⑥).
         $this->assertStringContainsString(
-            "referrer_type,referrer_name,pageviews,total_time_seconds,action_occurred_at,action_type,action_name,time_spent_seconds\r\n",
+            "referrer_type,referrer_name,referrer_url,pageviews,total_time_seconds,action_occurred_at,action_type,action_name,time_spent_seconds\r\n",
             $body,
         );
         // 액션 줄에 방문 정보가 함께 실려야 엑셀에서 한 줄만 보고도 맥락을 안다.
         $this->assertStringContainsString('naver.com', $body);
+        $this->assertStringContainsString('https://search.naver.com/search.naver?query=g7', $body);
         $this->assertStringContainsString('pageview', $body);
     }
 
@@ -291,6 +437,63 @@ class VisitorControllerTest extends AnalyticsApiTestCase
     }
 
     /**
+     * 카드가 회원과 재방문 여부를 함께 내는지 확인합니다.
+     *
+     * @return void 없음
+     *
+     * @scenario endpoint=visitors, role=privacy, period=valid
+     *
+     * @effects visitor_card_carries_member_and_returning
+     */
+    public function test_the_card_carries_member_and_returning(): void
+    {
+        // 목록에는 회원 이름이 있는데 상세 카드에는 없어서, 이름을 보고 들어온 운영자가 그 사람을
+        // 카드에서 다시 잃었다. 재방문 여부도 와이어프레임에 있는데 어느 응답에도 없었다
+        // (#682 S3 라운드 5, 계획서 §4.11 방문자 상세).
+        $member = User::factory()->create(['name' => '두 번 온 회원']);
+        $key = str_repeat('e', 32);
+
+        // 같은 사람의 방문 두 건 — 재방문이다.
+        $this->visit(['visitor_key' => $key, 'user_id' => $member->id]);
+        $this->visit(['visitor_key' => $key, 'user_id' => $member->id]);
+
+        $card = $this->actingAs($this->privacyAdmin())
+            ->getJson('/api/admin/analytics/visitors/'.$key)
+            ->assertOk()
+            ->json('data.visitor');
+
+        $this->assertSame($member->id, $card['user_id']);
+        $this->assertNotNull($card['user'], '카드에 회원이 붙어야 한다');
+        $this->assertSame('두 번 온 회원', $card['user']['name']);
+        $this->assertSame((string) $member->uuid, $card['user']['uuid'], 'uuid 가 없으면 회원 화면으로 갈 수 없다');
+        $this->assertTrue($card['is_returning'], '방문이 두 건이면 다시 온 사람이다');
+    }
+
+    /**
+     * 비회원 한 번 방문은 회원이 비고 재방문이 아닌지 확인합니다.
+     *
+     * @return void 없음
+     *
+     * @scenario endpoint=visitors, role=privacy, period=valid
+     *
+     * @effects visitor_card_carries_member_and_returning
+     */
+    public function test_a_guest_single_visit_card_has_no_member_and_is_not_returning(): void
+    {
+        $key = str_repeat('9', 32);
+        $this->visit(['visitor_key' => $key, 'user_id' => null]);
+
+        $card = $this->actingAs($this->privacyAdmin())
+            ->getJson('/api/admin/analytics/visitors/'.$key)
+            ->assertOk()
+            ->json('data.visitor');
+
+        $this->assertNull($card['user_id']);
+        $this->assertNull($card['user'], '비회원 방문에 붙일 회원은 없다');
+        $this->assertFalse($card['is_returning'], '한 번만 온 사람은 재방문이 아니다');
+    }
+
+    /**
      * 기간 안에 방문이 없어도 카드가 비지 않는지 확인합니다.
      *
      * @return void 없음
@@ -353,5 +556,59 @@ class VisitorControllerTest extends AnalyticsApiTestCase
             $today->toDateString(),
             Carbon::parse($visits[0]['first_action_at'])->toDateString(),
         );
+    }
+
+    /**
+     * 상세 응답이 마스킹 사실을 함께 싣는지 확인합니다.
+     *
+     * @return void 없음
+     *
+     * @scenario endpoint=visitors, role=privacy, period=valid
+     *
+     * @effects masked_ip_is_labelled_as_masked
+     */
+    public function test_the_detail_tells_the_screen_the_address_is_masked(): void
+    {
+        // 화면이 찍는 주소는 설정대로 뒤 옥텟을 지운 값이다. 그 사실을 함께 내려보내지 않으면
+        // 운영자가 마스킹된 값을 원래 주소로 읽고, 정보주체가 「내 접속 기록이 맞느냐」 물었을 때
+        // 그 주소로 답한다(#682 S3 라운드 6, 계획서 §4.10 「IP(마스킹 표시)」).
+        $key = str_repeat('f', 32);
+        $this->visit(['visitor_key' => $key]);
+
+        config(['g7_settings.core.analytics.ip_mask_octets' => 2]);
+
+        $this->assertSame(
+            2,
+            $this->actingAs($this->privacyAdmin())
+                ->getJson('/api/admin/analytics/visitors/'.$key)
+                ->assertOk()
+                ->json('data.ip_mask_octets'),
+            '마스킹 옥텟 수를 싣지 않으면 화면이 마스킹 사실을 알 길이 없다',
+        );
+    }
+
+    /**
+     * 단건 CSV 파일명에 기간이 들어가는지 확인합니다.
+     *
+     * @return void 없음
+     *
+     * @scenario endpoint=visitors, role=privacy, period=valid
+     *
+     * @effects visitor_csv_filename_carries_the_period
+     */
+    public function test_the_single_visitor_csv_filename_carries_the_period(): void
+    {
+        // 부록 D 의 파일명 규약은 `analytics-{report}-{from}_{to}.csv` 다. 기간이 없으면 같은
+        // 사람을 두 기간으로 내려받았을 때 앞 파일을 덮어, 정보주체에게 건넬 때 어느 구간인지
+        // 알 수 없다(#682 S3 라운드 6).
+        $key = str_repeat('9', 32);
+        $this->visit(['visitor_key' => $key]);
+
+        $disposition = $this->actingAs($this->privacyAdmin())
+            ->get('/api/admin/analytics/visitors/'.$key.'?format=csv&from=2026-09-01&to=2026-09-10')
+            ->assertOk()
+            ->headers->get('content-disposition');
+
+        $this->assertStringContainsString('2026-09-01_2026-09-10', (string) $disposition);
     }
 }

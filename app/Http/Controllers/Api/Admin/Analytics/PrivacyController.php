@@ -43,9 +43,11 @@ class PrivacyController extends AdminBaseController
      */
     public function subjects(SubjectRequest $request): JsonResponse
     {
+        $config = AnalyticsConfig::fromSettings();
+
         $found = $this->subjects->find(
             $request->subject(),
-            AnalyticsConfig::fromSettings(),
+            $config,
             $request->input('from'),
             $request->input('to'),
         );
@@ -55,11 +57,28 @@ class PrivacyController extends AdminBaseController
                 'visit_id' => $visit->id,
                 'visitor_key' => $visit->visitor_key,
                 'visit_date' => $visit->visit_date?->toDateString(),
-                'first_action_at' => $visit->first_action_at?->toIso8601String(),
-                'last_action_at' => $visit->last_action_at?->toIso8601String(),
+                'first_action_at' => AnalyticsClock::toSiteDateTimeString($visit->first_action_at),
+                'last_action_at' => AnalyticsClock::toSiteDateTimeString($visit->last_action_at),
+                // 화면의 표가 그리는 값 — 주소로 찾은 사람의 주소, 그 방문이 본 쪽수와 남긴 활동 수.
+                // 이 경로는 열람 권한 전용이라 주소를 그대로 보여 준다(익명 구간은 애초에 null 이다).
+                'ip' => $visit->ip,
+                'visitor_type' => $visit->visitor_type instanceof \BackedEnum ? $visit->visitor_type->value : $visit->visitor_type,
+                'pageviews_count' => $visit->pageviews_count,
                 'actions_count' => $visit->actions_count,
             ])->all(),
             'notice' => $found['notice'],
+            // 익명 모드 안내는 이 화면이 **자기 권한 API** 에서 읽어야 한다. 조회 권한(diagnostics)에서
+            // 읽으면 개인정보 권한만 가진 담당자에게 403 이 나고, 삼킨 뒤 남은 fallback 이 「full」로
+            // 굳어 안내가 영영 뜨지 않는다 — 0건을 받고도 「기록 없음」인지 「IP 를 저장하지 않음」인지
+            // 구분 못 해 GDPR 요청에 잘못 답할 수 있다(#682 S3 라운드 5, 설계 결정 방식).
+            // 형제 경로(`VisitorController::index`·`show`)가 이미 같은 키를 같은 뜻으로 싣는다.
+            'mode' => $config->privacyMode->value,
+            // 형제 경로(`VisitorController::show`)와 같은 뜻으로 싣는다 — 이 표도 주소를 그리므로
+            // 마스킹된 값을 원래 주소로 읽으면 GDPR 요청에 잘못 답한다(§4.10 「IP(마스킹 표시)」).
+            'ip_mask_octets' => $config->ipMaskOctets,
+            // 내보내기 파일은 토큰 동반 blob 으로 받아 화면이 저장 이름을 정한다 — 그 이름을 여기서 알려 주지
+            // 않으면 화면이 검색값(방문자 IP)을 파일명에 넣었다. 날짜는 사이트 기준이라 화면이 계산할 수 없다.
+            'export_filename' => $this->exportFilename(),
         ]);
     }
 
@@ -81,7 +100,7 @@ class PrivacyController extends AdminBaseController
             $request->input('to'),
         );
 
-        $filename = 'analytics-subject-'.AnalyticsClock::now()->format('Ymd').'.json';
+        $filename = $this->exportFilename();
 
         return new StreamedResponse(function () use ($payload): void {
             // 기록을 받는 사람이 읽을 파일이다 — 사람이 볼 수 있게 들여쓰고,
@@ -131,5 +150,15 @@ class PrivacyController extends AdminBaseController
         );
 
         return $this->success('analytics.privacy.anonymize_queued', ['queued' => true], 202);
+    }
+
+    /**
+     * 정보주체 내보내기 파일명을 만듭니다 — 조회 응답과 내보내기 응답이 같은 이름을 쓰도록 한 곳에 둡니다.
+     *
+     * @return string `analytics-subject-{사이트 기준 Ymd}.json`
+     */
+    private function exportFilename(): string
+    {
+        return 'analytics-subject-'.AnalyticsClock::now()->format('Ymd').'.json';
     }
 }

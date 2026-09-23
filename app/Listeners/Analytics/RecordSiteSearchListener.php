@@ -15,6 +15,10 @@ use App\Services\Analytics\VisitService;
  * 방문에 검색 액션을 붙입니다.
  *
  * 검색 요청은 같은 쿠키·IP·User-Agent 로 오므로 별도 토큰 없이 같은 방문에 묶입니다.
+ *
+ * **이 리스너는 큐를 타지 않습니다**(`sync => true`) — 형제인 수집 리스너와 같은 사유로,
+ * 검색 1회가 잡 1개가 되면 얻는 것 없이 `jobs` 테이블만 부풉니다
+ * (#682 S3 라운드 6, 설계 결정 「큐는 꼭 필요한 부분에만」).
  */
 class RecordSiteSearchListener implements HookListenerInterface
 {
@@ -33,7 +37,8 @@ class RecordSiteSearchListener implements HookListenerInterface
     public static function getSubscribedHooks(): array
     {
         return [
-            'core.search.after_search' => ['method' => 'handle', 'priority' => 20],
+            // sync — 위 클래스 주석의 사유. 검색 1회가 잡 1개가 되지 않도록 큐를 타지 않는다.
+            'core.search.after_search' => ['method' => 'handle', 'priority' => 20, 'sync' => true],
         ];
     }
 

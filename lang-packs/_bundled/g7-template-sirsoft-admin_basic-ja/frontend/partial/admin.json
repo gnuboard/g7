@@ -1922,7 +1922,12 @@
         "reset_password": "パスワード再設定",
         "password_changed": "パスワード変更通知",
         "sitemap_regenerated": "サイトマップ再生成完了",
-        "sitemap_regenerate_failed": "サイトマップ再生成失敗"
+        "sitemap_regenerate_failed": "サイトマップ再生成失敗",
+        "analytics_archive_failed": "訪問者統計集計失敗",
+        "analytics_ledger_limit_exceeded": "訪問者統計台帳閾値超過",
+        "analytics_visit_limit_exceeded": "訪問あたりアクション上限超過",
+        "analytics_weekly_report": "訪問者統計週間レポート",
+        "analytics_monthly_report": "訪問者統計月間レポート"
       },
       "channels_label": "チャネル:",
       "edit_modal": {
@@ -3008,6 +3013,12 @@
     "member_notification_list": {
       "delete_confirm_modal": "会員通知削除確認",
       "bulk_delete_confirm_modal": "会員通知一括削除確認"
+    },
+    "analytics": {
+      "retro_anonymize_modal": "遡及匿名化確認",
+      "purge_all_modal": "すべての統計データ削除確認",
+      "reaggregate_modal": "期間再集計",
+      "subject_delete_modal": "情報主体記録削除確認"
     }
   },
   "member_notification": {
@@ -3066,6 +3077,627 @@
       "bulk_confirm_title": "通知一括削除確認",
       "bulk_confirm_message": "選択したすべての通知を削除してもよろしいですか？会員の通知ボックスからも削除され、元に戻すことはできません。",
       "bulk_success": "選択した通知がすべて削除されました。"
+    }
+  },
+  "analytics": {
+    "common": {
+      "refresh": "更新",
+      "csv_download": "CSVダウンロード(Excel用)",
+      "more": "もっと見る",
+      "empty_title": "選択期間に記録がありません",
+      "empty_description": "収集ステータスは収集診断画面で確認できます。",
+      "visits": "訪問",
+      "visitors": "訪問者",
+      "pageviews": "ページビュー",
+      "hits": "閲覧",
+      "bounce_rate": "離脱率",
+      "avg_time": "平均滞在時間",
+      "pages_per_visit": "訪問あたりのページ",
+      "label": "項目",
+      "extra": "追加",
+      "search_placeholder": "項目検索 (Enter)",
+      "sort_label": "並べ替え",
+      "per_page": "ページあたりの件数",
+      "empty_diagnostics_link": "収集診断を開く",
+      "toggle_list": "リストの展開・折りたたみ",
+      "site_timezone_badge": "時刻基準: サイト標準時（{timezone}）",
+      "queue_backlog_badge": "キュー待ち {count} 件"
+    },
+    "period": {
+      "presets": {
+        "today": "今日",
+        "yesterday": "昨日",
+        "7d": "7日",
+        "30d": "30日",
+        "90d": "90日",
+        "this_month": "今月",
+        "last_month": "先月",
+        "this_year": "今年"
+      },
+      "from": "開始日",
+      "to": "終了日",
+      "unit_label": "単位",
+      "units": {
+        "auto": "自動",
+        "hour": "時間",
+        "day": "日",
+        "week": "週",
+        "month": "月",
+        "year": "年"
+      },
+      "exclude_admin": "管理者を除外",
+      "exclude_member": "会員を除外",
+      "range_too_long": "一度に閲覧できる期間は{{days}}日までです — 開始日または終了日を変更してください。"
+    },
+    "alerts": {
+      "collection_disabled": "訪問者統計の収集がオフになっています — 数値がこれ以上増加しません。",
+      "collection_disabled_link": "設定でオンにする",
+      "consent_fallback": "同意連携モードですが、同意を確認するプラグインがないため、匿名モードで収集しています。",
+      "consent_cookie_fallback": "同意管理プラグインが同意前の訪問者クッキーをブロックしているため、匿名モードで収集しています。",
+      "queue_backlog": "キューに待機中{{count}}件 — ワーカーが実行されているか確認してください。",
+      "queue_backlog_link": "収集診断を開く",
+      "geoip_off": "GeoIPがオフになっているため、国はブラウザ言語で推定され、地域・都市は収集されません。",
+      "geoip_off_link": "高度な設定を開く",
+      "anonymous_mode": "匿名モードでは訪問者キーが毎日変更されるため、同じ人物の訪問は1日以内でのみまとめられます。",
+      "unit_downgraded": "時間単位の集計の保持期間外のため、日単位で表示されます。",
+      "load_failed": "統計を読み込めませんでした。しばらく経ってからもう一度お試しください。",
+      "load_failed_retry": "再試行",
+      "site_timezone": "この画面の時刻はサイト標準時（{timezone}）基準です — お使いの端末の時間帯とは異なります。"
+    },
+    "overview": {
+      "title": "訪問者統計概要",
+      "description": "本日·昨日·最大·全体の訪問者と推移、上位ページ·流入元·国を一目で確認します。",
+      "realtime_now": "現在{{count}}名が閲覧中",
+      "realtime_link": "リアルタイム表示",
+      "kpi": {
+        "today": "本日",
+        "yesterday": "昨日",
+        "max": "最大",
+        "total": "全体",
+        "change_label": "昨日比"
+      },
+      "trend_title": "推移",
+      "quality": {
+        "bounce_rate": "離脱率",
+        "avg_time": "平均滞在時間",
+        "pages_per_visit": "訪問あたりのページ"
+      },
+      "top": {
+        "pages": "人気ページ",
+        "referrers": "流入経路",
+        "countries": "国"
+      },
+      "visitors_daily_sum_note": "訪問者(ユニーク)は日別ユニーク訪問者の合計です — 訪問者キーが日ごとに変わるため、複数日にまたがるユニーク訪問者は数えられません。"
+    },
+    "pages": {
+      "title": "ページ",
+      "description": "どのページがどれほど読まれ、どこから入ってどこで出ていくかを確認します。",
+      "tabs": {
+        "popular": "人気ページ",
+        "entry": "進入ページ",
+        "exit": "離脱ページ",
+        "titles": "ページタイトル"
+      }
+    },
+    "referrers": {
+      "title": "流入経路",
+      "description": "訪問者がどこから来たか — 直接·検索·外部サイト·キャンペーン。",
+      "tabs": {
+        "types": "流入タイプ",
+        "sites": "流入元サイト",
+        "keywords": "検索キーワード",
+        "campaigns": "キャンペーン"
+      },
+      "type_share_title": "流入タイプ比率",
+      "urls_title": "{{host}} の流入アドレス",
+      "urls_back": "流入サイト一覧へ",
+      "urls_column": "流入アドレス",
+      "urls_hint": "このドメインから入ってきた実際のアドレスです。流入URL匿名化を有効にした期間の訪問は保存時点でドメインまでのみ残り、1行のみ表示されます。",
+      "urls_empty_description": "選択した期間にこのドメインから入ってきた記録がありません。"
+    },
+    "environment": {
+      "title": "環境",
+      "description": "ブラウザ·オペレーティングシステム·デバイス·解像度·言語·ロケールの分布。",
+      "tabs": {
+        "browsers": "ブラウザ",
+        "os": "オペレーティングシステム",
+        "devices": "デバイス",
+        "resolutions": "解像度",
+        "languages": "ブラウザ言語",
+        "locales": "ロケール"
+      },
+      "device_share_title": "デバイス比率"
+    },
+    "regions": {
+      "title": "地域",
+      "description": "国·地域·都市別訪問。GeoIP が有効な場合のみ地域·都市が表示されます。",
+      "tabs": {
+        "countries": "国",
+        "regions": "地域",
+        "cities": "都市"
+      }
+    },
+    "patterns": {
+      "title": "曜日·時間帯",
+      "description": "曜日と時間帯別の平均訪問パターン。",
+      "weekday_title": "曜日別",
+      "hour_title": "時間帯別",
+      "metric_label": "指標",
+      "weekdays": {
+        "0": "日",
+        "1": "月",
+        "2": "火",
+        "3": "水",
+        "4": "木",
+        "5": "金",
+        "6": "土"
+      },
+      "hourly_from": "時間帯パターンは {{date}} 以降のみ表示できます — その前の時間集計は保持期間を超えて削除されました。",
+      "average_note": "値は合計ではなく、期間内の同じ曜日·時間帯の平均です。"
+    },
+    "actions": {
+      "title": "検索キーワード·ダウンロード·コンバージョン",
+      "description": "内部検索キーワード、ダウンロードされたファイル、外部リンク、拡張機能が記録したコンバージョン(目標)。",
+      "tabs": {
+        "search": "検索キーワード",
+        "downloads": "ダウンロード",
+        "outlinks": "外部リンク",
+        "goals": "コンバージョン",
+        "dimensions": "カスタムディメンション"
+      },
+      "no_result": "結果なし",
+      "revenue": "売上",
+      "dimension_label": "ディメンションキー",
+      "dimension_placeholder": "拡張機能が登録したディメンションキー (Enter)",
+      "dimensions_hint": "拡張機能がカスタムディメンションを登録した場合、そのキーで検索します。",
+      "dimensions_empty_title": "検索するディメンションを選択してください",
+      "dimensions_empty_description": "拡張機能が登録したカスタムディメンションキーを入力すると、そのディメンションの上位リストが表示されます。"
+    },
+    "realtime": {
+      "title": "リアルタイム",
+      "description": "現在サイトを閲覧している訪問者とページ。",
+      "count_label": "過去 {{minutes}} 分",
+      "window_label": "ウィンドウ(分)",
+      "badge_ws": "リアルタイム接続中",
+      "badge_polling": "{{seconds}} 秒ごとに更新",
+      "pages_title": "現在閲覧中のページ",
+      "visitors_title": "最近の訪問",
+      "empty": "最近の期間に訪問者がいません",
+      "columns": {
+        "time": "時刻",
+        "page": "ページ",
+        "country": "国",
+        "device": "デバイス",
+        "type": "タイプ",
+        "visitor": "訪問者"
+      }
+    },
+    "visitors": {
+      "title": "訪問者",
+      "description": "人単位で集約された訪問記録。1 人の訪問者を選択すると、アクティビティタイムラインが表示されます。",
+      "search_placeholder": "訪問者キー·IP·会員番号 (Enter)",
+      "type_label": "タイプ",
+      "types": {
+        "all": "すべて",
+        "guest": "ゲスト",
+        "member": "会員",
+        "admin": "管理者",
+        "bot": "ボット"
+      },
+      "columns": {
+        "key": "訪問者キー",
+        "type": "タイプ",
+        "visits": "訪問",
+        "pageviews": "ページビュー",
+        "last_visit": "最後の訪問",
+        "country": "国",
+        "device": "デバイス",
+        "timeline": "タイムライン",
+        "member": "会員"
+      },
+      "timeline_button": "タイムライン",
+      "action": {
+        "view_member": "会員情報を表示",
+        "search_by_member": "この会員で検索"
+      }
+    },
+    "visitor_detail": {
+      "title": "訪問者詳細",
+      "back": "リストに戻る",
+      "delete_button": "この訪問者データを削除",
+      "card": {
+        "title": "訪問者",
+        "type": "タイプ",
+        "visits": "訪問数",
+        "country": "国",
+        "device": "デバイス",
+        "browser": "ブラウザ / OS",
+        "ip": "IP",
+        "first_visit": "初回訪問",
+        "last_visit": "最後の訪問",
+        "member": "会員",
+        "returning": "再訪問",
+        "returning_yes": "再訪問",
+        "returning_no": "初回訪問",
+        "ip_masked": "マスク {octets} オクテット"
+      },
+      "visits_title": "訪問履歴",
+      "visit_summary": "{{pages}}ページ · {{minutes}}分{{seconds}}秒",
+      "conversions_badge": "{{count}}件",
+      "conversions_badge_label": "コンバージョン",
+      "conversions_title": "コンバージョン",
+      "timeline": {
+        "pageview": "ページビュー",
+        "download": "ダウンロード",
+        "outlink": "外部リンク",
+        "event": "イベント",
+        "goal": "コンバージョン",
+        "site_search": "検索",
+        "search_result_count": "結果 {{count}}件"
+      },
+      "referrer_label": "流入アドレス"
+    },
+    "bots": {
+      "title": "ボット·クローラー",
+      "description": "検索エンジン·クローラーがどのくらい、どのアドレスを取得したかです。",
+      "seo_cache_link": "SEO キャッシュ設定",
+      "kpi": {
+        "hits": "ボットリクエスト",
+        "names": "ボット種類"
+      },
+      "tabs": {
+        "bots": "ボット",
+        "pages": "取得ページ"
+      },
+      "names_title": "ボット別集計",
+      "recent_title": "最近のリクエスト",
+      "columns": {
+        "bot": "ボット",
+        "hits": "リクエスト",
+        "url": "アドレス",
+        "cache_status": "キャッシュ",
+        "time": "時刻"
+      }
+    },
+    "diagnostics": {
+      "title": "収集診断",
+      "description": "数字が増えない理由を1つの画面で見つけます — 収集·キュー·集計·ストレージ。",
+      "cards": {
+        "collection": "収集",
+        "queue": "キュー",
+        "archive": "集計",
+        "storage": "ストレージ"
+      },
+      "fields": {
+        "enabled_on": "オン",
+        "enabled_off": "オフ",
+        "anonymous_fallback": "匿名フォールバック",
+        "tracked_today": "本日の訪問者 {{count}}",
+        "last_tracked": "最後の収集 {{at}}",
+        "queue_not_countable": "カウント不可キュー",
+        "pending_jobs": "待機 {{count}}件",
+        "failed_jobs": "失敗 {{count}}件",
+        "backlogged": "渋滞",
+        "worker_hint": "待機中のジョブが残っています — 集計・匿名化にはワーカー（queue:work）が必要です。訪問の収集はワーカーがなくても記録されます。",
+        "last_hour_run": "時間集計 {{at}}",
+        "last_day_run": "日集計 {{at}}",
+        "lag_hours": "{{hours}}時間遅延",
+        "running": "実行中 #{{id}}",
+        "visits_rows": "訪問 {{count}}行",
+        "actions_rows": "アクション {{count}}行",
+        "storage_mb": "{{mb}} MB",
+        "over_limit": "警告制限超過",
+        "on": "オン",
+        "off": "オフ",
+        "cloud_ranges": "クラウド帯域ブロック",
+        "trusted_proxy_warning": "警告"
+      },
+      "progress_source": {
+        "ws": "進行率: リアルタイム",
+        "polling": "進行率: ポーリング"
+      },
+      "exclusions_title": "本日除外理由",
+      "exclusion_note": "キャッシュに生きており、キャッシュをクリアすると消えます",
+      "exclusion_columns": {
+        "reason": "理由",
+        "count": "件数"
+      },
+      "exclusions_empty": "本日除外されたリクエストはありません",
+      "exclusion_reasons": {
+        "disabled": "収集オフ",
+        "prefetch": "プリフェッチ",
+        "dnt": "DNT",
+        "opt_out": "収集除外",
+        "url_pattern": "URLパターン",
+        "ip_rule": "IPルール",
+        "ua_rule": "UAルール",
+        "headless": "ヘッドレス",
+        "cloud_ip": "クラウドIP",
+        "country": "国フィルター",
+        "bot": "ボット",
+        "consent": "同意なし",
+        "consent_revoked": "同意取消"
+      },
+      "runs_title": "集計実行履歴",
+      "run_columns": {
+        "type": "種類",
+        "period": "期間",
+        "status": "ステータス",
+        "progress": "進行率",
+        "processed": "処理訪問",
+        "trigger": "実行",
+        "started": "開始"
+      },
+      "run_types": {
+        "hour": "時間",
+        "day": "日",
+        "reaggregate": "再集計",
+        "anonymize": "匿名化",
+        "purge": "全削除",
+        "extension_purge": "拡張クリーンアップ"
+      },
+      "run_status": {
+        "running": "実行中",
+        "success": "成功",
+        "failed": "失敗",
+        "skipped": "スキップ"
+      },
+      "buttons": {
+        "archive_hour": "今すぐ集計(時間)",
+        "finalize_yesterday": "昨日確定",
+        "reaggregate": "期間再集計…"
+      },
+      "queued_toast": "再集計をキューに送信しました。履歴で進捗状況をご確認ください。",
+      "started_toast": "集計を実行しました。",
+      "skipped_toast": "別の集計が実行中のためスキップしました。",
+      "failures_title": "最近のロード失敗",
+      "failures_24h": "直近24時間 {{count}}件",
+      "failures_empty": "ロード失敗はありません",
+      "failure_columns": {
+        "time": "時刻",
+        "reason": "理由",
+        "message": "メッセージ",
+        "url": "アドレス",
+        "ip": "IP",
+        "ip_masked": "IP（マスク済み）"
+      },
+      "failure_reasons": {
+        "all": "全理由",
+        "validation": "フォーマットエラー",
+        "max_actions": "アクション上限",
+        "dictionary": "辞書エラー",
+        "db_error": "DBエラー",
+        "listener_exception": "リスナー例外",
+        "unknown_goal": "未登録目標",
+        "unknown_dimension": "未登録ディメンション"
+      }
+    },
+    "privacy_requests": {
+      "title": "情報主体要求",
+      "description": "閲覧·削除要求を受けた者の記録を検索してエクスポートまたは削除します。",
+      "anonymous_notice": "匿名モードで収集した期間は、最近2日分のみIPで検索できます。",
+      "search": {
+        "subject_label": "検索基準",
+        "subject_ip": "IPアドレス",
+        "subject_user": "会員番号",
+        "subject_key": "訪問者キー",
+        "value_label": "値",
+        "placeholder_ip": "203.0.113.9",
+        "placeholder_user": "会員番号",
+        "placeholder_key": "訪問者キー",
+        "period_label": "期間",
+        "button": "検索"
+      },
+      "results_title": "検索された記録",
+      "results_summary": "訪問 {{visits}}件 · アクション {{actions}}件",
+      "export_button": "JSONエクスポート",
+      "delete_button": "削除",
+      "no_results": "条件に該当する記録がありません",
+      "columns": {
+        "visit_at": "訪問時刻",
+        "visitor_key": "訪問者キー",
+        "ip": "IP",
+        "actions": "アクション",
+        "ip_masked": "IP（マスク済み）"
+      }
+    },
+    "settings": {
+      "title": "訪問者統計設定",
+      "description": "収集·個人情報·ボット·保存·レポート設定。保存は現在表示中のタブのみに反映されます。",
+      "tabs": {
+        "collection": "収集",
+        "privacy": "個人情報",
+        "bots": "ボット·除外",
+        "retention": "保存·容量",
+        "reports": "レポート"
+      },
+      "saved": "設定を保存しました。",
+      "save_error": "設定の保存に失敗しました。",
+      "validation_error": "入力値をご確認ください",
+      "units": {
+        "minutes": "分",
+        "days": "日"
+      },
+      "collection": {
+        "enabled": "訪問者統計収集",
+        "enabled_hint": "オフにするとビーコンは204で受信しますが、何も記録しません。",
+        "visit_timeout": "訪問期限",
+        "max_actions": "訪問あたりの最大アクション",
+        "excluded_url_patterns": "除外URLパターン",
+        "excluded_url_patterns_placeholder": "/admin*",
+        "excluded_url_patterns_hint": "管理画面のようにカウントしないパス。トラッカーも同じルールで事前にフィルタリングします。",
+        "site_search": "内部検索語記録",
+        "site_search_hint": "検索APIフックが検索語と結果数を記録します。",
+        "track_downloads": "ダウンロード記録",
+        "track_outlinks": "外部リンククリック記録",
+        "download_extensions": "ダウンロードとして見なす拡張子",
+        "public_summary": "ユーザー画面訪問者カウンター",
+        "public_summary_hint": "ホーム下部のカウンターが読む公開サマリー API をオンにします。"
+      },
+      "opt_out": {
+        "title": "自分の訪問をカウントしない",
+        "hint": "このブラウザーの訪問を統計から除外します — サイトをメンテナンス中に自分の訪問が人気ページ 1 位にならないようにします。",
+        "badge_on": "カウント中",
+        "badge_off": "除外済み",
+        "enable": "除外をオンにする",
+        "disable": "除外をオフにする"
+      },
+      "privacy": {
+        "consent_source_label": "同意ソース",
+        "consent_source_none": "なし",
+        "mode_label": "プライバシーレベル",
+        "modes": {
+          "full": {
+            "title": "完全収集",
+            "description": "クッキーで再訪を検出し、IP をマスキングして保存します。",
+            "traits": "再訪指標 ✅ · クッキー ✅ · IP マスキング保存"
+          },
+          "consent": {
+            "title": "同意連携",
+            "description": "同意管理プラグインが許可した訪問者のみクッキー·IP を使用します。",
+            "traits": "再訪指標 ✅(同意者) · クッキー同意時 · IP 同意時"
+          },
+          "anonymous": {
+            "title": "匿名",
+            "description": "クッキーなしで日別ハッシュのみで結合し、IP を保存しません。",
+            "traits": "再訪指標 ❌ · クッキー ❌ · IP 未保存"
+          }
+        },
+        "respect_dnt": "DNT を尊重",
+        "respect_dnt_hint": "ブラウザーのトラッキング禁止シグナルを受け取った場合、カウントしません。",
+        "ip_mask_octets": "IP マスキング",
+        "ip_mask": {
+          "0": "マスキングなし",
+          "1": "最後の1オクテット (10.20.30.0)",
+          "2": "最後の2オクテット (10.20.0.0)",
+          "3": "最後の3オクテット (10.0.0.0)"
+        },
+        "ip_mask_hint": "マスキングなしでは都市まで正確で、1 オクテットでも都市はおおむね残ります。2 オクテットは国のみ、3 オクテットは国も不正確です。",
+        "anonymize_referrer": "流入 URL 匿名化",
+        "referrer_modes": {
+          "none": "そのまま",
+          "domain_only": "ドメインのみ"
+        },
+        "visitor_cookie_days": "訪問者クッキー保持",
+        "geo_before_mask": "マスキング前に地域を検索",
+        "geo_before_mask_hint": "マスキング前に元の IP で地域を取得し、精度を維持します。",
+        "pseudonymize_user_id": "会員番号の仮名化",
+        "pseudonymize_user_id_hint": "会員番号の代わりにハッシュを保存します。",
+        "consent_source_unknown": "確認権限なし"
+      },
+      "bots": {
+        "bot_detector_enabled": "SEO ボット検出を使用",
+        "bot_detector_enabled_hint": "SEO 設定のボット判定も一緒に使用します。オフにしても統計自体の分類器がボットを除外します。",
+        "bot_tracking_enabled": "ボット要求ログ",
+        "bot_tracking_enabled_hint": "ボット訪問を人と別に数えてボット画面に表示します。",
+        "block_headless": "自動化ブラウザーを除外",
+        "exclude_prefetch": "プリフェッチを除外",
+        "exclude_prefetch_hint": "ブラウザーが事前に取得した要求は実際の閲覧ではありません。",
+        "excluded_ips": "除外 IP·範囲",
+        "excluded_ips_hint": "CIDR 表記を受け入れます。",
+        "ip_allowlist": "許可 IP",
+        "ip_allowlist_hint": "ここにあるアドレスは他の除外ルールに引っかかってもカウントされます。",
+        "excluded_user_agents": "除外 UA 文字列",
+        "block_cloud_ip_ranges": "クラウド範囲ブロック",
+        "cloud_ranges_updated": "リスト更新: {{at}}",
+        "cloud_ranges_refresh": "リスト更新",
+        "country_filter_mode": "国フィルター",
+        "country_filter_modes": {
+          "none": "使用しない",
+          "include": "指定国のみを含める",
+          "exclude": "指定国を除外"
+        },
+        "country_filter_geoip_hint": "GeoIP をオンにして国フィルターを使用できます。",
+        "country_filter_codes": "国コード"
+      },
+      "retention": {
+        "retention_days": "台帳保持",
+        "retention_days_hint": "過去の訪問·アクション台帳を削除する基準。日·月集計は永久保存されます。",
+        "hourly_retention_days": "時間集計保持",
+        "bot_hits_retention_days": "ボット記録保持(日)",
+        "failure_log_retention_days": "失敗ログ保持(日)",
+        "ledger_warning_actions": "アクション警告行数",
+        "ledger_warning_visits": "訪問警告行数",
+        "archive_chunk_size": "集計チャンク(訪問)",
+        "realtime_poll_seconds": "リアルタイムポーリング(秒)",
+        "realtime_window_minutes": "現在のアクセス者ウィンドウ(分)",
+        "top_n": "トップリスト件数",
+        "top_n_overview": "概要",
+        "top_n_dashboard": "ダッシュボード",
+        "top_n_detail": "詳細",
+        "top_n_hint": "概要·ダッシュボード·詳細の順序です。",
+        "storage_title": "ストレージ状況",
+        "storage_unsupported": "このデータベースドライバーはテーブル容量統計を提供していません。",
+        "storage_permission_required": "ストレージ状況は訪問者統計閲覧権限が必要です。",
+        "storage_columns": {
+          "table": "テーブル",
+          "rows": "行",
+          "size": "サイズ"
+        },
+        "purge_all": "すべての統計データを削除"
+      },
+      "reports": {
+        "weekly": "週間レポートメール",
+        "weekly_hint": "毎週月曜日 08:00 に管理者ロールに送信します。",
+        "monthly": "月間レポートメール",
+        "monthly_hint": "毎月1日08:00に管理者ロールに送信されます。",
+        "definitions_title": "通知定義ステータス",
+        "definitions_description": "レポート·警告通知の有効化と無効化およびチャネル。文案の編集は環境設定の通知定義タブで行います。",
+        "definition_inactive_alert": "レポートメールは有効ですが、通知定義が無効になっているためメールが送信されません — 下で定義を有効にしてください。",
+        "definitions_empty": "訪問者統計の通知定義がありません。",
+        "definitions_permission_required": "通知定義は通知設定権限がある場合のみ表示および変更できます。",
+        "definition_active": "有効化",
+        "definition_inactive": "無効化",
+        "edit_templates": "テンプレート編集",
+        "reset_button": "初期化",
+        "reset_confirm": "この通知のテンプレートをデフォルト文案に戻しますか?",
+        "reset_success": "テンプレートを初期化しました。"
+      }
+    },
+    "modals": {
+      "retro": {
+        "title": "既存データにも遡及適用しますか?",
+        "body": "訪問{{visits}}件·アクション{{actions}}件のIP·流入URL·会員番号を新しい設定に変更します。元に戻すことはできません。",
+        "hint": "集計表には影響しません — 個人を特定する値がありません。",
+        "confirm_label": "元に戻すことができないことを確認しました",
+        "apply": "遡及適用",
+        "skip": "スキップ",
+        "queued": "遡及匿名化を開始しました。進行状況は収集診断画面の履歴で確認してください。"
+      },
+      "purge": {
+        "title": "すべての統計データ削除",
+        "body": "訪問·アクション台帳、集計、ボットログ、エラーログ、実行履歴、ソルトをすべて削除します。元に戻すことはできません。",
+        "rows": "現在訪問{{visits}}行·アクション{{actions}}行",
+        "confirm_label": "すべて削除され、元に戻すことができないことを確認しました",
+        "button": "すべて削除",
+        "success": "すべての統計データを削除しました。"
+      },
+      "reaggregate": {
+        "title": "期間再集計",
+        "hint": "台帳保持期間が過ぎた日はスキップされます(集計はそのまま残ります)。数ヶ月分は数分かかる場合があります。",
+        "from": "開始日",
+        "to": "終了日",
+        "force": "すでに確定した日も再度集計",
+        "button": "再集計開始"
+      },
+      "subject_delete": {
+        "title": "情報主体記録削除",
+        "body": "見つかった訪問のアクション·コンバージョンをまず削除してから訪問を削除します。集計はそのまま保持され、元に戻すことはできません。",
+        "confirm_label": "元に戻すことができないことを確認しました",
+        "button": "削除",
+        "success": "訪問{{visits}}件·アクション{{actions}}件を削除しました。"
+      }
+    },
+    "dashboard_widget": {
+      "title": "訪問者統計",
+      "today": "今日",
+      "yesterday": "昨日",
+      "max": "最大",
+      "total": "全体",
+      "now": "現在{{count}}名",
+      "detail": "詳細",
+      "collection_off": "収集オフ",
+      "trend": "直近7日間の訪問者"
     }
   }
 }

@@ -11857,5 +11857,55 @@
         "label": "$t:editor.control.nc_dropdown_align.right"
       }
     ]
+  },
+  "vcToday": {
+    "widget": "text",
+    "apply": {
+      "type": "propValue",
+      "propKey": "today"
+    },
+    "label": "$t:editor.control.vc_today.label"
+  },
+  "vcYesterday": {
+    "widget": "text",
+    "apply": {
+      "type": "propValue",
+      "propKey": "yesterday"
+    },
+    "label": "$t:editor.control.vc_yesterday.label"
+  },
+  "vcMax": {
+    "widget": "text",
+    "apply": {
+      "type": "propValue",
+      "propKey": "max"
+    },
+    "label": "$t:editor.control.vc_max.label"
+  },
+  "vcTotal": {
+    "widget": "text",
+    "apply": {
+      "type": "propValue",
+      "propKey": "total"
+    },
+    "label": "$t:editor.control.vc_total.label"
+  },
+  "vcLayout": {
+    "widget": "select",
+    "apply": {
+      "type": "propValue",
+      "propKey": "layout"
+    },
+    "options": [
+      {
+        "value": "row",
+        "label": "$t:editor.control.vc_layout.row"
+      },
+      {
+        "value": "column",
+        "label": "$t:editor.control.vc_layout.column"
+      }
+    ],
+    "label": "$t:editor.control.vc_layout.label"
   }
 }

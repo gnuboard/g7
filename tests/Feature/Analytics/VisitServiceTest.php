@@ -379,7 +379,7 @@ class VisitServiceTest extends TestCase
      * 트랜잭션 두 개를 순차로 흉내 내고 조회 SQL 에 `for update` 가 있는지 단언한다.
      * 잠금이 빠져도 순차 실행에서는 방문이 하나로 나오므로 SQL 자체를 봐야 한다.
      *
-     * @scenario source=beacon, visit_state=open, dispatch=sync
+     * @scenario source=beacon, visit_state=open
      *
      * @effects open_visit_lookup_locks_the_row, second_request_within_window_joins_same_visit
      *
@@ -441,6 +441,72 @@ class VisitServiceTest extends TestCase
         $this->assertSame(AnalyticsAction::find($first['action_id'])->action_name_id, $visit->entry_action_name_id);
         $this->assertSame(AnalyticsAction::find($second['action_id'])->action_name_id, $visit->exit_action_name_id);
         $this->assertNotSame($visit->entry_action_name_id, $visit->exit_action_name_id);
+    }
+
+    /**
+     * 내려받기·검색처럼 페이지가 아닌 액션은 진입·이탈 페이지를 바꾸지 않는다.
+     *
+     * 방문의 마지막 행동이 내려받기면 이탈 페이지 리포트에 파일 이름이, 검색이면 검색어가 실렸다
+     * (브라우저 실측 §8 M3 — 이탈 페이지 「rows.csv」·「테스트」). 실시간 화면의 「보고 있는 페이지」도
+     * 같은 값을 읽어 파일 이름이 떴다.
+     *
+     * @scenario source=beacon, visit_state=open
+     *
+     * @effects entry_and_exit_pages_come_from_pageviews_only
+     *
+     * @return void 없음
+     */
+    public function test_non_page_actions_do_not_move_entry_or_exit(): void
+    {
+        $page = $this->service->track($this->request(['url' => 'https://example.test/board/free']));
+        $this->service->track($this->request([
+            'type' => 'download',
+            'target' => 'https://example.test/files/report.pdf',
+            'name' => 'report.pdf',
+        ]));
+        $last = $this->service->track($this->request([
+            'type' => 'site_search',
+            'searchQuery' => '그누보드',
+            'searchTotal' => 3,
+            'searchTab' => 'all',
+        ]));
+
+        $visit = AnalyticsVisit::find($last['visit_id']);
+        $pageName = AnalyticsAction::find($page['action_id'])->action_name_id;
+
+        $this->assertSame($pageName, $visit->entry_action_name_id);
+        $this->assertSame($pageName, $visit->exit_action_name_id, '마지막 페이지가 이탈 페이지다 — 파일 이름·검색어가 아니다');
+        $this->assertSame(3, $visit->actions_count, '액션 수는 그대로 센다');
+    }
+
+    /**
+     * 페이지뷰 없이 시작한 방문은 첫 페이지뷰가 올 때 진입 페이지를 얻는다.
+     *
+     * @scenario source=search, visit_state=new
+     *
+     * @effects entry_and_exit_pages_come_from_pageviews_only
+     *
+     * @return void 없음
+     */
+    public function test_visit_started_by_a_search_takes_its_entry_from_the_first_pageview(): void
+    {
+        $search = $this->service->track($this->request([
+            'type' => 'site_search',
+            'searchQuery' => '그누보드',
+            'searchTotal' => 0,
+            'searchTab' => 'all',
+        ]));
+
+        $visit = AnalyticsVisit::find($search['visit_id']);
+        $this->assertNull($visit->entry_action_name_id, '검색어는 진입 페이지가 아니다');
+        $this->assertNull($visit->exit_action_name_id);
+
+        $page = $this->service->track($this->request(['url' => 'https://example.test/search']));
+        $visit->refresh();
+        $pageName = AnalyticsAction::find($page['action_id'])->action_name_id;
+
+        $this->assertSame($pageName, $visit->entry_action_name_id);
+        $this->assertSame($pageName, $visit->exit_action_name_id);
     }
 
     /**
@@ -840,6 +906,91 @@ class VisitServiceTest extends TestCase
 
         $this->assertSame(1, AnalyticsVisit::query()->count());
         $this->assertSame(2, (int) AnalyticsVisit::query()->value('pageviews_count'));
+    }
+
+    /**
+     * 페이지 요청과 첫 비콘의 신원이 어긋나면, 서버가 남긴 자리표시 페이지뷰는 비콘 쪽 방문으로 넘어간다.
+     * [case:analytics-server-beacon-identity-mismatch]
+     *
+     * 브라우저 실측(계획서 §8 M1-T5, 2026-09-19): 게스트 방문이 열린 채 웹 세션 없이 토큰으로만
+     * 로그인된 회원이 새로고침하면, 쿠키만 실린 페이지 요청은 게스트로 잡혀 열린 게스트 방문에
+     * 페이지뷰를 붙이고, 토큰을 실은 첫 비콘은 회원 방문을 새로 열어 같은 페이지를 또 적었다 —
+     * 한 번 연 페이지가 두 방문에 한 번씩 세어졌다. 웹 세션(기본 120분)과 토큰(기본 30분)의
+     * 수명이 달라 두 신원이 어긋나는 구간은 실제로 생긴다.
+     *
+     * @scenario source=server+beacon, init=true, merge=within_window, visitor=member, visit_state=open
+     *
+     * @effects server_placeholder_moves_to_the_beacon_visit_when_identities_differ
+     *
+     * @return void 없음
+     */
+    public function test_server_placeholder_moves_to_the_beacon_visit_when_identities_differ(): void
+    {
+        // 게스트가 다른 페이지를 보고 있던 열린 방문.
+        $this->service->track($this->request(['url' => 'https://example.test/board/notice', 'init' => true]));
+        // 새로고침 — 페이지 요청에는 세션이 없어 게스트로 잡힌다.
+        $this->service->track($this->request(['source' => 'server', 'title' => null]));
+        // 같은 로드의 첫 비콘은 토큰을 실어 회원으로 잡힌다.
+        $beacon = $this->service->track($this->request(['init' => true, 'userId' => 42]));
+
+        $freeNameId = AnalyticsAction::find($beacon['action_id'])->action_name_id;
+        $this->assertSame(1, AnalyticsAction::query()->where('action_name_id', $freeNameId)->count(), '한 번 연 페이지는 한 번만 센다');
+
+        $guest = AnalyticsVisit::query()->whereNull('user_id')->firstOrFail();
+        $member = AnalyticsVisit::query()->where('user_id', 42)->firstOrFail();
+        $this->assertSame(1, (int) $guest->pageviews_count, '게스트 방문에는 게스트가 실제로 본 페이지만 남는다');
+        $this->assertSame(1, (int) $guest->actions_count);
+        $this->assertTrue((bool) $guest->is_bounce, '한 쪽만 본 게스트 방문은 이탈이다');
+        $this->assertSame(
+            (int) AnalyticsAction::query()->where('visit_id', $guest->id)->value('action_name_id'),
+            (int) $guest->exit_action_name_id,
+            '이탈 페이지가 남은 마지막 페이지로 되돌아간다',
+        );
+        $this->assertSame(1, (int) $member->pageviews_count);
+        $this->assertSame($member->id, (int) $beacon['visit_id']);
+    }
+
+    /**
+     * 반대 방향(페이지 요청은 회원, 첫 비콘은 게스트)도 같다 — 비콘 쪽 신원이 화면에 보이는 신원이다.
+     *
+     * 토큰이 먼저 끝나고 웹 세션이 남은 구간이다(기본 토큰 30분 < 세션 120분).
+     *
+     * @scenario source=server+beacon, init=true, merge=within_window, visitor=guest, visit_state=open
+     *
+     * @effects server_placeholder_moves_to_the_beacon_visit_when_identities_differ
+     *
+     * @return void 없음
+     */
+    public function test_server_placeholder_moves_when_the_page_request_is_the_member(): void
+    {
+        $this->service->track($this->request(['url' => 'https://example.test/board/notice', 'init' => true, 'userId' => 42]));
+        $this->service->track($this->request(['source' => 'server', 'title' => null, 'userId' => 42]));
+        $beacon = $this->service->track($this->request(['init' => true]));
+
+        $freeNameId = AnalyticsAction::find($beacon['action_id'])->action_name_id;
+        $this->assertSame(1, AnalyticsAction::query()->where('action_name_id', $freeNameId)->count(), '한 번 연 페이지는 한 번만 센다');
+        $this->assertSame(1, (int) AnalyticsVisit::query()->where('user_id', 42)->value('pageviews_count'));
+        $this->assertSame(1, (int) AnalyticsVisit::query()->whereNull('user_id')->value('pageviews_count'));
+    }
+
+    /**
+     * 신원이 어긋나도 서버 자리표시가 아닌 페이지뷰(제목이 있는 비콘 기록)는 건드리지 않는다.
+     *
+     * 게스트가 비콘으로 본 페이지를, 로그인 뒤 같은 URL 로 새로 열어도 게스트가 본 기록은 사실이다.
+     *
+     * @scenario source=beacon, init=true, merge=within_window, visitor=member, visit_state=open
+     *
+     * @effects server_placeholder_moves_to_the_beacon_visit_when_identities_differ
+     *
+     * @return void 없음
+     */
+    public function test_beacon_pageviews_of_the_other_identity_are_kept(): void
+    {
+        $this->service->track($this->request(['init' => true]));
+        $this->service->track($this->request(['init' => true, 'userId' => 42]));
+
+        $this->assertSame(2, AnalyticsAction::count(), '두 신원이 각각 본 페이지뷰는 둘 다 남는다');
+        $this->assertSame(1, (int) AnalyticsVisit::query()->whereNull('user_id')->value('pageviews_count'));
     }
 
     /**

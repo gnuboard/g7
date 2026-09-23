@@ -95,6 +95,13 @@
     "home": {
         "page_title": "Home"
     },
+    "visitor_counter": {
+        "title": "Visitors",
+        "today": "Today",
+        "yesterday": "Yesterday",
+        "max": "Peak",
+        "total": "Total"
+    },
     "auth": {
         "login_title": "Sign In",
         "register_title": "Sign Up",

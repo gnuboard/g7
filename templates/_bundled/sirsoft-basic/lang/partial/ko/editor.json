@@ -677,6 +677,23 @@
       "label": "드롭다운 정렬",
       "left": "왼쪽",
       "right": "오른쪽"
+    },
+    "vc_today": {
+      "label": "오늘"
+    },
+    "vc_yesterday": {
+      "label": "어제"
+    },
+    "vc_max": {
+      "label": "최대"
+    },
+    "vc_total": {
+      "label": "전체"
+    },
+    "vc_layout": {
+      "label": "배치",
+      "row": "가로",
+      "column": "세로"
     }
   },
   "component": {
@@ -706,6 +723,7 @@
     "pagination": "페이지네이션",
     "search_bar": "검색 바",
     "avatar": "아바타",
+    "visitor_counter": "방문자 카운터",
     "user_info": "사용자 정보",
     "html_content": "HTML 콘텐츠",
     "html_editor": "HTML 편집기",
@@ -1101,7 +1119,11 @@
     "footer_social_links": "소셜 링크",
     "footer_link_groups": "링크 그룹",
     "notification_items": "알림 목록",
-    "notification_unread_count": "읽지 않은 알림 수"
+    "notification_unread_count": "읽지 않은 알림 수",
+    "visitor_today": "오늘 방문",
+    "visitor_yesterday": "어제 방문",
+    "visitor_max": "최대 방문",
+    "visitor_total": "전체 방문"
   },
   "state_label": {
     "current_user": "현재 사용자",
@@ -1172,6 +1194,7 @@
     "userProfile": "사용자 프로필",
     "user_notification_ws": "알림 (실시간)",
     "wishlist": "위시리스트",
-    "scrap": "스크랩"
+    "scrap": "스크랩",
+    "visitor_summary": "방문자 요약"
   }
 }

@@ -177,6 +177,9 @@
     },
     "table": {
       "label": "表"
+    },
+    "visitor_counter": {
+      "label": "訪問者カウンター"
     }
   }
 }

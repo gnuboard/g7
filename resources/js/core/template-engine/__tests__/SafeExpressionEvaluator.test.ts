@@ -20,6 +20,8 @@ const evalx = (expr: string, ctx: Record<string, unknown> = {}): unknown =>
 
 describe('SafeExpressionEvaluator', () => {
     describe('literals', () => {
+        // @scenario case=safe_expression
+        // @effects same_expression_same_value_across_paths
         it('정수/실수', () => {
             expect(evalx('42')).toBe(42);
             expect(evalx('3.14')).toBe(3.14);
@@ -27,6 +29,8 @@ describe('SafeExpressionEvaluator', () => {
             expect(evalx('1e3')).toBe(1000);
         });
 
+        // @scenario case=safe_expression
+        // @effects same_expression_same_value_across_paths
         it('문자열 (따옴표/이스케이프)', () => {
             expect(evalx("'hello'")).toBe('hello');
             expect(evalx('"world"')).toBe('world');
@@ -37,6 +41,8 @@ describe('SafeExpressionEvaluator', () => {
             expect(evalx("'a\\tb'")).toBe('a\tb');
         });
 
+        // @scenario case=safe_expression
+        // @effects same_expression_same_value_across_paths
         it('boolean/null/undefined', () => {
             expect(evalx('true')).toBe(true);
             expect(evalx('false')).toBe(false);
@@ -44,6 +50,8 @@ describe('SafeExpressionEvaluator', () => {
             expect(evalx('undefined')).toBe(undefined);
         });
 
+        // @scenario case=safe_expression
+        // @effects same_expression_same_value_across_paths
         it('배열/객체 리터럴', () => {
             expect(evalx('[1, 2, 3]')).toEqual([1, 2, 3]);
             expect(evalx("{ a: 1, 'b-c': 2 }")).toEqual({ a: 1, 'b-c': 2 });
@@ -51,10 +59,14 @@ describe('SafeExpressionEvaluator', () => {
     });
 
     describe('member & optional chaining', () => {
+        // @scenario case=safe_expression
+        // @effects same_expression_same_value_across_paths
         it('점 접근', () => {
             expect(evalx('a.b.c', { a: { b: { c: 5 } } })).toBe(5);
         });
 
+        // @scenario case=safe_expression
+        // @effects same_expression_same_value_across_paths
         it('옵셔널 체이닝 단락', () => {
             expect(evalx('a?.b', { a: null })).toBe(undefined);
             expect(evalx('a?.b?.c', { a: undefined })).toBe(undefined);
@@ -62,24 +74,32 @@ describe('SafeExpressionEvaluator', () => {
             expect(evalx("user?.name ?? 'Guest'", { user: { name: 'Kim' } })).toBe('Kim');
         });
 
+        // @scenario case=safe_expression
+        // @effects same_expression_same_value_across_paths
         it('없는 식별자는 undefined (throw 하지 않음)', () => {
             expect(evalx('missing')).toBe(undefined);
             expect(evalx('missing?.x')).toBe(undefined);
             expect(evalx("missing ?? 'fallback'")).toBe('fallback');
         });
 
+        // @scenario case=safe_expression
+        // @effects same_expression_same_value_across_paths
         it('nullish 비-optional 접근은 undefined 반환', () => {
             expect(evalx('a.b', { a: undefined })).toBe(undefined);
         });
     });
 
     describe('computed access', () => {
+        // @scenario case=safe_expression
+        // @effects same_expression_same_value_across_paths
         it('문자열/변수 키', () => {
             expect(evalx("obj['key']", { obj: { key: 9 } })).toBe(9);
             expect(evalx('obj[k]', { obj: { key: 9 }, k: 'key' })).toBe(9);
             expect(evalx("query['status[]']", { query: { 'status[]': ['a'] } })).toEqual(['a']);
         });
 
+        // @scenario case=safe_expression
+        // @effects same_expression_same_value_across_paths
         it('옵셔널 computed', () => {
             expect(evalx('a?.[0]', { a: null })).toBe(undefined);
             expect(evalx('a?.[0]', { a: [7] })).toBe(7);
@@ -87,10 +107,14 @@ describe('SafeExpressionEvaluator', () => {
     });
 
     describe('calls & methods', () => {
+        // @scenario case=safe_expression
+        // @effects same_expression_same_value_across_paths
         it('컨텍스트 함수 호출', () => {
             expect(evalx("$t('some.key')", { $t: (k: string) => k })).toBe('some.key');
         });
 
+        // @scenario case=safe_expression
+        // @effects same_expression_same_value_across_paths
         it('$get 헬퍼', () => {
             const $get = (obj: unknown, path: string[], def: unknown): unknown => {
                 let cur: unknown = obj;
@@ -108,15 +132,21 @@ describe('SafeExpressionEvaluator', () => {
             );
         });
 
+        // @scenario case=safe_expression
+        // @effects same_expression_same_value_across_paths
         it('인스턴스 메서드 체인', () => {
             expect(evalx('String(value).toLocaleString()', { value: 1234 })).toBe('1234');
         });
 
+        // @scenario case=safe_expression
+        // @effects same_expression_same_value_across_paths
         it('옵셔널 호출', () => {
             expect(evalx('obj?.method?.()', { obj: {} })).toBe(undefined);
             expect(evalx('obj?.method?.()', { obj: { method: () => 3 } })).toBe(3);
         });
 
+        // @scenario case=safe_expression
+        // @effects same_expression_same_value_across_paths
         it('Math.max 등 화이트리스트 전역', () => {
             expect(evalx('Math.max(0, (products?.data?.length ?? 0) - 1)', { products: { data: [1, 2, 3] } })).toBe(2);
             expect(evalx('Math.max(0, (products?.data?.length ?? 0) - 1)', {})).toBe(0);
@@ -124,10 +154,14 @@ describe('SafeExpressionEvaluator', () => {
     });
 
     describe('arrow-function array methods', () => {
+        // @scenario case=arrow_template_literal
+        // @effects same_expression_same_value_across_paths
         it('filter', () => {
             expect(evalx("['a', 'b', 'c'].filter(v => v !== 'b')")).toEqual(['a', 'c']);
         });
 
+        // @scenario case=arrow_template_literal
+        // @effects same_expression_same_value_across_paths
         it('map returning object', () => {
             expect(
                 evalx('items.map(i => ({ id: i.id, label: i.name })).length', {
@@ -139,6 +173,8 @@ describe('SafeExpressionEvaluator', () => {
             ).toBe(2);
         });
 
+        // @scenario case=arrow_template_literal
+        // @effects same_expression_same_value_across_paths
         it('findIndex (u, i, a) 3-params dedupe', () => {
             const ctx = {
                 list: [{ uuid: 'a' }, { uuid: 'b' }, { uuid: 'a' }],
@@ -150,30 +186,44 @@ describe('SafeExpressionEvaluator', () => {
     describe('arrow param 배열 구조분해 (engine-v1.60.5 회귀 — 장바구니/바로구매 불능)', () => {
         // 구 평가기(new Function)가 허용하던 형태 전수: 저장소 레이아웃 54파일 104곳 사용
         // (`([code])` 35 · `([field, messages])` 34 · `([k, v])` 등 — _purchase_card.json 이 대표)
+        // @scenario case=destructuring_param
+        // @effects same_expression_same_value_across_paths
         it('단일 요소 ([k])', () => {
             expect(evalx('Object.entries({ a: 1, b: 2 }).map(([k]) => k)')).toEqual(['a', 'b']);
         });
 
+        // @scenario case=destructuring_param
+        // @effects same_expression_same_value_across_paths
         it('두 요소 ([k, v])', () => {
             expect(evalx('Object.entries({ a: 1, b: 2 }).map(([k, v]) => k + v)')).toEqual(['a1', 'b2']);
         });
 
+        // @scenario case=destructuring_param
+        // @effects same_expression_same_value_across_paths
         it('선행 홀 ([, v])', () => {
             expect(evalx('Object.entries({ a: 1, b: null }).filter(([, v]) => v != null).length')).toBe(1);
         });
 
+        // @scenario case=destructuring_param
+        // @effects same_expression_same_value_across_paths
         it('배열 인자 직접 분해', () => {
             expect(evalx('[[1, 2], [3, 4]].map(([a, b]) => a * b)')).toEqual([2, 12]);
         });
 
+        // @scenario case=destructuring_param
+        // @effects same_expression_same_value_across_paths
         it('파라미터 기본값 조합 (([a, b] = []) =>)', () => {
             expect(evalx('[undefined].map(([a, b] = [7, 8]) => (a ?? 0) + (b ?? 0))')).toEqual([15]);
         });
 
+        // @scenario case=destructuring_param
+        // @effects same_expression_same_value_across_paths
         it('null/undefined 인자 분해는 JS 와 동일하게 예외', () => {
             expect(() => evalx('[null].map(([a]) => a)')).toThrow();
         });
 
+        // @scenario case=destructuring_param
+        // @effects same_expression_same_value_across_paths
         it('실전 회귀: _purchase_card.json 장바구니 담기 본문 표현식', () => {
             const ctx = {
                 product: { data: { id: 98, has_options: true, options: [{ id: 1 }, { id: 2 }] } },
@@ -209,6 +259,8 @@ describe('SafeExpressionEvaluator', () => {
             });
         });
 
+        // @scenario case=destructuring_param
+        // @effects same_expression_same_value_across_paths
         it('실전 회귀: 게시판 환경설정 권한 computed (filter([key]) + startsWith)', () => {
             const ctx = {
                 settings: {
@@ -227,6 +279,8 @@ describe('SafeExpressionEvaluator', () => {
             ).toEqual(['read', 'write']);
         });
 
+        // @scenario case=destructuring_param
+        // @effects same_expression_same_value_across_paths
         it('실전 회귀: 검증 오류 표시 ([field, messages]) — 플러그인 설정 onError 형태', () => {
             const ctx = { errors: { name: ['이름은 필수입니다'], email: ['형식 오류'] } };
             expect(evalx("Object.entries(errors ?? {}).map(([field, messages]) => field + ': ' + messages[0])", ctx)).toEqual([
@@ -235,26 +289,36 @@ describe('SafeExpressionEvaluator', () => {
             ]);
         });
 
+        // @scenario case=destructuring_param
+        // @effects same_expression_same_value_across_paths
         it('function 선언 파라미터의 배열 구조분해', () => {
             expect(evalx('(function f([a, b]) { return a + b; })([3, 4])')).toBe(7);
         });
     });
 
     describe('spread (array / object / call)', () => {
+        // @scenario case=safe_expression
+        // @effects same_expression_same_value_across_paths
         it('배열 스프레드', () => {
             expect(evalx('[...a, ...b, 3]', { a: [1], b: [2] })).toEqual([1, 2, 3]);
         });
 
+        // @scenario case=safe_expression
+        // @effects same_expression_same_value_across_paths
         it('객체 스프레드', () => {
             expect(evalx('{ ...a, c: 3 }', { a: { a: 1, b: 2 } })).toEqual({ a: 1, b: 2, c: 3 });
         });
 
+        // @scenario case=safe_expression
+        // @effects same_expression_same_value_across_paths
         it('call 스프레드', () => {
             expect(evalx('Math.max(...nums)', { nums: [4, 9, 2] })).toBe(9);
         });
     });
 
     describe('operators & precedence', () => {
+        // @scenario case=safe_expression
+        // @effects same_expression_same_value_across_paths
         it('산술 우선순위', () => {
             expect(evalx('1 + 2 * 3')).toBe(7);
             expect(evalx('(1 + 2) * 3')).toBe(9);
@@ -262,6 +326,8 @@ describe('SafeExpressionEvaluator', () => {
             expect(evalx('7 / 2')).toBe(3.5);
         });
 
+        // @scenario case=safe_expression
+        // @effects same_expression_same_value_across_paths
         it('단항', () => {
             expect(evalx('!true')).toBe(false);
             expect(evalx('-5')).toBe(-5);
@@ -270,6 +336,8 @@ describe('SafeExpressionEvaluator', () => {
             expect(evalx('typeof missing')).toBe('undefined');
         });
 
+        // @scenario case=safe_expression
+        // @effects same_expression_same_value_across_paths
         it('비교/동등', () => {
             expect(evalx('1 === 1')).toBe(true);
             expect(evalx("1 === '1'")).toBe(false);
@@ -278,6 +346,8 @@ describe('SafeExpressionEvaluator', () => {
             expect(evalx('2 < 3 && 3 <= 3')).toBe(true);
         });
 
+        // @scenario case=safe_expression
+        // @effects same_expression_same_value_across_paths
         it('(count ?? 0) + 1', () => {
             expect(evalx('(count ?? 0) + 1', {})).toBe(1);
             expect(evalx('(count ?? 0) + 1', { count: 5 })).toBe(6);
@@ -285,28 +355,38 @@ describe('SafeExpressionEvaluator', () => {
     });
 
     describe('ternary / nullish / logical short-circuit', () => {
+        // @scenario case=safe_expression
+        // @effects same_expression_same_value_across_paths
         it('삼항 (중첩)', () => {
             expect(evalx("a ? 'x' : b ? 'y' : 'z'", { a: false, b: true })).toBe('y');
             expect(evalx("a ? 'x' : b ? 'y' : 'z'", { a: false, b: false })).toBe('z');
         });
 
+        // @scenario case=safe_expression
+        // @effects same_expression_same_value_across_paths
         it('|| 은 첫 truthy 피연산자 반환 (boolean 아님)', () => {
             expect(evalx("'' || 'fallback'")).toBe('fallback');
             expect(evalx("'first' || 'second'")).toBe('first');
             expect(evalx('0 || 42')).toBe(42);
         });
 
+        // @scenario case=safe_expression
+        // @effects same_expression_same_value_across_paths
         it('&& 는 첫 falsy 또는 마지막 값', () => {
             expect(evalx("'a' && 'b'")).toBe('b');
             expect(evalx("0 && 'b'")).toBe(0);
         });
 
+        // @scenario case=safe_expression
+        // @effects same_expression_same_value_across_paths
         it('?? 는 nullish 만 폴백', () => {
             expect(evalx("0 ?? 'x'")).toBe(0);
             expect(evalx("null ?? 'x'")).toBe('x');
             expect(evalx("'' ?? 'x'")).toBe('');
         });
 
+        // @scenario case=safe_expression
+        // @effects same_expression_same_value_across_paths
         it('&& 단락으로 오른쪽 미평가', () => {
             let called = false;
             const ctx = {
@@ -322,6 +402,8 @@ describe('SafeExpressionEvaluator', () => {
     });
 
     describe('whitelisted globals', () => {
+        // @scenario case=whitelisted_global_call
+        // @effects whitelisted_globals_stay_callable
         it('JSON / Number / Boolean / parse*', () => {
             expect(evalx('JSON.stringify(a)', { a: { x: 1 } })).toBe('{"x":1}');
             expect(evalx("Number('42')")).toBe(42);
@@ -332,9 +414,19 @@ describe('SafeExpressionEvaluator', () => {
             expect(evalx('Boolean(0)')).toBe(false);
             expect(evalx('Array.isArray(a)', { a: [] })).toBe(true);
         });
+
+        // @scenario case=whitelisted_global_call
+        // @effects whitelisted_globals_stay_callable
+        it('encodeURIComponent — 주소 조각을 안전하게 싣는다', () => {
+            // 검색어가 든 내려받기 주소를 레이아웃이 조립할 때 쓴다. 허용 목록에 없으면 호출이
+            // 「non-function」으로 실패해 주소가 통째로 비었다(방문자 통계 CSV, 이슈 #682 §8 M3).
+            expect(evalx("'&q=' + encodeURIComponent(q)", { q: 'a b&c/<테스트>' })).toBe('&q=a%20b%26c%2F%3C%ED%85%8C%EC%8A%A4%ED%8A%B8%3E');
+        });
     });
 
     describe('context shadowing', () => {
+        // @scenario case=safe_expression
+        // @effects same_expression_same_value_across_paths
         it('컨텍스트 값이 전역보다 우선', () => {
             expect(evalx('String', { String: 'shadowed' })).toBe('shadowed');
             expect(evalx('Math', { Math: 123 })).toBe(123);
@@ -342,23 +434,33 @@ describe('SafeExpressionEvaluator', () => {
     });
 
     describe('template literals', () => {
+        // @scenario case=arrow_template_literal
+        // @effects same_expression_same_value_across_paths
         it('보간 없는 템플릿', () => {
             expect(evalx('`no interpolation`')).toBe('no interpolation');
         });
 
+        // @scenario case=arrow_template_literal
+        // @effects same_expression_same_value_across_paths
         it('단일 보간', () => {
             expect(evalx('`/mypage/${$args[0]}`', { $args: ['x'] })).toBe('/mypage/x');
         });
 
+        // @scenario case=arrow_template_literal
+        // @effects same_expression_same_value_across_paths
         it('표현식 보간', () => {
             expect(evalx('`total: ${(count ?? 0) + 1}`', {})).toBe('total: 1');
             expect(evalx('`total: ${(count ?? 0) + 1}`', { count: 9 })).toBe('total: 10');
         });
 
+        // @scenario case=arrow_template_literal
+        // @effects same_expression_same_value_across_paths
         it('다중 보간 + 리터럴 조각', () => {
             expect(evalx('`${a}-${b}!`', { a: 'x', b: 'y' })).toBe('x-y!');
         });
 
+        // @scenario case=arrow_template_literal
+        // @effects same_expression_same_value_across_paths
         it('템플릿 내 이스케이프', () => {
             expect(evalx('`a\\nb`')).toBe('a\nb');
             expect(evalx('`price \\${x}`')).toBe('price ${x}');
@@ -366,25 +468,35 @@ describe('SafeExpressionEvaluator', () => {
     });
 
     describe('new operator (whitelisted constructors)', () => {
+        // @scenario case=whitelisted_global_call
+        // @effects whitelisted_globals_stay_callable
         it('new Date(str).getTime() → number', () => {
             expect(evalx("new Date('2020-01-01').getTime()")).toBe(new Date('2020-01-01').getTime());
             expect(typeof evalx("new Date('2020-01-01').getTime()")).toBe('number');
         });
 
+        // @scenario case=whitelisted_global_call
+        // @effects whitelisted_globals_stay_callable
         it('new Date().toISOString().slice(0,10) → 10-char string', () => {
             const r = evalx('new Date().toISOString().slice(0, 10)');
             expect(typeof r).toBe('string');
             expect((r as string).length).toBe(10);
         });
 
+        // @scenario case=whitelisted_global_call
+        // @effects whitelisted_globals_stay_callable
         it('Array.from(new Set([...])) dedupe', () => {
             expect(evalx('Array.from(new Set([1, 1, 2]))')).toEqual([1, 2]);
         });
 
+        // @scenario case=whitelisted_global_call
+        // @effects whitelisted_globals_stay_callable
         it('new Map([...]).get(key)', () => {
             expect(evalx("new Map([['a', 1]]).get('a')")).toBe(1);
         });
 
+        // @scenario case=whitelisted_global_call
+        // @effects whitelisted_globals_stay_callable
         it('new Date(query.expires_at).getTime()', () => {
             const ctx = { query: { expires_at: '2021-06-15T00:00:00Z' } };
             expect(evalx('new Date(query.expires_at).getTime()', ctx)).toBe(
@@ -392,6 +504,8 @@ describe('SafeExpressionEvaluator', () => {
             );
         });
 
+        // @scenario case=whitelisted_global_call
+        // @effects whitelisted_globals_stay_callable
         it('Array.from(new Set(x.flatMap(...)))', () => {
             const ctx = { x: [{ tags: ['a', 'b'] }, { tags: ['b', 'c'] }] };
             expect(evalx('Array.from(new Set((x ?? []).flatMap(p => p.tags)))', ctx)).toEqual(['a', 'b', 'c']);
@@ -400,6 +514,8 @@ describe('SafeExpressionEvaluator', () => {
 
     describe('real-world compatibility', () => {
         /** @effects same_expression_same_value_across_paths */
+        // @scenario case=safe_expression
+        // @effects same_expression_same_value_across_paths
         it('상태 필터 토글 (statusFilter)', () => {
             const expr =
                 "((_global.statusFilter ?? query['status[]']) || []).includes('pending') ? ((_global.statusFilter ?? query['status[]']) || []).filter(v => v !== 'pending') : [...((_global.statusFilter ?? query['status[]']) || []), 'pending']";
@@ -412,6 +528,8 @@ describe('SafeExpressionEvaluator', () => {
         });
 
         /** @effects same_expression_same_value_across_paths */
+        // @scenario case=safe_expression
+        // @effects same_expression_same_value_across_paths
         it('board_managers 병합 + dedupe', () => {
             const expr =
                 '[...(_local.form?.board_managers ?? []), ...(_local.managerSearchResults ?? [])].filter(u => ($event.target.value ?? []).includes(u.uuid)).filter((u, i, a) => a.findIndex(x => x.uuid === u.uuid) === i)';
@@ -426,6 +544,8 @@ describe('SafeExpressionEvaluator', () => {
         });
 
         /** @effects same_expression_same_value_across_paths */
+        // @scenario case=safe_expression
+        // @effects same_expression_same_value_across_paths
         it('comment blind 로그 판정', () => {
             const expr =
                 "comment?.abilities?.can_manage && (comment?.action_logs ?? []).filter(log => log.action === 'blind').length > 0";
@@ -442,6 +562,8 @@ describe('SafeExpressionEvaluator', () => {
         });
 
         /** @effects same_expression_same_value_across_paths */
+        // @scenario case=safe_expression
+        // @effects same_expression_same_value_across_paths
         it('마지막 blind 로그 reason 추출', () => {
             const expr = "(post?.data?.action_logs ?? []).filter(log => log.action === 'blind').slice(-1)[0]?.reason ?? '-'";
             expect(
@@ -458,14 +580,20 @@ describe('SafeExpressionEvaluator', () => {
     // `(function(){ const …; if(…) return …; })()` 형태가 조용히 거부돼 저장이 미해석
     // 원문 문자열로 전송되던 회귀(문의 게시판 지정 실패 등)를 고정한다.
     describe('statement 본문 IIFE (engine-v1.60.0 회귀 복원)', () => {
+        // @scenario case=arrow_template_literal
+        // @effects same_expression_same_value_across_paths
         it('const 선언 + return (arrow 블록)', () => {
             expect(evalx('(() => { const x = 1; return x + 1; })()')).toBe(2);
         });
 
+        // @scenario case=arrow_template_literal
+        // @effects same_expression_same_value_across_paths
         it('const 선언 + return (function 식)', () => {
             expect(evalx('(function() { const a = 2; const b = 3; return a * b; })()')).toBe(6);
         });
 
+        // @scenario case=arrow_template_literal
+        // @effects same_expression_same_value_across_paths
         it('if 분기 다중 return — 탭별 payload 조립 (이커머스 설정 저장 본문)', () => {
             const expr =
                 "(function() { const tab = _global.activeEcommerceSettingsTab || query.tab || 'basic_info'; const form = _local.form ?? {}; if (tab === 'notification_definitions') { return { _tab: 'notifications', notifications: { channels: form.notifications?.channels || [] } }; } if (tab === 'mileage') { return { _tab: 'mileage', mileage: form.mileage ?? {} }; } return { _tab: tab, [tab]: form[tab] ?? {}, inquiry: form.inquiry ?? {} }; })()";
@@ -480,11 +608,15 @@ describe('SafeExpressionEvaluator', () => {
             expect((result.basic_info as Record<string, unknown>).shop_name).toBe('S');
         });
 
+        // @scenario case=arrow_template_literal
+        // @effects same_expression_same_value_across_paths
         it('new Date() + 변형 메서드 (게시판 신고 기간 프리셋)', () => {
             const expr = '(() => { const d = new Date(2026, 0, 10); d.setDate(d.getDate() - 2); return d.getDate(); })()';
             expect(evalx(expr)).toBe(8);
         });
 
+        // @scenario case=arrow_template_literal
+        // @effects same_expression_same_value_across_paths
         it('for-of + continue + 재귀 arrow + 기본 파라미터 (카테고리 flatten)', () => {
             const expr =
                 "(() => { const result = []; const flatten = (items, path = [], depth = 0) => { if (!items || !Array.isArray(items) || items.length === 0) return; for (const item of items) { if (!item || !item.id) continue; const currentPath = [...path, item.name]; result.push({ value: item.id, label: currentPath.join(' > ') }); if (item.children && Array.isArray(item.children) && item.children.length > 0 && depth < 2) { flatten(item.children, currentPath, depth + 1); } } }; flatten(categories); return result; })()";
@@ -502,12 +634,16 @@ describe('SafeExpressionEvaluator', () => {
             ]);
         });
 
+        // @scenario case=arrow_template_literal
+        // @effects same_expression_same_value_across_paths
         it('delete 로 로컬 객체 사본 프로퍼티 제거 (edit 모드 slug 제외)', () => {
             const expr = '(() => { const data = {...form}; if (mode === "edit") { delete data.slug; } return data; })()';
             expect(evalx(expr, { form: { name: 'N', slug: 's' }, mode: 'edit' })).toEqual({ name: 'N' });
             expect(evalx(expr, { form: { name: 'N', slug: 's' }, mode: 'create' })).toEqual({ name: 'N', slug: 's' });
         });
 
+        // @scenario case=arrow_template_literal
+        // @effects same_expression_same_value_across_paths
         it('function 콜백 + concat + map (게시판 카테고리 옵션)', () => {
             const expr =
                 "[{value:'all', label:'전체'}].concat((categories ?? []).map(function(c){return{value:c,label:c};}))";
@@ -518,6 +654,8 @@ describe('SafeExpressionEvaluator', () => {
             ]);
         });
 
+        // @scenario case=arrow_template_literal
+        // @effects same_expression_same_value_across_paths
         it('try/catch 블록 본문 (실제 throw 를 잡음)', () => {
             // 이 평가기는 null 멤버 접근을 관대하게 undefined 로 돌려주므로(with 시맨틱),
             // 실제로 throw 하는 것은 비함수 호출·JSON.parse 오류 등이다.
@@ -526,6 +664,8 @@ describe('SafeExpressionEvaluator', () => {
             expect(evalx('(() => { try { return safe; } catch (e) { return "x"; } })()', { safe: 42 })).toBe(42);
         });
 
+        // @scenario case=arrow_template_literal
+        // @effects same_expression_same_value_across_paths
         it('IIFE 반환 타입 보존 — 객체/배열/빈문자열/undefined (if 판정 계약)', () => {
             expect(evalx('(function(){ return {}; })()')).toEqual({});
             expect(evalx('(function(){ return []; })()')).toEqual([]);
@@ -536,96 +676,134 @@ describe('SafeExpressionEvaluator', () => {
 
     describe('SECURITY — sandbox escape blocked', () => {
         /** @effects sandbox_escape_blocked */
+        // @scenario case=constructor_escape
+        // @effects sandbox_escape_blocked
         it("''.constructor.constructor('return 1')()", () => {
             expect(() => evalx("''.constructor.constructor('return 1')()")).toThrow();
         });
 
         /** @effects sandbox_escape_blocked */
+        // @scenario case=constructor_escape
+        // @effects sandbox_escape_blocked
         it("''['constructor']['constructor']('return 1')()", () => {
             expect(() => evalx("''['constructor']['constructor']('return 1')()")).toThrow();
         });
 
         /** @effects sandbox_escape_blocked */
+        // @scenario case=constructor_escape
+        // @effects sandbox_escape_blocked
         it('({}).__proto__', () => {
             expect(() => evalx('({}).__proto__')).toThrow();
         });
 
         /** @effects sandbox_escape_blocked */
+        // @scenario case=constructor_escape
+        // @effects sandbox_escape_blocked
         it('[].constructor', () => {
             expect(() => evalx('[].constructor')).toThrow();
         });
 
         /** @effects sandbox_escape_blocked */
+        // @scenario case=constructor_escape
+        // @effects sandbox_escape_blocked
         it('x.prototype', () => {
             expect(() => evalx('x.prototype', { x: {} })).toThrow();
         });
 
         /** @effects sandbox_escape_blocked */
+        // @scenario case=constructor_escape
+        // @effects sandbox_escape_blocked
         it('Function(...)', () => {
             expect(() => evalx("Function('return 1')")).toThrow();
         });
 
         /** @effects sandbox_escape_blocked */
+        // @scenario case=constructor_escape
+        // @effects sandbox_escape_blocked
         it('window', () => {
             expect(() => evalx('window')).toThrow();
         });
 
         /** @effects sandbox_escape_blocked */
+        // @scenario case=constructor_escape
+        // @effects sandbox_escape_blocked
         it('globalThis', () => {
             expect(() => evalx('globalThis')).toThrow();
         });
 
         /** @effects sandbox_escape_blocked */
+        // @scenario case=constructor_escape
+        // @effects sandbox_escape_blocked
         it('eval', () => {
             expect(() => evalx("eval('1')")).toThrow();
         });
 
         /** @effects sandbox_escape_blocked */
+        // @scenario case=constructor_escape
+        // @effects sandbox_escape_blocked
         it('computed constructor via variable — eval-time block', () => {
             expect(() => evalx("''[c]", { c: 'constructor' })).toThrow();
         });
 
         /** @effects sandbox_escape_blocked */
+        // @scenario case=constructor_escape
+        // @effects sandbox_escape_blocked
         it('computed __proto__ via variable — eval-time block', () => {
             expect(() => evalx('o[k]', { o: {}, k: '__proto__' })).toThrow();
         });
 
         /** @effects sandbox_escape_blocked */
+        // @scenario case=constructor_escape
+        // @effects sandbox_escape_blocked
         it('constructor access inside arrow callback still blocked', () => {
             expect(() => evalx('[1].map(x => x.constructor)')).toThrow();
         });
 
         /** @effects sandbox_escape_blocked */
+        // @scenario case=constructor_escape
+        // @effects sandbox_escape_blocked
         it('constructor access inside template interpolation still blocked', () => {
             expect(() => evalx("`${''.constructor.constructor('x')()}`")).toThrow();
         });
 
         /** @effects sandbox_escape_blocked */
+        // @scenario case=constructor_escape
+        // @effects sandbox_escape_blocked
         it('new on non-whitelisted constructor rejected', () => {
             expect(() => evalx('new evil()', { evil: function () {} })).toThrow();
         });
 
         /** @effects sandbox_escape_blocked */
+        // @scenario case=constructor_escape
+        // @effects sandbox_escape_blocked
         it('new Function still rejected', () => {
             expect(() => evalx("new Function('return 1')")).toThrow();
         });
 
         /** @effects sandbox_escape_blocked */
+        // @scenario case=constructor_escape
+        // @effects sandbox_escape_blocked
         it('new x() with context function rejected (not whitelisted)', () => {
             expect(() => evalx('new x()', { x: function () {} })).toThrow();
         });
 
         /** @effects sandbox_escape_blocked */
+        // @scenario case=constructor_escape
+        // @effects sandbox_escape_blocked
         it("new ''.constructor() rejected", () => {
             expect(() => evalx("new ''.constructor()")).toThrow();
         });
 
         /** @effects sandbox_escape_blocked */
+        // @scenario case=constructor_escape
+        // @effects sandbox_escape_blocked
         it('assignment rejected', () => {
             expect(() => evalx('x = 1', { x: 0 })).toThrow();
         });
 
         /** @effects sandbox_escape_blocked */
+        // @scenario case=constructor_escape
+        // @effects sandbox_escape_blocked
         it('increment rejected', () => {
             expect(() => evalx('x++', { x: 0 })).toThrow();
         });
@@ -634,6 +812,8 @@ describe('SafeExpressionEvaluator', () => {
         // 탈출 벡터는 "function 키워드" 가 아니라 `.constructor`/`Function`/`eval` 접근이며,
         // 그 차단은 statement 본문 안에서도 그대로 유지된다.
         /** @effects sandbox_escape_blocked */
+        // @scenario case=constructor_escape
+        // @effects sandbox_escape_blocked
         it('함수 표현식 본문에서도 constructor 탈출은 여전히 차단', () => {
             expect(() => evalx('(function(){ return "".constructor; })()')).toThrow();
             expect(() => evalx('(function(){ return [].constructor.constructor("return 1")(); })()')).toThrow();
@@ -641,29 +821,39 @@ describe('SafeExpressionEvaluator', () => {
         });
 
         /** @effects sandbox_escape_blocked */
+        // @scenario case=constructor_escape
+        // @effects sandbox_escape_blocked
         it('함수 본문에서도 Function/eval 전역 참조는 차단', () => {
             expect(() => evalx('(function(){ return Function("return 1"); })()')).toThrow();
             expect(() => evalx('(() => { return eval("1"); })()')).toThrow();
         });
 
         /** @effects sandbox_escape_blocked */
+        // @scenario case=constructor_escape
+        // @effects sandbox_escape_blocked
         it('블록 본문 안의 대입식은 여전히 거부', () => {
             expect(() => evalx('(function(){ x = 1; return x; })()', { x: 0 })).toThrow();
             expect(() => evalx('(() => { let y = 0; y = 2; return y; })()')).toThrow();
         });
 
         /** @effects sandbox_escape_blocked */
+        // @scenario case=constructor_escape
+        // @effects sandbox_escape_blocked
         it('블록 본문 안에서도 비화이트리스트 new 는 차단', () => {
             expect(() => evalx('(function(){ return new evil(); })()', { evil: function () {} })).toThrow();
         });
 
         /** @effects sandbox_escape_blocked */
+        // @scenario case=constructor_escape
+        // @effects sandbox_escape_blocked
         it('delete 로 화이트리스트 전역 프로퍼티 삭제 차단', () => {
             expect(() => evalx('(function(){ delete Math.floor; return 1; })()')).toThrow();
             expect(() => evalx('(function(){ const o = {}; return delete o.constructor; })()')).toThrow();
         });
 
         /** @effects sandbox_escape_blocked */
+        // @scenario case=constructor_escape
+        // @effects sandbox_escape_blocked
         it('sequence operator rejected', () => {
             expect(() => evalx('1, 2')).toThrow();
         });
@@ -674,41 +864,57 @@ describe('SafeExpressionEvaluator', () => {
     // 아래 벡터들이 81건 green 상태에서도 그대로 실행됐다.
     describe('SECURITY — non-string computed key escape blocked (KVE-2026-1915)', () => {
         /** @effects sandbox_escape_blocked */
+        // @scenario case=nonstring_key_escape
+        // @effects sandbox_escape_blocked
         it("''[['constructor']] — 배열 키가 'constructor' 로 강제변환되어 접근되던 결함", () => {
             expect(() => evalx("''[['constructor']]")).toThrow();
         });
 
         /** @effects sandbox_escape_blocked */
+        // @scenario case=nonstring_key_escape
+        // @effects sandbox_escape_blocked
         it("''[['constructor']][['constructor']]('return 1')() — 배열 키 RCE 전체 체인", () => {
             expect(() => evalx("''[['constructor']][['constructor']]('return 1')()")).toThrow();
         });
 
         /** @effects sandbox_escape_blocked */
+        // @scenario case=nonstring_key_escape
+        // @effects sandbox_escape_blocked
         it("''[['const' + 'ructor']] — 배열 안 문자열 조립 우회", () => {
             expect(() => evalx("''[['const' + 'ructor']]")).toThrow();
         });
 
         /** @effects sandbox_escape_blocked */
+        // @scenario case=nonstring_key_escape
+        // @effects sandbox_escape_blocked
         it("''[[['constructor']]] — 중첩 배열 키 우회", () => {
             expect(() => evalx("''[[['constructor']]]")).toThrow();
         });
 
         /** @effects sandbox_escape_blocked */
+        // @scenario case=nonstring_key_escape
+        // @effects sandbox_escape_blocked
         it('o[[k]] — 컨텍스트 값을 담은 배열 키 우회', () => {
             expect(() => evalx('o[[k]]', { o: {}, k: '__proto__' })).toThrow();
         });
 
         /** @effects sandbox_escape_blocked */
+        // @scenario case=nonstring_key_escape
+        // @effects sandbox_escape_blocked
         it("''[{ toString: () => 'constructor' }] — 객체 toString 강제변환 우회 (TOCTOU 없음: 1회 정규화)", () => {
             expect(() => evalx("''[{ toString: () => 'constructor' }]")).toThrow();
         });
 
         /** @effects sandbox_escape_blocked */
+        // @scenario case=nonstring_key_escape
+        // @effects sandbox_escape_blocked
         it('delete o[[key]] — 배열 키 삭제 경로도 차단', () => {
             expect(() => evalx('(function(){ const o = {}; return delete o[["constructor"]]; })()')).toThrow();
         });
 
         /** @effects sandbox_escape_blocked */
+        // @scenario case=nonstring_key_escape
+        // @effects same_expression_same_value_across_paths
         it('정상 computed 접근은 유지 — 배열/숫자/문자열 키', () => {
             expect(evalx("o['a']", { o: { a: 1 } })).toBe(1);
             expect(evalx('arr[0]', { arr: [42] })).toBe(42);
@@ -718,11 +924,15 @@ describe('SafeExpressionEvaluator', () => {
 
     describe('SECURITY — Object reflection statics removed (KVE-2026-1915)', () => {
         /** @effects sandbox_escape_blocked */
+        // @scenario case=object_facade_safe
+        // @effects sandbox_escape_blocked
         it('Object.getPrototypeOf 는 노출되지 않는다', () => {
             expect(() => evalx('Object.getPrototypeOf(String)')).toThrow();
         });
 
         /** @effects sandbox_escape_blocked */
+        // @scenario case=object_facade_safe
+        // @effects sandbox_escape_blocked
         it('Object.getOwnPropertyDescriptor(...).value 리플렉션 RCE 전체 체인', () => {
             expect(() =>
                 evalx("Object.getOwnPropertyDescriptor(Object.getPrototypeOf(String), 'constructor').value('return 1')()"),
@@ -730,21 +940,29 @@ describe('SafeExpressionEvaluator', () => {
         });
 
         /** @effects sandbox_escape_blocked */
+        // @scenario case=object_facade_safe
+        // @effects sandbox_escape_blocked
         it('Object.setPrototypeOf 는 노출되지 않는다 (프로토타입 오염 차단)', () => {
             expect(() => evalx('Object.setPrototypeOf({}, {})')).toThrow();
         });
 
         /** @effects sandbox_escape_blocked */
+        // @scenario case=object_facade_safe
+        // @effects sandbox_escape_blocked
         it('Object.defineProperty 는 노출되지 않는다', () => {
             expect(() => evalx("Object.defineProperty({}, 'x', { value: 1 })")).toThrow();
         });
 
         /** @effects sandbox_escape_blocked */
+        // @scenario case=object_facade_safe
+        // @effects sandbox_escape_blocked
         it('Object.getOwnPropertyDescriptors 는 노출되지 않는다', () => {
             expect(() => evalx('Object.getOwnPropertyDescriptors(String)')).toThrow();
         });
 
         /** @effects sandbox_escape_blocked */
+        // @scenario case=object_facade_safe
+        // @effects whitelisted_globals_stay_callable
         it('안전한 Object 데이터 메서드는 유지 — keys/values/entries/assign/fromEntries', () => {
             expect(evalx('Object.keys({ a: 1, b: 2 })')).toEqual(['a', 'b']);
             expect(evalx('Object.values({ a: 1, b: 2 })')).toEqual([1, 2]);
@@ -756,6 +974,8 @@ describe('SafeExpressionEvaluator', () => {
         // 회귀 방지: create 는 프로토타입/디스크립터를 읽지도 쓰지도 않으므로 유지된다.
         // 실제 레이아웃(_tab_reviews.json)의 리뷰 옵션 필터 맵 생성 패턴을 고정한다.
         /** @effects sandbox_escape_blocked */
+        // @scenario case=object_facade_safe
+        // @effects whitelisted_globals_stay_callable
         it('Object.create(null) + assign 은 유지 — 실제 레이아웃 필터 맵 패턴', () => {
             expect(evalx("Object.assign(Object.create(null), { a: '1' }, { b: '2' })")).toEqual({
                 a: '1',
@@ -781,6 +1001,8 @@ describe('SafeExpressionEvaluator', () => {
     // 지속되는 오염이므로 delete 와 동일 강도로 막아야 한다.
     describe('공유 전역 변조 차단', () => {
         /** @effects sandbox_escape_blocked */
+        // @scenario case=object_facade_safe
+        // @effects sandbox_escape_blocked
         it('Object.assign 으로 화이트리스트 전역을 변조할 수 없다', () => {
             expect(() => evalx('Object.assign(Math, { floor: 1 })')).toThrow();
             expect(() => evalx('Object.assign(JSON, { parse: 1 })')).toThrow();
@@ -788,17 +1010,23 @@ describe('SafeExpressionEvaluator', () => {
         });
 
         /** @effects sandbox_escape_blocked */
+        // @scenario case=object_facade_safe
+        // @effects sandbox_escape_blocked
         it('Object.freeze 로 화이트리스트 전역을 동결할 수 없다', () => {
             expect(() => evalx('Object.freeze(Math)')).toThrow();
             expect(Object.isFrozen(Math)).toBe(false);
         });
 
         /** @effects sandbox_escape_blocked */
+        // @scenario case=object_facade_safe
+        // @effects sandbox_escape_blocked
         it('화이트리스트 생성자도 동일하게 보호된다', () => {
             expect(() => evalx('Object.assign(Date, { now: 1 })')).toThrow();
         });
 
         /** @effects sandbox_escape_blocked */
+        // @scenario case=object_facade_safe
+        // @effects whitelisted_globals_stay_callable
         it('일반 객체에 대한 assign·freeze 는 정상 동작한다 (과차단 회귀 방지)', () => {
             expect(evalx('Object.assign({ a: 1 }, { b: 2 })')).toEqual({ a: 1, b: 2 });
             expect(evalx("Object.assign(Object.create(null), { a: '1' })")).toEqual({ a: '1' });
@@ -822,6 +1050,8 @@ describe('SafeExpressionEvaluator', () => {
             delete (Array.prototype as Record<string, unknown>).pwned;
         });
 
+        // @scenario case=constructor_escape
+        // @effects sandbox_escape_blocked
         it.each([
             ['__lookupGetter__', "({}).__lookupGetter__('__proto__')"],
             ['__lookupSetter__', "({}).__lookupSetter__('__proto__')"],
@@ -832,12 +1062,16 @@ describe('SafeExpressionEvaluator', () => {
         });
 
         /** @effects sandbox_escape_blocked */
+        // @scenario case=constructor_escape
+        // @effects sandbox_escape_blocked
         it('문자열 조립으로도 우회할 수 없다 (정적 검사가 못 잡는 형태)', () => {
             expect(() => evalx("({})['__lookup' + 'Getter__']('__pro' + 'to__')")).toThrow();
             expect(() => evalx("({})[['__lookupGetter__']]('__proto__')")).toThrow();
         });
 
         /** @effects sandbox_escape_blocked */
+        // @scenario case=constructor_escape
+        // @effects sandbox_escape_blocked
         it('프로토타입을 손에 넣어 전역을 오염시킬 수 없다', () => {
             // .call 없이 method-position 으로도 thisArg 가 공급되므로 두 형태를 모두 고정한다.
             expect(() =>
@@ -852,6 +1086,8 @@ describe('SafeExpressionEvaluator', () => {
         });
 
         /** @effects sandbox_escape_blocked */
+        // @scenario case=constructor_escape
+        // @effects sandbox_escape_blocked
         it('배열 프로토타입도 동일하게 보호된다', () => {
             expect(() => evalx("[].__lookupGetter__('__pro' + 'to__').call([])")).toThrow();
             expect((Array.prototype as Record<string, unknown>).pwned).toBeUndefined();
@@ -859,6 +1095,8 @@ describe('SafeExpressionEvaluator', () => {
         });
 
         /** @effects sandbox_escape_blocked */
+        // @scenario case=constructor_escape
+        // @effects sandbox_escape_blocked
         it('함수 객체의 프로토타입에도 도달할 수 없다', () => {
             expect(() =>
                 evalx("Math.floor.__lookupGetter__('__pro' + 'to__').call(Math.floor)")
@@ -867,6 +1105,8 @@ describe('SafeExpressionEvaluator', () => {
         });
 
         /** @effects sandbox_escape_blocked */
+        // @scenario case=constructor_escape
+        // @effects sandbox_escape_blocked
         it('Object.assign 이 source 의 __proto__ 키로 프로토타입을 바꾸지 못한다', () => {
             // JSON.parse 는 __proto__ 를 own enumerable 데이터 프로퍼티로 만든다.
             // 네이티브 Object.assign 은 [[Set]] 으로 복사해 target 의 __proto__ setter 를 깨운다.
@@ -886,6 +1126,8 @@ describe('SafeExpressionEvaluator', () => {
         });
 
         /** @effects sandbox_escape_blocked */
+        // @scenario case=constructor_escape
+        // @effects same_expression_same_value_across_paths
         it('정상 표현식은 그대로 통과한다 (과차단 회귀 방지)', () => {
             // 배포 레이아웃이 실제로 쓰는 형태들 — toLocaleString 19곳, Object.assign 34곳, Object.create 1곳
             expect(evalx('(1234.5).toLocaleString()')).toBeTypeOf('string');

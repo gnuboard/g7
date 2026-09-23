@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\Admin\Analytics;
 
+use App\Analytics\AnalyticsClock;
 use App\Analytics\AnalyticsConfig;
 use App\Contracts\Repositories\Analytics\CollectFailureRepositoryInterface;
 use App\Http\Controllers\Api\Base\AdminBaseController;
@@ -9,6 +10,7 @@ use App\Http\Requests\Admin\Analytics\CollectFailureIndexRequest;
 use App\Http\Requests\Admin\Analytics\DiagnosticsRequest;
 use App\Services\Analytics\DiagnosticsService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Carbon;
 
 /**
  * 방문자 통계 진단 API
@@ -59,7 +61,15 @@ class DiagnosticsController extends AdminBaseController
         );
 
         return $this->success('analytics.collect_failures.fetch_success', [
-            'data' => $paginator->items(),
+            'data' => array_map(static function ($failure): array {
+                $row = $failure->toArray();
+                // 실패 시각도 같은 화면의 다른 시각과 같은 기준이어야 한다(#682 S3 라운드 6).
+                if (isset($row['occurred_at'])) {
+                    $row['occurred_at'] = AnalyticsClock::toSiteDateTimeString(Carbon::parse($row['occurred_at']));
+                }
+
+                return $row;
+            }, $paginator->items()),
             'pagination' => [
                 'current_page' => $paginator->currentPage(),
                 'last_page' => $paginator->lastPage(),

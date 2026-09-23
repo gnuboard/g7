@@ -2,12 +2,17 @@
 
 namespace App\Jobs\Analytics;
 
+use App\Analytics\AnalyticsClock;
+use App\Enums\Analytics\ArchiveRunType;
 use App\Services\Analytics\AnonymizeService;
+use App\Services\Analytics\StaleRunService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Carbon;
+use Throwable;
 
 /**
  * 소급 익명화 잡
@@ -32,6 +37,14 @@ class AnonymizeLedgerJob implements ShouldQueue
     public int $tries = 1;
 
     /**
+     * 잡을 큐에 올린 시각 (UTC, Y-m-d H:i:s)
+     *
+     * 잡은 자기가 만든 실행 이력 번호를 모른다 — 실패했을 때 이 시각 이후에 같은 유형·같은
+     * 요청자로 시작한 「실행 중」 행을 자기 몫으로 찾아 닫는다.
+     */
+    private readonly string $queuedAt;
+
+    /**
      * 잡을 만듭니다.
      *
      * @param  int  $maskOctets  가릴 주소 옥텟 수 (0~3)
@@ -46,7 +59,9 @@ class AnonymizeLedgerJob implements ShouldQueue
         private readonly ?string $from = null,
         private readonly ?string $to = null,
         private readonly ?int $triggeredBy = null,
-    ) {}
+    ) {
+        $this->queuedAt = AnalyticsClock::now()->toDateTimeString();
+    }
 
     /**
      * 잡을 실행합니다.
@@ -64,5 +79,24 @@ class AnonymizeLedgerJob implements ShouldQueue
             'trigger' => 'manual',
             'triggered_by' => $this->triggeredBy,
         ]);
+    }
+
+    /**
+     * 잡이 실패했을 때(예외·제한시간 초과) 이 잡이 맡은 「실행 중」 이력을 실패로 닫습니다.
+     *
+     * 닫지 않으면 그 행이 남아 진단 화면의 수동 집계 버튼을 잠근다(#682 S3 라운드 13).
+     * 워커가 강제 종료돼 이 훅조차 돌지 못한 행은 매시 집계가 기준 시간 뒤에 닫는다.
+     *
+     * @param  Throwable  $exception  실패 원인
+     * @return void 없음
+     */
+    public function failed(Throwable $exception): void
+    {
+        app(StaleRunService::class)->failOrphansOf(
+            ArchiveRunType::Anonymize->value,
+            Carbon::parse($this->queuedAt, 'UTC'),
+            $this->triggeredBy,
+            $exception->getMessage(),
+        );
     }
 }

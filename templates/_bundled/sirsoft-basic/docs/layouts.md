@@ -5,7 +5,7 @@
 ## 레이아웃 목록
 
 <!-- @generated:layouts START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-레이아웃 168개 (루트: `layouts`).
+레이아웃 169개 (루트: `layouts`).
 
 | 그룹 | 개수 |
 |---|---|
@@ -15,7 +15,7 @@
 | `errors` | 6개 |
 | `mypage` | 12개 |
 | `page` | 1개 |
-| `partials` | 125개 |
+| `partials` | 126개 |
 | `search` | 1개 |
 | `shop` | 9개 |
 | `users` | 2개 |
@@ -55,6 +55,7 @@
 | `show` | `page` | 화면 | `_user_base` |
 | `_identity_challenge_modal` | `partials` | partial | - |
 | `_modal_notification_delete_all_confirm` | `partials` | partial | - |
+| `_visitor_counter` | `partials` | partial | - |
 | `_login_form` | `partials` | partial | - |
 | `_modal_privacy` | `partials` | partial | - |
 | `_modal_terms` | `partials` | partial | - |
@@ -356,7 +357,8 @@ _user_base.g7.html (베이스 레이아웃)
 │       ├── _popular_boards.g7.html (인기 게시판)
 │       ├── _board_summary.g7.html (게시판 요약)
 │       ├── _community_guide.g7.html (커뮤니티 가이드)
-│       └── _shop_promo.g7.html (쇼핑 프로모션)
+│       ├── _shop_promo.g7.html (쇼핑 프로모션)
+│       └── _visitor_counter.g7.html (방문자 카운터 — 설정을 켰을 때만, 공개 요약 API #682 S3)
 │
 ├── 인증 (auth/)
 │   ├── login.g7.html (로그인)
@@ -459,9 +461,14 @@ _user_base.g7.html (베이스 레이아웃)
 │   │       ├── _modal_address_manage.g7.html (배송지 관리)
 │   │       ├── _modal_coupon_download.g7.html (쿠폰 다운로드)
 │   │       └── _modal_exclusive_coupon_confirm.g7.html (전용 쿠폰 확인)
-│   └── order_complete.g7.html (주문 완료)
+│   ├── order_complete.g7.html (주문 완료)
+│   ├── reorder.g7.html (재주문 — 지난 주문을 장바구니로)
+│   ├── guest_order_form.g7.html (비회원 주문 조회 — 주문번호·연락처 입력)
+│   └── guest_order_show.g7.html (비회원 주문 상세)
 │
 ├── 마이페이지 (mypage/)
+│   ├── mileage.g7.html (마일리지 내역)
+│   ├── scrap.g7.html (스크랩 — 일괄 삭제 확인 조각 포함)
 │   ├── profile.g7.html (프로필 보기)
 │   ├── profile-edit.g7.html (프로필 수정)
 │   │   └── partials/mypage/profile/

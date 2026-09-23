@@ -5,6 +5,7 @@ namespace App\Contracts\Repositories\Analytics;
 use App\Models\Analytics\AnalyticsArchiveRun;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 
 /**
  * 배치 실행 이력 Repository 인터페이스
@@ -77,7 +78,26 @@ interface ArchiveRunRepositoryInterface
     /**
      * 지금 돌고 있는 집계 실행을 찾습니다.
      *
+     * @param  Carbon|null  $startedSince  이 시각 이후에 시작한 행만 본다(그 전의 「실행 중」은 멈춘 행으로 친다). null 이면 제한 없음
      * @return AnalyticsArchiveRun|null 실행 중인 이력 (없으면 null)
      */
-    public function findRunning(): ?AnalyticsArchiveRun;
+    public function findRunning(?Carbon $startedSince = null): ?AnalyticsArchiveRun;
+
+    /**
+     * 주어진 시각 이전에 시작해 아직 「실행 중」으로 남은 행을 찾습니다.
+     *
+     * @param  Carbon  $before  이 시각보다 앞서 시작한 행
+     * @return Collection<int, AnalyticsArchiveRun> 멈춘 것으로 볼 실행 이력
+     */
+    public function getRunningStartedBefore(Carbon $before): Collection;
+
+    /**
+     * 한 잡이 맡은 「실행 중」 행을 찾습니다 — 같은 유형·같은 요청자로 그 시각 이후에 시작한 행.
+     *
+     * @param  string  $runType  실행 유형
+     * @param  Carbon  $since  잡을 큐에 올린 시각
+     * @param  int|null  $triggeredBy  요청한 관리자 ID (예약 실행이면 null)
+     * @return Collection<int, AnalyticsArchiveRun> 실행 중인 이력
+     */
+    public function getRunningOfTypeSince(string $runType, Carbon $since, ?int $triggeredBy): Collection;
 }

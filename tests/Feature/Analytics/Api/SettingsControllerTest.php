@@ -155,6 +155,73 @@ class SettingsControllerTest extends AnalyticsApiTestCase
      *
      * @effects the_core_settings_route_validates_analytics_the_same_way
      */
+    /**
+     * 화면이 보낸 숫자·참거짓 문자열이 선언한 형으로 저장되는지 확인합니다.
+     *
+     * 폼 입력은 무엇이든 문자열로 온다. 그대로 저장하면 설정 파일과 응답에 "45" 가 남아
+     * 설정을 읽는 쪽이 숫자로 알고 쓰던 값을 문자열로 받는다(브라우저 실측 M6-T4).
+     *
+     * @return void 없음
+     *
+     * @scenario endpoint=settings, role=update
+     *
+     * @effects settings_store_declared_types_not_form_strings
+     */
+    public function test_form_strings_are_stored_as_the_declared_types(): void
+    {
+        $response = $this->actingAs($this->updateAdmin())
+            ->putJson('/api/admin/analytics/settings', [
+                'retention_days' => '45',
+                'visit_timeout_minutes' => '20',
+                'enabled' => '1',
+                'respect_dnt' => '0',
+            ]);
+
+        $response->assertOk();
+        $this->assertSame(45, $response->json('data.settings.retention_days'));
+        $this->assertSame(20, $response->json('data.settings.visit_timeout_minutes'));
+        $this->assertTrue($response->json('data.settings.enabled'));
+        $this->assertFalse($response->json('data.settings.respect_dnt'));
+
+        $stored = (array) g7_core_settings('analytics', []);
+        $this->assertSame(45, $stored['retention_days'], '저장된 값도 숫자여야 한다');
+        $this->assertFalse($stored['respect_dnt']);
+    }
+
+    /**
+     * 코어 설정 길로 온 값도 같은 형으로 저장되는지 확인합니다.
+     *
+     * @return void 없음
+     *
+     * @scenario endpoint=settings, role=update
+     *
+     * @effects settings_store_declared_types_not_form_strings
+     */
+    public function test_the_core_settings_route_casts_the_same_way(): void
+    {
+        $admin = $this->adminWith(['core.settings.update', 'core.settings.read']);
+
+        $this->actingAs($admin)
+            ->postJson('/api/admin/settings', [
+                '_tab' => 'analytics',
+                'analytics' => ['retention_days' => '45', 'enabled' => '0'],
+            ])
+            ->assertOk();
+
+        $stored = (array) g7_core_settings('analytics', []);
+        $this->assertSame(45, $stored['retention_days']);
+        $this->assertFalse($stored['enabled']);
+    }
+
+    /**
+     * 코어 설정 길로 온 값도 같은 규칙으로 검증되는지 확인합니다.
+     *
+     * @return void 없음
+     *
+     * @scenario endpoint=settings, role=update
+     *
+     * @effects settings_reject_values_outside_their_range
+     */
     public function test_the_core_settings_route_validates_analytics_the_same_way(): void
     {
         $admin = $this->adminWith(['core.settings.update', 'core.settings.read']);
@@ -172,5 +239,35 @@ class SettingsControllerTest extends AnalyticsApiTestCase
                 'analytics' => ['retention_days' => 45],
             ])
             ->assertOk();
+    }
+
+    /**
+     * 설정 응답의 시각이 사이트 표준시로 나가는지 확인합니다.
+     *
+     * 봇 탭이 「클라우드 대역 갱신」 시각을 `| datetime` 으로 그린다. 그 파이프는 값을
+     * `new Date()` 로 파싱한 뒤 **브라우저 로컬 getter** 로 찍으므로, 오프셋이 붙어 나가면
+     * 보는 사람의 시간대로 다시 옮겨져 사이트 기준이 깨진다(#682 S3 라운드 7, 설계 결정
+     * 「응답 경계에서 변환」). 저장값은 ISO8601 그대로 둔다 — 바꾸는 것은 나가는 길뿐이다.
+     *
+     * @return void 없음
+     *
+     * @scenario endpoint=settings, role=read
+     *
+     * @effects analytics_times_are_rendered_in_the_site_timezone
+     */
+    public function test_settings_response_carries_site_timezone_times(): void
+    {
+        config([
+            'g7_settings.core.general.timezone' => 'Asia/Seoul',
+            'g7_settings.core.analytics.cloud_ip_ranges_updated_at' => '2026-09-22T00:30:00+00:00',
+        ]);
+
+        $updatedAt = $this->actingAs($this->adminWith(['core.analytics.read', 'core.analytics.update']))
+            ->getJson('/api/admin/analytics/settings')
+            ->assertOk()
+            ->json('data.settings.cloud_ip_ranges_updated_at');
+
+        // 00:30 UTC = 09:30 KST.
+        $this->assertSame('2026-09-22 09:30:00', $updatedAt, '오프셋이 붙으면 브라우저가 다시 옮긴다');
     }
 }

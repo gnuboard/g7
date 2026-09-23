@@ -2,10 +2,12 @@
 
 namespace App\Services\Analytics;
 
+use App\Analytics\AnalyticsClock;
 use App\Analytics\GeoLabelTranslator;
 use App\Analytics\UrlNormalizer;
 use App\Contracts\Repositories\Analytics\BotHitRepositoryInterface;
 use App\Contracts\Repositories\Analytics\StatsRepositoryInterface;
+use App\Contracts\Repositories\Analytics\VisitRepositoryInterface;
 use App\Enums\Analytics\StatsDimension;
 use App\Enums\Analytics\VisitorType;
 
@@ -40,15 +42,46 @@ class ReportService
     private const RECENT_BOT_HITS = 50;
 
     /**
+     * 라벨이 주소인 차원 — 화면에서 풀어 보여 주므로 검색도 인코딩된 저장 형태를 함께 찾는다.
+     */
+    private const URL_DIMENSIONS = [
+        StatsDimension::PageUrl->value,
+        StatsDimension::EntryPage->value,
+        StatsDimension::ExitPage->value,
+        StatsDimension::BotPage->value,
+    ];
+
+    /**
      * 리포트 조회기를 생성합니다.
      *
      * @param  StatsRepositoryInterface  $stats  집계 저장소
      * @param  BotHitRepositoryInterface  $botHits  봇 요청 원장 저장소
+     * @param  VisitRepositoryInterface  $visits  방문 원장 저장소 — 집계에 없는 전체 유입 주소를 읽는다
      */
     public function __construct(
         private readonly StatsRepositoryInterface $stats,
         private readonly BotHitRepositoryInterface $botHits,
+        private readonly VisitRepositoryInterface $visits,
     ) {}
+
+    /**
+     * 한 유입처의 전체 유입 주소를 조회합니다.
+     *
+     * 유입 사이트 목록은 호스트(`referrer_name`)만 쌓인 집계를 읽어 「google.com 에서 340」까지만
+     * 말한다. 어느 검색 결과·어느 글에서 왔는지는 원장의 `referrer_url` 에만 있으므로 이 한 갈래만
+     * 집계가 아니라 원장을 직접 읽는다. 익명화(`referrer_anonymization`)를 켠 구간은 저장 시점에
+     * 이미 도메인까지만 남아 그 기간에는 호스트와 같은 한 줄만 나온다(#682 라운드 4, 검수 지적 ⑥).
+     *
+     * @param  string  $host  유입처 호스트
+     * @param  string  $from  시작일 (Y-m-d)
+     * @param  string  $to  종료일 (Y-m-d)
+     * @param  array<string, mixed>  $options  page·per_page·visitor_types
+     * @return array{rows: array<int, array{url: string, visits: int, hits: int}>, page: int, per_page: int, has_more: bool} 주소 목록과 쪽 정보
+     */
+    public function referrerUrls(string $host, string $from, string $to, array $options = []): array
+    {
+        return $this->visits->referrerUrls($host, $from, $to, $options);
+    }
 
     /**
      * 최근 봇 요청을 조회합니다.
@@ -68,7 +101,7 @@ class ReportService
                 'cache_status' => $hit->cache_status instanceof \BackedEnum
                     ? (string) $hit->cache_status->value
                     : $hit->cache_status,
-                'occurred_at' => $hit->occurred_at?->toIso8601String(),
+                'occurred_at' => AnalyticsClock::toSiteDateTimeString($hit->occurred_at),
             ])
             ->all();
     }
@@ -96,6 +129,30 @@ class ReportService
     }
 
     /**
+     * 리포트의 기간 합계(요청 수·라벨 수)를 만듭니다.
+     *
+     * 목록은 쪽으로 잘려 오므로, 화면이 그 행을 더해 KPI 를 그리면 라벨이 한 쪽보다 많은
+     * 기간에는 첫 쪽의 합만 보이고 쪽을 넘기면 KPI 가 그 쪽의 합으로 바뀐다(#682 S3 라운드 14).
+     *
+     * @param  string  $report  리포트 이름
+     * @param  string  $from  시작일 (Y-m-d)
+     * @param  string  $to  종료일 (Y-m-d)
+     * @param  array<string, mixed>  $options  조회 옵션 (visitor_types)
+     * @return array{hits: int, labels: int} 기간 합계
+     */
+    public function totals(string $report, string $from, string $to, array $options = []): array
+    {
+        $dimension = $this->dimensionFor($report);
+
+        return $this->stats->dimensionTotals(
+            $dimension,
+            $from,
+            $to,
+            $options['visitor_types'] ?? $this->defaultTypes($dimension),
+        );
+    }
+
+    /**
      * 상위 목록을 만듭니다.
      *
      * @param  string  $report  리포트 이름
@@ -118,7 +175,7 @@ class ReportService
             'limit' => $perPage + 1,
             'offset' => ($page - 1) * $perPage,
             'sort' => $this->sortColumn($options['sort'] ?? null),
-            'search' => $options['search'] ?? null,
+            'search' => $this->searchTerms($options['search'] ?? null, $dimension),
         ]);
 
         $hasMore = $rows->count() > $perPage;
@@ -191,9 +248,39 @@ class ReportService
             StatsDimension::PageUrl->value,
             StatsDimension::EntryPage->value,
             StatsDimension::ExitPage->value,
-            StatsDimension::BotPage->value => UrlNormalizer::stripSiteHost($label),
+            StatsDimension::BotPage->value => UrlNormalizer::forDisplay($label),
             default => $label,
         };
+    }
+
+    /**
+     * 검색어를 저장 라벨과 맞춰 볼 형태들로 바꿉니다.
+     *
+     * 주소 차원의 라벨은 브라우저가 인코딩한 채 저장되는데 화면은 풀어서 보여 줍니다
+     * (`UrlNormalizer::forDisplay`). 화면에 보이는 「테스트」로 찾으면 저장값 「%ED%85%8C…」와 맞지
+     * 않으므로, 공백·비ASCII 글자를 브라우저와 같게 인코딩한 형태도 함께 찾습니다.
+     *
+     * @param  string|null  $search  입력한 검색어
+     * @param  string  $dimension  차원 이름
+     * @return array<int, string> 찾을 형태 목록 (비었으면 검색 안 함)
+     */
+    private function searchTerms(?string $search, string $dimension): array
+    {
+        if ($search === null || trim($search) === '') {
+            return [];
+        }
+
+        $terms = [$search];
+
+        if (in_array($dimension, self::URL_DIMENSIONS, true)) {
+            $encoded = preg_replace_callback('/[^\x21-\x7E]/u', fn (array $m): string => rawurlencode($m[0]), $search);
+
+            if (is_string($encoded) && $encoded !== $search) {
+                $terms[] = $encoded;
+            }
+        }
+
+        return $terms;
     }
 
     /**

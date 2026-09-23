@@ -3,7 +3,6 @@
 namespace App\Analytics;
 
 use App\Enums\Analytics\CountryFilterMode;
-use App\Enums\Analytics\DispatchMode;
 use App\Enums\Analytics\PrivacyMode;
 use App\Enums\Analytics\ReferrerAnonymization;
 
@@ -33,7 +32,6 @@ readonly class AnalyticsConfig
      * @param  bool  $geoBeforeMask  마스킹 전에 지역을 조회할지 여부
      * @param  ReferrerAnonymization  $anonymizeReferrer  유입 URL 익명화 방식
      * @param  bool  $pseudonymizeUserId  회원 ID 가명화 여부
-     * @param  DispatchMode  $dispatchMode  적재 방식
      * @param  int  $visitTimeoutMinutes  방문 이어짐 판정 시간 (분)
      * @param  int  $maxActionsPerVisit  방문당 최대 액션 수
      * @param  array<int, string>  $excludedUrlPatterns  제외 경로 글로브 목록
@@ -76,7 +74,6 @@ readonly class AnalyticsConfig
         public bool $geoBeforeMask,
         public ReferrerAnonymization $anonymizeReferrer,
         public bool $pseudonymizeUserId,
-        public DispatchMode $dispatchMode,
         public int $visitTimeoutMinutes,
         public int $maxActionsPerVisit,
         public array $excludedUrlPatterns,
@@ -137,7 +134,6 @@ readonly class AnalyticsConfig
             geoBeforeMask: (bool) $get('geo_before_mask', true),
             anonymizeReferrer: ReferrerAnonymization::tryFrom((string) $get('anonymize_referrer', 'none')) ?? ReferrerAnonymization::None,
             pseudonymizeUserId: (bool) $get('pseudonymize_user_id', false),
-            dispatchMode: DispatchMode::tryFrom((string) $get('dispatch_mode', 'queue')) ?? DispatchMode::Queue,
             visitTimeoutMinutes: (int) $get('visit_timeout_minutes', 30),
             maxActionsPerVisit: (int) $get('max_actions_per_visit', 500),
             excludedUrlPatterns: $list('excluded_url_patterns'),

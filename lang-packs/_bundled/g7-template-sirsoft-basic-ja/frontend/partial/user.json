@@ -178,5 +178,12 @@
     },
     "identity_challenge_modal": "本人認証",
     "notification_delete_all_confirm_modal": "通知全削除確認"
+  },
+  "visitor_counter": {
+    "title": "訪問者",
+    "today": "今日",
+    "yesterday": "昨日",
+    "max": "最大",
+    "total": "全体"
   }
 }

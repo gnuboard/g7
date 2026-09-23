@@ -5,8 +5,11 @@ namespace Tests\Feature\Analytics\Api;
 use App\Enums\Analytics\ArchiveRunStatus;
 use App\Enums\Analytics\ArchiveRunType;
 use App\Enums\Analytics\CollectFailureReason;
+use App\Extension\HookManager;
 use App\Models\Analytics\AnalyticsArchiveRun;
 use App\Models\Analytics\AnalyticsCollectFailure;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\File;
 
 /**
  * 진단 API — 「왜 아무것도 안 세어지는가」에 답하는 화면.
@@ -46,6 +49,44 @@ class DiagnosticsControllerTest extends AnalyticsApiTestCase
         $this->assertArrayHasKey('lag_hours', $data['archive']);
         $this->assertArrayHasKey('excluded_today', $data['collection']);
         $this->assertSame(1, $data['collection']['tracked_today']);
+    }
+
+    /**
+     * 진단의 `broadcasting.configured` 가 실제 방송 게이트와 같은 답을 내는지 확인합니다.
+     *
+     * 화면은 이 값 하나로 「방송을 기다릴지, 2초 폴링을 걸지」를 가른다. 그래서 이 값은 「키가
+     * 있는가」가 아니라 **「방송이 실제로 나가는가」**여야 한다 — 키만 보고 판정하면 키는 넣었지만
+     * 드라이버가 `null`/`log` 이거나 호스트가 빈 사이트에서 방송도 폴링도 없어 진행률 바가
+     * 멈춘 채 남는다(#682 S3 라운드 3, 설계 결정으로 판정식을 `HookManager` 와 하나로 합쳤다).
+     *
+     * @return void 없음
+     *
+     * @scenario endpoint=diagnostics, role=read
+     *
+     * @effects diagnostics_report_queue_archive_and_proxy_state
+     */
+    public function test_broadcasting_is_reported_as_configured_only_when_broadcasts_go_out(): void
+    {
+        $this->visit();
+        $admin = $this->readAdmin();
+
+        $configured = fn (): ?bool => $this->actingAs($admin)
+            ->getJson('/api/admin/analytics/diagnostics')
+            ->json('data.broadcasting.configured');
+
+        // 키는 있는데 드라이버가 로그/널 — `HookManager::broadcast()` 가 첫 줄에서 돌아선다.
+        config(['broadcasting.default' => 'log', 'broadcasting.connections.reverb.key' => 'local-key']);
+        $this->assertFalse($configured(), '방송이 안 나가면 폴링으로 내려가야 한다');
+        $this->assertSame(HookManager::broadcastingEnabled(), $configured());
+
+        // 드라이버는 맞는데 호스트가 비었다 — 연결 시도 없이 건너뛴다.
+        config(['broadcasting.default' => 'reverb', 'broadcasting.connections.reverb.options.host' => '']);
+        $this->assertFalse($configured(), '호스트가 없으면 방송은 나가지 않는다');
+        $this->assertSame(HookManager::broadcastingEnabled(), $configured());
+
+        config(['broadcasting.default' => 'reverb', 'broadcasting.connections.reverb.options.host' => 'localhost']);
+        $this->assertTrue($configured());
+        $this->assertSame(HookManager::broadcastingEnabled(), $configured());
     }
 
     /**
@@ -99,5 +140,178 @@ class DiagnosticsControllerTest extends AnalyticsApiTestCase
         $this->actingAs($admin)
             ->getJson('/api/admin/analytics/collect-failures?reason=there_is_no_such_reason')
             ->assertStatus(422);
+    }
+
+    /**
+     * 진단 응답이 실패 로그 주소의 마스킹 사실을 함께 싣는지 확인합니다.
+     *
+     * @return void 없음
+     *
+     * @scenario endpoint=diagnostics, role=read
+     *
+     * @effects masked_ip_is_labelled_as_masked
+     */
+    public function test_diagnostics_tells_the_screen_the_failure_address_is_masked(): void
+    {
+        // 실패 로그의 주소도 방문 원장과 같은 마스킹 규칙을 받는다(마이그레이션 주석). 그 사실을
+        // 싣지 않으면 운영자가 뒤 옥텟이 지워진 값을 원래 주소로 읽고 그 주소로 차단·문의한다
+        // (#682 S3 라운드 6).
+        config(['g7_settings.core.analytics.ip_mask_octets' => 3]);
+
+        $this->assertSame(
+            3,
+            $this->actingAs($this->readAdmin())
+                ->getJson('/api/admin/analytics/diagnostics')
+                ->assertOk()
+                ->json('data.collection.ip_mask_octets'),
+        );
+    }
+
+    /**
+     * 통계 응답의 시각이 사이트 표준시로 나가는지 확인합니다.
+     *
+     * @return void 없음
+     *
+     * @scenario endpoint=diagnostics, role=read
+     *
+     * @effects analytics_times_are_rendered_in_the_site_timezone
+     */
+    public function test_analytics_responses_carry_site_timezone_times(): void
+    {
+        // 집계 경계는 사이트 자정에 잠겨 있다(`AnalyticsClock::dayRangeUtc`). 시각 표기가 UTC 로
+        // 나가면 KST 사이트에서 「기간」이 15:00~15:00 으로 보이고, 보는 사람 기준으로 나가면
+        // 「오늘 KPI」와 목록의 날짜가 서로 다른 하루를 가리킨다(#682 S3 라운드 6, 설계 결정).
+        // 오프셋이 붙으면 브라우저가 자기 시간대로 다시 옮기므로 **오프셋 없는** 문자열이어야 한다.
+        // 사이트 표준시를 명시해 둔다 — 테스트 환경 기본값은 UTC 라 그대로 두면 이 축이 성립하지 않는다.
+        config(['g7_settings.core.general.timezone' => 'Asia/Seoul']);
+        $this->travelTo(Carbon::parse('2026-09-22 00:30:00', 'UTC'));
+
+        $this->visit(['last_action_at' => Carbon::parse('2026-09-22 00:30:00', 'UTC')]);
+
+        $body = $this->actingAs($this->readAdmin())
+            ->getJson('/api/admin/analytics/diagnostics')
+            ->assertOk()
+            ->json('data');
+
+        $this->assertSame('Asia/Seoul', $body['timezone'] ?? null, '화면이 안내에 쓸 사이트 표준시가 실려야 한다');
+
+        $lastTracked = $body['collection']['last_tracked_at'] ?? null;
+        $this->assertNotNull($lastTracked);
+        // 00:30 UTC = 09:30 KST. UTC 로 나가면 '00:30', 오프셋이 붙으면 '+' 가 남는다.
+        $this->assertStringContainsString('09:30', (string) $lastTracked);
+        $this->assertStringNotContainsString('+', (string) $lastTracked, '오프셋이 붙으면 브라우저가 다시 옮긴다');
+        $this->assertStringNotContainsString('T', (string) $lastTracked);
+    }
+
+    /**
+     * 진단 응답의 **모든** 시각이 사이트 표준시인지 확인합니다.
+     *
+     * 키 하나만 재면 나머지가 샌다 — 라운드 6 은 `last_tracked_at` 한 자리만 쟀고, 그 사이
+     * `cloud_ranges.updated_at` 은 오프셋 붙은 ISO8601 로 남아 있었다(#682 S3 라운드 7).
+     * 그래서 모집단을 **응답에서 파생**한다: 페이로드를 재귀로 훑어 시각처럼 보이는 문자열을
+     * 전부 모으고, 그중 하나라도 `T`·오프셋을 달고 있으면 red 다. 키를 새로 더해도 자동으로
+     * 검사 대상이 된다.
+     *
+     * @return void 없음
+     *
+     * @scenario endpoint=diagnostics, role=read
+     *
+     * @effects analytics_times_are_rendered_in_the_site_timezone
+     */
+    public function test_every_time_in_the_diagnostics_payload_is_site_standard(): void
+    {
+        config(['g7_settings.core.general.timezone' => 'Asia/Seoul']);
+        $this->travelTo(Carbon::parse('2026-09-22 00:30:00', 'UTC'));
+
+        $this->visit(['last_action_at' => Carbon::parse('2026-09-22 00:30:00', 'UTC')]);
+        AnalyticsCollectFailure::factory()->create(['occurred_at' => Carbon::parse('2026-09-22 00:30:00', 'UTC')]);
+        AnalyticsArchiveRun::factory()->create([
+            'run_type' => ArchiveRunType::Hour,
+            'status' => ArchiveRunStatus::Success,
+            'started_at' => Carbon::parse('2026-09-22 00:30:00', 'UTC'),
+        ]);
+        // 클라우드 목록 갱신 시각은 목록 **파일**에 ISO8601 로 적힌다 — 응답 경계가 바꾸지 않으면 샌다.
+        $listPath = storage_path('app/'.config('analytics.cloud_ip_ranges.storage_path', 'analytics/cloud-ip-ranges.json'));
+        File::ensureDirectoryExists(dirname($listPath));
+        File::put($listPath, json_encode(['updated_at' => '2026-09-22T00:30:00+00:00', 'ranges' => ['203.0.113.0/24']]));
+
+        $body = $this->actingAs($this->readAdmin())
+            ->getJson('/api/admin/analytics/diagnostics')
+            ->assertOk()
+            ->json('data');
+
+        $offenders = [];
+        $times = self::collectTimeLikeStrings($body, '', $offenders);
+
+        // 모집단이 비면 red — 파생이 아무것도 못 찾았는데 초록이면 이 가드는 아무 말도 안 한 것이다.
+        $this->assertGreaterThanOrEqual(
+            3,
+            count($times),
+            '응답에서 시각을 찾지 못했다 — 파생이 깨졌거나 픽스처가 비었다',
+        );
+        $this->assertSame([], $offenders, '사이트 표준시가 아닌 시각: '.implode(' · ', $offenders));
+    }
+
+    /**
+     * 페이로드에서 시각처럼 보이는 문자열을 재귀로 모읍니다.
+     *
+     * `Y-m-d H:i:s`(사이트 표준시 규약)와 ISO8601 을 함께 잡고, 후자는 위반으로 적습니다.
+     * 일자만 있는 값(`Y-m-d`)은 시각이 아니므로 세지 않습니다.
+     *
+     * @param  mixed  $node  페이로드 조각
+     * @param  string  $path  현재 경로 (오류 메시지용)
+     * @param  array<int, string>  $offenders  위반 목록 (참조로 채운다)
+     * @return array<int, string> 찾은 시각 경로 목록
+     */
+    private static function collectTimeLikeStrings(mixed $node, string $path, array &$offenders): array
+    {
+        if (is_array($node)) {
+            $found = [];
+            foreach ($node as $key => $child) {
+                $found = array_merge($found, self::collectTimeLikeStrings($child, $path === '' ? (string) $key : "{$path}.{$key}", $offenders));
+            }
+
+            return $found;
+        }
+
+        if (! is_string($node) || ! preg_match('/^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}/', $node)) {
+            return [];
+        }
+
+        // `T` 구분자나 오프셋(`+09:00`·`Z`)이 있으면 브라우저가 자기 시간대로 다시 옮긴다.
+        if (str_contains($node, 'T') || preg_match('/(Z|[+-]\d{2}:?\d{2})$/', $node)) {
+            $offenders[] = "{$path} = {$node}";
+        }
+
+        return [$path];
+    }
+
+    /**
+     * 사용자 시간대가 사이트와 다를 때만 안내 플래그가 서는지 확인합니다.
+     *
+     * @return void 없음
+     *
+     * @scenario endpoint=diagnostics, role=read
+     *
+     * @effects analytics_times_are_rendered_in_the_site_timezone
+     */
+    public function test_timezone_notice_flag_stands_only_when_the_viewer_differs(): void
+    {
+        // 같은 시간대인 운영자에게 배너를 띄우면 군더더기다(설계 결정 「다를 때만」).
+        config(['g7_settings.core.general.timezone' => 'Asia/Seoul', 'app.default_user_timezone' => 'Asia/Seoul']);
+        $same = $this->readAdmin();
+        $same->forceFill(['timezone' => 'Asia/Seoul'])->save();
+
+        $this->assertFalse(
+            $this->actingAs($same)->getJson('/api/admin/analytics/diagnostics')->assertOk()->json('data.timezone_differs'),
+        );
+
+        $other = $this->readAdmin();
+        $other->forceFill(['timezone' => 'Europe/London'])->save();
+
+        $this->assertTrue(
+            $this->actingAs($other)->getJson('/api/admin/analytics/diagnostics')->assertOk()->json('data.timezone_differs'),
+            '시간대가 다른 운영자는 시각 기준을 알아야 한다',
+        );
     }
 }

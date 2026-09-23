@@ -120,7 +120,10 @@ class StatsRepository implements StatsRepositoryInterface
         $visitorTypes = $options['visitor_types'] ?? [];
         $limit = (int) ($options['limit'] ?? 25);
         $offset = (int) ($options['offset'] ?? 0);
-        $search = $options['search'] ?? null;
+        $terms = array_values(array_filter(
+            array_unique((array) ($options['search'] ?? [])),
+            fn ($term): bool => is_string($term) && $term !== '',
+        ));
 
         return AnalyticsDimensionStat::query()
             ->selectRaw('label_hash, MIN(label) as label, MIN(action_name_id) as action_name_id, '
@@ -129,7 +132,13 @@ class StatsRepository implements StatsRepositoryInterface
             ->where('dimension', $dimension)
             ->whereBetween('date', [$from, $to])
             ->when($visitorTypes !== [], fn (Builder $q) => $q->whereIn('visitor_type', $visitorTypes))
-            ->when($search !== null && $search !== '', fn (Builder $q) => $q->where('label', 'like', '%'.$search.'%'))
+            // 검색어는 글자 그대로 찾는다 — `%`·`_` 를 풀어 두면 밑줄 하나가 모든 라벨과 맞는다. 여러 형태가 오면
+            // (화면용·저장용) 어느 하나와 맞으면 잡는다.
+            ->when($terms !== [], fn (Builder $q) => $q->where(function (Builder $any) use ($terms): void {
+                foreach ($terms as $term) {
+                    $any->orWhere('label', 'like', '%'.addcslashes($term, '%_\\').'%');
+                }
+            }))
             ->groupBy('label_hash')
             ->orderByDesc($options['sort'] ?? 'visits')
             // CSV 는 쪽마다 독립 쿼리를 던진다. 정렬 키가 지표 하나뿐이면 동점 구간의
@@ -139,6 +148,33 @@ class StatsRepository implements StatsRepositoryInterface
             ->offset($offset)
             ->limit($limit)
             ->get();
+    }
+
+    /**
+     * 차원 집계의 기간 합계(요청 수·라벨 수)를 조회합니다.
+     *
+     * 목록은 쪽으로 잘려 오므로 그 행을 더한 값은 「이 쪽의 합」일 뿐이다 — 기간 전체를 말하는
+     * 숫자는 쪽과 무관하게 따로 센다.
+     *
+     * @param  string  $dimension  차원 이름
+     * @param  string  $from  시작일 (Y-m-d)
+     * @param  string  $to  종료일 (Y-m-d)
+     * @param  array<int, string>  $visitorTypes  포함할 방문자 유형
+     * @return array{hits: int, labels: int} 기간 합계
+     */
+    public function dimensionTotals(string $dimension, string $from, string $to, array $visitorTypes = []): array
+    {
+        $row = AnalyticsDimensionStat::query()
+            ->selectRaw('COALESCE(SUM(hits), 0) as hits, COUNT(DISTINCT label_hash) as labels')
+            ->where('dimension', $dimension)
+            ->whereBetween('date', [$from, $to])
+            ->when($visitorTypes !== [], fn (Builder $q) => $q->whereIn('visitor_type', $visitorTypes))
+            ->first();
+
+        return [
+            'hits' => (int) ($row->hits ?? 0),
+            'labels' => (int) ($row->labels ?? 0),
+        ];
     }
 
     /**

@@ -151,6 +151,9 @@
       "label": "Avatar",
       "default_alt": "User avatar"
     },
+    "visitor_counter": {
+      "label": "Visitor counter"
+    },
     "user_info": {
       "label": "User info",
       "default_name": "Username"

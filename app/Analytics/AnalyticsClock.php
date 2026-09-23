@@ -2,7 +2,9 @@
 
 namespace App\Analytics;
 
+use App\Helpers\TimezoneHelper;
 use Illuminate\Support\Carbon;
+use Throwable;
 
 /**
  * 방문자 통계 시각 기준
@@ -22,6 +24,10 @@ class AnalyticsClock
      */
     public static function siteTimezone(): string
     {
+        // `TimezoneHelper::getSiteTimezone()` 과 같은 뜻이지만 읽는 자리가 다르다 — 이쪽은 저장된
+        // 설정을 그때그때 읽고, 헬퍼는 부팅 때 `SettingsServiceProvider` 가 심은 config 스냅샷을
+        // 읽는다. 집계는 설정을 바꾼 직후에도 새 경계를 써야 하므로 여기서는 설정을 직접 읽는다
+        // (헬퍼로 합쳤다가 런타임에 시간대를 바꾸는 집계 테스트 4건이 깨져 되돌렸다 — #682 S3 라운드 6).
         $timezone = g7_core_settings('general.timezone', config('app.timezone', 'UTC'));
 
         return is_string($timezone) && $timezone !== '' ? $timezone : 'UTC';
@@ -70,6 +76,52 @@ class AnalyticsClock
     public static function hourStartOf(Carbon $moment): string
     {
         return $moment->copy()->setTimezone(self::siteTimezone())->startOfHour()->format('Y-m-d H:i:s');
+    }
+
+    /**
+     * 시각을 화면이 읽을 사이트 표준시 문자열로 바꿉니다.
+     *
+     * 집계 경계와 **같은 시계**를 써야 합니다 — 경계는 이 클래스가, 표기는 다른 곳이 정하면
+     * 「오늘 KPI」와 목록의 날짜가 서로 다른 하루를 가리킵니다(#682 S3 라운드 6, 설계 결정).
+     * 일반 기능의 사이트 기준 변환은 `TimezoneHelper::toSiteDateTimeString()` 이 맡고,
+     * 방문자 통계만 집계 경계와의 일치를 위해 이 시계를 씁니다.
+     *
+     * 오프셋을 붙이지 않습니다 — 붙이면 브라우저가 자기 시간대로 다시 옮겨 기준이 깨집니다.
+     *
+     * @param  Carbon|null  $moment  변환할 시각
+     * @return string|null Y-m-d H:i:s 형식 (값이 없으면 null)
+     */
+    public static function toSiteDateTimeString(?Carbon $moment): ?string
+    {
+        if (! $moment) {
+            return null;
+        }
+
+        return $moment->copy()->setTimezone(self::siteTimezone())->format('Y-m-d H:i:s');
+    }
+
+    /**
+     * 저장된 ISO8601 문자열을 화면이 읽을 사이트 표준시 문자열로 바꿉니다.
+     *
+     * 설정에 적히는 시각(클라우드 목록 갱신 등)은 저장값이 스스로 시간대를 말해야 하므로
+     * 오프셋 있는 ISO8601 로 남습니다. 화면으로 나가는 경계에서만 이 변환을 태웁니다 —
+     * 오프셋이 실린 채 나가면 `| datetime` 파이프가 브라우저 시간대로 다시 옮겨 사이트
+     * 기준이 깨집니다(#682 S3 라운드 7, 설계 결정 「응답 경계에서 변환」).
+     *
+     * @param  mixed  $value  저장된 시각 (문자열이 아니면 null 로 본다)
+     * @return string|null Y-m-d H:i:s 형식 (값이 없거나 해석 불가면 null)
+     */
+    public static function storedToSiteDateTimeString(mixed $value): ?string
+    {
+        if (! is_string($value) || $value === '') {
+            return null;
+        }
+
+        try {
+            return self::toSiteDateTimeString(Carbon::parse($value));
+        } catch (Throwable) {
+            return null;
+        }
     }
 
     /**

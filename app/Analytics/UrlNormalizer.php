@@ -122,6 +122,35 @@ class UrlNormalizer
     }
 
     /**
+     * 화면에 보일 이름을 만듭니다.
+     *
+     * 사이트 호스트를 떼고 퍼센트 인코딩을 풉니다 — 한국어 주소·검색어가 「%ED%85%8C…」로 보이면 운영자가
+     * 읽을 수 없습니다. 풀어서 올바른 UTF-8 글자가 아니거나 제어 문자가 섞이면 원문을 둡니다. 깨진
+     * 바이트는 JSON 응답을 실패시키고 줄바꿈은 표를 깨뜨립니다. 저장된 이름(집계 라벨·이름 사전)은 그대로
+     * 두는 화면 전용 변환입니다.
+     *
+     * @param  string  $name  정규화된 이름
+     * @param  string|null  $siteHost  사이트 호스트 (없으면 설정에서 읽는다)
+     * @return string 화면용 이름
+     */
+    public static function forDisplay(string $name, ?string $siteHost = null): string
+    {
+        $stripped = self::stripSiteHost($name, $siteHost);
+
+        if (! str_contains($stripped, '%')) {
+            return $stripped;
+        }
+
+        $decoded = rawurldecode($stripped);
+
+        if (! mb_check_encoding($decoded, 'UTF-8') || preg_match('/\p{Cc}/u', $decoded) === 1) {
+            return $stripped;
+        }
+
+        return $decoded;
+    }
+
+    /**
      * 사이트 자신의 호스트를 반환합니다(www 제거·소문자).
      *
      * @return string 호스트 (설정이 없으면 빈 문자열)

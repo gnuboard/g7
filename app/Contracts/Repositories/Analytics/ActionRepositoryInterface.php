@@ -29,6 +29,17 @@ interface ActionRepositoryInterface
     public function update(AnalyticsAction $action, array $attributes): bool;
 
     /**
+     * 액션 한 건을 지웁니다.
+     *
+     * 페이지 요청과 첫 비콘의 신원이 어긋났을 때, 서버가 다른 신원의 방문에 남긴 자리표시
+     * 페이지뷰를 거둘 때 씁니다 — 같은 페이지는 비콘 쪽 방문에 한 번만 남아야 합니다.
+     *
+     * @param  AnalyticsAction  $action  대상 액션
+     * @return bool 삭제 성공 여부
+     */
+    public function delete(AnalyticsAction $action): bool;
+
+    /**
      * 한 방문의 모든 액션에 복제된 방문자 키를 바꿉니다.
      *
      * 서버 폴백의 임시 키 방문을 첫 비콘이 이어받을 때 씁니다 — 액션 행이 옛 키를

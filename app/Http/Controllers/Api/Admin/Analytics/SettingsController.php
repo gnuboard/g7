@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\Admin\Analytics;
 
+use App\Analytics\AnalyticsClock;
 use App\Analytics\AnalyticsConfig;
 use App\Contracts\Repositories\Analytics\ActionRepositoryInterface;
 use App\Contracts\Repositories\Analytics\VisitRepositoryInterface;
@@ -97,7 +98,18 @@ class SettingsController extends AdminBaseController
      */
     private function currentSettings(): array
     {
-        return (array) g7_core_settings('analytics', []);
+        $settings = (array) g7_core_settings('analytics', []);
+
+        // 클라우드 목록 갱신 시각만 저장 형식이 ISO8601 이다(저장값은 어느 시간대인지 스스로
+        // 말해야 하므로 오프셋을 유지한다). 화면으로 나갈 때는 다른 통계 시각과 같은
+        // **오프셋 없는 사이트 표준시**로 바꾼다 — 오프셋을 실으면 `| datetime` 파이프가
+        // 브라우저 시간대로 다시 옮겨 사이트 기준이 깨진다(#682 S3 라운드 7, 설계 결정 「응답
+        // 경계에서 변환」).
+        $settings['cloud_ip_ranges_updated_at'] = AnalyticsClock::storedToSiteDateTimeString(
+            $settings['cloud_ip_ranges_updated_at'] ?? null,
+        );
+
+        return $settings;
     }
 
     /**

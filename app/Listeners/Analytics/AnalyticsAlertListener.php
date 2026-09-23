@@ -4,7 +4,10 @@ namespace App\Listeners\Analytics;
 
 use App\Analytics\AnalyticsConfig;
 use App\Contracts\Extension\HookListenerInterface;
+use App\Enums\PermissionType;
+use App\Models\User;
 use App\Services\Analytics\StorageStatsService;
+use Illuminate\Support\Facades\Auth;
 
 /**
  * 방문자 통계 대시보드 알림 리스너
@@ -65,7 +68,7 @@ class AnalyticsAlertListener implements HookListenerInterface
             return $alerts;
         }
 
-        $alerts[] = [
+        $alert = [
             'id' => 'analytics_ledger_limit',
             'type' => 'warning',
             'subtype' => 'analytics_ledger_limit',
@@ -77,12 +80,33 @@ class AnalyticsAlertListener implements HookListenerInterface
                 'days' => $config->retentionDays,
             ]),
             'read' => false,
-            // 운영자가 결함을 처음 만나는 곳이 알림이므로, 보존일을 고치러 가는 길을
-            // 그 자리에 둔다.
-            'action_url' => rtrim((string) config('app.url'), '/').'/admin/analytics/settings?tab=retention',
-            'action_label' => __('analytics.alerts.ledger_limit_action'),
         ];
 
+        // 운영자가 결함을 처음 만나는 곳이 알림이므로, 보존일을 고치러 가는 길을 그 자리에 둔다.
+        // 다만 그 길은 누를 수 있는 사람에게만 — 대시보드는 통계 설정 권한 없이도 열리므로, 권한이
+        // 없는 관리자에게 버튼을 주면 누르는 순간 권한 없음 화면이다. 경고 자체는 모두에게 보인다.
+        if ($this->canOpenSettings()) {
+            $alert['action_url'] = rtrim((string) config('app.url'), '/').'/admin/analytics/settings?tab=retention';
+            $alert['action_label'] = __('analytics.alerts.ledger_limit_action');
+        }
+
+        $alerts[] = $alert;
+
         return $alerts;
+    }
+
+    /**
+     * 지금 보는 관리자가 버튼의 목적지(통계 설정 화면)를 열 수 있는지 판정합니다.
+     *
+     * 목적지 라우트와 같은 판정(`permission:admin,core.analytics.update`)을 씁니다.
+     *
+     * @return bool 열 수 있으면 true, 로그인 사용자가 없거나 권한이 없으면 false
+     */
+    private function canOpenSettings(): bool
+    {
+        $user = Auth::user();
+
+        return $user instanceof User
+            && $user->hasPermission('core.analytics.update', PermissionType::Admin);
     }
 }

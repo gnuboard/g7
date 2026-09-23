@@ -44,6 +44,8 @@ axes:
     - country
     - bot
     - consent
+  # 훅 리스너가 큐를 타는가. 수집·검색 리스너는 `sync => true` 라 발화 자리에서 돌고
+  # (방문 1건이 잡 1개가 되지 않도록 — #682 S3 라운드 6), 활동 로그 같은 리스너는 큐로 간다.
   dispatch: [sync, queue]
   visit_state: [new, open, timed_out, max_actions]
   merge: [within_window, outside_window, different_url]
@@ -62,11 +64,15 @@ effects:
   - dwell_time_is_capped_at_configured_maximum
   - bounce_flag_releases_on_second_pageview
   - entry_and_exit_pages_are_recorded
+  - entry_and_exit_pages_come_from_pageviews_only
   - server_fallback_and_first_beacon_merge_into_one_action
   - merged_action_does_not_double_count_pageviews
   - returning_visitor_reload_stays_in_one_visit
   - first_beacon_fills_what_the_server_could_not_know
   - login_during_a_visit_starts_a_new_visit
+  - server_placeholder_moves_to_the_beacon_visit_when_identities_differ
+  - blob_downloads_are_named_without_a_target
+  - repeated_navigation_to_the_same_page_counts_once
   - cookieless_server_fallback_is_adopted_by_first_beacon
   - anonymous_server_fallback_and_beacon_share_a_visit
   - beacon_outside_merge_window_creates_new_action
@@ -99,6 +105,7 @@ effects:
   - server_fallback_records_html_page_loads_only
   - bot_hits_are_recorded_with_cache_status
   - site_search_hook_records_query_and_result_count
+  - collection_listeners_never_go_through_the_queue
   # 운영 표면 (설정 스키마·시딩·활동 로그·스키마 왕복·지역 조회)
   - settings_schema_exposes_only_public_keys
   - permissions_menus_and_definitions_are_seeded
@@ -119,6 +126,7 @@ effects:
   - campaign_parameters_take_precedence_over_referrer
   - url_normalization_collapses_scheme_www_and_tracking_params
   - url_prefix_is_kept_so_the_original_address_can_be_restored
+  - display_names_decode_only_readable_text
   # 브라우저 트래커 (비콘을 만들어 보내는 쪽)
   - tracker_sends_beacon_on_route_change
   - only_the_first_beacon_carries_init_and_referrer
@@ -133,6 +141,7 @@ effects:
   - client_and_server_exclusion_rules_agree
   - page_title_falls_back_through_meta_document_and_path
   - consent_bridge_blocks_sending_until_consent_is_known
+  - consented_visitors_first_page_is_held_until_consent_is_known
   - consent_bridge_does_not_block_when_there_is_no_consent_source
   - consent_bridge_updates_on_consent_change_events
   - consent_lookup_identifies_the_logged_in_member
@@ -152,6 +161,7 @@ test_files:
   - tests/Feature/Analytics/TrackServerVisitMiddlewareTest.php
   - tests/Feature/Analytics/TrackBotHitMiddlewareTest.php
   - tests/Feature/Analytics/SiteSearchTrackingTest.php
+  - tests/Feature/Analytics/CollectionDispatchTest.php
   - tests/Feature/Analytics/ActivityLogTest.php
   - tests/Feature/Analytics/SettingsSchemaTest.php
   - tests/Feature/Analytics/PermissionsMenusSeedTest.php

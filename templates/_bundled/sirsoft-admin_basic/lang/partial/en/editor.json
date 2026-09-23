@@ -1195,6 +1195,7 @@
     "product_card": "Product card",
     "template_card": "Template card",
     "bar_chart": "Bar chart",
+    "line_chart": "Line chart",
     "donut_chart": "Donut chart",
     "html_content": "HTML content",
     "html_editor": "HTML editor",
@@ -1311,6 +1312,14 @@
       "param_storage_key": "Browser storage key",
       "param_state_key": "Global state key",
       "param_value": "Value to save (literal)"
+    },
+    "set_analytics_period": {
+      "label": "Analytics period preset",
+      "param_preset": "Period",
+      "preset_today": "Today",
+      "preset_7d": "7 days",
+      "preset_30d": "30 days",
+      "preset_this_month": "This month"
     }
   },
   "computed": {
@@ -1681,6 +1690,26 @@
     "tokenValidation": "Token Validation",
     "trustedProxy": "Trusted proxy diagnostic",
     "user": "User",
-    "users": "Users"
+    "users": "Users",
+    "analytics_overview": "Analytics overview",
+    "analytics_realtime": "Realtime visitors",
+    "analytics_realtime_ws": "Realtime broadcast",
+    "analytics_status": "Analytics collection status",
+    "analytics_report": "Analytics report",
+    "analytics_referrer_urls": "Referrer URLs",
+    "analytics_patterns": "Weekday/hour patterns",
+    "analytics_visitors": "Visitor list",
+    "analytics_visitor": "Visitor detail",
+    "analytics_bots": "Bot aggregates",
+    "analytics_diagnostics": "Analytics diagnostics",
+    "analytics_archive_runs": "Archive runs",
+    "analytics_collect_failures": "Collection failures",
+    "analytics_archive_progress_ws": "Archive progress broadcast",
+    "analytics_settings": "Analytics settings",
+    "analytics_opt_out": "My opt-out state",
+    "analytics_storage": "Analytics storage",
+    "analytics_notification_definitions": "Analytics notification definitions",
+    "analytics_subjects": "Data subject records",
+    "dashboard_analytics": "Dashboard analytics"
   }
 }

@@ -9,6 +9,7 @@ use App\Contracts\Repositories\Analytics\StatsRepositoryInterface;
 use App\Enums\Analytics\ArchiveRunStatus;
 use App\Enums\Analytics\ArchiveRunType;
 use App\Extension\HookManager;
+use App\Services\Analytics\Concerns\BroadcastsRunProgress;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -25,6 +26,8 @@ use Illuminate\Support\Facades\Log;
  */
 class ExtensionPurgeService
 {
+    use BroadcastsRunProgress;
+
     /**
      * 정리기를 생성합니다.
      *
@@ -64,6 +67,10 @@ class ExtensionPurgeService
             'started_at' => $now,
         ]);
 
+        // 진단 화면은 이 표의 행 하나를 진행률의 출처로 삼는다 — 집계가 아닌 실행도 같은 자리에
+        // 뜨므로 같은 채널로 알린다(#682 S3 라운드 2).
+        $this->broadcastRunProgress($run);
+
         try {
             // 두 삭제를 한 트랜잭션으로 묶는다. 전환만 지워지고 차원이 남으면 리포트에
             // 라벨 없는 집계 행이 떠도는데, 실행 이력은 실패로 적혀 있어 운영자가
@@ -78,6 +85,8 @@ class ExtensionPurgeService
                 'error' => $e->getMessage(),
                 'finished_at' => AnalyticsClock::now(),
             ]);
+
+            $this->broadcastRunProgress($run->refresh());
 
             // 확장 제거 자체는 이미 끝났다 — 통계 정리가 실패했다고 제거를 되돌릴 수는
             // 없으므로, 예외를 삼키고 운영자가 볼 수 있는 자리에 남긴다.
@@ -107,6 +116,8 @@ class ExtensionPurgeService
             'progress_percent' => 100,
             'finished_at' => AnalyticsClock::now(),
         ]);
+
+        $this->broadcastRunProgress($run->refresh());
 
         HookManager::doAction('core.analytics.extension_purged', [
             'extension_type' => $type,

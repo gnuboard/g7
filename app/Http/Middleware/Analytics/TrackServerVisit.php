@@ -4,10 +4,8 @@ namespace App\Http\Middleware\Analytics;
 
 use App\Analytics\AnalyticsConfig;
 use App\Analytics\TrackingRequestFactory;
-use App\Enums\Analytics\DispatchMode;
 use App\Enums\Analytics\VisitSource;
 use App\Extension\HookManager;
-use App\Services\Analytics\VisitService;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -23,13 +21,6 @@ use Symfony\Component\HttpFoundation\Response;
  */
 class TrackServerVisit
 {
-    /**
-     * 미들웨어를 생성합니다.
-     *
-     * @param  VisitService  $visits  방문 적재 서비스
-     */
-    public function __construct(private readonly VisitService $visits) {}
-
     /**
      * 요청을 그대로 통과시킵니다.
      *
@@ -64,13 +55,11 @@ class TrackServerVisit
 
             $dto = TrackingRequestFactory::fromHttp($request, [], VisitSource::Server->value);
 
-            if ($config->dispatchMode === DispatchMode::Queue) {
-                HookManager::doAction('core.analytics.tracking_request_received', $dto->toArray());
-
-                return;
-            }
-
-            $this->visits->track($dto);
+            // 적재는 훅을 거친다 — 확장이 같은 자리에 끼어들 수 있게 하기 위해서다.
+            // 구독 리스너가 `sync => true` 라 큐를 타지 않는다. 이 메서드는 응답이
+            // 나간 뒤(`terminate`) 도므로 동기로 적재해도 방문자가 기다리지 않는다
+            // (#682 S3 라운드 6, 설계 결정 「큐는 꼭 필요한 부분에만」).
+            HookManager::doAction('core.analytics.tracking_request_received', $dto->toArray());
         } catch (\Throwable $e) {
             // 응답은 이미 나갔다. 통계 때문에 요청 종료가 실패하면 안 된다.
         }

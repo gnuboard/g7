@@ -3,6 +3,7 @@
 namespace Tests\Feature\Analytics\Api;
 
 use App\Analytics\AnalyticsClock;
+use App\Models\Analytics\AnalyticsStatsHourly;
 use App\Services\Analytics\CsvExporter;
 use Illuminate\Support\Carbon;
 
@@ -43,6 +44,8 @@ class OverviewControllerTest extends AnalyticsApiTestCase
         $this->assertSame(2, $kpi['today'], '오늘은 집계가 아니라 원장에서 직접 센다');
         $this->assertSame(20, $kpi['yesterday']);
         $this->assertSame(35, $kpi['max']['value']);
+        // 날짜 컬럼 캐스트가 시각을 붙여 「최대 (2026-09-17 00:00:00)」로 보였다(브라우저 실측 §8 M2-T1).
+        $this->assertSame(Carbon::parse($today)->subDays(5)->toDateString(), $kpi['max']['date'], '최대일은 날짜(Y-m-d)만');
         $this->assertSame(57, $kpi['total'], '전체는 지난 일 집계 합(55) + 오늘(2) 이다');
     }
 
@@ -209,6 +212,116 @@ class OverviewControllerTest extends AnalyticsApiTestCase
         $response->assertOk();
         $this->assertSame('day', $response->json('data.unit'));
         $this->assertTrue($response->json('data.unit_downgraded'), '빈 차트 대신 낮췄다는 사실을 화면에 알린다');
+    }
+
+    /**
+     * 기록이 없는 칸을 0 으로 채우는지 확인합니다.
+     *
+     * 방문이 없던 시간·날을 건너뛰면 차트가 앞뒤 칸을 곧장 이어 그려 추이가 거짓이 됩니다.
+     * 브라우저 실측(§8 M2-T3)에서 이틀치 시간 단위 추이가 48칸이 아니라 46칸으로 왔습니다.
+     *
+     * @return void 없음
+     *
+     * @scenario endpoint=series, role=read, period=valid
+     *
+     * @effects series_fills_empty_buckets_with_zero
+     */
+    public function test_series_fills_empty_buckets_with_zero(): void
+    {
+        config(['g7_settings.core.analytics.hourly_retention_days' => 30]);
+
+        $today = Carbon::parse(AnalyticsClock::today());
+        $from = $today->copy()->subDays(2)->toDateString();
+        $to = $today->copy()->subDay()->toDateString();
+
+        AnalyticsStatsHourly::factory()->forHour($from.' 03:00:00')->create(['visits' => 4]);
+        AnalyticsStatsHourly::factory()->forHour($to.' 15:00:00')->create(['visits' => 6]);
+
+        $admin = $this->readAdmin();
+
+        $hourly = $this->actingAs($admin)->getJson("/api/admin/analytics/series?from={$from}&to={$to}&unit=hour");
+
+        $hourly->assertOk();
+        $points = $hourly->json('data.points');
+
+        $this->assertCount(48, $points, '이틀을 시간 단위로 그리면 48칸이다 — 방문 없는 시간도 한 칸');
+        $this->assertSame($from.' 00:00:00', $points[0]['ts']);
+        $this->assertSame($to.' 23:00:00', $points[47]['ts']);
+        $this->assertSame(4, $points[3]['visits']);
+        $this->assertSame(0, $points[4]['visits'], '방문 없는 시간은 0 으로 그린다');
+        $this->assertSame(6, $points[24 + 15]['visits']);
+
+        $this->daily($today->copy()->subDays(6)->toDateString(), ['visits' => 7]);
+        $this->daily($today->copy()->subDays(3)->toDateString(), ['visits' => 5]);
+
+        $daily = $this->actingAs($admin)->getJson(
+            '/api/admin/analytics/series?from='.$today->copy()->subDays(6)->toDateString()
+            .'&to='.$today->copy()->subDays(2)->toDateString().'&unit=day',
+        );
+
+        $daily->assertOk();
+        $this->assertSame(
+            [7, 0, 0, 5, 0],
+            array_column($daily->json('data.points'), 'visits'),
+            '방문 없는 날도 한 칸이다',
+        );
+    }
+
+    /**
+     * 아직 오지 않은 칸은 만들지 않는지 확인합니다.
+     *
+     * 오늘 남은 시간이나 내일을 0 으로 미리 그리면 방문이 뚝 끊긴 것처럼 보입니다.
+     *
+     * @return void 없음
+     *
+     * @scenario endpoint=series, role=read, period=valid
+     *
+     * @effects series_stops_at_the_current_bucket
+     */
+    public function test_series_stops_at_the_current_bucket(): void
+    {
+        config(['g7_settings.core.analytics.hourly_retention_days' => 30]);
+        $this->travelTo(Carbon::parse('2026-09-19 10:30:00', AnalyticsClock::siteTimezone()));
+
+        AnalyticsStatsHourly::factory()->forHour('2026-09-19 09:00:00')->create();
+        $this->daily('2026-09-17');
+
+        $admin = $this->readAdmin();
+
+        $hourly = $this->actingAs($admin)->getJson('/api/admin/analytics/series?preset=today&unit=hour');
+
+        $hourly->assertOk();
+        $this->assertCount(11, $hourly->json('data.points'), '지금 시간(10시)까지만 — 남은 시간을 0 으로 미리 그리지 않는다');
+        $this->assertSame('2026-09-19 00:00:00', $hourly->json('data.points.0.ts'));
+        $this->assertSame('2026-09-19 10:00:00', $hourly->json('data.points.10.ts'));
+
+        $daily = $this->actingAs($admin)->getJson('/api/admin/analytics/series?from=2026-09-17&to=2026-09-21&unit=day');
+
+        $daily->assertOk();
+        $this->assertSame(
+            ['2026-09-17', '2026-09-18', '2026-09-19'],
+            array_column($daily->json('data.points'), 'ts'),
+            '오늘까지만 — 내일부터는 칸이 없다',
+        );
+    }
+
+    /**
+     * 기간 전체에 기록이 없으면 0 으로 채우지 않는지 확인합니다.
+     *
+     * 0 으로 채운 평평한 선은 「선택 기간에 기록이 없습니다」 안내를 가립니다.
+     *
+     * @return void 없음
+     *
+     * @scenario endpoint=series, role=read, period=preset
+     *
+     * @effects series_without_any_record_stays_empty
+     */
+    public function test_series_without_any_record_stays_empty(): void
+    {
+        $response = $this->actingAs($this->readAdmin())->getJson('/api/admin/analytics/series?preset=30d');
+
+        $response->assertOk();
+        $this->assertSame([], $response->json('data.points'), '빈 목록이어야 화면이 기록 없음 안내를 띄운다');
     }
 
     /**

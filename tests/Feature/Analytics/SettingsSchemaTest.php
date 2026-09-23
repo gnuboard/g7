@@ -7,7 +7,7 @@ use App\Services\SettingsService;
 use Tests\TestCase;
 
 /**
- * 설정 스키마 — 42키 전수·기본값 범위·공개 노출 통제.
+ * 설정 스키마 — 41키 전수·기본값 범위·공개 노출 통제.
  *
  * `frontend_schema` 에서 `expose` 를 빠뜨리면 보존일·임계치·차단 목록까지 공개 페이지의
  * `G7Config.settings` 로 샌다. 새 키를 더할 때 가장 잊기 쉬운 자리라 목록을 고정한다.
@@ -50,7 +50,7 @@ class SettingsSchemaTest extends TestCase
     }
 
     /**
-     * 기본값 42키가 스키마 42키와 정확히 같고 카테고리에 등록돼 있다.
+     * 기본값 41키가 스키마 41키와 정확히 같고 카테고리에 등록돼 있다.
      *
      * @scenario mode=full
      *
@@ -58,13 +58,13 @@ class SettingsSchemaTest extends TestCase
      *
      * @return void 없음
      */
-    public function test_defaults_and_schema_cover_the_same_42_keys(): void
+    public function test_defaults_and_schema_cover_the_same_41_keys(): void
     {
         $file = $this->defaultsFile();
         $defaults = array_keys($file['defaults']['analytics']);
         $schema = array_keys($file['frontend_schema']['analytics']['fields']);
 
-        $this->assertCount(42, $defaults);
+        $this->assertCount(41, $defaults);
         $this->assertEqualsCanonicalizing($defaults, $schema, '기본값과 스키마의 키 집합이 다르다');
         $this->assertContains('analytics', $file['_meta']['categories']);
         $this->assertArrayNotHasKey('merge_into', $file['frontend_schema']['analytics'], '자기 이름으로 실려야 한다');
@@ -93,7 +93,8 @@ class SettingsSchemaTest extends TestCase
         }
 
         $this->assertContains($defaults['privacy_mode'], ['full', 'consent', 'anonymous']);
-        $this->assertContains($defaults['dispatch_mode'], ['queue', 'sync']);
+        // 적재 방식 설정은 없앴다 — 수집은 언제나 요청 안에서 끝난다(#682 S3 라운드 6).
+        $this->assertArrayNotHasKey('dispatch_mode', $defaults);
     }
 
     /**
@@ -126,7 +127,7 @@ class SettingsSchemaTest extends TestCase
     }
 
     /**
-     * 런타임 값 객체가 42키 중 표시 전용 1키를 뺀 전부를 읽는다.
+     * 런타임 값 객체가 41키 중 표시 전용 1키를 뺀 전부를 읽는다.
      *
      * @scenario mode=full
      *

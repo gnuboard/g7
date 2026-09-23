@@ -6,6 +6,7 @@ use App\Analytics\AnalyticsConfig;
 use App\Enums\Analytics\StatsDimension;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use App\Http\Requests\Admin\Analytics\PeriodRequest;
+use App\Http\Requests\Admin\Analytics\ReferrerUrlsRequest;
 use App\Http\Requests\Admin\Analytics\ReportRequest;
 use App\Services\Analytics\CsvExporter;
 use App\Services\Analytics\PatternService;
@@ -118,6 +119,46 @@ class ReportController extends AdminBaseController
     }
 
     /**
+     * 한 유입처의 전체 유입 주소를 조회합니다.
+     *
+     * 유입 사이트 목록은 집계표를 읽어 호스트까지만 말한다 — 「google.com 에서 340」은
+     * 알아도 어느 검색 결과에서 왔는지는 모른다. 이 한 갈래만 원장(`analytics_visits`)의
+     * `referrer_url` 을 직접 세어 그 아래를 펼친다(#682 라운드 4, 검수 지적 ⑥).
+     *
+     * @param  ReferrerUrlsRequest  $request  유입처 주소 요청
+     * @return JsonResponse 주소 목록 응답
+     */
+    public function referrerUrls(ReferrerUrlsRequest $request): JsonResponse
+    {
+        [$from, $to] = $request->resolvedRange();
+        $host = (string) $request->input('host');
+
+        $options = [
+            'page' => (int) $request->input('page', 1),
+            'per_page' => (int) $request->input('per_page', AnalyticsConfig::fromSettings()->topNDetail),
+        ];
+
+        // 제외 토글은 운영자가 직접 건드렸을 때만 따른다 — 리포트 목록과 같은 규약이다.
+        if ($request->has('exclude')) {
+            $options['visitor_types'] = $request->visitorTypes();
+        }
+
+        $result = $this->reports->referrerUrls($host, $from, $to, $options);
+
+        return $this->success('analytics.report.fetch_success', [
+            'host' => $host,
+            'from' => $from,
+            'to' => $to,
+            'data' => $result['rows'],
+            'pagination' => [
+                'page' => $result['page'],
+                'per_page' => $result['per_page'],
+                'has_more' => $result['has_more'],
+            ],
+        ]);
+    }
+
+    /**
      * 추이 시계열을 조회합니다.
      *
      * @param  PeriodRequest  $request  기간 요청
@@ -188,11 +229,19 @@ class ReportController extends AdminBaseController
     {
         [$from, $to] = $request->resolvedRange();
 
-        return $this->success('analytics.patterns.fetch_success', $this->patterns->patterns(
-            $from,
-            $to,
-            AnalyticsConfig::fromSettings(),
-            ['visitor_types' => $request->visitorTypes()],
+        // 조회한 구간을 함께 돌려준다 — 기간 바의 달력 두 칸은 프리셋이 뜻하는 날짜를 서버가
+        // 푼 값으로 보여 준다(화면이 따로 계산하면 두 규칙이 어긋난다). 다른 리포트는 이미 싣는다.
+        return $this->success('analytics.patterns.fetch_success', array_merge(
+            [
+                'from' => $from,
+                'to' => $to,
+            ],
+            $this->patterns->patterns(
+                $from,
+                $to,
+                AnalyticsConfig::fromSettings(),
+                ['visitor_types' => $request->visitorTypes()],
+            ),
         ));
     }
 
@@ -231,6 +280,11 @@ class ReportController extends AdminBaseController
         // 「어느 봇이 얼마나」 옆에 「무엇을 언제」를 붙인다 — 집계만으로는 어떤 주소를
         // 긁어 갔는지 알 수 없어 운영자가 차단 여부를 판단할 근거가 없다.
         $payload['data']['recent_hits'] = $this->reports->recentBotHits();
+
+        // 「봇 요청」·「봇 종류」 KPI 는 기간 전체를 말해야 한다 — 쪽으로 잘린 목록을 더하면
+        // 봇 종류가 한 쪽보다 많은 기간에 첫 쪽의 합만 보인다(#682 S3 라운드 14).
+        [$from, $to] = $request->resolvedRange();
+        $payload['data']['totals'] = $this->reports->totals(StatsDimension::BotName->value, $from, $to);
 
         return $response->setData($payload);
     }

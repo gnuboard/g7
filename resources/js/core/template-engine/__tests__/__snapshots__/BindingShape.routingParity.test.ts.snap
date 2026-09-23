@@ -70,14 +70,14 @@ exports[`BindingShape 라우팅 diff 하네스 > 단일 바인딩 판정: greedy
 ]
 `;
 
-exports[`BindingShape 라우팅 diff 하네스 > 단일 바인딩 판정: 구 정규식과 신 정본이 갈리는 총량 1`] = `554`;
+exports[`BindingShape 라우팅 diff 하네스 > 단일 바인딩 판정: 구 정규식과 신 정본이 갈리는 총량 1`] = `588`;
 
 exports[`BindingShape 라우팅 diff 하네스 > 판정이 갈리는 식의 분류별 건수 요약 1`] = `
 {
-  "numericIndex": 41,
+  "numericIndex": 43,
   "other": 2,
   "quotedBracket": 22,
-  "total": 65,
+  "total": 67,
 }
 `;
 
@@ -247,6 +247,15 @@ exports[`BindingShape 라우팅 diff 하네스 > 표현식/경로 판정: 구 �
       "plugins/_bundled/sirsoft-koreaexim/resources/layouts/admin/plugin_settings.json",
       "plugins/_bundled/sirsoft-message_bizppurio/resources/layouts/admin/plugin_settings.json",
       "templates/_bundled/sirsoft-admin_basic/layouts/_admin_base.json",
+      "templates/_bundled/sirsoft-admin_basic/layouts/admin_analytics_actions.json",
+      "templates/_bundled/sirsoft-admin_basic/layouts/admin_analytics_bots.json",
+      "templates/_bundled/sirsoft-admin_basic/layouts/admin_analytics_diagnostics.json",
+      "templates/_bundled/sirsoft-admin_basic/layouts/admin_analytics_environment.json",
+      "templates/_bundled/sirsoft-admin_basic/layouts/admin_analytics_pages.json",
+      "templates/_bundled/sirsoft-admin_basic/layouts/admin_analytics_referrers.json",
+      "templates/_bundled/sirsoft-admin_basic/layouts/admin_analytics_regions.json",
+      "templates/_bundled/sirsoft-admin_basic/layouts/admin_analytics_settings.json",
+      "templates/_bundled/sirsoft-admin_basic/layouts/admin_analytics_visitors.json",
       "templates/_bundled/sirsoft-admin_basic/layouts/admin_module_list.json",
       "templates/_bundled/sirsoft-admin_basic/layouts/admin_plugin_list.json",
       "templates/_bundled/sirsoft-admin_basic/layouts/admin_role_form.json",
@@ -258,6 +267,7 @@ exports[`BindingShape 라우팅 diff 하네스 > 표현식/경로 판정: 구 �
       "templates/_bundled/sirsoft-admin_basic/layouts/admin_user_list.json",
       "templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_activity_log_list/_partial_datagrid.json",
       "templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_activity_log_list/_partial_filter.json",
+      "templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_analytics/_partial_report_grid.json",
       "templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_identity_logs/_partial_datagrid.json",
       "templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_language_pack_list/_content.json",
       "templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_language_pack_list/_modal_install.json",
@@ -637,6 +647,32 @@ exports[`BindingShape 라우팅 diff 하네스 > 표현식/경로 판정: 구 �
     "expr": "descEntry[1]",
     "files": [
       "modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_category_index/_panel_view.json",
+    ],
+    "old": {
+      "DataBindingEngine.isBaseExpression": false,
+      "DataBindingEngine.resolveBindings": false,
+      "DynamicRenderer/ConditionEvaluator": false,
+      "RenderHelpers": true,
+    },
+  },
+  {
+    "canonical": true,
+    "expr": "entry[0]",
+    "files": [
+      "templates/_bundled/sirsoft-admin_basic/layouts/admin_analytics_realtime.json",
+    ],
+    "old": {
+      "DataBindingEngine.isBaseExpression": false,
+      "DataBindingEngine.resolveBindings": false,
+      "DynamicRenderer/ConditionEvaluator": false,
+      "RenderHelpers": true,
+    },
+  },
+  {
+    "canonical": true,
+    "expr": "entry[1]",
+    "files": [
+      "templates/_bundled/sirsoft-admin_basic/layouts/admin_analytics_realtime.json",
     ],
     "old": {
       "DataBindingEngine.isBaseExpression": false,

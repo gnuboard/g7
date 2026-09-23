@@ -157,6 +157,21 @@ interface VisitRepositoryInterface
     public function countInDateRange(?string $from, ?string $to): int;
 
     /**
+     * 한 유입처(호스트)의 전체 유입 주소를 방문 수 순으로 셉니다.
+     *
+     * 집계표는 유입처를 호스트(`referrer_name`)까지만 쌓아 「어느 글에서 왔는지」를 답하지
+     * 못합니다. 전체 주소는 원장에만 있으므로 여기서 직접 읽습니다. 날짜 구간이 스캔을
+     * 묶어 주지만 `referrer_url` 자체에는 인덱스가 없으니 기간을 넓게 잡으면 느립니다.
+     *
+     * @param  string  $host  유입처 호스트 (`referrer_name`)
+     * @param  string  $from  시작일 (Y-m-d)
+     * @param  string  $to  종료일 (Y-m-d)
+     * @param  array<string, mixed>  $options  page·per_page·visitor_types
+     * @return array{rows: array<int, array{url: string, visits: int, hits: int}>, page: int, per_page: int, has_more: bool} 주소 목록과 쪽 정보
+     */
+    public function referrerUrls(string $host, string $from, string $to, array $options = []): array;
+
+    /**
      * 일자 구간 안의 방문을 ID 순서로 나눠 읽습니다.
      *
      * @param  string|null  $from  시작일 (Y-m-d)

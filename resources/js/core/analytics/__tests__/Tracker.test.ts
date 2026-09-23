@@ -94,6 +94,50 @@ describe('AnalyticsTracker', () => {
     expect(flush()).toBeNull();
   });
 
+  // @scenario mode=consent, source=beacon, visit_state=new
+  // @effects consented_visitors_first_page_is_held_until_consent_is_known
+  it('동의 조회보다 먼저 온 첫 화면은 버리지 않고 들고 있다가, 동의로 확인되면 보내고 아니면 버린다', async () => {
+    // 첫 화면 비콘은 부팅 직후 동기로 나가 동의 조회보다 늘 먼저다. 버리면 동의한 방문자가
+    // 새로 들어오거나 새로고침한 화면이 한 건도 안 남는다(#682 S3 라운드 13 브라우저 실측).
+    const run = async (consents: Record<string, boolean> | 'fail') => {
+      fetchMock.mockReset();
+      fetchMock.mockImplementation(async (url: string) => {
+        if (String(url).includes('/consent/cookie/status')) {
+          if (consents === 'fail') throw new Error('network');
+
+          return { ok: true, json: async () => ({ data: { consents } }) };
+        }
+
+        return { ok: true };
+      });
+
+      const tracker = new AnalyticsTracker({
+        settings: { ...SETTINGS, privacy_mode: 'consent' },
+        consentPluginActive: true,
+      });
+
+      tracker.trackPageview({ path: '/' });
+      vi.runAllTimers();
+      const beforeSettle = fetchMock.mock.calls.filter(([u]) => String(u).includes('/api/analytics/collect')).length;
+
+      await tracker.start();
+      vi.runAllTimers();
+
+      const sent = fetchMock.mock.calls.filter(([u]) => String(u).includes('/api/analytics/collect'));
+      tracker.stop();
+
+      return { beforeSettle, sent: sent.map(([, init]) => JSON.parse(init.body)) };
+    };
+
+    const granted = await run({ analytics: true });
+    expect(granted.beforeSettle, '조회가 끝나기 전에는 보내지 않는다').toBe(0);
+    expect(granted.sent).toHaveLength(1);
+    expect(granted.sent[0]).toMatchObject({ t: 'pageview', init: true });
+
+    expect((await run({ analytics: false })).sent, '미동의면 들고 있던 비콘을 버린다').toHaveLength(0);
+    expect((await run('fail')).sent, '조회에 실패해도 동의로 단정하지 않는다').toHaveLength(0);
+  });
+
   // @scenario source=beacon, visit_state=new
   // @effects tracker_sends_beacon_on_route_change
   it('keepalive 를 지원하지 않으면 sendBeacon 으로 보낸다', () => {
@@ -126,6 +170,24 @@ describe('AnalyticsTracker', () => {
     const second = flush();
 
     expect(second?.init).toBe(false);
+  });
+
+  // @scenario source=beacon, visit_state=open
+  // @effects repeated_navigation_to_the_same_page_counts_once
+  it('같은 화면으로의 되풀이 이동(메뉴 더블클릭)이 1초 안에 오면 한 번만 센다', () => {
+    // 브라우저 실측(§8 M1-T10): 메뉴 버튼 더블클릭이 같은 주소로 두 번 이동해 페이지뷰가 2건 나갔다.
+    const tracker = new AnalyticsTracker({ settings: SETTINGS });
+
+    tracker.trackPageview({ path: '/board/free' });
+    tracker.trackPageview({ path: '/board/free' });
+    vi.runAllTimers();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+
+    // 창이 지나면 같은 화면을 다시 연 것은 새 열람이다.
+    vi.advanceTimersByTime(1500);
+    tracker.trackPageview({ path: '/board/free' });
+    vi.runAllTimers();
+    expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
   // @scenario source=beacon, visit_state=open
@@ -254,6 +316,26 @@ describe('AnalyticsTracker', () => {
 
     tracker.trackOutlink('https://other.test/x');
     expect(flush()?.t).toBe('outlink');
+  });
+
+  // @scenario source=beacon
+  // @effects blob_downloads_are_named_without_a_target
+  it('받아 둔 내용을 저장시키는 blob·data 링크는 주소 없이 이름만 보낸다', () => {
+    // 게시판 첨부는 파일을 받아 blob 주소의 임시 링크로 저장시킨다(브라우저 실측 §8 M1-T7).
+    // blob 주소를 target 에 실으면 서버가 URL 이 아니라며 422 로 거절해 첨부 다운로드가 통째로 빠진다.
+    const tracker = new AnalyticsTracker({ settings: SETTINGS });
+
+    tracker.trackDownload('blob:https://example.test/41c5fb2c-a71e-4766-9e5f-1d303e0d304d', 'sample.jpg');
+    const blob = flush();
+    expect(blob?.t).toBe('download');
+    expect(blob?.name).toBe('sample.jpg');
+    expect(blob).not.toHaveProperty('target');
+
+    tracker.trackDownload('data:text/csv;charset=utf-8,a%2Cb', 'rows.csv');
+    expect(flush()).not.toHaveProperty('target');
+
+    tracker.trackDownload('https://example.test/a.pdf', 'a.pdf');
+    expect(flush()?.target).toBe('https://example.test/a.pdf');
   });
 
   // @scenario source=beacon

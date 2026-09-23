@@ -125,6 +125,28 @@ class UrlNormalizerTest extends TestCase
     }
 
     /**
+     * 화면용 이름은 퍼센트 인코딩을 풀되, 풀어서 글자가 아니면 그대로 둔다.
+     *
+     * 한국어 주소·검색어가 「/search?q=%ED%85%8C…」로 보이면 운영자가 읽을 수 없다(브라우저 실측 §8 M3).
+     * 깨진 바이트나 제어 문자는 풀면 표가 깨지거나 JSON 이 실패하므로 원문을 둔다.
+     *
+     * @scenario display=decode_for_display
+     *
+     * @effects display_names_decode_only_readable_text
+     *
+     * @return void 없음
+     */
+    public function test_decodes_readable_text_for_display(): void
+    {
+        $this->assertSame('/search?q=테스트', UrlNormalizer::forDisplay('example.com/search?q=%ED%85%8C%EC%8A%A4%ED%8A%B8', 'example.com'));
+        $this->assertSame('/게시판/free', UrlNormalizer::forDisplay('example.com/%EA%B2%8C%EC%8B%9C%ED%8C%90/free', 'example.com'));
+        $this->assertSame('other.com/한', UrlNormalizer::forDisplay('other.com/%ED%95%9C', 'example.com'), '다른 호스트는 호스트를 남긴 채 푼다');
+        $this->assertSame('/x?q=%FF', UrlNormalizer::forDisplay('example.com/x?q=%FF', 'example.com'), '깨진 바이트는 풀지 않는다');
+        $this->assertSame('/x?q=a%0Ab', UrlNormalizer::forDisplay('example.com/x?q=a%0Ab', 'example.com'), '제어 문자는 풀지 않는다');
+        $this->assertSame('/a+b', UrlNormalizer::forDisplay('example.com/a+b', 'example.com'), '더하기는 공백으로 바꾸지 않는다');
+    }
+
+    /**
      * 상대 경로도 처리한다.
      *
      * @scenario url=relative

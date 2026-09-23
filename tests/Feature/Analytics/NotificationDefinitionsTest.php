@@ -157,7 +157,9 @@ class NotificationDefinitionsTest extends TestCase
         $this->assertCount(1, $alerts);
         $this->assertSame('analytics_ledger_limit', $alerts[0]['id']);
         $this->assertSame('warning', $alerts[0]['type']);
-        $this->assertStringContainsString('tab=retention', $alerts[0]['action_url']);
+        // 이동 버튼은 목적지를 열 수 있는 관리자에게만 붙는다 — 로그인 사용자가 없는 맥락에는 없다
+        // (권한별 갈래는 LedgerAlertActionPermissionTest).
+        $this->assertArrayNotHasKey('action_url', $alerts[0]);
         $this->assertStringNotContainsString('analytics.alerts', $alerts[0]['title'], '번역 키가 그대로 보이면 안 된다');
     }
 

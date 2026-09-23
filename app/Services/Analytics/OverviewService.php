@@ -67,7 +67,10 @@ class OverviewService
             'yesterday' => $yesterdayCount,
             'max' => [
                 'value' => $max !== null ? (int) $max->visitors : 0,
-                'date' => $max !== null ? (string) $max->date : null,
+                // 날짜 컬럼이 캐스트되면 문자열화에 시각이 붙는다 — 화면에는 날짜만 보여야 한다.
+                'date' => $max === null ? null : ($max->date instanceof \DateTimeInterface
+                    ? $max->date->format('Y-m-d')
+                    : substr((string) $max->date, 0, 10)),
             ],
             'total' => $total,
             'change_pct' => $this->changePercent($yesterdayCount, $todayCount),

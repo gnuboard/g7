@@ -13,6 +13,7 @@
  *   spa_navigation_sends_another_beacon, admin_template_does_not_track.
  */
 import { authenticatePage, expect, issueToken, test } from '../../fixtures/auth';
+import { AnalyticsSettingsGuard, runArtisan, todayPageHits } from '../../fixtures/analytics';
 
 /** 수집 비콘 경로 */
 const COLLECT_PATH = '/api/analytics/collect';
@@ -92,6 +93,75 @@ test.describe('방문자 통계 비콘', () => {
     expect(payloads.map((payload) => `${payload.t}:${payload.init}`)).toEqual(['pageview:true']);
   });
 
+  // @scenario source=beacon, visitor=guest, visit_state=open, exclusion=none
+  // @effects repeated_navigation_to_the_same_page_counts_once
+  test('같은 화면으로 거듭 이동하면(메뉴 더블클릭) 페이지뷰는 1건이다', async ({ page }) => {
+    // 브라우저 실측(§8 M1-T10): 라우터는 같은 주소로의 이동도 매번 알려, 메뉴 더블클릭 한 번이
+    // 같은 페이지뷰 2건이 됐다. 메뉴 데이터에 기대지 않도록 같은 이동을 한 틱에 두 번 부른다.
+    const pageviews: string[] = [];
+    page.on('request', (request) => {
+      if (!request.url().includes(COLLECT_PATH)) return;
+      try {
+        const payload = JSON.parse(request.postData() ?? '{}');
+        if (payload.t === 'pageview') pageviews.push(String(payload.url ?? ''));
+      } catch {
+        // 아래 단언이 판정한다.
+      }
+    });
+
+    await page.goto('/');
+    await expect.poll(() => pageviews.length, { timeout: 20_000 }).toBeGreaterThan(0);
+    const before = pageviews.length;
+
+    await page.evaluate(() => {
+      const navigate = () => (window as unknown as { G7Core: { dispatch: (a: unknown) => void } }).G7Core
+        .dispatch({ handler: 'navigate', params: { path: '/boards' } });
+      navigate();
+      navigate();
+    });
+    await page.waitForURL(/\/boards/, { timeout: 20_000 });
+    await page.waitForTimeout(2_000);
+
+    expect(pageviews.slice(before).filter((url) => url.includes('/boards'))).toHaveLength(1);
+  });
+
+  // @scenario source=beacon, visitor=guest, visit_state=open, exclusion=none
+  // @effects blob_downloads_are_named_without_a_target
+  test('받아 둔 내용을 저장시키는 blob 내려받기는 주소 없이 이름만 보낸다', async ({ page }) => {
+    // 게시판 첨부처럼 파일을 받아 blob 임시 링크로 저장시키면, blob 주소를 target 에 실은 비콘은
+    // 서버가 URL 이 아니라며 거절해 내려받기가 통째로 빠졌다(§8 M1-T7).
+    const downloads: Record<string, unknown>[] = [];
+    page.on('request', (request) => {
+      if (!request.url().includes(COLLECT_PATH)) return;
+      try {
+        const payload = JSON.parse(request.postData() ?? '{}');
+        if (payload.t === 'download') downloads.push(payload);
+      } catch {
+        // 아래 단언이 판정한다.
+      }
+    });
+
+    await page.goto('/');
+    await page.waitForLoadState('domcontentloaded', { timeout: 30_000 });
+    await page.waitForTimeout(2_000);
+
+    await page.evaluate(() => {
+      const anchor = document.createElement('a');
+      anchor.id = 'e2e-blob-download';
+      anchor.href = URL.createObjectURL(new Blob(['a,b\n1,2'], { type: 'text/csv' }));
+      anchor.download = 'rows.csv';
+      anchor.textContent = 'rows.csv';
+      document.body.appendChild(anchor);
+    });
+    const saved = page.waitForEvent('download');
+    await page.locator('#e2e-blob-download').click();
+    await saved;
+
+    await expect.poll(() => downloads.length, { timeout: 10_000 }).toBe(1);
+    expect(downloads[0]).toMatchObject({ t: 'download', name: 'rows.csv' });
+    expect(downloads[0]).not.toHaveProperty('target');
+  });
+
   // @scenario source=beacon, visitor=admin, exclusion=disabled
   // @effects admin_template_does_not_track
   test('관리자 화면은 수집하지 않는다', async ({ page }) => {
@@ -169,5 +239,105 @@ test.describe('방문자 통계 비콘', () => {
 
     const restored = await page.context().cookies();
     expect(restored.some((cookie) => cookie.name === 'g7_analytics_optout' && cookie.value === '1')).toBe(false);
+  });
+});
+
+test.describe('방문자 통계 수집 → 집계 → 관리자 화면 (전체 흐름)', () => {
+  // @scenario screen=overview, state=normal, viewport=1440, locale=ko, e2e=collect
+  // @effects beacon_reaches_the_overview_after_archive
+  test('게스트 방문이 원장에 쌓이고 시간 집계 뒤 관리자 페이지 리포트와 개요에 나온다', async ({ page }) => {
+    const adminToken = issueToken('core.analytics.read', 'core.analytics.update');
+    const guard = new AnalyticsSettingsGuard(page.request, adminToken);
+
+    // Playwright 브라우저는 navigator.webdriver 가 참이라 기본 설정(자동화 브라우저 제외)에서는
+    // 방문이 원장에 닿지 않는다(비콘은 204 를 받는다). 이 흐름만 잠시 풀고 finally 에서 되돌린다.
+    //
+    // 적재 방식 설정은 없앴다 — 수집 리스너가 `sync => true` 라 워커가 없어도 비콘이 요청 안에서
+    // 원장에 닿는다(#682 S3 라운드 6). 예전에는 여기서 `dispatch_mode: 'sync'` 를 함께 고정해야
+    // 아래 집계가 빈손으로 끝나지 않았다.
+    await guard.apply({ block_headless: false });
+
+    try {
+      // 기준선 — 먼저 집계해 두어야 「집계 전 쌓여 있던 방문」이 이번 증가분에 섞이지 않는다.
+      runArtisan('analytics:archive --period=hour');
+      const before = await todayPageHits(page.request, adminToken, '/boards');
+
+      const beacons: string[] = [];
+      page.on('request', (request) => {
+        if (request.url().includes(COLLECT_PATH)) beacons.push(request.postData() ?? '');
+      });
+
+      await page.goto('/');
+      await expect.poll(() => beacons.length, { timeout: 20_000 }).toBeGreaterThan(0);
+      await expect
+        .poll(() => page.evaluate(() => typeof (window as any).G7Core?.dispatch), { timeout: 20_000 })
+        .toBe('function');
+
+      // 메뉴 클릭과 같은 SPA 이동 — 새로 불러오지 않고 라우터만 바뀐다.
+      await page.evaluate(() => (window as any).G7Core.dispatch({ handler: 'navigate', params: { path: '/boards' } }));
+      await expect(page).toHaveURL(/\/boards/);
+      await expect.poll(() => beacons.some((body) => body.includes('/boards')), { timeout: 20_000 }).toBe(true);
+
+      runArtisan('analytics:archive --period=hour');
+      const after = await todayPageHits(page.request, adminToken, '/boards');
+      expect(after, '이번 방문의 /boards 페이지뷰가 집계 표에 더해져야 한다').toBeGreaterThanOrEqual(before + 1);
+
+      // 화면 — 관리자로 전환해 페이지 리포트(검색)와 개요 KPI 를 본다.
+      await authenticatePage(page, adminToken);
+      await page.goto('/admin/analytics/pages?preset=today&q=boards');
+      await expect(page.locator('#analytics_report_grid').getByText('/boards', { exact: true }).first()).toBeVisible({ timeout: 30_000 });
+
+      await page.goto('/admin/analytics?preset=today');
+      const today = page.locator('#kpi_today');
+      await expect(today).toBeVisible({ timeout: 30_000 });
+      await expect.poll(async () => Number(((await today.textContent()) ?? '').replace(/[^0-9]/g, '').slice(0, 9) || '0'), { timeout: 20_000 })
+        .toBeGreaterThanOrEqual(1);
+    } finally {
+      await guard.restore();
+    }
+  });
+});
+
+test.describe('방문자 통계 비콘 — 동의 연동 모드', () => {
+  // @scenario source=beacon, visitor=guest, visit_state=new, exclusion=none
+  // @effects consented_visitors_first_page_is_held_until_consent_is_known
+  test('동의한 방문자가 새로고침한 첫 화면도 비콘을 보낸다', async ({ page }) => {
+    // 첫 화면 비콘은 부팅 직후 나가 동의 조회보다 늘 먼저다. 트래커가 그 순간의 「모름」을 미동의로
+    // 버리면, 동의한 방문자가 새로 들어오거나 새로고침한 화면이 한 건도 남지 않는다 — 메뉴 이동은
+    // 세어지니 단위 테스트와 SPA 실측만으로는 드러나지 않았다(#682 S3 라운드 13 브라우저 실측).
+    const adminToken = issueToken('core.analytics.read', 'core.analytics.update');
+    const guard = new AnalyticsSettingsGuard(page.request, adminToken);
+
+    const beacons: Array<Record<string, unknown>> = [];
+    page.on('request', (request) => {
+      if (request.url().includes(COLLECT_PATH)) beacons.push(JSON.parse(request.postData() ?? '{}'));
+    });
+
+    await guard.apply({ privacy_mode: 'consent' });
+
+    try {
+      await page.goto('/');
+      await page.waitForLoadState('networkidle', { timeout: 30_000 });
+      // 동의 연동 모드는 동의 관리 플러그인이 켜진 설치에서만 성립한다 — 이 spec 의 전제다.
+      const pluginActive = await page.evaluate(() => ((window as any).G7Config?.activePlugins ?? [])
+        .some((plugin: any) => plugin?.identifier === 'sirsoft-gdpr'));
+      expect(pluginActive, '동의 관리 플러그인이 활성이어야 한다').toBe(true);
+      expect(beacons, '동의 전에는 보내지 않는다').toHaveLength(0);
+
+      // 같은 배너가 두 벌 그려지는 설치가 있어(겹친 위쪽이 아래쪽의 클릭을 가린다) 위쪽을 누른다.
+      // 동의 저장 요청이 끝나기 전에 새로고침하면 그 요청이 취소돼 동의가 남지 않는다 — 저장 응답을 받고
+      // 새로고침한다(#682 S3 라운드 14: 저장이 빨랐던 첫 회만 통과하고 반복 실행에서 3/4 실패했다).
+      await Promise.all([
+        page.waitForResponse((res) => res.url().includes('/consent/cookie') && res.request().method() === 'POST'),
+        page.locator('#gdpr_cookie_banner').last().getByRole('button', { name: /Accept All|모두 동의/ }).click(),
+      ]);
+
+      await page.reload();
+      await expect
+        .poll(() => beacons.filter((body) => body.init === true).length, { timeout: 20_000 })
+        .toBeGreaterThan(0);
+    } finally {
+      await guard.restore();
+    }
   });
 });

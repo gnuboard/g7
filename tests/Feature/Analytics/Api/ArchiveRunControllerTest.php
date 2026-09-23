@@ -2,9 +2,12 @@
 
 namespace Tests\Feature\Analytics\Api;
 
+use App\Analytics\AnalyticsClock;
+use App\Enums\Analytics\ArchiveRunStatus;
 use App\Enums\Analytics\ArchiveRunType;
 use App\Jobs\Analytics\ArchiveRangeJob;
 use App\Models\Analytics\AnalyticsArchiveRun;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Queue;
 
 /**
@@ -37,6 +40,37 @@ class ArchiveRunControllerTest extends AnalyticsApiTestCase
         $this->assertNotNull($response->json('data.run_id'));
         $this->assertFalse($response->json('data.queued'));
         $this->assertDatabaseHas('analytics_archive_runs', ['trigger' => 'manual']);
+    }
+
+    /**
+     * 다른 집계가 도는 중이면 건너뛴 사실을 응답이 알리는지 확인합니다.
+     *
+     * 이력에는 「건너뜀」이 남는데 응답이 이력 번호만 주면 화면은 성공과 구별하지 못해
+     * 「집계를 실행했습니다」를 띄운다(브라우저 실측 M7-T10).
+     *
+     * @return void 없음
+     *
+     * @scenario endpoint=archive_runs, role=update, confirm=given
+     *
+     * @effects manual_archive_reports_skipped_when_locked
+     */
+    public function test_a_locked_run_reports_that_it_was_skipped(): void
+    {
+        $this->visit();
+
+        $lock = Cache::lock('analytics:archive:'.ArchiveRunType::Hour->value.':'.AnalyticsClock::today(), 30);
+        $this->assertTrue($lock->get(), '자물쇠를 먼저 잡아야 건너뜀 경로를 탄다');
+
+        try {
+            $response = $this->actingAs($this->updateAdmin())
+                ->postJson('/api/admin/analytics/archive-runs', ['run_type' => ArchiveRunType::Hour->value]);
+
+            $response->assertStatus(202);
+            $this->assertSame(ArchiveRunStatus::Skipped->value, $response->json('data.status'));
+            $this->assertNotNull($response->json('data.run_id'));
+        } finally {
+            $lock->release();
+        }
     }
 
     /**

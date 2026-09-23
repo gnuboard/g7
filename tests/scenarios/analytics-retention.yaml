@@ -92,10 +92,17 @@ effects:
   - irreversible_commands_stay_out_of_the_allowlist
   - maintenance_commands_are_exposed_in_the_dev_dashboard
   - conditional_schedules_stay_out_when_their_feature_is_off
+  - conditional_schedules_appear_when_their_feature_is_on
   # 클라우드 대역 목록
   - cloud_ranges_are_downloaded_and_stored
   - a_failed_download_keeps_the_existing_list
   - cloud_range_status_reports_presence_and_time
+  # 진행률 방송 — 집계가 아닌 실행도 진단 화면의 같은 자리에 뜬다
+  - non_archive_runs_broadcast_their_progress
+  # 멈춘 실행 — 워커가 도중에 죽은 「실행 중」 행이 진단 버튼을 잠그지 않는다
+  - stale_running_rows_do_not_lock_the_diagnostics_buttons
+  - stale_running_rows_are_closed_by_the_hourly_archive
+  - failed_jobs_close_the_runs_they_started
 
 test_files:
   - tests/Feature/Console/Analytics/PruneCommandTest.php
@@ -103,6 +110,8 @@ test_files:
   - tests/Feature/Console/Analytics/AnonymizeCommandTest.php
   - tests/Feature/Console/Analytics/PurgeCommandTest.php
   - tests/Feature/Analytics/ExtensionPurgeTest.php
+  - tests/Feature/Analytics/RunProgressBroadcastTest.php
+  - tests/Feature/Analytics/StaleRunServiceTest.php
   - tests/Feature/Console/Analytics/UpdateCloudRangesCommandTest.php
   - tests/Feature/Console/Analytics/AnalyticsScheduleRegistrationTest.php
 

@@ -7,6 +7,7 @@ use App\Enums\Analytics\ArchiveRunStatus;
 use App\Enums\Analytics\ArchiveRunType;
 use App\Models\Analytics\AnalyticsArchiveRun;
 use App\Services\Analytics\ArchiveService;
+use App\Services\Analytics\StaleRunService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Carbon;
 
@@ -48,9 +49,10 @@ class ArchiveCommand extends Command
      * 커맨드 실행
      *
      * @param  ArchiveService  $service  집계 서비스
+     * @param  StaleRunService  $staleRuns  멈춘 실행 정리 서비스
      * @return int 종료 코드
      */
-    public function handle(ArchiveService $service): int
+    public function handle(ArchiveService $service, StaleRunService $staleRuns): int
     {
         $from = $this->option('from');
         $to = $this->option('to');
@@ -66,6 +68,16 @@ class ArchiveCommand extends Command
             $this->error('집계 단위는 hour 또는 day 여야 합니다.');
 
             return self::FAILURE;
+        }
+
+        // 매시 실행이 끝을 알리지 못하고 멈춘 실행 이력을 닫는다 — 워커가 도중에 죽은 행이
+        // 「실행 중」으로 남아 진단 화면의 수동 집계 버튼을 잠그지 않게(#682 S3 라운드 13).
+        if ($period === 'hour' && ! $dryRun) {
+            $closed = $staleRuns->failStale();
+
+            if ($closed > 0) {
+                $this->warn(sprintf('끝을 알리지 못하고 멈춘 실행 %d건을 실패로 닫았습니다.', $closed));
+            }
         }
 
         return $period === 'hour'

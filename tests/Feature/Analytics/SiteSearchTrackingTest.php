@@ -27,7 +27,6 @@ class SiteSearchTrackingTest extends TestCase
     {
         parent::setUp();
 
-        config(['g7_settings.core.analytics.dispatch_mode' => 'sync']);
     }
 
     /**

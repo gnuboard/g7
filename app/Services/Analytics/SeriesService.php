@@ -2,6 +2,7 @@
 
 namespace App\Services\Analytics;
 
+use App\Analytics\AnalyticsClock;
 use App\Analytics\AnalyticsConfig;
 use App\Contracts\Repositories\Analytics\StatsRepositoryInterface;
 use App\Enums\Analytics\VisitorType;
@@ -86,7 +87,18 @@ class SeriesService
      */
     public function hourlyAvailableFrom(AnalyticsConfig $config): Carbon
     {
-        return Carbon::now()->subDays(max(1, $config->hourlyRetentionDays))->startOfDay();
+        // 경계는 **사이트 표준시 일자**로 센다 — 보존기간은 사이트 자정으로 끊기고 화면도 그 일자를
+        // 그린다(#682 S3 라운드 7). `Carbon::now()` 는 `config('app.timezone')`(UTC)을 따르므로
+        // UTC 보다 앞선 사이트에서는 새벽 시간대에 하루 앞 날짜가 나와, 안내 문구와 단위 강등
+        // 분기가 함께 어긋났다.
+        //
+        // 일자를 정한 뒤 다시 파싱해 **UTC 자정**으로 돌려준다 — 호출부 두 곳이 일(日) 단위로
+        // 비교하므로(`$from` 도 날짜 문자열을 파싱한다) 양쪽이 같은 기준이어야 한다.
+        $boundary = Carbon::now(AnalyticsClock::siteTimezone())
+            ->subDays(max(1, $config->hourlyRetentionDays))
+            ->toDateString();
+
+        return Carbon::parse($boundary);
     }
 
     /**
@@ -120,7 +132,11 @@ class SeriesService
     {
         $rows = $this->stats->hourly($from.' 00:00:00', $to.' 23:59:59', $types);
 
-        return $this->aggregate($rows, fn ($row): string => Carbon::parse($row->hour_start)->format('Y-m-d H:00:00'));
+        return $this->aggregate(
+            $rows,
+            fn ($row): string => Carbon::parse($row->hour_start)->format('Y-m-d H:00:00'),
+            $this->hourKeys($from, $to),
+        );
     }
 
     /**
@@ -138,38 +154,105 @@ class SeriesService
     {
         $rows = $this->stats->daily($from, $to, $types);
 
-        return $this->aggregate($rows, fn ($row): string => match ($unit) {
-            'week' => Carbon::parse($row->date)->startOfWeek()->toDateString(),
-            'month' => Carbon::parse($row->date)->format('Y-m-01'),
-            'year' => Carbon::parse($row->date)->format('Y-01-01'),
-            default => Carbon::parse($row->date)->toDateString(),
-        });
+        $bucketOf = fn (Carbon $date): string => match ($unit) {
+            'week' => $date->copy()->startOfWeek()->toDateString(),
+            'month' => $date->format('Y-m-01'),
+            'year' => $date->format('Y-01-01'),
+            default => $date->toDateString(),
+        };
+
+        return $this->aggregate(
+            $rows,
+            fn ($row): string => $bucketOf(Carbon::parse($row->date)),
+            $this->dayKeys($from, $to, $bucketOf),
+        );
     }
 
     /**
-     * 행을 시각별로 묶어 지표를 더합니다.
+     * 시간 단위 칸 키를 만듭니다.
+     *
+     * 시간 집계의 시각은 사이트 표준시 벽시계라 칸도 같은 기준으로 셉니다. 지금 시간
+     * 뒤의 칸은 만들지 않습니다 — 0 으로 미리 그리면 방문이 끊긴 것처럼 보입니다.
+     *
+     * @param  string  $from  시작일 (Y-m-d)
+     * @param  string  $to  종료일 (Y-m-d)
+     * @return array<int, string> 칸 키 목록 (Y-m-d H:00:00)
+     */
+    private function hourKeys(string $from, string $to): array
+    {
+        $timezone = AnalyticsClock::siteTimezone();
+        $end = Carbon::parse($to.' 23:00:00', $timezone);
+        $current = Carbon::now($timezone)->startOfHour();
+
+        if ($current->lessThan($end)) {
+            $end = $current;
+        }
+
+        $keys = [];
+
+        for ($hour = Carbon::parse($from.' 00:00:00', $timezone); $hour->lessThanOrEqualTo($end); $hour->addHour()) {
+            $keys[] = $hour->format('Y-m-d H:00:00');
+        }
+
+        return $keys;
+    }
+
+    /**
+     * 일·주·월·연 단위 칸 키를 만듭니다.
+     *
+     * 기간의 하루하루를 행과 같은 규칙으로 칸에 넣어 셉니다 — 주의 시작 요일 같은 규칙이
+     * 행 쪽과 어긋날 수 없습니다. 오늘 뒤의 날은 넣지 않습니다.
+     *
+     * @param  string  $from  시작일 (Y-m-d)
+     * @param  string  $to  종료일 (Y-m-d)
+     * @param  callable(Carbon): string  $bucketOf  날짜에서 칸 키를 만드는 함수
+     * @return array<int, string> 칸 키 목록
+     */
+    private function dayKeys(string $from, string $to, callable $bucketOf): array
+    {
+        $end = Carbon::parse($to);
+        $today = Carbon::parse(AnalyticsClock::today());
+
+        if ($today->lessThan($end)) {
+            $end = $today;
+        }
+
+        $keys = [];
+
+        for ($day = Carbon::parse($from); $day->lessThanOrEqualTo($end); $day->addDay()) {
+            $keys[$bucketOf($day)] = true;
+        }
+
+        return array_map('strval', array_keys($keys));
+    }
+
+    /**
+     * 행을 칸별로 묶어 지표를 더합니다.
+     *
+     * 기록이 없는 칸은 0 으로 채웁니다 — 건너뛰면 차트가 앞뒤 칸을 곧장 이어 그려 추이가
+     * 거짓이 됩니다. 다만 기간 전체에 기록이 하나도 없으면 빈 목록을 돌려줍니다. 평평한
+     * 0 선은 화면의 「선택 기간에 기록이 없습니다」 안내를 가립니다.
      *
      * @param  Collection<int, object>  $rows  집계 행
-     * @param  callable  $bucket  행에서 시각 키를 만드는 함수
+     * @param  callable  $bucket  행에서 칸 키를 만드는 함수
+     * @param  array<int, string>  $keys  기간의 칸 키 목록 (지금 뒤는 제외)
      * @return array<int, array<string, mixed>> 점 목록
      */
-    private function aggregate($rows, callable $bucket): array
+    private function aggregate(Collection $rows, callable $bucket, array $keys): array
     {
+        if ($rows->isEmpty()) {
+            return [];
+        }
+
         $points = [];
+
+        foreach ($keys as $key) {
+            $points[$key] = $this->emptyPoint($key);
+        }
 
         foreach ($rows as $row) {
             $key = $bucket($row);
-
-            if (! isset($points[$key])) {
-                $points[$key] = [
-                    'ts' => $key,
-                    'visits' => 0,
-                    'visitors' => 0,
-                    'pageviews' => 0,
-                    'bounces' => 0,
-                    'total_time_seconds' => 0,
-                ];
-            }
+            $points[$key] ??= $this->emptyPoint($key);
 
             $points[$key]['visits'] += (int) $row->visits;
             // 방문자 키는 날마다 바뀔 수 있어 여러 날을 아우르는 진짜 순방문자는 셀 수
@@ -191,6 +274,24 @@ class SeriesService
 
             return $point;
         }, $points));
+    }
+
+    /**
+     * 기록이 없는 칸 하나를 만듭니다.
+     *
+     * @param  string  $key  칸 키
+     * @return array<string, mixed> 0 으로 채운 점
+     */
+    private function emptyPoint(string $key): array
+    {
+        return [
+            'ts' => $key,
+            'visits' => 0,
+            'visitors' => 0,
+            'pageviews' => 0,
+            'bounces' => 0,
+            'total_time_seconds' => 0,
+        ];
     }
 
     /**

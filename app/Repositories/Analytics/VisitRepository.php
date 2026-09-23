@@ -291,6 +291,56 @@ class VisitRepository implements VisitRepositoryInterface
     }
 
     /**
+     * 한 유입처(호스트)의 전체 유입 주소를 방문 수 순으로 셉니다.
+     *
+     * 집계표(`analytics_dimension_stats`)는 유입처를 호스트까지만 쌓는다 — 「google.com 에서
+     * 왔다」는 알아도 어느 검색 결과·어느 글에서 왔는지는 원장에만 있다. 날짜 구간이
+     * `idx_analytics_visits_date_type` 로 스캔을 묶지만 `referrer_url` 에는 인덱스가 없으므로
+     * 기간을 넓게 잡으면 느리다 — 화면은 기간 바가 고른 구간으로만 부른다.
+     * 다음 쪽이 있는지는 한 행을 더 받아 판단한다(전체 개수를 다시 세지 않는다).
+     *
+     * @param  string  $host  유입처 호스트 (`referrer_name`)
+     * @param  string  $from  시작일 (Y-m-d)
+     * @param  string  $to  종료일 (Y-m-d)
+     * @param  array<string, mixed>  $options  page·per_page·visitor_types
+     * @return array{rows: array<int, array{url: string, visits: int, hits: int}>, page: int, per_page: int, has_more: bool} 주소 목록과 쪽 정보
+     */
+    public function referrerUrls(string $host, string $from, string $to, array $options = []): array
+    {
+        $page = max(1, (int) ($options['page'] ?? 1));
+        $perPage = max(1, min(100, (int) ($options['per_page'] ?? 25)));
+        $visitorTypes = array_values(array_filter((array) ($options['visitor_types'] ?? [])));
+
+        $rows = AnalyticsVisit::query()
+            ->selectRaw('referrer_url as url, COUNT(*) as visits, COALESCE(SUM(pageviews_count), 0) as hits')
+            ->where('referrer_name', $host)
+            ->whereNotNull('referrer_url')
+            ->where('referrer_url', '!=', '')
+            ->where('visit_date', '>=', $from)
+            ->where('visit_date', '<=', $to)
+            ->when($visitorTypes !== [], fn (Builder $q) => $q->whereIn('visitor_type', $visitorTypes))
+            ->groupBy('referrer_url')
+            ->orderByDesc('visits')
+            ->orderBy('referrer_url')
+            ->offset(($page - 1) * $perPage)
+            ->limit($perPage + 1)
+            ->get();
+
+        $hasMore = $rows->count() > $perPage;
+
+        return [
+            'rows' => $rows->take($perPage)->map(fn ($row): array => [
+                'url' => (string) $row->url,
+                'visits' => (int) $row->visits,
+                'hits' => (int) $row->hits,
+            ])->values()->all(),
+            'page' => $page,
+            'per_page' => $perPage,
+            'has_more' => $hasMore,
+        ];
+    }
+
+    /**
      * 일자 구간 안의 방문을 ID 순서로 나눠 읽습니다.
      *
      * @param  string|null  $from  시작일 (Y-m-d)

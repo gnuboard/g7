@@ -108,6 +108,11 @@ class DataSubjectService
                 'visit_id' => $visit->id,
                 'visitor_key' => $visit->visitor_key,
                 'visitor_type' => $this->enumValue($visit->visitor_type),
+                // 회원 신원. 열람권 이행 파일에 「나에 대해 무엇을 아는가」로 실려야 하는 값이고,
+                // 방문자 상세 화면의 회원 칸도 이 값으로 회원을 찾는다(#682 S3 라운드 5, §4.11).
+                // 가명화·소급 익명화를 돌린 구간은 `user_id` 가 지워지고 해시만 남는다.
+                'user_id' => $visit->user_id,
+                'user_hash' => $visit->user_hash,
                 'first_action_at' => $visit->first_action_at?->toIso8601String(),
                 'last_action_at' => $visit->last_action_at?->toIso8601String(),
                 'ip' => $visit->ip !== null ? (string) $visit->ip : null,
@@ -119,6 +124,10 @@ class DataSubjectService
                 // 읽어야 하는 값이고, 방문자 상세 CSV(부록 D)가 그대로 내보낸다.
                 'referrer_type' => $this->enumValue($visit->referrer_type),
                 'referrer_name' => $visit->referrer_name,
+                // 전체 유입 URL. 집계표는 호스트(referrer_name)까지만 쌓아 「어느 글에서 왔는지」를
+                // 알 수 없는데, 원장에는 처음부터 이 값이 있었다. 익명화 설정이 켜진 구간은
+                // 저장 시점에 이미 도메인까지만 남아 여기서도 도메인만 나온다(#682 라운드 4, 검수 지적 ⑥).
+                'referrer_url' => $visit->referrer_url,
                 'pageviews' => $visit->pageviews_count,
                 'total_time_seconds' => $visit->total_time_seconds,
                 'actions' => $actions->get($visit->id, collect())->map(fn ($action): array => [
@@ -127,6 +136,11 @@ class DataSubjectService
                     'name' => isset($nameMap[$action->action_name_id])
                         ? (string) $nameMap[$action->action_name_id]->name
                         : null,
+                    // 검색 액션의 결과 건수. 검색어만 보이면 「빈손으로 돌아간 검색」을 이 화면에서
+                    // 가려낼 수 없어 행동 화면의 「결과 없음」 열로 건너가야 한다(§4.10 방문자 상세
+                    // 「검색어(+결과 수)」·§4.11 「검색 "그누보드" 결과 12건」). 원장에는 수집 시점부터
+                    // 있던 값이고(`VisitService`), 검색이 아닌 액션에서는 null 이다.
+                    'search_result_count' => $action->search_result_count,
                     'time_spent_seconds' => $action->time_spent_seconds,
                 ])->all(),
                 'conversions' => $conversions->get($visit->id, collect())->map(fn ($conversion): array => [

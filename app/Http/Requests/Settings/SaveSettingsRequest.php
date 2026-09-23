@@ -399,6 +399,31 @@ class SaveSettingsRequest extends FormRequest
     }
 
     /**
+     * 검증을 마친 값을 돌려줍니다 — 방문자 통계 절은 선언한 형으로 바꿉니다.
+     *
+     * 화면이 보낸 "45" 를 그대로 저장하면 전용 API 로 저장했을 때와 형이 달라집니다.
+     *
+     * @param  string|null  $key  뽑아 올 키 (null 이면 전부)
+     * @param  mixed  $default  키가 없을 때 돌려줄 값
+     * @return mixed 검증을 마친 값
+     */
+    public function validated($key = null, $default = null): mixed
+    {
+        $validated = parent::validated();
+
+        if (is_array($validated) && isset($validated['analytics']) && is_array($validated['analytics'])) {
+            $validated['analytics'] = $this->castAnalyticsSettings($validated['analytics']);
+        }
+
+        if (! is_array($validated)) {
+            return $validated;
+        }
+
+        // 뽑아 오는 방식은 부모와 같게 둔다 — `data_get` 이라야 점 표기·와일드카드가 그대로 산다.
+        return data_get($validated, $key, $default);
+    }
+
+    /**
      * 특정 탭의 필수 필드에 대한 규칙을 반환합니다.
      *
      * @param  string  $currentTab  현재 활성 탭

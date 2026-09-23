@@ -996,6 +996,99 @@ export class DataSourceManager {
    * @param localState _local 상태 (globalHeaders 표현식 평가용)
    * @returns 데이터 맵 (key: 데이터 소스 ID, value: 데이터)
    */
+  /**
+   * **마지막으로 성공한** 응답 (요청이 같은 것끼리).
+   *
+   * `fallback` 은 아직 한 번도 못 받았을 때 흰 화면을 막는 첫 그림이다. 이미 값을 받아 그리고 있는
+   * 요청이 폴링 한 번 실패했다고 fallback(0·빈 배열)으로 되돌아가면 화면이 거짓을 말한다 — 실시간
+   * 화면이 서버 오류 동안 「지금 0명」을 띄운 것이 그 예다(이슈 #682 §8 M4-T4).
+   *
+   * 매니저는 화면을 다시 그릴 때마다 새로 만들어지므로 인스턴스가 아니라 클래스에 둔다. 키에 주소와
+   * 파라미터를 함께 넣어, **같은 요청**이 다시 실패했을 때만 그 값을 지킨다 — 기간이나 화면이 바뀌면
+   * 다른 요청이므로 남은 값을 보여 주지 않는다.
+   */
+  private static readonly lastSuccessful = new Map<string, any>();
+
+  /**
+   * 마지막 값 보관 한도 — 화면을 오래 돌아다녀도 메모리가 무한정 늘지 않게 한다.
+   */
+  private static readonly LAST_SUCCESSFUL_LIMIT = 50;
+
+  /**
+   * 같은 요청인지 가리는 키를 만듭니다.
+   *
+   * @param source 데이터 소스
+   * @param routeParams 라우트 파라미터
+   * @param queryParams 쿼리 파라미터
+   * @returns 보관 키
+   */
+  private lastDataKey(
+    source: DataSource,
+    routeParams: Record<string, any> = {},
+    queryParams: Record<string, any> = {},
+  ): string {
+    return [
+      source.id,
+      source.endpoint ?? '',
+      JSON.stringify(source.params ?? {}),
+      JSON.stringify(routeParams ?? {}),
+      JSON.stringify(queryParams ?? {}),
+    ].join('|');
+  }
+
+  /**
+   * 성공한 응답을 마지막 값으로 기억합니다.
+   *
+   * @param source 데이터 소스
+   * @param data 받은 데이터
+   * @param routeParams 라우트 파라미터
+   * @param queryParams 쿼리 파라미터
+   */
+  private rememberSuccess(
+    source: DataSource,
+    data: any,
+    routeParams?: Record<string, any>,
+    queryParams?: Record<string, any>,
+  ): void {
+    const store = DataSourceManager.lastSuccessful;
+    const key = this.lastDataKey(source, routeParams, queryParams);
+
+    store.delete(key);
+    store.set(key, data);
+
+    while (store.size > DataSourceManager.LAST_SUCCESSFUL_LIMIT) {
+      const oldest = store.keys().next();
+
+      if (oldest.done) {
+        break;
+      }
+
+      store.delete(oldest.value);
+    }
+  }
+
+  /**
+   * 요청이 실패했을 때 화면에 남길 데이터를 고릅니다.
+   *
+   * @param source 데이터 소스
+   * @param routeParams 라우트 파라미터
+   * @param queryParams 쿼리 파라미터
+   * @returns 남길 데이터(`{ data }`), 남길 것이 없으면 null
+   */
+  private dataAfterFailure(
+    source: DataSource,
+    routeParams?: Record<string, any>,
+    queryParams?: Record<string, any>,
+  ): { data: any } | null {
+    const key = this.lastDataKey(source, routeParams, queryParams);
+
+    if (DataSourceManager.lastSuccessful.has(key)) {
+      return { data: DataSourceManager.lastSuccessful.get(key) };
+    }
+
+    return source.fallback !== undefined ? { data: source.fallback } : null;
+  }
+
   async fetchDataSources(
     sources: DataSource[],
     routeParams: Record<string, string> = {},
@@ -1026,6 +1119,7 @@ export class DataSourceManager {
           const data = await this.fetchDataSource(source, routeParams, queryParams, globalState, localState);
           results[source.id] = data;
           this.dataCache.set(source.id, { data, timestamp: Date.now() });
+          this.rememberSuccess(source, data, routeParams, queryParams);
 
           // errorCondition 체크: 200 응답이어도 조건 만족 시 에러로 처리
           const errorConditionCode = this.checkErrorCondition(source, data);
@@ -1107,11 +1201,12 @@ export class DataSourceManager {
             }
           }
 
-          // fallback이 정의된 경우 렌더링용 데이터로 사용
-          if (source.fallback !== undefined) {
-            results[source.id] = source.fallback;
-            this.dataCache.set(source.id, { data: source.fallback, timestamp: Date.now() });
-            logger.log(`Using fallback data for ${source.id}`);
+          // 마지막으로 성공한 값이 있으면 그 값을 지키고, 없으면 fallback 으로 첫 그림을 그린다.
+          const kept = this.dataAfterFailure(source, routeParams, queryParams);
+          if (kept !== null) {
+            results[source.id] = kept.data;
+            this.dataCache.set(source.id, { data: kept.data, timestamp: Date.now() });
+            logger.log(`Keeping last data for ${source.id}`);
           }
 
           // 기존 onError 콜백도 호출 (호환성 유지)
@@ -1174,6 +1269,7 @@ export class DataSourceManager {
         try {
           const data = await this.fetchDataSource(source, routeParams, queryParams, globalState, localState);
           this.dataCache.set(source.id, { data, timestamp: Date.now() });
+          this.rememberSuccess(source, data, routeParams, queryParams);
 
           // errorCondition 체크: 200 응답이어도 조건 만족 시 에러로 처리
           const errorConditionCode = this.checkErrorCondition(source, data);
@@ -1299,14 +1395,16 @@ export class DataSourceManager {
             }
           }
 
-          // fallback이 정의된 경우 렌더링용 데이터로 사용
-          if (source.fallback !== undefined) {
-            this.dataCache.set(source.id, { data: source.fallback, timestamp: Date.now() });
-            logger.log(`Using fallback data for ${source.id}`);
+          // 마지막으로 성공한 값이 있으면 그 값을 지키고, 없으면 fallback 으로 첫 그림을 그린다.
+          const kept = this.dataAfterFailure(source, routeParams, queryParams);
+          if (kept !== null) {
+            this.dataCache.set(source.id, { data: kept.data, timestamp: Date.now() });
+            logger.log(`Keeping last data for ${source.id}`);
+
             return {
               id: source.id,
               state: 'success',
-              data: source.fallback,
+              data: kept.data,
             };
           }
 
@@ -1353,6 +1451,7 @@ export class DataSourceManager {
       this.fetchDataSource(source, routeParams, queryParams)
         .then(async (data) => {
           this.dataCache.set(source.id, { data, timestamp: Date.now() });
+          this.rememberSuccess(source, data, routeParams, queryParams);
 
           // errorCondition 체크: 200 응답이어도 조건 만족 시 에러로 처리
           const errorConditionCode = this.checkErrorCondition(source, data);
@@ -1441,13 +1540,16 @@ export class DataSourceManager {
             }
           }
 
-          // fallback이 정의된 경우 렌더링용 데이터로 사용
-          if (source.fallback !== undefined) {
-            this.dataCache.set(source.id, { data: source.fallback, timestamp: Date.now() });
-            logger.log(`Using fallback data for ${source.id}`);
+          // 마지막으로 성공한 값이 있으면 그 값을 지키고, 없으면 fallback 으로 첫 그림을 그린다.
+          const kept = this.dataAfterFailure(source, routeParams, queryParams);
+          if (kept !== null) {
+            this.dataCache.set(source.id, { data: kept.data, timestamp: Date.now() });
+            logger.log(`Keeping last data for ${source.id}`);
+
             if (onUpdate) {
-              onUpdate(source.id, source.fallback);
+              onUpdate(source.id, kept.data);
             }
+
             return;
           }
 

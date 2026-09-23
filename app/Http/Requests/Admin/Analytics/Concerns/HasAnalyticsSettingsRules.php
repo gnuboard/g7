@@ -3,7 +3,6 @@
 namespace App\Http\Requests\Admin\Analytics\Concerns;
 
 use App\Enums\Analytics\CountryFilterMode;
-use App\Enums\Analytics\DispatchMode;
 use App\Enums\Analytics\PrivacyMode;
 use App\Enums\Analytics\ReferrerAnonymization;
 use Illuminate\Validation\Rule;
@@ -17,6 +16,37 @@ use Illuminate\Validation\Rule;
  */
 trait HasAnalyticsSettingsRules
 {
+    /**
+     * 검증을 마친 설정 값을 규칙이 선언한 형으로 되돌립니다.
+     *
+     * 폼 입력은 숫자 칸이든 토글이든 문자열로 옵니다. `integer` 규칙은 "45" 를 통과시키므로
+     * 그대로 저장하면 설정 파일과 응답에 문자열이 남고, 숫자로 알고 읽던 쪽이 문자열을 받습니다.
+     * 검증이 끝난 뒤에 바꾸므로 잘못된 값이 형 변환에 묻혀 통과하는 일은 없습니다.
+     *
+     * @param  array<string, mixed>  $settings  검증을 마친 설정 값
+     * @return array<string, mixed> 선언한 형으로 바꾼 설정 값
+     */
+    protected function castAnalyticsSettings(array $settings): array
+    {
+        foreach ($this->analyticsSettingsRules() as $key => $rules) {
+            if (! array_key_exists($key, $settings) || ! is_array($rules)) {
+                continue;
+            }
+
+            if (in_array('integer', $rules, true) && is_numeric($settings[$key])) {
+                $settings[$key] = (int) $settings[$key];
+
+                continue;
+            }
+
+            if (in_array('boolean', $rules, true)) {
+                $settings[$key] = filter_var($settings[$key], FILTER_VALIDATE_BOOLEAN);
+            }
+        }
+
+        return $settings;
+    }
+
     /**
      * 방문자 통계 설정 검증 규칙을 반환합니다.
      *
@@ -32,7 +62,6 @@ trait HasAnalyticsSettingsRules
             $key('enabled') => ['sometimes', 'boolean'],
             $key('privacy_mode') => ['sometimes', Rule::in(PrivacyMode::values())],
             $key('respect_dnt') => ['sometimes', 'boolean'],
-            $key('dispatch_mode') => ['sometimes', Rule::in(DispatchMode::values())],
             $key('visit_timeout_minutes') => ['sometimes', 'integer', 'min:5', 'max:120'],
             $key('max_actions_per_visit') => ['sometimes', 'integer', 'min:50', 'max:10000'],
 

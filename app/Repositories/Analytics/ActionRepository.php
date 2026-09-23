@@ -37,6 +37,17 @@ class ActionRepository implements ActionRepositoryInterface
     }
 
     /**
+     * 액션 한 건을 지웁니다.
+     *
+     * @param  AnalyticsAction  $action  대상 액션
+     * @return bool 삭제 성공 여부
+     */
+    public function delete(AnalyticsAction $action): bool
+    {
+        return (bool) $action->delete();
+    }
+
+    /**
      * 한 방문의 모든 액션에 복제된 방문자 키를 바꿉니다.
      *
      * @param  int  $visitId  방문 ID

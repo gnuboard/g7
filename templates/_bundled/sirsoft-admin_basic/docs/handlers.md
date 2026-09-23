@@ -5,7 +5,7 @@
 ## 템플릿 전용 핸들러
 
 <!-- @generated:handlers START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-핸들러 19개 (정의: `src/handlers/index.ts`).
+핸들러 20개 (정의: `src/handlers/index.ts`).
 
 | 핸들러 | 레이아웃에서 부르는 이름 |
 |---|---|
@@ -23,6 +23,7 @@
 | `cancelMultilingualTag` | (템플릿 전용 — 네임스페이스 없음) |
 | `updateMultilingualTagValue` | (템플릿 전용 — 네임스페이스 없음) |
 | `setDateRange` | (템플릿 전용 — 네임스페이스 없음) |
+| `setAnalyticsPeriod` | (템플릿 전용 — 네임스페이스 없음) |
 | `toggleSidebar` | (템플릿 전용 — 네임스페이스 없음) |
 | `initSidebar` | (템플릿 전용 — 네임스페이스 없음) |
 | `downloadAttachment` | (템플릿 전용 — 네임스페이스 없음) |
@@ -141,6 +142,26 @@ JSON 이 `sequence` + `setState` 로 반환값(`$prev.startDate` 등)을 원하�
 ] }
 ```
 
+### setAnalyticsPeriod
+
+방문자 통계 화면의 기간 바 프리셋(`today`/`yesterday`/`7d`/`30d`/`90d`/`this_month`/`last_month`/`this_year`)을
+시작일·종료일 **날짜 문자열(`YYYY-MM-DD`)** 로 계산해 반환합니다. `setDateRange` 는 시각까지 붙인 값을 주어
+통계 API 가 422 로 거절하므로 재사용하지 않고 따로 둡니다. 계산 규칙은 서버(`PeriodRequest::resolvedRange`)와
+같아 달력에 보이는 값과 서버가 실제로 조회한 구간이 어긋나지 않습니다. 모르는 프리셋은 `7d` 로 떨어집니다.
+
+```html
+<sequence>
+  <action handler="setAnalyticsPeriod" preset="30d"/>
+  <set-state target="local" period.preset="{{$prev.preset}}" period.from="{{$prev.from}}" period.to="{{$prev.to}}"/>
+  <navigate path="/admin/analytics" :mergeQuery="true" :replace="true">
+    <query preset="30d" from="{{undefined}}" to="{{undefined}}" :page="1"/>
+  </navigate>
+</sequence>
+```
+
+`init_actions` 에서는 `resultTo` 로 결과를 담아 프리셋의 날짜 범위를 달력 두 칸에 미리 보여 줄 수 있습니다
+(`<action handler="setAnalyticsPeriod" preset="{{query.preset || '7d'}}"><field name="resultTo">…</field></action>`).
+
 ### 사이드바 접힘 핸들러 2종
 
 데스크톱 좌측 사이드바 접힘 상태를 `localStorage`(`g7_admin_sidebar_collapsed`) 와
@@ -170,6 +191,10 @@ ApiClient 경유로 토큰을 자동 첨부해야 다운로드 행위가 관리�
 ```json
 { "type": "click", "handler": "downloadAttachment", "params": { "url": "{{attachment.download_url}}", "filename": "{{attachment.original_name}}" } }
 ```
+
+`method="POST"` 와 `<field name="body">` 를 주면 POST 본문으로 요청해 응답 파일을 받습니다 — 방문자 통계의
+정보주체 내보내기(`POST /api/admin/analytics/privacy/subjects/export`)처럼 서버가 파일을 POST 응답으로
+흘려보내는 경로용입니다. `method` 를 생략하면 종전대로 GET 입니다.
 
 ### 자산 URL 방식 재감지 2종
 

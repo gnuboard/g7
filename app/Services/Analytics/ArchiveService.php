@@ -59,6 +59,19 @@ class ArchiveService
     private const PROGRESS_EVERY_CHUNKS = 1;
 
     /**
+     * 진행률을 방송하는 관리자 채널
+     *
+     * 현재 접속자 방송(`analytics.realtime.updated`)과 같은 채널을 쓴다 — 채널 인가는
+     * `core.analytics.read` 하나이고, 진단 화면이 두 방송을 한 구독으로 받는다.
+     */
+    public const PROGRESS_CHANNEL = 'core.admin.analytics';
+
+    /**
+     * 진행률 방송 이벤트 이름
+     */
+    public const PROGRESS_EVENT = 'analytics.archive.progress';
+
+    /**
      * 봇 기록을 한 번에 읽을 건수
      *
      * 봇 기록은 방문보다 훨씬 가벼워 청크를 크게 잡아도 메모리를 적게 쓴다.
@@ -136,6 +149,8 @@ class ArchiveService
             ]);
         }
 
+        $this->broadcastProgress($run);
+
         try {
             $config = AnalyticsConfig::fromSettings();
             $result = $this->collect($date, $periodStart, $periodEnd, $config, $run);
@@ -156,12 +171,18 @@ class ArchiveService
                 'progress_percent' => 100,
                 'finished_at' => AnalyticsClock::now(),
             ]);
+
+            $this->broadcastProgress($run);
         } catch (Throwable $e) {
             $this->runs->update($run, [
                 'status' => ArchiveRunStatus::Failed->value,
                 'error' => mb_substr($e->getMessage(), 0, 2000),
                 'finished_at' => AnalyticsClock::now(),
             ]);
+
+            // 실패도 방송한다 — 화면이 「끝났다」는 신호를 못 받으면 진행률 바가 멈춘 채
+            // 남고, 운영자는 워커가 죽은 것으로 오해한다.
+            $this->broadcastProgress($run);
 
             Log::error('방문자 통계 집계 실패', [
                 'date' => $date,
@@ -184,6 +205,25 @@ class ArchiveService
         }
 
         return $run->refresh();
+    }
+
+    /**
+     * 실행 이력의 지금 상태를 관리자 채널로 방송합니다.
+     *
+     * 진행 상태의 출처는 실행 이력 행 하나다 — 방송은 그 행을 그대로 싣고, 화면은
+     * 소켓이 없을 때 같은 행을 진단 API 로 물어본다. 두 길이 같은 값을 보게 하려고
+     * 단건 조회 응답과 같은 모양(`toArray()`)으로 보낸다. 방송 드라이버가 꺼져 있으면
+     * `HookManager` 가 건너뛰므로 여기서 분기하지 않는다.
+     *
+     * @param  AnalyticsArchiveRun  $run  실행 이력
+     * @return void 없음
+     */
+    private function broadcastProgress(AnalyticsArchiveRun $run): void
+    {
+        HookManager::broadcast(self::PROGRESS_CHANNEL, self::PROGRESS_EVENT, [
+            'type' => 'archive_progress',
+            'data' => $run->toArray(),
+        ]);
     }
 
     /**
@@ -218,7 +258,7 @@ class ArchiveService
     {
         [$periodStart, $periodEnd] = AnalyticsClock::dayRangeUtc($date);
 
-        return $this->runs->create([
+        $run = $this->runs->create([
             'run_type' => $runType,
             'period_start' => $periodStart,
             'period_end' => $periodEnd,
@@ -230,6 +270,13 @@ class ArchiveService
             'error' => $reason,
             'triggered_by' => $options['triggered_by'] ?? null,
         ]);
+
+        // 건너뜀도 종료 상태다 — 방송하지 않으면 소켓을 켠 사이트에서 화면의 `skipped` 분기가
+        // 도달하지 못해, 전부 건너뛴 재집계는 시작 토스트만 남기고 이력 표가 그대로 선다
+        // (#682 S3 라운드 3).
+        $this->broadcastProgress($run);
+
+        return $run;
     }
 
     /**
@@ -272,8 +319,16 @@ class ArchiveService
             }
 
             // 확정된 날은 다시 계산하지 않는다 — 집계 로직이 바뀌어 일부러 다시
-            // 돌리는 경우만 --force 로 연다.
+            // 돌리는 경우만 --force 로 연다. 건너뛴 사실은 이력에 남긴다: 아무 행도
+            // 남기지 않으면 화면이 「시작했습니다」만 띄운 채 결과가 비어, 돌다 만
+            // 것인지 안 돌아도 되는 것인지 운영자가 가릴 수 없다(보존일 밖 분기와 같은 꼴).
             if (! $force && $this->isFinalized($date)) {
+                $runs[] = $this->recordSkipped(
+                    $options['run_type'] ?? ArchiveRunType::Reaggregate->value,
+                    $date,
+                    $options,
+                    __('analytics.archive.skipped_finalized'),
+                );
                 $cursor->addDay();
 
                 continue;
@@ -377,6 +432,8 @@ class ArchiveService
                         ? (int) min(99, floor($processedVisits / $totalVisits * 100))
                         : 99,
                 ]);
+
+                $this->broadcastProgress($run);
             }
         });
 
@@ -571,6 +628,9 @@ class ArchiveService
         $visitKey = (string) $visit->id;
         $bounce = $visit->is_bounce ? 1 : 0;
         $time = (int) $visit->total_time_seconds;
+        // 방문 차원의 「조회」는 그 방문들이 본 페이지 수다. 방문마다 1 로 적으면 리포트의 「방문당 페이지」가
+        // 어느 브라우저·국가·유입이든 늘 1 이 된다.
+        $pageviews = (int) $visit->pageviews_count;
 
         $entryLabel = $this->nameLabel($nameMap, $visit->entry_action_name_id);
         $exitLabel = $this->nameLabel($nameMap, $visit->exit_action_name_id);
@@ -578,7 +638,7 @@ class ArchiveService
         if ($entryLabel !== null) {
             $daily->addDimension(StatsDimension::EntryPage->value, $entryLabel, $visitorType, [
                 'visit_key' => $visitKey,
-                'hits' => 1,
+                'hits' => $pageviews,
                 'entries' => 1,
                 'bounces' => $bounce,
                 'total_time_seconds' => $time,
@@ -589,7 +649,7 @@ class ArchiveService
         if ($exitLabel !== null) {
             $daily->addDimension(StatsDimension::ExitPage->value, $exitLabel, $visitorType, [
                 'visit_key' => $visitKey,
-                'hits' => 1,
+                'hits' => $pageviews,
                 'exits' => 1,
                 'bounces' => $bounce,
                 'total_time_seconds' => $time,
@@ -622,7 +682,7 @@ class ArchiveService
 
             $daily->addDimension($dimension, (string) $label, $visitorType, [
                 'visit_key' => $visitKey,
-                'hits' => 1,
+                'hits' => $pageviews,
                 'bounces' => $bounce,
                 'total_time_seconds' => $time,
             ]);
@@ -685,9 +745,14 @@ class ArchiveService
             return;
         }
 
+        // 페이지 차원의 이탈은 그 페이지 하나만 보고 떠난 방문이다 — 이탈 방문은 페이지뷰가 하나뿐이라 그
+        // 페이지에만 1 이 붙는다. 더하지 않으면 페이지·제목 리포트의 이탈률이 늘 0% 다.
+        $pageBounce = $isPageview && $visit->is_bounce ? 1 : 0;
+
         $metrics = [
             'visit_key' => $visitKey,
             'hits' => 1,
+            'bounces' => $pageBounce,
             'total_time_seconds' => $timeSpent,
             'action_name_id' => $action->action_name_id,
         ];
@@ -707,6 +772,7 @@ class ArchiveService
                 $daily->addDimension(StatsDimension::PageTitle->value, $titleLabel, $visitorType, [
                     'visit_key' => $visitKey,
                     'hits' => 1,
+                    'bounces' => $pageBounce,
                     'total_time_seconds' => $timeSpent,
                     'action_name_id' => $action->page_title_id,
                 ]);

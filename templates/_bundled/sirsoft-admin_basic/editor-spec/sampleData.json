@@ -14635,6 +14635,1043 @@
           "timestamp": "2026-06-21T15:55:00+09:00"
         }
       ]
+    },
+    "analytics_overview": {
+      "data": {
+        "kpi": {
+          "today": 1284,
+          "yesterday": 1146,
+          "max": {
+            "value": 3910,
+            "date": "2026-08-21"
+          },
+          "total": 214551,
+          "change_pct": 12.0
+        },
+        "series": {
+          "unit": "day",
+          "unit_downgraded": false,
+          "points": [
+            {
+              "ts": "2026-09-10",
+              "visits": 120,
+              "visitors": 100,
+              "pageviews": 300,
+              "bounces": 40,
+              "bounce_rate": 38.5,
+              "avg_time": 92,
+              "pages_per_visit": 2.7
+            },
+            {
+              "ts": "2026-09-11",
+              "visits": 127,
+              "visitors": 105,
+              "pageviews": 311,
+              "bounces": 41,
+              "bounce_rate": 38.5,
+              "avg_time": 92,
+              "pages_per_visit": 2.7
+            },
+            {
+              "ts": "2026-09-12",
+              "visits": 134,
+              "visitors": 110,
+              "pageviews": 322,
+              "bounces": 42,
+              "bounce_rate": 38.5,
+              "avg_time": 92,
+              "pages_per_visit": 2.7
+            },
+            {
+              "ts": "2026-09-13",
+              "visits": 141,
+              "visitors": 115,
+              "pageviews": 333,
+              "bounces": 43,
+              "bounce_rate": 38.5,
+              "avg_time": 92,
+              "pages_per_visit": 2.7
+            },
+            {
+              "ts": "2026-09-14",
+              "visits": 148,
+              "visitors": 120,
+              "pageviews": 344,
+              "bounces": 44,
+              "bounce_rate": 38.5,
+              "avg_time": 92,
+              "pages_per_visit": 2.7
+            },
+            {
+              "ts": "2026-09-15",
+              "visits": 155,
+              "visitors": 125,
+              "pageviews": 355,
+              "bounces": 45,
+              "bounce_rate": 38.5,
+              "avg_time": 92,
+              "pages_per_visit": 2.7
+            },
+            {
+              "ts": "2026-09-16",
+              "visits": 162,
+              "visitors": 130,
+              "pageviews": 366,
+              "bounces": 46,
+              "bounce_rate": 38.5,
+              "avg_time": 92,
+              "pages_per_visit": 2.7
+            }
+          ]
+        },
+        "top": {
+          "pages": [
+            {
+              "label": "/board/free",
+              "label_display": "/board/free",
+              "visits": 3201,
+              "hits": 5410,
+              "entries": 1600,
+              "exits": 1067,
+              "bounce_rate": 41.2,
+              "avg_time": 92,
+              "pages_per_visit": 2.7,
+              "extra": {}
+            },
+            {
+              "label": "/",
+              "label_display": "/",
+              "visits": 2988,
+              "hits": 4102,
+              "entries": 1494,
+              "exits": 996,
+              "bounce_rate": 41.2,
+              "avg_time": 92,
+              "pages_per_visit": 2.7,
+              "extra": {}
+            },
+            {
+              "label": "/shop/product/3",
+              "label_display": "/shop/product/3",
+              "visits": 812,
+              "hits": 1203,
+              "entries": 406,
+              "exits": 270,
+              "bounce_rate": 41.2,
+              "avg_time": 92,
+              "pages_per_visit": 2.7,
+              "extra": {}
+            }
+          ],
+          "referrers": [
+            {
+              "label": "(direct)",
+              "label_display": "(direct)",
+              "visits": 5102,
+              "hits": 5102,
+              "entries": 2551,
+              "exits": 1700,
+              "bounce_rate": 41.2,
+              "avg_time": 92,
+              "pages_per_visit": 2.7,
+              "extra": {}
+            },
+            {
+              "label": "google.com",
+              "label_display": "google.com",
+              "visits": 1220,
+              "hits": 1220,
+              "entries": 610,
+              "exits": 406,
+              "bounce_rate": 41.2,
+              "avg_time": 92,
+              "pages_per_visit": 2.7,
+              "extra": {}
+            }
+          ],
+          "countries": [
+            {
+              "label": "KR",
+              "label_display": "대한민국",
+              "visits": 9870,
+              "hits": 9870,
+              "entries": 0,
+              "exits": 0,
+              "bounce_rate": 0,
+              "avg_time": 0,
+              "pages_per_visit": 0,
+              "extra": {}
+            }
+          ]
+        },
+        "realtime": {
+          "count": 12,
+          "visitors": []
+        },
+        "meta": {
+          "mode": "full",
+          "consent_source": "none",
+          "collection_enabled": true,
+          "geoip_enabled": false,
+          "queue_backlogged": false,
+          "queue_pending_jobs": 0
+        }
+      }
+    },
+    "analytics_realtime": {
+      "data": {
+        "count": 12,
+        "window_minutes": 5,
+        "visitors": [
+          {
+            "visitor_key": "3f2a9c1e",
+            "page": "/board/free",
+            "last_action_at": "2026-09-18T10:32:01+09:00",
+            "visitor_type": "guest",
+            "country_code": "KR",
+            "device_type": "desktop",
+            "browser_name": "Chrome",
+            "ip": null
+          },
+          {
+            "visitor_key": "a81b77d0",
+            "page": "/",
+            "last_action_at": "2026-09-18T10:31:40+09:00",
+            "visitor_type": "member",
+            "country_code": "JP",
+            "device_type": "mobile",
+            "browser_name": "Safari",
+            "ip": null
+          }
+        ]
+      }
+    },
+    "analytics_status": {
+      "data": {
+        "collection": {
+          "enabled": true,
+          "mode": "full",
+          "effective_mode": "full",
+          "anonymous_fallback_reason": null,
+          "consent_source": "none"
+        },
+        "queue": {
+          "backlogged": false,
+          "pending_jobs": 0
+        },
+        "geoip": {
+          "enabled": false,
+          "db_present": false
+        },
+        "broadcasting": {
+          "configured": false
+        }
+      }
+    },
+    "analytics_referrer_urls": {
+      "data": {
+        "host": "google.com",
+        "from": "2026-09-01",
+        "to": "2026-09-21",
+        "data": [
+          { "url": "https://google.com/search?q=%EA%B7%B8%EB%88%84%EB%B3%B4%EB%93%9C7", "visits": 412, "hits": 901 },
+          { "url": "https://google.com/search?q=gnuboard+board", "visits": 188, "hits": 305 },
+          { "url": "https://google.com/", "visits": 74, "hits": 96 }
+        ],
+        "pagination": { "page": 1, "per_page": 25, "has_more": false }
+      }
+    },
+    "analytics_report": {
+      "data": {
+        "report": "page_url",
+        "data": [
+          {
+            "label": "/board/free",
+            "label_display": "/board/free",
+            "visits": 3201,
+            "hits": 5410,
+            "entries": 1600,
+            "exits": 1067,
+            "bounce_rate": 41.2,
+            "avg_time": 92,
+            "pages_per_visit": 2.7,
+            "extra": {}
+          },
+          {
+            "label": "/",
+            "label_display": "/",
+            "visits": 2988,
+            "hits": 4102,
+            "entries": 1494,
+            "exits": 996,
+            "bounce_rate": 41.2,
+            "avg_time": 92,
+            "pages_per_visit": 2.7,
+            "extra": {}
+          },
+          {
+            "label": "/shop/product/3",
+            "label_display": "/shop/product/3",
+            "visits": 812,
+            "hits": 1203,
+            "entries": 406,
+            "exits": 270,
+            "bounce_rate": 41.2,
+            "avg_time": 92,
+            "pages_per_visit": 2.7,
+            "extra": {}
+          }
+        ],
+        "pagination": {
+          "has_more": false
+        }
+      }
+    },
+    "analytics_patterns": {
+      "data": {
+        "weekday": [
+          {
+            "dow": 0,
+            "days": 4,
+            "visits": 100,
+            "visitors": 80,
+            "pageviews": 250
+          },
+          {
+            "dow": 1,
+            "days": 4,
+            "visits": 103,
+            "visitors": 82,
+            "pageviews": 255
+          },
+          {
+            "dow": 2,
+            "days": 4,
+            "visits": 106,
+            "visitors": 84,
+            "pageviews": 260
+          },
+          {
+            "dow": 3,
+            "days": 4,
+            "visits": 109,
+            "visitors": 86,
+            "pageviews": 265
+          },
+          {
+            "dow": 4,
+            "days": 4,
+            "visits": 112,
+            "visitors": 88,
+            "pageviews": 270
+          },
+          {
+            "dow": 5,
+            "days": 4,
+            "visits": 115,
+            "visitors": 90,
+            "pageviews": 275
+          },
+          {
+            "dow": 6,
+            "days": 4,
+            "visits": 118,
+            "visitors": 92,
+            "pageviews": 280
+          }
+        ],
+        "hour": [
+          {
+            "hour": 0,
+            "days": 7,
+            "visits": 10,
+            "visitors": 8,
+            "pageviews": 30
+          },
+          {
+            "hour": 1,
+            "days": 7,
+            "visits": 13,
+            "visitors": 10,
+            "pageviews": 35
+          },
+          {
+            "hour": 2,
+            "days": 7,
+            "visits": 16,
+            "visitors": 12,
+            "pageviews": 40
+          },
+          {
+            "hour": 3,
+            "days": 7,
+            "visits": 19,
+            "visitors": 14,
+            "pageviews": 45
+          },
+          {
+            "hour": 4,
+            "days": 7,
+            "visits": 22,
+            "visitors": 16,
+            "pageviews": 50
+          },
+          {
+            "hour": 5,
+            "days": 7,
+            "visits": 25,
+            "visitors": 18,
+            "pageviews": 55
+          },
+          {
+            "hour": 6,
+            "days": 7,
+            "visits": 28,
+            "visitors": 20,
+            "pageviews": 60
+          },
+          {
+            "hour": 7,
+            "days": 7,
+            "visits": 31,
+            "visitors": 22,
+            "pageviews": 65
+          },
+          {
+            "hour": 8,
+            "days": 7,
+            "visits": 34,
+            "visitors": 24,
+            "pageviews": 70
+          },
+          {
+            "hour": 9,
+            "days": 7,
+            "visits": 37,
+            "visitors": 26,
+            "pageviews": 75
+          },
+          {
+            "hour": 10,
+            "days": 7,
+            "visits": 40,
+            "visitors": 28,
+            "pageviews": 80
+          },
+          {
+            "hour": 11,
+            "days": 7,
+            "visits": 43,
+            "visitors": 30,
+            "pageviews": 85
+          },
+          {
+            "hour": 12,
+            "days": 7,
+            "visits": 10,
+            "visitors": 8,
+            "pageviews": 30
+          },
+          {
+            "hour": 13,
+            "days": 7,
+            "visits": 13,
+            "visitors": 10,
+            "pageviews": 35
+          },
+          {
+            "hour": 14,
+            "days": 7,
+            "visits": 16,
+            "visitors": 12,
+            "pageviews": 40
+          },
+          {
+            "hour": 15,
+            "days": 7,
+            "visits": 19,
+            "visitors": 14,
+            "pageviews": 45
+          },
+          {
+            "hour": 16,
+            "days": 7,
+            "visits": 22,
+            "visitors": 16,
+            "pageviews": 50
+          },
+          {
+            "hour": 17,
+            "days": 7,
+            "visits": 25,
+            "visitors": 18,
+            "pageviews": 55
+          },
+          {
+            "hour": 18,
+            "days": 7,
+            "visits": 28,
+            "visitors": 20,
+            "pageviews": 60
+          },
+          {
+            "hour": 19,
+            "days": 7,
+            "visits": 31,
+            "visitors": 22,
+            "pageviews": 65
+          },
+          {
+            "hour": 20,
+            "days": 7,
+            "visits": 34,
+            "visitors": 24,
+            "pageviews": 70
+          },
+          {
+            "hour": 21,
+            "days": 7,
+            "visits": 37,
+            "visitors": 26,
+            "pageviews": 75
+          },
+          {
+            "hour": 22,
+            "days": 7,
+            "visits": 40,
+            "visitors": 28,
+            "pageviews": 80
+          },
+          {
+            "hour": 23,
+            "days": 7,
+            "visits": 43,
+            "visitors": 30,
+            "pageviews": 85
+          }
+        ],
+        "hourly_available_from": "2026-06-20"
+      }
+    },
+    "analytics_visitors": {
+      "data": {
+        "data": [
+          {
+            "visitor_key": "3f2a9c1e5b7d4a20",
+            "visitor_type": "guest",
+            "visits": 3,
+            "pageviews": 11,
+            "last_action_at": "2026-09-18T10:32:01+09:00",
+            "country_code": "KR",
+            "device_type": "desktop",
+            "browser_name": "Chrome",
+            "user_id": null
+          },
+          {
+            "visitor_key": "a81b77d0c9e14f66",
+            "visitor_type": "member",
+            "visits": 9,
+            "pageviews": 40,
+            "last_action_at": "2026-09-18T09:12:44+09:00",
+            "country_code": "KR",
+            "device_type": "mobile",
+            "browser_name": "Safari",
+            "user_id": 42
+          }
+        ],
+        "pagination": {
+          "page": 1,
+          "per_page": 25,
+          "has_more": false
+        },
+        "mode": "full",
+        "mode_notice": null
+      }
+    },
+    "analytics_visitor": {
+      "data": {
+        "visitor": {
+          "visitor_key": "3f2a9c1e5b7d4a20",
+          "visitor_type": "guest",
+          "country_code": "KR",
+          "device_type": "desktop",
+          "browser_name": "Chrome",
+          "os_name": "Windows",
+          "visits": 2,
+          "first_action_at": "2026-09-17T14:02:00+09:00",
+          "last_action_at": "2026-09-18T10:36:00+09:00"
+        },
+        "visits": [
+          {
+            "visit_id": 101,
+            "visitor_key": "3f2a9c1e5b7d4a20",
+            "visitor_type": "guest",
+            "first_action_at": "2026-09-18T10:32:01+09:00",
+            "last_action_at": "2026-09-18T10:36:00+09:00",
+            "ip": "203.0.113.9",
+            "country_code": "KR",
+            "browser_name": "Chrome",
+            "os_name": "Windows",
+            "device_type": "desktop",
+            "referrer_type": "search",
+            "referrer_name": "google.com",
+            "pageviews": 3,
+            "total_time_seconds": 239,
+            "actions": [
+              {
+                "occurred_at": "2026-09-18T10:32:01+09:00",
+                "action_type": "pageview",
+                "name": "/board/free",
+                "time_spent_seconds": 62
+              },
+              {
+                "occurred_at": "2026-09-18T10:33:03+09:00",
+                "action_type": "download",
+                "name": "report.pdf",
+                "time_spent_seconds": 0
+              },
+              {
+                "occurred_at": "2026-09-18T10:35:10+09:00",
+                "action_type": "site_search",
+                "name": "그누보드",
+                "time_spent_seconds": 0
+              }
+            ],
+            "conversions": [
+              {
+                "occurred_at": "2026-09-18T10:36:00+09:00",
+                "goal_key": "sirsoft-ecommerce.order_completed",
+                "label": "주문 완료",
+                "revenue": 45000
+              }
+            ]
+          }
+        ],
+        "mode": "full",
+        "mode_notice": null
+      }
+    },
+    "analytics_bots": {
+      "data": {
+        "data": [
+          {
+            "label": "Googlebot",
+            "label_display": "Googlebot",
+            "visits": 120,
+            "hits": 340,
+            "entries": 60,
+            "exits": 40,
+            "bounce_rate": 41.2,
+            "avg_time": 92,
+            "pages_per_visit": 2.7,
+            "extra": {}
+          },
+          {
+            "label": "bingbot",
+            "label_display": "bingbot",
+            "visits": 40,
+            "hits": 90,
+            "entries": 20,
+            "exits": 13,
+            "bounce_rate": 41.2,
+            "avg_time": 92,
+            "pages_per_visit": 2.7,
+            "extra": {}
+          }
+        ],
+        "pagination": {
+          "has_more": false
+        },
+        "recent_hits": [
+          {
+            "bot_name": "Googlebot",
+            "url": "/board/free",
+            "ip": "192.0.2.66",
+            "cache_status": "hit",
+            "occurred_at": "2026-09-18T10:30:00+09:00"
+          }
+        ]
+      }
+    },
+    "analytics_diagnostics": {
+      "data": {
+        "collection": {
+          "enabled": true,
+          "mode": "full",
+          "effective_mode": "full",
+          "anonymous_fallback_reason": null,
+          "consent_source": "none",
+          "last_tracked_at": "2026-09-18T10:36:00+09:00",
+          "tracked_today": 1284,
+          "excluded_today": {
+            "bot": 52,
+            "url_pattern": 17
+          },
+          "excluded_yesterday": {}
+        },
+        "queue": {
+          "connection": "database",
+          "pending_jobs": 0,
+          "failed_jobs": 0,
+          "countable": true,
+          "backlogged": false,
+          "worker_hint": false
+        },
+        "archive": {
+          "last_hour_run": "2026-09-18T10:05:00+09:00",
+          "last_day_run": "2026-09-18T00:10:00+09:00",
+          "lag_hours": 0,
+          "running_run_id": null
+        },
+        "storage": {
+          "tables": [
+            {
+              "table": "analytics_visits",
+              "rows": 15200,
+              "data_bytes": 5242880,
+              "index_bytes": 1048576
+            },
+            {
+              "table": "analytics_actions",
+              "rows": 48200,
+              "data_bytes": 10485760,
+              "index_bytes": 2097152
+            }
+          ],
+          "exact": {
+            "analytics_visits": 15200,
+            "analytics_actions": 48200
+          },
+          "over_limit": false,
+          "driver_supported": true
+        },
+        "geoip": {
+          "enabled": false,
+          "db_present": false
+        },
+        "trusted_proxy": {
+          "configured": false
+        },
+        "broadcasting": {
+          "configured": false
+        },
+        "cloud_ranges": {
+          "enabled": false
+        },
+        "failures_24h": 2
+      }
+    },
+    "analytics_archive_runs": {
+      "data": {
+        "data": [
+          {
+            "id": 51,
+            "run_type": "hour",
+            "trigger": "scheduled",
+            "status": "success",
+            "period_start": "2026-09-18T09:00:00+09:00",
+            "period_end": "2026-09-18T10:00:00+09:00",
+            "processed_visits": 120,
+            "processed_actions": 340,
+            "chunks": 1,
+            "progress_percent": 100,
+            "started_at": "2026-09-18T10:05:00+09:00",
+            "finished_at": "2026-09-18T10:05:03+09:00"
+          },
+          {
+            "id": 50,
+            "run_type": "reaggregate",
+            "trigger": "manual",
+            "status": "running",
+            "period_start": "2026-09-10T00:00:00+09:00",
+            "period_end": "2026-09-11T00:00:00+09:00",
+            "processed_visits": 2400,
+            "processed_actions": 7100,
+            "chunks": 1,
+            "progress_percent": 48,
+            "started_at": "2026-09-18T10:04:00+09:00",
+            "finished_at": null
+          }
+        ],
+        "pagination": {
+          "current_page": 1,
+          "last_page": 1,
+          "per_page": 10,
+          "total": 2
+        }
+      }
+    },
+    "analytics_collect_failures": {
+      "data": {
+        "data": [
+          {
+            "id": 7,
+            "reason": "validation",
+            "message": "url: 올바른 URL 이 아닙니다",
+            "url": "javascript:void(0)",
+            "ip": "203.0.113.44",
+            "user_agent": "Mozilla/5.0",
+            "occurred_at": "2026-09-18T09:58:00+09:00"
+          }
+        ],
+        "pagination": {
+          "current_page": 1,
+          "last_page": 1,
+          "per_page": 10,
+          "total": 1
+        }
+      }
+    },
+    "analytics_settings": {
+      "data": {
+        "settings": {
+          "enabled": true,
+          "privacy_mode": "full",
+          "respect_dnt": true,
+          "ip_mask_octets": 0,
+          "geo_before_mask": true,
+          "anonymize_referrer": "none",
+          "pseudonymize_user_id": false,
+          "visit_timeout_minutes": 30,
+          "max_actions_per_visit": 500,
+          "excluded_url_patterns": [
+            "/admin*",
+            "/_boost*",
+            "/health*"
+          ],
+          "excluded_ips": [],
+          "excluded_user_agents": [],
+          "block_headless": true,
+          "block_cloud_ip_ranges": false,
+          "cloud_ip_ranges_updated_at": "",
+          "country_filter_mode": "none",
+          "country_filter_codes": [],
+          "ip_allowlist": [],
+          "exclude_prefetch": true,
+          "bot_detector_enabled": true,
+          "bot_tracking_enabled": true,
+          "site_search_enabled": true,
+          "track_downloads": true,
+          "track_outlinks": true,
+          "download_extensions": [
+            "pdf",
+            "zip",
+            "hwp"
+          ],
+          "retention_days": 90,
+          "hourly_retention_days": 90,
+          "bot_hits_retention_days": 30,
+          "failure_log_retention_days": 30,
+          "ledger_warning_actions": 2000000,
+          "ledger_warning_visits": 500000,
+          "archive_chunk_size": 5000,
+          "realtime_poll_seconds": 30,
+          "realtime_window_minutes": 5,
+          "top_n_overview": 5,
+          "top_n_dashboard": 5,
+          "top_n_detail": 25,
+          "report_weekly_enabled": false,
+          "report_monthly_enabled": false,
+          "public_summary_enabled": true,
+          "visitor_cookie_days": 395
+        }
+      }
+    },
+    "analytics_opt_out": {
+      "data": {
+        "opted_out": false
+      }
+    },
+    "analytics_storage": {
+      "data": {
+        "tables": [
+          {
+            "table": "analytics_visits",
+            "rows": 15200,
+            "data_bytes": 5242880,
+            "index_bytes": 1048576
+          }
+        ],
+        "exact": {
+          "analytics_visits": 15200,
+          "analytics_actions": 48200
+        },
+        "over_limit": false,
+        "driver_supported": true
+      }
+    },
+    "analytics_notification_definitions": {
+      "data": {
+        "data": [
+          {
+            "id": "analytics_weekly_report",
+            "type": "analytics_weekly_report",
+            "hook_prefix": "core.analytics",
+            "extension_type": "core",
+            "name": {
+              "ko": "방문자 통계 주간 리포트",
+              "en": "Weekly analytics report"
+            },
+            "description": {
+              "ko": "매주 월요일 지난주 방문 통계를 보냅니다.",
+              "en": "Sends last week's visitor statistics every Monday."
+            },
+            "channels": [
+              "mail"
+            ],
+            "is_active": true
+          }
+        ]
+      }
+    },
+    "analytics_subjects": {
+      "data": {
+        "visits": [
+          {
+            "visit_id": 101,
+            "visitor_key": "3f2a9c1e5b7d4a20",
+            "visitor_type": "guest",
+            "first_action_at": "2026-09-18T10:32:01+09:00",
+            "last_action_at": "2026-09-18T10:36:00+09:00",
+            "ip": "203.0.113.9",
+            "country_code": "KR",
+            "pageviews": 3,
+            "total_time_seconds": 239,
+            "actions": [
+              {
+                "occurred_at": "2026-09-18T10:32:01+09:00",
+                "action_type": "pageview",
+                "name": "/board/free",
+                "time_spent_seconds": 62
+              }
+            ],
+            "conversions": []
+          }
+        ],
+        "notice": null
+      }
+    },
+    "dashboard_analytics": {
+      "data": {
+        "kpi": {
+          "today": 1284,
+          "yesterday": 1146,
+          "max": {
+            "value": 3910,
+            "date": "2026-08-21"
+          },
+          "total": 214551,
+          "change_pct": 12.0
+        },
+        "series": {
+          "unit": "day",
+          "unit_downgraded": false,
+          "points": [
+            {
+              "ts": "2026-09-10",
+              "visits": 120,
+              "visitors": 100,
+              "pageviews": 300,
+              "bounces": 40,
+              "bounce_rate": 38.5,
+              "avg_time": 92,
+              "pages_per_visit": 2.7
+            },
+            {
+              "ts": "2026-09-11",
+              "visits": 127,
+              "visitors": 105,
+              "pageviews": 311,
+              "bounces": 41,
+              "bounce_rate": 38.5,
+              "avg_time": 92,
+              "pages_per_visit": 2.7
+            },
+            {
+              "ts": "2026-09-12",
+              "visits": 134,
+              "visitors": 110,
+              "pageviews": 322,
+              "bounces": 42,
+              "bounce_rate": 38.5,
+              "avg_time": 92,
+              "pages_per_visit": 2.7
+            },
+            {
+              "ts": "2026-09-13",
+              "visits": 141,
+              "visitors": 115,
+              "pageviews": 333,
+              "bounces": 43,
+              "bounce_rate": 38.5,
+              "avg_time": 92,
+              "pages_per_visit": 2.7
+            },
+            {
+              "ts": "2026-09-14",
+              "visits": 148,
+              "visitors": 120,
+              "pageviews": 344,
+              "bounces": 44,
+              "bounce_rate": 38.5,
+              "avg_time": 92,
+              "pages_per_visit": 2.7
+            },
+            {
+              "ts": "2026-09-15",
+              "visits": 155,
+              "visitors": 125,
+              "pageviews": 355,
+              "bounces": 45,
+              "bounce_rate": 38.5,
+              "avg_time": 92,
+              "pages_per_visit": 2.7
+            },
+            {
+              "ts": "2026-09-16",
+              "visits": 162,
+              "visitors": 130,
+              "pageviews": 366,
+              "bounces": 46,
+              "bounce_rate": 38.5,
+              "avg_time": 92,
+              "pages_per_visit": 2.7
+            }
+          ]
+        },
+        "top": {
+          "pages": [],
+          "referrers": [],
+          "countries": []
+        },
+        "realtime": {
+          "count": 12,
+          "visitors": []
+        },
+        "meta": {
+          "mode": "full",
+          "consent_source": "none",
+          "collection_enabled": true,
+          "geoip_enabled": false
+        }
+      }
+    },
+    "analytics_archive_progress_ws": {
+      "data": {
+        "run_id": 412,
+        "run_type": "reaggregate",
+        "status": "running",
+        "progress_percent": 45,
+        "processed_visits": 1820,
+        "date": "2026-09-20"
+      }
+    },
+    "analytics_realtime_ws": {
+      "data": {
+        "active_visitors": 7,
+        "window_minutes": 5,
+        "updated_at": "2026-09-21T09:20:00+09:00"
+      }
     }
   }
 }

@@ -53,6 +53,8 @@ effects:
   - anonymous_server_fallback_and_beacon_share_a_visit
   - consent_mode_with_granted_consent_behaves_like_full
   - consent_mode_with_declined_consent_records_nothing
+  - consent_lookup_uses_the_consent_providers_guest_session_id
+  - guest_consent_cookie_survives_web_cookie_encryption
   - consent_mode_without_consent_source_falls_back_to_anonymous
   - ip_masking_clears_requested_octets_for_ipv4
   - ip_masking_clears_requested_blocks_for_ipv6
@@ -70,6 +72,7 @@ effects:
   - each_exclusion_reason_is_counted_separately
 
 test_files:
+  - plugins/_bundled/sirsoft-gdpr/tests/Unit/Listeners/GdprAnalyticsConsentListenerTest.php
   - tests/Feature/Analytics/PrivacyModeTest.php
   - tests/Feature/Analytics/VisitServiceTest.php
   - tests/Feature/Analytics/CollectControllerTest.php

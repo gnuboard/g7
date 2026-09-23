@@ -5,12 +5,12 @@
 ## 제공 컴포넌트
 
 <!-- @generated:components START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-컴포넌트 79개 (루트: `src/components`).
+컴포넌트 80개 (루트: `src/components`).
 
 | 분류 | 개수 |
 |---|---|
 | `basic` | 38개 |
-| `composite` | 36개 |
+| `composite` | 37개 |
 | `layout` | 5개 |
 <!-- @generated:components END -->
 
@@ -191,6 +191,7 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다.
 | 컴포넌트 | 설명 | 주요 Props |
 |----------|------|-----------|
 | `Avatar` | 사용자 아바타 (이미지 또는 이름 첫 글자) | name, avatar, size, text |
+| `VisitorCounter` | 방문자 카운터 (오늘·어제·최대·전체, 순수 표시) | today, yesterday, max, total, layout, labels |
 | `AvatarUploader` | 아바타 이미지 업로드 (원형 UI, 즉시 업로드) | src, fallbackText, size, uploadEndpoint, deleteEndpoint, showDeleteButton, ... |
 | `UserInfo` | 사용자 정보 표시 및 드롭다운 | name, userId, subText, subTextTitle, isGuest, isWithdrawn, showDropdown, clickable, profilePath, text, author, layout, stopPropagation, menuItems, hideMenuItems, appendMenuItems, className |
 
@@ -281,6 +282,7 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다.
 | Composite | `PostReactions` | 게시글 리액션 |
 | Composite | `SocialLoginButtons` | 소셜 로그인 |
 | Composite | `Avatar`, `AvatarUploader` | 아바타 관련 |
+| Composite | `VisitorCounter` | 방문자 카운터(홈 하단) |
 | Composite | `UserInfo` | 사용자 정보 드롭다운 |
 | Composite | `RichTextEditor` | 리치 텍스트 에디터 |
 | Composite | `ExpandableContent` | 콘텐츠 접기/펼치기 |

@@ -14,6 +14,7 @@ use App\Enums\Analytics\ArchiveRunType;
 use App\Extension\HookManager;
 use App\Models\Analytics\AnalyticsArchiveRun;
 use App\Models\Analytics\AnalyticsVisit;
+use App\Services\Analytics\Concerns\BroadcastsRunProgress;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
@@ -31,6 +32,8 @@ use Throwable;
  */
 class AnonymizeService
 {
+    use BroadcastsRunProgress;
+
     /**
      * 한 번에 처리할 방문 수
      */
@@ -77,6 +80,10 @@ class AnonymizeService
             'triggered_by' => $options['triggered_by'] ?? null,
         ]);
 
+        // 진단 화면은 이 표의 행 하나를 진행률의 출처로 삼는다 — 집계가 아닌 실행도 같은 자리에
+        // 뜨므로 같은 채널로 알린다(#682 S3 라운드 2).
+        $this->broadcastRunProgress($run);
+
         try {
             $total = $this->visits->countInDateRange($from, $to);
             $processed = 0;
@@ -97,6 +104,8 @@ class AnonymizeService
                     'processed_visits' => $processed,
                     'progress_percent' => $total > 0 ? (int) min(99, floor($processed / $total * 100)) : 99,
                 ]);
+
+                $this->broadcastRunProgress($run->refresh());
             });
 
             // 봇 기록·실패 로그에는 해시를 담을 칸이 없다. 해시 모드에서는 주소를 지우고,
@@ -109,6 +118,8 @@ class AnonymizeService
                 'progress_percent' => 100,
                 'finished_at' => AnalyticsClock::now(),
             ]);
+
+            $this->broadcastRunProgress($run->refresh());
 
             HookManager::doAction('core.analytics.anonymized', [
                 'mask_octets' => $maskOctets,
@@ -123,6 +134,8 @@ class AnonymizeService
                 'error' => mb_substr($e->getMessage(), 0, 2000),
                 'finished_at' => AnalyticsClock::now(),
             ]);
+
+            $this->broadcastRunProgress($run->refresh());
 
             Log::error('방문자 통계 소급 익명화 실패', ['error' => $e->getMessage()]);
         }

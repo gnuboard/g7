@@ -203,15 +203,25 @@ class VisitService
         // 서버 폴백이 먼저 연 방문에 첫 비콘이 합류할 때는 회원 여부를 비콘 쪽이 정한다
         // (아래 보강). 그 밖에 방문 도중 로그인·로그아웃이 일어났다면 그때부터는 다른
         // 사람의 방문이므로 이어 붙이지 않고 새 방문을 연다(§8 M1-T5).
+        $otherIdentityVisit = null;
         if ($visit !== null
             && ! $this->isFirstBeaconJoiningServerVisit($request, $visit)
             && ! $this->enricher->identityMatches($request, $config, $visit)
         ) {
+            $otherIdentityVisit = $visit;
             $visit = null;
         }
 
         if ($visit === null) {
             $visit = $this->visits->create($this->enricher->build($request, $config, $identity, $anonymous));
+        }
+
+        // 페이지 요청과 첫 비콘의 신원이 어긋난 전체 로드(웹 세션과 토큰의 수명이 달라 한쪽만
+        // 로그인 상태인 구간)에서는 서버가 같은 페이지를 다른 신원의 방문에 이미 적어 두었다.
+        // 그 자리표시를 거두지 않으면 한 번 연 페이지가 두 방문에 한 번씩 세어진다 — 화면에
+        // 보이는 신원은 비콘 쪽이므로 비콘 쪽 방문에만 남긴다.
+        if ($otherIdentityVisit !== null) {
+            $this->releaseServerPlaceholder($request, $otherIdentityVisit);
         }
 
         // 서버 폴백이 먼저 연 방문에 첫 비콘이 합류하면, 서버가 알 수 없던 값(해상도·보던
@@ -257,6 +267,75 @@ class VisitService
         $this->recordConversion($request, $visit);
 
         return ['visit_id' => $visit->id, 'action_id' => $recorded['action']?->id];
+    }
+
+    /**
+     * 다른 신원의 방문에 서버가 남긴 자리표시 페이지뷰를 거둡니다.
+     *
+     * 첫 비콘(`init`)이 신원이 달라 열린 방문을 이어받지 못했을 때만 부릅니다. 그 방문의 가장
+     * 최근 액션이 이 비콘과 같은 URL 의 페이지뷰이고, 제목이 없으며(서버는 화면 제목을 모른다 —
+     * 비콘 기록은 늘 제목을 싣는다), 병합 창(60초) 안에 적혔다면 이 로드의 서버 폴백이 남긴
+     * 자리표시다. 지우고 그 방문의 카운터·이탈 페이지를 남은 기록 기준으로 되돌린다.
+     * 조건이 하나라도 어긋나면 그 신원이 실제로 본 기록이므로 건드리지 않는다.
+     *
+     * @param  TrackingRequest  $request  첫 비콘 요청
+     * @param  AnalyticsVisit  $otherVisit  신원이 달라 이어받지 않은 열린 방문
+     * @return void 없음
+     */
+    private function releaseServerPlaceholder(TrackingRequest $request, AnalyticsVisit $otherVisit): void
+    {
+        if ($request->type !== ActionType::Pageview->value
+            || ! $request->init
+            || $request->source !== VisitSource::Beacon->value
+        ) {
+            return;
+        }
+
+        $latest = $this->actions->findLatestForVisit($otherVisit->id);
+        if ($latest === null) {
+            return;
+        }
+
+        $normalized = UrlNormalizer::normalize($request->url);
+        $nameId = $this->names->firstOrCreateByHash(
+            $this->nameTypeFor($request),
+            $this->nameValueFor($request, $normalized['name']),
+            $normalized['url_prefix'],
+        )->id;
+
+        $latestType = $latest->action_type instanceof ActionType ? $latest->action_type->value : (string) $latest->action_type;
+        $isPlaceholder = $latestType === ActionType::Pageview->value
+            && (int) $latest->action_name_id === (int) $nameId
+            && $latest->page_title_id === null
+            && $latest->occurred_at !== null
+            && $latest->occurred_at->greaterThanOrEqualTo(AnalyticsClock::now()->subSeconds(self::MERGE_WINDOW_SECONDS));
+
+        if (! $isPlaceholder) {
+            return;
+        }
+
+        $this->actions->delete($latest);
+
+        $actions = max(0, (int) $otherVisit->actions_count - 1);
+        if ($actions === 0) {
+            // 자리표시만 담긴 방문 — 남길 기록이 없다.
+            $this->visits->deleteByIds([$otherVisit->id]);
+
+            return;
+        }
+
+        $pageviews = max(0, (int) $otherVisit->pageviews_count - 1);
+        $remaining = $this->actions->findLatestForVisit($otherVisit->id);
+        // 이탈 페이지는 남은 페이지뷰 중 마지막이다 — 마지막 액션이 내려받기면 그 파일 이름이 된다.
+        $remainingPage = $this->actions->findLatestForVisit($otherVisit->id, ActionType::Pageview->value);
+
+        $this->visits->update($otherVisit, [
+            'actions_count' => $actions,
+            'pageviews_count' => $pageviews,
+            'is_bounce' => $pageviews <= 1,
+            'exit_action_name_id' => $remainingPage?->action_name_id,
+            'last_action_at' => $remaining?->occurred_at ?? $otherVisit->first_action_at,
+        ]);
     }
 
     /**
@@ -527,13 +606,19 @@ class VisitService
             'actions_count' => $visit->actions_count + ($merged ? 0 : 1),
             'pageviews_count' => $pageviews,
             'last_action_at' => AnalyticsClock::now(),
-            'exit_action_name_id' => $action->action_name_id,
             // 페이지를 하나만 보고 떠나면 이탈이다. 두 번째 페이지가 오는 순간 풀린다.
             'is_bounce' => $pageviews <= 1,
         ];
 
-        if ($visit->entry_action_name_id === null) {
-            $attributes['entry_action_name_id'] = $action->action_name_id;
+        // 진입·이탈은 페이지다. 내려받기·검색·외부 링크·이벤트는 방문 안의 행동일 뿐이라, 그 이름(파일명·
+        // 검색어)을 실으면 이탈 페이지 리포트와 실시간 「보고 있는 페이지」에 파일 이름이 뜬다. 페이지뷰 없이
+        // 시작한 방문은 첫 페이지뷰가 올 때 진입 페이지를 얻는다.
+        if ($isPageview) {
+            $attributes['exit_action_name_id'] = $action->action_name_id;
+
+            if ($visit->entry_action_name_id === null) {
+                $attributes['entry_action_name_id'] = $action->action_name_id;
+            }
         }
 
         // 브라우저가 알려 준 직전 페이지 체류 시간으로 그 액션을 확정한다.

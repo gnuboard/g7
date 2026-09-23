@@ -32,6 +32,8 @@ export { default as ThemeToggle } from './ThemeToggle';
 export { Pagination } from './Pagination';
 export { SearchBar } from './SearchBar';
 export { Avatar } from './Avatar';
+export { VisitorCounter } from './VisitorCounter';
+export type { VisitorCounterProps, VisitorCounterLabels } from './VisitorCounter';
 export { AvatarUploader } from './AvatarUploader';
 export { UserInfo } from './UserInfo';
 export { Modal } from './Modal';
@@ -79,6 +81,7 @@ export declare const compositeComponents: {
     Pagination: () => Promise<typeof import("./Pagination")>;
     SearchBar: () => Promise<typeof import("./SearchBar")>;
     Avatar: () => Promise<typeof import("./Avatar")>;
+    VisitorCounter: () => Promise<typeof import("./VisitorCounter")>;
     AvatarUploader: () => Promise<typeof import("./AvatarUploader")>;
     UserInfo: () => Promise<typeof import("./UserInfo")>;
     Modal: () => Promise<typeof import("./Modal")>;

@@ -45,6 +45,8 @@ effects:
   - daily_metrics_match_hand_checked_ledger
   - unique_visitors_are_counted_by_key_not_summed
   - bounce_counts_only_single_pageview_visits
+  - visit_dimension_hits_are_the_visits_pageviews
+  - page_dimensions_count_single_page_visits_as_bounces
   - new_and_returning_are_null_without_cookie_mode
   - server_only_visits_are_counted_separately
   - reaggregation_never_erases_days_past_ledger_retention
@@ -74,10 +76,13 @@ effects:
   - progress_percent_advances_and_ends_at_full
   - concurrent_run_on_the_same_period_is_skipped
   - failure_records_the_run_and_fires_the_alert_hook
+  # 진행률 방송 — 소켓이 있는 사이트의 진단 화면이 이 방송으로 진행률 바를 움직인다
+  - archive_progress_is_broadcast_to_the_admin_channel
   - the_archive_failure_alert_is_sent_once_a_day
   - dry_run_touches_no_table
   - command_reports_failure_by_exit_code_not_exception
   - command_rejects_invalid_period_and_inverted_range
+  - range_job_reports_failed_days
   # 봇·확장
   - bot_hits_become_bot_typed_rows
   - bot_visits_are_counted_by_name_and_address_pair
@@ -91,6 +96,7 @@ effects:
 
 test_files:
   - tests/Feature/Analytics/ArchiveServiceTest.php
+  - tests/Feature/Analytics/ArchiveRangeJobTest.php
   - tests/Feature/Analytics/ArchiveTimezoneTest.php
   - tests/Feature/Console/Analytics/ArchiveCommandTest.php
 

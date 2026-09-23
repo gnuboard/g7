@@ -27,21 +27,9 @@ class CollectControllerTest extends TestCase
     use RefreshDatabase;
 
     /**
-     * 테스트 준비 — 즉시 적재로 두어 응답 안에서 원장을 확인할 수 있게 한다.
-     *
-     * @return void 없음
-     */
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        config(['g7_settings.core.analytics.dispatch_mode' => 'sync']);
-    }
-
-    /**
      * 유효한 비콘이 204 와 함께 방문을 남긴다.
      *
-     * @scenario source=beacon, dispatch=sync, visit_state=new
+     * @scenario source=beacon, visit_state=new
      *
      * @effects first_request_creates_visit_and_action
      *
@@ -150,22 +138,20 @@ class CollectControllerTest extends TestCase
     }
 
     /**
-     * 큐 방식에서는 적재를 훅으로 넘긴다.
+     * 적재는 언제나 훅을 거친다.
      *
-     * 테스트 환경의 큐 드라이버는 sync 라(phpunit.xml) 리스너가 즉시 실행된다.
-     * 그래서 「원장이 비어 있다」로는 큐 경로를 확인할 수 없고, **훅이 발화했는지**를
-     * 본다 — 운영 환경에서 그 훅을 받는 것이 워커다.
+     * 훅은 확장이 같은 자리에 끼어드는 이음매다. 구독 리스너는 `sync => true` 라 큐를
+     * 타지 않고 발화 자리에서 도는데(#682 S3 라운드 6), 그 사실은
+     * `CollectionDispatchTest` 가 잡 수로 따로 잠근다 — 여기서는 **훅이 발화했는지**만 본다.
      *
-     * @scenario dispatch=queue, source=beacon
+     * @scenario dispatch=sync, source=beacon
      *
      * @effects first_request_creates_visit_and_action
      *
      * @return void 없음
      */
-    public function test_queue_dispatch_hands_off_through_hook(): void
+    public function test_collect_hands_off_through_hook(): void
     {
-        config(['g7_settings.core.analytics.dispatch_mode' => 'queue']);
-
         $received = [];
         HookManager::addAction(
             'core.analytics.tracking_request_received',
@@ -179,30 +165,26 @@ class CollectControllerTest extends TestCase
             'url' => 'https://example.test/',
         ])->assertNoContent();
 
-        $this->assertCount(1, $received, '큐 방식은 적재를 훅으로 넘겨야 한다');
+        $this->assertCount(1, $received, '적재는 훅을 거쳐야 한다 — 확장이 끼어드는 자리다');
         $this->assertSame('https://example.test/', $received[0]['url']);
     }
 
     /**
-     * 큐 방식에서도 첫 방문에 방문자 쿠키를 심는다.
+     * 첫 방문에 방문자 쿠키를 심는다.
      *
-     * 쿠키는 적재 결과물이 아니라 **방문자 식별의 전제**다. 적재를 워커에게 넘긴다고
-     * 쿠키까지 미루면 워커는 응답 헤더를 쓸 수 없어 쿠키가 영영 나가지 않는다. 그러면
-     * 매 비콘이 새 방문으로 잡히고 재방문은 항상 0 이 된다 — 화면에는 숫자가 보이므로
-     * 아무 증상이 없고, 응답도 정상 204 다.
+     * 쿠키는 적재 결과물이 아니라 **방문자 식별의 전제**다. 식별을 훅 뒤로 미루면
+     * 구독자가 방문자 키를 새로 만들어 응답에 심은 쿠키와 어긋나고, 그러면 매 비콘이
+     * 새 방문으로 잡혀 재방문이 항상 0 이 된다 — 화면에는 숫자가 보이므로 아무 증상이
+     * 없고, 응답도 정상 204 다.
      *
-     * `dispatch_mode` 기본값이 `queue` 라서 이 경로가 설치 직후의 기본 동작이다.
-     *
-     * @scenario dispatch=queue, source=beacon, visit_state=new
+     * @scenario source=beacon, visit_state=new
      *
      * @effects full_mode_stores_masked_ip_and_issues_cookie
      *
      * @return void 없음
      */
-    public function test_queue_dispatch_still_issues_visitor_cookie(): void
+    public function test_collect_still_issues_visitor_cookie(): void
     {
-        config(['g7_settings.core.analytics.dispatch_mode' => 'queue']);
-
         $response = $this->postJson('/api/analytics/collect', [
             't' => 'pageview',
             'url' => 'https://example.test/',
@@ -282,7 +264,7 @@ class CollectControllerTest extends TestCase
      *
      * 수집을 끈 상태로 두드려 원장 없이 스로틀만 본다.
      *
-     * @scenario source=beacon, dispatch=sync
+     * @scenario source=beacon
      *
      * @effects tracking_never_throws_to_the_caller
      *

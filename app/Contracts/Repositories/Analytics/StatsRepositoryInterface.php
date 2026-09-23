@@ -79,6 +79,17 @@ interface StatsRepositoryInterface
     public function dimension(string $dimension, string $from, string $to, array $options = []): Collection;
 
     /**
+     * 차원 집계의 기간 합계(요청 수·라벨 수)를 조회합니다.
+     *
+     * @param  string  $dimension  차원 이름
+     * @param  string  $from  시작일 (Y-m-d)
+     * @param  string  $to  종료일 (Y-m-d)
+     * @param  array<int, string>  $visitorTypes  포함할 방문자 유형
+     * @return array{hits: int, labels: int} 기간 합계
+     */
+    public function dimensionTotals(string $dimension, string $from, string $to, array $visitorTypes = []): array;
+
+    /**
      * 라벨별 부가 값(`extra`)을 기간 내내 합산해 조회합니다.
      *
      * @param  string  $dimension  차원 이름

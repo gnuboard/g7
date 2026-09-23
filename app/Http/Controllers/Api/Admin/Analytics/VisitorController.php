@@ -4,14 +4,19 @@ namespace App\Http\Controllers\Api\Admin\Analytics;
 
 use App\Analytics\AnalyticsClock;
 use App\Analytics\AnalyticsConfig;
+use App\Analytics\UrlNormalizer;
 use App\Contracts\Repositories\Analytics\VisitRepositoryInterface;
+use App\Contracts\Repositories\UserRepositoryInterface;
 use App\Enums\Analytics\PrivacyMode;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use App\Http\Requests\Admin\Analytics\VisitorIndexRequest;
 use App\Http\Requests\Admin\Analytics\VisitorShowRequest;
+use App\Http\Resources\Traits\ExposesMemberContact;
+use App\Models\User;
 use App\Services\Analytics\CsvExporter;
 use App\Services\Analytics\DataSubjectService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Carbon;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
@@ -25,16 +30,20 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  */
 class VisitorController extends AdminBaseController
 {
+    use ExposesMemberContact;
+
     /**
      * 방문자 컨트롤러를 생성합니다.
      *
      * @param  DataSubjectService  $subjects  정보주체 처리기
      * @param  VisitRepositoryInterface  $visits  방문 원장 저장소
+     * @param  UserRepositoryInterface  $users  회원 저장소 — 원장에 번호만 남은 회원을 이름으로 푼다
      * @param  CsvExporter  $csv  CSV 내보내기
      */
     public function __construct(
         private readonly DataSubjectService $subjects,
         private readonly VisitRepositoryInterface $visits,
+        private readonly UserRepositoryInterface $users,
         private readonly CsvExporter $csv,
     ) {
         parent::__construct();
@@ -61,6 +70,7 @@ class VisitorController extends AdminBaseController
         ]);
 
         $config = AnalyticsConfig::fromSettings();
+        $members = $this->membersFor($result['rows']);
 
         return $this->success('analytics.visitors.index_success', [
             'from' => $from,
@@ -73,11 +83,14 @@ class VisitorController extends AdminBaseController
                     : (string) $row->visitor_type,
                 'visits' => (int) $row->visits,
                 'pageviews' => (int) $row->pageviews,
-                'last_action_at' => $row->last_action_at,
+                'last_action_at' => AnalyticsClock::toSiteDateTimeString($row->last_action_at),
                 'country_code' => $row->country_code,
                 'device_type' => $row->device_type,
                 'browser_name' => $row->browser_name,
                 'user_id' => $row->user_id !== null ? (int) $row->user_id : null,
+                // 회원 방문자는 번호만 보여서는 누군지 알 수 없다 — 화면이 이름을 쓰고
+                // 「회원 정보 보기」로 건너뛸 수 있게 uuid 까지 함께 싣는다. 비회원은 null 이다.
+                'user' => $this->memberSummary($members[(int) ($row->user_id ?? 0)] ?? null),
             ], $result['rows']),
             'pagination' => [
                 'page' => (int) $request->input('page', 1),
@@ -89,6 +102,50 @@ class VisitorController extends AdminBaseController
                 ? __('analytics.visitors.anonymous_mode_notice')
                 : null,
         ]);
+    }
+
+    /**
+     * 목록 한 쪽에 실린 회원들을 한 번에 읽습니다.
+     *
+     * 행마다 읽으면 한 쪽에 25 질의가 난다 — 쪽 안의 회원 번호를 모아 한 번만 읽는다.
+     *
+     * @param  array<int, object>  $rows  방문자 합산 행
+     * @return array<int, User> 회원 번호로 찾는 회원
+     */
+    private function membersFor(array $rows): array
+    {
+        $ids = array_values(array_unique(array_filter(array_map(
+            static fn (object $row): int => (int) ($row->user_id ?? 0),
+            $rows,
+        ))));
+
+        if ($ids === []) {
+            return [];
+        }
+
+        return $this->users->findManyByIdsKeyed($ids)->all();
+    }
+
+    /**
+     * 회원 한 사람을 화면이 읽을 모양으로 바꿉니다.
+     *
+     * 이메일은 공통 판정(`ExposesMemberContact`)을 따른다 — 활동 로그·알림 이력과 같은
+     * 규칙을 써야 한 화면만 주소록 수집 경로가 되는 일이 없다.
+     *
+     * @param  User|null  $user  회원 (비회원 방문이면 null)
+     * @return array{uuid: string, name: string, email: string|null}|null 화면용 회원 또는 null
+     */
+    private function memberSummary(?User $user): ?array
+    {
+        if ($user === null) {
+            return null;
+        }
+
+        return [
+            'uuid' => (string) $user->uuid,
+            'name' => (string) $user->name,
+            'email' => $this->canExposeMemberEmail(null, (int) $user->id) ? $user->email : null,
+        ];
     }
 
     /**
@@ -113,14 +170,25 @@ class VisitorController extends AdminBaseController
         $profile = $this->subjects->export(['visitor_key' => $visitorKey], $config, $from, $to);
 
         if ($request->wantsCsv()) {
-            return $this->exportProfileCsv($profile, $visitorKey);
+            return $this->exportProfileCsv($profile, $visitorKey, (string) $from, (string) $to);
         }
 
+        // 화면용 가공을 한 번만 하고 카드도 같은 값을 쓴다 — 카드에 원본을 넘기면 목록의 시각은
+        // 사이트 표준시인데 카드만 UTC 로 남아, 같은 화면 안에서 두 기준이 공존한다.
+        $screenVisits = $this->visitsForScreen($profile['visits'] ?? []);
+
         return $this->success('analytics.visitors.fetch_success', array_merge($profile, [
+            // 타임라인이 읽힐 이름을 덧붙인다. 저장 이름(`name`)은 정보주체 내보내기 파일이 그대로 싣는
+            // 값이라 손대지 않는다 — 화면만 사이트 호스트를 떼고 퍼센트 인코딩을 푼 이름을 쓴다.
+            'visits' => $screenVisits,
             // 화면의 「방문자 카드」가 읽을 한 덩어리. 방문이 0건이어도 카드가 비지 않도록
             // 키·유형만이라도 채워 둔다 — 목록에서 고른 값이 곧 그 사람의 신원이다.
-            'visitor' => $this->visitorCard($visitorKey, $profile['visits']),
+            'visitor' => $this->visitorCard($visitorKey, $screenVisits),
             'mode' => $config->privacyMode->value,
+            // 화면이 찍는 주소는 설정대로 뒤 옥텟을 지운 값이다(`DataSubjectService::export`).
+            // 그 사실을 함께 싣지 않으면 운영자가 마스킹된 값을 원래 주소로 읽고, 정보주체가
+            // 「내 접속 기록이 맞느냐」 물었을 때 그 주소로 답하게 된다(§4.10 「IP(마스킹 표시)」).
+            'ip_mask_octets' => $config->ipMaskOctets,
             'mode_notice' => $anonymous
                 ? __('analytics.visitors.anonymous_mode_notice')
                 : null,
@@ -136,9 +204,11 @@ class VisitorController extends AdminBaseController
      *
      * @param  array<string, mixed>  $profile  내보낸 프로필
      * @param  string  $visitorKey  방문자 키
+     * @param  string  $from  조회 시작일 (Y-m-d, 파일명에 싣는다 — 부록 D)
+     * @param  string  $to  조회 종료일 (Y-m-d, 파일명에 싣는다 — 부록 D)
      * @return StreamedResponse 내려받기 응답
      */
-    private function exportProfileCsv(array $profile, string $visitorKey): StreamedResponse
+    private function exportProfileCsv(array $profile, string $visitorKey, string $from = '', string $to = ''): StreamedResponse
     {
         $rows = function () use ($profile): iterable {
             foreach ($profile['visits'] as $visit) {
@@ -153,6 +223,8 @@ class VisitorController extends AdminBaseController
                     $visit['os_name'],
                     $visit['referrer_type'],
                     $visit['referrer_name'],
+                    // 전체 유입 URL — 집계표에는 호스트까지만 쌓여 어느 글에서 왔는지 알 수 없다.
+                    $visit['referrer_url'],
                     $visit['pageviews'],
                     $visit['total_time_seconds'],
                 ];
@@ -174,16 +246,71 @@ class VisitorController extends AdminBaseController
             }
         };
 
+        // 파일명에 기간을 넣는다(부록 D `analytics-{report}-{from}_{to}.csv`). 같은 사람을 두
+        // 기간으로 내려받으면 이름이 같아 앞 파일을 덮었다 — 내용이 다른 파일이 같은 이름을 쓰면
+        // 정보주체에게 건넬 때 어느 구간인지 알 수 없다.
+        $suffix = $from !== '' && $to !== '' ? sprintf('-%s_%s', $from, $to) : '';
+
         return $this->csv->stream(
-            sprintf('analytics-visitor-%s.csv', $visitorKey),
+            sprintf('analytics-visitor-%s%s.csv', $visitorKey, $suffix),
             [
                 'visit_id', 'first_action_at', 'last_action_at', 'visitor_type',
                 'country_code', 'device_type', 'browser', 'os',
-                'referrer_type', 'referrer_name', 'pageviews', 'total_time_seconds',
+                'referrer_type', 'referrer_name', 'referrer_url', 'pageviews', 'total_time_seconds',
                 'action_occurred_at', 'action_type', 'action_name', 'time_spent_seconds',
             ],
             $rows(),
         );
+    }
+
+    /**
+     * 타임라인 액션에 화면용 이름을 덧붙입니다.
+     *
+     * @param  array<int, array<string, mixed>>  $visits  내보내기 모양의 방문 목록
+     * @return array<int, array<string, mixed>> 화면용 이름이 붙은 방문 목록
+     */
+    private function visitsForScreen(array $visits): array
+    {
+        return array_map(function (array $visit): array {
+            $visit['actions'] = array_map(static function (array $action): array {
+                $name = $action['name'] ?? null;
+                $action['name_display'] = is_string($name) ? UrlNormalizer::forDisplay($name) : $name;
+                $action['occurred_at'] = self::siteTime($action['occurred_at'] ?? null);
+
+                return $action;
+            }, $visit['actions'] ?? []);
+
+            $visit['conversions'] = array_map(static function (array $conversion): array {
+                $conversion['occurred_at'] = self::siteTime($conversion['occurred_at'] ?? null);
+
+                return $conversion;
+            }, $visit['conversions'] ?? []);
+
+            $visit['first_action_at'] = self::siteTime($visit['first_action_at'] ?? null);
+            $visit['last_action_at'] = self::siteTime($visit['last_action_at'] ?? null);
+
+            return $visit;
+        }, $visits);
+    }
+
+    /**
+     * 내보낸 ISO8601 시각을 화면이 쓸 사이트 표준시 문자열로 바꿉니다.
+     *
+     * 방문자 통계의 집계 경계는 사이트 자정에 잠겨 있으므로 화면의 시각도 사이트 기준이어야
+     * 합니다 — 보는 사람 기준으로 보이면 「오늘 KPI」와 목록의 날짜가 서로 다른 하루를
+     * 가리킵니다(#682 S3 라운드 6, 설계 결정). 내보내기 파일·CSV 는 오프셋이 붙은 ISO8601 이
+     * 정본이라 `DataSubjectService` 쪽은 그대로 두고 **화면 경로에서만** 바꿉니다.
+     *
+     * @param  mixed  $value  ISO8601 문자열 또는 null
+     * @return string|null Y-m-d H:i:s 형식 (값이 없으면 null)
+     */
+    private static function siteTime(mixed $value): ?string
+    {
+        if (! is_string($value) || $value === '') {
+            return null;
+        }
+
+        return AnalyticsClock::toSiteDateTimeString(Carbon::parse($value));
     }
 
     /**
@@ -199,6 +326,19 @@ class VisitorController extends AdminBaseController
         // 화면은 마지막으로 본 값을 보여 준다. export() 는 최신순으로 내려준다.
         $latest = $visits[0] ?? null;
 
+        // 회원 신원. 목록 화면과 같은 값을 같은 모양으로 싣는다 — 상세에만 없으면 목록에서
+        // 이름을 보고 들어온 운영자가 카드에서 그 사람을 다시 잃는다(#682 S3 라운드 5, §4.11).
+        // 가명화 구간은 `user_id` 가 지워지고 해시만 남으므로 해시도 함께 내려보낸다.
+        $userId = 0;
+        $userHash = null;
+
+        foreach ($visits as $visit) {
+            $userId = (int) ($visit['user_id'] ?? 0) ?: $userId;
+            $userHash ??= $visit['user_hash'] ?? null;
+        }
+
+        $members = $userId > 0 ? $this->users->findManyByIdsKeyed([$userId])->all() : [];
+
         return [
             'visitor_key' => $visitorKey,
             'visitor_type' => $latest['visitor_type'] ?? null,
@@ -207,8 +347,14 @@ class VisitorController extends AdminBaseController
             'browser_name' => $latest['browser_name'] ?? null,
             'os_name' => $latest['os_name'] ?? null,
             'visits' => count($visits),
-            'first_action_at' => $visits !== [] ? end($visits)['first_action_at'] ?? null : null,
+            'first_action_at' => $visits !== [] ? end($visits)['first_action_at'] ?? null : null, // visitsForScreen 이 이미 사이트 표준시로 바꾼 값
             'last_action_at' => $latest['last_action_at'] ?? null,
+            'user_id' => $userId > 0 ? $userId : null,
+            'user_hash' => $userHash,
+            'user' => $this->memberSummary($members[$userId] ?? null),
+            // 재방문 여부. 방문이 두 번 이상이면 다시 온 사람이다. 익명 모드에서는 키가 날마다
+            // 바뀌어 「하루 안에서만」 묶이므로 화면이 `mode_notice` 로 그 한계를 함께 알린다.
+            'is_returning' => count($visits) > 1,
         ];
     }
 }

@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\Base\AdminBaseController;
 use App\Http\Requests\Admin\Analytics\ArchiveRunIndexRequest;
 use App\Http\Requests\Admin\Analytics\ArchiveRunStoreRequest;
 use App\Jobs\Analytics\ArchiveRangeJob;
+use App\Models\Analytics\AnalyticsArchiveRun;
 use App\Services\Analytics\ArchiveService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Carbon;
@@ -54,7 +55,7 @@ class ArchiveRunController extends AdminBaseController
         );
 
         return $this->success('analytics.archive_runs.fetch_success', [
-            'data' => $paginator->items(),
+            'data' => array_map([$this, 'runForScreen'], $paginator->items()),
             'pagination' => [
                 'current_page' => $paginator->currentPage(),
                 'last_page' => $paginator->lastPage(),
@@ -78,7 +79,7 @@ class ArchiveRunController extends AdminBaseController
             return $this->error('analytics.archive_runs.not_found', 404);
         }
 
-        return $this->success('analytics.archive_runs.fetch_success', $found->toArray());
+        return $this->success('analytics.archive_runs.fetch_success', $this->runForScreen($found));
     }
 
     /**
@@ -122,9 +123,35 @@ class ArchiveRunController extends AdminBaseController
             'triggered_by' => $userId,
         ]);
 
+        // 다른 집계가 자물쇠를 쥐고 있으면 이력에 「건너뜀」만 남는다 — 상태를 함께 돌려주지
+        // 않으면 화면이 성공과 구별하지 못해 돌지도 않은 집계를 돌았다고 알린다.
         return $this->success('analytics.archive_runs.queued', [
             'run_id' => $run?->id,
+            'status' => $run?->status instanceof \BackedEnum ? (string) $run->status->value : $run?->status,
             'queued' => false,
         ], 202);
+    }
+
+    /**
+     * 실행 이력 한 행을 화면이 읽을 모양으로 바꿉니다.
+     *
+     * 집계 경계는 사이트 자정에 잠겨 있고 저장만 UTC 다(`AnalyticsClock::dayRangeUtc`). 원본을
+     * 그대로 내보내면 KST 사이트에서 기간이 「15:00 ~ 15:00」으로 보여, 같은 표의 다른 시각 열과
+     * 기준이 갈린다 — 운영자가 9시간 어긋난 구간을 읽는다(#682 S3 라운드 6, 설계 결정).
+     *
+     * @param  AnalyticsArchiveRun  $run  실행 이력
+     * @return array<string, mixed> 화면용 실행 이력
+     */
+    private function runForScreen(AnalyticsArchiveRun $run): array
+    {
+        $row = $run->toArray();
+
+        foreach (['period_start', 'period_end', 'started_at', 'finished_at', 'created_at'] as $key) {
+            if (isset($row[$key])) {
+                $row[$key] = AnalyticsClock::toSiteDateTimeString(Carbon::parse($row[$key]));
+            }
+        }
+
+        return $row;
     }
 }

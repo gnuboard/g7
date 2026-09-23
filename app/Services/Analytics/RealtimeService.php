@@ -2,10 +2,14 @@
 
 namespace App\Services\Analytics;
 
+use App\Analytics\AnalyticsClock;
 use App\Analytics\AnalyticsConfig;
+use App\Analytics\UrlNormalizer;
 use App\Contracts\Repositories\Analytics\ActionNameRepositoryInterface;
 use App\Contracts\Repositories\Analytics\VisitRepositoryInterface;
+use App\Contracts\Repositories\UserRepositoryInterface;
 use App\Enums\Analytics\VisitorType;
+use App\Models\User;
 
 /**
  * 현재 접속자 현황
@@ -47,10 +51,12 @@ class RealtimeService
      *
      * @param  VisitRepositoryInterface  $visits  방문 원장 저장소
      * @param  ActionNameRepositoryInterface  $names  이름 사전 저장소
+     * @param  UserRepositoryInterface  $users  회원 저장소
      */
     public function __construct(
         private readonly VisitRepositoryInterface $visits,
         private readonly ActionNameRepositoryInterface $names,
+        private readonly UserRepositoryInterface $users,
     ) {}
 
     /**
@@ -74,23 +80,55 @@ class RealtimeService
         $rows = $this->visits->realtime($minutes, $types, self::LIST_LIMIT);
         $nameMap = $this->names->findManyById($rows->pluck('exit_action_name_id')->all());
 
+        // 회원 신원. 지금 보고 있는 사람이 누구인지 알아도 그 자리에서 회원 화면으로 건너갈 수
+        // 없으면 목록에서 다시 찾아야 한다(§4.10 「privacy 권한이면 IP 열 + 프로필 링크」).
+        // 주소와 같은 권한으로 가리고, 행마다 질의하지 않도록 한 쪽 분을 한 번에 읽는다.
+        $memberMap = $includeIp
+            ? $this->users->findManyByIdsKeyed(array_values(array_unique(array_filter(
+                $rows->pluck('user_id')->map(static fn ($id): int => (int) $id)->all(),
+            ))))->all()
+            : [];
+
         return [
             'count' => $this->visits->realtimeCount($minutes, $types),
             'window_minutes' => $minutes,
-            'visitors' => $rows->map(function ($visit) use ($nameMap, $includeIp): array {
+            'visitors' => $rows->map(function ($visit) use ($nameMap, $includeIp, $memberMap): array {
                 $nameId = $visit->exit_action_name_id;
 
                 return [
                     'visitor_key' => mb_substr((string) $visit->visitor_key, 0, self::KEY_PREFIX_LENGTH),
-                    'page' => $nameId !== null && isset($nameMap[$nameId]) ? (string) $nameMap[$nameId]->name : null,
-                    'last_action_at' => $visit->last_action_at?->toIso8601String(),
+                    'page' => $nameId !== null && isset($nameMap[$nameId]) ? UrlNormalizer::forDisplay((string) $nameMap[$nameId]->name) : null,
+                    'last_action_at' => AnalyticsClock::toSiteDateTimeString($visit->last_action_at),
                     'visitor_type' => $this->enumValue($visit->visitor_type),
                     'country_code' => $visit->country_code,
                     'device_type' => $this->enumValue($visit->device_type),
                     'browser_name' => $visit->browser_name,
                     'ip' => $includeIp && $visit->ip !== null ? (string) $visit->ip : null,
+                    'user' => $this->memberSummary($memberMap[(int) ($visit->user_id ?? 0)] ?? null),
                 ];
             })->all(),
+        ];
+    }
+
+    /**
+     * 회원 한 사람을 화면이 쓸 만큼만 간추립니다.
+     *
+     * 목록 화면(`VisitorController::memberSummary`)과 같은 모양으로 싣습니다 — 두 화면이
+     * 같은 사람을 다르게 그리면 운영자가 같은 사람인지 알 수 없습니다. 이메일은 노출 정책을
+     * 타는 값이라 싣지 않습니다 — 현재 접속자 표는 이름과 이동만 필요합니다.
+     *
+     * @param  User|null  $user  회원
+     * @return array<string, string>|null 간추린 회원 (회원 방문이 아니면 null)
+     */
+    private function memberSummary(?User $user): ?array
+    {
+        if ($user === null) {
+            return null;
+        }
+
+        return [
+            'uuid' => (string) $user->uuid,
+            'name' => (string) $user->name,
         ];
     }
 

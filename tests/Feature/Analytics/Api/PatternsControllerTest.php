@@ -3,6 +3,7 @@
 namespace Tests\Feature\Analytics\Api;
 
 use App\Models\Analytics\AnalyticsStatsHourly;
+use Illuminate\Support\Carbon;
 
 /**
  * 이용 패턴 API — 「언제 붐비는가」.
@@ -152,5 +153,38 @@ class PatternsControllerTest extends AnalyticsApiTestCase
 
         $this->assertEqualsWithDelta(16.0, $mondayAll['visits'], 0.01);
         $this->assertEqualsWithDelta(10.0, $mondayFiltered['visits'], 0.01);
+    }
+
+    /**
+     * 시간 집계 가능 시작일이 사이트 표준시 일자인지 확인합니다.
+     *
+     * 이 값은 화면이 안내 문구에 찍고(「N일부터 시간 단위로 볼 수 있습니다」) 기간 시작과
+     * 견주어 경고를 띄울지도 정한다. `Carbon::now()` 는 `config('app.timezone')`(UTC)을 따르므로
+     * UTC 보다 앞선 사이트에서는 **새벽 시간대에 하루 앞 날짜**가 나오고 경고 분기까지 함께
+     * 어긋난다(#682 S3 라운드 7).
+     *
+     * 사이트 자정 직후(KST 00:30 = 전날 15:30 UTC)를 골라 두 기준이 서로 다른 날짜를 가리키게
+     * 만든다 — 같은 날짜가 되는 시각에 재면 이 축이 성립하지 않는다.
+     *
+     * @return void 없음
+     *
+     * @scenario endpoint=patterns, role=read, period=valid
+     *
+     * @effects hourly_availability_boundary_follows_the_site_date
+     */
+    public function test_hourly_availability_boundary_uses_the_site_date(): void
+    {
+        config(['g7_settings.core.general.timezone' => 'Asia/Seoul']);
+        // 2026-09-21 15:30 UTC = 2026-09-22 00:30 KST — UTC 일자와 사이트 일자가 하루 다르다.
+        $this->travelTo(Carbon::parse('2026-09-21 15:30:00', 'UTC'));
+        config(['g7_settings.core.analytics.hourly_retention_days' => 7]);
+
+        $availableFrom = $this->actingAs($this->readAdmin())
+            ->getJson('/api/admin/analytics/patterns?preset=7d')
+            ->assertOk()
+            ->json('data.hourly_available_from');
+
+        // 사이트 일자 2026-09-22 에서 7일 전 = 2026-09-15. UTC 로 세면 2026-09-14 가 나온다.
+        $this->assertSame('2026-09-15', $availableFrom, '경계가 UTC 일자로 새면 안내와 경고가 하루 어긋난다');
     }
 }

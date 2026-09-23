@@ -248,6 +248,73 @@ class PrivacyModeTest extends TestCase
     }
 
     /**
+     * 동의 조회에 쓰는 세션 식별자는 동의 관리 확장이 요청 시점에 정한다.
+     * [case:analytics-consent-guest-session-id]
+     *
+     * 브라우저 실측(계획서 §8 M1-T9, 2026-09-19): GDPR 플러그인은 게스트 동의를 자기 게스트
+     * 쿠키(`gdpr_session` — 서명된 UUID)로 저장하는데, 수집 요청은 라라벨 세션 ID(수집 API 는
+     * 세션을 시작하지 않아 null)로 물었다. 배너에서 동의한 게스트의 비콘이 전부 「동의 없음」
+     * 으로 빠졌다. 식별자는 요청이 살아 있을 때 정해 실어 보내야 한다 — 큐로 넘어가면 요청이 없다.
+     *
+     * @scenario mode=consent, gdpr=active_consented
+     *
+     * @effects consent_lookup_uses_the_consent_providers_guest_session_id
+     *
+     * @return void 없음
+     */
+    public function test_consent_lookup_uses_the_session_id_supplied_by_the_consent_provider(): void
+    {
+        config(['g7_settings.core.analytics.privacy_mode' => 'consent']);
+
+        HookManager::addFilter(
+            'core.analytics.visitor_has_consent',
+            fn ($granted, $userId = null, $sessionId = null) => $sessionId === 'guest-uuid-1',
+        );
+        HookManager::addFilter('core.analytics.consent_session_id', fn ($default, $request = null) => 'guest-uuid-1');
+
+        $this->postJson('/api/analytics/collect', [
+            't' => 'pageview',
+            'url' => 'https://example.test/board/free',
+            'title' => '자유게시판',
+            'res' => '1920x1080',
+            'init' => true,
+        ])->assertNoContent();
+
+        $this->assertSame(1, AnalyticsVisit::count(), '동의한 게스트의 비콘은 적재된다');
+    }
+
+    /**
+     * 동의 관리 확장이 식별자를 주지 않으면 종전대로 라라벨 세션 ID(없으면 null)로 묻는다.
+     *
+     * @scenario mode=consent, gdpr=active_declined
+     *
+     * @effects consent_lookup_uses_the_consent_providers_guest_session_id
+     *
+     * @return void 없음
+     */
+    public function test_consent_lookup_without_a_provider_keeps_the_default_session_id(): void
+    {
+        config(['g7_settings.core.analytics.privacy_mode' => 'consent']);
+
+        $asked = [];
+        HookManager::addFilter('core.analytics.visitor_has_consent', function ($granted, $userId = null, $sessionId = null) use (&$asked) {
+            $asked[] = $sessionId;
+
+            return false;
+        });
+
+        $this->postJson('/api/analytics/collect', [
+            't' => 'pageview',
+            'url' => 'https://example.test/board/free',
+            'res' => '1920x1080',
+            'init' => true,
+        ])->assertNoContent();
+
+        $this->assertSame(0, AnalyticsVisit::count());
+        $this->assertSame([null], $asked, '수집 API 에는 시작된 세션이 없다 — 제공자가 없으면 null 로 묻는다');
+    }
+
+    /**
      * 동의 모드가 아니면 동의를 판정하지 않는다.
      *
      * @scenario mode=full

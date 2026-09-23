@@ -1,0 +1,56 @@
+<!-- 통계 화면 공통 상단 경고 세 줄. 수집이 꺼져 있으면 숫자가 멈춘 이유를, 동의 모드인데 물어볼 곳이 없으면
+  익명으로 모으고 있다는 사실을, 큐가 밀리면 비콘이 204 를 받고도 원장에 닿지 않는다는 것을 그 화면에서
+  바로 알린다. 세 값은 진단 API(`analytics_status`)에서 오므로 이 조각을 쓰는 화면은 그 소스를 `background`
+  로 함께 받는다 — 첫 그림을 늦추지 않되 경고가 화면마다 빠지지 않게. -->
+<partial description="방문자 통계 공통 상단 경고 — 수집 꺼짐·동의 폴백·큐 적체">
+  <div data-ref="analytics_status_alerts" class="space-y-2 mb-4">
+    <div data-ref="alert_collection_disabled" data-if="{{analytics_status?.data?.collection?.enabled === false}}" class="alert-warning">
+      <div class="flex-center gap-3">
+        <icon name="triangle-exclamation" class="text-xl text-yellow-600 dark:text-yellow-400 flex-shrink-0"/>
+        <p class="text-warning-soft flex-1">$t:admin.analytics.alerts.collection_disabled</p>
+        <!-- 안내 버튼은 그 화면에 갈 수 있는 계정에게만 그린다 — 권한이 없으면 눌러도 「필요 권한」 페이지뿐이라
+        안내가 막다른 길이 된다(#682 S3 라운드 3). 문구는 남겨 사실은 계속 알린다. -->
+        <button data-ref="collection_disabled_link" data-if="{{(current_user?.data?.is_super === true || (current_user?.data?.permissions ?? []).some(p =&gt; (p?.identifier ?? p) === 'core.analytics.update'))}}" type="button" class="text-sm font-medium underline text-yellow-800 dark:text-yellow-200">
+          <on type="click">
+            <navigate path="/admin/analytics/settings">
+              <query tab="collection"/>
+            </navigate>
+          </on>
+          $t:admin.analytics.alerts.collection_disabled_link
+        </button>
+      </div>
+    </div>
+    <!-- 익명으로 내려간 사유가 실리면 띄운다 — 운영자가 고른 모드로 가두지 않는다.
+      `consent_plugin_blocks_cookies` 는 서버가 **`full` 모드에서만** 만든다(`AnalyticsConfig::anonymousFallbackReason`).
+      종전 게이트는 `mode === 'consent'` 를 함께 요구해 그 사유와 서로 배타적이었고, 그래서
+      「전체 수집 + GDPR 플러그인」 사이트는 실제로 익명 수집 중인데 12면 어디에도 안내가 뜨지 않았다
+      (#682 S3 라운드 8 실측: 설정 full · effective anonymous · 화면 안내 0건). -->
+    <div data-ref="alert_consent_fallback" data-if="{{!!analytics_status?.data?.collection?.anonymous_fallback_reason}}" class="alert-info">
+      <div class="flex-center gap-3">
+        <icon name="circle-info" class="text-xl text-blue-600 dark:text-blue-400 flex-shrink-0"/>
+        <p class="text-info-soft flex-1">{{analytics_status?.data?.collection?.anonymous_fallback_reason === 'consent_plugin_blocks_cookies' ? $t('admin.analytics.alerts.consent_cookie_fallback') : $t('admin.analytics.alerts.consent_fallback')}}</p>
+      </div>
+    </div>
+    <!-- 통계의 집계 경계는 사이트 표준시 자정에 잠겨 있고 시각 표기도 사이트 기준이다(PO 확정).
+      보는 사람의 시간대가 그와 다르면 「오늘」의 숫자와 자기 시계가 어긋나 보이므로 그 사실을
+      알린다. 같은 시간대면 군더더기라 띄우지 않는다(#682 S3 라운드 6). -->
+    <div data-ref="alert_site_timezone" data-if="{{analytics_status?.data?.timezone_differs === true}}" class="alert-info">
+      <div class="flex-center gap-3">
+        <icon name="clock" class="text-xl text-blue-600 dark:text-blue-400 flex-shrink-0"/>
+        <p class="text-info-soft flex-1">$t:admin.analytics.alerts.site_timezone|timezone={{analytics_status?.data?.timezone}}</p>
+      </div>
+    </div>
+    <div data-ref="alert_queue_backlog" data-if="{{analytics_status?.data?.queue?.backlogged === true}}" class="alert-danger">
+      <div class="flex-center gap-3">
+        <icon name="triangle-exclamation" class="text-xl text-red-600 dark:text-red-400 flex-shrink-0"/>
+        <p class="text-error-soft flex-1">$t:admin.analytics.alerts.queue_backlog|count={{(analytics_status?.data?.queue?.pending_jobs ?? 0) | number}}</p>
+        <button data-ref="queue_backlog_link" data-if="{{(current_user?.data?.is_super === true || (current_user?.data?.permissions ?? []).some(p =&gt; (p?.identifier ?? p) === 'core.analytics.read'))}}" type="button" class="text-sm font-medium underline text-red-800 dark:text-red-200">
+          <on type="click">
+            <navigate path="/admin/analytics/diagnostics"/>
+          </on>
+          $t:admin.analytics.alerts.queue_backlog_link
+        </button>
+      </div>
+    </div>
+  </div>
+</partial>

@@ -881,6 +881,35 @@ describe('DataSourceManager', () => {
       expect(results['user']).toEqual({ data: null });
     });
 
+    it('한 번 성공한 소스는 다음 요청이 실패해도 마지막 값을 지킨다', async () => {
+      // 폴링이 한 번 실패했다고 fallback(0)으로 되돌리면 실시간 화면이 「지금 0명」이라는 거짓을 말한다
+      // (브라우저 실측 이슈 #682 §8 M4-T4). fallback 은 아직 한 번도 못 받았을 때의 첫 그림이다.
+      const mockApiClient = getApiClient();
+      const sources: DataSource[] = [
+        {
+          id: 'realtime',
+          type: 'api',
+          endpoint: '/api/admin/analytics/realtime',
+          method: 'GET',
+          auto_fetch: true,
+          auth_required: true,
+          fallback: { data: { count: 0 } },
+        },
+      ];
+
+      (mockApiClient.get as any).mockResolvedValueOnce({ data: { count: 7 } });
+      const first = await manager.fetchDataSources(sources, {});
+      expect(first['realtime']).toEqual({ data: { count: 7 } });
+
+      mockResolverResolve.mockReturnValue({ handler: null, source: 'default' });
+      (mockApiClient.get as any).mockRejectedValueOnce(
+        Object.assign(new Error('Server Error'), { response: { status: 500, data: {} } }),
+      );
+      const second = await manager.fetchDataSources(sources, {});
+
+      expect(second['realtime'], '실패는 토스트로 알리고 화면의 숫자는 마지막 값을 지킨다').toEqual({ data: { count: 7 } });
+    });
+
     it('fallback과 errorHandling 모두 없으면 기본 에러 처리가 되어야 함', async () => {
       const mockApiClient = getApiClient();
       const error500 = Object.assign(new Error('Server Error'), {

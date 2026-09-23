@@ -96,12 +96,6 @@ return [
         'consent' => 'No consent',
     ],
 
-    // Dispatch modes
-    'dispatch_mode' => [
-        'queue' => 'Queued',
-        'sync' => 'Immediate',
-    ],
-
     // Country filter modes
     'country_filter_mode' => [
         'none' => 'Disabled',
@@ -148,7 +142,10 @@ return [
     'archive' => [
         'skipped_locked' => 'Skipped because the same period is already being archived.',
         'skipped_beyond_retention' => 'Skipped because the raw records for this day are past the retention period. Existing aggregates are kept as they are.',
+        'skipped_finalized' => 'Skipped because this day is already finalized. Turn on "Re-archive finalized days" to recalculate it.',
         'range_invalid' => 'The re-aggregation period is invalid.',
+        'stale_run' => 'Closed as failed because the run stopped without reporting its end (worker stopped, timed out, etc.). Run it again if needed.',
+        'job_failed' => 'The job failed, so the run was closed: :reason',
     ],
 
     // Dashboard alerts

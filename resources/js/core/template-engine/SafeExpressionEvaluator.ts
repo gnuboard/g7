@@ -151,6 +151,9 @@ const WHITELIST_GLOBALS: Record<string, unknown> = {
     parseFloat,
     isNaN,
     isFinite,
+    // 주소 조각(검색어 등)을 쿼리에 실을 때 쓴다. 인자를 문자열로 바꿔 돌려줄 뿐 전역·프로토타입에
+    // 닿지 않는다. 역함수(decode)는 잘못된 입력에 던지므로 필요해지기 전까지 두지 않는다.
+    encodeURIComponent,
 };
 
 /**

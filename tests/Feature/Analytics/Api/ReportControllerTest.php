@@ -133,6 +133,60 @@ class ReportControllerTest extends AnalyticsApiTestCase
     }
 
     /**
+     * 페이지 라벨이 화면에서 읽히는 글자로 나가는지 확인합니다.
+     *
+     * 저장 라벨은 기계가 읽는 값이라 인코딩된 채 두고, 화면용 라벨만 풉니다.
+     *
+     * @return void 없음
+     *
+     * @scenario endpoint=reports, role=read, period=valid
+     *
+     * @effects page_labels_are_readable_for_display
+     */
+    public function test_page_labels_are_readable_for_display(): void
+    {
+        config(['g7_settings.core.general.site_url' => 'https://example.test']);
+        $raw = 'example.test/search?q=%ED%85%8C%EC%8A%A4%ED%8A%B8';
+        $this->dimensionRow(StatsDimension::PageUrl->value, $raw);
+
+        $response = $this->actingAs($this->readAdmin())
+            ->getJson('/api/admin/analytics/reports/page_url?preset=today');
+
+        $response->assertOk();
+        $this->assertSame($raw, $response->json('data.data.0.label'), '저장 라벨은 그대로');
+        $this->assertSame('/search?q=테스트', $response->json('data.data.0.label_display'));
+    }
+
+    /**
+     * 화면에 보이는 글자로 찾아도 인코딩된 저장 라벨이 잡히는지 확인합니다.
+     *
+     * 라벨을 풀어서 보여 주는데 검색이 저장값만 보면, 화면의 「/search?q=테스트」를 「테스트」로
+     * 찾았을 때 0건이 된다(브라우저 실측 §8 M3-T5). 검색어의 LIKE 와일드카드는 글자 그대로 찾는다.
+     *
+     * @return void 없음
+     *
+     * @scenario endpoint=reports, role=read, period=valid
+     *
+     * @effects page_labels_are_readable_for_display, report_search_matches_what_the_screen_shows
+     */
+    public function test_search_matches_the_decoded_page_label(): void
+    {
+        $this->dimensionRow(StatsDimension::PageUrl->value, 'example.test/search?q=%ED%85%8C%EC%8A%A4%ED%8A%B8');
+        $this->dimensionRow(StatsDimension::PageUrl->value, 'example.test/board/free');
+
+        $admin = $this->readAdmin();
+        $labels = fn (string $q): array => array_column(
+            $this->actingAs($admin)->getJson('/api/admin/analytics/reports/page_url?preset=today&q='.rawurlencode($q))->json('data.data'),
+            'label',
+        );
+
+        $this->assertSame(['example.test/search?q=%ED%85%8C%EC%8A%A4%ED%8A%B8'], $labels('테스트'), '화면에 보이는 글자로 찾는다');
+        $this->assertSame(['example.test/search?q=%ED%85%8C%EC%8A%A4%ED%8A%B8'], $labels('search?q=테스트'), '주소 모양 그대로 찾아도 된다');
+        $this->assertSame(['example.test/board/free'], $labels('board'), '영문 검색은 종전대로');
+        $this->assertSame([], $labels('_'), '밑줄은 한 글자 와일드카드가 아니라 글자 그대로');
+    }
+
+    /**
      * 봇 리포트가 봇 유형 행을 읽는지 확인합니다.
      *
      * @return void 없음
@@ -495,6 +549,50 @@ class ReportControllerTest extends AnalyticsApiTestCase
         $this->assertSame('Googlebot', $hits[0]['bot_name']);
         $this->assertSame('/pricing', $hits[0]['url']);
         $this->assertSame('miss', $hits[0]['cache_status']);
+    }
+
+    /**
+     * 봇 화면의 기간 합계가 쪽과 무관하게 기간 전체를 세는지 확인합니다.
+     *
+     * 목록은 쪽으로 잘려 오므로 그 행을 더한 KPI 는 봇 종류가 한 쪽보다 많은 기간에 첫 쪽의
+     * 합만 보였다(#682 S3 라운드 14). 사람 유형 행은 봇 합계에 섞이지 않는다.
+     *
+     * @return void 없음
+     *
+     * @scenario endpoint=reports, role=read, period=preset
+     *
+     * @effects bot_totals_count_the_whole_period_not_the_page
+     */
+    public function test_bot_totals_count_the_whole_period_not_the_page(): void
+    {
+        foreach (range(1, 4) as $i) {
+            $this->dimensionRow(StatsDimension::BotName->value, "Bot{$i}", [
+                'visitor_type' => VisitorType::Bot->value,
+                'hits' => 10 * $i,
+            ]);
+        }
+        // 같은 봇의 어제 행 — 라벨 수는 그대로, 요청 수만 더해진다.
+        $this->dimensionRow(StatsDimension::BotName->value, 'Bot1', [
+            'visitor_type' => VisitorType::Bot->value,
+            'date' => Carbon::now('UTC')->subDay()->toDateString(),
+            'hits' => 7,
+        ]);
+        $this->dimensionRow(StatsDimension::BotName->value, 'NotABot', ['hits' => 999]);
+
+        $admin = $this->readAdmin();
+
+        foreach ([1, 2] as $page) {
+            $response = $this->actingAs($admin)
+                ->getJson("/api/admin/analytics/bots?preset=7d&per_page=2&page={$page}")
+                ->assertOk();
+
+            $this->assertCount(2, $response->json('data.data'), '쪽은 두 행씩 잘린다');
+            $this->assertSame(
+                ['hits' => 107, 'labels' => 4],
+                $response->json('data.totals'),
+                "{$page} 쪽에서도 합계는 기간 전체(봇 4종 · 10+20+30+40+7)여야 한다",
+            );
+        }
     }
 
     /**

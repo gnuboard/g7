@@ -3,11 +3,14 @@
 namespace Tests\Feature\Analytics\Api;
 
 use App\Analytics\VisitorRecognizer;
+use App\Enums\Analytics\ActionType;
 use App\Enums\Analytics\ArchiveRunType;
+use App\Enums\Analytics\VisitorType;
 use App\Jobs\Analytics\AnonymizeLedgerJob;
 use App\Models\Analytics\AnalyticsAction;
 use App\Models\Analytics\AnalyticsStatsDaily;
 use App\Models\Analytics\AnalyticsVisit;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Queue;
 
 /**
@@ -123,6 +126,35 @@ class PrivacyControllerTest extends AnalyticsApiTestCase
     }
 
     /**
+     * 조회 응답이 개인정보 모드를 함께 내는지 확인합니다.
+     *
+     * 화면의 익명 모드 안내는 이 값을 읽는다. 조회 권한(`diagnostics`)에서 읽으면
+     * 개인정보 권한만 가진 담당자에게 403 이고, 삼킨 뒤 남은 fallback 이 「full」로
+     * 굳어 안내가 영영 뜨지 않았다 — 0건을 받고도 「기록 없음」인지 「IP 를 저장하지
+     * 않음」인지 구분 못 해 GDPR 요청에 잘못 답할 수 있다(#682 S3 라운드 5).
+     *
+     * @return void 없음
+     *
+     * @scenario endpoint=privacy_subjects, role=privacy
+     *
+     * @effects privacy_subjects_carry_the_privacy_mode
+     */
+    public function test_the_lookup_carries_the_privacy_mode(): void
+    {
+        $this->visit(['ip' => '203.0.113.9']);
+
+        $response = $this->actingAs($this->privacyAdmin())
+            ->getJson('/api/admin/analytics/privacy/subjects?ip=203.0.113.9');
+
+        $response->assertOk();
+        $this->assertSame(
+            'full',
+            $response->json('data.mode'),
+            '이 화면은 자기 권한 API 에서 모드를 읽어야 한다'
+        );
+    }
+
+    /**
      * 가명화된 구간의 삭제 요청이 실제로 지우는지 확인합니다.
      *
      * @return void 없음
@@ -201,6 +233,36 @@ class PrivacyControllerTest extends AnalyticsApiTestCase
     }
 
     /**
+     * 조회 응답이 내보내기와 같은 파일명을 알려 주는지 확인합니다.
+     *
+     * 내보내기는 토큰 동반 blob 으로 받아 화면이 저장 이름을 정한다. 서버 이름을 몰라 화면이 검색값을
+     * 넣었더니 방문자 IP 가 다운로드 폴더에 남았다(#682 S3 라운드 15). 날짜는 사이트 기준이라 화면이
+     * 계산할 수 없어 서버가 이름을 알려 준다.
+     *
+     * @return void 없음
+     *
+     * @scenario endpoint=privacy_subjects, role=privacy
+     *
+     * @effects subject_export_filename_comes_from_the_server
+     */
+    public function test_the_lookup_names_the_export_file_the_way_the_download_does(): void
+    {
+        $this->visit(['ip' => '203.0.113.52']);
+        $admin = $this->privacyAdmin();
+
+        $lookup = $this->actingAs($admin)->getJson('/api/admin/analytics/privacy/subjects?ip=203.0.113.52');
+        $export = $this->actingAs($admin)->postJson('/api/admin/analytics/privacy/subjects/export', ['ip' => '203.0.113.52']);
+
+        $lookup->assertOk();
+        $export->assertOk();
+        $filename = (string) $lookup->json('data.export_filename');
+
+        $this->assertMatchesRegularExpression('/^analytics-subject-\d{8}\.json$/', $filename);
+        $this->assertSame('attachment; filename="'.$filename.'"', (string) $export->headers->get('Content-Disposition'));
+        $this->assertStringNotContainsString('203.0.113', $filename, '파일명에 검색한 주소가 들어가면 안 된다');
+    }
+
+    /**
      * 주소로 찾을 때 한계 안내가 함께 오는지 확인합니다.
      *
      * @return void 없음
@@ -222,6 +284,34 @@ class PrivacyControllerTest extends AnalyticsApiTestCase
             $response->json('data.notice'),
             '익명 모드 구간은 오래되면 주소로 찾을 수 없다 — 화면이 그 한계를 알려야 한다',
         );
+    }
+
+    /**
+     * 찾은 방문 행이 화면이 그리는 값을 모두 싣는지 확인합니다.
+     *
+     * 정보주체 화면의 표는 주소·페이지뷰·액션 수를 열로 두는데, 응답에 그 값이 없으면 운영자는 「IP -,
+     * 페이지뷰 0, 액션 0」인 빈 표로 사람을 골라야 한다(브라우저 실측 §8 M5-T4).
+     *
+     * @return void 없음
+     *
+     * @scenario endpoint=privacy_subjects, role=privacy
+     *
+     * @effects subject_rows_carry_what_the_screen_shows
+     */
+    public function test_found_visits_carry_the_columns_the_screen_shows(): void
+    {
+        $this->visit(['ip' => '203.0.113.51', 'pageviews_count' => 4, 'actions_count' => 6]);
+
+        $response = $this->actingAs($this->privacyAdmin())
+            ->getJson('/api/admin/analytics/privacy/subjects?ip=203.0.113.51');
+
+        $response->assertOk();
+        $row = $response->json('data.visits.0');
+
+        $this->assertSame('203.0.113.51', $row['ip'], '주소로 찾은 사람의 주소는 그 자리에서 보여야 한다');
+        $this->assertSame(4, $row['pageviews_count']);
+        $this->assertSame(6, $row['actions_count']);
+        $this->assertSame(VisitorType::Guest->value, $row['visitor_type'], '유형 칸이 모두를 게스트로 적으면 안 된다');
     }
 
     /**
@@ -274,5 +364,92 @@ class PrivacyControllerTest extends AnalyticsApiTestCase
             ->assertStatus(202);
 
         $this->assertDatabaseHas('analytics_archive_runs', ['run_type' => ArchiveRunType::Anonymize->value]);
+    }
+
+    /**
+     * 정보주체 조회 응답이 마스킹 사실을 함께 싣는지 확인합니다.
+     *
+     * @return void 없음
+     *
+     * @scenario endpoint=privacy_subjects, role=privacy, mode=full
+     *
+     * @effects masked_ip_is_labelled_as_masked
+     */
+    public function test_the_subject_search_tells_the_screen_the_address_is_masked(): void
+    {
+        // 이 표도 주소를 그린다 — 설정이 뒤 옥텟을 지운 값을 원본으로 읽으면 정보주체에게
+        // 그 주소로 잘못 답한다. 형제 경로(`VisitorController::show`)와 같은 키를 싣는다
+        // (#682 S3 라운드 6, 계획서 §4.10 「IP(마스킹 표시)」).
+        config(['g7_settings.core.analytics.ip_mask_octets' => 1]);
+
+        $this->visit(['ip' => '203.0.113.7']);
+
+        $this->assertSame(
+            1,
+            $this->actingAs($this->privacyAdmin())
+                ->getJson('/api/admin/analytics/privacy/subjects?ip=203.0.113.7')
+                ->assertOk()
+                ->json('data.ip_mask_octets'),
+        );
+    }
+
+    /**
+     * 검색 액션의 결과 건수가 타임라인 응답에 실리는지 확인합니다.
+     *
+     * 검색어만 실으면 방문자 상세 화면에서 「빈손으로 돌아간 검색」을 가려낼 수 없어 운영자가
+     * 행동 화면의 「결과 없음」 열로 따로 건너가야 한다(§4.10 「검색어(+결과 수)」·§4.11
+     * 「검색 "그누보드" 결과 12건」). 원장에는 수집 시점부터 있던 값이다.
+     *
+     * @return void 없음
+     *
+     * @scenario endpoint=privacy_subjects, role=privacy
+     *
+     * @effects subject_timeline_carries_search_result_count
+     */
+    public function test_export_timeline_carries_search_result_count(): void
+    {
+        $visit = $this->visit(['user_id' => 101]);
+        $term = $this->actionName('search', 'gnuboard');
+
+        // 0 건 검색도 실려야 한다 — 그것이 이 화면에서 가려낼 값이다.
+        foreach ([[12, 'gnuboard'], [0, 'gnuboard-none']] as [$count, $slug]) {
+            AnalyticsAction::factory()->create([
+                'visit_id' => $visit->id,
+                'visitor_key' => $visit->visitor_key,
+                'action_type' => ActionType::SiteSearch,
+                'action_name_id' => $slug === 'gnuboard' ? $term->id : $this->actionName('search', $slug)->id,
+                'occurred_at' => Carbon::now('UTC'),
+                'search_result_count' => $count,
+            ]);
+        }
+
+        $response = $this->actingAs($this->privacyAdmin())
+            ->postJson('/api/admin/analytics/privacy/subjects/export', ['user_id' => 101]);
+
+        $response->assertOk();
+        $payload = json_decode($response->streamedContent(), true);
+        $actions = $payload['visits'][0]['actions'];
+
+        // 모집단이 비면 아래 단언이 조용히 통과한다 — 그 자체를 먼저 잰다.
+        $searches = array_values(array_filter(
+            $actions,
+            static fn (array $action): bool => $action['action_type'] === ActionType::SiteSearch->value,
+        ));
+        $this->assertCount(2, $searches, '검색 액션이 응답에 실려야 한다');
+
+        $counts = array_map(static fn (array $action) => $action['search_result_count'] ?? null, $searches);
+        sort($counts);
+        $this->assertSame([0, 12], $counts, '결과 건수가 0 건까지 그대로 실려야 한다');
+
+        // 검색이 아닌 액션에는 건수가 없다(키는 있고 값이 null).
+        $pageviews = array_values(array_filter(
+            $actions,
+            static fn (array $action): bool => $action['action_type'] === ActionType::Pageview->value,
+        ));
+        $this->assertNotSame([], $pageviews, '대조군인 페이지뷰 액션');
+        foreach ($pageviews as $action) {
+            $this->assertArrayHasKey('search_result_count', $action);
+            $this->assertNull($action['search_result_count']);
+        }
     }
 }

@@ -47,6 +47,9 @@ export class ConsentBridge {
   /** 현재 동의 상태 */
   private state: ConsentState = { source: 'none', granted: null };
 
+  /** 첫 조회가 끝났는가 (실패로 끝나도 true — 그 뒤의 「모름」은 대기가 아니라 미동의로 다룬다) */
+  private settled = false;
+
   /**
    * 동의 브리지를 만듭니다.
    *
@@ -95,6 +98,8 @@ export class ConsentBridge {
       // 조회 실패는 「모름」이다 — 동의했다고 단정하지 않는다.
     }
 
+    this.settled = true;
+
     if (typeof window !== 'undefined') {
       window.addEventListener(CONSENT_CHANGED_EVENT, this.handleChange);
     }
@@ -122,6 +127,19 @@ export class ConsentBridge {
 
     // 아직 못 읽었으면 보내지 않는다. 동의 여부를 모르는 채 모으지 않는다.
     return this.state.granted === true;
+  }
+
+  /**
+   * 동의 여부를 아직 읽지 못했는지 판정합니다.
+   *
+   * 확인할 곳이 있는데 조회가 끝나지 않은 상태다. 이때 온 비콘은 버리지 말고 조회가 끝날 때까지
+   * 들고 있어야 한다 — 첫 화면 비콘은 조회보다 먼저 나가므로, 버리면 동의한 방문자의 진입
+   * 화면·새로고침이 전부 빠진다(#682 S3 라운드 13).
+   *
+   * @returns 조회 대기 중이면 true
+   */
+  isPending(): boolean {
+    return this.state.source === 'gdpr' && this.state.granted === null && !this.settled;
   }
 
   /**

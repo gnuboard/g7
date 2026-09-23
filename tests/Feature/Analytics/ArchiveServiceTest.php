@@ -9,6 +9,7 @@ use App\Enums\Analytics\ArchiveRunType;
 use App\Enums\Analytics\StatsDimension;
 use App\Enums\Analytics\VisitorType;
 use App\Enums\Analytics\VisitSource;
+use App\Events\GenericBroadcastEvent;
 use App\Extension\HookManager;
 use App\Http\Middleware\Analytics\TrackServerVisit;
 use App\Jobs\Analytics\ArchiveRangeJob;
@@ -28,6 +29,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Event;
 use Tests\TestCase;
 
 /**
@@ -294,6 +296,44 @@ class ArchiveServiceTest extends TestCase
 
         $region = AnalyticsDimensionStat::query()->where('date', $date)->where('dimension', StatsDimension::Region->value)->first();
         $this->assertSame('KR/11', $region->label);
+    }
+
+    /**
+     * 리포트 파생 지표가 차원마다 뜻 있는 값을 갖는지 확인합니다.
+     *
+     * 방문 차원(브라우저·국가·유입 등)은 방문마다 조회 1로 적혀 「방문당 페이지」가 늘 1 이었고, 페이지
+     * 차원은 이탈 수를 더하지 않아 「이탈률」이 늘 0% 였다(브라우저 실측 §8 M3-T8). 방문 차원의 조회는 그
+     * 방문들의 페이지뷰 합, 페이지 차원의 이탈은 그 페이지 하나만 보고 떠난 방문이다.
+     *
+     * @return void 없음
+     *
+     * @scenario period=day, data=all_types, trigger=manual
+     *
+     * @effects visit_dimension_hits_are_the_visits_pageviews, page_dimensions_count_single_page_visits_as_bounces
+     */
+    public function test_derived_report_metrics_mean_something_per_dimension(): void
+    {
+        $date = '2026-09-14';
+        $this->visit($date, ['browser_name' => 'Chrome'], ['example.test/a', 'example.test/b']);
+        $this->visit($date, ['browser_name' => 'Chrome'], ['example.test/a']);
+
+        $this->service->archiveDay($date);
+
+        $row = fn (string $dimension, string $label): AnalyticsDimensionStat => AnalyticsDimensionStat::query()
+            ->where('date', $date)->where('dimension', $dimension)->where('label', $label)->firstOrFail();
+
+        $chrome = $row(StatsDimension::Browser->value, 'Chrome');
+        $this->assertSame(2, (int) $chrome->visits);
+        $this->assertSame(3, (int) $chrome->hits, '방문 차원의 조회는 그 방문들의 페이지뷰 합이다 — 방문당 페이지 1.5');
+        $this->assertSame(1, (int) $chrome->bounces);
+
+        $entry = $row(StatsDimension::EntryPage->value, 'example.test/a');
+        $this->assertSame(3, (int) $entry->hits, '진입 페이지도 방문 차원이다');
+
+        $a = $row(StatsDimension::PageUrl->value, 'example.test/a');
+        $this->assertSame(2, (int) $a->visits);
+        $this->assertSame(1, (int) $a->bounces, '이 페이지만 보고 떠난 방문 1건 — 페이지 이탈률 50%');
+        $this->assertSame(0, (int) $row(StatsDimension::PageUrl->value, 'example.test/b')->bounces);
     }
 
     /**
@@ -774,7 +814,19 @@ class ArchiveServiceTest extends TestCase
 
         $before = AnalyticsArchiveRun::query()->count();
         $this->service->archiveRange($date, $date);
-        $this->assertSame($before, AnalyticsArchiveRun::query()->count(), '확정된 날은 실행 이력조차 남기지 않는다');
+
+        // 다시 계산하지는 않지만 건너뛴 사실은 남긴다 — 아무 행도 없으면 화면이 「시작했습니다」만
+        // 띄운 채 결과가 비어, 돌다 만 것인지 안 돌아도 되는 것인지 운영자가 가릴 수 없다.
+        $skipped = AnalyticsArchiveRun::query()->where('status', ArchiveRunStatus::Skipped->value)->count();
+        $this->assertSame($before + 1, AnalyticsArchiveRun::query()->count(), '건너뛴 사실이 이력에 남아야 한다');
+        $this->assertSame(1, $skipped);
+        $this->assertSame(
+            0,
+            AnalyticsArchiveRun::query()->where('status', ArchiveRunStatus::Success->value)->where('run_type', 'reaggregate')->count(),
+            '확정된 날을 다시 계산하지는 않는다',
+        );
+
+        $before = AnalyticsArchiveRun::query()->count();
 
         $this->service->archiveRange($date, $date, ['force' => true]);
         $this->assertGreaterThan($before, AnalyticsArchiveRun::query()->count());
@@ -816,7 +868,6 @@ class ArchiveServiceTest extends TestCase
      */
     public function test_server_only_visits_count_only_visits_the_beacon_never_joined(): void
     {
-        config(['g7_settings.core.analytics.dispatch_mode' => 'sync']);
         $ua = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36';
         $html = new Response('<!doctype html><html></html>', 200, ['Content-Type' => 'text/html; charset=UTF-8']);
 
@@ -948,6 +999,193 @@ class ArchiveServiceTest extends TestCase
             (int) AnalyticsStatsHourly::query()->where('visitor_type', VisitorType::Guest->value)->sum('pageviews'),
             '시간 표 합이 일 표와 같아야 한다',
         );
+    }
+
+    /**
+     * 집계 진행률이 시작·완료 시점에 관리자 채널로 방송되는지 확인합니다.
+     *
+     * 진단 화면은 소켓이 있으면 이 방송으로 진행률 바를 움직이고, 없으면 진단 API 를
+     * 폴링한다. 방송이 빠지면 소켓을 켠 사이트에서만 바가 멈춘 채 남는다 — 폴링 폴백은
+     * 소켓이 없을 때만 도니 아무도 그 결함을 보지 못한다.
+     *
+     * @return void 없음
+     *
+     * @scenario period=day, data=all_types, trigger=manual
+     *
+     * @effects archive_progress_is_broadcast_to_the_admin_channel
+     */
+    public function test_progress_is_broadcast_at_start_and_completion(): void
+    {
+        config(['broadcasting.default' => 'reverb', 'broadcasting.connections.reverb.options.host' => 'localhost']);
+        Event::fake([GenericBroadcastEvent::class]);
+
+        $date = '2026-09-18';
+        $this->visit($date);
+
+        $run = $this->service->archiveDay($date);
+
+        $onChannel = static fn (GenericBroadcastEvent $event): bool => $event->channel === ArchiveService::PROGRESS_CHANNEL
+            && $event->eventName === ArchiveService::PROGRESS_EVENT
+            && ($event->payload['type'] ?? null) === 'archive_progress'
+            && ($event->payload['data']['id'] ?? null) === $run->id;
+
+        Event::assertDispatched(
+            GenericBroadcastEvent::class,
+            static fn (GenericBroadcastEvent $event): bool => $onChannel($event)
+                && ($event->payload['data']['status'] ?? null) === ArchiveRunStatus::Running->value
+                && ($event->payload['data']['progress_percent'] ?? null) === 0,
+        );
+
+        Event::assertDispatched(
+            GenericBroadcastEvent::class,
+            static fn (GenericBroadcastEvent $event): bool => $onChannel($event)
+                && ($event->payload['data']['status'] ?? null) === ArchiveRunStatus::Success->value
+                && ($event->payload['data']['progress_percent'] ?? null) === 100
+                && ($event->payload['data']['processed_visits'] ?? null) === 1
+                && array_key_exists('finished_at', $event->payload['data']),
+        );
+    }
+
+    /**
+     * 집계가 실패해도 종료 방송이 나가는지 확인합니다.
+     *
+     * 성공만 방송하면 실패한 집계의 진행률 바는 영원히 「진행 중」이다.
+     *
+     * @return void 없음
+     *
+     * @scenario period=day, data=all_types, trigger=manual
+     *
+     * @effects archive_progress_is_broadcast_to_the_admin_channel
+     */
+    public function test_failure_is_broadcast_as_a_terminal_state(): void
+    {
+        config(['broadcasting.default' => 'reverb', 'broadcasting.connections.reverb.options.host' => 'localhost']);
+        Event::fake([GenericBroadcastEvent::class]);
+
+        $date = '2026-09-18';
+        $this->visit($date);
+
+        HookManager::addAction('core.analytics.archive.day', function (): void {
+            throw new \RuntimeException('집계 중 확장이 던진 예외');
+        });
+
+        $run = $this->service->archiveDay($date);
+
+        Event::assertDispatched(
+            GenericBroadcastEvent::class,
+            static fn (GenericBroadcastEvent $event): bool => $event->eventName === ArchiveService::PROGRESS_EVENT
+                && ($event->payload['data']['id'] ?? null) === $run->id
+                && ($event->payload['data']['status'] ?? null) === ArchiveRunStatus::Failed->value,
+        );
+    }
+
+    /**
+     * 확정된 날을 force 없이 재집계하면 건너뛴 사실이 이력에 남는지 확인합니다.
+     *
+     * 화면은 「재집계를 시작했습니다」를 띄우고 이력 표로 결과를 보여 준다. 아무 행도
+     * 남지 않으면 운영자는 돌다 만 것인지, 안 돌아도 되는 것인지 가릴 수 없다 —
+     * 보존일 밖 분기는 이미 건너뜀을 남긴다(브라우저 실측으로 드러난 비대칭).
+     *
+     * @return void 없음
+     *
+     * @scenario period=range, data=all_types, trigger=manual
+     *
+     * @effects range_job_reports_failed_days
+     */
+    public function test_a_finalized_day_is_recorded_as_skipped_without_force(): void
+    {
+        $date = '2026-09-15';
+        $this->visit($date);
+
+        // 먼저 확정해 둔다(어제까지는 is_final).
+        $this->service->archiveDay($date, ['is_final' => true]);
+        $before = AnalyticsArchiveRun::count();
+
+        $runs = $this->service->archiveRange($date, $date, [
+            'run_type' => ArchiveRunType::Reaggregate->value,
+            'trigger' => 'manual',
+            'force' => false,
+        ]);
+
+        $this->assertCount(1, $runs, '건너뛰었어도 그 사실이 이력으로 돌아와야 한다');
+        $this->assertSame(ArchiveRunStatus::Skipped->value, $runs[0]->status instanceof \BackedEnum ? $runs[0]->status->value : (string) $runs[0]->status);
+        $this->assertSame($before + 1, AnalyticsArchiveRun::count());
+        $this->assertNotEmpty($runs[0]->error, '왜 건너뛰었는지 사유가 있어야 한다');
+    }
+
+    /**
+     * 청크마다 중간 진행률이 방송되는지 확인합니다.
+     *
+     * 시작·종료만 방송하면 바가 0 에서 100 으로 튄다 — 몇 분짜리 재집계에서 운영자는
+     * 멈춘 것과 구별할 수 없다.
+     *
+     * @return void 없음
+     *
+     * @scenario period=day, data=all_types, trigger=manual
+     *
+     * @effects archive_progress_is_broadcast_to_the_admin_channel
+     */
+    public function test_progress_is_broadcast_between_start_and_finish(): void
+    {
+        config([
+            'broadcasting.default' => 'reverb',
+            'broadcasting.connections.reverb.options.host' => 'localhost',
+            'g7_settings.core.analytics.archive_chunk_size' => 2,
+        ]);
+        Event::fake([GenericBroadcastEvent::class]);
+
+        $date = '2026-09-16';
+
+        for ($i = 0; $i < 5; $i++) {
+            $this->visit($date);
+        }
+
+        $run = $this->service->archiveDay($date);
+
+        // 시작(0)·종료(100) 사이에 0 < p < 100 인 프레임이 적어도 하나 있어야 한다.
+        Event::assertDispatched(
+            GenericBroadcastEvent::class,
+            static function (GenericBroadcastEvent $event) use ($run): bool {
+                if ($event->eventName !== ArchiveService::PROGRESS_EVENT) {
+                    return false;
+                }
+
+                if (($event->payload['data']['id'] ?? null) !== $run->id) {
+                    return false;
+                }
+
+                $percent = (int) ($event->payload['data']['progress_percent'] ?? 0);
+
+                return $percent > 0 && $percent < 100;
+            },
+        );
+    }
+
+    /**
+     * 방송 드라이버가 꺼져 있으면 방송 없이 집계만 끝나는지 확인합니다.
+     *
+     * 소켓을 두지 않은 설치가 대부분이다 — 그 사이트에서 방송 시도가 예외를 내거나
+     * 집계를 늦추면 안 된다.
+     *
+     * @return void 없음
+     *
+     * @scenario period=day, data=all_types, trigger=manual
+     *
+     * @effects archive_progress_is_broadcast_to_the_admin_channel
+     */
+    public function test_progress_is_not_broadcast_when_the_driver_is_off(): void
+    {
+        config(['broadcasting.default' => 'null']);
+        Event::fake([GenericBroadcastEvent::class]);
+
+        $date = '2026-09-18';
+        $this->visit($date);
+
+        $run = $this->service->archiveDay($date);
+
+        Event::assertNotDispatched(GenericBroadcastEvent::class);
+        $this->assertSame(ArchiveRunStatus::Success->value, $this->statusOf($run));
+        $this->assertSame(100, (int) $run->progress_percent);
     }
 
     /**

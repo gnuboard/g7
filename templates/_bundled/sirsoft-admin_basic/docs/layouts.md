@@ -5,19 +5,33 @@
 ## 레이아웃 목록
 
 <!-- @generated:layouts START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-레이아웃 149개 (루트: `layouts`).
+레이아웃 174개 (루트: `layouts`).
 
 | 그룹 | 개수 |
 |---|---|
-| `(root)` | 27개 |
+| `(root)` | 41개 |
 | `auth` | 1개 |
 | `errors` | 6개 |
-| `partials` | 115개 |
+| `partials` | 126개 |
 
 | 레이아웃 | 그룹 | 종류 | extends |
 |---|---|---|---|
 | `_admin_base` | `(root)` | partial | - |
 | `admin_activity_log_list` | `(root)` | 화면 | `_admin_base` |
+| `admin_analytics_actions` | `(root)` | 화면 | `_admin_base` |
+| `admin_analytics_bots` | `(root)` | 화면 | `_admin_base` |
+| `admin_analytics_diagnostics` | `(root)` | 화면 | `_admin_base` |
+| `admin_analytics_environment` | `(root)` | 화면 | `_admin_base` |
+| `admin_analytics_overview` | `(root)` | 화면 | `_admin_base` |
+| `admin_analytics_pages` | `(root)` | 화면 | `_admin_base` |
+| `admin_analytics_patterns` | `(root)` | 화면 | `_admin_base` |
+| `admin_analytics_privacy_requests` | `(root)` | 화면 | `_admin_base` |
+| `admin_analytics_realtime` | `(root)` | 화면 | `_admin_base` |
+| `admin_analytics_referrers` | `(root)` | 화면 | `_admin_base` |
+| `admin_analytics_regions` | `(root)` | 화면 | `_admin_base` |
+| `admin_analytics_settings` | `(root)` | 화면 | `_admin_base` |
+| `admin_analytics_visitor_detail` | `(root)` | 화면 | `_admin_base` |
+| `admin_analytics_visitors` | `(root)` | 화면 | `_admin_base` |
 | `admin_dashboard` | `(root)` | 화면 | `_admin_base` |
 | `admin_forgot_password` | `(root)` | 화면 | - |
 | `admin_identity_logs` | `(root)` | 화면 | `_admin_base` |
@@ -55,6 +69,17 @@
 | `_modal_notification_delete_all_confirm` | `partials` | partial | - |
 | `_partial_datagrid` | `partials` | partial | - |
 | `_partial_filter` | `partials` | partial | - |
+| `_modal_purge_all` | `partials` | partial | - |
+| `_modal_reaggregate` | `partials` | partial | - |
+| `_modal_retro_anonymize` | `partials` | partial | - |
+| `_modal_subject_delete` | `partials` | partial | - |
+| `_partial_kpi_row` | `partials` | partial | - |
+| `_partial_notification_definitions` | `partials` | partial | - |
+| `_partial_period_bar` | `partials` | partial | - |
+| `_partial_realtime_bar` | `partials` | partial | - |
+| `_partial_report_grid` | `partials` | partial | - |
+| `_partial_status_alerts` | `partials` | partial | - |
+| `_analytics_widget` | `partials` | partial | - |
 | `_content` | `partials` | partial | - |
 | `_modal_log_detail` | `partials` | partial | - |
 | `_modal_purge_confirm` | `partials` | partial | - |
@@ -269,6 +294,20 @@
 | `*/admin/templates/:type` | `admin_template_list` | - |
 | `*/admin/template/partial` | `template_partial_test` | - |
 | `*/admin/activity-logs` | `admin_activity_log_list` | - |
+| `*/admin/analytics` | `admin_analytics_overview` | - |
+| `*/admin/analytics/pages` | `admin_analytics_pages` | - |
+| `*/admin/analytics/referrers` | `admin_analytics_referrers` | - |
+| `*/admin/analytics/environment` | `admin_analytics_environment` | - |
+| `*/admin/analytics/regions` | `admin_analytics_regions` | - |
+| `*/admin/analytics/patterns` | `admin_analytics_patterns` | - |
+| `*/admin/analytics/actions` | `admin_analytics_actions` | - |
+| `*/admin/analytics/realtime` | `admin_analytics_realtime` | - |
+| `*/admin/analytics/visitors` | `admin_analytics_visitors` | - |
+| `*/admin/analytics/visitors/:key` | `admin_analytics_visitor_detail` | - |
+| `*/admin/analytics/bots` | `admin_analytics_bots` | - |
+| `*/admin/analytics/diagnostics` | `admin_analytics_diagnostics` | - |
+| `*/admin/analytics/privacy-requests` | `admin_analytics_privacy_requests` | - |
+| `*/admin/analytics/settings` | `admin_analytics_settings` | - |
 | `*/admin/member-notifications` | `admin_member_notification_list` | - |
 | `*/admin/notification-logs` | `admin_notification_log_list` | - |
 | `*/admin/settings` | `admin_settings` | - |
@@ -325,6 +364,35 @@ _admin_base.g7.html (베이스 레이아웃)
 │
 ├── admin_dashboard.g7.html (대시보드)
 ├── admin_login.g7.html (로그인 — _admin_base 미상속)
+│
+├── 방문자 통계 (#682 S3)
+│   ├── admin_analytics_overview.g7.html (개요 — KPI·추이·상위 3열·실시간 한 줄)
+│   ├── admin_analytics_pages.g7.html (페이지 — 인기·진입·이탈 탭)
+│   ├── admin_analytics_referrers.g7.html (유입 경로 — 유형·사이트·검색어·캠페인 탭)
+│   │   └── 사이트 탭에서 도메인 행을 누르면 그 도메인의 전체 유입 주소 목록(같은 화면, `host` 질의)
+│   ├── admin_analytics_environment.g7.html (환경 — 브라우저·OS·기기·해상도·언어·로케일 탭)
+│   ├── admin_analytics_regions.g7.html (지역 — 국가·지역·도시 탭)
+│   ├── admin_analytics_patterns.g7.html (요일·시간대 — 지표 선택은 `metric` 질의)
+│   ├── admin_analytics_actions.g7.html (행동 — 검색어·내려받기·외부 링크·전환·확장 차원 탭)
+│   ├── admin_analytics_realtime.g7.html (실시간 — 창 크기는 `minutes` 질의)
+│   ├── admin_analytics_visitors.g7.html (방문자 목록 — 회원 칸의 행위자 메뉴 포함)
+│   ├── admin_analytics_visitor_detail.g7.html (방문자 상세 — 방문 아코디언·액션 타임라인)
+│   ├── admin_analytics_bots.g7.html (봇·크롤러 — 봇별 집계 + 최근 요청)
+│   ├── admin_analytics_diagnostics.g7.html (수집 진단 — 실패 로그·집계 실행 이력·구간 재집계)
+│   ├── admin_analytics_privacy_requests.g7.html (정보주체 요청)
+│   ├── admin_analytics_settings.g7.html (설정 — 수집·개인정보·봇/제외·보존/용량·리포트 탭)
+│   └── partials/admin_analytics/
+│       ├── _partial_period_bar.g7.html (공통 기간 바 — 프리셋 8·달력·단위·제외·CSV)
+│       ├── _partial_report_grid.g7.html (공통 리포트 표 — 검색·정렬·쪽·부가 열)
+│       ├── _partial_status_alerts.g7.html (공통 상단 경고 — 수집 꺼짐·동의 폴백·큐 적체)
+│       ├── _partial_kpi_row.g7.html (KPI 카드 4)
+│       ├── _partial_realtime_bar.g7.html (실시간 한 줄)
+│       ├── _partial_notification_definitions.g7.html (설정>리포트 탭의 알림 정의 상태)
+│       ├── _modal_reaggregate.g7.html (구간 재집계)
+│       ├── _modal_purge_all.g7.html (전체 삭제)
+│       ├── _modal_retro_anonymize.g7.html (소급 익명화)
+│       └── _modal_subject_delete.g7.html (정보주체 삭제)
+│       └── 대시보드 카드는 partials/admin_dashboard/_analytics_widget.g7.html
 │
 ├── 사용자 관리
 │   ├── admin_user_list.g7.html (목록)
@@ -655,7 +723,7 @@ _admin_base.g7.html
 
 ### 관련 문서
 
-활동 로그 목록은 `admin_activity_log_list.g7.html`, 본인인증 이력 목록은 `admin_identity_logs.g7.html`에서 필터와 상세 조회를 제공합니다.
+활동 로그 목록은 `admin_activity_log_list.g7.html`, 본인인증 이력 목록은 `admin_identity_logs.g7.html`에서 필터와 상세 조회를 제공하며, 조각 `partials/admin_identity_logs/_partial_datagrid.g7.html`·`_partial_filter.g7.html`·`_modal_log_detail.g7.html`·`_modal_purge_confirm.g7.html`(기간 일괄 삭제 확인) 네 벌로 나뉩니다.
 
 - [sirsoft-admin_basic 컴포넌트](components.md)
 - [sirsoft-admin_basic 핸들러](handlers.md)

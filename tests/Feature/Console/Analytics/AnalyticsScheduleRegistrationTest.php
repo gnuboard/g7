@@ -5,6 +5,7 @@ namespace Tests\Feature\Console\Analytics;
 use Illuminate\Console\Scheduling\Event;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Schedule as ScheduleFacade;
 use Tests\TestCase;
 
 /**
@@ -188,13 +189,50 @@ class AnalyticsScheduleRegistrationTest extends TestCase
      */
     public function test_conditional_schedules_are_absent_when_their_feature_is_off(): void
     {
-        // 이 환경은 클라우드 대역 차단이 꺼져 있고 브로드캐스트 키가 비어 있다 —
-        // 그 상태에서 두 예약이 등록되면 없는 기능을 위해 배치가 돈다.
-        $this->assertFalse((bool) g7_core_settings('analytics.block_cloud_ip_ranges', false));
-        $this->assertSame('', (string) config('broadcasting.connections.reverb.key', ''));
+        // 조건을 **이 테스트가 만든다**. 개발자 `.env` 의 `REVERB_APP_KEY` 를 그대로 읽으면,
+        // 웹소켓을 켜 둔 사람의 컴퓨터에서만 빨개져 정작 재려던 것을 못 잰다(#682 S3 라운드 9).
+        $this->rebuildScheduleWith(['broadcasting.connections.reverb.key' => '']);
 
         $this->assertNull($this->findEvent('analytics:update-cloud-ranges'));
         $this->assertNull($this->findEvent('analytics:broadcast-realtime'));
+    }
+
+    /**
+     * 브로드캐스트가 설정된 사이트에서는 실시간 예약이 등록되는지 확인합니다.
+     *
+     * @return void 없음
+     *
+     * @scenario target=salts, row_age=within
+     *
+     * @effects conditional_schedules_appear_when_their_feature_is_on
+     */
+    public function test_the_realtime_schedule_appears_when_broadcasting_is_configured(): void
+    {
+        // 꺼진 쪽만 재면 「어느 조건에서도 등록되지 않는다」와 구분이 안 된다 — 켠 쪽도 잰다.
+        $this->rebuildScheduleWith(['broadcasting.connections.reverb.key' => 'test-key']);
+
+        $this->assertNotNull($this->findEvent('analytics:broadcast-realtime'));
+    }
+
+    /**
+     * 주어진 config 로 예약을 처음부터 다시 등록합니다.
+     *
+     * 예약은 부팅 때 `routes/console.php` 가 그 시점의 config 를 읽어 걸므로, 뒤늦게 config 만
+     * 바꿔서는 등록 결과가 달라지지 않는다. 빈 `Schedule` 을 새로 꽂고 콘솔 라우트를 다시 읽어
+     * 그 config 에서의 등록 결과를 만든다.
+     *
+     * @param  array<string, mixed>  $config  적용할 config 키-값
+     * @return void 없음
+     */
+    private function rebuildScheduleWith(array $config): void
+    {
+        config($config);
+
+        $this->app->forgetInstance(Schedule::class);
+        $this->app->instance(Schedule::class, new Schedule);
+        ScheduleFacade::clearResolvedInstance(Schedule::class);
+
+        require base_path('routes/console.php');
     }
 
     /**

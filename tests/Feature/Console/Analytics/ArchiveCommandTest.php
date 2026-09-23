@@ -151,8 +151,16 @@ class ArchiveCommandTest extends TestCase
         );
 
         $before = AnalyticsArchiveRun::query()->count();
+        $successBefore = AnalyticsArchiveRun::query()->where('status', ArchiveRunStatus::Success->value)->count();
         $this->artisan('analytics:archive', ['--from' => '2026-08-01', '--to' => '2026-08-02'])->assertSuccessful();
-        $this->assertSame($before, AnalyticsArchiveRun::query()->count(), '확정된 날은 다시 돌지 않는다');
+
+        // 다시 돌지는 않지만 건너뛴 사실은 이틀치 이력으로 남는다 — 아무것도 남기지 않으면
+        // 커맨드가 성공만 찍고 끝나 무엇을 했는지 물어볼 곳이 없다.
+        $this->assertSame($successBefore, AnalyticsArchiveRun::query()->where('status', ArchiveRunStatus::Success->value)->count(), '확정된 날은 다시 돌지 않는다');
+        $this->assertSame($before + 2, AnalyticsArchiveRun::query()->count());
+        $this->assertSame(2, AnalyticsArchiveRun::query()->where('status', ArchiveRunStatus::Skipped->value)->count());
+
+        $before = AnalyticsArchiveRun::query()->count();
 
         $this->artisan('analytics:archive', [
             '--from' => '2026-08-01',

@@ -100,19 +100,28 @@ Set-Cookie: g7_vid=3f2a...; Path=/; Max-Age=34128000; HttpOnly; SameSite=Lax
 
 ---
 
-## 적재 방식 — 큐와 즉시 적재
+## 적재 방식 — 언제나 요청 안에서
 
-설정 `analytics.dispatch_mode` 가 정합니다.
+**고를 것이 없습니다.** 수집 요청은 훅(`core.analytics.tracking_request_received`)을 거치되
+그 리스너가 `'sync' => true` 로 구독하므로 큐를 타지 않고 요청 안에서 원장에 닿습니다.
+워커를 운영하지 않는 설치에서도 방문이 유실되지 않습니다.
 
-- **queue**(기본): 수집 요청을 훅으로 넘기고 큐 워커가 적재합니다. 응답이 빨라지지만
-  **워커가 돌지 않으면 방문이 쌓이지 않습니다.** 진단 화면이 큐 대기 건수를 보여 줍니다.
-- **sync**: 요청 안에서 바로 적재합니다. 워커를 운영하지 않는 설치의 선택지입니다.
+큐를 써서 얻는 것이 없기 때문입니다 — 배치·합산이 없어 **방문 1건 = 잡 1개**가 되고,
+`jobs` 의 INSERT + 워커 SELECT + DELETE 가 원장 INSERT 한 번보다 비쌉니다. 지연을 미룰
+이유도 없습니다: 비콘은 `sendBeacon` 이라 브라우저가 기다리지 않고, 서버 폴백은 `terminate`
+단계라 응답이 이미 나간 뒤입니다.
 
-**두 방식 모두 방문자 쿠키는 이 요청의 응답에서 심습니다.** 쿠키는 적재 결과물이 아니라
-방문자 식별의 전제이고, 큐 워커는 응답 헤더를 쓸 수 없기 때문입니다. 적재와 함께 미루면
-쿠키가 영영 나가지 않아 매 비콘이 새 방문으로 잡히고 재방문이 항상 0 이 됩니다 — 응답은
-정상 204 라 겉으로는 아무 증상이 없습니다. 큐 방식에서는 이 요청이 정한 방문자 식별값을
-훅 페이로드의 `visitor_key` 로 함께 넘겨, 워커가 같은 방문자로 적재하게 합니다.
+훅을 그대로 거치므로 **확장의 이음매는 유지됩니다.** 다만 이 훅을 구독하는 확장은 자기
+리스너가 요청 안에서 돈다는 것을 전제해야 합니다 — 느린 작업은 확장 쪽에서 자기 잡으로
+넘기십시오.
+
+**방문자 쿠키는 이 요청의 응답에서 심습니다.** 쿠키는 적재 결과물이 아니라 방문자 식별의
+전제입니다. 적재와 함께 미루면 쿠키가 영영 나가지 않아 매 비콘이 새 방문으로 잡히고
+재방문이 항상 0 이 됩니다 — 응답은 정상 204 라 겉으로는 아무 증상이 없습니다. 그래서
+식별(`identify`)은 훅 발화보다 **먼저** 합니다.
+
+집계·익명화 같은 **배치는 큐 드라이버를 따릅니다**(구간 재집계·소급 익명화·확장 제거 시의
+정리). 큐 드라이버가 `sync` 면 요청 안에서 즉시 돕니다.
 
 ### GET /api/admin/analytics/overview
 <!-- @generated:start:api.admin.analytics.overview -->
@@ -142,7 +151,7 @@ Set-Cookie: g7_vid=3f2a...; Path=/; Max-Age=34128000; HttpOnly; SameSite=Lax
 | kpi.change_pct | float\|null | 어제 대비 증감률. 어제가 0 이면 `null` (「무한 % 증가」로 적으면 오해를 부른다) |
 | series.unit | string | 실제로 쓰인 시계열 단위 |
 | series.unit_downgraded | boolean | 시간 단위를 요청했으나 그 집계의 보존기간 밖이라 일 단위로 낮춘 경우 `true` |
-| series.points[] | array | `{ts, visits, visitors, pageviews, bounces, bounce_rate, avg_time, pages_per_visit}` |
+| series.points[] | array | `{ts, visits, visitors, pageviews, bounces, bounce_rate, avg_time, pages_per_visit}`. 기록이 없는 칸도 0 으로 채워 한 칸씩 나간다 — 건너뛰면 차트가 앞뒤 칸을 곧장 이어 그려 추이가 거짓이 된다. 지금 시간·오늘 뒤의 칸은 만들지 않는다. 기간 전체에 기록이 하나도 없으면 빈 배열이다 (화면이 「선택 기간에 기록이 없습니다」를 띄운다) |
 | top.pages / top.referrers / top.countries | array | 상위 목록 (설정 `top_n_overview` 건) |
 | realtime.count / realtime.visitors[] | integer / array | 현재 접속자 수와 최근 목록. 이 경로에서는 주소를 담지 않는다 |
 | meta.mode | string | 개인정보 수집 모드 (full, consent, anonymous) |
@@ -180,7 +189,7 @@ Set-Cookie: g7_vid=3f2a...; Path=/; Max-Age=34128000; HttpOnly; SameSite=Lax
 | --- | --- | --- |
 | unit | string | 실제 단위 (auto 는 구간 ≤2일 hour, ≤92일 day, ≤730일 week, 그 밖 month) |
 | unit_downgraded | boolean | 시간 집계 보존기간 밖을 시간 단위로 요청해 일 단위로 낮춘 경우 `true` |
-| points[] | array | `{ts, visits, visitors, pageviews, bounces, bounce_rate, avg_time, pages_per_visit}` |
+| points[] | array | `{ts, visits, visitors, pageviews, bounces, bounce_rate, avg_time, pages_per_visit}`. 기록이 없는 칸도 0 으로 채워 한 칸씩 나간다 — 건너뛰면 차트가 앞뒤 칸을 곧장 이어 그려 추이가 거짓이 된다. 지금 시간·오늘 뒤의 칸은 만들지 않는다. 기간 전체에 기록이 하나도 없으면 빈 배열이다 (화면이 「선택 기간에 기록이 없습니다」를 띄운다) |
 
 **CSV 내려받기** — `?format=csv` 는 `ts, visits, visitors, pageviews, bounce_rate,
 avg_time_seconds, pages_per_visit` 일곱 열입니다. 화면의 그래프를 운영자가 스프레드시트에서
@@ -209,7 +218,7 @@ avg_time_seconds, pages_per_visit` 일곱 열입니다. 화면의 그래프를 �
 | page | query | integer | 아니오 | min 1 | 쪽 번호 |
 | per_page | query | integer | 아니오 | min 1, max 100 | 쪽당 건수. 기본값은 설정의 「상세 화면 상위 목록 건수」(`top_n_detail`, 기본 25) |
 | sort | query | string | 아니오 | visits, hits, entries, exits | 정렬 기준. 기본 `visits` |
-| q | query | string | 아니오 | max 255 | 라벨 부분 검색 |
+| q | query | string | 아니오 | max 255 | 라벨 부분 검색. 입력한 글자 그대로 찾는다(`%`·`_` 도 글자). 주소 차원(페이지·진입·이탈·봇 페이지)은 화면에 풀어 보인 모양(「테스트」)으로 찾아도 인코딩돼 저장된 라벨(「%ED%85%8C…」)이 잡힌다 |
 | format | query | string | 아니오 | json, csv | `csv` 면 표를 파일로 내려받는다 |
 
 
@@ -219,7 +228,7 @@ avg_time_seconds, pages_per_visit` 일곱 열입니다. 화면의 그래프를 �
 | --- | --- | --- |
 | report | string | 요청한 리포트 이름 |
 | data[].label | string | 저장된 라벨 (기계가 읽는 값 — 국가 코드, 접두를 뗀 주소) |
-| data[].label_display | string | 화면에 보일 문자열 (국가·지역·도시는 번역, 주소는 사이트 호스트를 뗀 값) |
+| data[].label_display | string | 화면에 보일 문자열 (국가·지역·도시는 번역, 주소는 사이트 호스트를 떼고 퍼센트 인코딩을 푼 값 — 풀어서 올바른 UTF-8 이 아니거나 제어 문자가 섞이면 원문. `label` 은 저장값 그대로) |
 | data[].visits / hits | integer | 이 라벨이 나온 방문 수 / 액션 수. 같은 방문이 한 라벨을 여러 번 봐도 방문은 1 이다 |
 | data[].entries / exits | integer | 이 라벨로 시작한 / 끝난 방문 수 |
 | data[].bounce_rate | float | 이탈률 (%) |
@@ -304,12 +313,13 @@ pages_per_visit`) 뒤에 **그 차원의 부가 열**이 붙습니다. 내부 �
 
 **응답 필드** (`data` 내부)
 
-`reports/bot_name` 과 같은 모양에 최근 요청 목록이 하나 더 붙습니다.
+`reports/bot_name` 과 같은 모양에 기간 합계와 최근 요청 목록이 더 붙습니다.
 
 | 필드 | 타입 | 용도/설명 |
 | --- | --- | --- |
 | data[] | array | 봇 이름별 방문·조회 수 (`reports/bot_name` 과 같은 행 모양) |
 | pagination | object | 쪽 정보 |
+| totals | object | 기간 전체 합계 — `hits`(봇 요청 수)·`labels`(봇 종류 수). `data[]` 는 쪽으로 잘려 있어 그 행을 더하면 이 쪽의 합일 뿐이므로, 「봇 요청」·「봇 종류」 같은 기간 숫자는 이 값을 읽는다. 쪽·검색어와 무관하다 |
 | recent_hits[] | array | 최근 봇 요청 50건 — `bot_name`·`url`·`ip`·`cache_status`·`occurred_at`. 집계는 「어느 봇이 얼마나」까지만 답하므로, 어떤 주소를 언제 긁어 갔는지를 함께 보여 운영자가 차단 여부를 판단할 수 있게 한다 |
 
 `format=csv` 로 받을 때는 집계 표만 나갑니다 — 내려받기는 원장 목록을 싣지 않습니다.
@@ -337,7 +347,7 @@ pages_per_visit`) 뒤에 **그 차원의 부가 열**이 붙습니다. 내부 �
 | count | integer | 그 구간에 움직인 서로 다른 방문자 수 |
 | window_minutes | integer | 실제로 쓰인 구간 |
 | visitors[].visitor_key | string | 방문자 키 앞 8자 (전체는 내보내지 않는다) |
-| visitors[].page | string\|null | 마지막으로 본 페이지 |
+| visitors[].page | string\|null | 마지막으로 본 페이지 — 리포트의 `label_display` 와 같은 화면용 모양(사이트 호스트 제거·인코딩 해제) |
 | visitors[].last_action_at | string | 마지막 활동 시각 |
 | visitors[].visitor_type / country_code / device_type / browser_name | string\|null | 방문자 구분과 환경 |
 | visitors[].ip | string\|null | 주소. **`core.analytics.privacy` 권한이 있을 때만** 채워지고, 없으면 `null` |
@@ -361,20 +371,22 @@ _없음._
 
 | 필드 | 타입 | 용도/설명 |
 | --- | --- | --- |
-| collection.enabled / mode / consent_source / dispatch_mode | mixed | 수집이 켜져 있는지, 어떤 모드로, 동의를 어디서 받는지, 즉시 적재인지 큐인지 |
+| collection.enabled / mode / consent_source | mixed | 수집이 켜져 있는지, 어떤 모드로, 동의를 어디서 받는지 |
 | collection.effective_mode | string | 실제로 도는 모드. 운영자가 고른 `mode` 와 다를 수 있다(익명 폴백) |
 | collection.anonymous_fallback_reason | string\|null | 익명으로 내려간 사유. `consent_source_missing`(동의 모드인데 물어볼 곳이 없음) · `consent_plugin_blocks_cookies`(동의 관리 플러그인이 동의 전 방문자 쿠키를 막음). 내려가지 않았으면 `null` |
 | collection.last_tracked_at | string\|null | 마지막으로 무언가 세어진 때 |
 | collection.tracked_today | integer | 오늘 순방문자 |
 | collection.excluded_today / excluded_yesterday | object | 사유별 제외 건수. 캐시에 살기 때문에 캐시를 비우거나 서버를 다시 띄우면 사라진다 — 화면이 그 사실을 함께 적는다 |
 | queue.connection / pending_jobs / failed_jobs | mixed | 큐 상태. `countable` 이 `false` 면 데이터베이스 큐가 아니라 여기서 셀 수 없다는 뜻이고, 0 을 「비어 있다」로 읽으면 안 된다 |
-| queue.backlogged / worker_hint | boolean | 적체 판정. 큐 방식인데 워커가 멈추면 비콘은 204 를 받고도 원장에 닿지 않는다 |
+| queue.backlogged / worker_hint | boolean | 적체 판정. 수집은 큐를 타지 않으므로 여기 쌓이는 것은 **집계·익명화 배치**다 — 워커가 멈추면 방문은 계속 쌓이는데 집계 숫자만 그 시점에 멈춘다 |
 | archive.last_hour_run / last_day_run / lag_hours / running_run_id | mixed | 집계가 밀렸는지. 밀리면 화면 숫자가 그 시점에 멈춘 채 그럴듯하게 남는다 |
 | storage | object | 표별 행 수·크기와 경고 한계 초과 여부 |
 | geoip.enabled / db_present | boolean | 지역 조회 사용 여부와 데이터베이스 존재 |
 | trusted_proxy | object | 프록시 신뢰 설정. 설정하지 않으면 프록시 뒤 전 방문자가 주소 하나로 뭉친다 |
 | broadcasting.configured | boolean | 실시간 푸시 가능 여부 (아니면 화면이 폴링으로 돈다) |
-| cloud_ranges | object | 클라우드 대역 차단 사용 여부와 목록 파일 상태 |
+| cloud_ranges | object | 클라우드 대역 차단 사용 여부와 목록 파일 상태. `updated_at` 은 다른 통계 시각과 같은 **사이트 표준시**(`Y-m-d H:i:s`, 오프셋 없음) |
+| timezone | string | 사이트 표준시 이름. 통계 화면의 모든 시각이 이 기준이다 |
+| timezone_differs | boolean | 보는 사람의 시간대가 사이트와 다른지. 참이면 화면이 「이 시각은 사이트 표준시 기준」을 알린다 |
 | failures_24h | integer | 최근 24시간 적재 실패 건수 |
 <!-- @generated:end:api.admin.analytics.diagnostics -->
 
@@ -434,6 +446,14 @@ _없음._
 
 > 단건 조회는 없는 ID 에 **404** 를 돌려줍니다.
 <!-- @generated:end:api.admin.analytics.archive-runs.index -->
+
+**진행률 방송** — 실행 이력의 `progress_percent`·`status` 가 바뀔 때마다(시작 0% · 청크마다 ·
+성공 100% · 실패) 관리자 채널 `core.admin.analytics` 로 `analytics.archive.progress` 이벤트가
+나갑니다. 페이로드는 `{type: "archive_progress", data: <단건 조회의 data 와 같은 행>}` 이라
+소켓으로 받은 값과 폴링으로 받은 값이 같은 모양입니다. 진단 화면은 소켓이 있으면 이
+방송으로 진행률 바를 움직이고, 없으면(`diagnostics.broadcasting.configured=false`) 진단 API 의
+`archive.running_run_id` 를 2초 간격으로 물어봅니다. 방송 드라이버가 꺼진 설치에서는 방송
+시도 자체를 건너뜁니다(현재 접속자 방송과 같은 규약).
 
 ---
 
@@ -609,8 +629,9 @@ _없음._
 
 | 필드 | 타입 | 용도/설명 |
 | --- | --- | --- |
-| visits[] | array | 찾은 방문. 내보내기는 각 방문의 액션 타임라인과 전환을 함께 담는다 |
+| visits[] | array | 찾은 방문 — `visit_id`·`visitor_key`·`visit_date`·`first_action_at`·`last_action_at`·`ip`·`visitor_type`·`pageviews_count`·`actions_count`(화면의 표가 그리는 값). 내보내기는 각 방문의 액션 타임라인과 전환을 함께 담는다 |
 | notice | string\|null | 찾기의 한계 안내 (익명 모드 구간은 최근 이틀치만 주소로 찾을 수 있다) |
+| export_filename | string | 내보내기 파일명 `analytics-subject-{yyyymmdd}.json`(사이트 기준 날짜). 내보내기를 토큰 동반 blob 으로 받는 화면이 저장 이름으로 쓴다 — 검색값을 파일명에 넣지 않기 위해서다 |
 | deleted | object | (삭제 시) `{visits, actions, conversions}` |
 
 **내보내기는 파일로 옵니다** — `POST …/subjects/export` 는 봉투에 담은 JSON 이 아니라
@@ -686,7 +707,7 @@ _없음._
 | 필드 | 타입 | 용도/설명 |
 | --- | --- | --- |
 | visitor | object | 화면의 「방문자 카드」가 읽는 한 덩어리 — `visitor_key`·`visitor_type`·`country_code`·`device_type`·`browser_name`·`os_name`·`visits`·`first_action_at`·`last_action_at`. 기간 안에 방문이 0건이어도 키와 유형은 남아 카드가 비지 않는다 |
-| visits[] | array | 방문과 그 안의 액션 타임라인·전환 (시간순) |
+| visits[] | array | 방문과 그 안의 액션 타임라인·전환 (시간순). 액션마다 저장 이름 `name` 과 **화면용** `name_display`(사이트 호스트 제거·퍼센트 인코딩 해제)가 함께 온다 — 내보내기 파일(CSV·정보주체 JSON)은 `name` 만 싣는다 |
 | mode | string | 지금 수집 모드 |
 | mode_notice | string\|null | 익명 모드에서는 방문자 키가 날마다 바뀌어 같은 사람의 방문이 하루 안에서만 묶인다는 안내 |
 
@@ -758,19 +779,22 @@ _없음._
 | --- | --- | --- |
 | `core.analytics.collect_validation_rules` | filter | 비콘 검증 규칙에 확장 필드를 더한다 |
 | `core.analytics.visitor_has_consent` | filter | 동의 연동 모드에서 이 방문자가 동의했는지 답한다. 기본값 `null`(답할 확장 없음) |
-| `core.analytics.tracking_request_received` | action | 큐 방식에서 적재를 넘겨받는다 |
+| `core.analytics.consent_session_id` | filter | 동의 조회에 쓸 세션 식별자를 수집 요청 조립 시점에 정한다. 인자 `($default, Request $request)`, 기본값은 시작된 라라벨 세션 ID(없으면 `null`). 게스트 동의를 자기 식별자(예: GDPR 플러그인의 서명된 `gdpr_session` UUID)로 저장하는 동의 관리 확장이 답한다 — 요청이 살아 있을 때 정해 싣으므로 큐 적재에도 그대로 간다 |
+| `core.analytics.tracking_request_received` | action | 적재를 넘겨받는다. 코어 리스너가 `'sync' => true` 로 구독해 **요청 안에서** 돈다 — 구독하는 확장도 같은 전제로 쓴다 |
 | `core.analytics.after_track` | action | 적재 결과를 관찰한다 (방문 ID·액션 ID·종류) |
 | `core.analytics.visit_limit_exceeded` | action | 한 방문의 액션 상한 초과를 알린다 |
 | `core.analytics.period_validation_rules` | filter | 기간 조회 파라미터에 확장 필드를 더한다 |
 | `core.analytics.report_validation_rules` | filter | 상위 목록 조회 파라미터를 확장한다 |
 | `core.analytics.settings_validation_rules` | filter | 설정 저장 규칙을 확장한다 |
 | `core.analytics.subject_validation_rules` | filter | 정보주체 조회 조건을 확장한다 |
+| `core.analytics.{visitor_index·visitor_show·realtime·referrer_urls·diagnostics·collect_failures·archive_run·archive_runs·anonymize·purge·subject_delete·opt_out}_validation_rules` | filter | 같은 이름 관리자 요청의 검증 규칙을 확장한다 (인자 `($rules, FormRequest $request)`) |
 | `core.analytics.archive.day` | action | 집계가 하루치를 마칠 때 확장 차원 행을 얹는다 (**`'sync' => true` 로 구독해야 한다** — 큐로 가면 수집기를 잃는다) |
 | `core.analytics.archive_failed` | action | 집계 실패를 알린다 |
 | `core.analytics.ledger_limit_exceeded` | action | 원장이 경고 한계를 넘었음을 알린다 |
 | `core.analytics.before_prune` / `after_prune` | action | 보존 정리 전후 |
 | `core.analytics.anonymized` | action | 소급 익명화 완료 |
 | `core.analytics.data_purged` | action | 전체 삭제 완료 |
+| `core.analytics.extension_purged` | action | 제거된 확장의 통계 데이터 정리 결과 — 실패해도 지운 행 수 0 으로 쏜다 |
 | `core.analytics.subject_exported` / `subject_deleted` | action | 정보주체 내보내기·삭제 |
 | `core.analytics.settings_updated` / `privacy_mode_changed` | action | 설정·모드 변경 |
 | `core.analytics.opt_out_changed` | action | 수집 제외 전환 |

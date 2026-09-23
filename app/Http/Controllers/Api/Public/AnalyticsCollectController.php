@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Api\Public;
 use App\Analytics\AnalyticsConfig;
 use App\Analytics\TrackingRequestFactory;
 use App\Enums\Analytics\CollectFailureReason;
-use App\Enums\Analytics\DispatchMode;
 use App\Extension\HookManager;
 use App\Http\Controllers\Api\Base\PublicBaseController;
 use App\Http\Requests\Public\Analytics\CollectRequest;
@@ -58,32 +57,23 @@ class AnalyticsCollectController extends PublicBaseController
 
             $dto = TrackingRequestFactory::fromHttp($request, $request->validated());
 
-            // 큐로 넘기면 워커가 적재한다. 워커가 없는 설치에서는 sync 로 바꿔야
-            // 방문이 쌓이므로, 진단 화면이 큐 대기 건수를 함께 보여 준다.
-            if ($config->dispatchMode === DispatchMode::Queue) {
-                // 쿠키만은 여기서 심는다. 워커는 응답 헤더를 쓸 수 없어 적재와 함께
-                // 미루면 쿠키가 영영 나가지 않고, 그러면 매 비콘이 새 방문으로 잡혀
-                // 재방문이 항상 0 이 된다. 화면에는 숫자가 보이므로 증상이 없다.
-                $identity = $this->visits->identify($dto, $config);
+            // 적재는 훅을 거친다 — 확장이 같은 자리에 끼어들 수 있게 하기 위해서다.
+            // 구독 리스너(`RecordTrackingRequestListener`)가 `sync => true` 라 큐를 타지
+            // 않고 이 요청 안에서 끝난다. 방문 1건이 잡 1개가 되던 예전 큐 경로는
+            // 지웠다(#682 S3 라운드 6, 설계 결정 「큐는 꼭 필요한 부분에만」).
+            //
+            // 식별은 훅보다 먼저 한다. 쿠키는 응답 헤더로만 나갈 수 있는데, 구독자가
+            // 방문자 키를 새로 만들면 응답에 심은 쿠키와 어긋나 매 비콘이 새 방문으로
+            // 잡히고 재방문이 항상 0 이 된다. 화면에는 숫자가 보이므로 증상이 없다.
+            $identity = $this->visits->identify($dto, $config);
 
-                HookManager::doAction(
-                    'core.analytics.tracking_request_received',
-                    // 워커가 같은 방문자로 적재하도록 여기서 정한 식별값을 함께 넘긴다 —
-                    // 워커가 다시 만들면 응답에 심은 쿠키와 어긋난다.
-                    $dto->withVisitorKey($identity['key'])->toArray(),
-                );
+            HookManager::doAction(
+                'core.analytics.tracking_request_received',
+                $dto->withVisitorKey($identity['key'])->toArray(),
+            );
 
-                if ($identity['new_cookie'] !== null) {
-                    $response = $this->attachVisitorCookie($response, $identity['new_cookie'], $config);
-                }
-
-                return $response;
-            }
-
-            $result = $this->visits->track($dto);
-
-            if ($result['new_cookie'] !== null) {
-                $response = $this->attachVisitorCookie($response, $result['new_cookie'], $config);
+            if ($identity['new_cookie'] !== null) {
+                $response = $this->attachVisitorCookie($response, $identity['new_cookie'], $config);
             }
         } catch (\Throwable $e) {
             // 여기까지 예외가 올라왔다면 적재 서비스 밖의 문제다. 그래도 응답은 204 다.

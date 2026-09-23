@@ -210,6 +210,8 @@ $localized()는 API 응답의 다국어 객체 처리용
 | `$t:key\|param=value` | 파라미터 전달 | `$t:products.total\|count=10` |
 | `$t:moduleIdentifier.key` | 모듈 다국어 키 | `$t:sirsoft-sample.admin.title` |
 
+> **인자는 `$t:key|param=` 으로만 넘긴다.** 식 안의 `{{$t('key', { count: n })}}` 는 문법 오류 없이 평가되지만, `$t()` 헬퍼는 **키 하나만 받고 인자 객체를 버린다** — 화면에 `{{count}}` 자리표시자가 그대로 보인다. 인자가 필요하면 `$t:key|count={{n}}` 으로 쓰고(인자 값 안의 파이프도 된다: `|at={{row.at | datetime}}`), 반복 안에서 반복 변수를 넘기면 `$t:defer:key|…` 를 쓴다. `$t('key')` 처럼 인자 없는 호출은 식 안에서 그대로 쓸 수 있다.
+
 #### 모듈 식별자와 하이픈 파싱 규칙 (engine-v1.28.1+)
 
 `$t:` 키에서 모듈 식별자는 **별도의 네임스페이스 분리 로직이 아닌, 번역 딕셔너리의 중첩 키 조회**로 처리됩니다.

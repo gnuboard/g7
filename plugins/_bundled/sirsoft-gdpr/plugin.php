@@ -9,6 +9,7 @@ use App\Extension\AbstractPlugin;
 use App\Extension\Helpers\ExtensionMenuSyncHelper;
 use App\Models\Menu;
 use Plugins\Sirsoft\Gdpr\Http\Middleware\CookieConsentMiddleware;
+use Plugins\Sirsoft\Gdpr\Listeners\GdprAnalyticsConsentListener;
 use Plugins\Sirsoft\Gdpr\Listeners\GdprAuthConsentListener;
 use Plugins\Sirsoft\Gdpr\Listeners\GdprAuthLogoutListener;
 use Plugins\Sirsoft\Gdpr\Listeners\GdprUserDeleteListener;
@@ -710,6 +711,7 @@ class Plugin extends AbstractPlugin
             GdprUserDeleteListener::class,
             GdprAuthLogoutListener::class,
             GdprAuthConsentListener::class,
+            GdprAnalyticsConsentListener::class,
         ];
     }
 }

@@ -8,12 +8,18 @@ use App\Models\Analytics\AnalyticsArchiveRun;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 
 /**
  * 배치 실행 이력 Repository
  */
 class ArchiveRunRepository implements ArchiveRunRepositoryInterface
 {
+    /**
+     * 「실행 중」 행을 한 번에 찾는 최대 수
+     */
+    private const RUNNING_LOOKUP_LIMIT = 100;
+
     /**
      * 실행 이력을 시작 상태로 만듭니다.
      *
@@ -124,13 +130,57 @@ class ArchiveRunRepository implements ArchiveRunRepositoryInterface
     /**
      * 지금 돌고 있는 집계 실행을 찾습니다.
      *
+     * @param  Carbon|null  $startedSince  이 시각 이후에 시작한 행만 본다(그 전의 「실행 중」은 멈춘 행으로 친다). null 이면 제한 없음
      * @return AnalyticsArchiveRun|null 실행 중인 이력 (없으면 null)
      */
-    public function findRunning(): ?AnalyticsArchiveRun
+    public function findRunning(?Carbon $startedSince = null): ?AnalyticsArchiveRun
     {
         return AnalyticsArchiveRun::query()
             ->where('status', ArchiveRunStatus::Running->value)
+            ->when($startedSince !== null, fn (Builder $query) => $query->where('started_at', '>=', $startedSince))
             ->orderByDesc('started_at')
             ->first();
+    }
+
+    /**
+     * 주어진 시각 이전에 시작해 아직 「실행 중」으로 남은 행을 찾습니다.
+     *
+     * @param  Carbon  $before  이 시각보다 앞서 시작한 행
+     * @return Collection<int, AnalyticsArchiveRun> 멈춘 것으로 볼 실행 이력
+     */
+    public function getRunningStartedBefore(Carbon $before): Collection
+    {
+        return AnalyticsArchiveRun::query()
+            ->where('status', ArchiveRunStatus::Running->value)
+            ->where('started_at', '<', $before)
+            ->orderBy('id')
+            // 멈춘 행은 워커가 죽은 횟수만큼만 생긴다 — 한 번에 다 못 닫아도 매시 정리가 이어 닫는다.
+            ->limit(self::RUNNING_LOOKUP_LIMIT)
+            ->get();
+    }
+
+    /**
+     * 한 잡이 맡은 「실행 중」 행을 찾습니다 — 같은 유형·같은 요청자로 그 시각 이후에 시작한 행.
+     *
+     * @param  string  $runType  실행 유형
+     * @param  Carbon  $since  잡을 큐에 올린 시각
+     * @param  int|null  $triggeredBy  요청한 관리자 ID (예약 실행이면 null)
+     * @return Collection<int, AnalyticsArchiveRun> 실행 중인 이력
+     */
+    public function getRunningOfTypeSince(string $runType, Carbon $since, ?int $triggeredBy): Collection
+    {
+        return AnalyticsArchiveRun::query()
+            ->where('status', ArchiveRunStatus::Running->value)
+            ->where('run_type', $runType)
+            ->where('started_at', '>=', $since)
+            ->when(
+                $triggeredBy === null,
+                fn (Builder $query) => $query->whereNull('triggered_by'),
+                fn (Builder $query) => $query->where('triggered_by', $triggeredBy),
+            )
+            ->orderBy('id')
+            // 잡 하나가 여는 실행 중 행은 많아야 하루치 하나다.
+            ->limit(self::RUNNING_LOOKUP_LIMIT)
+            ->get();
     }
 }

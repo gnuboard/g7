@@ -36,8 +36,6 @@ class TrackServerVisitMiddlewareTest extends TestCase
     {
         parent::setUp();
 
-        config(['g7_settings.core.analytics.dispatch_mode' => 'sync']);
-
         $this->middleware = app(TrackServerVisit::class);
     }
 
@@ -145,7 +143,7 @@ class TrackServerVisitMiddlewareTest extends TestCase
     /**
      * HTTP 경로 전체 — 서버 폴백 뒤의 첫 비콘이 같은 방문에 붙고 쿠키를 받는다.
      *
-     * @scenario source=server+beacon, visitor=guest, visit_state=new, dispatch=sync
+     * @scenario source=server+beacon, visitor=guest, visit_state=new
      *
      * @effects cookieless_server_fallback_is_adopted_by_first_beacon
      *

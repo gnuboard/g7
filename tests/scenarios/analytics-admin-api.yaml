@@ -29,7 +29,7 @@ description: |
 coverage_strategy: pairwise
 
 axes:
-  endpoint: [overview, series, reports, patterns, realtime, visitors, diagnostics, collect_failures, archive_runs, settings, opt_out, data, privacy_subjects, cloud_ranges, summary]
+  endpoint: [overview, series, reports, patterns, realtime, visitors, visitor_detail, referrer_urls, diagnostics, collect_failures, archive_runs, settings, opt_out, data, privacy_subjects, cloud_ranges, summary]
   role: [none, read, update, privacy, superadmin]
   period: [valid, inverted, too_long, preset]
   format: [json, csv]
@@ -39,28 +39,38 @@ exclusions:
   - { endpoint: summary, role: none, reason: "공개 요약은 인증을 요구하지 않는다 — 권한 축이 성립하지 않는다" }
   - { format: csv, endpoint: settings, reason: "설정은 표가 아니다 — 내보낼 행이 없다" }
   - { confirm: missing, endpoint: overview, reason: "조회는 되돌릴 수 없는 작업이 아니라 확인을 받지 않는다" }
+  - { format: csv, endpoint: referrer_urls, reason: "도메인 아래를 펼쳐 보는 목록이다 — 내려받기는 사이트 목록(reports)이 맡는다" }
 
 effects:
   # 기간 규약
   - period_preset_resolves_to_a_date_range
+  - period_echo_path_matches_every_screen_response
   - explicit_dates_win_over_the_preset
   - inverted_range_is_rejected
   - range_beyond_the_cap_is_rejected
+  - settings_store_declared_types_not_form_strings
+  - manual_archive_reports_skipped_when_locked
   - exclude_toggles_drop_those_visitor_types_from_totals
   # 개요·추이·패턴
   - overview_returns_four_headline_numbers
+  - bot_totals_count_the_whole_period_not_the_page
   - today_is_counted_from_the_ledger_not_the_archive
   - total_is_the_sum_of_daily_unique_visitors
   - change_percent_is_empty_when_yesterday_was_zero
   - overview_meta_exposes_collection_and_queue_state
   - series_unit_is_chosen_from_the_range_length
   - series_downgrades_hour_outside_the_retention_window
+  - series_fills_empty_buckets_with_zero
+  - series_stops_at_the_current_bucket
+  - series_without_any_record_stays_empty
   - patterns_average_instead_of_summing
   # 상위 목록·CSV
   - every_report_dimension_answers
   - detail_top_n_setting_drives_the_page_size
   - unknown_report_is_not_found
   - report_rows_carry_display_labels
+  - page_labels_are_readable_for_display
+  - report_search_matches_what_the_screen_shows
   - report_rows_carry_dimension_extra_values
   - report_rows_without_extra_stay_shaped
   - bot_reports_read_bot_typed_rows
@@ -94,6 +104,9 @@ effects:
   - anonymize_requires_a_mask_or_hash
   - subject_delete_requires_confirmation
   - subject_lookup_requires_at_least_one_criterion
+  - subject_timeline_carries_search_result_count
+  - subject_rows_carry_what_the_screen_shows
+  - subject_export_filename_comes_from_the_server
   - pseudonymized_visits_are_found_by_member_number
   - subject_delete_leaves_aggregates_intact
   - opt_out_sets_and_clears_a_readable_cookie
@@ -110,6 +123,8 @@ effects:
   - visitor_list_pages
   - visitor_detail_expands_one_persons_timeline
   - visitor_detail_carries_a_single_profile_card
+  - visitor_card_carries_member_and_returning
+  - privacy_subjects_carry_the_privacy_mode
   - visitor_card_survives_an_empty_period
   - visitor_views_announce_the_anonymous_mode_limit
   - anonymous_profile_lookup_is_clamped_to_today
@@ -120,6 +135,7 @@ effects:
   - patterns_always_return_seven_weekdays_and_twenty_four_hours
   - patterns_hour_buckets_come_from_hourly_stats
   - patterns_report_the_hourly_availability_window
+  - hourly_availability_boundary_follows_the_site_date
   # 수집 제외 쿠키
   - opt_out_cookie_is_readable_by_the_tracker
   - opt_out_state_is_read_from_the_cookie
@@ -150,9 +166,25 @@ effects:
   - unknown_notification_types_pass_through
   - dashboard_alert_appears_only_over_the_limit
   - dashboard_alert_listener_subscribes_the_alerts_filter
+  - dashboard_alert_jump_is_gated_by_destination_permission
   - analytics_notification_definitions_carry_channels_and_recipients
   - public_summary_is_cached_between_requests
   - public_summary_is_rate_limited
+  # 유입처 전체 주소 — 집계에 없는 값이라 이 한 갈래만 원장을 직접 읽는다 (라운드 4, 검수 지적 ⑥)
+  - referrer_urls_group_by_full_url_within_host
+  - referrer_urls_skip_visits_without_a_stored_url
+  - referrer_urls_paginate_with_has_more
+  - referrer_urls_require_a_host
+  - referrer_urls_require_analytics_read
+  - visitor_detail_carries_the_full_referrer_url
+  # 방문자 목록의 회원 신원 (라운드 4, 검수 지적 ⑦)
+  - visitor_list_carries_member_identity_for_logged_in_visitors
+  - visitor_list_leaves_member_null_when_the_account_is_gone
+  # 마스킹 표시·회원 이동 (#682 S3 라운드 6)
+  - masked_ip_is_labelled_as_masked
+  - analytics_times_are_rendered_in_the_site_timezone
+  - member_jump_is_gated_by_destination_permission
+  - visitor_csv_filename_carries_the_period
 
 test_files:
   - tests/Feature/Analytics/Api/OverviewControllerTest.php
@@ -161,8 +193,10 @@ test_files:
   - tests/Feature/Analytics/Api/DiagnosticsControllerTest.php
   - tests/Feature/Analytics/Api/ArchiveRunControllerTest.php
   - tests/Feature/Analytics/Api/SettingsControllerTest.php
+  - tests/Unit/Analytics/AnalyticsSettingsCastTest.php
   - tests/Feature/Analytics/Api/PrivacyControllerTest.php
   - tests/Feature/Analytics/Api/VisitorControllerTest.php
+  - tests/Feature/Analytics/Api/ReferrerUrlsControllerTest.php
   - tests/Feature/Analytics/Api/PatternsControllerTest.php
   - tests/Feature/Analytics/Api/OptOutControllerTest.php
   - tests/Feature/Analytics/Api/DataControllerTest.php
@@ -170,6 +204,8 @@ test_files:
   - tests/Feature/Analytics/Api/PublicSummaryControllerTest.php
   - tests/Feature/Analytics/Api/PermissionMatrixTest.php
   - tests/Feature/Analytics/NotificationDefinitionsTest.php
+  - tests/Feature/Analytics/Api/LedgerAlertActionPermissionTest.php
+  - tests/Feature/Analytics/Api/PeriodEchoPathTest.php
   - tests/Feature/Console/Analytics/ReportCommandTest.php
   - tests/Unit/Analytics/CsvExporterTest.php
 
