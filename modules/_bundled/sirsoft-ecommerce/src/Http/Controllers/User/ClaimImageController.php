@@ -6,26 +6,32 @@ use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Api\Base\AuthBaseController;
 use Exception;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Modules\Sirsoft\Ecommerce\Exceptions\OrderClaimException;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Traits\MapsClaimErrors;
 use Modules\Sirsoft\Ecommerce\Http\Requests\User\UploadClaimImageRequest;
 use Modules\Sirsoft\Ecommerce\Http\Resources\ClaimImageResource;
 use Modules\Sirsoft\Ecommerce\Services\ClaimAttachmentService;
-use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
- * 클레임 첨부 이미지 컨트롤러 (회원 업로드·삭제 + 공용 서빙)
+ * 클레임 첨부 이미지 컨트롤러 (회원 업로드·삭제)
  *
  * 업로드(`uploadPending`)는 신청서 작성 중이라 첨부를 **주문에 묶어** 저장하고 신청서에는 매달지 않는다.
  * 소유권을 걸 앵커가 주문뿐이기 때문이다 — 신청 접수 시 `attachPending()` 이 신청서로 옮긴다.
- * 서빙(`download`)은 한시 서명 또는 열람자 게이트를 통과해야 한다 — 직접(CDN) URL 은 없다.
+ *
+ * 인증은 라우트 그룹(`user` 접두 + `auth:sanctum`)이 강제한다 — 이 클래스는 생성자를 재정의하므로
+ * `AuthBaseController` 생성자의 미들웨어 등록은 실행되지 않는다. 로그인 없이 열리는 서빙
+ * (한시 서명 URL)은 `Public\ClaimImageDownloadController` 가 맡는다.
  */
 class ClaimImageController extends AuthBaseController
 {
     use MapsClaimErrors;
 
+    /**
+     * 회원 클레임 첨부 컨트롤러를 생성합니다.
+     *
+     * @param  ClaimAttachmentService  $attachmentService  첨부 서비스
+     */
     public function __construct(
         private ClaimAttachmentService $attachmentService,
     ) {}
@@ -63,7 +69,7 @@ class ClaimImageController extends AuthBaseController
 
         $model = $this->attachmentService->find($image);
 
-        if (! $model || ! $this->attachmentService->ownedBy($model, Auth::id())) {
+        if (! $model || ! $this->attachmentService->deletableBy($model, Auth::id())) {
             return $this->claimNotFound('exceptions.claim_image_not_found');
         }
 
@@ -74,28 +80,5 @@ class ClaimImageController extends AuthBaseController
         } catch (Exception $e) {
             return $this->claimServerError("첨부 삭제(#{$image})", $e);
         }
-    }
-
-    /**
-     * 첨부 이미지 서빙 (한시 서명 / 신청자 본인 / 운영자)
-     *
-     * @param  Request  $request  요청 (서명 검증용)
-     * @param  string  $hash  첨부 해시
-     * @return StreamedResponse|JsonResponse 파일 응답 또는 404
-     */
-    // audit:allow controller-base-request-injection reason: GET 이미지 서빙. 요청 URL 의 한시 서명 검증(hasValidSignature)만 수행. 검증할 body 없음(hash 는 라우트 파라미터)
-    public function download(Request $request, string $hash): StreamedResponse|JsonResponse
-    {
-        $response = $this->attachmentService->download(
-            $hash,
-            signatureVerified: $request->hasValidSignature(absolute: false),
-            viewerUserId: Auth::id(),
-        );
-
-        if (! $response) {
-            return $this->claimNotFound('exceptions.claim_image_not_found');
-        }
-
-        return $response;
     }
 }

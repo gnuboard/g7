@@ -38,9 +38,21 @@
 ### 접수 시 환불 계좌 요건
 
 **돈이 계좌로 돌아가는 주문은 `refund_bank` 없이 접수되지 않는다** — 무통장입금처럼 사람이
-송금하는 수단과 입금이 끝난 가상계좌 둘 다다. 비면 `422` 이고 오류 키는 `refund_bank`,
-문구는 사람이 송금하는 수단이면 `validation.order.refund_bank_required_for_manual_transfer`,
-가상계좌면 `validation.order.refund_bank_required_for_vbank` 다(관리자 [주문취소]와 같은 두 벌).
+송금하는 수단과 입금이 끝난 가상계좌 둘 다다. 취소·환불뿐 아니라 **반품 신청**과 **돌려줄 차액이 있는
+교환 신청**(저가 교환 — 미리보기의 `refund_product_amount > 0`)도 같은 게이트를 지나고, 승인 전 **수정**
+(`PATCH …/claims/{claimNumber}`)도 신청서에 계좌가 남지 않게 되면 같은 이유로 거절한다. 같은 가격·
+고가 교환은 돌려줄 돈이 없어 계좌를 묻지 않는다. 비면 `422` 이고 오류 키는 `refund_bank`,
+문구는 가상계좌면 `validation.order.refund_bank_required_for_vbank`, 그 밖(무통장 등 사람이 송금하는
+수단, PG 플러그인이 빠져 계좌 환불로 떨어진 결제 포함)이면
+`validation.order.refund_bank_required_for_manual_transfer` 다(관리자 [주문취소]와 같은 두 벌).
+
+**등록 계좌 프리필은 가린 모양이다.** `claimable-options` 의 `refund_account.prefill` 은 주문 시점 등록
+계좌를 `account_number` 뒤 4자리·`holder` 첫 글자만 남기고 가려 싣는다(`masked: true`) — 이 응답은 비회원
+조회 토큰을 가진 누구에게나 나가므로 원문을 싣지 않는다. 화면이 그 값을 손대지 않고 제출하면
+(`refund_bank` 세 값이 가린 모양과 정확히 같으면) 서버가 등록 계좌 원문으로 되돌려 저장한다. 한 칸이라도
+고치면 제출값을 그대로 쓰되, 그 제출값의 계좌번호·예금주에 가린 글자(`*`)가 남아 있으면(예금주만 바꿨거나
+가린 계좌번호에 덧붙인 경우) `422 refund_bank`(`validation.claims.refund_bank.masked`)로 거절한다 — 별표째
+저장되지 않게 한다. 승인 전 수정은 그 신청서에 적힌 계좌를 가린 모양 그대로 되돌려 보내는 것도 "바꾸지 않음" 으로 받는다.
 세 칸 중 일부만 채우면 `validation.claims.refund_bank.incomplete` 로 거절된다. 주문 시점에 등록해 둔 계좌
 (`order_payments.refund_bank_code`)가 있으면 그것으로 충분해 요청에 다시 싣지 않아도 된다.
 
@@ -75,6 +87,11 @@
 
 404 와 500 도 같은 봉투(`success`/`message`)를 쓰며 `errors` 는 없다. 500 의 `message` 는 항상 고정
 문구이고 예외 원문·PG 원문은 담기지 않는다(원문은 서버 로그에만 남는다).
+
+취소·환불 신청(`refund-requests`)이 자동 전이 중 거절되면 `422` 다. 사유 키가 있는 거절(수량 잠금·상태
+자격 등)은 그 사유 문장이 `message` 이고, PG 가 환불을 거절한 경우는 `exceptions.order_cancel_failed`
+고정 문구다 — **PG 가 돌려준 원문(가맹점 설정·내부 코드)은 `errors.detail` 에도 싣지 않는다.** 회원·비회원
+주문 취소(`…/cancel`)도 같은 규칙이다. PG 원문은 서버 로그와 관리자 경로의 `errors.detail` 에만 있다.
 
 ## 엔드포인트 목록
 
@@ -119,6 +136,8 @@
 | reject_reason | string\|null | `null` | 반려 사유 |
 | requested_by | integer\|null | `7` | 신청 회원 ID (비회원 신청은 `null`) |
 | is_guest_request | boolean | `false` | 비회원 신청인지 |
+| refund_priority | string\|null | `pg_first` | 접수 때 고른 환불 우선순위(`pg_first` / `points_first`) — 교환·반품·환불신청서의 `refund_priority` 컬럼 저장값이다(고르지 않았으면 접수 계산에 쓴 `pg_first`). 수정 화면이 이 값을 그대로 세운다. 컬럼 도입 전 신청서·취소신청서는 `null` 이며 화면은 종전 추측으로 떨어진다 |
+| requester_user_uuid | string\|null | `9b1c…` | (관리자 확장 필드) 신청자 링크의 대상 — **주문의 주인** 회원 uuid. 관리자 회원 화면은 uuid 로 연다(`requester_user_id` 는 숫자 id 라 링크에 쓰면 404). 비회원 주문은 `null` |
 | currency_code | string\|null | `KRW` | 금액 통화 (주문 통화 스냅샷의 기본 통화) |
 | items | array | — | 신청 상품 행 ([ClaimItemResource](#claim-item-resource)) |
 | images | array | — | 첨부 이미지 ([ClaimImageResource](#claim-image-resource), 취소는 항상 빈 배열) |
@@ -233,6 +252,7 @@
 | calculation_comparison | object\|null | — | 아래 다섯 키를 가진 객체. 스냅샷이 없으면 `null` |
 | calculation_comparison.original | object | `{"subtotal_amount":58000,"item_count":2,"base_currency":"KRW","formatted":{"subtotal_amount":"58,000원",…},…}` | 재계산 **전** 주문 금액 스냅샷. 미리보기의 `adjustment.original_snapshot` 과 같은 형태(금액 줄 + `base_currency` + 기준 통화 포맷 `formatted`) |
 | calculation_comparison.recalculated | object | `{"subtotal_amount":29000,"item_count":1,…}` | 재계산 **후** 스냅샷 (같은 형태). 교환은 옵션 치환을 반영한 "교환 후" 값이다 |
+| calculation_comparison.{original,recalculated}.total_earned_points_amount_formatted | string | `1,234P` | 적립 마일리지의 **포인트 표기**(`formatted` 맵은 기준 통화 표기라 적립 줄에 쓰면 「원」이 붙는다). 단위 글자는 다국어 키 `messages.mileage.points_format` 이 정한다. 이 키가 없던 때 접수된 스냅샷도 읽을 때 채운다 |
 | calculation_comparison.mc_original | object\|null | `{"mc_total_paid_amount_formatted":{"KRW":"58,000원","USD":"$58.00"},…}` | 원 열의 다통화 줄(정가·판매가·실결제). 통화 스냅샷이 없는 주문은 `null` |
 | calculation_comparison.mc_recalculated | object\|null | — | 후 열의 다통화 줄 (같은 형태) |
 | calculation_comparison.substituted_items | array | `[{"order_option_id":310,"quantity":1,"product_option_id":77,"unit_price":29000,"new_unit_price":32000,"line_key":-310,"option_label":"색상: 블랙, 사이즈: L"}]` | 교환의 옵션 치환 근거 행(상품별 old→new). 교환이 아니거나 치환이 없으면 `[]` |
@@ -554,7 +574,7 @@ Authorization: Bearer {YOUR_TOKEN}
 | reason_detail | body | string | 아니오 | max 1000 | 사유 상세 |
 | charge_method | body | string | 아니오 | 환경설정 `claim.allowed_charge_methods` | 배송비 청구 방식 (교환·반품) |
 | add_image_ids | body | integer[] | 아니오 | max = 환경설정 `claim.max_images`(기본 5) | 귀속시킬 임시 업로드(`pending`) 첨부 ID 목록 |
-| remove_image_ids | body | integer[] | 아니오 | max = 환경설정 `claim.max_images`(기본 5) | 떼어낼 첨부 ID 목록 (이 신청서 소속만). 이 신청서 소속이 아닌 ID 는 조용히 무시된다 |
+| remove_image_ids | body | integer[] | 아니오 | max = 환경설정 `claim.max_images`(기본 5) | 떼어낼 첨부 ID 목록 (이 신청서 소속만). 이 신청서 소속이 아닌 ID 는 조용히 무시된다. **고객이 올린 첨부만** 뗄 수 있다 — 운영자·주체 미상 첨부가 섞이면 아무것도 바꾸지 않고 422(`claim_image_not_removable`) |
 | redelivery_address | body | object | 아니오 | — | (교환) 재발송지 — `recipient_name`(max 50), `phone`(max 20), `zipcode`(max 20), `address1`/`address2`(max 255), `country_code`(2자, 원 배송지와 같은 국가만), `changed_by_user`(boolean) |
 | refund_bank | body | object | 아니오 | 세 값이 **함께** 와야 한다 | 환불 계좌 — `bank_code`(max 10), `account_number`(max 50), `holder`(max 50) — 접수(POST)와 같은 키·같은 상한이다. 셋 중 일부만 채워 보내면 `validation.claims.refund_bank.incomplete` 로 거절된다 (은행만 바뀌고 계좌번호가 옛 값으로 남으면 운영자가 없는 계좌로 이체한다). 셋이 다 빈 채로 보내면 **기록된 계좌를 지우지 않고 그대로 둔다** — 표시 응답은 마스킹된 값이라 화면이 원문을 되돌려 보낼 수 없기 때문이다. 실제 송금 대상(주문 결제행)은 여기서 바뀌지 않는다 |
 
@@ -615,7 +635,7 @@ Content-Type: application/json
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.user-claims.request`)이 없는 경우 |
 | 404 | Not Found | 번호에 해당하는 신청서가 없거나 본인 신청서가 아닌 경우 (`claim_not_found`) |
-| 422 | Unprocessable Entity | 검증 위반, 승인 뒤라 수정 불가(`claim_not_editable` — 취소 이력도 동일), 사유 사용 불가(`claim_reason_unavailable`), 청구 방식 불허(`claim_charge_method_not_allowed`), 재발송지 국가 변경(`claim_redelivery_country_change_not_allowed`), 첨부 부재·타 신청서 소속(`claim_image_not_found`), 첨부 장수 초과(`claim_image_limit_exceeded`), 주문의 거래 시점 통화 스냅샷을 읽을 수 없어 차액 결제의 결제 통화 기준을 세울 수 없는 경우(`claim_payment_currency_unavailable`) |
+| 422 | Unprocessable Entity | 검증 위반, 승인 뒤라 수정 불가(`claim_not_editable` — 취소 이력도 동일), 사유 사용 불가(`claim_reason_unavailable`), 청구 방식 불허(`claim_charge_method_not_allowed`), 재발송지 국가 변경(`claim_redelivery_country_change_not_allowed`), 첨부 부재·타 신청서 소속(`claim_image_not_found`), 고객이 올리지 않은 첨부 삭제 시도(`claim_image_not_removable`), 첨부 장수 초과(`claim_image_limit_exceeded`), 주문의 거래 시점 통화 스냅샷을 읽을 수 없어 차액 결제의 결제 통화 기준을 세울 수 없는 경우(`claim_payment_currency_unavailable`) |
 | 500 | Server Error | 수정 처리 중 예기치 못한 오류 |
 
 <!-- @generated:end -->
@@ -732,9 +752,9 @@ Authorization: Bearer {YOUR_TOKEN}
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.user-claims.request`)이 없는 경우 |
-| 404 | Not Found | 첨부가 없거나 본인이 올린 첨부가 아닌 경우 (`claim_image_not_found`) |
+| 404 | Not Found | 첨부가 없거나, 본인이 올린 첨부가 아니거나, 이미 신청서에 붙은 첨부인 경우 (`claim_image_not_found`) |
 | 500 | Server Error | 파일 삭제 중 예기치 못한 오류 |
 
 <!-- @generated:end -->
 
-**설명** 본인이 올린 첨부(임시 업로드 또는 본인 신청서 소속)를 지웁니다. 스토리지 파일과 행을 함께 지우며, 다른 회원의 첨부는 존재 여부를 드러내지 않고 404 입니다. 승인 뒤 신청서의 첨부를 정리하려면 이 엔드포인트가 아니라 신청서 수정(`remove_image_ids`)의 편집 가능 경계를 따릅니다 — 수정이 막힌 신청서의 첨부도 이 엔드포인트로는 지울 수 있으므로 화면은 `is_editable` 이 `false` 면 삭제 버튼을 숨깁니다.
+**설명** 작성 화면에서 **아직 신청서에 붙지 않은**(임시 업로드) 본인 첨부만 지웁니다. 스토리지 파일과 행을 함께 지우며, 다른 회원의 첨부와 이미 신청서에 붙은 첨부는 존재 여부를 드러내지 않고 404 입니다. 신청서에 붙은 첨부는 신청서 수정(`remove_image_ids`)으로만 뗄 수 있고, 그 경로는 편집 가능 경계(승인 전)와 업로더(고객이 올린 것만)를 함께 봅니다 — 접수가 끝난 신청서의 증빙과 운영자가 올린 사진이 고객 손에 사라지지 않게 하기 위해서입니다.

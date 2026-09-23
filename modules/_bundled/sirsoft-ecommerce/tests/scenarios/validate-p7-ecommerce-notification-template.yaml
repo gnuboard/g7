@@ -1,0 +1,22 @@
+feature: 쇼핑몰 환경설정 알림 템플릿 편집 창 — 수신자 규칙 종류 전환·관계 선택 (#599 validate P7)
+
+description: |
+  코어 알림 템플릿 편집 창과 같은 결함(종류 전환 시 이전 값 잔존 → 수신자 0명, 관련 사용자 relation 미시드 → 422,
+  다중 선택 영어 문구)을 쇼핑몰 사본에서 닫는다. 표현식을 엔진에 그대로 넣어 평가한다.
+
+axes:
+  case: [specific_users_to_role, to_related_user, related_user_to_trigger_user, exclude_trigger_user_carry, other_rows_untouched, empty, undeclared, multiple]
+
+effects:
+  - recipient_rule_type_switch_clears_previous_value
+  - recipient_rule_related_user_seeds_first_declared_relation
+  - recipient_rule_exclude_trigger_user_only_carries_between_group_types
+  - recipient_relation_select_shows_placeholder
+  - recipient_relation_outside_declaration_warns
+  - recipient_multi_select_count_label_is_translated
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/admin-ecommerce-notification-template-recipient-rule-reset.test.ts
+
+notes: |
+  e2e_browser=not_applicable — 표현식 계약 수정. 브라우저 실측은 #599 통합 단계에서 한다.

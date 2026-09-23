@@ -107,6 +107,10 @@
                 "403": {
                     "comment": "클레임 열람 권한이 없는 주문 담당자에게는 정상적인 응답이다 — 상위(레이아웃) errorHandling 으로 전파되면 주문 화면 전체가 오류 페이지가 된다.",
                     "handler": "suppress"
+                },
+                "default": {
+                    "comment": "500·네트워크 실패도 같다 — 클레임 내역 한 섹션의 실패가 주문 화면 전체를 막지 않게 끊고, fallback 의 unavailable 로 섹션이 '못 불러왔다' 를 말한다.",
+                    "handler": "suppress"
                 }
             },
             "comment": "주문 스코프 클레임 내역 (D20 — 유형 서브탭 뱃지용 counts + 신청서가 상품 배열을 품는 그룹 구조). 이 게이트(claims.read)는 화면 라우트 권한(orders.read)보다 좁다 — 클레임 권한이 없는 운영자에게는 403 이므로 suppress 로 전파를 끊고 fallback 의 unavailable 로 '못 불러왔다' 를 섹션이 말한다. 화면 전체를 오류 페이지로 떨어뜨리거나 '접수된 건 없음' 으로 뭉뚱그리지 않는다. transition_overlay 에는 넣지 않는다 — 한 섹션이 주문 화면 전체의 진입을 막아서는 안 된다."
@@ -136,7 +140,8 @@
         "expandedCashReceiptHistory": []
     },
     "computed": {
-        "orderDetailTabs": "{{[{ id: 'order_info', label: $t('sirsoft-ecommerce.admin.order.detail.tabs.order_info') }, { id: 'payment_info', label: $t('sirsoft-ecommerce.admin.order.detail.tabs.payment_info') }, { id: 'claim_history', label: $t('sirsoft-ecommerce.admin.order.detail.tabs.claim_history') + ((orderClaims?.data?.claims ?? []).length > 0 ? ' (' + (orderClaims?.data?.claims ?? []).length + ')' : '') }, { id: 'activity_log', label: $t('sirsoft-ecommerce.admin.order.detail.tabs.activity_log') }]}}",
+        "claimHistoryTotal": "{{Number(orderClaims?.data?.counts?.exchange ?? 0) + Number(orderClaims?.data?.counts?.return ?? 0) + Number(orderClaims?.data?.counts?.cancel ?? 0) + Number(orderClaims?.data?.counts?.refund ?? 0)}}",
+        "orderDetailTabs": "{{[{ id: 'order_info', label: $t('sirsoft-ecommerce.admin.order.detail.tabs.order_info') }, { id: 'payment_info', label: $t('sirsoft-ecommerce.admin.order.detail.tabs.payment_info') }, { id: 'claim_history', label: $t('sirsoft-ecommerce.admin.order.detail.tabs.claim_history') + ((_computed.claimHistoryTotal ?? 0) > 0 ? ' (' + _computed.claimHistoryTotal + ')' : '') }, { id: 'activity_log', label: $t('sirsoft-ecommerce.admin.order.detail.tabs.activity_log') }]}}",
         "claimHistoryTypes": "{{['exchange', 'return', 'cancel', 'refund'].map(t => ({ value: t, label: $t('sirsoft-ecommerce.admin.order.detail.claim_history.subtabs.' + t), count: orderClaims?.data?.counts?.[t] ?? 0 }))}}",
         "claimHistoryActiveType": "{{_local.claimHistoryType || (['exchange', 'return', 'cancel', 'refund'].find(t => (orderClaims?.data?.counts?.[t] ?? 0) > 0) ?? 'exchange')}}",
         "claimHistoryRows": "{{(orderClaims?.data?.claims ?? []).filter(c => c.claim_type === (_local.claimHistoryType || (['exchange', 'return', 'cancel', 'refund'].find(t => (orderClaims?.data?.counts?.[t] ?? 0) > 0) ?? 'exchange')))}}"
@@ -362,20 +367,10 @@
                                 "partial": "partials/admin_ecommerce_order_detail/_partial_order_progress.json"
                             },
                             {
+                                "comment": "탭 클릭·스크롤 추적은 컴포넌트가 제 상태로 맡는다 — `onChange` 는 TabNavigationScroll 에 없는 이벤트라 걸어도 돌지 않고, `onTabChange` 를 걸면 내부 활성 탭 갱신이 꺼져(`activeTabId` 는 초기값 전용) 누른 탭 표시가 따라오지 않는다.",
                                 "id": "tab_navigation",
                                 "type": "composite",
                                 "name": "TabNavigationScroll",
-                                "actions": [
-                                    {
-                                        "comment": "탭 표시만 옮긴다 — 세 구획은 이미 한 페이지에 다 실려 있고 스크롤 스파이가 반대 방향(스크롤 → 탭)을 맡는다",
-                                        "type": "change",
-                                        "handler": "setState",
-                                        "params": {
-                                            "target": "local",
-                                            "activeOrderTab": "{{$event.value}}"
-                                        }
-                                    }
-                                ],
                                 "props": {
                                     "activeTabId": "{{_local.activeOrderTab ?? 'order_info'}}",
                                     "enableScrollSpy": true,

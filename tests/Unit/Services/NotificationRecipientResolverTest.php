@@ -23,6 +23,11 @@ class NotificationRecipientResolverTest extends TestCase
 
     private NotificationRecipientResolver $resolver;
 
+    /**
+     * 컨테이너에서 수신자 해석기를 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -34,7 +39,11 @@ class NotificationRecipientResolverTest extends TestCase
     // ──────────────────────────────────────────────
 
     /**
+     * 컨텍스트가 실은 유발자 모델을 그대로 수신자로 쓴다.
+     *
      * @effects trigger_user_resolves_from_context
+     *
+     * @return void 반환값 없음
      */
     public function test_trigger_user_resolves_from_context(): void
     {
@@ -50,7 +59,11 @@ class NotificationRecipientResolverTest extends TestCase
     }
 
     /**
+     * 유발자 ID 만 있어도 사용자를 조회해 수신자로 쓴다.
+     *
      * @effects trigger_user_resolves_from_id_only
+     *
+     * @return void 반환값 없음
      */
     public function test_trigger_user_resolves_from_id_only(): void
     {
@@ -66,7 +79,11 @@ class NotificationRecipientResolverTest extends TestCase
     }
 
     /**
+     * 유발자 정보가 없으면 수신자가 없다.
+     *
      * @effects trigger_user_returns_empty_without_context
+     *
+     * @return void 반환값 없음
      */
     public function test_trigger_user_returns_empty_without_context(): void
     {
@@ -83,7 +100,11 @@ class NotificationRecipientResolverTest extends TestCase
     // ──────────────────────────────────────────────
 
     /**
+     * 관련 사용자 관계가 가리키는 회원을 수신자로 쓴다.
+     *
      * @effects related_user_resolves_from_context
+     *
+     * @return void 반환값 없음
      */
     public function test_related_user_resolves_from_context(): void
     {
@@ -99,7 +120,11 @@ class NotificationRecipientResolverTest extends TestCase
     }
 
     /**
+     * 규칙이 가리킨 관계가 컨텍스트에 없으면 수신자가 없다.
+     *
      * @effects related_user_returns_empty_when_relation_missing
+     *
+     * @return void 반환값 없음
      */
     public function test_related_user_returns_empty_when_relation_missing(): void
     {
@@ -112,7 +137,11 @@ class NotificationRecipientResolverTest extends TestCase
     }
 
     /**
+     * 관련 사용자 관계가 여러 명(컬렉션)이어도 모두 수신자로 담긴다.
+     *
      * @effects related_user_supports_collection
+     *
+     * @return void 반환값 없음
      */
     public function test_related_user_supports_collection(): void
     {
@@ -131,7 +160,11 @@ class NotificationRecipientResolverTest extends TestCase
     // ──────────────────────────────────────────────
 
     /**
+     * 역할 식별자로 그 역할의 사용자를 수신자로 모은다.
+     *
      * @effects role_resolves_users_by_role_identifier
+     *
+     * @return void 반환값 없음
      */
     public function test_role_resolves_users_by_role_identifier(): void
     {
@@ -158,6 +191,8 @@ class NotificationRecipientResolverTest extends TestCase
      * 느려질 뿐 오류가 없어 어디에도 드러나지 않는다.
      *
      * @effects role_recipients_arrive_with_their_permissions_loaded
+     *
+     * @return void 반환값 없음
      */
     public function test_role_recipients_arrive_with_their_permissions_loaded(): void
     {
@@ -199,6 +234,8 @@ class NotificationRecipientResolverTest extends TestCase
      * **수신자 0명**이 된다. 화면에도 응답에도 흔적이 없다(로그 한 줄뿐).
      *
      * @effects role_resolves_users_from_multiple_identifiers
+     *
+     * @return void 반환값 없음
      */
     public function test_role_resolves_users_from_multiple_identifiers(): void
     {
@@ -223,6 +260,8 @@ class NotificationRecipientResolverTest extends TestCase
      * 두 역할에 함께 속한 사용자는 한 번만 담긴다 — 그대로 두면 같은 사람에게 두 통이 간다.
      *
      * @effects role_multiple_identifiers_deduplicate_shared_users
+     *
+     * @return void 반환값 없음
      */
     public function test_role_multiple_identifiers_deduplicate_shared_users(): void
     {
@@ -245,6 +284,8 @@ class NotificationRecipientResolverTest extends TestCase
      * 기존 저장값(문자열 8행)은 그대로 동작해야 한다 — 마이그레이션 없이 읽기에서 수용한다.
      *
      * @effects role_scalar_value_still_resolves
+     *
+     * @return void 반환값 없음
      */
     public function test_role_scalar_value_still_resolves(): void
     {
@@ -262,7 +303,11 @@ class NotificationRecipientResolverTest extends TestCase
     }
 
     /**
+     * 역할에 사용자가 없으면 최고관리자에게 보낸다.
+     *
      * @effects role_falls_back_to_super_admin
+     *
+     * @return void 반환값 없음
      */
     public function test_role_falls_back_to_super_admin(): void
     {
@@ -279,7 +324,11 @@ class NotificationRecipientResolverTest extends TestCase
     }
 
     /**
+     * 존재하지 않는 역할이면 최고관리자에게 보낸다.
+     *
      * @effects role_nonexistent_falls_back_to_super_admin
+     *
+     * @return void 반환값 없음
      */
     public function test_role_nonexistent_falls_back_to_super_admin(): void
     {
@@ -299,7 +348,11 @@ class NotificationRecipientResolverTest extends TestCase
     // ──────────────────────────────────────────────
 
     /**
+     * 지정 사용자 UUID 목록으로 수신자를 모은다.
+     *
      * @effects specific_users_resolves_by_uuid
+     *
+     * @return void 반환값 없음
      */
     public function test_specific_users_resolves_by_uuid(): void
     {
@@ -318,7 +371,11 @@ class NotificationRecipientResolverTest extends TestCase
     }
 
     /**
+     * 지정 사용자 목록이 비면 수신자가 없다.
+     *
      * @effects specific_users_returns_empty_for_empty_ids
+     *
+     * @return void 반환값 없음
      */
     public function test_specific_users_returns_empty_for_empty_ids(): void
     {
@@ -335,7 +392,11 @@ class NotificationRecipientResolverTest extends TestCase
     // ──────────────────────────────────────────────
 
     /**
+     * 유발자 제외 규칙이면 유발자를 수신자에서 뺀다.
+     *
      * @effects exclude_trigger_user_filters_out_trigger
+     *
+     * @return void 반환값 없음
      */
     public function test_exclude_trigger_user_filters_out_trigger(): void
     {
@@ -355,7 +416,11 @@ class NotificationRecipientResolverTest extends TestCase
     }
 
     /**
+     * 유발자 제외가 없으면 유발자도 수신자로 남는다.
+     *
      * @effects no_exclude_keeps_trigger_user
+     *
+     * @return void 반환값 없음
      */
     public function test_no_exclude_keeps_trigger_user(): void
     {
@@ -377,7 +442,11 @@ class NotificationRecipientResolverTest extends TestCase
     // ──────────────────────────────────────────────
 
     /**
+     * 규칙 여러 개의 수신자를 합친다.
+     *
      * @effects multiple_rules_combine_recipients
+     *
+     * @return void 반환값 없음
      */
     public function test_multiple_rules_combine_recipients(): void
     {
@@ -402,7 +471,11 @@ class NotificationRecipientResolverTest extends TestCase
     }
 
     /**
+     * 여러 규칙이 같은 회원을 뽑아도 한 번만 담는다.
+     *
      * @effects duplicate_users_are_deduplicated
+     *
+     * @return void 반환값 없음
      */
     public function test_duplicate_users_are_deduplicated(): void
     {
@@ -420,7 +493,11 @@ class NotificationRecipientResolverTest extends TestCase
     }
 
     /**
+     * 규칙이 비면 수신자가 없다.
+     *
      * @effects empty_rules_returns_empty
+     *
+     * @return void 반환값 없음
      */
     public function test_empty_rules_returns_empty(): void
     {
@@ -429,7 +506,11 @@ class NotificationRecipientResolverTest extends TestCase
     }
 
     /**
+     * 알 수 없는 수신자 종류는 오류 없이 건너뛴다.
+     *
      * @effects unknown_type_is_skipped_gracefully
+     *
+     * @return void 반환값 없음
      */
     public function test_unknown_type_is_skipped_gracefully(): void
     {
@@ -452,7 +533,11 @@ class NotificationRecipientResolverTest extends TestCase
     // ──────────────────────────────────────────────
 
     /**
+     * 회원이 지목되지 않은 사건(비회원)은 게스트 재료로 수신자를 만든다.
+     *
      * @effects trigger_user_falls_back_to_guest_recipient_when_no_user_id
+     *
+     * @return void 반환값 없음
      */
     public function test_trigger_user_falls_back_to_guest_recipient_when_no_user_id(): void
     {
@@ -467,7 +552,11 @@ class NotificationRecipientResolverTest extends TestCase
     }
 
     /**
+     * 회원이 지목되면 게스트 재료가 있어도 회원에게 보낸다.
+     *
      * @effects trigger_user_prefers_member_over_guest_recipient
+     *
+     * @return void 반환값 없음
      */
     public function test_trigger_user_prefers_member_over_guest_recipient(): void
     {
@@ -489,7 +578,11 @@ class NotificationRecipientResolverTest extends TestCase
     }
 
     /**
+     * 게스트 재료의 이메일이 비면 수신자가 없다.
+     *
      * @effects invalid_guest_recipient_yields_no_recipient
+     *
+     * @return void 반환값 없음
      */
     public function test_invalid_guest_recipient_yields_no_recipient(): void
     {
@@ -502,7 +595,11 @@ class NotificationRecipientResolverTest extends TestCase
     }
 
     /**
+     * 같은 게스트 이메일은 한 명으로 합친다.
+     *
      * @effects duplicate_guest_email_dedupes_to_one
+     *
+     * @return void 반환값 없음
      */
     public function test_duplicate_guest_email_dedupes_to_one(): void
     {
@@ -516,7 +613,11 @@ class NotificationRecipientResolverTest extends TestCase
     }
 
     /**
+     * 회원과 게스트 수신자가 중복 제거 키 충돌 없이 함께 담긴다.
+     *
      * @effects member_and_guest_coexist_without_collapsing
+     *
+     * @return void 반환값 없음
      */
     public function test_member_and_guest_coexist_without_collapsing(): void
     {
@@ -538,7 +639,11 @@ class NotificationRecipientResolverTest extends TestCase
     }
 
     /**
+     * 유발자 제외는 게스트 수신자에서 오류를 내지 않는다.
+     *
      * @effects exclude_trigger_user_does_not_break_on_guest
+     *
+     * @return void 반환값 없음
      */
     public function test_exclude_trigger_user_does_not_break_on_guest(): void
     {
@@ -566,6 +671,8 @@ class NotificationRecipientResolverTest extends TestCase
      * 운영자가 혼합 규칙을 만들면(관리자 제외 + 고객 포함) 고객까지 지워지던 결함의 회귀 그물.
      *
      * @effects exclude_trigger_user_applies_only_to_its_own_rule
+     *
+     * @return void 반환값 없음
      */
     public function test_exclude_trigger_user_applies_only_to_the_rule_that_declares_it(): void
     {
@@ -597,6 +704,8 @@ class NotificationRecipientResolverTest extends TestCase
      * 같은 규칙에 붙은 제외는 종전대로 그 규칙의 수집분에 적용된다.
      *
      * @effects exclude_trigger_user_still_filters_its_own_rule
+     *
+     * @return void 반환값 없음
      */
     public function test_exclude_trigger_user_still_filters_recipients_of_its_own_rule(): void
     {
@@ -615,13 +724,17 @@ class NotificationRecipientResolverTest extends TestCase
     }
 
     // ──────────────────────────────────────────────
-    // 탈퇴 회원: 계정이 사라져도 게스트 폴백으로 낙하한다
+    // 삭제 회원: 계정이 사라지면 게스트 폴백으로 대신 보내지 않는다
     // ──────────────────────────────────────────────
 
     /**
-     * @effects missing_trigger_user_falls_through_to_guest_recipient
+     * 삭제 회원은 확장이 게스트 재료를 실어도 그 주소로 대신 보내지 않는다.
+     *
+     * @effects missing_trigger_user_does_not_fall_back_to_guest_recipient
+     *
+     * @return void 반환값 없음
      */
-    public function test_missing_trigger_user_falls_through_to_the_guest_recipient(): void
+    public function test_missing_trigger_user_does_not_fall_back_to_the_guest_recipient(): void
     {
         $result = $this->resolver->resolve(
             [['type' => 'trigger_user']],
@@ -632,14 +745,15 @@ class NotificationRecipientResolverTest extends TestCase
             ]
         );
 
-        $this->assertCount(1, $result, '탈퇴 회원이면 확장이 실은 스냅샷 연락처로 갈 수 있어야 합니다.');
-        $this->assertInstanceOf(GuestNotifiable::class, $result->first());
+        $this->assertCount(0, $result, '삭제 회원을 주문서 연락처 등 다른 주소로 대신 부르면 안 됩니다.');
     }
 
     /**
-     * 확장이 게스트 재료를 안 실으면 종전과 같이 0명이다 — 코어가 정책을 정하지 않는다.
+     * 게스트 재료가 없어도 0명이다.
      *
      * @effects missing_trigger_user_without_guest_material_stays_empty
+     *
+     * @return void 반환값 없음
      */
     public function test_missing_trigger_user_without_guest_material_resolves_to_nobody(): void
     {

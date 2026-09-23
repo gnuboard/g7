@@ -32,6 +32,12 @@ class ExtensionUpdateAutoloadHookCacheTest extends TestCase
 {
     /**
      * 커맨드가 훅 캐시 재생성까지 수행하고, 그 앞에 오토로드 재등록·확장 적재를 마친다.
+     *
+     * @scenario cache_state=present_valid, registration_source=core, listener_type=action_sync, regeneration_trigger=core_update
+     *
+     * @effects update_autoload_command_regenerates_hook_cache_after_reregistering_autoload
+     *
+     * @return void 반환값 없음
      */
     public function test_update_autoload_regenerates_hook_cache_after_reregistering_autoload(): void
     {
@@ -89,10 +95,16 @@ class ExtensionUpdateAutoloadHookCacheTest extends TestCase
 
     /**
      * 커맨드 서명이 인수 없이 실행 가능해야 한다 — 사례 32 의 복구 안내가 그 형태다.
+     *
+     * @scenario cache_state=present_valid, registration_source=core, listener_type=action_sync, regeneration_trigger=core_update
+     *
+     * @effects update_autoload_command_runs_without_required_arguments
+     *
+     * @return void 반환값 없음
      */
     public function test_command_signature_takes_no_required_arguments(): void
     {
-        $command = new UpdateAutoloadCommand();
+        $command = new UpdateAutoloadCommand;
 
         $this->assertSame('extension:update-autoload', $command->getName());
         $this->assertEmpty(

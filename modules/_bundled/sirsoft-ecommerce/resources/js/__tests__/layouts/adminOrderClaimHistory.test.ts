@@ -159,8 +159,11 @@ describe('S9c — 주문상세 클레임 내역 섹션 구조 계약 (D20)', () 
     it('탭 뱃지 숫자는 응답의 신청서 수를 읽고, 0건이면 숫자를 붙이지 않는다', () => {
       const tabs = String((shell as Node).computed?.orderDetailTabs);
 
-      expect(tabs).toContain('orderClaims?.data?.claims');
-      expect(tabs).toMatch(/length > 0 \?/);
+      // 건수는 서버 `counts` 의 합이다 — 서브탭 뱃지와 같은 출처(P7 10-#7). 배열 길이를 세면
+      // 상한이 걸린 응답에서 탭 라벨과 서브탭 숫자가 갈린다.
+      expect(tabs).toContain('_computed.claimHistoryTotal');
+      expect(tabs).toMatch(/claimHistoryTotal \?\? 0\) > 0 \?/);
+      expect(String((shell as Node).computed?.claimHistoryTotal)).toContain('orderClaims?.data?.counts');
     });
   });
 

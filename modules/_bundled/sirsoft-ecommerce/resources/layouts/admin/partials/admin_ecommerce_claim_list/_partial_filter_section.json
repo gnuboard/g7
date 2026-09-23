@@ -2112,7 +2112,7 @@
                                     }
                                 },
                                 {
-                                    "comment": "audit:allow layout-list-context-navigate-merge-query 프리셋 적용 — 프리셋은 조건 세트를 통째로 갈아끼우는 것이므로 병합하면 직전 조건이 화면에 보이지 않는 채로 남는다.",
+                                    "comment": "audit:allow layout-list-context-navigate-merge-query 프리셋 적용 — 프리셋은 조건 세트를 통째로 갈아끼우는 것이므로 병합하면 직전 조건이 화면에 보이지 않는 채로 남는다. 페이지 크기는 조건이 아니라 보기 설정이라 지금 값을 이어 싣는다 — 떨구면 서버는 기본 20 으로 답하는데 셀렉트(`_local.perPage`)는 앞 값을 붙든 채 남는다.",
                                     "handler": "navigate",
                                     "params": {
                                         "path": "/admin/ecommerce/claims",
@@ -2121,6 +2121,7 @@
                                         "transition_overlay_target": "claim_datagrid__body",
                                         "query": {
                                             "page": 1,
+                                            "per_page": "{{query.per_page || null}}",
                                             "type": "{{preset.conditions?.claimType || (query.type || 'exchange')}}",
                                             "preset_id": "{{preset.id}}",
                                             "search_field": "{{preset.conditions?.searchField || null}}",
@@ -2179,6 +2180,13 @@
                             "id": "f_001_search_field_select",
                             "type": "basic",
                             "name": "Select",
+                            "responsive": {
+                                "portable": {
+                                    "props": {
+                                        "className": "w-24 shrink-0"
+                                    }
+                                }
+                            },
                             "actions": [
                                 {
                                     "type": "change",
@@ -2214,11 +2222,19 @@
                             }
                         },
                         {
+                            "comment": "최소 너비는 `min-w-[280px]` 로 적는다 — `min-w-64` 는 관리자 빌드 CSS 에 없다(`!min-w-64` 만 있다). 좁은 화면에서는 최소 너비를 풀고(`min-w-0`) 셀렉트도 줄인다: `w-80` 셀렉트와 280px 칸이 한 줄에 서면 375px 폭을 넘는다. 상품 목록 검색 줄과 같은 오버라이드다.",
                             "id": "f_002_search_keyword_input",
                             "type": "basic",
                             "name": "Div",
+                            "responsive": {
+                                "portable": {
+                                    "props": {
+                                        "className": "flex-1 min-w-0 relative"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "flex-1 min-w-64 relative"
+                                "className": "flex-1 min-w-[280px] relative"
                             },
                             "children": [
                                 {

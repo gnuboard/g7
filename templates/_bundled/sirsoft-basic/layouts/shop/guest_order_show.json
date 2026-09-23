@@ -68,22 +68,6 @@
             "comment": "비회원 주문 상세 — user/orders/{N} 통합 엔드포인트 (optional.sanctum). X-Guest-Order-Token 은 이 데이터소스에만 명시적으로 주입 (globalHeaders 의 user/orders/* 광역 패턴은 회원 라우트에도 토큰 노출되어 부적합). 401/404 시 토스트 + 백엔드 redirect_to 안내."
         },
         {
-            "id": "refundReasons",
-            "label_key": "$t:editor.data_source.refundReasons",
-            "type": "api",
-            "endpoint": "/api/modules/sirsoft-ecommerce/user/claim-reasons",
-            "method": "GET",
-            "auto_fetch": true,
-            "auth_mode": "optional",
-            "params": {
-                "type": "refund"
-            },
-            "fallback": {
-                "data": []
-            },
-            "comment": "환불 사유 — 회원/비회원 공유 카탈로그 엔드포인트 (optional.sanctum). 백엔드 라우트가 그룹 밖으로 분리되어 비회원도 동일 endpoint 로 카탈로그 조회 가능. 취소 모달의 사유 Select 옵션을 채운다."
-        },
-        {
             "id": "claimable",
             "label_key": "$t:editor.data_source.claimable",
             "type": "api",
@@ -127,6 +111,7 @@
     "initLocal": {
         "isGuest": true,
         "withdrawRefreshDataSourceId": "claims",
+        "withdrawRefreshClaimable": true,
         "claimDetailLinkMode": "same_window",
         "selectedItemIds": [],
         "selectAllItems": false,

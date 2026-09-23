@@ -187,6 +187,7 @@ return [
         'fetch_success' => '注文情報を照会しました。',
         'fetch_failed' => '注文情報照会に失敗しました。',
         'cancelled' => '注文がキャンセルされました。',
+        'cancel_refund_requested' => '返金申請書を受け付けました。返金が完了すると注文がキャンセルされます。',
         'cancel_failed' => '注文キャンセルに失敗しました。',
         'estimate_refund_success' => '返金予想金額を照会しました。',
         'estimate_refund_failed' => '返金予想金額照会に失敗しました。',
@@ -342,6 +343,7 @@ return [
         'not_earning' => '積立取引のみ編集できます。',
         'expiry_not_editable' => '既に失効したか、すべて使用された積立建は有効期限を変更できません。',
         'expiry_before_earned' => '有効期限は積立日時より前の日付にすることはできません。',
+        'points_format' => ':pointsP',
     ],
     'temp_order' => [
         'created' => '注文書が作成されました。',

@@ -2,7 +2,7 @@
  * NOTE: @since versions (engine-v1.x.x) refer to internal template engine
  * development iterations, not G7 platform release versions.
  *
- * audit:allow seo-renderer-parity-sync engine-v1.66.2 는 _fromBase 저장소 A 초기화 시점(렌더 단계)만 바꿨다 —
+ * audit:allow seo-renderer-parity-sync engine-v1.71.1 는 _fromBase 저장소 A 초기화 시점(렌더 단계)만 바꿨다 —
  * 노드 키·컨텍스트 해석·SEO 봇 렌더 표면은 변경 없음
  */
 /**
@@ -1282,7 +1282,7 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
 
     /**
      * @since engine-v1.24.8 _fromBase 컴포넌트의 localDynamicState 초기화
-     * @since engine-v1.66.2 초기화 시점을 useEffect 에서 **렌더 단계**로 앞당김
+     * @since engine-v1.71.1 초기화 시점을 useEffect 에서 **렌더 단계**로 앞당김
      *
      * _fromBase: true인 컴포넌트는 stable key로 SPA 네비게이션 시에도 보존(unmount/remount 없음).
      * 하지만 이전 페이지에서 설정된 localDynamicState(visibleFilters, hasChanges 등)가
@@ -1716,7 +1716,7 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
      * parentComponentContext가 전달되면 부모의 상태를 사용하고,
      * 그렇지 않으면 자체 로컬 상태를 사용합니다.
      */
-    // @since engine-v1.66.2: 레이아웃 전환 렌더(isBaseLayoutSwitch)에서는 stale 저장소 A 대신 빈 값을 쓴다.
+    // @since engine-v1.71.1: 레이아웃 전환 렌더(isBaseLayoutSwitch)에서는 stale 저장소 A 대신 빈 값을 쓴다.
     // setLocalDynamicState 가 반영된 재실행 패스에서는 localDynamicState 자체가 이미 빈 값이다.
     const dynamicState = parentComponentContext?.state
       ?? (isBaseLayoutSwitch ? { loadingActions: {} } : localDynamicState);

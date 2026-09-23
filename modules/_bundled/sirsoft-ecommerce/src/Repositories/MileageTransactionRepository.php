@@ -310,6 +310,7 @@ class MileageTransactionRepository implements MileageTransactionRepositoryInterf
      *
      * @param  Builder  $query  쿼리 빌더
      * @param  string  $sort  정렬 슬러그
+     * @return void 반환값 없음
      */
     protected function applySort($query, string $sort): void
     {
@@ -583,5 +584,16 @@ class MileageTransactionRepository implements MileageTransactionRepositoryInterf
             ->where('claim_payment_id', $claimPaymentId)
             ->where('type', MileageTransactionTypeEnum::REFUND_RESTORE->value)
             ->sum('amount');
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function findUsageForClaimPayment(int $claimPaymentId): ?MileageTransaction
+    {
+        return MileageTransaction::query()
+            ->where('claim_payment_id', $claimPaymentId)
+            ->where('type', MileageTransactionTypeEnum::ORDER_USE->value)
+            ->first();
     }
 }

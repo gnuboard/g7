@@ -25,7 +25,8 @@ use Modules\Sirsoft\Ecommerce\Http\Requests\Concerns\ResolvesClaimOrder;
  * 비회원 주문상세의 '이 주문의 클레임' 섹션도 같은 요청을 쓴다 — 유형·상태·기간·페이지 계약이
  * 같은데 요청을 두 벌로 두면 한쪽만 고쳤을 때 두 화면의 게이트가 갈린다. 열람 범위만 다르고
  * (회원 = 본인 주문 전체 / 비회원 = 토큰이 검증한 주문 하나) 그 차이는 `ResolvesClaimOrder` 가
- * 흡수한다. 회원 경로에는 주문이 없으므로 `getOrder()` 를 부르지 않는다.
+ * 흡수한다. 회원 횡단 목록(`user.claims.index`)에는 주문이 없으므로 `getOrder()` 를 부르지 않고,
+ * 회원 주문 스코프 목록(`user.orders.claims.index`)은 `getOrder()` 로 소유권까지 한 번에 판정한다.
  */
 class ClaimListRequest extends FormRequest
 {
@@ -172,6 +173,7 @@ class ClaimListRequest extends FormRequest
      * 형태가 갈려 클라이언트의 실패 분기가 목록에서만 통과한다.
      *
      * @param  Validator  $validator  검증기
+     * @return void 반환값 없음
      *
      * @throws ValidationException 항상
      */

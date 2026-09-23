@@ -56,7 +56,7 @@
     "payment_method_card": "カード·簡易決済",
     "payment_method_point": "マイレージ",
     "submit": "申請する",
-    "submit_with_payment": "決済する",
+    "submit_with_payment": "{{amount}}を決済する",
     "select_items_first": "申請する商品を選択してください。",
     "reason_required": "申請理由を選択してください。",
     "submit_success": "申請が受け付けられました。",
@@ -76,6 +76,7 @@
     "refund_account_number_placeholder": "口座番号（ハイフンなし、数字のみ）",
     "refund_account_holder_placeholder": "口座名義人",
     "refund_account_all_required": "銀行·口座番号·口座名義人をすべてご入力ください。",
+    "refund_account_masked_hint": "ご注文時に登録した口座を一部伏せて入力しています。そのままにすると登録口座に返金され、変更する場合は銀行·口座番号·口座名義人をすべて新しく入力してください。",
     "submit_cancel": "注文キャンセルする",
     "submit_refund": "返金申請する",
     "comparison": {

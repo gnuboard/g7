@@ -213,7 +213,7 @@
             <span class="text-tertiary block">$t:sirsoft-ecommerce.admin.shipping_policy.form.api_field_map_hint</span>
             <div data-each="mapOption, mapOptionIdx in {{(_computed.apiRequestFieldOptions ?? []).filter(o => (_computed.activeCountrySetting?.api_request_fields ?? []).includes(o.value))}}" class="grid grid-cols-2 gap-2 items-center">
               <span class="text-sm text-secondary">{{mapOption.label}}</span>
-              <input type="text" class="input input-sm font-mono" value="{{_computed.activeCountrySetting?.api_config?.field_map?.[mapOption.value] ?? ''}}" placeholder="{{mapOption.value}}" disabled="{{_computed.isReadOnly}}">
+              <input type="text" class="input text-sm font-mono" value="{{_computed.activeCountrySetting?.api_config?.field_map?.[mapOption.value] ?? ''}}" placeholder="{{mapOption.value}}" disabled="{{_computed.isReadOnly}}">
                 <on type="change">
                   <!-- 항목별 이름 바꾸기 — 우리 쪽 이름을 상대 API 가 기대하는 이름으로 옮기는 표다. 상대 API 를 우리 규약에 맞추라고 요구할 수 없어 이 표가 필요하다. -->
                   <action handler="sirsoft-ecommerce.updateApiFieldMap" :debounce="300" field="{{mapOption.value}}" value="{{$event.target.value}}"/>

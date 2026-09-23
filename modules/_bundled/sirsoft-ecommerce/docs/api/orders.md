@@ -3392,7 +3392,7 @@ Authorization: Bearer {YOUR_TOKEN}
 | refund_auto_approved | boolean | `false` | 이 주문의 환불이 **사람 손 없이 끝나는지** (P16·P17). 판정은 결제수단 카탈로그(`PaymentMethodResolver::autoApprovesRefund()`)가 소유하며, 운영자가 클레임 정책 탭에서 고른 목록(`claim.auto_approve_refund_payment_methods`)과 플러그인 선언을 함께 본다. **분기(`resolved_type`·`refund_branch`)와 다른 축이다** — 무통장·가상계좌는 분기가 `auto` 여도 이 값이 거짓이라 접수 뒤 `requested` 에서 멈추고 운영자 승인 → [환불하기] 를 기다린다. 거짓이면 신청서는 「자동 처리」가 아니라 「판매자 확인」 문구로 안내해야 한다 |
 | refund_account.required | boolean | `false` | 이 주문의 환불이 **계좌 이체**로 나가는지 (`PaymentMethodResolver::refundMethod()` 판정 = `bank`). 참이면 취소·환불 신청서가 환불 계좌 입력칸을 세운다. 어느 결제수단이 계좌 환불인지는 확장 결제수단이 자기 카탈로그에 선언하므로 화면이 결제수단 코드로 재현하지 않는다 |
 | refund_account.banks | array | `[{"code":"004","name":{"ko":"국민은행"}}]` | 운영자가 주문설정에 등록한 은행 목록 (`order_settings.banks`). `required` 가 거짓이면 빈 배열이다. `name` 은 다국어 맵이라 라벨은 `$localized(name)` 로 푼다 |
-| refund_account.prefill | object\|null | `{"bank_code":"004","account_number":"110234567890","holder":"홍길동"}` | 주문 시 등록해 둔 환불 계좌의 **원문**. 신청서가 입력칸을 채우는 데 쓴다. 세 값이 모두 있을 때만 실리고 그 밖에는 `null` 이다. 표시용 응답(`ClaimResource`·`OrderPaymentResource`)은 계좌번호 뒤 4자리·예금주 첫 글자만 내보내므로, 그 마스킹 값을 입력칸에 채우면 손대지 않은 제출에서 별표가 섞인 계좌가 저장된다 — 프리필은 이 필드만 쓴다. `required` 가 거짓이면 실리지 않는다 |
+| refund_account.prefill | object\|null | `{"bank_code":"004","account_number":"********7890","holder":"홍**","masked":true}` | 주문 시 등록해 둔 환불 계좌를 **가린 모양**으로 싣는다(계좌번호 뒤 4자리·예금주 첫 글자, `masked: true`). 이 응답은 비회원 조회 토큰을 가진 누구에게나 나가므로 원문을 싣지 않는다. 신청서는 이 값으로 입력칸을 채우고, 구매자가 손대지 않고 제출하면(세 값이 가린 모양과 정확히 같으면) 서버가 등록 계좌 원문으로 되돌려 저장한다 — 한 칸이라도 고치면 제출값을 쓴다. 세 값이 모두 있을 때만 실리고 그 밖에는 `null`, `required` 가 거짓이면 실리지 않는다 |
 | pending_images | array | — | 이 주문에 올려 둔 임시 첨부 ([ClaimImageResource](claims.md#claim-image-resource), `claimable_type=pending`) |
 
 **응답 예시**
@@ -3758,7 +3758,7 @@ Content-Type: application/json
 | charge_method | body | string | 아니오 | 환경설정 `claim.allowed_charge_methods` | 반품 배송비 청구 방식. 청구액이 0 이면 무시 |
 | payment_method | body | string | 아니오 | 환경설정 `claim.charge_payment_methods` | `pay_on_request` 일 때 결제 수단 |
 | refund_priority | body | string | 아니오 | `pg_first`, `points_first` | 환불 배분 우선순위 |
-| refund_bank | body | object | 아니오 | `bank_code`(max 10) · `account_number`(max 50) · `holder`(max 50) | 환불 계좌. 계좌 이체로 환불되는 주문(`claimable-options` 의 `refund_account.required=true`)에서 화면이 싣는다. **세 값이 함께 오거나 하나도 오지 않아야 한다** — 일부만 오면 422 다. 값이 오면 **그 신청서 행**(`refund_bank_*`)에 저장된다. 주문 결제행은 신청 접수만으로는 바뀌지 않는다 — 실제 송금이 읽는 자리라, 그 환불을 **실행하는 시점**에 실행 대상 환불의 계좌로 갱신된다(즉시취소는 접수가 곧 실행이라 그 자리에서 반영된다) |
+| refund_bank | body | object | 조건부 | `bank_code`(max 10) · `account_number`(max 50) · `holder`(max 50) | 환불 계좌. 계좌 이체로 환불되는 주문(`claimable-options` 의 `refund_account.required=true`)에서는 **필수**다 — 비면 `422 refund_bank`(주문 시점 등록 계좌가 있으면 생략 가능). 취소·환불 신청과 같은 게이트다. **세 값이 함께 오거나 하나도 오지 않아야 한다** — 일부만 오면 422 다. 값이 오면 **그 신청서 행**(`refund_bank_*`)에 저장된다. 주문 결제행은 신청 접수만으로는 바뀌지 않는다 — 실제 송금이 읽는 자리라, 그 환불을 **실행하는 시점**에 실행 대상 환불의 계좌로 갱신된다(즉시취소는 접수가 곧 실행이라 그 자리에서 반영된다) |
 | image_ids | body | integer[] | 아니오 | max = 환경설정 `claim.max_images`(기본 5) | 귀속시킬 임시 첨부 ID |
 
 **요청 예시**

@@ -126,14 +126,13 @@ class OrderController extends PublicBaseController
      * 갈래가 둘이다 — 주문서에서 저장된 배송지를 고쳐 보냈으면(`save_shipping_address_id`)
      * 그 행을 «갱신» 하고, 직접 입력한 주소면 새로 «추가» 한다. 갱신을 두지 않으면 주문서에서
      * 고친 주소가 주소록에 남지 않아 다음 주문서도 옛 주소로 열리고, 같은 손질을 매번 반복하게
-     * 된다(2026-09-21 PO 요청). 소유자가 아닌 행 ID 가 오면 서비스가 null 을 돌려 아무 일도
+     * 된다(2026-09-21 요구사항). 소유자가 아닌 행 ID 가 오면 서비스가 null 을 돌려 아무 일도
      * 일어나지 않는다 — 남의 주소록은 이 경로로 닿지 않는다.
      *
      * @param  int  $userId  회원 ID (비회원은 호출 측에서 가드)
      * @param  CreateOrderRequest  $request  검증된 요청 데이터
      * @param  Order  $order  생성된 주문
      * @param  bool  $requiresPg  PG 결제 필요 여부
-     *
      * @return void 반환값 없음
      */
     protected function maybeSaveShippingAddress(int $userId, CreateOrderRequest $request, Order $order, bool $requiresPg): void
@@ -338,11 +337,16 @@ class OrderController extends PublicBaseController
                 new GuestOrderResource($updatedOrder)
             );
         } catch (OrderCancellationException $e) {
-            // 취소 도메인 규칙 위반 — 사용자에게 안내 가능한 상황이므로 422
-            return ResponseHelper::error(
-                'sirsoft-ecommerce::exceptions.order_cancel_failed',
-                422
-            );
+            // 취소 도메인 규칙 위반 — 사용자에게 안내 가능한 상황이므로 422.
+            // 사유 키가 실려 오면(클레임 수량 잠금·상태 자격 등) 그 사유를 안내한다 — 환불 예상
+            // (`estimateRefund`)과 같은 규칙이다. 키가 없으면(PG 거절 등) 원문을 싣지 않고 일반 실패
+            // 문구만 낸다 — 이 면은 비회원 화면이라 PG 원문(가맹점 설정·내부 코드)을 내보내지 않는다.
+            // PG 원문을 품는 키(`pg_refund_failed`)는 공개 면에 내보내지 않는다(`publicMessageKey()`).
+            $messageKey = $e->publicMessageKey();
+
+            return $messageKey === null
+                ? ResponseHelper::error('sirsoft-ecommerce::exceptions.order_cancel_failed', 422)
+                : ResponseHelper::error($messageKey, 422, null, $e->getMessageParams());
         } catch (Exception $e) {
             Log::error('비회원 주문 취소 실패', [
                 'order_number' => $request->getOrder()->order_number,
@@ -378,9 +382,12 @@ class OrderController extends PublicBaseController
         } catch (OrderCancellationException $e) {
             // 클레임 수량 잠금 등 도메인 거절 — 취소 실행과 같은 422 로 미리보기/실행 비대칭을 없앤다.
             // 사유 키가 실려 오면 그대로 안내한다(관리자 면과 같은 근거) — 없으면 일반 실패 키다.
-            $messageKey = $e->getMessageKey() ?? 'sirsoft-ecommerce::exceptions.order_cancel_failed';
+            // PG 원문을 품는 키(`pg_refund_failed`)는 공개 면에 내보내지 않는다(`publicMessageKey()`).
+            $messageKey = $e->publicMessageKey();
 
-            return ResponseHelper::error($messageKey, 422, null, $e->getMessageParams());
+            return $messageKey === null
+                ? ResponseHelper::error('sirsoft-ecommerce::exceptions.order_cancel_failed', 422)
+                : ResponseHelper::error($messageKey, 422, null, $e->getMessageParams());
         } catch (Exception $e) {
             Log::error('비회원 환불 예상금액 계산 실패', [
                 'order_number' => $request->getOrder()->order_number,

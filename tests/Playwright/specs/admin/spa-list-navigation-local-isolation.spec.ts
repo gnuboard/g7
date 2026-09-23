@@ -1,5 +1,5 @@
 /**
- * E2E: SPA 목록 → 목록 이동 시 `_local` 격리 (트러블슈팅 state-closure 사례 4, engine-v1.66.2)
+ * E2E: SPA 목록 → 목록 이동 시 `_local` 격리 (트러블슈팅 state-closure 사례 4, engine-v1.71.1)
  *
  * 관리자 base 의 `admin_layout_root` 는 `_fromBase` 로 페이지 전환에도 보존된다. 그 인스턴스의
  * React 내부 상태(저장소 A)에는 이전 페이지의 `_local` 전체가 남는데, 초기화가 새 페이지의
@@ -17,8 +17,8 @@
  * 관측된 경로는 앱이 떠 있는 채로 레이아웃만 바뀌는 SPA 이동이므로, 메뉴 클릭과 같은 경로인
  * 라우터 navigate 를 쓴다.
  *
- * // @scenario surface=admin_ecommerce_order_list, transition=spa_navigate_to_admin_ecommerce_promotion_coupon_list, scope=page
- * // @effects previous_page_local_keys_absent, visible_columns_belong_to_destination, datagrid_header_not_collapsed, no_page_errors
+ * // @scenario transition=layout_switch, origin=order_list
+ * // @effects previous_page_keys_absent_in_global_local, destination_visible_columns_kept, datagrid_header_not_collapsed, no_page_errors
  */
 import { test, expect, issueToken, authenticatePage, type Page } from '../../fixtures/auth';
 

@@ -3,9 +3,10 @@
   ⓐ 필터 행은 전부 화면 밖 등록 영역(`slot_registration_area`)에 한 번만 정의하고, 각 행의
      `data-slot` 이 "기본 필터" 와 "상세 필터" 중 어디로 갈지를 그때그때 정한다. 그래서 필터를
      보이고 숨겨도 행이 사라졌다 다시 만들어지지 않고 자리만 옮긴다.
-  ⓑ 어떤 필터를 기본에 둘지는 운영자별 취향이라 서버가 아니라 브라우저(localStorage,
-     `g7_order_filter_visible_filters`)에 남긴다 — 편집모드 체크박스마다 상태 변경과 저장이
-     나란히 붙어 있는 이유다.
+  ⓑ 어떤 필터를 기본에 둘지는 운영자별 취향이라 서버가 아니라 브라우저(localStorage)에 남긴다.
+     저장은 필터 표시 선택기(`filter-visibility-selector`)가 맡는다 — 자기 `id` 와 로그인 사용자로
+     키(`g7_filters_{id}_{사용자}`)를 만들고, `visibleFilters` 가 바뀔 때마다 스스로 저장한다.
+     그래서 편집모드 체크박스는 상태만 바꾼다.
   ⓒ 입력 중인 값은 `_local.filter` 에 모이지만 **검색은 URL 로 나간다**. 조건을 query 로 실어야
      재진입·뒤로가기·주소 공유에서 같은 목록이 서기 때문이고, 그래서 프리셋을 누르면
      `_local.filter` 를 채우는 것과 `navigate` 로 query 를 갈아 끼우는 것이 함께 일어난다. -->
@@ -776,7 +777,7 @@
                 </on>
               </input>
               <span data-ref="f_262_claim_requested_separator" class="text-tertiary">~</span>
-              <!-- 종료일은 그날 하루 끝까지 포함한다. 시작일보다 앞선 날을 넣어도 화면은 막지 않고 서버 검증이 요청을 거부한다. -->
+              <!-- 종료일은 그날 하루 끝까지 포함한다. 시작일보다 앞선 날을 넣으면 검색 이동과 목록 데이터소스가 두 날짜를 바꿔 보낸다 — 그대로 보내면 서버 검증(`after_or_equal`)이 422 를 내고 목록 전체가 오류 화면이 되며, 그 구간이 URL 에 남아 새로고침으로도 빠져나올 수 없다. -->
               <input data-ref="f_263_claim_requested_to" type="date" class="input w-40" value="{{_local.filter.claimRequestedTo ?? ''}}">
                 <on type="change">
                   <set-state target="_local" filter.claimRequestedTo="{{$event.target.value}}"/>
@@ -797,7 +798,7 @@
         <span class="text-sm font-medium">$t:sirsoft-ecommerce.admin.order.preset.label</span>
       </div>
       <!-- 프리셋 버튼. 누르면 저장된 조건 세트를 통째로 갈아끼운다 — 지금 걸린 조건과 섞지 않는 것이 프리셋의 뜻이라 병합하지 않는다 -->
-      <div data-ref="preset_buttons_dynamic_{{presetIdx}}" data-each="preset, presetIdx in presets.data || []" class="{{query.preset_id === String(preset.id) ? 'btn-preset ring-1 ring-gray-400 bg-gray-900 text-white dark:bg-white dark:text-gray-900' : 'btn-preset cursor-pointer'}}">
+      <div data-ref="preset_buttons_dynamic_{{presetIdx}}" data-each="preset, presetIdx in presets.data || []" class="{{query.preset_id === String(preset.id) ? 'btn-preset ring-1 ring-gray-400 dark:ring-gray-500 bg-gray-900 text-white dark:bg-white dark:text-gray-900' : 'btn-preset cursor-pointer'}}">
         <on type="click">
           <set-state target="_local" merge="shallow">
             <field name="filter">
@@ -849,6 +850,7 @@
       <div data-ref="search_row_line1" class="flex-1 flex-center gap-2">
         <!-- F-001 -->
         <select data-ref="f_001_search_field_select" name="searchField" class="w-80 shrink-0" value="{{_local.filter.searchField}}">
+          <responsive on="portable" class="w-24 shrink-0"/>
           <options>
             <option value="all">$t:sirsoft-ecommerce.admin.order.search.field.all</option>
             <option value="order_number">$t:sirsoft-ecommerce.admin.order.search.field.order_number</option>
@@ -862,8 +864,9 @@
             <set-state target="_local" filter.searchField="{{$event.target.value}}"/>
           </on>
         </select>
-        <!-- F-002 — 최소 너비는 `min-w-[280px]` 로 적는다. `min-w-64` 는 관리자 템플릿 빌드 CSS(dist/css/components.css)에 셀렉터가 없어(생성된 것은 `!min-w-64` 뿐) 아무 효과가 없었다. -->
+        <!-- F-002 — 최소 너비는 `min-w-[280px]` 로 적는다. `min-w-64` 는 관리자 템플릿 빌드 CSS(dist/css/components.css)에 셀렉터가 없어(생성된 것은 `!min-w-64` 뿐) 아무 효과가 없었다. 좁은 화면에서는 최소 너비를 풀고 셀렉트도 줄인다 — 둘이 한 줄에 서면 375px 폭을 넘는다. -->
         <div data-ref="f_002_search_keyword_input" class="flex-1 min-w-[280px] relative">
+          <responsive on="portable" class="flex-1 min-w-0 relative"/>
           <input type="text" placeholder="$t:sirsoft-ecommerce.admin.order.search.placeholder" class="input w-full pr-10" value="{{_local.filter.searchKeyword}}">
             <on type="change">
               <!-- 타이핑은 300ms 묶어서 담기만 한다 — 글자마다 조회하면 목록 API 를 계속 친다. 실제 조회는 Enter 나 검색 버튼이다. -->

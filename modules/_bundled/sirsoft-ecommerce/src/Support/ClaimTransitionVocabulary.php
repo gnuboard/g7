@@ -26,6 +26,7 @@ use Modules\Sirsoft\Ecommerce\Enums\ReturnStatusEnum;
  *
  * 결제는 **신청서 단위** 축이다(청구액은 신청서 하나에 하나뿐이다). 상품 행에 결제대기가
  * 서면 그 행만 결제를 기다리는 상태가 되어 청구·수납 어느 쪽과도 대응되지 않는다.
+ * 같은 이유로 **결제대기 행에는 승인을 내지 않는다** — 그 승인은 결제 확정이 잇는다.
  */
 class ClaimTransitionVocabulary
 {
@@ -33,6 +34,11 @@ class ClaimTransitionVocabulary
      * 결제대기 상태 값 — 상품 단위 어휘에서 제외한다.
      */
     protected const PAYMENT_PENDING = 'payment_pending';
+
+    /**
+     * 승인 상태 값 — 상품 축의 결제대기 행에서는 제시하지 않는다.
+     */
+    protected const APPROVED = 'approved';
 
     /**
      * 현재 상태에서 제시할 전이 선택지를 만듭니다.
@@ -62,6 +68,13 @@ class ClaimTransitionVocabulary
             }
 
             if ($excludePaymentPending && $target->value === self::PAYMENT_PENDING) {
+                continue;
+            }
+
+            // 결제대기 행의 승인은 **결제 확정이 잇는 전이**다(`confirmPaid()` → paid → 승인).
+            // 상품 행에서 직접 승인을 내면 운영자가 돈을 받기 전에 그 행을 승인하고, 헤더가
+            // `payment_pending → approved` 로 따라가 미수납 게이트를 우회한다(#599 validate P2 #1).
+            if ($excludePaymentPending && $current->value === self::PAYMENT_PENDING && $target->value === self::APPROVED) {
                 continue;
             }
 

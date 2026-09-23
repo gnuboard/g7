@@ -262,6 +262,8 @@ describe('상세 셸 — 라우트·데이터소스·모달 (S9a)', () => {
     expect(endpoints).toEqual([
       '/api/modules/sirsoft-ecommerce/admin/claims/{{route.claimNumber}}',
       '/api/modules/sirsoft-ecommerce/admin/claims/{{route.claimNumber}}/logs',
+      // 환불 실행 모달의 은행 코드표 — 공개 결제 설정이라 권한 게이트가 없다(P7 #15).
+      '/api/modules/sirsoft-ecommerce/settings/payment',
     ]);
     // `settings.read` 게이트 — 완료 기본값·택배사는 상세 응답이 나른다.
     expect(endpoints.some((e: string) => e.includes('/admin/settings'))).toBe(false);
@@ -295,6 +297,8 @@ describe('상세 셸 — 라우트·데이터소스·모달 (S9a)', () => {
       // 수량 확인 모달도 같은 이유로 상세 소유다 (§4-6) — 주문상세 모달을 복제하지 않는다:
       // 그 파일은 주문 상태 어휘·`_local.changeQuantities` 키·`confirmItems` 계약에 묶여 있다.
       'partials/admin_ecommerce_claim_detail/_modal_claim_item_quantity_confirm.json',
+      // 첨부 일괄 정리 확인 모달 — 되돌릴 수 없는 삭제라 한 번 더 묻는다(P7 #4). 상세만 연다.
+      'partials/admin_ecommerce_claim_detail/_modal_claim_images_clear.json',
     ]);
     expect(
       fs.existsSync(
@@ -493,7 +497,10 @@ describe('배송 정보 — 회수·재발송 통합 (D17-② · D14)', () => {
    */
   it('택배사 셀렉트가 상세 응답의 목록을 읽는다', () => {
     ['cs_004_collection_carrier', 'cs_014_redelivery_carrier'].forEach((id) => {
-      expect(byId(shippingSection, id).props.options).toBe('{{claim?.data?.carriers ?? []}}');
+      // 맨 앞은 고를 수 있는 빈 선택지다 — Select 는 placeholder 를 그리지 않는다(P7 #5).
+      expect(byId(shippingSection, id).props.options).toBe(
+        "{{[{ value: '', label: $t('sirsoft-ecommerce.admin.claim.detail.shipping.carrier_placeholder') }].concat(claim?.data?.carriers ?? [])}}",
+      );
     });
   });
 });
@@ -510,7 +517,9 @@ describe('신청상품 — 일괄 변경 바와 표 (D24·D25)', () => {
   it('상품 단위 셀렉트가 서버 어휘를 그대로 읽는다', () => {
     const select = byId(itemsSection, 'ci_002_item_status');
 
-    expect(select.props.options).toBe('{{_local.itemTransitionOptions ?? []}}');
+    expect(select.props.options).toBe(
+      "{{[{ value: '', label: $t('sirsoft-ecommerce.admin.claim.bulk.status_placeholder'), disabled: true }].concat(_local.itemTransitionOptions ?? [])}}",
+    );
     expect(JSON.stringify(select.props.options)).not.toContain('approved');
   });
 
@@ -947,7 +956,7 @@ describe('이 클레임의 정산 (D18)', () => {
    */
   it('청구 방식 셀렉트가 상세 응답의 목록을 읽는다', () => {
     expect(byId(paymentSection, 'cst_003_charge_method').props.options).toBe(
-      '{{claim?.data?.charge_methods ?? []}}',
+      "{{[{ value: '', label: $t('sirsoft-ecommerce.admin.claim.detail.settlement.charge_method_placeholder'), disabled: true }].concat(claim?.data?.charge_methods ?? [])}}",
     );
   });
 
@@ -1168,7 +1177,8 @@ describe('환불 실행 — 취소 가능 금액과 실행 (D18·D19)', () => {
     const values = strings(refundExecuteModal).join(' ');
 
     expect(values).toContain('refund_bank_input_title');
-    expect(values).toContain('refund_bank_code_placeholder');
+    // 은행은 코드표 Select 로 고른다(P7 #15) — 빈 선택지 라벨이 은행 선택 안내다.
+    expect(values).toContain('refund_bank_select');
     expect(values).toContain('refund_bank_account_placeholder');
     expect(values).toContain('refund_bank_holder_placeholder');
     // 동의는 결과를 말하는 힌트와 한 쌍이다 (주문 상세 `mark_order_complete` 와 같은 형태).

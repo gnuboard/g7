@@ -11,6 +11,7 @@ use Illuminate\Support\Collection;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimReasonFaultTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundMethodEnum;
+use Modules\Sirsoft\Ecommerce\Enums\RefundPriorityEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundSourceTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundStatusEnum;
 
@@ -51,6 +52,7 @@ class OrderRefund extends Model
         'mc_refund_shipping_amount',
         'original_calculation_snapshot',
         'recalculated_snapshot',
+        'refund_priority',
         'additional_payment_amount',
         'additional_payment_method',
         'is_additional_payment_completed',
@@ -91,6 +93,7 @@ class OrderRefund extends Model
             'mc_refund_shipping_amount' => 'array',
             'original_calculation_snapshot' => 'array',
             'recalculated_snapshot' => 'array',
+            'refund_priority' => RefundPriorityEnum::class,
             'additional_payment_amount' => 'decimal:2',
             'is_additional_payment_completed' => 'boolean',
             'additional_paid_at' => 'datetime',

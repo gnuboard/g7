@@ -13,11 +13,9 @@ use Modules\Sirsoft\Ecommerce\Enums\CancelTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentStatusEnum;
-use Modules\Sirsoft\Ecommerce\Enums\RefundMethodEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundPriorityEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundSourceTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\SequenceType;
-use Modules\Sirsoft\Ecommerce\Enums\TaxInvoiceStatusEnum;
 use Modules\Sirsoft\Ecommerce\Exceptions\OrderCancellationException;
 use Modules\Sirsoft\Ecommerce\Exceptions\OrderClaimException;
 use Modules\Sirsoft\Ecommerce\Models\Order;
@@ -384,7 +382,10 @@ class OrderCancellationService
         try {
             return $intake();
         } catch (OrderClaimException $e) {
-            throw new OrderCancellationException(__($e->getMessage()), $e->getMessage());
+            // 키·치환 파라미터를 그대로 옮긴다(`validateNotLockedByClaim()` 과 같은 형태). 종전에는
+            // 이미 번역된 문장을 키 자리에 넣어, 키로 응답을 조립하는 면이 키 대신 문장을 받고
+            // 치환 파라미터(:type·:status 등)는 잃었다(#599 validate P2 #4).
+            throw new OrderCancellationException($e->getMessage(), $e->getMessageKey(), $e->getMessageParams());
         }
     }
 
@@ -535,9 +536,7 @@ class OrderCancellationService
      */
     protected function warnIfTaxInvoiceStale(Order $order): void
     {
-        $issued = $order->taxInvoices()
-            ->where('invoice_status', TaxInvoiceStatusEnum::ISSUED->value)
-            ->get(['id', 'invoice_number', 'total_amount']);
+        $issued = $this->orderRepository->listIssuedTaxInvoices($order->id);
 
         if ($issued->isEmpty()) {
             return;
@@ -694,6 +693,15 @@ class OrderCancellationService
         if ($restoreCouponsAndStock && $adjustment !== null) {
             $this->restoreCoupons($order, $adjustment);
             $this->restoreStock($order, $cancelItems);
+
+            // 환불 없이 끝나는 취소(미결제·0원)도 선차감 마일리지를 돌려준다. 환불이 있는 취소는
+            // 환불 실행(`RefundExecutionService::restoreMileage`)이 이미 돌려줬으므로 다시 하지 않는다.
+            // 이 분기가 없으면 「주문할 때」 차감 시점의 상점에서 입금 기한 만료·결제 미성립 주문을
+            // 정리할 때 사용 마일리지가 영영 돌아오지 않는다(취소는 되는데 오류도 로그도 없다).
+            // 복원은 취소신청서 id 로 멱등하다.
+            if ($refund === null) {
+                $this->refundExecutionService->restoreMileage($order, $adjustment, $cancel);
+            }
         }
 
         $this->finalizeCancellation($cancel, $processedBy);
@@ -790,9 +798,9 @@ class OrderCancellationService
      * 주문 취소 가능 여부를 검증합니다.
      *
      * @param  Order  $order  대상 주문
+     * @return void 반환값 없음
      *
      * @throws \Exception 취소 불가 시
-     * @return void 반환값 없음
      */
     protected function validateCancellable(Order $order): void
     {
@@ -803,34 +811,6 @@ class OrderCancellationService
 
         if (! $order->isCancellable($cancellableStatuses)) {
             throw new OrderCancellationException($order->getCancelDeniedReason($cancellableStatuses));
-        }
-    }
-
-    /**
-     * 취소 대상 아이템을 검증합니다.
-     *
-     * @param  Order  $order  주문
-     * @param  array  $cancelItems  취소 대상
-     *
-     * @throws \Exception 유효하지 않은 아이템
-     * @return void 반환값 없음
-     */
-    protected function validateCancelItems(Order $order, array $cancelItems): void
-    {
-        foreach ($cancelItems as $item) {
-            $option = $order->options->find($item['order_option_id']);
-
-            if (! $option) {
-                throw new OrderCancellationException(__('sirsoft-ecommerce::exceptions.cancel_option_not_found'));
-            }
-
-            if ($option->option_status === OrderStatusEnum::CANCELLED) {
-                throw new OrderCancellationException(__('sirsoft-ecommerce::exceptions.cancel_option_already_cancelled'));
-            }
-
-            if ($item['cancel_quantity'] < 1 || $item['cancel_quantity'] > $option->quantity) {
-                throw new OrderCancellationException(__('sirsoft-ecommerce::exceptions.cancel_quantity_invalid'));
-            }
         }
     }
 
@@ -847,9 +827,9 @@ class OrderCancellationService
      *
      * @param  Order  $order  주문
      * @param  array  $cancelItems  취소 대상
+     * @return void 반환값 없음
      *
      * @throws OrderCancellationException 진행 중인 클레임에 묶인 수량일 때
-     * @return void 반환값 없음
      */
     protected function validateNotLockedByClaim(Order $order, array $cancelItems): void
     {
@@ -1275,27 +1255,6 @@ class OrderCancellationService
             $this->orderOptionService->syncParentOrderStatus($order->id);
         }
     }
-
-    // ───────────────────────────────────────────────
-    // ③-f. OrderRefund 생성
-    // ───────────────────────────────────────────────
-
-    /**
-     * 환불 수단을 결정합니다.
-     *
-     * 판정 규칙은 취소와 클레임이 같아야 하므로 RefundExecutionService 가 SSoT 다.
-     *
-     * @param  Order  $order  주문
-     * @return RefundMethodEnum 환불 수단
-     */
-    protected function determineRefundMethod(Order $order): RefundMethodEnum
-    {
-        return $this->refundExecutionService->determineRefundMethod($order);
-    }
-
-    // ───────────────────────────────────────────────
-    // ③-g. OrderRefundOption 생성
-    // ───────────────────────────────────────────────
 
     // ───────────────────────────────────────────────
     // ③-h. OrderPayment 업데이트

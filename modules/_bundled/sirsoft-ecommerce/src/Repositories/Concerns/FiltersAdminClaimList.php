@@ -2,6 +2,7 @@
 
 namespace Modules\Sirsoft\Ecommerce\Repositories\Concerns;
 
+use App\Helpers\PermissionHelper;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 
@@ -19,6 +20,55 @@ use Illuminate\Database\Eloquent\Builder;
  */
 trait FiltersAdminClaimList
 {
+    /**
+     * 관리자 목록·건수에 적용하는 스코프 권한 식별자
+     */
+    public const ADMIN_CLAIM_SCOPE_PERMISSION = 'sirsoft-ecommerce.claims.read';
+
+    /**
+     * 신청서를 열람자의 권한 스코프 안으로 좁힙니다. (주문 스코프 상속)
+     *
+     * 신청서의 스코프 축은 **그 주문의 것**이다(`module.php` 의 `claims` 권한이 `orders` 와 같은
+     * `owner_key = user_id` 를 선언한다). 그래서 신청서 자신이 아니라 `order` 관계에 스코프 조건을
+     * 건다 — 판정식은 코어 단일 출처(`PermissionHelper::applyPermissionScope()`)이고, 주문 목록
+     * (`OrderRepository`)과 같은 식이라 "주문 목록에는 없는데 클레임 목록에는 있는" 주문이 생기지 않는다.
+     *
+     * 전체 스코프(null)·비인증 호출(큐·콘솔)에는 아무 조건도 붙지 않는다.
+     *
+     * @param  Builder  $query  대상 쿼리
+     * @param  string  $permission  스코프를 판정할 권한 식별자
+     * @return void 쿼리를 제자리에서 수정한다
+     */
+    protected function applyAdminClaimScope(Builder $query, string $permission): void
+    {
+        if (PermissionHelper::getEffectiveScope($permission) === null) {
+            return;
+        }
+
+        $query->whereHas('order', fn (Builder $order) => PermissionHelper::applyPermissionScope($order, $permission));
+    }
+
+    /**
+     * 지정한 신청서 중 열람자의 스코프 안에 있는 건수를 셉니다. (일괄 액션 가드)
+     *
+     * 목록과 **같은 스코프 조건**(`applyAdminClaimScope()`)으로 센다 — 일괄 경로가 목록과 다른
+     * 판정을 쓰면 목록에 보이지 않는 신청서를 일괄 전이로 건드릴 수 있다.
+     *
+     * @param  array<int, int>  $ids  신청서 ID 목록
+     * @param  string|null  $permission  스코프를 판정할 권한 식별자 (null 이면 스코프 없이 존재 건수만)
+     * @return int 스코프 안의 건수 (존재하지 않는 ID 는 세지 않는다)
+     */
+    public function countWithinAdminScope(array $ids, ?string $permission): int
+    {
+        $query = $this->model->newQuery()->whereIn($this->model->getKeyName(), array_values(array_unique(array_map('intval', $ids))));
+
+        if ($permission !== null) {
+            $this->applyAdminClaimScope($query, $permission);
+        }
+
+        return $query->count();
+    }
+
     /**
      * 유형별 컬럼 대응표를 반환합니다.
      *
@@ -48,6 +98,9 @@ trait FiltersAdminClaimList
     protected function applyAdminClaimFilters(Builder $query, array $filters): void
     {
         $columns = $this->adminClaimColumns();
+
+        // 목록·건수는 열람자의 `claims.read` 스코프 안의 신청서만 센다 — 주문 스코프 상속.
+        $this->applyAdminClaimScope($query, self::ADMIN_CLAIM_SCOPE_PERMISSION);
 
         if (! empty($filters['statuses'])) {
             $query->whereIn($columns['status'], (array) $filters['statuses']);

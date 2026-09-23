@@ -2,55 +2,76 @@
 
 namespace Modules\Sirsoft\Ecommerce\Tests\Unit\Lang;
 
-use Modules\Sirsoft\Ecommerce\Enums\RefundMethodEnum;
+use Modules\Sirsoft\Ecommerce\Exceptions\OrderClaimException;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 use PHPUnit\Framework\Attributes\Test;
 
 /**
- * 환불수단 불일치 안내 문구의 조립 정확성 (S0-D3 회귀 · #599 통합실측 전체 공정 라운드)
+ * 환불수단 거절 안내 문구의 단일 출처 (S0-D3 후속 · #599 validate P6)
  *
- * `ExecuteRefundRequest` 는 결제행과 어긋난 환불수단으로 [환불하기]를 누르면
- * `validation.claims.refund_method.payment_mismatch` 를 `:expected` 에 **수단 라벨**을
- * 끼워 돌려준다. 수단 라벨(`enums.refund_method.*`)은 셋 다 「환불」로 끝나는데
- * (「PG사 환불」·「계좌이체 환불」·「마일리지 환불」), 문구가 그 뒤에 「환불만」을 이어
- * 「이 주문의 결제수단은 PG사 환불 환불만 가능합니다」 로 조립됐다(2026-09-17 실측 ·
- * 주문 20 · RF 226 · 422 응답 본문).
+ * [환불하기] 실행 게이트(`ExecuteRefundRequest`)는 한때 결제행과 어긋난 수단을
+ * `validation.claims.refund_method.payment_mismatch`(`:expected` 에 수단 라벨을 끼우는 문구)로
+ * 막았다. 2026-09-23 결정으로 실행 게이트가 [금액 수정]과 같은 선택지를 쓰게 되면서 거절 문구도
+ * 금액 수정 경로와 같은 `exceptions.claim_refund_method_unavailable` 로 모였고, 옛 키는 어디서도
+ * 읽지 않는 죽은 키가 됐다.
  *
- * 라벨 사전과 문장 틀이 서로를 모르고 각자 「환불」을 붙인 것이 원인이라, 문장 틀만 보거나
- * 라벨만 봐서는 잡히지 않는다 — 실제 조립 결과를 라벨 전수로 잠근다.
+ * 이 테스트는 그 뒤의 계약을 잠근다 — 두 경로가 **같은 키**로 거절하고, 옛 키는 세 언어 어디에도
+ * 남지 않는다(남아 있으면 번역 관리 대상만 늘고, 누군가 다시 가져다 쓰면 두 경로의 문구가 갈린다).
  */
 class RefundMethodMismatchMessageTest extends ModuleTestCase
 {
     /**
-     * 라벨 전수 × 로케일 ko·en 에서 같은 단어가 연달아 두 번 나오지 않고, 라벨은 그대로 들어 있어야 한다.
+     * 실행 게이트와 금액 수정 경로가 같은 거절 문구 키를 쓴다.
      *
-     * @scenario surface=mismatch_copy
+     * 수정 전에도 통과한다 — 게이트 통일 이후의 계약을 잠그는 회귀 가드다.
      *
-     * @effects mismatch_message_contains_label_exactly_once_without_stutter
+     * @scenario surface=rejection_copy_source
+     *
+     * @effects refund_method_rejection_uses_one_message_key_on_both_paths
+     *
+     * @return void 반환값 없음
      */
     #[Test]
-    public function test_mismatch_message_does_not_stutter_the_label_word_for_any_refund_method(): void
+    public function test_refund_method_rejection_uses_one_message_key_on_both_paths(): void
     {
-        $cases = RefundMethodEnum::cases();
-        $this->assertNotEmpty($cases, 'RefundMethodEnum 케이스가 비어 있다 — 아래 루프가 공전한다');
+        $key = 'sirsoft-ecommerce::exceptions.claim_refund_method_unavailable';
 
-        foreach (['ko', 'en'] as $locale) {
-            app()->setLocale($locale);
+        $this->assertSame($key, OrderClaimException::refundMethodUnavailable()->getMessageKey());
 
-            foreach ($cases as $method) {
-                $label = $method->label();
-                $message = __('sirsoft-ecommerce::validation.claims.refund_method.payment_mismatch', ['expected' => $label]);
+        $gate = (string) file_get_contents($this->getModuleBasePath().'/src/Http/Requests/Admin/ExecuteRefundRequest.php');
+        $this->assertStringContainsString("__('{$key}')", $gate, '실행 게이트가 금액 수정 경로와 다른 문구로 거절합니다');
+    }
 
-                $this->assertStringContainsString($label, $message, "{$locale}/{$method->value}: 라벨이 문구에 끼워지지 않았다");
-                $this->assertDoesNotMatchRegularExpression(
-                    '/(\S{2,})\s+\1(?=\S|\s|$)/u',
-                    $message,
-                    "{$locale}/{$method->value}: 같은 단어가 연달아 두 번 나온다 — {$message}",
-                );
-                $this->assertStringNotContainsString('환불 환불', $message);
-            }
+    /**
+     * 읽는 곳이 없어진 옛 불일치 문구 키가 ko·en·ja 어디에도 남지 않는다.
+     *
+     * 수정 전 실패 이유: 실행 게이트가 거절 문구를 바꾼 뒤에도 `payment_mismatch` 가 세 언어 파일에
+     * 남아 있었다(읽는 코드 0곳).
+     *
+     * @scenario surface=retired_key
+     *
+     * @effects retired_payment_mismatch_key_is_removed_from_every_locale
+     *
+     * @return void 반환값 없음
+     */
+    #[Test]
+    public function test_retired_payment_mismatch_key_is_removed_from_every_locale(): void
+    {
+        $base = $this->getModuleBasePath();
+        $files = [
+            'ko' => $base.'/src/lang/ko/validation.php',
+            'en' => $base.'/src/lang/en/validation.php',
+            'ja' => base_path('lang-packs/_bundled/g7-module-sirsoft-ecommerce-ja/backend/ja/validation.php'),
+        ];
+
+        foreach ($files as $locale => $path) {
+            $lang = include $path;
+
+            $this->assertArrayNotHasKey(
+                'payment_mismatch',
+                $lang['claims']['refund_method'] ?? [],
+                "{$locale}: 읽는 곳이 없는 payment_mismatch 키가 남아 있습니다"
+            );
         }
-
-        app()->setLocale('ko');
     }
 }

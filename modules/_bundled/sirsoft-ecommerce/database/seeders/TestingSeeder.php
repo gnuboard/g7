@@ -127,18 +127,22 @@ class TestingSeeder extends Seeder
 
     /**
      * 클레임 사유 초기 데이터를 생성합니다.
+     *
+     * 목록은 설치 시더(`ClaimReasonSeeder::getDefaults()`)에서 가져온다 — 여기에 사본을 두면 설치
+     * 시더에 코드가 늘 때(예: 만료 자동취소 `auto_cancel_expired`) 테스트 환경에만 그 행이 없어,
+     * 실제 설치본에서는 성공하는 경로가 테스트에서만 `reasonUnavailable` 로 실패한다.
+     *
+     * 환불 유형만 시드한다. 교환·반품 사유는 테스트가 필요한 것만 직접 만든다 — 기본 목록을 깔면
+     * 사유 개수를 세는 테스트가 설치 시더의 목록 변경에 묶인다.
+     *
+     * @return void
      */
     private function createClaimReasons(): void
     {
-        $reasons = [
-            ['type' => 'refund', 'code' => 'order_mistake', 'name' => ['ko' => '주문 실수', 'en' => 'Order Mistake'], 'fault_type' => 'customer', 'is_user_selectable' => true, 'is_active' => true, 'sort_order' => 0],
-            ['type' => 'refund', 'code' => 'changed_mind', 'name' => ['ko' => '단순 변심', 'en' => 'Changed Mind'], 'fault_type' => 'customer', 'is_user_selectable' => true, 'is_active' => true, 'sort_order' => 1],
-            ['type' => 'refund', 'code' => 'reorder_other', 'name' => ['ko' => '다른 상품으로 재주문', 'en' => 'Reorder with Different Product'], 'fault_type' => 'customer', 'is_user_selectable' => true, 'is_active' => true, 'sort_order' => 2],
-            ['type' => 'refund', 'code' => 'delayed_delivery', 'name' => ['ko' => '배송 지연', 'en' => 'Delayed Delivery'], 'fault_type' => 'seller', 'is_user_selectable' => true, 'is_active' => true, 'sort_order' => 3],
-            ['type' => 'refund', 'code' => 'product_info_different', 'name' => ['ko' => '상품 정보 상이', 'en' => 'Product Info Different'], 'fault_type' => 'seller', 'is_user_selectable' => true, 'is_active' => true, 'sort_order' => 4],
-            ['type' => 'refund', 'code' => 'admin_cancel', 'name' => ['ko' => '관리자 취소', 'en' => 'Admin Cancel'], 'fault_type' => 'seller', 'is_user_selectable' => false, 'is_active' => true, 'sort_order' => 5],
-            ['type' => 'refund', 'code' => 'etc', 'name' => ['ko' => '기타', 'en' => 'Etc'], 'fault_type' => 'customer', 'is_user_selectable' => true, 'is_active' => true, 'sort_order' => 6],
-        ];
+        $reasons = array_values(array_filter(
+            (new ClaimReasonSeeder)->getDefaults(),
+            fn (array $reason): bool => $reason['type'] === 'refund',
+        ));
 
         foreach ($reasons as $reason) {
             ClaimReason::firstOrCreate(

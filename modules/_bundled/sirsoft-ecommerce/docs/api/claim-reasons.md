@@ -268,7 +268,7 @@ HTTP/1.1 201
 <!-- @generated:start:api.modules.sirsoft-ecommerce.admin.claim-reasons.active -->
 - **라우트명**: `api.modules.sirsoft-ecommerce.admin.claim-reasons.active`
 - **컨트롤러**: `Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\ClaimReasonController@active`
-- **인증/권한**: `auth:sanctum` + `permission:sirsoft-ecommerce.settings.read`
+- **인증/권한**: `auth:sanctum` + `permission:sirsoft-ecommerce.settings.read|sirsoft-ecommerce.claims.read` (둘 중 하나)
 
 **요청 파라미터**
 

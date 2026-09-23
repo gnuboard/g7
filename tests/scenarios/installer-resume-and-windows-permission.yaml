@@ -81,6 +81,7 @@ effects:
   - readonly_directory_is_detected
   - normal_directory_is_not_misdiagnosed_as_readonly
   - readonly_mode_returns_attrib_command
+  - readonly_fix_command_clears_nested_contents   # 안내 명령을 실행하면 폴더 안쪽까지 풀린다 (#599 validate, Windows 실측)
   - readonly_mode_does_not_return_icacls
 
   # OS 별 명령 생성 (기존 회귀 가드)
@@ -98,6 +99,7 @@ effects:
   - installer_never_skips_an_extension_whose_db_row_was_dropped
 
 test_files:
+  - tests/Unit/Installer/InstallerReadonlyAttribClearsContentsTest.php
   - tests/Unit/Installer/ExistingDbActionGuardTest.php
   - tests/Unit/Installer/InstallerWindowsCommandsTest.php
 

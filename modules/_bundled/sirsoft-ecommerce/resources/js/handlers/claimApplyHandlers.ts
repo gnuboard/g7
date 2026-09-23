@@ -35,6 +35,24 @@ interface ActionWithParams<T = Record<string, any>> {
     [key: string]: any;
 }
 
+/**
+ * 안내 문구를 모듈 다국어 키로 해석합니다. (미해석이면 폴백)
+ *
+ * 이 핸들러는 어느 사용자 템플릿에서든 돈다 — 템플릿 키(`claim.*`)에 기대면 그 키를 갖지 않은
+ * 템플릿에서 키 원문이 토스트로 뜬다. 그래서 모듈 키(`sirsoft-ecommerce.user.claim_apply.*`)를 쓴다.
+ * `G7Core.t` 는 번역이 없으면 **키를 그대로** 돌려주므로 `?? '문구'` 폴백은 돌지 않는다 — 키와 같은
+ * 값이 돌아오면 폴백으로 떨어뜨린다(`claimHandlers.ts` 의 같은 헬퍼와 같은 규칙).
+ *
+ * @param key 모듈 다국어 키
+ * @param fallback 폴백 문구 (번역이 없을 때)
+ * @returns 해석된 문구
+ */
+function t(key: string, fallback: string): string {
+    const resolved = (window as any).G7Core?.t?.(key);
+
+    return typeof resolved === 'string' && resolved !== '' && resolved !== key ? resolved : fallback;
+}
+
 /** 신청서 작성 중인 상품 한 줄 */
 export interface ClaimApplyItem {
     order_option_id: number;
@@ -250,6 +268,31 @@ export async function claimApplyOrderMissingHandler(
 }
 
 /**
+ * 저장된 신청서의 환불 우선순위를 되살립니다. (S1-D13)
+ *
+ * 응답이 접수 때 고른 우선순위(`refund_priority`)를 실어 주면 그 값이 정본이다. 금액 분해로
+ * 역산하면 PG 잔액이 모자라 마일리지로 넘친 **PG 우선** 신청서가 「마일리지 우선」 으로 뒤집힌다
+ * (#599 validate 2026-09-23) — 두 우선순위가 같은 분해를 낳는 경우가 있어 분해만으로는 가를 수 없다.
+ *
+ * 그 필드가 없는 응답(구버전 서버)만 종전처럼 분해로 역산한다: 마일리지 환불액이 0 이면 PG 우선,
+ * 마일리지가 먼저 소진됐다면 마일리지 우선.
+ *
+ * @param claim 신청서 페이로드
+ * @returns 'points_first' | 'pg_first'
+ */
+function resolveRefundPriorityFromClaim(claim: any): string {
+    const saved = claim?.refund_priority;
+
+    if (saved === 'pg_first' || saved === 'points_first') {
+        return saved;
+    }
+
+    const points = Number(claim?.refund_points_amount ?? 0);
+
+    return points > 0 ? 'points_first' : 'pg_first';
+}
+
+/**
  * 수정 화면의 신청서를 읽어 셸 계약값을 세우고 주문 조회를 잇습니다.
  *
  * 데이터소스가 아니라 핸들러가 부른다 — 데이터소스는 조건부 auto_fetch 를 받지 않아,
@@ -260,35 +303,20 @@ export async function claimApplyOrderMissingHandler(
  * (order → claimOrderId → claimable → initClaimApply). `initClaimApply` 가 여기서 세운
  * `claimEditSnapshot` 을 보고 작성 대신 수정 상태를 만든다.
  *
+ * 승인 이후의 신청서(`is_editable: false`)는 수정 폼을 세우지 않는다 — 안내 토스트를 띄우고
+ * `detailPath`(신청서 상세)로 돌려보낸다(#599 T2-D7 · 운영 결정 2026-09-23: 승인 이후 수정은
+ * 구매자는 못 하고 관리자만 한다). 서버도 같은 경우를 422(`claim_not_editable`)로 막지만,
+ * 화면이 먼저 막지 않으면 구매자는 다 고쳐 쓴 뒤에야 거절을 받는다.
+ *
  * @example
  * {
  *   "handler": "sirsoft-ecommerce.initClaimEdit",
  *   "params": { "claimApiBase": "/api/modules/sirsoft-ecommerce/user/claims", "isGuest": false, "detailPath": "/mypage/claims/EX20260901-0001" }
  * }
  *
- * 승인 이후의 신청서(`is_editable: false`)는 수정 폼을 세우지 않는다 — 안내 토스트를 띄우고
- * `detailPath`(신청서 상세)로 돌려보낸다(#599 T2-D7 · PO 결정 2026-09-23: 승인 이후 수정은
- * 구매자는 못 하고 관리자만 한다). 서버도 같은 경우를 422(`claim_not_editable`)로 막지만,
- * 화면이 먼저 막지 않으면 구매자는 다 고쳐 쓴 뒤에야 거절을 받는다.
- *
  * @param action 액션 객체
  * @param _context 액션 컨텍스트
  */
-/**
- * 저장된 신청서의 금액 분해로 환불 우선순위를 역산합니다. (S1-D13)
- *
- * 신청서에는 우선순위 컬럼이 없고 결과 분해(`refund_amount` / `refund_points_amount`)만 남는다.
- * 마일리지 환불액이 0 이면 PG 우선으로 처리된 것이고, 마일리지가 먼저 소진됐다면 마일리지 우선이다.
- *
- * @param claim 신청서 페이로드
- * @returns 'points_first' | 'pg_first'
- */
-function resolveRefundPriorityFromClaim(claim: any): string {
-    const points = Number(claim?.refund_points_amount ?? 0);
-
-    return points > 0 ? 'points_first' : 'pg_first';
-}
-
 export async function initClaimEditHandler(
     action: ActionWithParams<{ claimApiBase?: string; isGuest?: boolean; detailPath?: string }>,
     _context: ActionContext
@@ -330,8 +358,10 @@ export async function initClaimEditHandler(
         if (claim.is_editable === false) {
             G7Core.state.setLocal({ claimEditMode: false, claimEditLoading: false });
             G7Core.toast?.warning?.(
-                G7Core.t?.('claim.edit.not_editable')
-                    ?? '승인 이후에는 신청 내용을 수정할 수 없습니다.'
+                t(
+                    'sirsoft-ecommerce.user.claim_apply.edit_not_editable',
+                    '승인 이후에는 신청 내용을 수정할 수 없습니다. 변경이 필요하면 고객센터로 문의해 주세요.'
+                )
             );
 
             const detailPath = String(action.params?.detailPath ?? '');
@@ -356,8 +386,7 @@ export async function initClaimEditHandler(
             // **마일리지 우선으로 접수한 신청서의 수정 화면이 PG 우선으로 보인다** — 읽기 전용
             // 라벨도, 미리보기가 다시 계산하는 금액 분해(결제수단/마일리지 줄·잔여 마일리지)도
             // 전부 저장값과 어긋나고, 그 상태로 저장하면 분해가 조용히 뒤집힌다.
-            // 신청서에 우선순위 컬럼은 없으므로 **저장된 분해로 역산**한다 — 마일리지 환불액이
-            // 있는데 PG 잔여가 남아 있었다면 마일리지를 먼저 쓴 것이다.
+            // 응답의 `refund_priority` 가 정본이고, 그 필드가 없는 응답만 저장된 분해로 역산한다.
             claimRefundPriority: resolveRefundPriorityFromClaim(claim),
         });
 
@@ -422,8 +451,10 @@ export function buildClaimEditItems(claim: any, currency: string | null): ClaimA
             }).filter((label: string) => label !== ''),
             custom_options: item.new_option_snapshot?.custom_options ?? null,
             price_difference: Number(item.price_difference ?? 0),
-            price_difference_formatted: item.price_difference_formatted
-                ?? formatAmountInCurrency(Math.abs(Number(item.price_difference ?? 0)), currency),
+            // 부호 없는 절대값으로 포맷한다 — 화면이 차액 방향(`+`/`-`)을 따로 붙인다. 서버의
+            // `price_difference_formatted` 는 부호를 품으므로(`-5,000원`) 그대로 받으면 `--5,000원` 이
+            // 된다(#599 validate 2026-09-23). 작성 화면의 미리보기 경로도 같은 규칙이다.
+            price_difference_formatted: formatAmountInCurrency(Math.abs(Number(item.price_difference ?? 0)), currency),
             // 단가 줄의 보조 통화는 **단가**에서 온다. 예전에는 여기에 `mc_price_difference` 를
             // 실어, 수정 화면의 `28,000원` 줄에 교환 차액인 `$-3.00` 이 붙었다(S3-D6 실측).
             // 이름은 단가인데 값이 차액이라 서식은 정상이고 금액만 틀려 흔적이 남지 않는다.
@@ -440,6 +471,10 @@ export function buildClaimEditItems(claim: any, currency: string | null): ClaimA
  * 저장할 때 `remove_image_ids` 로 넘긴다. 바로 지우면 저장을 취소하고 나가도 첨부만
  * 영구히 사라지고, 서버의 장수 상한 판정(삭제 후 남을 장수)도 화면과 갈린다.
  *
+ * `removable` 은 **고객이 올린** 첨부에만 참이다. 운영자가 상세에서 대리로 올린 사진과 주체
+ * 미상 사진은 "누가 낸 증거인가" 를 가르는 기록이라 서버도 고객 수정으로는 지우지 않는다
+ * (`claim_image_not_removable`). 화면이 삭제 버튼을 보여 주면 저장이 통째로 422 가 된다.
+ *
  * @param claim 신청서 응답
  * @returns 첨부 줄
  */
@@ -450,6 +485,8 @@ export function buildClaimEditImages(claim: any): Array<Record<string, any>> {
         original_name: image.original_name ?? '',
         download_url: image.download_url ?? '',
         attached: true,
+        removable: image.uploader_type === 'customer',
+        uploader_type_label: image.uploader_type_label ?? null,
     }));
 }
 
@@ -469,6 +506,20 @@ export function buildClaimEditImages(claim: any): Array<Record<string, any>> {
  * @param items 신청 상품 줄
  * @returns 분기 (선택 없음 → null, 두 분기가 섞임 → 'mixed')
  */
+export function resolveSelectedRefundBranch(items: ClaimApplyItem[]): string | null {
+    const branches = Array.from(
+        new Set(
+            items
+                .filter((item) => item.selected && !!item.refund_branch)
+                .map((item) => String(item.refund_branch))
+        )
+    );
+
+    if (branches.length === 0) return null;
+
+    return branches.length === 1 ? branches[0] : 'mixed';
+}
+
 /**
  * 접수 응답을 보고 이동할 신청내역 탭 주소를 만듭니다. (F8 — 서버 `branch` 가 정본)
  *
@@ -478,6 +529,7 @@ export function buildClaimEditImages(claim: any): Array<Record<string, any>> {
  *
  * @param fallbackPath 화면이 만든 이동 주소
  * @param data 접수 응답의 `data` (branch / claim)
+ * @param detailPathBase 신청서 상세 주소의 앞부분 (셸이 준다 — 있으면 1순위)
  * @returns 이동할 주소 (만들 수 없으면 원 주소)
  */
 export function resolveClaimSuccessPath(fallbackPath: unknown, data: any, detailPathBase?: unknown): string {
@@ -504,20 +556,6 @@ export function resolveClaimSuccessPath(fallbackPath: unknown, data: any, detail
     params.set('type', claimType);
 
     return `${base}?${params.toString()}`;
-}
-
-export function resolveSelectedRefundBranch(items: ClaimApplyItem[]): string | null {
-    const branches = Array.from(
-        new Set(
-            items
-                .filter((item) => item.selected && !!item.refund_branch)
-                .map((item) => String(item.refund_branch))
-        )
-    );
-
-    if (branches.length === 0) return null;
-
-    return branches.length === 1 ? branches[0] : 'mixed';
 }
 
 /**
@@ -638,27 +676,6 @@ export function buildClaimItemsPayload(items: ClaimApplyItem[]): Array<Record<st
         });
 }
 
-/**
- * 미리보기 응답의 금액을 주문 통화 표기 문자열로 만듭니다.
- *
- * 미리보기 응답은 숫자만 준다(`*_formatted` 없음). 화면이 `금액.toLocaleString() + '원'`
- * 으로 단위를 이어 붙이면 기본 통화가 원화가 아닌 상점에서 값은 맞고 단위만 틀린 금액이
- * 나가므로, 설정의 기호·소수 자릿수를 따르는 공용 포맷터를 쓴다.
- *
- * `shipping_groups` 는 배송비 합계의 **산출 근거**다(§6-3). 서버가 배송정책 그룹마다
- * `base_fee`(편도 단가) · `multiplier`(교환 2 · 반품 1) · `extra_fee`(도서산간)를 내려주므로
- * 화면은 그 값을 옮기기만 한다 — 화면이 스스로 곱셈을 하면 합계(서버)와 근거(화면)의 출처가
- * 갈려, 훅이 금액을 덮어쓴 상점에서 둘이 어긋나도 어느 쪽이 맞는지 알 수 없게 된다.
- *
- * `decomposable` 은 **`original_policy` 모드에서만** 참이다. `fixed` 는 운영자가 정책 화면에서
- * 유형별 **총액**을 직접 선언한 값이라 서버도 배수를 곱하지 않으므로(D11), 그 값을 "편도 × N"
- * 으로 적으면 선언액을 단가로 잘못 부르게 된다 — 교환인데 "× 1회" 로 보여 합계 라벨(왕복)과
- * 어긋난다(2026-08-31 실측). 분해가 성립하지 않는 모드에서는 근거 줄을 세우지 않는다.
- *
- * @param estimate 미리보기 응답 payload
- * @param currencyCode 주문 시점 기준 통화
- * @returns 표기 문자열 맵 (`shipping_groups` 만 배열)
- */
 /**
  * 통화별 금액 맵을 화면이 그릴 수 있는 배열로 폅니다. (기준통화 제외)
  *
@@ -836,6 +853,27 @@ export function unplacedClaimErrorMessage(
     return '';
 }
 
+/**
+ * 미리보기 응답의 금액을 주문 통화 표기 문자열로 만듭니다.
+ *
+ * 미리보기 응답은 숫자만 준다(`*_formatted` 없음). 화면이 `금액.toLocaleString() + '원'`
+ * 으로 단위를 이어 붙이면 기본 통화가 원화가 아닌 상점에서 값은 맞고 단위만 틀린 금액이
+ * 나가므로, 설정의 기호·소수 자릿수를 따르는 공용 포맷터를 쓴다.
+ *
+ * `shipping_groups` 는 배송비 합계의 **산출 근거**다(§6-3). 서버가 배송정책 그룹마다
+ * `base_fee`(편도 단가) · `multiplier`(교환 2 · 반품 1) · `extra_fee`(도서산간)를 내려주므로
+ * 화면은 그 값을 옮기기만 한다 — 화면이 스스로 곱셈을 하면 합계(서버)와 근거(화면)의 출처가
+ * 갈려, 훅이 금액을 덮어쓴 상점에서 둘이 어긋나도 어느 쪽이 맞는지 알 수 없게 된다.
+ *
+ * `decomposable` 은 **`original_policy` 모드에서만** 참이다. `fixed` 는 운영자가 정책 화면에서
+ * 유형별 **총액**을 직접 선언한 값이라 서버도 배수를 곱하지 않으므로(D11), 그 값을 "편도 × N"
+ * 으로 적으면 선언액을 단가로 잘못 부르게 된다 — 교환인데 "× 1회" 로 보여 합계 라벨(왕복)과
+ * 어긋난다(2026-08-31 실측). 분해가 성립하지 않는 모드에서는 근거 줄을 세우지 않는다.
+ *
+ * @param estimate 미리보기 응답 payload
+ * @param currencyCode 주문 시점 기준 통화
+ * @returns 표기 문자열 맵 (`shipping_groups` 만 배열)
+ */
 export function formatClaimEstimate(estimate: any, currencyCode: string | null): Record<string, any> {
     const fmt = (value: unknown): string => formatAmountInCurrency(Number(value ?? 0), currencyCode);
 
@@ -923,31 +961,6 @@ export function defaultClaimComparisonOpen(G7Core: any): boolean {
 }
 
 /**
- * 신청서 작성 화면 초기화 핸들러
- *
- * `claimable-options` 응답으로 상품 줄을 세우고, 주문상세에서 체크해 온 상품
- * (`query.options`)을 미리 선택한다. 청구 2축의 기본값도 운영자 허용 목록의 첫 값으로
- * 정한다 — 화면이 리터럴 기본값을 들고 있으면 운영자가 그 방식을 껐을 때 제출이 422 가 된다.
- *
- * 페이로드는 **응답 컨텍스트에서 직접 받는다**. 이 핸들러는 `claimable` 데이터소스의
- * onSuccess 로 실행되는데, 그 시점의 `G7Core.dataSource.get('claimable')` 은 아직 비어 있다 —
- * TemplateApp 의 상태 갱신이 refetch 해소 뒤에 일어나기 때문이다. 데이터소스에서 읽으면
- * 응답은 200 인데 화면만 빈 신청서로 남고 오류는 어디에도 남지 않는다.
- *
- * @example
- * {
- *   "handler": "sirsoft-ecommerce.initClaimApply",
- *   "params": {
- *     "claimType": "exchange",
- *     "preselected": "{{query.options ?? ''}}",
- *     "claimable": "{{response.data.data}}"
- *   }
- * }
- *
- * @param action 액션 객체
- * @param _context 액션 컨텍스트
- */
-/**
  * 수정 화면의 로컬 상태를 신청서에서 만듭니다.
  *
  * 작성 초기화(`initClaimApplyHandler`)와 **키 집합이 같아야 한다** — 공유 partial 이 그 키를
@@ -988,6 +1001,7 @@ function seedClaimEditState(G7Core: any, claim: any, claimable: any, claimType: 
         claimRefundBankCode: '',
         claimRefundBankAccount: '',
         claimRefundBankHolder: '',
+        claimRefundAccountMasked: false,
         // 재발송지는 신청서에 동결된 값에서 출발한다 — 원 배송지로 되돌리면 구매자가 이미
         // 바꿔 둔 주소가 화면에서만 사라지고, 저장하면 그 주소로 되돌아간다.
         claimRedelivery: claim.redelivery_address_snapshot ?? null,
@@ -1017,6 +1031,31 @@ function seedClaimEditState(G7Core: any, claim: any, claimable: any, claimType: 
     });
 }
 
+/**
+ * 신청서 작성 화면 초기화 핸들러
+ *
+ * `claimable-options` 응답으로 상품 줄을 세우고, 주문상세에서 체크해 온 상품
+ * (`query.options`)을 미리 선택한다. 청구 2축의 기본값도 운영자 허용 목록의 첫 값으로
+ * 정한다 — 화면이 리터럴 기본값을 들고 있으면 운영자가 그 방식을 껐을 때 제출이 422 가 된다.
+ *
+ * 페이로드는 **응답 컨텍스트에서 직접 받는다**. 이 핸들러는 `claimable` 데이터소스의
+ * onSuccess 로 실행되는데, 그 시점의 `G7Core.dataSource.get('claimable')` 은 아직 비어 있다 —
+ * TemplateApp 의 상태 갱신이 refetch 해소 뒤에 일어나기 때문이다. 데이터소스에서 읽으면
+ * 응답은 200 인데 화면만 빈 신청서로 남고 오류는 어디에도 남지 않는다.
+ *
+ * @example
+ * {
+ *   "handler": "sirsoft-ecommerce.initClaimApply",
+ *   "params": {
+ *     "claimType": "exchange",
+ *     "preselected": "{{query.options ?? ''}}",
+ *     "claimable": "{{response.data.data}}"
+ *   }
+ * }
+ *
+ * @param action 액션 객체
+ * @param _context 액션 컨텍스트
+ */
 export function initClaimApplyHandler(
     action: ActionWithParams<{ claimType?: string; preselected?: string; claimable?: any }>,
     _context: ActionContext
@@ -1082,7 +1121,7 @@ export function initClaimApplyHandler(
                 refund_branch: entry.refund_branch ?? null,
                 selected: preselected.includes(Number(option.id ?? 0)),
                 // 신청 가능한 잔여 수량을 처음부터 다 담는다 — 취소·반품은 「고른 상품을 통째로」 가
-                // 대부분이라 1 로 두면 구매자가 줄마다 수량을 다시 올려야 한다(2026-09-21 PO 요청).
+                // 대부분이라 1 로 두면 구매자가 줄마다 수량을 다시 올려야 한다(2026-09-21 요구사항).
                 // 줄여 신청하는 경우는 입력칸에서 내리면 되고, 상한은 그대로 available_quantity 다.
                 quantity: available > 0 ? available : 1,
                 exchange_mode: 'same',
@@ -1129,6 +1168,11 @@ export function initClaimApplyHandler(
         claimRefundBankCode: refundPrefill.bank_code,
         claimRefundBankAccount: refundPrefill.account_number,
         claimRefundBankHolder: refundPrefill.holder,
+        // 서버는 등록 계좌를 **가린 모양**으로 실어 준다(`masked: true` — 계좌 뒤 4자리·예금주 첫 글자).
+        // 세 칸을 그대로 두고 제출하면 서버가 원문으로 되돌리지만, 한 칸이라도 바꾸면 나머지 가린 칸이
+        // 별표째 저장된다(`RefundBankMask::restoreRegistered` 는 세 칸이 모두 가린 모양일 때만 되돌린다).
+        // 그래서 가린 채움인지를 남겨 두고, 한 칸을 고치는 순간 나머지를 비운다(setClaimRefundAccountField).
+        claimRefundAccountMasked: claimable.refund_account?.prefill?.masked === true && refundPrefill.account_number !== '',
         claimEstimate: null,
         claimEstimateFormatted: null,
         claimEstimateLoading: false,
@@ -1177,8 +1221,10 @@ export function toggleClaimItemHandler(
     // 전체를 거절하므로(`claim_refund_branch_mixed`) 그 조합을 만들 수 있게 두지 않는다.
     if (!canSelectClaimItem(current, index, String(local.claimType ?? ''))) {
         G7Core.toast?.warning?.(
-            G7Core.t?.('claim.apply.refund_branch_mixed_blocked')
-            ?? '즉시 취소되는 상품과 환불 신청이 필요한 상품은 나누어 신청해 주세요.'
+            t(
+                'sirsoft-ecommerce.user.claim_apply.refund_branch_mixed_blocked',
+                '자동으로 처리되는 상품과 판매자 확인이 필요한 상품은 나누어 신청해 주세요.'
+            )
         );
 
         return;
@@ -1359,6 +1405,60 @@ export function setClaimPaymentMethodHandler(
     G7Core.state.setLocal({ claimPaymentMethod: String(action.params?.value ?? '') });
 }
 
+/** 환불 계좌 입력 칸 → 로컬 상태 키 */
+const REFUND_ACCOUNT_FIELD_KEYS: Record<string, string> = {
+    bank_code: 'claimRefundBankCode',
+    account_number: 'claimRefundBankAccount',
+    holder: 'claimRefundBankHolder',
+};
+
+/**
+ * 환불 계좌 입력 핸들러 (은행 · 계좌번호 · 예금주)
+ *
+ * 등록 계좌 프리필이 **가린 모양**(`claimRefundAccountMasked`)이면 세 칸을 「전부 그대로 두거나 전부 새로
+ * 쓰거나」 로 다룬다. 서버는 세 칸이 모두 가린 모양 그대로일 때만 원문으로 되돌리므로, 한 칸만 바꾸면
+ * 나머지 가린 칸(`********7890` · `홍**`)이 별표째 저장된다. 그래서 가린 상태에서 한 칸이 바뀌면:
+ *  - 바뀐 칸이 별표를 품은 채면(가린 값의 일부만 고침) 그 칸을 비운다 — 별표와 새 글자가 섞인 값이다.
+ *  - 나머지 가린 칸(계좌번호 · 예금주)을 비운다 — 구매자가 세 칸을 처음부터 새로 쓴다.
+ *  - 은행은 가린 값이 아니므로 비우지 않는다(바꾼 은행은 그대로 둔다).
+ * 가리지 않은 프리필(구버전 서버)이나 가린 상태가 풀린 뒤에는 칸마다 그대로 적는다.
+ *
+ * 금액과 무관한 값이라 미리보기를 다시 부르지 않는다.
+ *
+ * @example
+ * { "handler": "sirsoft-ecommerce.setClaimRefundAccountField", "params": { "field": "account_number", "value": "{{$event.target.value}}" } }
+ *
+ * @param action 액션 객체 (params.field: bank_code | account_number | holder, params.value: 입력값)
+ * @param _context 액션 컨텍스트
+ */
+export function setClaimRefundAccountFieldHandler(
+    action: ActionWithParams<{ field?: string; value?: unknown }>,
+    _context: ActionContext
+): void {
+    const G7Core = (window as any).G7Core;
+    if (!G7Core?.state) return;
+
+    const field = String(action.params?.field ?? '');
+    const key = REFUND_ACCOUNT_FIELD_KEYS[field];
+    if (!key) return;
+
+    const value = String(action.params?.value ?? '');
+    const local = G7Core.state.getLocal() ?? {};
+
+    if (local.claimRefundAccountMasked !== true || value === String(local[key] ?? '')) {
+        G7Core.state.setLocal({ [key]: value });
+
+        return;
+    }
+
+    G7Core.state.setLocal({
+        claimRefundAccountMasked: false,
+        claimRefundBankCode: field === 'bank_code' ? value : String(local.claimRefundBankCode ?? ''),
+        claimRefundBankAccount: field === 'account_number' && !value.includes('*') ? value : '',
+        claimRefundBankHolder: field === 'holder' && !value.includes('*') ? value : '',
+    });
+}
+
 /**
  * 환불 우선순위(PG 우선 / 마일리지 우선) 변경 핸들러 (P3-③)
  *
@@ -1521,8 +1621,7 @@ export async function openClaimChangeProductHandler(
         G7Core.state.setLocal({ changeProductLoading: false });
         G7Core.toast?.error?.(
             error?.response?.data?.message
-            ?? G7Core.t?.('claim.change_product.load_failed')
-            ?? '교환 가능한 옵션을 불러오지 못했습니다.'
+            ?? t('sirsoft-ecommerce.user.claim_apply.change_product_load_failed', '교환 가능한 옵션을 불러오지 못했습니다.')
         );
     }
 }
@@ -1574,8 +1673,7 @@ export function applyClaimChangeProductHandler(
 
     if (mode === 'change' && !matched?.id) {
         G7Core.toast?.warning?.(
-            G7Core.t?.('claim.change_product.select_option_required')
-            ?? '교환받을 옵션을 선택해 주세요.'
+            t('sirsoft-ecommerce.user.claim_apply.change_product_select_option_required', '교환받을 옵션을 선택해 주세요.')
         );
 
         return;
@@ -1772,8 +1870,7 @@ async function estimateClaimInternal(G7Core: any, claimApiBase: string, isGuest:
 
         const message = error?.response?.data?.message
             ?? error?.data?.message
-            ?? G7Core.t?.('claim.apply.estimate_failed')
-            ?? '예상 금액을 계산하지 못했습니다.';
+            ?? t('sirsoft-ecommerce.user.claim_apply.estimate_failed', '예상 금액을 계산하지 못했습니다.');
         const userFixable = isUserFixableClaimError(error);
 
         G7Core.state.setLocal({
@@ -1835,7 +1932,7 @@ export function claimStoreSuffix(claimType: string): string | null {
  * @param _context 액션 컨텍스트
  */
 export async function submitClaimHandler(
-    action: ActionWithParams<{ claimApiBase?: string; isGuest?: boolean; successPath?: string }>,
+    action: ActionWithParams<{ claimApiBase?: string; isGuest?: boolean; successPath?: string; detailPathBase?: string }>,
     _context: ActionContext
 ): Promise<void> {
     const G7Core = (window as any).G7Core;
@@ -1856,7 +1953,7 @@ export async function submitClaimHandler(
 
     if (items.length === 0) {
         G7Core.toast?.warning?.(
-            G7Core.t?.('claim.apply.select_items_first') ?? '신청할 상품을 선택해 주세요.'
+            t('sirsoft-ecommerce.user.claim_apply.select_items_first', '신청할 상품을 선택해 주세요.')
         );
 
         return;
@@ -1864,7 +1961,7 @@ export async function submitClaimHandler(
 
     if (!local.claimReason) {
         G7Core.toast?.warning?.(
-            G7Core.t?.('claim.apply.reason_required') ?? '신청 사유를 선택해 주세요.'
+            t('sirsoft-ecommerce.user.claim_apply.reason_required', '신청 사유를 선택해 주세요.')
         );
 
         return;
@@ -1875,8 +1972,10 @@ export async function submitClaimHandler(
     if (local.claimEstimate?.adjustment?.cancel_blocked === true) {
         G7Core.toast?.warning?.(
             local.claimEstimate?.adjustment?.cancel_blocked_reason
-            ?? G7Core.t?.('claim.apply.comparison.blocked_hint')
-            ?? '이 조합은 환불액이 0원 아래로 내려가 신청할 수 없습니다.'
+            ?? t(
+                'sirsoft-ecommerce.user.claim_apply.cancel_blocked',
+                '이 조합은 환불액이 0원 아래로 내려가 신청할 수 없습니다 — 상품·수량을 다시 확인해 주세요'
+            )
         );
 
         return;
@@ -1899,14 +1998,19 @@ export async function submitClaimHandler(
         logger.error('[submitClaim] 첨부 업로드 실패:', error);
     }
 
+    // 업로드를 기다리는 동안 로컬 상태가 바뀔 수 있다(구매자가 계속 입력한다). 본문은 **대기 뒤**
+    // 다시 읽은 상태로 만든다 — 대기 앞 스냅샷(`local`)으로 만들면 화면에 보이는 값과 제출된 값이
+    // 갈린다(#599 validate 2026-09-23). 제출 자격 판정(위)은 대기 앞 값으로 이미 끝났다.
+    const latest = G7Core.state.getLocal() ?? local;
+
     const body: Record<string, any> = {
-        items,
-        reason_code: local.claimReason,
-        refund_priority: local.claimRefundPriority ?? 'pg_first',
+        items: buildClaimItemsPayload(latest.claimItems ?? local.claimItems ?? []),
+        reason_code: latest.claimReason ?? local.claimReason,
+        refund_priority: latest.claimRefundPriority ?? 'pg_first',
     };
 
-    if (local.claimReasonDetail) {
-        body.reason_detail = local.claimReasonDetail;
+    if (latest.claimReasonDetail) {
+        body.reason_detail = latest.claimReasonDetail;
     }
 
     if (imageIds.length > 0) {
@@ -1914,17 +2018,17 @@ export async function submitClaimHandler(
     }
 
     if (claimType !== 'refund') {
-        if (local.claimChargeMethod) {
-            body.charge_method = local.claimChargeMethod;
+        if (latest.claimChargeMethod) {
+            body.charge_method = latest.claimChargeMethod;
         }
 
-        if (local.claimPaymentMethod) {
-            body.payment_method = local.claimPaymentMethod;
+        if (latest.claimPaymentMethod) {
+            body.payment_method = latest.claimPaymentMethod;
         }
     }
 
-    if (claimType === 'exchange' && local.claimRedelivery?.zipcode) {
-        body.redelivery_address = { ...local.claimRedelivery, changed_by_user: true };
+    if (claimType === 'exchange' && latest.claimRedelivery?.zipcode) {
+        body.redelivery_address = { ...latest.claimRedelivery, changed_by_user: true };
     }
 
     // 환불계좌는 구매자에게 돈이 돌아가는 신청에서, 그리고 세 필드가 다 채워졌을 때만 싣는다 —
@@ -1935,12 +2039,29 @@ export async function submitClaimHandler(
     // 값(refund_product_amount)을 쓴다. 다른 값을 쓰면 칸은 보이는데 전송되지 않거나 그 반대가
     // 되고, 둘 다 오류를 남기지 않는다.
     const refundsToBuyer =
-        claimType !== 'exchange' || Number(local.claimEstimate?.refund_product_amount ?? 0) > 0;
+        claimType !== 'exchange' || Number(latest.claimEstimate?.refund_product_amount ?? 0) > 0;
 
     if (refundsToBuyer) {
-        const bankCode = String(local.claimRefundBankCode ?? '').trim();
-        const bankAccount = String(local.claimRefundBankAccount ?? '').trim();
-        const bankHolder = String(local.claimRefundBankHolder ?? '').trim();
+        const bankCode = String(latest.claimRefundBankCode ?? '').trim();
+        const bankAccount = String(latest.claimRefundBankAccount ?? '').trim();
+        const bankHolder = String(latest.claimRefundBankHolder ?? '').trim();
+
+        // 별표가 섞인 계좌는 보내지 않는다 — 가린 프리필을 **세 칸 그대로** 보낼 때만 서버가 등록 원문으로
+        // 되돌린다. 가린 상태가 풀린 뒤(한 칸을 고친 뒤)에도 별표가 남아 있으면 그 값은 별표째 저장된다.
+        if (latest.claimRefundAccountMasked !== true && (bankAccount.includes('*') || bankHolder.includes('*'))) {
+            G7Core.state.setLocal({
+                isSubmittingClaim: false,
+                claimFieldErrors: {
+                    ...collectClaimFieldErrors(null),
+                    refund_bank: t(
+                        'sirsoft-ecommerce.user.claim_apply.refund_account_masked_mixed',
+                        '가려진 계좌 정보는 일부만 고칠 수 없습니다. 은행·계좌번호·예금주를 모두 새로 입력해 주세요.'
+                    ),
+                },
+            });
+
+            return;
+        }
 
         if (bankCode || bankAccount || bankHolder) {
             body.refund_bank = {
@@ -1972,8 +2093,7 @@ export async function submitClaimHandler(
         });
         G7Core.toast?.success?.(
             response.message
-            ?? G7Core.t?.('claim.apply.submit_success')
-            ?? '신청이 접수되었습니다.'
+            ?? t('sirsoft-ecommerce.user.claim_apply.submit_success', '신청이 접수되었습니다.')
         );
 
         const data = response.data ?? {};
@@ -2008,8 +2128,7 @@ export async function submitClaimHandler(
         const errorData = error?.response?.data ?? error?.data;
         const message = errorData?.message
             ?? error?.message
-            ?? G7Core.t?.('claim.apply.submit_failed')
-            ?? '신청 접수에 실패했습니다.';
+            ?? t('sirsoft-ecommerce.user.claim_apply.submit_failed', '신청 접수에 실패했습니다.');
         const userFixable = isUserFixableClaimError(error);
 
         // 4xx 는 필드 오류를 그 필드 옆에, 필드에 매이지 않는 사유를 요약 카드에 남긴다 —
@@ -2094,7 +2213,7 @@ export async function saveClaimEditHandler(
 
     if (!local.claimReason) {
         G7Core.toast?.warning?.(
-            G7Core.t?.('claim.apply.reason_required') ?? '신청 사유를 선택해 주세요.'
+            t('sirsoft-ecommerce.user.claim_apply.reason_required', '신청 사유를 선택해 주세요.')
         );
 
         return;
@@ -2176,8 +2295,7 @@ export async function saveClaimEditHandler(
 
         G7Core.toast?.success?.(
             response.message
-            ?? G7Core.t?.('claim.edit.save_success')
-            ?? '신청 내용이 수정되었습니다.'
+            ?? t('sirsoft-ecommerce.user.claim_apply.edit_save_success', '신청 내용이 수정되었습니다.')
         );
 
         // 재발송지 변경으로 배송비가 다시 계산되면 차액이 추가 청구될 수 있다. 그 경우
@@ -2206,8 +2324,7 @@ export async function saveClaimEditHandler(
         const errorData = error?.response?.data ?? error?.data;
         const message = errorData?.message
             ?? error?.message
-            ?? G7Core.t?.('claim.edit.save_failed')
-            ?? '신청 내용 수정에 실패했습니다.';
+            ?? t('sirsoft-ecommerce.user.claim_apply.edit_save_failed', '신청 내용 수정에 실패했습니다.');
         const userFixable = isUserFixableClaimError(error);
         const validationErrors = userFixable ? (errorData?.errors ?? null) : null;
 

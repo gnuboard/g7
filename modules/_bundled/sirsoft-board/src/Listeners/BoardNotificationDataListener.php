@@ -4,8 +4,8 @@ namespace Modules\Sirsoft\Board\Listeners;
 
 use App\Contracts\Extension\HookListenerInterface;
 use App\Contracts\Repositories\RoleRepositoryInterface;
+use App\Contracts\Repositories\UserRepositoryInterface;
 use App\Extension\ModuleManager;
-use App\Models\User;
 use App\Services\NotificationRecipientCapability;
 use BackedEnum;
 use Illuminate\Support\Collection;
@@ -20,6 +20,7 @@ use Modules\Sirsoft\Board\Module;
 use Modules\Sirsoft\Board\Repositories\Contracts\BoardRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\CommentRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\PostRepositoryInterface;
+use Modules\Sirsoft\Board\Repositories\Contracts\ReportRepositoryInterface;
 use Modules\Sirsoft\Board\Services\UserNotificationSettingService;
 
 /**
@@ -45,6 +46,8 @@ class BoardNotificationDataListener implements HookListenerInterface
      * @param  CommentRepositoryInterface  $commentRepository  댓글 조회
      * @param  UserNotificationSettingService  $userNotificationSettingService  사용자 알림 설정
      * @param  RoleRepositoryInterface  $roleRepository  역할 조회
+     * @param  UserRepositoryInterface  $userRepository  사용자 조회 (관리자 부재 시 superAdmin 폴백)
+     * @param  ReportRepositoryInterface  $reportRepository  신고 케이스·로그 조회
      */
     public function __construct(
         private readonly BoardRepositoryInterface $boardRepository,
@@ -52,6 +55,8 @@ class BoardNotificationDataListener implements HookListenerInterface
         private readonly CommentRepositoryInterface $commentRepository,
         private readonly UserNotificationSettingService $userNotificationSettingService,
         private readonly RoleRepositoryInterface $roleRepository,
+        private readonly UserRepositoryInterface $userRepository,
+        private readonly ReportRepositoryInterface $reportRepository,
     ) {}
 
     /**
@@ -646,10 +651,10 @@ class BoardNotificationDataListener implements HookListenerInterface
         // 발송 범위 조건: per_case = 케이스당 1회, per_report = 신고 건마다
         $scope = $reportPolicy['notify_admin_on_report_scope'] ?? 'per_case';
         if ($scope === 'per_case') {
-            $activeCycleLogCount = $report->logs()
-                ->when($report->last_activated_at,
-                    fn ($q) => $q->where('created_at', '>=', $report->last_activated_at)
-                )->count();
+            $activeCycleLogCount = $this->reportRepository->countLogsByReportSince(
+                (int) $report->getKey(),
+                $report->last_activated_at
+            );
 
             if ($activeCycleLogCount > 1) {
                 return $this->emptyResult();
@@ -661,8 +666,7 @@ class BoardNotificationDataListener implements HookListenerInterface
             return $this->emptyResult();
         }
 
-        $report->loadMissing(['logs' => fn ($q) => $q->latest()]);
-        $log = $report->logs->first();
+        $log = $this->reportRepository->findLatestLogByReport((int) $report->getKey());
         $postTitle = $log?->snapshot['title'] ?? '';
         $boardName = $log?->snapshot['board_name'] ?? ($board->localizedName ?? $board->name);
         $targetType = $report->target_type instanceof BackedEnum
@@ -713,11 +717,10 @@ class BoardNotificationDataListener implements HookListenerInterface
      */
     private function resolveBoardManagers(string $slug): Collection
     {
-        $managerRole = $this->roleRepository->findByIdentifier("sirsoft-board.{$slug}.manager");
-        $managers = $managerRole ? $managerRole->users()->get() : collect();
+        $managers = $this->roleRepository->getUsersByIdentifier("sirsoft-board.{$slug}.manager");
 
         if ($managers->isEmpty()) {
-            $superAdmin = User::superAdmins()->first();
+            $superAdmin = $this->userRepository->findSuperAdmin();
             $managers = $superAdmin ? collect([$superAdmin]) : collect();
         }
 

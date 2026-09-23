@@ -307,4 +307,5 @@ return [
         'refund_points_amount' => '返金マイレージ',
         'refund_method' => '返金手段',
     ],
+    'entity_id_fallback' => 'ID: :id',
 ];

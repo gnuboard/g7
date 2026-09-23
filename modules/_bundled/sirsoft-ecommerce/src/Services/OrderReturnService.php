@@ -5,6 +5,7 @@ namespace Modules\Sirsoft\Ecommerce\Services;
 use App\Extension\HookManager;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Ecommerce\DTO\AdjustmentResult;
 use Modules\Sirsoft\Ecommerce\DTO\ClaimCompletionOptions;
 use Modules\Sirsoft\Ecommerce\DTO\ClaimShippingFee;
@@ -34,6 +35,8 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderReturnOptionRepository
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderReturnRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ShippingPolicyClaimAddressRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Services\Concerns\AppliesRefundBankAccount;
+use Modules\Sirsoft\Ecommerce\Services\Concerns\FiresClaimHooksAfterCommit;
+use Modules\Sirsoft\Ecommerce\Services\Concerns\GuardsClaimFilterResults;
 use Modules\Sirsoft\Ecommerce\Support\ClaimItemSpecs;
 
 /**
@@ -73,6 +76,8 @@ use Modules\Sirsoft\Ecommerce\Support\ClaimItemSpecs;
 class OrderReturnService
 {
     use AppliesRefundBankAccount;
+    use FiresClaimHooksAfterCommit;
+    use GuardsClaimFilterResults;
 
     /**
      * @param  OrderAdjustmentService  $adjustmentService  환불금액 재계산 서비스
@@ -295,6 +300,17 @@ class OrderReturnService
      */
     public function requestReturn(Order $order, array $payload): OrderReturn
     {
+        // 접수의 before·filter 훅 — 주문 잠금·쓰기 전이다. 필터는 대상 상품·사유
+        // (`CLAIM_FILTERABLE_REQUEST_KEYS`)만 바꿀 수 있고, 바뀐 값은 아래 사유 해석·잠금 안 수량
+        // 가드를 고객 입력과 똑같이 지난다. 신청자·청구 방식·환불 우선순위·계좌는 되돌린다.
+        HookManager::doAction('sirsoft-ecommerce.claim.return.before_request', $order, $payload);
+
+        $payload = $this->acceptClaimFilterResult(
+            HookManager::applyFilters('sirsoft-ecommerce.claim.return.filter_request_data', $payload, $order),
+            $payload,
+            self::CLAIM_FILTERABLE_REQUEST_KEYS,
+        );
+
         $reason = $this->resolveReason((string) ($payload['reason_code'] ?? ''));
         $chargeMethod = $this->normalizeChargeMethod($payload['charge_method'] ?? null);
         $refundPriority = $payload['refund_priority'] ?? RefundPriorityEnum::PG_FIRST;
@@ -302,7 +318,7 @@ class OrderReturnService
 
         $orderReturn = DB::transaction(function () use ($order, $payload, $reason, $chargeMethod, $refundPriority, $requestedBy) {
             // 잠금은 잔여 수량을 읽기 전에 잡는다 — 읽고 나서 잠그면 이미 두 요청이 같은 값을 봤다.
-            $lockedOrder = $this->orderRepository->findForUpdate($order->id) ?? $order;
+            $lockedOrder = $this->orderRepository->findForUpdateOrFail($order->id);
             $lockedOrder->load(['options', 'shippings', 'payment']);
 
             $resolved = $this->claimQuantityGuard->resolveClaimItems(
@@ -348,6 +364,8 @@ class OrderReturnService
                 'total_charge_amount' => $shippingFee->fee,
                 'mc_total_charge_amount' => $shippingFee->mcFee ?: null,
                 'currency_code' => $this->resolveBaseCurrency($lockedOrder),
+                // 접수 계산에 쓴 환불 우선순위 — 응답·수정 화면이 추측하지 않고 이 값을 읽는다.
+                'refund_priority' => $refundPriority,
                 'items_snapshot' => $this->buildItemsSnapshot($resolved),
                 'return_address_snapshot' => $this->resolveReturnAddressSnapshot($lockedOrder, $resolved),
                 'requested_by' => $requestedBy,
@@ -362,13 +380,25 @@ class OrderReturnService
             return $return->fresh(['returnOptions']);
         });
 
-        HookManager::doAction('sirsoft-ecommerce.claim.return.requested', $orderReturn, $order->fresh());
+        $this->fireAfterCommit(fn () => HookManager::doAction('sirsoft-ecommerce.claim.return.requested', $orderReturn, $order->fresh()));
 
         // 청구액 0원 자동 승인 (§4-2 전이표 자동 열). 접수 훅을 먼저 발화한 뒤 전이하므로
         // 알림·로그 리스너는 '신청 → 승인' 두 사건을 순서대로 받는다. 전이는 transition() 에
         // 위임해 게이트·타임스탬프·상품 상태 동기화·훅이 수동 승인과 같은 경로를 타게 한다.
         if ($this->shouldAutoApproveZeroCharge($orderReturn)) {
-            return $this->transition($orderReturn, ReturnStatusEnum::APPROVED);
+            try {
+                return $this->transition($orderReturn, ReturnStatusEnum::APPROVED);
+            } catch (OrderClaimException $e) {
+                // 접수는 이미 커밋됐고 접수 훅도 나갔다. 자동 승인만 실패했으면(접수 직후 다른 요청이
+                // 상태를 바꾼 경우 등) 그 전이만 건너뛰고 접수를 마친다 — 예외를 그대로 올리면 신청서는
+                // 남아 있는데 고객은 실패 응답을 받는다(교환과 동형 — #599 validate P2 #20).
+                Log::info('[claim.return] 청구 0원 자동 승인 건너뜀 — 신청 상태로 접수', [
+                    'return_number' => $orderReturn->return_number,
+                    'reason' => $e->getMessageKey(),
+                ]);
+
+                return $orderReturn->fresh(['returnOptions']);
+            }
         }
 
         return $orderReturn;
@@ -386,7 +416,9 @@ class OrderReturnService
      */
     protected function shouldAutoApproveZeroCharge(OrderReturn $return): bool
     {
-        if ((int) $return->total_charge_amount > 0) {
+        // 정수 절사로 비교하면 소수 통화의 0.5 청구가 0 으로 읽혀 청구가 남은 채 자동 승인된다
+        // (교환과 같은 float 비교 — #599 validate P2 #5).
+        if ((float) $return->total_charge_amount > 0) {
             return false;
         }
 
@@ -421,6 +453,10 @@ class OrderReturnService
             throw OrderClaimException::notWithdrawable();
         }
 
+        // 철회 가능 판정 뒤·쓰기 전 — 확장이 예외로 철회를 막을 수 있다. 이어지는 전이가
+        // `before_status_change` 를 한 번 더 낸다(층이 다른 두 자리).
+        HookManager::doAction('sirsoft-ecommerce.claim.return.before_withdraw', $return);
+
         return $this->transition($return, ReturnStatusEnum::WITHDRAWN);
     }
 
@@ -429,6 +465,8 @@ class OrderReturnService
      *
      * 완료(COMPLETED)는 이 경로로 갈 수 없다 — 완료는 재고 복구 여부와 환불신청서 접수
      * 여부를 운영자가 고르는 절차(D26)이므로 `completeReturn()` 만이 진입점이다.
+     *
+     * 잠금 전에 before·filter 훅을 동기로 낸다(`beforeStatusChange()`).
      *
      * @param  OrderReturn  $return  반품 신청서
      * @param  ReturnStatusEnum  $target  목표 상태
@@ -442,6 +480,8 @@ class OrderReturnService
         if ($target === ReturnStatusEnum::COMPLETED) {
             throw OrderClaimException::completionRequiresCompletionFlow();
         }
+
+        $context = $this->beforeStatusChange($return, $target, $context);
 
         // 상태를 **행 잠금 아래에서 다시 읽어** 판정하고, 잠금·판정·쓰기를 **한 트랜잭션**으로
         // 묶는다(S3-D16). 메모리의 모델 값으로 판정하거나 판정만 잠금하고 밖에서 쓰면,
@@ -477,6 +517,33 @@ class OrderReturnService
         }
 
         return $updated;
+    }
+
+    /**
+     * 헤더 상태 전이 직전의 before·filter 훅을 동기로 발화합니다. (직접 전이·송장 등록 전이 공용)
+     *
+     * 잠금·쓰기 **전**에 돈다 — `before_status_change` 리스너가 던지면 아무것도 쓰이지 않는다.
+     * `filter_status_change_data` 는 컨텍스트의 메모·반려 사유(`CLAIM_FILTERABLE_STATUS_CONTEXT_KEYS`)만
+     * 바꿀 수 있다. 목표 상태는 넘기되 바꾸게 두지 않는다 — 호출층(`AdminClaimService::transition`)이
+     * 미수납 게이트·종결 정산을 그 값으로 이미 판정했기 때문이다. `$from` 은 호출 시점(잠금 전)의
+     * 값이며, 실제 전이 판정은 잠금 안에서 다시 읽은 상태로 한다. 교환 서비스와 같은 규칙이다.
+     *
+     * @param  OrderReturn  $return  반품 신청서
+     * @param  ReturnStatusEnum  $target  목표 상태
+     * @param  array  $context  부가 정보
+     * @return array 필터를 거친 부가 정보
+     */
+    protected function beforeStatusChange(OrderReturn $return, ReturnStatusEnum $target, array $context): array
+    {
+        $from = $return->return_status?->value;
+
+        HookManager::doAction('sirsoft-ecommerce.claim.return.before_status_change', $return, $from, $target->value, $context);
+
+        return $this->acceptClaimFilterResult(
+            HookManager::applyFilters('sirsoft-ecommerce.claim.return.filter_status_change_data', $context, $return, $from, $target->value),
+            $context,
+            self::CLAIM_FILTERABLE_STATUS_CONTEXT_KEYS,
+        );
     }
 
     /**
@@ -633,14 +700,24 @@ class OrderReturnService
         $processedBy = $context['processed_by'] ?? null;
         $specs = ClaimItemSpecs::normalize($items);
         $quantities = ClaimItemSpecs::quantities($specs);
-        $items = $this->resolveItems($return, ClaimItemSpecs::ids($specs));
+        $itemIds = ClaimItemSpecs::ids($specs);
+
+        // 상품 단위 전이의 before 훅 — 잠금·쓰기 전이라 리스너가 던지면 어떤 행도 옮겨지지 않는다.
+        // 필터는 두지 않는다(교환과 같은 판단 — 바꿀 자유 입력이 없고 대상·목표는 게이트가 잰 값).
+        HookManager::doAction('sirsoft-ecommerce.claim.return.before_option_status_change', $return, $specs, $target->value, $context);
 
         $succeeded = [];
         $skipped = [];
         $changes = [];
         $split = [];
 
-        DB::transaction(function () use ($items, $quantities, $target, $processedBy, &$succeeded, &$skipped, &$changes, &$split) {
+        // 신청서 행을 잠그고 **잠금 안에서** 상품 행을 다시 읽어 판정한다. 헤더 동기화도 같은
+        // 트랜잭션 안에서 한다 — 상품 전이를 커밋한 뒤 잠금 없이 헤더를 옮기면 그 사이에 들어온
+        // 다른 전이와 헤더 판정이 겹친다(#599 validate P2 #19). 훅은 커밋 뒤에 나간다(#7).
+        DB::transaction(function () use ($return, $itemIds, $quantities, $target, $processedBy, &$succeeded, &$skipped, &$changes, &$split) {
+            $locked = $this->returnRepository->findForUpdate((int) $return->getKey()) ?? $return;
+            $items = $this->resolveItems($locked, $itemIds);
+
             foreach ($items as $item) {
                 // 끝난 상품(반려·철회·완료)은 전이 게이트가 막지 못한다 — 자기 전이는 언제나 참이라
                 // 이미 반려된 상품에 반려를 다시 지시하면 상태·처리자가 다시 쓰인다. 건너뛰고 보고한다
@@ -693,6 +770,9 @@ class OrderReturnService
                     // "3개 중 2개" 가 어디에도 남지 않는다.
                     $change['quantity'] = (int) $item->fresh()->return_quantity;
                     $change['remainder_option_id'] = $remainder->id;
+                    // 잔여 수량은 **발행 시점 값**으로 싣는다 — 활동 로그 리스너가 이 값을 먼저 읽고, 없을 때만
+                    // 잔여 행을 다시 읽는다(다시 읽으면 그 사이 바뀐 값이 섞인다).
+                    $change['remainder_quantity'] = $previousQuantity - $change['quantity'];
 
                     $split[] = [
                         'id' => $item->id,
@@ -706,25 +786,26 @@ class OrderReturnService
 
                 $succeeded[] = $item->id;
             }
+
+            $fresh = $locked->fresh(['returnOptions']);
+
+            // 상품 단위 전이는 헤더 전이와 다른 사실이다 — 상품 상태가 갈리면 헤더는 움직이지
+            // 않으므로(`syncHeaderFromOptions` 는 살아 있는 상품이 한 상태로 모일 때만 옮긴다)
+            // 이 훅이 없으면 운영자가 한 상태 변경이 아무 데도 남지 않는다. 헤더가 따라 움직이면
+            // 그 전이는 `status_changed` 가 따로 낸다(이중 기록이 아니라 층이 다른 두 사실).
+            // 커밋 뒤 발화 순서는 등록 순서다 — 상품 축이 헤더 축보다 먼저 나간다.
+            if ($changes !== []) {
+                $this->fireAfterCommit(fn () => HookManager::doAction(
+                    'sirsoft-ecommerce.claim.return.option_status_changed',
+                    $fresh,
+                    $changes,
+                    $target->value,
+                    $processedBy,
+                ));
+            }
+
+            $this->syncHeaderFromOptions($fresh, $processedBy);
         });
-
-        $fresh = $return->fresh(['returnOptions']);
-
-        // 상품 단위 전이는 헤더 전이와 다른 사실이다 — 상품 상태가 갈리면 헤더는 움직이지
-        // 않으므로(`syncHeaderFromOptions` 는 살아 있는 상품이 한 상태로 모일 때만 옮긴다)
-        // 이 훅이 없으면 운영자가 한 상태 변경이 아무 데도 남지 않는다. 헤더가 따라 움직이면
-        // 그 전이는 `status_changed` 가 따로 낸다(이중 기록이 아니라 층이 다른 두 사실).
-        if ($changes !== []) {
-            HookManager::doAction(
-                'sirsoft-ecommerce.claim.return.option_status_changed',
-                $fresh,
-                $changes,
-                $target->value,
-                $processedBy,
-            );
-        }
-
-        $this->syncHeaderFromOptions($fresh, $processedBy);
 
         return ['succeeded' => $succeeded, 'skipped' => $skipped, 'split' => $split];
     }
@@ -812,9 +893,14 @@ class OrderReturnService
         $previous = $return->return_status;
         $startsCollecting = $previous === ReturnStatusEnum::COLLECTION_READY && $trackingNumber !== null;
 
+        // 송장이 전이를 끌고 가는 경우도 전이다 — 직접 전이와 같은 before·filter 훅을 쓰기 전에 낸다.
+        $transitionContext = $startsCollecting
+            ? $this->beforeStatusChange($return, ReturnStatusEnum::COLLECTING, ['processed_by' => $processedBy])
+            : [];
+
         // 송장 저장과 회수중 전환은 한 묶음이다 — 따로 두면 전환이 실패했을 때 "송장은 있는데
         // 회수준비중" 이 남는다. 훅은 커밋 뒤에 발화한다.
-        $updated = DB::transaction(function () use ($return, $carrierId, $trackingNumber, $processedBy, $startsCollecting) {
+        $updated = DB::transaction(function () use ($return, $carrierId, $trackingNumber, $processedBy, $startsCollecting, $transitionContext) {
             $tracked = $this->returnRepository->update($return, [
                 'collection_carrier_id' => $carrierId,
                 'collection_tracking_number' => $trackingNumber,
@@ -822,7 +908,7 @@ class OrderReturnService
             ]);
 
             return $startsCollecting
-                ? $this->applyTransition($tracked, ReturnStatusEnum::COLLECTING, ['processed_by' => $processedBy])
+                ? $this->applyTransition($tracked, ReturnStatusEnum::COLLECTING, $transitionContext)
                 : $tracked;
         });
 
@@ -981,36 +1067,49 @@ class OrderReturnService
         ClaimCompletionOptions $options,
         ?int $processedBy = null,
     ): OrderReturn {
+        // 완료의 before·filter 훅 — 주문 잠금·쓰기 전이다. 필터는 완료 옵션(재고 복구 행·환불신청서
+        // 접수 여부)만 바꿀 수 있고, 바뀐 값은 아래 중복 접수 가드와 잠금 안 대상 판정을 그대로 지난다.
+        // 금액은 옵션에 없다 — 환불액은 서버가 완료 행으로 계산한다.
+        HookManager::doAction('sirsoft-ecommerce.claim.return.before_complete', $return, $itemIds, $options, $processedBy);
+
+        $filteredOptions = HookManager::applyFilters('sirsoft-ecommerce.claim.return.filter_complete_options', $options, $return, $itemIds, $processedBy);
+        $options = $filteredOptions instanceof ClaimCompletionOptions ? $filteredOptions : $options;
+
         if ($options->createRefundRequest) {
             $this->assertRefundRequestNotYetCreated($return);
         }
 
-        $targets = array_values(array_filter(
-            $this->resolveItems($return, $itemIds),
-            fn (OrderReturnOption $item) => $item->option_status->canTransitionTo(ReturnStatusEnum::COMPLETED)
-                && ! $item->option_status->isFinal(),
-        ));
-
-        if ($targets === []) {
-            throw OrderClaimException::completionItemsInvalid();
-        }
-
-        $previousStatus = $return->return_status;
-
+        $previousStatus = null;
         $completionChanges = [];
 
-        $completed = DB::transaction(function () use ($return, $targets, $options, $processedBy, &$completionChanges) {
-            $order = $this->orderRepository->findForUpdate($return->order_id) ?? $return->order;
+        $completed = DB::transaction(function () use ($return, $itemIds, $options, $processedBy, &$completionChanges, &$previousStatus) {
+            $order = $this->orderRepository->findForUpdateOrFail($return->order_id);
             $order->load(['options', 'shippings', 'payment']);
 
-            // 잠금을 잡은 뒤 접수 여부를 **다시** 판정한다. 위 사전 검사는 호출부가 들고 온
-            // 모델을 보므로, 두 처리자가 각자 접수 전 상태를 읽은 뒤 차례로 저장되면 둘 다
-            // 통과해 환불신청서가 두 건 생긴다. 헤더 `refund_id` 는 나중 것만 남아 앞 건이
-            // 취소 가능 금액의 선점액 집계에서 빠지고, 그만큼 한도가 넓게 계산된다.
+            // 대상 필터·직전 상태·접수 여부를 **잠금 안에서 다시 읽은 값**으로 판정한다
+            // (#599 validate P2 #3). 호출부가 들고 온 모델로 거르면, 두 처리자가 각자 완료 전
+            // 상태를 읽은 뒤 차례로 들어올 때 둘 다 같은 상품을 대상으로 잡아 재고 복구·쿠폰
+            // 복원·완료 훅이 두 번 돈다(재고 복구에는 멱등 가드가 없다). 주문 행 잠금이 두 완료를
+            // 줄 세우므로, 뒤선 요청은 여기서 이미 끝난 상품을 보고 대상에서 뺀다.
+            $return = $this->returnRepository->findForUpdate((int) $return->getKey()) ?? $return;
+            $previousStatus = $return->return_status;
+
+            // 접수 여부를 잠금 뒤에 **다시** 판정한다. 위 사전 검사는 호출부가 들고 온 모델을
+            // 보므로, 두 처리자가 각자 접수 전 상태를 읽은 뒤 차례로 저장되면 둘 다 통과해
+            // 환불신청서가 두 건 생긴다. 헤더 `refund_id` 는 나중 것만 남아 앞 건이 취소 가능
+            // 금액의 선점액 집계에서 빠지고, 그만큼 한도가 넓게 계산된다.
             if ($options->createRefundRequest) {
-                $this->assertRefundRequestNotYetCreated(
-                    $this->returnRepository->findById($return->id) ?? $return
-                );
+                $this->assertRefundRequestNotYetCreated($return);
+            }
+
+            $targets = array_values(array_filter(
+                $this->resolveItems($return, $itemIds),
+                fn (OrderReturnOption $item) => $item->option_status->canTransitionTo(ReturnStatusEnum::COMPLETED)
+                    && ! $item->option_status->isFinal(),
+            ));
+
+            if ($targets === []) {
+                throw OrderClaimException::completionItemsInvalid();
             }
 
             $restoredAny = false;
@@ -1031,16 +1130,18 @@ class OrderReturnService
                 $orderOption = $order->options->firstWhere('id', $item->order_option_id);
 
                 if ($orderOption) {
-                    $this->markOrderOptionReturned($orderOption, (int) $item->return_quantity);
+                    // 재고 플래그·적립 회수는 **실제로 반품완료가 된 행**에 적용한다. 부분 수량이면
+                    // 완료분이 새 행으로 갈라져 나가고 원 행은 코스에 남으므로, 원 행에 적으면 아직
+                    // 재고를 점유한 행이 "복구됨" 으로 보인다(#599 validate P2 #4).
+                    $returnedOption = $this->markOrderOptionReturned($orderOption, (int) $item->return_quantity);
 
                     if ($options->shouldRestoreStock($item->id)) {
-                        $this->restoreStockForItem($orderOption, (int) $item->return_quantity);
+                        $this->restoreStockForItem($returnedOption, (int) $item->return_quantity);
                         $restoredAny = true;
                     }
 
-                    // 적립예정/기적립 회수. 분할 레코드에는 적립 lot 이 없어 자연 no-op 이며,
-                    // 이는 부분취소가 이미 갖는 특성과 같다(적립 lot 은 원 옵션에 남는다).
-                    $this->mileageService->cancelEarnForOption($order, $orderOption->fresh());
+                    // 적립예정/기적립 회수 (현재 정책은 회수하지 않는다 — `cancelEarnForOption()`).
+                    $this->mileageService->cancelEarnForOption($order, $returnedOption->fresh() ?? $returnedOption);
                 }
             }
 
@@ -1056,20 +1157,23 @@ class OrderReturnService
 
             $adjustment = new ReturnAdjustment(
                 returnItems: $claimItems,
-                collectionFee: (int) round((float) $return->claim_shipping_fee),
+                collectionFee: (float) $return->claim_shipping_fee,
                 chargeMethod: $return->charge_method,
             );
 
-            $result = $this->adjustmentService->calculate($order, $adjustment);
-            $priorResult = $this->priorReturnsAdjustment($order, $priorItems);
+            // 환불액을 나누는 우선순위는 접수 때 고객이 고른 값이다(저장값 없으면 종전 PG 우선).
+            $refundPriority = $this->refundPriorityOf($return);
+            $result = $this->adjustmentService->calculate($order, $adjustment, $refundPriority);
+            $priorResult = $this->priorReturnsAdjustment($order, $priorItems, $refundPriority);
             // 차분의 나누는 값도 같은 기준(상한 없음)이어야 이중 차감이 안 난다.
             $grossResult = $this->uncappedAdjustment(
                 $order,
                 $claimItems,
-                (int) round((float) $return->claim_shipping_fee),
+                (float) $return->claim_shipping_fee,
                 $return->charge_method,
                 $result,
                 $priorItems !== [],
+                $refundPriority,
             );
 
             $isFullyCompleted = $this->allItemsCompleted($return);
@@ -1111,13 +1215,13 @@ class OrderReturnService
         // 부분 완료 라운드는 헤더가 움직이지 않는다 — 그때 이 줄이 없으면 **어떤 줄도
         // 남지 않아** 운영자가 무엇을 완료 처리했는지 흔적이 사라진다(C4).
         if ($completionChanges !== []) {
-            HookManager::doAction(
+            $this->fireAfterCommit(fn () => HookManager::doAction(
                 'sirsoft-ecommerce.claim.return.option_status_changed',
                 $completed,
                 $completionChanges,
                 ReturnStatusEnum::COMPLETED->value,
                 $processedBy,
-            );
+            ));
         }
 
         if ($completed->return_status === ReturnStatusEnum::COMPLETED && $previousStatus !== ReturnStatusEnum::COMPLETED) {
@@ -1149,7 +1253,7 @@ class OrderReturnService
         }
 
         return DB::transaction(function () use ($return, $claimItems, $processedBy) {
-            $order = $this->orderRepository->findForUpdate($return->order_id) ?? $return->order;
+            $order = $this->orderRepository->findForUpdateOrFail($return->order_id);
             $order->load(['options', 'shippings', 'payment']);
 
             // 완료 경로와 같은 이유로 잠금 안에서 재판정한다 — 이 경로도 호출부가 들고 온
@@ -1164,20 +1268,23 @@ class OrderReturnService
 
             $adjustment = new ReturnAdjustment(
                 returnItems: $claimItems,
-                collectionFee: (int) round((float) $return->claim_shipping_fee),
+                collectionFee: (float) $return->claim_shipping_fee,
                 chargeMethod: $return->charge_method,
             );
 
-            $result = $this->adjustmentService->calculate($order, $adjustment);
-            $priorResult = $this->priorReturnsAdjustment($order, $priorItems);
+            // 환불액을 나누는 우선순위는 접수 때 고객이 고른 값이다(저장값 없으면 종전 PG 우선).
+            $refundPriority = $this->refundPriorityOf($return);
+            $result = $this->adjustmentService->calculate($order, $adjustment, $refundPriority);
+            $priorResult = $this->priorReturnsAdjustment($order, $priorItems, $refundPriority);
             // 차분의 나누는 값도 같은 기준(상한 없음)이어야 이중 차감이 안 난다.
             $grossResult = $this->uncappedAdjustment(
                 $order,
                 $claimItems,
-                (int) round((float) $return->claim_shipping_fee),
+                (float) $return->claim_shipping_fee,
                 $return->charge_method,
                 $result,
                 $priorItems !== [],
+                $refundPriority,
             );
             $refund = $this->createRefundRequest($order, $return, $ownItems, $result, $processedBy, $priorResult, $grossResult);
 
@@ -1240,22 +1347,25 @@ class OrderReturnService
 
         $adjustment = new ReturnAdjustment(
             returnItems: $claimItems,
-            collectionFee: (int) round((float) $return->claim_shipping_fee),
+            collectionFee: (float) $return->claim_shipping_fee,
             chargeMethod: $return->charge_method,
         );
 
-        $result = $this->adjustmentService->calculate($order, $adjustment);
+        // 실제 접수와 같은 우선순위로 예고한다 — 갈리면 모달이 예고한 PG·마일리지 구성과 접수 구성이 다르다.
+        $refundPriority = $this->refundPriorityOf($return);
+        $result = $this->adjustmentService->calculate($order, $adjustment, $refundPriority);
         // 실제 접수(`createRefundRequest`)와 같은 차분 규약으로 예고한다 — 여기만 누적을
         // 보여 주면 모달이 예고한 금액과 접수된 금액이 갈린다.
         $priorItems = $this->otherReturnsCompletedClaimItems($return);
-        $priorResult = $this->priorReturnsAdjustment($order, $priorItems);
+        $priorResult = $this->priorReturnsAdjustment($order, $priorItems, $refundPriority);
         $grossResult = $this->uncappedAdjustment(
             $order,
             $claimItems,
-            (int) round((float) $return->claim_shipping_fee),
+            (float) $return->claim_shipping_fee,
             $return->charge_method,
             $result,
             $priorItems !== [],
+            $refundPriority,
         );
         $delta = $this->clampDeltaToRemaining($order, $this->refundDeltaAgainstPrior($grossResult, $priorResult));
         // 상품 환불 몫의 기준선 — 앞 신청서가 이미 빼 간 상태의 소계에서 출발해야 한다.
@@ -1574,14 +1684,39 @@ class OrderReturnService
     }
 
     /**
+     * 신청서에 저장된 환불 우선순위를 반환합니다. (저장값이 없으면 종전 기본값 PG 우선)
+     *
+     * 접수 뒤의 재계산(완료·수동 접수·완료 미리보기·신청 수정의 동결 스냅샷)이 고객이 고른
+     * 우선순위를 그대로 이어받게 한다. 예전에는 저장 컬럼이 없어 이 경로들이 PG 우선으로 고정돼,
+     * 마일리지 우선을 고른 신청서의 환불신청서가 PG 환불로 먼저 채워졌다(#599 validate P2-A 후속).
+     *
+     * @param  OrderReturn  $claim  신청서
+     * @return RefundPriorityEnum 환불 우선순위
+     */
+    protected function refundPriorityOf(OrderReturn $claim): RefundPriorityEnum
+    {
+        $value = $claim->refund_priority;
+
+        if ($value instanceof RefundPriorityEnum) {
+            return $value;
+        }
+
+        return RefundPriorityEnum::tryFrom((string) $value) ?? RefundPriorityEnum::PG_FIRST;
+    }
+
+    /**
      * 주문의 기준통화 코드를 반환합니다.
+     *
+     * 판정은 클레임 서비스 공용 헬퍼(`CurrencyConversionService::resolveOrderBaseCurrency()`)가
+     * 소유한다 — 스냅샷 → 설정 기본 통화. 예전의 `orders.currency` 폴백은 **결제 통화**라 기본
+     * 통화와 다른 주문에서 신청서 통화가 틀렸다(#599 validate P2 #14).
      *
      * @param  Order  $order  주문
      * @return string 기준통화 코드
      */
     protected function resolveBaseCurrency(Order $order): string
     {
-        return (string) ($order->currency_snapshot['base_currency'] ?? $order->currency ?? 'KRW');
+        return $this->currencyService->resolveOrderBaseCurrency($order);
     }
 
     // ───────────────────────────────────────────────
@@ -1652,13 +1787,13 @@ class OrderReturnService
         // `transitionOption()` 한 경로만 훅을 쏴, 운영자가 신청서 단위로 승인하면 상품 행은
         // 조용히 함께 옮겨지고 그 사실이 활동로그 어디에도 없었다.
         if ($changes !== []) {
-            HookManager::doAction(
+            $this->fireAfterCommit(fn () => HookManager::doAction(
                 'sirsoft-ecommerce.claim.return.option_status_changed',
                 $return->fresh(['returnOptions']),
                 $changes,
                 $target->value,
                 $processedBy,
-            );
+            ));
         }
     }
 
@@ -1721,6 +1856,18 @@ class OrderReturnService
 
         foreach ($path as $step) {
             $previous = $current->return_status;
+
+            // 상품이 끌고 간 헤더 전이도 전이다 — 단계마다 before 훅을 쓰기 전에 낸다. 상품 전이
+            // 트랜잭션 **안**이라 리스너가 던지면 이번 상품 전이까지 함께 되돌아간다(헤더와 상품이
+            // 갈리지 않게). 필터는 없다 — 목표는 상품 상태가 정한 값이다.
+            HookManager::doAction(
+                'sirsoft-ecommerce.claim.return.before_status_change',
+                $current,
+                $previous->value,
+                $step->value,
+                ['processed_by' => $processedBy, 'source' => 'option_sync'],
+            );
+
             $updates = ['return_status' => $step] + $this->stampFor($step, []);
 
             if ($processedBy !== null) {
@@ -1894,12 +2041,12 @@ class OrderReturnService
      */
     protected function fireStatusHooks(OrderReturn $return, ReturnStatusEnum $previous, ReturnStatusEnum $target): void
     {
-        HookManager::doAction(
+        $this->fireAfterCommit(fn () => HookManager::doAction(
             'sirsoft-ecommerce.claim.return.status_changed',
             $return,
             $previous->value,
             $target->value,
-        );
+        ));
 
         $specific = match ($target) {
             ReturnStatusEnum::APPROVED => 'sirsoft-ecommerce.claim.return.approved',
@@ -1910,7 +2057,7 @@ class OrderReturnService
         };
 
         if ($specific !== null) {
-            HookManager::doAction($specific, $return);
+            $this->fireAfterCommit(fn () => HookManager::doAction($specific, $return));
         }
     }
 
@@ -1919,19 +2066,23 @@ class OrderReturnService
     // ───────────────────────────────────────────────
 
     /**
-     * 원 주문옵션을 반품완료(터미널)로 전이합니다.
+     * 원 주문옵션을 반품완료(터미널)로 전이하고, 실제로 전이된 행을 돌려줍니다.
+     *
+     * 부분 수량이면 `changeStatusWithQuantity()` 가 완료분을 **새 행(split)** 으로 갈라 반품완료로
+     * 옮기고 원 행은 잔여로 코스에 남긴다. 호출부는 재고 플래그·적립 회수를 그 새 행에 적용해야
+     * 한다(#599 validate P2 #4).
      *
      * @param  OrderOption  $orderOption  원 주문옵션
      * @param  int  $quantity  완료 수량
-     * @return void 반환값 없음
+     * @return OrderOption 반품완료가 된 행 (분할이면 새 행, 전량이면 원 행)
      */
-    protected function markOrderOptionReturned(OrderOption $orderOption, int $quantity): void
+    protected function markOrderOptionReturned(OrderOption $orderOption, int $quantity): OrderOption
     {
         if ($orderOption->option_status === OrderStatusEnum::RETURNED) {
-            return;
+            return $orderOption;
         }
 
-        $this->orderOptionService->changeStatusWithQuantity(
+        $result = $this->orderOptionService->changeStatusWithQuantity(
             $orderOption,
             OrderStatusEnum::RETURNED,
             min($quantity, (int) $orderOption->quantity),
@@ -1939,6 +2090,8 @@ class OrderReturnService
             restoreStockOnCancel: false,
             mergeSiblings: false,
         );
+
+        return $result['split'] ?? $result['merged_into'] ?? $orderOption;
     }
 
     /**
@@ -2029,6 +2182,8 @@ class OrderReturnService
             'requested_by' => $return->requested_by,
             'refund_amount' => $delta['refund_amount'],
             'refund_points_amount' => $delta['refund_points_amount'],
+            // 이 환불액을 나눈 우선순위 — 반품 접수 때 고른 값이 그대로 이어진다.
+            'refund_priority' => $result->refundPriority,
             'refund_shipping_amount' => $delta['refund_shipping_amount'],
             'mc_refund_amount' => $delta['mc_refund_amount'],
             'mc_refund_points_amount' => $delta['mc_refund_points_amount'],
@@ -2053,7 +2208,7 @@ class OrderReturnService
         // 반품·교환 발 환불신청서도 접수 훅을 쏜다(B8·B9). 예전에는 `OrderRefundRequestService::request()`
         // 한 곳만 발행해, 완료 처리가 만든 환불신청서는 **어떤 이력도 없이** 목록에 나타났다 —
         // 운영자는 그 신청서가 언제 어떤 경로로 생겼는지 되짚을 수 없었다.
-        HookManager::doAction('sirsoft-ecommerce.claim.refund.requested', $refund->fresh(), $order->fresh());
+        $this->fireAfterCommit(fn () => HookManager::doAction('sirsoft-ecommerce.claim.refund.requested', $refund->fresh(), $order->fresh()));
 
         // 신청상품 행 생성도 상품 축에 남긴다(§7-1 C12) — 헤더 줄만 남기면 그 환불이 어떤
         // 상품 몇 개를 담고 생겼는지 이력에서 되짚을 수 없다.
@@ -2214,60 +2369,23 @@ class OrderReturnService
      *
      * @param  Order  $order  주문
      * @param  array<int, array{order_option_id: int, cancel_quantity: int}>  $priorItems  다른 신청서 완료 몫
+     * @param  RefundPriorityEnum  $refundPriority  환불 우선순위 (차분의 나누는 값과 같은 값이어야 PG·마일리지 차분이 맞는다)
      * @return AdjustmentResult|null 앞 신청서가 없으면 null
      */
-    protected function priorReturnsAdjustment(Order $order, array $priorItems): ?AdjustmentResult
-    {
+    protected function priorReturnsAdjustment(
+        Order $order,
+        array $priorItems,
+        RefundPriorityEnum $refundPriority = RefundPriorityEnum::PG_FIRST,
+    ): ?AdjustmentResult {
         if ($priorItems === []) {
             return null;
         }
 
-        return $this->withoutPriorRefundCap(
-            $order,
-            fn () => $this->adjustmentService->calculate($order, new ReturnAdjustment(
-                returnItems: $priorItems,
-                collectionFee: 0,
-                chargeMethod: null,
-            )),
-        );
-    }
-
-    /**
-     * **기왕 환불액 상한을 끈 채** 계산합니다. (차분 산출 전용)
-     *
-     * `OrderAdjustmentService` 는 `min($totalRefundable, $originalPaid - total_refunded_amount)`
-     * 로 결과를 잘라낸다. 그 상한은 실행 단계의 안전장치로는 옳지만, **차분**을 낼 때는
-     * 빼는 값(앞 신청서 몫)에 이미 들어 있는 기왕 환불액이 나누는 값에서 한 번 더 깎여
-     * 이중 차감이 된다.
-     *
-     * 실측(주문 1500 · 2026-09-21): 전량 반품 회차에서 산정 166,000원이 상한 132,500원으로
-     * 잘린 뒤 앞 신청서 몫 60,000원을 또 빼 **64,000원**이 나왔다 — 올바른 값은 106,000원이다.
-     * 상한을 끄고 A·B 를 같은 기준으로 내면 회차 합이 실제 환불 총액과 정확히 맞는다
-     * (42,000 + 15,000 + 106,000 = 163,000 = 결제 174,500 − 회수비 11,500).
-     *
-     * 상한 자체는 환불 **실행** 경로가 그대로 들고 있으므로 여기서 꺼도 과다 지급은 막힌다.
-     * 모델 속성만 잠시 0 으로 두며 저장하지 않는다.
-     *
-     * @template T
-     *
-     * @param  Order  $order  주문
-     * @param  callable():T  $callback  계산 클로저
-     * @return T 계산 결과
-     */
-    protected function withoutPriorRefundCap(Order $order, callable $callback): mixed
-    {
-        $refunded = $order->total_refunded_amount;
-        $refundedPoints = $order->total_refunded_points_amount;
-
-        $order->total_refunded_amount = 0;
-        $order->total_refunded_points_amount = 0;
-
-        try {
-            return $callback();
-        } finally {
-            $order->total_refunded_amount = $refunded;
-            $order->total_refunded_points_amount = $refundedPoints;
-        }
+        return $this->adjustmentService->calculateWithoutPriorRefundCap($order, new ReturnAdjustment(
+            returnItems: $priorItems,
+            collectionFee: 0,
+            chargeMethod: null,
+        ), $refundPriority);
     }
 
     /**
@@ -2277,32 +2395,31 @@ class OrderReturnService
      *
      * @param  Order  $order  주문
      * @param  array<int, array{order_option_id: int, cancel_quantity: int}>  $claimItems  주문 전체 누적 몫
-     * @param  int  $collectionFee  이 신청서의 회수배송비
+     * @param  int|float  $collectionFee  이 신청서의 회수배송비 (소수 자릿수 통화는 소수 보존)
      * @param  ClaimChargeMethodEnum|null  $chargeMethod  이 신청서의 청구 방식
      * @param  AdjustmentResult  $fallback  앞 신청서가 없을 때 쓸 원 결과
      * @param  bool  $hasPrior  앞 신청서 존재 여부
+     * @param  RefundPriorityEnum  $refundPriority  환불 우선순위 (원 결과와 같은 값)
      * @return AdjustmentResult 상한 없는 누적 결과
      */
     protected function uncappedAdjustment(
         Order $order,
         array $claimItems,
-        int $collectionFee,
+        int|float $collectionFee,
         ?ClaimChargeMethodEnum $chargeMethod,
         AdjustmentResult $fallback,
         bool $hasPrior,
+        RefundPriorityEnum $refundPriority = RefundPriorityEnum::PG_FIRST,
     ): AdjustmentResult {
         if (! $hasPrior) {
             return $fallback;
         }
 
-        return $this->withoutPriorRefundCap(
-            $order,
-            fn () => $this->adjustmentService->calculate($order, new ReturnAdjustment(
-                returnItems: $claimItems,
-                collectionFee: $collectionFee,
-                chargeMethod: $chargeMethod,
-            )),
-        );
+        return $this->adjustmentService->calculateWithoutPriorRefundCap($order, new ReturnAdjustment(
+            returnItems: $claimItems,
+            collectionFee: $collectionFee,
+            chargeMethod: $chargeMethod,
+        ), $refundPriority);
     }
 
     /**
@@ -2338,7 +2455,7 @@ class OrderReturnService
     /**
      * 차분 결과를 **실제 지급 가능한 잔여**에 맞춥니다. (합계는 유지하고 배분만 옮긴다)
      *
-     * `withoutPriorRefundCap()` 은 차분을 내기 위해 기왕 환불액 상한을 껐다. 그 상태의 배분은
+     * `OrderAdjustmentService::calculateWithoutPriorRefundCap()` 은 차분을 내기 위해 기왕 환불액 상한을 껐다. 그 상태의 배분은
      * 마일리지 몫을 "이 주문에서 원래 쓴 만큼" 까지 잡으므로, 앞 회차가 이미 마일리지를
      * 전액 돌려준 뒤에는 **낼 수 없는 마일리지 환불액**이 남는다.
      *
@@ -2479,12 +2596,26 @@ class OrderReturnService
      */
     public function updateRequest(OrderReturn $return, array $payload): OrderReturn
     {
-        if (! $return->return_status->isWithdrawable()) {
-            throw OrderClaimException::notEditable();
-        }
+        // 수정의 before·filter 훅 — 잠금·쓰기 전이다. 필터는 사유(`CLAIM_FILTERABLE_UPDATE_KEYS`)만
+        // 바꿀 수 있고, 바뀐 값은 아래 사유 해석·회수비 재산정을 고객 입력과 똑같이 지난다.
+        // 청구 방식·환불 계좌는 돈의 경로라 되돌린다.
+        HookManager::doAction('sirsoft-ecommerce.claim.return.before_update_request', $return, $payload);
+
+        $payload = $this->acceptClaimFilterResult(
+            HookManager::applyFilters('sirsoft-ecommerce.claim.return.filter_update_request_data', $payload, $return),
+            $payload,
+            self::CLAIM_FILTERABLE_UPDATE_KEYS,
+        );
 
         return DB::transaction(function () use ($return, $payload) {
             $locked = $this->returnRepository->findForUpdate($return->id) ?? $return;
+
+            // 수정 가능 여부는 **잠금 안에서 다시 읽은 상태**로 판정한다(#599 validate P2 #8).
+            // 호출부 모델로 판정하면 그 사이 승인된 신청서의 사유·청구가 수정된다.
+            if (! $locked->return_status->isWithdrawable()) {
+                throw OrderClaimException::notEditable();
+            }
+
             $locked->load(['returnOptions', 'order.options', 'order.shippings', 'order.payment']);
             $order = $locked->order;
 
@@ -2529,13 +2660,15 @@ class OrderReturnService
                     $reason->fault_type,
                 );
 
-                $this->assertChargeMethodUsable($order, $claimItems, $shippingFee, $chargeMethod, RefundPriorityEnum::PG_FIRST);
+                // 동결 스냅샷은 접수 때와 같은 우선순위로 다시 낸다(저장값 없으면 종전 PG 우선).
+                $refundPriority = $this->refundPriorityOf($locked);
+                $this->assertChargeMethodUsable($order, $claimItems, $shippingFee, $chargeMethod, $refundPriority);
 
                 // 회수비가 다시 계산됐으므로 접수 시점 비교 스냅샷도 같은 재료로 갱신한다.
                 $frozen = $this->adjustmentService->preview(
                     $order,
                     new ReturnAdjustment(returnItems: $claimItems, collectionFee: $shippingFee->fee, chargeMethod: $chargeMethod),
-                    RefundPriorityEnum::PG_FIRST,
+                    $refundPriority,
                 );
                 $updates['original_calculation_snapshot'] = $frozen->originalSnapshot;
                 $updates['recalculated_snapshot'] = $frozen->recalculatedSnapshot;

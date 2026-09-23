@@ -36,6 +36,7 @@ use Modules\Sirsoft\Ecommerce\Models\OrderRefund;
 use Modules\Sirsoft\Ecommerce\Models\OrderReturn;
 use Modules\Sirsoft\Ecommerce\Services\AdminClaimService;
 use Modules\Sirsoft\Ecommerce\Services\ClaimAttachmentService;
+use Modules\Sirsoft\Ecommerce\Services\ClaimScopeGuard;
 use Modules\Sirsoft\Ecommerce\Services\ShippingCarrierService;
 use Modules\Sirsoft\Ecommerce\Services\UserClaimService;
 use Modules\Sirsoft\Ecommerce\Support\ClaimAdminAbilities;
@@ -48,23 +49,55 @@ use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
  * 이미 제약하므로 여기서는 `ClaimTypeEnum::fromAdminPathSegment()` 해석 결과를 신뢰한다.
  * 도메인 거절(`OrderClaimException`)은 `MapsClaimErrors::claimDomainError()` 가 422 로 바꾼다 —
  * 키+치환 파라미터 구성이며 매핑을 복제하지 않는다.
+ *
+ * 권한 스코프는 **주문의 것을 물려받는다**(`module.php` 의 `claims` 권한). `{claimType}/{id}`·번호
+ * 경로는 파라미터가 모델로 바인딩되지 않아 미들웨어의 스코프 판정이 건너뛰므로, 신청서를 찾은 뒤
+ * `ClaimScopeGuard` 가 **그 라우트의 권한 식별자**로 다시 판정한다(조회는 `claims.read`, 전이는
+ * `claims.update-status` …). 목록·건수는 저장소가 같은 조건을 쿼리에 건다.
  */
 class ClaimController extends AdminBaseController
 {
     use MapsClaimErrors;
+
+    /** 조회 권한 — 상세·로그 스코프 판정 */
+    private const PERMISSION_READ = 'sirsoft-ecommerce.claims.read';
+
+    /** 상태 전이 권한 — 전이·송장·첨부·환불신청서 접수 스코프 판정 */
+    private const PERMISSION_UPDATE_STATUS = 'sirsoft-ecommerce.claims.update-status';
+
+    /** 금액 수정 권한 */
+    private const PERMISSION_UPDATE_AMOUNTS = 'sirsoft-ecommerce.claims.update-amounts';
+
+    /** 환불 실행 권한 */
+    private const PERMISSION_EXECUTE_REFUND = 'sirsoft-ecommerce.claims.execute-refund';
 
     /**
      * @param  AdminClaimService  $adminClaimService  관리자 클레임 오케스트레이션 서비스
      * @param  UserClaimService  $userClaimService  클레임 공용 서비스 (결제 블록 조립 재사용)
      * @param  ClaimAttachmentService  $attachmentService  클레임 첨부 서비스
      * @param  ShippingCarrierService  $carrierService  배송사 서비스 (상세 화면 송장 택배사 선택지)
+     * @param  ClaimScopeGuard  $claimScope  권한 스코프 가드 (주문 스코프 상속)
      */
     public function __construct(
         protected AdminClaimService $adminClaimService,
         protected UserClaimService $userClaimService,
         protected ClaimAttachmentService $attachmentService,
         protected ShippingCarrierService $carrierService,
+        protected ClaimScopeGuard $claimScope,
     ) {}
+
+    /**
+     * 관리자 면의 500 응답에는 원인 요약을 싣습니다. (`MapsClaimErrors::claimServerError()`)
+     *
+     * 운영자는 서버 로그 없이도 조치 방향을 알아야 한다 — 형제 관리자 컨트롤러(`OrderController`)가
+     * 같은 이유로 `detail` 을 싣는다. 공개 면(회원·비회원)은 이 값을 내지 않는다.
+     *
+     * @return bool 항상 true
+     */
+    protected function exposesServerErrorDetail(): bool
+    {
+        return true;
+    }
 
     /**
      * 클레임 통합 목록을 조회합니다. (유형 서브탭 단위 + 유형별 건수 뱃지)
@@ -115,6 +148,8 @@ class ClaimController extends AdminBaseController
                 return $this->claimNotFound();
             }
 
+            $this->claimScope->assertAccessible($claim, self::PERMISSION_READ);
+
             return ResponseHelper::moduleSuccess(
                 'sirsoft-ecommerce',
                 'messages.claims.retrieved',
@@ -146,6 +181,8 @@ class ClaimController extends AdminBaseController
                 return $this->claimNotFound();
             }
 
+            $this->claimScope->assertAccessible($resolved['claim'], self::PERMISSION_READ);
+
             return ResponseHelper::moduleSuccess(
                 'sirsoft-ecommerce',
                 'messages.claims.retrieved',
@@ -176,6 +213,8 @@ class ClaimController extends AdminBaseController
             if ($resolved === null) {
                 return $this->claimNotFound();
             }
+
+            $this->claimScope->assertAccessible($resolved['claim'], self::PERMISSION_READ);
 
             $logs = $this->adminClaimService->activityLogs($resolved['claim'], $request->getFilters());
 
@@ -212,6 +251,7 @@ class ClaimController extends AdminBaseController
         }
 
         try {
+            $this->claimScope->assertAccessible($claim, self::PERMISSION_UPDATE_STATUS);
             $processedBy = Auth::id();
 
             if ($request->statusValue() === 'completed') {
@@ -248,6 +288,9 @@ class ClaimController extends AdminBaseController
     public function bulkStatus(BulkClaimStatusRequest $request): JsonResponse
     {
         try {
+            // 목록과 같은 스코프 조건으로 센다 — 목록에 보이지 않는 신청서를 일괄로 건드리지 못한다.
+            $this->claimScope->assertIdsAccessible($request->claimType(), $request->ids(), self::PERMISSION_UPDATE_STATUS);
+
             $result = $this->adminClaimService->bulkTransition(
                 $request->claimType(),
                 $request->ids(),
@@ -289,6 +332,8 @@ class ClaimController extends AdminBaseController
         }
 
         try {
+            $this->claimScope->assertAccessible($claim, self::PERMISSION_UPDATE_STATUS);
+
             $result = $this->adminClaimService->transitionOptions(
                 $claim,
                 $request->itemSpecs(),
@@ -331,6 +376,8 @@ class ClaimController extends AdminBaseController
         }
 
         try {
+            $this->claimScope->assertAccessible($claim, self::PERMISSION_UPDATE_AMOUNTS);
+
             $this->adminClaimService->updateAmounts($claim, $request->amounts(), Auth::id());
 
             return ResponseHelper::moduleSuccess(
@@ -443,6 +490,8 @@ class ClaimController extends AdminBaseController
         }
 
         try {
+            $this->claimScope->assertAccessible($claim, self::PERMISSION_EXECUTE_REFUND);
+
             $this->adminClaimService->executeRefund($claim, $request->overrides(), Auth::id());
 
             return ResponseHelper::moduleSuccess(
@@ -483,6 +532,12 @@ class ClaimController extends AdminBaseController
     public function completionPreview(ClaimCompletionPreviewRequest $request): JsonResponse
     {
         try {
+            $this->claimScope->assertIdsAccessible(
+                $request->claimType(),
+                array_map(fn (array $claim): int => (int) ($claim['id'] ?? 0), $request->claims()),
+                self::PERMISSION_UPDATE_STATUS,
+            );
+
             $preview = $this->adminClaimService->completionPreview(
                 $request->claimType(),
                 $request->claims(),
@@ -521,6 +576,8 @@ class ClaimController extends AdminBaseController
         }
 
         try {
+            $this->claimScope->assertAccessible($claim, self::PERMISSION_UPDATE_STATUS);
+
             $refund = $this->adminClaimService->createRefundRequestForCompleted($claim, Auth::id());
 
             return ResponseHelper::moduleSuccess(
@@ -556,6 +613,8 @@ class ClaimController extends AdminBaseController
         }
 
         try {
+            $this->claimScope->assertAccessible($claim, self::PERMISSION_UPDATE_STATUS);
+
             $this->adminClaimService->registerCollectionTracking($claim, $request->carrierId(), $request->trackingNumber(), Auth::id());
 
             return ResponseHelper::moduleSuccess(
@@ -588,6 +647,8 @@ class ClaimController extends AdminBaseController
         }
 
         try {
+            $this->claimScope->assertAccessible($claim, self::PERMISSION_UPDATE_STATUS);
+
             $this->adminClaimService->registerRedeliveryTracking($claim, $request->carrierId(), $request->trackingNumber(), Auth::id());
 
             return ResponseHelper::moduleSuccess(
@@ -615,12 +676,15 @@ class ClaimController extends AdminBaseController
     public function storeImage(UploadClaimImageRequest $request, string $claimType, int $id): JsonResponse
     {
         $type = $this->claimTypeOf($claimType);
+        $claim = $this->adminClaimService->findForTransition($type, $id);
 
-        if (! $this->adminClaimService->findForTransition($type, $id)) {
+        if (! $claim) {
             return $this->claimNotFound();
         }
 
         try {
+            $this->claimScope->assertAccessible($claim, self::PERMISSION_UPDATE_STATUS);
+
             $image = $this->attachmentService->uploadFor(
                 $request->uploadedImage(),
                 $type,
@@ -665,9 +729,16 @@ class ClaimController extends AdminBaseController
     public function destroyImage(string $claimType, int $id, int $image): JsonResponse
     {
         $type = $this->claimTypeOf($claimType);
+        $claim = $this->adminClaimService->findForTransition($type, $id);
 
-        if (! $this->adminClaimService->findForTransition($type, $id)) {
+        if (! $claim) {
             return $this->claimNotFound();
+        }
+
+        try {
+            $this->claimScope->assertAccessible($claim, self::PERMISSION_UPDATE_STATUS);
+        } catch (AccessDeniedHttpException $e) {
+            return ResponseHelper::forbidden('auth.scope_denied');
         }
 
         $target = $this->attachmentService->find($image);
@@ -703,12 +774,15 @@ class ClaimController extends AdminBaseController
     public function destroyImages(string $claimType, int $id): JsonResponse
     {
         $type = $this->claimTypeOf($claimType);
+        $claim = $this->adminClaimService->findForTransition($type, $id);
 
-        if (! $this->adminClaimService->findForTransition($type, $id)) {
+        if (! $claim) {
             return $this->claimNotFound();
         }
 
         try {
+            $this->claimScope->assertAccessible($claim, self::PERMISSION_UPDATE_STATUS);
+
             $deleted = $this->attachmentService->deleteFor($type, $id);
 
             return ResponseHelper::moduleSuccess(
@@ -861,6 +935,9 @@ class ClaimController extends AdminBaseController
                 'total_tax_amount_formatted',
                 'total_vat_amount_formatted',
                 'total_earned_points_amount',
+                // 적립 포인트 표기 — 화면이 숫자에 'P' 를 붙여 재현하면 단위가 다국어 키를 따르지 않는다.
+                // `OrderResource` 가 공용 포맷터(`EarnedPointsFormatter`)로 만든 값을 그대로 옮긴다.
+                'total_earned_points_amount_formatted',
             ])
         );
     }
@@ -884,7 +961,7 @@ class ClaimController extends AdminBaseController
     /**
      * 상세 응답 리소스를 조립합니다. (관리자 확장 필드 + 교환·반품 결제 블록)
      *
-     * @param  OrderExchange|OrderReturn|OrderRefund|null  $claim  신청서
+     * @param  OrderExchange|OrderReturn|OrderRefund|OrderCancel|null  $claim  신청서
      * @return ClaimResource|null 상세 리소스
      */
     protected function detailResource(OrderExchange|OrderReturn|OrderRefund|OrderCancel|null $claim): ?ClaimResource

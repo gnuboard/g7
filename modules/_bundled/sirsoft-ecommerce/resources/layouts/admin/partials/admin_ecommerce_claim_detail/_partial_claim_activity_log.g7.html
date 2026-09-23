@@ -64,7 +64,7 @@
                     </case>
                   </switch>
                 </on>
-                <div class="flex-center gap-2 hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-lg px-1 py-0.5 transition-colors cursor-pointer">
+                <div class="flex-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg px-1 py-0.5 transition-colors cursor-pointer">
                   <div class="flex-center w-6 h-6 bg-gray-200 dark:bg-gray-600 rounded-full justify-center">
                     <span class="text-xs font-medium text-gray-600 dark:text-gray-300">{{(log.user?.name ?? 'S').charAt(0).toUpperCase()}}</span>
                   </div>
@@ -95,7 +95,7 @@
               <div data-if="{{log.bulk_changes &amp;&amp; log.bulk_changes.length > 0}}" class="mt-2 space-y-2">
                 <div data-each="group, groupIdx in {{log.bulk_changes ?? []}}" class="toggle-group">
                   <div class="text-tertiary bg-gray-50 dark:bg-gray-800 px-3 py-1.5 font-medium flex gap-4">
-                    <span class="font-semibold text-gray-700 dark:text-gray-300 mr-auto">ID: {{group.model_id}}</span>
+                    <span class="font-semibold text-gray-700 dark:text-gray-300 mr-auto">$t:sirsoft-ecommerce.admin.claim.detail.activity_log.changes.model_id|id={{group.model_id}}</span>
                     <span class="w-28 text-center">$t:sirsoft-ecommerce.admin.claim.detail.activity_log.changes.before</span>
                     <span class="w-28 text-center">$t:sirsoft-ecommerce.admin.claim.detail.activity_log.changes.after</span>
                   </div>
@@ -124,7 +124,7 @@
                     </case>
                   </switch>
                 </on>
-                <div class="flex-center gap-2 hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-lg px-1 py-0.5 transition-colors cursor-pointer">
+                <div class="flex-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg px-1 py-0.5 transition-colors cursor-pointer">
                   <div class="flex-center w-5 h-5 bg-gray-200 dark:bg-gray-600 rounded-full justify-center">
                     <span class="text-xs font-medium text-gray-600 dark:text-gray-300">{{(log.user?.name ?? 'S').charAt(0).toUpperCase()}}</span>
                   </div>
@@ -156,7 +156,7 @@
           <div data-if="{{log.bulk_changes &amp;&amp; log.bulk_changes.length > 0}}" class="mt-2 space-y-2">
             <div data-each="group, groupIdx in {{log.bulk_changes ?? []}}" class="toggle-group">
               <div class="text-tertiary bg-gray-50 dark:bg-gray-800 px-3 py-1.5 font-medium flex gap-3">
-                <span class="font-semibold text-gray-700 dark:text-gray-300 mr-auto">ID: {{group.model_id}}</span>
+                <span class="font-semibold text-gray-700 dark:text-gray-300 mr-auto">$t:sirsoft-ecommerce.admin.claim.detail.activity_log.changes.model_id|id={{group.model_id}}</span>
                 <span class="w-20 text-center">$t:sirsoft-ecommerce.admin.claim.detail.activity_log.changes.before</span>
                 <span class="w-20 text-center">$t:sirsoft-ecommerce.admin.claim.detail.activity_log.changes.after</span>
               </div>

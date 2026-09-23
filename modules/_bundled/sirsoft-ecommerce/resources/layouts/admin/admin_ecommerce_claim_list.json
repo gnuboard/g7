@@ -63,7 +63,7 @@
             "params": {
                 "type": "{{(query.type || 'exchange') === 'cancel' ? 'refund' : (query.type || 'exchange')}}"
             },
-            "comment": "사유 필터 카탈로그. 취소 유형이 저장하는 cancel_reason_type 은 환불 사유 코드이므로 같은 카탈로그를 읽는다."
+            "comment": "사유 필터 카탈로그. 취소 유형이 저장하는 cancel_reason_type 은 환불 사유 코드이므로 같은 카탈로그를 읽는다.\n    게이트는 `settings.read | claims.read` 다 — 이 화면(`claims.read`)을 열 수 있는 운영자는 늘 통과하므로 403 억제를 두지 않는다. 억제를 남기면 누군가 게이트를 다시 좁혔을 때 사유 필터가 조용히 '전체' 하나로 비고 아무도 모른다 — 그때는 기본 오류 알림으로 드러나야 한다."
         },
         {
             "id": "presets",
@@ -88,6 +88,12 @@
             "auto_fetch": true,
             "auth_required": true,
             "loading_strategy": "background",
+            "errorHandling": {
+                "403": {
+                    "comment": "이 엔드포인트는 `settings.read` 게이트이고 화면은 `claims.read` 다 — 클레임 권한만 가진 운영자(기본 역할 manager)에게는 정상 응답이라 전파를 끊는다. 억제하지 않으면 진입할 때마다 오류 토스트가 뜬다. 비면 청구 결제수단 칩만 사라진다.",
+                    "handler": "suppress"
+                }
+            },
             "comment": "청구 결제수단 허용값(`claim.charge_payment_methods`)의 단일 출처. 통화 선택지는 이젠 `_global.modules['sirsoft-ecommerce'].language_currency.currencies` 가 줌—이 엔드포인트는 `settings.read` 를 요구하는데 화면 라우트는 `claims.read` 라, 둘만 가진 운영자(기본 역할 manager)에게는 이 응답이 403 이 되어 드롭다운이 조용히 빈다. 주문 목록 정본과 동형으로 전역을 쓰는 축부터 옮겼다."
         }
     ],
@@ -257,7 +263,7 @@
                                         "responsive": {
                                             "portable": {
                                                 "props": {
-                                                    "className": "btn btn-ghost btn-square flex"
+                                                    "className": "btn btn-ghost btn-icon flex"
                                                 }
                                             }
                                         },
@@ -270,7 +276,7 @@
                                         ],
                                         "props": {
                                             "type": "button",
-                                            "className": "btn btn-ghost btn-square hidden"
+                                            "className": "btn btn-ghost btn-icon hidden"
                                         },
                                         "children": [
                                             {

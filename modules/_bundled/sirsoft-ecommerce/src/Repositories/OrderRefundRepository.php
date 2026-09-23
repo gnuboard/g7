@@ -142,6 +142,36 @@ class OrderRefundRepository implements OrderRefundRepositoryInterface
     /**
      * {@inheritDoc}
      */
+    public function sumActiveDirectQuantitiesByOrderOptions(array $orderOptionIds): array
+    {
+        if ($orderOptionIds === []) {
+            return [];
+        }
+
+        $finalValues = array_map(
+            fn (RefundStatusEnum $status) => $status->value,
+            RefundStatusEnum::finalStatuses(),
+        );
+
+        $liveDirectRefunds = $this->model->newQuery()
+            ->select('id')
+            ->whereIn('refund_source_type', RefundSourceTypeEnum::quantityOwningValues())
+            ->whereNotIn('refund_status', $finalValues);
+
+        return OrderRefundOption::query()
+            ->whereIn('order_option_id', array_values(array_unique(array_map('intval', $orderOptionIds))))
+            ->whereIn('order_refund_id', $liveDirectRefunds)
+            ->whereNotIn('option_status', $finalValues)
+            ->groupBy('order_option_id')
+            ->selectRaw('order_option_id, SUM(quantity) as locked')
+            ->pluck('locked', 'order_option_id')
+            ->map(fn ($locked) => (int) $locked)
+            ->all();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     public function paginateForUser(int $userId, array $filters = [], int $perPage = 20): LengthAwarePaginator
     {
         $query = $this->buyerClaimListQuery()

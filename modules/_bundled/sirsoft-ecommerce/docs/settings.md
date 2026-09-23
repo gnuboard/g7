@@ -82,7 +82,9 @@ _`getSettingsSchema()` 선언이 없습니다._
 필요한 이유는 PG 플러그인을 새로 설치했을 때 그 수단의 환불이 전부 승인 대기로 쌓이는 것을 막기
 위함이고, 저장 시점에 화면이 제시한 선언 수단 전부를 `auto_approve_refund_payment_methods_decided`
 (운영자 결정 이력)에 남겨 **운영자가 뺀 수단이 다음 조회에서 되살아나지 않게** 합니다. 이 이력
-키는 화면이 보내지 않고 저장 직전에 서버가 채웁니다.
+키는 화면이 보내지 않고 저장 직전에 서버가 채웁니다 — 요청에 실으면 422 이고, 관리자 조회 응답에도
+실리지 않습니다(화면이 조회한 claim 섹션을 되보내도 저장이 막히지 않게). 전체 저장이든 개별 설정
+저장이든 목록을 고치면 같은 이력이 남으며, 이 조립은 `EcommerceSettingsAdminService` 한 곳에 있습니다.
 <!-- @intent END -->
 
 `language_currency.rate_provider` 는 환율을 자동으로 갱신할 **제공자 선택값**입니다(기본 `null`
@@ -106,7 +108,7 @@ _`getSettingsSchema()` 선언이 없습니다._
 |---|---|---|---|
 | `products` | 상품 관리 | `read`, `create`, `update`, `delete` | `product` |
 | `orders` | 주문 관리 | `read`, `update` | `order` |
-| `claims` | 취소/반품/교환 관리 | `read`, `update-status`, `update-amounts`, `execute-refund` | - |
+| `claims` | 취소/반품/교환 관리 | `read`, `update-status`, `update-amounts`, `execute-refund` | `order` |
 | `categories` | 카테고리 관리 | `read`, `create`, `update`, `delete` | - |
 | `brands` | 브랜드 관리 | `read`, `create`, `update`, `delete` | `brand` |
 | `product-notice-templates` | 상품정보제공고시 관리 | `read`, `create`, `update`, `delete` | - |
@@ -153,7 +155,13 @@ _`getSettingsSchema()` 선언이 없습니다._
 
 클레임은 관리자 `claims`(조회·상태 변경·금액 수정·환불 실행)와 사용자 `user-claims`(신청·조회·
 철회·결제) 두 그룹입니다. 사용자 그룹이 따로 있는 이유는 **특정 회원의 신청 권한만 회수**할 수
-있게 하기 위해서입니다 — 신청 권한을 뺀 회원은 화면 진입부터 막힙니다.
+있게 하기 위해서입니다 — 신청 권한을 뺀 회원은 화면 진입부터 막힙니다. 비회원 클레임 경로도 같은
+`user-claims.*` 를 guest 역할로 판정하므로, guest 역할에서 빼면 비회원 창구가 함께 닫힙니다.
+
+관리자 `claims` 의 스코프 축은 **주문의 것을 물려받습니다**(`orders` 와 같은 라우트 키 `order` ·
+소유자 컬럼 `user_id`). 신청서는 언제나 한 주문에 속하므로, 역할에 `self`·`role` 스코프를 걸면 그 신청서가
+속한 주문이 스코프 안일 때만 목록에 보이고 열리고 처리됩니다 — 주문을 볼 수 없는 운영자가 신청서로는
+같은 주문의 환불 계좌를 보거나 환불을 실행하는 우회로를 막습니다.
 <!-- @intent END -->
 
 ## 메뉴

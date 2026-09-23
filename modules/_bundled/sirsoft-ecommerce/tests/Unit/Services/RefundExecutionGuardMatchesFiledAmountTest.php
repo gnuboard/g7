@@ -35,7 +35,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  * 배송정책의 배송비**가 한도에서 빠진다(실측 차이 6,000).
  *
  * **고친 방법**: 공용 경로(`buildRecalcInput()`)는 건드리지 않고, 가드도 완료 처리와 같은
- * 누적을 넘긴다(`accumulatedReturnItems()` · `accumulatedDeductedCollectionFee()`).
+ * 누적을 넘긴다(`returnRefundDelta()` — 누적 재계산에서 앞 회차 몫을 뺀 차분, #599 validate P2 #1).
  *
  * **이 테스트가 재는 자리**: 금액이 아니라 **가드가 재계산에 넘기는 입력**이다.
  * 금액으로 재려면 「한 배송정책을 혼자 쓰던 상품이 전량 빠지는」 주문이 필요한데, 공용

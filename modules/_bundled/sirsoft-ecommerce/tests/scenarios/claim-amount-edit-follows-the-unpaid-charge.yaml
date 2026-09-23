@@ -15,7 +15,7 @@ description: >-
   곳은 구매자 수정(`UserClaimService::update()`)뿐이었고, `AdminClaimService::updateAmounts()` 는
   금액 컬럼을 갱신하고 활동로그 훅을 쏜 뒤 끝났다.
 
-  **이미 결제한 건은 이 매니페스트의 대상이 아니다**(PO 결정 2026-09-23). 초과 수납이 생겨도
+  **이미 결제한 건은 이 매니페스트의 대상이 아니다**(운영 결정 2026-09-23). 초과 수납이 생겨도
   자동 환급하지 않고 운영이 처리한다 — 관리자 금액 수정에 자동 환급을 하기로 한 합의가 없었고
   (`modules/_bundled/sirsoft-ecommerce/docs/api/admin-claims.md` 의 `updateAmounts` 응답에 환급 기술이 없다), 금액을 고치는 것은
   대개 운영상의 판단이기 때문이다. 그래서 정산은 **수납액이 0 일 때만** 부르고, 그 조건에서는

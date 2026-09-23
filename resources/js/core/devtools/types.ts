@@ -194,6 +194,8 @@ export interface DiagnosticContext {
     websocket: WebSocketInfo;
     stateAtTime: (timestamp: number) => StateView | undefined;
     layoutHas: (prop: string, value: string) => boolean;
+    /** 현재 렌더 중인 레이아웃 JSON (DevTools 가 로드를 추적하지 못했으면 null) */
+    currentLayoutJson?: LayoutJsonData | null;
 }
 
 /** 진단 결과 */

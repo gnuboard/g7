@@ -375,4 +375,7 @@ return [
         'refund_points_amount' => '환불 마일리지',
         'refund_method' => '환불 수단',
     ],
+
+    // 이름을 되찾지 못한 엔티티의 표시 (설명 파라미터 해석 실패 시)
+    'entity_id_fallback' => 'ID: :id',
 ];

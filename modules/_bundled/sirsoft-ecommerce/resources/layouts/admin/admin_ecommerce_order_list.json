@@ -46,8 +46,8 @@
                 "claim_refund_statuses": "{{query['claim_refund_statuses[]']}}",
                 "claim_cancel_types": "{{query['claim_cancel_types[]']}}",
                 "claim_fault_types": "{{query['claim_fault_types[]']}}",
-                "claim_requested_from": "{{query.claim_requested_from}}",
-                "claim_requested_to": "{{query.claim_requested_to}}"
+                "claim_requested_from": "{{query.claim_requested_from && query.claim_requested_to && query.claim_requested_from > query.claim_requested_to ? query.claim_requested_to : query.claim_requested_from}}",
+                "claim_requested_to": "{{query.claim_requested_from && query.claim_requested_to && query.claim_requested_from > query.claim_requested_to ? query.claim_requested_from : query.claim_requested_to}}"
             },
             "errorHandling": {
                 "403": {
@@ -63,7 +63,7 @@
                     }
                 }
             },
-            "comment": "목록 본체. 조회 조건을 전부 URL 쿼리에서 읽으므로 주소가 바뀌는 것이 곧 재조회다. 분류는 4단계 중 가장 깊이 고른 것 하나만 서버로 넘긴다"
+            "comment": "목록 본체. 조회 조건을 전부 URL 쿼리에서 읽으므로 주소가 바뀌는 것이 곧 재조회다. 분류는 4단계 중 가장 깊이 고른 것 하나만 서버로 넘긴다 클레임 신청일 구간은 시작이 끝보다 뒤면 두 값을 바꿔 보낸다 — 북마크·수기 편집으로 뒤집힌 구간이 URL 에 들어오면 서버가 422 를 내고 목록 전체가 오류 화면이 되는데, 그 URL 은 새로고침해도 그대로라 빠져나올 길이 없다."
         },
         {
             "id": "categories",
@@ -265,8 +265,8 @@
                     "claim_refund_statuses[]": "{{(_local.filter.claimRefundStatuses || []).length > 0 ? _local.filter.claimRefundStatuses : null}}",
                     "claim_cancel_types[]": "{{(_local.filter.claimCancelTypes || []).length > 0 ? _local.filter.claimCancelTypes : null}}",
                     "claim_fault_types[]": "{{(_local.filter.claimFaultTypes || []).length > 0 ? _local.filter.claimFaultTypes : null}}",
-                    "claim_requested_from": "{{_local.filter.claimRequestedFrom || null}}",
-                    "claim_requested_to": "{{_local.filter.claimRequestedTo || null}}"
+                    "claim_requested_from": "{{(_local.filter.claimRequestedFrom && _local.filter.claimRequestedTo && _local.filter.claimRequestedFrom > _local.filter.claimRequestedTo ? _local.filter.claimRequestedTo : _local.filter.claimRequestedFrom) || null}}",
+                    "claim_requested_to": "{{(_local.filter.claimRequestedTo && _local.filter.claimRequestedFrom && _local.filter.claimRequestedFrom > _local.filter.claimRequestedTo ? _local.filter.claimRequestedFrom : _local.filter.claimRequestedTo) || null}}"
                 }
             }
         }
@@ -404,7 +404,7 @@
                                         "responsive": {
                                             "portable": {
                                                 "props": {
-                                                    "className": "btn btn-ghost btn-square flex"
+                                                    "className": "btn btn-ghost btn-icon flex"
                                                 }
                                             }
                                         },
@@ -417,7 +417,7 @@
                                         ],
                                         "props": {
                                             "type": "button",
-                                            "className": "btn btn-ghost btn-square hidden"
+                                            "className": "btn btn-ghost btn-icon hidden"
                                         },
                                         "children": [
                                             {

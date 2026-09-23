@@ -17,6 +17,7 @@ use Modules\Sirsoft\Ecommerce\Models\ClaimPayment;
 use Modules\Sirsoft\Ecommerce\Models\MileageTransaction;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderOption;
+use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ClaimPaymentRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\MileageBalanceRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\MileageTransactionRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Support\MileageRounding;
@@ -35,11 +36,13 @@ class UserMileageService
      * @param  MileageTransactionRepositoryInterface  $ledger  원장 Repository
      * @param  MileageBalanceRepositoryInterface  $cache  잔액 캐시 Repository
      * @param  EcommerceSettingsService  $settings  환경설정 서비스
+     * @param  ClaimPaymentRepositoryInterface  $claimPaymentRepository  클레임 추가결제 Repository (차감·환급 멱등 잠금 축)
      */
     public function __construct(
         private MileageTransactionRepositoryInterface $ledger,
         private MileageBalanceRepositoryInterface $cache,
         private EcommerceSettingsService $settings,
+        private ClaimPaymentRepositoryInterface $claimPaymentRepository,
     ) {}
 
     /**
@@ -605,7 +608,7 @@ class UserMileageService
     }
 
     /**
-     * 적립 회수 — **이미 적립이 끝난 건은 회수하지 않는다.** (PO 결정 2026-09-23)
+     * 적립 회수 — **이미 적립이 끝난 건은 회수하지 않는다.** (운영 결정 2026-09-23)
      *
      * 원장에 확정된 적립은 되돌리지 않는다. 운영자가 반품·교환·취소를 늦게 처리해 적립이 먼저
      * 나갔다면 그것은 운영의 책임이고, 뒤늦게 회수하면 **회원이 이미 쓰거나 소멸시킨 적립을
@@ -640,7 +643,7 @@ class UserMileageService
         //
         // `EARN_CANCEL` 거래 유형과 그 언어팩(`activity_log.description.mileage_earn_cancel`)은
         // 남겨 둔다 — 이 결정 전에 쌓인 회수 기록을 마이페이지·관리자 내역이 계속 보여 줘야 한다
-        // (PO 결정 2026-09-23: 「앞으로만 막고 지나간 건은 둔다」).
+        // (운영 결정 2026-09-23: 「앞으로만 막고 지나간 건은 둔다」).
         return null;
     }
 
@@ -1051,7 +1054,7 @@ class UserMileageService
     }
 
     // 적립 회수 계산(`recoverPoints()`)은 제거했다 — `cancelEarnForOption()` 이 유일한 호출부였고
-    // 그 메서드가 더 이상 회수하지 않는다(PO 결정 2026-09-23). 되살릴 일이 생기면 git 이력에서
+    // 그 메서드가 더 이상 회수하지 않는다(운영 결정 2026-09-23). 되살릴 일이 생기면 git 이력에서
     // 꺼낸다. 남겨 두면 「자기 lot 잔여 → 타 lot FIFO」 라는 잠식 규칙이 호출부 없이 살아 있어,
     // 다음에 회수를 되살리는 사람이 같은 결함을 그대로 다시 켜게 된다.
 
@@ -1216,28 +1219,41 @@ class UserMileageService
      *
      * 주문 시 사용(`ORDER_USE`)과 같은 거래 유형을 쓰되 `claim_payment_id` 로 결제 건에 묶는다 —
      * 마일리지 내역 화면의 분류·배지가 기존 8종 어휘를 그대로 읽으므로 새 유형을 늘리지 않는다.
-     * 같은 결제 건으로 두 번 차감되지 않도록 호출부가 결제 건을 잠그고(findByPaymentNumberForUpdate)
-     * 결제 대기 상태에서만 부른다.
+     *
+     * 멱등은 **이 메서드가 스스로 지킨다**(#599 validate P2 #10). 결제 건 행을 잠근 트랜잭션
+     * 안에서 같은 결제 건의 사용 거래가 있는지 다시 보고, 있으면 그 거래를 돌려준다. 호출부
+     * (`ClaimPaymentService::payWithMileage()`)도 잠그지만, 그 계약에만 기대면 잠그지 않는 새
+     * 호출부 하나가 같은 결제 건으로 두 번 차감한다.
      *
      * @param  int  $userId  사용자 ID
      * @param  int  $amount  차감액
      * @param  string  $currency  통화 코드
      * @param  ClaimPayment  $payment  클레임 추가결제 건
-     * @return MileageTransaction 생성된 사용 거래 (음수)
+     * @return MileageTransaction 생성된(또는 이미 있던) 사용 거래 (음수)
      *
      * @throws MileageValidationException 잔액 부족 시
      */
     public function deductForClaimPayment(int $userId, int $amount, string $currency, ClaimPayment $payment): MileageTransaction
     {
-        return $this->consumeFifo(
-            $userId,
-            $amount,
-            $currency,
-            MileageTransactionTypeEnum::ORDER_USE,
-            ['order_id' => $payment->order_id, 'claim_payment_id' => $payment->id],
-            null,
-            null,
-        );
+        return DB::transaction(function () use ($userId, $amount, $currency, $payment) {
+            $this->claimPaymentRepository->findForUpdate((int) $payment->id);
+
+            $existing = $this->ledger->findUsageForClaimPayment((int) $payment->id);
+
+            if ($existing !== null) {
+                return $existing;
+            }
+
+            return $this->consumeFifo(
+                $userId,
+                $amount,
+                $currency,
+                MileageTransactionTypeEnum::ORDER_USE,
+                ['order_id' => $payment->order_id, 'claim_payment_id' => $payment->id],
+                null,
+                null,
+            );
+        });
     }
 
     /**
@@ -1247,6 +1263,10 @@ class UserMileageService
      * 상한으로 삼는다 — 전액 환급을 두 번 부르면 두 번째는 0 이 되어 아무 일도 하지 않는다(멱등).
      * 환급 lot 은 원본 만료를 승계하지 않고 신규 발행한다(취소 복원과 같은 정책).
      *
+     * 「기환급액 확인 → 환급 거래 생성」은 **결제 건 행을 잠근 트랜잭션 안**에서 한다
+     * (#599 validate P2 #10). 잠금 없이 두 요청(철회와 차액 정산 등)이 같은 기환급액을 읽으면
+     * 둘 다 상한 안이라고 판단해 각자 lot 을 발행한다 — 낸 마일리지보다 더 돌려준다.
+     *
      * @param  int  $userId  사용자 ID
      * @param  float  $amount  환급액
      * @param  string  $currency  통화 코드
@@ -1255,8 +1275,25 @@ class UserMileageService
      */
     public function restoreForClaimPayment(int $userId, float $amount, string $currency, ClaimPayment $payment): ?MileageTransaction
     {
-        $alreadyRestored = $this->ledger->sumRestoredForClaimPayment($payment->id);
-        $restorable = min($amount, max(0.0, (float) $payment->points_amount - $alreadyRestored));
+        return DB::transaction(fn () => $this->restoreForClaimPaymentLocked($userId, $amount, $currency, $payment));
+    }
+
+    /**
+     * 결제 건 행을 잠근 채 클레임 추가결제 마일리지를 환급합니다. (`restoreForClaimPayment()` 본체)
+     *
+     * @param  int  $userId  사용자 ID
+     * @param  float  $amount  환급액
+     * @param  string  $currency  통화 코드
+     * @param  ClaimPayment  $payment  클레임 추가결제 건
+     * @return MileageTransaction|null 환급 거래 (환급할 몫이 없으면 null)
+     */
+    private function restoreForClaimPaymentLocked(int $userId, float $amount, string $currency, ClaimPayment $payment): ?MileageTransaction
+    {
+        // 상한의 근거(`points_amount`)도 잠근 행에서 읽는다 — 호출부가 들고 온 모델은 낡았을 수 있다.
+        $locked = $this->claimPaymentRepository->findForUpdate((int) $payment->id) ?? $payment;
+
+        $alreadyRestored = $this->ledger->sumRestoredForClaimPayment((int) $payment->id);
+        $restorable = min($amount, max(0.0, (float) $locked->points_amount - $alreadyRestored));
 
         if ($restorable <= 0) {
             return null;

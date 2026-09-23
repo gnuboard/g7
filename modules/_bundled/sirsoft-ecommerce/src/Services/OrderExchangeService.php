@@ -45,6 +45,8 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductOptionRepositoryInte
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ShippingPolicyClaimAddressRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Rules\ExchangeRedeliveryCountryUnchanged;
 use Modules\Sirsoft\Ecommerce\Services\Concerns\AppliesRefundBankAccount;
+use Modules\Sirsoft\Ecommerce\Services\Concerns\FiresClaimHooksAfterCommit;
+use Modules\Sirsoft\Ecommerce\Services\Concerns\GuardsClaimFilterResults;
 use Modules\Sirsoft\Ecommerce\Services\Concerns\ResolvesAdditionalOptions;
 use Modules\Sirsoft\Ecommerce\Support\ClaimItemSpecs;
 
@@ -104,6 +106,8 @@ use Modules\Sirsoft\Ecommerce\Support\ClaimItemSpecs;
 class OrderExchangeService
 {
     use AppliesRefundBankAccount;
+    use FiresClaimHooksAfterCommit;
+    use GuardsClaimFilterResults;
     use ResolvesAdditionalOptions;
 
     /**
@@ -259,10 +263,22 @@ class OrderExchangeService
      *                          - redelivery_address: 재발송지 (선택, D14) {recipient_name, phone, zipcode, address1, address2, country_code, changed_by_user}
      * @return OrderExchange 생성된 교환 신청서
      *
+     * 쓰기 전에 `claim.exchange.before_request`(막기) → `claim.exchange.filter_request_data`(입력 변형)를
+     * 동기로 발화한다. 필터는 `CLAIM_FILTERABLE_REQUEST_KEYS`(대상 상품·사유·재발송지)만 바꿀 수 있고,
+     * 바뀐 값은 아래의 사유 해석·잠금 안 수량 가드·재발송지 규칙을 고객 입력과 똑같이 다시 지난다.
+     *
      * @throws OrderClaimException 신청 자격·수량·사유·청구 방식·신규 옵션·재발송지 위반
      */
     public function requestExchange(Order $order, array $payload): OrderExchange
     {
+        HookManager::doAction('sirsoft-ecommerce.claim.exchange.before_request', $order, $payload);
+
+        $payload = $this->acceptClaimFilterResult(
+            HookManager::applyFilters('sirsoft-ecommerce.claim.exchange.filter_request_data', $payload, $order),
+            $payload,
+            self::CLAIM_FILTERABLE_REQUEST_KEYS,
+        );
+
         $reason = $this->resolveReason((string) ($payload['reason_code'] ?? ''));
         $chargeMethod = $this->normalizeChargeMethod($payload['charge_method'] ?? null);
         $refundPriority = $payload['refund_priority'] ?? RefundPriorityEnum::PG_FIRST;
@@ -271,7 +287,7 @@ class OrderExchangeService
 
         $exchange = DB::transaction(function () use ($order, $payload, $items, $reason, $chargeMethod, $refundPriority, $requestedBy) {
             // 잠금은 잔여 수량을 읽기 전에 잡는다 — 읽고 나서 잠그면 이미 두 요청이 같은 값을 봤다.
-            $lockedOrder = $this->orderRepository->findForUpdate($order->id) ?? $order;
+            $lockedOrder = $this->orderRepository->findForUpdateOrFail($order->id);
             $lockedOrder->load(['options', 'shippings', 'payment', 'shippingAddress']);
 
             $resolved = $this->claimQuantityGuard->resolveClaimItems(
@@ -347,6 +363,8 @@ class OrderExchangeService
                 'total_charge_amount' => $totalCharge,
                 'mc_total_charge_amount' => $this->toMultiCurrency($totalCharge, $currencySnapshot),
                 'currency_code' => $this->resolveBaseCurrency($lockedOrder),
+                // 접수 계산에 쓴 환불 우선순위 — 응답·수정 화면이 추측하지 않고 이 값을 읽는다.
+                'refund_priority' => $refundPriority,
                 'items_snapshot' => $this->buildItemsSnapshot($plans),
                 'return_address_snapshot' => $this->resolveReturnAddressSnapshot($lockedOrder, $resolved),
                 'redelivery_address_snapshot' => $redelivery,
@@ -360,7 +378,7 @@ class OrderExchangeService
             return $created->fresh(['exchangeOptions']);
         });
 
-        HookManager::doAction('sirsoft-ecommerce.claim.exchange.requested', $exchange, $order->fresh());
+        $this->fireAfterCommit(fn () => HookManager::doAction('sirsoft-ecommerce.claim.exchange.requested', $exchange, $order->fresh()));
 
         // 청구액 0원 자동 승인 (§4-2 전이표 자동 열). 접수 훅을 먼저 발화한 뒤 전이하므로
         // 알림·로그 리스너는 '신청 → 승인' 두 사건을 순서대로 받는다.
@@ -409,6 +427,9 @@ class OrderExchangeService
      * 철회자 ID 를 받지 않는다 — 행위자 기록은 활동 로그 소관이며(반품 서비스와 같은 판정),
      * 이 메서드가 발화하는 `claim.exchange.withdrawn`·`status_changed` 훅이 그 입력이다.
      *
+     * 철회 가능 판정을 지난 뒤 `claim.exchange.before_withdraw` 를 동기로 발화한다 — 확장이 예외로
+     * 철회를 막을 수 있다. 이어지는 전이가 `before_status_change` 를 한 번 더 낸다(층이 다른 두 자리).
+     *
      * @param  OrderExchange  $exchange  교환 신청서
      * @return OrderExchange 철회된 신청서
      *
@@ -420,6 +441,8 @@ class OrderExchangeService
             throw OrderClaimException::notWithdrawable();
         }
 
+        HookManager::doAction('sirsoft-ecommerce.claim.exchange.before_withdraw', $exchange);
+
         return $this->transition($exchange, ExchangeStatusEnum::WITHDRAWN);
     }
 
@@ -428,6 +451,8 @@ class OrderExchangeService
      *
      * 완료(COMPLETED)는 이 경로로 갈 수 없다 — 원 옵션 재고 복구 여부와 환불신청서 접수 여부를
      * 운영자가 고르는 절차(D26)이므로 `completeExchange()` 만이 진입점이다.
+     *
+     * 잠금 전에 before·filter 훅을 동기로 낸다(`beforeStatusChange()`).
      *
      * @param  OrderExchange  $exchange  교환 신청서
      * @param  ExchangeStatusEnum  $target  목표 상태
@@ -441,6 +466,8 @@ class OrderExchangeService
         if ($target === ExchangeStatusEnum::COMPLETED) {
             throw OrderClaimException::completionRequiresCompletionFlow();
         }
+
+        $context = $this->beforeStatusChange($exchange, $target, $context);
 
         // 상태를 **행 잠금 아래에서 다시 읽어** 판정한다(S3-D16). 메모리의 모델 값으로
         // 판정하면 더블클릭·재시도로 동시에 들어온 두 요청이 **둘 다 가드를 통과**한다 —
@@ -479,6 +506,33 @@ class OrderExchangeService
         }
 
         return $updated;
+    }
+
+    /**
+     * 헤더 상태 전이 직전의 before·filter 훅을 동기로 발화합니다. (직접 전이·송장 등록 전이 공용)
+     *
+     * 잠금·쓰기 **전**에 돈다 — `before_status_change` 리스너가 던지면 아무것도 쓰이지 않는다.
+     * `filter_status_change_data` 는 컨텍스트의 메모·반려 사유(`CLAIM_FILTERABLE_STATUS_CONTEXT_KEYS`)만
+     * 바꿀 수 있다. 목표 상태는 넘기되 바꾸게 두지 않는다 — 호출층(`AdminClaimService::transition`)이
+     * 미수납 게이트·종결 정산을 그 값으로 이미 판정했기 때문이다. `$from` 은 호출 시점(잠금 전)의
+     * 값이며, 실제 전이 판정은 잠금 안에서 다시 읽은 상태로 한다.
+     *
+     * @param  OrderExchange  $exchange  교환 신청서
+     * @param  ExchangeStatusEnum  $target  목표 상태
+     * @param  array  $context  부가 정보
+     * @return array 필터를 거친 부가 정보
+     */
+    protected function beforeStatusChange(OrderExchange $exchange, ExchangeStatusEnum $target, array $context): array
+    {
+        $from = $exchange->exchange_status?->value;
+
+        HookManager::doAction('sirsoft-ecommerce.claim.exchange.before_status_change', $exchange, $from, $target->value, $context);
+
+        return $this->acceptClaimFilterResult(
+            HookManager::applyFilters('sirsoft-ecommerce.claim.exchange.filter_status_change_data', $context, $exchange, $from, $target->value),
+            $context,
+            self::CLAIM_FILTERABLE_STATUS_CONTEXT_KEYS,
+        );
     }
 
     /**
@@ -622,14 +676,25 @@ class OrderExchangeService
         $processedBy = $context['processed_by'] ?? null;
         $specs = ClaimItemSpecs::normalize($items);
         $quantities = ClaimItemSpecs::quantities($specs);
-        $items = $this->resolveItems($exchange, ClaimItemSpecs::ids($specs));
+        $itemIds = ClaimItemSpecs::ids($specs);
+
+        // 상품 단위 전이의 before 훅 — 잠금·쓰기 전이라 리스너가 던지면 어떤 행도 옮겨지지 않는다.
+        // 필터는 두지 않는다: 바꿀 수 있는 자유 입력이 없고(대상 행·목표 상태는 운영자 판단이자
+        // 미수납 게이트가 이미 잰 값), 헤더가 따라 움직이면 그 단계마다 `before_status_change` 가 난다.
+        HookManager::doAction('sirsoft-ecommerce.claim.exchange.before_option_status_change', $exchange, $specs, $target->value, $context);
 
         $succeeded = [];
         $skipped = [];
         $changes = [];
         $split = [];
 
-        DB::transaction(function () use ($exchange, $items, $quantities, $target, $processedBy, &$succeeded, &$skipped, &$changes, &$split) {
+        // 신청서 행을 잠그고 **잠금 안에서** 상품 행을 다시 읽어 판정한다. 헤더 동기화도 같은
+        // 트랜잭션 안에서 한다 — 상품 전이를 커밋한 뒤 잠금 없이 헤더를 옮기면 그 사이에 들어온
+        // 다른 전이와 헤더 판정이 겹친다(#599 validate P2 #19). 훅은 커밋 뒤에 나간다(#7).
+        DB::transaction(function () use ($exchange, $itemIds, $quantities, $target, $processedBy, &$succeeded, &$skipped, &$changes, &$split) {
+            $locked = $this->exchangeRepository->findForUpdate((int) $exchange->getKey()) ?? $exchange;
+            $items = $this->resolveItems($locked, $itemIds);
+
             foreach ($items as $item) {
                 // 끝난 상품(반려·철회·완료)은 전이 게이트가 막지 못한다 — 자기 전이는 언제나 참이라
                 // 이미 반려된 상품에 반려를 다시 지시하면 그 상품의 부수효과가 한 번 더 돈다.
@@ -662,7 +727,7 @@ class OrderExchangeService
                 $previousQuantity = (int) $item->exchange_quantity;
 
                 try {
-                    $remainder = $this->transitionItem($exchange, $item, $target, $processedBy, $quantities[$item->id] ?? null);
+                    $remainder = $this->transitionItem($locked, $item, $target, $processedBy, $quantities[$item->id] ?? null);
                 } catch (OrderClaimException $e) {
                     // 재고 부족 같은 상품 단위 실패는 그 상품만 건너뛴다 — 같은 TX 안의 다른
                     // 상품은 전이 자체엔 문제가 없고, 저장점(savepoint)이 실패분만 되돌린다.
@@ -683,6 +748,9 @@ class OrderExchangeService
                     // 스스로 해석해야 한다.
                     $change['quantity'] = (int) $item->fresh()->exchange_quantity;
                     $change['remainder_option_id'] = $remainder->id;
+                    // 잔여 수량은 **발행 시점 값**으로 싣는다 — 활동 로그 리스너가 이 값을 먼저 읽고, 없을 때만
+                    // 잔여 행을 다시 읽는다(다시 읽으면 그 사이 바뀐 값이 섞인다).
+                    $change['remainder_quantity'] = $previousQuantity - $change['quantity'];
 
                     $split[] = [
                         'id' => $item->id,
@@ -696,25 +764,26 @@ class OrderExchangeService
 
                 $succeeded[] = $item->id;
             }
+
+            $fresh = $locked->fresh(['exchangeOptions']);
+
+            // 상품 단위 전이는 헤더 전이와 다른 사실이다 — 상품 상태가 갈리면 헤더는 움직이지
+            // 않으므로(`syncHeaderFromOptions` 는 살아 있는 상품이 한 상태로 모일 때만 옮긴다)
+            // 이 훅이 없으면 운영자가 한 상태 변경이 아무 데도 남지 않는다. 헤더가 따라 움직이면
+            // 그 전이는 `status_changed` 가 따로 낸다(이중 기록이 아니라 층이 다른 두 사실).
+            // 커밋 뒤 발화 순서는 등록 순서다 — 상품 축이 헤더 축보다 먼저 나간다.
+            if ($changes !== []) {
+                $this->fireAfterCommit(fn () => HookManager::doAction(
+                    'sirsoft-ecommerce.claim.exchange.option_status_changed',
+                    $fresh,
+                    $changes,
+                    $target->value,
+                    $processedBy,
+                ));
+            }
+
+            $this->syncHeaderFromOptions($fresh, $processedBy);
         });
-
-        $fresh = $exchange->fresh(['exchangeOptions']);
-
-        // 상품 단위 전이는 헤더 전이와 다른 사실이다 — 상품 상태가 갈리면 헤더는 움직이지
-        // 않으므로(`syncHeaderFromOptions` 는 살아 있는 상품이 한 상태로 모일 때만 옮긴다)
-        // 이 훅이 없으면 운영자가 한 상태 변경이 아무 데도 남지 않는다. 헤더가 따라 움직이면
-        // 그 전이는 `status_changed` 가 따로 낸다(이중 기록이 아니라 층이 다른 두 사실).
-        if ($changes !== []) {
-            HookManager::doAction(
-                'sirsoft-ecommerce.claim.exchange.option_status_changed',
-                $fresh,
-                $changes,
-                $target->value,
-                $processedBy,
-            );
-        }
-
-        $this->syncHeaderFromOptions($fresh, $processedBy);
 
         return ['succeeded' => $succeeded, 'skipped' => $skipped, 'split' => $split];
     }
@@ -818,7 +887,12 @@ class OrderExchangeService
         $previous = $exchange->exchange_status;
         $startsMoving = $previous === $readyStatus && $trackingNumber !== null;
 
-        $updated = DB::transaction(function () use ($exchange, $columns, $carrierId, $trackingNumber, $processedBy, $startsMoving, $movingStatus) {
+        // 송장이 전이를 끌고 가는 경우도 전이다 — 직접 전이와 같은 before·filter 훅을 쓰기 전에 낸다.
+        $transitionContext = $startsMoving
+            ? $this->beforeStatusChange($exchange, $movingStatus, ['processed_by' => $processedBy])
+            : [];
+
+        $updated = DB::transaction(function () use ($exchange, $columns, $carrierId, $trackingNumber, $processedBy, $startsMoving, $movingStatus, $transitionContext) {
             $tracked = $this->exchangeRepository->update($exchange, [
                 $columns['carrier'] => $carrierId,
                 $columns['tracking'] => $trackingNumber,
@@ -826,7 +900,7 @@ class OrderExchangeService
             ]);
 
             return $startsMoving
-                ? $this->applyTransition($tracked, $movingStatus, ['processed_by' => $processedBy])
+                ? $this->applyTransition($tracked, $movingStatus, $transitionContext)
                 : $tracked;
         });
 
@@ -980,23 +1054,38 @@ class OrderExchangeService
         ClaimCompletionOptions $options,
         ?int $processedBy = null,
     ): OrderExchange {
-        $targets = array_values(array_filter(
-            $this->resolveItems($exchange, $itemIds),
-            fn (OrderExchangeOption $item) => $item->option_status->canTransitionTo(ExchangeStatusEnum::COMPLETED)
-                && ! $item->option_status->isFinal(),
-        ));
+        // 완료의 before·filter 훅 — 주문 잠금·쓰기 전이다. 필터는 완료 옵션(재고 복구 행·차액
+        // 환불신청서 접수 여부)만 바꿀 수 있다. 재고 복구는 잠금 안에서 **완료 대상 행에만** 적용되고,
+        // 환불신청서 접수는 접수할 것이 없으면 완료 전체를 되돌리므로 바뀐 값도 같은 검증을 지난다.
+        // 금액은 옵션에 없다 — 차액 환불액은 서버가 완료 행으로 계산한다.
+        HookManager::doAction('sirsoft-ecommerce.claim.exchange.before_complete', $exchange, $itemIds, $options, $processedBy);
 
-        if ($targets === []) {
-            throw OrderClaimException::completionItemsInvalid();
-        }
+        $filteredOptions = HookManager::applyFilters('sirsoft-ecommerce.claim.exchange.filter_complete_options', $options, $exchange, $itemIds, $processedBy);
+        $options = $filteredOptions instanceof ClaimCompletionOptions ? $filteredOptions : $options;
 
-        $previousStatus = $exchange->exchange_status;
-
+        $previousStatus = null;
         $completionChanges = [];
 
-        $completed = DB::transaction(function () use ($exchange, $targets, $options, $processedBy, &$completionChanges) {
-            $order = $this->orderRepository->findForUpdate($exchange->order_id) ?? $exchange->order;
+        $completed = DB::transaction(function () use ($exchange, $itemIds, $options, $processedBy, &$completionChanges, &$previousStatus) {
+            $order = $this->orderRepository->findForUpdateOrFail($exchange->order_id);
             $order->load(['options', 'shippings', 'payment']);
+
+            // 대상 필터·직전 상태를 **잠금 안에서 다시 읽은 값**으로 판정한다(#599 validate P2 #3).
+            // 호출부가 들고 온 모델로 거르면, 두 처리자가 각자 완료 전 상태를 읽은 뒤 차례로
+            // 들어올 때 둘 다 같은 상품을 대상으로 잡아 원 옵션 재고 복구·완료 훅이 두 번 돈다
+            // (재고 복구에는 멱등 가드가 없다). 주문 행 잠금이 두 완료를 줄 세운다.
+            $exchange = $this->exchangeRepository->findForUpdate((int) $exchange->getKey()) ?? $exchange;
+            $previousStatus = $exchange->exchange_status;
+
+            $targets = array_values(array_filter(
+                $this->resolveItems($exchange, $itemIds),
+                fn (OrderExchangeOption $item) => $item->option_status->canTransitionTo(ExchangeStatusEnum::COMPLETED)
+                    && ! $item->option_status->isFinal(),
+            ));
+
+            if ($targets === []) {
+                throw OrderClaimException::completionItemsInvalid();
+            }
 
             $restoredAny = false;
 
@@ -1016,16 +1105,19 @@ class OrderExchangeService
                 $orderOption = $order->options->firstWhere('id', $item->order_option_id);
 
                 if ($orderOption) {
-                    $this->markOrderOptionExchanged($orderOption, (int) $item->exchange_quantity);
+                    // 재고 플래그·적립 회수는 **실제로 교환완료가 된 행**에 적용한다. 부분 수량이면
+                    // 완료분이 새 행으로 갈라져 나가고 원 행은 코스에 남으므로, 원 행에 적으면 아직
+                    // 재고를 점유한 행이 "복구됨" 으로 보인다(#599 validate P2 #4).
+                    $exchangedOption = $this->markOrderOptionExchanged($orderOption, (int) $item->exchange_quantity);
 
                     if ($options->shouldRestoreStock($item->id)) {
-                        $this->restoreStockForItem($orderOption, (int) $item->exchange_quantity);
+                        $this->restoreStockForItem($exchangedOption, (int) $item->exchange_quantity);
                         $restoredAny = true;
                     }
 
-                    // 원 옵션에 남은 적립 lot 을 회수한다. 같은 구매의 적립은 후속 옵션이 구매확정될 때
-                    // 다시 발생하므로, 회수하지 않으면 한 구매에 두 번 적립된다.
-                    $this->mileageService->cancelEarnForOption($order, $orderOption->fresh());
+                    // 원 옵션에 남은 적립 lot 을 회수한다(현재 정책은 회수하지 않는다 —
+                    // `cancelEarnForOption()`). 같은 구매의 적립은 후속 옵션이 구매확정될 때 다시 발생한다.
+                    $this->mileageService->cancelEarnForOption($order, $exchangedOption->fresh() ?? $exchangedOption);
                 }
             }
 
@@ -1057,13 +1149,13 @@ class OrderExchangeService
         // 부분 완료 라운드는 헤더가 움직이지 않는다 — 그때 이 줄이 없으면 **어떤 줄도
         // 남지 않아** 운영자가 무엇을 완료 처리했는지 흔적이 사라진다(C3).
         if ($completionChanges !== []) {
-            HookManager::doAction(
+            $this->fireAfterCommit(fn () => HookManager::doAction(
                 'sirsoft-ecommerce.claim.exchange.option_status_changed',
                 $completed,
                 $completionChanges,
                 ExchangeStatusEnum::COMPLETED->value,
                 $processedBy,
-            );
+            ));
         }
 
         if ($completed->exchange_status === ExchangeStatusEnum::COMPLETED && $previousStatus !== ExchangeStatusEnum::COMPLETED) {
@@ -1095,7 +1187,7 @@ class OrderExchangeService
         }
 
         return DB::transaction(function () use ($exchange, $processedBy) {
-            $order = $this->orderRepository->findForUpdate($exchange->order_id) ?? $exchange->order;
+            $order = $this->orderRepository->findForUpdateOrFail($exchange->order_id);
             $order->load(['options', 'payment']);
 
             return $this->createRefundRequest($order, $exchange, $processedBy);
@@ -1845,14 +1937,39 @@ class OrderExchangeService
     }
 
     /**
+     * 신청서에 저장된 환불 우선순위를 반환합니다. (저장값이 없으면 종전 기본값 PG 우선)
+     *
+     * 접수 뒤의 재계산(완료·수동 접수·완료 미리보기·신청 수정의 동결 스냅샷)이 고객이 고른
+     * 우선순위를 그대로 이어받게 한다. 예전에는 저장 컬럼이 없어 이 경로들이 PG 우선으로 고정돼,
+     * 마일리지 우선을 고른 신청서의 환불신청서가 PG 환불로 먼저 채워졌다(#599 validate P2-A 후속).
+     *
+     * @param  OrderExchange  $claim  신청서
+     * @return RefundPriorityEnum 환불 우선순위
+     */
+    protected function refundPriorityOf(OrderExchange $claim): RefundPriorityEnum
+    {
+        $value = $claim->refund_priority;
+
+        if ($value instanceof RefundPriorityEnum) {
+            return $value;
+        }
+
+        return RefundPriorityEnum::tryFrom((string) $value) ?? RefundPriorityEnum::PG_FIRST;
+    }
+
+    /**
      * 주문의 기준통화 코드를 반환합니다.
+     *
+     * 판정은 클레임 서비스 공용 헬퍼(`CurrencyConversionService::resolveOrderBaseCurrency()`)가
+     * 소유한다 — 스냅샷 → 설정 기본 통화. 예전의 `orders.currency` 폴백은 **결제 통화**라 기본
+     * 통화와 다른 주문에서 신청서 통화가 틀렸다(#599 validate P2 #14).
      *
      * @param  Order  $order  주문
      * @return string 기준통화 코드
      */
     protected function resolveBaseCurrency(Order $order): string
     {
-        return (string) ($order->currency_snapshot['base_currency'] ?? $order->currency ?? 'KRW');
+        return $this->currencyService->resolveOrderBaseCurrency($order);
     }
 
     /**
@@ -1945,13 +2062,13 @@ class OrderExchangeService
         // 조용히 함께 옮겨지고 그 사실이 활동로그 어디에도 없었다 — 헤더 줄만 보고는 어느
         // 상품이 몇 건 따라 움직였는지 알 수 없다.
         if ($changes !== []) {
-            HookManager::doAction(
+            $this->fireAfterCommit(fn () => HookManager::doAction(
                 'sirsoft-ecommerce.claim.exchange.option_status_changed',
                 $exchange->fresh(['exchangeOptions']),
                 $changes,
                 $target->value,
                 $processedBy,
-            );
+            ));
         }
     }
 
@@ -2071,6 +2188,18 @@ class OrderExchangeService
 
         foreach ($path as $step) {
             $previous = $current->exchange_status;
+
+            // 상품이 끌고 간 헤더 전이도 전이다 — 단계마다 before 훅을 쓰기 전에 낸다. 이 자리는 상품
+            // 전이 트랜잭션 **안**이라 리스너가 던지면 이번 상품 전이까지 함께 되돌아간다(헤더만 막고
+            // 상품만 옮기면 헤더와 상품이 갈린다). 필터는 없다 — 목표는 상품 상태가 정한 값이다.
+            HookManager::doAction(
+                'sirsoft-ecommerce.claim.exchange.before_status_change',
+                $current,
+                $previous->value,
+                $step->value,
+                ['processed_by' => $processedBy, 'source' => 'option_sync'],
+            );
+
             $updates = ['exchange_status' => $step] + $this->stampFor($step, []);
 
             if ($processedBy !== null) {
@@ -2206,12 +2335,12 @@ class OrderExchangeService
      */
     protected function fireStatusHooks(OrderExchange $exchange, ExchangeStatusEnum $previous, ExchangeStatusEnum $target): void
     {
-        HookManager::doAction(
+        $this->fireAfterCommit(fn () => HookManager::doAction(
             'sirsoft-ecommerce.claim.exchange.status_changed',
             $exchange,
             $previous->value,
             $target->value,
-        );
+        ));
 
         $specific = match ($target) {
             ExchangeStatusEnum::APPROVED => 'sirsoft-ecommerce.claim.exchange.approved',
@@ -2222,7 +2351,7 @@ class OrderExchangeService
         };
 
         if ($specific !== null) {
-            HookManager::doAction($specific, $exchange);
+            $this->fireAfterCommit(fn () => HookManager::doAction($specific, $exchange));
         }
     }
 
@@ -2342,7 +2471,7 @@ class OrderExchangeService
         // `OrderOptionService` 의 전이 훅을 지나지 않으므로, 훅을 붙이지 않으면 주문에 배송중
         // 상품이 하나 늘어난 사실이 활동로그 어디에도 남지 않는다 — 재발송이 언제 나갔는지
         // 되짚을 근거가 사라진다. 전이 전 상태는 없다(신규 행)이므로 null 로 싣는다.
-        HookManager::doAction(
+        $this->fireAfterCommit(fn () => HookManager::doAction(
             'sirsoft-ecommerce.order_option.after_sync_status',
             [[
                 'order_option_id' => (int) $successor->id,
@@ -2352,7 +2481,7 @@ class OrderExchangeService
             ]],
             OrderStatusEnum::SHIPPING->value,
             'exchange_redelivery',
-        );
+        ));
 
         $this->replicateShippingRow($exchange, $original, $successor);
 
@@ -2463,19 +2592,23 @@ class OrderExchangeService
     // ───────────────────────────────────────────────
 
     /**
-     * 원 주문옵션을 교환완료(터미널)로 전이합니다.
+     * 원 주문옵션을 교환완료(터미널)로 전이하고, 실제로 전이된 행을 돌려줍니다.
+     *
+     * 부분 수량이면 `changeStatusWithQuantity()` 가 완료분을 **새 행(split)** 으로 갈라 교환완료로
+     * 옮기고 원 행은 잔여로 코스에 남긴다. 호출부는 재고 플래그·적립 회수를 그 새 행에 적용해야
+     * 한다(#599 validate P2 #4).
      *
      * @param  OrderOption  $orderOption  원 주문옵션
      * @param  int  $quantity  완료 수량
-     * @return void 반환값 없음
+     * @return OrderOption 교환완료가 된 행 (분할이면 새 행, 전량이면 원 행)
      */
-    protected function markOrderOptionExchanged(OrderOption $orderOption, int $quantity): void
+    protected function markOrderOptionExchanged(OrderOption $orderOption, int $quantity): OrderOption
     {
         if ($orderOption->option_status === OrderStatusEnum::EXCHANGED) {
-            return;
+            return $orderOption;
         }
 
-        $this->orderOptionService->changeStatusWithQuantity(
+        $result = $this->orderOptionService->changeStatusWithQuantity(
             $orderOption,
             OrderStatusEnum::EXCHANGED,
             min($quantity, (int) $orderOption->quantity),
@@ -2483,6 +2616,8 @@ class OrderExchangeService
             restoreStockOnCancel: false,
             mergeSiblings: false,
         );
+
+        return $result['split'] ?? $result['merged_into'] ?? $orderOption;
     }
 
     /**
@@ -2538,7 +2673,8 @@ class OrderExchangeService
             return null;
         }
 
-        [$pgRefund, $pointsRefund] = $this->splitRefundByPaymentCapacity($order, $refundAmount);
+        // 나누는 순서는 접수 때 고객이 고른 우선순위다(저장값 없으면 종전 PG 우선).
+        [$pgRefund, $pointsRefund] = $this->splitRefundByPaymentCapacity($order, $refundAmount, $this->refundPriorityOf($exchange));
 
         return [
             'raw_refundable' => $rawRefundable,
@@ -2806,6 +2942,8 @@ class OrderExchangeService
             'requested_by' => $exchange->requested_by,
             'refund_amount' => $pgRefund,
             'refund_points_amount' => $pointsRefund,
+            // 이 환불액을 나눈 우선순위 — 교환 접수 때 고른 값이 그대로 이어진다.
+            'refund_priority' => $this->refundPriorityOf($exchange),
             'refund_shipping_amount' => -$deductedFee,
             'mc_refund_amount' => $this->toMultiCurrency($pgRefund, $currencySnapshot),
             'mc_refund_points_amount' => $pointsRefund > 0 ? $this->toMultiCurrency($pointsRefund, $currencySnapshot) : null,
@@ -2843,7 +2981,7 @@ class OrderExchangeService
         // 반품·교환 발 환불신청서도 접수 훅을 쏜다(B8·B9). 예전에는 `OrderRefundRequestService::request()`
         // 한 곳만 발행해, 완료 처리가 만든 환불신청서는 **어떤 이력도 없이** 목록에 나타났다 —
         // 운영자는 그 신청서가 언제 어떤 경로로 생겼는지 되짚을 수 없었다.
-        HookManager::doAction('sirsoft-ecommerce.claim.refund.requested', $refund->fresh(), $order->fresh());
+        $this->fireAfterCommit(fn () => HookManager::doAction('sirsoft-ecommerce.claim.refund.requested', $refund->fresh(), $order->fresh()));
 
         // 신청상품 행 생성도 상품 축에 남긴다(§7-1 C11) — 헤더 줄만 남기면 그 환불이 어떤
         // 상품 몇 개를 담고 생겼는지 이력에서 되짚을 수 없다.
@@ -2855,23 +2993,33 @@ class OrderExchangeService
     /**
      * 환불액을 주문이 실제로 낸 돈에 맞춰 PG 환불액과 마일리지 환불액으로 나눕니다.
      *
-     * `OrderAdjustmentService::calculate()` 의 배분 규칙(PG 우선 — 결제수단 잔여 한도를 먼저 채우고
-     * 남는 몫을 마일리지 잔여 한도에서)과 같다. 반품의 환불신청서가 그 계산 결과를 싣는 것과 같은
+     * `OrderAdjustmentService::calculate()` 의 배분 규칙과 같다 — PG 우선이면 결제수단 잔여 한도를 먼저
+     * 채우고 남는 몫을 마일리지 잔여 한도에서, 마일리지 우선이면 그 반대 순서로 채운다. 반품의 환불신청서가 그 계산 결과를 싣는 것과 같은
      * 분할을 **동결 차액**에 적용한다 — 전액 마일리지 결제 주문의 차액을 PG 칸에 실으면 환불 수단은
      * 마일리지인데 금액은 PG 환불액인 어긋난 신청서가 된다. 두 잔여 한도가 환불액에 못 미치는 몫은
      * PG 칸에 남긴다 — 잘라내면 헤더와 상품 행 합계가 어긋나고, PG 칸이 운영자가 수정하는 자리다(D18).
      *
      * @param  Order  $order  주문
      * @param  float  $refundAmount  나눌 환불액 (차감 배송비 제외)
+     * @param  RefundPriorityEnum  $refundPriority  환불 우선순위 (교환 접수 때 고른 값)
      * @return array{0: float, 1: float} [PG 환불액, 마일리지 환불액]
      */
-    protected function splitRefundByPaymentCapacity(Order $order, float $refundAmount): array
-    {
+    protected function splitRefundByPaymentCapacity(
+        Order $order,
+        float $refundAmount,
+        RefundPriorityEnum $refundPriority = RefundPriorityEnum::PG_FIRST,
+    ): array {
         $remainingPg = max(0.0, (float) $order->total_paid_amount - (float) $order->total_refunded_amount);
         $remainingPoints = max(0.0, (float) $order->total_points_used_amount - (float) $order->total_refunded_points_amount);
 
-        $pg = min($refundAmount, $remainingPg);
-        $points = min($refundAmount - $pg, $remainingPoints);
+        if ($refundPriority === RefundPriorityEnum::POINTS_FIRST) {
+            $points = min($refundAmount, $remainingPoints);
+            $pg = min($refundAmount - $points, $remainingPg);
+        } else {
+            $pg = min($refundAmount, $remainingPg);
+            $points = min($refundAmount - $pg, $remainingPoints);
+        }
+
         $pg += $refundAmount - $pg - $points;
 
         return [$pg, $points];
@@ -3066,12 +3214,26 @@ class OrderExchangeService
      */
     public function updateRequest(OrderExchange $exchange, array $payload): OrderExchange
     {
-        if (! $exchange->exchange_status->isWithdrawable()) {
-            throw OrderClaimException::notEditable();
-        }
+        // 수정의 before·filter 훅 — 잠금·쓰기 전이다. 필터는 사유·재발송지
+        // (`CLAIM_FILTERABLE_UPDATE_KEYS`)만 바꿀 수 있고, 바뀐 값은 아래 사유 해석·국가 불변 규칙·
+        // 배송비 재산정을 고객 입력과 똑같이 지난다. 청구 방식·환불 계좌는 돈의 경로라 되돌린다.
+        HookManager::doAction('sirsoft-ecommerce.claim.exchange.before_update_request', $exchange, $payload);
+
+        $payload = $this->acceptClaimFilterResult(
+            HookManager::applyFilters('sirsoft-ecommerce.claim.exchange.filter_update_request_data', $payload, $exchange),
+            $payload,
+            self::CLAIM_FILTERABLE_UPDATE_KEYS,
+        );
 
         return DB::transaction(function () use ($exchange, $payload) {
             $locked = $this->exchangeRepository->findForUpdate($exchange->id) ?? $exchange;
+
+            // 수정 가능 여부는 **잠금 안에서 다시 읽은 상태**로 판정한다(#599 validate P2 #8).
+            // 호출부 모델로 판정하면 그 사이 승인된 신청서의 사유·재발송지·청구가 수정된다.
+            if (! $locked->exchange_status->isWithdrawable()) {
+                throw OrderClaimException::notEditable();
+            }
+
             $locked->load(['exchangeOptions', 'order.options', 'order.shippings', 'order.payment', 'order.shippingAddress']);
             $order = $locked->order;
 
@@ -3140,7 +3302,7 @@ class OrderExchangeService
                     $priceDifference,
                     $totalCharge,
                     $chargeMethod,
-                    RefundPriorityEnum::PG_FIRST,
+                    $this->refundPriorityOf($locked),
                 );
 
                 $currencySnapshot = $order->currency_snapshot ?? [];
@@ -3155,7 +3317,8 @@ class OrderExchangeService
                         $chargeMethod,
                         $this->buildSubstitutionsFromExchangeOptions($locked, $order),
                     ),
-                    RefundPriorityEnum::PG_FIRST,
+                    // 동결 스냅샷은 접수 때와 같은 우선순위로 다시 낸다(저장값 없으면 종전 PG 우선).
+                    $this->refundPriorityOf($locked),
                 ));
 
                 $updates['shipping_fee_mode'] = $shippingFee->mode;

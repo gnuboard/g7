@@ -37,6 +37,12 @@ class GuestClaimController extends PublicBaseController
 {
     use HandlesClaimActions;
 
+    /**
+     * 비회원 클레임 컨트롤러를 생성합니다.
+     *
+     * @param  UserClaimService  $claimService  클레임 서비스
+     * @param  ClaimAttachmentService  $attachmentService  첨부 서비스
+     */
     public function __construct(
         private UserClaimService $claimService,
         private ClaimAttachmentService $attachmentService,
@@ -217,7 +223,7 @@ class GuestClaimController extends PublicBaseController
     {
         $model = $this->attachmentService->find($image);
 
-        if (! $model || ! $this->attachmentService->ownedBy($model, null, $request->getOrder())) {
+        if (! $model || ! $this->attachmentService->deletableBy($model, null, $request->getOrder())) {
             return $this->claimNotFound('exceptions.claim_image_not_found');
         }
 

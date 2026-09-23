@@ -225,19 +225,19 @@
           </div>
         </div>
       </div>
-      <!-- row_earned_points — total_earned_points_amount -->
+      <!-- row_earned_points — total_earned_points_amount. 표기는 서버가 스냅샷 양쪽에 채워 준 `total_earned_points_amount_formatted` 를 먼저 읽고, 그 필드가 없는 옛 응답만 종전 표기(toLocaleString + 'P')로 떨어진다. -->
       <div class="grid grid-cols-3 gap-x-3 gap-y-1 py-0.5" data-row="total_earned_points_amount">
         <responsive on="portable" class="flex flex-wrap items-baseline justify-between gap-x-2 py-1" data-row="total_earned_points_amount"/>
         <span class="text-sm text-secondary break-keep">$t:sirsoft-ecommerce.admin.claim.detail.comparison.row_earned_points</span>
         <div class="text-right">
-          <span class="text-sm text-gray-900 dark:text-gray-100">{{(claim?.data?.claim?.calculation_comparison?.original?.total_earned_points_amount ?? 0).toLocaleString()}}P</span>
+          <span class="text-sm text-gray-900 dark:text-gray-100">{{claim?.data?.claim?.calculation_comparison?.original?.total_earned_points_amount_formatted ?? ((claim?.data?.claim?.calculation_comparison?.original?.total_earned_points_amount ?? 0).toLocaleString() + 'P')}}</span>
         </div>
         <span class="hidden">
           <responsive on="portable" class="text-xs text-gray-400 dark:text-gray-500"/>
           →
         </span>
         <div class="text-right">
-          <span class="{{(claim?.data?.claim?.calculation_comparison?.original?.total_earned_points_amount ?? 0) !== (claim?.data?.claim?.calculation_comparison?.recalculated?.total_earned_points_amount ?? 0) ? 'text-sm text-red-600 dark:text-red-400 font-semibold' : 'text-sm text-gray-900 dark:text-gray-100'}}">{{(claim?.data?.claim?.calculation_comparison?.recalculated?.total_earned_points_amount ?? 0).toLocaleString()}}P</span>
+          <span class="{{(claim?.data?.claim?.calculation_comparison?.original?.total_earned_points_amount ?? 0) !== (claim?.data?.claim?.calculation_comparison?.recalculated?.total_earned_points_amount ?? 0) ? 'text-sm text-red-600 dark:text-red-400 font-semibold' : 'text-sm text-gray-900 dark:text-gray-100'}}">{{claim?.data?.claim?.calculation_comparison?.recalculated?.total_earned_points_amount_formatted ?? ((claim?.data?.claim?.calculation_comparison?.recalculated?.total_earned_points_amount ?? 0).toLocaleString() + 'P')}}</span>
         </div>
       </div>
       <!-- row_substituted — 교환만. 치환 근거 행(상품별 old→new). 서버 substituted_items 를 그대로 옮긴다. -->

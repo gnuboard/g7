@@ -9,6 +9,10 @@ import Editor, { Monaco, loader } from '@monaco-editor/react';
 import type * as monaco from 'monaco-editor';
 import { getJSONLanguageDefaults } from '../../config/monaco.config';
 
+// G7Core.t() 번역 함수 참조
+const t = (key: string, params?: Record<string, string | number>) =>
+  (window as any).G7Core?.t?.(key, params) ?? key;
+
 /**
  * 동봉한 Monaco 버전 (`dist/vendor/monaco-editor/{VERSION}/`)
  *
@@ -122,9 +126,9 @@ function bridgeEditorMainExports(): Promise<void> {
 }
 
 /**
- * 동봉본 Monaco 를 직접 받아 `window.monaco` 에 심습니다.
+ * 편집기를 그리기 전에 동봉본 Monaco 를 먼저 심어야 하는지 판정합니다.
  *
- * @returns Promise 심기가 끝나면(또는 포기하면) resolve 된다
+ * @returns bool 심기를 기다려야 하면 true
  */
 function monacoNeedsPriming(): boolean {
     const w = window as any;
@@ -145,8 +149,35 @@ function monacoNeedsPriming(): boolean {
         && !/jsdom/i.test(navigator.userAgent ?? '');
 }
 
-function primeMonaco(): Promise<void> {
+/** 선심기가 넣은 AMD 로더 스크립트 표식 — 라이브러리·다른 확장이 넣은 로더와 가른다 */
+const PRIME_SCRIPT_ATTR = 'data-g7-monaco-loader';
 
+/**
+ * 지금 `loader.init()` 을 부르면 AMD 로더가 두 번 실행되는지 판정합니다.
+ *
+ * 라이브러리 `init()` 은 `window.monaco.editor` 가 없으면 **자기 `loader.js` 를 또 넣는다**.
+ * 선심기가 넣은 로더가 아직 `editor.main` 을 받지 못한 채(느린 네트워크) 제한 시간이 지났을 때
+ * 그대로 부르면 로더가 두 벌이 되어 `_amdLoaderGlobal` 재선언으로 그 판의 require 가 죽는다.
+ *
+ * @returns bool 부르면 로더가 겹치면 true
+ */
+function initWouldInjectSecondLoader(): boolean {
+    const w = window as any;
+
+    if (w.monaco?.editor) {
+        return false;
+    }
+
+    return typeof document !== 'undefined'
+        && document.querySelector(`script[${PRIME_SCRIPT_ATTR}]`) !== null;
+}
+
+/**
+ * 동봉본 Monaco 를 직접 받아 `window.monaco` 에 심습니다.
+ *
+ * @returns Promise 심기가 끝나면(또는 포기하면) resolve 된다
+ */
+function primeMonaco(): Promise<void> {
     const paths = (window as any)?.G7Core?.asset?.templateDir?.(
         TEMPLATE_ID,
         `vendor/monaco-editor/${MONACO_VERSION}/vs`,
@@ -234,6 +265,7 @@ function primeMonaco(): Promise<void> {
 
         script.src = `${paths}/loader.js`;
         script.async = true;
+        script.setAttribute(PRIME_SCRIPT_ATTR, '1');
         script.addEventListener('load', () => {
             if (!adopt()) {
                 done();
@@ -524,7 +556,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
     setFailed(true);
     (window as any)?.G7Core?.assets?.notifyFailure?.({
       id: FAILURE_ID,
-      label: '코드 편집기',
+      label: t('common.code_editor'),
       retry: () => {
         setFailed(false);
       },
@@ -628,6 +660,15 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
 
       setPrimed(true);
 
+      // 제한 시간으로 게이트가 풀렸는데 선심기가 아직 Monaco 를 심지 못했으면 `init()` 을 부르지
+      // 않는다 — 부르면 라이브러리가 두 번째 로더를 넣는다. 평문 폴백으로 넘기고, [다시 시도]를
+      // 누르면(그 사이 선심기가 끝났으면) 그때 `init()` 이 `window.monaco` 를 그대로 쓴다.
+      if (initWouldInjectSecondLoader()) {
+        handleLoadFailure();
+
+        return;
+      }
+
       loader.init().catch(() => {
         if (!cancelled) {
           handleLoadFailure();
@@ -690,7 +731,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
   if (!primed) {
     return (
       <div className="border border-gray-300 dark:border-gray-700 rounded-lg overflow-hidden">
-        <div className="p-4 text-sm text-gray-500 dark:text-gray-400">편집기를 불러오는 중...</div>
+        <div className="p-4 text-sm text-gray-500 dark:text-gray-400">{t('common.code_editor_loading')}</div>
       </div>
     );
   }
@@ -707,7 +748,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
         theme={resolvedTheme}
         onChange={handleChange}
         onMount={handleEditorDidMount}
-        loading={<div className="p-4 text-sm text-gray-500 dark:text-gray-400">편집기를 불러오는 중...</div>}
+        loading={<div className="p-4 text-sm text-gray-500 dark:text-gray-400">{t('common.code_editor_loading')}</div>}
         beforeMount={() => {
           if (!loaderConfigured) {
             loaderConfigured = configureMonacoLoader();

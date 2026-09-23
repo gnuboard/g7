@@ -9,11 +9,11 @@
 완료 요약의 선택 변경은 debounce 예약 시점부터 이전 응답을 무효화한다. 다음 요청이 아직 전송되지 않았더라도 이전 성공/실패 응답이 최신 선택이나 실행 잠금을 바꾸면 안 된다. 반응형 버튼 라벨은 내부 `Span.responsive`에 둔다. Button 자체의 `responsive.text`는 `children`보다 우선하므로 함께 둔 스피너를 가린다. 회귀 검증은 예약 사이 응답 경합과 desktop/portable의 대기 표시·기존 라벨을 포함한다.
 
 <!-- @generated:layouts START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-레이아웃 238개 (루트: `resources/layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
+레이아웃 239개 (루트: `resources/layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
 
 | 그룹 | 개수 |
 |---|---|
-| `admin` | 238개 |
+| `admin` | 239개 |
 
 | 레이아웃 | 그룹 | 종류 | extends |
 |---|---|---|---|
@@ -60,6 +60,7 @@
 | `_panel_detail` | `admin` | partial | - |
 | `_panel_form` | `admin` | partial | - |
 | `_panel_view` | `admin` | partial | - |
+| `_modal_claim_images_clear` | `admin` | partial | - |
 | `_modal_claim_item_quantity_confirm` | `admin` | partial | - |
 | `_modal_claim_refund_execute` | `admin` | partial | - |
 | `_partial_claim_activity_log` | `admin` | partial | - |
@@ -288,12 +289,17 @@
 상세는 주문상세와 같은 셸(`TabNavigationScroll` + `section_*`)이며, 완료 처리 모달
 (`_modal_claim_complete`)은 목록·상세·완료 버튼 세 진입점이 파일 하나를 공유합니다 — 모달이
 보여 주는 요약은 서버 `completion-preview` 응답이 단일 출처이고 화면은 표시만 합니다.
+
+환경설정 알림 탭의 템플릿 편집 창(`_modal_notification_template_edit`)은 코어 창의 사본입니다(게시판·수출입은행
+플러그인과 함께 네 벌). 수신자 규칙 종류를 바꾸면 새 종류의 빈 규칙으로 갈아 끼우고, 관련 사용자면 정의가 선언한
+첫 관계를 채웁니다 — 앞 종류의 값을 남기면 회원 UUID 가 역할로 저장돼 수신자가 0명이 됩니다. 규칙을 바꾸면 네 벌을
+함께 바꿉니다(코어 `sirsoft-admin_basic` AGENTS.md 「알림 템플릿 편집 창 사본」).
 <!-- @intent END -->
 
 ## 액션 핸들러
 
 <!-- @generated:handlers START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-핸들러 200개 (정의: `resources/js/handlers/index.ts`).
+핸들러 201개 (정의: `resources/js/handlers/index.ts`).
 
 | 핸들러 | 레이아웃에서 부르는 이름 |
 |---|---|
@@ -483,6 +489,7 @@
 | `submitClaim` | `sirsoft-ecommerce.submitClaim` |
 | `clearClaimApplyTimers` | `sirsoft-ecommerce.clearClaimApplyTimers` |
 | `changeClaimRefundPriority` | `sirsoft-ecommerce.changeClaimRefundPriority` |
+| `setClaimRefundAccountField` | `sirsoft-ecommerce.setClaimRefundAccountField` |
 | `toggleClaimComparison` | `sirsoft-ecommerce.toggleClaimComparison` |
 | `claimApplyOrderMissing` | `sirsoft-ecommerce.claimApplyOrderMissing` |
 | `initClaimEdit` | `sirsoft-ecommerce.initClaimEdit` |
@@ -500,7 +507,7 @@
 <!-- @generated:handlers END -->
 
 <!-- @intent START -->
-핸들러 160개는 레이아웃 JSON 에서 `sirsoft-ecommerce.{이름}` 으로 부릅니다. 관리자 화면 전용이
+핸들러 201개는 레이아웃 JSON 에서 `sirsoft-ecommerce.{이름}` 으로 부릅니다. 관리자 화면 전용이
 아니라 **템플릿의 방문자 화면도 이 핸들러를 씁니다** — `toggleItemSelection` ·
 `toggleSelectAllItems` · `initClaimApply` · `estimateClaim` · `submitClaim` · `submitReview` ·
 `changeShippingAddress` · `confirmOrderOption` 처럼 마이페이지·비회원 화면이 부르는 것들이 그
@@ -508,6 +515,17 @@
 1.3.0 에서 모달과 함께 삭제됐고, 상품 선택 2종은 `orderItemSelectionHandlers.ts` 로 옮겨 그대로
 제공합니다). 그래서 이 핸들러들의 이름·시그니처는 템플릿과의 계약이며, 바꾸면 템플릿 화면이
 조용히 무반응이 됩니다.
+
+상품 선택 2종은 `claimableOptions`(레이아웃이 넘기는 `claimable.data.options`)를 받아, 행 체크박스
+잠금과 **같은 술어**(취소되지 않음 + 열린 클레임 유형 1개 이상)로 고릅니다 — 넘기지 않으면 데이터소스
+store 를, 그것도 없으면 취소 여부만 봅니다. 구매자 신청서 핸들러(`claimApplyHandlers.ts`)의 안내 문구는
+모듈 키 `sirsoft-ecommerce.user.claim_apply.*` 로 찾고, 번역이 없어 키가 그대로 돌아오면 폴백 문구로
+떨어집니다(템플릿 키에 기대지 않습니다).
+환불 계좌 세 칸은 `setClaimRefundAccountField` 를 거칩니다 — 등록 계좌 프리필이 가린 모양(`masked: true`)이면
+서버가 세 칸 모두 가린 모양 그대로일 때만 원문으로 되돌리므로, 한 칸을 고치는 순간 나머지 가린 칸을 비우고
+별표가 섞인 계좌는 제출하지 않습니다. 첨부·철회·추가결제 핸들러(`claimImageHandlers.ts` · `claimListHandlers.ts`)도
+같은 규칙으로 `sirsoft-ecommerce.user.claim.*` 를 `claimText()` 로 찾습니다 — `G7Core.t` 는 번역이
+없으면 키 문자열을 돌려주므로 `t(...) ?? 폴백` 은 폴백까지 가지 않습니다.
 
 역할별로 네 무리입니다:
 
@@ -527,7 +545,13 @@
   간 탭에는 아무것도 없는 화면이 그것이었습니다.
 - **관리자 취소 모달은 `auto_advance_refund` 를 보냅니다**(기본 꺼짐). 종전의 `cancelPg` 는
   없앴습니다 — 끈 채로 카드 취소를 하면 PG 를 부르지 않고도 환불이 완료로 찍혀 고객 카드는
-  그대로인데 장부만 환불완료가 됐습니다.
+  그대로인데 장부만 환불완료가 됐습니다. 이 선택은 모달을 열 때와 성공한 뒤 **꺼진 값으로 되돌립니다** — 남기면 같은
+  화면의 다음 취소가 의식하지 못한 자동 환불이 됩니다. `executeCancelOrder` 는 셸이 넘긴
+  `canViewClaims`(orderClaims 가 403 으로 unavailable 이면 false)로 방금 만든 신청서 상세로 갈지
+  정합니다 — 클레임 권한이 없는 운영자를 보내면 403 화면에 떨어집니다.
+- **관리자 첨부 일괄 정리(`clearClaimImages`)는 확인 모달에서만 부릅니다.** 사유 카드 버튼은
+  `_global.claimImagesClearContext` 에 대상 식별 축과 장수를 담아 `modal_claim_images_clear` 를 열
+  뿐이고, 모달의 확인 버튼이 핸들러를 부릅니다(고객 증빙까지 되돌릴 수 없게 지워진다).
 - **수정 화면의 첨부는 `add_image_ids` 로 되돌려 보내지 않습니다.** `add_image_ids` 가 받는
   것은 **아직 신청서에 귀속되지 않은**(주문에 임시로 묶인) 첨부뿐입니다. 수정 화면은 이미
   귀속된 첨부로 목록을 채워 열리므로(`buildClaimEditImages()` 가 `attached: true` 를 세웁니다),

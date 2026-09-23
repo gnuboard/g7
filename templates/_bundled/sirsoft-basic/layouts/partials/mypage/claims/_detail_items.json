@@ -45,12 +45,9 @@
             ]
         },
         {
+            "comment": "상품 카드가 반복되고 간격은 부모가 준다 — 반복 노드가 space-y 를 들면 카드마다 자기 래퍼를 가져 간격도 last: 구분선 규칙도 걸리지 않는다.",
             "type": "basic",
             "name": "Div",
-            "iteration": {
-                "source": "{{claim.data?.claim?.items ?? []}}",
-                "item_var": "item"
-            },
             "props": {
                 "className": "space-y-4"
             },
@@ -58,6 +55,10 @@
                 {
                     "type": "basic",
                     "name": "Div",
+                    "iteration": {
+                        "source": "{{claim.data?.claim?.items ?? []}}",
+                        "item_var": "item"
+                    },
                     "props": {
                         "className": "flex flex-col gap-3 pb-4 border-b border-gray-100 dark:border-gray-700 last:border-b-0 last:pb-0"
                     },

@@ -16,6 +16,8 @@ return [
     'settings' => [
         'key_required' => '設定キーは必須です。',
         'value_present' => '設定値は必須です。',
+        'key_unknown' => '保存できない設定キーです: :key',
+        'key_server_managed' => 'この設定はサーバーが記録する値のため、直接保存できません。',
     ],
     'shipping_carrier' => [
         'code_required' => '配送業者コードは必須です。',
@@ -1878,7 +1880,6 @@ return [
         ],
         'refund_method' => [
             'in' => '選択された返金手段は使用できません。',
-            'payment_mismatch' => 'この注文の決済手段では :expected による返金のみ可能です。他の返金手段では実際の返金が行われません。',
         ],
         'preview_claims' => [
             'required' => 'プレビューする申請書を選択してください。',
@@ -1921,6 +1922,7 @@ return [
         'refund_bank' => [
             'array' => '返金口座は銀行・口座番号・口座名義を含むオブジェクトである必要があります。',
             'incomplete' => '返金口座は銀行、口座番号、口座名義をすべて入力してください。',
+            'masked' => '伏せ字の口座番号や口座名義は保存できません。返金口座を入力し直してください。',
         ],
         'image' => [
             'required' => '添付する画像を選択してください。',

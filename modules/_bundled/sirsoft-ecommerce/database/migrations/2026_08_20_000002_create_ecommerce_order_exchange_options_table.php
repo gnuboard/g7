@@ -2,7 +2,6 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 /**
@@ -18,6 +17,11 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // 부분 실패 뒤 재실행이나 이미 만들어진 설치본에서 "Base table already exists" 로 멈추지 않게 한다.
+        if (Schema::hasTable('ecommerce_order_exchange_options')) {
+            return;
+        }
+
         Schema::create('ecommerce_order_exchange_options', function (Blueprint $table) {
             $table->id()->comment('교환 옵션 ID');
             $table->foreignId('order_exchange_id')->comment('교환 FK')
@@ -26,12 +30,12 @@ return new class extends Migration
                 ->constrained('ecommerce_orders')->cascadeOnDelete();
             $table->foreignId('order_option_id')->comment('원 주문옵션 FK')
                 ->constrained('ecommerce_order_options')->cascadeOnDelete();
-            $table->string('option_status', 30)->comment('상품 단위 교환 상태 (ExchangeStatusEnum)');
+            $table->string('option_status', 30)->comment('상품 단위 교환 상태 (ExchangeStatusEnum — requested: 교환신청, payment_pending: 교환결제대기, paid: 교환결제완료, approved: 교환승인, on_hold: 교환보류, rejected: 교환반려, collection_ready: 교환회수준비중, collecting: 교환회수중, collected: 교환회수도착, redelivery_ready: 교환발송준비중, redelivering: 교환발송중, redelivered: 교환발송도착, completed: 교환완료, withdrawn: 교환철회)');
 
             // 수량 / 원 가격
             $table->unsignedInteger('exchange_quantity')->comment('교환 신청 수량');
             $table->unsignedInteger('original_quantity')->comment('신청 전 원래 수량 (감사용)');
-            $table->string('original_option_status', 30)->comment('신청 직전 원 주문옵션 상태 (반려·철회 시 상품옵션 단위 복귀 기준, OrderStatusEnum)');
+            $table->string('original_option_status', 30)->comment('신청 직전 원 주문옵션 상태 — 반려·철회 시 상품옵션 단위 복귀 기준 (OrderStatusEnum — pending_order: 주문대기, pending_payment: 결제대기, payment_complete: 결제완료, shipping_hold: 배송보류, preparing: 상품준비중, shipping_ready: 배송준비중, shipping: 배송중, delivered: 배송완료, confirmed: 구매확정, cancelled: 주문취소, exchange_in_progress: 교환진행중, return_in_progress: 반품진행중, exchanged: 교환완료, returned: 반품완료)');
             $table->decimal('unit_price', 12, 2)->comment('신청 시점 원 옵션 단가');
 
             // 신규 옵션
@@ -43,7 +47,7 @@ return new class extends Migration
 
             // 재발송 산출물
             $table->unsignedBigInteger('new_order_option_id')->nullable()->comment('재발송으로 생성된 주문옵션 ID (source_type=exchange)');
-            $table->boolean('is_new_stock_deducted')->default(false)->comment('신규 옵션 재고 차감 완료 여부');
+            $table->boolean('is_new_stock_deducted')->default(false)->comment('신규 옵션 재고 차감 완료 여부 (1: 차감함, 0: 차감 전)');
 
             $table->timestamp('completed_at')->nullable()->comment('상품 단위 완료 시각');
             $table->foreignId('processed_by')->nullable()->comment('처리 관리자')
@@ -59,11 +63,9 @@ return new class extends Migration
                 ->references('id')->on('ecommerce_product_options')->nullOnDelete();
             $table->foreign('new_order_option_id', 'fk_ex_opt_new_order_option_id')
                 ->references('id')->on('ecommerce_order_options')->nullOnDelete();
-        });
 
-        if (DB::getDriverName() === 'mysql') {
-            DB::statement('ALTER TABLE `'.DB::getTablePrefix()."ecommerce_order_exchange_options` COMMENT '교환 신청 상품별 상세'");
-        }
+            $table->comment('교환 신청 상품별 상세');
+        });
     }
 
     /**

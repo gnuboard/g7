@@ -21,6 +21,11 @@ class OrderOptionResource extends BaseApiResource
     use HasMultiCurrencyPrices;
 
     /**
+     * 부모가 주입한 클레임 점유 수량 (null 이면 스스로 구한다)
+     */
+    protected ?int $claimLockedQuantity = null;
+
+    /**
      * 리소스를 배열로 변환
      *
      * @param  Request  $request  요청
@@ -337,6 +342,44 @@ class OrderOptionResource extends BaseApiResource
      */
     private function claimAvailableQuantity(): int
     {
+        if ($this->claimLockedQuantity !== null) {
+            return max(0, (int) $this->quantity - $this->claimLockedQuantity);
+        }
+
         return app(ClaimQuantityGuard::class)->availableQuantity($this->resource);
+    }
+
+    /**
+     * 부모가 한 번에 구한 클레임 점유 수량을 주입합니다. (옵션당 3쿼리 방지)
+     *
+     * 주문 상세처럼 옵션을 여러 개 그리는 부모는 `ClaimQuantityGuard::lockedQuantities()` 로 점유
+     * 수량을 한 번에 구해 넘긴다 — 주입이 없으면(단건 경로) 종전처럼 스스로 구한다. 산정은 같은
+     * 가드가 소유하므로 두 경로의 숫자가 갈리지 않는다.
+     *
+     * @param  int|null  $lockedQuantity  활성 클레임 점유 수량 (null 이면 스스로 구한다)
+     * @return static 자기 자신
+     */
+    public function withClaimLockedQuantity(?int $lockedQuantity): static
+    {
+        $this->claimLockedQuantity = $lockedQuantity;
+
+        return $this;
+    }
+
+    /**
+     * 옵션 컬렉션의 클레임 점유 수량을 한 번에 구합니다. (부모 리소스 공용)
+     *
+     * @param  iterable  $options  주문옵션 모델 목록
+     * @return array<int, int> 주문옵션 ID => 점유 수량
+     */
+    public static function lockedQuantitiesFor(iterable $options): array
+    {
+        $ids = [];
+
+        foreach ($options as $option) {
+            $ids[] = (int) $option->id;
+        }
+
+        return $ids === [] ? [] : app(ClaimQuantityGuard::class)->lockedQuantities($ids);
     }
 }

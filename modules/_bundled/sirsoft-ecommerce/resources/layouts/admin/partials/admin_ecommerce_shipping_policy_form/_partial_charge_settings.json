@@ -981,7 +981,7 @@
                                                     ],
                                                     "props": {
                                                         "type": "text",
-                                                        "className": "input input-sm font-mono",
+                                                        "className": "input text-sm font-mono",
                                                         "value": "{{_computed.activeCountrySetting?.api_config?.field_map?.[mapOption.value] ?? ''}}",
                                                         "placeholder": "{{mapOption.value}}",
                                                         "disabled": "{{_computed.isReadOnly}}"

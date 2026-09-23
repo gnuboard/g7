@@ -91,6 +91,7 @@ class OrderActivityLogListener implements HookListenerInterface
      * 훅 이벤트 처리 (기본 핸들러)
      *
      * @param  mixed  ...$args  훅에서 전달된 인수들
+     * @return void
      */
     public function handle(...$args): void
     {
@@ -106,6 +107,7 @@ class OrderActivityLogListener implements HookListenerInterface
      *
      * @param  Order  $order  수정된 주문
      * @param  array|null  $snapshot  수정 전 스냅샷 (Service에서 전달)
+     * @return void
      */
     public function handleOrderAfterUpdate(Order $order, ?array $snapshot = null): void
     {
@@ -124,6 +126,7 @@ class OrderActivityLogListener implements HookListenerInterface
      * 주문 삭제 후 로그 기록
      *
      * @param  Order  $order  삭제된 주문
+     * @return void
      */
     public function handleOrderAfterDelete(Order $order): void
     {
@@ -145,6 +148,7 @@ class OrderActivityLogListener implements HookListenerInterface
      * @param  array  $ids  대상 주문 ID 목록
      * @param  int  $updatedCount  수정된 수
      * @param  array  $snapshots  수정 전 스냅샷 (Service에서 전달, id => snapshot)
+     * @return void
      */
     public function handleOrderAfterBulkUpdate(array $ids, int $updatedCount, array $snapshots = []): void
     {
@@ -175,6 +179,7 @@ class OrderActivityLogListener implements HookListenerInterface
      * @param  array  $ids  대상 주문 ID 목록
      * @param  int  $updatedCount  변경된 수
      * @param  array  $snapshots  변경 전 스냅샷 (Service에서 전달, id => snapshot)
+     * @return void
      */
     public function handleOrderAfterBulkStatusUpdate(array $ids, int $updatedCount, array $snapshots = []): void
     {
@@ -205,6 +210,7 @@ class OrderActivityLogListener implements HookListenerInterface
      * @param  array  $ids  대상 주문 ID 목록
      * @param  int  $updatedCount  변경된 수
      * @param  array  $snapshots  변경 전 스냅샷 (Service에서 전달, id => snapshot)
+     * @return void
      */
     public function handleOrderAfterBulkShippingUpdate(array $ids, int $updatedCount, array $snapshots = []): void
     {
@@ -238,6 +244,7 @@ class OrderActivityLogListener implements HookListenerInterface
      * @param  Order  $order  수정된 주문
      * @param  OrderAddress|null  $address  수정된 배송지
      * @param  array|null  $snapshot  수정 전 배송지 스냅샷
+     * @return void
      */
     public function handleOrderAfterUpdateShippingAddress(Order $order, ?OrderAddress $address = null, ?array $snapshot = null): void
     {
@@ -256,6 +263,7 @@ class OrderActivityLogListener implements HookListenerInterface
      * 주문 이메일 발송 후 로그 기록
      *
      * @param  array  $data  이메일 발송 데이터
+     * @return void
      */
     public function handleOrderAfterSendEmail(array $data): void
     {
@@ -276,6 +284,7 @@ class OrderActivityLogListener implements HookListenerInterface
      * 평문 비밀번호는 로그에 기록하지 않고 주문번호만 남깁니다.
      *
      * @param  Order  $order  재설정된 주문
+     * @return void
      */
     public function handleOrderAfterResetGuestPassword(Order $order): void
     {
@@ -305,6 +314,7 @@ class OrderActivityLogListener implements HookListenerInterface
      * @param  OrderStatusEnum  $newStatus  변경된 상태
      * @param  OrderOption|null  $split  분할된 주문 옵션
      * @param  array|null  $snapshot  변경 전 스냅샷 (Service 에서 전달, 없으면 전/후 미기록)
+     * @return void
      */
     public function handleOrderOptionAfterStatusChange(
         OrderOption $original,
@@ -340,6 +350,7 @@ class OrderActivityLogListener implements HookListenerInterface
      * @param  Order  $order  전이된 주문
      * @param  string|null  $previousStatus  전이 전 주문 상태 값
      * @param  string|null  $newStatus  전이 시점에 캡처한 목표 상태 값
+     * @return void
      */
     public function handleOrderStatusSync(Order $order, ?string $previousStatus = null, ?string $newStatus = null): void
     {
@@ -385,6 +396,7 @@ class OrderActivityLogListener implements HookListenerInterface
      * @param  array  $results  변경 결과 목록
      * @param  OrderStatusEnum  $newStatus  변경된 상태
      * @param  array  $snapshots  변경 전 스냅샷 (Service에서 전달, order_option_id => snapshot)
+     * @return void
      */
     public function handleOrderOptionAfterBulkStatusChange(array $results, OrderStatusEnum $newStatus, array $snapshots = []): void
     {
@@ -473,8 +485,12 @@ class OrderActivityLogListener implements HookListenerInterface
             $byOrder[(int) ($change['order_id'] ?? 0)][] = $change;
         }
 
+        // 주문은 한 번에 읽는다 — 일괄 상태변경은 주문 수십 건을 한 번에 옮기므로 주문마다 조회하면
+        // 그 수만큼 쿼리가 늘어난다(N+1).
+        $orders = $this->orderRepository->findByIdsKeyed(array_keys($byOrder));
+
         foreach ($byOrder as $orderId => $rows) {
-            $order = $this->orderRepository->find($orderId);
+            $order = $orders->get($orderId);
 
             if (! $order) {
                 continue;
@@ -708,6 +724,7 @@ class OrderActivityLogListener implements HookListenerInterface
      *
      * @param  Order  $order  관련 주문
      * @param  array  $restoredCouponIssueIds  복원된 쿠폰 발급 ID 목록
+     * @return void
      */
     public function handleCouponRestore(Order $order, array $restoredCouponIssueIds): void
     {
@@ -727,6 +744,7 @@ class OrderActivityLogListener implements HookListenerInterface
      *
      * @param  float  $amount  복원 금액
      * @param  Order  $order  관련 주문
+     * @return void
      */
     public function handleMileageRestore(float $amount, Order $order): void
     {
@@ -749,6 +767,7 @@ class OrderActivityLogListener implements HookListenerInterface
      * 주문 생성 후 로그 기록
      *
      * @param  Order  $order  생성된 주문
+     * @return void
      */
     public function handleOrderAfterCreate(Order $order): void
     {
@@ -812,6 +831,7 @@ class OrderActivityLogListener implements HookListenerInterface
      *
      * @param  array  $appliedCouponIds  적용된 쿠폰 ID 목록
      * @param  Order  $order  관련 주문
+     * @return void
      */
     public function handleCouponUse(array $appliedCouponIds, Order $order): void
     {
@@ -830,6 +850,7 @@ class OrderActivityLogListener implements HookListenerInterface
      *
      * @param  float  $usedPoints  사용된 마일리지
      * @param  Order  $order  관련 주문
+     * @return void
      */
     public function handleMileageUse(float $usedPoints, Order $order): void
     {
@@ -848,6 +869,7 @@ class OrderActivityLogListener implements HookListenerInterface
      *
      * @param  float  $earnedPoints  적립된 마일리지
      * @param  Order  $order  관련 주문
+     * @return void
      */
     public function handleMileageEarn(float $earnedPoints, Order $order): void
     {

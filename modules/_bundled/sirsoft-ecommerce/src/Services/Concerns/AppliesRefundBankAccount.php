@@ -2,6 +2,7 @@
 
 namespace Modules\Sirsoft\Ecommerce\Services\Concerns;
 
+use Modules\Sirsoft\Ecommerce\Exceptions\OrderClaimException;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 
 /**
@@ -32,8 +33,14 @@ trait AppliesRefundBankAccount
      *
      * 미입력이면 빈 배열이라 컬럼이 아예 실리지 않는다 — 신청이 계좌를 지우지 않는다.
      *
+     * 세 필드는 **짝**이다. 일부만 온 값을 받으면 은행과 계좌번호가 다른 사람의 것으로 섞인 채
+     * 저장되고, 예전에는 빠진 키를 그대로 인덱싱해 500 이 났다 — FormRequest 를 거치지 않는
+     * 서비스 호출도 같은 거절(422)을 받아야 한다.
+     *
      * @param  array|null  $refundBankInfo  환불 계좌 (bank_code/account_number/holder, 미입력 시 null)
      * @return array{refund_bank_code?: string, refund_bank_account?: string, refund_bank_holder?: string} 신청서 컬럼
+     *
+     * @throws OrderClaimException 세 필드 중 일부만 채워진 경우
      */
     protected function refundBankColumns(?array $refundBankInfo): array
     {
@@ -41,10 +48,23 @@ trait AppliesRefundBankAccount
             return [];
         }
 
+        $code = $refundBankInfo['bank_code'] ?? null;
+        $account = $refundBankInfo['account_number'] ?? null;
+        $holder = $refundBankInfo['holder'] ?? null;
+        $filled = array_filter([$code, $account, $holder], fn ($value) => filled($value));
+
+        if ($filled === []) {
+            return [];
+        }
+
+        if (count($filled) !== 3) {
+            throw OrderClaimException::refundBankIncomplete();
+        }
+
         return [
-            'refund_bank_code' => $refundBankInfo['bank_code'],
-            'refund_bank_account' => $refundBankInfo['account_number'],
-            'refund_bank_holder' => $refundBankInfo['holder'],
+            'refund_bank_code' => (string) $code,
+            'refund_bank_account' => (string) $account,
+            'refund_bank_holder' => (string) $holder,
         ];
     }
 
@@ -56,6 +76,7 @@ trait AppliesRefundBankAccount
      *
      * @param  Order  $order  대상 주문
      * @param  array|null  $refundBankInfo  환불 계좌 (bank_code/account_number/holder, 미입력 시 null)
+     * @return void 반환값 없음
      */
     protected function applyRefundBank(Order $order, ?array $refundBankInfo): void
     {

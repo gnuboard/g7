@@ -66,12 +66,25 @@
                 "sort_order": "{{_local.logsSort === 'date_asc' ? 'asc' : 'desc'}}"
             },
             "comment": "상세와 같은 번호 축을 읽는다 — 상세 응답이 도착해야 유형·id 를 알 수 있는 형태였다면 이 조회가 그 응답을 기다려야 하고, 기다리는 동안 활동 로그 섹션이 빈 채로 열린다."
+        },
+        {
+            "id": "paymentSettings",
+            "label_key": "$t:sirsoft-ecommerce.editor.data_source.paymentSettings",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-ecommerce/settings/payment",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "background",
+            "comment": "환불 실행 모달의 은행 선택지(은행 코드표). 공개 결제 설정 엔드포인트라 권한 게이트가 없다 — `admin/settings`(settings.read)를 읽으면 클레임 권한만 가진 운영자에게 403 이 되어 선택지가 조용히 빈다. 주문 상세 취소 모달과 같은 출처다."
         }
     ],
     "initLocal": {
         "activeClaimTab": "claim_info",
         "selectedClaimItems": [],
         "itemBulkStatus": "",
+        "claimBulkStatus": "",
+        "claimRejectReason": "",
         "adminMemo": "",
         "isSavingMemo": false,
         "collectionCarrierId": "",
@@ -92,7 +105,8 @@
         "logsSort": "date_desc"
     },
     "computed": {
-        "claimDetailTabs": "{{[{ id: 'claim_info', label: $t('sirsoft-ecommerce.admin.claim.detail.tabs.claim_info') }, ...(['exchange', 'return'].includes(claim?.data?.claim?.claim_type ?? '') ? [{ id: 'shipping_info', label: $t('sirsoft-ecommerce.admin.claim.detail.tabs.shipping_info') }] : []), { id: 'payment_info', label: $t('sirsoft-ecommerce.admin.claim.detail.tabs.payment_info') }, ...((claim?.data?.claim?.claim_type ?? '') === 'refund' ? [{ id: 'refund_execute', label: $t('sirsoft-ecommerce.admin.claim.detail.tabs.refund_execute') }] : []), { id: 'activity_log', label: $t('sirsoft-ecommerce.admin.claim.detail.tabs.activity_log') }]}}"
+        "claimDetailTabs": "{{[{ id: 'claim_info', label: $t('sirsoft-ecommerce.admin.claim.detail.tabs.claim_info') }, ...(['exchange', 'return'].includes(claim?.data?.claim?.claim_type ?? '') ? [{ id: 'shipping_info', label: $t('sirsoft-ecommerce.admin.claim.detail.tabs.shipping_info') }] : []), { id: 'payment_info', label: $t('sirsoft-ecommerce.admin.claim.detail.tabs.payment_info') }, ...((claim?.data?.claim?.claim_type ?? '') === 'refund' ? [{ id: 'refund_execute', label: $t('sirsoft-ecommerce.admin.claim.detail.tabs.refund_execute') }] : []), { id: 'activity_log', label: $t('sirsoft-ecommerce.admin.claim.detail.tabs.activity_log') }]}}",
+        "refundInputTotal": "{{Math.round((Number(_local.refundAmount || 0) + Number(_local.refundPointsAmount || 0)) * 100000000) / 100000000}}"
     },
     "permissions": [
         "sirsoft-ecommerce.claims.read"
@@ -111,6 +125,8 @@
                 "activeClaimTab": "claim_info",
                 "selectedClaimItems": [],
                 "itemBulkStatus": "",
+                "claimBulkStatus": "",
+                "claimRejectReason": "",
                 "itemTransitionOptions": [],
                 "isSavingMemo": false,
                 "isSavingCollection": false,
@@ -281,17 +297,17 @@
                                                         "text": "$t:sirsoft-ecommerce.admin.claim.detail.requester:"
                                                     },
                                                     {
-                                                        "comment": "e2e:allow 요청자 링크(계획 676) — 운영자가 신청자 이름에서 그 회원 화면으로 바로 간다. 링크 대상은 `requester_user_id`(**주문의 주인**)이다 — 이 칸이 그리는 이름이 주문자명이므로, `requested_by` 로 걸면 운영자 대리 접수 건에서 화면에 보이는 사람과 다른 회원 상세로 간다. 비회원 주문은 null 이라 아래 Span 이 평문으로 서다 — 누를 곳 없는 링크를 보이면 운영자는 회원이 있다고 오해한다. 선례: `admin_ecommerce_product_review_index.json` 의 작성자 칸(A+if / Span+if 한 쌍).",
+                                                        "comment": "e2e:allow 요청자 링크(계획 676) — 운영자가 신청자 이름에서 그 회원 화면으로 바로 간다. 링크 대상은 주문의 주인(`requester_user_uuid`)이다. 관리자 회원 화면은 **uuid** 로 연다 — 숫자 `requester_user_id` 로 만든 링크는 404 였다(주문 상세 `OrderResource.user.uuid` 와 같은 축) — 이 칸이 그리는 이름이 주문자명이므로, `requested_by` 로 걸면 운영자 대리 접수 건에서 화면에 보이는 사람과 다른 회원 상세로 간다. 비회원 주문은 null 이라 아래 Span 이 평문으로 서다 — 누를 곳 없는 링크를 보이면 운영자는 회원이 있다고 오해한다. 선례: `admin_ecommerce_product_review_index.json` 의 작성자 칸(A+if / Span+if 한 쌍).",
                                                         "id": "cd_008_requester",
                                                         "type": "basic",
                                                         "name": "A",
-                                                        "if": "{{!!claim?.data?.claim?.requester_user_id}}",
+                                                        "if": "{{!!claim?.data?.claim?.requester_user_uuid}}",
                                                         "actions": [
                                                             {
                                                                 "type": "click",
                                                                 "handler": "navigate",
                                                                 "params": {
-                                                                    "path": "/admin/users/{{claim?.data?.claim?.requester_user_id}}"
+                                                                    "path": "/admin/users/{{claim?.data?.claim?.requester_user_uuid}}"
                                                                 }
                                                             }
                                                         ],
@@ -305,7 +321,7 @@
                                                         "id": "cd_008_requester_plain",
                                                         "type": "basic",
                                                         "name": "Span",
-                                                        "if": "{{!claim?.data?.claim?.requester_user_id}}",
+                                                        "if": "{{!claim?.data?.claim?.requester_user_uuid}}",
                                                         "props": {
                                                             "className": "font-medium text-gray-900 dark:text-gray-100"
                                                         },
@@ -381,20 +397,10 @@
                                 ]
                             },
                             {
-                                "comment": "탭 배열과 섹션 존재는 **같은 조건**으로 분기한다 (D17-①) — 탭만 남기면 스크롤 대상이 없어 클릭이 무반응이 되고, 섹션만 남기면 scrollSpy 가 없는 탭 id 를 활성화하려다 무시된다. 배송 축의 조건식은 `_partial_claim_shipping.json` 의 `if` 와 문자 그대로 같다. 결제 정보·환불 실행 탭은 그 섹션을 만드는 세션(S9b)이 **탭과 함께** 더한다 — 지금 탭만 세워 두면 그 사이 클릭이 아무 일도 하지 않는다. 모바일 대응 코드는 없다: 컴포넌트가 768px 미만에서 Select 로 자체 전환한다.",
+                                "comment": "탭 배열과 섹션 존재는 **같은 조건**으로 분기한다 (D17-①) — 탭만 남기면 스크롤 대상이 없어 클릭이 무반응이 되고, 섹션만 남기면 scrollSpy 가 없는 탭 id 를 활성화하려다 무시된다. 배송 축의 조건식은 `_partial_claim_shipping.json` 의 `if` 와 문자 그대로 같다. 결제 정보·환불 실행 탭은 그 섹션을 만드는 세션(S9b)이 **탭과 함께** 더한다 — 지금 탭만 세워 두면 그 사이 클릭이 아무 일도 하지 않는다. 모바일 대응 코드는 없다: 컴포넌트가 768px 미만에서 Select 로 자체 전환한다. 탭 클릭은 컴포넌트가 제 상태로 처리한다 — `onChange` 는 TabNavigationScroll 에 없는 이벤트라 걸어도 돌지 않고, `onTabChange` 를 걸면 컴포넌트가 내부 활성 탭 갱신을 넘겨 버려(`activeTabId` 는 초기값 전용) 누른 탭 표시가 따라오지 않는다. 형제 선례(상품·게시판 폼)처럼 핸들러를 두지 않는다.",
                                 "id": "claim_tab_navigation",
                                 "type": "composite",
                                 "name": "TabNavigationScroll",
-                                "actions": [
-                                    {
-                                        "type": "change",
-                                        "handler": "setState",
-                                        "params": {
-                                            "target": "local",
-                                            "activeClaimTab": "{{$event.value}}"
-                                        }
-                                    }
-                                ],
                                 "props": {
                                     "activeTabId": "{{_local.activeClaimTab ?? 'claim_info'}}",
                                     "enableScrollSpy": true,
@@ -443,6 +449,10 @@
         {
             "comment": "상품 단위 전이의 수량 확인 모달 (§4-6). 일괄 바 [적용] 이 연다 — 수량은 행마다 다르므로 바에 입력을 둘 수 없고, 행 인라인에 두면 체크하지 않은 행의 수량이 남는다. 문맥은 `_global.claimItemQuantityContext` 하나이고 모달 표시와 실행 본문이 그것을 함께 읽는다.",
             "partial": "partials/admin_ecommerce_claim_detail/_modal_claim_item_quantity_confirm.json"
+        },
+        {
+            "comment": "첨부 일괄 정리 확인 모달. 고객이 올린 증빙까지 파일째 지우는 되돌릴 수 없는 처리라 한 번 더 묻는다(개별 삭제는 업로더가 이미 묻는다). 문맥은 `_global.claimImagesClearContext` 하나다 — 모달은 부모 `_local` 을 해석하지 못한다.",
+            "partial": "partials/admin_ecommerce_claim_detail/_modal_claim_images_clear.json"
         }
     ]
 }

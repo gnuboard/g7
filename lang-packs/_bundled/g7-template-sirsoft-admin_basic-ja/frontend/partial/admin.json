@@ -1965,7 +1965,11 @@
         "role_search_placeholder": "ロールを検索してください",
         "users_placeholder": "ユーザーを検索してください",
         "users_no_options": "検索結果がありません",
-        "role_no_options": "一致するロールがありません"
+        "role_no_options": "一致するロールがありません",
+        "relation_placeholder": "関係を選択してください",
+        "relation_undeclared": "この通知は「{{relation}}」の関係に対応していません。一覧から選び直してください。このままでは保存できません。",
+        "roles_selected_count": "{count}件のロールを選択",
+        "users_selected_count": "{count}名選択"
       },
       "preview_modal": {
         "title": "通知プレビュー",

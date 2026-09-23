@@ -302,7 +302,8 @@
         "mark_order_complete_hint": "체크하면 입금 기록과 함께 주문 상태를 결제완료로 변경합니다(마일리지 적립·재고 차감·알림 발송 포함). 체크하지 않으면 입금 내역만 기록합니다.",
         "cancel": "취소",
         "confirm": "입금확인",
-        "confirm_success": "입금이 확인되어 처리되었습니다."
+        "confirm_success": "입금이 확인되어 처리되었습니다.",
+        "confirm_failed": "입금 확인에 실패했습니다."
       },
       "batch_change": {
         "title": "일괄변경 확인",
@@ -389,6 +390,8 @@
         "estimate_failed": "환불 예상금액 계산에 실패했습니다.",
         "cancel_success": "주문이 취소되었습니다.",
         "refund_request_created": "환불신청서가 접수되었습니다. 승인·환불완료를 거쳐야 주문취소가 확정됩니다.",
+        "refund_request_created_no_claim_access": "환불신청서 {{number}}가 접수되었습니다. 클레임 권한이 있는 운영자가 승인·환불완료를 처리해야 주문취소가 확정됩니다.",
+        "refund_request_auto_stopped": "환불신청서를 승인까지 처리했습니다. 자동으로 환불할 수 없는 결제수단이라 신청서에서 환불완료를 처리해야 주문취소가 확정됩니다.",
         "cancel_failed": "주문 취소에 실패했습니다.",
         "refund_bank_label": "환불 계좌",
         "refund_bank_select": "은행 선택",
@@ -758,7 +761,8 @@
     "confirm_tracking_label": "운송장번호: ",
     "confirm_cancel": "취소",
     "confirm_apply": "변경 적용",
-    "confirm_no_changes": "변경할 항목이 없습니다."
+    "confirm_no_changes": "변경할 항목이 없습니다.",
+    "error": "일괄 처리에 실패했습니다."
   },
   "column": {
     "no": "번호",

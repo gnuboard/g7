@@ -666,7 +666,7 @@ describe('claimApplyHandlers', () => {
             data: {
                 claim: { claim_number: 'EX20260823000003' },
                 requires_pg_payment: true,
-                pg_payment_handler: 'sirsoft-pay_kginicis.requestPayment',
+                pg_payment_handler: 'example-pg.requestPayment',
                 pg_payment_data: { order_number: 'CP20260823000002', amount: 9000 },
             },
         });
@@ -682,7 +682,7 @@ describe('claimApplyHandlers', () => {
             undefined
         );
         expect(mockG7Core.dispatch).toHaveBeenCalledWith({
-            handler: 'sirsoft-pay_kginicis.requestPayment',
+            handler: 'example-pg.requestPayment',
             params: { pgPaymentData: { order_number: 'CP20260823000002', amount: 9000 } },
         });
     });

@@ -235,19 +235,19 @@
             </div>
           </div>
         </div>
-        <!-- row_earned_points — total_earned_points_amount -->
+        <!-- row_earned_points — total_earned_points_amount. 단위 표기(P)는 서버 `total_earned_points_amount_formatted` 가 정본이다(주문 리소스와 같은 formatEarnedPoints). 화면의 `toLocaleString() + 'P'` 는 그 필드를 싣지 않는 옛 응답·스냅샷을 위한 폴백일 뿐이다. -->
         <div class="grid grid-cols-3 gap-x-3 gap-y-1 py-0.5" data-row="total_earned_points_amount">
           <responsive on="portable" class="flex flex-wrap items-baseline justify-between gap-x-2 py-1" data-row="total_earned_points_amount"/>
           <span class="text-sm text-gray-500 dark:text-gray-400 break-keep">$t:claim.detail.comparison.row_earned_points</span>
           <div class="text-right">
-            <span class="text-sm text-gray-900 dark:text-white">{{(claim.data?.claim?.calculation_comparison?.original?.total_earned_points_amount ?? 0).toLocaleString()}}P</span>
+            <span class="text-sm text-gray-900 dark:text-white">{{claim.data?.claim?.calculation_comparison?.original?.total_earned_points_amount_formatted ?? ((claim.data?.claim?.calculation_comparison?.original?.total_earned_points_amount ?? 0).toLocaleString() + 'P')}}</span>
           </div>
           <span class="hidden">
             <responsive on="portable" class="text-xs text-gray-400 dark:text-gray-500"/>
             →
           </span>
           <div class="text-right">
-            <span class="{{(claim.data?.claim?.calculation_comparison?.original?.total_earned_points_amount ?? 0) !== (claim.data?.claim?.calculation_comparison?.recalculated?.total_earned_points_amount ?? 0) ? 'text-sm text-red-600 dark:text-red-400 font-semibold' : 'text-sm text-gray-900 dark:text-white'}}">{{(claim.data?.claim?.calculation_comparison?.recalculated?.total_earned_points_amount ?? 0).toLocaleString()}}P</span>
+            <span class="{{(claim.data?.claim?.calculation_comparison?.original?.total_earned_points_amount ?? 0) !== (claim.data?.claim?.calculation_comparison?.recalculated?.total_earned_points_amount ?? 0) ? 'text-sm text-red-600 dark:text-red-400 font-semibold' : 'text-sm text-gray-900 dark:text-white'}}">{{claim.data?.claim?.calculation_comparison?.recalculated?.total_earned_points_amount_formatted ?? ((claim.data?.claim?.calculation_comparison?.recalculated?.total_earned_points_amount ?? 0).toLocaleString() + 'P')}}</span>
           </div>
         </div>
         <!-- row_substituted — 교환만. 치환 근거 행(상품별 old→new). 서버 substituted_items 를 그대로 옮긴다. -->
@@ -302,9 +302,8 @@
         <span class="text-sm text-gray-500 dark:text-gray-400">$t:claim.detail.charge_method</span>
         <span class="text-sm text-gray-900 dark:text-white">{{claim.data?.claim?.charge_method_label}}</span>
       </div>
-      <!-- 결제 내역 — 신청서에 붙은 추가결제 건. 상세 응답에만 실린다(목록은 행마다 결제 건을 조회하지 않는다). -->
-      <div data-each="payment in {{claim.data?.claim?.payments ?? []}}" class="space-y-1">
-        <div class="flex items-baseline justify-between gap-2 px-3 py-2 rounded-lg bg-gray-50 dark:bg-gray-900">
+      <!-- 결제 내역 — 신청서에 붙은 추가결제 건. 상세 응답에만 실린다(목록은 행마다 결제 건을 조회하지 않는다). 결제 건 사이 간격은 부모(space-y-2)가 준다 — 반복 노드 자신의 space-y 는 형제 사이에 걸리지 않는다. -->
+        <div data-each="payment in {{claim.data?.claim?.payments ?? []}}" class="flex items-baseline justify-between gap-2 px-3 py-2 rounded-lg bg-gray-50 dark:bg-gray-900">
           <div class="min-w-0">
             <p class="text-sm text-gray-900 dark:text-white truncate">{{payment.payment_method_label ?? payment.payment_method ?? ''}}</p>
             <p class="text-xs text-gray-500 dark:text-gray-400">{{payment.payment_number ?? ''}}{{payment.paid_at_formatted ? ' · ' + payment.paid_at_formatted : ''}}</p>
@@ -328,7 +327,6 @@
             <span data-if="{{(payment.refunded_amount ?? 0) > 0}}" class="text-xs text-blue-600 dark:text-blue-400">$t:claim.detail.payment_refunded|amount={{payment.refunded_amount_formatted ?? ''}}</span>
           </div>
         </div>
-      </div>
       <!-- 미수납 — 청구액 중 아직 들어오지 않은 금액. 0원이면 줄을 세우지 않는다(다 냈다는 사실은 결제 내역이 말한다). -->
       <div data-if="{{(claim.data?.claim?.outstanding_amount ?? 0) > 0}}" class="flex items-baseline justify-between gap-2 pt-2 border-t border-gray-100 dark:border-gray-700">
         <span class="text-sm font-medium text-gray-700 dark:text-gray-300">$t:claim.detail.outstanding_amount</span>

@@ -204,6 +204,7 @@ return [
         'fetch_success' => 'Order information retrieved successfully.',
         'fetch_failed' => 'Failed to retrieve order information.',
         'cancelled' => 'Order has been cancelled.',
+        'cancel_refund_requested' => 'A refund request has been filed. The order will be cancelled once the refund is completed.',
         'cancel_failed' => 'Failed to cancel order.',
         'estimate_refund_success' => 'Refund estimate retrieved successfully.',
         'estimate_refund_failed' => 'Failed to calculate refund estimate.',
@@ -375,6 +376,8 @@ return [
         'not_earning' => 'Only earning transactions can be edited.',
         'expiry_not_editable' => 'Expiry cannot be changed for already-expired or fully-used earnings.',
         'expiry_before_earned' => 'Expiry cannot be earlier than the earned date.',
+        // Earned mileage label — points, not currency (`:points` is already thousands-separated).
+        'points_format' => ':pointsP',
     ],
 
     // Temporary Order Messages

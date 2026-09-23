@@ -21,6 +21,13 @@ class PaymentRefundListener implements HookListenerInterface
     private const PG_PROVIDER_ID = 'tosspayments';
 
     /**
+     * @param  OrderPaymentRepositoryInterface  $orderPaymentRepository  주문 결제 Repository (취소 장부 동기화)
+     */
+    public function __construct(
+        private readonly OrderPaymentRepositoryInterface $orderPaymentRepository,
+    ) {}
+
+    /**
      * 구독할 훅 매핑 반환
      *
      * @return array 훅 구독 설정
@@ -142,7 +149,12 @@ class PaymentRefundListener implements HookListenerInterface
             // S1-D14: 취소 응답은 갱신된 cancels[] 를 담고 온다. 이걸 스냅샷에 반영해야
             // 다음 회차가 「이미 소진한 면세분」을 알 수 있다. PG 가 실제로 기록한 값이므로
             // 우리가 보낸 값이 아니라 **받아들여진 값**이 장부에 쌓인다.
-            $this->syncCancelSnapshot($payment, $response);
+            //
+            // 이 시점에 토스 취소는 **이미 성립했다**. 장부 저장이 실패했다고 환불 결과를
+            // 실패로 돌려주면, 모듈은 돈이 나간 환불을 실패로 기록하고 재시도가 같은 금액을 한 번
+            // 더 취소하러 간다. 그래서 장부 동기화의 실패는 이 판정과 떼어 로그로만 남긴다
+            // (재동기 경로는 `syncCancelSnapshot()` 참조).
+            $this->syncCancelSnapshotSafely($payment, $response, $paymentKey);
 
             Log::info('토스페이먼츠 결제 취소 성공', [
                 'order_id' => $order->id,
@@ -278,9 +290,10 @@ class PaymentRefundListener implements HookListenerInterface
     /**
      * 승인 면세액 중 아직 취소하지 않은 잔여 예산을 반환합니다. (S1-D14)
      *
-     * 승인 응답 스냅샷은 결제 시점에 한 번 기록되고 이후 갱신되지 않는다 — 그럼으로써
-     * `taxFreeAmount` 는 「승인 시 등록된 면세액」이라는 **불변의 상한**이 된다.
-     * 이미 소진한 면세분은 같은 스냅샷의 취소 장부에서 더한다.
+     * 승인 응답 스냅샷의 `taxFreeAmount` 는 결제 시점에 기록된 뒤 덮어쓰지 않는다 — 그래서
+     * 「승인 시 등록된 면세액」이라는 **불변의 상한**이 된다(스냅샷에 없던 결제만 첫 취소 응답으로
+     * 한 번 채운다). 같은 스냅샷의 취소 장부(`cancels`)는 취소 때마다 `syncCancelSnapshot()` 이
+     * 갱신하며, 이미 소진한 면세분은 그 장부에서 더한다.
      *
      * 스냅샷에 면세액이 없으면(면세 무관 결제·구버전 데이터) null 을 돌려 상한을 걸지 않는다.
      *
@@ -307,6 +320,36 @@ class PaymentRefundListener implements HookListenerInterface
         }
 
         return max(0, $approved - $consumed);
+    }
+
+    /**
+     * 취소 장부를 갱신하되, 실패해도 환불 판정에 번지지 않게 합니다.
+     *
+     * 실패는 운영자 대사용으로 크게 남긴다 — 장부가 낡으면 다음 부분취소의 면세 예산이 실제보다
+     * 크게 계산되어 토스가 「취소 할 수 없는 금액」으로 거절할 수 있다. 재동기는 자동이다: 토스
+     * 취소 응답의 `cancels` 는 그 결제의 **전체** 취소 이력이라, 다음 취소가 성공하면 장부가
+     * 통째로 다시 맞춰진다.
+     *
+     * @param  OrderPayment  $payment  결제 레코드
+     * @param  array  $response  토스 취소 API 응답
+     * @param  string  $paymentKey  토스 결제 키 (로그 문맥)
+     * @return void 반환값 없음
+     */
+    private function syncCancelSnapshotSafely(OrderPayment $payment, array $response, string $paymentKey): void
+    {
+        try {
+            $this->syncCancelSnapshot($payment, $response);
+        } catch (\Throwable $e) {
+            Log::error('토스페이먼츠 취소 장부 동기화 실패 — 취소는 성립, 장부만 낡음', [
+                'order_payment_id' => $payment->id,
+                'payment_key' => $paymentKey,
+                'cancel_transaction_keys' => array_values(array_filter(array_map(
+                    fn ($cancel) => is_array($cancel) ? ($cancel['transactionKey'] ?? null) : null,
+                    is_array($response['cancels'] ?? null) ? $response['cancels'] : [],
+                ))),
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**
@@ -344,8 +387,7 @@ class PaymentRefundListener implements HookListenerInterface
         $meta['pg_raw_response'] = $raw;
 
         // Listener 에서 모델 영속 메서드를 직접 부르지 않고 Repository 를 경유한다.
-        app(OrderPaymentRepositoryInterface::class)
-            ->savePendingChanges($payment->forceFill(['payment_meta' => $meta]));
+        $this->orderPaymentRepository->savePendingChanges($payment->forceFill(['payment_meta' => $meta]));
     }
 
     /**

@@ -286,4 +286,24 @@ interface ReportRepositoryInterface
      * @return mixed 최근 신고 시각 (없으면 null)
      */
     public function latestLogCreatedAt(int $reportId);
+
+    /**
+     * 케이스의 신고 로그 중 기준 시각 이후(포함) 것만 셉니다.
+     *
+     * 기준 시각이 없으면 케이스 전체를 셉니다 — 재활성화된 적 없는 케이스의 "현재 주기" 는
+     * 케이스 전체이기 때문입니다.
+     *
+     * @param  int  $reportId  신고 케이스 ID
+     * @param  \DateTimeInterface|null  $since  기준 시각 (현재 주기 시작 — last_activated_at)
+     * @return int 로그 수
+     */
+    public function countLogsByReportSince(int $reportId, ?\DateTimeInterface $since): int;
+
+    /**
+     * 케이스의 가장 최근 신고 로그 1건을 반환합니다.
+     *
+     * @param  int  $reportId  신고 케이스 ID
+     * @return ReportLog|null 최근 로그 (없으면 null)
+     */
+    public function findLatestLogByReport(int $reportId): ?ReportLog;
 }

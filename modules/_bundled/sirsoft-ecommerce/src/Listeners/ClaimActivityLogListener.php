@@ -45,6 +45,14 @@ use Modules\Sirsoft\Ecommerce\Models\OrderReturn;
  * description_params 에 표시용 이름 저장 금지). 로그 문구는 클레임 번호까지만 담고,
  * 전이 전/후 상태 값은 properties 에 원값으로 남긴다.
  *
+ * ## 모델의 "지금" 값을 읽는 기록은 발행 시점에 남긴다 (동기 구독)
+ *
+ * 활동 로그 구독은 기본이 큐다. 워커가 신청서를 다시 읽는 시점에는 신청서가 이미 다음 상태로
+ * 옮겨 갔을 수 있다 — 접수 줄에 「완료」가 찍히고(자동 전이), 분할 전 수량은 잔여 행이 또
+ * 갈린 뒤의 값이 된다. 그래서 **모델에서 값을 읽는** 구독(접수 · 상품 단위 전이 · 추가결제
+ * 수납/환급)만 `'sync' => true` 로 두어 서비스가 훅을 쏜 그 자리(커밋 직후)에서 기록한다.
+ * 인자로 받은 스칼라(`$previous`/`$target`, 금액 전/후)만 쓰는 구독은 큐 그대로다.
+ *
  * ## 전/후는 `changes` 에도 싣는다
  *
  * 활동 로그 화면은 `changes` 에 실린 항목만 "변경 전 → 변경 후" 표로 그린다. properties 에만
@@ -85,18 +93,20 @@ class ClaimActivityLogListener implements HookListenerInterface
     /**
      * 구독할 훅과 메서드 매핑을 반환합니다.
      *
-     * @return array<string, array{method: string, priority: int}> 훅 매핑
+     * 모델에서 값을 읽는 구독만 `'sync' => true` 다(클래스 docblock 「발행 시점에 남긴다」).
+     *
+     * @return array<string, array{method: string, priority: int, sync?: bool}> 훅 매핑
      */
     public static function getSubscribedHooks(): array
     {
         return [
             // ─── 신청 접수 (OrderExchangeService / OrderReturnService / OrderRefundRequestService) ───
-            'sirsoft-ecommerce.claim.exchange.requested' => ['method' => 'handleExchangeRequested', 'priority' => 20],
-            'sirsoft-ecommerce.claim.return.requested' => ['method' => 'handleReturnRequested', 'priority' => 20],
-            'sirsoft-ecommerce.claim.refund.requested' => ['method' => 'handleRefundRequested', 'priority' => 20],
+            'sirsoft-ecommerce.claim.exchange.requested' => ['method' => 'handleExchangeRequested', 'priority' => 20, 'sync' => true],
+            'sirsoft-ecommerce.claim.return.requested' => ['method' => 'handleReturnRequested', 'priority' => 20, 'sync' => true],
+            'sirsoft-ecommerce.claim.refund.requested' => ['method' => 'handleRefundRequested', 'priority' => 20, 'sync' => true],
             // 취소 축은 알림 리스너에 등록하지 않는다 — 환불 알림이 이미 그 사건을 대표하므로
             // 등록하면 한 건에 알림이 두 번 간다.
-            'sirsoft-ecommerce.claim.cancel.requested' => ['method' => 'handleCancelRequested', 'priority' => 20],
+            'sirsoft-ecommerce.claim.cancel.requested' => ['method' => 'handleCancelRequested', 'priority' => 20, 'sync' => true],
 
             // ─── 상태 전이 (전 상태 전수) ───
             'sirsoft-ecommerce.claim.exchange.status_changed' => ['method' => 'handleStatusChanged', 'priority' => 20],
@@ -105,12 +115,12 @@ class ClaimActivityLogListener implements HookListenerInterface
             'sirsoft-ecommerce.claim.cancel.status_changed' => ['method' => 'handleStatusChanged', 'priority' => 20],
 
             // ─── 상품 단위 전이 (D25 — 헤더가 따라 움직이지 않는 조합이 있다) ───
-            'sirsoft-ecommerce.claim.exchange.option_status_changed' => ['method' => 'handleOptionStatusChanged', 'priority' => 20],
-            'sirsoft-ecommerce.claim.return.option_status_changed' => ['method' => 'handleOptionStatusChanged', 'priority' => 20],
+            'sirsoft-ecommerce.claim.exchange.option_status_changed' => ['method' => 'handleOptionStatusChanged', 'priority' => 20, 'sync' => true],
+            'sirsoft-ecommerce.claim.return.option_status_changed' => ['method' => 'handleOptionStatusChanged', 'priority' => 20, 'sync' => true],
             // 환불·취소 축의 상품 단위 전이 — 예전에는 발행·구독 양쪽에 모두 없어, 환불
             // 신청상품이 반려·철회·완료로 옮겨 가도 어떤 줄도 남지 않았다(C5·C6·C7·C8).
-            'sirsoft-ecommerce.claim.refund.option_status_changed' => ['method' => 'handleOptionStatusChanged', 'priority' => 20],
-            'sirsoft-ecommerce.claim.cancel.option_status_changed' => ['method' => 'handleOptionStatusChanged', 'priority' => 20],
+            'sirsoft-ecommerce.claim.refund.option_status_changed' => ['method' => 'handleOptionStatusChanged', 'priority' => 20, 'sync' => true],
+            'sirsoft-ecommerce.claim.cancel.option_status_changed' => ['method' => 'handleOptionStatusChanged', 'priority' => 20, 'sync' => true],
 
             // ─── 금액 수정 (AdminClaimService — D18) ───
             'sirsoft-ecommerce.claim.exchange.amounts_updated' => ['method' => 'handleAmountsUpdated', 'priority' => 20],
@@ -121,10 +131,10 @@ class ClaimActivityLogListener implements HookListenerInterface
             'sirsoft-ecommerce.claim.refund.completed' => ['method' => 'handleRefundExecuted', 'priority' => 20],
 
             // ─── 클레임 추가결제 (ClaimPaymentService) ───
-            'sirsoft-ecommerce.claim.exchange.payment_completed' => ['method' => 'handlePaymentCompleted', 'priority' => 20],
-            'sirsoft-ecommerce.claim.return.payment_completed' => ['method' => 'handlePaymentCompleted', 'priority' => 20],
-            'sirsoft-ecommerce.claim.exchange.payment_refunded' => ['method' => 'handlePaymentRefunded', 'priority' => 20],
-            'sirsoft-ecommerce.claim.return.payment_refunded' => ['method' => 'handlePaymentRefunded', 'priority' => 20],
+            'sirsoft-ecommerce.claim.exchange.payment_completed' => ['method' => 'handlePaymentCompleted', 'priority' => 20, 'sync' => true],
+            'sirsoft-ecommerce.claim.return.payment_completed' => ['method' => 'handlePaymentCompleted', 'priority' => 20, 'sync' => true],
+            'sirsoft-ecommerce.claim.exchange.payment_refunded' => ['method' => 'handlePaymentRefunded', 'priority' => 20, 'sync' => true],
+            'sirsoft-ecommerce.claim.return.payment_refunded' => ['method' => 'handlePaymentRefunded', 'priority' => 20, 'sync' => true],
             'sirsoft-ecommerce.claim.payment_cancelled' => ['method' => 'handlePaymentCancelled', 'priority' => 20],
 
             // ─── 첨부 (ClaimAttachmentService) ───
@@ -268,10 +278,16 @@ class ClaimActivityLogListener implements HookListenerInterface
             // 두지 않기로 했으므로(계보는 주문옵션 + 신청서 FK 로 이미 닫혀 있다) 이 줄이
             // 유일한 흔적이다 — 없으면 운영자는 표가 한 줄 늘어난 것을 스스로 해석해야 한다.
             if (isset($change['quantity'], $change['remainder_option_id'])) {
+                // 잔여 수량은 발행 측이 실어 준 값을 우선한다. 없으면(그 값을 싣지 않는 발행자)
+                // 잔여 행을 읽는다 — 이 구독은 동기라 그 값도 발행 시점의 것이다.
+                $remainder = isset($change['remainder_quantity'])
+                    ? (int) $change['remainder_quantity']
+                    : $this->remainderQuantityOf($claim, (int) $change['remainder_option_id']);
+
                 $rows[] = [
                     'field' => 'quantity',
                     'label_key' => self::FIELD_LABEL_PREFIX.'quantity',
-                    'old' => (string) ((int) $change['quantity'] + $this->remainderQuantityOf($claim, (int) $change['remainder_option_id'])),
+                    'old' => (string) ((int) $change['quantity'] + $remainder),
                     'new' => (string) (int) $change['quantity'],
                     'type' => 'number',
                 ];

@@ -6,10 +6,11 @@ namespace Plugins\Sirsoft\PayKginicis\Providers;
 
 use App\Extension\BasePluginServiceProvider;
 use Illuminate\Cookie\Middleware\EncryptCookies;
-use Plugins\Sirsoft\PayKginicis\Repositories\CbtReconciliationRepository;
-use Plugins\Sirsoft\PayKginicis\Repositories\CbtReconciliationRepositoryInterface;
 use Plugins\Sirsoft\PayKginicis\Repositories\CbtCvsOperationsRepository;
 use Plugins\Sirsoft\PayKginicis\Repositories\CbtCvsOperationsRepositoryInterface;
+use Plugins\Sirsoft\PayKginicis\Repositories\CbtReconciliationRepository;
+use Plugins\Sirsoft\PayKginicis\Repositories\CbtReconciliationRepositoryInterface;
+use Plugins\Sirsoft\PayKginicis\Support\CbtClaimAuthAmount;
 
 class PayKginicisServiceProvider extends BasePluginServiceProvider
 {
@@ -23,6 +24,18 @@ class PayKginicisServiceProvider extends BasePluginServiceProvider
     protected array $repositories = [
         CbtReconciliationRepositoryInterface::class => CbtReconciliationRepository::class,
         CbtCvsOperationsRepositoryInterface::class => CbtCvsOperationsRepository::class,
+    ];
+
+    /**
+     * 플러그인 캐시 도메인 (`g7:plugin.sirsoft-pay_kginicis:*`) 이 필요한 서비스.
+     *
+     * 글로벌 `CacheInterface::class` 바인딩을 덮어쓰지 않고 contextual binding 으로만
+     * 격리된 캐시를 주입합니다.
+     *
+     * @var array<int, class-string>
+     */
+    protected array $cacheServices = [
+        CbtClaimAuthAmount::class,
     ];
 
     /**

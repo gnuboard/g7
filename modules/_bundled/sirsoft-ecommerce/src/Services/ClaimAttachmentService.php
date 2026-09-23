@@ -499,6 +499,25 @@ class ClaimAttachmentService
     }
 
     /**
+     * 고객이 미귀속 삭제 경로(DELETE)로 이 첨부를 지울 수 있는지 판정합니다.
+     *
+     * 그 경로는 작성 화면에서 **아직 신청서에 붙지 않은** 사진을 치우는 용도다. 신청서에 붙은
+     * 첨부는 소유자라도 이 경로로 지울 수 없다 — 접수가 끝난 신청서의 증빙과 운영자가 올린
+     * 사진까지 지워져 수정 창(승인 전만 허용)을 통째로 우회하기 때문이다. 붙은 첨부의 정리는
+     * 수정 경로({@see UserClaimService::update()})가 신청서 상태와 업로더를 보고 판정한다.
+     *
+     * @param  ClaimImage  $image  첨부
+     * @param  int|null  $userId  요청 회원 ID (비회원이면 null)
+     * @param  Order|null  $guestOrder  토큰으로 검증된 비회원 주문 (회원이면 null)
+     * @return bool 미귀속이면서 본인 소유이면 true
+     */
+    public function deletableBy(ClaimImage $image, ?int $userId, ?Order $guestOrder = null): bool
+    {
+        return $image->claimable_type === ClaimImage::PENDING_CLAIMABLE_TYPE
+            && $this->ownedBy($image, $userId, $guestOrder);
+    }
+
+    /**
      * 첨부 서빙 응답을 만듭니다. (게이트 통과 시에만)
      *
      * @param  string  $hash  첨부 해시
@@ -596,6 +615,16 @@ class ClaimAttachmentService
         int $sortOrder,
         ClaimImageUploaderTypeEnum $uploaderType,
     ): ClaimImage {
+        // 업로드 트라이어드의 첫 단계 — 다른 첨부 지점(상품·리뷰·게시판)과 같은 모양이다. 확장은
+        // 여기서 예외를 던져 저장 전에 거절할 수 있다(파일도 행도 남지 않는다).
+        HookManager::doAction(
+            'sirsoft-ecommerce.claim-image.before_upload',
+            $file,
+            $claimableType,
+            $claimableId,
+            $uploaderType->value,
+        );
+
         $file = HookManager::applyFilters('sirsoft-ecommerce.claim-image.filter_upload_file', $file);
 
         // 확장자는 클라이언트가 준 값이 아니라 검증이 실제로 본 값(내용)에서 정한다 — 상세는

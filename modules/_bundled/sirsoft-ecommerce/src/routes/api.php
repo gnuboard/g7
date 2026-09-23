@@ -34,6 +34,7 @@ use Modules\Sirsoft\Ecommerce\Http\Controllers\Public\CashReceiptController as G
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Public\CategoryController as PublicCategoryController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Public\CategoryImageController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Public\CheckoutController;
+use Modules\Sirsoft\Ecommerce\Http\Controllers\Public\ClaimImageDownloadController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Public\EcommerceSettingsController as PublicEcommerceSettingsController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Public\GuestClaimController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Public\OrderController as PublicOrderController;
@@ -273,8 +274,11 @@ Route::post('user/orders', [PublicOrderController::class, 'store'])
 // POST /api/modules/sirsoft-ecommerce/guest/orders/verify
 // 무차별 대입 방어는 라우트 throttle(분당 20회, IP 기준) + 조회 비밀번호 정책(영문+숫자 8자 이상)이
 // 담당한다. 업계 표준·로그인/IDV 일관성을 고려해 별도 N회 잠금은 두지 않는다(#55 결정).
+// 상한은 **이름 있는 리미터**다(`EcommerceServiceProvider::registerRateLimiters()`). 이름 없는
+// `throttle:20,1` 은 키가 IP 하나라, 같은 IP 에서 나간 다른 이름 없는 throttle 라우트의 요청과
+// 한 카운터를 나눠 쓴다 — 클레임 미리보기 몇 번에 조회 인증이 429 로 막힌다.
 Route::post('guest/orders/verify', [PublicOrderController::class, 'verify'])
-    ->middleware('throttle:20,1')
+    ->middleware('throttle:sirsoft-ecommerce.guest-order-verify')
     ->name('guest.orders.verify');
 
 // 비회원 주문 상세/액션 API (조회 인증 토큰 X-Guest-Order-Token 으로 보호)
@@ -316,58 +320,79 @@ Route::prefix('guest/orders/{orderNumber}')
         // 회원 경로와 같은 FormRequest·액션 본문을 쓴다(HandlesClaimActions). 주문은 토큰이 검증한 guest_order 만.
         //
         // 요청 빈도 제한 — 이 블록에는 전역 API 리미터가 없고 형제 라우트(`guest/orders/verify`)만
-        // `throttle:20,1` 을 갖는다. 조회 토큰을 손에 넣은 쪽이 신청·미리보기·첨부 업로드를 무제한으로
+        // 자기 상한을 갖는다. 조회 토큰을 손에 넣은 쪽이 신청·미리보기·첨부 업로드를 무제한으로
         // 반복할 수 있으면 파일 쓰기(`claim-images.store`)가 디스크를 채우고, 철회가 행을 남기는 신청↔철회
         // 반복은 그 주문의 목록을 계속 부풀린다. 정상 사용은 이 상한 훨씬 아래다 — 신청서 한 장을 쓰는
         // 동안 미리보기가 입력마다(debounce) 나가는 것이 가장 잦은 호출이다.
-        Route::middleware('throttle:120,1')->group(function () {
+        //
+        // 상한은 **이름 있는 리미터**로 건다(`EcommerceServiceProvider::registerRateLimiters()`). 이름 없는
+        // `throttle:N,1` 은 키가 IP 하나뿐이라, 이 블록과 업로드의 좁은 상한과 조회 인증이 **한 카운터**를
+        // 나눠 썼다 — 미리보기를 스무 번 부르면 업로드·조회 인증까지 429 가 됐다.
+        //
+        // 권한 — 회원 경로와 같은 `user-claims.*` 를 건다. 미들웨어는 비로그인 요청을 guest 역할의
+        // 권한으로 판정하므로, 운영자가 guest 역할에서 클레임 권한을 빼면(블랙컨슈머 차단용 축) 비회원
+        // 경로도 함께 닫힌다. 걸지 않으면 그 축이 회원에게만 작동하고 비회원 창구는 언제나 열려 있다.
+        Route::middleware('throttle:sirsoft-ecommerce.guest-claims')->group(function () {
             // GET /guest/orders/{orderNumber}/claimable-options - 클레임 가능 상품·유형·사유·설정
             Route::get('/claimable-options', [GuestClaimController::class, 'claimableOptions'])
+                ->middleware('permission:user,sirsoft-ecommerce.user-claims.read')
                 ->name('guest.orders.claimable-options');
 
             // POST /guest/orders/{orderNumber}/claims/preview - 신청 미리보기 (배송비·차액·환불 예정액)
             Route::post('/claims/preview', [GuestClaimController::class, 'preview'])
+                ->middleware('permission:user,sirsoft-ecommerce.user-claims.request')
                 ->name('guest.orders.claims.preview');
 
             // POST /guest/orders/{orderNumber}/exchanges - 교환 신청
             Route::post('/exchanges', [GuestClaimController::class, 'storeExchange'])
+                ->middleware('permission:user,sirsoft-ecommerce.user-claims.request')
                 ->name('guest.orders.exchanges.store');
 
             // POST /guest/orders/{orderNumber}/returns - 반품 신청
             Route::post('/returns', [GuestClaimController::class, 'storeReturn'])
+                ->middleware('permission:user,sirsoft-ecommerce.user-claims.request')
                 ->name('guest.orders.returns.store');
 
             // POST /guest/orders/{orderNumber}/refund-requests - 취소·환불 신청 (상태 자동 분기)
             Route::post('/refund-requests', [GuestClaimController::class, 'storeRefund'])
+                ->middleware('permission:user,sirsoft-ecommerce.user-claims.request')
                 ->name('guest.orders.refund-requests.store');
 
             // GET /guest/orders/{orderNumber}/claims - 이 주문의 클레임 목록 (비회원 주문상세 섹션)
             Route::get('/claims', [GuestClaimController::class, 'index'])
+                ->middleware('permission:user,sirsoft-ecommerce.user-claims.read')
                 ->name('guest.orders.claims.index');
 
             // 클레임 번호 단위 — GET 상세 / PATCH 수정(승인 전) / POST 철회
             Route::get('/claims/{claimNumber}', [GuestClaimController::class, 'show'])
+                ->middleware('permission:user,sirsoft-ecommerce.user-claims.read')
                 ->name('guest.orders.claims.show');
             Route::patch('/claims/{claimNumber}', [GuestClaimController::class, 'update'])
+                ->middleware('permission:user,sirsoft-ecommerce.user-claims.request')
                 ->name('guest.orders.claims.update');
             Route::post('/claims/{claimNumber}/withdraw', [GuestClaimController::class, 'withdraw'])
+                ->middleware('permission:user,sirsoft-ecommerce.user-claims.withdraw')
                 ->name('guest.orders.claims.withdraw');
 
             // 첨부 이미지 — POST 업로드(신청서 작성 중, 주문 스코프 · 신청서 미귀속) / DELETE 삭제
             // 업로드는 이 블록에서 유일한 파일 쓰기이므로 블록 상한 위에 좁은 상한을 겹친다 —
             // 한 신청서의 첨부 장수 상한(설정)은 신청서 단위이지 시간 단위가 아니라, 신청서를
-            // 만들지 않고 업로드만 반복하는 경로를 막지 못한다.
+            // 만들지 않고 업로드만 반복하는 경로를 막지 못한다. 좁은 상한도 자기 이름의 리미터라
+            // 블록 상한의 카운터와 섞이지 않는다.
             Route::post('/claims/images', [GuestClaimController::class, 'storeImage'])
-                ->middleware('throttle:20,1')
+                ->middleware(['throttle:sirsoft-ecommerce.guest-claim-uploads', 'permission:user,sirsoft-ecommerce.user-claims.request'])
                 ->name('guest.orders.claim-images.store');
             Route::delete('/claims/images/{image}', [GuestClaimController::class, 'destroyImage'])
                 ->whereNumber('image')
+                ->middleware('permission:user,sirsoft-ecommerce.user-claims.request')
                 ->name('guest.orders.claim-images.destroy');
 
             // 추가결제 — POST 결제 시작 / POST PG 승인 콜백
             Route::post('/claim-payments/{paymentNumber}/pay', [GuestClaimController::class, 'pay'])
+                ->middleware('permission:user,sirsoft-ecommerce.user-claims.pay')
                 ->name('guest.orders.claim-payments.pay');
             Route::post('/claim-payments/{paymentNumber}/approve', [GuestClaimController::class, 'approve'])
+                ->middleware('permission:user,sirsoft-ecommerce.user-claims.pay')
                 ->name('guest.orders.claim-payments.approve');
         });
     });
@@ -401,7 +426,8 @@ Route::get('user/claim-reasons', [ClaimReasonController::class, 'userSelectableR
 
 // 클레임 첨부 이미지 서빙 (한시 서명 URL / 신청자 본인 / 운영자 — 직접 URL 없음)
 // GET /api/modules/sirsoft-ecommerce/claim-image/{hash}
-Route::get('claim-image/{hash}', [ClaimImageController::class, 'download'])
+// 로그인 없이도 열리는 경로(한시 서명)라 회원 전용 컨트롤러(`User\ClaimImageController`)에 두지 않는다.
+Route::get('claim-image/{hash}', [ClaimImageDownloadController::class, 'download'])
     ->where('hash', '[a-zA-Z0-9]{12}')
     ->middleware('optional.sanctum')
     ->name('claim-image.download');
@@ -520,6 +546,7 @@ Route::prefix('user')->middleware('auth:sanctum')->group(function () {
         // ── 클레임(교환/반품/취소·환불) 신청 — 주문 스코프 ─────────────────
         // GET /api/modules/sirsoft-ecommerce/user/orders/{id}/claims - 이 주문의 신청 내역 (마이페이지 주문상세 섹션)
         Route::get('/{id}/claims', [UserClaimController::class, 'orderClaims'])
+            ->whereNumber('id')
             ->middleware('permission:user,sirsoft-ecommerce.user-claims.read')
             ->name('user.orders.claims.index');
 
@@ -947,8 +974,11 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
             ->name('admin.claim-reasons.store');
 
         // 활성 사유 목록 (Select 옵션용) - 와일드카드보다 먼저 정의
+        // 클레임 화면(목록 사유 필터)도 이 카탈로그를 읽는다. 설정 권한만 받으면 클레임 권한만 가진
+        // 운영자(기본 역할 manager)는 진입할 때마다 403 을 받고 사유 필터가 빈다 — 코드와 표시명뿐인
+        // 선택지라 클레임 조회 권한으로도 연다(둘 중 하나, OR).
         Route::get('/active', [ClaimReasonController::class, 'active'])
-            ->middleware('permission:admin,sirsoft-ecommerce.settings.read')
+            ->middleware('permission:admin,sirsoft-ecommerce.settings.read|sirsoft-ecommerce.claims.read,false')
             ->name('admin.claim-reasons.active');
 
         Route::get('/{id}', [ClaimReasonController::class, 'show'])

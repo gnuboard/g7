@@ -7,8 +7,9 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Modules\Sirsoft\Ecommerce\Enums\RefundMethodEnum;
 use Modules\Sirsoft\Ecommerce\Models\OrderRefund;
-use Modules\Sirsoft\Ecommerce\Services\OrderRefundRequestService;
-use Modules\Sirsoft\Ecommerce\Services\RefundExecutionService;
+use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderRefundRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Services\AdminClaimService;
+use Modules\Sirsoft\Ecommerce\Services\ClaimRefundAccountPolicy;
 
 /**
  * 관리자 환불 실행 요청 ('환불하기' — D18)
@@ -18,6 +19,16 @@ use Modules\Sirsoft\Ecommerce\Services\RefundExecutionService;
  */
 class ExecuteRefundRequest extends FormRequest
 {
+    /**
+     * 실행 대상 환불신청서 (1회 조회 후 보관)
+     */
+    protected ?OrderRefund $targetRefund = null;
+
+    /**
+     * 실행 대상 조회를 마쳤는지 (부재도 결과이므로 따로 기록한다)
+     */
+    protected bool $targetRefundResolved = false;
+
     /**
      * 사용자가 이 요청을 수행할 권한이 있는지 확인 (권한 체크는 라우트의 permission 미들웨어에서 수행)
      *
@@ -45,7 +56,7 @@ class ExecuteRefundRequest extends FormRequest
             'refund_bank.bank_code' => ['nullable', 'string', 'max:10'],
             'refund_bank.account_number' => ['nullable', 'string', 'max:50'],
             'refund_bank.holder' => ['nullable', 'string', 'max:50'],
-            // 계좌 없이 완료로 기록하겠다는 **명시 동의**(T2-D6, PO 결정 2026-09-23).
+            // 계좌 없이 완료로 기록하겠다는 **명시 동의**(T2-D6, 운영 결정 2026-09-23).
             'force_without_refund_bank' => ['nullable', 'boolean'],
         ];
     }
@@ -68,35 +79,24 @@ class ExecuteRefundRequest extends FormRequest
     }
 
     /**
-     * 환불수단이 결제행과 맞는지 대조합니다. (P3 — 돈이 안 나가는 `COMPLETED` 차단)
+     * 환불수단이 그 주문에서 쓸 수 있는 수단인지 대조합니다. (금액 수정과 같은 강도)
      *
-     * `refund_method` 는 "이 돈을 어떻게 돌려주는가" 이고 그 답은 **주문이 어떻게 결제됐는지**가
-     * 정한다(`PaymentMethodResolver::refundMethod()`). 예전에는 본문 값을 그대로 받아 실행했고,
-     * 두 방향 모두 돈이 어긋났다:
+     * 게이트는 **[금액 수정](`UpdateClaimAmountsRequest` → `refundMethodOptions()`)과 같은 선택지**다 —
+     * PG 결제창을 쓰지 않은 주문에 `PG` 를 실으면 막고, 계좌 수동 환불(`BANK`)과 마일리지(`POINTS`)는
+     * 결제수단과 무관하게 받는다. 두 경로의 강도가 달랐던 동안은 카드 주문에 계좌 수동 환불을
+     * [금액 수정]으로 저장할 수는 있는데 [환불하기]가 `payment_mismatch` 로 막아, 저장한 수단으로
+     * 실행할 길이 없었다.
      *
-     *  - 카드 결제에 `BANK` 를 실으면 PG 를 부르지 않고 `COMPLETED` 가 찍힌다 — 고객 카드는
-     *    그대로인데 장부는 환불완료.
-     *  - 무통장 결제에 `PG` 를 실으면 PG 리스너가 인식하지 못해 `success=false` → 트랜잭션
-     *    롤백. 운영자는 원인 없는 500 을 본다.
+     * 카드 주문의 계좌 수동 환불은 **허용한다**(2026-09-23 결정) — PG 취소가 불가능한 상황(부분취소
+     * 미지원·승인 후 기한 경과·가맹점 해지)에서 운영자가 계좌로 돌려주고 장부를 닫는 것이 실제
+     * 운영 경로다. 대신 그 돈이 나갈 계좌가 있어야 한다 — 아래 계좌 검증이 실행 수단 축까지 본다
+     * (`ClaimRefundAccountPolicy::requiredForRefund()`). 무통장 주문의 `PG` 는 여전히 막는다 —
+     * PG 리스너가 인식하지 못해 원인 없는 500 이 된다.
      *
-     * 어긋나면 422 로 막는다. "PG 없이 장부만" 이 필요하면 그 주문의 결제수단 자체를 바꿔야
-     * 하며, 그것은 이 화면의 권한 밖이다.
-     *
-     * ## 대조 기준은 **실효 환불수단**이다 (P14 폴백 포함)
-     *
-     * 결제행의 원시 판정(`OrderPayment::refundMethod()`)을 기준으로 삼으면 P14 폴백 경로가
-     * 통째로 막힌다 — PG 플러그인이 제거된 주문은 신청서에 `BANK` 로 저장되는데(
-     * `RefundExecutionService::determineRefundMethod()` 가 리스너 부재를 보고 폴백한다)
-     * 결제행은 여전히 `PG` 라고 말하므로, 화면이 저장값을 그대로 실어 보내면 항상
-     * `payment_mismatch` 가 된다. 운영자는 "계좌로 송금하세요" 안내를 읽고 실제로 송금한 뒤
-     * [환불하기]에서 원인 없는 422 를 받는다 — P14 가 세운 "손으로 송금하고 완료를 찍는
-     * 경로는 살아 있다" 는 전제가 깨진다.
-     *
-     * 그래서 신청서가 저장할 때 쓴 것과 **같은 판정**으로 대조한다. 막으려던 것은
-     * "실행 로직이 쓸 수단과 다른 값을 실어 보내는 것" 이고, 실행 로직이 쓰는 것이 실효 수단이다.
+     * 선택지 판정은 상세 화면의 환불 수단 라디오와 **같은 곳**이다(`AdminClaimService::refundMethodOptions()`).
      *
      * @param  Validator  $validator  검증기
-     * @return void
+     * @return void 반환값 없음
      */
     protected function withValidator(Validator $validator): void
     {
@@ -107,22 +107,22 @@ class ExecuteRefundRequest extends FormRequest
                 return;
             }
 
-            $refund = OrderRefund::with('order.payment')->find((int) $this->route('id'));
-            $order = $refund?->order;
+            $order = $this->targetRefund()?->order;
 
-            if (! $order?->payment) {
+            if ($order === null) {
                 return;
             }
 
-            // 신청서가 저장할 때 쓴 것과 같은 판정 — P14 폴백(PG 리스너 부재 → BANK)을 포함한다.
-            $expected = app(RefundExecutionService::class)->determineRefundMethod($order);
+            // 선택지는 [금액 수정] 저장 가드와 **같은 판정**이다(`OrderRefundRequestService::pgRefundAvailable()`).
+            // PG 플러그인이 빠져 계좌 환불로 떨어진 주문(P14)은 선택지에서 PG 가 이미 빠진다 — 여기서
+            // 따로 거르면 저장과 실행이 다시 다른 기준을 읽게 된다.
+            $allowed = array_column(app(AdminClaimService::class)->refundMethodOptions($order), 'value');
 
-            if ($method !== $expected->value) {
+            if (! in_array($method, $allowed, true)) {
+                // 금액 수정 경로가 같은 위반에 내는 문구와 같다(`OrderClaimException::refundMethodUnavailable()`).
                 $validator->errors()->add(
                     'refund_method',
-                    __('sirsoft-ecommerce::validation.claims.refund_method.payment_mismatch', [
-                        'expected' => $expected->label(),
-                    ])
+                    __('sirsoft-ecommerce::exceptions.claim_refund_method_unavailable')
                 );
             }
         });
@@ -149,7 +149,7 @@ class ExecuteRefundRequest extends FormRequest
      *     (2026-09-22 #599 3차 실측 L-8).
      *
      * 동의(`force_without_refund_bank`)가 있으면 통과시킨다 — 이미 다른 경로로 송금했거나
-     * 채권을 포기하는 등 운영상 필요가 있기 때문이며(PO 결정 2026-09-23), 모르고 눌러 닫히는
+     * 채권을 포기하는 등 운영상 필요가 있기 때문이며(운영 결정 2026-09-23), 모르고 눌러 닫히는
      * 것과 **알고 누르는 것**을 가르는 것이 이 플래그의 일이다.
      *
      * @param  Validator  $validator  검증기
@@ -181,32 +181,23 @@ class ExecuteRefundRequest extends FormRequest
             return;
         }
 
-        $refund = OrderRefund::with('order.payment')->find((int) $this->route('id'));
-        $order = $refund?->order;
+        $refund = $this->targetRefund();
 
-        if (! $order) {
+        if ($refund === null || $refund->order === null) {
             return;
         }
 
-        // 이미 신청서에 적혀 있으면 그것으로 보낸다.
-        if (filled($refund->refund_bank_code)) {
-            return;
-        }
+        // ⓑ 계좌가 필요한 환불인가 — 상세 화면의 `refund_account_required` 와 같은 한 곳이다.
+        // 기준은 실행에 실제로 쓰일 값이라 본문 override(금액·수단)가 있으면 그것을, 없으면 저장값을
+        // 본다(실행 로직과 같은 순서다). 마일리지로만 돌려주는 환불은 계좌가 필요 없고, 카드 주문이라도
+        // 계좌 수동 환불(`BANK`)을 고르면 계좌가 필요하다.
+        $required = app(ClaimRefundAccountPolicy::class)->requiredForRefund(
+            $refund,
+            $this->has('refund_amount') ? (float) $this->input('refund_amount') : null,
+            filled($this->input('refund_method')) ? RefundMethodEnum::tryFrom((string) $this->input('refund_method')) : null,
+        );
 
-        // ⓑ-1 **계좌로 나갈 현금이 있는가.** 마일리지로만 돌려주는 환불(`refund_amount` 0,
-        // `refund_points_amount` > 0)은 회원 원장으로 들어가므로 보낼 계좌가 없다 — 여기까지
-        // 막으면 포인트 환급이 영영 실행되지 않는다. 기준은 실행에 실제로 쓰일 금액이라
-        // 본문 override 가 있으면 그것을, 없으면 저장값을 본다(실행 로직과 같은 순서다).
-        $amount = $this->has('refund_amount')
-            ? (float) $this->input('refund_amount')
-            : (float) $refund->refund_amount;
-
-        if ($amount <= 0) {
-            return;
-        }
-
-        // ⓑ-2 계좌가 필요한 환불인가 — 화면·구매자 접수와 같은 술어.
-        if (! app(OrderRefundRequestService::class)->refundsToBankAccount($order)) {
+        if (! $required) {
             return;
         }
 
@@ -215,6 +206,25 @@ class ExecuteRefundRequest extends FormRequest
             'refund_bank',
             __('sirsoft-ecommerce::validation.order.refund_bank_required_for_manual_transfer')
         );
+    }
+
+    /**
+     * 실행 대상 환불신청서를 반환합니다. (Repository 경유 · 요청당 1회 조회)
+     *
+     * 수단 대조와 계좌 검증이 같은 신청서를 읽는다 — 각자 모델을 직접 조회하면 한 요청에서 같은
+     * 행을 두 번 읽고, 저장소 규약(Repository 인터페이스 경유)도 우회한다.
+     *
+     * @return OrderRefund|null 환불신청서 (없으면 null — 부재는 컨트롤러가 404 로 낸다)
+     */
+    protected function targetRefund(): ?OrderRefund
+    {
+        if (! $this->targetRefundResolved) {
+            $this->targetRefund = app(OrderRefundRepositoryInterface::class)
+                ->findById((int) $this->route('id'), ['order.payment']);
+            $this->targetRefundResolved = true;
+        }
+
+        return $this->targetRefund;
     }
 
     /**

@@ -9,6 +9,7 @@ use Modules\Sirsoft\Ecommerce\Models\OrderCancel;
 use Modules\Sirsoft\Ecommerce\Models\OrderExchange;
 use Modules\Sirsoft\Ecommerce\Models\OrderRefund;
 use Modules\Sirsoft\Ecommerce\Models\OrderReturn;
+use Modules\Sirsoft\Ecommerce\Support\ClaimOutstanding;
 
 /**
  * 관리자 클레임 목록 행 리소스 (교환·반품·환불·취소 공용 — 목록 전용 축소 표현)
@@ -155,7 +156,7 @@ class ClaimAdminListResource extends ClaimResource
     /**
      * 미수납 청구액을 실어 둔 결제 건 관계에서 계산합니다. (미로드면 null)
      *
-     * `ClaimPaymentService::outstandingAmount()` 와 같은 식(청구액 − 실수납 잔액 합)이되,
+     * `ClaimPaymentService::outstandingAmount()` 와 같은 식(청구액 − 실수납 잔액 합 — `ClaimOutstanding`)이되,
      * 행마다 쿼리를 치지 않도록 Repository 가 eager load 한 컬렉션을 쓴다.
      *
      * @param  OrderExchange|OrderReturn  $claim  신청서
@@ -175,7 +176,7 @@ class ClaimAdminListResource extends ClaimResource
             ->filter(fn (ClaimPayment $payment) => $payment->isPaid())
             ->sum(fn (ClaimPayment $payment) => $payment->netPaidAmount());
 
-        return max(0.0, round((float) $claim->total_charge_amount - (float) $paid, 2));
+        return ClaimOutstanding::amount((float) $claim->total_charge_amount, (float) $paid);
     }
 
     /**

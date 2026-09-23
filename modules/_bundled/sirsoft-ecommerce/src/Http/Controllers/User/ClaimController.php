@@ -9,47 +9,49 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Traits\HandlesClaimActions;
 use Modules\Sirsoft\Ecommerce\Http\Requests\User\ClaimListRequest;
+use Modules\Sirsoft\Ecommerce\Http\Requests\User\ClaimOrderRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\User\ClaimPreviewRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\User\StoreExchangeRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\User\StoreRefundRequestRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\User\StoreReturnRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\User\UpdateClaimRequest;
 use Modules\Sirsoft\Ecommerce\Http\Resources\ClaimCollection;
-use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Services\UserClaimService;
 
 /**
  * 회원 클레임(교환/반품/취소·환불) 신청 컨트롤러 (마이페이지)
  *
- * AuthBaseController 상속으로 모든 메서드에 auth:sanctum 이 강제된다. 액션 본문은
- * 비회원 컨트롤러와 공유하는 `HandlesClaimActions` 에 있고, 이 클래스는 열람자(회원 ID)만 정한다.
+ * 인증은 라우트 그룹(`user` 접두 + `auth:sanctum`)이 강제한다 — 이 클래스는 생성자를 재정의하므로
+ * `AuthBaseController` 생성자의 미들웨어 등록은 실행되지 않는다. 액션 본문은 비회원 컨트롤러와 공유하는
+ * `HandlesClaimActions` 에 있고, 이 클래스는 열람자(회원 ID)만 정한다.
+ *
+ * 주문 소유권은 FormRequest(`ResolvesClaimOrder::getOrder()`)가 한 곳에서 판정한다 — 이 컨트롤러는
+ * 주문을 직접 찾지 않는다.
  */
 class ClaimController extends AuthBaseController
 {
     use HandlesClaimActions;
 
+    /**
+     * @param  UserClaimService  $claimService  클레임 서비스
+     */
     public function __construct(
         private UserClaimService $claimService,
-        private OrderRepositoryInterface $orderRepository,
     ) {}
 
     /**
      * 주문의 클레임 가능 상품·유형·사유·설정 조회
      *
-     * @param  int  $id  주문 ID
+     * @param  ClaimOrderRequest  $request  소유권이 확인된 주문 요청
+     * @param  int  $id  주문 ID (FormRequest 가 해석한다)
      * @return JsonResponse 응답
      */
-    public function claimableOptions(int $id): JsonResponse
+    // route-param:unused $id 는 ClaimOrderRequest(ResolvesClaimOrder)가 라우트에서 읽어 소유권을 판정한다.
+    public function claimableOptions(ClaimOrderRequest $request, int $id): JsonResponse
     {
         $this->logApiUsage('user.claims.claimable-options');
 
-        $order = $this->orderRepository->findWithShippingAddress($id);
-
-        if (! $order || $order->user_id !== Auth::id()) {
-            return ResponseHelper::moduleError('sirsoft-ecommerce', 'exceptions.order_not_found', 404);
-        }
-
-        return $this->respondClaimableOptions($order);
+        return $this->respondClaimableOptions($request->getOrder());
     }
 
     /**
@@ -61,19 +63,17 @@ class ClaimController extends AuthBaseController
      * 주문 ID 로 형제 자원(`claimable-options`)을 부르고 있어 같은 모양이 화면에 자연스럽고,
      * 본인 주문이 아니면 존재를 드러내지 않고 404 로 닫는 규칙을 그 형제와 함께 두기 위해서다.
      *
-     * @param  ClaimListRequest  $request  검증된 목록 요청
-     * @param  int  $id  주문 ID
+     * @param  ClaimListRequest  $request  검증된 목록 요청 (소유권 판정 포함)
+     * @param  int  $id  주문 ID (FormRequest 가 해석한다)
      * @return JsonResponse 응답
      */
+    // route-param:unused $id 는 ClaimListRequest(ResolvesClaimOrder)가 라우트에서 읽어 소유권을 판정한다.
     public function orderClaims(ClaimListRequest $request, int $id): JsonResponse
     {
         $this->logApiUsage('user.orders.claims.index');
 
-        $order = $this->orderRepository->findWithShippingAddress($id);
-
-        if (! $order || $order->user_id !== Auth::id()) {
-            return ResponseHelper::moduleError('sirsoft-ecommerce', 'exceptions.order_not_found', 404);
-        }
+        // 소유권 판정은 요청의 한 곳이다 — 남의 주문이면 여기서 404 로 끝난다.
+        $order = $request->getOrder();
 
         try {
             // 유형 미지정이면 접수 건이 있는 첫 유형을 서버가 고른다 — 화면은 응답의 claim_type 으로

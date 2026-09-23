@@ -83,51 +83,67 @@
             "auth_mode": "required",
             "onSuccess": [
                 {
-                    "comment": "기본 배송지로 배송지 칸을 채워 연다(2026-09-21 PO 요청) — 주문할 때마다 같은 주소를 다시\n           고르게 두지 않는다. 목록은 기본 배송지가 맨 앞이라 첫 줄을 집는다.\n           칩을 누른 경로와 **같은 모양**으로 옮겨 담는다(저장 형식 UserAddress → 주문서 형식):\n           해외 주소는 도시·주·우편번호가 `intl_*` 로 갈리므로 한 칸씩 옮겨야 한다.\n           마지막에 주문서를 다시 받는 것은 배송비 때문이다 — 우편번호·국가가 정해졌으니 그 값으로\n           계산된 금액이어야 주문 확정 때의 재계산과 미리보기가 갈라지지 않는다. refetch 는 «현재»\n           로컬 상태를 읽으므로 setState 가 같은 sequence 앞에 있어야 한다.",
+                    "comment": "기본 배송지로 배송지 칸을 채워 연다(2026-09-21 요구사항) — 주문할 때마다 같은 주소를 다시\n           고르게 두지 않는다. 목록은 기본 배송지가 맨 앞이라 첫 줄을 집는다.\n           칩을 누른 경로와 **같은 모양**으로 옮겨 담는다(저장 형식 UserAddress → 주문서 형식):\n           해외 주소는 도시·주·우편번호가 `intl_*` 로 갈리므로 한 칸씩 옮겨야 한다.\n           마지막에 주문서를 다시 받는 것은 배송비 때문이다 — 우편번호·국가가 정해졌으니 그 값으로\n           계산된 금액이어야 주문 확정 때의 재계산과 미리보기가 갈라지지 않는다. refetch 는 «현재»\n           로컬 상태를 읽으므로 setState 가 같은 sequence 앞에 있어야 한다.\n           채움은 **화면 진입마다 한 번**이다 — 배송지 관리 창이 주소를 추가·수정하고 목록을 다시 받을 때마다\n           이 onSuccess 가 다시 돈다. 그때 또 채우면 구매자가 고른 배송지를 기본 배송지로 덮어 다른 주소로\n           배송될 수 있다. onSuccess 컨텍스트에는 _local 이 없어 표현식으로 판정할 수 없으므로 핸들러\n           (markLocalOnce)가 현재 로컬 상태로 첫 회만 참을 돌려준다(플래그는 아래 initLocal 이 진입마다 거짓으로 세운다).",
                     "handler": "sequence",
                     "if": "{{(response.data.data.addresses?.data ?? []).length > 0}}",
                     "actions": [
                         {
-                            "handler": "setState",
+                            "handler": "sirsoft-basic.markLocalOnce",
                             "params": {
-                                "target": "local",
-                                "selectedAddressId": "{{(response.data.data.addresses.data)[0].id}}",
-                                "selectedAddressObj": "{{(response.data.data.addresses.data)[0]}}"
+                                "key": "checkoutDefaultAddressPrefilled"
                             }
                         },
                         {
-                            "handler": "setState",
-                            "params": {
-                                "target": "local",
-                                "shipping": {
-                                    "recipient_name": "{{(response.data.data.addresses.data)[0].recipient_name}}",
-                                    "recipient_phone": "{{(response.data.data.addresses.data)[0].recipient_phone}}",
-                                    "country_code": "{{(response.data.data.addresses.data)[0].country_code ?? 'KR'}}",
-                                    "zipcode": "{{(response.data.data.addresses.data)[0].zipcode ?? ''}}",
-                                    "address": "{{(response.data.data.addresses.data)[0].address ?? ''}}",
-                                    "address_detail": "{{(response.data.data.addresses.data)[0].address_detail ?? ''}}",
-                                    "region": "{{(response.data.data.addresses.data)[0].region ?? ''}}",
-                                    "address_line_1": "{{(response.data.data.addresses.data)[0].address_line_1 ?? ''}}",
-                                    "address_line_2": "{{(response.data.data.addresses.data)[0].address_line_2 ?? ''}}",
-                                    "intl_city": "{{(response.data.data.addresses.data)[0].city ?? ''}}",
-                                    "intl_state": "{{(response.data.data.addresses.data)[0].state ?? ''}}",
-                                    "intl_postal_code": "{{(response.data.data.addresses.data)[0].postal_code ?? ''}}"
+                            "handler": "conditions",
+                            "conditions": [
+                                {
+                                    "if": "{{$prev === true}}",
+                                    "then": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "selectedAddressId": "{{(response.data.data.addresses.data)[0].id}}",
+                                                "selectedAddressObj": "{{(response.data.data.addresses.data)[0]}}"
+                                            }
+                                        },
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "shipping": {
+                                                    "recipient_name": "{{(response.data.data.addresses.data)[0].recipient_name}}",
+                                                    "recipient_phone": "{{(response.data.data.addresses.data)[0].recipient_phone}}",
+                                                    "country_code": "{{(response.data.data.addresses.data)[0].country_code ?? 'KR'}}",
+                                                    "zipcode": "{{(response.data.data.addresses.data)[0].zipcode ?? ''}}",
+                                                    "address": "{{(response.data.data.addresses.data)[0].address ?? ''}}",
+                                                    "address_detail": "{{(response.data.data.addresses.data)[0].address_detail ?? ''}}",
+                                                    "region": "{{(response.data.data.addresses.data)[0].region ?? ''}}",
+                                                    "address_line_1": "{{(response.data.data.addresses.data)[0].address_line_1 ?? ''}}",
+                                                    "address_line_2": "{{(response.data.data.addresses.data)[0].address_line_2 ?? ''}}",
+                                                    "intl_city": "{{(response.data.data.addresses.data)[0].city ?? ''}}",
+                                                    "intl_state": "{{(response.data.data.addresses.data)[0].state ?? ''}}",
+                                                    "intl_postal_code": "{{(response.data.data.addresses.data)[0].postal_code ?? ''}}"
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "checkout.zipcode": "{{(response.data.data.addresses.data)[0].zipcode ?? ''}}",
+                                                "checkout.country_code": "{{(response.data.data.addresses.data)[0].country_code ?? 'KR'}}"
+                                            }
+                                        },
+                                        {
+                                            "handler": "refetchDataSource",
+                                            "params": {
+                                                "dataSourceId": "checkoutData"
+                                            }
+                                        }
+                                    ]
                                 }
-                            }
-                        },
-                        {
-                            "handler": "setState",
-                            "params": {
-                                "target": "local",
-                                "checkout.zipcode": "{{(response.data.data.addresses.data)[0].zipcode ?? ''}}",
-                                "checkout.country_code": "{{(response.data.data.addresses.data)[0].country_code ?? 'KR'}}"
-                            }
-                        },
-                        {
-                            "handler": "refetchDataSource",
-                            "params": {
-                                "dataSourceId": "checkoutData"
-                            }
+                            ]
                         }
                     ]
                 }
@@ -188,6 +204,7 @@
         "selectedDbank": null,
         "addressModalMode": "list",
         "selectedAddressId": null,
+        "checkoutDefaultAddressPrefilled": false,
         "selectedAddressObj": null,
         "saveShippingAddress": false,
         "updateSelectedAddress": true,

@@ -45,7 +45,7 @@ class ClaimActivityLogRepository implements ClaimActivityLogRepositoryInterface
             : $claim->claimPayments()->pluck('id')->all();
         $imageIds = $claim instanceof OrderCancel
             ? []
-            : $claim->images()->pluck('id')->all();
+            : $this->attachmentLogImageIds($claim);
         $linkedRefund = $claim instanceof OrderCancel ? $claim->refund : null;
 
         $query = ActivityLog::where(function (Builder $q) use ($claim, $paymentIds, $imageIds, $linkedRefund) {
@@ -71,7 +71,7 @@ class ClaimActivityLogRepository implements ClaimActivityLogRepositoryInterface
                 });
             }
 
-            // 이 신청서의 첨부 로그 (업로드·삭제)
+            // 이 신청서의 첨부 로그 (업로드·삭제) — 지워진 첨부의 로그도 포함한다
             if (! empty($imageIds)) {
                 $q->orWhere(function (Builder $sub) use ($imageIds) {
                     $sub->where('loggable_type', ClaimImage::class)
@@ -89,5 +89,36 @@ class ClaimActivityLogRepository implements ClaimActivityLogRepositoryInterface
             perPage: $perPage,
             resultCap: PaginationLimits::resultCap('admin.activity_logs'),
         );
+    }
+
+    /**
+     * 이 신청서의 첨부 로그를 찾을 첨부 ID 목록을 만듭니다. (현존 + 삭제분)
+     *
+     * 지금 남아 있는 첨부만으로 찾으면 **지워진 첨부의 로그가 통째로 사라진다** — 삭제 로그의
+     * loggable 도 그 첨부이고, 그 첨부의 업로드 로그도 마찬가지다. 운영자가 고객 증빙을 지운
+     * 사실이 이 신청서의 이력에서만 보이지 않게 된다(분쟁 판정의 근거가 사라진다).
+     *
+     * 지워진 첨부는 삭제 로그의 properties(`claimable_type`·`claimable_id` — 삭제 시점의 귀속)로
+     * 되찾는다. 그 첨부 ID 를 합치면 업로드 로그(업로드 당시에는 미귀속이었을 수 있다)까지 함께
+     * 잡힌다.
+     *
+     * @param  OrderExchange|OrderReturn|OrderRefund  $claim  신청서
+     * @return array<int, int> 첨부 ID 목록
+     */
+    private function attachmentLogImageIds(OrderExchange|OrderReturn|OrderRefund $claim): array
+    {
+        $current = $claim->images()->pluck('id')->map(fn ($id) => (int) $id)->all();
+
+        // audit:allow query-unbounded-get reason: 한 신청서의 첨부 삭제 로그 ID 만 고른다 — 행 수가 그 신청서의 첨부 삭제 횟수에 묶여 데이터 증가에 비례하지 않는다
+        $deleted = ActivityLog::query()
+            ->where('loggable_type', ClaimImage::class)
+            ->where('action', 'claim_image.delete')
+            ->where('properties->claimable_type', $claim->getMorphClass())
+            ->where('properties->claimable_id', $claim->getKey())
+            ->pluck('loggable_id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+
+        return array_values(array_unique([...$current, ...$deleted]));
     }
 }

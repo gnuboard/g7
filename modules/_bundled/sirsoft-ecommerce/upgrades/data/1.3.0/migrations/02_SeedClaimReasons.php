@@ -18,6 +18,20 @@ use Illuminate\Support\Facades\Schema;
  * 고쳤을 수 있고, 업그레이드가 그것을 되돌리면 안 된다. 신규 코드만 추가한다.
  * 삭제(stale cleanup)도 하지 않는다 — 운영자가 등록한 사유를 지울 근거가 없다.
  *
+ * ## 운영자·시스템 발 환불 사유 2종도 여기서 보장한다
+ *
+ * 취소·환불이 클레임 접수 한 입구로 모이면서 사유 코드가 실행 경로의 전제가 됐다 —
+ * `OrderRefundRequestService` 는 코드를 못 찾으면 접수 트랜잭션 전체를 되돌린다. 사람이 고르지
+ * 않는 두 코드(`admin_cancel` · `auto_cancel_expired`)는 코드가 직접 지목하므로, 이 행이 없는
+ * 기존 설치본은 만료 주문 자동취소가 전량 실패하고 가상계좌 환불은 PG 로 돈이 나간 뒤 장부만
+ * 롤백된다. 시더(`ClaimReasonSeeder`)는 설치 때만 돌아 업그레이드 경로에서는 이 스텝이 유일한
+ * 공급원이다.
+ *
+ * 예전에는 이 보장을 모듈 마이그레이션(`2026_09_12_000001`)이 했다. 마이그레이션은 언어팩을
+ * 읽지 않아 일본어 상점에서 두 사유만 한국어로 남았고, 이름도 시더와 달라(「결제 기한 만료」 대
+ * 「입금 기한 만료 자동취소」) 신규 설치와 업그레이드의 결과가 갈렸다. 그래서 데이터 보장은 이
+ * 스텝으로 옮기고 값은 시더와 같게 동결했다.
+ *
  * idempotent: 존재 여부를 먼저 확인하므로 재실행해도 추가 삽입이 없다.
  * V-1 안전: Illuminate\Support\Facades\* 만 사용 — 모듈 Enum/Model/Seeder 를 참조하지 않는다.
  */
@@ -42,6 +56,20 @@ class SeedClaimReasons implements DataMigration
     ];
 
     /**
+     * 1.3.0 시점에 동결한 환불 사유 목록 — 운영자·시스템이 코드로 지목하는 2종만.
+     *
+     * 고객이 고르는 환불 사유(주문 실수 등)는 1.3.0 이전부터 있었으므로 여기서 다시 넣지 않는다.
+     * 값은 `ClaimReasonSeeder::getDefaults()` 의 같은 코드와 같다 — 달라지면 신규 설치와
+     * 업그레이드한 상점의 사유 이름이 갈린다.
+     *
+     * @var array<int, array{code: string, ko: string, en: string, fault_type: string, is_user_selectable: bool, sort_order: int}>
+     */
+    private const REFUND_REASONS = [
+        ['code' => 'admin_cancel', 'ko' => '관리자 취소', 'en' => 'Admin Cancel', 'fault_type' => 'seller', 'is_user_selectable' => false, 'sort_order' => 5],
+        ['code' => 'auto_cancel_expired', 'ko' => '입금 기한 만료 자동취소', 'en' => 'Auto-cancelled (payment deadline expired)', 'fault_type' => 'customer', 'is_user_selectable' => false, 'sort_order' => 6],
+    ];
+
+    /**
      * 1.3.0 시점에 동결한 반품 사유 목록.
      *
      * @var array<int, array{code: string, ko: string, en: string, fault_type: string}>
@@ -58,11 +86,22 @@ class SeedClaimReasons implements DataMigration
         ['code' => 'etc', 'ko' => '기타', 'en' => 'Etc', 'fault_type' => 'customer'],
     ];
 
+    /**
+     * 마이그레이션 식별자를 반환합니다.
+     *
+     * @return string 마이그레이션 이름
+     */
     public function name(): string
     {
         return 'SeedClaimReasons';
     }
 
+    /**
+     * 교환·반품 사유와 운영자·시스템 발 환불 사유를 시드합니다.
+     *
+     * @param  UpgradeContext  $context  업그레이드 컨텍스트
+     * @return void
+     */
     public function run(UpgradeContext $context): void
     {
         if (! Schema::hasTable(self::TABLE)) {
@@ -76,8 +115,9 @@ class SeedClaimReasons implements DataMigration
         $created = 0;
         $created += $this->seedType('exchange', self::EXCHANGE_REASONS, $translations, $context);
         $created += $this->seedType('return', self::RETURN_REASONS, $translations, $context);
+        $created += $this->seedType('refund', self::REFUND_REASONS, $translations, $context);
 
-        $context->logger->info('[ecommerce:1.3.0] 교환/반품 사유 시드 완료 — 신규 '.$created.'건');
+        $context->logger->info('[ecommerce:1.3.0] 교환/반품/운영자 환불 사유 시드 완료 — 신규 '.$created.'건');
     }
 
     /**
@@ -93,7 +133,7 @@ class SeedClaimReasons implements DataMigration
      */
     private function loadLanguagePackTranslations(UpgradeContext $context): array
     {
-        $root = base_path('lang-packs');
+        $root = $this->languagePackRoot();
         if (! File::isDirectory($root)) {
             return [];
         }
@@ -138,10 +178,23 @@ class SeedClaimReasons implements DataMigration
     }
 
     /**
+     * 언어팩 루트 디렉토리를 반환합니다.
+     *
+     * @return string 언어팩 루트 절대 경로
+     */
+    protected function languagePackRoot(): string
+    {
+        return base_path('lang-packs');
+    }
+
+    /**
      * 한 유형의 사유 목록을 시드합니다.
      *
-     * @param  string  $type  사유 유형 (exchange, return)
-     * @param  array<int, array{code: string, ko: string, en: string, fault_type: string}>  $reasons  사유 목록
+     * 항목에 `is_user_selectable`·`sort_order` 가 있으면 그 값을 쓰고, 없으면 고객 선택 가능·목록
+     * 순서로 넣는다(교환·반품 사유의 종전 동작).
+     *
+     * @param  string  $type  사유 유형 (exchange, return, refund)
+     * @param  array<int, array{code: string, ko: string, en: string, fault_type: string, is_user_selectable?: bool, sort_order?: int}>  $reasons  사유 목록
      * @param  array<string, array<string, string>>  $translations  언어팩 번역 (code → locale → 이름)
      * @param  UpgradeContext  $context  업그레이드 컨텍스트
      * @return int 신규 생성 건수
@@ -169,9 +222,9 @@ class SeedClaimReasons implements DataMigration
                     JSON_UNESCAPED_UNICODE
                 ),
                 'fault_type' => $reason['fault_type'],
-                'is_user_selectable' => true,
+                'is_user_selectable' => $reason['is_user_selectable'] ?? true,
                 'is_active' => true,
-                'sort_order' => $index,
+                'sort_order' => $reason['sort_order'] ?? $index,
                 'created_at' => $now,
                 'updated_at' => $now,
             ]);

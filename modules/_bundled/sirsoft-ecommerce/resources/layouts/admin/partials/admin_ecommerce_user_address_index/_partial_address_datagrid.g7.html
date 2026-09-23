@@ -63,12 +63,13 @@
         </select>
       </div>
     </div>
+    <!-- PC 행 메뉴는 좁은 화면 카드 메뉴와 같은 비활성 조건을 진다 — 회원 없는 배송지(member null)의 「회원 정보」 는 `/admin/users/undefined` 로, 「이 회원으로 검색」 은 `user_uuids[]=[undefined]` → 422 → 본문 전체 오류로 이어졌다. 행마다 다른 조건은 `disabledField`(행 데이터 경로, 값이 falsy 면 비활성)로 적고, 삭제는 관리 권한으로 막는다. -->
     <data-grid data-ref="pc_data_table" :data-blur-until-loaded="true" data-if="{{!_global.isPortable}}" data="{{addresses?.data?.data || []}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{addresses?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{addresses?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{addresses?.data?.pagination?.has_more_pages ?? false}}" pageSize="{{+(query.per_page || 20)}}" :alwaysShowPagination="true" selectable="{{_computed.canManage === true}}" selectionScope="page" selectedIds="{{_local.selectedItems || []}}" idField="id" visibleColumns="{{_local.visibleColumns}}" selectedCountText="" emptyMessage="$t:sirsoft-ecommerce.admin.user_addresses.table.empty" actionsColumnHeader="$t:common.actions">
       <prop name="rowActions">
-        <item id="view_member" label="$t:sirsoft-ecommerce.admin.user_addresses.actions.view_member" iconName="fa-regular fa-user"/>
-        <item id="search_member" label="$t:sirsoft-ecommerce.admin.user_addresses.actions.search_member" iconName="fa-solid fa-magnifying-glass"/>
+        <item id="view_member" label="$t:sirsoft-ecommerce.admin.user_addresses.actions.view_member" iconName="fa-regular fa-user" disabledField="member.uuid"/>
+        <item id="search_member" label="$t:sirsoft-ecommerce.admin.user_addresses.actions.search_member" iconName="fa-solid fa-magnifying-glass" disabledField="member.uuid"/>
         <item id="divider" :divider="true"/>
-        <item id="delete" label="$t:sirsoft-ecommerce.admin.user_addresses.actions.delete" iconName="fa-regular fa-trash-can" variant="danger"/>
+        <item id="delete" label="$t:sirsoft-ecommerce.admin.user_addresses.actions.delete" iconName="fa-regular fa-trash-can" variant="danger" disabled="{{_computed.canManage !== true}}"/>
       </prop>
       <column field="checkbox" header="" width="40px" :selectable="true"/>
       <column field="created_at" header="$t:sirsoft-ecommerce.admin.user_addresses.columns.created_at" width="150px">

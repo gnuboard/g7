@@ -34,10 +34,11 @@
     <!-- 첨부 사진 — 클릭하면 확대해서 본다. 취소 이력에는 첨부가 없다(서버가 빈 배열을 내려준다). -->
     <div data-if="{{(claim.data?.claim?.images ?? []).length > 0}}" class="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
       <p class="text-sm text-gray-500 dark:text-gray-400 mb-2">$t:claim.detail.images</p>
-      <div data-each="claimImage in {{claim.data?.claim?.images ?? []}}" class="grid grid-cols-5 gap-2">
+      <!-- 격자는 부모가 한 번만 갖고 사진 버튼이 반복된다 — 반복 노드가 격자를 들면 사진마다 격자가 따로 생겨 한 줄에 하나씩 쌓인다. -->
+      <div class="grid grid-cols-5 gap-2">
         <responsive on="portable" class="grid grid-cols-3 gap-2"/>
         <!-- 사진을 누르면 확대 창을 연다 — 확대 창은 페이지 로컬에서 대상을 읽으므로 그 사진의 서명 주소와 파일명을 먼저 세운 뒤 연다. -->
-        <button type="button" class="aspect-square rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700 cursor-pointer hover:opacity-90 transition-opacity">
+        <button data-each="claimImage in {{claim.data?.claim?.images ?? []}}" type="button" class="aspect-square rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700 cursor-pointer hover:opacity-90 transition-opacity">
           <on type="click">
             <set-state target="local" claimImageViewerUrl="{{claimImage.download_url ?? ''}}" claimImageViewerName="{{claimImage.original_name ?? ''}}"/>
             <open-modal target="modal_claim_image_viewer"/>

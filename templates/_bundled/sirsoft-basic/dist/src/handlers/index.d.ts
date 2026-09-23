@@ -8,6 +8,7 @@ import { loadPreferredCurrencyHandler, savePreferredCurrencyHandler } from './lo
 import { setThemeHandler, initThemeHandler } from './setThemeHandler';
 import { redirectToLoginWithReturnHandler } from './redirectToLoginWithReturn';
 import { downloadAttachmentHandler } from './downloadAttachment';
+import { markLocalOnceHandler } from './markLocalOnce';
 /**
  * sirsoft-basic 템플릿의 모든 커스텀 핸들러
  *
@@ -42,6 +43,7 @@ export declare const handlers: {
     initTheme: typeof initThemeHandler;
     redirectToLoginWithReturn: typeof redirectToLoginWithReturnHandler;
     downloadAttachment: typeof downloadAttachmentHandler;
+    'sirsoft-basic.markLocalOnce': typeof markLocalOnceHandler;
     toggleCartItemSelection: typeof toggleCartItemSelectionHandler;
     selectAllCartItems: typeof selectAllCartItemsHandler;
     setCartOption: typeof setCartOptionHandler;
@@ -81,6 +83,7 @@ export declare const handlerMap: {
     initTheme: typeof initThemeHandler;
     redirectToLoginWithReturn: typeof redirectToLoginWithReturnHandler;
     downloadAttachment: typeof downloadAttachmentHandler;
+    'sirsoft-basic.markLocalOnce': typeof markLocalOnceHandler;
     toggleCartItemSelection: typeof toggleCartItemSelectionHandler;
     selectAllCartItems: typeof selectAllCartItemsHandler;
     setCartOption: typeof setCartOptionHandler;
@@ -104,4 +107,4 @@ export declare const handlerMap: {
  * 핸들러 타입 정의 (TypeScript 자동완성용)
  */
 export type SirsoftBasicHandlers = typeof handlers;
-export { addSelectedItemIfCompleteHandler, updateSelectedItemQuantityHandler, removeSelectedItemHandler, updateNoOptionQuantityHandler, setBlockAdditionalOptionHandler, getDisplayPriceHandler, formatCurrencyHandler, getCurrencySymbol, loadPreferredCurrencyHandler, savePreferredCurrencyHandler, setThemeHandler, initThemeHandler, redirectToLoginWithReturnHandler, downloadAttachmentHandler, toggleCartItemSelectionHandler, selectAllCartItemsHandler, setCartOptionHandler, openCartDeleteModalHandler, openCartOptionModalHandler, recalculateCartHandler, findMatchingOptionHandler, initCartOptionSelectionHandler, initCartKeyHandler, getCartKeyHandler, clearCartKeyHandler, regenerateCartKeyHandler, saveToStorageHandler, loadFromStorageHandler, initGuestOrderTokenHandler, saveGuestOrderTokenHandler, clearGuestOrderTokenHandler, clearGuestTokenOnEntryHandler, };
+export { addSelectedItemIfCompleteHandler, updateSelectedItemQuantityHandler, removeSelectedItemHandler, updateNoOptionQuantityHandler, setBlockAdditionalOptionHandler, getDisplayPriceHandler, formatCurrencyHandler, getCurrencySymbol, loadPreferredCurrencyHandler, savePreferredCurrencyHandler, setThemeHandler, initThemeHandler, redirectToLoginWithReturnHandler, downloadAttachmentHandler, markLocalOnceHandler, toggleCartItemSelectionHandler, selectAllCartItemsHandler, setCartOptionHandler, openCartDeleteModalHandler, openCartOptionModalHandler, recalculateCartHandler, findMatchingOptionHandler, initCartOptionSelectionHandler, initCartKeyHandler, getCartKeyHandler, clearCartKeyHandler, regenerateCartKeyHandler, saveToStorageHandler, loadFromStorageHandler, initGuestOrderTokenHandler, saveGuestOrderTokenHandler, clearGuestOrderTokenHandler, clearGuestTokenOnEntryHandler, };

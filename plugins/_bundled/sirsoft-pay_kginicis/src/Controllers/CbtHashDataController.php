@@ -2,12 +2,15 @@
 
 declare(strict_types=1);
 
+// audit:allow api-doc-coverage reason: 클레임 결제 Repository 를 서비스 로케이터 대신 생성자로 주입하고 private 메서드 PHPDoc 을 채운 내부 수정이다. 라우트·요청 파라미터·응답 구조는 불변이라 API 문서에 반영할 표면 변화가 없다(`api:docgen --scope=plugin:sirsoft-pay_kginicis --check` drift 없음).
+
 namespace Plugins\Sirsoft\PayKginicis\Controllers;
 
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
 use Modules\Sirsoft\Ecommerce\Models\ClaimPayment;
+use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ClaimPaymentRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Services\OrderProcessingService;
 use Plugins\Sirsoft\PayKginicis\Concerns\HandlesCbtClaimPayments;
 use Plugins\Sirsoft\PayKginicis\Concerns\HandlesClaimPaymentCallbacks;
@@ -16,6 +19,7 @@ use Plugins\Sirsoft\PayKginicis\Concerns\ValidatesTimestampFreshness;
 use Plugins\Sirsoft\PayKginicis\Http\Requests\CbtHashDataRequest;
 use Plugins\Sirsoft\PayKginicis\Services\CbtCheckoutTokenService;
 use Plugins\Sirsoft\PayKginicis\Services\KgInicisApiService;
+use Plugins\Sirsoft\PayKginicis\Support\CbtClaimAuthAmount;
 
 class CbtHashDataController
 {
@@ -24,10 +28,19 @@ class CbtHashDataController
     use ValidatesCbtOrderContext;
     use ValidatesTimestampFreshness;
 
+    /**
+     * @param  KgInicisApiService  $apiService  KG 이니시스 API 서비스
+     * @param  OrderProcessingService  $orderService  주문 결제 처리 서비스
+     * @param  CbtCheckoutTokenService  $checkoutTokenService  CBT 체크아웃 토큰 서비스
+     * @param  ClaimPaymentRepositoryInterface  $claimPaymentRepository  클레임 결제 Repository
+     * @param  CbtClaimAuthAmount  $claimAuthAmount  CBT 클레임 결제 인증요청 금액 기록
+     */
     public function __construct(
         private readonly KgInicisApiService $apiService,
         private readonly OrderProcessingService $orderService,
         private readonly CbtCheckoutTokenService $checkoutTokenService,
+        private readonly ClaimPaymentRepositoryInterface $claimPaymentRepository,
+        private readonly CbtClaimAuthAmount $claimAuthAmount,
     ) {}
 
     /**
@@ -98,6 +111,10 @@ class CbtHashDataController
                     'message' => 'CBT checkout token verification failed.',
                 ], 403);
             }
+
+            // CBT 승인 응답에는 금액이 없다 — 이 해시로 서명하는 인증요청 금액을 적어 두어 승인 리스너가
+            // 승인액으로 보고하게 한다(결제창을 연 뒤 청구액이 바뀌면 모듈 대조가 잡는다).
+            $this->claimAuthAmount->remember($oid, $price);
 
             return response()->json([
                 'success' => true,
@@ -174,6 +191,13 @@ class CbtHashDataController
         ]);
     }
 
+    /**
+     * 해시 발급 요청의 속도 제한 키를 만듭니다. (IP + 주문번호)
+     *
+     * @param  Request  $request  HTTP 요청
+     * @param  string  $oid  주문번호 또는 클레임 결제번호
+     * @return string 속도 제한 키
+     */
     private function rateLimitKey(Request $request, string $oid): string
     {
         return 'sirsoft-pay_kginicis:cbt-hash:'.sha1($request->ip().'|'.$oid);

@@ -37,6 +37,7 @@
       "bulk_success": "Item status changes have been processed.",
       "bulk_error": "Failed to change item statuses.",
       "no_common_transition": "The selected items have no status they can all move to. Select items that share the same status.",
+      "cancel_not_transitionable": "Cancellation requests have no per-item status to change. A cancellation is final as soon as it is filed.",
       "quantity_confirm_title": "Confirm quantities",
       "quantity_confirm_description": "The selected items will be moved to {{status}}. Reduce a quantity to process only part of it.",
       "quantity_not_splittable": "An exchange item whose redelivery item already exists cannot be split. It will be processed in full.",
@@ -74,6 +75,12 @@
       "no_detail": "No detailed reason was provided.",
       "images_label": "Attachments",
       "images_clear": "Delete all attachments",
+      "images_clear_confirm": {
+        "title": "Delete all attachments",
+        "message": "All {{count}} attachments on this request will be deleted.",
+        "warning": "Photos the customer uploaded as evidence are deleted too, and this cannot be undone.",
+        "confirm": "Delete all"
+      },
       "image_upload_success": "The attachment has been uploaded.",
       "image_upload_error": "Failed to upload the attachment.",
       "image_clear_success": "The attachments have been cleared.",
@@ -149,7 +156,8 @@
       "changes": {
         "field": "Field",
         "before": "Before",
-        "after": "After"
+        "after": "After",
+        "model_id": "ID: {{id}}"
       },
       "actor_action": {
         "view_member": "View member"
@@ -227,7 +235,7 @@
       "refund_bank_holder": "Account holder",
       "refund_bank_input_title": "Account to refund to",
       "refund_bank_input_hint": "This refund is completed by a manual bank transfer. The claim has no account on file, so you can enter it here — the value is saved to the claim as well.",
-      "refund_bank_code_placeholder": "Bank code (e.g. 004)",
+      "refund_bank_select": "Select bank",
       "refund_bank_account_placeholder": "Account number (no hyphens)",
       "refund_bank_holder_placeholder": "Account holder",
       "force_without_bank": "Record as completed without an account",

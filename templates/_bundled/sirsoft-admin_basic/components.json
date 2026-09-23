@@ -1675,12 +1675,22 @@
             "type": "string",
             "required": false,
             "default": "gray",
-            "description": "뱃지 색상 (blue, green, red, gray, yellow, purple, orange, teal, cyan)"
+            "description": "뱃지 색상 (blue, green, red, gray, yellow, purple, orange, teal, cyan) — variant 보다 우선한다"
+          },
+          "variant": {
+            "type": "string",
+            "required": false,
+            "description": "의미 기반 변형 (success | warning | danger | error | info | primary | secondary | text | default) — 백엔드 Enum 의 variant() 출력을 그대로 받는다. color 가 있으면 color 가 이긴다"
           },
           "text": {
             "type": "string",
             "required": false,
             "description": "뱃지 텍스트"
+          },
+          "icon": {
+            "type": "string",
+            "required": false,
+            "description": "텍스트 앞에 그릴 아이콘 이름 — 서버 상태 Enum 이 내보내는 의미 토큰(status-*)도 받는다. 비어 있으면 그리지 않는다"
           },
           "size": {
             "type": "string",
@@ -4547,6 +4557,12 @@
             "required": false,
             "default": "Select",
             "description": "트리거 버튼 텍스트"
+          },
+          "selectedCountLabel": {
+            "type": "string",
+            "required": false,
+            "default": "{count} selected",
+            "description": "다중 선택에서 둘 이상 골랐을 때의 트리거 문구 — {count} 가 고른 수로 치환된다. 기본값이 영어라 관리자 화면은 $t: 키로 넘긴다"
           },
           "triggerIcon": {
             "type": "ReactNode",

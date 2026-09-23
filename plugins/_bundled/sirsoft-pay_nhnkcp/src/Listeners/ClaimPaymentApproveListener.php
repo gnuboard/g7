@@ -6,6 +6,7 @@ namespace Plugins\Sirsoft\PayNhnkcp\Listeners;
 
 use App\Contracts\Extension\HookListenerInterface;
 use Illuminate\Support\Facades\Log;
+use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
 use Modules\Sirsoft\Ecommerce\Models\ClaimPayment;
 use Modules\Sirsoft\Ecommerce\Services\ClaimPaymentService;
 use Plugins\Sirsoft\PayNhnkcp\Concerns\SanitizesPgResponse;
@@ -65,6 +66,13 @@ class ClaimPaymentApproveListener implements HookListenerInterface
                 'type' => 'filter',
                 'priority' => 10,
             ],
+            // 모듈이 승인 **뒤**에 거절한 건(승인 금액 대조 실패)을 되돌리는 보상 — 서버 콜백·API
+            // 승인 두 경로의 보상이 이 한 곳이다(콜백 컨트롤러는 따로 보상 클로저를 넘기지 않는다).
+            'sirsoft-ecommerce.claim_payment.void_approval' => [
+                'method' => 'voidApproval',
+                'type' => 'filter',
+                'priority' => 10,
+            ],
         ];
     }
 
@@ -72,6 +80,7 @@ class ClaimPaymentApproveListener implements HookListenerInterface
      * 기본 핸들러 (미사용 — 개별 메서드에서 처리)
      *
      * @param  mixed  ...$args  훅 인수
+     * @return void 반환값 없음
      */
     public function handle(...$args): void {}
 
@@ -113,9 +122,31 @@ class ClaimPaymentApproveListener implements HookListenerInterface
         }
 
         // 입금 대기 수단(가상계좌)은 클레임 결제 상태 모델에 대기 상태가 없어 지원하지 않는다 —
-        // 승인(계좌 발급) 전에 거절하므로 PG 쪽 잔존물이 없다.
-        if (($callback['use_pay_method'] ?? '') === 'VCNT') {
+        // 승인(계좌 발급) 전에 거절하므로 PG 쪽 잔존물이 없다. 판정의 권위는 결제 건에 **저장된**
+        // 결제수단이다(주문 경로 KVE-2026-2018 과 같은 기준). 콜백의 use_pay_method 는 브라우저가
+        // 보낸 값이라 빼거나 바꿔 보낼 수 있으므로 **거절 쪽으로만** 쓴다 — 통과 근거로는 쓰지 않고,
+        // 승인 뒤 KCP 응답으로 한 번 더 판정한다.
+        if ($payment->payment_method === PaymentMethodEnum::VBANK->value
+            || $this->isVirtualAccountMethod((string) ($callback['use_pay_method'] ?? ''))) {
             return $this->failure('CLAIM_DEPOSIT_METHOD_NOT_SUPPORTED', __('sirsoft-pay_nhnkcp::messages.claim.deposit_not_supported'));
+        }
+
+        // 결제창 금액(good_mny)을 **승인 호출 전에** 청구액과 대조한다. 결제창을 연 사이 청구액이
+        // 바뀌면(신청서 수정·관리자 재산정) 낡은 창의 금액이 들어온다 — 그대로 승인하면 모듈이 승인
+        // **뒤**에 금액 불일치로 거절하고, 그 거절의 보상(취소)은 서버 콜백 경로에만 있어 클라이언트
+        // 승인 API 경로에서는 청구된 채 남는다(#599 validate 07 #8). 이 값은 브라우저가 보낸 것이라
+        // 통과 근거로는 부족하다 — 승인 뒤 KCP 응답 금액으로 한 번 더 판정한다.
+        $expectedAmount = (int) $charge['minor_unit_amount'];
+        $callbackAmount = is_numeric($callback['good_mny'] ?? null) ? (int) $callback['good_mny'] : null;
+
+        if ($callbackAmount !== $expectedAmount) {
+            Log::warning('KCP: claim approve amount mismatch before approval', [
+                'payment_number' => $payment->payment_number,
+                'callback_good_mny' => $callback['good_mny'] ?? null,
+                'expected' => $expectedAmount,
+            ]);
+
+            return $this->failure('AMOUNT_MISMATCH', __('sirsoft-pay_nhnkcp::messages.claim.amount_mismatch'));
         }
 
         $apiService = $this->getApiService();
@@ -139,7 +170,52 @@ class ClaimPaymentApproveListener implements HookListenerInterface
             }
 
             $tno = (string) ($pgResponse['tno'] ?? ($callback['tno'] ?? ''));
-            $goodMny = (int) ($callback['good_mny'] ?? 0);
+
+            // 승인 뒤 재판정 — 콜백이 결제수단을 숨겨 사전 거절을 지나쳤어도 KCP 응답이 가상계좌를
+            // 말하면 계좌만 발급된 상태다(입금 전). 발급분을 취소하고 거절한다.
+            if ($this->isVirtualAccountMethod((string) ($pgResponse['use_pay_method'] ?? ($pgResponse['pay_method'] ?? '')))) {
+                $this->cancelIssuedQuietly($apiService, $tno, $payment);
+
+                return $this->failure(
+                    'CLAIM_DEPOSIT_METHOD_NOT_SUPPORTED',
+                    __('sirsoft-pay_nhnkcp::messages.claim.deposit_not_supported'),
+                    $this->claimRawResponse($apiService, $pgResponse),
+                );
+            }
+
+            // 대조 금액은 KCP 응답 금액이 권위다. 응답이 금액을 싣고 왔는데 청구액과 다르면 승인분을
+            // **여기서** 취소하고 거절한다 — 모듈 쪽 대조의 거절은 보상이 서버 콜백 경로에만 있다.
+            // 응답에 없을 때만(CLI 응답에 금액이 빠지는 경우가 많다) 위에서 청구액과 대조한 브라우저
+            // 콜백의 good_mny 를 쓴다 — 그 값은 결제창 금액을 바꾼 요청이 청구액으로 맞춰 보낼 수
+            // 있으므로 응답 금액보다 앞세우지 않는다.
+            $responseMny = $pgResponse['amount'] ?? ($pgResponse['good_mny'] ?? null);
+
+            if (is_numeric($responseMny) && (int) $responseMny > 0 && (int) $responseMny !== $expectedAmount) {
+                Log::error('KCP: claim approve response amount does not match the charge — cancelling', [
+                    'payment_number' => $payment->payment_number,
+                    'tno' => $tno,
+                    'response_amount' => $responseMny,
+                    'expected' => $expectedAmount,
+                ]);
+
+                $this->cancelApprovedQuietly(
+                    $apiService,
+                    $tno,
+                    $payment,
+                    (int) $responseMny,
+                    __('sirsoft-pay_nhnkcp::messages.claim.compensation_cancel_reason'),
+                );
+
+                return $this->failure(
+                    'AMOUNT_MISMATCH',
+                    __('sirsoft-pay_nhnkcp::messages.claim.amount_mismatch'),
+                    $this->claimRawResponse($apiService, $pgResponse),
+                );
+            }
+
+            $goodMny = is_numeric($responseMny) && (int) $responseMny > 0
+                ? (int) $responseMny
+                : $callbackAmount;
 
             Log::info('KCP: claim payment approved', [
                 'payment_number' => $payment->payment_number,
@@ -151,9 +227,9 @@ class ClaimPaymentApproveListener implements HookListenerInterface
                 'handled' => true,
                 'success' => true,
                 'transaction_id' => $tno !== '' ? $tno : null,
-                // KCP CLI 응답에는 금액이 없는 경우가 많다 — 콜백 good_mny 가 있을 때만 대조값을
-                // 싣고, 없으면 null 로 두어 모듈 대조를 건너뛴다 (기대액으로 채우면 대조가 항등식이 된다).
-                'paid_amount' => $goodMny > 0 ? $goodMny : null,
+                // 응답 금액(없으면 승인 전에 청구액과 대조한 콜백 good_mny) — 모듈이 스냅샷 환산
+                // 청구액과 한 번 더 정수 비교한다.
+                'paid_amount' => $goodMny,
                 'raw_response' => $this->claimRawResponse($apiService, $pgResponse),
                 'error_code' => null,
                 'error_message' => null,
@@ -166,6 +242,139 @@ class ClaimPaymentApproveListener implements HookListenerInterface
 
             return $this->failure('PG_API_ERROR', $e->getMessage());
         }
+    }
+
+    /**
+     * KCP 결제수단 값이 가상계좌인지 판정합니다. (문자 코드 VCNT · 12자리 코드 001000000000)
+     *
+     * @param  string  $method  결제수단 값
+     * @return bool 가상계좌이면 true
+     */
+    private function isVirtualAccountMethod(string $method): bool
+    {
+        $method = strtoupper(trim($method));
+
+        return $method === 'VCNT' || $method === '001000000000';
+    }
+
+    /**
+     * 승인으로 발급된 가상계좌를 조용히 취소합니다. (보상 — 실패해도 흐름은 지속)
+     *
+     * @param  NhnKcpApiService  $apiService  API 서비스
+     * @param  string  $tno  KCP 거래번호
+     * @param  ClaimPayment  $payment  결제 건 (로그 문맥)
+     * @return void 반환값 없음
+     */
+    private function cancelIssuedQuietly(NhnKcpApiService $apiService, string $tno, ClaimPayment $payment): void
+    {
+        $charge = app(ClaimPaymentService::class)->resolvePaymentCharge($payment);
+
+        $this->cancelApprovedQuietly(
+            $apiService,
+            $tno,
+            $payment,
+            (int) ($charge['minor_unit_amount'] ?? round((float) $payment->amount)),
+            __('sirsoft-pay_nhnkcp::messages.claim.deposit_not_supported'),
+        );
+    }
+
+    /**
+     * 확정된 승인(또는 발급)을 조용히 취소합니다. (보상 — 실패해도 흐름은 지속, 수동 취소용 로그를 남긴다)
+     *
+     * @param  NhnKcpApiService  $apiService  API 서비스
+     * @param  string  $tno  KCP 거래번호
+     * @param  ClaimPayment  $payment  결제 건 (주문번호 자리·로그 문맥)
+     * @param  int  $cancelAmount  취소 금액 (승인된 금액)
+     * @param  string  $reason  취소 사유
+     * @return bool KCP 가 취소를 받아들였으면(res_cd 0000) true
+     */
+    private function cancelApprovedQuietly(
+        NhnKcpApiService $apiService,
+        string $tno,
+        ClaimPayment $payment,
+        int $cancelAmount,
+        string $reason,
+    ): bool {
+        if ($tno === '') {
+            Log::error('KCP: claim compensation cancel skipped — no tno (MANUAL CANCEL REQUIRED)', [
+                'payment_number' => $payment->payment_number,
+            ]);
+
+            return false;
+        }
+
+        try {
+            $response = $apiService->cancelPayment($tno, (string) $payment->payment_number, $cancelAmount, $reason);
+            $resCd = (string) ($response['res_cd'] ?? '');
+
+            if ($resCd !== self::SUCCESS_RES_CD) {
+                Log::error('KCP: claim compensation cancel refused — MANUAL CANCEL REQUIRED', [
+                    'payment_number' => $payment->payment_number,
+                    'tno' => $tno,
+                    'res_cd' => $resCd,
+                ]);
+
+                return false;
+            }
+
+            return true;
+        } catch (\Exception $e) {
+            Log::error('KCP: claim compensation cancel failed — MANUAL CANCEL REQUIRED', [
+                'payment_number' => $payment->payment_number,
+                'tno' => $tno,
+                'error' => $e->getMessage(),
+            ]);
+
+            return false;
+        }
+    }
+
+    /**
+     * 모듈이 승인 뒤 거절한 클레임 결제의 KCP 승인을 취소합니다. (`claim_payment.void_approval` 필터)
+     *
+     * 이 리스너가 승인 전·후로 금액을 먼저 대조하므로 보통은 불리지 않는다 — 모듈 쪽 대조가 따로
+     * 거절한 때의 보상이다. 거래번호는 승인 결과의 거래 식별자를, 취소 금액은 승인 결과가 보고한
+     * 승인액(없으면 결제 건 청구액)을 쓴다.
+     *
+     * @param  array  $result  보상 결과 (기본값)
+     * @param  ClaimPayment  $payment  거절된 결제 건
+     * @param  array  $callback  승인 때 받은 콜백 파라미터
+     * @param  array  $approveResult  승인 필터 결과 (transaction_id·paid_amount 등)
+     * @return array 보상 결과 {handled, success, error_code, error_message}
+     */
+    public function voidApproval(array $result, ClaimPayment $payment, array $callback, array $approveResult): array
+    {
+        if ($payment->pg_provider !== self::PG_PROVIDER_ID) {
+            return $result;
+        }
+
+        $tno = (string) ($approveResult['transaction_id'] ?? '');
+
+        if ($tno === '') {
+            $tno = (string) ($callback['tno'] ?? '');
+        }
+
+        $amount = is_numeric($approveResult['paid_amount'] ?? null) ? (int) $approveResult['paid_amount'] : 0;
+
+        if ($amount <= 0) {
+            $charge = app(ClaimPaymentService::class)->resolvePaymentCharge($payment);
+            $amount = (int) ($charge['minor_unit_amount'] ?? round((float) $payment->amount));
+        }
+
+        $cancelled = $this->cancelApprovedQuietly(
+            $this->getApiService(),
+            $tno,
+            $payment,
+            $amount,
+            __('sirsoft-pay_nhnkcp::messages.claim.compensation_cancel_reason'),
+        );
+
+        return [
+            'handled' => true,
+            'success' => $cancelled,
+            'error_code' => $cancelled ? null : ($tno === '' ? 'MISSING_TNO' : 'PG_API_ERROR'),
+            'error_message' => null,
+        ];
     }
 
     /**

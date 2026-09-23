@@ -29,6 +29,11 @@ class UserClaimAttachmentContractTest extends ModuleTestCase
 
     protected User $user;
 
+    /**
+     * 사유를 시드하고 회원을 만든 뒤 첨부 저장소를 목으로 고정합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -47,6 +52,11 @@ class UserClaimAttachmentContractTest extends ModuleTestCase
         $this->app->when(ClaimAttachmentService::class)->needs(StorageInterface::class)->give(fn () => $storage);
     }
 
+    /**
+     * 목을 정리합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         Mockery::close();
@@ -62,6 +72,8 @@ class UserClaimAttachmentContractTest extends ModuleTestCase
      * @scenario claim_type=exchange, claim_stage=applied
      *
      * @effects user_claim_attachment_keeps_its_legacy_keys
+     *
+     * @return void 반환값 없음
      */
     public function test_user_claim_response_keeps_the_legacy_attachment_keys(): void
     {
@@ -75,6 +87,9 @@ class UserClaimAttachmentContractTest extends ModuleTestCase
                 'reason_code' => 'changed_mind',
                 'charge_method' => 'deduct_from_refund',
                 'image_ids' => [$image->id],
+                // 이 주문은 계좌로 돈이 돌아가는 결제수단이라 반품 접수에도 계좌가 필요하다(#599 validate P3).
+                // 이 테스트가 보는 것은 첨부 응답 계약이므로 계좌를 채워 접수를 통과시킨다.
+                'refund_bank' => ['bank_code' => '004', 'account_number' => '11122233344', 'holder' => '홍길동'],
             ])
             ->assertCreated()
             ->json('data.claim.images.0');
@@ -98,6 +113,8 @@ class UserClaimAttachmentContractTest extends ModuleTestCase
      * @scenario claim_type=exchange, claim_stage=applying
      *
      * @effects user_claim_settings_keep_the_limit_key_names
+     *
+     * @return void 반환값 없음
      */
     public function test_claimable_options_settings_keep_the_limit_keys(): void
     {

@@ -1,0 +1,27 @@
+feature: 배송정책 등록/수정 폼 레이아웃 계약 (메인 · partial 6종 · 템플릿 모달 · i18n · 저장 토스트)
+
+description: |
+  배송정책 폼은 메인 레이아웃과 partial 6개(기본 정보 · 국가별 탭 · 국가별 기본 필드 · 상세 설정 ·
+  도서산간 배송비 · 도서산간 템플릿 모달)로 나뉜다. 각 구역의 조용한 실패는 모양이 같다 — 필드가
+  `setState {{}}` 키로 쓰여 엉뚱한 자리에 저장되거나, 조건식이 activeCountrySetting 이 아닌 값을 읽어
+  다른 국가 탭의 값을 보여 주거나, i18n 키가 다른 경로를 가리켜 키 문자열이 그대로 뜬다. 이 매니페스트는
+  구역별로 그 계약(구조 · 바인딩 · 핸들러 · 조건부 노출 · 키 경로)을 레이아웃 JSON 단위로 고정한다.
+  회수지·국가별 클레임 배송비 축은 admin-shipping-policy-claim-settings.yaml, 통화 축은
+  mp08-shipping-policy-currency.yaml, 구간 경계·단위 축은 issue94-shipping-tier-boundary-units.yaml 이 소유한다.
+
+axes:
+  section: [main, basic_info, country_tabs, country_basic_fields, charge_settings, extra_fee, extra_fee_template_modal, i18n, save_toast]
+
+effects:
+  - shipping_policy_form_main_layout_contract          # 메인: state·data_sources·computed·partial 순서·저장 sequence
+  - shipping_policy_form_basic_info_fields_bound       # 기본 정보: 정책명·토글 필드와 제거된 필드
+  - shipping_policy_form_country_tabs_switch_and_add   # 국가별 탭: 추가·전환·빈 상태
+  - shipping_policy_form_country_fields_follow_active_tab # 국가별 기본 필드: activeCountrySetting 바인딩 + updateCountryField
+  - shipping_policy_form_charge_fields_toggle_by_policy # 상세 설정: 부과정책별 조건부 필드 + 커스텀 핸들러
+  - shipping_policy_form_extra_fee_is_kr_only_and_bound # 도서산간: KR 전용 · PC/모바일 구조 · 행 핸들러
+  - shipping_policy_form_extra_fee_template_modal_crud  # 템플릿 모달: CRUD·검증 오류·로딩·읽기전용
+  - shipping_policy_form_i18n_keys_resolve             # i18n 키 경로 무결성
+  - shipping_policy_form_save_toast_follows_route_id   # 저장 성공 토스트는 route.id 로 등록/수정을 가른다
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/shippingPolicyFormLayouts.test.tsx

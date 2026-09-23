@@ -108,12 +108,17 @@ return [
     'claim_reason_unavailable' => '선택한 사유를 사용할 수 없습니다. 사유를 다시 선택해 주세요.',
     'claim_charge_method_required' => '청구 금액이 있어 청구 방식을 선택해야 합니다.',
     'claim_charge_method_not_allowed' => '선택한 청구 방식은 현재 사용할 수 없습니다.',
+    'claim_charge_method_deduct_after_payment' => '이미 결제한 청구는 환불금 차감 방식으로 바꿀 수 없습니다.',
+    'claim_refund_priority_invalid' => '환불 우선순위 값이 올바르지 않습니다.',
+    'claim_refund_bank_incomplete' => '환불 계좌는 은행·계좌번호·예금주를 모두 입력해야 합니다.',
+    'claim_bulk_item_failed' => '처리 중 오류가 발생해 이 건을 건너뛰었습니다. 잠시 후 다시 시도해 주세요.',
     'claim_request_period_expired' => '신청 가능 기간(:days일)이 지나 신청할 수 없습니다.',
     // 조사는 상태명이 아니라 고정어('상태')에 붙인다 — 상태명 뒤에 바로 붙이면 받침 유무에
     // 따라 '로는/으로는' 이 갈리고, 치환값 앞에 띄어쓰기가 그대로 남는다.
     // 형제 문구(validation.status_transition.invalid)와 같은 문형이다.
     'claim_transition_not_allowed' => ':from 상태에서 :to 상태로는 변경할 수 없습니다.',
     'claim_not_withdrawable' => '현재 상태에서는 신청을 철회할 수 없습니다.',
+    'claim_image_not_removable' => '직접 올린 첨부만 삭제할 수 있습니다.',
     'claim_completion_flow_required' => '완료 처리는 완료 처리 화면에서만 진행할 수 있습니다.',
     'claim_completion_items_invalid' => '완료 처리할 수 있는 신청 상품이 없습니다.',
     'claim_refund_request_exists' => '이미 환불신청서(:number)가 접수된 신청 건입니다.',

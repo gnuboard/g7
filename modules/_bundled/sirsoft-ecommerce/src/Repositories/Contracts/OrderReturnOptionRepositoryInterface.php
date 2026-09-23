@@ -89,12 +89,4 @@ interface OrderReturnOptionRepositoryInterface
      * @return int 변경된 행 수
      */
     public function bulkUpdateStatus(int $returnId, string $status, array $optionIds = []): int;
-
-    /**
-     * 반품 신청서의 신청 상품을 모두 삭제합니다.
-     *
-     * @param  int  $returnId  반품 신청서 ID
-     * @return int 삭제된 행 수
-     */
-    public function deleteByReturnId(int $returnId): int;
 }

@@ -1,0 +1,30 @@
+# 시나리오 매니페스트 — NHN KCP 클레임 추가결제(CP 채번) 콜백·승인키
+# 참조: docs/testing-guide.md "기능 단위 시나리오 매트릭스"
+
+feature: nhnkcp_claim_payment_callback
+
+description: |
+  클레임 추가결제(CP 채번)는 주문과 같은 KCP 결제창·같은 콜백 엔드포인트로 돌아온다. 콜백·승인키
+  컨트롤러는 결제번호가 CP 로 시작하면 주문이 아니라 클레임 결제 건으로 되찾아 처리한다.
+
+  - 승인 콜백은 주문 분기를 타지 않고 모듈 승인(`approvePgPayment`)에 위임해 신청서 상세로 돌려보낸다.
+    결제창을 닫은 사용자 취소는 오류 안내 없이 복귀하고 결제 건은 결제 대기로 남는다.
+  - 모바일 승인키 발급은 결제 건 기준으로 검증한다 — 금액 일치 / 입금 대기 수단 거절 / 부모 주문 부재
+    차단 / 다른 회원의 결제 건 차단.
+  - 클레임 승인도 주문 경로와 같은 결제번호 단위 직렬화 락 안에서 일어난다.
+
+axes:
+  concern:
+    - callback_routing
+    - approval_key
+    - callback_serialization
+
+effects:
+  - kcp_claim_callback_confirms_the_claim_payment_without_an_order   # CP 콜백 → 클레임 결제 확정 + 신청서 상세
+  - kcp_claim_user_cancel_returns_to_the_claim_detail                # 결제창 닫기 → 오류 없이 복귀
+  - kcp_claim_mobile_approval_key_is_gated_by_the_claim_payment      # 승인키 발급의 결제 건 기준 검증
+  - kcp_claim_approval_runs_inside_the_callback_lock                 # CP 승인도 콜백 락 안에서
+
+test_files:
+  - plugins/_bundled/sirsoft-pay_nhnkcp/tests/Feature/Controllers/ClaimPaymentCallbackTest.php
+  - plugins/_bundled/sirsoft-pay_nhnkcp/tests/Unit/Concerns/ClaimApprovalKeyGateTest.php

@@ -100,7 +100,7 @@ class ClaimNotificationDataListener implements HookListenerInterface
      *
      * @param  array  $default  앞선 필터까지의 extract_data 구조
      * @param  string  $type  알림 정의 유형
-     * @param  array  $args  훅 인수 [$claim] (부분 처리 안내는 [$claim, $summary])
+     * @param  array  $args  훅 인수 [$claim, $snapshot] (부분 처리 안내의 두 번째 인자는 회차 요약)
      * @return array{notifiable: mixed, notifiables: mixed, data: array, context: array} 추출 결과
      */
     public function extractData(array $default, string $type, array $args): array
@@ -115,17 +115,24 @@ class ClaimNotificationDataListener implements HookListenerInterface
             return $default;
         }
 
-        // 부분 처리 안내는 신청서만으로 만들 수 없는 값(이번 회차의 건수·결정 표기)을 두
-        // 번째 훅 인자로 받는다. 신청서에서 다시 세면 큐가 잡을 때의 상태를 읽게 되어
-        // **과거 사건의 안내에 지금 숫자가 실린다**(R24 와 같은 이유).
-        $summary = $type === 'claim_partially_processed' && is_array($args[1] ?? null)
-            ? array_map(fn ($value) => is_scalar($value) ? (string) $value : '', $args[1])
+        // 두 번째 훅 인자는 **발행 시점 스냅샷**이다(`ClaimStatusNotificationListener` 가 동기로
+        // 캡처한 상태 값·미수납액, 부분 처리 안내는 이번 회차의 건수·결정 표기). 신청서에서 다시
+        // 읽으면 큐가 잡을 때의 상태를 읽게 되어 **과거 사건의 알림에 지금 값이 실린다**(R24).
+        $snapshot = is_array($args[1] ?? null) ? $args[1] : [];
+
+        // 부분 처리 안내의 회차 요약은 본문 변수로 그대로 싣는다. 스냅샷 전용 키(상태 값·미수납액)는
+        // 치환 변수가 아니라 라벨·금액을 만드는 재료라 빼고 싣는다.
+        $summary = $type === 'claim_partially_processed'
+            ? array_map(
+                fn ($value) => is_scalar($value) ? (string) $value : '',
+                array_diff_key($snapshot, array_flip(['status', 'outstanding_amount'])),
+            )
             : [];
 
         return [
             'notifiable' => null,
             'notifiables' => null,
-            'data' => array_merge($this->buildClaimData($claim), $summary),
+            'data' => array_merge($this->buildClaimData($claim, $snapshot), $summary),
             'context' => $this->buildClaimContext($claim),
         ];
     }
@@ -204,10 +211,14 @@ class ClaimNotificationDataListener implements HookListenerInterface
     /**
      * 클레임 알림 치환 변수를 만듭니다. (29종 공용 키 집합)
      *
+     * 상태 라벨과 미수납액은 발행 시점 스냅샷이 있으면 그 값을 쓴다. 스냅샷이 없는 발행자
+     * (외부 확장이 알림 훅을 직접 쏘는 경우)만 발송 시점 값으로 채운다.
+     *
      * @param  OrderExchange|OrderReturn|OrderRefund  $claim  신청서
+     * @param  array<string, mixed>  $snapshot  발행 시점 스냅샷 (status · outstanding_amount)
      * @return array<string, string> 치환 변수
      */
-    private function buildClaimData(OrderExchange|OrderReturn|OrderRefund $claim): array
+    private function buildClaimData(OrderExchange|OrderReturn|OrderRefund $claim, array $snapshot = []): array
     {
         $claim->loadMissing(['order']);
 
@@ -226,7 +237,9 @@ class ClaimNotificationDataListener implements HookListenerInterface
             'claim_number' => $claimNumber,
             'claim_type_label' => $type->label(),
             'order_number' => (string) ($order?->order_number ?? ''),
-            'status_label' => $this->claimStatusLabel($claim),
+            'status_label' => is_string($snapshot['status'] ?? null)
+                ? $this->claimStatusLabelFor($claim, $snapshot['status'])
+                : $this->claimStatusLabel($claim),
             'reason_label' => method_exists($claim, 'getReasonLabel') ? $claim->getReasonLabel() : '',
             'reject_reason' => (string) ($claim->reject_reason ?? ''),
             'admin_memo' => (string) ($claim->admin_memo ?? ''),
@@ -235,7 +248,7 @@ class ClaimNotificationDataListener implements HookListenerInterface
             // 수신자가 정해진 뒤 personalize 가 올린다.
             'claim_url' => $baseUrl.$this->resolveClaimPath($claimNumber, $isGuest),
             'site_url' => $baseUrl,
-        ], $this->buildAmountData($claim, $order), $this->buildShippingData($claim));
+        ], $this->buildAmountData($claim, $order, $snapshot), $this->buildShippingData($claim));
     }
 
     /**
@@ -259,9 +272,10 @@ class ClaimNotificationDataListener implements HookListenerInterface
      *
      * @param  OrderExchange|OrderReturn|OrderRefund  $claim  신청서
      * @param  Order|null  $order  주문 (통화 스냅샷 출처)
+     * @param  array<string, mixed>  $snapshot  발행 시점 스냅샷 (outstanding_amount)
      * @return array<string, string> 금액 변수
      */
-    private function buildAmountData(OrderExchange|OrderReturn|OrderRefund $claim, ?Order $order): array
+    private function buildAmountData(OrderExchange|OrderReturn|OrderRefund $claim, ?Order $order, array $snapshot = []): array
     {
         if ($claim instanceof OrderRefund) {
             // 화면(`ClaimResource::refund_total`)과 같은 식이다 — 현금 + 마일리지.
@@ -283,7 +297,9 @@ class ClaimNotificationDataListener implements HookListenerInterface
         }
 
         $totalCharge = (float) $claim->total_charge_amount;
-        $outstanding = $this->claimPaymentService->outstandingAmount($claim);
+        $outstanding = is_numeric($snapshot['outstanding_amount'] ?? null)
+            ? (float) $snapshot['outstanding_amount']
+            : $this->claimPaymentService->outstandingAmount($claim);
 
         return [
             'charge_amount' => $this->formatClaimAmount($order, $totalCharge),
@@ -419,10 +435,9 @@ class ClaimNotificationDataListener implements HookListenerInterface
         // 게스트 재료는 **관리자 알림에도** 싣는다 — 운영자가 수신자 규칙을 바꾸면 같은 정의로
         // 고객도 받을 수 있고, 그때 재료가 없으면 조용히 0명이 된다.
         //
-        // 회원 주문인데 그 계정이 사라진 경우(탈퇴)도 같은 재료를 싣는다 — 코어의 trigger_user
-        // 규칙이 계정을 못 찾으면 게스트 폴백으로 낙하하므로, 주문 스냅샷의 연락처로 갈 수 있다.
-        // 재료를 싣지 않으면 종전과 같이 0명이 되므로 되돌리기는 이 조건 한 줄이다.
-        if ($isGuestClaim || $this->triggerUserAccountIsGone($context)) {
+        // 회원 주문인데 그 계정이 사라진 경우(탈퇴·삭제)에는 싣지 않는다 — 코어 정책상 삭제된
+        // 회원의 알림은 주문서에 남은 연락처로 대신 보내지 않는다(발송 이력에 사유만 남는다).
+        if ($isGuestClaim) {
             $context['guest_recipient'] = [
                 'email' => (string) ($order?->getOrdererEmail() ?? ''),
                 'name' => (string) ($order?->getOrdererName() ?? ''),
@@ -431,19 +446,5 @@ class ClaimNotificationDataListener implements HookListenerInterface
         }
 
         return $context;
-    }
-
-    /**
-     * 수신자로 지목된 회원 계정이 이미 사라졌는지 판정합니다.
-     *
-     * `trigger_user_id` 는 있는데 그 계정을 읽을 수 없으면(탈퇴·삭제) 알림이 아무에게도
-     * 가지 않습니다. 이 판정이 참이면 주문 스냅샷 연락처를 게스트 재료로 싣습니다.
-     *
-     * @param  array<string, mixed>  $context  수신자 컨텍스트
-     * @return bool 계정이 사라졌으면 true
-     */
-    private function triggerUserAccountIsGone(array $context): bool
-    {
-        return ! empty($context['trigger_user_id']) && ($context['trigger_user'] ?? null) === null;
     }
 }

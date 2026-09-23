@@ -1,0 +1,15 @@
+feature: 알림 수신자 권한 판정 메모의 수명 — 요청·큐 잡 하나 (#599 validate)
+
+description: |
+  NotificationRecipientCapability 는 수신자 수만큼 같은 권한을 다시 조회하지 않도록 판정을 메모한다.
+  singleton 으로 두면 큐 워커가 재시작될 때까지 메모가 남아, 권한을 뺏긴 사람도 관리자 링크가 든 알림을
+  계속 받았다. scoped 로 두면 요청과 큐 잡이 끝날 때마다 비워진다.
+
+axes:
+  lifetime: [queue_job]
+
+effects:
+  - recipient_capability_memo_is_reset_between_jobs
+
+test_files:
+  - tests/Unit/Services/NotificationRecipientCapabilityScopeTest.php

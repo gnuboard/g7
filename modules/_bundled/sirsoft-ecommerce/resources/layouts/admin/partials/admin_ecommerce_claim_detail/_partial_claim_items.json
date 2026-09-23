@@ -457,8 +457,7 @@
                                         "className": "w-48 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed",
                                         "value": "{{_local.itemBulkStatus ?? ''}}",
                                         "disabled": "{{claim?.data?.abilities?.can_update_status !== true}}",
-                                        "placeholder": "$t:sirsoft-ecommerce.admin.claim.bulk.status_placeholder",
-                                        "options": "{{_local.itemTransitionOptions ?? []}}"
+                                        "options": "{{[{ value: '', label: $t('sirsoft-ecommerce.admin.claim.bulk.status_placeholder'), disabled: true }].concat(_local.itemTransitionOptions ?? [])}}"
                                     }
                                 },
                                 {

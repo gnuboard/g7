@@ -24,7 +24,7 @@
 ### GET /api/modules/sirsoft-ecommerce/claim-image/{hash}
 <!-- @generated:start:api.modules.sirsoft-ecommerce.claim-image.download -->
 - **라우트명**: `api.modules.sirsoft-ecommerce.claim-image.download`
-- **컨트롤러**: `Modules\Sirsoft\Ecommerce\Http\Controllers\User\ClaimImageController@download`
+- **컨트롤러**: `Modules\Sirsoft\Ecommerce\Http\Controllers\Public\ClaimImageDownloadController@download`
 - **인증/권한**: `optional.sanctum` (서명 URL 이면 비로그인 허용 / 서명이 없으면 신청자 본인 또는 `sirsoft-ecommerce.claims.read` 권한)
 
 **요청 파라미터**

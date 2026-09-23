@@ -24,5 +24,6 @@ return [
         'currency_not_supported' => 'NHN KCP クレーム決済はKRW決済のみサポートしています。',
         'deposit_not_supported' => 'クレーム追加決済は入金待機方式(仮想口座)をサポートしていません。',
         'compensation_cancel_reason' => 'クレーム決済承認拒否に伴う自動キャンセル',
+        'amount_mismatch' => '決済金額が請求額と一致しないか請求額を確認できないため、決済を確定しませんでした(承認済みの金額は取り消されます)。申請書から決済をやり直してください。',
     ],
 ];

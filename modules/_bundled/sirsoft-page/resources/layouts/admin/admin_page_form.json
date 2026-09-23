@@ -722,6 +722,7 @@
                                 ]
                             },
                             {
+                                "comment": "한도는 서버 공개 설정(publicLimits)을 그대로 따른다. 개수 상한이 없으면(max_count=null, 제한 없음)\n             maxFiles 를 비워(undefined) 컴포넌트 기본값을 쓰게 한다 — `?? 5` 로 받으면 \"제한 없음\" 이 5개 상한이 된다.\n             허용 형식이 비면(accept='') 빈 accept 가 파일 선택창에서 모든 형식을 열므로 기본 목록으로 떨어뜨린다(`||`).",
                                 "id": "file_uploader",
                                 "type": "composite",
                                 "name": "FileUploader",
@@ -765,14 +766,13 @@
                                 ],
                                 "props": {
                                     "collection": "page_attachments",
-                                    "maxFiles": "{{attachmentSettings?.data?.max_count ?? 5}}",
+                                    "maxFiles": "{{attachmentSettings?.data?.max_count ?? undefined}}",
                                     "maxSize": "{{attachmentSettings?.data?.max_size_mb ?? 10}}",
-                                    "accept": "{{attachmentSettings?.data?.accept ?? '.jpg,.jpeg,.png,.gif,.webp,.pdf,.zip'}}",
+                                    "accept": "{{attachmentSettings?.data?.accept || '.jpg,.jpeg,.png,.gif,.webp,.pdf,.zip'}}",
                                     "initialFiles": "{{_local.form?.attachments ?? []}}",
                                     "autoUpload": false,
                                     "uploadTriggerEvent": "upload:page_attachments",
                                     "disabled": "{{_computed.isReadOnly}}",
-                                    "compact": true,
                                     "confirmBeforeRemove": true,
                                     "confirmRemoveTitle": "$t:sirsoft-page.admin.page.form.confirm_remove_attachment_title",
                                     "confirmRemoveMessage": "$t:sirsoft-page.admin.page.form.confirm_remove_attachment_message",

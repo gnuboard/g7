@@ -80,6 +80,33 @@ class ClaimQuantityGuard
     }
 
     /**
+     * 여러 주문옵션의 활성 클레임 점유 수량을 한 번에 반환합니다. (목록·주문 상세 N+1 방지)
+     *
+     * `lockedQuantity()` 와 **같은 세 축**(교환·반품·직접 환불신청)을 유형당 한 쿼리로 묶는다.
+     * 주문 상세처럼 옵션을 여러 개 그리는 응답이 옵션마다 `lockedQuantity()` 를 부르면 옵션 수 × 3
+     * 쿼리가 나간다. 수정 중인 자기 신청서 제외(`exclude*`)는 단건 경로에만 있다 — 일괄판을 쓰는
+     * 응답은 신청서 문맥이 없다.
+     *
+     * @param  array<int, int>  $orderOptionIds  주문옵션 ID 목록
+     * @return array<int, int> 주문옵션 ID => 점유 수량 (요청한 모든 ID 가 키로 있다)
+     */
+    public function lockedQuantities(array $orderOptionIds): array
+    {
+        $ids = array_values(array_unique(array_map('intval', $orderOptionIds)));
+        $exchange = $this->exchangeRepository->sumActiveQuantitiesByOrderOptions($ids);
+        $return = $this->returnRepository->sumActiveQuantitiesByOrderOptions($ids);
+        $refund = $this->refundRepository->sumActiveDirectQuantitiesByOrderOptions($ids);
+
+        $locked = [];
+
+        foreach ($ids as $id) {
+            $locked[$id] = ($exchange[$id] ?? 0) + ($return[$id] ?? 0) + ($refund[$id] ?? 0);
+        }
+
+        return $locked;
+    }
+
+    /**
      * 해당 주문옵션에서 지금 신청할 수 있는 잔여 수량을 반환합니다.
      *
      * @param  OrderOption  $option  주문옵션
@@ -179,6 +206,7 @@ class ClaimQuantityGuard
      *
      * @param  Order  $order  대상 주문
      * @param  array  $cancelItems  취소 대상 [{order_option_id, cancel_quantity}]
+     * @return void 반환값 없음
      *
      * @throws OrderClaimException 코스 상태 상품이거나 잔여 수량을 넘을 때
      */
@@ -224,6 +252,7 @@ class ClaimQuantityGuard
      * 두 형태를 모두 받는다.
      *
      * @param  array<array-key, OrderStatusEnum|string|null>  $optionStatuses  대상 주문옵션의 현재 상태 목록
+     * @return void 반환값 없음
      *
      * @throws OrderClaimException 코스 상태 상품이 섞여 있을 때
      */
@@ -246,6 +275,7 @@ class ClaimQuantityGuard
      * 내부·훅 호출도 같은 규칙을 따라야 한다.
      *
      * @param  OrderStatusEnum  $target  목표 상태
+     * @return void 반환값 없음
      *
      * @throws OrderClaimException 목표가 코스 상태일 때
      */

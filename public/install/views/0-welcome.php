@@ -139,7 +139,7 @@ $storageResult = $storageCheck['results']['storage'] ?? null;
                             <!-- Windows ReadOnly 속성: ACL 이 아니라 파일 속성이라 icacls 로 해소되지 않는다 -->
                             <p class="fix-guide-label"><?= lang('permission_readonly_fix_guide') ?></p>
                             <div class="code-box">
-                                <pre class="fix-command"><?= htmlspecialchars('attrib -R "'.str_replace('/', '\\', $storagePath).'" /D /S') ?></pre>
+                                <pre class="fix-command"><?= htmlspecialchars(getPermissionFixCommand($storagePath, 'windows_readonly')) ?></pre>
                                 <button class="btn-copy" onclick="copyWelcomeCommand(this)"><?= lang('copy_command') ?></button>
                             </div>
                             <p class="fix-guide-hint"><?= lang('permission_readonly_hint') ?></p>

@@ -15,6 +15,15 @@
   교환 옵션에서 **지금 교환받을 수 없는 조합**을 골랐을 때의 안내(`claim.change_product.unavailable`)의
   일본어 번역을 추가했습니다(`build-language-pack.cjs --locale=ja` 생성).
 - 승인된 신청서의 수정 주소로 들어왔을 때의 안내(`claim.edit.not_editable`) 일본어 번역을 추가했습니다.
+- 사진 첨부의 용량·형식 거절 안내(`attachment.file_too_large` · `attachment.file_type_not_allowed` ·
+  `attachment.upload_failed` · `attachment.upload_response_invalid`)와 주문 목록 추가옵션 요약 「他N件」
+  (`mypage.orders.additional_options_more`)의 일본어 번역을 추가했습니다. 종전에는 일본어 화면에도 한국어 문구가 떴습니다.
+- 환불 계좌 칸이 가린 등록 계좌로 채워졌을 때의 안내(`claim.apply.refund_account_masked_hint`) 일본어 번역을 추가했습니다.
+
+### Changed
+
+- 클레임 신청서 결제 버튼 문구(`claim.apply.submit_with_payment`)가 금액을 문구 안에서 받습니다(「{{amount}}を決済する」).
+  금액을 문구 밖에 이어 붙이던 동안에는 어순이 언어마다 틀렸습니다.
 
 ### Fixed
 

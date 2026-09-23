@@ -4,6 +4,10 @@ import { Icon } from '../basic/Icon';
 import { IconName } from '../basic/IconTypes';
 import type { EditorAttrs } from '../../types';
 
+// G7Core.t() 번역 함수 참조
+const t = (key: string, params?: Record<string, string | number>) =>
+  (window as any).G7Core?.t?.(key, params) ?? key;
+
 /**
  * 뱃지 상태 어휘.
  *
@@ -53,7 +57,7 @@ export interface StatusBadgeProps {
  *   "name": "StatusBadge",
  *   "props": {
  *     "status": "success",
- *     "label": "완료",
+ *     "label": "$t:common.status_badge.success",
  *     "showIcon": true
  *   }
  * }
@@ -96,18 +100,19 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
     default: IconName.QuestionCircle,
   };
 
-  // 상태별 기본 라벨 매핑
+  // 상태별 기본 라벨 — 번역 키(common.status_badge.*)로 낸다. 리터럴로 들고 있으면 영어·일본어
+  // 관리자 화면에도 한국어가 그대로 뜬다.
   const statusLabels: Record<StatusType, string> = {
-    success: '성공',
-    warning: '경고',
-    error: '오류',
-    danger: '위험',
-    info: '정보',
-    primary: '진행',
-    secondary: '보조',
-    dark: '보류',
-    pending: '대기 중',
-    default: '기본',
+    success: t('common.status_badge.success'),
+    warning: t('common.status_badge.warning'),
+    error: t('common.status_badge.error'),
+    danger: t('common.status_badge.danger'),
+    info: t('common.status_badge.info'),
+    primary: t('common.status_badge.primary'),
+    secondary: t('common.status_badge.secondary'),
+    dark: t('common.status_badge.dark'),
+    pending: t('common.status_badge.pending'),
+    default: t('common.status_badge.default'),
   };
 
   // 어휘 밖 값에서 `undefined` 가 className 에 박히지 않게 `default` 로 떨어뜨린다.

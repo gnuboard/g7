@@ -45,6 +45,11 @@ class ClaimPaymentServiceTest extends ModuleTestCase
 
     protected OrderExchangeService $exchangeService;
 
+    /**
+     * 테스트 전제(통화·사유·서비스 등)를 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -55,6 +60,11 @@ class ClaimPaymentServiceTest extends ModuleTestCase
         $this->exchangeService = app(OrderExchangeService::class);
     }
 
+    /**
+     * 테스트가 바꾼 설정·훅을 정리합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         $this->clearTestCurrencySettings();
@@ -107,9 +117,13 @@ class ClaimPaymentServiceTest extends ModuleTestCase
     // ================================================================
 
     /**
+     * 신청 시점 결제 반품의 접수 직후 결제 대기 건이 만들어지고 신청서가 결제대기로 옮겨지는지 검증합니다.
+     *
      * @scenario method=card, timing=on_request, outcome=approved
      *
      * @effects claim_payment_row_is_created_only_when_the_charge_is_positive
+     *
+     * @return void 반환값 없음
      */
     public function test_initiate_creates_a_pending_payment_and_moves_the_return_to_payment_pending(): void
     {
@@ -129,7 +143,11 @@ class ClaimPaymentServiceTest extends ModuleTestCase
     }
 
     /**
+     * 환불금 차감 방식이면 결제 대기 건을 만들지 않는지 검증합니다.
+     *
      * @effects claim_payment_is_not_created_for_deduct_from_refund
+     *
+     * @return void 반환값 없음
      */
     public function test_initiate_does_nothing_for_deduct_from_refund(): void
     {
@@ -141,7 +159,11 @@ class ClaimPaymentServiceTest extends ModuleTestCase
     }
 
     /**
+     * 승인 시점 결제는 운영자가 승인하기 전까지 결제 대기 건을 만들지 않는지 검증합니다.
+     *
      * @effects claim_payment_on_approval_waits_for_the_admin
+     *
+     * @return void 반환값 없음
      */
     public function test_initiate_does_nothing_for_pay_on_approval_until_the_admin_approves(): void
     {
@@ -152,7 +174,11 @@ class ClaimPaymentServiceTest extends ModuleTestCase
     }
 
     /**
+     * 청구액이 0 원이면 결제 대기 건을 만들지 않는지 검증합니다.
+     *
      * @effects claim_payment_row_is_created_only_when_the_charge_is_positive
+     *
+     * @return void 반환값 없음
      */
     public function test_initiate_does_nothing_when_the_charge_is_zero(): void
     {
@@ -167,7 +193,11 @@ class ClaimPaymentServiceTest extends ModuleTestCase
     }
 
     /**
+     * 허용 목록 밖의 결제 수단을 거절하는지 검증합니다.
+     *
      * @effects claim_payment_method_outside_the_allowed_list_is_rejected
+     *
+     * @return void 반환값 없음
      */
     public function test_initiate_rejects_a_payment_method_outside_the_allowed_list(): void
     {
@@ -179,7 +209,11 @@ class ClaimPaymentServiceTest extends ModuleTestCase
     }
 
     /**
+     * 승인 시점 결제가 승인 시도 때 결제 대기 건을 만드는지 검증합니다.
+     *
      * @effects claim_payment_on_approval_is_idempotent
+     *
+     * @return void 반환값 없음
      */
     public function test_request_payment_on_approval_creates_the_pending_payment_at_approval_time(): void
     {
@@ -197,7 +231,11 @@ class ClaimPaymentServiceTest extends ModuleTestCase
     }
 
     /**
+     * 비회원 신청서의 승인 시점 결제 건이 마일리지 수단으로 만들어지지 않는지 검증합니다.
+     *
      * @effects claim_payment_guest_never_gets_a_mileage_payment_row
+     *
+     * @return void 반환값 없음
      */
     public function test_request_payment_on_approval_never_creates_a_mileage_row_for_a_guest(): void
     {
@@ -228,9 +266,13 @@ class ClaimPaymentServiceTest extends ModuleTestCase
     // ================================================================
 
     /**
+     * 마일리지 결제가 FIFO 로 차감되고 결제 건이 결제 완료가 되는지 검증합니다.
+     *
      * @scenario method=point, timing=on_request, outcome=approved
      *
      * @effects claim_payment_mileage_is_deducted_fifo_once_per_payment
+     *
+     * @return void 반환값 없음
      */
     public function test_pay_with_mileage_deducts_fifo_and_marks_the_payment_paid(): void
     {
@@ -261,9 +303,13 @@ class ClaimPaymentServiceTest extends ModuleTestCase
     }
 
     /**
+     * 마일리지 잔액이 모자라면 결제 완료로 표시하지 않고 거절하는지 검증합니다.
+     *
      * @scenario method=point, timing=on_request, outcome=failed
      *
      * @effects claim_payment_mileage_insufficient_balance_leaves_the_payment_pending
+     *
+     * @return void 반환값 없음
      */
     public function test_pay_with_mileage_rejects_an_insufficient_balance_without_marking_paid(): void
     {
@@ -277,7 +323,11 @@ class ClaimPaymentServiceTest extends ModuleTestCase
     }
 
     /**
+     * 마일리지 결제에는 회원이 필요한지 검증합니다.
+     *
      * @effects claim_payment_mileage_requires_a_member
+     *
+     * @return void 반환값 없음
      */
     public function test_pay_with_mileage_requires_a_member(): void
     {
@@ -288,9 +338,13 @@ class ClaimPaymentServiceTest extends ModuleTestCase
     }
 
     /**
+     * 결제 대기가 아닌 건의 결제 시작을 거절하는지 검증합니다.
+     *
      * @scenario method=card, timing=on_request, outcome=approved
      *
      * @effects claim_payment_pg_approval_is_idempotent_for_a_replayed_callback
+     *
+     * @return void 반환값 없음
      */
     public function test_pay_rejects_a_payment_that_is_not_pending(): void
     {
@@ -307,7 +361,11 @@ class ClaimPaymentServiceTest extends ModuleTestCase
     // ================================================================
 
     /**
+     * 카드 결제 진입이 결제번호(CP)를 가맹점 주문번호로 싣는지 검증합니다.
+     *
      * @effects claim_payment_number_is_the_merchant_order_id
+     *
+     * @return void 반환값 없음
      */
     public function test_pay_with_card_returns_the_pg_entry_with_the_cp_number_as_merchant_order_id(): void
     {
@@ -334,7 +392,11 @@ class ClaimPaymentServiceTest extends ModuleTestCase
     }
 
     /**
+     * 통화 스냅샷이 없는 주문의 카드 결제 진입을 거절하는지 검증합니다.
+     *
      * @effects claim_payment_requires_a_readable_currency_snapshot
+     *
+     * @return void 반환값 없음
      */
     public function test_pay_with_card_is_rejected_when_the_order_has_no_currency_snapshot(): void
     {
@@ -353,9 +415,13 @@ class ClaimPaymentServiceTest extends ModuleTestCase
     }
 
     /**
+     * 통화 스냅샷을 읽을 수 없으면 결제 행을 만들기 전에 신청 시점 결제를 거절하는지 검증합니다.
+     *
      * @scenario method=card, timing=on_request, outcome=approved
      *
      * @effects claim_payment_requires_a_readable_currency_snapshot
+     *
+     * @return void 반환값 없음
      */
     public function test_initiate_for_request_rejects_before_creating_the_payment_row_when_the_currency_snapshot_is_unreadable(): void
     {
@@ -375,9 +441,13 @@ class ClaimPaymentServiceTest extends ModuleTestCase
     }
 
     /**
+     * 통화 스냅샷을 읽을 수 없으면 결제 행을 만들기 전에 승인 시점 결제를 거절하는지 검증합니다.
+     *
      * @scenario method=card, timing=on_approval, outcome=approved
      *
      * @effects claim_payment_requires_a_readable_currency_snapshot
+     *
+     * @return void 반환값 없음
      */
     public function test_request_payment_on_approval_rejects_before_creating_the_payment_row_when_the_currency_snapshot_is_unreadable(): void
     {
@@ -397,9 +467,13 @@ class ClaimPaymentServiceTest extends ModuleTestCase
     }
 
     /**
+     * 통화 스냅샷을 읽을 수 없으면 결제 행을 바꾸지 않고 거절하는지 검증합니다.
+     *
      * @scenario method=card, timing=on_request, outcome=approved
      *
      * @effects claim_payment_requires_a_readable_currency_snapshot
+     *
+     * @return void 반환값 없음
      */
     public function test_pay_leaves_the_payment_row_untouched_when_the_currency_snapshot_is_unreadable(): void
     {
@@ -422,9 +496,13 @@ class ClaimPaymentServiceTest extends ModuleTestCase
     }
 
     /**
+     * 통화 스냅샷을 읽을 수 없으면 차액 정산이 쓸 수 없는 진입을 돌려주지 않고 거절하는지 검증합니다.
+     *
      * @scenario method=card, timing=on_request, outcome=approved
      *
      * @effects claim_payment_requires_a_readable_currency_snapshot
+     *
+     * @return void 반환값 없음
      */
     public function test_settle_charge_difference_rejects_instead_of_returning_an_unusable_entry_when_the_snapshot_is_unreadable(): void
     {
@@ -445,9 +523,13 @@ class ClaimPaymentServiceTest extends ModuleTestCase
     }
 
     /**
+     * 통화 스냅샷을 읽을 수 없으면 결제 진입 파라미터를 비우는지 검증합니다.
+     *
      * @scenario method=card, timing=on_request, outcome=approved
      *
      * @effects claim_payment_requires_a_readable_currency_snapshot
+     *
+     * @return void 반환값 없음
      */
     public function test_payment_payload_omits_the_pg_entry_when_the_currency_snapshot_is_unreadable(): void
     {
@@ -465,7 +547,11 @@ class ClaimPaymentServiceTest extends ModuleTestCase
     }
 
     /**
+     * 결제 수단을 바꾸면 금액이 PG 칸과 마일리지 칸 사이로 옮겨지는지 검증합니다.
+     *
      * @effects claim_payment_switching_the_method_moves_the_amount_between_columns
+     *
+     * @return void 반환값 없음
      */
     public function test_pay_switching_the_method_moves_the_amount_between_pg_and_points_columns(): void
     {
@@ -481,9 +567,13 @@ class ClaimPaymentServiceTest extends ModuleTestCase
     }
 
     /**
+     * PG 승인이 플러그인 훅을 거쳐 결제를 확정하는지 검증합니다.
+     *
      * @scenario method=card, timing=on_request, outcome=approved
      *
      * @effects claim_payment_pg_approval_goes_through_the_plugin_hook
+     *
+     * @return void 반환값 없음
      */
     public function test_approve_confirms_the_payment_through_the_plugin_hook(): void
     {
@@ -504,7 +594,11 @@ class ClaimPaymentServiceTest extends ModuleTestCase
     }
 
     /**
+     * PG 실패 원문이 응답에 새지 않고 코드만 실리는지 검증합니다.
+     *
      * @effects claim_payment_pg_failure_message_is_not_leaked_to_the_response
+     *
+     * @return void 반환값 없음
      */
     public function test_pg_failure_message_does_not_leak_the_provider_text_to_the_response(): void
     {
@@ -531,7 +625,11 @@ class ClaimPaymentServiceTest extends ModuleTestCase
     }
 
     /**
+     * 환급 대상을 해석할 수 없는 마일리지 환급을 환급 완료로 기록하지 않는지 검증합니다.
+     *
      * @effects claim_payment_point_refund_without_an_owner_is_not_marked_refunded
+     *
+     * @return void 반환값 없음
      */
     public function test_a_point_refund_without_a_resolvable_owner_is_not_marked_refunded(): void
     {
@@ -552,7 +650,11 @@ class ClaimPaymentServiceTest extends ModuleTestCase
     }
 
     /**
+     * 같은 콜백이 다시 도달해도 승인이 한 번만 일어나는지 검증합니다.
+     *
      * @effects claim_payment_pg_approval_is_idempotent_for_a_replayed_callback
+     *
+     * @return void 반환값 없음
      */
     public function test_approve_is_idempotent_for_a_replayed_callback(): void
     {
@@ -561,7 +663,12 @@ class ClaimPaymentServiceTest extends ModuleTestCase
         HookManager::addFilter('sirsoft-ecommerce.claim_payment.approve', function (array $default, $payment) use (&$calls) {
             $calls++;
 
-            return array_merge($default, ['handled' => true, 'success' => true, 'transaction_id' => 'TXN-ONCE']);
+            return array_merge($default, [
+                'handled' => true,
+                'success' => true,
+                'transaction_id' => 'TXN-ONCE',
+                'paid_amount' => app(ClaimPaymentService::class)->resolvePaymentCharge($payment)['minor_unit_amount'],
+            ]);
         });
         $return = $this->requestedReturn();
         $payment = $this->service->initiateForRequest($return, PaymentMethodEnum::CARD->value);
@@ -575,7 +682,11 @@ class ClaimPaymentServiceTest extends ModuleTestCase
     }
 
     /**
+     * 승인 연동이 없으면 거절하고 결제 대기로 남기는지 검증합니다.
+     *
      * @effects claim_payment_pg_approval_without_a_listener_is_rejected
+     *
+     * @return void 반환값 없음
      */
     public function test_approve_without_a_plugin_listener_is_rejected_and_leaves_the_payment_pending(): void
     {
@@ -588,9 +699,13 @@ class ClaimPaymentServiceTest extends ModuleTestCase
     }
 
     /**
+     * PG 승인 실패가 오류를 기록하고 결제 대기로 남기는지 검증합니다.
+     *
      * @scenario method=card, timing=on_request, outcome=failed
      *
      * @effects claim_payment_pg_failure_keeps_the_payment_pending_and_records_the_error
+     *
+     * @return void 반환값 없음
      */
     public function test_approve_failure_records_the_pg_error_and_keeps_the_payment_pending(): void
     {
@@ -609,7 +724,11 @@ class ClaimPaymentServiceTest extends ModuleTestCase
     }
 
     /**
+     * 승인 금액이 청구액과 다르면 거절하는지 검증합니다.
+     *
      * @effects claim_payment_amount_must_match_the_frozen_charge
+     *
+     * @return void 반환값 없음
      */
     public function test_approve_rejects_an_amount_that_differs_from_the_charge(): void
     {
@@ -628,7 +747,11 @@ class ClaimPaymentServiceTest extends ModuleTestCase
     // ================================================================
 
     /**
+     * 자동 승인이 꺼져 있으면 신청 시점 결제가 결제 뒤 결제완료에 머무는지 검증합니다.
+     *
      * @effects claim_payment_completion_moves_the_claim_to_paid
+     *
+     * @return void 반환값 없음
      */
     public function test_pay_on_request_lands_in_paid_after_payment_unless_auto_approve_is_on(): void
     {
@@ -645,9 +768,13 @@ class ClaimPaymentServiceTest extends ModuleTestCase
     }
 
     /**
+     * 결제완료 신청서도 신청자가 철회할 수 있는지 검증합니다.
+     *
      * @scenario method=card, timing=on_request, outcome=refunded
      *
      * @effects claim_payment_completion_moves_the_claim_to_paid
+     *
+     * @return void 반환값 없음
      */
     public function test_paid_claims_are_still_withdrawable_by_the_requester(): void
     {
@@ -665,7 +792,11 @@ class ClaimPaymentServiceTest extends ModuleTestCase
     }
 
     /**
+     * 자동 승인이 켜져 있으면 신청 시점 결제가 결제 뒤 승인으로 옮겨지는지 검증합니다.
+     *
      * @effects claim_payment_on_request_auto_approves_only_when_the_setting_is_on
+     *
+     * @return void 반환값 없음
      */
     public function test_pay_on_request_auto_approves_after_payment_when_the_setting_is_on(): void
     {
@@ -681,9 +812,13 @@ class ClaimPaymentServiceTest extends ModuleTestCase
     }
 
     /**
+     * 승인 시점 결제는 결제 뒤 항상 승인으로 옮겨지는지 검증합니다.
+     *
      * @scenario method=point, timing=on_approval, outcome=approved
      *
      * @effects claim_payment_on_approval_always_approves_after_payment
+     *
+     * @return void 반환값 없음
      */
     public function test_pay_on_approval_always_approves_after_payment(): void
     {
@@ -697,9 +832,13 @@ class ClaimPaymentServiceTest extends ModuleTestCase
     }
 
     /**
+     * 승인 시점 카드 결제가 플러그인 훅으로 확정되는지 검증합니다.
+     *
      * @scenario method=card, timing=on_approval, outcome=approved
      *
      * @effects claim_payment_on_approval_always_approves_after_payment
+     *
+     * @return void 반환값 없음
      */
     public function test_pay_on_approval_confirms_a_card_payment_through_the_plugin_hook(): void
     {
@@ -728,7 +867,11 @@ class ClaimPaymentServiceTest extends ModuleTestCase
     }
 
     /**
+     * 교환 결제 확정이 교환 훅을 발화하고 자동 승인할 수 있는지 검증합니다.
+     *
      * @effects claim_payment_completion_fires_the_claim_type_specific_hook
+     *
+     * @return void 반환값 없음
      */
     public function test_exchange_payment_completion_fires_the_exchange_hook_and_can_auto_approve(): void
     {
@@ -758,6 +901,8 @@ class ClaimPaymentServiceTest extends ModuleTestCase
      * 도 "옮겨지고 … 훅이 발행됩니다" 로 이 순서를 계약으로 공표한다.
      *
      * @effects claim_payment_completion_hook_sees_the_claim_already_paid
+     *
+     * @return void 반환값 없음
      */
     public function test_payment_completion_hook_sees_the_claim_already_moved_to_paid(): void
     {
@@ -776,7 +921,11 @@ class ClaimPaymentServiceTest extends ModuleTestCase
     }
 
     /**
+     * 일부만 수납되면 결제대기에 머물고 결제 완료 훅을 발화하지 않는지 검증합니다.
+     *
      * @effects claim_payment_partial_payment_stays_in_payment_pending
+     *
+     * @return void 반환값 없음
      */
     public function test_partial_payment_leaves_the_claim_in_payment_pending_without_firing_the_completion_hook(): void
     {
@@ -806,9 +955,13 @@ class ClaimPaymentServiceTest extends ModuleTestCase
     // ================================================================
 
     /**
+     * 신청서 종결 환급이 마일리지를 한 번만 복원하고 결제 건을 환급 완료로 두는지 검증합니다.
+     *
      * @scenario method=point, timing=on_request, outcome=refunded
      *
      * @effects claim_payment_refund_restores_mileage_once
+     *
+     * @return void 반환값 없음
      */
     public function test_refund_for_claim_restores_mileage_once_and_marks_the_payment_refunded(): void
     {
@@ -829,7 +982,11 @@ class ClaimPaymentServiceTest extends ModuleTestCase
     }
 
     /**
+     * 신청서 종결 시 결제 대기 건은 환급 없이 취소되는지 검증합니다.
+     *
      * @effects claim_payment_refund_cancels_a_pending_payment_without_refunding
+     *
+     * @return void 반환값 없음
      */
     public function test_refund_for_claim_cancels_a_pending_payment_without_refunding(): void
     {
@@ -843,9 +1000,13 @@ class ClaimPaymentServiceTest extends ModuleTestCase
     }
 
     /**
+     * 신청서 종결 환급이 멱등키와 함께 PG 환급 훅을 부르는지 검증합니다.
+     *
      * @scenario method=card, timing=on_request, outcome=refunded
      *
      * @effects claim_payment_refund_calls_the_pg_hook_with_an_idempotency_key
+     *
+     * @return void 반환값 없음
      */
     public function test_refund_for_claim_calls_the_pg_refund_hook_with_an_idempotency_key(): void
     {
@@ -867,7 +1028,11 @@ class ClaimPaymentServiceTest extends ModuleTestCase
     }
 
     /**
+     * 실패한 환급을 다른 금액으로 재시도하면 멱등키가 바뀌는지 검증합니다.
+     *
      * @effects claim_payment_refund_idempotency_key_changes_when_the_amount_changes
+     *
+     * @return void 반환값 없음
      */
     public function test_pg_refund_idempotency_key_changes_when_a_failed_refund_is_retried_with_another_amount(): void
     {
@@ -894,7 +1059,11 @@ class ClaimPaymentServiceTest extends ModuleTestCase
     }
 
     /**
+     * PG 환급 실패가 예외로 올라오고 결제 건을 결제 완료로 남기는지 검증합니다.
+     *
      * @effects claim_payment_refund_failure_keeps_the_payment_paid
+     *
+     * @return void 반환값 없음
      */
     public function test_pg_refund_failure_is_raised_and_keeps_the_payment_paid(): void
     {
@@ -912,7 +1081,11 @@ class ClaimPaymentServiceTest extends ModuleTestCase
     }
 
     /**
+     * 환급 연동이 없으면 PG 환급을 거절하는지 검증합니다.
+     *
      * @effects claim_payment_refund_without_a_listener_is_rejected
+     *
+     * @return void 반환값 없음
      */
     public function test_pg_refund_without_a_plugin_listener_is_rejected(): void
     {
@@ -930,7 +1103,11 @@ class ClaimPaymentServiceTest extends ModuleTestCase
     // ================================================================
 
     /**
+     * 청구액이 줄면 차액을 부분 환급하고 결제 건을 결제 완료로 두는지 검증합니다.
+     *
      * @effects claim_payment_settle_difference_refunds_a_decrease
+     *
+     * @return void 반환값 없음
      */
     public function test_settle_difference_refunds_the_decrease_partially_and_keeps_the_payment_paid(): void
     {
@@ -955,7 +1132,11 @@ class ClaimPaymentServiceTest extends ModuleTestCase
     }
 
     /**
+     * 청구액이 늘면 증가분의 결제 대기 건을 만드는지 검증합니다.
+     *
      * @effects claim_payment_settle_difference_charges_an_increase
+     *
+     * @return void 반환값 없음
      */
     public function test_settle_difference_creates_a_pending_payment_for_the_increase(): void
     {
@@ -977,9 +1158,13 @@ class ClaimPaymentServiceTest extends ModuleTestCase
     }
 
     /**
+     * 아직 내지 않은 결제 대기 건을 새 청구액으로 고치는지 검증합니다.
+     *
      * @scenario method=card, timing=on_request, outcome=approved
      *
      * @effects claim_payment_partial_payment_stays_in_payment_pending
+     *
+     * @return void 반환값 없음
      */
     public function test_settle_difference_updates_an_unpaid_pending_payment_to_the_new_charge(): void
     {
@@ -996,7 +1181,11 @@ class ClaimPaymentServiceTest extends ModuleTestCase
     }
 
     /**
+     * 청구액이 0 원이 되면 결제 대기 건을 취소하는지 검증합니다.
+     *
      * @effects claim_payment_settle_difference_cancels_the_pending_row_at_zero
+     *
+     * @return void 반환값 없음
      */
     public function test_settle_difference_cancels_the_pending_payment_when_the_charge_drops_to_zero(): void
     {
@@ -1014,7 +1203,11 @@ class ClaimPaymentServiceTest extends ModuleTestCase
     // ================================================================
 
     /**
+     * 주문의 클레임 추가결제 합계가 부분 환급을 뺀 실수납액의 합인지 검증합니다.
+     *
      * @effects claim_payment_order_paid_total_excludes_refunded_amounts
+     *
+     * @return void 반환값 없음
      */
     public function test_order_paid_total_sums_net_paid_amounts_across_claims(): void
     {
@@ -1050,6 +1243,8 @@ class ClaimPaymentServiceTest extends ModuleTestCase
      * @scenario method=card, timing=on_approval, outcome=approved
      *
      * @effects claim_payment_on_hold_approval_keeps_the_claim_in_place
+     *
+     * @return void 반환값 없음
      */
     public function test_approval_from_on_hold_creates_the_payment_without_moving_the_claim(): void
     {
@@ -1077,6 +1272,8 @@ class ClaimPaymentServiceTest extends ModuleTestCase
      * @scenario method=card, timing=on_approval, outcome=approved
      *
      * @effects claim_payment_on_hold_approval_keeps_the_claim_in_place
+     *
+     * @return void 반환값 없음
      */
     public function test_paying_that_claim_advances_it_from_on_hold_to_approved(): void
     {

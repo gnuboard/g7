@@ -9,6 +9,7 @@ return [
         'currency_not_supported' => 'NHN KCP claim payments support KRW only.',
         'deposit_not_supported' => 'Claim additional payments do not support deposit-pending methods (virtual account).',
         'compensation_cancel_reason' => 'Automatically cancelled after the claim payment approval was rejected',
+        'amount_mismatch' => 'The payment amount does not match the charge, or the charge could not be determined, so the payment was not confirmed (any approved amount is cancelled). Please start the payment again from the claim.',
     ],
     'refund' => [
         'missing_tid' => 'Cannot process refund: transaction number (tno) is missing.',

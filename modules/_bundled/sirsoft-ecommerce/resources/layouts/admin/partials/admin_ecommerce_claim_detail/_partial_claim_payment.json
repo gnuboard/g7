@@ -694,6 +694,7 @@
                                                     ]
                                                 },
                                                 {
+                                                    "comment": "적립 예정 포인트 — 표기는 서버가 준 `total_earned_points_amount_formatted`(「1,000P」)를 쓴다. 화면이 숫자에 'P' 를 붙이면 단위·자릿수 규칙이 화면마다 갈린다. 필드가 없는 옛 응답만 종전 표기로 떨어진다.",
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "if": "{{claim?.data?.order?.total_earned_points_amount > 0 && claim?.data?.order?.order_status !== 'cancelled' && !claim?.data?.order?.is_partially_cancelled}}",
@@ -712,6 +713,16 @@
                                                         {
                                                             "type": "basic",
                                                             "name": "Span",
+                                                            "if": "{{claim?.data?.order?.total_earned_points_amount_formatted != null}}",
+                                                            "props": {
+                                                                "className": "text-blue-600 dark:text-blue-400"
+                                                            },
+                                                            "text": "{{claim?.data?.order?.total_earned_points_amount_formatted}}"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "if": "{{claim?.data?.order?.total_earned_points_amount_formatted == null}}",
                                                             "props": {
                                                                 "className": "text-blue-600 dark:text-blue-400"
                                                             },
@@ -955,9 +966,8 @@
                                                 "name": "chargeMethod",
                                                 "className": "w-48 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed",
                                                 "value": "{{_local.chargeMethod ?? ''}}",
-                                                "placeholder": "$t:sirsoft-ecommerce.admin.claim.detail.settlement.charge_method_placeholder",
                                                 "disabled": "{{claim?.data?.abilities?.can_update_amounts !== true}}",
-                                                "options": "{{claim?.data?.charge_methods ?? []}}"
+                                                "options": "{{[{ value: '', label: $t('sirsoft-ecommerce.admin.claim.detail.settlement.charge_method_placeholder'), disabled: true }].concat(claim?.data?.charge_methods ?? [])}}"
                                             }
                                         }
                                     ]
@@ -1990,7 +2000,7 @@
                                             ]
                                         },
                                         {
-                                            "comment": "입력 두 칸의 합 — 서버 왕복 없이 화면이 더한 값이라 통화 기호를 붙이지 않고 서버가 준 통화 코드를 그대로 병기한다. 기호를 화면이 붙이면 기본 통화가 원이 아닌 상점에서 값은 맞고 단위만 틀린 금액이 나간다.",
+                                            "comment": "입력 두 칸의 합 — 서버 왕복 없이 화면이 더한 값이라 통화 기호를 붙이지 않고 서버가 준 통화 코드를 그대로 병기한다. 기호를 화면이 붙이면 기본 통화가 원이 아닌 상점에서 값은 맞고 단위만 틀린 금액이 나간다. 합은 셸 computed(`refundInputTotal`)가 소수 8자리에서 반올림해 부동소수 오차(0.1 + 0.2 = 0.30000000000000004)를 걷어 낸 값이다 — 어느 통화의 소수 자릿수(최대 8)보다 깊은 자리라 값은 바뀌지 않는다.",
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
@@ -2012,7 +2022,7 @@
                                                     "props": {
                                                         "className": "text-gray-900 dark:text-gray-100"
                                                     },
-                                                    "text": "{{(Number(_local.refundAmount || 0) + Number(_local.refundPointsAmount || 0)) + ' ' + (claim?.data?.cancellable?.currency ?? claim?.data?.claim?.currency_code ?? '')}}"
+                                                    "text": "{{(_computed.refundInputTotal ?? 0) + ' ' + (claim?.data?.cancellable?.currency ?? claim?.data?.claim?.currency_code ?? '')}}"
                                                 }
                                             ]
                                         },
@@ -2021,11 +2031,23 @@
                                             "id": "cre_012_exceeds_notice",
                                             "type": "basic",
                                             "name": "P",
-                                            "if": "{{(Number(_local.refundAmount || 0) + Number(_local.refundPointsAmount || 0)) > (claim?.data?.cancellable?.amount ?? 0)}}",
+                                            "if": "{{(_computed.refundInputTotal ?? 0) > (claim?.data?.cancellable?.amount ?? 0)}}",
                                             "props": {
                                                 "className": "text-xs text-red-600 dark:text-red-400"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.exceeds"
+                                        },
+                                        {
+                                            "comment": "PG 플러그인이 사라져 계좌 환불로 떨어진 건 — 버튼 줄 안에 두면 두 버튼 사이에 박스가 끼어 좁은 화면에서 깨지므로 버튼 줄 위에 둔다. 운영자가 손으로 송금해야 한다(P14). 폴백 자체는 운영을 살리지만(리스너 없이 PG 경로로 들어가면 그 주문은 영영 취소할 수 없다), 화면에 '계좌 환불' 만 보이면 카드 결제 건에 왜 계좌 송금을 하라는지 알 수 없다.",
+                                            "id": "cre_013b_manual_transfer_notice",
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "if": "{{claim?.data?.claim?.refund_fell_back_to_manual === true}}",
+                                            "props": {
+                                                "data-testid": "refund-manual-transfer-notice",
+                                                "className": "rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:border-amber-700 dark:bg-amber-900/20 dark:text-amber-300"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.manual_transfer_notice"
                                         },
                                         {
                                             "type": "basic",
@@ -2078,18 +2100,6 @@
                                                             "text": "$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.save"
                                                         }
                                                     ]
-                                                },
-                                                {
-                                                    "comment": "PG 플러그인이 사라져 계좌 환불로 떨어진 건 — 운영자가 손으로 송금해야 한다(P14). 폴백 자체는 운영을 살리지만(리스너 없이 PG 경로로 들어가면 그 주문은 영영 취소할 수 없다), 화면에 '계좌 환불' 만 보이면 카드 결제 건에 왜 계좌 송금을 하라는지 알 수 없다.",
-                                                    "id": "cre_013b_manual_transfer_notice",
-                                                    "type": "basic",
-                                                    "name": "Div",
-                                                    "if": "{{claim?.data?.claim?.refund_fell_back_to_manual === true}}",
-                                                    "props": {
-                                                        "data-testid": "refund-manual-transfer-notice",
-                                                        "className": "mb-3 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:border-amber-700 dark:bg-amber-900/20 dark:text-amber-300"
-                                                    },
-                                                    "text": "$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.manual_transfer_notice"
                                                 },
                                                 {
                                                     "comment": "[환불하기]는 권한과 **상태**를 함께 본다(F2). 권한만 보면 `requested`(422)·`completed`(409) 에서도 눌리는데, 상세에는 승인 컨트롤이 따로 있어 운영자는 그 자리에서 승인한 뒤 다시 누를 수 있다 — 비활성 이유가 화면에 드러나야 막다른 길이 되지 않는다.",

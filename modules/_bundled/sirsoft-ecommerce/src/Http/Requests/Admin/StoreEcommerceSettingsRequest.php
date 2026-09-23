@@ -383,10 +383,11 @@ class StoreEcommerceSettingsRequest extends FormRequest
             'claim.auto_approve_refund_payment_methods' => ['sometimes', 'array'],
             'claim.auto_approve_refund_payment_methods.*' => ['string', Rule::in(app(PaymentMethodResolver::class)->allValidIds())],
 
-            // 운영자 결정 이력 (P17) — 화면이 보내지 않고 저장 직전에 서버가 채운다. 규칙을 두는
-            // 것은 클라이언트가 임의 값을 실어 보내도 카탈로그 밖 ID 가 남지 않게 하기 위함이다.
-            'claim.auto_approve_refund_payment_methods_decided' => ['sometimes', 'array'],
-            'claim.auto_approve_refund_payment_methods_decided.*' => ['string', Rule::in(app(PaymentMethodResolver::class)->allValidIds())],
+            // 운영자 결정 이력 (P17) — 화면이 보내지 않고 저장 직전에 서버가 채운다. 클라이언트가
+            // 값을 실어 보내면 422 다. 카탈로그 안 ID 로만 좁혀 받던 종전 규칙은 운영자가 한 번도
+            // 결정하지 않은 수단을 "결정됨" 으로 심어 플러그인 선언 수단의 자동 합류를 막을 수 있었다.
+            // 빈 배열은 이 규칙을 통과하지만 저장 조립(EcommerceSettingsAdminService)이 걷어 낸다.
+            'claim.auto_approve_refund_payment_methods_decided' => ['prohibited'],
 
             // 첨부 이미지 / 신청 가능 기간.
             // nullable 금지 — 형제 `order_settings.auto_cancel_days` 와 같은 이유다. null 은

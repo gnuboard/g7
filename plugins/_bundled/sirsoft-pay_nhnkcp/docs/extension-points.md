@@ -39,6 +39,7 @@
 | `core.plugins.updated` | action | `RestoreLayoutExtensionsAfterUpdateListener` | `restoreCurrentExtensionsAfterUpdate` | 20 |
 | `sirsoft-ecommerce.claim_payment.approve` | filter | `ClaimPaymentApproveListener` | `processApprove` | 10 |
 | `sirsoft-ecommerce.claim_payment.refund` | filter | `ClaimPaymentRefundListener` | `processRefund` | 10 |
+| `sirsoft-ecommerce.claim_payment.void_approval` | filter | `ClaimPaymentApproveListener` | `voidApproval` | 10 |
 | `sirsoft-ecommerce.payment.get_client_config` | filter | `RegisterPgProviderListener` | `getClientConfig` | 10 |
 | `sirsoft-ecommerce.payment.refund` | filter | `CancelActivityLogListener` | `logCancelConfirmed` | 20 |
 | `sirsoft-ecommerce.payment.refund` | filter | `PaymentRefundListener` | `processRefund` | 10 |
@@ -60,6 +61,18 @@
 경로를 타지 않고 모듈의 `approvePgPayment()` 에 위임하며, 그 안에서 이 필터가 발화합니다 —
 서버 콜백 경로와 API 승인 경로가 같은 구현을 탑니다. 인자·반환 키·멱등 규칙은 쇼핑몰 모듈
 `modules/_bundled/sirsoft-ecommerce/docs/api/claim-payments.md` 가 단일 출처입니다.
+
+승인 리스너는 결제창 금액(`good_mny`)을 승인 호출 **전에** 청구액과 대조하고(다르면 PG 호출 없이
+`AMOUNT_MISMATCH`), KCP 응답이 금액을 싣고 왔는데 청구액과 다르면 승인분을 직접 취소한 뒤 실패로
+돌려줍니다. 모듈도 승인 뒤 금액을 한 번 더 대조하며, 모듈이 따로 거절한 건은
+`sirsoft-ecommerce.claim_payment.void_approval` 필터(같은 리스너의 `voidApproval()`)로 되돌립니다 —
+콜백 컨트롤러는 보상 클로저를 따로 넘기지 않으므로 서버 콜백 경로와 API 승인 경로의 판정·보상이
+한 구현입니다.
+
+콜백 컨트롤러의 `CP` 분기는 결제번호 단위 캐시 락(`sirsoft-pay_nhnkcp:callback:{문맥}:{sha1(결제번호)}`)으로
+직렬화됩니다. 락을 기다리다 시간을 넘기면 오류(500)가 아니라 결제 건 상태를 읽어 신청서 상세로
+돌려보냅니다 — 이미 결제완료면 `?claim_payment=success`, 아니면 `?claim_payment=failed&error=callback_locked`.
+
 주입하는 결제수단 항목은 이커머스의 결제수단 **능력 키**를 함께 선언합니다. 그중
 `auto_approve_refund` 는 "사람의 개입 없이 환불이 집행되는가" 이고, 이 플러그인이 등록하는 것은
 모두 간편결제라 NHN KCP 결제취소 API 가 그 자리에서 환불을 끝냅니다 — 전부 `true` 입니다.
@@ -97,7 +110,7 @@
 |---|---|---|---|---|
 | `AdjustEcommercePaymentMethodsLayoutListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/AdjustEcommercePaymentMethodsLayoutListener.php` |
 | `CancelActivityLogListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/CancelActivityLogListener.php` |
-| `ClaimPaymentApproveListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/ClaimPaymentApproveListener.php` |
+| `ClaimPaymentApproveListener` | 2개 | 명시 등록 | ✅ | `src/Listeners/ClaimPaymentApproveListener.php` |
 | `ClaimPaymentRefundListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/ClaimPaymentRefundListener.php` |
 | `EnsureAdminOrderDetailPaymentQueryLayoutListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/EnsureAdminOrderDetailPaymentQueryLayoutListener.php` |
 | `EnsureAdminOrderListTestBadgeLayoutListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/EnsureAdminOrderListTestBadgeLayoutListener.php` |
@@ -145,6 +158,13 @@ auto-discovery 대상이라는 뜻이 아니라 이 저장소의 전 리스너 �
 때문입니다. `target_layout`(`mypage/orders/show`)으로 겨냥하면 그 한 화면에서만 뜨고, 나머지
 화면은 카드는 나오는데 이 블록만 빠진 채 열립니다 — 오류도 경고도 남지 않아 알아채기 어렵습니다.
 슬롯은 partial 을 따라가므로 그 카드가 새 화면에 마운트돼도 조각이 함께 갑니다.
+
+**템플릿 요구 사항 — `mypage_order_payment_provider_slot` 슬롯이 필수입니다.** 이 조각은 예전처럼 대상
+화면 이름(`target_layout: mypage/orders/show`)으로 붙지 않고 이 슬롯에만 붙습니다. 그래서 사용자 템플릿의
+결제 정보 카드에 이 확장점이 없으면(자체 제작 템플릿, 슬롯 도입 전에 복사한 템플릿) 주문 상세·클레임
+신청서 상세 어디에도 이 블록이 뜨지 않으며, 오류도 경고도 남지 않습니다. 사용자 템플릿을 만들거나 고칠 때는
+결제 정보 카드 partial 에 `<extension-point name="mypage_order_payment_provider_slot">` 을 둡니다 — 기본
+사용자 템플릿(sirsoft-basic)은 `partials/mypage/orders/_payment` 에 두고 있습니다.
 <!-- @intent END -->
 
 ## 미들웨어

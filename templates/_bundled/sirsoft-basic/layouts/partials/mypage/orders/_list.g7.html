@@ -185,7 +185,11 @@
                 </p>
                 <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{item.product_option_name}}</p>
                 <!-- 추가옵션 요약 — 첫 1건(직접입력 병기) + 외 N건 (Q-E2) -->
-                <p data-if="{{item.additional_options_summary}}" class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{{item.additional_options_summary?.label}}{{(item.additional_options_summary?.extra_count ?? 0) > 0 ? ' 외 ' + item.additional_options_summary.extra_count + '건' : ''}}</p>
+                <p data-if="{{item.additional_options_summary}}" class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+                  <span>{{item.additional_options_summary?.label}}</span>
+                  <!-- 「외 N건」 은 번역 키로 — 한국어를 이어 붙이면 다른 언어 화면에 한국어가 섞인다. -->
+                  <span data-if="{{(item.additional_options_summary?.extra_count ?? 0) > 0}}" class="ml-1">$t:mypage.orders.additional_options_more|count={{item.additional_options_summary?.extra_count ?? 0}}</span>
+                </p>
                 <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
                   <responsive on="portable" class="text-xs text-gray-500 dark:text-gray-400 mt-0.5"/>
                   {{item.unit_price_formatted}} × {{item.quantity}}$t:shop.count_unit

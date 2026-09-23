@@ -193,6 +193,9 @@ describe('클레임 목록 셸 — 본체 배선 (S8b)', () => {
     ]);
   });
 
+  /**
+   * @effects list_body_replaces_placeholder
+   */
   it('목록 본체는 일괄 변경 바 → DataGrid 순으로 partial 을 싣는다', () => {
     expect((byId(shell, 'claim_data_table_section').children ?? []).map((n: Node) => n.partial)).toEqual([
       'partials/admin_ecommerce_claim_list/_partial_bulk_action_section.json',
@@ -210,6 +213,9 @@ describe('클레임 목록 셸 — 본체 배선 (S8b)', () => {
     expect(partials).toContain('partials/admin_ecommerce_claim_list/_modal_claim_complete.json');
   });
 
+  /**
+   * @effects subtab_badges_read_response_counts
+   */
   it('서브탭 뱃지는 응답의 유형별 건수를 그대로 읽는다', () => {
     const tabs = byId(shell, 'claim_type_subtabs').props.tabs as Node[];
 
@@ -253,6 +259,9 @@ describe('클레임 목록 셸 — 본체 배선 (S8b)', () => {
     expect(reset.params.selectedItems).toEqual([]);
   });
 
+  /**
+   * @effects list_body_state_declared_in_shell
+   */
   it('본체가 쓰는 상태가 셸에 선언돼 있다', () => {
     expect(initStateOf(shell as Node).selectedItems).toEqual([]);
     expect(initStateOf(shell as Node).bulkClaimStatus).toBe('');
@@ -301,6 +310,9 @@ describe('컬럼 표시 영속 — SSoT 는 ColumnSelector 자기 키 하나다 
     expect(loaders).toHaveLength(0);
   });
 
+  /**
+   * @effects visible_columns_single_persistence_owner
+   */
   it('클레임 레이아웃 어디에서도 saveVisibleColumns 를 부르지 않는다', () => {
     const layouts: Node[] = [shell as Node, filterSection as Node, ...BODY_FILES.map(([, doc]) => doc)];
     const writers = layouts.flatMap((doc) =>
@@ -321,7 +333,9 @@ describe('컬럼 표시 영속 — SSoT 는 ColumnSelector 자기 키 하나다 
     const grid = byId(datagrid, 'claim_datagrid');
 
     expect(selector.props.id).toBe('admin_claim_list_columns');
-    expect(grid.props.columnSelectorId).toBe('admin_claim_list_columns');
+    // DataGrid 에는 `columnSelectorId` prop 이 없다(조용히 버려졌다 — P7 #7). 둘은 selector id 가
+    // 아니라 `_local.visibleColumns` 하나를 함께 읽어 이어진다.
+    expect(grid.props).not.toHaveProperty('columnSelectorId');
     expect(selector.props.visibleColumns).toBe('{{_local.visibleColumns}}');
     expect(grid.props.visibleColumns).toBe('{{_local.visibleColumns}}');
   });
@@ -395,6 +409,9 @@ describe('일괄 상태 변경 바 (S8b)', () => {
     expect(byId(bulkSection, 'cb_004_status_select_refund').if).toContain("=== 'refund'");
   });
 
+  /**
+   * @effects status_labels_read_type_prefixed_enum_keys
+   */
   it('상태 라벨은 유형 접두 Enum 키를 읽는다 (라벨 표 복제 금지)', () => {
     const prefixes: Record<string, string> = {
       cb_002_status_select_exchange: '$t:sirsoft-ecommerce.enums.exchange_status.',
@@ -424,6 +441,9 @@ describe('일괄 상태 변경 바 (S8b)', () => {
     expect(names).not.toContain('bulkTrackingNumber');
   });
 
+  /**
+   * @effects completion_defaults_reach_claims_read_operator
+   */
   it('[일괄 적용] 은 유형·상태·대상과 완료 기본값을 함께 넘긴다', () => {
     const action = byId(bulkSection, 'cb_005_bulk_apply_button').actions[0] as Node;
 
@@ -462,12 +482,18 @@ describe('DataGrid (S8b)', () => {
     expect(grid.props.selectionScope).toBe('page');
   });
 
+  /**
+   * @effects selection_closed_for_cancel_subtab
+   */
   it('취소 유형과 권한 없는 운영자에게는 선택이 열리지 않는다', () => {
     expect(grid.props.selectable).toBe(
       "{{(query.type ?? 'exchange') !== 'cancel' && claims?.data?.abilities?.can_update_status === true}}",
     );
   });
 
+  /**
+   * @effects server_pagination_reads_response_meta
+   */
   it('서버 페이지네이션을 응답 메타에서 읽는다', () => {
     expect(grid.props.serverSidePagination).toBe(true);
     expect(grid.props.serverCurrentPage).toBe('{{claims?.data?.pagination?.current_page ?? 1}}');
@@ -506,6 +532,9 @@ describe('완료 처리 모달 — 세 진입점 공용 (D26)', () => {
     expect(serialized).toContain('_global.claimCompleteContext');
   });
 
+  /**
+   * @effects completion_modal_registered_once
+   */
   it('모달 id 가 세 진입점이 여는 이름과 같다', () => {
     expect((completeModal as Node).id).toBe('modal_claim_complete');
   });
@@ -566,6 +595,7 @@ describe('완료 처리 모달 — 세 진입점 공용 (D26)', () => {
    * 4열 머리는 컬럼 이름('재고 복구')과 일괄 토글('전체 복구')을 함께 진다. 체크박스 라벨만
    * 두면 이 열이 무엇인지가 화면에서 사라지고, 3언어에 있는 `complete.col_restore_stock` 은
    * 소비처가 0 이 된다 (§6-4-1 컬럼명).
+   * @effects completion_modal_has_per_claim_and_header_stock_toggles
    */
   it('재고 복구 열 머리가 컬럼 이름과 일괄 토글을 함께 낸다', () => {
     const header = collect(completeModal, (n) => n.text === '$t:sirsoft-ecommerce.admin.claim.complete.col_restore_stock');
@@ -578,6 +608,7 @@ describe('완료 처리 모달 — 세 진입점 공용 (D26)', () => {
   /**
    * '함께 실행되는 처리' 항목 순서는 §6-4-1 이 정한다 — 상태전이 · 재고 · 적립 · 쿠폰 ·
    * 회수비. 순서가 어긋나도 오류가 없어 요약만 계획과 다른 이야기를 한다.
+   * @effects completion_summary_items_follow_spec_order
    */
   it('요약 항목이 §6-4-1 순서로 놓인다', () => {
     const summary = byId(completeModal, 'cc_014_summary');
@@ -600,6 +631,7 @@ describe('완료 처리 모달 — 세 진입점 공용 (D26)', () => {
    * 해제한 건의 재고 폐기는 활동 로그에 남지 않는다 (`restoreOptionStockForClaim` 이 훅도
    * 로그도 발화하지 않는다). "기록됩니다" 라고 안내하면 운영자는 없는 이력을 찾게 된다 —
    * 화면은 지키지 못할 약속을 하지 않는다.
+   * @effects discard_note_does_not_claim_recording
    */
   it('폐기 안내가 기록되지 않는 것을 기록된다고 말하지 않는다', () => {
     const note = byId(completeModal, 'cc_007_discard_note');
@@ -715,6 +747,9 @@ describe('완료 처리 모달 — 세 진입점 공용 (D26)', () => {
     expect(withoutAmount.if).toContain('== null');
   });
 
+  /**
+   * @effects completion_cancel_button_only_closes
+   */
   it('취소 버튼은 아무 실행 없이 닫기만 한다 (부분 실행 없음)', () => {
     const cancel = byId(completeModal, 'cc_021_cancel_button');
 
@@ -751,6 +786,9 @@ describe('금액 표기 — 서버가 준 문자열만 쓴다', () => {
     expect(serialized).not.toContain('toFixed');
   });
 
+  /**
+   * @effects amounts_render_from_server_formatted_only
+   */
   it('금액 셀은 *_formatted 필드만 바인딩한다', () => {
     const amountColumn = (byId(datagrid, 'claim_datagrid').props.columns as Node[]).find(
       (c) => c.field === 'amount',

@@ -528,9 +528,9 @@
               <field name="selectedPreset" value="{{preset.id}}"/>
             </field>
           </set-state>
-          <!-- audit:allow layout-list-context-navigate-merge-query 프리셋 적용 — 프리셋은 조건 세트를 통째로 갈아끼우는 것이므로 병합하면 직전 조건이 화면에 보이지 않는 채로 남는다. -->
+          <!-- audit:allow layout-list-context-navigate-merge-query 프리셋 적용 — 프리셋은 조건 세트를 통째로 갈아끼우는 것이므로 병합하면 직전 조건이 화면에 보이지 않는 채로 남는다. 페이지 크기는 조건이 아니라 보기 설정이라 지금 값을 이어 싣는다 — 떨구면 서버는 기본 20 으로 답하는데 셀렉트(`_local.perPage`)는 앞 값을 붙든 채 남는다. -->
           <navigate path="/admin/ecommerce/claims" :replace="true" :mergeQuery="false" transition_overlay_target="claim_datagrid__body">
-            <query :page="1" type="{{preset.conditions?.claimType || (query.type || 'exchange')}}" preset_id="{{preset.id}}" search_field="{{preset.conditions?.searchField || null}}" search_keyword="{{preset.conditions?.searchKeyword || null}}" from="{{preset.conditions?.startDate || null}}" to="{{preset.conditions?.endDate || null}}" statuses[]="{{(preset.conditions?.claimStatus || []).length > 0 ? preset.conditions?.claimStatus : null}}" fault_types[]="{{(preset.conditions?.claimType || query.type || 'exchange') !== 'cancel' &amp;&amp; (preset.conditions?.faultTypes || []).length > 0 ? preset.conditions?.faultTypes : null}}" charge_methods[]="{{((preset.conditions?.claimType || query.type || 'exchange') === 'exchange' || (preset.conditions?.claimType || query.type || 'exchange') === 'return') &amp;&amp; (preset.conditions?.chargeMethods || []).length > 0 ? preset.conditions?.chargeMethods : null}}" reason_code="{{preset.conditions?.reasonCode || null}}" requester_type="{{preset.conditions?.requesterType || null}}" min_amount="{{preset.conditions?.minAmount || null}}" max_amount="{{preset.conditions?.maxAmount || null}}" currency_code="{{preset.conditions?.currencyCode || null}}" charge_payment_methods[]="{{((preset.conditions?.claimType || query.type || 'exchange') === 'exchange' || (preset.conditions?.claimType || query.type || 'exchange') === 'return') &amp;&amp; (preset.conditions?.chargePaymentMethods || []).length > 0 ? preset.conditions?.chargePaymentMethods : null}}"/>
+            <query :page="1" per_page="{{query.per_page || null}}" type="{{preset.conditions?.claimType || (query.type || 'exchange')}}" preset_id="{{preset.id}}" search_field="{{preset.conditions?.searchField || null}}" search_keyword="{{preset.conditions?.searchKeyword || null}}" from="{{preset.conditions?.startDate || null}}" to="{{preset.conditions?.endDate || null}}" statuses[]="{{(preset.conditions?.claimStatus || []).length > 0 ? preset.conditions?.claimStatus : null}}" fault_types[]="{{(preset.conditions?.claimType || query.type || 'exchange') !== 'cancel' &amp;&amp; (preset.conditions?.faultTypes || []).length > 0 ? preset.conditions?.faultTypes : null}}" charge_methods[]="{{((preset.conditions?.claimType || query.type || 'exchange') === 'exchange' || (preset.conditions?.claimType || query.type || 'exchange') === 'return') &amp;&amp; (preset.conditions?.chargeMethods || []).length > 0 ? preset.conditions?.chargeMethods : null}}" reason_code="{{preset.conditions?.reasonCode || null}}" requester_type="{{preset.conditions?.requesterType || null}}" min_amount="{{preset.conditions?.minAmount || null}}" max_amount="{{preset.conditions?.maxAmount || null}}" currency_code="{{preset.conditions?.currencyCode || null}}" charge_payment_methods[]="{{((preset.conditions?.claimType || query.type || 'exchange') === 'exchange' || (preset.conditions?.claimType || query.type || 'exchange') === 'return') &amp;&amp; (preset.conditions?.chargePaymentMethods || []).length > 0 ? preset.conditions?.chargePaymentMethods : null}}"/>
           </navigate>
           <toast type="info" message="$t:sirsoft-ecommerce.admin.claim.preset.applied|name={{preset.name}}"/>
         </on>
@@ -543,6 +543,7 @@
       <div data-ref="search_row_line1" class="flex-1 flex-center gap-2">
         <!-- 검색 드롭다운 4종 (D27) — 이 4축은 상세 필터에 중복 배치하지 않는다. 게이트(`search_field`)에 'all' 이 없으므로 전체 옵션도 두지 않는다 -->
         <select data-ref="f_001_search_field_select" name="searchField" class="w-80 shrink-0" value="{{_local.filter.searchField || 'claim_number'}}">
+          <responsive on="portable" class="w-24 shrink-0"/>
           <options>
             <option value="claim_number">$t:sirsoft-ecommerce.admin.claim.search.field.claim_number</option>
             <option value="order_number">$t:sirsoft-ecommerce.admin.claim.search.field.order_number</option>
@@ -553,7 +554,9 @@
             <set-state target="_local" filter.searchField="{{$event.target.value}}"/>
           </on>
         </select>
-        <div data-ref="f_002_search_keyword_input" class="flex-1 min-w-64 relative">
+        <!-- 최소 너비는 `min-w-[280px]` 로 적는다 — `min-w-64` 는 관리자 빌드 CSS 에 없다(`!min-w-64` 만 있다). 좁은 화면에서는 최소 너비를 풀고(`min-w-0`) 셀렉트도 줄인다: `w-80` 셀렉트와 280px 칸이 한 줄에 서면 375px 폭을 넘는다. 상품 목록 검색 줄과 같은 오버라이드다. -->
+        <div data-ref="f_002_search_keyword_input" class="flex-1 min-w-[280px] relative">
+          <responsive on="portable" class="flex-1 min-w-0 relative"/>
           <input type="text" placeholder="$t:sirsoft-ecommerce.admin.claim.search.placeholder" class="input w-full pr-10" value="{{_local.filter.searchKeyword}}">
             <on type="change">
               <!-- 입력은 300ms 동안 묶어 담기만 한다. 글자마다 목록을 다시 부르지 않도록 조회는 Enter 나 검색 버튼에 맡긴다. -->

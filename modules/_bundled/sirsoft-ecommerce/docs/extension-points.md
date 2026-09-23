@@ -5,12 +5,12 @@
 ## 발행 훅
 
 <!-- @generated:hooks-published START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-발행 훅 543종 / 호출 지점 616곳. 이 중 541종은 `getHooks()` 선언에 없어 소스에서 자동 감지한 것입니다 — 선언에 추가하면 유형과 설명이 함께 실립니다. 훅 이름이 상수·변수로 조립된 호출이 13곳 있어 호출 위치가 표에 다 실리지 않을 수 있습니다.
+발행 훅 574종 / 호출 지점 661곳. 이 중 572종은 `getHooks()` 선언에 없어 소스에서 자동 감지한 것입니다 — 선언에 추가하면 유형과 설명이 함께 실립니다. 훅 이름이 상수·변수로 조립된 호출이 14곳 있어 호출 위치가 표에 다 실리지 않을 수 있습니다.
 
 | 훅 이름 | 유형 | 설명 | 발행 위치 |
 |---|---|---|---|
-| `core.module_settings.after_save` | action | — | `src/Http/Controllers/Admin/EcommerceSettingsController.php:287` 외 2곳 |
-| `sirsoft-ecommerce.adjustment.filter_restore_promotions` | filter | — | `src/Services/OrderAdjustmentService.php:753` |
+| `core.module_settings.after_save` | action | — | `src/Http/Controllers/Admin/EcommerceSettingsController.php:167` 외 1곳 |
+| `sirsoft-ecommerce.adjustment.filter_restore_promotions` | filter | — | `src/Services/OrderAdjustmentService.php:841` |
 | `sirsoft-ecommerce.admin.user_currency.changed` | action | — | `src/Services/UserCurrencyService.php:72` |
 | `sirsoft-ecommerce.admin.user_shipping_country.changed` | action | — | `src/Services/UserShippingCountryService.php:74` |
 | `sirsoft-ecommerce.brand.after_create` | action | — | `src/Services/BrandService.php:100` |
@@ -49,7 +49,7 @@
 | `sirsoft-ecommerce.calculation.before_product_discount` | filter | — | `src/Services/OrderCalculationService.php:182` |
 | `sirsoft-ecommerce.calculation.before_shipping_discount` | filter | — | `src/Services/OrderCalculationService.php:242` |
 | `sirsoft-ecommerce.calculation.before_shipping_fee` | filter | — | `src/Services/OrderCalculationService.php:216` |
-| `sirsoft-ecommerce.calculation.filter_promotions_snapshot` | filter | — | `src/Services/OrderAdjustmentService.php:1267` 외 1곳 |
+| `sirsoft-ecommerce.calculation.filter_promotions_snapshot` | filter | — | `src/Services/OrderAdjustmentService.php:1356` 외 1곳 |
 | `sirsoft-ecommerce.cart.after_add` | action | — | `src/Services/CartService.php:268` |
 | `sirsoft-ecommerce.cart.after_bulk_delete` | action | — | `src/Services/CartService.php:1113` |
 | `sirsoft-ecommerce.cart.after_change_option` | action | — | `src/Services/CartService.php:481` |
@@ -125,42 +125,73 @@
 | `sirsoft-ecommerce.checkout.update_validation_rules` | filter | — | `src/Http/Requests/Public/UpdateCheckoutRequest.php:55` |
 | `sirsoft-ecommerce.checkout.validation_rules` | filter | — | `src/Http/Requests/Public/CheckoutRequest.php:70` |
 | `sirsoft-ecommerce.claim-image.after_delete` | action | — | `src/Services/ClaimAttachmentService.php:337` |
-| `sirsoft-ecommerce.claim-image.after_upload` | action | — | `src/Services/ClaimAttachmentService.php:654` |
-| `sirsoft-ecommerce.claim-image.filter_upload_file` | filter | — | `src/Services/ClaimAttachmentService.php:599` |
-| `sirsoft-ecommerce.claim.` | action | — | `src/Services/ClaimPaymentService.php:616` 외 1곳 |
-| `sirsoft-ecommerce.claim.cancel.option_status_changed` | action | — | `src/Services/OrderCancellationService.php:775` |
-| `sirsoft-ecommerce.claim.cancel.requested` | action | — | `src/Services/OrderCancellationService.php:660` |
-| `sirsoft-ecommerce.claim.cancel.status_changed` | action | — | `src/Services/OrderCancellationService.php:756` |
-| `sirsoft-ecommerce.claim.exchange.option_status_changed` | action | — | `src/Services/OrderExchangeService.php:708` 외 2곳 |
-| `sirsoft-ecommerce.claim.exchange.requested` | action | — | `src/Services/OrderExchangeService.php:363` |
-| `sirsoft-ecommerce.claim.exchange.status_changed` | action | — | `src/Services/OrderExchangeService.php:2209` |
-| `sirsoft-ecommerce.claim.payment_cancelled` | action | — | `src/Services/ClaimPaymentService.php:920` |
-| `sirsoft-ecommerce.claim.refund.completed` | action | — | `src/Services/OrderRefundRequestService.php:1237` |
-| `sirsoft-ecommerce.claim.refund.option_status_changed` | action | — | `src/Services/OrderRefundRequestService.php:1221` 외 3곳 |
-| `sirsoft-ecommerce.claim.refund.requested` | action | — | `src/Services/OrderExchangeService.php:2846` 외 2곳 |
-| `sirsoft-ecommerce.claim.refund.status_changed` | action | — | `src/Services/OrderRefundRequestService.php:1230` 외 2곳 |
-| `sirsoft-ecommerce.claim.return.option_status_changed` | action | — | `src/Services/OrderReturnService.php:718` 외 2곳 |
-| `sirsoft-ecommerce.claim.return.requested` | action | — | `src/Services/OrderReturnService.php:365` |
-| `sirsoft-ecommerce.claim.return.status_changed` | action | — | `src/Services/OrderReturnService.php:1897` |
-| `sirsoft-ecommerce.claim_payment.approve` | filter | — | `src/Services/ClaimPaymentService.php:412` |
-| `sirsoft-ecommerce.claim_payment.refund` | filter | — | `src/Services/ClaimPaymentService.php:1103` |
+| `sirsoft-ecommerce.claim-image.after_upload` | action | — | `src/Services/ClaimAttachmentService.php:683` |
+| `sirsoft-ecommerce.claim-image.before_upload` | action | — | `src/Services/ClaimAttachmentService.php:620` |
+| `sirsoft-ecommerce.claim-image.filter_upload_file` | filter | — | `src/Services/ClaimAttachmentService.php:628` |
+| `sirsoft-ecommerce.claim.` | action | — | `src/Services/ClaimPaymentService.php:718` 외 1곳 |
+| `sirsoft-ecommerce.claim.cancel.option_status_changed` | action | — | `src/Services/OrderCancellationService.php:783` |
+| `sirsoft-ecommerce.claim.cancel.requested` | action | — | `src/Services/OrderCancellationService.php:659` |
+| `sirsoft-ecommerce.claim.cancel.status_changed` | action | — | `src/Services/OrderCancellationService.php:764` |
+| `sirsoft-ecommerce.claim.exchange.before_complete` | action | — | `src/Services/OrderExchangeService.php:1061` |
+| `sirsoft-ecommerce.claim.exchange.before_option_status_change` | action | — | `src/Services/OrderExchangeService.php:684` |
+| `sirsoft-ecommerce.claim.exchange.before_request` | action | — | `src/Services/OrderExchangeService.php:274` |
+| `sirsoft-ecommerce.claim.exchange.before_status_change` | action | — | `src/Services/OrderExchangeService.php:529` 외 1곳 |
+| `sirsoft-ecommerce.claim.exchange.before_update_request` | action | — | `src/Services/OrderExchangeService.php:3220` |
+| `sirsoft-ecommerce.claim.exchange.before_withdraw` | action | — | `src/Services/OrderExchangeService.php:444` |
+| `sirsoft-ecommerce.claim.exchange.filter_complete_options` | filter | — | `src/Services/OrderExchangeService.php:1063` |
+| `sirsoft-ecommerce.claim.exchange.filter_request_data` | filter | — | `src/Services/OrderExchangeService.php:277` |
+| `sirsoft-ecommerce.claim.exchange.filter_status_change_data` | filter | — | `src/Services/OrderExchangeService.php:532` |
+| `sirsoft-ecommerce.claim.exchange.filter_update_request_data` | filter | — | `src/Services/OrderExchangeService.php:3223` |
+| `sirsoft-ecommerce.claim.exchange.option_status_changed` | action | — | `src/Services/OrderExchangeService.php:776` 외 2곳 |
+| `sirsoft-ecommerce.claim.exchange.requested` | action | — | `src/Services/OrderExchangeService.php:381` |
+| `sirsoft-ecommerce.claim.exchange.status_changed` | action | — | `src/Services/OrderExchangeService.php:2338` |
+| `sirsoft-ecommerce.claim.payment_cancelled` | action | — | `src/Services/ClaimPaymentService.php:1025` |
+| `sirsoft-ecommerce.claim.refund.before_complete` | action | — | `src/Services/OrderRefundRequestService.php:1065` |
+| `sirsoft-ecommerce.claim.refund.before_option_status_change` | action | — | `src/Services/OrderRefundRequestService.php:1834` |
+| `sirsoft-ecommerce.claim.refund.before_request` | action | — | `src/Services/OrderRefundRequestService.php:297` |
+| `sirsoft-ecommerce.claim.refund.before_status_change` | action | — | `src/Services/OrderRefundRequestService.php:1667` 외 1곳 |
+| `sirsoft-ecommerce.claim.refund.before_update_request` | action | — | `src/Services/OrderRefundRequestService.php:827` |
+| `sirsoft-ecommerce.claim.refund.before_withdraw` | action | — | `src/Services/OrderRefundRequestService.php:805` |
+| `sirsoft-ecommerce.claim.refund.completed` | action | — | `src/Services/OrderRefundRequestService.php:1282` |
+| `sirsoft-ecommerce.claim.refund.filter_request_data` | filter | — | `src/Services/OrderRefundRequestService.php:300` |
+| `sirsoft-ecommerce.claim.refund.filter_status_change_data` | filter | — | `src/Services/OrderRefundRequestService.php:1670` |
+| `sirsoft-ecommerce.claim.refund.filter_update_request_data` | filter | — | `src/Services/OrderRefundRequestService.php:830` |
+| `sirsoft-ecommerce.claim.refund.option_status_changed` | action | — | `src/Services/OrderRefundRequestService.php:1266` 외 3곳 |
+| `sirsoft-ecommerce.claim.refund.requested` | action | — | `src/Services/OrderExchangeService.php:2984` 외 2곳 |
+| `sirsoft-ecommerce.claim.refund.status_changed` | action | — | `src/Services/OrderRefundRequestService.php:1275` 외 2곳 |
+| `sirsoft-ecommerce.claim.return.before_complete` | action | — | `src/Services/OrderReturnService.php:1073` |
+| `sirsoft-ecommerce.claim.return.before_option_status_change` | action | — | `src/Services/OrderReturnService.php:707` |
+| `sirsoft-ecommerce.claim.return.before_request` | action | — | `src/Services/OrderReturnService.php:306` |
+| `sirsoft-ecommerce.claim.return.before_status_change` | action | — | `src/Services/OrderReturnService.php:540` 외 1곳 |
+| `sirsoft-ecommerce.claim.return.before_update_request` | action | — | `src/Services/OrderReturnService.php:2602` |
+| `sirsoft-ecommerce.claim.return.before_withdraw` | action | — | `src/Services/OrderReturnService.php:458` |
+| `sirsoft-ecommerce.claim.return.filter_complete_options` | filter | — | `src/Services/OrderReturnService.php:1075` |
+| `sirsoft-ecommerce.claim.return.filter_request_data` | filter | — | `src/Services/OrderReturnService.php:309` |
+| `sirsoft-ecommerce.claim.return.filter_status_change_data` | filter | — | `src/Services/OrderReturnService.php:543` |
+| `sirsoft-ecommerce.claim.return.filter_update_request_data` | filter | — | `src/Services/OrderReturnService.php:2605` |
+| `sirsoft-ecommerce.claim.return.option_status_changed` | action | — | `src/Services/OrderReturnService.php:798` 외 2곳 |
+| `sirsoft-ecommerce.claim.return.requested` | action | — | `src/Services/OrderReturnService.php:383` |
+| `sirsoft-ecommerce.claim.return.status_changed` | action | — | `src/Services/OrderReturnService.php:2044` |
+| `sirsoft-ecommerce.claim_payment.approve` | filter | — | `src/Services/ClaimPaymentService.php:427` |
+| `sirsoft-ecommerce.claim_payment.refund` | filter | — | `src/Services/ClaimPaymentService.php:1209` |
+| `sirsoft-ecommerce.claim_payment.void_approval` | filter | — | `src/Services/ClaimPaymentService.php:518` |
 | `sirsoft-ecommerce.claim_reason.after_create` | action | — | `src/Services/ClaimReasonService.php:184` 외 1곳 |
-| `sirsoft-ecommerce.claim_reason.after_delete` | action | — | `src/Services/ClaimReasonService.php:377` 외 1곳 |
+| `sirsoft-ecommerce.claim_reason.after_delete` | action | — | `src/Services/ClaimReasonService.php:382` 외 1곳 |
 | `sirsoft-ecommerce.claim_reason.after_list` | action | — | `src/Services/ClaimReasonService.php:93` |
 | `sirsoft-ecommerce.claim_reason.after_show` | action | — | `src/Services/ClaimReasonService.php:112` |
 | `sirsoft-ecommerce.claim_reason.after_toggle_status` | action | — | `src/Services/ClaimReasonService.php:274` |
 | `sirsoft-ecommerce.claim_reason.after_update` | action | — | `src/Services/ClaimReasonService.php:245` 외 1곳 |
-| `sirsoft-ecommerce.claim_reason.before_create` | action | — | `src/Services/ClaimReasonService.php:171` |
-| `sirsoft-ecommerce.claim_reason.before_delete` | action | — | `src/Services/ClaimReasonService.php:375` 외 1곳 |
+| `sirsoft-ecommerce.claim_reason.before_create` | action | — | `src/Services/ClaimReasonService.php:171` 외 1곳 |
+| `sirsoft-ecommerce.claim_reason.before_delete` | action | — | `src/Services/ClaimReasonService.php:380` 외 1곳 |
 | `sirsoft-ecommerce.claim_reason.before_list` | action | — | `src/Services/ClaimReasonService.php:85` |
 | `sirsoft-ecommerce.claim_reason.before_show` | action | — | `src/Services/ClaimReasonService.php:106` |
 | `sirsoft-ecommerce.claim_reason.before_toggle_status` | action | — | `src/Services/ClaimReasonService.php:266` |
-| `sirsoft-ecommerce.claim_reason.before_update` | action | — | `src/Services/ClaimReasonService.php:206` |
-| `sirsoft-ecommerce.claim_reason.filter_create_data` | filter | — | `src/Services/ClaimReasonService.php:173` |
+| `sirsoft-ecommerce.claim_reason.before_update` | action | — | `src/Services/ClaimReasonService.php:206` 외 1곳 |
+| `sirsoft-ecommerce.claim_reason.filter_create_data` | filter | — | `src/Services/ClaimReasonService.php:173` 외 1곳 |
 | `sirsoft-ecommerce.claim_reason.filter_list_query` | filter | — | `src/Services/ClaimReasonService.php:87` |
 | `sirsoft-ecommerce.claim_reason.filter_list_result` | filter | — | `src/Services/ClaimReasonService.php:91` |
 | `sirsoft-ecommerce.claim_reason.filter_show_result` | filter | — | `src/Services/ClaimReasonService.php:111` |
-| `sirsoft-ecommerce.claim_reason.filter_update_data` | filter | — | `src/Services/ClaimReasonService.php:208` |
+| `sirsoft-ecommerce.claim_reason.filter_update_data` | filter | — | `src/Services/ClaimReasonService.php:208` 외 1곳 |
 | `sirsoft-ecommerce.coupon.after_bulk_status` | action | — | `src/Services/CouponService.php:258` |
 | `sirsoft-ecommerce.coupon.after_create` | action | — | `src/Services/CouponService.php:132` |
 | `sirsoft-ecommerce.coupon.after_delete` | action | — | `src/Services/CouponService.php:226` |
@@ -187,7 +218,7 @@
 | `sirsoft-ecommerce.coupon.filter_show_result` | filter | — | `src/Services/CouponService.php:77` |
 | `sirsoft-ecommerce.coupon.filter_update_data` | filter | — | `src/Services/CouponService.php:161` |
 | `sirsoft-ecommerce.coupon.issues_list_validation_rules` | filter | — | `src/Http/Requests/Admin/CouponIssuesListRequest.php:37` |
-| `sirsoft-ecommerce.coupon.restore` | action | — | `src/Services/RefundExecutionService.php:475` |
+| `sirsoft-ecommerce.coupon.restore` | action | — | `src/Services/RefundExecutionService.php:508` |
 | `sirsoft-ecommerce.coupon.update_validation_rules` | filter | — | `src/Http/Requests/Admin/UpdateCouponRequest.php:144` |
 | `sirsoft-ecommerce.coupon.use` | action | — | `src/Services/OrderProcessingService.php:222` |
 | `sirsoft-ecommerce.coupon.user_available_validation_rules` | filter | — | `src/Http/Requests/User/UserCouponAvailableRequest.php:35` |
@@ -245,63 +276,63 @@
 | `sirsoft-ecommerce.mileage.earn` | action | — | `src/Services/OrderProcessingService.php:363` 외 1곳 |
 | `sirsoft-ecommerce.mileage.max_usable_validation_rules` | filter | — | `src/Http/Requests/User/UserMileageMaxUsableRequest.php:34` |
 | `sirsoft-ecommerce.mileage.notify_expiring` | action | — | `src/Console/Commands/NotifyExpiringMileageCommand.php:88` |
-| `sirsoft-ecommerce.mileage.restore` | action | — | `src/Services/RefundExecutionService.php:518` |
+| `sirsoft-ecommerce.mileage.restore` | action | — | `src/Services/RefundExecutionService.php:551` |
 | `sirsoft-ecommerce.mileage.use` | action | — | `src/Services/OrderProcessingService.php:2135` |
-| `sirsoft-ecommerce.notification.channels` | filter | — | `src/Http/Controllers/Admin/EcommerceSettingsController.php:736` |
+| `sirsoft-ecommerce.notification.channels` | filter | — | `src/Services/EcommerceSettingsAdminService.php:481` |
 | `sirsoft-ecommerce.option.after_bulk_update` | action | — | `src/Services/ProductOptionService.php:297` |
 | `sirsoft-ecommerce.option.before_bulk_update` | action | — | `src/Services/ProductOptionService.php:197` |
 | `sirsoft-ecommerce.option.bulk_update_validation_rules` | filter | — | `src/Http/Requests/Admin/BulkUpdateOptionsRequest.php:72` |
 | `sirsoft-ecommerce.option.filter_bulk_update_data` | filter | — | `src/Services/ProductOptionService.php:200` |
-| `sirsoft-ecommerce.order-option.after_confirm` | action | — | `src/Services/OrderOptionService.php:302` 외 1곳 |
-| `sirsoft-ecommerce.order-option.before_confirm` | action | — | `src/Services/OrderService.php:879` |
+| `sirsoft-ecommerce.order-option.after_confirm` | action | — | `src/Services/OrderOptionService.php:300` 외 1곳 |
+| `sirsoft-ecommerce.order-option.before_confirm` | action | — | `src/Services/OrderService.php:953` |
 | `sirsoft-ecommerce.order.after_admin_notify` | action | — | `src/Services/OrderProcessingService.php:265` 외 2곳 |
-| `sirsoft-ecommerce.order.after_bulk_shipping_update` | action | — | `src/Services/OrderService.php:666` |
-| `sirsoft-ecommerce.order.after_bulk_status_update` | action | — | `src/Services/OrderService.php:631` |
-| `sirsoft-ecommerce.order.after_bulk_update` | action | — | `src/Services/OrderService.php:554` |
+| `sirsoft-ecommerce.order.after_bulk_shipping_update` | action | — | `src/Services/OrderService.php:740` |
+| `sirsoft-ecommerce.order.after_bulk_status_update` | action | — | `src/Services/OrderService.php:705` |
+| `sirsoft-ecommerce.order.after_bulk_update` | action | — | `src/Services/OrderService.php:628` |
 | `sirsoft-ecommerce.order.after_confirm` | action | — | `src/Services/OrderProcessingService.php:371` 외 1곳 |
 | `sirsoft-ecommerce.order.after_create` | action | — | `src/Services/OrderProcessingService.php:257` |
-| `sirsoft-ecommerce.order.after_delete` | action | — | `src/Services/OrderService.php:464` |
+| `sirsoft-ecommerce.order.after_delete` | action | — | `src/Services/OrderService.php:451` |
 | `sirsoft-ecommerce.order.after_deposit_recorded` | action | — | `src/Services/OrderProcessingService.php:1985` |
 | `sirsoft-ecommerce.order.after_payment_complete` | action | — | `src/Services/OrderProcessingService.php:370` 외 1곳 |
-| `sirsoft-ecommerce.order.after_purchase_confirmed` | action | — | `src/Services/OrderOptionService.php:980` 외 1곳 |
+| `sirsoft-ecommerce.order.after_purchase_confirmed` | action | — | `src/Services/OrderOptionService.php:970` 외 1곳 |
 | `sirsoft-ecommerce.order.after_read` | action | — | `src/Services/OrderService.php:181` 외 1곳 |
-| `sirsoft-ecommerce.order.after_reset_guest_password` | action | — | `src/Services/OrderService.php:962` |
-| `sirsoft-ecommerce.order.after_send_email` | action | — | `src/Services/OrderService.php:697` |
-| `sirsoft-ecommerce.order.after_status_change` | action | — | `src/Services/OrderOptionService.php:969` 외 3곳 |
-| `sirsoft-ecommerce.order.after_status_sync` | action | — | `src/Services/OrderOptionService.php:974` 외 1곳 |
-| `sirsoft-ecommerce.order.after_update` | action | — | `src/Services/OrderService.php:393` |
-| `sirsoft-ecommerce.order.after_update_shipping_address` | action | — | `src/Services/OrderService.php:400` 외 1곳 |
-| `sirsoft-ecommerce.order.before_bulk_shipping_update` | action | — | `src/Services/OrderService.php:658` |
-| `sirsoft-ecommerce.order.before_bulk_status_update` | action | — | `src/Services/OrderService.php:614` |
-| `sirsoft-ecommerce.order.before_bulk_update` | action | — | `src/Services/OrderService.php:500` |
-| `sirsoft-ecommerce.order.before_cancel` | action | — | `src/Services/OrderCancellationService.php:316` |
+| `sirsoft-ecommerce.order.after_reset_guest_password` | action | — | `src/Services/OrderService.php:1036` |
+| `sirsoft-ecommerce.order.after_send_email` | action | — | `src/Services/OrderService.php:771` |
+| `sirsoft-ecommerce.order.after_status_change` | action | — | `src/Services/OrderOptionService.php:959` 외 3곳 |
+| `sirsoft-ecommerce.order.after_status_sync` | action | — | `src/Services/OrderOptionService.php:964` 외 1곳 |
+| `sirsoft-ecommerce.order.after_update` | action | — | `src/Services/OrderService.php:398` |
+| `sirsoft-ecommerce.order.after_update_shipping_address` | action | — | `src/Services/OrderService.php:405` 외 1곳 |
+| `sirsoft-ecommerce.order.before_bulk_shipping_update` | action | — | `src/Services/OrderService.php:732` |
+| `sirsoft-ecommerce.order.before_bulk_status_update` | action | — | `src/Services/OrderService.php:688` |
+| `sirsoft-ecommerce.order.before_bulk_update` | action | — | `src/Services/OrderService.php:568` |
+| `sirsoft-ecommerce.order.before_cancel` | action | — | `src/Services/OrderCancellationService.php:314` |
 | `sirsoft-ecommerce.order.before_create` | action | — | `src/Services/OrderProcessingService.php:131` |
-| `sirsoft-ecommerce.order.before_delete` | action | — | `src/Services/OrderService.php:432` |
+| `sirsoft-ecommerce.order.before_delete` | action | — | `src/Services/OrderService.php:437` |
 | `sirsoft-ecommerce.order.before_payment_complete` | action | — | `src/Services/OrderProcessingService.php:359` 외 1곳 |
-| `sirsoft-ecommerce.order.before_reset_guest_password` | action | — | `src/Services/OrderService.php:956` |
+| `sirsoft-ecommerce.order.before_reset_guest_password` | action | — | `src/Services/OrderService.php:1030` |
 | `sirsoft-ecommerce.order.before_update` | action | — | `src/Services/OrderService.php:218` |
-| `sirsoft-ecommerce.order.before_update_shipping_address` | action | — | `src/Services/OrderService.php:777` |
+| `sirsoft-ecommerce.order.before_update_shipping_address` | action | — | `src/Services/OrderService.php:851` |
 | `sirsoft-ecommerce.order.create_validation_rules` | filter | — | `src/Http/Requests/Public/CreateOrderRequest.php:160` |
 | `sirsoft-ecommerce.order.filter_create_data` | filter | — | `src/Services/OrderProcessingService.php:680` |
-| `sirsoft-ecommerce.order.filter_export_params` | filter | — | `src/Services/OrderService.php:719` |
+| `sirsoft-ecommerce.order.filter_export_params` | filter | — | `src/Services/OrderService.php:793` |
 | `sirsoft-ecommerce.order.filter_list_params` | filter | — | `src/Services/OrderService.php:105` |
 | `sirsoft-ecommerce.order.filter_update_data` | filter | — | `src/Services/OrderService.php:224` |
 | `sirsoft-ecommerce.order.list_validation_messages` | filter | — | `src/Http/Requests/Admin/OrderListRequest.php:223` |
 | `sirsoft-ecommerce.order.list_validation_rules` | filter | — | `src/Http/Requests/Admin/OrderListRequest.php:132` |
 | `sirsoft-ecommerce.order.payment_failed` | action | — | `src/Services/OrderProcessingService.php:2117` |
 | `sirsoft-ecommerce.order.shipping_address_validation_rules` | filter | — | `src/Http/Requests/User/UpdateOrderShippingAddressRequest.php:71` |
-| `sirsoft-ecommerce.order.tax_invoice_stale_after_cancel` | action | — | `src/Services/OrderCancellationService.php:546` |
-| `sirsoft-ecommerce.order_option.after_bulk_status_change` | action | — | `src/Services/OrderOptionService.php:508` |
-| `sirsoft-ecommerce.order_option.after_status_change` | action | — | `src/Services/OrderOptionService.php:292` |
-| `sirsoft-ecommerce.order_option.after_sync_status` | action | — | `src/Repositories/OrderRepository.php:430` 외 2곳 |
-| `sirsoft-ecommerce.order_option.before_bulk_status_change` | action | — | `src/Services/OrderOptionService.php:458` |
-| `sirsoft-ecommerce.order_option.before_status_change` | action | — | `src/Services/OrderOptionService.php:129` |
-| `sirsoft-ecommerce.order_shipping.tracking_updated` | action | — | `src/Services/OrderOptionService.php:363` |
-| `sirsoft-ecommerce.payment.before_approve` | action | — | `src/Services/OrderService.php:506` 외 1곳 |
-| `sirsoft-ecommerce.payment.before_cancel` | action | — | `src/Services/OrderCancellationService.php:315` |
+| `sirsoft-ecommerce.order.tax_invoice_stale_after_cancel` | action | — | `src/Services/OrderCancellationService.php:545` |
+| `sirsoft-ecommerce.order_option.after_bulk_status_change` | action | — | `src/Services/OrderOptionService.php:506` |
+| `sirsoft-ecommerce.order_option.after_status_change` | action | — | `src/Services/OrderOptionService.php:290` |
+| `sirsoft-ecommerce.order_option.after_sync_status` | action | — | `src/Services/OrderExchangeService.php:2474` 외 2곳 |
+| `sirsoft-ecommerce.order_option.before_bulk_status_change` | action | — | `src/Services/OrderOptionService.php:456` |
+| `sirsoft-ecommerce.order_option.before_status_change` | action | — | `src/Services/OrderOptionService.php:127` |
+| `sirsoft-ecommerce.order_shipping.tracking_updated` | action | — | `src/Services/OrderOptionService.php:361` |
+| `sirsoft-ecommerce.payment.before_approve` | action | — | `src/Services/OrderService.php:574` 외 1곳 |
+| `sirsoft-ecommerce.payment.before_cancel` | action | — | `src/Services/OrderCancellationService.php:313` |
 | `sirsoft-ecommerce.payment.before_confirm_deposit` | action | — | `src/Services/OrderProcessingService.php:1921` |
 | `sirsoft-ecommerce.payment.get_client_config` | filter | — | `src/Http/Controllers/Shop/PaymentConfigController.php:26` |
-| `sirsoft-ecommerce.payment.refund` | filter | — | `src/Services/RefundExecutionService.php:421` |
+| `sirsoft-ecommerce.payment.refund` | filter | — | `src/Services/RefundExecutionService.php:451` |
 | `sirsoft-ecommerce.payment.registered_pg_providers` | filter | — | `src/Services/EcommerceSettingsService.php:1003` |
 | `sirsoft-ecommerce.payment.supports_partial_cancel` | filter | — | `src/Http/Resources/OrderPaymentResource.php:57` 외 1곳 |
 | `sirsoft-ecommerce.preset.after_create` | action | — | `src/Services/SearchPresetService.php:60` |
@@ -447,7 +478,7 @@
 | `sirsoft-ecommerce.search_preset.list_validation_rules` | filter | — | `src/Http/Requests/Admin/SearchPresetListRequest.php:40` |
 | `sirsoft-ecommerce.sequence.after_generate` | action | — | `src/Services/SequenceService.php:57` 외 1곳 |
 | `sirsoft-ecommerce.sequence.before_generate` | action | — | `src/Services/SequenceService.php:44` |
-| `sirsoft-ecommerce.settings.after_save` | action | — | `src/Http/Controllers/Admin/EcommerceSettingsController.php:281` 외 1곳 |
+| `sirsoft-ecommerce.settings.after_save` | action | — | `src/Http/Controllers/Admin/EcommerceSettingsController.php:164` |
 | `sirsoft-ecommerce.settings.filter_available_payment_methods` | filter | — | `src/Services/EcommerceSettingsService.php:908` |
 | `sirsoft-ecommerce.shipping.calculate_fee` | filter | — | `src/Services/OrderCalculationService.php:2141` |
 | `sirsoft-ecommerce.shipping_carrier.after_create` | action | — | `src/Services/ShippingCarrierService.php:156` |
@@ -469,45 +500,45 @@
 | `sirsoft-ecommerce.shipping_carrier.filter_show_result` | filter | — | `src/Services/ShippingCarrierService.php:91` |
 | `sirsoft-ecommerce.shipping_carrier.filter_update_data` | filter | — | `src/Services/ShippingCarrierService.php:183` |
 | `sirsoft-ecommerce.shipping_carrier.update_validation_rules` | filter | — | `src/Http/Requests/Admin/UpdateShippingCarrierRequest.php:44` |
-| `sirsoft-ecommerce.shipping_policy.after_bulk_delete` | action | — | `src/Services/ShippingPolicyService.php:490` |
-| `sirsoft-ecommerce.shipping_policy.after_bulk_toggle_active` | action | — | `src/Services/ShippingPolicyService.php:518` |
-| `sirsoft-ecommerce.shipping_policy.after_create` | action | — | `src/Services/ShippingPolicyService.php:120` |
-| `sirsoft-ecommerce.shipping_policy.after_delete` | action | — | `src/Services/ShippingPolicyService.php:438` |
-| `sirsoft-ecommerce.shipping_policy.after_read` | action | — | `src/Services/ShippingPolicyService.php:66` |
-| `sirsoft-ecommerce.shipping_policy.after_set_default` | action | — | `src/Services/ShippingPolicyService.php:558` |
-| `sirsoft-ecommerce.shipping_policy.after_toggle_active` | action | — | `src/Services/ShippingPolicyService.php:459` |
-| `sirsoft-ecommerce.shipping_policy.after_update` | action | — | `src/Services/ShippingPolicyService.php:186` 외 1곳 |
-| `sirsoft-ecommerce.shipping_policy.before_bulk_delete` | action | — | `src/Services/ShippingPolicyService.php:482` |
-| `sirsoft-ecommerce.shipping_policy.before_bulk_toggle_active` | action | — | `src/Services/ShippingPolicyService.php:513` |
-| `sirsoft-ecommerce.shipping_policy.before_create` | action | — | `src/Services/ShippingPolicyService.php:81` |
-| `sirsoft-ecommerce.shipping_policy.before_delete` | action | — | `src/Services/ShippingPolicyService.php:427` |
-| `sirsoft-ecommerce.shipping_policy.before_set_default` | action | — | `src/Services/ShippingPolicyService.php:544` |
-| `sirsoft-ecommerce.shipping_policy.before_toggle_active` | action | — | `src/Services/ShippingPolicyService.php:454` |
-| `sirsoft-ecommerce.shipping_policy.before_update` | action | — | `src/Services/ShippingPolicyService.php:137` 외 1곳 |
+| `sirsoft-ecommerce.shipping_policy.after_bulk_delete` | action | — | `src/Services/ShippingPolicyService.php:505` |
+| `sirsoft-ecommerce.shipping_policy.after_bulk_toggle_active` | action | — | `src/Services/ShippingPolicyService.php:533` |
+| `sirsoft-ecommerce.shipping_policy.after_create` | action | — | `src/Services/ShippingPolicyService.php:126` |
+| `sirsoft-ecommerce.shipping_policy.after_delete` | action | — | `src/Services/ShippingPolicyService.php:450` |
+| `sirsoft-ecommerce.shipping_policy.after_read` | action | — | `src/Services/ShippingPolicyService.php:72` |
+| `sirsoft-ecommerce.shipping_policy.after_set_default` | action | — | `src/Services/ShippingPolicyService.php:573` |
+| `sirsoft-ecommerce.shipping_policy.after_toggle_active` | action | — | `src/Services/ShippingPolicyService.php:471` |
+| `sirsoft-ecommerce.shipping_policy.after_update` | action | — | `src/Services/ShippingPolicyService.php:192` 외 1곳 |
+| `sirsoft-ecommerce.shipping_policy.before_bulk_delete` | action | — | `src/Services/ShippingPolicyService.php:494` |
+| `sirsoft-ecommerce.shipping_policy.before_bulk_toggle_active` | action | — | `src/Services/ShippingPolicyService.php:528` |
+| `sirsoft-ecommerce.shipping_policy.before_create` | action | — | `src/Services/ShippingPolicyService.php:87` |
+| `sirsoft-ecommerce.shipping_policy.before_delete` | action | — | `src/Services/ShippingPolicyService.php:433` |
+| `sirsoft-ecommerce.shipping_policy.before_set_default` | action | — | `src/Services/ShippingPolicyService.php:559` |
+| `sirsoft-ecommerce.shipping_policy.before_toggle_active` | action | — | `src/Services/ShippingPolicyService.php:466` |
+| `sirsoft-ecommerce.shipping_policy.before_update` | action | — | `src/Services/ShippingPolicyService.php:143` 외 1곳 |
 | `sirsoft-ecommerce.shipping_policy.bulk_delete_validation_rules` | filter | — | `src/Http/Requests/Admin/ShippingPolicyBulkDeleteRequest.php:38` |
 | `sirsoft-ecommerce.shipping_policy.bulk_toggle_active_validation_rules` | filter | — | `src/Http/Requests/Admin/ShippingPolicyBulkToggleActiveRequest.php:39` |
-| `sirsoft-ecommerce.shipping_policy.filter_create_data` | filter | — | `src/Services/ShippingPolicyService.php:84` |
-| `sirsoft-ecommerce.shipping_policy.filter_list_params` | filter | — | `src/Services/ShippingPolicyService.php:38` |
-| `sirsoft-ecommerce.shipping_policy.filter_update_data` | filter | — | `src/Services/ShippingPolicyService.php:143` |
+| `sirsoft-ecommerce.shipping_policy.filter_create_data` | filter | — | `src/Services/ShippingPolicyService.php:90` |
+| `sirsoft-ecommerce.shipping_policy.filter_list_params` | filter | — | `src/Services/ShippingPolicyService.php:44` |
+| `sirsoft-ecommerce.shipping_policy.filter_update_data` | filter | — | `src/Services/ShippingPolicyService.php:149` |
 | `sirsoft-ecommerce.shipping_policy.list_validation_messages` | filter | — | `src/Http/Requests/Admin/ShippingPolicyListRequest.php:129` |
 | `sirsoft-ecommerce.shipping_policy.list_validation_rules` | filter | — | `src/Http/Requests/Admin/ShippingPolicyListRequest.php:96` |
 | `sirsoft-ecommerce.shipping_policy.store_validation_rules` | filter | — | `src/Http/Requests/Admin/StoreShippingPolicyRequest.php:119` |
 | `sirsoft-ecommerce.shipping_policy.update_validation_rules` | filter | — | `src/Http/Requests/Admin/UpdateShippingPolicyRequest.php:24` |
-| `sirsoft-ecommerce.shipping_type.after_create` | action | — | `src/Services/ShippingTypeService.php:123` |
-| `sirsoft-ecommerce.shipping_type.after_delete` | action | — | `src/Services/ShippingTypeService.php:343` |
+| `sirsoft-ecommerce.shipping_type.after_create` | action | — | `src/Services/ShippingTypeService.php:123` 외 1곳 |
+| `sirsoft-ecommerce.shipping_type.after_delete` | action | — | `src/Services/ShippingTypeService.php:277` 외 1곳 |
 | `sirsoft-ecommerce.shipping_type.after_list` | action | — | `src/Services/ShippingTypeService.php:44` |
 | `sirsoft-ecommerce.shipping_type.after_show` | action | — | `src/Services/ShippingTypeService.php:63` |
-| `sirsoft-ecommerce.shipping_type.after_update` | action | — | `src/Services/ShippingTypeService.php:162` |
-| `sirsoft-ecommerce.shipping_type.before_create` | action | — | `src/Services/ShippingTypeService.php:107` |
-| `sirsoft-ecommerce.shipping_type.before_delete` | action | — | `src/Services/ShippingTypeService.php:334` |
+| `sirsoft-ecommerce.shipping_type.after_update` | action | — | `src/Services/ShippingTypeService.php:162` 외 1곳 |
+| `sirsoft-ecommerce.shipping_type.before_create` | action | — | `src/Services/ShippingTypeService.php:107` 외 1곳 |
+| `sirsoft-ecommerce.shipping_type.before_delete` | action | — | `src/Services/ShippingTypeService.php:274` 외 1곳 |
 | `sirsoft-ecommerce.shipping_type.before_list` | action | — | `src/Services/ShippingTypeService.php:36` |
 | `sirsoft-ecommerce.shipping_type.before_show` | action | — | `src/Services/ShippingTypeService.php:57` |
-| `sirsoft-ecommerce.shipping_type.before_update` | action | — | `src/Services/ShippingTypeService.php:145` |
-| `sirsoft-ecommerce.shipping_type.filter_create_data` | filter | — | `src/Services/ShippingTypeService.php:109` |
+| `sirsoft-ecommerce.shipping_type.before_update` | action | — | `src/Services/ShippingTypeService.php:145` 외 1곳 |
+| `sirsoft-ecommerce.shipping_type.filter_create_data` | filter | — | `src/Services/ShippingTypeService.php:109` 외 1곳 |
 | `sirsoft-ecommerce.shipping_type.filter_list_query` | filter | — | `src/Services/ShippingTypeService.php:38` |
 | `sirsoft-ecommerce.shipping_type.filter_list_result` | filter | — | `src/Services/ShippingTypeService.php:42` |
 | `sirsoft-ecommerce.shipping_type.filter_show_result` | filter | — | `src/Services/ShippingTypeService.php:62` |
-| `sirsoft-ecommerce.shipping_type.filter_update_data` | filter | — | `src/Services/ShippingTypeService.php:149` |
+| `sirsoft-ecommerce.shipping_type.filter_update_data` | filter | — | `src/Services/ShippingTypeService.php:149` 외 1곳 |
 | `sirsoft-ecommerce.stock.after_deduct` | action | — | `src/Services/StockService.php:118` |
 | `sirsoft-ecommerce.stock.after_restore` | action | — | `src/Services/StockService.php:160` |
 | `sirsoft-ecommerce.stock.before_deduct` | action | — | `src/Services/StockService.php:73` |
@@ -520,16 +551,16 @@
 | `sirsoft-ecommerce.temp_order.before_create` | action | — | `src/Services/TempOrderService.php:77` |
 | `sirsoft-ecommerce.temp_order.before_delete` | action | — | `src/Services/TempOrderService.php:523` 외 1곳 |
 | `sirsoft-ecommerce.temp_order.before_update` | action | — | `src/Services/TempOrderService.php:341` |
-| `sirsoft-ecommerce.user_address.after_bulk_delete` | action | — | `src/Services/UserAddressService.php:326` |
-| `sirsoft-ecommerce.user_address.after_create` | action | — | `src/Services/UserAddressService.php:155` |
-| `sirsoft-ecommerce.user_address.after_delete` | action | — | `src/Services/UserAddressService.php:220` |
-| `sirsoft-ecommerce.user_address.after_set_default` | action | — | `src/Services/UserAddressService.php:246` |
-| `sirsoft-ecommerce.user_address.after_update` | action | — | `src/Services/UserAddressService.php:186` |
-| `sirsoft-ecommerce.user_address.before_bulk_delete` | action | — | `src/Services/UserAddressService.php:322` |
-| `sirsoft-ecommerce.user_address.before_create` | action | — | `src/Services/UserAddressService.php:123` |
-| `sirsoft-ecommerce.user_address.before_delete` | action | — | `src/Services/UserAddressService.php:206` |
-| `sirsoft-ecommerce.user_address.before_set_default` | action | — | `src/Services/UserAddressService.php:240` |
-| `sirsoft-ecommerce.user_address.before_update` | action | — | `src/Services/UserAddressService.php:176` |
+| `sirsoft-ecommerce.user_address.after_bulk_delete` | action | — | `src/Services/UserAddressService.php:397` |
+| `sirsoft-ecommerce.user_address.after_create` | action | — | `src/Services/UserAddressService.php:153` |
+| `sirsoft-ecommerce.user_address.after_delete` | action | — | `src/Services/UserAddressService.php:218` |
+| `sirsoft-ecommerce.user_address.after_set_default` | action | — | `src/Services/UserAddressService.php:244` |
+| `sirsoft-ecommerce.user_address.after_update` | action | — | `src/Services/UserAddressService.php:184` |
+| `sirsoft-ecommerce.user_address.before_bulk_delete` | action | — | `src/Services/UserAddressService.php:393` |
+| `sirsoft-ecommerce.user_address.before_create` | action | — | `src/Services/UserAddressService.php:121` |
+| `sirsoft-ecommerce.user_address.before_delete` | action | — | `src/Services/UserAddressService.php:204` |
+| `sirsoft-ecommerce.user_address.before_set_default` | action | — | `src/Services/UserAddressService.php:238` |
+| `sirsoft-ecommerce.user_address.before_update` | action | — | `src/Services/UserAddressService.php:174` |
 | `sirsoft-ecommerce.user_address.store_validation_rules` | filter | — | `src/Http/Requests/User/StoreUserAddressRequest.php:77` |
 | `sirsoft-ecommerce.user_address.update_validation_rules` | filter | — | `src/Http/Requests/User/UpdateUserAddressRequest.php:93` |
 | `sirsoft-ecommerce.user_coupon.after_available` | action | — | `src/Services/UserCouponService.php:69` |
@@ -544,9 +575,9 @@
 | `sirsoft-ecommerce.user_coupon.filter_downloadable_result` | filter | — | `src/Services/UserCouponService.php:300` |
 | `sirsoft-ecommerce.user_coupon.filter_list_result` | filter | — | `src/Services/UserCouponService.php:47` |
 | `sirsoft-ecommerce.user_coupon.filter_product_downloadable_result` | filter | — | `src/Services/UserCouponService.php:526` |
-| `sirsoft-ecommerce.user_mileage.after_balance` | action | — | `src/Services/UserMileageService.php:148` |
-| `sirsoft-ecommerce.user_mileage.before_balance` | action | — | `src/Services/UserMileageService.php:131` |
-| `sirsoft-ecommerce.user_mileage.filter_balance` | filter | — | `src/Services/UserMileageService.php:146` |
+| `sirsoft-ecommerce.user_mileage.after_balance` | action | — | `src/Services/UserMileageService.php:151` |
+| `sirsoft-ecommerce.user_mileage.before_balance` | action | — | `src/Services/UserMileageService.php:134` |
+| `sirsoft-ecommerce.user_mileage.filter_balance` | filter | — | `src/Services/UserMileageService.php:149` |
 | `sirsoft-ecommerce.wishlist.after_bulk_delete` | action | — | `src/Services/ProductWishlistService.php:140` |
 | `sirsoft-ecommerce.wishlist.after_toggle` | action | — | `src/Services/ProductWishlistService.php:36` |
 | `sirsoft-ecommerce.wishlist.before_bulk_delete` | action | — | `src/Services/ProductWishlistService.php:136` |
@@ -562,6 +593,10 @@ FormRequest 쪽 `{동작}_validation_rules`(filter). `brand.*` 19종을 한 번 
 `shipping_carrier` 19 · `extra_fee_template` 19 · `label` 17 · `claim_reason` 17 ·
 `shipping_type` 15 에 그대로 적용됩니다.
 
+`claim_reason`·`shipping_type` 은 상세 REST 경로와 환경설정 탭의 일괄 저장 경로가 **같은 훅**을
+쏩니다. 일괄 저장은 실제로 바뀐 행에만 `before_update` → `filter_update_data` → `after_update` 를
+쏘고(아무것도 고치지 않은 저장은 훅도 쓰기도 없다), `after_*` 는 트랜잭션이 커밋된 뒤에 나갑니다.
+
 그 패턴에서 벗어나는 것이 이 모듈 고유의 확장점입니다:
 
 | 훅 무리 | 수 | 무엇을 열어 주는가 |
@@ -574,12 +609,13 @@ FormRequest 쪽 `{동작}_validation_rules`(filter). `brand.*` 19종을 한 번 
 | `mileage.*` · `user_mileage.*` | 8 | 마일리지 적립·차감·소멸 |
 | `search.*` · `preset.*` · `search_preset.*` | 12 | 상품 검색 술어와 관리자 검색 프리셋 |
 | `claim.exchange.*` · `claim.return.*` · `claim.refund.*` · `claim.cancel.*` | — | 네 유형 신청서의 접수·결제 확정·승인·전이·완료·철회·반려·금액 수정. 전이는 `status_changed` 한 축으로 기록되고, 승인·반려·철회·완료는 구체 훅이 함께 발화합니다 |
+| `claim.{type}.before_*` · `claim.{type}.filter_*` | 29 | 신청·수정·전이·철회·상품 단위 전이·완료를 쓰기 **전에** 막거나(action) 입력을 바꾸는(filter) 자리. 아래 「클레임 before·filter 훅」 참조 |
 | `claim.{type}.option_status_changed` | 4 | 신청서의 **상품 단위** 전이. 헤더가 따라 움직이지 않는 조합이 있어 층이 다른 사실로 따로 냅니다 — 헤더가 함께 움직인 회차는 두 줄이 남으며 이중 기록이 아닙니다 |
 | `order_option.after_sync_status` | 1 | 주문 상태 동기화가 **끌고 간** 상품 전이. 이 경로는 관계 빌더의 raw update 라 `order_option.after_status_change` 를 지나지 않습니다 |
 | `order_shipping.tracking_updated` | 1 | 운송장 기록·정정. 전이를 동반하지 않는 정정은 어떤 전이 훅도 지나지 않습니다 |
 | `order.tax_invoice_stale_after_cancel` | 1 | 취소가 일어났는데 발급 완료 세금계산서가 남아 있는 상태. 국세청 연동 자동 취소는 코어 범위 밖이라 **누락을 드러내는** 자리입니다 |
 | `payment.supports_partial_cancel` | 1 | 이 결제가 부분취소를 지원하는가(filter). 제약을 아는 자리는 PG 플러그인이므로 코어가 수단·PG 조합표를 들지 않습니다 |
-| `claim_payment.approve` · `claim_payment.refund` | 2 | 클레임 추가결제(`CP` 채번)의 PG 승인·환급 — 결제 플러그인이 구현하는 필터. 계약(인자·반환 키·멱등 규칙)의 단일 출처는 `modules/_bundled/sirsoft-ecommerce/docs/api/claim-payments.md` |
+| `claim_payment.approve` · `claim_payment.refund` · `claim_payment.void_approval` | 3 | 클레임 추가결제(`CP` 채번)의 PG 승인·환급, 그리고 PG 는 승인했지만 모듈이 금액 불일치로 거절한 승인의 망취소 보상(`void_approval` — 선택 구현, `ClaimPaymentService`) — 결제 플러그인이 구현하는 필터. 계약(인자·반환 키·멱등 규칙)의 단일 출처는 `modules/_bundled/sirsoft-ecommerce/docs/api/claim-payments.md` |
 | `claim-image.*` | 3 | 첨부 업로드 파일 검사(filter)와 업로드·삭제 후처리 |
 
 ### 취소·환불 축의 훅 계약 (#599 후속)
@@ -590,6 +626,68 @@ FormRequest 쪽 `{동작}_validation_rules`(filter). `brand.*` 19종을 한 번 
 그대로 남깁니다 — 알림 리스너만 그 플래그를 읽고, 활동 로그 리스너는 읽지 않습니다.
 기존 3인수 구독자는 그대로 두어도 됩니다(PHP 는 유저 함수에 인수가 더 넘어와도 오류를 내지
 않습니다 — 모자랄 때만 `ArgumentCountError`).
+
+### 클레임 훅은 커밋 뒤에 발화합니다 (#599 validate)
+
+교환·반품·환불신청 서비스와 관리자 클레임 서비스가 내는 `claim.{type}.*` 훅(접수·상태 전이·
+상품 단위 전이·금액 수정·상품 단위 처리 안내)과 교환 재발송의 `order_option.after_sync_status` 는
+**트랜잭션 커밋 뒤**에 발화합니다(`DB::afterCommit()` — 열린 트랜잭션이 없으면 즉시). 그래서:
+
+- 구독자는 **커밋된 상태**를 읽습니다. 리스너가 던져도 이미 끝난 전이는 되돌아가지 않습니다 —
+  그 예외는 호출자에게 전파되지만 도메인 쓰기는 남습니다.
+- 뒤이은 쓰기가 실패해 롤백된 전이의 훅은 **발화하지 않습니다**.
+- 한 트랜잭션 안의 훅은 등록 순서대로 나갑니다 — 상품 축(`option_status_changed`)이 헤더 축
+  (`status_changed`)보다 먼저입니다.
+
+호출자 트랜잭션과 **함께 되돌아가야 하는** 구독(금전 복원 — `'sync' => true`)은 이 훅들이 아니라
+금액·쿠폰·마일리지 축의 훅에 붙습니다. 클레임 훅에 롤백 연동이 필요한 쓰기를 걸지 마세요.
+
+### 클레임 before·filter 훅 — 막고 바꾸는 자리 (#599 validate)
+
+위 after 훅과 반대로, 아래 훅은 **쓰기 전에 동기로** 발화합니다(트랜잭션·잠금 전. 헤더 동기화만
+상품 전이 트랜잭션 안). before 리스너가 예외를 던지면 그 동작은 아무것도 쓰지 않고 끝납니다.
+막을 때는 `OrderClaimException::blockedByExtension('vendor-name::messages.키', [...])` 를 던지세요 —
+도메인 거절이라 화면은 422 와 그 문구를 받고, 일괄 전이는 그 건만 skip 으로 보고하며, 접수 직후의
+청구 0원 자동 승인은 접수를 살린 채 신청 상태로 남습니다. 다른 예외는 그 경로들에서 500·일반
+실패 문구가 됩니다. `{type}` 은 `exchange` · `return` · `refund` 입니다.
+
+| 훅 | 유형 | 인자 | 발화 지점 / 용도 |
+|----|------|------|-----------------|
+| `claim.{type}.before_request` | action | `(Order $order, array $payload)` | 신청 접수 직전(`requestExchange`·`requestReturn`·`OrderRefundRequestService::request`). 신청 자격을 확장이 더 좁힌다. 환불 접수는 환불할 돈이 없으면 취소신청서로 끝나지만 입구가 하나라 `claim.refund.*` 한 벌입니다 |
+| `claim.{type}.filter_request_data` | filter | `(array $payload, Order $order)` → `array` | 신청 입력 변형. **허용 키**: `items` · `reason_code` · `reason_detail` · `redelivery_address`(교환) |
+| `claim.{type}.before_update_request` | action | `($claim, array $payload)` | 승인 전 신청 수정 직전(`updateRequest`) |
+| `claim.{type}.filter_update_request_data` | filter | `(array $payload, $claim)` → `array` | 수정 입력 변형. **허용 키**: `reason_code` · `reason_detail` · `redelivery_address`(교환) |
+| `claim.{type}.before_status_change` | action | `($claim, ?string $from, string $to, array $context)` | 헤더 전이 직전 — 직접 전이·일괄 전이(건마다)·결제가 잇는 전이·송장 등록이 끄는 전이·**상품이 끌고 간 헤더 동기화**(단계마다, `$context['source'] = 'option_sync'`). `$from` 은 호출 시점 값이고 전이 판정은 잠금 안에서 다시 합니다. 헤더 동기화에서 막으면 그 회차의 상품 전이도 함께 되돌아갑니다 |
+| `claim.{type}.filter_status_change_data` | filter | `(array $context, $claim, ?string $from, string $to)` → `array` | 전이 컨텍스트 변형. **허용 키**: `admin_memo` · `reject_reason`. 헤더 동기화 경로에는 없습니다 |
+| `claim.{type}.before_withdraw` | action | `($claim)` | 신청자 철회 직전(철회 가능 판정 뒤). 이어지는 전이가 `before_status_change` 를 한 번 더 냅니다 |
+| `claim.{type}.before_option_status_change` | action | `($claim, array $items, string $to, array $context)` | 상품 단위 전이 직전. `$items` 는 `[{id, quantity}]`(수량 미지정이면 `null`) |
+| `claim.{exchange\|return}.before_complete` | action | `($claim, array $itemIds, ClaimCompletionOptions $options, ?int $processedBy)` | 교환·반품 완료 직전(`completeExchange`·`completeReturn`). `$itemIds` 가 비면 신청서 전체 |
+| `claim.{exchange\|return}.filter_complete_options` | filter | `(ClaimCompletionOptions $options, $claim, array $itemIds, ?int $processedBy)` → `ClaimCompletionOptions` | 완료 옵션(상품별 재고 복구 · 환불신청서 접수 여부) 변형. 다른 형을 돌려주면 무시합니다 |
+| `claim.refund.before_complete` | action | `(OrderRefund $refund, array $overrides, ?int $processedBy)` | 환불 실행 직전(`executeRefund` — 잠금·PG 호출 전). 막으면 돈이 나가지 않습니다 |
+
+**filter 가 바꿀 수 없는 값.** 필터 결과에서는 허용 키만 가져오고 나머지는 원래 값으로 되돌립니다
+(필터가 새로 넣은 키도 버립니다 — `Services/Concerns/GuardsClaimFilterResults`). 되돌리는 값과 이유:
+
+- 신청자(`requested_by`)·처리자(`processed_by`) — 소유권과 행위자 기록. 바뀌면 비회원 신청이 회원
+  소유로 넘어가거나 활동 로그의 처리자가 달라집니다.
+- 접수 창구 축(`refund_source_type` · `branch` · `gate_statuses` · `user_selectable_reason_only` ·
+  `pg_already_settled` · `auto_advance`) — 고객 창구 접수가 운영자 축으로 자격을 넓히거나 PG 왕복을
+  건너뜁니다.
+- 돈의 경로(`charge_method` · `refund_priority` · `refund_bank`) — 청구·환불 수단과 송금 계좌.
+- 목표 상태 — 호출층이 미수납 게이트(승인 → 결제 요청 우회)·종결 정산(반려·철회 → 돈 닫기)을 그
+  값으로 이미 판정했습니다. 필터 인자로 넘기지만 바꾸게 두지 않습니다. 알림 억제 플래그도 되돌립니다.
+- 금액 — 입력으로 받지 않고 서버가 대상·사유로 계산합니다. 환불 실행 본문(`$overrides`)은 금액
+  그 자체라 `claim.refund.before_complete` 에 필터를 두지 않았습니다.
+
+허용 키도 무검증으로 쓰이지 않습니다 — 필터 **뒤에** 고객 입력과 같은 검증(사유 해석, 잠금 안 수량
+가드, 재발송지 국가 불변, 배송비·회수비 재산정)을 그대로 지납니다. 그래서 필터가 사유를 판매자
+귀책으로 바꾸면 청구액도 그 사유로 다시 산정됩니다.
+
+상품 단위 전이(`before_option_status_change`)·철회·헤더 동기화·환불 실행에 필터가 없는 것은 바꿀 자유
+입력이 없거나(대상 행·목표 상태는 운영자 판단이자 게이트가 잰 값) 바꾸면 헤더와 상품이 갈리기
+때문입니다. 취소신청서(`claim.cancel.*`)의 막는 자리는 취소 파이프라인의 `order.before_cancel` 과
+위 `claim.refund.before_request` 입니다. 교환·반품 완료가 스스로 접수하는 차액·환불 신청서는
+`claim.refund.before_request` 를 지나지 않습니다 — 그 자리는 `claim.{exchange|return}.before_complete` 입니다.
 
 ### 결제수단 능력 선언 — `settings.filter_available_payment_methods`
 
@@ -928,7 +1026,9 @@ FormRequest 쪽 `{동작}_validation_rules`(filter). `brand.*` 19종을 한 번 
   신청서 테이블에 `*_by` 컬럼을 새로 만들지 않습니다. 전이는 `status_changed` 한 축으로만
   기록합니다 — 승인·반려·철회·완료는 `claim.{type}.approved` 같은 구체 훅도 함께 발화하는데,
   양쪽을 구독하면 한 번의 전이가 두 줄로 남습니다. 구체 훅은 알림 리스너
-  (`ClaimStatusNotificationListener`)의 몫입니다.
+  (`ClaimStatusNotificationListener`)의 몫입니다. 모델에서 값을 읽는 구독(접수 · 상품 단위 전이 ·
+  추가결제 수납/환급)과 알림 매핑 리스너 전체는 `'sync' => true` 입니다 — 큐 워커가 신청서를 다시
+  읽으면 그 사이 옮겨 간 "지금" 상태가 과거 사건의 기록·알림에 실리기 때문입니다.
 - **연동·주입 나머지**: 장바구니 병합 · 가입 시 통화/배송국가 배정 · 문의 피벗 정리 · 옵션↔상품
   대표값 동기화 · 회원 정보 화면에 마일리지/통화/배송국가 주입.
 
@@ -948,15 +1048,33 @@ FormRequest 쪽 `{동작}_validation_rules`(filter). `brand.*` 19종을 한 번 
 
 | 훅 | 인자 |
 |----|------|
-| `claim.{exchange\|return\|refund}.requested` | `($claim, Order $order)` |
-| `claim.{exchange\|return\|refund}.status_changed` | `($claim, ?string $previousStatus, ?string $targetStatus)` |
+| `claim.{exchange\|return}.requested` | `($claim, Order $order)` |
+| `claim.refund.requested` | `(OrderRefund $refund, Order $order, array $context = [])` — 환불 접수 경로는 `$context['suppress_notification']`(bool)를 싣는다. 접수 직후 자동 전이가 승인·완료까지 밟는 건이면 true 이고, 알림 리스너는 마지막 상태에서 1건만 보낸다. 반품·교환 완료가 만든 환불 접수는 세 번째 인자 없이 발화한다 |
+| `claim.cancel.requested` | `(OrderCancel $cancel, Order $order)` — 취소신청서는 환불이 완료되는 순간에 생긴다 |
+| `claim.{exchange\|return\|cancel}.status_changed` | `($claim, ?string $previousStatus, ?string $targetStatus)` |
+| `claim.refund.status_changed` | `(OrderRefund $refund, ?string $previousStatus, ?string $targetStatus, array $context = [])` — `$context['suppress_notification']` 는 자동 전이의 중간 단계 알림만 끈다(활동 로그는 끄지 않는다) |
 | `claim.{exchange\|return\|refund}.amounts_updated` | `($claim, array $before, array $after, ?int $processedBy)` — 스냅샷 키는 교환·반품 `claim_shipping_fee`/`total_charge_amount`/`charge_method`/`admin_memo`, 환불 `refund_amount`/`refund_points_amount`/`refund_method` |
 | `claim.refund.completed` | `(OrderRefund $refund)` — 환불 **실행 확정**(돈이 나간 사건). 같은 순간의 `approved → completed` 전이는 `status_changed` 가 따로 낸다 |
 | `claim.{exchange\|return}.payment_completed` | `($claim, ClaimPayment $payment)` — 청구액이 **전액 수납**됐을 때만, 그리고 신청서를 `paid` 로 옮긴 **뒤에** 발화한다 |
 | `claim.{exchange\|return}.payment_refunded` | `($claim, ClaimPayment $payment, float $refundAmount)` |
-| `claim.{exchange\|return\|refund}.option_status_changed` | `($claim, array $changes, ?string $targetStatus, ?int $processedBy)` — `$changes` 는 `{option_id, previous, new}` 목록이며 **실제로 옮겨진 상품만** 담는다(건너뛴 상품은 빠진다). 옮긴 것이 없으면 훅 자체가 발화하지 않는다. 그 회차에 **수량 분할**이 일어난 행은 `quantity`(전이분)와 `remainder_option_id`(잔여 행 ID)가 함께 실린다 — 분할 사실을 계보 컬럼으로 두지 않으므로 이 두 값이 유일한 흔적이다 |
+| `claim.{exchange\|return\|refund\|cancel}.option_status_changed` | `($claim, array $changes, ?string $targetStatus, ?int $processedBy)` — `$changes` 는 `{option_id, previous, new}` 목록이며 **실제로 옮겨진 상품만** 담는다(건너뛴 상품은 빠진다). 옮긴 것이 없으면 훅 자체가 발화하지 않는다. 그 회차에 **수량 분할**이 일어난 행은 `quantity`(전이분)와 `remainder_option_id`(잔여 행 ID)가 함께 실린다 — 분할 사실을 계보 컬럼으로 두지 않으므로 이 두 값이 유일한 흔적이다. 발행 측이 `remainder_quantity`(분할 직후 잔여 수량)를 함께 실으면 활동 로그는 그 값을 쓴다 |
+| `claim.items_transitioned` | `($claim, array $result, string $target)` — 상품 단위 전이 [일괄 적용] 1회가 끝났다는 **도메인 사실**. `$result` 는 `{succeeded: int[], skipped: array}` 다. 부분 처리 안내를 보낼지는 알림 리스너가 판정한다 |
+| `claim.{exchange\|return\|refund}.notify_{key}` · `claim.notify_withdrawn` | `($claim, array $snapshot)` — 알림 전용 훅. `$snapshot` 은 **발행 시점에 캡처한 스칼라**다: `status`(그 알림이 알리는 상태 값), 교환·반품은 `outstanding_amount`(미수납 청구액, 기준 통화). 알림 발송은 큐에서 돌므로 본문 값은 이 스냅샷에서 만든다 — 신청서를 다시 읽으면 과거 사건의 알림에 지금 값이 실린다 |
+| `claim.notify_partially_processed` | `($claim, array $summary)` — `$summary` 는 이번 회차의 건수·결정 표기·상품 줄(`total_count`·`processed_count`·`remaining_count`·`approved_count`·`rejected_count`·`decision_label`·`item_lines`) 문자열 맵이며, 발행 시점의 헤더 상태 값 `status` 가 함께 실린다(본문 변수로는 쓰지 않고 상태 라벨을 만드는 재료다) |
 | `claim.payment_cancelled` | `(ClaimPayment $payment, OrderExchange\|OrderReturn\|null $claim, string $reason)` — `$reason` 은 `ClaimPaymentService::CANCEL_REASON_*`(`claim_finalized` / `charge_settled` / `orphan_reaped`). 대상은 언제나 **미수납 대기 행**이라 돈이 오간 사건이 아니다 |
+| `claim-image.before_upload` | `(UploadedFile $file, string $claimableType, int $claimableId, string $uploaderType)` — 저장 전 거절 지점(예외를 던지면 파일도 행도 남지 않는다). `$claimableType` 은 신청서 morph 별칭(`exchange`/`return`/`refund`) 또는 미귀속(`pending`, 이때 `$claimableId` 는 주문 ID), `$uploaderType` 은 `customer`/`admin` |
+| `claim-image.filter_upload_file` | `(UploadedFile $file)` — 변형본을 돌려주면 저장 파일명·MIME·크기가 그 파일 기준이 된다 |
 | `claim-image.after_upload` / `after_delete` | `(ClaimImage $image)` |
+| `order_option.after_sync_status` | `(array $changes, string $newStatus, string $source)` — 주문 상태 동기화가 raw update 로 함께 옮긴 주문상품. `$changes` 는 `{order_option_id, order_id, previous, new}` 목록, `$source` 는 `order_status_sync`(결제완료·결제실패 등 처리 서비스) / `bulk_update`(관리자 주문 수정·일괄 상태변경) |
+
+**클레임 훅의 이름이 표준 패턴(`{entity}.{before|after}_{action}`)을 따르지 않는 이유**
+
+클레임 도메인 훅은 `claim.{type}.requested` · `status_changed` · `payment_completed` 처럼 **과거형 사건 이름**을 쓴다. 표준 패턴의 `after_*` 와 뜻이 같지만(모두 일이 끝난 뒤 발화한다) 이름을 바꾸지 않는 이유는 둘이다.
+
+- 한 동작이 여러 사건을 낸다 — 승인 한 번에 `status_changed` 와 `approved` 가 함께 발화하고, 상품이 갈리면 `option_status_changed` 가 따로 선다. `after_approve` 한 줄로는 「전이」와 「승인」 두 층을 나눌 수 없다.
+- 알림 전용 훅(`notify_*`)은 도메인 사건과 **다른 축**이다 — 자동 전이의 중간 단계처럼 사건은 있었으나 알리지 않는 조합이 있어 이름으로 구분한다(`ClaimNotificationHooks`).
+
+첨부 훅(`claim-image.*`)은 다른 업로드 지점(`product-image` · `review-image`)과 같은 하이픈 표기와 업로드 트라이어드(`before_upload` → `filter_upload_file` → `after_upload`)를 따른다. `order_option.after_sync_status` · `order_shipping.tracking_updated` 는 전이 훅을 지나지 않는 경로의 사실을 알리는 보조 훅이다.
 
 **발행되지만 활동 로그가 구독하지 않는 클레임 훅**
 
@@ -972,7 +1090,7 @@ FormRequest 쪽 `{동작}_validation_rules`(filter). `brand.*` 19종을 한 번 
 | `claim.items_transitioned` | `($claim, array $result, string $target)` | `AdminClaimService` — 상품 단위 전이가 끝났다는 **도메인 사실**. 「알릴 것인가」를 정하지 않는다 |
 | `claim.notify_partially_processed` | `($claim, array $variables)` | 부분 처리 안내(고객 수신). 판정·집계는 `ClaimStatusNotificationListener` 가 위 사실 훅을 받아 단독으로 한다 — 발화 규칙이 두 곳에 생기지 않게 |
 | `claim-image.filter_upload_file` (filter) | `(UploadedFile $file)` | 업로드 직전 파일 가공 |
-| `claim_payment.{approve,refund}` (filter) | 결제 플러그인 연동 계약 | `modules/_bundled/sirsoft-ecommerce/docs/api/claim-payments.md` "결제 플러그인 연동 계약" 이 정본 |
+| `claim_payment.{approve,refund,void_approval}` (filter) | 결제 플러그인 연동 계약 | `modules/_bundled/sirsoft-ecommerce/docs/api/claim-payments.md` "결제 플러그인 연동 계약" 이 정본 |
 
 ---
 <!-- @intent END -->
@@ -1200,23 +1318,24 @@ _등록하는 브로드캐스트 채널이 없습니다._
 
 ## 활동 로그 훅
 
-> 이 확장이 코어 활동 로그(`activity_logs`)에 기록을 남기기 위해 구독하는 훅 **98종**입니다
-> (등록 건수는 94건 — `order.after_create` 와 `order-option.after_confirm` 은 관리자 관점과
+> 이 확장이 코어 활동 로그(`activity_logs`)에 기록을 남기기 위해 구독하는 훅 **127종**입니다
+> (등록 건수는 129건 — `order.after_create` 와 `order-option.after_confirm` 은 관리자 관점과
 > 구매자 관점 두 리스너가 각각 구독합니다).
 > 코어 `docs/backend/activity-log-hooks.md` 에 있던 목록을 이 확장 소유로 옮긴 것입니다(#601) —
 > 확장이 훅을 더할 때 코어 문서를 고쳐야 하던 역방향 의존을 없애기 위해서입니다. 코어 문서에는
 > 총계와 이 문서로의 링크만 남습니다.
 
-> 새 항목을 추가하면 코어 `lang/{ko,en}/activity_log.php` 의 action 라벨과 description 본문,
-> 그리고 번들 일본어 팩까지 함께 정의해야 합니다 — **모듈 lang 파일에 넣으면 해석되지
-> 않습니다.**
+> 새 항목을 추가하면 action 라벨과 description 본문을 이 모듈의 `src/lang/{ko,en}/activity_log.php`
+> 와 번들 일본어 팩에 함께 정의합니다. description 은 리스너가 `sirsoft-ecommerce::activity_log.description.*`
+> 키로 남기므로 모듈 lang 에서 해석되고, action 라벨은 **모듈 lang 을 먼저** 찾은 뒤 없을 때만 코어
+> `lang/{ko,en}/activity_log.php` 로 내려갑니다.
 
 ### 이커머스 모듈 훅
 
 **모듈**: `sirsoft-ecommerce`
-**등록 113건 / 훅 111종** (8개 Listener)
+**등록 129건 / 훅 127종** (8개 Listener)
 
-#### OrderActivityLogListener (21훅)
+#### OrderActivityLogListener (25훅)
 
 **파일**: `modules/_bundled/sirsoft-ecommerce/src/Listeners/OrderActivityLogListener.php`
 
@@ -1265,6 +1384,18 @@ _등록하는 브로드캐스트 채널이 없습니다._
 | `sirsoft-ecommerce.coupon.use` | `handleCouponUse` | `coupon.use` | **User** | Order |
 | `sirsoft-ecommerce.mileage.use` | `handleMileageUse` | `mileage.use` | **User** | Order |
 | `sirsoft-ecommerce.mileage.earn` | `handleMileageEarn` | `mileage.earn` | **User** | Order |
+
+##### 상태 동기화 · 송장 · 세금계산서 (4훅)
+
+상품 상태가 바뀌어 주문 상태가 따라 움직였을 때(`status_sync`), 일괄 상태 변경으로 상품 상태가
+맞춰졌을 때(`sync_status`), 송장이 바뀌었을 때, 취소로 이미 발행된 세금계산서가 낡았을 때를 남긴다.
+
+| 훅 이름 | Listener 메서드 | Action (DB) | LogType | Loggable |
+|---------|----------------|-------------|---------|----------|
+| `sirsoft-ecommerce.order.after_status_sync` | `handleOrderStatusSync` | `order.status_sync` | Admin | Order |
+| `sirsoft-ecommerce.order_option.after_sync_status` | `handleOrderOptionAfterSyncStatus` | `order_option.sync_status` | Admin | Order |
+| `sirsoft-ecommerce.order_shipping.tracking_updated` | `handleOrderShippingTrackingUpdated` | `order_shipping.tracking_update` | Admin | OrderOption |
+| `sirsoft-ecommerce.order.tax_invoice_stale_after_cancel` | `handleTaxInvoiceStaleAfterCancel` | `order.tax_invoice_stale` | Admin | Order |
 
 #### ProductActivityLogListener (7훅)
 
@@ -1323,7 +1454,7 @@ _등록하는 브로드캐스트 채널이 없습니다._
 | `sirsoft-ecommerce.category.after_toggle_status` | `handleAfterToggleStatus` | `category.toggle_status` | Admin | Category |
 | `sirsoft-ecommerce.category.after_reorder` | `handleAfterReorder` | `category.reorder` | Admin | - |
 
-#### EcommerceAdminActivityLogListener (41훅)
+#### EcommerceAdminActivityLogListener (45훅)
 
 **파일**: `modules/_bundled/sirsoft-ecommerce/src/Listeners/EcommerceAdminActivityLogListener.php`
 
@@ -1411,6 +1542,18 @@ _등록하는 브로드캐스트 채널이 없습니다._
 | `sirsoft-ecommerce.product_option.after_bulk_stock_update` | `handleOptionAfterBulkStockUpdate` | `product_option.bulk_stock_update` | Admin | - |
 | `sirsoft-ecommerce.option.after_bulk_update` | `handleOptionAfterBulkUpdate` | `product_option.bulk_update` | Admin | - |
 
+##### ClaimReason (4훅)
+
+환경설정 > 클레임 탭의 교환·반품·환불 사유 카탈로그 변경을 남긴다. 사유를 지우면 모델이 사라지므로 삭제 줄은 대상 없이
+사유 코드·유형을 `properties` 로 남긴다.
+
+| 훅 이름 | Listener 메서드 | Action (DB) | LogType | Loggable |
+|---------|----------------|-------------|---------|----------|
+| `sirsoft-ecommerce.claim_reason.after_create` | `handleClaimReasonAfterCreate` | `claim_reason.create` | Admin | ClaimReason |
+| `sirsoft-ecommerce.claim_reason.after_update` | `handleClaimReasonAfterUpdate` | `claim_reason.update` | Admin | ClaimReason |
+| `sirsoft-ecommerce.claim_reason.after_delete` | `handleClaimReasonAfterDelete` | `claim_reason.delete` | Admin | - |
+| `sirsoft-ecommerce.claim_reason.after_toggle_status` | `handleClaimReasonAfterToggleStatus` | `claim_reason.toggle_status` | Admin | ClaimReason |
+
 ##### ProductReview (3훅)
 
 | 훅 이름 | Listener 메서드 | Action (DB) | LogType | Loggable |
@@ -1460,7 +1603,7 @@ _등록하는 브로드캐스트 채널이 없습니다._
 | `sirsoft-ecommerce.order.after_create` | `handleOrderAfterCreate` | `order.create` | **User** | Order |
 | `sirsoft-ecommerce.order-option.after_confirm` | `handleOrderOptionAfterConfirm` | `order_option.confirm` | **User** | OrderOption |
 
-#### ClaimActivityLogListener (19훅)
+#### ClaimActivityLogListener (23훅)
 
 **파일**: `modules/_bundled/sirsoft-ecommerce/src/Listeners/ClaimActivityLogListener.php`
 
@@ -1468,23 +1611,25 @@ _등록하는 브로드캐스트 채널이 없습니다._
 
 **전이는 `status_changed` 한 축으로만 기록한다.** 승인·반려·철회·완료는 `claim.{type}.approved` 같은 구체 훅도 함께 발화하는데, 양쪽을 구독하면 한 번의 전이가 두 줄로 남는다. 목표 상태는 `properties.new_status` 로 싣는다.
 
-##### 신청 접수 (3훅)
+##### 신청 접수 (4훅)
 
 | 훅 이름 | Listener 메서드 | Action (DB) | LogType | Loggable |
 |---------|----------------|-------------|---------|----------|
 | `sirsoft-ecommerce.claim.exchange.requested` | `handleExchangeRequested` | `claim_exchange.request` | User | OrderExchange |
 | `sirsoft-ecommerce.claim.return.requested` | `handleReturnRequested` | `claim_return.request` | User | OrderReturn |
 | `sirsoft-ecommerce.claim.refund.requested` | `handleRefundRequested` | `claim_refund.request` | User | OrderRefund |
+| `sirsoft-ecommerce.claim.cancel.requested` | `handleCancelRequested` | `claim_cancel.request` | User | OrderCancel |
 
-**상태 전이 (3훅 — 전 상태 전수)**
+**상태 전이 (4훅 — 전 상태 전수)**
 
 | 훅 이름 | Listener 메서드 | Action (DB) | LogType | Loggable |
 |---------|----------------|-------------|---------|----------|
 | `sirsoft-ecommerce.claim.exchange.status_changed` | `handleStatusChanged` | `claim_exchange.status_change` | Admin | OrderExchange |
 | `sirsoft-ecommerce.claim.return.status_changed` | `handleStatusChanged` | `claim_return.status_change` | Admin | OrderReturn |
 | `sirsoft-ecommerce.claim.refund.status_changed` | `handleStatusChanged` | `claim_refund.status_change` | Admin | OrderRefund |
+| `sirsoft-ecommerce.claim.cancel.status_changed` | `handleStatusChanged` | `claim_cancel.status_change` | Admin | OrderCancel |
 
-**상품 단위 전이 (2훅 — D25)**
+**상품 단위 전이 (4훅 — D25)**
 
 헤더 전이와 **층이 다른 사실**이라 따로 남긴다. `syncHeaderFromOptions` 는 살아 있는 상품이 한 상태로 모일 때만 헤더를 옮기므로, 상품 상태가 갈리는 조합에서는 헤더 줄이 아예 생기지 않는다 — 이 훅이 없으면 운영자가 한 상태 변경의 흔적이 전혀 남지 않는다. 헤더가 따라 움직인 회차는 두 줄이 함께 남으며 그것은 이중 기록이 아니다.
 
@@ -1492,6 +1637,8 @@ _등록하는 브로드캐스트 채널이 없습니다._
 |---------|----------------|-------------|---------|----------|
 | `sirsoft-ecommerce.claim.exchange.option_status_changed` | `handleOptionStatusChanged` | `claim_exchange.option_status_change` | Admin | OrderExchange |
 | `sirsoft-ecommerce.claim.return.option_status_changed` | `handleOptionStatusChanged` | `claim_return.option_status_change` | Admin | OrderReturn |
+| `sirsoft-ecommerce.claim.refund.option_status_changed` | `handleOptionStatusChanged` | `claim_refund.option_status_change` | Admin | OrderRefund |
+| `sirsoft-ecommerce.claim.cancel.option_status_changed` | `handleOptionStatusChanged` | `claim_cancel.option_status_change` | Admin | OrderCancel |
 
 ##### 금액 수정 / 환불 실행 (4훅)
 

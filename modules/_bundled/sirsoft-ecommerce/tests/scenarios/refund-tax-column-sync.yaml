@@ -12,7 +12,7 @@ description: |
   환불만 빠져 있었다** — 같은 「돈을 다 돌려준 주문」인데 **경로에 따라 헤더가 달랐다.**
 
   핵심 계약:
-    - 동기화 컬럼 목록의 정본은 `OrderRefundRequestService::TAX_SYNC_COLUMNS` **하나**다.
+    - 동기화 컬럼 목록의 정본은 `RefundExecutionService::TAX_SYNC_COLUMNS` **하나**다(환불신청 서비스도 이 상수를 참조한다).
       `RefundExecutionService` 는 받은 것을 그대로 쓴다 — 두 곳이 각자 목록을 들면
       한쪽만 늘렸을 때 조용히 잘린다(실측: 실행 쪽이 3개뿐이라 `total_cash_equivalent_amount`
       가 빠져 발급 가능액이 62,000 으로 남았다).

@@ -31,6 +31,27 @@ class RefundExecutionService
     use AppliesRefundBankAccount;
 
     /**
+     * 클레임 환불이 주문 헤더에 동기화할 수 있는 컬럼 (S3-D17 · #599 validate P2 #8)
+     *
+     * **세금 분류 + 현금성 금액만** 담는다. `total_paid_amount`·`total_amount` 가 섞여 들어오면
+     * 잔여 한도(`total_paid_amount - total_refunded_amount`)가 같은 금액을 두 번 차감한다
+     * (`execute()` 독블록). `total_cash_equivalent_amount` 가 빠지면 현금영수증 발급 가능액이
+     * 전액 환불 뒤에도 남는다(2026-09-16 실측). `mc_*` 두 개는 base 와 짝을 맞춘다.
+     *
+     * 목록의 정본은 여기 하나다 — 호출부가 골라 싣더라도 쓰기 직전에 이 목록으로 다시 거른다.
+     *
+     * @var array<int, string>
+     */
+    public const TAX_SYNC_COLUMNS = [
+        'total_tax_amount',
+        'total_tax_free_amount',
+        'total_vat_amount',
+        'total_cash_equivalent_amount',
+        'mc_total_tax_amount',
+        'mc_total_tax_free_amount',
+    ];
+
+    /**
      * @param  StockService  $stockService  재고 서비스
      * @param  EcommerceSettingsService  $settingsService  이커머스 설정 서비스
      * @param  CashReceiptService  $cashReceiptService  현금영수증 발급/취소 서비스
@@ -107,7 +128,7 @@ class RefundExecutionService
         // 장부의 환불가능액만 줄었다 — 이후 정상적인 카드 환불이 한도에 먼저 걸린다
         // (실측 1-P: 58,000 → 44,000, 토스 잔액은 58,000 그대로).
         //
-        // 운영자가 카드 주문을 손으로 계좌 송금하는 운영은 막지 않는다(PO 확정 2026-09-16 —
+        // 운영자가 카드 주문을 손으로 계좌 송금하는 운영은 막지 않는다(운영 결정 2026-09-16 —
         // 「허용하되 장부는 건드리지 않음」). 다만 그 송금은 **카드 취소가 아니므로** 카드
         // 결제행의 취소 누적이 아니다. 돈이 나간 사실은 주문 축(`total_refunded_amount`)과
         // 환불 레코드가 그대로 기록한다.
@@ -181,11 +202,11 @@ class RefundExecutionService
      */
     protected function taxColumnUpdates(Order $order, AdjustmentResult $result): array
     {
-        // **호출부가 이미 컬럼을 골라 실었다** — 여기서 다시 거르지 않는다.
-        // 두 곳에서 각자 목록을 들면 한쪽만 늘렸을 때 조용히 빠진다(실측: 여기 목록이
-        // 세 개뿐이라 `total_cash_equivalent_amount` 가 잘려 발급 가능액이 62,000 으로
-        // 남았다). 목록의 정본은 `OrderRefundRequestService::TAX_SYNC_COLUMNS` 하나다.
-        return $result->orderUpdates;
+        // 쓰기 직전에 **화이트리스트로 거른다**(#599 validate P2 #8). 종전에는 「호출부가 이미
+        // 골라 실었다」를 믿고 `orderUpdates` 를 통째로 썼는데, 그 전제가 깨지면(재계산 결과를
+        // 그대로 넘기는 새 호출부) `total_paid_amount` 가 재계산값으로 덮여 잔여 한도가 두 번
+        // 깎인다 — 오류 없이 다음 환불이 0 원이 된다. 목록은 `TAX_SYNC_COLUMNS` 하나가 정본이다.
+        return array_intersect_key($result->orderUpdates, array_flip(self::TAX_SYNC_COLUMNS));
     }
 
     /**
@@ -304,8 +325,17 @@ class RefundExecutionService
                 ->firstWhere('order_option_id', $item['order_option_id']);
 
             $quantity = (int) $item['cancel_quantity'];
-            $subtotalAmount = (float) $option->unit_price * $quantity;
-            $cancelAmount = $adjustedItem['cancel_amount'] ?? $subtotalAmount;
+
+            // 단가는 **한 가지**로 센다 — 재계산이 적은 회계 단가(`adjustedItems` — 교환 후속 행이면
+            // 신규 옵션 단가)가 있으면 그것을, 없으면 행의 저장 단가를 쓴다. 종전에는 소계는 저장
+            // 단가로, 취소액은 회계 단가 × **재계산이 본 수량**으로 따로 세어, 저가 교환 후속 행이나
+            // 누적 재계산(반품 2회차)에서 한 행 안의 단가·소계·환불액이 서로 다른 값을 말했다
+            // (#599 validate P2 minor).
+            $adjustedQuantity = (int) ($adjustedItem['cancel_quantity'] ?? 0);
+            $unitPrice = $adjustedItem !== null && $adjustedQuantity > 0 && isset($adjustedItem['cancel_amount'])
+                ? (float) $adjustedItem['cancel_amount'] / $adjustedQuantity
+                : (float) $option->unit_price;
+            $subtotalAmount = $unitPrice * $quantity;
 
             // 할인 차감분 계산 (원래 옵션 할인 비율 기반)
             $discountAmount = 0;
@@ -314,14 +344,14 @@ class RefundExecutionService
                 $discountAmount = round($subtotalAmount * $discountRatio, 2);
             }
 
-            $refundAmount = $cancelAmount - $discountAmount;
+            $refundAmount = $subtotalAmount - $discountAmount;
 
             $rows[] = [
                 'order_id' => $order->id,
                 'order_option_id' => $option->id,
                 'option_status' => RefundStatusEnum::REQUESTED,
                 'quantity' => $quantity,
-                'unit_price' => (float) $option->unit_price,
+                'unit_price' => $unitPrice,
                 'subtotal_amount' => $subtotalAmount,
                 'discount_amount' => $discountAmount,
                 'refund_amount' => max(0, $refundAmount),
@@ -455,9 +485,12 @@ class RefundExecutionService
                 'error_message' => $pgResult['error_message'] ?? null,
             ]);
 
-            throw new OrderCancellationException(__('sirsoft-ecommerce::exceptions.pg_refund_failed', [
-                'error' => $pgResult['error_message'] ?? 'Unknown error',
-            ]));
+            // 키·파라미터를 함께 싣는다 — 호출부(회원·비회원 면)는 번역문이 아니라 키로 응답을
+            // 조립하므로, 키가 없으면 PG 거절 사유가 뭉뚱그린 실패 안내로 사라진다.
+            $messageKey = 'sirsoft-ecommerce::exceptions.pg_refund_failed';
+            $messageParams = ['error' => $pgResult['error_message'] ?? 'Unknown error'];
+
+            throw new OrderCancellationException(__($messageKey, $messageParams), $messageKey, $messageParams);
         }
     }
 

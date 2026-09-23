@@ -203,7 +203,8 @@
         "mark_order_complete_hint": "When checked, the order status is changed to paid along with recording the deposit (including mileage earning, stock deduction, and notifications). When unchecked, only the deposit is recorded.",
         "cancel": "Cancel",
         "confirm": "Confirm Deposit",
-        "confirm_success": "The deposit has been recorded."
+        "confirm_success": "The deposit has been recorded.",
+        "confirm_failed": "Failed to confirm the deposit."
       },
       "batch_change": {
         "title": "Batch Change Confirmation",
@@ -290,6 +291,8 @@
         "estimate_failed": "Failed to calculate estimated refund.",
         "cancel_success": "Order has been cancelled.",
         "refund_request_created": "A refund request has been filed. The cancellation is confirmed once it is approved and the refund completes.",
+        "refund_request_created_no_claim_access": "Refund request {{number}} has been filed. An operator with claim permission must approve it and complete the refund to confirm the cancellation.",
+        "refund_request_auto_stopped": "The refund request was approved, but this payment method cannot be refunded automatically. Complete the refund on the request to confirm the cancellation.",
         "cancel_failed": "Failed to cancel order.",
         "refund_bank_label": "Refund account",
         "refund_bank_select": "Select bank",
@@ -758,7 +761,8 @@
     "confirm_tracking_label": "Tracking Number: ",
     "confirm_cancel": "Cancel",
     "confirm_apply": "Apply Changes",
-    "confirm_no_changes": "No changes to apply."
+    "confirm_no_changes": "No changes to apply.",
+    "error": "Bulk update failed."
   },
   "column": {
     "no": "NO",

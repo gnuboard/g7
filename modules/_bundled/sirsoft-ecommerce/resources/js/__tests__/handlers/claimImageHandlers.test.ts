@@ -218,10 +218,11 @@ describe('claimImageHandlers', () => {
         // 파일마다 같은 문구를 되풀이하지 않는다 — 요약 한 번이다.
         expect(mockG7Core.toast.error).toHaveBeenCalledTimes(1);
         const [message] = mockG7Core.toast.error.mock.calls.at(-1) ?? [];
-        expect(String(message)).toContain('claim.image.upload_partial_failed');
+        // 번역이 없으면(모의 t 는 키를 돌려준다) 키 원문이 아니라 장수를 담은 폴백 문구가 뜬다.
+        expect(String(message)).toContain('3장 중 1장');
         // 몇 장 중 몇 장인지 문구 파라미터로 넘긴다.
         expect(mockG7Core.t).toHaveBeenCalledWith(
-            'claim.image.upload_partial_failed',
+            'sirsoft-ecommerce.user.claim.image.upload_partial_failed',
             expect.objectContaining({ failed: 1, total: 3 }),
         );
         // 성공분은 그대로 남는다 — 빠진 것만 다시 붙이면 된다.
@@ -242,7 +243,7 @@ describe('claimImageHandlers', () => {
         await uploadPendingClaimFiles(mockG7Core, { claimApiBase: '/api/x', isGuest: false });
 
         expect(mockG7Core.t).toHaveBeenCalledWith(
-            'claim.image.upload_partial_failed',
+            'sirsoft-ecommerce.user.claim.image.upload_partial_failed',
             expect.objectContaining({ failed: 2, total: 2 }),
         );
     });

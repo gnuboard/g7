@@ -22,6 +22,9 @@ return [
         'signature_mismatch' => 'The callback signature verification failed.',
         'deposit_not_supported' => 'Claim additional payments do not support deposit-pending methods (virtual account).',
         'invalid_refund_amount' => 'The refund amount is invalid.',
+        'amount_mismatch' => 'The payment amount does not match the charge, or the charge could not be determined, so the payment was not confirmed (any approved amount is cancelled). Please start the payment again from the claim.',
+        'order_id_mismatch' => 'The order number in the approval response does not match the claim payment number being approved.',
+        'compensation_cancel_reason' => 'Automatically cancelled after the claim payment approval was rejected',
     ],
     'refund' => [
         'missing_tid' => 'Cannot process refund: transaction ID (TID) is missing.',

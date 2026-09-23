@@ -21,13 +21,6 @@
       </on-code>
     </error-handling>
   </data-source>
-  <!-- 환불 사유 — 회원/비회원 공유 카탈로그 엔드포인트 (optional.sanctum). 백엔드 라우트가 그룹 밖으로 분리되어 비회원도 동일 endpoint 로 카탈로그 조회 가능. 취소 모달의 사유 Select 옵션을 채운다. -->
-  <data-source id="refundReasons" label_key="$t:editor.data_source.refundReasons" type="api" endpoint="/api/modules/sirsoft-ecommerce/user/claim-reasons" method="GET" :auto_fetch="true" auth_mode="optional">
-    <params type="refund"/>
-    <fallback>
-      <field name="data" :value="[]"/>
-    </fallback>
-  </data-source>
   <!-- 클레임 가능 상품·유형 — 신청 버튼 3종의 노출·활성 근거다. 비회원 경로는 주문번호로 스코프가 잡히므로 주문 응답을 기다리지 않고 곧바로 부른다(회원 화면이 주문 ID 를 얻으려 체인을 태우는 것과 다른 점).
        신청·철회 뒤 이 화면으로 돌아오므로 캐시된 응답을 쓰면 방금 잠긴 수량이 반영되지 않는다. 클레임 가능 여부는 진입할 때마다 서버가 다시 판정해야 하는 값이다. -->
   <data-source id="claimable" label_key="$t:editor.data_source.claimable" type="api" endpoint="/api/modules/sirsoft-ecommerce/guest/orders/{{route.order_number}}/claimable-options" method="GET" :auto_fetch="true" auth_mode="optional" :cache="false" :refetchOnMount="true">
@@ -46,6 +39,7 @@
   <init-local>
     <field name="isGuest" :value="true"/>
     <field name="withdrawRefreshDataSourceId" value="claims"/>
+    <field name="withdrawRefreshClaimable" :value="true"/>
     <field name="claimDetailLinkMode" value="same_window"/>
     <field name="selectedItemIds" :value="[]"/>
     <field name="selectAllItems" :value="false"/>

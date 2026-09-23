@@ -91,6 +91,12 @@ class OrderReturnFactory extends Factory
      */
     public function guest(): static
     {
-        return $this->state(fn () => ['requested_by' => null]);
+        // 비회원은 **주문에 주인이 없는** 것이다. `requested_by` 만 비우면 운영자 대리 접수와
+        // 구분되지 않아(§4-3-1), 그 픽스처로 잠근 판정이 회원 주문까지 비회원으로 만든다.
+        // (`OrderExchangeFactory::guest()` 와 같은 규칙)
+        return $this->state(fn () => [
+            'requested_by' => null,
+            'order_id' => Order::factory()->state(['user_id' => null]),
+        ]);
     }
 }

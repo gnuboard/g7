@@ -1274,7 +1274,11 @@ function getPermissionFixCommand(string $pathList, string $mode = 'ownership'): 
         }
 
         if ($mode === 'windows_readonly') {
-            return 'attrib -R '.$winPath.' /D /S';
+            // 두 줄이 필요하다 — `attrib -R "<폴더>" /D /S` 는 경로를 파일 사양으로 읽어 폴더 자체만 풀고
+            // 안쪽 파일·하위 폴더는 읽기 전용으로 남긴다(2026-09-23 Windows 실측). 안쪽은 `<폴더>\*` 로 푼다.
+            $target = trim($winPath, '"');
+
+            return 'attrib -R "'.$target.'"'."\n".'attrib -R "'.$target.'\\*" /S /D';
         }
 
         return 'icacls '.$winPath.' /grant Everyone:(OI)(CI)F /T';

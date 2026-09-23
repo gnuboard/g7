@@ -841,9 +841,9 @@ class CartService
      * @param  int  $requestedQuantity  요청 수량
      * @param  int  $currentQuantity  현재 장바구니에 담긴 수량 (합산용, 기본값 0)
      * @return void
+     * @return void 반환값 없음
      *
      * @throws \Exception 재고 초과 시 예외
-     * @return void 반환값 없음
      */
     protected function validateStock(int $productOptionId, int $requestedQuantity, int $currentQuantity = 0): void
     {
@@ -884,10 +884,10 @@ class CartService
      *
      * @param  int  $productOptionId  상품 옵션 ID
      * @return void
+     * @return void 반환값 없음
      *
      * @throws CartUnavailableException 판매중지/품절/출시예정/전시중지 상품인 경우
      * @throws \Exception 옵션/상품을 찾을 수 없는 경우
-     * @return void 반환값 없음
      */
     protected function validatePurchasable(int $productOptionId): void
     {
@@ -916,9 +916,9 @@ class CartService
      * @param  int  $productId  상품 ID
      * @param  int  $totalQuantity  검증 후 상품 총수량 (기존 장바구니 + 이번 요청)
      * @return void
+     * @return void 반환값 없음
      *
      * @throws CartUnavailableException 최소 미달/최대 초과 시
-     * @return void 반환값 없음
      */
     protected function validatePurchaseQuantityLimit(int $productId, int $totalQuantity): void
     {
@@ -958,9 +958,9 @@ class CartService
      * @param  Cart  $cart  현재 장바구니 아이템
      * @param  int  $newProductOptionId  변경하려는 옵션 ID
      * @return void
+     * @return void 반환값 없음
      *
      * @throws \Exception 다른 상품의 옵션으로 변경 시도 시
-     * @return void 반환값 없음
      */
     protected function validateSameProduct(Cart $cart, int $newProductOptionId): void
     {
@@ -1045,9 +1045,9 @@ class CartService
      *
      * @param  int  $totalQuantity  합산 후 라인 수량
      * @return void
+     * @return void 반환값 없음
      *
      * @throws CartOperationException 상한 초과 시
-     * @return void 반환값 없음
      */
     protected function validateCartQuantityLimit(int $totalQuantity): void
     {

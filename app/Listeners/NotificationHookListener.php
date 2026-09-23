@@ -11,6 +11,7 @@ use App\Notifications\GenericNotification;
 use App\Services\NotificationDefinitionService;
 use App\Services\NotificationLogService;
 use App\Services\NotificationRecipientResolver;
+use App\Services\NotificationWithdrawnRecipientPolicy;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 
@@ -255,7 +256,11 @@ class NotificationHookListener implements HookListenerInterface
     }
 
     /**
-     * 탈퇴 회원에게 **바깥 채널**로 보내야 하는지 판정합니다.
+     * 탈퇴 회원에게 **바깥 채널**로 보내지 않아야 하는지 판정합니다.
+     *
+     * 판정은 {@see NotificationWithdrawnRecipientPolicy::blocksChannel()} 한 곳이 소유합니다 —
+     * 수신자 해석(삭제 회원의 게스트 폴백 금지)과 같은 정책 객체를 써서 두 경로가 갈라지지
+     * 않게 합니다.
      *
      * 탈퇴 처리는 이름·이메일·닉네임을 익명화합니다(`…@example.test_deleted_20260921_1733`).
      * 그 주소는 더 이상 존재하지 않는 우편함이므로, 그대로 보내면 운영에서는 매번 바운스가
@@ -274,15 +279,11 @@ class NotificationHookListener implements HookListenerInterface
      */
     private function shouldSkipWithdrawnRecipient(mixed $notifiable, string $channel): bool
     {
-        if (! $notifiable instanceof User) {
+        if (! is_object($notifiable)) {
             return false;
         }
 
-        if ($channel === 'database') {
-            return false;
-        }
-
-        return $notifiable->isWithdrawn();
+        return app(NotificationWithdrawnRecipientPolicy::class)->blocksChannel($notifiable, $channel);
     }
 
     /**
@@ -366,9 +367,11 @@ class NotificationHookListener implements HookListenerInterface
     /**
      * 수신자 0명의 사유 키를 고릅니다.
      *
-     * 비회원 수신자 경로에서 이메일이 비어 있는 것(`guest_email_empty`)과, 규칙이 아무도
-     * 뽑지 못한 것(`no_recipient_resolved`)은 운영자가 취할 조치가 다릅니다 — 전자는 주문의
-     * 연락처를, 후자는 템플릿의 수신자 규칙을 봐야 합니다.
+     * 비회원 수신자 경로에서 이메일이 비어 있는 것(`guest_email_empty`), 지목된 회원의
+     * 계정이 삭제된 것(`member_account_missing`), 규칙이 아무도 뽑지 못한 것
+     * (`no_recipient_resolved`)은 운영자가 취할 조치가 다릅니다 — 첫째는 주문의 연락처를
+     * 보고, 둘째는 조치할 것이 없으며(삭제 회원은 다른 주소로 대신 보내지 않는다), 셋째는
+     * 템플릿의 수신자 규칙을 봐야 합니다.
      *
      * @param  array  $recipientRules  수신자 규칙 배열
      * @param  array  $context  컨텍스트
@@ -379,7 +382,17 @@ class NotificationHookListener implements HookListenerInterface
         $hasTriggerUserRule = collect($recipientRules)
             ->contains(fn ($rule) => ($rule['type'] ?? null) === 'trigger_user');
 
-        if (! $hasTriggerUserRule || ! empty($context['trigger_user_id'])) {
+        if (! $hasTriggerUserRule) {
+            return 'no_recipient_resolved';
+        }
+
+        $policy = app(NotificationWithdrawnRecipientPolicy::class);
+
+        if ($policy->isTriggerMemberMissing($context)) {
+            return 'member_account_missing';
+        }
+
+        if ($policy->namesMember($context)) {
             return 'no_recipient_resolved';
         }
 

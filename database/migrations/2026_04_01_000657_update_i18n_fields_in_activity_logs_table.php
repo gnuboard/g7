@@ -17,9 +17,12 @@ return new class extends Migration
     public function up(): void
     {
         // SQLite 호환: 컬럼 삭제와 추가를 별도 블록으로 분리
-        Schema::table('activity_logs', function (Blueprint $table) {
-            $table->dropColumn('description');
-        });
+        // 재실행 안전: 앞선 실행이 삭제까지 마치고 뒤 단계에서 멈췄다면 컬럼이 이미 없다.
+        if (Schema::hasColumn('activity_logs', 'description')) {
+            Schema::table('activity_logs', function (Blueprint $table) {
+                $table->dropColumn('description');
+            });
+        }
 
         Schema::table('activity_logs', function (Blueprint $table) {
             if (! Schema::hasColumn('activity_logs', 'description_key')) {
@@ -59,11 +62,25 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::table('activity_logs', function (Blueprint $table) {
-            $table->dropIndex('idx_activity_logs_loggable');
-            $table->dropIndex('idx_activity_logs_type_action_date');
-            $table->dropColumn(['description_key', 'description_params', 'changes']);
-        });
+        // up() 이 중간에 멈춘 설치본도 되돌릴 수 있게 인덱스·컬럼을 각각 확인한다.
+        foreach (['idx_activity_logs_loggable', 'idx_activity_logs_type_action_date'] as $index) {
+            if (Schema::hasIndex('activity_logs', $index)) {
+                Schema::table('activity_logs', function (Blueprint $table) use ($index) {
+                    $table->dropIndex($index);
+                });
+            }
+        }
+
+        $columns = array_values(array_filter(
+            ['description_key', 'description_params', 'changes'],
+            fn (string $column): bool => Schema::hasColumn('activity_logs', $column),
+        ));
+
+        if ($columns !== []) {
+            Schema::table('activity_logs', function (Blueprint $table) use ($columns) {
+                $table->dropColumn($columns);
+            });
+        }
 
         if (! Schema::hasColumn('activity_logs', 'description')) {
             Schema::table('activity_logs', function (Blueprint $table) {

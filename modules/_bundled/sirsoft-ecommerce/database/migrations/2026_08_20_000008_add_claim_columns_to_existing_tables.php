@@ -2,7 +2,6 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 /**
@@ -30,6 +29,12 @@ use Illuminate\Support\Facades\Schema;
  */
 return new class extends Migration
 {
+    /** `order_cancel_id` 의 새 주석 — 대체 컬럼을 명시한다. */
+    private const ORDER_CANCEL_ID_COMMENT = '취소 FK (deprecated — refund_source_type/refund_source_id 로 대체, 취소 발 환불에 이중 기록)';
+
+    /** `order_cancel_id` 의 원래 주석 — 생성 마이그레이션(`2026_04_01_000043`)의 문구. */
+    private const ORDER_CANCEL_ID_ORIGINAL_COMMENT = '취소 FK (추후 polymorphic 전환 가능)';
+
     /**
      * Run the migrations.
      */
@@ -50,7 +55,7 @@ return new class extends Migration
         Schema::table($table, function (Blueprint $blueprint) use ($table) {
             if (! Schema::hasColumn($table, 'refund_source_type')) {
                 $blueprint->string('refund_source_type', 20)->nullable()->after('order_cancel_id')
-                    ->comment('환불 발생 출처 유형 (cancel, return, exchange, direct)');
+                    ->comment('환불 발생 출처 유형 (RefundSourceTypeEnum — cancel: 주문 취소 발, return: 반품 발, exchange: 교환 저가 차액 발, direct: 고객 직접 접수, admin: 운영자 대리 접수)');
             }
             if (! Schema::hasColumn($table, 'refund_source_id')) {
                 $blueprint->unsignedBigInteger('refund_source_id')->nullable()->after('refund_source_type')
@@ -66,7 +71,7 @@ return new class extends Migration
             }
             if (! Schema::hasColumn($table, 'fault_type')) {
                 $blueprint->string('fault_type', 20)->nullable()->after('reason_detail')
-                    ->comment('귀책 구분 스냅샷 (ClaimReasonFaultTypeEnum: customer, seller, carrier)');
+                    ->comment('귀책 구분 스냅샷 (ClaimReasonFaultTypeEnum — customer: 고객 귀책, seller: 판매자 귀책, carrier: 배송사 귀책)');
             }
             if (! Schema::hasColumn($table, 'requested_by')) {
                 $blueprint->unsignedBigInteger('requested_by')->nullable()->after('fault_type')
@@ -117,12 +122,34 @@ return new class extends Migration
         }
 
         // order_cancel_id 는 유지하되 대체 컬럼을 주석으로 명시한다 (하위호환 이중 기록).
-        if (DB::getDriverName() === 'mysql') {
-            DB::statement(
-                'ALTER TABLE `'.DB::getTablePrefix().'ecommerce_order_refunds` '
-                ."MODIFY `order_cancel_id` BIGINT UNSIGNED NULL COMMENT '취소 FK (deprecated — refund_source_type/refund_source_id 로 대체, 취소 발 환불에 이중 기록)'"
-            );
+        $this->commentOrderCancelId(self::ORDER_CANCEL_ID_COMMENT);
+    }
+
+    /**
+     * `ecommerce_order_refunds.order_cancel_id` 의 주석만 바꿉니다 (자료형·NULL 허용은 그대로).
+     *
+     * 이미 그 주석이면 건너뛴다 — `->change()` 는 매번 ALTER 를 내므로 재실행 때 불필요한
+     * DDL 을 만들지 않는다. 외래키가 걸린 컬럼이라 자료형을 바꾸지 않는 것이 전제다.
+     *
+     * @param  string  $comment  적용할 주석
+     * @return void
+     */
+    private function commentOrderCancelId(string $comment): void
+    {
+        $table = 'ecommerce_order_refunds';
+
+        if (! Schema::hasTable($table) || ! Schema::hasColumn($table, 'order_cancel_id')) {
+            return;
         }
+
+        $current = collect(Schema::getColumns($table))->firstWhere('name', 'order_cancel_id');
+        if (is_array($current) && ($current['comment'] ?? null) === $comment) {
+            return;
+        }
+
+        Schema::table($table, function (Blueprint $blueprint) use ($comment) {
+            $blueprint->unsignedBigInteger('order_cancel_id')->nullable()->comment($comment)->change();
+        });
     }
 
     /**
@@ -135,7 +162,7 @@ return new class extends Migration
         Schema::table($table, function (Blueprint $blueprint) use ($table) {
             if (! Schema::hasColumn($table, 'claim_fee_mode')) {
                 $blueprint->string('claim_fee_mode', 30)->default('fixed')->after('extra_fee_multiply')
-                    ->comment('클레임 배송비 산정 모드 (ClaimShippingFeeModeEnum: fixed, original_policy)');
+                    ->comment('클레임 배송비 산정 모드 (ClaimShippingFeeModeEnum — fixed: 고정액, original_policy: 원 배송정책 재계산)');
             }
             if (! Schema::hasColumn($table, 'return_fixed_fee')) {
                 $blueprint->decimal('return_fixed_fee', 12, 2)->default(0)->after('claim_fee_mode')
@@ -287,12 +314,7 @@ return new class extends Migration
                 }
             });
 
-            if (DB::getDriverName() === 'mysql') {
-                DB::statement(
-                    'ALTER TABLE `'.DB::getTablePrefix().'ecommerce_order_refunds` '
-                    ."MODIFY `order_cancel_id` BIGINT UNSIGNED NULL COMMENT '취소 FK (추후 polymorphic 전환 가능)'"
-                );
-            }
+            $this->commentOrderCancelId(self::ORDER_CANCEL_ID_ORIGINAL_COMMENT);
         }
     }
 };

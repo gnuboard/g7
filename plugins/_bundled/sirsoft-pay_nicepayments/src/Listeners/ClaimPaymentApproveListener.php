@@ -7,6 +7,7 @@ namespace Plugins\Sirsoft\PayNicepayments\Listeners;
 use App\Contracts\Extension\HookListenerInterface;
 use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Ecommerce\Models\ClaimPayment;
+use Modules\Sirsoft\Ecommerce\Services\ClaimPaymentService;
 use Plugins\Sirsoft\PayNicepayments\Concerns\SanitizesPgResponse;
 use Plugins\Sirsoft\PayNicepayments\Services\NicePaymentsApiService;
 
@@ -62,6 +63,13 @@ class ClaimPaymentApproveListener implements HookListenerInterface
                 'type' => 'filter',
                 'priority' => 10,
             ],
+            // 모듈이 승인 **뒤**에 거절한 건(승인 금액 대조 실패)을 되돌리는 보상 — 서버 콜백·API
+            // 승인 두 경로의 보상이 이 한 곳이다(콜백 컨트롤러는 따로 보상 클로저를 넘기지 않는다).
+            'sirsoft-ecommerce.claim_payment.void_approval' => [
+                'method' => 'voidApproval',
+                'type' => 'filter',
+                'priority' => 10,
+            ],
         ];
     }
 
@@ -69,6 +77,7 @@ class ClaimPaymentApproveListener implements HookListenerInterface
      * 기본 핸들러 (미사용 — 개별 메서드에서 처리)
      *
      * @param  mixed  ...$args  훅 인수
+     * @return void 반환값 없음
      */
     public function handle(...$args): void {}
 
@@ -121,6 +130,30 @@ class ClaimPaymentApproveListener implements HookListenerInterface
             return $this->failure('SIGNATURE_MISMATCH', __('sirsoft-pay_nicepayments::messages.claim.signature_mismatch'));
         }
 
+        // 콜백이 주문번호(Moid)를 실어 오면 이 결제 건이어야 한다 — 다른 결제창의 인증 재료를 이 결제
+        // 건에 붙이는 교차 승인을 PG 호출 전에 막는다(승인 응답의 Moid 로 한 번 더 확인한다).
+        $moid = trim((string) ($callback['Moid'] ?? ''));
+
+        if ($moid !== '' && $moid !== (string) $payment->payment_number) {
+            return $this->failure('ORDER_ID_MISMATCH', __('sirsoft-pay_nicepayments::messages.claim.order_id_mismatch'));
+        }
+
+        // 서명이 덮는 금액(Amt)을 **승인 호출 전에** 청구액과 대조한다. 결제창을 연 사이 청구액이
+        // 바뀌면(신청서 수정·관리자 재산정) 낡은 창의 금액이 들어온다 — 그대로 승인하면 모듈이 승인
+        // **뒤**에 금액 불일치로 거절하고, 그 거절의 보상(망취소)은 서버 콜백 경로에만 있어 클라이언트
+        // 승인 API 경로에서는 청구된 채 남는다. 기준을 세울 수 없으면(통화 스냅샷 부재) 통과시키지 않는다.
+        $charge = app(ClaimPaymentService::class)->resolvePaymentCharge($payment);
+
+        if ($charge === null || $amt !== (int) $charge['minor_unit_amount']) {
+            Log::warning('NicePayments: claim approve amount mismatch before authorization', [
+                'payment_number' => $payment->payment_number,
+                'callback_amt' => $amt,
+                'expected' => $charge['minor_unit_amount'] ?? null,
+            ]);
+
+            return $this->failure('AMOUNT_MISMATCH', __('sirsoft-pay_nicepayments::messages.claim.amount_mismatch'));
+        }
+
         try {
             $pgResponse = $apiService->authorizePayment($nextAppUrl, $txTid, $authToken, $amt);
             $resultCode = (string) ($pgResponse['ResultCode'] ?? '');
@@ -149,6 +182,29 @@ class ClaimPaymentApproveListener implements HookListenerInterface
                 );
             }
 
+            // 승인 응답이 이 결제 건·이 금액의 것인지 확인하고, 아니면 **여기서** 망취소한다 — 모듈
+            // 쪽 대조의 거절은 보상이 서버 콜백 경로에만 있다(#599 validate 07 #8). 응답에 없는 필드는
+            // 판정하지 않는다(금액은 위에서 서명 금액으로 이미 대조했다).
+            $responseMoid = trim((string) ($pgResponse['Moid'] ?? ''));
+            $responseAmt = $pgResponse['Amt'] ?? null;
+            $orderIdMismatch = $responseMoid !== '' && $responseMoid !== (string) $payment->payment_number;
+            $amountMismatch = is_numeric($responseAmt) && (int) $responseAmt !== $amt;
+
+            if ($orderIdMismatch || $amountMismatch) {
+                Log::error('NicePayments: claim approve response does not match the payment — net cancel', [
+                    'payment_number' => $payment->payment_number,
+                    'response_moid' => $responseMoid,
+                    'response_amt' => $responseAmt,
+                    'expected_amt' => $amt,
+                ]);
+
+                $this->sendNetCancelQuietly($apiService, $netCancelUrl, $txTid, $authToken, $amt, $payment);
+
+                return $orderIdMismatch
+                    ? $this->failure('ORDER_ID_MISMATCH', __('sirsoft-pay_nicepayments::messages.claim.order_id_mismatch'), $this->sanitizePgResponse($pgResponse, self::CLAIM_AUTH_RESPONSE_KEYS))
+                    : $this->failure('AMOUNT_MISMATCH', __('sirsoft-pay_nicepayments::messages.claim.amount_mismatch'), $this->sanitizePgResponse($pgResponse, self::CLAIM_AUTH_RESPONSE_KEYS));
+            }
+
             $tid = (string) ($pgResponse['TID'] ?? $txTid);
 
             Log::info('NicePayments: claim payment approved', [
@@ -161,7 +217,8 @@ class ClaimPaymentApproveListener implements HookListenerInterface
                 'handled' => true,
                 'success' => true,
                 'transaction_id' => $tid !== '' ? $tid : null,
-                // 서명이 덮는 승인 금액 — 모듈이 스냅샷 환산 청구액과 정수 비교한다.
+                // 서명이 덮는 승인 금액 — 위에서 청구액과 같음을 확인했다. 모듈이 스냅샷 환산
+                // 청구액과 한 번 더 정수 비교한다.
                 'paid_amount' => $amt,
                 // 환급은 결제 당시의 MID/모드로 호출해야 한다 — 주문 결제는 payment_meta 에 이
                 // 메타를 남기지만 클레임 결제행에는 raw_response 뿐이므로 여기에 함께 싣는다.
@@ -186,6 +243,64 @@ class ClaimPaymentApproveListener implements HookListenerInterface
     }
 
     /**
+     * 모듈이 승인 뒤 거절한 클레임 결제의 나이스 승인을 취소합니다. (`claim_payment.void_approval` 필터)
+     *
+     * 이 리스너가 승인 전·후로 금액을 먼저 대조하므로 보통은 불리지 않는다 — 모듈 쪽 대조가 따로
+     * 거절한 때의 보상이다. 승인이 이미 확정됐으므로 망취소가 아니라 거래번호(TID) 취소 API 로
+     * 되돌린다. 거래번호가 없으면 콜백의 인증 재료로 망취소를 시도한다(성패를 알 수 없어 실패로 보고).
+     *
+     * @param  array  $result  보상 결과 (기본값)
+     * @param  ClaimPayment  $payment  거절된 결제 건
+     * @param  array  $callback  승인 때 받은 콜백 파라미터
+     * @param  array  $approveResult  승인 필터 결과 (transaction_id·paid_amount 등)
+     * @return array 보상 결과 {handled, success, error_code, error_message}
+     */
+    public function voidApproval(array $result, ClaimPayment $payment, array $callback, array $approveResult): array
+    {
+        if ($payment->pg_provider !== self::PG_PROVIDER_ID) {
+            return $result;
+        }
+
+        $apiService = $this->getApiService();
+        $tid = (string) ($approveResult['transaction_id'] ?? '');
+        $amount = is_numeric($approveResult['paid_amount'] ?? null)
+            ? (int) $approveResult['paid_amount']
+            : (int) ($callback['Amt'] ?? 0);
+
+        if ($tid === '' || $amount <= 0) {
+            $this->sendNetCancelQuietly(
+                $apiService,
+                (string) ($callback['NetCancelURL'] ?? ''),
+                (string) ($callback['TxTid'] ?? ''),
+                (string) ($callback['AuthToken'] ?? ''),
+                (int) ($callback['Amt'] ?? 0),
+                $payment,
+            );
+
+            return ['handled' => true, 'success' => false, 'error_code' => 'MISSING_TID', 'error_message' => null];
+        }
+
+        try {
+            $apiService->cancelPayment(
+                $tid,
+                (string) $payment->payment_number,
+                $amount,
+                __('sirsoft-pay_nicepayments::messages.claim.compensation_cancel_reason'),
+            );
+
+            return ['handled' => true, 'success' => true, 'error_code' => null, 'error_message' => null];
+        } catch (\Exception $e) {
+            Log::error('NicePayments: claim approval void failed — MANUAL CANCEL REQUIRED', [
+                'payment_number' => $payment->payment_number,
+                'tid' => $tid,
+                'error' => $e->getMessage(),
+            ]);
+
+            return ['handled' => true, 'success' => false, 'error_code' => 'PG_API_ERROR', 'error_message' => $e->getMessage()];
+        }
+    }
+
+    /**
      * 망취소를 조용히 시도합니다. (보상 — 실패해도 흐름은 지속)
      *
      * @param  NicePaymentsApiService  $apiService  API 서비스
@@ -194,6 +309,7 @@ class ClaimPaymentApproveListener implements HookListenerInterface
      * @param  string  $authToken  인증 토큰
      * @param  int  $amt  결제 금액
      * @param  ClaimPayment  $payment  결제 건 (로그 문맥)
+     * @return void 반환값 없음
      */
     private function sendNetCancelQuietly(
         NicePaymentsApiService $apiService,

@@ -68,7 +68,7 @@
         </select>
       </div>
     </div>
-    <data-grid data-ref="pc_data_table" data-if="{{!_global.isPortable}}" data="{{coupons?.data?.data || []}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{coupons?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{coupons?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{coupons?.data?.pagination?.has_more_pages ?? false}}" pageSize="{{+(query.per_page || 10)}}" :alwaysShowPagination="true" :selectable="true" selectionScope="page" selectedIds="{{_local.selectedItems || []}}" visibleColumns="{{_local.visibleColumns}}" selectedCountText="" emptyMessage="$t:sirsoft-ecommerce.admin.promotion_coupon.table.empty" loading="{{coupons?.$loading}}" actionsColumnHeader="$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.actions">
+    <data-grid data-ref="pc_data_table" data-if="{{!_global.isPortable}}" data="{{coupons?.data?.data || []}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{coupons?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{coupons?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{coupons?.data?.pagination?.has_more_pages ?? false}}" pageSize="{{+(query.per_page || 10)}}" :alwaysShowPagination="true" :selectable="true" selectionScope="page" selectedIds="{{_local.selectedItems || []}}" visibleColumns="{{_local.visibleColumns}}" selectedCountText="" emptyMessage="$t:sirsoft-ecommerce.admin.promotion_coupon.table.empty" actionsColumnHeader="$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.actions">
       <prop name="rowActions">
         <item id="edit" label="$t:sirsoft-ecommerce.admin.promotion_coupon.action.edit" iconName="fa-regular fa-pen-to-square" disabledField="abilities.can_update"/>
         <item id="issue_history" label="$t:sirsoft-ecommerce.admin.promotion_coupon.modal.issue_history.title" iconName="fa-solid fa-list"/>
@@ -290,29 +290,29 @@
             <div class="space-y-2 text-sm">
               <div class="text-primary font-medium">{{coupon.benefit_formatted}}</div>
               <div class="flex-center gap-2">
-                <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.promotion_coupon.mobile.target_type:</span>
+                <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.promotion_coupon.mobile.target_type_label:</span>
                 <badge color="{{coupon.target_type_badge_color}}" text="{{coupon.target_type_label}}"/>
               </div>
               <div class="flex-center gap-2">
-                <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.promotion_coupon.mobile.issue:</span>
+                <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.promotion_coupon.mobile.issue_label:</span>
                 <badge color="{{coupon.issue_method_badge_color}}" text="{{coupon.issue_method_label}}"/>
                 <badge color="{{coupon.issue_condition_badge_color}}" text="{{coupon.issue_condition_label}}"/>
               </div>
               <div>
-                <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.promotion_coupon.mobile.valid_period: </span>
+                <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.promotion_coupon.mobile.validity_period_label: </span>
                 <span>{{coupon.valid_period_formatted}}</span>
               </div>
               <div>
-                <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.promotion_coupon.mobile.issue_period: </span>
+                <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.promotion_coupon.mobile.issue_period_label: </span>
                 <span>{{coupon.issue_period_formatted}}</span>
               </div>
               <div>
-                <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.promotion_coupon.mobile.issue_count: </span>
+                <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.promotion_coupon.mobile.issue_count_label: </span>
                 <span>{{coupon.issue_count_formatted}}</span>
               </div>
               <div class="flex-between">
                 <div class="flex-center gap-2">
-                  <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.promotion_coupon.mobile.status:</span>
+                  <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.promotion_coupon.mobile.status_label:</span>
                   <badge color="{{coupon.issue_status_badge_color}}" text="{{coupon.issue_status_label}}"/>
                 </div>
                 <span class="text-gray-500 dark:text-gray-400">{{coupon.created_by_name ?? '-'}}</span>

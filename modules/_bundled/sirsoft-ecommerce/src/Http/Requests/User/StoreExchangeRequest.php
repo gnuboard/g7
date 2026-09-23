@@ -10,12 +10,16 @@ use Illuminate\Validation\ValidationException;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimChargeMethodEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundPriorityEnum;
+use Modules\Sirsoft\Ecommerce\Exceptions\OrderClaimException;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Concerns\ResolvesClaimOrder;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Concerns\ValidatesClaimPaymentMethod;
+use Modules\Sirsoft\Ecommerce\Http\Requests\Concerns\ValidatesClaimRefundBank;
 use Modules\Sirsoft\Ecommerce\Models\ClaimReason;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Rules\ExchangeRedeliveryCountryUnchanged;
 use Modules\Sirsoft\Ecommerce\Services\ClaimAttachmentService;
+use Modules\Sirsoft\Ecommerce\Services\ClaimRefundAccountPolicy;
+use Modules\Sirsoft\Ecommerce\Services\UserClaimService;
 
 /**
  * 교환 신청 요청 (회원 · 비회원 공용)
@@ -33,6 +37,7 @@ class StoreExchangeRequest extends FormRequest
 {
     use ResolvesClaimOrder;
     use ValidatesClaimPaymentMethod;
+    use ValidatesClaimRefundBank;
 
     /**
      * 사용자가 이 요청을 수행할 권한이 있는지 확인
@@ -130,6 +135,7 @@ class StoreExchangeRequest extends FormRequest
      * 추가 검증 로직 — 주문 존재·소유권
      *
      * @param  Validator  $validator  검증기
+     * @return void 반환값 없음
      */
     protected function withValidator(Validator $validator): void
     {
@@ -141,13 +147,54 @@ class StoreExchangeRequest extends FormRequest
             $this->validateItemsBelongToOrder($validator, $order);
 
             // 환불 계좌는 세 필드가 함께 와야 한다 — 하나만 오면 계좌 없는 무통장 환불이 승인된다.
-            $bank = (array) $this->input('refund_bank', []);
-            $filled = array_filter(['bank_code', 'account_number', 'holder'], fn (string $f) => filled($bank[$f] ?? null));
+            if (! $this->validateRefundBankComplete($validator)) {
+                return;
+            }
 
-            if ($filled !== [] && count($filled) !== 3) {
-                $validator->errors()->add('refund_bank', __('sirsoft-ecommerce::validation.claims.refund_bank.incomplete'));
+            // 가린 값이 섞인 계좌는 등록 계좌를 가린 모양 그대로가 아니면 받지 않는다 — 별표째 저장된다.
+            if (! $this->validateRefundBankNotMasked($validator, $order)) {
+                return;
+            }
+
+            // 계좌로 돈이 돌아가는 주문은 교환 접수에서도 계좌를 받는다 — 단 **돌려줄 차액이 있는
+            // 교환**만이다(저가 교환). 같은 가격·고가 교환은 구매자에게 돌아갈 돈이 없고, 신청 화면도
+            // 그때는 계좌 칸을 세우지 않는다(`refund_product_amount > 0` 일 때만).
+            if ($validator->errors()->isEmpty() && $this->exchangeReturnsMoney($order)) {
+                $this->validateRefundBankPresent($validator, $order);
             }
         });
+    }
+
+    /**
+     * 이 교환이 구매자에게 돌려줄 차액을 만드는지 반환합니다. (저가 교환)
+     *
+     * 판정은 신청 화면의 미리보기와 **같은 계산**(`UserClaimService::preview()`)이다 — 화면이 계좌 칸을
+     * 세우는 조건(`refund_product_amount > 0`)과 같은 값을 읽는다. 계좌가 필요 없는 주문이면 미리보기를
+     * 돌리지 않는다. 미리보기가 신청 자격으로 거절하면 여기서 판정하지 않는다 — 그 거절은 서비스가
+     * 접수 단계에서 같은 사유로 다시 낸다.
+     *
+     * @param  Order  $order  소유권이 확인된 주문
+     * @return bool 돌려줄 차액이 있으면 true
+     */
+    protected function exchangeReturnsMoney(Order $order): bool
+    {
+        if (! app(ClaimRefundAccountPolicy::class)->missingForRequest($order, (array) $this->input('refund_bank', []))) {
+            return false;
+        }
+
+        try {
+            $preview = app(UserClaimService::class)->preview($order, ClaimTypeEnum::EXCHANGE, [
+                'items' => (array) $this->input('items', []),
+                'reason_code' => (string) $this->input('reason_code', ''),
+                'charge_method' => $this->input('charge_method'),
+                'refund_priority' => $this->input('refund_priority'),
+                'redelivery_address' => $this->input('redelivery_address'),
+            ]);
+        } catch (OrderClaimException) {
+            return false;
+        }
+
+        return (float) ($preview['refund_product_amount'] ?? 0) > 0;
     }
 
     /**
@@ -159,6 +206,7 @@ class StoreExchangeRequest extends FormRequest
      *
      * @param  Validator  $validator  검증기
      * @param  Order  $order  소유권이 확인된 주문
+     * @return void 반환값 없음
      */
     protected function validateItemsBelongToOrder(Validator $validator, Order $order): void
     {
@@ -180,6 +228,7 @@ class StoreExchangeRequest extends FormRequest
      * 검증 실패 시 응답 커스터마이징
      *
      * @param  Validator  $validator  검증기
+     * @return void 반환값 없음
      *
      * @throws ValidationException
      */
@@ -203,19 +252,13 @@ class StoreExchangeRequest extends FormRequest
     public function toServicePayload(): array
     {
         $validated = $this->validated();
-        $bank = $validated['refund_bank'] ?? null;
-        $hasBank = is_array($bank) && filled($bank['bank_code'] ?? null) && filled($bank['account_number'] ?? null) && filled($bank['holder'] ?? null);
 
         return [
             'items' => $validated['items'],
             'reason_code' => $validated['reason_code'],
             'reason_detail' => $validated['reason_detail'] ?? null,
             'charge_method' => $validated['charge_method'] ?? null,
-            'refund_bank' => $hasBank ? [
-                'bank_code' => (string) $bank['bank_code'],
-                'account_number' => (string) $bank['account_number'],
-                'holder' => (string) $bank['holder'],
-            ] : null,
+            'refund_bank' => $this->refundBankPayload($validated['refund_bank'] ?? null, $this->getOrder()),
             'refund_priority' => isset($validated['refund_priority'])
                 ? RefundPriorityEnum::from($validated['refund_priority'])
                 : RefundPriorityEnum::PG_FIRST,

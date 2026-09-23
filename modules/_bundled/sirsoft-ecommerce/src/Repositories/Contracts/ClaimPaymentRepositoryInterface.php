@@ -4,6 +4,7 @@ namespace Modules\Sirsoft\Ecommerce\Repositories\Contracts;
 
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Collection;
+use Modules\Sirsoft\Ecommerce\Enums\ClaimPaymentStatusEnum;
 use Modules\Sirsoft\Ecommerce\Models\ClaimPayment;
 
 /**
@@ -127,6 +128,20 @@ interface ClaimPaymentRepositoryInterface
      * @return ClaimPayment|null 잠금된 결제 건
      */
     public function findByPaymentNumberForUpdate(string $paymentNumber): ?ClaimPayment;
+
+    /**
+     * 결제 건이 **기대한 상태일 때만** 갱신합니다. (행 잠금 후 재판정 — 조건부 갱신)
+     *
+     * 승인 경로는 PG 왕복 동안 행을 잠그지 않으므로, 그 사이 다른 요청이 같은 건을 확정할 수
+     * 있다. 무조건 갱신하면 실패 기록이 이미 결제 완료된 행의 원응답을 덮거나, 같은 건을 두 번
+     * 확정한다. 이 메서드는 행을 잠그고 상태를 다시 본 뒤에만 쓴다.
+     *
+     * @param  ClaimPayment  $payment  결제 건
+     * @param  ClaimPaymentStatusEnum  $expected  기대 상태
+     * @param  array  $data  갱신 데이터
+     * @return ClaimPayment|null 갱신된 결제 건 (상태가 달라 갱신하지 않았으면 null)
+     */
+    public function updateIfStatus(ClaimPayment $payment, ClaimPaymentStatusEnum $expected, array $data): ?ClaimPayment;
 
     /**
      * 클레임 추가결제에 그 결제수단이 기록돼 있는지 확인합니다. (관리자 목록 청구 결제수단 어휘의 마지막 근거)

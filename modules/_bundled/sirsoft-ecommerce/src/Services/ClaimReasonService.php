@@ -344,9 +344,14 @@ class ClaimReasonService
      *   세션0 이 만든 사유 3건이 그렇게 사라진 것으로 보이나 흔적이 없어 확정하지 못했다).
      *   삭제는 운영자가 휴지통을 눌러 지목한 id 로만 일어난다.
      *
-     * 생성·수정·삭제마다 상세 REST 경로와 같은 훅(`claim_reason.after_*`)을 쏜다 — 활동로그가
-     * 그 훅을 듣는다. 종전에는 설정 저장 경로만 훅 없이 리포지토리를 직접 불러, 카탈로그 변경이
-     * 「설정 저장」 한 줄 뒤에 숨었다.
+     * 생성·수정·삭제마다 상세 REST 경로와 같은 훅(`claim_reason.before_*` → `filter_*_data` →
+     * `after_*`)을 쏜다 — 활동로그가 after 훅을 듣고, 확장은 before/filter 로 개입한다. 종전에는
+     * 설정 저장 경로만 훅 없이 리포지토리를 직접 불러, 카탈로그 변경이 「설정 저장」 한 줄 뒤에 숨었다.
+     *
+     * - **실제로 바뀐 행만 갱신한다.** 설정 탭은 저장할 때마다 그 유형의 사유 전부를 보낸다 —
+     *   전부 update 하면 아무것도 고치지 않은 저장 한 번이 사유 수만큼 「사유 수정」 로그를 쌓는다.
+     * - **after 훅은 커밋 뒤에 쏜다.** 뒤따르는 행에서 예외가 나 전체가 되돌아가도 이미 쏜 after
+     *   훅은 되돌릴 수 없어, 저장되지 않은 변경이 이력에 남는다.
      *
      * @param  string  $type  사유 유형 (exchange|return|refund)
      * @param  array  $reasonsData  reasons 배열
@@ -374,7 +379,7 @@ class ClaimReasonService
                     }
                     HookManager::doAction('sirsoft-ecommerce.claim_reason.before_delete', $reason);
                     $this->repository->delete($id);
-                    HookManager::doAction('sirsoft-ecommerce.claim_reason.after_delete', $reason->id, $reason);
+                    DB::afterCommit(fn () => HookManager::doAction('sirsoft-ecommerce.claim_reason.after_delete', $reason->id, $reason));
                 }
             }
 
@@ -388,31 +393,121 @@ class ClaimReasonService
                     'is_user_selectable' => $data['is_user_selectable'] ?? true,
                     'is_active' => $data['is_active'] ?? true,
                     'sort_order' => $index,
-                    'updated_by' => Auth::id(),
                 ];
 
                 if (! empty($data['id']) && in_array($data['id'], $existingIds)) {
-                    // 선행 판정(assertSyncDeletable)을 거치지 않는 호출 경로가 있을 수 있으므로
-                    // 여기서도 코드 변경을 막는다 — 삭제 가드와 같은 이유다.
-                    $existing = $this->repository->findById((int) $data['id']);
-
-                    if ($existing && $existing->code !== $reasonData['code']) {
-                        $usageCount = $this->countUsage($existing);
-
-                        if ($usageCount > 0) {
-                            throw ClaimReasonException::codeLockedInUse($usageCount);
-                        }
-                    }
-
-                    $updated = $this->repository->update((int) $data['id'], $reasonData);
-                    HookManager::doAction('sirsoft-ecommerce.claim_reason.after_update', $updated, $reasonData);
+                    $this->syncExistingReason((int) $data['id'], $reasonData);
                 } else {
+                    HookManager::doAction('sirsoft-ecommerce.claim_reason.before_create', $reasonData);
+                    $reasonData = HookManager::applyFilters('sirsoft-ecommerce.claim_reason.filter_create_data', $reasonData);
                     $reasonData['created_by'] = Auth::id();
+                    $reasonData['updated_by'] = Auth::id();
                     $created = $this->repository->create($reasonData);
-                    HookManager::doAction('sirsoft-ecommerce.claim_reason.after_create', $created, $reasonData);
+                    DB::afterCommit(fn () => HookManager::doAction('sirsoft-ecommerce.claim_reason.after_create', $created, $reasonData));
                 }
             }
         });
+    }
+
+    /**
+     * 동기화 대상 중 기존 사유 한 건을 반영합니다. (바뀐 경우에만)
+     *
+     * 바뀌었는지는 모델 캐스트 기준으로 본다 — 다국어 이름(JSON)·불리언·Enum 을 문자열로 비교하면
+     * 같은 값도 다르다고 판정되어 무변경 저장이 로그를 쌓는다. `updated_by` 는 판정에서 뺀다
+     * (저장자만 다른 것은 사유가 바뀐 것이 아니다).
+     *
+     * @param  int  $id  사유 ID
+     * @param  array<string, mixed>  $reasonData  반영할 값 (updated_by 제외)
+     * @return void
+     *
+     * @throws ClaimReasonException 사용 중인 사유의 코드를 바꾸려 할 때
+     */
+    protected function syncExistingReason(int $id, array $reasonData): void
+    {
+        $existing = $this->repository->findById($id);
+
+        if (! $existing) {
+            return;
+        }
+
+        if (! $this->wouldChange($existing, $reasonData)) {
+            return;
+        }
+
+        // 선행 판정(assertSyncDeletable)을 거치지 않는 호출 경로가 있을 수 있으므로
+        // 여기서도 코드 변경을 막는다 — 삭제 가드와 같은 이유다.
+        if ($existing->code !== $reasonData['code']) {
+            $usageCount = $this->countUsage($existing);
+
+            if ($usageCount > 0) {
+                throw ClaimReasonException::codeLockedInUse($usageCount);
+            }
+        }
+
+        HookManager::doAction('sirsoft-ecommerce.claim_reason.before_update', $id, $reasonData);
+        $reasonData = HookManager::applyFilters('sirsoft-ecommerce.claim_reason.filter_update_data', $reasonData, $id);
+        $reasonData['updated_by'] = Auth::id();
+
+        $updated = $this->repository->update($id, $reasonData);
+        DB::afterCommit(fn () => HookManager::doAction('sirsoft-ecommerce.claim_reason.after_update', $updated, $reasonData));
+    }
+
+    /**
+     * 값을 반영하면 사유가 실제로 바뀌는지 판정합니다. (쓰기 없음)
+     *
+     * 복제본에 채워 캐스트 기준 dirty 를 본다 — 원본 모델을 건드리지 않아 판정이 이후 흐름에 새지
+     * 않는다. 다국어 이름은 로케일 순서·빈 번역만 다른 것을 같은 값으로 본다(화면이 키 순서를
+     * 보장하지 않는다).
+     *
+     * @param  ClaimReason  $reason  기존 사유
+     * @param  array<string, mixed>  $data  반영할 값
+     * @return bool 바뀌면 true
+     */
+    protected function wouldChange(ClaimReason $reason, array $data): bool
+    {
+        $probe = clone $reason;
+        $probe->fill($data);
+
+        foreach (array_keys($probe->getDirty()) as $key) {
+            if (! array_key_exists($key, $data)) {
+                continue;
+            }
+
+            if ($key === 'name' && $this->normalizeTranslations($reason->name) === $this->normalizeTranslations($data['name'])) {
+                continue;
+            }
+
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * 다국어 이름을 비교용으로 정규화합니다. (빈 번역 제거 + 로케일 정렬)
+     *
+     * @param  mixed  $name  다국어 이름 (배열 또는 그 밖의 값)
+     * @return array<string, string>|string 정규화된 이름
+     */
+    protected function normalizeTranslations(mixed $name): array|string
+    {
+        if (! is_array($name)) {
+            return (string) $name;
+        }
+
+        $normalized = [];
+
+        foreach ($name as $locale => $value) {
+            if ($value === null || $value === '') {
+                continue;
+            }
+
+            $normalized[(string) $locale] = (string) $value;
+        }
+
+        ksort($normalized);
+
+        return $normalized;
     }
 
     /**

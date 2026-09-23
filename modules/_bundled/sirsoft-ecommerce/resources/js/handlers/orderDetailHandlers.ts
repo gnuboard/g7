@@ -313,6 +313,10 @@ export function buildOrderDetailBulkConfirmDataHandler(
                 cancelItems,
                 cancelReason: '',
                 cancelReasonDetail: '',
+                // 「환불까지 한 번에 처리」 는 **열 때마다 꺼진 채** 시작한다(기본 꺼짐 — D7).
+                // 초기화하지 않으면 앞 취소에서 켠 체크가 같은 화면의 다음 모달에 남아, 운영자가
+                // 의식하지 못한 채 자동 승인·환불완료(PG 실환불)가 나간다.
+                autoAdvanceRefund: false,
                 refundPriority: 'pg_first',
                 refundEstimate: null,
                 refundLoading: false,

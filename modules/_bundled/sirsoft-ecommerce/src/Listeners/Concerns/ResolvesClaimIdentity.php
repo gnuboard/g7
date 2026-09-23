@@ -81,6 +81,51 @@ trait ResolvesClaimIdentity
     }
 
     /**
+     * 주어진 상태 값의 라벨(현재 로케일)을 신청서 유형에 맞춰 반환합니다.
+     *
+     * 큐에서 실행되는 소비자는 모델의 "지금" 상태가 아니라 **발행 시점에 캡처된 값**으로 라벨을
+     * 만들어야 한다 — 과거 사건의 알림·기록에 현재 상태가 실리면 오류 없이 내용만 틀린다.
+     *
+     * @param  OrderExchange|OrderReturn|OrderRefund|OrderCancel  $claim  신청서 (유형 판별용)
+     * @param  string|null  $statusValue  상태 값
+     * @return string 상태 라벨 (해석 불가 시 빈 문자열)
+     */
+    protected function claimStatusLabelFor(OrderExchange|OrderReturn|OrderRefund|OrderCancel $claim, ?string $statusValue): string
+    {
+        if ($statusValue === null || $statusValue === '') {
+            return '';
+        }
+
+        // 상태 Enum 은 모델 캐스트가 정본이다 — 여기서 유형별 Enum 을 다시 나열하면 캐스트가
+        // 바뀔 때 이 매핑만 낡는다.
+        $enumClass = $claim->getCasts()[$this->claimStatusColumnOf($claim)] ?? null;
+
+        if (! is_string($enumClass) || ! enum_exists($enumClass)) {
+            return '';
+        }
+
+        $status = $enumClass::tryFrom($statusValue);
+
+        return $status !== null && method_exists($status, 'label') ? $status->label() : '';
+    }
+
+    /**
+     * 신청서 유형별 상태 컬럼 이름을 반환합니다.
+     *
+     * @param  OrderExchange|OrderReturn|OrderRefund|OrderCancel  $claim  신청서
+     * @return string 상태 컬럼 이름
+     */
+    protected function claimStatusColumnOf(OrderExchange|OrderReturn|OrderRefund|OrderCancel $claim): string
+    {
+        return match (true) {
+            $claim instanceof OrderExchange => 'exchange_status',
+            $claim instanceof OrderReturn => 'return_status',
+            $claim instanceof OrderCancel => 'cancel_status',
+            default => 'refund_status',
+        };
+    }
+
+    /**
      * 신청서의 사유 코드를 반환합니다.
      *
      * 취소신청서만 컬럼 이름이 다르다(`cancel_reason_type`) — 취소는 클레임 3종보다 먼저

@@ -52,6 +52,7 @@ effects:
 
 test_files:
   - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminShippingPolicyClaim.test.ts
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/shippingPolicyFormLayouts.test.tsx
   - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/admin/admin-shipping-policy-claim-settings.spec.ts
 
 notes: |

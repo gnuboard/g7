@@ -5,7 +5,7 @@
 ## TL;DR (5초 요약)
 
 ```text
-1. 코어 66훅 + 확장 151훅 = 총 217훅 (확장별 목록은 그 확장이 소유)
+1. 코어 70훅 + 확장 167훅 = 총 237훅 (확장별 목록은 그 확장이 소유)
 2. Listener에서 Log::channel('activity')->info() 직접 호출 (Monolog → ActivityLogHandler → DB)
 3. 스냅샷 패턴: before_update(priority 5) → 캡처, after_update → ChangeDetector로 비교
 4. 사용자 행위: ActivityLogType::User (장바구니/위시리스트/쿠폰 다운로드/주문/결제)
@@ -41,7 +41,7 @@ Service → doAction('hook.name') → ActivityLogListener → Log::channel('acti
 ## 2. 코어 훅 (CoreActivityLogListener)
 
 **파일**: `app/Listeners/CoreActivityLogListener.php`
-**총 66훅**
+**총 70훅**
 
 ### User (8훅)
 
@@ -79,6 +79,14 @@ Service → doAction('hook.name') → ActivityLogListener → Log::channel('acti
 | `core.identity.after_request` | `handleIdentityRequested` | `identity.request` | User | - |
 | `core.identity.after_verify` | `handleIdentityVerified` | `identity.verify` / `identity.verify_failed` | User | - |
 | `core.identity.challenge_expired` | `handleIdentityExpired` | `identity.expired` | User | - |
+
+### Member Notification (1훅)
+
+관리자가 회원 알림함의 알림을 일괄 삭제한 기록이다. 삭제된 알림은 모델이 사라지므로 대상 없이 요청·삭제 건수와 uuid 를 `properties` 로 남긴다.
+
+| 훅 이름 | Listener 메서드 | Action (DB) | LogType | Loggable |
+|---------|----------------|-------------|---------|----------|
+| `core.member_notification.after_bulk_delete` | `handleMemberNotificationAfterBulkDelete` | `member_notification.bulk_delete` | Admin | - |
 
 ### Role (5훅)
 
@@ -200,19 +208,21 @@ Service → doAction('hook.name') → ActivityLogListener → Log::channel('acti
 
 | 확장 | 훅 수 | 문서 |
 |------|------|------|
-| `sirsoft-ecommerce` | 111 | [docs/extension-points.md](../../modules/_bundled/sirsoft-ecommerce/docs/extension-points.md) |
+| `sirsoft-ecommerce` | 127 | [docs/extension-points.md](../../modules/_bundled/sirsoft-ecommerce/docs/extension-points.md) |
 | `sirsoft-board` | 30 | [docs/extension-points.md](../../modules/_bundled/sirsoft-board/docs/extension-points.md) |
 | `sirsoft-page` | 7 | [docs/extension-points.md](../../modules/_bundled/sirsoft-page/docs/extension-points.md) |
 | `sirsoft-pay_kginicis` | 1 | [docs/extension-points.md](../../plugins/_bundled/sirsoft-pay_kginicis/docs/extension-points.md) |
 | `sirsoft-pay_nhnkcp` | 1 | [docs/extension-points.md](../../plugins/_bundled/sirsoft-pay_nhnkcp/docs/extension-points.md) |
 | `sirsoft-pay_nicepayments` | 1 | [docs/extension-points.md](../../plugins/_bundled/sirsoft-pay_nicepayments/docs/extension-points.md) |
-| **합계** | **151** | |
+| **합계** | **167** | |
 
-코어 66훅 + 확장 151훅 = **총 217훅**입니다.
+코어 70훅 + 확장 167훅 = **총 237훅**입니다.
 
-확장에 새 활동 로그 항목을 추가할 때도 **다국어 키는 코어가 SSoT** 입니다 — action 라벨과
-description 본문을 코어 `lang/{ko,en}/activity_log.php` 에 정의해야 하며, 모듈 lang 파일에
-넣으면 해석되지 않습니다. 번들 일본어 팩도 같은 작업 단위에서 동기화합니다.
+확장에 새 활동 로그 항목을 추가할 때는 **그 확장의 lang 파일**(`src/lang/{ko,en}/activity_log.php`)에
+action 라벨과 description 본문을 정의합니다. description 은 리스너가 `{확장}::activity_log.description.*`
+키로 남기므로 확장 lang 에서 해석되고, action 라벨은 `ActivityLog::getActionLabelAttribute()` 가 확장 lang 을
+먼저 찾은 뒤 없을 때만 코어 `lang/{ko,en}/activity_log.php` 로 내려갑니다. 번들 일본어 팩도 같은 작업 단위에서
+동기화합니다.
 
 ## 4. 스냅샷/변경감지 패턴
 

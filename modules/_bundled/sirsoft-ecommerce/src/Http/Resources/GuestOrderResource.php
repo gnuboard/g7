@@ -144,10 +144,17 @@ class GuestOrderResource extends BaseApiResource
             'delivery_memo' => $this->shippingAddress?->delivery_memo,
             'delivery_memo_label' => $this->shippingAddress?->delivery_memo_label,
 
-            // 주문 옵션 (품목) — 주문 시점 통화를 자식에 전파
-            'options' => $this->whenLoaded('options', fn () => OrderOptionResource::collection($this->options)->each(
-                fn ($r) => $r->withOrderCurrency($orderCurrency)->withCurrencySnapshot($currencySnapshot)
-            )),
+            // 주문 옵션 (품목) — 주문 시점 통화를 자식에 전파. 클레임 점유 수량은 옵션마다 구하면
+            // 옵션 수 × 3 쿼리라 여기서 한 번에 구해 주입한다.
+            'options' => $this->whenLoaded('options', function () use ($orderCurrency, $currencySnapshot) {
+                $locked = OrderOptionResource::lockedQuantitiesFor($this->options);
+
+                return OrderOptionResource::collection($this->options)->each(
+                    fn ($r) => $r->withOrderCurrency($orderCurrency)
+                        ->withCurrencySnapshot($currencySnapshot)
+                        ->withClaimLockedQuantity($locked[(int) $r->resource->id] ?? null)
+                );
+            }),
 
             // 배송지/결제/배송 정보
             'shipping_address' => new OrderAddressResource($this->whenLoaded('shippingAddress')),

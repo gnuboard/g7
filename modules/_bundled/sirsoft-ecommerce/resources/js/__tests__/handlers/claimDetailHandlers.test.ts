@@ -962,6 +962,8 @@ describe('환불 실행 (D18·D19)', () => {
             currencyCode: 'KRW',
             refundAmount: 24000,
             refundPointsAmount: 1000,
+            // 표시용 합계 — 핸들러가 부동소수 오차를 걷어 넘긴다(P7 #14).
+            refundTotal: 25000,
             refundMethod: 'pg',
             refundMethodLabel: 'PG사 환불',
             refundBankName: '',
@@ -1085,7 +1087,7 @@ describe('환불 실행 (D18·D19)', () => {
     });
 
     /**
-     * 동의를 켜면 계좌 대신 **동의만** 실린다. (T2-D6 · PO 결정 2026-09-23)
+     * 동의를 켜면 계좌 대신 **동의만** 실린다. (T2-D6 · 운영 결정 2026-09-23)
      *
      * 둘을 함께 보내면 무엇이 실행됐는지 기록이 두 가지로 읽힌다 — 계좌를 적어 송금한 건인지
      * 계좌 없이 장부만 닫은 건인지 뒤에 가려낼 수 없다.

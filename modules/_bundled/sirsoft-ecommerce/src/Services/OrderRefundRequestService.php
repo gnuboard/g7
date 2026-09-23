@@ -27,6 +27,9 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ClaimReasonRepositoryInterf
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderRefundOptionRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderRefundRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Services\Concerns\AppliesRefundBankAccount;
+use Modules\Sirsoft\Ecommerce\Services\Concerns\FiresClaimHooksAfterCommit;
+use Modules\Sirsoft\Ecommerce\Services\Concerns\GuardsClaimFilterResults;
 use Modules\Sirsoft\Ecommerce\Support\ClaimItemSpecs;
 
 /**
@@ -55,6 +58,10 @@ use Modules\Sirsoft\Ecommerce\Support\ClaimItemSpecs;
  */
 class OrderRefundRequestService
 {
+    use AppliesRefundBankAccount;
+    use FiresClaimHooksAfterCommit;
+    use GuardsClaimFilterResults;
+
     /**
      * 분기 — 접수 후 승인·완료까지 자동 전이 (구 `cancel`).
      */
@@ -281,6 +288,20 @@ class OrderRefundRequestService
      */
     public function request(Order $order, array $payload): array
     {
+        // 접수의 before·filter 훅 — 분기 판정·주문 잠금·쓰기 전이다. 이 접수는 환불할 돈이 없으면
+        // 취소신청서로 끝나지만(`claim.cancel.requested`), 들어오는 입구는 하나라 훅도 `claim.refund.*`
+        // 한 벌이다. 필터는 대상 상품·사유(`CLAIM_FILTERABLE_REQUEST_KEYS`)만 바꿀 수 있다 — 접수 창구
+        // 축(`refund_source_type`·`branch`·`gate_statuses`·`user_selectable_reason_only`·
+        // `pg_already_settled`·`auto_advance`)과 신청자·환불 우선순위·계좌는 되돌린다. 바뀐 대상·사유는
+        // 아래 분기 판정·사유 해석·잠금 안 수량 가드를 고객 입력과 똑같이 지난다.
+        HookManager::doAction('sirsoft-ecommerce.claim.refund.before_request', $order, $payload);
+
+        $payload = $this->acceptClaimFilterResult(
+            HookManager::applyFilters('sirsoft-ecommerce.claim.refund.filter_request_data', $payload, $order),
+            $payload,
+            self::CLAIM_FILTERABLE_REQUEST_KEYS,
+        );
+
         $items = $payload['items'] ?? [];
         $reason = $this->resolveReason(
             (string) ($payload['reason_code'] ?? ''),
@@ -316,7 +337,7 @@ class OrderRefundRequestService
 
         $outcome = DB::transaction(function () use ($order, $items, $reason, $payload, $refundPriority, $branch, $sourceType, $gateStatuses) {
             // 잠금은 잔여 수량을 읽기 전에 잡는다 — 읽고 나서 잠그면 이미 두 요청이 같은 값을 봤다.
-            $lockedOrder = $this->orderRepository->findForUpdate($order->id) ?? $order;
+            $lockedOrder = $this->orderRepository->findForUpdateOrFail($order->id);
             $lockedOrder->load(['options', 'shippings', 'payment']);
 
             $resolved = $this->claimQuantityGuard->resolveClaimItems(
@@ -371,12 +392,12 @@ class OrderRefundRequestService
             // 접수 + 마지막 상태 **2통**이 나간다: PG·마일리지는 접수+완료, 계좌는 접수+승인.
             // `autoAdvance()` 가 승인 알림만 끄고 있어 3통이 2통으로 줄었을 뿐이었다.
             // 활동로그 리스너는 이 플래그를 읽지 않으므로 단계별 기록(D16)은 그대로 남는다.
-            HookManager::doAction(
+            $this->fireAfterCommit(fn () => HookManager::doAction(
                 'sirsoft-ecommerce.claim.refund.requested',
                 $refund,
                 $lockedOrder->fresh(),
                 ['suppress_notification' => $this->willAdvanceOnIntake($lockedOrder, $refund, $branch, $payload)]
-            );
+            ));
 
             $refund = $this->advanceAfterRequest($lockedOrder, $refund, $branch, $payload);
 
@@ -455,6 +476,8 @@ class OrderRefundRequestService
             'refund_amount' => max(0, $adjustment->refundAmount),
             'refund_points_amount' => $adjustment->refundPointsAmount,
             'refund_shipping_amount' => $adjustment->shippingDifference,
+            // 환불액을 나눈 우선순위(계산 결과가 든 값) — 응답·수정 화면이 추측하지 않고 이 값을 읽는다.
+            'refund_priority' => $adjustment->refundPriority,
             'mc_refund_amount' => $adjustment->mcRefundAmount,
             'mc_refund_points_amount' => $adjustment->mcRefundPointsAmount,
             'mc_refund_shipping_amount' => $adjustment->mcRefundShippingAmount,
@@ -608,7 +631,7 @@ class OrderRefundRequestService
         // auto_approve_refund_request` 설정이 한 일이다. 접수자를 그대로 실어 나르면 활동로그
         // 「환불 신청서 상태 변경(환불신청 → 환불승인)」의 작업자가 고객 이름으로 남아,
         // 나중에 「누가 승인했나」를 물을 때 고객이 자기 신청을 승인한 것처럼 읽힌다
-        // (#599 세션A 실측 2026-09-21 · RF20260921-1616082573 · PO 확정 2026-09-22).
+        // (#599 세션A 실측 2026-09-21 · RF20260921-1616082573 · 운영 결정 2026-09-22).
         //
         // 새 라벨을 만들지 않고 저장소가 이미 쓰는 관례에 합류한다 — 1-T 입금기한 만료
         // 자동취소도 작업자를 NULL 로 남기고 화면이 그것을 시스템으로 읽는다.
@@ -777,6 +800,10 @@ class OrderRefundRequestService
             throw OrderClaimException::notWithdrawable();
         }
 
+        // 철회 가능 판정 뒤·쓰기 전 — 확장이 예외로 철회를 막을 수 있다. 이어지는 전이가
+        // `before_status_change` 를 한 번 더 낸다(층이 다른 두 자리).
+        HookManager::doAction('sirsoft-ecommerce.claim.refund.before_withdraw', $refund);
+
         return $this->transition($refund, RefundStatusEnum::WITHDRAWN);
     }
 
@@ -787,45 +814,58 @@ class OrderRefundRequestService
      * @param  array  $payload  수정 페이로드 (reason_code? / reason_detail?)
      * @return OrderRefund 수정된 환불신청서
      *
-     * @throws OrderClaimException 수정 불가 상태 / 사유 부재
+     * 수정 가능 여부는 **신청서 행 잠금 안에서 다시 읽은 상태**로 판정한다(#599 validate P2 #8) —
+     * 호출부 모델로 판정하면 그 사이 승인된 신청서의 사유·계좌가 수정된다. 교환·반품의
+     * `updateRequest()` 와 같은 규율이다.
+     *
+     * @throws OrderClaimException 수정 불가 상태 / 사유 부재 / 환불 계좌 3필드 불완전
      */
     public function updateRequest(OrderRefund $refund, array $payload): OrderRefund
     {
-        if (! $refund->refund_source_type?->isBuyerEditable() || ! $refund->refund_status->isWithdrawable()) {
-            throw OrderClaimException::notEditable();
-        }
+        // 수정의 before·filter 훅 — 잠금·쓰기 전이다. 필터는 사유(`CLAIM_FILTERABLE_UPDATE_KEYS`)만
+        // 바꿀 수 있고 바뀐 값은 아래 사유 해석을 지난다. 환불 계좌는 돈이 향하는 곳이라 되돌린다.
+        HookManager::doAction('sirsoft-ecommerce.claim.refund.before_update_request', $refund, $payload);
 
-        $updates = [];
+        $payload = $this->acceptClaimFilterResult(
+            HookManager::applyFilters('sirsoft-ecommerce.claim.refund.filter_update_request_data', $payload, $refund),
+            $payload,
+            self::CLAIM_FILTERABLE_UPDATE_KEYS,
+        );
 
-        if (array_key_exists('reason_code', $payload) && $payload['reason_code'] !== null) {
-            $reason = $this->resolveReason((string) $payload['reason_code']);
-            $updates['reason_code'] = $reason->code;
-            $updates['fault_type'] = $reason->fault_type;
-        }
+        return DB::transaction(function () use ($refund, $payload) {
+            $locked = $this->refundRepository->findForUpdate((int) $refund->getKey()) ?? $refund;
 
-        if (array_key_exists('reason_detail', $payload)) {
-            $updates['reason_detail'] = $payload['reason_detail'];
-        }
+            if (! $locked->refund_source_type?->isBuyerEditable() || ! $locked->refund_status->isWithdrawable()) {
+                throw OrderClaimException::notEditable();
+            }
 
-        // 환불 계좌 — D13 이 여는 축이다(2026-09-01 확정: 수정 화면에서 편집 가능, 단
-        // 수정이 허용되는 신청 단계에서만 — 이 메서드는 그 단계에서만 진입한다). 값이 세 개
-        // 다 찬 경우에만 페이로드에 실리므로(UpdateClaimRequest), 손대지 않은 저장이 기록된
-        // 계좌를 지우지 않는다. 실제 송금 대상(주문 결제행)은 여기서 바꾸지 않는다 — 그
-        // 갱신은 환불을 실행하는 시점의 책임이다(AppliesRefundBankAccount). 접수 경로
-        // (`create()`)와 같은 컬럼·같은 키를 쓴다.
-        $bank = $payload['refund_bank'] ?? null;
+            $updates = [];
 
-        if (is_array($bank)) {
-            $updates['refund_bank_code'] = $bank['bank_code'];
-            $updates['refund_bank_account'] = $bank['account_number'];
-            $updates['refund_bank_holder'] = $bank['holder'];
-        }
+            if (array_key_exists('reason_code', $payload) && $payload['reason_code'] !== null) {
+                $reason = $this->resolveReason((string) $payload['reason_code']);
+                $updates['reason_code'] = $reason->code;
+                $updates['fault_type'] = $reason->fault_type;
+            }
 
-        if ($updates === []) {
-            return $refund;
-        }
+            if (array_key_exists('reason_detail', $payload)) {
+                $updates['reason_detail'] = $payload['reason_detail'];
+            }
 
-        return $this->refundRepository->update($refund, $updates);
+            // 환불 계좌 — D13 이 여는 축이다(2026-09-01 확정: 수정 화면에서 편집 가능, 단
+            // 수정이 허용되는 신청 단계에서만 — 이 메서드는 그 단계에서만 진입한다). 손대지 않은
+            // 저장이 기록된 계좌를 지우지 않는다. 실제 송금 대상(주문 결제행)은 여기서 바꾸지
+            // 않는다 — 그 갱신은 환불을 실행하는 시점의 책임이다. 컬럼 조립과 3필드 짝 검증은
+            // 교환·반품과 같은 공용 규칙(`AppliesRefundBankAccount::refundBankColumns()`)이 한다 —
+            // 예전에는 빠진 키를 직접 인덱싱해 500 이 났다(#599 validate P2 #9).
+            $bank = $payload['refund_bank'] ?? null;
+            $updates += $this->refundBankColumns(is_array($bank) ? $bank : null);
+
+            if ($updates === []) {
+                return $locked;
+            }
+
+            return $this->refundRepository->update($locked, $updates);
+        });
     }
 
     /**
@@ -864,7 +904,7 @@ class OrderRefundRequestService
             }
 
             $refund->loadMissing('order');
-            $order = $this->orderRepository->findForUpdate($refund->order_id) ?? $refund->order;
+            $order = $this->orderRepository->findForUpdateOrFail($refund->order_id);
 
             $updates = $this->normalizeRefundAmountUpdates($order, $refund, $amounts);
 
@@ -1019,6 +1059,11 @@ class OrderRefundRequestService
         // 옮길 API 가 저장소 어디에도 없어 영구 정지한다(P1).
         $refundId = $refund->id;
 
+        // 환불 완료(실행)의 before 훅 — 잠금·PG 호출·쓰기 전이라 리스너가 던지면 돈이 나가지 않는다.
+        // 필터는 두지 않는다: 실행 본문(`$overrides`)은 환불액·환불수단이라 금액 그 자체이고, 확장이
+        // 바꾸면 운영자가 화면에서 본 금액과 실제 송금액이 갈린다.
+        HookManager::doAction('sirsoft-ecommerce.claim.refund.before_complete', $refund, $overrides, $processedBy);
+
         $completedOptionChanges = [];
 
         $executed = DB::transaction(function () use ($refundId, $overrides, $processedBy, $pgAlreadySettled, &$completedOptionChanges) {
@@ -1040,7 +1085,7 @@ class OrderRefundRequestService
                 );
             }
 
-            $order = $this->orderRepository->findForUpdate($refund->order_id) ?? $refund->order;
+            $order = $this->orderRepository->findForUpdateOrFail($refund->order_id);
             $order->load(['options', 'shippings', 'payment', 'payments']);
 
             // D18 — 실행 본문의 금액을 저장과 같은 검증으로 반영 (저장 없이 실행 가능)
@@ -1124,7 +1169,7 @@ class OrderRefundRequestService
                 // 깎였다 — 카드사 잔액은 그대로인데 장부의 환불가능액만 줄어, 이후 정상적인
                 // 카드 환불이 한도에 먼저 걸린다(실측 1-P: 58,000 → 44,000).
                 //
-                // 운영자가 손으로 계좌 송금하는 운영은 막지 않는다(PO 확정 2026-09-16 —
+                // 운영자가 손으로 계좌 송금하는 운영은 막지 않는다(운영 결정 2026-09-16 —
                 // 「허용하되 장부는 건드리지 않음」). 그 송금은 카드 취소가 아니므로 카드
                 // 결제행의 취소 누적이 아닐 뿐이다. 돈이 나간 사실은 주문 축
                 // (`total_refunded_amount`)과 환불 레코드가 그대로 기록한다.
@@ -1218,23 +1263,23 @@ class OrderRefundRequestService
         });
 
         if ($completedOptionChanges !== []) {
-            HookManager::doAction(
+            $this->fireAfterCommit(fn () => HookManager::doAction(
                 'sirsoft-ecommerce.claim.refund.option_status_changed',
                 $executed,
                 $completedOptionChanges,
                 RefundStatusEnum::COMPLETED->value,
                 $processedBy,
-            );
+            ));
         }
 
-        HookManager::doAction(
+        $this->fireAfterCommit(fn () => HookManager::doAction(
             'sirsoft-ecommerce.claim.refund.status_changed',
             $executed,
             RefundStatusEnum::APPROVED->value,
             RefundStatusEnum::COMPLETED->value,
             [],
-        );
-        HookManager::doAction('sirsoft-ecommerce.claim.refund.completed', $executed);
+        ));
+        $this->fireAfterCommit(fn () => HookManager::doAction('sirsoft-ecommerce.claim.refund.completed', $executed));
 
         // 현금영수증 동기화는 **트랜잭션 밖에서만** 돈다 — 재발급 실패 이력이 롤백에 휩쓸리면
         // 안 되고, 프로바이더 왕복 2회 동안 DB 잠금을 붙들 수 없다.
@@ -1287,13 +1332,13 @@ class OrderRefundRequestService
             return;
         }
 
-        HookManager::doAction(
+        $this->fireAfterCommit(fn () => HookManager::doAction(
             'sirsoft-ecommerce.claim.refund.option_status_changed',
             $refund,
             $changes,
             RefundStatusEnum::REQUESTED->value,
             $processedBy,
-        );
+        ));
     }
 
     /**
@@ -1437,9 +1482,10 @@ class OrderRefundRequestService
     /**
      * 이 주문의 결제수단이 지정한 환불수단을 지원하는지 검증합니다. (S1-D15)
      *
-     * `pg` 는 PG사를 거친 결제에만 쓸 수 있다 — 판정은 실행 경로와 **같은 술어**를 쓴다
-     * (`OrderPayment::needsPgProvider()`). 두 곳이 다른 기준을 쓰면 저장은 되는데 실행은
-     * 다르게 행동하는 틈이 다시 생긴다.
+     * `pg` 의 판정은 `pgRefundAvailable()` 하나다 — [금액 수정]의 저장, 상세 화면의 선택지
+     * (`AdminClaimService::refundMethodOptions()`), [환불하기] 실행 게이트가 모두 그것을 읽는다.
+     * 예전에는 여기만 결제수단(`needsPgProvider`)을 보고 실행 게이트는 실효 수단을 봐, PG 리스너가
+     * 없어 계좌 환불로 떨어지는 주문(P14)에서 PG 가 저장은 되는데 실행은 막혔다(#599 validate P2-A 후속).
      *
      * `bank`·`points` 는 결제수단과 무관하게 사람이 돌려주는 경로라 제한하지 않는다
      * (마일리지 환급의 회원 제약은 금액 축이 따로 검사한다).
@@ -1456,11 +1502,37 @@ class OrderRefundRequestService
             return;
         }
 
+        if (! $this->pgRefundAvailable($order)) {
+            throw OrderClaimException::refundMethodUnavailable();
+        }
+    }
+
+    /**
+     * 이 주문을 PG 로 환불할 수 있는지 판정합니다. (환불수단 `pg` 의 단일 판정)
+     *
+     * 두 조건이 모두 참이어야 한다.
+     *
+     *  ① PG사를 거친 결제다(`OrderPayment::needsPgProvider()`) — 무통장·마일리지 결제에 PG 환불은 없다.
+     *  ② 실효 환불수단이 PG 다(`RefundExecutionService::determineRefundMethod()`) — 결제 플러그인이
+     *     빠져 `payment.refund` 에 응답할 리스너가 없으면 실행은 계좌 환불로 떨어진다(P14). 그 주문에
+     *     PG 를 저장하게 두면 [환불하기]가 막혀 저장한 수단으로 실행할 길이 없다.
+     *
+     * 저장(`assertRefundMethodAvailable()`)·선택지(`AdminClaimService::refundMethodOptions()`)·
+     * 실행 게이트(`ExecuteRefundRequest`)가 이 메서드 하나를 읽는다 — 기준이 갈리면 저장은 되는데
+     * 실행은 막히는 틈이 다시 생긴다.
+     *
+     * @param  Order  $order  주문
+     * @return bool PG 환불 가능 여부
+     */
+    public function pgRefundAvailable(Order $order): bool
+    {
         $order->loadMissing('payment');
 
         if ($order->payment === null || ! $order->payment->needsPgProvider()) {
-            throw OrderClaimException::refundMethodUnavailable();
+            return false;
         }
+
+        return $this->refundExecutionService->determineRefundMethod($order) === RefundMethodEnum::PG;
     }
 
     /**
@@ -1519,28 +1591,6 @@ class OrderRefundRequestService
     }
 
     /**
-     * 환불이 주문 헤더에 동기화하는 컬럼 (S3-D17).
-     *
-     * **세금 분류 + 현금성 금액만** 담는다. `total_paid_amount`·`total_amount` 를 넣으면
-     * 잔여 한도(`total_paid_amount - total_refunded_amount`)가 같은 금액을 두 번 차감한다.
-     *
-     * `total_cash_equivalent_amount` 가 함께 있어야 한다 —
-     * `CashReceiptService::calculateIssuableAmount()` 는 이 값을 **먼저** 보고, 0 이 아니면
-     * 세금 분류합이 0 이어도 이 값을 그대로 발급 가능액으로 낸다(폴백). 세금만 0 으로
-     * 내리면 발급 가능액이 62,000 으로 남는다(2026-09-16 실측).
-     *
-     * `mc_*` 두 개는 base 와 짝을 맞춘다 — 한쪽만 내리면 한 행 안에서 어긋난다(S1-D22 전례).
-     */
-    private const TAX_SYNC_COLUMNS = [
-        'total_tax_amount',
-        'total_tax_free_amount',
-        'total_vat_amount',
-        'total_cash_equivalent_amount',
-        'mc_total_tax_amount',
-        'mc_total_tax_free_amount',
-    ];
-
-    /**
      * 이 환불이 끝난 뒤의 **세금 분류 컬럼**을 재계산합니다. (S3-D17)
      *
      * `total_tax_amount`·`total_tax_free_amount`·`total_vat_amount` 세 개만 낸다 —
@@ -1576,7 +1626,7 @@ class OrderRefundRequestService
 
         $updates = [];
 
-        foreach (self::TAX_SYNC_COLUMNS as $column) {
+        foreach (RefundExecutionService::TAX_SYNC_COLUMNS as $column) {
             if (! array_key_exists($column, $source->orderUpdates)) {
                 continue;
             }
@@ -1608,6 +1658,19 @@ class OrderRefundRequestService
         if ($target === RefundStatusEnum::COMPLETED) {
             throw OrderClaimException::completionRequiresCompletionFlow();
         }
+
+        // 헤더 전이의 before·filter 훅 — 잠금·쓰기 전이다(교환·반품의 `beforeStatusChange()` 와 같은
+        // 규칙). 필터는 반려 사유·메모만 바꿀 수 있다 — 목표 상태·처리자·알림 억제 플래그는 되돌린다.
+        // 필터를 거친 컨텍스트가 `status_changed` 의 넷째 인자로 그대로 나간다.
+        $from = $refund->refund_status?->value;
+
+        HookManager::doAction('sirsoft-ecommerce.claim.refund.before_status_change', $refund, $from, $target->value, $context);
+
+        $context = $this->acceptClaimFilterResult(
+            HookManager::applyFilters('sirsoft-ecommerce.claim.refund.filter_status_change_data', $context, $refund, $from, $target->value),
+            $context,
+            self::CLAIM_FILTERABLE_STATUS_CONTEXT_KEYS,
+        );
 
         // S1-D21: 잠금·판정·쓰기를 **한 트랜잭션**에 묶는다.
         //
@@ -1670,13 +1733,13 @@ class OrderRefundRequestService
         });
 
         if ($optionChanges !== []) {
-            HookManager::doAction(
+            $this->fireAfterCommit(fn () => HookManager::doAction(
                 'sirsoft-ecommerce.claim.refund.option_status_changed',
                 $updated,
                 $optionChanges,
                 $optionChanges[0]['new'] ?? null,
                 $updates['processed_by'] ?? null,
-            );
+            ));
         }
 
         // 상태가 **실제로 바뀐 때만** 훅을 돌린다 (S1-D21 · 세션3 S3-D16 과 같은 처리).
@@ -1715,7 +1778,7 @@ class OrderRefundRequestService
         // 네 번째 인수 `$context` — 알림 리스너가 `suppress_notification` 를 읽어 자동 전이의
         // 중간 단계 알림만 끈다. 기존 3인수 구독자는 그대로 둔다(PHP 는 유저 함수에 인수가
         // 더 넘어와도 오류를 내지 않는다 — 모자랄 때만 ArgumentCountError).
-        HookManager::doAction('sirsoft-ecommerce.claim.refund.status_changed', $refund, $previous->value, $target->value, $context);
+        $this->fireAfterCommit(fn () => HookManager::doAction('sirsoft-ecommerce.claim.refund.status_changed', $refund, $previous->value, $target->value, $context));
 
         $specific = match ($target) {
             RefundStatusEnum::APPROVED => 'sirsoft-ecommerce.claim.refund.approved',
@@ -1726,7 +1789,7 @@ class OrderRefundRequestService
         };
 
         if ($specific !== null) {
-            HookManager::doAction($specific, $refund);
+            $this->fireAfterCommit(fn () => HookManager::doAction($specific, $refund));
         }
     }
 
@@ -1764,14 +1827,23 @@ class OrderRefundRequestService
         $processedBy = $context['processed_by'] ?? null;
         $specs = ClaimItemSpecs::normalize($items);
         $quantities = ClaimItemSpecs::quantities($specs);
-        $rows = $this->resolveItems($refund, ClaimItemSpecs::ids($specs));
+        $itemIds = ClaimItemSpecs::ids($specs);
+
+        // 상품 단위 전이의 before 훅 — 잠금·쓰기 전이라 리스너가 던지면 어떤 행도 옮겨지지 않는다.
+        // 필터는 두지 않는다(교환·반품과 같은 판단 — 바꿀 자유 입력이 없고 대상·목표는 운영자 판단).
+        HookManager::doAction('sirsoft-ecommerce.claim.refund.before_option_status_change', $refund, $specs, $target->value, $context);
 
         $succeeded = [];
         $skipped = [];
         $changes = [];
         $split = [];
 
-        DB::transaction(function () use ($rows, $quantities, $target, $processedBy, &$succeeded, &$skipped, &$changes, &$split) {
+        // 신청서 행을 잠그고 **잠금 안에서** 상품 행을 다시 읽어 판정한다. 헤더 동기화도 같은
+        // 트랜잭션 안에서 한다(#599 validate P2 #19 — 교환·반품과 같은 규율). 훅은 커밋 뒤다(#7).
+        DB::transaction(function () use ($refund, $itemIds, $quantities, $target, $processedBy, &$succeeded, &$skipped, &$changes, &$split) {
+            $locked = $this->refundRepository->findForUpdate((int) $refund->getKey()) ?? $refund;
+            $rows = $this->resolveItems($locked, $itemIds);
+
             foreach ($rows as $item) {
                 $current = $item->option_status instanceof RefundStatusEnum
                     ? $item->option_status
@@ -1810,6 +1882,9 @@ class OrderRefundRequestService
                 if ($remainder !== null) {
                     $change['quantity'] = (int) $item->fresh()->quantity;
                     $change['remainder_option_id'] = $remainder->id;
+                    // 잔여 수량은 **발행 시점 값**으로 싣는다 — 활동 로그 리스너가 이 값을 먼저 읽고, 없을 때만
+                    // 잔여 행을 다시 읽는다(다시 읽으면 그 사이 바뀐 값이 섞인다).
+                    $change['remainder_quantity'] = $previousQuantity - $change['quantity'];
 
                     $split[] = [
                         'id' => $item->id,
@@ -1823,23 +1898,24 @@ class OrderRefundRequestService
 
                 $succeeded[] = $item->id;
             }
+
+            $fresh = $locked->fresh(['refundOptions']);
+
+            // 상품 단위 전이는 헤더 전이와 다른 사실이다 — 상품 상태가 갈리면 헤더는 움직이지
+            // 않으므로, 이 훅이 없으면 운영자가 한 상태 변경이 아무 데도 남지 않는다.
+            // 커밋 뒤 발화 순서는 등록 순서다 — 상품 축이 헤더 축보다 먼저 나간다.
+            if ($changes !== []) {
+                $this->fireAfterCommit(fn () => HookManager::doAction(
+                    'sirsoft-ecommerce.claim.refund.option_status_changed',
+                    $fresh,
+                    $changes,
+                    $target->value,
+                    $processedBy,
+                ));
+            }
+
+            $this->syncHeaderFromOptions($fresh, $processedBy);
         });
-
-        $fresh = $refund->fresh(['refundOptions']);
-
-        // 상품 단위 전이는 헤더 전이와 다른 사실이다 — 상품 상태가 갈리면 헤더는 움직이지
-        // 않으므로, 이 훅이 없으면 운영자가 한 상태 변경이 아무 데도 남지 않는다.
-        if ($changes !== []) {
-            HookManager::doAction(
-                'sirsoft-ecommerce.claim.refund.option_status_changed',
-                $fresh,
-                $changes,
-                $target->value,
-                $processedBy,
-            );
-        }
-
-        $this->syncHeaderFromOptions($fresh, $processedBy);
 
         return ['succeeded' => $succeeded, 'skipped' => $skipped, 'split' => $split];
     }
@@ -1938,6 +2014,18 @@ class OrderRefundRequestService
 
         foreach ($path as $step) {
             $previous = $current->refund_status;
+
+            // 상품이 끌고 간 헤더 전이도 전이다 — 단계마다 before 훅을 쓰기 전에 낸다. 상품 전이
+            // 트랜잭션 **안**이라 리스너가 던지면 이번 상품 전이까지 함께 되돌아간다(헤더와 상품이
+            // 갈리지 않게). 필터는 없다 — 목표는 상품 상태가 정한 값이다.
+            HookManager::doAction(
+                'sirsoft-ecommerce.claim.refund.before_status_change',
+                $current,
+                $previous->value,
+                $step->value,
+                ['processed_by' => $processedBy, 'source' => 'option_sync'],
+            );
+
             $updates = ['refund_status' => $step] + $this->stampFor($step, []);
 
             if ($processedBy !== null) {

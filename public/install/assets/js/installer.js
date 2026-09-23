@@ -652,7 +652,8 @@
                     // ReadOnly 속성이 원인이면 icacls 로는 해소되지 않는다(ACL 이 아니라 파일 속성).
                     // attrib -R 안내를 먼저 노출한다.
                     if (hasWindowsReadOnly) {
-                        const winRoCommands = winDirPaths.map(p => `attrib -R "${p}" /D /S`);
+                        // 폴더 자체와 안쪽을 따로 푼다 — `attrib -R "<폴더>" /D /S` 는 폴더 자체만 풀고 안쪽은 읽기 전용으로 남긴다.
+                        const winRoCommands = winDirPaths.flatMap(p => [`attrib -R "${p}"`, `attrib -R "${p}\\*" /S /D`]);
                         html += `<p class="fix-guide-label">${lang('permission_readonly_fix_guide')}</p>`;
                         html += '<div class="code-box">';
                         html += `<pre class="fix-command">${escapeHtml(winRoCommands.join('\n'))}</pre>`;

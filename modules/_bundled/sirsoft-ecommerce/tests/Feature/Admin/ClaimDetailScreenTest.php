@@ -53,6 +53,11 @@ class ClaimDetailScreenTest extends ModuleTestCase
 
     protected User $admin;
 
+    /**
+     * 테스트 통화·사유와 클레임 읽기·상태 변경 권한만 가진 운영자를 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -64,12 +69,22 @@ class ClaimDetailScreenTest extends ModuleTestCase
         ]);
     }
 
+    /**
+     * 테스트 통화 설정을 정리합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         $this->clearTestCurrencySettings();
         parent::tearDown();
     }
 
+    /**
+     * 관리자 API 기준 경로를 반환합니다.
+     *
+     * @return string 관리자 API 기준 경로
+     */
     protected function base(): string
     {
         return '/api/modules/sirsoft-ecommerce/admin';
@@ -77,6 +92,9 @@ class ClaimDetailScreenTest extends ModuleTestCase
 
     /**
      * 반품 신청서를 서비스 경로로 접수합니다. (환불금 차감 — 청구 없음)
+     *
+     * @param  Order|null  $order  대상 주문 (없으면 배송완료 주문을 새로 만든다)
+     * @return OrderReturn 접수된 반품 신청서
      */
     protected function makeReturn(?Order $order = null): OrderReturn
     {
@@ -91,6 +109,10 @@ class ClaimDetailScreenTest extends ModuleTestCase
 
     /**
      * 교환 신청서를 서비스 경로로 접수합니다. (승인 후 결제 — 왕복 배송비 청구)
+     *
+     * @param  Order|null  $order  대상 주문 (없으면 배송완료 주문을 새로 만든다)
+     * @param  ClaimChargeMethodEnum  $chargeMethod  청구 방식
+     * @return OrderExchange 접수된 교환 신청서
      */
     protected function makeExchange(
         ?Order $order = null,
@@ -110,9 +132,13 @@ class ClaimDetailScreenTest extends ModuleTestCase
     // ================================================================
 
     /**
+     * 클레임 번호로 상세를 열면 유형을 해석하고 화면 문맥(경로 세그먼트·택배사 등)을 함께 싣는지 검증합니다.
+     *
      * @scenario claim_type=exchange, claim_stage=in_progress
      *
      * @effects claim_detail_response_carries_screen_context, claim_detail_never_assembles_path_segment
+     *
+     * @return void 반환값 없음
      */
     public function test_detail_by_number_resolves_type_and_carries_screen_context(): void
     {
@@ -139,9 +165,13 @@ class ClaimDetailScreenTest extends ModuleTestCase
     }
 
     /**
+     * 클레임 권한만 가진 운영자에게도 완료 처리 기본값이 상세 응답으로 전달되는지 검증합니다.
+     *
      * @scenario claim_type=return, claim_stage=in_progress
      *
      * @effects claim_detail_completion_seeds_settings_defaults, claim_detail_datasources_within_route_permission
+     *
+     * @return void 반환값 없음
      */
     public function test_detail_by_number_carries_settings_defaults_to_claim_only_operator(): void
     {
@@ -163,9 +193,13 @@ class ClaimDetailScreenTest extends ModuleTestCase
     }
 
     /**
+     * 환불신청서 상세에는 배송 축(택배사 선택지·재발송지 비교)이 실리지 않는지 검증합니다.
+     *
      * @scenario claim_type=refund, claim_stage=in_progress
      *
      * @effects claim_carrier_options_come_from_detail_response, claim_shipping_section_absent_for_refund
+     *
+     * @return void 반환값 없음
      */
     public function test_detail_by_number_omits_carriers_for_refund(): void
     {
@@ -184,9 +218,13 @@ class ClaimDetailScreenTest extends ModuleTestCase
     }
 
     /**
+     * 없는 클레임 번호의 상세 요청이 404 로 끝나는지 검증합니다.
+     *
      * @scenario claim_type=exchange, claim_stage=in_progress
      *
      * @effects detail_unknown_number_shows_error_page
+     *
+     * @return void 반환값 없음
      */
     public function test_detail_by_number_returns_404_for_unknown_number(): void
     {
@@ -195,9 +233,13 @@ class ClaimDetailScreenTest extends ModuleTestCase
     }
 
     /**
+     * 클레임 읽기 권한이 없는 운영자의 상세 요청이 403 으로 거절되는지 검증합니다.
+     *
      * @scenario claim_type=return, claim_stage=in_progress
      *
      * @effects detail_controls_gated_by_write_abilities
+     *
+     * @return void 반환값 없음
      */
     public function test_detail_by_number_requires_read_permission(): void
     {
@@ -209,9 +251,13 @@ class ClaimDetailScreenTest extends ModuleTestCase
     }
 
     /**
+     * 고정 경로(목록·건수 등)가 클레임 번호 와일드카드 라우트에 가려지지 않는지 검증합니다.
+     *
      * @scenario claim_type=return, claim_stage=in_progress
      *
      * @effects claim_detail_route_registered
+     *
+     * @return void 반환값 없음
      */
     public function test_static_claim_routes_are_not_shadowed_by_the_number_wildcard(): void
     {
@@ -224,9 +270,13 @@ class ClaimDetailScreenTest extends ModuleTestCase
     // ================================================================
 
     /**
+     * 청구가 없는 신청서의 진행단계에서 결제 두 칸이 빠지는지 검증합니다.
+     *
      * @scenario claim_type=return, claim_stage=in_progress
      *
      * @effects claim_progress_steps_come_from_server, claim_progress_payment_stages_follow_charge_method
+     *
+     * @return void 반환값 없음
      */
     public function test_progress_steps_drop_payment_stages_when_nothing_is_charged(): void
     {
@@ -248,9 +298,13 @@ class ClaimDetailScreenTest extends ModuleTestCase
     }
 
     /**
+     * 결제형 청구가 있는 신청서의 진행단계에 결제 두 칸이 남는지 검증합니다.
+     *
      * @scenario claim_type=exchange, claim_stage=in_progress
      *
      * @effects claim_progress_payment_stages_follow_charge_method
+     *
+     * @return void 반환값 없음
      */
     public function test_progress_steps_keep_payment_stages_when_a_charge_exists(): void
     {
@@ -272,9 +326,13 @@ class ClaimDetailScreenTest extends ModuleTestCase
     }
 
     /**
+     * 진행단계가 지난 칸과 현재 칸(한 칸)을 표시하는지 검증합니다.
+     *
      * @scenario claim_type=return, claim_stage=in_progress
      *
      * @effects claim_progress_stepper_renders_server_steps
+     *
+     * @return void 반환값 없음
      */
     public function test_progress_steps_mark_reached_stages_and_the_current_one(): void
     {
@@ -295,9 +353,13 @@ class ClaimDetailScreenTest extends ModuleTestCase
     }
 
     /**
+     * 보류된 신청서의 진행단계 끝에 순서 밖 이탈 칸이 붙는지 검증합니다.
+     *
      * @scenario claim_type=return, claim_stage=off_path
      *
      * @effects claim_progress_off_path_stage_appended
+     *
+     * @return void 반환값 없음
      */
     public function test_progress_steps_append_an_off_path_stage_for_on_hold(): void
     {
@@ -332,6 +394,8 @@ class ClaimDetailScreenTest extends ModuleTestCase
      * @scenario claim_type=exchange, claim_stage=in_progress
      *
      * @effects claim_progress_payment_stages_follow_charge_method, claim_progress_stepper_renders_server_steps
+     *
+     * @return void 반환값 없음
      */
     public function test_progress_steps_keep_the_stage_the_claim_stands_on_after_the_charge_is_removed(): void
     {
@@ -367,9 +431,13 @@ class ClaimDetailScreenTest extends ModuleTestCase
     }
 
     /**
+     * 이탈 상태 신청서의 도달 지점을 상태 시각 도장으로 정하는지 검증합니다.
+     *
      * @scenario claim_type=return, claim_stage=off_path
      *
      * @effects claim_progress_off_path_stage_appended
+     *
+     * @return void 반환값 없음
      */
     public function test_progress_steps_use_stamps_to_place_an_off_path_claim(): void
     {
@@ -395,9 +463,13 @@ class ClaimDetailScreenTest extends ModuleTestCase
     }
 
     /**
+     * 완료된 반품의 진행단계가 마지막 칸까지 완료로 표시되는지 검증합니다.
+     *
      * @scenario claim_type=return, claim_stage=final
      *
      * @effects claim_progress_stepper_renders_server_steps
+     *
+     * @return void 반환값 없음
      */
     public function test_progress_steps_mark_a_completed_return_as_done(): void
     {
@@ -428,6 +500,8 @@ class ClaimDetailScreenTest extends ModuleTestCase
      * @scenario claim_type=exchange, claim_stage=in_progress
      *
      * @effects claim_progress_steps_carry_icon_and_variant
+     *
+     * @return void 반환값 없음
      */
     public function test_progress_steps_carry_the_icon_and_variant_of_each_status(): void
     {
@@ -450,6 +524,15 @@ class ClaimDetailScreenTest extends ModuleTestCase
         $this->assertSame('status-completed', end($steps)['icon']);
     }
 
+    /**
+     * 반려된 환불신청서의 진행단계 끝에 순서 밖 이탈 칸(반려)이 붙는지 검증합니다.
+     *
+     * @scenario claim_type=refund, claim_stage=off_path
+     *
+     * @effects claim_progress_off_path_stage_appended
+     *
+     * @return void 반환값 없음
+     */
     public function test_progress_steps_append_an_off_path_stage_for_a_rejected_refund(): void
     {
         $return = $this->moveReturnToCompleted($this->makeReturn());
@@ -477,9 +560,13 @@ class ClaimDetailScreenTest extends ModuleTestCase
     // ================================================================
 
     /**
+     * 활동 로그가 신청서·추가결제·첨부의 기록을 한 목록으로 합쳐 싣는지 검증합니다.
+     *
      * @scenario claim_type=exchange, claim_stage=in_progress
      *
      * @effects claim_logs_merge_claim_payment_and_attachment
+     *
+     * @return void 반환값 없음
      */
     public function test_logs_merge_claim_payment_and_attachment_entries(): void
     {
@@ -521,9 +608,13 @@ class ClaimDetailScreenTest extends ModuleTestCase
     }
 
     /**
+     * 다른 신청서의 추가결제 로그가 이 신청서의 활동 로그에 섞이지 않는지 검증합니다.
+     *
      * @scenario claim_type=exchange, claim_stage=in_progress
      *
      * @effects claim_logs_scoped_to_one_claim
+     *
+     * @return void 반환값 없음
      */
     public function test_logs_do_not_leak_another_claims_payment_entries(): void
     {
@@ -557,9 +648,13 @@ class ClaimDetailScreenTest extends ModuleTestCase
     }
 
     /**
+     * 다른 신청서의 로그가 이 신청서의 활동 로그에 섞이지 않는지 검증합니다.
+     *
      * @scenario claim_type=return, claim_stage=in_progress
      *
      * @effects claim_logs_scoped_to_one_claim
+     *
+     * @return void 반환값 없음
      */
     public function test_logs_do_not_leak_another_claims_entries(): void
     {
@@ -585,8 +680,9 @@ class ClaimDetailScreenTest extends ModuleTestCase
      * 활동 로그 한 줄을 심습니다. (합본 축 검증용 — 리스너 경로와 같은 형태)
      *
      * @param  string  $loggableType  loggable 타입 (추가결제·첨부는 morph map 밖이라 FQCN)
-     * @param  int  $loggableId  loggable ID
-     * @param  string  $action  action 키
+     * @param  int  $loggableId  loggable 대상 ID
+     * @param  string  $action  로그 action 키
+     * @return void 반환값 없음
      */
     protected function logFor(string $loggableType, int $loggableId, string $action): void
     {
@@ -602,9 +698,13 @@ class ClaimDetailScreenTest extends ModuleTestCase
     }
 
     /**
+     * 활동 로그가 정렬 방향과 페이지 크기 요청을 따르는지 검증합니다.
+     *
      * @scenario claim_type=return, claim_stage=in_progress
      *
      * @effects claim_logs_honour_sort_and_page_size
+     *
+     * @return void 반환값 없음
      */
     public function test_logs_honour_sort_and_page_size(): void
     {
@@ -619,9 +719,13 @@ class ClaimDetailScreenTest extends ModuleTestCase
     }
 
     /**
+     * 어휘 밖 정렬 값의 활동 로그 요청이 422 로 거절되는지 검증합니다.
+     *
      * @scenario claim_type=return, claim_stage=in_progress
      *
      * @effects claim_logs_reject_out_of_vocabulary_sort
+     *
+     * @return void 반환값 없음
      */
     public function test_logs_reject_an_out_of_vocabulary_sort_order(): void
     {
@@ -633,9 +737,13 @@ class ClaimDetailScreenTest extends ModuleTestCase
     }
 
     /**
+     * 없는 클레임 번호의 활동 로그 요청이 404 로 끝나는지 검증합니다.
+     *
      * @scenario claim_type=return, claim_stage=in_progress
      *
      * @effects detail_unknown_number_shows_error_page
+     *
+     * @return void 반환값 없음
      */
     public function test_logs_return_404_for_unknown_number(): void
     {
@@ -648,9 +756,13 @@ class ClaimDetailScreenTest extends ModuleTestCase
     // ================================================================
 
     /**
+     * 재발송지 스냅샷이 주문 배송지와 같으면 「배송지 다름」이 false 인지 검증합니다.
+     *
      * @scenario claim_type=exchange, claim_stage=in_progress
      *
      * @effects claim_redelivery_two_badges_distinct
+     *
+     * @return void 반환값 없음
      */
     public function test_redelivery_address_differs_is_false_when_the_snapshot_matches_the_order(): void
     {
@@ -662,9 +774,13 @@ class ClaimDetailScreenTest extends ModuleTestCase
     }
 
     /**
+     * 재발송지 스냅샷이 주문 배송지와 다르면 「배송지 다름」이 true 인지 검증합니다.
+     *
      * @scenario claim_type=exchange, claim_stage=in_progress
      *
      * @effects claim_redelivery_address_differs_badge_alone
+     *
+     * @return void 반환값 없음
      */
     public function test_redelivery_address_differs_is_true_when_the_snapshot_diverges(): void
     {
@@ -683,6 +799,9 @@ class ClaimDetailScreenTest extends ModuleTestCase
 
     /**
      * 반품 신청서를 완료까지 진행시킵니다. (환불신청서 생성 경로)
+     *
+     * @param  OrderReturn  $return  반품 신청서
+     * @return OrderReturn 완료된 반품 신청서
      */
     protected function moveReturnToCompleted(OrderReturn $return): OrderReturn
     {
@@ -710,6 +829,8 @@ class ClaimDetailScreenTest extends ModuleTestCase
      * @scenario claim_type=exchange, cancellable=absent
      *
      * @effects claim_payment_reads_detail_envelope_only
+     *
+     * @return void 반환값 없음
      */
     public function test_detail_carries_order_payment_context_to_a_claim_only_operator(): void
     {
@@ -746,6 +867,8 @@ class ClaimDetailScreenTest extends ModuleTestCase
      * 상세 한 번을 여는 것만으로 응답이 부풀고, 미로드 관계가 직렬화 시점에 터진다.
      *
      * @effects claim_payment_order_context_is_pruned
+     *
+     * @return void 반환값 없음
      */
     public function test_detail_order_context_carries_only_what_the_payment_section_draws(): void
     {
@@ -768,6 +891,8 @@ class ClaimDetailScreenTest extends ModuleTestCase
      * @scenario claim_type=return, cancellable=absent
      *
      * @effects claim_settlement_preview_comes_from_server
+     *
+     * @return void 반환값 없음
      */
     public function test_detail_settlement_matches_the_completion_preview(): void
     {
@@ -797,6 +922,8 @@ class ClaimDetailScreenTest extends ModuleTestCase
      * @scenario claim_type=exchange, cancellable=absent
      *
      * @effects claim_settlement_preview_comes_from_server
+     *
+     * @return void 반환값 없음
      */
     public function test_detail_settlement_matches_the_completion_preview_for_an_exchange(): void
     {
@@ -836,6 +963,8 @@ class ClaimDetailScreenTest extends ModuleTestCase
      * @scenario claim_type=refund, cancellable=present
      *
      * @effects claim_settlement_blocks_split_by_type
+     *
+     * @return void 반환값 없음
      */
     public function test_detail_settlement_is_null_for_a_refund_request(): void
     {
@@ -858,6 +987,8 @@ class ClaimDetailScreenTest extends ModuleTestCase
      * @scenario claim_type=exchange, cancellable=absent
      *
      * @effects claim_charge_method_options_come_from_detail_response
+     *
+     * @return void 반환값 없음
      */
     public function test_detail_charge_methods_honour_the_shop_allow_list(): void
     {
@@ -885,9 +1016,15 @@ class ClaimDetailScreenTest extends ModuleTestCase
      * @scenario claim_type=refund, cancellable=present
      *
      * @effects claim_refund_method_options_come_from_detail_response
+     *
+     * @return void 반환값 없음
      */
     public function test_detail_refund_methods_are_present_only_for_a_refund_request(): void
     {
+        // PG 환불에 응답할 리스너를 둔다 — 없으면 이 카드 주문은 실행이 계좌 환불로 떨어져(P14)
+        // 선택지에서 PG 가 빠진다(저장·실행 게이트와 같은 판정 — #599 validate P2-A 후속).
+        HookManager::addFilter('sirsoft-ecommerce.payment.refund', fn (array $default) => $default);
+
         $return = $this->moveReturnToCompleted($this->makeReturn());
         $refund = $return->refresh()->refund;
 
@@ -915,6 +1052,8 @@ class ClaimDetailScreenTest extends ModuleTestCase
      * @scenario claim_type=refund, cancellable=present
      *
      * @effects claim_cancellable_method_label_from_catalog
+     *
+     * @return void 반환값 없음
      */
     public function test_detail_cancellable_method_label_comes_from_the_payment_method_catalog(): void
     {
@@ -968,6 +1107,8 @@ class ClaimDetailScreenTest extends ModuleTestCase
      * @scenario claim_type=refund, cancellable=present
      *
      * @effects claim_cancellable_formatting_uses_the_order_currency_snapshot
+     *
+     * @return void 반환값 없음
      */
     public function test_detail_cancellable_formatting_honours_the_order_currency_snapshot(): void
     {
@@ -1006,6 +1147,8 @@ class ClaimDetailScreenTest extends ModuleTestCase
      * @scenario claim_type=refund, cancellable=present
      *
      * @effects claim_cancellable_axes_come_from_server
+     *
+     * @return void 반환값 없음
      */
     public function test_detail_carries_the_cancellable_amount_with_its_three_axes(): void
     {
@@ -1049,6 +1192,8 @@ class ClaimDetailScreenTest extends ModuleTestCase
      * @scenario claim_type=exchange, cancellable=absent
      *
      * @effects claim_refund_execute_section_absent_for_non_refund
+     *
+     * @return void 반환값 없음
      */
     public function test_detail_omits_the_cancellable_amount_for_non_refund_types(): void
     {
@@ -1067,6 +1212,8 @@ class ClaimDetailScreenTest extends ModuleTestCase
      * @scenario claim_type=refund, cancellable=present
      *
      * @effects claim_cancellable_payload_is_identical_across_endpoints
+     *
+     * @return void 반환값 없음
      */
     public function test_cancellable_endpoint_and_detail_envelope_return_the_same_payload(): void
     {
@@ -1088,6 +1235,8 @@ class ClaimDetailScreenTest extends ModuleTestCase
 
     /**
      * 활성 택배사 한 건을 확보합니다. (형제 테스트와 같은 생성 경로 — 팩토리가 없다)
+     *
+     * @return ShippingCarrier 택배사
      */
     protected function ensureCarrier(): ShippingCarrier
     {
@@ -1107,6 +1256,9 @@ class ClaimDetailScreenTest extends ModuleTestCase
      *
      * 실서비스는 `OrderCancellationService` 가 세 행을 함께 만든다 — 상세는 취소 행에서
      * 구분·사유를, 취소 발 환불 행에서 환불 상태·금액을 읽는다.
+     *
+     * @param  Order|null  $order  대상 주문 (없으면 결제완료 주문을 새로 만든다)
+     * @return OrderCancel 취소 신청서
      */
     protected function makeCancel(?Order $order = null): OrderCancel
     {
@@ -1158,6 +1310,8 @@ class ClaimDetailScreenTest extends ModuleTestCase
      * @scenario claim_type=cancel, claim_stage=final
      *
      * @effects claim_detail_cancel_resolves_by_number, claim_detail_cancel_is_read_only
+     *
+     * @return void 반환값 없음
      */
     public function test_detail_by_number_resolves_a_cancel_as_a_read_only_detail(): void
     {
@@ -1197,6 +1351,8 @@ class ClaimDetailScreenTest extends ModuleTestCase
      * @scenario claim_type=cancel, claim_stage=final
      *
      * @effects claim_logs_include_cancel_linked_refund
+     *
+     * @return void 반환값 없음
      */
     public function test_logs_for_a_cancel_merge_its_linked_refund_entries(): void
     {

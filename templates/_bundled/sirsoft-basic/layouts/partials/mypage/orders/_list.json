@@ -706,7 +706,23 @@
                                                             "props": {
                                                                 "className": "text-xs text-gray-400 dark:text-gray-500 mt-0.5"
                                                             },
-                                                            "text": "{{item.additional_options_summary?.label}}{{(item.additional_options_summary?.extra_count ?? 0) > 0 ? ' 외 ' + item.additional_options_summary.extra_count + '건' : ''}}"
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "text": "{{item.additional_options_summary?.label}}"
+                                                                },
+                                                                {
+                                                                    "comment": "「외 N건」 은 번역 키로 — 한국어를 이어 붙이면 다른 언어 화면에 한국어가 섞인다.",
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "if": "{{(item.additional_options_summary?.extra_count ?? 0) > 0}}",
+                                                                    "props": {
+                                                                        "className": "ml-1"
+                                                                    },
+                                                                    "text": "$t:mypage.orders.additional_options_more|count={{item.additional_options_summary?.extra_count ?? 0}}"
+                                                                }
+                                                            ]
                                                         },
                                                         {
                                                             "type": "basic",

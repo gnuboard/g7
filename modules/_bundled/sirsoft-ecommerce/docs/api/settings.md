@@ -1305,7 +1305,9 @@ HTTP/1.1 200
 - 파라미터 표의 `필수` 열이 "아니오" 인 것은 *그 섹션을 저장하지 않을 때 생략 가능* 하다는 뜻이지, 보낸 섹션 안에서 개별 키를 생략해도 보존된다는 뜻이 아닙니다
 - DB 관리 대상(`shipping.carriers`·`shipping.types` 와 클레임 사유 카탈로그 3종)은 이 규칙 밖입니다 — 키 자체를 보내지 않으면 동기화가 일어나지 않아 기존 목록이 유지됩니다. 다만 **빈 배열을 보내면 "전부 삭제" 요청**으로 해석되므로, 조회 응답에 그 키가 없다고 해서 `[]` 로 채워 보내면 안 됩니다
 
-**취소 정책 별칭의 예외** `order_settings.cancellable_statuses` 또는 `claim.instant_cancel_statuses`를 저장하면 두 카테고리의 다른 저장값을 보존하면서 두 키를 함께 갱신합니다. 별칭 없는 일반 섹션 저장은 위의 교체 규칙을 따릅니다. 내부 개별 설정 메서드(`updateSetting`, 현재 HTTP 라우트 없음)도 같은 값 검증·숫자 정규화를 거치며 DB 카탈로그는 전체 저장의 동기화와 사용 중 삭제 검사를 공유합니다.
+**취소 정책 별칭의 예외** `order_settings.cancellable_statuses` 또는 `claim.instant_cancel_statuses`를 저장하면 두 카테고리의 다른 저장값을 보존하면서 두 키를 함께 갱신합니다. 별칭 없는 일반 섹션 저장은 위의 교체 규칙을 따릅니다. 내부 개별 설정 메서드(`updateSetting`, 현재 HTTP 라우트 없음)도 같은 값 검증·숫자 정규화를 거치며 DB 카탈로그는 전체 저장의 동기화와 사용 중 삭제 검사를 공유합니다. 개별 설정 키가 저장 규칙이 다스리지 않는 키(예: `claim.not_a_real_key`)이면 원시값을 저장하지 않고 `key` 오류로 **422** 를 돌려줍니다. `claim.auto_approve_refund_payment_methods` 를 개별 저장해도 전체 저장과 같은 운영자 결정 이력이 남습니다.
+
+**서버 전용 결정 이력** `claim.auto_approve_refund_payment_methods_decided`(환불 자동 승인 결제수단의 운영자 결정 이력)는 서버가 `claim.auto_approve_refund_payment_methods` 저장 직전에 채우는 값입니다. 요청에 값을 실으면 **422**(`prohibited`)이고, 개별 설정 키로 지정해도 **422** 입니다. 관리자 조회 응답(`GET /admin/settings`, `GET /admin/settings/claim`)에는 이 키가 실리지 않으므로, 조회한 claim 섹션을 그대로 되보내도 저장됩니다.
 
 **숫자 필드 정규화** 검증 규칙에 `integer` / `numeric` 이 선언된 모든 필드는 검증 직전에 숫자 타입으로 캐스트되어 저장됩니다(중첩 배열의 와일드카드 경로 포함 — 예: `mileage.currency_rules.*.use_unit`). HTML `number` 입력의 값은 문자열(`"5"`)로 전송되고 Laravel 의 `integer` 규칙은 숫자 문자열을 통과시키되 캐스트하지 않으므로, 정규화가 없으면 문자열이 그대로 설정 파일에 영속되어 이후 날짜/수치 연산에서 타입 오류를 유발합니다.
 

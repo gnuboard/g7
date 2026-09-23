@@ -5,6 +5,7 @@ namespace Plugins\Sirsoft\Tosspayments\Controllers;
 use App\Extension\HookManager;
 use App\Services\PluginSettingsService;
 use Carbon\Carbon;
+use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -17,6 +18,7 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ClaimPaymentRepositoryInter
 use Modules\Sirsoft\Ecommerce\Services\OrderProcessingService;
 use Modules\Sirsoft\Ecommerce\Support\ClaimPaymentCallback;
 use Modules\Sirsoft\Ecommerce\Support\ClaimPaymentRedirect;
+use Plugins\Sirsoft\Tosspayments\Concerns\SerializesPaymentCallbacks;
 use Plugins\Sirsoft\Tosspayments\Http\Requests\FailCallbackRequest;
 use Plugins\Sirsoft\Tosspayments\Http\Requests\SuccessCallbackRequest;
 use Plugins\Sirsoft\Tosspayments\Services\TossPaymentsApiService;
@@ -30,6 +32,8 @@ use Plugins\Sirsoft\Tosspayments\Support\ShopRedirectUrl;
  */
 class PaymentCallbackController
 {
+    use SerializesPaymentCallbacks;
+
     private const PLUGIN_IDENTIFIER = 'sirsoft-tosspayments';
 
     /**
@@ -62,10 +66,17 @@ class PaymentCallbackController
         '34' => 'Sh수협',
     ];
 
+    /**
+     * @param  OrderProcessingService  $orderService  주문 결제 처리 서비스
+     * @param  PluginSettingsService  $pluginSettingsService  플러그인 설정 조회 서비스
+     * @param  TossPaymentsApiService  $apiService  토스페이먼츠 API 서비스
+     * @param  ClaimPaymentRepositoryInterface  $claimPaymentRepository  클레임 결제 Repository
+     */
     public function __construct(
         private OrderProcessingService $orderService,
         private PluginSettingsService $pluginSettingsService,
         private TossPaymentsApiService $apiService,
+        private ClaimPaymentRepositoryInterface $claimPaymentRepository,
     ) {}
 
     /**
@@ -194,7 +205,7 @@ class PaymentCallbackController
         // 클레임 추가결제(CP 채번)도 같은 원칙이다 — 결제 건의 상태를 바꾸지 않고 신청서 상세로
         // 돌려보내기만 한다. 결제 건은 결제 대기로 남아 신청서 상세에서 재시도한다.
         if ($orderId && ClaimPayment::isClaimPaymentNumber($orderId)) {
-            $payment = $this->claimPaymentRepository()->findByPaymentNumber($orderId);
+            $payment = $this->claimPaymentRepository->findByPaymentNumber($orderId);
 
             if ($payment) {
                 // 사용자가 결제창을 스스로 닫은 중단은 실패가 아니다 — 오류 안내 없이 복귀.
@@ -226,7 +237,7 @@ class PaymentCallbackController
      */
     private function handleClaimPaymentSuccess(string $paymentNumber, array $callback): RedirectResponse
     {
-        $payment = $this->claimPaymentRepository()->findByPaymentNumber($paymentNumber);
+        $payment = $this->claimPaymentRepository->findByPaymentNumber($paymentNumber);
 
         if (! $payment) {
             Log::error('TossPayments: claim payment not found', ['orderId' => $paymentNumber]);
@@ -234,46 +245,50 @@ class PaymentCallbackController
             return redirect($this->resolveFailUrl(['error' => 'claim_payment_not_found', 'orderId' => $paymentNumber]));
         }
 
-        // 승인 금액 불일치는 토스 Confirm 이 확정된 뒤의 거절이다 — 취소로 보상하지 않으면
-        // 화면은 실패인데 PG 는 청구된 채 남는다.
-        return ClaimPaymentCallback::approveAndRedirect(
-            $payment,
-            $callback,
-            fn () => $this->cancelClaimConfirmation($payment, (string) ($callback['paymentKey'] ?? '')),
-        );
-    }
-
-    /**
-     * 모듈 거절로 실패 처리된 클레임 결제의 토스 승인을 취소합니다. (보상 — 실패해도 흐름은 지속)
-     *
-     * @param  ClaimPayment  $payment  결제 건
-     * @param  string  $paymentKey  토스 결제 키
-     */
-    private function cancelClaimConfirmation(ClaimPayment $payment, string $paymentKey): void
-    {
-        if ($paymentKey === '') {
-            return;
-        }
+        // 주문 경로와 형제 플러그인(kginicis·nhnkcp)의 CP 분기처럼 결제번호 단위로 직렬화한다 —
+        // 같은 콜백이 겹쳐 들어오면(새로고침·뒤로가기 재전송) 두 요청이 모두 결제 대기를 보고 각자
+        // Confirm 을 부른다. 뒤 요청은 토스의 중복 승인 거절을 받아 이미 결제완료된 행에 실패 코드를
+        // 남긴다. 락을 잡으면 뒤 요청은 앞 요청이 끝난 뒤 모듈에서 「이미 결제완료」로 끝난다.
+        //
+        // 락 획득은 try **안**이다 — 대기 시간을 넘긴 `LockTimeoutException` 을 밖으로 흘리면 콜백이
+        // 500 으로 끝나 구매자는 결제 결과를 볼 수 없다.
+        $lock = null;
 
         try {
-            $this->apiService->cancelPayment($paymentKey, __('sirsoft-tosspayments::messages.claim.amount_mismatch_cancel_reason'));
-        } catch (\Exception $e) {
-            Log::error('TossPayments: claim payment compensation cancel failed', [
-                'payment_number' => $payment->payment_number,
-                'payment_key' => $paymentKey,
-                'error' => $e->getMessage(),
-            ]);
+            $lock = $this->acquireOrderCallbackLock('success', $paymentNumber);
+
+            // 승인 뒤 거절의 보상(토스 취소)은 보상 클로저를 넘기지 않고 모듈의
+            // `claim_payment.void_approval` 필터에 맡긴다 — 이 플러그인의 승인 리스너가 그 필터를
+            // 구현하므로, 서버 콜백 경로와 클라이언트 승인 API 경로의 보상이 한 구현이 된다.
+            return ClaimPaymentCallback::approveAndRedirect($payment, $callback);
+        } catch (LockTimeoutException) {
+            return redirect($this->redirectBusyClaimCallback($payment));
+        } finally {
+            $this->releaseOrderCallbackLock($lock);
         }
     }
 
     /**
-     * 클레임 결제 Repository 를 가져옵니다.
+     * 콜백 락을 얻지 못한 클레임 결제의 복귀 주소를 정합니다.
      *
-     * @return ClaimPaymentRepositoryInterface 클레임 결제 Repository
+     * 락을 쥔 앞 요청이 이미 결제를 확정했으면 성공으로, 아니면 재시도 안내(`callback_locked`)로
+     * 보낸다. 결제 건 상태만 읽고 아무것도 바꾸지 않는다.
+     *
+     * @param  ClaimPayment  $payment  결제 건
+     * @return string 리다이렉트 URL
      */
-    private function claimPaymentRepository(): ClaimPaymentRepositoryInterface
+    private function redirectBusyClaimCallback(ClaimPayment $payment): string
     {
-        return app(ClaimPaymentRepositoryInterface::class);
+        $latest = $this->claimPaymentRepository->findByPaymentNumber($payment->payment_number) ?? $payment;
+
+        Log::warning('TossPayments: claim payment callback skipped because the callback lock is busy', [
+            'payment_number' => $payment->payment_number,
+            'payment_status' => $latest->payment_status?->value,
+        ]);
+
+        return $latest->isPaid()
+            ? ClaimPaymentRedirect::success($latest)
+            : ClaimPaymentRedirect::fail($latest, 'callback_locked');
     }
 
     /**
@@ -287,6 +302,7 @@ class PaymentCallbackController
      * @param  array<string, mixed>  $pgResponse  토스 confirm 응답
      * @param  string  $paymentKey  토스 결제 키
      * @param  Request  $request  HTTP 요청 (디바이스 판별용)
+     * @return void 반환값 없음
      */
     private function handleVirtualAccountIssued(Order $order, array $pgResponse, string $paymentKey, Request $request): void
     {
@@ -384,11 +400,4 @@ class PaymentCallbackController
 
         return $baseUrl.$separator.$query;
     }
-
-    /**
-     * 결제 디바이스 판별 (User-Agent 기반)
-     *
-     * @param  Request  $request  HTTP 요청
-     * @return string 디바이스 유형 (pc/mobile)
-     */
 }

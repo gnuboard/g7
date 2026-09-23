@@ -2,7 +2,6 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 /**
@@ -19,21 +18,26 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // 부분 실패 뒤 재실행이나 이미 만들어진 설치본에서 "Base table already exists" 로 멈추지 않게 한다.
+        if (Schema::hasTable('ecommerce_order_exchanges')) {
+            return;
+        }
+
         Schema::create('ecommerce_order_exchanges', function (Blueprint $table) {
             $table->id()->comment('교환 ID');
             $table->foreignId('order_id')->comment('주문 FK')
                 ->constrained('ecommerce_orders')->cascadeOnDelete();
             $table->string('exchange_number', 50)->unique()->comment('고유 교환번호 (SequenceType::EXCHANGE, 접두사 EX)');
-            $table->string('exchange_status', 30)->comment('교환 상태 (ExchangeStatusEnum 14종: requested ~ withdrawn)');
+            $table->string('exchange_status', 30)->comment('교환 상태 (ExchangeStatusEnum — requested: 교환신청, payment_pending: 교환결제대기, paid: 교환결제완료, approved: 교환승인, on_hold: 교환보류, rejected: 교환반려, collection_ready: 교환회수준비중, collecting: 교환회수중, collected: 교환회수도착, redelivery_ready: 교환발송준비중, redelivering: 교환발송중, redelivered: 교환발송도착, completed: 교환완료, withdrawn: 교환철회)');
 
             // 사유 / 귀책
             $table->string('reason_code', 50)->comment('교환 사유 코드 (ecommerce_claim_reasons.code, type=exchange 참조 — 폭은 카탈로그 code 와 같아야 한다)');
             $table->text('reason_detail')->nullable()->comment('상세 사유 (기타 선택 시)');
-            $table->string('fault_type', 20)->comment('귀책 구분 스냅샷 (ClaimReasonFaultTypeEnum: customer, seller, carrier)');
+            $table->string('fault_type', 20)->comment('귀책 구분 스냅샷 (ClaimReasonFaultTypeEnum — customer: 고객 귀책, seller: 판매자 귀책, carrier: 배송사 귀책)');
 
             // 청구 / 배송비
-            $table->string('charge_method', 30)->nullable()->comment('청구 방식 (ClaimChargeMethodEnum, 청구액 0원이면 NULL)');
-            $table->string('shipping_fee_mode', 30)->comment('배송비 산정 모드 스냅샷 (ClaimShippingFeeModeEnum: fixed, original_policy)');
+            $table->string('charge_method', 30)->nullable()->comment('청구 방식 (ClaimChargeMethodEnum — pay_on_request: 신청 시점 결제, pay_on_approval: 승인 시점 결제, deduct_from_refund: 환불액에서 차감 / 청구액 0원이면 NULL)');
+            $table->string('shipping_fee_mode', 30)->comment('배송비 산정 모드 스냅샷 (ClaimShippingFeeModeEnum — fixed: 고정액, original_policy: 원 배송정책 재계산)');
             $table->decimal('claim_shipping_fee', 12, 2)->default(0)->comment('클레임 배송비 (교환은 왕복, 판매자/배송사 귀책이면 0)');
             $table->text('mc_claim_shipping_fee')->nullable()->comment('다통화 클레임 배송비 (통화코드 → 금액)');
             $table->mediumText('shipping_fee_snapshot')->nullable()->comment('배송비 산정 근거 스냅샷 JSON (정책/구간/도서산간/안분)');
@@ -61,7 +65,7 @@ return new class extends Migration
             $table->timestamp('redelivered_at')->nullable()->comment('재발송 도착 시각');
 
             // 처리 / 감사
-            $table->boolean('is_stock_restored')->default(false)->comment('원 옵션 재고 복구 완료 여부 (회수 도착 시 관리자 선택)');
+            $table->boolean('is_stock_restored')->default(false)->comment('원 옵션 재고 복구 완료 여부 (1: 복구함, 0: 복구 안 함 — 회수 도착 시 관리자 선택)');
             $table->foreignId('requested_by')->nullable()->comment('신청자 (비회원이면 NULL)')
                 ->constrained('users')->nullOnDelete();
             $table->foreignId('processed_by')->nullable()->comment('처리 관리자')
@@ -87,11 +91,9 @@ return new class extends Migration
                 ->references('id')->on('ecommerce_shipping_carriers')->nullOnDelete();
             $table->foreign('redelivery_carrier_id', 'fk_ex_redelivery_carrier_id')
                 ->references('id')->on('ecommerce_shipping_carriers')->nullOnDelete();
-        });
 
-        if (DB::getDriverName() === 'mysql') {
-            DB::statement('ALTER TABLE `'.DB::getTablePrefix()."ecommerce_order_exchanges` COMMENT '교환 신청서'");
-        }
+            $table->comment('교환 신청서');
+        });
     }
 
     /**

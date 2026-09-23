@@ -32,14 +32,15 @@
       <icon name="circle-info" class="text-2xl text-gray-300 dark:text-gray-600"/>
       <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">$t:claim.apply.no_claimable_items</p>
     </div>
-    <!-- 상품 목록 -->
-    <div data-each="claimItem, claimIdx in {{_local.claimItems ?? []}}" class="divide-y divide-gray-100 dark:divide-gray-700">
+    <!-- 상품 목록 — 구분선은 반복 노드의 **부모**가 긋는다. 반복 노드는 자기 자신이 복제되므로 그 노드의 divide-y 는 상품 사이에 걸리지 않는다. -->
+    <div class="divide-y divide-gray-100 dark:divide-gray-700">
+    <div data-each="claimItem, claimIdx in {{_local.claimItems ?? []}}">
       <div class="py-4">
         <div class="flex gap-4">
           <responsive on="portable" class="flex gap-3"/>
           <div class="flex items-start pt-5 flex-shrink-0">
             <!-- 다른 분기의 상품은 지금 고를 수 없다 — 고르면 서버가 신청 전체를 거절하므로, 사유까지 다 채운 뒤 거절받지 않게 여기서 잠근다. 이미 고른 상품은 언제나 해제할 수 있어야 하므로(잠그면 잘못 고른 조합에서 빠져나올 수 없다) 선택 상태는 잠금 판정에서 제외한다. 핸들러도 같은 규칙을 갖는다 — 잠금은 표시이고 판정은 핸들러가 한다. -->
-            <input type="checkbox" checked="{{claimItem.selected === true}}" disabled="{{_local.claimEditMode === true || (_local.claimType === 'refund' &amp;&amp; claimItem.selected !== true &amp;&amp; !!_local.claimResolvedBranch &amp;&amp; _local.claimResolvedBranch !== claimItem.refund_branch)}}" class="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+            <input type="checkbox" id="claim_item_check_{{claimItem.order_option_id}}" checked="{{claimItem.selected === true}}" disabled="{{_local.claimEditMode === true || (_local.claimType === 'refund' &amp;&amp; claimItem.selected !== true &amp;&amp; !!_local.claimResolvedBranch &amp;&amp; _local.claimResolvedBranch !== claimItem.refund_branch)}}" class="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
               <on type="change">
                 <action handler="sirsoft-ecommerce.toggleClaimItem" index="{{claimIdx}}" claimApiBase="{{_local.claimApiBase ?? ''}}" isGuest="{{_local.isGuest === true}}"/>
               </on>
@@ -50,7 +51,8 @@
             <img src="{{claimItem.thumbnail_url ?? ''}}" alt="{{claimItem.product_name ?? ''}}" class="w-full h-full object-cover"/>
           </div>
           <div class="flex-1 min-w-0">
-            <p class="font-medium text-gray-900 dark:text-white truncate">{{claimItem.product_name ?? ''}}</p>
+            <!-- 상품명이 그 줄 체크박스의 라벨이다(id/for) — 이름을 눌러도 고르고 풀 수 있고, 보조기기는 체크박스를 상품명으로 읽는다. -->
+            <label for="claim_item_check_{{claimItem.order_option_id}}" class="block font-medium text-gray-900 dark:text-white truncate cursor-pointer">{{claimItem.product_name ?? ''}}</label>
             <p data-if="{{(claimItem.product_option_name ?? '') !== ''}}" class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 truncate">{{claimItem.product_option_name ?? ''}}</p>
             <!-- 이 상품이 어느 분기인지 — 배송 전이면 즉시 취소, 배송준비 이후면 환불 신청이다. 두 분기가 섞인 주문에서 무엇을 나눠 신청해야 하는지 이 배지가 알려 준다. 분기는 서버가 상품 상태로 판정해 내려준 값(refund_branch)이며 화면이 상태 코드로 재현하지 않는다 — 운영자가 신청 가능 상태 설정을 바꾸면 판정이 갈린다. -->
             <span data-if="{{_local.claimType === 'refund' &amp;&amp; !!claimItem.refund_branch}}" class="{{(claimItem.refund_branch === 'auto' &amp;&amp; (_local.claimableSnapshot ?? claimable?.data)?.refund_auto_approved !== false) ? 'inline-block mt-1 px-2 py-0.5 rounded text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' : 'inline-block mt-1 px-2 py-0.5 rounded text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'}}">{{(claimItem.refund_branch === 'auto' &amp;&amp; (_local.claimableSnapshot ?? claimable?.data)?.refund_auto_approved !== false) ? $t('claim.apply.refund_branch_cancel_badge') : $t('claim.apply.refund_branch_refund_badge')}}</span>
@@ -100,6 +102,7 @@
           </div>
         </div>
       </div>
+    </div>
     </div>
   </div>
 </partial>

@@ -35,7 +35,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  * **그 통화는 함께 넘어가지 않는다** — 환불에는 담을 칸이 없다. 이 이관 지점에서
  * 금액이 결제 통화 단위로 새면 고객이 1,000분의 1 만 돌려받는다.
  *
- * 조합은 교환 축과 같은 네 가지를 덮는다(PO 지시 2026-09-15 — 「KRW 에서 주행했던 시나리오와
+ * 조합은 교환 축과 같은 네 가지를 덮는다(요구사항 2026-09-15 — 「KRW 에서 주행했던 시나리오와
  * 동일한 수준으로 다 커버」):
  *   ⓐ 기본 KRW · 결제 KRW    — 대조군. 다통화 단언이 「통화가 달라서」가 아니라
  *                              「계약이 지켜져서」 통과함을 보인다.
@@ -59,6 +59,13 @@ class ReturnMultiCurrencyTest extends ModuleTestCase
     use BuildsClaimAdjustmentOrders;
     use BuildsClaimFlowOrders;
 
+    /**
+     * 통화 설정 캐시를 비운 뒤 기본 KRW + 보조 통화(USD·JPY) 설정과 클레임 사유를 준비합니다.
+     *
+     * 이전 통화 설정이 캐시에 남으면 바꾼 설정이 반영되지 않아, 아무것도 바뀌지 않은 채 테스트가 통과한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -69,6 +76,11 @@ class ReturnMultiCurrencyTest extends ModuleTestCase
         $this->seedClaimReasons();
     }
 
+    /**
+     * 테스트 통화 설정과 통화 설정 캐시를 지워 다음 테스트에 새지 않게 합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         $this->clearTestCurrencySettings();
@@ -124,7 +136,7 @@ class ReturnMultiCurrencyTest extends ModuleTestCase
      * 결제 통화가 USD 인 주문에 반품을 접수합니다. (조합 ⓒ)
      *
      * @param  ClaimChargeMethodEnum  $chargeMethod  회수 배송비 청구 방식
-     * @return array{0: Order, 1: OrderReturn}
+     * @return array{0: Order, 1: OrderReturn} 새로 읽은 주문과 접수된 반품 신청서
      */
     private function foreignReturn(
         ClaimChargeMethodEnum $chargeMethod = ClaimChargeMethodEnum::DEDUCT_FROM_REFUND
@@ -153,6 +165,8 @@ class ReturnMultiCurrencyTest extends ModuleTestCase
      * @scenario base_currency=krw, payment_currency=cross
      *
      * @effects return_snapshot_records_the_base_currency_not_the_payment_currency
+     *
+     * @return void 반환값 없음
      */
     public function test_return_snapshot_records_the_base_currency(): void
     {
@@ -182,6 +196,8 @@ class ReturnMultiCurrencyTest extends ModuleTestCase
      * @scenario base_currency=krw, payment_currency=cross
      *
      * @effects return_amounts_are_computed_in_the_base_currency
+     *
+     * @return void 반환값 없음
      */
     public function test_return_amounts_are_computed_in_the_base_currency(): void
     {
@@ -216,6 +232,8 @@ class ReturnMultiCurrencyTest extends ModuleTestCase
      * @scenario base_currency=krw, payment_currency=cross
      *
      * @effects return_secondary_currency_map_matches_the_base_amount
+     *
+     * @return void 반환값 없음
      */
     public function test_secondary_currency_map_is_derived_from_the_base_amount(): void
     {
@@ -252,6 +270,8 @@ class ReturnMultiCurrencyTest extends ModuleTestCase
      * @scenario base_currency=krw, payment_currency=cross
      *
      * @effects return_response_secondary_currency_is_formatted
+     *
+     * @return void 반환값 없음
      */
     public function test_resource_wraps_multi_currency_values_with_formatted_strings(): void
     {
@@ -307,6 +327,8 @@ class ReturnMultiCurrencyTest extends ModuleTestCase
      * @scenario base_currency=krw, payment_currency=cross
      *
      * @effects return_transitions_complete_under_cross_currency_payment
+     *
+     * @return void 반환값 없음
      */
     public function test_return_transitions_complete_under_cross_currency_payment(): void
     {
@@ -344,6 +366,8 @@ class ReturnMultiCurrencyTest extends ModuleTestCase
      * @scenario base_currency=krw, payment_currency=cross
      *
      * @effects return_sourced_refund_is_computed_in_the_base_currency
+     *
+     * @return void 반환값 없음
      */
     public function test_return_sourced_refund_is_computed_in_the_base_currency(): void
     {
@@ -404,6 +428,8 @@ class ReturnMultiCurrencyTest extends ModuleTestCase
      * @scenario base_currency=non_krw, payment_currency=cross
      *
      * @effects return_amounts_hold_when_the_store_base_currency_is_not_krw
+     *
+     * @return void 반환값 없음
      */
     public function test_return_holds_when_the_store_base_currency_is_not_krw(): void
     {
@@ -463,6 +489,8 @@ class ReturnMultiCurrencyTest extends ModuleTestCase
      * @scenario base_currency=non_krw, payment_currency=cross
      *
      * @effects return_frozen_amounts_survive_a_store_currency_change
+     *
+     * @return void 반환값 없음
      */
     public function test_return_frozen_amounts_survive_a_store_currency_change(): void
     {
@@ -511,6 +539,8 @@ class ReturnMultiCurrencyTest extends ModuleTestCase
      * @scenario base_currency=krw, payment_currency=same_as_base
      *
      * @effects return_amounts_are_computed_in_the_base_currency
+     *
+     * @return void 반환값 없음
      */
     public function test_single_currency_return_holds_the_same_contract(): void
     {

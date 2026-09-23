@@ -34,10 +34,10 @@
       },
       "bulk_no_selection": "変更する商品を選択してください。",
       "bulk_no_status_selected": "変更する状態を選択してください。",
-      "bulk_not_supported": "この種類は商品単位の状態変更に対応していません。",
       "bulk_success": "申請商品の状態変更を処理しました。",
       "bulk_error": "申請商品の状態変更に失敗しました。",
       "no_common_transition": "選択した商品を一緒に処理できる状態がありません。ステータスが同じ商品を選択してください。",
+      "cancel_not_transitionable": "キャンセル申請書には商品ごとに変更できる状態がありません。キャンセルは受付と同時に確定します。",
       "quantity_confirm_title": "処理数量確認",
       "quantity_confirm_description": "選択した商品を{{status}}ステータスで処理します。一部の数量のみ処理する場合は、数量を減らしてください。",
       "quantity_not_splittable": "再発送商品としてすでに作成された交換商品は数量を分割できません。全数量で処理されます。",
@@ -75,6 +75,12 @@
       "no_detail": "詳細な理由は入力されていません。",
       "images_label": "添付画像",
       "images_clear": "添付をすべて削除",
+      "images_clear_confirm": {
+        "title": "添付をすべて削除",
+        "message": "この申請書の添付{{count}}枚をすべて削除します。",
+        "warning": "お客様がアップロードした証拠写真も削除され、元に戻せません。",
+        "confirm": "すべて削除"
+      },
       "image_upload_success": "添付をアップロードしました。",
       "image_upload_error": "添付のアップロードに失敗しました。",
       "image_clear_success": "添付を整理しました。",
@@ -121,7 +127,8 @@
       "changes": {
         "field": "項目",
         "before": "変更前",
-        "after": "変更後"
+        "after": "変更後",
+        "model_id": "ID: {{id}}"
       },
       "actor_action": {
         "view_member": "会員情報を見る"
@@ -199,7 +206,7 @@
       "refund_bank_holder": "口座名義人",
       "refund_bank_input_title": "返金を受け取る口座",
       "refund_bank_input_hint": "この返金は、運営者が口座に送金することで完了します。申請書に口座がない場合は、ここで入力できます。入力した値は申請書にも記録されます。",
-      "refund_bank_code_placeholder": "銀行コード（例：004）",
+      "refund_bank_select": "銀行を選択",
       "refund_bank_account_placeholder": "口座番号（ハイフンなし）",
       "refund_bank_holder_placeholder": "預金者名",
       "force_without_bank": "口座なしで完了として記録します",

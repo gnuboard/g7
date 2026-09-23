@@ -114,17 +114,6 @@ class ClaimImageRepository implements ClaimImageRepositoryInterface
     /**
      * {@inheritDoc}
      */
-    public function deleteByClaimable(string $claimableType, int $claimableId): int
-    {
-        return $this->model->newQuery()
-            ->where('claimable_type', $claimableType)
-            ->where('claimable_id', $claimableId)
-            ->delete();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
     public function listPendingByOrder(int $orderId): Collection
     {
         return $this->model->newQuery()

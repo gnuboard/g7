@@ -28,6 +28,7 @@ use Modules\Sirsoft\Ecommerce\Models\OrderRefund;
 use Modules\Sirsoft\Ecommerce\Models\OrderReturn;
 use Modules\Sirsoft\Ecommerce\Services\UserClaimService;
 use Modules\Sirsoft\Ecommerce\Support\ClaimProgressSteps;
+use Modules\Sirsoft\Ecommerce\Support\RefundBankMask;
 
 /**
  * 클레임 신청 액션 공용 처리 (회원 · 비회원 컨트롤러 공유)
@@ -80,7 +81,12 @@ trait HandlesClaimActions
                 'base_currency' => $payload['base_currency'],
                 'resolved_type' => $payload['resolved_type'],
                 'options' => array_map(fn (array $row) => [
-                    'option' => (new OrderOptionResource($row['option']))->withOrderCurrency($currency)->withCurrencySnapshot($snapshot)->toArray(request()),
+                    // 점유 수량은 서비스가 이미 구했다 — 주입하지 않으면 옵션 리소스가 행마다 다시 구한다(3쿼리).
+                    'option' => (new OrderOptionResource($row['option']))
+                        ->withOrderCurrency($currency)
+                        ->withCurrencySnapshot($snapshot)
+                        ->withClaimLockedQuantity((int) $row['locked_quantity'])
+                        ->toArray(request()),
                     'available_quantity' => $row['available_quantity'],
                     'locked_quantity' => $row['locked_quantity'],
                     'claimable_types' => $row['claimable_types'],
@@ -93,7 +99,11 @@ trait HandlesClaimActions
                 'settings' => $payload['settings'],
                 // 접수 뒤 자동으로 끝나는지(P16·P17) — 분기와 다른 축이라 따로 싣는다.
                 'refund_auto_approved' => $payload['refund_auto_approved'],
-                'refund_account' => $payload['refund_account'],
+                // 등록 계좌 프리필은 **가린 모양**으로 싣는다 — 이 응답은 회원 본인뿐 아니라 비회원 조회
+                // 토큰을 가진 누구에게나 나가므로, 원문을 실으면 토큰 하나로 계좌번호·예금주 실명이
+                // 새어 나간다. 구매자가 손대지 않고 제출하면 가린 값이 그대로 돌아오고, 서버가 그 값이
+                // 등록 계좌를 가린 모양과 같을 때만 원문으로 되돌린다(`RefundBankMask::restoreRegistered()`).
+                'refund_account' => $this->maskedRefundAccount($payload['refund_account']),
                 'pending_images' => ClaimImageResource::collection($payload['pending_images'])->toArray(request()),
             ]);
         } catch (Exception $e) {
@@ -209,14 +219,10 @@ trait HandlesClaimActions
         } catch (OrderClaimException $e) {
             return $this->claimDomainError($e);
         } catch (OrderCancellationException $e) {
-            // 자동 전이 중 PG 환불 거절 — D15 에 따라 접수까지 전체 롤백된 상태다.
-            // 사유를 실어야 고객·운영자가 무엇 때문에 막혔는지 안다(P13).
-            return ResponseHelper::moduleError(
-                'sirsoft-ecommerce',
-                'exceptions.order_cancel_failed',
-                422,
-                ['detail' => $e->getMessage()],
-            );
+            // 자동 전이 중 취소·환불 거절 — D15 에 따라 접수까지 전체 롤백된 상태다.
+            // 사유 키가 있으면 그 사유를 안내하고(P13), 없으면(PG 거절) 원문을 싣지 않는다 —
+            // 이 면은 회원·비회원 공개 면이라 PG 가 돌려준 원문(가맹점 설정·내부 코드)을 내보내지 않는다.
+            return $this->publicCancellationError($e, 'refund-request');
         } catch (Exception $e) {
             return $this->claimServerError('refund-request', $e);
         }
@@ -420,6 +426,19 @@ trait HandlesClaimActions
         }
 
         return $payload;
+    }
+
+    /**
+     * 환불계좌 요건의 등록 계좌 프리필을 가린 모양으로 바꿉니다.
+     *
+     * @param  array{required: bool, prefill: ?array, banks: array}  $requirement  서비스가 만든 환불계좌 요건
+     * @return array 프리필이 가려진 환불계좌 요건
+     */
+    protected function maskedRefundAccount(array $requirement): array
+    {
+        $requirement['prefill'] = RefundBankMask::prefill($requirement['prefill'] ?? null);
+
+        return $requirement;
     }
 
     /**

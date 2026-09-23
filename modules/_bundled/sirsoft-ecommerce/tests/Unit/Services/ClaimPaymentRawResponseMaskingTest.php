@@ -29,6 +29,11 @@ class ClaimPaymentRawResponseMaskingTest extends ModuleTestCase
 
     protected OrderReturnService $returnService;
 
+    /**
+     * 테스트 전제(통화·사유·서비스 등)를 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -38,6 +43,11 @@ class ClaimPaymentRawResponseMaskingTest extends ModuleTestCase
         $this->returnService = app(OrderReturnService::class);
     }
 
+    /**
+     * 테스트가 바꾼 설정·훅을 정리합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         $this->clearTestCurrencySettings();
@@ -48,6 +58,8 @@ class ClaimPaymentRawResponseMaskingTest extends ModuleTestCase
 
     /**
      * 배송비가 청구되는 반품을 접수합니다.
+     *
+     * @return OrderReturn 접수된 반품 신청서
      */
     private function requestedReturn(): OrderReturn
     {
@@ -65,13 +77,16 @@ class ClaimPaymentRawResponseMaskingTest extends ModuleTestCase
      * 민감 키를 담은 원응답을 돌려주는 승인 훅을 세웁니다.
      *
      * @param  bool  $success  승인 성공 여부
+     * @return void 반환값 없음
      */
     private function stubApproveHook(bool $success): void
     {
-        HookManager::addFilter('sirsoft-ecommerce.claim_payment.approve', fn (array $default) => array_merge($default, [
+        HookManager::addFilter('sirsoft-ecommerce.claim_payment.approve', fn (array $default, $payment) => array_merge($default, [
             'handled' => true,
             'success' => $success,
             'transaction_id' => $success ? 'TXN-MASK' : null,
+            // 승인 금액을 돌려주지 않으면 서버가 대조 불가로 거절한다(#599 validate P2 #11).
+            'paid_amount' => $success ? $this->service->resolvePaymentCharge($payment)['minor_unit_amount'] : null,
             'error_code' => $success ? null : 'PG_DECLINED',
             'error_message' => $success ? null : 'declined',
             'raw_response' => [
@@ -87,6 +102,7 @@ class ClaimPaymentRawResponseMaskingTest extends ModuleTestCase
      * 저장된 원응답에서 민감 키가 마스킹되고 대사용 값은 남는지 단언합니다.
      *
      * @param  array<mixed, mixed>|null  $raw  저장된 원응답
+     * @return void 반환값 없음
      */
     private function assertMasked(?array $raw): void
     {
@@ -99,6 +115,12 @@ class ClaimPaymentRawResponseMaskingTest extends ModuleTestCase
 
     /**
      * 승인 성공 시 저장되는 원응답이 마스킹된다.
+     *
+     * @scenario defect=raw_response_masking
+     *
+     * @effects approved_claim_payment_raw_response_is_masked
+     *
+     * @return void 반환값 없음
      */
     public function test_approved_payment_stores_a_masked_raw_response(): void
     {
@@ -116,6 +138,12 @@ class ClaimPaymentRawResponseMaskingTest extends ModuleTestCase
      * 승인 실패 시 저장되는 원응답도 마스킹된다.
      *
      * 실패 경로는 운영자가 사유를 보려고 가장 자주 여는 자리라 오히려 노출 폭이 넓다.
+     *
+     * @scenario defect=raw_response_masking
+     *
+     * @effects failed_claim_payment_raw_response_is_masked
+     *
+     * @return void 반환값 없음
      */
     public function test_failed_payment_stores_a_masked_raw_response(): void
     {

@@ -23,8 +23,8 @@ use Modules\Sirsoft\Ecommerce\Helpers\DeviceDetector;
 use Modules\Sirsoft\Ecommerce\Models\ClaimPayment;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
+use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ClaimPaymentRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Services\OrderProcessingService;
-use Modules\Sirsoft\Ecommerce\Support\ClaimPaymentCallback;
 use Modules\Sirsoft\Ecommerce\Support\ClaimPaymentRedirect;
 use Plugins\Sirsoft\PayNicepayments\Concerns\HandlesClaimPaymentCallbacks;
 use Plugins\Sirsoft\PayNicepayments\Concerns\IssuesReceiptCookie;
@@ -32,6 +32,7 @@ use Plugins\Sirsoft\PayNicepayments\Concerns\PreventsReplayCallback;
 use Plugins\Sirsoft\PayNicepayments\Concerns\RecordsPaymentWindowClosure;
 use Plugins\Sirsoft\PayNicepayments\Concerns\ResolvesEasyPayDisplay;
 use Plugins\Sirsoft\PayNicepayments\Concerns\SanitizesPgResponse;
+use Plugins\Sirsoft\PayNicepayments\Concerns\SerializesPaymentCallbacks;
 use Plugins\Sirsoft\PayNicepayments\Http\Requests\AuthCallbackRequest;
 use Plugins\Sirsoft\PayNicepayments\Http\Requests\SignDataRequest;
 use Plugins\Sirsoft\PayNicepayments\Http\Requests\VbankNotifyRequest;
@@ -54,6 +55,7 @@ class PaymentCallbackController
     use RecordsPaymentWindowClosure;
     use ResolvesEasyPayDisplay;
     use SanitizesPgResponse;
+    use SerializesPaymentCallbacks;
 
     private const PLUGIN_IDENTIFIER = 'sirsoft-pay_nicepayments';
 
@@ -133,11 +135,19 @@ class PaymentCallbackController
         'RcptTID',
     ];
 
+    /**
+     * @param  OrderProcessingService  $orderService  주문 결제 처리 서비스
+     * @param  PluginSettingsService  $pluginSettingsService  플러그인 설정 조회 서비스
+     * @param  NicePaymentsApiService  $apiService  나이스페이먼츠 API 서비스
+     * @param  CacheInterface  $cache  콜백 재전송 감지용 캐시
+     * @param  ClaimPaymentRepositoryInterface  $claimPaymentRepository  클레임 결제 Repository
+     */
     public function __construct(
         private readonly OrderProcessingService $orderService,
         private readonly PluginSettingsService $pluginSettingsService,
         private readonly NicePaymentsApiService $apiService,
         private readonly CacheInterface $cache,
+        private readonly ClaimPaymentRepositoryInterface $claimPaymentRepository,
     ) {}
 
     /**
@@ -272,11 +282,13 @@ class PaymentCallbackController
                 return redirect($this->resolveFailUrl(['error' => 'claim_payment_not_found', 'orderId' => $moid]));
             }
 
-            return ClaimPaymentCallback::approveAndRedirect(
-                $claimPayment,
-                $validated,
-                fn () => $this->apiService->sendNetCancel($netCancelUrl, $txTid, $authToken, $amt),
-            );
+            // 주문 경로의 행 잠금에 대응하는 직렬화 락을 결제번호(CP) 단위로 건다 — 형제 플러그인
+            // (kginicis·nhnkcp)의 CP 분기와 같은 규약이다. 같은 콜백이 겹쳐 들어오면 두 요청이 모두
+            // 결제 대기를 보고 각자 승인을 부르고, 뒤 요청은 PG 의 중복 거절을 받아 이미 결제완료된
+            // 행에 실패 코드를 남긴다. 락 대기 초과는 500 이 아니라 신청서 상세 복귀로 끝난다.
+            // 승인 뒤 거절의 보상은 보상 클로저 대신 모듈의 `claim_payment.void_approval` 필터(이
+            // 플러그인 승인 리스너의 `voidApproval()`)가 맡는다 — API 승인 경로와 같은 한 구현이다.
+            return $this->approveClaimPaymentSerialized('authCallback', $claimPayment, $validated);
         }
 
         try {
@@ -470,6 +482,17 @@ class PaymentCallbackController
         }
     }
 
+    /**
+     * 주문·결제 행을 잠근 채 가상계좌 발급을 기록합니다. (결제 전 상태에서만)
+     *
+     * @param  string  $moid  주문번호
+     * @param  array  $pgResponse  PG 승인 응답
+     * @param  string  $resultCode  PG 결과 코드
+     * @param  string  $payMethod  PG 결제수단
+     * @param  bool  $isEscrow  에스크로 결제 여부
+     * @param  string  $txTid  PG 임시 거래번호
+     * @return string 처리 결과 코드 (recorded / 무시 사유)
+     */
     private function recordVbankIssueWithLock(
         string $moid,
         array $pgResponse,
@@ -543,6 +566,18 @@ class PaymentCallbackController
         });
     }
 
+    /**
+     * 주문·결제 행을 잠근 채 승인된 결제를 완료 처리합니다. (결제 전 상태에서만)
+     *
+     * @param  string  $moid  주문번호
+     * @param  array  $pgResponse  PG 승인 응답
+     * @param  string  $txTid  PG 임시 거래번호
+     * @param  int  $amt  금액
+     * @param  bool  $isEscrow  에스크로 결제 여부
+     * @param  Request  $request  HTTP 요청
+     * @param  array  $callbackPayload  검증된 콜백 파라미터 (결제 메타 보관용)
+     * @return string 처리 결과 코드 (completed / 무시 사유)
+     */
     private function completeAuthorizedPaymentWithLock(
         string $moid,
         array $pgResponse,
@@ -773,6 +808,13 @@ class PaymentCallbackController
         ]);
     }
 
+    /**
+     * SignData 발급 요청의 속도 제한 키를 만듭니다. (IP + 주문번호)
+     *
+     * @param  Request  $request  HTTP 요청
+     * @param  string  $moid  주문번호
+     * @return string 속도 제한 키
+     */
     private function signDataRateLimitKey(Request $request, string $moid): string
     {
         return 'sirsoft-pay_nicepayments:sign-data:'.sha1($request->ip().'|'.$moid);
@@ -948,6 +990,16 @@ class PaymentCallbackController
         }
     }
 
+    /**
+     * 입금통보가 이 주문에서 발급한 가상계좌 결제 건의 것인지 대조합니다. (TID·계좌·금액)
+     *
+     * @param  Order  $order  대상 주문
+     * @param  OrderPayment  $payment  주문 결제 레코드
+     * @param  array  $validated  검증된 콜백·통보 파라미터
+     * @param  string  $tid  PG 거래번호
+     * @param  int  $amount  통보 금액
+     * @return string|null 거절 사유 코드 (통과 시 null)
+     */
     private function validateVbankNotifyContext(
         Order $order,
         OrderPayment $payment,
@@ -1007,6 +1059,13 @@ class PaymentCallbackController
         return null;
     }
 
+    /**
+     * 나이스 결제창 실패로 취소된 주문을 재결제할 수 있게 결제 대기로 되돌립니다.
+     *
+     * @param  Order  $order  대상 주문
+     * @param  OrderPayment  $payment  결제 레코드
+     * @return bool 되돌렸으면 true
+     */
     private function restoreRetryableNicepayOrder(Order $order, OrderPayment $payment): bool
     {
         if (! $this->isRetryableNicepayFailure($order, $payment)) {
@@ -1067,6 +1126,13 @@ class PaymentCallbackController
         return true;
     }
 
+    /**
+     * 나이스 결제창 단계 실패(승인 흔적 없음)로 취소된 주문인지 판정합니다.
+     *
+     * @param  Order  $order  대상 주문
+     * @param  OrderPayment  $payment  결제 레코드
+     * @return bool 재결제 가능한 실패이면 true
+     */
     private function isRetryableNicepayFailure(Order $order, OrderPayment $payment): bool
     {
         $paymentMeta = $payment->payment_meta ?? [];
@@ -1082,6 +1148,12 @@ class PaymentCallbackController
             && $payment->paid_at === null;
     }
 
+    /**
+     * 결제 성공 리다이렉트 URL 을 만듭니다.
+     *
+     * @param  string  $orderId  주문번호
+     * @return string 절대 URL
+     */
     private function resolveSuccessUrl(string $orderId): string
     {
         $settings = $this->pluginSettingsService->get(self::PLUGIN_IDENTIFIER) ?? [];
@@ -1091,6 +1163,12 @@ class PaymentCallbackController
         return UrlHelper::toAbsolute($url);
     }
 
+    /**
+     * 결제 실패 리다이렉트 URL 을 만듭니다.
+     *
+     * @param  array  $queryParams  리다이렉트에 붙일 쿼리 파라미터
+     * @return string 절대 URL
+     */
     private function resolveFailUrl(array $queryParams = []): string
     {
         $settings = $this->pluginSettingsService->get(self::PLUGIN_IDENTIFIER) ?? [];
@@ -1109,6 +1187,12 @@ class PaymentCallbackController
      * 입금통보 1건의 어드민 표시용 entry 생성.
      *
      * 어드민 패널에서 timeline 형태로 보여줄 핵심 필드만 추려둠. raw 는 전체 보존.
+     *
+     * @param  string  $resultCode  PG 결과 코드
+     * @param  int  $amt  금액
+     * @param  string  $type  통보 종류 (입금·입금취소 등)
+     * @param  array  $validated  검증된 콜백·통보 파라미터
+     * @return array 어드민 표시용 통보 항목
      */
     private function buildVbankNotificationEntry(
         string $resultCode,
@@ -1140,6 +1224,14 @@ class PaymentCallbackController
      *
      * 어드민이 "언제 어떤 통보가 왔는지" 추적할 수 있도록 모든 이벤트를 기록.
      * 주문/결제가 없으면 조용히 skip (위변조 방어 — 우리 DB 에 없는 주문은 무시).
+     *
+     * @param  string  $moid  주문번호
+     * @param  string  $tid  PG 거래번호
+     * @param  int  $amt  금액
+     * @param  string  $resultCode  PG 결과 코드
+     * @param  string  $type  통보 종류 (입금·입금취소 등)
+     * @param  array  $validated  검증된 콜백·통보 파라미터
+     * @return void 반환값 없음
      */
     private function recordVbankNotification(
         string $moid,
@@ -1192,6 +1284,9 @@ class PaymentCallbackController
      * - count: 누적 통보 횟수 (재통보 포함)
      * - last_type / last_result_code: 마지막 통보 종류
      * - deposited_at / cancelled_at: 입금완료·입금취소가 있었던 경우의 시각
+     *
+     * @param  array  $notifications  누적 입금통보 목록
+     * @return array 요약 {count, last_type, last_result_code, deposited_at, cancelled_at}
      */
     private function buildNotificationSummary(array $notifications): array
     {
@@ -1227,6 +1322,12 @@ class PaymentCallbackController
         ];
     }
 
+    /**
+     * 값의 숫자만 남겨 마지막 네 자리를 돌려줍니다. (계좌번호 마스킹 표시용)
+     *
+     * @param  string  $value  원본 값 (계좌번호 등)
+     * @return string|null 마지막 네 자리 (숫자가 없으면 null)
+     */
     private function lastFour(string $value): ?string
     {
         $digits = $this->digitsOnly($value);

@@ -58,9 +58,13 @@ effects:
   - hooks_clear_command_removes_cache_file
   - hooks_clear_is_safe_when_cache_absent
   - removed_core_listener_dropped_from_cache_after_regeneration
+  # 별도 프로세스 복구 수단 (extension:update-autoload)
+  - update_autoload_command_regenerates_hook_cache_after_reregistering_autoload
+  - update_autoload_command_runs_without_required_arguments
 
 test_files:
   - tests/Unit/Extension/HookCacheManagerTest.php
   - tests/Unit/Extension/HookListenerRegistrarTest.php
   - tests/Feature/Console/HooksCacheCommandTest.php
   - tests/Unit/Services/NotificationDefinitionServiceTest.php
+  - tests/Feature/Extension/ExtensionUpdateAutoloadHookCacheTest.php

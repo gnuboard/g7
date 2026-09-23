@@ -532,11 +532,11 @@ class UserClaimApiTest extends ModuleTestCase
     }
 
     /**
-     * 주문 시 등록해 둔 계좌가 있으면 신청 화면이 채울 수 있게 원문을 함께 낸다. (2026-08-31 확정)
+     * 주문 시 등록해 둔 계좌가 있으면 신청 화면이 채울 수 있게 **가린 모양**으로 함께 낸다.
      *
-     * 표시용 응답은 계좌번호·예금주를 마스킹하므로(`MasksRefundBankAccount`), 화면이 그 값을
-     * 입력칸에 채우면 구매자가 손대지 않고 제출했을 때 별표가 섞인 계좌번호가 저장된다 —
-     * 검증은 통과하고 환불 실행 때가 되어서야 드러난다. 프리필은 이 통로만 쓴다.
+     * 이 응답은 비회원 조회 토큰을 가진 누구에게나 나가므로 원문을 싣지 않는다(#599 validate P3).
+     * 구매자가 손대지 않고 제출하면 가린 값이 그대로 돌아오고, 서버가 등록 계좌를 가린 모양과
+     * 같을 때만 원문으로 되돌린다 — 그 왕복은 `ValidateP3RefundAccountTest` 가 잰다.
      *
      * @return void 반환값 없음
      *
@@ -558,9 +558,10 @@ class UserClaimApiTest extends ModuleTestCase
             ->assertOk()
             ->assertJsonPath('data.refund_account.required', true)
             ->assertJsonPath('data.refund_account.prefill.bank_code', '004')
-            // 마스킹된 값이 아니라 원문이어야 손대지 않은 제출이 그대로 저장돼도 맞는 계좌가 된다.
-            ->assertJsonPath('data.refund_account.prefill.account_number', '110234567890')
-            ->assertJsonPath('data.refund_account.prefill.holder', '홍길동');
+            // 원문이 아니라 가린 모양이다 — 뒤 4자리·예금주 첫 글자만 남는다.
+            ->assertJsonPath('data.refund_account.prefill.account_number', '********7890')
+            ->assertJsonPath('data.refund_account.prefill.holder', '홍**')
+            ->assertJsonPath('data.refund_account.prefill.masked', true);
     }
 
     /**
@@ -683,7 +684,7 @@ class UserClaimApiTest extends ModuleTestCase
      * `completed` 로 두면 돈이 나가기 전에 환불완료 알림이 간다.
      *
      * 계좌를 실어 보내는 것은 이 축과 **직교하는 다른 계약**이다 — 돈이 계좌로 돌아가는 주문은
-     * 접수 시점에 받을 계좌가 있어야 한다(T2-D5, PO 결정 2026-09-23). 무통장은 바로 그런
+     * 접수 시점에 받을 계좌가 있어야 한다(T2-D5, 운영 결정 2026-09-23). 무통장은 바로 그런
      * 주문이라 계좌 없이는 422 로 막히고, 그 경로는
      * `UserClaimRefundBranchTest::test_bank_refund_is_rejected_without_an_account` 가 잠근다.
      *
@@ -1217,9 +1218,10 @@ class UserClaimApiTest extends ModuleTestCase
      */
     public function test_update_cannot_pick_a_reason_that_is_hidden_from_users(): void
     {
-        // 접수 FormRequest 는 `is_user_selectable=true` 까지 게이트하는데 수정 요청은 신청서 유형을
-        // 몰라 규칙을 걸 수 없다. 서비스가 그 조건을 보지 않으면, 화면에 뜨지도 않는 판매자 귀책
-        // 사유를 수정으로 지정해 회수 배송비를 0 으로 만들 수 있다.
+        // 화면에 뜨지도 않는 판매자 귀책 사유를 수정으로 지정하면 회수 배송비를 0 으로 만들 수 있다.
+        // 수정 요청도 이제 신청서 유형을 해석해 접수와 같은 카탈로그 게이트(`is_user_selectable=true`)를
+        // 걸므로 검증 단계가 먼저 거절한다(#599 validate P3). 서비스의 같은 가드는 요청을 거치지 않는
+        // 호출을 위해 그대로 남는다.
         $order = $this->myDeliveredOrder();
         $claims = app(UserClaimService::class);
         $return = $claims->requestReturn($order, [
@@ -1244,7 +1246,8 @@ class UserClaimApiTest extends ModuleTestCase
         $this->actingAs($this->user)->patchJson($this->base()."/claims/{$return->return_number}", [
             'reason_code' => $hidden->code,
         ])->assertStatus(422)
-            ->assertJsonPath('message', __('sirsoft-ecommerce::exceptions.claim_reason_unavailable'));
+            ->assertJsonValidationErrors('reason_code')
+            ->assertJsonPath('message', __('sirsoft-ecommerce::validation.claims.reason_code.exists'));
 
         $fresh = $return->fresh();
         $this->assertSame($before->reason_code, $fresh->reason_code);
@@ -1297,6 +1300,100 @@ class UserClaimApiTest extends ModuleTestCase
             ClaimImage::where('claimable_type', 'return')->where('claimable_id', $return->id)->count(),
             '거절된 수정이 첨부를 지우면 사용자는 스스로 되돌릴 수 없습니다.',
         );
+    }
+
+    /**
+     * 신청서에 붙은 첨부는 미귀속 삭제 경로(DELETE)로 지울 수 없다.
+     *
+     * DELETE 는 작성 화면에서 **아직 신청서에 붙지 않은** 사진을 치우는 경로다. 소유 판정만 보면
+     * 접수가 끝난(승인·완료된) 신청서의 증빙도 이 경로로 지워져, 수정 창(승인 전만 허용)을
+     * 통째로 우회한다 — 분쟁 때 남아 있어야 할 사진이 고객 손에 사라진다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario claim_type=return, screen=edit, entry=detail
+     *
+     * @effects attached_claim_image_is_not_deletable_through_the_pending_route
+     */
+    public function test_an_attached_image_cannot_be_deleted_through_the_pending_route(): void
+    {
+        $order = $this->myDeliveredOrder();
+        $image = app(ClaimAttachmentService::class)->uploadPending(UploadedFile::fake()->image('proof.jpg'), $order, $this->user->id);
+        $return = app(UserClaimService::class)->requestReturn(
+            $order,
+            ['items' => $this->items($order), 'reason_code' => 'changed_mind', 'charge_method' => 'deduct_from_refund', 'requested_by' => $this->user->id],
+            [(int) $image->id],
+        )['claim'];
+
+        $this->actingAs($this->user)->deleteJson($this->base()."/claims/images/{$image->id}")->assertNotFound();
+
+        $this->assertNotNull(ClaimImage::find($image->id), '신청서에 붙은 증빙이 미귀속 삭제 경로로 지워지면 안 됩니다.');
+        $this->assertSame('return', ClaimImage::find($image->id)->claimable_type);
+        $this->assertSame($return->id, (int) ClaimImage::find($image->id)->claimable_id);
+    }
+
+    /**
+     * 수정 화면은 운영자가 올린 첨부를 지울 수 없다 — 아무것도 바꾸기 전에 거절한다.
+     *
+     * 운영자가 상세에서 대리로 올린 사진은 "누가 낸 증거인가" 를 가르는 기록이다. 고객이 자기
+     * 수정 화면에서 그 사진을 `remove_image_ids` 에 실어 보내면 지금은 그대로 지워진다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario claim_type=return, screen=edit, entry=detail
+     *
+     * @effects buyer_edit_cannot_remove_an_operator_uploaded_image
+     */
+    public function test_update_cannot_remove_an_image_the_operator_uploaded(): void
+    {
+        $order = $this->myDeliveredOrder();
+        $return = app(UserClaimService::class)->requestReturn(
+            $order,
+            ['items' => $this->items($order), 'reason_code' => 'changed_mind', 'charge_method' => 'deduct_from_refund', 'requested_by' => $this->user->id],
+        )['claim'];
+
+        $adminImage = ClaimImage::factory()->create([
+            'claimable_type' => ClaimTypeEnum::RETURN->value,
+            'claimable_id' => $return->id,
+            'uploader_type' => 'admin',
+        ]);
+
+        $this->actingAs($this->user)->patchJson($this->base()."/claims/{$return->return_number}", [
+            'reason_code' => 'defective_product',
+            'reason_detail' => '불량',
+            'remove_image_ids' => [(int) $adminImage->id],
+        ])->assertStatus(422)
+            ->assertJsonPath('message', __('sirsoft-ecommerce::exceptions.claim_image_not_removable'));
+
+        $this->assertNotNull(ClaimImage::find($adminImage->id), '운영자 증빙이 고객 수정으로 지워지면 안 됩니다.');
+        $this->assertSame('changed_mind', $return->fresh()->reason_code, '거절된 수정이 사유를 바꿔 놓으면 안 됩니다.');
+    }
+
+    /**
+     * 고객이 올린 첨부는 수정 화면에서 계속 지울 수 있다(비회귀).
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario claim_type=return, screen=edit, entry=detail
+     *
+     * @effects buyer_edit_still_removes_its_own_image
+     */
+    public function test_update_still_removes_an_image_the_buyer_uploaded(): void
+    {
+        $order = $this->myDeliveredOrder();
+        $image = app(ClaimAttachmentService::class)->uploadPending(UploadedFile::fake()->image('mine.jpg'), $order, $this->user->id);
+        $return = app(UserClaimService::class)->requestReturn(
+            $order,
+            ['items' => $this->items($order), 'reason_code' => 'changed_mind', 'charge_method' => 'deduct_from_refund', 'requested_by' => $this->user->id],
+            [(int) $image->id],
+        )['claim'];
+
+        $this->actingAs($this->user)->patchJson($this->base()."/claims/{$return->return_number}", [
+            'reason_code' => 'changed_mind',
+            'remove_image_ids' => [(int) $image->id],
+        ])->assertOk();
+
+        $this->assertNull(ClaimImage::find($image->id));
     }
 
     /**

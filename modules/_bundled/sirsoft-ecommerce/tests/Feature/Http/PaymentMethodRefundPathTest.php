@@ -35,6 +35,11 @@ class PaymentMethodRefundPathTest extends ModuleTestCase
 {
     use BuildsClaimFlowOrders;
 
+    /**
+     * 통화 설정과 클레임 사유를 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -42,6 +47,11 @@ class PaymentMethodRefundPathTest extends ModuleTestCase
         $this->seedClaimReasons();
     }
 
+    /**
+     * 통화 설정을 되돌립니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         $this->clearTestCurrencySettings();
@@ -53,6 +63,7 @@ class PaymentMethodRefundPathTest extends ModuleTestCase
      *
      * @param  string  $method  결제수단 ID
      * @param  string  $provider  PG 제공자 ID (비-PG 수단은 빈 문자열)
+     * @param  int  $quantity  주문 수량
      * @return Order 주문
      */
     protected function orderPaidWith(string $method, string $provider = 'testpg', int $quantity = 1): Order
@@ -84,6 +95,8 @@ class PaymentMethodRefundPathTest extends ModuleTestCase
      * @scenario claim_type=refund, charge_method=none, refund_branch=auto
      *
      * @effects full_cancel_passes_even_when_partial_cancel_is_unsupported
+     *
+     * @return void 반환값 없음
      */
     public function test_a_partial_cancel_is_rejected_when_the_pg_declares_no_support(): void
     {
@@ -119,6 +132,8 @@ class PaymentMethodRefundPathTest extends ModuleTestCase
      * @scenario claim_type=refund, charge_method=none, refund_branch=auto
      *
      * @effects full_cancel_passes_even_when_partial_cancel_is_unsupported
+     *
+     * @return void 반환값 없음
      */
     public function test_a_full_cancel_passes_even_when_partial_cancel_is_unsupported(): void
     {
@@ -156,6 +171,8 @@ class PaymentMethodRefundPathTest extends ModuleTestCase
      * @scenario claim_type=refund, charge_method=none, refund_branch=auto
      *
      * @effects missing_pg_listener_falls_back_to_bank_refund
+     *
+     * @return void 반환값 없음
      */
     public function test_a_card_order_falls_back_to_bank_refund_when_no_pg_listener_is_registered(): void
     {
@@ -174,6 +191,8 @@ class PaymentMethodRefundPathTest extends ModuleTestCase
      * @scenario claim_type=refund, charge_method=none, refund_branch=auto
      *
      * @effects registered_pg_listener_keeps_pg_refund_method
+     *
+     * @return void 반환값 없음
      */
     public function test_a_card_order_keeps_pg_refund_when_a_listener_is_registered(): void
     {
@@ -201,6 +220,8 @@ class PaymentMethodRefundPathTest extends ModuleTestCase
      * @scenario claim_type=refund, charge_method=none, refund_branch=none
      *
      * @effects cancelled_order_is_not_revived_by_a_late_deposit
+     *
+     * @return void 반환값 없음
      */
     public function test_a_cancelled_order_is_not_revived_by_a_late_payment_completion(): void
     {
@@ -230,6 +251,8 @@ class PaymentMethodRefundPathTest extends ModuleTestCase
      * @scenario claim_type=refund, charge_method=none, refund_branch=auto
      *
      * @effects bank_transfer_cancel_requires_a_refund_account
+     *
+     * @return void 반환값 없음
      */
     public function test_a_bank_transfer_cancellation_requires_a_refund_account(): void
     {
@@ -256,6 +279,8 @@ class PaymentMethodRefundPathTest extends ModuleTestCase
      * @scenario claim_type=refund, charge_method=none, refund_branch=auto
      *
      * @effects card_cancel_does_not_require_a_refund_account
+     *
+     * @return void 반환값 없음
      */
     public function test_a_card_cancellation_does_not_require_a_refund_account(): void
     {
@@ -275,6 +300,8 @@ class PaymentMethodRefundPathTest extends ModuleTestCase
      * @scenario claim_type=refund, charge_method=none, refund_branch=auto
      *
      * @effects settled_virtual_account_requires_a_refund_account
+     *
+     * @return void 반환값 없음
      */
     public function test_a_settled_virtual_account_requires_a_refund_account(): void
     {
@@ -308,6 +335,8 @@ class PaymentMethodRefundPathTest extends ModuleTestCase
      * @scenario claim_type=refund, charge_method=none, refund_branch=auto
      *
      * @effects skipping_pg_never_stamps_refund_completed
+     *
+     * @return void 반환값 없음
      */
     public function test_a_refund_awaiting_a_human_transfer_is_never_stamped_completed(): void
     {
@@ -334,7 +363,9 @@ class PaymentMethodRefundPathTest extends ModuleTestCase
      *
      * @scenario claim_type=refund, charge_method=none, refund_branch=auto
      *
-     * @effects externally_settled_refund_is_completed_without_calling_pg
+     * @effects externally_settled_refund_completes_without_calling_pg
+     *
+     * @return void 반환값 없음
      */
     public function test_an_externally_settled_refund_completes_without_calling_pg(): void
     {
@@ -404,6 +435,8 @@ class PaymentMethodRefundPathTest extends ModuleTestCase
      * @scenario claim_type=refund, charge_method=none, refund_branch=auto
      *
      * @effects mismatched_refund_method_is_rejected
+     *
+     * @return void 반환값 없음
      */
     public function test_a_refund_method_that_contradicts_the_payment_is_rejected(): void
     {
@@ -425,6 +458,8 @@ class PaymentMethodRefundPathTest extends ModuleTestCase
      * @scenario claim_type=refund, charge_method=none, refund_branch=auto
      *
      * @effects matching_refund_method_passes_validation
+     *
+     * @return void 반환값 없음
      */
     public function test_a_refund_method_that_matches_the_payment_passes(): void
     {
@@ -450,6 +485,8 @@ class PaymentMethodRefundPathTest extends ModuleTestCase
      * @scenario claim_type=refund, charge_method=none, refund_branch=auto
      *
      * @effects fallback_refund_method_is_validated_against_the_effective_method
+     *
+     * @return void 반환값 없음
      */
     public function test_a_fallback_refund_is_validated_against_the_effective_method(): void
     {

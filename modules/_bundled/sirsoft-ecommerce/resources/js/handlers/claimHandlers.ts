@@ -649,12 +649,17 @@ export async function executeClaimCompletionHandler(
     const context = globalState.claimCompleteContext;
     const rows: Array<Record<string, any>> = globalState.claimCompleteRows ?? [];
 
-    if (globalState.claimCompletePreviewLoading === true) return;
+    // 조기 종료는 **실패**로 끝낸다 — 그냥 return 하면 액션이 성공으로 끝나 레이아웃의
+    // success 갈래가 모달을 닫는다(대상이 없다는 오류 토스트와 함께 닫히기도 했다). throw 하면
+    // fail 갈래가 진행 표식만 되돌리고 모달은 남아, 운영자가 그 자리에서 다시 시도한다.
+    if (globalState.claimCompletePreviewLoading === true) {
+        throw new Error('claim completion preview is still loading');
+    }
 
     if (!context?.execute || rows.length === 0) {
         G7Core.toast?.error?.(t('sirsoft-ecommerce.admin.claim.complete.error', '완료 처리에 실패했습니다.'));
 
-        return;
+        throw new Error('claim completion has no target');
     }
 
     const restoreMap: Record<string, boolean> = globalState.claimCompleteRestore ?? {};
@@ -1218,9 +1223,14 @@ export async function executeClaimItemBulkStatusHandler(
 
     // 취소신청서만 상품 단위 전이 축이 없다 — 생성이 곧 확정이라 옮길 상태가 없다.
     // 환불은 §4 에서 이 축이 열렸다(승인·보류·반려를 상품마다 가를 수 있다).
+    // 안내는 전용 키다 — 「변경할 상품을 선택해주세요」 는 상품을 고른 운영자에게 막힌 이유를
+    // 틀리게 말한다(선택이 아니라 유형이 이유다).
     if (claimType === 'cancel') {
         G7Core.toast?.warning?.(
-            t('sirsoft-ecommerce.admin.claim.detail.items.bulk_no_selection', '변경할 상품을 선택해주세요.'),
+            t(
+                'sirsoft-ecommerce.admin.claim.detail.items.cancel_not_transitionable',
+                '취소 신청서는 상품별로 옮길 상태가 없습니다. 취소는 접수와 동시에 확정됩니다.',
+            ),
         );
 
         return;
@@ -1705,6 +1715,8 @@ interface ClaimRefundExecuteContext {
     refundAmount: number;
     /** 마일리지 환불액 */
     refundPointsAmount: number;
+    /** 두 환불액의 합 — 부동소수 오차를 걷어 낸 값(모달 표시 전용) */
+    refundTotal: number;
     /** 환불 수단 값 */
     refundMethod: string;
     /** 환불 수단 라벨 (서버가 준 선택지에서 해석) */
@@ -1838,6 +1850,21 @@ export async function saveClaimAmountsHandler(
 }
 
 /**
+ * 두 금액을 더하되 부동소수 오차를 걷어 냅니다.
+ *
+ * `0.1 + 0.2` 는 `0.30000000000000004` 다 — 화면이 그대로 찍으면 소수 통화에서 합계가
+ * 이상한 자릿수로 보인다. 소수 8자리에서 반올림한다: 어느 통화의 소수 자릿수(최대 8)보다
+ * 깊은 자리라 실제 값은 바뀌지 않고 오차만 사라진다.
+ *
+ * @param a 첫째 금액
+ * @param b 둘째 금액
+ * @returns 반올림한 합
+ */
+function sumAmounts(a: number, b: number): number {
+    return Math.round((a + b) * 100000000) / 100000000;
+}
+
+/**
  * 환불 실행 확인 모달을 엽니다. (D18 — 진입 지점)
  *
  * 모달은 부모 화면과 다른 컨텍스트라 `_local` 표현식을 해석하지 못한다. 그래서 **지금 입력된
@@ -1881,16 +1908,17 @@ export async function openClaimRefundExecuteHandler(
         .find((option) => option?.value === method)?.label ?? method;
 
     // 계좌 이체 환불은 운영자가 손으로 보낸다 — 어느 계좌인지 이 창에 없으면 다른 화면을
-    // 뒤져야 하고, 못 찾으면 구매자에게 다시 묻게 된다. 은행명은 서버가 해석해 실어 준다:
-    // 화면이 은행 코드표를 읽으려면 설정 데이터소스가 필요한데 그 게이트가 이 화면의 라우트
-    // 권한보다 좁아, 클레임만 볼 수 있는 운영자에게는 그 데이터소스만 403 이 되어 은행명이
-    // 조용히 빈다.
+    // 뒤져야 하고, 못 찾으면 구매자에게 다시 묻게 된다. 이미 적힌 계좌의 은행명은 서버가
+    // 해석해 실어 준다. 계좌를 새로 적는 칸의 은행 선택지는 셸의 `paymentSettings`(공개 결제
+    // 설정 — 권한 게이트가 없다)가 나른다: 관리자 설정 엔드포인트(`settings.read`)를 읽으면
+    // 클레임만 볼 수 있는 운영자에게는 403 이 되어 선택지가 조용히 빈다.
     const context: ClaimRefundExecuteContext = {
         claimId,
         claimNumber: params.claimNumber ?? '',
         currencyCode: params.currencyCode ?? '',
         refundAmount: amountOrNull(params.refundAmount) ?? 0,
         refundPointsAmount: amountOrNull(params.refundPointsAmount) ?? 0,
+        refundTotal: sumAmounts(amountOrNull(params.refundAmount) ?? 0, amountOrNull(params.refundPointsAmount) ?? 0),
         refundMethod: method,
         refundMethodLabel: methodLabel,
         refundBankName: (params.refundBankName ?? '').trim(),

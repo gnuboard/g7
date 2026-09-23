@@ -32,6 +32,11 @@ class ClaimPaymentCallbackTest extends PluginTestCase
 {
     private static int $sequence = 0;
 
+    /**
+     * 테스트마다 이 플러그인의 승인 리스너를 훅에 다시 겁니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -46,7 +51,7 @@ class ClaimPaymentCallbackTest extends PluginTestCase
      * 결제 대기 클레임 결제 건을 만듭니다. (반품 신청서 + 주문 통화 스냅샷 동반)
      *
      * @param  bool  $withUser  회원 주문 여부
-     * @return array{order: Order, return: OrderReturn, payment: ClaimPayment, user: ?User}
+     * @return array{order: Order, return: OrderReturn, payment: ClaimPayment, user: ?User} 주문·신청서·결제 건·회원
      */
     private function makePendingClaimPayment(bool $withUser = true): array
     {
@@ -87,6 +92,15 @@ class ClaimPaymentCallbackTest extends PluginTestCase
         return ['order' => $order, 'return' => $return, 'payment' => $payment, 'user' => $user];
     }
 
+    /**
+     * CP 결제번호가 실린 승인 콜백이 주문 분기를 타지 않고 클레임 결제 건을 확정한다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario concern=callback_routing
+     *
+     * @effects kcp_claim_callback_confirms_the_claim_payment_without_an_order
+     */
     public function test_auth_callback_with_a_claim_payment_number_confirms_the_claim_payment_without_an_order(): void
     {
         ['return' => $return, 'payment' => $payment] = $this->makePendingClaimPayment();
@@ -117,6 +131,15 @@ class ClaimPaymentCallbackTest extends PluginTestCase
         $this->assertSame('KCP-CB-TNO-1', $fresh->transaction_id);
     }
 
+    /**
+     * 사용자가 결제창을 닫으면 오류 안내 없이 신청서 상세로 돌아가고 결제 건은 결제 대기로 남는다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario concern=callback_routing
+     *
+     * @effects kcp_claim_user_cancel_returns_to_the_claim_detail
+     */
     public function test_user_cancel_callback_returns_to_the_claim_detail_without_an_error(): void
     {
         ['return' => $return, 'payment' => $payment] = $this->makePendingClaimPayment();
@@ -131,6 +154,15 @@ class ClaimPaymentCallbackTest extends PluginTestCase
         $this->assertSame(ClaimPaymentStatusEnum::PENDING, $payment->fresh()->payment_status);
     }
 
+    /**
+     * 금액이 맞는 클레임 결제 건에는 모바일 승인키가 발급된다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario concern=approval_key
+     *
+     * @effects kcp_claim_mobile_approval_key_is_gated_by_the_claim_payment
+     */
     public function test_mobile_approval_key_is_issued_for_a_claim_payment_when_the_amount_matches(): void
     {
         ['payment' => $payment, 'user' => $user] = $this->makePendingClaimPayment();
@@ -154,6 +186,15 @@ class ClaimPaymentCallbackTest extends PluginTestCase
         $response->assertOk()->assertJsonPath('data.fields.ordr_idxx', $payment->payment_number);
     }
 
+    /**
+     * 청구액과 다른 금액의 승인키 요청은 422 로 거절한다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario concern=approval_key
+     *
+     * @effects kcp_claim_mobile_approval_key_is_gated_by_the_claim_payment
+     */
     public function test_mobile_approval_key_is_rejected_for_a_claim_payment_amount_mismatch(): void
     {
         ['payment' => $payment, 'user' => $user] = $this->makePendingClaimPayment();
@@ -169,6 +210,15 @@ class ClaimPaymentCallbackTest extends PluginTestCase
         $response->assertStatus(422);
     }
 
+    /**
+     * 입금 대기 수단(가상계좌)의 승인키 요청은 422 로 거절한다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario concern=approval_key
+     *
+     * @effects kcp_claim_mobile_approval_key_is_gated_by_the_claim_payment
+     */
     public function test_mobile_approval_key_rejects_a_deposit_pending_method_for_a_claim_payment(): void
     {
         ['payment' => $payment, 'user' => $user] = $this->makePendingClaimPayment();
@@ -190,6 +240,12 @@ class ClaimPaymentCallbackTest extends PluginTestCase
      * 부모를 못 읽었을 때 `?->user_id ?? 0` 으로 접으면 열람자 판정이 0 == 0 이 되어
      * 통과한다 — 지금은 라우트의 `auth:sanctum` 이 오른쪽을 0 이 되지 못하게 막고 있어
      * 실질은 닫혀 있지만, 그 방어가 이 판정 밖의 조건에 얹혀 있는 형태였다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario concern=approval_key
+     *
+     * @effects kcp_claim_mobile_approval_key_is_gated_by_the_claim_payment
      */
     public function test_mobile_approval_key_is_rejected_when_the_parent_order_is_gone(): void
     {
@@ -210,6 +266,12 @@ class ClaimPaymentCallbackTest extends PluginTestCase
 
     /**
      * 다른 회원의 결제 건은 승인키를 받을 수 없다. (대조군 — 위 단언이 전부-거절로 공허해지지 않음)
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario concern=approval_key
+     *
+     * @effects kcp_claim_mobile_approval_key_is_gated_by_the_claim_payment
      */
     public function test_mobile_approval_key_is_rejected_for_another_members_claim_payment(): void
     {
@@ -232,6 +294,12 @@ class ClaimPaymentCallbackTest extends PluginTestCase
      * CP 분기가 락을 걸기 **전에** return 하면 같은 콜백이 겹쳐 들어왔을 때 방어가 PG 의
      * 중복 승인 거절 하나뿐이 된다 — 주문 경로와 방어 층이 달라진다. 승인 훅이 불릴 때
      * 같은 키를 다른 소유자로 잡아 보고, 잡히면 그 자리에 락이 없다는 뜻이다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario concern=callback_serialization
+     *
+     * @effects kcp_claim_approval_runs_inside_the_callback_lock
      */
     public function test_claim_approval_runs_inside_the_same_callback_lock_as_the_order_path(): void
     {
@@ -254,6 +322,8 @@ class ClaimPaymentCallbackTest extends PluginTestCase
                     'handled' => true,
                     'success' => true,
                     'transaction_id' => 'KCP-LOCK-TNO',
+                    // 모듈은 승인액이 없으면 불일치로 거절한다 — 정상 승인의 모양을 갖춘다.
+                    'paid_amount' => 3000,
                 ]);
             },
             1,

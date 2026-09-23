@@ -1965,7 +1965,11 @@
         "role_search_placeholder": "역할을 검색하세요",
         "users_placeholder": "사용자를 검색하세요",
         "users_no_options": "검색 결과가 없습니다",
-        "role_no_options": "일치하는 역할이 없습니다"
+        "role_no_options": "일치하는 역할이 없습니다",
+        "relation_placeholder": "관계를 선택하세요",
+        "relation_undeclared": "이 알림은 '{{relation}}' 관계를 지원하지 않습니다. 목록에서 다시 선택하세요 — 그대로 두면 저장되지 않습니다.",
+        "roles_selected_count": "역할 {count}개 선택됨",
+        "users_selected_count": "{count}명 선택됨"
       },
       "preview_modal": {
         "title": "알림 미리보기",

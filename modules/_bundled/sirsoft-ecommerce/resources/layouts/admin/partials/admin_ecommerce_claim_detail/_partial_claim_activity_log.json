@@ -291,7 +291,7 @@
                                                             "type": "basic",
                                                             "name": "Div",
                                                             "props": {
-                                                                "className": "flex-center gap-2 hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-lg px-1 py-0.5 transition-colors cursor-pointer"
+                                                                "className": "flex-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg px-1 py-0.5 transition-colors cursor-pointer"
                                                             },
                                                             "children": [
                                                                 {
@@ -489,7 +489,7 @@
                                                                             "props": {
                                                                                 "className": "font-semibold text-gray-700 dark:text-gray-300 mr-auto"
                                                                             },
-                                                                            "text": "ID: {{group.model_id}}"
+                                                                            "text": "$t:sirsoft-ecommerce.admin.claim.detail.activity_log.changes.model_id|id={{group.model_id}}"
                                                                         },
                                                                         {
                                                                             "type": "basic",
@@ -615,7 +615,7 @@
                                                             "type": "basic",
                                                             "name": "Div",
                                                             "props": {
-                                                                "className": "flex-center gap-2 hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-lg px-1 py-0.5 transition-colors cursor-pointer"
+                                                                "className": "flex-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg px-1 py-0.5 transition-colors cursor-pointer"
                                                             },
                                                             "children": [
                                                                 {
@@ -816,7 +816,7 @@
                                                             "props": {
                                                                 "className": "font-semibold text-gray-700 dark:text-gray-300 mr-auto"
                                                             },
-                                                            "text": "ID: {{group.model_id}}"
+                                                            "text": "$t:sirsoft-ecommerce.admin.claim.detail.activity_log.changes.model_id|id={{group.model_id}}"
                                                         },
                                                         {
                                                             "type": "basic",

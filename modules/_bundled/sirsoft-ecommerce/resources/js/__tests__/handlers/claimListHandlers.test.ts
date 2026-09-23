@@ -316,7 +316,7 @@ describe('claimListHandlers', () => {
             success: true,
             data: {
                 requires_pg_payment: true,
-                pg_payment_handler: 'sirsoft-tosspayments.requestPayment',
+                pg_payment_handler: 'example-pg.requestPayment',
                 pg_payment_data: { order_number: 'CP20260901-0001', amount: 6000 },
             },
         });
@@ -327,7 +327,7 @@ describe('claimListHandlers', () => {
         );
 
         expect(mockG7Core.dispatch).toHaveBeenCalledWith({
-            handler: 'sirsoft-tosspayments.requestPayment',
+            handler: 'example-pg.requestPayment',
             params: { pgPaymentData: { order_number: 'CP20260901-0001', amount: 6000 } },
         });
         // 결제창이 뜨는 동안 버튼이 다시 살아나면 같은 건으로 두 번 진입할 수 있다.

@@ -79,14 +79,17 @@ trait ResolvesClaimOrder
     }
 
     /**
-     * 검증된 주문을 반환합니다.
+     * 소유권이 확인된 주문을 반환합니다. (부재·남의 주문이면 404 로 끝낸다)
+     *
+     * 주문 소유권 판정은 **이 한 곳**이다 — 회원 컨트롤러가 주문 ID 로 다시 찾고 `user_id` 를 비교하던
+     * 사본(`claimableOptions`·`orderClaims`)을 걷어 내고 이 메서드로 모았다. 사본이 셋이면 한 곳만
+     * 고쳐졌을 때 그 경로만 남의 주문을 연다.
      *
      * @return Order 주문
      */
     public function getOrder(): Order
     {
-        return $this->order ?? $this->resolveOrder()
-            ?? abort(ResponseHelper::moduleError('sirsoft-ecommerce', 'exceptions.order_not_found', 404));
+        return $this->assertOrderOwnership();
     }
 
     /**

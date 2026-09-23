@@ -200,6 +200,7 @@
             ]
         },
         {
+            "comment": "PC 행 메뉴는 좁은 화면 카드 메뉴와 같은 비활성 조건을 진다 — 회원 없는 배송지(member null)의 「회원 정보」 는 `/admin/users/undefined` 로, 「이 회원으로 검색」 은 `user_uuids[]=[undefined]` → 422 → 본문 전체 오류로 이어졌다. 행마다 다른 조건은 `disabledField`(행 데이터 경로, 값이 falsy 면 비활성)로 적고, 삭제는 관리 권한으로 막는다.",
             "id": "pc_data_table",
             "type": "composite",
             "name": "DataGrid",
@@ -324,12 +325,14 @@
                     {
                         "id": "view_member",
                         "label": "$t:sirsoft-ecommerce.admin.user_addresses.actions.view_member",
-                        "iconName": "fa-regular fa-user"
+                        "iconName": "fa-regular fa-user",
+                        "disabledField": "member.uuid"
                     },
                     {
                         "id": "search_member",
                         "label": "$t:sirsoft-ecommerce.admin.user_addresses.actions.search_member",
-                        "iconName": "fa-solid fa-magnifying-glass"
+                        "iconName": "fa-solid fa-magnifying-glass",
+                        "disabledField": "member.uuid"
                     },
                     {
                         "id": "divider",
@@ -339,7 +342,8 @@
                         "id": "delete",
                         "label": "$t:sirsoft-ecommerce.admin.user_addresses.actions.delete",
                         "iconName": "fa-regular fa-trash-can",
-                        "variant": "danger"
+                        "variant": "danger",
+                        "disabled": "{{_computed.canManage !== true}}"
                     }
                 ],
                 "columns": [

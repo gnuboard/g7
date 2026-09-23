@@ -960,7 +960,7 @@
                             ]
                         },
                         {
-                            "comment": "row_earned_points — total_earned_points_amount",
+                            "comment": "row_earned_points — total_earned_points_amount. 단위 표기(P)는 서버 `total_earned_points_amount_formatted` 가 정본이다(주문 리소스와 같은 formatEarnedPoints). 화면의 `toLocaleString() + 'P'` 는 그 필드를 싣지 않는 옛 응답·스냅샷을 위한 폴백일 뿐이다.",
                             "type": "basic",
                             "name": "Div",
                             "props": {
@@ -989,7 +989,7 @@
                                             "props": {
                                                 "className": "text-gray-900 dark:text-white"
                                             },
-                                            "text": "{{(_local.claimEstimate?.adjustment?.original_snapshot?.total_earned_points_amount ?? 0).toLocaleString()}}P"
+                                            "text": "{{_local.claimEstimate?.adjustment?.original_snapshot?.total_earned_points_amount_formatted ?? ((_local.claimEstimate?.adjustment?.original_snapshot?.total_earned_points_amount ?? 0).toLocaleString() + 'P')}}"
                                         }
                                     ]
                                 },
@@ -1006,7 +1006,7 @@
                                             "props": {
                                                 "className": "{{(_local.claimEstimate?.adjustment?.original_snapshot?.total_earned_points_amount ?? 0) !== (_local.claimEstimate?.adjustment?.recalculated_snapshot?.total_earned_points_amount ?? 0) ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-900 dark:text-white'}}"
                                             },
-                                            "text": "{{(_local.claimEstimate?.adjustment?.recalculated_snapshot?.total_earned_points_amount ?? 0).toLocaleString()}}P"
+                                            "text": "{{_local.claimEstimate?.adjustment?.recalculated_snapshot?.total_earned_points_amount_formatted ?? ((_local.claimEstimate?.adjustment?.recalculated_snapshot?.total_earned_points_amount ?? 0).toLocaleString() + 'P')}}"
                                         }
                                     ]
                                 }

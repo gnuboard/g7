@@ -785,8 +785,9 @@ _단건 응답: `data` 객체의 필드 (`GuestOrderResource` — 배송지 수�
 - 신청자(`requested_by`)는 항상 `null`, `is_guest_request=true`.
 - 마일리지 결제(`payment_method=point`)는 열리지 않는다 — 422 `claim_point_payment_requires_member`. 같은 판정을 `claimable-options` 응답도 따른다: `settings.charge_payment_methods` 에서 `point` 가 빠져 나가므로 화면이 고를 수 없는 수단을 그리지 않는다. 신청 시점 결제에서 이 수단을 지정하면 **신청서를 만들기 전에** 거절되므로 거절된 요청은 신청서도 결제 건도 남기지 않는다. 수단을 생략하면 허용 목록에서 비회원이 쓸 수 있는 첫 수단으로 확정된다.
 - 첨부 업로드·귀속·삭제는 토큰 주문에 묶인 첨부만 가능하다. 다른 주문의 첨부 ID 는 `claim_image_not_found`.
-- 인증 오류는 401/403 이 아니라 전부 404 다.
-- 요청 빈도 제한이 걸려 있다 — 이 블록 전체가 IP 기준 분당 **120회**, 첨부 업로드(`claim-images.store`)만 분당 **20회**다. 초과하면 **429**. 정상 사용은 이 상한 훨씬 아래이며, 신청서 한 장을 쓰는 동안 입력마다 나가는 미리보기(`claims/preview`)가 가장 잦은 호출이다.
+- 토큰 오류는 401/403 이 아니라 전부 404 다.
+- 권한은 회원 경로와 같은 `sirsoft-ecommerce.user-claims.*`(조회 `read` · 신청·수정·첨부 `request` · 철회 `withdraw` · 추가결제 `pay`)를 **guest 역할**로 판정한다. 운영자가 guest 역할에서 그 권한을 빼면(블랙컨슈머 차단용 축) 비회원 창구도 닫히며 응답은 **401** `auth.guest_permission_denied` 다.
+- 요청 빈도 제한이 걸려 있다 — 이 블록 전체가 IP 기준 분당 **120회**, 첨부 업로드(`claim-images.store`)만 분당 **20회**다. 초과하면 **429**(`auth.too_many_attempts`). 두 상한과 주문 조회 인증(`guest/orders/verify`, 분당 20회)은 **이름 있는 리미터**(`sirsoft-ecommerce.guest-claims` · `sirsoft-ecommerce.guest-claim-uploads` · `sirsoft-ecommerce.guest-order-verify`)라 카운터를 서로 나눠 쓰지 않는다 — 미리보기를 여러 번 불러도 업로드·조회 인증 상한이 줄지 않는다. 정상 사용은 이 상한 훨씬 아래이며, 신청서 한 장을 쓰는 동안 입력마다 나가는 미리보기(`claims/preview`)가 가장 잦은 호출이다.
 
 | 메서드 | URI | 라우트명 | 회원 대응 |
 | --- | --- | --- | --- |
@@ -1243,11 +1244,11 @@ X-Guest-Order-Token: {GUEST_ORDER_TOKEN}
 
 **오류 응답**
 
-404 (토큰·주문번호 불일치, 첨부 부재, 다른 주문의 첨부 — `claim_image_not_found`) / 500.
+404 (토큰·주문번호 불일치, 첨부 부재, 다른 주문의 첨부, 이미 신청서에 붙은 첨부 — `claim_image_not_found`) / 500.
 
 <!-- @generated:end -->
 
-**설명** 토큰 주문에 묶인 첨부(임시 또는 이 주문 신청서 소속)만 지웁니다.
+**설명** 토큰 주문에 묶인 **임시 업로드**(아직 신청서에 붙지 않은) 첨부만 지웁니다. 신청서에 붙은 첨부는 신청서 수정(`remove_image_ids`)으로만 뗄 수 있고, 고객이 올린 것만 허용됩니다.
 
 ---
 

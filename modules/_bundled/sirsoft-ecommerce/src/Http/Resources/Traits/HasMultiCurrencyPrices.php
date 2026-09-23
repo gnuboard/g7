@@ -3,6 +3,7 @@
 namespace Modules\Sirsoft\Ecommerce\Http\Resources\Traits;
 
 use Modules\Sirsoft\Ecommerce\Support\CurrencySettingsCache;
+use Modules\Sirsoft\Ecommerce\Support\EarnedPointsFormatter;
 
 // audit:allow api-doc-coverage 절사 결과의 되곱하기 잔차만 제거한다 — 응답 필드·타입·구조가
 // 그대로라 갱신할 API 레퍼런스 서술이 없다 (금액 값의 표현만 설정 단위에 맞게 정규화).
@@ -338,16 +339,18 @@ trait HasMultiCurrencyPrices
      * 같은 값이 화면마다 갈립니다 — 장바구니·주문서는 `Summary::mileage_formatted` 가
      * `710P` 로 내는데 주문완료·비회원 주문상세·관리자 주문목록은 `710원` 으로 나와,
      * 구매자가 한 클릭 사이에 단위가 바뀌는 것을 봅니다(#599 세션A 실측 2026-09-21 ·
-     * 주문 20260921-1536333520 · PO 확정 2026-09-22 「P 로 통일」).
+     * 주문 20260921-1536333520 · 운영 결정 2026-09-22 「P 로 통일」).
      *
      * 표기 관례(천 단위 구분)는 `Summary` 와 같은 식을 쓰므로 두 경로가 같은 문자열을 냅니다.
+     * 단위 글자는 다국어 키(`messages.mileage.points_format`)가 정하고, 식은 서비스 층과 같은
+     * `EarnedPointsFormatter` 한 곳이다 — 신청 미리보기 스냅샷과 주문 응답이 같은 문자열을 낸다.
      *
      * @param  float|int|null  $points  적립 포인트 (null 은 0 으로 처리)
      * @return string `710P` 형태의 포인트 표기
      */
     protected function formatEarnedPoints(float|int|null $points): string
     {
-        return number_format((float) ($points ?? 0)).'P';
+        return EarnedPointsFormatter::format($points);
     }
 
     /**

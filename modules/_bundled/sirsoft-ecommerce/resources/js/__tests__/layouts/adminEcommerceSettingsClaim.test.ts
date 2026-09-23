@@ -200,10 +200,13 @@ describe('설정 클레임 탭 — 구성', () => {
 describe('클레임 정책 — defaults 의 스칼라 축 전부가 편집 통로를 갖는다', () => {
   /**
    * `complete_defaults` 는 하위 키를 갖는 축이라 아래 전용 루프가 따로 본다.
-   * `auto_approve_refund_payment_methods_decided` 는 운영자가 편집하는 값이 아니라 **서버가 저장 시
-   * 기록하는 결정 이력**이다(`EcommerceSettingsController::updateSettings` — 운영자가 한 번 뺀 즉시 환불
-   * 수단이 다음 조회의 자동 합류로 되살아나지 않도록 남기는 키, #599 §4-A A-2 · P17). 화면 편집 통로가
-   * 없는 것이 설계이므로 「스칼라 축 전부가 편집 통로를 갖는다」 검사에서 뺀다.
+   * `auto_approve_refund_payment_methods_decided` 는 운영자가 편집하는 값이 아니라 **서버 전용 결정
+   * 이력**이다 — 운영자가 한 번 뺀 즉시 환불 수단이 다음 조회의 자동 합류로 되살아나지 않도록 남기는
+   * 키다(#599 §4-A A-2 · P17). 이력은 전체 저장과 단건 저장이 **같은 저장 경로**
+   * (`EcommerceSettingsAdminService::saveSettings` / `updateSetting`)에서 서버가 기록하고, 관리자 조회
+   * 응답에서는 빠지며(`getSettingsForAdmin`), 저장 요청에 실으면 `prohibited` 로 거절된다
+   * (`StoreEcommerceSettingsRequest`). 화면 편집 통로가 없는 것이 설계이므로 「스칼라 축 전부가 편집
+   * 통로를 갖는다」 검사에서 뺀다.
    */
   const SERVER_RECORDED_KEYS = ['auto_approve_refund_payment_methods_decided'];
   const POLICY_SCALAR_KEYS = SCALAR_KEYS.filter(

@@ -1,26 +1,25 @@
-feature: 환불수단 불일치 안내 문구는 라벨을 한 번만 말한다
+feature: 환불수단 거절 안내 문구는 한 곳에서 나온다
 
 description: |
-  결제행과 어긋난 환불수단으로 [환불하기]를 실행하면 422 와 함께
-  `validation.claims.refund_method.payment_mismatch` 가 돌아온다. 이 문구는 `:expected` 에
-  환불수단 라벨(`enums.refund_method.*`)을 끼우는데, 라벨 셋이 전부 「환불」로 끝나
-  (「PG사 환불」·「계좌이체 환불」·「마일리지 환불」) 문장 틀의 「환불만」과 이어지며
-  「이 주문의 결제수단은 PG사 환불 환불만 가능합니다」 로 조립됐다.
+  결제행과 어긋난 환불수단으로 [환불하기]를 실행하면 422 가 돌아온다. 한때 실행 게이트는
+  `validation.claims.refund_method.payment_mismatch`(`:expected` 에 수단 라벨을 끼우는 문구)를
+  썼는데, 라벨 셋이 전부 「환불」로 끝나 「PG사 환불 환불만」 으로 조립되는 결함이 있었다(S0-D3).
 
-  #599 통합 실측 전체 공정 라운드(2026-09-17)가 세션1 결함 D24 를 재실측하다가 주문 20 ·
-  RF 226 의 422 응답 본문에서 확인했다(S0-D3). 운영자가 읽는 안내 문구라 뜻은 통하나
-  오타로 보여 신뢰를 깎는다.
+  2026-09-23 결정으로 실행 게이트가 [금액 수정]과 같은 선택지(`refundMethodOptions()`)를 쓰게
+  되면서 거절 문구도 금액 수정 경로와 같은 `exceptions.claim_refund_method_unavailable` 로 모였다.
+  옛 키는 읽는 곳이 없는 죽은 키가 되어 세 언어에서 걷어 냈다.
 
-  계약: 라벨 전수 × ko·en 에서 조립된 문구가 같은 단어를 연달아 두 번 말하지 않고,
-  라벨은 그대로 들어 있다. 라벨 사전과 문장 틀이 서로를 모르므로 조립 결과를 잠근다.
+  계약: 실행 게이트와 금액 수정 경로가 같은 키로 거절하고, 옛 키는 ko·en·ja 어디에도 남지 않는다.
 
 axes:
-  # 라벨 전수(pg·bank·points) × 로케일(ko·en) 을 한 테스트가 루프로 전부 돌린다 — 조합을 축으로 펼치면
-  # 케이스마다 메서드를 쪼개야 하는데 단언은 하나뿐이라 표면 1축으로 둔다.
-  surface: [mismatch_copy]
+  surface: [rejection_copy_source, retired_key]
 
 effects:
-  - mismatch_message_contains_label_exactly_once_without_stutter
+  - refund_method_rejection_uses_one_message_key_on_both_paths
+  - retired_payment_mismatch_key_is_removed_from_every_locale
 
 test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Lang/RefundMethodMismatchMessageTest.php
+
+validation:
+  audit_rule: test-scenario-coverage

@@ -30,9 +30,10 @@
         <span data-if="{{(claims?.data?.counts?.[tab.id] ?? 0) > 0}}" class="{{(_local.claimsType ?? query.type ?? claims?.data?.claim_type ?? 'exchange') === tab.id ? 'ml-1.5 inline-flex items-center justify-center min-w-[1.25rem] px-1.5 py-0.5 rounded-full text-xs font-semibold bg-gray-900 dark:bg-white text-white dark:text-gray-900' : 'ml-1.5 inline-flex items-center justify-center min-w-[1.25rem] px-1.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'}}">{{claims?.data?.counts?.[tab.id] ?? 0}}</span>
       </button>
     </div>
-    <!-- 신청서 카드 반복 -->
-    <div data-if="{{(claims.data?.data ?? []).length > 0}}" data-each="claim in {{claims.data?.data ?? []}}" class="space-y-4">
+    <!-- 신청서 카드 반복 — 카드 사이 간격은 부모가 준다. 반복 노드는 자기 자신이 복제되므로 그 노드의 space-y 는 카드 사이에 걸리지 않는다. -->
+    <div data-if="{{(claims.data?.data ?? []).length > 0}}" class="space-y-4">
       <responsive on="portable" class="space-y-3"/>
+    <div data-each="claim in {{claims.data?.data ?? []}}">
       <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
         <responsive on="portable" class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-3"/>
         <!-- 카드 헤더 — 좌: 클레임번호·신청일·주문번호 / 우: 상태 배지 + 액션([수정][철회]). 액션은 승인 전 상태에서만 선다(서버 판정 is_editable / is_withdrawable — 화면이 상태 문자열로 재현하면 상태가 늘 때마다 갈린다). -->
@@ -224,6 +225,7 @@
           </button>
         </div>
       </div>
+    </div>
     </div>
     <!-- 빈 목록 — 유형 서브탭마다 따로 판정된다. '없음' 과 '아직 못 불러왔음' 은 다르므로 로딩 중에는 세우지 않는다. -->
     <div data-if="{{!!claims.data &amp;&amp; (claims.data?.data ?? []).length === 0}}" class="flex flex-col items-center justify-center py-16 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">

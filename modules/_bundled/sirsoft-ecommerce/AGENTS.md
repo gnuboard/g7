@@ -172,7 +172,7 @@ FormRequest → `CheckoutDataService`(주문서에 필요한 배송지·쿠폰·
 <!-- @generated:extension-points-summary START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 확장점 | 수 | 상세 |
 |---|---|---|
-| 발행 훅 | 543개 | [발행 훅](docs/extension-points.md#발행-훅) |
+| 발행 훅 | 574개 | [발행 훅](docs/extension-points.md#발행-훅) |
 | 구독 훅 | 187개 | [구독 훅](docs/extension-points.md#구독-훅) |
 | 훅 리스너 | 39개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
 | 레이아웃 확장 | 14개 | [레이아웃 확장](docs/extension-points.md#레이아웃-확장) |
@@ -205,7 +205,7 @@ CRUD 를 바꾸고 싶으면 이 4종 중 하나를 잡으면 되고, 이 모듈
 | 주문 상태 동기화가 끌고 간 상품 전이·운송장 정정에 개입 | `order_option.after_sync_status` · `order_shipping.tracking_updated` — 둘 다 전이 훅을 지나지 않는 경로다 |
 | 결제수단의 부분취소 지원 여부 선언 | `payment.supports_partial_cancel` 필터 — 제약을 아는 자리는 PG 플러그인이다 |
 | 새 PG 로 클레임 추가결제(`CP` 채번) 승인·환급 | `claim_payment.approve` · `claim_payment.refund` 필터 — 결제 플러그인이 구현하며 계약의 단일 출처는 `modules/_bundled/sirsoft-ecommerce/docs/api/claim-payments.md` |
-| 클레임 첨부 파일 검사·후처리 | `claim-image.filter_upload_file` · `claim-image.after_upload` · `claim-image.after_delete` |
+| 클레임 첨부 파일 검사·후처리 | `claim-image.before_upload`(저장 전 거절) · `claim-image.filter_upload_file` · `claim-image.after_upload` · `claim-image.after_delete` |
 
 **금전이 움직이는 훅을 구독할 때는 `'sync' => true` 를 붙입니다.** 쿠폰 차감·복원, 마일리지
 차감·복원이 여기 해당합니다 — 기본값(큐 래핑 + `afterCommit`)으로 두면 커밋 뒤에 실행되어
@@ -289,10 +289,10 @@ CRUD 를 바꾸고 싶으면 이 4종 중 하나를 잡으면 되고, 이 모듈
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 534개 | `modules/_bundled/sirsoft-ecommerce/tests` |
-| Vitest | 175개 | `vitest.config.ts` |
+| PHPUnit | 552개 | `modules/_bundled/sirsoft-ecommerce/tests` |
+| Vitest | 182개 | `vitest.config.ts` |
 | Playwright | 64개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 181개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 196개 | `tests/scenarios` |
 
 기저 TestCase: `tests/ModuleTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

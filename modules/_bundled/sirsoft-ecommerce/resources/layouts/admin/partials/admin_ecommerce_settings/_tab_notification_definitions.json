@@ -648,13 +648,13 @@
                                                             "text": "$t:sirsoft-ecommerce.admin.settings.notification_definitions.body_preview"
                                                         },
                                                         {
+                                                            "comment": "미리보기의 HTML 해석 여부는 **그 채널의 편집기 종류**를 따른다. 사이트내 알림은 알림센터가 평문으로 그리는데 여기서만 HTML 로 해석하면, 관리자가 본 문구와 사용자가 받는 문구가 다르다 — 태그가 글자 그대로 보이는 쪽은 사용자다.",
                                                             "type": "composite",
                                                             "name": "HtmlContent",
                                                             "props": {
                                                                 "content": "{{(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))?.body?.[$locale] ?? ''}}",
                                                                 "isHtml": "{{((availableChannels?.data?.channels ?? []).find(c => c.id === (query.channel ?? 'mail'))?.template_editor ?? 'plain') === 'rich'}}",
-                                                                "className": "prose dark:prose-invert prose-sm max-w-none bg-gray-50 dark:bg-gray-900/50 rounded-lg p-3 max-h-48 overflow-y-auto",
-                                                                "comment": "미리보기의 HTML 해석 여부는 **그 채널의 편집기 종류**를 따른다. 사이트내 알림은 알림센터가 평문으로 그리는데 여기서만 HTML 로 해석하면, 관리자가 본 문구와 사용자가 받는 문구가 다르다 — 태그가 글자 그대로 보이는 쪽은 사용자다."
+                                                                "className": "prose dark:prose-invert prose-sm max-w-none bg-gray-50 dark:bg-gray-900/50 rounded-lg p-3 max-h-48 overflow-y-auto"
                                                             }
                                                         }
                                                     ]

@@ -360,6 +360,8 @@
         "estimate_failed": "返金予想金額の計算に失敗しました。",
         "cancel_success": "注文がキャンセルされました。",
         "refund_request_created": "返金申請書が受け付けられました。承認・返金完了を経て注文キャンセルが確定します。",
+        "refund_request_created_no_claim_access": "返金申請書 {{number}} が受け付けられました。クレーム権限のある運営者が承認・返金完了を処理すると注文キャンセルが確定します。",
+        "refund_request_auto_stopped": "返金申請書を承認まで処理しました。自動返金できない決済手段のため、申請書で返金完了を処理すると注文キャンセルが確定します。",
         "cancel_failed": "注文のキャンセルに失敗しました。",
         "refund_bank_label": "返金口座",
         "refund_bank_select": "銀行を選択",
@@ -396,6 +398,7 @@
         "cancel": "キャンセル",
         "confirm": "入金確認",
         "confirm_success": "入金が確認され、決済完了処理されました。",
+        "confirm_failed": "入金確認に失敗しました。",
         "mark_order_complete": "注文を決済完了として処理",
         "mark_order_complete_hint": "チェックすると入金記録とともに注文ステータスを決済完了に変更します(ポイント積立·在庫減少·通知送信含む)。チェックしないと入金内訳のみ記録します。"
       }
@@ -758,7 +761,8 @@
     "confirm_tracking_label": "運送状番号: ",
     "confirm_cancel": "キャンセル",
     "confirm_apply": "変更を適用",
-    "confirm_no_changes": "変更する項目がありません。"
+    "confirm_no_changes": "変更する項目がありません。",
+    "error": "一括処理に失敗しました。"
   },
   "column": {
     "no": "番号",

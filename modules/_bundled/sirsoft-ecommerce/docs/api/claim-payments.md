@@ -210,8 +210,9 @@ Content-Type: application/json
 승인·환급이 조용히 실패합니다.
 
 **승인 멱등은 플러그인의 의무입니다.** 승인 엔드포인트는 클라이언트가 호출하므로 같은 결제 건의
-승인 요청이 동시에 두 번 도달할 수 있고, 서버(모듈)는 확정 **후**의 재호출만 걸러낼 뿐 검사–확정
-사이의 동시 승인에는 방어가 없습니다 (`transaction_id` UNIQUE 는 서로 다른 행의 중복만 막습니다).
+승인 요청이 동시에 두 번 도달할 수 있습니다. 서버(모듈)는 확정·실패 기록을 **결제 대기일 때만**
+쓰는 조건부 갱신으로 같은 건의 이중 확정과 결제 완료 행 덮어쓰기는 막지만, PG 쪽 이중 **청구**는
+막지 못합니다 (`transaction_id` UNIQUE 는 서로 다른 행의 중복만 막습니다).
 플러그인은 같은 `payment_number`(PG merchant_order_id)의 승인이 PG 쪽에서 한 번만 청구되도록
 해야 합니다 — 국내 PG 는 동일 주문번호 중복 승인을 PG 서버가 거절하는 것이 표준 동작이며, 그
 전제가 성립하지 않는 PG 라면 플러그인이 자체 잠금·중복 검사를 두어야 합니다.
@@ -229,7 +230,7 @@ Content-Type: application/json
 | `handled` | bool | 이 리스너가 자기 PG 건으로 인식했는지. `handled=false` 이고 `success=false` 면 서버는 연동 부재로 판정합니다 |
 | `success` | bool | 승인 성공 여부. `false` 면 서버가 오류를 기록하고 `claim_payment_failed` 로 거절합니다 |
 | `transaction_id` | string\|null | PG 거래 ID. 이 컬럼의 UNIQUE 가 이중 청구를 막는 축이므로 승인 성공 시 반드시 채웁니다. **서버는 값이 없어도 승인을 확정합니다**(`null` 은 UNIQUE 제약에 걸리지 않으므로 그 결제 건만 멱등 방어선이 사라집니다) — 채우는 것은 플러그인의 책임입니다 |
-| `paid_amount` | int\|null | PG 가 실제 승인한 금액. **결제 통화의 최소 화폐단위 정수**입니다(KRW 3000 → `3000`, USD 12.50 → `1250`). 서버는 주문 통화 스냅샷 환율로 환산한 청구액과 정수 비교하며, 다르면 `claim_payment_amount_mismatch` 로 거절합니다. `null` 이면 대조를 건너뜁니다 |
+| `paid_amount` | int\|null | PG 가 실제 승인한 금액. **결제 통화의 최소 화폐단위 정수**입니다(KRW 3000 → `3000`, USD 12.50 → `1250`). 서버는 주문 통화 스냅샷 환율로 환산한 청구액과 정수 비교하며, 다르면 `claim_payment_amount_mismatch` 로 거절합니다. **`null`·누락도 불일치로 거절합니다** — 대조할 수 없는 승인은 확정하지 않습니다(승인 성공 시 반드시 채웁니다) |
 | `raw_response` | array\|null | PG 원본 응답 (그대로 보관) |
 | `error_code` / `error_message` | string\|null | 실패 사유 (관리자 진단용) |
 
@@ -239,16 +240,38 @@ Content-Type: application/json
 | --- | --- | --- |
 | `$result` | array | 아래 반환 스키마의 기본값 |
 | `$payment` | `ClaimPayment` | 환급 대상 결제 건 |
-| `$amount` | float | 환급액, **결제 통화**(주문 통화 스냅샷의 `order_currency`) 기준입니다. 기준 통화와 다르고 결제 건에 그 통화의 동결 금액(`mc_amount`)이 있으면 서버가 비례 환산해 넘깁니다. **동결 금액이 없으면(스냅샷 이전에 만들어진 구형 결제 건 등) 환산 없이 기준 통화 금액이 그대로 넘어갑니다.** `$payment->currency_code` 는 신청 시점 **기준 통화**라 환산이 일어난 경우와 어긋나므로 단위 판별에 쓰지 마십시오 — 같은 통화의 청구 총액은 `ClaimPaymentService::resolvePaymentCurrencyTotal($payment)`, 환급 누적액은 `::resolveRefundedPaymentCurrencyTotal($payment)` 로 받습니다(부분/전액 취소 판정의 단일 출처) |
+| `$amount` | float | 환급액, **결제 통화**(주문 통화 스냅샷의 `order_currency`) 기준이며 **그 통화의 소수 자릿수로 맞춰** 넘어갑니다(0 자리 통화면 정수). 부분 환급은 누적 차분으로 환산해 회차 합이 결제 통화 총액을 넘지 않고, 마지막 회차는 정확히 잔액입니다. 기준 통화와 다르고 결제 건에 그 통화의 동결 금액(`mc_amount`)이 있으면 서버가 비례 환산해 넘깁니다. **동결 금액이 없으면(스냅샷 이전에 만들어진 구형 결제 건 등) 환산 없이 기준 통화 금액이 그대로 넘어갑니다.** `$payment->currency_code` 는 신청 시점 **기준 통화**라 환산이 일어난 경우와 어긋나므로 단위 판별에 쓰지 마십시오 — 같은 통화의 청구 총액은 `ClaimPaymentService::resolvePaymentCurrencyTotal($payment)`, 환급 누적액은 `::resolveRefundedPaymentCurrencyTotal($payment)` 로 받습니다(부분/전액 취소 판정의 단일 출처) |
 | `$reason` | string\|null | 환급 사유 |
 | `$idempotencyKey` | string | `g7-claimpay-{결제건ID}-{환급 전 누적액×100}-{이번 환급액×100}` 형식 (금액 두 축은 기준통화 기준). 같은 키의 재요청은 PG 쪽에서 한 번만 처리되어야 합니다. 이번 환급액이 재료에 들어 있으므로, 실패한 환급을 다른 금액으로 재시도하면 키가 바뀌어 새 요청으로 처리됩니다 |
 
 | 반환 키 | 타입 | 설명 |
 | --- | --- | --- |
 | `handled` | bool | 승인 필터와 같은 의미 |
-| `success` | bool | 환급 성공 여부. `false` 면 서버가 `claim_payment_refund_failed` 로 거절합니다. **앞선 철회·차액 정산은 되돌아가지 않습니다** — 그 단계는 자기 트랜잭션으로 이미 커밋된 뒤이고, **클레임 결제 경로는** PG 호출을 트랜잭션 밖에 두는 설계라 두 단계를 한 트랜잭션으로 묶지 않습니다. 이것은 이 경로의 설계이지 모듈 전체의 원칙이 아닙니다 — 주문 취소 경로(`payment.refund` 필터)는 반대로 트랜잭션 안에서 PG 환불을 부르고 실패 시 롤백합니다. 이 필터는 트랜잭션 밖에서만 호출됩니다. 따라서 환급이 실패하면 신청서는 철회 상태로, 결제 건은 `paid` 로 남아 운영자 개입이 필요합니다. 결제 건이 여러 개면 앞서 성공한 환급도 유지됩니다 |
+| `success` | bool | 환급 성공 여부. `false` 면 서버가 `claim_payment_refund_failed` 로 거절합니다. 이 필터는 **결제 건 행을 잠근 트랜잭션 안에서** 호출됩니다 — 잔액 판정·PG 환급·누적 갱신이 한 잠금 안에 있어, 같은 결제 건에 대한 두 환급 요청(철회와 차액 정산 등)이 같은 잔액을 읽고 각자 PG 에 보내는 일이 없습니다. 실패하면 누적 갱신이 롤백되고 실패 사유(`pg_error_code`·`pg_error_message`)는 롤백 뒤에 따로 기록됩니다. 호출부가 연 더 바깥의 단계(신청서 철회 등)가 이미 커밋됐다면 그 단계는 되돌아가지 않으므로, 신청서는 철회 상태로·결제 건은 `paid` 로 남아 운영자 개입이 필요합니다. 결제 건이 여러 개면 앞서 성공한 환급도 유지됩니다 |
 | `transaction_id` | string\|null | 환급 거래 ID. **현재 모듈은 이 값을 저장하지 않습니다**(환급 거래 ID 컬럼 없음) — 돌려주어도 무방하나 대사에 쓰이지 않습니다. 환급 멱등의 축은 위 `$idempotencyKey` 인자입니다 |
 | `error_code` / `error_message` | string\|null | 실패 사유 |
+
+### `sirsoft-ecommerce.claim_payment.void_approval` (보상 · 선택 구현)
+
+PG 는 승인했는데 모듈이 승인 금액 대조로 거절한 건(`claim_payment_amount_mismatch` — `paid_amount`
+불일치·누락)을 **망취소**로 되돌리는 필터입니다. API 승인 경로(`claim-payments/{no}/approve`)는 PG 별
+보상 수단을 모르므로 이 필터가 유일한 보상 통로입니다. 서버 콜백 경로에서
+`ClaimPaymentCallback::approveAndRedirect()` 에 보상 클로저를 넘긴 경우에는 두 번 취소하지 않도록
+이 필터를 부르지 않습니다. 리스너가 없거나 실패하면 모듈은 오류 로그만 남기고 거절 예외를 그대로
+던집니다 — 운영자가 PG 콘솔에서 수동 취소합니다.
+
+| 인자 | 타입 | 설명 |
+| --- | --- | --- |
+| `$result` | array | 기본값 `{handled: false, success: false, error_code: null, error_message: null}` |
+| `$payment` | `ClaimPayment` | 거절된 결제 건 (아직 `pending`) |
+| `$callback` | array | 승인 때 받은 PG 콜백 파라미터 원문 (결제 키 등 취소 근거) |
+| `$approveResult` | array | 승인 필터가 돌려준 결과 (`transaction_id` 등) |
+
+| 반환 키 | 타입 | 설명 |
+| --- | --- | --- |
+| `handled` | bool | 자기 PG 건으로 인식했는지 |
+| `success` | bool | 망취소 성공 여부 |
+| `error_code` / `error_message` | string\|null | 실패 사유 (로그용) |
 
 콜백 경로도 함께 확장해야 합니다 — 결제번호가 `CP` 로 시작하면 주문이 아니라 `ClaimPayment` 로
 되찾아야 하며, 주문번호로 `Order` 를 찾는 기존 분기를 그대로 태우면 클레임 결제 콜백이 실패합니다.
@@ -263,11 +286,16 @@ Content-Type: application/json
    `claim_payment.approve` 필터가 발화하므로, 플러그인의 승인 구현은 필터 리스너 **한 곳**이면
    서버 콜백 경로와 API 승인 경로(`claim-payments/{no}/approve`)를 모두 받칩니다. 실패는
    `OrderClaimException` 으로 옵니다 — 승인 금액 불일치(`claim_payment_amount_mismatch`)처럼 PG
-   승인이 확정된 뒤의 거절은 플러그인이 망취소 등으로 보상해야 합니다. 그래서 콜백 금액은
+   승인이 확정된 뒤의 거절은 망취소로 보상해야 합니다(콜백 경로는 `approveAndRedirect()` 의 보상
+   클로저, API 승인 경로는 위 `claim_payment.void_approval` 필터). 그래서 콜백 금액은
    **승인 API 를 부르기 전에** `resolvePaymentCharge($payment)['minor_unit_amount']` 와 대조해 다르면
    승인 없이 실패(`error_code` 예: `AMOUNT_MISMATCH`)로 돌려주는 편이 맞습니다 — 결제창을 연 사이
    청구액이 바뀌면 낡은 창의 금액이 들어오고, 뒤에서 거절하면 돈이 빠져나갔다가 돌아오는 왕복이
-   생깁니다(토스페이먼츠·KG 이니시스·NHN KCP·나이스페이먼츠 모두 승인 전에 대조합니다).
+   생깁니다(토스페이먼츠·NHN KCP·나이스페이먼츠는 콜백 금액을 승인 전에 대조합니다). 콜백에 믿을 금액이
+   없는 PG 는 결제창 진입 단계(서명·해시 발급)에서 청구액을 대조하고, 승인 뒤에는 **승인 응답의 금액**을
+   청구액과 대조해 다르면 스스로 되돌린 뒤 실패로 돌려줍니다 — KG 이니시스가 그렇습니다(콜백의
+   `TotPrice` 는 브라우저를 거친 값이라 쓰지 않습니다). `paid_amount` 에는 PG 승인 응답의 금액을 우선
+   싣습니다 — 응답에 금액이 없는 PG 만 승인 전에 청구액과 대조한 값(서명이 덮는 금액 등)으로 대신합니다.
    필터 결과의 `error_code` 는 코드 모양(`[A-Za-z0-9_.-]{1,50}`)이면 **그대로** 아래 `?error=` 가
    됩니다 — PG 가 준 거절 코드를 싣고, 응답을 받지 못한 통신 실패에만 일반 코드를 쓰십시오.
    코드 모양이 아닌 값은 받지 않고 `failed` 로 바뀝니다(배너에 그대로 그려지는 값이라서입니다).

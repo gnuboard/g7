@@ -169,6 +169,7 @@
             "cancelled": "취소"
         },
         "partial_cancelled_badge": "일부취소",
+        "additional_options_more": "외 {{count}}건",
         "total_amount": "결제금액",
         "shipping_fee": "배송비",
         "free_shipping": "무료",

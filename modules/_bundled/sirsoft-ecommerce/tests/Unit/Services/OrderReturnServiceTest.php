@@ -2213,7 +2213,7 @@ class OrderReturnServiceTest extends ModuleTestCase
 
         $this->service->completeReturn($return, [], $this->completionOptions($return, false, false));
 
-        // PO 결정 2026-09-23 — 원장에 확정된 적립은 반품완료로도 되돌리지 않는다.
+        // 운영 결정 2026-09-23 — 원장에 확정된 적립은 반품완료로도 되돌리지 않는다.
         // 회수하면 회원이 이미 쓰거나 소멸시킨 적립을 살아 있는 다른 적립에서 대신 빼 오게 된다
         // (#599 3차 실측 L-1 · T2-D13).
         $this->assertSame(

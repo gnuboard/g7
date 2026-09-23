@@ -1,4 +1,4 @@
-feature: SPA 레이아웃 전환 시 보존 컴포넌트 저장소 A 격리 (engine-v1.66.2)
+feature: SPA 레이아웃 전환 시 보존 컴포넌트 저장소 A 격리 (engine-v1.71.1)
 
 description: |
   extends 기반 관리자 화면은 base 의 admin_layout_root(_fromBase, stable key)가 _local 의 상태

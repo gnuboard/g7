@@ -100,6 +100,7 @@ class CancelOrderRequest extends FormRequest
      * 추가 검증 로직
      *
      * @param  Validator  $validator  검증기
+     * @return void 반환값 없음
      */
     protected function withValidator(Validator $validator): void
     {
@@ -154,6 +155,7 @@ class CancelOrderRequest extends FormRequest
      *
      * @param  Validator  $validator  검증기
      * @param  Order  $order  취소 대상 주문
+     * @return void 반환값 없음
      */
     protected function validateRefundBank(Validator $validator, Order $order): void
     {
@@ -230,9 +232,14 @@ class CancelOrderRequest extends FormRequest
             return false;
         }
 
-        $remaining = (float) $order->total_paid_amount - (float) $order->total_refunded_amount;
-
-        return $remaining > 0.0;
+        // 두 누적은 decimal 이다 — float 로 빼면 `0.1 + 0.2` 류의 오차로 전액 환불된 주문이
+        // `0.00000001 > 0` 이 되어 "돌려줄 돈이 있다" 로 읽히고, 존재하지 않는 환불에 계좌를 묻는다.
+        // 문자열 그대로 소수 넷째 자리까지 비교한다(통화 소수 자릿수 최대치보다 넉넉하다).
+        return bccomp(
+            (string) ($order->total_paid_amount ?? '0'),
+            (string) ($order->total_refunded_amount ?? '0'),
+            4,
+        ) > 0;
     }
 
     /**
@@ -277,6 +284,7 @@ class CancelOrderRequest extends FormRequest
      *
      * @param  Validator  $validator  검증기
      * @param  Order  $order  취소 대상 주문
+     * @return void 반환값 없음
      */
     protected function validateCancelItems(Validator $validator, Order $order): void
     {
@@ -320,6 +328,8 @@ class CancelOrderRequest extends FormRequest
     /**
      * 검증 실패 시 응답 커스터마이징
      *
+     * @param  Validator  $validator  검증기
+     * @return void 반환값 없음
      *
      * @throws ValidationException
      */

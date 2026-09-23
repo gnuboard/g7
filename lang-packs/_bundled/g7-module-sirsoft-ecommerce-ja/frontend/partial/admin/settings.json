@@ -75,7 +75,6 @@
     "language_settings": {
       "title": "言語/通貨",
       "description": "ショッピングモールの基本言語および通貨を設定します。",
-      "default_language": "基本言語",
       "default_currency": "基本通貨",
       "currency_change_warning": "最初の商品登録後は変更できません。"
     },
@@ -92,7 +91,6 @@
       "actions": "管理",
       "delete": "削除",
       "base_currency": "基本通貨",
-      "krw_base": "KRW 1,000 =",
       "rounding_units": {
         "1": "1（一の位）",
         "10": "10（十の位）",
@@ -229,11 +227,7 @@
       "days_suffix": "日後に自動キャンセルされます。",
       "pending_minutes_prefix": "決済画面まで進んだものの決済が完了しなかった注文は",
       "pending_minutes_suffix": "分後に自動キャンセルされます。",
-      "pending_minutes_hint": "0 にするとこの区分は自動キャンセルしません。最大 20160 分（14日）。",
-      "vbank_due_days_label": "仮想口座入金期限：",
-      "vbank_due_days_suffix": "日",
-      "dbank_due_days_label": "無通帳振込入金期限：",
-      "dbank_due_days_suffix": "日"
+      "pending_minutes_hint": "0 にするとこの区分は自動キャンセルしません。最大 20160 分（14日）。"
     },
     "cart_expiry": {
       "title": "カート有効期間",

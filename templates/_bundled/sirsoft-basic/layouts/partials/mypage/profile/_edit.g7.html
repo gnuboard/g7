@@ -4,7 +4,7 @@
   <div data-if="{{_local?.isPasswordVerified}}" class="space-y-6">
     <blur-until-loaded sources="user"/>
     <responsive on="portable" class="space-y-4"/>
-    <!-- 계정 상태 안내 — 보기 화면과 같은 자리·같은 양식이다(PO 지시 2026-09-21). 수정 화면에만
+    <!-- 계정 상태 안내 — 보기 화면과 같은 자리·같은 양식이다(요구사항 2026-09-21). 수정 화면에만
          없으면, 차단·탈퇴 상태라 저장이 거절되는 사람이 그 이유를 이 화면에서 알 수 없다 —
          보기 화면으로 되돌아 나가야 비로소 읽게 된다. -->
     <div data-if="{{user.data?.status === 'inactive'}}" class="flex items-center gap-3 p-4 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
@@ -105,7 +105,7 @@
         <h3 class="text-base font-semibold text-gray-900 dark:text-white mb-4 pb-3 border-b border-gray-200 dark:border-gray-700">$t:mypage.profile.section_basic</h3>
         <div class="space-y-4">
           <!-- 아바타 — 보기 화면과 **같은 업로더**를 같은 자리에 세운다. 종전에는 사진을 바꾸려면
-               「수정하기」 를 눌러 들어온 화면에서 되돌아 나가 보기 화면에서 눌러야 했다(PO 지시
+               「수정하기」 를 눌러 들어온 화면에서 되돌아 나가 보기 화면에서 눌러야 했다(요구사항
                2026-09-21). 이 컴포넌트는 폼 본문과 무관하게 자기 엔드포인트로 즉시 올리므로
                아래 [저장] 을 누르지 않아도 반영되고, 성공하면 두 데이터소스를 다시 부른다. -->
           <div data-ref="profile_edit_avatar" class="flex items-center gap-4 pb-4 border-b border-gray-200 dark:border-gray-700">

@@ -1,0 +1,19 @@
+feature: KG 이니시스 결제 정보 주입 — 비회원 클레임 신청서 상세 경로 (#599 validate P7)
+
+description: |
+  비회원 클레임 신청서 상세(/shop/guest/claims/{N})는 회원 상세와 같은 결제 정보 카드를 쓰는데, 주입기의 주소
+  매칭이 회원 경로만 봐서 영수증·결제수단 표시·입금 안내가 오류 없이 빠졌다(NHN KCP·나이스페이먼츠는 이미 두 경로).
+
+axes:
+  case: [guest_claim_detail, guest_order_detail]
+
+effects:
+  - guest_claim_detail_shows_kginicis_receipt
+  - guest_order_detail_shows_kginicis_vbank_info
+
+test_files:
+  - plugins/_bundled/sirsoft-pay_kginicis/resources/js/__tests__/guestClaimDetailInjector.test.ts
+  - plugins/_bundled/sirsoft-pay_kginicis/resources/js/__tests__/guestOrderVbankInfoInjector.test.ts
+
+notes: |
+  e2e_browser=not_applicable — 외부 PG 결제 데이터 의존으로 브라우저 재현 불가(주입기 파일 헤더 e2e:allow 와 같은 사유).

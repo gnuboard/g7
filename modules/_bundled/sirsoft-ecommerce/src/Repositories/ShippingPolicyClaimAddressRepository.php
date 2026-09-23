@@ -61,4 +61,18 @@ class ShippingPolicyClaimAddressRepository implements ShippingPolicyClaimAddress
             ->where('claim_type', $claimType)
             ->delete();
     }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function deleteByPolicyIds(array $shippingPolicyIds): int
+    {
+        if ($shippingPolicyIds === []) {
+            return 0;
+        }
+
+        return $this->model->newQuery()
+            ->whereIn('shipping_policy_id', $shippingPolicyIds)
+            ->delete();
+    }
 }

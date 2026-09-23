@@ -3,8 +3,9 @@
   
   ⓐ 필터 행은 화면 밖 등록 영역에 한 번만 정의하고 `data-slot` 이 기본/상세 중 어디로 갈지를
      정한다 — 보이고 숨겨도 행이 다시 만들어지지 않으므로 입력값이 유지된다.
-  ⓑ 어떤 필터를 기본에 둘지는 브라우저(localStorage, `g7_coupon_filter_visible_filters`)에
-     남긴다 — 주문·상품 목록과 **각각 다른 키**를 쓴다.
+  ⓑ 어떤 필터를 기본에 둘지는 브라우저(localStorage)에 남긴다. 저장은 셸의 필터 표시 선택기가
+     자기 `id`(`admin_ecommerce_promotion_coupon_filters`)와 로그인 사용자로 만든 키에 스스로
+     한다 — 주문·상품 목록과 `id` 가 달라 키가 겹치지 않고, 편집모드 체크박스는 상태만 바꾼다.
   ⓒ 입력 중인 값은 `_local.filter` 에 모이지만 검색은 URL 로 나간다.
   
   날짜 구간이 **셋**이라 헷갈리기 쉽다 — 만든 날(`created*`), 쿠폰을 쓸 수 있는 기간
@@ -16,7 +17,7 @@
         <responsive on="portable" class="filter-row flex-col items-start"/>
         <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('targetType')}}">
           <on type="change">
-            <!-- 혜택 대상 필터 노출 스위치. 어떤 필터를 기본에 둘지는 운영자 취향이라 서버가 아니라 브라우저에 남긴다 — 상태 변경과 저장이 나란히 있어야 새로고침 후에도 같은 필터가 선다. -->
+            <!-- 혜택 대상 필터 노출 스위치. 어떤 필터를 기본에 둘지는 운영자 취향이라 서버가 아니라 브라우저에 남긴다 — 여기서는 상태만 바꾸고, 저장은 셸의 필터 표시 선택기가 바뀐 값을 받아 브라우저에 남긴다. -->
               <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('targetType') ? (_local.visibleFilters || []).filter(f => f !== 'targetType') : [...(_local.visibleFilters || []), 'targetType']}}"/>
           </on>
         </input>

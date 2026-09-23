@@ -257,6 +257,7 @@ import {
     initClaimEditHandler,
     saveClaimEditHandler,
     changeClaimRefundPriorityHandler,
+    setClaimRefundAccountFieldHandler,
     toggleClaimComparisonHandler,
 } from './claimApplyHandlers';
 
@@ -553,6 +554,7 @@ export const handlerMap = {
     clearClaimApplyTimers: clearClaimApplyTimers,
     // 주문금액 비교 섹션(#599 후속) — 환불 우선순위 전환(미리보기 재호출) · 접기/펼치기
     changeClaimRefundPriority: changeClaimRefundPriorityHandler,
+    setClaimRefundAccountField: setClaimRefundAccountFieldHandler,
     toggleClaimComparison: toggleClaimComparisonHandler,
 
     // ===== 클레임 신청서 수정 (회원/비회원 공용 — 작성 셸의 edit 모드) =====

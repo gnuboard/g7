@@ -3,6 +3,7 @@
 namespace Modules\Sirsoft\Ecommerce\Services;
 
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Ecommerce\DTO\CancellableAmount;
 use Modules\Sirsoft\Ecommerce\DTO\CancellationAdjustment;
 use Modules\Sirsoft\Ecommerce\DTO\ExchangeAdjustment;
@@ -176,32 +177,12 @@ class CancellableAmountCalculator
             if ($sourceReturn !== null) {
                 $excludeClaims[ClaimTypeEnum::RETURN->value] = [$sourceReturn->id];
 
-                // 재계산(`buildRecalcInput()`)은 반품완료(`RETURNED`) 행을 **잔여로 센다** —
-                // 교환과 달리 승계 행이 없어 그렇게 설계돼 있고, 그 독블록이 그렇게 선언한다.
-                // 그래서 이번 신청서 몫만 넘기면 앞 회차에 이미 반품된 상품이 여전히 주문에
-                // 남아 있다고 계산되어, 그 상품과 **그 상품만 쓰던 배송정책의 배송비**가
-                // 환불 한도에서 통째로 빠진다.
-                //
-                // 완료 처리 경로가 `completedClaimItems()` 로 **누적**을 넘기는 것과 같은 이유다
-                // (S2-D5 선택지 ②). 저장이 그 규칙으로 금액을 만들었는데 실행 가드만 단건
-                // 기준이면 두 값이 어긋나 **시스템이 만든 환불신청서를 시스템이 거부한다**
-                // (S-B-D16 실측: 생성 194,500 · 가드 188,500 · 차이 6,000 = 전량 반품된
-                // 상품이 혼자 쓰던 정책의 배송비). 여기도 같은 누적을 넘겨 두 시점을 맞춘다.
-                //
-                // 과다 환불은 이 축이 아니라 `remainingPg`·`remainingPoints`(이미 나간 돈을 뺀
-                // 수단별 잔여)가 막는다 — 누적으로 올려도 이미 환불된 몫은 다시 나가지 않는다.
-                $accumulatedItems = $this->accumulatedReturnItems($order, $sourceReturn, $items);
-                $accumulatedFee = $this->accumulatedDeductedCollectionFee($order, $sourceReturn);
-
-                $adjustment = new ReturnAdjustment(
-                    returnItems: $accumulatedItems,
-                    collectionFee: $accumulatedFee,
-                    chargeMethod: $accumulatedFee > 0
-                        ? ClaimChargeMethodEnum::DEDUCT_FROM_REFUND
-                        : $sourceReturn->charge_method,
+                return $this->assembleFromDomain(
+                    $order,
+                    $this->returnRefundDelta($order, $sourceReturn, $items, $refundPriority),
+                    $excludeClaims,
+                    $refundPriority,
                 );
-
-                return $this->calculate($order, $accumulatedItems, ClaimTypeEnum::RETURN, $adjustment, $excludeClaims, $refundPriority);
             }
         }
 
@@ -312,7 +293,7 @@ class CancellableAmountCalculator
             }
 
             $local = max(0.0, (float) $payment->getCancellableAmount());
-            $base = $this->toBaseCurrency($local, $payment->currency, $order);
+            $base = $this->toBaseCurrency($local, $payment->currency, $order, $payment);
 
             $total += $base;
 
@@ -584,32 +565,76 @@ class CancellableAmountCalculator
      *
      * 신청·승인 시점 결제 방식은 별도 클레임 결제로 이미 받으므로 환불 예정액에 영향이 없다.
      *
+     * 소수 자릿수 통화(기본 통화가 USD 등)의 회수비를 정수로 반올림하면 차감액이 실제 청구와
+     * 어긋나므로 저장값 그대로 쓴다.
+     *
      * @param  OrderReturn  $orderReturn  반품 신청서
-     * @return int 차감 대상 회수배송비 (별도 결제면 0)
+     * @return float 차감 대상 회수배송비 (별도 결제면 0)
      */
-    protected function deductedCollectionFeeOf(OrderReturn $orderReturn): int
+    protected function deductedCollectionFeeOf(OrderReturn $orderReturn): float
     {
         return $orderReturn->charge_method === ClaimChargeMethodEnum::DEDUCT_FROM_REFUND
-            ? (int) round((float) $orderReturn->claim_shipping_fee)
-            : 0;
+            ? (float) $orderReturn->claim_shipping_fee
+            : 0.0;
     }
 
     /**
-     * 이 신청서 몫에 **같은 주문의 다른 완료 반품 몫**을 합산합니다. (S-B-D16)
+     * 반품 발 환불신청서 1건의 ① 축 — **이 신청서 몫의 차분**을 구합니다. (S-B-D16 · #599 validate P2 #1)
      *
-     * 재계산이 `RETURNED` 행을 잔여로 세기 때문에, 환불 실행 가드도 완료 처리 경로와 똑같이
-     * 누적을 넘겨야 두 시점이 같은 금액을 낸다. 판단 기준은 **상품행의 완료 여부**다 —
-     * 신청서 헤더가 아직 완료로 닫히지 않았어도 이미 완료된 상품행은 주문에서 빠진 몫이다.
+     * 재계산(`buildRecalcInput()`)은 반품완료(`RETURNED`) 행을 **잔여로 센다** — 교환과 달리
+     * 승계 행이 없어 그렇게 설계돼 있다. 그래서 이번 신청서 몫만 넘기면 앞 회차에 이미 반품된
+     * 상품이 여전히 주문에 남아 있다고 계산되어, 그 상품만 쓰던 배송정책의 배송비가 한도에서
+     * 빠진다(S-B-D16 실측: 생성 194,500 · 가드 188,500). 그렇다고 누적 결과를 **그대로** 한도로
+     * 쓰면 앞 회차가 이미 환불한 몫까지 이번 한도에 들어간다 — 2회차 정답 7,000 원에 한도가
+     * 14,000 원으로 열려, 운영자가 금액을 올려 저장하면 그대로 과다 환불이 나간다.
      *
-     * 자기 신청서는 `$items` 로 이미 들어와 있으므로 조회에서 제외한다 — 빼지 않으면 같은
-     * 수량이 두 번 더해져 환불 한도가 실제보다 커진다.
+     * 그래서 완료 처리 경로(`OrderReturnService::createRefundRequest()`)와 **같은 차분**을 쓴다:
+     * `상한 없는 재계산(누적 몫, 이 신청서 회수비) − 상한 없는 재계산(다른 신청서 몫, 회수비 0)`.
+     * 다른 신청서의 회수비는 그 신청서의 환불신청서에서 이미 차감됐으므로 양쪽 모두에서 뺀다.
+     * 앞 회차가 없으면 차분이 필요 없으므로 이 신청서 몫을 그대로 재계산한다(완료 경로와 같다).
+     *
+     * 과다 지급의 최종 방어는 ② 축(결제수단별 잔여)이 그대로 맡는다.
      *
      * @param  Order  $order  대상 주문
      * @param  OrderReturn  $sourceReturn  이 환불신청서의 출처 반품
      * @param  array<int, array{order_option_id: int, cancel_quantity: int}>  $items  이 신청서 몫
-     * @return array<int, array{order_option_id: int, cancel_quantity: int}> 누적 아이템
+     * @param  RefundPriorityEnum  $refundPriority  환불 우선순위
+     * @return float 이 신청서 몫의 환불 대상 금액 (기본 통화)
      */
-    protected function accumulatedReturnItems(Order $order, OrderReturn $sourceReturn, array $items): array
+    protected function returnRefundDelta(Order $order, OrderReturn $sourceReturn, array $items, RefundPriorityEnum $refundPriority): float
+    {
+        $ownFee = $this->deductedCollectionFeeOf($sourceReturn);
+        $priorItems = $this->otherCompletedReturnItems($order, $sourceReturn);
+
+        if ($priorItems === []) {
+            return $this->estimateReturnRefundForItems($order, $items, $ownFee, $refundPriority);
+        }
+
+        // 빼는 값을 먼저 구한다 — 마지막 재계산 입력이 누적 몫이어야 호출 추적이 「가드가 누적을
+        // 넘겼는가」를 그대로 읽는다(`RefundExecutionGuardMatchesFiledAmountTest`).
+        $prior = $this->estimateReturnRefundForItems($order, $priorItems, 0.0, $refundPriority, uncapped: true);
+        $gross = $this->estimateReturnRefundForItems(
+            $order,
+            $this->mergeClaimItems($items, $priorItems),
+            $ownFee,
+            $refundPriority,
+            uncapped: true,
+        );
+
+        return max(0.0, $gross - $prior);
+    }
+
+    /**
+     * 같은 주문의 **다른 반품 신청서**에서 완료된 상품 몫을 모읍니다.
+     *
+     * 판단 기준은 **상품행의 완료 여부**다 — 신청서 헤더가 아직 완료로 닫히지 않았어도 이미
+     * 완료된 상품행은 주문에서 빠진 몫이다. 자기 신청서는 호출부의 `$items` 로 들어오므로 뺀다.
+     *
+     * @param  Order  $order  대상 주문
+     * @param  OrderReturn  $sourceReturn  이 환불신청서의 출처 반품
+     * @return array<int, array{order_option_id: int, cancel_quantity: int}> 다른 신청서의 완료 몫
+     */
+    protected function otherCompletedReturnItems(Order $order, OrderReturn $sourceReturn): array
     {
         $others = [];
 
@@ -620,37 +645,7 @@ class CancellableAmountCalculator
             ];
         }
 
-        return $this->mergeClaimItems($items, $others);
-    }
-
-    /**
-     * 누적 대상이 된 다른 완료 반품들의 **환불금 차감 회수배송비**를 이 신청서 몫에 더합니다.
-     *
-     * 아이템만 누적하고 회수비를 두면 앞 회차가 환불금에서 이미 뺀 회수비가 이번 한도에
-     * 되살아나 한도가 그만큼 커진다 — 아이템과 같은 집합에 대해 같은 차감을 적용한다.
-     *
-     * @param  Order  $order  대상 주문
-     * @param  OrderReturn  $sourceReturn  이 환불신청서의 출처 반품
-     * @return int 차감 대상 회수배송비 합계
-     */
-    protected function accumulatedDeductedCollectionFee(Order $order, OrderReturn $sourceReturn): int
-    {
-        $total = $this->deductedCollectionFeeOf($sourceReturn);
-
-        $completedReturnIds = $this->returnOptionRepository
-            ->listCompletedByOrderId($order->id, $sourceReturn->id)
-            ->pluck('order_return_id')
-            ->unique();
-
-        foreach ($completedReturnIds as $returnId) {
-            $other = $this->returnRepository->findById((int) $returnId);
-
-            if ($other !== null) {
-                $total += $this->deductedCollectionFeeOf($other);
-            }
-        }
-
-        return $total;
+        return $this->mergeClaimItems([], $others);
     }
 
     /**
@@ -684,15 +679,17 @@ class CancellableAmountCalculator
      *
      * @param  Order  $order  대상 주문
      * @param  array<int, array{order_option_id: int, cancel_quantity: int}>  $items  대상 아이템
-     * @param  int  $deductedCollectionFee  환불금 차감 회수배송비 합계
+     * @param  float  $deductedCollectionFee  환불금 차감 회수배송비 합계
      * @param  RefundPriorityEnum  $refundPriority  환불 우선순위
+     * @param  bool  $uncapped  기왕 환불액 상한을 끌지 여부 (회차 차분 산출 전용)
      * @return float 환불 예정액 (기본 통화)
      */
     protected function estimateReturnRefundForItems(
         Order $order,
         array $items,
-        int $deductedCollectionFee,
+        float $deductedCollectionFee,
         RefundPriorityEnum $refundPriority,
+        bool $uncapped = false,
     ): float {
         if ($items === []) {
             return 0.0;
@@ -704,9 +701,11 @@ class CancellableAmountCalculator
             chargeMethod: $deductedCollectionFee > 0 ? ClaimChargeMethodEnum::DEDUCT_FROM_REFUND : null,
         );
 
-        return (float) $this->adjustmentService
-            ->calculate($order, $adjustment, $refundPriority)
-            ->getTotalRefundAmount();
+        $result = $uncapped
+            ? $this->adjustmentService->calculateWithoutPriorRefundCap($order, $adjustment, $refundPriority)
+            : $this->adjustmentService->calculate($order, $adjustment, $refundPriority);
+
+        return (float) $result->getTotalRefundAmount();
     }
 
     /**
@@ -738,12 +737,20 @@ class CancellableAmountCalculator
      * 환산식은 `CurrencyConversionService` 의 정방향(`base ÷ base_unit × rate`)을 뒤집은
      * 것이다: `base = local ÷ rate × base_unit`.
      *
+     * 스냅샷에 그 통화의 환율이 없으면(레거시 주문·손상된 스냅샷) 환산하지 않고 원값을 쓴다 —
+     * 근거 없는 환산으로 한도를 과대 산정하느니 좁히는 쪽을 택한다(기존 계약,
+     * `CancellableAmountCalculatorTest::test_missing_exchange_rate_falls_back_to_the_local_amount`).
+     * 다만 **조용히 넘기지 않고 경고를 남긴다** — 종전에는 USD 50 이 50 원 한도로 잡혀 정당한 환불이
+     * 막혀도 흔적이 없었다(#599 validate P2 minor). 예외로 막지 않는 이유는 이 값이 관리자 화면
+     * 표시에도 쓰여, 환율 하나가 빠진 주문의 상세·환불 화면이 통째로 열리지 않게 되기 때문이다.
+     *
      * @param  float  $localAmount  결제 통화 금액
      * @param  string|null  $currency  결제 통화 코드
      * @param  Order  $order  대상 주문
+     * @param  OrderPayment|null  $payment  결제행 (환율 부재 경고의 식별 근거)
      * @return float 기본 통화 금액
      */
-    protected function toBaseCurrency(float $localAmount, ?string $currency, Order $order): float
+    protected function toBaseCurrency(float $localAmount, ?string $currency, Order $order, ?OrderPayment $payment = null): float
     {
         $snapshot = $order->currency_snapshot ?? [];
         $baseCurrency = $this->resolveBaseCurrency($order);
@@ -753,26 +760,26 @@ class CancellableAmountCalculator
         }
 
         $rateData = $snapshot['exchange_rates'][$currency] ?? null;
+        $rate = match (true) {
+            $rateData === null => 0.0,
+            is_numeric($rateData) => (float) $rateData,
+            default => (float) ($rateData['rate'] ?? 0),
+        };
 
-        if ($rateData === null) {
-            return $localAmount;
+        if ($rate > 0) {
+            return ($localAmount / $rate) * $this->currencyService->getSnapshotBaseUnit($snapshot);
         }
 
-        $rate = is_numeric($rateData) ? (float) $rateData : (float) ($rateData['rate'] ?? 0);
+        Log::warning('[claim.cancellable] 결제 통화 환율이 스냅샷에 없어 원값으로 한도를 잡습니다', [
+            'order_id' => $order->id,
+            'payment_id' => $payment?->id,
+            'currency' => $currency,
+            'base_currency' => $baseCurrency,
+        ]);
 
-        if ($rate <= 0) {
-            return $localAmount;
-        }
-
-        return ($localAmount / $rate) * $this->currencyService->getSnapshotBaseUnit($snapshot);
+        return $localAmount;
     }
 
-    /**
-     * 주문의 기본 통화 코드를 반환합니다.
-     *
-     * @param  Order  $order  대상 주문
-     * @return string 기본 통화 코드
-     */
     /**
      * 되돌릴 대상이 없는 주문의 0 상한 결과를 반환합니다.
      *
@@ -807,16 +814,15 @@ class CancellableAmountCalculator
     /**
      * 주문의 기준 통화 코드를 반환합니다.
      *
-     * 거래 시점에 동결된 스냅샷이 정본이고, 없으면 상점 기본 통화로 떨어집니다.
+     * 거래 시점에 동결된 스냅샷이 정본이고, 없으면 상점 기본 통화로 떨어집니다. 해석 규칙은
+     * 클레임 서비스 공용 헬퍼(`CurrencyConversionService::resolveOrderBaseCurrency()`)가 단일 출처다.
      *
      * @param  Order  $order  주문
      * @return string 기준 통화 코드
      */
     protected function resolveBaseCurrency(Order $order): string
     {
-        $snapshot = $order->currency_snapshot ?? [];
-
-        return $snapshot['base_currency'] ?? $this->currencyService->getDefaultCurrency();
+        return $this->currencyService->resolveOrderBaseCurrency($order);
     }
 
     /**

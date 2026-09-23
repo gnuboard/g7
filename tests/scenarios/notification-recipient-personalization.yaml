@@ -14,8 +14,8 @@ description: |
     - 수신자 0명은 조용히 사라지지 않고 notification_logs 에 skipped 로 남으며,
       사유가 `no_recipient_resolved` / `guest_email_empty` 로 갈린다.
     - `exclude_trigger_user` 는 **그 규칙이 뽑은 수신자에게만** 적용된다.
-    - trigger_user_id 가 가리키는 계정이 사라졌으면(탈퇴) 게스트 폴백으로 낙하한다.
-      발송 여부의 정책은 코어가 아니라 확장이 정한다(guest_recipient 를 싣는지로).
+    - trigger_user_id 가 가리키는 계정이 사라졌으면(삭제 회원) 게스트 재료가 있어도 폴백하지
+      않는다 — 판정은 NotificationWithdrawnRecipientPolicy 한 곳이 소유한다(#599 validate).
     - 정의 전수 계약: 본문·링크가 쓰는 변수 선언 · database 채널의 클릭 대상 ·
       audience(staff/customer) ↔ 수신자 규칙 정합 · 인정 어휘 4종.
 
@@ -54,8 +54,30 @@ effects:
   - role_recipients_arrive_with_their_permissions_loaded
   - exclude_trigger_user_applies_only_to_its_own_rule
   - exclude_trigger_user_still_filters_its_own_rule
-  - missing_trigger_user_falls_through_to_guest_recipient
+  - missing_trigger_user_does_not_fall_back_to_guest_recipient
   - missing_trigger_user_without_guest_material_stays_empty
+  # 수신자 종류별 기본 해석 (NotificationRecipientResolverTest)
+  - trigger_user_resolves_from_context
+  - trigger_user_resolves_from_id_only
+  - trigger_user_returns_empty_without_context
+  - related_user_resolves_from_context
+  - related_user_returns_empty_when_relation_missing
+  - related_user_supports_collection
+  - role_resolves_users_by_role_identifier
+  - role_resolves_users_from_multiple_identifiers
+  - role_multiple_identifiers_deduplicate_shared_users
+  - role_scalar_value_still_resolves
+  - role_falls_back_to_super_admin
+  - role_nonexistent_falls_back_to_super_admin
+  - specific_users_resolves_by_uuid
+  - specific_users_returns_empty_for_empty_ids
+  - exclude_trigger_user_filters_out_trigger
+  - no_exclude_keeps_trigger_user
+  - multiple_rules_combine_recipients
+  - duplicate_users_are_deduplicated
+  - empty_rules_returns_empty
+  - unknown_type_is_skipped_gracefully
+  - invalid_guest_recipient_yields_no_recipient
 
 test_files:
   - tests/Unit/Notifications/NotificationLinkContractTest.php

@@ -28,7 +28,7 @@
  */
 
 import type { ActionContext } from '../types';
-import { claimRequestConfig } from './claimImageHandlers';
+import { claimRequestConfig, claimText } from './claimImageHandlers';
 import { isUserFixableClaimError } from './claimApplyHandlers';
 
 const logger = ((window as any).G7Core?.createLogger?.('Ecom:ClaimList')) ?? {
@@ -176,8 +176,7 @@ export async function withdrawClaimHandler(
         G7Core.modal?.close?.('modal_claim_withdraw');
         G7Core.toast?.success?.(
             response.message
-            ?? G7Core.t?.('claim.withdraw.success')
-            ?? '신청이 철회되었습니다.'
+            ?? claimText('sirsoft-ecommerce.user.claim.withdraw.success', '신청이 철회되었습니다.')
         );
 
         if (action.params?.refreshDataSourceId) {
@@ -199,8 +198,7 @@ export async function withdrawClaimHandler(
         const message = error?.response?.data?.message
             ?? error?.data?.message
             ?? error?.message
-            ?? G7Core.t?.('claim.withdraw.failed')
-            ?? '신청 철회에 실패했습니다.';
+            ?? claimText('sirsoft-ecommerce.user.claim.withdraw.failed', '신청 철회에 실패했습니다.');
         const userFixable = isUserFixableClaimError(error);
 
         G7Core.state.setLocal({
@@ -322,8 +320,7 @@ export async function payClaimOutstandingHandler(
         G7Core.state.setLocal({ isPayingClaim: false, claimPayError: null });
         G7Core.toast?.success?.(
             response.message
-            ?? G7Core.t?.('claim.detail.pay_success')
-            ?? '결제가 완료되었습니다.'
+            ?? claimText('sirsoft-ecommerce.user.claim.pay.success', '결제가 완료되었습니다.')
         );
 
         if (action.params?.refreshDataSourceId) {
@@ -338,8 +335,7 @@ export async function payClaimOutstandingHandler(
         const message = error?.response?.data?.message
             ?? error?.data?.message
             ?? error?.message
-            ?? G7Core.t?.('claim.detail.pay_failed')
-            ?? '결제를 시작하지 못했습니다.';
+            ?? claimText('sirsoft-ecommerce.user.claim.pay.failed', '결제를 시작하지 못했습니다.');
         const userFixable = isUserFixableClaimError(error);
 
         G7Core.state.setLocal({

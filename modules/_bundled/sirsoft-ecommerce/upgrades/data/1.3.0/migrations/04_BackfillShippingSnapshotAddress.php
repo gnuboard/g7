@@ -100,6 +100,10 @@ class BackfillShippingSnapshotAddress implements DataMigration
                 break;
             }
 
+            // 배송지 행은 청크 단위로 한 번에 읽는다 — 주문마다 조회하면 주문 수만큼 쿼리가 늘어
+            // 대형 상점의 업그레이드가 그 수에 비례해 길어진다(N+1).
+            $addressRows = $this->findShippingAddressRows($orders->pluck('id')->map(fn ($id) => (int) $id)->all());
+
             foreach ($orders as $order) {
                 $lastId = (int) $order->id;
 
@@ -120,7 +124,7 @@ class BackfillShippingSnapshotAddress implements DataMigration
                     continue;
                 }
 
-                $row = $this->findShippingAddressRow($lastId);
+                $row = $addressRows[$lastId] ?? null;
 
                 if ($row === null) {
                     $noAddressRow++;
@@ -191,21 +195,35 @@ class BackfillShippingSnapshotAddress implements DataMigration
     }
 
     /**
-     * 주문의 배송지 행을 조회합니다.
+     * 주문들의 배송지 행을 한 번에 조회합니다.
      *
      * "행이 없다" 와 "행은 있는데 국가가 없다" 는 백필 후의 결과가 다르므로(클래스 docblock
-     * 참조) 조회와 해석을 나눠 호출부가 두 경우를 각각 셀 수 있게 한다.
+     * 참조) 조회와 해석을 나눠 호출부가 두 경우를 각각 셀 수 있게 한다. 한 주문에 배송지 행이
+     * 여럿이면 종전 단건 조회(`orderBy('id')->first()`)와 같게 가장 먼저 만든 행을 쓴다.
      *
-     * @param  int  $orderId  주문 ID
-     * @return object|null 배송지 행 (없으면 null)
+     * @param  array<int, int>  $orderIds  주문 ID 목록
+     * @return array<int, object> 주문 ID → 배송지 행
      */
-    private function findShippingAddressRow(int $orderId): ?object
+    private function findShippingAddressRows(array $orderIds): array
     {
-        return DB::table(self::ADDRESSES_TABLE)
-            ->where('order_id', $orderId)
+        if ($orderIds === []) {
+            return [];
+        }
+
+        $rows = [];
+
+        $found = DB::table(self::ADDRESSES_TABLE)
+            ->whereIn('order_id', $orderIds)
             ->where('address_type', 'shipping')
             ->orderBy('id')
-            ->first(['recipient_country_code', 'zipcode', 'intl_postal_code']);
+            ->get(['order_id', 'recipient_country_code', 'zipcode', 'intl_postal_code']);
+
+        foreach ($found as $row) {
+            $orderId = (int) $row->order_id;
+            $rows[$orderId] ??= $row;
+        }
+
+        return $rows;
     }
 
     /**

@@ -22,7 +22,7 @@ description: |
   - 배송지: 받는 사람·주소가 회원 이름과 다를 수 있어 별도 검색 갈래를 둔다. 회원 한정은
     검색 대상/검색어와 **다른 축**이라 전용 다중선택 필터가 쥐고(`user_uuids[]`), 고른 회원의
     이름표는 목록 응답이 `filters.members` 로 되돌려 준다 — 코어 회원 검색은 uuid 를 한 건씩만
-    받아, 한정이 세 명이면 화면이 왕복을 세 번 해야 한다(2026-09-21 PO 지적).
+    받아, 한정이 세 명이면 화면이 왕복을 세 번 해야 한다(2026-09-21 검수 지적).
   - 상품문의: 본문 검색이 다형 관계를 넘어가야 해서 서버가 morph 타입을 먼저 푼다.
     해석되지 않는 타입이 섞여 있어도 화면이 500 으로 죽지 않고 그 타입만 건너뛴다.
 
@@ -121,7 +121,7 @@ effects:
   - ecommerce_admin_list_member_filter_keeps_labels_outside_search_results
   - ecommerce_admin_list_member_labels_come_from_the_list_response
   - ecommerce_admin_list_member_name_opens_context_menu_not_navigation
-  # 배송지 목록 전면 재작성(2026-09-21 PO 지시) — 쿠폰·주문·상품과 같은 뼈대로 옮기면서 생긴 축
+  # 배송지 목록 전면 재작성(2026-09-21 요구사항) — 쿠폰·주문·상품과 같은 뼈대로 옮기면서 생긴 축
   - ecommerce_admin_list_reset_clears_state_before_url
   - ecommerce_admin_list_page_change_clears_selection
   - ecommerce_admin_list_has_no_preset_or_edit_mode
@@ -150,7 +150,7 @@ effects:
   - ecommerce_member_tab_links_carry_user_uuid
   - ecommerce_member_tab_shows_saved_address_lines
   # 0건이어도 블록은 서고 「없다」 고 말한다 — 통째로 감추면 배송지가 없는 회원과 기능이 없는
-  # 화면이 구분되지 않는다(2026-09-21 PO 가 0건 회원을 열어 「버튼만 딸랑」 으로 읽은 자리).
+  # 화면이 구분되지 않는다(2026-09-21 운영자가 0건 회원을 열어 「버튼만 딸랑」 으로 읽은 자리).
   - ecommerce_member_tab_address_block_stands_when_empty
   # 실브라우저에서 «눌렀을 때 주소가 바뀌는가» — 레이아웃 JSON 검사로는 잡히지 않는 축이다.
   # (href 식이 렌더 시 undefined 가 되어 링크가 죽어 있던 결함, 2026-09-15)

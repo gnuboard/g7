@@ -1635,8 +1635,10 @@ describe('신청자 출처 뱃지·요청자 링크 (계획 676)', () => {
   /**
    * 회원 주문이면 이름이 **링크**로 서고 그 회원 화면을 가리킨다.
    *
-   * 되돌림 축: 링크 노드를 Span 으로 되돌리거나 `requester_user_id` 를 `requested_by` 로
-   * 바꾸면 anchor 가 사라져 red. 실측(2026-09-16) `RT20260916-0302483148` = `/admin/users/853`.
+   * 되돌림 축: 링크 노드를 Span 으로 되돌리거나 링크 조건을 `requested_by` 로 바꾸면 anchor 가
+   * 사라져 red. 링크 대상은 주문 주인의 **uuid**(`requester_user_uuid`)다 — 관리자 회원 화면은
+   * uuid 로 열리고, 숫자 id 로 만든 링크는 404 였다(#599 validate P7 11-#1 — 종전 이 테스트가
+   * 숫자 `/admin/users/853` 을 계약으로 잠갔다).
    *
    * @scenario claim_type=exchange, claim_stage=in_progress
    * @effects requester_link_targets_the_order_owner_not_the_filer
@@ -1647,6 +1649,7 @@ describe('신청자 출처 뱃지·요청자 링크 (계획 676)', () => {
       claimResponse({
         requester_name: 'MEAS599-S2-M',
         requester_user_id: 853,
+        requester_user_uuid: '01990000-0000-7000-8000-000000000853',
         request_source: 'customer',
         request_source_label: '고객 신청',
       })
@@ -1669,7 +1672,7 @@ describe('신청자 출처 뱃지·요청자 링크 (계획 676)', () => {
    *
    * 이 축이 핵심이다. `requested_by` 로 걸면 대리 접수 건은 그 값이 null 이라 **회원 주문인데
    * 링크가 사라진다.** 실측(2026-09-16) `RF20260915-1707536717` = `requested_by` NULL ·
-   * 주문 766 의 `user_id` 3 → `/admin/users/3`.
+   * 주문 766 의 주인(회원 id 3) → 그 회원의 uuid 경로.
    *
    * @scenario claim_type=exchange, claim_stage=in_progress
    * @effects requester_link_targets_the_order_owner_not_the_filer
@@ -1680,6 +1683,7 @@ describe('신청자 출처 뱃지·요청자 링크 (계획 676)', () => {
       claimResponse({
         requester_name: 'MEAS599-S1-M',
         requester_user_id: 3,
+        requester_user_uuid: '01990000-0000-7000-8000-000000000003',
         request_source: 'admin',
         request_source_label: '운영자 접수',
       })
@@ -1704,6 +1708,7 @@ describe('신청자 출처 뱃지·요청자 링크 (계획 676)', () => {
       claimResponse({
         requester_name: 'MEAS599-S2-R-G',
         requester_user_id: null,
+        requester_user_uuid: null,
         request_source: 'guest',
         request_source_label: '비회원 신청',
       })

@@ -33,6 +33,25 @@ interface ActionWithParams<T = Record<string, any>> {
     [key: string]: any;
 }
 
+/**
+ * 모듈 문구를 번역하고, 번역이 없으면 폴백 문구를 돌려줍니다.
+ *
+ * 키는 **모듈 접두사**(`sirsoft-ecommerce.`)를 쓴다 — 접두사 없는 `claim.*` 는 특정 사용자
+ * 템플릿(sirsoft-basic)의 lang 에만 있어, 다른 템플릿에서는 키 원문이 화면에 나온다.
+ * `G7Core.t` 는 번역이 없으면 키 문자열을 그대로 돌려주므로 `t(...) ?? 폴백` 은 폴백까지
+ * 가지 않는다 — 키와 같으면 폴백으로 본다(관리자 클레임 핸들러의 `t()` 와 같은 규칙).
+ *
+ * @param key 모듈 문구 키
+ * @param fallback 번역이 없을 때의 문구
+ * @param params 치환 파라미터
+ * @returns 표시할 문구
+ */
+export function claimText(key: string, fallback: string, params?: Record<string, unknown>): string {
+    const resolved = (window as any).G7Core?.t?.(key, params);
+
+    return typeof resolved === 'string' && resolved !== '' && resolved !== key ? resolved : fallback;
+}
+
 /** 업로드된(귀속 대기) 첨부 — ClaimImageResource 형태 */
 export interface ClaimPendingImage {
     id: number;
@@ -167,15 +186,13 @@ export async function uploadPendingClaimFiles(
 
     if (sizeExceeded) {
         G7Core.toast?.warning?.(
-            G7Core.t?.('claim.image.size_exceeded', { size: Number(settings.image_max_size_kb ?? 0) })
-            ?? '첨부 용량 상한을 초과한 파일은 제외했습니다.'
+            claimText('sirsoft-ecommerce.user.claim.image.size_exceeded', '첨부 용량 상한을 초과한 파일은 제외했습니다.', { size: Number(settings.image_max_size_kb ?? 0) })
         );
     }
 
     if (countExceeded) {
         G7Core.toast?.warning?.(
-            G7Core.t?.('claim.image.limit_exceeded', { max: Number(settings.max_images ?? 0) })
-            ?? '첨부 장수 상한을 초과한 파일은 제외했습니다.'
+            claimText('sirsoft-ecommerce.user.claim.image.limit_exceeded', '첨부 장수 상한을 초과한 파일은 제외했습니다.', { max: Number(settings.max_images ?? 0) })
         );
     }
 
@@ -224,8 +241,11 @@ export async function uploadPendingClaimFiles(
     if (failed > 0) {
         // 분모는 **올리려 한 장수**(`accepted`)다. 고른 장수를 쓰면 상한으로 이미 제외된 것까지
         // 「못 올렸다」로 세어, 바로 위에서 이유를 말한 그 파일을 두 번 세는 셈이 된다.
-        const summary = G7Core.t?.('claim.image.upload_partial_failed', { failed, total: accepted.length })
-            ?? `사진 ${accepted.length}장 중 ${failed}장을 올리지 못했습니다.`;
+        const summary = claimText(
+            'sirsoft-ecommerce.user.claim.image.upload_partial_failed',
+            `사진 ${accepted.length}장 중 ${failed}장을 올리지 못했습니다.`,
+            { failed, total: accepted.length },
+        );
 
         G7Core.toast?.error?.(firstFailureMessage ? `${summary} (${firstFailureMessage})` : summary);
     }
@@ -286,15 +306,13 @@ export function setClaimImageFilesHandler(
 
     if (sizeExceeded) {
         G7Core.toast?.warning?.(
-            G7Core.t?.('claim.image.size_exceeded', { size: Number(settings.image_max_size_kb ?? 0) })
-            ?? '첨부 용량 상한을 초과한 파일이 있습니다.'
+            claimText('sirsoft-ecommerce.user.claim.image.size_exceeded', '첨부 용량 상한을 초과한 파일이 있습니다.', { size: Number(settings.image_max_size_kb ?? 0) })
         );
     }
 
     if (countExceeded) {
         G7Core.toast?.warning?.(
-            G7Core.t?.('claim.image.limit_exceeded', { max: Number(settings.max_images ?? 0) })
-            ?? '첨부 장수 상한을 초과했습니다.'
+            claimText('sirsoft-ecommerce.user.claim.image.limit_exceeded', '첨부 장수 상한을 초과했습니다.', { max: Number(settings.max_images ?? 0) })
         );
     }
 
@@ -341,6 +359,10 @@ export async function removeClaimImageHandler(
         (image: ClaimPendingImage & { attached?: boolean }) => Number(image.id) === imageId
     );
 
+    // 고객이 지울 수 없는 첨부(운영자·주체 미상)는 삭제 목록에 담지 않는다 — 버튼을 숨겨도
+    // 이 핸들러가 담으면 저장이 서버에서 통째로 거절된다.
+    if ((target as { removable?: boolean } | undefined)?.removable === false) return;
+
     if (target?.attached === true) {
         G7Core.state.setLocal({
             claimImages: (current.claimImages ?? []).filter(
@@ -363,8 +385,7 @@ export async function removeClaimImageHandler(
         G7Core.toast?.error?.(
             error?.response?.data?.message
             ?? error?.data?.message
-            ?? G7Core.t?.('claim.image.remove_failed')
-            ?? '첨부 삭제에 실패했습니다.'
+            ?? claimText('sirsoft-ecommerce.user.claim.image.remove_failed', '첨부 삭제에 실패했습니다.')
         );
 
         return;

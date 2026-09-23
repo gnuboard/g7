@@ -30,7 +30,7 @@ return new class extends Migration
     private const INDEX = 'ecommerce_order_refund_opts_status_index';
 
     /** 정정된 주석 — `RefundStatusEnum` 의 7종 전량. */
-    private const COMMENT = '옵션 환불 상태 (RefundStatusEnum: requested, approved, processing, on_hold, completed, rejected, withdrawn)';
+    private const COMMENT = '옵션 환불 상태 (RefundStatusEnum — requested: 환불 신청, approved: 환불 승인, processing: 환불 처리 중, on_hold: 환불 보류, completed: 환불 완료, rejected: 환불 반려, withdrawn: 환불 철회)';
 
     /**
      * Run the migrations.

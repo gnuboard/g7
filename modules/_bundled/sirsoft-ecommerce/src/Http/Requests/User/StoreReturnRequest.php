@@ -12,6 +12,7 @@ use Modules\Sirsoft\Ecommerce\Enums\ClaimTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundPriorityEnum;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Concerns\ResolvesClaimOrder;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Concerns\ValidatesClaimPaymentMethod;
+use Modules\Sirsoft\Ecommerce\Http\Requests\Concerns\ValidatesClaimRefundBank;
 use Modules\Sirsoft\Ecommerce\Models\ClaimReason;
 use Modules\Sirsoft\Ecommerce\Services\ClaimAttachmentService;
 
@@ -25,6 +26,7 @@ class StoreReturnRequest extends FormRequest
 {
     use ResolvesClaimOrder;
     use ValidatesClaimPaymentMethod;
+    use ValidatesClaimRefundBank;
 
     /**
      * 사용자가 이 요청을 수행할 권한이 있는지 확인
@@ -102,6 +104,7 @@ class StoreReturnRequest extends FormRequest
      * 소유권 404 가 상품 소속 422 보다 먼저 나야 하므로 순서를 바꾸지 않는다.
      *
      * @param  Validator  $validator  검증기
+     * @return void 반환값 없음
      */
     protected function withValidator(Validator $validator): void
     {
@@ -119,12 +122,19 @@ class StoreReturnRequest extends FormRequest
             }
 
             // 환불 계좌는 세 필드가 함께 와야 한다 — 하나만 오면 계좌 없는 무통장 환불이 승인된다.
-            $bank = (array) $this->input('refund_bank', []);
-            $filled = array_filter(['bank_code', 'account_number', 'holder'], fn (string $f) => filled($bank[$f] ?? null));
-
-            if ($filled !== [] && count($filled) !== 3) {
-                $validator->errors()->add('refund_bank', __('sirsoft-ecommerce::validation.claims.refund_bank.incomplete'));
+            if (! $this->validateRefundBankComplete($validator)) {
+                return;
             }
+
+            // 가린 값이 섞인 계좌는 등록 계좌를 가린 모양 그대로가 아니면 받지 않는다 — 별표째 저장된다.
+            if (! $this->validateRefundBankNotMasked($validator, $order)) {
+                return;
+            }
+
+            // 계좌로 돈이 돌아가는 주문은 반품 접수에서도 계좌를 받는다 — 취소·환불 접수와 같은
+            // 판정이다. 반품은 완료 뒤 환불신청서로 이어지므로, 여기서 비워 두면 그 환불이 승인·실행
+            // 단계에서야 보낼 곳이 없다는 것이 드러난다.
+            $this->validateRefundBankPresent($validator, $order);
         });
     }
 
@@ -132,6 +142,7 @@ class StoreReturnRequest extends FormRequest
      * 검증 실패 시 응답 커스터마이징
      *
      * @param  Validator  $validator  검증기
+     * @return void 반환값 없음
      *
      * @throws ValidationException
      */
@@ -152,19 +163,13 @@ class StoreReturnRequest extends FormRequest
     public function toServicePayload(): array
     {
         $validated = $this->validated();
-        $bank = $validated['refund_bank'] ?? null;
-        $hasBank = is_array($bank) && filled($bank['bank_code'] ?? null) && filled($bank['account_number'] ?? null) && filled($bank['holder'] ?? null);
 
         return [
             'items' => $validated['items'],
             'reason_code' => $validated['reason_code'],
             'reason_detail' => $validated['reason_detail'] ?? null,
             'charge_method' => $validated['charge_method'] ?? null,
-            'refund_bank' => $hasBank ? [
-                'bank_code' => (string) $bank['bank_code'],
-                'account_number' => (string) $bank['account_number'],
-                'holder' => (string) $bank['holder'],
-            ] : null,
+            'refund_bank' => $this->refundBankPayload($validated['refund_bank'] ?? null, $this->getOrder()),
             'refund_priority' => isset($validated['refund_priority'])
                 ? RefundPriorityEnum::from($validated['refund_priority'])
                 : RefundPriorityEnum::PG_FIRST,

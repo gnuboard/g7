@@ -89,7 +89,7 @@ API 와 동기화하는 역할만 합니다. 등록은 훅 기반입니다
 | 확장점 | 수 | 상세 |
 |---|---|---|
 | 발행 훅 | 5개 | [발행 훅](docs/extension-points.md#발행-훅) |
-| 구독 훅 | 12개 | [구독 훅](docs/extension-points.md#구독-훅) |
+| 구독 훅 | 13개 | [구독 훅](docs/extension-points.md#구독-훅) |
 | 훅 리스너 | 10개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
 | 레이아웃 확장 | 5개 | [레이아웃 확장](docs/extension-points.md#레이아웃-확장) |
 | 미들웨어 | 1개 | [미들웨어](docs/extension-points.md#미들웨어) |
@@ -141,10 +141,10 @@ API 와 동기화하는 역할만 합니다. 등록은 훅 기반입니다
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 27개 | `plugins/_bundled/sirsoft-pay_nicepayments/tests` |
+| PHPUnit | 28개 | `plugins/_bundled/sirsoft-pay_nicepayments/tests` |
 | Vitest | 9개 | `vitest.config.ts` |
 | Playwright | 0개 | — |
-| 시나리오 매니페스트 | 1개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 3개 | `tests/scenarios` |
 
 기저 TestCase: `tests/PluginTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

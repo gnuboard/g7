@@ -27,6 +27,29 @@ import type {
 import { G7DevToolsCore } from './G7DevToolsCore';
 
 /**
+ * 현재 레이아웃이 알지 못하는 `_local` 최상위 키를 돌려준다.
+ *
+ * 레이아웃의 `state` 선언이나 레이아웃 JSON 어딘가(바인딩·setState 키·dataKey)에 그 이름이
+ * 한 번이라도 나오면 "안다" 로 본다. 어디에도 없는 키는 이전 화면에서 넘어온 것이다.
+ *
+ * @param local 현재 `_local`
+ * @param layout 현재 레이아웃 JSON (없으면 대조 불가 — 빈 배열)
+ * @returns 레이아웃 밖 키 목록
+ */
+function localKeysOutsideLayout(local: Record<string, any> | undefined, layout: unknown): string[] {
+    if (!local || !layout || typeof layout !== 'object') return [];
+
+    const declared = (layout as { state?: Record<string, unknown> }).state ?? {};
+    const text = JSON.stringify(layout);
+
+    return Object.keys(local).filter(key => {
+        if (Object.prototype.hasOwnProperty.call(declared, key)) return false;
+        const escaped = key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        return !new RegExp(`(^|[^A-Za-z0-9_$])${escaped}([^A-Za-z0-9_$]|$)`).test(text);
+    });
+}
+
+/**
  * 진단 규칙 정의
  *
  * 트러블슈팅 가이드의 주요 이슈를 규칙으로 정의
@@ -94,19 +117,26 @@ const diagnosticRules: DiagnosticRule[] = [
             const navIndex = recent.findIndex(a => a.type === 'navigate');
             if (navIndex < 0) return false;
             const after = recent.slice(navIndex + 1);
-            return after.some(a => {
+            const remountWrite = after.some(a => {
                 if (a.type !== 'setState') return false;
                 const raw = JSON.stringify(a.params ?? {});
                 return raw.includes('$args[0]') && /visibleColumns|visibleFilters/.test(raw);
             });
+            if (!remountWrite) return false;
+
+            // 그 흔적만으로는 발화하지 않는다 — 컬럼 선택기가 있는 목록은 **정상 진입에서도** 같은
+            // 마운트 콜백을 낸다(종전 오탐). 누수의 실제 증거는 현재 레이아웃이 알지 못하는 `_local`
+            // 키(이전 화면 전용 키)가 남아 있는 것이다. 현재 레이아웃을 모르면 대조할 수 없으므로
+            // 발화하지 않는다.
+            return localKeysOutsideLayout(ctx.currentState?._local, ctx.currentLayoutJson).length > 0;
         },
         probability: 0.7,
-        solution: 'g7-state 로 _local 을 읽어 현재 레이아웃 state 에 없는 키(이전 화면 전용 키)가 남았는지 확인. 남았다면 _fromBase 보존 컴포넌트의 저장소 A 가 새 페이지 첫 렌더에 병합된 뒤 자식 마운트 콜백이 되쓴 경로 — 엔진 engine-v1.66.2 의 렌더 단계 초기화(appliedLayoutKey)가 살아 있는지 확인하고 시크릿 창(목록 컬럼 저장값 없음)에서 재현',
-        docLink: 'troubleshooting-state-closure.md#사례-4-spa-이동-시-보존된-base-루트의-stale-저장소-a-가-첫-렌더에-병합되어-마운트-콜백이-이전-페이지-값을-되쓴다-engine-v1662',
+        solution: '감지기는 현재 레이아웃이 알지 못하는 _local 키(이전 화면 전용 키)가 남았을 때만 발화한다 — g7-state 로 그 키를 확인. 남았다면 _fromBase 보존 컴포넌트의 저장소 A 가 새 페이지 첫 렌더에 병합된 뒤 자식 마운트 콜백이 되쓴 경로 — 엔진 engine-v1.71.1 의 렌더 단계 초기화(appliedLayoutKey)가 살아 있는지 확인하고 시크릿 창(목록 컬럼 저장값 없음)에서 재현',
+        docLink: 'troubleshooting-state-closure.md#사례-4-spa-이동-시-보존된-base-루트의-stale-저장소-a-가-첫-렌더에-병합되어-마운트-콜백이-이전-페이지-값을-되쓴다-engine-v1711',
         codeExample: `
 // 진단: 쿠폰 목록인데 _local 에 주문 목록 키가 남고 visibleColumns 가 주문 컬럼
 // g7-state _local → { bulkCourier, ordererSearchResults, visibleColumns: ['ordered_at', ...] }
-// 원인: DynamicRenderer 보존(_fromBase) 루트의 저장소 A 초기화가 첫 렌더보다 늦음 (engine-v1.66.2 에서 렌더 단계로 이동)
+// 원인: DynamicRenderer 보존(_fromBase) 루트의 저장소 A 초기화가 첫 렌더보다 늦음 (engine-v1.71.1 에서 렌더 단계로 이동)
         `,
     },
     {
@@ -831,6 +861,7 @@ export class DiagnosticEngine {
             websocket: this.devTools.getWebSocketInfo(),
             stateAtTime: (timestamp: number) => this.devTools.getStateAtTime(timestamp),
             layoutHas: (prop: string, value: string) => this.checkLayoutHas(prop, value),
+            currentLayoutJson: this.devTools.getCurrentLayout?.()?.layoutJson ?? null,
         };
     }
 

@@ -1,10 +1,13 @@
-<!-- 회원가입 폼의 개인정보 동의 뒤에 마케팅 동의 항목을 덧붙이는 조각 -->
+<!-- 회원가입 폼의 개인정보 동의 뒤에 마케팅 동의 항목을 덧붙이는 조각.
+  동의 체크박스는 자동바인딩(name)을 끄고 표시값을 가입 폼 상태에서 boolean 으로 직접 읽는다 — 자동바인딩은
+  저장값이 boolean 일 때만 checked 로 붙고(아니면 빈 문자열이 전송된다), 전체 동의가 채널 동의를 함께 켜는 것처럼
+  다른 체크박스가 쓴 값에 표시가 따라와야 하기 때문이다. 값은 각 change 액션이 registerForm 에 쓴다. -->
 <extension target-layout="auth/register" priority="100">
   <inject target-id="register_privacy_agreement" position="append">
     <div data-ref="register_marketing_consent_section" class="space-y-2">
       <div data-if="{{marketing_settings?.data?.marketing_consent_enabled === true}}" class="flex items-center gap-2">
         <label class="flex items-center gap-2 flex-1 cursor-pointer text-sm text-gray-700 dark:text-gray-300">
-          <checkbox name="agree_marketing_consent" disabled="{{_local?.isRegistering}}">
+          <checkbox name="agree_marketing_consent" checked="{{!!_local.registerForm?.agree_marketing_consent}}" :autoBinding="false" disabled="{{_local?.isRegistering}}">
             <on type="change">
               <!-- 전체 마케팅 동의 — 가입 폼 상태에 쌓아 두고 가입 요청과 함께 보낸다 -->
               <sequence>
@@ -35,7 +38,7 @@
       </div>
       <div data-if="{{marketing_settings?.data?.marketing_consent_enabled === true}}" data-each="channel in marketing_settings?.data?.channels ?? []" class="flex items-center gap-2 ml-8">
         <label class="flex items-center gap-2 flex-1 cursor-pointer text-sm text-gray-700 dark:text-gray-300">
-          <checkbox name="agree_{{channel.key}}" disabled="{{_local?.isRegistering}}">
+          <checkbox name="agree_{{channel.key}}" checked="{{!!_local.registerForm?.['agree_' + channel.key]}}" :autoBinding="false" disabled="{{_local?.isRegistering}}">
             <on type="change">
               <!-- 채널별 동의 — 켜면 전체 동의도 함께 켜 준다 -->
               <set-state target="local" registerForm="{{Object.assign({}, _local.registerForm, $event.target.checked ? { ['agree_' + channel.key]: true, agree_marketing_consent: true } : { ['agree_' + channel.key]: false })}}"/>
@@ -64,7 +67,7 @@
       </div>
       <div data-if="{{marketing_settings?.data?.third_party_consent_enabled === true}}" class="flex items-center gap-2">
         <label class="flex items-center gap-2 flex-1 cursor-pointer text-sm text-gray-700 dark:text-gray-300">
-          <checkbox name="agree_third_party_consent" disabled="{{_local?.isRegistering}}">
+          <checkbox name="agree_third_party_consent" checked="{{!!_local.registerForm?.agree_third_party_consent}}" :autoBinding="false" disabled="{{_local?.isRegistering}}">
             <on type="change">
               <!-- 제3자 제공 동의 -->
               <set-state target="local" registerForm="{{Object.assign({}, _local.registerForm, { agree_third_party_consent: $event.target.checked })}}"/>
@@ -94,7 +97,7 @@
       <div data-if="{{marketing_settings?.data?.info_disclosure_enabled === true}}" class="space-y-1">
         <div class="flex items-center gap-2">
           <label class="flex items-center gap-2 flex-1 cursor-pointer text-sm text-gray-700 dark:text-gray-300">
-            <checkbox name="agree_info_disclosure" disabled="{{_local?.isRegistering}}">
+            <checkbox name="agree_info_disclosure" checked="{{!!_local.registerForm?.agree_info_disclosure}}" :autoBinding="false" disabled="{{_local?.isRegistering}}">
               <on type="change">
                 <!-- 정보 공개 동의 -->
                 <set-state target="local" registerForm="{{Object.assign({}, _local.registerForm, { agree_info_disclosure: $event.target.checked })}}"/>

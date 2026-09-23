@@ -4,7 +4,9 @@ namespace Modules\Sirsoft\Ecommerce\Repositories\Contracts;
 
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Modules\Sirsoft\Ecommerce\Models\Order;
+use Modules\Sirsoft\Ecommerce\Models\OrderTaxInvoice;
 
 /**
  * 주문 Repository 인터페이스
@@ -47,6 +49,33 @@ interface OrderRepositoryInterface
      * @return Order|null 잠긴 주문 모델 (없으면 null)
      */
     public function findForUpdate(int $id): ?Order;
+
+    /**
+     * ID로 주문을 배타적 잠금과 함께 조회하고, 없으면 예외를 던집니다.
+     *
+     * 잠금이 전제인 흐름(클레임 접수 등)에서 `findForUpdate($id) ?? $order` 처럼 잠기지 않은
+     * 모델로 떨어지면 **잠금 없이 계속 진행**한다 — 두 요청이 같은 잔여 수량을 보고 각각 통과하는
+     * 바로 그 경합이 조용히 되살아난다. 그 자리에는 이 메서드를 쓴다.
+     *
+     * @param  int  $id  주문 ID
+     * @return Order 잠긴 주문 모델
+     *
+     * @throws ModelNotFoundException 주문이 없을 때
+     */
+    public function findForUpdateOrFail(int $id): Order;
+
+    /**
+     * ID로 주문을 배타적 잠금과 함께 조회합니다. (호환 별칭)
+     *
+     * 1.3.0 에서 `findForUpdate()` 로 이름을 바꿨다. 이 인터페이스를 쓰는 외부 확장이 옛 이름을
+     * 부르면 치명 오류가 나므로 별칭을 남긴다.
+     *
+     * @deprecated 1.3.0 `findForUpdate()` 를 쓴다.
+     *
+     * @param  int  $id  주문 ID
+     * @return Order|null 잠긴 주문 모델 (없으면 null)
+     */
+    public function findByIdForUpdate(int $id): ?Order;
 
     /**
      * 주문이 1건이라도 존재하는지 확인합니다. (A2 base 통화 변경 가드)
@@ -129,11 +158,37 @@ interface OrderRepositoryInterface
     /**
      * 주문의 옵션 상태 일괄 변경
      *
+     * 쓰기만 한다 — 전이 훅(`order_option.after_sync_status`)은 호출한 Service 가 발행한다.
+     * 전/후 내역은 갱신 **전에** `collectOptionStatusSyncChanges()` 로 읽어 둔다.
+     *
      * @param  array  $ids  주문 ID 배열
      * @param  string  $status  변경할 상태값
      * @return int 변경된 옵션 개수
      */
     public function bulkUpdateOptionStatus(array $ids, string $status): int;
+
+    /**
+     * 주문 옵션 상태 일괄 변경이 옮길 상품의 전/후 내역을 읽습니다. (쓰기 없음)
+     *
+     * `bulkUpdateOptionStatus()` 와 같은 대상 조건(동기화 제외 상태 빼기)으로 읽고, 이미 목표
+     * 상태인 행은 뺀다. 반드시 갱신 **전에** 부른다.
+     *
+     * @param  array<int, int>  $ids  주문 ID 배열
+     * @param  string  $status  변경할 상태값
+     * @return array<int, array{order_option_id: int, order_id: int, previous: string, new: string}> 상품별 전이 내역
+     */
+    public function collectOptionStatusSyncChanges(array $ids, string $status): array;
+
+    /**
+     * 주문에 딸린 클레임 신청 상품 행(교환·반품·취소·환불)을 모두 삭제합니다.
+     *
+     * 주문 삭제 경로 전용이다. 신청서 헤더를 지우기 **전에** 부른다 — 상품 행은 헤더 FK CASCADE 로도
+     * 지워지지만 CASCADE 에 기대지 않는다(외래키가 꺼진 환경에서 헤더 없는 상품 행이 남는다).
+     *
+     * @param  int  $orderId  주문 ID
+     * @return int 삭제된 행 수
+     */
+    public function deleteClaimItemRows(int $orderId): int;
 
     /**
      * 주문 통계 조회
@@ -147,6 +202,8 @@ interface OrderRepositoryInterface
      *
      * 주문이 바뀌면 통계도 곧바로 달라져야 하므로, 저장소 밖에서 주문을 변경하는
      * 경로도 이 메서드로 캐시를 비웁니다.
+     *
+     * @return void 반환값 없음
      */
     public function forgetStatisticsCache(): void;
 
@@ -242,4 +299,12 @@ interface OrderRepositoryInterface
      * @return bool 기록 존재 여부
      */
     public function hasRecordedCurrency(string $code): bool;
+
+    /**
+     * 주문의 발급 완료 세금계산서를 조회합니다. (취소 뒤 누락 경고용 — P15)
+     *
+     * @param  int  $orderId  주문 ID
+     * @return Collection<int, OrderTaxInvoice> 발급 완료 계산서 (id · invoice_number · total_amount)
+     */
+    public function listIssuedTaxInvoices(int $orderId): Collection;
 }

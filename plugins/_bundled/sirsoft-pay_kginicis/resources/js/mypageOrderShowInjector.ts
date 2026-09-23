@@ -20,8 +20,10 @@ const ORDER_SHOW_RE = /^(?:\/mypage\/orders\/([^/]+)|\/shop\/guest\/orders\/([^/
 // 클레임 신청서 상세도 같은 결제 정보 카드를 재사용한다(§6-2). 그 주소에 실린 것은 클레임
 // 번호라 주문번호도 주문 ID 도 뽑을 수 없으므로, 이 경로에서는 화면이 이미 읽어 둔 주문을
 // 그대로 쓴다(세그먼트 대조 생략). 이 갈래가 없으면 카드는 뜨는데 영수증·세금내역만 빠진 채
-// 열리고, 오류도 경고도 남지 않는다.
-const CLAIM_SHOW_RE = /^\/mypage\/claims\/([^/]+)$/;
+// 열리고, 오류도 경고도 남지 않는다. 회원(/mypage/claims/{N})과 비회원(/shop/guest/claims/{N})
+// 신청서 상세가 같은 카드를 쓰므로 둘을 함께 매칭한다 — 비회원 쪽은 영수증 조회가 비회원 주문
+// 조회 토큰을 실어 보낸다(receiptPopup).
+const CLAIM_SHOW_RE = /^(?:\/mypage\/claims\/([^/]+)|\/shop\/guest\/claims\/([^/]+))$/;
 
 const activePolls = new Map<string, number>();
 
@@ -219,7 +221,9 @@ function onRouteChange(): void {
     }
 
     // 클레임 신청서 상세 — 주소가 클레임 번호라 화면이 읽어 둔 주문을 그대로 쓴다.
-    if (CLAIM_SHOW_RE.test(location.pathname)) startPolling(null, false);
+    // 비회원 경로(match[2])는 토큰 준비 지연으로 일시 404 가 날 수 있어 비회원 재시도 규칙을 탄다.
+    const claim = location.pathname.match(CLAIM_SHOW_RE);
+    if (claim) startPolling(null, claim[2] !== undefined);
 }
 
 export function installMypageOrderShowInjector(): void {

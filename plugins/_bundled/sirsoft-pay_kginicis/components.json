@@ -2,7 +2,6 @@
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "identifier": "sirsoft-pay_kginicis",
     "version": "1.2.0",
-    "comment": "audit:allow extension-doc-coverage — plugin.json 과 어긋나 있던 version 표기를 맞춘 것뿐이다. 선언 컴포넌트가 0개라 개발자 문서에 반영할 표면이 없다.",
     "components": {
         "basic": [],
         "composite": [],

@@ -90,19 +90,6 @@
             "comment": "회원 주소록 — 배송지 변경 창의 '저장된 배송지' 탭이 읽는다. 화면을 막지 않도록 진입 때 뒤에서 받아 두며, 배송지를 바꾼 뒤에는 주문만 다시 읽고 이 목록은 다시 받지 않는다."
         },
         {
-            "id": "refundReasons",
-            "label_key": "$t:editor.data_source.refundReasons",
-            "type": "api",
-            "endpoint": "/api/modules/sirsoft-ecommerce/user/claim-reasons",
-            "method": "GET",
-            "auto_fetch": true,
-            "auth_required": true,
-            "params": {
-                "type": "refund"
-            },
-            "comment": "취소 사유 목록 — 운영자가 관리하는 값이라 화면에 적지 않고 받아서 고르게 한다"
-        },
-        {
             "id": "reviewSettings",
             "label_key": "$t:editor.data_source.reviewSettings",
             "type": "api",
@@ -115,6 +102,7 @@
     "initLocal": {
         "isGuest": false,
         "withdrawRefreshDataSourceId": "claims",
+        "withdrawRefreshClaimable": true,
         "claimDetailLinkMode": "new_window",
         "claimWithdrawApiBase": "/api/modules/sirsoft-ecommerce/user/claims",
         "claimDetailPathBase": "/mypage/claims",

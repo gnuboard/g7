@@ -66,15 +66,6 @@ interface ClaimImageRepositoryInterface
     public function delete(ClaimImage $image): bool;
 
     /**
-     * 클레임의 첨부 이미지를 모두 삭제합니다.
-     *
-     * @param  string  $claimableType  클레임 유형
-     * @param  int  $claimableId  클레임 ID
-     * @return int 삭제된 행 수
-     */
-    public function deleteByClaimable(string $claimableType, int $claimableId): int;
-
-    /**
      * 주문에 매달린 미귀속(신청서 작성 중) 첨부를 조회합니다.
      *
      * 신청서가 만들어지기 전에 올린 이미지는 `claimable_type=pending` · `claimable_id=주문 ID` 로

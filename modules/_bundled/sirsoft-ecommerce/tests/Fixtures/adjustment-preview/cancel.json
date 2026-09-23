@@ -113,7 +113,8 @@
             "total_vat_amount": "0원",
             "total_earned_points_amount": "700원",
             "item_count": "5원"
-        }
+        },
+        "total_earned_points_amount_formatted": "700P"
     },
     "recalculated_snapshot": {
         "total_amount": 50000.0,
@@ -158,7 +159,8 @@
             "total_earned_points_amount": "0원",
             "item_count": "4원",
             "total_list_price_amount": "61,000원"
-        }
+        },
+        "total_earned_points_amount_formatted": "0P"
     },
     "mc_original_snapshot": {
         "mc_subtotal_amount": null,

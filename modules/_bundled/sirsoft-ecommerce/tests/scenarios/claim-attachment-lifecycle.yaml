@@ -19,7 +19,7 @@ description: |
   ApiClient 인터셉터가 globalHeaders 를 적용하지 않기 때문에 명시적으로 실어야 한다.
 
   계약: 이 매니페스트는 **수명주기**를 잠근다. 장수·용량 상한 판정은
-  `claim-attachment-limit-feedback.yaml` 이 따로 잠근다(그쪽은 S2-D10 의 PO 판단 대기 건).
+  `claim-attachment-limit-feedback.yaml` 이 따로 잠근다(그쪽은 S2-D10 의 결정 대기 건).
 
 axes:
   attachment_lifecycle:

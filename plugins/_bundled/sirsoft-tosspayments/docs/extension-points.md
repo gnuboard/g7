@@ -10,9 +10,9 @@
 | 훅 이름 | 유형 | 설명 | 발행 위치 |
 |---|---|---|---|
 | `sirsoft-tosspayments.payment.after_cancel` | action | 토스페이먼츠 결제 취소 완료 후 | `src/Services/TossPaymentsApiService.php:102` |
-| `sirsoft-tosspayments.payment.after_confirm` | action | 토스페이먼츠 결제 승인 완료 후 | `src/Controllers/PaymentCallbackController.php:107` |
+| `sirsoft-tosspayments.payment.after_confirm` | action | 토스페이먼츠 결제 승인 완료 후 | `src/Controllers/PaymentCallbackController.php:118` |
 | `sirsoft-tosspayments.payment.before_cancel` | action | 토스페이먼츠 결제 취소 API 호출 전 | `src/Services/TossPaymentsApiService.php:98` |
-| `sirsoft-tosspayments.payment.before_confirm` | action | 토스페이먼츠 결제 승인 API 호출 전 | `src/Controllers/PaymentCallbackController.php:103` |
+| `sirsoft-tosspayments.payment.before_confirm` | action | 토스페이먼츠 결제 승인 API 호출 전 | `src/Controllers/PaymentCallbackController.php:114` |
 <!-- @generated:hooks-published END -->
 
 <!-- @intent START -->
@@ -34,6 +34,7 @@
 | `sirsoft-ecommerce.cash_receipt.registered_providers` | filter | `RegisterCashReceiptProviderListener` | `registerProvider` | 10 |
 | `sirsoft-ecommerce.claim_payment.approve` | filter | `ClaimPaymentApproveListener` | `processApprove` | 10 |
 | `sirsoft-ecommerce.claim_payment.refund` | filter | `ClaimPaymentRefundListener` | `processRefund` | 10 |
+| `sirsoft-ecommerce.claim_payment.void_approval` | filter | `ClaimPaymentApproveListener` | `voidApproval` | 10 |
 | `sirsoft-ecommerce.payment.get_client_config` | filter | `RegisterPgProviderListener` | `getClientConfig` | 10 |
 | `sirsoft-ecommerce.payment.refund` | filter | `PaymentRefundListener` | `processRefund` | 10 |
 | `sirsoft-ecommerce.payment.registered_pg_providers` | filter | `RegisterPgProviderListener` | `registerProvider` | 10 |
@@ -64,6 +65,22 @@
 경로를 타지 않고 모듈의 `approvePgPayment()` 에 위임하며, 그 안에서 이 필터가 발화합니다 —
 서버 콜백 경로와 API 승인 경로가 같은 구현을 탑니다. 인자·반환 키·멱등 규칙은 쇼핑몰 모듈
 `modules/_bundled/sirsoft-ecommerce/docs/api/claim-payments.md` 가 단일 출처입니다.
+
+승인 리스너는 콜백 금액을 Confirm **전에** 청구액과 대조하고, Confirm 응답의 `totalAmount`(콜백 값으로
+채우지 않음)·`orderId` 가 이 결제 건·청구액과 어긋나면 승인을 직접 취소한 뒤 실패로 돌려줍니다.
+모듈도 승인 뒤 금액을 한 번 더 대조하며, 모듈이 따로 거절한 건은
+`sirsoft-ecommerce.claim_payment.void_approval` 필터(같은 리스너의 `voidApproval()`)로 되돌립니다 —
+콜백 컨트롤러는 보상 클로저를 따로 넘기지 않으므로 서버 콜백 경로와 API 승인 경로의 판정·보상이
+한 구현입니다.
+
+콜백 컨트롤러의 `CP` 분기는 결제번호 단위 캐시 락(`sirsoft-tosspayments:callback:{문맥}:{sha1(결제번호)}`)으로
+직렬화됩니다. 락을 기다리다 시간을 넘기면 오류(500)가 아니라 결제 건 상태를 읽어 신청서 상세로
+돌려보냅니다 — 이미 결제완료면 `?claim_payment=success`, 아니면 `?claim_payment=failed&error=callback_locked`.
+
+주문 환불(`sirsoft-ecommerce.payment.refund`)에서 토스 취소가 성립한 뒤의 취소 장부 동기화(승인 스냅샷
+`payment_meta.pg_raw_response.cancels` 갱신)는 환불 성패와 분리됩니다 — 저장이 실패해도 환불 결과는
+성공이고 실패는 로그로만 남습니다. 다음 취소 응답이 그 결제의 전체 취소 이력을 싣고 오므로 장부는
+그때 다시 맞춰집니다.
 <!-- @intent END -->
 
 ## 훅 리스너
@@ -71,7 +88,7 @@
 <!-- @generated:listeners START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 리스너 | 구독 훅 | 등록 방식 | HookListenerInterface | 파일 |
 |---|---|---|---|---|
-| `ClaimPaymentApproveListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/ClaimPaymentApproveListener.php` |
+| `ClaimPaymentApproveListener` | 2개 | 명시 등록 | ✅ | `src/Listeners/ClaimPaymentApproveListener.php` |
 | `ClaimPaymentRefundListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/ClaimPaymentRefundListener.php` |
 | `PaymentRefundListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/PaymentRefundListener.php` |
 | `RegisterCashReceiptProviderListener` | 3개 | 명시 등록 | ✅ | `src/Listeners/RegisterCashReceiptProviderListener.php` |
@@ -117,6 +134,13 @@
 때문입니다. `target_layout`(`mypage/orders/show`)으로 겨냥하면 그 한 화면에서만 뜨고, 나머지
 화면은 카드는 나오는데 이 블록만 빠진 채 열립니다 — 오류도 경고도 남지 않아 알아채기 어렵습니다.
 슬롯은 partial 을 따라가므로 그 카드가 새 화면에 마운트돼도 조각이 함께 갑니다.
+
+**템플릿 요구 사항 — `mypage_order_payment_provider_slot` 슬롯이 필수입니다.** 이 조각은 예전처럼 대상
+화면 이름(`target_layout: mypage/orders/show`)으로 붙지 않고 이 슬롯에만 붙습니다. 그래서 사용자 템플릿의
+결제 정보 카드에 이 확장점이 없으면(자체 제작 템플릿, 슬롯 도입 전에 복사한 템플릿) 주문 상세·클레임
+신청서 상세 어디에도 이 블록이 뜨지 않으며, 오류도 경고도 남지 않습니다. 사용자 템플릿을 만들거나 고칠 때는
+결제 정보 카드 partial 에 `<extension-point name="mypage_order_payment_provider_slot">` 을 둡니다 — 기본
+사용자 템플릿(sirsoft-basic)은 `partials/mypage/orders/_payment` 에 두고 있습니다.
 <!-- @intent END -->
 
 ## 미들웨어

@@ -46,6 +46,8 @@ validation:
     수정 전: mail/sms/alimtalk 이 익명화된 주소로 발송 대상이 됨(SMTP 부재로 가려짐).
     수정 후: mail·sms·alimtalk = skipped(사유 「탈퇴한 회원이라 바깥 채널…」) · database = sent.
   note: |
-    판정은 `NotificationHookListener::shouldSkipWithdrawnRecipient()` 한 자리에 모았다.
+    판정은 `NotificationWithdrawnRecipientPolicy::blocksChannel()` 한 자리에 모았고, 리스너의
+    `shouldSkipWithdrawnRecipient()` 는 그것에 위임한다(삭제 회원의 게스트 폴백 금지와 같은 정책 객체 —
+    validate-p4-core.yaml).
     `User::isWithdrawn()`(withdrawn_at + status)이 정본이며, 리스너가 그 판정을 다시 쓰지 않는다.
     사유 문구는 `notification.skipped.withdrawn_recipient` (ko·en).

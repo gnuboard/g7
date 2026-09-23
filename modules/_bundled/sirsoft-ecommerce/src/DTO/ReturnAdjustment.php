@@ -21,12 +21,12 @@ class ReturnAdjustment extends OrderAdjustment
 {
     /**
      * @param  array  $returnItems  반품 대상 [{order_option_id, cancel_quantity}]
-     * @param  int  $collectionFee  편도 회수 배송비 (`ClaimShippingFee::$fee`)
+     * @param  int|float  $collectionFee  편도 회수 배송비 (`ClaimShippingFee::$fee` · 저장된 `claim_shipping_fee` — 소수 자릿수 통화는 소수 보존)
      * @param  ClaimChargeMethodEnum|null  $chargeMethod  청구 방식 (청구 0원이면 null)
      */
     public function __construct(
         public array $returnItems = [],
-        public int $collectionFee = 0,
+        public int|float $collectionFee = 0,
         public ?ClaimChargeMethodEnum $chargeMethod = null,
     ) {}
 
@@ -53,9 +53,9 @@ class ReturnAdjustment extends OrderAdjustment
     /**
      * 추가 비용(환불액에서 차감할 회수 배송비)을 반환합니다.
      *
-     * @return int 차감 대상 회수 배송비 (별도 결제 방식이면 0)
+     * @return int|float 차감 대상 회수 배송비 (별도 결제 방식이면 0)
      */
-    public function getAdditionalCharges(): int
+    public function getAdditionalCharges(): int|float
     {
         return $this->deductsFromRefund() ? $this->collectionFee : 0;
     }

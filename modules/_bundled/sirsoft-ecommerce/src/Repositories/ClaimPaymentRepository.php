@@ -4,6 +4,7 @@ namespace Modules\Sirsoft\Ecommerce\Repositories;
 
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\DB;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimPaymentStatusEnum;
 use Modules\Sirsoft\Ecommerce\Models\ClaimPayment;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ClaimPaymentRepositoryInterface;
@@ -187,6 +188,24 @@ class ClaimPaymentRepository implements ClaimPaymentRepositoryInterface
             ->lockForUpdate()
             ->where('payment_number', $paymentNumber)
             ->first();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function updateIfStatus(ClaimPayment $payment, ClaimPaymentStatusEnum $expected, array $data): ?ClaimPayment
+    {
+        return DB::transaction(function () use ($payment, $expected, $data) {
+            $locked = $this->model->newQuery()->lockForUpdate()->find($payment->id);
+
+            if ($locked === null || $locked->payment_status !== $expected) {
+                return null;
+            }
+
+            $locked->update($data);
+
+            return $locked->fresh();
+        });
     }
 
     /**

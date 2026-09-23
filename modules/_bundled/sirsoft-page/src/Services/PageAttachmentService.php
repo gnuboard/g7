@@ -14,9 +14,9 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Modules\Sirsoft\Page\Exceptions\AttachmentLimitExceededException;
-use Modules\Sirsoft\Page\Http\Requests\UploadPageAttachmentRequest;
 use Modules\Sirsoft\Page\Models\PageAttachment;
 use Modules\Sirsoft\Page\Repositories\Contracts\PageAttachmentRepositoryInterface;
+use Modules\Sirsoft\Page\Support\AttachmentLimits;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
@@ -56,7 +56,7 @@ class PageAttachmentService
             return;
         }
 
-        $limit = (int) g7_module_settings('sirsoft-page', 'attachment.max_count', 0);
+        $limit = AttachmentLimits::maxCount();
         if ($limit <= 0) {
             // 상한 미설정은 제한하지 않는다 (기존 동작 유지)
             return;
@@ -88,14 +88,11 @@ class PageAttachmentService
      */
     public function publicLimits(): array
     {
-        $maxCount = (int) g7_module_settings('sirsoft-page', 'attachment.max_count', 0);
-        $maxSizeMb = max(1, (int) g7_module_settings('sirsoft-page', 'attachment.max_size_mb', 10));
-
-        $allowedTypes = g7_module_settings('sirsoft-page', 'attachment.allowed_types', null);
-        if (! is_array($allowedTypes)) {
-            $allowedTypes = UploadPageAttachmentRequest::FALLBACK_ALLOWED_TYPES;
-        }
-        $allowedTypes = array_values(array_filter(array_map('strval', $allowedTypes)));
+        // 해석(기본값·폴백)은 업로드 검증과 같은 하위 지점을 쓴다 — Service 가 FormRequest 의
+        // 상수를 읽으면 하위 계층이 HTTP 계층에 기대는 역전이 된다.
+        $maxCount = AttachmentLimits::maxCount();
+        $maxSizeMb = AttachmentLimits::maxSizeMb();
+        $allowedTypes = AttachmentLimits::allowedTypes();
 
         return [
             // 0 이하는 "제한 없음" 이다(서버 판정과 같은 뜻) — 화면은 컴포넌트 기본값을 쓴다.

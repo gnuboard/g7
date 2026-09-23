@@ -3,14 +3,13 @@
         "is_partial": true,
         "description": "Claim Completion Modal (D26) - shared by all three entry points"
     },
-    "comment": "완료 처리 모달 (D26). 세 진입점(① 목록 일괄 변경의 '완료' 선택 ② 신청서 내 상품 일괄 적용의 완료 선택 ③ 상세의 [완료 처리] 버튼)이 이 파일 하나를 공유한다 — 복제하면 한 곳만 고쳤을 때 나머지 두 경로가 조용히 옛 규칙으로 남는다. 그래서 이 모달은 목록 데이터소스를 읽지 않고 `_global.claimComplete*` 계약만 읽는다: 여는 쪽이 `sirsoft-ecommerce.openClaimCompleteModal` 에 대상과 실행 경로를 넘기면 된다.",
+    "comment": "완료 처리 모달 (D26). 세 진입점(① 목록 일괄 변경의 '완료' 선택 ② 신청서 내 상품 일괄 적용의 완료 선택 ③ 상세의 [완료 처리] 버튼)이 이 파일 하나를 공유한다 — 복제하면 한 곳만 고쳤을 때 나머지 두 경로가 조용히 옛 규칙으로 남는다. 그래서 이 모달은 목록 데이터소스를 읽지 않고 `_global.claimComplete*` 계약만 읽는다: 여는 쪽이 `sirsoft-ecommerce.openClaimCompleteModal` 에 대상과 실행 경로를 넘기면 된다. 제목은 유형이 정한다 — 교환·반품 둘만 완료 처리 모달을 연다. 셋째 값이 오면(계약 위반) 유형 없는 일반 제목으로 떨어뜨린다: 반품 제목을 폴백으로 쓰면 교환·반품이 아닌 대상에 '반품완료 처리' 라는 틀린 안내가 나간다.",
     "id": "modal_claim_complete",
     "type": "composite",
     "name": "Modal",
     "props": {
         "title": "{{_global.claimCompleteContext?.claimType === 'exchange' ? '$t:sirsoft-ecommerce.admin.claim.complete.title_exchange' : (_global.claimCompleteContext?.claimType === 'return' ? '$t:sirsoft-ecommerce.admin.claim.complete.title_return' : '$t:sirsoft-ecommerce.admin.claim.complete.title_generic')}}",
-        "size": "lg",
-        "comment": "제목은 유형이 정한다 — 교환·반품 둘만 완료 처리 모달을 연다. 셋째 값이 오면(계약 위반) 유형 없는 일반 제목으로 떨어뜨린다: 반품 제목을 폴백으로 쓰면 교환·반품이 아닌 대상에 '반품완료 처리' 라는 틀린 안내가 나간다."
+        "size": "lg"
     },
     "children": [
         {
@@ -477,7 +476,7 @@
                     ],
                     "props": {
                         "type": "button",
-                        "className": "px-4 py-2 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                        "className": "px-4 py-2 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
                         "disabled": "{{_global.isProcessing}}"
                     },
                     "children": [

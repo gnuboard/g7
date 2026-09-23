@@ -4,6 +4,8 @@ namespace Modules\Sirsoft\Ecommerce\Services;
 
 use App\Extension\HookManager;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Ecommerce\DTO\CancellableAmount;
 use Modules\Sirsoft\Ecommerce\DTO\ClaimCompletionOptions;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimChargeMethodEnum;
@@ -25,6 +27,7 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderCancelRepositoryInterf
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderExchangeRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderRefundRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderReturnRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Services\Concerns\FiresClaimHooksAfterCommit;
 use Modules\Sirsoft\Ecommerce\Support\ClaimItemSpecs;
 use Modules\Sirsoft\Ecommerce\Support\ClaimNotificationHooks;
 use Modules\Sirsoft\Ecommerce\Support\ClaimProgressSteps;
@@ -50,6 +53,8 @@ use Modules\Sirsoft\Ecommerce\Support\ClaimTransitionVocabulary;
  */
 class AdminClaimService
 {
+    use FiresClaimHooksAfterCommit;
+
     /**
      * @param  OrderExchangeService  $exchangeService  교환 서비스
      * @param  OrderReturnService  $returnService  반품 서비스
@@ -231,11 +236,12 @@ class AdminClaimService
     /**
      * 상세 응답용으로 신청서를 관계까지 실어 조회합니다.
      *
-     * 취소는 상세 엔드포인트가 없다 — 취소 이력은 주문 상세(D20)가 담당한다.
+     * 취소신청서도 번호로 열린다(조회 전용) — 전이·송장·메모 축이 없고, 환불 상태·금액은
+     * 취소 발 환불(`refund`)이 출처다.
      *
      * @param  ClaimTypeEnum  $type  클레임 유형
      * @param  int  $id  신청서 ID
-     * @return OrderExchange|OrderReturn|OrderRefund|null 신청서 (없으면 null)
+     * @return OrderExchange|OrderReturn|OrderRefund|OrderCancel|null 신청서 (없으면 null)
      */
     public function findForDetail(ClaimTypeEnum $type, int $id): OrderExchange|OrderReturn|OrderRefund|OrderCancel|null
     {
@@ -270,11 +276,11 @@ class AdminClaimService
      * `UserClaimService::resolveByNumber()` 가 이미 갖고 있으므로 그것을 쓴다. 여기서
      * 채번 접두를 다시 해석하면 채번 규칙의 두 번째 출처가 된다(접두는 운영자가 바꿀 수 있다).
      *
-     * 취소(`cancel`)는 상세 화면이 없다 — 취소 이력은 주문 상세(D20)가 담당하므로
-     * 번호가 해석되어도 상세로는 `null` 을 돌려준다.
+     * 취소(`cancel`)도 같은 상세 화면으로 열린다 — 주문상세 클레임 내역과 클레임 목록 취소 탭의
+     * 번호가 같은 화면으로 이어져야 하기 때문이다(조회 전용, `findForDetail()` 참조).
      *
      * @param  string  $claimNumber  클레임 번호
-     * @return array{type: ClaimTypeEnum, claim: OrderExchange|OrderReturn|OrderRefund}|null 해석 결과 (없으면 null)
+     * @return array{type: ClaimTypeEnum, claim: OrderExchange|OrderReturn|OrderRefund|OrderCancel}|null 해석 결과 (없으면 null)
      */
     public function findForDetailByNumber(string $claimNumber): ?array
     {
@@ -374,17 +380,9 @@ class AdminClaimService
                 return ['claim' => $this->requestPayment($claim, $processedBy), 'payment_requested' => true];
             }
 
-            if ($target === 'approved'
-                && $claim->requiresAdditionalPayment()
-                && $this->paymentService->outstandingAmount($claim) > 0) {
-                if ($claim->charge_method === ClaimChargeMethodEnum::PAY_ON_APPROVAL) {
-                    // §4-5-2: 승인 시도 → 미결제면 결제대기 + 결제 요청. 결제 확정이 승인을 잇는다.
-                    $this->paymentService->requestPaymentOnApproval($claim, $processedBy);
-
-                    return ['claim' => $this->reload($claim), 'payment_requested' => true];
-                }
-
-                throw OrderClaimException::paymentOutstanding();
+            // §4-5-2: 승인 시도 → 미결제면 결제대기 + 결제 요청. 결제 확정이 승인을 잇는다.
+            if ($this->divertApprovalToPayment($claim, $target, $processedBy)) {
+                return ['claim' => $this->reload($claim), 'payment_requested' => true];
             }
         }
 
@@ -406,19 +404,73 @@ class AdminClaimService
         // 「종결 경로는 대기 건을 함께 취소하므로」. 여기서 하지 않으면 그 전제가 깨지고 배치의
         // 보존 기간 동안 결제가 열린 채로 남는다.
         if ($updated instanceof OrderExchange || $updated instanceof OrderReturn) {
-            $isRejected = $updated instanceof OrderExchange
-                ? $updated->exchange_status === ExchangeStatusEnum::REJECTED
-                : $updated->return_status === ReturnStatusEnum::REJECTED;
-
-            if ($isRejected) {
-                $this->paymentService->refundPaymentsForClaim(
-                    $updated,
-                    __('sirsoft-ecommerce::messages.claims.rejected'),
-                );
-            }
+            $this->closeMoneyIfTerminated($updated);
         }
 
         return ['claim' => $updated, 'payment_requested' => false];
+    }
+
+    /**
+     * 미수납 청구가 남은 신청서의 승인 지시를 결제 절차로 돌립니다. (§4-5-2 — 헤더·상품 단위 공용)
+     *
+     * 신청서 단위 승인과 상품 단위 승인이 **같은 게이트**를 지나야 한다. 상품 행 승인이 이
+     * 판정을 건너뛰면 헤더가 `payment_pending → approved` 로 따라가(`syncHeaderFromOptions`)
+     * 돈을 받지 않은 채 승인된다(#599 validate P2 #1).
+     *
+     * - `pay_on_approval`: 결제 건을 만들고 결제대기로 옮긴다 — 결제 확정이 승인을 잇는다.
+     * - `pay_on_request`: 결제 통로가 이미 열려 있으므로 `claim_payment_outstanding` 로 거절한다.
+     *
+     * @param  OrderExchange|OrderReturn  $claim  신청서
+     * @param  string  $target  목표 상태 값
+     * @param  int|null  $processedBy  처리 관리자 ID
+     * @return bool 결제 요청으로 돌렸으면 true (승인 지시가 아니거나 미수납이 없으면 false)
+     *
+     * @throws OrderClaimException 신청 시점 결제의 미수납 승인
+     */
+    protected function divertApprovalToPayment(OrderExchange|OrderReturn $claim, string $target, ?int $processedBy): bool
+    {
+        if ($target !== 'approved'
+            || ! $claim->requiresAdditionalPayment()
+            || $this->paymentService->outstandingAmount($claim) <= 0) {
+            return false;
+        }
+
+        if ($claim->charge_method === ClaimChargeMethodEnum::PAY_ON_APPROVAL) {
+            $this->paymentService->requestPaymentOnApproval($claim, $processedBy);
+
+            return true;
+        }
+
+        throw OrderClaimException::paymentOutstanding();
+    }
+
+    /**
+     * 종결(반려·철회)된 신청서의 돈을 닫습니다. (대기 결제 취소 + 기납부 환급)
+     *
+     * **종결은 돈을 닫는 자리다.** 결제 가드가 보는 것은 결제행의 `isPending()` 뿐이고 신청서
+     * 상태가 아니라(`ClaimPaymentService::pay()`), 종결 경로가 대기 건을 닫지 않으면 이미 끝난
+     * 신청서에 구매자가 돈을 낼 수 있고 그 돈을 되돌릴 자리도 남지 않는다(#599 3차 실측 F-9).
+     * 신청서 단위 반려와 상품 단위 전량 반려·철회가 모두 이 한 곳을 지난다(#599 validate P2 #2).
+     * 고아 정리 배치(`CancelOrphanClaimPaymentsCommand`)도 이 정리를 전제로 적혀 있다.
+     *
+     * @param  OrderExchange|OrderReturn  $claim  전이된 신청서
+     * @return void 반환값 없음
+     */
+    protected function closeMoneyIfTerminated(OrderExchange|OrderReturn $claim): void
+    {
+        $status = $claim instanceof OrderExchange ? $claim->exchange_status?->value : $claim->return_status?->value;
+
+        $reasonKey = match ($status) {
+            ExchangeStatusEnum::REJECTED->value => 'sirsoft-ecommerce::messages.claims.rejected',
+            ExchangeStatusEnum::WITHDRAWN->value => 'sirsoft-ecommerce::messages.claims.withdrawn',
+            default => null,
+        };
+
+        if ($reasonKey === null) {
+            return;
+        }
+
+        $this->paymentService->refundPaymentsForClaim($claim, __($reasonKey));
     }
 
     /**
@@ -464,7 +516,7 @@ class AdminClaimService
      *
      * 완료 전이는 건별로 완료 절차(`complete()`)를 타고, 승인 전이에서 결제 요청으로
      * 우회된 건은 `payment_requested` 로 따로 보고한다 — 승인됨과 결제 요청됨은
-     * 운영자에게 다른 결과다.
+     * 운영자에게 다른 결과다. 도메인 예외가 아닌 건별 실패도 skip 으로 보고한다.
      *
      * @param  ClaimTypeEnum  $type  클레임 유형
      * @param  array<int, int>  $ids  신청서 ID 목록
@@ -517,6 +569,24 @@ class AdminClaimService
                     'claim_number' => $this->claimNumberOf($claim),
                     'message' => $e->getMessage(),
                 ];
+            } catch (\Throwable $e) {
+                // 부분 성공 계약은 **예상하지 못한 실패**에도 적용된다. 반려 직후의 환급(PG 호출)이나
+                // 리스너 장애처럼 도메인 예외가 아닌 실패가 한 건에서 나면, 예전에는 그 한 건이
+                // 요청 전체를 500 으로 끊어 앞서 처리된 건의 결과까지 운영자가 알 수 없었다
+                // (#599 validate P2 #11). 원인은 로그에 남기고 응답에는 원문을 싣지 않는다.
+                Log::error('[claim.bulk] 일괄 전이 중 건별 처리 실패 — skip 으로 보고', [
+                    'claim_id' => $claim->id,
+                    'claim_number' => $this->claimNumberOf($claim),
+                    'target' => $target,
+                    'exception' => $e::class,
+                    'message' => $e->getMessage(),
+                ]);
+
+                $skipped[] = [
+                    'id' => $claim->id,
+                    'claim_number' => $this->claimNumberOf($claim),
+                    'message' => __('sirsoft-ecommerce::exceptions.claim_bulk_item_failed'),
+                ];
             }
         }
 
@@ -539,9 +609,9 @@ class AdminClaimService
      * @param  string  $target  목표 상태 값
      * @param  array  $context  부가 정보 (processed_by)
      * @param  ClaimCompletionOptions|null  $completion  완료 처리 옵션 (완료 전이일 때만)
-     * @return array{succeeded: array<int, int>, skipped: array<int, array{id: int, message: string}>, split?: array<int, array{id: int, quantity: int, remainder_id: int, remainder_quantity: int}>} 전이 결과
+     * @return array{succeeded: array<int, int>, skipped: array<int, array{id: int, message: string}>, split?: array<int, array{id: int, quantity: int, remainder_id: int, remainder_quantity: int}>, payment_requested?: bool} 전이 결과 (승인이 결제 요청으로 우회되면 `payment_requested: true`)
      *
-     * @throws OrderClaimException 완료 가능 상품 부재 / 환불 완료 지시 등
+     * @throws OrderClaimException 완료 가능 상품 부재 / 환불 완료 지시 / 신청 시점 결제의 미수납 승인 등
      */
     public function transitionOptions(
         OrderExchange|OrderReturn|OrderRefund $claim,
@@ -571,9 +641,23 @@ class AdminClaimService
         $itemIds = ClaimItemSpecs::ids(ClaimItemSpecs::normalize($items));
 
         if ($target !== 'completed') {
+            // 상품 단위 승인도 신청서 단위 승인과 같은 미수납 게이트를 지난다(#1).
+            if ($this->divertApprovalToPayment($claim, $target, $context['processed_by'] ?? null)) {
+                return ['succeeded' => [], 'skipped' => [], 'split' => [], 'payment_requested' => true];
+            }
+
+            $wasFinal = $claim->isFinal();
+
             $result = $claim instanceof OrderExchange
                 ? $this->exchangeService->transitionOption($claim, $items, ExchangeStatusEnum::from($target), $context)
                 : $this->returnService->transitionOption($claim, $items, ReturnStatusEnum::from($target), $context);
+
+            // 상품 단위 전량 반려·철회로 헤더가 종결되면 헤더 경로와 같이 돈을 닫는다(#2).
+            $reloaded = $this->reload($claim);
+
+            if (! $wasFinal && $reloaded->isFinal()) {
+                $this->closeMoneyIfTerminated($reloaded);
+            }
 
             $this->announceItemsTransitioned($claim, $result, $target);
 
@@ -622,22 +706,6 @@ class AdminClaimService
     }
 
     /**
-     * 신청 상품 중 **일부만** 처리됐으면 고객에게 그 사실을 알립니다. (§5-5)
-     *
-     * 헤더 상태는 살아 있는 상품이 한 상태로 모일 때만 움직인다 — 갈린 채로 두면 기존 상태
-     * 알림이 발화하지 않아 **고객은 자기 신청이 어떻게 갈렸는지 알 방법이 없다.** 그 구멍을
-     * 이 한 통이 메운다.
-     *
-     * 발화 단위는 **운영자의 [일괄 적용] 1회**다 — 상품마다 보내면 3건 처리에 3통이 된다.
-     * 전건이 같은 결정으로 모였으면 보내지 않는다: 그때는 헤더가 따라 움직였고 기존 상태
-     * 알림이 같은 사실을 이미 말한다(두 통이 된다).
-     *
-     * @param  OrderExchange|OrderReturn|OrderRefund  $claim  신청서
-     * @param  array{succeeded: array<int, int>, skipped: array<int, array{id: int, message: string}>}  $result  전이 결과
-     * @param  string  $target  목표 상태 값
-     * @return void 반환값 없음
-     */
-    /**
      * 상품 단위 전이가 끝났다는 **사실**을 알립니다.
      *
      * 여기서 「고객에게 알릴 것인가」를 정하지 않는다. 그 판정은 알림 축
@@ -648,14 +716,14 @@ class AdminClaimService
      * @param  OrderExchange|OrderReturn|OrderRefund  $claim  신청서
      * @param  array{succeeded?: array<int, int>, skipped?: array<int, mixed>}  $result  전이 결과
      * @param  string  $target  이번 라운드의 목표 상태
-     * @return void
+     * @return void 반환값 없음
      */
     protected function announceItemsTransitioned(
         OrderExchange|OrderReturn|OrderRefund $claim,
         array $result,
         string $target,
     ): void {
-        HookManager::doAction(ClaimNotificationHooks::ITEMS_TRANSITIONED, $claim, $result, $target);
+        $this->fireAfterCommit(fn () => HookManager::doAction(ClaimNotificationHooks::ITEMS_TRANSITIONED, $claim, $result, $target));
     }
 
     /**
@@ -746,13 +814,40 @@ class AdminClaimService
      * @param  int|null  $processedBy  처리 관리자 ID
      * @return OrderExchange|OrderReturn|OrderRefund 갱신된 신청서
      *
-     * @throws OrderClaimException 수정 불가 상태·금액·청구 방식·D19 상한 위반
+     * 금액 갱신과 청구 정산(`settleChargeDifference()`)은 **한 트랜잭션**이다(#599 validate P2 #12).
+     * 정산이 실패하면(결제 수단 해석 불가 등) 금액도 함께 되돌아간다 — 예전에는 금액만 바뀐 채
+     * 남아 화면은 미수납을 적는데 낼 자리가 없었다. 수정 훅은 커밋 뒤에 나간다.
+     *
+     * @throws OrderClaimException 수정 불가 상태·금액·청구 방식·D19 상한 위반 / 기납부 청구의 차감 전환
      */
     public function updateAmounts(
         OrderExchange|OrderReturn|OrderRefund $claim,
         array $amounts,
         ?int $processedBy = null,
     ): OrderExchange|OrderReturn|OrderRefund {
+        return DB::transaction(fn () => $this->applyAmountUpdate($claim, $amounts, $processedBy));
+    }
+
+    /**
+     * 금액 수정의 본체입니다. (`updateAmounts()` 의 트랜잭션 안에서만 부른다)
+     *
+     * @param  OrderExchange|OrderReturn|OrderRefund  $claim  신청서
+     * @param  array  $amounts  수정값 (유형별 FormRequest 가 게이트한 키만)
+     * @param  int|null  $processedBy  처리 관리자 ID
+     * @return OrderExchange|OrderReturn|OrderRefund 갱신된 신청서
+     *
+     * @throws OrderClaimException 수정 불가 상태·금액·청구 방식·D19 상한 위반 / 기납부 청구의 차감 전환
+     */
+    protected function applyAmountUpdate(
+        OrderExchange|OrderReturn|OrderRefund $claim,
+        array $amounts,
+        ?int $processedBy,
+    ): OrderExchange|OrderReturn|OrderRefund {
+        // 이미 낸 청구를 환불금 차감으로 바꾸면 같은 돈을 두 번 받는다(#13).
+        if (($claim instanceof OrderExchange || $claim instanceof OrderReturn) && array_key_exists('charge_method', $amounts)) {
+            $this->userClaimService->assertChargeMethodChangeAllowed($claim, $amounts['charge_method']);
+        }
+
         $before = $this->amountSnapshot($claim);
 
         $updated = match (true) {
@@ -770,7 +865,7 @@ class AdminClaimService
         // 있었고, 반대로 청구 0원 신청서를 4,000원으로 올리면 화면은 「미수납 4,000원」이라 적는데
         // 결제행이 없어 **낼 자리가 없었다**(2026-09-22 #599 3차 실측 L-6·L-7).
         //
-        // **이미 결제한 건은 건드리지 않는다**(PO 결정 2026-09-23). 초과 수납이 생겨도 자동
+        // **이미 결제한 건은 건드리지 않는다**(운영 결정 2026-09-23). 초과 수납이 생겨도 자동
         // 환급하지 않고 운영이 처리한다 — 관리자 금액 수정에 자동 환급을 하기로 한 합의가 없고
         // (`modules/_bundled/sirsoft-ecommerce/docs/api/admin-claims.md` 의 `updateAmounts` 응답에 환급 기술이 없다), 운영자가 금액을
         // 고치는 것은 대개 운영상의 판단이기 때문이다.
@@ -790,13 +885,13 @@ class AdminClaimService
                 default => ClaimTypeEnum::REFUND->value,
             };
 
-            HookManager::doAction(
+            $this->fireAfterCommit(fn () => HookManager::doAction(
                 "sirsoft-ecommerce.claim.{$hookType}.amounts_updated",
                 $updated,
                 $before,
                 $after,
                 $processedBy,
-            );
+            ));
         }
 
         return $updated;
@@ -966,10 +1061,10 @@ class AdminClaimService
         // S1-D15: 주문을 받으면 그 결제수단이 쓸 수 없는 수단은 뺀다. 고를 수 있게
         // 보여 두고 저장에서만 거절하면 운영자는 될 줄 알고 고르다가 뒤늦게 막힌다.
         // 서버 가드(`OrderRefundRequestService::assertRefundMethodAvailable()`)는 그대로 둔다 —
-        // 화면을 거치지 않는 호출도 같은 거절을 받아야 한다.
+        // 화면을 거치지 않는 호출도 같은 거절을 받아야 한다. PG 가능 여부는 저장·실행 게이트와
+        // 같은 판정(`pgRefundAvailable()` — PG 리스너가 없어 계좌로 떨어지는 주문 포함)을 읽는다.
         if ($order !== null) {
-            $order->loadMissing('payment');
-            $hasPg = (bool) $order->payment?->needsPgProvider();
+            $hasPg = $this->refundRequestService->pgRefundAvailable($order);
 
             $cases = array_filter(
                 $cases,
@@ -1238,28 +1333,15 @@ class AdminClaimService
      *
      * 방어적 폴백이며 현재 스키마에서는 도달하지 않는다 — `order_exchanges.currency_code` ·
      * `order_returns.currency_code` 가 NOT NULL(기본값 보유)이라 호출부의 `?:` 좌변이 항상
-     * 참이다. 컬럼이 nullable 로 바뀌는 날을 대비해 남겨 둔다.
-     *
-     * 리소스 계층의 `HasMultiCurrencyPrices::resolveOrderBaseCurrencyCode()` 와 **같은 규칙이
-     * 아니다.** 스냅샷 `base_currency` 를 우선하는 1단계는 같지만, 그 뒤 폴백이 다르다 —
-     * 트레이트는 ① 선언된 기본 통화가 통화 목록에 실재할 때만 채택 ② 없으면 `is_default`
-     * 통화 ③ 마지막에 선언값의 3단인데, 여기서 부르는 `CurrencyConversionService::
-     * getDefaultCurrency()` 는 선언값을 그대로 돌려주는 1단이다. 삭제된 통화를 가리키는
-     * 설정에서 두 값이 갈리므로, 이 폴백이 실제로 도달하게 되면 그때 트레이트와 동형으로
-     * 맞추거나 판정을 공용 지점으로 올린다.
+     * 참이다. 판정 규칙은 클레임 서비스 공용 헬퍼
+     * (`CurrencyConversionService::resolveOrderBaseCurrency()`) 하나가 소유한다(#599 validate P2 #14).
      *
      * @param  Order|null  $order  주문
      * @return string 기준 통화 코드
      */
     protected function orderBaseCurrencyOf(?Order $order): string
     {
-        $snapshot = $order?->currency_snapshot;
-
-        if (is_array($snapshot) && ! empty($snapshot['base_currency'])) {
-            return (string) $snapshot['base_currency'];
-        }
-
-        return $this->currencyService->getDefaultCurrency();
+        return $this->currencyService->resolveOrderBaseCurrency($order);
     }
 
     /**
@@ -1398,7 +1480,7 @@ class AdminClaimService
      *
      * 「적립 차감」 예고(완료 모달 요약 · 상세 정산 카드)의 근거다. 반품·교환을 완료하면 주문옵션
      * 상태가 바뀌어 적립 대상 조회에서 빠지므로, 적립 **전**인 상품은 예정분이 나가지 않는다 —
-     * 예고가 맞다. 반면 이미 적립이 나간 상품은 되돌리지 않는다(#599 T2-D13 · PO 결정 2026-09-23
+     * 예고가 맞다. 반면 이미 적립이 나간 상품은 되돌리지 않는다(#599 T2-D13 · 운영 결정 2026-09-23
      * — `UserMileageService::cancelEarnForOption()`). 예전 판정(회원 주문 + 완료 대상 존재)은 그
      * 결정 뒤에도 남아, 120원이 이미 적립된 상품의 반품에 **일어나지 않을 차감**을 예고했다
      * (2026-09-23 재실측: 반품 완료 뒤 `earn_cancel` 0건 · 적립 lot 그대로).

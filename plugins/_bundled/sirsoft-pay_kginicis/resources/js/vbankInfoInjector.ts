@@ -5,12 +5,15 @@ const FLAG = '__kginicisVbankInfoInjectorInstalled';
 const MP_SECTION_ID = 'kginicis-mp-vbank-info';
 
 const ORDER_COMPLETE_RE = /^\/shop\/orders\/([^/]+)\/complete$/;
-const ORDER_SHOW_RE = /^\/mypage\/orders\/([^/]+)$/;
+// 회원 주문 상세(/mypage/orders/{N}) + 비회원 주문 상세(/shop/guest/orders/{N}) — 두 경로 모두 주소 조각이
+// 주문번호다. 회원 경로만 보면 비회원 가상계좌 주문의 입금 안내가 오류 없이 빠진다.
+const ORDER_SHOW_RE = /^(?:\/mypage\/orders\/([^/]+)|\/shop\/guest\/orders\/([^/]+))$/;
 // 클레임 신청서 상세도 같은 결제 정보 카드(partials/mypage/orders/_payment.json)를 재사용한다.
 // 그 주소에 실린 것은 클레임 번호라 주문번호를 뽑을 수 없으므로, 이 경로에서는 화면이 이미
 // 읽어 둔 주문을 그대로 쓴다(주문번호 대조 생략). 이 갈래가 없으면 결제 정보 카드는 뜨는데
-// 입금 안내만 빠진 채 열리고, 오류도 경고도 남지 않는다.
-const CLAIM_SHOW_RE = /^\/mypage\/claims\/([^/]+)$/;
+// 입금 안내만 빠진 채 열리고, 오류도 경고도 남지 않는다. 비회원 신청서 상세(/shop/guest/claims/{N})도
+// 같은 카드를 쓰므로 함께 매칭한다.
+const CLAIM_SHOW_RE = /^(?:\/mypage\/claims\/([^/]+)|\/shop\/guest\/claims\/([^/]+))$/;
 
 // ISO 8601 날짜 패턴 (2026-06-11T23:59:59+00:00 등)
 const ISO_DATE_RE = /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+\-]\d{2}:\d{2}/;
@@ -286,7 +289,7 @@ function onRouteChange(): void {
 
     const mp = location.pathname.match(ORDER_SHOW_RE);
     if (mp) {
-        startMypagePolling(mp[1]);
+        startMypagePolling(mp[1] ?? mp[2]);
 
         return;
     }

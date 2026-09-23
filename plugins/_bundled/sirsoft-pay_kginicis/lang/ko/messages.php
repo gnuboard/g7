@@ -23,6 +23,8 @@ return [
         'auth_url_invalid' => '승인 요청 주소가 KG 이니시스 허용 목록에 없습니다.',
         'deposit_not_supported' => '클레임 추가결제는 입금 대기 방식(가상계좌)을 지원하지 않습니다.',
         'compensation_cancel_reason' => '클레임 결제 승인 거절에 따른 자동 취소',
+        'amount_mismatch' => '결제 금액이 청구액과 맞지 않거나 청구액을 확인할 수 없어 결제를 확정하지 않았습니다(승인된 금액은 취소됩니다). 신청서에서 결제를 다시 시작해 주세요.',
+        'order_id_mismatch' => '승인 응답의 주문번호가 승인 대상 클레임 결제번호와 일치하지 않습니다.',
     ],
     'refund' => [
         'missing_tid' => '거래 ID(TID)가 없어 환불을 진행할 수 없습니다.',

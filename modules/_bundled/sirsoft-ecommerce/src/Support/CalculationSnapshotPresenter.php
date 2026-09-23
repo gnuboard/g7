@@ -45,8 +45,22 @@ final class CalculationSnapshotPresenter
     {
         $total = 0;
 
+        // 회계 주체 판정은 재계산 입력(`OrderAdjustmentService::buildRecalcInput()`)과 같다 —
+        // 교환완료(`EXCHANGED`)로 닫힌 원 행은 후속 행이 승계하므로 빼고, 원 행이 아직 교환
+        // 진행 중인 후속 행은 원 행이 주체이므로 뺀다. 취소만 빼면 교환이 끝난 주문에서 같은
+        // 상품의 정가가 두 번 더해진다(#599 validate P2 #5).
+        $exchangedSourceIds = $order->options
+            ->filter(fn ($option) => $option->option_status === OrderStatusEnum::EXCHANGED)
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+
         foreach ($order->options as $option) {
-            if ($option->option_status === OrderStatusEnum::CANCELLED) {
+            if (in_array($option->option_status, [OrderStatusEnum::CANCELLED, OrderStatusEnum::EXCHANGED], true)) {
+                continue;
+            }
+
+            if ($option->isExchanged() && ! in_array((int) $option->source_option_id, $exchangedSourceIds, true)) {
                 continue;
             }
 

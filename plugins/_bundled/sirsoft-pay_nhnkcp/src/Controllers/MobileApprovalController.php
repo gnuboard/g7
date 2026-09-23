@@ -10,6 +10,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Modules\Sirsoft\Ecommerce\Models\ClaimPayment;
 use Modules\Sirsoft\Ecommerce\Models\Order;
+use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ClaimPaymentRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Services\OrderProcessingService;
 use Plugins\Sirsoft\PayNhnkcp\Concerns\BindsMobileVbankSession;
 use Plugins\Sirsoft\PayNhnkcp\Concerns\HandlesClaimPaymentCallbacks;
@@ -67,9 +68,15 @@ class MobileApprovalController
 
     private const PLUGIN_IDENTIFIER = 'sirsoft-pay_nhnkcp';
 
+    /**
+     * @param  KcpSoapService  $soapService  KCP SOAP 서비스
+     * @param  OrderProcessingService  $orderService  주문 결제 처리 서비스
+     * @param  ClaimPaymentRepositoryInterface  $claimPaymentRepository  클레임 결제 Repository
+     */
     public function __construct(
         private readonly KcpSoapService $soapService,
         private readonly OrderProcessingService $orderService,
+        private readonly ClaimPaymentRepositoryInterface $claimPaymentRepository,
     ) {}
 
     /**
@@ -274,6 +281,8 @@ class MobileApprovalController
      * 비과세 금액이 있는 경우에만 comm_tax_mny / comm_vat_mny / comm_free_mny 추가.
      * 전액 과세라면 good_mny 만으로 KCP가 내부적으로 세금 계산.
      *
+     * @param  Order  $order  과세·면세 금액을 읽을 주문
+     * @param  int  $paymentAmount  결제 금액 (KRW)
      * @return array<string, string>
      */
     private function buildTaxFields(Order $order, int $paymentAmount): array
@@ -304,6 +313,7 @@ class MobileApprovalController
     }
 
     /**
+     * @param  string  $payMethodKey  쇼핑몰 결제수단 키
      * @return array<string, string>
      */
     private function buildEasyPayReturnFields(string $payMethodKey): array
@@ -318,12 +328,25 @@ class MobileApprovalController
         ];
     }
 
+    /**
+     * 요청 통화와 주문 통화가 모두 KRW 인지 판정합니다. (KCP 는 KRW 전용)
+     *
+     * @param  Order  $order  대상 주문
+     * @param  string|null  $requestedCurrency  요청이 보낸 결제 통화
+     * @return bool 둘 다 KRW 이면 true
+     */
     private function isKrwPayment(Order $order, ?string $requestedCurrency): bool
     {
         return $this->normalizeCurrency($requestedCurrency) === 'KRW'
             && $this->normalizeCurrency((string) ($order->currency ?? 'KRW')) === 'KRW';
     }
 
+    /**
+     * 통화 코드를 대문자로 정규화합니다. (빈 값이면 KRW)
+     *
+     * @param  string|null  $currency  통화 코드
+     * @return string 정규화된 통화 코드
+     */
     private function normalizeCurrency(?string $currency): string
     {
         $normalized = strtoupper(trim((string) $currency));

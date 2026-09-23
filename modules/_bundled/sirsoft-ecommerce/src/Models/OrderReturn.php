@@ -13,6 +13,7 @@ use Modules\Sirsoft\Ecommerce\Enums\ClaimChargeMethodEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimReasonFaultTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimShippingFeeModeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimTypeEnum;
+use Modules\Sirsoft\Ecommerce\Enums\RefundPriorityEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ReturnStatusEnum;
 
 /**
@@ -80,6 +81,7 @@ class OrderReturn extends Model
         'refund_bank_holder',
         'original_calculation_snapshot',
         'recalculated_snapshot',
+        'refund_priority',
     ];
 
     /**
@@ -103,6 +105,7 @@ class OrderReturn extends Model
             'return_address_snapshot' => 'array',
             'original_calculation_snapshot' => 'array',
             'recalculated_snapshot' => 'array',
+            'refund_priority' => RefundPriorityEnum::class,
             'collection_completed_at' => 'datetime',
             'is_stock_restored' => 'boolean',
             'approved_at' => 'datetime',

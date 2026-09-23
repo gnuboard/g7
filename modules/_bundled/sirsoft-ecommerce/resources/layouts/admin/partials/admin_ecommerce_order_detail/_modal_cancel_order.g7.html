@@ -163,7 +163,7 @@
       <div data-if="{{order.data?.payment?.requires_pg_cancellation === true}}">
         <span class="text-body font-medium block mb-2">$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.refund_priority_label</span>
         <!-- 포인트 미사용 안내 (선택 불가 사유) -->
-        <span data-if="{{(order.data?.total_points_used_amount ?? 0) <= 0}}" class="text-caption text-gray-500 dark:text-gray-400 block mb-2">$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.refund_priority_no_points_hint</span>
+        <span data-if="{{(order.data?.total_points_used_amount ?? 0) <= 0}}" class="text-xs text-gray-500 dark:text-gray-400 block mb-2">$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.refund_priority_no_points_hint</span>
         <div class="flex gap-3">
           <label class="flex-center gap-2 p-2 rounded-lg border {{(order.data?.total_points_used_amount ?? 0) <= 0 ? 'cursor-not-allowed opacity-50 border-gray-200 dark:border-gray-700' : (_local.refundPriority === 'pg_first' ? 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 border-gray-200 dark:border-gray-700')}}">
             <input type="radio" name="refundPriority" value="pg_first" checked="{{_local.refundPriority === 'pg_first'}}" disabled="{{(order.data?.total_points_used_amount ?? 0) <= 0}}" class="radio">
@@ -196,9 +196,9 @@
           </input>
           <div class="flex-1">
             <span class="text-body font-medium block">$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.auto_advance_refund_label</span>
-            <span class="text-caption text-gray-500 dark:text-gray-400 block mt-1">$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.auto_advance_refund_hint</span>
+            <span class="text-xs text-gray-500 dark:text-gray-400 block mt-1">$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.auto_advance_refund_hint</span>
             <!-- 정지 수단 안내 (P16) — 체크박스는 그대로 두되, 이 주문의 결제수단이 자동 승인 목록 밖이면 체크해도 환불신청에서 멈춘다는 것을 미리 알린다. 판정은 서버가 준 auto_approves_refund 하나를 읽는다 — 레이아웃에서 목록을 다시 비교하면 설정 변경·플러그인 추가 때 안내와 실제 전이가 갈린다. -->
-            <span data-if="{{order.data?.payment?.auto_approves_refund === false}}" class="text-caption text-amber-600 dark:text-amber-400 block mt-1">$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.auto_advance_refund_blocked_hint</span>
+            <span data-if="{{order.data?.payment?.auto_approves_refund === false}}" class="text-xs text-amber-600 dark:text-amber-400 block mt-1">$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.auto_advance_refund_blocked_hint</span>
           </div>
         </label>
       </div>
@@ -419,8 +419,8 @@
       </button>
       <button type="button" class="flex-center gap-2 px-4 py-2 text-sm bg-red-600 dark:bg-red-500 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_local.isCancelling || _local.refundLoading || _local.refundEstimate?.cancel_blocked}}">
         <on type="click">
-          <!-- 취소 실행 — 화면에 흩어진 여섯 값을 그대로 핸들러에 넘긴다. 재고 복원·마일리지 회수·PG 취소가 한 흐름으로 얽혀 있어 화면에서 조립하지 않고, 검증 오류 표시와 창 닫기도 핸들러 몫이다. -->
-          <action handler="sirsoft-ecommerce.executeCancelOrder" orderId="{{route.orderNumber}}" cancelItems="{{_local.cancelItems}}" cancelReason="{{_local.cancelReason ?? ''}}" cancelReasonDetail="{{_local.cancelReasonDetail ?? ''}}" autoAdvanceRefund="{{_local.autoAdvanceRefund === true}}" refundPriority="{{_local.refundPriority ?? 'pg_first'}}"/>
+          <!-- 취소 실행 — 화면에 흩어진 여섯 값을 그대로 핸들러에 넘긴다. 클레임 열람 가능 여부(`canViewClaims`)도 함께 넘긴다 — 셸의 orderClaims 가 403 이면 unavailable 이고, 그 운영자를 방금 만든 신청서 상세로 보내면 403 화면에 떨어진다. 재고 복원·마일리지 회수·PG 취소가 한 흐름으로 얽혀 있어 화면에서 조립하지 않고, 검증 오류 표시와 창 닫기도 핸들러 몫이다. -->
+          <action handler="sirsoft-ecommerce.executeCancelOrder" orderId="{{route.orderNumber}}" cancelItems="{{_local.cancelItems}}" cancelReason="{{_local.cancelReason ?? ''}}" cancelReasonDetail="{{_local.cancelReasonDetail ?? ''}}" autoAdvanceRefund="{{_local.autoAdvanceRefund === true}}" refundPriority="{{_local.refundPriority ?? 'pg_first'}}" canViewClaims="{{orderClaims?.data?.unavailable !== true}}"/>
         </on>
         <icon data-if="{{_local.isCancelling}}" name="spinner" class="animate-spin" size="sm"/>
         <span>$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.cancel_btn</span>

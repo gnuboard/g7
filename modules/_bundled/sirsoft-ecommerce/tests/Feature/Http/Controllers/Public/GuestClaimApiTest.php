@@ -342,7 +342,7 @@ class GuestClaimApiTest extends ModuleTestCase
      * 둘이라, 한쪽만 게이트를 지나면 비회원 무통장 주문이 조용히 자동 완료된다.
      *
      * 계좌는 이 축과 직교한다 — 돈이 계좌로 돌아가는 주문이라 접수 시점에 받을 계좌가 있어야
-     * 한다(T2-D5, PO 결정 2026-09-23). 여기서는 계좌를 채워 `auto`/`requested` 축만 본다.
+     * 한다(T2-D5, 운영 결정 2026-09-23). 여기서는 계좌를 채워 `auto`/`requested` 축만 본다.
      *
      * @return void 반환값 없음
      *
@@ -512,6 +512,35 @@ class GuestClaimApiTest extends ModuleTestCase
         ], ['X-Guest-Order-Token' => $token])->assertCreated()->assertJsonPath('data.claim.images.0.id', $imageId);
 
         $this->assertSame('return', ClaimImage::find($imageId)->claimable_type);
+    }
+
+    /**
+     * 비회원도 신청서에 붙은 첨부를 미귀속 삭제 경로(DELETE)로 지울 수 없다.
+     *
+     * 회원 경로와 같은 결함이 토큰 경로에도 있다 — 토큰만 있으면 접수된 신청서의 증빙과
+     * 운영자가 올린 사진까지 지울 수 있었다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario claim_type=return, entry=with_token, screen=edit
+     *
+     * @effects guest_cannot_delete_an_attached_image_through_the_pending_route
+     */
+    public function test_guest_cannot_delete_an_attached_image(): void
+    {
+        [$order, $token] = $this->guestOrderWithToken();
+
+        $imageId = $this->postJson($this->base($order).'/claims/images', [
+            'image' => UploadedFile::fake()->image('proof.jpg'),
+        ], ['X-Guest-Order-Token' => $token])->assertCreated()->json('data.id');
+
+        $this->postJson($this->base($order).'/returns', [
+            'items' => $this->items($order), 'reason_code' => 'changed_mind', 'charge_method' => 'deduct_from_refund', 'image_ids' => [$imageId],
+        ], ['X-Guest-Order-Token' => $token])->assertCreated();
+
+        $this->deleteJson($this->base($order)."/claims/images/{$imageId}", [], ['X-Guest-Order-Token' => $token])->assertNotFound();
+
+        $this->assertNotNull(ClaimImage::find($imageId), '신청서에 붙은 증빙이 토큰 경로로 지워지면 안 됩니다.');
     }
 
     /**

@@ -129,4 +129,13 @@ interface OrderCancelRepositoryInterface
      * @return int 건수
      */
     public function countForAdmin(array $filters = []): int;
+
+    /**
+     * 지정한 신청서 중 열람자의 권한 스코프 안에 있는 건수를 셉니다. (주문 스코프 상속 — 일괄 액션 가드)
+     *
+     * @param  array<int, int>  $ids  신청서 ID 목록
+     * @param  string|null  $permission  스코프를 판정할 권한 식별자 (null 이면 스코프 없이 존재 건수만)
+     * @return int 스코프 안의 건수
+     */
+    public function countWithinAdminScope(array $ids, ?string $permission): int;
 }

@@ -13,11 +13,7 @@ use Modules\Sirsoft\Ecommerce\Exceptions\OrderClaimException;
 use Modules\Sirsoft\Ecommerce\Exceptions\OrderProcessingException;
 use Modules\Sirsoft\Ecommerce\Exceptions\ResourceScopeMismatchException;
 use Modules\Sirsoft\Ecommerce\Models\Order;
-use Modules\Sirsoft\Ecommerce\Models\OrderCancelOption;
-use Modules\Sirsoft\Ecommerce\Models\OrderExchangeOption;
 use Modules\Sirsoft\Ecommerce\Models\OrderOption;
-use Modules\Sirsoft\Ecommerce\Models\OrderRefundOption;
-use Modules\Sirsoft\Ecommerce\Models\OrderReturnOption;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\MileageTransactionRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderOptionRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderRepositoryInterface;
@@ -41,6 +37,7 @@ class OrderOptionService
      * @param  EcommerceSettingsService  $settingsService  이커머스 설정 서비스 (재고 복원 정책 등)
      * @param  MileageTransactionRepositoryInterface  $mileageTransactionRepository  마일리지 거래 Repository (병합 시 적립 거래 이전)
      * @param  ClaimQuantityGuard  $claimQuantityGuard  클레임 수량 잠금 가드 (D15)
+     * @param  CurrencyConversionService  $currencyService  통화 변환 서비스 (주문 기준 통화 해석)
      */
     public function __construct(
         protected OrderOptionRepositoryInterface $orderOptionRepository,
@@ -51,6 +48,7 @@ class OrderOptionService
         protected EcommerceSettingsService $settingsService,
         protected MileageTransactionRepositoryInterface $mileageTransactionRepository,
         protected ClaimQuantityGuard $claimQuantityGuard,
+        protected CurrencyConversionService $currencyService,
     ) {}
 
     /**
@@ -729,22 +727,16 @@ class OrderOptionService
      * 걸려 있다. 피흡수 행을 지우기 전에 옮기지 않으면 접수 때 기록한 신청상품이 함께
      * 지워져, 신청서에 금액만 남고 **무엇을 신청했는지가 사라진다**.
      *
+     * 쓰기는 Repository 가 맡는다 — 서비스가 네 모델을 직접 질의하면 데이터 접근 규율
+     * (Service → RepositoryInterface)을 벗어난다(#599 validate P2 #7).
+     *
      * @param  int  $fromOrderOptionId  피흡수 옵션 ID
      * @param  int  $toOrderOptionId  생존 옵션 ID
      * @return void
      */
     private function transferClaimOptions(int $fromOrderOptionId, int $toOrderOptionId): void
     {
-        foreach ([
-            OrderRefundOption::class,
-            OrderCancelOption::class,
-            OrderReturnOption::class,
-            OrderExchangeOption::class,
-        ] as $model) {
-            $model::query()
-                ->where('order_option_id', $fromOrderOptionId)
-                ->update(['order_option_id' => $toOrderOptionId]);
-        }
+        $this->orderOptionRepository->transferClaimOptionReferences($fromOrderOptionId, $toOrderOptionId);
     }
 
     /**
@@ -936,18 +928,16 @@ class OrderOptionService
         // 아래 S1-D17 블록이 따로 다룬다.
         $order->loadMissing('payment');
         $paymentSettled = $order->payment?->payment_status === PaymentStatusEnum::PAID;
-        $headerUnpaid = (int) $order->total_paid_amount === 0 && (int) $order->total_due_amount > 0;
+        $headerUnpaid = (float) $order->total_paid_amount <= 0.0 && (float) $order->total_due_amount > 0.0;
         $movesPastPayment = ! $newStatus->isBeforePayment() && $newStatus !== OrderStatusEnum::CANCELLED;
 
         if ($movesPastPayment && $paymentSettled && $headerUnpaid) {
             // 실제로 수납된 금액은 결제 레코드가 들고 있다 — 미수금(total_due_amount)을 그대로
             // 옮기지 않고 payment 의 수납액을 쓴다(부분 입금·금액 정정이 있어도 장부가 어긋나지 않는다).
-            $paidAmount = (int) $order->payment->paid_amount_base
-                ?: (int) $order->payment->paid_amount_local
-                ?: (int) $order->total_due_amount;
+            $paidAmount = $this->resolveSettledBaseAmount($order);
 
             $orderUpdate['total_paid_amount'] = $paidAmount;
-            $orderUpdate['total_due_amount'] = max(0, (int) $order->total_due_amount - $paidAmount);
+            $orderUpdate['total_due_amount'] = max(0.0, (float) $order->total_due_amount - $paidAmount);
             $orderUpdate['paid_at'] = $order->paid_at ?? $order->payment->paid_at ?? now();
             // mc_total_paid_amount 는 여기서 파생하지 않는다 — 통화 스냅샷 환산은
             // OrderProcessingService 가 소유한다(SSoT). 이 경로는 base 금액만 정합화한다.
@@ -979,6 +969,37 @@ class OrderOptionService
         if ($purchaseConfirmed) {
             HookManager::doAction('sirsoft-ecommerce.order.after_purchase_confirmed', $order->fresh());
         }
+    }
+
+    /**
+     * 결제행이 수납한 금액을 **기준 통화**로 반환합니다. (헤더 결제금액 정합화 전용 — S2-D4)
+     *
+     * 주문 헤더의 `total_paid_amount` 는 기준 통화 금액이다. 그래서 결제행의 기준 통화 수납액
+     * (`paid_amount_base`)만 옮길 수 있다 — 결제 통화 금액(`paid_amount_local`)은 결제 통화가
+     * 기준 통화와 같을 때만 같은 단위다. 종전에는 `base ?: local` 로 떨어져 USD 50 이 헤더에
+     * 50 원으로 적히고, `(int)` 캐스팅이 소수 통화의 센트까지 잘라냈다(#599 validate P2 #6).
+     * 단위를 세울 수 없으면 미수금(`total_due_amount` — 기준 통화)을 쓴다.
+     *
+     * @param  Order  $order  주문 (payment 로드됨)
+     * @return float 기준 통화 수납액
+     */
+    private function resolveSettledBaseAmount(Order $order): float
+    {
+        $payment = $order->payment;
+        $base = (float) ($payment->paid_amount_base ?? 0);
+
+        if ($base > 0) {
+            return $base;
+        }
+
+        $baseCurrency = $this->currencyService->resolveOrderBaseCurrency($order);
+        $local = (float) ($payment->paid_amount_local ?? 0);
+
+        if ($local > 0 && ($payment->currency === null || $payment->currency === $baseCurrency)) {
+            return $local;
+        }
+
+        return (float) $order->total_due_amount;
     }
 
     /**

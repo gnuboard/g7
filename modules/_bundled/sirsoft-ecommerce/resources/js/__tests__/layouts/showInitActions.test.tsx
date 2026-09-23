@@ -59,7 +59,7 @@ describe('상품 상세 페이지 init_actions 검증', () => {
         // 사실과 다르다 — 이 화면의 짝 `.g7.html` 은 저작 트랙 이관 커밋(#476 `66aa7d7d0`)에서
         // 처음 생겼고, 그 전에는 설치가 `.json` 을 읽었으므로 실제로 돌던 값은 `{}` 였다.
         // 즉 `[]` 는 이관이 바꾼 값이고 이 단언이 그것을 뒤늦게 잠근 것이다(#599 15차 병합
-        // 전수 보존 검사 실측, PO 결정 2026-09-21 「22곳 전부 되돌린다」).
+        // 전수 보존 검사 실측, 운영 결정 2026-09-21 「22곳 전부 되돌린다」).
         expect(resetAction.params.currentSelection).toEqual({});
         expect(resetAction.params.noOptionQuantity).toBe(1);
         expect(resetAction.params.additionalOptions).toEqual({});

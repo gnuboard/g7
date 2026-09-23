@@ -169,6 +169,7 @@
             "cancelled": "Cancelled"
         },
         "partial_cancelled_badge": "Partially Cancelled",
+        "additional_options_more": "+{{count}} more",
         "total_amount": "Total Amount",
         "shipping_fee": "Shipping",
         "free_shipping": "Free",

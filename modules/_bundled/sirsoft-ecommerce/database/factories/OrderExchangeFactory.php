@@ -29,7 +29,9 @@ class OrderExchangeFactory extends Factory
             'order_id' => Order::factory(),
             'exchange_number' => 'EX'.strtoupper($faker->unique()->bothify('##########')),
             'exchange_status' => ExchangeStatusEnum::REQUESTED,
-            'reason_code' => 'changed_mind',
+            // 교환 사유 카탈로그에 있는 코드여야 한다 — `changed_mind` 는 환불·반품에만 있어 교환
+            // 신청서 픽스처가 사유 라벨을 잃는다(`ClaimReasonSeeder` 의 exchange 목록 참조).
+            'reason_code' => 'size_mismatch',
             'reason_detail' => null,
             'fault_type' => ClaimReasonFaultTypeEnum::CUSTOMER,
             'charge_method' => null,

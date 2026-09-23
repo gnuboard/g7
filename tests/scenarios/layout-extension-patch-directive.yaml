@@ -1,0 +1,21 @@
+feature: inject_props `_patch` 의 새 항목 지시자 정규화 (#599 validate)
+
+description: |
+  `_patch` 대상 항목이 호스트에 없으면 패치 항목을 원문 그대로 끝에 붙여, `_append`·중첩 `_patch` 지시자
+  객체가 리터럴로 레이아웃에 남았다. 새 항목도 기존 항목과 같은 병합(빈 대상에 대한 병합)을 거쳐 지시자를 푼다.
+  항목 안 `_append` 가 표현식 문자열을 만나면 최상위 경로와 같게 경고하고 건너뛴다.
+
+axes:
+  host_item: [missing, present]
+  directive: [append_and_nested_patch, append_on_expression]
+
+exclusions:
+  - { host_item: missing, directive: append_on_expression, reason: "대상 항목이 없으면 덮을 표현식도 없다" }
+
+effects:
+  - new_patch_item_directives_are_normalized
+  - item_append_on_expression_is_skipped_not_overwritten
+  - existing_item_append_still_appends
+
+test_files:
+  - tests/Unit/Services/LayoutExtensionPatchDirectiveTest.php

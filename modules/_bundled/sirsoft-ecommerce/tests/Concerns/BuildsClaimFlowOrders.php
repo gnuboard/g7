@@ -16,6 +16,7 @@ use Modules\Sirsoft\Ecommerce\Models\OrderAddress;
 use Modules\Sirsoft\Ecommerce\Models\OrderExchange;
 use Modules\Sirsoft\Ecommerce\Models\OrderShipping;
 use Modules\Sirsoft\Ecommerce\Models\ShippingPolicy;
+use Modules\Sirsoft\Ecommerce\Services\ClaimPaymentService;
 use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
 use Modules\Sirsoft\Ecommerce\Services\OrderExchangeService;
 
@@ -32,6 +33,8 @@ trait BuildsClaimFlowOrders
 
     /**
      * 교환·반품·환불 사유 카탈로그를 시드합니다.
+     *
+     * @return void 반환값 없음
      */
     protected function seedClaimReasons(): void
     {
@@ -206,9 +209,9 @@ trait BuildsClaimFlowOrders
      * 아니라 `pg_payment_handler` 가 `null` 이 되기 때문이다. 오류가 없어 원인이 드러나지
      * 않는다(2026-09-15 실측 — `CP20260915-1004285647` 이 그렇게 고정됐다).
      *
-     * @param  string  $id  provider id
+     * @param  string  $id  PG 제공자 ID
      * @param  string|null  $handler  프론트 결제 진입 핸들러
-     * @return void
+     * @return void 반환값 없음
      */
     protected function registerTestPgProvider(string $id = 'testpg', ?string $handler = 'sirsoft-testpg.requestPayment'): void
     {
@@ -234,6 +237,7 @@ trait BuildsClaimFlowOrders
      * @param  bool  $success  승인 성공 여부
      * @param  array  $overrides  반환값 덮어쓰기
      * @param  array|null  $captured  마지막 호출 인자 (참조)
+     * @return void 반환값 없음
      */
     protected function fakeClaimPaymentApprove(bool $success = true, array $overrides = [], ?array &$captured = null): void
     {
@@ -244,6 +248,11 @@ trait BuildsClaimFlowOrders
                 'handled' => true,
                 'success' => $success,
                 'transaction_id' => $success ? 'TXN-'.$payment->payment_number : null,
+                // 실제 PG 처럼 승인 금액을 돌려준다 — 서버는 금액을 대조할 수 없는 승인을 확정하지
+                // 않는다(#599 validate P2 #11). 불일치를 재는 테스트는 `$overrides` 로 덮는다.
+                'paid_amount' => $success
+                    ? app(ClaimPaymentService::class)->resolvePaymentCharge($payment)['minor_unit_amount'] ?? null
+                    : null,
                 'error_code' => $success ? null : 'DECLINED',
                 'error_message' => $success ? null : 'card declined',
             ], $overrides);
@@ -255,6 +264,7 @@ trait BuildsClaimFlowOrders
      *
      * @param  bool  $success  환급 성공 여부
      * @param  array|null  $calls  호출 기록 (참조)
+     * @return void 반환값 없음
      */
     protected function fakeClaimPaymentRefund(bool $success = true, ?array &$calls = null): void
     {

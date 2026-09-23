@@ -1,7 +1,7 @@
 /**
  * DynamicRenderer.fromBaseLayoutKeyReset.test.tsx
  *
- * 트러블슈팅 state-closure 사례 4 (engine-v1.66.2) — 실물 렌더 회귀 잠금.
+ * 트러블슈팅 state-closure 사례 4 (engine-v1.71.1) — 실물 렌더 회귀 잠금.
  *
  * SPA 네비게이션에서 `_fromBase` 보존 컴포넌트(관리자 base 의 `admin_layout_root`)는 stable key 로
  * unmount 되지 않는다. 그 인스턴스의 저장소 A(`localDynamicState`)에는 이전 페이지의 `_local` 전체가
@@ -19,7 +19,7 @@
  * fail-first: 초기화가 useEffect 로 되돌아가면 페이지 B 의 첫 렌더가 페이지 A 의 컬럼을 받고
  * 저장소 B 도 A 의 값으로 굳어 여기서 red 가 된다.
  *
- * @see 트러블슈팅 state-closure 사례 4 (engine-v1.66.2) · docs/frontend/state-management.md 「엔진 수정 시 금지 사항」
+ * @see 트러블슈팅 state-closure 사례 4 (engine-v1.71.1) · docs/frontend/state-management.md 「엔진 수정 시 금지 사항」
  */
 
 import React from 'react';
@@ -120,7 +120,7 @@ const rootDef = (page: string): ComponentDefinition =>
     ],
   }) as unknown as ComponentDefinition;
 
-describe('[case:state-closure-spa-from-base-stale-first-render] SPA 이동 시 보존된 base 루트의 stale 저장소 A 가 첫 렌더에 병합되어 자식 마운트 콜백이 이전 페이지 값을 되쓴다 (engine-v1.66.2)', () => {
+describe('[case:state-closure-spa-from-base-stale-first-render] SPA 이동 시 보존된 base 루트의 stale 저장소 A 가 첫 렌더에 병합되어 자식 마운트 콜백이 이전 페이지 값을 되쓴다 (engine-v1.71.1)', () => {
   let registry: ComponentRegistry;
   let bindingEngine: DataBindingEngine;
   let translationEngine: TranslationEngine;

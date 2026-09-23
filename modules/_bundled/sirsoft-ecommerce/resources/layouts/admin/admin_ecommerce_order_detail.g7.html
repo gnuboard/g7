@@ -62,6 +62,10 @@
         <!-- 클레임 열람 권한이 없는 주문 담당자에게는 정상적인 응답이다 — 상위(레이아웃) errorHandling 으로 전파되면 주문 화면 전체가 오류 페이지가 된다. -->
         <suppress/>
       </on-code>
+      <default>
+        <!-- 500·네트워크 실패도 같다 — 클레임 내역 한 섹션의 실패가 주문 화면 전체를 막지 않게 끊고, fallback 의 unavailable 로 섹션이 '못 불러왔다' 를 말한다. -->
+        <suppress/>
+      </default>
     </error-handling>
   </data-source>
   <!-- 취소/환불 창의 사유 선택지 — 운영자가 관리하는 사유 중 사용 중인 환불 사유만 받는다 -->
@@ -78,7 +82,8 @@
     <field name="claimHistoryType" value=""/>
     <field name="expandedCashReceiptHistory" :value="[]"/>
   </init-local>
-  <computed name="orderDetailTabs">{{[{ id: 'order_info', label: $t('sirsoft-ecommerce.admin.order.detail.tabs.order_info') }, { id: 'payment_info', label: $t('sirsoft-ecommerce.admin.order.detail.tabs.payment_info') }, { id: 'claim_history', label: $t('sirsoft-ecommerce.admin.order.detail.tabs.claim_history') + ((orderClaims?.data?.claims ?? []).length > 0 ? ' (' + (orderClaims?.data?.claims ?? []).length + ')' : '') }, { id: 'activity_log', label: $t('sirsoft-ecommerce.admin.order.detail.tabs.activity_log') }]}}</computed>
+  <computed name="claimHistoryTotal">{{Number(orderClaims?.data?.counts?.exchange ?? 0) + Number(orderClaims?.data?.counts?.return ?? 0) + Number(orderClaims?.data?.counts?.cancel ?? 0) + Number(orderClaims?.data?.counts?.refund ?? 0)}}</computed>
+  <computed name="orderDetailTabs">{{[{ id: 'order_info', label: $t('sirsoft-ecommerce.admin.order.detail.tabs.order_info') }, { id: 'payment_info', label: $t('sirsoft-ecommerce.admin.order.detail.tabs.payment_info') }, { id: 'claim_history', label: $t('sirsoft-ecommerce.admin.order.detail.tabs.claim_history') + ((_computed.claimHistoryTotal ?? 0) > 0 ? ' (' + _computed.claimHistoryTotal + ')' : '') }, { id: 'activity_log', label: $t('sirsoft-ecommerce.admin.order.detail.tabs.activity_log') }]}}</computed>
   <computed name="claimHistoryTypes">{{['exchange', 'return', 'cancel', 'refund'].map(t => ({ value: t, label: $t('sirsoft-ecommerce.admin.order.detail.claim_history.subtabs.' + t), count: orderClaims?.data?.counts?.[t] ?? 0 }))}}</computed>
   <computed name="claimHistoryActiveType">{{_local.claimHistoryType || (['exchange', 'return', 'cancel', 'refund'].find(t => (orderClaims?.data?.counts?.[t] ?? 0) > 0) ?? 'exchange')}}</computed>
   <computed name="claimHistoryRows">{{(orderClaims?.data?.claims ?? []).filter(c => c.claim_type === (_local.claimHistoryType || (['exchange', 'return', 'cancel', 'refund'].find(t => (orderClaims?.data?.counts?.[t] ?? 0) > 0) ?? 'exchange')))}}</computed>
@@ -142,12 +147,8 @@
           </div>
         </div>
         <include src="partials/admin_ecommerce_order_detail/_partial_order_progress.g7.html"/>
-        <tab-navigation-scroll data-ref="tab_navigation" activeTabId="{{_local.activeOrderTab ?? 'order_info'}}" :enableScrollSpy="true" :scrollSpyOffset="120" sectionIdPrefix="section_" tabs="{{_computed.orderDetailTabs ?? []}}">
-          <on type="change">
-            <!-- 탭 표시만 옮긴다 — 세 구획은 이미 한 페이지에 다 실려 있고 스크롤 스파이가 반대 방향(스크롤 → 탭)을 맡는다 -->
-            <set-state target="local" activeOrderTab="{{$event.value}}"/>
-          </on>
-        </tab-navigation-scroll>
+        <!-- 탭 클릭·스크롤 추적은 컴포넌트가 제 상태로 맡는다 — `onChange` 는 TabNavigationScroll 에 없는 이벤트라 걸어도 돌지 않고, `onTabChange` 를 걸면 내부 활성 탭 갱신이 꺼져(`activeTabId` 는 초기값 전용) 누른 탭 표시가 따라오지 않는다. -->
+        <tab-navigation-scroll data-ref="tab_navigation" activeTabId="{{_local.activeOrderTab ?? 'order_info'}}" :enableScrollSpy="true" :scrollSpyOffset="120" sectionIdPrefix="section_" tabs="{{_computed.orderDetailTabs ?? []}}"/>
       </div>
       <div data-ref="tab_content_area" class="tab-content">
         <include src="partials/admin_ecommerce_order_detail/_partial_order_info.g7.html"/>

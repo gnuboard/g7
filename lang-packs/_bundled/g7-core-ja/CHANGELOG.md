@@ -11,6 +11,7 @@
 - 코어에 새로 생긴 두 안내의 일본어 문구를 채웠습니다 — 본인확인 코드 발송 실패
   (`identity.errors.challenge_dispatch_failed`) · 탈퇴 회원 외부 채널 발송 제외
   (`notification.skipped.withdrawn_recipient`). 없으면 ja 화면에 원문 키가 그대로 보입니다.
+- 「삭제된 회원이라 발송하지 않음」 발송 이력 사유(`notification.skipped.member_account_missing`)의 일본어 문구를 채웠습니다.
 
 ## [1.1.0] - 2026-09-14
 

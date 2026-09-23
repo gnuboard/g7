@@ -6,6 +6,7 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 use Modules\Sirsoft\Ecommerce\DTO\CancellationResult;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimChargeMethodEnum;
+use Modules\Sirsoft\Ecommerce\Enums\ClaimImageUploaderTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
@@ -53,6 +54,7 @@ class UserClaimService
      * @param  OrderRefundRepositoryInterface  $refundRepository  환불신청서 Repository
      * @param  OrderCancelRepositoryInterface  $cancelRepository  취소 Repository
      * @param  ClaimReasonRepositoryInterface  $claimReasonRepository  사유 카탈로그 Repository
+     * @param  CurrencyConversionService  $currencyService  통화 서비스 (주문 기준 통화 해석 — 클레임 공용 규칙)
      */
     public function __construct(
         protected OrderExchangeService $exchangeService,
@@ -67,6 +69,7 @@ class UserClaimService
         protected OrderRefundRepositoryInterface $refundRepository,
         protected OrderCancelRepositoryInterface $cancelRepository,
         protected ClaimReasonRepositoryInterface $claimReasonRepository,
+        protected CurrencyConversionService $currencyService,
     ) {}
 
     // ───────────────────────────────────────────────
@@ -156,22 +159,17 @@ class UserClaimService
     /**
      * 주문의 금액 표기 기준 통화 코드를 돌려줍니다.
      *
-     * 판정 규칙은 주문 리소스(`HasMultiCurrencyPrices::resolveOrderBaseCurrencyCode`)와 같다 —
-     * 거래 시점에 동결된 스냅샷이 정본이고, 없으면 상점 기본 통화로 떨어진다. 두 곳이 갈리면
-     * 같은 주문을 두 응답이 다른 통화로 말하게 되므로 규칙을 그대로 맞춘다.
+     * 거래 시점에 동결된 스냅샷이 정본이고, 없으면 상점 기본 통화로 떨어진다. 판정은 클레임
+     * 서비스 공용 헬퍼(`CurrencyConversionService::resolveOrderBaseCurrency()`) 하나가 소유한다 —
+     * 예전에는 서비스마다 폴백이 달라(결제 통화·`KRW` 리터럴) 같은 주문을 응답마다 다른 통화로
+     * 적었다(#599 validate P2 #14).
      *
      * @param  Order  $order  주문
      * @return string 기준 통화 코드
      */
     protected function orderBaseCurrency(Order $order): string
     {
-        $snapshot = $order->currency_snapshot;
-
-        if (is_array($snapshot) && filled($snapshot['base_currency'] ?? null)) {
-            return (string) $snapshot['base_currency'];
-        }
-
-        return (string) ($this->settingsService->getSetting('language_currency.default_currency') ?: 'KRW');
+        return $this->currencyService->resolveOrderBaseCurrency($order);
     }
 
     /**
@@ -323,17 +321,13 @@ class UserClaimService
      * @param  int|null  $excludeClaimId  수정 화면이면 자기 신청서 ID (수량 잠금 집계 제외)
      * @return array 미리보기 결과 (유형별 형태 + 공통 `type`)
      *
-     * @throws OrderClaimException 신청 자격·사유 위반
+     * @throws OrderClaimException 신청 자격·사유 위반 / 알 수 없는 청구 방식·환불 우선순위
      */
     public function preview(Order $order, ClaimTypeEnum $type, array $input, ?int $excludeClaimId = null): array
     {
         $items = $input['items'] ?? [];
-        $refundPriority = ($input['refund_priority'] ?? null) instanceof RefundPriorityEnum
-            ? $input['refund_priority']
-            : (isset($input['refund_priority']) ? RefundPriorityEnum::from((string) $input['refund_priority']) : RefundPriorityEnum::PG_FIRST);
-        $chargeMethod = isset($input['charge_method']) && $input['charge_method'] !== '' && $input['charge_method'] !== null
-            ? ClaimChargeMethodEnum::from((string) $input['charge_method'])
-            : null;
+        $refundPriority = $this->resolveRefundPriority($input['refund_priority'] ?? null);
+        $chargeMethod = $this->resolveChargeMethod($input['charge_method'] ?? null);
 
         return match ($type) {
             ClaimTypeEnum::EXCHANGE => ['type' => $type->value] + $this->exchangeService->previewExchange(
@@ -381,6 +375,9 @@ class UserClaimService
         $this->attachmentService->resolveAttachable($order, $imageIds, $payload['requested_by'] ?? null);
         $this->paymentService->assertRequestPaymentMethodAvailable($paymentMethod, $payload['requested_by'] ?? null);
 
+        // 고객이 고른 환불 우선순위를 Enum 으로 확정해 넘긴다 — 도메인 서비스가 그 값으로 계산하고 신청서에 기록한다.
+        $payload['refund_priority'] = $this->resolveRefundPriority($payload['refund_priority'] ?? null);
+
         $exchange = $this->exchangeService->requestExchange($order, $payload);
         $this->attachmentService->attachPending($order, $imageIds, ClaimTypeEnum::EXCHANGE, $exchange->id, $payload['requested_by'] ?? null);
 
@@ -403,6 +400,9 @@ class UserClaimService
         // 교환 경로와 같은 이유로 첨부 자격과 결제 수단 자격을 선행 검사한다 (아래 `requestExchange()` 주석 참조).
         $this->attachmentService->resolveAttachable($order, $imageIds, $payload['requested_by'] ?? null);
         $this->paymentService->assertRequestPaymentMethodAvailable($paymentMethod, $payload['requested_by'] ?? null);
+
+        // 고객이 고른 환불 우선순위를 Enum 으로 확정해 넘긴다 — 도메인 서비스가 그 값으로 계산하고 신청서에 기록한다.
+        $payload['refund_priority'] = $this->resolveRefundPriority($payload['refund_priority'] ?? null);
 
         $return = $this->returnService->requestReturn($order, $payload);
         $this->attachmentService->attachPending($order, $imageIds, ClaimTypeEnum::RETURN, $return->id, $payload['requested_by'] ?? null);
@@ -427,6 +427,9 @@ class UserClaimService
     {
         // 교환·반품과 같은 이유로 선행 검사한다 — 첨부가 잘못된 요청은 접수 전에 걸러야 한다.
         $this->attachmentService->resolveAttachable($order, $imageIds, $payload['requested_by'] ?? null);
+
+        // 고객이 고른 환불 우선순위를 Enum 으로 확정해 넘긴다 — 도메인 서비스가 그 값으로 계산하고 신청서에 기록한다.
+        $payload['refund_priority'] = $this->resolveRefundPriority($payload['refund_priority'] ?? null);
 
         $result = $this->refundRequestService->request($order, $payload);
 
@@ -804,7 +807,7 @@ class UserClaimService
      * @param  int|null  $userId  수정 주체 회원 ID
      * @return array{claim: OrderExchange|OrderReturn|OrderRefund, payment: ?ClaimPayment, payment_entry: ?array} 수정 결과
      *
-     * @throws OrderClaimException 수정 불가·첨부 위반·환급 실패
+     * @throws OrderClaimException 수정 불가·첨부 위반·환급 실패·기납부 청구의 차감 전환
      */
     public function update(ClaimTypeEnum $type, OrderExchange|OrderReturn|OrderRefund $claim, array $payload, array $addImageIds = [], array $removeImageIds = [], ?int $userId = null): array
     {
@@ -815,11 +818,30 @@ class UserClaimService
         // 그 뒤의 삭제는 파일까지 지운다. 귀속 단계에서 거절하면 사유·금액 변경은 반영되고 첨부만
         // 영구히 사라진 채 422 가 나가, 사용자는 "수정 실패" 를 보면서 실제로는 바뀐 신청서를 갖는다.
         // 상한은 `attachPending()` 과 같은 등식이어야 하므로 삭제 후 남을 장수를 함께 넘긴다.
-        $remainingAttached = $this->attachmentService->listFor($type, $claim->id)
-            ->reject(fn ($image) => in_array((int) $image->id, array_map('intval', $removeImageIds), true))
+        $attached = $this->attachmentService->listFor($type, $claim->id);
+        $removeIds = array_map('intval', $removeImageIds);
+
+        // 고객이 지울 수 있는 것은 **자기가 올린** 첨부뿐이다. 운영자가 상세에서 대리로 올린
+        // 사진(uploader_type=admin)과 주체 미상 사진은 "누가 낸 증거인가" 를 가르는 기록이라
+        // 고객 수정으로 사라지면 안 된다. 섞여 오면 아무것도 쓰기 전에 거절한다.
+        $notRemovable = $attached->filter(
+            fn ($image) => in_array((int) $image->id, $removeIds, true)
+                && $image->uploader_type !== ClaimImageUploaderTypeEnum::CUSTOMER
+        );
+
+        if ($notRemovable->isNotEmpty()) {
+            throw OrderClaimException::imageNotRemovable();
+        }
+
+        $remainingAttached = $attached
+            ->reject(fn ($image) => in_array((int) $image->id, $removeIds, true))
             ->count();
 
         $this->attachmentService->resolveAttachable($order, $addImageIds, $userId, $remainingAttached);
+
+        if (($claim instanceof OrderExchange || $claim instanceof OrderReturn) && array_key_exists('charge_method', $payload)) {
+            $this->assertChargeMethodChangeAllowed($claim, $payload['charge_method']);
+        }
 
         $updated = match ($type) {
             ClaimTypeEnum::EXCHANGE => $this->exchangeService->updateRequest($claim, $payload),
@@ -847,6 +869,36 @@ class UserClaimService
         }
 
         return ['claim' => $updated->fresh(), 'payment' => $payment, 'payment_entry' => $entry];
+    }
+
+    /**
+     * 청구 방식 변경이 이미 들어온 돈과 충돌하지 않는지 검증합니다. (관리자 금액 수정·구매자 수정 공용)
+     *
+     * 이미 결제한 청구를 **환불금 차감**으로 바꾸면 같은 청구를 두 번 받는다 — 결제로 한 번,
+     * 완료 시 환불금에서 한 번. 차감 방식은 결제행을 보지 않으므로 전환 뒤의 정산
+     * (`settleChargeDifference()`)도 기납부분을 돌려주지 않는다(#599 validate P2 #13).
+     * 이미 차감 방식인 신청서의 재지정(no-op)은 막지 않는다.
+     *
+     * @param  OrderExchange|OrderReturn  $claim  신청서
+     * @param  mixed  $chargeMethod  바꾸려는 청구 방식 (Enum 또는 값, 비었으면 검사하지 않는다)
+     * @return void 반환값 없음
+     *
+     * @throws OrderClaimException 기납부 청구의 차감 전환
+     */
+    public function assertChargeMethodChangeAllowed(OrderExchange|OrderReturn $claim, mixed $chargeMethod): void
+    {
+        $target = $chargeMethod instanceof ClaimChargeMethodEnum
+            ? $chargeMethod
+            : ClaimChargeMethodEnum::tryFrom((string) $chargeMethod);
+
+        if ($target !== ClaimChargeMethodEnum::DEDUCT_FROM_REFUND
+            || $claim->charge_method === ClaimChargeMethodEnum::DEDUCT_FROM_REFUND) {
+            return;
+        }
+
+        if ($this->paymentService->paidAmount($claim) > 0) {
+            throw OrderClaimException::chargeMethodDeductAfterPayment();
+        }
     }
 
     /**
@@ -995,6 +1047,54 @@ class UserClaimService
         }
 
         return ['claim' => $claim->fresh(), 'payment' => $payment, 'payment_entry' => $entry];
+    }
+
+    /**
+     * 환불 우선순위 입력을 Enum 으로 해석합니다. (없으면 PG 우선)
+     *
+     * `Enum::from()` 은 알 수 없는 값에 `ValueError` 를 던져 500 이 된다 — 입력 오류는
+     * 도메인 예외(4xx)로 거절한다(#599 validate P2 #10).
+     *
+     * @param  mixed  $value  입력값 (Enum · 문자열 · null)
+     * @return RefundPriorityEnum 환불 우선순위
+     *
+     * @throws OrderClaimException 알 수 없는 값
+     */
+    protected function resolveRefundPriority(mixed $value): RefundPriorityEnum
+    {
+        if ($value instanceof RefundPriorityEnum) {
+            return $value;
+        }
+
+        if ($value === null || $value === '') {
+            return RefundPriorityEnum::PG_FIRST;
+        }
+
+        return RefundPriorityEnum::tryFrom((string) $value) ?? throw OrderClaimException::refundPriorityInvalid();
+    }
+
+    /**
+     * 청구 방식 입력을 Enum 으로 해석합니다. (없으면 null)
+     *
+     * 교환·반품 서비스의 `normalizeChargeMethod()` 와 같은 거절(`claim_charge_method_not_allowed`)을
+     * 낸다 — 미리보기와 접수가 같은 입력에 다른 오류를 내지 않게 한다(#599 validate P2 #10).
+     *
+     * @param  mixed  $value  입력값 (Enum · 문자열 · null)
+     * @return ClaimChargeMethodEnum|null 청구 방식
+     *
+     * @throws OrderClaimException 알 수 없는 값
+     */
+    protected function resolveChargeMethod(mixed $value): ?ClaimChargeMethodEnum
+    {
+        if ($value instanceof ClaimChargeMethodEnum) {
+            return $value;
+        }
+
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        return ClaimChargeMethodEnum::tryFrom((string) $value) ?? throw OrderClaimException::chargeMethodNotAllowed();
     }
 
     /**

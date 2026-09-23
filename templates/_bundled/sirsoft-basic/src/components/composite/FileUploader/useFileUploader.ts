@@ -255,8 +255,10 @@ export function useFileUploader(options: UseFileUploaderOptions): UseFileUploade
         // 걸러 내지 않고 파일을 그대로 넘겨, 호출부 핸들러가 자기 기준(서버 설정)으로
         // 판정하고 그 자리에서 문구를 띄운다(S2-D10 · SA-D5).
         if (maxSize != null && file.size > maxSize * 1024 * 1024) {
+          // 거절 문구는 attachment.* 키로 만든다 — 호출부가 이 문구를 토스트로 그대로 띄우므로(onUploadError)
+          // 한국어 리터럴이면 다른 언어 화면에 한국어가 섞인다(#599 validate 2026-09-23).
           onUploadError?.(
-            `[${file.name}] 파일 크기(${formatFileSize(file.size)})가 최대 허용 크기(${maxSize}MB)를 초과합니다.`,
+            t('attachment.file_too_large', { name: file.name, size: formatFileSize(file.size), max: maxSize }),
             file
           );
           continue;
@@ -280,7 +282,7 @@ export function useFileUploader(options: UseFileUploaderOptions): UseFileUploade
             return ext === accepted;
           });
           if (!isAccepted) {
-            onUploadError?.(`[${file.name}] 허용되지 않는 파일 형식입니다. (허용: ${accept})`, file);
+            onUploadError?.(t('attachment.file_type_not_allowed', { name: file.name, accept }), file);
             continue;
           }
         }
@@ -461,7 +463,7 @@ export function useFileUploader(options: UseFileUploaderOptions): UseFileUploade
             );
           }
         } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : '업로드 실패';
+          const errorMessage = error instanceof Error ? error.message : t('attachment.upload_failed');
           setPendingFiles((prev) =>
             prev.map((f) =>
               f.id === pendingFile.id ? { ...f, status: 'error', error: errorMessage } : f

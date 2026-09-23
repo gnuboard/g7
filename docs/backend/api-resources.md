@@ -105,6 +105,36 @@ public function toArray($request): array
 }
 ```
 
+### 파일 크기 표시 — formatFileSize()
+
+파일 크기를 사람이 읽는 문자열(`size_formatted` 등)로 내보낼 때는 `BaseApiResource::formatFileSize(?int $bytes): string` 을 쓴다. 리소스마다 변환을 복제하면 단위·자릿수가 화면마다 갈린다(같은 파일이 한 화면에서는 `1.5 MB`, 다른 화면에서는 `1.46MB`).
+
+| 규칙 | 값 |
+| --- | --- |
+| 단위 | `B` · `KB` · `MB` · `GB` (1024 진법, `GB` 가 상한) |
+| 자릿수 | 소수 둘째 자리 반올림 (`round($value, 2)`), 끝자리 0 은 생략 |
+| `null` · `0` | `0 B` |
+| 가시성 | `protected` — 하위 리소스가 상속해 호출 |
+
+```php
+'size' => $size,
+'size_formatted' => $this->formatFileSize($size),
+```
+
+> **하위 호환 (7.1.0)**: 코어 레이아웃 리소스(`LayoutResource` · `LayoutListResource` · `LayoutExtensionResource`)는 전에는 리소스마다 둔 `private formatFileSize()` 로 **소수 첫째 자리 · `MB` 상한** 이었다. 공용 메서드로 합치면서 이 세 응답의 `size_formatted` 값이 바뀐다. 키와 타입은 그대로다.
+>
+> | 바이트 | 종전 | 7.1.0 |
+> | ---: | --- | --- |
+> | 1,536 | `1.5 KB` | `1.5 KB` |
+> | 1,500 | `1.5 KB` | `1.46 KB` |
+> | 12,345 | `12.1 KB` | `12.06 KB` |
+> | 1,234,567 | `1.2 MB` | `1.18 MB` |
+> | 1,073,741,824 | `1024 MB` | `1 GB` |
+>
+> 화면이나 외부 연동이 `size_formatted` 문자열을 파싱하고 있었다면 원시 값 `size`(바이트)를 쓰도록 옮긴다.
+>
+> **확장 리소스 주의**: `BaseApiResource` 를 상속한 확장 리소스가 같은 이름의 메서드를 직접 두고 있으면 부모와 선언이 맞아야 한다. `private` 로 두거나(가시성 축소) 매개변수를 `int` 로 좁히면(`?int` 보다 좁음) PHP 가 클래스를 읽는 순간 치명 오류를 낸다. 자체 메서드를 지우고 부모 것을 쓰거나, `protected function formatFileSize(?int $bytes): string` 으로 선언을 맞춘다.
+
 ---
 
 ## 권한 메타 표준화 (is_owner + abilities)

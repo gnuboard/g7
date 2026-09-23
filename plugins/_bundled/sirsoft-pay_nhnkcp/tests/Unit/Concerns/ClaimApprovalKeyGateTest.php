@@ -12,6 +12,7 @@ use Modules\Sirsoft\Ecommerce\Database\Factories\OrderReturnFactory;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimPaymentStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimTypeEnum;
 use Modules\Sirsoft\Ecommerce\Models\ClaimPayment;
+use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ClaimPaymentRepositoryInterface;
 use Plugins\Sirsoft\PayNhnkcp\Concerns\HandlesClaimPaymentCallbacks;
 use Plugins\Sirsoft\PayNhnkcp\Tests\PluginTestCase;
 
@@ -31,19 +32,33 @@ class ClaimApprovalKeyGateTest extends PluginTestCase
 {
     /**
      * 트레이트만 노출하는 최소 소비자를 만듭니다.
+     *
+     * @return object 게이트 메서드를 공개한 소비자
      */
     private function gate(): object
     {
-        return new class
+        // 트레이트는 호스트가 Repository 를 생성자로 주입받는다고 전제한다(서비스 로케이터 금지).
+        return new class(app(ClaimPaymentRepositoryInterface::class))
         {
             use HandlesClaimPaymentCallbacks {
                 validateClaimApprovalKeyContext as public;
             }
+
+            /**
+             * 트레이트가 쓰는 클레임 결제 Repository 를 주입받습니다.
+             *
+             * @param  ClaimPaymentRepositoryInterface  $claimPaymentRepository  클레임 결제 Repository
+             */
+            public function __construct(
+                private readonly ClaimPaymentRepositoryInterface $claimPaymentRepository,
+            ) {}
         };
     }
 
     /**
      * 주문이 soft-delete 된 결제 대기 건을 만듭니다.
+     *
+     * @return ClaimPayment 결제 대기 건
      */
     private function paymentWithoutOrder(): ClaimPayment
     {
@@ -75,6 +90,12 @@ class ClaimApprovalKeyGateTest extends PluginTestCase
 
     /**
      * 주문을 못 읽고 열람자도 없으면 통과가 아니라 403 이다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario concern=approval_key
+     *
+     * @effects kcp_claim_mobile_approval_key_is_gated_by_the_claim_payment
      */
     public function test_gate_blocks_when_both_the_parent_order_and_the_viewer_are_missing(): void
     {
@@ -95,6 +116,12 @@ class ClaimApprovalKeyGateTest extends PluginTestCase
 
     /**
      * 결제 건 자체가 없으면 404 다 (대조군 — 게이트가 전부-403 으로 공허해지지 않음을 고정).
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario concern=approval_key
+     *
+     * @effects kcp_claim_mobile_approval_key_is_gated_by_the_claim_payment
      */
     public function test_gate_reports_a_missing_payment_as_not_found(): void
     {
@@ -113,6 +140,12 @@ class ClaimApprovalKeyGateTest extends PluginTestCase
      * 주문이 살아 있는 비회원 결제 건도 열람자가 없으면 막힌다.
      *
      * 비회원 주문(`user_id` NULL)에서 익명 요청을 허용하면 결제번호만 알면 승인키를 받는다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario concern=approval_key
+     *
+     * @effects kcp_claim_mobile_approval_key_is_gated_by_the_claim_payment
      */
     public function test_gate_blocks_an_anonymous_request_for_a_guest_order(): void
     {
@@ -148,6 +181,11 @@ class ClaimApprovalKeyGateTest extends PluginTestCase
         $this->assertSame(403, $response->getStatusCode());
     }
 
+    /**
+     * 주문이 사라진 결제 대기 건 픽스처를 먼저 세웁니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();

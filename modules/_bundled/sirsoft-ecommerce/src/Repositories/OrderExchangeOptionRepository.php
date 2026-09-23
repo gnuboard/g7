@@ -120,14 +120,4 @@ class OrderExchangeOptionRepository implements OrderExchangeOptionRepositoryInte
             'updated_at' => now(),
         ]);
     }
-
-    /**
-     * {@inheritDoc}
-     */
-    public function deleteByExchangeId(int $exchangeId): int
-    {
-        return $this->model->newQuery()
-            ->where('order_exchange_id', $exchangeId)
-            ->delete();
-    }
 }

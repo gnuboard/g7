@@ -8,6 +8,7 @@ use App\Http\Resources\BaseApiResource;
 use Illuminate\Http\Request;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundMethodEnum;
+use Modules\Sirsoft\Ecommerce\Enums\RefundPriorityEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundSourceTypeEnum;
 use Modules\Sirsoft\Ecommerce\Http\Resources\Traits\HasMultiCurrencyPrices;
 use Modules\Sirsoft\Ecommerce\Http\Resources\Traits\MasksRefundBankAccount;
@@ -16,8 +17,8 @@ use Modules\Sirsoft\Ecommerce\Models\OrderCancel;
 use Modules\Sirsoft\Ecommerce\Models\OrderExchange;
 use Modules\Sirsoft\Ecommerce\Models\OrderRefund;
 use Modules\Sirsoft\Ecommerce\Models\OrderReturn;
+use Modules\Sirsoft\Ecommerce\Services\ClaimRefundAccountPolicy;
 use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
-use Modules\Sirsoft\Ecommerce\Services\OrderRefundRequestService;
 use Modules\Sirsoft\Ecommerce\Services\RefundExecutionService;
 use Modules\Sirsoft\Ecommerce\Support\CalculationSnapshotPresenter;
 
@@ -181,6 +182,49 @@ class ClaimResource extends BaseApiResource
     }
 
     /**
+     * 접수 때 고른 환불 우선순위를 반환합니다. (저장값이 없으면 null)
+     *
+     * 값은 신청서에 저장된 것만 낸다 — 환불액 구성으로 추측하지 않는다. 추측은 화면이 이미 하던
+     * 것이고, 서버가 같은 추측을 내면 그 값이 저장값처럼 보여 틀린 추측을 굳힌다.
+     *
+     * @param  OrderExchange|OrderReturn|OrderRefund|OrderCancel  $claim  신청서
+     * @return string|null `pg_first` / `points_first` (저장값이 없으면 null)
+     */
+    protected function resolveRefundPriority(OrderExchange|OrderReturn|OrderRefund|OrderCancel $claim): ?string
+    {
+        if ($claim instanceof OrderCancel) {
+            return null;
+        }
+
+        $value = $claim->getAttribute('refund_priority');
+
+        if ($value instanceof \BackedEnum) {
+            return (string) $value->value;
+        }
+
+        return RefundPriorityEnum::tryFrom((string) $value)?->value;
+    }
+
+    /**
+     * 신청자(주문의 주인) 회원의 uuid 를 반환합니다. (비회원 주문이면 null)
+     *
+     * 상세 응답 전용이다(관리자 확장 필드) — 관계가 실려 있으면 그것을, 없으면 한 번 읽는다.
+     *
+     * @param  Order|null  $order  주문
+     * @return string|null 회원 uuid
+     */
+    protected function requesterUserUuid(?Order $order): ?string
+    {
+        if ($order === null || $order->user_id === null) {
+            return null;
+        }
+
+        $order->loadMissing('user');
+
+        return $order->user?->uuid;
+    }
+
+    /**
      * 사유 라벨을 해석합니다. (주입 우선 → 없으면 모델 게터)
      *
      * @param  OrderExchange|OrderReturn|OrderRefund|OrderCancel  $claim  신청서
@@ -269,6 +313,11 @@ class ClaimResource extends BaseApiResource
             // `is_guest_request` 는 회원·비회원만 갈라 **운영자 대리 접수를 드러내지 못한다**.
             'request_source' => $this->resolveRequestSource($claim),
             'request_source_label' => __('sirsoft-ecommerce::enums.request_source.'.$this->resolveRequestSource($claim)),
+            // 접수 때 고른 환불 우선순위(`pg_first` / `points_first`). 수정 화면이 이 값을 그대로 세운다 —
+            // 화면이 환불액 구성(마일리지 > 0 이면 마일리지 우선)으로 추측하면 PG 잔여가 모자라 마일리지가
+            // 섞인 PG 우선 신청서가 수정 화면에서 마일리지 우선으로 뒤집힌다. 저장된 값이 없는 신청서는
+            // null 이고 화면은 종전 추측으로 떨어진다.
+            'refund_priority' => $this->resolveRefundPriority($claim),
             'currency_code' => $currency,
             // 행별 전이 선택지는 **관리자 상세**에서만 실린다 — 목록은 50행 × 200상품마다
             // 전이표를 계산하게 되고, 유저 응답은 그 어휘를 쓰지 않는다.
@@ -369,14 +418,18 @@ class ClaimResource extends BaseApiResource
                 // 않아 그 주문은 **영영 취소할 수 없다**. 그런데 화면에 보이는 것이 "계좌 환불" 뿐이면
                 // 운영자는 카드 결제 건에 왜 계좌 송금을 하라는지 알 수 없고, 근거는 애플리케이션
                 // 로그에만 남는다. 그 사실을 그 자리에서 말해 준다.
-                'refund_fell_back_to_manual' => $this->refundFellBackToManual($claim),
+                //
+                // 목록 행은 이 값을 그리지 않는다 — 행마다 주문·결제행을 읽고 PG 리스너를 조회해
+                // 페이지 크기만큼 쿼리가 늘었다(N+1). 상세에서만 판정한다.
+                'refund_fell_back_to_manual' => $this->forList ? null : $this->refundFellBackToManual($claim),
                 // 이 환불을 실행하려면 **보낼 계좌가 있어야 하는가** (T2-D6).
                 //
                 // 화면이 결제수단 코드로 재현하면 안 된다 — 확장 결제수단이 자기 카탈로그에
                 // 선언한 환불 수단과 갈리고, 어긋난 쪽은 오류 없이 「계좌 칸 없는 계좌 환불」
                 // (운영자가 계좌를 못 적어 영영 못 끝낸다) 또는 「PG 환불인데 계좌를 요구」
                 // (카드 환불이 잠긴다)가 된다. 서버가 실행 게이트와 같은 술어로 답한다.
-                'refund_account_required' => $this->refundAccountRequired($claim),
+                // 목록 행은 그리지 않는다(위와 같은 N+1 이유) — 상세에서만 판정한다.
+                'refund_account_required' => $this->forList ? null : $this->refundAccountRequired($claim),
                 'refund_amount' => $this->roundToOrderCurrency((float) $claim->refund_amount, $currency),
                 'refund_amount_formatted' => $this->formatOrderCurrency((float) $claim->refund_amount, $currency),
                 'refund_points_amount' => $this->roundToOrderCurrency((float) $claim->refund_points_amount, $currency),
@@ -441,6 +494,9 @@ class ClaimResource extends BaseApiResource
                 // 다른 회원 상세로 간다(운영자 대리 접수 건은 `requested_by` 가 그 운영자다).
                 // 비회원 주문은 null 이고, 화면은 그때 링크 대신 평문 이름을 그린다.
                 'requester_user_id' => $order?->user_id,
+                // 회원 상세 링크의 대상 식별자. 관리자 회원 화면은 **uuid** 로 연다 — 숫자 id 로
+                // 링크를 만들면 404 다(주문 상세 `OrderResource.user.uuid` 와 같은 축). 비회원은 null.
+                'requester_user_uuid' => $this->requesterUserUuid($order),
             ];
         }
 
@@ -531,6 +587,12 @@ class ClaimResource extends BaseApiResource
             ];
         }
 
+        // 적립 마일리지 줄의 표기 — 포인트 단위다(`formatted` 맵은 기준 통화 표기라 그대로 쓰면
+        // 「710원」이 된다). 새 스냅샷은 서비스가 이미 싣지만(`OrderAdjustmentService`), 그 이전에
+        // 접수된 신청서의 스냅샷에는 없으므로 읽을 때 같은 식(`formatEarnedPoints()`)으로 채운다.
+        $original = $this->withEarnedPointsFormatted($original);
+        $recalculated = $this->withEarnedPointsFormatted($recalculated);
+
         return [
             'original' => $original,
             'recalculated' => $recalculated,
@@ -538,6 +600,26 @@ class ClaimResource extends BaseApiResource
             'mc_recalculated' => $presenter->mcRecalculated($recalculated, $order?->currency_snapshot),
             'substituted_items' => $substitutedRows,
         ];
+    }
+
+    /**
+     * 비교 스냅샷 한쪽에 적립 마일리지 포인트 표기(`total_earned_points_amount_formatted`)를 채웁니다.
+     *
+     * 이미 실려 있으면(새 스냅샷) 그대로 두고, 적립 금액 키가 없으면 아무것도 하지 않는다.
+     *
+     * @param  array  $snapshot  비교 스냅샷 한쪽 (원 / 재계산)
+     * @return array 포인트 표기가 채워진 스냅샷
+     */
+    protected function withEarnedPointsFormatted(array $snapshot): array
+    {
+        if (array_key_exists('total_earned_points_amount', $snapshot)
+            && ! array_key_exists('total_earned_points_amount_formatted', $snapshot)) {
+            $snapshot['total_earned_points_amount_formatted'] = $this->formatEarnedPoints(
+                (float) $snapshot['total_earned_points_amount']
+            );
+        }
+
+        return $snapshot;
     }
 
     /**
@@ -606,30 +688,19 @@ class ClaimResource extends BaseApiResource
     /**
      * 이 환불을 실행하려면 보낼 계좌가 있어야 하는지 답합니다. (T2-D6)
      *
-     * 실행 게이트(`ExecuteRefundRequest::validateRefundBank()`)와 **같은 두 조건**이다 —
-     * 계좌로 나갈 현금이 있는가(마일리지로만 돌려주는 환불은 회원 원장으로 들어가 보낼 계좌가
-     * 없다)와, 이 주문이 계좌로 환불되는 주문인가(`refundsToBankAccount()` — 구매자 접수·신청
-     * 화면이 쓰는 그 술어다).
-     *
-     * 이미 적혀 있으면 요구하지 않는다 — 운영자가 다시 적을 일이 없다.
+     * 실행 게이트(`ExecuteRefundRequest::validateRefundBank()`)와 **같은 판정**이다 — 계좌로 나갈
+     * 현금이 있는가(마일리지로만 돌려주는 환불은 회원 원장으로 들어가 보낼 계좌가 없다)와, 그 현금이
+     * 계좌로 나가는가(환불 수단 `BANK` — 카드 주문의 계좌 수동 환불 포함 — 또는 계좌로 환불되는
+     * 주문)를 본다. 이미 적혀 있으면 요구하지 않는다 — 운영자가 다시 적을 일이 없다.
      *
      * @param  OrderRefund  $claim  환불신청서
      * @return bool 계좌가 있어야 실행되는지 여부
      */
     protected function refundAccountRequired(OrderRefund $claim): bool
     {
-        if (filled($claim->refund_bank_code)) {
-            return false;
-        }
-
-        if ((float) $claim->refund_amount <= 0) {
-            return false;
-        }
-
-        $order = $claim->order;
-
-        return $order !== null
-            && app(OrderRefundRequestService::class)->refundsToBankAccount($order);
+        // 판정은 실행 게이트와 같은 한 곳(`ClaimRefundAccountPolicy::requiredForRefund()`)이다 —
+        // 카드 주문의 계좌 수동 환불(`BANK`)도 계좌를 요구한다.
+        return app(ClaimRefundAccountPolicy::class)->requiredForRefund($claim);
     }
 
     /**

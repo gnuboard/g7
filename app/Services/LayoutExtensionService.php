@@ -1199,7 +1199,7 @@ class LayoutExtensionService
      * 복사본은 만든 시점에 얼어붙어 호스트가 나중에 더한 항목을 조용히 지운다(S2-D13).
      *
      * 손대지 않은 항목은 **원본 그대로** 남고 순서도 보존한다. `by` 값이 기존에 없으면
-     * 새 항목으로 끝에 붙인다.
+     * 빈 항목에 병합해(항목 안의 지시자를 풀어) 새 항목으로 끝에 붙인다.
      *
      * @param  array  $existing  호스트의 현재 목록
      * @param  mixed  $patch  `{by: string, items: array}` 형태의 패치 정의
@@ -1261,8 +1261,10 @@ class LayoutExtensionService
                 continue;
             }
 
-            // 기존에 없는 키 — 새 항목으로 끝에 붙인다
-            $existing[] = $patchItem;
+            // 기존에 없는 키 — 새 항목으로 끝에 붙인다. 원문을 그대로 붙이면 항목 안의
+            // `_append`·중첩 `_patch` 지시자 객체가 리터럴로 남아 렌더러가 배열 자리에서 객체를
+            // 받는다(#599 validate). 빈 항목에 병합해 지시자를 푼다.
+            $existing[] = $this->mergePatchItem([], $patchItem, $componentId, $propKey);
             $indexByKey[$key] = array_key_last($existing);
         }
 
@@ -1315,6 +1317,19 @@ class LayoutExtensionService
     private function mergePatchItem(array $target, array $patchItem, string $componentId, string $propKey): array
     {
         foreach ($patchItem as $key => $value) {
+            // 대상이 표현식 문자열이면 덮어쓰지 않고 건너뛴다 — 최상위 `_append`·`_patch` 와 같은 규칙.
+            // 배열로 덮으면 호스트가 런타임에 채우던 목록이 조용히 사라진다.
+            if (is_array($value) && (array_key_exists('_append', $value) || array_key_exists('_patch', $value))
+                && is_string($target[$key] ?? null)) {
+                Log::warning('inject_props _patch 항목의 지시자 대상이 표현식 문자열', [
+                    'component_id' => $componentId,
+                    'prop_key' => $propKey.'.'.$key,
+                    'existing_value' => $target[$key],
+                ]);
+
+                continue;
+            }
+
             if (is_array($value) && array_key_exists('_append', $value) && is_array($value['_append'])) {
                 $current = is_array($target[$key] ?? null) ? $target[$key] : [];
 

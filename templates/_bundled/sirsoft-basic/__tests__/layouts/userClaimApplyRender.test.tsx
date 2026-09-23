@@ -636,7 +636,7 @@ describe('클레임 신청서 — 금액·오류 자리 렌더', () => {
     expect(text, '보조통화 차감액에 부호가 없다(S-B-D5)').toContain('-$2.25');
     expect(text, '부호 없는 보조통화가 그대로 남았다(S-B-D5)').not.toMatch(/(?<!-)\$2\.25/);
 
-    // S-B-D6(같은 실측 · PO 확정 「감추기」) — 이 방식은 회수비를 환불액에서 이미 뺐으므로
+    // S-B-D6(같은 실측 · 운영 결정 「감추기」) — 이 방식은 회수비를 환불액에서 이미 뺐으므로
     // 따로 낼 돈이 없다. 차감 줄 아래에 「총 청구액」이 서면 같은 돈을 두 번 내는 것으로
     // 읽힌다. 0원으로 그려도 오해가 남으므로 **줄의 부재**를 잰다.
     expect(text, '「환불액에서 차감」인데 총 청구액 줄이 섰다(S-B-D6)').not.toContain('claim.apply.total_charge');
@@ -698,14 +698,15 @@ describe('클레임 신청서 — 금액·오류 자리 렌더', () => {
           requires_payment: true,
           adjustment: { refund_total: 0 },
         },
-      })
+      }),
+      KO_TRANSLATIONS
     );
     active = utils;
 
     const text = container.textContent ?? '';
 
-    expect(text).toContain('claim.apply.submit_with_payment');
-    expect(text).toContain('9,000원');
+    // 금액은 번역문의 파라미터다(#599 validate 2026-09-23) — 번역문 밖에서 이어 붙이면 언어마다 어순이 틀린다.
+    expect(text).toContain('9,000원 결제하기');
   });
 
   /**

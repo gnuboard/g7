@@ -234,7 +234,22 @@
             }
         },
         {
-            "comment": "신규 등록에는 서버에 덮어쓸 회수지가 없고 회수지 조회 데이터소스 자체가 돌지 않는다(`if: !!route.id`) — 회수지 저장 허용 플래그를 여기서 세운다. 화면 진입 시점에 한 번 정해지는 값이라 init_actions 가 맞는 자리다 (버튼 액션 체인의 `if` 에서 `route` 를 읽는 형태는 이 화면에서 실측 중 실패가 있었고 원인을 확정하지 못해 쓰지 않았다 — 형제 `admin_ecommerce_product_form` 의 onSuccess 체인은 `!route.itemCode` 를 읽고 출하 중이므로 '체인 if 는 route 를 못 읽는다' 로 일반화하지 말 것).",
+            "comment": "신규 등록에는 서버에 덮어쓸 회수지가 없고 회수지 조회 데이터소스 자체가 돌지 않는다(`if: !!route.id`) — 회수지 저장 허용 플래그를 여기서 세운다. 화면 진입 시점에 한 번 정해지는 값이라 init_actions 가 맞는 자리다 (버튼 액션 체인의 `if` 에서 `route` 를 읽는 형태는 이 화면에서 실측 중 실패가 있었고 원인을 확정하지 못해 쓰지 않았다 — 형제 `admin_ecommerce_product_form` 의 onSuccess 체인은 `!route.itemCode` 를 읽고 출하 중이므로 '체인 if 는 route 를 못 읽는다' 로 일반화하지 말 것). 같은 자리에서 회수지 버퍼·손댐 표식·저장된 정책 id 도 함께 비운다 — 같은 레이아웃 SPA 이동(수정→신규, 수정 A→수정 B)에서는 `_local` 이 남아, 비우지 않으면 신규 폼에 앞 정책의 회수지가 보이고 `savedPolicyId` 때문에 새 정책 POST 가 앞 정책 PUT 으로 나가며, 손댐 표식이 정책 B 의 조회 응답을 막는다. `_loaded` 는 먼저 false 로 되돌리고(수정 진입은 회수지 조회가 도착해야 저장한다) 신규 등록만 바로 아래에서 true 로 세운다.",
+            "handler": "setState",
+            "params": {
+                "target": "local",
+                "savedPolicyId": null,
+                "claimAddressesDirty": false,
+                "claimAddresses": {
+                    "addresses": {
+                        "exchange": null,
+                        "return": null
+                    },
+                    "_loaded": false
+                }
+            }
+        },
+        {
             "handler": "setState",
             "if": "{{!route.id}}",
             "params": {

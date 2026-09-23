@@ -70,8 +70,8 @@ exports[`BindingShape 라우팅 diff 하네스 > 단일 바인딩 판정: greedy
     "canonical": null,
     "greedy": "_global.shopBase}}/products/{{item.product_snapshot?.product_code ?? item.product_id",
     "sites": [
-      "templates/_bundled/sirsoft-basic/layouts/partials/mypage/orders/_items.json :: children.1.children.0.children.0.children.1.actions.0.params.path",
-      "templates/_bundled/sirsoft-basic/layouts/partials/mypage/orders/_items.json :: children.1.children.0.children.0.children.2.children.0.actions.0.params.path",
+      "templates/_bundled/sirsoft-basic/layouts/partials/mypage/orders/_items.json :: children.1.children.0.children.0.children.0.children.1.actions.0.params.path",
+      "templates/_bundled/sirsoft-basic/layouts/partials/mypage/orders/_items.json :: children.1.children.0.children.0.children.0.children.2.children.0.actions.0.params.path",
     ],
     "value": "{{_global.shopBase}}/products/{{item.product_snapshot?.product_code ?? item.product_id}}",
   },
@@ -86,7 +86,7 @@ exports[`BindingShape 라우팅 diff 하네스 > 단일 바인딩 판정: greedy
 ]
 `;
 
-exports[`BindingShape 라우팅 diff 하네스 > 단일 바인딩 판정: 구 정규식과 신 정본이 갈리는 총량 1`] = `715`;
+exports[`BindingShape 라우팅 diff 하네스 > 단일 바인딩 판정: 구 정규식과 신 정본이 갈리는 총량 1`] = `722`;
 
 exports[`BindingShape 라우팅 diff 하네스 > 판정이 갈리는 식의 분류별 건수 요약 1`] = `
 {

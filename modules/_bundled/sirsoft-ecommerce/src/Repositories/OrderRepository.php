@@ -24,14 +24,20 @@ use Modules\Sirsoft\Ecommerce\Enums\PaymentStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ReturnStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ShippingStatusEnum;
+use Modules\Sirsoft\Ecommerce\Enums\TaxInvoiceStatusEnum;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderAddress;
 use Modules\Sirsoft\Ecommerce\Models\OrderCancel;
+use Modules\Sirsoft\Ecommerce\Models\OrderCancelOption;
 use Modules\Sirsoft\Ecommerce\Models\OrderExchange;
+use Modules\Sirsoft\Ecommerce\Models\OrderExchangeOption;
 use Modules\Sirsoft\Ecommerce\Models\OrderOption;
 use Modules\Sirsoft\Ecommerce\Models\OrderRefund;
+use Modules\Sirsoft\Ecommerce\Models\OrderRefundOption;
 use Modules\Sirsoft\Ecommerce\Models\OrderReturn;
+use Modules\Sirsoft\Ecommerce\Models\OrderReturnOption;
 use Modules\Sirsoft\Ecommerce\Models\OrderShipping;
+use Modules\Sirsoft\Ecommerce\Models\OrderTaxInvoice;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderRepositoryInterface;
 
 /**
@@ -135,6 +141,9 @@ class OrderRepository implements OrderRepositoryInterface
         ],
     ];
 
+    /**
+     * @param  Order  $model  주문 모델
+     */
     public function __construct(
         protected Order $model
     ) {}
@@ -172,6 +181,24 @@ class OrderRepository implements OrderRepositoryInterface
         return $this->model->newQuery()
             ->lockForUpdate()
             ->find($id);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function findForUpdateOrFail(int $id): Order
+    {
+        return $this->model->newQuery()
+            ->lockForUpdate()
+            ->findOrFail($id);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function findByIdForUpdate(int $id): ?Order
+    {
+        return $this->findForUpdate($id);
     }
 
     /**
@@ -399,16 +426,23 @@ class OrderRepository implements OrderRepositoryInterface
      */
     public function bulkUpdateOptionStatus(array $ids, string $status): int
     {
-        // 취소/환불·클레임 등 별도 라이프사이클 옵션은 동기화에서 제외한다.
-        // (취소된 옵션이 결제완료/배송중 등으로 되살아나는 것을 차단 — OrderStatusEnum SSoT)
-        $query = OrderOption::whereIn('order_id', $ids)
-            ->whereNotIn('option_status', OrderStatusEnum::syncExcludedValues());
+        return $this->optionStatusSyncQuery($ids)->update([
+            'option_status' => $status,
+            'updated_at' => now(),
+        ]);
+    }
 
+    /**
+     * {@inheritDoc}
+     */
+    public function collectOptionStatusSyncChanges(array $ids, string $status): array
+    {
         // 전/후를 적으려면 갱신 **전** 상태를 읽어야 한다. 이 경로는 관계 빌더의 raw update
         // 라 `OrderOptionService` 의 어떤 훅도 지나지 않아, 관리자 주문 수정·일괄 상태변경이
         // 끌고 간 상품 전이가 활동로그에 **한 줄도 남지 않았다**(A1·A2). 주문 헤더 줄만
         // 남으므로 운영자는 어느 상품이 함께 움직였는지 알 수 없다.
-        $changes = $query->get(['id', 'order_id', 'option_status'])
+        return $this->optionStatusSyncQuery($ids)
+            ->get(['id', 'order_id', 'option_status'])
             ->map(fn (OrderOption $option): array => [
                 'order_option_id' => (int) $option->id,
                 'order_id' => (int) $option->order_id,
@@ -420,17 +454,46 @@ class OrderRepository implements OrderRepositoryInterface
             ->filter(fn (array $change): bool => $change['previous'] !== $change['new'])
             ->values()
             ->all();
+    }
 
-        $updated = $query->update([
-            'option_status' => $status,
-            'updated_at' => now(),
-        ]);
+    /**
+     * 주문 옵션 상태 동기화의 대상 조건을 만듭니다.
+     *
+     * 취소/환불·클레임 등 별도 라이프사이클 옵션은 동기화에서 제외한다
+     * (취소된 옵션이 결제완료/배송중 등으로 되살아나는 것을 차단 — OrderStatusEnum SSoT).
+     * 읽기(`collectOptionStatusSyncChanges`)와 쓰기(`bulkUpdateOptionStatus`)가 이 한 조건을
+     * 공유해야 기록된 전/후와 실제로 옮겨진 행이 어긋나지 않는다.
+     *
+     * @param  array<int, int>  $ids  주문 ID 배열
+     * @return Builder 대상 옵션 쿼리
+     */
+    private function optionStatusSyncQuery(array $ids): Builder
+    {
+        return OrderOption::whereIn('order_id', $ids)
+            ->whereNotIn('option_status', OrderStatusEnum::syncExcludedValues());
+    }
 
-        if ($changes !== []) {
-            HookManager::doAction('sirsoft-ecommerce.order_option.after_sync_status', $changes, $status, 'bulk_update');
-        }
+    /**
+     * {@inheritDoc}
+     */
+    public function deleteClaimItemRows(int $orderId): int
+    {
+        $deleted = 0;
 
-        return $updated;
+        $deleted += OrderExchangeOption::query()
+            ->whereIn('order_exchange_id', OrderExchange::query()->where('order_id', $orderId)->select('id'))
+            ->delete();
+        $deleted += OrderReturnOption::query()
+            ->whereIn('order_return_id', OrderReturn::query()->where('order_id', $orderId)->select('id'))
+            ->delete();
+        $deleted += OrderCancelOption::query()
+            ->whereIn('order_cancel_id', OrderCancel::query()->where('order_id', $orderId)->select('id'))
+            ->delete();
+        $deleted += OrderRefundOption::query()
+            ->whereIn('order_refund_id', OrderRefund::query()->where('order_id', $orderId)->select('id'))
+            ->delete();
+
+        return $deleted;
     }
 
     /**
@@ -464,6 +527,8 @@ class OrderRepository implements OrderRepositoryInterface
      *
      * 주문이 생성·수정·삭제되면 통계도 곧바로 달라져야 합니다. 쓰기 경로가 이 메서드를
      * 부르지 않으면 화면이 TTL 이 끝날 때까지 이전 수치를 보여 줍니다.
+     *
+     * @return void 반환값 없음
      */
     public function forgetStatisticsCache(): void
     {
@@ -590,6 +655,7 @@ class OrderRepository implements OrderRepositoryInterface
      * @param  Builder  $query
      * @param  array|string  $statuses
      * @param  string  $type  claim type (refund, return, exchange)
+     * @return void 반환값 없음
      */
     protected function applyClaimFilter($query, $statuses, string $type): void
     {
@@ -627,6 +693,7 @@ class OrderRepository implements OrderRepositoryInterface
      *
      * @param  Builder  $query  주문 목록 쿼리
      * @param  array  $filters  요청 필터
+     * @return void 반환값 없음
      */
     protected function applyClaimCriteriaFilters(Builder $query, array $filters): void
     {
@@ -689,6 +756,7 @@ class OrderRepository implements OrderRepositoryInterface
      * @param  string|null  $from  신청일 시작
      * @param  string|null  $to  신청일 종료
      * @param  bool  $activeOnly  미종결 상태만 매칭할지 여부 (claim_presence=active)
+     * @return void 반환값 없음
      */
     protected function claimExistsSubquery($sub, string $type, array $statuses, array $faults, ?string $from, ?string $to, bool $activeOnly): void
     {
@@ -1140,5 +1208,16 @@ class OrderRepository implements OrderRepositoryInterface
     public function hasRecordedCurrency(string $code): bool
     {
         return $this->model->newQuery()->where('currency', $code)->exists();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function listIssuedTaxInvoices(int $orderId): Collection
+    {
+        return OrderTaxInvoice::query()
+            ->where('order_id', $orderId)
+            ->where('invoice_status', TaxInvoiceStatusEnum::ISSUED->value)
+            ->get(['id', 'invoice_number', 'total_amount']);
     }
 }

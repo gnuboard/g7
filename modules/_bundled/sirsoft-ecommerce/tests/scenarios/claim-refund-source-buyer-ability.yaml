@@ -38,6 +38,7 @@ effects:
   - refund_source_type_axes_are_explicit                        # 수량 축과 조작 축이 어긋나지 않는다
   # 출처 뱃지(계획 676) — 위 판정을 **화면에 보이게** 만든 축이다.
   - request_source_splits_customer_guest_and_admin               # 고객·비회원·운영자 접수 셋을 가른다
+  - guest_flag_reads_the_order_owner_not_the_requester_column   # 비회원 판정은 접수자 컬럼이 아니라 주문의 주인으로 한다
   # 요청자 링크(계획 676) — 뱃지 옆 이름이 그 회원 화면으로 간다.
   - requester_link_targets_the_order_owner_not_the_filer         # 접수자가 아니라 주문의 주인으로 간다
 

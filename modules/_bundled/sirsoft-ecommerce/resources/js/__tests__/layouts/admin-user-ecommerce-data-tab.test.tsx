@@ -86,7 +86,7 @@ describe('회원 상세 쇼핑 데이터 탭 (#524 WP-E)', () => {
     // @effects ecommerce_member_tab_shows_saved_address_lines
     it('배송지는 건수 말고 «주소 자체» 도 편다 — 서버가 접어 보낸 줄을 그대로 읽는다', () => {
         // 건수만으로는 「어디로 보내는 회원인가」 를 알 수 없어, 상담 중에 배송지 관리 화면으로
-        // 나갔다 돌아오면 그 화면의 조회 조건을 잃는다(2026-09-21 PO 지적).
+        // 나갔다 돌아오면 그 화면의 조회 조건을 잃는다(2026-09-21 검수 지적).
         const block = flattenNodes(content).find((n: any) => n?.id === 'ecommerce_saved_addresses');
 
         expect(block).toBeTruthy();
@@ -106,7 +106,7 @@ describe('회원 상세 쇼핑 데이터 탭 (#524 WP-E)', () => {
     // @scenario surface=member_detail_tab, list=user_address
     // @effects ecommerce_member_tab_address_block_stands_when_empty
     it('배송지가 0건이어도 블록은 서고, 없다고 말한다 — 감추면 미구현과 구분되지 않는다', () => {
-        // 종전에는 0건이면 블록을 통째로 접어, 배송지 없는 회원을 연 PO 에게 「버튼만 딸랑」
+        // 종전에는 0건이면 블록을 통째로 접어, 배송지 없는 회원을 연 운영자에게 「버튼만 딸랑」
         // 남은 화면으로 보였다(2026-09-21). 「이 회원은 배송지가 없다」 와 「이 기능이 없다」 는
         // 다른 사실인데 화면에서 같아 보이면 안 된다.
         const nodes = flattenNodes(content);

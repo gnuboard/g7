@@ -1,5 +1,5 @@
 {
-    "comment": "주문 목록 — 검색 필터 영역. 구조가 두 겹이라 처음 보면 헷갈리는 자리가 셋 있다.\n\n  ⓐ 필터 행은 전부 화면 밖 등록 영역(`slot_registration_area`)에 한 번만 정의하고, 각 행의\n     `data-slot` 이 \"기본 필터\" 와 \"상세 필터\" 중 어디로 갈지를 그때그때 정한다. 그래서 필터를\n     보이고 숨겨도 행이 사라졌다 다시 만들어지지 않고 자리만 옮긴다.\n  ⓑ 어떤 필터를 기본에 둘지는 운영자별 취향이라 서버가 아니라 브라우저(localStorage,\n     `g7_order_filter_visible_filters`)에 남긴다 — 편집모드 체크박스마다 상태 변경과 저장이\n     나란히 붙어 있는 이유다.\n  ⓒ 입력 중인 값은 `_local.filter` 에 모이지만 **검색은 URL 로 나간다**. 조건을 query 로 실어야\n     재진입·뒤로가기·주소 공유에서 같은 목록이 서기 때문이고, 그래서 프리셋을 누르면\n     `_local.filter` 를 채우는 것과 `navigate` 로 query 를 갈아 끼우는 것이 함께 일어난다.",
+    "comment": "주문 목록 — 검색 필터 영역. 구조가 두 겹이라 처음 보면 헷갈리는 자리가 셋 있다.\n\n  ⓐ 필터 행은 전부 화면 밖 등록 영역(`slot_registration_area`)에 한 번만 정의하고, 각 행의\n     `data-slot` 이 \"기본 필터\" 와 \"상세 필터\" 중 어디로 갈지를 그때그때 정한다. 그래서 필터를\n     보이고 숨겨도 행이 사라졌다 다시 만들어지지 않고 자리만 옮긴다.\n  ⓑ 어떤 필터를 기본에 둘지는 운영자별 취향이라 서버가 아니라 브라우저(localStorage)에 남긴다.\n     저장은 필터 표시 선택기(`filter-visibility-selector`)가 맡는다 — 자기 `id` 와 로그인 사용자로\n     키(`g7_filters_{id}_{사용자}`)를 만들고, `visibleFilters` 가 바뀔 때마다 스스로 저장한다.\n     그래서 편집모드 체크박스는 상태만 바꾼다.\n  ⓒ 입력 중인 값은 `_local.filter` 에 모이지만 **검색은 URL 로 나간다**. 조건을 query 로 실어야\n     재진입·뒤로가기·주소 공유에서 같은 목록이 서기 때문이고, 그래서 프리셋을 누르면\n     `_local.filter` 를 채우는 것과 `navigate` 로 query 를 갈아 끼우는 것이 함께 일어난다.",
     "meta": {
         "is_partial": true,
         "description": "Order List - Filter Section with Slot System (v2)"
@@ -3116,7 +3116,7 @@
                                                     "text": "~"
                                                 },
                                                 {
-                                                    "comment": "종료일은 그날 하루 끝까지 포함한다. 시작일보다 앞선 날을 넣어도 화면은 막지 않고 서버 검증이 요청을 거부한다.",
+                                                    "comment": "종료일은 그날 하루 끝까지 포함한다. 시작일보다 앞선 날을 넣으면 검색 이동과 목록 데이터소스가 두 날짜를 바꿔 보낸다 — 그대로 보내면 서버 검증(`after_or_equal`)이 422 를 내고 목록 전체가 오류 화면이 되며, 그 구간이 URL 에 남아 새로고침으로도 빠져나올 수 없다.",
                                                     "id": "f_263_claim_requested_to",
                                                     "type": "basic",
                                                     "name": "Input",
@@ -3296,7 +3296,7 @@
                         }
                     ],
                     "props": {
-                        "className": "{{query.preset_id === String(preset.id) ? 'btn-preset ring-1 ring-gray-400 bg-gray-900 text-white dark:bg-white dark:text-gray-900' : 'btn-preset cursor-pointer'}}"
+                        "className": "{{query.preset_id === String(preset.id) ? 'btn-preset ring-1 ring-gray-400 dark:ring-gray-500 bg-gray-900 text-white dark:bg-white dark:text-gray-900' : 'btn-preset cursor-pointer'}}"
                     },
                     "text": "{{preset.name}}"
                 }
@@ -3325,6 +3325,13 @@
                             "id": "f_001_search_field_select",
                             "type": "basic",
                             "name": "Select",
+                            "responsive": {
+                                "portable": {
+                                    "props": {
+                                        "className": "w-24 shrink-0"
+                                    }
+                                }
+                            },
                             "actions": [
                                 {
                                     "type": "change",
@@ -3372,10 +3379,17 @@
                             }
                         },
                         {
-                            "comment": "F-002 — 최소 너비는 `min-w-[280px]` 로 적는다. `min-w-64` 는 관리자 템플릿 빌드 CSS(dist/css/components.css)에 셀렉터가 없어(생성된 것은 `!min-w-64` 뿐) 아무 효과가 없었다.",
+                            "comment": "F-002 — 최소 너비는 `min-w-[280px]` 로 적는다. `min-w-64` 는 관리자 템플릿 빌드 CSS(dist/css/components.css)에 셀렉터가 없어(생성된 것은 `!min-w-64` 뿐) 아무 효과가 없었다. 좁은 화면에서는 최소 너비를 풀고 셀렉트도 줄인다 — 둘이 한 줄에 서면 375px 폭을 넘는다.",
                             "id": "f_002_search_keyword_input",
                             "type": "basic",
                             "name": "Div",
+                            "responsive": {
+                                "portable": {
+                                    "props": {
+                                        "className": "flex-1 min-w-0 relative"
+                                    }
+                                }
+                            },
                             "props": {
                                 "className": "flex-1 min-w-[280px] relative"
                             },

@@ -113,7 +113,7 @@
                     "props": {
                         "className": "mt-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap min-h-16"
                     },
-                    "text": "{{claim?.data?.claim?.reason_detail ?? '$t:sirsoft-ecommerce.admin.claim.detail.reason.no_detail'}}"
+                    "text": "{{claim?.data?.claim?.reason_detail || '$t:sirsoft-ecommerce.admin.claim.detail.reason.no_detail'}}"
                 },
                 {
                     "comment": "첨부가 0건이어도 블록을 세운다(F6) — 운영자 대리 업로드 진입점이 이 안에 있고, 첨부가 없을 때야말로 그 진입점이 필요하다. 예전에는 `images.length > 0` 조건이라 첨부 없는 신청서에서는 올릴 자리조차 없었다.",
@@ -141,10 +141,10 @@
                             "props": {
                                 "className": "text-xs text-gray-500 dark:text-gray-400 mb-2"
                             },
-                            "text": "$t:sirsoft-ecommerce.admin.claim.detail.reason.images_hint|max={{claim?.data?.attachment_settings?.max_images ?? 0}}&size={{Math.round((claim?.data?.attachment_settings?.image_max_size_kb ?? 0) / 1024 * 100) / 100 + 'MB'}}&types={{(claim?.data?.attachment_settings?.allowed_extensions ?? []).join(', ')}}"
+                            "text": "$t:sirsoft-ecommerce.admin.claim.detail.reason.images_hint|max={{claim?.data?.attachment_settings?.max_images ?? 0}}&size={{(claim?.data?.attachment_settings?.image_max_size_mb ?? '-') + 'MB'}}&types={{(claim?.data?.attachment_settings?.allowed_extensions ?? []).join(', ')}}"
                         },
                         {
-                            "comment": "구매자 신청 화면과 같은 공용 업로더를 쓴다 — 드롭존·다중 선택·미리보기·진행률·상한 안내·개별 삭제가 한 벌로 온다. `reorder` 는 빈 문자열로 명시해야 한다: 기본값은 코어 첨부 순서 API 라, 드래그 한 번이 **남의 첨부 순서**를 바꾸고 이 화면에는 오류가 뜨지 않는다. `maxConcurrentUploads` 를 1 로 낮추는 것은 서버가 개수 상한을 잠금 없이 판정하기 때문이다(병렬이면 상한을 넘겨 저장된다).",
+                            "comment": "용량 상한은 서버가 MB 로 내려 준 값(`image_max_size_mb`)을 그대로 쓴다 — 화면이 KB 를 나누면 반올림 규칙이 화면마다 갈린다. 값이 없으면 prop 을 비워 컴포넌트 기본값에 맡긴다: 0 으로 떨어뜨리면 업로더가 모든 파일을 거절한다. 구매자 신청 화면과 같은 공용 업로더를 쓴다 — 드롭존·다중 선택·미리보기·진행률·상한 안내·개별 삭제가 한 벌로 온다. `reorder` 는 빈 문자열로 명시해야 한다: 기본값은 코어 첨부 순서 API 라, 드래그 한 번이 **남의 첨부 순서**를 바꾸고 이 화면에는 오류가 뜨지 않는다. `maxConcurrentUploads` 를 1 로 낮추는 것은 서버가 개수 상한을 잠금 없이 판정하기 때문이다(병렬이면 상한을 넘겨 저장된다).",
                             "id": "cr_006_images_uploader",
                             "type": "composite",
                             "name": "FileUploader",
@@ -180,7 +180,7 @@
                                 "autoUpload": true,
                                 "maxConcurrentUploads": 1,
                                 "maxFiles": "{{claim?.data?.attachment_settings?.max_images ?? 5}}",
-                                "maxSize": "{{Math.round((claim?.data?.attachment_settings?.image_max_size_kb ?? 0) / 1024 * 100) / 100}}",
+                                "maxSize": "{{claim?.data?.attachment_settings?.image_max_size_mb}}",
                                 "accept": "{{claim?.data?.attachment_settings?.accept ?? ''}}",
                                 "initialFiles": "{{claim?.data?.claim?.images ?? []}}",
                                 "confirmBeforeRemove": true,
@@ -275,7 +275,7 @@
                             },
                             "children": [
                                 {
-                                    "comment": "올린 사람과 무관하게 이 신청서의 첨부를 파일째 전부 지운다 — 개별 삭제와 달리 확인창을 거치지 않는다.",
+                                    "comment": "올린 사람과 무관하게 이 신청서의 첨부를 파일째 전부 지운다 — 고객이 올린 증빙까지 사라지고 되돌릴 수 없으므로 곧바로 지우지 않고 확인 창을 연다. 창은 부모 `_local`·데이터소스 문맥을 해석하지 못하므로 대상 식별 축과 장수를 `_global.claimImagesClearContext` 로 넘긴다.",
                                     "id": "cr_007_image_clear",
                                     "type": "basic",
                                     "name": "Button",
@@ -283,16 +283,21 @@
                                     "actions": [
                                         {
                                             "type": "click",
-                                            "handler": "sirsoft-ecommerce.clearClaimImages",
-                                            "params": {
-                                                "pathSegment": "{{claim?.data?.claim_path_segment ?? ''}}",
-                                                "claimType": "{{claim?.data?.claim?.claim_type ?? ''}}",
-                                                "claimId": "{{claim?.data?.claim?.id ?? null}}"
-                                            },
-                                            "onError": {
-                                                "comment": "실패 사유는 핸들러가 이미 띄운다(서버 사유 우선 + 다국어 폴백). onError 를 두지 않으면 기본 에러 정책이 같은 실패를 한 번 더 알려 같은 문구가 두 번 뜬다 — 2026-09-22 #599 3차 실측 T2-D12 에서 승인 실패 「교환할 옵션의 재고가 부족합니다.」가 2개 겹쳐 떴다. 형제 자리(_partial_claim_shipping·_modal_claim_refund_execute)와 같은 규율이다.",
-                                                "handler": "suppress"
-                                            }
+                                            "handler": "sequence",
+                                            "actions": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "claimImagesClearContext": "{{({ pathSegment: claim?.data?.claim_path_segment ?? '', claimType: claim?.data?.claim?.claim_type ?? '', claimId: claim?.data?.claim?.id ?? null, count: (claim?.data?.claim?.images ?? []).length })}}",
+                                                        "isProcessing": false
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "openModal",
+                                                    "target": "modal_claim_images_clear"
+                                                }
+                                            ]
                                         }
                                     ],
                                     "props": {

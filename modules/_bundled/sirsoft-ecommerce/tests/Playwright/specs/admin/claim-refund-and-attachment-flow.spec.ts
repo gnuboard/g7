@@ -188,7 +188,7 @@ test('환불 — 부분 승인 중에는 [환불하기]가 잠기고, 잔여를 
   });
 
   expect(status).toBe(200);
-  // 접수 상태에서는 눌리면 안 된다 — 판단이 끝나기 전에 돈이 나간다(PO 결정 A4).
+  // 접수 상태에서는 눌리면 안 된다 — 판단이 끝나기 전에 돈이 나간다(운영 결정 A4).
   expect(atRequested.disabled).toBe(true);
   // 부분 승인 중에도 잠겨 있어야 한다 — '신청' 잔여가 남아 있다.
   expect(afterPartial.disabled).toBe(true);

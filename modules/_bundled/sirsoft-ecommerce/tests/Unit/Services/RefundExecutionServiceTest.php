@@ -51,6 +51,11 @@ class RefundExecutionServiceTest extends ModuleTestCase
 {
     protected RefundExecutionService $service;
 
+    /**
+     * 테스트 통화·채번 설정을 준비하고 환불 실행 서비스를 꺼냅니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -59,6 +64,11 @@ class RefundExecutionServiceTest extends ModuleTestCase
         $this->service = app(RefundExecutionService::class);
     }
 
+    /**
+     * 테스트가 기록한 통화·주문 설정 파일을 지워 다음 테스트에 새지 않게 합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         $settingsDir = storage_path('framework/testing/modules/sirsoft-ecommerce/settings');
@@ -78,6 +88,8 @@ class RefundExecutionServiceTest extends ModuleTestCase
 
     /**
      * 테스트용 통화 설정을 기록합니다.
+     *
+     * @return void 반환값 없음
      */
     protected function setupTestCurrencySettings(): void
     {
@@ -111,6 +123,7 @@ class RefundExecutionServiceTest extends ModuleTestCase
      * 재고 복원 설정을 기록합니다.
      *
      * @param  bool  $enabled  복원 여부
+     * @return void 반환값 없음
      */
     protected function setStockRestoreSetting(bool $enabled): void
     {
@@ -127,6 +140,8 @@ class RefundExecutionServiceTest extends ModuleTestCase
 
     /**
      * 취소/환불 시퀀스 레코드를 생성합니다.
+     *
+     * @return void 반환값 없음
      */
     protected function setupSequences(): void
     {
@@ -206,6 +221,7 @@ class RefundExecutionServiceTest extends ModuleTestCase
      * PG 환불 훅을 성공으로 고정합니다.
      *
      * @param  string  $transactionId  반환할 거래 ID
+     * @return void 반환값 없음
      */
     protected function stubPgRefundSuccess(string $transactionId = 'TXN-OK'): void
     {
@@ -401,6 +417,8 @@ class RefundExecutionServiceTest extends ModuleTestCase
      * @scenario claim_type=return, charge_method=deduct_from_refund, refund_branch=none
      *
      * @effects claim_refund_account_reaches_the_payout_target_at_execution, refund_account_on_the_refund_reaches_the_payment_row_at_execution
+     *
+     * @return void 반환값 없음
      */
     public function test_execute_applies_the_refunds_own_bank_account_to_the_payment(): void
     {
@@ -428,6 +446,8 @@ class RefundExecutionServiceTest extends ModuleTestCase
      * 운영자가 이체할 근거가 사라진다.
      *
      * @effects refund_without_an_account_keeps_the_existing_payout_target
+     *
+     * @return void 반환값 없음
      */
     public function test_execute_keeps_the_existing_account_when_the_refund_carries_none(): void
     {
@@ -455,6 +475,8 @@ class RefundExecutionServiceTest extends ModuleTestCase
      * 남의 계좌로 간다.
      *
      * @effects partially_filled_refund_account_is_ignored_entirely
+     *
+     * @return void 반환값 없음
      */
     public function test_execute_ignores_a_partially_filled_account_on_the_refund(): void
     {
@@ -477,6 +499,8 @@ class RefundExecutionServiceTest extends ModuleTestCase
      * PG 환불이 성공하면 완료 도장과 거래 ID·환불 시각이 남는다.
      *
      * @effects pg_refund_marks_the_refund_completed_with_the_transaction_id_on_success
+     *
+     * @return void 반환값 없음
      */
     public function test_execute_pg_refund_marks_refund_completed_on_success(): void
     {
@@ -496,6 +520,8 @@ class RefundExecutionServiceTest extends ModuleTestCase
      * 훅에 들어가기 전에 진행중으로 찍는다 — 훅 안에서 본 상태가 그 증거다.
      *
      * @effects pg_refund_marks_processing_before_calling_the_hook
+     *
+     * @return void 반환값 없음
      */
     public function test_execute_pg_refund_marks_processing_before_calling_hook(): void
     {
@@ -521,6 +547,8 @@ class RefundExecutionServiceTest extends ModuleTestCase
      * PG 실패는 오류 코드·메시지를 남기고 예외로 올린다 — 완료로 찍지 않는다.
      *
      * @effects pg_refund_records_the_error_and_throws_on_failure
+     *
+     * @return void 반환값 없음
      */
     public function test_execute_pg_refund_throws_and_records_error_on_failure(): void
     {
@@ -550,6 +578,8 @@ class RefundExecutionServiceTest extends ModuleTestCase
      * 리스너는 환불 레코드를 6번째 인자로 받는다 (멱등키의 근거).
      *
      * @effects pg_refund_hands_the_refund_record_to_the_listener
+     *
+     * @return void 반환값 없음
      */
     public function test_execute_pg_refund_passes_refund_record_as_sixth_argument(): void
     {
@@ -576,6 +606,8 @@ class RefundExecutionServiceTest extends ModuleTestCase
      * 5-파라미터 레거시 리스너도 그대로 호출되고 완료까지 간다.
      *
      * @effects pg_refund_stays_compatible_with_a_five_argument_listener
+     *
+     * @return void 반환값 없음
      */
     public function test_execute_pg_refund_is_backward_compatible_with_five_arg_listener(): void
     {
@@ -602,6 +634,8 @@ class RefundExecutionServiceTest extends ModuleTestCase
      * 리스너에 넘기는 금액은 주문 통화 금액이다 — 기준 통화 금액이 아니다.
      *
      * @effects pg_refund_sends_the_amount_in_the_order_currency
+     *
+     * @return void 반환값 없음
      */
     public function test_execute_pg_refund_sends_order_currency_amount_to_listener(): void
     {
@@ -632,6 +666,8 @@ class RefundExecutionServiceTest extends ModuleTestCase
      * 주문 통화 항목이 없으면 기준 통화 금액으로 떨어진다.
      *
      * @effects pg_refund_falls_back_to_the_base_amount_without_an_order_currency_entry
+     *
+     * @return void 반환값 없음
      */
     public function test_execute_pg_refund_falls_back_to_base_amount_when_order_currency_missing(): void
     {
@@ -662,6 +698,8 @@ class RefundExecutionServiceTest extends ModuleTestCase
      * 통화 해석기는 주문 통화를 우선하고, 지정이 없으면 기준 금액을 낸다.
      *
      * @effects order_currency_refund_amount_prefers_the_order_currency_over_the_base_amount
+     *
+     * @return void 반환값 없음
      */
     public function test_resolve_order_currency_refund_amount_prefers_order_currency(): void
     {
@@ -679,6 +717,8 @@ class RefundExecutionServiceTest extends ModuleTestCase
      * 쿠폰 복원 훅은 복원 대상 발급 ID 를 그대로 싣는다.
      *
      * @effects coupon_restore_hook_carries_the_restored_issue_ids
+     *
+     * @return void 반환값 없음
      */
     public function test_restore_coupons_fires_hook_with_issue_ids(): void
     {
@@ -698,6 +738,8 @@ class RefundExecutionServiceTest extends ModuleTestCase
      * 복원할 쿠폰이 없으면 훅 자체를 쏘지 않는다.
      *
      * @effects coupon_restore_hook_is_not_fired_without_anything_to_restore
+     *
+     * @return void 반환값 없음
      */
     public function test_restore_coupons_does_not_fire_hook_when_nothing_to_restore(): void
     {
@@ -717,6 +759,8 @@ class RefundExecutionServiceTest extends ModuleTestCase
      * 쿠폰 리스너 예외는 호출부로 전파되지 않는다 — 돈은 이미 나갔다.
      *
      * @effects coupon_restore_listener_failure_does_not_reach_the_caller
+     *
+     * @return void 반환값 없음
      */
     public function test_restore_coupons_swallows_listener_failure(): void
     {
@@ -735,6 +779,8 @@ class RefundExecutionServiceTest extends ModuleTestCase
      * 애초에 마일리지를 쓰지 않은 주문은 복원 훅을 타지 않는다.
      *
      * @effects mileage_restore_skips_when_the_order_never_deducted_points
+     *
+     * @return void 반환값 없음
      */
     public function test_restore_mileage_skips_when_order_never_deducted(): void
     {
@@ -754,6 +800,8 @@ class RefundExecutionServiceTest extends ModuleTestCase
      * 돌려줄 마일리지가 0 이면 훅을 쏘지 않는다.
      *
      * @effects mileage_restore_skips_when_there_are_no_points_to_refund
+     *
+     * @return void 반환값 없음
      */
     public function test_restore_mileage_skips_when_no_points_to_refund(): void
     {
@@ -773,6 +821,8 @@ class RefundExecutionServiceTest extends ModuleTestCase
      * 마일리지 복원 훅은 금액과 함께 취소 ID 를 멱등 축으로 넘긴다.
      *
      * @effects mileage_restore_hook_carries_the_cancel_id_as_its_idempotency_axis
+     *
+     * @return void 반환값 없음
      */
     public function test_restore_mileage_fires_hook_with_cancel_id_as_idempotency_axis(): void
     {
@@ -797,6 +847,8 @@ class RefundExecutionServiceTest extends ModuleTestCase
      * 마일리지 리스너 예외는 호출부로 전파되지 않는다.
      *
      * @effects mileage_restore_listener_failure_does_not_reach_the_caller
+     *
+     * @return void 반환값 없음
      */
     public function test_restore_mileage_swallows_listener_failure(): void
     {
@@ -815,6 +867,8 @@ class RefundExecutionServiceTest extends ModuleTestCase
      * 재고 복원 설정이 켜져 있으면 취소 수량만큼 되돌린다.
      *
      * @effects stock_restore_returns_the_cancelled_quantity_when_the_setting_is_on
+     *
+     * @return void 반환값 없음
      */
     public function test_restore_stock_returns_quantity_when_setting_enabled(): void
     {
@@ -832,6 +886,8 @@ class RefundExecutionServiceTest extends ModuleTestCase
      * 설정이 꺼져 있으면 재고를 건드리지 않는다.
      *
      * @effects stock_restore_is_skipped_entirely_when_the_setting_is_off
+     *
+     * @return void 반환값 없음
      */
     public function test_restore_stock_skips_entirely_when_setting_disabled(): void
     {
@@ -849,6 +905,8 @@ class RefundExecutionServiceTest extends ModuleTestCase
      * 차감된 적 없는 옵션은 되돌릴 것이 없다 — 재고가 늘지 않는다.
      *
      * @effects stock_restore_skips_options_that_were_never_deducted
+     *
+     * @return void 반환값 없음
      */
     public function test_restore_stock_skips_options_that_were_never_deducted(): void
     {
@@ -872,6 +930,8 @@ class RefundExecutionServiceTest extends ModuleTestCase
      * 현금영수증 동기화는 주문과 사유를 그대로 전용 서비스에 넘긴다.
      *
      * @effects cash_receipt_sync_is_delegated_with_the_order_and_the_reason
+     *
+     * @return void 반환값 없음
      */
     public function test_sync_cash_receipt_delegates_to_cash_receipt_service(): void
     {
@@ -890,6 +950,8 @@ class RefundExecutionServiceTest extends ModuleTestCase
      * 국세청·프로바이더 통신 실패는 호출부로 전파되지 않는다.
      *
      * @effects cash_receipt_provider_failure_does_not_reach_the_caller
+     *
+     * @return void 반환값 없음
      */
     public function test_sync_cash_receipt_swallows_provider_failure(): void
     {
@@ -912,6 +974,8 @@ class RefundExecutionServiceTest extends ModuleTestCase
      * 실행은 주문의 환불 누적을 쌓는다.
      *
      * @effects execute_accumulates_the_orders_total_refunded_amount
+     *
+     * @return void 반환값 없음
      */
     public function test_execute_accumulates_total_refunded_amount(): void
     {
@@ -928,6 +992,8 @@ class RefundExecutionServiceTest extends ModuleTestCase
      * 마일리지 환불도 주문의 마일리지 환불 누적으로 쌓인다.
      *
      * @effects execute_accumulates_the_orders_total_refunded_points_amount
+     *
+     * @return void 반환값 없음
      */
     public function test_execute_accumulates_total_refunded_points_amount(): void
     {
@@ -943,6 +1009,8 @@ class RefundExecutionServiceTest extends ModuleTestCase
      * 이미 쌓인 값에 더한다 — 덮어쓰지 않는다.
      *
      * @effects execute_adds_to_the_values_already_accumulated
+     *
+     * @return void 반환값 없음
      */
     public function test_execute_adds_to_existing_accumulated_values(): void
     {
@@ -964,6 +1032,8 @@ class RefundExecutionServiceTest extends ModuleTestCase
      * 결제행의 취소 누적도 함께 쌓인다 — PG 환불가능액의 근거다.
      *
      * @effects execute_accumulates_the_payment_rows_cancelled_amount
+     *
+     * @return void 반환값 없음
      */
     public function test_execute_accumulates_payment_cancelled_amount(): void
     {
@@ -980,6 +1050,8 @@ class RefundExecutionServiceTest extends ModuleTestCase
      * 다통화 취소 누적은 통화별로 각각 쌓인다.
      *
      * @effects execute_accumulates_the_multi_currency_cancelled_amount_per_currency
+     *
+     * @return void 반환값 없음
      */
     public function test_execute_accumulates_mc_cancelled_amount_per_currency(): void
     {
@@ -1002,6 +1074,8 @@ class RefundExecutionServiceTest extends ModuleTestCase
      * 두 번 실행하면 두 번 다 쌓인다 (회차마다 누적).
      *
      * @effects execute_accumulates_on_every_round_not_just_the_first
+     *
+     * @return void 반환값 없음
      */
     public function test_execute_twice_accumulates_both_times(): void
     {
@@ -1021,6 +1095,8 @@ class RefundExecutionServiceTest extends ModuleTestCase
      * 취소 고유 필드(결제상태·취소시각·취소이력)는 환불 경로가 건드리지 않는다.
      *
      * @effects execute_leaves_the_cancel_only_payment_fields_untouched
+     *
+     * @return void 반환값 없음
      */
     public function test_execute_does_not_touch_cancel_specific_payment_fields(): void
     {
@@ -1040,6 +1116,8 @@ class RefundExecutionServiceTest extends ModuleTestCase
      * 결제행이 없는 주문도 주문 축 누적은 쌓인다.
      *
      * @effects execute_accumulates_order_totals_even_without_a_payment_row
+     *
+     * @return void 반환값 없음
      */
     public function test_execute_accumulates_order_totals_when_order_has_no_payment_row(): void
     {
@@ -1060,6 +1138,8 @@ class RefundExecutionServiceTest extends ModuleTestCase
      * 무통장입금은 PG 훅에 들어가지 않지만 주문 누적은 쌓인다.
      *
      * @effects execute_skips_the_pg_hook_for_a_non_pg_payment_method_but_still_accumulates
+     *
+     * @return void 반환값 없음
      */
     public function test_execute_skips_pg_hook_for_non_pg_payment_method_but_still_accumulates(): void
     {
@@ -1083,6 +1163,8 @@ class RefundExecutionServiceTest extends ModuleTestCase
      * 호출부가 왕복을 건너뛰라고 하면 훅을 부르지 않는다.
      *
      * @effects execute_skips_the_pg_hook_when_the_caller_asks_it_not_to
+     *
+     * @return void 반환값 없음
      */
     public function test_execute_skips_pg_hook_when_execute_pg_is_false(): void
     {
@@ -1114,13 +1196,15 @@ class RefundExecutionServiceTest extends ModuleTestCase
      * 200 으로 통과하고 `cancelled_amount` 가 14,000 — 환불가능액이 58,000 → 44,000 으로
      * 줄었다. 토스 잔액은 58,000 그대로다.
      *
-     * 방향은 PO 확정(2026-09-16): **허용하되 장부는 건드리지 않는다.** 운영자가 카드 주문을
+     * 방향은 운영 결정(2026-09-16): **허용하되 장부는 건드리지 않는다.** 운영자가 카드 주문을
      * 손으로 계좌 송금하는 운영은 막지 않는다 — 다만 그 송금은 카드 취소가 아니므로 카드
      * 결제행의 취소 누적이 아니다. 주문 축 누적(`total_refunded_amount`)은 그대로 쌓인다.
      *
-     * @scenario payment_method=card, refund_method=bank
+     * @scenario refund_method=bank, pg_roundtrip=skipped_not_applicable, restore_target=none
      *
      * @effects non_pg_refund_leaves_payment_cancelled_amount_untouched
+     *
+     * @return void 반환값 없음
      */
     public function test_execute_does_not_touch_payment_cancelled_amount_without_pg_call(): void
     {
@@ -1155,9 +1239,11 @@ class RefundExecutionServiceTest extends ModuleTestCase
      * `cancelPg: false`)과 ② 애초에 PG 로 나가지 않는 환불. S1-D24 가 막아야 하는 것은 ② 뿐이다.
      * 둘을 묶어 막으면 **정상 취소의 취소 누적이 사라진다** — 이 테스트가 그 과잉 구현을 잡는다.
      *
-     * @scenario payment_method=card, refund_method=pg, pg_already_settled=true
+     * @scenario refund_method=pg, pg_roundtrip=skipped_settled_outside, restore_target=none
      *
      * @effects externally_settled_pg_refund_still_records_ledger
+     *
+     * @return void 반환값 없음
      */
     public function test_execute_records_ledger_when_pg_was_settled_outside(): void
     {
@@ -1185,6 +1271,8 @@ class RefundExecutionServiceTest extends ModuleTestCase
      * 마일리지만 돌려주는 건은 PG 훅에 진입하지 않는다.
      *
      * @effects execute_skips_the_pg_hook_when_only_points_are_refunded
+     *
+     * @return void 반환값 없음
      */
     public function test_execute_skips_pg_hook_when_refund_amount_is_zero(): void
     {
@@ -1208,6 +1296,8 @@ class RefundExecutionServiceTest extends ModuleTestCase
      * PG 실패는 예외로 올라가고 누적은 한 푼도 쌓이지 않는다.
      *
      * @effects execute_does_not_accumulate_anything_when_the_pg_call_fails
+     *
+     * @return void 반환값 없음
      */
     public function test_execute_propagates_pg_failure_before_accumulating(): void
     {
@@ -1235,6 +1325,8 @@ class RefundExecutionServiceTest extends ModuleTestCase
      * 취소 누적 갱신 규칙은 취소 경로와 하나다 — 취소 고유 필드는 그 규칙에 없다.
      *
      * @effects cancelled_amount_updates_share_one_rule_with_the_cancellation_path
+     *
+     * @return void 반환값 없음
      */
     public function test_build_cancelled_amount_updates_shares_one_rule_with_cancel_path(): void
     {
@@ -1261,6 +1353,8 @@ class RefundExecutionServiceTest extends ModuleTestCase
      * 쌓인 환불 누적은 다음 환불의 잔여 한도를 실제로 좁힌다.
      *
      * @effects accumulated_refunds_narrow_the_remaining_refundable_capacity
+     *
+     * @return void 반환값 없음
      */
     public function test_accumulated_refund_narrows_remaining_payment_capacity(): void
     {
@@ -1326,6 +1420,8 @@ class RefundExecutionServiceTest extends ModuleTestCase
      * @scenario claim_type=refund, charge_method=none, refund_branch=auto
      *
      * @effects cancellation_path_reports_remaining_capacity_through_refund_accumulation
+     *
+     * @return void 반환값 없음
      */
     public function test_cancellation_path_reports_remaining_capacity_through_refund_accumulation(): void
     {
@@ -1361,6 +1457,8 @@ class RefundExecutionServiceTest extends ModuleTestCase
      * 취소 경로를 탄 환불도 결제행의 취소 누적을 쌓고 부분취소 상태를 찍는다.
      *
      * @effects cancellation_path_also_accumulates_the_payment_rows_cancelled_amount
+     *
+     * @return void 반환값 없음
      */
     public function test_cancellation_path_still_accumulates_payment_cancelled_amount(): void
     {

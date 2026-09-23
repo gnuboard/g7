@@ -14,6 +14,7 @@ use Modules\Sirsoft\Ecommerce\Enums\ClaimReasonFaultTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimShippingFeeModeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ExchangeStatusEnum;
+use Modules\Sirsoft\Ecommerce\Enums\RefundPriorityEnum;
 
 /**
  * 교환 신청서 모델
@@ -85,6 +86,7 @@ class OrderExchange extends Model
         'refund_bank_holder',
         'original_calculation_snapshot',
         'recalculated_snapshot',
+        'refund_priority',
     ];
 
     /**
@@ -111,6 +113,7 @@ class OrderExchange extends Model
             'redelivery_address_snapshot' => 'array',
             'original_calculation_snapshot' => 'array',
             'recalculated_snapshot' => 'array',
+            'refund_priority' => RefundPriorityEnum::class,
             'collection_completed_at' => 'datetime',
             'redelivered_at' => 'datetime',
             'is_stock_restored' => 'boolean',

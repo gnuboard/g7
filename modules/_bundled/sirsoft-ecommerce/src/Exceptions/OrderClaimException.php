@@ -172,6 +172,46 @@ class OrderClaimException extends Exception
     }
 
     /**
+     * 이미 결제한 청구를 환불금 차감 방식으로 바꾸려 할 때 (이중 징수 방지)
+     *
+     * @return self 예외 인스턴스
+     */
+    public static function chargeMethodDeductAfterPayment(): self
+    {
+        return new self('sirsoft-ecommerce::exceptions.claim_charge_method_deduct_after_payment');
+    }
+
+    /**
+     * 환불 우선순위 입력이 알 수 없는 값일 때
+     *
+     * @return self 예외 인스턴스
+     */
+    public static function refundPriorityInvalid(): self
+    {
+        return new self('sirsoft-ecommerce::exceptions.claim_refund_priority_invalid');
+    }
+
+    /**
+     * 환불 계좌 세 필드(은행·계좌번호·예금주) 중 일부만 입력됐을 때
+     *
+     * @return self 예외 인스턴스
+     */
+    public static function refundBankIncomplete(): self
+    {
+        return new self('sirsoft-ecommerce::exceptions.claim_refund_bank_incomplete');
+    }
+
+    /**
+     * 고객이 자기가 올리지 않은 첨부(운영자·주체 미상)를 지우려 할 때
+     *
+     * @return self 예외 인스턴스
+     */
+    public static function imageNotRemovable(): self
+    {
+        return new self('sirsoft-ecommerce::exceptions.claim_image_not_removable');
+    }
+
+    /**
      * 완료 전이를 일반 상태 변경으로 시도했을 때 (D26 — 완료는 완료 처리 경로 전용)
      *
      * @return self 예외 인스턴스
@@ -649,6 +689,23 @@ class OrderClaimException extends Exception
     public static function imageNotFound(): self
     {
         return new self('sirsoft-ecommerce::exceptions.claim_image_not_found');
+    }
+
+    /**
+     * 확장이 클레임 before 훅(`claim.{type}.before_*`)에서 동작을 막을 때 던집니다.
+     *
+     * 생성자가 닫혀 있어 확장은 이 팩토리로만 클레임 도메인 거절을 만들 수 있다. 도메인 거절로
+     * 던져야 화면이 422 와 그 문구를 받고, 일괄 전이는 그 건만 skip 으로 보고하며, 접수 직후의
+     * 0원 자동 승인은 접수를 살린 채 신청 상태로 남긴다 — 다른 예외는 그 경로들에서 500·일반
+     * 실패 문구가 된다. 메시지 키는 확장 자신의 다국어 키(`vendor-name::...`)를 쓴다.
+     *
+     * @param  string  $messageKey  다국어 메시지 키
+     * @param  array<string, mixed>  $replace  메시지 치환 파라미터
+     * @return self 예외 인스턴스
+     */
+    public static function blockedByExtension(string $messageKey, array $replace = []): self
+    {
+        return new self($messageKey, $replace);
     }
 
     /**

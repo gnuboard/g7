@@ -5,7 +5,7 @@
 ## 템플릿 전용 핸들러
 
 <!-- @generated:handlers START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-핸들러 32개 (정의: `src/handlers/index.ts`).
+핸들러 33개 (정의: `src/handlers/index.ts`).
 
 | 핸들러 | 레이아웃에서 부르는 이름 |
 |---|---|
@@ -23,6 +23,7 @@
 | `initTheme` | (템플릿 전용 — 네임스페이스 없음) |
 | `redirectToLoginWithReturn` | (템플릿 전용 — 네임스페이스 없음) |
 | `downloadAttachment` | (템플릿 전용 — 네임스페이스 없음) |
+| `markLocalOnce` | `sirsoft-basic.markLocalOnce` |
 | `toggleCartItemSelection` | (템플릿 전용 — 네임스페이스 없음) |
 | `selectAllCartItems` | (템플릿 전용 — 네임스페이스 없음) |
 | `setCartOption` | (템플릿 전용 — 네임스페이스 없음) |
@@ -44,7 +45,7 @@
 <!-- @generated:handlers END -->
 
 <!-- @intent START -->
-32개가 **두 종류로 갈립니다** — 네임스페이스를 붙여 등록한 10개(`sirsoft-basic.*`)와 붙이지
+33개가 **두 종류로 갈립니다** — 네임스페이스를 붙여 등록한 11개(`sirsoft-basic.*`)와 붙이지
 않은 22개. 레이아웃에서 부를 때 전자는 전체 이름을 그대로 써야 하고, 후자는 이름만 씁니다.
 
 | 무리 | 예 | 무엇을 하는가 |
@@ -56,6 +57,14 @@
 | 저장소 6 | `initCartKey` · `getCartKey` · `saveToStorage` 등 | 비회원 장바구니 키 관리(localStorage + API 발급) |
 | 비회원 주문 4 | `initGuestOrderToken` · `saveGuestOrderToken` · `clearGuestOrderToken` · `clearGuestTokenOnEntry` | 비회원 주문 조회 토큰 보관·폐기 |
 | 기타 2 | `redirectToLoginWithReturn` · `downloadAttachment` | 로그인 후 원래 자리 복귀, 첨부 내려받기 |
+| 가드 (`sirsoft-basic.*` 1) | `markLocalOnce` | 데이터소스 onSuccess 를 화면 진입마다 한 번만 돌게 한다 |
+
+**`sirsoft-basic.markLocalOnce` 는 데이터소스 onSuccess 전용 가드입니다.** onSuccess 컨텍스트에는
+`response` 만 실리고 `_local` 이 없어, 레이아웃 표현식으로는 「이미 했는가」 를 판정할 수 없습니다.
+이 핸들러가 **현재** 로컬 상태를 읽어 `params.key` 플래그가 참이 아니면 참으로 세우고 `true` 를,
+이미 참이면 `false` 를 돌려주므로 같은 sequence 의 다음 액션에서 `{{$prev === true}}` 로 받습니다.
+주문서의 기본 배송지 채움이 이 가드를 씁니다 — 배송지 관리 창이 목록을 다시 받을 때마다 채움이 돌면
+구매자가 고른 배송지를 기본 배송지로 덮습니다. 플래그는 레이아웃 initLocal 이 진입마다 `false` 로 세웁니다.
 
 **비회원 토큰 4종이 이 템플릿에서 가장 조심스러운 자리입니다.** 그 토큰이 곧 신원이므로
 (서버측 `VerifyGuestOrderToken` 이 그것만 보고 주문을 엽니다), 브라우저에 남아 있으면 다음

@@ -1,5 +1,5 @@
 {
-    "comment": "회원가입 폼의 개인정보 동의 뒤에 마케팅 동의 항목을 덧붙이는 조각",
+    "comment": "회원가입 폼의 개인정보 동의 뒤에 마케팅 동의 항목을 덧붙이는 조각.\n  동의 체크박스는 자동바인딩(name)을 끄고 표시값을 가입 폼 상태에서 boolean 으로 직접 읽는다 — 자동바인딩은\n  저장값이 boolean 일 때만 checked 로 붙고(아니면 빈 문자열이 전송된다), 전체 동의가 채널 동의를 함께 켜는 것처럼\n  다른 체크박스가 쓴 값에 표시가 따라와야 하기 때문이다. 값은 각 change 액션이 registerForm 에 쓴다.",
     "target_layout": "auth/register",
     "priority": 100,
     "data_sources": [
@@ -188,6 +188,8 @@
                                             ],
                                             "props": {
                                                 "name": "agree_marketing_consent",
+                                                "checked": "{{!!_local.registerForm?.agree_marketing_consent}}",
+                                                "autoBinding": false,
                                                 "disabled": "{{_local?.isRegistering}}"
                                             }
                                         },
@@ -296,6 +298,8 @@
                                             ],
                                             "props": {
                                                 "name": "agree_{{channel.key}}",
+                                                "checked": "{{!!_local.registerForm?.['agree_' + channel.key]}}",
+                                                "autoBinding": false,
                                                 "disabled": "{{_local?.isRegistering}}"
                                             }
                                         },
@@ -400,6 +404,8 @@
                                             ],
                                             "props": {
                                                 "name": "agree_third_party_consent",
+                                                "checked": "{{!!_local.registerForm?.agree_third_party_consent}}",
+                                                "autoBinding": false,
                                                 "disabled": "{{_local?.isRegistering}}"
                                             }
                                         },
@@ -511,6 +517,8 @@
                                                     ],
                                                     "props": {
                                                         "name": "agree_info_disclosure",
+                                                        "checked": "{{!!_local.registerForm?.agree_info_disclosure}}",
+                                                        "autoBinding": false,
                                                         "disabled": "{{_local?.isRegistering}}"
                                                     }
                                                 },

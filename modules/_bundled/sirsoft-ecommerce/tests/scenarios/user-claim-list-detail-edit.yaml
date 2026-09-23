@@ -168,6 +168,9 @@ effects:
   - claim_update_validates_attachments_before_mutating_anything     # 첨부 상한 초과는 아무것도 바꾸기 전에 422
   - claim_withdraw_closes_and_refunds_the_paid_charge               # 철회가 신청서를 닫고 결제분을 환불한다
   - claim_image_upload_delete_round_trip_with_type_gate             # 첨부 업로드·삭제 왕복과 파일 형식 게이트
+  - attached_claim_image_is_not_deletable_through_the_pending_route # C3 — 붙은 증빙은 미귀속 삭제 경로로 못 지운다
+  - buyer_edit_cannot_remove_an_operator_uploaded_image             # C3 — 수정 화면은 운영자 증빙을 못 지운다
+  - buyer_edit_still_removes_its_own_image                          # C3 비회귀
   - claim_payment_pay_and_pg_approve_round_trip                     # 마일리지 결제와 PG 승인 콜백
   - claim_attachment_signed_url_serves_without_session              # 서명 URL 은 세션 없이, 맨 URL 은 열람자 게이트
   - order_detail_exposes_claim_additional_paid_total                # 주문 상세의 클레임 추가결제 합계

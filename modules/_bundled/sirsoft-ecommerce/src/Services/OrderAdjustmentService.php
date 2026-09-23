@@ -22,6 +22,7 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\CouponIssueRepositoryInterf
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderExchangeOptionRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderRefundRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Support\CalculationSnapshotPresenter;
+use Modules\Sirsoft\Ecommerce\Support\EarnedPointsFormatter;
 use Modules\Sirsoft\Ecommerce\Support\ShippingPolicySnapshot;
 use Modules\Sirsoft\Ecommerce\Support\VatCalculator;
 
@@ -132,8 +133,8 @@ class OrderAdjustmentService
             $newSnapshot = is_array($exchangeItem->new_option_snapshot) ? $exchangeItem->new_option_snapshot : [];
             $snapshot = $successor->option_snapshot ?? [];
 
-            // 가격 축만 신규 옵션 값으로 — 정체(옵션명·SKU 등)는 후속 행 스냅샷 그대로.
-            foreach (['price_adjustment', 'list_price', 'selling_price'] as $key) {
+            // 표시 축(정가·판매가)은 신규 옵션 값으로 — 정체(옵션명·SKU 등)는 후속 행 스냅샷 그대로.
+            foreach (['list_price', 'selling_price'] as $key) {
                 if (array_key_exists($key, $newSnapshot)) {
                     $snapshot[$key] = $newSnapshot[$key];
                 }
@@ -142,6 +143,15 @@ class OrderAdjustmentService
             if (! array_key_exists('selling_price', $newSnapshot)) {
                 $snapshot['selling_price'] = (float) $exchangeItem->new_unit_price;
             }
+
+            // 엔진 단가는 `product_snapshot.selling_price + option_snapshot.price_adjustment` 다
+            // (`SnapshotProductOption::getSellingPrice()`). 신규 옵션의 조정액을 그대로 복사하면
+            // 교환 신청 시점에 상품가가 바뀐 주문에서 엔진 단가가 `new_unit_price`(현재 상품가
+            // 기준)와 어긋나, 후속 행을 취소할 때 그 차이만큼 덜(또는 더) 환불된다. 치환 패스
+            // (`applySubstitutions()`)와 같은 식으로 조정액을 역산해 엔진 단가 == 신규 단가로
+            // 맞춘다(#599 validate P2 #3).
+            $snapshot['price_adjustment'] = (float) $exchangeItem->new_unit_price
+                - (float) (($successor->product_snapshot ?? [])['selling_price'] ?? 0);
 
             $overrides[(int) $successor->id] = [
                 'option_snapshot' => $snapshot,
@@ -219,11 +229,17 @@ class OrderAdjustmentService
         // 두 값이 같아져 상한에 걸리지 않고 그대로 통과한다 — 전량 제외 경로에서만 걸린다.
         //
         // 그래서 **이미 취소된 상품만 빠진 상태**를 한 번 더 계산해 기준선으로 삼는다. 차액은
-        // "이번에 빠지는 상품의 값" 이 되어 회차마다 정확해진다. 앞선 환불이 없으면 기준선은
+        // "이번에 빠지는 상품의 값" 이 되어 회차마다 정확해진다. 종결 행이 없으면 기준선은
         // 원 결제금액과 같으므로 추가 계산도 하지 않는다(대부분의 신청이 이 경우다).
+        //
+        // 판정 근거는 **종결 행의 존재**다 — 누적 환불액(`total_refunded_amount`)이 아니다.
+        // 환불액이 0 으로 확정된 부분 환불(운영자가 0 원으로 수정, 무상 증정 행 등)도 행은
+        // 취소로 닫히는데, 누적 환불액만 보면 그 뒤의 신청이 원 결제금액을 기준선으로 삼아 닫힌
+        // 행의 값까지 한 번 더 돌려준다(#599 validate P2 #2). 반대로 기준선을 다시 구해도 종결
+        // 행이 없으면 값은 원 결제금액과 같으므로 판정을 넓혀 잃는 것은 계산 한 번뿐이다.
         $baselineAmount = $originalPaidAmount + $originalPointsUsed;
 
-        if ((float) $order->total_refunded_amount > 0 || (float) $order->total_refunded_points_amount > 0) {
+        if ($this->hasClosedRows($order)) {
             $priorInput = $this->buildRecalcInput($order, [], $successorOverrides);
 
             if (! empty($priorInput->items)) {
@@ -397,6 +413,60 @@ class OrderAdjustmentService
     }
 
     /**
+     * **기왕 환불액 상한을 끈 채** 계산합니다. (회차 차분 산출 전용 — DB 변경 없음)
+     *
+     * `calculate()` 는 결과를 `원 결제금액 − total_refunded_amount` 로 잘라낸다. 그 상한은 실행
+     * 단계의 안전장치로는 옳지만, 「누적 − 앞 회차 몫」 **차분**을 낼 때는 빼는 값(앞 회차 몫)에
+     * 이미 들어 있는 기왕 환불액이 나누는 값에서 한 번 더 깎여 이중 차감이 된다. 반품 완료
+     * 경로(`OrderReturnService::priorReturnsAdjustment()`·`uncappedAdjustment()`)와 환불 실행 가드
+     * (`CancellableAmountCalculator::calculateForRefund()`)가 **같은 식**을 쓰도록 여기 둔다.
+     *
+     * 모델 속성만 잠시 0 으로 두며 저장하지 않는다. 기준선 재계산 판정은 종결 행의 존재로
+     * 하므로(`hasClosedRows()`) 상한을 꺼도 기준선은 그대로다.
+     *
+     * @param  Order  $order  대상 주문
+     * @param  OrderAdjustment  $adjustment  변경 정보
+     * @param  RefundPriorityEnum  $refundPriority  환불 우선순위
+     * @return AdjustmentResult 상한 없는 계산 결과
+     */
+    public function calculateWithoutPriorRefundCap(
+        Order $order,
+        OrderAdjustment $adjustment,
+        RefundPriorityEnum $refundPriority = RefundPriorityEnum::PG_FIRST,
+    ): AdjustmentResult {
+        $refunded = $order->total_refunded_amount;
+        $refundedPoints = $order->total_refunded_points_amount;
+
+        $order->total_refunded_amount = 0;
+        $order->total_refunded_points_amount = 0;
+
+        try {
+            return $this->calculate($order, $adjustment, $refundPriority);
+        } finally {
+            $order->total_refunded_amount = $refunded;
+            $order->total_refunded_points_amount = $refundedPoints;
+        }
+    }
+
+    /**
+     * 재계산 입력에서 빠지는 종결 행(취소·교환완료)이 주문에 있는지 판정합니다.
+     *
+     * `buildRecalcInput()` 이 빼는 행과 같은 집합이다 — 이 행이 있으면 「이미 빠진 상품만 뺀
+     * 기준선」이 원 결제금액과 달라질 수 있으므로 기준선을 다시 구해야 한다.
+     *
+     * @param  Order  $order  주문 (options 로드됨)
+     * @return bool 종결 행이 있으면 true
+     */
+    private function hasClosedRows(Order $order): bool
+    {
+        return $order->options->contains(fn ($option) => in_array(
+            $option->option_status,
+            [OrderStatusEnum::CANCELLED, OrderStatusEnum::EXCHANGED],
+            true,
+        ));
+    }
+
+    /**
      * 주문 금액 스냅샷을 캡처합니다.
      *
      * @param  Order  $order  주문
@@ -486,11 +556,22 @@ class OrderAdjustmentService
             $originalKey = (int) $option->product_option_id;
             $newKey = self::substitutionLineKey((int) $orderOptionId);
 
-            $index = null;
-            foreach ($items as $i => $item) {
-                if ((int) $item->productOptionId === $originalKey) {
-                    $index = $i;
-                    break;
+            // 치환할 라인은 **그 주문 행이 만든 라인**이다. 수량 분할(`source_type=split`)·교환
+            // 후속 행은 같은 `product_option_id` 를 갖는 라인을 여럿 만들므로, 키로 첫 라인을
+            // 잡으면 다른 주문 행의 수량이 줄어든다(#599 validate P2 minor). 라인 → 주문 행
+            // 대응은 `buildRecalcInput()` 이 메타데이터로 남긴다. 대응이 없으면(외부에서 만든
+            // 입력) 종전대로 키의 첫 라인으로 떨어진다.
+            $lineOrderOptionIds = $metadata['line_order_option_ids'] ?? [];
+            $index = array_search((int) $orderOptionId, $lineOrderOptionIds, true);
+
+            if ($index === false || ! isset($items[$index])) {
+                $index = null;
+
+                foreach ($items as $i => $item) {
+                    if ((int) $item->productOptionId === $originalKey) {
+                        $index = $i;
+                        break;
+                    }
                 }
             }
 
@@ -568,8 +649,12 @@ class OrderAdjustmentService
                         continue;
                     }
 
-                    $couponSnapshots[$couponIssueId]['max_discount_amount_by_line'][$originalKey] = (int) round($cap * $remaining / $originalQuantity);
-                    $couponSnapshots[$couponIssueId]['max_discount_amount_by_line'][$newKey] = (int) round($cap * $quantity / $originalQuantity);
+                    // 두 라인을 각자 반올림하면 합이 상한을 넘을 수 있다(예: 상한 1,001 을 1:1 로 나누면
+                    // 501 + 501). 한 라인만 반올림하고 나머지는 상한에서 뺀 값으로 둔다 — 합은 언제나
+                    // 원 상한과 같다(#599 validate P2 minor).
+                    $remainingCap = (int) round($cap * $remaining / $originalQuantity);
+                    $couponSnapshots[$couponIssueId]['max_discount_amount_by_line'][$originalKey] = $remainingCap;
+                    $couponSnapshots[$couponIssueId]['max_discount_amount_by_line'][$newKey] = $cap - $remainingCap;
                 }
             }
         }
@@ -700,7 +785,9 @@ class OrderAdjustmentService
     private function buildRecalcInput(Order $order, array $excludedMap, array $successorOverrides = []): CalculationInput
     {
         $items = [];
-        $restoredCoupons = [];
+        // 라인 인덱스 → 주문 행 ID. 같은 `product_option_id` 를 가진 라인이 여럿일 때(분할 행)
+        // 치환 패스가 올바른 라인을 고르는 근거다(`applySubstitutions()`).
+        $lineOrderOptionIds = [];
 
         $exchangedSourceIds = $order->options
             ->filter(fn ($option) => $option->option_status === OrderStatusEnum::EXCHANGED)
@@ -739,6 +826,7 @@ class OrderAdjustmentService
                 'option_snapshot' => $successorOverrides[(int) $optionId]['option_snapshot'] ?? $option->option_snapshot,
                 'additional_options_snapshot' => $option->additional_options_snapshot,
             ]);
+            $lineOrderOptionIds[] = (int) $optionId;
         }
 
         // 쿠폰 정보 복원 (프로모션 스냅샷에서)
@@ -808,6 +896,7 @@ class OrderAdjustmentService
                 'snapshot_mode' => true,
                 'coupon_snapshots' => $couponSnapshots,
                 'currency_snapshot' => $order->currency_snapshot,
+                'line_order_option_ids' => $lineOrderOptionIds,
             ],
             shippingPolicySnapshots: $shippingPolicySnapshots,
             promotionSnapshots: $order->promotions_applied_snapshot,
@@ -1617,6 +1706,14 @@ class OrderAdjustmentService
 
         $snapshot['base_currency'] = $baseCurrency;
         $snapshot['formatted'] = $formatted;
+
+        // 적립 마일리지는 화폐가 아니다 — 위 `formatted` 맵은 기준 통화 표기(원)라 적립 줄에 그대로
+        // 쓰면 「710원」이 된다. 포인트 표기를 별도 필드로 싣는다(주문 상세 리소스와 같은 식).
+        if (array_key_exists('total_earned_points_amount', $snapshot)) {
+            $snapshot['total_earned_points_amount_formatted'] = EarnedPointsFormatter::format(
+                (float) $snapshot['total_earned_points_amount']
+            );
+        }
 
         return $snapshot;
     }

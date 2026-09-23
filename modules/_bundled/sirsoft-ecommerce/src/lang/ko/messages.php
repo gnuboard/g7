@@ -208,6 +208,7 @@ return [
         'fetch_success' => '주문 정보를 조회했습니다.',
         'fetch_failed' => '주문 정보 조회에 실패했습니다.',
         'cancelled' => '주문이 취소되었습니다.',
+        'cancel_refund_requested' => '환불신청서가 접수되었습니다. 환불이 완료되면 주문이 취소됩니다.',
         'cancel_failed' => '주문 취소에 실패했습니다.',
         'estimate_refund_success' => '환불 예상금액을 조회했습니다.',
         'estimate_refund_failed' => '환불 예상금액 조회에 실패했습니다.',
@@ -379,6 +380,8 @@ return [
         'not_earning' => '적립 거래만 수정할 수 있습니다.',
         'expiry_not_editable' => '이미 소멸되었거나 모두 사용된 적립건은 유효기간을 변경할 수 없습니다.',
         'expiry_before_earned' => '유효기간은 적립일시보다 이전일 수 없습니다.',
+        // 적립 마일리지 표기 — 통화가 아니라 포인트 단위다(`:points` 는 천 단위 구분이 끝난 숫자).
+        'points_format' => ':pointsP',
     ],
 
     // 임시주문 메시지

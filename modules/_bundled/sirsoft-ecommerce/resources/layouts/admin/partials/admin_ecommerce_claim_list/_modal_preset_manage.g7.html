@@ -7,7 +7,7 @@
         <span class="text-heading">{{presetItem.name}}</span>
         <div class="flex-center gap-2">
           <!-- 연필 버튼 — 이름 바꾸기 창을 이 창 위에 겹쳐 연다. 반복 변수 presetItem 은 이 목록 안에서만 살아 있으므로, 입력칸이 현재 이름으로 시작하도록 id 와 이름을 _global 로 옮겨 담고 연다. -->
-          <button type="button" class="p-1.5 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-700 rounded-lg">
+          <button type="button" class="p-1.5 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
             <on type="click">
               <set-state target="global" editingPresetId="{{presetItem.id}}" editingPresetName="{{presetItem.name}}"/>
               <open-modal target="modal_claim_preset_edit"/>

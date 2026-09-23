@@ -25,7 +25,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  *  ⓐ **계좌가 없으면 막는다** — 422. 장부만 닫히는 길을 없앤다.
  *  ⓑ **그 자리에서 계좌를 적을 수 있다** — 실행 본문의 `refund_bank` 를 신청서에 저장한 뒤
  *     실행한다. 막기만 하면 운영자는 계좌를 넣을 화면이 없어 영영 끝내지 못한다.
- *  ⓒ **직권으로 넘길 수 있되 동의를 받는다**(PO 결정 2026-09-23) — `force_without_refund_bank`
+ *  ⓒ **직권으로 넘길 수 있되 동의를 받는다**(운영 결정 2026-09-23) — `force_without_refund_bank`
  *     가 참이면 계좌 없이도 실행한다. 이미 다른 경로로 송금을 마쳤거나 채권을 포기하는 등
  *     운영상 필요가 있기 때문이며, 모르고 눌러 장부가 닫히는 것과 **알고 누르는 것**을 가른다.
  *
@@ -175,7 +175,7 @@ class AdminRefundExecuteRequiresBankTest extends ModuleTestCase
     }
 
     /**
-     * 동의를 실으면 계좌 없이도 직권 실행이 되는지 검증합니다. (PO 결정 2026-09-23)
+     * 동의를 실으면 계좌 없이도 직권 실행이 되는지 검증합니다. (운영 결정 2026-09-23)
      *
      * @return void 반환값 없음
      *

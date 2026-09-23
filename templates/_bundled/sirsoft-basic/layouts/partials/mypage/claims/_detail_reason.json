@@ -193,12 +193,9 @@
                     "text": "$t:claim.detail.images"
                 },
                 {
+                    "comment": "격자는 부모가 한 번만 갖고 사진 버튼이 반복된다 — 반복 노드가 격자를 들면 사진마다 격자가 따로 생겨 한 줄에 하나씩 쌓인다.",
                     "type": "basic",
                     "name": "Div",
-                    "iteration": {
-                        "source": "{{claim.data?.claim?.images ?? []}}",
-                        "item_var": "claimImage"
-                    },
                     "responsive": {
                         "portable": {
                             "props": {
@@ -214,6 +211,10 @@
                             "comment": "사진을 누르면 확대 창을 연다 — 확대 창은 페이지 로컬에서 대상을 읽으므로 그 사진의 서명 주소와 파일명을 먼저 세운 뒤 연다.",
                             "type": "basic",
                             "name": "Button",
+                            "iteration": {
+                                "source": "{{claim.data?.claim?.images ?? []}}",
+                                "item_var": "claimImage"
+                            },
                             "actions": [
                                 {
                                     "type": "click",

@@ -24,26 +24,56 @@ const optionChangeModal = read('partials/shop/_modal_cart_option_change.json');
 const mypageList = read('partials/mypage/orders/_list.json');
 
 describe('상품 상세 — 직접입력 조건부 Input + payload', () => {
+  /**
+   * 직접입력 칸은 고른 선택지가 직접입력을 허용할 때만 보입니다.
+   *
+   * @scenario surface=product_detail
+   * @effects custom_text_input_shown_only_for_allowing_choice
+   */
   it('선택된 선택지의 allow_custom_text 일 때만 Input 을 노출하는 조건부 가드가 있다', () => {
     expect(purchaseCard).toContain('allow_custom_text');
     // 조건부 Input if: find(...).allow_custom_text === true
     expect(purchaseCard).toContain('?.allow_custom_text === true');
   });
 
+  /**
+   * 직접입력 칸의 값이 추가옵션 선택 핸들러로 전달됩니다.
+   *
+   * @scenario surface=product_detail
+   * @effects custom_text_input_passes_value_to_handler
+   */
   it('직접입력 Input 변경 시 setBlockAdditionalOption 에 customText 를 전달한다', () => {
     expect(purchaseCard).toContain('"customText": "{{$event.target.value}}"');
   });
 
+  /**
+   * 장바구니 담기·바로구매 요청에 직접입력 값이 실립니다.
+   *
+   * @scenario surface=product_detail
+   * @effects cart_payload_carries_custom_text
+   */
   it('담기/바로구매 payload 에 custom_text 가 포함된다', () => {
     expect(purchaseCard).toContain('custom_text: item.additionalOptionCustomTexts');
   });
 
+  /**
+   * 직접입력을 비웠을 때 막는 가드는 필수 그룹에만 걸립니다(비필수는 빈값 허용).
+   *
+   * @scenario surface=product_detail
+   * @effects custom_text_required_only_for_required_group
+   */
   it('직접입력 미입력 차단 가드는 필수 그룹(is_required)에만 적용된다', () => {
     expect(purchaseCard).toContain('shop.additional_option_custom_text_required');
     // 가드 조건에 g.is_required && ... allow_custom_text 결합 (비필수 그룹은 빈값 허용)
     expect(purchaseCard).toContain('g.is_required && v?.allow_custom_text === true');
   });
 
+  /**
+   * 상품 상세의 직접입력 칸은 라벨과 테두리·배경으로 입력란임이 드러납니다.
+   *
+   * @scenario surface=product_detail
+   * @effects custom_text_input_is_visibly_an_input
+   */
   it('직접입력 칸은 라벨 + 입력란 테두리/배경 스타일로 명확히 구분된다', () => {
     // 입력란임을 알리는 라벨
     expect(purchaseCard).toContain('shop.additional_option_custom_text_label');
@@ -54,35 +84,72 @@ describe('상품 상세 — 직접입력 조건부 Input + payload', () => {
 });
 
 describe('장바구니 — custom_text 표시 + 모달 시드', () => {
+  /**
+   * 장바구니의 추가옵션 표시에 직접입력 값을 함께 보여 줍니다.
+   *
+   * @scenario surface=cart
+   * @effects cart_shows_custom_text
+   */
   it('장바구니 추가옵션 표시에 custom_text 를 병기한다', () => {
     expect(cartItem).toContain('addOpt.custom_text');
   });
 
+  /**
+   * 옵션변경 모달을 열 때 직접입력 값 맵을 넘겨 기존 값이 채워집니다.
+   *
+   * @scenario surface=cart
+   * @effects option_change_modal_seeded_with_custom_texts
+   */
   it('옵션변경 모달 시드에 additionalCustomTexts 맵을 전달한다', () => {
     expect(cartItem).toContain('additionalCustomTexts');
   });
 });
 
 describe('옵션변경 모달 — 직접입력 재선택 + PATCH', () => {
+  /**
+   * 옵션변경 모달에도 직접입력 허용 선택지에서만 입력란이 나옵니다.
+   *
+   * @scenario surface=option_change_modal
+   * @effects modal_custom_text_input_conditional
+   */
   it('모달에 직접입력 Input(allow_custom_text 조건)이 있다', () => {
     expect(optionChangeModal).toContain('allow_custom_text === true');
     expect(optionChangeModal).toContain('additional_option_custom_text_placeholder');
   });
 
+  /**
+   * 옵션변경 모달의 직접입력 칸도 라벨과 테두리·배경으로 구분됩니다.
+   *
+   * @scenario surface=option_change_modal
+   * @effects modal_custom_text_input_is_visibly_an_input
+   */
   it('모달 직접입력 칸도 라벨 + 테두리/배경 스타일로 명확히 구분된다', () => {
     expect(optionChangeModal).toContain('shop.additional_option_custom_text_label');
     expect(optionChangeModal).toContain('border border-gray-300');
   });
 
+  /**
+   * 옵션변경 저장 요청(PATCH)에 직접입력 값이 실립니다.
+   *
+   * @scenario surface=option_change_modal
+   * @effects option_change_patch_carries_custom_text
+   */
   it('PATCH body 에 custom_text 가 포함된다', () => {
     expect(optionChangeModal).toContain('custom_text: $parent._local.additionalCustomTexts');
   });
 });
 
 describe('마이페이지 주문리스트 — 추가옵션 요약', () => {
+  /**
+   * 마이페이지 주문 목록이 추가옵션 대표 라벨과 「외 N건」 을 다국어 키로 보여 줍니다.
+   *
+   * @scenario surface=mypage_order_list
+   * @effects order_list_shows_additional_option_summary
+   */
   it('additional_options_summary.label + "외 N건"(extra_count) 을 노출한다 (Q-E2)', () => {
     expect(mypageList).toContain('additional_options_summary?.label');
-    expect(mypageList).toContain('additional_options_summary.extra_count');
-    expect(mypageList).toContain('외 ');
+    expect(mypageList).toContain('additional_options_summary?.extra_count');
+    // 「외 N건」 문구는 하드코딩이 아니라 다국어 키로 그린다(건수는 치환 파라미터).
+    expect(mypageList).toContain('$t:mypage.orders.additional_options_more|count=');
   });
 });

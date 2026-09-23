@@ -122,14 +122,4 @@ class OrderReturnOptionRepository implements OrderReturnOptionRepositoryInterfac
             'updated_at' => now(),
         ]);
     }
-
-    /**
-     * {@inheritDoc}
-     */
-    public function deleteByReturnId(int $returnId): int
-    {
-        return $this->model->newQuery()
-            ->where('order_return_id', $returnId)
-            ->delete();
-    }
 }

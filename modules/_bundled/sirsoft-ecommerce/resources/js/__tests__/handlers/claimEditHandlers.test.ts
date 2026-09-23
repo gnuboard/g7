@@ -300,7 +300,7 @@ describe('클레임 수정 — 진입', () => {
     });
 
     /**
-     * 승인 이후의 신청서는 구매자가 수정 화면을 열지 못한다 (#599 T2-D7 · PO 결정 2026-09-23)
+     * 승인 이후의 신청서는 구매자가 수정 화면을 열지 못한다 (#599 T2-D7 · 운영 결정 2026-09-23)
      *
      * 서버는 승인 이후 수정을 422(`claim_not_editable`)로 막는다. 그런데 주소에 `/edit` 을 붙이면
      * 수정 폼이 그대로 열리고 [저장]도 활성이라, 구매자는 다 고쳐 쓴 뒤에야 거절을 받았다
@@ -324,7 +324,9 @@ describe('클레임 수정 — 진입', () => {
 
         expect(mockLocalState.claimEditSnapshot).toBeUndefined();
         expect(mockLocalState.claimEditMode).toBe(false);
-        expect(mockG7Core.toast.warning).toHaveBeenCalledWith('claim.edit.not_editable');
+        // 안내는 모듈 키(`sirsoft-ecommerce.user.claim_apply.edit_not_editable`)로 찾고, 번역이 없으면(이 목은
+        // 키를 그대로 돌려준다) 키 원문이 아니라 폴백 문구를 띄운다(#599 validate 2026-09-23).
+        expect(mockG7Core.toast.warning).toHaveBeenCalledWith(expect.stringContaining('승인 이후에는'));
         expect(mockG7Core.dispatch).toHaveBeenCalledWith({
             handler: 'navigate',
             params: { path: '/mypage/claims/EX20260901-0001' },
@@ -433,6 +435,41 @@ describe('클레임 수정 — 상품·첨부 옮기기', () => {
         expect(images).toHaveLength(1);
         expect(images[0].attached).toBe(true);
         expect(images[0].id).toBe(9);
+    });
+
+    /**
+     * @scenario claim_type=return, screen=edit, entry=detail
+     *
+     * @effects buyer_edit_cannot_remove_an_operator_uploaded_image
+     */
+    it('운영자가 올린 첨부는 지울 수 없는 줄로 옮긴다 (고객 업로드만 지운다)', () => {
+        const images = buildClaimEditImages({
+            images: [
+                { id: 1, original_name: 'mine.jpg', uploader_type: 'customer' },
+                { id: 2, original_name: 'admin.jpg', uploader_type: 'admin', uploader_type_label: '운영자' },
+                { id: 3, original_name: 'old.jpg', uploader_type: 'unknown' },
+            ],
+        });
+
+        expect(images.map((image) => image.removable)).toEqual([true, false, false]);
+        expect(images[1].uploader_type_label).toBe('운영자');
+    });
+
+    /**
+     * @scenario claim_type=return, screen=edit, entry=detail
+     *
+     * @effects buyer_edit_cannot_remove_an_operator_uploaded_image
+     */
+    it('지울 수 없는 첨부는 삭제 핸들러가 삭제 목록에 담지 않는다', async () => {
+        mockLocalState = {
+            claimImages: [{ id: 2, attached: true, removable: false }],
+            claimRemoveImageIds: [],
+        };
+
+        await removeClaimImageHandler({ params: { imageId: 2, imageDeleteBase: '/api/x' } } as any, {} as any);
+
+        expect(mockLocalState.claimImages).toHaveLength(1);
+        expect(mockLocalState.claimRemoveImageIds ?? []).toEqual([]);
     });
 });
 
@@ -764,7 +801,7 @@ describe('클레임 수정 — 저장', () => {
             success: true,
             data: {
                 requires_pg_payment: true,
-                pg_payment_handler: 'sirsoft-tosspayments.requestPayment',
+                pg_payment_handler: 'example-pg.requestPayment',
                 pg_payment_data: { order_number: 'CP20260901-0001' },
             },
         });
@@ -779,7 +816,7 @@ describe('클레임 수정 — 저장', () => {
 
         // 특정 PG 를 화면이 지목하지 않는다 — 서버가 준 핸들러 이름을 그대로 dispatch 한다.
         expect(mockG7Core.dispatch).toHaveBeenCalledWith({
-            handler: 'sirsoft-tosspayments.requestPayment',
+            handler: 'example-pg.requestPayment',
             params: { pgPaymentData: { order_number: 'CP20260901-0001' } },
         });
         // 결제창으로 가므로 목적지 이동은 하지 않는다 — 두 번 이동하면 결제창이 닫힌다.

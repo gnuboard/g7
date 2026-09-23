@@ -26,6 +26,8 @@ return [
     'settings' => [
         'key_required' => 'The settings key is required.',
         'value_present' => 'The settings value is required.',
+        'key_unknown' => 'The settings key cannot be saved: :key',
+        'key_server_managed' => 'This setting is recorded by the server and cannot be saved directly.',
     ],
 
     // Shipping carrier validation messages
@@ -2032,7 +2034,6 @@ return [
         ],
         'refund_method' => [
             'in' => 'The selected refund method is not available.',
-            'payment_mismatch' => 'This order can only be refunded via :expected. Other refund methods would not actually move the money.',
         ],
         // Completion modal preview (D26)
         'preview_claims' => [
@@ -2088,6 +2089,7 @@ return [
         'refund_bank' => [
             'array' => 'The refund account must be an object with bank, account number and holder.',
             'incomplete' => 'Please enter the bank, account number and account holder together.',
+            'masked' => 'A masked account number or holder cannot be saved. Please enter the refund account again.',
         ],
         'image' => [
             'required' => 'Please select an image to attach.',

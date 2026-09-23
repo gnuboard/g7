@@ -28,9 +28,11 @@ abstract class OrderAdjustment
     /**
      * 추가 비용을 반환합니다. (교환배송비, 반품배송비 등)
      *
-     * @return int
+     * 소수 자릿수 통화(기본 통화가 USD 등)의 회수비를 담을 수 있도록 `float` 도 받는다.
+     *
+     * @return int|float 추가 비용
      */
-    public function getAdditionalCharges(): int
+    public function getAdditionalCharges(): int|float
     {
         return 0;
     }

@@ -19,6 +19,8 @@
       <p data-if="{{!!_local.claimEditSnapshot?.refund_bank_account}}" class="text-sm text-gray-700 dark:text-gray-300">{{$t('claim.edit.refund_account_current')}} {{_local.claimEditSnapshot?.refund_bank_name ?? ''}} {{_local.claimEditSnapshot?.refund_bank_account ?? ''}} {{_local.claimEditSnapshot?.refund_bank_holder ?? ''}}</p>
       <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">$t:claim.edit.refund_account_hint</p>
     </div>
+    <!-- 가린 등록 계좌 안내 — 서버는 등록 계좌를 가린 모양(계좌 뒤 4자리 · 예금주 첫 글자)으로 채워 준다. 세 칸을 그대로 두면 서버가 원문으로 되돌리지만, 한 칸만 바꾸면 나머지 가린 칸이 별표째 저장된다. 그래서 세 칸은 한 핸들러(setClaimRefundAccountField)를 거쳐 한 칸을 고치는 순간 나머지 가린 칸을 비우고, 가린 값이 채워져 있는 동안 그 사실을 여기 알린다. -->
+    <p data-if="{{_local.claimRefundAccountMasked === true}}" class="text-xs text-gray-500 dark:text-gray-400 mb-3">$t:claim.apply.refund_account_masked_hint</p>
     <!-- 은행 / 계좌번호 2열 → 모바일 1열 (마크업 구조가 바뀌므로 responsive 속성을 쓴다) -->
     <div class="grid grid-cols-2 gap-3">
       <responsive on="portable" class="grid grid-cols-1 gap-3"/>
@@ -26,14 +28,14 @@
       <select value="{{_local.claimRefundBankCode ?? ''}}" options="{{[{ value: '', label: $t('claim.apply.refund_account_bank_select') }, ...(((_local.claimableSnapshot ?? claimable?.data)?.refund_account?.banks ?? []).map(b => ({ value: b.code, label: $localized(b.name) ?? b.code })))]}}" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
         <responsive on="portable" class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"/>
         <on type="change">
-          <set-state target="local" claimRefundBankCode="{{$event.target.value}}"/>
+          <action handler="sirsoft-ecommerce.setClaimRefundAccountField" field="bank_code" value="{{$event.target.value}}"/>
         </on>
       </select>
-      <!-- 계좌번호는 입력한 그대로 두었다가 제출 때 앞뒤 공백만 걷어 보낸다 — 하이픈 없이 쓰라는 것은 안내 문구일 뿐 화면이 걷어 내지 않는다. 금액과 무관해 바꿔도 미리보기를 다시 부르지 않는다. -->
+      <!-- 계좌번호는 입력한 그대로 두었다가 제출 때 앞뒤 공백만 걷어 보낸다 — 하이픈 없이 쓰라는 것은 안내 문구일 뿐 화면이 걷어 내지 않는다(숫자만 남기는 가공을 하지 않으므로 가린 값의 별표도 그대로 남는다). 금액과 무관해 바꿔도 미리보기를 다시 부르지 않는다. -->
       <input type="text" value="{{_local.claimRefundBankAccount ?? ''}}" placeholder="$t:claim.apply.refund_account_number_placeholder" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
         <responsive on="portable" class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"/>
         <on type="change">
-          <set-state target="local" claimRefundBankAccount="{{$event.target.value}}"/>
+          <action handler="sirsoft-ecommerce.setClaimRefundAccountField" field="account_number" value="{{$event.target.value}}"/>
         </on>
       </input>
     </div>
@@ -41,7 +43,7 @@
     <input type="text" value="{{_local.claimRefundBankHolder ?? ''}}" placeholder="$t:claim.apply.refund_account_holder_placeholder" class="w-full mt-3 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
       <responsive on="portable" class="w-full mt-3 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"/>
       <on type="change">
-        <set-state target="local" claimRefundBankHolder="{{$event.target.value}}"/>
+        <action handler="sirsoft-ecommerce.setClaimRefundAccountField" field="holder" value="{{$event.target.value}}"/>
       </on>
     </input>
     <!-- 세 필드가 함께 와야 한다는 규칙은 서버가 정한다 — 하나만 오면 계좌 없는 무통장 환불이 승인된다. 화면은 그 규칙을 미리 알려 제출 전에 채울 수 있게 한다. -->

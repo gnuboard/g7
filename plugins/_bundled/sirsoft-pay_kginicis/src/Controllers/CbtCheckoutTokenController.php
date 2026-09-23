@@ -2,11 +2,14 @@
 
 declare(strict_types=1);
 
+// audit:allow api-doc-coverage reason: 클레임 결제 Repository 를 서비스 로케이터 대신 생성자로 주입하고 private 메서드 PHPDoc 을 채운 내부 수정이다. 라우트·요청 파라미터·응답 구조는 불변이라 API 문서에 반영할 표면 변화가 없다(`api:docgen --scope=plugin:sirsoft-pay_kginicis --check` drift 없음).
+
 namespace Plugins\Sirsoft\PayKginicis\Controllers;
 
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\RateLimiter;
 use Modules\Sirsoft\Ecommerce\Models\ClaimPayment;
+use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ClaimPaymentRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Services\OrderProcessingService;
 use Plugins\Sirsoft\PayKginicis\Concerns\HandlesCbtClaimPayments;
 use Plugins\Sirsoft\PayKginicis\Concerns\HandlesClaimPaymentCallbacks;
@@ -21,10 +24,17 @@ class CbtCheckoutTokenController
     use HandlesClaimPaymentCallbacks;
     use ValidatesCbtOrderContext;
 
+    /**
+     * @param  KgInicisApiService  $apiService  KG 이니시스 API 서비스
+     * @param  OrderProcessingService  $orderService  주문 결제 처리 서비스
+     * @param  CbtCheckoutTokenService  $checkoutTokenService  CBT 체크아웃 토큰 서비스
+     * @param  ClaimPaymentRepositoryInterface  $claimPaymentRepository  클레임 결제 Repository
+     */
     public function __construct(
         private readonly KgInicisApiService $apiService,
         private readonly OrderProcessingService $orderService,
         private readonly CbtCheckoutTokenService $checkoutTokenService,
+        private readonly ClaimPaymentRepositoryInterface $claimPaymentRepository,
     ) {}
 
     /**

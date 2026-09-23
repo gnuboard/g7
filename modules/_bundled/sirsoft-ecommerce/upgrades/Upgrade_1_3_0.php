@@ -12,7 +12,7 @@ use App\Extension\AbstractUpgradeStep;
  * 동기화는 ModuleManager 가 담당하므로 여기서는 데이터 전환만 다룬다:
  *
  *   1. 기존 환불 이력의 발생 출처를 polymorphic 축(refund_source_*)으로 백필
- *   2. 교환/반품 사유 카탈로그 시드
+ *   2. 교환/반품 사유 카탈로그 시드 + 운영자·시스템 발 환불 사유 2종(`admin_cancel`·`auto_cancel_expired`) 보장
  *   3. claim 설정 카테고리 기본값 병합 (즉시취소 상태는 기존 값 승계)
  *   4. 배송지 스냅샷이 빈 구형 주문(1.0.0-beta.5 이전)의 배송지 백필
  *   5. 클레임 채번 시퀀스 3종(교환·반품·클레임 추가결제) 시드

@@ -680,8 +680,8 @@ server.tool(
         id: 'spa-local-leak',
         name: 'SPA 이동 후 이전 페이지 _local 잔존',
         keywords: ['페이지 전환', '페이지 이동', '다른 목록', '이전 페이지', '컬럼이 사라', '목록이 깨', '체크박스만', '잔존', '유출', 'visibleColumns', 'SPA'],
-        solution: 'g7-state 로 _local 을 읽어 현재 레이아웃 state 에 없는 키(이전 화면 전용 키)가 있는지 본다. 있으면 보존(_fromBase) 컴포넌트의 저장소 A 가 새 페이지 첫 렌더에 병합된 뒤 자식 마운트 콜백(ColumnSelector·FilterVisibilitySelector init)이 되쓴 경로다 — 엔진 engine-v1.66.2 이상인지, 렌더 단계 초기화(appliedLayoutKey)가 살아 있는지 확인. 시크릿 창(목록 컬럼 저장값 없음)에서 재현한다',
-        doc: 'troubleshooting-state-closure.md#사례-4-spa-이동-시-보존된-base-루트의-stale-저장소-a-가-첫-렌더에-병합되어-마운트-콜백이-이전-페이지-값을-되쓴다-engine-v1662',
+        solution: 'g7-state 로 _local 을 읽어 현재 레이아웃 state 에 없는 키(이전 화면 전용 키)가 있는지 본다. 있으면 보존(_fromBase) 컴포넌트의 저장소 A 가 새 페이지 첫 렌더에 병합된 뒤 자식 마운트 콜백(ColumnSelector·FilterVisibilitySelector init)이 되쓴 경로다 — 엔진 engine-v1.71.1 이상인지, 렌더 단계 초기화(appliedLayoutKey)가 살아 있는지 확인. 시크릿 창(목록 컬럼 저장값 없음)에서 재현한다',
+        doc: 'troubleshooting-state-closure.md#사례-4-spa-이동-시-보존된-base-루트의-stale-저장소-a-가-첫-렌더에-병합되어-마운트-콜백이-이전-페이지-값을-되쓴다-engine-v1711',
         example: '// g7-state _local → 쿠폰 목록인데 bulkCourier·ordererSearchResults(주문 목록 키) 잔존, visibleColumns 가 주문 컬럼\n// → DynamicRenderer.tsx isBaseLayoutSwitch(렌더 단계 초기화) 확인',
       },
       {

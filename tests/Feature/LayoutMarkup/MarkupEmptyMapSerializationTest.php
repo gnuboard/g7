@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\LayoutMarkup;
 
+use App\Extension\Traits\ValidatesLayoutFiles;
 use App\Support\LayoutMarkup\EmptyMap;
 use App\Support\LayoutMarkup\LayoutCorpus;
 use App\Support\LayoutMarkup\LayoutJsonWriter;
@@ -81,7 +82,7 @@ class MarkupEmptyMapSerializationTest extends TestCase
      * 축 ③ **설치 경로** — `.json` 을 그대로 설치할 때도 빈 map 이 살아남아야 한다.
      *
      * 축 ①은 마크업에서 구운 산출의 직렬화를 잠그지만, 설치는 `.g7.html` 을 거치지 않고 짝
-     * `.json` 을 **직접 읽는 경로**가 따로 있다({@see \App\Extension\Traits\ValidatesLayoutFiles}).
+     * `.json` 을 **직접 읽는 경로**가 따로 있다({@see ValidatesLayoutFiles}).
      * 그쪽이 `json_decode($s, true)` 를 쓰면 `{}` 와 `[]` 가 둘 다 빈 PHP 배열이 되고, 설치본은
      * 그 배열을 `content`(cast `array`)에 담아 다시 인코딩하므로 파일의 `{}` 가 DB 에서 `[]` 로
      * 굳는다. 두 경로가 같은 계약을 지어야 어느 쪽으로 설치하든 산출이 같다.
@@ -99,7 +100,7 @@ class MarkupEmptyMapSerializationTest extends TestCase
     {
         $probe = new class
         {
-            use \App\Extension\Traits\ValidatesLayoutFiles;
+            use ValidatesLayoutFiles;
 
             /**
              * 트레이트의 디코드 계약만 외부에 연다.
@@ -186,7 +187,6 @@ class MarkupEmptyMapSerializationTest extends TestCase
      * @param  string  $path  현재 경로
      * @param  string  $relative  파일 상대 경로
      * @param  array<int, string>  $offenders  누적 위반 목록 (참조)
-     *
      * @return void 반환값 없음
      */
     private function collectEmptyServerBoundMaps(object|array $node, string $path, string $relative, array &$offenders): void

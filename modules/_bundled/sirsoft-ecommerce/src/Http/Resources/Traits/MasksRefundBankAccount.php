@@ -4,20 +4,36 @@ namespace Modules\Sirsoft\Ecommerce\Http\Resources\Traits;
 
 use App\Enums\PermissionType;
 use Illuminate\Support\Facades\Auth;
+use Modules\Sirsoft\Ecommerce\Support\RefundBankMask;
 
 /**
- * 환불 계좌 마스킹 (표시 계층 단일 출처)
+ * 환불 계좌 마스킹 (표시 계층)
  *
  * 환불 계좌는 평문으로 저장된다. 그래서 마스킹 책임이 표시 계층에 있고, 같은 컬럼을 내보내는
  * 리소스가 둘 이상이면 한쪽만 가려도 다른 쪽이 그대로 우회로가 된다 — 실제로 클레임 응답은
  * 가리고 주문 결제 응답은 평문이라, 같은 비회원 토큰으로 주문상세를 열면 마스킹이 무력화됐다.
- * 규칙을 이 트레이트 한 곳에 두고 두 리소스가 함께 쓴다.
+ * 가리는 모양은 `RefundBankMask` 한 곳이 정하고 두 리소스가 이 트레이트로 함께 쓴다.
  *
- * 운영자(주문 관리 권한 보유)는 원문을 본다 — 취소 모달이 이 값을 프리필하고 PG 환불이 같은
- * 컬럼을 읽으므로, 가리면 환불 실행 자체가 막힌다.
+ * 원문은 **운영자**가 본다 — 주문 관리 권한 또는 클레임 관리 권한(`claims.*`) 가운데 하나다.
+ * 취소 모달이 이 값을 프리필하고 계좌 환불 실행([환불하기])이 같은 컬럼으로 송금하므로, 환불
+ * 실행만 맡은 역할(`claims.execute-refund`)이 가린 계좌만 보면 어디로 보낼지 알 수 없다.
+ * 스코프 판정(그 신청서·주문을 볼 수 있는가)은 이 값을 싣기 전에 라우트·가드가 이미 끝냈다.
  */
 trait MasksRefundBankAccount
 {
+    /**
+     * 환불 계좌 원문을 볼 수 있는 관리자 권한 (하나라도 있으면 원문)
+     *
+     * @var array<int, string>
+     */
+    protected static array $rawRefundBankPermissions = [
+        'sirsoft-ecommerce.orders.read',
+        'sirsoft-ecommerce.claims.read',
+        'sirsoft-ecommerce.claims.update-status',
+        'sirsoft-ecommerce.claims.update-amounts',
+        'sirsoft-ecommerce.claims.execute-refund',
+    ];
+
     /**
      * 열람자가 환불 계좌 원문을 볼 자격이 있는지 판정합니다.
      *
@@ -26,7 +42,7 @@ trait MasksRefundBankAccount
     protected function canSeeRawRefundBank(): bool
     {
         return Auth::check()
-            && Auth::user()->hasPermission('sirsoft-ecommerce.orders.read', PermissionType::Admin);
+            && Auth::user()->hasPermissions(static::$rawRefundBankPermissions, false, PermissionType::Admin);
     }
 
     /**
@@ -41,9 +57,7 @@ trait MasksRefundBankAccount
             return $account === '' ? null : $account;
         }
 
-        $length = mb_strlen($account);
-
-        return $length <= 4 ? $account : str_repeat('*', $length - 4).mb_substr($account, -4);
+        return RefundBankMask::account($account);
     }
 
     /**
@@ -60,8 +74,6 @@ trait MasksRefundBankAccount
             return $holder === '' ? null : $holder;
         }
 
-        $length = mb_strlen($holder);
-
-        return $length <= 1 ? $holder : mb_substr($holder, 0, 1).str_repeat('*', $length - 1);
+        return RefundBankMask::holder($holder);
     }
 }

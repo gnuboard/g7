@@ -498,7 +498,7 @@
                     ]
                 },
                 {
-                    "comment": "총 청구액 — 취소·환불은 회수 배송이 없어 청구가 발생하지 않으므로 그리지 않는다(§6-3). 형제 줄(청구 2축·환불 예정액)과 같은 유형 가드다 — 이 줄만 가드가 없으면 취소 신청서에 '총 청구액 0원' 이 선다.\n           '환불금에서 차감'(`deduct_from_refund`)도 그리지 않는다 — 그 방식은 회수비를 환불액에서 이미 뺐으므로 따로 낼 돈이 없는데, 바로 위 '회수 배송비 차감 −3,000원' 아래에 '총 청구액 3,000원' 이 서면 같은 3,000원을 두 번 내는 것으로 읽힌다(2026-09-21 세션B 실측 S-B-D6 · PO 확정 「감추기」). 차감액은 위 세 줄(환불 예정액 / 차감 / 최종 환불액)이 이미 말한다.",
+                    "comment": "총 청구액 — 취소·환불은 회수 배송이 없어 청구가 발생하지 않으므로 그리지 않는다(§6-3). 형제 줄(청구 2축·환불 예정액)과 같은 유형 가드다 — 이 줄만 가드가 없으면 취소 신청서에 '총 청구액 0원' 이 선다.\n           '환불금에서 차감'(`deduct_from_refund`)도 그리지 않는다 — 그 방식은 회수비를 환불액에서 이미 뺐으므로 따로 낼 돈이 없는데, 바로 위 '회수 배송비 차감 −3,000원' 아래에 '총 청구액 3,000원' 이 서면 같은 3,000원을 두 번 내는 것으로 읽힌다(2026-09-21 세션B 실측 S-B-D6 · 운영 결정 「감추기」). 차감액은 위 세 줄(환불 예정액 / 차감 / 최종 환불액)이 이미 말한다.",
                     "type": "basic",
                     "name": "Div",
                     "if": "{{_local.claimType !== 'refund' && (_local.claimEstimate?.charge_method ?? _local.claimChargeMethod) !== 'deduct_from_refund'}}",
@@ -641,7 +641,7 @@
                                         "name": "claimRefundPriority",
                                         "value": "pg_first",
                                         "checked": "{{(_local.claimRefundPriority ?? 'pg_first') === 'pg_first'}}",
-                                        "className": "text-blue-600"
+                                        "className": "text-blue-600 dark:text-blue-500"
                                     }
                                 },
                                 {
@@ -681,7 +681,7 @@
                                         "name": "claimRefundPriority",
                                         "value": "points_first",
                                         "checked": "{{(_local.claimRefundPriority ?? 'pg_first') === 'points_first'}}",
-                                        "className": "text-blue-600"
+                                        "className": "text-blue-600 dark:text-blue-500"
                                     }
                                 },
                                 {
@@ -725,12 +725,9 @@
                     "text": "$t:claim.apply.charge_method_title"
                 },
                 {
+                    "comment": "라디오 사이 간격은 부모가 준다 — 반복 노드(라벨)는 자기 자신이 복제되므로 그 노드의 space-y 는 형제 사이에 걸리지 않는다.",
                     "type": "basic",
                     "name": "Div",
-                    "iteration": {
-                        "source": "{{(_local.claimableSnapshot ?? claimable?.data)?.settings?.allowed_charge_methods ?? []}}",
-                        "item_var": "chargeMethod"
-                    },
                     "props": {
                         "className": "space-y-1"
                     },
@@ -738,6 +735,10 @@
                         {
                             "type": "basic",
                             "name": "Label",
+                            "iteration": {
+                                "source": "{{(_local.claimableSnapshot ?? claimable?.data)?.settings?.allowed_charge_methods ?? []}}",
+                                "item_var": "chargeMethod"
+                            },
                             "props": {
                                 "className": "flex items-center gap-2 p-2 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700"
                             },
@@ -763,7 +764,7 @@
                                         "value": "{{chargeMethod}}",
                                         "checked": "{{_local.claimChargeMethod === chargeMethod}}",
                                         "disabled": "{{chargeMethod === 'deduct_from_refund' && (_local.claimType === 'exchange' ? (_local.claimEstimate?.refund_product_amount ?? 0) <= 0 : (_local.claimEstimate?.refund_before_deduction ?? _local.claimEstimate?.adjustment?.refund_total ?? 0) <= 0)}}",
-                                        "className": "text-blue-600 disabled:opacity-50"
+                                        "className": "text-blue-600 dark:text-blue-500 disabled:opacity-50"
                                     }
                                 },
                                 {
@@ -791,7 +792,7 @@
             "text": "{{_local.claimFieldErrors?.charge_method ?? ''}}"
         },
         {
-            "comment": "축2 결제 수단 — '환불금에서 차감' 을 고르면 낼 돈이 없어 이 칸이 쓰이지 않으므로 **감춘다**(2026-09-21 세션B 실측 S-B-D6 · PO 확정). 종전에는 회색 + disabled 로 남겼으나, 비활성이어도 칸이 서 있으면 '카드로 결제해야 하나' 로 읽힌다.",
+            "comment": "축2 결제 수단 — '환불금에서 차감' 을 고르면 낼 돈이 없어 이 칸이 쓰이지 않으므로 **감춘다**(2026-09-21 세션B 실측 S-B-D6 · 운영 결정). 종전에는 회색 + disabled 로 남겼으나, 비활성이어도 칸이 서 있으면 '카드로 결제해야 하나' 로 읽힌다.",
             "type": "basic",
             "name": "Div",
             "if": "{{_local.claimEditMode !== true && _local.claimType !== 'refund' && (_local.claimEstimate?.charge_method ?? _local.claimChargeMethod) !== 'deduct_from_refund' && ((_local.claimableSnapshot ?? claimable?.data)?.settings?.charge_payment_methods ?? []).length > 0}}",
@@ -809,12 +810,9 @@
                     "text": "$t:claim.apply.payment_method_title"
                 },
                 {
+                    "comment": "라디오 사이 간격은 부모가 준다(축1과 같은 규칙).",
                     "type": "basic",
                     "name": "Div",
-                    "iteration": {
-                        "source": "{{(_local.claimableSnapshot ?? claimable?.data)?.settings?.charge_payment_methods ?? []}}",
-                        "item_var": "chargePaymentMethod"
-                    },
                     "props": {
                         "className": "space-y-1"
                     },
@@ -822,6 +820,10 @@
                         {
                             "type": "basic",
                             "name": "Label",
+                            "iteration": {
+                                "source": "{{(_local.claimableSnapshot ?? claimable?.data)?.settings?.charge_payment_methods ?? []}}",
+                                "item_var": "chargePaymentMethod"
+                            },
                             "props": {
                                 "className": "flex items-center gap-2 p-2 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700"
                             },
@@ -845,7 +847,7 @@
                                         "value": "{{chargePaymentMethod}}",
                                         "checked": "{{_local.claimPaymentMethod === chargePaymentMethod}}",
                                         "disabled": "{{_local.claimChargeMethod === 'deduct_from_refund'}}",
-                                        "className": "text-blue-600 disabled:opacity-50"
+                                        "className": "text-blue-600 dark:text-blue-500 disabled:opacity-50"
                                     }
                                 },
                                 {
@@ -965,10 +967,10 @@
             ]
         },
         {
-            "comment": "환불 계좌 미입력 안내 (T2-D5 · #599 3차 실측 L-8) — 계좌로 돈이 돌아가는 주문인데 계좌가 비면 제출을 막고 그 이유를 버튼 위에 남긴다. 막기만 하면 구매자는 버튼이 왜 회색인지 알 수 없다. 판정은 계좌 카드가 서는 조건과 **같은 값**을 쓴다((claimableSnapshot ?? claimable).refund_account.required + 교환은 돌려줄 돈이 있을 때만) — 다른 값을 쓰면 칸은 없는데 버튼만 잠기거나 그 반대가 되고, 둘 다 오류를 남기지 않는다. 서버도 같은 규칙으로 422 를 낸다(StoreRefundRequestRequest::requiresRefundBank).",
+            "comment": "환불 계좌 미입력 안내 (T2-D5 · #599 3차 실측 L-8) — 계좌로 돈이 돌아가는 주문인데 계좌가 비면 제출을 막고 그 이유를 버튼 위에 남긴다. 막기만 하면 구매자는 버튼이 왜 회색인지 알 수 없다. 판정은 계좌 카드가 서는 조건과 **같은 값**을 쓴다((claimableSnapshot ?? claimable).refund_account.required + 교환은 돌려줄 돈이 있을 때만) — 다른 값을 쓰면 칸은 없는데 버튼만 잠기거나 그 반대가 되고, 둘 다 오류를 남기지 않는다. 서버도 같은 규칙으로 422 를 낸다(StoreRefundRequestRequest::requiresRefundBank). 수정 화면에는 세우지 않는다 — 그 화면은 계좌 칸을 빈 채로 열고 「비워 두면 그대로 둔다」 고 안내하며, [저장]도 계좌를 요구하지 않는다.",
             "type": "basic",
             "name": "Div",
-            "if": "{{(((_local.claimableSnapshot ?? claimable?.data)?.refund_account?.required === true) && (_local.claimType !== 'exchange' || (_local.claimEstimate?.refund_product_amount ?? 0) > 0) && !((_local.claimRefundBankCode ?? '').trim() && (_local.claimRefundBankAccount ?? '').trim() && (_local.claimRefundBankHolder ?? '').trim()))}}",
+            "if": "{{_local.claimEditMode !== true && (((_local.claimableSnapshot ?? claimable?.data)?.refund_account?.required === true) && (_local.claimType !== 'exchange' || (_local.claimEstimate?.refund_product_amount ?? 0) > 0) && !((_local.claimRefundBankCode ?? '').trim() && (_local.claimRefundBankAccount ?? '').trim() && (_local.claimRefundBankHolder ?? '').trim()))}}",
             "props": {
                 "className": "p-3 rounded-lg bg-amber-50 dark:bg-yellow-900/20 border border-amber-200 dark:border-yellow-800"
             },
@@ -1017,10 +1019,17 @@
                     }
                 },
                 {
-                    "comment": "실행 버튼의 라벨은 **지금 결제창이 뜨는가**를 말한다. 서버의 `requires_payment` 는 `ClaimChargeMethodEnum::requiresPayment()` = '상계가 아니다' 라는 도메인 뜻이라 `신청 시 결제`와 `승인 후 결제`를 구분하지 않는다 — 그 값만 보면 승인 후 결제에서도 'N원 결제하기' 로 예고하는데 실제로는 접수만 되고 결제창이 뜨지 않는다(S17 트랙 A F-6). 결제 시점 축(`charge_method`)을 함께 본다. 결제 시점의 정본은 미리보기 응답의 `charge_method` 이고, 응답이 아직 없으면 사용자가 고른 값으로 떨어진다.",
+                    "comment": "실행 버튼의 라벨은 **지금 결제창이 뜨는가**를 말한다. 서버의 `requires_payment` 는 `ClaimChargeMethodEnum::requiresPayment()` = '상계가 아니다' 라는 도메인 뜻이라 `신청 시 결제`와 `승인 후 결제`를 구분하지 않는다 — 그 값만 보면 승인 후 결제에서도 'N원 결제하기' 로 예고하는데 실제로는 접수만 되고 결제창이 뜨지 않는다(S17 트랙 A F-6). 결제 시점 축(`charge_method`)을 함께 본다. 결제 시점의 정본은 미리보기 응답의 `charge_method` 이고, 응답이 아직 없으면 사용자가 고른 값으로 떨어진다.\n           결제창이 뜨는 경우의 라벨은 금액을 **번역문의 파라미터**로 넘긴다 — 금액을 번역문 밖에서 이어 붙이면 어순이 언어마다 틀린다(`9,000원 Pay now`). 표현식 안의 $t() 는 파라미터를 받지 않아 그 경우만 따로 그린다.",
                     "type": "basic",
                     "name": "Span",
-                    "text": "{{_local.isSubmittingClaim === true ? $t('common.processing') : (_local.claimType === 'refund' ? ((_local.claimResolvedBranch ?? (_local.claimableSnapshot ?? claimable?.data)?.resolved_type) === 'auto' ? $t('claim.apply.submit_cancel') : $t('claim.apply.submit_refund')) : (_local.claimEstimate?.requires_payment === true && (_local.claimEstimate?.charge_method ?? _local.claimChargeMethod) === 'pay_on_request' ? (_local.claimEstimateFormatted?.total_charge_amount ?? '') + ' ' + $t('claim.apply.submit_with_payment') : $t('claim.apply.submit')))}}"
+                    "if": "{{_local.isSubmittingClaim !== true && _local.claimType !== 'refund' && _local.claimEstimate?.requires_payment === true && (_local.claimEstimate?.charge_method ?? _local.claimChargeMethod) === 'pay_on_request'}}",
+                    "text": "$t:claim.apply.submit_with_payment|amount={{_local.claimEstimateFormatted?.total_charge_amount ?? ''}}"
+                },
+                {
+                    "type": "basic",
+                    "name": "Span",
+                    "if": "{{!(_local.isSubmittingClaim !== true && _local.claimType !== 'refund' && _local.claimEstimate?.requires_payment === true && (_local.claimEstimate?.charge_method ?? _local.claimChargeMethod) === 'pay_on_request')}}",
+                    "text": "{{_local.isSubmittingClaim === true ? $t('common.processing') : (_local.claimType === 'refund' ? ((_local.claimResolvedBranch ?? (_local.claimableSnapshot ?? claimable?.data)?.resolved_type) === 'auto' ? $t('claim.apply.submit_cancel') : $t('claim.apply.submit_refund')) : $t('claim.apply.submit'))}}"
                 }
             ]
         },

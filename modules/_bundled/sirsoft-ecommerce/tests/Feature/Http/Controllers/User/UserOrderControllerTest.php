@@ -1397,7 +1397,7 @@ class UserOrderControllerTest extends ModuleTestCase
     /**
      * 주문서에서 저장된 배송지를 고른 뒤 그 자리에서 고쳤으면 그 행을 갱신한다.
      *
-     * 새 행이 쌓이면 다음 주문서도 옛 주소로 열려 같은 손질을 매번 반복하게 된다(2026-09-21 PO 요청).
+     * 새 행이 쌓이면 다음 주문서도 옛 주소로 열려 같은 손질을 매번 반복하게 된다(2026-09-21 요구사항).
      *
      * @return void 반환값 없음
      *
@@ -1454,7 +1454,7 @@ class UserOrderControllerTest extends ModuleTestCase
      *
      * @return void 반환값 없음
      */
-    public function test_남의_배송지_ID_로는_아무_것도_바뀌지_않는다(): void
+    public function test_남의_배송지_i_d_로는_아무_것도_바뀌지_않는다(): void
     {
         $user = $this->createUser();
         $other = $this->createUser();
@@ -1494,7 +1494,7 @@ class UserOrderControllerTest extends ModuleTestCase
      *
      * @return void 반환값 없음
      */
-    public function test_p_g_결제는_갱신_대상_배송지_ID_도_order_meta_에_남긴다(): void
+    public function test_p_g_결제는_갱신_대상_배송지_i_d_도_order_meta_에_남긴다(): void
     {
         $this->registerDefaultPgProvider('tosspayments');
 

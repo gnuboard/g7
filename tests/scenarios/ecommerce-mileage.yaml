@@ -79,6 +79,10 @@ effects:
   - cache_available_matches_ledger_sum_definition
   - extend_lot_expiry_revives_expired_lot_and_recalculates_cache  # §6.1 표8
   - cache_is_display_only_money_paths_use_ledger_for_update  # drift 무해
+  # 원장 저장소 원자성 (MileageTransactionRepositoryTest) — 낡은 스냅샷으로 커밋된 값을 덮지 않는다
+  - lot_decrement_applies_to_the_committed_value
+  - lot_increment_applies_to_the_committed_value_and_refreshes_the_model
+  - earn_lot_lookup_for_update_returns_the_same_row
   # 관리자 수동
   - admin_earn_issues_lot_with_granted_by_and_memo_and_policy_or_direct_or_unlimited_expiry
   - admin_deduct_consumes_fifo_and_rejects_when_exceeds_balance_with_422
@@ -220,6 +224,8 @@ test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Console/MileageCommandsTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Admin/MileageTransactionControllerTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/User/UserMileageControllerTest.php
+  # 원장 저장소 — 잔액 합산·FIFO 순서·적립/복원 멱등 판정·lot 원자 갱신의 근거 계층
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Repositories/MileageTransactionRepositoryTest.php
   # 부분취소 재안분 회귀 (§6.3) — 기존 파일에 회귀 테스트 추가
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/OrderAdjustmentServiceTest.php
   # 적립률 패치 (§6.2)

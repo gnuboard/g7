@@ -85,6 +85,7 @@ effects:
   # ⑤ 요청 빈도 제한
   - guest_claim_routes_carry_a_request_rate_limit
   - guest_claim_image_upload_is_bounded_more_tightly
+  - guest_cannot_delete_an_attached_image_through_the_pending_route  # C3 — 토큰 경로도 붙은 증빙을 못 지운다
   # 서버가 거절하는 수단은 화면에도 서지 않는다
   - guest_claim_options_hide_the_payment_method_the_server_refuses
   # 토큰 처분 — 없거나 만료된 진입

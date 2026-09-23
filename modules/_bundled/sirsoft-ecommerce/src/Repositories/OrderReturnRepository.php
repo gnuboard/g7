@@ -146,6 +146,30 @@ class OrderReturnRepository implements OrderReturnRepositoryInterface
     /**
      * {@inheritDoc}
      */
+    public function sumActiveQuantitiesByOrderOptions(array $orderOptionIds): array
+    {
+        if ($orderOptionIds === []) {
+            return [];
+        }
+
+        $finalValues = array_map(
+            fn (ReturnStatusEnum $status) => $status->value,
+            ReturnStatusEnum::finalStatuses(),
+        );
+
+        return OrderReturnOption::query()
+            ->whereIn('order_option_id', array_values(array_unique(array_map('intval', $orderOptionIds))))
+            ->whereNotIn('option_status', $finalValues)
+            ->groupBy('order_option_id')
+            ->selectRaw('order_option_id, SUM(return_quantity) as locked')
+            ->pluck('locked', 'order_option_id')
+            ->map(fn ($locked) => (int) $locked)
+            ->all();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     public function countByReasonCode(string $reasonCode): int
     {
         return $this->model->newQuery()

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Plugins\Sirsoft\PayKginicis\Tests\Unit\Upgrades;
 
 use App\Extension\UpgradeContext;
-use App\Upgrades\Data\Ext\Plugins\SirsoftPayKginicis\V1_1_3\Migrations\DropLegacyPaymentPanelOverlay;
+use App\Upgrades\Data\Ext\Plugins\SirsoftPayKginicis\V1_2_0\Migrations\DropLegacyPaymentPanelOverlay;
 use Illuminate\Support\Facades\DB;
 use Plugins\Sirsoft\PayKginicis\Tests\PluginTestCase;
 
@@ -51,17 +51,31 @@ class DropLegacyPaymentPanelOverlayTest extends PluginTestCase
      */
     private int $templateId;
 
+    /**
+     * 업그레이드 데이터 마이그레이션을 불러오고 이 템플릿의 확장 등록 행을 비웁니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
 
         // DataMigration 은 AbstractUpgradeStep 이 동적으로 require 하므로 일반 autoload 대상이 아니다.
-        require_once base_path('plugins/_bundled/sirsoft-pay_kginicis/upgrades/data/1.1.3/migrations/DropLegacyPaymentPanelOverlay.php');
+        require_once base_path('plugins/_bundled/sirsoft-pay_kginicis/upgrades/data/1.2.0/migrations/DropLegacyPaymentPanelOverlay.php');
 
         $this->templateId = $this->ensureTemplate();
         DB::table(self::TABLE)->where('template_id', $this->templateId)->delete();
     }
 
+    /**
+     * 자기 플러그인이 남긴 구 overlay 행만 지우고 다른 확장·다른 대상·확장 슬롯 행은 남긴다.
+     *
+     * @scenario scope=own_rows
+     *
+     * @effects legacy_overlay_rows_of_this_plugin_only_are_removed
+     *
+     * @return void 반환값 없음
+     */
     public function test_자기_플러그인이_남긴_구_overlay_행만_지운다(): void
     {
         $mine = $this->seedRow('overlay', self::LEGACY_TARGET, self::SELF);
@@ -81,6 +95,15 @@ class DropLegacyPaymentPanelOverlayTest extends PluginTestCase
         $this->assertSame(1, $this->countById($extensionPoint), '확장점 등록 행까지 지웠다 — extension_type 스코프가 없다');
     }
 
+    /**
+     * 두 번 실행해도 결과가 같다(멱등).
+     *
+     * @scenario scope=rerun
+     *
+     * @effects legacy_overlay_drop_is_idempotent
+     *
+     * @return void 반환값 없음
+     */
     public function test_두_번_실행해도_안전하다(): void
     {
         $mine = $this->seedRow('overlay', self::LEGACY_TARGET, self::SELF);
@@ -95,6 +118,15 @@ class DropLegacyPaymentPanelOverlayTest extends PluginTestCase
         $this->assertSame(1, $this->countById($survivor), '재실행이 남의 행을 건드렸다');
     }
 
+    /**
+     * 지울 행이 없어도 예외 없이 끝난다.
+     *
+     * @scenario scope=no_rows
+     *
+     * @effects legacy_overlay_drop_is_safe_without_rows
+     *
+     * @return void 반환값 없음
+     */
     public function test_지울_행이_없어도_안전하다(): void
     {
         $survivor = $this->seedRow('overlay', self::LEGACY_TARGET, 'sirsoft-other_plugin');
@@ -106,14 +138,16 @@ class DropLegacyPaymentPanelOverlayTest extends PluginTestCase
     }
 
     /**
-     * 마이그레이션을 실행합니다.
+     * 마이그레이션을 실행합니다. (공개판 1.1.3 에서 올리는 경로)
+     *
+     * @return void 반환값 없음
      */
     private function runMigration(): void
     {
         (new DropLegacyPaymentPanelOverlay)->run(new UpgradeContext(
-            fromVersion: '1.1.2',
-            toVersion: '1.1.3',
-            currentStep: '1.1.3',
+            fromVersion: '1.1.3',
+            toVersion: '1.2.0',
+            currentStep: '1.2.0',
         ));
     }
 

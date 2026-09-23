@@ -46,7 +46,13 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 class ClaimRepositoriesTest extends ModuleTestCase
 {
     /**
+     * 클레임 저장소 인터페이스 7종이 컨테이너에서 모두 해당 계약의 구현체로 해석되는지 확인한다.
+     *
+     * @scenario area=binding
+     *
      * @effects all_claim_repository_interfaces_are_bound
+     *
+     * @return void 반환값 없음
      */
     public function test_all_claim_repository_interfaces_are_bound(): void
     {
@@ -70,7 +76,13 @@ class ClaimRepositoriesTest extends ModuleTestCase
     // ========================================
 
     /**
+     * 교환 저장소가 생성·ID/번호 조회·수정을 지원하고, 없는 교환번호는 null 을 돌려주는지 확인한다.
+     *
+     * @scenario area=exchange
+     *
      * @effects exchange_repository_crud_and_lookup
+     *
+     * @return void 반환값 없음
      */
     public function test_exchange_repository_crud_and_lookup(): void
     {
@@ -90,7 +102,13 @@ class ClaimRepositoriesTest extends ModuleTestCase
     }
 
     /**
+     * 주문별 교환 목록이 다른 주문의 신청서를 섞지 않고 최신 신청이 먼저 오도록 정렬되는지 확인한다.
+     *
+     * @scenario area=exchange
+     *
      * @effects exchange_repository_lists_by_order_newest_first
+     *
+     * @return void 반환값 없음
      */
     public function test_exchange_repository_lists_by_order_newest_first(): void
     {
@@ -108,7 +126,13 @@ class ClaimRepositoriesTest extends ModuleTestCase
     }
 
     /**
+     * 주문옵션별 진행 중 교환 수량 합계가 철회 등 종결 상태를 빼고 세며, 수정 경로에서는 자기 신청서를 제외하는지 확인한다.
+     *
+     * @scenario area=exchange
+     *
      * @effects exchange_repository_active_quantity_excludes_terminal_states
+     *
+     * @return void 반환값 없음
      */
     public function test_exchange_repository_active_quantity_excludes_terminal_states(): void
     {
@@ -142,7 +166,13 @@ class ClaimRepositoriesTest extends ModuleTestCase
     }
 
     /**
+     * 교환 사유 코드별 사용 건수가 그 코드의 신청서만 세고, 쓰인 적 없는 코드는 0 인지 확인한다.
+     *
+     * @scenario area=exchange
+     *
      * @effects exchange_repository_counts_by_reason_code
+     *
+     * @return void 반환값 없음
      */
     public function test_exchange_repository_counts_by_reason_code(): void
     {
@@ -169,7 +199,11 @@ class ClaimRepositoriesTest extends ModuleTestCase
      *
      * 되돌리면(스코프 제거) 아래 두 단언이 붉어진다.
      *
+     * @scenario area=refund
+     *
      * @effects refund_repository_counts_only_direct_refunds_by_reason_code
+     *
+     * @return void 반환값 없음
      */
     public function test_refund_repository_counts_only_direct_refunds_by_reason_code(): void
     {
@@ -207,7 +241,13 @@ class ClaimRepositoriesTest extends ModuleTestCase
     }
 
     /**
+     * 교환 상품 행 일괄 상태 변경이 지정한 교환 신청서의 행만 바꾸고, 같은 주문의 다른 신청서 행은 요청 상태로 남기는지 확인한다.
+     *
+     * @scenario area=exchange
+     *
      * @effects exchange_option_repository_bulk_status_update_scopes_to_exchange
+     *
+     * @return void 반환값 없음
      */
     public function test_exchange_option_repository_bulk_status_update_scopes_to_exchange(): void
     {
@@ -235,7 +275,13 @@ class ClaimRepositoriesTest extends ModuleTestCase
     }
 
     /**
+     * 행 ID 목록을 넘기면 같은 교환 신청서 안에서도 그 행만 상태가 바뀌는지 확인한다.
+     *
+     * @scenario area=exchange
+     *
      * @effects exchange_option_repository_bulk_status_update_can_target_subset
+     *
+     * @return void 반환값 없음
      */
     public function test_exchange_option_repository_bulk_status_update_can_target_subset(): void
     {
@@ -251,25 +297,18 @@ class ClaimRepositoriesTest extends ModuleTestCase
         $this->assertSame(ExchangeStatusEnum::REQUESTED, $second->refresh()->option_status);
     }
 
-    /**
-     * @effects exchange_option_repository_deletes_by_exchange
-     */
-    public function test_exchange_option_repository_deletes_by_exchange(): void
-    {
-        $repo = app(OrderExchangeOptionRepositoryInterface::class);
-        $exchange = OrderExchangeFactory::new()->create();
-        OrderExchangeOptionFactory::new()->count(3)->create(['order_exchange_id' => $exchange->id]);
-
-        $this->assertSame(3, $repo->deleteByExchangeId($exchange->id));
-        $this->assertCount(0, $repo->listByExchangeId($exchange->id));
-    }
-
     // ========================================
     // OrderReturnRepository
     // ========================================
 
     /**
+     * 반품 저장소가 생성·ID/번호 조회·수정(관리자 메모)을 지원하는지 확인한다.
+     *
+     * @scenario area=return
+     *
      * @effects return_repository_crud_and_lookup
+     *
+     * @return void 반환값 없음
      */
     public function test_return_repository_crud_and_lookup(): void
     {
@@ -286,7 +325,13 @@ class ClaimRepositoriesTest extends ModuleTestCase
     }
 
     /**
+     * 주문옵션별 진행 중 반품 수량 합계가 반려 등 종결 상태를 빼고 세며, 수정 경로에서는 자기 신청서를 제외하는지 확인한다.
+     *
+     * @scenario area=return
+     *
      * @effects return_repository_active_quantity_excludes_terminal_states
+     *
+     * @return void 반환값 없음
      */
     public function test_return_repository_active_quantity_excludes_terminal_states(): void
     {
@@ -317,9 +362,15 @@ class ClaimRepositoriesTest extends ModuleTestCase
     }
 
     /**
-     * @effects return_option_repository_bulk_update_and_delete
+     * 반품 상품 행 일괄 상태 변경이 그 반품의 행 전부를 바꾸고 변경 건수를 돌려주는지 확인한다.
+     *
+     * @scenario area=return
+     *
+     * @effects return_option_repository_bulk_update
+     *
+     * @return void 반환값 없음
      */
-    public function test_return_option_repository_bulk_update_and_delete(): void
+    public function test_return_option_repository_bulk_update(): void
     {
         $repo = app(OrderReturnOptionRepositoryInterface::class);
         $return = OrderReturnFactory::new()->create();
@@ -329,8 +380,6 @@ class ClaimRepositoriesTest extends ModuleTestCase
         foreach ($repo->listByReturnId($return->id) as $option) {
             $this->assertSame(ReturnStatusEnum::APPROVED, $option->option_status);
         }
-
-        $this->assertSame(2, $repo->deleteByReturnId($return->id));
     }
 
     // ========================================
@@ -338,7 +387,13 @@ class ClaimRepositoriesTest extends ModuleTestCase
     // ========================================
 
     /**
+     * 첨부 이미지 목록·개수가 클레임 유형과 신청서 ID 로 좁혀져 다른 신청서의 이미지가 섞이지 않는지 확인한다.
+     *
+     * @scenario area=image
+     *
      * @effects claim_image_repository_scopes_by_claimable
+     *
+     * @return void 반환값 없음
      */
     public function test_claim_image_repository_scopes_by_claimable(): void
     {
@@ -355,7 +410,13 @@ class ClaimRepositoriesTest extends ModuleTestCase
     }
 
     /**
+     * 해시로 첨부 이미지를 찾을 수 있고, 삭제 후에는 ID 로 더 이상 조회되지 않는지 확인한다.
+     *
+     * @scenario area=image
+     *
      * @effects claim_image_repository_finds_by_hash_and_deletes
+     *
+     * @return void 반환값 없음
      */
     public function test_claim_image_repository_finds_by_hash_and_deletes(): void
     {
@@ -367,27 +428,18 @@ class ClaimRepositoriesTest extends ModuleTestCase
         $this->assertNull($repo->findById($image->id));
     }
 
-    /**
-     * @effects claim_image_repository_delete_by_claimable_leaves_others
-     */
-    public function test_claim_image_repository_delete_by_claimable_leaves_others(): void
-    {
-        $repo = app(ClaimImageRepositoryInterface::class);
-        $exchange = OrderExchangeFactory::new()->create();
-        $other = OrderExchangeFactory::new()->create();
-        ClaimImageFactory::new()->forExchange($exchange)->count(2)->create();
-        ClaimImageFactory::new()->forExchange($other)->create();
-
-        $this->assertSame(2, $repo->deleteByClaimable(ClaimTypeEnum::EXCHANGE->value, $exchange->id));
-        $this->assertSame(1, $repo->countByClaimable(ClaimTypeEnum::EXCHANGE->value, $other->id));
-    }
-
     // ========================================
     // ClaimPaymentRepository
     // ========================================
 
     /**
+     * 클레임 결제를 결제번호·거래 ID 로 찾을 수 있고, 발급된 적 없는 거래 ID 는 null 인지 확인한다.
+     *
+     * @scenario area=payment
+     *
      * @effects claim_payment_repository_lookup_by_number_and_transaction
+     *
+     * @return void 반환값 없음
      */
     public function test_claim_payment_repository_lookup_by_number_and_transaction(): void
     {
@@ -400,7 +452,13 @@ class ClaimRepositoriesTest extends ModuleTestCase
     }
 
     /**
+     * 신청서별 결제 합계가 수납 완료 건의 금액과 포인트만 더하고 미수납 건은 빼는지 확인한다.
+     *
+     * @scenario area=payment
+     *
      * @effects claim_payment_repository_sums_only_paid_amounts
+     *
+     * @return void 반환값 없음
      */
     public function test_claim_payment_repository_sums_only_paid_amounts(): void
     {
@@ -427,7 +485,13 @@ class ClaimRepositoriesTest extends ModuleTestCase
     }
 
     /**
+     * 수납된 결제가 하나도 없으면 결제 합계가 0 인지 확인한다.
+     *
+     * @scenario area=payment
+     *
      * @effects claim_payment_repository_sum_is_zero_when_none_paid
+     *
+     * @return void 반환값 없음
      */
     public function test_claim_payment_repository_sum_is_zero_when_none_paid(): void
     {
@@ -445,7 +509,13 @@ class ClaimRepositoriesTest extends ModuleTestCase
     // ========================================
 
     /**
+     * 배송정책 회수지 upsert 를 같은 유형으로 반복해도 행이 하나로 유지되고 마지막 값으로 갱신되는지 확인한다.
+     *
+     * @scenario area=claim_address
+     *
      * @effects claim_address_repository_upsert_is_idempotent_per_type
+     *
+     * @return void 반환값 없음
      */
     public function test_claim_address_repository_upsert_is_idempotent_per_type(): void
     {
@@ -464,7 +534,13 @@ class ClaimRepositoriesTest extends ModuleTestCase
     }
 
     /**
+     * 유형별 회수지 삭제가 지정 유형의 행만 지우고 같은 정책의 다른 유형 행은 남기는지 확인한다.
+     *
+     * @scenario area=claim_address
+     *
      * @effects claim_address_repository_delete_scopes_to_type
+     *
+     * @return void 반환값 없음
      */
     public function test_claim_address_repository_delete_scopes_to_type(): void
     {
@@ -483,7 +559,13 @@ class ClaimRepositoriesTest extends ModuleTestCase
     // ========================================
 
     /**
+     * 취소 상품 행 일괄 상태 변경이 대상 취소 신청서의 행에만 완료 상태·처리자·완료 시각을 기록하고, 다른 취소의 행은 건드리지 않는지 확인한다.
+     *
+     * @scenario area=cancel
+     *
      * @effects cancel_option_repository_bulk_status_update_records_completion
+     *
+     * @return void 반환값 없음
      */
     public function test_cancel_option_repository_bulk_status_update_records_completion(): void
     {
@@ -553,7 +635,13 @@ class ClaimRepositoriesTest extends ModuleTestCase
     }
 
     /**
+     * 환불 상품 행 일괄 상태 변경이 처리자·완료 시각을 받지 않는 반려 경로에서는 기존 처리자를 지우지 않고, 값을 받는 실행 경로에서만 처리자·완료 시각을 기입하는지 확인한다.
+     *
+     * @scenario area=refund
+     *
      * @effects refund_option_repository_bulk_status_update_sets_completed_at_only_when_given
+     *
+     * @return void 반환값 없음
      */
     public function test_refund_option_repository_bulk_status_update_sets_completed_at_only_when_given(): void
     {
@@ -613,7 +701,13 @@ class ClaimRepositoriesTest extends ModuleTestCase
     // ========================================
 
     /**
+     * 교환 ID 여러 개로 상품 행 ID 를 조회하면 신청서별로 묶어 돌려주고, 요청하지 않은 신청서는 빠지며 빈 입력은 빈 배열인지 확인한다.
+     *
+     * @scenario area=exchange
+     *
      * @effects exchange_option_repository_lists_option_ids_grouped_by_claim
+     *
+     * @return void 반환값 없음
      */
     public function test_exchange_option_repository_lists_option_ids_grouped_by_claim(): void
     {
@@ -638,7 +732,13 @@ class ClaimRepositoriesTest extends ModuleTestCase
     }
 
     /**
+     * 반품 ID 여러 개로 상품 행 ID 를 조회하면 신청서별로 묶어 돌려주고, 빈 입력은 빈 배열인지 확인한다.
+     *
+     * @scenario area=return
+     *
      * @effects return_option_repository_lists_option_ids_grouped_by_claim
+     *
+     * @return void 반환값 없음
      */
     public function test_return_option_repository_lists_option_ids_grouped_by_claim(): void
     {

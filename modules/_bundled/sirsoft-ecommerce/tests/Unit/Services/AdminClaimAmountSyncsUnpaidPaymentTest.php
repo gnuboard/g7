@@ -30,7 +30,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  * (`UserClaimService::update()`) 뿐이었고, `AdminClaimService::updateAmounts()` 는 금액 컬럼만
  * 갱신하고 활동로그 훅을 쏜 뒤 끝났다.
  *
- * **이미 결제한 건은 손대지 않는다**(PO 결정 2026-09-23). 초과 수납이 생겨도 자동 환급하지 않고
+ * **이미 결제한 건은 손대지 않는다**(운영 결정 2026-09-23). 초과 수납이 생겨도 자동 환급하지 않고
  * 운영이 처리한다 — 관리자 금액 수정에 자동 환급을 하기로 한 합의가 없었고(`modules/_bundled/sirsoft-ecommerce/docs/api/admin-claims.md`
  * 의 `updateAmounts` 응답에 환급 기술이 없다), 운영자가 금액을 고치는 것은 대개 운영상의 판단이기
  * 때문이다. 그래서 정산은 **수납액이 0 일 때만** 부른다. 그 조건에서는 차액이 음수가 될 수 없어
@@ -182,7 +182,7 @@ class AdminClaimAmountSyncsUnpaidPaymentTest extends ModuleTestCase
     /**
      * **이미 결제한 건**은 금액을 고쳐도 결제행을 건드리지 않는지 검증합니다.
      *
-     * PO 결정 2026-09-23 — 초과 수납은 자동 환급하지 않고 운영이 처리한다. 이 테스트가 없으면
+     * 운영 결정 2026-09-23 — 초과 수납은 자동 환급하지 않고 운영이 처리한다. 이 테스트가 없으면
      * 위 세 테스트를 만족시키려다 결제 완료 건까지 정산 경로로 끌어들이기 쉽다.
      *
      * @return void 반환값 없음

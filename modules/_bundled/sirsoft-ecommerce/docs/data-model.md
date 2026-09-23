@@ -27,13 +27,13 @@
 | `OrderCancel` | `ecommerce_order_cancels` | 10 | order→Order, cancelOptions→OrderCancelOption, refund→OrderRefund, cancelledByUser→User | - |
 | `OrderCancelOption` | `ecommerce_order_cancel_options` | 10 | orderCancel→OrderCancel, order→Order, orderOption→OrderOption, processedByUser→User | - |
 | `OrderCashReceipt` | `ecommerce_order_cash_receipts` | 16 | order→Order, payment→OrderPayment | - |
-| `OrderExchange` | `ecommerce_order_exchanges` | 40 | order→Order, exchangeOptions→OrderExchangeOption, images→ClaimImage, claimPayments→ClaimPayment, collectionCarrier→ShippingCarrier, redeliveryCarrier→ShippingCarrier, 외 2개 | - |
+| `OrderExchange` | `ecommerce_order_exchanges` | 41 | order→Order, exchangeOptions→OrderExchangeOption, images→ClaimImage, claimPayments→ClaimPayment, collectionCarrier→ShippingCarrier, redeliveryCarrier→ShippingCarrier, 외 2개 | - |
 | `OrderExchangeOption` | `ecommerce_order_exchange_options` | 17 | orderExchange→OrderExchange, order→Order, orderOption→OrderOption, newProductOption→ProductOption, newOrderOption→OrderOption, processedByUser→User | - |
 | `OrderOption` | `ecommerce_order_options` | 57 | order→Order, parentOption→self, childOptions→self, splitOptions→self, product→Product, productOption→ProductOption, 외 4개 | - |
 | `OrderPayment` | `ecommerce_order_payments` | 58 | order→Order, taxInvoices→OrderTaxInvoice, cashReceipts→OrderCashReceipt | - |
-| `OrderRefund` | `ecommerce_order_refunds` | 36 | order→Order, orderCancel→OrderCancel, images→ClaimImage, requestedByUser→User, refundOptions→OrderRefundOption, processedByUser→User | - |
+| `OrderRefund` | `ecommerce_order_refunds` | 37 | order→Order, orderCancel→OrderCancel, images→ClaimImage, requestedByUser→User, refundOptions→OrderRefundOption, processedByUser→User | - |
 | `OrderRefundOption` | `ecommerce_order_refund_options` | 12 | orderRefund→OrderRefund, order→Order, orderOption→OrderOption, processedByUser→User | - |
-| `OrderReturn` | `ecommerce_order_returns` | 35 | order→Order, returnOptions→OrderReturnOption, images→ClaimImage, claimPayments→ClaimPayment, collectionCarrier→ShippingCarrier, refund→OrderRefund, 외 2개 | - |
+| `OrderReturn` | `ecommerce_order_returns` | 36 | order→Order, returnOptions→OrderReturnOption, images→ClaimImage, claimPayments→ClaimPayment, collectionCarrier→ShippingCarrier, refund→OrderRefund, 외 2개 | - |
 | `OrderReturnOption` | `ecommerce_order_return_options` | 11 | orderReturn→OrderReturn, order→Order, orderOption→OrderOption, processedByUser→User | - |
 | `OrderShipping` | `ecommerce_order_shippings` | 32 | order→Order, orderOption→OrderOption, shippingPolicy→ShippingPolicy, carrier→ShippingCarrier | - |
 | `OrderTaxInvoice` | `ecommerce_order_tax_invoices` | 21 | order→Order, payment→OrderPayment | - |
@@ -348,9 +348,9 @@
 | `2026_08_31_000001_add_refund_bank_to_claim_tables.php` | - | - | ✅ |
 | `2026_09_11_000001_add_calculation_snapshots_to_claim_tables.php` | - | - | ✅ |
 | `2026_09_11_000002_add_rejected_at_to_ecommerce_order_refunds_table.php` | - | - | ✅ |
-| `2026_09_12_000001_ensure_operator_claim_reason_codes_exist.php` | - | - | ✅ |
 | `2026_09_14_000001_add_uploader_type_to_ecommerce_claim_images_table.php` | - | `ecommerce_claim_images` | ✅ |
 | `2026_09_14_000002_add_option_status_index_to_ecommerce_order_refund_options_table.php` | - | - | ✅ |
+| `2026_09_23_000001_add_refund_priority_to_claim_tables.php` | - | - | ✅ |
 <!-- @generated:migrations END -->
 
 <!-- @intent START -->

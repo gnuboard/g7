@@ -32,10 +32,14 @@
   <data-source id="claim_logs" label_key="$t:sirsoft-ecommerce.editor.data_source.claim_logs" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/claims/{{route.claimNumber}}/logs" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="background">
     <params per_page="{{_local.logsPerPage ?? 10}}" page="{{_local.logsPage ?? 1}}" sort_order="{{_local.logsSort === 'date_asc' ? 'asc' : 'desc'}}"/>
   </data-source>
+  <!-- 환불 실행 모달의 은행 선택지(은행 코드표). 공개 결제 설정 엔드포인트라 권한 게이트가 없다 — `admin/settings`(settings.read)를 읽으면 클레임 권한만 가진 운영자에게 403 이 되어 선택지가 조용히 빈다. 주문 상세 취소 모달과 같은 출처다. -->
+  <data-source id="paymentSettings" label_key="$t:sirsoft-ecommerce.editor.data_source.paymentSettings" type="api" endpoint="/api/modules/sirsoft-ecommerce/settings/payment" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="background"/>
   <init-local>
     <field name="activeClaimTab" value="claim_info"/>
     <field name="selectedClaimItems" :value="[]"/>
     <field name="itemBulkStatus" value=""/>
+    <field name="claimBulkStatus" value=""/>
+    <field name="claimRejectReason" value=""/>
     <field name="adminMemo" value=""/>
     <field name="isSavingMemo" :value="false"/>
     <field name="collectionCarrierId" value=""/>
@@ -56,6 +60,7 @@
     <field name="logsSort" value="date_desc"/>
   </init-local>
   <computed name="claimDetailTabs">{{[{ id: 'claim_info', label: $t('sirsoft-ecommerce.admin.claim.detail.tabs.claim_info') }, ...(['exchange', 'return'].includes(claim?.data?.claim?.claim_type ?? '') ? [{ id: 'shipping_info', label: $t('sirsoft-ecommerce.admin.claim.detail.tabs.shipping_info') }] : []), { id: 'payment_info', label: $t('sirsoft-ecommerce.admin.claim.detail.tabs.payment_info') }, ...((claim?.data?.claim?.claim_type ?? '') === 'refund' ? [{ id: 'refund_execute', label: $t('sirsoft-ecommerce.admin.claim.detail.tabs.refund_execute') }] : []), { id: 'activity_log', label: $t('sirsoft-ecommerce.admin.claim.detail.tabs.activity_log') }]}}</computed>
+  <computed name="refundInputTotal">{{Math.round((Number(_local.refundAmount || 0) + Number(_local.refundPointsAmount || 0)) * 100000000) / 100000000}}</computed>
   <permissions>
     <permission>sirsoft-ecommerce.claims.read</permission>
   </permissions>
@@ -64,7 +69,7 @@
   </transition-overlay>
   <init>
     <!-- 폼 시드는 데이터소스 `initLocal` 이 담당한다 — 여기서는 응답과 무관한 화면 상태만 되돌린다(이탈 후 복귀 시 앞 신청서의 선택이 남지 않게). -->
-    <set-state target="local" activeClaimTab="claim_info" :selectedClaimItems="[]" itemBulkStatus="" :itemTransitionOptions="[]" :isSavingMemo="false" :isSavingCollection="false" :isSavingRedelivery="false" :isSavingAmounts="false" :isExecutingRefund="false" :logsPage="1" :logsPerPage="10" logsSort="date_desc"/>
+    <set-state target="local" activeClaimTab="claim_info" :selectedClaimItems="[]" itemBulkStatus="" claimBulkStatus="" claimRejectReason="" :itemTransitionOptions="[]" :isSavingMemo="false" :isSavingCollection="false" :isSavingRedelivery="false" :isSavingAmounts="false" :isExecutingRefund="false" :logsPage="1" :logsPerPage="10" logsSort="date_desc"/>
   </init>
   <slot name="content">
     <div data-ref="claim_detail_wrapper" class="admin-page-content">
@@ -86,14 +91,14 @@
               <span data-ref="cd_007_requested_at" class="font-medium text-gray-900 dark:text-gray-100">{{claim?.data?.claim?.requested_at_formatted ?? ''}}</span>
               <span class="text-gray-300 dark:text-gray-600">|</span>
               <span class="text-secondary">$t:sirsoft-ecommerce.admin.claim.detail.requester:</span>
-              <!-- e2e:allow 요청자 링크(계획 676) — 운영자가 신청자 이름에서 그 회원 화면으로 바로 간다. 링크 대상은 `requester_user_id`(**주문의 주인**)이다 — 이 칸이 그리는 이름이 주문자명이므로, `requested_by` 로 걸면 운영자 대리 접수 건에서 화면에 보이는 사람과 다른 회원 상세로 간다. 비회원 주문은 null 이라 아래 Span 이 평문으로 서다 — 누를 곳 없는 링크를 보이면 운영자는 회원이 있다고 오해한다. 선례: `admin_ecommerce_product_review_index.json` 의 작성자 칸(A+if / Span+if 한 쌍). -->
-              <a data-ref="cd_008_requester" data-if="{{!!claim?.data?.claim?.requester_user_id}}" href="#" class="font-medium text-blue-600 dark:text-blue-400 hover:underline cursor-pointer">
+              <!-- e2e:allow 요청자 링크(계획 676) — 운영자가 신청자 이름에서 그 회원 화면으로 바로 간다. 링크 대상은 주문의 주인(`requester_user_uuid`)이다. 관리자 회원 화면은 **uuid** 로 연다 — 숫자 `requester_user_id` 로 만든 링크는 404 였다(주문 상세 `OrderResource.user.uuid` 와 같은 축) — 이 칸이 그리는 이름이 주문자명이므로, `requested_by` 로 걸면 운영자 대리 접수 건에서 화면에 보이는 사람과 다른 회원 상세로 간다. 비회원 주문은 null 이라 아래 Span 이 평문으로 서다 — 누를 곳 없는 링크를 보이면 운영자는 회원이 있다고 오해한다. 선례: `admin_ecommerce_product_review_index.json` 의 작성자 칸(A+if / Span+if 한 쌍). -->
+              <a data-ref="cd_008_requester" data-if="{{!!claim?.data?.claim?.requester_user_uuid}}" href="#" class="font-medium text-blue-600 dark:text-blue-400 hover:underline cursor-pointer">
                 <on type="click">
-                  <navigate path="/admin/users/{{claim?.data?.claim?.requester_user_id}}"/>
+                  <navigate path="/admin/users/{{claim?.data?.claim?.requester_user_uuid}}"/>
                 </on>
                 {{claim?.data?.claim?.requester_name ?? '-'}}
               </a>
-              <span data-ref="cd_008_requester_plain" data-if="{{!claim?.data?.claim?.requester_user_id}}" class="font-medium text-gray-900 dark:text-gray-100">{{claim?.data?.claim?.requester_name ?? '-'}}</span>
+              <span data-ref="cd_008_requester_plain" data-if="{{!claim?.data?.claim?.requester_user_uuid}}" class="font-medium text-gray-900 dark:text-gray-100">{{claim?.data?.claim?.requester_name ?? '-'}}</span>
               <!-- e2e:allow 출처 뱃지는 서버 필드(`request_source`) 하나를 그대로 그리는 표시 전용 노드다 — 판정 로직이 화면에 없다. 그 필드의 3분류(고객·비회원·운영자 접수)는 PHPUnit 이 조합 전건을 덮고(ClaimResourceRequestSourceTest), 렌더는 Vitest 3건이 잠근다(adminClaimDetailRender.test.tsx 「신청자 출처 뱃지·요청자 링크」 — 4차 라운드 D2 해소). 2026-09-16 브라우저로 3종 전건도 확인했다(RF20260915-1707536717 운영자 접수 · RT20260916-0302483148 고객 신청 · RT20260915-1425436901 비회원 신청). 출처 뱃지(계획 676) — 고객 신청·비회원 신청·운영자 접수. 운영자는 셋을 다르게 대한다: 고객 건은 연락처가 계정에 있고, 비회원 건은 주문서 연락처뿐이며, 대리 접수 건은 고객이 철회·수정할 수 없다. 라벨은 서버가 로케일로 풀어 내려준다(`request_source_label`) — 화면이 코드를 매핑하면 3로케일 사본이 하나 더 생긴다. -->
               <badge data-ref="cd_008b_request_source" variant="{{claim?.data?.claim?.request_source === 'admin' ? 'warning' : (claim?.data?.claim?.request_source === 'guest' ? 'secondary' : 'info')}}" size="sm">{{claim?.data?.claim?.request_source_label}}</badge>
             </div>
@@ -117,12 +122,8 @@
             </button>
           </div>
         </div>
-        <!-- 탭 배열과 섹션 존재는 **같은 조건**으로 분기한다 (D17-①) — 탭만 남기면 스크롤 대상이 없어 클릭이 무반응이 되고, 섹션만 남기면 scrollSpy 가 없는 탭 id 를 활성화하려다 무시된다. 배송 축의 조건식은 `_partial_claim_shipping.json` 의 `if` 와 문자 그대로 같다. 결제 정보·환불 실행 탭은 그 섹션을 만드는 세션(S9b)이 **탭과 함께** 더한다 — 지금 탭만 세워 두면 그 사이 클릭이 아무 일도 하지 않는다. 모바일 대응 코드는 없다: 컴포넌트가 768px 미만에서 Select 로 자체 전환한다. -->
-        <tab-navigation-scroll data-ref="claim_tab_navigation" activeTabId="{{_local.activeClaimTab ?? 'claim_info'}}" :enableScrollSpy="true" :scrollSpyOffset="120" sectionIdPrefix="section_" tabs="{{_computed.claimDetailTabs ?? []}}">
-          <on type="change">
-            <set-state target="local" activeClaimTab="{{$event.value}}"/>
-          </on>
-        </tab-navigation-scroll>
+        <!-- 탭 배열과 섹션 존재는 **같은 조건**으로 분기한다 (D17-①) — 탭만 남기면 스크롤 대상이 없어 클릭이 무반응이 되고, 섹션만 남기면 scrollSpy 가 없는 탭 id 를 활성화하려다 무시된다. 배송 축의 조건식은 `_partial_claim_shipping.json` 의 `if` 와 문자 그대로 같다. 결제 정보·환불 실행 탭은 그 섹션을 만드는 세션(S9b)이 **탭과 함께** 더한다 — 지금 탭만 세워 두면 그 사이 클릭이 아무 일도 하지 않는다. 모바일 대응 코드는 없다: 컴포넌트가 768px 미만에서 Select 로 자체 전환한다. 탭 클릭은 컴포넌트가 제 상태로 처리한다 — `onChange` 는 TabNavigationScroll 에 없는 이벤트라 걸어도 돌지 않고, `onTabChange` 를 걸면 컴포넌트가 내부 활성 탭 갱신을 넘겨 버려(`activeTabId` 는 초기값 전용) 누른 탭 표시가 따라오지 않는다. 형제 선례(상품·게시판 폼)처럼 핸들러를 두지 않는다. -->
+        <tab-navigation-scroll data-ref="claim_tab_navigation" activeTabId="{{_local.activeClaimTab ?? 'claim_info'}}" :enableScrollSpy="true" :scrollSpyOffset="120" sectionIdPrefix="section_" tabs="{{_computed.claimDetailTabs ?? []}}"/>
       </div>
       <div data-ref="claim_tab_content_area" class="tab-content">
         <include src="partials/admin_ecommerce_claim_detail/_partial_claim_items.g7.html"/>
@@ -138,4 +139,6 @@
   <modal src="partials/admin_ecommerce_claim_detail/_modal_claim_refund_execute.g7.html"/>
   <!-- 상품 단위 전이의 수량 확인 모달 (§4-6). 일괄 바 [적용] 이 연다 — 수량은 행마다 다르므로 바에 입력을 둘 수 없고, 행 인라인에 두면 체크하지 않은 행의 수량이 남는다. 문맥은 `_global.claimItemQuantityContext` 하나이고 모달 표시와 실행 본문이 그것을 함께 읽는다. -->
   <modal src="partials/admin_ecommerce_claim_detail/_modal_claim_item_quantity_confirm.g7.html"/>
+  <!-- 첨부 일괄 정리 확인 모달. 고객이 올린 증빙까지 파일째 지우는 되돌릴 수 없는 처리라 한 번 더 묻는다(개별 삭제는 업로더가 이미 묻는다). 문맥은 `_global.claimImagesClearContext` 하나다 — 모달은 부모 `_local` 을 해석하지 못한다. -->
+  <modal src="partials/admin_ecommerce_claim_detail/_modal_claim_images_clear.g7.html"/>
 </layout>

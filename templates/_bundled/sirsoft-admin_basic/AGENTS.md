@@ -151,15 +151,28 @@ Monaco 를 올릴 때는 `templates/_bundled/sirsoft-admin_basic/tests/Playwrigh
 세 축(자산 200 · 마운트 · **로더 1회 실행**)을 함께 확인한다. 마운트만 재면 로더가 두 번
 돌아도 green 이다 — 먼저 뜬 편집기가 살아 있기 때문이다.
 
+심기에는 3초 제한 시간이 있다(자산이 영영 오지 않을 때 화면이 굳지 않게). 제한 시간이 지났는데
+심기가 넣은 로더(`script[data-g7-monaco-loader]`)가 아직 `window.monaco` 를 채우지 못했으면
+`loader.init()` 을 **부르지 않고** 평문 폴백으로 넘긴다 — 라이브러리 `init()` 은 `window.monaco.editor`
+가 없으면 자기 `loader.js` 를 또 넣기 때문이다. [다시 시도]는 그 사이 심기가 끝났으면 정상 경로를 탄다.
+
+### 알림 템플릿 편집 창 사본 (코어·게시판·이커머스·환율 플러그인)
+
+`_modal_notification_template_form` 은 게시판(`sirsoft-board`)·이커머스(`sirsoft-ecommerce`)·환율 플러그인
+(`sirsoft-koreaexim`)이 같은 코어 저장 API 로 쓰는 사본을 갖는다. 수신자 규칙 종류를 바꾸면 **새 종류의 빈
+규칙**으로 갈아 끼우고(앞 종류의 `value`·`display_names`·`relation` 은 버린다 — 남기면 회원 UUID 가 역할로
+저장돼 수신자 0명), 관련 사용자면 정의가 선언한 첫 `relation` 을 채운다(서버가 선언 안의 값만 받는다).
+「행위자 제외」는 역할↔특정 회원 사이에서만 이어 간다. 이 규칙을 바꾸면 네 벌을 함께 바꾼다.
+
 ## 7. 테스트 실행
 
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
 | PHPUnit | 0개 | — |
-| Vitest | 232개 | `vitest.config.ts` |
+| Vitest | 236개 | `vitest.config.ts` |
 | Playwright | 18개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 14개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 15개 | `tests/scenarios` |
 
 ```bash
 # Vitest (확장 디렉토리에서) (PowerShell)

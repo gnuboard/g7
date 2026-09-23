@@ -7,6 +7,7 @@ use App\Support\LayoutMarkup\CompileError;
 use App\Support\LayoutMarkup\EmptyMap;
 use App\Support\LayoutMarkup\LayoutMarkupCompiler;
 use App\Support\LayoutMarkup\MarkupCompileContextResolver;
+use App\Support\LayoutMarkup\NodeCompiler;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
 
@@ -757,7 +758,7 @@ trait ValidatesLayoutFiles
      * `params.query`·`params.body`·`initLocal` 에 실리면 서버 검증이 대상을 찾지 못해 422 나
      * 침묵 미적용이 된다 — 화면도 안 깨지고 로그도 안 남는 형태로 틀린다({@see EmptyMap}).
      *
-     * 마크업 경로는 {@see \App\Support\LayoutMarkup\NodeCompiler} 가 같은 일을 이미 한다.
+     * 마크업 경로는 {@see NodeCompiler} 가 같은 일을 이미 한다.
      * 두 경로가 같은 계약을 지어야 `.g7.html` 로 굽든 `.json` 을 그대로 설치하든 산출이 같다.
      *
      * "어느 키가 map 인가" 의 목록은 두지 않는다 — 목록은 문법이 늘 때 낡아 같은 결함이 다시

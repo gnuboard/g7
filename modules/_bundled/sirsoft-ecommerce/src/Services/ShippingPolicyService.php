@@ -21,6 +21,12 @@ class ShippingPolicyService
 {
     use ReappliesPermissionScope;
 
+    /**
+     * 배송정책 서비스를 만듭니다.
+     *
+     * @param  ShippingPolicyRepositoryInterface  $repository  배송정책 Repository
+     * @param  ShippingPolicyClaimAddressRepositoryInterface  $claimAddressRepository  교환·반품 회수지 Repository
+     */
     public function __construct(
         protected ShippingPolicyRepositoryInterface $repository,
         protected ShippingPolicyClaimAddressRepositoryInterface $claimAddressRepository,
@@ -429,10 +435,16 @@ class ShippingPolicyService
         // 삭제 전 ID 캡처 (삭제 후 모델 id가 null이 될 수 있음)
         $shippingPolicyId = $shippingPolicy->id;
 
-        // 국가별 설정 명시적 삭제 (DB CASCADE에 의존하지 않음)
-        $shippingPolicy->countrySettings()->delete();
+        // 자식 행(국가별 설정 · 교환/반품 회수지)을 명시적으로 지운다 — DB CASCADE 에 기대지 않는다.
+        // 회수지를 빠뜨리면 FK 가 없는 환경(외래키 비활성 DB·복제본)에서 삭제된 정책의 회수지가
+        // 남고, 같은 ID 로 다시 만들어진 정책이 남의 회수지를 물려받는다.
+        // 한 트랜잭션으로 묶는다 — 중간에 실패하면 자식만 지워진 정책이 남는다.
+        $result = DB::transaction(function () use ($shippingPolicy, $shippingPolicyId) {
+            $this->repository->deleteCountrySettingsByPolicyIds([$shippingPolicyId]);
+            $this->claimAddressRepository->deleteByPolicyIds([$shippingPolicyId]);
 
-        $result = $this->repository->delete($shippingPolicy);
+            return $this->repository->delete($shippingPolicy);
+        });
 
         // 삭제 후 훅
         HookManager::doAction('sirsoft-ecommerce.shipping_policy.after_delete', $shippingPolicyId);
@@ -481,10 +493,13 @@ class ShippingPolicyService
         // 일괄 삭제 전 훅
         HookManager::doAction('sirsoft-ecommerce.shipping_policy.before_bulk_delete', $ids);
 
-        // 국가별 설정 명시적 삭제 (DB CASCADE에 의존하지 않음)
-        $this->repository->deleteCountrySettingsByPolicyIds($ids);
+        // 자식 행(국가별 설정 · 교환/반품 회수지) 명시적 삭제 — DB CASCADE 에 의존하지 않음(delete() 와 같은 이유).
+        $count = DB::transaction(function () use ($ids) {
+            $this->repository->deleteCountrySettingsByPolicyIds($ids);
+            $this->claimAddressRepository->deleteByPolicyIds($ids);
 
-        $count = $this->repository->bulkDelete($ids);
+            return $this->repository->bulkDelete($ids);
+        });
 
         // 일괄 삭제 후 훅
         HookManager::doAction('sirsoft-ecommerce.shipping_policy.after_bulk_delete', $ids, $count, $snapshots);

@@ -3,7 +3,7 @@
   회원 배송지 목록 — 검색 필터. 쿠폰·주문·상품 목록의 같은 영역과 구조가 같다(검색 줄 + 컬럼
   선택 + 필터 격자 + 실행 버튼). **다른 점은 덜어낸 것들이다** — 슬롯 등록 영역·검색 편집 모드·
   상세검색 토글·프리셋이 없다. 필터가 넷(검색어·회원·등록일·기본 배송지)이라 접어 둘 이유가 없고,
-  접는 장치가 있으면 「지금 무엇으로 좁혀져 있나」 를 두 군데서 읽어야 한다(2026-09-21 PO 지시).
+  접는 장치가 있으면 「지금 무엇으로 좁혀져 있나」 를 두 군데서 읽어야 한다(2026-09-21 요구사항).
 
   회원 한정은 검색 대상/검색어와 **다른 축**이라 전용 칸이 쥔다. 회원 수가 많아 선택지를 미리
   받아 둘 수 없으므로 입력할 때마다 코어 회원 검색을 친다(300ms 로 묶는다). 고른 회원은 uuid 로
@@ -71,19 +71,26 @@
         <responsive on="portable" class="filter-row flex-col items-start"/>
         <span class="filter-label w-28">$t:sirsoft-ecommerce.admin.user_addresses.filter.member</span>
         <div class="flex-center flex-wrap gap-2 flex-1">
-          <searchable-dropdown data-ref="member_filter_dropdown" :multiple="true" options="{{_local.memberSearchResults ?? []}}" value="{{_local.filter.memberUuids ?? []}}" triggerLabel="$t:sirsoft-ecommerce.admin.user_addresses.filter.member_select" selectedCountLabel="$t:sirsoft-ecommerce.admin.user_addresses.filter.member_selected_count" searchPlaceholder="$t:sirsoft-ecommerce.admin.user_addresses.filter.member_search_placeholder" noResultsText="$t:common.no_results" initialText="$t:sirsoft-ecommerce.admin.user_addresses.filter.member_search_initial" class="w-64">
+          <searchable-dropdown data-ref="member_filter_dropdown" :multiple="true" options="{{(_local.memberSearchResultsKeyword ?? null) === (_local.memberSearchKeyword ?? '').trim() ? (_local.memberSearchResults ?? []) : []}}" value="{{_local.filter.memberUuids ?? []}}" triggerLabel="$t:sirsoft-ecommerce.admin.user_addresses.filter.member_select" selectedCountLabel="$t:sirsoft-ecommerce.admin.user_addresses.filter.member_selected_count" searchPlaceholder="$t:sirsoft-ecommerce.admin.user_addresses.filter.member_search_placeholder" noResultsText="$t:common.no_results" initialText="$t:sirsoft-ecommerce.admin.user_addresses.filter.member_search_initial" class="w-64">
             <on event="onSearch">
               <!-- 응답을 그대로 쓰지 않고 `{value,label,description}` 으로 접는다 — 드롭다운이 그 세 키만 읽는다.
-                   실패하면 이전 결과를 남기지 않고 비운다(방금 친 검색어와 맞지 않는 목록이 붙어 있게 된다) -->
-              <api-call :debounce="300" :auth_required="true" target="/api/admin/users/search" method="GET">
-                <success>
-                  <set-state target="local" memberSearchResults="{{(response.data ?? []).map(u => ({ value: u.uuid, label: u.name, description: u.email }))}}"/>
-                </success>
-                <fail>
-                  <set-state target="local" :memberSearchResults="[]"/>
-                </fail>
-                <query keyword="{{$args[0]}}"/>
-              </api-call>
+                   실패하면 이전 결과를 남기지 않고 비운다(방금 친 검색어와 맞지 않는 목록이 붙어 있게 된다).
+                   늦게 온 옛 응답 가드: 지금 검색어를 먼저 담고, 결과에는 **응답이 실어 온 검색어**(`meta.keyword`)를
+                   도장한다 — 두 값이 같을 때만 후보를 보인다(마일리지 수동 지급·쿠폰 직접 발급 창과 같은 가드).
+                   `$event`·`$args` 로 도장하면 그것은 응답이 도착한 순간의 입력이라, 한 글자가 부른 큰 옛 응답이
+                   늦게 와서 지금 검색어의 것으로 둔갑한다. 서버가 검색어를 trim 하므로 지금 값도 trim 해 견준다. -->
+              <sequence>
+                <set-state target="local" memberSearchKeyword="{{$args[0] ?? ''}}"/>
+                <api-call :debounce="300" :auth_required="true" target="/api/admin/users/search" method="GET">
+                  <success>
+                    <set-state target="local" memberSearchResults="{{(response.data ?? []).map(u => ({ value: u.uuid, label: u.name, description: u.email }))}}" memberSearchResultsKeyword="{{response?.meta?.keyword ?? ''}}"/>
+                  </success>
+                  <fail>
+                    <set-state target="local" :memberSearchResults="[]" :memberSearchResultsKeyword="null"/>
+                  </fail>
+                  <query keyword="{{$args[0]}}"/>
+                </api-call>
+              </sequence>
             </on>
             <on type="change" event="onChange">
               <!-- 고른 회원은 uuid 로 담는다(동명이인이 있고, 이름을 바꿔도 같은 사람을 가리켜야 한다).

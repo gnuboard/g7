@@ -18,7 +18,13 @@ _`getSettingsSchema()` 선언이 없습니다._
 |---|---|---|
 | `attachment.max_count` | 5 | `PageAttachmentService` — 초과 시 `AttachmentLimitExceededException` |
 | `attachment.max_size_mb` | 10 | `UploadPageAttachmentRequest` 검증 규칙 |
-| `attachment.allowed_types` | 이미지 4종 + PDF + ZIP | 같은 FormRequest (미설정 시 클래스 상수 폴백) |
+| `attachment.allowed_types` | 이미지 4종 + PDF + ZIP | 같은 FormRequest (미설정 시 `AttachmentLimits::FALLBACK_ALLOWED_TYPES` 폴백) |
+
+세 값의 해석(기본값·폴백·0 이하 = 제한 없음)은 `modules/_bundled/sirsoft-page/src/Support/AttachmentLimits.php` 한 곳이
+합니다. 업로드 검증(`UploadPageAttachmentRequest`)과 화면용 공개 설정
+(`PageAttachmentService::publicLimits()`)이 모두 이것을 읽습니다 — Service 가 FormRequest 의
+상수를 읽으면 하위 계층이 HTTP 계층에 기대는 역전이 되고, 두 계층이 따로 해석하면 화면이
+안내한 상한과 서버가 거절하는 상한이 갈립니다.
 
 파일 형태가 다른 확장과 다릅니다 — 이커머스·게시판은 `{_meta, defaults, frontend_schema}` 3단
 구조지만 여기는 **평평한 값 트리**입니다. 관리자 화면이 없어 `frontend_schema` 가 필요 없고,

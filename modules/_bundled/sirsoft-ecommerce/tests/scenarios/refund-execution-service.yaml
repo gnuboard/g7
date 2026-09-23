@@ -101,6 +101,14 @@ effects:
   # 취소 경로를 탄 환불도 결제행의 취소 누적을 쌓고 부분취소 상태를 찍는다 —
   # 주문 축 누적만 쌓고 결제행을 비워 두면 PG 환불가능액이 실제보다 크게 남는다.
   - cancellation_path_also_accumulates_the_payment_rows_cancelled_amount
+  # 카드 주문을 계좌이체로 환불하면 PG 왕복이 없으므로 카드 결제행의 취소 누적은 그대로다
+  # (운영 결정 2026-09-16 — 허용하되 장부는 건드리지 않는다). 주문 축 누적은 쌓인다.
+  - non_pg_refund_leaves_payment_cancelled_amount_untouched
+  # 바깥(가상계좌 환불 화면 등)에서 이미 집행된 PG 환불은 왕복만 건너뛰고 장부에는 남는다.
+  - externally_settled_pg_refund_still_records_ledger
+  # 누적 지점은 하나다 — 취소 경로도 원 결제금액을 깎지 않고 환불 누적으로 잔여를 말한다
+  # (잔여 = total_paid_amount − total_refunded_amount). 두 축을 함께 깎으면 이중 차감이 된다.
+  - cancellation_path_reports_remaining_capacity_through_refund_accumulation
 
 test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/RefundExecutionServiceTest.php

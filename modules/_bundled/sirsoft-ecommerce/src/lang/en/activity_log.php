@@ -375,4 +375,7 @@ return [
         'refund_points_amount' => 'Refunded Mileage',
         'refund_method' => 'Refund Method',
     ],
+
+    // Display for an entity whose name could not be resolved
+    'entity_id_fallback' => 'ID: :id',
 ];

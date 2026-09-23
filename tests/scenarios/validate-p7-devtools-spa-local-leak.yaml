@@ -1,0 +1,19 @@
+feature: DevTools 진단 — spa-local-leak 감지기 오탐 제거 (#599 validate P7)
+
+description: |
+  spa-local-leak 감지기가 「navigate 뒤 visibleColumns 를 $args[0] 로 되쓰는 setState」 만 보고 발화해,
+  컬럼 선택기가 있는 목록 화면을 정상으로 오가도 누수로 진단했다. 누수의 실제 증거인 「현재 레이아웃이
+  알지 못하는 _local 키」가 있을 때만 발화하게 한다.
+
+axes:
+  case: [declared_only, stale_from_previous_page, layout_unknown]
+
+effects:
+  - spa_local_leak_ignores_normal_list_entry
+  - spa_local_leak_fires_on_keys_outside_current_layout
+
+test_files:
+  - resources/js/core/devtools/__tests__/DiagnosticEngine.spaLocalLeak.test.ts
+
+notes: |
+  e2e_browser=not_applicable — 개발 도구 진단 규칙(런타임 화면 무관).

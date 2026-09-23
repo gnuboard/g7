@@ -70,6 +70,28 @@ class CurrencyConversionService
     }
 
     /**
+     * 주문의 금액 기준 통화 코드를 반환합니다. (클레임 서비스 공용 — 스냅샷 → 설정 기본 통화)
+     *
+     * 거래 시점에 동결된 `currency_snapshot.base_currency` 가 정본이고, 없으면 상점 기본 통화로
+     * 떨어진다. `orders.currency` 는 **결제 통화**라 폴백에 쓰지 않는다 — 결제 통화가 기본
+     * 통화와 다른 주문에서 신청서의 기준 통화가 결제 통화로 적히면, 같은 주문을 관리자 화면
+     * (설정 기본 통화)과 신청서가 서로 다른 통화로 말한다(#599 validate P2 #14).
+     *
+     * @param  Order|null  $order  주문
+     * @return string 기준 통화 코드
+     */
+    public function resolveOrderBaseCurrency(?Order $order): string
+    {
+        $snapshot = $order?->currency_snapshot;
+
+        if (is_array($snapshot) && filled($snapshot['base_currency'] ?? null)) {
+            return (string) $snapshot['base_currency'];
+        }
+
+        return $this->getDefaultCurrency();
+    }
+
+    /**
      * 지원 통화 코드 목록을 반환합니다.
      *
      * @return string[] 지원 통화 코드 배열
@@ -660,6 +682,8 @@ class CurrencyConversionService
      * 캐시를 초기화합니다.
      *
      * 테스트 또는 설정 변경 시 캐시를 리셋해야 할 때 사용합니다.
+     *
+     * @return void 반환값 없음
      */
     public function clearCache(): void
     {

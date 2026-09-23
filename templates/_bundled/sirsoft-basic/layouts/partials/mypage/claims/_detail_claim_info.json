@@ -1243,7 +1243,7 @@
                             ]
                         },
                         {
-                            "comment": "row_earned_points — total_earned_points_amount",
+                            "comment": "row_earned_points — total_earned_points_amount. 단위 표기(P)는 서버 `total_earned_points_amount_formatted` 가 정본이다(주문 리소스와 같은 formatEarnedPoints). 화면의 `toLocaleString() + 'P'` 는 그 필드를 싣지 않는 옛 응답·스냅샷을 위한 폴백일 뿐이다.",
                             "type": "basic",
                             "name": "Div",
                             "responsive": {
@@ -1280,7 +1280,7 @@
                                             "props": {
                                                 "className": "text-sm text-gray-900 dark:text-white"
                                             },
-                                            "text": "{{(claim.data?.claim?.calculation_comparison?.original?.total_earned_points_amount ?? 0).toLocaleString()}}P"
+                                            "text": "{{claim.data?.claim?.calculation_comparison?.original?.total_earned_points_amount_formatted ?? ((claim.data?.claim?.calculation_comparison?.original?.total_earned_points_amount ?? 0).toLocaleString() + 'P')}}"
                                         }
                                     ]
                                 },
@@ -1312,7 +1312,7 @@
                                             "props": {
                                                 "className": "{{(claim.data?.claim?.calculation_comparison?.original?.total_earned_points_amount ?? 0) !== (claim.data?.claim?.calculation_comparison?.recalculated?.total_earned_points_amount ?? 0) ? 'text-sm text-red-600 dark:text-red-400 font-semibold' : 'text-sm text-gray-900 dark:text-white'}}"
                                             },
-                                            "text": "{{(claim.data?.claim?.calculation_comparison?.recalculated?.total_earned_points_amount ?? 0).toLocaleString()}}P"
+                                            "text": "{{claim.data?.claim?.calculation_comparison?.recalculated?.total_earned_points_amount_formatted ?? ((claim.data?.claim?.calculation_comparison?.recalculated?.total_earned_points_amount ?? 0).toLocaleString() + 'P')}}"
                                         }
                                     ]
                                 }
@@ -1597,7 +1597,7 @@
                     ]
                 },
                 {
-                    "comment": "결제 내역 — 신청서에 붙은 추가결제 건. 상세 응답에만 실린다(목록은 행마다 결제 건을 조회하지 않는다).",
+                    "comment": "결제 내역 — 신청서에 붙은 추가결제 건. 상세 응답에만 실린다(목록은 행마다 결제 건을 조회하지 않는다). 결제 건 사이 간격은 부모(space-y-2)가 준다 — 반복 노드 자신의 space-y 는 형제 사이에 걸리지 않는다.",
                     "type": "basic",
                     "name": "Div",
                     "iteration": {
@@ -1605,105 +1605,96 @@
                         "item_var": "payment"
                     },
                     "props": {
-                        "className": "space-y-1"
+                        "className": "flex items-baseline justify-between gap-2 px-3 py-2 rounded-lg bg-gray-50 dark:bg-gray-900"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "flex items-baseline justify-between gap-2 px-3 py-2 rounded-lg bg-gray-50 dark:bg-gray-900"
+                                "className": "min-w-0"
                             },
                             "children": [
                                 {
                                     "type": "basic",
-                                    "name": "Div",
+                                    "name": "P",
                                     "props": {
-                                        "className": "min-w-0"
+                                        "className": "text-sm text-gray-900 dark:text-white truncate"
+                                    },
+                                    "text": "{{payment.payment_method_label ?? payment.payment_method ?? ''}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-xs text-gray-500 dark:text-gray-400"
+                                    },
+                                    "text": "{{payment.payment_number ?? ''}}{{payment.paid_at_formatted ? ' · ' + payment.paid_at_formatted : ''}}"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex flex-col items-end gap-0.5 flex-shrink-0"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-sm font-medium text-gray-900 dark:text-white"
+                                    },
+                                    "text": "{{payment.total_amount_formatted ?? ''}}"
+                                },
+                                {
+                                    "comment": "보조 통화 — 바로 위 결제 금액과 같은 값의 다른 표기다. `mc_amount` 는 결제 수단(카드·마일리지)과 무관하게 **청구액 전체**로 만들어지므로(카드분·마일리지분은 배타적이다) 합계인 `total_amount_formatted` 와 같은 값이다.",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "iteration": {
+                                        "source": "{{Object.entries(payment.mc_amount ?? {}).filter(([code]) => code !== (claim.data?.claim?.currency_code ?? _global.preferredCurrency ?? _global.defaultCurrency))}}",
+                                        "item_var": "currency"
+                                    },
+                                    "props": {
+                                        "className": "flex flex-wrap gap-x-2 justify-end"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
-                                            "name": "P",
-                                            "props": {
-                                                "className": "text-sm text-gray-900 dark:text-white truncate"
-                                            },
-                                            "text": "{{payment.payment_method_label ?? payment.payment_method ?? ''}}"
-                                        },
-                                        {
-                                            "type": "basic",
-                                            "name": "P",
+                                            "name": "Span",
                                             "props": {
                                                 "className": "text-xs text-gray-500 dark:text-gray-400"
                                             },
-                                            "text": "{{payment.payment_number ?? ''}}{{payment.paid_at_formatted ? ' · ' + payment.paid_at_formatted : ''}}"
+                                            "text": "{{currency[1]?.formatted ?? ''}}"
                                         }
                                     ]
                                 },
                                 {
                                     "type": "basic",
-                                    "name": "Div",
-                                    "props": {
-                                        "className": "flex flex-col items-end gap-0.5 flex-shrink-0"
+                                    "name": "Span",
+                                    "classMap": {
+                                        "base": "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap",
+                                        "key": "{{payment.payment_status_variant}}",
+                                        "variants": {
+                                            "success": "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
+                                            "danger": "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
+                                            "warning": "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400",
+                                            "info": "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
+                                            "secondary": "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300"
+                                        },
+                                        "default": "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"
                                     },
-                                    "children": [
-                                        {
-                                            "type": "basic",
-                                            "name": "Span",
-                                            "props": {
-                                                "className": "text-sm font-medium text-gray-900 dark:text-white"
-                                            },
-                                            "text": "{{payment.total_amount_formatted ?? ''}}"
-                                        },
-                                        {
-                                            "comment": "보조 통화 — 바로 위 결제 금액과 같은 값의 다른 표기다. `mc_amount` 는 결제 수단(카드·마일리지)과 무관하게 **청구액 전체**로 만들어지므로(카드분·마일리지분은 배타적이다) 합계인 `total_amount_formatted` 와 같은 값이다.",
-                                            "type": "basic",
-                                            "name": "Div",
-                                            "iteration": {
-                                                "source": "{{Object.entries(payment.mc_amount ?? {}).filter(([code]) => code !== (claim.data?.claim?.currency_code ?? _global.preferredCurrency ?? _global.defaultCurrency))}}",
-                                                "item_var": "currency"
-                                            },
-                                            "props": {
-                                                "className": "flex flex-wrap gap-x-2 justify-end"
-                                            },
-                                            "children": [
-                                                {
-                                                    "type": "basic",
-                                                    "name": "Span",
-                                                    "props": {
-                                                        "className": "text-xs text-gray-500 dark:text-gray-400"
-                                                    },
-                                                    "text": "{{currency[1]?.formatted ?? ''}}"
-                                                }
-                                            ]
-                                        },
-                                        {
-                                            "type": "basic",
-                                            "name": "Span",
-                                            "classMap": {
-                                                "base": "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap",
-                                                "key": "{{payment.payment_status_variant}}",
-                                                "variants": {
-                                                    "success": "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
-                                                    "danger": "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
-                                                    "warning": "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400",
-                                                    "info": "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
-                                                    "secondary": "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300"
-                                                },
-                                                "default": "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"
-                                            },
-                                            "text": "{{payment.payment_status_label ?? ''}}"
-                                        },
-                                        {
-                                            "type": "basic",
-                                            "name": "Span",
-                                            "if": "{{(payment.refunded_amount ?? 0) > 0}}",
-                                            "props": {
-                                                "className": "text-xs text-blue-600 dark:text-blue-400"
-                                            },
-                                            "text": "$t:claim.detail.payment_refunded|amount={{payment.refunded_amount_formatted ?? ''}}"
-                                        }
-                                    ]
+                                    "text": "{{payment.payment_status_label ?? ''}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{(payment.refunded_amount ?? 0) > 0}}",
+                                    "props": {
+                                        "className": "text-xs text-blue-600 dark:text-blue-400"
+                                    },
+                                    "text": "$t:claim.detail.payment_refunded|amount={{payment.refunded_amount_formatted ?? ''}}"
                                 }
                             ]
                         }

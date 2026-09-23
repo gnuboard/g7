@@ -54,6 +54,7 @@ interface MileageTransactionRepositoryInterface
      *
      * @param  MileageTransaction  $lot  대상 적립건
      * @param  float  $amount  차감액
+     * @return void 반환값 없음
      */
     public function decrementRemaining(MileageTransaction $lot, float $amount): void;
 
@@ -107,6 +108,7 @@ interface MileageTransactionRepositoryInterface
      *
      * @param  MileageTransaction  $lot  대상 적립건
      * @param  float  $delta  증액할 금액 (> 0)
+     * @return void 반환값 없음
      */
     public function incrementEarnLotAmount(MileageTransaction $lot, float $delta): void;
 
@@ -188,6 +190,7 @@ interface MileageTransactionRepositoryInterface
      *
      * @param  MileageTransaction  $lot  대상 적립건
      * @param  Carbon  $now  소멸 처리 시각
+     * @return void 반환값 없음
      */
     public function markExpired(MileageTransaction $lot, Carbon $now): void;
 
@@ -271,6 +274,7 @@ interface MileageTransactionRepositoryInterface
      *
      * @param  MileageTransaction  $lot  대상 적립건
      * @param  Carbon  $expiresAt  새 만료일
+     * @return void 반환값 없음
      */
     public function updateExpiry(MileageTransaction $lot, Carbon $expiresAt): void;
 
@@ -297,4 +301,12 @@ interface MileageTransactionRepositoryInterface
      * @return float 환급 누적액
      */
     public function sumRestoredForClaimPayment(int $claimPaymentId): float;
+
+    /**
+     * 클레임 추가결제 건으로 이미 기록된 마일리지 사용(차감) 거래를 찾습니다. (차감 멱등 축)
+     *
+     * @param  int  $claimPaymentId  클레임 추가결제 ID
+     * @return MileageTransaction|null 사용 거래 (없으면 null)
+     */
+    public function findUsageForClaimPayment(int $claimPaymentId): ?MileageTransaction;
 }

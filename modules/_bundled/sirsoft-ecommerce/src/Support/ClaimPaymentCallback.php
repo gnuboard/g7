@@ -39,7 +39,13 @@ final class ClaimPaymentCallback
     public static function approveAndRedirect(ClaimPayment $payment, array $callback, ?Closure $onAmountMismatch = null): RedirectResponse
     {
         try {
-            $paid = app(ClaimPaymentService::class)->approvePgPayment($payment, $callback);
+            // PG 별 보상 클로저를 받았으면 모듈의 망취소 훅은 부르지 않는다 — 두 경로가 모두
+            // 취소를 시도하면 같은 승인을 두 번 취소한다. 클로저가 없으면 모듈 훅이 보상한다.
+            $paid = app(ClaimPaymentService::class)->approvePgPayment(
+                $payment,
+                $callback,
+                voidOnReject: $onAmountMismatch === null,
+            );
 
             return redirect(ClaimPaymentRedirect::success($paid));
         } catch (OrderClaimException $e) {

@@ -232,8 +232,17 @@ class Module extends AbstractModule
                     ],
                 ],
                 // 클레임(교환/반품/환불) 관리 권한
+                //
+                // 스코프 축은 **주문의 것을 물려받는다**(`orders` 와 같은 `order` · `user_id`). 신청서는
+                // 언제나 한 주문에 속하고, 그 주문을 볼 수 없는 운영자가 신청서로는 같은 고객의 주문
+                // 내용·환불 계좌를 보거나 환불을 실행할 수 있으면 주문 스코프가 우회된다. 판정 대상
+                // 모델은 신청서가 아니라 **그 주문**이다 — `{order}` 로 묶인 라우트는 미들웨어가,
+                // `{id}` 로 신청서를 받는 라우트는 `ClaimScopeGuard` 가, 목록은 저장소가
+                // (`FiltersAdminClaimList::applyAdminClaimScope()`) 같은 판정을 한다.
                 [
                     'identifier' => 'claims',
+                    'resource_route_key' => 'order',
+                    'owner_key' => 'user_id',
                     'name' => [
                         'ko' => '취소/반품/교환 관리',
                         'en' => 'Claim Management',

@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace Modules\Sirsoft\Ecommerce\Tests\Unit\Providers;
 
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Route;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
@@ -73,7 +77,10 @@ class GuestClaimRouteThrottleTest extends ModuleTestCase
     }
 
     /**
-     * 미들웨어 목록에서 `throttle:` 상한을 읽습니다.
+     * 미들웨어 목록에서 `throttle:` 상한을 읽습니다. (숫자 상한 · 이름 있는 리미터 모두)
+     *
+     * 이름 있는 리미터(`throttle:sirsoft-ecommerce.guest-claims`)는 등록된 리미터를 실제로 풀어
+     * 분당 허용 횟수를 읽는다 — 이름만 보고 통과시키면 리미터가 등록되지 않은 경우를 놓친다.
      *
      * @param  array<int, string>  $middleware  미들웨어 목록
      * @return array<int, int> 분당 허용 횟수 목록
@@ -91,6 +98,20 @@ class GuestClaimRouteThrottleTest extends ModuleTestCase
 
             if (is_numeric($parts[0])) {
                 $limits[] = (int) $parts[0];
+
+                continue;
+            }
+
+            $limiter = RateLimiter::limiter($parts[0]);
+
+            if ($limiter === null) {
+                continue;
+            }
+
+            foreach (Arr::wrap($limiter(Request::create('/'))) as $limit) {
+                if ($limit instanceof Limit) {
+                    $limits[] = (int) $limit->maxAttempts;
+                }
             }
         }
 
@@ -98,9 +119,13 @@ class GuestClaimRouteThrottleTest extends ModuleTestCase
     }
 
     /**
+     * 비회원 클레임 라우트 전부에 요청 빈도 상한(숫자 또는 이름 있는 리미터)이 걸려 있는지 검증합니다.
+     *
      * @scenario claim_type=exchange, entry=with_token, screen=apply
      *
      * @effects guest_claim_routes_carry_a_request_rate_limit
+     *
+     * @return void 반환값 없음
      */
     public function test_every_guest_claim_route_carries_a_request_rate_limit(): void
     {
@@ -126,9 +151,13 @@ class GuestClaimRouteThrottleTest extends ModuleTestCase
     }
 
     /**
+     * 파일을 쓰는 첨부 업로드 라우트의 상한이 블록의 다른 라우트보다 좁은지 검증합니다.
+     *
      * @scenario claim_type=return, entry=with_token, screen=apply
      *
      * @effects guest_claim_image_upload_is_bounded_more_tightly
+     *
+     * @return void 반환값 없음
      */
     public function test_the_file_writing_route_is_bounded_more_tightly_than_the_block(): void
     {

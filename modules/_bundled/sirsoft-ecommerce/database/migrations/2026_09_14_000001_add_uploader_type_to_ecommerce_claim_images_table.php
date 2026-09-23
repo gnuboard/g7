@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Schema;
  *
  * ## 백필을 `up()` 안에서 하는 이유
  *
- * 클레임 기능은 아직 공개 전이라 업그레이드 스텝을 만들지 않는다(PO 결정). 대신 이 마이그레이션이
+ * 클레임 기능은 아직 공개 전이라 업그레이드 스텝을 만들지 않는다(운영 결정). 대신 이 마이그레이션이
  * 컬럼 추가 직후 같은 자리에서 기존 행의 주체를 추정해 채운다. **단정할 수 있는 규칙만** 쓰고
  * 나머지는 `unknown` 으로 둔다 — 한 번 굳으면 원본이 없고, 화면은 확신 있게 "고객 첨부" 라고
  * 말하게 되기 때문이다.
@@ -76,9 +76,6 @@ return new class extends Migration
             return;
         }
 
-        $prefix = DB::getTablePrefix();
-        $images = $prefix.'ecommerce_claim_images';
-
         // 1) 미귀속(pending) 업로드는 언제나 고객이 올린 것이다.
         DB::table('ecommerce_claim_images')
             ->where('uploader_type', 'unknown')
@@ -92,6 +89,8 @@ return new class extends Migration
             ->update(['uploader_type' => 'customer']);
 
         // 3) 귀속 신청서의 신청자와 업로더를 대조한다. 유형별 신청서 테이블이 따로라 유형마다 돈다.
+        //    `UPDATE ... JOIN` 은 MySQL 전용 문법이라 쓰지 않는다 — 존재 서브쿼리 두 번으로 나눠
+        //    "신청자 = 업로더 → customer" 를 먼저 채우고, 귀속 신청서가 있는 나머지를 admin 으로 채운다.
         foreach ([
             'exchange' => 'ecommerce_order_exchanges',
             'return' => 'ecommerce_order_returns',
@@ -101,18 +100,27 @@ return new class extends Migration
                 continue;
             }
 
-            $claims = $prefix.$table;
+            DB::table('ecommerce_claim_images')
+                ->where('uploader_type', 'unknown')
+                ->where('claimable_type', $claimType)
+                ->whereExists(function ($query) use ($table) {
+                    $query->select("{$table}.id")
+                        ->from($table)
+                        ->whereColumn("{$table}.id", 'ecommerce_claim_images.claimable_id')
+                        ->whereNotNull("{$table}.requested_by")
+                        ->whereColumn("{$table}.requested_by", 'ecommerce_claim_images.created_by');
+                })
+                ->update(['uploader_type' => 'customer']);
 
-            DB::statement(
-                "UPDATE `{$images}` i
-                 JOIN `{$claims}` c ON c.id = i.claimable_id
-                 SET i.uploader_type = CASE
-                     WHEN c.requested_by IS NOT NULL AND c.requested_by = i.created_by THEN 'customer'
-                     ELSE 'admin'
-                 END
-                 WHERE i.uploader_type = 'unknown' AND i.claimable_type = ?",
-                [$claimType]
-            );
+            DB::table('ecommerce_claim_images')
+                ->where('uploader_type', 'unknown')
+                ->where('claimable_type', $claimType)
+                ->whereExists(function ($query) use ($table) {
+                    $query->select("{$table}.id")
+                        ->from($table)
+                        ->whereColumn("{$table}.id", 'ecommerce_claim_images.claimable_id');
+                })
+                ->update(['uploader_type' => 'admin']);
         }
 
         // 4) 남은 행은 귀속 신청서를 찾지 못한 고아다 — `unknown` 으로 둔다(단정 금지).

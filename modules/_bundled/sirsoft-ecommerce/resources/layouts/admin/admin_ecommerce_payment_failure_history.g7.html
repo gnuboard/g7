@@ -63,7 +63,7 @@
         <div data-ref="payment_method_filter_row" class="filter-row">
           <span class="filter-label">$t:sirsoft-ecommerce.admin.payment_failure_history.filter.payment_method</span>
           <div class="filter-buttons">
-            <div class="{{_local.paymentMethodFilter === '' ? 'btn-badge cursor-pointer bg-gray-200 text-gray-700 ring-1 ring-gray-400 dark:bg-gray-700 dark:text-gray-300' : 'btn-badge cursor-pointer'}}">
+            <div class="{{_local.paymentMethodFilter === '' ? 'btn-badge cursor-pointer bg-gray-200 text-gray-700 ring-1 ring-gray-400 dark:bg-gray-700 dark:text-gray-300 dark:ring-gray-500' : 'btn-badge cursor-pointer'}}">
               <on type="click">
                 <!-- 결제수단을 가리지 않고 모두 -->
                 <set-state target="_local" paymentMethodFilter=""/>
@@ -71,7 +71,7 @@
               <icon name="list" class="text-xs"/>
               <span>$t:sirsoft-ecommerce.admin.payment_failure_history.filter.all</span>
             </div>
-            <div class="{{_local.paymentMethodFilter === 'card' ? 'btn-badge btn-badge-blue cursor-pointer ring-1 ring-blue-400' : 'btn-badge cursor-pointer'}}">
+            <div class="{{_local.paymentMethodFilter === 'card' ? 'btn-badge btn-badge-blue cursor-pointer ring-1 ring-blue-400 dark:ring-blue-500' : 'btn-badge cursor-pointer'}}">
               <on type="click">
                 <!-- 신용카드 — 실패가 가장 많이 나는 수단이라 따로 보는 일이 잦다 -->
                 <set-state target="_local" paymentMethodFilter="card"/>
@@ -79,7 +79,7 @@
               <icon name="credit-card" class="text-xs"/>
               <span>$t:sirsoft-ecommerce.admin.payment_failure_history.filter.card</span>
             </div>
-            <div class="{{_local.paymentMethodFilter === 'bank_transfer' ? 'btn-badge btn-badge-cyan cursor-pointer ring-1 ring-cyan-400' : 'btn-badge cursor-pointer'}}">
+            <div class="{{_local.paymentMethodFilter === 'bank_transfer' ? 'btn-badge btn-badge-cyan cursor-pointer ring-1 ring-cyan-500' : 'btn-badge cursor-pointer'}}">
               <on type="click">
                 <!-- 계좌이체 -->
                 <set-state target="_local" paymentMethodFilter="bank_transfer"/>
@@ -87,7 +87,7 @@
               <icon name="landmark" class="text-xs"/>
               <span>$t:sirsoft-ecommerce.admin.payment_failure_history.filter.bank_transfer</span>
             </div>
-            <div class="{{_local.paymentMethodFilter === 'virtual_account' ? 'btn-badge btn-badge-orange cursor-pointer ring-1 ring-orange-400' : 'btn-badge cursor-pointer'}}">
+            <div class="{{_local.paymentMethodFilter === 'virtual_account' ? 'btn-badge btn-badge-orange cursor-pointer ring-1 ring-orange-500' : 'btn-badge cursor-pointer'}}">
               <on type="click">
                 <!-- 가상계좌 — 발급 단계에서 막힌 건이 여기 남는다 -->
                 <set-state target="_local" paymentMethodFilter="virtual_account"/>
@@ -95,7 +95,7 @@
               <icon name="wallet" class="text-xs"/>
               <span>$t:sirsoft-ecommerce.admin.payment_failure_history.filter.virtual_account</span>
             </div>
-            <div class="{{_local.paymentMethodFilter === 'easy_payment' ? 'btn-badge btn-badge-yellow cursor-pointer ring-1 ring-yellow-400' : 'btn-badge cursor-pointer'}}">
+            <div class="{{_local.paymentMethodFilter === 'easy_payment' ? 'btn-badge btn-badge-yellow cursor-pointer ring-1 ring-yellow-500' : 'btn-badge cursor-pointer'}}">
               <on type="click">
                 <!-- 간편결제 — 앱으로 넘어갔다 돌아오지 못한 이탈이 섞여 있다 -->
                 <set-state target="_local" paymentMethodFilter="easy_payment"/>
@@ -103,7 +103,7 @@
               <icon name="smartphone" class="text-xs"/>
               <span>$t:sirsoft-ecommerce.admin.payment_failure_history.filter.easy_payment</span>
             </div>
-            <div class="{{_local.paymentMethodFilter === 'bank_deposit' ? 'btn-badge btn-badge-red cursor-pointer ring-1 ring-red-400' : 'btn-badge cursor-pointer'}}">
+            <div class="{{_local.paymentMethodFilter === 'bank_deposit' ? 'btn-badge btn-badge-red cursor-pointer ring-1 ring-red-500' : 'btn-badge cursor-pointer'}}">
               <on type="click">
                 <!-- 무통장입금 -->
                 <set-state target="_local" paymentMethodFilter="bank_deposit"/>
@@ -117,21 +117,21 @@
           <span class="filter-label">$t:sirsoft-ecommerce.admin.payment_failure_history.filter.device</span>
           <div class="filter-buttons">
             <!-- 기기를 가리지 않고 모두 -->
-            <div class="{{_local.deviceFilter === '' ? 'btn-badge btn-badge-blue cursor-pointer ring-1 ring-blue-400' : 'btn-badge cursor-pointer'}}">
+            <div class="{{_local.deviceFilter === '' ? 'btn-badge btn-badge-blue cursor-pointer ring-1 ring-blue-400 dark:ring-blue-500' : 'btn-badge cursor-pointer'}}">
               <on type="click">
                 <set-state target="_local" deviceFilter=""/>
               </on>
               $t:sirsoft-ecommerce.admin.payment_failure_history.filter.all
             </div>
             <!-- PC — 기기별로 결제창 동작이 달라 실패 원인 추적의 한 축이다 -->
-            <div class="{{_local.deviceFilter === 'desktop' ? 'btn-badge cursor-pointer bg-gray-200 text-gray-700 ring-1 ring-gray-400 dark:bg-gray-700 dark:text-gray-300' : 'btn-badge cursor-pointer'}}">
+            <div class="{{_local.deviceFilter === 'desktop' ? 'btn-badge cursor-pointer bg-gray-200 text-gray-700 ring-1 ring-gray-400 dark:bg-gray-700 dark:text-gray-300 dark:ring-gray-500' : 'btn-badge cursor-pointer'}}">
               <on type="click">
                 <set-state target="_local" deviceFilter="desktop"/>
               </on>
               $t:sirsoft-ecommerce.admin.payment_failure_history.filter.desktop
             </div>
             <!-- 모바일 — 앱 전환이 끼어 이탈이 잦은 쪽이다 -->
-            <div class="{{_local.deviceFilter === 'mobile' ? 'btn-badge cursor-pointer bg-gray-200 text-gray-700 ring-1 ring-gray-400 dark:bg-gray-700 dark:text-gray-300' : 'btn-badge cursor-pointer'}}">
+            <div class="{{_local.deviceFilter === 'mobile' ? 'btn-badge cursor-pointer bg-gray-200 text-gray-700 ring-1 ring-gray-400 dark:bg-gray-700 dark:text-gray-300 dark:ring-gray-500' : 'btn-badge cursor-pointer'}}">
               <on type="click">
                 <set-state target="_local" deviceFilter="mobile"/>
               </on>

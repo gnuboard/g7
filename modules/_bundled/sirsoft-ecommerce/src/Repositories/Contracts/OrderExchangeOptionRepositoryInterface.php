@@ -85,14 +85,4 @@ interface OrderExchangeOptionRepositoryInterface
      * @return int 변경된 행 수
      */
     public function bulkUpdateStatus(int $exchangeId, string $status, array $optionIds = []): int;
-
-    /**
-     * 교환 신청서의 신청 상품을 모두 삭제합니다.
-     *
-     * 신청 수정(교체 저장) 경로에서 사용합니다.
-     *
-     * @param  int  $exchangeId  교환 신청서 ID
-     * @return int 삭제된 행 수
-     */
-    public function deleteByExchangeId(int $exchangeId): int;
 }

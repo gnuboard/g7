@@ -18,7 +18,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  * 같은 도메인의 관리자 주문상세·클레임 비교표는 이미 `710P` 라 어긋난 쪽이 드러났고,
  * ja 언어팩의 마일리지 만료 알림도 단위가 `ポイント` 로 일관된다.
  *
- * PO 확정(2026-09-22): **P 로 통일**.
+ * 운영 결정(2026-09-22): **P 로 통일**.
  */
 class EarnedPointsFormattedAsPointsTest extends ModuleTestCase
 {

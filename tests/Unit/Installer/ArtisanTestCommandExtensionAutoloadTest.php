@@ -42,6 +42,11 @@ class ArtisanTestCommandExtensionAutoloadTest extends TestCase
 {
     private string $artisanSource = '';
 
+    /**
+     * 검사 대상 artisan 스크립트 원문을 읽어 둡니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -50,9 +55,13 @@ class ArtisanTestCommandExtensionAutoloadTest extends TestCase
     }
 
     /**
+     * test 명령 경로는 등록 완료 상수를 무조건 세우지 않는다.
+     *
      * @scenario entrypoint=artisan_test_command, autoload_registration=skipped
      *
      * @effects autoload_registered_flag_is_not_defined_unconditionally, artisan_never_claims_autoload_registration_it_did_not_perform
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function 확장_오토로드를_건너뛰는_경로에서는_등록_완료_상수를_정의하지_않는다(): void
@@ -74,9 +83,13 @@ class ArtisanTestCommandExtensionAutoloadTest extends TestCase
     }
 
     /**
+     * 등록 완료 상수는 실제 등록 블록 안에서만 정의된다.
+     *
      * @scenario entrypoint=artisan_normal_command, autoload_registration=registered
      *
      * @effects autoload_registered_flag_is_defined_only_inside_registration_block, artisan_never_claims_autoload_registration_it_did_not_perform
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function 등록_완료_상수는_실제_등록_경로_안에서만_정의된다(): void
@@ -99,9 +112,13 @@ class ArtisanTestCommandExtensionAutoloadTest extends TestCase
     }
 
     /**
+     * test 명령 판별과 확장 오토로드 캐시 경로는 그대로 유지된다.
+     *
      * @scenario entrypoint=artisan_test_command, autoload_registration=skipped
      *
      * @effects test_command_detection_is_preserved, extension_autoload_cache_path_is_preserved
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_명령_판별과_확장_오토로드_파일_경로가_유지된다(): void
@@ -115,7 +132,7 @@ class ArtisanTestCommandExtensionAutoloadTest extends TestCase
         );
 
         $this->assertStringContainsString(
-            "bootstrap/cache/autoload-extensions.php",
+            'bootstrap/cache/autoload-extensions.php',
             $this->artisanSource,
             '확장 오토로드 캐시 경로가 바뀌었다.'
         );

@@ -27,6 +27,8 @@ class OrderResourceFieldsTest extends ModuleTestCase
      * OrderOptionResource에 final_amount, final_amount_formatted 필드가 포함되는지 확인
      *
      * @effects option_final_amount_deducts_discount_points_and_deposit
+     *
+     * @return void 반환값 없음
      */
     public function test_order_option_resource_includes_final_amount_fields(): void
     {
@@ -53,6 +55,8 @@ class OrderResourceFieldsTest extends ModuleTestCase
      * OrderOptionResource에 list_price 필드가 option_snapshot에서 추출되는지 확인
      *
      * @effects option_list_price_comes_from_the_option_snapshot
+     *
+     * @return void 반환값 없음
      */
     public function test_order_option_resource_includes_list_price_from_snapshot(): void
     {
@@ -78,6 +82,8 @@ class OrderResourceFieldsTest extends ModuleTestCase
      * OrderOptionResource에서 mc_subtotal_discount_amount 필드가 제거되었는지 확인
      *
      * @effects option_resource_drops_the_removed_mc_discount_field
+     *
+     * @return void 반환값 없음
      */
     public function test_order_option_resource_does_not_include_mc_subtotal_discount_amount(): void
     {
@@ -96,6 +102,8 @@ class OrderResourceFieldsTest extends ModuleTestCase
      * OrderResource에 total_quantity 필드가 옵션 수량 합계를 반환하는지 확인
      *
      * @effects order_total_quantity_sums_the_option_quantities
+     *
+     * @return void 반환값 없음
      */
     public function test_order_resource_includes_total_quantity(): void
     {
@@ -117,6 +125,8 @@ class OrderResourceFieldsTest extends ModuleTestCase
      * OrderResource에 total_list_price 필드가 스냅샷의 list_price * quantity 합계를 반환하는지 확인
      *
      * @effects order_total_list_price_sums_snapshot_list_price_times_quantity
+     *
+     * @return void 반환값 없음
      */
     public function test_order_resource_includes_total_list_price(): void
     {
@@ -150,6 +160,8 @@ class OrderResourceFieldsTest extends ModuleTestCase
      * OrderResource의 total_list_price가 list_price 없을 때 unit_price로 폴백하는지 확인
      *
      * @effects order_total_list_price_falls_back_to_unit_price_without_a_snapshot
+     *
+     * @return void 반환값 없음
      */
     public function test_order_resource_total_list_price_falls_back_to_unit_price(): void
     {
@@ -178,6 +190,8 @@ class OrderResourceFieldsTest extends ModuleTestCase
      * Resource 가 누락하면 화면에 마일리지가 표시되지 않는다.
      *
      * @effects order_exposes_used_earned_and_refunded_mileage_totals
+     *
+     * @return void 반환값 없음
      */
     public function test_order_resource_exposes_mileage_and_refund_points_fields(): void
     {
@@ -195,7 +209,8 @@ class OrderResourceFieldsTest extends ModuleTestCase
         $this->assertEquals(5000, $resource['total_points_used_amount']);
         $this->assertEquals('5,000원', $resource['total_points_used_amount_formatted']);
         $this->assertEquals(2400, $resource['total_earned_points_amount']);
-        $this->assertEquals('2,400원', $resource['total_earned_points_amount_formatted']);
+        // 적립 마일리지는 화폐가 아니라 포인트라 `P` 로 표기한다 (CHANGELOG 「적립 마일리지 단위 통일」)
+        $this->assertEquals('2,400P', $resource['total_earned_points_amount_formatted']);
         $this->assertEquals(1500, $resource['total_refunded_points_amount']);
         $this->assertEquals('1,500원', $resource['total_refunded_points_amount_formatted']);
     }
@@ -204,6 +219,8 @@ class OrderResourceFieldsTest extends ModuleTestCase
      * OrderOptionResource의 final_amount가 할인+마일리지+예치금 모두 차감하는지 확인
      *
      * @effects option_final_amount_deducts_discount_points_and_deposit
+     *
+     * @return void 반환값 없음
      */
     public function test_order_option_resource_final_amount_deducts_all(): void
     {
@@ -232,6 +249,8 @@ class OrderResourceFieldsTest extends ModuleTestCase
      * 주문상세 '구매수량' 컬럼의 재고 차감/미차감 배지가 이 필드를 사용한다.
      *
      * @effects resource_exposes_is_stock_deducted_boolean
+     *
+     * @return void 반환값 없음
      */
     public function test_order_option_resource_exposes_is_stock_deducted(): void
     {
@@ -256,6 +275,8 @@ class OrderResourceFieldsTest extends ModuleTestCase
      * 적립예정액은 있으나 실제 적립이 아직 발생하지 않은 상태 → '적립예정' 배지.
      *
      * @effects resource_is_points_earned_false_without_earn_tx
+     *
+     * @return void 반환값 없음
      */
     public function test_order_option_resource_is_points_earned_false_without_earn_transaction(): void
     {
@@ -280,6 +301,8 @@ class OrderResourceFieldsTest extends ModuleTestCase
      * 실제 PURCHASE_EARN 거래가 해당 옵션에 발행된 상태 → '적립완료' 배지.
      *
      * @effects resource_is_points_earned_true_with_purchase_earn
+     *
+     * @return void 반환값 없음
      */
     public function test_order_option_resource_is_points_earned_true_with_purchase_earn_transaction(): void
     {
@@ -315,6 +338,8 @@ class OrderResourceFieldsTest extends ModuleTestCase
      * 구매 적립(PURCHASE_EARN)만 대상으로 한다. 사용/복원 거래로 오탐되면 안 된다.
      *
      * @effects resource_is_points_earned_ignores_non_purchase_tx
+     *
+     * @return void 반환값 없음
      */
     public function test_order_option_resource_is_points_earned_ignores_non_purchase_earn_transactions(): void
     {
@@ -362,6 +387,8 @@ class OrderResourceFieldsTest extends ModuleTestCase
      * @scenario stock_deduction=not_deducted, points_earn=earn_cancelled, non_purchase_tx=none
      *
      * @effects resource_marks_cancelled_option_as_earn_cancelled
+     *
+     * @return void 반환값 없음
      */
     public function test_order_option_resource_marks_cancelled_option_as_earn_cancelled(): void
     {
@@ -395,6 +422,8 @@ class OrderResourceFieldsTest extends ModuleTestCase
      * @scenario stock_deduction=not_deducted, points_earn=earned, non_purchase_tx=none
      *
      * @effects resource_marks_cancelled_option_as_earn_cancelled
+     *
+     * @return void 반환값 없음
      */
     public function test_cancelled_option_with_issued_earn_still_reads_as_earned(): void
     {
@@ -429,6 +458,8 @@ class OrderResourceFieldsTest extends ModuleTestCase
      * OrderResource 가 cancelled_at native 컬럼과 cancelled_at_formatted 를 노출하는지 확인.
      *
      * @effects order_exposes_cancelled_at_with_its_formatted_twin
+     *
+     * @return void 반환값 없음
      */
     public function test_order_resource_exposes_cancelled_at_and_formatted(): void
     {
@@ -446,6 +477,8 @@ class OrderResourceFieldsTest extends ModuleTestCase
      * cancelled_at 이 null 이면 cancelled_at_formatted 도 null 이다.
      *
      * @effects order_cancelled_at_formatted_is_null_when_the_order_was_never_cancelled
+     *
+     * @return void 반환값 없음
      */
     public function test_order_resource_cancelled_at_formatted_null_when_not_cancelled(): void
     {
@@ -461,6 +494,8 @@ class OrderResourceFieldsTest extends ModuleTestCase
      * OrderPaymentResource 가 결제수단별 requires_pg_cancellation 플래그를 노출하는지 확인 (A28).
      *
      * @effects payment_resource_declares_whether_the_method_requires_a_pg_cancellation, resource_exposes_requires_pg_cancellation
+     *
+     * @return void 반환값 없음
      */
     public function test_order_payment_resource_exposes_requires_pg_cancellation(): void
     {
@@ -483,6 +518,8 @@ class OrderResourceFieldsTest extends ModuleTestCase
      * (부분취소는 별도 order_status 가 아니라 파생 플래그로 표시 — 2026-06-22.)
      *
      * @effects order_is_partially_cancelled_only_with_both_cancelled_and_active_options
+     *
+     * @return void 반환값 없음
      */
     public function test_order_resource_exposes_is_partially_cancelled_flag(): void
     {
@@ -515,6 +552,8 @@ class OrderResourceFieldsTest extends ModuleTestCase
      * 동일한 경계(confirmed_at + N일)를 사용함을 회귀로 고정한다.
      *
      * @effects option_review_deadline_passed_after_the_write_period_from_confirmation
+     *
+     * @return void 반환값 없음
      */
     public function test_order_option_resource_review_deadline_passed_true_when_expired(): void
     {
@@ -537,6 +576,8 @@ class OrderResourceFieldsTest extends ModuleTestCase
      * 구매확정 후 작성 기한 이내(확정 직후)면 review_deadline_passed=false
      *
      * @effects option_review_deadline_not_passed_inside_the_write_period
+     *
+     * @return void 반환값 없음
      */
     public function test_order_option_resource_review_deadline_passed_false_within_period(): void
     {
@@ -558,6 +599,8 @@ class OrderResourceFieldsTest extends ModuleTestCase
      * 구매확정 전(미확정) 옵션은 기한 만료 안내를 노출하지 않는다
      *
      * @effects option_review_deadline_not_passed_before_confirmation
+     *
+     * @return void 반환값 없음
      */
     public function test_order_option_resource_review_deadline_passed_false_when_not_confirmed(): void
     {
@@ -582,6 +625,8 @@ class OrderResourceFieldsTest extends ModuleTestCase
      * 계속 "$..." 로 고정되어야 한다 (소급 통화 변경 방지).
      *
      * @effects order_formatted_amounts_follow_the_order_snapshot_currency_not_the_current_default
+     *
+     * @return void 반환값 없음
      */
     public function test_order_amount_formatted_uses_snapshot_currency_not_current_default(): void
     {
@@ -611,6 +656,8 @@ class OrderResourceFieldsTest extends ModuleTestCase
      * 숫자와 기호의 단위가 어긋난다 (#421 기본통화≠결제통화 정합).
      *
      * @effects child_resource_formats_base_fields_with_the_injected_order_currency, child_resource_formats_the_actually_charged_amount_with_the_payment_currency
+     *
+     * @return void 반환값 없음
      */
     public function test_child_resource_uses_injected_order_currency(): void
     {
@@ -647,6 +694,8 @@ class OrderResourceFieldsTest extends ModuleTestCase
      * 화면이 서버와 같은 값을 들 수 있도록 응답에 그 값을 노출한다.
      *
      * @effects order_exposes_the_payment_currency_charge_amount_for_cross_currency_orders
+     *
+     * @return void 반환값 없음
      */
     public function test_order_resource_exposes_payment_currency_charge_amount(): void
     {
@@ -690,6 +739,8 @@ class OrderResourceFieldsTest extends ModuleTestCase
      * base == 결제 통화면 청구액이 base 금액과 같아야 한다 (단일통화 상점 회귀 방지).
      *
      * @effects order_charge_amount_equals_the_base_amount_for_single_currency_orders
+     *
+     * @return void 반환값 없음
      */
     public function test_order_resource_charge_amount_equals_base_when_single_currency(): void
     {

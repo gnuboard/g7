@@ -178,14 +178,14 @@ P3-① — adjustment.cancel_blocked 면 사유 + 안내를 이 자리에 남기
             </div>
           </div>
         </div>
-        <!-- row_earned_points — total_earned_points_amount -->
+        <!-- row_earned_points — total_earned_points_amount. 단위 표기(P)는 서버 `total_earned_points_amount_formatted` 가 정본이다(주문 리소스와 같은 formatEarnedPoints). 화면의 `toLocaleString() + 'P'` 는 그 필드를 싣지 않는 옛 응답·스냅샷을 위한 폴백일 뿐이다. -->
         <div class="grid grid-cols-3 gap-x-3 gap-y-1 py-0.5" data-row="total_earned_points_amount">
           <span class="text-gray-600 dark:text-gray-400 break-keep">$t:claim.apply.comparison.row_earned_points</span>
           <div class="text-right">
-            <span class="text-gray-900 dark:text-white">{{(_local.claimEstimate?.adjustment?.original_snapshot?.total_earned_points_amount ?? 0).toLocaleString()}}P</span>
+            <span class="text-gray-900 dark:text-white">{{_local.claimEstimate?.adjustment?.original_snapshot?.total_earned_points_amount_formatted ?? ((_local.claimEstimate?.adjustment?.original_snapshot?.total_earned_points_amount ?? 0).toLocaleString() + 'P')}}</span>
           </div>
           <div class="text-right">
-            <span class="{{(_local.claimEstimate?.adjustment?.original_snapshot?.total_earned_points_amount ?? 0) !== (_local.claimEstimate?.adjustment?.recalculated_snapshot?.total_earned_points_amount ?? 0) ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-900 dark:text-white'}}">{{(_local.claimEstimate?.adjustment?.recalculated_snapshot?.total_earned_points_amount ?? 0).toLocaleString()}}P</span>
+            <span class="{{(_local.claimEstimate?.adjustment?.original_snapshot?.total_earned_points_amount ?? 0) !== (_local.claimEstimate?.adjustment?.recalculated_snapshot?.total_earned_points_amount ?? 0) ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-900 dark:text-white'}}">{{_local.claimEstimate?.adjustment?.recalculated_snapshot?.total_earned_points_amount_formatted ?? ((_local.claimEstimate?.adjustment?.recalculated_snapshot?.total_earned_points_amount ?? 0).toLocaleString() + 'P')}}</span>
           </div>
         </div>
         <!-- row_coupons — 적용 쿠폰 목록(쿠폰명 · 할인액). 전/후 모두 비면 행을 세우지 않는다. -->

@@ -169,6 +169,7 @@
       "cancelled": "キャンセル"
     },
     "partial_cancelled_badge": "一部キャンセル",
+    "additional_options_more": "他{{count}}件",
     "total_amount": "決済金額",
     "shipping_fee": "配送料",
     "free_shipping": "無料",

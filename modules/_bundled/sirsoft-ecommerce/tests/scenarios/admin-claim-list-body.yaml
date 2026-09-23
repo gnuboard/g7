@@ -128,6 +128,18 @@ effects:
   # 유형 축 선택 승계 · 체크 즉시 반영 (5차)
   - subtab_switch_clears_carried_selection
   - completion_modal_stock_toggle_reflects_immediately
+  # 역매핑 보강 (#599 validate P7 — 매핑 없이 남아 있던 구조 계약)
+  - subtab_badges_read_response_counts
+  - list_body_state_declared_in_shell
+  - status_labels_read_type_prefixed_enum_keys
+  - server_pagination_reads_response_meta
+  - completion_summary_items_follow_spec_order
+  - discard_note_does_not_claim_recording
+  - completion_cancel_button_only_closes
+  # 첨부 갱신 핸들러 (상세 사유 카드의 업로더 이벤트)
+  - refresh_claim_attachments_refetches_detail_and_logs
+  - refresh_claim_attachments_announces_the_result
+  - refresh_claim_attachments_does_not_upload
   # i18n
   - new_labels_present_in_all_three_dictionaries
   - defer_translation_only_inside_repeat_context

@@ -42,8 +42,8 @@
             </sequence>
           </on>
         </input>
-        <!-- 목록은 지금 입력값이 만든 결과일 때만 그린다 — 늦게 온 옛 응답은 잠시 감출 뿐 잘못된 행을 보여주지 않는다 -->
-        <div data-ref="member_search_results" data-if="{{(_global.mileageManual?.memberSearchKeyword ?? '').length > 0 &amp;&amp; (_global.mileageManual?.memberSearchResultsKeyword ?? null) === (_global.mileageManual?.memberSearchKeyword ?? '')}}" class="absolute left-0 right-0 top-full z-50 mt-1 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 shadow-lg divide-y divide-gray-100 dark:divide-gray-700 max-h-60 overflow-y-auto">
+        <!-- 목록은 지금 입력값이 만든 결과일 때만 그린다 — 늦게 온 옛 응답은 잠시 감출 뿐 잘못된 행을 보여주지 않는다. 입력값은 trim 해 견준다: 서버는 검색어를 trim 해 `meta.keyword` 로 돌려주므로 앞뒤 공백이 있는 입력(붙여넣은 이메일 등)과 그대로 견주면 결과가 영영 숨는다. -->
+        <div data-ref="member_search_results" data-if="{{(_global.mileageManual?.memberSearchKeyword ?? '').length > 0 &amp;&amp; (_global.mileageManual?.memberSearchResultsKeyword ?? null) === (_global.mileageManual?.memberSearchKeyword ?? '').trim()}}" class="absolute left-0 right-0 top-full z-50 mt-1 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 shadow-lg divide-y divide-gray-100 dark:divide-gray-700 max-h-60 overflow-y-auto">
           <div data-each="member, memberIndex in _global.mileageManual?.memberSearchResults ?? []" class="flex items-center gap-2 p-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700">
             <on type="click">
               <!-- 회원 확정 — 필요한 넷만 추려 담는다(회원 응답 전체를 들고 다니지 않는다). 잔액을 함께 담아 두는 것은 아래 차감 초과 경고가 그 값으로 판단하기 때문이고, 검색어·결과·오류를 한 번에 비워 목록이 남아 떠 있지 않게 한다. -->

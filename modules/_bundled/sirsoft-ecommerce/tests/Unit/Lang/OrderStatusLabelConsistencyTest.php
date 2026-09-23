@@ -15,7 +15,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  * 확인창이 다른 이름으로 바꾸겠다고 묻는다.
  *
  * en 은 두 키가 모두 "Ready to Ship" 로 같아 이 어긋남은 ko 에만 있었다.
- * **정본은 `배송준비중`**(PO 확정 2026-09-15) — 어긋나 있던 쪽이 아니라
+ * **정본은 `배송준비중`**(운영 결정 2026-09-15) — 어긋나 있던 쪽이 아니라
  * 더 널리 쓰이던 `배송준비완료` 를 전면 교체했다.
  *
  * 이 라벨들은 레이아웃 JSON 이 `$t:` 로 참조해 **프론트엔드가** 해석한다
@@ -50,11 +50,26 @@ class OrderStatusLabelConsistencyTest extends ModuleTestCase
         'confirmed',
     ];
 
+    /**
+     * 모듈 언어 파셜 파일의 절대 경로를 만듭니다.
+     *
+     * @param  string  $locale  로케일 (ko/en)
+     * @param  string  $file  파셜 파일명
+     * @return string 파셜 파일 경로
+     */
     private function langPath(string $locale, string $file): string
     {
         return __DIR__."/../../../resources/lang/partial/{$locale}/{$file}";
     }
 
+    /**
+     * 언어 파셜 파일에서 점 경로의 라벨 문자열을 읽습니다 — 없거나 문자열이 아니면 null 입니다.
+     *
+     * @param  string  $locale  로케일 (ko/en)
+     * @param  string  $file  파셜 파일명
+     * @param  string  $path  점으로 구분한 키 경로
+     * @return string|null 라벨 문자열 (없으면 null)
+     */
     private function readKey(string $locale, string $file, string $path): ?string
     {
         $full = $this->langPath($locale, $file);
@@ -84,6 +99,8 @@ class OrderStatusLabelConsistencyTest extends ModuleTestCase
      * @scenario label_path=enums_order_status
      *
      * @effects order_status_label_identical_across_paths
+     *
+     * @return void 반환값 없음
      */
     public function test_order_status_labels_are_identical_across_surfaces(): void
     {
@@ -113,7 +130,7 @@ class OrderStatusLabelConsistencyTest extends ModuleTestCase
     }
 
     /**
-     * `shipping_ready` 는 정본대로 `배송준비중` 이어야 한다 (S3-D1 본체 · PO 확정).
+     * `shipping_ready` 는 정본대로 `배송준비중` 이어야 한다 (S3-D1 본체 · 운영 결정).
      *
      * 세 경로를 한 값으로 맞출 때 아무 쪽으로나 맞춰도 위 일관성 테스트는 통과하므로,
      * 정본 문자열 자체를 따로 잠근다.
@@ -121,6 +138,8 @@ class OrderStatusLabelConsistencyTest extends ModuleTestCase
      * @scenario label_path=admin_order_status
      *
      * @effects shipping_ready_uses_canonical_korean_label
+     *
+     * @return void 반환값 없음
      */
     public function test_shipping_ready_uses_canonical_korean_label(): void
     {
@@ -142,6 +161,8 @@ class OrderStatusLabelConsistencyTest extends ModuleTestCase
      * @scenario label_path=enums_order_status
      *
      * @effects backend_enum_label_matches_canonical
+     *
+     * @return void 반환값 없음
      */
     public function test_backend_enum_label_matches_canonical(): void
     {
@@ -163,6 +184,8 @@ class OrderStatusLabelConsistencyTest extends ModuleTestCase
      * @scenario label_path=admin_order_filter_options
      *
      * @effects shipping_ready_uses_canonical_korean_label
+     *
+     * @return void 반환값 없음
      */
     public function test_admin_filter_options_use_canonical_label(): void
     {

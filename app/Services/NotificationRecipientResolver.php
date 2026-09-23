@@ -32,10 +32,12 @@ class NotificationRecipientResolver
     /**
      * @param  UserRepositoryInterface  $userRepository  사용자 조회 Repository
      * @param  RoleRepositoryInterface  $roleRepository  역할 조회 Repository
+     * @param  NotificationWithdrawnRecipientPolicy  $withdrawnPolicy  탈퇴·삭제 회원 수신 정책
      */
     public function __construct(
         private readonly UserRepositoryInterface $userRepository,
         private readonly RoleRepositoryInterface $roleRepository,
+        private readonly NotificationWithdrawnRecipientPolicy $withdrawnPolicy,
     ) {}
 
     /**
@@ -120,28 +122,26 @@ class NotificationRecipientResolver
      * guest_recipient({email, name, locale})로 GuestNotifiable 을 생성해 추가합니다.
      * 템플릿의 {"type":"trigger_user"} 규칙이 회원/비회원 분기 없이 동작합니다.
      *
+     * 회원이 지목된 사건에서 그 계정이 삭제되어 없으면 **아무에게도 보내지 않습니다** —
+     * 게스트 재료가 함께 실려 있어도 그 주소로 대신 보내지 않습니다
+     * ({@see NotificationWithdrawnRecipientPolicy::allowsGuestFallback()}).
+     *
      * @param  Collection  $recipients  수신자 컬렉션
      * @param  array  $context  컨텍스트
      * @return void
      */
     private function addTriggerUser(Collection $recipients, array $context): void
     {
-        $triggerUserId = $context['trigger_user_id'] ?? null;
-
-        if ($triggerUserId) {
-            $user = $context['trigger_user'] ?? $this->userRepository->findById($triggerUserId);
+        if (! $this->withdrawnPolicy->allowsGuestFallback($context)) {
+            $user = $this->withdrawnPolicy->findTriggerMember($context);
             if ($user) {
                 $recipients->push($user);
-
-                return;
             }
 
-            // 계정이 사라진 경우(탈퇴 회원)는 여기서 끝내지 않고 게스트 폴백으로 낙하한다.
-            // 확장이 guest_recipient 를 실었으면 주문 스냅샷 연락처로 갈 수 있고, 안 실었으면
-            // 종전과 같이 0명이다 — **발송 여부의 정책은 코어가 정하지 않는다.**
+            return;
         }
 
-        // 비회원 폴백: user_id 가 없으면 표준 guest_recipient 키로 1급 게스트 수신자 생성
+        // 비회원: 회원이 지목되지 않은 사건만 표준 guest_recipient 키로 1급 게스트 수신자 생성
         $guest = $context['guest_recipient'] ?? null;
         if (is_array($guest) && ($notifiable = GuestNotifiable::fromContext($guest)) !== null) {
             $recipients->push($notifiable);

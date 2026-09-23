@@ -16,7 +16,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  * - 관리자 회원 상세(GET /api/admin/users/{uuid}) 응답에만 ecommerce_data 가 실린다
  * - 프로필(/api/me)에는 «건수» 가 실리지 않는다 (부팅 경로마다 COUNT 4개를 돌리지 않는다)
  * - 관리자 상세는 배송지 «주소 줄» 도 함께 싣고, 프로필은 기본 배송지 한 줄만 싣는다
- *   (2026-09-21 PO 지적 — 건수만으로는 「어디로 보내는가」 를 알 수 없다)
+ *   (2026-09-21 검수 지적 — 건수만으로는 「어디로 보내는가」 를 알 수 없다)
  *
  * @scenario surface=admin_user_detail,actor=admin
  *

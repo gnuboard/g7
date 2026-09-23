@@ -602,7 +602,8 @@ describe('완료 실행 — 페이로드 계약 (D26)', () => {
     it('대상이 없으면 요청을 만들지 않는다', async () => {
         mockGlobalState = { claimCompleteContext: { execute: { url: BULK_STATUS_URL, method: 'POST' } }, claimCompleteRows: [] };
 
-        await executeClaimCompletionHandler({ handler: 'x' }, mockContext);
+        // 조기 종료는 실패로 끝난다 — 성공으로 끝나면 모달의 success 갈래가 창을 닫는다(P7 #12).
+        await expect(executeClaimCompletionHandler({ handler: 'x' }, mockContext)).rejects.toThrow();
 
         expect(lastBodyTo(BULK_STATUS_URL)).toBeNull();
         expect(mockG7Core.toast.error).toHaveBeenCalled();
@@ -883,7 +884,8 @@ describe('완료 처리 모달 — 미리보기 응답 경합 (4차 F1)', () => 
             expect(mockGlobalState.claimCompletePreviewLoading).toBe(true);
             expect(mockGlobalState.claimCompleteRows[0].restore).toBe(true);
             expect(mockGlobalState.claimCompleteCreateRefundRequest).toBe(true);
-            await executeClaimCompletionHandler({ handler: 'x' }, mockContext);
+            // 미리보기가 도는 동안의 실행은 실패로 끝난다(모달의 success 갈래가 닫지 않게 — P7 #12).
+            await expect(executeClaimCompletionHandler({ handler: 'x' }, mockContext)).rejects.toThrow();
             expect(mockG7Core.api.post).toHaveBeenCalledTimes(1);
             if (latestFails) mockG7Core.api.post.mockRejectedValueOnce(new Error('최신 요청 실패'));
             else mockG7Core.api.post.mockResolvedValueOnce(previewFor(true));

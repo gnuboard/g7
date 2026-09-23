@@ -6,6 +6,7 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
+use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsAdminService;
 use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
 
 /**
@@ -21,13 +22,22 @@ class UpdateSettingRequest extends FormRequest
      *
      * @return void 설정값 정규화 및 기존 설정 요청 규칙 검증
      *
-     * @throws ValidationException 설정값이 저장 규칙을 위반한 경우
+     * @throws ValidationException 설정값이 저장 규칙을 위반했거나, 규칙이 없는 키·서버 전용 키인 경우
      */
     protected function prepareForValidation(): void
     {
         $key = $this->input('key');
         if (! is_string($key) || $key === '' || strlen($key) > 255 || ! $this->exists('value')) {
             return;
+        }
+
+        // 환불 자동 승인 결정 이력(P17)은 서버만 쓴다. 값 검증(`prohibited`)은 빈 배열을 통과시키므로
+        // 키 자체를 거절한다 — `[]` 한 번으로 이력이 지워지면 운영자가 뺀 수단이 되살아난다.
+        $decidedKey = 'claim.'.EcommerceSettingsAdminService::REFUND_AUTO_APPROVE_DECIDED_KEY;
+        if ($key === $decidedKey || str_starts_with($key, $decidedKey.'.')) {
+            throw ValidationException::withMessages([
+                'key' => __('sirsoft-ecommerce::validation.settings.key_server_managed'),
+            ]);
         }
 
         $category = explode('.', $key, 2)[0];
@@ -51,7 +61,17 @@ class UpdateSettingRequest extends FormRequest
         }
         $settingsRequest->validateResolved();
 
-        $this->merge(['value' => Arr::get($settingsRequest->validatedSettings(), $key, $this->input('value'))]);
+        // 저장 규칙이 다스리지 않는 키는 검증된 설정에 남지 않는다. 그 자리를 원시 입력으로
+        // 메우면 검증을 한 번도 거치지 않은 값이 설정 파일에 그대로 영속되므로 422 로 거절한다.
+        // 카테고리 통째(`claim`)·중첩 배열 키도 규칙이 있는 하위 값이 하나라도 있으면 남는다.
+        $validatedSettings = $settingsRequest->validatedSettings();
+        if (! Arr::has($validatedSettings, $key)) {
+            throw ValidationException::withMessages([
+                'key' => __('sirsoft-ecommerce::validation.settings.key_unknown', ['key' => $key]),
+            ]);
+        }
+
+        $this->merge(['value' => Arr::get($validatedSettings, $key)]);
     }
 
     /**

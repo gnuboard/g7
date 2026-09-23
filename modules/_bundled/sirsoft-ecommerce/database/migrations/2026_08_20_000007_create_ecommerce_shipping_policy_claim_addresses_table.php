@@ -2,7 +2,6 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 /**
@@ -19,10 +18,15 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // 부분 실패 뒤 재실행이나 이미 만들어진 설치본에서 "Base table already exists" 로 멈추지 않게 한다.
+        if (Schema::hasTable('ecommerce_shipping_policy_claim_addresses')) {
+            return;
+        }
+
         Schema::create('ecommerce_shipping_policy_claim_addresses', function (Blueprint $table) {
             $table->id()->comment('클레임 회수지 ID');
             $table->unsignedBigInteger('shipping_policy_id')->comment('배송정책 ID');
-            $table->string('claim_type', 20)->comment('클레임 유형 (ClaimTypeEnum: exchange, return)');
+            $table->string('claim_type', 20)->comment('클레임 유형 (ClaimTypeEnum — exchange: 교환, return: 반품)');
             $table->string('recipient_name', 100)->comment('회수지 수취인명');
             $table->string('phone', 20)->nullable()->comment('회수지 연락처');
             $table->string('zipcode', 10)->nullable()->comment('회수지 우편번호');
@@ -37,11 +41,9 @@ return new class extends Migration
             $table->index('claim_type', 'idx_ca_claim_type');
             $table->foreign('shipping_policy_id', 'fk_ca_shipping_policy_id')
                 ->references('id')->on('ecommerce_shipping_policies')->cascadeOnDelete();
-        });
 
-        if (DB::getDriverName() === 'mysql') {
-            DB::statement('ALTER TABLE `'.DB::getTablePrefix()."ecommerce_shipping_policy_claim_addresses` COMMENT '배송정책별 클레임 회수지'");
-        }
+            $table->comment('배송정책별 클레임 회수지');
+        });
     }
 
     /**

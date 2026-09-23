@@ -2989,7 +2989,7 @@ class OrderExchangeServiceTest extends ModuleTestCase
 
         $this->service->completeExchange($exchange, [], $this->completionOptions($exchange, false, false));
 
-        // PO 결정 2026-09-23 — 원장에 확정된 적립은 교환완료로도 되돌리지 않는다.
+        // 운영 결정 2026-09-23 — 원장에 확정된 적립은 교환완료로도 되돌리지 않는다.
         // 교환은 매출이 신규 옵션으로 승계되므로, 새 옵션이 구매확정에 도달하면 그쪽에서 적립이
         // 다시 계산된다. 원 옵션의 적립을 여기서 빼면 이미 확정된 기록만 깨진다.
         $this->assertSame(

@@ -156,6 +156,9 @@ sirsoft-page.attachment.filter_upload_file              # 페이지 첨부
 sirsoft-ecommerce.product-image.filter_upload_file      # 상품 이미지
 sirsoft-ecommerce.category-image.filter_upload_file     # 카테고리 이미지
 sirsoft-ecommerce.review-image.filter_upload_file       # 리뷰 이미지 (공개 #96)
+sirsoft-ecommerce.claim-image.before_upload             # 클레임 첨부 (교환·반품·환불 증빙)
+sirsoft-ecommerce.claim-image.filter_upload_file        # 클레임 첨부
+sirsoft-ecommerce.claim-image.after_upload              # 클레임 첨부
 sirsoft-ckeditor5.image.before_upload                   # 에디터 이미지
 sirsoft-ckeditor5.image.filter_upload_file              # 에디터 이미지
 sirsoft-ckeditor5.image.after_upload                    # 에디터 이미지
@@ -921,15 +924,15 @@ HookManager::doAction('...payment_completed', $claim, $payment);
 
 ```php
 // 발행: 수신자 한 사람마다 1회
-HookManager::applyFilters("{$prefix}.notification.personalize_data", $data, $notifiable, $definition, $context, $args);
+HookManager::applyFilters("{$prefix}.notification.personalize_data", $data, $notifiable, $definition->type, $context, $args);
 ```
 
 | 인자 | 무엇인가 |
 |------|----------|
 | `$data` | 이 수신자에게 나갈 치환 값 배열 (반환값이 그대로 쓰인다) |
-| `$notifiable` | 이번 수신자 — `User` 또는 게스트 |
-| `$definition` | 알림 정의 |
-| `$context` | 발행 측이 실어 둔 **스칼라** 컨텍스트 |
+| `$notifiable` | 이번 수신자 — `User` 또는 게스트(`GuestNotifiable`) |
+| `$type` | 알림 정의의 유형 문자열(`$definition->type`) — 정의 모델이 아니다. 구독자는 이 값으로 자기 알림인지 가른다 |
+| `$context` | 발행 측이 `extract_data` 에서 실어 둔 **스칼라** 컨텍스트 |
 | `$args` | 원래 훅 인자 |
 
 **규약 — `personalize` 는 `$context` 의 스칼라만 읽는다.** `$args` 의 모델을 다시 읽으면 안 된다. 알림은 큐를 타고 나중에 실행되므로 그 시점의 모델은 **"지금" 상태**다. 과거 사건을 알리는 알림에 현재 상태가 실리고, 오류도 로그도 남지 않는다. 필요한 값은 발행 시점에 `$context` 에 스칼라로 실어 둔다.

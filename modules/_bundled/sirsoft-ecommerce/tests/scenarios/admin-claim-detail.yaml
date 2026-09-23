@@ -194,6 +194,13 @@ effects:
   - claim_detail_uses_no_unknown_handler_alias            # 등록되지 않은 핸들러 별칭을 쓰지 않는다
   - claim_item_transition_network_error_shows_localized_message # 통신 실패도 번역된 문구로 알린다
   - claim_refund_execute_disabled_unless_approved         # [환불하기]는 승인된 건에서만 눌린다
+  # 역매핑 보강 (#599 validate P7 — 렌더 테스트에 마킹돼 있었으나 어느 매니페스트에도 선언되지 않았던 효과)
+  - claim_items_grid_pairs_subtotal_with_subtotal         # 상품 표 금액 열은 소계와 새 소계를 짝지어 보인다
+  - claim_items_grid_shows_exchange_additional_options    # 교환에 얹은 추가옵션 이름이 상품 칸에 선다
+  - claim_detail_has_a_status_transition_bar              # 신청서 단위 전이 바가 선다
+  - claim_detail_hides_the_transition_bar_without_targets # 옮길 상태가 없으면 전이 바를 그리지 않는다
+  - claim_detail_shows_approval_rejection_withdrawal_timestamps # 승인·반려·철회 일시를 값이 있는 것만 보인다
+  - claim_detail_omits_empty_progress_timestamps          # 일시가 하나도 없으면 그 줄을 그리지 않는다
 
 test_files:
   - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminClaimDetail.test.ts

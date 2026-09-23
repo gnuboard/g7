@@ -55,7 +55,12 @@ class UpdateNotificationTemplateRequest extends FormRequest
             }
 
             if (is_array($rule) && ($rule['type'] ?? null) === 'related_user') {
-                $rules["recipients.{$index}.relation"] = ['required', 'string', 'max:100', Rule::in($this->declaredRelations())];
+                $declared = $this->declaredRelations();
+                // NULL = 아직 선언 전(업그레이드 직후 확장이 재동기화되기 전) — 선언 밖으로 막지 않는다.
+                // [] = 선언했는데 relation 이 없음 — 어떤 키도 통과시키지 않는다.
+                $rules["recipients.{$index}.relation"] = $declared === null
+                    ? ['required', 'string', 'max:100']
+                    : ['required', 'string', 'max:100', Rule::in($declared)];
             }
         }
 
@@ -70,14 +75,20 @@ class UpdateNotificationTemplateRequest extends FormRequest
      * 이 템플릿이 속한 정의가 선언한 relation 키 목록을 반환합니다.
      *
      * 선언 밖의 키를 저장하면 발송 시점에 **수신자 0명**이 되고 예외도 로그도 남지 않는다.
-     * 선언이 비어 있으면 어떤 키도 통과시키지 않는다 — 화면도 그 타입을 감춘다.
+     * 선언이 비어 있으면(`[]`) 어떤 키도 통과시키지 않는다 — 화면도 그 타입을 감춘다.
+     * 선언 자체가 없으면(`NULL` — 7.1.0 업그레이드 직후 확장이 재동기화되기 전) null 을 돌려
+     * 호출부가 선언 밖으로 막지 않게 한다. 막으면 기존 related_user 규칙이 든 템플릿을 저장할 수 없다.
      *
-     * @return array<int, string> 선언된 relation 키
+     * @return array<int, string>|null 선언된 relation 키 (선언 전이면 null)
      */
-    private function declaredRelations(): array
+    private function declaredRelations(): ?array
     {
         $template = $this->route('template');
-        $relations = $template?->definition?->relations ?? [];
+        $relations = $template?->definition?->relations;
+
+        if ($relations === null) {
+            return null;
+        }
 
         return is_array($relations) ? array_values(array_filter($relations, 'is_string')) : [];
     }

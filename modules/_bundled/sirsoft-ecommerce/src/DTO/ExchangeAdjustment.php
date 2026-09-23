@@ -93,9 +93,9 @@ class ExchangeAdjustment extends OrderAdjustment
      * 옵션 차액은 부호를 유지한다 — 음수(저가 교환)면 추가 비용이 음수가 되어
      * `OrderAdjustmentService` 의 환불 산식에서 환불액으로 뒤집힌다.
      *
-     * @return int 추가 비용 (음수면 환불 대상)
+     * @return int|float 추가 비용 (음수면 환불 대상)
      */
-    public function getAdditionalCharges(): int
+    public function getAdditionalCharges(): int|float
     {
         $fee = $this->deductsFromRefund() ? $this->roundTripFee : 0;
 

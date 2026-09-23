@@ -41,7 +41,7 @@ effects:
   # T2-D6 (#599 3차 실측 L-8) — 관리자 [환불하기]도 같은 술어로 계좌를 요구한다
   - admin_refund_execution_requires_a_bank_account            # 계좌 없이 실행하면 422
   - admin_refund_execution_records_the_bank_account_it_was_given  # 실행하며 적은 계좌가 신청서에 남는다
-  - admin_refund_execution_allows_forcing_without_a_bank_account  # 동의하면 직권 실행 (PO 결정)
+  - admin_refund_execution_allows_forcing_without_a_bank_account  # 동의하면 직권 실행 (운영 결정)
   - stopped_payment_method_sends_one_requested_notification   # 자동 전이가 없으니 접수 알림 1통
   - stopped_payment_method_ignores_auto_approve_toggle        # D8 토글도 게이트를 못 넘는다
   - stopped_payment_method_ignores_admin_auto_advance         # 관리자 자동 전이도 마찬가지

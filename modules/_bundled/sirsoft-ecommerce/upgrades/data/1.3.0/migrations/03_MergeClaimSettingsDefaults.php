@@ -18,6 +18,17 @@ use Illuminate\Support\Facades\File;
  *
  * 기존 설정이 이미 존재하면 덮어쓰지 않는다(SettingsMigrator addField/addCategory 보장).
  *
+ * ## 값은 이 버전에 동결한다
+ *
+ * 운영자가 취소 가능 상태를 저장한 적이 없으면 1.2.x 의 유효값은 그 버전의 기본값
+ * (`['payment_complete']`)이었다. 예전에는 그 자리에서 **새 버전의** `defaults.json` 을 읽었는데,
+ * 1.3.0 은 기본값을 미결제 2종까지 넓혔으므로 스텝을 밟는 시점의 파일에 따라 결과가 달라졌다
+ * (스텝은 어느 버전의 파일이 깔려 있든 같은 일을 해야 한다). 그래서 1.2.x 기본값을 상수로 둔다.
+ *
+ * 1.3.0 이 새로 도입한 자동 승인 3키(`auto_approve_refund_statuses` ·
+ * `auto_approve_refund_payment_methods` · `auto_approve_refund_payment_methods_decided`)도 함께
+ * 넣는다 — 빠지면 저장본만 보는 도구(백업·이관)가 이 세 값을 모른 채 남는다.
+ *
  * idempotent: 이미 병합된 사이트는 적용 대상이 없어 no-op.
  * V-1 안전: SettingsMigrator·File 은 1.3.0 이전 코어에도 존재하는 헬퍼다. 저장 경로는
  * `ExtensionStoragePath`(코어 7.0.10 — 이 버전의 최소 요구 코어)가 해석한다 — 직접 조립하면
@@ -27,16 +38,47 @@ class MergeClaimSettingsDefaults implements DataMigration
 {
     private const IDENTIFIER = 'sirsoft-ecommerce';
 
+    /**
+     * 1.2.x 의 `order_settings.cancellable_statuses` 기본값.
+     *
+     * 저장값이 없는 상점의 1.2.x 유효값이다. 새 버전의 defaults.json 을 읽지 않는다(클래스 docblock).
+     *
+     * @var array<int, string>
+     */
+    private const LEGACY_CANCELLABLE_STATUSES = ['payment_complete'];
+
+    /**
+     * 1.3.0 에서 도입한 자동 승인 3키의 기본값.
+     *
+     * @var array<string, array<int, string>>
+     */
+    private const AUTO_APPROVE_DEFAULTS = [
+        'auto_approve_refund_statuses' => ['payment_complete', 'preparing'],
+        'auto_approve_refund_payment_methods' => ['card', 'point', 'free'],
+        'auto_approve_refund_payment_methods_decided' => [],
+    ];
+
+    /**
+     * 마이그레이션 식별자를 반환합니다.
+     *
+     * @return string 마이그레이션 이름
+     */
     public function name(): string
     {
         return 'MergeClaimSettingsDefaults';
     }
 
+    /**
+     * claim 설정 카테고리 기본값을 병합합니다.
+     *
+     * @param  UpgradeContext  $context  업그레이드 컨텍스트
+     * @return void
+     */
     public function run(UpgradeContext $context): void
     {
         $instantCancelStatuses = $this->resolveInstantCancelStatuses();
 
-        $result = SettingsMigrator::forModule(self::IDENTIFIER)
+        $migrator = SettingsMigrator::forModule(self::IDENTIFIER)
             ->addCategory('claim', [
                 'exchange_requestable_statuses' => ['delivered', 'confirmed'],
                 'return_requestable_statuses' => ['delivered', 'confirmed'],
@@ -47,6 +89,7 @@ class MergeClaimSettingsDefaults implements DataMigration
                 'auto_approve_zero_charge' => false,
                 'auto_approve_after_payment' => false,
                 'auto_approve_refund_request' => false,
+                ...self::AUTO_APPROVE_DEFAULTS,
                 'max_images' => 5,
                 'image_max_size_kb' => 2048,
                 'request_period_days' => 7,
@@ -56,8 +99,13 @@ class MergeClaimSettingsDefaults implements DataMigration
                 ],
             ])
             // 카테고리가 이미 있는 사이트(부분 적용 후 재실행 등)를 위해 개별 필드도 보강한다.
-            ->addField('claim.instant_cancel_statuses', $instantCancelStatuses)
-            ->apply();
+            ->addField('claim.instant_cancel_statuses', $instantCancelStatuses);
+
+        foreach (self::AUTO_APPROVE_DEFAULTS as $key => $default) {
+            $migrator->addField('claim.'.$key, $default);
+        }
+
+        $result = $migrator->apply();
 
         $context->logger->info(
             '[ecommerce:1.3.0] claim 설정 기본값 병합 완료 ('.($result['applied'] ?? 0).'건 적용) — '
@@ -68,8 +116,8 @@ class MergeClaimSettingsDefaults implements DataMigration
     /**
      * 즉시취소 가능 상태를 해석합니다.
      *
-     * 저장된 order_settings.cancellable_statuses → 모듈 defaults.json → 최후 기본값 순.
-     * 저장 파일에 그 키가 없으면 defaults 가 유효값이므로 defaults 도 함께 읽는다.
+     * 저장된 order_settings.cancellable_statuses → 1.2.x 기본값 순. 저장 파일에 그 키가 없으면
+     * 1.2.x 에서의 유효값은 그 버전의 기본값이었으므로 그것을 쓴다(새 버전 defaults.json 을 읽지 않는다).
      *
      * @return array<int, string> 즉시취소 가능 상태 값 배열
      */
@@ -83,32 +131,7 @@ class MergeClaimSettingsDefaults implements DataMigration
             return array_values($saved['cancellable_statuses']);
         }
 
-        $defaults = $this->readJson($this->resolveDefaultsPath());
-        $fromDefaults = $defaults['defaults']['order_settings']['cancellable_statuses'] ?? null;
-
-        if (is_array($fromDefaults)) {
-            return array_values($fromDefaults);
-        }
-
-        return ['payment_complete'];
-    }
-
-    /**
-     * 모듈 defaults.json 경로를 반환합니다.
-     *
-     * 활성 디렉토리를 먼저 보고, 없으면 번들 원본을 본다.
-     *
-     * @return string defaults.json 절대 경로
-     */
-    private function resolveDefaultsPath(): string
-    {
-        $active = base_path('modules/'.self::IDENTIFIER.'/config/settings/defaults.json');
-
-        if (File::exists($active)) {
-            return $active;
-        }
-
-        return base_path('modules/_bundled/'.self::IDENTIFIER.'/config/settings/defaults.json');
+        return self::LEGACY_CANCELLABLE_STATUSES;
     }
 
     /**

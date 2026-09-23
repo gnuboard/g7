@@ -47,4 +47,14 @@ interface ShippingPolicyClaimAddressRepositoryInterface
      * @return int 삭제된 행 수
      */
     public function deleteByPolicyAndType(int $shippingPolicyId, string $claimType): int;
+
+    /**
+     * 배송정책들의 회수지를 모두 삭제합니다.
+     *
+     * 배송정책을 지울 때 쓴다 — FK CASCADE 에 기대지 않고 명시적으로 지운다.
+     *
+     * @param  array<int, int>  $shippingPolicyIds  배송정책 ID 목록
+     * @return int 삭제된 행 수
+     */
+    public function deleteByPolicyIds(array $shippingPolicyIds): int;
 }

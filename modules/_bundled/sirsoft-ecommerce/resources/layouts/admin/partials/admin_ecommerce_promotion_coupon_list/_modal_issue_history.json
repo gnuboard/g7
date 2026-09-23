@@ -146,7 +146,6 @@
             "name": "DataGrid",
             "props": {
                 "data": "{{couponIssues?.data?.data || []}}",
-                "loading": "{{couponIssues?.$loading}}",
                 "emptyMessage": "$t:sirsoft-ecommerce.admin.promotion_coupon.modal.issue_history.empty",
                 "columns": [
                     {

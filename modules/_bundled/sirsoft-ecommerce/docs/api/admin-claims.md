@@ -34,6 +34,14 @@
 | `claim_number` | 만들어진 신청서 번호 — 화면은 이 번호로 상세로 이동한다 |
 | `cancelled` | 취소가 **확정**됐는지. 취소신청서는 환불이 집행된 순간에만 생기므로, 계좌 환불처럼 사람이 송금해야 하는 수단은 운영자가 [환불하기]를 누를 때까지 `false` 다 |
 
+응답 `message` 도 같은 사실을 따른다 — `cancelled=true` 이면 `messages.orders.cancelled`(주문이
+취소되었습니다), 신청서만 생겼으면 `messages.orders.cancel_refund_requested`(환불신청서가
+접수되었습니다. 환불이 완료되면 주문이 취소됩니다)다. 예전에는 두 경우 모두 "취소되었습니다" 로 답해
+운영자가 방금 만든 신청서를 보지 않았다.
+
+신청 자격 위반(`OrderClaimException`)의 `422` 는 `message` 가 `messages.orders.cancel_failed`, 사유가
+`errors.detail` 이다(사유 키+치환 파라미터로 다시 만든 문장).
+
 > `cancel_pg` 파라미터는 없앴다. 끈 채로 카드 취소를 하면 PG 를 부르지 않고도 환불이 완료로
 > 찍혀 **고객 카드는 그대로인데 장부만 환불완료**가 됐다. "PG 없이 장부만" 이 필요하면 환불수단을
 > 계좌 환불로 바꿔 수동 처리한다.
@@ -48,6 +56,28 @@
 | `sirsoft-ecommerce.claims.update-status` | 전이(단건·일괄·상품 단위)·송장·첨부·완료 미리보기·환불신청서 수동 접수 |
 | `sirsoft-ecommerce.claims.update-amounts` | 금액 수정 (D18) |
 | `sirsoft-ecommerce.claims.execute-refund` | 환불 실행 ('환불하기') |
+
+### 권한 스코프 — 주문 스코프를 물려받는다
+
+`claims` 권한은 `orders` 와 같은 스코프 축(`resource_route_key = order` · `owner_key = user_id`)을
+선언한다. 역할의 `scope_type` 이 `self`·`role` 이면 **그 신청서가 속한 주문**이 운영자의 스코프 안에
+있을 때만 다룰 수 있다 — 주문을 볼 수 없는 운영자가 신청서로 같은 주문의 내용·환불 계좌를 보거나
+환불을 실행하지 못하게 한다.
+
+| 경로 | 판정 지점 | 스코프 밖일 때 |
+| --- | --- | --- |
+| `GET /admin/claims` (목록·`counts`) | 저장소가 쿼리에 조건을 건다 | 행·건수에서 빠진다 |
+| `/admin/{claimType}/{id}/…`, `/admin/claims/{claimNumber}(/logs)`, `/admin/refunds/{id}/execute` 등 단건 | 신청서를 찾은 뒤 **그 라우트의 권한 식별자**로 판정 | `403 auth.scope_denied` |
+| `POST /admin/claims/bulk-status`, `POST /admin/claims/completion-preview` | 목록과 같은 조건으로 대상 전부를 센다 | 하나라도 밖이면 전량 `403` |
+| `/admin/orders/{order}/claims`, `/admin/orders/{order}/cancellable-amount` | 권한 미들웨어가 바인딩된 주문으로 판정 | `403 auth.scope_denied` |
+
+스코프가 전체(null)인 역할에는 아무 조건도 붙지 않는다.
+
+### 500 응답
+
+관리자 클레임 엔드포인트의 `500` 은 `message` 가 `messages.claims.operation_failed` 이고 원인 요약이
+`errors.detail` 에 실린다 — 운영자가 서버 로그 없이도 조치 방향을 알 수 있게 한다. 회원·비회원 경로의
+`500` 에는 이 값이 없다.
 
 ## 엔드포인트 목록
 
@@ -269,7 +299,7 @@
 | payments | 결제수단 카드 ([OrderPaymentResource](orders.md)) |
 | subtotal_amount_formatted · total_shipping_amount_formatted · total_discount_amount(_formatted) · total_product_coupon_discount_amount(_formatted) · total_code_discount_amount(_formatted) · total_points_used_amount(_formatted) · total_deposit_used_amount(_formatted) · total_paid_amount_formatted | 금액 행 세트 |
 | total_cancelled_amount(_formatted) · total_refunded_amount(_formatted) · total_refunded_points_amount(_formatted) | 누적 취소·환불 블록. 환불 두 행은 **클레임 발 환불에서만** 0 을 넘는다 (취소 발은 취소금액 행이 담당) |
-| total_tax_amount_formatted · total_vat_amount_formatted · total_earned_points_amount | 과세·부가세·적립예정 |
+| total_tax_amount_formatted · total_vat_amount_formatted · total_earned_points_amount · total_earned_points_amount_formatted | 과세·부가세·적립예정. 적립 표기(`…_formatted`, 예 `1,234P`)는 주문 응답과 같은 공용 포맷터가 만들며 단위 글자는 다국어 키를 따른다 — 화면이 숫자에 'P' 를 붙이지 않는다 |
 
 **settlement 축** (`data.settlement`)
 
@@ -912,6 +942,16 @@ Authorization: Bearer {YOUR_TOKEN}
 | refund_bank | object | 아니오 | 실행하며 적어 넣는 환불 계좌 — `bank_code`(max 10) · `account_number`(max 50) · `holder`(max 50). **세 값이 함께** 와야 하며 일부만 실으면 `validation.claims.refund_bank.incomplete` 로 거절됩니다. 실행과 같은 트랜잭션에서 신청서에 저장되므로 「계좌는 저장됐는데 실행은 실패한」 반쪽 상태가 생기지 않습니다 |
 | force_without_refund_bank | boolean | 아니오 | 계좌 없이 완료로 기록하겠다는 **명시 동의**. 참이면 계좌 게이트를 통과합니다 — 이미 다른 경로로 송금했거나 지급하지 않기로 한 건을 위한 길이며, 송금은 일어나지 않고 신청서만 닫힙니다 |
 
+#### 환불 수단 게이트 — [금액 수정]과 같은 강도
+
+`refund_method` 는 [금액 수정](`PUT …/amounts`)과 **같은 선택지**로 받습니다(상세 봉투의
+`refund_methods` 와 같은 판정). PG 결제창을 쓰지 않은 주문(무통장 등)의 `pg` 는 `422`
+(`exceptions.claim_refund_method_unavailable`)이고, PG 플러그인이 빠져 계좌 환불로 떨어진 주문의
+`pg` 도 막습니다(응답할 리스너가 없습니다). **카드 주문의 계좌 수동 환불(`bank`)은 받습니다** —
+PG 취소가 불가능한 상황에서 운영자가 계좌로 돌려주고 장부를 닫는 운영 경로이며, 그 대신 아래
+계좌 게이트가 계좌를 요구합니다. 예전에는 실효 수단과 다른 값을 전부 `payment_mismatch` 로 막아,
+[금액 수정]으로 저장한 계좌 수동 환불을 실행할 길이 없었습니다.
+
 #### 환불 계좌 게이트 (T2-D6)
 
 **계좌로 송금해야 끝나는 환불은 보낼 계좌가 있어야 실행됩니다.** 없으면 `422` 이고 오류 키는
@@ -920,8 +960,9 @@ Authorization: Bearer {YOUR_TOKEN}
 1. 신청서에 계좌가 아직 없다 (`refund_bank_code` 가 비었다)
 2. 계좌로 나갈 **현금이 있다** (`refund_amount` > 0 — 마일리지로만 돌려주는 환불은 회원 원장으로
    들어가 보낼 계좌가 없습니다)
-3. 이 주문이 계좌로 환불되는 주문이다 — 판정은 구매자 접수·신청 화면과 같은 술어
-   (`OrderRefundRequestService::refundsToBankAccount()`)입니다
+3. 그 현금이 계좌로 나간다 — 실행 수단(본문 `refund_method`, 없으면 저장값)이 `bank` 면 그렇고
+   (카드 주문의 계좌 수동 환불 포함), `points` 면 아니며, 그 밖에는 이 주문이 계좌로 환불되는
+   주문인지(구매자 접수·신청 화면과 같은 술어 `refundsToBankAccount()` — 무통장·입금된 가상계좌)로 정합니다
 
 같은 판정을 상세 응답이 `claim.refund_account_required` 로 미리 답해 주므로, 화면은 결제수단
 코드로 규칙을 재현하지 않고 그 값으로 계좌 입력 칸과 실행 버튼 잠금을 정합니다.
@@ -947,7 +988,7 @@ Authorization: Bearer {YOUR_TOKEN}
 | --- | --- |
 | `404` | 환불신청서 부재 |
 | `409` | 이미 실행됐거나 실행 중 (`claim_refund_already_executed` — 더블클릭). 화면은 새로고침을 안내한다 |
-| `422` | 환불 계좌 부재(`refund_bank` — 계좌도 동의도 없이 계좌 환불을 실행) / 일부만 실린 계좌(`validation.claims.refund_bank.incomplete`) / 승인 전 상태(`claim_transition_not_allowed`) / D19 상한 초과(`claim_refund_exceeds_cancellable` — 실행 직전 재계산 가드) / 환불수단이 결제행과 어긋남(`claims.refund_method.payment_mismatch`) / PG 환불 거절(`errors.detail` 에 PG 사유 — 관리자 전용 면의 조치 근거) |
+| `422` | 환불 계좌 부재(`refund_bank` — 계좌도 동의도 없이 계좌 환불을 실행) / 일부만 실린 계좌(`validation.claims.refund_bank.incomplete`) / 승인 전 상태(`claim_transition_not_allowed`) / D19 상한 초과(`claim_refund_exceeds_cancellable` — 실행 직전 재계산 가드) / 그 주문에서 쓸 수 없는 환불수단(`exceptions.claim_refund_method_unavailable`) / PG 환불 거절(`errors.detail` 에 PG 사유 — 관리자 전용 면의 조치 근거) |
 
 ---
 

@@ -38,7 +38,7 @@ export interface StatusBadgeProps {
  *   "name": "StatusBadge",
  *   "props": {
  *     "status": "success",
- *     "label": "완료",
+ *     "label": "$t:common.status_badge.success",
  *     "showIcon": true
  *   }
  * }

@@ -38,6 +38,13 @@ class ClaimPaymentApproveListener implements HookListenerInterface
                 'type' => 'filter',
                 'priority' => 10,
             ],
+            // 모듈이 승인 **뒤**에 거절한 건(승인 금액 대조 실패)을 되돌리는 보상 — 서버 콜백·API
+            // 승인 두 경로의 보상이 이 한 곳이다(콜백 컨트롤러는 따로 보상 클로저를 넘기지 않는다).
+            'sirsoft-ecommerce.claim_payment.void_approval' => [
+                'method' => 'voidApproval',
+                'type' => 'filter',
+                'priority' => 10,
+            ],
         ];
     }
 
@@ -85,7 +92,9 @@ class ClaimPaymentApproveListener implements HookListenerInterface
         // 망취소로 돌아오는 왕복이 생기고, 보상이 실패하면 화면은 실패인데 PG 는 청구된 채 남는다.
         // 모듈이 통화 축에 이미 같은 원칙을 적어 두었다 — 「진입도 같은 판정으로 닫는다 — 열어
         // 두면 PG 승인이 확정된 **뒤**에 금액 불일치로 거절되어 망취소 보상이 필요해진다」.
-        // 형제 플러그인 3종(kginicis·nhnkcp·nicepayments)도 승인/서명 전에 같은 대조를 한다.
+        // 형제 플러그인도 승인 리스너에서 청구액 기준을 먼저 세운다 — nhnkcp·nicepayments 는 콜백
+        // 금액을 승인 호출 전에 대조하고, kginicis 는 콜백 금액을 신뢰할 수 없어(서명 발급 단계에서
+        // 대조) 승인 응답 금액으로 대조한다.
         //
         // 기준을 세울 수 없으면(주문 삭제 등 통화 스냅샷 부재) 통과시키지 않는다 — 근거 없는
         // "일치" 로 승인을 부르면 그 결과를 되돌릴 방법이 없다.
@@ -125,6 +134,38 @@ class ClaimPaymentApproveListener implements HookListenerInterface
                 );
             }
 
+            // 승인 응답이 이 결제 건·이 금액의 것인지 **여기서** 확인하고, 아니면 여기서 취소한다.
+            //
+            // 모듈도 `paid_amount` 로 한 번 더 대조하고, 그 거절의 보상은 `claim_payment.void_approval`
+            // 필터(이 리스너의 `voidApproval()`)가 맡는다. 그래도 여기서 먼저 판정하는 것은 모듈이 보지
+            // 않는 축(응답 주문번호)까지 한 번에 닫고, 서버 콜백·클라이언트 승인 API
+            // (`claim-payments/{no}/approve` → `respondApprove`) 어느 경로로 들어와도 같은 판정·같은
+            // 취소가 일어나게 하기 위해서다 (#599 validate 07 #8).
+            //
+            // 승인액은 **응답** 값만 쓴다 — 응답에 없을 때 콜백 금액으로 채우면 대조가 항등식이 된다.
+            $approvedAmount = isset($response['totalAmount']) && is_numeric($response['totalAmount'])
+                ? (int) $response['totalAmount']
+                : null;
+            $responseOrderId = (string) ($response['orderId'] ?? '');
+
+            if ($approvedAmount !== $amount || ($responseOrderId !== '' && $responseOrderId !== $payment->payment_number)) {
+                $orderIdMismatch = $responseOrderId !== '' && $responseOrderId !== $payment->payment_number;
+
+                Log::error('토스페이먼츠 클레임 결제 승인 응답이 결제 건과 어긋나 취소합니다', [
+                    'payment_number' => $payment->payment_number,
+                    'payment_key' => $paymentKey,
+                    'expected_amount' => $amount,
+                    'approved_amount' => $approvedAmount,
+                    'response_order_id' => $responseOrderId,
+                ]);
+
+                $this->cancelConfirmationQuietly($apiService, $paymentKey, $payment);
+
+                return $orderIdMismatch
+                    ? $this->failure('ORDER_ID_MISMATCH', __('sirsoft-tosspayments::messages.claim.order_id_mismatch'), $response)
+                    : $this->failure('AMOUNT_MISMATCH', __('sirsoft-tosspayments::messages.claim.amount_mismatch'), $response);
+            }
+
             Log::info('토스페이먼츠 클레임 결제 승인 성공', [
                 'payment_number' => $payment->payment_number,
                 'payment_key' => $paymentKey,
@@ -135,8 +176,9 @@ class ClaimPaymentApproveListener implements HookListenerInterface
                 'handled' => true,
                 'success' => true,
                 'transaction_id' => (string) ($response['paymentKey'] ?? $paymentKey),
-                // 결제 통화 최소 화폐단위 정수 — 모듈이 스냅샷 환산 청구액과 정수 비교한다.
-                'paid_amount' => (int) ($response['totalAmount'] ?? $amount),
+                // 결제 통화 최소 화폐단위 정수 — 위에서 청구액과 같음을 확인한 응답 금액이다.
+                // 모듈이 스냅샷 환산 청구액과 한 번 더 정수 비교한다.
+                'paid_amount' => $approvedAmount,
                 'raw_response' => $response,
                 'error_code' => null,
                 'error_message' => null,
@@ -161,6 +203,70 @@ class ClaimPaymentApproveListener implements HookListenerInterface
 
             return $this->failure($pgCode ?? 'PG_API_ERROR', $e->getMessage(), $pgBody);
         }
+    }
+
+    /**
+     * 확정된 승인을 조용히 취소합니다. (보상 — 실패해도 흐름은 지속, 운영자 대사용 로그를 남긴다)
+     *
+     * @param  TossPaymentsApiService  $apiService  API 서비스
+     * @param  string  $paymentKey  토스 결제 키
+     * @param  ClaimPayment  $payment  결제 건 (로그 문맥)
+     * @return bool 취소 요청이 성공했으면 true
+     */
+    private function cancelConfirmationQuietly(TossPaymentsApiService $apiService, string $paymentKey, ClaimPayment $payment): bool
+    {
+        try {
+            $apiService->cancelPayment($paymentKey, __('sirsoft-tosspayments::messages.claim.amount_mismatch_cancel_reason'));
+
+            return true;
+        } catch (\Exception $e) {
+            Log::error('토스페이먼츠 클레임 결제 보상 취소 실패 — 수동 취소 필요', [
+                'payment_number' => $payment->payment_number,
+                'payment_key' => $paymentKey,
+                'error' => $e->getMessage(),
+            ]);
+
+            return false;
+        }
+    }
+
+    /**
+     * 모듈이 승인 뒤 거절한 클레임 결제의 토스 승인을 취소합니다. (`claim_payment.void_approval` 필터)
+     *
+     * 이 리스너가 승인 응답을 먼저 대조하므로 보통은 불리지 않는다 — 모듈 쪽 대조가 따로 거절한
+     * 때(예: 스냅샷 환산 규칙이 바뀐 경우)의 보상이다. 취소 키는 승인 결과의 거래 식별자(결제 키)를
+     * 먼저 쓰고, 없으면 콜백의 결제 키를 쓴다.
+     *
+     * @param  array  $result  보상 결과 (기본값)
+     * @param  ClaimPayment  $payment  거절된 결제 건
+     * @param  array  $callback  승인 때 받은 콜백 파라미터
+     * @param  array  $approveResult  승인 필터 결과 (transaction_id 등)
+     * @return array 보상 결과 {handled, success, error_code, error_message}
+     */
+    public function voidApproval(array $result, ClaimPayment $payment, array $callback, array $approveResult): array
+    {
+        if ($payment->pg_provider !== self::PG_PROVIDER_ID) {
+            return $result;
+        }
+
+        $paymentKey = (string) ($approveResult['transaction_id'] ?? '');
+
+        if ($paymentKey === '') {
+            $paymentKey = (string) ($callback['paymentKey'] ?? '');
+        }
+
+        if ($paymentKey === '') {
+            return ['handled' => true, 'success' => false, 'error_code' => 'MISSING_PAYMENT_KEY', 'error_message' => null];
+        }
+
+        $cancelled = $this->cancelConfirmationQuietly($this->getApiService(), $paymentKey, $payment);
+
+        return [
+            'handled' => true,
+            'success' => $cancelled,
+            'error_code' => $cancelled ? null : 'PG_API_ERROR',
+            'error_message' => null,
+        ];
     }
 
     /**

@@ -1961,7 +1961,11 @@
         "role_search_placeholder": "Search roles",
         "users_placeholder": "Search users",
         "users_no_options": "No results found",
-        "role_no_options": "No matching role"
+        "role_no_options": "No matching role",
+        "relation_placeholder": "Select a relation",
+        "relation_undeclared": "This notification does not support the '{{relation}}' relation. Choose one from the list — it cannot be saved as is.",
+        "roles_selected_count": "{count} roles selected",
+        "users_selected_count": "{count} users selected"
       },
       "preview_modal": {
         "title": "Notification Preview",

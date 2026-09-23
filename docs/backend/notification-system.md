@@ -644,6 +644,7 @@ user_id 없는 비회원(주문자 이메일/이름만 보유)도 회원과 동�
 ```
 
 - `trigger_user_id` 가 있으면 User, 없고 `guest_recipient` 가 있으면 GuestNotifiable 을 수신자로 반환합니다.
+- **삭제 회원은 폴백하지 않습니다.** `trigger_user_id` 가 있는데 그 계정이 삭제되어 없으면 `guest_recipient` 가 함께 실려 있어도 그 주소(주문서 연락처 등)로 대신 보내지 않고 0명이 되며, 발송 이력에 `notification.skipped.member_account_missing` 사유로 남습니다. 탈퇴 회원(행은 남고 연락처가 익명화됨)은 그 회원 자신으로 해석되어 알림함(`database`)은 받고 바깥 채널만 건너뜁니다(`withdrawn_recipient`). 두 판정은 `NotificationWithdrawnRecipientPolicy` 한 곳이 소유합니다 — 수신자 해석과 발송 루프가 같은 객체를 씁니다.
 - 중복 제거 키는 네임스페이스 분리: 회원 `user:{id}` / 비회원 `guest:{이메일 해시}` — null-id 게스트가 하나로 뭉개지지 않습니다.
 - `exclude_trigger_user` 는 회원(user_id) 기준이라 게스트 수신자를 깨뜨리지 않습니다.
 

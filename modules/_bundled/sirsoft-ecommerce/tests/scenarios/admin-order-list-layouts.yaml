@@ -1,0 +1,35 @@
+# audit:allow test-scenario-coverage[cross_product] reason: 레이아웃 구조 계약 묶음이라 축이 화면 하나(주문 목록)다. 효과가 계약 묶음(검색·페이지네이션·필터·컬럼·셀)마다 하나씩이고 교차 조합이 없다.
+feature: 관리자 주문 목록 레이아웃 구조 계약
+
+description: |
+  주문 목록 셸·필터 섹션·DataGrid 의 **구워진 JSON** 이 서버 계약(요청 파라미터 키·응답 경로)과
+  화면 계약(컬럼·셀 표기·필터 배선)을 지키는지 잠근다. 이 파일은 오래 소유 매니페스트 없이 남아
+  있었고(#599 validate P7 에서 역매핑), 각 묶음이 조용히 깨지는 방식은 다음과 같다.
+
+  ① 검색 입력이 글자마다 목록을 부르거나, Enter 가 마지막 글자를 빼고 조회한다.
+  ② 페이지네이션·총건수가 응답의 다른 경로를 읽으면 쪽 이동이 멈추거나 0건으로 보인다.
+  ③ 필터 파라미터 키가 FormRequest 와 다르면 필터가 조용히 무시된다.
+  ④ 컬럼·셀이 서버가 준 표기 필드 대신 원값을 읽으면 통화·날짜 표기가 화면마다 갈린다.
+  ⑤ DataGrid 에 정의 없는 prop 을 넘기면 조용히 버려진다(컬럼 선택은 visibleColumns 상태로 잇는다).
+  ⑥ 기본 컬럼 묶음이 출처마다 다르면 새로고침 뒤 컬럼이 바뀐다.
+
+axes:
+  surface: [order_list]
+
+effects:
+  - order_list_search_input_debounce_and_enter
+  - order_list_pagination_reads_response_meta
+  - order_list_filter_param_keys_match_request
+  - order_list_datagrid_columns_bind_server_fields
+  - order_list_datagrid_props_are_defined
+  - order_list_visible_columns_share_one_default
+  - order_list_dynamic_filters_follow_settings
+  - order_list_claim_filter_wired
+  - order_list_shipping_filters_wired
+  - order_list_product_cell_shows_more_count
+  - order_list_amount_cell_sub_lines
+  - order_list_orderer_filter_wired
+  - order_list_member_type_filter_wired
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/orderListLayouts.test.tsx

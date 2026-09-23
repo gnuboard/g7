@@ -151,6 +151,25 @@ interface OrderRefundRepositoryInterface
     public function countForAdmin(array $filters = []): int;
 
     /**
+     * 지정한 신청서 중 열람자의 권한 스코프 안에 있는 건수를 셉니다. (주문 스코프 상속 — 일괄 액션 가드)
+     *
+     * @param  array<int, int>  $ids  신청서 ID 목록
+     * @param  string|null  $permission  스코프를 판정할 권한 식별자 (null 이면 스코프 없이 존재 건수만)
+     * @return int 스코프 안의 건수
+     */
+    public function countWithinAdminScope(array $ids, ?string $permission): int;
+
+    /**
+     * 여러 주문옵션에 활성 직접 환불신청이 잡아 둔 수량을 한 번에 합산합니다. (목록 N+1 방지)
+     *
+     * `sumActiveDirectQuantityByOrderOption()` 의 일괄판이다 — 같은 조건을 한 쿼리로 묶는다.
+     *
+     * @param  array<int, int>  $orderOptionIds  주문옵션 ID 목록
+     * @return array<int, int> 주문옵션 ID => 점유 수량 (점유가 없으면 키가 없다)
+     */
+    public function sumActiveDirectQuantitiesByOrderOptions(array $orderOptionIds): array;
+
+    /**
      * 환불신청서를 수정합니다.
      *
      * @param  OrderRefund  $refund  환불신청서

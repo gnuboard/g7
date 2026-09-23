@@ -839,7 +839,6 @@
     "additional_name_label": "オプション名",
     "additional_name_placeholder": "刻印文句",
     "no_additional": "登録された追加オプションはありません",
-    "auto_currency": "多通貨価格自動計算",
     "items_count": "{{count}}個オプション",
     "required": "必須",
     "columns": {

@@ -13,8 +13,8 @@
           <span class="text-gray-900 dark:text-gray-100 ml-2">{{[claim?.data?.claim?.return_address_snapshot?.recipient_name, claim?.data?.claim?.return_address_snapshot?.phone, claim?.data?.claim?.return_address_snapshot?.zipcode, claim?.data?.claim?.return_address_snapshot?.address1, claim?.data?.claim?.return_address_snapshot?.address2].filter(Boolean).join(' ') || '-'}}</span>
         </div>
         <div data-ref="cs_003_collection_tracking_row" class="flex-center flex-wrap gap-2">
-          <!-- 택배사 선택지는 상세 응답이 나른다 — 배송사 엔드포인트는 `settings.read` 게이트라 이 화면(`claims.read`)이 직접 부르면 클레임 권한만 가진 운영자에게만 403 이 되어 드롭다운이 조용히 빈다. -->
-          <select data-ref="cs_004_collection_carrier" name="collectionCarrierId" class="w-36 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed" value="{{_local.collectionCarrierId ?? ''}}" placeholder="$t:sirsoft-ecommerce.admin.claim.detail.shipping.carrier_placeholder" disabled="{{claim?.data?.abilities?.can_update_status !== true}}" options="{{claim?.data?.carriers ?? []}}">
+          <!-- 택배사 선택지는 상세 응답이 나른다 — 배송사 엔드포인트는 `settings.read` 게이트라 이 화면(`claims.read`)이 직접 부르면 클레임 권한만 가진 운영자에게만 403 이 되어 드롭다운이 조용히 빈다. 맨 앞 빈 선택지는 고를 수 있어야 한다: Select 는 `placeholder` 를 그리지 않아 빈 값이 선택지에 없으면 한 번 고른 택배사를 비울 수 없고, 「둘 다 비우고 저장하면 송장 삭제」에 화면으로 도달할 수 없다. -->
+          <select data-ref="cs_004_collection_carrier" name="collectionCarrierId" class="w-36 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed" value="{{_local.collectionCarrierId ?? ''}}" disabled="{{claim?.data?.abilities?.can_update_status !== true}}" options="{{[{ value: '', label: $t('sirsoft-ecommerce.admin.claim.detail.shipping.carrier_placeholder') }].concat(claim?.data?.carriers ?? [])}}">
             <on type="change">
               <set-state target="_local" collectionCarrierId="{{$event.target.value}}"/>
             </on>
@@ -61,7 +61,7 @@
         </div>
         <div data-ref="cs_013_redelivery_tracking_row" class="flex-center flex-wrap gap-2">
           <!-- 재발송 택배사 — 교환품을 다시 보낼 때 쓰는 택배사라 회수 택배사와 따로 고른다. 고른 값은 송장번호와 함께 저장해야 기록된다. -->
-          <select data-ref="cs_014_redelivery_carrier" name="redeliveryCarrierId" class="w-36 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed" value="{{_local.redeliveryCarrierId ?? ''}}" placeholder="$t:sirsoft-ecommerce.admin.claim.detail.shipping.carrier_placeholder" disabled="{{claim?.data?.abilities?.can_update_status !== true}}" options="{{claim?.data?.carriers ?? []}}">
+          <select data-ref="cs_014_redelivery_carrier" name="redeliveryCarrierId" class="w-36 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed" value="{{_local.redeliveryCarrierId ?? ''}}" disabled="{{claim?.data?.abilities?.can_update_status !== true}}" options="{{[{ value: '', label: $t('sirsoft-ecommerce.admin.claim.detail.shipping.carrier_placeholder') }].concat(claim?.data?.carriers ?? [])}}">
             <on type="change">
               <set-state target="_local" redeliveryCarrierId="{{$event.target.value}}"/>
             </on>

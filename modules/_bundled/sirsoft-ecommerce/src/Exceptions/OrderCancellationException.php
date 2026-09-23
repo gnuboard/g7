@@ -17,6 +17,15 @@ use Exception;
 class OrderCancellationException extends Exception
 {
     /**
+     * PG 원문을 치환 파라미터로 품는 메시지 키 — 공개 면에 내보내지 않는다
+     *
+     * @var array<int, string>
+     */
+    public const PG_DETAIL_MESSAGE_KEYS = [
+        'sirsoft-ecommerce::exceptions.pg_refund_failed',
+    ];
+
+    /**
      * 생성자
      *
      * @param  string  $message  다국어 처리된 예외 메시지
@@ -38,6 +47,24 @@ class OrderCancellationException extends Exception
      */
     public function getMessageKey(): ?string
     {
+        return $this->messageKey;
+    }
+
+    /**
+     * 구매자 화면(회원·비회원)에 그대로 안내해도 되는 메시지 키를 반환합니다.
+     *
+     * PG 가 돌려준 원문을 치환 파라미터로 품는 키(`pg_refund_failed` 의 `:error`)는 공개 면에 내보내지
+     * 않는다 — 가맹점 설정·내부 코드가 섞인 문장이라 고객 화면에 나가면 안 된다. 그 경우 null 을 돌려
+     * 호출부가 일반 실패 문구로 떨어지게 한다. 관리자 면은 이 메서드가 아니라 원문을 조치 근거로 싣는다.
+     *
+     * @return string|null 공개 면에 쓸 수 있는 메시지 키 (없거나 PG 원문을 품으면 null)
+     */
+    public function publicMessageKey(): ?string
+    {
+        if ($this->messageKey === null || in_array($this->messageKey, self::PG_DETAIL_MESSAGE_KEYS, true)) {
+            return null;
+        }
+
         return $this->messageKey;
     }
 

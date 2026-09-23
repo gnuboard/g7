@@ -3,8 +3,13 @@
 namespace Modules\Sirsoft\Ecommerce\Providers;
 
 use App\Extension\BaseModuleServiceProvider;
+use App\Helpers\ResponseHelper;
 use App\Seo\SitemapGenerator;
+use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\RateLimiter;
 use Modules\Sirsoft\Ecommerce\Console\Commands\AggregateEcommerceStatsCommand;
 use Modules\Sirsoft\Ecommerce\Console\Commands\CancelOrphanClaimPaymentsCommand;
 use Modules\Sirsoft\Ecommerce\Console\Commands\CancelPendingPaymentOrdersCommand;
@@ -285,6 +290,7 @@ class EcommerceServiceProvider extends BaseModuleServiceProvider
         parent::boot();
 
         $this->registerClaimMorphMap();
+        $this->registerRateLimiters();
 
         // Artisan 커맨드 등록
         if ($this->app->runningInConsole()) {
@@ -307,6 +313,43 @@ class EcommerceServiceProvider extends BaseModuleServiceProvider
     }
 
     /**
+     * 비회원 공개 경로의 이름 있는 요청 빈도 리미터를 등록합니다.
+     *
+     * 라우트에 `throttle:N,1` 처럼 **이름 없이** 상한을 걸면 키가 요청자(IP) 하나로 정해져,
+     * 같은 IP 에서 나간 모든 이름 없는 throttle 라우트가 한 카운터를 나눠 쓴다. 비회원 클레임
+     * 블록(분당 120)·첨부 업로드(분당 20)·주문 조회 인증(분당 20)이 그렇게 섞여, 미리보기를
+     * 스무 번 부르면 업로드와 조회 인증까지 429 가 됐다. 리미터마다 이름을 주면 키에 이름이
+     * 들어가 카운터가 갈린다.
+     *
+     * 429 응답은 로그인 리미터와 같은 다국어 문구(`auth.too_many_attempts`)로 낸다 — 기본 응답은
+     * 영문 "Too Many Attempts." 라 화면이 그대로 노출한다.
+     *
+     * @return void 반환값 없음
+     */
+    protected function registerRateLimiters(): void
+    {
+        $limits = [
+            // 비회원 주문 조회 인증 — 무차별 대입 방어선 (#55)
+            'sirsoft-ecommerce.guest-order-verify' => 20,
+            // 비회원 클레임 블록 전체 — 신청·미리보기·목록·상세·수정·철회·첨부 삭제·추가결제
+            'sirsoft-ecommerce.guest-claims' => 120,
+            // 비회원 첨부 업로드 — 블록에서 유일한 파일 쓰기라 블록 상한 위에 좁은 상한을 겹친다
+            'sirsoft-ecommerce.guest-claim-uploads' => 20,
+        ];
+
+        foreach ($limits as $name => $perMinute) {
+            RateLimiter::for($name, fn (Request $request) => Limit::perMinute($perMinute)
+                ->by((string) $request->ip())
+                ->response(fn (Request $request, array $headers) => ResponseHelper::error(
+                    'auth.too_many_attempts',
+                    429,
+                    null,
+                    ['seconds' => (int) ($headers['Retry-After'] ?? 60)]
+                )->withHeaders($headers)));
+        }
+    }
+
+    /**
      * 클레임 다형 관계의 morph map 을 등록합니다.
      *
      * 클레임 첨부(`ecommerce_claim_images.claimable_type`)와 추가결제
@@ -316,10 +359,21 @@ class EcommerceServiceProvider extends BaseModuleServiceProvider
      *
      * enforceMorphMap 이 아니라 morphMap 을 쓴다 — 코어·타 확장이 등록하는 다형
      * 관계까지 이 목록으로 한정하면 그쪽이 조용히 깨진다.
+     *
+     * ## 별칭이 범용 단어다 — 충돌은 조용히 넘기지 않는다
+     *
+     * morph map 은 프로세스 전역 하나다. 다른 확장이 같은 별칭(`refund` 등)을 다른 모델로 먼저
+     * 등록해 두었다면 나중 등록이 덮어써 **한쪽의 다형 관계가 오류 없이 엉뚱한 모델을 가리킨다.**
+     * 별칭을 네임스페이스형으로 바꾸려면 저장된 모든 행(첨부·추가결제·환불 출처·활동로그)을
+     * 이관해야 하는데, 1.3.0 은 미출시라 공개판 데이터에는 이 별칭이 아직 없다(1.2.x 는 이 네
+     * 모델을 다형 대상으로 저장한 적이 없다). 그래서 별칭은 유지하고, 충돌하면 등록 시점에
+     * 오류 로그로 드러낸다 — 어느 확장과 부딪혔는지가 로그에 남아야 운영자가 원인을 찾는다.
+     *
+     * @return void 반환값 없음
      */
     protected function registerClaimMorphMap(): void
     {
-        Relation::morphMap([
+        $map = [
             ClaimTypeEnum::EXCHANGE->value => OrderExchange::class,
             ClaimTypeEnum::RETURN->value => OrderReturn::class,
             ClaimTypeEnum::REFUND->value => OrderRefund::class,
@@ -327,6 +381,20 @@ class EcommerceServiceProvider extends BaseModuleServiceProvider
             // 저장하는데 클레임 상세의 활동로그 탭은 morph 별칭(`cancel`)으로 조회하므로,
             // 줄은 쌓이는데 화면은 **구조적으로 언제나 빈 표**가 된다.
             ClaimTypeEnum::CANCEL->value => OrderCancel::class,
-        ]);
+        ];
+
+        foreach ($map as $alias => $class) {
+            $registered = Relation::getMorphedModel($alias);
+
+            if ($registered !== null && $registered !== $class) {
+                Log::error('[ecommerce] 클레임 morph 별칭이 다른 모델과 충돌합니다 — 나중 등록이 덮어씁니다', [
+                    'alias' => $alias,
+                    'registered' => $registered,
+                    'ecommerce' => $class,
+                ]);
+            }
+        }
+
+        Relation::morphMap($map);
     }
 }

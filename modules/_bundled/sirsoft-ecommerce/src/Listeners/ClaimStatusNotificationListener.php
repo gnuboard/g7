@@ -6,6 +6,7 @@ namespace Modules\Sirsoft\Ecommerce\Listeners;
 
 use App\Contracts\Extension\HookListenerInterface;
 use App\Extension\HookManager;
+use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ExchangeStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundStatusEnum;
@@ -14,6 +15,7 @@ use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderExchange;
 use Modules\Sirsoft\Ecommerce\Models\OrderRefund;
 use Modules\Sirsoft\Ecommerce\Models\OrderReturn;
+use Modules\Sirsoft\Ecommerce\Services\ClaimPaymentService;
 use Modules\Sirsoft\Ecommerce\Support\ClaimNotificationHooks;
 
 /**
@@ -33,9 +35,19 @@ use Modules\Sirsoft\Ecommerce\Support\ClaimNotificationHooks;
  *
  * ## 매핑 기준은 전이 시점에 캡처된 목표 상태다
  *
- * 이 리스너는 자동발견으로 큐 디스패치되고 워커가 신청서를 PK 로 재조회한다. 큐가 밀린
- * 사이 신청서가 또 전이되면 모델의 현재 상태는 "지금" 값이라 엉뚱한 알림이 나간다.
- * 그래서 매핑은 발화 측이 넘긴 스칼라 목표 상태로만 판정한다(주문 축 N1 과 동일).
+ * 매핑은 발화 측이 넘긴 스칼라 목표 상태로만 판정한다(주문 축 N1 과 동일) — 모델의 현재
+ * 상태는 "지금" 값이라, 그 사이 신청서가 또 전이되면 엉뚱한 알림이 나간다.
+ *
+ * ## 알림 본문 값은 발행 시점에 스칼라로 싣는다 (동기 구독)
+ *
+ * 알림 발송(코어 `NotificationHookListener`)은 큐에서 돈다. 그 시점에 신청서를 다시 읽어
+ * 상태 라벨·미수납액·부분 처리 건수를 만들면 **과거 사건의 알림에 지금 숫자가 실린다**
+ * (오류도 로그도 없다). 그래서 이 리스너는 `'sync' => true` 로 구독해 서비스가 훅을 쏜
+ * 그 자리(커밋 직후)에서 값을 계산하고, 알림 훅의 두 번째 인자로 스칼라 스냅샷을 넘긴다.
+ * 데이터 필터(`ClaimNotificationDataListener`)는 그 스냅샷을 우선한다.
+ *
+ * 동기로 돌기 때문에 스냅샷 계산이 실패해도 요청을 깨뜨리지 않는다 — 경고만 남기고 스냅샷
+ * 없이 알림을 넘긴다(데이터 필터가 종전처럼 발송 시점 값으로 채운다).
  *
  * ## 철회는 관리자 수신 1종으로 모은다
  *
@@ -61,20 +73,22 @@ class ClaimStatusNotificationListener implements HookListenerInterface
     /**
      * 구독할 훅 목록을 반환합니다.
      *
-     * @return array<string, array{method: string, priority: int}> 훅 매핑
+     * 전부 `'sync' => true` 다 — 알림 본문 값을 발행 시점에 계산하기 위해서다(클래스 docblock).
+     *
+     * @return array<string, array{method: string, priority: int, sync: bool}> 훅 매핑
      */
     public static function getSubscribedHooks(): array
     {
         return [
-            'sirsoft-ecommerce.claim.exchange.requested' => ['method' => 'handleExchangeRequested', 'priority' => 10],
-            'sirsoft-ecommerce.claim.return.requested' => ['method' => 'handleReturnRequested', 'priority' => 10],
-            'sirsoft-ecommerce.claim.refund.requested' => ['method' => 'handleRefundRequested', 'priority' => 10],
-            'sirsoft-ecommerce.claim.exchange.status_changed' => ['method' => 'handleStatusChange', 'priority' => 10],
-            'sirsoft-ecommerce.claim.return.status_changed' => ['method' => 'handleStatusChange', 'priority' => 10],
-            'sirsoft-ecommerce.claim.refund.status_changed' => ['method' => 'handleStatusChange', 'priority' => 10],
+            'sirsoft-ecommerce.claim.exchange.requested' => ['method' => 'handleExchangeRequested', 'priority' => 10, 'sync' => true],
+            'sirsoft-ecommerce.claim.return.requested' => ['method' => 'handleReturnRequested', 'priority' => 10, 'sync' => true],
+            'sirsoft-ecommerce.claim.refund.requested' => ['method' => 'handleRefundRequested', 'priority' => 10, 'sync' => true],
+            'sirsoft-ecommerce.claim.exchange.status_changed' => ['method' => 'handleStatusChange', 'priority' => 10, 'sync' => true],
+            'sirsoft-ecommerce.claim.return.status_changed' => ['method' => 'handleStatusChange', 'priority' => 10, 'sync' => true],
+            'sirsoft-ecommerce.claim.refund.status_changed' => ['method' => 'handleStatusChange', 'priority' => 10, 'sync' => true],
             // 상품 단위 전이의 **사실**을 받아, 「부분 처리인가 · 고객에게 알릴 것인가」를
-            // 이 축이 단독으로 판정한다. 서비스는 판정하지 않는다.
-            ClaimNotificationHooks::ITEMS_TRANSITIONED => ['method' => 'handleItemsTransitioned', 'priority' => 10],
+            // 이 축이 단독으로 판정한다. 서비스는 판정하지 않는다. 건수는 발행 시점에 센다.
+            ClaimNotificationHooks::ITEMS_TRANSITIONED => ['method' => 'handleItemsTransitioned', 'priority' => 10, 'sync' => true],
         ];
     }
 
@@ -235,7 +249,7 @@ class ClaimStatusNotificationListener implements HookListenerInterface
 
         // 철회는 유형 구분 없이 관리자 수신 1종으로 모은다.
         if ($this->isWithdrawnStatus($type, $target)) {
-            HookManager::doAction(self::WITHDRAWN_HOOK, $claim);
+            HookManager::doAction(self::WITHDRAWN_HOOK, $claim, $this->publishSnapshot($claim, $target));
 
             return;
         }
@@ -272,8 +286,44 @@ class ClaimStatusNotificationListener implements HookListenerInterface
         $hook = self::notifyHookFor($claimType, $status);
 
         if ($hook !== null) {
-            HookManager::doAction($hook, $claim);
+            HookManager::doAction($hook, $claim, $this->publishSnapshot($claim, $status));
         }
+    }
+
+    /**
+     * 알림 본문에 쓸 값을 발행 시점에 스칼라로 캡처합니다.
+     *
+     * 알림 발송은 큐에서 돌아 그때 신청서를 다시 읽으면 "지금" 상태가 실린다. 상태 값과
+     * 미수납 청구액을 여기서 고정해 알림 훅의 두 번째 인자로 넘긴다.
+     *
+     * 계산이 실패하면 상태 값만 싣는다 — 이 리스너는 동기라 예외를 올리면 이미 커밋된 요청이
+     * 오류 응답이 된다. 빠진 값은 데이터 필터가 발송 시점 값으로 채운다.
+     *
+     * @param  OrderExchange|OrderReturn|OrderRefund  $claim  신청서
+     * @param  string  $status  발행 시점의 상태 값
+     * @return array{status: string, outstanding_amount?: float} 스냅샷
+     */
+    private function publishSnapshot(OrderExchange|OrderReturn|OrderRefund $claim, string $status): array
+    {
+        $snapshot = ['status' => $status];
+
+        if ($claim instanceof OrderRefund) {
+            return $snapshot;
+        }
+
+        try {
+            // 미수납 산식의 단일 출처는 ClaimPaymentService 다. 생성자 주입 대신 여기서 해석하는 것은
+            // 이 리스너가 청구액이 필요 없는 환불 축에서도 만들어지기 때문이다(그 경로엔 비용 0).
+            $snapshot['outstanding_amount'] = (float) app(ClaimPaymentService::class)->outstandingAmount($claim);
+        } catch (\Throwable $e) {
+            Log::warning('[claim.notification] 발행 시점 미수납액 캡처 실패 — 발송 시점 값으로 대체', [
+                'claim_type' => $claim->claimType()->value,
+                'claim_id' => $claim->getKey(),
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        return $snapshot;
     }
 
     /**
@@ -305,7 +355,8 @@ class ClaimStatusNotificationListener implements HookListenerInterface
             return;
         }
 
-        $rows = $this->claimItemRows($this->reloadWithItems($claim));
+        $reloaded = $this->reloadWithItems($claim);
+        $rows = $this->claimItemRows($reloaded);
 
         if ($rows === []) {
             return;
@@ -348,6 +399,8 @@ class ClaimStatusNotificationListener implements HookListenerInterface
                 'rejected_count' => (string) ($target === 'rejected' ? $processed : 0),
                 'decision_label' => $this->optionStatusLabel($claim, $target),
                 'item_lines' => $this->claimItemLines($rows, $succeeded),
+                // 본문의 상태 라벨도 이 시점의 헤더 상태로 고정한다(발송 시점 재조회 금지).
+                'status' => $this->headerStatusValue($reloaded),
             ],
         );
     }
@@ -376,6 +429,23 @@ class ClaimStatusNotificationListener implements HookListenerInterface
         OrderExchange|OrderReturn|OrderRefund $claim,
     ): OrderExchange|OrderReturn|OrderRefund {
         return $claim->fresh([$this->itemRelationFor($claim)]) ?? $claim;
+    }
+
+    /**
+     * 신청서 헤더의 현재 상태 값을 돌려줍니다.
+     *
+     * @param  OrderExchange|OrderReturn|OrderRefund  $claim  신청서
+     * @return string 상태 값 (해석 불가면 빈 문자열)
+     */
+    private function headerStatusValue(OrderExchange|OrderReturn|OrderRefund $claim): string
+    {
+        $status = match (true) {
+            $claim instanceof OrderExchange => $claim->exchange_status,
+            $claim instanceof OrderReturn => $claim->return_status,
+            default => $claim->refund_status,
+        };
+
+        return $status instanceof \BackedEnum ? (string) $status->value : (string) $status;
     }
 
     /**

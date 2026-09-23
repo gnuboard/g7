@@ -10,13 +10,11 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimTypeEnum;
-use Modules\Sirsoft\Ecommerce\Enums\RefundMethodEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundPriorityEnum;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Concerns\ResolvesClaimOrder;
+use Modules\Sirsoft\Ecommerce\Http\Requests\Concerns\ValidatesClaimRefundBank;
 use Modules\Sirsoft\Ecommerce\Models\ClaimReason;
-use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Services\ClaimAttachmentService;
-use Modules\Sirsoft\Ecommerce\Services\OrderRefundRequestService;
 
 /**
  * 취소·환불 신청 요청 (회원 · 비회원 공용 — D2 자동 분기)
@@ -28,6 +26,7 @@ use Modules\Sirsoft\Ecommerce\Services\OrderRefundRequestService;
 class StoreRefundRequestRequest extends FormRequest
 {
     use ResolvesClaimOrder;
+    use ValidatesClaimRefundBank;
 
     /**
      * 사용자가 이 요청을 수행할 권한이 있는지 확인
@@ -117,87 +116,22 @@ class StoreRefundRequestRequest extends FormRequest
             }
 
             // 환불 계좌는 세 필드가 함께 와야 한다 — 하나만 오면 무통장 환불이 계좌 없이 승인된다.
-            $bank = (array) $this->input('refund_bank', []);
-            $filled = array_filter(['bank_code', 'account_number', 'holder'], fn (string $f) => filled($bank[$f] ?? null));
-
-            if ($filled !== [] && count($filled) !== 3) {
-                $validator->errors()->add('refund_bank', __('sirsoft-ecommerce::validation.claims.refund_bank.incomplete'));
-
+            if (! $this->validateRefundBankComplete($validator)) {
                 return;
             }
 
-            // PG·수단이 환불받을 계좌를 요구하는 주문은 **접수에서** 막는다 (S1-D8).
+            // 가린 값이 섞인 계좌는 등록 계좌를 가린 모양 그대로가 아니면 받지 않는다 — 별표째 저장된다.
+            if (! $this->validateRefundBankNotMasked($validator, $order)) {
+                return;
+            }
+
+            // PG·수단이 환불받을 계좌를 요구하는 주문은 **접수에서** 막는다 (S1-D8 · T2-D5).
             // 막지 않으면 계좌 없이 접수·승인까지 통과한 뒤 마지막 [환불하기] 에서 PG 가
-            // `MISSING_REFUND_ACCOUNT` 로 거절한다 — 그때는 이미 승인된 신청서라 화면에
-            // 계좌를 넣을 자리가 없어 **운영자가 되돌릴 수 없다**.
-            // 판정은 신청 화면이 계좌 칸을 세울 때 쓰는 것과 **같은 술어**다
-            // (OrderRefundRequestService::refundsToBankAccount).
-            $this->validateRefundBankRequired($validator, $order, $bank);
+            // `MISSING_REFUND_ACCOUNT` 로 거절하거나(가상계좌) 송금 없이 장부만 닫힌다(무통장) —
+            // 그때는 이미 승인된 신청서라 **운영자가 되돌릴 수 없다**. 판정은 반품·교환·수정과
+            // 같은 한 곳(`ValidatesClaimRefundBank`)이다.
+            $this->validateRefundBankPresent($validator, $order);
         });
-    }
-
-    /**
-     * 환불받을 계좌가 필요한 주문인데 비어 있으면 접수를 막습니다. (S1-D8)
-     *
-     * **돈이 계좌로 돌아가는 주문 전부**에 건다 — 사람이 송금하는 수단(무통장입금 등)과
-     * 입금이 끝난 가상계좌 둘 다다. 판정은 `OrderRefundRequestService::refundsToBankAccount()`
-     * 하나뿐이다 — 신청 화면이 계좌 칸을 세울지 정할 때 쓰는 값(`refund_account.required`)과
-     * 같은 술어여서, 「칸은 없는데 서버가 막는다」·「칸은 있는데 빈 채로 통과한다」가 생기지 않는다.
-     *
-     * 예전에는 가상계좌에만 걸었다. 무통장은 「운영자가 승인 전에 계좌를 채운다」는 전제였는데
-     * **그 입력란이 화면에 없어서** 계좌가 빈 채로 승인·[환불하기]를 지나 송금 없이 장부만
-     * `completed` 로 닫혔다(2026-09-22 #599 3차 실측 L-8 · T2-D5).
-     *
-     * 주문 시점에 환불계좌를 넣어 둔 주문(`order_payments.refund_bank_code`)은 그것을 쓴다.
-     *
-     * @param  Validator  $validator  검증기
-     * @param  Order  $order  대상 주문
-     * @param  array  $bank  요청에 실린 환불 계좌
-     * @return void
-     */
-    protected function validateRefundBankRequired(Validator $validator, $order, array $bank): void
-    {
-        $payment = $order->payment;
-
-        if (! $payment) {
-            return;
-        }
-
-        // **돈이 계좌로 돌아가는 주문은 계좌 없이 접수하지 않는다.** 두 축이다 —
-        // ⓐ 사람이 송금하는 수단(`refundMethod() === BANK`, 무통장입금 등)
-        // ⓑ PG 가 환불받을 계좌를 요구하는 수단(입금완료된 가상계좌)
-        //
-        // 예전에는 ⓑ 만 막았다. 무통장은 「운영자가 승인 전에 계좌를 채워 넣을 수 있다」는 전제로
-        // 접수를 받았는데, **그 자리가 화면에 없었다** — 클레임 상세에도 주문 상세에도 계좌 입력
-        // 요소가 하나도 없다. 그래서 계좌 3칸이 비어 있는 채 접수·승인을 지나 [환불하기]에서
-        // 송금 없이 장부만 `completed` 로 닫혔고, 되돌릴 경로도 남지 않았다
-        // (2026-09-22 #599 3차 실측 L-8 · T2-D5·D6).
-        //
-        // 수단 코드를 여기서 다시 열거하지 않는다. 같은 규칙을 세 벌(이 요청 · 화면에 내려 주는
-        // `refund_account.required` · 관리자 [주문취소])로 두면 확장 결제수단이 늘 때 판정이
-        // 갈리고, 어긋난 쪽은 오류 없이 「계좌 칸 없는 계좌 환불」 또는 「쓸모없는 계좌 요구」가 된다.
-        if (! app(OrderRefundRequestService::class)->refundsToBankAccount($order)) {
-            return;
-        }
-
-        // 주문 시점에 넣어 둔 계좌가 있으면 그것으로 충분하다.
-        if (filled($payment->refund_bank_code)) {
-            return;
-        }
-
-        if (filled($bank['bank_code'] ?? null)) {
-            return;
-        }
-
-        // 사유가 수단마다 다르다 — 「사람이 송금해야 한다」와 「가상계좌라서 PG 가 요구한다」는
-        // 구매자가 할 일은 같아도 왜 요구받는지가 달라, 한 문구로 뭉뚱그리면 카드로 결제한 줄
-        // 알았던 사람이 이유를 납득하지 못한다. 관리자 [주문취소]가 쓰는 문구 두 벌을 그대로
-        // 쓴다 — 같은 상황에 두 화면이 다른 말을 하지 않게 한다.
-        $messageKey = $payment->refundMethod() === RefundMethodEnum::BANK
-            ? 'sirsoft-ecommerce::validation.order.refund_bank_required_for_manual_transfer'
-            : 'sirsoft-ecommerce::validation.order.refund_bank_required_for_vbank';
-
-        $validator->errors()->add('refund_bank', __($messageKey));
     }
 
     /**
@@ -225,8 +159,6 @@ class StoreRefundRequestRequest extends FormRequest
     public function toServicePayload(): array
     {
         $validated = $this->validated();
-        $bank = $validated['refund_bank'] ?? null;
-        $hasBank = is_array($bank) && filled($bank['bank_code'] ?? null) && filled($bank['account_number'] ?? null) && filled($bank['holder'] ?? null);
 
         return [
             'items' => $validated['items'],
@@ -235,11 +167,7 @@ class StoreRefundRequestRequest extends FormRequest
             'refund_priority' => isset($validated['refund_priority'])
                 ? RefundPriorityEnum::from($validated['refund_priority'])
                 : RefundPriorityEnum::PG_FIRST,
-            'refund_bank' => $hasBank ? [
-                'bank_code' => (string) $bank['bank_code'],
-                'account_number' => (string) $bank['account_number'],
-                'holder' => (string) $bank['holder'],
-            ] : null,
+            'refund_bank' => $this->refundBankPayload($validated['refund_bank'] ?? null, $this->getOrder()),
             'requested_by' => $this->requesterId(),
         ];
     }

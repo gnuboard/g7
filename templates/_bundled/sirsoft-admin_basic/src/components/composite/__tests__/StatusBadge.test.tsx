@@ -8,19 +8,37 @@ import { IconName } from '../../basic/IconTypes';
 
 describe('StatusBadge', () => {
   describe('기본 렌더링', () => {
+    /**
+     * StatusBadge 렌더 계약 회귀(기본 라벨은 번역 키, 상태별 스타일·아이콘·매니페스트 동기).
+     *
+     * @scenario case=status_badge_regression
+     * @effects status_badge_renders_translated_default_label_and_style
+     */
     it('status와 기본 라벨을 렌더링해야 함', () => {
       render(<StatusBadge status="success" />);
 
-      expect(screen.getByText('성공')).toBeInTheDocument();
+      expect(screen.getByText('common.status_badge.success')).toBeInTheDocument();
     });
 
+    /**
+     * StatusBadge 렌더 계약 회귀(기본 라벨은 번역 키, 상태별 스타일·아이콘·매니페스트 동기).
+     *
+     * @scenario case=status_badge_regression
+     * @effects status_badge_renders_translated_default_label_and_style
+     */
     it('커스텀 라벨을 렌더링해야 함', () => {
       render(<StatusBadge status="success" label="완료됨" />);
 
       expect(screen.getByText('완료됨')).toBeInTheDocument();
-      expect(screen.queryByText('성공')).not.toBeInTheDocument();
+      expect(screen.queryByText('common.status_badge.success')).not.toBeInTheDocument();
     });
 
+    /**
+     * StatusBadge 렌더 계약 회귀(기본 라벨은 번역 키, 상태별 스타일·아이콘·매니페스트 동기).
+     *
+     * @scenario case=status_badge_regression
+     * @effects status_badge_renders_translated_default_label_and_style
+     */
     it('기본적으로 아이콘을 표시해야 함', () => {
       const { container } = render(<StatusBadge status="success" />);
 
@@ -28,6 +46,12 @@ describe('StatusBadge', () => {
       expect(icon).toBeInTheDocument();
     });
 
+    /**
+     * StatusBadge 렌더 계약 회귀(기본 라벨은 번역 키, 상태별 스타일·아이콘·매니페스트 동기).
+     *
+     * @scenario case=status_badge_regression
+     * @effects status_badge_renders_translated_default_label_and_style
+     */
     it('showIcon=false일 때 아이콘을 숨겨야 함', () => {
       const { container } = render(<StatusBadge status="success" showIcon={false} />);
 
@@ -37,16 +61,23 @@ describe('StatusBadge', () => {
   });
 
   describe('상태별 스타일', () => {
+    // 기본 라벨은 번역 키(common.status_badge.*)로 낸다 — 테스트 번역 맵에 없는 키라 키가 그대로 보인다.
     const statusTests: Array<{ status: StatusType; label: string; bgClass: string }> = [
-      { status: 'success', label: '성공', bgClass: 'bg-green-50' },
-      { status: 'warning', label: '경고', bgClass: 'bg-yellow-50' },
-      { status: 'error', label: '오류', bgClass: 'bg-red-50' },
-      { status: 'info', label: '정보', bgClass: 'bg-blue-50' },
-      { status: 'pending', label: '대기 중', bgClass: 'bg-gray-50' },
-      { status: 'default', label: '기본', bgClass: 'bg-gray-50' },
+      { status: 'success', label: 'common.status_badge.success', bgClass: 'bg-green-50' },
+      { status: 'warning', label: 'common.status_badge.warning', bgClass: 'bg-yellow-50' },
+      { status: 'error', label: 'common.status_badge.error', bgClass: 'bg-red-50' },
+      { status: 'info', label: 'common.status_badge.info', bgClass: 'bg-blue-50' },
+      { status: 'pending', label: 'common.status_badge.pending', bgClass: 'bg-gray-50' },
+      { status: 'default', label: 'common.status_badge.default', bgClass: 'bg-gray-50' },
     ];
 
     statusTests.forEach(({ status, label, bgClass }) => {
+      /**
+       * StatusBadge 렌더 계약 회귀(기본 라벨은 번역 키, 상태별 스타일·아이콘·매니페스트 동기).
+       *
+       * @scenario case=status_badge_regression
+       * @effects status_badge_renders_translated_default_label_and_style
+       */
       it(`status="${status}"일 때 올바른 스타일과 라벨을 적용해야 함`, () => {
         const { container } = render(<StatusBadge status={status} />);
 
@@ -59,6 +90,12 @@ describe('StatusBadge', () => {
   });
 
   describe('아이콘 커스터마이징', () => {
+    /**
+     * StatusBadge 렌더 계약 회귀(기본 라벨은 번역 키, 상태별 스타일·아이콘·매니페스트 동기).
+     *
+     * @scenario case=status_badge_regression
+     * @effects status_badge_renders_translated_default_label_and_style
+     */
     it('커스텀 아이콘을 사용할 수 있어야 함', () => {
       const { container } = render(
         <StatusBadge status="success" iconName={IconName.Star} />
@@ -70,6 +107,12 @@ describe('StatusBadge', () => {
   });
 
   describe('스타일 커스터마이징', () => {
+    /**
+     * StatusBadge 렌더 계약 회귀(기본 라벨은 번역 키, 상태별 스타일·아이콘·매니페스트 동기).
+     *
+     * @scenario case=status_badge_regression
+     * @effects status_badge_renders_translated_default_label_and_style
+     */
     it('className prop을 적용해야 함', () => {
       const { container } = render(
         <StatusBadge status="success" className="custom-class" />
@@ -79,6 +122,12 @@ describe('StatusBadge', () => {
       expect(badge).toHaveClass('custom-class');
     });
 
+    /**
+     * StatusBadge 렌더 계약 회귀(기본 라벨은 번역 키, 상태별 스타일·아이콘·매니페스트 동기).
+     *
+     * @scenario case=status_badge_regression
+     * @effects status_badge_renders_translated_default_label_and_style
+     */
     it('style prop을 적용해야 함', () => {
       const { container } = render(
         <StatusBadge status="success" style={{ fontSize: '20px' }} />
@@ -90,6 +139,12 @@ describe('StatusBadge', () => {
   });
 
   describe('접근성', () => {
+    /**
+     * StatusBadge 렌더 계약 회귀(기본 라벨은 번역 키, 상태별 스타일·아이콘·매니페스트 동기).
+     *
+     * @scenario case=status_badge_regression
+     * @effects status_badge_renders_translated_default_label_and_style
+     */
     it('올바른 구조로 렌더링되어야 함', () => {
       const { container } = render(<StatusBadge status="success" label="완료" />);
 
@@ -102,6 +157,12 @@ describe('StatusBadge', () => {
   });
 
   describe('복합 시나리오', () => {
+    /**
+     * StatusBadge 렌더 계약 회귀(기본 라벨은 번역 키, 상태별 스타일·아이콘·매니페스트 동기).
+     *
+     * @scenario case=status_badge_regression
+     * @effects status_badge_renders_translated_default_label_and_style
+     */
     it('모든 props를 함께 사용할 수 있어야 함', () => {
       const { container } = render(
         <StatusBadge
@@ -169,6 +230,12 @@ describe('StatusBadge', () => {
     /** 유니언 어휘를 담아야 하는 맵들 — 손으로 적지 않고 소스 선언에서 파생한다. */
     const MAPS = [...source.matchAll(/const (\w+): Record<StatusType,/g)].map((m) => m[1]);
 
+    /**
+     * StatusBadge 렌더 계약 회귀(기본 라벨은 번역 키, 상태별 스타일·아이콘·매니페스트 동기).
+     *
+     * @scenario case=status_badge_regression
+     * @effects status_badge_renders_translated_default_label_and_style
+     */
     it('파생 원본이 비어 있지 않다', () => {
       expect(unionValues.length).toBeGreaterThanOrEqual(10);
       expect(documented.length).toBeGreaterThanOrEqual(1);
@@ -178,10 +245,22 @@ describe('StatusBadge', () => {
       );
     });
 
+    /**
+     * StatusBadge 렌더 계약 회귀(기본 라벨은 번역 키, 상태별 스타일·아이콘·매니페스트 동기).
+     *
+     * @scenario case=status_badge_regression
+     * @effects status_badge_renders_translated_default_label_and_style
+     */
     it('매니페스트 설명의 허용값이 소스 유니언과 같다', () => {
       expect(documented).toEqual(unionValues);
     });
 
+    /**
+     * StatusBadge 렌더 계약 회귀(기본 라벨은 번역 키, 상태별 스타일·아이콘·매니페스트 동기).
+     *
+     * @scenario case=status_badge_regression
+     * @effects status_badge_renders_translated_default_label_and_style
+     */
     it.each(MAPS)(
       '%s 가 유니언 어휘를 전부 담는다',
       (map) => {

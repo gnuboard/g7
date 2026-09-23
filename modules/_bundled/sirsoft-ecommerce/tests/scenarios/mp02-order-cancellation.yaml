@@ -158,6 +158,13 @@ effects:
   - cancellation_path_reports_remaining_capacity_through_refund_accumulation # §12-B B1 — 원금은 그대로, 누적이 잔여를 말한다
   - admin_bulk_status_change_cannot_create_a_cancellation        # N16 — 신청서 없는 취소 차단
   - cancel_pg_control_is_gone_from_the_bulk_bar                  # P2 — 「PG 없이 장부만」 경로 제거
+  - mismatched_refund_method_is_rejected                         # P3 — 결제행과 어긋난 환불수단은 실행 전에 거절
+  - matching_refund_method_passes_validation                     # P3 비회귀
+  - fallback_refund_method_is_validated_against_the_effective_method # P14 — 폴백 신청서는 실효 수단(BANK)으로 대조
+  - cancellation_record_links_the_refund_that_created_it         # D6 — 취소 문서가 자기를 만든 환불을 가리킨다
+  - auto_advance_sends_exactly_one_customer_notification         # §4-2 — 접수·전이를 합쳐 고객 알림은 1통
+  - auto_approve_also_sends_exactly_one_notification             # D8 — 자동승인 접수도 1통
+  - order_detail_item_selection_feeds_claim_entry                # U-3 — 주문상세 상품 선택이 클레임 작성 화면으로 넘어간다
 
   # ── 취소 금액 재계산 — OrderAdjustmentService 가 내놓는 관측 결과 ────────
   # 이 파일의 axes(item_selection × payment_state × …)는 "누가 어떤 수단으로 취소하는가" 를

@@ -109,18 +109,37 @@
                     "text": "$t:claim.withdraw.cancel"
                 },
                 {
-                    "comment": "철회를 실제로 보내는 버튼 — 성공하면 모달을 닫고 셸이 지정한 데이터소스를 다시 읽어 바뀐 상태를 보여 준다. 승인 뒤라 거절되면 사유를 이 모달 안에 남기고, 서버 장애만 토스트로 알린다.",
+                    "comment": "철회를 실제로 보내는 버튼 — 성공하면 모달을 닫고 셸이 지정한 데이터소스를 다시 읽어 바뀐 상태를 보여 준다. 승인 뒤라 거절되면 사유를 이 모달 안에 남기고, 서버 장애만 토스트로 알린다.\n           주문상세 셸(회원·비회원)은 withdrawRefreshClaimable 을 세운다 — 철회로 그 상품이 다시 신청 가능해지므로 claimable 을 다시 받아야 체크박스 잠금과 신청 버튼이 풀린다(받지 않으면 새로고침 전까지 잠긴 채 남는다). 신청서 목록·상세 셸에는 claimable 데이터소스가 없어 세우지 않는다.",
                     "type": "basic",
                     "name": "Button",
                     "actions": [
                         {
                             "type": "click",
-                            "handler": "sirsoft-ecommerce.withdrawClaim",
-                            "params": {
-                                "withdrawApiBase": "{{_local.claimWithdrawApiBase ?? ''}}",
-                                "isGuest": "{{_local.isGuest === true}}",
-                                "refreshDataSourceId": "{{_local.withdrawRefreshDataSourceId ?? ''}}"
-                            }
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "sirsoft-ecommerce.withdrawClaim",
+                                    "params": {
+                                        "withdrawApiBase": "{{_local.claimWithdrawApiBase ?? ''}}",
+                                        "isGuest": "{{_local.isGuest === true}}",
+                                        "refreshDataSourceId": "{{_local.withdrawRefreshDataSourceId ?? ''}}"
+                                    }
+                                },
+                                {
+                                    "handler": "conditions",
+                                    "conditions": [
+                                        {
+                                            "if": "{{_local.withdrawRefreshClaimable === true}}",
+                                            "then": {
+                                                "handler": "refetchDataSource",
+                                                "params": {
+                                                    "dataSourceId": "claimable"
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
                         }
                     ],
                     "props": {
