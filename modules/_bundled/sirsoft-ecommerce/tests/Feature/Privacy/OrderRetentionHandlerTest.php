@@ -437,6 +437,43 @@ class OrderRetentionHandlerTest extends ModuleTestCase
     }
 
     /**
+     * 삭제는 주문마다 관리자 삭제와 같은 `sirsoft-ecommerce.order.after_delete` 를 발행한다 — 주문 활동
+     * 로그가 「주문 삭제」를 남기고 확장이 자기 사본을 정리할 자리다. 커밋 뒤에 발행하므로 구독자가 받는
+     * 시점에 주문은 이미 없다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario order_state=confirmed, toggle=on, mode=delete
+     *
+     * @effects order_purge_emits_after_delete
+     */
+    #[Test]
+    public function delete_emits_after_delete_for_each_purged_order_after_commit(): void
+    {
+        $this->fakeRetentionSettings(['privacy_retention.enabled' => true, 'privacy_retention.retention_years' => 5, 'privacy_retention.mode' => 'delete']);
+
+        $first = $this->closedOrder();
+        $second = $this->closedOrder();
+        $this->closedOrder(['confirmed_at' => now()->subYears(1)]);
+
+        $received = [];
+        $recorder = function (Order $order) use (&$received) {
+            $received[$order->id] = Order::withTrashed()->whereKey($order->id)->exists();
+        };
+        HookManager::addAction('sirsoft-ecommerce.order.after_delete', $recorder);
+
+        try {
+            $this->assertSame(2, app(OrderRetentionHandler::class)->process(false)['count']);
+        } finally {
+            HookManager::removeAction('sirsoft-ecommerce.order.after_delete', $recorder);
+        }
+
+        ksort($received);
+        $this->assertSame([$first->id, $second->id], array_keys($received), '지운 주문마다 한 번씩, 보유기간 안의 주문은 발행하지 않는다');
+        $this->assertSame([false, false], array_values($received), '구독자가 받는 시점에 주문은 이미 지워져 있다');
+    }
+
+    /**
      * 익명화했던 주문을 삭제 모드로 바꾸면 다시 대상이 된다 — 익명화 표지는 익명화 모드에서만 제외 조건이다.
      *
      * @return void 반환값 없음

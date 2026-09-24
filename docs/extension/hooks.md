@@ -92,7 +92,7 @@ HookManager::addFilter('core.privacy.retention_handlers', function (array $handl
   숫자·명단과 실제로 지워진 양이 달라집니다. 멱등(이미 처리된 행 제외)도 그 조건식이 책임집니다.
 - `preview()`·`targets()`는 기능이 **꺼져 있어도** 저장된 기간값으로 셉니다 — 운영자는 켜기 전에
   규모와 명단을 확인합니다. 꺼짐 여부는 수집기가 `enabled` 로 따로 알립니다.
-- `targets()`는 대상 명단 한 쪽(`LengthAwarePaginator`, 항목은 `App\Privacy\PrivacyRetentionTarget`)을,
+- `targets()`는 대상 명단 한 쪽(`LengthAwarePaginator`, 항목은 `App\Privacy\DTO\PrivacyRetentionTarget`)을,
   `targetColumns()`는 쓰는 열의 라벨을, `targetPermissions()`는 명단을 볼 권한(**설정 읽기 + 그 도메인
   읽기**, 모두 필요)을 돌려줍니다. 코어의 대상 명단 API(`GET /api/admin/privacy/retention-targets/{handler}`)가
   핸들러를 식별자로 찾아 그 권한을 요청 시점에 검사하므로, 확장은 등록만으로 설정 화면의 「대상 보기」
@@ -273,6 +273,8 @@ core.permission.store_validation_rules
 core.permission.update_validation_rules
 core.menu.store_validation_rules
 core.menu.update_validation_rules
+core.privacy.target_list_validation_rules           # 개인정보 조치 대상 명단 조회 (page · per_page)
+core.settings.privacy_preview_validation_rules      # 개인정보 탭 대상 건수 미리보기 (기본 규칙 없음)
 
 # 구 이름에서 표준 이름으로 옮긴 훅 (7.0.6) — 구 이름도 함께 발행되므로 기존 구독은 유지되나,
 # 새로 구독할 때는 표준 이름을 쓴다. 구 이름에 구독자가 있으면 로그에 1회 안내가 남는다.

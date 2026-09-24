@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Privacy;
+namespace App\Privacy\DTO;
 
 use App\Helpers\TimezoneHelper;
 use Illuminate\Support\Carbon;
@@ -15,7 +15,7 @@ use Illuminate\Support\Carbon;
  * 개인을 알아볼 수 있는 **최소한의 열**만 담습니다 — 모달은 「누가 대상인가」를 확인하는
  * 자리이지 상세 화면이 아닙니다. 더 볼 것은 {@see $url} 로 상세 화면을 엽니다.
  */
-final class PrivacyRetentionTarget
+final readonly class PrivacyRetentionTarget
 {
     /**
      * @param  int|string  $id  행 식별자 (목록 안에서 유일)
@@ -26,12 +26,12 @@ final class PrivacyRetentionTarget
      * @param  string|null  $url  상세 화면 경로 (관리자가 새 탭으로 연다, 없으면 null)
      */
     public function __construct(
-        public readonly int|string $id,
-        public readonly string $title,
-        public readonly ?string $subtitle = null,
-        public readonly ?string $context = null,
-        public readonly ?Carbon $date = null,
-        public readonly ?string $url = null,
+        public int|string $id,
+        public string $title,
+        public ?string $subtitle = null,
+        public ?string $context = null,
+        public ?Carbon $date = null,
+        public ?string $url = null,
     ) {}
 
     /**

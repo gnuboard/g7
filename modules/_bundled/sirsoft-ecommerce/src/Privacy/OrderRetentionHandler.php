@@ -4,7 +4,7 @@ namespace Modules\Sirsoft\Ecommerce\Privacy;
 
 use App\Extension\HookManager;
 use App\Privacy\Contracts\PrivacyRetentionHandlerInterface;
-use App\Privacy\PrivacyRetentionTarget;
+use App\Privacy\DTO\PrivacyRetentionTarget;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;

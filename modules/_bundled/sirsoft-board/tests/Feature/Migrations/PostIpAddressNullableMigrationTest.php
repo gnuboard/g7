@@ -59,8 +59,9 @@ class PostIpAddressNullableMigrationTest extends ModuleTestCase
     }
 
     /**
-     * up 은 NULL 을 허용하고 자리표시값 0.0.0.0 을 NULL 로 되돌리며, down 은 NULL 을 자리표시값으로
-     * 채운 뒤 NOT NULL 로 되돌리고, 다시 up 해도 깨지지 않는다.
+     * up 은 NULL 을 허용하고, down 은 NULL 을 자리표시값으로 채운 뒤 NOT NULL 로 되돌리며,
+     * 다시 up 해도 깨지지 않는다. 기존 자리표시값의 정리는 마이그레이션이 아니라 1.2.0 업그레이드
+     * 스텝의 몫이라(스키마 변경과 데이터 변환 분리) up 은 행 값을 바꾸지 않는다.
      *
      * @return void 반환값 없음
      *
@@ -69,7 +70,7 @@ class PostIpAddressNullableMigrationTest extends ModuleTestCase
      * @effects board_post_ip_is_nullable
      */
     #[Test]
-    public function migration_round_trips_and_normalizes_placeholder(): void
+    public function migration_round_trips_without_touching_row_values(): void
     {
         $migration = require base_path(self::MIGRATION);
         $ids = [];
@@ -86,8 +87,7 @@ class PostIpAddressNullableMigrationTest extends ModuleTestCase
 
             $migration->up();
             $this->assertTrue($this->ipIsNullable());
-            $this->assertNull(DB::table('board_posts')->find($placeholder)->ip_address, '자리표시값 0.0.0.0 은 「모름」이라 NULL 로 되돌린다');
-            $this->assertNull(DB::table('board_posts')->find($erased)->ip_address);
+            $this->assertSame('0.0.0.0', DB::table('board_posts')->find($placeholder)->ip_address, 'up 은 행 값을 바꾸지 않는다 — 자리표시값 정리는 업그레이드 스텝의 몫');
 
             // 멱등: 재실행해도 SQL 오류가 없다
             $migration->up();

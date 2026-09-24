@@ -2,8 +2,8 @@
 
 namespace App\Privacy\Contracts;
 
+use App\Privacy\DTO\PrivacyRetentionTarget;
 use App\Privacy\PrivacyRetentionManager;
-use App\Privacy\PrivacyRetentionTarget;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 /**

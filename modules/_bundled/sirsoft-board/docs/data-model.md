@@ -109,7 +109,7 @@
 | `2026_09_15_000002_add_reaction_counts_to_board_comments_table.php` | - | `board_comments` | ✅ |
 | `2026_09_15_000003_add_use_comment_reaction_to_boards_table.php` | - | `boards` | ✅ |
 | `2026_09_15_000004_add_admin_indexes_to_board_reactions_table.php` | - | `board_reactions` | ✅ |
-| `2026_09_23_000001_make_ip_address_nullable_in_board_posts_table.php` | - | - | ✅ |
+| `2026_09_23_000001_make_ip_address_nullable_in_board_posts_table.php` | - | `board_posts` | ✅ |
 <!-- @generated:migrations END -->
 
 <!-- @intent START -->
@@ -124,8 +124,10 @@
 
 `make_ip_address_nullable_in_board_posts_table`(2026-09-23, 이슈 #636)은 `board_posts.ip_address` 를
 NOT NULL → nullable 로 바꿔 `board_comments.ip_address`(처음부터 nullable)와 맞춘 것입니다 —
-개인정보 보유기간이 지난 작성 IP 를 NULL 로 파기하려면 필요합니다. 같은 마이그레이션이 이커머스
-상품문의 연동이 NOT NULL 을 채우려고 넣던 자리표시값 `'0.0.0.0'` 을 NULL 로 되돌리고, 연동
+개인정보 보유기간이 지난 작성 IP 를 NULL 로 파기하려면 필요합니다. 이커머스 상품문의 연동이
+NOT NULL 을 채우려고 넣던 자리표시값 `'0.0.0.0'` 을 NULL 로 되돌리는 기존 행 정리는 마이그레이션이
+아니라 1.2.0 업그레이드 스텝(`upgrades/data/1.2.0/migrations/01_NormalizePlaceholderPostIp.php`)이
+맡고(스키마 변경과 데이터 변환을 나눈다 — 확장 갱신은 마이그레이션 → 업그레이드 스텝 순서), 연동
 리스너(`EcommerceInquiryHookListener`)도 이제 IP 를 모르면 NULL 로 둡니다. 따라서 게시글·댓글
 응답의 `ip_address` 는 **nullable 문자열**이고, 관리자 화면(`_post_card_content`·`_comment`·
 `_reply_card_content`)은 이미 `data-if` 로 빈 값을 숨깁니다. `down()` 은 NULL 행을

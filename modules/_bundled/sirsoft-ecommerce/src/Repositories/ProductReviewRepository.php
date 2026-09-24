@@ -435,7 +435,8 @@ class ProductReviewRepository implements ProductReviewRepositoryInterface
             return new Collection;
         }
 
-        return ProductReview::withTrashed()
+        return $this->model->newQuery()
+            ->withTrashed()
             ->with(['images' => fn ($query) => $query->withTrashed()])
             ->whereIn('order_option_id', $orderOptionIds)
             ->get();

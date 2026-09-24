@@ -5,7 +5,7 @@
 ## 발행 훅
 
 <!-- @generated:hooks-published START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-발행 훅 521종 / 호출 지점 563곳. 이 중 519종은 `getHooks()` 선언에 없어 소스에서 자동 감지한 것입니다 — 선언에 추가하면 유형과 설명이 함께 실립니다. 훅 이름이 상수·변수로 조립된 호출이 5곳 있어 호출 위치가 표에 다 실리지 않을 수 있습니다.
+발행 훅 521종 / 호출 지점 564곳. 이 중 519종은 `getHooks()` 선언에 없어 소스에서 자동 감지한 것입니다 — 선언에 추가하면 유형과 설명이 함께 실립니다. 훅 이름이 상수·변수로 조립된 호출이 5곳 있어 호출 위치가 표에 다 실리지 않을 수 있습니다.
 
 | 훅 이름 | 유형 | 설명 | 발행 위치 |
 |---|---|---|---|
@@ -241,7 +241,7 @@
 | `sirsoft-ecommerce.order.after_bulk_update` | action | — | `src/Services/OrderService.php:466` |
 | `sirsoft-ecommerce.order.after_confirm` | action | — | `src/Services/OrderProcessingService.php:314` 외 1곳 |
 | `sirsoft-ecommerce.order.after_create` | action | — | `src/Services/OrderProcessingService.php:232` |
-| `sirsoft-ecommerce.order.after_delete` | action | — | `src/Services/OrderService.php:376` |
+| `sirsoft-ecommerce.order.after_delete` | action | — | `src/Services/OrderPrivacyRetentionService.php:138` 외 1곳 |
 | `sirsoft-ecommerce.order.after_deposit_recorded` | action | — | `src/Services/OrderProcessingService.php:1878` |
 | `sirsoft-ecommerce.order.after_payment_complete` | action | — | `src/Services/OrderProcessingService.php:313` 외 1곳 |
 | `sirsoft-ecommerce.order.after_prune` | action | — | `src/Privacy/OrderRetentionHandler.php:227` |
@@ -560,9 +560,12 @@ FormRequest 쪽 `{동작}_validation_rules`(filter). `brand.*` 19종을 한 번 
 
 `sirsoft-ecommerce.order.before_prune`(보존일) / `.after_prune`(보존일, 건수)는 종결 주문 개인정보
 보유기간 핸들러(이슈 #636)가 코어 prune 훅 규약(7.0.7)에 따라 발행합니다. **`--dry-run` 에서는
-발행하지 않습니다.** 주문 단위 `order.before_delete`/`after_delete` 는 발화하지 않습니다 — 그 훅들은
-관리자 삭제(소프트 삭제·스코프 판정) 흐름의 계약이고, 보유기간 삭제는 참조 행까지 영구 삭제하는
-별개의 시스템 처리입니다. 주문 단위로 반응해야 하는 확장은 prune 훅 전후로 자기 자료를 정리합니다.
+발행하지 않습니다.** 삭제 방식이면 주문을 영구 삭제한 뒤(트랜잭션 커밋 후) 주문마다 관리자 삭제와 같은
+`sirsoft-ecommerce.order.after_delete`(주문 모델)를 발행합니다 — 주문 활동 로그가 「주문 삭제」를 남기고,
+주문 삭제에 반응하는 확장은 같은 훅으로 자기 자료를 정리합니다. 구독자가 받는 시점에 주문 행은 이미
+없으므로 모델은 메모리 값으로만 읽습니다. `order.before_delete` 는 발행하지 않습니다 — 관리자 요청을
+전제한 사전 검사를 무인 배치에 걸지 않습니다(게시판 보유기간 삭제와 같은 판단). 익명화 방식은 주문마다
+`sirsoft-ecommerce.order.after_anonymize`(주문 ID)를 익명화와 같은 트랜잭션 안에서 발행합니다.
 <!-- @intent END -->
 
 ## 구독 훅

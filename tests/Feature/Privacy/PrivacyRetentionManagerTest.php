@@ -4,9 +4,9 @@ namespace Tests\Feature\Privacy;
 
 use App\Extension\HookManager;
 use App\Privacy\Contracts\PrivacyRetentionHandlerInterface;
+use App\Privacy\DTO\PrivacyRetentionTarget;
 use App\Privacy\Handlers\WithdrawnUserRetentionHandler;
 use App\Privacy\PrivacyRetentionManager;
-use App\Privacy\PrivacyRetentionTarget;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Pagination\LengthAwarePaginator as Paginator;

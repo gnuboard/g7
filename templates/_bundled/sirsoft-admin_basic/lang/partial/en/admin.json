@@ -88,6 +88,10 @@
       "sample_plugin_1": "SEO Optimization",
       "sample_template_1": "Main Page"
     },
+    "activities": {
+      "user_registered": "{{name}} signed up"
+    },
+    "refreshed": "Dashboard refreshed.",
     "extension_status": {
       "more": "More"
     },

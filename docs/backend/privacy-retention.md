@@ -42,7 +42,7 @@ namespace Modules\Vendor\Shop\Privacy;
 
 use App\Extension\HookManager;
 use App\Privacy\Contracts\PrivacyRetentionHandlerInterface;
-use App\Privacy\PrivacyRetentionTarget;
+use App\Privacy\DTO\PrivacyRetentionTarget;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Modules\Vendor\Shop\Models\Inquiry;
@@ -229,6 +229,8 @@ php artisan privacy:process-retention                                   # 실제
 
 익명화한 행에 확장이 따로 둔 사본(결제 대행사 메타 등)이 있으면, 도메인 소유자가 행 한 건마다 발행하는 액션 훅(예: `sirsoft-ecommerce.order.after_anonymize`)을 구독해 그 사본을 지웁니다. 이 훅은 익명화 트랜잭션 안에서 발행되므로 구독 리스너는 동기(`sync`)로 등록합니다 — 리스너가 실패하면 표지까지 롤백되어 다음 실행이 다시 처리합니다.
 
+삭제 방식은 행을 지운 뒤 도메인이 이미 가진 **삭제 후 훅**(예: `sirsoft-ecommerce.order.after_delete`, 게시판의 글·댓글 `after_delete`)을 행마다 발행합니다 — 관리자 삭제와 같은 구독자(활동 로그, 확장의 사본 정리)가 그대로 동작하게 하려는 것입니다. 영구 삭제라면 트랜잭션이 커밋된 뒤 발행해 구독자가 실제로 지워진 행만 받게 합니다(큐 리스너는 모델을 메모리 값으로 받습니다). **삭제 전 훅은 발행하지 않습니다** — 관리자 요청을 전제한 사전 검사(본인인증 정책 등)를 무인 배치에 걸지 않습니다.
+
 ## 8. 핸들러 추가 후 검증 매트릭스 (MANDATORY)
 
 | 축 | 단언 |
@@ -259,7 +261,7 @@ php artisan privacy:process-retention                                   # 실제
 ## 10. 관련 코드 진입점
 
 - **계약**: `app/Privacy/Contracts/PrivacyRetentionHandlerInterface.php`
-- **명단 행**: `app/Privacy/PrivacyRetentionTarget.php`
+- **명단 행**: `app/Privacy/DTO/PrivacyRetentionTarget.php`
 - **수집기**: `app/Privacy/PrivacyRetentionManager.php`
 - **배치**: `app/Console/Commands/ProcessPrivacyRetentionCommand.php` (`routes/console.php` 예약 등록)
 - **명단 API**: `app/Http/Controllers/Api/Admin/PrivacyTargetController.php` · `app/Http/Resources/PrivacyTargetCollection.php`

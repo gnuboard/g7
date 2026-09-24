@@ -188,7 +188,7 @@ CRUD 를 바꾸고 싶으면 이 4종 중 하나를 잡으면 되고, 이 모듈
 - [ ] 결제수단·PG 관련 선언을 바꾸면 기설치본 `order_settings.json` 을 정정하는 업그레이드 스텝 동반 (자기 접두사만, 멱등)
 - [ ] 새 관리자 화면을 추가하면 그 화면의 권한(`getPermissions()`)·메뉴(`getAdminMenus()`)·라우트 이름이 서로 가리키는 대상이 일치하는지 확인
 - [ ] 레이아웃·컴포넌트·`data_source` 를 건드렸다면 [`docs/editor-spec.md`](docs/editor-spec.md) 의 동반 의무 표를 따라 `editor-spec.json` 을 함께 갱신 — 샘플이 없는 `data_source` 는 편집기 캔버스에서만 빈 화면이 되고 실제 화면은 정상이라 오류도 경고도 남지 않는다. 반영은 `php artisan module:update sirsoft-ecommerce --force`
-- [ ] 개인정보 보유기간 핸들러(`src/Privacy/`)를 고칠 때는 건수(`preview()`)·대상 명단(`targets()`)·실행(`process()`)이 **같은 조건식**을 쓰는지, 명단 권한(`targetPermissions()` = 설정 읽기 + 주문 읽기)을 지키는지 확인 — 계약 전체는 [코어 개인정보 보유기간 처리 가이드](../../../docs/backend/privacy-retention.md)
+- [ ] 개인정보 보유기간 핸들러(`src/Privacy/`)를 고칠 때는 건수(`preview()`)·대상 명단(`targets()`)·실행(`process()`)이 **같은 조건식**을 쓰는지, 명단 권한(`targetPermissions()` = 설정 읽기 + 주문 읽기)을 지키는지, 명단 행을 코어 값 객체 `App\Privacy\DTO\PrivacyRetentionTarget` 로 내는지 확인 — 계약 전체는 [코어 개인정보 보유기간 처리 가이드](../../../docs/backend/privacy-retention.md)
 
 ## 6. 금지 패턴
 

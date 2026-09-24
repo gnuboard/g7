@@ -9,7 +9,7 @@
       </on-code>
     </error-handling>
   </data-source>
-  <!-- 개인정보 보유기간 대상 건수 — 「일반」 탭의 보유기간 카드 뱃지가 읽는다. 저장된 설정 기준이라 저장 성공 뒤 다시 읽고, 꺼진 축은 서버가 null 을 준다 -->
+  <!-- 개인정보 보유기간 대상 건수 — 「일반」 탭의 보유기간 카드 뱃지가 읽는다. 저장된 설정 기준이라 저장 성공 뒤 다시 읽는다. 꺼진 축도 서버가 센다(꺼짐은 `ip_enabled`·`guest_enabled` 로 구분) — null 은 응답을 받기 전 fallback 뿐이다 -->
   <data-source id="boardPrivacyRetentionPreview" label_key="$t:sirsoft-board.editor.data_source.boardPrivacyRetentionPreview" type="api" endpoint="/api/modules/sirsoft-board/admin/settings/privacy-retention-preview" method="GET" if="{{(query.tab || _global.activeBoardSettingsTab || 'general') === 'general'}}" :auto_fetch="true" :auth_required="true">
     <fallback>
       <field name="data">

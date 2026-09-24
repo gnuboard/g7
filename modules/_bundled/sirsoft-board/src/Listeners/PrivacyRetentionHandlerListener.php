@@ -21,7 +21,7 @@ class PrivacyRetentionHandlerListener implements HookListenerInterface
     /**
      * 구독할 훅 목록 반환
      *
-     * @return array<string, mixed>
+     * @return array<string, mixed> 훅 이름별 구독 설정
      */
     public static function getSubscribedHooks(): array
     {

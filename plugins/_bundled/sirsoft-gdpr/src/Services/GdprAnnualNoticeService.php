@@ -7,7 +7,7 @@ use App\Enums\UserStatus;
 use App\Extension\HookManager;
 use App\Models\User;
 use App\Notifications\BaseNotification;
-use App\Privacy\PrivacyRetentionTarget;
+use App\Privacy\DTO\PrivacyRetentionTarget;
 use App\Services\NotificationChannelService;
 use App\Services\NotificationTemplateService;
 use App\Services\PluginSettingsService;

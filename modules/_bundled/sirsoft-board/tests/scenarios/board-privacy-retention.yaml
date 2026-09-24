@@ -48,9 +48,12 @@ sub_flows:
       - board_settings_retention_section_binds_saved_keys
       - board_settings_delete_warning_is_mode_conditional
   - id: schema
-    description: board_posts.ip_address 를 nullable 로 바꾸고 자리표시값 0.0.0.0 을 NULL 로 되돌리는 마이그레이션 왕복
+    description: |
+      board_posts.ip_address 를 nullable 로 바꾸는 마이그레이션 왕복과, 기존 행에 남은 자리표시값
+      0.0.0.0 을 NULL 로 되돌리는 1.2.0 업그레이드 스텝(스키마 변경과 데이터 변환을 나눈다).
     effects:
       - board_post_ip_is_nullable
+      - board_placeholder_post_ip_is_normalized
 
 effects:
   - board_retention_is_off_by_default
@@ -68,6 +71,7 @@ test_files:
   - modules/_bundled/sirsoft-board/tests/Feature/Privacy/BoardRetentionHandlerTest.php
   - modules/_bundled/sirsoft-board/tests/Feature/Privacy/BoardPrivacyRetentionSettingsTest.php
   - modules/_bundled/sirsoft-board/tests/Feature/Migrations/PostIpAddressNullableMigrationTest.php
+  - modules/_bundled/sirsoft-board/tests/Feature/Upgrade/PlaceholderPostIpNormalizeTest.php
   - modules/_bundled/sirsoft-board/resources/js/__tests__/layouts/admin-board-privacy-retention-settings.test.ts
   - modules/_bundled/sirsoft-board/tests/Playwright/specs/admin/board-settings-privacy-retention.spec.ts
 

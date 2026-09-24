@@ -66,6 +66,7 @@ effects:
   - unclosed_orders_are_never_processed
   - refund_completion_extends_closure
   - order_is_purged_with_references
+  - order_purge_emits_after_delete
   - order_reviews_are_purged_with_files
   - order_meta_copies_are_anonymized
   - order_anonymize_hook_failure_rolls_back

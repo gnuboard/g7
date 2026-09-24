@@ -683,11 +683,13 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
     });
 
     // 개인정보 조치 대상 목록 (#636) — 설정 화면 「대상 N건」 옆 「더보기」 모달이 부른다.
-    // 권한은 대상 공급자가 선언한 「설정 읽기 + 도메인 읽기」를 컨트롤러가 요청 시점에 검사한다 —
-    // 확장 핸들러는 필터 훅으로 동적으로 붙으므로 라우트가 그 권한을 정적으로 알 수 없다.
+    // 보유기간 명단의 권한은 대상 공급자가 선언한 「설정 읽기 + 도메인 읽기」를 컨트롤러가 요청 시점에
+    // 검사한다 — 확장 핸들러는 필터 훅으로 동적으로 붙으므로 라우트가 그 권한을 정적으로 알 수 없다.
+    // 휴면 명단은 권한이 고정(설정 읽기 + 회원 읽기)이라 라우트에 건다. 적용 범위(전체만 명단 허용)는
+    // 두 경로 모두 컨트롤러가 본다.
     Route::prefix('privacy')->group(function () {
         Route::get('retention-targets/{handler}', [AdminPrivacyTargetController::class, 'retention'])->name('api.admin.privacy.retention-targets');
-        Route::get('dormant-targets/{stage}', [AdminPrivacyTargetController::class, 'dormant'])->name('api.admin.privacy.dormant-targets');
+        Route::get('dormant-targets/{stage}', [AdminPrivacyTargetController::class, 'dormant'])->middleware('permission:admin,core.settings.read|core.users.read')->name('api.admin.privacy.dormant-targets');
     });
 
     // 환경설정 관리

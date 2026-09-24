@@ -118,6 +118,11 @@ class OrderPrivacyRetentionService
      * 저장소가 참조하는 쪽 → 참조되는 쪽 순서로 지운다. 한 트랜잭션이라 중간에 실패하면 그 주문은
      * 통째로 남고 다음 실행이 다시 대상으로 잡는다(리뷰 이미지 파일은 되돌려지지 않는다).
      *
+     * 지운 뒤에는 관리자 삭제와 같은 `sirsoft-ecommerce.order.after_delete` 를 발행한다 — 주문 활동
+     * 로그가 「주문 삭제」를 남기고, 확장이 기존 삭제 훅으로 자기 사본을 정리할 수 있다. 커밋 뒤에
+     * 발행하므로 구독자는 실제로 지워진 주문만 받는다. `before_delete` 는 발행하지 않는다 — 게시판
+     * 보유기간 삭제와 같이, 관리자 요청 전제의 사전 검사를 무인 배치에 걸지 않는다.
+     *
      * @param  Order  $order  대상 주문 (휴지통 포함)
      * @return void 반환값 없음
      */
@@ -129,5 +134,7 @@ class OrderPrivacyRetentionService
         });
 
         $this->orderRepository->forgetStatisticsCache();
+
+        HookManager::doAction('sirsoft-ecommerce.order.after_delete', $order);
     }
 }

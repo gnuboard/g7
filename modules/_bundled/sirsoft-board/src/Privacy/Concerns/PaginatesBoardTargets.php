@@ -3,7 +3,7 @@
 namespace Modules\Sirsoft\Board\Privacy\Concerns;
 
 use App\Models\User;
-use App\Privacy\PrivacyRetentionTarget;
+use App\Privacy\DTO\PrivacyRetentionTarget;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;

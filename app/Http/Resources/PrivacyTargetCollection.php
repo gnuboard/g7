@@ -2,7 +2,7 @@
 
 namespace App\Http\Resources;
 
-use App\Privacy\PrivacyRetentionTarget;
+use App\Privacy\DTO\PrivacyRetentionTarget;
 use Illuminate\Http\Request;
 
 /**

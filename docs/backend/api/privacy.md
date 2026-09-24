@@ -135,7 +135,7 @@ Authorization: Bearer {YOUR_TOKEN}
 
 **응답 필드** (`data` 내부)
 
-`retention-targets` 와 같은 행 형태입니다(`data[]` · `columns` · `pagination`). 기준일은 앞 두 단계(`pre_notice`·`convert`)가 **마지막 활동일**(판정과 같이 로그인 — 없으면 가입일 — 과 토큰 마지막 사용 중 늦은 쪽, 정렬도 같은 값), 뒤 두 단계(`withdraw_notice`·`withdraw`)가 **휴면 전환일**이며 `columns.date` 라벨이 그에 맞춰 바뀝니다. 권한은 `core.settings.read` + `core.users.read` 를 **전체 범위로** 가져야 합니다(범위가 좁으면 403).
+`retention-targets` 와 같은 행 형태입니다(`data[]` · `columns` · `pagination`). 기준일은 앞 두 단계(`pre_notice`·`convert`)가 **마지막 활동일**(판정과 같이 로그인 — 없으면 가입일 — 과 토큰 마지막 사용 중 늦은 쪽, 정렬도 같은 값), 뒤 두 단계(`withdraw_notice`·`withdraw`)가 **휴면 전환일**이며 `columns.date` 라벨이 그에 맞춰 바뀝니다. 권한은 `core.settings.read` + `core.users.read` 를 **전체 범위로** 가져야 합니다(범위가 좁으면 403). 두 권한은 `retention-targets` 와 달리 고정이라 라우트의 권한 미들웨어가 먼저 확인하고(없으면 단계 식별자와 무관하게 403), 적용 범위는 컨트롤러가 확인합니다.
 
 **응답 예시**
 

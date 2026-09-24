@@ -6,8 +6,10 @@ use App\ActivityLog\Traits\ResolvesActivityLogType;
 use App\Enums\ActivityLogType;
 use App\Enums\PermissionType;
 use App\Enums\UserStatus;
+use App\Exceptions\UnknownDormantStageException;
 use App\Extension\HookManager;
 use App\Models\User;
+use App\Privacy\DTO\PrivacyRetentionTarget;
 use App\Services\UserService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
@@ -159,7 +161,7 @@ class DormantAccountService
      * @param  string  $stage  단계 식별자 ({@see STAGES})
      * @return Builder<User> 대상 쿼리
      *
-     * @throws \InvalidArgumentException 알 수 없는 단계
+     * @throws UnknownDormantStageException 알 수 없는 단계
      */
     public function stageQuery(string $stage): Builder
     {
@@ -168,7 +170,7 @@ class DormantAccountService
             'convert' => $this->convertQuery(),
             'withdraw_notice' => $this->withdrawNoticeQuery(),
             'withdraw' => $this->withdrawQuery(),
-            default => throw new \InvalidArgumentException("Unknown dormant stage: {$stage}"),
+            default => throw new UnknownDormantStageException($stage),
         };
     }
 
@@ -197,8 +199,12 @@ class DormantAccountService
         } else {
             // 기준일 = 판정과 같은 「마지막 활동」 — 로그인(없으면 가입)과 토큰 마지막 사용 중 늦은 쪽
             // (§1-D 14). 로그인 시각만 보이면 토큰으로 쓰던 회원이 실제보다 오래 쉰 것처럼 보인다.
+            // 두 값 중 늦은 쪽은 GREATEST 대신 표준 CASE 로 고른다 — GREATEST 는 DB 마다 있지 않다.
             $query->withMax('tokens', 'last_used_at')
-                ->orderByRaw('GREATEST(COALESCE(last_login_at, created_at), COALESCE(tokens_max_last_used_at, last_login_at, created_at))');
+                ->orderByRaw(
+                    'CASE WHEN tokens_max_last_used_at > COALESCE(last_login_at, created_at) '
+                    .'THEN tokens_max_last_used_at ELSE COALESCE(last_login_at, created_at) END'
+                );
         }
 
         return $query->orderBy('id')
