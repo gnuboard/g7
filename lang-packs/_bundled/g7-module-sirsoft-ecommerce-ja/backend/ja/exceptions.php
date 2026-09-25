@@ -145,4 +145,5 @@ return [
     'claim_refund_method_unavailable' => 'この注文の決済方法としては、選択された返金方法は使用できません。',
     'exchange_rate_save_failed' => '為替レート設定を保存できませんでした。',
     'claim_not_editable' => '承認後は申請内容を修正することはできません。変更が必要な場合は、カスタマーサポートにお問い合わせください。',
+    'claim_tracking_required' => '回収中·発送中に変更するには、配送業者と送り状番号を入力してください。',
 ];

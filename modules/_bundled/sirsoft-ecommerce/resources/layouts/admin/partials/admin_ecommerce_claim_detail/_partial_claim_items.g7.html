@@ -93,7 +93,7 @@
             <set-state target="local" claimRejectReason="{{$event.target.value}}"/>
           </on>
         </input>
-        <!-- 고른 상태로 신청서 전체를 옮긴다(상품 하나하나는 아래 목록의 일괄 바가 맡는다). 완료는 재고 복구·환불 접수 선택이 딸려 있어 이 경로로 보내지 않고 완료 처리 모달로 안내하며, 반려는 사유가 비면 보내지 않는다. -->
+        <!-- 고른 상태로 신청서 전체를 옮긴다(상품 하나하나는 아래 목록의 일괄 바가 맡는다). 선택지는 심사(결제 요청·승인·보류·반려)뿐이고 눌러도 거절될 값은 서버가 애초에 싣지 않는다 — 회수·발송 단계는 상품 칸, 완료는 아래 [완료 처리] 가 입구다. 반려는 사유가 비면 보내지 않는다. -->
         <button data-ref="cts_003_apply" type="button" class="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{claim?.data?.abilities?.can_update_status !== true || (_local.claimBulkStatus ?? '') === '' || _local.isTransitioningClaim === true}}">
           <on type="click">
             <action handler="sirsoft-ecommerce.executeClaimStatusTransition" pathSegment="{{claim?.data?.claim_path_segment ?? ''}}" claimType="{{claim?.data?.claim?.claim_type ?? ''}}" claimId="{{claim?.data?.claim?.id ?? null}}" status="{{_local.claimBulkStatus ?? ''}}" rejectReason="{{_local.claimRejectReason ?? ''}}">
@@ -116,18 +116,38 @@
           <!-- 선택지는 **서버가 행마다 실어 준 어휘**(`transition_options`)의 교집합이다 — 핸들러가 계산해 `_local.itemTransitionOptions` 에 깐다. 화면이 상태 목록을 리터럴로 들면 전이표가 바뀔 때 화면과 서버가 갈리고, 그 사이 운영자는 '가끔 안 되는 버튼' 을 본다. 결제대기는 서버가 상품 축에서 이미 뺀다(결제는 신청서 단위 축이다). -->
           <select data-ref="ci_002_item_status" data-if="{{(_local.itemTransitionOptions ?? []).length > 0}}" name="itemBulkStatus" class="w-48 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed" value="{{_local.itemBulkStatus ?? ''}}" disabled="{{claim?.data?.abilities?.can_update_status !== true}}" options="{{[{ value: '', label: $t('sirsoft-ecommerce.admin.claim.bulk.status_placeholder'), disabled: true }].concat(_local.itemTransitionOptions ?? [])}}">
             <on type="change">
-              <set-state target="_local" itemBulkStatus="{{$event.target.value}}"/>
+              <!-- 회수중·발송중을 고르면 신청서에 저장된 송장을 미리 채운다 — 「배송 정보」 카드에 먼저 저장해 둔 번호를 다시 치게 하지 않는다. 회수중은 회수 송장, 발송중은 재발송 송장이다. -->
+              <set-state target="_local" itemBulkStatus="{{$event.target.value}}" itemCarrierId="{{$event.target.value === 'redelivering' ? (claim?.data?.claim?.redelivery_carrier_id ?? '') : (claim?.data?.claim?.collection_carrier_id ?? '')}}" itemTrackingNumber="{{$event.target.value === 'redelivering' ? (claim?.data?.claim?.redelivery_tracking_number ?? '') : (claim?.data?.claim?.collection_tracking_number ?? '')}}"/>
             </on>
           </select>
           <!-- 교집합이 0건이면 셀렉트를 감추고 이유를 적는다 — 빈 셀렉트만 두면 운영자는 화면이 덜 그려진 줄 안다. -->
           <span data-ref="ci_003_no_common_transition" data-if="{{(_local.selectedClaimItems ?? []).length > 0 &amp;&amp; (_local.itemTransitionOptions ?? []).length === 0}}" class="text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">$t:sirsoft-ecommerce.admin.claim.detail.items.no_common_transition</span>
+        </div>
+        <!-- 반려 사유 (#599 후속 운영 결정). 상품 칸의 반려도 사유가 정본이다 — 상품을 모두 반려하면 신청서가 따라 반려되는데, 사유 없이 보내면 구매자 화면의 반려 사유가 빈 칸으로 남는다. 반려를 고른 순간에만 연다(위 신청서 칸과 같은 규칙). -->
+        <input data-ref="ci_005_reject_reason" data-if="{{(_local.itemBulkStatus ?? '') === 'rejected'}}" type="text" name="itemRejectReason" class="flex-1 min-w-[16rem] px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg" placeholder="$t:sirsoft-ecommerce.admin.claim.detail.transition.reject_reason_placeholder" value="{{_local.itemRejectReason ?? ''}}">
+          <on type="change">
+            <set-state target="local" itemRejectReason="{{$event.target.value}}"/>
+          </on>
+        </input>
+        <!-- 회수중·발송중 송장 (#599 후속 운영 결정). 그 두 상태는 택배가 물건을 싣고 가는 중이라는 사실이라 송장 없이 들어가면 고객 알림의 운송장 칸이 비어서 나간다 — 서버도 422 로 막는다. 송장은 신청서 한 칸에 남는다(회수중은 회수 송장, 발송중은 재발송 송장). 선택지는 상세 응답이 나른다 — 배송사 엔드포인트는 `settings.read` 게이트다. -->
+        <div data-ref="ci_006_tracking_row" data-if="{{['collecting', 'redelivering'].includes(_local.itemBulkStatus ?? '')}}" class="flex-center flex-wrap gap-2">
+          <select data-ref="ci_007_carrier" name="itemCarrierId" class="w-36 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg" value="{{_local.itemCarrierId ?? ''}}" options="{{[{ value: '', label: $t('sirsoft-ecommerce.admin.claim.detail.shipping.carrier_placeholder'), disabled: true }].concat(claim?.data?.carriers ?? [])}}">
+            <on type="change">
+              <set-state target="_local" itemCarrierId="{{$event.target.value}}"/>
+            </on>
+          </select>
+          <input data-ref="ci_008_tracking_number" type="text" name="itemTrackingNumber" :maxLength="50" class="w-48 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg" placeholder="$t:sirsoft-ecommerce.admin.claim.detail.shipping.tracking_placeholder" value="{{_local.itemTrackingNumber ?? ''}}">
+            <on type="change">
+              <set-state target="_local" itemTrackingNumber="{{$event.target.value}}"/>
+            </on>
+          </input>
         </div>
         <div class="flex-1"/>
         <button data-ref="ci_004_item_bulk_apply" type="button" class="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_local.isUpdatingClaimItems === true || (_local.selectedClaimItems ?? []).length === 0 || claim?.data?.abilities?.can_update_status !== true}}">
           <responsive on="portable" class="w-full px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"/>
           <on type="click">
             <!-- 수량 확인 모달을 연다 (§4-6) — 수량 입력을 이 바에 두면 행이 여럿일 때 수량이 하나뿐이라 '3 중 2, 5 중 1' 을 표현할 수 없다. 완료 전이는 그 모달을 건너뛰고 완료 처리 모달로 간다 (D26) — 분기는 핸들러가 한다. 경로 세그먼트는 서버가 준 값을 그대로 쓴다: 화면이 `claim_type + 's'` 로 조립하면 그 조립이 세그먼트 규칙의 두 번째 출처가 된다. -->
-            <action handler="sirsoft-ecommerce.openClaimItemQuantityConfirm" pathSegment="{{claim?.data?.claim_path_segment ?? ''}}" claimType="{{claim?.data?.claim?.claim_type ?? ''}}" claimId="{{claim?.data?.claim?.id ?? null}}" claimNumber="{{claim?.data?.claim?.claim_number ?? ''}}" requesterName="{{claim?.data?.claim?.requester_name ?? ''}}" itemIds="{{_local.selectedClaimItems ?? []}}" status="{{_local.itemBulkStatus ?? ''}}" rows="{{claim?.data?.claim?.items ?? []}}" completeDefaults="{{claim?.data?.complete_defaults ?? {} }}">
+            <action handler="sirsoft-ecommerce.openClaimItemQuantityConfirm" pathSegment="{{claim?.data?.claim_path_segment ?? ''}}" claimType="{{claim?.data?.claim?.claim_type ?? ''}}" claimId="{{claim?.data?.claim?.id ?? null}}" claimNumber="{{claim?.data?.claim?.claim_number ?? ''}}" requesterName="{{claim?.data?.claim?.requester_name ?? ''}}" itemIds="{{_local.selectedClaimItems ?? []}}" status="{{_local.itemBulkStatus ?? ''}}" rejectReason="{{_local.itemRejectReason ?? ''}}" carrierId="{{_local.itemCarrierId ?? ''}}" trackingNumber="{{_local.itemTrackingNumber ?? ''}}" carriers="{{claim?.data?.carriers ?? []}}" rows="{{claim?.data?.claim?.items ?? []}}" completeDefaults="{{claim?.data?.complete_defaults ?? {} }}">
               <fail>
                 <!-- 실패 사유는 핸들러가 이미 띄운다(서버 사유 우선 + 다국어 폴백). onError 를 두지 않으면 기본 에러 정책이 같은 실패를 한 번 더 알려 같은 문구가 두 번 뜬다 — 형제 모달(_modal_claim_refund_execute·_modal_claim_complete)과 같은 규율이다. -->
                 <suppress/>
@@ -186,14 +206,16 @@
         </on>
       </data-grid>
     </div>
-    <!-- 완료 처리 카드 (D26). 교환·반품만이다 — 환불의 완료는 환불 실행(S9b)이 옮기는 상태라 관리자가 직접 지정하는 축이 아니다. 이미 종결된 신청서에는 그리지 않는다. -->
+    <!-- 완료 처리 카드 (D26). 교환·반품만이다 — 환불의 완료는 환불 실행(S9b)이 옮기는 상태라 관리자가 직접 지정하는 축이 아니다. 이미 종결된 신청서에는 그리지 않는다. 버튼·건수는 서버가 센 **지금 완료할 수 있는 상품 수**(`completable_item_count`)를 읽는다 — 예전에는 전체 상품 수를 적고 버튼을 늘 켜 두어, 회수도착 전에 누르면 모달까지 열린 뒤 거절됐다(#599 후속). -->
     <div data-ref="claim_completion_card" data-if="{{['exchange', 'return'].includes(claim?.data?.claim?.claim_type ?? '') &amp;&amp; claim?.data?.claim?.is_final !== true}}" class="admin-card mt-6">
       <div class="flex-between gap-4 flex-wrap">
         <div>
           <h2 class="text-lg font-bold text-gray-900 dark:text-gray-100">$t:sirsoft-ecommerce.admin.claim.detail.completion.title</h2>
-          <p data-ref="cmpl_001_description" class="text-sm text-secondary mt-1">$t:sirsoft-ecommerce.admin.claim.detail.completion.description|count={{(claim?.data?.claim?.items ?? []).length}}</p>
+          <p data-ref="cmpl_001_description" data-if="{{(claim?.data?.completable_item_count ?? 0) > 0}}" class="text-sm text-secondary mt-1">$t:sirsoft-ecommerce.admin.claim.detail.completion.description|count={{claim?.data?.completable_item_count ?? 0}}</p>
+          <!-- 완료할 상품이 없을 때는 언제 완료할 수 있는지를 적는다 — 꺼진 버튼만 두면 운영자는 권한 문제로 읽는다. -->
+          <p data-ref="cmpl_003_unavailable" data-if="{{(claim?.data?.completable_item_count ?? 0) === 0}}" class="text-sm text-secondary mt-1">{{(claim?.data?.claim?.claim_type ?? '') === 'exchange' ? $t('sirsoft-ecommerce.admin.claim.detail.completion.unavailable_exchange') : $t('sirsoft-ecommerce.admin.claim.detail.completion.unavailable_return')}}</p>
         </div>
-        <button data-ref="cmpl_002_button" type="button" class="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{claim?.data?.abilities?.can_update_status !== true}}">
+        <button data-ref="cmpl_002_button" type="button" class="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{claim?.data?.abilities?.can_update_status !== true || (claim?.data?.completable_item_count ?? 0) === 0}}">
           <on type="click">
             <!-- 목록·상품 단위와 같은 모달 파일을 연다 (D26). 신청서 단위 진입점이므로 `item_ids` 를 싣지 않는다 — 생략하면 서버가 그 신청서의 완료 가능 상품 전체를 대상으로 본다. 초기 선택값은 상세 응답(`complete_defaults`)이 나른다: 설정 엔드포인트는 `settings.read` 게이트라 클레임 권한만 가진 운영자에게는 403 이 되고, 상점이 꺼 둔 기본값이 조용히 계약 기본값으로 되돌아간다. -->
             <action handler="sirsoft-ecommerce.openClaimDetailComplete" pathSegment="{{claim?.data?.claim_path_segment ?? ''}}" claimType="{{claim?.data?.claim?.claim_type ?? ''}}" claimId="{{claim?.data?.claim?.id ?? null}}" claimNumber="{{claim?.data?.claim?.claim_number ?? ''}}" requesterName="{{claim?.data?.claim?.requester_name ?? ''}}" rows="{{claim?.data?.claim?.items ?? []}}" completeDefaults="{{claim?.data?.complete_defaults ?? {} }}"/>

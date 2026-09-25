@@ -124,6 +124,9 @@ class ClaimController extends AdminBaseController
                 (new ClaimAdminCollection($claims))
                     ->withCounts($counts)
                     ->withCompleteDefaults($this->adminClaimService->completionDefaults())
+                    ->withCarriers(in_array($request->claimType(), [ClaimTypeEnum::EXCHANGE, ClaimTypeEnum::RETURN], true)
+                        ? $this->carrierService->getActiveCarrierOptions()
+                        : [])
             );
         } catch (AccessDeniedHttpException $e) {
             return ResponseHelper::forbidden('auth.scope_denied');
@@ -297,6 +300,7 @@ class ClaimController extends AdminBaseController
                 $request->statusValue(),
                 $request->context(Auth::id()),
                 $request->completionOptions(),
+                $request->trackingsById(),
             );
 
             return ResponseHelper::moduleSuccess('sirsoft-ecommerce', 'messages.claims.bulk_status_processed', $result);
@@ -596,7 +600,7 @@ class ClaimController extends AdminBaseController
     }
 
     /**
-     * 회수 운송장을 등록합니다. (회수준비중이면 회수중 전이 동반)
+     * 회수 운송장을 저장합니다. (상태는 옮기지 않는다 — 회수중 전이는 상품 칸·신청서 전이가 송장을 실어 수행)
      *
      * @param  ClaimTrackingRequest  $request  송장 요청
      * @param  string  $claimType  유형 세그먼트 (exchanges/returns)
@@ -632,7 +636,7 @@ class ClaimController extends AdminBaseController
     }
 
     /**
-     * 재발송 운송장을 등록합니다. (교환 전용 — 재발송준비중이면 재발송중 전이 동반)
+     * 재발송 운송장을 저장합니다. (교환 전용 — 상태는 옮기지 않는다)
      *
      * @param  ClaimTrackingRequest  $request  송장 요청
      * @param  int  $id  교환 신청서 ID
@@ -856,6 +860,9 @@ class ClaimController extends AdminBaseController
             // 시절에는 운영자가 상세를 열어 내용을 확인한 뒤 목록으로 되돌아가 그 줄을 다시
             // 찾아야 했고, 환불 유형은 상세에 어떤 전이 컨트롤도 없었다.
             'transition_options' => $this->adminClaimService->transitionOptionsFor($claim),
+            // 지금 완료할 수 있는 상품 수 — [완료 처리] 버튼의 활성·안내 건수. 신청서가 끝나지
+            // 않았다는 것만 보고 버튼을 켜면 회수도착 전에도 눌려 모달까지 열린 뒤 거절된다.
+            'completable_item_count' => $this->adminClaimService->completableItemCount($claim),
             // 청구 방식 어휘는 운영자 설정(`claim.allowed_charge_methods`)이 정하고 그 조회는
             // `settings.read` 게이트다 — 완료 기본값·택배사와 같은 이유로 봉투가 나른다.
             'charge_methods' => $claim instanceof OrderRefund || $claim instanceof OrderCancel

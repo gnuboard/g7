@@ -39,6 +39,11 @@ class ExchangeMultiCurrencyTest extends ModuleTestCase
     use BuildsClaimAdjustmentOrders;
     use BuildsClaimFlowOrders;
 
+    /**
+     * 통화 설정 캐시를 비우고 테스트용 다통화 설정·클레임 사유를 시드합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -47,6 +52,11 @@ class ExchangeMultiCurrencyTest extends ModuleTestCase
         $this->seedClaimReasons();
     }
 
+    /**
+     * 테스트용 다통화 설정을 지워 다음 테스트로 새지 않게 합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         $this->clearTestCurrencySettings();
@@ -57,7 +67,7 @@ class ExchangeMultiCurrencyTest extends ModuleTestCase
      * 결제 통화가 USD 인 주문에 고가 옵션 교환을 접수합니다.
      *
      * @param  int  $priceAdjustment  교환 대상 옵션의 가격 조정 (양수 = 고가 → 추가 청구)
-     * @return array{0: Order, 1: OrderExchange}
+     * @return array{0: Order, 1: OrderExchange} 새로 읽은 주문과 접수된 교환 신청서
      */
     private function foreignExchange(int $priceAdjustment = 10000): array
     {
@@ -95,6 +105,8 @@ class ExchangeMultiCurrencyTest extends ModuleTestCase
      * @scenario base_currency=krw, payment_currency=cross
      *
      * @effects exchange_amounts_are_computed_in_the_base_currency
+     *
+     * @return void 반환값 없음
      */
     public function test_exchange_amounts_are_computed_in_the_base_currency(): void
     {
@@ -120,6 +132,8 @@ class ExchangeMultiCurrencyTest extends ModuleTestCase
      * @scenario base_currency=krw, payment_currency=cross
      *
      * @effects exchange_secondary_currency_matches_the_base_line
+     *
+     * @return void 반환값 없음
      */
     public function test_exchange_secondary_currency_matches_the_base_line(): void
     {
@@ -147,6 +161,8 @@ class ExchangeMultiCurrencyTest extends ModuleTestCase
      * @scenario base_currency=krw, payment_currency=cross
      *
      * @effects exchange_response_secondary_currency_is_formatted
+     *
+     * @return void 반환값 없음
      */
     public function test_exchange_response_secondary_currency_is_formatted(): void
     {
@@ -178,6 +194,8 @@ class ExchangeMultiCurrencyTest extends ModuleTestCase
      * @scenario base_currency=krw, payment_currency=cross
      *
      * @effects exchange_transitions_complete_under_cross_currency_payment
+     *
+     * @return void 반환값 없음
      */
     public function test_exchange_transitions_complete_under_cross_currency_payment(): void
     {
@@ -193,7 +211,7 @@ class ExchangeMultiCurrencyTest extends ModuleTestCase
             ExchangeStatusEnum::REDELIVERING,
             ExchangeStatusEnum::REDELIVERED,
         ] as $step) {
-            $exchange = $service->transition($exchange, $step);
+            $exchange = $service->transition($exchange, $step, $this->claimTrackingFor($step));
         }
 
         $this->assertSame(ExchangeStatusEnum::REDELIVERED, $exchange->exchange_status);
@@ -212,6 +230,8 @@ class ExchangeMultiCurrencyTest extends ModuleTestCase
      * @scenario base_currency=non_krw, payment_currency=cross
      *
      * @effects exchange_amounts_hold_when_the_store_base_currency_is_not_krw
+     *
+     * @return void 반환값 없음
      */
     public function test_exchange_holds_when_the_store_base_currency_is_not_krw(): void
     {
@@ -268,6 +288,8 @@ class ExchangeMultiCurrencyTest extends ModuleTestCase
      * @scenario base_currency=non_krw, payment_currency=cross
      *
      * @effects exchange_frozen_amounts_survive_a_store_currency_change
+     *
+     * @return void 반환값 없음
      */
     public function test_exchange_frozen_amounts_survive_a_store_currency_change(): void
     {
@@ -302,6 +324,8 @@ class ExchangeMultiCurrencyTest extends ModuleTestCase
      *
      * @effects exchange_amounts_are_computed_in_the_base_currency
      * @effects exchange_secondary_currency_matches_the_base_line
+     *
+     * @return void 반환값 없음
      */
     public function test_single_currency_exchange_holds_the_same_contract(): void
     {
@@ -350,6 +374,8 @@ class ExchangeMultiCurrencyTest extends ModuleTestCase
      * @scenario base_currency=krw, payment_currency=cross
      *
      * @effects exchange_sourced_refund_is_computed_in_the_base_currency
+     *
+     * @return void 반환값 없음
      */
     public function test_exchange_sourced_refund_is_computed_in_the_base_currency(): void
     {
@@ -385,7 +411,7 @@ class ExchangeMultiCurrencyTest extends ModuleTestCase
             ExchangeStatusEnum::REDELIVERING,
             ExchangeStatusEnum::REDELIVERED,
         ] as $step) {
-            $exchange = $service->transition($exchange, $step);
+            $exchange = $service->transition($exchange, $step, $this->claimTrackingFor($step));
         }
 
         $exchange = $service->completeExchange(

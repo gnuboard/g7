@@ -174,6 +174,17 @@ class AdminClaimService
      * "승인" 이 남아 눌러도 422 가 되고, ⓑ 만 보면 완료·처리중처럼 **돈이 움직여야 도달하는**
      * 상태가 목록에 서서 돈 없이 완료를 찍을 수 있게 된다.
      *
+     * 그 교집합에서 **심사 선택지**(결제 요청·승인·보류·반려)만 남긴다 — 회수·발송 단계는 상품
+     * 칸의 몫이고 완료는 [완료 처리] 가 유일한 입구다(`ClaimTransitionVocabulary::reviewOptionsFrom()`).
+     * 남은 선택지 중 **눌러도 `transition()` 이 거절할 것**은 싣지 않는다(#599 후속 운영 결정):
+     *
+     *  - 결제대기 — 고객이 더 낼 돈이 없으면 `requestPayment()` 가 `claim_payment_not_required` 로 거절한다.
+     *  - 승인 — 신청 시점 결제의 미수납 건은 `divertApprovalToPayment()` 가 `claim_payment_outstanding` 으로 거절한다.
+     *  - 반려 — 상품 일부가 신청서보다 앞서 있으면 서비스가 `claim_transition_not_allowed` 로 거절한다.
+     *
+     * 판정은 전부 거절하는 쪽의 메서드를 그대로 부른다 — 여기서 조건을 다시 적으면 선택지와
+     * 거절이 갈려 운영자가 고른 값이 다시 422 로 돌아온다.
+     *
      * 취소신청서는 전이 축이 없다(생성이 곧 확정이다) — 빈 배열을 돌려주어 화면이 바 자체를
      * 그리지 않게 한다.
      *
@@ -194,9 +205,62 @@ class AdminClaimService
 
         // 교집합 계산은 `ClaimTransitionVocabulary` 가 단독 소유한다 — 헤더 바·상품 행 리소스·
         // FormRequest 세 곳이 같은 어휘를 읽어야 화면에 선 값이 서버에서 422 가 되지 않는다.
-        return ClaimTransitionVocabulary::optionsFrom(
+        $options = ClaimTransitionVocabulary::reviewOptionsFrom(
             $current instanceof \BackedEnum ? $current : null
         );
+
+        if ($claim instanceof OrderRefund) {
+            return $options;
+        }
+
+        return array_values(array_filter(
+            $options,
+            fn (array $option) => ! $this->headerTransitionWouldBeRejected($claim, $option['value']),
+        ));
+    }
+
+    /**
+     * 교환·반품 신청서의 신청서 단위 전이가 `transition()` 에서 거절될지 판정합니다.
+     *
+     * @param  OrderExchange|OrderReturn  $claim  신청서
+     * @param  string  $target  목표 상태 값
+     * @return bool 거절되면 true
+     */
+    protected function headerTransitionWouldBeRejected(OrderExchange|OrderReturn $claim, string $target): bool
+    {
+        $owesMoney = $claim->requiresAdditionalPayment()
+            && $this->paymentService->outstandingAmount($claim) > 0;
+
+        return match ($target) {
+            'payment_pending' => ! $owesMoney,
+            'approved' => $owesMoney && $claim->charge_method !== ClaimChargeMethodEnum::PAY_ON_APPROVAL,
+            default => $claim instanceof OrderExchange
+                ? $this->exchangeService->headerTransitionBlockedByItems($claim, ExchangeStatusEnum::from($target))
+                : $this->returnService->headerTransitionBlockedByItems($claim, ReturnStatusEnum::from($target)),
+        };
+    }
+
+    /**
+     * 지금 완료할 수 있는 신청 상품 수를 셉니다. (상세 [완료 처리] 버튼의 활성·안내 건수)
+     *
+     * 완료 절차가 대상으로 삼는 상품과 같은 판정(`isCompletableItem()`)이다. 예전에는 버튼이
+     * 신청서가 끝나지 않았다는 것만 보고 켜져, 회수도착 전에 누르면 모달까지 열린 뒤
+     * 「완료 처리할 수 있는 신청 상품이 없습니다」 로 거절됐다. 환불·취소는 [완료 처리] 가 없다.
+     *
+     * @param  OrderExchange|OrderReturn|OrderRefund|OrderCancel  $claim  신청서
+     * @return int 완료 가능 상품 수
+     */
+    public function completableItemCount(OrderExchange|OrderReturn|OrderRefund|OrderCancel $claim): int
+    {
+        return match (true) {
+            $claim instanceof OrderExchange => $claim->loadMissing('exchangeOptions')->exchangeOptions
+                ->filter(fn ($item) => $this->exchangeService->isCompletableItem($item))
+                ->count(),
+            $claim instanceof OrderReturn => $claim->loadMissing('returnOptions')->returnOptions
+                ->filter(fn ($item) => $this->returnService->isCompletableItem($item))
+                ->count(),
+            default => 0,
+        };
     }
 
     /**
@@ -523,6 +587,7 @@ class AdminClaimService
      * @param  string  $target  목표 상태 값
      * @param  array  $context  부가 정보 (processed_by / reject_reason / admin_memo)
      * @param  ClaimCompletionOptions|null  $completion  완료 처리 옵션 (완료 전이일 때만)
+     * @param  array<int, array{carrier_id: int, tracking_number: string}>  $trackings  신청서별 송장 (회수중·발송중일 때 — 송장은 신청서마다 다르다)
      * @return array{succeeded: array<int, int>, payment_requested: array<int, int>, skipped: array<int, array{id: int, claim_number: string|null, message: string}>} 전이 결과
      */
     public function bulkTransition(
@@ -531,6 +596,7 @@ class AdminClaimService
         string $target,
         array $context = [],
         ?ClaimCompletionOptions $completion = null,
+        array $trackings = [],
     ): array {
         $succeeded = [];
         $paymentRequested = [];
@@ -555,7 +621,7 @@ class AdminClaimService
                     $this->complete($claim, [], $completion, $context['processed_by'] ?? null);
                     $succeeded[] = $claim->id;
                 } else {
-                    $result = $this->transition($claim, $target, $context);
+                    $result = $this->transition($claim, $target, $context + ($trackings[$claim->id] ?? []));
 
                     if ($result['payment_requested']) {
                         $paymentRequested[] = $claim->id;
@@ -1381,8 +1447,7 @@ class AdminClaimService
                 continue;
             }
 
-            if ($item->option_status->canTransitionTo(ExchangeStatusEnum::COMPLETED)
-                && ! $item->option_status->isFinal()) {
+            if ($this->exchangeService->isCompletableItem($item)) {
                 $ids[] = (int) $item->id;
             }
         }

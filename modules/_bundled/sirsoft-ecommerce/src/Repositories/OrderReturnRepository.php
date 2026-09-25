@@ -252,6 +252,8 @@ class OrderReturnRepository implements OrderReturnRepositoryInterface
             'id', 'order_id', 'return_number', 'return_status', 'requested_by',
             'reason_code', 'fault_type', 'charge_method', 'total_charge_amount',
             'currency_code', 'items_snapshot', 'created_at', 'completed_at',
+            // 회수중·발송중 일괄 모달이 신청서마다 저장된 송장을 미리 채운다(#599 후속).
+            'collection_carrier_id', 'collection_tracking_number',
         ]);
     }
 

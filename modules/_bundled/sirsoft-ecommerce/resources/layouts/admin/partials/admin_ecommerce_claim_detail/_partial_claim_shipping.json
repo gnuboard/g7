@@ -133,7 +133,7 @@
                                     "props": {
                                         "type": "text",
                                         "name": "collectionTrackingNumber",
-                                        "maxLength": 100,
+                                        "maxLength": 50,
                                         "className": "w-48 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed",
                                         "placeholder": "$t:sirsoft-ecommerce.admin.claim.detail.shipping.tracking_placeholder",
                                         "value": "{{_local.collectionTrackingNumber ?? ''}}",
@@ -146,7 +146,7 @@
                                     "name": "Button",
                                     "actions": [
                                         {
-                                            "comment": "회수준비중이면 저장이 회수중 전이를 함께 일으킨다 — 그래서 저장 후 상세를 다시 읽어 진행단계와 상태 뱃지를 맞춘다.",
+                                            "comment": "저장은 송장만 기록한다 — 상태는 옮기지 않는다(#599 후속 운영 결정: 저장과 전이는 별개). 회수중 전이는 상품 칸이 송장을 실어 수행하며, 여기 저장해 둔 번호를 상품 칸이 미리 채운다.",
                                             "type": "click",
                                             "handler": "sirsoft-ecommerce.saveClaimTracking",
                                             "params": {
@@ -361,7 +361,7 @@
                                     "props": {
                                         "type": "text",
                                         "name": "redeliveryTrackingNumber",
-                                        "maxLength": 100,
+                                        "maxLength": 50,
                                         "className": "w-48 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed",
                                         "placeholder": "$t:sirsoft-ecommerce.admin.claim.detail.shipping.tracking_placeholder",
                                         "value": "{{_local.redeliveryTrackingNumber ?? ''}}",
@@ -369,7 +369,7 @@
                                     }
                                 },
                                 {
-                                    "comment": "재발송준비중인 교환이면 이 저장이 재발송중 전이와 교환품의 새 주문옵션 생성을 함께 일으킨다 — 그래서 성공 뒤 상세와 활동 로그를 다시 읽어 진행단계와 뱃지를 맞춘다.",
+                                    "comment": "저장은 송장만 기록한다 — 상태는 옮기지 않는다(#599 후속 운영 결정). 이미 발송된 교환품이 있으면 그 새 주문상품의 배송 조회 송장도 함께 고쳐진다(서버). 발송중 전이는 상품 칸이 송장을 실어 수행한다.",
                                     "id": "cs_016_redelivery_save",
                                     "type": "basic",
                                     "name": "Button",

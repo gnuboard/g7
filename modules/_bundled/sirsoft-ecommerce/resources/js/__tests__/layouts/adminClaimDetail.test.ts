@@ -1510,3 +1510,105 @@ describe('입력 컴포넌트의 change 이벤트 경로 (브라우저 실측 �
     }
   });
 });
+
+describe('#599 후속 — 막히는 입구 정리·반려 사유·탭 고정', () => {
+  /**
+   * 탭 막대는 헤더 묶음 **밖**에서 스크롤 영역 위에 붙는다 — 헤더 묶음 안에 두면 sticky 가
+   * 부모 경계에 막혀 스크롤과 함께 사라지고, 긴 구역을 지나 탭으로 돌아가려면 끝까지 올려야 했다.
+   *
+   * @effects claim_detail_tab_nav_is_sticky_outside_header
+   */
+  it('탭 막대가 고정 클래스를 갖고 헤더 묶음 밖에 있다', () => {
+    const nav = byId(shell, 'claim_tab_navigation');
+    const header = byId(shell, 'claim_detail_header_section');
+
+    expect(String(nav.props.className)).toContain('sticky-tab-nav');
+    expect(collect(header, (n) => n.id === 'claim_tab_navigation')).toEqual([]);
+  });
+
+  /**
+   * [완료 처리] 는 서버가 센 완료 가능 수로 켜지고, 안내 건수도 그 값이다 — 전체 상품 수를 적고
+   * 늘 켜 두면 회수도착 전에도 눌려 모달까지 열린 뒤 거절된다.
+   *
+   * @effects claim_completion_button_follows_completable_count
+   */
+  it('완료 처리 버튼·건수가 completable_item_count 를 읽는다', () => {
+    const button = byId(itemsSection, 'cmpl_002_button');
+    const description = byId(itemsSection, 'cmpl_001_description');
+    const unavailable = byId(itemsSection, 'cmpl_003_unavailable');
+
+    expect(button.props.disabled).toContain('(claim?.data?.completable_item_count ?? 0) === 0');
+    expect(description.text).toContain('count={{claim?.data?.completable_item_count ?? 0}}');
+    expect(description.if).toBe('{{(claim?.data?.completable_item_count ?? 0) > 0}}');
+    expect(unavailable.if).toBe('{{(claim?.data?.completable_item_count ?? 0) === 0}}');
+  });
+
+  /**
+   * 상품 칸 반려는 사유 입력칸을 열고, [적용] → 수량 모달 → 실행까지 사유가 이어진다.
+   *
+   * @effects claim_item_rejection_reason_is_wired_through_the_modal
+   */
+  it('상품 칸 반려 사유가 입력칸 → [적용] → 수량 모달로 이어진다', () => {
+    const input = byId(itemsSection, 'ci_005_reject_reason');
+    const apply = (byId(itemsSection, 'ci_004_item_bulk_apply').actions as Node[])[0];
+    const confirm = collect(quantityModal, (n) => Array.isArray(n.actions)
+      && (n.actions as Node[]).some((a) => a.handler === 'sirsoft-ecommerce.executeClaimItemBulkStatus'))[0];
+    const execute = (confirm.actions as Node[]).find((a) => a.handler === 'sirsoft-ecommerce.executeClaimItemBulkStatus') as Node;
+
+    expect(input.if).toBe("{{(_local.itemBulkStatus ?? '') === 'rejected'}}");
+    expect(apply.params.rejectReason).toBe("{{_local.itemRejectReason ?? ''}}");
+    expect(execute.params.rejectReason).toBe("{{_global.claimItemQuantityContext?.rejectReason ?? ''}}");
+  });
+
+  /**
+   * 신청서 칸의 선택지는 서버가 거른 `transition_options` 만 그린다 — 화면이 완료·회수 단계를
+   * 따로 더하거나 빼지 않는다(거절 판정의 두 번째 출처 금지).
+   *
+   * @effects claim_header_select_renders_server_options_only
+   */
+  it('신청서 칸 셀렉트가 서버 선택지만 그린다', () => {
+    const select = byId(itemsSection, 'cts_001_status_select');
+
+    expect(select.props.options).toContain('.concat(claim?.data?.transition_options ?? [])');
+    expect(strings(itemsSection).some((value) => value.includes("'completed'"))).toBe(false);
+  });
+});
+
+describe('#599 후속 — 회수중·발송중 송장 · 저장은 저장만', () => {
+  /**
+   * 회수중·발송중을 고르면 상품 칸에 택배사·운송장 입력이 열리고, 고르는 순간 신청서에 저장된 송장으로
+   * 미리 채워지며(회수중은 회수 송장, 발송중은 재발송 송장), [적용] → 수량 모달 → 실행까지 송장이 이어진다.
+   *
+   * @effects claim_item_tracking_is_wired_through_the_modal
+   */
+  it('상품 칸 송장이 입력칸 → [적용] → 수량 모달로 이어진다', () => {
+    const row = byId(itemsSection, 'ci_006_tracking_row');
+    const carrier = byId(itemsSection, 'ci_007_carrier');
+    const tracking = byId(itemsSection, 'ci_008_tracking_number');
+    const statusChange = (byId(itemsSection, 'ci_002_item_status').actions as Node[])[0];
+    const apply = (byId(itemsSection, 'ci_004_item_bulk_apply').actions as Node[])[0];
+    const confirm = collect(quantityModal, (n) => Array.isArray(n.actions)
+      && (n.actions as Node[]).some((a) => a.handler === 'sirsoft-ecommerce.executeClaimItemBulkStatus'))[0];
+    const execute = (confirm.actions as Node[]).find((a) => a.handler === 'sirsoft-ecommerce.executeClaimItemBulkStatus') as Node;
+
+    expect(row.if).toBe("{{['collecting', 'redelivering'].includes(_local.itemBulkStatus ?? '')}}");
+    expect(carrier.props.options).toContain('.concat(claim?.data?.carriers ?? [])');
+    expect(tracking.props.maxLength).toBe(50);
+    expect(JSON.stringify(statusChange.params)).toContain('redelivery_tracking_number');
+    expect(JSON.stringify(statusChange.params)).toContain('collection_tracking_number');
+    expect(apply.params.carrierId).toBe("{{_local.itemCarrierId ?? ''}}");
+    expect(apply.params.trackingNumber).toBe("{{_local.itemTrackingNumber ?? ''}}");
+    expect(execute.params.trackingNumber).toBe("{{_global.claimItemQuantityContext?.trackingNumber ?? ''}}");
+    expect(execute.params.carrierId).toBe("{{_global.claimItemQuantityContext?.carrierId ?? ''}}");
+  });
+
+  /**
+   * 배송 정보 카드의 운송장 입력은 DB 칸 길이(50)까지만 받는다 — 100자를 받으면 51자부터 저장이 서버 오류로 끊겼다.
+   *
+   * @effects claim_tracking_inputs_are_capped_at_the_column_length
+   */
+  it('배송 정보 카드 운송장 입력이 50자로 막힌다', () => {
+    expect(byId(shippingSection, 'cs_005_collection_tracking_number').props.maxLength).toBe(50);
+    expect(byId(shippingSection, 'cs_015_redelivery_tracking_number').props.maxLength).toBe(50);
+  });
+});

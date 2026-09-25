@@ -43,6 +43,11 @@ class ClaimRefundExecutionTest extends ModuleTestCase
 
     protected User $admin;
 
+    /**
+     * 통화 설정·클레임 사유를 시드하고 조회·상태 변경·금액 수정·환불 실행·주문 수정 권한을 가진 관리자를 만듭니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -57,12 +62,22 @@ class ClaimRefundExecutionTest extends ModuleTestCase
         ]);
     }
 
+    /**
+     * 테스트용 통화 설정을 지워 다음 테스트로 새지 않게 합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         $this->clearTestCurrencySettings();
         parent::tearDown();
     }
 
+    /**
+     * 관리자 이커머스 API 의 기본 경로를 돌려줍니다.
+     *
+     * @return string 관리자 API 기본 경로
+     */
     protected function base(): string
     {
         return '/api/modules/sirsoft-ecommerce/admin';
@@ -72,6 +87,7 @@ class ClaimRefundExecutionTest extends ModuleTestCase
      * PG 환불 훅을 성공으로 고정하고 호출 금액을 기록합니다.
      *
      * @param  array|null  $calls  호출 기록 (참조)
+     * @return void 반환값 없음
      */
     protected function fakePgRefund(?array &$calls = null): void
     {
@@ -89,6 +105,7 @@ class ClaimRefundExecutionTest extends ModuleTestCase
      *
      * @param  float  $amount  PG 환불액
      * @param  float  $points  마일리지 환불액
+     * @param  array  $orderOverrides  주문 팩토리에 덮어쓸 속성 (마일리지 사용액 등)
      * @return array{0: Order, 1: OrderRefund} 주문 + 환불신청서
      */
     protected function approvedDirectRefund(float $amount = 10000, float $points = 0, array $orderOverrides = []): array
@@ -125,7 +142,7 @@ class ClaimRefundExecutionTest extends ModuleTestCase
         $service = app(OrderReturnService::class);
         $return = $service->transition($return, ReturnStatusEnum::APPROVED);
         $return = $service->transition($return, ReturnStatusEnum::COLLECTION_READY);
-        $return = $service->transition($return, ReturnStatusEnum::COLLECTING);
+        $return = $service->transition($return, ReturnStatusEnum::COLLECTING, $this->claimTrackingFor(ReturnStatusEnum::COLLECTING));
         $return = $service->transition($return, ReturnStatusEnum::COLLECTED);
 
         $return = $service->completeReturn($return, [], new ClaimCompletionOptions(
@@ -171,7 +188,14 @@ class ClaimRefundExecutionTest extends ModuleTestCase
     // ================================================================
 
     /**
+     * 승인된 직접 환불신청서를 실행하면 신청서·상세 행이 완료되고, 선점하던 옵션 수량이 취소로 빠진다.
+     *
+     * 주문은 `total_paid_amount` 를 그대로 두고 `total_refunded_amount`·결제 취소액만 쌓으며,
+     * PG 환불 훅은 환불액 그대로 한 번 호출된다.
+     *
      * @effects execute_completes_an_approved_direct_refund_and_cancels_the_option_quantity
+     *
+     * @return void 반환값 없음
      */
     public function test_execute_completes_an_approved_direct_refund_and_cancels_the_option_quantity(): void
     {
@@ -214,6 +238,8 @@ class ClaimRefundExecutionTest extends ModuleTestCase
      * @scenario claim_type=refund, cancellable=present
      *
      * @effects claim_refund_execute_uses_request_body_amounts
+     *
+     * @return void 반환값 없음
      */
     public function test_execute_uses_the_request_body_amounts(): void
     {
@@ -239,6 +265,8 @@ class ClaimRefundExecutionTest extends ModuleTestCase
      * @scenario claim_type=refund, cancellable=present
      *
      * @effects claim_refund_execute_rejects_over_the_cancellable_limit
+     *
+     * @return void 반환값 없음
      */
     public function test_execute_rejects_amounts_exceeding_the_cancellable_limit(): void
     {
@@ -261,6 +289,8 @@ class ClaimRefundExecutionTest extends ModuleTestCase
      * @scenario claim_type=refund, cancellable=present
      *
      * @effects claim_refund_execute_twice_is_a_conflict
+     *
+     * @return void 반환값 없음
      */
     public function test_execute_twice_is_a_409_conflict(): void
     {
@@ -289,6 +319,8 @@ class ClaimRefundExecutionTest extends ModuleTestCase
      * @scenario claim_type=refund, cancellable=present
      *
      * @effects claim_refund_execute_accepts_a_cancel_sourced_refund
+     *
+     * @return void 반환값 없음
      */
     public function test_execute_accepts_a_cancel_sourced_refund(): void
     {
@@ -304,7 +336,11 @@ class ClaimRefundExecutionTest extends ModuleTestCase
     }
 
     /**
+     * 승인 전(requested) 환불신청서는 실행할 수 없다(422).
+     *
      * @effects execute_requires_an_approved_refund
+     *
+     * @return void 반환값 없음
      */
     public function test_execute_requires_an_approved_refund(): void
     {
@@ -317,7 +353,11 @@ class ClaimRefundExecutionTest extends ModuleTestCase
     }
 
     /**
+     * 조회 권한만 있는 관리자는 환불을 실행할 수 없다(403).
+     *
      * @effects execute_requires_the_execute_refund_permission
+     *
+     * @return void 반환값 없음
      */
     public function test_execute_requires_the_execute_refund_permission(): void
     {
@@ -331,7 +371,12 @@ class ClaimRefundExecutionTest extends ModuleTestCase
     }
 
     /**
+     * 마일리지 환불을 실행하면 `order_refund_id` 가 붙은 환급(REFUND_RESTORE) 거래가 한 건 생기고,
+     * 같은 환불로 환급을 다시 시도해도 거래가 늘지 않는다(멱등).
+     *
      * @effects execute_refunds_used_mileage_with_the_refund_idempotency_axis
+     *
+     * @return void 반환값 없음
      */
     public function test_execute_refunds_used_mileage_with_the_refund_idempotency_axis(): void
     {
@@ -376,6 +421,8 @@ class ClaimRefundExecutionTest extends ModuleTestCase
      * @scenario claim_type=refund, cancellable=present
      *
      * @effects claim_refund_execute_accumulates_order_refund_totals
+     *
+     * @return void 반환값 없음
      */
     public function test_execute_of_a_return_sourced_refund_accumulates_without_touching_options(): void
     {
@@ -403,7 +450,12 @@ class ClaimRefundExecutionTest extends ModuleTestCase
     // ================================================================
 
     /**
+     * 취소 가능 금액 응답이 세 축(도메인 환불 대상·결제 잔여·선점)과 수단별 내역·통화를 함께 싣고,
+     * 다른 클레임이 없으면 선점 내역이 비어 있다.
+     *
      * @effects cancellable_amount_returns_the_three_axes_with_methods
+     *
+     * @return void 반환값 없음
      */
     public function test_cancellable_amount_returns_the_three_axes_with_methods(): void
     {
@@ -423,7 +475,11 @@ class ClaimRefundExecutionTest extends ModuleTestCase
     }
 
     /**
+     * 같은 주문의 다른 미실행 환불신청서 금액이 선점(`reserved`) 축에 집계된다.
+     *
      * @effects cancellable_amount_reserves_other_pending_refunds
+     *
+     * @return void 반환값 없음
      */
     public function test_cancellable_amount_reserves_other_pending_refunds(): void
     {
@@ -439,7 +495,11 @@ class ClaimRefundExecutionTest extends ModuleTestCase
     }
 
     /**
+     * `refund_id` 문맥으로 조회하면 그 신청서 자신은 선점 집계에서 빠져 자기 금액으로 한도가 줄지 않는다.
+     *
      * @effects cancellable_amount_with_refund_context_excludes_itself_from_the_reserve
+     *
+     * @return void 반환값 없음
      */
     public function test_cancellable_amount_with_refund_context_excludes_itself_from_the_reserve(): void
     {
@@ -456,7 +516,12 @@ class ClaimRefundExecutionTest extends ModuleTestCase
     }
 
     /**
+     * 교환 발 환불의 도메인 환불 대상(① 축)은 교환이 동결한 차액이며, 자기 접수분을 빼지 않아
+     * 한도가 접수액 이상으로 남는다.
+     *
      * @effects cancellable_amount_for_an_exchange_sourced_refund_excludes_its_own_filing
+     *
+     * @return void 반환값 없음
      */
     public function test_cancellable_amount_for_an_exchange_sourced_refund_excludes_its_own_filing(): void
     {
@@ -480,7 +545,11 @@ class ClaimRefundExecutionTest extends ModuleTestCase
     }
 
     /**
+     * 교환 발 환불을 실행하면 옵션 상태(EXCHANGED)는 그대로 두고 주문 누적 환불액과 PG 호출액만 움직인다.
+     *
      * @effects execute_of_an_exchange_sourced_refund_accumulates_without_touching_options
+     *
+     * @return void 반환값 없음
      */
     public function test_execute_of_an_exchange_sourced_refund_accumulates_without_touching_options(): void
     {
@@ -504,7 +573,11 @@ class ClaimRefundExecutionTest extends ModuleTestCase
     }
 
     /**
+     * 다른 주문의 환불신청서 ID 를 문맥으로 넘기면 교차 접근으로 보고 404 를 낸다.
+     *
      * @effects cancellable_amount_is_404_for_a_refund_of_another_order
+     *
+     * @return void 반환값 없음
      */
     public function test_cancellable_amount_is_404_for_a_refund_of_another_order(): void
     {
@@ -521,7 +594,11 @@ class ClaimRefundExecutionTest extends ModuleTestCase
     // ================================================================
 
     /**
+     * 상한 이내의 환불액·환불 방법 수정은 저장되어 신청서에 반영된다.
+     *
      * @effects amounts_updates_the_refund_amounts_within_the_cancellable_limit
+     *
+     * @return void 반환값 없음
      */
     public function test_amounts_updates_the_refund_amounts_within_the_cancellable_limit(): void
     {
@@ -549,6 +626,8 @@ class ClaimRefundExecutionTest extends ModuleTestCase
      * 직렬화 지점(주문 행)을 쓰는지가 이 축의 유일한 관측 가능 신호다.
      *
      * @effects amounts_locks_the_order_row_for_the_cancellable_aggregate
+     *
+     * @return void 반환값 없음
      */
     public function test_amounts_locks_the_order_row_for_the_cancellable_aggregate(): void
     {
@@ -577,7 +656,11 @@ class ClaimRefundExecutionTest extends ModuleTestCase
     }
 
     /**
+     * 취소 가능 금액을 넘는 환불액 수정은 422 로 거절되고 저장 금액이 바뀌지 않는다.
+     *
      * @effects amounts_rejects_a_refund_amount_exceeding_the_cancellable_limit
+     *
+     * @return void 반환값 없음
      */
     public function test_amounts_rejects_a_refund_amount_exceeding_the_cancellable_limit(): void
     {
@@ -591,7 +674,11 @@ class ClaimRefundExecutionTest extends ModuleTestCase
     }
 
     /**
+     * 비회원 주문의 환불신청서에는 마일리지 환불액을 저장할 수 없다(422) — 원장이 회원 전용이다.
+     *
      * @effects amounts_rejects_mileage_refunds_for_guest_orders
+     *
+     * @return void 반환값 없음
      */
     public function test_amounts_rejects_mileage_refunds_for_guest_orders(): void
     {
@@ -611,6 +698,8 @@ class ClaimRefundExecutionTest extends ModuleTestCase
      * 마일리지 원장은 회원 전용이라 환급 대상 자체가 없다.
      *
      * @effects execute_rejects_mileage_refunds_for_guest_orders
+     *
+     * @return void 반환값 없음
      */
     public function test_execute_rejects_mileage_refunds_for_guest_orders(): void
     {
@@ -626,7 +715,11 @@ class ClaimRefundExecutionTest extends ModuleTestCase
     }
 
     /**
+     * 환불 유형 금액 수정에 클레임 배송비 필드를 보내면 422 로 거절한다.
+     *
      * @effects amounts_prohibits_shipping_fee_fields_on_the_refund_type
+     *
+     * @return void 반환값 없음
      */
     public function test_amounts_prohibits_shipping_fee_fields_on_the_refund_type(): void
     {
@@ -638,7 +731,11 @@ class ClaimRefundExecutionTest extends ModuleTestCase
     }
 
     /**
+     * 조회 권한만 있는 관리자는 환불 금액을 수정할 수 없다(403).
+     *
      * @effects amounts_requires_the_update_amounts_permission
+     *
+     * @return void 반환값 없음
      */
     public function test_amounts_requires_the_update_amounts_permission(): void
     {
@@ -656,7 +753,11 @@ class ClaimRefundExecutionTest extends ModuleTestCase
     // ================================================================
 
     /**
+     * 반품 접수로 클레임 코스에 들어간 상품은 실행뿐 아니라 취소 환불 미리보기도 422 로 막힌다.
+     *
      * @effects estimate_refund_is_422_for_items_locked_by_a_claim_course
+     *
+     * @return void 반환값 없음
      */
     public function test_estimate_refund_is_422_for_items_locked_by_a_claim_course(): void
     {
@@ -683,7 +784,12 @@ class ClaimRefundExecutionTest extends ModuleTestCase
     // ================================================================
 
     /**
+     * 외화 결제 주문의 수단별 잔여는 결제 통화 원값(USD 50)과 기준 통화 환산값(KRW 50,000)을 따로 싣고,
+     * 합계 축은 기준 통화로 답한다.
+     *
      * @effects cancellable_amount_reports_the_payment_currency_remaining_separately_from_the_base
+     *
+     * @return void 반환값 없음
      */
     public function test_cancellable_amount_reports_the_payment_currency_remaining_separately_from_the_base(): void
     {
@@ -710,7 +816,11 @@ class ClaimRefundExecutionTest extends ModuleTestCase
     }
 
     /**
+     * 주문 권한만 있는 관리자는 취소 가능 금액을 조회할 수 없다(403) — 게이트는 `claims.read` 다.
+     *
      * @effects cancellable_amount_requires_the_claims_read_permission
+     *
+     * @return void 반환값 없음
      */
     public function test_cancellable_amount_requires_the_claims_read_permission(): void
     {
@@ -725,7 +835,11 @@ class ClaimRefundExecutionTest extends ModuleTestCase
     }
 
     /**
+     * `refund_id` 문맥과 `items` 를 함께 보내면 items 를 조용히 버리지 않고 422 로 거절한다.
+     *
      * @effects cancellable_amount_rejects_the_refund_context_together_with_items
+     *
+     * @return void 반환값 없음
      */
     public function test_cancellable_amount_rejects_the_refund_context_together_with_items(): void
     {
@@ -741,7 +855,11 @@ class ClaimRefundExecutionTest extends ModuleTestCase
     }
 
     /**
+     * 쿼리 스트링의 빈 `refund_id` 는 보내지 않은 것으로 보고 상품 기준 조회를 통과시킨다.
+     *
      * @effects cancellable_amount_accepts_items_when_the_refund_context_is_blank
+     *
+     * @return void 반환값 없음
      */
     public function test_cancellable_amount_accepts_items_when_the_refund_context_is_blank(): void
     {
@@ -756,7 +874,11 @@ class ClaimRefundExecutionTest extends ModuleTestCase
     }
 
     /**
+     * 다른 주문의 옵션 ID 로 이 주문의 한도를 묻는 교차 접근은 해당 항목 422 로 거절한다.
+     *
      * @effects cancellable_amount_scopes_the_requested_items_to_the_order
+     *
+     * @return void 반환값 없음
      */
     public function test_cancellable_amount_scopes_the_requested_items_to_the_order(): void
     {
@@ -780,6 +902,8 @@ class ClaimRefundExecutionTest extends ModuleTestCase
      * 그 내역을 계속 싣되, `binding` 은 ①·② 두 강제 축만 가리킨다.
      *
      * @effects cancellable_amount_reports_the_reserved_axis_but_does_not_bind_on_it
+     *
+     * @return void 반환값 없음
      */
     public function test_cancellable_amount_reports_the_reserved_axis_but_does_not_bind_on_it(): void
     {
@@ -798,7 +922,11 @@ class ClaimRefundExecutionTest extends ModuleTestCase
     }
 
     /**
+     * 결제 잔여가 도메인 환불 대상보다 작으면 한도를 정한 축(`binding`)이 결제 잔여로 보고되고 한도가 그 값이 된다.
+     *
      * @effects cancellable_amount_reports_the_payment_axis_as_binding
+     *
+     * @return void 반환값 없음
      */
     public function test_cancellable_amount_reports_the_payment_axis_as_binding(): void
     {
@@ -814,7 +942,11 @@ class ClaimRefundExecutionTest extends ModuleTestCase
     }
 
     /**
+     * 전량 취소된 주문은 취소 가능 금액 0 을 답하되, 통화(KRW)는 비우지 않고 함께 싣는다.
+     *
      * @effects cancellable_amount_answers_a_fully_cancelled_order_with_the_base_currency
+     *
+     * @return void 반환값 없음
      */
     public function test_cancellable_amount_answers_a_fully_cancelled_order_with_the_base_currency(): void
     {
@@ -836,7 +968,12 @@ class ClaimRefundExecutionTest extends ModuleTestCase
     // ================================================================
 
     /**
+     * PG·마일리지 혼합 환불을 실행하면 PG 에는 PG 몫만 청구하고 마일리지 몫은 원장 환급으로 나가며,
+     * 주문의 두 누적 컬럼에 각자 쌓인다.
+     *
      * @effects execute_splits_a_mixed_pg_and_mileage_refund
+     *
+     * @return void 반환값 없음
      */
     public function test_execute_splits_a_mixed_pg_and_mileage_refund(): void
     {
@@ -868,7 +1005,11 @@ class ClaimRefundExecutionTest extends ModuleTestCase
     }
 
     /**
+     * 마일리지 환급 실행이 원 사용 거래에 `order_refund_id` 를 역주입해 환급과 사용이 연결 거래로 묶인다.
+     *
      * @effects execute_links_the_mileage_restore_to_the_original_usage_transaction
+     *
+     * @return void 반환값 없음
      */
     public function test_execute_links_the_mileage_restore_to_the_original_usage_transaction(): void
     {
@@ -905,7 +1046,11 @@ class ClaimRefundExecutionTest extends ModuleTestCase
     }
 
     /**
+     * 처리자 없이 실행해도 환불 상세 행에 이미 기록된 처리자는 지워지지 않는다.
+     *
      * @effects execute_preserves_the_option_processed_by_when_none_is_given
+     *
+     * @return void 반환값 없음
      */
     public function test_execute_preserves_the_option_processed_by_when_none_is_given(): void
     {
@@ -928,7 +1073,11 @@ class ClaimRefundExecutionTest extends ModuleTestCase
     // ================================================================
 
     /**
+     * 취소 발 환불신청서는 취소 파이프라인 산출값이라 금액 수정을 422 로 거절하고 금액이 그대로다.
+     *
      * @effects amounts_rejects_a_cancel_sourced_refund
+     *
+     * @return void 반환값 없음
      */
     public function test_amounts_rejects_a_cancel_sourced_refund(): void
     {
@@ -950,7 +1099,11 @@ class ClaimRefundExecutionTest extends ModuleTestCase
     }
 
     /**
+     * 처리 중(PROCESSING) 환불신청서는 금액이 이미 실행 근거로 소비됐으므로 수정을 422 로 거절한다.
+     *
      * @effects amounts_rejects_a_processing_refund
+     *
+     * @return void 반환값 없음
      */
     public function test_amounts_rejects_a_processing_refund(): void
     {
@@ -970,7 +1123,11 @@ class ClaimRefundExecutionTest extends ModuleTestCase
     // ================================================================
 
     /**
+     * 클레임 진행 중 상품의 취소 미리보기가 422 일 때 관리자 응답은 사유 원문을 `errors.detail` 로 싣는다.
+     *
      * @effects estimate_refund_reports_the_reason_detail_for_admins
+     *
+     * @return void 반환값 없음
      */
     public function test_estimate_refund_reports_the_reason_detail_for_admins(): void
     {
@@ -994,7 +1151,11 @@ class ClaimRefundExecutionTest extends ModuleTestCase
     }
 
     /**
+     * 미실행 환불신청서가 잠근 수량까지 합쳐 취소를 미리보기하면 수량 잠금으로 422 가 난다.
+     *
      * @effects estimate_refund_is_422_for_items_locked_by_a_pending_refund_quantity
+     *
+     * @return void 반환값 없음
      */
     public function test_estimate_refund_is_422_for_items_locked_by_a_pending_refund_quantity(): void
     {
@@ -1028,6 +1189,8 @@ class ClaimRefundExecutionTest extends ModuleTestCase
      * @scenario claim_type=refund, cancellable=present
      *
      * @effects claim_refund_save_rejects_over_the_cancellable_limit
+     *
+     * @return void 반환값 없음
      */
     public function test_save_rejects_amounts_exceeding_the_cancellable_limit(): void
     {
@@ -1057,6 +1220,8 @@ class ClaimRefundExecutionTest extends ModuleTestCase
      * @scenario claim_type=refund, cancellable=present
      *
      * @effects claim_refund_save_accepts_within_the_cancellable_limit
+     *
+     * @return void 반환값 없음
      */
     public function test_save_accepts_amounts_within_the_cancellable_limit(): void
     {

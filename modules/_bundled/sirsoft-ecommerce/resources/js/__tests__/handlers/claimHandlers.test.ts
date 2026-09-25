@@ -24,6 +24,7 @@ import {
     executeClaimCompletionHandler,
     clearClaimCompleteTimersHandler,
     refreshClaimAttachmentsHandler,
+    updateClaimBulkTrackingHandler,
 } from '../../handlers/claimHandlers';
 
 const PREVIEW_URL = '/api/modules/sirsoft-ecommerce/admin/claims/completion-preview';
@@ -1148,5 +1149,110 @@ describe('첨부 새로고침', () => {
         await refreshClaimAttachmentsHandler();
 
         expect(mockG7Core.api.post).not.toHaveBeenCalled();
+    });
+});
+
+describe('반려 사유 — 목록 일괄 (#599 후속 운영 결정)', () => {
+    /**
+     * 사유 없이 반려를 고르면 확인 모달을 열지 않는다 — 비워 보내면 구매자 화면의 반려 사유가 빈 칸이 된다.
+     *
+     * @effects bulk_rejection_requires_reason_before_confirm
+     */
+    it('사유가 비면 확인 모달을 열지 않는다', async () => {
+        await buildClaimBulkConfirmDataHandler(
+            { handler: 'x', params: { claimType: 'return', status: 'rejected', rejectReason: '', ids: [31, 34], rows: ROWS } },
+            mockContext,
+        );
+
+        expect(mockG7Core.modal.open).not.toHaveBeenCalled();
+        expect(mockG7Core.toast.warning).toHaveBeenCalled();
+    });
+
+    /**
+     * 사유가 확인 데이터를 거쳐 요청 본문의 `reject_reason` 으로 실린다 — 고른 신청서 전부에 같은 사유.
+     *
+     * @effects bulk_rejection_reason_travels_to_the_request
+     */
+    it('사유가 확인 데이터를 거쳐 본문에 실린다', async () => {
+        await buildClaimBulkConfirmDataHandler(
+            { handler: 'x', params: { claimType: 'return', status: 'rejected', rejectReason: ' 반품 기간이 지났습니다. ', ids: [31, 34], rows: ROWS } },
+            mockContext,
+        );
+
+        expect(mockG7Core.modal.open).toHaveBeenCalledWith('modal_claim_bulk_confirm');
+        expect(mockGlobalState.claimBulkConfirmData.rejectReason).toBe('반품 기간이 지났습니다.');
+
+        mockG7Core.api.post.mockResolvedValue({
+            success: true,
+            data: { succeeded: [31, 34], payment_requested: [], skipped: [] },
+        });
+
+        await executeClaimBulkActionHandler({ handler: 'x' }, mockContext);
+
+        expect(lastBodyTo(BULK_STATUS_URL)).toEqual({
+            type: 'return',
+            ids: [31, 34],
+            status: 'rejected',
+            reject_reason: '반품 기간이 지났습니다.',
+        });
+    });
+});
+
+describe('회수중·발송중 송장 — 목록 일괄 (#599 후속 운영 결정)', () => {
+    const TRACKED_ROWS = [
+        { ...ROWS[0], collection_carrier_id: 3, collection_tracking_number: 'SAVED-31' },
+        { ...ROWS[1], collection_carrier_id: null, collection_tracking_number: null },
+    ];
+
+    /**
+     * 회수중을 고르면 신청서마다 한 줄씩 송장 입력을 만든다 — 저장된 송장은 미리 채운다.
+     *
+     * @effects bulk_logistics_builds_one_tracking_row_per_claim
+     */
+    it('신청서마다 송장 줄을 만들고 저장된 송장을 채운다', async () => {
+        await buildClaimBulkConfirmDataHandler(
+            { handler: 'x', params: { claimType: 'return', status: 'collecting', ids: [31, 34], rows: TRACKED_ROWS, carriers: [{ value: 3, label: 'CJ' }] } },
+            mockContext,
+        );
+
+        expect(mockG7Core.modal.open).toHaveBeenCalledWith('modal_claim_bulk_confirm');
+        expect(mockGlobalState.claimBulkConfirmData.trackings).toEqual([
+            { id: 31, claim_number: 'RT20260826000031', requester_name: '박서준', carrier_id: '3', tracking_number: 'SAVED-31' },
+            { id: 34, claim_number: 'RT20260826000034', requester_name: '김지은', carrier_id: '', tracking_number: '' },
+        ]);
+        expect(mockGlobalState.claimBulkConfirmData.carriers).toEqual([{ value: 3, label: 'CJ' }]);
+    });
+
+    /**
+     * 한 건이라도 비면 보내지 않고, 모두 채우면 신청서마다 자기 송장을 `trackings` 로 싣는다.
+     *
+     * @effects bulk_logistics_sends_each_claims_own_tracking
+     */
+    it('빈 줄이 있으면 막고, 모두 채우면 신청서별 송장을 싣는다', async () => {
+        await buildClaimBulkConfirmDataHandler(
+            { handler: 'x', params: { claimType: 'return', status: 'collecting', ids: [31, 34], rows: TRACKED_ROWS } },
+            mockContext,
+        );
+
+        await expect(executeClaimBulkActionHandler({ handler: 'x' }, mockContext)).rejects.toThrow();
+        expect(mockG7Core.api.post).not.toHaveBeenCalled();
+        expect(mockG7Core.toast.warning).toHaveBeenCalled();
+
+        updateClaimBulkTrackingHandler({ handler: 'x', params: { claimId: 34, field: 'carrier_id', value: '3' } }, mockContext);
+        updateClaimBulkTrackingHandler({ handler: 'x', params: { claimId: 34, field: 'tracking_number', value: ' NEW-34 ' } }, mockContext);
+
+        mockG7Core.api.post.mockResolvedValue({ success: true, data: { succeeded: [31, 34], payment_requested: [], skipped: [] } });
+
+        await executeClaimBulkActionHandler({ handler: 'x' }, mockContext);
+
+        expect(lastBodyTo(BULK_STATUS_URL)).toEqual({
+            type: 'return',
+            ids: [31, 34],
+            status: 'collecting',
+            trackings: [
+                { id: 31, carrier_id: 3, tracking_number: 'SAVED-31' },
+                { id: 34, carrier_id: 3, tracking_number: 'NEW-34' },
+            ],
+        });
     });
 });

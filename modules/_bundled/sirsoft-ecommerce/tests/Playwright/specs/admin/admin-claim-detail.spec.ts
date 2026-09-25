@@ -26,7 +26,7 @@
  *
  * 소유 시나리오: `admin-claim-detail` · `admin-claim-detail-payment` (축 매핑은 각 테스트에 있다)
  * @axes claim_type=exchange|return|refund|cancel
- * @effects detail_tab_click_scrolls_to_section, detail_scroll_syncs_active_tab, detail_tabs_collapse_to_select_on_mobile, detail_items_amount_pairs_subtotal, detail_items_price_difference_shows_amount, claim_progress_cells_uniform_width_with_chevrons, claim_progress_wraps_on_mobile_without_scroll, claim_detail_cancel_is_read_only, claim_detail_cancel_info_card_rendered
+ * @effects detail_tab_nav_stays_visible_on_scroll, detail_completion_button_follows_completable_count, detail_header_select_has_no_logistics_or_completion, detail_item_logistics_opens_prefilled_tracking, detail_tab_click_scrolls_to_section, detail_scroll_syncs_active_tab, detail_tabs_collapse_to_select_on_mobile, detail_items_amount_pairs_subtotal, detail_items_price_difference_shows_amount, claim_progress_cells_uniform_width_with_chevrons, claim_progress_wraps_on_mobile_without_scroll, claim_detail_cancel_is_read_only, claim_detail_cancel_info_card_rendered
  */
 import { test, expect, authenticatePage } from '../../fixtures/ecommerce-auth';
 
@@ -482,10 +482,13 @@ test.describe('관리자 클레임 상세 골격 (#599 S9a)', () => {
     await expect(page.locator('#cts_001_status_select')).toBeVisible();
     await expect(page.locator('#cts_003_apply')).toBeVisible();
 
-    // 선택지에 placeholder 말고 실제 상태가 하나라도 있어야 누를 것이 생긴다.
-    const optionCount = await page.locator('#cts_001_status_select option').count();
+    // 선택지에 placeholder 말고 실제 상태가 하나라도 있어야 누를 것이 생긴다. 이 칸은 `options` 를
+    // 받는 버튼형 드롭다운이라 네이티브 `<option>` 이 없다 — 열어서 목록 항목(`role=option`)을 센다.
+    await page.locator('#cts_001_status_select button').first().click();
+    const optionCount = await page.getByRole('listbox').getByRole('option').count();
     expect(optionCount, '전이 선택지가 placeholder 하나뿐이면 바가 있어도 할 수 있는 일이 없다')
       .toBeGreaterThan(1);
+    await page.keyboard.press('Escape');
 
     // 문구가 키 그대로 나오면 언어팩이 빠진 것이다.
     const cardText = await card.innerText();
@@ -671,5 +674,169 @@ test.describe('관리자 클레임 상세 골격 (#599 S9a)', () => {
     await expect(page.locator('[data-testid="claim-detail-comparison"]')).toHaveCount(1);
     // 그 한 벌은 취소 정보 카드 쪽이다 — 정산 카드에는 없다.
     expect(await page.locator('#claim_settlement_card [data-testid="claim-detail-comparison"]').count()).toBe(0);
+  });
+  /**
+   * 탭 막대가 스크롤 영역 위에 붙어 있어야 한다 — 헤더 묶음 안에 있으면 sticky 가 부모 경계에
+   * 막혀 스크롤과 함께 사라지고, 긴 구역을 지나 탭으로 돌아가려면 끝까지 올려야 했다(#599 후속 운영 지적).
+   */
+  // @scenario claim_type=exchange, claim_stage=in_progress
+  // @effects detail_tab_nav_stays_visible_on_scroll
+  test('맨 아래 구역까지 스크롤해도 탭 막대가 화면 안에 남는다', async ({ page, request, claimsManageToken }) => {
+    const claim = await discoverClaim(request, claimsManageToken);
+    test.skip(claim === null, '클레임 신청서가 한 건도 없다 — 클레임 시드 선행');
+
+    await authenticatePage(page, claimsManageToken);
+    await page.goto(DETAIL_URL(claim!.claimNumber));
+    await waitForDetail(page);
+
+    await page.evaluate(() => {
+      document.getElementById('section_activity_log')?.scrollIntoView({ block: 'end' });
+    });
+    await page.waitForTimeout(800);
+
+    const navTop = await page.evaluate(() => {
+      const nav = document.getElementById('claim_tab_navigation');
+
+      return nav ? nav.getBoundingClientRect().top : -1;
+    });
+    const viewportHeight = page.viewportSize()?.height ?? 0;
+
+    expect(navTop, '탭 막대가 화면 위로 사라졌다').toBeGreaterThanOrEqual(0);
+    expect(navTop).toBeLessThan(viewportHeight);
+  });
+
+  /**
+   * [완료 처리] 는 서버가 센 완료 가능 수로 켜진다 — 회수도착 전에 켜져 있으면 모달까지 열린 뒤
+   * 거절된다. 누르지 않고 버튼 상태만 본다.
+   */
+  // @scenario claim_type=return, claim_stage=in_progress
+  // @effects detail_completion_button_follows_completable_count
+  test('[완료 처리] 버튼이 완료 가능 상품 수를 따른다', async ({ page, request, claimsManageToken }) => {
+    const claim = await discoverClaimOfType(request, claimsManageToken, 'return')
+      ?? await discoverClaimOfType(request, claimsManageToken, 'exchange');
+    test.skip(claim === null, '교환·반품 신청서가 한 건도 없다 — 클레임 시드 선행');
+
+    const detail = await request.get(
+      `/api/modules/sirsoft-ecommerce/admin/claims/${encodeURIComponent(claim!.claimNumber)}`,
+      { headers: { Authorization: `Bearer ${claimsManageToken}`, Accept: 'application/json' } },
+    );
+    const count = (await detail.json())?.data?.completable_item_count;
+    expect(typeof count, '상세 응답에 completable_item_count 가 없다').toBe('number');
+
+    await authenticatePage(page, claimsManageToken);
+    await page.goto(DETAIL_URL(claim!.claimNumber));
+    await waitForDetail(page);
+
+    const button = page.locator('#cmpl_002_button');
+
+    // 종결된 신청서는 카드가 서지 않는다 — 그것도 계약이다.
+    if ((await button.count()) === 0) {
+      return;
+    }
+
+    if (count === 0) {
+      await expect(button).toBeDisabled();
+      await expect(page.locator('#cmpl_003_unavailable')).toBeVisible();
+    } else {
+      await expect(button).toBeEnabled();
+      await expect(page.locator('#cmpl_001_description')).toContainText(String(count));
+    }
+  });
+
+  /**
+   * 신청서 칸에는 심사 선택지만 선다 — 완료·회수·발송 단계가 서면 고른 뒤 막다른 길이 된다.
+   */
+  // @scenario claim_type=exchange, claim_stage=in_progress
+  // @effects detail_header_select_has_no_logistics_or_completion
+  test('신청서 상태 변경 칸에 완료·회수·발송 단계가 없다', async ({ page, request, claimsManageToken }) => {
+    const claim = await discoverClaim(request, claimsManageToken);
+    test.skip(claim === null, '클레임 신청서가 한 건도 없다 — 클레임 시드 선행');
+
+    await authenticatePage(page, claimsManageToken);
+    await page.goto(DETAIL_URL(claim!.claimNumber));
+    await waitForDetail(page);
+
+    // 값은 서버 응답에서 본다 — 버튼형 드롭다운은 항목에 값을 싣지 않고 라벨만 그린다.
+    const detail = await request.get(
+      `/api/modules/sirsoft-ecommerce/admin/claims/${encodeURIComponent(claim!.claimNumber)}`,
+      { headers: { Authorization: `Bearer ${claimsManageToken}`, Accept: 'application/json' } },
+    );
+    const serverOptions: Array<{ value: string; label: string }> = (await detail.json())?.data?.transition_options ?? [];
+    const review = ['payment_pending', 'approved', 'on_hold', 'rejected'];
+
+    expect(serverOptions.map((option) => option.value).filter((value) => !review.includes(value))).toEqual([]);
+
+    const select = page.locator('#cts_001_status_select');
+
+    if (serverOptions.length === 0) {
+      // 갈 곳이 없으면 칸 자체가 서지 않는다 — 그것도 계약이다.
+      await expect(select).toHaveCount(0);
+
+      return;
+    }
+
+    // 화면은 서버가 준 선택지만 그린다 — 자리표시 한 줄 + 서버 라벨.
+    await select.locator('button').first().click();
+    const labels = (await page.getByRole('listbox').getByRole('option').allInnerTexts()).map((label) => label.trim());
+    await page.keyboard.press('Escape');
+
+    expect(labels.slice(1)).toEqual(serverOptions.map((option) => option.label));
+  });
+
+  /**
+   * 상품 칸에서 회수중·발송중을 고르면 택배사·운송장 입력이 열리고 저장된 송장으로 미리 채워진다.
+   * 송장을 비운 채 [적용] 하면 요청을 보내지 않고 안내한다 — 쓰기 없이 입구만 잰다.
+   */
+  // @scenario claim_type=return, claim_stage=in_progress
+  // @effects detail_item_logistics_opens_prefilled_tracking
+  test('상품 칸 회수중·발송중 선택이 송장 입력을 열고 미리 채운다', async ({ page, request, claimsManageToken }) => {
+    const headers = { Authorization: `Bearer ${claimsManageToken}`, Accept: 'application/json' };
+    let target: { claimNumber: string; status: string; tracking: string } | null = null;
+
+    for (const claimType of ['return', 'exchange']) {
+      const list = await request.get(`/api/modules/sirsoft-ecommerce/admin/claims?type=${claimType}&per_page=30`, { headers });
+      const rows: Array<{ claim_number: string }> = (await list.json())?.data?.data ?? [];
+
+      for (const row of rows) {
+        const detail = (await (await request.get(`/api/modules/sirsoft-ecommerce/admin/claims/${encodeURIComponent(row.claim_number)}`, { headers })).json())?.data;
+        const items: Array<{ transition_options?: Array<{ value: string }> }> = detail?.claim?.items ?? [];
+        const first = items[0]?.transition_options?.map((option) => option.value) ?? [];
+        const status = first.includes('collecting') ? 'collecting' : first.includes('redelivering') ? 'redelivering' : null;
+
+        if (items.length === 1 && status) {
+          const saved = status === 'redelivering' ? detail.claim.redelivery_tracking_number : detail.claim.collection_tracking_number;
+          target = { claimNumber: row.claim_number, status, tracking: saved ?? '' };
+          break;
+        }
+      }
+
+      if (target) break;
+    }
+
+    test.skip(target === null, '회수중·발송중으로 옮길 수 있는 상품 1건짜리 신청서가 없다 — 클레임 시드 선행');
+
+    await authenticatePage(page, claimsManageToken);
+    await page.goto(DETAIL_URL(target!.claimNumber));
+    await waitForDetail(page);
+
+    await page.locator('#claim_items_datagrid tbody input[type="checkbox"]').first().check();
+    await page.locator('#ci_002_item_status button').first().click();
+    const statusLabel = target!.status === 'collecting' ? /회수중|Collecting/ : /발송중|Shipping|Redelivering/;
+    await page.getByRole('listbox').getByRole('option', { name: statusLabel }).first().click();
+
+    await expect(page.locator('#ci_006_tracking_row')).toBeVisible();
+    await expect(page.locator('#ci_008_tracking_number')).toHaveValue(target!.tracking);
+    await expect(page.locator('#ci_008_tracking_number')).toHaveAttribute('maxlength', '50');
+
+    // 비운 송장으로는 요청이 나가지 않는다.
+    await page.locator('#ci_008_tracking_number').fill('');
+    await page.locator('#ci_008_tracking_number').blur();
+    const patched: string[] = [];
+    page.on('request', (req) => {
+      if (req.method() === 'PATCH' && req.url().includes('/options/bulk-status')) patched.push(req.url());
+    });
+    await page.locator('#ci_004_item_bulk_apply').click();
+    await expect(page.locator('#modal_claim_item_quantity_confirm')).toHaveCount(0);
+    expect(patched).toEqual([]);
   });
 });

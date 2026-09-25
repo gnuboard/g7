@@ -113,6 +113,130 @@
                                     "text": "$t:sirsoft-ecommerce.admin.claim.bulk.confirm_count_value|count={{(_global.claimBulkConfirmData?.ids ?? []).length}}"
                                 }
                             ]
+                        },
+                        {
+                            "comment": "반려면 고른 신청서 전부에 들어갈 사유를 한 번 더 보여 준다 — 구매자 화면에 그대로 나가는 문구다.",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{_global.claimBulkConfirmData?.status === 'rejected'}}",
+                            "props": {
+                                "className": "flex items-start text-sm"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-gray-500 dark:text-gray-400 w-28 flex-shrink-0"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.claim.detail.reason.reject_reason_label"
+                                },
+                                {
+                                    "id": "cbc_007_reject_reason_value",
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "font-semibold text-gray-900 dark:text-gray-100 whitespace-pre-line break-all"
+                                    },
+                                    "text": "{{_global.claimBulkConfirmData?.rejectReason ?? ''}}"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "comment": "회수중·발송중이면 신청서마다 택배사·운송장을 받는다 (#599 후속 운영 결정) — 송장은 신청서마다 달라 한 쌍을 여러 건에 나눠 쓸 수 없다. 저장된 송장은 핸들러가 미리 채운다. 한 건이라도 비면 [변경] 이 잠긴다(서버도 422). 선택지는 목록 응답이 나른다 — 배송사 엔드포인트는 `settings.read` 게이트다.",
+                    "id": "cbc_008_trackings",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{(_global.claimBulkConfirmData?.trackings ?? []).length > 0}}",
+                    "props": {
+                        "className": "space-y-2"
+                    },
+                    "children": [
+                        {
+                            "id": "cbc_009_tracking_hint",
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.claim.detail.shipping.tracking_incomplete"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "border border-gray-200 dark:border-gray-700 rounded-lg divide-y divide-gray-200 dark:divide-gray-700"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "iteration": {
+                                        "source": "{{_global.claimBulkConfirmData?.trackings ?? []}}",
+                                        "item_var": "trackRow",
+                                        "index_var": "trackIdx"
+                                    },
+                                    "props": {
+                                        "className": "flex-center flex-wrap gap-2 p-3"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-sm text-gray-900 dark:text-gray-100 flex-1 min-w-[8rem] truncate"
+                                            },
+                                            "text": "{{[trackRow.claim_number, trackRow.requester_name].filter(Boolean).join(' · ')}}"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Select",
+                                            "actions": [
+                                                {
+                                                    "type": "change",
+                                                    "handler": "sirsoft-ecommerce.updateClaimBulkTracking",
+                                                    "params": {
+                                                        "claimId": "{{trackRow.id}}",
+                                                        "field": "carrier_id",
+                                                        "value": "{{$event.target.value}}"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "name": "bulkTrackingCarrier",
+                                                "className": "w-32 px-2 py-1 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg",
+                                                "value": "{{trackRow.carrier_id ?? ''}}",
+                                                "options": "{{[{ value: '', label: $t('sirsoft-ecommerce.admin.claim.detail.shipping.carrier_placeholder'), disabled: true }].concat(_global.claimBulkConfirmData?.carriers ?? [])}}"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "actions": [
+                                                {
+                                                    "type": "change",
+                                                    "handler": "sirsoft-ecommerce.updateClaimBulkTracking",
+                                                    "params": {
+                                                        "claimId": "{{trackRow.id}}",
+                                                        "field": "tracking_number",
+                                                        "value": "{{$event.target.value}}"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "text",
+                                                "name": "bulkTrackingNumber",
+                                                "maxLength": 50,
+                                                "className": "w-40 px-2 py-1 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg",
+                                                "placeholder": "$t:sirsoft-ecommerce.admin.claim.detail.shipping.tracking_placeholder",
+                                                "value": "{{trackRow.tracking_number ?? ''}}"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
                         }
                     ]
                 }
@@ -194,7 +318,7 @@
                     "props": {
                         "type": "button",
                         "className": "flex-center gap-2 px-4 py-2 text-sm bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed",
-                        "disabled": "{{!_global.claimBulkConfirmData?.status || (_global.claimBulkConfirmData?.ids ?? []).length === 0 || _global.isProcessing}}"
+                        "disabled": "{{!_global.claimBulkConfirmData?.status || (_global.claimBulkConfirmData?.ids ?? []).length === 0 || _global.isProcessing || (_global.claimBulkConfirmData?.trackings ?? []).some(r => !r.carrier_id || !(r.tracking_number ?? '').trim())}}"
                     },
                     "children": [
                         {

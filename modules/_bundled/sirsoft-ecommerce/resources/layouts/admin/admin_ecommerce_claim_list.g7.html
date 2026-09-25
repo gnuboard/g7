@@ -74,6 +74,7 @@
     </field>
     <field name="selectedItems" :value="[]"/>
     <field name="bulkClaimStatus" value=""/>
+    <field name="bulkRejectReason" value=""/>
     <field name="perPage" value="20"/>
   </init-local>
   <computed name="claimReasonOptions">{{[{ value: '', label: '$t:sirsoft-ecommerce.admin.claim.filter.reason_all' }, ...((claim_reasons?.data?.data || []).map(r => ({ value: r.code, label: r.localized_name })))]}}</computed>
@@ -190,7 +191,7 @@
         <on type="change" event="onTabChange">
           <sequence>
             <!-- 일괄 상태 어휘는 유형이 정한다 — 앞 유형에서 고른 값을 그대로 들고 넘어가면 그 상태는 새 유형의 어휘에 없어 [일괄 적용] 이 요청 전체를 422 로 만든다. 선택도 함께 비운다 — DataGrid 의 `selectionScope: "page"` 는 지금 페이지에 없는 id 만 버리는데, `id` 는 유형마다 다른 테이블의 기본키(`order_exchanges`/`order_returns`/`order_refunds`)라 값이 겹치면 앞 유형에서 고른 선택이 살아남아 운영자가 체크한 적 없는 다른 유형의 신청서가 대상이 된다. 페이지 크기도 함께 되돌린다 — 아래 이동이 `per_page` 를 URL 에서 떨구므로 서버는 기본값 20 으로 응답하는데, 셀렉트만 앞 유형의 값을 붙들고 있으면 화면이 실제와 다른 페이지 크기를 가리킨다. -->
-            <set-state target="_local" :selectedItems="[]" bulkClaimStatus="" perPage="20"/>
+            <set-state target="_local" :selectedItems="[]" bulkClaimStatus="" bulkRejectReason="" perPage="20"/>
             <!-- audit:allow layout-list-context-navigate-merge-query 유형 전환은 의도적 리셋이다 — 유형마다 상태·귀책·청구 어휘가 달라 앞 유형의 `statuses[]` 가 따라오면 목록 전체가 422 가 된다(실측). `type` 만 갈아끼운다. -->
             <navigate path="/admin/ecommerce/claims" :replace="true" transition_overlay_target="claim_datagrid__body">
               <query type="{{$args[0]}}"/>

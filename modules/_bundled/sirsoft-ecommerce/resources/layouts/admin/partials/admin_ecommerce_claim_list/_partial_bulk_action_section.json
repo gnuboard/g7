@@ -209,6 +209,30 @@
             ]
         },
         {
+            "comment": "반려 사유 (#599 후속 운영 결정). 목록 일괄 반려도 사유가 정본이다 — 비워 보내면 구매자 화면의 반려 사유가 빈 칸으로 남는다. 고른 신청서 전부에 같은 사유가 들어간다. 반려를 고른 순간에만 연다(상세 두 칸과 같은 규칙).",
+            "id": "cb_006_reject_reason",
+            "type": "basic",
+            "name": "Input",
+            "if": "{{(_local.bulkClaimStatus ?? '') === 'rejected'}}",
+            "actions": [
+                {
+                    "type": "change",
+                    "handler": "setState",
+                    "params": {
+                        "target": "_local",
+                        "bulkRejectReason": "{{$event.target.value}}"
+                    }
+                }
+            ],
+            "props": {
+                "type": "text",
+                "name": "bulkRejectReason",
+                "className": "flex-1 min-w-[16rem] px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg",
+                "placeholder": "$t:sirsoft-ecommerce.admin.claim.detail.transition.reject_reason_placeholder",
+                "value": "{{_local.bulkRejectReason ?? ''}}"
+            }
+        },
+        {
             "type": "basic",
             "name": "Div",
             "props": {
@@ -235,9 +259,11 @@
                     "params": {
                         "claimType": "{{query.type ?? 'exchange'}}",
                         "status": "{{_local.bulkClaimStatus ?? ''}}",
+                        "rejectReason": "{{_local.bulkRejectReason ?? ''}}",
                         "ids": "{{_local.selectedItems ?? []}}",
                         "rows": "{{claims?.data?.data ?? []}}",
-                        "completeDefaults": "{{claims?.data?.complete_defaults ?? {} }}"
+                        "completeDefaults": "{{claims?.data?.complete_defaults ?? {} }}",
+                        "carriers": "{{claims?.data?.carriers ?? []}}"
                     }
                 }
             ],

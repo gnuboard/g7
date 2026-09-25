@@ -163,14 +163,14 @@ describe('상품 단위 일괄 전이 (D25)', () => {
         await executeClaimItemBulkStatusHandler(
             {
                 handler: 'sirsoft-ecommerce.executeClaimItemBulkStatus',
-                params: { ...DETAIL_TARGET, itemIds: [55], status: 'collecting', rows: ITEM_ROWS },
+                params: { ...DETAIL_TARGET, itemIds: [55], status: 'collected', rows: ITEM_ROWS },
             },
             mockContext,
         );
 
         const [url, body] = lastCall('patch');
         expect(url).toBe(`${BASE}/exchanges/31/options/bulk-status`);
-        expect(body).toEqual({ items: [{ id: 55 }], status: 'collecting' });
+        expect(body).toEqual({ items: [{ id: 55 }], status: 'collected' });
     });
 
     /**
@@ -289,6 +289,7 @@ describe('상품 단위 일괄 전이 (D25)', () => {
                     itemIds: [55, 56],
                     itemQuantities: { 55: 2 },
                     status: 'rejected',
+                    rejectReason: '개봉 상품입니다.',
                     rows: ITEM_ROWS,
                 },
             },
@@ -296,7 +297,11 @@ describe('상품 단위 일괄 전이 (D25)', () => {
         );
 
         const [, body] = lastCall('patch');
-        expect(body).toEqual({ items: [{ id: 55, quantity: 2 }, { id: 56 }], status: 'rejected' });
+        expect(body).toEqual({
+            items: [{ id: 55, quantity: 2 }, { id: 56 }],
+            status: 'rejected',
+            reject_reason: '개봉 상품입니다.',
+        });
     });
 
     /**
@@ -523,7 +528,7 @@ describe('상세 처리 후 재조회 — 신청서와 활동 로그 둘 다', (
         ['상품 단위 전이', async () => executeClaimItemBulkStatusHandler(
             {
                 handler: 'sirsoft-ecommerce.executeClaimItemBulkStatus',
-                params: { ...DETAIL_TARGET, itemIds: [55], status: 'collecting', rows: ITEM_ROWS },
+                params: { ...DETAIL_TARGET, itemIds: [55], status: 'collected', rows: ITEM_ROWS },
             },
             mockContext,
         )],
@@ -1318,7 +1323,7 @@ describe('선택 교집합과 수량 확인 모달 (§4-4·§4-6)', () => {
         await openClaimItemQuantityConfirmHandler(
             {
                 handler: 'sirsoft-ecommerce.openClaimItemQuantityConfirm',
-                params: { ...DETAIL_TARGET, itemIds: [55], status: 'rejected', rows: ITEM_ROWS },
+                params: { ...DETAIL_TARGET, itemIds: [55], status: 'rejected', rejectReason: '개봉 상품입니다.', rows: ITEM_ROWS },
             },
             mockContext,
         );
@@ -1359,7 +1364,7 @@ describe('선택 교집합과 수량 확인 모달 (§4-4·§4-6)', () => {
         await openClaimItemQuantityConfirmHandler(
             {
                 handler: 'sirsoft-ecommerce.openClaimItemQuantityConfirm',
-                params: { ...DETAIL_TARGET, itemIds: [56], status: 'rejected', rows: ITEM_ROWS },
+                params: { ...DETAIL_TARGET, itemIds: [56], status: 'rejected', rejectReason: '개봉 상품입니다.', rows: ITEM_ROWS },
             },
             mockContext,
         );
@@ -1374,7 +1379,7 @@ describe('선택 교집합과 수량 확인 모달 (§4-4·§4-6)', () => {
         await openClaimItemQuantityConfirmHandler(
             {
                 handler: 'sirsoft-ecommerce.openClaimItemQuantityConfirm',
-                params: { ...DETAIL_TARGET, itemIds: [55], status: 'rejected', rows: ITEM_ROWS },
+                params: { ...DETAIL_TARGET, itemIds: [55], status: 'rejected', rejectReason: '개봉 상품입니다.', rows: ITEM_ROWS },
             },
             mockContext,
         );
@@ -1395,5 +1400,161 @@ describe('선택 교집합과 수량 확인 모달 (§4-4·§4-6)', () => {
 
         update(2);
         expect(mockGlobalState.claimItemQuantityContext.quantities['55']).toBe(2);
+    });
+});
+
+describe('반려 사유 — 상품 칸 (#599 후속 운영 결정)', () => {
+    /**
+     * 사유 없이 반려를 고르면 수량 확인 모달을 열지 않는다 — 모달까지 연 뒤 서버에서야 422 가 되지 않게.
+     *
+     * @effects claim_item_rejection_requires_reason_before_modal
+     */
+    it('사유가 비면 모달을 열지 않고 안내한다', async () => {
+        await openClaimItemQuantityConfirmHandler(
+            {
+                handler: 'sirsoft-ecommerce.openClaimItemQuantityConfirm',
+                params: { ...DETAIL_TARGET, itemIds: [55], status: 'rejected', rejectReason: '   ', rows: ITEM_ROWS },
+            },
+            mockContext,
+        );
+
+        expect(mockG7Core.modal.open).not.toHaveBeenCalled();
+        expect(mockG7Core.t).toHaveBeenCalledWith('sirsoft-ecommerce.admin.claim.detail.transition.reject_reason_required', undefined);
+        expect(mockG7Core.toast.warning).toHaveBeenCalledWith('반려 사유를 입력해주세요.');
+    });
+
+    /**
+     * 모달 문맥이 사유를 나르고, 실행 본문이 그 사유를 `reject_reason` 으로 싣는다.
+     *
+     * @effects claim_item_rejection_reason_travels_to_the_request
+     */
+    it('사유가 모달 문맥을 거쳐 본문에 실린다', async () => {
+        await openClaimItemQuantityConfirmHandler(
+            {
+                handler: 'sirsoft-ecommerce.openClaimItemQuantityConfirm',
+                params: { ...DETAIL_TARGET, itemIds: [56], status: 'rejected', rejectReason: ' 개봉 상품입니다. ', rows: ITEM_ROWS },
+            },
+            mockContext,
+        );
+
+        expect(mockGlobalState.claimItemQuantityContext.rejectReason).toBe('개봉 상품입니다.');
+
+        await executeClaimItemBulkStatusHandler(
+            {
+                handler: 'sirsoft-ecommerce.executeClaimItemBulkStatus',
+                params: {
+                    ...DETAIL_TARGET,
+                    itemIds: [56],
+                    status: 'rejected',
+                    rejectReason: mockGlobalState.claimItemQuantityContext.rejectReason,
+                    rows: ITEM_ROWS,
+                },
+            },
+            mockContext,
+        );
+
+        const [, body] = lastCall('patch');
+        expect(body.reject_reason).toBe('개봉 상품입니다.');
+        expect(mockG7Core.state.setLocal).toHaveBeenCalledWith(expect.objectContaining({ itemRejectReason: '' }));
+    });
+
+    /**
+     * 반려가 아니면 사유를 싣지 않는다 — 승인에 남은 사유가 신청서 반려 사유로 덮어쓰이지 않게.
+     *
+     * @effects claim_item_non_rejection_omits_reason
+     */
+    it('반려가 아니면 reject_reason 이 없다', async () => {
+        await executeClaimItemBulkStatusHandler(
+            {
+                handler: 'sirsoft-ecommerce.executeClaimItemBulkStatus',
+                params: { ...DETAIL_TARGET, itemIds: [55], status: 'approved', rejectReason: '남은 입력', rows: ITEM_ROWS },
+            },
+            mockContext,
+        );
+
+        const [, body] = lastCall('patch');
+        expect(body).not.toHaveProperty('reject_reason');
+    });
+});
+
+describe('회수중·발송중 송장 — 상품 칸 (#599 후속 운영 결정)', () => {
+    /**
+     * 송장이 비면 수량 확인 모달을 열지 않는다 — 모달까지 연 뒤 서버에서야 422 가 되지 않게.
+     *
+     * @effects claim_item_logistics_requires_tracking_before_modal
+     */
+    it('회수중인데 송장이 비면 모달을 열지 않고 안내한다', async () => {
+        await openClaimItemQuantityConfirmHandler(
+            {
+                handler: 'sirsoft-ecommerce.openClaimItemQuantityConfirm',
+                params: { ...DETAIL_TARGET, itemIds: [55], status: 'collecting', carrierId: '3', trackingNumber: '  ', rows: ITEM_ROWS },
+            },
+            mockContext,
+        );
+
+        expect(mockG7Core.modal.open).not.toHaveBeenCalled();
+        expect(mockG7Core.t).toHaveBeenCalledWith('sirsoft-ecommerce.admin.claim.detail.shipping.tracking_incomplete', undefined);
+        expect(mockG7Core.toast.warning).toHaveBeenCalledWith('택배사와 송장번호를 함께 입력해주세요.');
+    });
+
+    /**
+     * 모달 문맥이 송장을 나르고(확인 문구용 택배사 이름 포함), 실행 본문이 그 송장을 싣는다.
+     *
+     * @effects claim_item_logistics_tracking_travels_to_the_request
+     */
+    it('송장이 모달 문맥을 거쳐 본문에 실린다', async () => {
+        await openClaimItemQuantityConfirmHandler(
+            {
+                handler: 'sirsoft-ecommerce.openClaimItemQuantityConfirm',
+                params: {
+                    ...DETAIL_TARGET,
+                    itemIds: [56],
+                    status: 'redelivering',
+                    carrierId: 3,
+                    trackingNumber: ' RD-1 ',
+                    carriers: [{ value: 3, label: 'CJ대한통운' }],
+                    rows: ITEM_ROWS,
+                },
+            },
+            mockContext,
+        );
+
+        const context = mockGlobalState.claimItemQuantityContext;
+        expect(context.carrierId).toBe('3');
+        expect(context.trackingNumber).toBe('RD-1');
+        expect(context.carrierLabel).toBe('CJ대한통운');
+
+        await executeClaimItemBulkStatusHandler(
+            {
+                handler: 'sirsoft-ecommerce.executeClaimItemBulkStatus',
+                params: { ...DETAIL_TARGET, itemIds: [56], status: 'redelivering', carrierId: context.carrierId, trackingNumber: context.trackingNumber, rows: ITEM_ROWS },
+            },
+            mockContext,
+        );
+
+        const [, body] = lastCall('patch');
+        expect(body.carrier_id).toBe(3);
+        expect(body.tracking_number).toBe('RD-1');
+        expect(mockG7Core.state.setLocal).toHaveBeenCalledWith(expect.objectContaining({ itemCarrierId: '', itemTrackingNumber: '' }));
+    });
+
+    /**
+     * 회수중·발송중이 아니면 송장을 싣지 않는다 — 회수도착(고객 직접 발송)은 송장 없이 간다.
+     *
+     * @effects claim_item_non_logistics_omits_tracking
+     */
+    it('회수도착은 송장 없이 간다', async () => {
+        await executeClaimItemBulkStatusHandler(
+            {
+                handler: 'sirsoft-ecommerce.executeClaimItemBulkStatus',
+                params: { ...DETAIL_TARGET, itemIds: [55], status: 'collected', carrierId: '', trackingNumber: '', rows: ITEM_ROWS },
+            },
+            mockContext,
+        );
+
+        const [, body] = lastCall('patch');
+        expect(body).not.toHaveProperty('carrier_id');
+        expect(body).not.toHaveProperty('tracking_number');
+        expect(mockG7Core.toast.warning).not.toHaveBeenCalled();
     });
 });

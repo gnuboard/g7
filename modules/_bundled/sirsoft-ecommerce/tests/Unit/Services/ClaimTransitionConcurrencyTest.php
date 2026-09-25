@@ -28,6 +28,11 @@ class ClaimTransitionConcurrencyTest extends ModuleTestCase
 {
     use BuildsClaimFlowOrders;
 
+    /**
+     * 클레임 사유 카탈로그를 시드해 반품·교환 접수가 사유 코드 검증을 통과하게 합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -36,6 +41,8 @@ class ClaimTransitionConcurrencyTest extends ModuleTestCase
 
     /**
      * 배송완료 주문에 교환을 접수해 승인까지 올립니다.
+     *
+     * @return OrderExchange 승인 상태로 전이된 교환 신청서
      */
     private function approvedExchange(): OrderExchange
     {
@@ -66,6 +73,8 @@ class ClaimTransitionConcurrencyTest extends ModuleTestCase
      * @scenario claim_type=exchange, concurrency=simultaneous
      *
      * @effects duplicate_transition_is_rejected_under_row_lock
+     *
+     * @return void 반환값 없음
      */
     public function test_repeating_the_same_exchange_transition_is_rejected(): void
     {
@@ -99,6 +108,8 @@ class ClaimTransitionConcurrencyTest extends ModuleTestCase
      * @scenario claim_type=return, concurrency=simultaneous
      *
      * @effects duplicate_transition_is_rejected_under_row_lock
+     *
+     * @return void 반환값 없음
      */
     public function test_repeating_the_same_return_transition_is_rejected(): void
     {
@@ -134,6 +145,8 @@ class ClaimTransitionConcurrencyTest extends ModuleTestCase
      * @scenario claim_type=exchange, concurrency=sequential
      *
      * @effects sequential_transition_still_succeeds
+     *
+     * @return void 반환값 없음
      */
     public function test_sequential_transitions_still_advance(): void
     {
@@ -148,7 +161,7 @@ class ClaimTransitionConcurrencyTest extends ModuleTestCase
             ExchangeStatusEnum::REDELIVERING,
             ExchangeStatusEnum::REDELIVERED,
         ] as $step) {
-            $exchange = $service->transition($exchange, $step);
+            $exchange = $service->transition($exchange, $step, $this->claimTrackingFor($step));
         }
 
         $this->assertSame(ExchangeStatusEnum::REDELIVERED, $exchange->exchange_status);
@@ -160,6 +173,8 @@ class ClaimTransitionConcurrencyTest extends ModuleTestCase
      * @scenario claim_type=return, concurrency=sequential
      *
      * @effects sequential_transition_still_succeeds
+     *
+     * @return void 반환값 없음
      */
     public function test_sequential_return_transitions_still_advance(): void
     {
@@ -180,7 +195,7 @@ class ClaimTransitionConcurrencyTest extends ModuleTestCase
             ReturnStatusEnum::COLLECTING,
             ReturnStatusEnum::COLLECTED,
         ] as $step) {
-            $return = $service->transition($return, $step);
+            $return = $service->transition($return, $step, $this->claimTrackingFor($step));
         }
 
         $this->assertSame(ReturnStatusEnum::COLLECTED, $return->return_status);

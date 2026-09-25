@@ -331,7 +331,7 @@ class ValidateP2ClaimFollowupTest extends ModuleTestCase
         ]);
 
         foreach ([ReturnStatusEnum::APPROVED, ReturnStatusEnum::COLLECTION_READY, ReturnStatusEnum::COLLECTING, ReturnStatusEnum::COLLECTED] as $step) {
-            $return = $service->transition($return, $step);
+            $return = $service->transition($return, $step, $this->claimTrackingFor($step));
         }
 
         $completed = $service->completeReturn($return->fresh(['returnOptions']), [], new ClaimCompletionOptions([], true));
@@ -376,7 +376,7 @@ class ValidateP2ClaimFollowupTest extends ModuleTestCase
             ExchangeStatusEnum::REDELIVERING,
             ExchangeStatusEnum::REDELIVERED,
         ] as $step) {
-            $exchange = $service->transition($exchange, $step);
+            $exchange = $service->transition($exchange, $step, $this->claimTrackingFor($step));
         }
 
         $service->completeExchange($exchange->fresh(['exchangeOptions']), [], new ClaimCompletionOptions([], true));

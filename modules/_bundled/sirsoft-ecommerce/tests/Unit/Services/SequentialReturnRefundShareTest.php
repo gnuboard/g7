@@ -77,7 +77,7 @@ class SequentialReturnRefundShareTest extends ModuleTestCase
             ReturnStatusEnum::COLLECTING,
             ReturnStatusEnum::COLLECTED,
         ] as $target) {
-            $return = $service->transition($return, $target);
+            $return = $service->transition($return, $target, $this->claimTrackingFor($target));
         }
 
         $return->load('returnOptions');

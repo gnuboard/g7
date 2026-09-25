@@ -7,6 +7,7 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimTypeEnum;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Concerns\ResolvesClaimCompletionOptions;
+use Modules\Sirsoft\Ecommerce\Http\Requests\Concerns\ValidatesClaimTransitionTracking;
 use Modules\Sirsoft\Ecommerce\Models\OrderExchangeOption;
 use Modules\Sirsoft\Ecommerce\Models\OrderRefundOption;
 use Modules\Sirsoft\Ecommerce\Models\OrderReturnOption;
@@ -35,10 +36,14 @@ use Modules\Sirsoft\Ecommerce\Support\ClaimTransitionVocabulary;
  * 단계에서 뒤엣것만 남기므로 **오류 없이 한쪽 지시가 사라진다** — 여기서 422 로 세운다.
  *
  * 결제대기는 상품 단위 어휘에서 뺀다 — 결제는 신청서 단위 축이라 상품 행에는 의미가 없다.
+ *
+ * 반려는 사유를 함께 받는다 — 사유는 신청서 한 칸(`reject_reason`)에 남는다(상품 행에는 사유
+ * 칸이 없다). 구매자 화면은 그 칸이 차 있으면 신청서 상태와 무관하게 보여 준다.
  */
 class BulkClaimOptionStatusRequest extends FormRequest
 {
     use ResolvesClaimCompletionOptions;
+    use ValidatesClaimTransitionTracking;
 
     /**
      * 사용자가 이 요청을 수행할 권한이 있는지 확인 (권한 체크는 라우트의 permission 미들웨어에서 수행)
@@ -78,7 +83,10 @@ class BulkClaimOptionStatusRequest extends FormRequest
             // 수량 미지정은 "전량" 이다 — 수량을 싣지 않는 화면 경로(전건 전이)가 그대로 돈다.
             'items.*.quantity' => ['nullable', 'integer', 'min:1'],
             'status' => ['required', 'string', Rule::in(ClaimTransitionVocabulary::assignableValuesFor($type, true))],
-        ] + $this->completionRules();
+            // 상품 칸의 반려도 사유가 정본이다 — 상품을 모두 반려하면 신청서가 따라 반려되는데,
+            // 사유 없이 받으면 구매자 화면의 반려 사유가 빈 칸으로 남는다(#599 후속 운영 결정).
+            'reject_reason' => ['nullable', 'required_if:status,rejected', 'string', 'max:2000'],
+        ] + $this->transitionTrackingRules() + $this->completionRules();
     }
 
     /**
@@ -124,7 +132,9 @@ class BulkClaimOptionStatusRequest extends FormRequest
             'items.*.quantity.min' => __('sirsoft-ecommerce::validation.claims.items.quantity_min'),
             'status.required' => __('sirsoft-ecommerce::validation.claims.admin_status.required'),
             'status.in' => __('sirsoft-ecommerce::validation.claims.admin_status.in'),
-        ] + $this->completionMessages();
+            'reject_reason.required_if' => __('sirsoft-ecommerce::validation.claims.reject_reason.required'),
+            'reject_reason.max' => __('sirsoft-ecommerce::validation.claims.reject_reason.max'),
+        ] + $this->transitionTrackingMessages() + $this->completionMessages();
     }
 
     /**
@@ -165,6 +175,12 @@ class BulkClaimOptionStatusRequest extends FormRequest
      */
     public function context(?int $processedBy): array
     {
-        return ['processed_by' => $processedBy];
+        $context = ['processed_by' => $processedBy];
+
+        if ($this->statusValue() === 'rejected') {
+            $context['reject_reason'] = (string) $this->validated('reject_reason');
+        }
+
+        return $context + $this->transitionTrackingContext($this->statusValue());
     }
 }

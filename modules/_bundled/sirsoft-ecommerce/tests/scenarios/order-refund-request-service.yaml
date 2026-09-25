@@ -61,6 +61,11 @@ effects:
   - withdraw_is_blocked_after_approval
   - update_changes_the_reason_before_approval_only
   - transition_follows_the_refund_gate_and_refuses_completion
+  # 환불 상태 어휘·전이표 (ClaimEnumsTest — 게이트가 읽는 Enum 자체를 행 단위로 고정한다)
+  - refund_status_gains_withdrawn_and_keeps_legacy_cases
+  - refund_status_transition_table_is_pinned_row_by_row
+  - refund_status_withdrawn_is_final
+  - refund_status_labels_are_translated
   # 환불수단 ↔ 결제수단
   - refund_method_must_match_payment_capability
   - non_pg_refund_leaves_payment_cancelled_amount_untouched
@@ -74,6 +79,7 @@ effects:
 
 test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/OrderRefundRequestServiceTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Enums/ClaimEnumsTest.php
 
 validation:
   audit_rule: test-scenario-coverage

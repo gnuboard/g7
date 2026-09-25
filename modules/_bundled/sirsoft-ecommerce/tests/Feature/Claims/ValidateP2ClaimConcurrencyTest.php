@@ -94,7 +94,7 @@ class ValidateP2ClaimConcurrencyTest extends ModuleTestCase
     protected function collected(OrderReturn $return): OrderReturn
     {
         foreach ([ReturnStatusEnum::APPROVED, ReturnStatusEnum::COLLECTION_READY, ReturnStatusEnum::COLLECTING, ReturnStatusEnum::COLLECTED] as $step) {
-            $return = $this->returns->transition($return, $step);
+            $return = $this->returns->transition($return, $step, $this->claimTrackingFor($step));
         }
 
         return $return->fresh(['returnOptions']);
@@ -211,7 +211,7 @@ class ValidateP2ClaimConcurrencyTest extends ModuleTestCase
         $itemId = (int) $return->returnOptions->first()->id;
 
         $this->returns->transitionOption($return->fresh(['returnOptions']), [['id' => $itemId, 'quantity' => 2]], ReturnStatusEnum::COLLECTION_READY);
-        $this->returns->transitionOption($return->fresh(['returnOptions']), [$itemId], ReturnStatusEnum::COLLECTING);
+        $this->returns->transitionOption($return->fresh(['returnOptions']), [$itemId], ReturnStatusEnum::COLLECTING, $this->claimTrackingFor(ReturnStatusEnum::COLLECTING));
         $this->returns->transitionOption($return->fresh(['returnOptions']), [$itemId], ReturnStatusEnum::COLLECTED);
 
         $fresh = $return->fresh(['returnOptions']);

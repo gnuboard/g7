@@ -2,6 +2,7 @@
 
 namespace Modules\Sirsoft\Ecommerce\Http\Requests\Admin;
 
+use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimTypeEnum;
@@ -9,6 +10,8 @@ use Modules\Sirsoft\Ecommerce\Enums\ExchangeStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ReturnStatusEnum;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Concerns\ResolvesClaimCompletionOptions;
+use Modules\Sirsoft\Ecommerce\Http\Requests\Concerns\ValidatesClaimTransitionTracking;
+use Modules\Sirsoft\Ecommerce\Models\ShippingCarrier;
 
 /**
  * 관리자 클레임 일괄 상태 전이 요청
@@ -16,10 +19,15 @@ use Modules\Sirsoft\Ecommerce\Http\Requests\Concerns\ResolvesClaimCompletionOpti
  * 목록이 유형 서브탭 단위이므로 일괄 대상도 한 유형이다 — `type` + `ids[]`.
  * 취소는 전이 대상이 아니라 유형에서 제외한다. 완료 전이의 `completion` 계약은
  * 단건(`UpdateClaimStatusRequest`)과 동일하다 — 세 진입점이 같은 계약을 쓴다(D26).
+ *
+ * 회수중·발송중은 신청서마다 송장을 싣는다(`trackings: [{id, carrier_id, tracking_number}]`) —
+ * 송장은 신청서마다 다르므로 한 쌍을 여러 건에 나눠 쓰지 않는다(#599 후속 운영 결정). 대상 신청서
+ * 하나라도 송장이 빠지면 422 다.
  */
 class BulkClaimStatusRequest extends FormRequest
 {
     use ResolvesClaimCompletionOptions;
+    use ValidatesClaimTransitionTracking;
 
     /**
      * 사용자가 이 요청을 수행할 권한이 있는지 확인 (권한 체크는 라우트의 permission 미들웨어에서 수행)
@@ -49,9 +57,44 @@ class BulkClaimStatusRequest extends FormRequest
             'ids' => ['required', 'array', 'min:1', 'max:100'],
             'ids.*' => ['integer'],
             'status' => ['required', 'string', Rule::in($this->assignableStatuses())],
-            'reject_reason' => ['nullable', 'string', 'max:2000'],
+            // 반려는 사유가 정본이다 — 없이 받으면 구매자 화면의 반려 사유가 빈 칸으로 남는다(#599 후속).
+            'reject_reason' => ['nullable', 'required_if:status,rejected', 'string', 'max:2000'],
             'admin_memo' => ['nullable', 'string', 'max:2000'],
+            'trackings' => ['nullable', 'required_if:status,'.implode(',', $this->trackingRequiredStatuses()), 'array', 'max:100'],
+            'trackings.*' => ['array'],
+            'trackings.*.id' => ['required', 'integer'],
+            'trackings.*.carrier_id' => ['required', 'integer', Rule::exists(ShippingCarrier::class, 'id')],
+            'trackings.*.tracking_number' => ['required', 'string', 'max:50'],
         ] + $this->completionRules();
+    }
+
+    /**
+     * 추가 검증 — 회수중·발송중이면 대상 신청서마다 송장이 한 쌍씩 있어야 합니다.
+     *
+     * @param  Validator  $validator  검증기
+     * @return void 반환값 없음
+     */
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $validator): void {
+            if (! $this->requiresTransitionTracking((string) $this->input('status'))) {
+                return;
+            }
+
+            $tracked = [];
+
+            foreach ((array) $this->input('trackings', []) as $entry) {
+                if (is_array($entry) && isset($entry['id'])) {
+                    $tracked[] = (int) $entry['id'];
+                }
+            }
+
+            $ids = array_map('intval', (array) $this->input('ids', []));
+
+            if (array_diff($ids, $tracked) !== [] || count($tracked) !== count(array_unique($tracked))) {
+                $validator->errors()->add('trackings', __('sirsoft-ecommerce::validation.claims.tracking.per_claim_required'));
+            }
+        });
     }
 
     /**
@@ -71,8 +114,19 @@ class BulkClaimStatusRequest extends FormRequest
             'ids.*.integer' => __('sirsoft-ecommerce::validation.claims.ids.integer'),
             'status.required' => __('sirsoft-ecommerce::validation.claims.admin_status.required'),
             'status.in' => __('sirsoft-ecommerce::validation.claims.admin_status.in'),
+            'reject_reason.required_if' => __('sirsoft-ecommerce::validation.claims.reject_reason.required'),
             'reject_reason.max' => __('sirsoft-ecommerce::validation.claims.reject_reason.max'),
             'admin_memo.max' => __('sirsoft-ecommerce::validation.claims.admin_memo.max'),
+            'trackings.required_if' => __('sirsoft-ecommerce::validation.claims.tracking.per_claim_required'),
+            'trackings.array' => __('sirsoft-ecommerce::validation.claims.tracking.per_claim_required'),
+            'trackings.max' => __('sirsoft-ecommerce::validation.claims.ids.max'),
+            'trackings.*.id.required' => __('sirsoft-ecommerce::validation.claims.tracking.per_claim_required'),
+            'trackings.*.id.integer' => __('sirsoft-ecommerce::validation.claims.ids.integer'),
+            'trackings.*.carrier_id.required' => __('sirsoft-ecommerce::validation.claims.tracking.carrier_id_required'),
+            'trackings.*.carrier_id.integer' => __('sirsoft-ecommerce::validation.claims.tracking.carrier_id_integer'),
+            'trackings.*.carrier_id.exists' => __('sirsoft-ecommerce::validation.claims.tracking.carrier_id_exists'),
+            'trackings.*.tracking_number.required' => __('sirsoft-ecommerce::validation.claims.tracking.tracking_number_required'),
+            'trackings.*.tracking_number.max' => __('sirsoft-ecommerce::validation.claims.tracking.tracking_number_max'),
         ] + $this->completionMessages();
     }
 
@@ -119,6 +173,29 @@ class BulkClaimStatusRequest extends FormRequest
     public function statusValue(): string
     {
         return (string) $this->validated('status');
+    }
+
+    /**
+     * 신청서별 송장을 반환합니다. (회수중·발송중이 아니면 빈 배열)
+     *
+     * @return array<int, array{carrier_id: int, tracking_number: string}> 신청서 ID => 송장
+     */
+    public function trackingsById(): array
+    {
+        if (! $this->requiresTransitionTracking($this->statusValue())) {
+            return [];
+        }
+
+        $trackings = [];
+
+        foreach ((array) $this->validated('trackings', []) as $entry) {
+            $trackings[(int) $entry['id']] = [
+                'carrier_id' => (int) $entry['carrier_id'],
+                'tracking_number' => (string) $entry['tracking_number'],
+            ];
+        }
+
+        return $trackings;
     }
 
     /**

@@ -808,7 +808,7 @@ class ClaimDetailScreenTest extends ModuleTestCase
         $service = app(OrderReturnService::class);
         $return = $service->transition($return, ReturnStatusEnum::APPROVED);
         $return = $service->transition($return->fresh(), ReturnStatusEnum::COLLECTION_READY);
-        $return = $service->transition($return->fresh(), ReturnStatusEnum::COLLECTING);
+        $return = $service->transition($return->fresh(), ReturnStatusEnum::COLLECTING, $this->claimTrackingFor(ReturnStatusEnum::COLLECTING));
         $return = $service->transition($return->fresh(), ReturnStatusEnum::COLLECTED);
 
         return app(AdminClaimService::class)->complete(

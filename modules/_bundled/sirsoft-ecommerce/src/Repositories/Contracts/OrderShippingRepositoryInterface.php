@@ -73,7 +73,7 @@ interface OrderShippingRepositoryInterface
      * 그것도 반영한다 — 회원 주문상세 「배송 현황」 카드가 이 레코드를 읽으므로, 송장만 쓰고
      * 상태를 두면 배송완료 주문이 고객에게 「배송대기」로 보인다. 시각은 **비어 있을 때만**
      * 기록해 같은 단계를 다시 지나도 최초 시각을 덮지 않는다. 송장만 정정하는 호출은 이 키들을
-     * 넘기지 않으므로 상태가 보존된다.
+     * 넘기지 않으므로 상태가 보존된다. 송장 없이 상태만 넘기는 호출도 받는다(직접 건넨 교환품의 배송완료).
      *
      * @param  int  $orderOptionId  주문 옵션 ID
      * @param  array  $tracking  ['carrier_id' => int, 'tracking_number' => string,

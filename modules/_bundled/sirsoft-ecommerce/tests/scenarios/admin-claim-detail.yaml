@@ -102,6 +102,10 @@ effects:
   - claim_progress_steps_carry_icon_and_variant
   - claim_progress_cells_uniform_width_with_chevrons
   - claim_progress_wraps_on_mobile_without_scroll
+  # 스텝퍼가 그리는 상태 아이콘 토큰·순서의 출처 (ClaimEnumsTest)
+  - claim_status_icons_are_library_neutral_tokens
+  - claim_shared_stages_use_the_same_icon_across_types
+  - cancel_progress_sequence_is_two_stages
   # 신청상품 일괄 변경 (D24·D25 · §4-4·§4-6)
   - claim_item_status_vocabulary_comes_from_the_server
   - claim_item_bar_has_no_status_literals
@@ -201,6 +205,28 @@ effects:
   - claim_detail_hides_the_transition_bar_without_targets # 옮길 상태가 없으면 전이 바를 그리지 않는다
   - claim_detail_shows_approval_rejection_withdrawal_timestamps # 승인·반려·철회 일시를 값이 있는 것만 보인다
   - claim_detail_omits_empty_progress_timestamps          # 일시가 하나도 없으면 그 줄을 그리지 않는다
+  # #599 후속 — 막히는 입구 정리 · 상품 칸 반려 사유 · 탭 막대 고정
+  - claim_item_rejection_requires_reason_before_modal
+  - claim_item_rejection_reason_travels_to_the_request
+  - claim_item_non_rejection_omits_reason
+  - claim_detail_tab_nav_is_sticky_outside_header
+  - claim_completion_button_follows_completable_count
+  - claim_item_rejection_reason_is_wired_through_the_modal
+  - claim_header_select_renders_server_options_only
+  - detail_tab_nav_stays_visible_on_scroll
+  - detail_completion_button_follows_completable_count
+  - detail_header_select_has_no_logistics_or_completion
+  - detail_item_logistics_opens_prefilled_tracking
+  # #599 후속 — 회수중·발송중 송장 필수 · 저장은 저장만 · 송장 50자
+  - claim_item_logistics_requires_tracking_before_modal
+  - claim_item_logistics_tracking_travels_to_the_request
+  - claim_item_non_logistics_omits_tracking
+  - claim_item_tracking_is_wired_through_the_modal
+  - claim_tracking_inputs_are_capped_at_the_column_length
+  # 브라우저 스펙이 이미 잠그고 있었으나 매니페스트에 등재되지 않았던 축 (S17 신청상품 금액 · F1 신청서 전이 바)
+  - detail_items_amount_pairs_subtotal
+  - detail_items_price_difference_shows_amount
+  - detail_status_transition_bar_is_available
 
 test_files:
   - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminClaimDetail.test.ts
@@ -208,6 +234,7 @@ test_files:
   - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/handlers/claimDetailHandlers.test.ts
   - modules/_bundled/sirsoft-ecommerce/tests/Feature/Admin/ClaimDetailScreenTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/admin/admin-claim-detail.spec.ts
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Enums/ClaimEnumsTest.php
   # 신청상품 표 차액 줄의 번역 경로(`cell_children_parameterized_translation_uses_defer`)를 잠근다 — 등재 전에는
   # 마킹이 어느 매니페스트에도 계상되지 않아 지워도 커버리지가 초록으로 남았다.
   - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/admin-cell-children-defer-translation.test.ts

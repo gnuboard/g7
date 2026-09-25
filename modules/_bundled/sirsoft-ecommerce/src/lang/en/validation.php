@@ -2145,6 +2145,7 @@ return [
             'in' => 'That status cannot be assigned for this claim type.',
         ],
         'reject_reason' => [
+            'required' => 'Please enter a reject reason. It is shown to the buyer as is.',
             'max' => 'The reject reason may not be longer than :max characters.',
         ],
         'admin_memo' => [
@@ -2166,6 +2167,9 @@ return [
             'create_refund_request_boolean' => 'The refund request flag must be true or false.',
         ],
         'tracking' => [
+            'carrier_id_required' => 'Select a carrier to move this to collecting or shipping.',
+            'tracking_number_required' => 'Enter a tracking number to move this to collecting or shipping.',
+            'per_claim_required' => 'Enter a carrier and tracking number for each selected request to move them to collecting or shipping.',
             'carrier_id_integer' => 'The carrier ID must be a number.',
             'carrier_id_exists' => 'The carrier is not registered.',
             'tracking_number_max' => 'The tracking number may not be longer than :max characters.',

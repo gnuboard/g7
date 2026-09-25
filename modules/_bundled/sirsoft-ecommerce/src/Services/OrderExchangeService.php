@@ -47,6 +47,7 @@ use Modules\Sirsoft\Ecommerce\Rules\ExchangeRedeliveryCountryUnchanged;
 use Modules\Sirsoft\Ecommerce\Services\Concerns\AppliesRefundBankAccount;
 use Modules\Sirsoft\Ecommerce\Services\Concerns\FiresClaimHooksAfterCommit;
 use Modules\Sirsoft\Ecommerce\Services\Concerns\GuardsClaimFilterResults;
+use Modules\Sirsoft\Ecommerce\Services\Concerns\RecordsClaimTracking;
 use Modules\Sirsoft\Ecommerce\Services\Concerns\ResolvesAdditionalOptions;
 use Modules\Sirsoft\Ecommerce\Support\ClaimItemSpecs;
 
@@ -108,6 +109,7 @@ class OrderExchangeService
     use AppliesRefundBankAccount;
     use FiresClaimHooksAfterCommit;
     use GuardsClaimFilterResults;
+    use RecordsClaimTracking;
     use ResolvesAdditionalOptions;
 
     /**
@@ -494,6 +496,11 @@ class OrderExchangeService
                 $this->assertLivingItemsCanTransitionTo($exchange, $target);
             }
 
+            // 회수중·발송중은 송장이 있어야 들어간다 — 알림·교환품 배송 행이 이 값을 읽으므로 전이보다 먼저 기록한다.
+            if ($current !== $target) {
+                $this->recordTrackingForTransition($exchange, $target, $context);
+            }
+
             return [$current, $this->applyTransition($exchange, $target, $context)];
         });
 
@@ -551,6 +558,39 @@ class OrderExchangeService
      */
     protected function assertLivingItemsCanTransitionTo(OrderExchange $exchange, ExchangeStatusEnum $target): void
     {
+        $blocking = $this->firstItemBlockingHeaderTransition($exchange, $target);
+
+        if ($blocking !== null) {
+            throw OrderClaimException::transitionNotAllowed($blocking->option_status->label(), $target->label());
+        }
+    }
+
+    /**
+     * 신청서 단위 전이가 앞서 있는 상품 때문에 거절되는지 판정합니다. (상세 신청서 칸의 선택지 게이트)
+     *
+     * `transition()` 이 실제로 거절하는 조건(반려·철회 + 앞선 상품)과 **같은 판정**이다 — 화면이
+     * 조건을 따로 적으면 선택지와 거절이 갈려, 운영자가 고른 「반려」 가 다시 422 로 돌아온다.
+     * 반품 서비스와 같은 규칙이다.
+     *
+     * @param  OrderExchange  $exchange  교환 신청서
+     * @param  ExchangeStatusEnum  $target  목표 상태
+     * @return bool 거절되면 true
+     */
+    public function headerTransitionBlockedByItems(OrderExchange $exchange, ExchangeStatusEnum $target): bool
+    {
+        return $this->revertsOrderOptions($target)
+            && $this->firstItemBlockingHeaderTransition($exchange, $target) !== null;
+    }
+
+    /**
+     * 목표 상태로 갈 수 없는 첫 살아 있는 상품을 찾습니다. (끝난 상품·이미 목표 상태인 상품 제외)
+     *
+     * @param  OrderExchange  $exchange  교환 신청서
+     * @param  ExchangeStatusEnum  $target  목표 상태
+     * @return OrderExchangeOption|null 막는 상품 (없으면 null)
+     */
+    protected function firstItemBlockingHeaderTransition(OrderExchange $exchange, ExchangeStatusEnum $target): ?OrderExchangeOption
+    {
         $exchange->loadMissing('exchangeOptions');
 
         foreach ($exchange->exchangeOptions as $item) {
@@ -559,9 +599,23 @@ class OrderExchangeService
             }
 
             if (! $item->option_status->canTransitionTo($target)) {
-                throw OrderClaimException::transitionNotAllowed($item->option_status->label(), $target->label());
+                return $item;
             }
         }
+
+        return null;
+    }
+
+    /**
+     * 지금 완료할 수 있는 상품인지 판정합니다. (완료 절차의 대상 필터 · 상세 [완료 처리] 활성 판정 공용)
+     *
+     * @param  OrderExchangeOption  $item  신청 상품 행
+     * @return bool 완료 가능하면 true
+     */
+    public function isCompletableItem(OrderExchangeOption $item): bool
+    {
+        return $item->option_status->canTransitionTo(ExchangeStatusEnum::COMPLETED)
+            && ! $item->option_status->isFinal();
     }
 
     /**
@@ -674,14 +728,30 @@ class OrderExchangeService
         }
 
         $processedBy = $context['processed_by'] ?? null;
+        // 상품 칸 반려의 사유 — 신청서 한 칸(`reject_reason`)에 남는다(상품 행에는 사유 칸이 없다).
+        $rejectReason = $target === ExchangeStatusEnum::REJECTED ? trim((string) ($context['reject_reason'] ?? '')) : '';
         $specs = ClaimItemSpecs::normalize($items);
         $quantities = ClaimItemSpecs::quantities($specs);
         $itemIds = ClaimItemSpecs::ids($specs);
 
         // 상품 단위 전이의 before 훅 — 잠금·쓰기 전이라 리스너가 던지면 어떤 행도 옮겨지지 않는다.
-        // 필터는 두지 않는다: 바꿀 수 있는 자유 입력이 없고(대상 행·목표 상태는 운영자 판단이자
-        // 미수납 게이트가 이미 잰 값), 헤더가 따라 움직이면 그 단계마다 `before_status_change` 가 난다.
+        // 상품 단위 전용 필터는 두지 않는다: 대상 행·목표 상태는 운영자 판단이자 미수납 게이트가 이미 잰 값이고, 헤더가
+        // 따라 움직이면 그 단계마다 `before_status_change` 가 난다. 자유 입력은 반려 사유 하나다(#599 후속) —
+        // 그 사유만은 아래에서 헤더 경로와 같은 `filter_status_change_data` 를 거친다.
         HookManager::doAction('sirsoft-ecommerce.claim.exchange.before_option_status_change', $exchange, $specs, $target->value, $context);
+
+        // 반려 사유는 신청서 한 칸(`reject_reason`)에 남는 자유 입력이라 헤더 경로와 **같은 필터**를 거친다
+        // (#599 후속 운영 결정) — 어느 칸에서 적었느냐에 따라 확장이 손댈 수 있는지가 갈리면 금칙어 필터 같은
+        // 확장이 상품 칸으로 우회된다. 받아들이는 키도 같다(처리자·목표 상태는 되돌린다).
+        if ($rejectReason !== '') {
+            $filterInput = ['reject_reason' => $rejectReason] + $context;
+            $filtered = $this->acceptClaimFilterResult(
+                HookManager::applyFilters('sirsoft-ecommerce.claim.exchange.filter_status_change_data', $filterInput, $exchange, $exchange->exchange_status?->value, $target->value),
+                $filterInput,
+                self::CLAIM_FILTERABLE_STATUS_CONTEXT_KEYS,
+            );
+            $rejectReason = trim((string) ($filtered['reject_reason'] ?? ''));
+        }
 
         $succeeded = [];
         $skipped = [];
@@ -691,8 +761,13 @@ class OrderExchangeService
         // 신청서 행을 잠그고 **잠금 안에서** 상품 행을 다시 읽어 판정한다. 헤더 동기화도 같은
         // 트랜잭션 안에서 한다 — 상품 전이를 커밋한 뒤 잠금 없이 헤더를 옮기면 그 사이에 들어온
         // 다른 전이와 헤더 판정이 겹친다(#599 validate P2 #19). 훅은 커밋 뒤에 나간다(#7).
-        DB::transaction(function () use ($exchange, $itemIds, $quantities, $target, $processedBy, &$succeeded, &$skipped, &$changes, &$split) {
+        DB::transaction(function () use ($exchange, $itemIds, $quantities, $target, $processedBy, $rejectReason, $context, &$succeeded, &$skipped, &$changes, &$split) {
             $locked = $this->exchangeRepository->findForUpdate((int) $exchange->getKey()) ?? $exchange;
+
+            // 상품 칸의 회수중·발송중도 신청서 전이와 같은 송장 규칙을 지난다. 발송중이면 이 송장이
+            // 교환품의 새 배송 행에 실리므로(`replicateShippingRow`) 상품 전이보다 먼저 기록한다.
+            $this->recordTrackingForTransition($locked, $target, $context);
+
             $items = $this->resolveItems($locked, $itemIds);
 
             foreach ($items as $item) {
@@ -765,6 +840,12 @@ class OrderExchangeService
                 $succeeded[] = $item->id;
             }
 
+            // 일부만 반려해 신청서가 그대로여도 사유는 남긴다 — 구매자 화면은 사유가 차 있으면
+            // 신청서 상태와 무관하게 보여 주므로, 어느 상품이 왜 반려됐는지가 거기서 읽힌다.
+            if ($rejectReason !== '' && $succeeded !== []) {
+                $this->exchangeRepository->update($locked, ['reject_reason' => $rejectReason]);
+            }
+
             $fresh = $locked->fresh(['exchangeOptions']);
 
             // 상품 단위 전이는 헤더 전이와 다른 사실이다 — 상품 상태가 갈리면 헤더는 움직이지
@@ -782,7 +863,7 @@ class OrderExchangeService
                 ));
             }
 
-            $this->syncHeaderFromOptions($fresh, $processedBy);
+            $this->syncHeaderFromOptions($fresh, $processedBy, $rejectReason !== '' ? ['reject_reason' => $rejectReason] : []);
         });
 
         return ['succeeded' => $succeeded, 'skipped' => $skipped, 'split' => $split];
@@ -793,7 +874,10 @@ class OrderExchangeService
     // ───────────────────────────────────────────────
 
     /**
-     * 회수 운송장을 기록하고 회수중으로 전이합니다.
+     * 회수 운송장을 저장합니다. (상태는 옮기지 않는다)
+     *
+     * 저장과 상태 전이는 별개다(#599 후속 운영 결정) — 회수중 전이는 상품 칸·신청서 전이가 송장을
+     * 실어 수행한다(`recordTrackingForTransition`). 둘 다 비우고 저장하면 등록된 송장을 지운다.
      *
      * @param  OrderExchange  $exchange  교환 신청서
      * @param  int|null  $carrierId  회수 택배사 ID
@@ -809,21 +893,21 @@ class OrderExchangeService
         ?string $trackingNumber,
         ?int $processedBy = null,
     ): OrderExchange {
-        return $this->registerTracking(
-            $exchange,
-            ['carrier' => 'collection_carrier_id', 'tracking' => 'collection_tracking_number'],
-            ExchangeStatusEnum::COLLECTION_READY,
-            ExchangeStatusEnum::COLLECTING,
-            $carrierId,
-            $trackingNumber,
-            $processedBy,
-        );
+        [$carrierId, $trackingNumber] = $this->normalizeTracking($carrierId, $trackingNumber);
+
+        return $this->exchangeRepository->update($exchange, [
+            'collection_carrier_id' => $carrierId,
+            'collection_tracking_number' => $trackingNumber,
+            'processed_by' => $processedBy ?? $exchange->processed_by,
+        ]);
     }
 
     /**
-     * 재발송 운송장을 기록하고 재발송중으로 전이합니다.
+     * 재발송 운송장을 저장합니다. (상태는 옮기지 않는다)
      *
-     * 재발송이 시작되는 순간 후속 주문옵션이 생긴다(`transitionItem` 의 REDELIVERING 부수효과).
+     * 발송중 전이는 상품 칸·신청서 전이가 송장을 실어 수행한다. 이미 발송된 교환품이 있으면 그
+     * 새 주문상품의 배송 행 송장도 함께 고친다 — 고객 주문 화면의 배송 조회는 배송 행을 읽으므로,
+     * 신청서만 고치면 정정한 송장이 고객에게 닿지 않는다.
      *
      * @param  OrderExchange  $exchange  교환 신청서
      * @param  int|null  $carrierId  재발송 택배사 ID
@@ -839,76 +923,82 @@ class OrderExchangeService
         ?string $trackingNumber,
         ?int $processedBy = null,
     ): OrderExchange {
-        return $this->registerTracking(
-            $exchange,
-            ['carrier' => 'redelivery_carrier_id', 'tracking' => 'redelivery_tracking_number'],
-            ExchangeStatusEnum::REDELIVERY_READY,
-            ExchangeStatusEnum::REDELIVERING,
-            $carrierId,
-            $trackingNumber,
-            $processedBy,
-        );
-    }
+        [$carrierId, $trackingNumber] = $this->normalizeTracking($carrierId, $trackingNumber);
 
-    /**
-     * 송장을 기록하고, 준비 상태였으면 진행 상태로 전이합니다. (회수·재발송 공용)
-     *
-     * 송장 저장과 전이는 한 트랜잭션이다 — 따로 두면 전이가 실패했을 때 "송장은 있는데
-     * 준비중" 이 남는다. 훅은 커밋 뒤에 발화한다.
-     *
-     * @param  OrderExchange  $exchange  교환 신청서
-     * @param  array{carrier: string, tracking: string}  $columns  기록할 컬럼명
-     * @param  ExchangeStatusEnum  $readyStatus  준비 상태
-     * @param  ExchangeStatusEnum  $movingStatus  진행 상태
-     * @param  int|null  $carrierId  택배사 ID
-     * @param  string|null  $trackingNumber  운송장 번호
-     * @param  int|null  $processedBy  처리 관리자 ID
-     * @return OrderExchange 갱신된 신청서
-     *
-     * @throws OrderClaimException 송장 정보 불완전
-     */
-    protected function registerTracking(
-        OrderExchange $exchange,
-        array $columns,
-        ExchangeStatusEnum $readyStatus,
-        ExchangeStatusEnum $movingStatus,
-        ?int $carrierId,
-        ?string $trackingNumber,
-        ?int $processedBy,
-    ): OrderExchange {
-        $trackingNumber = $trackingNumber !== null && trim($trackingNumber) !== ''
-            ? trim($trackingNumber)
-            : null;
-
-        if (($carrierId === null) !== ($trackingNumber === null)) {
-            throw OrderClaimException::trackingIncomplete();
-        }
-
-        $previous = $exchange->exchange_status;
-        $startsMoving = $previous === $readyStatus && $trackingNumber !== null;
-
-        // 송장이 전이를 끌고 가는 경우도 전이다 — 직접 전이와 같은 before·filter 훅을 쓰기 전에 낸다.
-        $transitionContext = $startsMoving
-            ? $this->beforeStatusChange($exchange, $movingStatus, ['processed_by' => $processedBy])
-            : [];
-
-        $updated = DB::transaction(function () use ($exchange, $columns, $carrierId, $trackingNumber, $processedBy, $startsMoving, $movingStatus, $transitionContext) {
-            $tracked = $this->exchangeRepository->update($exchange, [
-                $columns['carrier'] => $carrierId,
-                $columns['tracking'] => $trackingNumber,
+        return DB::transaction(function () use ($exchange, $carrierId, $trackingNumber, $processedBy) {
+            $updated = $this->exchangeRepository->update($exchange, [
+                'redelivery_carrier_id' => $carrierId,
+                'redelivery_tracking_number' => $trackingNumber,
                 'processed_by' => $processedBy ?? $exchange->processed_by,
             ]);
 
-            return $startsMoving
-                ? $this->applyTransition($tracked, $movingStatus, $transitionContext)
-                : $tracked;
-        });
+            if ($trackingNumber !== null) {
+                $this->syncSuccessorShippingTracking($updated);
+            }
 
-        if ($startsMoving) {
-            $this->fireStatusHooks($updated, $previous, $movingStatus);
+            return $updated;
+        });
+    }
+
+    /**
+     * 회수중·발송중으로 옮기기 전에 지시에 실린 송장을 기록하고, 송장이 갖춰졌는지 확인합니다.
+     *
+     * 신청서 전이·상품 칸·목록 일괄이 모두 이 한 곳을 지난다(`RecordsClaimTracking`). 회수중은 회수
+     * 송장, 발송중은 재발송 송장 칸에 남는다.
+     *
+     * @param  OrderExchange  $exchange  교환 신청서 (잠금 인스턴스 — 기록 후 같은 인스턴스가 갱신된다)
+     * @param  ExchangeStatusEnum  $target  목표 상태
+     * @param  array  $context  전이 부가 정보 (carrier_id / tracking_number)
+     * @return void 반환값 없음
+     *
+     * @throws OrderClaimException 송장 불완전 / 송장 없음
+     */
+    protected function recordTrackingForTransition(OrderExchange $exchange, ExchangeStatusEnum $target, array $context): void
+    {
+        $columns = match ($target) {
+            ExchangeStatusEnum::COLLECTING => ['carrier' => 'collection_carrier_id', 'tracking' => 'collection_tracking_number'],
+            ExchangeStatusEnum::REDELIVERING => ['carrier' => 'redelivery_carrier_id', 'tracking' => 'redelivery_tracking_number'],
+            default => null,
+        };
+
+        if ($columns === null) {
+            return;
         }
 
-        return $updated;
+        $updates = $this->trackingUpdatesForTransition($exchange, $columns, $context);
+
+        if ($updates === []) {
+            return;
+        }
+
+        $this->exchangeRepository->update($exchange, $updates);
+
+        // 먼저 발송된 교환품이 있으면(상품별로 나눠 발송) 그 배송 행도 같은 송장으로 맞춘다.
+        if ($target === ExchangeStatusEnum::REDELIVERING) {
+            $this->syncSuccessorShippingTracking($exchange);
+        }
+    }
+
+    /**
+     * 이미 생긴 교환품 새 주문상품의 배송 행에 신청서의 재발송 송장을 반영합니다.
+     *
+     * @param  OrderExchange  $exchange  교환 신청서
+     * @return void 반환값 없음
+     */
+    protected function syncSuccessorShippingTracking(OrderExchange $exchange): void
+    {
+        $exchange->loadMissing('exchangeOptions');
+
+        foreach ($exchange->exchangeOptions as $item) {
+            if ($item->new_order_option_id === null) {
+                continue;
+            }
+
+            $this->orderShippingRepository->updateTrackingByOrderOptionId((int) $item->new_order_option_id, [
+                'carrier_id' => $exchange->redelivery_carrier_id,
+                'tracking_number' => $exchange->redelivery_tracking_number,
+            ]);
+        }
     }
 
     /**
@@ -1079,8 +1169,7 @@ class OrderExchangeService
 
             $targets = array_values(array_filter(
                 $this->resolveItems($exchange, $itemIds),
-                fn (OrderExchangeOption $item) => $item->option_status->canTransitionTo(ExchangeStatusEnum::COMPLETED)
-                    && ! $item->option_status->isFinal(),
+                fn (OrderExchangeOption $item) => $this->isCompletableItem($item),
             ));
 
             if ($targets === []) {
@@ -1088,8 +1177,16 @@ class OrderExchangeService
             }
 
             $restoredAny = false;
+            // 발송중인 교환품의 완료는 발송도착을 건너뛴다 — 발송도착이 하던 일(후속 주문상품 배송완료)을
+            // 대신 하고, 도착 기록을 완료 시각으로 남긴다.
+            $skippedArrival = false;
 
             foreach ($targets as $item) {
+                if ($item->option_status === ExchangeStatusEnum::REDELIVERING) {
+                    $skippedArrival = true;
+                    $this->markNewOrderOptionDelivered($item);
+                }
+
                 $completionChanges[] = [
                     'option_id' => (int) $item->id,
                     'previous' => $item->option_status->value,
@@ -1136,6 +1233,10 @@ class OrderExchangeService
 
             if ($restoredAny) {
                 $updates['is_stock_restored'] = true;
+            }
+
+            if ($skippedArrival && $exchange->redelivered_at === null) {
+                $updates['redelivered_at'] = now();
             }
 
             if ($this->allItemsCompleted($exchange)) {
@@ -2149,9 +2250,10 @@ class OrderExchangeService
      *
      * @param  OrderExchange  $exchange  교환 신청서
      * @param  int|null  $processedBy  처리 관리자 ID
+     * @param  array  $stampContext  단계 시각 외 부가 컬럼 (상품 칸 반려의 `reject_reason` — 헤더가 반려로 따라갈 때 사유를 지우지 않게)
      * @return void 반환값 없음
      */
-    protected function syncHeaderFromOptions(OrderExchange $exchange, ?int $processedBy): void
+    protected function syncHeaderFromOptions(OrderExchange $exchange, ?int $processedBy, array $stampContext = []): void
     {
         $exchange->loadMissing('exchangeOptions');
 
@@ -2200,7 +2302,7 @@ class OrderExchangeService
                 ['processed_by' => $processedBy, 'source' => 'option_sync'],
             );
 
-            $updates = ['exchange_status' => $step] + $this->stampFor($step, []);
+            $updates = ['exchange_status' => $step] + $this->stampFor($step, $stampContext);
 
             if ($processedBy !== null) {
                 $updates['processed_by'] = $processedBy;
@@ -2513,7 +2615,7 @@ class OrderExchangeService
     }
 
     /**
-     * 후속 주문옵션을 배송완료로 옮깁니다. (재발송도착)
+     * 후속 주문옵션과 그 배송 행을 배송완료로 옮깁니다. (재발송도착 · 발송중 완료)
      *
      * @param  OrderExchangeOption  $item  신청 상품 행
      * @return void 반환값 없음
@@ -2536,6 +2638,14 @@ class OrderExchangeService
             restoreStockOnCancel: false,
             mergeSiblings: false,
         );
+
+        // 배송 행도 배송완료로 옮긴다 — 구매자 주문상세 「배송 현황」 카드는 배송 행을 읽으므로, 상품만 옮기면
+        // 상품 줄은 배송완료인데 카드는 배송중으로 남았다(#599 후속 실주문 실측). 상태 변경이 송장을 싣지 않아
+        // 주문 쪽 동기화(`applyShippingTracking`)를 타지 않으므로 여기서 직접 옮긴다.
+        $this->orderShippingRepository->updateTrackingByOrderOptionId((int) $successor->id, [
+            'shipping_status' => ShippingStatusEnum::DELIVERED->value,
+            'delivered_at' => now(),
+        ]);
     }
 
     /**

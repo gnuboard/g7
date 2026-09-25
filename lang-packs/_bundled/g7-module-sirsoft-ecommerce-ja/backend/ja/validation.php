@@ -1963,6 +1963,7 @@ return [
         ],
         'reject_reason' => [
             'max' => '差戻し理由は:max文字以内で入力してください。',
+            'required' => '却下理由を入力してください。購入者画面にそのままご案内されます。',
         ],
         'admin_memo' => [
             'max' => '管理者メモは:max文字以内で入力してください。',
@@ -1986,6 +1987,9 @@ return [
             'carrier_id_integer' => '配送会社IDは数字である必要があります。',
             'carrier_id_exists' => '登録されていない配送会社です。',
             'tracking_number_max' => '送り状番号は:max文字以内で入力してください。',
+            'carrier_id_required' => '回収中·発送中に変更するには配送業者を選択してください。',
+            'tracking_number_required' => '回収中·発送中に変更するには送り状番号を入力してください。',
+            'per_claim_required' => '回収中·発送中に変更するには、選択した申請書ごとに配送業者と送り状番号を入力してください。',
         ],
         'min_amount' => [
             'numeric' => '最小金額は数字である必要があります。',

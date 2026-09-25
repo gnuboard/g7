@@ -161,6 +161,11 @@ enum ExchangeStatusEnum: string
     /**
      * 현재 상태에서 전이 가능한 목표 상태 목록을 반환합니다.
      *
+     * 회수·재발송 단계는 앞으로 건너뛸 수 있다(#599 후속 운영 결정) — 송장이 있으면 승인에서 곧바로
+     * 회수중, 회수도착에서 곧바로 발송중이 되고, 고객이 직접 보낸 물건은 회수도착으로, 직접 건넨
+     * 교환품은 발송도착으로 곧바로 간다. 발송중인 교환품도 완료할 수 있다 — 완료는 여전히
+     * [완료 처리] 만의 입구다. 승인은 건너뛰지 않는다: 추가결제 확인·교환품 재고 차감이 승인에 걸려 있다.
+     *
      * @return array<self> 전이 가능 상태 목록
      */
     public function allowedTransitions(): array
@@ -176,12 +181,12 @@ enum ExchangeStatusEnum: string
             self::PAYMENT_PENDING => [self::PAID, self::APPROVED, self::REJECTED, self::WITHDRAWN],
             self::PAID => [self::APPROVED, self::ON_HOLD, self::REJECTED, self::WITHDRAWN],
             self::ON_HOLD => [self::APPROVED, self::REJECTED, self::WITHDRAWN],
-            self::APPROVED => [self::COLLECTION_READY],
-            self::COLLECTION_READY => [self::COLLECTING],
+            self::APPROVED => [self::COLLECTION_READY, self::COLLECTING, self::COLLECTED],
+            self::COLLECTION_READY => [self::COLLECTING, self::COLLECTED],
             self::COLLECTING => [self::COLLECTED],
-            self::COLLECTED => [self::REDELIVERY_READY],
-            self::REDELIVERY_READY => [self::REDELIVERING],
-            self::REDELIVERING => [self::REDELIVERED],
+            self::COLLECTED => [self::REDELIVERY_READY, self::REDELIVERING, self::REDELIVERED],
+            self::REDELIVERY_READY => [self::REDELIVERING, self::REDELIVERED],
+            self::REDELIVERING => [self::REDELIVERED, self::COMPLETED],
             self::REDELIVERED => [self::COMPLETED],
             self::COMPLETED, self::REJECTED, self::WITHDRAWN => [],
         };

@@ -44,6 +44,26 @@ interface ClaimListRow {
     claim_number?: string | null;
     requester_name?: string | null;
     item_summary?: { product_name?: string | null; item_count?: number; total_quantity?: number } | null;
+    /** 저장된 회수·재발송 송장 — 회수중·발송중 일괄 모달이 미리 채운다 */
+    collection_carrier_id?: number | null;
+    collection_tracking_number?: string | null;
+    redelivery_carrier_id?: number | null;
+    redelivery_tracking_number?: string | null;
+}
+
+/** 택배사 선택지 (서버 `carriers`) */
+interface CarrierOption {
+    value: number | string;
+    label: string;
+}
+
+/** 목록 일괄 회수중·발송중 모달의 신청서 한 줄 */
+interface ClaimBulkTrackingRow {
+    id: number;
+    claim_number: string | null;
+    requester_name: string | null;
+    carrier_id: string;
+    tracking_number: string;
 }
 
 /** 완료 처리 모달의 실행 경로 — 진입점마다 다르다 (D26) */
@@ -94,6 +114,15 @@ interface ClaimCompleteOpenParams {
 
 const PREVIEW_URL = '/api/modules/sirsoft-ecommerce/admin/claims/completion-preview';
 const BULK_STATUS_URL = '/api/modules/sirsoft-ecommerce/admin/claims/bulk-status';
+
+/**
+ * 송장이 있어야 들어가는 상태 — 서버 `ValidatesClaimTransitionTracking` 과 같은 목록이다.
+ *
+ * 회수중·발송중은 택배가 물건을 싣고 가는 중이라는 사실이라 송장 없이 들어가면 고객 알림의
+ * 운송장 칸이 비어서 나간다(#599 후속 운영 결정). 서버가 422 로 막지만, 수량 확인 모달까지 연 뒤에야
+ * 거절되지 않게 입구에서 먼저 세운다.
+ */
+const TRACKING_REQUIRED_STATUSES = ['collecting', 'redelivering'];
 
 /** 완료 미리보기 재조회 debounce (ms) — 형제 취소 모달(`cancelOrderHandlers`)과 같은 규율. */
 const PREVIEW_DEBOUNCE_MS = 200;
@@ -739,16 +768,18 @@ function resetClaimCompleteState(): void {
  * 완료 전이는 곧바로 실행하지 않고 완료 처리 모달을 연다 (D26) — 재고 복구 여부와
  * 환불신청서 접수 여부를 운영자가 골라야 하고, 그 선택 없이 보내면 요청이 422 다.
  *
- * @param action 액션 객체 (params.claimType / status / ids / rows)
+ * @param action 액션 객체 (params.claimType / status / rejectReason / ids / rows)
  * @param _context 액션 컨텍스트
  */
 export async function buildClaimBulkConfirmDataHandler(
     action: ActionWithParams<{
         claimType?: string;
         status?: string;
+        rejectReason?: string | null;
         ids?: number[];
         rows?: ClaimListRow[];
         completeDefaults?: ClaimCompleteDefaults;
+        carriers?: CarrierOption[];
     }>,
     _context?: ActionContext,
 ): Promise<void> {
@@ -785,6 +816,10 @@ export async function buildClaimBulkConfirmDataHandler(
         return;
     }
 
+    if (rejectReasonMissing(status, params.rejectReason)) {
+        return;
+    }
+
     if (status === 'completed') {
         await openClaimCompleteModal({
             claimType,
@@ -802,6 +837,12 @@ export async function buildClaimBulkConfirmDataHandler(
             ids,
             status,
             statusLabel: resolveStatusLabel(claimType, status),
+            // 목록 일괄 반려의 사유 — 고른 신청서 전부에 같은 사유가 들어간다(#599 후속 운영 결정).
+            rejectReason: status === 'rejected' ? (params.rejectReason ?? '').trim() : '',
+            // 회수중·발송중은 신청서마다 송장을 받는다 — 송장은 신청서마다 다르다(#599 후속 운영 결정).
+            // 저장된 송장이 있으면 미리 채워 같은 번호를 다시 치지 않게 한다.
+            trackings: TRACKING_REQUIRED_STATUSES.includes(status) ? ids.map((id) => bulkTrackingRow(id, status, rows)) : [],
+            carriers: params.carriers ?? [],
         },
     });
 
@@ -932,6 +973,14 @@ interface ClaimItemQuantityContext {
     requesterName: string;
     status: string;
     statusLabel: string;
+    /** 반려 사유 — 반려일 때만 실린다(모달 [확인] 이 실행 본문에 그대로 싣는다). */
+    rejectReason: string;
+    /** 회수중·발송중의 택배사 ID — 그 두 상태일 때만 실린다 */
+    carrierId: string;
+    /** 회수중·발송중의 운송장 번호 */
+    trackingNumber: string;
+    /** 모달 확인 문구용 택배사 이름 */
+    carrierLabel: string;
     itemIds: number[];
     rows: ClaimItemQuantityRow[];
     quantities: Record<string, number>;
@@ -1023,6 +1072,34 @@ export function syncClaimItemSelectionHandler(
 }
 
 /**
+ * 수량 확인 모달 문맥에 실을 송장 축을 만듭니다. (회수중·발송중이 아니면 빈 값)
+ *
+ * @param status 목표 상태
+ * @param carrierId 택배사 ID
+ * @param trackingNumber 운송장 번호
+ * @param carriers 택배사 선택지 (확인 문구의 이름 해석용)
+ * @returns 문맥의 송장 축
+ */
+function itemTrackingContext(
+    status: string,
+    carrierId: string | number | null | undefined,
+    trackingNumber: string | null | undefined,
+    carriers: CarrierOption[],
+): Pick<ClaimItemQuantityContext, 'carrierId' | 'trackingNumber' | 'carrierLabel'> {
+    if (!TRACKING_REQUIRED_STATUSES.includes(status)) {
+        return { carrierId: '', trackingNumber: '', carrierLabel: '' };
+    }
+
+    const carrier = String(carrierId ?? '');
+
+    return {
+        carrierId: carrier,
+        trackingNumber: (trackingNumber ?? '').trim(),
+        carrierLabel: carriers.find((option) => String(option.value) === carrier)?.label ?? '',
+    };
+}
+
+/**
  * 수량 확인 모달을 엽니다. (§4-6 — 일괄 바 [적용] 의 진입점)
  *
  * 수량 입력을 일괄 바에 두면 행이 여럿일 때 수량이 하나뿐이라 "3 중 2, 5 중 1" 을 표현할 수
@@ -1044,6 +1121,10 @@ export async function openClaimItemQuantityConfirmHandler(
         requesterName?: string | null;
         itemIds?: Array<number | string>;
         status?: string;
+        rejectReason?: string | null;
+        carrierId?: string | number | null;
+        trackingNumber?: string | null;
+        carriers?: CarrierOption[];
         rows?: ClaimDetailItemRow[];
         completeDefaults?: ClaimCompleteDefaults;
     }>,
@@ -1070,6 +1151,14 @@ export async function openClaimItemQuantityConfirmHandler(
             t('sirsoft-ecommerce.admin.claim.detail.items.bulk_no_status_selected', '변경할 상태를 선택해주세요.'),
         );
 
+        return;
+    }
+
+    if (rejectReasonMissing(status, params.rejectReason)) {
+        return;
+    }
+
+    if (trackingMissing(status, params.carrierId, params.trackingNumber)) {
         return;
     }
 
@@ -1104,6 +1193,8 @@ export async function openClaimItemQuantityConfirmHandler(
         requesterName: params.requesterName ?? '',
         status,
         statusLabel: prefix ? t(`${prefix}${status}`, status) : status,
+        rejectReason: status === 'rejected' ? (params.rejectReason ?? '').trim() : '',
+        ...itemTrackingContext(status, params.carrierId, params.trackingNumber, params.carriers ?? []),
         itemIds,
         rows: modalRows,
         quantities,
@@ -1200,6 +1291,9 @@ export async function executeClaimItemBulkStatusHandler(
         itemIds?: Array<number | string>;
         itemQuantities?: Record<string, number | string | null>;
         status?: string;
+        rejectReason?: string | null;
+        carrierId?: string | number | null;
+        trackingNumber?: string | null;
         rows?: ClaimDetailItemRow[];
         completeDefaults?: ClaimCompleteDefaults;
     }>,
@@ -1252,6 +1346,14 @@ export async function executeClaimItemBulkStatusHandler(
         return;
     }
 
+    if (rejectReasonMissing(status, params.rejectReason)) {
+        return;
+    }
+
+    if (trackingMissing(status, params.carrierId, params.trackingNumber)) {
+        return;
+    }
+
     if (status === 'completed') {
         await openClaimCompleteModal({
             claimType,
@@ -1281,10 +1383,21 @@ export async function executeClaimItemBulkStatusHandler(
     G7Core.state.setLocal?.({ isUpdatingClaimItems: true });
 
     try {
-        const response = await G7Core.api.patch(`${base}/options/bulk-status`, {
+        const body: Record<string, unknown> = {
             items: claimItemPayload(itemIds, params.itemQuantities),
             status,
-        });
+        };
+
+        if (status === 'rejected') {
+            body.reject_reason = (params.rejectReason ?? '').trim();
+        }
+
+        if (TRACKING_REQUIRED_STATUSES.includes(status)) {
+            body.carrier_id = Number(params.carrierId);
+            body.tracking_number = (params.trackingNumber ?? '').trim();
+        }
+
+        const response = await G7Core.api.patch(`${base}/options/bulk-status`, body);
 
         if (response?.success === false) {
             throw new Error(response?.message ?? 'option bulk status failed');
@@ -1303,7 +1416,7 @@ export async function executeClaimItemBulkStatusHandler(
 
         G7Core.modal?.close?.('modal_claim_item_quantity_confirm');
         G7Core.state.set?.({ claimItemQuantityContext: null });
-        G7Core.state.setLocal?.({ selectedClaimItems: [], itemBulkStatus: '', itemTransitionOptions: [] });
+        G7Core.state.setLocal?.({ selectedClaimItems: [], itemBulkStatus: '', itemRejectReason: '', itemCarrierId: '', itemTrackingNumber: '', itemTransitionOptions: [] });
         refetchSources(DETAIL_REFETCH_SOURCES);
     } catch (error: any) {
         logger.error('[executeClaimItemBulkStatus] 상품 단위 전이 실패:', error);
@@ -1318,6 +1431,28 @@ export async function executeClaimItemBulkStatusHandler(
 }
 
 /**
+ * 반려인데 사유가 비었으면 안내하고 true 를 돌려줍니다. (신청서 칸·상품 칸·목록 일괄 공용)
+ *
+ * 반려는 사유가 정본이다 — 비워 보내면 구매자 화면의 반려 사유가 빈 칸으로 남는다. 서버도
+ * 같은 조건을 422 로 막지만, 수량 확인 모달까지 연 뒤에야 거절되지 않게 입구에서 먼저 세운다.
+ *
+ * @param status 목표 상태
+ * @param rejectReason 입력된 반려 사유
+ * @returns 사유가 필요한데 비었으면 true
+ */
+function rejectReasonMissing(status: string, rejectReason?: string | null): boolean {
+    if (status !== 'rejected' || (rejectReason ?? '').trim() !== '') {
+        return false;
+    }
+
+    core()?.toast?.warning?.(
+        t('sirsoft-ecommerce.admin.claim.detail.transition.reject_reason_required', '반려 사유를 입력해주세요.'),
+    );
+
+    return true;
+}
+
+/**
  * 신청서 **단위** 상태를 전이시킵니다. (상세 화면 전이 바 — #599 후속 F1)
  *
  * 예전에는 상세에 신청서 단위 전이 진입점이 통째로 없었다. 승인·반려·보류·결제대기는 **목록의
@@ -1326,8 +1461,9 @@ export async function executeClaimItemBulkStatusHandler(
  * 체크해야 했다. F2([환불하기]가 상태를 보지 않던 결함)와 겹쳐 "상세에서 승인할 수 없는데
  * 승인 상태에서만 눌리는 버튼" 이라는 막다른 길이 됐다.
  *
- * 완료(`completed`)는 이 경로로 보내지 않는다 — 완료는 재고 복구·환불신청서 접수 선택을
- * 동반하므로 전용 모달(`openClaimDetailComplete`)이 진입점이다.
+ * 선택지는 서버가 준 **심사 어휘**(결제 요청·승인·보류·반려)뿐이다 — 회수·발송 단계는 상품 칸,
+ * 완료는 [완료 처리](`openClaimDetailComplete`)가 입구다. 예전에는 완료가 이 칸에 서서 고르면
+ * "완료 모달에서 진행해주세요" 안내만 뜨고 아무 일도 일어나지 않았다(#599 후속).
  *
  * @param action 액션 객체 (params: pathSegment / claimId / status / rejectReason)
  * @param _context 액션 컨텍스트
@@ -1363,20 +1499,7 @@ export async function executeClaimStatusTransitionHandler(
         return;
     }
 
-    if (status === 'completed') {
-        G7Core.toast?.warning?.(
-            t('sirsoft-ecommerce.admin.claim.detail.transition.use_complete_modal', '완료 처리는 완료 모달에서 진행해주세요.'),
-        );
-
-        return;
-    }
-
-    // 반려는 사유가 정본이다 — 없이 보내면 구매자 화면의 반려 사유 칸이 빈 채로 남는다.
-    if (status === 'rejected' && !(params.rejectReason ?? '').trim()) {
-        G7Core.toast?.warning?.(
-            t('sirsoft-ecommerce.admin.claim.detail.transition.reject_reason_required', '반려 사유를 입력해주세요.'),
-        );
-
+    if (rejectReasonMissing(status, params.rejectReason)) {
         return;
     }
 
@@ -2076,6 +2199,84 @@ function toCompleteTarget(id: number, rows: ClaimListRow[]): ClaimCompleteTarget
 }
 
 /**
+ * 목록 일괄 회수중·발송중 모달의 신청서 한 줄을 만듭니다. (저장된 송장으로 미리 채움)
+ *
+ * @param id 신청서 ID
+ * @param status 목표 상태 (회수중이면 회수 송장, 발송중이면 재발송 송장)
+ * @param rows 목록 행
+ * @returns 모달 한 줄
+ */
+function bulkTrackingRow(id: number, status: string, rows: ClaimListRow[]): ClaimBulkTrackingRow {
+    const row = rows.find((candidate) => Number(candidate.id) === id);
+    const carrierId = status === 'redelivering' ? row?.redelivery_carrier_id : row?.collection_carrier_id;
+    const trackingNumber = status === 'redelivering' ? row?.redelivery_tracking_number : row?.collection_tracking_number;
+
+    return {
+        id,
+        claim_number: row?.claim_number ?? null,
+        requester_name: row?.requester_name ?? null,
+        carrier_id: carrierId === null || carrierId === undefined ? '' : String(carrierId),
+        tracking_number: trackingNumber ?? '',
+    };
+}
+
+/**
+ * 목록 일괄 회수중·발송중 모달에서 한 신청서의 택배사·운송장 입력을 씁니다.
+ *
+ * @param action 액션 객체 (params: claimId / field / value)
+ * @param _context 액션 컨텍스트
+ */
+export function updateClaimBulkTrackingHandler(
+    action: ActionWithParams<{ claimId?: number | string; field?: string; value?: string | number | null }>,
+    _context?: ActionContext,
+): void {
+    const G7Core = core();
+    if (!G7Core) return;
+
+    const params = action.params ?? {};
+    const claimId = Number(params.claimId);
+    const field = params.field === 'carrier_id' ? 'carrier_id' : params.field === 'tracking_number' ? 'tracking_number' : null;
+    const confirmData = G7Core.state.get()?.claimBulkConfirmData;
+
+    if (!confirmData || field === null || !Number.isFinite(claimId)) return;
+
+    G7Core.state.set({
+        claimBulkConfirmData: {
+            ...confirmData,
+            trackings: (confirmData.trackings ?? []).map((row: ClaimBulkTrackingRow) => (
+                row.id === claimId ? { ...row, [field]: String(params.value ?? '') } : row
+            )),
+        },
+    });
+}
+
+/**
+ * 회수중·발송중인데 택배사·운송장이 비었으면 안내하고 true 를 돌려줍니다. (상품 칸·목록 일괄 공용)
+ *
+ * 길이는 여기서 보지 않는다 — 입력칸이 `maxLength` 로 DB 칸 길이(50)를 이미 막는다.
+ *
+ * @param status 목표 상태
+ * @param carrierId 택배사 ID
+ * @param trackingNumber 운송장 번호
+ * @returns 송장이 필요한데 비었으면 true
+ */
+function trackingMissing(status: string, carrierId?: string | number | null, trackingNumber?: string | null): boolean {
+    if (!TRACKING_REQUIRED_STATUSES.includes(status)) {
+        return false;
+    }
+
+    if (String(carrierId ?? '').trim() !== '' && (trackingNumber ?? '').trim() !== '') {
+        return false;
+    }
+
+    core()?.toast?.warning?.(
+        t('sirsoft-ecommerce.admin.claim.detail.shipping.tracking_incomplete', '택배사와 송장번호를 함께 입력해주세요.'),
+    );
+
+    return true;
+}
+
+/**
  * 상태 값의 표시 라벨을 유형별 어휘 사전에서 해석합니다.
  *
  * @param claimType 클레임 유형
@@ -2113,12 +2314,34 @@ export async function executeClaimBulkActionHandler(
         return;
     }
 
+    const trackings: ClaimBulkTrackingRow[] = confirmData.trackings ?? [];
+    const requiresTracking = TRACKING_REQUIRED_STATUSES.includes(confirmData.status);
+
+    // 한 건이라도 비었으면 보내지 않는다 — 모달이 닫히지 않도록 실패로 끝낸다(모달의 fail 은 진행 표시만 되돌린다).
+    if (requiresTracking && trackings.some((row) => trackingMissing(confirmData.status, row.carrier_id, row.tracking_number))) {
+        throw new Error('tracking missing');
+    }
+
     try {
-        const response = await G7Core.api.post(BULK_STATUS_URL, {
+        const body: Record<string, unknown> = {
             type: confirmData.claimType,
             ids: confirmData.ids,
             status: confirmData.status,
-        });
+        };
+
+        if (confirmData.status === 'rejected') {
+            body.reject_reason = confirmData.rejectReason ?? '';
+        }
+
+        if (requiresTracking) {
+            body.trackings = trackings.map((row) => ({
+                id: row.id,
+                carrier_id: Number(row.carrier_id),
+                tracking_number: row.tracking_number.trim(),
+            }));
+        }
+
+        const response = await G7Core.api.post(BULK_STATUS_URL, body);
 
         if (response?.success === false) {
             throw new Error(response?.message ?? 'bulk status failed');
@@ -2136,7 +2359,7 @@ export async function executeClaimBulkActionHandler(
         reportBulkSkips(data);
 
         G7Core.state.set({ claimBulkConfirmData: null });
-        G7Core.state.setLocal?.({ selectedItems: [], bulkClaimStatus: '' });
+        G7Core.state.setLocal?.({ selectedItems: [], bulkClaimStatus: '', bulkRejectReason: '' });
         G7Core.dispatch?.({ handler: 'refetchDataSource', params: { dataSourceId: 'claims' } });
     } catch (error: any) {
         logger.error('[executeClaimBulkAction] 일괄 전이 실패:', error);

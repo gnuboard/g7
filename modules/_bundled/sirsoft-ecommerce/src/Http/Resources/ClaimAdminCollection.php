@@ -40,6 +40,13 @@ class ClaimAdminCollection extends BaseApiCollection
     protected ?array $completeDefaults = null;
 
     /**
+     * 회수중·발송중 일괄 전이 모달의 택배사 선택지 (`ShippingCarrierService::getActiveCarrierOptions()` 결과)
+     *
+     * @var array<int, array{value: int, label: string}>|null
+     */
+    protected ?array $carriers = null;
+
+    /**
      * 컬렉션 레벨 능력(can_*) 매핑을 반환합니다.
      *
      * 매핑 자체는 `ClaimAdminAbilities` 가 단일 출처다 — 상세 응답도 같은 축을 그리므로
@@ -83,6 +90,22 @@ class ClaimAdminCollection extends BaseApiCollection
     }
 
     /**
+     * 회수중·발송중 일괄 전이 모달의 택배사 선택지를 주입합니다.
+     *
+     * 상세 응답과 같은 이유로 목록 응답이 전달 통로다 — 배송사 엔드포인트는 `settings.read`
+     * 게이트라 클레임 권한만 가진 운영자에게 403 이 되어 모달의 선택지가 조용히 빈다.
+     *
+     * @param  array<int, array{value: int, label: string}>|null  $carriers  택배사 선택지 (회수·발송 축이 없는 유형이면 빈 배열)
+     * @return static 자기 자신
+     */
+    public function withCarriers(?array $carriers): static
+    {
+        $this->carriers = $carriers;
+
+        return $this;
+    }
+
+    /**
      * 리소스를 배열로 변환
      *
      * @param  Request  $request  요청
@@ -98,6 +121,7 @@ class ClaimAdminCollection extends BaseApiCollection
                 ->toArray(),
             'counts' => $this->counts,
             'complete_defaults' => $this->completeDefaults,
+            'carriers' => $this->carriers ?? [],
             'abilities' => $this->resolveAbilitiesFromMap($this->abilityMap(), $request->user()),
         ], $this->paginationMeta());
     }

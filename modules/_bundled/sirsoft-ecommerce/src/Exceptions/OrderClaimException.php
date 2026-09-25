@@ -399,6 +399,16 @@ class OrderClaimException extends Exception
     }
 
     /**
+     * 회수중·발송중으로 옮기는데 택배사·송장번호가 없을 때
+     *
+     * @return self 예외 인스턴스
+     */
+    public static function trackingRequired(): self
+    {
+        return new self('sirsoft-ecommerce::exceptions.claim_tracking_required');
+    }
+
+    /**
      * 취소 대상 주문 옵션이 진행 중인 클레임에 묶여 있을 때
      *
      * @param  string  $statusLabel  현재 상품 상태 라벨

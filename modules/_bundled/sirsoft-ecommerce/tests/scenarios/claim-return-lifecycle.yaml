@@ -93,12 +93,27 @@ sub_flows:
       옮긴다. 상품 단위 전이는 전 항목이 같은 상태일 때만 헤더를 옮긴다.
     effects:
       - return_transition_follows_the_status_gate
+      - return_completion_can_come_while_collecting   # 회수중인 물건도 완료(선환불)할 수 있다 (#599 후속)
+      - tracking_save_does_not_move_the_status        # 송장 저장은 저장만 — 회수중은 전이가 송장을 싣는다
       - return_completion_is_not_reachable_by_a_plain_transition
       - return_on_hold_and_approval_times_are_stamped
       - return_withdraw_reverts_the_order_option
       - return_withdraw_is_blocked_after_approval
       - return_reject_reverts_each_item_to_its_own_original_status
       - return_item_level_transition_moves_the_header_only_when_items_agree
+      # 상태 어휘·전이표 (ClaimEnumsTest — Enum 단위로 게이트 자체를 고정한다)
+      - return_status_vocabulary_has_eleven_cases_without_redelivery
+      - return_status_withdrawable_only_before_approval
+      - return_payment_pending_keeps_its_exits
+      - return_on_hold_can_be_approved_or_rejected
+      - return_requested_can_enter_payment_pending
+      - return_approved_cannot_be_rejected_or_skipped
+      - return_withdraw_gate_matches_is_withdrawable
+      - return_self_transition_is_a_noop
+      - return_collection_stages_only_move_forward
+      - return_status_transition_table_is_pinned_row_by_row
+      - return_terminal_states_have_no_transitions
+      - return_status_labels_are_type_prefixed_and_translated
 
   - id: stock_restore
     description: |
@@ -132,6 +147,7 @@ sub_flows:
   - return_originated_refund_is_not_buyer_editable    # 구매자 [수정]/[철회] 가 서지 않는다 (F3)
 test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/OrderReturnServiceTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Enums/ClaimEnumsTest.php
 
 notes: |
   **미커버로 남기는 칸은 없다.** 착수 시점 `OrderReturnServiceTest` 는 117케이스였고 6셀 중

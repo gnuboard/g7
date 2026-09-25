@@ -128,6 +128,7 @@ return [
     'claim_refund_points_requires_member' => 'Mileage refunds cannot be assigned to guest orders.',
     'claim_refund_method_unavailable' => 'The selected refund method is not available for this order’s payment method.',
     'claim_tracking_incomplete' => 'Please enter both the carrier and the tracking number.',
+    'claim_tracking_required' => 'Enter the carrier and tracking number to move this to collecting or shipping.',
     'claim_option_in_course' => 'An item with an exchange or return in progress (:status) cannot be cancelled.',
     'claim_option_in_course_status_change' => 'The status of an item with an exchange or return in progress (:status) cannot be changed. Process the related request first.',
     'claim_course_status_not_assignable' => 'The exchange/return course status (:status) cannot be assigned directly from the order screen. It is entered only through an exchange or return request.',

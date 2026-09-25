@@ -47,6 +47,7 @@ use Modules\Sirsoft\Ecommerce\Services\OrderRefundRequestService;
 use Modules\Sirsoft\Ecommerce\Services\OrderReturnService;
 use Modules\Sirsoft\Ecommerce\Tests\Concerns\AssertsClaimExceptions;
 use Modules\Sirsoft\Ecommerce\Tests\Concerns\BuildsClaimAdjustmentOrders;
+use Modules\Sirsoft\Ecommerce\Tests\Concerns\ProvidesClaimTracking;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
@@ -65,6 +66,7 @@ class OrderExchangeServiceTest extends ModuleTestCase
 {
     use AssertsClaimExceptions;
     use BuildsClaimAdjustmentOrders;
+    use ProvidesClaimTracking;
 
     protected OrderExchangeService $service;
 
@@ -322,7 +324,7 @@ class OrderExchangeServiceTest extends ModuleTestCase
                 continue;
             }
 
-            $exchange = $this->service->transition($exchange, $step);
+            $exchange = $this->service->transition($exchange, $step, $this->claimTrackingFor($step));
 
             if ($step === $target) {
                 break;
@@ -2654,7 +2656,8 @@ class OrderExchangeServiceTest extends ModuleTestCase
     }
 
     /**
-     * 상품들이 시차를 두고 진행돼도 헤더가 중간 단계를 따라간다.
+     * 상품들이 시차를 두고 진행돼도 헤더가 따라간다 — 재발송 단계는 건너뛸 수 있으므로(#599 후속 운영 결정)
+     * 회수도착에서 곧바로 발송중으로 옮기고, 지나간 발송준비중 알림은 뒤늦게 보내지 않는다.
      *
      * @return void 반환값 없음
      *
@@ -2674,16 +2677,16 @@ class OrderExchangeServiceTest extends ModuleTestCase
         $fresh = fn () => $exchange->fresh(['exchangeOptions']);
 
         $this->service->transitionOption($fresh(), [$itemA], ExchangeStatusEnum::REDELIVERY_READY);
-        $this->service->transitionOption($fresh(), [$itemA], ExchangeStatusEnum::REDELIVERING);
+        $this->service->transitionOption($fresh(), [$itemA], ExchangeStatusEnum::REDELIVERING, $this->claimTrackingFor(ExchangeStatusEnum::REDELIVERING));
         $this->service->transitionOption($fresh(), [$itemB], ExchangeStatusEnum::REDELIVERY_READY);
 
         $this->assertSame(ExchangeStatusEnum::COLLECTED, $exchange->fresh()->exchange_status);
 
-        $this->service->transitionOption($fresh(), [$itemB], ExchangeStatusEnum::REDELIVERING);
+        $this->service->transitionOption($fresh(), [$itemB], ExchangeStatusEnum::REDELIVERING, $this->claimTrackingFor(ExchangeStatusEnum::REDELIVERING));
 
         $this->assertSame(ExchangeStatusEnum::REDELIVERING, $exchange->fresh()->exchange_status);
         $this->assertSame(
-            ['requested>approved', 'approved>collection_ready', 'collection_ready>collecting', 'collecting>collected', 'collected>redelivery_ready', 'redelivery_ready>redelivering'],
+            ['requested>approved', 'approved>collection_ready', 'collection_ready>collecting', 'collecting>collected', 'collected>redelivering'],
             $changed
         );
         // 두 상품 모두 후속 주문옵션이 생겼다 — 상품 단위 경로도 같은 부수효과를 탄다.
@@ -2715,15 +2718,15 @@ class OrderExchangeServiceTest extends ModuleTestCase
     // ================================================================
 
     /**
-     * 회수 송장을 등록하면 회수중으로 옮긴다.
+     * 회수 송장 저장은 송장만 기록하고 상태는 옮기지 않는다 (#599 후속 운영 결정 — 저장과 전이는 별개).
      *
      * @return void 반환값 없음
      *
      * @scenario price_delta=equal, charge_method=none, additional_options=unchanged
      *
-     * @effects exchange_transition_follows_the_status_gate
+     * @effects tracking_save_does_not_move_the_status
      */
-    public function test_register_collection_tracking_moves_to_collecting(): void
+    public function test_register_collection_tracking_saves_without_moving_the_status(): void
     {
         $order = $this->deliveredOrder();
         $exchange = $this->advanceTo($this->service->requestExchange($order, $this->payload($order)), ExchangeStatusEnum::COLLECTION_READY);
@@ -2731,7 +2734,7 @@ class OrderExchangeServiceTest extends ModuleTestCase
 
         $tracked = $this->service->registerCollectionTracking($exchange, $carrier->id, ' 1234567890 ');
 
-        $this->assertSame(ExchangeStatusEnum::COLLECTING, $tracked->exchange_status);
+        $this->assertSame(ExchangeStatusEnum::COLLECTION_READY, $tracked->exchange_status, '송장 저장이 상태를 옮겼습니다.');
         $this->assertSame('1234567890', $tracked->collection_tracking_number);
         $this->assertSame($carrier->id, $tracked->collection_carrier_id);
     }
@@ -2755,8 +2758,10 @@ class OrderExchangeServiceTest extends ModuleTestCase
     }
 
     /**
-     * 재발송 송장 등록이 재발송중으로 옮기고 후속 주문옵션을 만든다.
+     * 송장을 실은 발송중 전이가 재발송 송장을 기록하고 후속 주문옵션을 만든다 — 그 배송 행에 송장이 실린다.
      *
+     * 송장 저장(`registerRedeliveryTracking`)은 상태를 옮기지 않는다(#599 후속 운영 결정). 발송중은 전이가 송장을
+     * 실어 들어가고, 후속 주문옵션의 배송 행은 그 송장을 읽는다 — 송장을 전이보다 먼저 기록해야 한다.
      *
      * @return void 반환값 없음
      *
@@ -2764,7 +2769,7 @@ class OrderExchangeServiceTest extends ModuleTestCase
      *
      * @scenario price_delta=equal, charge_method=none, additional_options=unchanged
      */
-    public function test_register_redelivery_tracking_moves_to_redelivering_and_creates_the_successor_option(): void
+    public function test_redelivering_with_tracking_creates_the_successor_option(): void
     {
         $order = $this->deliveredOrder();
         $newOption = $this->siblingOption($order, 0);
@@ -2775,7 +2780,10 @@ class OrderExchangeServiceTest extends ModuleTestCase
         $carrier = $this->carrier();
         $original = $order->options->first()->fresh();
 
-        $moving = $this->service->registerRedeliveryTracking($exchange, $carrier->id, 'RD-0001');
+        $saved = $this->service->registerRedeliveryTracking($exchange, $carrier->id, 'RD-0000');
+        $this->assertSame(ExchangeStatusEnum::REDELIVERY_READY, $saved->exchange_status, '송장 저장이 상태를 옮겼습니다.');
+
+        $moving = $this->service->transition($saved, ExchangeStatusEnum::REDELIVERING, ['carrier_id' => $carrier->id, 'tracking_number' => 'RD-0001']);
 
         $this->assertSame(ExchangeStatusEnum::REDELIVERING, $moving->exchange_status);
         $this->assertSame('RD-0001', $moving->redelivery_tracking_number);
@@ -3008,7 +3016,7 @@ class OrderExchangeServiceTest extends ModuleTestCase
     }
 
     /**
-     * 도착하지 않은 상품은 완료 처리를 거절한다.
+     * 발송되지 않은 상품은 완료 처리를 거절한다 — 발송중부터는 완료할 수 있다(#599 후속 운영 결정), 그 전(발송준비중)은 아니다.
      *
      * @return void 반환값 없음
      *
@@ -3019,7 +3027,7 @@ class OrderExchangeServiceTest extends ModuleTestCase
     public function test_complete_rejects_items_that_have_not_arrived(): void
     {
         $order = $this->deliveredOrder();
-        $exchange = $this->advanceTo($this->service->requestExchange($order, $this->payload($order)), ExchangeStatusEnum::REDELIVERING);
+        $exchange = $this->advanceTo($this->service->requestExchange($order, $this->payload($order)), ExchangeStatusEnum::REDELIVERY_READY);
 
         $this->assertClaimException('claim_completion_items_invalid', fn () => $this->service->completeExchange($exchange, [], $this->completionOptions($exchange, false, false)));
     }

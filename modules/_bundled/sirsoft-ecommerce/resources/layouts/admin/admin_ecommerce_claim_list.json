@@ -140,6 +140,7 @@
         ],
         "selectedItems": [],
         "bulkClaimStatus": "",
+        "bulkRejectReason": "",
         "perPage": "20"
     },
     "computed": {
@@ -460,6 +461,7 @@
                                             "target": "_local",
                                             "selectedItems": [],
                                             "bulkClaimStatus": "",
+                                            "bulkRejectReason": "",
                                             "perPage": "20"
                                         }
                                     },

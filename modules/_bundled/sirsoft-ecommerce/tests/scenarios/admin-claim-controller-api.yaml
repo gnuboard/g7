@@ -84,13 +84,34 @@ effects:
   - option_bulk_transitions_items_and_syncs_the_header
   - option_bulk_completed_completes_the_selected_items
   - option_bulk_rejects_items_of_another_claim_with_422
-  # ⑦ 송장 — 택배사와 번호는 쌍이다
-  - collection_tracking_registers_and_moves_to_collecting
-  - redelivery_tracking_registers_and_moves_to_redelivering
+  # ⑦ 송장 — 택배사와 번호는 쌍이다. 저장은 저장만 한다(#599 후속 운영 결정)
+  - collection_tracking_saves_without_moving_the_status
+  - redelivery_tracking_saves_without_moving_the_status
   - collection_tracking_rejects_an_incomplete_pair
   # ⑧ 첨부
   - admin_uploads_and_clears_claim_attachments
   - image_upload_is_404_for_a_missing_claim
+  # ⑨ 신청서 칸 선택지 게이트 · 완료 가능 수 · 반려 사유 (#599 후속 운영 결정)
+  - claim_header_options_exclude_logistics_and_completion
+  - claim_header_payment_pending_only_when_money_is_owed
+  - claim_header_hides_approval_blocked_by_outstanding_payment
+  - claim_header_hides_rejection_when_items_are_ahead
+  - claim_detail_carries_completable_item_count
+  - claim_rejection_requires_reason_on_every_entry
+  - claim_item_rejection_reason_reaches_the_claim
+  - claim_bulk_rejection_stores_reason_on_every_claim
+  # ⑩ 회수중·발송중 송장 필수 · 건너뛰기 · 완료 앞당기기 (#599 후속 운영 결정)
+  - claim_item_logistics_transition_requires_tracking
+  - claim_header_logistics_transition_requires_tracking
+  - claim_bulk_logistics_transition_requires_tracking_per_claim
+  - claim_tracking_number_is_capped_at_the_column_length
+  - claim_approved_can_skip_to_collected_without_tracking
+  - return_completion_while_collecting_stamps_arrival
+  - exchange_collected_can_skip_to_redelivered
+  - exchange_completion_while_redelivering_marks_the_successor_delivered
+  - claim_redelivery_tracking_correction_reaches_the_successor_shipping
+  - exchange_redelivered_marks_the_successor_shipping_delivered
+  - claim_list_carries_carriers_and_saved_tracking
 
 test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Feature/Admin/ClaimControllerTest.php

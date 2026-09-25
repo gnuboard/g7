@@ -107,6 +107,15 @@ effects:
   # #599 후속 D13 — 차액 환불완료 시 취소신청서가 생긴다
   - exchange_refund_completion_records_a_cancellation
   - exchange_refund_option_rows_announce_their_creation   # 그 취소신청서의 옵션 행도 함께 선언된다
+  # 클레임 공용 어휘 (ClaimEnumsTest) — 교환·반품 도입이 공용 Enum 에 더한 유형·값·라벨
+  - claim_type_covers_exchange_return_refund_cancel
+  - claim_type_attachable_excludes_cancel
+  - claim_shipping_fee_mode_is_fixed_or_original_policy
+  - claim_enum_labels_are_all_translated
+  - claim_reason_type_gains_exchange_and_return
+  - sequence_type_gains_claim_numbers_with_prefixes
+  - sequence_type_every_case_has_a_default_config
+  - adjustment_type_gains_exchange_and_return
 
 sub_flows:
   - id: transition_gate
@@ -115,12 +124,28 @@ sub_flows:
       완료 처리(D26)만이 옮긴다. 상품 단위 전이는 전 항목이 같은 상태일 때만 헤더를 옮긴다.
     effects:
       - exchange_transition_follows_the_status_gate
+      - exchange_logistics_stages_can_be_skipped_forward     # 회수·재발송 단계 앞 건너뛰기 (#599 후속)
+      - exchange_approval_and_redelivery_order_are_not_skipped
+      - tracking_save_does_not_move_the_status
       - exchange_completion_is_not_reachable_by_a_plain_transition
       - exchange_on_hold_is_stamped_and_released_through_the_gate
       - exchange_withdraw_reverts_the_order_option
       - exchange_withdraw_is_blocked_after_approval
       - exchange_reject_reverts_each_item_to_its_own_original_status
       - exchange_item_level_transition_moves_the_header_only_when_items_agree
+      # 상태 어휘·전이표 (ClaimEnumsTest — Enum 단위로 게이트 자체를 고정한다)
+      - exchange_status_vocabulary_has_fourteen_cases
+      - exchange_status_final_statuses_are_completed_rejected_withdrawn
+      - exchange_status_withdrawable_only_before_approval
+      - exchange_status_forward_transitions_follow_the_lifecycle
+      - exchange_payment_pending_keeps_its_exits
+      - exchange_on_hold_can_be_approved_or_rejected
+      - exchange_approved_cannot_be_rejected
+      - exchange_status_transition_table_is_pinned_row_by_row
+      - exchange_terminal_states_have_no_transitions
+      - exchange_self_transition_is_a_noop
+      - exchange_withdraw_gate_matches_is_withdrawable
+      - exchange_status_labels_are_type_prefixed_and_translated
 
   - id: stock_and_redelivery
     description: |
@@ -161,6 +186,7 @@ sub_flows:
   - exchange_redelivery_new_option_is_logged            # 재발송 신규 주문상품 (A6)
 test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/OrderExchangeServiceTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Enums/ClaimEnumsTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/OrderAdjustmentServiceTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Support/CalculationSnapshotPresenterTest.php
 

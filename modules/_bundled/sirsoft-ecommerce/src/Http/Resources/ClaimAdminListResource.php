@@ -84,6 +84,11 @@ class ClaimAdminListResource extends ClaimResource
                 'total_charge_amount_formatted' => $this->formatOrderCurrency((float) $claim->total_charge_amount, $currency),
                 'outstanding_amount' => $outstanding !== null ? $this->roundToOrderCurrency($outstanding, $currency) : null,
                 'outstanding_amount_formatted' => $outstanding !== null ? $this->formatOrderCurrency($outstanding, $currency) : null,
+                // 회수중·발송중 일괄 모달이 신청서마다 저장된 송장을 미리 채운다 — 같은 번호를 다시 치게 하지 않는다.
+                'collection_carrier_id' => $claim->collection_carrier_id,
+                'collection_tracking_number' => $claim->collection_tracking_number,
+                'redelivery_carrier_id' => $claim instanceof OrderExchange ? $claim->redelivery_carrier_id : null,
+                'redelivery_tracking_number' => $claim instanceof OrderExchange ? $claim->redelivery_tracking_number : null,
             ];
         }
 

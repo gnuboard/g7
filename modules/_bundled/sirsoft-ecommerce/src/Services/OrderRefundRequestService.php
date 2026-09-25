@@ -1825,13 +1825,29 @@ class OrderRefundRequestService
         }
 
         $processedBy = $context['processed_by'] ?? null;
+        // 상품 칸 반려의 사유 — 신청서 한 칸(`reject_reason`)에 남는다(상품 행에는 사유 칸이 없다).
+        $rejectReason = $target === RefundStatusEnum::REJECTED ? trim((string) ($context['reject_reason'] ?? '')) : '';
         $specs = ClaimItemSpecs::normalize($items);
         $quantities = ClaimItemSpecs::quantities($specs);
         $itemIds = ClaimItemSpecs::ids($specs);
 
         // 상품 단위 전이의 before 훅 — 잠금·쓰기 전이라 리스너가 던지면 어떤 행도 옮겨지지 않는다.
-        // 필터는 두지 않는다(교환·반품과 같은 판단 — 바꿀 자유 입력이 없고 대상·목표는 운영자 판단).
+        // 상품 단위 전용 필터는 두지 않는다(교환·반품과 같은 판단 — 대상·목표는 운영자 판단). 자유 입력인
+        // 반려 사유만 아래에서 헤더 경로와 같은 `filter_status_change_data` 를 거친다(#599 후속).
         HookManager::doAction('sirsoft-ecommerce.claim.refund.before_option_status_change', $refund, $specs, $target->value, $context);
+
+        // 반려 사유는 신청서 한 칸(`reject_reason`)에 남는 자유 입력이라 헤더 경로와 **같은 필터**를 거친다
+        // (#599 후속 운영 결정) — 어느 칸에서 적었느냐에 따라 확장이 손댈 수 있는지가 갈리면 금칙어 필터 같은
+        // 확장이 상품 칸으로 우회된다. 받아들이는 키도 같다(처리자·목표 상태는 되돌린다).
+        if ($rejectReason !== '') {
+            $filterInput = ['reject_reason' => $rejectReason] + $context;
+            $filtered = $this->acceptClaimFilterResult(
+                HookManager::applyFilters('sirsoft-ecommerce.claim.refund.filter_status_change_data', $filterInput, $refund, $refund->refund_status?->value, $target->value),
+                $filterInput,
+                self::CLAIM_FILTERABLE_STATUS_CONTEXT_KEYS,
+            );
+            $rejectReason = trim((string) ($filtered['reject_reason'] ?? ''));
+        }
 
         $succeeded = [];
         $skipped = [];
@@ -1840,7 +1856,7 @@ class OrderRefundRequestService
 
         // 신청서 행을 잠그고 **잠금 안에서** 상품 행을 다시 읽어 판정한다. 헤더 동기화도 같은
         // 트랜잭션 안에서 한다(#599 validate P2 #19 — 교환·반품과 같은 규율). 훅은 커밋 뒤다(#7).
-        DB::transaction(function () use ($refund, $itemIds, $quantities, $target, $processedBy, &$succeeded, &$skipped, &$changes, &$split) {
+        DB::transaction(function () use ($refund, $itemIds, $quantities, $target, $processedBy, $rejectReason, &$succeeded, &$skipped, &$changes, &$split) {
             $locked = $this->refundRepository->findForUpdate((int) $refund->getKey()) ?? $refund;
             $rows = $this->resolveItems($locked, $itemIds);
 
@@ -1899,6 +1915,12 @@ class OrderRefundRequestService
                 $succeeded[] = $item->id;
             }
 
+            // 일부만 반려해 신청서가 그대로여도 사유는 남긴다 — 구매자 화면은 사유가 차 있으면
+            // 신청서 상태와 무관하게 보여 주므로, 어느 상품이 왜 반려됐는지가 거기서 읽힌다.
+            if ($rejectReason !== '' && $succeeded !== []) {
+                $this->refundRepository->update($locked, ['reject_reason' => $rejectReason]);
+            }
+
             $fresh = $locked->fresh(['refundOptions']);
 
             // 상품 단위 전이는 헤더 전이와 다른 사실이다 — 상품 상태가 갈리면 헤더는 움직이지
@@ -1914,7 +1936,7 @@ class OrderRefundRequestService
                 ));
             }
 
-            $this->syncHeaderFromOptions($fresh, $processedBy);
+            $this->syncHeaderFromOptions($fresh, $processedBy, $rejectReason !== '' ? ['reject_reason' => $rejectReason] : []);
         });
 
         return ['succeeded' => $succeeded, 'skipped' => $skipped, 'split' => $split];
@@ -1971,9 +1993,10 @@ class OrderRefundRequestService
      *
      * @param  OrderRefund  $refund  환불신청서
      * @param  int|null  $processedBy  처리 관리자 ID
+     * @param  array  $stampContext  단계 시각 외 부가 컬럼 (상품 칸 반려의 `reject_reason` — 헤더가 반려로 따라갈 때 사유를 지우지 않게)
      * @return void 반환값 없음
      */
-    protected function syncHeaderFromOptions(OrderRefund $refund, ?int $processedBy): void
+    protected function syncHeaderFromOptions(OrderRefund $refund, ?int $processedBy, array $stampContext = []): void
     {
         $refund->loadMissing('refundOptions');
 
@@ -2026,7 +2049,7 @@ class OrderRefundRequestService
                 ['processed_by' => $processedBy, 'source' => 'option_sync'],
             );
 
-            $updates = ['refund_status' => $step] + $this->stampFor($step, []);
+            $updates = ['refund_status' => $step] + $this->stampFor($step, $stampContext);
 
             if ($processedBy !== null) {
                 $updates['processed_by'] = $processedBy;

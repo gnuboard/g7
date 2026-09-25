@@ -118,6 +118,44 @@ effects:
   - claim_shipping_fee_basis_is_visible
   - claim_cancellable_method_label_from_catalog
   - claim_cancellable_formatting_uses_the_order_currency_snapshot
+  # 서버 계약 — 환불 실행 (ClaimRefundExecutionTest: 상태·권한 게이트 · 누적 · 마일리지 환급)
+  - execute_completes_an_approved_direct_refund_and_cancels_the_option_quantity
+  - claim_refund_execute_accepts_a_cancel_sourced_refund
+  - execute_requires_an_approved_refund
+  - execute_requires_the_execute_refund_permission
+  - execute_refunds_used_mileage_with_the_refund_idempotency_axis
+  - execute_of_an_exchange_sourced_refund_accumulates_without_touching_options
+  - execute_rejects_mileage_refunds_for_guest_orders
+  - execute_splits_a_mixed_pg_and_mileage_refund
+  - execute_links_the_mileage_restore_to_the_original_usage_transaction
+  - execute_preserves_the_option_processed_by_when_none_is_given
+  # 서버 계약 — 취소 가능 금액 산정 (D19 세 축 · 자기 제외 · 문맥 배타 · 교차 접근 · 다통화)
+  - cancellable_amount_returns_the_three_axes_with_methods
+  - cancellable_amount_reserves_other_pending_refunds
+  - cancellable_amount_with_refund_context_excludes_itself_from_the_reserve
+  - cancellable_amount_for_an_exchange_sourced_refund_excludes_its_own_filing
+  - cancellable_amount_is_404_for_a_refund_of_another_order
+  - cancellable_amount_reports_the_payment_currency_remaining_separately_from_the_base
+  - cancellable_amount_requires_the_claims_read_permission
+  - cancellable_amount_rejects_the_refund_context_together_with_items
+  - cancellable_amount_accepts_items_when_the_refund_context_is_blank
+  - cancellable_amount_scopes_the_requested_items_to_the_order
+  - cancellable_amount_reports_the_reserved_axis_but_does_not_bind_on_it
+  - cancellable_amount_reports_the_payment_axis_as_binding
+  - cancellable_amount_answers_a_fully_cancelled_order_with_the_base_currency
+  # 서버 계약 — 환불 금액 수정 (D18 환불 축 · 상한 · 직렬화 · 상태 게이트)
+  - amounts_updates_the_refund_amounts_within_the_cancellable_limit
+  - amounts_locks_the_order_row_for_the_cancellable_aggregate
+  - amounts_rejects_a_refund_amount_exceeding_the_cancellable_limit
+  - amounts_rejects_mileage_refunds_for_guest_orders
+  - amounts_prohibits_shipping_fee_fields_on_the_refund_type
+  - amounts_requires_the_update_amounts_permission
+  - amounts_rejects_a_cancel_sourced_refund
+  - amounts_rejects_a_processing_refund
+  # 서버 계약 — 취소 미리보기 (클레임 코스·수량 잠금 422 · 관리자 사유 원문)
+  - estimate_refund_is_422_for_items_locked_by_a_claim_course
+  - estimate_refund_is_422_for_items_locked_by_a_pending_refund_quantity
+  - estimate_refund_reports_the_reason_detail_for_admins
   # 브라우저 실측 (E2E)
   - detail_payment_tab_reveals_order_amounts
   - detail_refund_execute_tab_present_only_for_refund

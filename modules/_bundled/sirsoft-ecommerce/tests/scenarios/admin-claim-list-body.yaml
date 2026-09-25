@@ -143,6 +143,41 @@ effects:
   # i18n
   - new_labels_present_in_all_three_dictionaries
   - defer_translation_only_inside_repeat_context
+  # #599 후속 — 목록 일괄 반려 사유
+  - bulk_rejection_requires_reason_before_confirm
+  - bulk_rejection_reason_travels_to_the_request
+  - bulk_rejection_reason_is_wired_through_confirm
+  # #599 후속 — 목록 일괄 회수중·발송중은 신청서마다 송장
+  - bulk_logistics_builds_one_tracking_row_per_claim
+  - bulk_logistics_sends_each_claims_own_tracking
+  - bulk_logistics_tracking_is_wired_through_confirm
+  # 완료 처리 미리보기 API (D26) — 예정액·재고 건수·접수 불가 사유·대상 스코프·권한
+  - completion_preview_reports_return_refund_estimate_and_stock_counts
+  - completion_preview_reflects_unchecked_stock_and_no_refund_choice
+  - completion_preview_blocks_exchange_without_refundable_difference
+  - completion_preview_matches_exchange_frozen_difference
+  - completion_preview_blocks_return_without_completable_items
+  - completion_preview_reports_already_filed_reason_for_return
+  - completion_preview_skips_missing_claim_with_report
+  - completion_preview_rejects_foreign_claim_item_ids
+  - completion_preview_scopes_item_ids_per_claim
+  - completion_preview_rejects_unsupported_claim_type
+  - completion_preview_rejects_empty_claim_list
+  - completion_preview_requires_update_status_permission
+  # 환불신청서 수동 접수 (D26 — 완료 시 접수하지 않은 건)
+  - refund_request_files_refund_for_return_completed_without_one
+  - refund_request_files_exchange_difference_once_after_completion
+  - refund_request_rejects_return_already_filed
+  - refund_request_rejects_exchange_without_completed_items
+  - refund_request_requires_update_status_permission
+  # 클레임 금액 수정 (D18 — 교환·반품 축, 환불 방법 게이트)
+  - claim_amounts_raise_from_zero_requires_charge_method_and_fires_hook
+  - claim_amounts_reject_charge_method_outside_allowed_list
+  - claim_amounts_reject_final_claim
+  - claim_amounts_update_exchange_round_trip_fee_and_totals
+  - claim_amounts_prohibit_refund_fields_on_exchange
+  - claim_amounts_prohibit_refund_fields_on_return
+  - refund_amounts_reject_unknown_refund_method
 
 test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/admin/claim-pending-feedback.spec.ts
@@ -167,7 +202,6 @@ notes: |
   그 선택이 **화면에서 요청 본문까지 도달하는가** 이고, 핸들러 테스트가 그 지점을 본다 —
   둘을 한 파일에서 다시 재현하면 같은 계약이 두 벌이 된다.
 
-  일괄 전이 바에 택배사·송장 입력을 두지 않은 것은 축소가 아니라 계약이다. §6-4 와이어프레임은
-  주문 목록의 바를 그대로 옮겨 그렸지만, 클레임 일괄 전이 엔드포인트는 그 두 값을 받지 않고
-  (회수·재발송 송장은 신청서마다 회수지가 달라 `PUT {claimType}/{id}/collection-tracking`
-  으로 건별 처리한다), 컨트롤만 두면 운영자가 입력한 값이 조용히 버려진다.
+  일괄 전이 **바**에는 택배사·송장 입력을 두지 않는다 — 송장은 신청서마다 다르기 때문이다. 대신
+  회수중·발송중을 고르면 확인 창이 신청서마다 택배사·운송장 한 줄씩을 받는다(#599 후속 운영 결정,
+  `trackings[]`). 예전에는 이 경로로 송장 없이 회수중이 되어 고객 알림의 운송장 칸이 비어 나갔다.

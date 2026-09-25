@@ -35,6 +35,7 @@ use Modules\Sirsoft\Ecommerce\Services\OrderRefundRequestService;
 use Modules\Sirsoft\Ecommerce\Services\OrderReturnService;
 use Modules\Sirsoft\Ecommerce\Tests\Concerns\AssertsClaimExceptions;
 use Modules\Sirsoft\Ecommerce\Tests\Concerns\BuildsClaimAdjustmentOrders;
+use Modules\Sirsoft\Ecommerce\Tests\Concerns\ProvidesClaimTracking;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
@@ -51,6 +52,7 @@ class OrderReturnServiceTest extends ModuleTestCase
 {
     use AssertsClaimExceptions;
     use BuildsClaimAdjustmentOrders;
+    use ProvidesClaimTracking;
 
     protected OrderReturnService $service;
 
@@ -241,7 +243,7 @@ class OrderReturnServiceTest extends ModuleTestCase
         ];
 
         foreach ($path as $step) {
-            $return = $this->service->transition($return, $step);
+            $return = $this->service->transition($return, $step, $this->claimTrackingFor($step));
 
             if ($step === $target) {
                 break;
@@ -1592,7 +1594,7 @@ class OrderReturnServiceTest extends ModuleTestCase
             ReturnStatusEnum::COLLECTING,
             ReturnStatusEnum::COLLECTED,
         ] as $target) {
-            $return = $this->service->transition($return, $target);
+            $return = $this->service->transition($return, $target, $this->claimTrackingFor($target));
             $this->assertSame($target, $return->return_status);
         }
     }
@@ -1957,15 +1959,15 @@ class OrderReturnServiceTest extends ModuleTestCase
     // ================================================================
 
     /**
-     * 회수 송장을 등록하면 회수중으로 옮긴다.
+     * 회수 송장 저장은 송장만 기록하고 상태는 옮기지 않는다 (#599 후속 운영 결정 — 저장과 전이는 별개).
      *
      * @return void 반환값 없음
      *
      * @scenario quantity=full, charge_method=none, refund_chain=none
      *
-     * @effects return_transition_follows_the_status_gate
+     * @effects tracking_save_does_not_move_the_status
      */
-    public function test_register_tracking_moves_to_collecting(): void
+    public function test_register_tracking_saves_without_moving_the_status(): void
     {
         $order = $this->deliveredOrder();
         $return = $this->advanceTo(
@@ -1986,7 +1988,7 @@ class OrderReturnServiceTest extends ModuleTestCase
         $tracked = $this->service->registerCollectionTracking($updated, $carrier->id, '1234567890');
 
         $this->assertSame('1234567890', $tracked->collection_tracking_number);
-        $this->assertSame(ReturnStatusEnum::COLLECTING, $tracked->return_status);
+        $this->assertSame(ReturnStatusEnum::COLLECTION_READY, $tracked->return_status, '송장 저장이 상태를 옮겼습니다.');
     }
 
     /**
@@ -3300,11 +3302,12 @@ class OrderReturnServiceTest extends ModuleTestCase
     // ================================================================
 
     /**
-     * 상품 단위 전이가 서로 한 단계 이상 벌어진 뒤 같은 단계에서 만나면, 헤더는 건너뛴 중간
-     * 단계를 차례로 거쳐 그 단계까지 따라간다 (확정 2026-08-22 6차 ①).
+     * 상품 단위 전이가 서로 한 단계 이상 벌어진 뒤 같은 단계에서 만나면, 헤더는 그 단계까지 따라간다
+     * (확정 2026-08-22 6차 ①).
      *
-     * 한 단계만 추종하면 A 가 회수중까지 간 뒤 B 가 뒤따라 회수중이 되는 순간 헤더는
-     * 승인 → 회수중 게이트에 막혀 영구히 승인에 남고, 회수 3단계 알림이 영영 나가지 않는다.
+     * 회수 단계는 앞으로 건너뛸 수 있으므로(#599 후속 운영 결정) 헤더는 가장 짧은 길로 — 승인에서 곧바로
+     * 회수중으로 — 옮기고, 고객 알림은 도착한 상태 한 통만 나간다. 건너뛴 회수준비중 알림을 뒤늦게 보내면
+     * 고객은 이미 회수중인 물건에 「회수를 준비하고 있습니다」를 받는다.
      *
      * @return void 반환값 없음
      *
@@ -3327,22 +3330,22 @@ class OrderReturnServiceTest extends ModuleTestCase
         $fresh = fn () => $return->fresh(['returnOptions']);
 
         $this->service->transitionOption($fresh(), [$itemA], ReturnStatusEnum::COLLECTION_READY);
-        $this->service->transitionOption($fresh(), [$itemA], ReturnStatusEnum::COLLECTING);
+        $this->service->transitionOption($fresh(), [$itemA], ReturnStatusEnum::COLLECTING, $this->claimTrackingFor(ReturnStatusEnum::COLLECTING));
         $this->service->transitionOption($fresh(), [$itemB], ReturnStatusEnum::COLLECTION_READY);
 
         // B 가 아직 회수준비중이라 살아 있는 상품이 두 상태 — 헤더는 움직이지 않는다.
         $this->assertSame(ReturnStatusEnum::APPROVED, $return->fresh()->return_status);
 
-        $this->service->transitionOption($fresh(), [$itemB], ReturnStatusEnum::COLLECTING);
+        $this->service->transitionOption($fresh(), [$itemB], ReturnStatusEnum::COLLECTING, $this->claimTrackingFor(ReturnStatusEnum::COLLECTING));
 
         $this->assertSame(
             ReturnStatusEnum::COLLECTING,
             $return->fresh()->return_status,
             '살아 있는 상품 전부가 회수중인데 헤더가 따라가지 못했습니다.'
         );
-        // 건너뛴 회수준비중 단계의 훅도 순서대로 발화한다 — 알림 리스너가 단계를 잃지 않는다.
+        // 헤더는 승인에서 곧바로 회수중으로 간다 — 지나간 회수준비중 알림을 뒤늦게 보내지 않는다.
         $this->assertSame(
-            ['requested>approved', 'approved>collection_ready', 'collection_ready>collecting'],
+            ['requested>approved', 'approved>collecting'],
             $changed
         );
         $this->assertNotNull($return->fresh()->collection_ready_at ?? $return->fresh()->approved_at);
@@ -3730,7 +3733,7 @@ class OrderReturnServiceTest extends ModuleTestCase
         $return = $this->service->requestReturn($order, $this->payload($order));
 
         foreach ([ReturnStatusEnum::APPROVED, ReturnStatusEnum::COLLECTION_READY, ReturnStatusEnum::COLLECTING, ReturnStatusEnum::COLLECTED] as $step) {
-            $return = $this->service->transition($return, $step, ['processed_by' => $processor]);
+            $return = $this->service->transition($return, $step, ['processed_by' => $processor] + $this->claimTrackingFor($step));
         }
         $this->assertSame($processor, $return->returnOptions->first()->processed_by);
 
@@ -3741,7 +3744,7 @@ class OrderReturnServiceTest extends ModuleTestCase
     }
 
     /**
-     * 송장 저장과 회수중 전환은 한 묶음이다 — 전환이 실패하면 송장도 남지 않는다 (6차 ⑤).
+     * 송장을 실은 회수중 전이는 송장 기록과 전이가 한 묶음이다 — 전이가 실패하면 송장도 남지 않는다 (6차 ⑤).
      *
      * @return void 반환값 없음
      *
@@ -3764,14 +3767,16 @@ class OrderReturnServiceTest extends ModuleTestCase
             ]);
 
         // 첫 update(송장)는 통과시키고, 두 번째 update(회수중 전이)에서 실패를 주입한다.
-        $repository = Mockery::mock(app(OrderReturnRepositoryInterface::class))->makePartial();
-        $repository->shouldReceive('update')->once()->ordered()->passthru();
+        $real = app(OrderReturnRepositoryInterface::class);
+        $repository = Mockery::mock(OrderReturnRepositoryInterface::class);
+        $repository->shouldReceive('findForUpdate')->andReturnUsing(fn (int $id) => $real->findForUpdate($id));
+        $repository->shouldReceive('update')->once()->ordered()->andReturnUsing(fn ($model, array $data) => $real->update($model, $data));
         $repository->shouldReceive('update')->once()->ordered()->andThrow(new \RuntimeException('transition failed'));
         app()->instance(OrderReturnRepositoryInterface::class, $repository);
         $service = app(OrderReturnService::class);
 
         try {
-            $service->registerCollectionTracking($return, $carrier->id, '1234567890');
+            $service->transition($return, ReturnStatusEnum::COLLECTING, ['carrier_id' => $carrier->id, 'tracking_number' => '1234567890']);
             $this->fail('전이 실패가 전파되지 않았습니다.');
         } catch (\RuntimeException $e) {
             $this->assertSame('transition failed', $e->getMessage());

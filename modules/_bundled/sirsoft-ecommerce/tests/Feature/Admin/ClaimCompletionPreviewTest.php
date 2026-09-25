@@ -36,6 +36,11 @@ class ClaimCompletionPreviewTest extends ModuleTestCase
 
     protected User $admin;
 
+    /**
+     * 통화 설정·클레임 사유를 시드하고 조회·상태 변경·금액 수정 권한을 가진 관리자를 만듭니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -48,12 +53,22 @@ class ClaimCompletionPreviewTest extends ModuleTestCase
         ]);
     }
 
+    /**
+     * 테스트용 통화 설정을 지워 다음 테스트로 새지 않게 합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         $this->clearTestCurrencySettings();
         parent::tearDown();
     }
 
+    /**
+     * 관리자 이커머스 API 의 기본 경로를 돌려줍니다.
+     *
+     * @return string 관리자 API 기본 경로
+     */
     protected function base(): string
     {
         return '/api/modules/sirsoft-ecommerce/admin';
@@ -77,7 +92,7 @@ class ClaimCompletionPreviewTest extends ModuleTestCase
 
         $return = $service->transition($return, ReturnStatusEnum::APPROVED);
         $return = $service->transition($return, ReturnStatusEnum::COLLECTION_READY);
-        $return = $service->transition($return, ReturnStatusEnum::COLLECTING);
+        $return = $service->transition($return, ReturnStatusEnum::COLLECTING, $this->claimTrackingFor(ReturnStatusEnum::COLLECTING));
         $return = $service->transition($return, ReturnStatusEnum::COLLECTED);
 
         return [$order, $return->fresh(['returnOptions'])];
@@ -105,6 +120,16 @@ class ClaimCompletionPreviewTest extends ModuleTestCase
     // 완료 처리 미리보기 (D26)
     // ================================================================
 
+    /**
+     * 반품 완료 미리보기가 완료 가능 행·재고 복구/폐기 건수와 환불 예정액을 함께 낸다.
+     *
+     * 재고 복구 대상 유무는 `hasStockRestoreTarget()` 판정을 그대로 싣고, 환불 예정액은 상품가 29,000 에서
+     * 회수배송비 3,000 을 뺀 26,000 이 행과 합계 양쪽에 같게 떨어져야 한다.
+     *
+     * @effects completion_preview_reports_return_refund_estimate_and_stock_counts
+     *
+     * @return void 반환값 없음
+     */
     public function test_completion_preview_reports_the_return_refund_estimate_and_stock_choices(): void
     {
         [, $return] = $this->collectedReturn();
@@ -137,6 +162,15 @@ class ClaimCompletionPreviewTest extends ModuleTestCase
         $this->assertSame(26000.0, (float) $response->json('data.totals.refund_amount_total'));
     }
 
+    /**
+     * 재고 복구를 끄고 '접수하지 않음' 을 고르면 미리보기가 그 선택을 그대로 반영한다.
+     *
+     * 복구 0·폐기 1 로 세고, 환불은 접수 대상이 아니므로 `applicable=false`·합계 0 이 된다.
+     *
+     * @effects completion_preview_reflects_unchecked_stock_and_no_refund_choice
+     *
+     * @return void 반환값 없음
+     */
     public function test_completion_preview_reflects_the_unchecked_stock_and_no_refund_choice(): void
     {
         [, $return] = $this->collectedReturn();
@@ -163,6 +197,13 @@ class ClaimCompletionPreviewTest extends ModuleTestCase
         $this->assertSame(0.0, (float) $response->json('data.totals.refund_amount_total'));
     }
 
+    /**
+     * 차액이 없는 동일 옵션 교환은 접수 불가 사유를 `claim_refund_not_applicable` 로 구분해 낸다.
+     *
+     * @effects completion_preview_blocks_exchange_without_refundable_difference
+     *
+     * @return void 반환값 없음
+     */
     public function test_completion_preview_distinguishes_the_exchange_without_a_refundable_difference(): void
     {
         [, $exchange] = $this->sameOptionExchange();
@@ -182,6 +223,14 @@ class ClaimCompletionPreviewTest extends ModuleTestCase
         $this->assertSame('claim_refund_not_applicable', $row['refund']['blocked_reason']);
     }
 
+    /**
+     * 저가 교환의 미리보기는 접수 가능으로 답하고, 환불액·마일리지·차감 배송비의 합이
+     * 교환이 동결한 차액과 같아야 한다 — 모달 안내와 실제 접수액이 갈리지 않게 한다.
+     *
+     * @effects completion_preview_matches_exchange_frozen_difference
+     *
+     * @return void 반환값 없음
+     */
     public function test_completion_preview_reports_the_exchange_refundable_difference(): void
     {
         [, $exchange] = $this->redeliveredLowerPricedExchange();
@@ -211,6 +260,14 @@ class ClaimCompletionPreviewTest extends ModuleTestCase
         );
     }
 
+    /**
+     * 접수 없이 완료한 저가 교환은 나중에 수동 접수로 차액 환불신청서(출처 exchange)를 만들고,
+     * 두 번째 접수는 담을 상품이 없어 422 로 거절된다.
+     *
+     * @effects refund_request_files_exchange_difference_once_after_completion
+     *
+     * @return void 반환값 없음
+     */
     public function test_refund_request_files_the_exchange_difference_after_completing_without_one(): void
     {
         [, $exchange] = $this->redeliveredLowerPricedExchange();
@@ -240,6 +297,13 @@ class ClaimCompletionPreviewTest extends ModuleTestCase
             ->assertStatus(422);
     }
 
+    /**
+     * 없는 신청서 ID 가 섞이면 요청 전체를 실패시키지 않고 그 ID 만 `skipped` 로 보고한다.
+     *
+     * @effects completion_preview_skips_missing_claim_with_report
+     *
+     * @return void 반환값 없음
+     */
     public function test_completion_preview_skips_a_missing_claim_with_a_report(): void
     {
         [, $return] = $this->collectedReturn();
@@ -256,6 +320,13 @@ class ClaimCompletionPreviewTest extends ModuleTestCase
         $this->assertSame(999999, $response->json('data.skipped.0.id'));
     }
 
+    /**
+     * 다른 신청서의 상품 행 ID 를 실으면 조용히 버리지 않고 해당 항목을 422 로 거절한다.
+     *
+     * @effects completion_preview_rejects_foreign_claim_item_ids
+     *
+     * @return void 반환값 없음
+     */
     public function test_completion_preview_rejects_item_ids_from_another_claim(): void
     {
         [, $return] = $this->collectedReturn();
@@ -277,6 +348,13 @@ class ClaimCompletionPreviewTest extends ModuleTestCase
             ->assertJsonValidationErrors('claims.0.item_ids.0');
     }
 
+    /**
+     * 조회 권한만 있는 관리자는 완료 처리 미리보기를 호출할 수 없다(403).
+     *
+     * @effects completion_preview_requires_update_status_permission
+     *
+     * @return void 반환값 없음
+     */
     public function test_completion_preview_requires_the_update_status_permission(): void
     {
         $reader = $this->createAdminUser(['sirsoft-ecommerce.claims.read']);
@@ -294,6 +372,13 @@ class ClaimCompletionPreviewTest extends ModuleTestCase
     // 환불신청서 수동 접수 (D26)
     // ================================================================
 
+    /**
+     * 접수 없이 완료한 반품은 수동 접수로 환불신청서가 생기고, 반품에 연결된 환불액이 26,000 이다.
+     *
+     * @effects refund_request_files_refund_for_return_completed_without_one
+     *
+     * @return void 반환값 없음
+     */
     public function test_refund_request_files_the_refund_for_a_return_completed_without_one(): void
     {
         [, $return] = $this->collectedReturn();
@@ -315,6 +400,13 @@ class ClaimCompletionPreviewTest extends ModuleTestCase
         $this->assertSame(26000.0, (float) OrderRefund::findOrFail($return->refund_id)->refund_amount);
     }
 
+    /**
+     * 완료 시 이미 환불신청서를 접수한 반품은 수동 접수를 다시 받지 않는다(422).
+     *
+     * @effects refund_request_rejects_return_already_filed
+     *
+     * @return void 반환값 없음
+     */
     public function test_refund_request_rejects_a_return_that_already_filed_one(): void
     {
         [, $return] = $this->collectedReturn();
@@ -329,6 +421,13 @@ class ClaimCompletionPreviewTest extends ModuleTestCase
             ->assertStatus(422);
     }
 
+    /**
+     * 완료된 상품이 없는 교환은 접수할 대상이 없으므로 수동 접수가 422 로 거절된다.
+     *
+     * @effects refund_request_rejects_exchange_without_completed_items
+     *
+     * @return void 반환값 없음
+     */
     public function test_refund_request_rejects_an_exchange_without_completed_items(): void
     {
         [, $exchange] = $this->sameOptionExchange();
@@ -346,6 +445,14 @@ class ClaimCompletionPreviewTest extends ModuleTestCase
     // 금액 수정 (D18) — 교환·반품 축
     // ================================================================
 
+    /**
+     * 청구 0원 반품의 배송비를 올릴 때는 청구 방식을 함께 실어야 하고, 통과하면 금액·청구 방식이
+     * 저장되며 수정 전후 금액이 `claim.return.amounts_updated` 훅으로 한 번 나간다.
+     *
+     * @effects claim_amounts_raise_from_zero_requires_charge_method_and_fires_hook
+     *
+     * @return void 반환값 없음
+     */
     public function test_amounts_raises_the_zero_charge_return_with_a_charge_method(): void
     {
         $order = $this->deliveredClaimOrder();
@@ -387,6 +494,13 @@ class ClaimCompletionPreviewTest extends ModuleTestCase
         $this->assertSame(3000.0, (float) $fired[0]['after']['claim_shipping_fee']);
     }
 
+    /**
+     * 모듈 설정의 허용 청구 방식 목록에 없는 청구 방식으로는 금액을 수정할 수 없다(422).
+     *
+     * @effects claim_amounts_reject_charge_method_outside_allowed_list
+     *
+     * @return void 반환값 없음
+     */
     public function test_amounts_rejects_a_charge_method_outside_the_allowed_list(): void
     {
         $order = $this->deliveredClaimOrder();
@@ -406,6 +520,13 @@ class ClaimCompletionPreviewTest extends ModuleTestCase
             ->assertStatus(422);
     }
 
+    /**
+     * 완료된(종결) 반품은 금액 수정 요청을 422 로 거절한다.
+     *
+     * @effects claim_amounts_reject_final_claim
+     *
+     * @return void 반환값 없음
+     */
     public function test_amounts_rejects_a_final_claim(): void
     {
         [, $return] = $this->collectedReturn();
@@ -420,6 +541,13 @@ class ClaimCompletionPreviewTest extends ModuleTestCase
             ->assertStatus(422);
     }
 
+    /**
+     * 교환의 왕복 배송비를 수정하면 청구 총액이 함께 갱신되고 스냅샷에 관리자 조정 표시가 남는다.
+     *
+     * @effects claim_amounts_update_exchange_round_trip_fee_and_totals
+     *
+     * @return void 반환값 없음
+     */
     public function test_amounts_updates_the_exchange_round_trip_fee_and_totals(): void
     {
         [, $exchange] = $this->sameOptionExchange();
@@ -439,6 +567,7 @@ class ClaimCompletionPreviewTest extends ModuleTestCase
      *
      * @param  string  $key  설정 키
      * @param  mixed  $value  값
+     * @return void 반환값 없음
      */
     protected function setModuleSetting(string $key, mixed $value): void
     {
@@ -449,6 +578,14 @@ class ClaimCompletionPreviewTest extends ModuleTestCase
     // 3차 계획 검증 보강 — 사유 구분 · 다건 스코프 · 권한 · 교차 유형 거절
     // ================================================================
 
+    /**
+     * 전건 반려로 완료 가능한 상품이 없는 반품은 0원 접수를 예고하지 않고
+     * `claim_refund_not_applicable` 사유와 함께 접수 불가로 답한다.
+     *
+     * @effects completion_preview_blocks_return_without_completable_items
+     *
+     * @return void 반환값 없음
+     */
     public function test_completion_preview_blocks_a_return_without_completable_items(): void
     {
         [, $return] = $this->collectedReturn();
@@ -475,6 +612,13 @@ class ClaimCompletionPreviewTest extends ModuleTestCase
         $this->assertSame(0.0, (float) $response->json('data.claims.0.refund.refund_amount'));
     }
 
+    /**
+     * 이미 환불신청서를 접수한 반품의 미리보기는 `claim_refund_request_exists` 사유를 낸다.
+     *
+     * @effects completion_preview_reports_already_filed_reason_for_return
+     *
+     * @return void 반환값 없음
+     */
     public function test_completion_preview_reports_the_already_filed_reason_for_a_return(): void
     {
         [, $return] = $this->collectedReturn();
@@ -498,6 +642,14 @@ class ClaimCompletionPreviewTest extends ModuleTestCase
         );
     }
 
+    /**
+     * 여러 신청서를 한 요청에 실으면 상품 행 ID 는 자기 부모 신청서 소속만 통과한다 —
+     * 교차 배치는 두 항목 모두 422, 올바른 배치는 200 이다.
+     *
+     * @effects completion_preview_scopes_item_ids_per_claim
+     *
+     * @return void 반환값 없음
+     */
     public function test_completion_preview_scopes_item_ids_per_claim_across_multiple_claims(): void
     {
         [, $first] = $this->collectedReturn();
@@ -533,6 +685,13 @@ class ClaimCompletionPreviewTest extends ModuleTestCase
             ->assertStatus(200);
     }
 
+    /**
+     * 조회 권한만 있는 관리자는 환불신청서를 수동 접수할 수 없고(403), 반품에 환불이 연결되지 않는다.
+     *
+     * @effects refund_request_requires_update_status_permission
+     *
+     * @return void 반환값 없음
+     */
     public function test_refund_request_requires_the_update_status_permission(): void
     {
         [, $return] = $this->collectedReturn();
@@ -552,6 +711,13 @@ class ClaimCompletionPreviewTest extends ModuleTestCase
         $this->assertNull($return->fresh()->refund_id);
     }
 
+    /**
+     * 교환 금액 수정에 환불 3키(환불액·마일리지·환불 방법)를 보내면 키마다 422 로 거절한다.
+     *
+     * @effects claim_amounts_prohibit_refund_fields_on_exchange
+     *
+     * @return void 반환값 없음
+     */
     public function test_amounts_prohibits_refund_fields_on_the_exchange_type(): void
     {
         [, $exchange] = $this->sameOptionExchange();
@@ -565,6 +731,13 @@ class ClaimCompletionPreviewTest extends ModuleTestCase
         }
     }
 
+    /**
+     * 반품 금액 수정에 환불액을 보내면 422 로 거절한다.
+     *
+     * @effects claim_amounts_prohibit_refund_fields_on_return
+     *
+     * @return void 반환값 없음
+     */
     public function test_amounts_prohibits_refund_fields_on_the_return_type(): void
     {
         [, $return] = $this->collectedReturn();
@@ -575,6 +748,13 @@ class ClaimCompletionPreviewTest extends ModuleTestCase
             ->assertJsonValidationErrors('refund_amount');
     }
 
+    /**
+     * 환불신청서 금액 수정은 알 수 없는 환불 방법 값을 422 로 거절한다.
+     *
+     * @effects refund_amounts_reject_unknown_refund_method
+     *
+     * @return void 반환값 없음
+     */
     public function test_amounts_rejects_an_unknown_refund_method(): void
     {
         [, $return] = $this->collectedReturn();
@@ -592,6 +772,13 @@ class ClaimCompletionPreviewTest extends ModuleTestCase
             ->assertJsonValidationErrors('refund_method');
     }
 
+    /**
+     * 완료 처리 미리보기는 교환·반품 전용이라 환불 유형 요청을 422 로 거절한다.
+     *
+     * @effects completion_preview_rejects_unsupported_claim_type
+     *
+     * @return void 반환값 없음
+     */
     public function test_completion_preview_rejects_an_unsupported_claim_type(): void
     {
         // 완료 모달은 교환·반품 전용이다 — 환불·취소는 각자 다른 파이프라인이 소유한다.
@@ -605,6 +792,13 @@ class ClaimCompletionPreviewTest extends ModuleTestCase
             ->assertJsonValidationErrors('claim_type');
     }
 
+    /**
+     * 대상 신청서 목록이 비어 있으면 완료 처리 미리보기를 422 로 거절한다.
+     *
+     * @effects completion_preview_rejects_empty_claim_list
+     *
+     * @return void 반환값 없음
+     */
     public function test_completion_preview_rejects_an_empty_claim_list(): void
     {
         $this->actingAs($this->admin)
@@ -627,9 +821,15 @@ class ClaimCompletionPreviewTest extends ModuleTestCase
     // ================================================================
 
     /**
+     * 미리보기의 행·합계 금액 표기 문자열은 모듈 통화 포맷터가 만든 값과 같아야 한다.
+     *
+     * 서비스가 숫자만 내보내거나 문자열을 손으로 조립하면 화면이 기호를 붙이게 되어 단일 출처가 깨진다.
+     *
      * @scenario claim_type=return, completion_choice=file_now
      *
      * @effects amounts_render_from_server_formatted_only
+     *
+     * @return void 반환값 없음
      */
     public function test_completion_preview_carries_formatted_amounts_from_the_currency_formatter(): void
     {
@@ -676,9 +876,13 @@ class ClaimCompletionPreviewTest extends ModuleTestCase
     }
 
     /**
+     * 표기 통화는 신청서의 거래 시점 통화(USD)를 따른다 — 원으로 고정된 표기가 나오면 안 된다.
+     *
      * @scenario claim_type=exchange, completion_choice=file_now
      *
      * @effects amounts_render_from_server_formatted_only
+     *
+     * @return void 반환값 없음
      */
     public function test_completion_preview_formats_amounts_in_the_claim_currency_not_a_fixed_one(): void
     {
@@ -708,9 +912,13 @@ class ClaimCompletionPreviewTest extends ModuleTestCase
     }
 
     /**
+     * '접수하지 않음' 이면 합계에 기여한 통화가 없으므로 합계 통화·표기를 null 로 둔다.
+     *
      * @scenario claim_type=return, completion_choice=file_later
      *
      * @effects completion_total_omitted_when_nothing_is_filed
+     *
+     * @return void 반환값 없음
      */
     public function test_completion_preview_omits_the_total_when_the_choice_files_nothing(): void
     {
@@ -740,6 +948,8 @@ class ClaimCompletionPreviewTest extends ModuleTestCase
      * @scenario claim_type=exchange, completion_choice=file_later
      *
      * @effects mixed_currency_total_falls_back_to_count_only
+     *
+     * @return void 반환값 없음
      */
     public function test_completion_preview_drops_total_formatting_when_currencies_are_mixed(): void
     {
@@ -777,6 +987,8 @@ class ClaimCompletionPreviewTest extends ModuleTestCase
      * @scenario claim_type=return, completion_choice=file_now
      *
      * @effects collection_fee_shown_in_completion_summary
+     *
+     * @return void 반환값 없음
      */
     public function test_completion_preview_totals_the_deducted_collection_fee(): void
     {
@@ -806,6 +1018,8 @@ class ClaimCompletionPreviewTest extends ModuleTestCase
      * @scenario claim_type=return, completion_choice=file_later
      *
      * @effects collection_fee_shown_in_completion_summary
+     *
+     * @return void 반환값 없음
      */
     public function test_completion_preview_omits_the_collection_fee_when_nothing_is_filed(): void
     {

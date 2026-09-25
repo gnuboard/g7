@@ -145,6 +145,12 @@ enum ReturnStatusEnum: string
     /**
      * 현재 상태에서 전이 가능한 목표 상태 목록을 반환합니다.
      *
+     * 회수 단계는 앞으로 건너뛸 수 있다(#599 후속 운영 결정) — 수거 예약과 송장이 이미 있으면
+     * 승인에서 곧바로 회수중이 되고, 고객이 직접 보낸 물건이 먼저 도착하면 회수중을 거치지 않고
+     * 회수도착이 된다. 오는 중인 물건도 완료(선환불)할 수 있다 — 완료는 여전히 [완료 처리] 만의
+     * 입구다(`transition()`·`transitionOption()` 이 거절). 승인은 건너뛰지 않는다: 추가결제 확인과
+     * 승인 알림이 승인에 걸려 있다.
+     *
      * @return array<self> 전이 가능 상태 목록
      */
     public function allowedTransitions(): array
@@ -160,9 +166,9 @@ enum ReturnStatusEnum: string
             self::PAYMENT_PENDING => [self::PAID, self::APPROVED, self::REJECTED, self::WITHDRAWN],
             self::PAID => [self::APPROVED, self::ON_HOLD, self::REJECTED, self::WITHDRAWN],
             self::ON_HOLD => [self::APPROVED, self::REJECTED, self::WITHDRAWN],
-            self::APPROVED => [self::COLLECTION_READY],
-            self::COLLECTION_READY => [self::COLLECTING],
-            self::COLLECTING => [self::COLLECTED],
+            self::APPROVED => [self::COLLECTION_READY, self::COLLECTING, self::COLLECTED],
+            self::COLLECTION_READY => [self::COLLECTING, self::COLLECTED],
+            self::COLLECTING => [self::COLLECTED, self::COMPLETED],
             self::COLLECTED => [self::COMPLETED],
             self::COMPLETED, self::REJECTED, self::WITHDRAWN => [],
         };

@@ -116,7 +116,8 @@ class OrderShippingRepository implements OrderShippingRepositoryInterface
             static fn ($value) => $value !== null && $value !== ''
         );
 
-        if ($payload === []) {
+        // 송장도 상태도 없으면 쓸 것이 없다. 송장 없이 상태만 옮기는 호출(직접 건넨 교환품의 배송완료)은 받는다.
+        if ($payload === [] && ! isset($tracking['shipping_status'])) {
             return null;
         }
 

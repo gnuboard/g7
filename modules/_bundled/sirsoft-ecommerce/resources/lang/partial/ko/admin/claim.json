@@ -46,6 +46,8 @@
     "completion": {
       "title": "완료 처리",
       "description": "신청 상품 {{count}}건을 완료 상태로 전환합니다. 재고 복구와 환불신청서 접수 방식은 다음 화면에서 고릅니다.",
+      "unavailable_return": "회수중이거나 회수도착한 상품이 없어 아직 완료할 수 없습니다. 상품이 회수중이 되면 완료할 수 있습니다.",
+      "unavailable_exchange": "발송중이거나 발송도착한 상품이 없어 아직 완료할 수 없습니다. 교환 상품이 발송중이 되면 완료할 수 있습니다.",
       "action": "완료 처리"
     },
     "shipping": {
@@ -246,7 +248,6 @@
       "title": "신청서 상태 변경",
       "reject_reason_placeholder": "반려 사유를 입력하세요",
       "no_status_selected": "변경할 상태를 선택해주세요.",
-      "use_complete_modal": "완료 처리는 완료 모달에서 진행해주세요.",
       "reject_reason_required": "반려 사유를 입력해주세요.",
       "success": "신청서 상태를 변경했습니다.",
       "error": "신청서 상태 변경에 실패했습니다."

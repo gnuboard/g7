@@ -203,7 +203,7 @@ class ClaimBeforeFilterHooksTest extends ModuleTestCase
     protected function advanceReturn(OrderReturn $return, array $steps): OrderReturn
     {
         foreach ($steps as $step) {
-            $return = $this->returns->transition($return, $step);
+            $return = $this->returns->transition($return, $step, $this->claimTrackingFor($step));
         }
 
         return $return->fresh(['returnOptions']);
@@ -554,7 +554,9 @@ class ClaimBeforeFilterHooksTest extends ModuleTestCase
     }
 
     /**
-     * 회수 송장이 끌고 가는 전이도 before 훅을 지나고, 막으면 송장도 기록되지 않는지 검증합니다.
+     * 송장을 실은 회수중 전이도 before 훅을 지나고, 막으면 송장도 기록되지 않는지 검증합니다.
+     *
+     * 송장 저장은 상태를 옮기지 않는다(#599 후속 운영 결정) — 회수중은 전이가 송장을 실어 들어간다.
      *
      * @return void 반환값 없음
      *
@@ -573,7 +575,7 @@ class ClaimBeforeFilterHooksTest extends ModuleTestCase
 
         $captured = $this->blockOn('sirsoft-ecommerce.claim.return.before_status_change');
 
-        $this->assertBlocked(fn () => $this->returns->registerCollectionTracking($return, $carrier->id, 'T-1234'));
+        $this->assertBlocked(fn () => $this->returns->transition($return, ReturnStatusEnum::COLLECTING, ['carrier_id' => $carrier->id, 'tracking_number' => 'T-1234']));
 
         $this->assertSame('collection_ready', $captured[1]);
         $this->assertSame('collecting', $captured[2]);
@@ -740,5 +742,55 @@ class ClaimBeforeFilterHooksTest extends ModuleTestCase
 
         $this->assertSame((int) $refund->id, (int) $captured[0]->id);
         $this->assertSame(RefundStatusEnum::APPROVED, $refund->fresh()->refund_status);
+    }
+
+    /**
+     * 상품 칸 반려 사유도 신청서 칸과 같은 필터(`filter_status_change_data`)를 거치는지 검증합니다. (#599 후속 운영 결정)
+     *
+     * 같은 「반려 사유」 인데 어느 칸에서 적었느냐에 따라 확장이 손댈 수 있는지가 갈리면 안 된다 — 금칙어
+     * 필터 같은 확장이 상품 칸 경로로 우회된다. 받아들이는 키도 헤더 경로와 같다(처리자는 되돌린다).
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario operation=option_status_change, hook_kind=filter
+     *
+     * @effects option_rejection_reason_passes_the_status_filter
+     */
+    public function test_상품_단위_반려_사유도_상태_필터를_거친다(): void
+    {
+        $admin = User::factory()->create();
+        $seen = [];
+
+        foreach (['exchange', 'return', 'refund'] as $type) {
+            HookManager::addFilter("sirsoft-ecommerce.claim.{$type}.filter_status_change_data", function (array $context, $claim, ?string $from, string $to) use (&$seen, $type) {
+                $seen[$type] = "{$from}->{$to}";
+                $context['reject_reason'] = "filtered:{$type}";
+                $context['processed_by'] = null;
+
+                return $context;
+            });
+        }
+
+        $exchange = $this->freeExchange();
+        $this->exchanges->transitionOption($exchange, [(int) $exchange->exchangeOptions()->first()->id], ExchangeStatusEnum::REJECTED, [
+            'reject_reason' => '원문', 'processed_by' => $admin->id,
+        ]);
+
+        $return = $this->freeReturn();
+        $this->returns->transitionOption($return, [(int) $return->returnOptions()->first()->id], ReturnStatusEnum::REJECTED, [
+            'reject_reason' => '원문', 'processed_by' => $admin->id,
+        ]);
+
+        $refund = $this->requestedRefund();
+        $this->refunds->transitionOption($refund, [(int) $refund->refundOptions()->first()->id], RefundStatusEnum::REJECTED, [
+            'reject_reason' => '원문', 'processed_by' => $admin->id,
+        ]);
+
+        $this->assertSame('filtered:exchange', $exchange->fresh()->reject_reason);
+        $this->assertSame('filtered:return', $return->fresh()->reject_reason);
+        $this->assertSame('filtered:refund', $refund->fresh()->reject_reason);
+        $this->assertSame(['exchange' => 'requested->rejected', 'return' => 'requested->rejected', 'refund' => 'requested->rejected'], $seen);
+        // 처리자는 필터가 바꿀 수 있는 키가 아니다 — 헤더 경로와 같은 규칙.
+        $this->assertSame((int) $admin->id, (int) $return->fresh()->processed_by);
     }
 }

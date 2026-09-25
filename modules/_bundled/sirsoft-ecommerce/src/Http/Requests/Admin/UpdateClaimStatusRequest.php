@@ -9,6 +9,7 @@ use Modules\Sirsoft\Ecommerce\Enums\ExchangeStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ReturnStatusEnum;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Concerns\ResolvesClaimCompletionOptions;
+use Modules\Sirsoft\Ecommerce\Http\Requests\Concerns\ValidatesClaimTransitionTracking;
 
 /**
  * 관리자 클레임 단건 상태 전이 요청
@@ -21,6 +22,7 @@ use Modules\Sirsoft\Ecommerce\Http\Requests\Concerns\ResolvesClaimCompletionOpti
 class UpdateClaimStatusRequest extends FormRequest
 {
     use ResolvesClaimCompletionOptions;
+    use ValidatesClaimTransitionTracking;
 
     /**
      * 사용자가 이 요청을 수행할 권한이 있는지 확인 (권한 체크는 라우트의 permission 미들웨어에서 수행)
@@ -41,9 +43,10 @@ class UpdateClaimStatusRequest extends FormRequest
     {
         return [
             'status' => ['required', 'string', Rule::in($this->assignableStatuses())],
-            'reject_reason' => ['nullable', 'string', 'max:2000'],
+            // 반려는 사유가 정본이다 — 없이 받으면 구매자 화면의 반려 사유가 빈 칸으로 남는다(#599 후속).
+            'reject_reason' => ['nullable', 'required_if:status,rejected', 'string', 'max:2000'],
             'admin_memo' => ['nullable', 'string', 'max:2000'],
-        ] + $this->completionRules();
+        ] + $this->transitionTrackingRules() + $this->completionRules();
     }
 
     /**
@@ -56,9 +59,10 @@ class UpdateClaimStatusRequest extends FormRequest
         return [
             'status.required' => __('sirsoft-ecommerce::validation.claims.admin_status.required'),
             'status.in' => __('sirsoft-ecommerce::validation.claims.admin_status.in'),
+            'reject_reason.required_if' => __('sirsoft-ecommerce::validation.claims.reject_reason.required'),
             'reject_reason.max' => __('sirsoft-ecommerce::validation.claims.reject_reason.max'),
             'admin_memo.max' => __('sirsoft-ecommerce::validation.claims.admin_memo.max'),
-        ] + $this->completionMessages();
+        ] + $this->transitionTrackingMessages() + $this->completionMessages();
     }
 
     /**
@@ -107,6 +111,6 @@ class UpdateClaimStatusRequest extends FormRequest
             $context['admin_memo'] = $this->validated('admin_memo');
         }
 
-        return $context;
+        return $context + $this->transitionTrackingContext($this->statusValue());
     }
 }

@@ -2145,6 +2145,7 @@ return [
             'in' => '이 유형에서 지정할 수 없는 상태입니다.',
         ],
         'reject_reason' => [
+            'required' => '반려 사유를 입력해 주세요. 구매자 화면에 그대로 안내됩니다.',
             'max' => '반려 사유는 :max자 이하로 입력해 주세요.',
         ],
         'admin_memo' => [
@@ -2166,6 +2167,9 @@ return [
             'create_refund_request_boolean' => '환불신청서 접수 여부는 true/false 여야 합니다.',
         ],
         'tracking' => [
+            'carrier_id_required' => '회수중·발송중으로 바꾸려면 택배사를 선택해 주세요.',
+            'tracking_number_required' => '회수중·발송중으로 바꾸려면 운송장 번호를 입력해 주세요.',
+            'per_claim_required' => '회수중·발송중으로 바꾸려면 선택한 신청서마다 택배사와 운송장 번호를 입력해 주세요.',
             'carrier_id_integer' => '택배사 ID 는 숫자여야 합니다.',
             'carrier_id_exists' => '등록되지 않은 택배사입니다.',
             'tracking_number_max' => '운송장 번호는 :max자 이하로 입력해 주세요.',

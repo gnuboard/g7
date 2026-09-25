@@ -131,6 +131,7 @@ return [
     'claim_refund_points_requires_member' => '비회원 주문에는 마일리지 환불을 지정할 수 없습니다.',
     'claim_refund_method_unavailable' => '이 주문의 결제수단으로는 선택하신 환불수단을 쓸 수 없습니다.',
     'claim_tracking_incomplete' => '택배사와 운송장 번호를 함께 입력해 주세요.',
+    'claim_tracking_required' => '회수중·발송중으로 바꾸려면 택배사와 운송장 번호를 입력해 주세요.',
     'claim_option_in_course' => '교환·반품이 진행 중인 상품(:status)은 취소할 수 없습니다.',
     'claim_option_in_course_status_change' => '교환·반품이 진행 중인 상품(:status)은 상태를 변경할 수 없습니다. 해당 신청 건을 먼저 처리하세요.',
     'claim_course_status_not_assignable' => '교환·반품 진행 상태(:status)는 주문 화면에서 직접 지정할 수 없습니다. 교환·반품 신청을 통해서만 진입합니다.',

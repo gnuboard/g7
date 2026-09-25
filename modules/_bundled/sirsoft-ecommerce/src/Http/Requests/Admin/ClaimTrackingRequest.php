@@ -11,6 +11,7 @@ use Modules\Sirsoft\Ecommerce\Models\ShippingCarrier;
  *
  * 택배사·운송장 번호의 "함께 있어야 한다" 검증은 서비스가 담당한다
  * (`registerCollectionTracking()` 의 `claim_tracking_incomplete`) — 여기서는 형식만 닫는다.
+ * 운송장 상한 50자는 DB 칸(`*_tracking_number` varchar 50) 길이다 — 넘기면 저장이 SQL 오류로 끊긴다.
  */
 class ClaimTrackingRequest extends FormRequest
 {
@@ -33,7 +34,7 @@ class ClaimTrackingRequest extends FormRequest
     {
         return [
             'carrier_id' => ['nullable', 'integer', Rule::exists(ShippingCarrier::class, 'id')],
-            'tracking_number' => ['nullable', 'string', 'max:100'],
+            'tracking_number' => ['nullable', 'string', 'max:50'],
         ];
     }
 

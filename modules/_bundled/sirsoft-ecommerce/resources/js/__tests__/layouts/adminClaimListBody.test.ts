@@ -427,12 +427,12 @@ describe('일괄 상태 변경 바 (S8b)', () => {
   });
 
   /**
-   * 일괄 전이 엔드포인트는 택배사·송장번호를 받지 않는다 — 컨트롤을 두면 운영자가 입력한
-   * 값이 조용히 버려진다.
+   * 일괄 바에는 송장 한 쌍을 두지 않는다 — 송장은 신청서마다 달라 한 쌍을 여러 건에 나눠 쓸 수 없고,
+   * 회수중·발송중이면 확인 창이 신청서마다 한 줄씩 받는다(`trackings[]`, #599 후속 운영 결정).
    *
    * @effects bulk_bar_has_no_uncontracted_tracking_inputs
    */
-  it('일괄 바에 송장 입력이 없다 (게이트가 받지 않는 축)', () => {
+  it('일괄 바에 송장 한 쌍 입력이 없다 (송장은 확인 창이 신청서마다 받는다)', () => {
     const names = collect(bulkSection, (n) => typeof n.props?.name === 'string').map(
       (n) => n.props.name as string,
     );
@@ -444,12 +444,12 @@ describe('일괄 상태 변경 바 (S8b)', () => {
   /**
    * @effects completion_defaults_reach_claims_read_operator
    */
-  it('[일괄 적용] 은 유형·상태·대상과 완료 기본값을 함께 넘긴다', () => {
+  it('[일괄 적용] 은 유형·상태·반려 사유·대상과 완료 기본값·택배사 선택지를 함께 넘긴다', () => {
     const action = byId(bulkSection, 'cb_005_bulk_apply_button').actions[0] as Node;
 
     expect(action.handler).toBe('sirsoft-ecommerce.buildClaimBulkConfirmData');
     expect(Object.keys(action.params).sort()).toEqual(
-      ['claimType', 'completeDefaults', 'ids', 'rows', 'status'].sort(),
+      ['carriers', 'claimType', 'completeDefaults', 'ids', 'rejectReason', 'rows', 'status'].sort(),
     );
   });
 
@@ -853,5 +853,44 @@ describe('i18n — 새 화면 라벨이 세 사전에 모두 있다', () => {
       const value = key.split('.').reduce<any>((node, part) => node?.[part], dictionary);
       expect(value, `${key} 가 사전에 없다`).toBeTypeOf('string');
     });
+  });
+});
+
+describe('목록 일괄 반려 사유 (#599 후속 운영 결정)', () => {
+  /**
+   * 반려를 고르면 사유 입력칸이 열리고, [일괄 적용] 이 그 사유를 확인 데이터로 넘기며, 확인 모달이
+   * 들어갈 사유를 한 번 더 보여 준다 — 비워 보내면 구매자 화면의 반려 사유가 빈 칸이 된다.
+   *
+   * @effects bulk_rejection_reason_is_wired_through_confirm
+   */
+  it('반려 사유 입력칸 → [일괄 적용] → 확인 모달로 이어진다', () => {
+    const input = byId(bulkSection, 'cb_006_reject_reason');
+    const apply = (byId(bulkSection, 'cb_005_bulk_apply_button').actions as Node[])[0];
+    const shown = byId(bulkConfirmModal, 'cbc_007_reject_reason_value');
+
+    expect(input.if).toBe("{{(_local.bulkClaimStatus ?? '') === 'rejected'}}");
+    expect(apply.params.rejectReason).toBe("{{_local.bulkRejectReason ?? ''}}");
+    expect(shown.text).toBe("{{_global.claimBulkConfirmData?.rejectReason ?? ''}}");
+  });
+});
+
+describe('목록 일괄 회수중·발송중 송장 (#599 후속 운영 결정)', () => {
+  /**
+   * [일괄 적용] 이 택배사 선택지를 넘기고, 확인 모달이 신청서마다 택배사·운송장 한 줄을 그리며, 한 줄이라도
+   * 비면 [변경] 이 잠긴다 — 송장은 신청서마다 달라 한 쌍을 여러 건에 나눠 쓸 수 없다.
+   *
+   * @effects bulk_logistics_tracking_is_wired_through_confirm
+   */
+  it('택배사 선택지 → 신청서별 송장 줄 → 빈 줄이면 [변경] 잠금', () => {
+    const apply = (byId(bulkSection, 'cb_005_bulk_apply_button').actions as Node[])[0];
+    const rows = byId(bulkConfirmModal, 'cbc_008_trackings');
+    const applyButton = byId(bulkConfirmModal, 'cbc_006_apply_button');
+    const handlers = collect(rows, (n) => Array.isArray(n.actions))
+      .flatMap((n) => (n.actions as Node[]).map((a) => a.handler));
+
+    expect(apply.params.carriers).toBe('{{claims?.data?.carriers ?? []}}');
+    expect(rows.if).toBe('{{(_global.claimBulkConfirmData?.trackings ?? []).length > 0}}');
+    expect(handlers).toEqual(['sirsoft-ecommerce.updateClaimBulkTracking', 'sirsoft-ecommerce.updateClaimBulkTracking']);
+    expect(String(applyButton.props.disabled)).toContain('trackings ?? []).some(');
   });
 });

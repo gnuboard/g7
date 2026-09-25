@@ -206,6 +206,7 @@
     ],
     "counts": {"exchange": 3, "return": 5, "refund": 1, "cancel": 8},
     "complete_defaults": {"create_refund_request": true, "restore_stock": true},
+    "carriers": [{"value": 3, "label": "CJ대한통운"}],
     "abilities": {"can_update_status": true, "can_update_amounts": true, "can_execute_refund": true},
     "pagination": {"current_page": 1, "per_page": 20, "from": 1, "to": 5, "has_more_pages": false, "last_page": 1, "total": 5}
   }
@@ -214,6 +215,11 @@
 
 `counts` 는 유형 공통 필터(기간·검색·회원구분)만 반영합니다 — 상태·귀책·청구 필터는 유형마다
 어휘가 달라 다른 탭 건수에 적용할 수 없습니다.
+
+`carriers` 는 회수중·발송중 일괄 전이 모달의 택배사 선택지입니다(교환·반품 탭만, 그 외 빈 배열).
+배송사 엔드포인트는 `settings.read` 게이트라 클레임 권한만 가진 운영자에게는 이 응답이 유일한
+통로입니다. 교환·반품 행은 저장된 송장(`collection_carrier_id`·`collection_tracking_number`, 교환은
+`redelivery_*` 도)을 함께 실어 모달이 미리 채웁니다.
 
 `complete_defaults` 는 완료 처리 모달의 **초기 선택값**입니다(설정 `claim.complete_defaults`).
 설정 조회 엔드포인트는 `sirsoft-ecommerce.settings.read` 게이트라 클레임 권한만 가진 관리자에게는
@@ -277,6 +283,8 @@
 | abilities | object | `{"can_update_status": true, …}` | 화면 컨트롤 게이팅. 목록 응답과 **같은 매핑**이다 (`can_update_status` / `can_update_amounts` / `can_execute_refund`) |
 | complete_defaults | object | `{"create_refund_request": true, "restore_stock": true}` | 완료 처리 모달(D26)의 **초기 선택값**. 설정 `claim.complete_defaults` — 완료 처리를 자동으로 수행하지 않는다 |
 | progress_steps | array | — | 진행단계 스텝퍼 (아래) |
+| transition_options | array | `[{"value": "approved", "label": "반품승인"}]` | 상세 「신청서 상태 변경」 칸의 선택지. **심사 어휘**(결제 요청·승인·보류·반려) 중 지금 상태에서 갈 수 있는 것만이고, 그중 **눌러도 거절될 값은 싣지 않는다** — 고객이 낼 돈이 없는 신청서의 `payment_pending`(→ `claim_payment_not_required`), 신청 시점 결제 미수납 건의 `approved`(→ `claim_payment_outstanding`), 상품 일부가 신청서보다 앞선 건의 `rejected`(→ `claim_transition_not_allowed`). 회수·발송 단계는 상품 칸, 완료는 [완료 처리] 가 입구라 여기 서지 않는다. 취소신청서는 빈 배열 |
+| completable_item_count | integer | `1` | 지금 완료할 수 있는 신청 상품 수 — 완료 절차가 대상으로 삼는 상품과 같은 판정(반품은 회수중·회수도착, 교환은 발송중·발송도착). 상세 [완료 처리] 버튼은 0 이면 꺼지고 안내 건수도 이 값이다. 환불·취소는 `0` |
 | redelivery_address_differs | boolean\|null | `false` | 최종 재발송지가 주문 배송지와 다른가. 저장된 두 주소의 비교로 도출하며 별도 컬럼이 없다. 재발송 축이 없는 유형은 `null` — `false`(같다)와 구분된다 |
 | carriers | array | `[{"value": 3, "label": "CJ대한통운", …}]` | 회수·재발송 송장의 택배사 선택지. 형태는 `admin/shipping-carriers/active` 와 같다. 환불은 회수·재발송 축이 없어 빈 배열 |
 | order | object\|null | — | 결제 정보 섹션(D17-③)이 그리는 **원 주문의 결제 축**. 주문 상세 엔드포인트는 `orders.read` 게이트라 이 화면이 직접 부르면 클레임 권한만 가진 관리자에게만 403 이 되어 탭이 통째로 빈다. 이 화면이 실제로 그리는 축만 실린다 (아래) |
@@ -409,11 +417,22 @@
 | 파라미터 | 타입 | 필수 | 설명 |
 | --- | --- | --- | --- |
 | status | string | 예 | 목표 상태 — 어휘는 유형별 `adminAssignableValues()`. 교환·반품은 `requested`/`paid`/`withdrawn` 제외 전체(11/8종), 환불은 `approved`/`on_hold`/`rejected` 3종 |
-| reject_reason | string | 아니오 | 반려 사유 (max 2000 — `status=rejected` 일 때 저장) |
+| reject_reason | string | `status=rejected` 일 때 필수 | 반려 사유 (max 2000). 비우면 `422` — 구매자 화면에 그대로 안내되는 문구다 |
+| carrier_id | integer | `status` 가 `collecting`/`redelivering` 일 때 필수 | 택배사 ID. 회수중은 회수 송장, 발송중은 재발송 송장 칸에 전이보다 먼저 기록된다 |
+| tracking_number | string | `status` 가 `collecting`/`redelivering` 일 때 필수 | 운송장 번호 (max 50 — DB 칸 길이) |
 | admin_memo | string | 아니오 | 관리자 메모 (max 2000 — 보낸 요청만 갱신, 미포함 시 기존값 유지). **교환·반품 전용** — 환불은 저장 컬럼이 없어 반영되지 않는다 |
 | completion | object | `status=completed` 일 때 필수 | 완료 처리 옵션 (D26) |
 | completion.restore_stock_by_item | object | 아니오 | 신청 상품 행 ID → 재고 복구 여부 맵 (`{"55": true}`) — 목록에 없는 행은 복구하지 않음 |
 | completion.create_refund_request | boolean | completion 과 함께 필수 | 환불신청서를 지금 접수할지 — `false` 면 `order_refunds` 를 만들지 않는다 |
+
+**회수중·발송중은 송장이 있어야 들어갑니다**(#599 후속). 택배가 물건을 싣고 가는 중이라는 사실이라,
+송장 없이 들어가면 고객 알림의 운송장 칸이 빈 채로 나갑니다. 세 입구(이 API·목록 일괄·상품 단위)가
+같은 규칙이며 서비스(`RecordsClaimTracking`)도 한 번 더 막습니다(`claim_tracking_required`).
+
+**회수·재발송 단계는 앞으로 건너뛸 수 있습니다** — 승인 → 회수준비중·회수중·회수도착, 회수준비중 →
+회수중·회수도착, 교환 회수도착 → 발송준비중·발송중·발송도착, 발송준비중 → 발송중·발송도착. 승인은
+건너뛰지 않습니다(추가결제 확인·교환품 재고 차감). 건너뛴 단계의 기록(회수도착·발송도착 시각)과
+부수효과(교환품 새 주문상품 생성·배송완료)는 목표 단계가 수행하고, 고객 알림은 목표 상태 한 통입니다.
 
 `reject_reason`/`admin_memo` 는 `status=completed` 전이에는 적용되지 않습니다 — 완료 분기는
 `completion` 만 처리합니다 (완료 모달 D26 에도 해당 입력이 없다).
@@ -462,7 +481,12 @@
 | type | string | 예 | 유형 (`exchange`/`return`/`refund` — 취소는 전이 대상이 아님) |
 | ids[] | integer[] | 예 | 신청서 ID 목록 (1~100건) |
 | status | string | 예 | 목표 상태 (단건 전이와 같은 어휘 게이트) |
-| reject_reason / admin_memo | string | 아니오 | 단건 전이와 동일 |
+| reject_reason | string | `status=rejected` 일 때 필수 | 단건 전이와 동일 — 고른 신청서 전부에 같은 사유가 들어간다 |
+| trackings[] | object[] | `status` 가 `collecting`/`redelivering` 일 때 필수 | 신청서별 송장 — `ids[]` 의 **모든** 신청서가 한 줄씩 있어야 한다(빠지거나 중복이면 `422` `trackings`). 송장은 신청서마다 달라 한 쌍을 여러 건에 나눠 쓰지 않는다 |
+| trackings[].id | integer | 예 | 신청서 ID |
+| trackings[].carrier_id | integer | 예 | 택배사 ID |
+| trackings[].tracking_number | string | 예 | 운송장 번호 (max 50) |
+| admin_memo | string | 아니오 | 단건 전이와 동일 |
 | completion | object | `status=completed` 일 때 필수 | 단건 전이와 동일 계약 — `restore_stock_by_item` 은 전 신청서의 상품 행 ID 를 한 맵에 싣는다 |
 
 **응답 예시 (200)**
@@ -502,14 +526,19 @@
 | items[].id | integer | 예 | 신청 상품 행 ID — **이 신청서에 속한 행만** 통과(다른 신청서의 행은 422 `errors`). 같은 id 를 두 줄로 보내도 `422` |
 | items[].quantity | integer | 아니오 | 이번에 전이할 수량 (min 1, 생략하면 전량). 행 수량보다 적으면 **그 행이 갈라져** 전이분이 원래 행에 남고 잔여가 새 행으로 나갑니다 |
 | status | string | 예 | 목표 상태 — 유형별 관리자 어휘에서 `payment_pending` 제외 (결제는 신청서 단위 축) |
+| reject_reason | string | `status=rejected` 일 때 필수 | 반려 사유 (max 2000). 신청서의 `reject_reason` 한 칸에 남는다 — 상품 전부를 반려해 신청서가 따라 반려될 때도, 일부만 반려해 신청서가 그대로일 때도 |
+| carrier_id | integer | `status` 가 `collecting`/`redelivering` 일 때 필수 | 택배사 ID — 송장은 신청서 한 칸에 남는다(회수중은 회수 송장, 발송중은 재발송 송장) |
+| tracking_number | string | `status` 가 `collecting`/`redelivering` 일 때 필수 | 운송장 번호 (max 50) |
 | completion | object | `status=completed` 일 때 필수 | 단건 전이와 동일 계약 (선택 상품만 이번 라운드에 완료 — 부분 완료). 환불신청서의 완료는 환불 실행의 소유라 `422` 입니다 |
 
 **스칼라 배열을 하위호환으로 남기지 않은 이유**: 두 모양을 받으면 `items` 의 상위 스코프
 검사가 둘로 갈라져 "다른 신청서의 행이 통과" 하는 결함이 되살아나고, 배포 중 두 형태가
 섞여도 아무 데도 드러나지 않습니다. 스칼라가 오면 `422` 로 드러나야 합니다.
 
-상품 단위 전이에는 메모·반려 사유 파라미터가 없습니다 — 상품 행에는 저장 지점이 없고,
-신청서(헤더) 메모는 단건 전이(`{id}/status`)가 담당합니다.
+상품 단위 전이에는 메모 파라미터가 없습니다 — 상품 행에는 저장 지점이 없고, 신청서(헤더)
+메모는 단건 전이(`{id}/status`)가 담당합니다. 반려 사유는 받습니다 — 상품 행에는 사유 칸이
+없어 신청서의 `reject_reason` 에 남고, 구매자 화면은 그 칸이 차 있으면 신청서 상태와 무관하게
+보여 줍니다(예전에는 받지 않아 상품을 모두 반려하면 신청서가 사유 없이 반려됐다).
 
 **요청 예시**
 
@@ -550,7 +579,10 @@
 
 ### PUT /api/modules/sirsoft-ecommerce/admin/{claimType}/{id}/collection-tracking
 
-회수 운송장을 등록합니다 (교환·반품). 회수준비중이면 회수중 전이가 함께 일어납니다.
+회수 운송장을 저장합니다 (교환·반품). **상태는 옮기지 않습니다** — 저장과 상태 전이는 별개입니다
+(#599 후속). 예전에는 회수준비중에서 저장하면 회수중으로 함께 옮겼는데, 승인 상태에서 먼저 저장한 송장은
+전이를 끌지 못해 신청서가 회수준비중에 멈췄습니다. 회수중 전이는 전이 API 가 송장을 실어 수행합니다.
+둘 다 비우고 저장하면 등록된 송장을 지웁니다.
 
 **권한**: `sirsoft-ecommerce.claims.update-status`
 
@@ -559,7 +591,7 @@
 | 파라미터 | 타입 | 필수 | 설명 |
 | --- | --- | --- | --- |
 | carrier_id | integer | 아니오* | 택배사 ID (`ecommerce_shipping_carriers`) |
-| tracking_number | string | 아니오* | 운송장 번호 (max 100) |
+| tracking_number | string | 아니오* | 운송장 번호 (max 50 — DB 칸 길이. 예전 상한 100 은 51자부터 저장이 서버 오류로 끊겼다) |
 
 \* 둘 중 하나만 보내면 `422` `claim_tracking_incomplete` — 함께 입력해야 합니다.
 
@@ -567,7 +599,8 @@
 
 ### PUT /api/modules/sirsoft-ecommerce/admin/exchanges/{id}/redelivery-tracking
 
-재발송 운송장을 등록합니다 (교환 전용). 재발송준비중이면 재발송중 전이가 함께 일어납니다.
+재발송 운송장을 저장합니다 (교환 전용). 상태는 옮기지 않습니다. 이미 발송된 교환품이 있으면 그 새
+주문상품의 배송 행 송장도 함께 고칩니다 — 고객 주문 화면의 배송 조회가 배송 행을 읽기 때문입니다.
 파라미터·응답·오류는 회수 송장과 동일하며 `redelivery_*` 필드가 갱신됩니다.
 
 ---

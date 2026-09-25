@@ -46,6 +46,8 @@
     "completion": {
       "title": "Completion",
       "description": "Move {{count}} requested item(s) to completed. Stock restoration and refund request options are chosen on the next screen.",
+      "unavailable_return": "No items are being collected or have been collected yet, so this cannot be completed. You can complete it once items are being collected.",
+      "unavailable_exchange": "No replacement items are being shipped or have been delivered yet, so this cannot be completed. You can complete it once replacement items are being shipped.",
       "action": "Complete"
     },
     "shipping": {
@@ -246,7 +248,6 @@
       "title": "Change request status",
       "reject_reason_placeholder": "Enter the rejection reason",
       "no_status_selected": "Select a status to change to.",
-      "use_complete_modal": "Use the completion modal to complete this request.",
       "reject_reason_required": "Enter the rejection reason.",
       "success": "The request status has been changed.",
       "error": "Failed to change the request status."

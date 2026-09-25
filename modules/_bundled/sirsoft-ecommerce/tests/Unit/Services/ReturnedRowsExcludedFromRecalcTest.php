@@ -44,6 +44,11 @@ class ReturnedRowsExcludedFromRecalcTest extends ModuleTestCase
 {
     use BuildsClaimFlowOrders;
 
+    /**
+     * 클레임 사유 카탈로그를 시드해 반품 접수가 사유 코드 검증을 통과하게 합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -54,7 +59,7 @@ class ReturnedRowsExcludedFromRecalcTest extends ModuleTestCase
      * 완료 처리용 아이템을 만듭니다. (protected 메서드 직접 호출)
      *
      * @param  OrderReturn  $return  반품 신청서
-     * @return array [{order_option_id, cancel_quantity}]
+     * @return array 재계산에 넘길 완료분 목록 [{order_option_id, cancel_quantity}]
      */
     private function completedItems(OrderReturn $return): array
     {
@@ -88,7 +93,7 @@ class ReturnedRowsExcludedFromRecalcTest extends ModuleTestCase
             ReturnStatusEnum::COLLECTING,
             ReturnStatusEnum::COLLECTED,
         ] as $target) {
-            $return = $service->transition($return, $target);
+            $return = $service->transition($return, $target, $this->claimTrackingFor($target));
         }
 
         $return->load('returnOptions');
@@ -113,6 +118,8 @@ class ReturnedRowsExcludedFromRecalcTest extends ModuleTestCase
      * @scenario return_round=sequential
      *
      * @effects sequential_return_recalc_counts_previously_returned_rows
+     *
+     * @return void 반환값 없음
      */
     public function test_second_return_includes_the_first_returns_completed_quantity(): void
     {
@@ -154,6 +161,8 @@ class ReturnedRowsExcludedFromRecalcTest extends ModuleTestCase
      * @scenario return_round=single
      *
      * @effects sequential_return_recalc_counts_previously_returned_rows
+     *
+     * @return void 반환값 없음
      */
     public function test_first_return_counts_only_its_own_quantity(): void
     {
@@ -181,6 +190,8 @@ class ReturnedRowsExcludedFromRecalcTest extends ModuleTestCase
      * @scenario return_round=incomplete_excluded
      *
      * @effects incomplete_returns_are_not_counted_as_returned
+     *
+     * @return void 반환값 없음
      */
     public function test_incomplete_returns_are_not_counted(): void
     {
@@ -218,6 +229,8 @@ class ReturnedRowsExcludedFromRecalcTest extends ModuleTestCase
      * @scenario return_round=shared_path_unchanged
      *
      * @effects shared_recalc_path_still_counts_returned_rows
+     *
+     * @return void 반환값 없음
      */
     public function test_shared_recalc_path_is_unchanged(): void
     {

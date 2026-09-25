@@ -55,6 +55,11 @@ class SequentialReturnRestoresCouponTest extends ModuleTestCase
      */
     private int $couponIssueId = 0;
 
+    /**
+     * 클레임 사유 카탈로그를 시드해 반품 접수가 사유 코드 검증을 통과하게 합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -158,7 +163,7 @@ class SequentialReturnRestoresCouponTest extends ModuleTestCase
             ReturnStatusEnum::COLLECTING,
             ReturnStatusEnum::COLLECTED,
         ] as $target) {
-            $return = $service->transition($return, $target);
+            $return = $service->transition($return, $target, $this->claimTrackingFor($target));
         }
 
         $return->load('returnOptions');
@@ -183,6 +188,8 @@ class SequentialReturnRestoresCouponTest extends ModuleTestCase
      * @scenario return_round=sequential
      *
      * @effects sequential_return_restores_coupons_at_the_final_round
+     *
+     * @return void 반환값 없음
      */
     public function test_coupon_restore_fires_after_the_final_sequential_return(): void
     {
@@ -217,6 +224,8 @@ class SequentialReturnRestoresCouponTest extends ModuleTestCase
      * @scenario return_round=single
      *
      * @effects sequential_return_restores_coupons_at_the_final_round
+     *
+     * @return void 반환값 없음
      */
     public function test_coupon_is_not_restored_while_items_remain(): void
     {

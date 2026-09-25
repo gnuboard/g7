@@ -18,6 +18,13 @@
           </div>
         </div>
       </div>
+      <!-- 회수중·발송중이면 실릴 송장을 한 번 더 보여 준다 — 고객 알림과 배송 조회에 그대로 나가는 값이다. -->
+      <div data-ref="ciq_006_tracking" data-if="{{!!_global.claimItemQuantityContext?.trackingNumber}}" class="flex-center flex-wrap gap-3 text-sm p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+        <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.claim.detail.shipping.carrier_placeholder</span>
+        <span class="font-semibold text-gray-900 dark:text-gray-100">{{_global.claimItemQuantityContext?.carrierLabel ?? ''}}</span>
+        <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.claim.detail.shipping.tracking_placeholder</span>
+        <span class="font-semibold text-gray-900 dark:text-gray-100 break-all">{{_global.claimItemQuantityContext?.trackingNumber ?? ''}}</span>
+      </div>
       <!-- 잠긴 행이 하나라도 있으면 이유를 적는다 — 비활성 입력만 두면 운영자는 화면이 고장 난 줄 안다. -->
       <p data-ref="ciq_003_not_splittable_hint" data-if="{{(_global.claimItemQuantityContext?.rows ?? []).some(r => r.splittable !== true &amp;&amp; r.quantity > 1)}}" class="text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.claim.detail.items.quantity_not_splittable</p>
       <div class="flex justify-end gap-2 pt-2">
@@ -30,7 +37,7 @@
         <!-- 실행은 일괄 바와 **같은 핸들러**다 — 두 발신처가 각자 요청을 만들면 본문 계약이 갈리고, 한쪽만 고쳐졌을 때 그 경로로만 422 가 난다(형제 결함 R10 이 그것이다). -->
         <button data-ref="ciq_005_confirm" type="button" class="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_local.isUpdatingClaimItems === true}}">
           <on type="click">
-            <action handler="sirsoft-ecommerce.executeClaimItemBulkStatus" pathSegment="{{_global.claimItemQuantityContext?.pathSegment ?? ''}}" claimType="{{_global.claimItemQuantityContext?.claimType ?? ''}}" claimId="{{_global.claimItemQuantityContext?.claimId ?? null}}" claimNumber="{{_global.claimItemQuantityContext?.claimNumber ?? ''}}" requesterName="{{_global.claimItemQuantityContext?.requesterName ?? ''}}" itemIds="{{_global.claimItemQuantityContext?.itemIds ?? []}}" itemQuantities="{{_global.claimItemQuantityContext?.quantities ?? {} }}" status="{{_global.claimItemQuantityContext?.status ?? ''}}" rows="{{_global.claimItemQuantityContext?.detailRows ?? []}}" completeDefaults="{{_global.claimItemQuantityContext?.completeDefaults ?? {} }}">
+            <action handler="sirsoft-ecommerce.executeClaimItemBulkStatus" pathSegment="{{_global.claimItemQuantityContext?.pathSegment ?? ''}}" claimType="{{_global.claimItemQuantityContext?.claimType ?? ''}}" claimId="{{_global.claimItemQuantityContext?.claimId ?? null}}" claimNumber="{{_global.claimItemQuantityContext?.claimNumber ?? ''}}" requesterName="{{_global.claimItemQuantityContext?.requesterName ?? ''}}" itemIds="{{_global.claimItemQuantityContext?.itemIds ?? []}}" itemQuantities="{{_global.claimItemQuantityContext?.quantities ?? {} }}" status="{{_global.claimItemQuantityContext?.status ?? ''}}" rejectReason="{{_global.claimItemQuantityContext?.rejectReason ?? ''}}" carrierId="{{_global.claimItemQuantityContext?.carrierId ?? ''}}" trackingNumber="{{_global.claimItemQuantityContext?.trackingNumber ?? ''}}" rows="{{_global.claimItemQuantityContext?.detailRows ?? []}}" completeDefaults="{{_global.claimItemQuantityContext?.completeDefaults ?? {} }}">
               <fail>
                 <!-- 사유 토스트는 핸들러가 이미 띄운다 — 기본 정책까지 돌면 같은 문구가 두 번 뜬다. -->
                 <suppress/>

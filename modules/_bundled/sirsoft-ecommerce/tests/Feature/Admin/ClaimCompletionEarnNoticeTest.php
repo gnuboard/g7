@@ -127,7 +127,7 @@ class ClaimCompletionEarnNoticeTest extends ModuleTestCase
         ]);
 
         foreach ([ReturnStatusEnum::APPROVED, ReturnStatusEnum::COLLECTION_READY, ReturnStatusEnum::COLLECTING, ReturnStatusEnum::COLLECTED] as $status) {
-            $return = $service->transition($return, $status);
+            $return = $service->transition($return, $status, $this->claimTrackingFor($status));
         }
 
         return $return->fresh(['returnOptions', 'order']);

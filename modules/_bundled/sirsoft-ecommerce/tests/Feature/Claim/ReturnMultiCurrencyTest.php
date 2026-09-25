@@ -342,7 +342,7 @@ class ReturnMultiCurrencyTest extends ModuleTestCase
             ReturnStatusEnum::COLLECTING,
             ReturnStatusEnum::COLLECTED,
         ] as $target) {
-            $return = $service->transition($return, $target);
+            $return = $service->transition($return, $target, $this->claimTrackingFor($target));
         }
 
         $this->assertSame(
@@ -381,7 +381,7 @@ class ReturnMultiCurrencyTest extends ModuleTestCase
             ReturnStatusEnum::COLLECTING,
             ReturnStatusEnum::COLLECTED,
         ] as $target) {
-            $return = $service->transition($return, $target);
+            $return = $service->transition($return, $target, $this->claimTrackingFor($target));
         }
 
         // 완료 처리가 환불신청서를 함께 접수하게 한다 — 운영자가 모달에서 고르는 실제 경로다

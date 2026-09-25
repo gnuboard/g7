@@ -41,11 +41,16 @@ effects:
   - guest_flag_reads_the_order_owner_not_the_requester_column   # 비회원 판정은 접수자 컬럼이 아니라 주문의 주인으로 한다
   # 요청자 링크(계획 676) — 뱃지 옆 이름이 그 회원 화면으로 간다.
   - requester_link_targets_the_order_owner_not_the_filer         # 접수자가 아니라 주문의 주인으로 간다
+  # 출처 ↔ 원 신청서 대응 (ClaimEnumsTest) — 조작 판정이 기대는 출처 Enum 의 매핑
+  - refund_source_type_maps_to_source_models
+  - refund_source_type_direct_has_no_source_model
+  - refund_source_type_maps_to_claim_types
 
 test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Support/ClaimResourceAbilityTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Http/Resources/ClaimResourceRequestSourceTest.php
   - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminClaimDetailRender.test.tsx
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Enums/ClaimEnumsTest.php
 
 notes: |
   **서버 거절 자체는 이 매니페스트의 축이 아니다.** `withdraw()`·`updateRequest()` 의 422 는

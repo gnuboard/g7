@@ -37,6 +37,7 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ShippingPolicyClaimAddressR
 use Modules\Sirsoft\Ecommerce\Services\Concerns\AppliesRefundBankAccount;
 use Modules\Sirsoft\Ecommerce\Services\Concerns\FiresClaimHooksAfterCommit;
 use Modules\Sirsoft\Ecommerce\Services\Concerns\GuardsClaimFilterResults;
+use Modules\Sirsoft\Ecommerce\Services\Concerns\RecordsClaimTracking;
 use Modules\Sirsoft\Ecommerce\Support\ClaimItemSpecs;
 
 /**
@@ -78,6 +79,7 @@ class OrderReturnService
     use AppliesRefundBankAccount;
     use FiresClaimHooksAfterCommit;
     use GuardsClaimFilterResults;
+    use RecordsClaimTracking;
 
     /**
      * @param  OrderAdjustmentService  $adjustmentService  환불금액 재계산 서비스
@@ -505,6 +507,11 @@ class OrderReturnService
                 $this->assertLivingItemsCanTransitionTo($return, $target);
             }
 
+            // 회수중은 송장이 있어야 들어간다 — 알림·고객 화면이 이 값을 읽으므로 전이보다 먼저 기록한다.
+            if ($current !== $target) {
+                $this->recordTrackingForTransition($return, $target, $context);
+            }
+
             return [$current, $this->applyTransition($return, $target, $context)];
         });
 
@@ -563,6 +570,38 @@ class OrderReturnService
      */
     protected function assertLivingItemsCanTransitionTo(OrderReturn $return, ReturnStatusEnum $target): void
     {
+        $blocking = $this->firstItemBlockingHeaderTransition($return, $target);
+
+        if ($blocking !== null) {
+            throw OrderClaimException::transitionNotAllowed($blocking->option_status->label(), $target->label());
+        }
+    }
+
+    /**
+     * 신청서 단위 전이가 앞서 있는 상품 때문에 거절되는지 판정합니다. (상세 신청서 칸의 선택지 게이트)
+     *
+     * `transition()` 이 실제로 거절하는 조건(반려·철회 + 앞선 상품)과 **같은 판정**이다 — 화면이
+     * 조건을 따로 적으면 선택지와 거절이 갈려, 운영자가 고른 「반려」 가 다시 422 로 돌아온다.
+     *
+     * @param  OrderReturn  $return  반품 신청서
+     * @param  ReturnStatusEnum  $target  목표 상태
+     * @return bool 거절되면 true
+     */
+    public function headerTransitionBlockedByItems(OrderReturn $return, ReturnStatusEnum $target): bool
+    {
+        return $this->revertsOrderOptions($target)
+            && $this->firstItemBlockingHeaderTransition($return, $target) !== null;
+    }
+
+    /**
+     * 목표 상태로 갈 수 없는 첫 살아 있는 상품을 찾습니다. (끝난 상품·이미 목표 상태인 상품 제외)
+     *
+     * @param  OrderReturn  $return  반품 신청서
+     * @param  ReturnStatusEnum  $target  목표 상태
+     * @return OrderReturnOption|null 막는 상품 (없으면 null)
+     */
+    protected function firstItemBlockingHeaderTransition(OrderReturn $return, ReturnStatusEnum $target): ?OrderReturnOption
+    {
         $return->loadMissing('returnOptions');
 
         foreach ($return->returnOptions as $item) {
@@ -571,9 +610,23 @@ class OrderReturnService
             }
 
             if (! $item->option_status->canTransitionTo($target)) {
-                throw OrderClaimException::transitionNotAllowed($item->option_status->label(), $target->label());
+                return $item;
             }
         }
+
+        return null;
+    }
+
+    /**
+     * 지금 완료할 수 있는 상품인지 판정합니다. (완료 절차의 대상 필터 · 상세 [완료 처리] 활성 판정 공용)
+     *
+     * @param  OrderReturnOption  $item  신청 상품 행
+     * @return bool 완료 가능하면 true
+     */
+    public function isCompletableItem(OrderReturnOption $item): bool
+    {
+        return $item->option_status->canTransitionTo(ReturnStatusEnum::COMPLETED)
+            && ! $item->option_status->isFinal();
     }
 
     /**
@@ -698,13 +751,29 @@ class OrderReturnService
         }
 
         $processedBy = $context['processed_by'] ?? null;
+        // 상품 칸 반려의 사유 — 신청서 한 칸(`reject_reason`)에 남는다(상품 행에는 사유 칸이 없다).
+        $rejectReason = $target === ReturnStatusEnum::REJECTED ? trim((string) ($context['reject_reason'] ?? '')) : '';
         $specs = ClaimItemSpecs::normalize($items);
         $quantities = ClaimItemSpecs::quantities($specs);
         $itemIds = ClaimItemSpecs::ids($specs);
 
         // 상품 단위 전이의 before 훅 — 잠금·쓰기 전이라 리스너가 던지면 어떤 행도 옮겨지지 않는다.
-        // 필터는 두지 않는다(교환과 같은 판단 — 바꿀 자유 입력이 없고 대상·목표는 게이트가 잰 값).
+        // 상품 단위 전용 필터는 두지 않는다(교환과 같은 판단 — 대상·목표는 게이트가 잰 값). 자유 입력인
+        // 반려 사유만 아래에서 헤더 경로와 같은 `filter_status_change_data` 를 거친다(#599 후속).
         HookManager::doAction('sirsoft-ecommerce.claim.return.before_option_status_change', $return, $specs, $target->value, $context);
+
+        // 반려 사유는 신청서 한 칸(`reject_reason`)에 남는 자유 입력이라 헤더 경로와 **같은 필터**를 거친다
+        // (#599 후속 운영 결정) — 어느 칸에서 적었느냐에 따라 확장이 손댈 수 있는지가 갈리면 금칙어 필터 같은
+        // 확장이 상품 칸으로 우회된다. 받아들이는 키도 같다(처리자·목표 상태는 되돌린다).
+        if ($rejectReason !== '') {
+            $filterInput = ['reject_reason' => $rejectReason] + $context;
+            $filtered = $this->acceptClaimFilterResult(
+                HookManager::applyFilters('sirsoft-ecommerce.claim.return.filter_status_change_data', $filterInput, $return, $return->return_status?->value, $target->value),
+                $filterInput,
+                self::CLAIM_FILTERABLE_STATUS_CONTEXT_KEYS,
+            );
+            $rejectReason = trim((string) ($filtered['reject_reason'] ?? ''));
+        }
 
         $succeeded = [];
         $skipped = [];
@@ -714,8 +783,12 @@ class OrderReturnService
         // 신청서 행을 잠그고 **잠금 안에서** 상품 행을 다시 읽어 판정한다. 헤더 동기화도 같은
         // 트랜잭션 안에서 한다 — 상품 전이를 커밋한 뒤 잠금 없이 헤더를 옮기면 그 사이에 들어온
         // 다른 전이와 헤더 판정이 겹친다(#599 validate P2 #19). 훅은 커밋 뒤에 나간다(#7).
-        DB::transaction(function () use ($return, $itemIds, $quantities, $target, $processedBy, &$succeeded, &$skipped, &$changes, &$split) {
+        DB::transaction(function () use ($return, $itemIds, $quantities, $target, $processedBy, $rejectReason, $context, &$succeeded, &$skipped, &$changes, &$split) {
             $locked = $this->returnRepository->findForUpdate((int) $return->getKey()) ?? $return;
+
+            // 상품 칸의 회수중도 신청서 전이와 같은 송장 규칙을 지난다 — 송장은 신청서 한 칸에 남는다.
+            $this->recordTrackingForTransition($locked, $target, $context);
+
             $items = $this->resolveItems($locked, $itemIds);
 
             foreach ($items as $item) {
@@ -787,6 +860,12 @@ class OrderReturnService
                 $succeeded[] = $item->id;
             }
 
+            // 일부만 반려해 신청서가 그대로여도 사유는 남긴다 — 구매자 화면은 사유가 차 있으면
+            // 신청서 상태와 무관하게 보여 주므로, 어느 상품이 왜 반려됐는지가 거기서 읽힌다.
+            if ($rejectReason !== '' && $succeeded !== []) {
+                $this->returnRepository->update($locked, ['reject_reason' => $rejectReason]);
+            }
+
             $fresh = $locked->fresh(['returnOptions']);
 
             // 상품 단위 전이는 헤더 전이와 다른 사실이다 — 상품 상태가 갈리면 헤더는 움직이지
@@ -804,7 +883,7 @@ class OrderReturnService
                 ));
             }
 
-            $this->syncHeaderFromOptions($fresh, $processedBy);
+            $this->syncHeaderFromOptions($fresh, $processedBy, $rejectReason !== '' ? ['reject_reason' => $rejectReason] : []);
         });
 
         return ['succeeded' => $succeeded, 'skipped' => $skipped, 'split' => $split];
@@ -863,10 +942,12 @@ class OrderReturnService
     // ───────────────────────────────────────────────
 
     /**
-     * 회수 운송장을 기록하고 회수중으로 전이합니다.
+     * 회수 운송장을 저장합니다. (상태는 옮기지 않는다)
      *
-     * 송장이 입력되면 회수가 시작된 것이므로 회수준비중 → 회수중 전이를 함께 수행한다
-     * (§4-2 "송장 입력 시 자동 collecting"). 이미 회수중 이후면 송장만 갱신한다.
+     * 저장과 상태 전이는 별개다(#599 후속 운영 결정). 예전에는 회수준비중에서 저장하면 회수중으로
+     * 함께 옮겼는데, 승인 상태에서 먼저 저장한 송장은 전이를 끌지 못해 신청서가 회수준비중에
+     * 멈췄다. 회수중 전이는 상품 칸·신청서 전이가 송장을 실어 수행한다(`recordTrackingForTransition`).
+     * 둘 다 비우고 저장하면 등록된 송장을 지운다.
      *
      * @param  OrderReturn  $return  반품 신청서
      * @param  int|null  $carrierId  회수 택배사 ID
@@ -882,41 +963,42 @@ class OrderReturnService
         ?string $trackingNumber,
         ?int $processedBy = null,
     ): OrderReturn {
-        $trackingNumber = $trackingNumber !== null && trim($trackingNumber) !== ''
-            ? trim($trackingNumber)
-            : null;
+        [$carrierId, $trackingNumber] = $this->normalizeTracking($carrierId, $trackingNumber);
 
-        if (($carrierId === null) !== ($trackingNumber === null)) {
-            throw OrderClaimException::trackingIncomplete();
+        return $this->returnRepository->update($return, [
+            'collection_carrier_id' => $carrierId,
+            'collection_tracking_number' => $trackingNumber,
+            'processed_by' => $processedBy ?? $return->processed_by,
+        ]);
+    }
+
+    /**
+     * 회수중으로 옮기기 전에 지시에 실린 회수 송장을 기록하고, 송장이 갖춰졌는지 확인합니다.
+     *
+     * 신청서 전이·상품 칸·목록 일괄이 모두 이 한 곳을 지난다(`RecordsClaimTracking`).
+     *
+     * @param  OrderReturn  $return  반품 신청서 (잠금 인스턴스 — 기록 후 같은 인스턴스가 갱신된다)
+     * @param  ReturnStatusEnum  $target  목표 상태
+     * @param  array  $context  전이 부가 정보 (carrier_id / tracking_number)
+     * @return void 반환값 없음
+     *
+     * @throws OrderClaimException 송장 불완전 / 송장 없음
+     */
+    protected function recordTrackingForTransition(OrderReturn $return, ReturnStatusEnum $target, array $context): void
+    {
+        if ($target !== ReturnStatusEnum::COLLECTING) {
+            return;
         }
 
-        $previous = $return->return_status;
-        $startsCollecting = $previous === ReturnStatusEnum::COLLECTION_READY && $trackingNumber !== null;
+        $updates = $this->trackingUpdatesForTransition(
+            $return,
+            ['carrier' => 'collection_carrier_id', 'tracking' => 'collection_tracking_number'],
+            $context,
+        );
 
-        // 송장이 전이를 끌고 가는 경우도 전이다 — 직접 전이와 같은 before·filter 훅을 쓰기 전에 낸다.
-        $transitionContext = $startsCollecting
-            ? $this->beforeStatusChange($return, ReturnStatusEnum::COLLECTING, ['processed_by' => $processedBy])
-            : [];
-
-        // 송장 저장과 회수중 전환은 한 묶음이다 — 따로 두면 전환이 실패했을 때 "송장은 있는데
-        // 회수준비중" 이 남는다. 훅은 커밋 뒤에 발화한다.
-        $updated = DB::transaction(function () use ($return, $carrierId, $trackingNumber, $processedBy, $startsCollecting, $transitionContext) {
-            $tracked = $this->returnRepository->update($return, [
-                'collection_carrier_id' => $carrierId,
-                'collection_tracking_number' => $trackingNumber,
-                'processed_by' => $processedBy ?? $return->processed_by,
-            ]);
-
-            return $startsCollecting
-                ? $this->applyTransition($tracked, ReturnStatusEnum::COLLECTING, $transitionContext)
-                : $tracked;
-        });
-
-        if ($startsCollecting) {
-            $this->fireStatusHooks($updated, $previous, ReturnStatusEnum::COLLECTING);
+        if ($updates !== []) {
+            $this->returnRepository->update($return, $updates);
         }
-
-        return $updated;
     }
 
     /**
@@ -1104,8 +1186,7 @@ class OrderReturnService
 
             $targets = array_values(array_filter(
                 $this->resolveItems($return, $itemIds),
-                fn (OrderReturnOption $item) => $item->option_status->canTransitionTo(ReturnStatusEnum::COMPLETED)
-                    && ! $item->option_status->isFinal(),
+                fn (OrderReturnOption $item) => $this->isCompletableItem($item),
             ));
 
             if ($targets === []) {
@@ -1113,8 +1194,12 @@ class OrderReturnService
             }
 
             $restoredAny = false;
+            // 회수중인 상품의 완료(선환불)는 회수도착을 건너뛴다 — 도착 기록을 완료 시각으로 남긴다.
+            $skippedArrival = false;
 
             foreach ($targets as $item) {
+                $skippedArrival = $skippedArrival || $item->option_status === ReturnStatusEnum::COLLECTING;
+
                 $completionChanges[] = [
                     'option_id' => (int) $item->id,
                     'previous' => $item->option_status->value,
@@ -1200,6 +1285,10 @@ class OrderReturnService
 
             if ($refund) {
                 $updates['refund_id'] = $refund->id;
+            }
+
+            if ($skippedArrival && $return->collection_completed_at === null) {
+                $updates['collection_completed_at'] = now();
             }
 
             // 모든 신청 상품이 완료됐을 때만 헤더가 완료된다 — 일부만 완료한 라운드에서
@@ -1312,8 +1401,7 @@ class OrderReturnService
 
         $targets = array_values(array_filter(
             $this->resolveItems($return, $itemIds),
-            fn (OrderReturnOption $item) => $item->option_status->canTransitionTo(ReturnStatusEnum::COMPLETED)
-                && ! $item->option_status->isFinal(),
+            fn (OrderReturnOption $item) => $this->isCompletableItem($item),
         ));
 
         $claimItems = $this->completedClaimItems($return);
@@ -1813,9 +1901,10 @@ class OrderReturnService
      *
      * @param  OrderReturn  $return  반품 신청서
      * @param  int|null  $processedBy  처리 관리자 ID
+     * @param  array  $stampContext  단계 시각 외 부가 컬럼 (상품 칸 반려의 `reject_reason` — 헤더가 반려로 따라갈 때 사유를 지우지 않게)
      * @return void 반환값 없음
      */
-    protected function syncHeaderFromOptions(OrderReturn $return, ?int $processedBy): void
+    protected function syncHeaderFromOptions(OrderReturn $return, ?int $processedBy, array $stampContext = []): void
     {
         $return->loadMissing('returnOptions');
 
@@ -1868,7 +1957,7 @@ class OrderReturnService
                 ['processed_by' => $processedBy, 'source' => 'option_sync'],
             );
 
-            $updates = ['return_status' => $step] + $this->stampFor($step, []);
+            $updates = ['return_status' => $step] + $this->stampFor($step, $stampContext);
 
             if ($processedBy !== null) {
                 $updates['processed_by'] = $processedBy;

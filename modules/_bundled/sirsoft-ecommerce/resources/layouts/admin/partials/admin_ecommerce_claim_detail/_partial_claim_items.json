@@ -362,7 +362,7 @@
                             }
                         },
                         {
-                            "comment": "고른 상태로 신청서 전체를 옮긴다(상품 하나하나는 아래 목록의 일괄 바가 맡는다). 완료는 재고 복구·환불 접수 선택이 딸려 있어 이 경로로 보내지 않고 완료 처리 모달로 안내하며, 반려는 사유가 비면 보내지 않는다.",
+                            "comment": "고른 상태로 신청서 전체를 옮긴다(상품 하나하나는 아래 목록의 일괄 바가 맡는다). 선택지는 심사(결제 요청·승인·보류·반려)뿐이고 눌러도 거절될 값은 서버가 애초에 싣지 않는다 — 회수·발송 단계는 상품 칸, 완료는 아래 [완료 처리] 가 입구다. 반려는 사유가 비면 보내지 않는다.",
                             "id": "cts_003_apply",
                             "type": "basic",
                             "name": "Button",
@@ -444,11 +444,14 @@
                                     "if": "{{(_local.itemTransitionOptions ?? []).length > 0}}",
                                     "actions": [
                                         {
+                                            "comment": "회수중·발송중을 고르면 신청서에 저장된 송장을 미리 채운다 — 「배송 정보」 카드에 먼저 저장해 둔 번호를 다시 치게 하지 않는다. 회수중은 회수 송장, 발송중은 재발송 송장이다.",
                                             "type": "change",
                                             "handler": "setState",
                                             "params": {
                                                 "target": "_local",
-                                                "itemBulkStatus": "{{$event.target.value}}"
+                                                "itemBulkStatus": "{{$event.target.value}}",
+                                                "itemCarrierId": "{{$event.target.value === 'redelivering' ? (claim?.data?.claim?.redelivery_carrier_id ?? '') : (claim?.data?.claim?.collection_carrier_id ?? '')}}",
+                                                "itemTrackingNumber": "{{$event.target.value === 'redelivering' ? (claim?.data?.claim?.redelivery_tracking_number ?? '') : (claim?.data?.claim?.collection_tracking_number ?? '')}}"
                                             }
                                         }
                                     ],
@@ -470,6 +473,86 @@
                                         "className": "text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.claim.detail.items.no_common_transition"
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "반려 사유 (#599 후속 운영 결정). 상품 칸의 반려도 사유가 정본이다 — 상품을 모두 반려하면 신청서가 따라 반려되는데, 사유 없이 보내면 구매자 화면의 반려 사유가 빈 칸으로 남는다. 반려를 고른 순간에만 연다(위 신청서 칸과 같은 규칙).",
+                            "id": "ci_005_reject_reason",
+                            "type": "basic",
+                            "name": "Input",
+                            "if": "{{(_local.itemBulkStatus ?? '') === 'rejected'}}",
+                            "actions": [
+                                {
+                                    "type": "change",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "itemRejectReason": "{{$event.target.value}}"
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "type": "text",
+                                "name": "itemRejectReason",
+                                "className": "flex-1 min-w-[16rem] px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg",
+                                "placeholder": "$t:sirsoft-ecommerce.admin.claim.detail.transition.reject_reason_placeholder",
+                                "value": "{{_local.itemRejectReason ?? ''}}"
+                            }
+                        },
+                        {
+                            "comment": "회수중·발송중 송장 (#599 후속 운영 결정). 그 두 상태는 택배가 물건을 싣고 가는 중이라는 사실이라 송장 없이 들어가면 고객 알림의 운송장 칸이 비어서 나간다 — 서버도 422 로 막는다. 송장은 신청서 한 칸에 남는다(회수중은 회수 송장, 발송중은 재발송 송장). 선택지는 상세 응답이 나른다 — 배송사 엔드포인트는 `settings.read` 게이트다.",
+                            "id": "ci_006_tracking_row",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{['collecting', 'redelivering'].includes(_local.itemBulkStatus ?? '')}}",
+                            "props": {
+                                "className": "flex-center flex-wrap gap-2"
+                            },
+                            "children": [
+                                {
+                                    "id": "ci_007_carrier",
+                                    "type": "basic",
+                                    "name": "Select",
+                                    "actions": [
+                                        {
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "_local",
+                                                "itemCarrierId": "{{$event.target.value}}"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "name": "itemCarrierId",
+                                        "className": "w-36 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg",
+                                        "value": "{{_local.itemCarrierId ?? ''}}",
+                                        "options": "{{[{ value: '', label: $t('sirsoft-ecommerce.admin.claim.detail.shipping.carrier_placeholder'), disabled: true }].concat(claim?.data?.carriers ?? [])}}"
+                                    }
+                                },
+                                {
+                                    "id": "ci_008_tracking_number",
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "actions": [
+                                        {
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "_local",
+                                                "itemTrackingNumber": "{{$event.target.value}}"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "text",
+                                        "name": "itemTrackingNumber",
+                                        "maxLength": 50,
+                                        "className": "w-48 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg",
+                                        "placeholder": "$t:sirsoft-ecommerce.admin.claim.detail.shipping.tracking_placeholder",
+                                        "value": "{{_local.itemTrackingNumber ?? ''}}"
+                                    }
                                 }
                             ]
                         },
@@ -504,6 +587,10 @@
                                         "requesterName": "{{claim?.data?.claim?.requester_name ?? ''}}",
                                         "itemIds": "{{_local.selectedClaimItems ?? []}}",
                                         "status": "{{_local.itemBulkStatus ?? ''}}",
+                                        "rejectReason": "{{_local.itemRejectReason ?? ''}}",
+                                        "carrierId": "{{_local.itemCarrierId ?? ''}}",
+                                        "trackingNumber": "{{_local.itemTrackingNumber ?? ''}}",
+                                        "carriers": "{{claim?.data?.carriers ?? []}}",
                                         "rows": "{{claim?.data?.claim?.items ?? []}}",
                                         "completeDefaults": "{{claim?.data?.complete_defaults ?? {} }}"
                                     },
@@ -724,7 +811,7 @@
             ]
         },
         {
-            "comment": "완료 처리 카드 (D26). 교환·반품만이다 — 환불의 완료는 환불 실행(S9b)이 옮기는 상태라 관리자가 직접 지정하는 축이 아니다. 이미 종결된 신청서에는 그리지 않는다.",
+            "comment": "완료 처리 카드 (D26). 교환·반품만이다 — 환불의 완료는 환불 실행(S9b)이 옮기는 상태라 관리자가 직접 지정하는 축이 아니다. 이미 종결된 신청서에는 그리지 않는다. 버튼·건수는 서버가 센 **지금 완료할 수 있는 상품 수**(`completable_item_count`)를 읽는다 — 예전에는 전체 상품 수를 적고 버튼을 늘 켜 두어, 회수도착 전에 누르면 모달까지 열린 뒤 거절됐다(#599 후속).",
             "id": "claim_completion_card",
             "type": "basic",
             "name": "Div",
@@ -756,10 +843,22 @@
                                     "id": "cmpl_001_description",
                                     "type": "basic",
                                     "name": "P",
+                                    "if": "{{(claim?.data?.completable_item_count ?? 0) > 0}}",
                                     "props": {
                                         "className": "text-sm text-secondary mt-1"
                                     },
-                                    "text": "$t:sirsoft-ecommerce.admin.claim.detail.completion.description|count={{(claim?.data?.claim?.items ?? []).length}}"
+                                    "text": "$t:sirsoft-ecommerce.admin.claim.detail.completion.description|count={{claim?.data?.completable_item_count ?? 0}}"
+                                },
+                                {
+                                    "comment": "완료할 상품이 없을 때는 언제 완료할 수 있는지를 적는다 — 꺼진 버튼만 두면 운영자는 권한 문제로 읽는다.",
+                                    "id": "cmpl_003_unavailable",
+                                    "type": "basic",
+                                    "name": "P",
+                                    "if": "{{(claim?.data?.completable_item_count ?? 0) === 0}}",
+                                    "props": {
+                                        "className": "text-sm text-secondary mt-1"
+                                    },
+                                    "text": "{{(claim?.data?.claim?.claim_type ?? '') === 'exchange' ? $t('sirsoft-ecommerce.admin.claim.detail.completion.unavailable_exchange') : $t('sirsoft-ecommerce.admin.claim.detail.completion.unavailable_return')}}"
                                 }
                             ]
                         },
@@ -786,7 +885,7 @@
                             "props": {
                                 "type": "button",
                                 "className": "px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
-                                "disabled": "{{claim?.data?.abilities?.can_update_status !== true}}"
+                                "disabled": "{{claim?.data?.abilities?.can_update_status !== true || (claim?.data?.completable_item_count ?? 0) === 0}}"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.claim.detail.completion.action"
                         }

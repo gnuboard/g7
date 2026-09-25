@@ -76,6 +76,11 @@ effects:
   - claim_payment_on_hold_approval_keeps_the_claim_in_place   # 보류에서 누른 승인은 결제행만 만들고 신청서를 제자리에 둔다 (S3-D7)
   - claim_payment_completion_hook_sees_the_claim_already_paid
   - claim_payment_completion_fires_the_claim_type_specific_hook
+  # 결제 어휘 (ClaimEnumsTest) — 어느 유형·청구 방식이 결제 행을 만들고 어느 상태가 환급 대상인가
+  - claim_type_payable_is_exchange_and_return_only
+  - claim_charge_method_deduct_from_refund_creates_no_payment
+  - claim_payment_status_refundable_only_when_paid
+  - claim_payment_status_final_states_are_cancelled_and_refunded
 
 sub_flows:
   - id: refund_and_cancel
@@ -104,6 +109,7 @@ sub_flows:
 
 test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/ClaimPaymentServiceTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Enums/ClaimEnumsTest.php
 
 notes: |
   **없던 칸은 하나였다** — 승인 시점 청구를 카드로 결제해 PG 승인까지 가는 경로다. 착수 시점

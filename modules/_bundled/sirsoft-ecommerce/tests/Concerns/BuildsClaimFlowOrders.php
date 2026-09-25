@@ -30,6 +30,7 @@ use Modules\Sirsoft\Ecommerce\Services\OrderExchangeService;
 trait BuildsClaimFlowOrders
 {
     use BuildsClaimAdjustmentOrders;
+    use ProvidesClaimTracking;
 
     /**
      * 교환·반품·환불 사유 카탈로그를 시드합니다.
@@ -376,7 +377,7 @@ trait BuildsClaimFlowOrders
             ExchangeStatusEnum::REDELIVERING,
             ExchangeStatusEnum::REDELIVERED,
         ] as $step) {
-            $exchange = $service->transition($exchange, $step);
+            $exchange = $service->transition($exchange, $step, $this->claimTrackingFor($step));
         }
 
         return [$order->fresh(['options', 'shippings', 'payments']), $exchange->fresh(['exchangeOptions'])];

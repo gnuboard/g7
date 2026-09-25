@@ -27,6 +27,10 @@
 - 주문 취소 접수 안내·적립 마일리지 표기·알 수 없는 설정 키 거절 문구의 일본어 번역을 추가했습니다.
 - 활동 로그에서 이름을 찾지 못한 항목의 ID 표기 문구를 추가했습니다.
 - 가려진 계좌 정보가 섞인 환불 계좌를 다시 입력하도록 하는 안내 문구의 일본어 번역을 추가했습니다.
+- 클레임 상세의 완료 불가 안내 2건(`admin.claim.detail.completion.unavailable_return`·`unavailable_exchange`), 반려 사유 필수
+  안내(`claims.reject_reason.required`), 회수중·발송중 송장 필수 안내 4건(`claim_tracking_required`·
+  `claims.tracking.carrier_id_required`·`tracking_number_required`·`per_claim_required`)의 일본어 번역을 추가했습니다.
+  「반려」는 기존 화면 문구와 같이 「却下」로 옮깁니다.
 
 ### Changed
 
@@ -51,6 +55,8 @@
 
 - ko 원본에서 지운 관리자 화면 문구의 **일본어 번역이 남아 있던 것**(마일리지 설정·마일리지 내역·상품·환경설정, 12건)과 쓰이지 않는 클레임 상세 문구 1건을 정리했습니다. 화면에는 쓰이지 않던 문구입니다.
 - 쓰이지 않게 된 환불수단 불일치 안내 문구를 지웠습니다.
+- 관리자 클레임 상세의 「완료 처리는 완료 모달에서 진행해주세요」 안내(`admin.claim.detail.transition.use_complete_modal`)
+  일본어 번역을 지웠습니다. 신청서 상태 변경 칸에 「완료」가 더 이상 서지 않아 그 안내가 뜰 자리가 없어졌습니다.
 
 ## [1.1.5] - 2026-09-16
 

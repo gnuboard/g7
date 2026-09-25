@@ -41,6 +41,11 @@ class ClaimTransitionVocabulary
     protected const APPROVED = 'approved';
 
     /**
+     * 신청서 단위 칸의 심사 어휘 — 결제 요청·승인·보류·반려.
+     */
+    protected const REVIEW_VALUES = ['payment_pending', 'approved', 'on_hold', 'rejected'];
+
+    /**
      * 현재 상태에서 제시할 전이 선택지를 만듭니다.
      *
      * @param  BackedEnum|null  $current  현재 상태 (전이표를 가진 상태 Enum)
@@ -85,6 +90,29 @@ class ClaimTransitionVocabulary
         }
 
         return $options;
+    }
+
+    /**
+     * 신청서 단위 칸(상세 「신청서 상태 변경」)에 제시할 **심사** 선택지를 만듭니다.
+     *
+     * 신청서 칸은 신청 내용을 읽은 자리에서 내리는 결정(승인·보류·반려·결제 요청)만 맡는다.
+     * 회수·발송 단계는 상품이 실제로 움직이는 사실이라 상품 칸이 정본이고(헤더는 상품이 한
+     * 상태로 모이면 따라간다), 완료는 재고 복구·환불신청서 선택이 딸려 [완료 처리] 가 유일한
+     * 입구다. 예전에는 이 둘까지 신청서 칸에 서서, 회수도착 반품에서 「반품완료」 를 고르면
+     * 안내 토스트만 뜨고 아무 일도 일어나지 않았다(#599 후속).
+     *
+     * 지금 상태에서 갈 수 있는지(`optionsFrom()`)까지만 판정한다 — 돈·상품 행에 걸린 게이트는
+     * 신청서 인스턴스가 있어야 알 수 있으므로 `AdminClaimService::transitionOptionsFor()` 가 거른다.
+     *
+     * @param  BackedEnum|null  $current  현재 상태
+     * @return array<int, array{value: string, label: string}> 심사 선택지
+     */
+    public static function reviewOptionsFrom(?BackedEnum $current): array
+    {
+        return array_values(array_filter(
+            self::optionsFrom($current),
+            fn (array $option) => in_array($option['value'], self::REVIEW_VALUES, true),
+        ));
     }
 
     /**

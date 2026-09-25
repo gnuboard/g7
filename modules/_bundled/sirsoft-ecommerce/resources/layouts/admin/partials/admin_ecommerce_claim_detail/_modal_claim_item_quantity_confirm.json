@@ -102,6 +102,50 @@
                     ]
                 },
                 {
+                    "comment": "회수중·발송중이면 실릴 송장을 한 번 더 보여 준다 — 고객 알림과 배송 조회에 그대로 나가는 값이다.",
+                    "id": "ciq_006_tracking",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{!!_global.claimItemQuantityContext?.trackingNumber}}",
+                    "props": {
+                        "className": "flex-center flex-wrap gap-3 text-sm p-3 bg-gray-50 dark:bg-gray-800 rounded-lg"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "text-gray-500 dark:text-gray-400"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.claim.detail.shipping.carrier_placeholder"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "font-semibold text-gray-900 dark:text-gray-100"
+                            },
+                            "text": "{{_global.claimItemQuantityContext?.carrierLabel ?? ''}}"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "text-gray-500 dark:text-gray-400"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.claim.detail.shipping.tracking_placeholder"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "font-semibold text-gray-900 dark:text-gray-100 break-all"
+                            },
+                            "text": "{{_global.claimItemQuantityContext?.trackingNumber ?? ''}}"
+                        }
+                    ]
+                },
+                {
                     "comment": "잠긴 행이 하나라도 있으면 이유를 적는다 — 비활성 입력만 두면 운영자는 화면이 고장 난 줄 안다.",
                     "id": "ciq_003_not_splittable_hint",
                     "type": "basic",
@@ -153,6 +197,9 @@
                                         "itemIds": "{{_global.claimItemQuantityContext?.itemIds ?? []}}",
                                         "itemQuantities": "{{_global.claimItemQuantityContext?.quantities ?? {} }}",
                                         "status": "{{_global.claimItemQuantityContext?.status ?? ''}}",
+                                        "rejectReason": "{{_global.claimItemQuantityContext?.rejectReason ?? ''}}",
+                                        "carrierId": "{{_global.claimItemQuantityContext?.carrierId ?? ''}}",
+                                        "trackingNumber": "{{_global.claimItemQuantityContext?.trackingNumber ?? ''}}",
                                         "rows": "{{_global.claimItemQuantityContext?.detailRows ?? []}}",
                                         "completeDefaults": "{{_global.claimItemQuantityContext?.completeDefaults ?? {} }}"
                                     },
