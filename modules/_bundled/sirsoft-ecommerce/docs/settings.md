@@ -80,7 +80,7 @@ _`getSettingsSchema()` 선언이 없습니다._
 처리는 `OrderPrivacyRetentionService` 가 합니다. 대상 건수는 `GET …/admin/settings/privacy-retention-preview`
 (저장된 설정 기준, **꺼져 있어도 센다** — 꺼짐은 `enabled` 로 구분)가 커맨드의 `--dry-run` 과 같은 조건식으로 셉니다.
 건수 옆 「대상 주문 보기」는 코어 공통 대상 명단 API(`GET /api/admin/privacy/retention-targets/sirsoft-ecommerce.order`)를
-무한 스크롤 모달로 엽니다 — 행은 주문번호·주문자·주문 상태·종결일이고 주문 상세로 새 탭을 엽니다(휴지통 주문은 관리자 상세가 없어 링크 없이 주문번호만 — 대상에는 든다). 권한은 적용 범위가 전체여야 합니다(범위를 좁혀 위임받은 관리자는 건수만 봅니다). 명단은 주문자 이름이
+무한 스크롤 모달로 엽니다(대상이 0건이어도 버튼은 보이고, 창은 빈 명단을 안내합니다) — 행은 주문번호·주문자·주문 상태·종결일이고 주문 상세로 새 탭을 엽니다(휴지통 주문은 관리자 상세가 없어 링크 없이 주문번호만 — 대상에는 든다). 권한은 적용 범위가 전체여야 합니다(범위를 좁혀 위임받은 관리자는 건수만 봅니다). 명단은 주문자 이름이
 그대로 나오므로 `sirsoft-ecommerce.settings.read` + `sirsoft-ecommerce.orders.read` 가 모두 있어야 보입니다.
 핸들러 계약 전체는 코어 [개인정보 보유기간 처리 가이드](../../../../docs/backend/privacy-retention.md)에 있습니다.
 

@@ -416,7 +416,7 @@
                     ]
                 },
                 {
-                    "comment": "두 축의 대상 건수 — 꺼져 있어도 보인다(켜기 전에 규모를 본다, #636). 기간 칸은 켰을 때만 보이므로 건수를 그 안에 두지 않는다.\n        옆 버튼은 대상 창을 여는데, 게시판 관리 읽기 권한이 있고 대상이 있을 때만 그린다. 비회원 기간 0(미적용)이면 비회원 건수는 0 이다.",
+                    "comment": "두 축의 대상 건수 — 꺼져 있어도 보인다(켜기 전에 규모를 본다, #636). 기간 칸은 켰을 때만 보이므로 건수를 그 안에 두지 않는다.\n        옆 버튼은 대상 창을 여는데, 게시판 관리 읽기 권한이 있으면 대상이 0건이어도 그린다(빈 명단은 창이 안내한다). 비회원 기간 0(미적용)이면 비회원 건수는 0 이다.",
                     "id": "privacy_retention_targets",
                     "type": "basic",
                     "name": "Div",
@@ -437,7 +437,7 @@
                             "id": "view_ip_targets",
                             "type": "basic",
                             "name": "Button",
-                            "if": "{{boardPrivacyRetentionPreview?.data?.can_view_targets && (boardPrivacyRetentionPreview?.data?.ip ?? 0) > 0}}",
+                            "if": "{{boardPrivacyRetentionPreview?.data?.can_view_targets}}",
                             "actions": [
                                 {
                                     "type": "click",
@@ -488,7 +488,7 @@
                             "id": "view_guest_targets",
                             "type": "basic",
                             "name": "Button",
-                            "if": "{{boardPrivacyRetentionPreview?.data?.can_view_targets && (boardPrivacyRetentionPreview?.data?.guest ?? 0) > 0}}",
+                            "if": "{{boardPrivacyRetentionPreview?.data?.can_view_targets}}",
                             "actions": [
                                 {
                                     "type": "click",

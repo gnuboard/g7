@@ -209,13 +209,14 @@ describe('개인정보 조치 대상 — 건수 상시 노출 + 대상 목록 �
      *
      * @effects annual_notice_targets_match_the_dispatch_decision
      */
-    it('「대상 보기」 버튼이 있고, 모두 권한·건수로 게이트되며 기능 토글 안에 갇히지 않는다', () => {
+    it('「대상 보기」 버튼이 있고, 권한으로만 게이트되며(0건이어도 보인다) 기능 토글 안에 갇히지 않는다', () => {
         // 모집단은 레이아웃에서 파생한다 — 버튼이 하나도 없으면 이 단언 자체가 공허해진다.
         expect(viewButtons.length).toBe(1);
 
         for (const [button, ancestors] of viewButtons) {
             expect(button.if, button.id).toContain('can_view_targets');
-            expect(button.if, button.id).toMatch(/> 0/);
+            // 대상이 0건이어도 버튼은 보인다 — 0건인 까닭을 창에서 확인할 수 있어야 한다.
+            expect(button.if, button.id).not.toMatch(/> 0/);
             // 켜기 전에 규모와 명단을 보는 자리다 — 조상에 기능 켜짐 조건이 걸리면 꺼진 상태에서 사라진다.
             for (const ancestor of ancestors) {
                 expect(String(ancestor.if ?? ''), `${button.id} 조상 ${ancestor.id ?? ancestor.name}`).not.toMatch(/enabled/);

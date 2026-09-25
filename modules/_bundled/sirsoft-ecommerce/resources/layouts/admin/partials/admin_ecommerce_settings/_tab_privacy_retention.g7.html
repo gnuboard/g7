@@ -2,7 +2,7 @@
   켜는 순간부터 되돌릴 수 없는 처리가 매일 돌므로 법령 안내(전자상거래법 5년 보존)와 처리방침 사전 안내 의무를 맨 위에 두고, 두 방식이 각각 무엇을 잃게 하는지(익명화 — 비회원 주문조회·관리자 이름 검색 / 삭제 — 상품 리뷰·결제 영수증 조회·쿠폰·마일리지 주문 연결)를 방식별로 적는다.
   세 칸 모두 `name` 바인딩만 쓴다(코어 개인정보 탭과 같은 패턴) — 토글에만 명시 set-state 를 섞으면 방식 라디오의 이름 바인딩이 카테고리를 옛 값으로 되써 토글이 꺼진다(게시판 E2E 실측).
   대상 건수는 저장된 설정 기준(코어 보유기간 커맨드의 dry-run 과 같은 조건식)이고 **꺼져 있어도** 보인다(켜기 전에 규모를 본다 — #636).
-  건수 옆 버튼은 대상 주문 창을 여는데, 주문 읽기 권한이 있고 대상이 있을 때만 그린다. -->
+  건수 옆 버튼은 대상 주문 창을 여는데, 주문 읽기 권한이 있으면 대상이 0건이어도 그린다(빈 명단은 창이 안내한다). -->
 <partial description="쇼핑몰 설정 개인정보 보유기간 탭 콘텐츠">
   <div data-ref="tab_content_privacy_retention" data-if="{{(_global.activeEcommerceSettingsTab || query.tab || 'basic_info') === 'privacy_retention'}}" class="card-stack">
     <div data-ref="privacy_retention_notice" class="alert-info">
@@ -23,7 +23,7 @@
             <div class="flex-wrap-center gap-2">
               <span class="text-heading">$t:sirsoft-ecommerce.admin.settings.privacy_retention.enabled</span>
               <span data-if="{{ecommercePrivacyRetentionPreview?.data?.orders !== null &amp;&amp; ecommercePrivacyRetentionPreview?.data?.orders !== undefined}}" class="badge badge-yellow">$t:sirsoft-ecommerce.admin.settings.privacy_retention.target_count|count={{ecommercePrivacyRetentionPreview?.data?.orders ?? 0}}</span>
-              <button data-ref="view_privacy_retention_targets" data-if="{{ecommercePrivacyRetentionPreview?.data?.can_view_targets &amp;&amp; (ecommercePrivacyRetentionPreview?.data?.orders ?? 0) > 0}}" type="button" class="btn btn-sm btn-outline">
+              <button data-ref="view_privacy_retention_targets" data-if="{{ecommercePrivacyRetentionPreview?.data?.can_view_targets}}" type="button" class="btn btn-sm btn-outline">
                 <on type="click">
                   <sequence>
                     <set-state target="global" privacyTargets="{{({ path: 'retention-targets/sirsoft-ecommerce.order', currentPage: 1, hasMore: true, isLoadingMore: false })}}"/>

@@ -5,7 +5,7 @@
   없어 설정이 먹히지 않는 것처럼 읽힌다(보안 탭의 적용 범위 칸과 같은 결).
   저장값이 boolean 이 아닐 수 있어(미저장이면 null) 조건은 느슨하게 참 판정한다.
   대상 건수는 **기능이 꺼져 있어도** 보인다(켜기 전에 규모와 명단을 확인하는 자리). 건수 옆 버튼은
-  명단 창(`_modal_privacy_targets`)을 여는데, 명단을 볼 권한(설정 읽기 + 회원 읽기)이 있고 대상이 있을 때만 그린다. -->
+  명단 창(`_modal_privacy_targets`)을 여는데, 명단을 볼 권한(설정 읽기 + 회원 읽기)이 있으면 대상이 0명이어도 그린다 — 0명인 까닭을 창에서 확인할 수 있어야 한다. -->
 <partial description="환경설정 개인정보 탭 콘텐츠">
   <div data-ref="tab_content_privacy" data-if="{{(_global.activeSettingsTab || query.tab) === 'privacy'}}" class="card-stack">
     <div data-ref="card_privacy_notice" class="alert-info">
@@ -27,7 +27,7 @@
             <div class="flex-wrap-center gap-2">
               <span class="text-heading">$t:admin.settings.privacy.withdrawn.enabled</span>
               <span data-if="{{privacyPreview?.data?.retention?.['user-withdrawn']?.count !== null &amp;&amp; privacyPreview?.data?.retention?.['user-withdrawn']?.count !== undefined}}" class="badge badge-yellow">$t:admin.settings.privacy.target_count|count={{privacyPreview?.data?.retention?.['user-withdrawn']?.count ?? 0}}</span>
-              <button data-ref="view_withdrawn_targets" data-if="{{privacyPreview?.data?.retention?.['user-withdrawn']?.can_view_targets &amp;&amp; (privacyPreview?.data?.retention?.['user-withdrawn']?.count ?? 0) > 0}}" type="button" class="btn btn-sm btn-outline">
+              <button data-ref="view_withdrawn_targets" data-if="{{privacyPreview?.data?.retention?.['user-withdrawn']?.can_view_targets}}" type="button" class="btn btn-sm btn-outline">
               <on type="click">
                 <sequence>
                   <set-state target="global" privacyTargets="{{({ path: 'retention-targets/user-withdrawn', currentPage: 1, hasMore: true, isLoadingMore: false })}}"/>
@@ -62,7 +62,7 @@
             <div class="flex-wrap-center gap-2">
               <span class="text-heading">$t:admin.settings.privacy.dormant.enabled</span>
               <span data-if="{{privacyPreview?.data?.dormant}}" class="badge badge-yellow">$t:admin.settings.privacy.dormant.stage_counts|notice={{privacyPreview?.data?.dormant?.pre_notice ?? 0}}|convert={{privacyPreview?.data?.dormant?.convert ?? 0}}</span>
-              <button data-ref="view_pre_notice_targets" data-if="{{privacyPreview?.data?.dormant?.can_view_targets &amp;&amp; (privacyPreview?.data?.dormant?.pre_notice ?? 0) > 0}}" type="button" class="btn btn-sm btn-outline">
+              <button data-ref="view_pre_notice_targets" data-if="{{privacyPreview?.data?.dormant?.can_view_targets}}" type="button" class="btn btn-sm btn-outline">
               <on type="click">
                 <sequence>
                   <set-state target="global" privacyTargets="{{({ path: 'dormant-targets/pre_notice', currentPage: 1, hasMore: true, isLoadingMore: false })}}"/>
@@ -73,7 +73,7 @@
               </on>
                 $t:admin.settings.privacy.targets.view_pre_notice
               </button>
-              <button data-ref="view_convert_targets" data-if="{{privacyPreview?.data?.dormant?.can_view_targets &amp;&amp; (privacyPreview?.data?.dormant?.convert ?? 0) > 0}}" type="button" class="btn btn-sm btn-outline">
+              <button data-ref="view_convert_targets" data-if="{{privacyPreview?.data?.dormant?.can_view_targets}}" type="button" class="btn btn-sm btn-outline">
               <on type="click">
                 <sequence>
                   <set-state target="global" privacyTargets="{{({ path: 'dormant-targets/convert', currentPage: 1, hasMore: true, isLoadingMore: false })}}"/>
@@ -92,7 +92,7 @@
         </div>
         <div data-ref="dormant_withdraw_targets" data-if="{{privacyPreview?.data?.dormant}}" class="flex-wrap-center gap-2">
           <span class="badge badge-red">$t:admin.settings.privacy.dormant.withdraw_stage_counts|notice={{privacyPreview?.data?.dormant?.withdraw_notice ?? 0}}|withdraw={{privacyPreview?.data?.dormant?.withdraw ?? 0}}</span>
-          <button data-ref="view_withdraw_notice_targets" data-if="{{privacyPreview?.data?.dormant?.can_view_targets &amp;&amp; (privacyPreview?.data?.dormant?.withdraw_notice ?? 0) > 0}}" type="button" class="btn btn-sm btn-outline">
+          <button data-ref="view_withdraw_notice_targets" data-if="{{privacyPreview?.data?.dormant?.can_view_targets}}" type="button" class="btn btn-sm btn-outline">
             <on type="click">
                 <sequence>
                   <set-state target="global" privacyTargets="{{({ path: 'dormant-targets/withdraw_notice', currentPage: 1, hasMore: true, isLoadingMore: false })}}"/>
@@ -103,7 +103,7 @@
               </on>
             $t:admin.settings.privacy.targets.view_withdraw_notice
           </button>
-          <button data-ref="view_withdraw_targets" data-if="{{privacyPreview?.data?.dormant?.can_view_targets &amp;&amp; (privacyPreview?.data?.dormant?.withdraw ?? 0) > 0}}" type="button" class="btn btn-sm btn-outline">
+          <button data-ref="view_withdraw_targets" data-if="{{privacyPreview?.data?.dormant?.can_view_targets}}" type="button" class="btn btn-sm btn-outline">
             <on type="click">
                 <sequence>
                   <set-state target="global" privacyTargets="{{({ path: 'dormant-targets/withdraw', currentPage: 1, hasMore: true, isLoadingMore: false })}}"/>

@@ -292,7 +292,12 @@ test('화면에서 기간을 바꿔 저장하면 새로고침 없이 뱃지가 �
     expect(convert).toBe(0);
 
     await expect(dormantBadge).toContainText(new RegExp(`전환 대상 ${convert}명|${convert} to convert`), { timeout: 20_000 });
-    await expect(convertButton).toHaveCount(0);
+    // 0명이어도 「대상 보기」는 남고, 창은 빈 명단 안내를 보인다 — 0명인 까닭을 창에서 확인한다.
+    await expect(convertButton).toBeVisible();
+    await convertButton.click();
+    await expect(page.locator('#privacy_targets_empty')).toBeVisible({ timeout: 20_000 });
+    await expect(page.locator('#privacy_targets_list tbody tr')).toHaveCount(0);
+    await page.locator('#privacy_targets_footer button').click();
   } finally {
     seedDormant('--purge-users');
   }

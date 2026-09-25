@@ -20,6 +20,9 @@ use Illuminate\Support\Str;
  *   - `pre_notice` : 사전 안내 대상 (활성 · 전환 임박 · 미통지)
  *   - `convertible`: 전환 대상 (활성 · 안내 완료 · 통지 기간 경과)
  *   - `dormant`    : 이미 휴면 (해제 축 실측용)
+ *   - `withdraw_notice`: 탈퇴 예고 대상 (휴면 · 탈퇴 예정일 임박 · 미통지)
+ *   - `withdraw`   : 탈퇴 대상 (휴면 · 예고 완료 · 휴면 기간 경과)
+ *   - `withdrawn`  : 탈퇴 회원 잔여정보 파기 대상 (탈퇴 후 보존기간 경과)
  *
  * 보안 가드 (3중, `playwright:seed-two-factor` 와 동형):
  *   ① CLI 한정 — `php_sapi_name() === 'cli'`. production 웹 요청에서 도달 불가
@@ -39,7 +42,7 @@ class PlaywrightSeedDormant extends Command
      * @var string
      */
     protected $signature = 'playwright:seed-dormant
-        {--stage=dormant : 만들 상태 (pre_notice|convertible|dormant)}
+        {--stage=dormant : 만들 상태 (pre_notice|convertible|dormant|withdraw_notice|withdraw|withdrawn)}
         {--password= : 생성 계정의 비밀번호 (기본값 Passw0rd!dorm)}
         {--count=1 : 같은 단계 계정을 몇 개 만들지 (대상 목록 창의 무한 스크롤 실측용, 최대 200)}
         {--purge-users : 이 커맨드가 만든 테스트 계정을 전부 제거 (실측 종료 직후 호출)}';
@@ -53,6 +56,13 @@ class PlaywrightSeedDormant extends Command
 
     /** 테스트 전용 계정 이메일 접두사 — 정리 대상 판정에도 쓴다 */
     private const TEST_EMAIL_PREFIX = 'playwright_dormant_';
+
+    /**
+     * 만들 수 있는 단계 — 개인정보 탭의 「대상 보기」 다섯 개가 각각 한 단계를 연다.
+     *
+     * @var list<string>
+     */
+    public const STAGES = ['pre_notice', 'convertible', 'dormant', 'withdraw_notice', 'withdraw', 'withdrawn'];
 
     /** 기본 비밀번호 */
     private const DEFAULT_PASSWORD = 'Passw0rd!dorm';
@@ -90,8 +100,8 @@ class PlaywrightSeedDormant extends Command
 
         $stage = (string) $this->option('stage');
 
-        if (! in_array($stage, ['pre_notice', 'convertible', 'dormant'], true)) {
-            $this->error("알 수 없는 단계입니다: {$stage} (pre_notice|convertible|dormant)");
+        if (! in_array($stage, self::STAGES, true)) {
+            $this->error("알 수 없는 단계입니다: {$stage} (".implode('|', self::STAGES).')');
 
             return self::FAILURE;
         }
@@ -121,6 +131,8 @@ class PlaywrightSeedDormant extends Command
     {
         $dormantDays = max(1, (int) g7_core_settings('privacy.dormant_days', 730));
         $noticeDays = max(1, (int) g7_core_settings('privacy.dormant_notice_days', 30));
+        $withdrawDays = max(1, (int) g7_core_settings('privacy.dormant_withdraw_days', 365));
+        $withdrawnRetentionDays = max(1, (int) g7_core_settings('privacy.withdrawn_retention_days', 365));
 
         $attributes = [
             'uuid' => Str::orderedUuid()->toString(),
@@ -151,6 +163,26 @@ class PlaywrightSeedDormant extends Command
                 'status' => UserStatus::Dormant->value,
                 'dormant_at' => now()->subDays(1),
                 'dormant_notified_at' => null,
+            ],
+            // 휴면 전환 뒤 탈퇴 예정일이 통지 기간 안으로 들어왔지만 아직 예고를 받지 않은 상태.
+            'withdraw_notice' => [
+                'last_login_at' => now()->subDays($dormantDays + $withdrawDays),
+                'status' => UserStatus::Dormant->value,
+                'dormant_at' => now()->subDays(max(1, $withdrawDays - $noticeDays) + 1),
+                'dormant_notified_at' => null,
+            ],
+            // 탈퇴 예고를 받았고 통지 기간과 휴면 기간이 모두 지난 상태 — 다음 실행에서 탈퇴된다.
+            'withdraw' => [
+                'last_login_at' => now()->subDays($dormantDays + $withdrawDays + 2),
+                'status' => UserStatus::Dormant->value,
+                'dormant_at' => now()->subDays($withdrawDays + 1),
+                'dormant_notified_at' => now()->subDays($noticeDays + 1),
+            ],
+            // 탈퇴 후 보존기간이 지나 잔여 개인정보 파기를 기다리는 상태.
+            'withdrawn' => [
+                'last_login_at' => now()->subDays($withdrawnRetentionDays + 30),
+                'status' => UserStatus::Withdrawn->value,
+                'withdrawn_at' => now()->subDays($withdrawnRetentionDays + 1),
             ],
             default => [],
         });
