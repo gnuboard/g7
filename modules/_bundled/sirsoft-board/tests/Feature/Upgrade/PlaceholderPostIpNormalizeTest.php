@@ -8,6 +8,7 @@ use App\Extension\UpgradeContext;
 use Illuminate\Support\Facades\DB;
 use Modules\Sirsoft\Board\Tests\BoardTestCase;
 use Modules\Sirsoft\Board\Upgrades\Upgrade_1_2_0;
+use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\Test;
 
 /**
@@ -21,10 +22,9 @@ use PHPUnit\Framework\Attributes\Test;
  * - 자리표시값 행은 NULL 이 된다
  * - 실제 IP 행과 이미 NULL 인 행은 그대로다
  * - 재실행해도 결과가 같다 (멱등)
- *
- * @group board
- * @group upgrade
  */
+#[Group('board')]
+#[Group('upgrade')]
 class PlaceholderPostIpNormalizeTest extends BoardTestCase
 {
     /**

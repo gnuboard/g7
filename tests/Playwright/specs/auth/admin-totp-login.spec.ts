@@ -9,7 +9,7 @@
  * 이 spec 은 사이트 설정을 **가역적으로** 바꾼다 — `test.afterAll` 이 원복을 담당한다.
  * 되돌리지 못하면 이후 모든 로그인이 막히므로 반드시 `mode: 'serial'` 로 실행한다.
  *
- * // @scenario provider=totp | enrolled=true,false | code=valid,invalid,backup | mail_fallback=on | locked=true
+ * // @scenario provider=totp, enrolled=true|false, code=valid|invalid|backup, mail_fallback=on, locked=true
  * // @effects admin_totp_challenge_reports_app_provider, unenrolled_admin_falls_back_to_mail, a_used_code_cannot_be_reused_on_a_new_challenge, admin_totp_locked_account_cannot_complete
  */
 import { test, expect, issueToken } from '../../fixtures/auth';
@@ -115,7 +115,7 @@ async function submitAdminLogin(
 /**
  * 등록한 관리자의 로그인이 메일이 아닌 앱 수단으로 분기하고, 화면이 그에 맞게 바뀌는지 본다.
  *
- * @scenario provider=totp | enrolled=true
+ * @scenario provider=totp, enrolled=true
  * @effects admin_totp_challenge_reports_app_provider
  */
 test('등록한 관리자 — 앱 코드 안내로 바뀌고 「다시 받기」가 사라진다', async ({ page }) => {
@@ -141,7 +141,7 @@ test('등록한 관리자 — 앱 코드 안내로 바뀌고 「다시 받기」
 /**
  * 앱이 만든 코드로 관리자 로그인이 끝까지 완료되는지 본다.
  *
- * @scenario provider=totp | enrolled=true | code=valid,invalid
+ * @scenario provider=totp, enrolled=true, code=valid|invalid
  * @effects admin_totp_challenge_reports_app_provider
  */
 test('등록한 관리자 — 앱 코드로 로그인이 완료된다', async ({ page }) => {
@@ -175,7 +175,7 @@ test('등록한 관리자 — 앱 코드로 로그인이 완료된다', async ({
 /**
  * 단말을 잃은 관리자가 백업 코드로 로그인할 수 있는지 본다 — 막히면 계정이 영구히 잠긴다.
  *
- * @scenario provider=totp | enrolled=true | code=backup
+ * @scenario provider=totp, enrolled=true, code=backup
  * @effects a_used_code_cannot_be_reused_on_a_new_challenge
  */
 test('등록한 관리자 — 백업 코드로도 로그인된다', async ({ page }) => {
@@ -201,7 +201,7 @@ test('등록한 관리자 — 백업 코드로도 로그인된다', async ({ pag
 /**
  * 인증 앱을 등록하지 않은 관리자가 메일 폴백으로 로그인할 수 있는지 본다(콜드스타트 락아웃 방지).
  *
- * @scenario provider=mail_fallback | enrolled=false | mail_fallback=on
+ * @scenario provider=mail_fallback, enrolled=false, mail_fallback=on
  * @effects unenrolled_admin_falls_back_to_mail
  */
 test('미등록 관리자 — 메일 폴백으로 넘어가 잠기지 않는다', async ({ page }) => {
@@ -234,7 +234,7 @@ test('미등록 관리자 — 메일 폴백으로 넘어가 잠기지 않는다'
  * 잠금은 계정 상태를 바꾸므로 **이 테스트 전용 계정**을 쓴다 — 형제 테스트가 쓰는
  * 계정을 잠그면 그쪽이 엉뚱한 이유로 실패한다.
  *
- * @scenario provider=totp | enrolled=true | code=valid | locked=true
+ * @scenario provider=totp, enrolled=true, code=valid, locked=true
  * @effects admin_totp_locked_account_cannot_complete
  */
 test('등록한 관리자 — 잠긴 뒤에는 정답 코드로도 못 들어간다', async ({ page }) => {

@@ -11,7 +11,7 @@
  * 이 spec 은 사이트 설정을 건드리지 않는다 — 등록은 로그인한 관리자 본인의 자격증명만
  * 만들므로 2단계 인증 토글이 필요 없다. 만든 계정은 `afterAll` 이 접두사로 한정해 지운다.
  *
- * // @scenario provider=totp | enrolled=false | code=valid
+ * // @scenario provider=totp, enrolled=false, code=valid
  * // @effects backup_codes_are_shown_once_at_enrollment, backup_codes_can_be_taken_in_one_go
  */
 import { test, expect } from '../../fixtures/auth';
@@ -69,6 +69,7 @@ async function loginAsAdmin(page: import('@playwright/test').Page): Promise<void
 async function enrollThroughUi(page: import('@playwright/test').Page): Promise<void> {
   await page.goto(SECURITY_PATH);
 
+  // 레이아웃의 `data-ref` 는 DOM 에 `id` 로 렌더된다 — `[data-ref=…]` 속성으로는 찾을 수 없다.
   // 카드 1(시작 전) → 「등록 시작」 → 카드 2(진행)
   const [startResponse] = await Promise.all([
     page.waitForResponse(
@@ -76,7 +77,7 @@ async function enrollThroughUi(page: import('@playwright/test').Page): Promise<v
         r.url().includes('/api/plugins/sirsoft-totp/enrollment') &&
         r.request().method() === 'POST'
     ),
-    page.locator('[data-ref="totp_security_start"]').click(),
+    page.locator('#totp_security_start').click(),
   ]);
 
   const started = await startResponse.json();
@@ -93,14 +94,14 @@ async function enrollThroughUi(page: import('@playwright/test').Page): Promise<v
         r.url().includes('/api/plugins/sirsoft-totp/enrollment/confirm') &&
         r.request().method() === 'POST'
     ),
-    page.locator('[data-ref="totp_security_confirm"]').click(),
+    page.locator('#totp_security_confirm').click(),
   ]);
 }
 
 /**
  * 등록을 마치면 백업 코드 10개가 뜨고, 한 번에 가져갈 수단이 함께 있는지 본다.
  *
- * @scenario provider=totp | enrolled=false | code=valid
+ * @scenario provider=totp, enrolled=false, code=valid
  * @effects backup_codes_are_shown_once_at_enrollment, backup_codes_can_be_taken_in_one_go
  */
 test('등록을 마치면 백업 코드와 함께 「전체 복사」가 뜬다', async ({ page, context }) => {
@@ -113,10 +114,10 @@ test('등록을 마치면 백업 코드와 함께 「전체 복사」가 뜬다'
   await enrollThroughUi(page);
 
   // 백업 코드 카드가 떴다 — 10개가 모두 보여야 한다.
-  const codes = page.locator('[data-ref^="totp_security_backup_item_"]');
+  const codes = page.locator('[id^="totp_security_backup_item_"]');
   await expect(codes).toHaveCount(10);
 
-  const copyButton = page.locator('[data-ref="totp_security_backup_copy"]');
+  const copyButton = page.locator('#totp_security_backup_copy');
   await expect(copyButton, '백업 코드를 한 번에 가져갈 수단이 없습니다').toBeVisible();
 
   // 화면에 뜬 코드와 클립보드에 담긴 것이 같아야 한다 — 다르면 운영자가 엉뚱한 것을 보관한다.
@@ -140,7 +141,7 @@ test('등록을 마치면 백업 코드와 함께 「전체 복사」가 뜬다'
 /**
  * 백업 코드는 1회 노출이 계약이다 — 화면을 다시 열면 보이지 않아야 한다.
  *
- * @scenario provider=totp | enrolled=true
+ * @scenario provider=totp, enrolled=true
  * @effects backup_codes_are_shown_once_at_enrollment
  */
 test('화면을 다시 열면 백업 코드는 보이지 않는다', async ({ page }) => {
@@ -148,7 +149,7 @@ test('화면을 다시 열면 백업 코드는 보이지 않는다', async ({ pa
   await page.goto(SECURITY_PATH);
 
   // 앞 테스트가 등록을 마쳤으므로 이제 「등록됨」 카드가 떠야 한다.
-  await expect(page.locator('[data-ref="totp_security_enrolled_card"]')).toBeVisible();
-  await expect(page.locator('[data-ref^="totp_security_backup_item_"]')).toHaveCount(0);
-  await expect(page.locator('[data-ref="totp_security_backup_copy"]')).toHaveCount(0);
+  await expect(page.locator('#totp_security_enrolled_card')).toBeVisible();
+  await expect(page.locator('[id^="totp_security_backup_item_"]')).toHaveCount(0);
+  await expect(page.locator('#totp_security_backup_copy')).toHaveCount(0);
 });

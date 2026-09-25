@@ -210,7 +210,8 @@ test('기능이 꺼져 있어도 두 축의 건수가 보이고 「IP 대상 보
     await page.locator('#view_ip_targets').click();
     const rows = page.locator('#privacy_targets_list tbody tr');
     await expect(rows).toHaveCount(Math.min(preview.body.data.ip, 20), { timeout: 20_000 });
-    await expect(rows.first().locator('a').first()).toHaveAttribute('href', /^\/board\//);
+    // 행 링크는 관리자 상세다 — 대상의 휴지통 글은 사용자 화면에서 403 이라 열 수 없다
+    await expect(rows.first().locator('a').first()).toHaveAttribute('href', /^\/admin\/board\/[^/]+\/post\/\d+$/);
 
     await page.locator('#privacy_targets_footer button').click();
     await expect(page.getByRole('dialog')).toHaveCount(0);

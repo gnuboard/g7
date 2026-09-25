@@ -7,13 +7,13 @@
  * 각 조각을 따로 보는 한 드러나지 않는다 — 실제로 렌더해 봐야 안다.
  *
  * 붙는 자리가 «상세»(`/admin/users/:id`)라는 것 자체가 4차 검증이 고친 결함이다. 종전에는
- * «수정»(`/admin/users/:id/edit`)에 붙어 있어, 계획서와 PO 실측 안내를 따라 목록에서 회원을
+ * «수정»(`/admin/users/:id/edit`)에 붙어 있어, 안내된 순서대로 목록에서 회원을
  * 눌러 들어가면 카드가 없었다. 이 spec 은 그 경로를 사람과 같은 순서로 밟는다.
  *
  * 사이트 설정을 건드리지 않는다 — 탭은 로그인한 관리자의 권한과 대상 회원의 등록 여부만
  * 보므로 2단계 인증 토글이 필요 없다. 만든 계정은 `afterAll` 이 접두사로 한정해 지운다.
  *
- * // @scenario provider=totp | enrolled=true | actor=admin
+ * // @scenario provider=totp, enrolled=true, actor=admin
  * // @effects admin_forced_reset_is_written_to_the_activity_log
  */
 import { test, expect } from '../../fixtures/auth';
@@ -113,7 +113,7 @@ async function openTargetMemberDetail(page: import('@playwright/test').Page): Pr
   return uuid;
 }
 
-// @scenario provider=totp | enrolled=true | actor=admin
+// @scenario provider=totp, enrolled=true, actor=admin
 // @effects admin_reset_tab_is_reachable_from_member_detail
 test('회원 상세에 「인증 앱」 탭이 뜨고 눌러서 본문까지 닿는다', async ({ page }) => {
   await loginAsAdmin(page);
@@ -130,7 +130,7 @@ test('회원 상세에 「인증 앱」 탭이 뜨고 눌러서 본문까지 닿
   await expect(page.getByRole('button', { name: /등록 해제/ })).toBeVisible();
 });
 
-// @scenario provider=totp | enrolled=true | actor=admin
+// @scenario provider=totp, enrolled=true, actor=admin
 // @effects admin_reset_tab_is_absent_from_member_edit
 test('수정 화면에는 그 탭이 없다 — 상세로 옮긴 자리가 유지된다', async ({ page }) => {
   await loginAsAdmin(page);
@@ -140,11 +140,11 @@ test('수정 화면에는 그 탭이 없다 — 상세로 옮긴 자리가 유�
   await page.goto(`${detailUrl}/edit`);
   await page.waitForLoadState('networkidle');
 
-  // 종전 위치다. 되돌아가면 PO 안내(목록 → 회원 클릭)와 다시 어긋난다.
+  // 종전 위치다. 되돌아가면 운영 안내(목록 → 회원 클릭)와 다시 어긋난다.
   await expect(page.locator('#ext_totp_security')).toHaveCount(0);
 });
 
-// @scenario provider=totp | enrolled=true | actor=admin
+// @scenario provider=totp, enrolled=true, actor=admin
 // @effects admin_reset_tab_is_hidden_without_the_permission
 test('강제 해제 API 는 관리자 권한 없이는 막힌다', async ({ page }) => {
   // 화면 조건으로 가리지 않는다 — 관리자 셸이 `_global.currentUser` 를 올리지 않아 그 조건은
