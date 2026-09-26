@@ -57,7 +57,7 @@ FULLTEXT 연산자를 제거한 뒤 검색하며, 연산자만 입력한 경우�
 | file | body | file | 예 | — | 업로드 파일 |
 | post_id | body | integer | 아니오 | min 1 | post 식별자 |
 | collection | body | string | 아니오 | max 100 | 첨부 컬렉션 그룹명 (첨부를 용도별로 묶는 키, 미지정 시 default) |
-| temp_key | body | string | 아니오 | max 64 | 게시글 작성 전 임시 업로드 세션 키. `post_id`가 없을 때 이 키로 첨부를 임시 보관했다가 게시글 저장 시점에 연결합니다 (쿼리스트링으로 보내면 body로 병합). |
+| temp_key | body | string | 아니오 | UUID | 게시글 작성 전 임시 업로드 세션 키(화면이 `$uuid()` 로 발급, `post_id` 와 함께 생략하면 서버가 UUID 를 발급). `post_id`가 없을 때 이 키로 첨부를 임시 보관했다가 게시글 저장 시점에 연결합니다 (쿼리스트링으로 보내면 body로 병합). |
 
 > 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`sirsoft-board.attachment.upload_validation_rules`).
 
@@ -86,7 +86,7 @@ Content-Disposition: form-data; name="collection"
 ------G7ExampleBoundary
 Content-Disposition: form-data; name="temp_key"
 
-예시값
+5f0c3a3e-1b2c-4d5e-8f90-a1b2c3d4e5f6
 ------G7ExampleBoundary--
 ```
 

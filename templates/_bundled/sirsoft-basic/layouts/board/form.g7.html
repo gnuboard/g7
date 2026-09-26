@@ -36,7 +36,7 @@
   <permissions/>
   <init>
     <!-- tempKey 생성 -->
-    <set-state target="local" tempKey="{{('temp_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9))}}"/>
+    <set-state target="local" tempKey="{{$uuid()}}"/>
   </init>
   <slot name="content">
     <!-- 비회원 수정 시 비밀번호 확인 모달 -->

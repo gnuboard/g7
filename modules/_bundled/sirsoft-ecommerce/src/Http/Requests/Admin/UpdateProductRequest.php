@@ -21,13 +21,19 @@ class UpdateProductRequest extends StoreProductRequest
         $rules = parent::rules();
 
         // product_code unique 검증에서 현재 상품 제외
-        $productId = $this->route('product')?->id ?? $this->route('product');
-        $rules['product_code'] = [
-            'required',
-            'string',
-            'max:50',
-            Rule::unique(Product::class, 'product_code')->ignore($productId),
-        ];
+        $product = $this->route('product');
+        $productId = $product?->id ?? $product;
+        $rules['product_code'] = ['required', 'string', 'max:50'];
+
+        // 허용 문자 규칙은 코드를 바꿀 때만 적용한다 — 수정 화면은 코드 입력칸이 비활성인 채 폼 전체를 보내므로,
+        // 규칙 이전에 저장된 코드(한글·공백 등)의 상품도 다른 항목은 계속 수정할 수 있어야 한다.
+        // 현재 코드: {product} 경로는 바인딩된 모델, by-code 경로는 {code} 인자 자체
+        $currentCode = $product instanceof Product ? $product->product_code : $this->route('code');
+        if ($this->input('product_code') !== $currentCode) {
+            $rules['product_code'][] = 'regex:'.self::PRODUCT_CODE_PATTERN;
+        }
+
+        $rules['product_code'][] = Rule::unique(Product::class, 'product_code')->ignore($productId);
 
         // 수정 시 필드 일부 optional 처리
         $optionalFields = [

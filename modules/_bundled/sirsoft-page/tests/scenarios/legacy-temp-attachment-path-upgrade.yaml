@@ -1,0 +1,26 @@
+feature: 1.2.0 업그레이드 — 키 없이 올린 예전 첨부의 빈 조각(//) 경로 보정 (KVE-2026-2349 후속)
+
+description: |
+  1.2.0 이전에는 번호·임시 키 없이 올린 첨부가 DB 에 `temp//{파일}` 로 저장됐고, 실제 파일은
+  파일 시스템 정규화로 빈 조각이 빠진 위치에 있었다. 1.2.0 의 저장소 경로 검사는 빈 조각을
+  거부하므로 보정하지 않으면 다운로드·정리가 그 행에서 실패한다.
+
+  계층 결정:
+    - 대상: page_attachments.path 에 '//' 가 든 행만
+    - Flysystem 과 같은 규칙(빈 조각·'.' 제거, 앞뒤 슬래시 제거)으로 합친다 — 합친 경로가 곧 실제 파일
+      위치라 파일은 옮기지 않는다(로컬·원격 디스크 공통)
+    - '..'·역슬래시·인코딩 조각이 남는 행은 이 모듈이 만든 형식이 아니므로 고치지 않고 경고 로그
+  설계 결정(2026-09-26 인터뷰): "업그레이드 스텝으로 보정".
+
+axes:
+  row_state: [legacy_empty_segment, normal_or_foreign]
+
+effects:
+  - legacy_empty_segment_path_collapsed
+  - collapsed_path_readable_through_driver
+  - normal_path_untouched
+  - foreign_segment_row_left_and_logged
+  - collapse_is_idempotent
+
+test_files:
+  - modules/_bundled/sirsoft-page/tests/Feature/Upgrade/LegacyTempAttachmentPathUpgradeTest.php

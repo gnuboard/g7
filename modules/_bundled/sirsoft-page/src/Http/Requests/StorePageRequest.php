@@ -6,6 +6,7 @@ use App\Rules\LocaleRequiredTranslatable;
 use App\Rules\TranslatableField;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Modules\Sirsoft\Page\Http\Requests\Concerns\ValidatesTempKey;
 use Modules\Sirsoft\Page\Models\Page;
 
 /**
@@ -13,6 +14,8 @@ use Modules\Sirsoft\Page\Models\Page;
  */
 class StorePageRequest extends FormRequest
 {
+    use ValidatesTempKey;
+
     /**
      * 권한 체크는 라우트의 permission 미들웨어에서 수행됩니다.
      *
@@ -40,7 +43,7 @@ class StorePageRequest extends FormRequest
             'seo_meta.title' => ['nullable', 'string', 'max:255'],
             'seo_meta.description' => ['nullable', 'string', 'max:500'],
             'seo_meta.keywords' => ['nullable', 'string', 'max:500'],
-            'temp_key' => ['nullable', 'string', 'max:64'],
+            'temp_key' => $this->tempKeyRules(),
         ];
     }
 

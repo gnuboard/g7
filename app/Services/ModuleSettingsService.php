@@ -131,7 +131,7 @@ class ModuleSettingsService
      * 1. 인터페이스 바인딩: Modules\{Vendor}\{Module}\Contracts\{Module}SettingsServiceInterface
      * 2. 구체 클래스: Modules\{Vendor}\{Module}\Services\{Module}SettingsService
      *
-     * @param string $identifier 모듈 식별자 (예: sirsoft-ecommerce)
+     * @param  string  $identifier  모듈 식별자 (예: sirsoft-ecommerce)
      * @return ModuleSettingsInterface|null 설정 서비스 인스턴스
      */
     private function resolveModuleService(string $identifier): ?ModuleSettingsInterface
@@ -152,7 +152,7 @@ class ModuleSettingsService
     /**
      * 모듈별 설정 서비스를 검색합니다.
      *
-     * @param string $identifier 모듈 식별자
+     * @param  string  $identifier  모듈 식별자
      * @return ModuleSettingsInterface|null 설정 서비스 인스턴스
      */
     private function discoverModuleService(string $identifier): ?ModuleSettingsInterface
@@ -343,8 +343,9 @@ class ModuleSettingsService
         if ($moduleInstance) {
             $storage = $moduleInstance->getStorage();
 
-            // 모듈 전체 스토리지 디렉토리 삭제 ({identifier}/)
-            $storage->deleteDirectory('', '');
+            // 설정 카테고리 디렉토리 삭제 ({identifier}/settings) — 확장 루트는 드라이버가
+            // 파괴 작업 대상으로 허용하지 않으므로 카테고리 전체 삭제 API 로만 정리한다
+            $storage->deleteAll('settings');
         }
 
         // 캐시 초기화
@@ -360,6 +361,7 @@ class ModuleSettingsService
      * 설정 캐시를 초기화합니다.
      *
      * @param  string|null  $identifier  특정 모듈만 초기화 (null이면 전체)
+     * @return void
      */
     public function clearCache(?string $identifier = null): void
     {

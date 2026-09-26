@@ -3,12 +3,15 @@
 namespace Modules\Sirsoft\Page\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Modules\Sirsoft\Page\Http\Requests\Concerns\ValidatesTempKey;
 
 /**
  * 페이지 첨부파일 업로드 요청
  */
 class UploadPageAttachmentRequest extends FormRequest
 {
+    use ValidatesTempKey;
+
     /**
      * 허용 형식 폴백 (config/settings/defaults.json 의 attachment.allowed_types 와 동일)
      *
@@ -37,6 +40,8 @@ class UploadPageAttachmentRequest extends FormRequest
 
     /**
      * query string 파라미터를 body로 병합합니다.
+     *
+     * @return void
      */
     protected function prepareForValidation(): void
     {
@@ -77,7 +82,7 @@ class UploadPageAttachmentRequest extends FormRequest
             'file' => $fileRules,
             'page_id' => ['nullable', 'integer', 'min:1'],
             'collection' => ['sometimes', 'string', 'max:100'],
-            'temp_key' => ['nullable', 'string', 'max:64'],
+            'temp_key' => $this->tempKeyRules(),
         ];
     }
 

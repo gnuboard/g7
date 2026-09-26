@@ -3,6 +3,7 @@
 namespace Modules\Sirsoft\Ecommerce\Services;
 
 use App\Contracts\Extension\StorageInterface;
+use App\Exceptions\UnsafeStoragePathException;
 use App\Extension\HookManager;
 use App\Support\ImageResizer;
 use Illuminate\Database\Eloquent\Collection;
@@ -155,6 +156,7 @@ class ProductImageService
      * @param  int|null  $productId  상품 ID
      * @param  string|null  $tempKey  임시 업로드 키
      * @param  string  $collection  컬렉션명
+     * @return void
      *
      * @throws ProductImageUploadLimitException 상한 도달 시
      */
@@ -188,6 +190,13 @@ class ProductImageService
     public function linkTempImages(string $tempKey, int $productId, string $productCode): int
     {
         $tempImages = $this->repository->getByTempKey($tempKey);
+
+        // 연결할 임시 이미지가 없으면 디렉토리 정리도 하지 않는다 — temp_key 는 요청에서 온 값이라
+        // 조회 결과 없이 정리 경로를 만들면 사용자 입력으로 삭제 대상을 고르게 된다 (KVE-2026-2349)
+        if ($tempImages->isEmpty()) {
+            return 0;
+        }
+
         $linkedCount = 0;
 
         // 기존 이미지의 최대 sort_order 조회 (복사 이미지 뒤에 배치)
@@ -454,10 +463,35 @@ class ProductImageService
      * 상품 이미지 폴더 전체를 삭제합니다.
      * 실제 경로: storage/app/modules/sirsoft-ecommerce/images/products/{productCode}/
      *
+     * 상품 코드가 저장소 경로 규칙에 맞지 않으면(허용 문자 규칙 이전에 저장된 코드) 폴더를 지우지 않고
+     * 경고만 남긴 뒤 false 를 돌려준다 — 이미지 폴더 때문에 상품 삭제 자체가 막히지 않게 한다.
+     *
      * @param  int  $productId  상품 ID
      * @return bool 삭제 성공 여부 (대상 디스크 전체 기준)
      */
     public function deleteByProductId(int $productId): bool
+    {
+        try {
+            return $this->deleteProductDirectories($productId);
+        } catch (UnsafeStoragePathException $e) {
+            Log::warning('상품 코드가 저장소 경로 규칙에 맞지 않아 이미지 폴더를 지우지 못했습니다 — 수동 정리가 필요합니다', [
+                'product_id' => $productId,
+                'reason' => $e->getReason(),
+            ]);
+
+            return false;
+        }
+    }
+
+    /**
+     * 상품 이미지 폴더를 행이 실린 디스크별로 삭제합니다.
+     *
+     * @param  int  $productId  상품 ID
+     * @return bool 삭제 성공 여부 (대상 디스크 전체 기준)
+     *
+     * @throws UnsafeStoragePathException 상품 코드가 저장소 경로 규칙에 맞지 않을 때
+     */
+    private function deleteProductDirectories(int $productId): bool
     {
         $product = $this->productRepository->find($productId);
 
@@ -553,6 +587,7 @@ class ProductImageService
      * 빠졌거나 파일 삭제에 실패한 경우 등) 삭제하지 않습니다.
      *
      * @param  Collection  $images  이번 회차에 처리한 이미지 목록
+     * @return void
      */
     private function removeEmptyTempDirectories(Collection $images): void
     {
@@ -597,6 +632,7 @@ class ProductImageService
      * 상품 저장 실패 시 업로드된 이미지들을 정리하기 위해 사용됩니다.
      *
      * @param  array<int>  $imageIds  이미지 ID 배열
+     * @return void
      */
     public function rollbackUploadedImages(array $imageIds): void
     {
@@ -610,6 +646,7 @@ class ProductImageService
      *
      * @param  int  $productId  상품 ID
      * @param  string  $collection  컬렉션명
+     * @return void
      */
     protected function reorderAfterDelete(int $productId, string|ProductImageCollection $collection): void
     {

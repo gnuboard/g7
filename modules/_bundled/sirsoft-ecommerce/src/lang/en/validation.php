@@ -279,6 +279,7 @@ return [
         'product_code' => [
             'required' => 'Please enter the product code.',
             'unique' => 'This product code is already in use.',
+            'regex' => 'The product code may only contain letters, numbers, hyphens (-) and underscores (_).',
         ],
         'list_price' => [
             'required' => 'Please enter the list price.',

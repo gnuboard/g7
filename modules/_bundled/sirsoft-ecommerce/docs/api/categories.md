@@ -187,7 +187,7 @@ HTTP/1.1 200
 | is_active | body | boolean | 아니오 | — | 활성 여부 (true 활성 / false 비활성) |
 | meta_title | body | string | 아니오 | max 200 | SEO 메타 제목 (검색엔진/소셜 공유 표시 제목) |
 | meta_description | body | string | 아니오 | — | SEO 메타 설명 (검색엔진/소셜 공유 표시 요약) |
-| temp_key | body | string | 아니오 | max 64 | 저장 전 임시 업로드한 이미지를 이 카테고리에 연결하기 위한 FileUploader temp_key |
+| temp_key | body | string | 아니오 | UUID | 저장 전 임시 업로드한 이미지를 이 카테고리에 연결하기 위한 FileUploader temp_key |
 
 > 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`sirsoft-ecommerce.category.create_validation_rules`).
 
@@ -212,7 +212,7 @@ Content-Type: application/json
     "is_active": true,
     "meta_title": "예시 제목",
     "meta_description": "예시 내용입니다.",
-    "temp_key": "예시값"
+    "temp_key": "5f0c3a3e-1b2c-4d5e-8f90-a1b2c3d4e5f6"
 }
 ```
 
@@ -309,7 +309,7 @@ HTTP/1.1 201
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
 | file | body | file | 예 | max 10240 | 업로드 파일 |
-| temp_key | body | string | 아니오 | max 64 | 사전 업로드한 임시 이미지를 이 카테고리에 연결하기 위한 FileUploader temp_key |
+| temp_key | body | string | 아니오 | UUID | 사전 업로드한 임시 이미지를 이 카테고리에 연결하기 위한 FileUploader temp_key |
 | collection | body | string | 아니오 | max 100 | 첨부 컬렉션 그룹명 (첨부를 용도별로 묶는 키, 미지정 시 default) |
 | alt_text | body | array | 아니오 | — | 이미지 대체 텍스트 (접근성/이미지 미표시 시 대체 문구) |
 | alt_text.ko | body | string | 아니오 | max 255 | 이미지 대체 텍스트 (접근성/이미지 미표시 시 대체 문구) — `ko` 로케일 값 |
@@ -334,7 +334,7 @@ Content-Type: application/octet-stream
 ------G7ExampleBoundary
 Content-Disposition: form-data; name="temp_key"
 
-예시값
+5f0c3a3e-1b2c-4d5e-8f90-a1b2c3d4e5f6
 ------G7ExampleBoundary
 Content-Disposition: form-data; name="collection"
 
@@ -723,7 +723,7 @@ HTTP/1.1 200
 | --- | --- | --- | --- | --- | --- |
 | categoryId | path | string | 예 | — | 대상 category의 식별자 |
 | file | body | file | 예 | max 10240 | 업로드 파일 |
-| temp_key | body | string | 아니오 | max 64 | 사전 업로드한 임시 이미지를 이 카테고리에 연결하기 위한 FileUploader temp_key |
+| temp_key | body | string | 아니오 | UUID | 사전 업로드한 임시 이미지를 이 카테고리에 연결하기 위한 FileUploader temp_key |
 | collection | body | string | 아니오 | max 100 | 첨부 컬렉션 그룹명 (첨부를 용도별로 묶는 키, 미지정 시 default) |
 | alt_text | body | array | 아니오 | — | 이미지 대체 텍스트 (접근성/이미지 미표시 시 대체 문구) |
 | alt_text.ko | body | string | 아니오 | max 255 | 이미지 대체 텍스트 (접근성/이미지 미표시 시 대체 문구) — `ko` 로케일 값 |
@@ -748,7 +748,7 @@ Content-Type: application/octet-stream
 ------G7ExampleBoundary
 Content-Disposition: form-data; name="temp_key"
 
-예시값
+5f0c3a3e-1b2c-4d5e-8f90-a1b2c3d4e5f6
 ------G7ExampleBoundary
 Content-Disposition: form-data; name="collection"
 
@@ -906,7 +906,7 @@ HTTP/1.1 200
 | is_active | body | boolean | 아니오 | — | 활성 여부 (true 활성 / false 비활성) |
 | meta_title | body | string | 아니오 | max 200 | SEO 메타 제목 (검색엔진/소셜 공유 표시 제목) |
 | meta_description | body | string | 아니오 | — | SEO 메타 설명 (검색엔진/소셜 공유 표시 요약) |
-| temp_key | body | string | 아니오 | max 64 | 저장 전 임시 업로드한 이미지를 이 카테고리에 연결하기 위한 FileUploader temp_key |
+| temp_key | body | string | 아니오 | UUID | 저장 전 임시 업로드한 이미지를 이 카테고리에 연결하기 위한 FileUploader temp_key |
 
 > 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`sirsoft-ecommerce.category.update_validation_rules`).
 
@@ -931,7 +931,7 @@ Content-Type: application/json
     "is_active": true,
     "meta_title": "예시 제목",
     "meta_description": "예시 내용입니다.",
-    "temp_key": "예시값"
+    "temp_key": "5f0c3a3e-1b2c-4d5e-8f90-a1b2c3d4e5f6"
 }
 ```
 
