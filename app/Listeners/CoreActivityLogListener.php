@@ -8,10 +8,13 @@ use App\Contracts\Extension\HookListenerInterface;
 use App\Contracts\Repositories\ActivityLogRepositoryInterface;
 use App\Contracts\Repositories\ScheduleRepositoryInterface;
 use App\Contracts\Repositories\UserRepositoryInterface;
+use App\Enums\ActivityLogType;
+use App\Enums\PrivacyManualRunStatus;
 use App\Extension\IdentityVerification\DTO\VerificationChallenge;
 use App\Extension\IdentityVerification\DTO\VerificationResult;
 use App\Models\Attachment;
 use App\Models\IdentityVerificationLog;
+use App\Models\PrivacyManualRun;
 use App\Models\Schedule;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
@@ -99,6 +102,10 @@ class CoreActivityLogListener implements HookListenerInterface
             // ─── Settings ───
             'core.settings.after_save' => ['method' => 'handleSettingsAfterSave', 'priority' => 20],
             'core.settings.after_set' => ['method' => 'handleSettingsAfterSet', 'priority' => 20],
+
+            // ─── Privacy (관리자 직권 실행) ───
+            'core.privacy.manual_run_queued' => ['method' => 'handlePrivacyManualRunQueued', 'priority' => 20],
+            'core.privacy.manual_run_finished' => ['method' => 'handlePrivacyManualRunFinished', 'priority' => 20],
 
             // ─── Schedule ───
             'core.schedule.after_create' => ['method' => 'handleScheduleAfterCreate', 'priority' => 20],
@@ -709,6 +716,66 @@ class CoreActivityLogListener implements HookListenerInterface
         $this->logActivity('settings.save', [
             'description_key' => 'activity_log.description.settings_save',
             'properties' => ['tab' => $tab, 'keys' => array_keys($settings)],
+        ]);
+    }
+
+    /**
+     * 개인정보 조치 직권 실행 접수 로그 기록
+     *
+     * 접수한 관리자의 요청 안에서 발행되므로 로그 유형은 요청자 기준(관리자)으로 정해진다.
+     * 대상 이름은 접수 시점의 라벨 그대로 남긴다 — 확장이 나중에 비활성화돼도 무엇을 돌렸는지 읽힌다.
+     *
+     * @param  PrivacyManualRun  $run  접수된 기록
+     * @param  string  $label  대상 이름
+     * @return void
+     */
+    public function handlePrivacyManualRunQueued(PrivacyManualRun $run, string $label): void
+    {
+        $this->logActivity('privacy.manual_run_queued', [
+            'description_key' => $run->skip_waiting
+                ? 'activity_log.description.privacy_manual_run_queued_skip_waiting'
+                : 'activity_log.description.privacy_manual_run_queued',
+            'description_params' => ['target' => $label],
+            'properties' => [
+                'run_id' => $run->id,
+                'target' => $run->target,
+                'skip_waiting' => (bool) $run->skip_waiting,
+            ],
+        ]);
+    }
+
+    /**
+     * 개인정보 조치 직권 실행 종료(완료·실패) 로그 기록
+     *
+     * 큐 작업 안에서 발행되므로 인증 사용자가 없다 — 시스템 로그로 남기고 접수자를 속성에 적는다.
+     *
+     * @param  PrivacyManualRun  $run  종료된 기록
+     * @param  string  $label  대상 이름
+     * @return void
+     */
+    public function handlePrivacyManualRunFinished(PrivacyManualRun $run, string $label): void
+    {
+        $failed = $run->status === PrivacyManualRunStatus::Failed;
+
+        $this->logActivity('privacy.manual_run_finished', [
+            'log_type' => ActivityLogType::System,
+            'description_key' => $failed
+                ? 'activity_log.description.privacy_manual_run_failed'
+                : 'activity_log.description.privacy_manual_run_completed',
+            'description_params' => [
+                'target' => $label,
+                'count' => (string) ($run->processed_count ?? 0),
+            ],
+            'properties' => [
+                'run_id' => $run->id,
+                'target' => $run->target,
+                'status' => $run->status->value,
+                'processed_count' => $run->processed_count,
+                'remaining_count' => $run->remaining_count,
+                'mode' => $run->mode,
+                'requested_by' => $run->requested_by,
+                'error' => $run->error,
+            ],
         ]);
     }
 

@@ -13,7 +13,7 @@
 | 스타일 시스템 | - |
 | 다크 모드 전략 | - |
 
-> 단일 파일 · 팔레트 1 · 편집 역량 1
+> 단일 파일 · 팔레트 1 · 편집 역량 1 · 프리뷰 샘플 2
 <!-- @generated:editor-spec-summary END -->
 
 <!-- @intent START -->
@@ -37,6 +37,7 @@
 | `componentPalette.entries` | 편집기 "요소 추가" 팔레트에 나타나는 항목 | 1 | `editor-spec.json (인라인)` |
 | `componentPalette.groups` | 팔레트 좌측 목록의 묶음 | 1 | `editor-spec.json (인라인)` |
 | `componentCapabilities` | 컴포넌트별 편집 역량(어떤 속성을 편집기가 다루는가) | 1 | `editor-spec.json (인라인)` |
+| `sampleData.byDataSourceId` | 레이아웃 `data_sources` ID 로 붙는 프리뷰 응답 | 2 | `editor-spec.json (인라인)` |
 <!-- @generated:editor-spec-blocks END -->
 
 <!-- @intent START -->
@@ -66,7 +67,7 @@
 <!-- @generated:editor-spec-samples START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 자리 | 역할 | 개수 | ID |
 |---|---|---|---|
-| `sampleData.byDataSourceId` | 레이아웃 `data_sources` ID 로 붙는 프리뷰 응답 | 미선언 | - |
+| `sampleData.byDataSourceId` | 레이아웃 `data_sources` ID 로 붙는 프리뷰 응답 | 2 | `memos` · `memoData` |
 | `sampleData.byEndpointPattern` | 엔드포인트 패턴으로 붙는 프리뷰 응답 | 미선언 | - |
 | `states.groups` | 상태 변종을 적용할 범위(라우트·베이스 레이아웃) | 미선언 | - |
 

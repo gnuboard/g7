@@ -1,0 +1,14 @@
+{
+  "sirsoft-totp": {
+    "name": "認証アプリ2段階認証 (TOTP)",
+    "description": "認証アプリプラグインが提供する権限"
+  },
+  "sirsoft-totp.credentials": {
+    "name": "認証アプリ資格情報",
+    "description": "会員の認証アプリ登録に対する管理権限"
+  },
+  "sirsoft-totp.credentials.delete": {
+    "name": "会員認証アプリ登録解除",
+    "description": "端末·バックアップコードをすべて失った会員の認証アプリ登録を強制解除 (コード確認なし)"
+  }
+}

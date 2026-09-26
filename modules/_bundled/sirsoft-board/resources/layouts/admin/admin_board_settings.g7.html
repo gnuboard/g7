@@ -1,4 +1,4 @@
-<!-- 게시판 모듈 전역 설정. 탭이 여섯이고 데이터소스가 아홉인데, 설정 본체(`settings`) 말고는 전부 `if` 로 자기 탭에서만 읽는다 — 한 화면에 다 걸어 두면 열지도 않은 탭 때문에 진입이 느려진다. 어느 탭인지는 URL 의 `tab` 이 먼저이고 없으면 전역 값, 그것도 없으면 `general` 이다 -->
+<!-- 게시판 모듈 전역 설정. 탭이 여덟이고 데이터소스가 열둘인데, 설정 본체(`settings`)와 버튼으로만 여는 명단(`privacyTargets`) 말고는 전부 `if` 로 자기 탭에서만 읽는다 — 한 화면에 다 걸어 두면 열지도 않은 탭 때문에 진입이 느려진다. 어느 탭인지는 URL 의 `tab` 이 먼저이고 없으면 전역 값, 그것도 없으면 `general` 이다 -->
 <layout name="admin_board_settings" version="1.0.0" extends="_admin_base">
   <meta _e2e_allow="e2e:allow F6 정정 — 죽은 state 키 3개(알림 정의 페이지 번호)를 initLocal 로 옮긴 것뿐(2026-09-17 저작 트랙 게이트), 값·화면 동작 동일" title="$t:sirsoft-board.admin.settings.title" description="$t:sirsoft-board.admin.settings.description"/>
   <!-- 설정 본체 — 유일하게 탭 조건 없이 항상 읽고 `_local.form` 을 채운다(모든 탭이 이 한 폼을 나눠 쓴다) -->
@@ -8,6 +8,45 @@
         <show-error-page target="content"/>
       </on-code>
     </error-handling>
+  </data-source>
+  <!-- 개인정보 보유기간 대상 건수 — 「개인정보 보유기간」 탭의 대상 행 뱃지가 읽는다. 저장된 설정 기준이라 저장 성공 뒤 다시 읽는다. 꺼진 축도 서버가 센다(꺼짐은 `ip_enabled`·`guest_enabled` 로 구분) — null 은 응답을 받기 전 fallback 뿐이다 -->
+  <data-source id="boardPrivacyRetentionPreview" label_key="$t:sirsoft-board.editor.data_source.boardPrivacyRetentionPreview" type="api" endpoint="/api/modules/sirsoft-board/admin/settings/privacy-retention-preview" method="GET" if="{{(query.tab || _global.activeBoardSettingsTab || 'general') === 'privacy_retention'}}" :auto_fetch="true" :auth_required="true">
+    <fallback>
+      <field name="data">
+        <field name="ip" :value="null"/>
+        <field name="guest" :value="null"/>
+      </field>
+    </fallback>
+  </data-source>
+  <!-- 개인정보 조치 직권 실행 상태 — 「지금 실행」 버튼과 상태 줄(처리 대기/처리 중 · 마지막 결과)이 쓴다(코어 직권 실행 API).
+       진행 중이면 3초마다 다시 받고 끝나면 멈춘다. 진행 중일 때 받은 서버 시각(`checked_at`)을 다음 조회의 `since` 로
+       돌려보내 그 뒤에 끝난 작업이 있으면(`finished_since`) 대상 건수를 다시 받는다 — 판정을 응답값으로만 하는 까닭은
+       직전에 넣은 전역 값이 이 성공 핸들러에서 낡은 값으로 읽히기 때문이다(코어 환경설정 개인정보 탭과 같은 방식). -->
+  <data-source id="privacyManualRuns" label_key="$t:sirsoft-board.editor.data_source.privacyManualRuns" type="api" endpoint="/api/admin/privacy/manual-runs" method="GET" if="{{(query.tab || _global.activeBoardSettingsTab || 'general') === 'privacy_retention'}}" :auto_fetch="true" :auth_required="true">
+    <params targets="retention:sirsoft-board.ip,retention:sirsoft-board.guest" since="{{_global.privacyRunWatchSince ?? ''}}"/>
+    <fallback>
+      <field name="data">
+        <field name="targets" :value="{}"/>
+        <field name="has_active" :value="false"/>
+        <field name="finished_since" :value="false"/>
+      </field>
+    </fallback>
+    <success>
+      <set-state if="{{response?.data?.data?.has_active === true}}" target="global" privacyRunWatchSince="{{response?.data?.data?.checked_at}}"/>
+      <start-interval if="{{response?.data?.data?.has_active === true}}" id="privacy_manual_run_poll" :intervalMs="3000">
+        <actions>
+          <refetch-data-source dataSourceId="privacyManualRuns"/>
+        </actions>
+      </start-interval>
+      <stop-interval if="{{response?.data?.data?.has_active !== true}}" id="privacy_manual_run_poll"/>
+      <refetch-data-source if="{{response?.data?.data?.has_active !== true &amp;&amp; response?.data?.data?.finished_since === true}}" dataSourceId="boardPrivacyRetentionPreview"/>
+      <set-state if="{{response?.data?.data?.has_active !== true}}" target="global" :privacyRunWatchSince="null"/>
+    </success>
+  </data-source>
+  <!-- 개인정보 보유기간 대상 창 — 작성 IP·비회원 두 축이 함께 쓴다. 여는 버튼이 목록 경로를 `_global.privacyTargets.path` 에
+       넣고 다시 받은 뒤 연다. 명단은 코어 공통 대상 목록 API 가 두 핸들러를 식별자로 찾아 내려준다. -->
+  <data-source id="privacyTargets" label_key="$t:sirsoft-board.editor.data_source.privacyTargets" type="api" endpoint="/api/admin/privacy/{{_global.privacyTargets?.path ?? 'retention-targets/sirsoft-board.ip'}}" method="GET" :auto_fetch="false" :auth_required="true" loading_strategy="progressive">
+    <params :per_page="20"/>
   </data-source>
   <!-- 「기본값」 탭의 게시판 선택지 — 셀렉트 하나를 채우는 용도라 페이지를 나누지 않고 필요한 두 칸만 받는다 -->
   <data-source id="boards_list" label_key="$t:sirsoft-board.editor.data_source.boards_list" type="api" endpoint="/api/modules/sirsoft-board/admin/boards?per_page=999&amp;fields=id,title" method="GET" if="{{(query.tab || _global.activeBoardSettingsTab || 'general') === 'basic_defaults'}}" :auto_fetch="true" :auth_required="true">
@@ -113,6 +152,8 @@
   </permissions>
   <transition-overlay>
     <wait-for>settings</wait-for>
+    <wait-for>boardPrivacyRetentionPreview</wait-for>
+    <wait-for>privacyManualRuns</wait-for>
     <wait-for>boards_list</wait-for>
     <wait-for>roles</wait-for>
     <wait-for>board_types</wait-for>
@@ -142,6 +183,7 @@
               <item id="seo" label="$t:sirsoft-board.admin.settings.tabs.seo"/>
               <item id="notification_definitions" label="$t:sirsoft-board.admin.settings.tabs.notification_definitions"/>
               <item id="identity_policies" label="$t:sirsoft-board.admin.settings.tabs.identity_policies"/>
+              <item id="privacy_retention" label="$t:sirsoft-board.admin.settings.tabs.privacy_retention"/>
             </prop>
             <on type="change" event="onTabChange">
               <!-- 탭 갈아타기 — 앞 탭에서 난 검증 오류를 먼저 지우고(다른 탭의 붉은 문구가 따라다니지 않도록), 어느 탭인지를 전역과 URL 양쪽에 남긴다. `replace` 라 탭 전환이 뒤로가기 이력에 쌓이지 않는다. 마지막으로 본문 머리로 스크롤을 되돌린다 -->
@@ -199,6 +241,7 @@
         <include src="partials/admin_board_settings/_tab_seo.g7.html"/>
         <include src="partials/admin_board_settings/_tab_notification_definitions.g7.html"/>
         <include src="partials/admin_board_settings/_tab_identity_policies.g7.html"/>
+        <include src="partials/admin_board_settings/_tab_privacy_retention.g7.html"/>
         <div data-ref="footer_buttons" data-if="{{!_computed.isReadOnly}}" class="sticky-footer-buttons">
           <div data-if="{{_local.hasChanges}}" class="flex-center gap-1.5 text-sm text-amber-600 dark:text-amber-400 mr-auto">
             <icon name="circle-dot" size="xs"/>
@@ -212,16 +255,17 @@
           </button>
           <button data-ref="footer_save_button" type="button" disabled="{{_computed.isReadOnly || !_local.hasChanges || _local.isSaving}}" class="btn btn-primary flex-center gap-1.5 text-sm">
             <on type="click">
-              <!-- 저장 — 폼 전체가 아니라 «지금 탭이 소유한 구획만» 골라 보낸다(`_tab` 이 서버에 어느 구획인지 알린다). 한 폼을 여섯 탭이 나눠 쓰므로 통째로 보내면 열어 보지도 않은 탭의 값이 함께 덮어써진다 -->
+              <!-- 저장 — 폼 전체가 아니라 «지금 탭이 소유한 구획만» 골라 보낸다(`_tab` 이 서버에 어느 구획인지 알린다). 한 폼을 여러 탭이 나눠 쓰므로 통째로 보내면 열어 보지도 않은 탭의 값이 함께 덮어써진다 -->
               <sequence>
                 <set-state target="local" :isSaving="true" :errors="null"/>
-                <api-call target="/api/modules/sirsoft-board/admin/settings" :auth_required="true" method="PUT" body="{{(function() { const tab = _global.activeBoardSettingsTab || query.tab || 'general'; const form = _local.form || {}; if (tab === 'general') { return { _tab: 'general', display: form.display || {}, attachment_settings: form.attachment_settings || {} }; } if (tab === 'report_policy') { return { _tab: 'report_policy', report_policy: form.report_policy || {}, spam_security: form.spam_security || {}, report_permissions: form.report_permissions || {} }; } if (tab === 'spam_security') { return { _tab: 'spam_security', spam_security: form.spam_security || {} }; } if (tab === 'seo') { return { _tab: 'seo', seo: form.seo || {} }; } if (tab === 'notification_definitions') { return { _tab: 'notifications', notifications: { channels: form.notifications?.channels || [] } }; } return { _tab: 'basic_defaults', basic_defaults: form.basic_defaults || {}, notifications: form.notifications || {} }; })()}}">
+                <api-call target="/api/modules/sirsoft-board/admin/settings" :auth_required="true" method="PUT" body="{{(function() { const tab = _global.activeBoardSettingsTab || query.tab || 'general'; const form = _local.form || {}; if (tab === 'general') { return { _tab: 'general', display: form.display || {}, attachment_settings: form.attachment_settings || {} }; } if (tab === 'privacy_retention') { return { _tab: 'privacy_retention', privacy_retention: form.privacy_retention || {} }; } if (tab === 'report_policy') { return { _tab: 'report_policy', report_policy: form.report_policy || {}, spam_security: form.spam_security || {}, report_permissions: form.report_permissions || {} }; } if (tab === 'spam_security') { return { _tab: 'spam_security', spam_security: form.spam_security || {} }; } if (tab === 'seo') { return { _tab: 'seo', seo: form.seo || {} }; } if (tab === 'notification_definitions') { return { _tab: 'notifications', notifications: { channels: form.notifications?.channels || [] } }; } return { _tab: 'basic_defaults', basic_defaults: form.basic_defaults || {}, notifications: form.notifications || {} }; })()}}">
                   <success>
                     <set-state target="local" :isSaving="false" :hasChanges="false"/>
                     <refetch-data-source dataSourceId="settings"/>
                     <refetch-data-source dataSourceId="boards_list"/>
                     <refetch-data-source dataSourceId="roles"/>
                     <refetch-data-source dataSourceId="board_types"/>
+                    <refetch-data-source dataSourceId="boardPrivacyRetentionPreview"/>
                     <toast type="success" message="$t:sirsoft-board.admin.settings.save_success"/>
                   </success>
                   <fail>
@@ -253,4 +297,8 @@
   <modal src="partials/admin_board_settings/_modal_identity_policy_form.g7.html"/>
   <!-- 본인인증 정책 삭제 확인 -->
   <modal src="partials/admin_board_settings/_modal_identity_policy_delete.g7.html"/>
+  <!-- 개인정보 보유기간 대상 창(일반 탭 보유기간 카드) — 작성 IP·비회원 두 축이 함께 쓴다. -->
+  <modal src="partials/admin_board_settings/_modal_privacy_targets.g7.html"/>
+  <!-- 개인정보 보유기간 직권 실행 확인 창(일반 탭 — 작성 IP·비회원 글 두 대상이 함께 쓴다). -->
+  <modal src="partials/admin_board_settings/_modal_privacy_run.g7.html"/>
 </layout>

@@ -62,7 +62,7 @@
 ## 마이그레이션
 
 <!-- @generated:migrations START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-마이그레이션 43개.
+마이그레이션 44개.
 
 | 파일 | 생성 테이블 | 변경 테이블 | down() |
 |---|---|---|---|
@@ -109,6 +109,7 @@
 | `2026_09_15_000002_add_reaction_counts_to_board_comments_table.php` | - | `board_comments` | ✅ |
 | `2026_09_15_000003_add_use_comment_reaction_to_boards_table.php` | - | `boards` | ✅ |
 | `2026_09_15_000004_add_admin_indexes_to_board_reactions_table.php` | - | `board_reactions` | ✅ |
+| `2026_09_23_000001_make_ip_address_nullable_in_board_posts_table.php` | - | `board_posts` | ✅ |
 <!-- @generated:migrations END -->
 
 <!-- @intent START -->
@@ -120,6 +121,17 @@
 `board_attachments` 3개 테이블에 적용했던 파티셔닝을 되돌린 이력입니다 — 그 마이그레이션의
 `down()` 은 "파티션 복원은 데이터 재배치가 필요해 자동 롤백 불가"라고 명시하므로, 파티셔닝을
 다시 도입할 때는 이 파일을 그대로 재실행하는 방식이 아니라 새 마이그레이션으로 설계해야 합니다.
+
+`make_ip_address_nullable_in_board_posts_table`(2026-09-23, 이슈 #636)은 `board_posts.ip_address` 를
+NOT NULL → nullable 로 바꿔 `board_comments.ip_address`(처음부터 nullable)와 맞춘 것입니다 —
+개인정보 보유기간이 지난 작성 IP 를 NULL 로 파기하려면 필요합니다. 이커머스 상품문의 연동이
+NOT NULL 을 채우려고 넣던 자리표시값 `'0.0.0.0'` 을 NULL 로 되돌리는 기존 행 정리는 마이그레이션이
+아니라 1.2.0 업그레이드 스텝(`upgrades/data/1.2.0/migrations/01_NormalizePlaceholderPostIp.php`)이
+맡고(스키마 변경과 데이터 변환을 나눈다 — 확장 갱신은 마이그레이션 → 업그레이드 스텝 순서), 연동
+리스너(`EcommerceInquiryHookListener`)도 이제 IP 를 모르면 NULL 로 둡니다. 따라서 게시글·댓글
+응답의 `ip_address` 는 **nullable 문자열**이고, 관리자 화면(`_post_card_content`·`_comment`·
+`_reply_card_content`)은 이미 `data-if` 로 빈 값을 숨깁니다. `down()` 은 NULL 행을
+`'0.0.0.0'` 으로 채운 뒤 NOT NULL 로 되돌립니다(파기된 IP 는 되살릴 수 없으므로 「모름」 값).
 <!-- @intent END -->
 
 ## Enum

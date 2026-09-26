@@ -12,6 +12,8 @@
 5. 삭제/위험 작업 버튼은 로딩 중 흐림 + 스피너 + 텍스트 변경 필수
 6. $parent._local 은 모달 마운트 시점의 스냅샷 — 모달이 열린 뒤의 부모 변경은 반영되지 않음
 7. closeModal 후 setState 금지 — setState 를 먼저 실행하고 closeModal 을 나중에
+8. 하단 버튼이 **방금 입력한 값**을 읽어야 하면 props.footer 가 아니라 본문 맨 아래 줄에 둔다 (§Footer 예외)
+9. 부모 **폼**(저장이 실어 보내는 값)을 고칠 때는 $parent._local 만으로 부족하다 — §부모 폼 커밋 참조
 ```
 
 ---
@@ -511,6 +513,50 @@ modals 섹션 모달은 React Portal 로 외부 마운트되어 페이지 단위
 > **회귀 배경 (F5)**: 이전에는 `Modal` 에 `footer` 표면이 없어 `props.footer` 가 렌더되지 않았고, 마크업이 버튼을 `children` 마지막 Div 로 우회 배치했다. S8 이 `props.footer` 표면을 신설(S16 F5 로 12개 모달 버튼 복원)했으므로 이제 `props.footer` 가 정본이다.
 >
 > **적용 범위 — 관리자 템플릿 한정**: `props.footer` 를 렌더하는 것은 `sirsoft-admin_basic` 의 `Modal` 뿐이다. `sirsoft-basic`(사용자 템플릿)의 `Modal` 은 이 prop 을 받지 않으므로 넘겨도 **조용히 사라진다** — 사용자측 모달의 하단 버튼은 `children` 안에 둔다. props 표면 대조: [component-props.md §Modal](component-props.md#modal-컴포넌트).
+
+### 예외 — 하단 버튼이 **방금 입력한 값**을 읽어야 하는 창
+
+고정 하단(`props.footer`)의 버튼은 `Modal` 이 자기 렌더러로 그리며, 그 데이터 컨텍스트에는 **창이 열린 시점의 `_global`** 이 실린 채로 남는다. 그래서 그 자리의 액션이 `if` 나 `params` 에서 `_global.{창}.form.*` 를 읽으면 **사용자가 방금 친 값이 아니라 창을 열 때의 빈 값**을 본다 — 본문은 새 값으로 다시 그려지므로 화면만 보면 이상한 데가 없고, 「확인」만 영원히 "입력하세요" 로 되돌아간다(#636 에서 브라우저 실측으로 확인).
+
+- **닫기·확인만 하는 창**(삭제 확인, 안내)은 종전대로 `props.footer` 를 쓴다. 읽을 입력값이 없다.
+- **입력을 받아 그 값으로 분기하는 창**은 버튼을 **본문 맨 아래 줄**에 둔다. 선례: [`_modal_identity_policy_form.g7.html`](../../templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_settings/_modal_identity_policy_form.g7.html) 의 `policy_form_footer`, [`_modal_ip_restriction_rule_form.g7.html`](../../templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_settings/_modal_ip_restriction_rule_form.g7.html) 의 `ip_rule_form_footer`. 클래스는 `flex-center justify-end gap-2 px-4 py-3 border-t border-gray-200 dark:border-gray-700 flex-shrink-0 bg-white dark:bg-gray-800` 로 고정 하단과 같은 모양을 낸다(본문과 함께 스크롤되는 점만 다르다).
+
+부모 폼 배열을 고칠 때는 **고칠 자리를 `target` 에 적고 값을 `value` 로 준다** — `target="$parent._local"` 에 점 찍은 이름(`form.security.rules`)을 주면 그 이름이 통째로 한 칸이 되어 화면에 아무것도 반영되지 않는다.
+
+```html
+<!-- ✅ 부모 폼의 한 칸만 갈아 끼운다 -->
+<set-state target="$parent._local.form.security.ip_restriction_rules" value="{{ ... }}"/>
+<set-state target="$parent._local.hasChanges" :value="true"/>
+```
+
+### 부모 폼 커밋 — 두 자리에 같은 값을 쓴다
+
+`_local` 은 **두 곳**에 산다 — 화면이 읽는 저장소(React 로컬 상태)와 저장·플러그인이 읽는 저장소
+(`_global._local`)다. 엔진은 모달의 `$parent._local` 쓰기를 **일부러 미러에서 빼 둔다**(모달이 페이지
+상태를 오염시키던 사례 때문이다). 그래서 창에서 부모 폼만 고치면 **표에는 보이는데 저장 요청 본문에는
+실리지 않아**, 운영자는 「저장했는데 방금 넣은 값이 사라졌다」를 겪는다(#636 브라우저 실측).
+
+부모의 **폼 값**(하단 저장 버튼이 실어 보내는 값)을 고치는 창은 같은 배열·객체를 두 자리에 쓴다.
+
+```html
+<sequence>
+  <!-- ① 저장이 읽는 자리 — 전역을 통해 페이지 _local 에 넣는다 -->
+  <set-state target="global" _local.form.security.ip_restriction_rules="{{ ... }}" :_local.hasChanges="true"/>
+  <!-- ② 화면이 읽는 자리 — 표·저장 버튼이 곧바로 반응하게 한다 -->
+  <set-state target="$parent._local.form.security.ip_restriction_rules" value="{{ ... }}"/>
+  <set-state target="$parent._local.hasChanges" :value="true"/>
+  <close-modal target="..."/>
+</sequence>
+```
+
+두 쓰기에는 **같은 표현식**을 넣는다 — 갈라지면 화면과 저장이 다른 값을 보게 된다. 값은 결과를 통째로
+넣어(부분 갱신이 아니라 배열·객체 전체) 순서가 바뀌어도 같은 결과가 되게 한다.
+
+서버 API 를 직접 부르는 창(예: 본인인증 정책 창)은 이 문제가 없다 — 부모 폼을 거치지 않기 때문이다.
+창이 부모 폼을 고쳐야 하는지, 자기가 저장해야 하는지를 먼저 정하고 그에 맞는 형태를 고른다.
+
+> 엔진이 이 미러 정책을 바꾸면 ①이 불필요해진다. 그때까지 이 형태를 쓰는 곳은
+> `_modal_ip_restriction_rule_form` 하나이며, 새로 쓸 때는 이 절을 근거로 삼는다.
 
 ### Footer 스타일 규칙
 
@@ -1088,6 +1134,8 @@ modals 섹션 모달은 React Portal 로 외부 마운트되어 페이지 단위
 □ slots 속성이 없는가?
 □ 본문 내용이 children에 있는가?
 □ 취소/확인 버튼이 `props.footer` 배열에 있는가? (children 마지막 Div 아님 — Modal 이 별도 하단 표면으로 렌더)
+   ↳ **예외**: 버튼이 창에서 방금 입력한 값을 읽어 분기한다면 본문 맨 아래 줄에 둔다 ([§예외](#예외--하단-버튼이-방금-입력한-값을-읽어야-하는-창))
+□ 부모 **폼 값**을 고치는 창이라면 저장이 읽는 자리에도 함께 썼는가? ([§부모 폼 커밋](#부모-폼-커밋--두-자리에-같은-값을-쓴다))
 □ 취소 버튼에 closeModal 핸들러가 있는가?
 ```
 

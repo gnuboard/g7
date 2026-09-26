@@ -4,6 +4,12 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.1.3] - 2026-09-21
+
+### Removed
+
+- 한국어 원본에서 사라진 현금영수증 발급 화면 문구 14건(`admin.cash_receipt_*`)을 팩에서 함께 정리했습니다. 쓰이지 않는 번역만 빠지며 화면 동작은 달라지지 않습니다.
+
 ## [1.1.2] - 2026-09-06
 
 ### Added

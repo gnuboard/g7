@@ -37,6 +37,22 @@ effects:
   - seo_cache_invalidated_on_bulk_apply              # 일괄 적용은 대상 게시판 전부에 걸린다
   - seo_cache_untouched_for_other_module             # 다른 모듈 식별자의 저장에는 반응하지 않는다
 
+sub_flows:
+  - id: settings_layout_contract
+    description: |
+      설정 화면 레이아웃(메인·하위 탭·신고 정책·스팸·SEO·일괄 적용 창)이 저장 파이프라인이 기대하는
+      키·저장 payload·재조회 순서를 그대로 들고 있는지 — 저장 경로의 화면 쪽 끝이다. 탭 묶음별로 효과를 가른다.
+    effects:
+      - settings_layout_main_contract
+      - settings_layout_default_tabs_contract
+      - settings_layout_bulk_apply_contract
+      - settings_layout_report_policy_contract
+      - settings_layout_spam_security_contract
+      - settings_layout_cross_file_contract
+      - settings_layout_general_tab_contract
+      - settings_layout_seo_tab_contract
+
 test_files:
+  - modules/_bundled/sirsoft-board/resources/js/__tests__/layouts/admin-board-settings.test.tsx
   - modules/_bundled/sirsoft-board/tests/Unit/BoardSetSettingPipelineTest.php
   - modules/_bundled/sirsoft-board/tests/Feature/Admin/BoardSettingsSeoCacheInvalidationTest.php

@@ -98,7 +98,7 @@
               </input>
             </div>
             <div data-ref="mobile_action_row" class="flex flex-row gap-2 items-center">
-              <column-selector data-ref="mobile_column_selector" id="admin_user_list_columns" visibleColumns="{{_global.visibleColumns_admin_users}}" triggerLabel="$t:common.column_selector" menuTitle="$t:common.column_selector_title" menuDescription="$t:common.column_selector_description" position="right" :iconOnly="true">
+              <column-selector data-ref="mobile_column_selector" id="admin_user_list_columns" visibleColumns="{{_global.visibleColumns_admin_users}}" triggerLabel="$t:common.column_selector" menuTitle="$t:common.column_selector_title" menuDescription="$t:common.column_selector_description" position="right" labelClassName="sr-only">
                 <prop name="columns">
                   <item field="id" header="$t:admin.users.columns.id" :required="true"/>
                   <item field="name" header="$t:admin.users.columns.name" :required="true"/>
@@ -309,7 +309,7 @@
         </column>
         <column field="status" header="$t:admin.users.columns.status" :sortable="true">
           <cell>
-            <span class="{{row.status_variant === 'success' ? 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : row.status_variant === 'secondary' ? 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200' : row.status_variant === 'danger' ? 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' : 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'}}">{{row.status_label}}</span>
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{({success: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200', secondary: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200', danger: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200', warning: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200', info: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'})[row.status_variant] ?? 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'}}">{{row.status_label}}</span>
           </cell>
         </column>
         <column field="created_at" header="$t:admin.users.columns.created_at" :sortable="true"/>

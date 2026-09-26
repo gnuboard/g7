@@ -196,4 +196,5 @@ return [
         'action_param_misplaced_key' => ':handler アクションの :key が params に入りました — :handler はこのキーを読み込まないため、静かに無視されます。条件は data-if(アクションの if)、イベントは <on event="…">、それ以外は該当ハンドラーが実際に読み込む引数名を使用してください。',
         'hoist_prop_not_supported_by_template' => ':template テンプレートの :component は :prop を宣言していません — <:tag> で記述した内容はレンダリングされずに失われます。',
     ],
+    'privacy_manual_run_conflict' => '同じ対象に対して処理待機中または処理中の職権実行がすでに存在します。終了後に再度実行してください。',
 ];

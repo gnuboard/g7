@@ -467,4 +467,12 @@ _에러 없음 (공개 조회 — 요청 파라미터가 없고 컨트롤러/서
 
 **설명** 게스트도 접근할 수 있는 완전 공개 엔드포인트로, 인증 없이 호출됩니다. 공개 쿠키 동의 배너와 마이페이지 카드 렌더링에 필요한 쿠키 카테고리·배너 설정·차단 도메인과 현재 `cookie_policy_version`(정책 버전 서비스 기준)을 반환합니다. 차단 도메인은 게스트도 차단이 동작해야 하므로 공개 응답에 노출되며, 이 컨트롤러가 응답 노출의 기준(SSoT)입니다. 조회 전용입니다.
 
+## 연간 통지 설정
 
+`PUT /api/plugins/sirsoft-gdpr/admin/settings`는 `annual_notice` 객체를 추가로 받습니다.
+`enabled`(boolean), `channels`(mail/database 중 1~2개, 중복 불가), `batch_size`(1~1,000 정수)는
+객체를 보낼 때 모두 필요합니다. `introduction`은 지원 로케일별 최대 2,000자 문자열 객체입니다.
+`GET` 응답은 `data.settings.annual_notice`와 `data.annual_notice_limits.{min,max}`를 포함합니다.
+
+예: `{"annual_notice":{"enabled":false,"channels":["database"],"batch_size":500,"introduction":{"ko":"개인정보 이용내역 안내"}}}`.
+범위 초과 또는 빈 채널은 422이며 기존 설정은 보존됩니다.

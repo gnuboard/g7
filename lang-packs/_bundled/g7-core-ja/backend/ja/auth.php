@@ -15,6 +15,7 @@ return [
     'invalid_credentials' => '無効な認証情報です。',
     'admin_login_success' => '管理者ログインが成功しました。',
     'admin_required' => '管理者権限が必要です。',
+    'admin_required_dormancy_restored' => '管理者権限が必要です。休眠状態だったアカウントは解除されましたので、通常のログイン画面をご利用ください。',
     'unauthenticated' => '認証が必要です。',
     'permission_denied' => '該当する権限がありません。',
     'layout_permission_denied' => 'レイアウトへのアクセス権限がありません。(必要な権限: :required_permissions)',
@@ -43,4 +44,7 @@ return [
     'password_reset_email_sent' => 'パスワードリセットメールが送信されました。',
     'email_send_failed' => 'メール送信に失敗しました。しばらく後に再度お試しください。',
     'two_factor_delivery_failed' => '認証番号を送信できませんでした。管理者にお問い合わせください。',
+    'two_factor_required_app' => '認証アプリの6桁コードを入力してログインを完了してください。',
+    'two_factor_enrollment_required' => 'ログインするには認証アプリの登録が必要です。管理者にお問い合わせください。',
+    'account_dormant' => '長期間アクセスがないため、休眠状態のアカウントです。本人確認後、利用することができます。',
 ];

@@ -6,6 +6,8 @@ return [
         'inactive' => '無効',
         'blocked' => 'ブロック',
         'withdrawn' => '退会',
+        'pending_verification' => '登録待機中',
+        'dormant' => '休眠',
     ],
     'language' => [
         'ko' => '韓国語',

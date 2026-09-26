@@ -2,11 +2,13 @@
 /**
  * GDPR 플러그인 환경설정 레이아웃 구조 검증
  *
- * 4 카드 (운영자 작업 순서):
+ * 6 카드 (운영자 작업 순서):
  * 1. card_operator (운영 주체 + 정책 페이지)
  * 2. card_cookie_banner (배너 + 카테고리 + 정책버전)
  * 3. card_auto_blocking_policy (자동 차단 정책 — 차단 도메인 관리)
  * 4. card_necessary_storage (필수 저장 항목 허용목록 — 저장소·쿠키 3 스코프)
+ * 5. card_annual_notice (개인정보 연간 통지 — 토글·채널·상한·서문)
+ * 6. card_gdpr_notifications (알림 템플릿 — 채널 선택·템플릿 편집·기본값 복원)
  *
  * 마이페이지 동의 관리 카드는 GDPR Art.7(3) 대칭성 의무에 따라 플러그인 활성 시 항상 노출
  * — 운영자가 끌 수 있는 토글이 없으므로 관리자 설정 화면에 카드/필드가 존재하지 않는다.
@@ -25,7 +27,7 @@ import enLang from '../../../lang/en.json';
 import { findById, type AnyNode } from './helpers';
 import { asArray, findByIdPrefix } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 
-describe('admin/plugin_settings.json — 4 카드 (operator / cookie_banner / auto_blocking_policy / necessary_storage)', () => {
+describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / auto_blocking_policy / necessary_storage / annual_notice / gdpr_notifications)', () => {
     const root = layout as unknown as AnyNode;
 
     describe('레이아웃 메타데이터', () => {
@@ -56,7 +58,7 @@ describe('admin/plugin_settings.json — 4 카드 (operator / cookie_banner / au
             expect(nav?.name).toBe('TabNavigationScroll');
         });
 
-        it('4 탭이 정의되어 있다 (operator / cookie_banner / auto_blocking_policy / necessary_storage)', () => {
+        it('6 탭이 정의되어 있다 (operator / cookie_banner / auto_blocking_policy / necessary_storage / annual_notice / gdpr_notifications)', () => {
             const tabs = (nav?.props as { tabs?: { id: string }[] })?.tabs ?? [];
             const ids = tabs.map((t) => t.id);
             expect(ids).toEqual([
@@ -64,6 +66,8 @@ describe('admin/plugin_settings.json — 4 카드 (operator / cookie_banner / au
                 'card_cookie_banner',
                 'card_auto_blocking_policy',
                 'card_necessary_storage',
+                'card_annual_notice',
+                'card_gdpr_notifications',
             ]);
         });
 
@@ -78,19 +82,30 @@ describe('admin/plugin_settings.json — 4 카드 (operator / cookie_banner / au
             'card_cookie_banner',
             'card_auto_blocking_policy',
             'card_necessary_storage',
+            'card_annual_notice',
+            'card_gdpr_notifications',
         ];
 
         it.each(expectedCards)('카드 %s 가 존재한다', (cardId) => {
             expect(findById(root, cardId)).toBeTruthy();
         });
 
-        it('카드는 settings_main_content 의 직계 children 으로 4개 모두 배치', () => {
+        it('카드는 settings_main_content 의 직계 children 으로 6개 모두 배치', () => {
             const main = findById(root, 'settings_main_content');
             const cardChildren = (asArray(main?.children) as AnyNode[]).filter((c) =>
                 (c.id ?? '').startsWith('card_')
             );
             const cardIds = cardChildren.map((c) => c.id);
             expect(cardIds).toEqual(expectedCards);
+        });
+
+        // PO 실측 2026-09-21 — 카드마다 겉 여백 규격이 갈려 상하 간격이 들쭉날쭉했다.
+        // 겉은 여백만(첫 카드 제외 mt-4), 안쪽 패딩은 본문 컨테이너(p-6)가 갖는다.
+        it.each(expectedCards)('카드 %s 는 겉에 패딩을 두지 않는다 (간격 규격 통일)', (cardId) => {
+            const className = (findById(root, cardId)?.props as { className?: string })?.className ?? '';
+            expect(className).not.toMatch(/\bp-6\b/);
+            expect(className).not.toMatch(/\bmb-4\b/);
+            if (cardId !== expectedCards[0]) expect(className).toContain('mt-4');
         });
 
         it.each(expectedCards)('카드 %s 의 className은 라이트/다크 모드 + scroll-mt-32 포함', (cardId) => {

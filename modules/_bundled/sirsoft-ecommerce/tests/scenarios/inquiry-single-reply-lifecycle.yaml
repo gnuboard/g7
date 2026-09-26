@@ -47,6 +47,19 @@ effects:
   - orphan_replies_backfilled_idempotent # 업그레이드 스텝 04~06 정리 + 재실행 멱등
   - board_not_configured_safe           # 게시판 미설정 시 422/안전 열화 (500 없음)
 
+sub_flows:
+  - id: board_listener_contract
+    description: |
+      게시판 쪽 리스너(`EcommerceInquiryHookListener`)가 이커머스 문의 필터 훅 8종을 받아
+      게시판 CRUD 로 위임하는 계약. 게시판이 없거나 대상 글이 없을 때의 열화 방식까지 고정한다.
+    effects:
+      - listener_subscribes_every_inquiry_filter_hook
+      - listener_creates_board_post_for_inquiry
+      - listener_degrades_to_carry_when_board_missing
+      - listener_maps_posts_by_ids
+      - listener_reads_board_settings
+      - listener_delete_fails_loudly_for_missing_post
+
 test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Admin/AdminProductInquiryControllerTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/User/UserProductInquiryControllerTest.php

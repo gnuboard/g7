@@ -1002,7 +1002,11 @@
     "user_base_default": "デフォルト",
     "mobile_menu_open": "モバイルメニュー展開",
     "gdpr_cookie_banner_visible": "クッキーバナー表示",
-    "identity_challenge_inicis": "本人認証モーダル (イニシス)"
+    "identity_challenge_inicis": "本人認証モーダル (イニシス)",
+    "modal_filled": "ウィンドウの内容を表示",
+    "screen_filled": "画面の状態を表示",
+    "two_factor_challenge": "2段階認証の入力",
+    "comment_editing": "コメント編集中"
   },
   "cell_border": {
     "side_all": "すべて",

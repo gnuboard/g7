@@ -270,7 +270,7 @@ class ProductInquiryService
         // 클라이언트 IP 를 요청 경계(Service)에서 캡처해 게시판 훅 payload 로 전달한다.
         // 게시판 Listener 가 request() 를 직접 참조하지 않도록 소유 서비스가 주입한다.
         if (empty($data['ip_address'])) {
-            $data['ip_address'] = request()->ip() ?? '0.0.0.0';
+            $data['ip_address'] = request()->ip();
         }
 
         $inquiry = DB::transaction(function () use ($productId, $product, $boardSlug, $data) {
@@ -726,7 +726,7 @@ class ProductInquiryService
 
         // 클라이언트 IP 를 요청 경계(Service)에서 캡처해 게시판 훅 payload 로 전달한다.
         if (empty($data['ip_address'])) {
-            $data['ip_address'] = request()->ip() ?? '0.0.0.0';
+            $data['ip_address'] = request()->ip();
         }
 
         $updated = DB::transaction(function () use ($inquiry, $boardSlug, $data) {

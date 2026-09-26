@@ -856,7 +856,7 @@
                                                         "text": "$t:admin.users.form.fields.status"
                                                     },
                                                     {
-                                                        "comment": "커스텀 Select 는 value-제어 전용 — defaultValue 는 렌더되지 않아 create 모드 표시가 비었다. 미전송 시 서버(CreateUserRequest)가 active 로 보정하므로 표시 기본값과 서버 기본값이 일치한다.",
+                                                        "comment": "커스텀 Select 는 value-제어 전용 — defaultValue 는 렌더되지 않아 create 모드 표시가 비었다. 미전송 시 서버(CreateUserRequest)가 active 로 보정하므로 표시 기본값과 서버 기본값이 일치한다.\n                   수정 모드에만 탈퇴·휴면·가입대기를 둔다 — 셋 다 \"그 상태가 되기까지의 이력\"(탈퇴 처리·장기 미접속·인증 미완료)이 전제라 생성으로 건너뛰면 그 이력을 가진 회원과 구분되지 않는다. 휴면이 빠져 있으면 휴면 회원을 열었을 때 select 값이 옵션에 없어 칸이 빈다.",
                                                         "type": "basic",
                                                         "name": "Select",
                                                         "actions": [
@@ -873,7 +873,7 @@
                                                             "name": "status",
                                                             "className": "w-full",
                                                             "value": "{{_local.form?.status ?? 'active'}}",
-                                                            "options": "{{route?.id ? [{label: '$t:admin.users.form.status_options.active', value: 'active'}, {label: '$t:admin.users.form.status_options.inactive', value: 'inactive'}, {label: '$t:admin.users.form.status_options.blocked', value: 'blocked'}, {label: '$t:admin.users.form.status_options.withdrawn', value: 'withdrawn'}] : [{label: '$t:admin.users.form.status_options.active', value: 'active'}, {label: '$t:admin.users.form.status_options.inactive', value: 'inactive'}, {label: '$t:admin.users.form.status_options.blocked', value: 'blocked'}] ?? []}}"
+                                                            "options": "{{route?.id ? [{label: '$t:admin.users.form.status_options.active', value: 'active'}, {label: '$t:admin.users.form.status_options.inactive', value: 'inactive'}, {label: '$t:admin.users.form.status_options.blocked', value: 'blocked'}, {label: '$t:admin.users.form.status_options.withdrawn', value: 'withdrawn'}, {label: '$t:admin.users.form.status_options.dormant', value: 'dormant'}, {label: '$t:admin.users.form.status_options.pending_verification', value: 'pending_verification'}] : [{label: '$t:admin.users.form.status_options.active', value: 'active'}, {label: '$t:admin.users.form.status_options.inactive', value: 'inactive'}, {label: '$t:admin.users.form.status_options.blocked', value: 'blocked'}] ?? []}}"
                                                         }
                                                     }
                                                 ]

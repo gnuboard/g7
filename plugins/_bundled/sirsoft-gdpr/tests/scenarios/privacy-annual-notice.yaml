@@ -1,0 +1,29 @@
+feature: privacy_annual_notice
+description: |
+  활성 회원의 연간 개인정보 통지를 실행당 상한 내에서 접수한다.
+  접수와 채널 결과는 추가 전용이며 시험 발송은 정기 주기에서 제외한다.
+  batch 태그는 사용하지 않는다. 배치 상한 1과 다음 실행 잔여 처리를 직접 검증하며
+  로컬 MySQL에 10만 건 시드나 전 번들 DDL 초기화를 요구하지 않는다.
+axes:
+  flow: [scheduled, api, layout, browser, installation]
+effects:
+  - notice_queued
+  - channel_result_appended
+  - duplicate_prevented
+  - settings_validated
+  - self_test_only
+  - permission_enforced
+  - history_paginated
+  - schema_roundtrip
+  - history_anonymized
+  - disabled_toggle_releases_dependent_fields
+  - notification_templates_are_editable_in_plugin_settings
+  - annual_notice_targets_match_the_dispatch_decision
+  - manual_send_ignores_the_toggle_and_keeps_the_batch_limit
+  - manual_send_button_opens_the_confirm_modal
+test_files:
+  - plugins/_bundled/sirsoft-gdpr/tests/Feature/AnnualNoticeMigrationTest.php
+  - plugins/_bundled/sirsoft-gdpr/tests/Unit/Listeners/GdprUserDeleteListenerTest.php
+  - plugins/_bundled/sirsoft-gdpr/tests/Feature/AnnualNoticeCommandTest.php
+  - plugins/_bundled/sirsoft-gdpr/resources/js/__tests__/layouts/annual_notice.test.tsx
+  - plugins/_bundled/sirsoft-gdpr/tests/Playwright/specs/admin/gdpr-annual-notice-settings.spec.ts

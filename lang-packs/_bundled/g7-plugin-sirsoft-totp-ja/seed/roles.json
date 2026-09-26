@@ -1,0 +1,6 @@
+{
+  "sirsoft-totp.credentials": {
+    "name": "認証アプリ運営者",
+    "description": "会員の認証アプリ登録解除権限 (紛失救済担当)"
+  }
+}

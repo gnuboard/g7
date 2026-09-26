@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\Auth;
 
 use App\Exceptions\Auth\AccountLockedException;
 use App\Exceptions\Auth\TwoFactorDeliveryFailedException;
+use App\Exceptions\Auth\TwoFactorEnrollmentRequiredException;
 use App\Http\Controllers\Api\Base\AuthBaseController;
 use App\Http\Controllers\Concerns\BuildsAuthFailureResponses;
 use App\Http\Requests\Auth\AuthenticatedRequest;
@@ -23,6 +24,11 @@ class AuthController extends AuthBaseController
 {
     use BuildsAuthFailureResponses;
 
+    /**
+     * 사용자 인증 컨트롤러를 생성합니다.
+     *
+     * @param  AuthService  $authService  인증 서비스
+     */
     public function __construct(
         private AuthService $authService
     ) {
@@ -58,7 +64,7 @@ class AuthController extends AuthBaseController
 
             // 2단계 인증이 켜져 있으면 아직 토큰이 없다 — 인증 코드 확인 단계로 안내한다
             if ($data['two_factor_required'] ?? false) {
-                return $this->success('auth.two_factor_required', $data);
+                return $this->success($this->twoFactorRequiredMessageKey($data), $data);
             }
 
             // 사용자 정보는 Resource로, 토큰은 그대로
@@ -67,6 +73,8 @@ class AuthController extends AuthBaseController
             return $this->success('auth.login_success', $data);
         } catch (AccountLockedException $e) {
             return $this->lockedResponse($e);
+        } catch (TwoFactorEnrollmentRequiredException $e) {
+            return $this->enrollmentRequiredResponse();
         } catch (TwoFactorDeliveryFailedException $e) {
             return $this->deliveryFailedResponse();
         } catch (ValidationException $e) {
@@ -100,6 +108,8 @@ class AuthController extends AuthBaseController
             // 세션을 여는 지점이므로 `login` 과 같은 423 계약을 따른다 — 화면은 두 경로를
             // 구분하지 않으므로 한쪽만 다른 모양이면 잠금 안내가 깨진다.
             return $this->lockedResponse($e);
+        } catch (TwoFactorEnrollmentRequiredException $e) {
+            return $this->enrollmentRequiredResponse();
         } catch (TwoFactorDeliveryFailedException $e) {
             return $this->deliveryFailedResponse();
         } catch (ValidationException $e) {
@@ -123,9 +133,11 @@ class AuthController extends AuthBaseController
                 $request->validated()['challenge_id']
             );
 
-            return $this->success('auth.two_factor_required', $data);
+            return $this->success($this->twoFactorRequiredMessageKey($data), $data);
         } catch (AccountLockedException $e) {
             return $this->lockedResponse($e);
+        } catch (TwoFactorEnrollmentRequiredException $e) {
+            return $this->enrollmentRequiredResponse();
         } catch (TwoFactorDeliveryFailedException $e) {
             return $this->deliveryFailedResponse();
         } catch (ValidationException $e) {

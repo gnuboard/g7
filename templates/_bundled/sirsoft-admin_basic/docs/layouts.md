@@ -5,14 +5,14 @@
 ## 레이아웃 목록
 
 <!-- @generated:layouts START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-레이아웃 149개 (루트: `layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
+레이아웃 154개 (루트: `layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
 
 | 그룹 | 개수 |
 |---|---|
 | `(root)` | 27개 |
 | `auth` | 1개 |
 | `errors` | 6개 |
-| `partials` | 115개 |
+| `partials` | 120개 |
 
 | 레이아웃 | 그룹 | 종류 | extends |
 |---|---|---|---|
@@ -120,11 +120,14 @@
 | `_modal_identity_message_template_preview` | `partials` | partial | - |
 | `_modal_identity_policy_delete` | `partials` | partial | - |
 | `_modal_identity_policy_form` | `partials` | partial | - |
+| `_modal_ip_restriction_rule_form` | `partials` | partial | - |
 | `_modal_mail_template_form` | `partials` | partial | - |
 | `_modal_notification_definition_reset` | `partials` | partial | - |
 | `_modal_notification_template_form` | `partials` | partial | - |
 | `_modal_notification_template_preview` | `partials` | partial | - |
 | `_modal_password_confirm` | `partials` | partial | - |
+| `_modal_privacy_run` | `partials` | partial | - |
+| `_modal_privacy_targets` | `partials` | partial | - |
 | `_modal_static_cache_republish` | `partials` | partial | - |
 | `_tab_advanced` | `partials` | partial | - |
 | `_tab_drivers` | `partials` | partial | - |
@@ -139,7 +142,9 @@
 | `_tab_mail` | `partials` | partial | - |
 | `_tab_mail_templates` | `partials` | partial | - |
 | `_tab_notification_definitions` | `partials` | partial | - |
+| `_tab_privacy` | `partials` | partial | - |
 | `_tab_security` | `partials` | partial | - |
+| `_tab_security_ip_restriction` | `partials` | partial | - |
 | `_tab_seo` | `partials` | partial | - |
 | `_tab_upload` | `partials` | partial | - |
 | `_modal_extension_preview_layout` | `partials` | partial | - |
@@ -236,6 +241,15 @@
   발급한 토큰을 회수합니다. 그 문구는 `loginTwoFactor` 의 `onError` 가 인증번호 오류 자리에 그대로
   싣습니다 — 별도 분기를 두지 않습니다.
 - 만료 시각은 정적 표기입니다(`| datetime`). 카운트다운을 쓰지 않습니다.
+- **인증 수단(`provider_id`)에 따라 화면이 갈립니다.** challenge 응답의 `provider_id` 를
+  `_local.twoFactor` 에 실어 두고 그 값으로 분기합니다.
+  - `'totp'`(인증 앱): 서버가 **아무것도 보내지 않습니다**. 그래서 「인증번호를 보냈습니다」
+    안내 대신 앱 코드 안내를 띄우고 **「인증번호 다시 받기」 버튼을 감춥니다** — 남겨 두면
+    눌러도 아무 일이 없는 것처럼 보입니다. 백업 코드(`xxxxx-xxxxx`)도 같은 칸에 받으므로
+    `maxLength` 를 넓히고 안내 문구를 함께 바꿉니다.
+  - 그 외(메일 등): 종전 화면 그대로입니다.
+  - 분기 기준은 **provider 목록을 늘려도 따라오도록** 코어가 내려주는 값을 그대로 씁니다 —
+    수단이 추가될 때마다 화면에 조건을 덧대지 않습니다.
 
 **금지 — 같은 시퀀스·onSuccess 안에서 방금 저장한 상태를 다시 읽지 않습니다**
 
@@ -353,11 +367,16 @@ _admin_base.g7.html (베이스 레이아웃)
 │           ├── _tab_mail.g7.html (메일 발송 SMTP 설정)
 │           ├── _tab_notification_definitions.g7.html (알림 정의)
 │           ├── _tab_security.g7.html (보안)
+│           ├── _tab_security_ip_restriction.g7.html (보안 > IP 접근 제한 카드)
+│           ├── _tab_privacy.g7.html (개인정보 — 보유기간 파기·휴면 계정, 조치 대상은 대상마다 한 행: 건수 · 대상 보기 · 지금 실행 · 결과 줄)
+│           ├── _modal_privacy_targets.g7.html (개인정보 — 조치 대상 명단 창, 무한 스크롤 · 0건이면 빈 명단 안내)
+│           ├── _modal_privacy_run.g7.html (개인정보 — 직권 실행 확인 창, 건수 재조회 · 휴면 전환·탈퇴의 대기기간 생략)
 │           ├── _tab_upload.g7.html (업로드)
 │           ├── _tab_drivers.g7.html (드라이버)
 │           ├── _tab_seo.g7.html (SEO)
 │           ├── _tab_advanced.g7.html (고급)
 │           ├── _tab_info.g7.html (시스템 정보)
+│           ├── _modal_ip_restriction_rule_form.g7.html (IP 접근 제한 규칙 추가·수정)
 │           ├── _modal_cache_delete.g7.html
 │           ├── _modal_core_changelog.g7.html
 │           ├── _modal_core_update_guide.g7.html

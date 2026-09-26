@@ -88,6 +88,10 @@
       "sample_plugin_1": "SEO Optimization",
       "sample_template_1": "Main Page"
     },
+    "activities": {
+      "user_registered": "{{name}} signed up"
+    },
+    "refreshed": "Dashboard refreshed.",
     "extension_status": {
       "more": "More"
     },
@@ -293,7 +297,9 @@
         "active": "Active",
         "inactive": "Inactive",
         "blocked": "Blocked",
-        "withdrawn": "Withdrawn"
+        "withdrawn": "Withdrawn",
+        "dormant": "Dormant",
+        "pending_verification": "Pending Verification"
       },
       "timezone_options": {
         "Asia/Seoul": "Asia/Seoul (UTC+9)",
@@ -334,6 +340,7 @@
       "disabled": "Disabled",
       "withdrawn_at": "Withdrawn At",
       "blocked_at": "Blocked At",
+      "dormant_at": "Dormant Since",
       "consent_type": {
         "terms": "Terms of Service",
         "privacy": "Privacy Policy"
@@ -1326,7 +1333,8 @@
       "notification_definitions": "Notifications",
       "language_packs": "Language Packs",
       "identity": "Identity",
-      "info": "Info"
+      "info": "Info",
+      "privacy": "Privacy"
     },
     "general": {
       "site_info": "Site Information",
@@ -1551,8 +1559,49 @@
       "require_password_special_char_hint": "When enabled, newly set passwords must contain at least one special character.",
       "two_factor_auth": "Two-factor authentication",
       "two_factor_auth_label": "Require a verification code at sign-in",
-      "two_factor_auth_hint": "When enabled, a verification code is emailed after the password check and must be entered to finish signing in.",
-      "ip_throttle_floor_hint": "The per-IP request limit is six times this value, with a guaranteed floor of 30 requests per minute."
+      "two_factor_auth_hint": "When enabled, one more verification step follows the password check. Codes are emailed by default; installing the authenticator app plugin also allows app codes.",
+      "two_factor_scope": "Applies to",
+      "two_factor_scope_all": "All members",
+      "two_factor_scope_admin": "Administrators only",
+      "two_factor_scope_hint": "With administrators only, ordinary members keep signing in with just their password.",
+      "ip_throttle_floor_hint": "The per-IP request limit is six times this value, with a guaranteed floor of 30 requests per minute.",
+      "ip_restriction": {
+        "title": "Access restriction",
+        "desc": "Only allow the admin area from the IP addresses you permit.",
+        "proxy_warning": "Forwarding headers such as X-Forwarded-For are arriving while no trusted proxy is configured. Every visitor then appears as the single proxy address and the IP restriction misbehaves — configure trusted proxies first.",
+        "enabled": "Enable IP access restriction",
+        "enabled_desc": "When off, the lists and rules below are saved but not applied.",
+        "admin_allowed_ips": "Admin area allowed IPs",
+        "current_ip": "Your current IP {{ip}}",
+        "add_current_ip": "Add current IP",
+        "ip_placeholder": "Type an IP or CIDR and press Enter (e.g. 203.0.113.24, 10.0.0.0/8)",
+        "admin_allowed_ips_hint": "Applies to the admin screens, admin APIs (including extension admin screens) and admin login. Leave empty to not apply this item. A list that leaves out your current IP cannot be saved.",
+        "rules": "Route rules",
+        "add_rule": "Add rule",
+        "rules_empty": "No rules yet.",
+        "rules_hint": "Only the first matching rule from the top applies. A * in a pattern matches anything, including /.",
+        "rules_callback_warning": "Rules on paths outside the admin area can also cut off requests from external servers, such as payment approvals and deposit notifications. Known payment, webhook and identity verification callbacks are excluded automatically, but requests an extension receives on other paths may be blocked.",
+        "emergency_hint": "If you get locked out, disable it on the server: php artisan security:ip-restriction --disable",
+        "col_pattern": "URI pattern",
+        "col_ips": "Allowed IPs",
+        "col_memo": "Memo",
+        "col_enabled": "On",
+        "modal": {
+          "create_title": "Add rule",
+          "edit_title": "Edit rule",
+          "pattern": "URI pattern",
+          "pattern_hint": "A leading / makes no difference. A * matches anything, including /.",
+          "pattern_placeholder": "e.g. /api/admin/users*",
+          "ips": "Allowed IPs",
+          "memo": "Memo",
+          "memo_placeholder": "e.g. Member management from HQ network only",
+          "enabled": "Use this rule",
+          "pattern_required": "Please enter a URI pattern.",
+          "ips_required": "Please enter at least one allowed IP.",
+          "apply": "Apply",
+          "apply_hint": "Applied rules are stored only after you press Save at the bottom of the screen."
+        }
+      }
     },
     "identity": {
       "sub_tabs": {
@@ -1918,7 +1967,10 @@
         "reset_password": "Password Reset",
         "password_changed": "Password Changed",
         "sitemap_regenerated": "Sitemap Regeneration Complete",
-        "sitemap_regenerate_failed": "Sitemap Regeneration Failed"
+        "sitemap_regenerate_failed": "Sitemap Regeneration Failed",
+        "dormant_pre_notice": "Dormancy Advance Notice",
+        "dormant_converted": "Dormancy Applied",
+        "dormant_withdraw_notice": "Dormant Account Withdrawal Notice"
       },
       "channels_label": "Channels:",
       "edit_modal": {
@@ -2056,7 +2108,90 @@
     "unsaved_changes": "You have unsaved changes.",
     "validation_error": "Please check your input",
     "app_key_regenerated": "Application key has been regenerated.",
-    "cache_cleared": "All cache has been cleared."
+    "cache_cleared": "All cache has been cleared.",
+    "privacy": {
+      "policy_notice_title": "Update your privacy policy before turning these on",
+      "policy_notice_desc": "The settings below irreversibly erase members’ personal data or change account status. The law requires advance notice, so document the retention and dormancy policy and announce it before enabling.",
+      "target_count": "{{count}} member(s) affected",
+      "withdrawn": {
+        "title": "Erasing residual data of withdrawn members",
+        "desc": "On withdrawal the original name and email are kept with a suffix so disputes can still be handled. Once the retention period passes, that residual data is actually erased.",
+        "enabled": "Erase automatically after the retention period",
+        "enabled_desc": "Off by default. When on, the nightly batch processes matching members.",
+        "days": "Retention period after withdrawal (days)",
+        "days_hint": "Members whose withdrawal is older than this are affected. Default 365 days.",
+        "irreversible_warning": "Contact details, address, bio and identity-verification identifiers are erased and cannot be recovered. The name becomes a fixed placeholder and the email an unidentifiable form."
+      },
+      "dormant": {
+        "title": "Dormant accounts",
+        "desc": "Long-inactive members become dormant after an advance notice. When a dormant member signs in, that sign-in counts as identity confirmation and the account is restored immediately.",
+        "enabled": "Move long-inactive members to dormant",
+        "enabled_desc": "Off by default. When on, an advance notice is sent first, then the transition follows.",
+        "days": "Inactivity before dormancy (days)",
+        "days_hint": "Counted from the last activity — sign-in or app/token use. Default 730 days.",
+        "notice_days": "Advance notice period (days)",
+        "notice_days_hint": "How many days before the transition the notice goes out. It must be shorter than the dormancy period, and the transition only happens after this period has passed since the notice.",
+        "withdraw_enabled": "Withdraw accounts that stay dormant",
+        "withdraw_enabled_desc": "Off by default. When on, long-dormant accounts are withdrawn.",
+        "withdraw_days": "Days from dormancy to withdrawal",
+        "withdraw_days_hint": "After this period a withdrawal notice is sent, and the account is withdrawn once the notice period has passed. Default 365 days.",
+        "withdraw_warning": "A withdrawn account cannot be restored. Administrator accounts are excluded from automatic withdrawal.",
+        "restore_hint": "Dormancy is lifted automatically when the member signs in — no application is required."
+      },
+      "targets": {
+        "view": "View targets",
+        "title": {
+          "withdrawn": "Withdrawn members to be purged",
+          "pre_notice": "Members to receive the dormancy notice",
+          "convert": "Members to be converted to dormant",
+          "withdraw_notice": "Dormant members to receive the withdrawal notice",
+          "withdraw": "Dormant members to be withdrawn"
+        },
+        "rows": {
+          "withdrawn": "Withdrawn members' residual data",
+          "pre_notice": "Advance notice before dormancy",
+          "convert": "Convert to dormant",
+          "withdraw_notice": "Notice before withdrawing dormant accounts",
+          "withdraw": "Withdraw dormant accounts"
+        },
+        "hint": "Counts and lists follow the saved settings. Even while a feature is off, they show what would be processed once it is turned on.",
+        "total": "{{count}} in total",
+        "empty": "There are no targets.",
+        "loading": "Loading...",
+        "close": "Close"
+      },
+      "manual_run": {
+        "section_desc": "Run once now without waiting for the scheduler. It processes with the saved settings even when automatic runs are off.",
+        "run": "Run now",
+        "save_first_hint": "You have unsaved changes. Manual runs use the saved settings, so save first.",
+        "status_active": "{{status}} — queued {{at}} · {{by}}",
+        "last_completed": "Last manual run: {{at}} · {{by}} · {{count}} processed",
+        "last_failed": "Last manual run failed: {{at}} · {{by}} — {{error}}",
+        "unknown_requester": "Unknown",
+        "modal_title": "{{target}} — manual run",
+        "confirm_desc": "Run once now without waiting for the scheduler. The job is queued and processed in order; the result appears on the card when it finishes.",
+        "count_label": "To be processed",
+        "count_value": "{{count}}",
+        "loading": "Counting...",
+        "mode_label": "Method",
+        "modes": {
+          "anonymize": "Anonymize",
+          "delete": "Delete",
+          "erase_ip": "Erase author IP"
+        },
+        "disabled_notice": "Automatic runs are off. A manual run ignores the toggle and processes once with the saved retention period.",
+        "skip_waiting": "Skip waiting period",
+        "skip_waiting_desc": "Also processes members who were not notified, or whose notice period has not passed, as long as the period has elapsed. This skips the advance notice the law requires, so use it only under your own responsibility.",
+        "irreversible": "This cannot be undone. Check the count and the target list before running.",
+        "queue_hint": "A queue worker must be running. You cannot run the same target again until its queued job finishes.",
+        "cancel": "Cancel",
+        "execute": "Run",
+        "executing": "Queuing...",
+        "queued_toast": "The run has been queued. The result will appear on the card when it finishes.",
+        "queue_failed": "Could not queue the run.",
+        "preview_failed": "Could not load the target count."
+      }
+    }
   },
   "templates": {
     "page_title": "Template Management",
@@ -2981,6 +3116,7 @@
       "modal_identity_message_template_preview": "Preview Identity Verification Message Template",
       "identity_policy_delete_modal": "Delete Identity Verification Policy",
       "identity_policy_form_modal": "Edit Identity Verification Policy",
+      "ip_restriction_rule_form_modal": "Edit IP Access Restriction Rule",
       "modal_mail_template_form": "Edit Mail Template",
       "modal_notification_definition_reset": "Reset Notification Definition",
       "modal_notification_template_form": "Edit Notification Template",

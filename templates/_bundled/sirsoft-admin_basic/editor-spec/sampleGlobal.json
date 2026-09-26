@@ -54,5 +54,25 @@
   "fileDeleteReferences": [],
   "fileDeleteRouteRequired": false,
   "layoutVersionLimit": 100,
-  "extensionViewMode": "gallery"
+  "extensionViewMode": "gallery",
+  "appConfig": {
+    "version": "1.1.0",
+    "releaseYear": 2026,
+    "isIos": false,
+    "supportedLocales": [
+      "ko",
+      "en",
+      "ja"
+    ],
+    "localeNames": {
+      "ko": "한국어",
+      "en": "English",
+      "ja": "日本語"
+    },
+    "supportedTimezones": [
+      "Asia/Seoul",
+      "Asia/Tokyo",
+      "UTC"
+    ]
+  }
 }

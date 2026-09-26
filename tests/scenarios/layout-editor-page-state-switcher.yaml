@@ -27,13 +27,20 @@ description: |
     - 신규 상태 라벨/formErrors $t: 키가 캐시 무효화 구멍 없이 친화명으로 해석(raw 키 회귀 차단).
 
 axes:
-  scope_kind: [route_exact, route_glob, base, modal]
+  scope_kind: [route_exact, route_glob, base, modal, host_inherited]
   states_count: [zero, one, two_or_more]
   patch_branch: [sample_override, local, global, query, route_set, route_null, form_errors]
   template: [sirsoft-basic, sirsoft-admin_basic]
   label_resolution: [existing_key, new_key_cache_busted]
+  mode_transition: [stay, enter_iteration_item, round_trip, move_to_other_screen]
 
 exclusions:
+  - { scope_kind: host_inherited, patch_branch: sample_override, reason: "호스트 상속은 scope 도출 축 — 패치 분기와 직교(route_exact 가 cover)" }
+  - { scope_kind: host_inherited, patch_branch: form_errors, reason: "동일" }
+  - { scope_kind: host_inherited, patch_branch: route_null, reason: "동일" }
+  - { mode_transition: enter_iteration_item, states_count: zero, reason: "states 미선언 → 물려받을 scope 가 없다(디그레이드)" }
+  - { mode_transition: round_trip, states_count: zero, reason: "동일" }
+  - { mode_transition: move_to_other_screen, patch_branch: route_null, reason: "화면 이동은 목록 교체 축 — 패치 분기와 직교" }
   - { states_count: zero, patch_branch: local, reason: "states 미선언 → 토글 미표시 + no-op(패치 분기 무관)" }
   - { states_count: zero, patch_branch: global, reason: "동일" }
   - { states_count: zero, patch_branch: query, reason: "동일" }
@@ -61,6 +68,25 @@ effects:
   - state_switcher_visible_when_two_or_more_items
   - state_switcher_hidden_when_single_or_zero_or_unmatched
   - simulator_noop_when_no_active_state
+  # 호스트 scope 상속 (확장 조각 / 반복 항목 템플릿)
+  - iteration_item_inherits_host_route_scope
+  - iteration_item_inherits_host_base_and_modal_scope
+  - iteration_item_degrades_when_host_path_unknown
+  - extension_inherits_host_modal_scope
+  # 모드 왕복 시 선택 보존
+  - active_state_survives_enter_iteration_item_edit
+  - active_state_survives_transient_empty_state_list
+  - active_state_resets_to_default_when_moving_to_other_screen
+  - active_state_memory_not_cleared_on_stateless_screen
+  - picking_a_state_overwrites_the_memory
+  - active_state_memory_is_scoped_to_its_screen
+  # 단독 변종(시드 목적) 허용
+  - single_variant_scope_allowed_when_it_carries_simulation_effect
+  - scope_with_no_effect_variant_is_rejected
+  - state_effect_guard_population_is_derived_from_repository
+  # 자동 채움 표본이 소비처 타입과 맞는가 (문자열이 배열·수 자리에 박히면 분기가 뒤집힌다)
+  - sample_seed_type_guard_population_is_derived_from_repository
+  - sample_seed_type_matches_consumer_expression
   # sampleData 오버라이드
   - active_state_sample_override_replaces_base_wholesale
   - unmatched_sample_falls_back_to_base
@@ -89,11 +115,15 @@ effects:
   - admin_users_edit_vs_create_title_via_route_id_removal
   - admin_settings_general_vs_seo_tab_via_query_tab
   - checkout_validation_failed_renders_dotted_key_inline_errors
+  - guest_order_form_guest_vs_member_branch_toggle_via_currentuser_patch
   # 비편집 무영향
   - non_edit_user_page_unaffected_simulation_gated_by_isEditMode
 
 test_files:
   - resources/js/core/template-engine/layout-editor/__tests__/utils/matchStateScope.test.ts
+  - resources/js/core/template-engine/layout-editor/__tests__/LayoutEditorReducer.activeState.test.ts
+  - resources/js/core/template-engine/layout-editor/__tests__/spec/stateItemHasEffect.test.ts
+  - resources/js/core/template-engine/layout-editor/__tests__/spec/stateSeedTypeMatchesConsumer.test.ts
   - resources/js/core/template-engine/layout-editor/__tests__/state/pageStateSimulator.test.ts
   - resources/js/core/template-engine/layout-editor/__tests__/sample-data/sampleDataProvider.test.ts
   - resources/js/core/template-engine/layout-editor/__tests__/hooks/useEditorTemplateAssets.test.ts

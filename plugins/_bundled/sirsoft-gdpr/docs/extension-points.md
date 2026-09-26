@@ -5,16 +5,24 @@
 ## 발행 훅
 
 <!-- @generated:hooks-published START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-발행 훅 2종 / 호출 지점 12곳. 훅 이름이 상수·변수로 조립된 호출이 12곳 있어 호출 위치가 표에 다 실리지 않을 수 있습니다.
+발행 훅 4종 / 호출 지점 14곳. 이 중 1종은 `getHooks()` 선언에 없어 소스에서 자동 감지한 것입니다 — 선언에 추가하면 유형과 설명이 함께 실립니다. 훅 이름이 상수·변수로 조립된 호출이 12곳 있어 호출 위치가 표에 다 실리지 않을 수 있습니다.
 
 | 훅 이름 | 유형 | 설명 | 발행 위치 |
 |---|---|---|---|
+| `core.privacy.notice_sections` | filter | — | `src/Services/GdprAnnualNoticeService.php:167` |
 | `sirsoft-gdpr.consent.granted` | action | 동의 부여 시 발화 | 선언 (호출 위치 미확인) |
 | `sirsoft-gdpr.consent.revoked` | action | 동의 철회 시 발화 | 선언 (호출 위치 미확인) |
+| `sirsoft-gdpr.privacy.annual_notice_due` | action | 개인정보 연간 통지 접수 후 발화 | `src/Services/GdprAnnualNoticeService.php:186` |
 <!-- @generated:hooks-published END -->
 
 <!-- @intent START -->
-두 훅 모두 `GdprUserConsent $consent, string $source` 를 인자로 넘깁니다. `$source` 값은
+위 표의 `core.privacy.notice_sections` 는 **이 플러그인의 훅이 아닙니다.** 코어가 소유한 필터이고
+계약 정본은 코어 `docs/extension/hooks.md` 의 「개인정보 통지 섹션 계약」 절입니다. 이 플러그인은
+통지문을 조립하는 **소비자**로서 그 필터를 호출할 뿐이고, 표에 실린 것은 위 머리말이 밝힌 대로
+소스의 호출 지점을 자동 감지한 결과입니다. 자기 섹션을 기여하려는 확장은 gdpr 이 아니라 **코어
+문서의 계약**을 보고 `addFilter` 하면 되며, gdpr 설치 여부와 무관하게 구독할 수 있습니다.
+
+동의 granted/revoked 두 훅 모두 `GdprUserConsent $consent, string $source` 를 인자로 넘깁니다. `$source` 값은
 `banner`/`mypage`/`mypage_renew_all`/`register`/`withdraw` 중 하나이며, 어떤 화면에서 동의가
 바뀌었는지 구분해야 하는 리스너(예: 배너 동의만 특정 방식으로 처리하고 싶은 경우)는 이 값으로
 분기합니다. `revoked` 는 명시적 철회(마이페이지)뿐 아니라 회원탈퇴로 인한 일괄 철회
@@ -29,8 +37,13 @@
 |---|---|---|---|---|
 | `core.auth.logout` | action (미선언) | `GdprAuthLogoutListener` | `forgetGdprCookies` | 10 |
 | `core.auth.record_consents` | action (미선언) | `GdprAuthConsentListener` | `recordRegisterConsents` | 10 |
+| `core.notification.after_channel_send` | action (미선언) | `GdprAnnualNoticeListener` | `sent` | - |
+| `core.notification.channel_send_failed` | action (미선언) | `GdprAnnualNoticeListener` | `failed` | - |
+| `core.notification.filter_default_definitions` | filter | `GdprAnnualNoticeListener` | `defaults` | 20 |
+| `core.privacy.manual_run_targets` | filter | `GdprAnnualNoticeListener` | `addManualRunTarget` | 20 |
 | `core.user.after_withdraw` | action (미선언) | `GdprUserWithdrawListener` | `handleWithdraw` | 10 |
 | `core.user.before_delete` | action (미선언) | `GdprUserDeleteListener` | `cascadePluginData` | 10 |
+| `sirsoft-gdpr.notification.extract_data` | filter | `GdprAnnualNoticeListener` | `extract` | - |
 <!-- @generated:hooks-subscribed END -->
 
 <!-- @intent START -->
@@ -46,6 +59,7 @@
 <!-- @generated:listeners START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 리스너 | 구독 훅 | 등록 방식 | HookListenerInterface | 파일 |
 |---|---|---|---|---|
+| `GdprAnnualNoticeListener` | 5개 | 명시 등록 | ✅ | `src/Listeners/GdprAnnualNoticeListener.php` |
 | `GdprAuthConsentListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/GdprAuthConsentListener.php` |
 | `GdprAuthLogoutListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/GdprAuthLogoutListener.php` |
 | `GdprUserDeleteListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/GdprUserDeleteListener.php` |
@@ -107,7 +121,9 @@ _등록하는 브로드캐스트 채널이 없습니다._
 ## 스케줄
 
 <!-- @generated:schedules START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-_등록하는 스케줄이 없습니다._
+| 스케줄 | 주기 | 설명 |
+|---|---|---|
+| `sirsoft-gdpr:send-annual-notices --scheduled` | `daily` | 개인정보 연간 통지 |
 <!-- @generated:schedules END -->
 
 <!-- @intent START -->
@@ -118,7 +134,9 @@ _등록하는 스케줄이 없습니다._
 ## 알림 정의
 
 <!-- @generated:notifications START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-_등록하는 알림 정의가 없습니다._
+| 알림 키 | 채널 |
+|---|---|
+| `annual_privacy_notice` | `mail`, `database` |
 <!-- @generated:notifications END -->
 
 <!-- @intent START -->

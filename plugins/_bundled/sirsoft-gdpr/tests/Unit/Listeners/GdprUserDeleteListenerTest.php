@@ -4,12 +4,17 @@ namespace Plugins\Sirsoft\Gdpr\Tests\Unit\Listeners;
 
 use App\Models\User;
 use App\Services\PluginSettingsService;
+use Illuminate\Support\Str;
+use Plugins\Sirsoft\Gdpr\Enums\PrivacyNoticeStatus;
 use Plugins\Sirsoft\Gdpr\Listeners\GdprUserDeleteListener;
+use Plugins\Sirsoft\Gdpr\Models\GdprPrivacyNoticeLog;
 use Plugins\Sirsoft\Gdpr\Models\GdprUserConsent;
 use Plugins\Sirsoft\Gdpr\Models\GdprUserConsentHistory;
+use Plugins\Sirsoft\Gdpr\Repositories\GdprPrivacyNoticeRepository;
 use Plugins\Sirsoft\Gdpr\Repositories\GdprUserConsentHistoryRepository;
 use Plugins\Sirsoft\Gdpr\Repositories\GdprUserConsentRepository;
 use Plugins\Sirsoft\Gdpr\Services\CookieCategoryService;
+use Plugins\Sirsoft\Gdpr\Services\GdprAnnualNoticeService;
 use Plugins\Sirsoft\Gdpr\Services\GdprConsentService;
 use Plugins\Sirsoft\Gdpr\Tests\PluginTestCase;
 
@@ -25,6 +30,21 @@ class GdprUserDeleteListenerTest extends PluginTestCase
 {
     private GdprUserDeleteListener $listener;
 
+    /**
+     * 기존 테스트 DB를 트랜잭션으로 격리하고 전체 DDL 초기화를 피합니다.
+     *
+     * @return void 반환값 없음
+     */
+    public function refreshDatabase(): void
+    {
+        $this->beginDatabaseTransaction();
+    }
+
+    /**
+     * 동의와 통지 이력 저장소를 사용하는 삭제 리스너를 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -36,15 +56,27 @@ class GdprUserDeleteListenerTest extends PluginTestCase
         $this->app->instance(PluginSettingsService::class, $pluginSettings);
 
         $consentService = new GdprConsentService(
-            new GdprUserConsentRepository(),
-            new GdprUserConsentHistoryRepository(),
+            new GdprUserConsentRepository,
+            new GdprUserConsentHistoryRepository,
             $pluginSettings,
             new CookieCategoryService($pluginSettings),
         );
 
-        $this->listener = new GdprUserDeleteListener($consentService);
+        $this->listener = new GdprUserDeleteListener(
+            $consentService,
+            new GdprAnnualNoticeService(new GdprPrivacyNoticeRepository, $pluginSettings),
+        );
     }
 
+    /**
+     * 완전 삭제 전 훅에 개인정보 정리 메서드가 연결되는지 검증합니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario flow=scheduled
+     *
+     * @effects history_anonymized
+     */
     public function test_get_subscribed_hooks_returns_before_delete(): void
     {
         $hooks = GdprUserDeleteListener::getSubscribedHooks();
@@ -53,6 +85,15 @@ class GdprUserDeleteListenerTest extends PluginTestCase
         $this->assertSame('cascadePluginData', $hooks['core.user.before_delete']['method']);
     }
 
+    /**
+     * 완전 삭제 전에 회원의 현재 동의 상태가 제거되는지 검증합니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario flow=scheduled
+     *
+     * @effects history_anonymized
+     */
     public function test_cascade_deletes_status_table(): void
     {
         $user = User::factory()->create();
@@ -70,12 +111,21 @@ class GdprUserDeleteListenerTest extends PluginTestCase
         $this->assertDatabaseMissing('gdpr_user_consents', ['user_id' => $user->id]);
     }
 
+    /**
+     * 동의 증적 두 행을 보존하면서 직접 식별정보를 익명화하는지 검증합니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario flow=scheduled
+     *
+     * @effects history_anonymized
+     */
     public function test_cascade_anonymizes_history_rather_than_delete(): void
     {
         $user = User::factory()->create();
 
         // history: 변경 이력 2건 사전 생성 (감사 추적용)
-        GdprUserConsentHistory::create([
+        $first = GdprUserConsentHistory::create([
             'user_id' => $user->id,
             'consent_key' => 'cookie_analytics',
             'action' => 'granted',
@@ -85,7 +135,7 @@ class GdprUserDeleteListenerTest extends PluginTestCase
             'user_agent' => 'PHPUnit',
         ]);
 
-        GdprUserConsentHistory::create([
+        $second = GdprUserConsentHistory::create([
             'user_id' => $user->id,
             'consent_key' => 'cookie_marketing',
             'action' => 'revoked',
@@ -99,18 +149,20 @@ class GdprUserDeleteListenerTest extends PluginTestCase
 
         // history 행 자체는 보존되어야 함 (총 2건 그대로 존재)
         $remaining = GdprUserConsentHistory::query()
-            ->whereIn('consent_key', ['cookie_analytics', 'cookie_marketing'])
+            ->whereIn('id', [$first->id, $second->id])
             ->count();
         $this->assertSame(2, $remaining);
 
         // 단, user_id / ip_address / user_agent 는 NULL 로 익명화되어야 함
         $this->assertDatabaseHas('gdpr_user_consent_histories', [
+            'id' => $first->id,
             'consent_key' => 'cookie_analytics',
             'user_id' => null,
             'ip_address' => null,
             'user_agent' => null,
         ]);
         $this->assertDatabaseHas('gdpr_user_consent_histories', [
+            'id' => $second->id,
             'consent_key' => 'cookie_marketing',
             'user_id' => null,
             'ip_address' => null,
@@ -118,6 +170,15 @@ class GdprUserDeleteListenerTest extends PluginTestCase
         ]);
     }
 
+    /**
+     * 동의와 통지 증적이 없는 회원도 안전하게 정리되는지 검증합니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario flow=scheduled
+     *
+     * @effects history_anonymized
+     */
     public function test_cascade_is_safe_when_no_data_exists(): void
     {
         $user = User::factory()->create();
@@ -128,5 +189,36 @@ class GdprUserDeleteListenerTest extends PluginTestCase
         $this->assertDatabaseMissing('gdpr_user_consents', ['user_id' => $user->id]);
         // 예외 없이 종료
         $this->assertTrue(true);
+    }
+
+    /**
+     * 삭제 리스너가 실제 통지 증적을 보존하고 회원 연결만 익명화하는지 검증합니다.
+     *
+     * @scenario flow=scheduled
+     *
+     * @effects history_anonymized
+     *
+     * @return void 반환값 없음
+     */
+    public function test_cascade_anonymizes_annual_notice_without_removing_evidence(): void
+    {
+        $user = User::factory()->create();
+        $log = GdprPrivacyNoticeLog::create([
+            'user_id' => $user->id,
+            'attempt_id' => (string) Str::uuid(),
+            'status' => PrivacyNoticeStatus::Sent,
+            'channels' => ['database'],
+            'is_test' => false,
+            'sent_at' => now(),
+            'snapshot' => ['locale' => 'ko', 'sections' => []],
+        ]);
+
+        $this->listener->cascadePluginData($user);
+
+        $preserved = $log->fresh();
+        $this->assertNotNull($preserved);
+        $this->assertNull($preserved->user_id);
+        $this->assertSame(PrivacyNoticeStatus::Sent, $preserved->status);
+        $this->assertSame($log->snapshot, $preserved->snapshot);
     }
 }

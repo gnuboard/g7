@@ -159,6 +159,14 @@ return [
         'attachment_purge_retention_days_min' => 1,
         'attachment_purge_retention_days_max' => 3650,
 
+        // 개인정보 보유기간 (일) — 게시물·댓글 작성 IP / 비회원 작성자 정보 (이슈 #636)
+        // IP 하한 1일: 0 은 「작성 즉시 파기」가 되어 스팸·분쟁 대응 근거가 사라진다.
+        // 비회원 하한 0: 0 은 「비회원 축 미적용」을 뜻한다(파기하지 않음).
+        'privacy_ip_retention_days_min' => 1,
+        'privacy_ip_retention_days_max' => 3650,
+        'privacy_guest_retention_days_min' => 0,
+        'privacy_guest_retention_days_max' => 3650,
+
         // 신고 정책
         'auto_hide_threshold_min' => 0,
         'auto_hide_threshold_max' => 100,

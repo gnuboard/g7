@@ -15,7 +15,8 @@
     "seo": "SEO Settings",
     "mail_templates": "Mail Templates",
     "notification_definitions": "Notification Settings",
-    "identity_policies": "Identity Policies"
+    "identity_policies": "Identity Policies",
+    "privacy_retention": "Privacy Retention"
   },
   "board_settings_tabs": {
     "basic": "Basic",
@@ -510,5 +511,65 @@
       "icon_delete_failed": "Failed to delete the icon"
     },
     "delete_blocked_suffix": " reaction(s) use this type, so it cannot be deleted — you can turn it off instead"
+  },
+  "privacy_retention": {
+    "title": "Privacy Retention",
+    "description": "Automatically erases the author IP of posts and comments and the author information of guest posts once their retention period has passed, every day. Announce the retention period and erasure method in your privacy policy before turning this on.",
+    "enabled": "Automatic retention processing",
+    "enabled_hint": "When on, the core privacy retention job (runs daily) processes board data by the two rules below. Processed data cannot be restored.",
+    "target_count": "{{count}} targets",
+    "ip_retention_days": "Author IP retention period (days)",
+    "ip_retention_days_hint": "Erases the author IP of every post and comment, including members' posts, once this many days have passed since writing. Access records must be kept for at least 1 year (2 years for large operators), so do not set a shorter period.",
+    "guest_retention_days": "Guest author information retention period (days)",
+    "guest_retention_days_hint": "Processes posts and comments written by guests with the method below once this many days have passed since writing. 0 means they are not processed.",
+    "guest_mode": "Guest post processing mode",
+    "guest_mode_hint": "Anonymize hides only the author name and keeps the post. Delete removes the post from lists and erases its title, content and attached files.",
+    "modes": {
+      "anonymize": "Anonymize (hide author name)",
+      "delete": "Delete"
+    },
+    "delete_warning": "Deletion cannot be undone. Replies and comments under a guest post (including members' ones) are deleted with it, and attached files are erased immediately.",
+    "preview_hint": "Target counts are based on the saved settings. If you changed a value, save first and check again.",
+    "withdrawn_notice": "Posts by withdrawn members are shown as “Withdrawn user”, so they are not processed here. Member information erasure is configured in the Privacy tab of the core settings.",
+    "targets": {
+      "row_ip": "Author IPs (posts and comments)",
+      "row_guest": "Guest author information (posts and comments)",
+      "count": "{{count}} targets",
+      "view": "View targets",
+      "title_ip": "Author IPs to be erased (posts and comments)",
+      "title_guest": "Guest author information to be processed (posts and comments)",
+      "total": "{{count}} in total",
+      "empty": "There are no targets.",
+      "loading": "Loading...",
+      "close": "Close"
+    },
+    "manual_run": {
+      "run": "Run now",
+      "save_first_hint": "You have unsaved changes. Manual runs use the saved settings, so save first.",
+      "status_active": "{{status}} — queued {{at}} · {{by}}",
+      "last_completed": "Last manual run: {{at}} · {{by}} · {{count}} processed",
+      "last_failed": "Last manual run failed: {{at}} · {{by}} — {{error}}",
+      "unknown_requester": "Unknown",
+      "modal_title": "{{target}} — manual run",
+      "confirm_desc": "Run once now without waiting for the scheduler. The job is queued and processed in order; the result appears on this screen when it finishes.",
+      "count_label": "To be processed",
+      "count_value": "{{count}}",
+      "loading": "Counting...",
+      "mode_label": "Method",
+      "modes": {
+        "anonymize": "Anonymize",
+        "delete": "Delete",
+        "erase_ip": "Erase author IP"
+      },
+      "disabled_notice": "Automatic runs are off. A manual run ignores the toggle and processes once with the saved settings.",
+      "irreversible": "This cannot be undone. Check the count and the target list before running.",
+      "queue_hint": "A queue worker must be running. You cannot run the same target again until its queued job finishes.",
+      "cancel": "Cancel",
+      "execute": "Run",
+      "executing": "Queuing...",
+      "queued_toast": "The run has been queued. The result will appear when it finishes.",
+      "queue_failed": "Could not queue the run.",
+      "preview_failed": "Could not load the target count."
+    }
   }
 }

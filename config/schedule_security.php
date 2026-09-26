@@ -93,6 +93,10 @@ return [
             'attachments:prune-orphans' => ['options' => ['dry-run', 'limit', 'days', 'scheduled']],
             // 잔존물 정리 — 최신 백업 1개 상시 보존 가드는 커맨드 내부 소유(옵션으로 무력화 불가).
             'storage:prune-leftovers' => ['options' => ['days', 'backup-days', 'dry-run']],
+            // 개인정보 보유기간·휴면 — 파기 여부는 각 도메인 설정(기본 꺼짐)이 결정하며
+            // 옵션으로 켤 수 없다. `--handler=` 는 대상을 좁히기만 하므로 안전장치를 무력화하지 않는다.
+            'privacy:process-retention' => ['options' => ['dry-run', 'handler', 'scheduled']],
+            'privacy:process-dormant' => ['options' => ['dry-run', 'scheduled']],
 
             // SEO
             'seo:warmup' => ['options' => ['layout']],

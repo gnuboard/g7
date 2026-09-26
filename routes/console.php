@@ -64,6 +64,14 @@ Schedule::command('attachments:prune-orphans --scheduled')->dailyAt('04:55')->on
 // 중단된 업데이트·설치가 남긴 임시 산출물 + 오래된 백업본(최신 1개 보존) 정리
 Schedule::command('storage:prune-leftovers')->dailyAt('05:00')->onOneServer();
 
+// 개인정보를 파기하므로 기본 꺼짐 — 각 도메인 핸들러가 `--scheduled` 에서 자기 설정을
+// false 폴백으로 재확인한다.
+Schedule::command('privacy:process-retention --scheduled')->dailyAt('05:05')->onOneServer();
+// 회원 상태를 바꾸고 설정에 따라 탈퇴까지 하므로 기본 꺼짐 — 커맨드가 `--scheduled` 에서
+// `privacy.dormant_enabled` 를 false 폴백으로 재확인한다. 보유기간 처리 뒤에 두는 이유는
+// 같은 날 탈퇴된 회원의 잔여 정보 2차 파기가 보존기간부터 새로 시작되어야 하기 때문이다.
+Schedule::command('privacy:process-dormant --scheduled')->dailyAt('05:10')->onOneServer();
+
 // 만료 시각이 지난 본인인증 challenge 상태 전환 (비파괴 — 물리 파기는 identity:prune-logs)
 Schedule::command('identity:expire-challenges')->hourly()->onOneServer();
 // gc-schedules:end

@@ -3465,7 +3465,7 @@ _단건 응답: `data` 객체의 필드._
 | trigger_type | string | `user` | 상태 변경/삭제를 유발한 주체 (user 사용자 / admin 관리자 / report 신고 / system 시스템 / auto_hide 자동 블라인드 / cascade 연쇄 삭제 — TriggerType Enum) |
 | updated_at | string | `2026-07-07 09:39:03` | 최종 수정 일시 |
 | deleted_at | null | `null` | 소프트 삭제 일시 (미삭제 시 null) |
-| ip_address | string | `127.0.0.1` | 요청/행위가 발생한 IP 주소 |
+| ip_address | string\|null | `127.0.0.1` | 요청/행위가 발생한 IP 주소 (보유기간이 지나 파기되면 null — 게시판 개인정보 보유기간, 이슈 #636) |
 | action_logs | array | `[]` | 블라인드/복원/삭제 등 운영 처리 이력 (admin.manage 권한 보유자에게만 노출, action/reason/admin_name/created_at — 비권한자는 빈 배열/null) |
 | board | object | `{"slug":"apidoc-sample-board","name":"API 문서 샘플 게시판","typ…` | 게시글이 속한 게시판 정보 (slug/name/type + 댓글·답변·신고·조회수 노출·깊이 등 렌더링에 필요한 설정과 신고 유형 목록) |
 | navigation | null | `null` | 이전/다음 글 정보 (상세 API에서는 기본 null — 별도 navigation 엔드포인트로 비동기 로딩) |
@@ -3723,7 +3723,7 @@ _단건 응답: `data` 객체의 필드._
 | trigger_type | string | `user` | 동작을 유발한 방식/주체 구분 값 |
 | updated_at | string | `2026-07-08 15:01:44` | 최종 수정 일시 |
 | deleted_at | null | `null` | 소프트 삭제 일시 (미삭제 시 null) |
-| ip_address | string | `127.0.0.1` | 요청/행위가 발생한 IP 주소 |
+| ip_address | string\|null | `127.0.0.1` | 요청/행위가 발생한 IP 주소 (보유기간이 지나 파기되면 null — 게시판 개인정보 보유기간, 이슈 #636) |
 | action_logs | array | `[]` | 게시글 블라인드/복원/삭제 등 운영 처리 이력 (action/reason/admin_name/created_at — admin.manage 권한 보유자에게만 노출, 비권한자는 null) |
 | board | object | `{"slug":"apidoc-sample-board","name":"API 문서 샘플 게시판","typ…` | 소속 게시판 요약 정보 (slug/name/type/댓글·답변·신고 사용 여부·최대 깊이·신고 유형 목록 등 — board 관계 로드 시에만 채워지며 미로드 시 null) |
 | navigation | null | `null` | 이전/다음 글 이동 정보 (별도 navigation 조회로 채워지며, 이 응답에는 기본적으로 미포함되어 null) |

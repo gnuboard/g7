@@ -32,6 +32,8 @@ use App\Http\Controllers\Api\Admin\NotificationTemplateController as AdminNotifi
 use App\Http\Controllers\Api\Admin\PermissionController as AdminPermissionController;
 use App\Http\Controllers\Api\Admin\PluginController as AdminPluginController;
 use App\Http\Controllers\Api\Admin\PluginSettingsController as AdminPluginSettingsController;
+use App\Http\Controllers\Api\Admin\PrivacyManualRunController as AdminPrivacyManualRunController;
+use App\Http\Controllers\Api\Admin\PrivacyTargetController as AdminPrivacyTargetController;
 use App\Http\Controllers\Api\Admin\RoleController as AdminRoleController;
 use App\Http\Controllers\Api\Admin\ScheduleController as AdminScheduleController;
 use App\Http\Controllers\Api\Admin\SeoBotPreviewController;
@@ -681,6 +683,23 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
             ->name('api.admin.extensions.custom-assets.destroy');
     });
 
+    // 개인정보 조치 대상 목록 (#636) — 설정 화면 「대상 N건」 옆 「더보기」 모달이 부른다.
+    // 보유기간 명단의 권한은 대상 공급자가 선언한 「설정 읽기 + 도메인 읽기」를 컨트롤러가 요청 시점에
+    // 검사한다 — 확장 핸들러는 필터 훅으로 동적으로 붙으므로 라우트가 그 권한을 정적으로 알 수 없다.
+    // 휴면 명단은 권한이 고정(설정 읽기 + 회원 읽기)이라 라우트에 건다. 적용 범위(전체만 명단 허용)는
+    // 두 경로 모두 컨트롤러가 본다.
+    Route::prefix('privacy')->group(function () {
+        Route::get('retention-targets/{handler}', [AdminPrivacyTargetController::class, 'retention'])->name('api.admin.privacy.retention-targets');
+        Route::get('dormant-targets/{stage}', [AdminPrivacyTargetController::class, 'dormant'])->middleware('permission:admin,core.settings.read|core.users.read')->name('api.admin.privacy.dormant-targets');
+
+        // 관리자 직권 실행 (#636 후속) — 카드의 「지금 실행」. 대상(보유기간 핸들러·휴면 단계·확장 조치)은
+        // 수집기가 키로 찾고, 실행 권한(설정 수정 + 도메인 수정, 전체 범위)은 대상이 선언해 컨트롤러가
+        // 요청 시점에 검사한다. 접수는 큐에 넣고 202 로 끝나며 결과는 상태 조회가 돌려준다.
+        Route::get('manual-runs', [AdminPrivacyManualRunController::class, 'index'])->name('api.admin.privacy.manual-runs.index');
+        Route::get('manual-runs/{target}/preview', [AdminPrivacyManualRunController::class, 'preview'])->where('target', '[A-Za-z0-9:._-]+')->name('api.admin.privacy.manual-runs.preview');
+        Route::post('manual-runs/{target}', [AdminPrivacyManualRunController::class, 'store'])->where('target', '[A-Za-z0-9:._-]+')->name('api.admin.privacy.manual-runs.store');
+    });
+
     // 환경설정 관리
     Route::prefix('settings')->group(function () {
         Route::get('/', [AdminSettingsController::class, 'index'])->middleware('permission:admin,core.settings.read')->name('api.admin.settings.index');
@@ -692,6 +711,8 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
         // 초기 화면 정적 파일(정적 게시) 상태 + 관리자 수동 복구 (#651). 상태는 `{key}` 와일드카드보다 먼저.
         Route::get('static-cache', [AdminSettingsController::class, 'staticCacheStatus'])->middleware('permission:admin,core.settings.read')->name('api.admin.settings.static-cache');
         Route::post('static-cache/republish', [AdminSettingsController::class, 'republishStaticCache'])->middleware('permission:admin,core.settings.update')->name('api.admin.settings.static-cache.republish');
+        // 개인정보 보유기간·휴면 dry-run 건수 — 읽기 전용이라 settings.read 로 충분하다.
+        Route::get('privacy-preview', [AdminSettingsController::class, 'privacyPreview'])->middleware('permission:admin,core.settings.read')->name('api.admin.settings.privacy-preview');
         Route::get('app-key', [AdminSettingsController::class, 'getAppKey'])->middleware('permission:admin,core.settings.read')->name('api.admin.settings.app-key');
         Route::post('regenerate-app-key', [AdminSettingsController::class, 'regenerateAppKey'])->middleware('permission:admin,core.settings.update')->name('api.admin.settings.regenerate-app-key');
         Route::post('clear-cache', [AdminSettingsController::class, 'clearCache'])->middleware('permission:admin,core.settings.update')->name('api.admin.settings.clear-cache');

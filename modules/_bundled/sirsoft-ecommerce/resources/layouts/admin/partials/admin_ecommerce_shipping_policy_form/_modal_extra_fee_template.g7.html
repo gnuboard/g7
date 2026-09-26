@@ -335,8 +335,8 @@
           <loading-spinner data-ref="loading_indicator" data-if="{{_global.infiniteScroll.isLoadingMore}}" size="sm" text="$t:sirsoft-ecommerce.common.loading" color="text-blue-600 dark:text-blue-400" class="py-3"/>
         </div>
       </div>
-      <div data-ref="empty_state" data-if="{{(extra_fee_templates?.data?.data ?? []).length === 0 &amp;&amp; $parent._local.isAddingTemplate !== true}}" class="text-center text-gray-400 dark:text-gray-500">
-        <icon name="inbox" class="text-4xl mx-auto mb-3"/>
+      <div data-ref="empty_state" data-if="{{(extra_fee_templates?.data?.data ?? []).length === 0 &amp;&amp; $parent._local.isAddingTemplate !== true}}" class="flex flex-col items-center gap-3 text-center text-gray-400 dark:text-gray-500">
+        <icon name="inbox" class="text-4xl"/>
         <span class="text-sm">$t:sirsoft-ecommerce.admin.shipping_policy.modal_extra_fee.no_templates</span>
       </div>
     </div>

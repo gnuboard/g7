@@ -5,6 +5,24 @@
 >
 > 형식: [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)
 
+## [engine-v1.71.1] - 2026-09-21
+
+### Fixed
+
+#### 반복 항목 편집에 들어가면 편집 대상이 캔버스에서 사라지던 문제
+
+- `deriveCurrentScope` 는 `iteration_item` 을 states scope 비대상으로 보고 `null` 로 디그레이드했다. 그런데 반복 항목 템플릿은 **그 항목을 그리는 화면의 상태 뒤에** 있다(예: 알림톡 템플릿 행은 `query.tab=templates` 상태에서만 존재). scope 가 풀리면 그 상태도 풀려 편집하러 들어간 항목 자체가 캔버스에서 없어졌다.
+- 이제 `extension` 과 같은 **호스트 scope 상속** 갈래로 묶는다. 호스트 path 는 호출부가 진입 직전 라우트(`returnRoute.path`)에서 도출해 `hostRoutePath` 로 넘긴다. 호스트가 base(`__base__/`)·모달(`__modal__/`)인 경우도 해당 scope 로 매칭한다(모달 해석은 이번에 추가됐다 — 종전에는 route 로만 떨어졌다).
+- 호스트 path 가 끝내 미상이면 종전대로 `null` 디그레이드다(동작 변화 없음).
+
+#### 고른 페이지 상태가 모드를 드나들면 풀리거나, 다른 화면까지 따라가던 문제
+
+- 반복 항목·모달 편집을 드나들면 scope 가 재도출되는데, `SET_AVAILABLE_STATES` 가 활성 상태를 **무조건 기본값으로 덮었다**. 저작자가 고른 화면으로 돌아오지 못하고, 그 상태에서만 보이던 구역이 다시 사라졌다.
+- 전환 도중 매칭 목록이 **한 프레임 동안 비는 구간**(호스트 path 확정 전)이 있어 `activeStateId` 만으로는 기억이 지워진다. 비우지 않는 `lastActiveStateId` 가 그 구간을 건너뛴다.
+- 다만 상태 id 는 화면마다 재사용된다 — 번들 실측으로 `modal_filled` 하나가 170개 scope, `validation_failed` 가 17개 scope 에 쓰인다. id 만 대조해 되살리면 A 화면에서 고른 상태가 B 화면을 열 때도 살아나 B 가 기본 모습으로 열리지 않는다. 그래서 scope 키(`kind|match`)를 함께 기억해 **같은 화면의 기억만** 이어 간다.
+- `SET_AVAILABLE_STATES` 액션에 `scopeKey` 가 **필수 필드로 추가**됐다. 이 액션을 직접 dispatch 하는 호출부는 scope 키를 함께 넘겨야 한다(엔진 내부 호출부는 모두 갱신됐다).
+- 신규 심볼: `stateScopeKey`, `resolveNextActiveStateId`(`layout-editor/utils/matchStateScope`). 상태 필드 `lastActiveStateId` · `activeStateScopeKey` · `lastActiveStateScopeKey`.
+
 ## [engine-v1.71.0] - 2026-09-13
 
 ### Added

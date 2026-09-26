@@ -865,4 +865,62 @@ class ReportRepository implements ReportRepositoryInterface
             }
         });
     }
+
+    /**
+     * 신고 대상의 스냅샷에서 개인정보 필드를 덮어씁니다 (개인정보 보유기간 처리, 이슈 #636).
+     *
+     * 스냅샷에 그 키가 없는 로그는 건드리지 않는다. 수정 시각을 바꾸지 않도록 타임스탬프를
+     * 끄고 모델 이벤트 없이 저장한다 — 파기는 신고 처리 이력이 아니다.
+     *
+     * @param  string  $targetType  신고 대상 종류 (post|comment)
+     * @param  array<int, int>  $targetIds  대상 ID 목록
+     * @param  array<string, string>  $replacements  스냅샷 키 => 치환값
+     * @return int 갱신한 신고 로그 수
+     */
+    public function scrubSnapshotsForTargets(string $targetType, array $targetIds, array $replacements): int
+    {
+        if ($targetIds === [] || $replacements === []) {
+            return 0;
+        }
+
+        $reportIds = Report::withTrashed()
+            ->where('target_type', $targetType)
+            ->whereIn('target_id', $targetIds)
+            ->pluck('id')
+            ->all();
+
+        if ($reportIds === []) {
+            return 0;
+        }
+
+        $updated = 0;
+
+        ReportLog::query()
+            ->whereIn('report_id', $reportIds)
+            ->whereNotNull('snapshot')
+            ->chunkById(200, function ($logs) use ($replacements, &$updated) {
+                foreach ($logs as $log) {
+                    $snapshot = is_array($log->snapshot) ? $log->snapshot : [];
+                    $changed = false;
+
+                    foreach ($replacements as $key => $value) {
+                        if (array_key_exists($key, $snapshot) && $snapshot[$key] !== $value) {
+                            $snapshot[$key] = $value;
+                            $changed = true;
+                        }
+                    }
+
+                    if (! $changed) {
+                        continue;
+                    }
+
+                    $log->snapshot = $snapshot;
+                    $log->timestamps = false;
+                    $log->saveQuietly();
+                    $updated++;
+                }
+            });
+
+        return $updated;
+    }
 }

@@ -7,6 +7,8 @@ return [
         'inactive' => 'Inactive',
         'blocked' => 'Blocked',
         'withdrawn' => 'Withdrawn',
+        'pending_verification' => 'Pending verification',
+        'dormant' => 'Dormant',
     ],
 
     // Language labels

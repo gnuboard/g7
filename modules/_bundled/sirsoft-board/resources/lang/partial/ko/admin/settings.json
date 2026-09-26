@@ -15,7 +15,8 @@
     "mail_templates": "메일 템플릿",
     "notification_definitions": "알림 설정",
     "seo": "SEO 설정",
-    "identity_policies": "본인인증 정책"
+    "identity_policies": "본인인증 정책",
+    "privacy_retention": "개인정보 보유기간"
   },
   "board_settings_tabs": {
     "basic": "기본",
@@ -510,5 +511,65 @@
       "icon_delete_failed": "아이콘 삭제에 실패했습니다"
     },
     "delete_blocked_suffix": "건의 반응이 있어 삭제할 수 없습니다 — 사용을 끄는 것만 가능합니다"
+  },
+  "privacy_retention": {
+    "title": "개인정보 보유기간",
+    "description": "보유기간이 지난 게시물·댓글의 작성 IP와 비회원 작성자 정보를 매일 자동으로 파기합니다. 켜기 전에 개인정보 처리방침에 보유기간과 파기 방법을 먼저 안내하세요.",
+    "enabled": "보유기간 자동 파기",
+    "enabled_hint": "켜면 코어 개인정보 보유기간 작업(매일 실행)이 아래 두 기준으로 게시판 데이터를 처리합니다. 처리한 내용은 되돌릴 수 없습니다.",
+    "target_count": "대상 {{count}}건",
+    "ip_retention_days": "작성 IP 보유기간 (일)",
+    "ip_retention_days_hint": "회원 글을 포함한 모든 게시물·댓글의 작성 IP를 작성 후 이 기간이 지나면 지웁니다. 접속기록은 최소 1년(대규모 사업자는 2년) 보관해야 하므로 그보다 짧게 두지 마세요.",
+    "guest_retention_days": "비회원 작성자 정보 보유기간 (일)",
+    "guest_retention_days_hint": "비회원이 쓴 게시물·댓글을 작성 후 이 기간이 지나면 아래 방식으로 처리합니다. 0이면 처리하지 않습니다.",
+    "guest_mode": "비회원 글 처리 방식",
+    "guest_mode_hint": "익명화는 작성자명만 가리고 글은 그대로 둡니다. 삭제는 글을 목록에서 없애고 제목·본문·첨부 파일까지 파기합니다.",
+    "modes": {
+      "anonymize": "익명화 (작성자명 가림)",
+      "delete": "삭제"
+    },
+    "delete_warning": "삭제는 되돌릴 수 없습니다. 비회원 글에 달린 답글과 댓글(회원이 쓴 것 포함)도 함께 삭제되고, 첨부 파일은 곧바로 지워집니다.",
+    "preview_hint": "대상 건수는 저장된 설정 기준입니다. 값을 바꿨다면 저장한 뒤에 다시 확인하세요.",
+    "withdrawn_notice": "탈퇴한 회원의 글은 화면에 「탈퇴한 사용자」로 표시되므로 여기서 따로 처리하지 않습니다. 회원 정보 파기는 코어 환경설정의 개인정보 탭에서 설정합니다.",
+    "targets": {
+      "row_ip": "게시판 작성 IP (글·댓글)",
+      "row_guest": "비회원 작성자 정보 (글·댓글)",
+      "count": "대상 {{count}}건",
+      "view": "대상 보기",
+      "title_ip": "작성 IP 파기 대상 (글·댓글)",
+      "title_guest": "비회원 작성자 정보 처리 대상 (글·댓글)",
+      "total": "총 {{count}}건",
+      "empty": "대상이 없습니다.",
+      "loading": "불러오는 중...",
+      "close": "닫기"
+    },
+    "manual_run": {
+      "run": "지금 실행",
+      "save_first_hint": "저장하지 않은 변경이 있습니다. 직권 실행은 저장된 설정으로 처리되므로 먼저 저장하세요.",
+      "status_active": "{{status}} — {{at}} 접수 · {{by}}",
+      "last_completed": "마지막 직권 실행: {{at}} · {{by}} · {{count}}건 처리",
+      "last_failed": "마지막 직권 실행 실패: {{at}} · {{by}} — {{error}}",
+      "unknown_requester": "알 수 없음",
+      "modal_title": "{{target}} — 직권 실행",
+      "confirm_desc": "스케줄러를 기다리지 않고 지금 한 번 실행합니다. 작업은 큐에 접수되어 차례로 처리되며, 끝나면 이 화면에 결과가 표시됩니다.",
+      "count_label": "처리 예정",
+      "count_value": "{{count}}건",
+      "loading": "건수를 세는 중...",
+      "mode_label": "처리 방식",
+      "modes": {
+        "anonymize": "익명화",
+        "delete": "삭제",
+        "erase_ip": "작성 IP 삭제"
+      },
+      "disabled_notice": "자동 실행은 꺼져 있습니다. 직권 실행은 토글과 무관하게 저장된 설정값으로 이번 한 번만 처리합니다.",
+      "irreversible": "실행하면 되돌릴 수 없습니다. 처리 예정 건수와 대상 명단을 확인한 뒤 실행하세요.",
+      "queue_hint": "큐 워커가 동작해야 처리됩니다. 같은 대상에 접수된 작업이 끝나기 전에는 다시 실행할 수 없습니다.",
+      "cancel": "취소",
+      "execute": "실행",
+      "executing": "접수 중...",
+      "queued_toast": "실행을 큐에 접수했습니다. 처리가 끝나면 결과가 표시됩니다.",
+      "queue_failed": "실행을 접수하지 못했습니다.",
+      "preview_failed": "대상 건수를 불러오지 못했습니다."
+    }
   }
 }

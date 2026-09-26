@@ -132,9 +132,9 @@ FormRequest → `CheckoutDataService`(주문서에 필요한 배송지·쿠폰·
 <!-- @generated:extension-points-summary START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 확장점 | 수 | 상세 |
 |---|---|---|
-| 발행 훅 | 518개 | [발행 훅](docs/extension-points.md#발행-훅) |
-| 구독 훅 | 147개 | [구독 훅](docs/extension-points.md#구독-훅) |
-| 훅 리스너 | 34개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
+| 발행 훅 | 521개 | [발행 훅](docs/extension-points.md#발행-훅) |
+| 구독 훅 | 149개 | [구독 훅](docs/extension-points.md#구독-훅) |
+| 훅 리스너 | 35개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
 | 레이아웃 확장 | 13개 | [레이아웃 확장](docs/extension-points.md#레이아웃-확장) |
 | 미들웨어 | 3개 | [미들웨어](docs/extension-points.md#미들웨어) |
 | 브로드캐스트 채널 | 0개 | [브로드캐스트 채널](docs/extension-points.md#브로드캐스트-채널) |
@@ -188,6 +188,7 @@ CRUD 를 바꾸고 싶으면 이 4종 중 하나를 잡으면 되고, 이 모듈
 - [ ] 결제수단·PG 관련 선언을 바꾸면 기설치본 `order_settings.json` 을 정정하는 업그레이드 스텝 동반 (자기 접두사만, 멱등)
 - [ ] 새 관리자 화면을 추가하면 그 화면의 권한(`getPermissions()`)·메뉴(`getAdminMenus()`)·라우트 이름이 서로 가리키는 대상이 일치하는지 확인
 - [ ] 레이아웃·컴포넌트·`data_source` 를 건드렸다면 [`docs/editor-spec.md`](docs/editor-spec.md) 의 동반 의무 표를 따라 `editor-spec.json` 을 함께 갱신 — 샘플이 없는 `data_source` 는 편집기 캔버스에서만 빈 화면이 되고 실제 화면은 정상이라 오류도 경고도 남지 않는다. 반영은 `php artisan module:update sirsoft-ecommerce --force`
+- [ ] 개인정보 보유기간 핸들러(`src/Privacy/`)를 고칠 때는 건수(`preview()`)·대상 명단(`targets()`)·실행(`process()`)이 **같은 조건식**을 쓰는지, 명단 권한(`targetPermissions()` = 설정 읽기 + 주문 읽기)을 지키는지, 명단 행을 코어 값 객체 `App\Privacy\DTO\PrivacyRetentionTarget` 로 내는지 확인 — 계약 전체는 [코어 개인정보 보유기간 처리 가이드](../../../docs/backend/privacy-retention.md)
 
 ## 6. 금지 패턴
 
@@ -210,10 +211,10 @@ CRUD 를 바꾸고 싶으면 이 4종 중 하나를 잡으면 되고, 이 모듈
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 412개 | `modules/_bundled/sirsoft-ecommerce/tests` |
-| Vitest | 148개 | `vitest.config.ts` |
-| Playwright | 43개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 98개 | `tests/scenarios` |
+| PHPUnit | 414개 | `modules/_bundled/sirsoft-ecommerce/tests` |
+| Vitest | 150개 | `vitest.config.ts` |
+| Playwright | 44개 | `tests/Playwright` |
+| 시나리오 매니페스트 | 100개 | `tests/scenarios` |
 
 기저 TestCase: `tests/ModuleTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

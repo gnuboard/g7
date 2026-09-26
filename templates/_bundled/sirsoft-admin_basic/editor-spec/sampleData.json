@@ -13952,7 +13952,10 @@
           "login_lockout_time": 5,
           "two_factor_auth": false,
           "password_min_length": 8,
-          "require_password_special_char": false
+          "require_password_special_char": false,
+          "ip_restriction_enabled": false,
+          "admin_allowed_ips": [],
+          "ip_restriction_rules": []
         },
         "mail": {
           "mailer": "smtp",
@@ -14523,7 +14526,7 @@
         "bio": "커뮤니티 운영과 CS를 담당하고 있습니다.",
         "timezone": "Asia/Seoul",
         "admin_memo": "2025년 우수 운영자. CS 응대 만족도 1위. 콘텐츠 신고 처리 권한 보유.",
-        "ip_address": "203.241.18.92",
+        "ip_address": "203.0.113.42",
         "email_verified_at": "2025-08-20 10:14:55",
         "last_login_at": "2026-06-03 08:40:12",
         "created_at": "2025-08-20 09:58:31",
@@ -14635,6 +14638,126 @@
           "timestamp": "2026-06-21T15:55:00+09:00"
         }
       ]
+    },
+    "privacyPreview": {
+      "data": {
+        "retention": {
+          "user-withdrawn": {
+            "enabled": false,
+            "count": 3,
+            "can_view_targets": true
+          }
+        },
+        "dormant": {
+          "enabled": false,
+          "withdraw_enabled": false,
+          "can_view_targets": true,
+          "pre_notice": 12,
+          "convert": 4,
+          "withdraw_notice": 2,
+          "withdraw": 1
+        }
+      }
+    },
+    "privacyManualRuns": {
+      "data": {
+        "targets": {
+          "retention:user-withdrawn": {
+            "key": "retention:user-withdrawn",
+            "label": "탈퇴 회원 잔여 개인정보",
+            "can_run": true,
+            "enabled": false,
+            "supports_skip_waiting": false,
+            "run": {
+              "id": 7,
+              "target": "retention:user-withdrawn",
+              "status": "completed",
+              "status_label": "완료",
+              "is_active": false,
+              "skip_waiting": false,
+              "processed_count": 3,
+              "remaining_count": null,
+              "mode": "anonymize",
+              "error": null,
+              "requester_name": "관리자",
+              "queued_at": "2026-09-25 14:02:11",
+              "started_at": "2026-09-25 14:02:12",
+              "finished_at": "2026-09-25 14:02:15"
+            }
+          },
+          "dormant:pre_notice": {
+            "key": "dormant:pre_notice",
+            "label": "휴면 전환 사전 안내",
+            "can_run": true,
+            "enabled": false,
+            "supports_skip_waiting": false,
+            "run": null
+          },
+          "dormant:convert": {
+            "key": "dormant:convert",
+            "label": "휴면 전환",
+            "can_run": true,
+            "enabled": false,
+            "supports_skip_waiting": true,
+            "run": null
+          },
+          "dormant:withdraw_notice": {
+            "key": "dormant:withdraw_notice",
+            "label": "휴면 계정 탈퇴 예정 안내",
+            "can_run": true,
+            "enabled": false,
+            "supports_skip_waiting": false,
+            "run": null
+          },
+          "dormant:withdraw": {
+            "key": "dormant:withdraw",
+            "label": "휴면 계정 탈퇴 처리",
+            "can_run": true,
+            "enabled": false,
+            "supports_skip_waiting": true,
+            "run": null
+          }
+        },
+        "has_active": false,
+        "finished_since": false,
+        "checked_at": "2026-09-25T14:02:20+09:00"
+      }
+    },
+    "privacyTargets": {
+      "data": {
+        "data": [
+          {
+            "id": 12,
+            "title": "홍길동_탈퇴_20250101",
+            "subtitle": "gildong_withdrawn_20250101@example.com",
+            "context": null,
+            "date": "2025-01-01",
+            "url": "/admin/users/00000000-0000-4000-8000-000000000012"
+          },
+          {
+            "id": 15,
+            "title": "김철수_탈퇴_20250214",
+            "subtitle": "chulsoo_withdrawn_20250214@example.com",
+            "context": null,
+            "date": "2025-02-14",
+            "url": "/admin/users/00000000-0000-4000-8000-000000000015"
+          }
+        ],
+        "columns": {
+          "title": "이름",
+          "subtitle": "이메일",
+          "date": "탈퇴일"
+        },
+        "pagination": {
+          "current_page": 1,
+          "per_page": 20,
+          "from": 1,
+          "to": 2,
+          "has_more_pages": false,
+          "last_page": 1,
+          "total": 2
+        }
+      }
     }
   }
 }
