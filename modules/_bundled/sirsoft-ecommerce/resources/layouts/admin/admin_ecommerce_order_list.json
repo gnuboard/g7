@@ -366,7 +366,7 @@
                                         "responsive": {
                                             "portable": {
                                                 "props": {
-                                                    "className": "btn btn-ghost btn-square flex"
+                                                    "className": "btn-icon flex"
                                                 }
                                             }
                                         },
@@ -379,7 +379,7 @@
                                         ],
                                         "props": {
                                             "type": "button",
-                                            "className": "btn btn-ghost btn-square hidden"
+                                            "className": "btn-icon hidden"
                                         },
                                         "children": [
                                             {
@@ -453,7 +453,7 @@
                                                 "type": "basic",
                                                 "name": "Icon",
                                                 "props": {
-                                                    "name": "refresh-cw",
+                                                    "name": "arrows-rotate",
                                                     "className": "text-xl"
                                                 }
                                             }
@@ -503,7 +503,7 @@
                                         "type": "basic",
                                         "name": "Icon",
                                         "props": {
-                                            "name": "settings",
+                                            "name": "gear",
                                             "className": "text-base"
                                         }
                                     },

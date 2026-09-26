@@ -99,8 +99,8 @@ describe('① 필터는 주소에 실리고 뒤로 가기로 되돌아간다', (
     const bar = loadLayout('partials/admin_analytics/_partial_period_bar.json');
     const navigates = navigateActions(bar);
 
-    // 모집단은 조각이 실제로 들고 있는 이동 전량이다 — 프리셋 8 · 달력 2 · 단위 1 · 제외 2.
-    expect(navigates.length, '기간 바의 이동 개수').toBe(13);
+    // 모집단은 조각이 실제로 들고 있는 이동 전량이다 — 프리셋 8 · 달력 2 · 단위 1 · 제외 2 · 초기화 1.
+    expect(navigates.length, '기간 바의 이동 개수').toBe(14);
 
     const replacing = navigates.filter((a) => (a.params ?? a)?.replace === true);
     expect(

@@ -698,7 +698,7 @@
                                                     "type": "basic",
                                                     "name": "Icon",
                                                     "props": {
-                                                        "name": "{{_local.driverTestResults.s3.success ? 'check-circle' : 'x-circle'}}",
+                                                        "name": "{{_local.driverTestResults.s3.success ? 'check-circle' : 'circle-xmark'}}",
                                                         "className": "text-xl"
                                                     }
                                                 },
@@ -1355,7 +1355,7 @@
                                                     "type": "basic",
                                                     "name": "Icon",
                                                     "props": {
-                                                        "name": "{{_local.driverTestResults.redis.success ? 'check-circle' : 'x-circle'}}",
+                                                        "name": "{{_local.driverTestResults.redis.success ? 'check-circle' : 'circle-xmark'}}",
                                                         "className": "text-xl"
                                                     }
                                                 },
@@ -1640,7 +1640,7 @@
                                                     "type": "basic",
                                                     "name": "Icon",
                                                     "props": {
-                                                        "name": "{{_local.driverTestResults.memcached.success ? 'check-circle' : 'x-circle'}}",
+                                                        "name": "{{_local.driverTestResults.memcached.success ? 'check-circle' : 'circle-xmark'}}",
                                                         "className": "text-xl"
                                                     }
                                                 },
@@ -3477,7 +3477,7 @@
                                                     "type": "basic",
                                                     "name": "Icon",
                                                     "props": {
-                                                        "name": "{{_local.driverTestResults.websocket.success ? 'check-circle' : 'x-circle'}}",
+                                                        "name": "{{_local.driverTestResults.websocket.success ? 'check-circle' : 'circle-xmark'}}",
                                                         "className": "text-xl"
                                                     }
                                                 },

@@ -189,6 +189,7 @@
         "escrow_delivery_invoice_placeholder": "운송장번호를 입력하세요",
         "escrow_delivery_courier_label": "택배사",
         "escrow_delivery_courier_placeholder": "택배사를 선택하세요",
+        "escrow_delivery_courier_etc": "기타",
         "escrow_delivery_register_button": "배송등록",
         "escrow_delivery_change_button": "배송변경",
         "escrow_delivery_registering": "등록 중...",
@@ -208,7 +209,8 @@
         "escrow_deny_confirm_done": "거절확인 완료",
         "escrow_deny_confirm_done_at": "처리일시",
         "escrow_deny_confirm_status_label": "구매거절 상태",
-        "escrow_deny_confirm_buyer_denied": "구매거절"
+        "escrow_deny_confirm_buyer_denied": "구매거절",
+        "escrow_deny_confirm_buyer_denied_at": "일시"
     },
     "settings": {
         "title": "KG 이니시스 설정",

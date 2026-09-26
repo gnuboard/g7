@@ -63,7 +63,7 @@
           </div>
           <div class="flex-center gap-2">
             <button type="button" class="btn btn-outline">
-              <icon name="settings-2" class="text-base"/>
+              <icon name="sliders" class="text-base"/>
               <span>$t:sirsoft-ecommerce.admin.promotion_discount_code.search.column_select</span>
               <span class="text-gray-500 dark:text-gray-400">(9)</span>
             </button>
@@ -139,7 +139,6 @@
             </div>
           </div>
           <div data-ref="filter_benefit_amount" class="filter-row">
-            <responsive on="portable" class="filter-row-vertical"/>
             <span class="filter-label">$t:sirsoft-ecommerce.admin.promotion_discount_code.filter.benefit_amount</span>
             <div class="flex-center gap-2">
               <responsive on="portable" class="grid grid-cols-1 gap-2 w-full"/>
@@ -216,7 +215,7 @@
             <span>$t:sirsoft-ecommerce.admin.promotion_discount_code.actions.search</span>
           </button>
           <button type="button" class="btn btn-secondary">
-            <icon name="refresh-cw" class="text-base"/>
+            <icon name="arrows-rotate" class="text-base"/>
             <span>$t:sirsoft-ecommerce.admin.promotion_discount_code.actions.reset</span>
           </button>
         </div>
@@ -275,7 +274,7 @@
           </select>
         </div>
       </div>
-      <div data-ref="data_table_container" class="md:table-container">
+      <div data-ref="data_table_container">
         <responsive on="portable">
           <div data-ref="mobile_cards_container">
             <div class="admin-card">
@@ -285,7 +284,7 @@
                   <span class="text-primary font-medium">신규회원 10% 할인코</span>
                 </div>
                 <button type="button" class="btn-icon">
-                  <icon name="more-horizontal" class="text-base"/>
+                  <icon name="ellipsis" class="text-base"/>
                 </button>
               </div>
               <div class="text-sm text-secondary mb-3">2025-12-18 17:58</div>
@@ -326,7 +325,7 @@
                   <span class="text-primary font-medium">첫구매 5천원 할인</span>
                 </div>
                 <button type="button" class="btn-icon">
-                  <icon name="more-horizontal" class="text-base"/>
+                  <icon name="ellipsis" class="text-base"/>
                 </button>
               </div>
               <div class="text-sm text-secondary mb-3">2025-12-01 10:00</div>
@@ -362,105 +361,108 @@
             </div>
           </div>
         </responsive>
-        <table data-ref="data_table" class="table">
-          <thead class="bg-gray-50 dark:bg-gray-800">
-            <tr>
-              <th class="px-4 py-3 w-10">
-                <input type="checkbox" class="checkbox" checked="{{_local.selectAll}}">
-                  <on type="change">
-                    <!-- 머리글 전체선택 — 체크값이 아니라 지금 상태를 뒤집는다(표가 예시 행이라 개별 선택과 아직 이어져 있지 않다) -->
-                    <set-state target="_local" selectAll="{{!_local.selectAll}}"/>
-                  </on>
-                </input>
-              </th>
-              <th class="text-table-header px-4 py-3 text-left">$t:sirsoft-ecommerce.admin.promotion_discount_code.table.columns.no</th>
-              <th class="text-table-header px-4 py-3 text-left">$t:sirsoft-ecommerce.admin.promotion_discount_code.table.columns.benefit_type</th>
-              <th class="text-table-header px-4 py-3 text-left">$t:sirsoft-ecommerce.admin.promotion_discount_code.table.columns.code_type</th>
-              <th class="text-table-header px-4 py-3 text-left">$t:sirsoft-ecommerce.admin.promotion_discount_code.table.columns.discount_code_name</th>
-              <th class="text-table-header px-4 py-3 text-left">$t:sirsoft-ecommerce.admin.promotion_discount_code.table.columns.code_info</th>
-              <th class="text-table-header px-4 py-3 text-left">$t:sirsoft-ecommerce.admin.promotion_discount_code.table.columns.benefit</th>
-              <th class="text-table-header px-4 py-3 text-left">$t:sirsoft-ecommerce.admin.promotion_discount_code.table.columns.validity_period</th>
-              <th class="text-table-header px-4 py-3 text-left">$t:sirsoft-ecommerce.admin.promotion_discount_code.table.columns.history</th>
-              <th class="text-table-header px-4 py-3 text-left">$t:sirsoft-ecommerce.admin.promotion_discount_code.table.columns.created_at</th>
-              <th class="text-table-header px-4 py-3 text-left">$t:sirsoft-ecommerce.admin.promotion_discount_code.table.columns.status</th>
-              <th class="text-table-header px-4 py-3 text-left">$t:sirsoft-ecommerce.admin.promotion_discount_code.table.columns.actions</th>
-            </tr>
-          </thead>
-          <tbody class="divider-list bg-white dark:bg-gray-900">
-            <tr>
-              <td class="px-4 py-3">
-                <input type="checkbox" class="checkbox"/>
-              </td>
-              <td class="px-4 py-3 text-sm text-secondary">1</td>
-              <td class="px-4 py-3">
-                <span class="badge badge-green">$t:sirsoft-ecommerce.admin.promotion_discount_code.benefit_type.product</span>
-              </td>
-              <td class="px-4 py-3">
-                <span class="badge badge-blue">$t:sirsoft-ecommerce.admin.promotion_discount_code.code_type.public_code</span>
-              </td>
-              <td class="px-4 py-3">
-                <a href="#" class="text-blue-600 dark:text-blue-400 hover:underline">신규회원 10% 할인코</a>
-              </td>
-              <td class="px-4 py-3 text-sm text-secondary">53572</td>
-              <td class="px-4 py-3">
-                <div class="flex-center gap-1">
-                  <span class="badge badge-cyan">$t:sirsoft-ecommerce.admin.promotion_discount_code.benefit_category.rate</span>
-                  <span class="text-sm text-primary">10%</span>
-                  <span class="text-xs text-secondary">(최대 10,000원)</span>
-                </div>
-              </td>
-              <td class="px-4 py-3 text-sm text-secondary">2025-12-16 ~ 2025-12-30</td>
-              <td class="px-4 py-3 text-sm text-primary">8 / 8</td>
-              <td class="px-4 py-3 text-sm text-secondary">2025-12-18 17:58</td>
-              <td class="px-4 py-3">
-                <span class="badge badge-green">$t:sirsoft-ecommerce.admin.promotion_discount_code.status.active</span>
-              </td>
-              <td class="px-4 py-3">
-                <button type="button" class="btn-icon">
-                  <icon name="more-horizontal" class="text-base"/>
-                </button>
-              </td>
-            </tr>
-            <tr>
-              <td class="px-4 py-3">
-                <input type="checkbox" class="checkbox"/>
-              </td>
-              <td class="px-4 py-3 text-sm text-secondary">2</td>
-              <td class="px-4 py-3">
-                <span class="badge badge-green">$t:sirsoft-ecommerce.admin.promotion_discount_code.benefit_type.product</span>
-              </td>
-              <td class="px-4 py-3">
-                <span class="badge badge-pink">$t:sirsoft-ecommerce.admin.promotion_discount_code.code_type.one_time_code</span>
-              </td>
-              <td class="px-4 py-3">
-                <a href="#" class="text-blue-600 dark:text-blue-400 hover:underline">첫구매 5천원 할인</a>
-              </td>
-              <td class="px-4 py-3 text-sm text-secondary">FIRST5000</td>
-              <td class="px-4 py-3">
-                <div class="flex-center gap-1">
-                  <span class="badge badge-indigo">$t:sirsoft-ecommerce.admin.promotion_discount_code.benefit_category.fixed</span>
-                  <span class="text-sm text-primary">5,000원</span>
-                </div>
-              </td>
-              <td class="px-4 py-3 text-sm text-secondary">2025-12-01 ~ 2025-12-31</td>
-              <td class="px-4 py-3 text-sm text-primary">89 / 152</td>
-              <td class="px-4 py-3 text-sm text-secondary">2025-12-01 10:00</td>
-              <td class="px-4 py-3">
-                <span class="badge badge-green">$t:sirsoft-ecommerce.admin.promotion_discount_code.status.active</span>
-              </td>
-              <td class="px-4 py-3">
-                <button type="button" class="btn-icon">
-                  <icon name="more-horizontal" class="text-base"/>
-                </button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+        <!-- 테두리 상자는 데스크톱 표에만 — 모바일은 위 카드가 스스로 상자다(옛 `md:table-container` 는 자산에 반응형 접두를 붙여 생성되지 않았다). -->
+        <div data-ref="data_table_box" class="table-container">
+          <table data-ref="data_table" class="table">
+            <thead class="bg-gray-50 dark:bg-gray-800">
+              <tr>
+                <th class="px-4 py-3 w-10">
+                  <input type="checkbox" class="checkbox" checked="{{_local.selectAll}}">
+                    <on type="change">
+                      <!-- 머리글 전체선택 — 체크값이 아니라 지금 상태를 뒤집는다(표가 예시 행이라 개별 선택과 아직 이어져 있지 않다) -->
+                      <set-state target="_local" selectAll="{{!_local.selectAll}}"/>
+                    </on>
+                  </input>
+                </th>
+                <th class="text-table-header px-4 py-3 text-left">$t:sirsoft-ecommerce.admin.promotion_discount_code.table.columns.no</th>
+                <th class="text-table-header px-4 py-3 text-left">$t:sirsoft-ecommerce.admin.promotion_discount_code.table.columns.benefit_type</th>
+                <th class="text-table-header px-4 py-3 text-left">$t:sirsoft-ecommerce.admin.promotion_discount_code.table.columns.code_type</th>
+                <th class="text-table-header px-4 py-3 text-left">$t:sirsoft-ecommerce.admin.promotion_discount_code.table.columns.discount_code_name</th>
+                <th class="text-table-header px-4 py-3 text-left">$t:sirsoft-ecommerce.admin.promotion_discount_code.table.columns.code_info</th>
+                <th class="text-table-header px-4 py-3 text-left">$t:sirsoft-ecommerce.admin.promotion_discount_code.table.columns.benefit</th>
+                <th class="text-table-header px-4 py-3 text-left">$t:sirsoft-ecommerce.admin.promotion_discount_code.table.columns.validity_period</th>
+                <th class="text-table-header px-4 py-3 text-left">$t:sirsoft-ecommerce.admin.promotion_discount_code.table.columns.history</th>
+                <th class="text-table-header px-4 py-3 text-left">$t:sirsoft-ecommerce.admin.promotion_discount_code.table.columns.created_at</th>
+                <th class="text-table-header px-4 py-3 text-left">$t:sirsoft-ecommerce.admin.promotion_discount_code.table.columns.status</th>
+                <th class="text-table-header px-4 py-3 text-left">$t:sirsoft-ecommerce.admin.promotion_discount_code.table.columns.actions</th>
+              </tr>
+            </thead>
+            <tbody class="divider-list bg-white dark:bg-gray-900">
+              <tr>
+                <td class="px-4 py-3">
+                  <input type="checkbox" class="checkbox"/>
+                </td>
+                <td class="px-4 py-3 text-sm text-secondary">1</td>
+                <td class="px-4 py-3">
+                  <span class="badge badge-green">$t:sirsoft-ecommerce.admin.promotion_discount_code.benefit_type.product</span>
+                </td>
+                <td class="px-4 py-3">
+                  <span class="badge badge-blue">$t:sirsoft-ecommerce.admin.promotion_discount_code.code_type.public_code</span>
+                </td>
+                <td class="px-4 py-3">
+                  <a href="#" class="text-blue-600 dark:text-blue-400 hover:underline">신규회원 10% 할인코</a>
+                </td>
+                <td class="px-4 py-3 text-sm text-secondary">53572</td>
+                <td class="px-4 py-3">
+                  <div class="flex-center gap-1">
+                    <span class="badge badge-cyan">$t:sirsoft-ecommerce.admin.promotion_discount_code.benefit_category.rate</span>
+                    <span class="text-sm text-primary">10%</span>
+                    <span class="text-xs text-secondary">(최대 10,000원)</span>
+                  </div>
+                </td>
+                <td class="px-4 py-3 text-sm text-secondary">2025-12-16 ~ 2025-12-30</td>
+                <td class="px-4 py-3 text-sm text-primary">8 / 8</td>
+                <td class="px-4 py-3 text-sm text-secondary">2025-12-18 17:58</td>
+                <td class="px-4 py-3">
+                  <span class="badge badge-green">$t:sirsoft-ecommerce.admin.promotion_discount_code.status.active</span>
+                </td>
+                <td class="px-4 py-3">
+                  <button type="button" class="btn-icon">
+                    <icon name="ellipsis" class="text-base"/>
+                  </button>
+                </td>
+              </tr>
+              <tr>
+                <td class="px-4 py-3">
+                  <input type="checkbox" class="checkbox"/>
+                </td>
+                <td class="px-4 py-3 text-sm text-secondary">2</td>
+                <td class="px-4 py-3">
+                  <span class="badge badge-green">$t:sirsoft-ecommerce.admin.promotion_discount_code.benefit_type.product</span>
+                </td>
+                <td class="px-4 py-3">
+                  <span class="badge badge-pink">$t:sirsoft-ecommerce.admin.promotion_discount_code.code_type.one_time_code</span>
+                </td>
+                <td class="px-4 py-3">
+                  <a href="#" class="text-blue-600 dark:text-blue-400 hover:underline">첫구매 5천원 할인</a>
+                </td>
+                <td class="px-4 py-3 text-sm text-secondary">FIRST5000</td>
+                <td class="px-4 py-3">
+                  <div class="flex-center gap-1">
+                    <span class="badge badge-indigo">$t:sirsoft-ecommerce.admin.promotion_discount_code.benefit_category.fixed</span>
+                    <span class="text-sm text-primary">5,000원</span>
+                  </div>
+                </td>
+                <td class="px-4 py-3 text-sm text-secondary">2025-12-01 ~ 2025-12-31</td>
+                <td class="px-4 py-3 text-sm text-primary">89 / 152</td>
+                <td class="px-4 py-3 text-sm text-secondary">2025-12-01 10:00</td>
+                <td class="px-4 py-3">
+                  <span class="badge badge-green">$t:sirsoft-ecommerce.admin.promotion_discount_code.status.active</span>
+                </td>
+                <td class="px-4 py-3">
+                  <button type="button" class="btn-icon">
+                    <icon name="ellipsis" class="text-base"/>
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
       <div data-ref="pagination" class="flex justify-center mt-6">
         <div class="pagination">
           <button type="button" class="pagination-btn" :disabled="true">
-            <icon name="chevrons-left" class="text-base"/>
+            <icon name="angles-left" class="text-base"/>
           </button>
           <button type="button" class="pagination-btn" :disabled="true">
             <icon name="chevron-left" class="text-base"/>
@@ -472,7 +474,7 @@
             <icon name="chevron-right" class="text-base"/>
           </button>
           <button type="button" class="pagination-btn">
-            <icon name="chevrons-right" class="text-base"/>
+            <icon name="angles-right" class="text-base"/>
           </button>
         </div>
       </div>

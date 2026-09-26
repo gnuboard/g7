@@ -44,7 +44,7 @@
                         "type": "basic",
                         "name": "Icon",
                         "props": {
-                            "name": "file-down",
+                            "name": "file-arrow-down",
                             "className": "text-base"
                         }
                     },

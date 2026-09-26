@@ -309,7 +309,7 @@
                                                                     "type": "basic",
                                                                     "name": "Icon",
                                                                     "props": {
-                                                                        "name": "document-text",
+                                                                        "name": "file-lines",
                                                                         "className": "text-base text-gray-500"
                                                                     }
                                                                 },

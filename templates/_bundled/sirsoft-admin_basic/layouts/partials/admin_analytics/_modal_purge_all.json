@@ -27,12 +27,22 @@
                     },
                     "children": [
                         {
+                            "comment": "원은 감싸는 칸이 그린다. 아이콘 요소에 원 자산을 직접 주면 글꼴 아이콘이 48px 칸 위쪽에\n          본문 글자 크기로 붙는다(#682 PO 실측 후속 4).",
                             "type": "basic",
-                            "name": "Icon",
+                            "name": "Div",
                             "props": {
-                                "name": "triangle-exclamation",
                                 "className": "danger-confirm-icon"
-                            }
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                        "name": "triangle-exclamation",
+                                        "aria-hidden": "true"
+                                    }
+                                }
+                            ]
                         },
                         {
                             "type": "basic",

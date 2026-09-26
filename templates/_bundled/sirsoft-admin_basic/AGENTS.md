@@ -118,6 +118,8 @@ admin/`)이 이 템플릿의 베이스(`_admin_base`)를 extends 하고 이 템�
 | 사이드바 접힘 상태를 레이아웃 `init_actions` 로 매번 복원 | 템플릿 부트스트랩(`src/index.ts`)에서 1회 복원 | `init_actions` 는 화면 진입마다 재실행되어 불필요한 반복 처리가 된다 |
 | `_admin_base` 를 상속하는데 로그인 화면처럼 `initTheme`/메뉴 초기화를 다시 호출 | `_admin_base` 상속 화면은 이미 초기화된 전역 상태를 그대로 사용 | 중복 호출은 낭비이며, 두 초기화 지점의 결과가 어긋나면 화면 간 상태 불일치가 생긴다 |
 | `onSuccess`·시퀀스 안에서 방금 저장한 상태(`_global.*`/`_local.*`)를 형제 액션의 `if`·값으로 재독 | 그 자리에서는 `{{response.*}}` 만 읽는다 | 그 시점 컨텍스트는 아직 갱신 전이라 stale 값으로 조용히 분기한다 |
+| 레이아웃·TSX 에서 Lucide·Heroicons 식 아이콘 이름(`x-circle`·`refresh-cw`·`more-horizontal`·`alert-circle`·`chevrons-left`·`arrow-down-tray` 등) | Font Awesome 6.4.0 이름(`circle-xmark`·`arrows-rotate`·`ellipsis`·`circle-exclamation`·`angles-left`·`download`) | 관리자 템플릿 `Icon` 은 이름을 `fa-{이름}` 로만 바꾼다 — FA 에 없는 이름은 오류 없이 **빈칸**으로 그려진다. 가드: `tests/Unit/Extension/FontIconNameTest.php` |
+| 원·칸을 그리는 스타일 자산(`danger-confirm-icon` 등, 글자 크기 없음)을 `<icon>` 요소에 직접 부여 | 자산은 감싸는 요소에, 아이콘은 그 안에(`<div class="danger-confirm-icon"><icon …/></div>`) | Font Awesome 의 `display` 가 자산의 가운데 정렬을 이기고 글리프는 상속 글자 크기에 머문다 — 원 위쪽에 작게 붙는다. 가드: `tests/Unit/Extension/FontIconSizingTest.php` |
 <!-- @intent END -->
 
 ## 7. 테스트 실행
@@ -126,7 +128,7 @@ admin/`)이 이 템플릿의 베이스(`_admin_base`)를 extends 하고 이 템�
 | 종류 | 개수 | 위치 |
 |---|---|---|
 | PHPUnit | 0개 | — |
-| Vitest | 244개 | `vitest.config.ts` |
+| Vitest | 245개 | `vitest.config.ts` |
 | Playwright | 17개 | `tests/Playwright` |
 | 시나리오 매니페스트 | 11개 | `tests/scenarios` |
 

@@ -2,7 +2,7 @@
 <extension target-layout="admin_ecommerce_order_detail">
   <inject target-id="sticky_header_container" position="append_child">
     <div data-if="{{nicepay_status.data?._is_test_mode === true}}" class="mx-6 mb-3 px-3 py-2 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-700 rounded-lg flex-center gap-2">
-      <icon name="flask-conical" class="text-base text-orange-600 dark:text-orange-400 flex-shrink-0"/>
+      <icon name="flask" class="text-base text-orange-600 dark:text-orange-400 flex-shrink-0"/>
       <span class="text-sm font-semibold text-orange-800 dark:text-orange-300">$t:sirsoft-pay_nicepayments.admin.test_mode_badge</span>
       <span class="text-sm text-orange-700 dark:text-orange-400">$t:sirsoft-pay_nicepayments.admin.test_mode_order_notice</span>
     </div>
@@ -129,7 +129,7 @@
               <span data-if="{{(_local._nicepayResult ?? nicepay_status.data).Status === '1'}}" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300">$t:sirsoft-pay_nicepayments.admin.pay_status_cancelled</span>
               <span data-if="{{(_local._nicepayResult ?? nicepay_status.data).Status !== '0' &amp;&amp; (_local._nicepayResult ?? nicepay_status.data).Status !== '1'}}" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">$t:sirsoft-pay_nicepayments.admin.pay_status_unknown</span>
               <span data-if="{{(_local._nicepayResult ?? nicepay_status.data).EscrowYN === 'Y' || (_local._nicepayResult ?? nicepay_status.data)._local_is_escrow === true}}" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
-                <icon name="shield-check" class="text-xs"/>
+                <icon name="shield-halved" class="text-xs"/>
                 <span>$t:sirsoft-pay_nicepayments.admin.escrow_badge</span>
               </span>
               <span data-if="{{(_local._nicepayResult ?? nicepay_status.data)?._is_test_mode === true}}" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300">$t:sirsoft-pay_nicepayments.admin.test_mode_badge</span>

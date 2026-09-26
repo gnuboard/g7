@@ -410,6 +410,16 @@
                 </navigate>
               </on>
             </select>
+            <!-- 실패 로그 조건 초기화 — 사유 필터를 걷고 첫 쪽으로. 이미 전체면 잠근다. -->
+            <button data-ref="failure_filter_reset" type="button" class="btn btn-secondary btn-sm flex-center gap-1.5" disabled="{{!query.reason}}">
+              <on type="click">
+                <navigate path="/admin/analytics/diagnostics" :mergeQuery="true" :replace="true">
+                  <query reason="{{undefined}}" :failures_page="1"/>
+                </navigate>
+              </on>
+              <icon name="rotate-left" size="sm"/>
+              <span>$t:common.reset</span>
+            </button>
           </div>
         </div>
         <div class="overflow-x-auto">

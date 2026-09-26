@@ -4,6 +4,12 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.0.5] - 2026-09-26
+
+### Added
+
+- 플러그인 설정의 시스템 점검 카드 문구 18건과 에스크로 택배사 「기타」의 일본어 번역을 추가했습니다.
+
 ## [1.0.4] - 2026-09-06
 
 ### Added

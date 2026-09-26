@@ -414,6 +414,50 @@
                                             "className": "btn btn-primary px-6"
                                         },
                                         "text": "$t:admin.analytics.privacy_requests.search.button"
+                                    },
+                                    {
+                                        "comment": "검색 조건 초기화 — 폼(대상 IP·값·기간)과 주소를 함께 비운다. 주소에 값이 없으면 조회 자체가\n            일어나지 않아 결과 카드도 닫힌다. 폼과 주소가 모두 기본이면 잠근다.",
+                                        "id": "search_reset_button",
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "actions": [
+                                            {
+                                                "type": "click",
+                                                "handler": "sequence",
+                                                "actions": [
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "local",
+                                                            "search.subject": "ip",
+                                                            "search.value": "",
+                                                            "search.from": "",
+                                                            "search.to": ""
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "navigate",
+                                                        "params": {
+                                                            "path": "/admin/analytics/privacy-requests",
+                                                            "mergeQuery": true,
+                                                            "replace": true,
+                                                            "query": {
+                                                                "subject": "{{undefined}}",
+                                                                "value": "{{undefined}}",
+                                                                "from": "{{undefined}}",
+                                                                "to": "{{undefined}}"
+                                                            }
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        ],
+                                        "props": {
+                                            "type": "button",
+                                            "className": "btn btn-secondary px-6",
+                                            "disabled": "{{(_local.search?.subject || 'ip') === 'ip' && !_local.search?.value && !_local.search?.from && !_local.search?.to && !query.subject && !query.value && !query.from && !query.to}}"
+                                        },
+                                        "text": "$t:common.reset"
                                     }
                                 ]
                             }

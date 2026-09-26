@@ -107,7 +107,7 @@
                                                 "props": {
                                                     "className": "text-base font-semibold text-gray-900 dark:text-gray-100"
                                                 },
-                                                "text": "시스템 점검"
+                                                "text": "$t:sirsoft-pay_nhnkcp.settings.health.title"
                                             },
                                             {
                                                 "type": "basic",
@@ -116,7 +116,7 @@
                                                 "props": {
                                                     "className": "ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300"
                                                 },
-                                                "text": "오류 {{health.data.summary.error_count}}건"
+                                                "text": "$t:sirsoft-pay_nhnkcp.settings.health.error_count|count={{health.data.summary.error_count}}"
                                             },
                                             {
                                                 "type": "basic",
@@ -125,7 +125,7 @@
                                                 "props": {
                                                     "className": "ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300"
                                                 },
-                                                "text": "경고 {{health.data.summary.warning_count}}건"
+                                                "text": "$t:sirsoft-pay_nhnkcp.settings.health.warning_count|count={{health.data.summary.warning_count}}"
                                             },
                                             {
                                                 "type": "basic",
@@ -134,7 +134,7 @@
                                                 "props": {
                                                     "className": "ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300"
                                                 },
-                                                "text": "자동 복구 {{health.data.summary.fixed_count}}건"
+                                                "text": "$t:sirsoft-pay_nhnkcp.settings.health.fixed_count|count={{health.data.summary.fixed_count}}"
                                             },
                                             {
                                                 "type": "basic",
@@ -143,7 +143,7 @@
                                                 "props": {
                                                     "className": "ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300"
                                                 },
-                                                "text": "모두 정상"
+                                                "text": "$t:sirsoft-pay_nhnkcp.settings.health.all_ok"
                                             }
                                         ]
                                     },
@@ -174,7 +174,7 @@
                                             {
                                                 "type": "basic",
                                                 "name": "Span",
-                                                "text": "다시 검사"
+                                                "text": "$t:sirsoft-pay_nhnkcp.settings.health.recheck"
                                             }
                                         ]
                                     }
@@ -216,7 +216,7 @@
                                                         "props": {
                                                             "className": "font-medium text-sm text-gray-900 dark:text-gray-100"
                                                         },
-                                                        "text": "PC 결제 (Standard Pay)"
+                                                        "text": "$t:sirsoft-pay_nhnkcp.settings.health.pc_payment"
                                                     },
                                                     {
                                                         "type": "basic",
@@ -224,7 +224,7 @@
                                                         "props": {
                                                             "className": "{{health.data.summary.pc_payment_ready ? 'text-success-soft' : 'text-danger-soft'}}"
                                                         },
-                                                        "text": "{{health.data.summary.pc_payment_ready ? '동작 가능' : '동작 불가'}}"
+                                                        "text": "{{health.data.summary.pc_payment_ready ? '$t:sirsoft-pay_nhnkcp.settings.health.ready' : '$t:sirsoft-pay_nhnkcp.settings.health.not_ready'}}"
                                                     }
                                                 ]
                                             },
@@ -234,7 +234,7 @@
                                                 "props": {
                                                     "className": "text-secondary text-xs mt-1 ml-6"
                                                 },
-                                                "text": "CLI 바이너리 필요"
+                                                "text": "$t:sirsoft-pay_nhnkcp.settings.health.pc_payment_requires"
                                             }
                                         ]
                                     },
@@ -267,7 +267,7 @@
                                                         "props": {
                                                             "className": "font-medium text-sm text-gray-900 dark:text-gray-100"
                                                         },
-                                                        "text": "모바일 카드/일반결제"
+                                                        "text": "$t:sirsoft-pay_nhnkcp.settings.health.mobile_payment"
                                                     },
                                                     {
                                                         "type": "basic",
@@ -275,7 +275,7 @@
                                                         "props": {
                                                             "className": "{{health.data.summary.mobile_payment_ready ? 'text-success-soft' : 'text-danger-soft'}}"
                                                         },
-                                                        "text": "{{health.data.summary.mobile_payment_ready ? '동작 가능' : '동작 불가'}}"
+                                                        "text": "{{health.data.summary.mobile_payment_ready ? '$t:sirsoft-pay_nhnkcp.settings.health.ready' : '$t:sirsoft-pay_nhnkcp.settings.health.not_ready'}}"
                                                     }
                                                 ]
                                             },
@@ -285,7 +285,7 @@
                                                 "props": {
                                                     "className": "text-secondary text-xs mt-1 ml-6"
                                                 },
-                                                "text": "SmartPhone Pay (SOAP) + CLI 바이너리 모두 필요"
+                                                "text": "$t:sirsoft-pay_nhnkcp.settings.health.mobile_payment_requires"
                                             }
                                         ]
                                     },
@@ -318,7 +318,7 @@
                                                         "props": {
                                                             "className": "font-medium text-sm text-gray-900 dark:text-gray-100"
                                                         },
-                                                        "text": "모바일 가상계좌"
+                                                        "text": "$t:sirsoft-pay_nhnkcp.settings.health.mobile_vbank"
                                                     },
                                                     {
                                                         "type": "basic",
@@ -326,7 +326,7 @@
                                                         "props": {
                                                             "className": "{{health.data.summary.mobile_vbank_only_ready ? 'text-success-soft' : 'text-danger-soft'}}"
                                                         },
-                                                        "text": "{{health.data.summary.mobile_vbank_only_ready ? '동작 가능' : '동작 불가'}}"
+                                                        "text": "{{health.data.summary.mobile_vbank_only_ready ? '$t:sirsoft-pay_nhnkcp.settings.health.ready' : '$t:sirsoft-pay_nhnkcp.settings.health.not_ready'}}"
                                                     }
                                                 ]
                                             },
@@ -336,7 +336,7 @@
                                                 "props": {
                                                     "className": "text-secondary text-xs mt-1 ml-6"
                                                 },
-                                                "text": "SmartPhone Pay (SOAP) 만 필요 (평문 콜백)"
+                                                "text": "$t:sirsoft-pay_nhnkcp.settings.health.mobile_vbank_requires"
                                             }
                                         ]
                                     }
@@ -404,7 +404,7 @@
                                                                         "props": {
                                                                             "className": "{{check.category === 'pc' ? 'text-xs px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300' : 'text-xs px-1.5 py-0.5 rounded bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300'}}"
                                                                         },
-                                                                        "text": "{{check.category === 'pc' ? 'PC' : '모바일'}}"
+                                                                        "text": "{{check.category === 'pc' ? '$t:sirsoft-pay_nhnkcp.settings.health.category_pc' : '$t:sirsoft-pay_nhnkcp.settings.health.category_mobile'}}"
                                                                     },
                                                                     {
                                                                         "type": "basic",
@@ -413,7 +413,7 @@
                                                                         "props": {
                                                                             "className": "text-xs px-1.5 py-0.5 rounded bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300"
                                                                         },
-                                                                        "text": "자동 복구됨"
+                                                                        "text": "$t:sirsoft-pay_nhnkcp.settings.health.auto_fixed"
                                                                     }
                                                                 ]
                                                             },
@@ -440,7 +440,7 @@
                                                                         "props": {
                                                                             "className": "text-xs font-medium text-amber-900 dark:text-amber-200 mb-1"
                                                                         },
-                                                                        "text": "↓ 사용자 조치 필요"
+                                                                        "text": "$t:sirsoft-pay_nhnkcp.settings.health.action_required"
                                                                     },
                                                                     {
                                                                         "type": "basic",
@@ -483,7 +483,7 @@
                                         "name": "Icon",
                                         "props": {
                                             "name": "triangle-exclamation",
-                                            "className": "text-xl text-red-600 dark:text-red-400 dark:text-red-400 flex-shrink-0 mt-0.5"
+                                            "className": "text-xl text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"
                                         }
                                     },
                                     {
@@ -1672,7 +1672,7 @@
                                                 "type": "basic",
                                                 "name": "Icon",
                                                 "props": {
-                                                    "name": "shield-check",
+                                                    "name": "shield-halved",
                                                     "className": "text-secondary text-base"
                                                 }
                                             },

@@ -72,7 +72,7 @@
                                         "type": "basic",
                                         "name": "Icon",
                                         "props": {
-                                            "name": "refresh-cw",
+                                            "name": "arrows-rotate",
                                             "className": "text-xl"
                                         }
                                     }
@@ -184,7 +184,7 @@
                                                 "type": "basic",
                                                 "name": "Icon",
                                                 "props": {
-                                                    "name": "refresh-cw",
+                                                    "name": "arrows-rotate",
                                                     "className": "text-base"
                                                 }
                                             }
@@ -921,7 +921,7 @@
                                                                         "props": {
                                                                             "className": "badge-status badge-status-progress"
                                                                         },
-                                                                        "text": "수동매칭"
+                                                                        "text": "$t:sirsoft-ecommerce.admin.deposit.status.manual"
                                                                     }
                                                                 ]
                                                             }
@@ -1660,7 +1660,7 @@
                                                 "type": "basic",
                                                 "name": "Icon",
                                                 "props": {
-                                                    "name": "chevrons-left",
+                                                    "name": "angles-left",
                                                     "className": "text-base"
                                                 }
                                             }
@@ -1733,7 +1733,7 @@
                                                 "type": "basic",
                                                 "name": "Icon",
                                                 "props": {
-                                                    "name": "chevrons-right",
+                                                    "name": "angles-right",
                                                     "className": "text-base"
                                                 }
                                             }

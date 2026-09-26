@@ -50,7 +50,7 @@
                                         "type": "basic",
                                         "name": "Icon",
                                         "props": {
-                                            "name": "file-spreadsheet",
+                                            "name": "file-excel",
                                             "className": "text-xl icon-muted"
                                         }
                                     },
@@ -174,7 +174,7 @@
                                                 "type": "basic",
                                                 "name": "Icon",
                                                 "props": {
-                                                    "name": "refresh-cw",
+                                                    "name": "arrows-rotate",
                                                     "className": "text-base"
                                                 }
                                             },
@@ -218,7 +218,7 @@
                                             }
                                         ],
                                         "props": {
-                                            "className": "{{_local.statusFilter === '' ? 'badge-status cursor-pointer bg-gray-200 text-gray-700 ring-1 ring-gray-400 dark:bg-gray-700 dark:text-gray-300' : 'badge-status cursor-pointer bg-gray-100 text-gray-500 hover:bg-gray-150 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-750'}}"
+                                            "className": "{{_local.statusFilter === '' ? 'badge-status cursor-pointer bg-gray-200 text-gray-700 ring-1 ring-gray-400 dark:ring-gray-500 dark:bg-gray-700 dark:text-gray-300' : 'badge-status cursor-pointer bg-gray-100 text-gray-500 hover:bg-gray-150 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-750'}}"
                                         },
                                         "text": "$t:sirsoft-ecommerce.admin.excel_download.filter.all"
                                     },
@@ -237,7 +237,7 @@
                                             }
                                         ],
                                         "props": {
-                                            "className": "{{_local.statusFilter === 'completed' ? 'badge-status badge-status-success cursor-pointer ring-1 ring-green-400' : 'badge-status cursor-pointer bg-gray-100 text-gray-500 hover:bg-gray-150 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-750'}}"
+                                            "className": "{{_local.statusFilter === 'completed' ? 'badge-status badge-status-success cursor-pointer ring-1 ring-green-400 dark:ring-green-500' : 'badge-status cursor-pointer bg-gray-100 text-gray-500 hover:bg-gray-150 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-750'}}"
                                         },
                                         "children": [
                                             {
@@ -270,14 +270,14 @@
                                             }
                                         ],
                                         "props": {
-                                            "className": "{{_local.statusFilter === 'processing' ? 'badge-status badge-status-processing cursor-pointer ring-1 ring-blue-400' : 'badge-status cursor-pointer bg-gray-100 text-gray-500 hover:bg-gray-150 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-750'}}"
+                                            "className": "{{_local.statusFilter === 'processing' ? 'badge-status badge-status-processing cursor-pointer ring-1 ring-blue-400 dark:ring-blue-500' : 'badge-status cursor-pointer bg-gray-100 text-gray-500 hover:bg-gray-150 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-750'}}"
                                         },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Icon",
                                                 "props": {
-                                                    "name": "loader",
+                                                    "name": "spinner",
                                                     "className": "text-xs"
                                                 }
                                             },
@@ -303,14 +303,14 @@
                                             }
                                         ],
                                         "props": {
-                                            "className": "{{_local.statusFilter === 'failed' ? 'badge-status badge-status-error cursor-pointer ring-1 ring-red-400' : 'badge-status cursor-pointer bg-gray-100 text-gray-500 hover:bg-gray-150 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-750'}}"
+                                            "className": "{{_local.statusFilter === 'failed' ? 'badge-status badge-status-error cursor-pointer ring-1 ring-red-400 dark:ring-red-500' : 'badge-status cursor-pointer bg-gray-100 text-gray-500 hover:bg-gray-150 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-750'}}"
                                         },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Icon",
                                                 "props": {
-                                                    "name": "alert-circle",
+                                                    "name": "circle-exclamation",
                                                     "className": "text-xs"
                                                 }
                                             },
@@ -336,7 +336,7 @@
                                             }
                                         ],
                                         "props": {
-                                            "className": "{{_local.statusFilter === 'expired' ? 'badge-status badge-status-expired cursor-pointer ring-1 ring-gray-400' : 'badge-status cursor-pointer bg-gray-100 text-gray-500 hover:bg-gray-150 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-750'}}"
+                                            "className": "{{_local.statusFilter === 'expired' ? 'badge-status badge-status-expired cursor-pointer ring-1 ring-gray-400 dark:ring-gray-500' : 'badge-status cursor-pointer bg-gray-100 text-gray-500 hover:bg-gray-150 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-750'}}"
                                         },
                                         "children": [
                                             {
@@ -882,7 +882,7 @@
                                                                                 "type": "basic",
                                                                                 "name": "Icon",
                                                                                 "props": {
-                                                                                    "name": "loader",
+                                                                                    "name": "spinner",
                                                                                     "className": "text-xs animate-spin"
                                                                                 }
                                                                             },
@@ -1072,7 +1072,7 @@
                                                                                 "type": "basic",
                                                                                 "name": "Icon",
                                                                                 "props": {
-                                                                                    "name": "alert-circle",
+                                                                                    "name": "circle-exclamation",
                                                                                     "className": "text-xs"
                                                                                 }
                                                                             },
@@ -1982,7 +1982,7 @@
                                                                                 "type": "basic",
                                                                                 "name": "Icon",
                                                                                 "props": {
-                                                                                    "name": "loader",
+                                                                                    "name": "spinner",
                                                                                     "className": "text-xs animate-spin"
                                                                                 }
                                                                             },
@@ -2120,7 +2120,7 @@
                                                                                 "type": "basic",
                                                                                 "name": "Icon",
                                                                                 "props": {
-                                                                                    "name": "alert-circle",
+                                                                                    "name": "circle-exclamation",
                                                                                     "className": "text-xs"
                                                                                 }
                                                                             },
@@ -2390,7 +2390,7 @@
                                                         "type": "basic",
                                                         "name": "Icon",
                                                         "props": {
-                                                            "name": "chevrons-left",
+                                                            "name": "angles-left",
                                                             "className": "text-base"
                                                         }
                                                     }
@@ -2463,7 +2463,7 @@
                                                         "type": "basic",
                                                         "name": "Icon",
                                                         "props": {
-                                                            "name": "chevrons-right",
+                                                            "name": "angles-right",
                                                             "className": "text-base"
                                                         }
                                                     }

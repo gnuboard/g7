@@ -111,6 +111,16 @@
               </navigate>
             </on>
           </select>
+          <!-- 검색 조건 초기화 — 검색어·유형만 걷는다. 기간은 위 기간 바의 초기화가 따로 맡는다. 이미 비었으면 잠근다. -->
+          <button data-ref="visitors_filter_reset" type="button" class="btn btn-secondary flex-center gap-1.5" disabled="{{!query.q &amp;&amp; !query.type}}">
+            <on type="click">
+              <navigate path="/admin/analytics/visitors" :mergeQuery="true" :replace="true" transition_overlay_target="analytics_visitors_grid__body">
+                <query q="{{undefined}}" type="{{undefined}}" :page="1"/>
+              </navigate>
+            </on>
+            <icon name="rotate-left" size="sm"/>
+            <span>$t:common.reset</span>
+          </button>
         </div>
         <div class="overflow-x-auto">
           <blur-until-loaded sources="analytics_visitors"/>

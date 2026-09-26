@@ -153,6 +153,7 @@ API 까지만 소유하고, 그 API 를 소비해 실제로 그리는 것은 이
 | 레이아웃 JSON 에 빌드된 CSS 에 없는 Tailwind 클래스 사용 | 기존 레이아웃에 쓰인 클래스이거나 빌드 산출물에 존재하는지 확인 | 그 스타일만 조용히 빠져 화면이 어긋난다 |
 | `dist/` 재빌드 없이 `src/` 만 고치고 커밋 | `template:build --production` 후 `dist/` 동반 커밋 | 브라우저가 받는 것은 커밋된 `dist/` 다 — 소스 수정이 사문화된다 |
 | `onSuccess`·시퀀스 안에서 방금 저장한 상태(`_global.*`/`_local.*`)를 형제 액션의 `if`·값으로 재독 | 그 자리에서는 `{{response.*}}` 만 읽는다 | 그 시점 컨텍스트는 아직 갱신 전이라 stale 값으로 조용히 분기한다 |
+| 사용자 화면에서 변환표(`IconTypes.ts` 의 `iconNameMap`)에 없는 Lucide 식 이름(`log-out`·`alert-circle`·`loader-2` 등) | Font Awesome 6.4.0 이름(`right-from-bracket`·`circle-exclamation`·`spinner`) 또는 변환표에 있는 별칭 | 변환표에 없는 이름은 `fa-{이름}` 로 그대로 붙어 **빈칸**으로 그려진다. 관리자 화면에 들어가는 조각은 변환표가 없다. 가드: `tests/Unit/Extension/FontIconNameTest.php` |
 <!-- @intent END -->
 
 ## 7. 테스트 실행

@@ -128,7 +128,8 @@ describe('기간 바 조각', () => {
 
     const unitNav = navs.find((n) => typeof n.params?.query?.unit === 'string');
     expect(unitNav?.params?.query?.unit).toContain("'auto' ? undefined");
-    const excludeNavs = navs.filter((n) => typeof n.params?.query?.exclude === 'string');
+    // 초기화 버튼은 제외 키를 지우기만 한다(`{{undefined}}`) — 토글 두 개만 센다.
+    const excludeNavs = navs.filter((n) => typeof n.params?.query?.exclude === 'string' && n.params.query.exclude !== '{{undefined}}');
     expect(excludeNavs).toHaveLength(2);
     for (const n of navs) {
       expect(n.params.mergeQuery, '기간 바의 모든 이동은 병합이다').toBe(true);

@@ -175,7 +175,7 @@
                             "type": "basic",
                             "name": "Icon",
                             "props": {
-                                "name": "alert-circle",
+                                "name": "circle-exclamation",
                                 "size": "lg",
                                 "className": "text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"
                             }

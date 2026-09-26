@@ -324,3 +324,84 @@ test.describe('#682 라운드 8 — 실측이 드러낸 자리', () => {
     await expect(alert).toContainText('익명');
   });
 });
+
+/**
+ * #682 PO 실측 후속 4 — 필터 초기화 · 전체 삭제 확인 창의 경고 아이콘.
+ *
+ * 초기화는 구운 JSON 으로 「키를 지우는 이동이 있다」까지 잰다(analyticsFilterReset.test.ts). 여기서는 그 이동 뒤
+ * **입력칸·선택·칩이 주소를 따라 비워지는가**와 **다른 영역의 조건이 남는가**를 브라우저에서 잰다 — 입력칸 값이
+ * 주소를 다시 읽지 않으면 주소는 비었는데 칸에 옛 검색어가 남는다.
+ * 경고 아이콘은 클래스 조합이 아니라 실제로 그려진 글리프 크기와 원 안 위치를 잰다.
+ */
+test.describe('#682 PO 실측 후속 4 — 필터 초기화 · 경고 아이콘', () => {
+  // @scenario screen=visitors, state=normal, viewport=1440, locale=ko, e2e=overview
+  // @effects every_filter_area_has_a_reset_that_clears_its_keys, filter_reset_is_locked_when_nothing_to_clear
+  test('방문자 초기화는 검색어·유형만 걷고 기간은 남기며, 걷은 뒤 잠긴다', async ({ page }) => {
+    await authenticatePage(page, issueToken('core.analytics.read', 'core.analytics.privacy'));
+    await page.goto('/admin/analytics/visitors?q=1&type=member&preset=30d&page=2');
+
+    const reset = page.locator('#visitors_filter_reset');
+    const periodReset = page.locator('#period_reset_button');
+    await expect(reset).toBeEnabled({ timeout: 30_000 });
+    await expect(page.locator('input[name="analytics_visitors_q"]')).toHaveValue('1');
+
+    await reset.click();
+
+    await expect(page).not.toHaveURL(/[?&](q|type)=/);
+    await expect(page).toHaveURL(/preset=30d/);
+    await expect(page.locator('input[name="analytics_visitors_q"]')).toHaveValue('');
+    await expect(page.locator('#visitors_toolbar')).toContainText('전체');
+    await expect(page.locator('#preset_30d')).toHaveClass(/active/);
+    await expect(reset).toBeDisabled();
+    // 기간은 다른 영역의 조건이다 — 방문자 초기화가 건드리지 않았으니 기간 바 초기화는 여전히 켜져 있다.
+    await expect(periodReset).toBeEnabled();
+
+    await periodReset.click();
+    await expect(page).not.toHaveURL(/preset=/);
+    await expect(page.locator('#preset_7d')).toHaveClass(/active/);
+    await expect(periodReset).toBeDisabled();
+  });
+
+  // @scenario screen=settings, state=normal, viewport=1440, locale=ko, e2e=settings_privacy
+  // @effects purge_confirm_warning_icon_is_centered_at_its_size
+  test('전체 삭제 확인 창의 경고 아이콘은 원 가운데에 제 크기로 그려진다', async ({ page }) => {
+    await authenticatePage(page, issueToken('core.analytics.read', 'core.analytics.update'));
+    await page.goto('/admin/analytics/settings?tab=retention');
+
+    // 창을 열기만 한다 — 확인 체크 없이는 실행 버튼이 잠겨 있어 데이터는 지워지지 않는다.
+    await page.locator('#purge_all_button').click();
+    // 구조와 무관하게 잰다 — 경고 글리프에서 출발해, 배경색과 둥근 모서리를 가진 가장 가까운 자신/조상을 원으로 본다.
+    // (원 자산을 아이콘에 직접 준 옛 모양에서는 아이콘 자신이 원이다 — 클래스 부재로 실패하지 않고 증상으로 실패해야 한다.)
+    const glyph = page.getByRole('dialog').locator('i.fa-triangle-exclamation').first();
+    await expect(glyph).toBeVisible({ timeout: 30_000 });
+    await expect(page.locator('#purge_execute_button')).toBeDisabled();
+
+    const m = await glyph.evaluate((i) => {
+      let circleEl: HTMLElement | null = i as HTMLElement;
+      while (circleEl) {
+        const cs = getComputedStyle(circleEl);
+        if (cs.backgroundColor !== 'rgba(0, 0, 0, 0)' && parseFloat(cs.borderTopLeftRadius) > 0) break;
+        circleEl = circleEl.parentElement;
+      }
+      const c = (circleEl ?? i).getBoundingClientRect();
+      const g = i.getBoundingClientRect();
+      const fontSize = parseFloat(getComputedStyle(i).fontSize);
+      // 글리프는 글자 크기 한 줄 높이로 그려진다 — 요소 상자가 글자보다 크면(옛 모양) 글리프는 상자 맨 위 줄에 놓인다.
+      const glyphTop = g.height > fontSize * 1.5 ? g.top : g.top + g.height / 2 - fontSize / 2;
+      return {
+        circle: c.height,
+        fontSize,
+        glyph: getComputedStyle(i, '::before').content,
+        dx: Math.abs(g.left + g.width / 2 - (c.left + c.width / 2)),
+        dy: Math.abs(glyphTop + fontSize / 2 - (c.top + c.height / 2)),
+      };
+    });
+    expect(m.glyph, '글리프가 없다(빈 아이콘)').not.toBe('none');
+    // 원(48px)의 절반 크기 — 옛 모양은 본문 글자 크기(14px)로 원 위쪽에 붙었다.
+    expect(m.fontSize).toBeGreaterThanOrEqual(m.circle / 2);
+    expect(m.dx).toBeLessThanOrEqual(2);
+    expect(m.dy).toBeLessThanOrEqual(2);
+
+    await page.keyboard.press('Escape');
+  });
+});

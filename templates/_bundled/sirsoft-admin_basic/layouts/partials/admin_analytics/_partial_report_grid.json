@@ -135,6 +135,48 @@
                                 "options": "{{((n, base) => (base.includes(n) ? base : base.concat([n]).sort((a, b) => a - b)).map((v) => Object.fromEntries([['value', String(v)], ['label', String(v)]])))(Number(query.per_page || analytics_report?.data?.pagination?.per_page) || 25, [10, 25, 50, 100]) ?? []}}",
                                 "aria-label": "$t:admin.analytics.common.per_page"
                             }
+                        },
+                        {
+                            "comment": "검색 조건 초기화 — 검색어·정렬만 걷는다. 한 쪽 행 수는 보기 설정이라 남기고, 기간은 기간 바의\n          초기화가 따로 맡는다. 이미 기본이면 잠근다.",
+                            "id": "report_filter_reset",
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "navigate",
+                                    "params": {
+                                        "path": "{{_local.periodPath}}",
+                                        "mergeQuery": true,
+                                        "replace": true,
+                                        "query": {
+                                            "q": "{{undefined}}",
+                                            "sort": "{{undefined}}",
+                                            "page": 1
+                                        }
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "type": "button",
+                                "className": "btn btn-secondary flex-center gap-1.5",
+                                "disabled": "{{!query.q && !query.sort}}"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                        "name": "rotate-left",
+                                        "size": "sm"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:common.reset"
+                                }
+                            ]
                         }
                     ]
                 }

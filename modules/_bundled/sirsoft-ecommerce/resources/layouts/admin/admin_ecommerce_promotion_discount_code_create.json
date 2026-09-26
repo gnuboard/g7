@@ -645,7 +645,7 @@
                                         "type": "basic",
                                         "name": "Icon",
                                         "props": {
-                                            "name": "help-circle",
+                                            "name": "circle-question",
                                             "className": "text-base text-gray-400 dark:text-gray-500 ml-auto cursor-pointer"
                                         }
                                     }
@@ -950,7 +950,7 @@
                                         "type": "basic",
                                         "name": "Icon",
                                         "props": {
-                                            "name": "settings",
+                                            "name": "gear",
                                             "className": "text-xl text-gray-700 dark:text-gray-300"
                                         }
                                     },

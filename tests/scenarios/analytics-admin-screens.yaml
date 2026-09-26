@@ -217,12 +217,17 @@ effects:
   - every_analytics_source_handles_403
   - permission_guards_read_only_fields_the_auth_response_sends
   - settings_keys_match_server_defaults
+  # PO 실측 후속 4 — 필터 영역마다 초기화(모집단 = 통계 레이아웃의 입력이 쓰는 질의 키, 카드 단위)
+  - every_filter_area_has_a_reset_that_clears_its_keys
+  - filter_reset_is_locked_when_nothing_to_clear
+  - purge_confirm_warning_icon_is_centered_at_its_size
 
 test_files:
   - templates/_bundled/sirsoft-admin_basic/src/__tests__/layouts/analyticsStateBranches.test.ts
   - templates/_bundled/sirsoft-admin_basic/src/__tests__/layouts/analyticsScreenPermissions.test.ts
   - templates/_bundled/sirsoft-admin_basic/src/__tests__/layouts/analyticsPatterns.test.tsx
   - templates/_bundled/sirsoft-admin_basic/src/__tests__/layouts/analyticsPoFollowups.test.ts
+  - templates/_bundled/sirsoft-admin_basic/src/__tests__/layouts/analyticsFilterReset.test.ts
   - templates/_bundled/sirsoft-admin_basic/src/__tests__/layouts/analyticsOverview.test.tsx
   - templates/_bundled/sirsoft-admin_basic/src/__tests__/layouts/analyticsReports.test.tsx
   - templates/_bundled/sirsoft-admin_basic/src/__tests__/layouts/analyticsRealtime.test.tsx

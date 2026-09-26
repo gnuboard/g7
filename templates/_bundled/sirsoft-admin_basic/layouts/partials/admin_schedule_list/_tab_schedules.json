@@ -169,7 +169,7 @@
                                     "type": "basic",
                                     "name": "Icon",
                                     "props": {
-                                        "name": "x-circle",
+                                        "name": "circle-xmark",
                                         "className": "text-xl text-red-500"
                                     }
                                 }
@@ -1076,7 +1076,7 @@
                                     "type": "basic",
                                     "name": "Icon",
                                     "props": {
-                                        "name": "refresh-cw",
+                                        "name": "arrows-rotate",
                                         "className": "text-base"
                                     }
                                 }

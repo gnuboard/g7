@@ -45,6 +45,17 @@
             </navigate>
           </on>
         </select>
+        <!-- 검색 조건 초기화 — 검색어·정렬만 걷는다. 한 쪽 행 수는 보기 설정이라 남기고, 기간은 기간 바의
+          초기화가 따로 맡는다. 이미 기본이면 잠근다. -->
+        <button data-ref="report_filter_reset" type="button" class="btn btn-secondary flex-center gap-1.5" disabled="{{!query.q &amp;&amp; !query.sort}}">
+          <on type="click">
+            <navigate path="{{_local.periodPath}}" :mergeQuery="true" :replace="true">
+              <query q="{{undefined}}" sort="{{undefined}}" :page="1"/>
+            </navigate>
+          </on>
+          <icon name="rotate-left" size="sm"/>
+          <span>$t:common.reset</span>
+        </button>
       </div>
     </div>
     <div data-ref="report_table_wrap" class="overflow-x-auto">

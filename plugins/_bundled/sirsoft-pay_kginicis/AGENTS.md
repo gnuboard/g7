@@ -141,6 +141,7 @@ CBT 인증 URL 로 폼 POST → KG 이니시스가 `sid` 를 콜백으로 전달
 | 결제창 컨텍스트를 `window` 전역에만 보관 | `markStandardPaymentCloseReportContext()` 가 sessionStorage 에도 남기고, 부팅 시 `reportStandardPaymentFailureOnReturn()` 으로 보고 | 결제창은 전체 페이지 이동으로 열리고 돌아와 전역이 소실된다. 승인 거절은 fail URL 리다이렉트로 끝나므로, 남겨 둔 정보가 없으면 정당한 결제 실패가 어디에도 기록되지 않는다 |
 | 리턴 콜백 복귀 보고에 체크아웃 경로 검사를 강제 | `reportStandardPaymentWindowClosed($reason, requireCheckoutPage: false)` | 상점이 `redirect_fail_url` 을 바꿔 두면 경로 검사가 보고를 통째로 막는다. 닫힘 메시지 경로(체크아웃 화면 전용)와 리턴 복귀 경로는 판정 기준이 다르다 |
 | 실패 화면에서 보고가 닿지 못한 주문을 방치 | 이커머스 모듈의 만료 주문 자동 정리가 최종 안전망 | 브라우저를 바로 닫으면 보고가 나가지 않는다. 두 경로가 함께 있어야 선차감 마일리지가 무기한 묶이지 않는다 |
+| 레이아웃·TSX 에서 Lucide·Heroicons 식 아이콘 이름(`x-circle`·`refresh-cw`·`more-horizontal`·`alert-circle`·`chevrons-left`·`arrow-down-tray` 등) | Font Awesome 6.4.0 이름(`circle-xmark`·`arrows-rotate`·`ellipsis`·`circle-exclamation`·`angles-left`·`download`) | 관리자 템플릿 `Icon` 은 이름을 `fa-{이름}` 로만 바꾼다 — FA 에 없는 이름은 오류 없이 **빈칸**으로 그려진다. 가드: `tests/Unit/Extension/FontIconNameTest.php` |
 <!-- @intent END -->
 
 ## 7. 테스트 실행
@@ -149,7 +150,7 @@ CBT 인증 URL 로 폼 POST → KG 이니시스가 `sid` 를 콜백으로 전달
 | 종류 | 개수 | 위치 |
 |---|---|---|
 | PHPUnit | 35개 | `plugins/_bundled/sirsoft-pay_kginicis/tests` |
-| Vitest | 12개 | `vitest.config.ts` |
+| Vitest | 13개 | `vitest.config.ts` |
 | Playwright | 1개 | `tests/Playwright` |
 | 시나리오 매니페스트 | 2개 | `tests/scenarios` |
 

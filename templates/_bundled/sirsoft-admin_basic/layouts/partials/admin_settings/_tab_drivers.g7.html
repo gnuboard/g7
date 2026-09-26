@@ -122,7 +122,7 @@
               <span>{{_local.testingDriver === 's3' ? '$t:admin.settings.drivers.testing' : '$t:admin.settings.drivers.test_connection'}}</span>
             </button>
             <div data-if="{{_local.driverTestResults?.s3}}" class="{{_local.driverTestResults.s3.success ? 'flex-center gap-2 text-green-600 dark:text-green-400' : 'flex-center gap-2 text-red-600 dark:text-red-400'}}">
-              <icon name="{{_local.driverTestResults.s3.success ? 'check-circle' : 'x-circle'}}" class="text-xl"/>
+              <icon name="{{_local.driverTestResults.s3.success ? 'check-circle' : 'circle-xmark'}}" class="text-xl"/>
               <span class="text-sm font-medium">{{_local.driverTestResults.s3.success ? '$t:admin.settings.drivers.test_success' : '$t:admin.settings.drivers.test_failed'}}</span>
             </div>
           </div>
@@ -237,7 +237,7 @@
               <span>{{_local.testingDriver === 'redis' ? '$t:admin.settings.drivers.testing' : '$t:admin.settings.drivers.test_connection'}}</span>
             </button>
             <div data-if="{{_local.driverTestResults?.redis}}" class="{{_local.driverTestResults.redis.success ? 'flex-center gap-2 text-green-600 dark:text-green-400' : 'flex-center gap-2 text-red-600 dark:text-red-400'}}">
-              <icon name="{{_local.driverTestResults.redis.success ? 'check-circle' : 'x-circle'}}" class="text-xl"/>
+              <icon name="{{_local.driverTestResults.redis.success ? 'check-circle' : 'circle-xmark'}}" class="text-xl"/>
               <span class="text-sm font-medium">{{_local.driverTestResults.redis.success ? '$t:admin.settings.drivers.test_success' : '$t:admin.settings.drivers.test_failed'}}</span>
             </div>
           </div>
@@ -293,7 +293,7 @@
               <span>{{_local.testingDriver === 'memcached' ? '$t:admin.settings.drivers.testing' : '$t:admin.settings.drivers.test_connection'}}</span>
             </button>
             <div data-if="{{_local.driverTestResults?.memcached}}" class="{{_local.driverTestResults.memcached.success ? 'flex-center gap-2 text-green-600 dark:text-green-400' : 'flex-center gap-2 text-red-600 dark:text-red-400'}}">
-              <icon name="{{_local.driverTestResults.memcached.success ? 'check-circle' : 'x-circle'}}" class="text-xl"/>
+              <icon name="{{_local.driverTestResults.memcached.success ? 'check-circle' : 'circle-xmark'}}" class="text-xl"/>
               <span class="text-sm font-medium">{{_local.driverTestResults.memcached.success ? '$t:admin.settings.drivers.test_success' : '$t:admin.settings.drivers.test_failed'}}</span>
             </div>
           </div>
@@ -608,7 +608,7 @@
               <span>{{_local.testingDriver === 'websocket' ? '$t:admin.settings.drivers.testing' : '$t:admin.settings.drivers.test_connection'}}</span>
             </button>
             <div data-if="{{_local.driverTestResults?.websocket}}" class="{{_local.driverTestResults.websocket.success ? 'flex-center gap-2 text-green-600 dark:text-green-400' : 'flex-center gap-2 text-red-600 dark:text-red-400'}}">
-              <icon name="{{_local.driverTestResults.websocket.success ? 'check-circle' : 'x-circle'}}" class="text-xl"/>
+              <icon name="{{_local.driverTestResults.websocket.success ? 'check-circle' : 'circle-xmark'}}" class="text-xl"/>
               <span class="text-sm font-medium">{{_local.driverTestResults.websocket.success ? '$t:admin.settings.drivers.test_success' : '$t:admin.settings.drivers.test_failed'}}</span>
             </div>
           </div>

@@ -135,6 +135,19 @@
             </on>
             $t:admin.analytics.privacy_requests.search.button
           </button>
+          <!-- 검색 조건 초기화 — 폼(대상 IP·값·기간)과 주소를 함께 비운다. 주소에 값이 없으면 조회 자체가
+            일어나지 않아 결과 카드도 닫힌다. 폼과 주소가 모두 기본이면 잠근다. -->
+          <button data-ref="search_reset_button" type="button" class="btn btn-secondary px-6" disabled="{{(_local.search?.subject || 'ip') === 'ip' &amp;&amp; !_local.search?.value &amp;&amp; !_local.search?.from &amp;&amp; !_local.search?.to &amp;&amp; !query.subject &amp;&amp; !query.value &amp;&amp; !query.from &amp;&amp; !query.to}}">
+            <on type="click">
+              <sequence>
+                <set-state target="local" search.subject="ip" search.value="" search.from="" search.to=""/>
+                <navigate path="/admin/analytics/privacy-requests" :mergeQuery="true" :replace="true">
+                  <query subject="{{undefined}}" value="{{undefined}}" from="{{undefined}}" to="{{undefined}}"/>
+                </navigate>
+              </sequence>
+            </on>
+            $t:common.reset
+          </button>
         </div>
       </div>
       <div data-ref="results_card" data-if="{{!!query.value}}" class="admin-card">
