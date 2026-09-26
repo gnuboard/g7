@@ -120,4 +120,26 @@ trait HasAnalyticsSettingsRules
             $key('public_summary_enabled') => ['sometimes', 'boolean'],
         ];
     }
+
+    /**
+     * 방문자 통계 설정 필드의 검증 항목명을 반환합니다.
+     *
+     * 규칙 키에서 그대로 파생합니다 — 필드를 규칙에 더하고 항목명을 빠뜨리면 저장 실패 안내에
+     * `analytics.retention_days` 같은 내부 키가 그대로 나가기 때문입니다. 배열 항목(`*.`)은
+     * 부모 필드의 이름을 씁니다. 이름은 관리자 「방문자 통계 설정」 화면의 항목 이름과 같습니다.
+     *
+     * @param  string  $prefix  규칙 키 앞에 붙은 접두 (빈 문자열이면 키 이름 그대로)
+     * @return array<string, string> 규칙 키 => 항목명
+     */
+    protected function analyticsSettingsAttributes(string $prefix = ''): array
+    {
+        $attributes = [];
+
+        foreach (array_keys($this->analyticsSettingsRules($prefix)) as $key) {
+            $field = $prefix === '' ? $key : substr($key, strlen($prefix) + 1);
+            $attributes[$key] = __('analytics.attributes.'.preg_replace('/\.\*$/', '', $field));
+        }
+
+        return $attributes;
+    }
 }

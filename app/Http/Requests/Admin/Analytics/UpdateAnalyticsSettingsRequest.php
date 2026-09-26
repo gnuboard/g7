@@ -40,6 +40,16 @@ class UpdateAnalyticsSettingsRequest extends FormRequest
     }
 
     /**
+     * 검증 항목명을 반환합니다.
+     *
+     * @return array<string, string> 규칙 키 => 항목명
+     */
+    public function attributes(): array
+    {
+        return $this->analyticsSettingsAttributes();
+    }
+
+    /**
      * 검증을 마친 값을 규칙이 선언한 형으로 돌려줍니다.
      *
      * @param  string|null  $key  뽑아 올 키 (null 이면 전부)

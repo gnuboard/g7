@@ -140,4 +140,22 @@ class PeriodRequest extends FormRequest
             $excluded,
         ));
     }
+
+    /**
+     * 검증 항목명을 반환합니다 — 오류 문구에 필드 키 대신 화면에서 쓰는 이름이 나오게 합니다.
+     *
+     * @return array<string, string> 필드 => 항목명
+     */
+    public function attributes(): array
+    {
+        return [
+            'preset' => __('analytics.attributes.preset'),
+            'from' => __('analytics.attributes.from'),
+            'to' => __('analytics.attributes.to'),
+            'unit' => __('analytics.attributes.unit'),
+            'exclude' => __('analytics.attributes.exclude'),
+            'exclude.*' => __('analytics.attributes.exclude'),
+            'format' => __('analytics.attributes.format'),
+        ];
+    }
 }

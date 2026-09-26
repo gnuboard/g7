@@ -121,4 +121,32 @@ class CollectRequest extends FormRequest
             'dims.max' => __('validation.analytics.dimensions_too_many'),
         ];
     }
+
+    /**
+     * 검증 항목명을 반환합니다 — 오류 문구에 필드 키 대신 화면에서 쓰는 이름이 나오게 합니다.
+     *
+     * @return array<string, string> 필드 => 항목명
+     */
+    public function attributes(): array
+    {
+        return [
+            't' => __('analytics.attributes.t'),
+            'url' => __('analytics.attributes.url'),
+            'title' => __('analytics.attributes.title'),
+            'ref' => __('analytics.attributes.ref'),
+            'res' => __('analytics.attributes.res'),
+            'lang' => __('analytics.attributes.lang'),
+            'locale' => __('analytics.attributes.locale'),
+            'prev' => __('analytics.attributes.prev'),
+            'init' => __('analytics.attributes.init'),
+            'target' => __('analytics.attributes.target'),
+            'name' => __('analytics.attributes.name'),
+            'goal' => __('analytics.attributes.goal'),
+            'attrs' => __('analytics.attributes.attrs'),
+            'dims' => __('analytics.attributes.dims'),
+            'dims.*' => __('analytics.attributes.dims'),
+            'ch' => __('analytics.attributes.ch'),
+            'wd' => __('analytics.attributes.wd'),
+        ];
+    }
 }

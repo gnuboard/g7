@@ -1461,6 +1461,9 @@ class SaveSettingsRequest extends FormRequest
         ];
 
         // 규칙을 더한 확장이 같은 자리에서 라벨도 더한다 (rules() 의 훅과 짝).
+        // 방문자 통계 탭 필드 — 규칙이 트레이트에서 오므로 항목명도 같은 곳에서 파생한다.
+        $attributes = array_merge($attributes, $this->analyticsSettingsAttributes('analytics'));
+
         return HookManager::applyFilters('core.settings.save_validation_attributes', $attributes, $this);
     }
 }

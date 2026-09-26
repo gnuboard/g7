@@ -71,4 +71,19 @@ class SubjectRequest extends FormRequest
             'visitor_key' => $this->input('visitor_key'),
         ], fn ($value): bool => $value !== null && $value !== '');
     }
+
+    /**
+     * 검증 항목명을 반환합니다 — 오류 문구에 필드 키 대신 화면에서 쓰는 이름이 나오게 합니다.
+     *
+     * @return array<string, string> 필드 => 항목명
+     */
+    public function attributes(): array
+    {
+        return [
+            'ip' => __('analytics.attributes.ip'),
+            'visitor_key' => __('analytics.attributes.visitor_key'),
+            'from' => __('analytics.attributes.from'),
+            'to' => __('analytics.attributes.to'),
+        ];
+    }
 }

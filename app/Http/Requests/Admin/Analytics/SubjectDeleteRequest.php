@@ -38,4 +38,16 @@ class SubjectDeleteRequest extends SubjectRequest
             'confirm.accepted' => __('validation.analytics.confirm_required'),
         ];
     }
+
+    /**
+     * 검증 항목명을 반환합니다 — 오류 문구에 필드 키 대신 화면에서 쓰는 이름이 나오게 합니다.
+     *
+     * @return array<string, string> 필드 => 항목명 (부모 요청의 항목명 포함)
+     */
+    public function attributes(): array
+    {
+        return array_merge(parent::attributes(), [
+            'confirm' => __('analytics.attributes.confirm'),
+        ]);
+    }
 }
