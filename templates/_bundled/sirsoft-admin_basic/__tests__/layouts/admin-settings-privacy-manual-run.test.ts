@@ -159,7 +159,7 @@ describe('개인정보 조치 직권 실행 — 버튼 (#636 후속)', () => {
     });
 });
 
-describe('개인정보 조치 직권 실행 — 상태 소스 폴링 (#636 후속)', () => {
+describe('[case:state-closure-9] 개인정보 조치 직권 실행 — 상태 소스 폴링 (#636 후속)', () => {
     const dataSource = (settingsLayout as any).data_sources.find((d: any) => d.id === 'privacyManualRuns');
 
     /**
@@ -198,7 +198,7 @@ describe('개인정보 조치 직권 실행 — 상태 소스 폴링 (#636 후�
     });
 });
 
-describe('개인정보 조치 직권 실행 — 확인 창 (#636 후속)', () => {
+describe('[case:state-closure-10] 개인정보 조치 직권 실행 — 확인 창 (#636 후속)', () => {
     /**
      * @scenario target_kind=dormant_stage, toggle=on, actor=runner
      *

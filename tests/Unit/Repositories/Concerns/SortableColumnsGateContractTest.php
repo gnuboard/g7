@@ -44,12 +44,14 @@ class SortableColumnsGateContractTest extends TestCase
         'app/Repositories/ScheduleHistoryRepository.php' => 'app/Http/Requests/Schedule/ScheduleHistoryListRequest.php',
         'app/Repositories/ScheduleRepository.php' => 'app/Http/Requests/Schedule/ScheduleListRequest.php',
         'app/Repositories/UserRepository.php' => 'app/Http/Requests/User/UserListRequest.php',
+        'modules/_bundled/sirsoft-board/src/Services/BoardService.php' => 'modules/_bundled/sirsoft-board/src/Http/Requests/Admin/IndexBoardRequest.php',
         'modules/_bundled/sirsoft-ecommerce/src/Repositories/CouponRepository.php' => 'modules/_bundled/sirsoft-ecommerce/src/Http/Requests/Admin/CouponListRequest.php',
         'modules/_bundled/sirsoft-ecommerce/src/Repositories/ExtraFeeTemplateRepository.php' => 'modules/_bundled/sirsoft-ecommerce/src/Http/Requests/Admin/ExtraFeeTemplateListRequest.php',
         'modules/_bundled/sirsoft-ecommerce/src/Repositories/OrderRepository.php' => 'modules/_bundled/sirsoft-ecommerce/src/Http/Requests/Admin/OrderListRequest.php',
         'modules/_bundled/sirsoft-ecommerce/src/Repositories/ProductRepository.php' => 'modules/_bundled/sirsoft-ecommerce/src/Http/Requests/Admin/ProductListRequest.php',
         'modules/_bundled/sirsoft-ecommerce/src/Repositories/ShippingPolicyRepository.php' => 'modules/_bundled/sirsoft-ecommerce/src/Http/Requests/Admin/ShippingPolicyListRequest.php',
         'modules/_bundled/sirsoft-page/src/Repositories/PageRepository.php' => 'modules/_bundled/sirsoft-page/src/Http/Requests/PageListRequest.php',
+        'plugins/_bundled/sirsoft-ckeditor5/src/Repositories/ImageUploadRepository.php' => 'plugins/_bundled/sirsoft-ckeditor5/src/Http/Requests/IndexUploadsRequest.php',
     ];
 
     /**
@@ -219,6 +221,9 @@ class SortableColumnsGateContractTest extends TestCase
         if (preg_match('/Rule::in\(\[(.*?)\]\)/s', $rule, $ruleInMatch)) {
             preg_match_all("/'([a-zA-Z0-9_]+)'/", $ruleInMatch[1], $columnMatches);
             $columns = $columnMatches[1];
+        } elseif (preg_match('/Rule::in\(self::(\w+)\)/', $rule, $constMatch)) {
+            // 허용 어휘를 상수로 둔 요청(`Rule::in(self::SORTABLE)`) — 저장소 쪽과 같은 상수 해석을 쓴다.
+            $columns = $this->literalColumns($content, 'self::'.$constMatch[1], $constMatch[1], false);
         } elseif (preg_match('/in:([a-zA-Z0-9_,]+)/', $rule, $inMatch)) {
             $columns = explode(',', $inMatch[1]);
         }

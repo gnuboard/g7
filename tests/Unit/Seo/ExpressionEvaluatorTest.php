@@ -27,6 +27,10 @@ class ExpressionEvaluatorTest extends TestCase
      * 봇 화면은 이 평가기가, 사람 화면은 React 평가기가 같은 식을 푼다. 두 결과가 다르면 같은 주소가
      * 봇에게만 다르게 보인다 — 자바스크립트는 `!*'()` 를 인코딩하지 않는데 PHP `rawurlencode` 는 한다.
      *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects encode_uri_component_keeps_js_unreserved_marks
+     *
      * @return void 없음
      */
     public function test_encode_uri_component_matches_the_browser(): void
@@ -40,6 +44,10 @@ class ExpressionEvaluatorTest extends TestCase
 
     /**
      * dot notation 으로 중첩 객체의 값을 해석합니다.
+     *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects dot_path_resolves_nested_value
      *
      * @return void 없음
      */
@@ -55,6 +63,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * 깊은 dot notation 경로를 해석합니다.
      *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects dot_path_resolves_nested_value
+     *
      * @return void 없음
      */
     public function test_deep_dot_notation(): void
@@ -68,6 +80,10 @@ class ExpressionEvaluatorTest extends TestCase
 
     /**
      * optional chaining(?.)으로 존재하는 값을 해석합니다.
+     *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects optional_chaining_yields_value_or_empty
      *
      * @return void 없음
      */
@@ -83,6 +99,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * optional chaining(?.)으로 존재하지 않는 값은 빈 문자열을 반환합니다.
      *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects optional_chaining_yields_value_or_empty
+     *
      * @return void 없음
      */
     public function test_optional_chaining_missing_value(): void
@@ -96,6 +116,10 @@ class ExpressionEvaluatorTest extends TestCase
 
     /**
      * null coalescing(??)으로 null 값에 기본값을 사용합니다.
+     *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects null_coalescing_falls_back_only_on_missing_or_null
      *
      * @return void 없음
      */
@@ -111,6 +135,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * null coalescing(??)으로 존재하지 않는 키에 기본값을 사용합니다.
      *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects null_coalescing_falls_back_only_on_missing_or_null
+     *
      * @return void 없음
      */
     public function test_null_coalescing_with_nonexistent_key(): void
@@ -125,6 +153,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * null coalescing(??)으로 값이 존재하면 실제 값을 반환합니다.
      *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects null_coalescing_falls_back_only_on_missing_or_null
+     *
      * @return void 없음
      */
     public function test_null_coalescing_with_existing_value(): void
@@ -138,6 +170,10 @@ class ExpressionEvaluatorTest extends TestCase
 
     /**
      * $t: 접두사로 번역 키를 처리합니다.
+     *
+     * @scenario entry_point=evaluate, expression_form=translation_key
+     *
+     * @effects translation_prefix_resolves_key
      *
      * @return void 없음
      */
@@ -154,6 +190,10 @@ class ExpressionEvaluatorTest extends TestCase
 
     /**
      * 배열 인덱스([N])를 올바르게 해석합니다.
+     *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects array_index_access_resolves_or_renders_empty
      *
      * @return void 없음
      */
@@ -174,6 +214,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * 범위를 벗어난 배열 인덱스는 빈 문자열을 반환합니다.
      *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects array_index_access_resolves_or_renders_empty
+     *
      * @return void 없음
      */
     public function test_array_index_out_of_range(): void
@@ -192,6 +236,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * 삼항 연산자: truthy 조건에서 true 분기 값을 반환합니다.
      *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects ternary_selects_branch_by_truthiness
+     *
      * @return void 없음
      */
     public function test_ternary_evaluates_true_branch(): void
@@ -205,6 +253,10 @@ class ExpressionEvaluatorTest extends TestCase
 
     /**
      * 존재하지 않는 키는 빈 문자열을 반환합니다.
+     *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects missing_path_renders_empty_string
      *
      * @return void 없음
      */
@@ -220,6 +272,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * dot notation과 null coalescing을 혼합하여 사용합니다.
      *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects null_coalescing_falls_back_only_on_missing_or_null
+     *
      * @return void 없음
      */
     public function test_mixed_dot_notation_with_null_coalescing(): void
@@ -233,6 +289,10 @@ class ExpressionEvaluatorTest extends TestCase
 
     /**
      * 숫자 값을 문자열로 변환합니다.
+     *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects scalar_values_rendered_as_strings
      *
      * @return void 없음
      */
@@ -248,6 +308,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * boolean 값을 문자열로 변환합니다.
      *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects scalar_values_rendered_as_strings
+     *
      * @return void 없음
      */
     public function test_boolean_value_converted_to_string(): void
@@ -262,6 +326,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * 표현식 없는 일반 문자열은 그대로 반환합니다.
      *
+     * @scenario entry_point=evaluate, expression_form=plain_text
+     *
+     * @effects text_without_binding_passes_through
+     *
      * @return void 없음
      */
     public function test_plain_string_without_expression(): void
@@ -273,6 +341,10 @@ class ExpressionEvaluatorTest extends TestCase
 
     /**
      * 다국어 객체에서 현재 로케일 값을 자동 추출합니다.
+     *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects localized_object_picks_current_then_fallback_locale
      *
      * @return void 없음
      */
@@ -289,6 +361,10 @@ class ExpressionEvaluatorTest extends TestCase
 
     /**
      * 다국어 객체에서 현재 로케일이 없으면 fallback 로케일 값을 반환합니다.
+     *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects localized_object_picks_current_then_fallback_locale
      *
      * @return void 없음
      */
@@ -311,6 +387,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * > 연산자: 좌측이 우측보다 클 때 true를 반환합니다.
      *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects comparison_operators_render_true_or_false
+     *
      * @return void 없음
      */
     public function test_comparison_greater_than_true(): void
@@ -324,6 +404,10 @@ class ExpressionEvaluatorTest extends TestCase
 
     /**
      * > 연산자: 좌측이 우측보다 작을 때 false를 반환합니다.
+     *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects comparison_operators_render_true_or_false
      *
      * @return void 없음
      */
@@ -339,6 +423,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * optional chaining이 포함된 비교 표현식을 처리합니다.
      *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects comparison_operators_render_true_or_false
+     *
      * @return void 없음
      */
     public function test_comparison_with_optional_chaining(): void
@@ -352,6 +440,10 @@ class ExpressionEvaluatorTest extends TestCase
 
     /**
      * === 연산자: 문자열 동등 비교입니다.
+     *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects comparison_operators_render_true_or_false
      *
      * @return void 없음
      */
@@ -367,6 +459,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * !== 연산자: 문자열 불일치 비교입니다.
      *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects comparison_operators_render_true_or_false
+     *
      * @return void 없음
      */
     public function test_comparison_strict_not_equals(): void
@@ -381,6 +477,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * <= 연산자: 숫자 비교입니다.
      *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects comparison_operators_render_true_or_false
+     *
      * @return void 없음
      */
     public function test_comparison_less_than_or_equal(): void
@@ -394,6 +494,10 @@ class ExpressionEvaluatorTest extends TestCase
 
     /**
      * 좌측 경로가 미존재하면 빈 문자열을 반환합니다.
+     *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects comparison_with_missing_left_path_renders_empty
      *
      * @return void 없음
      */
@@ -413,6 +517,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * || 연산자: 좌측이 truthy이면 true를 반환합니다.
      *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects logical_or_returns_operand_value
+     *
      * @return void 없음
      */
     public function test_logical_or_left_truthy(): void
@@ -427,6 +535,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * || 연산자: 좌측이 falsy이면 우측 피연산자 값을 반환합니다.
      *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects logical_or_returns_operand_value
+     *
      * @return void 없음
      */
     public function test_logical_or_right_truthy(): void
@@ -440,6 +552,10 @@ class ExpressionEvaluatorTest extends TestCase
 
     /**
      * || 연산자: 양쪽 모두 falsy이면 우측 피연산자 값을 반환합니다.
+     *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects logical_or_returns_operand_value
      *
      * @return void 없음
      */
@@ -458,6 +574,10 @@ class ExpressionEvaluatorTest extends TestCase
      * 레이아웃이 `{{query?.q || ''}}` 를 값 폴백으로 사용하므로 boolean이 아니라
      * 피연산자 값이어야 합니다 (프론트엔드 JS 평가와 동일).
      *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects logical_or_returns_operand_value
+     *
      * @return void 없음
      */
     public function test_logical_or_value_fallback_idiom(): void
@@ -468,6 +588,10 @@ class ExpressionEvaluatorTest extends TestCase
 
     /**
      * && 연산자: 좌측이 truthy이면 우측 피연산자 값을 반환합니다.
+     *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects logical_and_returns_operand_value
      *
      * @return void 없음
      */
@@ -483,6 +607,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * && 연산자: 한쪽이 falsy이면 falsy 피연산자 값을 반환합니다.
      *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects logical_and_returns_operand_value
+     *
      * @return void 없음
      */
     public function test_logical_and_one_falsy(): void
@@ -496,6 +624,10 @@ class ExpressionEvaluatorTest extends TestCase
 
     /**
      * ! 연산자: truthy 값을 false로 변환합니다.
+     *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects negation_inverts_truthiness
      *
      * @return void 없음
      */
@@ -511,6 +643,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * ! 연산자: falsy 값을 true로 변환합니다.
      *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects negation_inverts_truthiness
+     *
      * @return void 없음
      */
     public function test_negation_falsy_becomes_true(): void
@@ -524,6 +660,10 @@ class ExpressionEvaluatorTest extends TestCase
 
     /**
      * 복합 논리 표현식: !a || a <= 0 패턴을 처리합니다.
+     *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects compound_logical_condition_evaluated
      *
      * @return void 없음
      */
@@ -539,6 +679,10 @@ class ExpressionEvaluatorTest extends TestCase
 
     /**
      * 복합 논리 표현식: discount_rate가 0이면 "할인 없음" 조건은 true입니다.
+     *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects compound_logical_condition_evaluated
      *
      * @return void 없음
      */
@@ -558,6 +702,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * 문자열 리터럴 브래킷 접근자를 해석합니다.
      *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects bracket_accessor_resolves_literal_and_context_keys
+     *
      * @return void 없음
      */
     public function test_bracket_accessor_string_literal(): void
@@ -571,6 +719,10 @@ class ExpressionEvaluatorTest extends TestCase
 
     /**
      * null coalescing이 포함된 브래킷 접근자를 해석합니다.
+     *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects bracket_accessor_honours_null_coalescing
      *
      * @return void 없음
      */
@@ -596,6 +748,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * 브래킷 접근자 + 최상위 ?? fallback 경로입니다.
      *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects bracket_accessor_honours_null_coalescing
+     *
      * @return void 없음
      */
     public function test_bracket_accessor_with_outer_null_coalescing(): void
@@ -616,6 +772,10 @@ class ExpressionEvaluatorTest extends TestCase
 
     /**
      * 브래킷 접근자: 동적 키가 context에 있으면 그 값을 사용합니다.
+     *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects bracket_accessor_resolves_literal_and_context_keys
      *
      * @return void 없음
      */
@@ -641,6 +801,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * 텍스트 중간에 위치한 $t: 토큰을 해석합니다.
      *
+     * @scenario entry_point=evaluate, expression_form=plain_text
+     *
+     * @effects inline_translation_token_resolved_in_text
+     *
      * @return void 없음
      */
     public function test_inline_translation_token(): void
@@ -656,6 +820,10 @@ class ExpressionEvaluatorTest extends TestCase
 
     /**
      * {{binding}}과 $t: 토큰이 혼합된 표현식을 처리합니다.
+     *
+     * @scenario entry_point=evaluate, expression_form=embedded_binding
+     *
+     * @effects inline_translation_token_resolved_in_text
      *
      * @return void 없음
      */
@@ -674,6 +842,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * 미등록 인라인 $t: 토큰은 빈 문자열로 치환됩니다.
      *
+     * @scenario entry_point=evaluate, expression_form=plain_text
+     *
+     * @effects unknown_inline_translation_renders_empty
+     *
      * @return void 없음
      */
     public function test_inline_unknown_translation_returns_empty(): void
@@ -688,6 +860,10 @@ class ExpressionEvaluatorTest extends TestCase
      *
      * 프론트엔드의 지연 해석 표기를 SEO에서도 인식해야 합니다 — 미인식 시 키가
      * `defer:xxx` 가 되어 사전 조회에 실패하고 빈 문자열이 출력됩니다.
+     *
+     * @scenario entry_point=evaluate, expression_form=translation_key
+     *
+     * @effects defer_translation_prefix_resolves_like_t
      *
      * @return void 없음
      */
@@ -705,6 +881,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * $t:defer: 접두사가 파라미터와 함께 사용되어도 해석됩니다.
      *
+     * @scenario entry_point=evaluate, expression_form=translation_key
+     *
+     * @effects defer_translation_prefix_resolves_like_t
+     *
      * @return void 없음
      */
     public function test_defer_translation_prefix_with_params(): void
@@ -720,6 +900,10 @@ class ExpressionEvaluatorTest extends TestCase
 
     /**
      * 텍스트 중간의 $t:defer: 토큰도 해석되며 raw 문자열이 남지 않습니다.
+     *
+     * @scenario entry_point=evaluate, expression_form=plain_text
+     *
+     * @effects defer_translation_prefix_resolves_like_t
      *
      * @return void 없음
      */
@@ -742,6 +926,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * 빈 {{}} 치환으로 남은 고립 연산자(+)를 정리합니다.
      *
+     * @scenario entry_point=evaluate, expression_form=embedded_binding
+     *
+     * @effects unsupported_expression_renders_empty_without_orphan_operator
+     *
      * @return void 없음
      */
     public function test_orphaned_operator_cleaned_up(): void
@@ -758,6 +946,8 @@ class ExpressionEvaluatorTest extends TestCase
 
     /**
      * 실제 상품 상세 가격 표현식: 할인가 표시 조건입니다.
+     *
+     * @effects product_price_layout_expressions_render
      *
      * @return void 없음
      */
@@ -799,6 +989,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * 실제 상품 상세: 할인 없는 상품의 가격 표시 조건입니다.
      *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects product_price_layout_expressions_render
+     *
      * @return void 없음
      */
     public function test_real_world_no_discount_price_condition(): void
@@ -824,6 +1018,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * 문자열 연결 연산자(+)가 포함된 복합 표현식은 빈 문자열을 반환합니다.
      *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects unsupported_expression_renders_empty_without_orphan_operator
+     *
      * @return void 없음
      */
     public function test_string_concat_operator_returns_empty(): void
@@ -838,6 +1036,10 @@ class ExpressionEvaluatorTest extends TestCase
 
     /**
      * setTranslations로 설정된 번역은 인라인 $t: 토큰에서도 사용됩니다.
+     *
+     * @scenario entry_point=evaluate, expression_form=translation_key
+     *
+     * @effects inline_translation_token_resolved_in_text
      *
      * @return void 없음
      */
@@ -856,6 +1058,10 @@ class ExpressionEvaluatorTest extends TestCase
      * 괄호로 감싼 null coalescing + 비교 연산자 테스트
      * 실제 사용 예: 탭 패널 조건 `{{(_local.activeTab ?? 'info') === 'info'}}`
      *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects parenthesized_fallback_then_compared
+     *
      * @return void 없음
      */
     public function test_parenthesized_null_coalescing_comparison(): void
@@ -870,6 +1076,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * 괄호 내 null coalescing으로 fallback된 값이 비교 우측과 다를 때
      *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects parenthesized_fallback_then_compared
+     *
      * @return void 없음
      */
     public function test_parenthesized_null_coalescing_comparison_false(): void
@@ -883,6 +1093,10 @@ class ExpressionEvaluatorTest extends TestCase
 
     /**
      * 괄호 내 null coalescing에서 실제 값이 있는 경우
+     *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects parenthesized_fallback_then_compared
      *
      * @return void 없음
      */
@@ -900,6 +1114,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * 배열의 .length 가상 프로퍼티 해석
      *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects length_virtual_property_counts_arrays_and_strings
+     *
      * @return void 없음
      */
     public function test_array_length_virtual_property(): void
@@ -915,6 +1133,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * 빈 배열의 .length 가상 프로퍼티
      *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects length_virtual_property_counts_arrays_and_strings
+     *
      * @return void 없음
      */
     public function test_empty_array_length_virtual_property(): void
@@ -927,6 +1149,10 @@ class ExpressionEvaluatorTest extends TestCase
 
     /**
      * .length를 비교 연산자와 함께 사용
+     *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects length_combines_with_comparison_and_logic
      *
      * @return void 없음
      */
@@ -943,6 +1169,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * .length를 && 조건과 함께 사용 (인기상품 패턴)
      *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects length_combines_with_comparison_and_logic
+     *
      * @return void 없음
      */
     public function test_array_length_with_and_condition(): void
@@ -957,6 +1187,10 @@ class ExpressionEvaluatorTest extends TestCase
 
     /**
      * 빈 배열 .length와 && 조건 (false 반환)
+     *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects length_combines_with_comparison_and_logic
      *
      * @return void 없음
      */
@@ -973,6 +1207,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * 문자열의 .length 가상 프로퍼티
      *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects length_virtual_property_counts_arrays_and_strings
+     *
      * @return void 없음
      */
     public function test_string_length_virtual_property(): void
@@ -985,6 +1223,10 @@ class ExpressionEvaluatorTest extends TestCase
 
     /**
      * optional chaining과 .length 조합
+     *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects length_virtual_property_counts_arrays_and_strings
      *
      * @return void 없음
      */
@@ -1001,6 +1243,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * 존재하지 않는 경로의 .length → 빈 문자열
      *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects missing_path_length_renders_empty
+     *
      * @return void 없음
      */
     public function test_nonexistent_path_length_returns_empty(): void
@@ -1013,6 +1259,10 @@ class ExpressionEvaluatorTest extends TestCase
 
     /**
      * 중첩 깊은 경로의 .length
+     *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects length_virtual_property_counts_arrays_and_strings
      *
      * @return void 없음
      */
@@ -1043,6 +1293,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * Array.join() — 배열을 구분자로 결합합니다.
      *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects array_join_uses_given_or_comma_separator
+     *
      * @return void 없음
      */
     public function test_array_join(): void
@@ -1055,6 +1309,10 @@ class ExpressionEvaluatorTest extends TestCase
 
     /**
      * Array.join() — 구분자 없이 기본 쉼표 사용
+     *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects array_join_uses_given_or_comma_separator
      *
      * @return void 없음
      */
@@ -1069,6 +1327,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * Array.slice() — 부분 배열 추출
      *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects array_reshaping_methods_match_js
+     *
      * @return void 없음
      */
     public function test_array_slice(): void
@@ -1081,6 +1343,10 @@ class ExpressionEvaluatorTest extends TestCase
 
     /**
      * Array.includes() — 요소 포함 여부
+     *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects array_search_methods_match_js
      *
      * @return void 없음
      */
@@ -1095,6 +1361,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * Array.includes() — 미포함
      *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects array_search_methods_match_js
+     *
      * @return void 없음
      */
     public function test_array_includes_false(): void
@@ -1107,6 +1377,10 @@ class ExpressionEvaluatorTest extends TestCase
 
     /**
      * Array.indexOf() — 요소 인덱스 검색
+     *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects array_search_methods_match_js
      *
      * @return void 없음
      */
@@ -1121,6 +1395,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * Array.indexOf() — 없는 요소는 -1 반환
      *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects array_search_methods_match_js
+     *
      * @return void 없음
      */
     public function test_array_index_of_not_found(): void
@@ -1133,6 +1411,10 @@ class ExpressionEvaluatorTest extends TestCase
 
     /**
      * Array.reverse() — 배열 역순
+     *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects array_reshaping_methods_match_js
      *
      * @return void 없음
      */
@@ -1147,6 +1429,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * Array.flat() — 중첩 배열 평탄화
      *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects array_reshaping_methods_match_js
+     *
      * @return void 없음
      */
     public function test_array_flat(): void
@@ -1159,6 +1445,10 @@ class ExpressionEvaluatorTest extends TestCase
 
     /**
      * Array.at() — 음수 인덱스 지원
+     *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects array_reshaping_methods_match_js
      *
      * @return void 없음
      */
@@ -1173,6 +1463,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * Array.concat() — 배열 병합
      *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects array_reshaping_methods_match_js
+     *
      * @return void 없음
      */
     public function test_array_concat(): void
@@ -1185,6 +1479,10 @@ class ExpressionEvaluatorTest extends TestCase
 
     /**
      * Array.map() — 객체 배열에서 특정 프로퍼티 추출
+     *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects array_callback_methods_apply_arrow_function
      *
      * @return void 없음
      */
@@ -1203,6 +1501,10 @@ class ExpressionEvaluatorTest extends TestCase
 
     /**
      * Array.filter() — 조건에 맞는 요소만 추출
+     *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects array_callback_methods_apply_arrow_function
      *
      * @return void 없음
      */
@@ -1223,6 +1525,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * Array.find() — 조건에 맞는 첫 요소
      *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects array_callback_methods_apply_arrow_function
+     *
      * @return void 없음
      */
     public function test_array_find(): void
@@ -1241,6 +1547,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * Array.some() — 하나라도 조건 충족
      *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects array_callback_methods_apply_arrow_function
+     *
      * @return void 없음
      */
     public function test_array_some(): void
@@ -1253,6 +1563,10 @@ class ExpressionEvaluatorTest extends TestCase
 
     /**
      * Array.every() — 모두 조건 충족
+     *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects array_callback_methods_apply_arrow_function
      *
      * @return void 없음
      */
@@ -1267,6 +1581,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * Array.every() — 일부 미충족
      *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects array_callback_methods_apply_arrow_function
+     *
      * @return void 없음
      */
     public function test_array_every_false(): void
@@ -1280,6 +1598,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * Array.findIndex() — 조건에 맞는 첫 인덱스
      *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects array_search_methods_match_js
+     *
      * @return void 없음
      */
     public function test_array_find_index(): void
@@ -1292,6 +1614,10 @@ class ExpressionEvaluatorTest extends TestCase
 
     /**
      * Array.sort() — 콜백 없이 기본 정렬
+     *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects array_reshaping_methods_match_js
      *
      * @return void 없음
      */
@@ -1310,6 +1636,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * String.split() — 문자열 분할
      *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects string_split_returns_array
+     *
      * @return void 없음
      */
     public function test_string_split(): void
@@ -1322,6 +1652,10 @@ class ExpressionEvaluatorTest extends TestCase
 
     /**
      * 문자열 앞뒤 공백을 떼는 `trim()` 이 식 안에서 동작하는지 확인합니다.
+     *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects string_case_and_trim_methods_match_js
      *
      * @return void 없음
      */
@@ -1336,6 +1670,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * 문자열을 소문자로 바꾸는 `toLowerCase()` 가 식 안에서 동작하는지 확인합니다.
      *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects string_case_and_trim_methods_match_js
+     *
      * @return void 없음
      */
     public function test_string_to_lower_case(): void
@@ -1348,6 +1686,10 @@ class ExpressionEvaluatorTest extends TestCase
 
     /**
      * 문자열을 대문자로 바꾸는 `toUpperCase()` 가 식 안에서 동작하는지 확인합니다.
+     *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects string_case_and_trim_methods_match_js
      *
      * @return void 없음
      */
@@ -1362,6 +1704,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * 부분 문자열 포함 여부를 묻는 `includes()` 가 식 안에서 동작하는지 확인합니다.
      *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects string_search_methods_match_js
+     *
      * @return void 없음
      */
     public function test_string_includes(): void
@@ -1374,6 +1720,10 @@ class ExpressionEvaluatorTest extends TestCase
 
     /**
      * 앞자리 일치를 묻는 `startsWith()` 가 식 안에서 동작하는지 확인합니다.
+     *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects string_search_methods_match_js
      *
      * @return void 없음
      */
@@ -1388,6 +1738,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * 끝자리 일치를 묻는 `endsWith()` 가 식 안에서 동작하는지 확인합니다.
      *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects string_search_methods_match_js
+     *
      * @return void 없음
      */
     public function test_string_ends_with(): void
@@ -1400,6 +1754,10 @@ class ExpressionEvaluatorTest extends TestCase
 
     /**
      * String.replace() — 최초 1회만 치환
+     *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects string_replace_first_vs_all
      *
      * @return void 없음
      */
@@ -1414,6 +1772,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * String.replaceAll() — 전체 치환
      *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects string_replace_first_vs_all
+     *
      * @return void 없음
      */
     public function test_string_replace_all(): void
@@ -1426,6 +1788,10 @@ class ExpressionEvaluatorTest extends TestCase
 
     /**
      * 구간을 잘라 내는 `substring()` 이 식 안에서 동작하는지 확인합니다.
+     *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects string_slicing_methods_support_negative_index
      *
      * @return void 없음
      */
@@ -1440,6 +1806,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * String.slice() — 음수 인덱스 지원
      *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects string_slicing_methods_support_negative_index
+     *
      * @return void 없음
      */
     public function test_string_slice_negative(): void
@@ -1452,6 +1822,10 @@ class ExpressionEvaluatorTest extends TestCase
 
     /**
      * 찾은 자리를 돌려주는 `indexOf()` 가 식 안에서 동작하는지 확인합니다.
+     *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects string_search_methods_match_js
      *
      * @return void 없음
      */
@@ -1466,6 +1840,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * 문자열을 되풀이하는 `repeat()` 이 식 안에서 동작하는지 확인합니다.
      *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects string_padding_and_repeat_match_js
+     *
      * @return void 없음
      */
     public function test_string_repeat(): void
@@ -1478,6 +1856,10 @@ class ExpressionEvaluatorTest extends TestCase
 
     /**
      * 앞을 채워 길이를 맞추는 `padStart()` 가 식 안에서 동작하는지 확인합니다.
+     *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects string_padding_and_repeat_match_js
      *
      * @return void 없음
      */
@@ -1492,6 +1874,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * 한 글자를 꺼내는 `charAt()` 이 식 안에서 동작하는지 확인합니다.
      *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects string_slicing_methods_support_negative_index
+     *
      * @return void 없음
      */
     public function test_string_char_at(): void
@@ -1504,6 +1890,10 @@ class ExpressionEvaluatorTest extends TestCase
 
     /**
      * String.at() — 음수 인덱스
+     *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects string_slicing_methods_support_negative_index
      *
      * @return void 없음
      */
@@ -1522,6 +1912,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * Number.toLocaleString() — 천 단위 구분
      *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects number_formatting_methods_match_js
+     *
      * @return void 없음
      */
     public function test_number_to_locale_string(): void
@@ -1535,6 +1929,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * Number.toFixed() — 소수점 고정
      *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects number_formatting_methods_match_js
+     *
      * @return void 없음
      */
     public function test_number_to_fixed(): void
@@ -1547,6 +1945,10 @@ class ExpressionEvaluatorTest extends TestCase
 
     /**
      * Number.toString() — 진수 변환
+     *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects number_formatting_methods_match_js
      *
      * @return void 없음
      */
@@ -1565,6 +1967,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * Object.keys() — 객체 키 추출
      *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects object_keys_and_values_enumerated
+     *
      * @return void 없음
      */
     public function test_object_keys(): void
@@ -1577,6 +1983,10 @@ class ExpressionEvaluatorTest extends TestCase
 
     /**
      * Object.values() — 객체 값 추출
+     *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects object_keys_and_values_enumerated
      *
      * @return void 없음
      */
@@ -1591,6 +2001,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * Object.keys().length — 키 수 (메서드 + 프로퍼티 체이닝)
      *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects object_keys_and_values_enumerated
+     *
      * @return void 없음
      */
     public function test_object_keys_length(): void
@@ -1603,6 +2017,10 @@ class ExpressionEvaluatorTest extends TestCase
 
     /**
      * 가장 작은 수를 고르는 `Math.min()` 이 식 안에서 동작하는지 확인합니다.
+     *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects math_functions_compute_like_js
      *
      * @return void 없음
      */
@@ -1617,6 +2035,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * 가장 큰 수를 고르는 `Math.max()` 가 식 안에서 동작하는지 확인합니다.
      *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects math_functions_compute_like_js
+     *
      * @return void 없음
      */
     public function test_math_max(): void
@@ -1629,6 +2051,10 @@ class ExpressionEvaluatorTest extends TestCase
 
     /**
      * 내림하는 `Math.floor()` 가 식 안에서 동작하는지 확인합니다.
+     *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects math_functions_compute_like_js
      *
      * @return void 없음
      */
@@ -1643,6 +2069,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * 올림하는 `Math.ceil()` 이 식 안에서 동작하는지 확인합니다.
      *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects math_functions_compute_like_js
+     *
      * @return void 없음
      */
     public function test_math_ceil(): void
@@ -1655,6 +2085,10 @@ class ExpressionEvaluatorTest extends TestCase
 
     /**
      * 반올림하는 `Math.round()` 가 식 안에서 동작하는지 확인합니다.
+     *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects math_functions_compute_like_js
      *
      * @return void 없음
      */
@@ -1669,6 +2103,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * 절댓값을 구하는 `Math.abs()` 가 식 안에서 동작하는지 확인합니다.
      *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects math_functions_compute_like_js
+     *
      * @return void 없음
      */
     public function test_math_abs(): void
@@ -1681,6 +2119,10 @@ class ExpressionEvaluatorTest extends TestCase
 
     /**
      * Array.isArray() — 배열 판별
+     *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects array_is_array_discriminates_arrays
      *
      * @return void 없음
      */
@@ -1695,6 +2137,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * Array.isArray() — 비배열
      *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects array_is_array_discriminates_arrays
+     *
      * @return void 없음
      */
     public function test_array_is_array_false(): void
@@ -1707,6 +2153,10 @@ class ExpressionEvaluatorTest extends TestCase
 
     /**
      * 값을 JSON 문자열로 바꾸는 `JSON.stringify()` 가 식 안에서 동작하는지 확인합니다.
+     *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects json_stringify_serializes_value
      *
      * @return void 없음
      */
@@ -1725,6 +2175,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * Number() — 형 변환
      *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects global_conversion_functions_match_js
+     *
      * @return void 없음
      */
     public function test_global_number(): void
@@ -1737,6 +2191,10 @@ class ExpressionEvaluatorTest extends TestCase
 
     /**
      * String() — 형 변환
+     *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects global_conversion_functions_match_js
      *
      * @return void 없음
      */
@@ -1751,6 +2209,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * Boolean() — truthy 판별
      *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects global_conversion_functions_match_js
+     *
      * @return void 없음
      */
     public function test_global_boolean_truthy(): void
@@ -1763,6 +2225,10 @@ class ExpressionEvaluatorTest extends TestCase
 
     /**
      * 정수로 읽는 `parseInt()` 가 식 안에서 동작하는지 확인합니다.
+     *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects global_conversion_functions_match_js
      *
      * @return void 없음
      */
@@ -1777,6 +2243,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * 실수로 읽는 `parseFloat()` 가 식 안에서 동작하는지 확인합니다.
      *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects global_conversion_functions_match_js
+     *
      * @return void 없음
      */
     public function test_global_parse_float(): void
@@ -1790,6 +2260,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * 주소 조각을 인코딩하는 `encodeURIComponent()` 가 식 안에서 동작하는지 확인합니다.
      *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects encode_uri_component_percent_encodes_multibyte
+     *
      * @return void 없음
      */
     public function test_global_encode_uri_component(): void
@@ -1802,6 +2276,10 @@ class ExpressionEvaluatorTest extends TestCase
 
     /**
      * isNaN() — 비숫자 판별
+     *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects global_conversion_functions_match_js
      *
      * @return void 없음
      */
@@ -1820,6 +2298,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * Object.values().join() — 정적 메서드 → 인스턴스 메서드 체이닝
      *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects method_chain_applies_left_to_right
+     *
      * @return void 없음
      */
     public function test_method_chaining_static_to_instance(): void
@@ -1833,6 +2315,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * split → join 체이닝
      *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects method_chain_applies_left_to_right
+     *
      * @return void 없음
      */
     public function test_method_chaining_split_join(): void
@@ -1845,6 +2331,10 @@ class ExpressionEvaluatorTest extends TestCase
 
     /**
      * filter → map → join 체이닝
+     *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects method_chain_applies_left_to_right
      *
      * @return void 없음
      */
@@ -1869,6 +2359,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * 실제 레이아웃: 옵션 그룹 값 표시 (Object.values.join 패턴)
      *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects collection_display_layout_expressions_render
+     *
      * @return void 없음
      */
     public function test_real_world_option_values_display(): void
@@ -1883,6 +2377,10 @@ class ExpressionEvaluatorTest extends TestCase
 
     /**
      * 실제 레이아웃: 쿠폰 목록에서 이름만 추출
+     *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects collection_display_layout_expressions_render
      *
      * @return void 없음
      */
@@ -1902,6 +2400,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * 실제 레이아웃: 가격 포맷 (toLocaleString)
      *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects collection_display_layout_expressions_render
+     *
      * @return void 없음
      */
     public function test_real_world_price_format(): void
@@ -1914,6 +2416,10 @@ class ExpressionEvaluatorTest extends TestCase
 
     /**
      * 실제 레이아웃: 상품정보제공고시 항목 키 매핑
+     *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects collection_display_layout_expressions_render
      *
      * @return void 없음
      */
@@ -1934,6 +2440,10 @@ class ExpressionEvaluatorTest extends TestCase
 
     /**
      * 실제 레이아웃: 색상 옵션 목록 (join 표현식)
+     *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects collection_display_layout_expressions_render
      *
      * @return void 없음
      */
@@ -1956,6 +2466,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * Number.isNaN — 정적 메서드
      *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects number_static_predicates_answer_like_js
+     *
      * @return void 없음
      */
     public function test_number_is_na_n_static(): void
@@ -1968,6 +2482,10 @@ class ExpressionEvaluatorTest extends TestCase
 
     /**
      * Number.isFinite — 정적 메서드
+     *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects number_static_predicates_answer_like_js
      *
      * @return void 없음
      */
@@ -1986,6 +2504,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * 숫자 리터럴 0은 경로가 아닌 리터럴로 해석됩니다.
      *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects numeric_literal_not_read_as_path
+     *
      * @return void 없음
      */
     public function test_numeric_literal_zero(): void
@@ -1997,6 +2519,10 @@ class ExpressionEvaluatorTest extends TestCase
 
     /**
      * 양의 정수 리터럴이 올바르게 해석됩니다.
+     *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects numeric_literal_not_read_as_path
      *
      * @return void 없음
      */
@@ -2010,6 +2536,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * 음의 정수 리터럴이 올바르게 해석됩니다.
      *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects numeric_literal_not_read_as_path
+     *
      * @return void 없음
      */
     public function test_numeric_literal_negative_integer(): void
@@ -2022,6 +2552,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * 소수점 리터럴이 올바르게 해석됩니다.
      *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects numeric_literal_not_read_as_path
+     *
      * @return void 없음
      */
     public function test_numeric_literal_decimal(): void
@@ -2033,6 +2567,10 @@ class ExpressionEvaluatorTest extends TestCase
 
     /**
      * null coalescing 폴백으로 숫자 리터럴 0이 올바르게 반환됩니다.
+     *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects null_coalescing_falls_back_to_numeric_literal
      *
      * @return void 없음
      */
@@ -2049,6 +2587,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * null coalescing 폴백으로 숫자 리터럴 1이 올바르게 반환됩니다.
      *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects null_coalescing_falls_back_to_numeric_literal
+     *
      * @return void 없음
      */
     public function test_null_coalescing_fallback_to_numeric_one(): void
@@ -2062,6 +2604,10 @@ class ExpressionEvaluatorTest extends TestCase
 
     /**
      * null coalescing에서 좌측 값이 존재하면 폴백하지 않습니다.
+     *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects null_coalescing_falls_back_only_on_missing_or_null
      *
      * @return void 없음
      */
@@ -2081,6 +2627,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * $t: 파라미터 값에 {{}} 표현식이 포함되면 컨텍스트에서 해석됩니다.
      *
+     * @scenario entry_point=evaluate, expression_form=translation_key
+     *
+     * @effects translation_params_resolve_bound_expressions
+     *
      * @return void 없음
      */
     public function test_translation_param_with_expression(): void
@@ -2095,6 +2645,10 @@ class ExpressionEvaluatorTest extends TestCase
 
     /**
      * $t: 파라미터의 {{}} 표현식이 폴백을 사용할 때 올바르게 해석됩니다.
+     *
+     * @scenario entry_point=evaluate, expression_form=translation_key
+     *
+     * @effects translation_params_resolve_bound_expressions
      *
      * @return void 없음
      */
@@ -2112,6 +2666,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * $t: 파라미터에 리터럴 값이 올바르게 처리됩니다.
      *
+     * @scenario entry_point=evaluate, expression_form=translation_key
+     *
+     * @effects translation_literal_or_absent_params_accepted
+     *
      * @return void 없음
      */
     public function test_translation_param_literal_value(): void
@@ -2125,6 +2683,10 @@ class ExpressionEvaluatorTest extends TestCase
 
     /**
      * 템플릿 번역의 {{param}} 형식과 Laravel의 :param 형식 모두 치환됩니다.
+     *
+     * @scenario entry_point=evaluate, expression_form=translation_key
+     *
+     * @effects translation_placeholders_replaced_in_both_formats
      *
      * @return void 없음
      */
@@ -2148,6 +2710,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * $t: 파라미터 없이도 번역이 올바르게 동작합니다.
      *
+     * @scenario entry_point=evaluate, expression_form=translation_key
+     *
+     * @effects translation_literal_or_absent_params_accepted
+     *
      * @return void 없음
      */
     public function test_translation_without_params(): void
@@ -2161,6 +2727,10 @@ class ExpressionEvaluatorTest extends TestCase
 
     /**
      * $t: 파라미터에 여러 {{}} 표현식이 포함될 때 모두 해석됩니다.
+     *
+     * @scenario entry_point=evaluate, expression_form=translation_key
+     *
+     * @effects translation_params_resolve_bound_expressions
      *
      * @return void 없음
      */
@@ -2186,6 +2756,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * 덧셈: 경로 값 + 숫자 리터럴이 올바르게 계산됩니다.
      *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects arithmetic_add_subtract_on_path_values
+     *
      * @return void 없음
      */
     public function test_arithmetic_addition(): void
@@ -2200,6 +2774,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * 뺄셈: 경로 값 - 숫자 리터럴이 올바르게 계산됩니다.
      *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects arithmetic_add_subtract_on_path_values
+     *
      * @return void 없음
      */
     public function test_arithmetic_subtraction(): void
@@ -2213,6 +2791,10 @@ class ExpressionEvaluatorTest extends TestCase
 
     /**
      * null coalescing + 산술 연산이 조합됩니다.
+     *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects arithmetic_after_null_coalescing
      *
      * @return void 없음
      */
@@ -2229,6 +2811,10 @@ class ExpressionEvaluatorTest extends TestCase
 
     /**
      * null coalescing fallback + 산술 연산이 올바르게 동작합니다.
+     *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects arithmetic_after_null_coalescing
      *
      * @return void 없음
      */
@@ -2248,6 +2834,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * 산술 연산에서 좌측이 비숫자일 때 산술이 무시됩니다.
      *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects non_numeric_arithmetic_renders_empty
+     *
      * @return void 없음
      */
     public function test_arithmetic_non_numeric_left_side(): void
@@ -2263,6 +2853,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * 소수점 산술 연산이 올바르게 동작합니다.
      *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects arithmetic_add_subtract_on_path_values
+     *
      * @return void 없음
      */
     public function test_arithmetic_with_decimal(): void
@@ -2275,6 +2869,10 @@ class ExpressionEvaluatorTest extends TestCase
 
     /**
      * 페이지네이션 실제 패턴: 이전/다음 페이지 계산
+     *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects arithmetic_add_subtract_on_path_values
      *
      * @return void 없음
      */
@@ -2307,6 +2905,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * null !== 값 → true (JavaScript null 시맨틱)
      *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects null_strict_comparison_follows_js_semantics
+     *
      * @return void 없음
      */
     public function test_null_strict_not_equals_value_returns_true(): void
@@ -2323,6 +2925,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * null === 값 → false (JavaScript null 시맨틱)
      *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects null_strict_comparison_follows_js_semantics
+     *
      * @return void 없음
      */
     public function test_null_strict_equals_value_returns_false(): void
@@ -2336,6 +2942,10 @@ class ExpressionEvaluatorTest extends TestCase
 
     /**
      * null 끼리의 `!==` 비교가 거짓인지 확인합니다.
+     *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects null_strict_comparison_follows_js_semantics
      *
      * @return void 없음
      */
@@ -2351,6 +2961,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * null 끼리의 `===` 비교가 참인지 확인합니다.
      *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects null_strict_comparison_follows_js_semantics
+     *
      * @return void 없음
      */
     public function test_null_strict_equals_null_returns_true(): void
@@ -2364,6 +2978,10 @@ class ExpressionEvaluatorTest extends TestCase
 
     /**
      * SEO 댓글 if 조건: _global 미존재 시에도 && 체인이 정상 작동합니다.
+     *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects compound_logical_condition_evaluated
      *
      * @return void 없음
      */
@@ -2394,6 +3012,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * evaluateRaw: 단일 {{expr}} 패턴으로 배열을 원본 반환합니다.
      *
+     * @scenario entry_point=evaluate_raw, expression_form=single_binding
+     *
+     * @effects raw_single_binding_returns_original_type
+     *
      * @return void 없음
      */
     public function test_evaluate_raw_returns_array(): void
@@ -2413,6 +3035,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * evaluateRaw: 문자열 값은 문자열로 반환합니다.
      *
+     * @scenario entry_point=evaluate_raw, expression_form=single_binding
+     *
+     * @effects raw_single_binding_returns_original_type
+     *
      * @return void 없음
      */
     public function test_evaluate_raw_returns_string(): void
@@ -2426,6 +3052,10 @@ class ExpressionEvaluatorTest extends TestCase
 
     /**
      * evaluateRaw: 복합 표현식은 문자열로 반환합니다.
+     *
+     * @scenario entry_point=evaluate_raw, expression_form=embedded_binding
+     *
+     * @effects raw_non_single_binding_returns_interpolated_string
      *
      * @return void 없음
      */
@@ -2444,6 +3074,10 @@ class ExpressionEvaluatorTest extends TestCase
      * 회귀: 양끝 앵커 정규식이 `{{a}} - {{b}}` 도 단일 바인딩으로 오인해
      * 내부를 `a}} - {{b` 로 해석하던 문제.
      *
+     * @scenario entry_point=evaluate_raw, expression_form=embedded_binding
+     *
+     * @effects raw_non_single_binding_returns_interpolated_string
+     *
      * @return void 없음
      */
     public function test_evaluate_raw_multiple_bindings_returns_interpolated_string(): void
@@ -2458,6 +3092,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * evaluateRaw: 중첩 객체 리터럴은 내부에 `}}` 가 있어도 단일 바인딩으로 유지됩니다.
      *
+     * @scenario entry_point=evaluate_raw, expression_form=single_binding
+     *
+     * @effects raw_nested_object_literal_stays_single_binding
+     *
      * @return void 없음
      */
     public function test_evaluate_raw_nested_object_literal_stays_single_binding(): void
@@ -2469,6 +3107,10 @@ class ExpressionEvaluatorTest extends TestCase
 
     /**
      * evaluateRaw: 미존재 경로는 null을 반환합니다.
+     *
+     * @scenario entry_point=evaluate_raw, expression_form=single_binding
+     *
+     * @effects raw_missing_path_returns_null
      *
      * @return void 없음
      */
@@ -2488,6 +3130,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * 배열 리터럴 + includes() — 포함
      *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects array_literal_includes_answers_membership
+     *
      * @return void 없음
      */
     public function test_array_literal_includes_true(): void
@@ -2501,6 +3147,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * 배열 리터럴 + includes() — 미포함
      *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects array_literal_includes_answers_membership
+     *
      * @return void 없음
      */
     public function test_array_literal_includes_false(): void
@@ -2513,6 +3163,10 @@ class ExpressionEvaluatorTest extends TestCase
 
     /**
      * 배열 리터럴 + 부정 연산자 + includes() — 게시판 타입 분기 실제 패턴
+     *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects negated_array_literal_includes_selects_board_type_branch
      *
      * @return void 없음
      */
@@ -2531,6 +3185,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * 배열 리터럴 + 부정 연산자 — basic 타입은 fallback으로 렌더링
      *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects negated_array_literal_includes_selects_board_type_branch
+     *
      * @return void 없음
      */
     public function test_array_literal_negated_includes_basic_type(): void
@@ -2546,6 +3204,10 @@ class ExpressionEvaluatorTest extends TestCase
 
     /**
      * 배열 리터럴 + 부정 연산자 — 알 수 없는 타입은 basic으로 fallback
+     *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects negated_array_literal_includes_selects_board_type_branch
      *
      * @return void 없음
      */
@@ -2563,6 +3225,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * 빈 배열 리터럴 includes — 항상 false
      *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects array_literal_includes_answers_membership
+     *
      * @return void 없음
      */
     public function test_empty_array_literal_includes(): void
@@ -2576,6 +3242,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * 배열 리터럴 — 숫자 요소 포함
      *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects array_literal_includes_answers_membership
+     *
      * @return void 없음
      */
     public function test_array_literal_with_numbers(): void
@@ -2588,6 +3258,10 @@ class ExpressionEvaluatorTest extends TestCase
 
     /**
      * 배열 리터럴 — 표현식 요소가 context로 해석되어 배열로 파싱됨
+     *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects array_literal_includes_answers_membership
      *
      * @return void 없음
      */
@@ -2606,6 +3280,10 @@ class ExpressionEvaluatorTest extends TestCase
 
     /**
      * SEO 덮어쓰기의 와일드카드가 대괄호 동적 접근에도 값을 돌려주는지 확인합니다.
+     *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects seo_override_wildcard_fills_bracket_access
      *
      * @return void 없음
      */
@@ -2634,6 +3312,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * SEO 덮어쓰기의 와일드카드가 이미 풀린 대괄호 키에도 값을 돌려주는지 확인합니다.
      *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects seo_override_wildcard_fills_bracket_access
+     *
      * @return void 없음
      */
     public function test_seo_override_wildcard_returns_value_for_resolved_bracket_key(): void
@@ -2660,6 +3342,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * 경로가 정확히 맞는 SEO 덮어쓰기가 그 값을 돌려주는지 확인합니다.
      *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects seo_override_exact_or_global_path_returns_value
+     *
      * @return void 없음
      */
     public function test_seo_override_exact_match_returns_value(): void
@@ -2678,6 +3364,10 @@ class ExpressionEvaluatorTest extends TestCase
 
     /**
      * SEO 덮어쓰기가 이미 있는 값은 건드리지 않는지 확인합니다.
+     *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects seo_override_never_replaces_existing_value
      *
      * @return void 없음
      */
@@ -2707,6 +3397,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * 덮어쓰기가 하나도 없으면 평소 결과가 그대로 나오는지 확인합니다.
      *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects seo_override_absent_leaves_evaluation_unchanged
+     *
      * @return void 없음
      */
     public function test_seo_override_without_overrides_returns_normal(): void
@@ -2727,6 +3421,10 @@ class ExpressionEvaluatorTest extends TestCase
 
     /**
      * 덮어쓰기가 있을 때도 댓글 깊이 조건이 그대로 판정되는지 확인합니다.
+     *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects seo_override_keeps_comment_depth_conditions
      *
      * @return void 없음
      */
@@ -2756,6 +3454,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * 덮어쓰기가 있어도 최상위 댓글은 계속 보이는지 확인합니다.
      *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects seo_override_keeps_comment_depth_conditions
+     *
      * @return void 없음
      */
     public function test_seo_override_root_comment_still_shows(): void
@@ -2782,6 +3484,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * 전역 범위로 건 SEO 덮어쓰기가 적용되는지 확인합니다.
      *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects seo_override_exact_or_global_path_returns_value
+     *
      * @return void 없음
      */
     public function test_seo_override_global_scope(): void
@@ -2807,6 +3513,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * 배열 다중 값 매칭: seo_overrides에서 배열로 설정된 값은
      * === 비교 시 배열 내 어떤 값과도 매칭됨
+     *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects seo_override_array_matches_any_listed_value
      *
      * @return void 없음
      */
@@ -2844,6 +3554,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * 배열 다중 값 매칭: !== 비교 시 배열 내 매칭 값이 있으면 false
      *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects seo_override_array_matches_any_listed_value
+     *
      * @return void 없음
      */
     public function test_seo_override_array_multi_value_not_equals(): void
@@ -2873,6 +3587,10 @@ class ExpressionEvaluatorTest extends TestCase
      * 배열 오버라이드는 context 값보다 우선함
      * (init_actions로 _local.activeTab = 'reviews' 설정되어도 배열 오버라이드가 우선)
      *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects seo_override_array_takes_priority_over_context
+     *
      * @return void 없음
      */
     public function test_seo_override_array_takes_priority_over_context(): void
@@ -2900,6 +3618,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * 배열 다중 값 매칭 + null coalescing: 실제 파셜 패턴
      * (_local.activeTab ?? 'info') === 'reviews' 표현식에서 배열 오버라이드 동작
+     *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects seo_override_array_matches_any_listed_value
      *
      * @return void 없음
      */
@@ -2941,6 +3663,10 @@ class ExpressionEvaluatorTest extends TestCase
 
     /**
      * 와일드카드 오버라이드는 기존대로 fallback만 (회귀 테스트)
+     *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects seo_override_never_replaces_existing_value
      *
      * @return void 없음
      */
@@ -2984,6 +3710,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * 삼항 연산자: 기본 true 분기를 평가합니다.
      *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects ternary_selects_branch_by_truthiness
+     *
      * @return void 없음
      */
     public function test_ternary_basic_true_branch(): void
@@ -2997,6 +3727,10 @@ class ExpressionEvaluatorTest extends TestCase
 
     /**
      * 삼항 연산자: 기본 false 분기를 평가합니다.
+     *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects ternary_selects_branch_by_truthiness
      *
      * @return void 없음
      */
@@ -3012,6 +3746,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * 삼항 연산자: truthy/falsy 값 기반 평가입니다.
      *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects ternary_selects_branch_by_truthiness
+     *
      * @return void 없음
      */
     public function test_ternary_truthy_falsy(): void
@@ -3025,6 +3763,10 @@ class ExpressionEvaluatorTest extends TestCase
 
     /**
      * 삼항 연산자: falsy 값(빈 문자열)은 false 분기입니다.
+     *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects ternary_selects_branch_by_truthiness
      *
      * @return void 없음
      */
@@ -3040,6 +3782,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * 삼항 연산자: optional chaining과 함께 사용합니다.
      *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects ternary_selects_branch_by_truthiness
+     *
      * @return void 없음
      */
     public function test_ternary_with_optional_chaining(): void
@@ -3054,6 +3800,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * 삼항 연산자: optional chaining 값이 없을 때 false 분기입니다.
      *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects ternary_selects_branch_by_truthiness
+     *
      * @return void 없음
      */
     public function test_ternary_with_optional_chaining_missing(): void
@@ -3067,6 +3817,10 @@ class ExpressionEvaluatorTest extends TestCase
 
     /**
      * 삼항 연산자: 중첩 삼항 (우측 결합)을 평가합니다.
+     *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects nested_ternary_is_right_associative
      *
      * @return void 없음
      */
@@ -3085,6 +3839,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * 삼항 연산자: 중첩 삼항에서 첫 번째 조건 매칭입니다.
      *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects nested_ternary_is_right_associative
+     *
      * @return void 없음
      */
     public function test_ternary_nested_first_match(): void
@@ -3102,6 +3860,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * 삼항 연산자: 숫자 비교를 조건으로 사용합니다.
      *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects ternary_condition_accepts_comparison_and_logic
+     *
      * @return void 없음
      */
     public function test_ternary_with_number_comparison(): void
@@ -3115,6 +3877,10 @@ class ExpressionEvaluatorTest extends TestCase
 
     /**
      * 삼항 연산자: 숫자 비교 false 분기입니다.
+     *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects ternary_condition_accepts_comparison_and_logic
      *
      * @return void 없음
      */
@@ -3130,6 +3896,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * 삼항 연산자: 논리 AND 조건과 함께 사용합니다.
      *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects ternary_condition_accepts_comparison_and_logic
+     *
      * @return void 없음
      */
     public function test_ternary_with_logical_and(): void
@@ -3143,6 +3913,10 @@ class ExpressionEvaluatorTest extends TestCase
 
     /**
      * 삼항 연산자: 부정 연산자를 조건으로 사용합니다.
+     *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects ternary_condition_accepts_comparison_and_logic
      *
      * @return void 없음
      */
@@ -3158,6 +3932,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * 삼항 연산자: evaluateRaw에서도 원본 값을 반환합니다.
      *
+     * @scenario entry_point=evaluate_raw, expression_form=single_binding
+     *
+     * @effects raw_or_and_ternary_keep_operand_value
+     *
      * @return void 없음
      */
     public function test_ternary_raw_returns_original_value(): void
@@ -3171,6 +3949,10 @@ class ExpressionEvaluatorTest extends TestCase
 
     /**
      * 삼항 연산자: evaluateRaw에서 false 분기 원본 값을 반환합니다.
+     *
+     * @scenario entry_point=evaluate_raw, expression_form=single_binding
+     *
+     * @effects raw_or_and_ternary_keep_operand_value
      *
      * @return void 없음
      */
@@ -3190,6 +3972,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * $t() 함수: 문자열 키로 번역을 반환합니다.
      *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects t_function_call_translates_key
+     *
      * @return void 없음
      */
     public function test_t_function_basic(): void
@@ -3205,6 +3991,10 @@ class ExpressionEvaluatorTest extends TestCase
 
     /**
      * $t() 함수: 삼항 연산자 내부에서 사용합니다.
+     *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects t_function_call_translates_key
      *
      * @return void 없음
      */
@@ -3229,6 +4019,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * $t() 함수: 존재하지 않는 번역 키는 빈 문자열입니다.
      *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects t_function_missing_key_renders_empty
+     *
      * @return void 없음
      */
     public function test_t_function_missing_key(): void
@@ -3242,6 +4036,10 @@ class ExpressionEvaluatorTest extends TestCase
 
     /**
      * $t() 함수: 큰따옴표 문자열 키를 지원합니다.
+     *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects t_function_call_translates_key
      *
      * @return void 없음
      */
@@ -3263,6 +4061,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * $localized(): 현재 로케일(ko)에 해당하는 값을 반환합니다.
      *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects localized_function_follows_locale_fallback_chain
+     *
      * @return void 없음
      */
     public function test_localized_returns_current_locale(): void
@@ -3277,6 +4079,10 @@ class ExpressionEvaluatorTest extends TestCase
 
     /**
      * $localized(): 영어 로케일에서 영어 값을 반환합니다.
+     *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects localized_function_follows_locale_fallback_chain
      *
      * @return void 없음
      */
@@ -3293,6 +4099,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * $localized(): 현재 로케일이 없으면 ko fallback합니다.
      *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects localized_function_follows_locale_fallback_chain
+     *
      * @return void 없음
      */
     public function test_localized_fallback_to_ko(): void
@@ -3308,6 +4118,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * $localized(): 비배열 값은 그대로 반환합니다.
      *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects localized_function_passes_non_array_through
+     *
      * @return void 없음
      */
     public function test_localized_non_array_passthrough(): void
@@ -3321,6 +4135,10 @@ class ExpressionEvaluatorTest extends TestCase
 
     /**
      * $localized(): ko도 없으면 첫 번째 값을 반환합니다.
+     *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects localized_function_follows_locale_fallback_chain
      *
      * @return void 없음
      */
@@ -3341,6 +4159,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * 단순 객체 리터럴 {key: 'value'}를 파싱합니다.
      *
+     * @scenario entry_point=evaluate_raw, expression_form=single_binding
+     *
+     * @effects object_literal_parsed_with_scalar_and_path_values
+     *
      * @return void 없음
      */
     public function test_object_literal_simple(): void
@@ -3355,6 +4177,10 @@ class ExpressionEvaluatorTest extends TestCase
 
     /**
      * 객체 리터럴에서 boolean/null 값을 지원합니다.
+     *
+     * @scenario entry_point=evaluate_raw, expression_form=single_binding
+     *
+     * @effects object_literal_parsed_with_scalar_and_path_values
      *
      * @return void 없음
      */
@@ -3372,6 +4198,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * 빈 객체 리터럴 {}을 파싱합니다.
      *
+     * @scenario entry_point=evaluate_raw, expression_form=single_binding
+     *
+     * @effects object_literal_parsed_with_scalar_and_path_values
+     *
      * @return void 없음
      */
     public function test_object_literal_empty(): void
@@ -3385,6 +4215,10 @@ class ExpressionEvaluatorTest extends TestCase
 
     /**
      * 객체 스프레드: {...obj, key: value}
+     *
+     * @scenario entry_point=evaluate_raw, expression_form=single_binding
+     *
+     * @effects object_spread_and_dynamic_key_build_object
      *
      * @return void 없음
      */
@@ -3401,6 +4235,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * 동적 키: {[expr]: value}
      *
+     * @scenario entry_point=evaluate_raw, expression_form=single_binding
+     *
+     * @effects object_spread_and_dynamic_key_build_object
+     *
      * @return void 없음
      */
     public function test_object_dynamic_key(): void
@@ -3414,6 +4252,10 @@ class ExpressionEvaluatorTest extends TestCase
 
     /**
      * 객체 리터럴에서 값으로 경로 참조를 사용합니다.
+     *
+     * @scenario entry_point=evaluate_raw, expression_form=single_binding
+     *
+     * @effects object_literal_parsed_with_scalar_and_path_values
      *
      * @return void 없음
      */
@@ -3429,6 +4271,10 @@ class ExpressionEvaluatorTest extends TestCase
 
     /**
      * 중첩 객체 리터럴: {outer: {inner: 'value'}}
+     *
+     * @scenario entry_point=evaluate_raw, expression_form=single_binding
+     *
+     * @effects object_literal_parsed_with_scalar_and_path_values
      *
      * @return void 없음
      */
@@ -3449,6 +4295,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * 배열 스프레드: [...arr, item]
      *
+     * @scenario entry_point=evaluate_raw, expression_form=single_binding
+     *
+     * @effects array_spread_merges_elements
+     *
      * @return void 없음
      */
     public function test_array_spread(): void
@@ -3462,6 +4312,10 @@ class ExpressionEvaluatorTest extends TestCase
 
     /**
      * 배열 스프레드에서 빈 배열을 스프레드합니다.
+     *
+     * @scenario entry_point=evaluate_raw, expression_form=single_binding
+     *
+     * @effects array_spread_merges_elements
      *
      * @return void 없음
      */
@@ -3477,6 +4331,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * 복합 패턴: 객체 스프레드 + 동적 키 (reduce 콜백 시뮬레이션)
      * {...map, [c.id]: [...(map[c.id] ?? []), c]}
+     *
+     * @scenario entry_point=evaluate_raw, expression_form=single_binding
+     *
+     * @effects object_spread_and_dynamic_key_build_object
      *
      * @return void 없음
      */
@@ -3497,6 +4355,10 @@ class ExpressionEvaluatorTest extends TestCase
      * (subexpr).property 패턴: 괄호 내 하위 표현식 + 후속 프로퍼티 접근
      *
      * SEO 렌더링에서 (array ?? []).length 같은 JavaScript 패턴을 PHP로 해석합니다.
+     *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects parenthesized_subexpression_supports_member_access
      *
      * @since engine-v1.17.6
      *
@@ -3521,6 +4383,10 @@ class ExpressionEvaluatorTest extends TestCase
 
     /**
      * 괄호로 묶은 하위 식의 길이 비교가 성립하는지 확인합니다.
+     *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects parenthesized_subexpression_supports_member_access
      *
      * @return void 없음
      */
@@ -3547,6 +4413,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * 괄호로 묶은 하위 식이 비었을 때 폴백이 쓰이는지 확인합니다.
      *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects parenthesized_subexpression_supports_member_access
+     *
      * @return void 없음
      */
     public function test_parenthesized_subexpression_with_empty_fallback(): void
@@ -3568,6 +4438,10 @@ class ExpressionEvaluatorTest extends TestCase
 
     /**
      * 괄호로 묶은 하위 식의 동등 비교가 성립하는지 확인합니다.
+     *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects parenthesized_subexpression_supports_member_access
      *
      * @return void 없음
      */
@@ -3598,6 +4472,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * 곱셈: 경로 값 * 숫자 리터럴이 올바르게 계산됩니다.
      *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects arithmetic_multiply_divide_modulo
+     *
      * @return void 없음
      */
     public function test_arithmetic_multiplication(): void
@@ -3612,6 +4490,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * 나눗셈: 경로 값 / 숫자 리터럴이 올바르게 계산됩니다.
      *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects arithmetic_multiply_divide_modulo
+     *
      * @return void 없음
      */
     public function test_arithmetic_division(): void
@@ -3625,6 +4507,10 @@ class ExpressionEvaluatorTest extends TestCase
 
     /**
      * 나눗셈 소수점 결과가 올바르게 반환됩니다.
+     *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects arithmetic_multiply_divide_modulo
      *
      * @return void 없음
      */
@@ -3641,6 +4527,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * 0으로 나눗셈 시 0을 반환합니다.
      *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects division_or_modulo_by_zero_yields_zero
+     *
      * @return void 없음
      */
     public function test_arithmetic_division_by_zero(): void
@@ -3654,6 +4544,10 @@ class ExpressionEvaluatorTest extends TestCase
 
     /**
      * 나머지 연산: 경로 값 % 숫자 리터럴이 올바르게 계산됩니다.
+     *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects arithmetic_multiply_divide_modulo
      *
      * @return void 없음
      */
@@ -3669,6 +4563,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * 0으로 나머지 연산 시 0을 반환합니다.
      *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects division_or_modulo_by_zero_yields_zero
+     *
      * @return void 없음
      */
     public function test_arithmetic_modulo_by_zero(): void
@@ -3683,6 +4581,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * 곱셈 + null coalescing 조합이 동작합니다.
      *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects arithmetic_after_null_coalescing
+     *
      * @return void 없음
      */
     public function test_arithmetic_multiplication_with_null_coalescing(): void
@@ -3695,6 +4597,10 @@ class ExpressionEvaluatorTest extends TestCase
 
     /**
      * 소수점 곱셈이 올바르게 동작합니다.
+     *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects arithmetic_multiply_divide_modulo
      *
      * @return void 없음
      */
@@ -3713,6 +4619,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * number 파이프가 evaluate에서 올바르게 동작합니다.
      *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects pipe_formats_number_and_date
+     *
      * @return void 없음
      */
     public function test_pipe_number_in_evaluate(): void
@@ -3726,6 +4636,10 @@ class ExpressionEvaluatorTest extends TestCase
 
     /**
      * number 파이프가 소수점 인자와 함께 동작합니다.
+     *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects pipe_formats_number_and_date
      *
      * @return void 없음
      */
@@ -3741,6 +4655,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * date 파이프가 evaluate에서 올바르게 동작합니다.
      *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects pipe_formats_number_and_date
+     *
      * @return void 없음
      */
     public function test_pipe_date_in_evaluate(): void
@@ -3754,6 +4672,10 @@ class ExpressionEvaluatorTest extends TestCase
 
     /**
      * datetime 파이프가 evaluate에서 올바르게 동작합니다.
+     *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects pipe_formats_number_and_date
      *
      * @return void 없음
      */
@@ -3769,6 +4691,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * uppercase 파이프가 evaluate에서 올바르게 동작합니다.
      *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects pipe_transforms_text
+     *
      * @return void 없음
      */
     public function test_pipe_uppercase_in_evaluate(): void
@@ -3782,6 +4708,10 @@ class ExpressionEvaluatorTest extends TestCase
 
     /**
      * lowercase 파이프가 evaluate에서 올바르게 동작합니다.
+     *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects pipe_transforms_text
      *
      * @return void 없음
      */
@@ -3797,6 +4727,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * truncate 파이프가 evaluate에서 올바르게 동작합니다.
      *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects pipe_transforms_text
+     *
      * @return void 없음
      */
     public function test_pipe_truncate_in_evaluate(): void
@@ -3810,6 +4744,10 @@ class ExpressionEvaluatorTest extends TestCase
 
     /**
      * stripHtml 파이프가 evaluate에서 HTML 태그를 제거합니다.
+     *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects pipe_transforms_text
      *
      * @return void 없음
      */
@@ -3825,6 +4763,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * 다중 파이프 체인이 올바르게 동작합니다.
      *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects pipe_chain_applies_in_order
+     *
      * @return void 없음
      */
     public function test_pipe_chain(): void
@@ -3838,6 +4780,10 @@ class ExpressionEvaluatorTest extends TestCase
 
     /**
      * 파이프와 null coalescing 조합이 동작합니다.
+     *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects pipe_combines_with_null_coalescing_base
      *
      * @return void 없음
      */
@@ -3853,6 +4799,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * 파이프가 없는 기존 || 연산자는 영향받지 않습니다.
      *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects double_bar_or_not_mistaken_for_pipe
+     *
      * @return void 없음
      */
     public function test_pipe_does_not_affect_or_operator(): void
@@ -3866,6 +4816,10 @@ class ExpressionEvaluatorTest extends TestCase
 
     /**
      * join 파이프가 배열을 문자열로 결합합니다.
+     *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects pipe_joins_defaults_and_localizes
      *
      * @return void 없음
      */
@@ -3881,6 +4835,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * default 파이프가 null에 기본값을 적용합니다.
      *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects pipe_joins_defaults_and_localizes
+     *
      * @return void 없음
      */
     public function test_pipe_default_in_evaluate(): void
@@ -3894,6 +4852,10 @@ class ExpressionEvaluatorTest extends TestCase
 
     /**
      * evaluateRaw에서 파이프가 원본 타입을 유지합니다.
+     *
+     * @scenario entry_point=evaluate_raw, expression_form=single_binding
+     *
+     * @effects raw_pipe_keeps_value_type
      *
      * @return void 없음
      */
@@ -3909,6 +4871,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * evaluateRaw에서 다중 파이프 체인이 동작합니다.
      *
+     * @scenario entry_point=evaluate_raw, expression_form=single_binding
+     *
+     * @effects raw_pipe_keeps_value_type
+     *
      * @return void 없음
      */
     public function test_pipe_chain_in_evaluate_raw(): void
@@ -3922,6 +4888,10 @@ class ExpressionEvaluatorTest extends TestCase
 
     /**
      * localized 파이프가 다국어 객체에서 값을 추출합니다.
+     *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects pipe_joins_defaults_and_localizes
      *
      * @return void 없음
      */
@@ -3937,6 +4907,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * 미등록 파이프는 원본 값 그대로 출력합니다.
      *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects unknown_pipe_passes_value_through
+     *
      * @return void 없음
      */
     public function test_unknown_pipe_passes_through(): void
@@ -3951,6 +4925,10 @@ class ExpressionEvaluatorTest extends TestCase
 
     /**
      * 복합 텍스트 내 파이프가 올바르게 동작합니다.
+     *
+     * @scenario entry_point=evaluate, expression_form=embedded_binding
+     *
+     * @effects pipe_applies_inside_embedded_text
      *
      * @return void 없음
      */
@@ -3969,6 +4947,10 @@ class ExpressionEvaluatorTest extends TestCase
      * 종전에는 null 을 돌려줘서, 확장 주입 props 의 `?? 기본값` 이 항상 적용되며
      * 레이아웃이 선언한 판정(예: `isHtml`)이 통째로 뒤집혔습니다.
      *
+     * @scenario entry_point=evaluate_raw, expression_form=single_binding
+     *
+     * @effects raw_comparison_and_logic_return_boolean
+     *
      * @return void 없음
      */
     public function test_raw_comparison_returns_boolean(): void
@@ -3981,6 +4963,10 @@ class ExpressionEvaluatorTest extends TestCase
 
     /**
      * 부정·논리곱 표현식의 원본 값도 참/거짓입니다.
+     *
+     * @scenario entry_point=evaluate_raw, expression_form=single_binding
+     *
+     * @effects raw_comparison_and_logic_return_boolean
      *
      * @return void 없음
      */
@@ -3996,6 +4982,10 @@ class ExpressionEvaluatorTest extends TestCase
     /**
      * `||` 값 폴백 관용구는 참/거짓이 아니라 피연산자 값을 유지합니다.
      *
+     * @scenario entry_point=evaluate_raw, expression_form=single_binding
+     *
+     * @effects raw_or_and_ternary_keep_operand_value
+     *
      * @return void 없음
      */
     public function test_raw_or_expression_keeps_operand_value(): void
@@ -4007,6 +4997,10 @@ class ExpressionEvaluatorTest extends TestCase
 
     /**
      * 삼항·화살표 함수는 비교식으로 오인되지 않습니다 (기존 동작 보존).
+     *
+     * @scenario entry_point=evaluate_raw, expression_form=single_binding
+     *
+     * @effects raw_or_and_ternary_keep_operand_value
      *
      * @return void 없음
      */
@@ -4020,6 +5014,10 @@ class ExpressionEvaluatorTest extends TestCase
 
     /**
      * 경로·배열 해석은 종전대로 원본 값을 반환합니다 (회귀 방지).
+     *
+     * @scenario entry_point=evaluate_raw, expression_form=single_binding
+     *
+     * @effects raw_single_binding_returns_original_type
      *
      * @return void 없음
      */

@@ -218,3 +218,19 @@ challenge 를 열어 두고 제출된 코드를 대조할 뿐이라 발송할 �
 정책은 사이트마다 다르고, 인증 수단 플러그인이 그것까지 정하면 끄기 어려운 결합이
 생깁니다.
 <!-- @intent END -->
+
+## 활동 로그 훅
+
+> 이 플러그인이 코어 활동 로그(`activity_logs`)에 기록을 남기기 위해 구독하는 훅 1개입니다.
+> 기록은 `ResolvesActivityLogType::logActivity()` 로 남기며, 로그 유형은 요청 문맥에서 판정합니다
+> (관리자 화면의 강제 해제이므로 Admin). 설명 문구는 `sirsoft-totp::activity_log.description.credential_admin_reset`
+> 이고 이 플러그인의 `lang/{ko,en}/activity_log.php` 와 번들 일본어 팩이 함께 정의합니다.
+
+### 인증 앱 훅 (TotpAdminResetActivityLogListener)
+
+**파일**: `plugins/_bundled/sirsoft-totp/src/Listeners/TotpAdminResetActivityLogListener.php`
+**총 1훅**
+
+| 훅 이름 | Listener 메서드 | Action (DB) | LogType | Loggable |
+|---------|----------------|-------------|---------|----------|
+| `sirsoft-totp.credential.admin_reset` | `handle` | `credential.admin_reset` | Admin | User |

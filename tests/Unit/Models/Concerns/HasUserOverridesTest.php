@@ -62,7 +62,8 @@ class HasUserOverridesTest extends TestCase
         $template->subject = ['ko' => '수정된 제목', 'en' => 'Modified'];
         $template->save();
 
-        $this->assertEquals(['subject'], $template->fresh()->user_overrides);
+        // subject 는 다국어 trackable 필드라 언어 키 단위(dot-path)로 기록된다 (HasUserOverrides::translatableTrackableFields, 7.0.0-beta.4).
+        $this->assertEquals(['subject.ko', 'subject.en'], $template->fresh()->user_overrides);
     }
 
     /**
@@ -159,7 +160,8 @@ class HasUserOverridesTest extends TestCase
         $template->subject = ['ko' => '두 번째 수정', 'en' => 'Second'];
         $template->save();
 
-        $this->assertEquals(['subject'], $template->fresh()->user_overrides);
+        // 언어 키 단위 기록이 두 번째 수정에서 중복 누적되지 않는다.
+        $this->assertEquals(['subject.ko', 'subject.en'], $template->fresh()->user_overrides);
     }
 
     /**

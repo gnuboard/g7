@@ -122,9 +122,12 @@ class CoreActivityLogListenerTest extends TestCase
     {
         $hooks = CoreActivityLogListener::getSubscribedHooks();
 
-        // 65개 로깅(after_*) 훅 (mail_template 2개 제거됨, IDV/auth 후속 추가 분 포함,
-        // develop 머지 후 +2, 관리자 계정 잠금 해제(core.auth.account_unlocked) +1)
-        $this->assertCount(65, $hooks);
+        // 81개 로깅 훅 (mail_template 2개 제거됨, IDV/auth 후속 추가 분 포함,
+        // develop 머지 후 +2, 관리자 계정 잠금 해제(core.auth.account_unlocked) +1).
+        // 65 에서 멈춰 있던 동안 방문자 통계(core.analytics.* 9)·개인정보 보유기간(core.privacy.* 2)·
+        // 회원 알림함·커스텀 자산·설정 등이 더해졌다 — 2026-09-26 실측 81(접두어별: auth 9 · analytics 9 ·
+        // user 7 · menu 6 · schedule 6 · modules 6 · templates 6 · role 5 · plugins 5 · layout 5 · 그 외 17).
+        $this->assertCount(81, $hooks);
     }
 
     public function test_handle_does_nothing(): void
