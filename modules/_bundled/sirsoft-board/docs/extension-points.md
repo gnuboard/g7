@@ -5,22 +5,24 @@
 ## 발행 훅
 
 <!-- @generated:hooks-published START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-발행 훅 94종 / 호출 지점 99곳. 이 중 94종은 `getHooks()` 선언에 없어 소스에서 자동 감지한 것입니다 — 선언에 추가하면 유형과 설명이 함께 실립니다.
+발행 훅 102종 / 호출 지점 108곳. 이 중 102종은 `getHooks()` 선언에 없어 소스에서 자동 감지한 것입니다 — 선언에 추가하면 유형과 설명이 함께 실립니다.
 
 | 훅 이름 | 유형 | 설명 | 발행 위치 |
 |---|---|---|---|
-| `core.module_settings.after_save` | action | — | `src/Http/Controllers/Admin/BoardSettingsController.php:123` |
-| `sirsoft-board.attachment.after_delete` | action | — | `src/Services/AttachmentService.php:463` |
-| `sirsoft-board.attachment.after_download` | action | — | `src/Services/AttachmentService.php:776` |
-| `sirsoft-board.attachment.after_link` | action | — | `src/Services/AttachmentService.php:217` 외 1곳 |
-| `sirsoft-board.attachment.after_reorder` | action | — | `src/Services/AttachmentService.php:631` |
-| `sirsoft-board.attachment.after_upload` | action | — | `src/Services/AttachmentService.php:192` |
-| `sirsoft-board.attachment.before_delete` | action | — | `src/Services/AttachmentService.php:442` |
-| `sirsoft-board.attachment.before_reorder` | action | — | `src/Services/AttachmentService.php:626` |
-| `sirsoft-board.attachment.before_upload` | action | — | `src/Services/AttachmentService.php:117` |
-| `sirsoft-board.attachment.filter_upload_file` | filter | — | `src/Services/AttachmentService.php:120` |
+| `core.module_settings.after_save` | action | — | `src/Http/Controllers/Admin/BoardSettingsController.php:158` |
+| `sirsoft-board.attachment.after_delete` | action | — | `src/Services/AttachmentService.php:467` |
+| `sirsoft-board.attachment.after_download` | action | — | `src/Services/AttachmentService.php:806` |
+| `sirsoft-board.attachment.after_link` | action | — | `src/Services/AttachmentService.php:219` 외 1곳 |
+| `sirsoft-board.attachment.after_reorder` | action | — | `src/Services/AttachmentService.php:655` |
+| `sirsoft-board.attachment.after_upload` | action | — | `src/Services/AttachmentService.php:194` |
+| `sirsoft-board.attachment.before_delete` | action | — | `src/Services/AttachmentService.php:446` |
+| `sirsoft-board.attachment.before_reorder` | action | — | `src/Services/AttachmentService.php:650` |
+| `sirsoft-board.attachment.before_upload` | action | — | `src/Services/AttachmentService.php:119` |
+| `sirsoft-board.attachment.filter_upload_file` | filter | — | `src/Services/AttachmentService.php:122` |
 | `sirsoft-board.attachment.reorder_validation_rules` | filter | — | `src/Http/Requests/ReorderAttachmentsRequest.php:35` |
 | `sirsoft-board.attachment.upload_validation_rules` | filter | — | `src/Http/Requests/UploadAttachmentRequest.php:77` |
+| `sirsoft-board.author_ip.after_prune` | action | — | `src/Privacy/BoardIpRetentionHandler.php:135` |
+| `sirsoft-board.author_ip.before_prune` | action | — | `src/Privacy/BoardIpRetentionHandler.php:130` |
 | `sirsoft-board.board.after_add_to_menu` | action | — | `src/Services/BoardService.php:1059` |
 | `sirsoft-board.board.after_create` | action | — | `src/Services/BoardService.php:457` |
 | `sirsoft-board.board.after_delete` | action | — | `src/Services/BoardService.php:623` |
@@ -37,8 +39,8 @@
 | `sirsoft-board.board.filter_menu_data` | filter | — | `src/Services/BoardService.php:1053` |
 | `sirsoft-board.board.filter_update_data` | filter | — | `src/Services/BoardService.php:500` |
 | `sirsoft-board.board.posts.before_force_delete` | action | — | `src/Services/BoardService.php:593` |
-| `sirsoft-board.board.store_validation_rules` | filter | — | `src/Http/Requests/StoreBoardRequest.php:227` |
-| `sirsoft-board.board.update_validation_rules` | filter | — | `src/Http/Requests/UpdateBoardRequest.php:231` |
+| `sirsoft-board.board.store_validation_rules` | filter | — | `src/Http/Requests/StoreBoardRequest.php:247` |
+| `sirsoft-board.board.update_validation_rules` | filter | — | `src/Http/Requests/UpdateBoardRequest.php:247` |
 | `sirsoft-board.board_type.after_create` | action | — | `src/Services/BoardTypeService.php:42` |
 | `sirsoft-board.board_type.after_delete` | action | — | `src/Services/BoardTypeService.php:107` |
 | `sirsoft-board.board_type.after_update` | action | — | `src/Services/BoardTypeService.php:70` |
@@ -47,57 +49,63 @@
 | `sirsoft-board.board_type.before_update` | action | — | `src/Services/BoardTypeService.php:62` |
 | `sirsoft-board.board_type.filter_create_data` | filter | — | `src/Services/BoardTypeService.php:38` |
 | `sirsoft-board.board_type.filter_update_data` | filter | — | `src/Services/BoardTypeService.php:66` |
-| `sirsoft-board.comment.after_blind` | action | — | `src/Services/CommentService.php:496` |
-| `sirsoft-board.comment.after_create` | action | — | `src/Services/CommentService.php:391` |
-| `sirsoft-board.comment.after_delete` | action | — | `src/Services/CommentService.php:457` |
-| `sirsoft-board.comment.after_restore` | action | — | `src/Services/CommentService.php:532` |
-| `sirsoft-board.comment.after_update` | action | — | `src/Services/CommentService.php:426` |
-| `sirsoft-board.comment.before_blind` | action | — | `src/Services/CommentService.php:487` |
-| `sirsoft-board.comment.before_create` | action | — | `src/Services/CommentService.php:357` |
-| `sirsoft-board.comment.before_delete` | action | — | `src/Services/CommentService.php:447` |
-| `sirsoft-board.comment.before_restore` | action | — | `src/Services/CommentService.php:523` |
-| `sirsoft-board.comment.before_update` | action | — | `src/Services/CommentService.php:415` |
-| `sirsoft-board.comment.filter_create_data` | filter | — | `src/Services/CommentService.php:360` |
-| `sirsoft-board.comment.filter_update_data` | filter | — | `src/Services/CommentService.php:420` |
+| `sirsoft-board.comment.after_blind` | action | — | `src/Services/CommentService.php:528` |
+| `sirsoft-board.comment.after_create` | action | — | `src/Services/CommentService.php:393` |
+| `sirsoft-board.comment.after_delete` | action | — | `src/Services/CommentService.php:491` |
+| `sirsoft-board.comment.after_restore` | action | — | `src/Services/CommentService.php:564` |
+| `sirsoft-board.comment.after_update` | action | — | `src/Services/CommentService.php:428` |
+| `sirsoft-board.comment.before_blind` | action | — | `src/Services/CommentService.php:519` |
+| `sirsoft-board.comment.before_create` | action | — | `src/Services/CommentService.php:359` |
+| `sirsoft-board.comment.before_delete` | action | — | `src/Services/CommentService.php:449` |
+| `sirsoft-board.comment.before_restore` | action | — | `src/Services/CommentService.php:555` |
+| `sirsoft-board.comment.before_update` | action | — | `src/Services/CommentService.php:417` |
+| `sirsoft-board.comment.filter_create_data` | filter | — | `src/Services/CommentService.php:362` |
+| `sirsoft-board.comment.filter_update_data` | filter | — | `src/Services/CommentService.php:422` |
 | `sirsoft-board.comment.store_validation_rules` | filter | — | `src/Http/Requests/StoreCommentRequest.php:91` |
 | `sirsoft-board.comment.update_validation_rules` | filter | — | `src/Http/Requests/UpdateCommentRequest.php:67` |
+| `sirsoft-board.guest_author.after_prune` | action | — | `src/Privacy/BoardGuestRetentionHandler.php:192` |
+| `sirsoft-board.guest_author.before_prune` | action | — | `src/Privacy/BoardGuestRetentionHandler.php:186` |
 | `sirsoft-board.permissions.after_create` | action | — | `src/Services/BoardService.php:431` |
 | `sirsoft-board.permissions.after_delete` | action | — | `src/Services/BoardService.php:600` |
 | `sirsoft-board.permissions.after_update` | action | — | `src/Services/BoardService.php:523` |
-| `sirsoft-board.post.after_blind` | action | — | `src/Services/PostService.php:546` |
-| `sirsoft-board.post.after_bulk_action` | action | — | `src/Services/PostService.php:692` |
-| `sirsoft-board.post.after_create` | action | — | `src/Services/PostService.php:286` |
-| `sirsoft-board.post.after_delete` | action | — | `src/Services/PostService.php:489` |
-| `sirsoft-board.post.after_restore` | action | — | `src/Services/PostService.php:626` |
-| `sirsoft-board.post.after_update` | action | — | `src/Services/PostService.php:362` |
-| `sirsoft-board.post.before_blind` | action | — | `src/Services/PostService.php:521` |
-| `sirsoft-board.post.before_bulk_action` | action | — | `src/Services/PostService.php:660` |
-| `sirsoft-board.post.before_create` | action | — | `src/Services/PostService.php:261` |
-| `sirsoft-board.post.before_delete` | action | — | `src/Services/PostService.php:437` |
-| `sirsoft-board.post.before_restore` | action | — | `src/Services/PostService.php:579` |
-| `sirsoft-board.post.before_update` | action | — | `src/Services/PostService.php:335` |
-| `sirsoft-board.post.filter_content_thumbnail` | filter | — | `src/Models/Post.php:140` |
-| `sirsoft-board.post.filter_create_data` | filter | — | `src/Services/PostService.php:264` |
-| `sirsoft-board.post.filter_update_data` | filter | — | `src/Services/PostService.php:340` |
+| `sirsoft-board.post.after_blind` | action | — | `src/Services/PostService.php:574` |
+| `sirsoft-board.post.after_bulk_action` | action | — | `src/Services/PostService.php:720` |
+| `sirsoft-board.post.after_create` | action | — | `src/Services/PostService.php:287` |
+| `sirsoft-board.post.after_delete` | action | — | `src/Services/PostService.php:517` |
+| `sirsoft-board.post.after_restore` | action | — | `src/Services/PostService.php:654` |
+| `sirsoft-board.post.after_update` | action | — | `src/Services/PostService.php:363` |
+| `sirsoft-board.post.before_blind` | action | — | `src/Services/PostService.php:549` |
+| `sirsoft-board.post.before_bulk_action` | action | — | `src/Services/PostService.php:688` |
+| `sirsoft-board.post.before_create` | action | — | `src/Services/PostService.php:262` |
+| `sirsoft-board.post.before_delete` | action | — | `src/Services/PostService.php:438` |
+| `sirsoft-board.post.before_restore` | action | — | `src/Services/PostService.php:607` |
+| `sirsoft-board.post.before_update` | action | — | `src/Services/PostService.php:336` |
+| `sirsoft-board.post.filter_content_thumbnail` | filter | — | `src/Models/Post.php:147` |
+| `sirsoft-board.post.filter_create_data` | filter | — | `src/Services/PostService.php:265` |
+| `sirsoft-board.post.filter_update_data` | filter | — | `src/Services/PostService.php:341` |
 | `sirsoft-board.post.store_validation_rules` | filter | — | `src/Http/Requests/StorePostRequest.php:120` |
 | `sirsoft-board.post.update_validation_rules` | filter | — | `src/Http/Requests/UpdatePostRequest.php:77` |
-| `sirsoft-board.report.after_blind_content` | action | — | `src/Services/ReportService.php:717` |
-| `sirsoft-board.report.after_bulk_update_status` | action | — | `src/Services/ReportService.php:497` |
-| `sirsoft-board.report.after_create` | action | — | `src/Services/ReportService.php:297` |
-| `sirsoft-board.report.after_delete` | action | — | `src/Services/ReportService.php:564` |
-| `sirsoft-board.report.after_delete_content` | action | — | `src/Services/ReportService.php:885` |
-| `sirsoft-board.report.after_restore_content` | action | — | `src/Services/ReportService.php:683` |
-| `sirsoft-board.report.after_update_status` | action | — | `src/Services/ReportService.php:374` |
-| `sirsoft-board.report.before_bulk_update_status` | action | — | `src/Services/ReportService.php:390` |
-| `sirsoft-board.report.before_create` | action | — | `src/Services/ReportService.php:208` |
-| `sirsoft-board.report.before_delete` | action | — | `src/Services/ReportService.php:559` |
-| `sirsoft-board.report.before_update_status` | action | — | `src/Services/ReportService.php:329` |
-| `sirsoft-board.report.filter_create_data` | filter | — | `src/Services/ReportService.php:232` |
+| `sirsoft-board.reaction.after_react` | action | — | `src/Services/ReactionService.php:396` 외 1곳 |
+| `sirsoft-board.reaction.before_react` | action | — | `src/Services/ReactionService.php:353` |
+| `sirsoft-board.report.after_blind_content` | action | — | `src/Services/ReportService.php:722` |
+| `sirsoft-board.report.after_bulk_update_status` | action | — | `src/Services/ReportService.php:500` |
+| `sirsoft-board.report.after_cancel` | action | — | `src/Services/ReportService.php:1620` |
+| `sirsoft-board.report.after_create` | action | — | `src/Services/ReportService.php:300` |
+| `sirsoft-board.report.after_delete` | action | — | `src/Services/ReportService.php:567` |
+| `sirsoft-board.report.after_delete_content` | action | — | `src/Services/ReportService.php:893` |
+| `sirsoft-board.report.after_restore_content` | action | — | `src/Services/ReportService.php:687` |
+| `sirsoft-board.report.after_update_status` | action | — | `src/Services/ReportService.php:377` |
+| `sirsoft-board.report.before_bulk_update_status` | action | — | `src/Services/ReportService.php:393` |
+| `sirsoft-board.report.before_cancel` | action | — | `src/Services/ReportService.php:1594` |
+| `sirsoft-board.report.before_create` | action | — | `src/Services/ReportService.php:211` |
+| `sirsoft-board.report.before_delete` | action | — | `src/Services/ReportService.php:562` |
+| `sirsoft-board.report.before_update_status` | action | — | `src/Services/ReportService.php:332` |
+| `sirsoft-board.report.filter_create_data` | filter | — | `src/Services/ReportService.php:235` |
 | `sirsoft-board.roles.after_create` | action | — | `src/Services/BoardService.php:411` |
 | `sirsoft-board.roles.after_delete` | action | — | `src/Services/BoardService.php:604` |
 | `sirsoft-board.scrap.after_toggle` | action | — | `src/Services/PostScrapService.php:69` 외 4곳 |
 | `sirsoft-board.scrap.before_toggle` | action | — | `src/Services/PostScrapService.php:57` |
-| `sirsoft-board.search.post.index_should_update` | filter | — | `src/Models/Post.php:282` |
+| `sirsoft-board.search.post.index_should_update` | filter | — | `src/Models/Post.php:295` |
 | `sirsoft-board.settings.after_bulk_apply` | action | — | `src/Services/BoardService.php:1368` |
 | `sirsoft-board.settings.after_bulk_apply_aborted` | action | — | `src/Services/BoardService.php:1359` |
 | `sirsoft-board.settings.before_bulk_apply` | action | — | `src/Services/BoardService.php:1263` |
@@ -115,6 +123,14 @@
 `sirsoft-board.post.filter_content_thumbnail`/`sirsoft-board.search.post.index_should_update`
 두 필터는 Model(`Post.php`) 안에서 직접 발행되는 예외적인 자리입니다 — Service 를 거치지 않는
 지연 평가(썸네일 추출, 검색 색인 갱신 여부 판단)라 Model 이 직접 훅을 겁니다.
+
+개인정보 보유기간 핸들러 두 개(`src/Privacy/`, 이슈 #636)는 코어 prune 훅 규약(7.0.7)을 따라
+처리 전후로 `sirsoft-board.author_ip.before_prune`(보존일) / `.after_prune`(보존일, 건수),
+`sirsoft-board.guest_author.before_prune` / `.after_prune` 을 발행합니다. **`--dry-run` 에서는
+발행하지 않습니다** — 리허설에서 리스너가 돌았다고 착각하지 않도록 실제 처리 때만 발행합니다.
+비회원 삭제 모드는 게시판 삭제 경로를 지나므로 `sirsoft-board.post.after_delete`·
+`sirsoft-board.comment.after_delete` 가 `trigger_type=system` 행에 대해 발화하지만
+**`before_delete` 는 발화하지 않습니다**(무인 배치에 본인인증 정책이 걸리면 법정 파기가 멈춤).
 <!-- @intent END -->
 
 ## 구독 훅
@@ -125,6 +141,7 @@
 | `core.activity_log.filter_description_params` | filter | `ActivityLogDescriptionResolver` | `resolveDescriptionParams` | 10 |
 | `core.module_settings.after_save` | action (미선언) | `SeoBoardSettingsCacheListener` | `onModuleSettingsSave` | 20 |
 | `core.notification.filter_default_definitions` | filter | `BoardNotificationDataListener` | `contributeDefaultDefinitions` | 20 |
+| `core.privacy.retention_handlers` | filter | `PrivacyRetentionHandlerListener` | `addBoardHandlers` | 20 |
 | `core.search.build_response` | filter | `SearchPostsListener` | `buildPostsResponse` | 10 |
 | `core.search.index_validation_rules` | filter | `SearchPostsListener` | `addValidationRules` | 10 |
 | `core.search.results` | filter | `SearchPostsListener` | `searchPosts` | 10 |
@@ -132,6 +149,7 @@
 | `core.user.create_validation_rules` | filter | `UserNotificationSettingsListener` | `addValidationRules` | 10 |
 | `core.user.filter_create_data` | filter | `UserNotificationSettingsListener` | `filterCreateData` | 10 |
 | `core.user.filter_resource_data` | filter | `UserNotificationSettingsListener` | `filterResourceData` | 10 |
+| `core.user.filter_resource_data` | filter | `UserReactionInfoListener` | `injectReactionSummary` | 31 |
 | `core.user.filter_resource_data` | filter | `UserScrapInfoListener` | `injectScrapSummary` | 30 |
 | `core.user.filter_update_data` | filter | `UserNotificationSettingsListener` | `filterUpdateData` | 10 |
 | `core.user.update_profile_validation_rules` | filter | `UserNotificationSettingsListener` | `addValidationRules` | 10 |
@@ -181,8 +199,10 @@
 | `sirsoft-board.post.after_restore` | action (미선언) | `PostReplySyncListener` | `syncRepliesCount` | 10 |
 | `sirsoft-board.post.after_update` | action (미선언) | `BoardActivityLogListener` | `handlePostAfterUpdate` | 20 |
 | `sirsoft-board.post.after_update` | action (미선언) | `SeoBoardCacheListener` | `onPostUpdate` | 20 |
+| `sirsoft-board.reaction.after_react` | action (미선언) | `BoardActivityLogListener` | `handleReactionAfterReact` | 20 |
 | `sirsoft-board.report.after_blind_content` | action (미선언) | `BoardActivityLogListener` | `handleReportAfterBlindContent` | 20 |
 | `sirsoft-board.report.after_bulk_update_status` | action (미선언) | `BoardActivityLogListener` | `handleReportAfterBulkUpdateStatus` | 20 |
+| `sirsoft-board.report.after_cancel` | action (미선언) | `BoardActivityLogListener` | `handleReportAfterCancel` | 20 |
 | `sirsoft-board.report.after_create` | action (미선언) | `BoardActivityLogListener` | `handleReportAfterCreate` | 20 |
 | `sirsoft-board.report.after_delete` | action (미선언) | `BoardActivityLogListener` | `handleReportAfterDelete` | 20 |
 | `sirsoft-board.report.after_delete_content` | action (미선언) | `BoardActivityLogListener` | `handleReportAfterDeleteContent` | 20 |
@@ -218,7 +238,7 @@ Post/Comment CRUD 를 그대로 재사용하되 저장 로직만 이커머스가
 | 리스너 | 구독 훅 | 등록 방식 | HookListenerInterface | 파일 |
 |---|---|---|---|---|
 | `ActivityLogDescriptionResolver` | 1개 | 명시 등록 | ✅ | `src/Listeners/ActivityLogDescriptionResolver.php` |
-| `BoardActivityLogListener` | 31개 | 명시 등록 | ✅ | `src/Listeners/BoardActivityLogListener.php` |
+| `BoardActivityLogListener` | 33개 | 명시 등록 | ✅ | `src/Listeners/BoardActivityLogListener.php` |
 | `BoardCommentsCountSyncListener` | 3개 | 명시 등록 | ✅ | `src/Listeners/BoardCommentsCountSyncListener.php` |
 | `BoardNotificationChannelListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/BoardNotificationChannelListener.php` |
 | `BoardNotificationDataListener` | 2개 | 명시 등록 | ✅ | `src/Listeners/BoardNotificationDataListener.php` |
@@ -229,10 +249,12 @@ Post/Comment CRUD 를 그대로 재사용하되 저장 로직만 이커머스가
 | `PostAttachmentCountSyncListener` | 3개 | 명시 등록 | ✅ | `src/Listeners/PostAttachmentCountSyncListener.php` |
 | `PostCountSyncListener` | 3개 | 명시 등록 | ✅ | `src/Listeners/PostCountSyncListener.php` |
 | `PostReplySyncListener` | 3개 | 명시 등록 | ✅ | `src/Listeners/PostReplySyncListener.php` |
+| `PrivacyRetentionHandlerListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/PrivacyRetentionHandlerListener.php` |
 | `SearchPostsListener` | 3개 | 명시 등록 | ✅ | `src/Listeners/SearchPostsListener.php` |
 | `SeoBoardCacheListener` | 4개 | 명시 등록 | ✅ | `src/Listeners/SeoBoardCacheListener.php` |
 | `SeoBoardSettingsCacheListener` | 2개 | 명시 등록 | ✅ | `src/Listeners/SeoBoardSettingsCacheListener.php` |
 | `UserNotificationSettingsListener` | 7개 | 명시 등록 | ✅ | `src/Listeners/UserNotificationSettingsListener.php` |
+| `UserReactionInfoListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/UserReactionInfoListener.php` |
 | `UserScrapInfoListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/UserScrapInfoListener.php` |
 <!-- @generated:listeners END -->
 
@@ -250,6 +272,7 @@ Post/Comment CRUD 를 그대로 재사용하되 저장 로직만 이커머스가
 | 대상 | 설명 |
 |---|---|
 | `resources/extensions/admin-ecommerce-inquiry-settings.g7.html` | 다른 확장/템플릿 레이아웃에 주입되는 조각 — 확장점 `inquiry_board_setting` |
+| `resources/extensions/admin-user-reactions-tab.g7.html` | 다른 확장/템플릿 레이아웃에 주입되는 조각 — 대상 레이아웃 `admin_user_detail` |
 | `resources/extensions/admin-user-scraps-tab.g7.html` | 다른 확장/템플릿 레이아웃에 주입되는 조각 — 대상 레이아웃 `admin_user_detail` |
 | `resources/extensions/admin_dashboard_community.g7.html` | 다른 확장/템플릿 레이아웃에 주입되는 조각 — 확장점 `admin_dashboard_community` |
 | `resources/extensions/admin_dashboard_quick_menu.g7.html` | 다른 확장/템플릿 레이아웃에 주입되는 조각 — 확장점 `admin_dashboard_quick_menu` |
@@ -332,7 +355,7 @@ _등록하는 브로드캐스트 채널이 없습니다._
 
 ## 활동 로그 훅
 
-> 이 확장이 코어 활동 로그(`activity_logs`)에 기록을 남기기 위해 구독하는 훅 30개입니다.
+> 이 확장이 코어 활동 로그(`activity_logs`)에 기록을 남기기 위해 구독하는 훅 33개입니다.
 > 코어 `docs/backend/activity-log-hooks.md` 에 있던 목록을 이 확장 소유로 옮긴 것입니다(#601) —
 > 확장이 훅을 더할 때 코어 문서를 고쳐야 하던 역방향 의존을 없애기 위해서입니다. 코어 문서에는
 > 총계와 이 문서로의 링크만 남습니다.
@@ -399,7 +422,7 @@ _등록하는 브로드캐스트 채널이 없습니다._
 | `sirsoft-board.attachment.after_delete` | `handleAttachmentAfterDelete` | `attachment.delete` | Admin | Attachment |
 | `sirsoft-board.attachment.after_download` | `handleAttachmentAfterDownload` | `attachment.download` | Admin / User | Attachment |
 
-#### Report (7훅)
+#### Report (8훅)
 
 | 훅 이름 | Listener 메서드 | Action (DB) | LogType | Loggable |
 |---------|----------------|-------------|---------|----------|
@@ -410,3 +433,16 @@ _등록하는 브로드캐스트 채널이 없습니다._
 | `sirsoft-board.report.after_restore_content` | `handleReportAfterRestoreContent` | `report.restore_content` | Admin | Report |
 | `sirsoft-board.report.after_blind_content` | `handleReportAfterBlindContent` | `report.blind_content` | Admin | Report |
 | `sirsoft-board.report.after_delete_content` | `handleReportAfterDeleteContent` | `report.delete_content` | Admin | Report |
+| `sirsoft-board.report.after_cancel` | `handleReportAfterCancel` | `report.cancel` | User | Report |
+
+#### Scrap (1훅)
+
+| 훅 이름 | Listener 메서드 | Action (DB) | LogType | Loggable |
+|---------|----------------|-------------|---------|----------|
+| `sirsoft-board.scrap.after_toggle` | `handleScrapAfterToggle` | `scrap.scrap` / `scrap.unscrap` | User | Post |
+
+#### Reaction (1훅)
+
+| 훅 이름 | Listener 메서드 | Action (DB) | LogType | Loggable |
+|---------|----------------|-------------|---------|----------|
+| `sirsoft-board.reaction.after_react` | `handleReactionAfterReact` | `reaction.add` / `reaction.change` / `reaction.remove` (댓글이면 `comment_reaction.*`) | User | Post / Comment |

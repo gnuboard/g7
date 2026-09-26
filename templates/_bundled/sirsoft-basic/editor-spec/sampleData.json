@@ -6821,6 +6821,180 @@
         "total": 21455
       }
     }
+  ,
+    "myReactions": {
+      "data": {
+        "data": [
+          {
+            "id": 801,
+            "target_type": "post",
+            "target_id": 1201,
+            "post_id": 1201,
+            "comment_id": null,
+            "title": "맛집 추천해요",
+            "excerpt": null,
+            "board": {
+              "slug": "free",
+              "name": "자유게시판",
+              "is_active": true,
+              "use_reaction": true,
+              "use_comment_reaction": true
+            },
+            "board_slug": "free",
+            "board_name": "자유게시판",
+            "board_deleted": false,
+            "reaction_type": {
+              "id": 1,
+              "code": "like",
+              "name": "추천",
+              "icon_name": "fa-thumbs-up",
+              "icon_url": null
+            },
+            "author_name": "이도현",
+            "target_deleted": false,
+            "reaction_enabled": true,
+            "reacted_at": "2026-09-14 09:31"
+          },
+          {
+            "id": 802,
+            "target_type": "comment",
+            "target_id": 3301,
+            "post_id": 1202,
+            "comment_id": 3301,
+            "title": "[필독] 게시판 이용 규칙 안내",
+            "excerpt": "규칙 잘 봤습니다. 감사합니다.",
+            "board": {
+              "slug": "notice",
+              "name": "공지사항",
+              "is_active": true,
+              "use_reaction": true,
+              "use_comment_reaction": false
+            },
+            "board_slug": "notice",
+            "board_name": "공지사항",
+            "board_deleted": false,
+            "reaction_type": {
+              "id": 2,
+              "code": "dislike",
+              "name": "비추천",
+              "icon_name": "fa-thumbs-down",
+              "icon_url": null
+            },
+            "author_name": "운영자",
+            "target_deleted": false,
+            "reaction_enabled": false,
+            "reacted_at": "2026-09-13 20:04"
+          }
+        ],
+        "query": {
+          "search": "",
+          "search_field": "title_content",
+          "board_slug": "",
+          "reaction_type_id": null,
+          "target_type": "",
+          "sort": "latest"
+        },
+        "reaction_types": [
+          {
+            "id": 1,
+            "code": "like",
+            "name": "추천",
+            "icon_name": "fa-thumbs-up",
+            "icon_url": null
+          },
+          {
+            "id": 2,
+            "code": "dislike",
+            "name": "비추천",
+            "icon_name": "fa-thumbs-down",
+            "icon_url": null
+          }
+        ],
+        "pagination": {
+          "total": 2,
+          "count": 2,
+          "per_page": 10,
+          "current_page": 1,
+          "last_page": 1,
+          "from": 1,
+          "to": 2,
+          "has_more_pages": false
+        }
+      }
+    },
+    "myReports": {
+      "data": {
+        "data": [
+          {
+            "id": 901,
+            "report_id": 401,
+            "board": {
+              "slug": "free",
+              "name": "자유게시판"
+            },
+            "board_slug": "free",
+            "board_name": "자유게시판",
+            "target_type": "post",
+            "target_type_label": "게시글",
+            "target_id": 1203,
+            "post_id": 1203,
+            "comment_id": null,
+            "title": "광고성 게시글입니다",
+            "excerpt": "지금 가입하면 무료…",
+            "reason_type": "spam",
+            "reason_type_label": "스팸/광고",
+            "reason_detail": "같은 글을 여러 게시판에 반복해서 올립니다.",
+            "status": "pending",
+            "status_label": "접수",
+            "reported_at": "2026-09-14 11:02",
+            "can_cancel": true,
+            "target_deleted": false
+          },
+          {
+            "id": 902,
+            "report_id": 402,
+            "board": {
+              "slug": "notice",
+              "name": "공지사항"
+            },
+            "board_slug": "notice",
+            "board_name": "공지사항",
+            "target_type": "comment",
+            "target_type_label": "댓글",
+            "target_id": 3302,
+            "post_id": 1202,
+            "comment_id": 3302,
+            "title": "[필독] 게시판 이용 규칙 안내",
+            "excerpt": "욕설이 섞인 댓글입니다",
+            "reason_type": "abuse",
+            "reason_type_label": "욕설/비방",
+            "reason_detail": null,
+            "status": "resolved",
+            "status_label": "처리 완료",
+            "reported_at": "2026-09-10 08:47",
+            "can_cancel": false,
+            "target_deleted": false
+          }
+        ],
+        "query": {
+          "search": "",
+          "status": "",
+          "board_slug": "",
+          "target_type": "",
+          "sort": "latest"
+        },
+        "pagination": {
+          "total": 2,
+          "count": 2,
+          "per_page": 10,
+          "current_page": 1,
+          "last_page": 1,
+          "from": 1,
+          "to": 2,
+          "has_more_pages": false
+        }
+      }
+    }
   },
   "byEndpointPattern": {
     "/api/modules/sirsoft-page/pages/*": {

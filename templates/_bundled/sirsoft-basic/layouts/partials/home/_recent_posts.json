@@ -156,6 +156,29 @@
                                                 "className": "text-xs font-medium text-blue-500 dark:text-blue-400 shrink-0"
                                             },
                                             "text": "[{{post.comment_count}}]"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{(post.reaction_total ?? 0) > 0}}",
+                                            "props": {
+                                                "className": "text-rose-500 dark:text-rose-400 text-xs font-medium shrink-0 inline-flex items-center gap-0.5"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Icon",
+                                                    "props": {
+                                                        "name": "fa-solid fa-thumbs-up",
+                                                        "className": "text-xs"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "text": "{{post.reaction_total}}"
+                                                }
+                                            ]
                                         }
                                     ]
                                 },

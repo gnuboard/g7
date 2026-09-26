@@ -115,7 +115,7 @@
                                                                     "name": "Icon",
                                                                     "props": {
                                                                         "name": "turn-up",
-                                                                        "className": "text-sm fa-rotate-90 mt-1 text-gray-500 dark:text-gray-400"
+                                                                        "className": "text-sm rotate-90 mt-1 text-gray-500 dark:text-gray-400"
                                                                     }
                                                                 },
                                                                 {

@@ -20,6 +20,9 @@ import { describe, it, expect } from 'vitest';
 import { asArray, actionsOf, callbacksOf, flattenNodes, findById } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 
 const layout = require('../../../layouts/admin/admin_board_scraps_index.json');
+// 검색·필터 영역은 형제 관리자 목록들처럼 별도 조각으로 뺐다(저장소 관례). 계약은 그대로이므로
+// 두 산출물을 합쳐서 본다 — 조각으로 옮겼다는 이유만으로 검사가 눈을 감으면 안 된다.
+const filterPartial = require('../../../layouts/admin/partials/admin_board_scraps_index/_partial_filter.json');
 const routes = require('../../../routes/admin.json');
 
 /** 액션 트리를 평탄화한다 — `sequence`·`switch` 는 자식 액션을 접어 둔다. */
@@ -87,7 +90,7 @@ describe('관리자 스크랩 관리 — 레이아웃 계약 (#524 WP-A)', () =>
             // 다른 쪽이 조용히 빈 셀렉트로 남는다.
             // <options> 로 감싸면 컴파일러가 정적 props.options 로 평탄화하면서 data-each 를
             // 버려, 화면에는 풀리지 않은 «빈 항목» 하나만 뜬다(2026-09-15 브라우저 실측).
-            const boardSelects = flattenNodes(layout).filter(
+            const boardSelects = flattenNodes(filterPartial).filter(
                 (n: any) =>
                     asArray(n?.children).some(
                         (c: any) => c?.text === '$t:sirsoft-board.admin.scraps.filters.board_all'
@@ -97,7 +100,9 @@ describe('관리자 스크랩 관리 — 레이아웃 계약 (#524 WP-A)', () =>
                     )
             );
 
-            expect(boardSelects).toHaveLength(2);
+            // 넓은 화면·좁은 화면을 `responsive` 한 벌로 덮으므로 셀렉트는 하나다(종전에는 두 벌이었다).
+            // 개수가 몇이든 **찾은 전량**이 데이터소스를 순회해야 한다는 것이 이 검사의 명제다.
+            expect(boardSelects.length).toBeGreaterThanOrEqual(1);
 
             for (const select of boardSelects) {
                 expect(asArray(select?.props?.options)).toHaveLength(0);
@@ -135,7 +140,7 @@ describe('관리자 스크랩 관리 — 레이아웃 계약 (#524 WP-A)', () =>
         // @scenario surface=admin_list, search_field=all
         // @effects admin_list_search_field_offers_six_targets
         it('검색 대상 셀렉트가 서버 화이트리스트와 같은 여섯 값을 준다', () => {
-            const selects = flattenNodes(layout).filter((n: any) => asArray(n?.props?.options).some((o: any) => o.value === 'post_title'));
+            const selects = flattenNodes(filterPartial).filter((n: any) => asArray(n?.props?.options).some((o: any) => o.value === 'post_title'));
 
             expect(selects.length).toBeGreaterThanOrEqual(1);
 
@@ -170,12 +175,13 @@ describe('관리자 스크랩 관리 — 레이아웃 계약 (#524 WP-A)', () =>
 
         // @scenario surface=admin_list, search_field=all
         // @effects admin_list_search_entrypoints_share_named_action
-        it('세 진입점(검색 버튼·PC 엔터·모바일 엔터)이 같은 명명 액션을 부른다', () => {
-            const refs = flattenActions(layout).filter((a: any) => a.actionRef === 'searchBoardScraps');
+        it('검색 진입점(검색 버튼·엔터)이 같은 명명 액션을 부른다', () => {
+            // 검색줄은 형제 화면들처럼 `responsive` 한 벌로 좁은 화면까지 덮으므로 진입점은 둘이다
+            // (종전에는 좁은 화면용 줄을 따로 둬 셋이었다).
+            const refs = flattenActions(filterPartial).filter((a: any) => a.actionRef === 'searchBoardScraps');
 
-            expect(refs.length).toBeGreaterThanOrEqual(3);
-            // 좁은 화면용과 넓은 화면용 입력이 나란히 있어 엔터 진입점이 둘이다.
-            expect(refs.filter((r: any) => r.key === 'Enter').length).toBeGreaterThanOrEqual(2);
+            expect(refs.length).toBeGreaterThanOrEqual(2);
+            expect(refs.filter((r: any) => r.key === 'Enter').length).toBeGreaterThanOrEqual(1);
             expect(refs.some((r: any) => r.type === 'click')).toBe(true);
         });
 

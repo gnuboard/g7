@@ -8,9 +8,9 @@
 
 | 카테고리 | 문서 수 | 진입점 |
 |---|---:|---|
-| 백엔드 | 36 | [docs/backend/](docs/backend/) |
-| 프론트엔드 | 45 | [docs/frontend/](docs/frontend/) |
-| 확장 시스템 | 32 | [docs/extension/](docs/extension/) |
+| 백엔드 | 38 | [docs/backend/](docs/backend/) |
+| 프론트엔드 | 46 | [docs/frontend/](docs/frontend/) |
+| 확장 시스템 | 34 | [docs/extension/](docs/extension/) |
 | 공통 | 11 | [docs/](docs/) |
 
 전체 목록·작업 유형별 필수 문서·API 레퍼런스·확장 개발자 문서: [docs/README.md](docs/README.md)
@@ -115,9 +115,9 @@ PHP 8.2+ · Laravel 12.x · MySQL 8.0 · Sanctum 4.x · PHPUnit 11.x · Pint(PSR
 | `resources/views/**/*.blade.php` | [template-basics](docs/extension/template-basics.md), [testing-guide](docs/testing-guide.md) |
 | 코어 공개 확장 표면(`app/Extension/Abstract*`·`HookManager`·`app/Contracts/Extension/**`) | [changelog-rules](docs/extension/changelog-rules.md) |
 | 번들 확장 공개 표면(`src/{Services,Contracts,Repositories,Models}/**`·`routes/**`) | [changelog-rules](docs/extension/changelog-rules.md) |
-| `**/extensions/**/*.{g7.html,json}` | [layout-extensions](docs/extension/layout-extensions.md), [layout-json](docs/frontend/layout-json.md) |
+| `**/extensions/**/*.{g7.html,json}` | [layout-markup](docs/frontend/layout-markup.md), [layout-extensions](docs/extension/layout-extensions.md), [layout-json](docs/frontend/layout-json.md) |
 | `(modules|plugins|templates)/**/editor-spec.json`·`editor-spec/**/*.json` | [editor-spec](docs/extension/editor-spec.md) |
-| `modules/**/layouts/**/*.{g7.html,json}` | [module-layouts](docs/extension/module-layouts.md), [layout-json](docs/frontend/layout-json.md) |
+| `modules/**/layouts/**/*.{g7.html,json}` | [layout-markup](docs/frontend/layout-markup.md), [module-layouts](docs/extension/module-layouts.md), [layout-json](docs/frontend/layout-json.md) |
 | `modules/**/lang/**` | [module-i18n](docs/extension/module-i18n.md) |
 | `modules/**/Module.php` | [module-basics](docs/extension/module-basics.md) |
 | `config/app.php` | [core-config](docs/backend/core-config.md) |
@@ -127,8 +127,8 @@ PHP 8.2+ · Laravel 12.x · MySQL 8.0 · Sanctum 4.x · PHPUnit 11.x · Pint(PSR
 | `templates/**/template.json` | [template-basics](docs/extension/template-basics.md) |
 | `plugins/**/plugin.json` | [plugin-development](docs/extension/plugin-development.md) |
 | `templates/**/routes.json` | [template-routing](docs/extension/template-routing.md) |
-| `**/layouts/**/*.{g7.html,json}` | [layout-json](docs/frontend/layout-json.md), [actions-handlers](docs/frontend/actions-handlers.md) |
-| `**/partials/**/*.{g7.html,json}` | [layout-json-inheritance](docs/frontend/layout-json-inheritance.md) |
+| `**/layouts/**/*.{g7.html,json}` | [layout-markup](docs/frontend/layout-markup.md), [layout-json](docs/frontend/layout-json.md), [actions-handlers](docs/frontend/actions-handlers.md) |
+| `**/partials/**/*.{g7.html,json}` | [layout-markup](docs/frontend/layout-markup.md), [layout-json-inheritance](docs/frontend/layout-json-inheritance.md) |
 | `**/handlers/**/*.ts` | [g7core-api](docs/frontend/g7core-api.md), [actions-handlers](docs/frontend/actions-handlers.md) |
 | `**/components/**/*.tsx` | [components](docs/frontend/components.md), [components](templates/_bundled/sirsoft-admin_basic/docs/components.md), [components](templates/_bundled/sirsoft-basic/docs/components.md) |
 | `**/upgrades/Upgrade_*.php` | [upgrade-step-guide](docs/extension/upgrade-step-guide.md) |

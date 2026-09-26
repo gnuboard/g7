@@ -699,7 +699,6 @@ function pickIconGlyph(entry: ComponentManifestEntry): string {
     FileUploader: '📎',
     AvatarUploader: '📷',
     SocialLoginButtons: '🌐',
-    PostReactions: '❤',
   };
   return map[name] ?? '◻';
 }

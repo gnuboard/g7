@@ -6,6 +6,8 @@ use App\Extension\HookManager;
 use App\Extension\PluginManager;
 use App\Extension\TemplateManager;
 use App\Support\ExtensionSettingsMirror;
+use App\Support\LayoutMarkup\LayoutMarkupCompiler;
+use App\Support\LayoutMarkup\MarkupCompileContextResolver;
 use App\Support\SensitiveSettingMask;
 use App\Traits\FiltersFrontendSchema;
 use App\Traits\NormalizesSettingsData;
@@ -306,6 +308,7 @@ class PluginSettingsService
      * 설정 캐시를 초기화합니다.
      *
      * @param  string|null  $identifier  특정 플러그인만 초기화 (null이면 전체)
+     * @return void
      */
     public function clearCache(?string $identifier = null): void
     {
@@ -456,12 +459,33 @@ class PluginSettingsService
     /**
      * 레이아웃 파일을 파싱합니다.
      *
-     * @param  string  $path  파일 경로
+     * `.g7.html`(작성 SSoT)이면 메모리에서 컴파일하고, `.json`(굽기 산출)이면 그대로 디코드한다.
+     * 다른 레이아웃 소비 경로가 설치 시점에 하는 것과 같은 처리이며, 이 경로만 종전에 `.json`
+     * 디스크 실재를 요구해 굽기를 빠뜨린 플러그인의 설정 화면이 통째로 사라졌다.
+     *
+     * @param  string  $path  파일 경로 (`.g7.html` 또는 `.json`)
      * @return array|null 파싱된 레이아웃 또는 null
      */
     private function parseLayoutFile(string $path): ?array
     {
         $content = File::get($path);
+
+        if (preg_match('/\.g7\.html$/i', $path) === 1) {
+            try {
+                $resolver = new MarkupCompileContextResolver;
+                $registry = $resolver->registryFor($path);
+
+                return (new LayoutMarkupCompiler($registry))->compile($content, $path, $resolver->contextFor($path))->json;
+            } catch (\Throwable $error) {
+                Log::error('플러그인 설정 레이아웃 마크업 컴파일 실패', [
+                    'path' => $path,
+                    'error' => $error->getMessage(),
+                ]);
+
+                return null;
+            }
+        }
+
         $layout = json_decode($content, true);
 
         if (json_last_error() !== JSON_ERROR_NONE) {

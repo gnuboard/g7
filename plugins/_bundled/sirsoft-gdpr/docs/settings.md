@@ -7,6 +7,7 @@
 <!-- @generated:settings-schema START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 키 | 타입 | 기본값 | 설명 |
 |---|---|---|---|
+| `annual_notice` | `array` | `{"enabled":false,"channels":["mail","database"],"batch_size":500,"introduction":[]}` | 개인정보 연간 통지 |
 | `privacy_policy_slug` | `string` | `privacy` | 개인정보처리방침 페이지 슬러그 |
 | `legal_entity_name` | `string` | - | 운영 주체명 |
 | `data_storage_location` | `string` | - | 데이터 저장 위치 |
@@ -16,7 +17,7 @@
 | `necessary_storage_allowlist` | `array` | `{"localStorage":["g7_locale","g7_color_scheme","g7_cache_version","g7_asset_url_mode*","g7_cart_key","g7-devtools-panel","g7_guest_order_token","g7_guest_order_number","g7_guest_order_expires_at","g7_devtools_*","g7_filters_*","g7_columns_*","g7_order_*","g7_admin_sidebar_collapsed","g7_filter_visibility_*","g7_dismissed_warnings","g7_view_mode_*","g7le.*","__sirsoftKginicisMobilePaymentReturnPending","g7.identity.redirectStash","sirsoft-verification_nhnkcp.formStash"],"sessionStorage":["g7:sirsoft-pay_kginicis:pendingClose","g7:sirsoft-pay_nhnkcp:pendingClose","g7:sirsoft-tosspayments:pendingClose","g7.identity.redirectStash","sirsoft-verification_nhnkcp.formStash","__sirsoftKginicisMobilePaymentReturnPending","g7le.*","g7_devtools_*","g7_filters_*","g7_columns_*","g7_order_*","g7_filter_visibility_*"],"cookie":["laravel_maintenance","g7_analytics_optout"]}` | 필수 저장 항목 허용목록 |
 | `cookie_categories` | `json` | `[]` | 쿠키 카테고리 정의 |
 
-기본값 파일: `config/settings/defaults.json` · 설정 화면 레이아웃: `resources/layouts/admin/plugin_settings.json`
+기본값 파일: `config/settings/defaults.json` · 설정 화면 레이아웃: `resources/layouts/admin/plugin_settings.g7.html`
 <!-- @generated:settings-schema END -->
 
 <!-- @intent START -->
@@ -65,6 +66,7 @@
 | 구분 | slug | 이름 | URL | 하위 |
 |---|---|---|---|---|
 | 관리자 | `sirsoft-gdpr-consent-log` | GDPR 동의 이력 | `/admin/plugins/sirsoft-gdpr/consent-log` | - |
+| 관리자 | `sirsoft-gdpr-notice-log` | 개인정보 통지 이력 | `/admin/plugins/sirsoft-gdpr/notice-log` | - |
 <!-- @generated:menus END -->
 
 <!-- @intent START -->

@@ -144,6 +144,7 @@
                             "name": "Select",
                             "actions": [
                                 {
+                                    "comment": "검색 대상만 담아 둔다 — 조회는 검색창 제출 때 일어난다",
                                     "type": "change",
                                     "handler": "setState",
                                     "params": {

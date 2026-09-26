@@ -65,6 +65,9 @@ class PostRepository implements PostRepositoryInterface
             'title', 'author_name', 'content_mode', 'content_thumbnail_url',
             'is_notice', 'is_secret', 'status', 'depth',
             'view_count', 'comments_count', 'replies_count', 'attachments_count',
+            // 목록의 반응 수는 이 캐시 컬럼의 합이다 — 빼면 목록에서만 항상 0 이 된다
+            // (2026-09-16 실측: 상세는 {1:1} 인데 목록은 reaction_total 0).
+            'reaction_counts',
             'trigger_type', 'ip_address', 'created_at', 'updated_at', 'deleted_at',
             DB::raw('SUBSTRING(content, 1, 200) as content_preview_raw'),
         ];

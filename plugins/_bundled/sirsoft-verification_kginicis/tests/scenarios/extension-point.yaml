@@ -126,7 +126,7 @@ rules_layer_coverage:
   - rule: api-resource-pii-masking
     coverage: InicisIdentityResource 마스킹 유지 (Phase E)
   - rule: middleware-auth-route-scoped
-    coverage: 카드 라우트 auth:sanctum + check.user_status:active (Phase E)
+    coverage: 카드 라우트 auth:sanctum + check.user_status (Phase E — `:active` 는 미들웨어가 읽지 않는 인자라 #636 S4 에서 제거)
   - rule: controller-direct-repository-injection
     coverage: 모든 controller 가 Service 만 주입 (Phase E)
   - rule: i18n-key-naming

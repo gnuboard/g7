@@ -124,11 +124,13 @@ class EcommerceInquiryHookListener implements HookListenerInterface
                 $data['user_id'] = null;
             }
 
-            // ip_address: board_posts.ip_address NOT NULL 제약 충족.
-            // 클라이언트 IP 는 요청 경계(호출 서비스 ProductInquiryService)가 payload 로
+            // ip_address: 클라이언트 IP 는 요청 경계(호출 서비스 ProductInquiryService)가 payload 로
             // 주입한다 — Listener 는 request() 를 직접 참조하지 않는다(입력 우회 방지).
+            // 없으면 NULL 로 둔다: board_posts.ip_address 는 nullable 이고(이슈 #636), 예전처럼
+            // '0.0.0.0' 을 채우면 「모름」이 실제 IP 처럼 남아 보유기간 파기가 그 행을 개인정보가
+            // 남은 행으로 센다.
             if (empty($data['ip_address'])) {
-                $data['ip_address'] = '0.0.0.0';
+                $data['ip_address'] = null;
             }
 
             // 2차 방어(게시판 실데이터): 이미 살아있는 답변이 있는 부모에는 자식 Post 생성 거부.

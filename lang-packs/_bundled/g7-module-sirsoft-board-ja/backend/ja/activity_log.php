@@ -20,6 +20,10 @@ return [
         'upload' => 'アップロード',
         'scrap' => 'スクラップ',
         'unscrap' => 'スクラップ解除',
+        'add' => 'リアクション登録',
+        'change' => 'リアクション変更',
+        'remove' => 'リアクション取消',
+        'cancel' => 'キャンセル',
     ],
     'description' => [
         'board_index' => '掲示板一覧閲覧',
@@ -61,6 +65,13 @@ return [
         'board_type_show' => '掲示板タイプ詳細閲覧 (:type_name)',
         'scrap_add' => '投稿のスクラップ (ID: :post_id)',
         'scrap_remove' => '投稿のスクラップ解除 (ID: :post_id)',
+        'reaction_add' => 'リアクション登録 (掲示板: :board_name, タイトル: :title, タイプ: :reaction_type)',
+        'reaction_change' => 'リアクション変更 (掲示板: :board_name, タイトル: :title, タイプ: :reaction_type)',
+        'reaction_remove' => 'リアクション取消 (掲示板: :board_name, タイトル: :title)',
+        'report_cancel' => '通報キャンセル (ID: :report_id)',
+        'comment_reaction_add' => 'コメント反応登録 (掲示板: :board_name, 投稿 ID: :post_id, コメント ID: :comment_id, タイプ: :reaction_type)',
+        'comment_reaction_change' => 'コメント反応変更 (掲示板: :board_name, 投稿 ID: :post_id, コメント ID: :comment_id, タイプ: :reaction_type)',
+        'comment_reaction_remove' => 'コメント反応キャンセル (掲示板: :board_name, 投稿 ID: :post_id, コメント ID: :comment_id)',
     ],
     'fields' => [
         'name' => '掲示板名',
@@ -89,5 +100,6 @@ return [
         'status' => 'ステータス',
         'content' => '内容',
         'use_scrap' => 'スクラップ使用',
+        'use_comment_reaction' => 'コメント反応使用',
     ],
 ];

@@ -15,7 +15,7 @@
 | `unusedImageCleanup` | `boolean` | `false` | 미사용 이미지 자동 정리 |
 | `unusedImageRetentionDays` | `integer` | `30` | 미사용 이미지 보존기간 (일) |
 
-기본값 파일: `config/settings/defaults.json` · 설정 화면 레이아웃: `resources/layouts/admin/plugin_settings.json`
+기본값 파일: `config/settings/defaults.json` · 설정 화면 레이아웃: `resources/layouts/admin/plugin_settings.g7.html`
 <!-- @generated:settings-schema END -->
 
 <!-- @intent START -->

@@ -11,7 +11,8 @@
             "review_settings",
             "inquiry",
             "notifications",
-            "mileage"
+            "mileage",
+            "privacy_retention"
         ]
     },
     "defaults": {
@@ -577,6 +578,11 @@
             "expiry_days": 365,
             "expiry_notification_enabled": true,
             "expiry_notification_days_before": 7
+        },
+        "privacy_retention": {
+            "enabled": false,
+            "retention_years": 5,
+            "mode": "anonymize"
         }
     },
     "frontend_schema": {
@@ -727,6 +733,9 @@
         "notifications": {
             "expose": true,
             "fields": {}
+        },
+        "privacy_retention": {
+            "expose": false
         }
     }
 }

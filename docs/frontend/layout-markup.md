@@ -242,7 +242,7 @@
 | `type`/`name` | 태그명 자동 판정 (`<data-grid>` `<button>`) |
 | `props` | 무접두 속성 + `<prop name="…">JSON</prop>` |
 | `children` / `text` | 자식 태그 / 태그 본문 (둘 공존 = `mixed_text_and_children` 에러) |
-| `id` | `data-ref="…"` (HTML `id` 는 props.id 로 감) |
+| `id` | `data-ref="…"` (HTML `id` 는 props.id 로 감). 렌더 시 props.id 가 없으면 이 값이 DOM `id` 가 되고 `data-ref` 속성은 DOM 에 남지 않는다 — E2E 는 `#…` 로 찾는다 |
 | `if`/`condition` | `data-if="{{…}}"` (불리언은 `:data-if="false"`) |
 | `iteration` | `data-each="item, i in {{source}}"` |
 | `conditions` | `<all-of>/<any-of>` |

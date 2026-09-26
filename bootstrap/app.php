@@ -20,6 +20,7 @@ use App\Http\Middleware\MaintenanceModePage;
 use App\Http\Middleware\OptionalSanctumMiddleware;
 use App\Http\Middleware\PermissionMiddleware;
 use App\Http\Middleware\RefreshTokenExpiration;
+use App\Http\Middleware\RestrictIpAccess;
 use App\Http\Middleware\RoleMiddleware;
 use App\Http\Middleware\SetLocale;
 use App\Http\Middleware\SetTimezone;
@@ -112,6 +113,13 @@ $app = Application::configure(basePath: dirname(__DIR__))
         ];
         $middleware->appendToGroup('web', $localeTimezoneMiddleware);
         $middleware->appendToGroup('api', $localeTimezoneMiddleware);
+
+        // IP 접근 제한 (인증 불필요, 전역) — 관리자 셸·코어 API·확장 API 전 표면을 한 판정으로 덮는다.
+        // prepend 가 아니라 append 인 이유: 신뢰 프록시는 기본 전역 스택의 TrustProxies 가 적용하므로
+        // 그보다 앞에서 돌면 프록시 뒤에서 $request->ip() 가 프록시 주소가 된다. append 도 그룹·라우트
+        // 미들웨어보다는 먼저 돌아 withoutMiddleware() 로 빠져나갈 수 없다. Gzip 보다 앞에 두어 차단
+        // 응답이 압축 단계를 거치지 않게 한다.
+        $middleware->append(RestrictIpAccess::class);
 
         // Gzip 압축 미들웨어 (웹서버 설정 없이 애플리케이션 레벨에서 압축)
         $middleware->append(GzipEncodeResponse::class);

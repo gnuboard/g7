@@ -609,7 +609,7 @@ public function bulkUpdateStatus(array $ids, string $status): int
 
 ### 상태 변경 타임스탬프 자동 설정
 
-상태 변경 시 관련 타임스탬프를 `match` 표현식으로 자동 설정합니다:
+상태에 딸린 타임스탬프의 짝은 **Enum 한 곳**(`UserStatus::transitionTimestamps()`)이 소유합니다. 호출부에서 `match` 를 펼치지 마십시오 — 상태를 하나 더할 때 그 `match` 를 쓴 자리를 전부 찾아 고쳐야 하고, 한 곳이라도 빠지면 새 상태의 시각 칸이 채워지지 않거나 낡은 칸이 남습니다:
 
 ```php
 // 상태 변경 감지 및 타임스탬프 자동 설정
@@ -617,17 +617,14 @@ $oldStatus = $user->status;
 $newStatus = $data['status'] ?? null;
 
 if ($newStatus && $newStatus !== $oldStatus) {
-    $newStatusEnum = UserStatus::from($newStatus);
-    $data = match ($newStatusEnum) {
-        UserStatus::Blocked => array_merge($data, ['blocked_at' => now()]),
-        UserStatus::Withdrawn => array_merge($data, ['withdrawn_at' => now()]),
-        UserStatus::Active => array_merge($data, ['blocked_at' => null, 'withdrawn_at' => null]),
-        UserStatus::Inactive => $data,  // 타임스탬프 변경 없음
-    };
+    // 채울 칸과 비울 칸을 Enum 이 함께 돌려준다 (없는 상태는 빈 배열).
+    $data = array_merge($data, UserStatus::from($newStatus)->transitionTimestamps());
 }
 
 $this->userRepository->update($user, $data);
 ```
+
+같은 표를 읽는 쓰기 경로는 다음과 같습니다 — 관리자 생성(`UserService::createUser()`), 수정(`updateUser()`), 일괄 상태 변경(`bulkUpdateStatus()`), 휴면 회원의 로그인 해제(`AuthService::restoreDormantAccount()`), 본인인증 완료 시 활성화(`ActivateUserOnIdentityVerified`). 짝 표를 바꿀 때는 이 경로 전부가 영향 범위입니다. 상태를 신설할 때는 `transitionTimestamps()` 의 `match` 에 갈래를 더하는 것으로 끝나고, **`default` 갈래가 있어 빠뜨린 상태가 500 을 내지 않습니다.**
 
 ### 상태 변경 시 토큰 자동 삭제
 

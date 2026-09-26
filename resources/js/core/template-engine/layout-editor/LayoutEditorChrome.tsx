@@ -57,6 +57,7 @@ import {
   deriveCurrentScope,
   matchStateItems,
   resolveDefaultStateId,
+  stateScopeKey,
 } from './utils/matchStateScope';
 import { buildAuthHeaders } from './utils/authToken';
 import { buildSampleGlobalSeed } from './sample-data/sampleGlobalChain';
@@ -362,6 +363,16 @@ function LayoutEditorChromeBody({
     // 라우트 노드가 없는 호스트(예: `_user_base`) → base scope 로 매칭.
     return `__base__/${selectedHostLayout}`;
   }, [editMode, selectedHostLayout, routeTree]);
+  // 반복 항목 편집 모드의 호스트 scope — 진입 직전 화면(`returnRoute`)이 호스트다.
+  // 항목 템플릿은 그 화면의 상태 뒤에 있으므로(예: 알림톡 템플릿 행은 `templates_tab`
+  // 상태에서만 존재) 호스트 scope 를 물려받지 않으면 항목 편집에 들어가는 순간 상태가
+  // 풀려 편집 대상이 캔버스에서 사라진다. returnRoute.path 는 route/base/modal 모드의
+  // 인코딩을 그대로 담고 있어 deriveCurrentScope 가 그대로 해석한다.
+  const iterationReturnPath = state.returnRoute?.path ?? null;
+  const iterationHostRoutePath = useMemo<string | null>(() => {
+    if (editMode !== 'iteration_item') return null;
+    return iterationReturnPath;
+  }, [editMode, iterationReturnPath]);
   // host 미지정 확장 URL 직접 진입(`?edit=__extension__/{id}` 단독)의 종료 복귀 보강.
   // 진입 시점에는 호스트 미확정이라 returnRoute 합성이 불가(useEditorUrlSync 의 D-32 합성은
   // `?host=` 가 있을 때만 동작). 호스트가 확정되는 시점(picker 선택 → selectHost / 단일 호스트
@@ -381,14 +392,29 @@ function LayoutEditorChromeBody({
   }, [extensionReturnRoutePending, selectedHostLayout, routeTree, dispatch]);
 
   useEffect(() => {
-    const scope = deriveCurrentScope(editMode, selectedRoutePath, extensionHostRoutePath);
+    const scope = deriveCurrentScope(
+      editMode,
+      selectedRoutePath,
+      extensionHostRoutePath ?? iterationHostRoutePath,
+    );
     const items = matchStateItems(editorSpec?.states?.groups, scope);
     dispatch({
       type: 'SET_AVAILABLE_STATES',
       states: items,
+      // 새 대상의 기본 상태. 직전 선택이 **같은 scope 의 것이고** 새 목록에도 있으면 리듀서가
+      // 그쪽을 이어 간다(반복 항목/모달 편집을 드나들 때마다 기본값으로 풀리지 않게 —
+      // lastActiveStateId). scope 키를 함께 넘겨야 다른 화면의 동명 상태를 되살리지 않는다.
       activeStateId: resolveDefaultStateId(items),
+      scopeKey: stateScopeKey(scope),
     });
-  }, [editorSpec, editMode, selectedRoutePath, extensionHostRoutePath, dispatch]);
+  }, [
+    editorSpec,
+    editMode,
+    selectedRoutePath,
+    extensionHostRoutePath,
+    iterationHostRoutePath,
+    dispatch,
+  ]);
 
   // 권한 키 후보 — 속성 모달 고급 탭 permissions TagInput (a-2).
   // 편집 권한 가드된 편집기 전용 엔드포인트에서 1회 fetch (코어 + 활성 확장 권한).

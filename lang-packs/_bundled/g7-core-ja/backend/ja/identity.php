@@ -70,6 +70,7 @@ return [
     ],
     'channels' => [
         'email' => 'メール',
+        'app' => '認証アプリ',
     ],
     'origin_types' => [
         'route' => 'ルート',

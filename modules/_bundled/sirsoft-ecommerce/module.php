@@ -32,6 +32,7 @@ use Modules\Sirsoft\Ecommerce\Listeners\MergeCartOnLoginListener;
 use Modules\Sirsoft\Ecommerce\Listeners\MileageTransactionListener;
 use Modules\Sirsoft\Ecommerce\Listeners\OrderActivityLogListener;
 use Modules\Sirsoft\Ecommerce\Listeners\OrderStatusNotificationListener;
+use Modules\Sirsoft\Ecommerce\Listeners\PrivacyRetentionListener;
 use Modules\Sirsoft\Ecommerce\Listeners\ProductActivityLogListener;
 use Modules\Sirsoft\Ecommerce\Listeners\ProductInquiryBoardListener;
 use Modules\Sirsoft\Ecommerce\Listeners\PurgeCashReceiptIdentifierListener;
@@ -2296,6 +2297,7 @@ class Module extends AbstractModule
             IssueCashReceiptOnDepositListener::class,
             PurgeCashReceiptIdentifierListener::class,
             Ckeditor5ReferenceSourcesListener::class,
+            PrivacyRetentionListener::class,
         ];
     }
 

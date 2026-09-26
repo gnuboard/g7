@@ -22,7 +22,6 @@ export { default as ProductImageViewer } from './ProductImageViewer';
 export { default as QuantitySelector } from './QuantitySelector';
 
 // 게시판 관련 컴포넌트
-export { default as PostReactions } from './PostReactions';
 export { default as RichTextEditor } from './RichTextEditor';
 export { HtmlContent } from './HtmlContent';
 export { HtmlEditor } from './HtmlEditor';
@@ -87,7 +86,6 @@ export const compositeComponents = {
   QuantitySelector: () => import('./QuantitySelector'),
 
   // 게시판
-  PostReactions: () => import('./PostReactions'),
   RichTextEditor: () => import('./RichTextEditor'),
   HtmlContent: () => import('./HtmlContent'),
   HtmlEditor: () => import('./HtmlEditor'),

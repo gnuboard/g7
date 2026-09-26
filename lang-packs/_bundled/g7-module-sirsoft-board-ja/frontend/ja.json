@@ -20,7 +20,13 @@
       "roles": "ロール一覧",
       "settings": "掲示板設定",
       "scraps": "スクラップ一覧",
-      "scrap_boards": "スクラップ掲示板選択肢"
+      "scrap_boards": "スクラップ掲示板選択肢",
+      "reactionTypes": "レスポンスタイプ",
+      "reactions": "リアクション一覧",
+      "reaction_boards": "リアクション掲示板選択肢",
+      "boardPrivacyRetentionPreview": "掲示板 個人情報保有期間 対象件数",
+      "privacyTargets": "保有期間処理対象リスト (作成IP·非会員)",
+      "privacyManualRuns": "個人情報措置職権実行状態"
     }
   },
   "common": {
@@ -59,6 +65,9 @@
     },
     "scraps": {
       "$partial": "partial/admin/scraps.json"
+    },
+    "reactions": {
+      "$partial": "partial/admin/reactions.json"
     }
   },
   "board": {

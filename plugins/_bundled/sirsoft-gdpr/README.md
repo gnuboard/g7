@@ -42,6 +42,7 @@ Art.6/ePrivacy Art.5(3) 관점에서 게스트(디바이스 단위)와 회원(�
 | 마이페이지 동의 관리 | 회원이 자신의 동의 현황을 조회·개별 철회·재동의·전체 일괄 재동의 |
 | 관리자 동의 이력 조회 | 회원/게스트 동의 변경 이력(이메일·세션 검색, 카테고리·출처 다중 필터, 카테고리 스냅샷 표) |
 | 정책 버전 발행 | 정책 본문 변경 시 수동 발행으로 모든 회원에게 재동의를 트리거 |
+| 개인정보 연간 통지 | 활성 회원에게 수집 항목·이용 목적·보유 기간을 연 1회 메일·사이트 알림으로 안내(기본 OFF, 1회 실행 상한, 본인 시험 발송, 통지 이력 화면). 정책 버전 발행과는 별개 작업 |
 <!-- @intent END -->
 
 ## 동작 방식
@@ -98,6 +99,7 @@ php artisan plugin:update sirsoft-gdpr --force
 <!-- @generated:settings-summary START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 키 | 의미 | 기본값 |
 |---|---|---|
+| `annual_notice` | 개인정보 연간 통지 | `{"enabled":false,"channels":["mail","database"],"batch_size":500,"introduction":[]}` |
 | `privacy_policy_slug` | 개인정보처리방침 페이지 슬러그 | `privacy` |
 | `legal_entity_name` | 운영 주체명 | - |
 | `data_storage_location` | 데이터 저장 위치 | - |

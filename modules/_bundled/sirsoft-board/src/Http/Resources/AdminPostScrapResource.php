@@ -66,6 +66,10 @@ class AdminPostScrapResource extends BaseApiResource
                 $this->created_at,
                 g7_module_settings('sirsoft-board', 'display.date_display_format', 'standard')
             ) : null,
+            // 표시 설정이 「상대 표기」면 scrapped_at 은 "2시간 전" 이라 두 스크랩의 선후를 가리지
+            // 못한다. 관리 목록은 초까지 필요하므로 회원 표시 시간대로 환산한 절대 시각을 함께 싣는다
+            // (저장은 UTC, 환산은 표시 시점 — AdminReactionResource 와 같은 규약).
+            'created_at' => $this->formatDateTimeStringForUser($this->created_at),
             'abilities' => [
                 'can_delete' => $this->checkModulePermission('scraps', 'manage'),
             ],

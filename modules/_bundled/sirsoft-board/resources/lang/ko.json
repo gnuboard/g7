@@ -4,6 +4,7 @@
             "availableChannels": "사용 가능 채널",
             "boardIdentityPolicies": "게시판 본인인증 정책",
             "boardIdentityPurposes": "게시판 본인인증 목적",
+            "boardPrivacyRetentionPreview": "게시판 개인정보 보유기간 대상 건수",
             "boardNotificationDefinitions": "게시판 알림 정의",
             "board_list_for_inquiry": "문의용 게시판 목록",
             "board_types": "게시판 유형",
@@ -20,7 +21,12 @@
             "roles": "역할 목록",
             "settings": "게시판 설정",
             "scraps": "스크랩 목록",
-            "scrap_boards": "스크랩 게시판 선택지"
+            "scrap_boards": "스크랩 게시판 선택지",
+            "reactionTypes": "반응 유형",
+            "reactions": "반응 목록",
+            "reaction_boards": "반응 게시판 선택지",
+            "privacyTargets": "보유기간 처리 대상 목록 (작성 IP·비회원)",
+            "privacyManualRuns": "개인정보 조치 직권 실행 상태"
         }
     },
     "common": {
@@ -41,6 +47,9 @@
         },
         "scraps": {
             "$partial": "partial/ko/admin/scraps.json"
+        },
+        "reactions": {
+            "$partial": "partial/ko/admin/reactions.json"
         },
         "posts": {
             "$partial": "partial/ko/admin/posts.json"

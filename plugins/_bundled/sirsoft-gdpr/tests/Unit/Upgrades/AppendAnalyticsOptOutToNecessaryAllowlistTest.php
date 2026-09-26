@@ -54,7 +54,7 @@ class AppendAnalyticsOptOutToNecessaryAllowlistTest extends PluginTestCase
 
         // 업그레이드 마이그레이션은 오토로드되지 않는다 — AbstractUpgradeStep 이 실행 시점에
         // `data/{version}/migrations/*.php` 를 require_once 한다. 테스트도 같은 방식으로 싣는다.
-        require_once __DIR__.'/../../../upgrades/data/1.1.0/migrations/02_AppendAnalyticsOptOutToNecessaryAllowlist.php';
+        require_once __DIR__.'/../../../upgrades/data/1.1.0/migrations/03_AppendAnalyticsOptOutToNecessaryAllowlist.php';
 
         $this->path = ExtensionStoragePath::plugin('sirsoft-gdpr', 'settings').'/setting.json';
 

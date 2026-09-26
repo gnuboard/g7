@@ -4,6 +4,7 @@
         "description": "마이페이지 스크랩 해제 확인 모달",
         "editor_label": "$t:user.modal_label.mypage_scrap.scrapDeleteModal"
     },
+    "comment": "스크랩 단건 해제 확인 — 대상은 전역 scrapDeleteModal 로 받는다",
     "id": "scrap_delete_modal",
     "type": "composite",
     "name": "Modal",
@@ -137,6 +138,7 @@
                             },
                             "actions": [
                                 {
+                                    "comment": "단건 해제 — 먼저 잠그고 성공하면 선택에서 그 ID 를 뺀다",
                                     "type": "click",
                                     "handler": "sequence",
                                     "actions": [

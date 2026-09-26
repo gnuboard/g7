@@ -12,7 +12,7 @@
 | `popup_height` | `integer` | `600` | 팝업 높이 (px) |
 | `theme_color` | `string` | `#1D4ED8` | 테마 색상 |
 
-기본값 파일: `config/settings/defaults.json` · 설정 화면 레이아웃: `resources/layouts/admin/plugin_settings.json`
+기본값 파일: `config/settings/defaults.json` · 설정 화면 레이아웃: `resources/layouts/admin/plugin_settings.g7.html`
 <!-- @generated:settings-schema END -->
 
 <!-- @intent START -->

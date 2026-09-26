@@ -467,16 +467,15 @@
         "stats": {
             "total_posts": "작성한 게시글",
             "total_comments": "작성한 댓글",
-            "total_views": "총 조회수"
+            "total_views": "총 조회수",
+            "total_reactions": "남긴 반응",
+            "total_reports": "신고한 건"
         },
         "tabs": {
             "my_posts": "내가 쓴 글",
-            "my_comments": "내가 쓴 댓글"
-        },
-        "sub_tabs": {
-            "my_posts": "내 게시글",
-            "my_comments": "내 댓글",
-            "my_reports": "나의 신고현황"
+            "my_comments": "내가 쓴 댓글",
+            "my_reactions": "내 반응",
+            "my_reports": "내 신고"
         },
         "filter": {
             "all_boards": "전체"
@@ -498,8 +497,7 @@
         },
         "activity_type": {
             "authored": "작성",
-            "commented": "댓글",
-            "reported": "신고"
+            "commented": "댓글"
         },
         "empty": "게시글 활동이 없습니다.",
         "empty_posts": "작성한 게시글이 없습니다.",
@@ -508,11 +506,66 @@
         "search_fields": {
             "title_content": "제목+내용",
             "title": "제목",
-            "content": "내용"
+            "content": "내용",
+            "reason": "신고 사유"
         },
         "comment_search_fields": {
             "content": "댓글 내용",
             "post_title": "게시글 제목"
+        },
+        "target": {
+            "post": "게시글",
+            "comment": "댓글"
+        },
+        "reactions": {
+            "filter": {
+                "all_types": "전체 유형",
+                "all_targets": "전체 대상"
+            },
+            "table": {
+                "type": "유형",
+                "target": "대상",
+                "title": "제목",
+                "board": "게시판",
+                "reacted_at": "반응일",
+                "manage": "관리"
+            },
+            "selected_count": "{{count}}개 선택",
+            "bulk_remove": "선택 해제",
+            "remove": "해제",
+            "disabled_flag": "반응 꺼짐",
+            "board_deleted": "게시판 삭제됨",
+            "deleted_flag": "삭제됨",
+            "deleted_post": "삭제된 게시글",
+            "deleted_comment": "삭제된 댓글",
+            "empty": "남긴 반응이 없습니다.",
+            "removed": "반응을 해제했습니다.",
+            "delete_title": "이 반응을 해제할까요?",
+            "delete_confirm": "「{{title}}」에 남긴 반응을 해제합니다.",
+            "delete_confirm_deleted": "이미 삭제된 대상에 남긴 반응을 해제합니다.",
+            "delete_notice": "게시글·댓글 자체는 삭제되지 않습니다.",
+            "bulk_delete_title": "선택한 반응을 해제할까요?",
+            "bulk_delete_confirm": "선택한 {{count}}개의 반응을 해제합니다.",
+            "delete_confirm_button": "해제"
+        },
+        "reports": {
+            "filter": {
+                "all_statuses": "전체 상태",
+                "all_targets": "전체 대상"
+            },
+            "status": {
+                "pending": "접수",
+                "review": "검토",
+                "rejected": "반려",
+                "suspended": "게시중단"
+            },
+            "target_deleted": "삭제된 대상",
+            "cancel": "취소",
+            "cancel_title": "이 신고를 취소할까요?",
+            "cancel_confirm": "접수된 신고를 거둡니다. 아직 처리가 시작되지 않은 건만 취소할 수 있습니다.",
+            "cancel_notice": "신고한 게시글·댓글은 그대로 남습니다.",
+            "cancel_confirm_button": "신고 취소",
+            "empty": "넣은 신고가 없습니다."
         }
     },
     "inquiries": {

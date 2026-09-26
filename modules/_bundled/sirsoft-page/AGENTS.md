@@ -58,7 +58,7 @@
 | `database/migrations/` | 마이그레이션 | 한국어 comment + `down()` 필수, 기설치본은 업그레이드 스텝으로 백필 |
 | `database/seeders/` | 시더 | composer autoload 등록 + `extension:update-autoload` |
 | `upgrades/` | 업그레이드 스텝 | DB·설정 구조 변경 시 작성 (모듈/플러그인 전용) |
-| `resources/layouts/` | 레이아웃 JSON | `php artisan module:update sirsoft-page --force` (빌드 불필요) |
+| `resources/layouts/` | 레이아웃 소스 `.g7.html` (짝 `.json` 은 굽기 산출) | `php artisan module:update sirsoft-page --force` (빌드 불필요) |
 | `resources/routes.json` | 라우트 → 레이아웃 매핑 | `php artisan module:update sirsoft-page --force` |
 | `resources/js/` | 프론트 엔트리·핸들러 | `php artisan module:build` → `php artisan module:update sirsoft-page --force` |
 | `editor-spec.json` | 레이아웃 편집기 스펙 | `php artisan module:update sirsoft-page --force` |
@@ -143,7 +143,7 @@
 - [ ] 스키마 변경 시 마이그레이션(한국어 comment + `down()`) + 기설치본 백필용 업그레이드 스텝
 - [ ] 발행 훅 추가·이름 변경 시 `php artisan ext:docgen` 재실행 (구독하는 확장의 계약이 바뀝니다)
 - [ ] API 표면 변경 시 `php artisan api:docgen --scope=module:sirsoft-page` 재실행 + `docs/api/**` 갱신
-- [ ] 레이아웃 JSON 변경 시 빌드 없이 update 만 — 신규 Tailwind 클래스는 빌드된 CSS 에 존재하는지 확인
+- [ ] 레이아웃은 `.g7.html` 을 고치고 `php artisan layout:decompile <경로> --sync` 로 짝 `.json` 을 다시 굽는다 (짝을 굽지 않으면 화면에 반영되지 않음) — 빌드 없이 update 만, 신규 Tailwind 클래스는 빌드된 CSS 에 존재하는지 확인
 - [ ] 다국어 키 추가 시 ko·en 동시 반영 + 번들 ja 언어팩 증분 동기화
 - [ ] 페이지 저장 경로를 추가·변경했다면 버전 스냅샷 적재와 `current_version` 증가가 같은 트랜잭션에 있는지 확인
 - [ ] 첨부를 내보내는 경로를 추가하면 발행 상태 게이트를 그 자리에서 재적용 (부모에서 한 번 판정하고 끝나지 않는다)

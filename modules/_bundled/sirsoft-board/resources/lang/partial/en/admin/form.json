@@ -24,6 +24,8 @@
     "use_reply": "Enable Reply Posts",
     "use_report": "Enable Reports",
     "use_scrap": "Enable Scrap",
+    "use_reaction": "Enable Reactions",
+    "active_reaction_types": "Select Reaction Types",
     "secret_mode": "Secret Mode",
     "order_by": {
       "label": "Sort By",
@@ -137,7 +139,9 @@
       "channels_label": "Channels",
       "channel_mail": "Email",
       "channel_database": "Site Notification"
-    }
+    },
+    "use_comment_reaction": "Comment reactions",
+    "manage_reaction_types": "Manage types"
   },
   "placeholders": {
     "name": "e.g., Notice Board",
@@ -156,7 +160,9 @@
     "use_reply": "When enabled, you can set the maximum reply depth.",
     "use_report": "Enable report feature for inappropriate posts/comments",
     "use_scrap": "Enable the scrap feature that lets members save posts to their personal collection",
-    "type": "Board types can be managed in Settings > Basic Settings."
+    "use_reaction": "Enable reactions such as recommend/not recommend on posts",
+    "type": "Board types can be managed in Settings > Basic Settings.",
+    "use_comment_reaction": "Show reaction buttons on comments too. Works only where \"Reactions\" is on."
   },
   "options": {
     "secret_mode": {

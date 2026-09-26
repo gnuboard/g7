@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$comment": "레이아웃 편집기 스펙 — GDPR 플러그인 도메인 sampleData. 관리자 레이아웃(plugin_settings / gdpr_consent_log + 정책 버전 모달)의 data_source ID 전수 스캔 기반: gdprSettings / gdprPolicyVersionCurrent / gdprPolicyVersionHistory / gdprPolicyVersionSnapshot / gdprConsentLog. 응답 shape 는 각 레이아웃의 실제 바인딩 경로(gdprSettings.data.* / gdprPolicyVersion*.data.data.* / gdprConsentLog.data.data[] + pagination) 역추론. 편집기 캔버스 프리뷰에서 generic 폴백 차단용 mock.",
+  "$comment": "레이아웃 편집기 스펙 — GDPR 플러그인 도메인 sampleData. 관리자 레이아웃(plugin_settings / gdpr_consent_log + 정책 버전 모달)의 data_source ID 전수 스캔 기반: gdprSettings / gdprAnnualNoticePreview / privacyTargets / privacyManualRuns / gdprPolicyVersionCurrent / gdprPolicyVersionHistory / gdprPolicyVersionSnapshot / gdprConsentLog. 응답 shape 는 각 레이아웃의 실제 바인딩 경로(gdprSettings.data.* / gdprPolicyVersion*.data.data.* / gdprConsentLog.data.data[] + pagination) 역추론. 편집기 캔버스 프리뷰에서 generic 폴백 차단용 mock.",
   "pluginId": "sirsoft-gdpr",
   "version": "1.0.0",
   "description": "GDPR 플러그인 레이아웃 편집기 샘플 데이터 (쿠키 동의 설정 / 동의 이력 / 개인정보 정책 버전).",
@@ -8,6 +8,10 @@
     "byDataSourceId": {
       "gdprSettings": {
         "data": {
+          "annual_notice_limits": {
+            "min": 1,
+            "max": 1000
+          },
           "is_blocking_enabled": true,
           "auto_block": true,
           "respect_dnt": true,
@@ -96,6 +100,15 @@
                 "laravel_session",
                 "gdpr_session"
               ]
+            },
+            "annual_notice": {
+              "enabled": false,
+              "channels": [
+                "mail",
+                "database"
+              ],
+              "batch_size": 500,
+              "introduction": {}
             }
           }
         }
@@ -577,6 +590,224 @@
             "updated_at": "2026-05-24 09:32:38"
           }
         ]
+      },
+      "gdprNoticeLog": {
+        "data": {
+          "data": [
+            {
+              "id": 1,
+              "user_id": 1,
+              "status": "sent",
+              "status_label": "발송 완료",
+              "channels": [
+                "database"
+              ],
+              "channels_label": "database",
+              "is_test": true,
+              "created_at": "2026-09-19T00:00:00+09:00",
+              "sent_at": "2026-09-19T00:00:00+09:00"
+            }
+          ],
+          "pagination": {
+            "current_page": 1,
+            "last_page": 1,
+            "per_page": 20,
+            "total": 1,
+            "from": 1,
+            "to": 1
+          }
+        }
+      },
+      "gdprNotificationChannels": {
+        "data": {
+          "channels": [
+            {
+              "id": "mail",
+              "name": "이메일",
+              "icon": "fas fa-envelope",
+              "description": "이메일로 발송합니다.",
+              "source": "core",
+              "source_label": "코어 기본",
+              "allow_guest": true,
+              "readiness": {
+                "ready": true
+              }
+            },
+            {
+              "id": "database",
+              "name": "사이트 알림",
+              "icon": "fas fa-bell",
+              "description": "사이트 안에서 알림으로 표시합니다.",
+              "source": "core",
+              "source_label": "코어 기본",
+              "allow_guest": false,
+              "readiness": {
+                "ready": true
+              }
+            }
+          ]
+        }
+      },
+      "gdprNotificationDefinitions": {
+        "data": {
+          "data": [
+            {
+              "id": 1,
+              "type": "annual_privacy_notice",
+              "hook_prefix": "sirsoft-gdpr",
+              "name": {
+                "ko": "개인정보 이용내역 안내",
+                "en": "Annual Privacy Notice"
+              },
+              "description": {
+                "ko": "활성 회원에게 개인정보 처리 내역을 연 1회 안내",
+                "en": "Annual notice of personal data processing for active members"
+              },
+              "is_active": true,
+              "is_default": true,
+              "channels": [
+                "mail",
+                "database"
+              ],
+              "variables": [
+                {
+                  "key": "recipient_name"
+                },
+                {
+                  "key": "introduction"
+                },
+                {
+                  "key": "notice_sections"
+                }
+              ],
+              "templates": [
+                {
+                  "id": 1,
+                  "channel": "mail",
+                  "is_active": true,
+                  "is_default": true,
+                  "subject": {
+                    "ko": "[{app_name}] 개인정보 이용내역 안내",
+                    "en": "[{app_name}] Annual privacy notice"
+                  },
+                  "body": {
+                    "ko": "<h1>{recipient_name}님, 개인정보 이용내역을 안내합니다.</h1>",
+                    "en": "<h1>{recipient_name}, here is your annual privacy notice.</h1>"
+                  },
+                  "recipients": [
+                    {
+                      "type": "trigger_user"
+                    }
+                  ]
+                },
+                {
+                  "id": 2,
+                  "channel": "database",
+                  "is_active": true,
+                  "is_default": true,
+                  "subject": {
+                    "ko": "개인정보 이용내역 안내",
+                    "en": "Annual privacy notice"
+                  },
+                  "body": {
+                    "ko": "{introduction} / {collection_summary}",
+                    "en": "{introduction} / {collection_summary}"
+                  },
+                  "recipients": [
+                    {
+                      "type": "trigger_user"
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "pagination": {
+            "current_page": 1,
+            "last_page": 1,
+            "per_page": 20,
+            "total": 1,
+            "has_more_pages": false
+          },
+          "abilities": {
+            "can_update": true
+          }
+        }
+      },
+      "gdprAnnualNoticePreview": {
+        "data": {
+          "enabled": false,
+          "count": 128,
+          "can_view_targets": true
+        }
+      },
+      "privacyManualRuns": {
+        "data": {
+          "targets": {
+            "sirsoft-gdpr:annual_notice": {
+              "key": "sirsoft-gdpr:annual_notice",
+              "label": "개인정보 연간 통지 발송",
+              "can_run": true,
+              "enabled": false,
+              "supports_skip_waiting": false,
+              "run": {
+                "id": 7,
+                "target": "sirsoft-gdpr:annual_notice",
+                "status": "completed",
+                "status_label": "완료",
+                "is_active": false,
+                "skip_waiting": false,
+                "processed_count": 5,
+                "remaining_count": 0,
+                "mode": null,
+                "error": null,
+                "requester_name": "관리자",
+                "queued_at": "2026-09-25 14:02:11",
+                "started_at": "2026-09-25 14:02:12",
+                "finished_at": "2026-09-25 14:02:15"
+              }
+            }
+          },
+          "has_active": false,
+          "finished_since": false,
+          "checked_at": "2026-09-25T14:02:20+09:00"
+        }
+      },
+      "privacyTargets": {
+        "data": {
+          "data": [
+            {
+              "id": 7,
+              "title": "홍길동",
+              "subtitle": "hong@example.com",
+              "context": null,
+              "date": "2024-03-02",
+              "url": "/admin/users/00000000-0000-4000-8000-000000000007"
+            },
+            {
+              "id": 9,
+              "title": "이영희",
+              "subtitle": "lee@example.com",
+              "context": null,
+              "date": "2024-05-11",
+              "url": "/admin/users/00000000-0000-4000-8000-000000000009"
+            }
+          ],
+          "columns": {
+            "title": "이름",
+            "subtitle": "이메일",
+            "date": "가입일"
+          },
+          "pagination": {
+            "current_page": 1,
+            "per_page": 20,
+            "from": 1,
+            "to": 2,
+            "has_more_pages": false,
+            "last_page": 1,
+            "total": 2
+          }
+        }
       }
     }
   },
@@ -639,6 +870,343 @@
                     "needs_renewal": false,
                     "current_policy_version": "1",
                     "is_member": false
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "GDPR 플러그인 설정 화면. 입력칸은 _local.form 을 읽는데 편집기는 서버 값→폼 흐름을 실행하지 않아 전부 빈 채로 그려지고, 정책 이력 표·쿠키 분류 펼침 구역은 클릭으로만 열리는 _local 토글 뒤에 있다.",
+        "scope": {
+          "kind": "route",
+          "match": "*/admin/plugins/sirsoft-gdpr/settings"
+        },
+        "items": [
+          {
+            "id": "settings_default",
+            "label": "$t:editor.state.with_data",
+            "default": true,
+            "comment": "gdprSettings 샘플과 같은 값으로 _local.form 을 시드한다. banner_enabled=true 라야 차단 도메인 하위 구역(subsection_blocked_domains)이 열린다.",
+            "initialState": {
+              "local": {
+                "isSaving": false,
+                "hasChanges": false,
+                "errors": null,
+                "policyHistoryOpen": false,
+                "policyHistoryPage": 1,
+                "expandedCategoryIdx": null,
+                "form": {
+                  "banner_enabled": true,
+                  "is_blocking_enabled": true,
+                  "auto_block": true,
+                  "respect_dnt": true,
+                  "banner_position": "bottom",
+                  "show_settings_button": true,
+                  "consent_version": 3,
+                  "consent_expiry_days": 365,
+                  "privacy_policy_slug": "privacy",
+                  "privacy_policy_url": "/privacy",
+                  "geo_targeting": false,
+                  "geo_countries": [
+                    "KR",
+                    "JP"
+                  ],
+                  "test_mode": false,
+                  "log_consents": true,
+                  "blocked_domains": [
+                    "www.google-analytics.com",
+                    "connect.facebook.net"
+                  ],
+                  "annual_notice": {
+                    "enabled": true,
+                    "channels": [
+                      "mail",
+                      "database"
+                    ],
+                    "batch_size": 500,
+                    "introduction": {}
+                  }
+                }
+              }
+            }
+          },
+          {
+            "id": "policy_history_open",
+            "label": "$t:editor.state.policy_history_open",
+            "comment": "정책 버전 이력 표(policy_version_history_table)는 [이력 보기] 토글로만 열린다 — 편집기는 클릭이 없으므로 상태로 연다.",
+            "initialState": {
+              "local": {
+                "policyHistoryOpen": true,
+                "policyHistoryPage": 1,
+                "expandedCategoryIdx": null,
+                "form": {
+                  "banner_enabled": true,
+                  "is_blocking_enabled": true
+                }
+              }
+            }
+          },
+          {
+            "id": "cookie_category_expanded",
+            "label": "$t:editor.state.cookie_category_expanded",
+            "comment": "쿠키 분류 행의 상세 구역은 그 행을 눌렀을 때만 펼쳐진다(_local.expandedCategoryIdx === categoryIdx). 두 번째 분류(분석 쿠키)를 펼쳐 둔다.",
+            "initialState": {
+              "local": {
+                "expandedCategoryIdx": 1,
+                "policyHistoryOpen": false,
+                "form": {
+                  "banner_enabled": true,
+                  "is_blocking_enabled": true
+                }
+              }
+            }
+          },
+          {
+            "id": "settings_validation_failed",
+            "label": "$t:editor.state.validation_failed",
+            "comment": "저장 검증 실패 — 필드 아래 빨간 안내. hasChanges 를 켜야 저장 버튼이 활성 상태로 보인다.",
+            "initialState": {
+              "local": {
+                "hasChanges": true,
+                "isSaving": false,
+                "expandedCategoryIdx": null,
+                "form": {
+                  "banner_enabled": true,
+                  "consent_expiry_days": "",
+                  "privacy_policy_slug": ""
+                }
+              }
+            },
+            "formErrors": {
+              "_local.errors.consent_expiry_days": [
+                "1 이상 3650 이하의 일수를 입력해 주세요."
+              ],
+              "_local.errors.privacy_policy_slug": [
+                "개인정보처리방침 페이지 주소를 입력해 주세요."
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "comment": "동의 로그 검색 필터가 걸린 상태 — 필터 해제 줄(clear_filters_row)은 query 에 검색어가 있을 때만 그려지고, 검색 입력칸의 초기값도 query 에서 온다.",
+        "scope": {
+          "kind": "route",
+          "match": "*/admin/plugins/sirsoft-gdpr/consent-log"
+        },
+        "items": [
+          {
+            "id": "filtered_by_email",
+            "label": "$t:editor.state.filtered_by_search",
+            "initialState": {
+              "query": {
+                "email": "member@example.com",
+                "consent_keys[]": "analytics",
+                "actions[]": "granted"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "정책 버전 스냅샷 모달 — 제목이 _global.viewingPolicyVersion 을 끼워 넣는다. 값이 없으면 제목이 '?' 로 열린다.",
+        "scope": {
+          "kind": "modal",
+          "match": "policy_version_snapshot_modal"
+        },
+        "items": [
+          {
+            "id": "snapshot_view",
+            "label": "$t:editor.state.policy_version_snapshot",
+            "default": true,
+            "initialState": {
+              "global": {
+                "viewingPolicyVersion": 3
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "알림 템플릿 편집 모달 — 폼 전체가 _global.gdpr_notification_template_form_modal 아래에 있고 그 값은 카드의 [편집] 클릭이 담는다. 상태로 담지 않으면 제목·본문·수신자 구역이 모두 빈 채로 열린다.",
+        "scope": {
+          "kind": "modal",
+          "match": "modal_gdpr_notification_template_edit"
+        },
+        "items": [
+          {
+            "id": "template_edit",
+            "label": "$t:editor.state.notification_template_edit",
+            "default": true,
+            "comment": "수신자 유형 4종(trigger_user/related_user/role/specific_users)은 서로 배타 입력칸이라 한 건씩 넣어 모두 열어 둔다.",
+            "initialState": {
+              "global": {
+                "gdpr_notification_template_form_modal": {
+                  "isSaving": false,
+                  "errors": null,
+                  "editLang": "ko",
+                  "definition": {
+                    "id": 1,
+                    "type": "annual_privacy_notice",
+                    "name": {
+                      "ko": "개인정보 이용내역 안내",
+                      "en": "Annual Privacy Notice"
+                    },
+                    "variables": [
+                      {
+                        "key": "recipient_name"
+                      },
+                      {
+                        "key": "introduction"
+                      },
+                      {
+                        "key": "notice_sections"
+                      }
+                    ]
+                  },
+                  "template": {
+                    "id": 1,
+                    "channel": "mail",
+                    "click_url": "/mypage/privacy",
+                    "subject": {
+                      "ko": "[{app_name}] 개인정보 이용내역 안내",
+                      "en": "[{app_name}] Annual privacy notice"
+                    },
+                    "body": {
+                      "ko": "<h1>{recipient_name}님, 개인정보 이용내역을 안내합니다.</h1><p>{introduction}</p>",
+                      "en": "<h1>{recipient_name}, here is your annual privacy notice.</h1><p>{introduction}</p>"
+                    }
+                  },
+                  "recipients": [
+                    {
+                      "type": "trigger_user"
+                    },
+                    {
+                      "type": "related_user",
+                      "value": "manager"
+                    },
+                    {
+                      "type": "role",
+                      "value": "admin",
+                      "display_name": "최고 관리자",
+                      "exclude_trigger_user": false
+                    },
+                    {
+                      "type": "specific_users",
+                      "value": [
+                        "00000000-0000-4000-8000-000000000021"
+                      ],
+                      "display_names": [
+                        "운영자 A"
+                      ],
+                      "exclude_trigger_user": true
+                    }
+                  ],
+                  "roleSearchResults": [
+                    {
+                      "value": "admin",
+                      "label": "최고 관리자",
+                      "description": "admin"
+                    },
+                    {
+                      "value": "operator",
+                      "label": "운영자",
+                      "description": "operator"
+                    }
+                  ],
+                  "userSearchResults": [
+                    {
+                      "value": "00000000-0000-4000-8000-000000000022",
+                      "label": "운영자 B"
+                    }
+                  ],
+                  "preview": {
+                    "subject": "",
+                    "body": ""
+                  }
+                }
+              }
+            }
+          },
+          {
+            "id": "template_edit_validation_failed",
+            "label": "$t:editor.state.validation_failed",
+            "comment": "모달 상단 오류 목록은 errors 가 객체일 때만 그려진다.",
+            "initialState": {
+              "global": {
+                "gdpr_notification_template_form_modal": {
+                  "isSaving": false,
+                  "errors": {
+                    "subject.ko": [
+                      "제목을 입력해 주세요."
+                    ],
+                    "body.ko": [
+                      "본문을 입력해 주세요."
+                    ]
+                  },
+                  "editLang": "ko",
+                  "definition": {
+                    "id": 1,
+                    "type": "annual_privacy_notice",
+                    "name": {
+                      "ko": "개인정보 이용내역 안내",
+                      "en": "Annual Privacy Notice"
+                    },
+                    "variables": [
+                      {
+                        "key": "recipient_name"
+                      }
+                    ]
+                  },
+                  "template": {
+                    "id": 1,
+                    "channel": "mail",
+                    "click_url": "",
+                    "subject": {
+                      "ko": "",
+                      "en": ""
+                    },
+                    "body": {
+                      "ko": "",
+                      "en": ""
+                    }
+                  },
+                  "recipients": [
+                    {
+                      "type": "trigger_user"
+                    }
+                  ],
+                  "roleSearchResults": [],
+                  "userSearchResults": [],
+                  "preview": {
+                    "subject": "",
+                    "body": ""
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "알림 템플릿 미리보기 모달 — preview.subject/body 만 읽는다. 값이 없으면 빈 상자로 열린다.",
+        "scope": {
+          "kind": "modal",
+          "match": "modal_gdpr_notification_definition_preview"
+        },
+        "items": [
+          {
+            "id": "template_preview",
+            "label": "$t:editor.state.notification_template_preview",
+            "default": true,
+            "initialState": {
+              "global": {
+                "gdpr_notification_template_form_modal": {
+                  "preview": {
+                    "subject": "[샘플 사이트] 개인정보 이용내역 안내",
+                    "body": "<h1>홍길동님, 개인정보 이용내역을 안내합니다.</h1><p>최근 1년간 수집·이용한 개인정보 항목은 아래와 같습니다.</p>"
                   }
                 }
               }

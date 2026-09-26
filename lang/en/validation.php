@@ -874,6 +874,22 @@ return [
         'force_https_required' => 'Please select the Force HTTPS setting.',
         'force_https_boolean' => 'Force HTTPS must be true or false.',
         'allow_internal_outbound_urls_boolean' => 'Allow internal network address calls must be true or false.',
+        // IP access restriction
+        'ip_restriction_enabled_boolean' => 'IP access restriction must be true or false.',
+        'ip_or_cidr_invalid' => '":value" is not an IP address or CIDR range (e.g. 203.0.113.0/24).',
+        'admin_allowed_ips_array' => 'The admin area allowed IPs must be a list.',
+        'admin_allowed_ips_max' => 'You can register up to :max admin area allowed IPs.',
+        'ip_restriction_rules_array' => 'The route rules must be a list.',
+        'ip_restriction_rules_max' => 'You can register up to :max route rules.',
+        'ip_restriction_rule_pattern_required' => 'Please enter the URI pattern of the rule.',
+        'ip_restriction_rule_pattern_max' => 'The URI pattern of the rule may not be greater than :max characters.',
+        'ip_restriction_rule_pattern_invalid' => 'The URI pattern of the rule cannot contain spaces, ? or #. Use a path and * only (e.g. /api/admin/users*).',
+        'ip_restriction_rule_ips_required' => 'Please enter at least one allowed IP for each rule.',
+        'ip_restriction_rule_ips_max' => 'You can register up to :max allowed IPs per rule.',
+        'ip_restriction_rule_memo_max' => 'The rule memo may not be greater than :max characters.',
+        'ip_restriction_rule_enabled_boolean' => 'The rule enabled flag must be true or false.',
+        'ip_restriction_self_lockout' => 'Your current IP (:ip) is not in the admin area allowed list. Saving now would lock you out of the admin area, including this screen — add your current IP to the list and save again.',
+        'ip_restriction_self_lockout_rule' => 'The rule ":pattern" blocks your current IP (:ip). Saving now would lock you out of this screen — add your current IP to that rule or turn the rule off, then save again.',
         'login_attempt_enabled_required' => 'Please select the login attempt limit setting.',
         'login_attempt_enabled_boolean' => 'Login attempt limit must be true or false.',
         'auth_token_lifetime_integer' => 'Auth token lifetime must be an integer.',
@@ -1131,6 +1147,15 @@ return [
         'identity_max_attempts_integer' => 'Maximum attempts must be an integer.',
         'identity_max_attempts_min' => 'Maximum attempts must be at least 1.',
         'identity_max_attempts_max' => 'Maximum attempts may not be greater than 20.',
+
+        // Privacy retention / dormant accounts
+        'privacy_days_integer' => 'The period must be an integer number of days.',
+        'privacy_retention_days_min' => 'The retention period must be at least 1 day.',
+        'privacy_retention_days_max' => 'The retention period may not be greater than 3650 days (10 years).',
+        'privacy_dormant_days_min' => 'The dormancy period must be at least 30 days.',
+        'privacy_dormant_notice_days_min' => 'The advance notice period must be at least 1 day.',
+        'privacy_dormant_notice_days_max' => 'The advance notice period may not be greater than 365 days.',
+        'privacy_dormant_notice_days_lt_dormant_days' => 'The advance notice period must be shorter than the dormancy period. If it is equal or longer, the notice and the transition happen on the same day, leaving no advance notice at all.',
     ],
 
     // Identity verification policy validation messages
@@ -1177,6 +1202,33 @@ return [
         ],
     ],
 
+    // Privacy target list
+    'privacy_targets' => [
+        'page' => [
+            'integer' => 'The page number must be a number.',
+            'min' => 'The page number must be at least 1.',
+        ],
+        'per_page' => [
+            'integer' => 'The page size must be a number.',
+            'min' => 'The page size must be at least 1.',
+            'max' => 'The page size may not exceed :max.',
+        ],
+    ],
+
+    'privacy_manual_run' => [
+        'since' => [
+            'date' => 'The reference time is not a valid date.',
+        ],
+        'skip_waiting' => [
+            'boolean' => 'The skip-waiting value must be true or false.',
+        ],
+        'targets' => [
+            'required' => 'Specify the targets to look up.',
+            'string' => 'The target list must be a comma-separated string.',
+            'max' => 'The target list is too long (max :max characters).',
+        ],
+    ],
+
     // Validation attribute names (validation.attributes)
     // Analytics beacon validation messages
     'analytics' => [
@@ -1194,6 +1246,11 @@ return [
     ],
 
     'attributes' => [
+        'since' => 'reference time',
+        'skip_waiting' => 'skip waiting period',
+        'targets' => 'targets',
+        'page' => 'page number',
+        'per_page' => 'page size',
         'ids' => 'ID list',
         'user_ids' => 'user ID list',
         'user_id' => 'user ID',
@@ -1211,6 +1268,13 @@ return [
         'identity_purpose_providers' => 'purpose-to-provider mapping',
         'identity_challenge_ttl_minutes' => 'challenge TTL',
         'identity_max_attempts' => 'maximum attempts',
+        'privacy_withdrawn_retention_enabled' => 'withdrawn member data erasure',
+        'privacy_withdrawn_retention_days' => 'withdrawn member data retention period',
+        'privacy_dormant_enabled' => 'dormant account transition',
+        'privacy_dormant_days' => 'dormancy period',
+        'privacy_dormant_notice_days' => 'dormancy advance notice period',
+        'privacy_dormant_withdraw_enabled' => 'automatic withdrawal of dormant accounts',
+        'privacy_dormant_withdraw_days' => 'period before withdrawing a dormant account',
         // Identity verification policy fields
         'identity_policy_key' => 'policy key',
         'identity_policy_scope' => 'scope',
@@ -1288,6 +1352,22 @@ return [
         // General settings (additional)
         'channels' => 'channels',
         'notification_channels' => 'notification channels',
+        // Settings tab containers — used when the tab payload itself is malformed.
+        'settings_tab' => 'settings tab',
+        'settings_tab_general' => 'general settings',
+        'settings_tab_mail' => 'mail settings',
+        'settings_tab_upload' => 'upload settings',
+        'settings_tab_seo' => 'SEO settings',
+        'settings_tab_security' => 'security settings',
+        'settings_tab_drivers' => 'driver settings',
+        'settings_tab_advanced' => 'advanced settings',
+        'settings_tab_notifications' => 'notification settings',
+        'settings_tab_identity' => 'identity verification settings',
+        'settings_tab_analytics' => 'visitor analytics settings',
+        'settings_tab_privacy' => 'privacy settings',
+        'notification_channel_id' => 'notification channel id',
+        'notification_channel_is_active' => 'notification channel active flag',
+        'notification_channel_sort_order' => 'notification channel sort order',
         'currency' => 'currency',
         'default_currency' => 'default currency',
         'maintenance_mode' => 'maintenance mode',
@@ -1326,7 +1406,15 @@ return [
         'password_min_length' => 'minimum password length',
         'require_password_special_char' => 'require special character in password',
         'two_factor_auth' => 'two-factor authentication',
+        'two_factor_scope' => 'two-factor authentication scope',
         'allow_internal_outbound_urls' => 'allow internal outbound URLs',
+        'ip_restriction_enabled' => 'IP access restriction',
+        'admin_allowed_ips' => 'admin area allowed IPs',
+        'ip_restriction_rules' => 'route access rules',
+        'ip_restriction_rule_pattern' => 'rule URI pattern',
+        'ip_restriction_rule_ips' => 'rule allowed IPs',
+        'ip_restriction_rule_memo' => 'rule memo',
+        'ip_restriction_rule_enabled' => 'rule enabled',
         // Advanced settings (additional)
         'advanced_cache_enabled' => 'cache',
         'layout_cache_enabled' => 'layout cache',

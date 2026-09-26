@@ -83,11 +83,14 @@ class FragmentSourceConventionRoutingGuardTest extends LayoutMarkupTestCase
             .'시드 DB 행 `content` 에 그대로 싣는 것이 전부라, 소스로 옮겨도 곧바로 같은 배열로 '
             .'되돌려야 한다 — 규약 위반이 아니라 **테스트 자료의 의도된 예외**이며, 등재 목적은 '
             .'"다음 사람이 이것을 사본으로 오인해 고치지 않게" 다 (설계 판정, 5차 병합 후속).',
-        'app/Extension/AbstractPlugin.php' => '`getSettingsLayout()` 의 `plugin_settings.json` 경로 '
-            .'하드코딩. AGENTS.md "확장 시스템 빠른 참조" 이 명문화한 **설계**다 — 플러그인 설정 UI 는 DB 설치 레이아웃과 '
-            .'달리 파일에서 직접 읽으므로 짝 `.json` 이 디스크에 있어야 한다. 규약 위반이 아니라 '
-            .'의도된 예외이며, 등재 목적은 "다음 사람이 이것을 사본으로 오인해 고치지 않게" 다.',
-        'app/Services/PluginSettingsService.php' => '위 `AbstractPlugin` 예외의 소비 측. 같은 명문 '
+        // ── #525(`221beb3a4`) 에서 `app/Extension/AbstractPlugin.php` 가 이 목록에서 빠졌다.
+        //
+        // 등재 사유는 "`getSettingsLayout()` 의 `plugin_settings.json` 경로 하드코딩 — 플러그인 설정 UI 는
+        // 파일에서 직접 읽으므로 짝 `.json` 이 디스크에 있어야 한다" 는 명문 설계였다. 반응 레이아웃 복원
+        // 작업이 그 메서드를 `layoutSourceCandidates()` 규약으로 옮겨 `.g7.html` 소스를 먼저 찾게 했고,
+        // 그때 원장에서 빼지 않아 이 게이트가 4라운드 뒤(develop-7.1.0 2차 병합 전수 보존 검사, 2026-09-17)
+        // red 로 드러났다. 아래 `PluginSettingsService` 항목은 여전히 `.json` 을 직접 읽는 소비 측이라 남는다.
+        'app/Services/PluginSettingsService.php' => '`AbstractPlugin::getSettingsLayout()` 예외의 소비 측. 명문 '
             .'설계(AGENTS.md "확장 시스템 빠른 참조")에 따라 `plugin_settings.json` 과 템플릿 오버라이드본을 직접 읽는다. '
             .'31·32차가 각각 이 자리를 사본으로 오검출했으므로, 오검출이 재발하지 않도록 사유를 '
             .'여기 못박는다.',
@@ -129,6 +132,8 @@ class FragmentSourceConventionRoutingGuardTest extends LayoutMarkupTestCase
      * @scenario compile_unit=install,source_health=valid
      *
      * @effects fragment_definition_consumers_delegate_reading_to_convention
+     *
+     * @return void 반환값 없음
      */
     public function test_fragment_definition_consumers_delegate_reading(): void
     {
@@ -171,6 +176,8 @@ class FragmentSourceConventionRoutingGuardTest extends LayoutMarkupTestCase
      * @scenario compile_unit=install,source_health=invalid
      *
      * @effects fragment_delegation_guard_detects_method_level_inline_consumption
+     *
+     * @return void 반환값 없음
      */
     public function test_self_rejects_inline_consumption_hidden_in_delegating_file(): void
     {
@@ -217,6 +224,8 @@ class FragmentSourceConventionRoutingGuardTest extends LayoutMarkupTestCase
      * @scenario compile_unit=install,source_health=valid
      *
      * @effects fragment_delegation_guard_accepts_intermediate_variable_delegation
+     *
+     * @return void 반환값 없음
      */
     public function test_self_accepts_intermediate_variable_delegation(): void
     {
@@ -254,6 +263,8 @@ class FragmentSourceConventionRoutingGuardTest extends LayoutMarkupTestCase
      * @scenario compile_unit=install,source_health=valid
      *
      * @effects convention_selection_callers_do_not_reimplement_reading
+     *
+     * @return void 반환값 없음
      */
     public function test_selection_callers_do_not_reimplement_reading(): void
     {
@@ -318,6 +329,8 @@ class FragmentSourceConventionRoutingGuardTest extends LayoutMarkupTestCase
      * @scenario compile_unit=install,source_health=valid
      *
      * @effects partial_path_convention_copies_do_not_increase_beyond_registered_debt
+     *
+     * @return void 반환값 없음
      */
     public function test_partial_path_convention_copies_do_not_increase(): void
     {
@@ -376,6 +389,8 @@ class FragmentSourceConventionRoutingGuardTest extends LayoutMarkupTestCase
      * @scenario compile_unit=install,source_health=valid
      *
      * @effects json_only_layout_consumers_do_not_increase_beyond_registered_debt
+     *
+     * @return void 반환값 없음
      */
     public function test_json_only_layout_consumers_do_not_increase(): void
     {

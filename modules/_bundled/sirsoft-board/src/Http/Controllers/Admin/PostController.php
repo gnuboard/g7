@@ -22,8 +22,10 @@ use Modules\Sirsoft\Board\Http\Requests\UpdatePostRequest;
 use Modules\Sirsoft\Board\Http\Resources\BoardResource;
 use Modules\Sirsoft\Board\Http\Resources\PostCollection;
 use Modules\Sirsoft\Board\Http\Resources\PostResource;
+use Modules\Sirsoft\Board\Repositories\Contracts\ReactionRepositoryInterface;
 use Modules\Sirsoft\Board\Services\BoardService;
 use Modules\Sirsoft\Board\Services\PostService;
+use Modules\Sirsoft\Board\Services\ReactionService;
 use Modules\Sirsoft\Board\Services\ReportService;
 use Modules\Sirsoft\Board\Traits\ChecksBoardPermission;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
@@ -144,8 +146,16 @@ class PostController extends AdminBaseController
                     ? $this->reportService->getReportedTargetIds($user->id, $board->id, 'comment', $commentIds)
                     : [];
 
+                // 내 댓글 반응 일괄 조회 (댓글 수와 무관하게 쿼리 1회 — 프리로드 키가 없으면
+                // Resource 가 댓글마다 개별 조회로 조용히 퇴화한다).
+                $myCommentReactions = ! empty($commentIds)
+                    ? app(ReactionRepositoryInterface::class)
+                        ->getUserReactionTypeIdsByTargets($user->id, ReactionService::TARGET_COMMENT, $commentIds)
+                    : [];
+
                 foreach ($comments as $comment) {
                     $comment->is_already_reported_preloaded = in_array($comment->id, $reportedCommentIds);
+                    $comment->my_reaction_type_id_preloaded = $myCommentReactions[$comment->id] ?? null;
                 }
             }
 

@@ -32,6 +32,7 @@ class AttachmentService
      * AttachmentService 생성자
      *
      * @param  AttachmentRepositoryInterface  $repository  첨부파일 리포지토리
+     * @param  BoardRepositoryInterface  $boardRepository  게시판 리포지토리
      * @param  StorageInterface  $storage  모듈 스토리지 드라이버
      */
     public function __construct(
@@ -53,6 +54,7 @@ class AttachmentService
      * @param  int|null  $postId  게시글 ID (신규 작성 중이면 null)
      * @param  int  $additional  이번에 추가하려는 첨부 개수
      * @param  string|null  $tempKey  임시 업로드 키 (신규 작성 시 기존 임시첨부 합산용)
+     * @return void 반환값 없음
      *
      * @throws AttachmentLimitExceededException 상한 초과 시
      */
@@ -326,6 +328,7 @@ class AttachmentService
      *
      * @param  string  $slug  게시판 슬러그
      * @param  Attachment  $attachment  첨부파일 모델
+     * @return void 반환값 없음
      *
      * @throws AccessDeniedHttpException 삭제글 첨부에 권한 없이 접근한 경우
      */
@@ -358,6 +361,7 @@ class AttachmentService
      *
      * @param  string  $slug  게시판 슬러그
      * @param  Attachment  $attachment  첨부파일 모델
+     * @return void 반환값 없음
      *
      * @throws AccessDeniedHttpException 비밀글 첨부에 권한 없이 접근한 경우
      */
@@ -503,6 +507,7 @@ class AttachmentService
      * 빠진 경우 등) 삭제하지 않습니다.
      *
      * @param  Collection  $attachments  이번 회차에 처리한 첨부 목록
+     * @return void 반환값 없음
      */
     private function removeEmptyTempDirectories(Collection $attachments): void
     {
@@ -547,6 +552,25 @@ class AttachmentService
         $attachments = $this->repository->findSoftDeletedOlderThan($threshold, $limit);
 
         return $this->purgeCollection($attachments, $dryRun, '소프트 삭제 게시판 첨부');
+    }
+
+    /**
+     * 게시글들에 딸린 첨부를 파일과 기록째 즉시 파기합니다 (개인정보 보유기간 삭제 모드, 이슈 #636).
+     *
+     * 게시글 삭제는 첨부를 소프트 삭제만 하므로 파일이 남는다. 첨부 정리 설정이 꺼져 있으면
+     * 그 파일은 영원히 남아 「파기했다」가 거짓이 되므로, 보유기간 삭제는 첨부 정리 주기를
+     * 기다리지 않고 바로 지운다. 파일 삭제에 실패한 첨부는 기록을 남겨 다음 실행이 다시 시도한다.
+     *
+     * @param  array<int, int>  $postIds  게시글 ID 목록
+     * @return array{scanned: int, deleted: int, failed: int} 처리 결과
+     */
+    public function purgeByPostIds(array $postIds): array
+    {
+        return $this->purgeCollection(
+            $this->repository->findWithTrashedByPostIds($postIds),
+            false,
+            '보유기간 파기 게시글 첨부',
+        );
     }
 
     /**
@@ -644,6 +668,8 @@ class AttachmentService
      *
      * @param  string  $slug  게시판 슬러그
      * @param  Attachment  $attachment  대상 첨부
+     * @param  string  $context  호출 경로 (admin|user)
+     * @return void 반환값 없음
      *
      * @throws AccessDeniedHttpException 스코프 밖 첨부인 경우
      */
@@ -669,6 +695,8 @@ class AttachmentService
      *
      * @param  string  $slug  게시판 슬러그
      * @param  array<int, array{id: int, order: int}>  $orders  순서 데이터
+     * @param  string  $context  호출 경로 (admin|user)
+     * @return void 반환값 없음
      *
      * @throws AccessDeniedHttpException 스코프 밖 첨부가 하나라도 포함된 경우
      */
@@ -696,6 +724,7 @@ class AttachmentService
      * @param  string  $slug  게시판 슬러그
      * @param  int  $postId  게시글 ID
      * @param  string  $collection  컬렉션명
+     * @return void 반환값 없음
      */
     protected function reorderAfterDelete(string $slug, int $postId, string $collection): void
     {
@@ -731,6 +760,7 @@ class AttachmentService
      *
      * @param  string  $slug  게시판 슬러그
      * @param  array<int>  $attachmentIds  첨부파일 ID 배열
+     * @return void 반환값 없음
      */
     public function rollbackUploadedFiles(string $slug, array $attachmentIds): void
     {

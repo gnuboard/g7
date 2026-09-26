@@ -29,6 +29,11 @@ class PluginSettingsControllerTest extends TestCase
 
     private PluginManager $pluginManager;
 
+    /**
+     * 각 테스트 전에 공통 픽스처를 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -42,6 +47,8 @@ class PluginSettingsControllerTest extends TestCase
      * 관리자 역할 생성 및 할당
      *
      * @param  array  $permissions  사용자에게 부여할 권한 식별자 목록
+     *
+     * @return User User 인스턴스
      */
     private function createAdminUser(array $permissions = ['core.plugins.read', 'core.plugins.update']): User
     {
@@ -102,6 +109,8 @@ class PluginSettingsControllerTest extends TestCase
 
     /**
      * 인증된 요청 헬퍼 메서드
+     *
+     * @return static 체이닝용 자기 자신
      */
     private function authRequest(): static
     {
@@ -113,6 +122,9 @@ class PluginSettingsControllerTest extends TestCase
 
     /**
      * 테스트용 플러그인 생성 (DB 레코드만)
+     * @param $identifier 식별자
+     *
+     * @return Plugin Plugin 인스턴스
      */
     private function createTestPlugin(string $identifier = 'test-settings-plugin'): Plugin
     {
@@ -128,6 +140,10 @@ class PluginSettingsControllerTest extends TestCase
 
     /**
      * 테스트용 설정 파일 생성
+     * @param $identifier 식별자
+     * @param $settings 설정 배열
+     *
+     * @return void 반환값 없음
      */
     private function createTestSettingsFile(string $identifier, array $settings): void
     {
@@ -143,6 +159,9 @@ class PluginSettingsControllerTest extends TestCase
 
     /**
      * 테스트용 설정 파일 삭제
+     * @param $identifier 식별자
+     *
+     * @return void 반환값 없음
      */
     private function cleanupTestSettings(string $identifier): void
     {
@@ -158,6 +177,12 @@ class PluginSettingsControllerTest extends TestCase
 
     /**
      * 인증 없이 설정 조회 시 401 반환
+     *
+     * @scenario endpoint=show,authentication=none
+     *
+     * @effects show_without_authentication_returns_401
+     *
+     * @return void 반환값 없음
      */
     public function test_show_returns_401_without_authentication(): void
     {
@@ -168,6 +193,12 @@ class PluginSettingsControllerTest extends TestCase
 
     /**
      * 권한 없이 설정 조회 시 403 반환
+     *
+     * @scenario endpoint=show,authentication=authenticated,permission=denied
+     *
+     * @effects show_without_permission_returns_403
+     *
+     * @return void 반환값 없음
      */
     public function test_show_returns_403_without_permission(): void
     {
@@ -192,6 +223,12 @@ class PluginSettingsControllerTest extends TestCase
 
     /**
      * 인증 없이 설정 업데이트 시 401 반환
+     *
+     * @scenario endpoint=update,authentication=none
+     *
+     * @effects update_without_authentication_returns_401
+     *
+     * @return void 반환값 없음
      */
     public function test_update_returns_401_without_authentication(): void
     {
@@ -204,6 +241,12 @@ class PluginSettingsControllerTest extends TestCase
 
     /**
      * 권한 없이 설정 업데이트 시 403 반환
+     *
+     * @scenario endpoint=update,authentication=authenticated,permission=denied
+     *
+     * @effects update_without_permission_returns_403
+     *
+     * @return void 반환값 없음
      */
     public function test_update_returns_403_without_permission(): void
     {
@@ -223,6 +266,12 @@ class PluginSettingsControllerTest extends TestCase
 
     /**
      * 인증 없이 레이아웃 조회 시 401 반환
+     *
+     * @scenario endpoint=layout,authentication=none
+     *
+     * @effects layout_without_authentication_returns_401
+     *
+     * @return void 반환값 없음
      */
     public function test_layout_returns_401_without_authentication(): void
     {
@@ -237,6 +286,12 @@ class PluginSettingsControllerTest extends TestCase
 
     /**
      * 존재하지 않는 플러그인 설정 조회 시 404 반환
+     *
+     * @scenario endpoint=show,plugin_existence=nonexistent
+     *
+     * @effects show_for_nonexistent_plugin_returns_404
+     *
+     * @return void 반환값 없음
      */
     public function test_show_returns_404_for_nonexistent_plugin(): void
     {
@@ -248,6 +303,12 @@ class PluginSettingsControllerTest extends TestCase
 
     /**
      * 실제 설치된 Daum 우편번호 플러그인 설정 조회 테스트
+     *
+     * @scenario endpoint=show,plugin_existence=installed,permission=granted
+     *
+     * @effects show_returns_settings_for_installed_plugin
+     *
+     * @return void 반환값 없음
      */
     public function test_show_returns_settings_for_installed_plugin(): void
     {
@@ -280,6 +341,12 @@ class PluginSettingsControllerTest extends TestCase
 
     /**
      * 존재하지 않는 플러그인 설정 업데이트 시 에러 반환
+     *
+     * @scenario endpoint=update,plugin_existence=nonexistent
+     *
+     * @effects update_for_nonexistent_plugin_returns_error
+     *
+     * @return void 반환값 없음
      */
     public function test_update_returns_error_for_nonexistent_plugin(): void
     {
@@ -294,6 +361,12 @@ class PluginSettingsControllerTest extends TestCase
 
     /**
      * 실제 설치된 플러그인 설정 업데이트 테스트
+     *
+     * @scenario endpoint=update,plugin_existence=installed,payload_scope=within_schema
+     *
+     * @effects update_saves_settings_for_installed_plugin
+     *
+     * @return void 반환값 없음
      */
     public function test_update_saves_settings_for_installed_plugin(): void
     {
@@ -340,6 +413,12 @@ class PluginSettingsControllerTest extends TestCase
      * "PluginManager 미등록 플러그인" 은 `PluginSettingsService::save()` 가 이미 false 로
      * 차단하므로 도달할 수 없고, 실제로는 스키마 밖 키만 담긴 요청이 그대로 설정 파일에
      * 병합되는 경로로만 동작했다.
+     *
+     * @scenario endpoint=update,plugin_existence=installed,payload_scope=outside_schema
+     *
+     * @effects update_ignores_fields_outside_settings_schema
+     *
+     * @return void 반환값 없음
      */
     public function test_update_ignores_fields_outside_settings_schema(): void
     {
@@ -379,6 +458,12 @@ class PluginSettingsControllerTest extends TestCase
 
     /**
      * 존재하지 않는 플러그인 레이아웃 조회 시 404 반환
+     *
+     * @scenario endpoint=layout,plugin_existence=nonexistent
+     *
+     * @effects layout_for_nonexistent_plugin_returns_404
+     *
+     * @return void 반환값 없음
      */
     public function test_layout_returns_404_for_nonexistent_plugin(): void
     {
@@ -390,6 +475,12 @@ class PluginSettingsControllerTest extends TestCase
 
     /**
      * Daum 우편번호 플러그인 레이아웃 조회 성공
+     *
+     * @scenario endpoint=layout,plugin_existence=installed,permission=granted
+     *
+     * @effects layout_returns_layout_for_installed_plugin
+     *
+     * @return void 반환값 없음
      */
     public function test_layout_returns_layout_for_daum_postcode_plugin(): void
     {
@@ -413,13 +504,16 @@ class PluginSettingsControllerTest extends TestCase
 
         $response = $this->authRequest()->getJson('/api/admin/plugins/sirsoft-daum_postcode/settings/layout');
 
+        // `schema` 는 레이아웃 계약에 없다 — 번들 플러그인 12개 중 어느 것도 이 키를 내보내지
+        // 않으며(2026-09-15 전수 실측), 설정 폼은 `slots` 안의 컴포넌트가 그린다. 종전 단언은
+        // 존재한 적 없는 키를 요구해 이 테스트를 상시 red 로 두고 있었다.
         $response->assertStatus(200)
             ->assertJsonStructure([
                 'success',
                 'data' => [
                     'version',
                     'meta',
-                    'schema',
+                    'slots',
                 ],
             ]);
     }
@@ -430,6 +524,12 @@ class PluginSettingsControllerTest extends TestCase
 
     /**
      * 설정 조회 응답 구조 검증
+     *
+     * @scenario endpoint=show,plugin_existence=installed,permission=granted
+     *
+     * @effects show_response_has_documented_structure
+     *
+     * @return void 반환값 없음
      */
     public function test_show_response_structure(): void
     {
@@ -460,6 +560,12 @@ class PluginSettingsControllerTest extends TestCase
 
     /**
      * 설정 업데이트 응답에 업데이트된 설정 포함
+     *
+     * @scenario endpoint=update,plugin_existence=installed,payload_scope=within_schema
+     *
+     * @effects update_response_includes_updated_settings
+     *
+     * @return void 반환값 없음
      */
     public function test_update_response_includes_updated_settings(): void
     {

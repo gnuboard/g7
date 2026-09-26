@@ -10,6 +10,7 @@ use App\Extension\Helpers\ExtensionMenuSyncHelper;
 use App\Models\Menu;
 use Plugins\Sirsoft\Gdpr\Http\Middleware\CookieConsentMiddleware;
 use Plugins\Sirsoft\Gdpr\Listeners\GdprAnalyticsConsentListener;
+use Plugins\Sirsoft\Gdpr\Listeners\GdprAnnualNoticeListener;
 use Plugins\Sirsoft\Gdpr\Listeners\GdprAuthConsentListener;
 use Plugins\Sirsoft\Gdpr\Listeners\GdprAuthLogoutListener;
 use Plugins\Sirsoft\Gdpr\Listeners\GdprUserDeleteListener;
@@ -23,6 +24,16 @@ use Plugins\Sirsoft\Gdpr\Listeners\GdprUserWithdrawListener;
  */
 class Plugin extends AbstractPlugin
 {
+    public const ANNUAL_NOTICE_MIN = 1;
+
+    public const ANNUAL_NOTICE_MAX = 1000;
+
+    /** 1회 실행당 발송 상한 기본값 — 설정·스키마·검증 복원의 단일 출처. */
+    public const ANNUAL_NOTICE_DEFAULT = 500;
+
+    /** 발송 채널 기본값 — 위와 같은 이유로 한 곳에서만 정의한다. */
+    public const ANNUAL_NOTICE_CHANNELS = ['mail', 'database'];
+
     /**
      * strictly necessary 허용목록 출하 기본 카탈로그.
      *
@@ -199,6 +210,12 @@ class Plugin extends AbstractPlugin
     {
         return [
             [
+                'name' => 'sirsoft-gdpr.privacy.annual_notice_due',
+                'type' => 'action',
+                'description' => ['ko' => '개인정보 연간 통지 접수 후 발화', 'en' => 'Annual privacy notice queued'],
+                'parameters' => ['user' => 'User - 수신 회원', 'attemptId' => 'string - 접수 식별자'],
+            ],
+            [
                 'name' => 'sirsoft-gdpr.consent.granted',
                 'type' => 'action',
                 'description' => [
@@ -245,6 +262,13 @@ class Plugin extends AbstractPlugin
                 'url' => '/admin/plugins/sirsoft-gdpr/consent-log',
                 'icon' => 'fas fa-user-shield',
                 'order' => 50,
+            ],
+            [
+                'name' => ['ko' => '개인정보 통지 이력', 'en' => 'Privacy Notice Log'],
+                'slug' => 'sirsoft-gdpr-notice-log',
+                'url' => '/admin/plugins/sirsoft-gdpr/notice-log',
+                'icon' => 'fas fa-envelope',
+                'order' => 51,
             ],
         ];
     }
@@ -419,6 +443,7 @@ class Plugin extends AbstractPlugin
     public function getDynamicTables(): array
     {
         return [
+            'gdpr_privacy_notice_logs',
             'gdpr_user_consent_histories',
             'gdpr_user_consents',
             'gdpr_policy_versions',
@@ -488,9 +513,75 @@ class Plugin extends AbstractPlugin
         ];
     }
 
+    /**
+     * 개인정보 통지는 정책 버전 발행과 별개인 정기 작업입니다.
+     *
+     * @return array 정기 실행 선언
+     */
+    public function getSchedules(): array
+    {
+        return [[
+            'command' => 'sirsoft-gdpr:send-annual-notices --scheduled',
+            'schedule' => 'daily',
+            'description' => '개인정보 연간 통지',
+            'enabled_config' => 'annual_notice.enabled',
+        ]];
+    }
+
+    /**
+     * 수신자 로케일로 렌더링하는 연간 개인정보 통지 정의입니다.
+     *
+     * @return array 알림 및 채널 템플릿 선언
+     */
+    public function getNotificationDefinitions(): array
+    {
+        return [[
+            'type' => 'annual_privacy_notice',
+            'hook_prefix' => 'sirsoft-gdpr',
+            'name' => ['ko' => '개인정보 이용내역 안내', 'en' => 'Annual Privacy Notice'],
+            'description' => ['ko' => '활성 회원에게 개인정보 처리 내역을 연 1회 안내', 'en' => 'Annual notice of personal data processing for active members'],
+            'channels' => ['mail', 'database'],
+            'hooks' => ['sirsoft-gdpr.privacy.annual_notice_due'],
+            'variables' => [
+                ['key' => 'recipient_name', 'description' => '수신자 이름'],
+                ['key' => 'app_name', 'description' => '사이트명'],
+                ['key' => 'introduction', 'description' => '운영자 서문'],
+                ['key' => 'collection_summary', 'description' => '수집 항목 요약'],
+                ['key' => 'purpose', 'description' => '이용 목적'],
+                ['key' => 'retention', 'description' => '보유 기간'],
+                ['key' => 'privacy_policy_url', 'description' => '개인정보처리방침 URL'],
+                ['key' => 'notice_sections', 'description' => '확장이 기여한 처리 내역'],
+            ],
+            'templates' => [
+                [
+                    'channel' => 'mail',
+                    'recipients' => [['type' => 'trigger_user']],
+                    'subject' => ['ko' => '[{app_name}] 개인정보 이용내역 안내', 'en' => '[{app_name}] Annual privacy notice'],
+                    'body' => [
+                        'ko' => '<h1>{recipient_name}님, 개인정보 이용내역을 안내합니다.</h1><p>{introduction}</p><h2>수집 항목</h2><p>{collection_summary}</p><h2>이용 목적</h2><p>{purpose}</p><h2>보유 기간</h2><p>{retention}</p>{notice_sections}<p><a href="{privacy_policy_url}">개인정보처리방침</a></p>',
+                        'en' => '<h1>{recipient_name}, here is your annual privacy notice.</h1><p>{introduction}</p><h2>Data collected</h2><p>{collection_summary}</p><h2>Purpose</h2><p>{purpose}</p><h2>Retention</h2><p>{retention}</p>{notice_sections}<p><a href="{privacy_policy_url}">Privacy policy</a></p>',
+                    ],
+                ],
+                [
+                    'channel' => 'database',
+                    'recipients' => [['type' => 'trigger_user']],
+                    'subject' => ['ko' => '개인정보 이용내역 안내', 'en' => 'Annual privacy notice'],
+                    'body' => ['ko' => '{introduction} / {collection_summary} / {purpose} / {retention} / {notice_sections}', 'en' => '{introduction} / {collection_summary} / {purpose} / {retention} / {notice_sections}'],
+                    'click_url' => '{privacy_policy_url}',
+                ],
+            ],
+        ]];
+    }
+
     public function getConfigValues(): array
     {
         return [
+            'annual_notice' => [
+                'enabled' => false,
+                'channels' => self::ANNUAL_NOTICE_CHANNELS,
+                'batch_size' => self::ANNUAL_NOTICE_DEFAULT,
+                'introduction' => [],
+            ],
             // 정책 메타데이터 — cookie_policy_version 은 gdpr_policy_versions 테이블이 SSoT
             // (마이그레이션 시 initial 행 자동 시드). 본 settings 에서는 보관하지 않음.
             'privacy_policy_slug' => 'privacy',
@@ -589,6 +680,12 @@ class Plugin extends AbstractPlugin
     public function getSettingsSchema(): array
     {
         return [
+            'annual_notice' => [
+                'type' => 'array',
+                'default' => ['enabled' => false, 'channels' => self::ANNUAL_NOTICE_CHANNELS, 'batch_size' => self::ANNUAL_NOTICE_DEFAULT, 'introduction' => []],
+                'label' => ['ko' => '개인정보 연간 통지', 'en' => 'Annual privacy notice'],
+                'required' => false,
+            ],
             // 정책 메타데이터 — cookie_policy_version 은 gdpr_policy_versions 테이블이 SSoT.
             // 운영자는 직접 입력하지 않고, Material 변경 (카테고리 추가/삭제 등) 시 시스템이 자동 발행.
             'privacy_policy_slug' => [
@@ -707,6 +804,7 @@ class Plugin extends AbstractPlugin
     public function getHookListeners(): array
     {
         return [
+            GdprAnnualNoticeListener::class,
             GdprUserWithdrawListener::class,
             GdprUserDeleteListener::class,
             GdprAuthLogoutListener::class,

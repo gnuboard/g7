@@ -46,7 +46,7 @@
     <div data-ref="board_scraps_content" class="admin-page-content-fluid">
       <responsive on="portable" class="admin-page-content-fluid-compact"/>
       <page-header data-ref="page_header" title="$t:sirsoft-board.admin.scraps.page_title" description="$t:sirsoft-board.admin.scraps.page_description">
-        <button data-ref="refresh_button" class="btn-icon">
+        <button data-ref="refresh_button" type="button" class="btn-icon" aria-label="$t:sirsoft-board.admin.scraps.refresh">
           <on type="click">
             <!-- 새로고침은 보고 있던 목록을 그대로 다시 부르는 것이다 — 페이지/검색/필터를 유지한다 -->
             <navigate path="/admin/boards/scraps" :mergeQuery="true">
@@ -71,185 +71,12 @@
           <span>$t:sirsoft-board.admin.scraps.filters.member_filter_clear</span>
         </button>
       </div>
-      <div data-ref="search_filter_area" class="admin-card">
-        <div data-ref="search_row" class="flex-center flex-row gap-3">
-          <responsive on="portable" class="row-stack">
-            <div data-ref="mobile_search_row" class="flex flex-row gap-2 items-center">
-              <select data-ref="mobile_search_field_select" value="{{_local.searchField || 'all'}}" class="w-24 px-3 py-2 bg-gray-100 dark:bg-gray-700 border-0 rounded-lg text-gray-700 dark:text-gray-200 text-sm font-medium focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400">
-                <options>
-                  <option value="all">$t:sirsoft-board.admin.scraps.search_fields.all</option>
-                  <option value="post_title">$t:sirsoft-board.admin.scraps.search_fields.post_title</option>
-                  <option value="post_content">$t:sirsoft-board.admin.scraps.search_fields.post_content</option>
-                  <option value="board_name">$t:sirsoft-board.admin.scraps.search_fields.board_name</option>
-                  <option value="member">$t:sirsoft-board.admin.scraps.search_fields.member</option>
-                  <option value="author_name">$t:sirsoft-board.admin.scraps.search_fields.author_name</option>
-                </options>
-                <on type="change">
-                  <set-state searchField="{{$event.target.value}}"/>
-                </on>
-              </select>
-              <input data-ref="mobile_search_input" type="text" placeholder="$t:sirsoft-board.admin.scraps.search_placeholder" value="{{_local.searchQuery || ''}}" class="flex-1 min-w-0">
-                <on type="change">
-                  <set-state searchQuery="{{$event.target.value}}"/>
-                </on>
-                <on type="keypress" key="Enter">
-                  <action-ref name="searchBoardScraps"/>
-                </on>
-              </input>
-            </div>
-            <div data-ref="mobile_action_row" class="flex flex-row gap-2 items-center">
-              <select data-ref="mobile_board_filter_select" value="{{_global.scrapBoardFilter !== undefined ? _global.scrapBoardFilter : (query.board_id || '')}}" class="flex-1 min-w-0 px-3 py-2 bg-gray-100 dark:bg-gray-700 border-0 rounded-lg text-gray-700 dark:text-gray-200 text-sm font-medium focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400">
-                  <option value="">$t:sirsoft-board.admin.scraps.filters.board_all</option>
-                  <option data-each="b in {{scrap_boards?.data?.data ?? []}}" value="{{b.id}}">{{b.name}}</option>
-                <on type="change">
-                  <!-- 좁은 화면 판 게시판 필터 — 넓은 화면 판과 같은 전역 값을 쓴다. 담아만 두고 실제 조회는 검색 버튼에서 한 번에 일어난다 -->
-                  <set-state target="global" scrapBoardFilter="{{$event.target.value}}"/>
-                </on>
-              </select>
-              <button data-ref="mobile_advanced_search_toggle" class="flex items-center justify-center gap-2 px-4 py-2 bg-gray-800 dark:bg-gray-700 border-0 rounded-lg text-white dark:text-gray-200 font-medium hover:bg-gray-900 dark:hover:bg-gray-600 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 transition-colors text-sm">
-                <on type="click">
-                  <!-- 좁은 화면 판 고급 검색 열기·닫기 — 넓은 화면 판과 같은 전역 값을 뒤집으므로 두 판이 어긋난 상태로 남지 않는다 -->
-                  <set-state target="global" showAdvancedSearch="{{!_global.showAdvancedSearch}}"/>
-                </on>
-                <span>$t:sirsoft-board.admin.scraps.advanced_search</span>
-                <icon name="{{_global.showAdvancedSearch ? 'chevron-up' : 'chevron-down'}}" class="text-base text-white dark:text-gray-300"/>
-              </button>
-            </div>
-          </responsive>
-          <select data-ref="search_field_select" value="{{_local.searchField || 'all'}}" class="w-32 px-4 py-2.5 bg-gray-100 dark:bg-gray-700 border-0 rounded-xl text-gray-700 dark:text-gray-200 text-sm font-medium focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400">
-            <options>
-              <option value="all">$t:sirsoft-board.admin.scraps.search_fields.all</option>
-              <option value="post_title">$t:sirsoft-board.admin.scraps.search_fields.post_title</option>
-              <option value="post_content">$t:sirsoft-board.admin.scraps.search_fields.post_content</option>
-              <option value="board_name">$t:sirsoft-board.admin.scraps.search_fields.board_name</option>
-              <option value="member">$t:sirsoft-board.admin.scraps.search_fields.member</option>
-              <option value="author_name">$t:sirsoft-board.admin.scraps.search_fields.author_name</option>
-            </options>
-            <on type="change">
-              <set-state searchField="{{$event.target.value}}"/>
-            </on>
-          </select>
-          <input data-ref="search_input" type="text" placeholder="$t:sirsoft-board.admin.scraps.search_placeholder" value="{{_local.searchQuery || ''}}" class="flex-1 min-w-0">
-            <on type="change">
-              <set-state searchQuery="{{$event.target.value}}"/>
-            </on>
-            <on type="keypress" key="Enter">
-              <action-ref name="searchBoardScraps"/>
-            </on>
-          </input>
-          <select data-ref="board_filter_select" value="{{_global.scrapBoardFilter !== undefined ? _global.scrapBoardFilter : (query.board_id || '')}}" class="w-44 px-4 py-2.5 bg-gray-100 dark:bg-gray-700 border-0 rounded-xl text-gray-700 dark:text-gray-200 text-sm font-medium focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400">
-              <option value="">$t:sirsoft-board.admin.scraps.filters.board_all</option>
-              <option data-each="b in {{scrap_boards?.data?.data ?? []}}" value="{{b.id}}">{{b.name}}</option>
-            <on type="change">
-              <!-- 게시판 필터를 담아 둔다 — 검색 버튼이 이 값을 URL 로 옮긴다 -->
-              <set-state target="global" scrapBoardFilter="{{$event.target.value}}"/>
-            </on>
-          </select>
-          <button data-ref="advanced_search_toggle" class="flex-center gap-2 px-4 py-2.5 bg-gray-800 dark:bg-gray-700 border-0 rounded-xl text-white dark:text-gray-200 font-medium hover:bg-gray-900 dark:hover:bg-gray-600 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 transition-colors text-sm">
-            <on type="click">
-              <!-- 넓은 화면 판 고급 검색 열기·닫기 — 화면 표시일 뿐이라 URL 에 남기지 않는다(새로고침하면 접힌 채로 시작한다) -->
-              <set-state target="global" showAdvancedSearch="{{!_global.showAdvancedSearch}}"/>
-            </on>
-            <span>$t:sirsoft-board.admin.scraps.advanced_search</span>
-            <icon name="{{_global.showAdvancedSearch ? 'chevron-up' : 'chevron-down'}}" class="text-base text-white dark:text-gray-300"/>
-          </button>
-        </div>
-        <div>
-          <div data-ref="advanced_filters" data-if="{{_global.showAdvancedSearch}}" class="row-stack mt-4">
-            <div data-ref="date_filter_row" class="flex-start gap-3">
-              <responsive on="portable" class="row-stack"/>
-              <span class="text-tertiary font-medium w-20 shrink-0 pt-2">$t:sirsoft-board.admin.scraps.filters.scrapped_at_label</span>
-              <div class="flex-center flex-wrap gap-2">
-                <input data-ref="date_from" type="date" value="{{_global.dateFrom !== undefined ? _global.dateFrom : (query.scrapped_at_from || '')}}" class="rounded">
-                  <on type="change">
-                    <!-- 시작 날짜를 직접 고르면 옆의 빠른 선택 표시를 끈다 — 「최근 1주」로 채운 값을 손으로 고친 뒤에도 그 배지가 켜져 있으면 화면이 거짓말을 한다 -->
-                    <set-state target="global" dateFrom="{{$event.target.value}}" dateQuick=""/>
-                  </on>
-                </input>
-                <span class="text-label-subtle">~</span>
-                <input data-ref="date_to" type="date" value="{{_global.dateTo !== undefined ? _global.dateTo : (query.scrapped_at_to || '')}}" class="rounded">
-                  <on type="change">
-                    <!-- 끝 날짜도 같은 이유로 빠른 선택 표시를 끈다 -->
-                    <set-state target="global" dateTo="{{$event.target.value}}" dateQuick=""/>
-                  </on>
-                </input>
-                <div data-ref="date_quick_buttons" class="flex flex-wrap gap-1">
-                  <div class="{{_global.dateQuick === 'today' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
-                    <on type="click">
-                      <!-- 오늘 하루 — 시작·끝을 같은 날로 채운다. 여섯 버튼 모두 날짜 두 칸을 대신 채워 줄 뿐이라 실제 조회는 검색 버튼에서 일어난다 -->
-                      <set-state target="global" dateQuick="today" dateFrom="{{new Date().toISOString().slice(0, 10)}}" dateTo="{{new Date().toISOString().slice(0, 10)}}"/>
-                    </on>
-                    $t:sirsoft-board.admin.scraps.filters.date_quick_today
-                  </div>
-                  <div class="{{_global.dateQuick === '3days' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
-                    <on type="click">
-                      <!-- 최근 3일 — 오늘을 포함해 세 날이므로 이틀을 뺀다 -->
-                      <set-state target="global" dateQuick="3days" dateFrom="{{(() => { const d = new Date(); d.setDate(d.getDate() - 2); return d.toISOString().slice(0, 10); })()}}" dateTo="{{new Date().toISOString().slice(0, 10)}}"/>
-                    </on>
-                    $t:sirsoft-board.admin.scraps.filters.date_quick_3days
-                  </div>
-                  <div class="{{_global.dateQuick === 'week' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
-                    <on type="click">
-                      <!-- 최근 1주 — 오늘 포함 7일이라 엿새를 뺀다 -->
-                      <set-state target="global" dateQuick="week" dateFrom="{{(() => { const d = new Date(); d.setDate(d.getDate() - 6); return d.toISOString().slice(0, 10); })()}}" dateTo="{{new Date().toISOString().slice(0, 10)}}"/>
-                    </on>
-                    $t:sirsoft-board.admin.scraps.filters.date_quick_week
-                  </div>
-                  <div class="{{_global.dateQuick === 'month' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
-                    <on type="click">
-                      <!-- 최근 1개월 — 날수가 아니라 달을 하나 뺀 같은 날짜다(말일이면 브라우저가 다음 달로 넘긴다) -->
-                      <set-state target="global" dateQuick="month" dateFrom="{{(() => { const d = new Date(); d.setMonth(d.getMonth() - 1); return d.toISOString().slice(0, 10); })()}}" dateTo="{{new Date().toISOString().slice(0, 10)}}"/>
-                    </on>
-                    $t:sirsoft-board.admin.scraps.filters.date_quick_month
-                  </div>
-                  <div class="{{_global.dateQuick === '3months' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
-                    <on type="click">
-                      <!-- 최근 3개월 — 달 셋을 뺀 같은 날짜 -->
-                      <set-state target="global" dateQuick="3months" dateFrom="{{(() => { const d = new Date(); d.setMonth(d.getMonth() - 3); return d.toISOString().slice(0, 10); })()}}" dateTo="{{new Date().toISOString().slice(0, 10)}}"/>
-                    </on>
-                    $t:sirsoft-board.admin.scraps.filters.date_quick_3months
-                  </div>
-                  <div class="{{_global.dateQuick === 'all' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
-                    <on type="click">
-                      <!-- 기간 제한 없음 — 두 칸을 «빈 값»으로 둔다(손대지 않은 상태와 달라서, 검색 시 URL 의 기존 날짜를 잇지 않고 지운다) -->
-                      <set-state target="global" dateQuick="all" dateFrom="" dateTo=""/>
-                    </on>
-                    $t:sirsoft-board.admin.scraps.filters.date_quick_all
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div data-ref="search_buttons" class="flex justify-center gap-2 mt-4">
-          <responsive on="portable" class="grid grid-cols-2 gap-2 mt-4"/>
-          <button data-ref="reset_button" class="px-4 py-2 bg-white dark:bg-gray-800 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors font-medium">
-            <responsive on="portable" class="w-full px-4 py-2 bg-white dark:bg-gray-800 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors font-medium"/>
-            <on type="click">
-              <!-- 초기화 ①  검색 대상과 검색어를 지역 상태에서 비운다 -->
-              <set-state searchField="all" searchQuery=""/>
-            </on>
-            <on type="click">
-              <!-- 초기화 ②  게시판·날짜·선택을 전역에서 비운다 — 이것을 먼저 하지 않으면 URL 만 털리고 화면의 셀렉트·날짜·체크가 남는다 -->
-              <set-state target="global" scrapBoardFilter="" dateFrom="" dateTo="" dateQuick="" :selectedIds="[]"/>
-            </on>
-            <on type="click">
-              <!-- audit:allow layout-list-context-navigate-merge-query 초기화 버튼 — 목록 상태를 전부 비우는 것이 이 버튼의 목적이므로 병합하지 않는다. 회원 필터도 함께 떨어진다 -->
-              <navigate path="/admin/boards/scraps" :mergeQuery="false"/>
-            </on>
-            <span>$t:sirsoft-board.admin.scraps.reset</span>
-          </button>
-          <button data-ref="search_button" class="px-4 py-2 bg-gray-800 dark:bg-gray-600 text-white rounded-lg hover:bg-gray-900 dark:hover:bg-gray-500 transition-colors text-sm font-medium">
-            <responsive on="portable" class="w-full px-4 py-2 bg-gray-800 dark:bg-gray-600 text-white rounded-lg hover:bg-gray-900 dark:hover:bg-gray-500 transition-colors text-sm font-medium"/>
-            <on type="click">
-              <!-- 검색 실행 — 조립은 명명 액션 한 자리에 있고 여기서는 그것을 부르기만 한다(엔터 입력 두 자리와 같은 규칙을 쓰기 위해서다) -->
-              <action-ref name="searchBoardScraps"/>
-            </on>
-            <span>$t:sirsoft-board.admin.scraps.search</span>
-          </button>
-        </div>
-      </div>
-      <div data-ref="bulk_actions_area" class="bulk-actions-bar">
+      <include src="partials/admin_board_scraps_index/_partial_filter.g7.html"/>
+      <!-- 일괄 처리 줄은 **항상 세운다** — 저장소의 관리자 목록 21곳이 그렇게 하고, 버튼만
+        잠가 둔다. 고를 것이 있다는 사실 자체를 먼저 알려야 하고, 골랐다 풀 때마다 줄이
+        생겼다 사라지면 그 아래 표가 위아래로 흔들린다. 노출 여부는 권한으로 가른다
+        (형제 화면 회원 목록과 같은 규칙). -->
+      <div data-ref="bulk_actions_area" data-if="{{scraps?.data?.abilities?.can_manage === true}}" class="bulk-actions-bar">
         <span data-ref="selected_count" class="text-body font-medium">$t:sirsoft-board.admin.scraps.selected_count|count={{(_global.selectedIds || []).length}}</span>
         <div data-ref="bulk_buttons" class="flex gap-2 ml-auto">
           <button data-ref="bulk_delete" data-testid="admin-scrap-bulk-delete" class="px-3 py-1.5 bg-red-600 text-white rounded hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors" disabled="{{scraps?.data?.abilities?.can_manage !== true || !_global.selectedIds || _global.selectedIds.length === 0}}">
@@ -261,23 +88,44 @@
           </button>
         </div>
       </div>
-      <data-grid data-ref="scraps_data_grid" :data-blur-until-loaded="true" data="{{scraps?.data?.data}}" :sortable="true" sortField="created_at" sortDirection="{{query.sort_order || 'desc'}}" :pagination="true" :alwaysShowPagination="true" :pageSize="20" :serverSidePagination="true" serverCurrentPage="{{scraps?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{scraps?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{scraps?.data?.pagination?.has_more_pages ?? false}}" selectable="{{scraps?.data?.abilities?.can_manage === true}}" selectionScope="page" selectedIds="{{_global.selectedIds || []}}" idField="id" :showColumnSelector="false" :responsiveBreakpoint="768" :showFirstLast="true" emptyMessage="$t:common.no_data" actionsColumnHeader="$t:common.actions" selectedCountText="">
+      <!-- 건수 줄 — 형제 관리자 목록과 같은 자리. 필터를 걸었을 때 몇 건이 남았는지 표를 세지 않고 안다. -->
+      <div data-ref="table_header_bar" class="flex-between flex-wrap gap-3 mb-4">
+        <span class="text-label">$t:sirsoft-board.admin.scraps.total_count|count={{scraps?.data?.pagination?.total ?? 0}}</span>
+      </div>
+      <data-grid data-ref="scraps_data_grid" :data-blur-until-loaded="true" data="{{scraps?.data?.data}}" :sortable="true" sortField="created_at" sortDirection="{{query.sort_order || 'desc'}}" :pagination="true" :alwaysShowPagination="true" :pageSize="20" :serverSidePagination="true" serverCurrentPage="{{scraps?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{scraps?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{scraps?.data?.pagination?.has_more_pages ?? false}}" selectable="{{scraps?.data?.abilities?.can_manage === true}}" selectionScope="page" selectedIds="{{_global.selectedIds || []}}" idField="id" :showColumnSelector="false" :responsiveBreakpoint="768" :showFirstLast="true" emptyMessage="$t:sirsoft-board.admin.scraps.table_empty" actionsColumnHeader="$t:common.actions" selectedCountText="">
         <column field="created_at" header="$t:sirsoft-board.admin.scraps.columns.scrapped_at" :sortable="true">
           <cell>
-            <span class="text-sm text-gray-900 dark:text-white">{{row.scrapped_at}}</span>
+            <!-- 스크랩 시각도 반응 관리와 같은 규약으로 초까지 밝힌다 — 「2시간 전」 상대 표기는 정리 대상을
+                 고를 때 선후를 가리지 못한다. 저장은 UTC, `created_at` 이 회원 표시 시간대로 환산된 값이다. -->
+            <span class="text-sm text-gray-900 dark:text-white whitespace-nowrap">{{row.created_at}}</span>
           </cell>
         </column>
         <column field="member" header="$t:sirsoft-board.admin.scraps.columns.member">
           <cell>
             <div class="flex flex-col">
               <div class="flex-center gap-2">
-                <span data-if="{{!!row.member?.uuid}}" class="text-heading cursor-pointer hover:underline">
-                  <on type="click">
-                    <!-- 회원 이름을 누르면 그 회원 상세로 간다 — 스크랩을 지우기 전에 "누구인가" 를 확인하는 자리다 -->
-                    <navigate path="/admin/users/{{row.member?.uuid}}"/>
+                <action-menu data-if="{{!!row.member?.uuid}}" position="right">
+                  <prop name="items">
+                    <item id="view_member" label="$t:sirsoft-board.admin.scraps.cell.view_member" iconName="user"/>
+                    <item id="search_member" label="$t:sirsoft-board.admin.scraps.cell.search_member" iconName="magnifying-glass"/>
+                  </prop>
+                  <on event="onItemClick">
+                    <!-- 반응 관리와 같은 두 갈래 — 상세는 새 창(이 목록의 검색 조건 보존), 「이 회원으로 검색」은
+                         같은 창에서 회원 조건만 갈아끼운다(user_uuid — 목록이 이미 읽는 필터). -->
+                    <switch>
+                      <case when="view_member">
+                        <open-window path="/admin/users/{{row.member?.uuid}}"/>
+                      </case>
+                      <case when="search_member">
+                        <navigate path="/admin/boards/scraps" :mergeQuery="true" :replace="true">
+                          <query user_uuid="{{row.member?.uuid}}" :page="1"/>
+                        </navigate>
+                      </case>
+                    </switch>
                   </on>
-                  {{row.member?.name}}
-                </span>
+                  <span class="text-heading cursor-pointer hover:underline">{{row.member?.name}}</span>
+                </action-menu>
+                <span data-if="{{!row.member?.uuid}}" class="text-heading">{{row.member?.name}}</span>
                 <badge data-if="{{row.member?.is_withdrawn}}" color="gray" size="sm">$t:sirsoft-board.admin.scraps.badges.withdrawn</badge>
               </div>
               <span data-if="{{row.member?.email}}" class="text-tertiary">({{row.member?.email}})</span>
@@ -386,9 +234,11 @@
         </button>
         <button class="px-4 py-2 bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.scrapDeleteLoading}}">
           <on type="click">
+            <!-- 확인 버튼을 먼저 잠근다 — 응답이 늦는 사이 두 번 눌리면 같은 삭제가 겹친다 -->
             <set-state target="global" :scrapDeleteLoading="true"/>
           </on>
           <on type="click">
+            <!-- 스크랩 단건 삭제 — 성공하면 선택 목록에서 그 ID 를 빼고 목록을 다시 받는다. 실패 사유는 오류 모달에 싣는다 -->
             <api-call :auth_required="true" target="/api/modules/sirsoft-board/admin/scraps/{{_global.deleteTarget?.id}}" method="DELETE">
               <success>
                 <set-state target="global" :scrapDeleteLoading="false"/>

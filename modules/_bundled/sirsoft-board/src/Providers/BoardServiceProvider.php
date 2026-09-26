@@ -5,6 +5,8 @@ namespace Modules\Sirsoft\Board\Providers;
 use App\Extension\BaseModuleServiceProvider;
 use App\Seo\SitemapGenerator;
 use Modules\Sirsoft\Board\Console\Commands\AggregateBoardStatsCommand;
+use Modules\Sirsoft\Board\Console\Commands\PlaywrightSeedBoardReaction;
+use Modules\Sirsoft\Board\Console\Commands\PlaywrightSeedBoardRetention;
 use Modules\Sirsoft\Board\Console\Commands\PlaywrightSeedBoardScrap;
 use Modules\Sirsoft\Board\Console\Commands\PruneAttachmentsCommand;
 use Modules\Sirsoft\Board\Repositories\AttachmentRepository;
@@ -19,10 +21,14 @@ use Modules\Sirsoft\Board\Repositories\Contracts\BoardTypeRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\CommentRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\PostRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\PostScrapRepositoryInterface;
+use Modules\Sirsoft\Board\Repositories\Contracts\ReactionRepositoryInterface;
+use Modules\Sirsoft\Board\Repositories\Contracts\ReactionTypeRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\ReportRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\UserNotificationSettingRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\PostRepository;
 use Modules\Sirsoft\Board\Repositories\PostScrapRepository;
+use Modules\Sirsoft\Board\Repositories\ReactionRepository;
+use Modules\Sirsoft\Board\Repositories\ReactionTypeRepository;
 use Modules\Sirsoft\Board\Repositories\ReportRepository;
 use Modules\Sirsoft\Board\Repositories\UserNotificationSettingRepository;
 use Modules\Sirsoft\Board\Seo\BoardSitemapContributor;
@@ -82,6 +88,8 @@ class BoardServiceProvider extends BaseModuleServiceProvider
         CommentRepositoryInterface::class => CommentRepository::class,
         PostRepositoryInterface::class => PostRepository::class,
         PostScrapRepositoryInterface::class => PostScrapRepository::class,
+        ReactionRepositoryInterface::class => ReactionRepository::class,
+        ReactionTypeRepositoryInterface::class => ReactionTypeRepository::class,
         ReportRepositoryInterface::class => ReportRepository::class,
         UserNotificationSettingRepositoryInterface::class => UserNotificationSettingRepository::class,
     ];
@@ -94,6 +102,8 @@ class BoardServiceProvider extends BaseModuleServiceProvider
     protected array $commands = [
         AggregateBoardStatsCommand::class,
         // E2E·실측 시드 — 3중 가드(CLI · G7_PLAYWRIGHT_BYPASS · APP_DEBUG)가 커맨드 안에 있다.
+        PlaywrightSeedBoardReaction::class,
+        PlaywrightSeedBoardRetention::class,
         PlaywrightSeedBoardScrap::class,
         PruneAttachmentsCommand::class,
     ];

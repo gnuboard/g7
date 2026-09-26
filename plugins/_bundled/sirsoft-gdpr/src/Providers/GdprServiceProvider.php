@@ -5,10 +5,13 @@ namespace Plugins\Sirsoft\Gdpr\Providers;
 use App\Extension\BasePluginServiceProvider;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Plugins\Sirsoft\Gdpr\Console\Commands\PlaywrightSeedGdprGuestLogin;
+use Plugins\Sirsoft\Gdpr\Console\Commands\SendAnnualNotices;
 use Plugins\Sirsoft\Gdpr\Repositories\Contracts\GdprPolicyVersionRepositoryInterface;
+use Plugins\Sirsoft\Gdpr\Repositories\Contracts\GdprPrivacyNoticeRepositoryInterface;
 use Plugins\Sirsoft\Gdpr\Repositories\Contracts\GdprUserConsentHistoryRepositoryInterface;
 use Plugins\Sirsoft\Gdpr\Repositories\Contracts\GdprUserConsentRepositoryInterface;
 use Plugins\Sirsoft\Gdpr\Repositories\GdprPolicyVersionRepository;
+use Plugins\Sirsoft\Gdpr\Repositories\GdprPrivacyNoticeRepository;
 use Plugins\Sirsoft\Gdpr\Repositories\GdprUserConsentHistoryRepository;
 use Plugins\Sirsoft\Gdpr\Repositories\GdprUserConsentRepository;
 
@@ -30,6 +33,7 @@ class GdprServiceProvider extends BasePluginServiceProvider
     protected string $pluginIdentifier = 'sirsoft-gdpr';
 
     protected array $repositories = [
+        GdprPrivacyNoticeRepositoryInterface::class => GdprPrivacyNoticeRepository::class,
         GdprUserConsentRepositoryInterface::class => GdprUserConsentRepository::class,
         GdprUserConsentHistoryRepositoryInterface::class => GdprUserConsentHistoryRepository::class,
         GdprPolicyVersionRepositoryInterface::class => GdprPolicyVersionRepository::class,
@@ -52,6 +56,7 @@ class GdprServiceProvider extends BasePluginServiceProvider
 
         if ($this->app->runningInConsole()) {
             $this->commands([
+                SendAnnualNotices::class,
                 PlaywrightSeedGdprGuestLogin::class,
             ]);
         }

@@ -5,6 +5,7 @@ namespace Modules\Sirsoft\Board;
 use App\Extension\AbstractModule;
 use App\Models\Role;
 use App\Seo\Concerns\LocalizesSeoValues;
+use App\Services\AttachmentService;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Schema;
 use Modules\Sirsoft\Board\Database\Seeders\BoardTypeSeeder;
@@ -20,10 +21,12 @@ use Modules\Sirsoft\Board\Listeners\EcommerceInquiryHookListener;
 use Modules\Sirsoft\Board\Listeners\PostAttachmentCountSyncListener;
 use Modules\Sirsoft\Board\Listeners\PostCountSyncListener;
 use Modules\Sirsoft\Board\Listeners\PostReplySyncListener;
+use Modules\Sirsoft\Board\Listeners\PrivacyRetentionHandlerListener;
 use Modules\Sirsoft\Board\Listeners\SearchPostsListener;
 use Modules\Sirsoft\Board\Listeners\SeoBoardCacheListener;
 use Modules\Sirsoft\Board\Listeners\SeoBoardSettingsCacheListener;
 use Modules\Sirsoft\Board\Listeners\UserNotificationSettingsListener;
+use Modules\Sirsoft\Board\Listeners\UserReactionInfoListener;
 use Modules\Sirsoft\Board\Listeners\UserScrapInfoListener;
 use Modules\Sirsoft\Board\Models\Board;
 
@@ -55,6 +58,11 @@ class Module extends AbstractModule
                     $role->delete();
                 }
             });
+
+        // 반응 유형 아이콘 첨부 정리 — source_identifier 가 붙은 첨부는 코어 고아 정리
+        // 대상이 아니므로(정리 대상은 source_identifier 가 NULL 인 행뿐) 여기서 지우지
+        // 않으면 모듈을 지운 뒤에도 파일과 attachments 행이 남는다.
+        app(AttachmentService::class)->deleteBySourceIdentifier('sirsoft-board');
 
         return parent::uninstall();
     }
@@ -368,6 +376,48 @@ class Module extends AbstractModule
                         ],
                     ],
                 ],
+                // 반응 관리 권한 (type: admin) — 스크랩과 동형
+                [
+                    'identifier' => 'reactions',
+                    'resource_route_key' => 'reaction',
+                    'owner_key' => 'user_id',
+                    'name' => [
+                        'ko' => '게시글 반응 관리',
+                        'en' => 'Reaction Management',
+                    ],
+                    'description' => [
+                        'ko' => '전 회원 게시글·댓글 반응 조회·삭제 권한',
+                        'en' => 'View and delete post/comment reactions across all members',
+                    ],
+                    'permissions' => [
+                        [
+                            'action' => 'view',
+                            'name' => [
+                                'ko' => '반응 조회',
+                                'en' => 'View Reactions',
+                            ],
+                            'description' => [
+                                'ko' => '전 회원 반응 목록 조회',
+                                'en' => 'View reaction list across all members',
+                            ],
+                            'type' => 'admin',
+                            'roles' => ['admin', 'manager'],
+                        ],
+                        [
+                            'action' => 'manage',
+                            'name' => [
+                                'ko' => '반응 삭제',
+                                'en' => 'Delete Reactions',
+                            ],
+                            'description' => [
+                                'ko' => '회원 반응 개별·일괄 삭제',
+                                'en' => 'Delete member reactions individually or in bulk',
+                            ],
+                            'type' => 'admin',
+                            'roles' => ['admin'],
+                        ],
+                    ],
+                ],
             ],
         ];
     }
@@ -498,6 +548,8 @@ class Module extends AbstractModule
             BoardCommentsCountSyncListener::class,
             Ckeditor5ReferenceSourcesListener::class,
             UserScrapInfoListener::class,
+            UserReactionInfoListener::class,
+            PrivacyRetentionHandlerListener::class,
         ];
     }
 
@@ -780,6 +832,17 @@ class Module extends AbstractModule
                         'icon' => 'fas fa-bookmark',
                         'order' => 4,
                         'permission' => 'sirsoft-board.scraps.view',
+                    ],
+                    [
+                        'name' => [
+                            'ko' => '반응 관리',
+                            'en' => 'Reaction Management',
+                        ],
+                        'slug' => 'sirsoft-board-reactions',
+                        'url' => '/admin/boards/reactions',
+                        'icon' => 'fas fa-thumbs-up',
+                        'order' => 5,
+                        'permission' => 'sirsoft-board.reactions.view',
                     ],
                 ],
             ],

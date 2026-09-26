@@ -81,7 +81,7 @@
 | `database/migrations/` | 마이그레이션 | 한국어 comment + `down()` 필수, 기설치본은 업그레이드 스텝으로 백필 |
 | `database/seeders/` | 시더 | composer autoload 등록 + `extension:update-autoload` |
 | `upgrades/` | 업그레이드 스텝 | DB·설정 구조 변경 시 작성 (모듈/플러그인 전용) |
-| `resources/layouts/` | 레이아웃 JSON | `php artisan module:update sirsoft-ecommerce --force` (빌드 불필요) |
+| `resources/layouts/` | 레이아웃 소스 `.g7.html` (짝 `.json` 은 굽기 산출) | `php artisan module:update sirsoft-ecommerce --force` (빌드 불필요) |
 | `resources/routes/` | 라우트 → 레이아웃 매핑 (분할) | `php artisan module:update sirsoft-ecommerce --force` |
 | `resources/js/` | 프론트 엔트리·핸들러 | `php artisan module:build` → `php artisan module:update sirsoft-ecommerce --force` |
 | `resources/extensions/` | 다른 확장 레이아웃에 주입하는 조각 | `php artisan module:update sirsoft-ecommerce --force` |
@@ -132,9 +132,9 @@ FormRequest → `CheckoutDataService`(주문서에 필요한 배송지·쿠폰·
 <!-- @generated:extension-points-summary START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 확장점 | 수 | 상세 |
 |---|---|---|
-| 발행 훅 | 518개 | [발행 훅](docs/extension-points.md#발행-훅) |
-| 구독 훅 | 147개 | [구독 훅](docs/extension-points.md#구독-훅) |
-| 훅 리스너 | 34개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
+| 발행 훅 | 521개 | [발행 훅](docs/extension-points.md#발행-훅) |
+| 구독 훅 | 149개 | [구독 훅](docs/extension-points.md#구독-훅) |
+| 훅 리스너 | 35개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
 | 레이아웃 확장 | 13개 | [레이아웃 확장](docs/extension-points.md#레이아웃-확장) |
 | 미들웨어 | 3개 | [미들웨어](docs/extension-points.md#미들웨어) |
 | 브로드캐스트 채널 | 0개 | [브로드캐스트 채널](docs/extension-points.md#브로드캐스트-채널) |
@@ -170,13 +170,14 @@ CRUD 를 바꾸고 싶으면 이 4종 중 하나를 잡으면 되고, 이 모듈
 
 ## 5. 수정 시 동반 의무
 
+- [ ] 새 `.g7.html` 을 만들었다면 저작 트랙 종료 게이트(`LayoutMarkup` PHPUnit 스위트)의 코퍼스 목록에 등재하고, 파일 헤더·데이터소스·모달·액션 블록 주석(S21, `docs/frontend/layout-markup.md` §10.5)을 채운다 — 굽기·왕복이 초록이어도 이 스위트만 미등재·미주석을 잡는다(2026-09-17 develop-7.1.0 2차 병합 전수 보존 검사에서 이 확장의 미등재 레이아웃이 red)
 - [ ] `_bundled` 에서만 수정하고 `php artisan module:update sirsoft-ecommerce --force` 로 반영
 - [ ] manifest version 상향 시 `package.json` · `package-lock.json` · `composer.json` 동기화 + CHANGELOG 기재
 - [ ] 스키마 변경 시 마이그레이션(한국어 comment + `down()`) + 기설치본 백필용 업그레이드 스텝
 - [ ] 업그레이드 스텝·데이터 마이그레이션이 설정 파일을 새로 쓰면(`File::put`) 바로 뒤에 `FilePermissionHelper::inheritOwnershipFromParent($path)` — `sudo` 코어 업데이트 안에서 root 로 실행되어 그 파일이 root 소유로 남으면 이후 웹 프로세스의 설정 저장이 영구 실패한다. 번들 확장 `upgrades/**` 전수를 파일시스템에서 파생해 검사하는 패리티 테스트가 누락을 잡는다
 - [ ] 발행 훅 추가·이름 변경 시 `php artisan ext:docgen` 재실행 (구독하는 확장의 계약이 바뀝니다)
 - [ ] API 표면 변경 시 `php artisan api:docgen --scope=module:sirsoft-ecommerce` 재실행 + `docs/api/**` 갱신
-- [ ] 레이아웃 JSON 변경 시 빌드 없이 update 만 — 신규 Tailwind 클래스는 빌드된 CSS 에 존재하는지 확인
+- [ ] 레이아웃은 `.g7.html` 을 고치고 `php artisan layout:decompile <경로> --sync` 로 짝 `.json` 을 다시 굽는다 (짝을 굽지 않으면 화면에 반영되지 않음) — 빌드 없이 update 만, 신규 Tailwind 클래스는 빌드된 CSS 에 존재하는지 확인
 - [ ] TSX/TS 변경 시 `--production` 재빌드 후 `dist/` 커밋 (sourceMappingURL 잔존 금지)
 - [ ] 다국어 키 추가 시 ko·en 동시 반영 + 번들 ja 언어팩 증분 동기화
 - [ ] 금액 계산 경로를 건드렸다면 여섯 소비 지점(상품 상세·장바구니·체크아웃·주문 생성·결제 검증·부분 취소)에 같은 결과가 도달하는지 확인
@@ -187,6 +188,7 @@ CRUD 를 바꾸고 싶으면 이 4종 중 하나를 잡으면 되고, 이 모듈
 - [ ] 결제수단·PG 관련 선언을 바꾸면 기설치본 `order_settings.json` 을 정정하는 업그레이드 스텝 동반 (자기 접두사만, 멱등)
 - [ ] 새 관리자 화면을 추가하면 그 화면의 권한(`getPermissions()`)·메뉴(`getAdminMenus()`)·라우트 이름이 서로 가리키는 대상이 일치하는지 확인
 - [ ] 레이아웃·컴포넌트·`data_source` 를 건드렸다면 [`docs/editor-spec.md`](docs/editor-spec.md) 의 동반 의무 표를 따라 `editor-spec.json` 을 함께 갱신 — 샘플이 없는 `data_source` 는 편집기 캔버스에서만 빈 화면이 되고 실제 화면은 정상이라 오류도 경고도 남지 않는다. 반영은 `php artisan module:update sirsoft-ecommerce --force`
+- [ ] 개인정보 보유기간 핸들러(`src/Privacy/`)를 고칠 때는 건수(`preview()`)·대상 명단(`targets()`)·실행(`process()`)이 **같은 조건식**을 쓰는지, 명단 권한(`targetPermissions()` = 설정 읽기 + 주문 읽기)을 지키는지, 명단 행을 코어 값 객체 `App\Privacy\DTO\PrivacyRetentionTarget` 로 내는지 확인 — 계약 전체는 [코어 개인정보 보유기간 처리 가이드](../../../docs/backend/privacy-retention.md)
 
 ## 6. 금지 패턴
 
@@ -210,10 +212,10 @@ CRUD 를 바꾸고 싶으면 이 4종 중 하나를 잡으면 되고, 이 모듈
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 412개 | `modules/_bundled/sirsoft-ecommerce/tests` |
-| Vitest | 149개 | `vitest.config.ts` |
-| Playwright | 43개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 99개 | `tests/scenarios` |
+| PHPUnit | 414개 | `modules/_bundled/sirsoft-ecommerce/tests` |
+| Vitest | 151개 | `vitest.config.ts` |
+| Playwright | 44개 | `tests/Playwright` |
+| 시나리오 매니페스트 | 101개 | `tests/scenarios` |
 
 기저 TestCase: `tests/ModuleTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

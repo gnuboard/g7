@@ -63,18 +63,60 @@
         "language_currency": {
           "default_currency": "KRW",
           "currencies": [
-            { "code": "KRW", "symbol": "₩", "flag": "🇰🇷", "exchange_rate": 1, "is_default": true },
-            { "code": "USD", "symbol": "$", "flag": "🇺🇸", "exchange_rate": 0.00073, "is_default": false },
-            { "code": "JPY", "symbol": "¥", "flag": "🇯🇵", "exchange_rate": 0.11, "is_default": false }
+            {
+              "code": "KRW",
+              "symbol": "₩",
+              "flag": "🇰🇷",
+              "exchange_rate": 1,
+              "is_default": true
+            },
+            {
+              "code": "USD",
+              "symbol": "$",
+              "flag": "🇺🇸",
+              "exchange_rate": 0.00073,
+              "is_default": false
+            },
+            {
+              "code": "JPY",
+              "symbol": "¥",
+              "flag": "🇯🇵",
+              "exchange_rate": 0.11,
+              "is_default": false
+            }
           ]
         },
         "shipping": {
           "international_shipping_enabled": true,
           "default_country": "KR",
           "available_countries": [
-            { "code": "KR", "name": { "ko": "대한민국", "en": "South Korea", "ja": "韓国" }, "is_active": true },
-            { "code": "US", "name": { "ko": "미국", "en": "United States", "ja": "アメリカ" }, "is_active": true },
-            { "code": "JP", "name": { "ko": "일본", "en": "Japan", "ja": "日本" }, "is_active": true }
+            {
+              "code": "KR",
+              "name": {
+                "ko": "대한민국",
+                "en": "South Korea",
+                "ja": "韓国"
+              },
+              "is_active": true
+            },
+            {
+              "code": "US",
+              "name": {
+                "ko": "미국",
+                "en": "United States",
+                "ja": "アメリカ"
+              },
+              "is_active": true
+            },
+            {
+              "code": "JP",
+              "name": {
+                "ko": "일본",
+                "en": "Japan",
+                "ja": "日本"
+              },
+              "is_active": true
+            }
           ]
         }
       }
@@ -83,14 +125,41 @@
     "preferredCurrency": "KRW",
     "preferredShippingCountry": "KR",
     "availableCurrencies": [
-      { "code": "KRW", "symbol": "₩", "flag": "🇰🇷", "exchange_rate": 1, "is_default": true },
-      { "code": "USD", "symbol": "$", "flag": "🇺🇸", "exchange_rate": 0.00073, "is_default": false },
-      { "code": "JPY", "symbol": "¥", "flag": "🇯🇵", "exchange_rate": 0.11, "is_default": false }
+      {
+        "code": "KRW",
+        "symbol": "₩",
+        "flag": "🇰🇷",
+        "exchange_rate": 1,
+        "is_default": true
+      },
+      {
+        "code": "USD",
+        "symbol": "$",
+        "flag": "🇺🇸",
+        "exchange_rate": 0.00073,
+        "is_default": false
+      },
+      {
+        "code": "JPY",
+        "symbol": "¥",
+        "flag": "🇯🇵",
+        "exchange_rate": 0.11,
+        "is_default": false
+      }
     ],
     "availableShippingCountries": [
-      { "code": "KR", "name": "대한민국" },
-      { "code": "US", "name": "미국" },
-      { "code": "JP", "name": "일본" }
+      {
+        "code": "KR",
+        "name": "대한민국"
+      },
+      {
+        "code": "US",
+        "name": "미국"
+      },
+      {
+        "code": "JP",
+        "name": "일본"
+      }
     ],
     "mileageManual": {},
     "mileageEdit": {},
@@ -99,238 +168,238 @@
   "sampleData": {
     "comment": "실제 모듈 레이아웃 data_source ID(admin: products/categories/orders/order/reviews 등) + 사용자 페이지(템플릿이 렌더, /api/modules/sirsoft-ecommerce/* 호출) byEndpointPattern. 계획서 추정과 실제 ID 차이 반영(데이터소스가 SSoT).",
     "byDataSourceId": {
-        "wishlists": {
-            "data": {
-                "data": [
-                    {
-                        "id": 7001,
-                        "member": {
-                            "uuid": "00000000-0000-4000-8000-000000000101",
-                            "name": "김서연",
-                            "email": "seoyeon@example.com",
-                            "is_withdrawn": false
-                        },
-                        "product": {
-                            "id": 9101,
-                            "name": "무선 블루투스 이어폰",
-                            "display_status": "visible",
-                            "display_status_label": "노출",
-                            "sales_status": "on_sale",
-                            "sales_status_label": "판매중"
-                        },
-                        "created_at": "2026-09-12 11:04"
-                    },
-                    {
-                        "id": 7002,
-                        "member": {
-                            "uuid": "00000000-0000-4000-8000-000000000102",
-                            "name": "박지훈",
-                            "email": "jihun@example.com",
-                            "is_withdrawn": false
-                        },
-                        "product": {
-                            "id": 9102,
-                            "name": "한정판 머그컵",
-                            "display_status": "hidden",
-                            "display_status_label": "숨김",
-                            "sales_status": "on_sale",
-                            "sales_status_label": "판매중"
-                        },
-                        "created_at": "2026-09-11 16:40"
-                    },
-                    {
-                        "id": 7003,
-                        "member": {
-                            "uuid": "00000000-0000-4000-8000-000000000103",
-                            "name": "탈퇴한 회원",
-                            "email": null,
-                            "is_withdrawn": true
-                        },
-                        "product": {
-                            "id": 9103,
-                            "name": "캠핑용 랜턴",
-                            "display_status": "visible",
-                            "display_status_label": "노출",
-                            "sales_status": "suspended",
-                            "sales_status_label": "판매중지"
-                        },
-                        "created_at": "2026-09-02 08:12"
-                    }
-                ],
-                "abilities": {
-                    "can_manage": true
-                },
-                "pagination": {
-                    "current_page": 1,
-                    "last_page": 1,
-                    "per_page": 20,
-                    "total": 3,
-                    "from": 1,
-                    "to": 3,
-                    "has_more_pages": false
-                }
+      "wishlists": {
+        "data": {
+          "data": [
+            {
+              "id": 7001,
+              "member": {
+                "uuid": "00000000-0000-4000-8000-000000000101",
+                "name": "김서연",
+                "email": "seoyeon@example.com",
+                "is_withdrawn": false
+              },
+              "product": {
+                "id": 9101,
+                "name": "무선 블루투스 이어폰",
+                "display_status": "visible",
+                "display_status_label": "노출",
+                "sales_status": "on_sale",
+                "sales_status_label": "판매중"
+              },
+              "created_at": "2026-09-12 11:04"
+            },
+            {
+              "id": 7002,
+              "member": {
+                "uuid": "00000000-0000-4000-8000-000000000102",
+                "name": "박지훈",
+                "email": "jihun@example.com",
+                "is_withdrawn": false
+              },
+              "product": {
+                "id": 9102,
+                "name": "한정판 머그컵",
+                "display_status": "hidden",
+                "display_status_label": "숨김",
+                "sales_status": "on_sale",
+                "sales_status_label": "판매중"
+              },
+              "created_at": "2026-09-11 16:40"
+            },
+            {
+              "id": 7003,
+              "member": {
+                "uuid": "00000000-0000-4000-8000-000000000103",
+                "name": "탈퇴한 회원",
+                "email": null,
+                "is_withdrawn": true
+              },
+              "product": {
+                "id": 9103,
+                "name": "캠핑용 랜턴",
+                "display_status": "visible",
+                "display_status_label": "노출",
+                "sales_status": "suspended",
+                "sales_status_label": "판매중지"
+              },
+              "created_at": "2026-09-02 08:12"
             }
-        },
-        "carts": {
-            "data": {
-                "data": [
-                    {
-                        "id": 8001,
-                        "member": {
-                            "uuid": "00000000-0000-4000-8000-000000000101",
-                            "name": "김서연",
-                            "email": "seoyeon@example.com",
-                            "is_withdrawn": false
-                        },
-                        "product": {
-                            "id": 9101,
-                            "name": "무선 블루투스 이어폰",
-                            "display_status": "visible",
-                            "display_status_label": "노출",
-                            "sales_status": "on_sale",
-                            "sales_status_label": "판매중"
-                        },
-                        "option_name": "화이트 / 1개",
-                        "quantity": 1,
-                        "owner": "member",
-                        "guest_key": null,
-                        "created_at": "2026-09-13 09:22"
-                    },
-                    {
-                        "id": 8002,
-                        "member": {
-                            "uuid": "00000000-0000-4000-8000-000000000102",
-                            "name": "박지훈",
-                            "email": "jihun@example.com",
-                            "is_withdrawn": false
-                        },
-                        "product": {
-                            "id": 9102,
-                            "name": "한정판 머그컵",
-                            "display_status": "hidden",
-                            "display_status_label": "숨김",
-                            "sales_status": "on_sale",
-                            "sales_status_label": "판매중"
-                        },
-                        "option_name": null,
-                        "quantity": 3,
-                        "owner": "member",
-                        "guest_key": null,
-                        "created_at": "2026-09-12 19:55"
-                    },
-                    {
-                        "id": 8003,
-                        "member": null,
-                        "product": {
-                            "id": 9103,
-                            "name": "캠핑용 랜턴",
-                            "display_status": "visible",
-                            "display_status_label": "노출",
-                            "sales_status": "suspended",
-                            "sales_status_label": "판매중지"
-                        },
-                        "option_name": "블랙 / 2개",
-                        "quantity": 2,
-                        "owner": "guest",
-                        "guest_key": "a3f6b7c1",
-                        "created_at": "2026-09-12 07:31"
-                    }
-                ],
-                "abilities": {
-                    "can_manage": true
-                },
-                "pagination": {
-                    "current_page": 1,
-                    "last_page": 1,
-                    "per_page": 20,
-                    "total": 3,
-                    "from": 1,
-                    "to": 3,
-                    "has_more_pages": false
-                }
+          ],
+          "abilities": {
+            "can_manage": true
+          },
+          "pagination": {
+            "current_page": 1,
+            "last_page": 1,
+            "per_page": 20,
+            "total": 3,
+            "from": 1,
+            "to": 3,
+            "has_more_pages": false
+          }
+        }
+      },
+      "carts": {
+        "data": {
+          "data": [
+            {
+              "id": 8001,
+              "member": {
+                "uuid": "00000000-0000-4000-8000-000000000101",
+                "name": "김서연",
+                "email": "seoyeon@example.com",
+                "is_withdrawn": false
+              },
+              "product": {
+                "id": 9101,
+                "name": "무선 블루투스 이어폰",
+                "display_status": "visible",
+                "display_status_label": "노출",
+                "sales_status": "on_sale",
+                "sales_status_label": "판매중"
+              },
+              "option_name": "화이트 / 1개",
+              "quantity": 1,
+              "owner": "member",
+              "guest_key": null,
+              "created_at": "2026-09-13 09:22"
+            },
+            {
+              "id": 8002,
+              "member": {
+                "uuid": "00000000-0000-4000-8000-000000000102",
+                "name": "박지훈",
+                "email": "jihun@example.com",
+                "is_withdrawn": false
+              },
+              "product": {
+                "id": 9102,
+                "name": "한정판 머그컵",
+                "display_status": "hidden",
+                "display_status_label": "숨김",
+                "sales_status": "on_sale",
+                "sales_status_label": "판매중"
+              },
+              "option_name": null,
+              "quantity": 3,
+              "owner": "member",
+              "guest_key": null,
+              "created_at": "2026-09-12 19:55"
+            },
+            {
+              "id": 8003,
+              "member": null,
+              "product": {
+                "id": 9103,
+                "name": "캠핑용 랜턴",
+                "display_status": "visible",
+                "display_status_label": "노출",
+                "sales_status": "suspended",
+                "sales_status_label": "판매중지"
+              },
+              "option_name": "블랙 / 2개",
+              "quantity": 2,
+              "owner": "guest",
+              "guest_key": "a3f6b7c1",
+              "created_at": "2026-09-12 07:31"
             }
-        },
-        "inquiries": {
-            "data": {
-                "data": [
-                    {
-                        "id": 6001,
-                        "member": {
-                            "uuid": "00000000-0000-4000-8000-000000000101",
-                            "name": "김서연",
-                            "email": "seoyeon@example.com",
-                            "is_withdrawn": false
-                        },
-                        "product": {
-                            "id": 9101,
-                            "name": "무선 블루투스 이어폰",
-                            "display_status": "visible",
-                            "display_status_label": "노출",
-                            "sales_status": "on_sale",
-                            "sales_status_label": "판매중"
-                        },
-                        "content_excerpt": "색상이 사진과 동일한가요? 실물이 더 어둡다는 후기가 있어서요.",
-                        "is_answered": false,
-                        "answered_at": null,
-                        "created_at": "2026-09-13 13:40"
-                    },
-                    {
-                        "id": 6002,
-                        "member": {
-                            "uuid": "00000000-0000-4000-8000-000000000102",
-                            "name": "박지훈",
-                            "email": "jihun@example.com",
-                            "is_withdrawn": false
-                        },
-                        "product": {
-                            "id": 9102,
-                            "name": "한정판 머그컵",
-                            "display_status": "hidden",
-                            "display_status_label": "숨김",
-                            "sales_status": "on_sale",
-                            "sales_status_label": "판매중"
-                        },
-                        "content_excerpt": "재입고 예정이 있는지 궁금합니다.",
-                        "is_answered": true,
-                        "answered_at": "2026-09-12 10:15",
-                        "created_at": "2026-09-11 22:07"
-                    },
-                    {
-                        "id": 6003,
-                        "member": {
-                            "uuid": "00000000-0000-4000-8000-000000000103",
-                            "name": "탈퇴한 회원",
-                            "email": null,
-                            "is_withdrawn": true
-                        },
-                        "product": {
-                            "id": 9103,
-                            "name": "캠핑용 랜턴",
-                            "display_status": "visible",
-                            "display_status_label": "노출",
-                            "sales_status": "suspended",
-                            "sales_status_label": "판매중지"
-                        },
-                        "content_excerpt": null,
-                        "is_answered": false,
-                        "answered_at": null,
-                        "created_at": "2026-09-01 17:26"
-                    }
-                ],
-                "abilities": {
-                    "can_manage": true
-                },
-                "pagination": {
-                    "current_page": 1,
-                    "last_page": 1,
-                    "per_page": 20,
-                    "total": 3,
-                    "from": 1,
-                    "to": 3,
-                    "has_more_pages": false
-                }
+          ],
+          "abilities": {
+            "can_manage": true
+          },
+          "pagination": {
+            "current_page": 1,
+            "last_page": 1,
+            "per_page": 20,
+            "total": 3,
+            "from": 1,
+            "to": 3,
+            "has_more_pages": false
+          }
+        }
+      },
+      "inquiries": {
+        "data": {
+          "data": [
+            {
+              "id": 6001,
+              "member": {
+                "uuid": "00000000-0000-4000-8000-000000000101",
+                "name": "김서연",
+                "email": "seoyeon@example.com",
+                "is_withdrawn": false
+              },
+              "product": {
+                "id": 9101,
+                "name": "무선 블루투스 이어폰",
+                "display_status": "visible",
+                "display_status_label": "노출",
+                "sales_status": "on_sale",
+                "sales_status_label": "판매중"
+              },
+              "content_excerpt": "색상이 사진과 동일한가요? 실물이 더 어둡다는 후기가 있어서요.",
+              "is_answered": false,
+              "answered_at": null,
+              "created_at": "2026-09-13 13:40"
+            },
+            {
+              "id": 6002,
+              "member": {
+                "uuid": "00000000-0000-4000-8000-000000000102",
+                "name": "박지훈",
+                "email": "jihun@example.com",
+                "is_withdrawn": false
+              },
+              "product": {
+                "id": 9102,
+                "name": "한정판 머그컵",
+                "display_status": "hidden",
+                "display_status_label": "숨김",
+                "sales_status": "on_sale",
+                "sales_status_label": "판매중"
+              },
+              "content_excerpt": "재입고 예정이 있는지 궁금합니다.",
+              "is_answered": true,
+              "answered_at": "2026-09-12 10:15",
+              "created_at": "2026-09-11 22:07"
+            },
+            {
+              "id": 6003,
+              "member": {
+                "uuid": "00000000-0000-4000-8000-000000000103",
+                "name": "탈퇴한 회원",
+                "email": null,
+                "is_withdrawn": true
+              },
+              "product": {
+                "id": 9103,
+                "name": "캠핑용 랜턴",
+                "display_status": "visible",
+                "display_status_label": "노출",
+                "sales_status": "suspended",
+                "sales_status_label": "판매중지"
+              },
+              "content_excerpt": null,
+              "is_answered": false,
+              "answered_at": null,
+              "created_at": "2026-09-01 17:26"
             }
-        },
+          ],
+          "abilities": {
+            "can_manage": true
+          },
+          "pagination": {
+            "current_page": 1,
+            "last_page": 1,
+            "per_page": 20,
+            "total": 3,
+            "from": 1,
+            "to": 3,
+            "has_more_pages": false
+          }
+        }
+      },
       "products": {
         "data": {
           "abilities": {
@@ -2796,8 +2865,8 @@
       },
       "settings": {
         "data": {
-        "available_rate_providers": [],
-        "active_rate_provider": null,
+          "available_rate_providers": [],
+          "active_rate_provider": null,
           "general": {
             "shop_name": "샘플 쇼핑몰",
             "currency": "KRW"
@@ -3884,6 +3953,84 @@
           ],
           "abilities": {
             "can_update": true
+          }
+        }
+      },
+      "ecommercePrivacyRetentionPreview": {
+        "data": {
+          "orders": 42,
+          "enabled": false,
+          "mode": "anonymize",
+          "retention_years": 5,
+          "can_view_targets": true
+        }
+      },
+      "privacyManualRuns": {
+        "data": {
+          "targets": {
+            "retention:sirsoft-ecommerce.order": {
+              "key": "retention:sirsoft-ecommerce.order",
+              "label": "이커머스 종결 주문 개인정보",
+              "can_run": true,
+              "enabled": false,
+              "supports_skip_waiting": false,
+              "run": {
+                "id": 7,
+                "target": "retention:sirsoft-ecommerce.order",
+                "status": "completed",
+                "status_label": "완료",
+                "is_active": false,
+                "skip_waiting": false,
+                "processed_count": 2,
+                "remaining_count": null,
+                "mode": "anonymize",
+                "error": null,
+                "requester_name": "관리자",
+                "queued_at": "2026-09-25 14:02:11",
+                "started_at": "2026-09-25 14:02:12",
+                "finished_at": "2026-09-25 14:02:15"
+              }
+            }
+          },
+          "has_active": false,
+          "finished_since": false,
+          "checked_at": "2026-09-25T14:02:20+09:00"
+        }
+      },
+      "privacyTargets": {
+        "data": {
+          "data": [
+            {
+              "id": 101,
+              "title": "ORD-20200315-0001",
+              "subtitle": "홍길동",
+              "context": "구매확정",
+              "date": "2020-03-20",
+              "url": "/admin/ecommerce/orders/ORD-20200315-0001"
+            },
+            {
+              "id": 102,
+              "title": "ORD-20200402-0007",
+              "subtitle": "김철수",
+              "context": "취소",
+              "date": "2020-04-03",
+              "url": "/admin/ecommerce/orders/ORD-20200402-0007"
+            }
+          ],
+          "columns": {
+            "title": "주문번호",
+            "subtitle": "주문자",
+            "context": "주문 상태",
+            "date": "종결일"
+          },
+          "pagination": {
+            "current_page": 1,
+            "per_page": 20,
+            "from": 1,
+            "to": 2,
+            "has_more_pages": false,
+            "last_page": 1,
+            "total": 2
           }
         }
       },
@@ -8403,7 +8550,7 @@
         ]
       },
       {
-        "comment": "admin 이커머스 설정 — {{_global.activeEcommerceSettingsTab || query.tab || 'basic_info'}} 으로 9개 탭 화면을 if 분기한다(본문 line 303/344~). query.tab + 우선 키 함께 주입.",
+        "comment": "admin 이커머스 설정 — {{_global.activeEcommerceSettingsTab || query.tab || 'basic_info'}} 으로 11개 탭 화면을 if 분기한다(본문 line 303/344~). query.tab + 우선 키 함께 주입.",
         "scope": {
           "kind": "route",
           "match": "*/admin/ecommerce/settings"
@@ -8515,6 +8662,18 @@
               },
               "global": {
                 "activeEcommerceSettingsTab": "identity_policies"
+              }
+            }
+          },
+          {
+            "id": "tab_privacy_retention",
+            "label": "$t:editor.state.tab.privacy_retention",
+            "initialState": {
+              "query": {
+                "tab": "privacy_retention"
+              },
+              "global": {
+                "activeEcommerceSettingsTab": "privacy_retention"
               }
             }
           }
@@ -8641,6 +8800,23 @@
                 }
               }
             }
+          },
+          {
+            "id": "screen_filled",
+            "label": "$t:editor.state.screen_filled",
+            "initialState": {
+              "global": {
+                "issueHistoryCoupon": {
+                  "id": 1
+                },
+                "issueHistoryPage": 1,
+                "issueHistoryFilterUser": {
+                  "uuid": "00000000-0000-4000-8000-000000000031"
+                },
+                "issueHistoryPerPage": 10,
+                "isPortable": true
+              }
+            }
           }
         ]
       },
@@ -8729,6 +8905,2130 @@
                 }
               }
             }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(tempFormForBulkChange) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "bulk_change_modal"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "tempFormForBulkChange": "샘플 값"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(bulkSelectedItems, isBulkDeleting) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "bulk_delete_modal"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "bulkSelectedItems": [],
+                "isBulkDeleting": false
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(bulkSelectedItems, bulkToggleValue, isBulkToggling) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "bulk_toggle_modal"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "bulkSelectedItems": [],
+                "bulkToggleValue": "true",
+                "isBulkToggling": false
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(selectedItem) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "copy_confirm_modal"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "selectedItem": {
+                  "abilities": {
+                    "can_delete": true,
+                    "can_update": true
+                  },
+                  "content": "샘플 설명 문구입니다.",
+                  "content_mode": "sample",
+                  "created_at": "2026-09-19 11:30:00",
+                  "is_active": true,
+                  "is_default": true,
+                  "name": "샘플 제목",
+                  "updated_at": "2026-09-19 11:30:00"
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(targetPolicy) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "copy_modal"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "targetPolicy": {
+                  "countries_display": "샘플 값",
+                  "country_settings": [],
+                  "id": 1,
+                  "name_localized": "샘플 값"
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(deleteModal, isDeleting, modal_data) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "delete_confirm_modal"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "modal_data": {
+                  "brandId": 1,
+                  "brandName": "샘플 제목",
+                  "productsCount": 0,
+                  "templateId": 1,
+                  "templateName": "샘플 제목"
+                },
+                "isDeleting": false,
+                "deleteModal": {
+                  "itemId": 1,
+                  "itemName": "샘플 제목"
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(isDeleting, targetPolicy) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "delete_modal"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "isDeleting": false,
+                "targetPolicy": {
+                  "countries_display": "샘플 값",
+                  "country_settings": [],
+                  "id": 1,
+                  "name_localized": "샘플 값"
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(ecommerceIdentityPolicyDeleteId, ecommerceIdentityPolicyDeleting) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "ecommerce_identity_policy_delete_modal"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "ecommerceIdentityPolicyDeleting": false,
+                "ecommerceIdentityPolicyDeleteId": 1
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(pendingItem, pendingItemId) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "editing_confirm_modal"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "pendingItemId": 1,
+                "pendingItem": "샘플 값"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(infiniteScroll, isTemplateDeleting, isTemplateSaving) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "extra_fee_template"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "infiniteScroll": {
+                  "currentPage": "샘플 값",
+                  "hasMore": true,
+                  "isLoadingMore": false
+                },
+                "isTemplateDeleting": false,
+                "isTemplateSaving": false
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(identity_policy_form_modal) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "identity_policy_form_modal"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "identity_policy_form_modal": {
+                  "errors": {
+                    "errors": {
+                      "applies_to": [
+                        "샘플 안내 문구입니다."
+                      ],
+                      "fail_mode": [
+                        "샘플 안내 문구입니다."
+                      ],
+                      "grace_minutes": [
+                        "샘플 안내 문구입니다."
+                      ],
+                      "key": [
+                        "샘플 안내 문구입니다."
+                      ],
+                      "priority": [
+                        "샘플 안내 문구입니다."
+                      ],
+                      "purpose": [
+                        "샘플 안내 문구입니다."
+                      ],
+                      "scope": [
+                        "샘플 안내 문구입니다."
+                      ],
+                      "target": [
+                        "샘플 안내 문구입니다."
+                      ]
+                    },
+                    "message": "샘플 설명 문구입니다."
+                  },
+                  "form": {
+                    "applies_to": "샘플 값",
+                    "conditions": {
+                      "signup_stage": "샘플 값"
+                    },
+                    "enabled": true,
+                    "fail_mode": "sample",
+                    "grace_minutes": 0,
+                    "id": 1,
+                    "key": "sample",
+                    "priority": 100,
+                    "provider_id": 1,
+                    "purpose": "signup",
+                    "scope": "sample",
+                    "source_identifier": "샘플 값",
+                    "source_type": "admin",
+                    "target": "샘플 값"
+                  },
+                  "isNew": true,
+                  "isSaving": false
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(bulkDeleting_addresses, selectedItems_addresses) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "modal_addresses_bulk_delete"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "selectedItems_addresses": [],
+                "bulkDeleting_addresses": false
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(deleteTarget_addresses, deleting_addresses, selectedItems_addresses) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "modal_addresses_delete"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "selectedItems_addresses": [],
+                "deleting_addresses": false,
+                "deleteTarget_addresses": {
+                  "id": 1
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(errorMessage) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "modal_addresses_error"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "errorMessage": "샘플 설명 문구입니다."
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(isProcessing) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "modal_batch_change_confirm"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "isProcessing": false
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(bulkConfirmData, bulkDisplayStatus, bulkPriceCondition, bulkSalesStatus, bulkStockCondition, bulkUpdateErrors, isProcessing) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "modal_bulk_confirm"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "bulkPriceCondition": "샘플 값",
+                "bulkStockCondition": "샘플 값",
+                "isProcessing": false,
+                "bulkConfirmData": {
+                  "courierId": 1,
+                  "options": ["샘플 값"],
+                  "orderStatus": "shipping",
+                  "products": ["샘플 값"],
+                  "selectedItems": ["샘플 값"],
+                  "summary": {
+                    "hasBulkChanges": true,
+                    "optionCount": 3
+                  },
+                  "trackingNumber": "샘플 값"
+                },
+                "bulkSalesStatus": "coming_soon",
+                "bulkDisplayStatus": "visible",
+                "bulkUpdateErrors": ["샘플 값"]
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(cancelIssueSubmitting, cancelIssueTarget, issueHistoryCoupon) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "modal_cancel_issue_confirm"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "issueHistoryCoupon": {
+                  "id": 1
+                },
+                "cancelIssueTarget": {
+                  "id": 1,
+                  "user_name": "홍길동"
+                },
+                "cancelIssueSubmitting": false
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(defaultCurrency, preferredCurrency) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "modal_cancel_order"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "preferredCurrency": "KRW",
+                "defaultCurrency": "KRW"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(bulkDeleting_carts, selectedItems_carts) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "modal_carts_bulk_delete"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "selectedItems_carts": [],
+                "bulkDeleting_carts": false
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(deleteTarget_carts, deleting_carts, selectedItems_carts) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "modal_carts_delete"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "selectedItems_carts": [],
+                "deleting_carts": false,
+                "deleteTarget_carts": {
+                  "id": 1
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(errorMessage) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "modal_carts_error"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "errorMessage": "샘플 설명 문구입니다."
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(isCopyingProduct) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "modal_copy_product"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "isCopyingProduct": false
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(deleteProduct, deleteTarget, isDeleting, isProductDeleting, selectedCategory, selectedCategoryId) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "modal_delete_confirm"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "selectedCategory": {
+                  "abilities": {
+                    "can_delete": true,
+                    "can_update": true
+                  },
+                  "children": 0,
+                  "children_count": 0,
+                  "created_at": "2026-09-19 11:30:00",
+                  "description": "샘플 설명 문구입니다.",
+                  "images": [],
+                  "is_active": true,
+                  "meta_description": "샘플 설명 문구입니다.",
+                  "meta_title": "샘플 제목",
+                  "name": "샘플 제목",
+                  "parent": {
+                    "name": "샘플 제목"
+                  },
+                  "parent_id": 1,
+                  "products_count": 0,
+                  "slug": "sample-slug",
+                  "sort_order": 0,
+                  "updated_at": "2026-09-19 11:30:00"
+                },
+                "selectedCategoryId": 1,
+                "isDeleting": false,
+                "deleteProduct": {
+                  "canDelete": true,
+                  "reason": "샘플 사유입니다.",
+                  "relatedData": {
+                    "additionalOptions": 0,
+                    "images": 0,
+                    "options": 0
+                  },
+                  "target": {
+                    "id": 1
+                  }
+                },
+                "isProductDeleting": false,
+                "deleteTarget": {
+                  "id": 1,
+                  "name": "샘플 제목"
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(directIssueCoupon, directIssueSearchKeyword, directIssueSearchResults, directIssueSelectedUsers, directIssueSubmitting) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "modal_direct_issue"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "directIssueCoupon": {
+                  "id": 1,
+                  "name": "샘플 제목"
+                },
+                "directIssueSearchKeyword": "샘플 값",
+                "directIssueSearchResults": [],
+                "directIssueSelectedUsers": [],
+                "directIssueSubmitting": false
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(ecommerce_notification_template_form_modal) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "modal_ecommerce_notification_definition_preview"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "ecommerce_notification_template_form_modal": {
+                  "isSaving": false,
+                  "errors": null,
+                  "editLang": "ko",
+                  "definition": {
+                    "id": 1,
+                    "type": "sample_notification",
+                    "name": {
+                      "ko": "샘플 알림 정의",
+                      "en": "Sample notification"
+                    },
+                    "variables": [
+                      {
+                        "key": "recipient_name"
+                      },
+                      {
+                        "key": "subject_title"
+                      },
+                      {
+                        "key": "target_url"
+                      }
+                    ]
+                  },
+                  "template": {
+                    "id": 1,
+                    "channel": "mail",
+                    "click_url": "/sample",
+                    "subject": {
+                      "ko": "[{app_name}] {subject_title} 알림",
+                      "en": "[{app_name}] {subject_title} notification"
+                    },
+                    "body": {
+                      "ko": "<p>{recipient_name}님, {subject_title} 소식을 알려 드립니다.</p><p><a href=\"{target_url}\">바로 보기</a></p>",
+                      "en": "<p>{recipient_name}, here is an update on {subject_title}.</p><p><a href=\"{target_url}\">Open</a></p>"
+                    }
+                  },
+                  "recipients": [
+                    {
+                      "type": "trigger_user"
+                    },
+                    {
+                      "type": "related_user",
+                      "value": "author"
+                    },
+                    {
+                      "type": "role",
+                      "value": "admin",
+                      "display_name": "최고 관리자",
+                      "exclude_trigger_user": false
+                    },
+                    {
+                      "type": "specific_users",
+                      "value": [
+                        "00000000-0000-4000-8000-000000000021"
+                      ],
+                      "display_names": [
+                        "운영자 A"
+                      ],
+                      "exclude_trigger_user": true
+                    }
+                  ],
+                  "roleSearchResults": [
+                    {
+                      "value": "admin",
+                      "label": "최고 관리자",
+                      "description": "admin"
+                    },
+                    {
+                      "value": "operator",
+                      "label": "운영자",
+                      "description": "operator"
+                    }
+                  ],
+                  "userSearchResults": [
+                    {
+                      "value": "00000000-0000-4000-8000-000000000022",
+                      "label": "운영자 B"
+                    }
+                  ],
+                  "preview": {
+                    "subject": "[샘플 사이트] 새 소식 알림",
+                    "body": "<p>홍길동님, 새 소식을 알려 드립니다.</p>"
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(isResettingNotification, resetTargetId, resetTargetName) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "modal_ecommerce_notification_definition_reset"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "resetTargetName": "샘플 제목",
+                "isResettingNotification": false,
+                "resetTargetId": 1
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(ecommerce_notification_template_form_modal) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "modal_ecommerce_notification_template_edit"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "ecommerce_notification_template_form_modal": {
+                  "isSaving": false,
+                  "errors": null,
+                  "editLang": "ko",
+                  "definition": {
+                    "id": 1,
+                    "type": "sample_notification",
+                    "name": {
+                      "ko": "샘플 알림 정의",
+                      "en": "Sample notification"
+                    },
+                    "variables": [
+                      {
+                        "key": "recipient_name"
+                      },
+                      {
+                        "key": "subject_title"
+                      },
+                      {
+                        "key": "target_url"
+                      }
+                    ]
+                  },
+                  "template": {
+                    "id": 1,
+                    "channel": "mail",
+                    "click_url": "/sample",
+                    "subject": {
+                      "ko": "[{app_name}] {subject_title} 알림",
+                      "en": "[{app_name}] {subject_title} notification"
+                    },
+                    "body": {
+                      "ko": "<p>{recipient_name}님, {subject_title} 소식을 알려 드립니다.</p><p><a href=\"{target_url}\">바로 보기</a></p>",
+                      "en": "<p>{recipient_name}, here is an update on {subject_title}.</p><p><a href=\"{target_url}\">Open</a></p>"
+                    }
+                  },
+                  "recipients": [
+                    {
+                      "type": "trigger_user"
+                    },
+                    {
+                      "type": "related_user",
+                      "value": "author"
+                    },
+                    {
+                      "type": "role",
+                      "value": "admin",
+                      "display_name": "최고 관리자",
+                      "exclude_trigger_user": false
+                    },
+                    {
+                      "type": "specific_users",
+                      "value": [
+                        "00000000-0000-4000-8000-000000000021"
+                      ],
+                      "display_names": [
+                        "운영자 A"
+                      ],
+                      "exclude_trigger_user": true
+                    }
+                  ],
+                  "roleSearchResults": [
+                    {
+                      "value": "admin",
+                      "label": "최고 관리자",
+                      "description": "admin"
+                    },
+                    {
+                      "value": "operator",
+                      "label": "운영자",
+                      "description": "operator"
+                    }
+                  ],
+                  "userSearchResults": [
+                    {
+                      "value": "00000000-0000-4000-8000-000000000022",
+                      "label": "운영자 B"
+                    }
+                  ],
+                  "preview": {
+                    "subject": "[샘플 사이트] 새 소식 알림",
+                    "body": "<p>홍길동님, 새 소식을 알려 드립니다.</p>"
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(mileageEdit) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "modal_edit_transaction"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "mileageEdit": {
+                  "amountFormatted": "샘플 값",
+                  "canEditExpiry": true,
+                  "createdAtFormatted": "샘플 값",
+                  "currency": "KRW",
+                  "earnedAtDate": "2026-09-19 11:30:00",
+                  "errors": {
+                    "errors": {
+                      "expires_at": [
+                        "샘플 안내 문구입니다."
+                      ],
+                      "memo": [
+                        "샘플 안내 문구입니다."
+                      ]
+                    },
+                    "message": "샘플 설명 문구입니다."
+                  },
+                  "expiresAt": "2026-09-19 11:30:00",
+                  "id": 1,
+                  "isSaving": false,
+                  "memberName": "샘플 제목",
+                  "memo": "샘플 메모입니다.",
+                  "typeLabel": "샘플 제목"
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(isDownloading) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "modal_excel_download"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "isDownloading": false
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(mileageExtend) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "modal_extend_expiry"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "mileageExtend": {
+                  "days": 0,
+                  "errors": {
+                    "errors": {
+                      "days": [
+                        "샘플 안내 문구입니다."
+                      ]
+                    },
+                    "message": "샘플 설명 문구입니다."
+                  },
+                  "isSaving": false,
+                  "lotIds": [
+                    11,
+                    12,
+                    13
+                  ],
+                  "userId": 1
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(imagePreview, reviewForModal, reviewImageIndex) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "modal_image_preview"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "imagePreview": {
+                  "imageAlt": "샘플 값",
+                  "imageUrl": "/sample"
+                },
+                "reviewForModal": {
+                  "content": "샘플 설명 문구입니다.",
+                  "createdAt": "2026-09-19 11:30:00",
+                  "images": [],
+                  "optionValues": [],
+                  "rating": 0,
+                  "userName": "홍길동"
+                },
+                "reviewImageIndex": 0
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(bulkDeleting_inquiries, selectedItems_inquiries) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "modal_inquiries_bulk_delete"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "selectedItems_inquiries": [],
+                "bulkDeleting_inquiries": false
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(deleteTarget_inquiries, deleting_inquiries, selectedItems_inquiries) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "modal_inquiries_delete"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "selectedItems_inquiries": [],
+                "deleting_inquiries": false,
+                "deleteTarget_inquiries": {
+                  "id": 1
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(errorMessage) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "modal_inquiries_error"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "errorMessage": "샘플 설명 문구입니다."
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(replyContent_inquiries, replyTarget_inquiries, replying_inquiries) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "modal_inquiries_reply"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "replyTarget_inquiries": {
+                  "content_excerpt": "샘플 값",
+                  "id": 1,
+                  "is_answered": true,
+                  "member": {
+                    "name": "샘플 제목"
+                  },
+                  "product": {
+                    "name": "샘플 제목"
+                  }
+                },
+                "replyContent_inquiries": "샘플 값",
+                "replying_inquiries": "샘플 값"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(adminCashReceiptForm) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "modal_issue_cash_receipt"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "adminCashReceiptForm": {
+                  "error": "샘플 값",
+                  "identifier": "샘플 값",
+                  "identifier_type": "business",
+                  "receipt_type": "expense"
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(issueHistoryFilterUser, issueHistoryPerPage) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "modal_issue_history"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "issueHistoryPerPage": 10,
+                "issueHistoryFilterUser": {
+                  "name": "샘플 제목",
+                  "uuid": "00000000-0000-4000-8000-000000000031"
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(isDeletingLabel, labelToDeleteId) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "modal_label_delete_confirm"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "labelToDeleteId": 1,
+                "isDeletingLabel": false
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(editingLabelId, isSavingLabel, labelFormData) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "modal_label_form"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "editingLabelId": 1,
+                "labelFormData": {
+                  "color": "#2563eb",
+                  "name": {
+                    "ko": "샘플 한국어 문구"
+                  }
+                },
+                "isSavingLabel": false
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(labelToUncheckId) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "modal_label_uncheck_confirm"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "labelToUncheckId": 1
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(mileageManual) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "modal_manual_transaction"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "mileageManual": {
+                  "action": "deduct",
+                  "amount": 0,
+                  "currency": "KRW",
+                  "errors": {
+                    "errors": {
+                      "amount": [
+                        "샘플 안내 문구입니다."
+                      ],
+                      "memo": [
+                        "샘플 안내 문구입니다."
+                      ],
+                      "user_id": 1
+                    },
+                    "message": "샘플 설명 문구입니다."
+                  },
+                  "expiresAt": "2026-09-19 11:30:00",
+                  "isSaving": false,
+                  "memberSearchKeyword": "샘플 값",
+                  "memberSearchResults": [],
+                  "reason": "샘플 사유입니다.",
+                  "selectedMember": {
+                    "balance": 0,
+                    "name": "샘플 제목",
+                    "uuid": "00000000-0000-4000-8000-000000000031"
+                  },
+                  "useDefaultExpiry": true
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(deletingPresetId, deletingPresetName, isDeleting) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "modal_preset_delete_confirm"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "deletingPresetName": false,
+                "isDeleting": false,
+                "deletingPresetId": 1
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(editingPresetId, editingPresetName, isSaving) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "modal_preset_edit"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "editingPresetName": "샘플 제목",
+                "isSaving": false,
+                "editingPresetId": 1
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(isSaving, savingPresetConditions) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "modal_preset_save"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "isSaving": false,
+                "savingPresetConditions": {
+                  "brandId": 1,
+                  "category1": "샘플 값",
+                  "category2": "샘플 값",
+                  "category3": "샘플 값",
+                  "category4": "샘플 값",
+                  "claimExchangeStatus": "sample",
+                  "claimRefundStatus": "sample",
+                  "claimReturnStatus": "sample",
+                  "countries": ["샘플 값"],
+                  "dateQuick": "샘플 값",
+                  "dateType": "sample",
+                  "deliveryMethods": ["샘플 값"],
+                  "devices": ["샘플 값"],
+                  "displayStatus": "sample",
+                  "endDate": "2026-09-19 11:30:00",
+                  "maxPrice": 10000,
+                  "maxStock": "샘플 값",
+                  "minPrice": 10000,
+                  "minStock": "샘플 값",
+                  "noBrandRegistered": "샘플 값",
+                  "noCategoryRegistered": "샘플 값",
+                  "orderStatus": "sample",
+                  "paymentMethods": ["샘플 값"],
+                  "priceType": "sample",
+                  "salesStatus": "sample",
+                  "searchField": "샘플 값",
+                  "searchKeyword": "샘플 값",
+                  "shippingPolicy": "샘플 값",
+                  "startDate": "2026-09-19 11:30:00",
+                  "taxStatus": "sample"
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(editReviewId) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "modal_reply_delete"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "editReviewId": 1
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(ui) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "modal_save_template"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "ui": {
+                  "saveTemplateData": {
+                    "category_id": 1,
+                    "is_default": false,
+                    "name": "샘플 제목"
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(isSending) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "modal_send_sms"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "isSending": false
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(isSettingDefault, selectedId, selectedItem) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "modal_set_default_confirm"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "selectedItem": {
+                  "abilities": {
+                    "can_delete": true,
+                    "can_update": true
+                  },
+                  "content": "샘플 설명 문구입니다.",
+                  "content_mode": "sample",
+                  "created_at": "2026-09-19 11:30:00",
+                  "is_active": true,
+                  "is_default": true,
+                  "name": "샘플 제목",
+                  "updated_at": "2026-09-19 11:30:00"
+                },
+                "isSettingDefault": false,
+                "selectedId": 1
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(reviewBatchAction, reviewBatchIds) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "modal_status_change"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "reviewBatchIds": [
+                  11,
+                  12,
+                  13
+                ],
+                "reviewBatchAction": "visible"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(bulkIssueStatus, bulkSelectedItems, isChangingStatus) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "modal_status_change_confirm"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "bulkIssueStatus": "issuing",
+                "bulkSelectedItems": [],
+                "isChangingStatus": false
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(bulkDeleting_wishlists, selectedItems_wishlists) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "modal_wishlists_bulk_delete"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "selectedItems_wishlists": [],
+                "bulkDeleting_wishlists": false
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(deleteTarget_wishlists, deleting_wishlists, selectedItems_wishlists) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "modal_wishlists_delete"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "selectedItems_wishlists": [],
+                "deleting_wishlists": false,
+                "deleteTarget_wishlists": {
+                  "id": 1
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(errorMessage) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "modal_wishlists_error"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "errorMessage": "샘플 설명 문구입니다."
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(multilingualTagEdit) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "multilingual_tag_edit_modal"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "multilingualTagEdit": {
+                  "editingIndex": "샘플 값",
+                  "supportedLocales": [],
+                  "values": "샘플 값"
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(tempFormForBulkChange) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "notice_bulk_change_modal"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "tempFormForBulkChange": "샘플 값"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(pendingNoticeTemplateId) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "notice_template_confirm_modal"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "pendingNoticeTemplateId": 1
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "모달 본문이 읽는 전역 상태(isSettingDefault, targetDefaultPolicy) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "set_default_modal"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "isSettingDefault": false,
+                "targetDefaultPolicy": {
+                  "id": 1,
+                  "name_localized": "샘플 값"
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "화면 본문이 읽는 전역 상태(panelMode, selectedBrand, selectedBrandId, selectedCategory, selectedCategoryId, selectedId, selectedItem, selectedTemplate, selectedTemplateId, tempKey) — 클릭·응답이 담는 값이라 편집기에서는 이 상태로 담아야 해당 구역이 그려진다.",
+        "scope": {
+          "kind": "route",
+          "match": "*/admin/ecommerce/brands"
+        },
+        "items": [
+          {
+            "id": "screen_filled",
+            "label": "$t:editor.state.screen_filled",
+            "initialState": {
+              "global": {
+                "selectedBrandId": 1,
+                "panelMode": "view",
+                "selectedBrand": {
+                  "abilities": {
+                    "can_delete": true,
+                    "can_update": true
+                  },
+                  "created_at": "2026-09-19 11:30:00",
+                  "is_active": true,
+                  "name": "샘플 제목",
+                  "products_count": 0,
+                  "slug": "sample-slug",
+                  "updated_at": "2026-09-19 11:30:00",
+                  "website": "샘플 값"
+                },
+                "selectedCategoryId": 1,
+                "tempKey": "sample",
+                "selectedCategory": {
+                  "abilities": {
+                    "can_delete": true,
+                    "can_update": true
+                  },
+                  "children": 0,
+                  "created_at": "2026-09-19 11:30:00",
+                  "description": "샘플 설명 문구입니다.",
+                  "images": [],
+                  "is_active": true,
+                  "meta_description": "샘플 설명 문구입니다.",
+                  "meta_title": "샘플 제목",
+                  "name": "샘플 제목",
+                  "parent": {
+                    "name": "샘플 제목"
+                  },
+                  "parent_id": 1,
+                  "products_count": 0,
+                  "slug": "sample-slug",
+                  "sort_order": 0,
+                  "updated_at": "2026-09-19 11:30:00"
+                },
+                "selectedId": 1,
+                "selectedItem": {
+                  "abilities": {
+                    "can_delete": true,
+                    "can_update": true
+                  },
+                  "content": "샘플 설명 문구입니다.",
+                  "content_mode": "sample",
+                  "created_at": "2026-09-19 11:30:00",
+                  "is_active": true,
+                  "is_default": true,
+                  "name": "샘플 제목",
+                  "updated_at": "2026-09-19 11:30:00"
+                },
+                "selectedTemplateId": 1,
+                "selectedTemplate": {
+                  "abilities": {
+                    "can_delete": true,
+                    "can_update": true
+                  },
+                  "fields": [],
+                  "fields_count": 0,
+                  "is_active": true,
+                  "name": "샘플 제목"
+                }
+              }
+            },
+            "default": true
+          }
+        ]
+      },
+      {
+        "comment": "화면 본문이 읽는 전역 상태(selectedItems_carts) — 클릭·응답이 담는 값이라 편집기에서는 이 상태로 담아야 해당 구역이 그려진다.",
+        "scope": {
+          "kind": "route",
+          "match": "*/admin/ecommerce/carts"
+        },
+        "items": [
+          {
+            "id": "screen_filled",
+            "label": "$t:editor.state.screen_filled",
+            "initialState": {
+              "global": {
+                "selectedItems_carts": []
+              }
+            },
+            "default": true
+          }
+        ]
+      },
+      {
+        "comment": "화면 본문이 읽는 전역 상태(panelMode, selectedBrand, selectedBrandId, selectedCategory, selectedCategoryId, selectedId, selectedItem, selectedTemplate, selectedTemplateId, tempKey) — 클릭·응답이 담는 값이라 편집기에서는 이 상태로 담아야 해당 구역이 그려진다.",
+        "scope": {
+          "kind": "route",
+          "match": "*/admin/ecommerce/categories"
+        },
+        "items": [
+          {
+            "id": "screen_filled",
+            "label": "$t:editor.state.screen_filled",
+            "initialState": {
+              "global": {
+                "panelMode": "view",
+                "selectedBrandId": 1,
+                "selectedBrand": {
+                  "abilities": {
+                    "can_delete": true,
+                    "can_update": true
+                  },
+                  "created_at": "2026-09-19 11:30:00",
+                  "is_active": true,
+                  "name": "샘플 제목",
+                  "products_count": 0,
+                  "slug": "sample-slug",
+                  "updated_at": "2026-09-19 11:30:00",
+                  "website": "샘플 값"
+                },
+                "selectedCategoryId": 1,
+                "tempKey": "sample",
+                "selectedCategory": {
+                  "abilities": {
+                    "can_delete": true,
+                    "can_update": true
+                  },
+                  "children": 0,
+                  "created_at": "2026-09-19 11:30:00",
+                  "description": "샘플 설명 문구입니다.",
+                  "images": [],
+                  "is_active": true,
+                  "meta_description": "샘플 설명 문구입니다.",
+                  "meta_title": "샘플 제목",
+                  "name": "샘플 제목",
+                  "parent": {
+                    "name": "샘플 제목"
+                  },
+                  "parent_id": 1,
+                  "products_count": 0,
+                  "slug": "sample-slug",
+                  "sort_order": 0,
+                  "updated_at": "2026-09-19 11:30:00"
+                },
+                "selectedId": 1,
+                "selectedItem": {
+                  "abilities": {
+                    "can_delete": true,
+                    "can_update": true
+                  },
+                  "content": "샘플 설명 문구입니다.",
+                  "content_mode": "sample",
+                  "created_at": "2026-09-19 11:30:00",
+                  "is_active": true,
+                  "is_default": true,
+                  "name": "샘플 제목",
+                  "updated_at": "2026-09-19 11:30:00"
+                },
+                "selectedTemplateId": 1,
+                "selectedTemplate": {
+                  "abilities": {
+                    "can_delete": true,
+                    "can_update": true
+                  },
+                  "fields": [],
+                  "fields_count": 0,
+                  "is_active": true,
+                  "name": "샘플 제목"
+                }
+              }
+            },
+            "default": true
+          }
+        ]
+      },
+      {
+        "comment": "화면 본문이 읽는 전역 상태(infiniteScroll, panelMode, selectedBrand, selectedBrandId, selectedCategory, selectedCategoryId, selectedId, selectedItem, selectedTemplate, selectedTemplateId, tempKey) — 클릭·응답이 담는 값이라 편집기에서는 이 상태로 담아야 해당 구역이 그려진다.",
+        "scope": {
+          "kind": "route",
+          "match": "*/admin/ecommerce/common-info"
+        },
+        "items": [
+          {
+            "id": "screen_filled",
+            "label": "$t:editor.state.screen_filled",
+            "initialState": {
+              "global": {
+                "panelMode": "view",
+                "selectedBrandId": 1,
+                "selectedBrand": {
+                  "abilities": {
+                    "can_delete": true,
+                    "can_update": true
+                  },
+                  "created_at": "2026-09-19 11:30:00",
+                  "is_active": true,
+                  "name": "샘플 제목",
+                  "products_count": 0,
+                  "slug": "sample-slug",
+                  "updated_at": "2026-09-19 11:30:00",
+                  "website": "샘플 값"
+                },
+                "selectedCategoryId": 1,
+                "tempKey": "sample",
+                "selectedCategory": {
+                  "abilities": {
+                    "can_delete": true,
+                    "can_update": true
+                  },
+                  "children": 0,
+                  "created_at": "2026-09-19 11:30:00",
+                  "description": "샘플 설명 문구입니다.",
+                  "images": [],
+                  "is_active": true,
+                  "meta_description": "샘플 설명 문구입니다.",
+                  "meta_title": "샘플 제목",
+                  "name": "샘플 제목",
+                  "parent": {
+                    "name": "샘플 제목"
+                  },
+                  "parent_id": 1,
+                  "products_count": 0,
+                  "slug": "sample-slug",
+                  "sort_order": 0,
+                  "updated_at": "2026-09-19 11:30:00"
+                },
+                "selectedId": 1,
+                "selectedItem": {
+                  "abilities": {
+                    "can_delete": true,
+                    "can_update": true
+                  },
+                  "content": "샘플 설명 문구입니다.",
+                  "content_mode": "sample",
+                  "created_at": "2026-09-19 11:30:00",
+                  "is_active": true,
+                  "is_default": true,
+                  "name": "샘플 제목",
+                  "updated_at": "2026-09-19 11:30:00"
+                },
+                "infiniteScroll": {
+                  "currentPage": "샘플 값",
+                  "hasMore": true,
+                  "isLoadingMore": false
+                },
+                "selectedTemplateId": 1,
+                "selectedTemplate": {
+                  "abilities": {
+                    "can_delete": true,
+                    "can_update": true
+                  },
+                  "fields": [],
+                  "fields_count": 0,
+                  "is_active": true,
+                  "name": "샘플 제목"
+                }
+              }
+            },
+            "default": true
+          }
+        ]
+      },
+      {
+        "comment": "화면 본문이 읽는 전역 상태(selectedItems_inquiries) — 클릭·응답이 담는 값이라 편집기에서는 이 상태로 담아야 해당 구역이 그려진다.",
+        "scope": {
+          "kind": "route",
+          "match": "*/admin/ecommerce/inquiries"
+        },
+        "items": [
+          {
+            "id": "screen_filled",
+            "label": "$t:editor.state.screen_filled",
+            "initialState": {
+              "global": {
+                "selectedItems_inquiries": []
+              }
+            },
+            "default": true
+          }
+        ]
+      },
+      {
+        "comment": "화면 본문이 읽는 전역 상태(infiniteScroll, panelMode, selectedBrand, selectedBrandId, selectedCategory, selectedCategoryId, selectedId, selectedItem, selectedTemplate, selectedTemplateId, tempKey) — 클릭·응답이 담는 값이라 편집기에서는 이 상태로 담아야 해당 구역이 그려진다.",
+        "scope": {
+          "kind": "route",
+          "match": "*/admin/ecommerce/product-notices"
+        },
+        "items": [
+          {
+            "id": "screen_filled",
+            "label": "$t:editor.state.screen_filled",
+            "initialState": {
+              "global": {
+                "panelMode": "view",
+                "selectedBrandId": 1,
+                "selectedBrand": {
+                  "abilities": {
+                    "can_delete": true,
+                    "can_update": true
+                  },
+                  "created_at": "2026-09-19 11:30:00",
+                  "is_active": true,
+                  "name": "샘플 제목",
+                  "products_count": 0,
+                  "slug": "sample-slug",
+                  "updated_at": "2026-09-19 11:30:00",
+                  "website": "샘플 값"
+                },
+                "selectedCategoryId": 1,
+                "tempKey": "sample",
+                "selectedCategory": {
+                  "abilities": {
+                    "can_delete": true,
+                    "can_update": true
+                  },
+                  "children": 0,
+                  "created_at": "2026-09-19 11:30:00",
+                  "description": "샘플 설명 문구입니다.",
+                  "images": [],
+                  "is_active": true,
+                  "meta_description": "샘플 설명 문구입니다.",
+                  "meta_title": "샘플 제목",
+                  "name": "샘플 제목",
+                  "parent": {
+                    "name": "샘플 제목"
+                  },
+                  "parent_id": 1,
+                  "products_count": 0,
+                  "slug": "sample-slug",
+                  "sort_order": 0,
+                  "updated_at": "2026-09-19 11:30:00"
+                },
+                "selectedId": 1,
+                "selectedItem": {
+                  "abilities": {
+                    "can_delete": true,
+                    "can_update": true
+                  },
+                  "content": "샘플 설명 문구입니다.",
+                  "content_mode": "sample",
+                  "created_at": "2026-09-19 11:30:00",
+                  "is_active": true,
+                  "is_default": true,
+                  "name": "샘플 제목",
+                  "updated_at": "2026-09-19 11:30:00"
+                },
+                "infiniteScroll": {
+                  "currentPage": "샘플 값",
+                  "hasMore": true,
+                  "isLoadingMore": false
+                },
+                "selectedTemplateId": 1,
+                "selectedTemplate": {
+                  "abilities": {
+                    "can_delete": true,
+                    "can_update": true
+                  },
+                  "fields": [],
+                  "fields_count": 0,
+                  "is_active": true,
+                  "name": "샘플 제목"
+                }
+              }
+            },
+            "default": true
+          }
+        ]
+      },
+      {
+        "comment": "화면 본문이 읽는 전역 상태(bulkPriceCondition, bulkStockCondition) — 클릭·응답이 담는 값이라 편집기에서는 이 상태로 담아야 해당 구역이 그려진다.",
+        "scope": {
+          "kind": "route",
+          "match": "*/admin/ecommerce/products"
+        },
+        "items": [
+          {
+            "id": "screen_filled",
+            "label": "$t:editor.state.screen_filled",
+            "initialState": {
+              "global": {
+                "bulkPriceCondition": "샘플 값",
+                "bulkStockCondition": "샘플 값"
+              }
+            },
+            "default": true
+          }
+        ]
+      },
+      {
+        "comment": "화면 본문이 읽는 전역 상태(pendingNoticeTemplateId, site_url) — 클릭·응답이 담는 값이라 편집기에서는 이 상태로 담아야 해당 구역이 그려진다.",
+        "scope": {
+          "kind": "route",
+          "match": "*/admin/ecommerce/products/create"
+        },
+        "items": [
+          {
+            "id": "screen_filled",
+            "label": "$t:editor.state.screen_filled",
+            "initialState": {
+              "global": {
+                "pendingNoticeTemplateId": 1,
+                "site_url": "/sample"
+              }
+            },
+            "default": true
+          }
+        ]
+      },
+      {
+        "comment": "화면 본문이 읽는 전역 상태(bulkSelectedItems) — 클릭·응답이 담는 값이라 편집기에서는 이 상태로 담아야 해당 구역이 그려진다.",
+        "scope": {
+          "kind": "route",
+          "match": "*/admin/ecommerce/shipping-policies"
+        },
+        "items": [
+          {
+            "id": "screen_filled",
+            "label": "$t:editor.state.screen_filled",
+            "initialState": {
+              "global": {
+                "bulkSelectedItems": ["샘플 값"]
+              }
+            },
+            "default": true
+          }
+        ]
+      },
+      {
+        "comment": "화면 본문이 읽는 전역 상태(apiTestLoading, apiTestResult) — 클릭·응답이 담는 값이라 편집기에서는 이 상태로 담아야 해당 구역이 그려진다.",
+        "scope": {
+          "kind": "route",
+          "match": "*/admin/ecommerce/shipping-policies/create"
+        },
+        "items": [
+          {
+            "id": "screen_filled",
+            "label": "$t:editor.state.screen_filled",
+            "initialState": {
+              "global": {
+                "apiTestLoading": false,
+                "apiTestResult": {
+                  "error": "샘플 값",
+                  "extracted_fee": "샘플 값",
+                  "extracted_fee_formatted": "샘플 값",
+                  "request": {
+                    "body": "샘플 설명 문구입니다.",
+                    "endpoint": "샘플 값",
+                    "method": "샘플 값"
+                  },
+                  "response": {
+                    "body": "샘플 설명 문구입니다.",
+                    "status": "sample"
+                  }
+                }
+              }
+            },
+            "default": true
+          }
+        ]
+      },
+      {
+        "comment": "화면 본문이 읽는 전역 상태(selectedItems_addresses) — 클릭·응답이 담는 값이라 편집기에서는 이 상태로 담아야 해당 구역이 그려진다.",
+        "scope": {
+          "kind": "route",
+          "match": "*/admin/ecommerce/user-addresses"
+        },
+        "items": [
+          {
+            "id": "screen_filled",
+            "label": "$t:editor.state.screen_filled",
+            "initialState": {
+              "global": {
+                "selectedItems_addresses": []
+              }
+            },
+            "default": true
+          }
+        ]
+      },
+      {
+        "comment": "화면 본문이 읽는 전역 상태(selectedItems_wishlists) — 클릭·응답이 담는 값이라 편집기에서는 이 상태로 담아야 해당 구역이 그려진다.",
+        "scope": {
+          "kind": "route",
+          "match": "*/admin/ecommerce/wishlists"
+        },
+        "items": [
+          {
+            "id": "screen_filled",
+            "label": "$t:editor.state.screen_filled",
+            "initialState": {
+              "global": {
+                "selectedItems_wishlists": []
+              }
+            },
+            "default": true
           }
         ]
       }

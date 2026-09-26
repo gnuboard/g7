@@ -452,23 +452,6 @@
       "full": "Full",
       "icon": "Icon"
     },
-    "pr_user_reaction": {
-      "label": "My Reaction",
-      "like": "Like",
-      "funny": "Funny",
-      "agree": "Agree",
-      "thanks": "Thanks",
-      "wow": "Wow"
-    },
-    "pr_post_id": {
-      "label": "Post ID"
-    },
-    "pr_size": {
-      "label": "Size",
-      "sm": "SM",
-      "md": "MD",
-      "lg": "LG"
-    },
     "pi_label": {
       "label": "Label"
     },
@@ -735,7 +718,6 @@
     "file_uploader": "File Uploader",
     "avatar_uploader": "Avatar Uploader",
     "social_login_buttons": "Social Login Buttons",
-    "post_reactions": "Post Reactions",
     "input": "Input",
     "textarea": "Textarea",
     "select": "Select",
@@ -1038,7 +1020,11 @@
     "user_base_default": "Default",
     "mobile_menu_open": "Mobile menu open",
     "gdpr_cookie_banner_visible": "Cookie banner visible",
-    "identity_challenge_inicis": "Identity verification modal (Inicis)"
+    "identity_challenge_inicis": "Identity verification modal (Inicis)",
+    "modal_filled": "Modal content filled",
+    "screen_filled": "Screen state filled",
+    "two_factor_challenge": "Two-factor challenge",
+    "comment_editing": "Comment being edited"
   },
   "cell_border": {
     "side_all": "All",
@@ -1103,7 +1089,6 @@
     "user": "User",
     "current_page": "Current page",
     "total_pages": "Total pages",
-    "reactions": "Reactions",
     "product": "Product",
     "author": "Author",
     "value": "Value",
@@ -1154,6 +1139,8 @@
     "myComments": "My Comments",
     "myInquiries": "My Inquiries",
     "myPosts": "My Posts",
+    "myReactions": "My Reactions",
+    "myReports": "My Reports",
     "navigation": "Navigation",
     "newProducts": "New Products",
     "notification_unread_count": "Unread Notification Count",

@@ -15,6 +15,9 @@ return [
     'template_not_found' => 'Template not found: :identifier',
     'template_not_active' => 'Template is not active: :identifier (status: :status)',
 
+    // Privacy manual run — one job per target
+    'privacy_manual_run_conflict' => 'A manual run for this target is already queued or running. Try again after it finishes.',
+
     // Optimistic lock — concurrent save conflict
     'concurrent_modification' => 'Another user has saved first. (resource: :resource, current version: :current, your version: :expected)',
 

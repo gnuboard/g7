@@ -4,6 +4,7 @@
         "description": "마이페이지 스크랩 선택 해제 확인 모달",
         "editor_label": "$t:user.modal_label.mypage_scrap.scrapBulkDeleteModal"
     },
+    "comment": "선택 스크랩 일괄 해제 확인 — 선택 ID 배열을 한 요청으로 보낸다",
     "id": "scrap_bulk_delete_modal",
     "type": "composite",
     "name": "Modal",
@@ -126,11 +127,11 @@
                             },
                             "actions": [
                                 {
+                                    "comment": "여러 건을 한 요청으로 보낸다 — 응답이 늦는 사이 두 번 눌리면 같은 ID 가 겹쳐 들어가므로 먼저 잠근다.\n            DELETE 본문의 ids 는 엔진이 그대로 실어 보낸다(ActionDispatcher 가 GET 이 아닌 메서드에만 body 를 붙인다).",
                                     "type": "click",
                                     "handler": "sequence",
                                     "actions": [
                                         {
-                                            "comment": "여러 건을 한 요청으로 보낸다 — 응답이 늦는 사이 두 번 눌리면 같은 ID 가 겹쳐 들어가므로 먼저 잠근다.\n                 DELETE 본문의 ids 는 엔진이 그대로 실어 보낸다(ActionDispatcher 가 GET 이 아닌 메서드에만 body 를 붙인다).",
                                             "handler": "setState",
                                             "params": {
                                                 "target": "local",

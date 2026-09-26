@@ -124,6 +124,8 @@ class User extends Authenticatable implements HasLocalePreference
         'last_login_at',
         'withdrawn_at',
         'blocked_at',
+        'dormant_at',
+        'dormant_notified_at',
         'identity_verified_at',
         'identity_verified_provider',
         'identity_verified_purpose_last',
@@ -159,6 +161,8 @@ class User extends Authenticatable implements HasLocalePreference
             'last_login_at' => 'datetime',
             'withdrawn_at' => 'datetime',
             'blocked_at' => 'datetime',
+            'dormant_at' => 'datetime',
+            'dormant_notified_at' => 'datetime',
             'identity_verified_at' => 'datetime',
             'mobile_verified_at' => 'datetime',
             'is_super' => 'boolean',
@@ -198,6 +202,8 @@ class User extends Authenticatable implements HasLocalePreference
 
     /**
      * 모델 부팅 시 UUID 자동 생성을 등록합니다.
+     *
+     * @return void
      */
     protected static function boot(): void
     {
@@ -212,6 +218,8 @@ class User extends Authenticatable implements HasLocalePreference
 
     /**
      * 사용자의 약관 동의 이력들과의 관계를 정의합니다.
+     *
+     * @return HasMany 약관 동의 이력 관계
      */
     public function consents(): HasMany
     {
@@ -240,6 +248,8 @@ class User extends Authenticatable implements HasLocalePreference
 
     /**
      * 사용자가 가진 역할들과의 관계를 정의합니다.
+     *
+     * @return BelongsToMany 역할 관계 (user_roles 피벗)
      */
     public function roles(): BelongsToMany
     {
@@ -252,6 +262,8 @@ class User extends Authenticatable implements HasLocalePreference
      * 사용자의 개별 메뉴 권한들과의 관계를 정의합니다.
      *
      * @deprecated role_menus 피벗 테이블 사용. 역할 기반 권한을 사용하세요.
+     *
+     * @return HasMany 개별 메뉴 권한 관계
      */
     public function menuPermissions(): HasMany
     {
@@ -263,6 +275,7 @@ class User extends Authenticatable implements HasLocalePreference
      *
      * @param  string  $permission  권한 식별자
      * @param  PermissionType|null  $type  권한 타입 (null이면 타입 구분 없이 체크)
+     * @return bool 권한 보유 여부
      */
     public function hasPermission(string $permission, ?PermissionType $type = null): bool
     {
@@ -334,6 +347,8 @@ class User extends Authenticatable implements HasLocalePreference
      *
      * 같은 인스턴스에서 역할을 바꾼 직후 다시 판정해야 하는 경우에 호출합니다.
      * (역할 동기화 서비스가 호출하며, 일반 조회 경로에서는 필요하지 않습니다)
+     *
+     * @return void
      */
     public function flushPermissionCaches(): void
     {
@@ -347,6 +362,7 @@ class User extends Authenticatable implements HasLocalePreference
      * @param  array  $permissions  권한 식별자 배열
      * @param  bool  $requireAll  모든 권한이 필요한지 여부 (true: AND, false: OR)
      * @param  PermissionType|null  $type  권한 타입 (null이면 타입 구분 없이 체크)
+     * @return bool 권한 보유 여부 ($requireAll 에 따라 AND/OR)
      */
     public function hasPermissions(array $permissions, bool $requireAll = true, ?PermissionType $type = null): bool
     {
@@ -406,6 +422,7 @@ class User extends Authenticatable implements HasLocalePreference
      * 특정 역할을 가지고 있는지 확인합니다.
      *
      * @param  string  $role  역할 식별자
+     * @return bool 역할 보유 여부
      */
     public function hasRole(string $role): bool
     {
@@ -417,6 +434,7 @@ class User extends Authenticatable implements HasLocalePreference
      *
      * @param  array  $roles  역할 식별자 배열
      * @param  bool  $requireAll  모든 역할이 필요한지 여부 (true: AND, false: OR)
+     * @return bool 역할 보유 여부 ($requireAll 에 따라 AND/OR)
      */
     public function hasRoles(array $roles, bool $requireAll = true): bool
     {
@@ -476,6 +494,7 @@ class User extends Authenticatable implements HasLocalePreference
      *
      * @param  int  $menuId  메뉴 ID
      * @param  MenuPermissionType|string  $permissionType  권한 유형 (read, write, delete)
+     * @return bool 메뉴 권한 보유 여부
      */
     public function hasMenuPermission(int $menuId, MenuPermissionType|string $permissionType = 'read'): bool
     {
@@ -528,6 +547,8 @@ class User extends Authenticatable implements HasLocalePreference
     /**
      * 사용자의 시간대를 반환합니다.
      * 설정되지 않은 경우 기본 사용자 시간대를 반환합니다.
+     *
+     * @return string 시간대 식별자 (예: Asia/Seoul)
      */
     public function getTimezone(): string
     {
@@ -539,6 +560,8 @@ class User extends Authenticatable implements HasLocalePreference
      *
      * attachments 테이블의 다형성 관계를 사용합니다.
      * collection='avatar'로 아바타 전용 첨부파일을 구분합니다.
+     *
+     * @return MorphOne 아바타 첨부파일 관계
      */
     public function avatarAttachment(): MorphOne
     {
@@ -571,7 +594,15 @@ class User extends Authenticatable implements HasLocalePreference
     }
 
     /**
-     * 활성화된 사용자만 조회합니다.
+     * 탈퇴하지 않은 사용자만 조회합니다.
+     *
+     * ⚠ 이름과 달리 "활성(Active)" 이 아니라 **"탈퇴 아님"** 이다 — `inactive`·`blocked`·
+     * `pending_verification`·`dormant` 가 모두 통과한다. 활성 회원만 골라야 하는 자리
+     * (통지 발송 대상 등)에서 이 스코프에 기대면 차단·휴면 회원에게도 메일이 나가므로,
+     * 그런 자리는 `where('status', UserStatus::Active)` 를 명시한다.
+     *
+     * @param  Builder  $query  적용 대상 쿼리
+     * @return void 쿼리에 조건을 직접 더한다
      */
     public function scopeActive(Builder $query): void
     {
@@ -581,6 +612,9 @@ class User extends Authenticatable implements HasLocalePreference
 
     /**
      * 탈퇴한 사용자만 조회합니다.
+     *
+     * @param  Builder  $query  적용 대상 쿼리
+     * @return void 쿼리에 조건을 직접 더한다
      */
     public function scopeWithdrawn(Builder $query): void
     {

@@ -2,11 +2,16 @@
 
 namespace Modules\Sirsoft\Board\Http\Requests\Admin;
 
+use App\Models\Attachment;
 use App\Models\Role;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 use Modules\Sirsoft\Board\Enums\ReplyDeletePolicy;
 use Modules\Sirsoft\Board\Http\Requests\Concerns\ReadsBoardLimits;
+use Modules\Sirsoft\Board\Models\ReactionType;
+use Modules\Sirsoft\Board\Repositories\Contracts\ReactionTypeRepositoryInterface;
+use Modules\Sirsoft\Board\Services\ReactionTypeService;
 
 /**
  * 게시판 환경설정 저장 요청 검증
@@ -34,6 +39,8 @@ class StoreBoardSettingsRequest extends FormRequest
      * 검증 전 입력 데이터 정규화
      *
      * 앞에 0이 붙은 숫자 문자열("00232" → 232)을 integer로 캐스팅합니다.
+     *
+     * @return void
      */
     protected function prepareForValidation(): void
     {
@@ -60,6 +67,8 @@ class StoreBoardSettingsRequest extends FormRequest
             'spam_security.report_cooldown_seconds',
             'spam_security.view_count_cache_ttl',
             'attachment_settings.purge_retention_days',
+            'privacy_retention.ip_retention_days',
+            'privacy_retention.guest_retention_days',
         ];
 
         $booleanFields = [
@@ -68,6 +77,8 @@ class StoreBoardSettingsRequest extends FormRequest
             'basic_defaults.show_view_count',
             'basic_defaults.use_report',
             'basic_defaults.use_scrap',
+            'basic_defaults.use_reaction',
+            'basic_defaults.use_comment_reaction',
             'basic_defaults.use_file_upload',
             'basic_defaults.notify_admin_on_post',
             'basic_defaults.notify_author',
@@ -77,6 +88,7 @@ class StoreBoardSettingsRequest extends FormRequest
             'seo.seo_board',
             'seo.seo_post_detail',
             'attachment_settings.purge_enabled',
+            'privacy_retention.enabled',
         ];
 
         $data = $this->all();
@@ -105,6 +117,40 @@ class StoreBoardSettingsRequest extends FormRequest
                 $permissions,
                 fn ($roles) => is_array($roles) && array_is_list($roles)
             );
+        }
+
+        // 반응 유형 편집기 행 정규화 — 화면은 빈 문자열/문자열 숫자를 그대로 보낸다.
+        // id·icon_attachment_id·display_order 는 '' 를 null 로, 숫자는 int 로 맞추고
+        // is_active 는 'false' 같은 문자열도 불리언으로 해석한다.
+        $reactionTypes = $data['basic_defaults']['reaction_types'] ?? null;
+        if (is_array($reactionTypes)) {
+            foreach ($reactionTypes as $index => $row) {
+                if (! is_array($row)) {
+                    continue;
+                }
+
+                foreach (['id', 'icon_attachment_id', 'display_order'] as $numeric) {
+                    if (! array_key_exists($numeric, $row)) {
+                        continue;
+                    }
+
+                    $row[$numeric] = ($row[$numeric] === '' || $row[$numeric] === null)
+                        ? null
+                        : (int) $row[$numeric];
+                }
+
+                if (array_key_exists('is_active', $row)) {
+                    $row['is_active'] = filter_var($row['is_active'], FILTER_VALIDATE_BOOLEAN);
+                }
+
+                if (isset($row['code']) && is_string($row['code'])) {
+                    $row['code'] = strtolower(trim($row['code']));
+                }
+
+                $reactionTypes[$index] = $row;
+            }
+
+            $data['basic_defaults']['reaction_types'] = array_values($reactionTypes);
         }
 
         $this->replace($data);
@@ -152,7 +198,7 @@ class StoreBoardSettingsRequest extends FormRequest
 
         return [
             // 현재 탭 정보 (메타 데이터)
-            '_tab' => ['sometimes', 'string', 'in:basic_defaults,report_policy,spam_security,general,seo,notifications,notification_definitions'],
+            '_tab' => ['sometimes', 'string', 'in:basic_defaults,report_policy,spam_security,general,seo,notifications,notification_definitions,privacy_retention'],
 
             // ========================================
             // notifications (알림 채널 설정) 카테고리
@@ -182,6 +228,25 @@ class StoreBoardSettingsRequest extends FormRequest
             'basic_defaults.show_view_count' => ['nullable', 'boolean'],
             'basic_defaults.use_report' => ['nullable', 'boolean'],
             'basic_defaults.use_scrap' => ['nullable', 'boolean'],
+            'basic_defaults.use_reaction' => ['nullable', 'boolean'],
+            'basic_defaults.use_comment_reaction' => ['nullable', 'boolean'],
+            'basic_defaults.active_reaction_types' => ['nullable', 'array'],
+            'basic_defaults.active_reaction_types.*' => ['string', 'max:50'],
+
+            // 반응 유형 인라인 편집기 행 (설정 JSON 에 저장하지 않고 컨트롤러가 떼어내
+            // ReactionTypeService::syncTypes() 로 DB 에 반영한다)
+            'basic_defaults.reaction_types' => ['sometimes', 'array', 'max:50'],
+            'basic_defaults.reaction_types.*.id' => ['nullable', 'integer', Rule::exists(ReactionType::class, 'id')],
+            'basic_defaults.reaction_types.*.code' => ['required', 'string', 'regex:/^[a-z][a-z0-9_]{1,49}$/', 'distinct'],
+            'basic_defaults.reaction_types.*.name' => ['required', 'array'],
+            'basic_defaults.reaction_types.*.name.ko' => ['required', 'string', 'max:50'],
+            'basic_defaults.reaction_types.*.name.*' => ['nullable', 'string', 'max:50'],
+            'basic_defaults.reaction_types.*.icon_attachment_id' => ['nullable', 'integer', Rule::exists(Attachment::class, 'id')
+                ->where('collection', ReactionTypeService::ICON_COLLECTION)
+                ->where('source_identifier', ReactionTypeService::ICON_SOURCE_IDENTIFIER)
+                ->whereNull('deleted_at')],
+            'basic_defaults.reaction_types.*.display_order' => ['nullable', 'integer', 'min:0'],
+            'basic_defaults.reaction_types.*.is_active' => ['nullable', 'boolean'],
             'basic_defaults.min_title_length' => ['nullable', 'integer', "min:{$minTitleLengthMin}", "max:{$minTitleLengthMax}"],
             'basic_defaults.max_title_length' => ['nullable', 'integer', "min:{$maxTitleLengthMin}", "max:{$maxTitleLengthMax}"],
             'basic_defaults.min_content_length' => ['nullable', 'integer', "min:{$minContentLengthMin}", "max:{$minContentLengthMax}"],
@@ -274,6 +339,14 @@ class StoreBoardSettingsRequest extends FormRequest
             // 상한(3650일)은 "사실상 정리하지 않음" 과 구분되지 않는 값을 저장하지 않기 위함이다.
             'attachment_settings.purge_enabled' => ['nullable', 'boolean'],
             'attachment_settings.purge_retention_days' => ['nullable', 'integer', 'min:'.$limits['attachment_purge_retention_days_min'], 'max:'.$limits['attachment_purge_retention_days_max']],
+
+            // 개인정보 보유기간 (이슈 #636) — 되돌릴 수 없는 파기라 하한을 서버가 강제한다.
+            // IP 축은 게시물·댓글 전체(회원 글 포함)의 작성 IP 를, 비회원 축은 비회원 글의 작성자
+            // 정보를 다룬다. 비회원 기간 0 은 「그 축을 쓰지 않음」이다.
+            'privacy_retention.enabled' => ['nullable', 'boolean'],
+            'privacy_retention.ip_retention_days' => ['nullable', 'integer', 'min:'.$limits['privacy_ip_retention_days_min'], 'max:'.$limits['privacy_ip_retention_days_max']],
+            'privacy_retention.guest_retention_days' => ['nullable', 'integer', 'min:'.$limits['privacy_guest_retention_days_min'], 'max:'.$limits['privacy_guest_retention_days_max']],
+            'privacy_retention.guest_mode' => ['nullable', 'string', 'in:anonymize,delete'],
         ];
     }
 
@@ -282,11 +355,74 @@ class StoreBoardSettingsRequest extends FormRequest
      *
      * @return array<string, string>
      */
+    /**
+     * 규칙만으로 판정할 수 없는 조건을 추가 검증합니다.
+     *
+     * 신규 행(id 없음)의 code 가 이미 DB 에 있으면 그 행에 오류를 붙인다.
+     * Rule::unique()->ignore() 는 행별 id 를 볼 수 없어(규칙은 행 단위로 평가되지만
+     * ignore 값은 규칙 정의 시점에 고정된다) 여기서 직접 판정한다.
+     *
+     * @param  Validator  $validator  검증기
+     * @return void
+     */
+    public function withValidator($validator): void
+    {
+        $validator->after(function ($validator) {
+            $rows = $this->input('basic_defaults.reaction_types');
+
+            if (! is_array($rows)) {
+                return;
+            }
+
+            $newCodes = [];
+
+            foreach ($rows as $index => $row) {
+                if (! is_array($row) || ! empty($row['id']) || empty($row['code'])) {
+                    continue;
+                }
+
+                $newCodes[$index] = $row['code'];
+            }
+
+            if ($newCodes === []) {
+                return;
+            }
+
+            // FormRequest 는 모델을 직접 부르지 않는다 — Repository 계약을 경유한다.
+            $repository = app(ReactionTypeRepositoryInterface::class);
+            $taken = $repository->all()
+                ->pluck('code')
+                ->intersect(array_values($newCodes))
+                ->values()
+                ->all();
+
+            foreach ($newCodes as $index => $code) {
+                if (in_array($code, $taken, true)) {
+                    $validator->errors()->add(
+                        "basic_defaults.reaction_types.{$index}.code",
+                        __('sirsoft-board::validation.reaction_type.code.unique'),
+                    );
+                }
+            }
+        });
+    }
+
+    /**
+     * attributes
+     *
+     * @return array<string, mixed>
+     */
     public function attributes(): array
     {
         $attributes = __('sirsoft-board::validation.attributes.settings');
 
-        return is_array($attributes) ? $attributes : [];
+        return array_merge(is_array($attributes) ? $attributes : [], [
+            // 개인정보 보유기간 (이슈 #636) — 키별로 명시해 오류 문구에 필드 키가 노출되지 않게 한다
+            'privacy_retention.enabled' => __('sirsoft-board::validation.privacy_retention_attributes.enabled'),
+            'privacy_retention.ip_retention_days' => __('sirsoft-board::validation.privacy_retention_attributes.ip_retention_days'),
+            'privacy_retention.guest_retention_days' => __('sirsoft-board::validation.privacy_retention_attributes.guest_retention_days'),
+            'privacy_retention.guest_mode' => __('sirsoft-board::validation.privacy_retention_attributes.guest_mode'),
+        ]);
     }
 
     /**
@@ -323,7 +459,7 @@ class StoreBoardSettingsRequest extends FormRequest
     public function validatedSettings(): array
     {
         $validated = $this->validated();
-        $validCategories = ['basic_defaults', 'report_policy', 'spam_security', 'display', 'seo', 'notifications', 'attachment_settings'];
+        $validCategories = ['basic_defaults', 'report_policy', 'spam_security', 'display', 'seo', 'notifications', 'attachment_settings', 'privacy_retention'];
 
         return array_filter(
             $validated,

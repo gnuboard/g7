@@ -694,29 +694,6 @@
         }
       },
       {
-        "name": "PostReactions",
-        "type": "composite",
-        "description": "게시글 리액션 버튼 그룹",
-        "path": "src/components/composite/PostReactions.tsx",
-        "props": {
-          "postId": {
-            "type": "number",
-            "required": true,
-            "description": "게시글 ID"
-          },
-          "reactions": {
-            "type": "object",
-            "required": false,
-            "description": "리액션 데이터"
-          },
-          "className": {
-            "type": "string",
-            "required": false,
-            "description": "사용자 정의 클래스"
-          }
-        }
-      },
-      {
         "name": "SocialLoginButtons",
         "type": "composite",
         "description": "소셜 로그인 버튼 그룹",

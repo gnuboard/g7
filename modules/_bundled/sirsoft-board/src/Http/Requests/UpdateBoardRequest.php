@@ -38,6 +38,8 @@ class UpdateBoardRequest extends FormRequest
      *
      * blocked_keywords가 문자열로 전송된 경우 배열로 변환하고, 조건부 배제(`exclude_if`)의
      * 판정 기준이 되는 토글이 요청에 없으면 기존 게시판의 저장값을 주입합니다.
+     *
+     * @return void
      */
     protected function prepareForValidation(): void
     {
@@ -53,6 +55,16 @@ class UpdateBoardRequest extends FormRequest
             if ($board !== null && isset($board->use_file_upload)) {
                 $data['use_file_upload'] = (bool) $board->use_file_upload;
             }
+        }
+
+        // active_reaction_types 가 명시적 null 로 오면 빈 배열로 정규화한다 (validation 전).
+        // boards.active_reaction_types 는 nullable·기본값 없음이라 값을 주지 않고 만든 게시판은
+        // NULL 이고, 그 게시판의 폼 데이터를 그대로 돌려보내면 키가 있는 채 값만 null 이 된다.
+        // 규칙 ['sometimes','array'] 는 명시적 null 을 거부하므로 저장이 422 가 된다.
+        // 규칙을 nullable 로 넓히는 대신 여기서 정규화한다 — "null 도 유효" 라는 새 계약을
+        // 만들지 않고, 컬럼의 array 캐스트 계약과도 일치한다 (StoreBoardRequest 와 대칭).
+        if (array_key_exists('active_reaction_types', $data) && $data['active_reaction_types'] === null) {
+            $data['active_reaction_types'] = [];
         }
 
         // blocked_keywords가 문자열이면 배열로 변환 (validation 전)
@@ -76,7 +88,7 @@ class UpdateBoardRequest extends FormRequest
         // boolean 필드 캐스팅 (Toggle 컴포넌트가 "on"/"off" 문자열을 전송할 수 있음)
         $booleanFields = [
             'is_active', 'use_comment', 'use_reply', 'use_file_upload',
-            'use_report', 'use_scrap', 'show_view_count', 'is_notice',
+            'use_report', 'use_scrap', 'use_reaction', 'use_comment_reaction', 'show_view_count', 'is_notice',
             'notify_admin_on_post', 'notify_author',
         ];
 
@@ -166,6 +178,10 @@ class UpdateBoardRequest extends FormRequest
             'use_reply' => ['sometimes', 'required', 'boolean'],
             'use_report' => ['sometimes', 'required', 'boolean'],
             'use_scrap' => ['sometimes', 'required', 'boolean'],
+            'use_reaction' => ['sometimes', 'required', 'boolean'],
+            'use_comment_reaction' => ['sometimes', 'required', 'boolean'],
+            'active_reaction_types' => ['sometimes', 'array'],
+            'active_reaction_types.*' => ['string'],
             'comment_order' => ['sometimes', 'required', 'in:ASC,DESC'],
             // 하한 기본값 0 = 신규 배지를 붙이지 않음 (Post::isNew() 가 항상 false). 아카이브형 게시판이 쓰는 정상 값이다.
             'new_display_hours' => ['sometimes', 'nullable', 'integer', "min:{$newDisplayHoursMin}", "max:{$newDisplayHoursMax}"],
@@ -238,6 +254,7 @@ class UpdateBoardRequest extends FormRequest
      * 비교하므로 부분 수정(sometimes)에서는 적용되지 않습니다.
      *
      * @param  Validator  $validator  검증기
+     * @return void
      */
     public function withValidator(Validator $validator): void
     {
@@ -267,6 +284,7 @@ class UpdateBoardRequest extends FormRequest
                 'per_page', 'per_page_mobile', 'order_by', 'order_direction',
                 'secret_mode', 'use_comment', 'use_reply', 'use_report',
                 'use_scrap',
+                'use_reaction', 'use_comment_reaction', 'active_reaction_types',
                 'comment_order', 'show_view_count',
                 'max_reply_depth', 'max_comment_depth',
                 'min_title_length', 'max_title_length',

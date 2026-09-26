@@ -48,6 +48,8 @@ abstract class TestCase extends BaseTestCase
      * provider 자동 등록 가드가 올바른 시점에 적용됩니다.
      *
      * settings 디스크는 앱 부팅 직후 페이크로 대체합니다 (아래 fakeSettingsDisk).
+     *
+     * @return void 반환값 없음
      */
     protected function setUp(): void
     {
@@ -89,6 +91,8 @@ abstract class TestCase extends BaseTestCase
      * 설정 *읽기* 는 부팅 시 Config(`g7_settings.*`)로 이미 적재된 뒤이므로 이 페이크의
      * 영향을 받지 않습니다. 저장소를 직접 읽어야 하는 테스트는 페이크 디스크에 직접
      * 값을 넣고 검증합니다.
+     *
+     * @return void 반환값 없음
      */
     private function fakeSettingsDisk(): void
     {
@@ -114,12 +118,24 @@ abstract class TestCase extends BaseTestCase
      * 다른 모드를 검증해야 하는 테스트는 `AssetUrl::forceMode()` 로, 2단계 인증을 켜야 하는
      * 테스트는 `config(['g7_settings.core.security.two_factor_auth' => true])` 로 자기 전제를
      * 명시한다 (자식 `setUp()` 은 `parent::setUp()` 뒤에 실행되므로 그 지정이 이긴다).
+     *
+     * @return void 반환값 없음
      */
     private function pinEnvironmentDependentSettings(): void
     {
         config([
             'g7_settings.core.general.asset_url_mode' => AssetUrl::MODE_EXTENSION,
             'g7_settings.core.security.two_factor_auth' => false,
+            // 적용 범위도 함께 고정한다. `two_factor_auth` 만 고정하면 이 키가 사이트 저장값
+            // ('admin') 을 그대로 읽어, 2단계 인증을 켠 테스트가 **일반 회원 경로에서만**
+            // 조용히 건너뛴다 — 관리자 케이스는 통과하므로 원인이 더 가려진다.
+            'g7_settings.core.security.two_factor_scope' => 'all',
+            // IP 접근 제한도 꺼 둔다. 개발 사이트에서 켜 두면 전역 미들웨어가 테스트 요청(127.0.0.1)을
+            // 관리자 영역·규칙 경로에서 무더기로 403 으로 끊는데, 실패 메시지는 원인을 가리키지 않는다.
+            // 제한을 검증하는 테스트는 이 세 키를 자기 setUp 에서 명시한다.
+            'g7_settings.core.security.ip_restriction_enabled' => false,
+            'g7_settings.core.security.admin_allowed_ips' => [],
+            'g7_settings.core.security.ip_restriction_rules' => [],
         ]);
     }
 
@@ -132,6 +148,8 @@ abstract class TestCase extends BaseTestCase
      * "메일이 설정된 사이트" 를 만들어야 합니다.
      *
      * (설정 미비 시 발송하지 않는 것은 의도된 제품 동작이므로 기본값은 그대로 둡니다)
+     *
+     * @return void 반환값 없음
      */
     protected function enableMailChannelReadiness(): void
     {
@@ -152,6 +170,8 @@ abstract class TestCase extends BaseTestCase
      *
      * 프로세스 내 다음 테스트 클래스가 stale allowlist 를 물려받지 않도록
      * 보장합니다.
+     *
+     * @return void 반환값 없음
      */
     protected function tearDown(): void
     {
@@ -188,6 +208,8 @@ abstract class TestCase extends BaseTestCase
      * 테스트 수만큼 연결이 누적된다 — DB 를 쓰는 테스트가 151개(max_connections)를
      * 넘는 클래스/스위트는 그 지점부터 전부 1040 Too many connections 로 실패한다.
      * 트랜잭션 진행 중인 연결은 건드리지 않는다 (트레이트의 롤백 콜백이 처리).
+     *
+     * @return void 반환값 없음
      */
     protected function purgeIdleDatabaseConnections(): void
     {
@@ -210,7 +232,7 @@ abstract class TestCase extends BaseTestCase
      * selfExtension() 으로 반환한 자기 확장을 자동으로 포함합니다.
      * → 확장 테스트 클래스는 자기 확장을 명시하지 않아도 격리에서 허용됩니다.
      *
-     * @return array<string>
+     * @return array<string> 이 테스트에서 로딩을 허용할 확장 식별자 목록
      */
     protected function resolveAllowedExtensions(): array
     {
@@ -269,7 +291,7 @@ abstract class TestCase extends BaseTestCase
      * → beforeRefreshingDatabase()는 RefreshDatabase 트레이트에 의해 가려지므로
      *   setUpTraits() 오버라이드로 마이그레이션 경로를 먼저 등록합니다.
      *
-     * @return void
+     * @return void 반환값 없음
      */
     protected function setUpTraits()
     {
@@ -297,6 +319,8 @@ abstract class TestCase extends BaseTestCase
      * `$migrator->path()` 는 동일 경로 중복 등록을 무시하므로 안전하다. selfExtension()
      * (확장 자체 테스트) 은 ModuleTestCase / PluginTestCase 가 migrateFreshUsing() 으로
      * 자기 마이그레이션을 직접 처리하므로 여기서 별도 추가하지 않는다.
+     *
+     * @return void 반환값 없음
      */
     private function loadExtensionMigrations(): void
     {
@@ -332,6 +356,8 @@ abstract class TestCase extends BaseTestCase
      *
      * 현재 프로세스의 커넥션은 제외하고,
      * 테스트 DB 에 연결된 다른 모든 커넥션을 KILL 합니다.
+     *
+     * @return void 반환값 없음
      */
     private function killStaleTestingConnections(): void
     {

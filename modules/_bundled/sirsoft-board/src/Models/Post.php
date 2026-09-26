@@ -83,10 +83,13 @@ class Post extends Model implements FulltextSearchable
         'comments_count',
         'attachments_count',
         'scrap_count',
+        'reaction_counts',
     ];
 
     /**
      * 속성 캐스팅
+     *
+     * @return array<string, string> 컬럼별 캐스팅 규칙
      */
     protected function casts(): array
     {
@@ -104,6 +107,8 @@ class Post extends Model implements FulltextSearchable
             'comments_count' => 'integer',
             'attachments_count' => 'integer',
             'scrap_count' => 'integer',
+            // 반응 유형별 개수 (키는 유형 ID 문자열, 예: {"1":18,"2":2})
+            'reaction_counts' => 'array',
             'created_at' => 'datetime',
             'updated_at' => 'datetime',
             'deleted_at' => 'datetime',
@@ -117,6 +122,8 @@ class Post extends Model implements FulltextSearchable
      * 목록 쿼리는 content 를 SELECT 하지 않으므로(컬럼 프루닝) 조회 시점 파싱이 불가하다.
      * Service 가 아닌 모델 saving 이벤트에 두는 이유: 시더·테스트의 Post::create() 직접
      * 호출과 이커머스 문의 훅 리스너 경유 경로까지 누락 없이 커버되는 유일 지점이기 때문.
+     *
+     * @return void 반환값 없음
      */
     protected static function booted(): void
     {
@@ -155,6 +162,7 @@ class Post extends Model implements FulltextSearchable
      * 게시판과의 관계를 정의합니다.
      *
      * @return BelongsTo 게시판 모델과의 관계
+     * @return BelongsTo<Board, Post>
      */
     public function board(): BelongsTo
     {
@@ -165,6 +173,7 @@ class Post extends Model implements FulltextSearchable
      * 작성자와의 관계를 정의합니다 (회원).
      *
      * @return BelongsTo 작성자 모델과의 관계
+     * @return BelongsTo<User, Post>
      */
     public function user(): BelongsTo
     {
@@ -175,6 +184,7 @@ class Post extends Model implements FulltextSearchable
      * 부모 게시글과의 관계를 정의합니다 (답글용).
      *
      * @return BelongsTo 부모 게시글과의 관계
+     * @return BelongsTo<Post, Post>
      */
     public function parent(): BelongsTo
     {
@@ -188,6 +198,7 @@ class Post extends Model implements FulltextSearchable
      * Repository의 Eager loading 클로저에서 명시적으로 전달합니다.
      *
      * @return HasMany 답글 목록과의 관계
+     * @return HasMany<Post>
      */
     public function replies(): HasMany
     {
@@ -201,6 +212,7 @@ class Post extends Model implements FulltextSearchable
      * Repository의 Eager loading 클로저에서 명시적으로 전달합니다.
      *
      * @return HasMany 댓글 목록과의 관계
+     * @return HasMany<Comment>
      */
     public function comments(): HasMany
     {
@@ -215,6 +227,7 @@ class Post extends Model implements FulltextSearchable
      * Repository의 Eager loading 클로저에서 명시적으로 전달합니다.
      *
      * @return HasMany 첨부파일 목록과의 관계
+     * @return HasMany<Attachment>
      */
     public function attachments(): HasMany
     {

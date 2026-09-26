@@ -7,8 +7,8 @@
  * - 저장 버튼의 apiCall body가 활성 탭 데이터만 전송하는지 검증
  * - 코어 환경설정과 동일한 탭별 개별 저장 패턴 확인
  * - _tab 메타 필드 포함 여부 검증
- * - 탭 10종 (basic_info, language_currency, seo, order_settings, claim, shipping,
- *   review_settings, notification_definitions, identity_policies, mileage) 정의 검증
+ * - 탭 11종 (basic_info, language_currency, seo, order_settings, claim, shipping,
+ *   review_settings, notification_definitions, identity_policies, mileage, privacy_retention) 정의 검증
  *
  * @vitest-environment node
  */
@@ -63,21 +63,41 @@ describe('환경설정 탭별 개별 저장 패턴 검증', () => {
     describe('저장 버튼 apiCall body 구조', () => {
         const saveButton = findById(content, 'save_button');
 
+        /**
+         * @scenario order_state=confirmed, toggle=on, mode=anonymize
+         *
+         * @effects settings_save_sends_only_active_tab
+         */
         it('저장 버튼이 존재해야 한다', () => {
             expect(saveButton).not.toBeNull();
         });
 
+        /**
+         * @scenario order_state=confirmed, toggle=on, mode=anonymize
+         *
+         * @effects settings_save_sends_only_active_tab
+         */
         it('저장 버튼에 click 액션이 있어야 한다', () => {
             expect(saveButton.actions).toBeDefined();
             expect(asArray(saveButton?.actions).length).toBeGreaterThan(0);
             expect(asArray(saveButton?.actions)[0].type).toBe('click');
         });
 
+        /**
+         * @scenario order_state=confirmed, toggle=on, mode=anonymize
+         *
+         * @effects settings_save_sends_only_active_tab
+         */
         it('apiCall 핸들러가 존재해야 한다 (sequence 내부 포함)', () => {
             const apiCallAction = findActionByHandler(saveButton.actions, 'apiCall');
             expect(apiCallAction).not.toBeNull();
         });
 
+        /**
+         * @scenario order_state=confirmed, toggle=on, mode=anonymize
+         *
+         * @effects settings_save_sends_only_active_tab
+         */
         it('body 가 _local.form 전체가 아닌 동적 탭 필터링 표현식이어야 한다', () => {
             const apiCallAction = findActionByHandler(saveButton.actions, 'apiCall');
             const body = apiCallAction.params.body;
@@ -87,6 +107,11 @@ describe('환경설정 탭별 개별 저장 패턴 검증', () => {
             expect(body).toContain('function()');
         });
 
+        /**
+         * @scenario order_state=confirmed, toggle=on, mode=anonymize
+         *
+         * @effects settings_save_sends_only_active_tab
+         */
         it('body 에 활성 탭 감지 로직이 포함되어야 한다', () => {
             const apiCallAction = findActionByHandler(saveButton.actions, 'apiCall');
             const body = apiCallAction.params.body;
@@ -96,6 +121,11 @@ describe('환경설정 탭별 개별 저장 패턴 검증', () => {
             expect(body).toContain("'basic_info'");
         });
 
+        /**
+         * @scenario order_state=confirmed, toggle=on, mode=anonymize
+         *
+         * @effects settings_save_failure_shows_server_message
+         */
         it('저장 실패 토스트가 서버 오류 메시지를 노출해야 한다 (회귀 — 운영 실측 제보)', () => {
             // 고정 문구만 쓰면 검증 실패 사유(예: 필드별 422 메시지)가 사용자에게
             // 도달하지 못하고 "설정 저장에 실패했습니다" 로 뭉개진다.
@@ -110,6 +140,11 @@ describe('환경설정 탭별 개별 저장 패턴 검증', () => {
             expect(errorToast.params.message).toContain('save_error');
         });
 
+        /**
+         * @scenario order_state=confirmed, toggle=on, mode=anonymize
+         *
+         * @effects settings_save_sends_only_active_tab
+         */
         it('body 에 _tab 메타 필드가 포함되어야 한다', () => {
             const apiCallAction = findActionByHandler(saveButton.actions, 'apiCall');
             const body = apiCallAction.params.body;
@@ -119,6 +154,11 @@ describe('환경설정 탭별 개별 저장 패턴 검증', () => {
             expect(body).toContain("_tab: 'notifications'");
         });
 
+        /**
+         * @scenario order_state=confirmed, toggle=on, mode=anonymize
+         *
+         * @effects settings_save_sends_only_active_tab
+         */
         it('body 에 동적 키([tab]) 로 해당 탭 데이터만 추출하는 패턴이 있어야 한다', () => {
             const apiCallAction = findActionByHandler(saveButton.actions, 'apiCall');
             const body = apiCallAction.params.body;
@@ -126,6 +166,11 @@ describe('환경설정 탭별 개별 저장 패턴 검증', () => {
             expect(body).toContain('[tab]: form[tab]');
         });
 
+        /**
+         * @scenario order_state=confirmed, toggle=on, mode=anonymize
+         *
+         * @effects settings_save_sends_only_active_tab
+         */
         it('body 에 nullish fallback (?? {}) 이 있어야 한다', () => {
             const apiCallAction = findActionByHandler(saveButton.actions, 'apiCall');
             const body = apiCallAction.params.body;
@@ -135,6 +180,11 @@ describe('환경설정 탭별 개별 저장 패턴 검증', () => {
             expect(body).toContain('form[tab] ?? {}');
         });
 
+        /**
+         * @scenario order_state=confirmed, toggle=on, mode=anonymize
+         *
+         * @effects settings_save_sends_only_active_tab
+         */
         it('notification_definitions 탭은 notifications 페이로드로 변환되어야 한다', () => {
             const apiCallAction = findActionByHandler(saveButton.actions, 'apiCall');
             const body = apiCallAction.params.body;
@@ -145,6 +195,11 @@ describe('환경설정 탭별 개별 저장 패턴 검증', () => {
             expect(body).toContain('form.notifications?.channels');
         });
 
+        /**
+         * @scenario order_state=confirmed, toggle=on, mode=anonymize
+         *
+         * @effects settings_save_sends_only_active_tab
+         */
         it('mileage 탭은 _tab:mileage + mileage 데이터만 전송한다 (inquiry 미포함)', () => {
             const apiCallAction = findActionByHandler(saveButton.actions, 'apiCall');
             const body = apiCallAction.params.body;
@@ -159,6 +214,11 @@ describe('환경설정 탭별 개별 저장 패턴 검증', () => {
     describe('탭 네비게이션과 저장 연동', () => {
         const tabNav = findById(content, 'tab_navigation');
 
+        /**
+         * @scenario order_state=confirmed, toggle=on, mode=anonymize
+         *
+         * @effects settings_tabs_include_privacy_retention
+         */
         it('탭 변경 시 _global.activeEcommerceSettingsTab 이 업데이트되어야 한다', () => {
             expect(tabNav).not.toBeNull();
 
@@ -183,9 +243,14 @@ describe('환경설정 탭별 개별 저장 패턴 검증', () => {
             expect(globalSetState.params.activeEcommerceSettingsTab).toContain('$args[0]');
         });
 
-        it('10개 탭이 정의되어야 한다 (마일리지 탭 포함)', () => {
+        /**
+         * @scenario order_state=confirmed, toggle=on, mode=anonymize
+         *
+         * @effects settings_tabs_include_privacy_retention
+         */
+        it('11개 탭이 정의되어야 한다 (마일리지·개인정보 보유기간 탭 포함)', () => {
             const tabs = tabNav.props.tabs;
-            expect(tabs).toHaveLength(10);
+            expect(tabs).toHaveLength(11);
 
             const tabIds = tabs.map((t: any) => t.id);
             expect(tabIds).toEqual([
@@ -199,9 +264,16 @@ describe('환경설정 탭별 개별 저장 패턴 검증', () => {
                 'notification_definitions',
                 'identity_policies',
                 'mileage',
+                // 이슈 #636 — 저장은 기본 분기(`{ _tab: tab, [tab]: form[tab] }`)를 그대로 탄다
+                'privacy_retention',
             ]);
         });
 
+        /**
+         * @scenario order_state=confirmed, toggle=on, mode=anonymize
+         *
+         * @effects settings_tabs_include_privacy_retention
+         */
         it('activeTabId 가 저장 body 와 동일한 탭 감지 표현식을 사용해야 한다', () => {
             const activeTabExpr = tabNav.props.activeTabId;
             expect(activeTabExpr).toContain('_global.activeEcommerceSettingsTab');

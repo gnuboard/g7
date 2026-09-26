@@ -142,7 +142,9 @@
                                     }
                                 ],
                                 "props": {
-                                    "className": "btn-icon"
+                                    "type": "button",
+                                    "className": "btn-icon",
+                                    "aria-label": "$t:sirsoft-board.admin.scraps.refresh"
                                 },
                                 "children": [
                                     {
@@ -219,688 +221,14 @@
                         ]
                     },
                     {
-                        "id": "search_filter_area",
-                        "type": "basic",
-                        "name": "Div",
-                        "props": {
-                            "className": "admin-card"
-                        },
-                        "children": [
-                            {
-                                "id": "search_row",
-                                "type": "basic",
-                                "name": "Div",
-                                "responsive": {
-                                    "portable": {
-                                        "props": {
-                                            "className": "row-stack"
-                                        },
-                                        "children": [
-                                            {
-                                                "id": "mobile_search_row",
-                                                "type": "basic",
-                                                "name": "Div",
-                                                "props": {
-                                                    "className": "flex flex-row gap-2 items-center"
-                                                },
-                                                "children": [
-                                                    {
-                                                        "id": "mobile_search_field_select",
-                                                        "type": "basic",
-                                                        "name": "Select",
-                                                        "actions": [
-                                                            {
-                                                                "type": "change",
-                                                                "handler": "setState",
-                                                                "params": {
-                                                                    "searchField": "{{$event.target.value}}"
-                                                                }
-                                                            }
-                                                        ],
-                                                        "props": {
-                                                            "value": "{{_local.searchField || 'all'}}",
-                                                            "className": "w-24 px-3 py-2 bg-gray-100 dark:bg-gray-700 border-0 rounded-lg text-gray-700 dark:text-gray-200 text-sm font-medium focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400",
-                                                            "options": [
-                                                                {
-                                                                    "value": "all",
-                                                                    "label": "$t:sirsoft-board.admin.scraps.search_fields.all"
-                                                                },
-                                                                {
-                                                                    "value": "post_title",
-                                                                    "label": "$t:sirsoft-board.admin.scraps.search_fields.post_title"
-                                                                },
-                                                                {
-                                                                    "value": "post_content",
-                                                                    "label": "$t:sirsoft-board.admin.scraps.search_fields.post_content"
-                                                                },
-                                                                {
-                                                                    "value": "board_name",
-                                                                    "label": "$t:sirsoft-board.admin.scraps.search_fields.board_name"
-                                                                },
-                                                                {
-                                                                    "value": "member",
-                                                                    "label": "$t:sirsoft-board.admin.scraps.search_fields.member"
-                                                                },
-                                                                {
-                                                                    "value": "author_name",
-                                                                    "label": "$t:sirsoft-board.admin.scraps.search_fields.author_name"
-                                                                }
-                                                            ]
-                                                        }
-                                                    },
-                                                    {
-                                                        "id": "mobile_search_input",
-                                                        "type": "basic",
-                                                        "name": "Input",
-                                                        "actions": [
-                                                            {
-                                                                "type": "change",
-                                                                "handler": "setState",
-                                                                "params": {
-                                                                    "searchQuery": "{{$event.target.value}}"
-                                                                }
-                                                            },
-                                                            {
-                                                                "type": "keypress",
-                                                                "key": "Enter",
-                                                                "actionRef": "searchBoardScraps"
-                                                            }
-                                                        ],
-                                                        "props": {
-                                                            "type": "text",
-                                                            "placeholder": "$t:sirsoft-board.admin.scraps.search_placeholder",
-                                                            "value": "{{_local.searchQuery || ''}}",
-                                                            "className": "flex-1 min-w-0"
-                                                        }
-                                                    }
-                                                ]
-                                            },
-                                            {
-                                                "id": "mobile_action_row",
-                                                "type": "basic",
-                                                "name": "Div",
-                                                "props": {
-                                                    "className": "flex flex-row gap-2 items-center"
-                                                },
-                                                "children": [
-                                                    {
-                                                        "id": "mobile_board_filter_select",
-                                                        "type": "basic",
-                                                        "name": "Select",
-                                                        "actions": [
-                                                            {
-                                                                "comment": "좁은 화면 판 게시판 필터 — 넓은 화면 판과 같은 전역 값을 쓴다. 담아만 두고 실제 조회는 검색 버튼에서 한 번에 일어난다",
-                                                                "type": "change",
-                                                                "handler": "setState",
-                                                                "params": {
-                                                                    "target": "global",
-                                                                    "scrapBoardFilter": "{{$event.target.value}}"
-                                                                }
-                                                            }
-                                                        ],
-                                                        "props": {
-                                                            "value": "{{_global.scrapBoardFilter !== undefined ? _global.scrapBoardFilter : (query.board_id || '')}}",
-                                                            "className": "flex-1 min-w-0 px-3 py-2 bg-gray-100 dark:bg-gray-700 border-0 rounded-lg text-gray-700 dark:text-gray-200 text-sm font-medium focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
-                                                        },
-                                                        "children": [
-                                                            {
-                                                                "type": "basic",
-                                                                "name": "Option",
-                                                                "props": {
-                                                                    "value": ""
-                                                                },
-                                                                "text": "$t:sirsoft-board.admin.scraps.filters.board_all"
-                                                            },
-                                                            {
-                                                                "type": "basic",
-                                                                "name": "Option",
-                                                                "iteration": {
-                                                                    "source": "{{scrap_boards?.data?.data ?? []}}",
-                                                                    "item_var": "b"
-                                                                },
-                                                                "props": {
-                                                                    "value": "{{b.id}}"
-                                                                },
-                                                                "text": "{{b.name}}"
-                                                            }
-                                                        ]
-                                                    },
-                                                    {
-                                                        "id": "mobile_advanced_search_toggle",
-                                                        "type": "basic",
-                                                        "name": "Button",
-                                                        "actions": [
-                                                            {
-                                                                "comment": "좁은 화면 판 고급 검색 열기·닫기 — 넓은 화면 판과 같은 전역 값을 뒤집으므로 두 판이 어긋난 상태로 남지 않는다",
-                                                                "type": "click",
-                                                                "handler": "setState",
-                                                                "params": {
-                                                                    "target": "global",
-                                                                    "showAdvancedSearch": "{{!_global.showAdvancedSearch}}"
-                                                                }
-                                                            }
-                                                        ],
-                                                        "props": {
-                                                            "className": "flex items-center justify-center gap-2 px-4 py-2 bg-gray-800 dark:bg-gray-700 border-0 rounded-lg text-white dark:text-gray-200 font-medium hover:bg-gray-900 dark:hover:bg-gray-600 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 transition-colors text-sm"
-                                                        },
-                                                        "children": [
-                                                            {
-                                                                "type": "basic",
-                                                                "name": "Span",
-                                                                "text": "$t:sirsoft-board.admin.scraps.advanced_search"
-                                                            },
-                                                            {
-                                                                "type": "basic",
-                                                                "name": "Icon",
-                                                                "props": {
-                                                                    "name": "{{_global.showAdvancedSearch ? 'chevron-up' : 'chevron-down'}}",
-                                                                    "className": "text-base text-white dark:text-gray-300"
-                                                                }
-                                                            }
-                                                        ]
-                                                    }
-                                                ]
-                                            }
-                                        ]
-                                    }
-                                },
-                                "props": {
-                                    "className": "flex-center flex-row gap-3"
-                                },
-                                "children": [
-                                    {
-                                        "id": "search_field_select",
-                                        "type": "basic",
-                                        "name": "Select",
-                                        "actions": [
-                                            {
-                                                "type": "change",
-                                                "handler": "setState",
-                                                "params": {
-                                                    "searchField": "{{$event.target.value}}"
-                                                }
-                                            }
-                                        ],
-                                        "props": {
-                                            "value": "{{_local.searchField || 'all'}}",
-                                            "className": "w-32 px-4 py-2.5 bg-gray-100 dark:bg-gray-700 border-0 rounded-xl text-gray-700 dark:text-gray-200 text-sm font-medium focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400",
-                                            "options": [
-                                                {
-                                                    "value": "all",
-                                                    "label": "$t:sirsoft-board.admin.scraps.search_fields.all"
-                                                },
-                                                {
-                                                    "value": "post_title",
-                                                    "label": "$t:sirsoft-board.admin.scraps.search_fields.post_title"
-                                                },
-                                                {
-                                                    "value": "post_content",
-                                                    "label": "$t:sirsoft-board.admin.scraps.search_fields.post_content"
-                                                },
-                                                {
-                                                    "value": "board_name",
-                                                    "label": "$t:sirsoft-board.admin.scraps.search_fields.board_name"
-                                                },
-                                                {
-                                                    "value": "member",
-                                                    "label": "$t:sirsoft-board.admin.scraps.search_fields.member"
-                                                },
-                                                {
-                                                    "value": "author_name",
-                                                    "label": "$t:sirsoft-board.admin.scraps.search_fields.author_name"
-                                                }
-                                            ]
-                                        }
-                                    },
-                                    {
-                                        "id": "search_input",
-                                        "type": "basic",
-                                        "name": "Input",
-                                        "actions": [
-                                            {
-                                                "type": "change",
-                                                "handler": "setState",
-                                                "params": {
-                                                    "searchQuery": "{{$event.target.value}}"
-                                                }
-                                            },
-                                            {
-                                                "type": "keypress",
-                                                "key": "Enter",
-                                                "actionRef": "searchBoardScraps"
-                                            }
-                                        ],
-                                        "props": {
-                                            "type": "text",
-                                            "placeholder": "$t:sirsoft-board.admin.scraps.search_placeholder",
-                                            "value": "{{_local.searchQuery || ''}}",
-                                            "className": "flex-1 min-w-0"
-                                        }
-                                    },
-                                    {
-                                        "id": "board_filter_select",
-                                        "type": "basic",
-                                        "name": "Select",
-                                        "actions": [
-                                            {
-                                                "comment": "게시판 필터를 담아 둔다 — 검색 버튼이 이 값을 URL 로 옮긴다",
-                                                "type": "change",
-                                                "handler": "setState",
-                                                "params": {
-                                                    "target": "global",
-                                                    "scrapBoardFilter": "{{$event.target.value}}"
-                                                }
-                                            }
-                                        ],
-                                        "props": {
-                                            "value": "{{_global.scrapBoardFilter !== undefined ? _global.scrapBoardFilter : (query.board_id || '')}}",
-                                            "className": "w-44 px-4 py-2.5 bg-gray-100 dark:bg-gray-700 border-0 rounded-xl text-gray-700 dark:text-gray-200 text-sm font-medium focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
-                                        },
-                                        "children": [
-                                            {
-                                                "type": "basic",
-                                                "name": "Option",
-                                                "props": {
-                                                    "value": ""
-                                                },
-                                                "text": "$t:sirsoft-board.admin.scraps.filters.board_all"
-                                            },
-                                            {
-                                                "type": "basic",
-                                                "name": "Option",
-                                                "iteration": {
-                                                    "source": "{{scrap_boards?.data?.data ?? []}}",
-                                                    "item_var": "b"
-                                                },
-                                                "props": {
-                                                    "value": "{{b.id}}"
-                                                },
-                                                "text": "{{b.name}}"
-                                            }
-                                        ]
-                                    },
-                                    {
-                                        "id": "advanced_search_toggle",
-                                        "type": "basic",
-                                        "name": "Button",
-                                        "actions": [
-                                            {
-                                                "comment": "넓은 화면 판 고급 검색 열기·닫기 — 화면 표시일 뿐이라 URL 에 남기지 않는다(새로고침하면 접힌 채로 시작한다)",
-                                                "type": "click",
-                                                "handler": "setState",
-                                                "params": {
-                                                    "target": "global",
-                                                    "showAdvancedSearch": "{{!_global.showAdvancedSearch}}"
-                                                }
-                                            }
-                                        ],
-                                        "props": {
-                                            "className": "flex-center gap-2 px-4 py-2.5 bg-gray-800 dark:bg-gray-700 border-0 rounded-xl text-white dark:text-gray-200 font-medium hover:bg-gray-900 dark:hover:bg-gray-600 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 transition-colors text-sm"
-                                        },
-                                        "children": [
-                                            {
-                                                "type": "basic",
-                                                "name": "Span",
-                                                "text": "$t:sirsoft-board.admin.scraps.advanced_search"
-                                            },
-                                            {
-                                                "type": "basic",
-                                                "name": "Icon",
-                                                "props": {
-                                                    "name": "{{_global.showAdvancedSearch ? 'chevron-up' : 'chevron-down'}}",
-                                                    "className": "text-base text-white dark:text-gray-300"
-                                                }
-                                            }
-                                        ]
-                                    }
-                                ]
-                            },
-                            {
-                                "type": "basic",
-                                "name": "Div",
-                                "children": [
-                                    {
-                                        "id": "advanced_filters",
-                                        "type": "basic",
-                                        "name": "Div",
-                                        "if": "{{_global.showAdvancedSearch}}",
-                                        "props": {
-                                            "className": "row-stack mt-4"
-                                        },
-                                        "children": [
-                                            {
-                                                "id": "date_filter_row",
-                                                "type": "basic",
-                                                "name": "Div",
-                                                "responsive": {
-                                                    "portable": {
-                                                        "props": {
-                                                            "className": "row-stack"
-                                                        }
-                                                    }
-                                                },
-                                                "props": {
-                                                    "className": "flex-start gap-3"
-                                                },
-                                                "children": [
-                                                    {
-                                                        "type": "basic",
-                                                        "name": "Span",
-                                                        "props": {
-                                                            "className": "text-tertiary font-medium w-20 shrink-0 pt-2"
-                                                        },
-                                                        "text": "$t:sirsoft-board.admin.scraps.filters.scrapped_at_label"
-                                                    },
-                                                    {
-                                                        "type": "basic",
-                                                        "name": "Div",
-                                                        "props": {
-                                                            "className": "flex-center flex-wrap gap-2"
-                                                        },
-                                                        "children": [
-                                                            {
-                                                                "id": "date_from",
-                                                                "type": "basic",
-                                                                "name": "Input",
-                                                                "actions": [
-                                                                    {
-                                                                        "comment": "시작 날짜를 직접 고르면 옆의 빠른 선택 표시를 끈다 — 「최근 1주」로 채운 값을 손으로 고친 뒤에도 그 배지가 켜져 있으면 화면이 거짓말을 한다",
-                                                                        "type": "change",
-                                                                        "handler": "setState",
-                                                                        "params": {
-                                                                            "target": "global",
-                                                                            "dateFrom": "{{$event.target.value}}",
-                                                                            "dateQuick": ""
-                                                                        }
-                                                                    }
-                                                                ],
-                                                                "props": {
-                                                                    "type": "date",
-                                                                    "value": "{{_global.dateFrom !== undefined ? _global.dateFrom : (query.scrapped_at_from || '')}}",
-                                                                    "className": "rounded"
-                                                                }
-                                                            },
-                                                            {
-                                                                "type": "basic",
-                                                                "name": "Span",
-                                                                "props": {
-                                                                    "className": "text-label-subtle"
-                                                                },
-                                                                "text": "~"
-                                                            },
-                                                            {
-                                                                "id": "date_to",
-                                                                "type": "basic",
-                                                                "name": "Input",
-                                                                "actions": [
-                                                                    {
-                                                                        "comment": "끝 날짜도 같은 이유로 빠른 선택 표시를 끈다",
-                                                                        "type": "change",
-                                                                        "handler": "setState",
-                                                                        "params": {
-                                                                            "target": "global",
-                                                                            "dateTo": "{{$event.target.value}}",
-                                                                            "dateQuick": ""
-                                                                        }
-                                                                    }
-                                                                ],
-                                                                "props": {
-                                                                    "type": "date",
-                                                                    "value": "{{_global.dateTo !== undefined ? _global.dateTo : (query.scrapped_at_to || '')}}",
-                                                                    "className": "rounded"
-                                                                }
-                                                            },
-                                                            {
-                                                                "id": "date_quick_buttons",
-                                                                "type": "basic",
-                                                                "name": "Div",
-                                                                "props": {
-                                                                    "className": "flex flex-wrap gap-1"
-                                                                },
-                                                                "children": [
-                                                                    {
-                                                                        "type": "basic",
-                                                                        "name": "Div",
-                                                                        "actions": [
-                                                                            {
-                                                                                "comment": "오늘 하루 — 시작·끝을 같은 날로 채운다. 여섯 버튼 모두 날짜 두 칸을 대신 채워 줄 뿐이라 실제 조회는 검색 버튼에서 일어난다",
-                                                                                "type": "click",
-                                                                                "handler": "setState",
-                                                                                "params": {
-                                                                                    "target": "global",
-                                                                                    "dateQuick": "today",
-                                                                                    "dateFrom": "{{new Date().toISOString().slice(0, 10)}}",
-                                                                                    "dateTo": "{{new Date().toISOString().slice(0, 10)}}"
-                                                                                }
-                                                                            }
-                                                                        ],
-                                                                        "props": {
-                                                                            "className": "{{_global.dateQuick === 'today' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
-                                                                        },
-                                                                        "text": "$t:sirsoft-board.admin.scraps.filters.date_quick_today"
-                                                                    },
-                                                                    {
-                                                                        "type": "basic",
-                                                                        "name": "Div",
-                                                                        "actions": [
-                                                                            {
-                                                                                "comment": "최근 3일 — 오늘을 포함해 세 날이므로 이틀을 뺀다",
-                                                                                "type": "click",
-                                                                                "handler": "setState",
-                                                                                "params": {
-                                                                                    "target": "global",
-                                                                                    "dateQuick": "3days",
-                                                                                    "dateFrom": "{{(() => { const d = new Date(); d.setDate(d.getDate() - 2); return d.toISOString().slice(0, 10); })()}}",
-                                                                                    "dateTo": "{{new Date().toISOString().slice(0, 10)}}"
-                                                                                }
-                                                                            }
-                                                                        ],
-                                                                        "props": {
-                                                                            "className": "{{_global.dateQuick === '3days' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
-                                                                        },
-                                                                        "text": "$t:sirsoft-board.admin.scraps.filters.date_quick_3days"
-                                                                    },
-                                                                    {
-                                                                        "type": "basic",
-                                                                        "name": "Div",
-                                                                        "actions": [
-                                                                            {
-                                                                                "comment": "최근 1주 — 오늘 포함 7일이라 엿새를 뺀다",
-                                                                                "type": "click",
-                                                                                "handler": "setState",
-                                                                                "params": {
-                                                                                    "target": "global",
-                                                                                    "dateQuick": "week",
-                                                                                    "dateFrom": "{{(() => { const d = new Date(); d.setDate(d.getDate() - 6); return d.toISOString().slice(0, 10); })()}}",
-                                                                                    "dateTo": "{{new Date().toISOString().slice(0, 10)}}"
-                                                                                }
-                                                                            }
-                                                                        ],
-                                                                        "props": {
-                                                                            "className": "{{_global.dateQuick === 'week' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
-                                                                        },
-                                                                        "text": "$t:sirsoft-board.admin.scraps.filters.date_quick_week"
-                                                                    },
-                                                                    {
-                                                                        "type": "basic",
-                                                                        "name": "Div",
-                                                                        "actions": [
-                                                                            {
-                                                                                "comment": "최근 1개월 — 날수가 아니라 달을 하나 뺀 같은 날짜다(말일이면 브라우저가 다음 달로 넘긴다)",
-                                                                                "type": "click",
-                                                                                "handler": "setState",
-                                                                                "params": {
-                                                                                    "target": "global",
-                                                                                    "dateQuick": "month",
-                                                                                    "dateFrom": "{{(() => { const d = new Date(); d.setMonth(d.getMonth() - 1); return d.toISOString().slice(0, 10); })()}}",
-                                                                                    "dateTo": "{{new Date().toISOString().slice(0, 10)}}"
-                                                                                }
-                                                                            }
-                                                                        ],
-                                                                        "props": {
-                                                                            "className": "{{_global.dateQuick === 'month' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
-                                                                        },
-                                                                        "text": "$t:sirsoft-board.admin.scraps.filters.date_quick_month"
-                                                                    },
-                                                                    {
-                                                                        "type": "basic",
-                                                                        "name": "Div",
-                                                                        "actions": [
-                                                                            {
-                                                                                "comment": "최근 3개월 — 달 셋을 뺀 같은 날짜",
-                                                                                "type": "click",
-                                                                                "handler": "setState",
-                                                                                "params": {
-                                                                                    "target": "global",
-                                                                                    "dateQuick": "3months",
-                                                                                    "dateFrom": "{{(() => { const d = new Date(); d.setMonth(d.getMonth() - 3); return d.toISOString().slice(0, 10); })()}}",
-                                                                                    "dateTo": "{{new Date().toISOString().slice(0, 10)}}"
-                                                                                }
-                                                                            }
-                                                                        ],
-                                                                        "props": {
-                                                                            "className": "{{_global.dateQuick === '3months' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
-                                                                        },
-                                                                        "text": "$t:sirsoft-board.admin.scraps.filters.date_quick_3months"
-                                                                    },
-                                                                    {
-                                                                        "type": "basic",
-                                                                        "name": "Div",
-                                                                        "actions": [
-                                                                            {
-                                                                                "comment": "기간 제한 없음 — 두 칸을 «빈 값»으로 둔다(손대지 않은 상태와 달라서, 검색 시 URL 의 기존 날짜를 잇지 않고 지운다)",
-                                                                                "type": "click",
-                                                                                "handler": "setState",
-                                                                                "params": {
-                                                                                    "target": "global",
-                                                                                    "dateQuick": "all",
-                                                                                    "dateFrom": "",
-                                                                                    "dateTo": ""
-                                                                                }
-                                                                            }
-                                                                        ],
-                                                                        "props": {
-                                                                            "className": "{{_global.dateQuick === 'all' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
-                                                                        },
-                                                                        "text": "$t:sirsoft-board.admin.scraps.filters.date_quick_all"
-                                                                    }
-                                                                ]
-                                                            }
-                                                        ]
-                                                    }
-                                                ]
-                                            }
-                                        ]
-                                    }
-                                ]
-                            },
-                            {
-                                "id": "search_buttons",
-                                "type": "basic",
-                                "name": "Div",
-                                "responsive": {
-                                    "portable": {
-                                        "props": {
-                                            "className": "grid grid-cols-2 gap-2 mt-4"
-                                        }
-                                    }
-                                },
-                                "props": {
-                                    "className": "flex justify-center gap-2 mt-4"
-                                },
-                                "children": [
-                                    {
-                                        "id": "reset_button",
-                                        "type": "basic",
-                                        "name": "Button",
-                                        "responsive": {
-                                            "portable": {
-                                                "props": {
-                                                    "className": "w-full px-4 py-2 bg-white dark:bg-gray-800 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors font-medium"
-                                                }
-                                            }
-                                        },
-                                        "actions": [
-                                            {
-                                                "comment": "초기화 ①  검색 대상과 검색어를 지역 상태에서 비운다",
-                                                "type": "click",
-                                                "handler": "setState",
-                                                "params": {
-                                                    "searchField": "all",
-                                                    "searchQuery": ""
-                                                }
-                                            },
-                                            {
-                                                "comment": "초기화 ②  게시판·날짜·선택을 전역에서 비운다 — 이것을 먼저 하지 않으면 URL 만 털리고 화면의 셀렉트·날짜·체크가 남는다",
-                                                "type": "click",
-                                                "handler": "setState",
-                                                "params": {
-                                                    "target": "global",
-                                                    "scrapBoardFilter": "",
-                                                    "dateFrom": "",
-                                                    "dateTo": "",
-                                                    "dateQuick": "",
-                                                    "selectedIds": []
-                                                }
-                                            },
-                                            {
-                                                "comment": "audit:allow layout-list-context-navigate-merge-query 초기화 버튼 — 목록 상태를 전부 비우는 것이 이 버튼의 목적이므로 병합하지 않는다. 회원 필터도 함께 떨어진다",
-                                                "type": "click",
-                                                "handler": "navigate",
-                                                "params": {
-                                                    "path": "/admin/boards/scraps",
-                                                    "mergeQuery": false
-                                                }
-                                            }
-                                        ],
-                                        "props": {
-                                            "className": "px-4 py-2 bg-white dark:bg-gray-800 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors font-medium"
-                                        },
-                                        "children": [
-                                            {
-                                                "type": "basic",
-                                                "name": "Span",
-                                                "text": "$t:sirsoft-board.admin.scraps.reset"
-                                            }
-                                        ]
-                                    },
-                                    {
-                                        "id": "search_button",
-                                        "type": "basic",
-                                        "name": "Button",
-                                        "responsive": {
-                                            "portable": {
-                                                "props": {
-                                                    "className": "w-full px-4 py-2 bg-gray-800 dark:bg-gray-600 text-white rounded-lg hover:bg-gray-900 dark:hover:bg-gray-500 transition-colors text-sm font-medium"
-                                                }
-                                            }
-                                        },
-                                        "actions": [
-                                            {
-                                                "comment": "검색 실행 — 조립은 명명 액션 한 자리에 있고 여기서는 그것을 부르기만 한다(엔터 입력 두 자리와 같은 규칙을 쓰기 위해서다)",
-                                                "type": "click",
-                                                "actionRef": "searchBoardScraps"
-                                            }
-                                        ],
-                                        "props": {
-                                            "className": "px-4 py-2 bg-gray-800 dark:bg-gray-600 text-white rounded-lg hover:bg-gray-900 dark:hover:bg-gray-500 transition-colors text-sm font-medium"
-                                        },
-                                        "children": [
-                                            {
-                                                "type": "basic",
-                                                "name": "Span",
-                                                "text": "$t:sirsoft-board.admin.scraps.search"
-                                            }
-                                        ]
-                                    }
-                                ]
-                            }
-                        ]
+                        "partial": "partials/admin_board_scraps_index/_partial_filter.json"
                     },
                     {
+                        "comment": "일괄 처리 줄은 **항상 세운다** — 저장소의 관리자 목록 21곳이 그렇게 하고, 버튼만\n        잠가 둔다. 고를 것이 있다는 사실 자체를 먼저 알려야 하고, 골랐다 풀 때마다 줄이\n        생겼다 사라지면 그 아래 표가 위아래로 흔들린다. 노출 여부는 권한으로 가른다\n        (형제 화면 회원 목록과 같은 규칙).",
                         "id": "bulk_actions_area",
                         "type": "basic",
                         "name": "Div",
+                        "if": "{{scraps?.data?.abilities?.can_manage === true}}",
                         "props": {
                             "className": "bulk-actions-bar"
                         },
@@ -948,6 +276,25 @@
                                         ]
                                     }
                                 ]
+                            }
+                        ]
+                    },
+                    {
+                        "comment": "건수 줄 — 형제 관리자 목록과 같은 자리. 필터를 걸었을 때 몇 건이 남았는지 표를 세지 않고 안다.",
+                        "id": "table_header_bar",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "flex-between flex-wrap gap-3 mb-4"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "props": {
+                                    "className": "text-label"
+                                },
+                                "text": "$t:sirsoft-board.admin.scraps.total_count|count={{scraps?.data?.pagination?.total ?? 0}}"
                             }
                         ]
                     },
@@ -1079,7 +426,7 @@
                             "showColumnSelector": false,
                             "responsiveBreakpoint": 768,
                             "showFirstLast": true,
-                            "emptyMessage": "$t:common.no_data",
+                            "emptyMessage": "$t:sirsoft-board.admin.scraps.table_empty",
                             "actionsColumnHeader": "$t:common.actions",
                             "selectedCountText": "",
                             "rowActions": [
@@ -1107,12 +454,13 @@
                                     "sortable": true,
                                     "cellChildren": [
                                         {
+                                            "comment": "스크랩 시각도 반응 관리와 같은 규약으로 초까지 밝힌다 — 「2시간 전」 상대 표기는 정리 대상을\n                 고를 때 선후를 가리지 못한다. 저장은 UTC, `created_at` 이 회원 표시 시간대로 환산된 값이다.",
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-sm text-gray-900 dark:text-white"
+                                                "className": "text-sm text-gray-900 dark:text-white whitespace-nowrap"
                                             },
-                                            "text": "{{row.scrapped_at}}"
+                                            "text": "{{row.created_at}}"
                                         }
                                     ]
                                 },
@@ -1135,21 +483,68 @@
                                                     },
                                                     "children": [
                                                         {
-                                                            "type": "basic",
-                                                            "name": "Span",
+                                                            "type": "composite",
+                                                            "name": "ActionMenu",
                                                             "if": "{{!!row.member?.uuid}}",
                                                             "actions": [
                                                                 {
-                                                                    "comment": "회원 이름을 누르면 그 회원 상세로 간다 — 스크랩을 지우기 전에 \"누구인가\" 를 확인하는 자리다",
-                                                                    "type": "click",
-                                                                    "handler": "navigate",
-                                                                    "params": {
-                                                                        "path": "/admin/users/{{row.member?.uuid}}"
+                                                                    "comment": "반응 관리와 같은 두 갈래 — 상세는 새 창(이 목록의 검색 조건 보존), 「이 회원으로 검색」은\n                         같은 창에서 회원 조건만 갈아끼운다(user_uuid — 목록이 이미 읽는 필터).",
+                                                                    "event": "onItemClick",
+                                                                    "handler": "switch",
+                                                                    "cases": {
+                                                                        "view_member": {
+                                                                            "handler": "openWindow",
+                                                                            "params": {
+                                                                                "path": "/admin/users/{{row.member?.uuid}}"
+                                                                            }
+                                                                        },
+                                                                        "search_member": {
+                                                                            "handler": "navigate",
+                                                                            "params": {
+                                                                                "path": "/admin/boards/scraps",
+                                                                                "mergeQuery": true,
+                                                                                "replace": true,
+                                                                                "query": {
+                                                                                    "user_uuid": "{{row.member?.uuid}}",
+                                                                                    "page": 1
+                                                                                }
+                                                                            }
+                                                                        }
                                                                     }
                                                                 }
                                                             ],
                                                             "props": {
-                                                                "className": "text-heading cursor-pointer hover:underline"
+                                                                "position": "right",
+                                                                "items": [
+                                                                    {
+                                                                        "id": "view_member",
+                                                                        "label": "$t:sirsoft-board.admin.scraps.cell.view_member",
+                                                                        "iconName": "user"
+                                                                    },
+                                                                    {
+                                                                        "id": "search_member",
+                                                                        "label": "$t:sirsoft-board.admin.scraps.cell.search_member",
+                                                                        "iconName": "magnifying-glass"
+                                                                    }
+                                                                ]
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "props": {
+                                                                        "className": "text-heading cursor-pointer hover:underline"
+                                                                    },
+                                                                    "text": "{{row.member?.name}}"
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "if": "{{!row.member?.uuid}}",
+                                                            "props": {
+                                                                "className": "text-heading"
                                                             },
                                                             "text": "{{row.member?.name}}"
                                                         },
@@ -1386,6 +781,7 @@
                             "name": "Button",
                             "actions": [
                                 {
+                                    "comment": "확인 버튼을 먼저 잠근다 — 응답이 늦는 사이 두 번 눌리면 같은 삭제가 겹친다",
                                     "type": "click",
                                     "handler": "setState",
                                     "params": {
@@ -1394,6 +790,7 @@
                                     }
                                 },
                                 {
+                                    "comment": "스크랩 단건 삭제 — 성공하면 선택 목록에서 그 ID 를 빼고 목록을 다시 받는다. 실패 사유는 오류 모달에 싣는다",
                                     "type": "click",
                                     "handler": "apiCall",
                                     "target": "/api/modules/sirsoft-board/admin/scraps/{{_global.deleteTarget?.id}}",

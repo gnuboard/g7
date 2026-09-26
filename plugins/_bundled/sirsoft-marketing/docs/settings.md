@@ -15,7 +15,7 @@
 | `info_disclosure_enabled` | `boolean` | `true` | 정보 공개 동의 사용 |
 | `info_disclosure_terms_slug` | `string` | - | 정보 공개 동의 약관 페이지 Slug |
 
-기본값 파일: `config/settings/defaults.json` · 설정 화면 레이아웃: `resources/layouts/admin/plugin_settings.json`
+기본값 파일: `config/settings/defaults.json` · 설정 화면 레이아웃: `resources/layouts/admin/plugin_settings.g7.html`
 <!-- @generated:settings-schema END -->
 
 <!-- @intent START -->

@@ -11230,66 +11230,6 @@
     ],
     "label": "$t:editor.control.slb_variant.label"
   },
-  "prUserReaction": {
-    "widget": "select",
-    "apply": {
-      "type": "propValue",
-      "propKey": "userReaction"
-    },
-    "options": [
-      {
-        "value": "like",
-        "label": "$t:editor.control.pr_user_reaction.like"
-      },
-      {
-        "value": "funny",
-        "label": "$t:editor.control.pr_user_reaction.funny"
-      },
-      {
-        "value": "agree",
-        "label": "$t:editor.control.pr_user_reaction.agree"
-      },
-      {
-        "value": "thanks",
-        "label": "$t:editor.control.pr_user_reaction.thanks"
-      },
-      {
-        "value": "wow",
-        "label": "$t:editor.control.pr_user_reaction.wow"
-      }
-    ],
-    "label": "$t:editor.control.pr_user_reaction.label"
-  },
-  "prPostId": {
-    "widget": "text",
-    "apply": {
-      "type": "propValue",
-      "propKey": "postId"
-    },
-    "label": "$t:editor.control.pr_post_id.label"
-  },
-  "prSize": {
-    "widget": "select",
-    "apply": {
-      "type": "propValue",
-      "propKey": "size"
-    },
-    "options": [
-      {
-        "value": "sm",
-        "label": "$t:editor.control.pr_size.sm"
-      },
-      {
-        "value": "md",
-        "label": "$t:editor.control.pr_size.md"
-      },
-      {
-        "value": "lg",
-        "label": "$t:editor.control.pr_size.lg"
-      }
-    ],
-    "label": "$t:editor.control.pr_size.label"
-  },
   "piLabel": {
     "widget": "i18n-text",
     "apply": {

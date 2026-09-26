@@ -524,6 +524,24 @@ class AttachmentRepository implements AttachmentRepositoryInterface
     }
 
     /**
+     * 게시글들에 딸린 첨부를 삭제 여부와 무관하게 조회합니다 (개인정보 보유기간 파기용).
+     *
+     * @param  array<int, int>  $postIds  게시글 ID 목록
+     * @return Collection 첨부 목록 (소프트 삭제분 포함)
+     */
+    public function findWithTrashedByPostIds(array $postIds): Collection
+    {
+        if ($postIds === []) {
+            return new Collection;
+        }
+
+        return Attachment::withTrashed()
+            ->whereIn('post_id', $postIds)
+            ->orderBy('id')
+            ->get(['id', 'board_id', 'post_id', 'disk', 'path', 'deleted_at']);
+    }
+
+    /**
      * 첨부 레코드를 영구 삭제합니다.
      *
      * @param  Attachment  $attachment  첨부파일 모델

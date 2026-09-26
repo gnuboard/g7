@@ -297,7 +297,9 @@
         "active": "활성",
         "inactive": "비활성",
         "blocked": "차단",
-        "withdrawn": "탈퇴"
+        "withdrawn": "탈퇴",
+        "dormant": "휴면",
+        "pending_verification": "가입대기"
       },
       "timezone_options": {
         "Asia/Seoul": "아시아/서울 (UTC+9)",
@@ -338,6 +340,7 @@
       "disabled": "비활성",
       "withdrawn_at": "탈퇴일",
       "blocked_at": "차단일",
+      "dormant_at": "휴면 전환일",
       "consent_type": {
         "terms": "이용약관",
         "privacy": "개인정보처리방침"
@@ -1330,7 +1333,8 @@
       "notification_definitions": "알림 설정",
       "language_packs": "언어팩",
       "identity": "본인인증",
-      "info": "정보"
+      "info": "정보",
+      "privacy": "개인정보"
     },
     "general": {
       "site_info": "사이트 정보",
@@ -1555,8 +1559,49 @@
       "require_password_special_char_hint": "켜면 새로 설정하는 비밀번호에 특수문자가 최소 1개 필요합니다.",
       "two_factor_auth": "2단계 인증",
       "two_factor_auth_label": "로그인 시 인증번호를 한 번 더 확인",
-      "two_factor_auth_hint": "켜면 비밀번호 확인 뒤 가입 메일로 인증번호를 보내고, 그 번호를 입력해야 로그인이 완료됩니다.",
-      "ip_throttle_floor_hint": "IP 단위 요청 제한은 이 값의 6배로 적용되며, 분당 최소 30회는 항상 보장됩니다."
+      "two_factor_auth_hint": "켜면 비밀번호 확인 뒤 인증번호를 한 번 더 확인합니다. 기본은 가입 메일로 보내며, 인증 앱 플러그인을 설치하면 앱 코드로도 받을 수 있습니다.",
+      "two_factor_scope": "적용 범위",
+      "two_factor_scope_all": "전체 회원",
+      "two_factor_scope_admin": "관리자만",
+      "two_factor_scope_hint": "관리자만으로 두면 일반 회원은 종전처럼 비밀번호만으로 로그인합니다.",
+      "ip_throttle_floor_hint": "IP 단위 요청 제한은 이 값의 6배로 적용되며, 분당 최소 30회는 항상 보장됩니다.",
+      "ip_restriction": {
+        "title": "접근 제한",
+        "desc": "허용한 IP 에서만 관리자 영역에 접근하게 합니다.",
+        "proxy_warning": "신뢰 프록시가 설정되지 않은 상태에서 X-Forwarded-For 같은 전달 헤더가 수신되고 있습니다. 이대로면 모든 방문자가 프록시 주소 하나로 보여 IP 제한이 오작동합니다 — 먼저 신뢰 프록시를 설정하세요.",
+        "enabled": "IP 접근 제한 사용",
+        "enabled_desc": "끄면 아래 목록과 규칙은 저장만 되고 적용되지 않습니다.",
+        "admin_allowed_ips": "관리자 영역 허용 IP",
+        "current_ip": "현재 접속 IP {{ip}}",
+        "add_current_ip": "현재 IP 추가",
+        "ip_placeholder": "IP 또는 CIDR 입력 후 Enter (예: 203.0.113.24, 10.0.0.0/8)",
+        "admin_allowed_ips_hint": "관리자 화면·관리자 API(확장 관리 화면 포함)·관리자 로그인에 적용됩니다. 비우면 이 항목은 적용되지 않습니다. 지금 접속한 IP 가 빠진 목록은 저장되지 않습니다.",
+        "rules": "라우트별 규칙",
+        "add_rule": "규칙 추가",
+        "rules_empty": "등록된 규칙이 없습니다.",
+        "rules_hint": "위에서부터 처음 맞는 규칙 하나만 적용됩니다. 패턴의 * 는 / 를 포함해 무엇이든 맞습니다.",
+        "rules_callback_warning": "관리자 영역 밖 경로를 막는 규칙은 결제 승인·입금 통보 같은 외부 서버의 요청까지 끊을 수 있습니다. 코어가 아는 결제·웹훅·본인인증 콜백 경로는 자동으로 빠지지만, 확장이 다른 경로로 받는 요청은 막힐 수 있습니다.",
+        "emergency_hint": "잠겼을 때 서버에서 해제: php artisan security:ip-restriction --disable",
+        "col_pattern": "URI 패턴",
+        "col_ips": "허용 IP",
+        "col_memo": "메모",
+        "col_enabled": "사용",
+        "modal": {
+          "create_title": "규칙 추가",
+          "edit_title": "규칙 편집",
+          "pattern": "URI 패턴",
+          "pattern_hint": "앞의 / 는 있어도 없어도 같습니다. * 는 / 를 포함해 무엇이든 맞습니다.",
+          "pattern_placeholder": "예: /api/admin/users*",
+          "ips": "허용 IP",
+          "memo": "메모",
+          "memo_placeholder": "예: 회원 관리는 본사망만",
+          "enabled": "이 규칙 사용",
+          "pattern_required": "URI 패턴을 입력하세요.",
+          "ips_required": "허용 IP 를 하나 이상 입력하세요.",
+          "apply": "적용",
+          "apply_hint": "적용한 규칙은 화면 아래 「저장」을 눌러야 실제로 저장됩니다."
+        }
+      }
     },
     "identity": {
       "sub_tabs": {
@@ -1927,7 +1972,10 @@
         "analytics_ledger_limit_exceeded": "방문자 통계 원장 임계 초과",
         "analytics_visit_limit_exceeded": "방문당 액션 상한 초과",
         "analytics_weekly_report": "방문자 통계 주간 리포트",
-        "analytics_monthly_report": "방문자 통계 월간 리포트"
+        "analytics_monthly_report": "방문자 통계 월간 리포트",
+        "dormant_pre_notice": "휴면 전환 사전 안내",
+        "dormant_converted": "휴면 전환 완료",
+        "dormant_withdraw_notice": "휴면 계정 탈퇴 예정 안내"
       },
       "channels_label": "채널:",
       "edit_modal": {
@@ -2065,7 +2113,90 @@
     "unsaved_changes": "저장되지 않은 변경사항이 있습니다.",
     "validation_error": "입력 정보를 확인해주세요",
     "app_key_regenerated": "어플리케이션 키가 재생성되었습니다.",
-    "cache_cleared": "모든 캐시가 삭제되었습니다."
+    "cache_cleared": "모든 캐시가 삭제되었습니다.",
+    "privacy": {
+      "policy_notice_title": "켜기 전에 개인정보 처리방침을 먼저 고치세요",
+      "policy_notice_desc": "아래 기능은 회원의 개인정보를 되돌릴 수 없게 파기하거나 계정 상태를 바꿉니다. 법은 사전 안내 후 운영할 것을 요구하므로, 처리방침에 보유기간·휴면 정책을 먼저 적고 공지한 뒤에 켜세요.",
+      "target_count": "대상 {{count}}명",
+      "withdrawn": {
+        "title": "탈퇴 회원 잔여정보 파기",
+        "desc": "탈퇴 시에는 분쟁 대응을 위해 이름·이메일의 원값이 접미사 형태로 남습니다. 보유기간이 지나면 그 잔여 정보까지 실제로 지웁니다.",
+        "enabled": "보유기간 경과 시 자동 파기",
+        "enabled_desc": "기본 꺼짐. 켜면 매일 새벽 배치가 대상을 처리합니다.",
+        "days": "탈퇴 후 보유기간 (일)",
+        "days_hint": "탈퇴일로부터 이 기간이 지난 회원이 대상입니다. 기본 365일.",
+        "irreversible_warning": "연락처·주소·자기소개와 본인인증 식별자까지 지워지며 되돌릴 수 없습니다. 이름은 「탈퇴회원」, 이메일은 식별 불가 형태로 바뀝니다."
+      },
+      "dormant": {
+        "title": "휴면 계정",
+        "desc": "장기 미접속 회원을 사전 안내 후 휴면으로 전환합니다. 휴면 회원이 로그인하면 그 자체를 본인확인으로 보고 곧바로 원래대로 되돌립니다.",
+        "enabled": "휴면 계정 전환",
+        "enabled_desc": "기본 꺼짐. 켜면 사전 안내 → 전환 순서로 진행됩니다.",
+        "days": "휴면 전환 기준 미접속 기간 (일)",
+        "days_hint": "마지막 활동(로그인 또는 앱·토큰 사용)으로부터 이 기간이 지나면 전환 대상입니다. 기본 730일.",
+        "notice_days": "사전 안내 기간 (일)",
+        "notice_days_hint": "전환 예정일 며칠 전에 안내를 보낼지 정합니다. 전환 기간보다 짧아야 하며, 안내를 보낸 뒤 이 기간이 지나야 실제로 전환됩니다.",
+        "withdraw_enabled": "휴면 기간이 지나면 탈퇴 처리",
+        "withdraw_enabled_desc": "기본 꺼짐. 켜면 휴면 상태가 오래 이어진 계정을 탈퇴 처리합니다.",
+        "withdraw_days": "휴면 후 탈퇴까지 기간 (일)",
+        "withdraw_days_hint": "휴면 전환일로부터 이 기간이 지나면 탈퇴 예정 안내를 보내고, 안내 기간이 지난 뒤 탈퇴 처리합니다. 기본 365일.",
+        "withdraw_warning": "탈퇴 처리된 계정은 되돌릴 수 없습니다. 관리자 계정은 자동 탈퇴 대상에서 제외됩니다.",
+        "restore_hint": "휴면 회원이 로그인하면 자동으로 해제되며, 별도의 신청 절차는 없습니다."
+      },
+      "targets": {
+        "view": "대상 보기",
+        "title": {
+          "withdrawn": "탈퇴 회원 잔여정보 파기 대상",
+          "pre_notice": "휴면 사전 안내 대상",
+          "convert": "휴면 전환 대상",
+          "withdraw_notice": "휴면 탈퇴 예고 대상",
+          "withdraw": "휴면 자동 탈퇴 대상"
+        },
+        "rows": {
+          "withdrawn": "탈퇴 회원 잔여정보",
+          "pre_notice": "휴면 전환 사전 안내",
+          "convert": "휴면 전환",
+          "withdraw_notice": "휴면 계정 탈퇴 예정 안내",
+          "withdraw": "휴면 계정 탈퇴 처리"
+        },
+        "hint": "건수와 명단은 저장된 설정 기준입니다. 기능이 꺼져 있어도 켜면 처리될 대상을 미리 보여 줍니다.",
+        "total": "총 {{count}}건",
+        "empty": "대상이 없습니다.",
+        "loading": "불러오는 중...",
+        "close": "닫기"
+      },
+      "manual_run": {
+        "section_desc": "스케줄러를 기다리지 않고 관리자가 지금 한 번 실행합니다. 자동 실행이 꺼져 있어도 저장된 설정값으로 처리됩니다.",
+        "run": "지금 실행",
+        "save_first_hint": "저장하지 않은 변경이 있습니다. 직권 실행은 저장된 설정으로 처리되므로 먼저 저장하세요.",
+        "status_active": "{{status}} — {{at}} 접수 · {{by}}",
+        "last_completed": "마지막 직권 실행: {{at}} · {{by}} · {{count}}건 처리",
+        "last_failed": "마지막 직권 실행 실패: {{at}} · {{by}} — {{error}}",
+        "unknown_requester": "알 수 없음",
+        "modal_title": "{{target}} — 직권 실행",
+        "confirm_desc": "스케줄러를 기다리지 않고 지금 한 번 실행합니다. 작업은 큐에 접수되어 차례로 처리되며, 끝나면 카드에 결과가 표시됩니다.",
+        "count_label": "처리 예정",
+        "count_value": "{{count}}건",
+        "loading": "건수를 세는 중...",
+        "mode_label": "처리 방식",
+        "modes": {
+          "anonymize": "익명화",
+          "delete": "삭제",
+          "erase_ip": "작성 IP 삭제"
+        },
+        "disabled_notice": "자동 실행은 꺼져 있습니다. 직권 실행은 토글과 무관하게 저장된 기간값으로 이번 한 번만 처리합니다.",
+        "skip_waiting": "대기기간 생략",
+        "skip_waiting_desc": "사전 안내를 받지 않았거나 안내 후 기간이 지나지 않은 회원도 기간만 지났으면 즉시 처리합니다. 법이 요구하는 사전 안내를 건너뛰므로 운영자 책임 아래에서만 사용하세요.",
+        "irreversible": "실행하면 되돌릴 수 없습니다. 처리 예정 건수와 대상 명단을 확인한 뒤 실행하세요.",
+        "queue_hint": "큐 워커가 동작해야 처리됩니다. 같은 대상에 접수된 작업이 끝나기 전에는 다시 실행할 수 없습니다.",
+        "cancel": "취소",
+        "execute": "실행",
+        "executing": "접수 중...",
+        "queued_toast": "실행을 큐에 접수했습니다. 처리가 끝나면 카드에 결과가 표시됩니다.",
+        "queue_failed": "실행을 접수하지 못했습니다.",
+        "preview_failed": "대상 건수를 불러오지 못했습니다."
+      }
+    }
   },
   "templates": {
     "page_title": "템플릿 관리",
@@ -3655,6 +3786,7 @@
       "modal_identity_message_template_preview": "본인인증 메시지 템플릿 미리보기",
       "identity_policy_delete_modal": "본인인증 정책 삭제 확인",
       "identity_policy_form_modal": "본인인증 정책 편집",
+      "ip_restriction_rule_form_modal": "IP 접근 제한 규칙 편집",
       "modal_mail_template_form": "메일 템플릿 편집",
       "modal_notification_definition_reset": "알림 정의 기본값 복원",
       "modal_notification_template_form": "알림 템플릿 편집",

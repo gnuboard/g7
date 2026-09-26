@@ -544,7 +544,7 @@ _단건 응답: `data` 객체의 필드 (`PostResource` — 게시글 수정(PUT
 | trigger_type | string | `user` | 상태 변경을 유발한 주체 (`report`/`admin`/`system`/`auto_hide`/`user`/`cascade`) |
 | updated_at | string | `2026-07-08 10:41:34` | 최종 수정 일시 |
 | deleted_at | null | `null` | 소프트 삭제 일시 (미삭제 시 null) |
-| ip_address | string | `127.0.0.1` | 작성 요청이 발생한 IP 주소 |
+| ip_address | string\|null | `127.0.0.1` | 작성 요청이 발생한 IP 주소 (보유기간이 지나 파기되면 null — 게시판 개인정보 보유기간, 이슈 #636) |
 | action_logs | array | `[]` | 블라인드/복원/삭제 처리 이력 목록. `admin.manage` 권한 보유자에게만 노출. |
 | board | null | `null` | 소속 게시판 정보 객체. board 관계 미로드 시 null. |
 | navigation | null | `null` | 이전/다음 게시글 이동 정보. 쓰기 응답에서는 계산하지 않아 null. |
@@ -896,7 +896,7 @@ _단건 응답: `data` 객체의 필드._
 | trigger_type | string | `admin` | 동작을 유발한 방식/주체 구분 값 |
 | updated_at | string | `2026-07-08 15:01:43` | 최종 수정 일시 |
 | deleted_at | string | `2026-07-08 15:01:43` | 소프트 삭제 일시 (미삭제 시 null) |
-| ip_address | string | `127.0.0.1` | 요청/행위가 발생한 IP 주소 |
+| ip_address | string\|null | `127.0.0.1` | 요청/행위가 발생한 IP 주소 (보유기간이 지나 파기되면 null — 게시판 개인정보 보유기간, 이슈 #636) |
 | action_logs | array | `[{"action":"delete","reason":null,"admin_name":"API 문서 샘플…` | 블라인드/복원/삭제 등 처리 이력 목록(항목별 action·reason·admin_name·created_at). `admin.manage` 권한 보유자에게만 노출되며, 민감 필드(admin_id·ip_address)는 제외됩니다. 비권한자에게는 null. |
 | board | null | `null` | 소속 게시판 정보 객체(슬러그·이름·유형·댓글/답글/신고 사용 여부·조회수 표시·최대 답글/댓글 깊이·신고 사유 목록). board 관계가 로드된 경우에만 채워지며, 아니면 null. |
 | navigation | null | `null` | 이전/다음 게시글 이동 정보(`prev`·`next`). 상세 로드 시 계산되며, 쓰기 응답처럼 인접 게시글을 계산하지 않은 경우 null. |
@@ -905,6 +905,8 @@ _단건 응답: `data` 객체의 필드._
 | attachments | null | `null` | 게시글 첨부파일 목록(AttachmentResource 컬렉션). attachments 관계가 로드된 경우에만 채워지며, 아니면 null(비밀글·삭제글은 권한에 따라 빈 배열 또는 연쇄 삭제분만 노출). |
 | replies | null | `null` | 이 게시글에 달린 답변글 목록(PostResource 컬렉션, 재귀). replies 관계가 로드된 경우에만 채워지며, 아니면 null. |
 | is_already_reported | boolean | `false` | already reported 여부 |
+| reaction_counts | object | `{"1":18,"2":2}` | 게시판이 켠 활성 반응 유형별 개수 맵(JSON 객체). 키는 유형 ID 문자열, 개수 0인 유형도 포함됩니다. board 관계 미로드 시 빈 객체(`{}`). |
+| my_reaction_type_id | integer\|null | `1` | 현재 로그인 사용자가 이 게시글에 남긴 반응 유형 ID. 반응이 없으면 null. |
 | is_owner | boolean | `true` | 현재 인증 사용자가 이 리소스의 소유자인지 여부 (BaseApiResource 표준 메타) |
 | abilities | object | `{"can_read":true,"can_write":true,"can_read_secret":true,…` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 (can_update, can_delete 등 — 권한 맵 기반) |
 
@@ -1056,7 +1058,7 @@ _단건 응답: `data` 객체의 필드._
 | trigger_type | string | `user` | 상태 변경(삭제/블라인드 등)을 유발한 주체. `report`(신고) / `admin`(관리자 직권) / `system`(시스템) / `auto_hide`(신고 누적 자동 블라인드) / `user`(사용자 직접) / `cascade`(상위 삭제 연쇄) 중 하나입니다. |
 | updated_at | string | `2026-07-07 09:39:03` | 최종 수정 일시 |
 | deleted_at | null | `null` | 소프트 삭제 일시 (미삭제 시 null) |
-| ip_address | string | `127.0.0.1` | 요청/행위가 발생한 IP 주소 |
+| ip_address | string\|null | `127.0.0.1` | 요청/행위가 발생한 IP 주소 (보유기간이 지나 파기되면 null — 게시판 개인정보 보유기간, 이슈 #636) |
 | action_logs | array | `[]` | 블라인드/복원/삭제 등 처리 이력 목록(항목별 action·reason·admin_name·created_at). `admin.manage` 권한 보유자에게만 노출되며, 민감 필드(admin_id·ip_address)는 제외됩니다. 비권한자에게는 null. |
 | board | object | `{"slug":"apidoc-sample-board","name":"API 문서 샘플 게시판","typ…` | 소속 게시판 정보 객체(슬러그·이름·유형·댓글/답글/신고 사용 여부·조회수 표시·최대 답글/댓글 깊이·신고 사유 목록). board 관계가 로드된 경우에만 채워지며, 아니면 null. |
 | navigation | object | `{"prev":null,"next":null}` | 이전/다음 게시글 이동 정보. `prev`·`next` 키에 인접 게시글 요약(없으면 null)이 담기며, 상세 로드 시 함께 계산됩니다. |
@@ -1068,6 +1070,8 @@ _단건 응답: `data` 객체의 필드._
 | attachments | array | `[{"id":155,"hash":"apidocsmpl1","original_filename":"apid…` | 게시글 첨부파일 목록(AttachmentResource 컬렉션). 비밀글은 열람 권한이 없으면 빈 배열, 삭제된 게시글은 관리 권한이 없으면 연쇄 삭제된 첨부만 노출됩니다. |
 | replies | array | `[]` | 이 게시글에 달린 답변글 목록(PostResource 컬렉션, 재귀). replies 관계가 로드된 경우에만 채워지며, 아니면 null. |
 | is_already_reported | boolean | `false` | already reported 여부 |
+| reaction_counts | object | `{"1":18,"2":2}` | 게시판이 켠 활성 반응 유형별 개수 맵(JSON 객체). 키는 유형 ID 문자열, 개수 0인 유형도 포함됩니다. board 관계 미로드 시 빈 객체(`{}`). |
+| my_reaction_type_id | integer\|null | `1` | 현재 로그인 사용자가 이 게시글에 남긴 반응 유형 ID. 반응이 없으면 null. |
 | is_owner | boolean | `true` | 현재 인증 사용자가 이 리소스의 소유자인지 여부 (BaseApiResource 표준 메타) |
 | abilities | object | `{"can_read":true,"can_write":true,"can_read_secret":true,…` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 (can_update, can_delete 등 — 권한 맵 기반) |
 
@@ -1317,7 +1321,7 @@ _단건 응답: `data` 객체의 필드._
 | trigger_type | string | `user` | 동작을 유발한 방식/주체 구분 값 |
 | updated_at | string | `2026-07-08 15:01:44` | 최종 수정 일시 |
 | deleted_at | null | `null` | 소프트 삭제 일시 (미삭제 시 null) |
-| ip_address | string | `127.0.0.1` | 요청/행위가 발생한 IP 주소 |
+| ip_address | string\|null | `127.0.0.1` | 요청/행위가 발생한 IP 주소 (보유기간이 지나 파기되면 null — 게시판 개인정보 보유기간, 이슈 #636) |
 | action_logs | array | `[]` | 블라인드/복원/삭제 등 처리 이력 목록(항목별 action·reason·admin_name·created_at). `admin.manage` 권한 보유자에게만 노출되며, 민감 필드(admin_id·ip_address)는 제외됩니다. 비권한자에게는 null. |
 | board | null | `null` | 소속 게시판 정보 객체(슬러그·이름·유형·댓글/답글/신고 사용 여부·조회수 표시·최대 답글/댓글 깊이·신고 사유 목록). board 관계가 로드된 경우에만 채워지며, 아니면 null. |
 | navigation | null | `null` | 이전/다음 게시글 이동 정보(`prev`·`next`). 상세 로드 시 계산되며, 쓰기 응답처럼 인접 게시글을 계산하지 않은 경우 null. |
@@ -1326,6 +1330,8 @@ _단건 응답: `data` 객체의 필드._
 | attachments | null | `null` | 게시글 첨부파일 목록(AttachmentResource 컬렉션). attachments 관계가 로드된 경우에만 채워지며, 아니면 null(비밀글·삭제글은 권한에 따라 빈 배열 또는 연쇄 삭제분만 노출). |
 | replies | null | `null` | 이 게시글에 달린 답변글 목록(PostResource 컬렉션, 재귀). replies 관계가 로드된 경우에만 채워지며, 아니면 null. |
 | is_already_reported | boolean | `false` | already reported 여부 |
+| reaction_counts | object | `{"1":18,"2":2}` | 게시판이 켠 활성 반응 유형별 개수 맵(JSON 객체). 키는 유형 ID 문자열, 개수 0인 유형도 포함됩니다. board 관계 미로드 시 빈 객체(`{}`). |
+| my_reaction_type_id | integer\|null | `1` | 현재 로그인 사용자가 이 게시글에 남긴 반응 유형 ID. 반응이 없으면 null. |
 | is_owner | boolean | `true` | 현재 인증 사용자가 이 리소스의 소유자인지 여부 (BaseApiResource 표준 메타) |
 | abilities | object | `{"can_read":true,"can_write":true,"can_read_secret":true,…` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 (can_update, can_delete 등 — 권한 맵 기반) |
 
@@ -1476,7 +1482,7 @@ _단건 응답: `data` 객체의 필드._
 | trigger_type | string | `user` | 동작을 유발한 방식/주체 구분 값 |
 | updated_at | string | `2026-07-08 15:01:44` | 최종 수정 일시 |
 | deleted_at | null | `null` | 소프트 삭제 일시 (미삭제 시 null) |
-| ip_address | string | `127.0.0.1` | 요청/행위가 발생한 IP 주소 |
+| ip_address | string\|null | `127.0.0.1` | 요청/행위가 발생한 IP 주소 (보유기간이 지나 파기되면 null — 게시판 개인정보 보유기간, 이슈 #636) |
 | action_logs | array | `[{"action":"blind","reason":"실측 예시값","admin_name":"API 문서…` | 블라인드/복원/삭제 등 처리 이력 목록(항목별 action·reason·admin_name·created_at). `admin.manage` 권한 보유자에게만 노출되며, 민감 필드(admin_id·ip_address)는 제외됩니다. 비권한자에게는 null. |
 | board | null | `null` | 소속 게시판 정보 객체(슬러그·이름·유형·댓글/답글/신고 사용 여부·조회수 표시·최대 답글/댓글 깊이·신고 사유 목록). board 관계가 로드된 경우에만 채워지며, 아니면 null. |
 | navigation | null | `null` | 이전/다음 게시글 이동 정보(`prev`·`next`). 상세 로드 시 계산되며, 쓰기 응답처럼 인접 게시글을 계산하지 않은 경우 null. |
@@ -1485,6 +1491,8 @@ _단건 응답: `data` 객체의 필드._
 | attachments | null | `null` | 게시글 첨부파일 목록(AttachmentResource 컬렉션). attachments 관계가 로드된 경우에만 채워지며, 아니면 null(비밀글·삭제글은 권한에 따라 빈 배열 또는 연쇄 삭제분만 노출). |
 | replies | null | `null` | 이 게시글에 달린 답변글 목록(PostResource 컬렉션, 재귀). replies 관계가 로드된 경우에만 채워지며, 아니면 null. |
 | is_already_reported | boolean | `false` | already reported 여부 |
+| reaction_counts | object | `{"1":18,"2":2}` | 게시판이 켠 활성 반응 유형별 개수 맵(JSON 객체). 키는 유형 ID 문자열, 개수 0인 유형도 포함됩니다. board 관계 미로드 시 빈 객체(`{}`). |
+| my_reaction_type_id | integer\|null | `1` | 현재 로그인 사용자가 이 게시글에 남긴 반응 유형 ID. 반응이 없으면 null. |
 | is_owner | boolean | `true` | 현재 인증 사용자가 이 리소스의 소유자인지 여부 (BaseApiResource 표준 메타) |
 | abilities | object | `{"can_read":true,"can_write":true,"can_read_secret":true,…` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 (can_update, can_delete 등 — 권한 맵 기반) |
 
@@ -1642,7 +1650,7 @@ _단건 응답: `data` 객체의 필드 (`PostResource` — 복원된 게시글.
 | trigger_type | string | `admin` | 상태 변경을 유발한 주체 (복원은 관리자 직권이므로 `admin`) |
 | updated_at | string | `2026-07-08 15:01:45` | 최종 수정 일시 |
 | deleted_at | null | `null` | 소프트 삭제 일시 (복원 후 null) |
-| ip_address | string | `127.0.0.1` | 작성 요청이 발생한 IP 주소 |
+| ip_address | string\|null | `127.0.0.1` | 작성 요청이 발생한 IP 주소 (보유기간이 지나 파기되면 null — 게시판 개인정보 보유기간, 이슈 #636) |
 | action_logs | array | `[{"action":"restore","reason":null,"admin_name":"API 문서 샘플 사용자","created_at":"2026-07-08 06:01:45"}]` | 블라인드/복원/삭제 처리 이력 목록. `admin.manage` 권한 보유자에게만 노출. |
 | board | null | `null` | 소속 게시판 정보 객체 (관계 미로드 시 null) |
 | navigation | null | `null` | 이전/다음 게시글 이동 정보 (쓰기 응답은 미계산 → null) |
@@ -1792,7 +1800,7 @@ _단건 응답: `data` 객체의 필드 (`CommentResource`)._
 | updated_at | string | `2026-07-08 10:41:34` | 최종 수정 일시 |
 | deleted_at | null | `null` | 소프트 삭제 일시 (미삭제 시 null) |
 | is_cascade_deleted | boolean | `false` | 상위 게시글/댓글 삭제로 연쇄 삭제된 댓글인지 여부 |
-| ip_address | string | `127.0.0.1` | 작성 요청이 발생한 IP 주소 (권한자에게만 노출) |
+| ip_address | string\|null | `127.0.0.1` | 작성 요청이 발생한 IP 주소 (권한자에게만 노출) (보유기간이 지나 파기되면 null — 게시판 개인정보 보유기간, 이슈 #636) |
 | action_logs | array | `[]` | 블라인드/복원/삭제 처리 이력 목록. `admin.manage` 권한 보유자에게만 노출. |
 | is_author | boolean | `true` | 현재 사용자가 작성자인지 여부 |
 | is_guest_comment | boolean | `false` | 비회원 작성 댓글 여부 |
@@ -2092,6 +2100,8 @@ _단건 응답: `data` 객체의 필드._
 | is_author | boolean | `true` | author 여부 |
 | is_guest_comment | boolean | `false` | guest comment 여부 |
 | is_already_reported | boolean | `false` | already reported 여부 |
+| reaction_counts | object | `{"1":18,"2":2}` | 게시판이 켠 활성 반응 유형별 개수 맵(JSON 객체). 키는 유형 ID 문자열, 개수 0인 유형도 포함됩니다. board 관계 미로드 시 빈 객체(`{}`). |
+| my_reaction_type_id | integer\|null | `1` | 현재 로그인 사용자가 이 게시글에 남긴 반응 유형 ID. 반응이 없으면 null. |
 | is_owner | boolean | `true` | 현재 인증 사용자가 이 리소스의 소유자인지 여부 (BaseApiResource 표준 메타) |
 | abilities | object | `{"can_read":true,"can_write":true,"can_manage":true}` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 (can_update, can_delete 등 — 권한 맵 기반) |
 

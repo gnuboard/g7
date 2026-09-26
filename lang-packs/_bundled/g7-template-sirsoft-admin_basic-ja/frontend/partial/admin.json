@@ -296,7 +296,9 @@
         "active": "有効",
         "inactive": "無効",
         "blocked": "ブロック",
-        "withdrawn": "退会"
+        "withdrawn": "退会",
+        "dormant": "休眠中",
+        "pending_verification": "登録待機中"
       },
       "timezone_options": {
         "Asia/Seoul": "アジア/ソウル (UTC+9)",
@@ -360,7 +362,8 @@
         "total": "総通知数",
         "unread": "未読",
         "view_inbox": "通知ボックスを表示"
-      }
+      },
+      "dormant_at": "休眠転換日"
     },
     "bulk_status_change": "ステータス変更"
   },
@@ -1330,7 +1333,8 @@
       "notification_definitions": "通知設定",
       "language_packs": "言語パック",
       "identity": "本人認証",
-      "info": "情報"
+      "info": "情報",
+      "privacy": "個人情報"
     },
     "general": {
       "site_info": "サイト情報",
@@ -1556,7 +1560,48 @@
       "two_factor_auth": "2段階認証",
       "two_factor_auth_label": "ログイン時に認証番号をもう一度確認",
       "two_factor_auth_hint": "有効にすると、パスワード確認後に登録メールへ認証番号を送信し、その番号を入力してログインが完了します。",
-      "ip_throttle_floor_hint": "IP単位のリクエスト制限はこの値の6倍で適用され、1分あたり最低30回は常に保証されます。"
+      "ip_throttle_floor_hint": "IP単位のリクエスト制限はこの値の6倍で適用され、1分あたり最低30回は常に保証されます。",
+      "two_factor_scope": "適用範囲",
+      "two_factor_scope_all": "全会員",
+      "two_factor_scope_admin": "管理者のみ",
+      "two_factor_scope_hint": "管理者のみに設定すると、一般ユーザーは従来通りパスワードのみでログインします。",
+      "ip_restriction": {
+        "title": "アクセス制限",
+        "desc": "許可されたIPアドレスからのみ管理者領域へのアクセスを許可します。",
+        "proxy_warning": "信頼できるプロキシが設定されていない状態でX-Forwarded-Forなどの転送ヘッダーが受信されています。このままではすべての訪問者がプロキシアドレス1つに見え、IP制限が誤動作します — 先に信頼できるプロキシを設定してください。",
+        "enabled": "IP アクセス制限を使用",
+        "enabled_desc": "無効にすると、下のリストとルールは保存されますが適用されません。",
+        "admin_allowed_ips": "管理者領域許可IP",
+        "current_ip": "現在のアクセスIP {{ip}}",
+        "add_current_ip": "現在のIPを追加",
+        "ip_placeholder": "IPまたはCIDRを入力してEnterキーを押してください（例：203.0.113.24、10.0.0.0/8）",
+        "admin_allowed_ips_hint": "管理画面・管理者API（拡張管理画面を含む）・管理者ログインに適用されます。空白の場合、この項目は適用されません。現在のアクセスIPが含まれていないリストは保存されません。",
+        "rules": "ルート別ルール",
+        "add_rule": "ルールを追加",
+        "rules_empty": "登録されたルールがありません。",
+        "rules_hint": "上から最初にマッチするルール1つだけが適用されます。パターンの*は/を含めて何にでもマッチします。",
+        "rules_callback_warning": "管理者領域外のパスをブロックするルールは、決済承認・入金通知など外部サーバーからのリクエストまでを切断する可能性があります。コアが認識している決済・webhook・本人認証コールバックパスは自動的に除外されますが、拡張が別のパスで受け取るリクエストはブロックされる可能性があります。",
+        "emergency_hint": "ロックされた場合のサーバー解除：php artisan security:ip-restriction --disable",
+        "col_pattern": "URIパターン",
+        "col_ips": "許可IP",
+        "col_memo": "メモ",
+        "col_enabled": "使用",
+        "modal": {
+          "create_title": "ルールを追加",
+          "edit_title": "ルール編集",
+          "pattern": "URIパターン",
+          "pattern_hint": "前の/があってもなくても同じです。*は/を含めて何にでもマッチします。",
+          "pattern_placeholder": "例：/api/admin/users*",
+          "ips": "許可IP",
+          "memo": "メモ",
+          "memo_placeholder": "例：会員管理は本社ネットワークのみ",
+          "enabled": "このルールを使用",
+          "pattern_required": "URIパターンを入力してください。",
+          "ips_required": "許可IPを1つ以上入力してください。",
+          "apply": "適用",
+          "apply_hint": "適用したルールは、画面下の「保存」をクリックして初めて実際に保存されます。"
+        }
+      }
     },
     "identity": {
       "sub_tabs": {
@@ -1927,7 +1972,10 @@
         "analytics_ledger_limit_exceeded": "訪問者統計台帳閾値超過",
         "analytics_visit_limit_exceeded": "訪問あたりアクション上限超過",
         "analytics_weekly_report": "訪問者統計週間レポート",
-        "analytics_monthly_report": "訪問者統計月間レポート"
+        "analytics_monthly_report": "訪問者統計月間レポート",
+        "dormant_pre_notice": "休眠転換事前通知",
+        "dormant_converted": "休眠転換完了",
+        "dormant_withdraw_notice": "休眠アカウント退会予定通知"
       },
       "channels_label": "チャネル:",
       "edit_modal": {
@@ -2065,7 +2113,90 @@
     "unsaved_changes": "保存されていない変更があります。",
     "validation_error": "入力情報を確認してください",
     "app_key_regenerated": "アプリケーションキーが再生成されました。",
-    "cache_cleared": "すべてのキャッシュが削除されました。"
+    "cache_cleared": "すべてのキャッシュが削除されました。",
+    "privacy": {
+      "policy_notice_title": "有効化する前に、個人情報処理方針を先に修正してください",
+      "policy_notice_desc": "以下の機能は、会員の個人情報を取り戻せない形で削除するか、アカウント状態を変更します。法律では事前告知の後に運営することを要求しているため、処理方針に保有期間・休眠ポリシーを先に記載し、告知した後に有効化してください。",
+      "target_count": "対象 {{count}}名",
+      "withdrawn": {
+        "title": "退会会員の残存情報削除",
+        "desc": "退会時には紛争対応のため、名前·メールアドレスの原値がサフィックス形式で残ります。保有期間が経過したら、その残存情報まで実際に削除します。",
+        "enabled": "保有期間経過時の自動削除",
+        "enabled_desc": "デフォルトで無効。有効にすると毎日未明にバッチが対象を処理します。",
+        "days": "退会後の保有期間（日）",
+        "days_hint": "退会日からこの期間が経過した会員が対象です。デフォルトは365日です。",
+        "irreversible_warning": "連絡先·住所·自己紹介と本人認証識別子まで削除され、取り戻せません。名前は「退会会員」に、メールアドレスは識別不可形式に変わります。"
+      },
+      "dormant": {
+        "title": "休眠アカウント",
+        "desc": "長期間アクセスのない会員に事前告知の後、休眠に転換します。休眠会員がログインすると、それ自体を本人確認と見なし、すぐに元の状態に戻します。",
+        "enabled": "休眠アカウント転換",
+        "enabled_desc": "デフォルトで無効。有効にすると事前告知→転換の順序で進行します。",
+        "days": "休眠転換基準アクセスなし期間（日）",
+        "days_hint": "最後のアクティビティ（ログインまたはアプリ·トークン使用）からこの期間が経過すると転換対象です。デフォルトは730日です。",
+        "notice_days": "事前告知期間（日）",
+        "notice_days_hint": "転換予定日の何日前に告知を送るかを定めます。転換期間より短くなければならず、告知を送った後、この期間が経過して初めて実際に転換されます。",
+        "withdraw_enabled": "休眠期間が経過したら退会処理",
+        "withdraw_enabled_desc": "デフォルトで無効。有効にすると休眠状態が長く続いたアカウントを退会処理します。",
+        "withdraw_days": "休眠後の退会までの期間（日）",
+        "withdraw_days_hint": "休眠転換日からこの期間が経過すると退会予定告知を送り、告知期間が経過した後、退会処理します。デフォルトは365日です。",
+        "withdraw_warning": "退会処理されたアカウントは取り戻せません。管理者アカウントは自動退会対象から除外されます。",
+        "restore_hint": "休眠会員がログインすると自動的に解除され、別途の申請手続きはありません。"
+      },
+      "targets": {
+        "title": {
+          "withdrawn": "退会会員残存情報破棄対象",
+          "pre_notice": "休眠事前案内対象",
+          "convert": "休眠転換対象",
+          "withdraw_notice": "休眠退会予告対象",
+          "withdraw": "休眠自動退会対象"
+        },
+        "hint": "件数と名簿は保存された設定基準です。機能がオフでも、オンにすれば処理される対象を事前に表示します。",
+        "total": "合計 {{count}}件",
+        "empty": "対象がありません。",
+        "loading": "読み込み中...",
+        "close": "閉じる",
+        "view": "対象を表示",
+        "rows": {
+          "withdrawn": "退会会員の残存情報",
+          "pre_notice": "休眠転換事前通知",
+          "convert": "休眠転換",
+          "withdraw_notice": "休眠アカウント退会予定通知",
+          "withdraw": "休眠アカウント退会処理"
+        }
+      },
+      "manual_run": {
+        "section_desc": "スケジューラーを待たずに管理者が今すぐ一度実行します。自動実行がオフになっていても、保存された設定値で処理されます。",
+        "run": "今すぐ実行",
+        "save_first_hint": "保存されていない変更があります。職権実行は保存された設定で処理されるため、先に保存してください。",
+        "status_active": "{{status}} — {{at}}受け付け·{{by}}",
+        "last_completed": "最後の職権実行：{{at}}·{{by}}·{{count}}件処理",
+        "last_failed": "最後の職権実行失敗：{{at}}·{{by}}— {{error}}",
+        "unknown_requester": "不明",
+        "modal_title": "{{target}} — 職権実行",
+        "confirm_desc": "スケジューラーを待たずに今すぐ一度実行します。作業はキューに受け付けられて順番に処理され、終わったらカードに結果が表示されます。",
+        "count_label": "処理予定",
+        "count_value": "{{count}}件",
+        "loading": "件数を数えています...",
+        "mode_label": "処理方式",
+        "modes": {
+          "anonymize": "匿名化",
+          "delete": "削除",
+          "erase_ip": "作成IPを削除"
+        },
+        "disabled_notice": "自動実行がオフになっています。職権実行はトグルと無関係に保存された期間値でこの一度だけ処理します。",
+        "skip_waiting": "待機期間をスキップ",
+        "skip_waiting_desc": "事前通知を受けていない、または通知後期間が経過していない会員でも、期間が経過していれば即座に処理します。法が要求する事前通知をスキップするため、運営者の責任の下でのみ使用してください。",
+        "irreversible": "実行すると取り消すことができません。処理予定件数と対象リストを確認した後に実行してください。",
+        "queue_hint": "キューワーカーが動作する必要があります。同じ対象に受け付けられた作業が終わる前に再度実行することはできません。",
+        "cancel": "キャンセル",
+        "execute": "実行",
+        "executing": "受け付け中...",
+        "queued_toast": "実行をキューに受け付けました。処理が終わったらカードに結果が表示されます。",
+        "queue_failed": "実行を受け付けることができませんでした。",
+        "preview_failed": "対象件数を読み込むことができませんでした。"
+      }
+    }
   },
   "templates": {
     "page_title": "テンプレート管理",
@@ -2941,7 +3072,8 @@
       "core_changelog_modal": "コア変更履歴",
       "core_update_guide_modal": "コアアップデートお知らせ",
       "core_update_result_modal": "コアアップデート確認結果",
-      "settings_static_cache_republish_modal": "初期画面静的ファイルの再作成確認"
+      "settings_static_cache_republish_modal": "初期画面静的ファイルの再作成確認",
+      "ip_restriction_rule_form_modal": "IP アクセス制限ルール編集"
     },
     "admin_template_list": {
       "template_activate_modal": "テンプレート有効化確認",

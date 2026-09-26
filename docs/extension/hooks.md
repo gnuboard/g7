@@ -42,6 +42,127 @@ G7의 훅 시스템은 WordPress 스타일로 구현되어 코어 수정 없이 
 
 ## 훅 타입
 
+### 환경설정 검증 규칙과 라벨 계약
+
+`core.settings.save_validation_rules`(규칙)와 `core.settings.save_validation_attributes`(라벨)는
+코어 소유 필터이며 **짝으로 씁니다**. 각각 `(array $rules, SaveSettingsRequest $request)` ·
+`(array $attributes, SaveSettingsRequest $request)` 를 받아 같은 형태로 반환합니다.
+
+확장이 규칙만 더하면 그 필드의 오류 문구에 **원시 키가 그대로** 나갑니다(`x.y 필드는 …`) —
+화면은 확장이 그렸는데 문구는 코어가 만들므로 운영자에게 고칠 자리가 보이지 않습니다.
+라벨 값은 확장 네임스페이스 문구(`__('sirsoft-x::messages.…')`)를 씁니다. 확장 lang 은 코어
+`validation.attributes` 경로에 합류하지 않습니다. 규율과 배경은 `docs/backend/validation.md`
+「검증 문구의 필드 라벨」 절에 있습니다.
+
+### 개인정보 통지 섹션 계약
+
+`core.privacy.notice_sections`는 코어 소유 필터이며 개인정보 통지 소비자가 호출합니다.
+입력은 `(array $sections, string $locale)`, 반환은 `array<array{title: string, body: string}>`입니다.
+확장은 수신자 로케일에 맞춘 수집 항목·이용 목적·보유 기간 섹션을 추가합니다.
+반환 텍스트는 소비자가 HTML 이스케이프합니다. 개인 식별정보를 포함하지 않습니다.
+통지 플러그인 설치 여부와 관계없이 확장이 구독할 수 있으며 통지 발행자는 독립적으로 선택합니다.
+
+### 개인정보 보유기간 핸들러 계약
+
+`core.privacy.retention_handlers`는 코어 소유 필터이며 보유기간 처리 진입점
+(`App\Privacy\PrivacyRetentionManager`)이 호출합니다. 입력·반환 모두
+`array<int, class-string>`(핸들러 클래스명 목록)이고, 각 클래스는
+`App\Privacy\Contracts\PrivacyRetentionHandlerInterface`를 구현해야 합니다.
+
+```php
+HookManager::addFilter('core.privacy.retention_handlers', function (array $handlers) {
+    $handlers[] = OrderRetentionHandler::class;
+
+    return $handlers;
+});
+```
+
+계약을 구현하지 않았거나 생성·식별자 조회(`id()`)에 실패한 클래스는 **기록 후 건너뜁니다** — 확장 하나의
+잘못된 등록이 다른 도메인의 법정 파기를 함께 멈추면 안 되기 때문입니다. 반대로 조용히
+버리지도 않습니다: 건너뛴 사실이 로그에 남지 않으면 운영자는 그 도메인이 처리되고 있다고
+믿게 됩니다. 같은 `id()` 가 둘이면 먼저 등록된 쪽만 남습니다.
+
+구현 시 지켜야 할 것:
+
+- `isEnabled()`는 **자기 도메인 설정을 기본 false 폴백으로** 읽습니다. 확장을 설치했다는
+  사실만으로 회원 데이터가 지워지면 안 됩니다.
+- `process()`는 수집기가 이미 걸러 주더라도 **자기 토글을 다시 봅니다.** 되돌릴 수 없는
+  파기라 호출자를 믿지 않습니다. 단 관리자 직권 실행(`process($dryRun, force: true)`)은 토글만
+  건너뜁니다 — 처리 조건식은 그대로입니다.
+- `runPermissions()`는 설정 화면 「지금 실행」의 권한(**설정 수정 + 그 도메인 수정**, 행을 지우는
+  방식이면 도메인 삭제까지)을 돌려줍니다. 핸들러를 등록하면 코어가 `retention:{id}` 직권 실행 대상을
+  자동으로 만듭니다.
+- `preview()`·`targets()`·`process()`는 **같은 조건식**을 공유합니다. 어긋나면 운영자가 화면에서 본
+  숫자·명단과 실제로 지워진 양이 달라집니다. 멱등(이미 처리된 행 제외)도 그 조건식이 책임집니다.
+- `preview()`·`targets()`는 기능이 **꺼져 있어도** 저장된 기간값으로 셉니다 — 운영자는 켜기 전에
+  규모와 명단을 확인합니다. 꺼짐 여부는 수집기가 `enabled` 로 따로 알립니다.
+- `targets()`는 대상 명단 한 쪽(`LengthAwarePaginator`, 항목은 `App\Privacy\DTO\PrivacyRetentionTarget`)을,
+  `targetColumns()`는 쓰는 열의 라벨을, `targetPermissions()`는 명단을 볼 권한(**설정 읽기 + 그 도메인
+  읽기**, 모두 필요)을 돌려줍니다. 코어의 대상 명단 API(`GET /api/admin/privacy/retention-targets/{handler}`)가
+  핸들러를 식별자로 찾아 그 권한을 요청 시점에 검사하므로, 확장은 등록만으로 설정 화면의 「대상 보기」
+  모달을 얻습니다.
+- 대량 순회는 `chunkById`입니다 — 처리하면서 조건에서 빠지는 행을 다루므로 OFFSET 순회는
+  커서가 밀려 건을 건너뜁니다.
+
+각 핸들러는 처리 전후로 자기 도메인 prune 훅을 발행합니다(7.0.7 규약):
+`{prefix}.before_prune`(보존일) / `{prefix}.after_prune`(보존일, 건수).
+**`--dry-run` 에서는 발행하지 않습니다** — 리허설에서 자기 리스너가 돌았다고 착각하지 않도록
+실제 처리 때만 발행합니다. 번들 핸들러의 접두사 전수는 아래 「보존 기간 자동 파기」 카탈로그에 있습니다.
+코어 탈퇴 회원 핸들러의 접두사는 `core.privacy.withdrawn_user`입니다.
+구현 예시·규약 표·검증 매트릭스는 [개인정보 보유기간 처리 가이드](../backend/privacy-retention.md)에 있습니다.
+
+### 개인정보 조치 직권 실행 대상·알림 훅
+
+`core.privacy.manual_run_targets`는 코어 소유 필터입니다. 입력·반환 모두 `array<int, class-string>`이고,
+각 클래스는 `App\Privacy\Contracts\PrivacyManualRunnerInterface`를 구현합니다. 보유기간 핸들러와 휴면
+단계는 코어가 이미 등록하므로, **핸들러가 아닌 조치**(예: gdpr 연간 통지 발송)만 이 필터로 더합니다.
+리스너는 DB 에 접근하지 않고 클래스명만 더하며, 대상 키는 `{확장 식별자}:{이름}` 으로 전역 유일해야
+합니다(같은 키가 둘이면 먼저 등록된 쪽만 남습니다 — 확장이 코어 대상을 가로채지 못하게).
+
+```php
+HookManager::addFilter('core.privacy.manual_run_targets', function (array $runners) {
+    $runners[] = AnnualNoticeManualRunner::class;
+
+    return $runners;
+});
+```
+
+접수·종료는 코어 소유 액션 훅으로 알립니다. 인자는 `(PrivacyManualRun $run, string $label)` 이고 코어 활동
+로그 리스너가 구독합니다.
+
+| 훅 | 발행 시점 | 비고 |
+| --- | --- | --- |
+| `core.privacy.manual_run_queued` | 「지금 실행」 접수 직후(관리자 요청 안) | `$run->skip_waiting` 로 휴면 대기기간 생략 여부를 안다 |
+| `core.privacy.manual_run_finished` | 큐 작업이 완료·실패로 기록을 닫은 뒤(버려진 기록을 닫을 때 포함) | 인증 사용자가 없다 — 접수자는 `$run->requested_by` |
+
+계약·운영 규약은 [개인정보 보유기간 처리 가이드 — 관리자 직권 실행](../backend/privacy-retention.md#10-관리자-직권-실행)에 있습니다.
+
+### 휴면 계정 생명주기 알림 훅
+
+`core.privacy.dormant_pre_notice` · `core.privacy.dormant_converted` ·
+`core.privacy.dormant_withdraw_notice`는 코어 소유 액션 훅이며 인자는 `(User $user, array $extra)`
+입니다. 코어 알림 정의 3종이 이 훅을 구독하고, 치환값은 `core.privacy.notification.extract_data`
+필터(`CorePrivacyNotificationDataListener`)가 채웁니다.
+
+`$extra`의 내용은 **훅마다 다릅니다** — 구독 측은 키가 있다고 가정하지 말고 없을 때를 함께
+다루십시오.
+
+| 훅                                     | `$extra`                                                    |
+| -------------------------------------- | ----------------------------------------------------------- |
+| `core.privacy.dormant_pre_notice`      | `dormant_days` · `scheduled_date`                            |
+| `core.privacy.dormant_converted`       | 없음(빈 배열) — 전환은 이미 일어난 일이라 예정일이 없습니다  |
+| `core.privacy.dormant_withdraw_notice` | `scheduled_date`                                             |
+
+예정일은 커맨드가 계산해 실어 보냅니다 — 리스너가 다시 계산하면 하루 차이로 어긋나
+"오늘 전환된다" 는 메일을 받은 다음 날 전환되는 식의 불일치가 생깁니다. 계산 기준은 **집행
+쿼리와 같은 시점**(통지 시각 + `privacy.dormant_notice_days`)입니다.
+
+### 알림 추출의 선택 채널
+
+`{hookPrefix}.notification.extract_data` 반환의 `context.channels`에 채널 ID 배열을 지정하면
+코어 알림 리스너가 해당 채널의 활성 템플릿만 발송합니다. 키가 없으면 기존 전체 채널 동작을
+유지하며 빈 배열은 발송하지 않습니다. `context.skip`은 기존처럼 전체 발송을 중단합니다.
+
 ### 1. Action Hooks (액션 훅)
 
 **목적**: 특정 시점에 부가 작업 실행
@@ -133,6 +254,14 @@ core.activity_log.before_prune          core.activity_log.after_prune
 core.notification_log.before_prune      core.notification_log.after_prune
 core.schedule.before_prune_history      core.schedule.after_prune_history
 
+# 개인정보 보유기간 파기 (7.1.0, privacy:process-retention) — 핸들러마다 자기 접두사로 발행한다.
+# 같은 (보존일) / (보존일, 처리건수) 인자 규약이다. --dry-run 에서는 발행하지 않는다 —
+# 리허설에서 리스너가 돌았다고 착각하지 않도록 실제 처리 때만 발행한다.
+core.privacy.withdrawn_user.before_prune        core.privacy.withdrawn_user.after_prune
+sirsoft-ecommerce.order.before_prune            sirsoft-ecommerce.order.after_prune
+sirsoft-board.author_ip.before_prune            sirsoft-board.author_ip.after_prune
+sirsoft-board.guest_author.before_prune         sirsoft-board.guest_author.after_prune
+
 # 본문 첫 내부 이미지 썸네일 캐시 (Filter, 공개#22) — 각 모델 saving 이벤트가 발행.
 # 값 = 추출된 첫 내부 이미지 URL(없으면 null), 인자 = (값, 모델, 전체 후보 src 배열).
 # 확장이 후보를 대체(CDN prefix 승격 등)하거나 차단(null 반환)할 수 있다.
@@ -174,6 +303,10 @@ core.permission.store_validation_rules
 core.permission.update_validation_rules
 core.menu.store_validation_rules
 core.menu.update_validation_rules
+core.privacy.target_list_validation_rules           # 개인정보 조치 대상 명단 조회 (page · per_page)
+core.settings.privacy_preview_validation_rules      # 개인정보 탭 대상 건수 미리보기 (기본 규칙 없음)
+core.privacy.manual_run_validation_rules            # 개인정보 조치 직권 실행 접수·건수 확인 (skip_waiting)
+core.privacy.manual_run_status_validation_rules     # 개인정보 조치 직권 실행 상태 조회 (targets · since)
 
 # 구 이름에서 표준 이름으로 옮긴 훅 (7.0.6) — 구 이름도 함께 발행되므로 기존 구독은 유지되나,
 # 새로 구독할 때는 표준 이름을 쓴다. 구 이름에 구독자가 있으면 로그에 1회 안내가 남는다.
@@ -214,6 +347,10 @@ core.settings.available_mail_drivers
 
 # 드라이버 확장 훅 (Action) — 플러그인 드라이버 선택 시 Config 적용
 core.settings.apply_driver_config
+
+# IP 접근 제한 제외 경로 훅 (Filter) — 확장이 자기 인바운드 콜백 경로를 제외 목록에 추가
+# 아래 "IP 접근 제한 제외 경로 훅 페이로드" 참조
+core.security.ip_restriction_exempt_paths   # applyFilters($patterns)
 
 # 사용자 추가 에셋 훅 (Filter) — 운영자가 확장에 덧붙인 CSS·JS 목록을 보정/추가
 core.assets.custom_assets   # applyFilters($assets, $extensionType, $identifier)
@@ -334,6 +471,45 @@ core.analytics.extension_purged          # (Action) 확장을 데이터까지 �
 | `provider` | string | 공급 플러그인 식별자 — 비활성화 시 "사용 중 드라이버" 경고 판정에 사용 (코어 기본 항목에는 없음) |
 
 `core.settings.available_public_asset_drivers` 로 등록하는 디스크는 플러그인 ServiceProvider 에서 `filesystems.disks.{id}` 정의가 함께 있어야 하며, 그 정의에 `url` 키가 있어야 직접 URL 이 생성됩니다(없으면 스트리밍 폴백). 플러그인이 비활성화되어 디스크 정의가 사라지면 저장값은 보존된 채 스트리밍으로 자동 폴백합니다.
+
+#### `core.security.ip_restriction_exempt_paths`
+
+운영자가 켠 **IP 접근 제한**(환경설정 > 보안)이 확장의 인바운드 콜백을 끊지 않도록, 확장이 자기 콜백 경로를 제외 목록에 추가합니다. 첫 인자는 URI 패턴 문자열 배열이며 같은 모양의 문자열을 append 합니다.
+
+| 항목 | 값 |
+| --- | --- |
+| 패턴 문법 | `Str::is()` 글롭 — `*` 는 `/` 를 포함해 무엇이든 맞습니다 (예: `plugins/my-pay/notify/*`) |
+| 기준 경로 | 앞뒤 `/` 를 뗀 요청 경로 (`$request->path()` 와 같은 모양) |
+| 적용 시점 | 규칙 판정 **이전**. 제외에 걸리면 그 요청은 규칙을 보지 않고 통과합니다 |
+| 적용 한계 | **관리자 영역은 이 훅으로 열 수 없습니다** — 관리자 화면·관리자 API·관리자 로그인 API 는 제외 판정 자체를 건너뜁니다 |
+
+코어는 관례적인 콜백 경로(`plugins/*/payment/*`, `plugins/*/webhook`, `api/plugins/*/webhook*`, `plugins/*/plugin/*/callback`)를 이미 제외하므로, 그 관례를 따르는 확장은 훅을 구독하지 않아도 됩니다. 관례 밖 경로로 외부 통보를 받는 확장만 등록하면 됩니다 — 등록하지 않으면 운영자가 `plugins/*` 류 규칙을 넣는 순간 결제 승인·입금 통보가 403 으로 끊기고, 실패는 상대편 재시도 로그에만 남습니다.
+
+```php
+public static function getSubscribedHooks(): array
+{
+    return [
+        'core.security.ip_restriction_exempt_paths' => [
+            'method' => 'exemptCallbacks',
+            'priority' => 10,
+        ],
+    ];
+}
+
+/**
+ * 이 플러그인이 외부에서 통보받는 경로를 IP 제한 제외 목록에 더합니다.
+ *
+ * @param  array<int, string>  $patterns  현재 제외 패턴 목록
+ * @return array<int, string> 패턴 목록
+ */
+public static function exemptCallbacks(array $patterns): array
+{
+    $patterns[] = 'pay/my-gateway/notify';
+    $patterns[] = 'pay/my-gateway/notify/*';
+
+    return $patterns;
+}
+```
 
 #### `sirsoft-ckeditor5.image.filter_reference_sources`
 

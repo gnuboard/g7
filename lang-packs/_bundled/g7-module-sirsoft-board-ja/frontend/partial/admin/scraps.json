@@ -56,5 +56,12 @@
     "bulk_delete_editor_label": "スクラップ選択削除確認",
     "processing": "処理中..."
   },
-  "pagination_info": "総{{total}}件中{{from}}-{{to}}"
+  "pagination_info": "総{{total}}件中{{from}}-{{to}}",
+  "table_empty": "条件に合致するスクラップがありません。",
+  "refresh": "更新",
+  "total_count": "合計 {{count}}件",
+  "cell": {
+    "view_member": "会員情報を表示",
+    "search_member": "この会員で検索"
+  }
 }

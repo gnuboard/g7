@@ -264,6 +264,11 @@ class UserResource extends BaseApiResource
             'blocked_at' => $this->getValue('blocked_at')
                 ? $this->formatDateTimeStringForUser($this->getValue('blocked_at'))
                 : null,
+            // 휴면 전환 시각 — 「휴면 후 N일」 자동 탈퇴 판정의 기준점이라 관리자가 언제
+            // 전환됐는지 볼 수 있어야 한다(상태 뱃지만으로는 남은 기간을 알 수 없다).
+            'dormant_at' => $this->getValue('dormant_at')
+                ? $this->formatDateTimeStringForUser($this->getValue('dormant_at'))
+                : null,
             // 로그인 실패 누적 잠금 상태 — 관리자만 확인·해제할 수 있어야 하므로 관리자 응답에만 노출
             'failed_login_attempts' => (int) ($this->getValue('failed_login_attempts') ?? 0),
             'locked_permanently' => (bool) $this->getValue('locked_permanently'),

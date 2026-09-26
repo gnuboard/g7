@@ -18,7 +18,7 @@
 | `history_retention_days` | `integer` | `365` | 이력 보존 일수 |
 | `notify_on_failure` | `boolean` | `true` | 실패 알림 |
 
-기본값 파일: `config/settings/defaults.json` · 설정 화면 레이아웃: `resources/layouts/admin/plugin_settings.json`
+기본값 파일: `config/settings/defaults.json` · 설정 화면 레이아웃: `resources/layouts/admin/plugin_settings.g7.html`
 <!-- @generated:settings-schema END -->
 
 <!-- @intent START -->

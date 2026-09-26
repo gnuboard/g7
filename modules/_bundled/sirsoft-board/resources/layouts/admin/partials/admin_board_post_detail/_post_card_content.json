@@ -462,6 +462,68 @@
                             ]
                         },
                         {
+                            "comment": "반응 — 읽기 전용. 게시판이 반응을 끄면 백엔드가 reaction_type_options 를 빈 배열로 내리므로 이 줄 전체가 사라진다. 유형별 개수를 아이콘(업로드 이미지 우선)과 함께 편다",
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{post?.data?.board?.use_reaction && (post?.data?.board?.reaction_type_options ?? []).length > 0}}",
+                            "text": "·"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{post?.data?.board?.use_reaction && (post?.data?.board?.reaction_type_options ?? []).length > 0}}",
+                            "props": {
+                                "className": "flex-center gap-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "iteration": {
+                                        "source": "{{post?.data?.board?.reaction_type_options ?? []}}",
+                                        "item_var": "adminReactionType",
+                                        "index_var": "adminReactionIdx"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "flex-center gap-1",
+                                                "title": "{{adminReactionType.name ?? ''}}"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Img",
+                                                    "if": "{{adminReactionType.icon_url}}",
+                                                    "props": {
+                                                        "src": "{{adminReactionType.icon_url}}",
+                                                        "alt": "{{adminReactionType.name ?? ''}}",
+                                                        "className": "w-4 h-4 object-contain"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Icon",
+                                                    "if": "{{!adminReactionType.icon_url}}",
+                                                    "props": {
+                                                        "name": "{{adminReactionType.icon_name ?? 'fa-thumbs-up'}}",
+                                                        "className": "text-base"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "text": "{{post?.data?.reaction_counts?.[adminReactionType.id] ?? 0}}"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
                             "type": "basic",
                             "name": "Span",
                             "if": "{{post?.data?.ip_address}}",

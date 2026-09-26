@@ -10,7 +10,10 @@ use Illuminate\Support\Facades\Auth;
 use Modules\Sirsoft\Board\Enums\PostStatus;
 use Modules\Sirsoft\Board\Enums\TriggerType;
 use Modules\Sirsoft\Board\Models\Post;
+use Modules\Sirsoft\Board\Repositories\Contracts\ReactionRepositoryInterface;
+use Modules\Sirsoft\Board\Repositories\Contracts\ReactionTypeRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\ReportRepositoryInterface;
+use Modules\Sirsoft\Board\Services\ReactionService;
 use Modules\Sirsoft\Board\Traits\ChecksBoardPermission;
 use Modules\Sirsoft\Board\Traits\FormatsBoardDate;
 
@@ -83,6 +86,10 @@ class CommentResource extends BaseApiResource
 
             // 신고 여부 (로그인 사용자 + post.board 관계 로드 시에만)
             'is_already_reported' => $this->getIsAlreadyReported($request),
+
+            // 댓글 반응 (게시판이 use_reaction + use_comment_reaction 을 모두 켰을 때만 의미 있음)
+            'reaction_counts' => $this->getReactionCountsForResponse($request),
+            'my_reaction_type_id' => $this->getMyReactionTypeId($request),
 
             // 권한 정보 (is_owner + permissions)
             ...$this->resourceMeta($request),
@@ -190,6 +197,92 @@ class CommentResource extends BaseApiResource
 
         return app(ReportRepositoryInterface::class)
             ->hasUserReported($user->id, $boardId, 'comment', $this->id);
+    }
+
+    /**
+     * 댓글의 반응 카운트를 응답용으로 반환합니다.
+     *
+     * 게시판이 반응·댓글반응을 모두 켰을 때만 값을 채우고, 활성 유형은 0 으로 채워
+     * "유형은 있으나 아직 아무도 누르지 않은" 상태도 화면이 그릴 수 있게 한다.
+     *
+     * 반환은 반드시 객체(stdClass)다 — 정수 키 배열은 JSON 직렬화에서 리스트로 바뀌어
+     * 프론트의 `counts[typeId]` 접근이 깨진다.
+     *
+     * @param  Request  $request  HTTP 요청
+     * @return object 유형 ID => 개수
+     */
+    private function getReactionCountsForResponse(Request $request): object
+    {
+        $board = $this->resolveParentPost($request)?->board;
+
+        if (! BoardResource::reactionsEnabled($board) || ! $board->use_comment_reaction) {
+            return new \stdClass;
+        }
+
+        $counts = $this->reaction_counts ?? [];
+
+        foreach ($this->resolveActiveReactionTypeIds($board) as $typeId) {
+            $key = (string) $typeId;
+            $counts[$key] = (int) ($counts[$key] ?? 0);
+        }
+
+        return (object) $counts;
+    }
+
+    /**
+     * 게시판이 켠 반응 유형 ID 목록을 요청 단위로 한 번만 해석합니다.
+     *
+     * 댓글마다 유형을 조회하면 댓글 수에 비례해 쿼리가 늘어난다(목록 응답의 N+1).
+     * 같은 요청 안에서는 게시판당 결과가 불변이므로 정적 캐시에 담아 재사용한다.
+     *
+     * @param  mixed  $board  게시판 모델
+     * @return array<int, int> 활성 반응 유형 ID 목록
+     */
+    private function resolveActiveReactionTypeIds($board): array
+    {
+        static $cache = [];
+
+        $key = (int) $board->id;
+
+        if (! array_key_exists($key, $cache)) {
+            $cache[$key] = app(ReactionTypeRepositoryInterface::class)
+                ->findByCodes($board->active_reaction_types ?? [])
+                ->pluck('id')
+                ->map(fn ($id) => (int) $id)
+                ->all();
+        }
+
+        return $cache[$key];
+    }
+
+    /**
+     * 로그인 사용자가 이 댓글에 남긴 반응 유형 ID 를 반환합니다.
+     *
+     * 사전 로드 판정에 isset() 을 쓰면 안 된다 — "반응을 남기지 않음"이 정당한 null 이라
+     * isset() 은 프리로드가 있어도 false 가 되어 댓글마다 개별 쿼리로 조용히 퇴화한다.
+     * array_key_exists 로 "키가 주입됐는지"를 본다.
+     *
+     * @param  Request  $request  HTTP 요청
+     * @return int|null 반응 유형 ID (없으면 null)
+     */
+    private function getMyReactionTypeId(Request $request): ?int
+    {
+        if (array_key_exists('my_reaction_type_id_preloaded', $this->resource->getAttributes())) {
+            $value = $this->resource->getAttributes()['my_reaction_type_id_preloaded'];
+
+            return $value === null ? null : (int) $value;
+        }
+
+        $user = $request->user();
+
+        if (! $user) {
+            return null;
+        }
+
+        $reaction = app(ReactionRepositoryInterface::class)
+            ->findByUserAndTarget($user->id, ReactionService::TARGET_COMMENT, (int) $this->id);
+
+        return $reaction === null ? null : (int) $reaction->reaction_type_id;
     }
 
     // =========================================================================

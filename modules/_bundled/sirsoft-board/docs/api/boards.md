@@ -142,6 +142,9 @@ HTTP/1.1 200
 | use_comment | body | boolean | 예 | — | 댓글 기능 사용 여부 |
 | use_reply | body | boolean | 예 | — | 게시글 답변(원글에 대한 답글) 기능 사용 여부 |
 | use_report | body | boolean | 예 | — | 게시글/댓글 신고 기능 사용 여부 |
+| use_reaction | body | boolean | 예 | — | 게시글 반응(추천/비추천) 기능 사용 여부 |
+| use_comment_reaction | body | boolean | 아니오 | `true` | 댓글 반응 사용 여부. `use_reaction` 의 하위 토글이라 상위가 꺼져 있으면 함께 꺼집니다. |
+| active_reaction_types | body | array | 아니오 | — | 이 게시판에서 켠 반응 유형 code 목록 (문자열 배열, 예: `["like","dislike"]`) |
 | comment_order | body | string | 예 | `ASC`, `DESC` | 댓글 정렬 순서 (ASC 오름차순 / DESC 내림차순) |
 | new_display_hours | body | integer | 아니오 | min 0, max 720 | 신규(NEW) 표시를 유지할 기간 (시간 단위, 최대 720시간=30일). `0` 은 NEW 배지를 표시하지 않음 — 아카이브형 게시판이 쓰는 정상 값이며 시더가 실제로 넣는다 |
 | min_title_length | body | integer | 아니오 | min 0, max 200 | 게시글 제목 최소 글자 수 |
@@ -407,6 +410,9 @@ _단건 응답: `data` 객체의 필드._
 | comment_order | string | `ASC` | 댓글 정렬 순서 (ASC: 오름차순, DESC: 내림차순) |
 | show_view_count | boolean | `true` | 조회수 노출 |
 | use_report | boolean | `false` | 게시글/댓글 신고 기능 사용 |
+| use_reaction | boolean | `true` | 게시글 반응(추천/비추천) 기능 사용 |
+| use_comment_reaction | boolean | `true` | 댓글 반응 사용. `use_reaction` 이 꺼져 있으면 값과 무관하게 댓글 반응은 동작하지 않음 |
+| active_reaction_types | array | `["like","dislike"]` | 이 게시판에서 켠 반응 유형 code 목록. 생성 모드에서는 환경설정 기본값(`basic_defaults.active_reaction_types`)이 채워짐 |
 | min_title_length | integer | `2` | 최소 제목 글자 수 |
 | max_title_length | integer | `200` | 최대 제목 글자 수 |
 | min_content_length | integer | `2` | 최소 게시글 글자 수 |
@@ -1269,6 +1275,9 @@ HTTP/1.1 200
 | use_comment | body | boolean | 예 | — | 댓글 기능 사용 여부 |
 | use_reply | body | boolean | 예 | — | 게시글 답변(원글에 대한 답글) 기능 사용 여부 |
 | use_report | body | boolean | 예 | — | 게시글/댓글 신고 기능 사용 여부 |
+| use_reaction | body | boolean | 예 | — | 게시글 반응(추천/비추천) 기능 사용 여부 |
+| use_comment_reaction | body | boolean | 아니오 | `true` | 댓글 반응 사용 여부. `use_reaction` 의 하위 토글이라 상위가 꺼져 있으면 함께 꺼집니다. |
+| active_reaction_types | body | array | 아니오 | — | 이 게시판에서 켠 반응 유형 code 목록 (문자열 배열, 예: `["like","dislike"]`) |
 | comment_order | body | string | 예 | `ASC`, `DESC` | 댓글 정렬 순서 (ASC 오름차순 / DESC 내림차순) |
 | new_display_hours | body | integer | 아니오 | min 0, max 720 | 신규(NEW) 표시를 유지할 기간 (시간 단위, 최대 720시간=30일). `0` 은 NEW 배지를 표시하지 않음 — 아카이브형 게시판이 쓰는 정상 값이며 시더가 실제로 넣는다 |
 | min_title_length | body | integer | 아니오 | min 0, max 200 | 게시글 제목 최소 글자 수 |
@@ -3456,7 +3465,7 @@ _단건 응답: `data` 객체의 필드._
 | trigger_type | string | `user` | 상태 변경/삭제를 유발한 주체 (user 사용자 / admin 관리자 / report 신고 / system 시스템 / auto_hide 자동 블라인드 / cascade 연쇄 삭제 — TriggerType Enum) |
 | updated_at | string | `2026-07-07 09:39:03` | 최종 수정 일시 |
 | deleted_at | null | `null` | 소프트 삭제 일시 (미삭제 시 null) |
-| ip_address | string | `127.0.0.1` | 요청/행위가 발생한 IP 주소 |
+| ip_address | string\|null | `127.0.0.1` | 요청/행위가 발생한 IP 주소 (보유기간이 지나 파기되면 null — 게시판 개인정보 보유기간, 이슈 #636) |
 | action_logs | array | `[]` | 블라인드/복원/삭제 등 운영 처리 이력 (admin.manage 권한 보유자에게만 노출, action/reason/admin_name/created_at — 비권한자는 빈 배열/null) |
 | board | object | `{"slug":"apidoc-sample-board","name":"API 문서 샘플 게시판","typ…` | 게시글이 속한 게시판 정보 (slug/name/type + 댓글·답변·신고·조회수 노출·깊이 등 렌더링에 필요한 설정과 신고 유형 목록) |
 | navigation | null | `null` | 이전/다음 글 정보 (상세 API에서는 기본 null — 별도 navigation 엔드포인트로 비동기 로딩) |
@@ -3714,7 +3723,7 @@ _단건 응답: `data` 객체의 필드._
 | trigger_type | string | `user` | 동작을 유발한 방식/주체 구분 값 |
 | updated_at | string | `2026-07-08 15:01:44` | 최종 수정 일시 |
 | deleted_at | null | `null` | 소프트 삭제 일시 (미삭제 시 null) |
-| ip_address | string | `127.0.0.1` | 요청/행위가 발생한 IP 주소 |
+| ip_address | string\|null | `127.0.0.1` | 요청/행위가 발생한 IP 주소 (보유기간이 지나 파기되면 null — 게시판 개인정보 보유기간, 이슈 #636) |
 | action_logs | array | `[]` | 게시글 블라인드/복원/삭제 등 운영 처리 이력 (action/reason/admin_name/created_at — admin.manage 권한 보유자에게만 노출, 비권한자는 null) |
 | board | object | `{"slug":"apidoc-sample-board","name":"API 문서 샘플 게시판","typ…` | 소속 게시판 요약 정보 (slug/name/type/댓글·답변·신고 사용 여부·최대 깊이·신고 유형 목록 등 — board 관계 로드 시에만 채워지며 미로드 시 null) |
 | navigation | null | `null` | 이전/다음 글 이동 정보 (별도 navigation 조회로 채워지며, 이 응답에는 기본적으로 미포함되어 null) |

@@ -113,6 +113,7 @@
                                                                     "if": "{{_global.selectedModule?.icon_url && !(_local.selectedModuleIconBroken ?? []).includes(_global.selectedModule?.identifier)}}",
                                                                     "actions": [
                                                                         {
+                                                                            "comment": "이미지 404·손상 — 이 확장의 식별자만 깨진 목록에 더해 이미지를 감추고, 아래 깔린 글리프가\n                         다시 드러나게 한다. 불리언 하나로 들면 창이 재사용될 때 다음 확장까지 아이콘을 잃는다.",
                                                                             "event": "onError",
                                                                             "handler": "setState",
                                                                             "params": {

@@ -15,6 +15,9 @@ return [
     'template_not_found' => '템플릿을 찾을 수 없습니다: :identifier',
     'template_not_active' => '템플릿이 활성화되지 않았습니다: :identifier (상태: :status)',
 
+    // 개인정보 조치 직권 실행 — 대상당 작업 하나
+    'privacy_manual_run_conflict' => '같은 대상에 처리 대기 중이거나 처리 중인 직권 실행이 이미 있습니다. 끝난 뒤 다시 실행하세요.',
+
     // 낙관적 잠금 — 동시 저장 충돌
     'concurrent_modification' => '다른 사용자가 먼저 저장했습니다. (리소스: :resource, 현재 버전: :current, 보낸 버전: :expected)',
 

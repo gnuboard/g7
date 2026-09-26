@@ -47,7 +47,7 @@ KG 이니시스 PG(결제 게이트웨이)를 `sirsoft-ecommerce`에 연결하�
 | `src/Listeners/` | 훅 리스너 | Repository 경유 (Model·DB 파사드 직접 접근 금지) |
 | `src/routes/` | 라우트 | 모든 라우트에 `name()` 필수 |
 | `upgrades/` | 업그레이드 스텝 | DB·설정 구조 변경 시 작성 (모듈/플러그인 전용) |
-| `resources/layouts/` | 레이아웃 JSON | `php artisan plugin:update sirsoft-pay_kginicis --force` (빌드 불필요) |
+| `resources/layouts/` | 레이아웃 소스 `.g7.html` (짝 `.json` 은 굽기 산출) | `php artisan plugin:update sirsoft-pay_kginicis --force` (빌드 불필요) |
 | `resources/js/` | 프론트 엔트리·핸들러 | `php artisan plugin:build` → `php artisan plugin:update sirsoft-pay_kginicis --force` |
 | `resources/extensions/` | 다른 확장 레이아웃에 주입하는 조각 | `php artisan plugin:update sirsoft-pay_kginicis --force` |
 | `editor-spec.json` | 레이아웃 편집기 스펙 | `php artisan plugin:update sirsoft-pay_kginicis --force` |
@@ -90,8 +90,8 @@ CBT 인증 URL 로 폼 POST → KG 이니시스가 `sid` 를 콜백으로 전달
 | 확장점 | 수 | 상세 |
 |---|---|---|
 | 발행 훅 | 6개 | [발행 훅](docs/extension-points.md#발행-훅) |
-| 구독 훅 | 14개 | [구독 훅](docs/extension-points.md#구독-훅) |
-| 훅 리스너 | 11개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
+| 구독 훅 | 15개 | [구독 훅](docs/extension-points.md#구독-훅) |
+| 훅 리스너 | 12개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
 | 레이아웃 확장 | 4개 | [레이아웃 확장](docs/extension-points.md#레이아웃-확장) |
 | 미들웨어 | 1개 | [미들웨어](docs/extension-points.md#미들웨어) |
 | 브로드캐스트 채널 | 0개 | [브로드캐스트 채널](docs/extension-points.md#브로드캐스트-채널) |
@@ -116,7 +116,7 @@ CBT 인증 URL 로 폼 POST → KG 이니시스가 `sid` 를 콜백으로 전달
 - [ ] 업그레이드 스텝·데이터 마이그레이션이 설정 파일을 새로 쓰면(`File::put`) 바로 뒤에 `FilePermissionHelper::inheritOwnershipFromParent($path)` — `sudo` 코어 업데이트 안에서 root 로 실행되어 그 파일이 root 소유로 남으면 이후 웹 프로세스의 설정 저장이 영구 실패한다. 번들 확장 `upgrades/**` 전수를 파일시스템에서 파생해 검사하는 패리티 테스트가 누락을 잡는다
 - [ ] 발행 훅 추가·이름 변경 시 `php artisan ext:docgen` 재실행 (구독하는 확장의 계약이 바뀝니다)
 - [ ] API 표면 변경 시 `php artisan api:docgen --scope=plugin:sirsoft-pay_kginicis` 재실행 + `docs/api/**` 갱신
-- [ ] 레이아웃 JSON 변경 시 빌드 없이 update 만 — 신규 Tailwind 클래스는 빌드된 CSS 에 존재하는지 확인
+- [ ] 레이아웃은 `.g7.html` 을 고치고 `php artisan layout:decompile <경로> --sync` 로 짝 `.json` 을 다시 굽는다 (짝을 굽지 않으면 화면에 반영되지 않음) — 빌드 없이 update 만, 신규 Tailwind 클래스는 빌드된 CSS 에 존재하는지 확인
 - [ ] TSX/TS 변경 시 `--production` 재빌드 후 `dist/` 커밋 (sourceMappingURL 잔존 금지)
 - [ ] 다국어 키 추가 시 ko·en 동시 반영 + 번들 ja 언어팩 증분 동기화
 - [ ] 승인/취소 흐름을 고칠 때 `before_*`/`after_*` 훅 순서와 우선순위(`PaymentRefundListener` < `CancelActivityLogListener`)를 유지 — 로그가 실제 처리보다 먼저 실행되면 안 된다
@@ -149,10 +149,10 @@ CBT 인증 URL 로 폼 POST → KG 이니시스가 `sid` 를 콜백으로 전달
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 35개 | `plugins/_bundled/sirsoft-pay_kginicis/tests` |
+| PHPUnit | 36개 | `plugins/_bundled/sirsoft-pay_kginicis/tests` |
 | Vitest | 13개 | `vitest.config.ts` |
 | Playwright | 1개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 2개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 3개 | `tests/scenarios` |
 
 기저 TestCase: `tests/PluginTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

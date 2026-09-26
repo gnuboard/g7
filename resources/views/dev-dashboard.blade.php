@@ -1121,6 +1121,14 @@ if (isset($_GET['ajax_action'])) {
                                     <span>의존성 취약점 점검</span>
                                     <span class="text-[10px] opacity-60">(security:audit-dependencies)</span>
                                 </button>
+                                <button onclick="runCommand('security:ip-restriction --status')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded transition-colors">
+                                    <span>IP 접근 제한 점검</span>
+                                    <span class="text-[10px] opacity-60">(security:ip-restriction --status)</span>
+                                </button>
+                                <button onclick="runCommand('security:ip-restriction --disable')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded transition-colors">
+                                    <span>IP 접근 제한 비상 해제</span>
+                                    <span class="text-[10px] opacity-60">(security:ip-restriction --disable)</span>
+                                </button>
                                 <button onclick="runCommand('seo:prune-stats')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded transition-colors">
                                     <span>SEO 캐시 통계 정리</span>
                                     <span class="text-[10px] opacity-60">(seo:prune-stats)</span>
@@ -1152,6 +1160,22 @@ if (isset($_GET['ajax_action'])) {
                                 <button onclick="runCommand('storage:prune-leftovers')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded transition-colors">
                                     <span>스토리지 잔존물 정리 (실행)</span>
                                     <span class="text-[10px] opacity-60">(storage:prune-leftovers)</span>
+                                </button>
+                                <button onclick="runCommand('privacy:process-retention --dry-run')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded transition-colors">
+                                    <span>보유기간 경과 개인정보 (미리보기)</span>
+                                    <span class="text-[10px] opacity-60">(privacy:process-retention --dry-run)</span>
+                                </button>
+                                <button onclick="runCommand('privacy:process-retention')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded transition-colors">
+                                    <span>보유기간 경과 개인정보 (실행)</span>
+                                    <span class="text-[10px] opacity-60">(privacy:process-retention)</span>
+                                </button>
+                                <button onclick="runCommand('privacy:process-dormant --dry-run')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded transition-colors">
+                                    <span>휴면 계정 처리 (미리보기)</span>
+                                    <span class="text-[10px] opacity-60">(privacy:process-dormant --dry-run)</span>
+                                </button>
+                                <button onclick="runCommand('privacy:process-dormant')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded transition-colors">
+                                    <span>휴면 계정 처리 (실행)</span>
+                                    <span class="text-[10px] opacity-60">(privacy:process-dormant)</span>
                                 </button>
                                 <button onclick="runCommand('identity:expire-challenges')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded transition-colors">
                                     <span>본인인증 challenge 만료 처리</span>

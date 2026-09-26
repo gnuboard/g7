@@ -78,6 +78,16 @@ return [
         'identity_max_attempts_min' => 1,
         'identity_max_attempts_max' => 20,
 
+        // 개인정보 보유기간·휴면 (일)
+        // 하한을 0 으로 두지 않는 이유: 0 이면 켠 즉시 전원이 대상이 되어 되돌릴 수 없다.
+        // 휴면 전환 하한 30 일은 유효기간제 폐지 이후 "자율 정책 + 사전 안내" 라는 법 취지의
+        // 최소선이다 — 그보다 짧은 전환은 사전 안내가 실질적으로 불가능하다.
+        'privacy_retention_days_min' => 1,
+        'privacy_retention_days_max' => 3650,
+        'privacy_dormant_days_min' => 30,
+        'privacy_dormant_notice_days_min' => 1,
+        'privacy_dormant_notice_days_max' => 365,
+
         // 목록 한계값 (0 = 무제한)
         'advanced_pagination_result_cap_min' => 0,
         'advanced_pagination_result_cap_max' => 1000000,
@@ -1061,6 +1071,151 @@ return [
                     'subject' => ['ko' => '사이트맵 재생성 실패', 'en' => 'Sitemap regeneration failed'],
                     'body' => ['ko' => '요청하신 사이트맵 재생성이 실패했습니다. 오류: {error}', 'en' => 'Your sitemap regeneration failed. Error: {error}'],
                     'click_url' => '/admin/settings?tab=seo',
+                ],
+            ],
+        ],
+        /*
+        | 휴면 생명주기 3종 (privacy:process-dormant 가 발행)
+        |
+        | hook_prefix 가 `core.privacy` 라서 데이터 추출 필터는
+        | `core.privacy.notification.extract_data` 이며 CorePrivacyNotificationDataListener 가 받는다.
+        | 세 정의 모두 법정 사전 안내·사후 고지에 해당하므로 마케팅 수신 동의와 무관하게 발송한다.
+        */
+        'dormant_pre_notice' => [
+            'hook_prefix' => 'core.privacy',
+            'name' => ['ko' => '휴면 전환 사전 안내', 'en' => 'Dormancy Advance Notice'],
+            'description' => ['ko' => '장기 미접속으로 곧 휴면 전환될 회원에게 미리 보내는 안내', 'en' => 'Notice sent before a long-inactive account becomes dormant'],
+            'channels' => ['mail', 'database'],
+            'hooks' => ['core.privacy.dormant_pre_notice'],
+            'variables' => [
+                ['key' => 'name', 'description' => '수신자 이름'],
+                ['key' => 'app_name', 'description' => '사이트명'],
+                ['key' => 'action_url', 'description' => '로그인 페이지 URL'],
+                ['key' => 'site_url', 'description' => '사이트 URL'],
+                ['key' => 'dormant_days', 'description' => '휴면 전환 기준 미접속 일수'],
+                ['key' => 'scheduled_date', 'description' => '휴면 전환 예정일'],
+            ],
+            'templates' => [
+                [
+                    'channel' => 'mail',
+                    'recipients' => [['type' => 'trigger_user']],
+                    'subject' => [
+                        'ko' => '[{app_name}] {scheduled_date} 휴면 계정 전환 예정 안내',
+                        'en' => '[{app_name}] Your account will become dormant on {scheduled_date}',
+                    ],
+                    'body' => [
+                        'ko' => '<h1>{name}님, 안녕하세요.</h1>'
+                            .'<p>{app_name} 에 <strong>{dormant_days}일</strong> 이상 접속하지 않으셔서, <strong>{scheduled_date}</strong> 에 회원님의 계정이 휴면 상태로 전환될 예정입니다.</p>'
+                            .'<p>그 전에 한 번 로그인하시면 휴면 전환이 취소됩니다. 휴면으로 전환된 뒤에도 로그인하시면 곧바로 원래대로 복구됩니다.</p>'
+                            .'<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin: 24px 0;"><tr><td align="center"><a href="{action_url}" style="display: inline-block; padding: 12px 32px; background-color: #2d3748; color: #ffffff; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 14px;">지금 로그인하기</a></td></tr></table>'
+                            .'<p>감사합니다,<br><a href="{site_url}">{app_name}</a></p>',
+                        'en' => '<h1>Hello, {name}.</h1>'
+                            .'<p>You have not signed in to {app_name} for more than <strong>{dormant_days} days</strong>, so your account is scheduled to become dormant on <strong>{scheduled_date}</strong>.</p>'
+                            .'<p>Signing in before then cancels the change. Even after it takes effect, signing in restores your account immediately.</p>'
+                            .'<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin: 24px 0;"><tr><td align="center"><a href="{action_url}" style="display: inline-block; padding: 12px 32px; background-color: #2d3748; color: #ffffff; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 14px;">Sign in now</a></td></tr></table>'
+                            .'<p>Thank you,<br><a href="{site_url}">{app_name}</a></p>',
+                    ],
+                ],
+                [
+                    'channel' => 'database',
+                    'recipients' => [['type' => 'trigger_user']],
+                    'subject' => ['ko' => '휴면 계정 전환 예정 안내', 'en' => 'Your account will become dormant soon'],
+                    'body' => [
+                        'ko' => '{dormant_days}일 이상 미접속으로 {scheduled_date} 에 휴면 계정으로 전환됩니다. 로그인하시면 전환이 취소됩니다.',
+                        'en' => 'Your account becomes dormant on {scheduled_date} after {dormant_days} days of inactivity. Signing in cancels it.',
+                    ],
+                    'click_url' => '/mypage',
+                ],
+            ],
+        ],
+        'dormant_converted' => [
+            'hook_prefix' => 'core.privacy',
+            'name' => ['ko' => '휴면 전환 완료', 'en' => 'Dormancy Applied'],
+            'description' => ['ko' => '휴면 계정으로 전환되었음을 알리는 고지', 'en' => 'Notice sent when an account has become dormant'],
+            'channels' => ['mail', 'database'],
+            'hooks' => ['core.privacy.dormant_converted'],
+            'variables' => [
+                ['key' => 'name', 'description' => '수신자 이름'],
+                ['key' => 'app_name', 'description' => '사이트명'],
+                ['key' => 'action_url', 'description' => '로그인 페이지 URL'],
+                ['key' => 'site_url', 'description' => '사이트 URL'],
+            ],
+            'templates' => [
+                [
+                    'channel' => 'mail',
+                    'recipients' => [['type' => 'trigger_user']],
+                    'subject' => [
+                        'ko' => '[{app_name}] 휴면 계정으로 전환되었습니다',
+                        'en' => '[{app_name}] Your account is now dormant',
+                    ],
+                    'body' => [
+                        'ko' => '<h1>{name}님, 안녕하세요.</h1>'
+                            .'<p>장기 미접속으로 회원님의 {app_name} 계정이 <strong>휴면 상태</strong>로 전환되었습니다.</p>'
+                            .'<p>휴면 상태에서는 서비스 이용이 제한되지만, <strong>로그인만 하시면 곧바로 원래대로 복구</strong>됩니다. 별도의 신청 절차는 없습니다.</p>'
+                            .'<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin: 24px 0;"><tr><td align="center"><a href="{action_url}" style="display: inline-block; padding: 12px 32px; background-color: #2d3748; color: #ffffff; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 14px;">로그인해 복구하기</a></td></tr></table>'
+                            .'<p>감사합니다,<br><a href="{site_url}">{app_name}</a></p>',
+                        'en' => '<h1>Hello, {name}.</h1>'
+                            .'<p>Your {app_name} account has become <strong>dormant</strong> after a long period of inactivity.</p>'
+                            .'<p>Service is limited while dormant, but <strong>simply signing in restores it immediately</strong> — no application is required.</p>'
+                            .'<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin: 24px 0;"><tr><td align="center"><a href="{action_url}" style="display: inline-block; padding: 12px 32px; background-color: #2d3748; color: #ffffff; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 14px;">Sign in to restore</a></td></tr></table>'
+                            .'<p>Thank you,<br><a href="{site_url}">{app_name}</a></p>',
+                    ],
+                ],
+                [
+                    'channel' => 'database',
+                    'recipients' => [['type' => 'trigger_user']],
+                    'subject' => ['ko' => '휴면 계정으로 전환되었습니다', 'en' => 'Your account is now dormant'],
+                    'body' => [
+                        'ko' => '장기 미접속으로 휴면 계정이 되었습니다. 로그인하시면 곧바로 복구됩니다.',
+                        'en' => 'Your account is dormant after a long period of inactivity. Signing in restores it immediately.',
+                    ],
+                    'click_url' => '/login',
+                ],
+            ],
+        ],
+        'dormant_withdraw_notice' => [
+            'hook_prefix' => 'core.privacy',
+            'name' => ['ko' => '휴면 계정 탈퇴 예정 안내', 'en' => 'Dormant Account Withdrawal Notice'],
+            'description' => ['ko' => '휴면 기간이 지나 탈퇴 처리될 예정임을 미리 알리는 안내', 'en' => 'Notice sent before a dormant account is withdrawn'],
+            'channels' => ['mail', 'database'],
+            'hooks' => ['core.privacy.dormant_withdraw_notice'],
+            'variables' => [
+                ['key' => 'name', 'description' => '수신자 이름'],
+                ['key' => 'app_name', 'description' => '사이트명'],
+                ['key' => 'action_url', 'description' => '로그인 페이지 URL'],
+                ['key' => 'site_url', 'description' => '사이트 URL'],
+                ['key' => 'scheduled_date', 'description' => '탈퇴 처리 예정일'],
+            ],
+            'templates' => [
+                [
+                    'channel' => 'mail',
+                    'recipients' => [['type' => 'trigger_user']],
+                    'subject' => [
+                        'ko' => '[{app_name}] {scheduled_date} 회원 탈퇴 처리 예정 안내',
+                        'en' => '[{app_name}] Your account will be withdrawn on {scheduled_date}',
+                    ],
+                    'body' => [
+                        'ko' => '<h1>{name}님, 안녕하세요.</h1>'
+                            .'<p>휴면 상태가 계속되어 <strong>{scheduled_date}</strong> 에 회원님의 {app_name} 계정이 탈퇴 처리될 예정입니다.</p>'
+                            .'<p><strong>탈퇴 처리 후에는 계정과 개인정보를 되돌릴 수 없습니다.</strong> 계정을 계속 이용하시려면 그 전에 로그인해 주세요 — 로그인하시면 휴면이 해제되고 탈퇴 예정도 함께 취소됩니다.</p>'
+                            .'<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin: 24px 0;"><tr><td align="center"><a href="{action_url}" style="display: inline-block; padding: 12px 32px; background-color: #2d3748; color: #ffffff; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 14px;">지금 로그인하기</a></td></tr></table>'
+                            .'<p>감사합니다,<br><a href="{site_url}">{app_name}</a></p>',
+                        'en' => '<h1>Hello, {name}.</h1>'
+                            .'<p>Your {app_name} account has remained dormant and is scheduled to be withdrawn on <strong>{scheduled_date}</strong>.</p>'
+                            .'<p><strong>Once withdrawn, the account and its personal data cannot be restored.</strong> To keep using it, please sign in before then — signing in lifts the dormancy and cancels the scheduled withdrawal.</p>'
+                            .'<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin: 24px 0;"><tr><td align="center"><a href="{action_url}" style="display: inline-block; padding: 12px 32px; background-color: #2d3748; color: #ffffff; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 14px;">Sign in now</a></td></tr></table>'
+                            .'<p>Thank you,<br><a href="{site_url}">{app_name}</a></p>',
+                    ],
+                ],
+                [
+                    'channel' => 'database',
+                    'recipients' => [['type' => 'trigger_user']],
+                    'subject' => ['ko' => '회원 탈퇴 처리 예정 안내', 'en' => 'Your account will be withdrawn soon'],
+                    'body' => [
+                        'ko' => '휴면 상태가 계속되어 {scheduled_date} 에 탈퇴 처리됩니다. 되돌릴 수 없으니 계속 이용하시려면 로그인해 주세요.',
+                        'en' => 'Your dormant account will be withdrawn on {scheduled_date}. This cannot be undone — sign in to keep it.',
+                    ],
+                    'click_url' => '/login',
                 ],
             ],
         ],

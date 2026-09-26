@@ -197,7 +197,8 @@
       "rejected": "Rejected",
       "suspended": "Suspended",
       "deleted": "Deleted",
-      "restored": "Restored"
+      "restored": "Restored",
+      "report_cancelled": "Report cancelled"
     },
     "no_histories": "No processing history available.",
     "cancelled_badge": "Cancelled ({{cancelled_at}})",

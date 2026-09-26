@@ -75,6 +75,7 @@ return [
 
     'channels' => [
         'email' => 'Email',
+        'app' => 'Authenticator app',
     ],
 
     'origin_types' => [

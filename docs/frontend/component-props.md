@@ -466,6 +466,7 @@ export interface DataGridProps {
 
   // 행 액션 메뉴
   rowActions?: ActionMenuItem[];    // 행별 액션 메뉴 항목
+  rowClassName?: string;            // 데이터 행에 덧붙일 CSS 클래스 (행 표현식 가능)
 
   // SubRow Props (engine-v1.6.0+)
   subRowChildren?: ComponentDefinition[];  // 서브 행 컴포넌트 배열
@@ -555,6 +556,7 @@ export interface DataGridProps {
 
 | Props | 타입 | 필수 | 기본값 | 설명 |
 |-------|------|------|--------|------|
+| `rowClassName` | `string` | ❌ | `''` | 데이터 행에 덧붙일 CSS 클래스. 행 유형을 배경색으로 구분할 때 쓰며, 마크업에서 행 표현식을 넘기면 템플릿 엔진이 행마다 풀어 준다 (예: `rowClassName="{{row.row_type === 'notice' ? 'bg-blue-50 dark:bg-blue-900/20' : ''}}"`). 선택 행 강조보다 먼저 놓여 선택 상태가 덮어쓴다 |
 | `subRowChildren` | `ComponentDefinition[]` | ❌ | - | 서브 행에 렌더링할 컴포넌트 배열 |
 | `subRowCondition` | `string` | ❌ | - | 서브 행 표시 조건 (예: `"{{row.status !== 'free'}}"`) |
 | `subRowClassName` | `string` | ❌ | - | 서브 행 CSS 클래스 |

@@ -165,9 +165,6 @@
       "label": "상품 이미지 뷰어",
       "default_alt": "상품 이미지"
     },
-    "post_reactions": {
-      "label": "게시글 반응"
-    },
     "group": {
       "design": "디자인",
       "db": "데이터"
