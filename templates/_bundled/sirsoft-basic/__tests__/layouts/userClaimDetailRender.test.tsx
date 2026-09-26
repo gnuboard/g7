@@ -19,7 +19,13 @@
  *   claim_detail_contrast_axis_shows_both_sides,
  *   claim_detail_refund_account_reads_the_claim_row,
  *   claim_detail_reject_reason_leads_the_reason_card,
- *   claim_detail_progress_stepper_renders_server_steps
+ *   claim_detail_progress_stepper_renders_server_steps,
+ *   claim_detail_shipping_groups_by_waybill,
+ *   claim_detail_item_row_shows_its_waybill,
+ *   claim_detail_item_reject_reason_on_the_row,
+ *   claim_detail_advance_exchange_notice_and_overdue,
+ *   claim_detail_unreturned_items_marked,
+ *   claim_detail_admin_requested_notice
  *
  * @vitest-environment jsdom
  */
@@ -89,12 +95,27 @@ const TRANSLATIONS = {
       shipping_title: '배송',
       collection_title: '회수',
       collection_address: '회수지',
-      collection_completed_at: '회수 완료',
+      collection_completed_at: '전체 회수 완료',
       redelivery_title: '재발송',
       redelivery_changed_badge: '고객이 수정함',
-      redelivered_at: '재발송 완료',
-      tracking: '송장',
+      redelivered_at: '전체 재발송 완료',
       tracking_pending: '등록 전',
+      tracking_no_tracking: '송장 없이 도착',
+      tracking_arrived: '도착',
+      tracking_in_transit: '배송 중',
+      advance_exchange_notice: '선교환 — 새 상품을 먼저 보내드립니다. 기존 상품은 {{date}}까지 보내 주세요.',
+      advance_exchange_notice_no_due: '선교환 — 새 상품을 먼저 보내드립니다.',
+      collection_overdue: '반송 기한 {{days}}일 지남',
+      unreturned_badge: '미회수',
+      collection_address_n: '회수지 {{n}}',
+      item_collection_tracking: '회수 송장',
+      item_redelivery_tracking: '재발송 송장',
+      item_collection_state: '기존 상품 {{state}}',
+      item_reject_reason: '반려 사유: {{reason}}',
+      collection_lane_title: '기존 상품 회수',
+      collection_lane_counts: '{{total}}개 중 {{collected}}개 도착',
+      collection_lane_due: '반송 기한 {{date}}',
+      admin_requested_notice: '판매자가 접수한 신청은 고객센터로 문의해 주세요.',
       claim_info_title: '클레임 정보',
       compare_item: '항목',
       compare_original: '원 주문',
@@ -179,11 +200,27 @@ function exchangeDetail(overrides: Record<string, any> = {}): Record<string, any
     mc_total_charge_amount: { USD: { formatted: '$6.75' } },
     charge_method_label: '신청 시 결제',
     outstanding_amount: 0,
-    collection_carrier_name: 'CJ대한통운',
-    collection_tracking_number: '651234567890',
-    collection_tracking_url: 'https://example.test/track/651234567890',
+    // 송장은 상품 행마다 있다(#599) — 서버가 같은 운송장을 가진 행을 묶어 `tracking_groups` 로 싣는다.
+    tracking_groups: {
+      collection: [
+        {
+          key: 'collection:1|651234567890',
+          direction: 'collection',
+          no_tracking: false,
+          carrier_name: 'CJ대한통운',
+          tracking_number: '651234567890',
+          tracking_url: 'https://example.test/track/651234567890',
+          items: [{ claim_item_id: 1, product_name: '티셔츠', option_name: '차콜/M', quantity: 1, arrived: true }],
+          all_arrived: true,
+        },
+      ],
+      redelivery: [],
+    },
     collection_completed_at_formatted: '2026-09-02 14:00',
     return_address_snapshot: { zipcode: '06236', address1: '서울시 강남구', address2: '1층' },
+    return_addresses: [
+      { address_snapshot: { zipcode: '06236', address1: '서울시 강남구', address2: '1층' }, claim_item_ids: [1] },
+    ],
     redelivery_address_snapshot: {
       recipient_name: '홍길동',
       phone: '010-1234-5678',
@@ -192,8 +229,6 @@ function exchangeDetail(overrides: Record<string, any> = {}): Record<string, any
       address2: '2층',
       changed_by_user: true,
     },
-    redelivery_tracking_number: null,
-    redelivery_tracking_url: null,
     payments: [
       {
         payment_number: 'CP20260901-0001',
@@ -207,9 +242,13 @@ function exchangeDetail(overrides: Record<string, any> = {}): Record<string, any
     ],
     items: [
       {
+        id: 1,
         product_name: '티셔츠',
         product_option_name: '차콜/M',
         quantity: 1,
+        collection_carrier_name: 'CJ대한통운',
+        collection_tracking_number: '651234567890',
+        collection_tracking_url: 'https://example.test/track/651234567890',
         unit_price_formatted: '29,000원',
         subtotal_amount_formatted: '29,000원',
         is_option_change: true,
@@ -413,13 +452,15 @@ describe('클레임 신청서 상세 — 렌더', () => {
     expect(text).toContain('배송');
     expect(text).toContain('회수');
     expect(text).toContain('CJ대한통운 651234567890');
+    // 운송장 묶음 안에 담긴 상품 × 수량과 도착 여부를 적는다.
+    expect(text).toContain('티셔츠 (차콜/M) × 1');
+    expect(text).toContain('도착');
     expect(text).toContain('회수지');
     expect(text).toContain('재발송');
     // 구매자가 재발송지를 고친 사실은 값이 같아도 남는다(D14).
     expect(text).toContain('고객이 수정함');
-    // 송장이 아직 없는 재발송은 '등록 전' 이다 — 빈 칸으로 두면 없는 것인지 못 읽은 것인지
-    // 모른다. 그 자리는 `$t('...')` 형태라 하네스에서는 키로 남는다(실 화면에서는 치환된다).
-    expect(text).toContain('claim.detail.tracking_pending');
+    // 송장이 아직 없는 재발송은 '등록 전' 이다 — 빈 칸으로 두면 없는 것인지 못 읽은 것인지 모른다.
+    expect(text).toContain('등록 전');
     expect(container.querySelector('a[href="https://example.test/track/651234567890"]')).not.toBeNull();
   });
 
@@ -663,9 +704,10 @@ describe('클레임 신청서 상세 — 렌더', () => {
    * @effects claim_detail_reject_reason_leads_the_reason_card
    */
   it('신청 사유 — 반려 사유가 있으면 카드 맨 위에 선다', async () => {
+    // 헤더 반려 사유는 신청서 **전체가** 반려됐을 때만 선다(S3).
     const { utils, container } = await renderDetail(
       ['_detail_reason.json'],
-      exchangeDetail({ reject_reason: '사용 흔적이 있어 교환이 어렵습니다.' })
+      exchangeDetail({ status: 'rejected', reject_reason: '사용 흔적이 있어 교환이 어렵습니다.' })
     );
     active = utils;
 
@@ -675,6 +717,242 @@ describe('클레임 신청서 상세 — 렌더', () => {
     expect(text).toContain('사용 흔적이 있어 교환이 어렵습니다.');
     // 반려 사유가 사유 라벨보다 앞에 나온다 — 구매자가 가장 먼저 읽어야 할 값이다.
     expect(text.indexOf('반려 사유')).toBeLessThan(text.indexOf('사이즈가 맞지 않아요'));
+  });
+
+  /**
+   * 한 신청서의 상품이 여러 상자로 오갈 수 있다 — 운송장마다 한 묶음이 서고, 묶음마다 자기
+   * 조회 링크와 담긴 상품을 적는다. 송장 없이 회수도착한 상품은 따로 묶인다.
+   *
+   * @scenario claim_type=return, screen=detail, entry=none
+   * @effects claim_detail_shipping_groups_by_waybill
+   */
+  it('배송 — 운송장이 둘이면 두 묶음이 각자 링크와 상품을 가진다', async () => {
+    const claim = exchangeDetail({
+      claim_type: 'return',
+      tracking_groups: {
+        collection: [
+          {
+            key: 'collection:1|A-1', direction: 'collection', no_tracking: false, carrier_name: 'CJ대한통운',
+            tracking_number: 'A-1', tracking_url: 'https://example.test/track/A-1',
+            items: [{ claim_item_id: 1, product_name: '셔츠', option_name: null, quantity: 2, arrived: true }], all_arrived: true,
+          },
+          {
+            key: 'collection:1|B-2', direction: 'collection', no_tracking: false, carrier_name: 'CJ대한통운',
+            tracking_number: 'B-2', tracking_url: 'https://example.test/track/B-2',
+            items: [{ claim_item_id: 2, product_name: '셔츠', option_name: null, quantity: 1, arrived: false }], all_arrived: false,
+          },
+          {
+            key: 'collection:no_tracking', direction: 'collection', no_tracking: true, carrier_name: null,
+            tracking_number: null, tracking_url: null,
+            items: [{ claim_item_id: 3, product_name: '바지', option_name: null, quantity: 1, arrived: true }], all_arrived: true,
+          },
+        ],
+        redelivery: [],
+      },
+    });
+    const { utils, container } = await renderDetail(['_detail_shipping.json'], claim);
+    active = utils;
+
+    const text = container.textContent ?? '';
+    expect(container.querySelector('a[href="https://example.test/track/A-1"]')).not.toBeNull();
+    expect(container.querySelector('a[href="https://example.test/track/B-2"]')).not.toBeNull();
+    expect(text).toContain('셔츠 × 2');
+    expect(text).toContain('셔츠 × 1');
+    expect(text).toContain('배송 중');
+    expect(text).toContain('송장 없이 도착');
+    expect(text).toContain('바지 × 1');
+    // 반품은 재발송이 없다.
+    expect(text).not.toContain('재발송');
+  });
+
+  /**
+   * 회수지가 상품마다 다르면 주소별로 담긴 상품을 적는다(S4).
+   *
+   * @scenario claim_type=return, screen=detail, entry=none
+   * @effects claim_detail_shipping_groups_by_waybill
+   */
+  it('배송 — 회수지가 둘이면 주소마다 번호와 상품을 적는다', async () => {
+    const claim = exchangeDetail({
+      claim_type: 'return',
+      items: [
+        { ...exchangeDetail().items[0], id: 1, product_name: '셔츠' },
+        { ...exchangeDetail().items[0], id: 2, product_name: '바지' },
+      ],
+      return_addresses: [
+        { address_snapshot: { zipcode: '06236', address1: '서울시 강남구', address2: '1층' }, claim_item_ids: [1] },
+        { address_snapshot: { zipcode: '48058', address1: '부산시 해운대구', address2: '' }, claim_item_ids: [2] },
+      ],
+    });
+    const { utils, container } = await renderDetail(['_detail_shipping.json'], claim);
+    active = utils;
+
+    const text = container.textContent ?? '';
+    expect(text).toContain('회수지 1');
+    expect(text).toContain('회수지 2');
+    expect(text).toContain('부산시 해운대구');
+  });
+
+  /**
+   * 상품 줄에 그 행의 운송장이 선다 — 같은 신청서의 다른 상품은 다른 상자일 수 있다.
+   *
+   * @scenario claim_type=exchange, screen=detail, entry=none
+   * @effects claim_detail_item_row_shows_its_waybill
+   */
+  it('신청 상품 — 상품 줄에 그 행의 회수·재발송 운송장이 선다', async () => {
+    const claim = exchangeDetail();
+    claim.items[0].redelivery_carrier_name = '한진택배';
+    claim.items[0].redelivery_tracking_number = 'RD-77';
+    claim.items[0].redelivery_tracking_url = null;
+    const { utils, container } = await renderDetail(['_detail_items.json'], claim);
+    active = utils;
+
+    const text = container.textContent ?? '';
+    expect(text).toContain('회수 송장');
+    expect(container.querySelector('a[href="https://example.test/track/651234567890"]')?.textContent).toContain('651234567890');
+    expect(text).toContain('재발송 송장');
+    expect(text).toContain('한진택배 RD-77');
+  });
+
+  /**
+   * 일부 상품만 반려되면 사유는 그 상품 줄에 서고, 헤더 사유 카드는 반려를 외치지 않는다(S3).
+   *
+   * @scenario claim_type=exchange, screen=detail, entry=none
+   * @effects claim_detail_item_reject_reason_on_the_row
+   */
+  it('상품별 반려 — 사유는 상품 줄에, 진행 중 신청서의 사유 카드에는 반려가 없다', async () => {
+    const claim = exchangeDetail({ status: 'collecting', reject_reason: '예전 사유' });
+    claim.items[0].reject_reason = '사용 흔적이 있습니다.';
+    const { utils, container } = await renderDetail(['_detail_items.json', '_detail_reason.json'], claim);
+    active = utils;
+
+    const text = container.textContent ?? '';
+    expect(text).toContain('반려 사유: 사용 흔적이 있습니다.');
+    expect(text).not.toContain('예전 사유');
+  });
+
+  /**
+   * 선교환은 새 상품이 먼저 나간다 — 기존 상품 반송 기한을 알리고, 넘기면 지난 일수를 띄운다.
+   * 진행 단계 아래에는 서버가 센 회수 줄(`collection_lane`)이 선다.
+   *
+   * @scenario claim_type=exchange, screen=detail, entry=none
+   * @effects claim_detail_advance_exchange_notice_and_overdue
+   */
+  it('선교환 — 반송 기한 안내·지연·회수 줄', async () => {
+    const claim = exchangeDetail({
+      is_advance_exchange: true,
+      collection_due_date_formatted: '2026-09-20',
+      is_collection_overdue: true,
+      collection_overdue_days: 3,
+    });
+    claim.items[0].collection_state_label = '회수중';
+    const { utils, container } = await renderDetail(
+      ['_detail_progress.json', '_detail_items.json', '_detail_shipping.json'],
+      claim,
+      {
+        progress_steps: PROGRESS_STEPS,
+        collection_lane: { total: 3, collected: 1, in_transit: 1, pending: 1, unreturned: 0, state: 'in_transit', state_label: '회수중', state_variant: 'info', due_date: '2026-09-20', is_overdue: true, overdue_days: 3 },
+      },
+    );
+    active = utils;
+
+    const text = container.textContent ?? '';
+    expect(text).toContain('기존 상품은 2026-09-20까지 보내 주세요');
+    expect(text).toContain('반송 기한 3일 지남');
+    expect(text).toContain('기존 상품 회수');
+    expect(text).toContain('3개 중 1개 도착');
+    expect(text).toContain('반송 기한 2026-09-20');
+    expect(text).toContain('기존 상품 회수중');
+  });
+
+  /**
+   * 일반 교환에는 선교환 안내·회수 줄이 서지 않는다.
+   *
+   * @scenario claim_type=exchange, screen=detail, entry=none
+   * @effects claim_detail_advance_exchange_notice_and_overdue
+   */
+  it('일반 교환 — 선교환 안내와 회수 줄이 없다', async () => {
+    const { utils, container } = await renderDetail(
+      ['_detail_progress.json', '_detail_shipping.json'],
+      exchangeDetail({ is_advance_exchange: false }),
+      { progress_steps: PROGRESS_STEPS, collection_lane: null },
+    );
+    active = utils;
+
+    const text = container.textContent ?? '';
+    expect(text).not.toContain('선교환');
+    expect(text).not.toContain('기존 상품 회수');
+  });
+
+  /**
+   * 끝난 선교환(미회수 완료)에는 반송 안내와 「등록 전」 이 서지 않는다 — 처리가 끝났는데 「보내 주세요」 가
+   * 남으면 고객이 무엇을 더 해야 하는지 헷갈린다(Chrome 실측 A-5).
+   *
+   * @scenario claim_type=exchange, screen=detail, entry=none
+   * @effects claim_detail_final_advance_exchange_drops_the_return_request
+   */
+  it('끝난 선교환 — 반송 안내와 등록 전 문구가 없다', async () => {
+    const claim = exchangeDetail({
+      is_advance_exchange: true,
+      is_final: true,
+      collection_due_date_formatted: '2026-10-10',
+      tracking_groups: { collection: [], redelivery: [] },
+    });
+    claim.items[0].is_unreturned = true;
+    const { utils, container } = await renderDetail(['_detail_shipping.json'], claim);
+    active = utils;
+
+    const text = container.textContent ?? '';
+    expect(text).not.toContain('보내 주세요');
+    expect(text).not.toContain('선교환');
+    expect(text).toContain('미회수');
+    // 재발송 칸의 「등록 전」 은 재발송 운송장이 없어서 서는 것 — 회수 칸의 것만 사라져야 한다.
+    expect(text.split('등록 전').length - 1).toBe(1);
+  });
+
+  /**
+   * 미회수로 완료된 상품은 상품 줄과 배송 카드 양쪽에 「미회수」 로 남는다.
+   *
+   * @scenario claim_type=exchange, screen=detail, entry=none
+   * @effects claim_detail_unreturned_items_marked
+   */
+  it('미회수 — 상품 줄과 배송 카드에 표시된다', async () => {
+    const claim = exchangeDetail({ is_advance_exchange: true });
+    claim.items[0].is_unreturned = true;
+    const { utils, container } = await renderDetail(['_detail_items.json', '_detail_shipping.json'], claim);
+    active = utils;
+
+    const text = container.textContent ?? '';
+    expect(text.split('미회수').length - 1).toBe(2);
+    expect(text).toContain('티셔츠 (차콜/M) × 1');
+  });
+
+  /**
+   * 판매자가 접수한 신청은 고객이 고치거나 철회할 수 없다 — 회원·비회원 상세 머리가 안내와
+   * 출처 뱃지를 같은 서버 필드(`request_source`)로 세운다(D8).
+   *
+   * @scenario claim_type=exchange, screen=detail, entry=none
+   * @effects claim_detail_admin_requested_notice
+   */
+  it.each([
+    ['회원', '../../layouts/mypage/claims/show.json'],
+    ['비회원', '../../layouts/shop/guest_claim_show.json'],
+  ])('%s 상세 — 판매자 접수 뱃지와 안내가 request_source 로 선다', (_label, file) => {
+    const json = fs.readFileSync(path.resolve(__dirname, file), 'utf-8');
+    const nodes: any[] = [];
+    const walk = (n: any) => {
+      if (Array.isArray(n)) return n.forEach(walk);
+      if (n && typeof n === 'object') {
+        nodes.push(n);
+        Object.values(n).forEach(walk);
+      }
+    };
+    walk(JSON.parse(json));
+
+    const badge = nodes.find((n) => typeof n.if === 'string' && n.if.includes("request_source === 'admin'") && String(n.text ?? '').includes('request_source_label'));
+    const notice = nodes.find((n) => typeof n.if === 'string' && n.if.includes("request_source === 'admin'") && String(n.text ?? '').includes('claim.detail.admin_requested_notice'));
+    expect(badge).toBeDefined();
+    expect(notice).toBeDefined();
+    expect(notice.if).toContain('is_final !== true');
   });
 
   /**

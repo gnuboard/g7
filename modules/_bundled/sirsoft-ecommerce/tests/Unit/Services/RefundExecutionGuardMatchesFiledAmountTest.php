@@ -16,6 +16,7 @@ use Modules\Sirsoft\Ecommerce\Services\CancellableAmountCalculator;
 use Modules\Sirsoft\Ecommerce\Services\OrderAdjustmentService;
 use Modules\Sirsoft\Ecommerce\Services\OrderReturnService;
 use Modules\Sirsoft\Ecommerce\Tests\Concerns\BuildsClaimFlowOrders;
+use Modules\Sirsoft\Ecommerce\Tests\Concerns\ReadsReturnRefundLink;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
@@ -49,6 +50,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 class RefundExecutionGuardMatchesFiledAmountTest extends ModuleTestCase
 {
     use BuildsClaimFlowOrders;
+    use ReadsReturnRefundLink;
 
     /**
      * 클레임 사유 카탈로그를 심고 시작합니다.
@@ -182,7 +184,7 @@ class RefundExecutionGuardMatchesFiledAmountTest extends ModuleTestCase
         $optionId = $order->options->first()->id;
 
         $first = $this->completeReturnOf($order, $optionId, 1);
-        $firstRefund = OrderRefund::findOrFail($first->fresh()->refund_id);
+        $firstRefund = OrderRefund::findOrFail($this->returnRefundId($first));
         $firstOptionIds = DB::table('ecommerce_order_refund_options')
             ->where('order_refund_id', $firstRefund->id)
             ->pluck('order_option_id')
@@ -197,7 +199,7 @@ class RefundExecutionGuardMatchesFiledAmountTest extends ModuleTestCase
         ]);
 
         $second = $this->completeReturnOf($order->fresh(['options']), $optionId, 1);
-        $secondRefund = OrderRefund::findOrFail($second->fresh()->refund_id);
+        $secondRefund = OrderRefund::findOrFail($this->returnRefundId($second));
 
         $adjustment = $this->captureGuardAdjustment(
             $order->fresh(['options', 'shippings', 'payments']),
@@ -241,7 +243,7 @@ class RefundExecutionGuardMatchesFiledAmountTest extends ModuleTestCase
         $optionId = $order->options->first()->id;
 
         $first = $this->completeReturnOf($order, $optionId, 1);
-        $firstRefund = OrderRefund::findOrFail($first->fresh()->refund_id);
+        $firstRefund = OrderRefund::findOrFail($this->returnRefundId($first));
 
         DB::table('ecommerce_orders')->where('id', $order->id)->update([
             'total_refunded_amount' => $firstRefund->refund_amount,
@@ -249,7 +251,7 @@ class RefundExecutionGuardMatchesFiledAmountTest extends ModuleTestCase
         ]);
 
         $second = $this->completeReturnOf($order->fresh(['options']), $optionId, 1);
-        $secondRefund = OrderRefund::findOrFail($second->fresh()->refund_id);
+        $secondRefund = OrderRefund::findOrFail($this->returnRefundId($second));
 
         $fresh = $order->fresh(['options', 'shippings', 'payments']);
         $cancellable = app(CancellableAmountCalculator::class)->calculateForRefund($fresh, $secondRefund);

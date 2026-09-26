@@ -56,7 +56,8 @@
             "claim_reasons": "취소/반품/교환 사유",
             "claim_settings": "배송정책 클레임 설정",
             "claims": "취소/반품/교환 목록",
-            "orderClaims": "주문 클레임 내역"
+            "orderClaims": "주문 클레임 내역",
+            "claimRequestContext": "직권 접수 문맥"
         }
     },
     "common": {

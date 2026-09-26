@@ -696,17 +696,18 @@ class GuestClaimApiTest extends ModuleTestCase
         $result = app(UserClaimService::class)->requestReturn($order, [
             'items' => $this->items($order), 'reason_code' => 'changed_mind', 'charge_method' => 'deduct_from_refund', 'requested_by' => null,
         ]);
-        $result['claim']->forceFill([
+        // 송장은 신청서 헤더가 아니라 **상품 행**에 있다(#599 — 다중 송장).
+        $result['claim']->returnOptions()->update([
             'collection_carrier_id' => $carrier->id,
             'collection_tracking_number' => '651234567890',
-        ])->save();
+        ]);
 
         $response = $this->getJson($this->base($order).'/claims?type=return', ['X-Guest-Order-Token' => $token])->assertOk();
 
         $row = $response->json('data.data.0');
         $this->assertSame($order->order_number, $row['order_number']);
-        $this->assertNotNull($row['collection_carrier_name'], '배송사 관계가 없으면 이름이 무음 null 이 됩니다.');
-        $this->assertSame('https://track.example.test/651234567890', $row['collection_tracking_url']);
+        $this->assertNotNull($row['items'][0]['collection_carrier_name'] ?? null, '배송사 관계가 없으면 이름이 무음 null 이 됩니다.');
+        $this->assertSame('https://track.example.test/651234567890', $row['items'][0]['collection_tracking_url'] ?? null);
     }
 
     /**

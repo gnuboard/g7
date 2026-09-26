@@ -159,8 +159,8 @@ describe('#5 Select 는 placeholder 를 그리지 않는다 — 빈 선택지를
      * @effects claim_selects_lead_with_empty_option
      */
     it.each([
-        ['collection carrier', () => byId(claimShipping, 'cs_004_collection_carrier')],
-        ['redelivery carrier', () => byId(claimShipping, 'cs_014_redelivery_carrier')],
+        // 송장 입력은 상품 칸 선택 바 하나다(송장은 상품 행마다 — #599). 방향은 옆 셀렉트가 정한다.
+        ['item carrier', () => byId(claimItems, 'ci_007_carrier')],
         ['item bulk status', () => byId(claimItems, 'ci_002_item_status')],
         ['charge method', () => byId(claimPayment, 'cst_003_charge_method')],
     ])('%s', (_label, get) => {
@@ -175,9 +175,8 @@ describe('#5 Select 는 placeholder 를 그리지 않는다 — 빈 선택지를
      * @effects claim_carrier_empty_option_is_selectable
      */
     it('택배사 빈 선택지는 고를 수 있다(disabled 아님) — 비워야 송장이 지워진다', () => {
-        for (const id of ['cs_004_collection_carrier', 'cs_014_redelivery_carrier']) {
-            expect(String(byId(claimShipping, id).props.options)).not.toContain('disabled: true');
-        }
+        // 「송장만 저장」 에서 둘 다 비우면 그 행의 송장이 지워진다(R7) — 빈 선택지를 고를 수 있어야 한다.
+        expect(String(byId(claimItems, 'ci_007_carrier').props.options)).not.toContain('disabled: true');
     });
 });
 

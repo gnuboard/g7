@@ -400,6 +400,11 @@ class StoreEcommerceSettingsRequest extends FormRequest
             'claim.image_max_size_kb' => ['sometimes', 'required', 'integer', 'min:'.config('sirsoft-ecommerce.limits.claim_image_max_size_kb_min', 128), 'max:'.config('sirsoft-ecommerce.limits.claim_image_max_size_kb_max', 20480)],
             'claim.request_period_days' => ['sometimes', 'required', 'integer', 'min:'.config('sirsoft-ecommerce.limits.claim_request_period_days_min', 1), 'max:'.config('sirsoft-ecommerce.limits.claim_request_period_days_max', 365)],
 
+            // 선교환 (D1·D2) — 켜고 끄는 불리언과 헌 상품 반송 기한(일). 기한은 null 을 막는다(위 정수 3축과
+            // 같은 이유 — 저장된 null 이 기본값을 이겨 기한이 0 일이 된다).
+            'claim.advance_exchange_enabled' => ['sometimes', 'boolean'],
+            'claim.advance_exchange_collection_due_days' => ['sometimes', 'required', 'integer', 'min:'.config('sirsoft-ecommerce.limits.advance_exchange_collection_due_days_min', 1), 'max:'.config('sirsoft-ecommerce.limits.advance_exchange_collection_due_days_max', 90)],
+
             // 완료 처리 기본값 (D26 — 모달 초기 선택값).
             // 이 3축은 무너지는 **방향**까지 나쁘다. 소비처
             // `AdminClaimService::completionDefaults()` 는 `$defaults[...] ?? true` 라 저장된 null 이

@@ -29,7 +29,6 @@
                 <option value="shipping">$t:sirsoft-ecommerce.admin.order.filter.order_status_options.shipping</option>
                 <option value="delivered">$t:sirsoft-ecommerce.admin.order.filter.order_status_options.delivered</option>
                 <option value="confirmed">$t:sirsoft-ecommerce.admin.order.filter.order_status_options.confirmed</option>
-                <option value="cancelled">$t:sirsoft-ecommerce.admin.order.filter.order_status_options.cancelled</option>
               </options>
               <on type="change">
                 <!-- 일괄 변경할 상태. 이 값 하나가 옆 칸들의 등장을 정한다 — 배송 관련 상태면 택배사·송장이, 취소면 PG 취소 체크가 나타난다. -->
@@ -53,6 +52,34 @@
             </input>
           </div>
           <div class="flex-1"/>
+          <!-- 관리자 직권 접수 (§3-11) — 고객을 대신해 교환·반품·취소·환불을 접수한다. 입구는 이 선택 바 하나다(입구가 둘이면 게이트가 둘이 된다 — 종전 「취소」 상태 선택은 [취소·환불 접수] 로 대체). 버튼은 고른 상품이 모두 그 유형의 물리 게이트 상태일 때만 켜진다(D5 — 신청 기간·신청 가능 상태 설정은 따르지 않는다). -->
+          <div data-ref="claim_request_buttons" class="flex-center flex-wrap gap-2">
+            <button data-ref="crb_001_exchange" type="button" class="btn btn-outline disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.claimRequestGateExchange !== true}}">
+              <on type="click">
+                <action handler="sirsoft-ecommerce.openAdminClaimRequest" type="exchange" orderNumber="{{route.orderNumber}}" selectedIds="{{_local.selectedProducts ?? []}}" options="{{order?.data?.options ?? []}}" shippingAddress="{{order?.data?.shipping_address ?? null}}" payment="{{order?.data?.payment ?? null}}" currency="{{order?.data?.base_currency ?? null}}"/>
+              </on>
+              $t:sirsoft-ecommerce.admin.order.claim_request.button_exchange
+            </button>
+            <button data-ref="crb_002_return" type="button" class="btn btn-outline disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.claimRequestGateReturn !== true}}">
+              <on type="click">
+                <action handler="sirsoft-ecommerce.openAdminClaimRequest" type="return" orderNumber="{{route.orderNumber}}" selectedIds="{{_local.selectedProducts ?? []}}" options="{{order?.data?.options ?? []}}" shippingAddress="{{order?.data?.shipping_address ?? null}}" payment="{{order?.data?.payment ?? null}}" currency="{{order?.data?.base_currency ?? null}}"/>
+              </on>
+              $t:sirsoft-ecommerce.admin.order.claim_request.button_return
+            </button>
+            <button data-ref="crb_003_cancel_refund" type="button" class="btn btn-outline disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.claimRequestGateRefund !== true}}">
+              <on type="click">
+                <!-- 종전 취소 모달을 그대로 연다 — 같은 서비스(`cancel-refund`)로 위임한다. -->
+                <action handler="sirsoft-ecommerce.buildOrderDetailBulkConfirmData" selectedProducts="{{_local.selectedProducts ?? []}}" batchOrderStatus="cancelled" batchCarrierId="" batchTrackingNumber=""/>
+              </on>
+              $t:sirsoft-ecommerce.admin.order.claim_request.button_cancel_refund
+            </button>
+            <!-- 꺼진 이유 — 고른 상품이 있는데 버튼이 하나라도 꺼졌으면 그 까닭(교환·반품은 보낸 뒤, 취소·환불은 보내기 전)을 곁에 둔다. 꺼진 버튼만 두면 운영자는 권한 문제로 읽는다(Chrome 실측 P-1). -->
+            <span data-ref="crb_004_disabled_hint" data-if="{{(_local.selectedProducts ?? []).length > 0 &amp;&amp; claimRequestContext?.data?.unavailable !== true &amp;&amp; (_computed.claimRequestGateExchange !== true || _computed.claimRequestGateReturn !== true || _computed.claimRequestGateRefund !== true)}}" class="text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.order.claim_request.gate_hint</span>
+            <!-- 접수 권한(`claims.create`)이 없으면 버튼 셋이 꺼진 채 서고 그 까닭을 곁에 둔다 — 버튼을 숨기면 기능이 있는지조차 모른다(Chrome 실측 P-6). -->
+            <span data-ref="crb_005_no_permission_hint" data-if="{{claimRequestContext?.data?.unavailable === true &amp;&amp; _local.claimRequestContextError !== 'failed'}}" class="text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.order.claim_request.no_permission</span>
+            <!-- 권한은 있는데 문맥을 못 받은 경우(500·네트워크) — 「권한 없음」 으로 뜨면 운영자는 권한을 요청하러 간다. 실패 종류는 데이터 소스 `error-handling` 이 `_local.claimRequestContextError` 에 남긴다(403=forbidden, 그 밖=failed). -->
+            <span data-ref="crb_005b_context_error_hint" data-if="{{claimRequestContext?.data?.unavailable === true &amp;&amp; _local.claimRequestContextError === 'failed'}}" class="text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.order.claim_request.context_load_failed</span>
+          </div>
           <!-- 고른 상품만 부분 취소·환불한다. 대상 선택이 표 안에 있고 그 표는 페이지를 나누지 않으므로 선택 범위를 free 로 둔다 -->
           <button type="button" class="px-4 py-2 bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-800 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{!_local.selectedProducts || _local.selectedProducts.length === 0 || order?.data?.abilities?.can_update !== true}}">
             <on type="click">

@@ -49,6 +49,7 @@
                 </a>
                 <span data-ref="claim_history_card_number_text_{{claim.claim_number}}" data-if="{{!claim.detail_url}}" class="text-sm font-medium text-gray-900 dark:text-gray-100 break-all">{{claim.claim_number ?? ''}}</span>
                 <badge variant="{{claim.status_variant ?? 'default'}}">{{claim.status_label ?? ''}}</badge>
+                <badge data-if="{{claim.has_pending_refund === true}}" variant="warning" size="sm">$t:sirsoft-ecommerce.admin.order.detail.claim_history.pending_refund_badge</badge>
               </div>
               <div class="text-xs text-gray-500 dark:text-gray-400">{{claim.requested_at_formatted ?? ''}} · {{claim.requester_name ?? ''}}</div>
               <div data-if="{{!!claim.reason_label}}" class="text-xs text-gray-600 dark:text-gray-300">{{claim.reason_label ?? ''}}{{claim.fault_type_label ? ' · ' + claim.fault_type_label : ''}}</div>
@@ -115,6 +116,8 @@
                 </a>
                 <div data-ref="claim_history_number_text_{{claim.claim_number}}" data-if="{{!claim.detail_url}}" class="text-sm font-medium text-gray-900 dark:text-gray-100 break-all">{{claim.claim_number ?? ''}}</div>
                 <badge variant="{{claim.status_variant ?? 'default'}}">{{claim.status_label ?? ''}}</badge>
+                <!-- 환불 미접수(D9) — 완료됐는데 환불신청서가 연결되지 않은 신청서. 번호를 눌러 신청서 상단의 [환불신청서 접수] 로 간다. -->
+                <badge data-if="{{claim.has_pending_refund === true}}" variant="warning" size="sm">$t:sirsoft-ecommerce.admin.order.detail.claim_history.pending_refund_badge</badge>
                 <div class="text-xs text-gray-500 dark:text-gray-400">{{claim.requested_at_formatted ?? ''}} · {{claim.requester_name ?? ''}}</div>
                 <div data-if="{{!!claim.reason_label}}" class="text-xs text-gray-600 dark:text-gray-300">{{claim.reason_label ?? ''}}{{claim.fault_type_label ? ' · ' + claim.fault_type_label : ''}}</div>
                 <div data-if="{{!!claim.reject_reason}}" class="text-xs text-red-600 dark:text-red-400">$t:sirsoft-ecommerce.admin.order.detail.claim_history.reject_reason: {{claim.reject_reason ?? ''}}</div>

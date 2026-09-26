@@ -83,6 +83,7 @@ effects:
   - return_completion_refund_is_filed_exactly_once
   - return_refund_can_be_filed_after_completion
   - return_second_refund_request_is_rejected
+  - return_each_completion_round_files_its_own_refund   # S7 — 회차마다 환불 미연결 완료 상품으로 접수
   - return_deducted_fee_is_carried_into_a_later_refund_request
   - return_later_round_refund_covers_every_completed_item
 
@@ -134,6 +135,18 @@ sub_flows:
       - return_update_request_recalculates_the_fee_when_the_reason_changes
       - return_update_request_is_blocked_after_approval
       - return_update_amounts_moves_the_total_charge_with_the_fee
+
+  - id: item_row_facts
+    description: |
+      헤더 한 칸이던 사실을 상품 행으로 옮긴 결함 정리(S2·S3·S4·S6·S8). 상품마다 갈리는 사실 —
+      도착 시각·반려 사유·회수지·재고 복구·완료 판정 — 을 헤더 한 칸에 두면 부분 처리 회차가
+      다른 상품의 사실을 덮는다.
+    effects:
+      - return_header_collection_time_is_stamped_only_when_the_header_arrives
+      - return_item_rejection_reason_lives_on_the_item_row
+      - return_item_row_snapshots_its_own_policy_return_address
+      - return_stock_restoration_is_recorded_per_item_row
+      - return_header_completes_when_living_items_are_all_completed
 
 
   # ── 아래는 `sub_flows` 리스트에 문자열로 놓여 있던 잔여 항목이다. 그 자리는 YAML 상

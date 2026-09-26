@@ -16,6 +16,7 @@ use Modules\Sirsoft\Ecommerce\Console\Commands\CancelPendingPaymentOrdersCommand
 use Modules\Sirsoft\Ecommerce\Console\Commands\EarnMileageCommand;
 use Modules\Sirsoft\Ecommerce\Console\Commands\ExpireMileageCommand;
 use Modules\Sirsoft\Ecommerce\Console\Commands\NotifyExpiringMileageCommand;
+use Modules\Sirsoft\Ecommerce\Console\Commands\NotifyOverdueCollectionsCommand;
 use Modules\Sirsoft\Ecommerce\Console\Commands\PlaywrightSeedMemberData;
 use Modules\Sirsoft\Ecommerce\Console\Commands\PruneExpiredCartsCommand;
 use Modules\Sirsoft\Ecommerce\Console\Commands\PruneExpiredTempOrdersCommand;
@@ -246,6 +247,7 @@ class EcommerceServiceProvider extends BaseModuleServiceProvider
         EarnMileageCommand::class,
         ExpireMileageCommand::class,
         NotifyExpiringMileageCommand::class,
+        NotifyOverdueCollectionsCommand::class,
         // E2E·실측 시드 — 3중 가드(CLI · G7_PLAYWRIGHT_BYPASS · APP_DEBUG)가 커맨드 안에 있다.
         PlaywrightSeedMemberData::class,
         PruneExpiredCartsCommand::class,

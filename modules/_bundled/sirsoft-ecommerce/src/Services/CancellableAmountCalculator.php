@@ -345,8 +345,8 @@ class CancellableAmountCalculator
      * 대상은 "승인은 됐거나 진행 중인데 아직 환불이 실행되지 않은" 건이다.
      *
      * - 환불신청서(`OrderRefund`): 저장된 환불액이 곧 선점액이다 (권위 있는 값)
-     * - 반품(`OrderReturn`): 환불신청서가 아직 없는 건만 재계산으로 환불 예정액을 구한다.
-     *   환불신청서가 생긴 건은 그쪽에서 이미 세므로 여기서 또 세면 두 배가 된다
+     * - 반품(`OrderReturn`): 환불이 연결되지 않은 상품 행만 재계산으로 환불 예정액을 구한다.
+     *   환불신청서에 담긴 행은 그쪽에서 이미 세므로 여기서 또 세면 두 배가 된다(S7 — 회차마다 접수)
      * - 교환(`OrderExchange`): 저가 교환 차액 환불분(`refund_product_amount`)만 선점 대상이다.
      *   교환의 배송비·차액 청구는 받는 돈이지 나가는 돈이 아니다. 교환은 완료 라운드마다
      *   환불신청서를 접수할 수 있어 진행 중에도 그 교환에서 난 환불신청서가 있을 수 있다 —
@@ -468,7 +468,8 @@ class CancellableAmountCalculator
         return $this->returnRepository->listPendingWithoutRefundByOrderId(
             $order->id,
             $this->excludedIds($excludeClaims, ClaimTypeEnum::RETURN),
-            ['returnOptions'],
+            // 행마다 연결 환불의 상태를 본다(`hasLiveRefund`) — 함께 실어 행 수만큼 조회하지 않는다.
+            ['returnOptions.refund:id,refund_status'],
         );
     }
 
@@ -551,6 +552,12 @@ class CancellableAmountCalculator
         $items = [];
 
         foreach ($orderReturn->returnOptions as $option) {
+            // 살아 있는 환불신청서에 담긴 행은 그 환불신청서 쪽에서 센다(S7 — 회차마다 접수). 반려·철회된 신청서에
+            // 걸린 행은 아직 환불되지 않은 몫이라 여기서 센다 — `refund_id` 유무만 보면 어느 쪽에서도 잡히지 않는다.
+            if ($option->hasLiveRefund()) {
+                continue;
+            }
+
             $items[] = [
                 'order_option_id' => (int) $option->order_option_id,
                 'cancel_quantity' => (int) $option->return_quantity,

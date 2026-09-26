@@ -166,9 +166,45 @@ enum ExchangeStatusEnum: string
      * 교환품은 발송도착으로 곧바로 간다. 발송중인 교환품도 완료할 수 있다 — 완료는 여전히
      * [완료 처리] 만의 입구다. 승인은 건너뛰지 않는다: 추가결제 확인·교환품 재고 차감이 승인에 걸려 있다.
      *
+     * 일반 교환의 표다 — 선교환 표는 `allowedTransitionsIn(ExchangeModeEnum::ADVANCE)` 가 낸다.
+     *
      * @return array<self> 전이 가능 상태 목록
      */
     public function allowedTransitions(): array
+    {
+        return $this->allowedTransitionsIn(ExchangeModeEnum::STANDARD);
+    }
+
+    /**
+     * 진행 방식별로 현재 상태에서 전이 가능한 목표 상태 목록을 반환합니다.
+     *
+     * 선교환(새 물건 먼저 발송)은 심사 단계가 일반 교환과 같고, 승인 뒤로는 **발송 단계만** 쓴다 —
+     * 승인 → 발송준비중·발송중·발송도착, 발송준비중 → 발송중·발송도착, 발송중 → 발송도착·완료,
+     * 발송도착 → 완료. 회수준비중·회수중·회수도착은 선교환에서 쓰지 않는다 — 헌 물건이 어디쯤
+     * 왔는지는 상품 행의 회수 송장·도착 시각이 따로 표현한다(`ClaimItemCollectionState`).
+     *
+     * @param  ExchangeModeEnum  $mode  진행 방식
+     * @return array<self> 전이 가능 상태 목록
+     */
+    public function allowedTransitionsIn(ExchangeModeEnum $mode): array
+    {
+        if ($mode === ExchangeModeEnum::ADVANCE) {
+            return match ($this) {
+                self::APPROVED => [self::REDELIVERY_READY, self::REDELIVERING, self::REDELIVERED],
+                self::COLLECTION_READY, self::COLLECTING, self::COLLECTED => [],
+                default => $this->standardTransitions(),
+            };
+        }
+
+        return $this->standardTransitions();
+    }
+
+    /**
+     * 일반 교환의 전이표를 반환합니다.
+     *
+     * @return array<self> 전이 가능 상태 목록
+     */
+    protected function standardTransitions(): array
     {
         return match ($this) {
             self::REQUESTED => [
@@ -199,15 +235,16 @@ enum ExchangeStatusEnum: string
      * 방어하기 위해 허용한다(no-op).
      *
      * @param  self  $target  목표 상태
+     * @param  ExchangeModeEnum  $mode  진행 방식 (기본 일반 교환)
      * @return bool 전이 허용 여부
      */
-    public function canTransitionTo(self $target): bool
+    public function canTransitionTo(self $target, ExchangeModeEnum $mode = ExchangeModeEnum::STANDARD): bool
     {
         if ($this === $target) {
             return true;
         }
 
-        return in_array($target, $this->allowedTransitions(), true);
+        return in_array($target, $this->allowedTransitionsIn($mode), true);
     }
 
     /**
@@ -274,6 +311,33 @@ enum ExchangeStatusEnum: string
      */
     public static function progressSequence(): array
     {
+        return self::progressSequenceIn(ExchangeModeEnum::STANDARD);
+    }
+
+    /**
+     * 진행 방식별 정상 진행 순서를 반환합니다.
+     *
+     * 선교환은 회수 3단계가 없다 — 신청·결제대기·결제완료·승인·발송준비중·발송중·발송도착·완료.
+     * 헌 물건의 회수 진행은 진행단계 카드가 발송 줄 아래 「회수」 줄로 따로 그린다.
+     *
+     * @param  ExchangeModeEnum  $mode  진행 방식
+     * @return array<self> 진행 순서
+     */
+    public static function progressSequenceIn(ExchangeModeEnum $mode): array
+    {
+        if ($mode === ExchangeModeEnum::ADVANCE) {
+            return [
+                self::REQUESTED,
+                self::PAYMENT_PENDING,
+                self::PAID,
+                self::APPROVED,
+                self::REDELIVERY_READY,
+                self::REDELIVERING,
+                self::REDELIVERED,
+                self::COMPLETED,
+            ];
+        }
+
         return [
             self::REQUESTED,
             self::PAYMENT_PENDING,

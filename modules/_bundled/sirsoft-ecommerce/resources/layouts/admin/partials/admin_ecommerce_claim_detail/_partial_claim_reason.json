@@ -21,11 +21,45 @@
             "children": [
                 {
                     "type": "basic",
-                    "name": "H2",
+                    "name": "Div",
                     "props": {
-                        "className": "text-lg font-bold text-gray-900 dark:text-gray-100 mb-6"
+                        "className": "flex-between gap-3 mb-6"
                     },
-                    "text": "$t:sirsoft-ecommerce.admin.claim.detail.reason.title"
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "H2",
+                            "props": {
+                                "className": "text-lg font-bold text-gray-900 dark:text-gray-100"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.claim.detail.reason.title"
+                        },
+                        {
+                            "comment": "신청 내용 수정(S15) — 고객이 사유를 잘못 골라 귀책·배송비가 틀렸을 때 운영자가 고친다. 단계는 고객 수정과 같고(서버 `on_behalf.can_edit`), 판매자 귀책 사유도 고를 수 있다.",
+                            "id": "cr_000_edit_request",
+                            "type": "basic",
+                            "name": "Button",
+                            "if": "{{claim?.data?.on_behalf?.can_edit === true && claim?.data?.abilities?.can_update_status === true}}",
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "sirsoft-ecommerce.openClaimRequestEdit",
+                                    "params": {
+                                        "pathSegment": "{{claim?.data?.claim_path_segment ?? ''}}",
+                                        "claimId": "{{claim?.data?.claim?.id ?? null}}",
+                                        "reasonCode": "{{claim?.data?.claim?.reason_code ?? ''}}",
+                                        "reasonDetail": "{{claim?.data?.claim?.reason_detail ?? ''}}",
+                                        "reasonOptions": "{{claim?.data?.reason_options ?? []}}"
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "type": "button",
+                                "className": "btn btn-outline btn-sm"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.claim.detail.request_edit.button"
+                        }
+                    ]
                 },
                 {
                     "type": "basic",

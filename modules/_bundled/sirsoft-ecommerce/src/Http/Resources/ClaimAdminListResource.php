@@ -10,6 +10,7 @@ use Modules\Sirsoft\Ecommerce\Models\OrderExchange;
 use Modules\Sirsoft\Ecommerce\Models\OrderRefund;
 use Modules\Sirsoft\Ecommerce\Models\OrderReturn;
 use Modules\Sirsoft\Ecommerce\Support\ClaimOutstanding;
+use Modules\Sirsoft\Ecommerce\Support\ClaimTrackingGroups;
 
 /**
  * 관리자 클레임 목록 행 리소스 (교환·반품·환불·취소 공용 — 목록 전용 축소 표현)
@@ -84,12 +85,27 @@ class ClaimAdminListResource extends ClaimResource
                 'total_charge_amount_formatted' => $this->formatOrderCurrency((float) $claim->total_charge_amount, $currency),
                 'outstanding_amount' => $outstanding !== null ? $this->roundToOrderCurrency($outstanding, $currency) : null,
                 'outstanding_amount_formatted' => $outstanding !== null ? $this->formatOrderCurrency($outstanding, $currency) : null,
-                // 회수중·발송중 일괄 모달이 신청서마다 저장된 송장을 미리 채운다 — 같은 번호를 다시 치게 하지 않는다.
-                'collection_carrier_id' => $claim->collection_carrier_id,
-                'collection_tracking_number' => $claim->collection_tracking_number,
-                'redelivery_carrier_id' => $claim instanceof OrderExchange ? $claim->redelivery_carrier_id : null,
-                'redelivery_tracking_number' => $claim instanceof OrderExchange ? $claim->redelivery_tracking_number : null,
+                // 운송장 열 — 방향별 첫 운송장과 「외 N개」. 송장은 상품 행에 있다.
+                'tracking_summary' => ClaimTrackingGroups::summary($claim),
+                // 회수중·발송중 일괄 모달의 미리 채움 — 살아 있는 상품 행이 **모두 같은 송장**을 가질 때만
+                // 그 값을 준다(P1). 행마다 다르면 비워 두어 운영자가 새로 적게 한다.
+                'tracking_prefill' => $this->trackingPrefill($claim),
+                'is_admin_requested' => $claim->isAdminRequested(),
+                // 「환불 미접수」 뱃지(D9) — 목록 필터 `pending_refund` 와 같은 술어다(금액 0 판정은 상세가 한다).
+                'has_pending_refund' => $this->hasPendingRefund($claim),
             ];
+
+            if ($claim instanceof OrderExchange) {
+                $overdue = ClaimTrackingGroups::overdueOf($claim);
+
+                $data += [
+                    'exchange_mode' => $claim->mode()->value,
+                    'exchange_mode_label' => $claim->mode()->label(),
+                    'is_advance_exchange' => $claim->isAdvanceExchange(),
+                    'is_collection_overdue' => $overdue['is_overdue'],
+                    'collection_overdue_days' => $overdue['days'],
+                ];
+            }
         }
 
         if ($claim instanceof OrderRefund) {
@@ -198,5 +214,56 @@ class ClaimAdminListResource extends ClaimResource
         }
 
         return $value === null ? null : (string) $value;
+    }
+
+    /**
+     * 일괄 송장 모달의 미리 채움 값을 만듭니다. (살아 있는 행이 모두 같은 송장일 때만)
+     *
+     * @param  OrderExchange|OrderReturn  $claim  신청서 (상품 행 로드)
+     * @return array{collection: array{carrier_id: int, tracking_number: string}|null, redelivery: array{carrier_id: int, tracking_number: string}|null} 방향별 미리 채움
+     */
+    protected function trackingPrefill(OrderExchange|OrderReturn $claim): array
+    {
+        $items = $claim instanceof OrderExchange ? $claim->exchangeOptions : $claim->returnOptions;
+        $prefill = ['collection' => null, 'redelivery' => null];
+
+        foreach (array_keys($prefill) as $prefix) {
+            if ($prefix === 'redelivery' && ! $claim instanceof OrderExchange) {
+                continue;
+            }
+
+            $pairs = [];
+
+            foreach ($items as $item) {
+                if ($item->option_status->isFinal()) {
+                    continue;
+                }
+
+                $pairs[] = $item->getAttribute($prefix.'_carrier_id').'|'.$item->getAttribute($prefix.'_tracking_number');
+            }
+
+            $unique = array_values(array_unique($pairs));
+
+            if (count($unique) === 1 && ! str_ends_with($unique[0], '|')) {
+                [$carrierId, $trackingNumber] = explode('|', $unique[0], 2);
+                $prefill[$prefix] = ['carrier_id' => (int) $carrierId, 'tracking_number' => $trackingNumber];
+            }
+        }
+
+        return $prefill;
+    }
+
+    /**
+     * 완료됐는데 환불신청서가 연결되지 않은 상품이 있는지 판정합니다. (목록 뱃지 — D9)
+     *
+     * 판정은 모델 `pendingRefundItems()` 한 곳이다(목록 필터는 그 쿼리판 `scopePendingRefund`). 교환의 살아 있는
+     * 환불 수는 목록 쿼리가 센 `live_refund_count` 를 읽어 행마다 조회하지 않는다.
+     *
+     * @param  OrderExchange|OrderReturn  $claim  신청서 (목록 즉시 로드)
+     * @return bool 환불 미접수면 true
+     */
+    protected function hasPendingRefund(OrderExchange|OrderReturn $claim): bool
+    {
+        return $claim->pendingRefundItems()->isNotEmpty();
     }
 }

@@ -25,6 +25,15 @@ class ClaimNotificationHooks
     public const WITHDRAWN = 'sirsoft-ecommerce.claim.notify_withdrawn';
 
     /**
+     * 대리 철회 안내(고객 수신) 훅 — 유형 구분 없이 한 종.
+     *
+     * 운영자가 고객 요청으로 대신 철회(S14 — `withdrawn_by_admin` 기록)했을 때만 나간다. 고객이 스스로
+     * 철회했으면 그 사실을 본인에게 되돌려 보낼 이유가 없지만, 대신 철회는 고객이 한 일이 아니라서
+     * 이 알림이 없으면 고객은 자기 신청이 왜 사라졌는지 알 길이 없다.
+     */
+    public const WITHDRAWN_ON_BEHALF = 'sirsoft-ecommerce.claim.notify_withdrawn_on_behalf';
+
+    /**
      * 부분 처리 안내(고객 수신) 훅 — 유형 구분 없이 한 종.
      *
      * 운영자가 신청 상품 중 일부만 처리하면 헤더 상태가 그대로라 기존 상태 알림이 발화하지

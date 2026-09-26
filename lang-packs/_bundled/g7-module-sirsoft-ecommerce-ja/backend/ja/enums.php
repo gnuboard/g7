@@ -229,7 +229,7 @@ return [
     'request_source' => [
         'customer' => 'お客様申請',
         'guest' => '非会員申請',
-        'admin' => '運営者受付',
+        'admin' => '販売者受付',
     ],
     'refund_priority' => [
         'pg_first' => '決済手段（PG）優先返金',
@@ -350,5 +350,19 @@ return [
         'customer' => '顧客',
         'admin' => '運営者',
         'unknown' => '不明',
+    ],
+    'claim_tracking_direction' => [
+        'collection' => '回収',
+        'redelivery' => '再発送',
+    ],
+    'exchange_mode' => [
+        'standard' => '通常交換',
+        'advance' => '先交換',
+    ],
+    'claim_item_collection_state' => [
+        'pending' => '回収待機中',
+        'in_transit' => '回収中',
+        'collected' => '回収到着',
+        'unreturned' => '未回収',
     ],
 ];

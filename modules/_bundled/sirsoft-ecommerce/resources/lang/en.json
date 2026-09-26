@@ -56,7 +56,8 @@
             "claim_reasons": "Claim Reasons",
             "claim_settings": "Shipping policy claim settings",
             "claims": "Claims",
-            "orderClaims": "Order Claim History"
+            "orderClaims": "Order Claim History",
+            "claimRequestContext": "Claim request context"
         }
     },
     "common": {

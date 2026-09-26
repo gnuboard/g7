@@ -9,7 +9,9 @@ use App\Contracts\Extension\HookListenerInterface;
 use Modules\Sirsoft\Ecommerce\Enums\CancelOptionStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\CancelStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimChargeMethodEnum;
+use Modules\Sirsoft\Ecommerce\Enums\ClaimReasonFaultTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimTypeEnum;
+use Modules\Sirsoft\Ecommerce\Enums\ExchangeModeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ExchangeStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundMethodEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundStatusEnum;
@@ -23,6 +25,8 @@ use Modules\Sirsoft\Ecommerce\Models\OrderCancel;
 use Modules\Sirsoft\Ecommerce\Models\OrderExchange;
 use Modules\Sirsoft\Ecommerce\Models\OrderRefund;
 use Modules\Sirsoft\Ecommerce\Models\OrderReturn;
+use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ClaimReasonRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ShippingCarrierRepositoryInterface;
 
 /**
  * 클레임 활동 로그 리스너 (§4-8 — 교환·반품·환불·클레임 추가결제 전 상태 변경 전수)
@@ -65,6 +69,15 @@ class ClaimActivityLogListener implements HookListenerInterface
     use BuildsEnumFieldChange;
     use ResolvesActivityLogType;
     use ResolvesClaimIdentity;
+
+    /**
+     * @param  ShippingCarrierRepositoryInterface  $carrierRepository  배송사 Repository (송장 전·후 택배사 이름)
+     * @param  ClaimReasonRepositoryInterface  $claimReasonRepository  클레임 사유 Repository (신청 내용 수정 전·후 사유 이름)
+     */
+    public function __construct(
+        protected ShippingCarrierRepositoryInterface $carrierRepository,
+        protected ClaimReasonRepositoryInterface $claimReasonRepository,
+    ) {}
 
     /** 다국어 description 키 접두 */
     private const DESCRIPTION_PREFIX = 'sirsoft-ecommerce::activity_log.description.';
@@ -123,9 +136,25 @@ class ClaimActivityLogListener implements HookListenerInterface
             'sirsoft-ecommerce.claim.cancel.option_status_changed' => ['method' => 'handleOptionStatusChanged', 'priority' => 20, 'sync' => true],
 
             // ─── 금액 수정 (AdminClaimService — D18) ───
+            // ─── 상품 행 송장 · 운송장 단위 도착 · 진행 방식 (#599 후속 — 상품별 송장·선교환) ───
+            'sirsoft-ecommerce.claim.exchange.after_tracking_update' => ['method' => 'handleTrackingUpdated', 'priority' => 20],
+            'sirsoft-ecommerce.claim.return.after_tracking_update' => ['method' => 'handleTrackingUpdated', 'priority' => 20],
+            'sirsoft-ecommerce.claim.exchange.after_tracking_deliver' => ['method' => 'handleTrackingDelivered', 'priority' => 20],
+            'sirsoft-ecommerce.claim.return.after_tracking_deliver' => ['method' => 'handleTrackingDelivered', 'priority' => 20],
+            'sirsoft-ecommerce.claim.exchange.after_mode_change' => ['method' => 'handleExchangeModeChanged', 'priority' => 20],
+            // 뒤늦은 재고 복구 (S13)
+            'sirsoft-ecommerce.claim.exchange.after_stock_restore' => ['method' => 'handleStockRestored', 'priority' => 20],
+            'sirsoft-ecommerce.claim.return.after_stock_restore' => ['method' => 'handleStockRestored', 'priority' => 20],
+
             'sirsoft-ecommerce.claim.exchange.amounts_updated' => ['method' => 'handleAmountsUpdated', 'priority' => 20],
             'sirsoft-ecommerce.claim.return.amounts_updated' => ['method' => 'handleAmountsUpdated', 'priority' => 20],
             'sirsoft-ecommerce.claim.refund.amounts_updated' => ['method' => 'handleAmountsUpdated', 'priority' => 20],
+
+            // ─── 신청 내용 수정 (D13 고객 수정 · S15 운영자 대리 수정) ───
+            // 전/후는 훅 인자로 받으므로 큐 그대로다(모델의 "지금" 값을 읽지 않는다).
+            'sirsoft-ecommerce.claim.exchange.request_updated' => ['method' => 'handleRequestUpdated', 'priority' => 20],
+            'sirsoft-ecommerce.claim.return.request_updated' => ['method' => 'handleRequestUpdated', 'priority' => 20],
+            'sirsoft-ecommerce.claim.refund.request_updated' => ['method' => 'handleRequestUpdated', 'priority' => 20],
 
             // ─── 환불 실행 (OrderRefundRequestService) ───
             'sirsoft-ecommerce.claim.refund.completed' => ['method' => 'handleRefundExecuted', 'priority' => 20],
@@ -293,6 +322,17 @@ class ClaimActivityLogListener implements HookListenerInterface
                 ];
             }
 
+            // 선교환 「미회수로 완료」 는 사유를 한 줄 더 남긴다(D3) — 재고가 늘지 않은 근거다.
+            if (! empty($change['unreturned'])) {
+                $rows[] = [
+                    'field' => 'unreturned_reason',
+                    'label_key' => self::FIELD_LABEL_PREFIX.'unreturned_reason',
+                    'old' => null,
+                    'new' => (string) ($change['unreturned_reason'] ?? ''),
+                    'type' => 'text',
+                ];
+            }
+
             $bulkChanges[(int) ($change['option_id'] ?? 0)] = $rows;
         }
 
@@ -445,6 +485,41 @@ class ClaimActivityLogListener implements HookListenerInterface
     }
 
     /**
+     * 신청 내용 수정(사유·상세 사유·환불 계좌·교환 재발송지)을 기록합니다. (D13 고객 · S15 운영자 대리)
+     *
+     * 사유가 바뀌면 귀책과 배송비(누가 내는가)가 함께 바뀐다 — 한 요청을 한 줄로 남기고 바뀐 항목마다
+     * 전/후를 `changes` 에 싣는다. 운영자가 고객 대신 고친 수정은 문구부터 다르게 남겨, 목록에서 줄만 봐도
+     * 고객이 고친 것인지 운영자가 고친 것인지 가려진다.
+     *
+     * @param  OrderExchange|OrderReturn|OrderRefund  $claim  수정된 신청서
+     * @param  array<string, array{before: mixed, after: mixed, masked?: bool}>  $changes  바뀐 항목 (서비스가 실제로 바뀐 것만 싣는다)
+     * @param  array{operator?: bool, processed_by?: int|null}  $context  부가 정보
+     * @return void
+     */
+    public function handleRequestUpdated(OrderExchange|OrderReturn|OrderRefund $claim, array $changes = [], array $context = []): void
+    {
+        if ($changes === []) {
+            return;
+        }
+
+        $type = $this->claimTypeOf($claim);
+        $operator = (bool) ($context['operator'] ?? false);
+
+        $this->logActivity($this->actionFor($type, 'request_update'), [
+            'loggable' => $claim,
+            'description_key' => self::DESCRIPTION_PREFIX.$this->descriptionFor($type, $operator ? 'request_update_on_behalf' : 'request_update'),
+            'description_params' => $this->identityParams($claim),
+            'properties' => [
+                'claim_type' => $type->value,
+                'operator' => $operator,
+                'processed_by' => $context['processed_by'] ?? null,
+                'fields' => array_keys($changes),
+            ],
+            'changes' => $this->buildRequestChanges($type, $changes),
+        ]);
+    }
+
+    /**
      * 환불 실행(돈이 나간 사건)을 기록합니다.
      *
      * 같은 순간의 `approved → completed` 전이는 `status_changed` 가 따로 남긴다 — 이
@@ -512,8 +587,12 @@ class ClaimActivityLogListener implements HookListenerInterface
     ): void {
         $this->logActivity('claim_payment.refund', [
             'loggable' => $payment,
-            'description_key' => self::DESCRIPTION_PREFIX.'claim_payment_refund',
-            'description_params' => ['payment_number' => (string) ($payment->payment_number ?? '')],
+            'description_key' => self::DESCRIPTION_PREFIX.'claim_payment_refund_amount',
+            // 이번에 되돌린 금액을 문구에 싣는다 — 부분 환급이면 결제 줄 금액과 달라 번호만으로는 얼마를 돌려줬는지 알 수 없다.
+            'description_params' => [
+                'payment_number' => (string) ($payment->payment_number ?? ''),
+                'amount' => ecommerce_format_price($refundAmount, $payment->currency_code),
+            ],
             'properties' => [
                 'claim_type' => $this->claimTypeOf($claim)->value,
                 'claim_number' => $this->claimNumberOf($claim),
@@ -609,6 +688,200 @@ class ClaimActivityLogListener implements HookListenerInterface
     }
 
     /**
+     * 상품 행 송장 변경을 기록합니다. (「송장만 저장」 · 전이와 함께 쓴 송장)
+     *
+     * 로그 한 줄이 한 요청이다. 행마다 「택배사 · 운송장」 전/후를 `changes` 에 싣는다 — 같은 운송장을
+     * 가진 다른 행은 바뀌지 않으므로(R3) 바뀐 행만 남는다. 행 수량과 분할 내역은 properties 에 남긴다.
+     *
+     * @param  OrderExchange|OrderReturn  $claim  신청서
+     * @param  string  $direction  방향 값 (collection|redelivery)
+     * @param  array<int, array<string, mixed>>  $changes  바뀐 행 (item_id · quantity · previous · new)
+     * @param  array<string, mixed>  $context  부가 정보 (source · split)
+     * @return void
+     */
+    public function handleTrackingUpdated(OrderExchange|OrderReturn $claim, string $direction, array $changes = [], array $context = []): void
+    {
+        if ($changes === []) {
+            return;
+        }
+
+        $type = $this->claimTypeOf($claim);
+        $carrierNames = $this->carrierNamesFor($changes);
+        $bulkChanges = [];
+
+        foreach ($changes as $change) {
+            $bulkChanges[(int) ($change['item_id'] ?? 0)] = [[
+                'field' => $direction.'_tracking',
+                'label_key' => self::FIELD_LABEL_PREFIX.$direction.'_tracking',
+                'old' => $this->trackingText($change['previous'] ?? [], $carrierNames),
+                'new' => $this->trackingText($change['new'] ?? [], $carrierNames),
+                'type' => 'text',
+            ]];
+        }
+
+        $this->logActivity($this->actionFor($type, 'tracking_update'), [
+            'loggable' => $claim,
+            'description_key' => self::DESCRIPTION_PREFIX.'claim_'.$type->value.'_'.$direction.'_tracking_update',
+            'description_params' => $this->identityParams($claim) + ['count' => (string) count($changes)],
+            'properties' => [
+                'claim_type' => $type->value,
+                'direction' => $direction,
+                'source' => $context['source'] ?? null,
+                'items' => $changes,
+                'split' => $context['split'] ?? [],
+            ],
+            'changes' => $bulkChanges,
+        ]);
+    }
+
+    /**
+     * 운송장 단위 도착 처리를 기록합니다. (배송 정보 탭 [도착 처리] — R9)
+     *
+     * 도착으로 옮겨진 상품 행의 상태 변화는 `option_status_changed` 가 따로 남긴다 — 이 줄은 「어느
+     * 운송장을 도착 처리했는가」 라는 사실을 남긴다(선교환 회수는 상태가 바뀌지 않아 이 줄뿐이다).
+     *
+     * @param  OrderExchange|OrderReturn  $claim  신청서
+     * @param  string  $direction  방향 값
+     * @param  int  $carrierId  택배사 ID
+     * @param  string  $trackingNumber  운송장 번호
+     * @param  array{succeeded?: array<int, int>, skipped?: array<int, mixed>}  $result  처리 결과
+     * @return void
+     */
+    public function handleTrackingDelivered(OrderExchange|OrderReturn $claim, string $direction, int $carrierId, string $trackingNumber, array $result = []): void
+    {
+        $type = $this->claimTypeOf($claim);
+
+        $this->logActivity($this->actionFor($type, 'tracking_deliver'), [
+            'loggable' => $claim,
+            'description_key' => self::DESCRIPTION_PREFIX.'claim_'.$type->value.'_'.$direction.'_tracking_deliver',
+            'description_params' => $this->identityParams($claim) + [
+                'tracking_number' => $trackingNumber,
+                'count' => (string) count($result['succeeded'] ?? []),
+            ],
+            'properties' => [
+                'claim_type' => $type->value,
+                'direction' => $direction,
+                'carrier_id' => $carrierId,
+                'tracking_number' => $trackingNumber,
+                'succeeded' => $result['succeeded'] ?? [],
+                'skipped' => $result['skipped'] ?? [],
+            ],
+        ]);
+    }
+
+    /**
+     * 교환 진행 방식(일반·선교환) 변경을 기록합니다. (D1)
+     *
+     * @param  OrderExchange  $exchange  교환 신청서
+     * @param  string  $from  이전 방식 값
+     * @param  string  $to  새 방식 값
+     * @param  int|null  $by  바꾼 관리자 ID
+     * @return void
+     */
+    public function handleExchangeModeChanged(OrderExchange $exchange, string $from, string $to, ?int $by = null): void
+    {
+        $this->logActivity('claim_exchange.mode_change', [
+            'loggable' => $exchange,
+            'description_key' => self::DESCRIPTION_PREFIX.'claim_exchange_mode_change',
+            'description_params' => $this->identityParams($exchange),
+            'properties' => [
+                'claim_type' => ClaimTypeEnum::EXCHANGE->value,
+                'from' => $from,
+                'to' => $to,
+                'processed_by' => $by,
+            ],
+            'changes' => [
+                $this->enumFieldChange(
+                    'exchange_mode',
+                    self::FIELD_LABEL_PREFIX.'exchange_mode',
+                    ExchangeModeEnum::class,
+                    $from,
+                    $to,
+                ),
+            ],
+        ]);
+    }
+
+    /**
+     * 뒤늦은 재고 복구를 기록합니다. (S13)
+     *
+     * @param  OrderExchange|OrderReturn  $claim  신청서
+     * @param  array<int, array{id: int, quantity: int}>  $restored  복구한 상품 행
+     * @param  int|null  $processedBy  처리 관리자 ID
+     * @return void
+     */
+    public function handleStockRestored(OrderExchange|OrderReturn $claim, array $restored, ?int $processedBy = null): void
+    {
+        $type = $this->claimTypeOf($claim);
+
+        $this->logActivity($this->actionFor($type, 'stock_restore'), [
+            'loggable' => $claim,
+            'description_key' => self::DESCRIPTION_PREFIX.'claim_'.$type->value.'_stock_restore',
+            'description_params' => $this->identityParams($claim) + [
+                'count' => (string) count($restored),
+                'quantity' => (string) array_sum(array_column($restored, 'quantity')),
+            ],
+            'properties' => [
+                'claim_type' => $type->value,
+                'restored' => $restored,
+                'processed_by' => $processedBy,
+            ],
+        ]);
+    }
+
+    /**
+     * 송장 변경 내역의 택배사 이름을 한 번에 읽습니다. (행마다 조회하지 않는다)
+     *
+     * @param  array<int, array<string, mixed>>  $changes  바뀐 행
+     * @return array<int, string> 택배사 ID => 이름
+     */
+    private function carrierNamesFor(array $changes): array
+    {
+        $ids = [];
+
+        foreach ($changes as $change) {
+            foreach (['previous', 'new'] as $side) {
+                if (($change[$side]['carrier_id'] ?? null) !== null) {
+                    $ids[] = (int) $change[$side]['carrier_id'];
+                }
+            }
+        }
+
+        if ($ids === []) {
+            return [];
+        }
+
+        $names = [];
+
+        foreach ($this->carrierRepository->findByIds($ids) as $carrier) {
+            $names[(int) $carrier->id] = (string) $carrier->getLocalizedName();
+        }
+
+        return $names;
+    }
+
+    /**
+     * 송장 한쪽(전 또는 후)을 「택배사 · 운송장」 문자열로 만듭니다. (없으면 빈 문자열)
+     *
+     * @param  array{carrier_id?: int|null, tracking_number?: string|null}  $tracking  송장
+     * @param  array<int, string>  $carrierNames  택배사 이름 맵
+     * @return string 표시 문자열
+     */
+    private function trackingText(array $tracking, array $carrierNames): string
+    {
+        $number = $tracking['tracking_number'] ?? null;
+
+        if ($number === null || $number === '') {
+            return '';
+        }
+
+        $carrierId = $tracking['carrier_id'] ?? null;
+        $carrier = $carrierId !== null ? ($carrierNames[(int) $carrierId] ?? (string) $carrierId) : '';
+
+        return trim($carrier.' · '.$number, ' ·');
+    }
+
+    /**
      * 클레임 식별 파라미터(문구 치환용)를 만듭니다.
      *
      * @param  OrderExchange|OrderReturn|OrderRefund  $claim  신청서
@@ -688,5 +961,111 @@ class ClaimActivityLogListener implements HookListenerInterface
         }
 
         return $changes !== [] ? $changes : null;
+    }
+
+    /**
+     * 신청 내용 수정의 전/후를 코어 changes 형식으로 변환합니다.
+     *
+     * - 사유는 코드가 아니라 **다국어 이름 원본**(`json`)을 싣는다 — 화면이 표시 시점 로케일로 고르므로
+     *   라벨을 박제하지 않으면서 운영자가 코드가 아닌 이름으로 읽는다. 사유가 카탈로그에서 지워졌으면 코드를 싣는다.
+     * - 귀책·청구 방식은 enum 라벨 키, 배송비·청구액은 통화로 싣는다(금액 수정 기록과 같은 모양).
+     * - 환불 계좌·재발송지는 전/후 값 없이 「변경됨」 라벨 키만 싣는다 — 서비스가 값을 떼어 보낸다.
+     *
+     * @param  ClaimTypeEnum  $type  클레임 유형
+     * @param  array<string, array{before: mixed, after: mixed, masked?: bool}>  $changes  바뀐 항목
+     * @return array<int, array<string, mixed>>|null 변경 항목 (없으면 null)
+     */
+    private function buildRequestChanges(ClaimTypeEnum $type, array $changes): ?array
+    {
+        $rows = [];
+
+        if (isset($changes['reason_code'])) {
+            $names = $this->reasonNamesFor($type, [$changes['reason_code']['before'], $changes['reason_code']['after']]);
+            $old = $changes['reason_code']['before'];
+            $new = $changes['reason_code']['after'];
+
+            $rows[] = [
+                'field' => 'reason',
+                'label_key' => self::FIELD_LABEL_PREFIX.'claim_reason',
+                'old' => $old !== null ? ($names[$old] ?? $old) : null,
+                'new' => $new !== null ? ($names[$new] ?? $new) : null,
+                'type' => 'json',
+            ];
+        }
+
+        foreach ([
+            'fault_type' => ['type' => 'enum', 'enum' => ClaimReasonFaultTypeEnum::class],
+            'reason_detail' => ['type' => 'text'],
+            'claim_shipping_fee' => ['type' => 'currency'],
+            'total_charge_amount' => ['type' => 'currency'],
+            'charge_method' => ['type' => 'enum', 'enum' => ClaimChargeMethodEnum::class],
+        ] as $field => $meta) {
+            if (! isset($changes[$field])) {
+                continue;
+            }
+
+            $old = $changes[$field]['before'];
+            $new = $changes[$field]['after'];
+            $row = [
+                'field' => $field,
+                'label_key' => self::FIELD_LABEL_PREFIX.$field,
+                'old' => $old,
+                'new' => $new,
+                'type' => $meta['type'],
+            ];
+
+            if ($meta['type'] === 'enum') {
+                $enumClass = $meta['enum'];
+                $row['old_label_key'] = $old !== null ? $enumClass::tryFrom($old)?->labelKey() : null;
+                $row['new_label_key'] = $new !== null ? $enumClass::tryFrom($new)?->labelKey() : null;
+            }
+
+            $rows[] = $row;
+        }
+
+        foreach (['refund_bank', 'redelivery_address'] as $group) {
+            if (! isset($changes[$group])) {
+                continue;
+            }
+
+            // 값은 싣지 않는다 — enum 모양을 빌려 「변경됨」 라벨만 표시 시점 로케일로 번역되게 한다.
+            $rows[] = [
+                'field' => $group,
+                'label_key' => self::FIELD_LABEL_PREFIX.$group,
+                'old' => null,
+                'new' => null,
+                'type' => 'enum',
+                'old_label_key' => null,
+                'new_label_key' => 'sirsoft-ecommerce::activity_log.values.masked_change',
+            ];
+        }
+
+        return $rows !== [] ? $rows : null;
+    }
+
+    /**
+     * 사유 코드들의 다국어 이름 원본을 한 번에 읽습니다.
+     *
+     * @param  ClaimTypeEnum  $type  클레임 유형
+     * @param  array<int, mixed>  $codes  사유 코드 (null 포함 가능)
+     * @return array<string, array<string, string>> 코드 => 다국어 이름
+     */
+    private function reasonNamesFor(ClaimTypeEnum $type, array $codes): array
+    {
+        $codes = array_values(array_filter($codes, fn ($code) => is_string($code) && $code !== ''));
+
+        if ($codes === []) {
+            return [];
+        }
+
+        $names = [];
+
+        foreach ($this->claimReasonRepository->findByCodes($type->value, $codes) as $reason) {
+            if (is_array($reason->name) && $reason->name !== []) {
+                $names[(string) $reason->code] = $reason->name;
+            }
+        }
+
+        return $names;
     }
 }

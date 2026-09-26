@@ -199,11 +199,11 @@
     "templates": {
       "mail": {
         "subject": "[{app_name}] 交換申請が受け付けられました (申請番号: {claim_number})",
-        "body": "<div style=\"font-family:'Malgun Gothic',sans-serif;max-width:600px;margin:0 auto;padding:20px\"><h2 style=\"color:#333;border-bottom:2px solid #4F46E5;padding-bottom:10px\">交換申請が受け付けられました</h2><p style=\"color:#555;line-height:1.6\">{name}様、交換申請が受け付けられました。検討後、処理結果をご案内します。</p><div style=\"background:#f8f9fa;padding:15px;border-radius:8px;margin:15px 0\"><p style=\"margin:5px 0\"><strong>申請番号:</strong> {claim_number}</p><p style=\"margin:5px 0\"><strong>注文番号:</strong> {order_number}</p><p style=\"margin:5px 0\"><strong>進行状況:</strong> {status_label}</p><p style=\"margin:5px 0\"><strong>申請理由:</strong> {reason_label}</p></div><div style=\"text-align:center;margin:25px 0\"><a href=\"{claim_url}\" style=\"display:inline-block;padding:12px 30px;background-color:#4F46E5;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:bold\">申請内容を見る</a></div><hr style=\"border:none;border-top:1px solid #eee;margin:20px 0\"><p style=\"color:#999;font-size:12px\">本メールは {app_name} から送信されました。</p></div>"
+        "body": "<div style=\"font-family:'Malgun Gothic',sans-serif;max-width:600px;margin:0 auto;padding:20px\"><h2 style=\"color:#333;border-bottom:2px solid #4F46E5;padding-bottom:10px\">交換申請が受け付けられました</h2><p style=\"color:#555;line-height:1.6\">{name}様、交換申請が受け付けられました。{request_origin_notice}検討後、処理結果をご案内いたします。</p><div style=\"background:#f8f9fa;padding:15px;border-radius:8px;margin:15px 0\"><p style=\"margin:5px 0;white-space:pre-line\"><strong>申請番号:</strong> {claim_number}</p><p style=\"margin:5px 0;white-space:pre-line\"><strong>注文番号:</strong> {order_number}</p><p style=\"margin:5px 0;white-space:pre-line\"><strong>進行状態:</strong> {status_label}</p><p style=\"margin:5px 0;white-space:pre-line\"><strong>申請理由:</strong> {reason_label}</p></div><div style=\"text-align:center;margin:25px 0\"><a href=\"{claim_url}\" style=\"display:inline-block;padding:12px 30px;background-color:#4F46E5;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:bold\">申請内容を表示</a></div><hr style=\"border:none;border-top:1px solid #eee;margin:20px 0\"><p style=\"color:#999;font-size:12px\">本メールは{app_name}から送信されました。</p></div>"
       },
       "database": {
         "subject": "交換申請が受け付けられました",
-        "body": "{name}様、交換申請({claim_number})が受け付けられました。"
+        "body": "{name}様、交換申請({claim_number})が受け付けられました。{request_origin_notice}"
       }
     }
   },
@@ -343,7 +343,7 @@
     "templates": {
       "mail": {
         "subject": "[{app_name}] 回収が開始されました (申請番号: {claim_number})",
-        "body": "<div style=\"font-family:'Malgun Gothic',sans-serif;max-width:600px;margin:0 auto;padding:20px\"><h2 style=\"color:#333;border-bottom:2px solid #4F46E5;padding-bottom:10px\">回収が開始されました</h2><p style=\"color:#555;line-height:1.6\">{name}様、交換商品の回収が開始されました。下記の送り状番号で進行状況をご確認いただけます。</p><div style=\"background:#f8f9fa;padding:15px;border-radius:8px;margin:15px 0\"><p style=\"margin:5px 0\"><strong>申請番号:</strong> {claim_number}</p><p style=\"margin:5px 0\"><strong>注文番号:</strong> {order_number}</p><p style=\"margin:5px 0\"><strong>進行状態:</strong> {status_label}</p><p style=\"margin:5px 0\"><strong>回収配送業者:</strong> {collection_carrier_name}</p><p style=\"margin:5px 0\"><strong>回収送り状番号:</strong> {collection_tracking_number}</p></div><div style=\"text-align:center;margin:25px 0\"><a href=\"{claim_url}\" style=\"display:inline-block;padding:12px 30px;background-color:#4F46E5;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:bold\">申請内容を表示</a></div><hr style=\"border:none;border-top:1px solid #eee;margin:20px 0\"><p style=\"color:#999;font-size:12px\">本メールは {app_name} から送信されました。</p></div>"
+        "body": "<div style=\"font-family:'Malgun Gothic',sans-serif;max-width:600px;margin:0 auto;padding:20px\"><h2 style=\"color:#333;border-bottom:2px solid #4F46E5;padding-bottom:10px\">回収が開始されました</h2><p style=\"color:#555;line-height:1.6\">{name}様、交換商品の回収が開始されました。下記の送り状で進行状況をご確認いただけます。</p><div style=\"background:#f8f9fa;padding:15px;border-radius:8px;margin:15px 0\"><p style=\"margin:5px 0;white-space:pre-line\"><strong>申請番号:</strong> {claim_number}</p><p style=\"margin:5px 0;white-space:pre-line\"><strong>注文番号:</strong> {order_number}</p><p style=\"margin:5px 0;white-space:pre-line\"><strong>進行状態:</strong> {status_label}</p><p style=\"margin:5px 0;white-space:pre-line\"><strong>回収送り状:</strong> {tracking_lines}</p></div><div style=\"text-align:center;margin:25px 0\"><a href=\"{claim_url}\" style=\"display:inline-block;padding:12px 30px;background-color:#4F46E5;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:bold\">申請内容を表示</a></div><hr style=\"border:none;border-top:1px solid #eee;margin:20px 0\"><p style=\"color:#999;font-size:12px\">本メールは{app_name}から送信されました。</p></div>"
       },
       "database": {
         "subject": "回収が開始されました",
@@ -391,7 +391,7 @@
     "templates": {
       "mail": {
         "subject": "[{app_name}] 再発送が開始されました (申請番号: {claim_number})",
-        "body": "<div style=\"font-family:'Malgun Gothic',sans-serif;max-width:600px;margin:0 auto;padding:20px\"><h2 style=\"color:#333;border-bottom:2px solid #4F46E5;padding-bottom:10px\">再発送が開始されました</h2><p style=\"color:#555;line-height:1.6\">{name}様、交換商品が発送されました。下記の送り状番号で配送状況をご確認いただけます。</p><div style=\"background:#f8f9fa;padding:15px;border-radius:8px;margin:15px 0\"><p style=\"margin:5px 0\"><strong>申請番号:</strong> {claim_number}</p><p style=\"margin:5px 0\"><strong>注文番号:</strong> {order_number}</p><p style=\"margin:5px 0\"><strong>進行状態:</strong> {status_label}</p><p style=\"margin:5px 0\"><strong>再発送配送業者:</strong> {redelivery_carrier_name}</p><p style=\"margin:5px 0\"><strong>再発送送り状番号:</strong> {redelivery_tracking_number}</p></div><div style=\"text-align:center;margin:25px 0\"><a href=\"{claim_url}\" style=\"display:inline-block;padding:12px 30px;background-color:#4F46E5;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:bold\">申請内容を表示</a></div><hr style=\"border:none;border-top:1px solid #eee;margin:20px 0\"><p style=\"color:#999;font-size:12px\">本メールは {app_name} から送信されました。</p></div>"
+        "body": "<div style=\"font-family:'Malgun Gothic',sans-serif;max-width:600px;margin:0 auto;padding:20px\"><h2 style=\"color:#333;border-bottom:2px solid #4F46E5;padding-bottom:10px\">再配送が開始されました</h2><p style=\"color:#555;line-height:1.6\">{name}様、交換商品が発送されました。下記の送り状で配送状況をご確認いただけます。{advance_exchange_notice}</p><div style=\"background:#f8f9fa;padding:15px;border-radius:8px;margin:15px 0\"><p style=\"margin:5px 0;white-space:pre-line\"><strong>申請番号:</strong> {claim_number}</p><p style=\"margin:5px 0;white-space:pre-line\"><strong>注文番号:</strong> {order_number}</p><p style=\"margin:5px 0;white-space:pre-line\"><strong>進行状態:</strong> {status_label}</p><p style=\"margin:5px 0;white-space:pre-line\"><strong>発送送り状:</strong> {tracking_lines}</p></div><div style=\"text-align:center;margin:25px 0\"><a href=\"{claim_url}\" style=\"display:inline-block;padding:12px 30px;background-color:#4F46E5;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:bold\">申請内容を表示</a></div><hr style=\"border:none;border-top:1px solid #eee;margin:20px 0\"><p style=\"color:#999;font-size:12px\">本メールは{app_name}から送信されました。</p></div>"
       },
       "database": {
         "subject": "再発送が開始されました",
@@ -407,7 +407,7 @@
     "templates": {
       "mail": {
         "subject": "[{app_name}] 再発送商品が到着しました (申請番号: {claim_number})",
-        "body": "<div style=\"font-family:'Malgun Gothic',sans-serif;max-width:600px;margin:0 auto;padding:20px\"><h2 style=\"color:#333;border-bottom:2px solid #4F46E5;padding-bottom:10px\">再発送商品が到着しました</h2><p style=\"color:#555;line-height:1.6\">{name}様、交換商品の配送が完了しました。</p><div style=\"background:#f8f9fa;padding:15px;border-radius:8px;margin:15px 0\"><p style=\"margin:5px 0\"><strong>申請番号:</strong> {claim_number}</p><p style=\"margin:5px 0\"><strong>注文番号:</strong> {order_number}</p><p style=\"margin:5px 0\"><strong>進行状態:</strong> {status_label}</p><p style=\"margin:5px 0\"><strong>再発送配送業者:</strong> {redelivery_carrier_name}</p><p style=\"margin:5px 0\"><strong>再発送送り状番号:</strong> {redelivery_tracking_number}</p></div><div style=\"text-align:center;margin:25px 0\"><a href=\"{claim_url}\" style=\"display:inline-block;padding:12px 30px;background-color:#4F46E5;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:bold\">申請内容を表示</a></div><hr style=\"border:none;border-top:1px solid #eee;margin:20px 0\"><p style=\"color:#999;font-size:12px\">本メールは {app_name} から送信されました。</p></div>"
+        "body": "<div style=\"font-family:'Malgun Gothic',sans-serif;max-width:600px;margin:0 auto;padding:20px\"><h2 style=\"color:#333;border-bottom:2px solid #4F46E5;padding-bottom:10px\">再配送商品が届きました</h2><p style=\"color:#555;line-height:1.6\">{name}様、交換商品の配送が完了いたしました。</p><div style=\"background:#f8f9fa;padding:15px;border-radius:8px;margin:15px 0\"><p style=\"margin:5px 0;white-space:pre-line\"><strong>申請番号:</strong> {claim_number}</p><p style=\"margin:5px 0;white-space:pre-line\"><strong>注文番号:</strong> {order_number}</p><p style=\"margin:5px 0;white-space:pre-line\"><strong>進行状態:</strong> {status_label}</p><p style=\"margin:5px 0;white-space:pre-line\"><strong>発送送り状:</strong> {tracking_lines}</p></div><div style=\"text-align:center;margin:25px 0\"><a href=\"{claim_url}\" style=\"display:inline-block;padding:12px 30px;background-color:#4F46E5;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:bold\">申請内容を表示</a></div><hr style=\"border:none;border-top:1px solid #eee;margin:20px 0\"><p style=\"color:#999;font-size:12px\">本メールは{app_name}から送信されました。</p></div>"
       },
       "database": {
         "subject": "再発送商品が到着しました",
@@ -439,11 +439,11 @@
     "templates": {
       "mail": {
         "subject": "[{app_name}] 返品申請が受け付けられました (申請番号: {claim_number})",
-        "body": "<div style=\"font-family:'Malgun Gothic',sans-serif;max-width:600px;margin:0 auto;padding:20px\"><h2 style=\"color:#333;border-bottom:2px solid #4F46E5;padding-bottom:10px\">返品申請が受け付けられました</h2><p style=\"color:#555;line-height:1.6\">{name}様、返品申請が受け付けられました。審査後に処理結果をご案内いたします。</p><div style=\"background:#f8f9fa;padding:15px;border-radius:8px;margin:15px 0\"><p style=\"margin:5px 0\"><strong>申請番号:</strong> {claim_number}</p><p style=\"margin:5px 0\"><strong>注文番号:</strong> {order_number}</p><p style=\"margin:5px 0\"><strong>進行状態:</strong> {status_label}</p><p style=\"margin:5px 0\"><strong>申請理由:</strong> {reason_label}</p></div><div style=\"text-align:center;margin:25px 0\"><a href=\"{claim_url}\" style=\"display:inline-block;padding:12px 30px;background-color:#4F46E5;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:bold\">申請内容を確認</a></div><hr style=\"border:none;border-top:1px solid #eee;margin:20px 0\"><p style=\"color:#999;font-size:12px\">本メールは {app_name} から送信されました。</p></div>"
+        "body": "<div style=\"font-family:'Malgun Gothic',sans-serif;max-width:600px;margin:0 auto;padding:20px\"><h2 style=\"color:#333;border-bottom:2px solid #4F46E5;padding-bottom:10px\">返品申請が受け付けられました</h2><p style=\"color:#555;line-height:1.6\">{name}様、返品申請が受け付けられました。{request_origin_notice}検討後、処理結果をご案内いたします。</p><div style=\"background:#f8f9fa;padding:15px;border-radius:8px;margin:15px 0\"><p style=\"margin:5px 0;white-space:pre-line\"><strong>申請番号:</strong> {claim_number}</p><p style=\"margin:5px 0;white-space:pre-line\"><strong>注文番号:</strong> {order_number}</p><p style=\"margin:5px 0;white-space:pre-line\"><strong>進行状態:</strong> {status_label}</p><p style=\"margin:5px 0;white-space:pre-line\"><strong>申請理由:</strong> {reason_label}</p></div><div style=\"text-align:center;margin:25px 0\"><a href=\"{claim_url}\" style=\"display:inline-block;padding:12px 30px;background-color:#4F46E5;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:bold\">申請内容を表示</a></div><hr style=\"border:none;border-top:1px solid #eee;margin:20px 0\"><p style=\"color:#999;font-size:12px\">本メールは{app_name}から送信されました。</p></div>"
       },
       "database": {
         "subject": "返品申請が受け付けられました",
-        "body": "{name}様、返品申請({claim_number})が受け付けられました。"
+        "body": "{name}様、返品申請({claim_number})が受け付けられました。{request_origin_notice}"
       }
     }
   },
@@ -583,7 +583,7 @@
     "templates": {
       "mail": {
         "subject": "[{app_name}] 回収が開始されました (申請番号: {claim_number})",
-        "body": "<div style=\"font-family:'Malgun Gothic',sans-serif;max-width:600px;margin:0 auto;padding:20px\"><h2 style=\"color:#333;border-bottom:2px solid #4F46E5;padding-bottom:10px\">回収が開始されました</h2><p style=\"color:#555;line-height:1.6\">{name}様、返品商品の回収が開始されました。下記の送り状で進行状況をご確認いただけます。</p><div style=\"background:#f8f9fa;padding:15px;border-radius:8px;margin:15px 0\"><p style=\"margin:5px 0\"><strong>申請番号:</strong> {claim_number}</p><p style=\"margin:5px 0\"><strong>注文番号:</strong> {order_number}</p><p style=\"margin:5px 0\"><strong>進行状態:</strong> {status_label}</p><p style=\"margin:5px 0\"><strong>回収配送業者:</strong> {collection_carrier_name}</p><p style=\"margin:5px 0\"><strong>回収送り状番号:</strong> {collection_tracking_number}</p></div><div style=\"text-align:center;margin:25px 0\"><a href=\"{claim_url}\" style=\"display:inline-block;padding:12px 30px;background-color:#4F46E5;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:bold\">申請内容を確認</a></div><hr style=\"border:none;border-top:1px solid #eee;margin:20px 0\"><p style=\"color:#999;font-size:12px\">本メールは {app_name} から送信されました。</p></div>"
+        "body": "<div style=\"font-family:'Malgun Gothic',sans-serif;max-width:600px;margin:0 auto;padding:20px\"><h2 style=\"color:#333;border-bottom:2px solid #4F46E5;padding-bottom:10px\">回収が開始されました</h2><p style=\"color:#555;line-height:1.6\">{name}様、返品商品の回収が開始されました。下記の送り状で進行状況をご確認いただけます。</p><div style=\"background:#f8f9fa;padding:15px;border-radius:8px;margin:15px 0\"><p style=\"margin:5px 0;white-space:pre-line\"><strong>申請番号:</strong> {claim_number}</p><p style=\"margin:5px 0;white-space:pre-line\"><strong>注文番号:</strong> {order_number}</p><p style=\"margin:5px 0;white-space:pre-line\"><strong>進行状態:</strong> {status_label}</p><p style=\"margin:5px 0;white-space:pre-line\"><strong>回収送り状:</strong> {tracking_lines}</p></div><div style=\"text-align:center;margin:25px 0\"><a href=\"{claim_url}\" style=\"display:inline-block;padding:12px 30px;background-color:#4F46E5;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:bold\">申請内容を表示</a></div><hr style=\"border:none;border-top:1px solid #eee;margin:20px 0\"><p style=\"color:#999;font-size:12px\">本メールは{app_name}から送信されました。</p></div>"
       },
       "database": {
         "subject": "回収が開始されました",
@@ -631,11 +631,11 @@
     "templates": {
       "mail": {
         "subject": "[{app_name}] 返金申請が受け付けられました (申請番号: {claim_number})",
-        "body": "<div style=\"font-family:'Malgun Gothic',sans-serif;max-width:600px;margin:0 auto;padding:20px\"><h2 style=\"color:#333;border-bottom:2px solid #4F46E5;padding-bottom:10px\">返金申請が受け付けられました</h2><p style=\"color:#555;line-height:1.6\">{name}様、返金申請が受け付けられました。審査後に処理結果をご案内いたします。</p><div style=\"background:#f8f9fa;padding:15px;border-radius:8px;margin:15px 0\"><p style=\"margin:5px 0\"><strong>申請番号:</strong> {claim_number}</p><p style=\"margin:5px 0\"><strong>注文番号:</strong> {order_number}</p><p style=\"margin:5px 0\"><strong>進行状態:</strong> {status_label}</p><p style=\"margin:5px 0\"><strong>申請理由:</strong> {reason_label}</p></div><div style=\"text-align:center;margin:25px 0\"><a href=\"{claim_url}\" style=\"display:inline-block;padding:12px 30px;background-color:#4F46E5;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:bold\">申請内容を確認</a></div><hr style=\"border:none;border-top:1px solid #eee;margin:20px 0\"><p style=\"color:#999;font-size:12px\">本メールは {app_name} から送信されました。</p></div>"
+        "body": "<div style=\"font-family:'Malgun Gothic',sans-serif;max-width:600px;margin:0 auto;padding:20px\"><h2 style=\"color:#333;border-bottom:2px solid #4F46E5;padding-bottom:10px\">返金申請が受け付けられました</h2><p style=\"color:#555;line-height:1.6\">{name}様、返金申請が受け付けられました。{request_origin_notice}検討後、処理結果をご案内いたします。</p><div style=\"background:#f8f9fa;padding:15px;border-radius:8px;margin:15px 0\"><p style=\"margin:5px 0;white-space:pre-line\"><strong>申請番号:</strong> {claim_number}</p><p style=\"margin:5px 0;white-space:pre-line\"><strong>注文番号:</strong> {order_number}</p><p style=\"margin:5px 0;white-space:pre-line\"><strong>進行状態:</strong> {status_label}</p><p style=\"margin:5px 0;white-space:pre-line\"><strong>申請理由:</strong> {reason_label}</p></div><div style=\"text-align:center;margin:25px 0\"><a href=\"{claim_url}\" style=\"display:inline-block;padding:12px 30px;background-color:#4F46E5;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:bold\">申請内容を表示</a></div><hr style=\"border:none;border-top:1px solid #eee;margin:20px 0\"><p style=\"color:#999;font-size:12px\">本メールは{app_name}から送信されました。</p></div>"
       },
       "database": {
         "subject": "返金申請が受け付けられました",
-        "body": "{name}様、返金申請({claim_number})が受け付けられました。"
+        "body": "{name}様、返金申請({claim_number})が受け付けられました。{request_origin_notice}"
       }
     }
   },
@@ -727,11 +727,11 @@
     "templates": {
       "mail": {
         "subject": "[{app_name}] クレーム申請が取り下げられました (申請番号: {claim_number})",
-        "body": "<div style=\"font-family:'Malgun Gothic',sans-serif;max-width:600px;margin:0 auto;padding:20px\"><h2 style=\"color:#333;border-bottom:2px solid #4F46E5;padding-bottom:10px\">クレーム申請が取り下げられました</h2><p style=\"color:#555;line-height:1.6\">{name}様、顧客が {claim_type_label} 申請を取り下げました。</p><div style=\"background:#f8f9fa;padding:15px;border-radius:8px;margin:15px 0\"><p style=\"margin:5px 0\"><strong>申請番号:</strong> {claim_number}</p><p style=\"margin:5px 0\"><strong>クレームタイプ:</strong> {claim_type_label}</p><p style=\"margin:5px 0\"><strong>注文番号:</strong> {order_number}</p><p style=\"margin:5px 0\"><strong>申請者:</strong> {requester_name}</p></div><div style=\"text-align:center;margin:25px 0\"><a href=\"{claim_url}\" style=\"display:inline-block;padding:12px 30px;background-color:#4F46E5;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:bold\">クレーム管理へ</a></div><hr style=\"border:none;border-top:1px solid #eee;margin:20px 0\"><p style=\"color:#999;font-size:12px\">本メールは {app_name} から送信されました。</p></div>"
+        "body": "<div style=\"font-family:'Malgun Gothic',sans-serif;max-width:600px;margin:0 auto;padding:20px\"><h2 style=\"color:#333;border-bottom:2px solid #4F46E5;padding-bottom:10px\">クレーム申請が取り下げられました</h2><p style=\"color:#555;line-height:1.6\">{name}様、{claim_type_label}申請が取り下げられました。{withdraw_origin_notice}</p><div style=\"background:#f8f9fa;padding:15px;border-radius:8px;margin:15px 0\"><p style=\"margin:5px 0;white-space:pre-line\"><strong>申請番号:</strong> {claim_number}</p><p style=\"margin:5px 0;white-space:pre-line\"><strong>クレームタイプ:</strong> {claim_type_label}</p><p style=\"margin:5px 0;white-space:pre-line\"><strong>注文番号:</strong> {order_number}</p><p style=\"margin:5px 0;white-space:pre-line\"><strong>申請者:</strong> {requester_name}</p></div><div style=\"text-align:center;margin:25px 0\"><a href=\"{claim_url}\" style=\"display:inline-block;padding:12px 30px;background-color:#4F46E5;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:bold\">クレーム管理に移動</a></div><hr style=\"border:none;border-top:1px solid #eee;margin:20px 0\"><p style=\"color:#999;font-size:12px\">本メールは{app_name}から送信されました。</p></div>"
       },
       "database": {
         "subject": "クレーム申請取下",
-        "body": "{requester_name}様が {claim_type_label} 申請({claim_number})を取り下げました。"
+        "body": "{requester_name}様の{claim_type_label}申請({claim_number})が取り下げられました。{withdraw_origin_notice}"
       }
     }
   },
@@ -748,6 +748,86 @@
       "database": {
         "subject": "申請商品部分処理",
         "body": "{name}様、申請({claim_number}) {total_count} 件中 {processed_count} 件が {decision_label} 処理されました。残りの {remaining_count} 件は検討中です。\n{item_lines}"
+      }
+    }
+  },
+  "claim_withdrawn_on_behalf": {
+    "definition": {
+      "name": "顧客要求代理取り消しのご案内",
+      "description": "運営者が顧客要求により交換·返品·返金申請を代理取り消しした場合、顧客に発送されます"
+    },
+    "templates": {
+      "mail": {
+        "subject": "[{app_name}] お客様のご要望により申請が取り消されました (申請番号: {claim_number})",
+        "body": "<div style=\"font-family:'Malgun Gothic',sans-serif;max-width:600px;margin:0 auto;padding:20px\"><h2 style=\"color:#333;border-bottom:2px solid #4F46E5;padding-bottom:10px\">申請が取り消されました</h2><p style=\"color:#555;line-height:1.6\">{name}様、{claim_type_label}申請({claim_number})はお客様のご要望により販売者が取り消しました。</p><div style=\"background:#f8f9fa;padding:15px;border-radius:8px;margin:15px 0\"><p style=\"margin:5px 0;white-space:pre-line\"><strong>申請番号:</strong> {claim_number}</p><p style=\"margin:5px 0;white-space:pre-line\"><strong>クレームタイプ:</strong> {claim_type_label}</p><p style=\"margin:5px 0;white-space:pre-line\"><strong>注文番号:</strong> {order_number}</p></div><div style=\"text-align:center;margin:25px 0\"><a href=\"{claim_url}\" style=\"display:inline-block;padding:12px 30px;background-color:#4F46E5;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:bold\">申請内容を表示</a></div><hr style=\"border:none;border-top:1px solid #eee;margin:20px 0\"><p style=\"color:#999;font-size:12px\">本メールは{app_name}より送信されました。</p></div>"
+      },
+      "database": {
+        "subject": "申請取り消しのご案内",
+        "body": "{name}様、{claim_type_label}申請({claim_number})がお客様のご要望により販売者が取り消しました。"
+      }
+    }
+  },
+  "exchange_collection_tracking_registered": {
+    "definition": {
+      "name": "交換商品の回収送り状登録",
+      "description": "交換商品の回収送り状が新規登録されると顧客に発送されます"
+    },
+    "templates": {
+      "mail": {
+        "subject": "[{app_name}] 回収送り状が登録されました (申請番号: {claim_number})",
+        "body": "<div style=\"font-family:'Malgun Gothic',sans-serif;max-width:600px;margin:0 auto;padding:20px\"><h2 style=\"color:#333;border-bottom:2px solid #4F46E5;padding-bottom:10px\">回収送り状が登録されました</h2><p style=\"color:#555;line-height:1.6\">{name}様、交換商品の回収送り状が登録されました。以下の運送状により回収進行状況をご確認いただけます。</p><div style=\"background:#f8f9fa;padding:15px;border-radius:8px;margin:15px 0\"><p style=\"margin:5px 0;white-space:pre-line\"><strong>申請番号:</strong> {claim_number}</p><p style=\"margin:5px 0;white-space:pre-line\"><strong>注文番号:</strong> {order_number}</p><p style=\"margin:5px 0;white-space:pre-line\"><strong>回収運送状:</strong> {tracking_lines}</p></div><div style=\"text-align:center;margin:25px 0\"><a href=\"{claim_url}\" style=\"display:inline-block;padding:12px 30px;background-color:#4F46E5;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:bold\">申請内容を表示</a></div><hr style=\"border:none;border-top:1px solid #eee;margin:20px 0\"><p style=\"color:#999;font-size:12px\">本メールは{app_name}より送信されました。</p></div>"
+      },
+      "database": {
+        "subject": "回収送り状が登録されました",
+        "body": "{name}様、交換申請({claim_number})の回収送り状が登録されました。\n{tracking_lines}"
+      }
+    }
+  },
+  "exchange_redelivery_tracking_registered": {
+    "definition": {
+      "name": "交換商品発送送り状登録",
+      "description": "交換商品の発送送り状が新規登録されると顧客に発送されます"
+    },
+    "templates": {
+      "mail": {
+        "subject": "[{app_name}] 交換商品を送信しました (申請番号: {claim_number})",
+        "body": "<div style=\"font-family:'Malgun Gothic',sans-serif;max-width:600px;margin:0 auto;padding:20px\"><h2 style=\"color:#333;border-bottom:2px solid #4F46E5;padding-bottom:10px\">交換商品を送信しました</h2><p style=\"color:#555;line-height:1.6\">{name}様、交換商品を送信いたしました。以下の運送状により配送状況をご確認いただけます。{advance_exchange_notice}</p><div style=\"background:#f8f9fa;padding:15px;border-radius:8px;margin:15px 0\"><p style=\"margin:5px 0;white-space:pre-line\"><strong>申請番号:</strong> {claim_number}</p><p style=\"margin:5px 0;white-space:pre-line\"><strong>注文番号:</strong> {order_number}</p><p style=\"margin:5px 0;white-space:pre-line\"><strong>発送運送状:</strong> {tracking_lines}</p></div><div style=\"text-align:center;margin:25px 0\"><a href=\"{claim_url}\" style=\"display:inline-block;padding:12px 30px;background-color:#4F46E5;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:bold\">申請内容を表示</a></div><hr style=\"border:none;border-top:1px solid #eee;margin:20px 0\"><p style=\"color:#999;font-size:12px\">本メールは{app_name}より送信されました。</p></div>"
+      },
+      "database": {
+        "subject": "交換商品を送信しました",
+        "body": "{name}様、交換申請({claim_number})の交換商品を送信いたしました。\n{tracking_lines}"
+      }
+    }
+  },
+  "return_collection_tracking_registered": {
+    "definition": {
+      "name": "返品回収送り状登録",
+      "description": "返品商品の回収送り状が新規登録されると顧客に発送されます"
+    },
+    "templates": {
+      "mail": {
+        "subject": "[{app_name}] 回収送り状が登録されました (申請番号: {claim_number})",
+        "body": "<div style=\"font-family:'Malgun Gothic',sans-serif;max-width:600px;margin:0 auto;padding:20px\"><h2 style=\"color:#333;border-bottom:2px solid #4F46E5;padding-bottom:10px\">回収送り状が登録されました</h2><p style=\"color:#555;line-height:1.6\">{name}様、返品商品の回収送り状が登録されました。以下の運送状により回収進行状況をご確認いただけます。</p><div style=\"background:#f8f9fa;padding:15px;border-radius:8px;margin:15px 0\"><p style=\"margin:5px 0;white-space:pre-line\"><strong>申請番号:</strong> {claim_number}</p><p style=\"margin:5px 0;white-space:pre-line\"><strong>注文番号:</strong> {order_number}</p><p style=\"margin:5px 0;white-space:pre-line\"><strong>回収運送状:</strong> {tracking_lines}</p></div><div style=\"text-align:center;margin:25px 0\"><a href=\"{claim_url}\" style=\"display:inline-block;padding:12px 30px;background-color:#4F46E5;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:bold\">申請内容を表示</a></div><hr style=\"border:none;border-top:1px solid #eee;margin:20px 0\"><p style=\"color:#999;font-size:12px\">本メールは{app_name}より送信されました。</p></div>"
+      },
+      "database": {
+        "subject": "回収送り状が登録されました",
+        "body": "{name}様、返品申請({claim_number})の回収送り状が登録されました。\n{tracking_lines}"
+      }
+    }
+  },
+  "exchange_collection_overdue": {
+    "definition": {
+      "name": "先交換回収遅延管理者通知",
+      "description": "先交換で古い商品が返送期限までに届かない場合、運営者に1回発送されます"
+    },
+    "templates": {
+      "mail": {
+        "subject": "[{app_name}] 先交換の古い商品回収が遅れています (申請番号: {claim_number})",
+        "body": "<div style=\"font-family:'Malgun Gothic',sans-serif;max-width:600px;margin:0 auto;padding:20px\"><h2 style=\"color:#333;border-bottom:2px solid #4F46E5;padding-bottom:10px\">先交換回収が遅延しています</h2><p style=\"color:#555;line-height:1.6\">{name}様、交換商品を先に送った先交換の古い商品が返送期限を{overdue_days}日超過しました。お客様にお問い合わせください。</p><div style=\"background:#f8f9fa;padding:15px;border-radius:8px;margin:15px 0\"><p style=\"margin:5px 0;white-space:pre-line\"><strong>申請番号:</strong> {claim_number}</p><p style=\"margin:5px 0;white-space:pre-line\"><strong>注文番号:</strong> {order_number}</p><p style=\"margin:5px 0;white-space:pre-line\"><strong>顧客:</strong> {requester_name}</p><p style=\"margin:5px 0;white-space:pre-line\"><strong>返送期限:</strong> {collection_due_date}</p><p style=\"margin:5px 0;white-space:pre-line\"><strong>遅延日数:</strong> {overdue_days}</p><p style=\"margin:5px 0;white-space:pre-line\"><strong>未回収商品:</strong> {unreturned_item_lines}</p></div><div style=\"text-align:center;margin:25px 0\"><a href=\"{claim_url}\" style=\"display:inline-block;padding:12px 30px;background-color:#4F46E5;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:bold\">クレーム管理へ</a></div><hr style=\"border:none;border-top:1px solid #eee;margin:20px 0\"><p style=\"color:#999;font-size:12px\">本メールは{app_name}より送信されました。</p></div>"
+      },
+      "database": {
+        "subject": "先交換回収遅延",
+        "body": "{requester_name}様の先交換({claim_number})の古い商品が期限({collection_due_date})を{overdue_days}日超過しました。"
       }
     }
   }

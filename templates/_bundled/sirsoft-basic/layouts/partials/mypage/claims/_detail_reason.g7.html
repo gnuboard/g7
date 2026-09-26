@@ -8,8 +8,8 @@
       <icon name="comment-dots" class="text-base text-gray-900 dark:text-white"/>
       <h2 class="text-base font-bold text-gray-900 dark:text-white">$t:claim.detail.reason_title</h2>
     </div>
-    <!-- 반려 사유 — 운영자가 거절하며 적은 사유. 이 카드에서 가장 먼저 읽혀야 한다. -->
-    <div data-if="{{!!claim.data?.claim?.reject_reason}}" class="flex items-start gap-2 p-3 mb-4 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
+    <!-- 반려 사유 — 운영자가 거절하며 적은 사유. 이 카드에서 가장 먼저 읽혀야 한다. 신청서 **전체가** 반려됐을 때만 선다(S3) — 일부 상품만 반려됐으면 사유는 그 상품 줄에 있고, 나머지 상품이 진행 중인데 이 카드가 반려를 외치면 구매자가 신청 전체가 거절된 것으로 읽는다. -->
+    <div data-if="{{claim.data?.claim?.status === 'rejected' &amp;&amp; !!claim.data?.claim?.reject_reason}}" class="flex items-start gap-2 p-3 mb-4 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
       <icon name="circle-exclamation" class="text-base text-red-600 dark:text-red-400 flex-shrink-0"/>
       <div class="min-w-0">
         <p class="text-sm font-medium text-red-800 dark:text-red-200">$t:claim.detail.reject_reason</p>

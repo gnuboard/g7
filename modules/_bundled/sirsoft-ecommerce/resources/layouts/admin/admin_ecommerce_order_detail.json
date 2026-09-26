@@ -116,6 +116,41 @@
             "comment": "주문 스코프 클레임 내역 (D20 — 유형 서브탭 뱃지용 counts + 신청서가 상품 배열을 품는 그룹 구조). 이 게이트(claims.read)는 화면 라우트 권한(orders.read)보다 좁다 — 클레임 권한이 없는 운영자에게는 403 이므로 suppress 로 전파를 끊고 fallback 의 unavailable 로 '못 불러왔다' 를 섹션이 말한다. 화면 전체를 오류 페이지로 떨어뜨리거나 '접수된 건 없음' 으로 뭉뚱그리지 않는다. transition_overlay 에는 넣지 않는다 — 한 섹션이 주문 화면 전체의 진입을 막아서는 안 된다."
         },
         {
+            "id": "claimRequestContext",
+            "label_key": "$t:sirsoft-ecommerce.editor.data_source.claimRequestContext",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-ecommerce/admin/orders/{{route.orderNumber}}/claims/request-context",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "fallback": {
+                "data": {
+                    "gates": {},
+                    "reasons": {},
+                    "charge_methods": [],
+                    "unavailable": true
+                }
+            },
+            "errorHandling": {
+                "403": {
+                    "comment": "실패의 종류를 남긴다 — 403(접수 권한 없음)과 그 밖(500·네트워크)을 선택 바 안내가 가른다. 전부 「권한 없음」 으로 알리면 권한이 있는 운영자가 엉뚱하게 권한을 요청하러 간다. 이 핸들러가 실패를 받아 끊으므로 주문 화면 전체 오류로 번지지 않는다.",
+                    "handler": "setState",
+                    "params": {
+                        "target": "local",
+                        "claimRequestContextError": "forbidden"
+                    }
+                },
+                "default": {
+                    "handler": "setState",
+                    "params": {
+                        "target": "local",
+                        "claimRequestContextError": "failed"
+                    }
+                }
+            },
+            "comment": "관리자 직권 접수 문맥 (§3-11) — 선택 바 [교환 접수]·[반품 접수]·[취소·환불 접수] 가 켜지는 물리 게이트(D5) 상태 목록과 접수 창의 사유·청구 방식 선택지. 게이트(claims.create)가 화면 라우트(orders.read)보다 좁아 권한이 없는 운영자에게는 403 이다 — suppress 로 끊고 fallback 의 빈 게이트로 세 버튼이 꺼진 채 선다. 게이트 computed(`claimRequestGate*`)는 고른 상품이 **모두** 그 유형의 상태 목록에 있어야 참이다 — 화면이 목록을 적으면 서버 판정과 갈린다."
+        },
+        {
             "id": "refundReasons",
             "label_key": "$t:sirsoft-ecommerce.editor.data_source.refundReasons",
             "type": "api",
@@ -144,7 +179,10 @@
         "orderDetailTabs": "{{[{ id: 'order_info', label: $t('sirsoft-ecommerce.admin.order.detail.tabs.order_info') }, { id: 'payment_info', label: $t('sirsoft-ecommerce.admin.order.detail.tabs.payment_info') }, { id: 'claim_history', label: $t('sirsoft-ecommerce.admin.order.detail.tabs.claim_history') + ((_computed.claimHistoryTotal ?? 0) > 0 ? ' (' + _computed.claimHistoryTotal + ')' : '') }, { id: 'activity_log', label: $t('sirsoft-ecommerce.admin.order.detail.tabs.activity_log') }]}}",
         "claimHistoryTypes": "{{['exchange', 'return', 'cancel', 'refund'].map(t => ({ value: t, label: $t('sirsoft-ecommerce.admin.order.detail.claim_history.subtabs.' + t), count: orderClaims?.data?.counts?.[t] ?? 0 }))}}",
         "claimHistoryActiveType": "{{_local.claimHistoryType || (['exchange', 'return', 'cancel', 'refund'].find(t => (orderClaims?.data?.counts?.[t] ?? 0) > 0) ?? 'exchange')}}",
-        "claimHistoryRows": "{{(orderClaims?.data?.claims ?? []).filter(c => c.claim_type === (_local.claimHistoryType || (['exchange', 'return', 'cancel', 'refund'].find(t => (orderClaims?.data?.counts?.[t] ?? 0) > 0) ?? 'exchange')))}}"
+        "claimHistoryRows": "{{(orderClaims?.data?.claims ?? []).filter(c => c.claim_type === (_local.claimHistoryType || (['exchange', 'return', 'cancel', 'refund'].find(t => (orderClaims?.data?.counts?.[t] ?? 0) > 0) ?? 'exchange')))}}",
+        "claimRequestGateExchange": "{{(_local.selectedProducts ?? []).length > 0 && (_local.selectedProducts ?? []).every(id => (claimRequestContext?.data?.gates?.exchange ?? []).includes((order?.data?.options ?? []).find(o => o.id === id)?.option_status))}}",
+        "claimRequestGateReturn": "{{(_local.selectedProducts ?? []).length > 0 && (_local.selectedProducts ?? []).every(id => (claimRequestContext?.data?.gates?.return ?? []).includes((order?.data?.options ?? []).find(o => o.id === id)?.option_status))}}",
+        "claimRequestGateRefund": "{{(_local.selectedProducts ?? []).length > 0 && (_local.selectedProducts ?? []).every(id => (claimRequestContext?.data?.gates?.refund ?? []).includes((order?.data?.options ?? []).find(o => o.id === id)?.option_status))}}"
     },
     "permissions": [
         "sirsoft-ecommerce.orders.read"
@@ -423,6 +461,10 @@
         {
             "comment": "취소/환불 — 취소할 옵션과 수량을 고르면 환불 예상액을 서버에서 다시 계산해 보여 준다",
             "partial": "partials/admin_ecommerce_order_detail/_modal_cancel_order.json"
+        },
+        {
+            "comment": "관리자 직권 접수 창 (교환·반품 — §3-11). 취소·환불 접수는 위 취소 모달을 그대로 쓴다(같은 서비스로 위임).",
+            "partial": "partials/admin_ecommerce_order_detail/_modal_admin_claim_request.json"
         },
         {
             "comment": "현금영수증 발급 — 무통장·가상계좌 결제 건에 대해 운영자가 대신 발급한다",

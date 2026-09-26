@@ -865,6 +865,13 @@ class LayoutMarkupRoundTripCorpusTest extends LayoutMarkupTestCase
         'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_claim_list/_partial_bulk_action_section.g7.html',
         'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_claim_list/_partial_claim_datagrid.g7.html',
         'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_claim_list/_partial_filter_section.g7.html',
+        // ── #599 상품 행 송장·선교환·관리자 직권 접수(2026-09-25) 가 새로 저작한 모달 4건.
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_claim_detail/_modal_claim_exchange_mode_confirm.g7.html',
+        // 선행 커밋(첨부 전체 삭제 확인 창)이 저작하고 등재를 빠뜨린 1건 — 같은 게이트가 굽기 최신·escape 0 을 잰다.
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_claim_detail/_modal_claim_images_clear.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_claim_detail/_modal_claim_request_edit.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_claim_detail/_modal_claim_withdraw_on_behalf.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_order_detail/_modal_admin_claim_request.g7.html',
         'templates/_bundled/sirsoft-basic/layouts/shop/guest_claim_apply.g7.html',
         'templates/_bundled/sirsoft-basic/layouts/shop/guest_claim_show.g7.html',
     ];

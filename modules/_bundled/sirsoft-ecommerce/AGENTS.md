@@ -172,14 +172,14 @@ FormRequest → `CheckoutDataService`(주문서에 필요한 배송지·쿠폰·
 <!-- @generated:extension-points-summary START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 확장점 | 수 | 상세 |
 |---|---|---|
-| 발행 훅 | 574개 | [발행 훅](docs/extension-points.md#발행-훅) |
-| 구독 훅 | 187개 | [구독 훅](docs/extension-points.md#구독-훅) |
+| 발행 훅 | 582개 | [발행 훅](docs/extension-points.md#발행-훅) |
+| 구독 훅 | 200개 | [구독 훅](docs/extension-points.md#구독-훅) |
 | 훅 리스너 | 39개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
 | 레이아웃 확장 | 14개 | [레이아웃 확장](docs/extension-points.md#레이아웃-확장) |
 | 미들웨어 | 3개 | [미들웨어](docs/extension-points.md#미들웨어) |
 | 브로드캐스트 채널 | 0개 | [브로드캐스트 채널](docs/extension-points.md#브로드캐스트-채널) |
-| 스케줄 | 11개 | [스케줄](docs/extension-points.md#스케줄) |
-| 알림 정의 | 47개 | [알림 정의](docs/extension-points.md#알림-정의) |
+| 스케줄 | 12개 | [스케줄](docs/extension-points.md#스케줄) |
+| 알림 정의 | 52개 | [알림 정의](docs/extension-points.md#알림-정의) |
 <!-- @generated:extension-points-summary END -->
 
 <!-- @intent START -->
@@ -289,10 +289,10 @@ CRUD 를 바꾸고 싶으면 이 4종 중 하나를 잡으면 되고, 이 모듈
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 552개 | `modules/_bundled/sirsoft-ecommerce/tests` |
-| Vitest | 182개 | `vitest.config.ts` |
-| Playwright | 64개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 196개 | `tests/scenarios` |
+| PHPUnit | 561개 | `modules/_bundled/sirsoft-ecommerce/tests` |
+| Vitest | 184개 | `vitest.config.ts` |
+| Playwright | 65개 | `tests/Playwright` |
+| 시나리오 매니페스트 | 204개 | `tests/scenarios` |
 
 기저 TestCase: `tests/ModuleTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

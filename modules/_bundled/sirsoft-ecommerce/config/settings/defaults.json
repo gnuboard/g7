@@ -625,6 +625,8 @@
             "max_images": 5,
             "image_max_size_kb": 2048,
             "request_period_days": 7,
+            "advance_exchange_enabled": false,
+            "advance_exchange_collection_due_days": 14,
             "complete_defaults": {
                 "create_refund_request": true,
                 "restore_stock": true

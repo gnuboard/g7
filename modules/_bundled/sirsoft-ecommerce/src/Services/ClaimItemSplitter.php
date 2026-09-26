@@ -7,6 +7,7 @@ use Modules\Sirsoft\Ecommerce\Models\OrderExchangeOption;
 use Modules\Sirsoft\Ecommerce\Models\OrderRefundOption;
 use Modules\Sirsoft\Ecommerce\Models\OrderReturnOption;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderExchangeOptionRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderOptionRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderRefundOptionRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderReturnOptionRepositoryInterface;
 
@@ -41,6 +42,19 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderReturnOptionRepository
  * 대칭이다) — 클레임 아이템을 합치면 활동로그 `option_id` 가 고아가 되고, 환불 행은 어느
  * 라운드 몫인지 구분되지 않는다. 계보 컬럼(`parent_option_id` 등)도 두지 않는다: 계보는
  * `order_option_id` + 신청서 FK 로 이미 닫혀 있고, 분할 사실은 활동로그가 나른다.
+ *
+ * ## 행에 붙은 사실은 잔여 행이 그대로 잇는다
+ *
+ * 송장(회수·재발송 택배사·운송장·등록 시각·도착 시각)·회수지·재고 복구 표시는 **행의 사실**이다.
+ * `replicate()` 가 그대로 복사하므로 잔여 행은 원래 값을 가진다 — 「셔츠 3개 중 1개에만 송장」 이면
+ * 호출부가 쪼갠 뒤 전이분 행에만 새 송장을 쓴다(R4).
+ *
+ * ## 교환품을 이미 보낸 교환 행도 쪼갠다 (R10 — PO 2026-09-25)
+ *
+ * 선교환에서는 새 물건을 먼저 보낸 뒤 헌 물건을 나눠 받는다. 교환품의 후속 주문옵션
+ * (`new_order_option_id`)이 있는 행을 쪼갤 때는 **후속 주문옵션도 같은 수량으로 쪼개고**
+ * (`OrderOptionService::splitOffQuantity()` — 주문 쪽 금액 안분 재사용), 잔여 교환 행이 새로 생긴
+ * 후속 행을 가리키게 한다. 두 조각이 한 후속 옵션을 가리키면 재발송 수량이 오류 없이 어긋난다.
  */
 class ClaimItemSplitter
 {
@@ -48,11 +62,15 @@ class ClaimItemSplitter
      * @param  OrderExchangeOptionRepositoryInterface  $exchangeOptionRepository  교환 신청 상품 Repository
      * @param  OrderReturnOptionRepositoryInterface  $returnOptionRepository  반품 신청 상품 Repository
      * @param  OrderRefundOptionRepositoryInterface  $refundOptionRepository  환불 신청 상품 Repository
+     * @param  OrderOptionRepositoryInterface  $orderOptionRepository  주문 옵션 Repository (교환 후속 주문옵션 조회)
+     * @param  OrderOptionService  $orderOptionService  주문 옵션 서비스 (후속 주문옵션 수량 분할)
      */
     public function __construct(
         protected OrderExchangeOptionRepositoryInterface $exchangeOptionRepository,
         protected OrderReturnOptionRepositoryInterface $returnOptionRepository,
         protected OrderRefundOptionRepositoryInterface $refundOptionRepository,
+        protected OrderOptionRepositoryInterface $orderOptionRepository,
+        protected OrderOptionService $orderOptionService,
     ) {}
 
     /**
@@ -94,6 +112,10 @@ class ClaimItemSplitter
         $remainder = $this->createRemainder($item, $remainingQuantity, $captured, $ratio);
         $target = $this->applyTargetAmounts($item, $quantity, $captured, $ratio);
 
+        if ($item instanceof OrderExchangeOption && $item->new_order_option_id !== null) {
+            $remainder = $this->splitSuccessorOption($item, $remainder, $remainingQuantity);
+        }
+
         return ['target' => $target, 'remainder' => $remainder];
     }
 
@@ -111,13 +133,38 @@ class ClaimItemSplitter
     {
         $status = $item->option_status;
 
-        if ($status instanceof \BackedEnum && method_exists($status, 'isFinal') && $status->isFinal()) {
-            return false;
+        // 교환품을 이미 보낸 행(`new_order_option_id` 보유)도 쪼갤 수 있다 — `split()` 이 후속
+        // 주문옵션을 같은 수량으로 함께 쪼갠다(R10). 끝난 행만 나눌 수 없다.
+        return ! ($status instanceof \BackedEnum && method_exists($status, 'isFinal') && $status->isFinal());
+    }
+
+    /**
+     * 교환 행의 후속 주문옵션을 잔여 수량만큼 떼어 내고 잔여 교환 행에 잇습니다. (R10)
+     *
+     * 원본 교환 행은 원래 후속 옵션을 계속 가리키고(수량은 전이분으로 줄어든다), 잔여 교환 행은
+     * 떼어 낸 새 후속 옵션을 가리킨다.
+     *
+     * @param  OrderExchangeOption  $item  원본 교환 행 (전이분)
+     * @param  OrderExchangeOption  $remainder  잔여 교환 행
+     * @param  int  $remainingQuantity  잔여 수량
+     * @return OrderExchangeOption 새 후속 옵션을 가리키는 잔여 교환 행
+     */
+    protected function splitSuccessorOption(
+        OrderExchangeOption $item,
+        OrderExchangeOption $remainder,
+        int $remainingQuantity,
+    ): OrderExchangeOption {
+        $successor = $this->orderOptionRepository->findOrFail((int) $item->new_order_option_id);
+
+        // 후속 옵션 수량이 교환 행 수량과 어긋나 있으면(데이터 보정 등) 쪼개지 않는다 — 잔여 교환 행은
+        // 후속 옵션 없이 남고, 발송 단계에 들어가면 `ensureNewOrderOption()` 이 자기 몫을 새로 만든다.
+        if ((int) $successor->quantity <= $remainingQuantity) {
+            return $this->exchangeOptionRepository->update($remainder, ['new_order_option_id' => null]);
         }
 
-        // 교환의 후속 주문옵션은 `quantity = exchange_quantity` 로 1:1 산출된 것이라, 두
-        // 조각이 같은 후속 옵션을 가리키면 재발송 수량이 오류 없이 어긋난다.
-        return ! ($item instanceof OrderExchangeOption && $item->new_order_option_id !== null);
+        $split = $this->orderOptionService->splitOffQuantity($successor, $remainingQuantity);
+
+        return $this->exchangeOptionRepository->update($remainder, ['new_order_option_id' => $split->id]);
     }
 
     /**

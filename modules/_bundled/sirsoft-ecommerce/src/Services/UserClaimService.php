@@ -782,8 +782,8 @@ class UserClaimService
             // 정상 동작한 결과로 상품명·옵션명·썸네일이 오류 없이 전부 null 이 된다(회원 목록·상세는 싣는다).
             // 관계 목록은 회원 목록(저장소 `paginateForUser`)과 같아야 한다 — 하나라도 빠지면 그 필드가
             // 오류 없이 전 행 null 이 된다(`order_number`·회수/재발송 배송사명).
-            ClaimTypeEnum::EXCHANGE->value => $this->exchangeRepository->listByOrderId($order->id, ['exchangeOptions.orderOption', 'images', 'order.shippingAddress', 'collectionCarrier', 'redeliveryCarrier']),
-            ClaimTypeEnum::RETURN->value => $this->returnRepository->listByOrderId($order->id, ['returnOptions.orderOption', 'images', 'order.shippingAddress', 'collectionCarrier']),
+            ClaimTypeEnum::EXCHANGE->value => $this->exchangeRepository->listByOrderId($order->id, ['exchangeOptions.orderOption', 'exchangeOptions.collectionCarrier', 'exchangeOptions.redeliveryCarrier', 'images', 'order.shippingAddress']),
+            ClaimTypeEnum::RETURN->value => $this->returnRepository->listByOrderId($order->id, ['returnOptions.orderOption', 'returnOptions.collectionCarrier', 'images', 'order.shippingAddress']),
             // 출처로 거르지 않는다(D6) — 취소신청서와 환불신청서는 같은 사건의 두 문서가
             // 아니라 **다른 사실**을 기록하는 별개 문서다. 반품 1건이 반품·환불·취소 세 탭에
             // 뜨는 것도 같은 이유로 정상이다(D14).
@@ -805,11 +805,12 @@ class UserClaimService
      * @param  array<int, int>  $addImageIds  귀속할 미귀속 첨부 ID
      * @param  array<int, int>  $removeImageIds  삭제할 첨부 ID
      * @param  int|null  $userId  수정 주체 회원 ID
+     * @param  bool  $operator  운영자 수정 여부 (S15 — 판매자 귀책 사유 허용, 판매자 접수 건도 수정)
      * @return array{claim: OrderExchange|OrderReturn|OrderRefund, payment: ?ClaimPayment, payment_entry: ?array} 수정 결과
      *
-     * @throws OrderClaimException 수정 불가·첨부 위반·환급 실패·기납부 청구의 차감 전환
+     * @throws OrderClaimException 수정 불가·첨부 위반·환급 실패·기납부 청구의 차감 전환·판매자 접수 건의 고객 수정
      */
-    public function update(ClaimTypeEnum $type, OrderExchange|OrderReturn|OrderRefund $claim, array $payload, array $addImageIds = [], array $removeImageIds = [], ?int $userId = null): array
+    public function update(ClaimTypeEnum $type, OrderExchange|OrderReturn|OrderRefund $claim, array $payload, array $addImageIds = [], array $removeImageIds = [], ?int $userId = null, bool $operator = false): array
     {
         $claim->loadMissing('order');
         $order = $claim->order;
@@ -844,9 +845,9 @@ class UserClaimService
         }
 
         $updated = match ($type) {
-            ClaimTypeEnum::EXCHANGE => $this->exchangeService->updateRequest($claim, $payload),
-            ClaimTypeEnum::RETURN => $this->returnService->updateRequest($claim, $payload),
-            default => $this->refundRequestService->updateRequest($claim, $payload),
+            ClaimTypeEnum::EXCHANGE => $this->exchangeService->updateRequest($claim, $payload, $operator),
+            ClaimTypeEnum::RETURN => $this->returnService->updateRequest($claim, $payload, $operator),
+            default => $this->refundRequestService->updateRequest($claim, $payload, $operator),
         };
 
         foreach ($this->attachmentService->listFor($type, $updated->id) as $image) {

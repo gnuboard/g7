@@ -8,7 +8,7 @@ use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundStatusEnum;
 use Modules\Sirsoft\Ecommerce\Http\Resources\ClaimResource;
 use Modules\Sirsoft\Ecommerce\Http\Resources\OrderOptionResource;
-use Modules\Sirsoft\Ecommerce\Services\AdminOrderCancelService;
+use Modules\Sirsoft\Ecommerce\Services\AdminClaimRequestService;
 use Modules\Sirsoft\Ecommerce\Services\ClaimQuantityGuard;
 use Modules\Sirsoft\Ecommerce\Support\ClaimOutstanding;
 use Modules\Sirsoft\Ecommerce\Support\EarnedPointsFormatter;
@@ -193,18 +193,18 @@ class ValidateP3ResourceTest extends ModuleTestCase
         $order = $this->deliveredClaimOrder(quantity: 2);
         $option = $order->options->first();
 
-        $service = app(AdminOrderCancelService::class);
+        $service = app(AdminClaimRequestService::class);
 
         $this->assertSame(
             [['order_option_id' => $option->id, 'quantity' => 2]],
-            $service->toClaimItems($order, true, []),
+            $service->toCancelItems($order, true, []),
         );
         $this->assertSame(
             [['order_option_id' => $option->id, 'quantity' => 1]],
-            $service->toClaimItems($order, false, [['order_option_id' => (string) $option->id, 'cancel_quantity' => '1']]),
+            $service->toCancelItems($order, false, [['order_option_id' => (string) $option->id, 'cancel_quantity' => '1']]),
         );
 
         $option->forceFill(['option_status' => OrderStatusEnum::CANCELLED])->save();
-        $this->assertSame([], $service->toClaimItems($order->fresh(['options']), true, []));
+        $this->assertSame([], $service->toCancelItems($order->fresh(['options']), true, []));
     }
 }

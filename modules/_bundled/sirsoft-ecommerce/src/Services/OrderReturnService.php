@@ -3,6 +3,8 @@
 namespace Modules\Sirsoft\Ecommerce\Services;
 
 use App\Extension\HookManager;
+use BackedEnum;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -12,6 +14,7 @@ use Modules\Sirsoft\Ecommerce\DTO\ClaimShippingFee;
 use Modules\Sirsoft\Ecommerce\DTO\ReturnAdjustment;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimChargeMethodEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimReasonFaultTypeEnum;
+use Modules\Sirsoft\Ecommerce\Enums\ClaimTrackingDirectionEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundPriorityEnum;
@@ -38,7 +41,9 @@ use Modules\Sirsoft\Ecommerce\Services\Concerns\AppliesRefundBankAccount;
 use Modules\Sirsoft\Ecommerce\Services\Concerns\FiresClaimHooksAfterCommit;
 use Modules\Sirsoft\Ecommerce\Services\Concerns\GuardsClaimFilterResults;
 use Modules\Sirsoft\Ecommerce\Services\Concerns\RecordsClaimTracking;
+use Modules\Sirsoft\Ecommerce\Services\Concerns\ReportsClaimRequestUpdate;
 use Modules\Sirsoft\Ecommerce\Support\ClaimItemSpecs;
+use Modules\Sirsoft\Ecommerce\Support\ClaimPhysicalGate;
 
 /**
  * 반품 클레임 서비스
@@ -80,6 +85,16 @@ class OrderReturnService
     use FiresClaimHooksAfterCommit;
     use GuardsClaimFilterResults;
     use RecordsClaimTracking;
+    use ReportsClaimRequestUpdate;
+
+    /**
+     * 이번 요청에서 전이와 함께 쓴 행 송장 변경 (방향 값 → 변경 목록)
+     *
+     * 상품마다 저장점 안에서 쓰므로 모아 두었다가 커밋 뒤 `after_tracking_update` 로 한 번 알린다.
+     *
+     * @var array<string, array<int, array<string, mixed>>>
+     */
+    protected array $trackingChangeLog = [];
 
     /**
      * @param  OrderAdjustmentService  $adjustmentService  환불금액 재계산 서비스
@@ -141,6 +156,8 @@ class OrderReturnService
      * @param  ClaimChargeMethodEnum|null  $chargeMethod  청구 방식 (청구 0원이면 null)
      * @param  RefundPriorityEnum  $refundPriority  환불 우선순위
      * @param  int|null  $excludeReturnId  수량 잠금 집계에서 뺄 반품 신청서 ID (수정 화면의 미리보기)
+     * @param  bool  $operator  운영자 직권 접수 미리보기 여부 (D5 — 기간·신청가능상태 대신 물리 게이트, 판매자 귀책 사유 허용)
+     * @param  float|null  $shippingFeeOverride  운영자가 정한 클레임 배송비 (D7 — null 이면 산정값)
      * @return array{shipping_fee: ClaimShippingFee, adjustment: AdjustmentResult, fault_type: ClaimReasonFaultTypeEnum, charge_method: ClaimChargeMethodEnum|null, total_charge_amount: float, mc_total_charge_amount: array|null, deducted_shipping_fee: float, refund_before_deduction: float, mc_refund_before_deduction: array|null, requires_payment: bool} 미리보기 결과
      *
      * @throws OrderClaimException 사유 부재 / 신청 자격 위반
@@ -152,27 +169,33 @@ class OrderReturnService
         ?ClaimChargeMethodEnum $chargeMethod = null,
         RefundPriorityEnum $refundPriority = RefundPriorityEnum::PG_FIRST,
         ?int $excludeReturnId = null,
+        bool $operator = false,
+        ?float $shippingFeeOverride = null,
     ): array {
-        $reason = $this->resolveReason($reasonCode);
+        $reason = $this->resolveReason($reasonCode, ! $operator);
 
         // 신청과 같은 자격 가드(상태·수량·잠금·기간) — 신청할 수 없는 조합의 금액을 보여 주지 않는다.
         $resolved = $this->claimQuantityGuard->resolveClaimItems(
             $order,
             $this->normalizeItemQuantities($items),
             ClaimTypeEnum::RETURN,
-            $this->requestableStatusValues(),
+            $this->requestStatusValuesFor($operator),
             null,
             $excludeReturnId,
         );
-        $this->assertWithinRequestPeriod($resolved);
+
+        if (! $operator) {
+            $this->assertWithinRequestPeriod($resolved);
+        }
+
         $claimItems = $this->toClaimItemsFromResolved($resolved);
 
-        $shippingFee = $this->claimShippingFeeService->calculate(
+        $shippingFee = $this->applyShippingFeeOverride($this->claimShippingFeeService->calculate(
             $order,
             ClaimTypeEnum::RETURN,
             $claimItems,
             $reason->fault_type,
-        );
+        ), $shippingFeeOverride, $order->currency_snapshot ?? []);
 
         $adjustment = new ReturnAdjustment(
             returnItems: $claimItems,
@@ -313,12 +336,14 @@ class OrderReturnService
             self::CLAIM_FILTERABLE_REQUEST_KEYS,
         );
 
-        $reason = $this->resolveReason((string) ($payload['reason_code'] ?? ''));
+        $operator = (bool) ($payload['operator'] ?? false);
+        $reason = $this->resolveReason((string) ($payload['reason_code'] ?? ''), ! $operator);
         $chargeMethod = $this->normalizeChargeMethod($payload['charge_method'] ?? null);
         $refundPriority = $payload['refund_priority'] ?? RefundPriorityEnum::PG_FIRST;
         $requestedBy = $payload['requested_by'] ?? null;
+        $feeOverride = isset($payload['shipping_fee_override']) ? (float) $payload['shipping_fee_override'] : null;
 
-        $orderReturn = DB::transaction(function () use ($order, $payload, $reason, $chargeMethod, $refundPriority, $requestedBy) {
+        $orderReturn = DB::transaction(function () use ($order, $payload, $reason, $chargeMethod, $refundPriority, $requestedBy, $operator, $feeOverride) {
             // 잠금은 잔여 수량을 읽기 전에 잡는다 — 읽고 나서 잠그면 이미 두 요청이 같은 값을 봤다.
             $lockedOrder = $this->orderRepository->findForUpdateOrFail($order->id);
             $lockedOrder->load(['options', 'shippings', 'payment']);
@@ -327,19 +352,22 @@ class OrderReturnService
                 $lockedOrder,
                 $payload['items'] ?? [],
                 ClaimTypeEnum::RETURN,
-                $this->requestableStatusValues(),
+                $this->requestStatusValuesFor($operator),
             );
 
-            $this->assertWithinRequestPeriod($resolved);
+            // 운영자 직권 접수는 신청 가능 기간을 무시한다(D5) — 물리 게이트는 위 상태 목록이 이미 건다.
+            if (! $operator) {
+                $this->assertWithinRequestPeriod($resolved);
+            }
 
             $claimItems = $this->toClaimItemsFromResolved($resolved);
 
-            $shippingFee = $this->claimShippingFeeService->calculate(
+            $shippingFee = $this->applyShippingFeeOverride($this->claimShippingFeeService->calculate(
                 $lockedOrder,
                 ClaimTypeEnum::RETURN,
                 $claimItems,
                 $reason->fault_type,
-            );
+            ), $feeOverride, $lockedOrder->currency_snapshot ?? []);
 
             $this->assertChargeMethodUsable($lockedOrder, $claimItems, $shippingFee, $chargeMethod, $refundPriority);
 
@@ -362,7 +390,7 @@ class OrderReturnService
                 'shipping_fee_mode' => $shippingFee->mode,
                 'claim_shipping_fee' => $shippingFee->fee,
                 'mc_claim_shipping_fee' => $shippingFee->mcFee ?: null,
-                'shipping_fee_snapshot' => $shippingFee->toArray(),
+                'shipping_fee_snapshot' => $shippingFee->toArray() + ($feeOverride !== null ? ['admin_adjusted' => true] : []),
                 'total_charge_amount' => $shippingFee->fee,
                 'mc_total_charge_amount' => $shippingFee->mcFee ?: null,
                 'currency_code' => $this->resolveBaseCurrency($lockedOrder),
@@ -371,6 +399,7 @@ class OrderReturnService
                 'items_snapshot' => $this->buildItemsSnapshot($resolved),
                 'return_address_snapshot' => $this->resolveReturnAddressSnapshot($lockedOrder, $resolved),
                 'requested_by' => $requestedBy,
+                'requested_by_admin' => $payload['requested_by_admin'] ?? null,
                 'original_calculation_snapshot' => $frozen->originalSnapshot,
                 'recalculated_snapshot' => $frozen->recalculatedSnapshot,
             ] + $this->refundBankColumns($payload['refund_bank'] ?? null));
@@ -382,7 +411,13 @@ class OrderReturnService
             return $return->fresh(['returnOptions']);
         });
 
-        $this->fireAfterCommit(fn () => HookManager::doAction('sirsoft-ecommerce.claim.return.requested', $orderReturn, $order->fresh()));
+        // 운영자 직권 접수는 컨텍스트 `source = admin` 을 함께 싣는다(§3-11 — 새 훅 없이 기존 신청 훅).
+        $this->fireAfterCommit(fn () => HookManager::doAction('sirsoft-ecommerce.claim.return.requested', $orderReturn, $order->fresh(), ['source' => $operator ? 'admin' : 'customer']));
+
+        // 운영자 직권 접수의 승인은 호출부(`AdminClaimRequestService`)가 「접수와 함께 승인」 선택으로 정한다.
+        if ($operator) {
+            return $orderReturn;
+        }
 
         // 청구액 0원 자동 승인 (§4-2 전이표 자동 열). 접수 훅을 먼저 발화한 뒤 전이하므로
         // 알림·로그 리스너는 '신청 → 승인' 두 사건을 순서대로 받는다. 전이는 transition() 에
@@ -445,21 +480,39 @@ class OrderReturnService
      * 행위자는 코어 `ActivityLogProcessor` 가 요청 인증 주체로 자동 주입한다.
      *
      * @param  OrderReturn  $return  반품 신청서
+     * @param  int|null  $withdrawnByAdmin  고객 요청으로 대신 철회하는 관리자 ID (S14 — null 이면 신청자 본인 철회)
+     * @param  string|null  $withdrawReason  대리 철회 사유 (관리자 대리 철회에서 필수)
      * @return OrderReturn 철회된 신청서
      *
      * @throws OrderClaimException 철회 불가 상태
      */
-    public function withdraw(OrderReturn $return): OrderReturn
+    public function withdraw(OrderReturn $return, ?int $withdrawnByAdmin = null, ?string $withdrawReason = null): OrderReturn
     {
         if (! $return->return_status->isWithdrawable()) {
             throw OrderClaimException::notWithdrawable();
+        }
+
+        // 판매자가 접수한 신청은 고객이 철회할 수 없다(D8) — 운영자는 고객 요청으로 대신 철회할 수 있다(S14).
+        if ($withdrawnByAdmin === null && $return->isAdminRequested()) {
+            throw OrderClaimException::adminRequestedNotEditable();
+        }
+
+        $withdrawReason = $withdrawReason === null ? null : trim($withdrawReason);
+
+        if ($withdrawnByAdmin !== null && ($withdrawReason === null || $withdrawReason === '')) {
+            throw OrderClaimException::withdrawReasonRequired();
         }
 
         // 철회 가능 판정 뒤·쓰기 전 — 확장이 예외로 철회를 막을 수 있다. 이어지는 전이가
         // `before_status_change` 를 한 번 더 낸다(층이 다른 두 자리).
         HookManager::doAction('sirsoft-ecommerce.claim.return.before_withdraw', $return);
 
-        return $this->transition($return, ReturnStatusEnum::WITHDRAWN);
+        // 대리 철회는 철회자·사유를 신청서에 남긴다(S14 — 고객 알림이 「고객님 요청으로 판매자가 철회」 로 나간다).
+        return $this->transition($return, ReturnStatusEnum::WITHDRAWN, $withdrawnByAdmin === null ? [] : [
+            'processed_by' => $withdrawnByAdmin,
+            'withdrawn_by_admin' => $withdrawnByAdmin,
+            'withdraw_reason' => $withdrawReason,
+        ]);
     }
 
     /**
@@ -490,6 +543,8 @@ class OrderReturnService
         // 더블클릭·재시도로 동시에 들어온 두 요청이 **둘 다 가드를 통과**한다 — 쓰기는 같은
         // 값이라 상태는 1회처럼 보이지만 `fireStatusHooks()` 가 두 번 돌아 **알림이 채널마다
         // 2통씩** 나간다. 구매자에게는 같은 메일·SMS 가 두 번 도착한다.
+        $this->trackingChangeLog = [];
+
         [$current, $updated] = DB::transaction(function () use ($return, $target, $context) {
             // 저장소가 이미 갖고 있는 잠금 조회를 쓴다 — 서비스가 모델을 직접 조회하지 않는다.
             $locked = $this->returnRepository->findForUpdate((int) $return->getKey());
@@ -507,12 +562,14 @@ class OrderReturnService
                 $this->assertLivingItemsCanTransitionTo($return, $target);
             }
 
-            // 회수중은 송장이 있어야 들어간다 — 알림·고객 화면이 이 값을 읽으므로 전이보다 먼저 기록한다.
+            // 회수중은 대상 행 전부에 회수 송장이 있어야 들어간다(R6) — 지시에 실린 송장은 상품 행에 쓴다.
+            $tracking = [];
+
             if ($current !== $target) {
-                $this->recordTrackingForTransition($return, $target, $context);
+                $tracking = $this->prepareTransitionTracking($return, $target, $context, $this->headerTransitionTargets($return, $target));
             }
 
-            return [$current, $this->applyTransition($return, $target, $context)];
+            return [$current, $this->applyTransition($return, $target, $context, $tracking)];
         });
 
         // 상태가 실제로 바뀜 때만 훅을 돌린다(S3-D16). 상태 기계는 **같은 상태로의
@@ -522,6 +579,8 @@ class OrderReturnService
         if ($current !== $target) {
             $this->fireStatusHooks($updated, $current, $target);
         }
+
+        $this->flushTrackingChangeLog($updated, $current !== $target ? $target : null);
 
         return $updated;
     }
@@ -639,13 +698,14 @@ class OrderReturnService
      * @param  OrderReturn  $return  반품 신청서
      * @param  ReturnStatusEnum  $target  목표 상태 (게이트 통과 전제)
      * @param  array  $context  부가 정보 (processed_by / reject_reason / admin_memo)
+     * @param  array  $tracking  대상 행에 쓸 송장 (`prepareTransitionTracking()` — 없으면 빈 배열)
      * @return OrderReturn 전이된 신청서
      */
-    protected function applyTransition(OrderReturn $return, ReturnStatusEnum $target, array $context): OrderReturn
+    protected function applyTransition(OrderReturn $return, ReturnStatusEnum $target, array $context, array $tracking = []): OrderReturn
     {
         $processedBy = $context['processed_by'] ?? null;
 
-        return DB::transaction(function () use ($return, $target, $context, $processedBy) {
+        return DB::transaction(function () use ($return, $target, $context, $processedBy, $tracking) {
             $updates = ['return_status' => $target];
 
             if ($processedBy !== null) {
@@ -660,7 +720,7 @@ class OrderReturnService
 
             $fresh = $this->returnRepository->update($return, $updates);
 
-            $this->syncOptionStatuses($fresh, $target, $processedBy);
+            $this->syncOptionStatuses($fresh, $target, $processedBy, $tracking);
 
             // 반려·철회는 상품옵션을 신청 직전 상태로 되돌린다 (확정 (a)).
             if ($this->revertsOrderOptions($target)) {
@@ -751,7 +811,7 @@ class OrderReturnService
         }
 
         $processedBy = $context['processed_by'] ?? null;
-        // 상품 칸 반려의 사유 — 신청서 한 칸(`reject_reason`)에 남는다(상품 행에는 사유 칸이 없다).
+        // 상품 칸 반려의 사유 — 반려된 상품 행(`reject_reason`)에 남는다(S3).
         $rejectReason = $target === ReturnStatusEnum::REJECTED ? trim((string) ($context['reject_reason'] ?? '')) : '';
         $specs = ClaimItemSpecs::normalize($items);
         $quantities = ClaimItemSpecs::quantities($specs);
@@ -779,17 +839,27 @@ class OrderReturnService
         $skipped = [];
         $changes = [];
         $split = [];
+        $headerBefore = null;
+        $headerAfter = null;
+        $this->trackingChangeLog = [];
 
         // 신청서 행을 잠그고 **잠금 안에서** 상품 행을 다시 읽어 판정한다. 헤더 동기화도 같은
         // 트랜잭션 안에서 한다 — 상품 전이를 커밋한 뒤 잠금 없이 헤더를 옮기면 그 사이에 들어온
         // 다른 전이와 헤더 판정이 겹친다(#599 validate P2 #19). 훅은 커밋 뒤에 나간다(#7).
-        DB::transaction(function () use ($return, $itemIds, $quantities, $target, $processedBy, $rejectReason, $context, &$succeeded, &$skipped, &$changes, &$split) {
+        $fresh = DB::transaction(function () use ($return, $itemIds, $quantities, $target, $processedBy, $rejectReason, $context, &$succeeded, &$skipped, &$changes, &$split, &$headerBefore, &$headerAfter) {
             $locked = $this->returnRepository->findForUpdate((int) $return->getKey()) ?? $return;
-
-            // 상품 칸의 회수중도 신청서 전이와 같은 송장 규칙을 지난다 — 송장은 신청서 한 칸에 남는다.
-            $this->recordTrackingForTransition($locked, $target, $context);
+            $headerBefore = $locked->return_status;
 
             $items = $this->resolveItems($locked, $itemIds);
+
+            // 상품 칸의 회수중도 신청서 전이와 같은 송장 규칙을 지난다(R6·R8). 지시에 실린 송장은
+            // 상품마다 저장점 안에서 **쪼갠 행**에 쓴다.
+            $tracking = $this->prepareTransitionTracking($locked, $target, $context, array_values(array_filter(
+                $items,
+                fn (OrderReturnOption $item) => ! $item->option_status->isFinal()
+                    && $item->option_status !== $target
+                    && $item->option_status->canTransitionTo($target),
+            )));
 
             foreach ($items as $item) {
                 // 끝난 상품(반려·철회·완료)은 전이 게이트가 막지 못한다 — 자기 전이는 언제나 참이라
@@ -823,7 +893,7 @@ class OrderReturnService
                 $previousQuantity = (int) $item->return_quantity;
 
                 try {
-                    $remainder = $this->transitionItem($item, $target, $processedBy, $quantities[$item->id] ?? null);
+                    $remainder = $this->transitionItem($item, $target, $processedBy, $quantities[$item->id] ?? null, $locked, $tracking);
                 } catch (OrderClaimException $e) {
                     // 나눌 수 없는 행 같은 상품 단위 실패는 그 상품만 건너뛴다 — 저장점이
                     // 실패분만 되돌리고 같은 TX 안의 다른 상품은 그대로 간다(교환과 같은 규칙).
@@ -860,10 +930,16 @@ class OrderReturnService
                 $succeeded[] = $item->id;
             }
 
-            // 일부만 반려해 신청서가 그대로여도 사유는 남긴다 — 구매자 화면은 사유가 차 있으면
-            // 신청서 상태와 무관하게 보여 주므로, 어느 상품이 왜 반려됐는지가 거기서 읽힌다.
+            // 상품 단위 반려 사유는 **그 상품 행**에 남긴다(S3). 헤더 사유는 신청서 전체가 반려로 모일 때만
+            // 채워진다(`syncHeaderFromOptions` → `stampFor(REJECTED)` — 사유가 여럿이면 마지막 반려 사유).
+            // 예전에는 헤더 한 칸이라 두 번째 반려가 첫 사유를 덮고, 나머지 상품이 승인돼도 구매자
+            // 화면에 반려 사유가 남았다.
             if ($rejectReason !== '' && $succeeded !== []) {
-                $this->returnRepository->update($locked, ['reject_reason' => $rejectReason]);
+                foreach ($locked->fresh(['returnOptions'])->returnOptions as $rejectedItem) {
+                    if (in_array((int) $rejectedItem->id, array_map('intval', $succeeded), true)) {
+                        $this->returnOptionRepository->update($rejectedItem, ['reject_reason' => $rejectReason]);
+                    }
+                }
             }
 
             $fresh = $locked->fresh(['returnOptions']);
@@ -884,7 +960,14 @@ class OrderReturnService
             }
 
             $this->syncHeaderFromOptions($fresh, $processedBy, $rejectReason !== '' ? ['reject_reason' => $rejectReason] : []);
+
+            $after = $fresh->fresh(['returnOptions']);
+            $headerAfter = $after->return_status;
+
+            return $after;
         });
+
+        $this->flushTrackingChangeLog($fresh, $headerBefore !== $headerAfter ? $headerAfter : null);
 
         return ['succeeded' => $succeeded, 'skipped' => $skipped, 'split' => $split];
     }
@@ -906,6 +989,8 @@ class OrderReturnService
      * @param  ReturnStatusEnum  $target  목표 상태 (게이트 통과 전제)
      * @param  int|null  $processedBy  처리 관리자 ID
      * @param  int|null  $quantity  이번에 전이할 수량 (null 이면 전량)
+     * @param  OrderReturn|null  $return  반품 신청서 (송장을 쓸 때 — 잠금 인스턴스)
+     * @param  array  $tracking  이 행에 쓸 송장 (`prepareTransitionTracking()` — 없으면 빈 배열)
      * @return OrderReturnOption|null 분할로 생긴 잔여 행 (분할하지 않았으면 null)
      *
      * @throws OrderClaimException 나눌 수 없는 행
@@ -915,8 +1000,10 @@ class OrderReturnService
         ReturnStatusEnum $target,
         ?int $processedBy,
         ?int $quantity = null,
+        ?OrderReturn $return = null,
+        array $tracking = [],
     ): ?OrderReturnOption {
-        return DB::transaction(function () use ($item, $target, $processedBy, $quantity) {
+        return DB::transaction(function () use ($item, $target, $processedBy, $quantity, $return, $tracking) {
             $remainder = null;
 
             if ($quantity !== null) {
@@ -924,10 +1011,15 @@ class OrderReturnService
                 $item->refresh();
             }
 
+            // 지시에 실린 송장은 쪼갠 행(전이분)에만 쓴다(R4). 회수도착이면 행 도착 시각을 찍는다.
+            $arrival = $return !== null
+                ? $this->applyTransitionTrackingTo($return, $item, $target, $tracking, $processedBy)
+                : ($target === ReturnStatusEnum::COLLECTED && $item->collected_at === null ? ['collected_at' => now()] : []);
+
             $updated = $this->returnOptionRepository->update($item, [
                 'option_status' => $target,
                 'processed_by' => $processedBy ?? $item->processed_by,
-            ]);
+            ] + $arrival);
 
             if ($this->revertsOrderOptions($target)) {
                 $this->revertOrderOptionFor($updated->loadMissing('orderOption'), (int) $updated->return_quantity);
@@ -942,63 +1034,268 @@ class OrderReturnService
     // ───────────────────────────────────────────────
 
     /**
-     * 회수 운송장을 저장합니다. (상태는 옮기지 않는다)
+     * 운송장 한 개의 행을 한꺼번에 회수도착 처리합니다. (배송 정보 탭 운송장 묶음의 [도착 처리] — R9)
      *
-     * 저장과 상태 전이는 별개다(#599 후속 운영 결정). 예전에는 회수준비중에서 저장하면 회수중으로
-     * 함께 옮겼는데, 승인 상태에서 먼저 저장한 송장은 전이를 끌지 못해 신청서가 회수준비중에
-     * 멈췄다. 회수중 전이는 상품 칸·신청서 전이가 송장을 실어 수행한다(`recordTrackingForTransition`).
-     * 둘 다 비우고 저장하면 등록된 송장을 지운다.
+     * 같은 (택배사, 운송장)을 가진 이 신청서의 행 전부를 회수도착으로 옮긴다(P2 건너뛰기 포함).
+     * 전이할 수 없는 행은 `skipped` 로 보고한다. 커밋 뒤 `claim.return.after_tracking_deliver` 를 낸다.
      *
      * @param  OrderReturn  $return  반품 신청서
-     * @param  int|null  $carrierId  회수 택배사 ID
-     * @param  string|null  $trackingNumber  회수 운송장 번호
+     * @param  ClaimTrackingDirectionEnum  $direction  방향 (반품은 회수만)
+     * @param  int  $carrierId  택배사 ID
+     * @param  string  $trackingNumber  운송장 번호
      * @param  int|null  $processedBy  처리 관리자 ID
-     * @return OrderReturn 갱신된 신청서
+     * @return array{claim: OrderReturn, succeeded: array<int, int>, skipped: array<int, array{id: int, message: string}>} 처리 결과
      *
-     * @throws OrderClaimException 송장 정보 불완전
+     * @throws OrderClaimException 재발송 방향 / 그 운송장을 가진 행 없음
      */
-    public function registerCollectionTracking(
+    public function deliverTracking(
         OrderReturn $return,
-        ?int $carrierId,
-        ?string $trackingNumber,
+        ClaimTrackingDirectionEnum $direction,
+        int $carrierId,
+        string $trackingNumber,
         ?int $processedBy = null,
-    ): OrderReturn {
-        [$carrierId, $trackingNumber] = $this->normalizeTracking($carrierId, $trackingNumber);
+    ): array {
+        $this->assertTrackingDirectionAllowed($return, $direction);
 
-        return $this->returnRepository->update($return, [
-            'collection_carrier_id' => $carrierId,
-            'collection_tracking_number' => $trackingNumber,
-            'processed_by' => $processedBy ?? $return->processed_by,
-        ]);
+        $return->loadMissing('returnOptions');
+        $items = $this->itemsWithTracking($return, $direction, $carrierId, $trackingNumber);
+
+        if ($items === []) {
+            throw OrderClaimException::trackingNotFound();
+        }
+
+        $succeeded = [];
+        $skipped = [];
+        $movable = [];
+
+        foreach ($items as $item) {
+            if ($item->option_status->isFinal() || $item->option_status === ReturnStatusEnum::COLLECTED
+                || ! $item->option_status->canTransitionTo(ReturnStatusEnum::COLLECTED)) {
+                $skipped[] = [
+                    'id' => (int) $item->id,
+                    'message' => $item->option_status === ReturnStatusEnum::COLLECTED || $item->collected_at !== null
+                        ? __('sirsoft-ecommerce::exceptions.claim_tracking_already_arrived')
+                        : __('sirsoft-ecommerce::exceptions.claim_transition_not_allowed', [
+                            'from' => $item->option_status->label(),
+                            'to' => ReturnStatusEnum::COLLECTED->label(),
+                        ]),
+                ];
+
+                continue;
+            }
+
+            $movable[] = (int) $item->id;
+        }
+
+        if ($movable !== []) {
+            $result = $this->transitionOption($return, $movable, ReturnStatusEnum::COLLECTED, ['processed_by' => $processedBy]);
+            $succeeded = $result['succeeded'];
+            $skipped = [...$skipped, ...$result['skipped']];
+        }
+
+        $fresh = $return->fresh(['returnOptions']);
+
+        $this->fireAfterCommit(fn () => HookManager::doAction(
+            'sirsoft-ecommerce.claim.return.after_tracking_deliver',
+            $fresh,
+            $direction->value,
+            $carrierId,
+            $trackingNumber,
+            ['succeeded' => $succeeded, 'skipped' => $skipped],
+        ));
+
+        return ['claim' => $fresh, 'succeeded' => $succeeded, 'skipped' => $skipped];
     }
 
     /**
-     * 회수중으로 옮기기 전에 지시에 실린 회수 송장을 기록하고, 송장이 갖춰졌는지 확인합니다.
+     * 전이 지시에 실린 회수 송장을 해석하고, 이동 대상 행이 송장을 갖출 수 있는지 검증합니다. (R6·R8)
      *
-     * 신청서 전이·상품 칸·목록 일괄이 모두 이 한 곳을 지난다(`RecordsClaimTracking`).
+     * 회수중은 송장이 필수다 — 지시에 없으면 대상 행이 이미 자기 송장을 가져야 한다. 회수도착은 송장이
+     * 선택이다(P2) — 지시에 실리면 그 행에 함께 쓴다.
      *
-     * @param  OrderReturn  $return  반품 신청서 (잠금 인스턴스 — 기록 후 같은 인스턴스가 갱신된다)
+     * @param  OrderReturn  $return  반품 신청서 (상품 행 로드)
      * @param  ReturnStatusEnum  $target  목표 상태
      * @param  array  $context  전이 부가 정보 (carrier_id / tracking_number)
-     * @return void 반환값 없음
+     * @param  array<int, OrderReturnOption>  $targets  이동할 대상 행
+     * @return array{direction?: ClaimTrackingDirectionEnum, carrier_id?: int|null, tracking_number?: string|null} 대상 행에 쓸 송장 (쓸 것이 없으면 빈 배열)
      *
-     * @throws OrderClaimException 송장 불완전 / 송장 없음
+     * @throws OrderClaimException 송장 불완전 / 송장 없음 / 회수지 섞임
      */
-    protected function recordTrackingForTransition(OrderReturn $return, ReturnStatusEnum $target, array $context): void
+    protected function prepareTransitionTracking(OrderReturn $return, ReturnStatusEnum $target, array $context, array $targets): array
     {
-        if ($target !== ReturnStatusEnum::COLLECTING) {
-            return;
+        if (! in_array($target, [ReturnStatusEnum::COLLECTING, ReturnStatusEnum::COLLECTED], true)) {
+            return [];
         }
 
-        $updates = $this->trackingUpdatesForTransition(
-            $return,
-            ['carrier' => 'collection_carrier_id', 'tracking' => 'collection_tracking_number'],
-            $context,
-        );
+        $direction = ClaimTrackingDirectionEnum::COLLECTION;
+        [$carrierId, $trackingNumber] = $this->trackingFromContext($context);
 
-        if ($updates !== []) {
-            $this->returnRepository->update($return, $updates);
+        if ($target === ReturnStatusEnum::COLLECTING) {
+            $this->assertTransitionTracking($return, $targets, $direction, $carrierId, $trackingNumber);
+        } elseif ($trackingNumber !== null) {
+            $this->assertSameReturnAddress($return, $targets, $carrierId, $trackingNumber);
         }
+
+        if ($trackingNumber === null) {
+            return [];
+        }
+
+        return ['direction' => $direction, 'carrier_id' => $carrierId, 'tracking_number' => $trackingNumber];
+    }
+
+    /**
+     * 신청서 단위 전이가 끌고 갈 상품 행을 고릅니다. (`syncOptionStatuses()` 와 같은 판정)
+     *
+     * @param  OrderReturn  $return  반품 신청서
+     * @param  ReturnStatusEnum  $target  목표 상태
+     * @return array<int, OrderReturnOption> 이동할 상품 행
+     */
+    protected function headerTransitionTargets(OrderReturn $return, ReturnStatusEnum $target): array
+    {
+        $return->loadMissing('returnOptions');
+
+        return $return->returnOptions
+            ->filter(fn (OrderReturnOption $item) => $item->option_status !== $target
+                && ! $item->option_status->isFinal()
+                && $item->option_status->canTransitionTo($target))
+            ->values()
+            ->all();
+    }
+
+    /**
+     * 한 행에 전이 지시의 송장을 쓰고, 회수도착이면 행 도착 시각을 찍을 값을 돌려줍니다.
+     *
+     * @param  OrderReturn  $return  반품 신청서
+     * @param  OrderReturnOption  $item  상품 행 (쪼갠 뒤의 전이분)
+     * @param  ReturnStatusEnum  $target  목표 상태
+     * @param  array  $tracking  쓸 송장 (`prepareTransitionTracking()`)
+     * @param  int|null  $processedBy  처리 관리자 ID
+     * @return array<string, mixed> 상태와 함께 쓸 행 갱신값 (도착 시각)
+     */
+    protected function applyTransitionTrackingTo(OrderReturn $return, OrderReturnOption $item, ReturnStatusEnum $target, array $tracking, ?int $processedBy): array
+    {
+        if (($tracking['direction'] ?? null) instanceof ClaimTrackingDirectionEnum) {
+            $change = $this->applyItemTracking(
+                $return,
+                $item,
+                $tracking['direction'],
+                $tracking['carrier_id'] ?? null,
+                $tracking['tracking_number'] ?? null,
+                $processedBy,
+            );
+
+            if ($change !== null) {
+                $this->trackingChangeLog[$tracking['direction']->value][] = $change;
+            }
+
+            $item->refresh();
+        }
+
+        return $target === ReturnStatusEnum::COLLECTED && $item->collected_at === null
+            ? ['collected_at' => now()]
+            : [];
+    }
+
+    /**
+     * 이번 요청에서 전이와 함께 쓴 송장 변경을 알립니다. (`after_tracking_update`)
+     *
+     * @param  OrderReturn  $return  반품 신청서
+     * @param  ReturnStatusEnum|null  $headerTransitionedTo  이번 요청에서 신청서가 옮겨 간 상태 (그대로면 null)
+     * @return void 반환값 없음
+     */
+    protected function flushTrackingChangeLog(OrderReturn $return, ?ReturnStatusEnum $headerTransitionedTo): void
+    {
+        $log = $this->trackingChangeLog;
+        $this->trackingChangeLog = [];
+
+        foreach ($log as $directionValue => $changes) {
+            $this->announceTrackingUpdated($return, ClaimTrackingDirectionEnum::from($directionValue), $changes, [
+                'source' => 'transition',
+                'header_transitioned_to' => $headerTransitionedTo?->value,
+            ]);
+        }
+    }
+
+    // ── RecordsClaimTracking 구현 ──
+
+    /**
+     * {@inheritDoc}
+     */
+    protected function trackingItemsOf(Model $claim): iterable
+    {
+        return $claim->loadMissing('returnOptions')->returnOptions;
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * 반품은 회수만 있다 — 교환품을 다시 보내지 않는다(R1).
+     */
+    protected function trackingDirectionsOf(Model $claim): array
+    {
+        return [ClaimTrackingDirectionEnum::COLLECTION];
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * 반품 회수: 승인~회수중 (R5).
+     */
+    protected function trackingWritableStatuses(Model $claim, ClaimTrackingDirectionEnum $direction): array
+    {
+        return [ReturnStatusEnum::APPROVED, ReturnStatusEnum::COLLECTION_READY, ReturnStatusEnum::COLLECTING];
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    protected function trackingMovingStatus(ClaimTrackingDirectionEnum $direction): ?BackedEnum
+    {
+        return $direction === ClaimTrackingDirectionEnum::COLLECTION ? ReturnStatusEnum::COLLECTING : null;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    protected function updateTrackingItem(Model $item, array $updates): Model
+    {
+        return $this->returnOptionRepository->update($item, $updates);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    protected function splitTrackingItem(Model $item, int $quantity): array
+    {
+        $result = $this->claimItemSplitter->split($item, $quantity);
+        $result['target']->refresh();
+
+        return $result;
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * 반품 행 송장에는 딸린 후속 기록이 없다.
+     */
+    protected function afterItemTrackingWritten(Model $claim, Model $item, ClaimTrackingDirectionEnum $direction): void {}
+
+    /**
+     * {@inheritDoc}
+     */
+    protected function trackingHookType(): string
+    {
+        return ClaimTypeEnum::RETURN->value;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    protected function lockClaimForTracking(Model $claim): Model
+    {
+        $locked = $this->returnRepository->findForUpdate((int) $claim->getKey()) ?? $claim;
+
+        return $locked->load('returnOptions');
     }
 
     /**
@@ -1132,8 +1429,10 @@ class OrderReturnService
      * 나중에 관리자가 수동 접수하거나 주문상세 환불 모달로 처리한다 — 완료 처리와 환불신청서
      * 생성을 분리하는 것이 D26 의 핵심이다.
      *
-     * 환불신청서는 신청서당 한 건이다. 반품 헤더의 `refund_id` 가 선점액 집계(D19 ③ 축)에서
-     * 그 반품을 빼는 근거이므로, 두 건이 생기면 한쪽이 집계에서 누락돼 이중 계상이 된다.
+     * 환불신청서는 **완료 회차마다** 접수할 수 있다(S7) — 그 회차에 환불이 연결되지 않은 완료
+     * 상품을 담고, 담긴 상품 행이 `refund_id` 로 그 환불신청서를 가리킨다. 선점액 집계(D19 ③ 축)는
+     * 이 연결로 반품의 예정 몫과 환불신청서 몫을 나눈다. 예전에는 헤더 한 칸(`refund_id`)이라
+     * 2회차 접수가 `claim_refund_request_exists` 로 막혔다.
      *
      * @param  OrderReturn  $return  반품 신청서
      * @param  array<int, int>  $itemIds  완료할 신청 상품 행 ID 목록 (빈 배열이면 전체)
@@ -1157,10 +1456,6 @@ class OrderReturnService
         $filteredOptions = HookManager::applyFilters('sirsoft-ecommerce.claim.return.filter_complete_options', $options, $return, $itemIds, $processedBy);
         $options = $filteredOptions instanceof ClaimCompletionOptions ? $filteredOptions : $options;
 
-        if ($options->createRefundRequest) {
-            $this->assertRefundRequestNotYetCreated($return);
-        }
-
         $previousStatus = null;
         $completionChanges = [];
 
@@ -1176,14 +1471,6 @@ class OrderReturnService
             $return = $this->returnRepository->findForUpdate((int) $return->getKey()) ?? $return;
             $previousStatus = $return->return_status;
 
-            // 접수 여부를 잠금 뒤에 **다시** 판정한다. 위 사전 검사는 호출부가 들고 온 모델을
-            // 보므로, 두 처리자가 각자 접수 전 상태를 읽은 뒤 차례로 저장되면 둘 다 통과해
-            // 환불신청서가 두 건 생긴다. 헤더 `refund_id` 는 나중 것만 남아 앞 건이 취소 가능
-            // 금액의 선점액 집계에서 빠지고, 그만큼 한도가 넓게 계산된다.
-            if ($options->createRefundRequest) {
-                $this->assertRefundRequestNotYetCreated($return);
-            }
-
             $targets = array_values(array_filter(
                 $this->resolveItems($return, $itemIds),
                 fn (OrderReturnOption $item) => $this->isCompletableItem($item),
@@ -1194,23 +1481,26 @@ class OrderReturnService
             }
 
             $restoredAny = false;
-            // 회수중인 상품의 완료(선환불)는 회수도착을 건너뛴다 — 도착 기록을 완료 시각으로 남긴다.
-            $skippedArrival = false;
 
             foreach ($targets as $item) {
-                $skippedArrival = $skippedArrival || $item->option_status === ReturnStatusEnum::COLLECTING;
-
                 $completionChanges[] = [
                     'option_id' => (int) $item->id,
                     'previous' => $item->option_status->value,
                     'new' => ReturnStatusEnum::COMPLETED->value,
                 ];
 
-                $this->returnOptionRepository->update($item, [
+                $itemUpdates = [
                     'option_status' => ReturnStatusEnum::COMPLETED,
                     'completed_at' => now(),
                     'processed_by' => $processedBy ?? $item->processed_by,
-                ]);
+                ];
+
+                // 회수중 상품의 완료(선환불)는 회수도착을 건너뛴다 — 행 도착 기록을 완료 시각으로 남긴다.
+                if ($item->option_status === ReturnStatusEnum::COLLECTING && $item->collected_at === null) {
+                    $itemUpdates['collected_at'] = now();
+                }
+
+                $this->returnOptionRepository->update($item, $itemUpdates);
 
                 $orderOption = $order->options->firstWhere('id', $item->order_option_id);
 
@@ -1222,6 +1512,8 @@ class OrderReturnService
 
                     if ($options->shouldRestoreStock($item->id)) {
                         $this->restoreStockForItem($returnedOption, (int) $item->return_quantity);
+                        // 무엇을 복구했는지는 상품 행이 말한다(S6) — 헤더는 「1개 이상 복구」 뜻으로만 남는다.
+                        $this->returnOptionRepository->update($item, ['is_stock_restored' => true]);
                         $restoredAny = true;
                     }
 
@@ -1233,11 +1525,15 @@ class OrderReturnService
             // 재계산 기준은 **이 신청서에서 지금까지 완료된 상품 전부**다. 이번 라운드 몫만
             // 넘기면 여러 라운드로 나눠 완료할 때 마지막 라운드의 환불신청서가 앞 라운드 상품을
             // 담지 못한다(환불신청서는 신청서당 한 건이다).
-            $return->load('returnOptions');
+            $return->load('returnOptions.refund');
             $claimItems = $this->completedClaimItems($return);
-            // 다른 신청서가 이미 완료한 몫 — 재계산 기준선에는 들어가지만 이 신청서의
-            // 환불신청서에는 들어가면 안 된다(중복 환불). 차분의 뺄 값으로만 쓴다.
-            $priorItems = $this->otherReturnsCompletedClaimItems($return);
+            // 이미 환불된 몫 — 다른 신청서의 완료분과 **이 신청서의 앞 회차에서 환불신청서에 담긴
+            // 완료분**(S7). 재계산 기준선에는 들어가지만 이번 환불신청서에는 들어가면 안 된다(중복
+            // 환불). 차분의 뺄 값으로만 쓴다.
+            $priorItems = $this->mergeClaimItemQuantities(
+                $this->otherReturnsCompletedClaimItems($return),
+                $this->linkedCompletedClaimItems($return),
+            );
             $ownItems = $this->ownCompletedClaimItems($claimItems, $priorItems);
 
             $adjustment = new ReturnAdjustment(
@@ -1269,10 +1565,13 @@ class OrderReturnService
                 $this->refundExecutionService->restoreCoupons($order, $result);
             }
 
-            $refund = null;
-
             if ($options->createRefundRequest) {
+                // 회차마다 **환불이 연결되지 않은 완료 상품**으로 접수한다(S7). 이번 회차 대상이 전부
+                // 이미 접수됐으면 기존 거절 사유를 그대로 낸다.
+                $this->assertUnlinkedCompletedRowsExist($return);
+
                 $refund = $this->createRefundRequest($order, $return, $ownItems, $result, $processedBy, $priorResult, $grossResult);
+                $this->linkRefundToUnlinkedCompletedRows($return, $refund);
             }
 
             $updates = [
@@ -1283,19 +1582,18 @@ class OrderReturnService
                 $updates['is_stock_restored'] = true;
             }
 
-            if ($refund) {
-                $updates['refund_id'] = $refund->id;
-            }
-
-            if ($skippedArrival && $return->collection_completed_at === null) {
-                $updates['collection_completed_at'] = now();
-            }
-
-            // 모든 신청 상품이 완료됐을 때만 헤더가 완료된다 — 일부만 완료한 라운드에서
+            // 살아 있는 상품이 없고 완료된 상품이 있을 때만 헤더가 완료된다(S8) — 일부만 완료한 라운드에서
             // 헤더까지 완료로 넘기면 남은 상품의 회수·완료 경로가 사라진다.
             if ($isFullyCompleted) {
                 $updates['return_status'] = ReturnStatusEnum::COMPLETED;
                 $updates['completed_at'] = now();
+
+                // 헤더 「회수 완료」 시각은 헤더가 그 단계를 지날 때만 찍힌다(S2). 회수도착을 건너뛰고
+                // 완료로 끝났으면 여기서 채운다 — 부분 완료 회차가 찍으면 아직 오는 중인 상품까지
+                // 「회수 완료」 로 보인다. 상품별 도착은 행 `collected_at` 이 말한다.
+                if ($return->collection_completed_at === null) {
+                    $updates['collection_completed_at'] = now();
+                }
             }
 
             return $this->returnRepository->update($return, $updates)->fresh(['returnOptions']);
@@ -1331,28 +1629,30 @@ class OrderReturnService
      */
     public function createRefundRequestForCompleted(OrderReturn $return, ?int $processedBy = null): OrderRefund
     {
-        $this->assertRefundRequestNotYetCreated($return);
-
         $return->loadMissing('returnOptions');
 
-        $claimItems = $this->completedClaimItems($return);
-
-        if ($claimItems === []) {
+        if ($return->returnOptions->every(fn (OrderReturnOption $item) => $item->option_status !== ReturnStatusEnum::COMPLETED)) {
             throw OrderClaimException::completionItemsInvalid();
         }
 
-        return DB::transaction(function () use ($return, $claimItems, $processedBy) {
+        return DB::transaction(function () use ($return, $processedBy) {
             $order = $this->orderRepository->findForUpdateOrFail($return->order_id);
             $order->load(['options', 'shippings', 'payment']);
 
             // 완료 경로와 같은 이유로 잠금 안에서 재판정한다 — 이 경로도 호출부가 들고 온
-            // 모델만 보면 동시 접수 두 건을 통과시킨다.
-            $this->assertRefundRequestNotYetCreated(
-                $this->returnRepository->findById($return->id) ?? $return
-            );
+            // 모델만 보면 동시 접수 두 건을 통과시킨다. 판정 대상은 **환불이 연결되지 않은 완료
+            // 상품**이다(S7 — 회차마다 접수).
+            $return = $this->returnRepository->findForUpdate((int) $return->getKey()) ?? $return;
+            $return->load('returnOptions.refund');
+            $this->assertUnlinkedCompletedRowsExist($return);
+
+            $claimItems = $this->completedClaimItems($return);
 
             // 완료 경로와 같은 차분 규약을 쓴다 — 이 경로만 누적을 실으면 같은 결함이 남는다.
-            $priorItems = $this->otherReturnsCompletedClaimItems($return);
+            $priorItems = $this->mergeClaimItemQuantities(
+                $this->otherReturnsCompletedClaimItems($return),
+                $this->linkedCompletedClaimItems($return),
+            );
             $ownItems = $this->ownCompletedClaimItems($claimItems, $priorItems);
 
             $adjustment = new ReturnAdjustment(
@@ -1377,7 +1677,7 @@ class OrderReturnService
             );
             $refund = $this->createRefundRequest($order, $return, $ownItems, $result, $processedBy, $priorResult, $grossResult);
 
-            $this->returnRepository->update($return, ['refund_id' => $refund->id]);
+            $this->linkRefundToUnlinkedCompletedRows($return, $refund);
 
             return $refund;
         });
@@ -1395,7 +1695,7 @@ class OrderReturnService
      */
     public function previewCompletion(OrderReturn $return, array $itemIds = []): array
     {
-        $return->loadMissing(['returnOptions', 'order']);
+        $return->loadMissing(['returnOptions.refund', 'order']);
         $order = $return->order;
         $order?->loadMissing(['options', 'shippings', 'payment']);
 
@@ -1413,7 +1713,11 @@ class OrderReturnService
             ];
         }
 
-        $alreadyFiled = $return->refund_id !== null;
+        // 「이미 접수됨」 은 이번에 접수할 몫이 하나도 없다는 뜻이다 — 완료 대상도 없고 환불이 연결되지
+        // 않은 완료 상품도 없는데 환불이 연결된 완료 상품은 있는 경우(S7 — 회차마다 접수).
+        $alreadyFiled = $targets === []
+            && $this->unlinkedCompletedRows($return) === []
+            && $this->linkedCompletedClaimItems($return) !== [];
 
         if ($order === null || $claimItems === []) {
             // 접수할 상품이 없다 — 교환 미리보기와 같은 두 사유 구분을 반품도 낸다(S5 인계 9).
@@ -1444,7 +1748,10 @@ class OrderReturnService
         $result = $this->adjustmentService->calculate($order, $adjustment, $refundPriority);
         // 실제 접수(`createRefundRequest`)와 같은 차분 규약으로 예고한다 — 여기만 누적을
         // 보여 주면 모달이 예고한 금액과 접수된 금액이 갈린다.
-        $priorItems = $this->otherReturnsCompletedClaimItems($return);
+        $priorItems = $this->mergeClaimItemQuantities(
+            $this->otherReturnsCompletedClaimItems($return),
+            $this->linkedCompletedClaimItems($return),
+        );
         $priorResult = $this->priorReturnsAdjustment($order, $priorItems, $refundPriority);
         $grossResult = $this->uncappedAdjustment(
             $order,
@@ -1667,6 +1974,9 @@ class OrderReturnService
      */
     protected function createReturnOption(OrderReturn $return, Order $order, OrderOption $option, int $quantity): void
     {
+        // 회수지는 **상품마다** 자기 배송정책에서 해석한다(S4) — 분할 전 원 행의 배송 행이 정책을 가리킨다.
+        $returnAddress = $this->resolveReturnAddressSnapshot($order, [['option' => $option]]);
+
         // 전이는 원 행의 수량·상태를 그 자리에서 바꾼다(부분이면 잔여만 남는다).
         // 감사용 값은 전이 **전에** 캡처해야 신청 직전의 사실이 남는다.
         $originalStatus = $option->option_status;
@@ -1691,6 +2001,7 @@ class OrderReturnService
             'order_id' => $order->id,
             'order_option_id' => $courseOption->id,
             'option_status' => ReturnStatusEnum::REQUESTED,
+            'return_address_snapshot' => $returnAddress,
             'return_quantity' => $quantity,
             'original_quantity' => $originalQuantity,
             'original_option_status' => $originalStatus,
@@ -1827,7 +2138,9 @@ class OrderReturnService
                 'rejected_at' => now(),
                 'reject_reason' => $context['reject_reason'] ?? null,
             ],
-            ReturnStatusEnum::WITHDRAWN => ['withdrawn_at' => now()],
+            ReturnStatusEnum::WITHDRAWN => ['withdrawn_at' => now()] + (isset($context['withdrawn_by_admin'])
+                ? ['withdrawn_by_admin' => (int) $context['withdrawn_by_admin'], 'withdraw_reason' => $context['withdraw_reason'] ?? null]
+                : []),
             ReturnStatusEnum::COLLECTED => ['collection_completed_at' => now()],
             default => [],
         };
@@ -1842,9 +2155,10 @@ class OrderReturnService
      * @param  OrderReturn  $return  반품 신청서
      * @param  ReturnStatusEnum  $target  목표 상태
      * @param  int|null  $processedBy  처리 관리자 ID
+     * @param  array  $tracking  대상 행에 쓸 송장 (`prepareTransitionTracking()` — 없으면 빈 배열)
      * @return void 반환값 없음
      */
-    protected function syncOptionStatuses(OrderReturn $return, ReturnStatusEnum $target, ?int $processedBy): void
+    protected function syncOptionStatuses(OrderReturn $return, ReturnStatusEnum $target, ?int $processedBy, array $tracking = []): void
     {
         $return->loadMissing('returnOptions');
 
@@ -1865,10 +2179,12 @@ class OrderReturnService
                 'new' => $target->value,
             ];
 
+            $arrival = $this->applyTransitionTrackingTo($return, $item, $target, $tracking, $processedBy);
+
             $this->returnOptionRepository->update($item, [
                 'option_status' => $target,
                 'processed_by' => $processedBy ?? $item->processed_by,
-            ]);
+            ] + $arrival);
         }
 
         // 헤더 전이가 끌고 간 상품 전이도 상품 축 훅으로 남긴다(C2). 예전에는
@@ -2184,27 +2500,137 @@ class OrderReturnService
     }
 
     /**
-     * 환불신청서가 아직 접수되지 않았음을 단언합니다.
+     * 환불이 연결되지 않은 완료 상품이 있는지 단언합니다. (회차마다 접수 — S7)
      *
-     * 환불신청서는 신청서당 한 건이다 — `refund_id` 가 D19 ③축(선점액)에서 그 반품을 빼는
-     * 근거이므로 두 건이 생기면 한쪽이 집계에서 누락돼 이중 계상이 된다.
+     * 환불신청서는 신청서당 한 건이 아니다 — 부분 완료 회차마다 그때 환불이 연결되지 않은 완료
+     * 상품으로 접수한다. 전부 이미 살아 있는 환불신청서에 담겼으면 `claim_refund_request_exists`,
+     * 완료 상품 자체가 없으면 `claim_refund_not_applicable` 로 거절한다. 호출부는 신청서를 잠근 뒤
+     * 부른다 — 동시 접수 두 건을 줄 세우는 지점이다.
      *
-     * @param  OrderReturn  $return  판정 대상 신청서 (잠금 안에서는 재조회한 행을 넘긴다)
+     * @param  OrderReturn  $return  반품 신청서 (returnOptions.refund 로드)
      * @return void 반환값 없음
      *
-     * @throws OrderClaimException 이미 접수된 경우
+     * @throws OrderClaimException 접수할 완료 상품 없음
      */
-    protected function assertRefundRequestNotYetCreated(OrderReturn $return): void
+    protected function assertUnlinkedCompletedRowsExist(OrderReturn $return): void
     {
-        if ($return->refund_id === null) {
+        if ($this->unlinkedCompletedRows($return) !== []) {
             return;
         }
 
-        $existing = $this->refundRepository->findById($return->refund_id);
+        $latest = $return->returnOptions
+            ->filter(fn (OrderReturnOption $item) => $this->isLinkedToLiveRefund($item))
+            ->sortByDesc('refund_id')
+            ->first();
 
-        throw OrderClaimException::refundRequestAlreadyExists(
-            $existing?->refund_number ?? (string) $return->refund_id
-        );
+        if ($latest !== null) {
+            throw OrderClaimException::refundRequestAlreadyExists(
+                $latest->refund?->refund_number ?? (string) $latest->refund_id
+            );
+        }
+
+        throw OrderClaimException::refundNotApplicable();
+    }
+
+    /**
+     * 환불이 연결되지 않은 이 신청서의 완료 상품 행을 반환합니다.
+     *
+     * 반려·철회된 환불신청서에 연결된 행은 연결되지 않은 것으로 본다 — 그 돈은 나가지 않았으므로
+     * 다시 접수할 수 있어야 한다(교환의 살아 있는 환불신청서 판정과 같은 축).
+     *
+     * @param  OrderReturn  $return  반품 신청서 (returnOptions 로드)
+     * @return array<int, OrderReturnOption> 완료·미연결 상품 행
+     */
+    protected function unlinkedCompletedRows(OrderReturn $return): array
+    {
+        return $return->returnOptions
+            ->filter(fn (OrderReturnOption $item) => $item->option_status === ReturnStatusEnum::COMPLETED
+                && ! $this->isLinkedToLiveRefund($item))
+            ->values()
+            ->all();
+    }
+
+    /**
+     * 상품 행이 살아 있는 환불신청서(반려·철회 제외)에 연결돼 있는지 반환합니다.
+     *
+     * @param  OrderReturnOption  $item  상품 행
+     * @return bool 연결돼 있으면 true
+     */
+    protected function isLinkedToLiveRefund(OrderReturnOption $item): bool
+    {
+        return $item->hasLiveRefund();
+    }
+
+    /**
+     * 이 신청서에서 이미 환불신청서에 담긴 완료 상품을 계산기 공용 아이템 형태로 반환합니다. (차분의 뺄 값)
+     *
+     * @param  OrderReturn  $return  반품 신청서 (returnOptions 로드)
+     * @return array<int, array{order_option_id: int, cancel_quantity: int}> 이미 접수된 완료 몫
+     */
+    protected function linkedCompletedClaimItems(OrderReturn $return): array
+    {
+        $quantities = [];
+
+        foreach ($return->returnOptions as $item) {
+            if ($item->option_status !== ReturnStatusEnum::COMPLETED || ! $this->isLinkedToLiveRefund($item)) {
+                continue;
+            }
+
+            $optionId = (int) $item->order_option_id;
+            $quantities[$optionId] = ($quantities[$optionId] ?? 0) + (int) $item->return_quantity;
+        }
+
+        $items = [];
+
+        foreach ($quantities as $optionId => $quantity) {
+            $items[] = ['order_option_id' => $optionId, 'cancel_quantity' => $quantity];
+        }
+
+        return $items;
+    }
+
+    /**
+     * 두 아이템 목록을 주문옵션별 수량 합으로 합칩니다.
+     *
+     * @param  array<int, array{order_option_id: int, cancel_quantity: int}>  $a  목록 1
+     * @param  array<int, array{order_option_id: int, cancel_quantity: int}>  $b  목록 2
+     * @return array<int, array{order_option_id: int, cancel_quantity: int}> 합친 목록
+     */
+    protected function mergeClaimItemQuantities(array $a, array $b): array
+    {
+        $quantities = [];
+
+        foreach ([...$a, ...$b] as $item) {
+            $optionId = (int) $item['order_option_id'];
+            $quantities[$optionId] = ($quantities[$optionId] ?? 0) + (int) $item['cancel_quantity'];
+        }
+
+        $merged = [];
+
+        foreach ($quantities as $optionId => $quantity) {
+            $merged[] = ['order_option_id' => $optionId, 'cancel_quantity' => $quantity];
+        }
+
+        return $merged;
+    }
+
+    /**
+     * 방금 접수한 환불신청서를 환불이 연결되지 않은 완료 상품 행에 잇습니다. (S7)
+     *
+     * 선점액 집계(D19 ③ 축)는 이 연결로 반품의 환불 예정 몫과 환불신청서 몫을 나눈다 — 잇지 않으면
+     * 같은 상품이 두 쪽에서 세어진다.
+     *
+     * @param  OrderReturn  $return  반품 신청서 (returnOptions 로드)
+     * @param  OrderRefund  $refund  접수된 환불신청서
+     * @return void 반환값 없음
+     */
+    protected function linkRefundToUnlinkedCompletedRows(OrderReturn $return, OrderRefund $refund): void
+    {
+        foreach ($this->unlinkedCompletedRows($return) as $item) {
+            $this->returnOptionRepository->update($item, ['refund_id' => $refund->id]);
+        }
+
+        $return->load('returnOptions.refund');
     }
 
     /**
@@ -2616,10 +3042,12 @@ class OrderReturnService
      */
     protected function allItemsCompleted(OrderReturn $return): bool
     {
-        return $return->returnOptions->isNotEmpty()
-            && $return->returnOptions->every(
-                fn (OrderReturnOption $item) => $item->option_status === ReturnStatusEnum::COMPLETED
-            );
+        // 「살아 있는 상품 0 그리고 완료 상품 ≥ 1」(S8) — 반려·철회된 상품이 섞여도 나머지가 모두
+        // 완료되면 신청서는 완료다. 예전 판정(모든 행 완료)은 반려 행 하나가 헤더를 영원히 묶었다.
+        $items = $return->returnOptions;
+
+        return $items->contains(fn (OrderReturnOption $item) => $item->option_status === ReturnStatusEnum::COMPLETED)
+            && ! $items->contains(fn (OrderReturnOption $item) => ! $item->option_status->isFinal());
     }
 
     // ───────────────────────────────────────────────
@@ -2677,14 +3105,23 @@ class OrderReturnService
      * `charge_method` 를 함께 받는다. 이미 받은 추가결제와의 차액 정산은 호출부가
      * `ClaimPaymentService::settleChargeDifference()` 로 한다(교환과 같은 분담).
      *
+     * 실제로 바뀐 항목은 커밋 뒤 `claim.return.request_updated` 로 전/후와 함께 나간다 — 운영자가 고객 대신
+     * 사유를 바꾸면 회수비를 누가 내는지가 달라지므로 활동 로그가 그 흔적을 남긴다(`ReportsClaimRequestUpdate`).
+     *
      * @param  OrderReturn  $return  반품 신청서
      * @param  array  $payload  수정 페이로드 (reason_code? / reason_detail? / charge_method?)
+     * @param  bool  $operator  운영자 수정 여부 (S15 — 판매자 귀책 사유 허용, 판매자 접수 건도 수정)
      * @return OrderReturn 수정된 신청서
      *
      * @throws OrderClaimException 수정 불가 상태 / 사유 부재 / 청구 방식 부재·불허·차감 불가
      */
-    public function updateRequest(OrderReturn $return, array $payload): OrderReturn
+    public function updateRequest(OrderReturn $return, array $payload, bool $operator = false): OrderReturn
     {
+        // 판매자가 접수한 신청은 고객이 수정할 수 없다(D8). 운영자 수정(S15)은 통과한다.
+        if (! $operator && $return->isAdminRequested()) {
+            throw OrderClaimException::adminRequestedNotEditable();
+        }
+
         // 수정의 before·filter 훅 — 잠금·쓰기 전이다. 필터는 사유(`CLAIM_FILTERABLE_UPDATE_KEYS`)만
         // 바꿀 수 있고, 바뀐 값은 아래 사유 해석·회수비 재산정을 고객 입력과 똑같이 지난다.
         // 청구 방식·환불 계좌는 돈의 경로라 되돌린다.
@@ -2696,7 +3133,7 @@ class OrderReturnService
             self::CLAIM_FILTERABLE_UPDATE_KEYS,
         );
 
-        return DB::transaction(function () use ($return, $payload) {
+        return DB::transaction(function () use ($return, $payload, $operator) {
             $locked = $this->returnRepository->findForUpdate($return->id) ?? $return;
 
             // 수정 가능 여부는 **잠금 안에서 다시 읽은 상태**로 판정한다(#599 validate P2 #8).
@@ -2707,12 +3144,13 @@ class OrderReturnService
 
             $locked->load(['returnOptions', 'order.options', 'order.shippings', 'order.payment']);
             $order = $locked->order;
+            $before = $this->claimRequestUpdateSnapshot($locked);
 
             $updates = [];
             $reason = null;
 
             if (($payload['reason_code'] ?? null) !== null && $payload['reason_code'] !== '' && $payload['reason_code'] !== $locked->reason_code) {
-                $reason = $this->resolveReason((string) $payload['reason_code']);
+                $reason = $this->resolveReason((string) $payload['reason_code'], ! $operator);
                 $updates['reason_code'] = $reason->code;
                 $updates['fault_type'] = $reason->fault_type;
             }
@@ -2787,7 +3225,66 @@ class OrderReturnService
                 return $locked;
             }
 
-            return $this->returnRepository->update($locked, $updates)->fresh(['returnOptions']);
+            $updated = $this->returnRepository->update($locked, $updates)->fresh(['returnOptions']);
+
+            // 같은 값으로 다시 저장한 수정은 알리지 않는다 — 활동 로그에 빈 이력이 쌓이면 실제로 바뀐 줄이 묻힌다.
+            $changes = $this->claimRequestUpdateChanges($before, $this->claimRequestUpdateSnapshot($updated));
+
+            if ($changes !== []) {
+                $context = $this->claimRequestUpdateContext($operator);
+                $this->fireAfterCommit(fn () => HookManager::doAction(
+                    'sirsoft-ecommerce.claim.return.request_updated',
+                    $updated,
+                    $changes,
+                    $context,
+                ));
+            }
+
+            return $updated;
         });
+    }
+
+    /**
+     * 신청 자격 상태 목록을 반환합니다. (운영자 직권 접수면 물리 게이트 — D5)
+     *
+     * @param  bool  $operator  운영자 직권 접수 여부
+     * @return array<string> 상태 값 목록
+     */
+    protected function requestStatusValuesFor(bool $operator): array
+    {
+        return $operator ? ClaimPhysicalGate::statuses(ClaimTypeEnum::RETURN) : $this->requestableStatusValues();
+    }
+
+    /**
+     * 운영자가 정한 클레임 배송비로 산정 결과를 덮습니다. (D7 — 직권 접수 창의 배송비 수정·무료)
+     *
+     * 산정 근거(그룹·모드)는 그대로 두고 금액만 바꾼다 — 운영자가 고친 사실은 신청서 스냅샷의
+     * `admin_adjusted` 표시로 남는다(접수가 산정 근거 스냅샷에 싣는다 — 금액 수정 경로와 같은 표시).
+     *
+     * @param  ClaimShippingFee  $shippingFee  산정 결과
+     * @param  float|null  $override  운영자가 정한 배송비 (null 이면 산정값 그대로)
+     * @param  array  $currencySnapshot  주문 통화 스냅샷
+     * @return ClaimShippingFee 덮은 결과
+     */
+    protected function applyShippingFeeOverride(ClaimShippingFee $shippingFee, ?float $override, array $currencySnapshot): ClaimShippingFee
+    {
+        if ($override === null) {
+            return $shippingFee;
+        }
+
+        $fee = (int) round(max(0.0, $override));
+
+        return new ClaimShippingFee(
+            fee: $fee,
+            mode: $shippingFee->mode,
+            claimType: $shippingFee->claimType,
+            fault: $shippingFee->fault,
+            charged: $fee > 0,
+            reason: $shippingFee->reason,
+            groups: $shippingFee->groups,
+            extraFee: 0,
+            mcFee: $fee > 0 ? ($this->toMultiCurrencyOrNull((float) $fee, $currencySnapshot) ?? []) : [],
+            redeliveryChanged: $shippingFee->redeliveryChanged,
+        );
     }
 }

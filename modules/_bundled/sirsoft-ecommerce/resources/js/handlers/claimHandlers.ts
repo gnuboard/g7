@@ -7,7 +7,8 @@
  *
  * 상세 화면이 쓰는 갈래는 셋이다:
  *  - 상품 단위 일괄 전이 (D25): `PATCH admin/{세그먼트}/{id}/options/bulk-status`
- *  - 회수·재발송 송장 저장: `PUT .../collection-tracking` · `PUT exchanges/{id}/redelivery-tracking`
+ *  - 상품 행 송장(「송장만 저장」): `PATCH admin/{세그먼트}/{id}/options/tracking` · 운송장 단위 도착 `POST …/tracking/deliver`
+ *  - 진행 방식(일반·선교환) · 대리 철회 · 신청 내용 수정 · 뒤늦은 재고 복구
  *  - 관리자 메모 저장: `PUT .../amounts` (메모는 금액 수정 엔드포인트가 함께 받는 축이다)
  *
  * 유형 스코프 경로 세그먼트(`exchanges`/`returns`/`refunds`)는 **서버가 준 값**만 쓴다 —
@@ -312,6 +313,9 @@ async function refreshClaimCompletePreview(allowRetry = true): Promise<boolean> 
     const targets: ClaimCompleteTarget[] = context.targets ?? [];
     const restoreMap: Record<string, boolean> = globalState.claimCompleteRestore ?? {};
     const createRefundRequest: boolean = globalState.claimCompleteCreateRefundRequest !== false;
+    // 「미회수로 완료」 로 고른 행 — 실행은 이 행도 완료하되 재고를 되돌리지 않는다. 미리보기가 모르면
+    // 완료 건수·재고 요약·환불 예정액이 실행과 갈린다(D26). 서버가 신청서별 후보와 교집합을 낸다.
+    const unreturnedIds: number[] = Object.keys(globalState.claimCompleteUnreturned ?? {}).map(Number).filter(Number.isFinite);
 
     // 보낸 맵을 기억해 둔다 — 응답이 상품 행을 새로 알려 주면 이 값과 비교해 재호출 여부를 정한다.
     const sentRestore = targets.map(
@@ -327,6 +331,7 @@ async function refreshClaimCompletePreview(allowRetry = true): Promise<boolean> 
             // 서버는 상품 행 ID 단위 맵을 받는다. 모달의 체크는 신청서 단위이므로 앞선
             // 미리보기가 답한 `completable_item_ids` 전체에 같은 값을 편다.
             restore_stock_by_item: sentRestore[index],
+            ...(unreturnedIds.length > 0 ? { unreturned_item_ids: unreturnedIds } : {}),
         })),
     };
 
@@ -564,7 +569,12 @@ async function openClaimCompleteModal(params: ClaimCompleteOpenParams): Promise<
         claimCompleteRestore: seedRestoreMap(targets, defaults.restore_stock !== false),
         claimCompleteCreateRefundRequest: defaults.create_refund_request !== false,
         claimCompleteAppliedRefundRequest: defaults.create_refund_request !== false,
-    });
+        // 미회수 선택은 신청서마다 다르다 — 앞서 취소한 모달의 행 ID 가 다음 신청서 요청에 실리면
+        // 화면에 없는 행의 사유를 요구하거나 서버가 `claim_unreturned_not_eligible` 로 막는다.
+        claimCompleteUnreturned: {},
+    // 엔진의 전역 set 은 기본이 deep 병합이다 — 맵 값(`claimCompleteRestore`·`claimCompleteUnreturned`)을
+    // 빈 객체·새 맵으로 **바꾸려면** shallow 여야 한다. deep 이면 앞 신청서의 키가 그대로 남는다(Chrome 실측 V-M6M7).
+    }, { merge: 'shallow' });
 
     G7Core.modal?.open?.('modal_claim_complete');
 
@@ -705,12 +715,25 @@ export async function executeClaimCompletionHandler(
         return map;
     }, {});
 
+    // 선교환 「미회수로 완료」(D3) — 체크한 행은 사유가 필수다. 빈 사유를 보내면 서버가 422 로 막지만,
+    // 모달을 닫기 전에 먼저 세운다.
+    const unreturned: Record<string, string> = globalState.claimCompleteUnreturned ?? {};
+
+    if (Object.values(unreturned).some((reason) => String(reason ?? '').trim() === '')) {
+        G7Core.toast?.warning?.(
+            t('sirsoft-ecommerce.admin.claim.complete.unreturned_reason_required', '미회수로 완료할 상품의 사유를 입력해주세요.'),
+        );
+
+        throw new Error('claim completion unreturned reason missing');
+    }
+
     const body: Record<string, unknown> = {
         ...(context.execute.body ?? {}),
         status: 'completed',
         completion: {
             restore_stock_by_item: mergedRestore,
             create_refund_request: globalState.claimCompleteCreateRefundRequest !== false,
+            ...(Object.keys(unreturned).length > 0 ? { unreturned } : {}),
         },
     };
 
@@ -759,7 +782,63 @@ function resetClaimCompleteState(): void {
         claimCompleteRestore: {},
         claimCompleteCreateRefundRequest: null,
         claimCompleteAppliedRefundRequest: null,
-    });
+        claimCompleteUnreturned: {},
+    }, { merge: 'shallow' });
+}
+
+/**
+ * 완료 모달의 「미회수로 완료」 체크를 토글합니다. (선교환 D3)
+ *
+ * 체크된 행은 `_global.claimCompleteUnreturned` 맵의 키로 둔다 — 값은 사유다(빈 문자열로 시작).
+ *
+ * @param action 액션 객체 (params: itemId / checked)
+ * @param _context 액션 컨텍스트
+ */
+export function toggleClaimCompleteUnreturnedHandler(
+    action: ActionWithParams<{ itemId?: number | string; checked?: boolean | string }>,
+    _context?: ActionContext,
+): void {
+    const G7Core = core();
+    if (!G7Core) return;
+
+    const key = String(action.params?.itemId ?? '');
+    if (key === '') return;
+
+    const checked = action.params?.checked === true || action.params?.checked === 'true';
+    const current: Record<string, string> = { ...(G7Core.state.get()?.claimCompleteUnreturned ?? {}) };
+
+    if (checked) {
+        current[key] = current[key] ?? '';
+    } else {
+        delete current[key];
+    }
+
+    // 맵을 통째로 바꾼다 — deep 병합이면 뺀 키가 남아 체크 해제가 풀리지 않는다(Chrome 실측 V-M6M7).
+    G7Core.state.set({ claimCompleteUnreturned: current }, { merge: 'shallow' });
+    // 미회수 행이 완료 대상에 들고 나면 건수·재고 요약·환불 예정액이 바뀐다 — 미리보기를 다시 받는다.
+    void scheduleClaimCompletePreview();
+}
+
+/**
+ * 완료 모달의 「미회수로 완료」 사유를 씁니다. (선교환 D3)
+ *
+ * @param action 액션 객체 (params: itemId / reason)
+ * @param _context 액션 컨텍스트
+ */
+export function setClaimCompleteUnreturnedReasonHandler(
+    action: ActionWithParams<{ itemId?: number | string; reason?: string | null }>,
+    _context?: ActionContext,
+): void {
+    const G7Core = core();
+    if (!G7Core) return;
+
+    const key = String(action.params?.itemId ?? '');
+    const current: Record<string, string> = { ...(G7Core.state.get()?.claimCompleteUnreturned ?? {}) };
+
+    if (key === '' || !Object.prototype.hasOwnProperty.call(current, key)) return;
+
+    current[key] = String(action.params?.reason ?? '');
+    G7Core.state.set({ claimCompleteUnreturned: current }, { merge: 'shallow' });
 }
 
 /**
@@ -855,6 +934,13 @@ interface ClaimDetailItemRow {
     product_name?: string | null;
     option_name?: string | null;
     quantity?: number | null;
+    /** 행 송장 (방향별 — 교환·반품) */
+    collection_carrier_id?: number | null;
+    collection_tracking_number?: string | null;
+    redelivery_carrier_id?: number | null;
+    redelivery_tracking_number?: string | null;
+    /** 이 행의 회수지 (S4 — 회수 운송장 묶기 판정 R8) */
+    return_address_snapshot?: Record<string, unknown> | null;
 }
 
 /** 상세 화면 액션이 공통으로 넘기는 신청서 식별 축 */
@@ -986,6 +1072,12 @@ interface ClaimItemQuantityContext {
     quantities: Record<string, number>;
     completeDefaults: ClaimCompleteDefaults;
     detailRows: ClaimDetailItemRow[];
+    /** 「송장만 저장」 모드 — 상태는 옮기지 않고 행 송장만 쓴다(R7) */
+    trackingOnly?: boolean;
+    /** 송장 방향 (`collection` / `redelivery`) */
+    direction?: string;
+    /** 모달 문구용 방향 라벨 */
+    directionLabel?: string;
 }
 
 /**
@@ -1202,7 +1294,9 @@ export async function openClaimItemQuantityConfirmHandler(
         detailRows: rows,
     };
 
-    G7Core.state.set({ claimItemQuantityContext: modalContext });
+    // 문맥을 통째로 바꾼다 — [취소] 는 창만 닫으므로 deep 병합이면 앞서 연 「송장만 저장」 의
+    // `trackingOnly`·`direction` 이 남아 [적용] 이 송장 저장으로 나간다(사례 43).
+    G7Core.state.set({ claimItemQuantityContext: modalContext }, { merge: 'shallow' });
     G7Core.modal?.open?.('modal_claim_item_quantity_confirm');
 }
 
@@ -1296,6 +1390,8 @@ export async function executeClaimItemBulkStatusHandler(
         trackingNumber?: string | null;
         rows?: ClaimDetailItemRow[];
         completeDefaults?: ClaimCompleteDefaults;
+        trackingOnly?: boolean;
+        direction?: string | null;
     }>,
     _context?: ActionContext,
 ): Promise<void> {
@@ -1311,6 +1407,19 @@ export async function executeClaimItemBulkStatusHandler(
 
     if (base === null) {
         logger.warn('[executeClaimItemBulkStatus] 신청서 식별 축이 없습니다.');
+
+        return;
+    }
+
+    // 「송장만 저장」 — 같은 모달이 상태 전이와 송장 저장을 모두 확인하므로 실행도 같은 입구에서 가른다.
+    if (params.trackingOnly === true) {
+        await saveClaimItemTracking(base, {
+            itemIds,
+            itemQuantities: params.itemQuantities,
+            direction: params.direction,
+            carrierId: params.carrierId,
+            trackingNumber: params.trackingNumber,
+        });
 
         return;
     }
@@ -1380,7 +1489,8 @@ export async function executeClaimItemBulkStatusHandler(
     }
 
     if (G7Core.state.getLocal?.()?.isUpdatingClaimItems === true) return;
-    G7Core.state.setLocal?.({ isUpdatingClaimItems: true });
+    // 잠금은 선택 바 두 버튼·확인 창이 함께 쓰고, 스피너는 누른 쪽에만 돈다 — 종류로 가른다.
+    G7Core.state.setLocal?.({ isUpdatingClaimItems: true, claimItemsUpdateKind: 'status' });
 
     try {
         const body: Record<string, unknown> = {
@@ -1426,7 +1536,7 @@ export async function executeClaimItemBulkStatusHandler(
         );
         throw error;
     } finally {
-        G7Core.state.setLocal?.({ isUpdatingClaimItems: false });
+        G7Core.state.setLocal?.({ isUpdatingClaimItems: false, claimItemsUpdateKind: null });
     }
 }
 
@@ -1688,20 +1798,295 @@ export async function clearClaimImagesHandler(
 }
 
 /**
- * 회수·재발송 운송장을 저장합니다. (상세 화면 배송 정보 섹션)
+ * 한 방향의 송장 칸 이름을 돌려줍니다. (`collection` → `collection_*`, `redelivery` → `redelivery_*`)
  *
- * 택배사와 송장번호는 함께 입력해야 한다 — 하나만 보내면 서버가 `claim_tracking_incomplete`
- * 로 거절하므로, 왕복을 돌기 전에 화면에서 먼저 알린다. 회수준비중·재발송준비중이면 저장이
- * 다음 상태로의 전이를 함께 일으키므로 성공 후 상세를 다시 읽는다.
+ * @param status 목표 상태 (회수중·발송중에서 방향을 읽는다)
+ * @returns 방향 값 (회수중·기타 = collection, 발송중 = redelivery)
+ */
+function directionForStatus(status: string): 'collection' | 'redelivery' {
+    return status === 'redelivering' ? 'redelivery' : 'collection';
+}
+
+/**
+ * 고른 행들이 **모두 같은 송장**을 가질 때만 그 값을 돌려줍니다. (P1 「미리 채움」)
+ *
+ * 송장은 상품 행마다 있다 — 행마다 다르면 미리 채울 값이 없어 비워 두고 새로 적게 한다.
+ *
+ * @param rows 상세 상품 행
+ * @param selectedIds 고른 행 ID
+ * @param direction 방향
+ * @returns 공통 송장 (없으면 빈 값)
+ */
+function commonRowTracking(
+    rows: ClaimDetailItemRow[],
+    selectedIds: number[],
+    direction: 'collection' | 'redelivery',
+): { carrierId: string; trackingNumber: string } {
+    const selected = rows.filter((row) => selectedIds.includes(Number(row.id)));
+    const pairs = new Set(selected.map((row) => {
+        const carrier = (row as any)[`${direction}_carrier_id`];
+        const number = (row as any)[`${direction}_tracking_number`];
+
+        return `${carrier ?? ''}|${number ?? ''}`;
+    }));
+
+    if (pairs.size !== 1) {
+        return { carrierId: '', trackingNumber: '' };
+    }
+
+    const [carrierId, trackingNumber] = [...pairs][0].split('|');
+
+    return trackingNumber ? { carrierId, trackingNumber } : { carrierId: '', trackingNumber: '' };
+}
+
+/**
+ * 상품 칸 일괄 바의 상태를 고릅니다. (회수중·발송중이면 고른 행들의 공통 송장을 미리 채운다)
+ *
+ * 레이아웃 인라인 식으로 미리 채우지 않는 이유: 송장은 상품 행마다 있어 「고른 행이 모두 같은
+ * 송장인가」 를 판정해야 하고, 그 판정이 식 안에 들어가면 구조 테스트가 막는 다중 바인딩이 된다.
+ *
+ * @param action 액션 객체 (params: status / rows)
+ * @param _context 액션 컨텍스트
+ */
+export function selectClaimItemBulkStatusHandler(
+    action: ActionWithParams<{ status?: string; rows?: ClaimDetailItemRow[] }>,
+    _context?: ActionContext,
+): void {
+    const G7Core = core();
+    if (!G7Core) return;
+
+    const params = action.params ?? {};
+    const status = params.status ?? '';
+    const selectedIds: number[] = (G7Core.state.getLocal?.()?.selectedClaimItems ?? []).map((id: unknown) => Number(id));
+    const tracking = TRACKING_REQUIRED_STATUSES.includes(status)
+        ? commonRowTracking(params.rows ?? [], selectedIds, directionForStatus(status))
+        : { carrierId: '', trackingNumber: '' };
+
+    G7Core.state.setLocal?.({
+        itemBulkStatus: status,
+        // 상태를 고르면 「송장만 저장」 칸은 닫는다 — 두 입력이 같은 칸을 공유하므로 모드가 섞이면 무엇이 저장될지 모른다.
+        itemTrackingMode: false,
+        itemCarrierId: tracking.carrierId,
+        itemTrackingNumber: tracking.trackingNumber,
+    });
+}
+
+/**
+ * 「송장만 저장」 의 방향을 고릅니다. (그 방향의 공통 송장을 다시 미리 채운다)
+ *
+ * @param action 액션 객체 (params: direction / rows)
+ * @param _context 액션 컨텍스트
+ */
+export function selectClaimItemTrackingDirectionHandler(
+    action: ActionWithParams<{ direction?: string; rows?: ClaimDetailItemRow[] }>,
+    _context?: ActionContext,
+): void {
+    const G7Core = core();
+    if (!G7Core) return;
+
+    const direction = action.params?.direction === 'redelivery' ? 'redelivery' : 'collection';
+    const selectedIds: number[] = (G7Core.state.getLocal?.()?.selectedClaimItems ?? []).map((id: unknown) => Number(id));
+    const tracking = commonRowTracking(action.params?.rows ?? [], selectedIds, direction);
+
+    G7Core.state.setLocal?.({
+        itemTrackingDirection: direction,
+        itemCarrierId: tracking.carrierId,
+        itemTrackingNumber: tracking.trackingNumber,
+    });
+}
+
+/**
+ * 「송장만 저장」 을 누릅니다. (R7 — 상태 불변)
+ *
+ * 처음 누르면 방향·택배사·운송장 칸을 열고 고른 행의 공통 송장을 미리 채운다. 칸이 열린 뒤 누르면
+ * 입력을 확인하고 수량 확인 모달로 간다 — 수량을 줄이면 그 행이 쪼개져 지정 수량에만 송장이 붙는다(R4).
+ *
+ * 요청 전에 막는 것: 택배사·운송장 반쪽(R2), 회수지가 다른 행을 한 회수 운송장으로 묶기(R8).
+ * 서버도 같은 조건을 422 로 거절하지만, 모달까지 연 뒤에야 거절되지 않게 입구에서 먼저 세운다.
  *
  * @param action 액션 객체 (params)
  * @param _context 액션 컨텍스트
  */
-export async function saveClaimTrackingHandler(
+export async function openClaimItemTrackingOnlyHandler(
+    action: ActionWithParams<{
+        pathSegment?: string;
+        claimType?: string;
+        claimId?: number | string | null;
+        itemIds?: Array<number | string>;
+        trackingMode?: boolean;
+        direction?: string;
+        carrierId?: string | number | null;
+        trackingNumber?: string | null;
+        carriers?: CarrierOption[];
+        rows?: ClaimDetailItemRow[];
+    }>,
+    _context?: ActionContext,
+): Promise<void> {
+    const G7Core = core();
+    if (!G7Core) return;
+
+    const params = action.params ?? {};
+    const itemIds = (params.itemIds ?? []).map((id) => Number(id));
+    const rows = params.rows ?? [];
+    const direction = params.direction === 'redelivery' ? 'redelivery' : 'collection';
+
+    if (itemIds.length === 0) {
+        G7Core.toast?.warning?.(
+            t('sirsoft-ecommerce.admin.claim.detail.items.bulk_no_selection', '변경할 상품을 선택해주세요.'),
+        );
+
+        return;
+    }
+
+    if (params.trackingMode !== true) {
+        const tracking = commonRowTracking(rows, itemIds, direction);
+
+        G7Core.state.setLocal?.({
+            itemTrackingMode: true,
+            itemBulkStatus: '',
+            itemTrackingDirection: direction,
+            itemCarrierId: tracking.carrierId,
+            itemTrackingNumber: tracking.trackingNumber,
+        });
+
+        return;
+    }
+
+    const carrier = String(params.carrierId ?? '');
+    const trackingNumber = (params.trackingNumber ?? '').trim();
+
+    if ((carrier === '') !== (trackingNumber === '')) {
+        G7Core.toast?.warning?.(
+            t('sirsoft-ecommerce.admin.claim.detail.shipping.tracking_incomplete', '택배사와 송장번호를 함께 입력해주세요.'),
+        );
+
+        return;
+    }
+
+    if (direction === 'collection' && trackingNumber !== '') {
+        const addresses = new Set(rows
+            .filter((row) => itemIds.includes(Number(row.id)))
+            .map((row) => JSON.stringify((row as any).return_address_snapshot ?? null)));
+
+        if (addresses.size > 1) {
+            G7Core.toast?.warning?.(
+                t('sirsoft-ecommerce.admin.claim.detail.items.tracking_mixed_address', '회수지가 다른 상품은 한 운송장으로 묶을 수 없습니다. 회수지별로 나눠 저장해 주세요.'),
+            );
+
+            return;
+        }
+    }
+
+    const selected = rows.filter((row) => itemIds.includes(Number(row.id)));
+    const modalRows: ClaimItemQuantityRow[] = selected.map((row) => ({
+        id: Number(row.id),
+        label: [row.product_name ?? '', row.option_name ?? ''].filter(Boolean).join(' / '),
+        quantity: Number(row.quantity ?? 1),
+        splittable: (row as any).is_splittable === true && Number(row.quantity ?? 1) > 1,
+    }));
+    const quantities: Record<string, number> = {};
+    modalRows.forEach((row) => {
+        quantities[String(row.id)] = row.quantity;
+    });
+
+    const modalContext: ClaimItemQuantityContext = {
+        pathSegment: params.pathSegment ?? '',
+        claimType: params.claimType ?? '',
+        claimId: Number(params.claimId),
+        claimNumber: '',
+        requesterName: '',
+        status: '',
+        statusLabel: '',
+        rejectReason: '',
+        carrierId: carrier,
+        trackingNumber,
+        carrierLabel: (params.carriers ?? []).find((option) => String(option.value) === carrier)?.label ?? '',
+        itemIds,
+        rows: modalRows,
+        quantities,
+        completeDefaults: {},
+        detailRows: rows,
+        trackingOnly: true,
+        direction,
+        directionLabel: direction === 'redelivery'
+            ? t('sirsoft-ecommerce.admin.claim.detail.shipping.redelivery_title', '재발송')
+            : t('sirsoft-ecommerce.admin.claim.detail.shipping.collection_title', '회수'),
+    };
+
+    // 문맥을 통째로 바꾼다 — 상태 전이 창과 같은 문맥이라 앞 창의 키가 남으면 안 된다(사례 43).
+    G7Core.state.set({ claimItemQuantityContext: modalContext }, { merge: 'shallow' });
+    G7Core.modal?.open?.('modal_claim_item_quantity_confirm');
+}
+
+/**
+ * 「송장만 저장」 을 실행합니다. (수량 확인 모달 [송장만 저장] — `PATCH …/options/tracking`)
+ *
+ * @param base 유형 스코프 기본 경로
+ * @param params 실행 파라미터
+ */
+async function saveClaimItemTracking(
+    base: string,
+    params: {
+        itemIds: number[];
+        itemQuantities?: Record<string, number | string | null>;
+        direction?: string | null;
+        carrierId?: string | number | null;
+        trackingNumber?: string | null;
+    },
+): Promise<void> {
+    const G7Core = core();
+    if (!G7Core) return;
+
+    if (G7Core.state.getLocal?.()?.isUpdatingClaimItems === true) return;
+    G7Core.state.setLocal?.({ isUpdatingClaimItems: true, claimItemsUpdateKind: 'tracking' });
+
+    try {
+        const carrier = String(params.carrierId ?? '');
+        const trackingNumber = (params.trackingNumber ?? '').trim();
+        const response = await G7Core.api.patch(`${base}/options/tracking`, {
+            direction: params.direction === 'redelivery' ? 'redelivery' : 'collection',
+            carrier_id: carrier === '' ? null : Number(carrier),
+            tracking_number: trackingNumber === '' ? null : trackingNumber,
+            items: claimItemPayload(params.itemIds, params.itemQuantities),
+        });
+
+        if (response?.success === false) {
+            throw new Error(response?.message ?? 'item tracking save failed');
+        }
+
+        G7Core.toast?.success?.(
+            response?.message
+            ?? t('sirsoft-ecommerce.admin.claim.detail.shipping.tracking_saved', '운송장 정보를 저장했습니다.'),
+        );
+        reportClaimItemSplits(response?.data ?? {});
+
+        G7Core.modal?.close?.('modal_claim_item_quantity_confirm');
+        G7Core.state.set?.({ claimItemQuantityContext: null });
+        G7Core.state.setLocal?.({ selectedClaimItems: [], itemBulkStatus: '', itemCarrierId: '', itemTrackingNumber: '', itemTrackingMode: false, itemTransitionOptions: [] });
+        refetchSources(DETAIL_REFETCH_SOURCES);
+    } catch (error: any) {
+        logger.error('[saveClaimItemTracking] 송장 저장 실패:', error);
+        G7Core.toast?.error?.(
+            serverMessageOf(error)
+            ?? t('sirsoft-ecommerce.admin.claim.detail.shipping.tracking_error', '운송장 정보를 저장하지 못했습니다.'),
+        );
+        throw error;
+    } finally {
+        G7Core.state.setLocal?.({ isUpdatingClaimItems: false, claimItemsUpdateKind: null });
+    }
+}
+
+/**
+ * 운송장 한 개에 묶인 행을 한꺼번에 도착 처리합니다. (배송 정보 탭 [도착 처리] — R9)
+ *
+ * @param action 액션 객체 (params: pathSegment / claimId / direction / carrierId / trackingNumber)
+ * @param _context 액션 컨텍스트
+ */
+export async function deliverClaimTrackingHandler(
     action: ActionWithParams<{
         pathSegment?: string;
         claimId?: number | string | null;
-        kind?: 'collection' | 'redelivery';
+        direction?: string;
         carrierId?: number | string | null;
         trackingNumber?: string | null;
     }>,
@@ -1714,55 +2099,350 @@ export async function saveClaimTrackingHandler(
     const base = claimScopedBase(params);
 
     if (base === null) {
-        logger.warn('[saveClaimTracking] 신청서 식별 축이 없습니다.');
+        logger.warn('[deliverClaimTracking] 신청서 식별 축이 없습니다.');
 
         return;
     }
 
-    const carrierId = params.carrierId === undefined || params.carrierId === null || params.carrierId === ''
-        ? null
-        : Number(params.carrierId);
+    if (G7Core.state.getLocal?.()?.isDeliveringTracking === true) return;
+
+    const direction = params.direction === 'redelivery' ? 'redelivery' : 'collection';
+    const carrierId = Number(params.carrierId);
     const trackingNumber = (params.trackingNumber ?? '').trim();
 
-    if ((carrierId === null) !== (trackingNumber === '')) {
-        G7Core.toast?.warning?.(
-            t('sirsoft-ecommerce.admin.claim.detail.shipping.tracking_incomplete', '택배사와 송장번호를 함께 입력해주세요.'),
-        );
-
-        return;
-    }
-
-    const isRedelivery = params.kind === 'redelivery';
-    const savingKey = isRedelivery ? 'isSavingRedelivery' : 'isSavingCollection';
-    const url = isRedelivery ? `${base}/redelivery-tracking` : `${base}/collection-tracking`;
-
-    if (G7Core.state.getLocal?.()?.[savingKey] === true) return;
-    G7Core.state.setLocal?.({ [savingKey]: true });
+    // 잠금은 모든 묶음 버튼이 함께 쓰고(중복 요청 방지), 스피너는 누른 묶음에만 돈다 — 화면은 이 키와 묶음의 (방향, 택배사, 운송장)을 맞춰 본다.
+    G7Core.state.setLocal?.({ isDeliveringTracking: true, deliveringTrackingKey: `${direction}|${carrierId}|${trackingNumber}` });
 
     try {
-        const response = await G7Core.api.put(url, {
+        const response = await G7Core.api.post(`${base}/tracking/deliver`, {
+            direction,
             carrier_id: carrierId,
-            tracking_number: trackingNumber === '' ? null : trackingNumber,
+            tracking_number: trackingNumber,
         });
 
         if (response?.success === false) {
-            throw new Error(response?.message ?? 'tracking save failed');
+            throw new Error(response?.message ?? 'tracking deliver failed');
         }
 
+        const data = response?.data ?? {};
+
         G7Core.toast?.success?.(
-            t('sirsoft-ecommerce.admin.claim.detail.shipping.tracking_saved', '운송장 정보를 저장했습니다.'),
+            t('sirsoft-ecommerce.admin.claim.detail.shipping.deliver_success', '도착 처리했습니다.', {
+                succeeded: (data.succeeded ?? []).length,
+                skipped: (data.skipped ?? []).length,
+            }),
         );
+        reportBulkSkips(data);
         refetchSources(DETAIL_REFETCH_SOURCES);
     } catch (error: any) {
-        logger.error('[saveClaimTracking] 운송장 저장 실패:', error);
+        logger.error('[deliverClaimTracking] 도착 처리 실패:', error);
         G7Core.toast?.error?.(
             serverMessageOf(error)
-            ?? t('sirsoft-ecommerce.admin.claim.detail.shipping.tracking_error', '운송장 정보를 저장하지 못했습니다.'),
+            ?? t('sirsoft-ecommerce.admin.claim.detail.shipping.deliver_error', '도착 처리에 실패했습니다.'),
         );
         throw error;
     } finally {
-        // 실패해도 버튼은 되살린다 — 그러지 않으면 한 번 실패한 뒤로 저장 자체를 못 한다.
-        G7Core.state.setLocal?.({ [savingKey]: false });
+        G7Core.state.setLocal?.({ isDeliveringTracking: false, deliveringTrackingKey: null });
+    }
+}
+
+/**
+ * 진행 방식 전환 확인 모달을 엽니다. (D1)
+ *
+ * @param action 액션 객체 (params: claimId / mode / dueDays)
+ * @param _context 액션 컨텍스트
+ */
+export function openClaimExchangeModeConfirmHandler(
+    action: ActionWithParams<{ claimId?: number | string | null; mode?: string; dueDays?: number | string | null }>,
+    _context?: ActionContext,
+): void {
+    const G7Core = core();
+    if (!G7Core) return;
+
+    const params = action.params ?? {};
+
+    G7Core.state.set({
+        claimExchangeModeContext: {
+            claimId: Number(params.claimId),
+            mode: params.mode === 'advance' ? 'advance' : 'standard',
+            dueDays: params.dueDays ?? '',
+        },
+    });
+    G7Core.modal?.open?.('modal_claim_exchange_mode_confirm');
+}
+
+/**
+ * 교환의 진행 방식을 바꿉니다. (`PUT admin/exchanges/{id}/exchange-mode`)
+ *
+ * @param action 액션 객체 (params: claimId / mode)
+ * @param _context 액션 컨텍스트
+ */
+export async function setClaimExchangeModeHandler(
+    action: ActionWithParams<{ claimId?: number | string | null; mode?: string }>,
+    _context?: ActionContext,
+): Promise<void> {
+    const G7Core = core();
+    if (!G7Core) return;
+
+    const params = action.params ?? {};
+    const claimId = Number(params.claimId);
+
+    if (!Number.isFinite(claimId) || claimId <= 0) {
+        logger.warn('[setClaimExchangeMode] 신청서 식별 축이 없습니다.');
+
+        return;
+    }
+
+    if (G7Core.state.get?.()?.isSettingExchangeMode === true) return;
+    G7Core.state.set?.({ isSettingExchangeMode: true });
+
+    try {
+        const response = await G7Core.api.put(`/api/modules/sirsoft-ecommerce/admin/exchanges/${claimId}/exchange-mode`, {
+            mode: params.mode === 'advance' ? 'advance' : 'standard',
+        });
+
+        if (response?.success === false) {
+            throw new Error(response?.message ?? 'exchange mode failed');
+        }
+
+        G7Core.toast?.success?.(
+            response?.message ?? t('sirsoft-ecommerce.admin.claim.detail.exchange_mode.updated', '진행 방식을 바꿨습니다.'),
+        );
+        G7Core.modal?.close?.('modal_claim_exchange_mode_confirm');
+        G7Core.state.set?.({ claimExchangeModeContext: null });
+        refetchSources(DETAIL_REFETCH_SOURCES);
+    } catch (error: any) {
+        logger.error('[setClaimExchangeMode] 진행 방식 변경 실패:', error);
+        G7Core.toast?.error?.(
+            serverMessageOf(error)
+            ?? t('sirsoft-ecommerce.admin.claim.detail.exchange_mode.error', '진행 방식을 바꾸지 못했습니다.'),
+        );
+        throw error;
+    } finally {
+        G7Core.state.set?.({ isSettingExchangeMode: false });
+    }
+}
+
+/**
+ * 고객 요청 대리 철회 모달을 엽니다. (S14)
+ *
+ * @param action 액션 객체 (params: pathSegment / claimId)
+ * @param _context 액션 컨텍스트
+ */
+export function openClaimWithdrawOnBehalfHandler(
+    action: ActionWithParams<{ pathSegment?: string; claimId?: number | string | null }>,
+    _context?: ActionContext,
+): void {
+    const G7Core = core();
+    if (!G7Core) return;
+
+    G7Core.state.set({
+        claimWithdrawContext: {
+            pathSegment: action.params?.pathSegment ?? '',
+            claimId: Number(action.params?.claimId),
+        },
+        claimWithdrawReason: '',
+    });
+    G7Core.modal?.open?.('modal_claim_withdraw_on_behalf');
+}
+
+/**
+ * 고객 요청으로 신청을 대신 철회합니다. (S14 — `POST …/withdraw`)
+ *
+ * @param action 액션 객체 (params: pathSegment / claimId / reason)
+ * @param _context 액션 컨텍스트
+ */
+export async function withdrawClaimOnBehalfHandler(
+    action: ActionWithParams<{ pathSegment?: string; claimId?: number | string | null; reason?: string | null }>,
+    _context?: ActionContext,
+): Promise<void> {
+    const G7Core = core();
+    if (!G7Core) return;
+
+    const params = action.params ?? {};
+    const base = claimScopedBase(params);
+    const reason = (params.reason ?? '').trim();
+
+    if (base === null) {
+        logger.warn('[withdrawClaimOnBehalf] 신청서 식별 축이 없습니다.');
+
+        return;
+    }
+
+    if (reason === '') {
+        G7Core.toast?.warning?.(
+            t('sirsoft-ecommerce.admin.claim.detail.withdraw_on_behalf.reason_required', '철회 사유를 입력해주세요.'),
+        );
+
+        return;
+    }
+
+    if (G7Core.state.get?.()?.isWithdrawingClaim === true) return;
+    G7Core.state.set?.({ isWithdrawingClaim: true });
+
+    try {
+        const response = await G7Core.api.post(`${base}/withdraw`, { reason });
+
+        if (response?.success === false) {
+            throw new Error(response?.message ?? 'withdraw failed');
+        }
+
+        G7Core.toast?.success?.(
+            response?.message ?? t('sirsoft-ecommerce.admin.claim.detail.withdraw_on_behalf.success', '고객 요청으로 신청을 철회했습니다.'),
+        );
+        G7Core.modal?.close?.('modal_claim_withdraw_on_behalf');
+        G7Core.state.set?.({ claimWithdrawContext: null, claimWithdrawReason: '' });
+        refetchSources(DETAIL_REFETCH_SOURCES);
+    } catch (error: any) {
+        logger.error('[withdrawClaimOnBehalf] 대리 철회 실패:', error);
+        G7Core.toast?.error?.(
+            serverMessageOf(error)
+            ?? t('sirsoft-ecommerce.admin.claim.detail.withdraw_on_behalf.error', '신청을 철회하지 못했습니다.'),
+        );
+        throw error;
+    } finally {
+        G7Core.state.set?.({ isWithdrawingClaim: false });
+    }
+}
+
+/**
+ * 신청 내용 수정 모달을 엽니다. (S15)
+ *
+ * @param action 액션 객체 (params: pathSegment / claimId / reasonCode / reasonDetail / reasonOptions)
+ * @param _context 액션 컨텍스트
+ */
+export function openClaimRequestEditHandler(
+    action: ActionWithParams<{
+        pathSegment?: string;
+        claimId?: number | string | null;
+        reasonCode?: string | null;
+        reasonDetail?: string | null;
+        reasonOptions?: Array<{ value: string; label: string }>;
+    }>,
+    _context?: ActionContext,
+): void {
+    const G7Core = core();
+    if (!G7Core) return;
+
+    const params = action.params ?? {};
+
+    G7Core.state.set({
+        claimRequestEditContext: {
+            pathSegment: params.pathSegment ?? '',
+            claimId: Number(params.claimId),
+            reasonOptions: params.reasonOptions ?? [],
+        },
+        claimRequestEditReasonCode: params.reasonCode ?? '',
+        claimRequestEditReasonDetail: params.reasonDetail ?? '',
+    });
+    G7Core.modal?.open?.('modal_claim_request_edit');
+}
+
+/**
+ * 신청 내용을 운영자가 고칩니다. (S15 — `PATCH admin/{세그먼트}/{id}`)
+ *
+ * @param action 액션 객체 (params: pathSegment / claimId / reasonCode / reasonDetail)
+ * @param _context 액션 컨텍스트
+ */
+export async function updateClaimRequestOnBehalfHandler(
+    action: ActionWithParams<{
+        pathSegment?: string;
+        claimId?: number | string | null;
+        reasonCode?: string | null;
+        reasonDetail?: string | null;
+    }>,
+    _context?: ActionContext,
+): Promise<void> {
+    const G7Core = core();
+    if (!G7Core) return;
+
+    const params = action.params ?? {};
+    const base = claimScopedBase(params);
+
+    if (base === null) {
+        logger.warn('[updateClaimRequestOnBehalf] 신청서 식별 축이 없습니다.');
+
+        return;
+    }
+
+    if (G7Core.state.get?.()?.isEditingClaimRequest === true) return;
+    G7Core.state.set?.({ isEditingClaimRequest: true });
+
+    try {
+        const response = await G7Core.api.patch(base, {
+            reason_code: params.reasonCode ?? null,
+            reason_detail: params.reasonDetail ?? null,
+        });
+
+        if (response?.success === false) {
+            throw new Error(response?.message ?? 'request edit failed');
+        }
+
+        G7Core.toast?.success?.(
+            response?.message ?? t('sirsoft-ecommerce.admin.claim.detail.request_edit.success', '신청 내용을 수정했습니다.'),
+        );
+        G7Core.modal?.close?.('modal_claim_request_edit');
+        G7Core.state.set?.({ claimRequestEditContext: null });
+        refetchSources(DETAIL_REFETCH_SOURCES);
+    } catch (error: any) {
+        logger.error('[updateClaimRequestOnBehalf] 신청 내용 수정 실패:', error);
+        G7Core.toast?.error?.(
+            serverMessageOf(error)
+            ?? t('sirsoft-ecommerce.admin.claim.detail.request_edit.error', '신청 내용을 수정하지 못했습니다.'),
+        );
+        throw error;
+    } finally {
+        G7Core.state.set?.({ isEditingClaimRequest: false });
+    }
+}
+
+/**
+ * 완료됐지만 재고를 복구하지 않은 행의 재고를 복구합니다. (S13 — `POST …/items/restore-stock`)
+ *
+ * @param action 액션 객체 (params: pathSegment / claimId / itemIds)
+ * @param _context 액션 컨텍스트
+ */
+export async function restoreClaimStockHandler(
+    action: ActionWithParams<{ pathSegment?: string; claimId?: number | string | null; itemIds?: Array<number | string> }>,
+    _context?: ActionContext,
+): Promise<void> {
+    const G7Core = core();
+    if (!G7Core) return;
+
+    const params = action.params ?? {};
+    const base = claimScopedBase(params);
+
+    if (base === null) {
+        logger.warn('[restoreClaimStock] 신청서 식별 축이 없습니다.');
+
+        return;
+    }
+
+    if (G7Core.state.getLocal?.()?.isRestoringStock === true) return;
+    G7Core.state.setLocal?.({ isRestoringStock: true });
+
+    try {
+        const response = await G7Core.api.post(`${base}/items/restore-stock`, {
+            items: (params.itemIds ?? []).map((id) => Number(id)),
+        });
+
+        if (response?.success === false) {
+            throw new Error(response?.message ?? 'restore stock failed');
+        }
+
+        G7Core.toast?.success?.(
+            response?.message ?? t('sirsoft-ecommerce.admin.claim.detail.completion.restore_stock_success', '재고를 복구했습니다.'),
+        );
+        refetchSources(DETAIL_REFETCH_SOURCES);
+    } catch (error: any) {
+        logger.error('[restoreClaimStock] 재고 복구 실패:', error);
+        G7Core.toast?.error?.(
+            serverMessageOf(error)
+            ?? t('sirsoft-ecommerce.admin.claim.detail.completion.restore_stock_error', '재고를 복구하지 못했습니다.'),
+        );
+        throw error;
+    } finally {
+        G7Core.state.setLocal?.({ isRestoringStock: false });
     }
 }
 

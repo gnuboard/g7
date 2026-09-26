@@ -35,6 +35,11 @@ class ClaimActivityLogListenerTest extends ModuleTestCase
 
     protected ClaimActivityLogListener $listener;
 
+    /**
+     * 통화 설정·사유 카탈로그를 시드하고 리스너를 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -43,12 +48,23 @@ class ClaimActivityLogListenerTest extends ModuleTestCase
         $this->listener = app(ClaimActivityLogListener::class);
     }
 
+    /**
+     * 테스트용 통화 설정을 지웁니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         $this->clearTestCurrencySettings();
         parent::tearDown();
     }
 
+    /**
+     * 신청 상태의 반품 신청서를 만듭니다. (고객 접수 · 환불액 차감)
+     *
+     * @param  Order|null  $order  대상 주문 (없으면 배송완료 단일 상품 주문을 만든다)
+     * @return OrderReturn 신청 상태 반품 신청서
+     */
     private function requestedReturn(?Order $order = null): OrderReturn
     {
         $order ??= $this->deliveredClaimOrder();
@@ -62,7 +78,11 @@ class ClaimActivityLogListenerTest extends ModuleTestCase
     }
 
     /**
+     * 반품 접수는 신청번호를 실은 활동 로그 한 줄을 남긴다.
+     *
      * @effects request_writes_one_activity_row_with_the_claim_number
+     *
+     * @return void 반환값 없음
      */
     public function test_requesting_a_return_writes_one_log_row_with_the_claim_number(): void
     {
@@ -82,7 +102,11 @@ class ClaimActivityLogListenerTest extends ModuleTestCase
     }
 
     /**
+     * 서비스 전이 한 번은 상태 변경 로그 정확히 한 줄이다.
+     *
      * @effects service_transition_writes_exactly_one_status_change_row
+     *
+     * @return void 반환값 없음
      */
     public function test_a_service_transition_writes_exactly_one_status_change_row(): void
     {
@@ -117,6 +141,8 @@ class ClaimActivityLogListenerTest extends ModuleTestCase
      * 같은 상태로의 재호출은 전/후 표를 만들지 않는다 — 바뀐 것이 없으면 표도 없다.
      *
      * @effects status_change_carries_before_and_after_in_changes
+     *
+     * @return void 반환값 없음
      */
     public function test_status_change_with_the_same_value_records_no_changes(): void
     {
@@ -129,7 +155,11 @@ class ClaimActivityLogListenerTest extends ModuleTestCase
     }
 
     /**
+     * 상태 변경 로그는 발화 시점에 잡은 목표 상태를 적는다 — 기록 시점의 모델 상태가 아니다.
+     *
      * @effects status_change_records_the_captured_target
+     *
+     * @return void 반환값 없음
      */
     public function test_status_change_records_the_captured_target_not_the_current_model_state(): void
     {
@@ -150,7 +180,11 @@ class ClaimActivityLogListenerTest extends ModuleTestCase
     }
 
     /**
+     * 금액 수정은 코어 changes 형태(항목·이전·이후)로 기록된다.
+     *
      * @effects amount_edits_are_recorded_in_the_core_changes_shape
+     *
+     * @return void 반환값 없음
      */
     public function test_amount_edits_are_recorded_in_the_core_changes_shape(): void
     {
@@ -181,7 +215,11 @@ class ClaimActivityLogListenerTest extends ModuleTestCase
     }
 
     /**
+     * 실제로 바뀐 금액이 없으면 changes 를 비운다.
+     *
      * @effects amount_edits_with_no_effective_change_record_no_changes
+     *
+     * @return void 반환값 없음
      */
     public function test_amount_edits_with_no_effective_change_record_no_changes(): void
     {
@@ -193,6 +231,41 @@ class ClaimActivityLogListenerTest extends ModuleTestCase
         $log = ActivityLog::where('action', 'claim_return.update_amounts')->firstOrFail();
 
         $this->assertNull($log->changes);
+    }
+
+    /**
+     * 고객이 신청 내용(상세 사유·환불 계좌)을 고치면 한 줄이 남는다 — 운영자 대리 수정이 아니라는 표시와 함께.
+     * 환불 계좌는 「바뀌었다」 는 사실만 남고 계좌번호·예금주는 로그 어디에도 실리지 않는다.
+     *
+     * @return void 반환값 없음
+     *
+     * @effects customer_request_update_is_logged_with_masked_refund_bank
+     */
+    public function test_customer_request_update_is_logged_without_the_account_number(): void
+    {
+        $return = $this->requestedReturn();
+        ActivityLog::query()->delete();
+
+        app(OrderReturnService::class)->updateRequest($return, [
+            'reason_detail' => '사이즈가 작음',
+            'refund_bank' => ['bank_code' => '004', 'account_number' => '98765432101234', 'holder' => '홍길동'],
+        ]);
+
+        $log = ActivityLog::where('action', 'claim_return.request_update')->firstOrFail();
+        $this->assertSame('sirsoft-ecommerce::activity_log.description.claim_return_request_update', $log->description_key);
+        $this->assertFalse($log->properties['operator']);
+
+        $changed = collect($log->changes)->keyBy('field');
+        $this->assertNull($changed['reason_detail']['old']);
+        $this->assertSame('사이즈가 작음', $changed['reason_detail']['new']);
+        $this->assertNull($changed['refund_bank']['old']);
+        $this->assertNull($changed['refund_bank']['new']);
+        $this->assertSame('sirsoft-ecommerce::activity_log.values.masked_change', $changed['refund_bank']['new_label_key']);
+        $this->assertArrayNotHasKey('reason', $changed->all(), '바뀌지 않은 사유는 이력에 남기지 않습니다.');
+
+        $serialized = json_encode($log->toArray(), JSON_UNESCAPED_UNICODE);
+        $this->assertStringNotContainsString('98765432101234', $serialized, '환불 계좌번호가 활동 로그에 남았습니다.');
+        $this->assertStringNotContainsString('홍길동', $serialized, '예금주가 활동 로그에 남았습니다.');
     }
 
     // ================================================================
@@ -234,7 +307,11 @@ class ClaimActivityLogListenerTest extends ModuleTestCase
     }
 
     /**
+     * 헤더가 움직이지 않아도 상품 단위 전이는 기록된다.
+     *
      * @effects item_level_transition_is_recorded_even_when_the_header_does_not_move
+     *
+     * @return void 반환값 없음
      */
     public function test_an_item_level_transition_is_recorded_even_when_the_header_does_not_move(): void
     {
@@ -289,7 +366,11 @@ class ClaimActivityLogListenerTest extends ModuleTestCase
     }
 
     /**
+     * 상품 전이가 헤더까지 옮기면 두 사실을 모두 기록한다.
+     *
      * @effects item_level_transition_that_moves_the_header_records_both_facts
+     *
+     * @return void 반환값 없음
      */
     public function test_an_item_level_transition_that_moves_the_header_records_both_facts(): void
     {
@@ -313,7 +394,11 @@ class ClaimActivityLogListenerTest extends ModuleTestCase
     }
 
     /**
+     * 아무것도 옮기지 않은 상품 단위 호출은 기록하지 않는다.
+     *
      * @effects item_level_call_that_moves_nothing_records_nothing
+     *
+     * @return void 반환값 없음
      */
     public function test_an_item_level_call_that_moves_nothing_records_nothing(): void
     {
@@ -349,7 +434,11 @@ class ClaimActivityLogListenerTest extends ModuleTestCase
     }
 
     /**
+     * 결제 대기 건 취소는 사유와 함께 기록된다.
+     *
      * @effects pending_claim_payment_cancellation_is_recorded_with_its_reason
+     *
+     * @return void 반환값 없음
      */
     public function test_cancelling_a_pending_claim_payment_is_recorded_with_its_reason(): void
     {
@@ -377,7 +466,11 @@ class ClaimActivityLogListenerTest extends ModuleTestCase
     }
 
     /**
+     * 배치가 결제 대기 건을 취소하면 신청서를 해석하지 못해도 기록된다.
+     *
      * @effects pending_payment_cancelled_by_the_reaper_is_recorded_without_a_claim
+     *
+     * @return void 반환값 없음
      */
     public function test_a_pending_payment_cancelled_by_the_reaper_is_recorded_without_a_claim(): void
     {
@@ -397,5 +490,48 @@ class ClaimActivityLogListenerTest extends ModuleTestCase
         $this->assertSame(ClaimPaymentService::CANCEL_REASON_ORPHAN_REAPED, $log->properties['reason']);
         $this->assertNull($log->properties['claim_number']);
         $this->assertSame('return', $log->properties['claim_type'], '신청서를 못 찾아도 결제 건 자신이 유형을 안다.');
+    }
+
+    /**
+     * 추가결제 환급 로그는 이번에 되돌린 금액을 문구에 싣는다 — 번호만 있으면 운영자가 얼마를 돌려줬는지
+     * 활동 로그만으로 알 수 없다(부분 환급이면 결제 줄 금액과도 다르다).
+     *
+     * @effects claim_payment_refund_log_names_the_refunded_amount
+     *
+     * @return void 반환값 없음
+     */
+    public function test_claim_payment_refund_log_names_the_refunded_amount(): void
+    {
+        $return = $this->payOnRequestReturn();
+        $payment = app(ClaimPaymentService::class)->initiateForRequest($return, PaymentMethodEnum::POINT->value);
+        ActivityLog::query()->delete();
+
+        $this->listener->handlePaymentRefunded($return->fresh(), $payment->fresh(), 5000.0);
+
+        $log = ActivityLog::where('action', 'claim_payment.refund')->firstOrFail();
+        $expected = ecommerce_format_price(5000.0, $payment->currency_code);
+
+        $this->assertSame('sirsoft-ecommerce::activity_log.description.claim_payment_refund_amount', $log->description_key);
+        $this->assertSame($expected, $log->description_params['amount'] ?? null);
+        $this->assertStringContainsString($expected, __($log->description_key, $log->description_params, 'ko'));
+        $this->assertStringContainsString($payment->payment_number, __($log->description_key, $log->description_params, 'ko'));
+    }
+
+    /**
+     * 금액을 싣기 전에 남은 환급 로그(번호만 있는 행)는 옛 키로 그대로 읽힌다 — 옛 키 문구에 새 자리표시자를
+     * 넣으면 과거 로그가 「(CP…, :amount)」 처럼 자리표시자를 그대로 드러낸다(3차 실측 회귀 2026-09-26).
+     *
+     * @effects claim_payment_refund_legacy_log_renders_without_placeholders
+     *
+     * @return void 반환값 없음
+     */
+    public function test_legacy_claim_payment_refund_log_renders_without_placeholders(): void
+    {
+        foreach (['ko', 'en'] as $locale) {
+            $text = __('sirsoft-ecommerce::activity_log.description.claim_payment_refund', ['payment_number' => 'CP-LEGACY'], $locale);
+
+            $this->assertStringContainsString('CP-LEGACY', $text);
+            $this->assertStringNotContainsString(':', str_replace('CP-LEGACY', '', $text), "{$locale} 옛 환급 로그에 채워지지 않은 자리표시자가 남는다");
+        }
     }
 }

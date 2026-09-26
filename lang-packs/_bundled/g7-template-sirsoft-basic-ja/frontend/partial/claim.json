@@ -190,7 +190,8 @@
     "total_charge": "合計請求額",
     "empty": "申請内容がありません。",
     "go_orders": "注文内容を表示",
-    "order_section_title": "この注文のキャンセル·返品·交換"
+    "order_section_title": "この注文のキャンセル·返品·交換",
+    "tracking_more": "他 {{more}}個"
   },
   "detail": {
     "back": "申請内容",
@@ -204,11 +205,8 @@
     "shipping_title": "配送",
     "collection_title": "回収",
     "collection_address": "回収先",
-    "collection_completed_at": "回収完了",
     "redelivery_title": "再発送",
     "redelivery_changed_badge": "顧客が編集しました",
-    "redelivered_at": "再発送完了",
-    "tracking": "送り状",
     "tracking_pending": "登録前",
     "claim_info_title": "クレーム情報",
     "compare_item": "項目",
@@ -268,7 +266,25 @@
       "row_earned_points": "付与予定ポイント",
       "row_substituted": "交換対象 (オプション変更)",
       "unit_count": "点"
-    }
+    },
+    "tracking_no_tracking": "送り状なしで到着",
+    "tracking_arrived": "到着",
+    "tracking_in_transit": "配送中",
+    "advance_exchange_notice": "先交換 — 新商品をまず送付いたします。既存商品は{{date}}までにお送りください。",
+    "advance_exchange_notice_no_due": "先交換 — 新商品をまず送付いたします。新商品をお受け取りの後、既存商品をお送りください。",
+    "collection_overdue": "返送期限{{days}}日経過",
+    "unreturned_badge": "未回収",
+    "collection_address_n": "回収先{{n}}",
+    "item_collection_tracking": "回収送り状",
+    "item_redelivery_tracking": "再発送送り状",
+    "item_collection_state": "既存商品{{state}}",
+    "item_reject_reason": "却下理由：{{reason}}",
+    "collection_lane_title": "既存商品回収",
+    "collection_lane_counts": "{{total}}個中{{collected}}個到着",
+    "collection_lane_due": "返送期限{{date}}",
+    "admin_requested_notice": "販売者が受け付けたお申し込みはカスタマーセンターへお問い合わせください。",
+    "collection_completed_at": "全体回収完了",
+    "redelivered_at": "全体再送信完了"
   },
   "edit": {
     "title": "申請内容編集",

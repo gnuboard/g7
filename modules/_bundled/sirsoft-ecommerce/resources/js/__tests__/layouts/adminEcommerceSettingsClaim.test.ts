@@ -324,8 +324,9 @@ describe('클레임 정책 — defaults 의 스칼라 축 전부가 편집 통�
 
     // 하한(>14)이면 partial 3개가 통째로 사라져도 통과한다 — 정확값으로 고정한다.
     // 52 = 종전 50 + 자동승인 대상 상태 MultiSelect 1(#599 후속 D8)
-    //      + 환불 자동 승인 결제수단 MultiSelect 1(#599 §4-A A-2 · P17 · `591770d69`).
-    expect(found.length, '7 partial 의 입력형 노드 수가 바뀌었다 — 입력을 더했거나 뺐으면 이 수를 함께 고친다').toBe(52);
+    //      + 환불 자동 승인 결제수단 MultiSelect 1(#599 §4-A A-2 · P17 · `591770d69`)
+    //      + 선교환 허용 Toggle 1 · 회수 기한(일) 숫자 입력 1(#599 §3-3 = 54).
+    expect(found.length, '7 partial 의 입력형 노드 수가 바뀌었다 — 입력을 더했거나 뺐으면 이 수를 함께 고친다').toBe(54);
 
     const open = found.filter(
       (f) => typeof f.disabled !== 'string' || !f.disabled.includes('_computed.isReadOnly')

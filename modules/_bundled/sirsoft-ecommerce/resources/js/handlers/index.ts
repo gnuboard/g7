@@ -189,7 +189,19 @@ import {
     storeClaimRefundRequestHandler,
     refreshClaimAttachmentsHandler,
     clearClaimImagesHandler,
-    saveClaimTrackingHandler,
+    selectClaimItemBulkStatusHandler,
+    selectClaimItemTrackingDirectionHandler,
+    openClaimItemTrackingOnlyHandler,
+    deliverClaimTrackingHandler,
+    openClaimExchangeModeConfirmHandler,
+    setClaimExchangeModeHandler,
+    openClaimWithdrawOnBehalfHandler,
+    withdrawClaimOnBehalfHandler,
+    openClaimRequestEditHandler,
+    updateClaimRequestOnBehalfHandler,
+    restoreClaimStockHandler,
+    toggleClaimCompleteUnreturnedHandler,
+    setClaimCompleteUnreturnedReasonHandler,
     saveClaimAdminMemoHandler,
     saveClaimAmountsHandler,
     openClaimRefundExecuteHandler,
@@ -220,6 +232,13 @@ import {
     executeCancelOrderHandler,
     clearCancelOrderTimers,
 } from './cancelOrderHandlers';
+import {
+    clearAdminClaimRequestTimersHandler,
+    openAdminClaimRequestHandler,
+    setAdminClaimRequestFieldHandler,
+    setAdminClaimRequestRowHandler,
+    submitAdminClaimRequestHandler,
+} from './adminClaimRequestHandlers';
 
 // 주문 상품 선택 핸들러 (회원/비회원 주문상세 공용 — 클레임 신청 진입이 쓴다)
 import {
@@ -473,7 +492,19 @@ export const handlerMap = {
     storeClaimRefundRequest: storeClaimRefundRequestHandler,
     refreshClaimAttachments: refreshClaimAttachmentsHandler,
     clearClaimImages: clearClaimImagesHandler,
-    saveClaimTracking: saveClaimTrackingHandler,
+    selectClaimItemBulkStatus: selectClaimItemBulkStatusHandler,
+    selectClaimItemTrackingDirection: selectClaimItemTrackingDirectionHandler,
+    openClaimItemTrackingOnly: openClaimItemTrackingOnlyHandler,
+    deliverClaimTracking: deliverClaimTrackingHandler,
+    openClaimExchangeModeConfirm: openClaimExchangeModeConfirmHandler,
+    setClaimExchangeMode: setClaimExchangeModeHandler,
+    openClaimWithdrawOnBehalf: openClaimWithdrawOnBehalfHandler,
+    withdrawClaimOnBehalf: withdrawClaimOnBehalfHandler,
+    openClaimRequestEdit: openClaimRequestEditHandler,
+    updateClaimRequestOnBehalf: updateClaimRequestOnBehalfHandler,
+    restoreClaimStock: restoreClaimStockHandler,
+    toggleClaimCompleteUnreturned: toggleClaimCompleteUnreturnedHandler,
+    setClaimCompleteUnreturnedReason: setClaimCompleteUnreturnedReasonHandler,
     saveClaimAdminMemo: saveClaimAdminMemoHandler,
     saveClaimAmounts: saveClaimAmountsHandler,
     openClaimRefundExecute: openClaimRefundExecuteHandler,
@@ -523,6 +554,12 @@ export const handlerMap = {
     changeRefundPriority: changeRefundPriorityHandler,
     executeCancelOrder: executeCancelOrderHandler,
     clearCancelOrderTimers: clearCancelOrderTimers,
+    // 관리자 직권 접수 (§3-11) — 주문 상세 선택 바 [교환 접수]·[반품 접수]
+    clearAdminClaimRequestTimers: clearAdminClaimRequestTimersHandler,
+    openAdminClaimRequest: openAdminClaimRequestHandler,
+    setAdminClaimRequestField: setAdminClaimRequestFieldHandler,
+    setAdminClaimRequestRow: setAdminClaimRequestRowHandler,
+    submitAdminClaimRequest: submitAdminClaimRequestHandler,
 
     // ===== 주문 상품 선택 (사용자) =====
     toggleItemSelection: toggleItemSelectionHandler,

@@ -7,7 +7,9 @@ use App\Models\User;
 use ArrayObject;
 use Illuminate\Support\Facades\DB;
 use Modules\Sirsoft\Ecommerce\DTO\ClaimCompletionOptions;
+use Modules\Sirsoft\Ecommerce\Enums\ClaimTrackingDirectionEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimTypeEnum;
+use Modules\Sirsoft\Ecommerce\Enums\ExchangeModeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ExchangeStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundSourceTypeEnum;
@@ -21,6 +23,7 @@ use Modules\Sirsoft\Ecommerce\Models\OrderReturn;
 use Modules\Sirsoft\Ecommerce\Models\ProductOption;
 use Modules\Sirsoft\Ecommerce\Models\ShippingCarrier;
 use Modules\Sirsoft\Ecommerce\Services\AdminClaimService;
+use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
 use Modules\Sirsoft\Ecommerce\Services\OrderExchangeService;
 use Modules\Sirsoft\Ecommerce\Services\OrderRefundRequestService;
 use Modules\Sirsoft\Ecommerce\Services\OrderReturnService;
@@ -792,5 +795,103 @@ class ClaimBeforeFilterHooksTest extends ModuleTestCase
         $this->assertSame(['exchange' => 'requested->rejected', 'return' => 'requested->rejected', 'refund' => 'requested->rejected'], $seen);
         // 처리자는 필터가 바꿀 수 있는 키가 아니다 — 헤더 경로와 같은 규칙.
         $this->assertSame((int) $admin->id, (int) $return->fresh()->processed_by);
+    }
+
+    // ── 송장만 저장 · 진행 방식 (#599 후속 §3-7) ──
+
+    /**
+     * 「송장만 저장」 의 before 훅이 막으면 어떤 행에도 송장이 쓰이지 않는다 — 훅은 방향·대상 행·입력을 받는다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario operation=tracking_update, hook_kind=before
+     *
+     * @effects tracking_update_before_hook_blocks_the_write
+     */
+    public function test_송장만_저장_before_훅이_막으면_송장이_쓰이지_않는다(): void
+    {
+        $return = $this->advanceReturn($this->freeReturn(), [ReturnStatusEnum::APPROVED]);
+        $itemId = (int) $return->returnOptions->first()->id;
+        $carrier = $this->testClaimCarrier();
+
+        $captured = $this->blockOn('sirsoft-ecommerce.claim.return.before_tracking_update');
+
+        $this->assertBlocked(fn () => $this->returns->writeItemTracking($return, ClaimTrackingDirectionEnum::COLLECTION, [['id' => $itemId, 'quantity' => 1]], $carrier->id, 'BLOCK-1'));
+
+        $this->assertSame('collection', $captured[1]);
+        $this->assertSame([['id' => $itemId, 'quantity' => 1]], $captured[2]);
+        $this->assertSame(['carrier_id' => $carrier->id, 'tracking_number' => 'BLOCK-1'], $captured[3]);
+        $this->assertNull($return->returnOptions->first()->fresh()->collection_tracking_number);
+    }
+
+    /**
+     * 송장 필터는 택배사·운송장만 바꿀 수 있다 — 다른 키(처리자·상태)를 실어도 되돌린다. 바뀐 값도 반쪽 송장
+     * 규칙을 그대로 지난다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario operation=tracking_update, hook_kind=filter
+     *
+     * @effects tracking_update_filter_changes_only_the_tracking_pair
+     */
+    public function test_송장_필터는_택배사와_운송장만_바꾼다(): void
+    {
+        $exchange = $this->exchanges->transition($this->freeExchange(), ExchangeStatusEnum::APPROVED);
+        $itemId = (int) $exchange->fresh('exchangeOptions')->exchangeOptions->first()->id;
+        $carrier = $this->testClaimCarrier();
+        $seen = [];
+
+        HookManager::addFilter('sirsoft-ecommerce.claim.exchange.filter_tracking_update_data', function (array $data, $claim, string $direction) use (&$seen) {
+            $seen[] = $direction;
+            $data['tracking_number'] = 'FILTERED-'.$data['tracking_number'];
+            $data['processed_by'] = 999999;
+            $data['option_status'] = 'completed';
+
+            return $data;
+        });
+
+        $this->exchanges->writeItemTracking($exchange, ClaimTrackingDirectionEnum::COLLECTION, [$itemId], $carrier->id, 'RAW-1', null);
+
+        $row = $exchange->fresh('exchangeOptions')->exchangeOptions->first();
+        $this->assertSame(['collection'], $seen);
+        $this->assertSame('FILTERED-RAW-1', $row->collection_tracking_number);
+        $this->assertSame(ExchangeStatusEnum::APPROVED, $row->option_status);
+        $this->assertNotSame(999999, (int) $row->processed_by);
+
+        // 필터가 반쪽 송장을 만들면 같은 규칙으로 거절한다.
+        HookManager::addFilter('sirsoft-ecommerce.claim.exchange.filter_tracking_update_data', fn (array $data) => ['carrier_id' => null] + $data, 20);
+
+        try {
+            $this->exchanges->writeItemTracking($exchange->fresh(), ClaimTrackingDirectionEnum::COLLECTION, [$itemId], $carrier->id, 'RAW-2');
+            $this->fail('필터가 만든 반쪽 송장이 저장됐습니다.');
+        } catch (OrderClaimException $e) {
+            $this->assertSame('sirsoft-ecommerce::exceptions.claim_tracking_incomplete', $e->getMessageKey());
+        }
+
+        $this->assertSame('FILTERED-RAW-1', $exchange->fresh('exchangeOptions')->exchangeOptions->first()->collection_tracking_number);
+    }
+
+    /**
+     * 진행 방식 전환의 before 훅이 막으면 방식이 바뀌지 않는다 — 훅은 바꾸기 전·후 방식을 받는다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario operation=mode_change, hook_kind=before
+     *
+     * @effects exchange_mode_before_hook_blocks_the_change
+     */
+    public function test_진행_방식_before_훅이_막으면_방식이_그대로다(): void
+    {
+        app(EcommerceSettingsService::class)->setSetting('claim.advance_exchange_enabled', true);
+        $exchange = $this->freeExchange();
+
+        $captured = $this->blockOn('sirsoft-ecommerce.claim.exchange.before_mode_change');
+
+        $this->assertBlocked(fn () => $this->exchanges->setExchangeMode($exchange, ExchangeModeEnum::ADVANCE));
+
+        $this->assertSame('standard', $captured[1]);
+        $this->assertSame('advance', $captured[2]);
+        $this->assertSame(ExchangeModeEnum::STANDARD, $exchange->fresh()->mode());
+        $this->assertNull($exchange->fresh()->exchange_mode_set_at);
     }
 }

@@ -37,9 +37,52 @@ type Node = Record<string, any>;
 
 const GRID_ROW_TESTID = 'claim-item-row';
 
+/** 회수 운송장 (두 행이 한 상자로 나갔다 — 같은 운송장을 두 행에 적는다) */
+const COLLECTION_WAYBILL = {
+  carrier_id: 3,
+  carrier_name: 'CJ대한통운',
+  tracking_number: '612345678901',
+  tracking_url: 'https://trace.cjlogistics.com/next/tracking.html?wblNo=612345678901',
+};
+
+/**
+ * 교환 상품 행의 송장 필드를 만든다. (`ClaimItemResource::trackingFields()` 와 같은 키)
+ *
+ * 송장은 **상품 행**에 있다 — 신청서 헤더에는 송장 칸이 없다.
+ *
+ * @param overrides 덮어쓸 필드
+ * @returns 행 송장 필드
+ */
+function exchangeRowTracking(overrides: Node = {}): Node {
+  return {
+    collection_carrier_id: COLLECTION_WAYBILL.carrier_id,
+    collection_carrier_name: COLLECTION_WAYBILL.carrier_name,
+    collection_tracking_number: COLLECTION_WAYBILL.tracking_number,
+    collection_tracking_url: COLLECTION_WAYBILL.tracking_url,
+    collection_shipped_at_formatted: '2026-08-28 09:00',
+    collected_at_formatted: null,
+    collection_state: 'in_transit',
+    collection_state_label: '회수중',
+    collection_state_variant: 'info',
+    is_stock_restored: false,
+    is_stock_restorable: false,
+    redelivery_carrier_id: null,
+    redelivery_carrier_name: null,
+    redelivery_tracking_number: null,
+    redelivery_tracking_url: null,
+    redelivery_shipped_at_formatted: null,
+    redelivered_at_formatted: null,
+    is_unreturned: false,
+    unreturned_at_formatted: null,
+    unreturned_reason: null,
+    ...overrides,
+  };
+}
+
 /** 교환 신청 상품 두 행 (하나는 옵션 변경, 하나는 동일 옵션) */
 const EXCHANGE_ITEMS = [
   {
+    ...exchangeRowTracking(),
     id: 55,
     product_name: '프리미엄 코튼 티셔츠',
     option_name: '차콜 / M',
@@ -61,6 +104,7 @@ const EXCHANGE_ITEMS = [
     thumbnail_url: '/storage/products/1/thumb.jpg',
   },
   {
+    ...exchangeRowTracking(),
     id: 56,
     product_name: '소프트 터치 니트',
     option_name: '아이보리 / L',
@@ -82,6 +126,30 @@ const EXCHANGE_ITEMS = [
     thumbnail_url: null,
   },
 ];
+
+/**
+ * 운송장 묶음 (`ClaimTrackingGroups::for($claim, forAdmin: true)` 와 같은 모양)
+ *
+ * 회수는 한 운송장에 두 행이 담긴 한 묶음이고 아직 도착 전이라 [도착 처리] 가 켜진다. 재발송은 아직 없다.
+ */
+const TRACKING_GROUPS = {
+  collection: [
+    {
+      key: `collection:${COLLECTION_WAYBILL.carrier_id}|${COLLECTION_WAYBILL.tracking_number}`,
+      direction: 'collection',
+      no_tracking: false,
+      ...COLLECTION_WAYBILL,
+      items: [
+        { claim_item_id: 55, product_name: '프리미엄 코튼 티셔츠', option_name: '차콜 / M', quantity: 2, status_label: '교환회수중', arrived: false },
+        { claim_item_id: 56, product_name: '소프트 터치 니트', option_name: '아이보리 / L', quantity: 1, status_label: '교환회수중', arrived: false },
+      ],
+      all_arrived: false,
+      can_deliver: true,
+      blocked_reason: null,
+    },
+  ],
+  redelivery: [],
+};
 
 /** 진행단계 (서버가 만든 배열 — 청구액이 없는 교환이라 결제 두 칸이 빠져 있다) */
 const PROGRESS_STEPS = [
@@ -141,14 +209,18 @@ function claimResponse(overrides: Node = {}, envelope: Node = {}) {
           address2: '101동 1001호',
           changed_by_user: false,
         },
-        collection_carrier_id: null,
-        collection_tracking_number: null,
-        collection_tracking_url: null,
+        // 송장은 상품 행(`items[]`)에 있고, 배송 정보 탭은 운송장별 묶음(`tracking_groups`)을 그린다 —
+        // 헤더에는 송장 칸이 없다(헤더에 남은 것은 신청서 전체의 도착 시각뿐이다).
+        tracking_groups: TRACKING_GROUPS,
+        return_addresses: [],
         collection_completed_at_formatted: null,
-        redelivery_carrier_id: null,
-        redelivery_tracking_number: null,
-        redelivery_tracking_url: null,
         redelivered_at_formatted: null,
+        exchange_mode: 'standard',
+        exchange_mode_label: '일반 교환',
+        is_advance_exchange: false,
+        collection_due_date_formatted: null,
+        is_collection_overdue: false,
+        collection_overdue_days: 0,
         ...overrides,
       },
       claim_path_segment: 'exchanges',
@@ -454,15 +526,27 @@ describe('배송 섹션 — 유형별 노출 (D17-②)', () => {
    * @effects claim_shipping_redelivery_marked_not_applicable
    */
   it('반품에서는 회수만 편집 가능하고 재발송은 해당 없음으로 남는다', async () => {
+    // 반품 행에는 재발송 키가 없다(`ClaimItemResource` 는 교환 행에만 싣는다) — 묶음도 회수뿐이다.
+    const returnItems = EXCHANGE_ITEMS.map((item) => Object.fromEntries(
+      Object.entries(item).filter(([key]) => !key.startsWith('redelivery_') && !key.startsWith('redelivered_')
+        && !key.startsWith('unreturned_') && key !== 'is_unreturned'),
+    ));
     const utils = await renderProbe(
       shippingSection as Node,
-      claimResponse({ claim_type: 'return' }, { claim_path_segment: 'returns' })
+      claimResponse(
+        { claim_type: 'return', items: returnItems, tracking_groups: { collection: TRACKING_GROUPS.collection, redelivery: [] } },
+        { claim_path_segment: 'returns' }
+      )
     );
 
     expect(document.querySelector('[data-section-id="shipping_info"]')).not.toBeNull();
     expect(document.getElementById('claim_collection_block')).not.toBeNull();
+    expect(document.getElementById('cs_006_collection_group_0')).not.toBeNull();
     expect(document.getElementById('cs_008_redelivery_na_text')).not.toBeNull();
-    expect(document.getElementById('cs_016_redelivery_save')).toBeNull();
+    // 재발송 묶음·빈 안내는 교환 전용 블록 안에만 있다.
+    expect(document.getElementById('claim_redelivery_block')).toBeNull();
+    expect(document.getElementById('cs_014_redelivery_empty')).toBeNull();
+    expect(document.querySelector('[id^="cs_015_redelivery_group_"]')).toBeNull();
     utils.cleanup();
   });
 
@@ -478,6 +562,68 @@ describe('배송 섹션 — 유형별 노출 (D17-②)', () => {
     expect(card?.querySelector('#claim_collection_block')).not.toBeNull();
     expect(card?.querySelector('#claim_redelivery_block')).not.toBeNull();
     expect(document.getElementById('cs_008_redelivery_na_text')).toBeNull();
+    utils.cleanup();
+  });
+});
+
+describe('배송 정보 탭 — 운송장 묶음 렌더 (상품 행 송장 · R9)', () => {
+  /**
+   * 한 운송장에 두 행이 담긴 회수 묶음이 **한 줄**로 서고, 택배사·운송장·서버 조회 링크·담긴 상품 × 수량을
+   * 그린다. 재발송은 아직 묶음이 없어 빈 안내가 선다. 이 탭에는 입력칸이 없다.
+   *
+   * @scenario claim_type=exchange, claim_stage=in_progress
+   * @effects claim_shipping_renders_waybill_group_rows_and_link
+   */
+  it('회수 운송장 묶음 하나가 택배사·운송장·조회 링크·상품 × 수량으로 선다', async () => {
+    const utils = await renderProbe(shippingSection as Node);
+
+    const group = document.getElementById('cs_006_collection_group_0');
+    expect(group).not.toBeNull();
+    expect(document.getElementById('cs_006_collection_group_1')).toBeNull();
+    expect(document.getElementById('cs_005_collection_empty')).toBeNull();
+
+    const text = group?.textContent ?? '';
+    expect(text).toContain('CJ대한통운');
+    expect(text).toContain('612345678901');
+    expect(text).toContain('프리미엄 코튼 티셔츠 (차콜 / M) × 2');
+    expect(text).toContain('소프트 터치 니트 (아이보리 / L) × 1');
+    expect(group?.querySelector('a')?.getAttribute('href')).toBe(COLLECTION_WAYBILL.tracking_url);
+
+    // 도착 전이고 서버가 옮길 수 있다고 판정했다 — [도착 처리] 가 켜지고 막힌 이유 문구가 없다.
+    const deliver = group?.querySelector('button');
+    expect(deliver).not.toBeNull();
+    expect(deliver?.hasAttribute('disabled')).toBe(false);
+
+    // 재발송 묶음은 아직 없다.
+    expect(document.getElementById('cs_014_redelivery_empty')).not.toBeNull();
+    expect(document.querySelector('[id^="cs_015_redelivery_group_"]')).toBeNull();
+    expect(document.querySelectorAll('#claim_shipping_card input, #claim_shipping_card select')).toHaveLength(0);
+    utils.cleanup();
+  });
+
+  /**
+   * 서버가 이 묶음을 옮길 수 없다고 판정하면(이미 도착 · 상태 불가) [도착 처리] 가 꺼지고 그 이유를 버튼 옆에
+   * 적는다 — 꺼진 버튼만 두면 운영자는 권한 문제로 읽는다. 도착한 묶음은 「도착」 뱃지를 단다.
+   *
+   * @scenario claim_type=exchange, claim_stage=in_progress
+   * @effects claim_shipping_deliver_disabled_with_reason_when_server_blocks
+   */
+  it('`can_deliver` 가 거짓이면 [도착 처리] 가 꺼지고 막힌 이유가 곁에 선다', async () => {
+    const arrived = {
+      ...TRACKING_GROUPS.collection[0],
+      items: TRACKING_GROUPS.collection[0].items.map((item) => ({ ...item, arrived: true })),
+      all_arrived: true,
+      can_deliver: false,
+      blocked_reason: '이미 도착 처리된 운송장입니다.',
+    };
+    const utils = await renderProbe(
+      shippingSection as Node,
+      claimResponse({ tracking_groups: { collection: [arrived], redelivery: [] } })
+    );
+
+    const group = document.getElementById('cs_006_collection_group_0');
+    expect(group?.querySelector('button')?.hasAttribute('disabled')).toBe(true);
+    expect(group?.textContent ?? '').toContain('이미 도착 처리된 운송장입니다.');
     utils.cleanup();
   });
 });
@@ -1677,7 +1823,7 @@ describe('신청자 출처 뱃지·요청자 링크 (계획 676)', () => {
    * @scenario claim_type=exchange, claim_stage=in_progress
    * @effects requester_link_targets_the_order_owner_not_the_filer
    */
-  it('운영자 대리 접수도 회원 주문이면 링크가 서고 뱃지는 운영자 접수다', async () => {
+  it('운영자 대리 접수도 회원 주문이면 링크가 서고 뱃지는 판매자 접수다', async () => {
     const utils = await renderProbe(
       requesterBlock(),
       claimResponse({
@@ -1685,14 +1831,14 @@ describe('신청자 출처 뱃지·요청자 링크 (계획 676)', () => {
         requester_user_id: 3,
         requester_user_uuid: '01990000-0000-7000-8000-000000000003',
         request_source: 'admin',
-        request_source_label: '운영자 접수',
+        request_source_label: '판매자 접수',
       })
     );
 
     const link = document.getElementById('cd_008_requester');
     expect(link).not.toBeNull();
     expect(link!.tagName).toBe('A');
-    expect(document.getElementById('cd_008b_request_source')!.textContent).toContain('운영자 접수');
+    expect(document.getElementById('cd_008b_request_source')!.textContent).toContain('판매자 접수');
     utils.cleanup();
   });
 
@@ -1723,5 +1869,62 @@ describe('신청자 출처 뱃지·요청자 링크 (계획 676)', () => {
 
     expect(document.getElementById('cd_008b_request_source')!.textContent).toContain('비회원 신청');
     utils.cleanup();
+  });
+});
+
+describe('정산 칸 추가결제 건 — 부분 환급액 (3차 검증 인터뷰 2026-09-26)', () => {
+  const payment = (refunded: number) => ({
+    id: 7,
+    payment_number: 'CP20260926-0230330903',
+    payment_method_label: '마일리지',
+    payment_status: 'paid',
+    payment_status_label: '결제완료',
+    payment_status_variant: 'success',
+    total_amount: 11000,
+    total_amount_formatted: '11,000원',
+    refunded_amount: refunded,
+    refunded_amount_formatted: refunded > 0 ? '5,000원' : '0원',
+  });
+
+  /**
+   * 차액 상품을 반려해 추가결제 일부가 되돌아가도 결제 건 상태는 `paid` 로 남는다. 줄에 결제 금액만 있으면
+   * 운영자는 환급이 없었던 것으로 읽는다 — 구매자 화면(`claim.detail.payment_refunded`)처럼 환급액을 곁에 적는다.
+   *
+   * @scenario claim_type=exchange, claim_stage=in_progress
+   * @effects claim_settlement_payment_row_shows_partial_refund
+   */
+  it.each([
+    [5000, true],
+    [0, false],
+  ])('환급액 %s 이면 환급 표시 %s', async (refunded, shown) => {
+    const utils = await renderProbe(
+      paymentSection as Node,
+      claimResponse({ status: 'approved', status_label: '교환승인', payments: [payment(refunded)] }),
+    );
+    const row = document.getElementById('cst_007_payment_0');
+
+    expect(row).not.toBeNull();
+    expect(row!.textContent).toContain('11,000원');
+    // 이 스위트는 번역을 싣지 않는다 — 키가 그대로 그려지는지로 노출을 재고, 금액 인자는 아래 구조 단언이 잰다.
+    expect(row!.textContent!.includes('settlement.payment_refunded')).toBe(shown);
+    utils.cleanup();
+  });
+
+  /**
+   * @scenario claim_type=exchange, claim_stage=in_progress
+   * @effects claim_settlement_payment_row_shows_partial_refund
+   */
+  it('환급 줄은 결제 건의 서버 표기 환급액을 인자로 싣는다', () => {
+    const texts: string[] = [];
+    const walk = (n: any): void => {
+      if (Array.isArray(n)) { n.forEach(walk); return; }
+      if (n && typeof n === 'object') {
+        if (typeof n.text === 'string') texts.push(n.text);
+        Object.values(n).forEach(walk);
+      }
+    };
+    walk(paymentSection);
+
+    expect(texts).toContain("$t:sirsoft-ecommerce.admin.claim.detail.settlement.payment_refunded|amount={{claimPayment.refunded_amount_formatted ?? ''}}");
   });
 });

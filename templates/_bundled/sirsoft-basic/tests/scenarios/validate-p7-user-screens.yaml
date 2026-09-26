@@ -52,6 +52,7 @@ effects:
   - file_uploader_reject_messages_are_translated
   - claim_refund_account_fields_route_through_mask_guard
   - claim_refund_account_masked_notice_shown
+  - guest_claim_show_marks_seller_filed_claims  # 비회원 상세 판매자 접수 라벨·안내(D8) — request_source 로만 선다
 
 test_files:
   - templates/_bundled/sirsoft-basic/__tests__/layouts/validateP7UserClaimScreens.test.tsx

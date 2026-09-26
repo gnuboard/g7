@@ -331,7 +331,8 @@
         "charge": "Additional charge",
         "refund": "Refund",
         "none": "-"
-      }
+      },
+      "pending_refund_badge": "Refund not filed"
     },
     "payment_info": {
       "title": "Payment Info",
@@ -822,5 +823,41 @@
       "reshipping_completed": "Exchange Reshipping Completed",
       "completed": "Exchange Completed"
     }
+  },
+  "claim_request": {
+    "button_exchange": "File exchange",
+    "button_return": "File return",
+    "button_cancel_refund": "File cancel/refund",
+    "gate_hint": "The selected items cannot be filed in their current state — exchanges/returns need shipped, delivered or confirmed items; cancel/refund needs items not yet shipped.",
+    "no_permission": "You do not have permission to file exchanges, returns or cancellations.",
+    "context_load_failed": "Could not load whether claims can be filed. Please refresh.",
+    "title_exchange": "File exchange (on behalf of customer)",
+    "title_return": "File return (on behalf of customer)",
+    "description": "Filed on behalf of the customer. The request period and requestable-status settings do not apply.",
+    "same_option": "Same option",
+    "sold_out": "Sold out",
+    "reason": "Reason",
+    "reason_placeholder": "Select a reason",
+    "seller_fault": "Seller fault",
+    "reason_detail_placeholder": "Details (e.g. call notes)",
+    "charge_method": "Charge method",
+    "charge_method_auto": "Auto (choose if there is a charge)",
+    "redelivery_address": "Reshipping address",
+    "recipient_name": "Recipient",
+    "phone": "Phone",
+    "zipcode": "Postal code",
+    "address1": "Address",
+    "address2": "Address details",
+    "shipping_fee": "Shipping fee",
+    "total_charge": "Charge {{amount}}",
+    "refund_estimate": "Estimated refund {{amount}}",
+    "preview_needs_reason": "Select a reason to calculate the fee and charge.",
+    "preview_error": "Could not calculate the charge.",
+    "approve": "Approve on filing",
+    "customer_notice": "The customer is notified that the seller filed on their behalf, and cannot withdraw or edit this request.",
+    "submit": "File",
+    "success": "Filed on behalf of the customer.",
+    "error": "Could not file the request.",
+    "reason_required": "Select a reason."
   }
 }

@@ -374,5 +374,9 @@
   "sirsoft-ecommerce.user-claims.pay": {
     "name": "クレーム追加決済",
     "description": "クレーム配送料·差額追加決済"
+  },
+  "sirsoft-ecommerce.claims.create": {
+    "name": "クレーム職権受付",
+    "description": "注文詳細から顧客に代わって交換・返品・キャンセル・返金を受け付け"
   }
 }

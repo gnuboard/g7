@@ -103,6 +103,11 @@ describe('클레임 목록 필터 섹션 — 카드 구조 (D21)', () => {
     ]);
   });
 
+  /**
+   * 표시 여부 선택기는 상태만 가진다 — 카드 구조 순서의 맨 앞 노드다.
+   *
+   * @effects filter_card_node_order_matches_order_screen
+   */
   it('FilterVisibilitySelector 는 UI 를 렌더하지 않으므로 카드 최상단에 두고 화면에는 그리지 않는다', () => {
     const selector = byId('filter_visibility_selector');
     expect(selector.name).toBe('FilterVisibilitySelector');
@@ -125,6 +130,8 @@ describe('클레임 목록 필터 섹션 — 카드 구조 (D21)', () => {
       { id: 'requesterType_filter_row', order: 7 },
       { id: 'amount_filter_row', order: 8 },
       { id: 'chargePaymentMethod_filter_row', order: 9 },
+      // 관리자 접수 · 회수 기한 초과 · 환불 미접수 체크 묶음(#599 §3-11·§3-12)
+      { id: 'claimFlags_filter_row', order: 10 },
     ]);
   });
 
@@ -147,6 +154,11 @@ describe('클레임 목록 필터 섹션 — 카드 구조 (D21)', () => {
     expect(JSON.stringify(filterSection)).not.toContain('saveToLocalStorage');
   });
 
+  /**
+   * 필터 행은 슬롯 등록으로 기본/상세 자리를 고른다.
+   *
+   * @effects filter_rows_registered_through_slot_system
+   */
   it('각 필터 행은 표시 여부에 따라 기본/상세 슬롯으로 갈린다', () => {
     for (const row of byId('slot_registration_area').children ?? []) {
       const key = String(row.id).replace('_filter_row', '');
@@ -156,6 +168,11 @@ describe('클레임 목록 필터 섹션 — 카드 구조 (D21)', () => {
     }
   });
 
+  /**
+   * 슬롯을 받는 컨테이너가 하나씩이어야 행이 두 번 그려지지 않는다.
+   *
+   * @effects filter_rows_registered_through_slot_system
+   */
   it('기본/상세 슬롯 컨테이너가 각각 하나씩 있다', () => {
     const containers = collect(root, (n) => n.name === 'SlotContainer');
     expect(containers.map((n) => n.props?.slotId)).toEqual(['basic_filters', 'detail_filters']);
@@ -195,10 +212,20 @@ describe('클레임 목록 필터 섹션 — 상태 필터 (D21 · D28)', () => 
     cancel: 'CancelStatusEnum',
   } as const;
 
+  /**
+   * 상태 필터는 칩으로만 고른다 — 드롭다운이면 여러 상태를 한 번에 걸 수 없다.
+   *
+   * @effects status_filter_uses_chip_checkbox_not_dropdown
+   */
   it('상태 필터에는 드롭다운(Select)이 하나도 없다', () => {
     expect(collect(statusRow(), (n) => n.name === 'Select')).toHaveLength(0);
   });
 
+  /**
+   * 상태 칩은 배열에 누적된다.
+   *
+   * @effects status_filter_uses_chip_checkbox_not_dropdown
+   */
   it('상태 칩은 전부 ChipCheckbox 이고 toggleArrayValue 로 배열을 누적한다', () => {
     const chips = collect(statusRow(), (n) => n.name === 'ChipCheckbox');
     expect(chips.length).toBeGreaterThan(0);
@@ -228,6 +255,11 @@ describe('클레임 목록 필터 섹션 — 상태 필터 (D21 · D28)', () => 
     }
   );
 
+  /**
+   * 다른 유형의 상태 칩이 섞이지 않게 활성 서브탭 묶음만 등록한다.
+   *
+   * @effects status_chips_scoped_to_active_subtab
+   */
   it('유형별 칩 묶음은 활성 서브탭에서만 등록된다 (기본값 교환 — D16)', () => {
     for (const type of Object.keys(GATE)) {
       expect(byId(`claim_status_chips_${type}`).if).toBe(`{{(query.type || 'exchange') === '${type}'}}`);
@@ -255,10 +287,20 @@ describe('클레임 목록 필터 섹션 — 상태 필터 (D21 · D28)', () => 
 });
 
 describe('클레임 목록 필터 섹션 — 유형에 없는 축 (게이트 prohibited)', () => {
+  /**
+   * 취소에는 귀책 축이 없다 — 게이트가 prohibited 로 거절한다.
+   *
+   * @effects fault_axis_absent_for_cancel
+   */
   it('귀책 필터는 취소 유형에서 등록되지 않는다', () => {
     expect(byId('faultType_filter_row').if).toBe("{{(query.type || 'exchange') !== 'cancel'}}");
   });
 
+  /**
+   * 청구 방식은 교환·반품에만 있다.
+   *
+   * @effects charge_axis_absent_for_refund_and_cancel
+   */
   it('청구방식 필터는 교환·반품에서만 등록된다', () => {
     expect(byId('chargeMethod_filter_row').if).toBe(
       "{{(query.type || 'exchange') === 'exchange' || (query.type || 'exchange') === 'return'}}"
@@ -314,6 +356,11 @@ describe('클레임 목록 필터 섹션 — 검색 드롭다운 (D27)', () => {
     }
   });
 
+  /**
+   * 검색 드롭다운 축은 상세 필터로 다시 두지 않는다 — 상세로 내려가는 축은 겹치지 않는 것뿐이다.
+   *
+   * @effects search_axes_not_duplicated_in_detail_filter
+   */
   it('상세 필터로 내려가는 축은 검색 드롭다운과 겹치지 않는 회원구분 하나다', () => {
     const defaults = byId('filter_visibility_selector').props?.defaultFilters as string[];
     const rowKeys = (byId('slot_registration_area').children ?? []).map((n) =>
@@ -325,6 +372,7 @@ describe('클레임 목록 필터 섹션 — 검색 드롭다운 (D27)', () => {
       'requesterType',
       'amount',
       'chargePaymentMethod',
+      'claimFlags',
     ]);
   });
 });
@@ -350,6 +398,11 @@ describe('[case:components-misc-computed-prefix-options] 클레임 목록 필터
     }
   });
 
+  /**
+   * 셸이 만든 computed 선택지는 필터가 `_computed.` 로 읽는다 — 읽히지 않는 항목이 없다.
+   *
+   * @effects computed_options_are_referenced_with_computed_prefix
+   */
   it('셸 computed 는 전부 소비된다 (사문 항목 없음)', () => {
     const serialized = JSON.stringify(filterSection) + JSON.stringify((shell as any).slots);
     for (const key of Object.keys((shell as any).computed)) {
@@ -425,6 +478,11 @@ describe('클레임 목록 필터 섹션 — 목록 컨텍스트 왕복', () => 
     expect(navigate.comment).toContain('audit:allow layout-list-context-navigate-merge-query');
   });
 
+  /**
+   * 초기화는 필터 상태의 모든 키를 비우고 서브탭만 남긴다.
+   *
+   * @effects reset_clears_every_filter_key_but_keeps_subtab
+   */
   it('초기화는 필터 상태 전 키를 비운다 (화면에 남은 조건 없이 URL 만 비는 상태 방지)', () => {
     const reset = collect(byId('filter_actions'), (n) => n.id === 'f_912_reset_button')[0]
       .actions![0] as any;
@@ -437,6 +495,11 @@ describe('클레임 목록 필터 섹션 — 목록 컨텍스트 왕복', () => 
 });
 
 describe('클레임 목록 필터 섹션 — 프리셋', () => {
+  /**
+   * 프리셋 동작은 클레임 전용 모달을 연다.
+   *
+   * @effects preset_actions_target_claim_scoped_modals
+   */
   it('프리셋 행은 카드 안 최상단이고 관리 모달은 클레임 전용 id 를 연다', () => {
     const presetRow = byId('preset_row');
     const openManage = (presetRow.children ?? [])[0].actions![0] as any;
@@ -504,6 +567,11 @@ describe('클레임 목록 필터 섹션 — 프리셋', () => {
     expect(Object.keys(setState.params.filter).sort()).toEqual(shellKeys);
   });
 
+  /**
+   * 프리셋 데이터소스는 클레임 화면 것만 읽는다.
+   *
+   * @effects presets_scoped_to_claims_target_screen
+   */
   it('셸이 프리셋 데이터소스를 claims 화면으로 스코프한다', () => {
     const presets = (shell as any).data_sources.find((d: any) => d.id === 'presets');
     expect(presets.params.target_screen).toBe('claims');
@@ -572,6 +640,11 @@ describe('클레임 목록 필터 섹션 — 프리셋', () => {
 describe('[case:components-misc-i18n-partial-missing] 클레임 목록 — 다국어 partial 선언', () => {
   const LOCALES = ['ko', 'en'] as const;
 
+  /**
+   * ko·en 사전의 admin.claim 이 partial 파일을 선언한다 — 선언이 빠지면 목록 문구가 키로 보인다.
+   *
+   * @effects claim_list_i18n_partial_declared
+   */
   it.each(LOCALES)('%s.json 의 admin.claim 이 partial 을 선언한다', (locale) => {
     const dict = JSON.parse(
       fs.readFileSync(path.join(MODULE_ROOT, 'resources/lang', `${locale}.json`), 'utf8')
@@ -589,6 +662,11 @@ describe('[case:components-misc-i18n-partial-missing] 클레임 목록 — 다�
       .toBe(typeof decl.$partial);
   });
 
+  /**
+   * 선언한 partial 파일이 실제로 있고 비어 있지 않다.
+   *
+   * @effects claim_list_i18n_partial_declared
+   */
   it.each(LOCALES)('%s 의 admin/claim 사전 파일이 실재하고 비어 있지 않다', (locale) => {
     const file = path.join(MODULE_ROOT, 'resources/lang/partial', locale, 'admin/claim.json');
 

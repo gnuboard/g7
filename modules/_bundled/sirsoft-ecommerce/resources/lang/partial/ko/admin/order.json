@@ -176,7 +176,8 @@
         "charge": "추가 청구",
         "refund": "환불",
         "none": "-"
-      }
+      },
+      "pending_refund_badge": "환불 미접수"
     },
     "payment_info": {
       "title": "결제정보",
@@ -822,5 +823,41 @@
       "reshipping_completed": "교환배송완료",
       "completed": "교환완료"
     }
+  },
+  "claim_request": {
+    "button_exchange": "교환 접수",
+    "button_return": "반품 접수",
+    "button_cancel_refund": "취소·환불 접수",
+    "gate_hint": "고른 상품의 상태로는 접수할 수 없습니다 — 교환·반품은 배송중·배송완료·구매확정, 취소·환불은 아직 보내지 않은 상품만 받습니다.",
+    "no_permission": "교환·반품·취소 접수 권한이 없습니다.",
+    "context_load_failed": "접수 가능 여부를 불러오지 못했습니다. 새로고침해 주세요.",
+    "title_exchange": "교환 접수 (고객 대신)",
+    "title_return": "반품 접수 (고객 대신)",
+    "description": "고객을 대신해 접수합니다. 신청 기간·신청 가능 상태 설정은 적용되지 않습니다.",
+    "same_option": "같은 옵션으로 교환",
+    "sold_out": "품절",
+    "reason": "사유",
+    "reason_placeholder": "사유 선택",
+    "seller_fault": "판매자 귀책",
+    "reason_detail_placeholder": "상세 사유 (상담 내용 등)",
+    "charge_method": "청구 방식",
+    "charge_method_auto": "자동 (청구액이 있으면 선택)",
+    "redelivery_address": "재발송지",
+    "recipient_name": "받는 분",
+    "phone": "연락처",
+    "zipcode": "우편번호",
+    "address1": "주소",
+    "address2": "상세 주소",
+    "shipping_fee": "배송비",
+    "total_charge": "청구액 {{amount}}",
+    "refund_estimate": "환불 예정 {{amount}}",
+    "preview_needs_reason": "사유를 고르면 배송비와 청구액을 계산합니다.",
+    "preview_error": "청구액을 계산하지 못했습니다.",
+    "approve": "접수와 함께 승인",
+    "customer_notice": "고객에게 「판매자가 고객님을 대신해 접수했습니다」 알림이 가고, 고객은 이 신청을 철회·수정할 수 없습니다.",
+    "submit": "접수",
+    "success": "고객을 대신해 접수했습니다.",
+    "error": "접수하지 못했습니다.",
+    "reason_required": "사유를 선택해주세요."
   }
 }

@@ -103,7 +103,7 @@ interface OrderExchangeRepositoryInterface
      * 특정 배송사를 회수·재발송 택배사로 지정한 교환 신청 건수를 셉니다.
      *
      * 배송사를 삭제해도 되는지 판단할 때 사용합니다. 교환 신청서는 배송사를 `order_shippings`
-     * 가 아니라 자기 표의 `collection_carrier_id`·`redelivery_carrier_id` 로 붙잡으므로,
+     * 가 아니라 자기 **상품 행**의 `collection_carrier_id`·`redelivery_carrier_id` 로 붙잡으므로(R12),
      * 일반 배송 건수만 세면 **회수 전용으로만 쓰인 배송사가 "안 쓰임" 으로 판정된다.**
      * 두 외래키는 `nullOnDelete` 라 그 상태로 삭제가 통과하면 접수된 신청서의 택배사가
      * 오류도 로그도 없이 비워진다.
@@ -215,4 +215,15 @@ interface OrderExchangeRepositoryInterface
      * @return bool 기록 존재 여부
      */
     public function hasRecordedCurrency(string $code): bool;
+
+    /**
+     * 회수 지연 관리자 알림을 보낼 후보 선교환을 조회합니다. (배치 — D2)
+     *
+     * 선교환이고, 반송 기한이 지났고, 아직 지연 알림을 보내지 않았고, 종결되지 않은 신청서다.
+     * 헌 물건이 실제로 안 왔는지(회수 대기 행 존재)는 호출부가 행으로 판정한다.
+     *
+     * @param  int  $limit  최대 건수
+     * @return Collection<int, OrderExchange> 후보 (상품 행 로드)
+     */
+    public function listOverdueCollectionCandidates(int $limit): Collection;
 }

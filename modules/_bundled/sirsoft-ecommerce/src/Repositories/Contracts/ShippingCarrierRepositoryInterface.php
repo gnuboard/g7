@@ -74,6 +74,14 @@ interface ShippingCarrierRepositoryInterface
     public function findByCodes(array $codes): Collection;
 
     /**
+     * ID 목록으로 배송사 조회 (활동 로그의 송장 전·후 택배사 이름 해석)
+     *
+     * @param  array<int, int>  $ids  배송사 ID 목록
+     * @return Collection<int, ShippingCarrier>
+     */
+    public function findByIds(array $ids): Collection;
+
+    /**
      * 활성 배송사 목록 조회 (Select 옵션용)
      *
      * @param  string|null  $type  배송사 유형 필터 (domestic, international, null=전체)

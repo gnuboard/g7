@@ -173,6 +173,13 @@ sub_flows:
       - exchange_update_request_recalculates_the_fee_when_the_reason_changes
       - exchange_update_request_is_blocked_after_approval
 
+  - id: partial_rejection_reprice
+    description: |
+      상품 단위 반려·철회 뒤 청구 재산정(S5) — 차액은 살아 있는 상품으로 다시 나누고, 결제 대기 건·
+      기수납액이 그 값에 맞춰진다. 반려된 상품의 차액까지 고객이 결제하던 결함.
+    effects:
+      - exchange_partial_rejection_reprices_the_charge_for_living_items
+
   # ── 아래는 `sub_flows` 리스트에 문자열로 놓여 있던 잔여 항목이다. 그 자리는 YAML 상
   #    「하위 흐름 하나」의 자리라 커버리지 규칙이 **선언으로 세지 않았고**, 그래서 테스트가
   #    쓰던 이름들이 「소유 매니페스트에 없다」로 잡혔다. 실제로 테스트가 쓰는 것은 위

@@ -406,3 +406,25 @@ describe('주문 목록 추가옵션 요약 (orders/_list)', () => {
     expect(json).toContain('mypage.orders.additional_options_more');
   });
 });
+
+describe('비회원 클레임 상세 — 판매자 접수 표시 (shop/guest_claim_show · D8)', () => {
+  /**
+   * 판매자가 대신 접수한 신청(`request_source === 'admin'`)은 비회원 상세에도 출처 라벨과 안내를 세운다 —
+   * 고객은 그 신청을 고치거나 철회할 수 없으므로 버튼이 사라진 이유를 알아야 한다. 라벨은 서버가 로케일로
+   * 풀어 준 값(`request_source_label`)이고, 안내는 끝난 신청서에는 세우지 않는다.
+   *
+   * @effects guest_claim_show_marks_seller_filed_claims
+   */
+  it('출처 라벨과 판매자 접수 안내가 request_source 로만 선다', () => {
+    const layout = loadJson('shop/guest_claim_show.json');
+    const nodes = collect(layout, (n) => typeof n.if === 'string' && n.if.includes('request_source'));
+
+    expect(nodes.map((n) => [n.if, n.text])).toEqual([
+      ["{{claim.data?.claim?.request_source === 'admin'}}", "{{claim.data?.claim?.request_source_label ?? ''}}"],
+      [
+        "{{claim.data?.claim?.request_source === 'admin' && claim.data?.claim?.is_final !== true}}",
+        '$t:claim.detail.admin_requested_notice',
+      ],
+    ]);
+  });
+});

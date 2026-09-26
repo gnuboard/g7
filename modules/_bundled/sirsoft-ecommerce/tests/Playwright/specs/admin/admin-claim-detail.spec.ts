@@ -362,9 +362,16 @@ test.describe('관리자 클레임 상세 골격 (#599 S9a)', () => {
       await expect(memoSave).toBeDisabled();
     }
 
-    const collectionSave = page.locator('#cs_006_collection_save');
-    if (await collectionSave.count()) {
-      await expect(collectionSave).toBeDisabled();
+    // 송장 입력은 상품 칸 선택 바의 [송장만 저장] 하나다(송장은 상품 행마다 — #599). 배송 정보 탭의
+    // 운송장 묶음 [도착 처리] 도 같은 전이 권한을 따른다.
+    const trackingOnly = page.locator('#ci_009_tracking_only');
+    if (await trackingOnly.count()) {
+      await expect(trackingOnly).toBeDisabled();
+    }
+
+    const deliverButtons = page.locator('[data-section-id="shipping_info"] button', { hasText: /도착 처리|Mark arrived|Arrived/ });
+    for (const button of await deliverButtons.all()) {
+      await expect(button).toBeDisabled();
     }
   });
 
@@ -799,12 +806,13 @@ test.describe('관리자 클레임 상세 골격 (#599 S9a)', () => {
 
       for (const row of rows) {
         const detail = (await (await request.get(`/api/modules/sirsoft-ecommerce/admin/claims/${encodeURIComponent(row.claim_number)}`, { headers })).json())?.data;
-        const items: Array<{ transition_options?: Array<{ value: string }> }> = detail?.claim?.items ?? [];
+        const items: Array<{ transition_options?: Array<{ value: string }>; collection_tracking_number?: string | null; redelivery_tracking_number?: string | null }> = detail?.claim?.items ?? [];
         const first = items[0]?.transition_options?.map((option) => option.value) ?? [];
         const status = first.includes('collecting') ? 'collecting' : first.includes('redelivering') ? 'redelivering' : null;
 
         if (items.length === 1 && status) {
-          const saved = status === 'redelivering' ? detail.claim.redelivery_tracking_number : detail.claim.collection_tracking_number;
+          // 미리 채움은 고른 **행**의 송장이다 — 송장은 상품 행마다 있다(#599 P1).
+          const saved = status === 'redelivering' ? items[0].redelivery_tracking_number : items[0].collection_tracking_number;
           target = { claimNumber: row.claim_number, status, tracking: saved ?? '' };
           break;
         }
@@ -836,7 +844,9 @@ test.describe('관리자 클레임 상세 골격 (#599 S9a)', () => {
       if (req.method() === 'PATCH' && req.url().includes('/options/bulk-status')) patched.push(req.url());
     });
     await page.locator('#ci_004_item_bulk_apply').click();
-    await expect(page.locator('#modal_claim_item_quantity_confirm')).toHaveCount(0);
+    // 모달 셸은 data-ref 를 DOM id 로 옮기지 않아 '#modal_*' 는 늘 0개다 — 대화상자 역할 + 모달 안의 확인 버튼으로 찾아야
+    // 「모달이 뜨지 않았다」 가 실제로 검사된다.
+    await expect(page.getByRole('dialog').filter({ has: page.locator('#ciq_005_confirm') })).toHaveCount(0);
     expect(patched).toEqual([]);
   });
 });

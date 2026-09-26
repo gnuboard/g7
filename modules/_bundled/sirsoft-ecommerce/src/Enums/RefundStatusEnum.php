@@ -111,6 +111,29 @@ enum RefundStatusEnum: string
     }
 
     /**
+     * 신청서 상품과의 연결을 끊는 상태 목록을 반환합니다. (반려·철회)
+     *
+     * 이 상태의 환불신청서는 연결된 반품 상품·교환 차액을 환불하지 않는다 — 그 몫은 다시 「환불 미접수」 이고
+     * 재접수·선점 대상이다. 「살아 있는 환불 연결」 판정(반품 서비스·환불 미접수·환불 가능액 선점)의 유일한 기준이다.
+     *
+     * @return array<self> 연결을 끊는 상태 목록
+     */
+    public static function linkReleasingStatuses(): array
+    {
+        return [self::REJECTED, self::WITHDRAWN];
+    }
+
+    /**
+     * 신청서 상품과의 연결을 끊는 상태 값 목록을 반환합니다. (쿼리용)
+     *
+     * @return array<int, string> 상태 값 목록
+     */
+    public static function linkReleasingValues(): array
+    {
+        return array_map(fn (self $status) => $status->value, self::linkReleasingStatuses());
+    }
+
+    /**
      * 신청자(유저)가 철회할 수 있는 상태 목록을 반환합니다.
      *
      * 승인(APPROVED) 이후는 환불 실행 절차가 시작되므로 철회 경계 밖이다.

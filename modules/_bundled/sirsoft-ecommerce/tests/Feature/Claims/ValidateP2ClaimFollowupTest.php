@@ -26,6 +26,7 @@ use Modules\Sirsoft\Ecommerce\Services\OrderReturnService;
 use Modules\Sirsoft\Ecommerce\Services\UserClaimService;
 use Modules\Sirsoft\Ecommerce\Tests\Concerns\AssertsClaimExceptions;
 use Modules\Sirsoft\Ecommerce\Tests\Concerns\BuildsClaimFlowOrders;
+use Modules\Sirsoft\Ecommerce\Tests\Concerns\ReadsReturnRefundLink;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 use ReflectionMethod;
 
@@ -44,6 +45,7 @@ class ValidateP2ClaimFollowupTest extends ModuleTestCase
 {
     use AssertsClaimExceptions;
     use BuildsClaimFlowOrders;
+    use ReadsReturnRefundLink;
 
     /**
      * 서비스와 테스트 통화·사유를 준비합니다.
@@ -335,7 +337,7 @@ class ValidateP2ClaimFollowupTest extends ModuleTestCase
         }
 
         $completed = $service->completeReturn($return->fresh(['returnOptions']), [], new ClaimCompletionOptions([], true));
-        $refund = OrderRefund::query()->findOrFail($completed->refund_id);
+        $refund = OrderRefund::query()->findOrFail($this->returnRefundId($completed));
 
         $this->assertSame(10000.0, (float) $refund->refund_points_amount);
         $this->assertSame(RefundPriorityEnum::POINTS_FIRST, $refund->refund_priority);

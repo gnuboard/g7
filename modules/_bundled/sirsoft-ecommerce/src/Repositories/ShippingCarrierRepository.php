@@ -11,6 +11,9 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ShippingCarrierRepositoryIn
  */
 class ShippingCarrierRepository implements ShippingCarrierRepositoryInterface
 {
+    /**
+     * @param  ShippingCarrier  $model  배송사 모델
+     */
     public function __construct(
         protected ShippingCarrier $model
     ) {}
@@ -112,6 +115,20 @@ class ShippingCarrierRepository implements ShippingCarrierRepositoryInterface
         return $this->model->newQuery()
             ->whereIn('code', $codes)
             ->get(['id', 'code']);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function findByIds(array $ids): Collection
+    {
+        $ids = array_values(array_unique(array_filter(array_map('intval', $ids))));
+
+        if ($ids === []) {
+            return new Collection;
+        }
+
+        return $this->model->newQuery()->whereIn('id', $ids)->get();
     }
 
     /**

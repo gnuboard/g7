@@ -53,6 +53,8 @@ effects:
   # 기존 핸들러 검증의 목적도 개별 테스트에 역매핑한다.
   - bulk_confirmation_requires_selection_and_status
   - noncomplete_transition_uses_confirmation
+  - claim_list_spacing_classes_exist_in_the_admin_build  # 완료 창·목록 간격 클래스가 관리자 빌드 CSS 에 있다 (2026-09-26)
+  - claim_filter_refs_have_unique_numbers  # 필터 칸 f_NNN 번호가 겹치지 않는다 (2026-09-26)
   - completion_rows_use_item_summary
   - completion_success_clears_state_and_refetches
   # 실행이 실패하면 **아무것도 지우지 않는다** — 오류 토스트를 띄우고 대상 줄과 모달을
@@ -178,6 +180,9 @@ effects:
   - claim_amounts_prohibit_refund_fields_on_exchange
   - claim_amounts_prohibit_refund_fields_on_return
   - refund_amounts_reject_unknown_refund_method
+  # #599 후속 — 목록 행 뱃지(판매자 접수·선교환·회수 지연·환불 미접수)와 운송장 열 「외 N개」
+  - claim_list_row_badges_read_server_flags
+  - claim_list_tracking_column_shows_first_waybill_and_more_count
 
 test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/admin/claim-pending-feedback.spec.ts

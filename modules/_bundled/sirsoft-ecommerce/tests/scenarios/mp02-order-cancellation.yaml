@@ -128,6 +128,26 @@ effects:
   - auto_advance_sends_one_notification_but_logs_every_step      # 알림 1건 · 로그 단계별 (§4-2)
   - cancellation_record_walks_requested_then_completed           # 취소 문서도 단계를 밟는다 (D16 · B3·B4)
   - admin_filed_refund_is_not_buyer_withdrawable                 # 운영자 대리 접수는 구매자 철회 불가 (§4-3-1)
+  # 운영자 취소 게이트 = 물리 게이트 (D5) — 취소 가능 상태 설정은 고객 축으로만 남는다
+  - admin_cancel_ignores_the_cancellable_status_setting_for_unshipped_items  # 설정 밖 상품준비중도 운영자는 취소
+  - admin_cancel_refuses_shipped_items_even_when_the_setting_allows          # 설정이 허용해도 배송중은 거절
+  # 일원화 입구의 호출부 구분 · 구조 가드 (§12-F C-2 · §9-1) — 테스트가 이미 표시하던 효과의 선언 누락 보충
+  - user_cancel_is_filed_on_the_buyer_axis                       # 회원 주문취소는 고객 신청(DIRECT)으로 접수
+  - cancel_intake_rejects_empty_items                            # 상품 행 없는 취소 문서는 만들지 않는다
+  # 관리자 주문취소·환불 예상 API 계약 (Admin\OrderCancellationControllerTest)
+  - admin_estimate_refund_returns_the_refund_amount              # 환불 예상 응답이 환불 예상액을 싣는다
+  - admin_estimate_refund_requires_items                         # 대상 없는 환불 예상은 422
+  - admin_estimate_refund_carries_shipping_details               # 환불 예상 응답이 배송비 상세를 싣는다
+  - admin_estimate_refund_carries_restored_coupons               # 쿠폰 주문의 환불 예상 응답이 복원 쿠폰을 싣는다
+  - admin_auto_advance_full_cancel_cancels_the_order             # 자동 전이 전체취소 → 주문 CANCELLED
+  - admin_auto_advance_partial_cancel_is_accepted                # 자동 전이 부분취소 접수 성공
+  - admin_auto_advance_cancel_is_accepted_in_one_request         # 자동 전이 취소는 한 요청으로 끝난다
+  - admin_cancel_of_a_shipping_order_is_rejected                 # 배송중 주문 취소 422
+  - admin_cancel_of_a_cancelled_order_is_rejected                # 이미 취소된 주문 재취소 422
+  - admin_cancel_of_a_missing_order_is_404                       # 없는 주문번호 404
+  - admin_cancel_accepts_a_refund_priority                       # 환불 우선순위를 지정한 취소 성공
+  - admin_cancel_restores_the_used_coupon                        # 전체취소가 사용 쿠폰을 복원한다
+  - admin_cancel_requires_a_reason                               # 취소 사유 없으면 422
   # 잔여 한도 이중 차감 금지 (§12-B) + 전량 제외 경로의 기존 환불 차감 (새 결함 N1)
   - second_partial_refund_is_not_zeroed_by_double_deduction
   # 돈·재고가 어긋나는 결함의 회귀 잠금 (§7-2)

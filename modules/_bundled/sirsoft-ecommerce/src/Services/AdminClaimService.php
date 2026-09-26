@@ -9,7 +9,9 @@ use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Ecommerce\DTO\CancellableAmount;
 use Modules\Sirsoft\Ecommerce\DTO\ClaimCompletionOptions;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimChargeMethodEnum;
+use Modules\Sirsoft\Ecommerce\Enums\ClaimTrackingDirectionEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimTypeEnum;
+use Modules\Sirsoft\Ecommerce\Enums\ExchangeModeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ExchangeStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundMethodEnum;
@@ -19,13 +21,18 @@ use Modules\Sirsoft\Ecommerce\Exceptions\OrderClaimException;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderCancel;
 use Modules\Sirsoft\Ecommerce\Models\OrderExchange;
+use Modules\Sirsoft\Ecommerce\Models\OrderExchangeOption;
 use Modules\Sirsoft\Ecommerce\Models\OrderRefund;
 use Modules\Sirsoft\Ecommerce\Models\OrderReturn;
+use Modules\Sirsoft\Ecommerce\Models\OrderReturnOption;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ClaimActivityLogRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ClaimReasonRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\MileageTransactionRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderCancelRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderExchangeOptionRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderExchangeRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderRefundRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderReturnOptionRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderReturnRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Services\Concerns\FiresClaimHooksAfterCommit;
 use Modules\Sirsoft\Ecommerce\Support\ClaimItemSpecs;
@@ -71,6 +78,10 @@ class AdminClaimService
      * @param  OrderCancelRepositoryInterface  $cancelRepository  취소 Repository
      * @param  PaymentMethodResolver  $paymentMethodResolver  결제수단 카탈로그 해석기 (라벨 SSoT)
      * @param  MileageTransactionRepositoryInterface  $mileageRepository  마일리지 원장 Repository (적립 차감 예고 — 적립 여부 판정)
+     * @param  StockService  $stockService  재고 서비스 (뒤늦은 재고 복구 — S13)
+     * @param  OrderExchangeOptionRepositoryInterface  $exchangeOptionRepository  교환 상품 행 Repository (재고 복구 표시)
+     * @param  OrderReturnOptionRepositoryInterface  $returnOptionRepository  반품 상품 행 Repository (재고 복구 표시)
+     * @param  ClaimReasonRepositoryInterface  $claimReasonRepository  사유 카탈로그 Repository (신청 내용 수정의 사유 선택지 — S15)
      */
     public function __construct(
         protected OrderExchangeService $exchangeService,
@@ -88,6 +99,10 @@ class AdminClaimService
         protected OrderCancelRepositoryInterface $cancelRepository,
         protected PaymentMethodResolver $paymentMethodResolver,
         protected MileageTransactionRepositoryInterface $mileageRepository,
+        protected StockService $stockService,
+        protected OrderExchangeOptionRepositoryInterface $exchangeOptionRepository,
+        protected OrderReturnOptionRepositoryInterface $returnOptionRepository,
+        protected ClaimReasonRepositoryInterface $claimReasonRepository,
     ) {}
 
     // ───────────────────────────────────────────────
@@ -264,6 +279,43 @@ class AdminClaimService
     }
 
     /**
+     * 「미회수로 완료」 할 수 있는 상품 행을 반환합니다. (선교환 D3 — 새 물건은 보냈는데 헌 물건이 오지 않은 행)
+     *
+     * 완료 모달이 행마다 체크와 사유 칸을 그리는 근거다. 판정은 완료 절차와 같은
+     * `OrderExchangeService::isUnreturnedEligibleItem()` 이다.
+     *
+     * @param  OrderExchange|OrderReturn|OrderRefund|OrderCancel  $claim  신청서
+     * @param  array<int, int>  $itemIds  대상 행 ID (빈 배열이면 전체)
+     * @return array<int, array{id: int, label: string}> 미회수 완료 가능 행
+     */
+    public function unreturnedEligibleItems(OrderExchange|OrderReturn|OrderRefund|OrderCancel $claim, array $itemIds = []): array
+    {
+        if (! $claim instanceof OrderExchange || ! $claim->isAdvanceExchange()) {
+            return [];
+        }
+
+        $claim->loadMissing('exchangeOptions.orderOption');
+        $rows = [];
+
+        foreach ($claim->exchangeOptions as $item) {
+            if ($itemIds !== [] && ! in_array((int) $item->id, $itemIds, true)) {
+                continue;
+            }
+
+            if ($this->exchangeService->isUnreturnedEligibleItem($item, $claim->mode())) {
+                $option = $item->orderOption;
+                $name = $option?->product_name;
+                $rows[] = [
+                    'id' => (int) $item->id,
+                    'label' => trim((is_array($name) ? ($name[app()->getLocale()] ?? reset($name)) : (string) $name).' × '.(int) $item->exchange_quantity),
+                ];
+            }
+        }
+
+        return $rows;
+    }
+
+    /**
      * 완료 처리 모달의 초기 선택값을 반환합니다. (D26 — `claim.complete_defaults`)
      *
      * 목록 응답이 이 값을 나른다. 설정 엔드포인트(`admin/settings`)는 `settings.read` 게이트인데
@@ -314,11 +366,14 @@ class AdminClaimService
             // 지연 로드 쿼리가 하나 더 붙는다. 주문 결제행은 결제 정보 섹션(D17-③)이
             // 결제수단 카드로 그린다 — 주문상세 엔드포인트는 `orders.read` 게이트라 이
             // 화면이 직접 부를 수 없고, 봉투가 그 통로다.
+            // 송장은 상품 행에 있다 — 행의 택배사를 함께 싣는다(운송장 묶음·상품 칸 송장 열, N+1 방지).
             ClaimTypeEnum::EXCHANGE => $this->exchangeRepository->findById($id, [
-                'exchangeOptions.orderOption', 'images', 'order.shippingAddress', 'order.payments', 'collectionCarrier', 'redeliveryCarrier',
+                'exchangeOptions.orderOption', 'exchangeOptions.collectionCarrier', 'exchangeOptions.redeliveryCarrier',
+                'images', 'order.shippingAddress', 'order.payments', 'requestedByAdminUser', 'withdrawnByAdminUser',
             ]),
             ClaimTypeEnum::RETURN => $this->returnRepository->findById($id, [
-                'returnOptions.orderOption', 'images', 'order.payments', 'collectionCarrier', 'refund',
+                'returnOptions.orderOption', 'returnOptions.collectionCarrier', 'returnOptions.refund',
+                'images', 'order.payments', 'requestedByAdminUser', 'withdrawnByAdminUser',
             ]),
             ClaimTypeEnum::REFUND => $this->refundRepository->findById($id, [
                 'refundOptions.orderOption', 'images', 'order.payments',
@@ -723,6 +778,18 @@ class AdminClaimService
 
             if (! $wasFinal && $reloaded->isFinal()) {
                 $this->closeMoneyIfTerminated($reloaded);
+            } elseif ($reloaded instanceof OrderExchange
+                && in_array($target, [ExchangeStatusEnum::REJECTED->value, ExchangeStatusEnum::WITHDRAWN->value], true)
+                && ($result['succeeded'] ?? []) !== []) {
+                // 일부만 반려·철회됐으면 청구액을 살아 있는 상품 기준으로 다시 계산하고, 결제 대기 건·
+                // 기수납액을 그 값에 맞춘다(S5) — 갱신과 정산은 한 트랜잭션이다(금액 수정과 같은 규칙).
+                DB::transaction(function () use ($reloaded) {
+                    $repriced = $this->exchangeService->recalculateChargeForLivingItems($reloaded);
+
+                    if ($repriced !== null) {
+                        $this->paymentService->settleChargeDifference($repriced, __('sirsoft-ecommerce::messages.claims.charge_repriced_after_partial_rejection'));
+                    }
+                });
             }
 
             $this->announceItemsTransitioned($claim, $result, $target);
@@ -1246,7 +1313,9 @@ class AdminClaimService
      * 시점 스냅샷이 정하며, 합계는 대상이 한 통화로 모일 때만 낸다.
      *
      * @param  ClaimTypeEnum  $type  클레임 유형 (교환·반품)
-     * @param  array<int, array{id: int, item_ids?: array<int, int>, restore_stock_by_item?: array<int|string, bool>}>  $claims  대상 신청서 목록
+     *                               선교환 「미회수로 완료」 로 고른 행(`unreturned_item_ids`)은 실행(`completeExchange`)과 같게
+     *                               완료 대상에 넣고 재고 복구 수에서는 뺀다 — 후보(`unreturnedEligibleItems`)가 아닌 ID 는 버린다.
+     * @param  array<int, array{id: int, item_ids?: array<int, int>, restore_stock_by_item?: array<int|string, bool>, unreturned_item_ids?: array<int, int>}>  $claims  대상 신청서 목록
      * @param  bool  $createRefundRequest  환불신청서 접수 선택 상태 (모달 라디오)
      * @return array{claims: array<int, array>, skipped: array<int, array{id: int, message: string}>, totals: array{claim_count: int, completable_item_count: int, refund_amount_total: float, refund_points_amount_total: float, currency_code: string|null, refund_amount_total_formatted: string|null, refund_points_amount_total_formatted: string|null, deducted_shipping_fee_total: float, deducted_shipping_fee_total_formatted: string|null}} 미리보기 결과
      */
@@ -1264,6 +1333,8 @@ class AdminClaimService
         foreach ($claims as $entry) {
             $id = (int) ($entry['id'] ?? 0);
             $claim = $this->findForTransition($type, $id);
+            /** @var array<int, int> $unreturnedIds 미회수로 완료할 행 (교환만 — 반품은 늘 빈 목록) */
+            $unreturnedIds = [];
 
             if (! $claim instanceof OrderExchange && ! $claim instanceof OrderReturn) {
                 $skipped[] = [
@@ -1313,6 +1384,15 @@ class AdminClaimService
                 $couponRestore = $preview['coupon_restore'];
             } else {
                 $completableIds = $this->completableExchangeItemIds($claim, $itemIds);
+
+                // 미회수로 완료할 행 — 실행과 같이 완료 대상에 들고, 재고는 되돌리지 않는다(D3).
+                $eligibleUnreturned = array_column($this->unreturnedEligibleItems($claim, $itemIds), 'id');
+                $unreturnedIds = array_values(array_intersect(
+                    array_map('intval', (array) ($entry['unreturned_item_ids'] ?? [])),
+                    $eligibleUnreturned,
+                ));
+                $completableIds = array_values(array_unique(array_merge($completableIds, $unreturnedIds)));
+
                 $refundPreview = $this->exchangeService->previewRefundRequest($claim, $completableIds);
 
                 $refund = [
@@ -1329,7 +1409,7 @@ class AdminClaimService
 
             $restoreCount = count(array_filter(
                 $completableIds,
-                fn (int $itemId) => $completion->shouldRestoreStock($itemId),
+                fn (int $itemId) => ! in_array($itemId, $unreturnedIds, true) && $completion->shouldRestoreStock($itemId),
             ));
 
             $refund += [
@@ -1350,6 +1430,8 @@ class AdminClaimService
                 'earn_recovery' => $this->dropsPendingEarn($claim, $completableIds),
                 'coupon_restore' => $couponRestore,
                 'refund' => $refund,
+                // 선교환 「미회수로 완료」 후보(D3) — 모달이 행마다 체크·사유 칸을 그린다.
+                'unreturned_eligible_items' => $this->unreturnedEligibleItems($claim, $itemIds),
             ];
 
             $completableTotal += count($completableIds);
@@ -1480,49 +1562,318 @@ class AdminClaimService
     }
 
     // ───────────────────────────────────────────────
-    // 송장
+    // 송장 (상품 행) · 진행 방식
     // ───────────────────────────────────────────────
 
     /**
-     * 회수 운송장을 등록합니다.
+     * 「송장만 저장」 — 고른 상품 행(수량 지정 시 쪼갠 행)에 한 방향 송장을 적습니다. (상태 불변 — R3·R4·R7)
      *
      * @param  OrderExchange|OrderReturn  $claim  신청서
-     * @param  int|null  $carrierId  택배사 ID
-     * @param  string|null  $trackingNumber  운송장 번호
+     * @param  ClaimTrackingDirectionEnum  $direction  방향
+     * @param  array<int, array{id: int, quantity?: int|null}>  $items  대상 행 지시
+     * @param  int|null  $carrierId  택배사 ID (비우면 삭제)
+     * @param  string|null  $trackingNumber  운송장 번호 (비우면 삭제)
      * @param  int|null  $processedBy  처리 관리자 ID
-     * @return OrderExchange|OrderReturn 갱신된 신청서
+     * @return array{claim: OrderExchange|OrderReturn, split: array<int, array<string, int>>, changes: array<int, array<string, mixed>>} 결과
      *
-     * @throws OrderClaimException 송장 정보 불완전
+     * @throws OrderClaimException R1·R2·R5·R7·R8 위반 / 신청서에 없는 행
      */
-    public function registerCollectionTracking(
+    public function saveItemTracking(
         OrderExchange|OrderReturn $claim,
+        ClaimTrackingDirectionEnum $direction,
+        array $items,
         ?int $carrierId,
         ?string $trackingNumber,
         ?int $processedBy = null,
-    ): OrderExchange|OrderReturn {
+    ): array {
         return $claim instanceof OrderExchange
-            ? $this->exchangeService->registerCollectionTracking($claim, $carrierId, $trackingNumber, $processedBy)
-            : $this->returnService->registerCollectionTracking($claim, $carrierId, $trackingNumber, $processedBy);
+            ? $this->exchangeService->writeItemTracking($claim, $direction, $items, $carrierId, $trackingNumber, $processedBy)
+            : $this->returnService->writeItemTracking($claim, $direction, $items, $carrierId, $trackingNumber, $processedBy);
     }
 
     /**
-     * 재발송 운송장을 등록합니다. (교환 전용 — 반품·환불에는 재발송 축이 없다)
+     * 운송장 한 개의 행을 한꺼번에 도착 처리합니다. (배송 정보 탭 [도착 처리] — R9)
+     *
+     * @param  OrderExchange|OrderReturn  $claim  신청서
+     * @param  ClaimTrackingDirectionEnum  $direction  방향
+     * @param  int  $carrierId  택배사 ID
+     * @param  string  $trackingNumber  운송장 번호
+     * @param  int|null  $processedBy  처리 관리자 ID
+     * @return array{claim: OrderExchange|OrderReturn, succeeded: array<int, int>, skipped: array<int, array{id: int, message: string}>} 처리 결과
+     *
+     * @throws OrderClaimException 그 운송장의 행 없음 / 반품의 재발송
+     */
+    public function deliverTracking(
+        OrderExchange|OrderReturn $claim,
+        ClaimTrackingDirectionEnum $direction,
+        int $carrierId,
+        string $trackingNumber,
+        ?int $processedBy = null,
+    ): array {
+        return $claim instanceof OrderExchange
+            ? $this->exchangeService->deliverTracking($claim, $direction, $carrierId, $trackingNumber, $processedBy)
+            : $this->returnService->deliverTracking($claim, $direction, $carrierId, $trackingNumber, $processedBy);
+    }
+
+    /**
+     * 교환의 진행 방식(일반·선교환)을 바꿉니다. (D1)
      *
      * @param  OrderExchange  $claim  교환 신청서
-     * @param  int|null  $carrierId  택배사 ID
-     * @param  string|null  $trackingNumber  운송장 번호
+     * @param  ExchangeModeEnum  $mode  바꿀 방식
      * @param  int|null  $processedBy  처리 관리자 ID
      * @return OrderExchange 갱신된 신청서
      *
-     * @throws OrderClaimException 송장 정보 불완전
+     * @throws OrderClaimException 설정 꺼짐 / 바꿀 수 없는 단계 / 회수 송장이 있는 선교환
      */
-    public function registerRedeliveryTracking(
-        OrderExchange $claim,
-        ?int $carrierId,
-        ?string $trackingNumber,
-        ?int $processedBy = null,
-    ): OrderExchange {
-        return $this->exchangeService->registerRedeliveryTracking($claim, $carrierId, $trackingNumber, $processedBy);
+    public function setExchangeMode(OrderExchange $claim, ExchangeModeEnum $mode, ?int $processedBy = null): OrderExchange
+    {
+        return $this->exchangeService->setExchangeMode($claim, $mode, $processedBy);
+    }
+
+    /**
+     * 상세 「진행 방식」 줄의 버튼 게이트를 만듭니다. (`setExchangeMode()` 와 같은 판정)
+     *
+     * @param  OrderExchange|OrderReturn|OrderRefund|OrderCancel  $claim  신청서
+     * @return array{can_set_advance: bool, can_set_standard: bool, blocked_reason: string|null, advance_enabled: bool, collection_due_days: int}|null 게이트 (교환이 아니면 null)
+     */
+    public function exchangeModeAbilities(OrderExchange|OrderReturn|OrderRefund|OrderCancel $claim): ?array
+    {
+        if (! $claim instanceof OrderExchange) {
+            return null;
+        }
+
+        $target = $claim->mode() === ExchangeModeEnum::ADVANCE ? ExchangeModeEnum::STANDARD : ExchangeModeEnum::ADVANCE;
+        $blocked = $this->exchangeService->exchangeModeBlockReason($claim, $target);
+
+        return [
+            'can_set_advance' => $target === ExchangeModeEnum::ADVANCE && $blocked === null,
+            'can_set_standard' => $target === ExchangeModeEnum::STANDARD && $blocked === null,
+            'blocked_reason' => $blocked === null ? null : __('sirsoft-ecommerce::exceptions.'.$blocked),
+            'advance_enabled' => $this->exchangeService->advanceExchangeEnabled(),
+            // 실제 기한 계산과 같은 출처다 — 한계 밖 값이 저장돼 있으면 서비스가 기본값으로 돌리므로 안내도 그 값을 쓴다.
+            'collection_due_days' => $this->exchangeService->advanceExchangeDueDays(),
+        ];
+    }
+
+    // ───────────────────────────────────────────────
+    // 뒤늦은 재고 복구 (S13) · 대리 철회 (S14) · 신청 내용 수정 (S15) · 환불 미접수 (D9)
+    // ───────────────────────────────────────────────
+
+    /**
+     * 완료됐지만 재고를 복구하지 않은 상품 행의 재고를 복구합니다. (S13 — 완료 모달에서만 되던 복구의 뒤늦은 입구)
+     *
+     * 멱등이다 — 신청서 행을 잠근 뒤(`findForUpdate`) 상품 행의 `is_stock_restored` 를 다시 읽어, 이미 복구된 행은
+     * 건너뛴다. 같은 신청서의 동시 복구는 신청서 행 잠금이 줄 세운다(주문 행은 잠그지 않는다).
+     * 선교환에서 「미회수로 완료」 한 행은 헌 물건이 오지 않았으므로 복구 대상이 아니다(D3). 커밋 뒤
+     * `sirsoft-ecommerce.claim.{type}.after_stock_restore` 를 낸다.
+     *
+     * @param  OrderExchange|OrderReturn  $claim  신청서
+     * @param  array<int, int>  $itemIds  복구할 상품 행 ID (빈 배열이면 복구 가능한 행 전부)
+     * @param  int|null  $processedBy  처리 관리자 ID
+     * @return array{claim: OrderExchange|OrderReturn, restored: array<int, array{id: int, quantity: int}>} 복구 결과
+     *
+     * @throws OrderClaimException 복구할 행 없음
+     */
+    public function restoreStock(OrderExchange|OrderReturn $claim, array $itemIds, ?int $processedBy = null): array
+    {
+        $type = $claim->claimType()->value;
+        $ids = array_map('intval', $itemIds);
+        $restored = [];
+
+        $fresh = DB::transaction(function () use ($claim, $ids, $processedBy, &$restored) {
+            $locked = $claim instanceof OrderExchange
+                ? ($this->exchangeRepository->findForUpdate((int) $claim->getKey()) ?? $claim)->load('exchangeOptions.orderOption')
+                : ($this->returnRepository->findForUpdate((int) $claim->getKey()) ?? $claim)->load('returnOptions.orderOption');
+
+            $items = $locked instanceof OrderExchange ? $locked->exchangeOptions : $locked->returnOptions;
+
+            foreach ($items as $item) {
+                if ($ids !== [] && ! in_array((int) $item->id, $ids, true)) {
+                    continue;
+                }
+
+                if (! $this->isStockRestorable($item)) {
+                    continue;
+                }
+
+                $quantity = (int) ($item instanceof OrderExchangeOption ? $item->exchange_quantity : $item->return_quantity);
+
+                if ($item->orderOption !== null) {
+                    $this->stockService->restoreOptionStockForClaim($item->orderOption, $quantity);
+                }
+
+                $marks = ['is_stock_restored' => true, 'processed_by' => $processedBy ?? $item->processed_by];
+
+                $item instanceof OrderExchangeOption
+                    ? $this->exchangeOptionRepository->update($item, $marks)
+                    : $this->returnOptionRepository->update($item, $marks);
+                $restored[] = ['id' => (int) $item->id, 'quantity' => $quantity];
+            }
+
+            if ($restored === []) {
+                throw OrderClaimException::stockRestoreNotEligible();
+            }
+
+            $locked instanceof OrderExchange
+                ? $this->exchangeRepository->update($locked, ['is_stock_restored' => true])
+                : $this->returnRepository->update($locked, ['is_stock_restored' => true]);
+
+            return $locked->fresh();
+        });
+
+        $this->fireAfterCommit(fn () => HookManager::doAction(
+            "sirsoft-ecommerce.claim.{$type}.after_stock_restore",
+            $fresh,
+            $restored,
+            $processedBy,
+        ));
+
+        return ['claim' => $fresh, 'restored' => $restored];
+    }
+
+    /**
+     * 상품 행이 뒤늦은 재고 복구 대상인지 판정합니다. (완료 · 미복구 · 미회수 아님)
+     *
+     * @param  OrderExchangeOption|OrderReturnOption  $item  상품 행
+     * @return bool 복구할 수 있으면 true
+     */
+    public function isStockRestorable(object $item): bool
+    {
+        $completed = $item->option_status instanceof \BackedEnum && $item->option_status->value === 'completed';
+
+        return $completed
+            && ! (bool) $item->is_stock_restored
+            && ($item->unreturned_at ?? null) === null;
+    }
+
+    /**
+     * 고객 요청으로 운영자가 신청을 대신 철회합니다. (S14)
+     *
+     * 고객 철회와 같은 단계(`withdrawableStatuses()`)에서만 된다. 판매자가 접수한 건도 거둘 수 있다.
+     * 결제 환급은 기존 철회 경로(`closeMoneyIfTerminated()`)를 그대로 탄다. 고객 알림에는
+     * 「고객님 요청으로 판매자가 철회했습니다」(`withdraw_origin_notice`)가 붙는다.
+     *
+     * @param  OrderExchange|OrderReturn|OrderRefund  $claim  신청서
+     * @param  string  $reason  철회 사유
+     * @param  int|null  $processedBy  처리 관리자 ID
+     * @return OrderExchange|OrderReturn|OrderRefund 철회된 신청서
+     *
+     * @throws OrderClaimException 철회 불가 상태 / 사유 누락
+     */
+    public function withdrawOnBehalf(OrderExchange|OrderReturn|OrderRefund $claim, string $reason, ?int $processedBy): OrderExchange|OrderReturn|OrderRefund
+    {
+        $withdrawn = match (true) {
+            $claim instanceof OrderExchange => $this->exchangeService->withdraw($claim, $processedBy ?? 0, $reason),
+            $claim instanceof OrderReturn => $this->returnService->withdraw($claim, $processedBy ?? 0, $reason),
+            default => $this->refundRequestService->withdraw($claim, $processedBy ?? 0, $reason),
+        };
+
+        if ($withdrawn instanceof OrderExchange || $withdrawn instanceof OrderReturn) {
+            $this->closeMoneyIfTerminated($withdrawn);
+        }
+
+        return $withdrawn;
+    }
+
+    /**
+     * 운영자가 신청 내용(사유·상세 사유·교환 재발송지)을 고칩니다. (S15)
+     *
+     * 고객 수정(`UserClaimService::update()`)을 운영자 축으로 재사용한다 — 판매자 귀책 사유도 고를 수
+     * 있고, 판매자가 접수한 건도 고칠 수 있다. 수정 가능 단계는 고객 수정과 같다. 사유 변경으로
+     * 배송비가 다시 계산되면 기존 정산 경로(`settleChargeDifference()`)가 이어진다.
+     *
+     * @param  OrderExchange|OrderReturn|OrderRefund  $claim  신청서
+     * @param  array  $payload  수정 페이로드 (reason_code? / reason_detail? / redelivery_address?)
+     * @return OrderExchange|OrderReturn|OrderRefund 수정된 신청서
+     *
+     * @throws OrderClaimException 수정 불가 단계 / 사유 부재
+     */
+    public function updateRequestOnBehalf(OrderExchange|OrderReturn|OrderRefund $claim, array $payload): OrderExchange|OrderReturn|OrderRefund
+    {
+        return $this->userClaimService->update($claim->claimType(), $claim, $payload, [], [], null, operator: true)['claim'];
+    }
+
+    /**
+     * 신청 내용 수정(S15) 모달의 사유 선택지를 반환합니다. (그 유형의 활성 사유 — 판매자 귀책 비노출 사유 포함)
+     *
+     * 사유 카탈로그 조회 엔드포인트는 `settings.read` 게이트라 상세 봉투가 나른다(택배사·청구 방식과 같은 이유).
+     *
+     * @param  OrderExchange|OrderReturn|OrderRefund|OrderCancel  $claim  신청서
+     * @return array<int, array{value: string, label: string, fault_type: string|null}> 사유 선택지 (취소는 빈 배열)
+     */
+    public function reasonOptionsFor(OrderExchange|OrderReturn|OrderRefund|OrderCancel $claim): array
+    {
+        if ($claim instanceof OrderCancel) {
+            return [];
+        }
+
+        return $this->reasonOptionsForType($claim->claimType());
+    }
+
+    /**
+     * 유형의 활성 사유 선택지를 반환합니다. (판매자 귀책 비노출 사유 포함 — 운영자 축)
+     *
+     * @param  ClaimTypeEnum  $type  클레임 유형
+     * @return array<int, array{value: string, label: string, fault_type: string|null}> 사유 선택지
+     */
+    public function reasonOptionsForType(ClaimTypeEnum $type): array
+    {
+        return $this->claimReasonRepository->getActiveReasons($type->value)
+            ->map(fn ($reason) => [
+                'value' => (string) $reason->code,
+                'label' => $reason->getLocalizedName(),
+                'fault_type' => $reason->fault_type instanceof \BackedEnum ? $reason->fault_type->value : $reason->fault_type,
+            ])
+            ->values()
+            ->all();
+    }
+
+    /**
+     * 완료됐는데 환불신청서가 없는 환불액을 계산합니다. (D9 — 「환불 미접수」 표시의 단일 출처)
+     *
+     * 교환·반품이고, 환불이 연결되지 않은 완료 상품이 있으며(반품은 상품 행 `refund_id`, 교환은 저가 차액
+     * 완료 상품 중 살아 있는 환불신청서에 담기지 않은 것), 정산 블록의 환불액이 0 보다 클 때만 값을 낸다.
+     *
+     * @param  OrderExchange|OrderReturn|OrderRefund|OrderCancel  $claim  신청서
+     * @return array{amount: float, amount_formatted: string, item_count: int}|null 미접수 환불 (없으면 null)
+     */
+    public function pendingRefundFor(OrderExchange|OrderReturn|OrderRefund|OrderCancel $claim): ?array
+    {
+        if (! $claim instanceof OrderExchange && ! $claim instanceof OrderReturn) {
+            return null;
+        }
+
+        // 판정은 모델 한 곳(`pendingRefundItems`)이다 — 목록·주문 상세 뱃지와 필터가 같은 판정을 읽는다.
+        $unlinked = $claim->pendingRefundItems();
+
+        if ($unlinked->isEmpty()) {
+            return null;
+        }
+
+        // 금액은 정산 블록(완료 미리보기)과 같은 산식이다 — 완료 전 예고와 완료 후 미접수가 같은 숫자를 말한다.
+        $preview = $claim instanceof OrderReturn
+            ? $this->returnService->previewCompletion($claim)
+            : $this->exchangeService->previewRefundRequest($claim);
+
+        if (($preview['blocked_reason'] ?? null) !== null) {
+            return null;
+        }
+
+        $amount = (float) $preview['refund_amount'] + (float) $preview['refund_points_amount'];
+
+        if ($amount <= 0) {
+            return null;
+        }
+
+        $claim->loadMissing('order');
+        $currency = $claim->currency_code ?: $this->orderBaseCurrencyOf($claim->order);
+        $snapshot = is_array($claim->order?->currency_snapshot) ? $claim->order->currency_snapshot : null;
+
+        return [
+            'amount' => $amount,
+            'amount_formatted' => $this->currencyService->formatPrice($amount, $currency, $snapshot),
+            'item_count' => $unlinked->count(),
+        ];
     }
 
     // ───────────────────────────────────────────────

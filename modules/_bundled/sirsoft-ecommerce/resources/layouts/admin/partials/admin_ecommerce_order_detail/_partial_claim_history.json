@@ -231,6 +231,16 @@
                                                                 "variant": "{{claim.status_variant ?? 'default'}}"
                                                             },
                                                             "text": "{{claim.status_label ?? ''}}"
+                                                        },
+                                                        {
+                                                            "type": "composite",
+                                                            "name": "Badge",
+                                                            "if": "{{claim.has_pending_refund === true}}",
+                                                            "props": {
+                                                                "variant": "warning",
+                                                                "size": "sm"
+                                                            },
+                                                            "text": "$t:sirsoft-ecommerce.admin.order.detail.claim_history.pending_refund_badge"
                                                         }
                                                     ]
                                                 },
@@ -600,6 +610,17 @@
                                                                 "variant": "{{claim.status_variant ?? 'default'}}"
                                                             },
                                                             "text": "{{claim.status_label ?? ''}}"
+                                                        },
+                                                        {
+                                                            "comment": "환불 미접수(D9) — 완료됐는데 환불신청서가 연결되지 않은 신청서. 번호를 눌러 신청서 상단의 [환불신청서 접수] 로 간다.",
+                                                            "type": "composite",
+                                                            "name": "Badge",
+                                                            "if": "{{claim.has_pending_refund === true}}",
+                                                            "props": {
+                                                                "variant": "warning",
+                                                                "size": "sm"
+                                                            },
+                                                            "text": "$t:sirsoft-ecommerce.admin.order.detail.claim_history.pending_refund_badge"
                                                         },
                                                         {
                                                             "type": "basic",

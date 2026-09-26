@@ -3,6 +3,8 @@
 namespace Modules\Sirsoft\Ecommerce\Models;
 
 use App\Models\User;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -13,8 +15,11 @@ use Modules\Sirsoft\Ecommerce\Enums\ClaimChargeMethodEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimReasonFaultTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimShippingFeeModeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimTypeEnum;
+use Modules\Sirsoft\Ecommerce\Enums\ExchangeModeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ExchangeStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundPriorityEnum;
+use Modules\Sirsoft\Ecommerce\Enums\RefundSourceTypeEnum;
+use Modules\Sirsoft\Ecommerce\Enums\RefundStatusEnum;
 
 /**
  * 교환 신청서 모델
@@ -49,6 +54,11 @@ class OrderExchange extends Model
         'order_id',
         'exchange_number',
         'exchange_status',
+        'exchange_mode',
+        'exchange_mode_set_by',
+        'exchange_mode_set_at',
+        'collection_due_at',
+        'collection_overdue_notified_at',
         'reason_code',
         'reason_detail',
         'fault_type',
@@ -65,19 +75,18 @@ class OrderExchange extends Model
         'items_snapshot',
         'return_address_snapshot',
         'redelivery_address_snapshot',
-        'collection_carrier_id',
-        'collection_tracking_number',
         'collection_completed_at',
-        'redelivery_carrier_id',
-        'redelivery_tracking_number',
         'redelivered_at',
         'is_stock_restored',
         'requested_by',
+        'requested_by_admin',
         'processed_by',
         'approved_at',
         'on_hold_at',
         'rejected_at',
         'withdrawn_at',
+        'withdrawn_by_admin',
+        'withdraw_reason',
         'completed_at',
         'reject_reason',
         'admin_memo',
@@ -98,6 +107,10 @@ class OrderExchange extends Model
     {
         return [
             'exchange_status' => ExchangeStatusEnum::class,
+            'exchange_mode' => ExchangeModeEnum::class,
+            'exchange_mode_set_at' => 'datetime',
+            'collection_due_at' => 'datetime',
+            'collection_overdue_notified_at' => 'datetime',
             'fault_type' => ClaimReasonFaultTypeEnum::class,
             'charge_method' => ClaimChargeMethodEnum::class,
             'shipping_fee_mode' => ClaimShippingFeeModeEnum::class,
@@ -146,6 +159,79 @@ class OrderExchange extends Model
     }
 
     /**
+     * 이 교환에서 파생된 환불신청서 목록과의 관계 (저가 차액 환불 — `refund_source_type = exchange`)
+     *
+     * @return HasMany 파생 환불신청서 관계
+     */
+    public function refunds(): HasMany
+    {
+        return $this->hasMany(OrderRefund::class, 'refund_source_id')
+            ->where('refund_source_type', RefundSourceTypeEnum::EXCHANGE->value);
+    }
+
+    /**
+     * 이 교환에서 파생된 살아 있는(반려·철회 제외) 차액 환불신청서가 있는지 반환합니다.
+     *
+     * 목록은 `scopeWithLiveRefundCount` 로 센 값(`live_refund_count`)을 읽고, 그 값이 없으면 직접 조회한다.
+     *
+     * @return bool 살아 있는 환불신청서가 있으면 true
+     */
+    public function hasLiveRefund(): bool
+    {
+        if (array_key_exists('live_refund_count', $this->getAttributes())) {
+            return (int) $this->getAttribute('live_refund_count') > 0;
+        }
+
+        return $this->refunds()->whereNotIn('refund_status', RefundStatusEnum::linkReleasingValues())->exists();
+    }
+
+    /**
+     * 완료됐는데 살아 있는 차액 환불신청서가 없는 저가 차액 상품 행을 반환합니다. (「환불 미접수」 — D9)
+     *
+     * 상세 배너 금액(`AdminClaimService::pendingRefundFor`)·목록 뱃지·주문 상세 이력 뱃지가 모두 이 판정을 쓰고,
+     * 목록 필터는 쿼리판 `scopePendingRefund` 를 쓴다.
+     *
+     * @return Collection<int, OrderExchangeOption> 환불 미접수 상품 행
+     */
+    public function pendingRefundItems(): Collection
+    {
+        $lowerPriced = $this->loadMissing('exchangeOptions')->exchangeOptions
+            ->filter(fn (OrderExchangeOption $item) => $item->option_status?->value === ExchangeStatusEnum::COMPLETED->value
+                && (float) $item->price_difference < 0)
+            ->values();
+
+        return $lowerPriced->isEmpty() || $this->hasLiveRefund() ? new Collection : $lowerPriced;
+    }
+
+    /**
+     * 환불 미접수 저가 차액 상품이 있는 교환만 남깁니다. (`pendingRefundItems()` 의 쿼리판)
+     *
+     * @param  Builder  $query  쿼리
+     * @return Builder 쿼리
+     */
+    public function scopePendingRefund(Builder $query): Builder
+    {
+        return $query
+            ->whereHas('exchangeOptions', fn (Builder $items) => $items
+                ->where('option_status', ExchangeStatusEnum::COMPLETED->value)
+                ->where('price_difference', '<', 0))
+            ->whereDoesntHave('refunds', fn (Builder $refunds) => $refunds
+                ->whereNotIn('refund_status', RefundStatusEnum::linkReleasingValues()));
+    }
+
+    /**
+     * 살아 있는 차액 환불신청서 수를 `live_refund_count` 로 함께 셉니다. (목록 — `hasLiveRefund()` 가 읽는다)
+     *
+     * @param  Builder  $query  쿼리
+     * @return Builder 쿼리
+     */
+    public function scopeWithLiveRefundCount(Builder $query): Builder
+    {
+        return $query->withCount(['refunds as live_refund_count' => fn (Builder $refunds) => $refunds
+            ->whereNotIn('refund_status', RefundStatusEnum::linkReleasingValues())]);
+    }
+
+    /**
      * 첨부 이미지 목록과의 관계
      *
      * @return MorphMany 첨부 이미지 관계
@@ -166,26 +252,6 @@ class OrderExchange extends Model
     }
 
     /**
-     * 회수 택배사와의 관계
-     *
-     * @return BelongsTo 회수 택배사 관계
-     */
-    public function collectionCarrier(): BelongsTo
-    {
-        return $this->belongsTo(ShippingCarrier::class, 'collection_carrier_id');
-    }
-
-    /**
-     * 재발송 택배사와의 관계
-     *
-     * @return BelongsTo 재발송 택배사 관계
-     */
-    public function redeliveryCarrier(): BelongsTo
-    {
-        return $this->belongsTo(ShippingCarrier::class, 'redelivery_carrier_id');
-    }
-
-    /**
      * 신청자와의 관계
      *
      * @return BelongsTo 신청 사용자 관계
@@ -203,6 +269,66 @@ class OrderExchange extends Model
     public function processedByUser(): BelongsTo
     {
         return $this->belongsTo(User::class, 'processed_by');
+    }
+
+    /**
+     * 대리 접수한 관리자와의 관계 (판매자 접수)
+     *
+     * @return BelongsTo 대리 접수 관리자 관계
+     */
+    public function requestedByAdminUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'requested_by_admin');
+    }
+
+    /**
+     * 고객 요청으로 대신 철회한 관리자와의 관계
+     *
+     * @return BelongsTo 대리 철회 관리자 관계
+     */
+    public function withdrawnByAdminUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'withdrawn_by_admin');
+    }
+
+    /**
+     * 진행 방식을 바꾼 관리자와의 관계
+     *
+     * @return BelongsTo 진행 방식 변경 관리자 관계
+     */
+    public function exchangeModeSetByUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'exchange_mode_set_by');
+    }
+
+    /**
+     * 진행 방식을 반환합니다. (저장값이 없거나 알 수 없으면 일반 교환)
+     *
+     * @return ExchangeModeEnum 진행 방식
+     */
+    public function mode(): ExchangeModeEnum
+    {
+        return ExchangeModeEnum::resolve($this->exchange_mode);
+    }
+
+    /**
+     * 선교환인지 반환합니다.
+     *
+     * @return bool 선교환이면 true
+     */
+    public function isAdvanceExchange(): bool
+    {
+        return $this->mode()->isAdvance();
+    }
+
+    /**
+     * 운영자가 고객을 대신해 접수한 신청서인지 반환합니다. (판매자 접수 — 고객 철회·수정 불가)
+     *
+     * @return bool 판매자 접수면 true
+     */
+    public function isAdminRequested(): bool
+    {
+        return $this->requested_by_admin !== null;
     }
 
     /**

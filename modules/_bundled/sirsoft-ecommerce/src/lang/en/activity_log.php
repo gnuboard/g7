@@ -44,6 +44,9 @@ return [
         'toggle_active' => 'Active Status Changed',
         'tax_invoice_stale' => 'Tax Invoice Not Handled',
         'tracking_update' => 'Tracking Recorded/Corrected',
+        'tracking_deliver' => 'Tracking Delivered',
+        'mode_change' => 'Mode Changed',
+        'stock_restore' => 'Stock Restored',
         'toggle_status' => 'Status Toggled',
         'update' => 'Updated',
         'update_quantity' => 'Quantity Updated',
@@ -60,6 +63,7 @@ return [
         'request' => 'Request Received',
         'option_status_change' => 'Item Status Change',
         'update_amounts' => 'Amounts Updated',
+        'request_update' => 'Request Updated',
         'complete' => 'Completed',
         'refund' => 'Refunded',
         'execute' => 'Executed',
@@ -258,12 +262,29 @@ return [
         'claim_return_option_status_change' => 'Return request item status changed (:claim_number, :count item(s))',
         'claim_refund_option_status_change' => 'Refund request item status changed (:claim_number, :count item(s))',
         'claim_cancel_option_status_change' => 'Cancellation record item status changed (:claim_number, :count item(s))',
+        'claim_exchange_collection_tracking_update' => 'Exchange request collection tracking changed (:claim_number · :count item(s))',
+        'claim_exchange_redelivery_tracking_update' => 'Exchange request redelivery tracking changed (:claim_number · :count item(s))',
+        'claim_return_collection_tracking_update' => 'Return request collection tracking changed (:claim_number · :count item(s))',
+        'claim_exchange_collection_tracking_deliver' => 'Exchange collection tracking marked as arrived (:claim_number · :tracking_number · :count item(s))',
+        'claim_exchange_redelivery_tracking_deliver' => 'Exchange redelivery tracking marked as arrived (:claim_number · :tracking_number · :count item(s))',
+        'claim_return_collection_tracking_deliver' => 'Return collection tracking marked as arrived (:claim_number · :tracking_number · :count item(s))',
+        'claim_exchange_mode_change' => 'Exchange request mode changed (:claim_number)',
+        'claim_exchange_stock_restore' => 'Exchange claim stock restored (:claim_number · :count item(s) · qty :quantity)',
+        'claim_return_stock_restore' => 'Return claim stock restored (:claim_number · :count item(s) · qty :quantity)',
         'claim_exchange_update_amounts' => 'Exchange request amounts updated (:claim_number)',
         'claim_return_update_amounts' => 'Return request amounts updated (:claim_number)',
         'claim_refund_update_amounts' => 'Refund request amounts updated (:claim_number)',
+        'claim_exchange_request_update' => 'Exchange request details updated (:claim_number)',
+        'claim_return_request_update' => 'Return request details updated (:claim_number)',
+        'claim_refund_request_update' => 'Refund request details updated (:claim_number)',
+        'claim_exchange_request_update_on_behalf' => 'Exchange request details updated by an operator for the customer (:claim_number)',
+        'claim_return_request_update_on_behalf' => 'Return request details updated by an operator for the customer (:claim_number)',
+        'claim_refund_request_update_on_behalf' => 'Refund request details updated by an operator for the customer (:claim_number)',
         'claim_refund_execute' => 'Refund executed (:claim_number)',
         'claim_payment_complete' => 'Claim additional payment completed (:payment_number)',
         'claim_payment_refund' => 'Claim additional payment refunded (:payment_number)',
+        // 금액을 싣는 새 환급 로그 — 옛 키 문구에 자리표시자를 더하면 금액 없이 남은 과거 로그가 「:amount」 를 드러낸다.
+        'claim_payment_refund_amount' => 'Claim additional payment refunded (:payment_number, :amount)',
         'claim_payment_cancel' => 'Claim additional payment request cancelled (:payment_number)',
         'claim_image_upload' => 'Claim attachment uploaded (:original_name)',
         'claim_image_delete' => 'Claim attachment deleted (:original_name)',
@@ -348,6 +369,10 @@ return [
         'meta_description' => 'Meta Description',
 
         // OrderOption
+        'collection_tracking' => 'Collection Tracking',
+        'redelivery_tracking' => 'Redelivery Tracking',
+        'exchange_mode' => 'Exchange Mode',
+        'unreturned_reason' => 'Not-returned Reason',
         'option_status' => 'Option Status',
         'carrier_id' => 'Carrier',
         'tracking_number' => 'Tracking number',
@@ -374,6 +399,18 @@ return [
         'refund_amount' => 'Refund Amount',
         'refund_points_amount' => 'Refunded Mileage',
         'refund_method' => 'Refund Method',
+
+        // Claim request edits (D13 · S15)
+        'claim_reason' => 'Reason',
+        'fault_type' => 'Fault',
+        'reason_detail' => 'Reason Detail',
+        'refund_bank' => 'Refund Bank Account',
+        'redelivery_address' => 'Redelivery Address',
+    ],
+
+    // Change value display (items whose values are not stored)
+    'values' => [
+        'masked_change' => 'Changed (value not stored — personal information)',
     ],
 
     // Display for an entity whose name could not be resolved

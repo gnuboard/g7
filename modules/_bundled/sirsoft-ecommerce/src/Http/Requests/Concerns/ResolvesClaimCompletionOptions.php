@@ -24,6 +24,9 @@ trait ResolvesClaimCompletionOptions
             'completion.restore_stock_by_item' => ['nullable', 'array'],
             'completion.restore_stock_by_item.*' => ['boolean'],
             'completion.create_refund_request' => ['required_with:completion', 'boolean'],
+            // 선교환 「미회수로 완료」(D3) — 행 ID => 사유. 사유 없는 항목은 서비스가 거절한다.
+            'completion.unreturned' => ['nullable', 'array'],
+            'completion.unreturned.*' => ['nullable', 'string', 'max:2000'],
         ];
     }
 
@@ -41,6 +44,9 @@ trait ResolvesClaimCompletionOptions
             'completion.restore_stock_by_item.*.boolean' => __('sirsoft-ecommerce::validation.claims.completion.restore_stock_by_item_boolean'),
             'completion.create_refund_request.required_with' => __('sirsoft-ecommerce::validation.claims.completion.create_refund_request_required'),
             'completion.create_refund_request.boolean' => __('sirsoft-ecommerce::validation.claims.completion.create_refund_request_boolean'),
+            'completion.unreturned.array' => __('sirsoft-ecommerce::validation.claims.unreturned.array'),
+            'completion.unreturned.*.string' => __('sirsoft-ecommerce::validation.claims.unreturned.reason_string'),
+            'completion.unreturned.*.max' => __('sirsoft-ecommerce::validation.claims.unreturned.reason_max'),
         ];
     }
 
@@ -63,9 +69,16 @@ trait ResolvesClaimCompletionOptions
             $restoreByItem[(int) $itemId] = (bool) $restore;
         }
 
+        $unreturned = [];
+
+        foreach (($completion['unreturned'] ?? []) as $itemId => $reason) {
+            $unreturned[(int) $itemId] = (string) ($reason ?? '');
+        }
+
         return new ClaimCompletionOptions(
             restoreStockByItem: $restoreByItem,
             createRefundRequest: (bool) ($completion['create_refund_request'] ?? false),
+            unreturned: $unreturned,
         );
     }
 }

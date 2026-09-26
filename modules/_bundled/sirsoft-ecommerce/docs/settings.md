@@ -108,7 +108,7 @@ _`getSettingsSchema()` 선언이 없습니다._
 |---|---|---|---|
 | `products` | 상품 관리 | `read`, `create`, `update`, `delete` | `product` |
 | `orders` | 주문 관리 | `read`, `update` | `order` |
-| `claims` | 취소/반품/교환 관리 | `read`, `update-status`, `update-amounts`, `execute-refund` | `order` |
+| `claims` | 취소/반품/교환 관리 | `read`, `update-status`, `create`, `update-amounts`, `execute-refund` | `order` |
 | `categories` | 카테고리 관리 | `read`, `create`, `update`, `delete` | - |
 | `brands` | 브랜드 관리 | `read`, `create`, `update`, `delete` | `brand` |
 | `product-notice-templates` | 상품정보제공고시 관리 | `read`, `create`, `update`, `delete` | - |

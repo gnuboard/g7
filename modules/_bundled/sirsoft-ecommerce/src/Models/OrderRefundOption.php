@@ -36,6 +36,7 @@ class OrderRefundOption extends Model
         'shipping_amount',
         'refund_amount',
         'completed_at',
+        'reject_reason',
         'processed_by',
     ];
 

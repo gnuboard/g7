@@ -3,7 +3,7 @@
   <meta title="$t:sirsoft-ecommerce.admin.claim.title" description="$t:sirsoft-ecommerce.admin.claim.description"/>
   <!-- 유형별 금지 축(귀책·청구·청구 결제수단)은 `named_actions.searchClaims` 와 동일한 게이트를 거친다. URL 은 검색 액션 말고도 북마크·뒤로가기·수기 편집으로도 만들어지므로, 이쪽을 비워 두면 교차 조합 URL 에서 목록 전체가 422 가 되고 화면은 '로딩 중...' 에 멈춘 상태로 남는다. -->
   <data-source id="claims" label_key="$t:sirsoft-ecommerce.editor.data_source.claims" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/claims" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive">
-    <params type="{{query.type || 'exchange'}}" page="{{query.page || 1}}" per_page="{{query.per_page || 20}}" search_field="{{query.search_field}}" search_keyword="{{query.search_keyword}}" from="{{query.from}}" to="{{query.to}}" statuses="{{query['statuses[]']}}" fault_types="{{(query.type || 'exchange') !== 'cancel' ? query['fault_types[]'] : null}}" charge_methods="{{((query.type || 'exchange') === 'exchange' || (query.type || 'exchange') === 'return') ? query['charge_methods[]'] : null}}" reason_code="{{query.reason_code}}" requester_type="{{query.requester_type}}" min_amount="{{query.min_amount}}" max_amount="{{query.max_amount}}" currency_code="{{query.currency_code}}" charge_payment_methods="{{((query.type || 'exchange') === 'exchange' || (query.type || 'exchange') === 'return') ? query['charge_payment_methods[]'] : null}}"/>
+    <params type="{{query.type || 'exchange'}}" page="{{query.page || 1}}" per_page="{{query.per_page || 20}}" search_field="{{query.search_field}}" search_keyword="{{query.search_keyword}}" from="{{query.from}}" to="{{query.to}}" statuses="{{query['statuses[]']}}" fault_types="{{(query.type || 'exchange') !== 'cancel' ? query['fault_types[]'] : null}}" charge_methods="{{((query.type || 'exchange') === 'exchange' || (query.type || 'exchange') === 'return') ? query['charge_methods[]'] : null}}" reason_code="{{query.reason_code}}" requester_type="{{query.requester_type}}" request_source="{{(query.type || 'exchange') !== 'cancel' ? query.request_source : null}}" collection_overdue="{{(query.type || 'exchange') === 'exchange' ? query.collection_overdue : null}}" pending_refund="{{['exchange', 'return'].includes(query.type || 'exchange') ? query.pending_refund : null}}" min_amount="{{query.min_amount}}" max_amount="{{query.max_amount}}" currency_code="{{query.currency_code}}" charge_payment_methods="{{((query.type || 'exchange') === 'exchange' || (query.type || 'exchange') === 'return') ? query['charge_payment_methods[]'] : null}}"/>
     <error-handling>
       <on-code code="403">
         <show-error-page target="content"/>
@@ -46,6 +46,9 @@
       <field name="chargeMethods" :value="[]"/>
       <field name="reasonCode" value=""/>
       <field name="requesterType" value=""/>
+      <field name="requestSource" value=""/>
+      <field name="collectionOverdue" value=""/>
+      <field name="pendingRefund" value=""/>
       <field name="minAmount" value=""/>
       <field name="maxAmount" value=""/>
       <field name="currencyCode" value=""/>
@@ -62,6 +65,7 @@
       <item>reason_label</item>
       <item>fault_type</item>
       <item>amount</item>
+      <item>tracking</item>
     </field>
     <field name="visibleFilters">
       <item>searchField</item>
@@ -89,7 +93,7 @@
   <!-- 귀책·청구 파라미터는 그 축을 가진 유형에서만 싣는다 — 게이트(`Admin\ClaimListRequest`)가 취소·환불에서 prohibited 로 거절하므로, 유형을 바꾼 뒤 남아 있던 값을 그대로 보내면 목록 전체가 422 가 된다. -->
   <action name="searchClaims">
     <navigate path="/admin/ecommerce/claims" :replace="true" :mergeQuery="true" transition_overlay_target="claim_datagrid__body">
-      <query :page="1" search_field="{{_local.filter.searchField || 'claim_number'}}" search_keyword="{{_local.filter.searchKeyword || null}}" from="{{_local.filter.startDate || null}}" to="{{_local.filter.endDate || null}}" statuses[]="{{(_local.filter.claimStatus || []).length > 0 ? _local.filter.claimStatus : null}}" fault_types[]="{{(query.type || 'exchange') !== 'cancel' &amp;&amp; (_local.filter.faultTypes || []).length > 0 ? _local.filter.faultTypes : null}}" charge_methods[]="{{((query.type || 'exchange') === 'exchange' || (query.type || 'exchange') === 'return') &amp;&amp; (_local.filter.chargeMethods || []).length > 0 ? _local.filter.chargeMethods : null}}" reason_code="{{_local.filter.reasonCode || null}}" requester_type="{{_local.filter.requesterType || null}}" min_amount="{{_local.filter.minAmount || null}}" max_amount="{{_local.filter.maxAmount || null}}" currency_code="{{_local.filter.currencyCode || null}}" charge_payment_methods[]="{{((query.type || 'exchange') === 'exchange' || (query.type || 'exchange') === 'return') &amp;&amp; (_local.filter.chargePaymentMethods || []).length > 0 ? _local.filter.chargePaymentMethods : null}}"/>
+      <query :page="1" search_field="{{_local.filter.searchField || 'claim_number'}}" search_keyword="{{_local.filter.searchKeyword || null}}" from="{{_local.filter.startDate || null}}" to="{{_local.filter.endDate || null}}" statuses[]="{{(_local.filter.claimStatus || []).length > 0 ? _local.filter.claimStatus : null}}" fault_types[]="{{(query.type || 'exchange') !== 'cancel' &amp;&amp; (_local.filter.faultTypes || []).length > 0 ? _local.filter.faultTypes : null}}" charge_methods[]="{{((query.type || 'exchange') === 'exchange' || (query.type || 'exchange') === 'return') &amp;&amp; (_local.filter.chargeMethods || []).length > 0 ? _local.filter.chargeMethods : null}}" reason_code="{{_local.filter.reasonCode || null}}" requester_type="{{_local.filter.requesterType || null}}" request_source="{{(query.type || 'exchange') !== 'cancel' ? (_local.filter.requestSource || null) : null}}" collection_overdue="{{(query.type || 'exchange') === 'exchange' &amp;&amp; _local.filter.collectionOverdue === '1' ? 1 : null}}" pending_refund="{{['exchange', 'return'].includes(query.type || 'exchange') &amp;&amp; _local.filter.pendingRefund === '1' ? 1 : null}}" min_amount="{{_local.filter.minAmount || null}}" max_amount="{{_local.filter.maxAmount || null}}" currency_code="{{_local.filter.currencyCode || null}}" charge_payment_methods[]="{{((query.type || 'exchange') === 'exchange' || (query.type || 'exchange') === 'return') &amp;&amp; (_local.filter.chargePaymentMethods || []).length > 0 ? _local.filter.chargePaymentMethods : null}}"/>
     </navigate>
   </action>
   <init>
@@ -106,6 +110,9 @@
           <field name="chargeMethods" value="{{query['charge_methods[]'] || []}}"/>
           <field name="reasonCode" value="{{query.reason_code || ''}}"/>
           <field name="requesterType" value="{{query.requester_type || ''}}"/>
+          <field name="requestSource" value="{{query.request_source || ''}}"/>
+          <field name="collectionOverdue" value="{{String(query.collection_overdue ?? '') === '1' ? '1' : ''}}"/>
+          <field name="pendingRefund" value="{{String(query.pending_refund ?? '') === '1' ? '1' : ''}}"/>
           <field name="selectedPreset" value="{{query.preset_id || ''}}"/>
           <field name="minAmount" value="{{query.min_amount || ''}}"/>
           <field name="maxAmount" value="{{query.max_amount || ''}}"/>

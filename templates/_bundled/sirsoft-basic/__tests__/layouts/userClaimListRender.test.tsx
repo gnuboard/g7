@@ -21,7 +21,9 @@
  *   claim_list_amount_column_branches_by_type,
  *   claim_list_return_row_omits_refund_amount,
  *   claim_list_shows_secondary_currency,
- *   claim_list_empty_state_and_pagination
+ *   claim_list_empty_state_and_pagination,
+ *   claim_list_tracking_column_first_waybill_and_more,
+ *   claim_list_admin_requested_badge
  *
  * @vitest-environment jsdom
  */
@@ -94,6 +96,7 @@ const TRANSLATIONS = {
       col_amount: '금액',
       collection: '회수',
       redelivery: '재발송',
+      tracking_more: '외 {{more}}개',
       round_trip_shipping_fee: '왕복 배송비',
       collection_shipping_fee: '회수 배송비',
       additional_product_amount: '추가 상품금액',
@@ -132,11 +135,11 @@ function exchangeClaim(overrides: Record<string, any> = {}): Record<string, any>
     total_charge_amount_formatted: '9,000원',
     mc_total_charge_amount: { USD: { formatted: '$6.75' } },
     charge_method_label: '신청 시 결제',
-    collection_carrier_name: 'CJ대한통운',
-    collection_tracking_number: '651234567890',
-    collection_tracking_url: 'https://example.test/track/651234567890',
-    redelivery_tracking_number: null,
-    redelivery_tracking_url: null,
+    // 목록은 방향별 첫 운송장과 개수만 싣는다(`tracking_summary`) — 운송장별 링크는 상세 몫이다.
+    tracking_summary: {
+      collection: { first: '651234567890', count: 2 },
+      redelivery: { first: null, count: 0 },
+    },
     items: [
       {
         product_name: '티셔츠',
@@ -229,6 +232,11 @@ describe('클레임 신청내역 목록 — 렌더', () => {
     active = null;
   });
 
+  /**
+   * 서브탭 네 개의 활성 판정은 주소(query.type)가 단일 출처다.
+   *
+   * @effects claim_list_type_tabs_follow_the_query
+   */
   it('유형 서브탭 4종이 서고, 활성 판정은 주소를 따른다', async () => {
     const { utils, container } = await renderList([exchangeClaim()], { type: 'return' });
     active = utils;
@@ -307,6 +315,11 @@ describe('클레임 신청내역 목록 — 렌더', () => {
     expect(tab?.textContent).toBe('claim.list.tab_exchange');
   });
 
+  /**
+   * 유형 없는 주소는 교환 탭으로 연다.
+   *
+   * @effects claim_list_type_tabs_follow_the_query
+   */
   it('주소에 유형이 없으면 교환 탭이 활성이다 (서버 게이트가 유형을 요구한다)', async () => {
     const { utils, container } = await renderList([exchangeClaim()], {});
     active = utils;
@@ -317,6 +330,11 @@ describe('클레임 신청내역 목록 — 렌더', () => {
     expect(active버튼[0].textContent).toBe('claim.list.tab_exchange');
   });
 
+  /**
+   * 카드 헤더가 서버 값을 그대로 그린다.
+   *
+   * @effects claim_list_row_actions_follow_server_flags
+   */
   it('카드 헤더 — 클레임번호·신청일·주문번호·상태 라벨이 나온다', async () => {
     const { utils, container } = await renderList([exchangeClaim()], { type: 'exchange' });
     active = utils;
@@ -331,6 +349,11 @@ describe('클레임 신청내역 목록 — 렌더', () => {
     expect(text).toContain('교환회수중');
   });
 
+  /**
+   * 수정·철회 버튼은 서버 판정(is_editable/is_withdrawable)만 따른다.
+   *
+   * @effects claim_list_row_actions_follow_server_flags
+   */
   it('[수정]·[철회]는 서버 판정에서만 선다', async () => {
     const { utils, container } = await renderList(
       [exchangeClaim(), returnClaim()],
@@ -345,6 +368,11 @@ describe('클레임 신청내역 목록 — 렌더', () => {
     expect(labels.filter((l) => l === '철회')).toHaveLength(1);
   });
 
+  /**
+   * 상품 줄 아래에 교환 대상 줄이 선다.
+   *
+   * @effects claim_list_amount_column_branches_by_type
+   */
   it('상품 줄과 교환 대상 줄이 나온다', async () => {
     const { utils, container } = await renderList([exchangeClaim()], { type: 'exchange' });
     active = utils;
@@ -358,6 +386,11 @@ describe('클레임 신청내역 목록 — 렌더', () => {
     expect(text).toContain('블랙/L 각인"JE"');
   });
 
+  /**
+   * 옵션을 바꾸지 않은 교환에는 교환 대상 줄이 없다.
+   *
+   * @effects claim_list_amount_column_branches_by_type
+   */
   it('동일상품 교환에는 교환 대상 줄이 서지 않는다', async () => {
     const { utils, container } = await renderList(
       [
@@ -382,6 +415,11 @@ describe('클레임 신청내역 목록 — 렌더', () => {
     expect(container.textContent ?? '').not.toContain('⇄');
   });
 
+  /**
+   * 교환 금액 열의 구성.
+   *
+   * @effects claim_list_amount_column_branches_by_type
+   */
   it('교환 금액 열 — 왕복 배송비·추가 상품금액·총 청구액', async () => {
     const { utils, container } = await renderList([exchangeClaim()], { type: 'exchange' });
     active = utils;
@@ -401,6 +439,11 @@ describe('클레임 신청내역 목록 — 렌더', () => {
     expect(text).toContain('$6.75');
   });
 
+  /**
+   * 반품 행에는 환불액을 싣지 않는다.
+   *
+   * @effects claim_list_return_row_omits_refund_amount
+   */
   it('반품 금액 열 — 회수 배송비가 서고 환불액은 서지 않는다', async () => {
     const { utils, container } = await renderList([returnClaim()], { type: 'return' });
     active = utils;
@@ -534,6 +577,11 @@ describe('클레임 신청내역 목록 — 렌더', () => {
     expect(text).toContain('¥805');
   });
 
+  /**
+   * 환불 금액 열은 음수 부호로 선다.
+   *
+   * @effects claim_list_amount_column_branches_by_type
+   */
   it('환불 금액 열 — 환불액이 음수 부호와 함께 선다', async () => {
     const { utils, container } = await renderList([refundClaim()], { type: 'refund' });
     active = utils;
@@ -546,6 +594,11 @@ describe('클레임 신청내역 목록 — 렌더', () => {
     expect(text).not.toContain('claim.list.collection_shipping_fee');
   });
 
+  /**
+   * 환불액에도 보조 통화가 병기된다.
+   *
+   * @effects claim_list_shows_secondary_currency
+   */
   it('환불 금액 열 — 환불액에도 보조 통화가 병기된다 (합계 필드를 읽는다)', async () => {
     // 서버는 목록 응답에도 `mc_refund_total`(현금+마일리지)·`mc_refund_amount`(현금분)를 싣는데
     // 화면이 쓰지 않아, 다통화 상점에서 환불·취소 카드만 외화가 통째로 빠져 있었다. 총 청구액 줄은
@@ -570,6 +623,11 @@ describe('클레임 신청내역 목록 — 렌더', () => {
     expect(text).not.toContain('$28.50');
   });
 
+  /**
+   * 취소 금액의 보조 통화는 현금분을 읽는다.
+   *
+   * @effects claim_list_shows_secondary_currency
+   */
   it('취소 금액 열 — 보조 통화는 현금분(mc_refund_amount)으로 떨어진다', async () => {
     // 취소는 기준 줄이 연결 환불의 현금분(`refund_amount_formatted`)이라 합계 키가 없다.
     const { utils, container } = await renderList(
@@ -593,6 +651,11 @@ describe('클레임 신청내역 목록 — 렌더', () => {
     expect(text).toContain('$27.20');
   });
 
+  /**
+   * 클레임 배송비에도 보조 통화가 병기된다.
+   *
+   * @effects claim_list_shows_secondary_currency
+   */
   it('금액 열 — 클레임 배송비에도 보조 통화가 병기된다', async () => {
     // 같은 금액 열의 형제 줄(총 청구액)은 병기하는데 배송비 줄만 기준 통화로 남아 있었다.
     const { utils, container } = await renderList(
@@ -607,6 +670,11 @@ describe('클레임 신청내역 목록 — 렌더', () => {
     expect(text).toContain('$4.50');
   });
 
+  /**
+   * 옵션 차액의 보조 통화는 차액 줄과 같은 게이트를 쓴다.
+   *
+   * @effects claim_list_shows_secondary_currency
+   */
   it('상품 행 — 옵션 차액에도 보조 통화가 병기된다 (차액이 0 이면 서지 않는다)', async () => {
     // 게이트는 차액이 실제로 그려지는 조건과 같아야 한다 — 동일상품 교환에서 이 줄만 돌면
     // 근거 없는 0 이 남는다(상세의 같은 자리에서 3차가 겪은 형태다).
@@ -643,6 +711,11 @@ describe('클레임 신청내역 목록 — 렌더', () => {
     same.cleanup();
   });
 
+  /**
+   * 교환에 얹은 추가옵션을 이름으로 적는다.
+   *
+   * @effects claim_list_amount_column_branches_by_type
+   */
   it('상품 행 — 이 교환에 얹은 추가옵션이 이름으로 나온다', async () => {
     // 신청 시점 동결값이다. 예전에는 선택 ID 만 남아 이 자리에 그릴 재료가 없었다.
     const { utils, container } = await renderList(
@@ -679,6 +752,11 @@ describe('클레임 신청내역 목록 — 렌더', () => {
     expect(text).toContain('각인 (G7)');
   });
 
+  /**
+   * 추가옵션이 없으면 그 줄이 없다.
+   *
+   * @effects claim_list_amount_column_branches_by_type
+   */
   it('상품 행 — 추가옵션이 없으면 그 줄이 서지 않는다', async () => {
     const { utils, container } = await renderList([exchangeClaim()], { type: 'exchange' });
     active = utils;
@@ -692,6 +770,9 @@ describe('클레임 신청내역 목록 — 렌더', () => {
     expect(strays).toHaveLength(0);
   });
 
+  /**
+   * @effects claim_list_tracking_column_first_waybill_and_more
+   */
   it('배송조회 — 교환은 회수·재발송 두 항목, 환불은 대시', async () => {
     const { utils: u1, container: exchange } = await renderList([exchangeClaim()], { type: 'exchange' });
     active = u1;
@@ -699,8 +780,9 @@ describe('클레임 신청내역 목록 — 렌더', () => {
     const exchangeText = exchange.textContent ?? '';
     expect(exchangeText).toContain('회수');
     expect(exchangeText).toContain('재발송');
-    expect(exchangeText).toContain('CJ대한통운 651234567890');
-    expect(exchange.querySelector('a[href="https://example.test/track/651234567890"]')).not.toBeNull();
+    // 운송장이 둘이면 첫 운송장 + 「외 1개」.
+    expect(exchangeText).toContain('651234567890');
+    expect(exchangeText).toContain('외 1개');
 
     active.cleanup();
 
@@ -712,6 +794,45 @@ describe('클레임 신청내역 목록 — 렌더', () => {
     expect(refundText).not.toContain('재발송');
   });
 
+  /**
+   * 운송장이 하나면 「외 N개」 가 서지 않는다.
+   *
+   * @effects claim_list_tracking_column_first_waybill_and_more
+   */
+  it('배송조회 — 운송장이 하나면 「외 N개」 가 없다', async () => {
+    const { utils, container } = await renderList(
+      [exchangeClaim({ tracking_summary: { collection: { first: 'ONE-1', count: 1 }, redelivery: { first: null, count: 0 } } })],
+      { type: 'exchange' },
+    );
+    active = utils;
+
+    const text = container.textContent ?? '';
+    expect(text).toContain('ONE-1');
+    expect(text).not.toContain('외 ');
+  });
+
+  /**
+   * 판매자가 대신 접수한 신청서는 목록 카드에도 출처 뱃지가 선다(D8).
+   *
+   * @effects claim_list_admin_requested_badge
+   */
+  it('판매자 접수 — 카드에 출처 뱃지가 선다', async () => {
+    const { utils, container } = await renderList(
+      [exchangeClaim({ request_source: 'admin', request_source_label: '판매자 접수', is_editable: false, is_withdrawable: false })],
+      { type: 'exchange' },
+    );
+    active = utils;
+
+    const text = container.textContent ?? '';
+    expect(text).toContain('판매자 접수');
+    expect(text).not.toContain('철회');
+  });
+
+  /**
+   * 빈 목록 안내.
+   *
+   * @effects claim_list_empty_state_and_pagination
+   */
   it('빈 목록 — 안내와 주문내역 링크가 서고 카드는 없다', async () => {
     const { utils, container } = await renderList([], { type: 'exchange' });
     active = utils;
@@ -723,6 +844,11 @@ describe('클레임 신청내역 목록 — 렌더', () => {
     expect(text).not.toContain('상세보기');
   });
 
+  /**
+   * 페이저는 여러 페이지일 때만 선다.
+   *
+   * @effects claim_list_empty_state_and_pagination
+   */
   it('페이지네이션 — 여러 페이지일 때만 선다', async () => {
     const { utils: u1, container: single } = await renderList(
       [exchangeClaim()],
@@ -748,6 +874,11 @@ describe('클레임 신청내역 목록 — 렌더', () => {
     expect(pager?.getAttribute('data-total')).toBe('5');
   });
 
+  /**
+   * 잘린 총 건수에서도 페이저가 선다.
+   *
+   * @effects claim_list_pagination_survives_a_truncated_total
+   */
   it('총 건수가 상한에 잘린 응답에서도 페이저가 선다 (last_page 는 null 이다)', async () => {
     // 대용량 목록은 총 건수만 상한을 받고 "다음" 은 실측으로 열려 있다 — last_page 가 null 인
     // 응답에서 페이저를 감추면 1페이지 밖 신청서가 조용히 잘린다.

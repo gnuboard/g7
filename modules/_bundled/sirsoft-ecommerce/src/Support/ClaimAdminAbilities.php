@@ -27,6 +27,7 @@ final class ClaimAdminAbilities
     public static function map(): array
     {
         return [
+            'can_create' => 'sirsoft-ecommerce.claims.create',
             'can_update_status' => 'sirsoft-ecommerce.claims.update-status',
             'can_update_amounts' => 'sirsoft-ecommerce.claims.update-amounts',
             'can_execute_refund' => 'sirsoft-ecommerce.claims.execute-refund',

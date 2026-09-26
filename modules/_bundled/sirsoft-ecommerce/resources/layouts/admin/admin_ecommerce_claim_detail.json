@@ -39,10 +39,6 @@
             },
             "initLocal": {
                 "adminMemo": "{{data.claim?.admin_memo ?? ''}}",
-                "collectionCarrierId": "{{data.claim?.collection_carrier_id ? String(data.claim.collection_carrier_id) : ''}}",
-                "collectionTrackingNumber": "{{data.claim?.collection_tracking_number ?? ''}}",
-                "redeliveryCarrierId": "{{data.claim?.redelivery_carrier_id ? String(data.claim.redelivery_carrier_id) : ''}}",
-                "redeliveryTrackingNumber": "{{data.claim?.redelivery_tracking_number ?? ''}}",
                 "claimShippingFee": "{{data.claim?.claim_shipping_fee === undefined || data.claim?.claim_shipping_fee === null ? '' : String(data.claim.claim_shipping_fee)}}",
                 "chargeMethod": "{{data.claim?.charge_method ?? ''}}",
                 "refundAmount": "{{data.claim?.refund_amount === undefined || data.claim?.refund_amount === null ? '' : String(data.claim.refund_amount)}}",
@@ -87,12 +83,10 @@
         "claimRejectReason": "",
         "adminMemo": "",
         "isSavingMemo": false,
-        "collectionCarrierId": "",
-        "collectionTrackingNumber": "",
-        "isSavingCollection": false,
-        "redeliveryCarrierId": "",
-        "redeliveryTrackingNumber": "",
-        "isSavingRedelivery": false,
+        "itemTrackingMode": false,
+        "itemTrackingDirection": "collection",
+        "isDeliveringTracking": false,
+        "isRestoringStock": false,
         "claimShippingFee": "",
         "chargeMethod": "",
         "isSavingAmounts": false,
@@ -128,12 +122,14 @@
                 "itemRejectReason": "",
                 "itemCarrierId": "",
                 "itemTrackingNumber": "",
+                "itemTrackingMode": false,
+                "itemTrackingDirection": "collection",
                 "claimBulkStatus": "",
                 "claimRejectReason": "",
                 "itemTransitionOptions": [],
                 "isSavingMemo": false,
-                "isSavingCollection": false,
-                "isSavingRedelivery": false,
+                "isDeliveringTracking": false,
+                "isRestoringStock": false,
                 "isSavingAmounts": false,
                 "isExecutingRefund": false,
                 "logsPage": 1,
@@ -340,6 +336,27 @@
                                                             "size": "sm"
                                                         },
                                                         "text": "{{claim?.data?.claim?.request_source_label}}"
+                                                    },
+                                                    {
+                                                        "comment": "판매자 접수·대리 철회를 한 운영자 (계획 §3-11 「머리에 판매자 접수 뱃지와 접수 관리자 이름」) — 관리자 상세 응답에만 실리는 이름이다(고객 응답에는 없다). 누가 고객을 대신했는지 알아야 고객 문의에 답한다.",
+                                                        "id": "cd_008c_requested_by_admin",
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "if": "{{claim?.data?.claim?.request_source === 'admin' && !!claim?.data?.claim?.requested_by_admin_name}}",
+                                                        "props": {
+                                                            "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                        },
+                                                        "text": "$t:sirsoft-ecommerce.admin.claim.detail.requested_by_admin|name={{claim?.data?.claim?.requested_by_admin_name}}"
+                                                    },
+                                                    {
+                                                        "id": "cd_008d_withdrawn_by_admin",
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "if": "{{!!claim?.data?.claim?.withdrawn_by_admin_name}}",
+                                                        "props": {
+                                                            "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                        },
+                                                        "text": "$t:sirsoft-ecommerce.admin.claim.detail.withdrawn_by_admin|name={{claim?.data?.claim?.withdrawn_by_admin_name}}"
                                                     }
                                                 ]
                                             }
@@ -352,6 +369,28 @@
                                             "className": "page-actions"
                                         },
                                         "children": [
+                                            {
+                                                "comment": "고객 요청 대리 철회(S14) — 고객이 전화로 신청 취소를 요청하면 반려가 아니라 철회다. 단계는 고객 철회와 같고, 판매자가 접수한 건도 거둘 수 있다(게이트는 서버의 `on_behalf.can_withdraw`).",
+                                                "id": "cd_011_withdraw_on_behalf",
+                                                "type": "basic",
+                                                "name": "Button",
+                                                "if": "{{claim?.data?.on_behalf?.can_withdraw === true && claim?.data?.abilities?.can_update_status === true}}",
+                                                "actions": [
+                                                    {
+                                                        "type": "click",
+                                                        "handler": "sirsoft-ecommerce.openClaimWithdrawOnBehalf",
+                                                        "params": {
+                                                            "pathSegment": "{{claim?.data?.claim_path_segment ?? ''}}",
+                                                            "claimId": "{{claim?.data?.claim?.id ?? null}}"
+                                                        }
+                                                    }
+                                                ],
+                                                "props": {
+                                                    "type": "button",
+                                                    "className": "btn btn-outline"
+                                                },
+                                                "text": "$t:sirsoft-ecommerce.admin.claim.detail.withdraw_on_behalf.button"
+                                            },
                                             {
                                                 "id": "cd_009_order_link_button",
                                                 "type": "basic",
@@ -396,6 +435,146 @@
                                                 "text": "$t:sirsoft-ecommerce.common.list"
                                             }
                                         ]
+                                    }
+                                ]
+                            },
+                            {
+                                "comment": "환불 미접수(D9) — 완료됐는데 환불신청서가 없고 환불액이 0 보다 크다. 예전에는 완료 모달에서 접수를 끄면 그 뒤로 운영자가 그 사실을 알 길이 없었다. 금액·건수는 서버(`pending_refund`)가 정하고, 버튼은 기존 수동 접수 경로다.",
+                                "id": "cd_012_pending_refund_banner",
+                                "type": "basic",
+                                "name": "Div",
+                                "if": "{{!!claim?.data?.pending_refund}}",
+                                "props": {
+                                    "className": "mt-4 flex-between gap-3 flex-wrap p-4 rounded-lg border border-orange-200 dark:border-orange-800 bg-orange-50 dark:bg-orange-900/20"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "props": {
+                                            "className": "text-sm text-orange-800 dark:text-orange-300"
+                                        },
+                                        "text": "$t:sirsoft-ecommerce.admin.claim.detail.pending_refund.banner|amount={{claim?.data?.pending_refund?.amount_formatted ?? ''}}"
+                                    },
+                                    {
+                                        "id": "cd_012b_pending_refund_action",
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "actions": [
+                                            {
+                                                "type": "click",
+                                                "handler": "sirsoft-ecommerce.storeClaimRefundRequest",
+                                                "params": {
+                                                    "pathSegment": "{{claim?.data?.claim_path_segment ?? ''}}",
+                                                    "claimId": "{{claim?.data?.claim?.id ?? null}}"
+                                                },
+                                                "onError": {
+                                                    "handler": "suppress"
+                                                }
+                                            }
+                                        ],
+                                        "props": {
+                                            "type": "button",
+                                            "className": "btn btn-outline",
+                                            "disabled": "{{claim?.data?.abilities?.can_update_status !== true}}"
+                                        },
+                                        "text": "$t:sirsoft-ecommerce.admin.claim.detail.pending_refund.action"
+                                    }
+                                ]
+                            },
+                            {
+                                "comment": "선교환 반송 기한 경과 — 새 물건은 보냈는데 헌 물건이 기한까지 오지 않았다. 기한·경과 일수는 서버가 센다.",
+                                "id": "cd_013_overdue_banner",
+                                "type": "basic",
+                                "name": "Div",
+                                "if": "{{claim?.data?.claim?.is_collection_overdue === true}}",
+                                "props": {
+                                    "className": "mt-4 p-4 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 text-sm text-red-800 dark:text-red-300"
+                                },
+                                "text": "$t:sirsoft-ecommerce.admin.claim.detail.exchange_mode.overdue_banner|days={{claim?.data?.claim?.collection_overdue_days ?? 0}}|date={{claim?.data?.claim?.collection_due_date_formatted ?? ''}}"
+                            },
+                            {
+                                "comment": "「진행 방식」 줄 (교환만, D1) — 일반 교환/선교환 뱃지와 전환 버튼. 전환할 수 있는지는 서버(`exchange_mode_abilities`)가 실제 거절 조건과 같은 판정으로 준다. 막힌 이유는 버튼 옆 문구다 — 꺼진 버튼만 두면 운영자는 권한 문제로 읽는다.",
+                                "id": "cd_014_exchange_mode_row",
+                                "type": "basic",
+                                "name": "Div",
+                                "if": "{{(claim?.data?.claim?.claim_type ?? '') === 'exchange' && !!claim?.data?.exchange_mode_abilities}}",
+                                "props": {
+                                    "className": "mt-4 flex-center gap-3 flex-wrap"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "props": {
+                                            "className": "text-sm text-secondary"
+                                        },
+                                        "text": "$t:sirsoft-ecommerce.admin.claim.detail.exchange_mode.label"
+                                    },
+                                    {
+                                        "id": "cd_015_exchange_mode_badge",
+                                        "type": "composite",
+                                        "name": "Badge",
+                                        "props": {
+                                            "variant": "{{claim?.data?.claim?.is_advance_exchange === true ? 'warning' : 'secondary'}}"
+                                        },
+                                        "text": "{{claim?.data?.claim?.exchange_mode_label ?? ''}}"
+                                    },
+                                    {
+                                        "id": "cd_016_set_advance",
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "if": "{{claim?.data?.claim?.is_advance_exchange !== true}}",
+                                        "actions": [
+                                            {
+                                                "type": "click",
+                                                "handler": "sirsoft-ecommerce.openClaimExchangeModeConfirm",
+                                                "params": {
+                                                    "claimId": "{{claim?.data?.claim?.id ?? null}}",
+                                                    "mode": "advance",
+                                                    "dueDays": "{{claim?.data?.exchange_mode_abilities?.collection_due_days ?? ''}}"
+                                                }
+                                            }
+                                        ],
+                                        "props": {
+                                            "type": "button",
+                                            "className": "btn btn-outline btn-sm disabled:opacity-50 disabled:cursor-not-allowed",
+                                            "disabled": "{{claim?.data?.abilities?.can_update_status !== true || claim?.data?.exchange_mode_abilities?.can_set_advance !== true}}"
+                                        },
+                                        "text": "$t:sirsoft-ecommerce.admin.claim.detail.exchange_mode.set_advance"
+                                    },
+                                    {
+                                        "id": "cd_017_set_standard",
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "if": "{{claim?.data?.claim?.is_advance_exchange === true}}",
+                                        "actions": [
+                                            {
+                                                "type": "click",
+                                                "handler": "sirsoft-ecommerce.openClaimExchangeModeConfirm",
+                                                "params": {
+                                                    "claimId": "{{claim?.data?.claim?.id ?? null}}",
+                                                    "mode": "standard",
+                                                    "dueDays": "{{claim?.data?.exchange_mode_abilities?.collection_due_days ?? ''}}"
+                                                }
+                                            }
+                                        ],
+                                        "props": {
+                                            "type": "button",
+                                            "className": "btn btn-outline btn-sm disabled:opacity-50 disabled:cursor-not-allowed",
+                                            "disabled": "{{claim?.data?.abilities?.can_update_status !== true || claim?.data?.exchange_mode_abilities?.can_set_standard !== true}}"
+                                        },
+                                        "text": "$t:sirsoft-ecommerce.admin.claim.detail.exchange_mode.set_standard"
+                                    },
+                                    {
+                                        "id": "cd_018_mode_blocked",
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "if": "{{!!claim?.data?.exchange_mode_abilities?.blocked_reason}}",
+                                        "props": {
+                                            "className": "text-xs text-gray-500 dark:text-gray-400"
+                                        },
+                                        "text": "{{claim?.data?.exchange_mode_abilities?.blocked_reason ?? ''}}"
                                     }
                                 ]
                             }
@@ -457,6 +636,16 @@
         {
             "comment": "첨부 일괄 정리 확인 모달. 고객이 올린 증빙까지 파일째 지우는 되돌릴 수 없는 처리라 한 번 더 묻는다(개별 삭제는 업로더가 이미 묻는다). 문맥은 `_global.claimImagesClearContext` 하나다 — 모달은 부모 `_local` 을 해석하지 못한다.",
             "partial": "partials/admin_ecommerce_claim_detail/_modal_claim_images_clear.json"
+        },
+        {
+            "comment": "진행 방식 전환 확인 (D1) · 고객 요청 대리 철회 (S14) · 신청 내용 수정 (S15). 모달은 부모 `_local` 을 해석하지 못하므로 여는 핸들러가 `_global` 문맥으로 값을 넘긴다.",
+            "partial": "partials/admin_ecommerce_claim_detail/_modal_claim_exchange_mode_confirm.json"
+        },
+        {
+            "partial": "partials/admin_ecommerce_claim_detail/_modal_claim_withdraw_on_behalf.json"
+        },
+        {
+            "partial": "partials/admin_ecommerce_claim_detail/_modal_claim_request_edit.json"
         }
     ]
 }

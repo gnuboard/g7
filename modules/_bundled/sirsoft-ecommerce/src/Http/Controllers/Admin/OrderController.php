@@ -31,7 +31,7 @@ use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\UpdateOrderRequest;
 use Modules\Sirsoft\Ecommerce\Http\Resources\OrderCollection;
 use Modules\Sirsoft\Ecommerce\Http\Resources\OrderResource;
 use Modules\Sirsoft\Ecommerce\Models\Order;
-use Modules\Sirsoft\Ecommerce\Services\AdminOrderCancelService;
+use Modules\Sirsoft\Ecommerce\Services\AdminClaimRequestService;
 use Modules\Sirsoft\Ecommerce\Services\OrderCancellationService;
 use Modules\Sirsoft\Ecommerce\Services\OrderOptionService;
 use Modules\Sirsoft\Ecommerce\Services\OrderProcessingService;
@@ -53,7 +53,7 @@ class OrderController extends AdminBaseController
      * @param  OrderCancellationService  $cancellationService  주문 취소 서비스
      * @param  ActivityLogService  $activityLogService  활동 로그 서비스
      * @param  OrderProcessingService  $orderProcessingService  결제·입금 처리 서비스
-     * @param  AdminOrderCancelService  $adminOrderCancelService  관리자 [주문취소] 접수 서비스
+     * @param  AdminClaimRequestService  $adminClaimRequestService  관리자 직권 접수 서비스 ([취소·환불 접수] — §3-11)
      */
     public function __construct(
         private OrderService $orderService,
@@ -61,7 +61,7 @@ class OrderController extends AdminBaseController
         private OrderCancellationService $cancellationService,
         private ActivityLogService $activityLogService,
         private OrderProcessingService $orderProcessingService,
-        private AdminOrderCancelService $adminOrderCancelService,
+        private AdminClaimRequestService $adminClaimRequestService,
     ) {}
 
     /**
@@ -399,7 +399,7 @@ class OrderController extends AdminBaseController
     public function cancelOrder(CancelOrderRequest $request, Order $order): JsonResponse
     {
         try {
-            $outcome = $this->adminOrderCancelService->requestCancel(
+            $outcome = $this->adminClaimRequestService->requestCancelOrRefund(
                 $order,
                 [
                     'full_cancel' => $request->isFullCancel(),

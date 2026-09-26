@@ -30,6 +30,7 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Services\Concerns\AppliesRefundBankAccount;
 use Modules\Sirsoft\Ecommerce\Services\Concerns\FiresClaimHooksAfterCommit;
 use Modules\Sirsoft\Ecommerce\Services\Concerns\GuardsClaimFilterResults;
+use Modules\Sirsoft\Ecommerce\Services\Concerns\ReportsClaimRequestUpdate;
 use Modules\Sirsoft\Ecommerce\Support\ClaimItemSpecs;
 
 /**
@@ -61,6 +62,7 @@ class OrderRefundRequestService
     use AppliesRefundBankAccount;
     use FiresClaimHooksAfterCommit;
     use GuardsClaimFilterResults;
+    use ReportsClaimRequestUpdate;
 
     /**
      * 분기 — 접수 후 승인·완료까지 자동 전이 (구 `cancel`).
@@ -222,19 +224,25 @@ class OrderRefundRequestService
      * @param  array  $items  신청 대상 [{order_option_id, quantity}]
      * @param  RefundPriorityEnum  $refundPriority  환불 우선순위
      * @param  int|null  $excludeRefundId  수량 잠금 판정에서 제외할 환불신청서 ID (자기 신청서 수정 미리보기)
+     * @param  array<int, string>|null  $gateStatuses  자격 판정 상태 목록 (관리자 직권 접수는 물리 게이트 — null 이면 고객 신청 가능 상태)
+     * @param  string|null  $branch  분기 고정 (관리자 직권 접수는 운영자 선택 — null 이면 상태로 판정)
      * @return array{branch: string, adjustment: AdjustmentResult} 분기 + 환불 계산 결과
      *
      * @throws OrderClaimException 신청 자격 위반
      */
-    public function previewRefund(Order $order, array $items, RefundPriorityEnum $refundPriority = RefundPriorityEnum::PG_FIRST, ?int $excludeRefundId = null): array
+    public function previewRefund(Order $order, array $items, RefundPriorityEnum $refundPriority = RefundPriorityEnum::PG_FIRST, ?int $excludeRefundId = null, ?array $gateStatuses = null, ?string $branch = null): array
     {
-        $branch = $this->resolveBranch($order, $items);
+        if ($branch === null) {
+            $branch = $this->resolveBranch($order, $items);
+        } elseif (empty($items)) {
+            throw OrderClaimException::itemsRequired();
+        }
 
         $resolved = $this->claimQuantityGuard->resolveClaimItems(
             $order,
             $items,
             ClaimTypeEnum::REFUND,
-            $this->requestableStatusValues(),
+            $gateStatuses ?? $this->requestableStatusValues(),
             null,
             null,
             $excludeRefundId,
@@ -787,24 +795,41 @@ class OrderRefundRequestService
     }
 
     /**
-     * 신청자가 환불신청서를 철회합니다.
+     * 신청자가 환불신청서를 철회합니다. (또는 고객 요청으로 운영자가 대신 철회 — S14)
+     *
+     * 운영자 대리 철회는 출처(구매자 편집 가능 여부)를 보지 않는다 — 판매자가 접수한 건도 고객 요청이면
+     * 운영자가 거둘 수 있다. 철회 가능 단계(`isWithdrawable()`)는 고객 철회와 같고, 사유는 필수다.
      *
      * @param  OrderRefund  $refund  환불신청서
+     * @param  int|null  $withdrawnByAdmin  고객 요청으로 대신 철회하는 관리자 ID (null 이면 신청자 본인 철회)
+     * @param  string|null  $withdrawReason  대리 철회 사유 (관리자 대리 철회에서 필수)
      * @return OrderRefund 철회된 환불신청서
      *
-     * @throws OrderClaimException 철회 불가 상태
+     * @throws OrderClaimException 철회 불가 상태 / 대리 철회 사유 누락
      */
-    public function withdraw(OrderRefund $refund): OrderRefund
+    public function withdraw(OrderRefund $refund, ?int $withdrawnByAdmin = null, ?string $withdrawReason = null): OrderRefund
     {
-        if (! $refund->refund_source_type?->isBuyerEditable() || ! $refund->isWithdrawable()) {
+        $buyerMayWithdraw = $withdrawnByAdmin !== null || $refund->refund_source_type?->isBuyerEditable();
+
+        if (! $buyerMayWithdraw || ! $refund->isWithdrawable()) {
             throw OrderClaimException::notWithdrawable();
+        }
+
+        $withdrawReason = $withdrawReason === null ? null : trim($withdrawReason);
+
+        if ($withdrawnByAdmin !== null && ($withdrawReason === null || $withdrawReason === '')) {
+            throw OrderClaimException::withdrawReasonRequired();
         }
 
         // 철회 가능 판정 뒤·쓰기 전 — 확장이 예외로 철회를 막을 수 있다. 이어지는 전이가
         // `before_status_change` 를 한 번 더 낸다(층이 다른 두 자리).
         HookManager::doAction('sirsoft-ecommerce.claim.refund.before_withdraw', $refund);
 
-        return $this->transition($refund, RefundStatusEnum::WITHDRAWN);
+        return $this->transition($refund, RefundStatusEnum::WITHDRAWN, $withdrawnByAdmin === null ? [] : [
+            'processed_by' => $withdrawnByAdmin,
+            'withdrawn_by_admin' => $withdrawnByAdmin,
+            'withdraw_reason' => $withdrawReason,
+        ]);
     }
 
     /**
@@ -812,15 +837,19 @@ class OrderRefundRequestService
      *
      * @param  OrderRefund  $refund  환불신청서
      * @param  array  $payload  수정 페이로드 (reason_code? / reason_detail?)
+     * @param  bool  $operator  운영자 수정 여부 (S15 — 출처와 무관하게 수정, 판매자 귀책 사유 허용)
      * @return OrderRefund 수정된 환불신청서
      *
      * 수정 가능 여부는 **신청서 행 잠금 안에서 다시 읽은 상태**로 판정한다(#599 validate P2 #8) —
      * 호출부 모델로 판정하면 그 사이 승인된 신청서의 사유·계좌가 수정된다. 교환·반품의
      * `updateRequest()` 와 같은 규율이다.
      *
+     * 실제로 바뀐 항목은 커밋 뒤 `claim.refund.request_updated` 로 전/후와 함께 나간다 — 활동 로그가 운영자
+     * 대리 수정의 흔적을 남긴다(`ReportsClaimRequestUpdate`). 환불 계좌는 바뀐 사실만 싣는다.
+     *
      * @throws OrderClaimException 수정 불가 상태 / 사유 부재 / 환불 계좌 3필드 불완전
      */
-    public function updateRequest(OrderRefund $refund, array $payload): OrderRefund
+    public function updateRequest(OrderRefund $refund, array $payload, bool $operator = false): OrderRefund
     {
         // 수정의 before·filter 훅 — 잠금·쓰기 전이다. 필터는 사유(`CLAIM_FILTERABLE_UPDATE_KEYS`)만
         // 바꿀 수 있고 바뀐 값은 아래 사유 해석을 지난다. 환불 계좌는 돈이 향하는 곳이라 되돌린다.
@@ -832,17 +861,19 @@ class OrderRefundRequestService
             self::CLAIM_FILTERABLE_UPDATE_KEYS,
         );
 
-        return DB::transaction(function () use ($refund, $payload) {
+        return DB::transaction(function () use ($refund, $payload, $operator) {
             $locked = $this->refundRepository->findForUpdate((int) $refund->getKey()) ?? $refund;
 
-            if (! $locked->refund_source_type?->isBuyerEditable() || ! $locked->refund_status->isWithdrawable()) {
+            // 운영자 수정(S15)은 출처(고객 편집 가능 여부)를 보지 않는다 — 수정 가능 단계는 고객과 같다.
+            if ((! $operator && ! $locked->refund_source_type?->isBuyerEditable()) || ! $locked->refund_status->isWithdrawable()) {
                 throw OrderClaimException::notEditable();
             }
 
+            $before = $this->claimRequestUpdateSnapshot($locked);
             $updates = [];
 
             if (array_key_exists('reason_code', $payload) && $payload['reason_code'] !== null) {
-                $reason = $this->resolveReason((string) $payload['reason_code']);
+                $reason = $this->resolveReason((string) $payload['reason_code'], ! $operator);
                 $updates['reason_code'] = $reason->code;
                 $updates['fault_type'] = $reason->fault_type;
             }
@@ -864,7 +895,22 @@ class OrderRefundRequestService
                 return $locked;
             }
 
-            return $this->refundRepository->update($locked, $updates);
+            $updated = $this->refundRepository->update($locked, $updates);
+
+            // 같은 값으로 다시 저장한 수정은 알리지 않는다 — 활동 로그에 빈 이력이 쌓이면 실제로 바뀐 줄이 묻힌다.
+            $changes = $this->claimRequestUpdateChanges($before, $this->claimRequestUpdateSnapshot($updated));
+
+            if ($changes !== []) {
+                $context = $this->claimRequestUpdateContext($operator);
+                $this->fireAfterCommit(fn () => HookManager::doAction(
+                    'sirsoft-ecommerce.claim.refund.request_updated',
+                    $updated,
+                    $changes,
+                    $context,
+                ));
+            }
+
+            return $updated;
         });
     }
 
@@ -1825,7 +1871,7 @@ class OrderRefundRequestService
         }
 
         $processedBy = $context['processed_by'] ?? null;
-        // 상품 칸 반려의 사유 — 신청서 한 칸(`reject_reason`)에 남는다(상품 행에는 사유 칸이 없다).
+        // 상품 칸 반려의 사유 — 반려된 상품 행(`reject_reason`)에 남는다(S3).
         $rejectReason = $target === RefundStatusEnum::REJECTED ? trim((string) ($context['reject_reason'] ?? '')) : '';
         $specs = ClaimItemSpecs::normalize($items);
         $quantities = ClaimItemSpecs::quantities($specs);
@@ -1915,10 +1961,16 @@ class OrderRefundRequestService
                 $succeeded[] = $item->id;
             }
 
-            // 일부만 반려해 신청서가 그대로여도 사유는 남긴다 — 구매자 화면은 사유가 차 있으면
-            // 신청서 상태와 무관하게 보여 주므로, 어느 상품이 왜 반려됐는지가 거기서 읽힌다.
+            // 상품 단위 반려 사유는 **그 상품 행**에 남긴다(S3). 헤더 사유는 신청서 전체가 반려로 모일 때만
+            // 채워진다(`syncHeaderFromOptions` → `stampFor(REJECTED)` — 사유가 여럿이면 마지막 반려 사유).
+            // 예전에는 헤더 한 칸이라 두 번째 반려가 첫 사유를 덮고, 나머지 상품이 승인돼도 구매자
+            // 화면에 반려 사유가 남았다.
             if ($rejectReason !== '' && $succeeded !== []) {
-                $this->refundRepository->update($locked, ['reject_reason' => $rejectReason]);
+                foreach ($locked->fresh(['refundOptions'])->refundOptions as $rejectedItem) {
+                    if (in_array((int) $rejectedItem->id, array_map('intval', $succeeded), true)) {
+                        $this->refundOptionRepository->update($rejectedItem, ['reject_reason' => $rejectReason]);
+                    }
+                }
             }
 
             $fresh = $locked->fresh(['refundOptions']);
@@ -2354,7 +2406,9 @@ class OrderRefundRequestService
                 'reject_reason' => $context['reject_reason'] ?? null,
                 'rejected_at' => Carbon::now(),
             ],
-            RefundStatusEnum::WITHDRAWN => ['withdrawn_at' => Carbon::now()],
+            RefundStatusEnum::WITHDRAWN => ['withdrawn_at' => Carbon::now()] + (isset($context['withdrawn_by_admin'])
+                ? ['withdrawn_by_admin' => (int) $context['withdrawn_by_admin'], 'withdraw_reason' => $context['withdraw_reason'] ?? null]
+                : []),
             default => [],
         };
     }

@@ -3,7 +3,10 @@
 namespace Modules\Sirsoft\Ecommerce\Services;
 
 use App\Extension\HookManager;
+use BackedEnum;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Ecommerce\DTO\AdjustmentResult;
@@ -11,8 +14,11 @@ use Modules\Sirsoft\Ecommerce\DTO\ClaimCompletionOptions;
 use Modules\Sirsoft\Ecommerce\DTO\ClaimShippingFee;
 use Modules\Sirsoft\Ecommerce\DTO\ExchangeAdjustment;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimChargeMethodEnum;
+use Modules\Sirsoft\Ecommerce\Enums\ClaimItemCollectionStateEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimReasonFaultTypeEnum;
+use Modules\Sirsoft\Ecommerce\Enums\ClaimTrackingDirectionEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimTypeEnum;
+use Modules\Sirsoft\Ecommerce\Enums\ExchangeModeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ExchangeStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\OrderOptionSourceTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
@@ -48,8 +54,12 @@ use Modules\Sirsoft\Ecommerce\Services\Concerns\AppliesRefundBankAccount;
 use Modules\Sirsoft\Ecommerce\Services\Concerns\FiresClaimHooksAfterCommit;
 use Modules\Sirsoft\Ecommerce\Services\Concerns\GuardsClaimFilterResults;
 use Modules\Sirsoft\Ecommerce\Services\Concerns\RecordsClaimTracking;
+use Modules\Sirsoft\Ecommerce\Services\Concerns\ReportsClaimRequestUpdate;
 use Modules\Sirsoft\Ecommerce\Services\Concerns\ResolvesAdditionalOptions;
+use Modules\Sirsoft\Ecommerce\Support\ClaimItemCollectionState;
 use Modules\Sirsoft\Ecommerce\Support\ClaimItemSpecs;
+use Modules\Sirsoft\Ecommerce\Support\ClaimPhysicalGate;
+use Modules\Sirsoft\Ecommerce\Support\ClaimTrackingGroups;
 
 /**
  * 교환 클레임 서비스
@@ -110,7 +120,20 @@ class OrderExchangeService
     use FiresClaimHooksAfterCommit;
     use GuardsClaimFilterResults;
     use RecordsClaimTracking;
+    use ReportsClaimRequestUpdate;
     use ResolvesAdditionalOptions;
+
+    /** 선교환 헌 물건 반송 기한 기본 일수 (설정 기본값 `claim.advance_exchange_collection_due_days` 와 같다) */
+    public const ADVANCE_EXCHANGE_DEFAULT_DUE_DAYS = 14;
+
+    /**
+     * 이번 요청에서 전이와 함께 쓴 행 송장 변경 (방향 값 → 변경 목록)
+     *
+     * 상품마다 저장점 안에서 쓰므로 모아 두었다가 커밋 뒤 `after_tracking_update` 로 한 번 알린다.
+     *
+     * @var array<string, array<int, array<string, mixed>>>
+     */
+    protected array $trackingChangeLog = [];
 
     /**
      * @param  OrderAdjustmentService  $adjustmentService  금액 재계산 서비스 (미리보기·청구 방식 검증)
@@ -183,6 +206,8 @@ class OrderExchangeService
      * @param  RefundPriorityEnum  $refundPriority  환불 우선순위
      * @param  array|null  $redeliveryAddress  재발송지 (D14) [{country_code?, zipcode?, ...}]
      * @param  int|null  $excludeExchangeId  수량 잠금 집계에서 뺄 교환 신청서 ID (수정 화면의 미리보기)
+     * @param  bool  $operator  운영자 직권 접수 미리보기 여부 (D5 — 기간·신청가능상태 대신 물리 게이트, 판매자 귀책 사유 허용)
+     * @param  float|null  $shippingFeeOverride  운영자가 정한 클레임 배송비 (D7 — null 이면 산정값)
      * @return array{shipping_fee: ClaimShippingFee, adjustment: AdjustmentResult, items: array, price_difference: float, additional_product_amount: float, refund_product_amount: float, total_charge_amount: float, mc_total_charge_amount: array|null, fault_type: ClaimReasonFaultTypeEnum, charge_method: ClaimChargeMethodEnum|null, requires_payment: bool} 미리보기 결과
      *
      * @throws OrderClaimException 사유 부재 / 대상 부재 / 신규 옵션 무효
@@ -195,18 +220,20 @@ class OrderExchangeService
         RefundPriorityEnum $refundPriority = RefundPriorityEnum::PG_FIRST,
         ?array $redeliveryAddress = null,
         ?int $excludeExchangeId = null,
+        bool $operator = false,
+        ?float $shippingFeeOverride = null,
     ): array {
-        $reason = $this->resolveReason($reasonCode);
-        $plans = $this->planItems($this->resolvePreviewItems($order, $items, $excludeExchangeId), $items);
+        $reason = $this->resolveReason($reasonCode, ! $operator);
+        $plans = $this->planItems($this->resolvePreviewItems($order, $items, $excludeExchangeId, $operator), $items);
         $claimItems = $this->toClaimItemsFromPlans($plans);
 
-        $shippingFee = $this->claimShippingFeeService->calculate(
+        $shippingFee = $this->applyShippingFeeOverride($this->claimShippingFeeService->calculate(
             $order,
             ClaimTypeEnum::EXCHANGE,
             $claimItems,
             $reason->fault_type,
             $this->toFeeLegAddress($redeliveryAddress),
-        );
+        ), $shippingFeeOverride, $order->currency_snapshot ?? []);
 
         $priceDifference = $this->sumPriceDifference($plans);
         [$additional, $refund] = $this->splitPriceDifference($priceDifference);
@@ -263,6 +290,9 @@ class OrderExchangeService
      *                          - requested_by: 신청자 ID (비회원이면 null)
      *                          - refund_priority: RefundPriorityEnum (선택)
      *                          - redelivery_address: 재발송지 (선택, D14) {recipient_name, phone, zipcode, address1, address2, country_code, changed_by_user}
+     *                          - operator: bool (선택 — 운영자 직권 접수. 기간·신청가능상태 대신 물리 게이트, 판매자 귀책 사유 허용 — D5)
+     *                          - requested_by_admin: 대리 접수 관리자 ID (선택 — 값이 있으면 판매자 접수, 고객 철회·수정 불가 — D8)
+     *                          - shipping_fee_override: 운영자가 정한 클레임 배송비 (선택 — D7)
      * @return OrderExchange 생성된 교환 신청서
      *
      * 쓰기 전에 `claim.exchange.before_request`(막기) → `claim.exchange.filter_request_data`(입력 변형)를
@@ -281,13 +311,15 @@ class OrderExchangeService
             self::CLAIM_FILTERABLE_REQUEST_KEYS,
         );
 
-        $reason = $this->resolveReason((string) ($payload['reason_code'] ?? ''));
+        $operator = (bool) ($payload['operator'] ?? false);
+        $reason = $this->resolveReason((string) ($payload['reason_code'] ?? ''), ! $operator);
         $chargeMethod = $this->normalizeChargeMethod($payload['charge_method'] ?? null);
         $refundPriority = $payload['refund_priority'] ?? RefundPriorityEnum::PG_FIRST;
         $requestedBy = $payload['requested_by'] ?? null;
         $items = $payload['items'] ?? [];
+        $feeOverride = isset($payload['shipping_fee_override']) ? (float) $payload['shipping_fee_override'] : null;
 
-        $exchange = DB::transaction(function () use ($order, $payload, $items, $reason, $chargeMethod, $refundPriority, $requestedBy) {
+        $exchange = DB::transaction(function () use ($order, $payload, $items, $reason, $chargeMethod, $refundPriority, $requestedBy, $operator, $feeOverride) {
             // 잠금은 잔여 수량을 읽기 전에 잡는다 — 읽고 나서 잠그면 이미 두 요청이 같은 값을 봤다.
             $lockedOrder = $this->orderRepository->findForUpdateOrFail($order->id);
             $lockedOrder->load(['options', 'shippings', 'payment', 'shippingAddress']);
@@ -296,10 +328,13 @@ class OrderExchangeService
                 $lockedOrder,
                 $items,
                 ClaimTypeEnum::EXCHANGE,
-                $this->requestableStatusValues(),
+                $this->requestStatusValuesFor($operator),
             );
 
-            $this->assertWithinRequestPeriod($resolved);
+            // 운영자 직권 접수는 신청 가능 기간을 무시한다(D5) — 물리 게이트는 위 상태 목록이 이미 건다.
+            if (! $operator) {
+                $this->assertWithinRequestPeriod($resolved);
+            }
 
             $redelivery = $this->buildRedeliveryAddressSnapshot($lockedOrder, $payload['redelivery_address'] ?? null);
             $this->assertRedeliveryCountryUnchanged($lockedOrder, $redelivery);
@@ -309,13 +344,13 @@ class OrderExchangeService
 
             $claimItems = $this->toClaimItemsFromPlans($plans);
 
-            $shippingFee = $this->claimShippingFeeService->calculate(
+            $shippingFee = $this->applyShippingFeeOverride($this->claimShippingFeeService->calculate(
                 $lockedOrder,
                 ClaimTypeEnum::EXCHANGE,
                 $claimItems,
                 $reason->fault_type,
                 $this->toFeeLegAddress($redelivery),
-            );
+            ), $feeOverride, $lockedOrder->currency_snapshot ?? []);
 
             $priceDifference = $this->sumPriceDifference($plans);
             [$additional, $refund] = $this->splitPriceDifference($priceDifference);
@@ -359,7 +394,7 @@ class OrderExchangeService
                 'shipping_fee_mode' => $shippingFee->mode,
                 'claim_shipping_fee' => $shippingFee->fee,
                 'mc_claim_shipping_fee' => $shippingFee->mcFee ?: null,
-                'shipping_fee_snapshot' => $shippingFee->toArray(),
+                'shipping_fee_snapshot' => $shippingFee->toArray() + ($feeOverride !== null ? ['admin_adjusted' => true] : []),
                 'additional_product_amount' => $additional,
                 'refund_product_amount' => $refund,
                 'total_charge_amount' => $totalCharge,
@@ -371,6 +406,7 @@ class OrderExchangeService
                 'return_address_snapshot' => $this->resolveReturnAddressSnapshot($lockedOrder, $resolved),
                 'redelivery_address_snapshot' => $redelivery,
                 'requested_by' => $requestedBy,
+                'requested_by_admin' => $payload['requested_by_admin'] ?? null,
             ] + $this->frozenCalculationSnapshots($frozen) + $this->refundBankColumns($payload['refund_bank'] ?? null));
 
             foreach ($plans as $plan) {
@@ -380,7 +416,13 @@ class OrderExchangeService
             return $created->fresh(['exchangeOptions']);
         });
 
-        $this->fireAfterCommit(fn () => HookManager::doAction('sirsoft-ecommerce.claim.exchange.requested', $exchange, $order->fresh()));
+        // 운영자 직권 접수는 컨텍스트 `source = admin` 을 함께 싣는다(§3-11 — 새 훅 없이 기존 신청 훅).
+        $this->fireAfterCommit(fn () => HookManager::doAction('sirsoft-ecommerce.claim.exchange.requested', $exchange, $order->fresh(), ['source' => $operator ? 'admin' : 'customer']));
+
+        // 운영자 직권 접수의 승인은 호출부(`AdminClaimRequestService`)가 「접수와 함께 승인」 선택으로 정한다.
+        if ($operator) {
+            return $exchange;
+        }
 
         // 청구액 0원 자동 승인 (§4-2 전이표 자동 열). 접수 훅을 먼저 발화한 뒤 전이하므로
         // 알림·로그 리스너는 '신청 → 승인' 두 사건을 순서대로 받는다.
@@ -433,19 +475,37 @@ class OrderExchangeService
      * 철회를 막을 수 있다. 이어지는 전이가 `before_status_change` 를 한 번 더 낸다(층이 다른 두 자리).
      *
      * @param  OrderExchange  $exchange  교환 신청서
+     * @param  int|null  $withdrawnByAdmin  고객 요청으로 대신 철회하는 관리자 ID (S14 — null 이면 신청자 본인 철회)
+     * @param  string|null  $withdrawReason  대리 철회 사유 (관리자 대리 철회에서 필수)
      * @return OrderExchange 철회된 신청서
      *
      * @throws OrderClaimException 철회 불가 상태
      */
-    public function withdraw(OrderExchange $exchange): OrderExchange
+    public function withdraw(OrderExchange $exchange, ?int $withdrawnByAdmin = null, ?string $withdrawReason = null): OrderExchange
     {
         if (! $exchange->exchange_status->isWithdrawable()) {
             throw OrderClaimException::notWithdrawable();
         }
 
+        // 판매자가 접수한 신청은 고객이 철회할 수 없다(D8) — 운영자는 고객 요청으로 대신 철회할 수 있다(S14).
+        if ($withdrawnByAdmin === null && $exchange->isAdminRequested()) {
+            throw OrderClaimException::adminRequestedNotEditable();
+        }
+
+        $withdrawReason = $withdrawReason === null ? null : trim($withdrawReason);
+
+        if ($withdrawnByAdmin !== null && ($withdrawReason === null || $withdrawReason === '')) {
+            throw OrderClaimException::withdrawReasonRequired();
+        }
+
         HookManager::doAction('sirsoft-ecommerce.claim.exchange.before_withdraw', $exchange);
 
-        return $this->transition($exchange, ExchangeStatusEnum::WITHDRAWN);
+        // 대리 철회는 철회자·사유를 신청서에 남긴다(S14 — 고객 알림이 「고객님 요청으로 판매자가 철회」 로 나간다).
+        return $this->transition($exchange, ExchangeStatusEnum::WITHDRAWN, $withdrawnByAdmin === null ? [] : [
+            'processed_by' => $withdrawnByAdmin,
+            'withdrawn_by_admin' => $withdrawnByAdmin,
+            'withdraw_reason' => $withdrawReason,
+        ]);
     }
 
     /**
@@ -479,29 +539,41 @@ class OrderExchangeService
         // 잠금이 판정 직후 풀려 **두 요청이 다시 나란히 통과**한다 — 쓰기는 같은 값이라
         // 상태는 1회처럼 보이지만 `fireStatusHooks()` 가 두 번 돌아 **알림이 채널마다 2통씩**
         // 나간다. 구매자에게는 같은 메일·SMS 가 두 번 도착한다.
+        $this->trackingChangeLog = [];
+
         [$current, $updated] = DB::transaction(function () use ($exchange, $target, $context) {
             // 저장소가 이미 갖고 있는 잠금 조회를 쓴다 — 서비스가 모델을 직접 조회하지 않는다.
             $locked = $this->exchangeRepository->findForUpdate((int) $exchange->getKey());
 
             $current = ($locked ?? $exchange)->exchange_status;
+            $mode = ($locked ?? $exchange)->mode();
 
-            if (! $current->canTransitionTo($target)) {
+            if (! $current->canTransitionTo($target, $mode)) {
                 throw OrderClaimException::transitionNotAllowed($current->label(), $target->label());
             }
 
             // 호출층이 들고 있는 인스턴스도 잠금 시점의 값으로 맞춘다.
             $exchange->setAttribute('exchange_status', $current);
+            $exchange->setAttribute('exchange_mode', $mode);
 
             if ($this->revertsOrderOptions($target)) {
                 $this->assertLivingItemsCanTransitionTo($exchange, $target);
             }
 
-            // 회수중·발송중은 송장이 있어야 들어간다 — 알림·교환품 배송 행이 이 값을 읽으므로 전이보다 먼저 기록한다.
+            // 회수중·발송중은 대상 행 전부에 그 방향 송장이 있어야 들어간다(R6) — 지시에 실린 송장은
+            // 상품마다 전이 저장점 안에서 그 행에 쓴다(`transitionItem`). 알림·교환품 배송 행이 행 송장을 읽는다.
+            $tracking = [];
+
             if ($current !== $target) {
-                $this->recordTrackingForTransition($exchange, $target, $context);
+                $tracking = $this->prepareTransitionTracking($exchange, $target, $context, $this->headerTransitionTargets($exchange, $target));
             }
 
-            return [$current, $this->applyTransition($exchange, $target, $context)];
+            $applied = $this->applyTransition($exchange, $target, $context, $tracking);
+
+            // 선교환은 발송 단계 전이가 회수 기한의 기준을 바꾼다(발송도착 시각 — §3-5).
+            $this->refreshCollectionDue($applied);
+
+            return [$current, $applied->fresh(['exchangeOptions'])];
         });
 
         // 상태가 실제로 바뀜 때만 훅을 돌린다(S3-D16). 상태 기계는 **같은 상태로의
@@ -511,6 +583,8 @@ class OrderExchangeService
         if ($current !== $target) {
             $this->fireStatusHooks($updated, $current, $target);
         }
+
+        $this->flushTrackingChangeLog($updated, $current !== $target ? $target : null);
 
         return $updated;
     }
@@ -592,13 +666,14 @@ class OrderExchangeService
     protected function firstItemBlockingHeaderTransition(OrderExchange $exchange, ExchangeStatusEnum $target): ?OrderExchangeOption
     {
         $exchange->loadMissing('exchangeOptions');
+        $mode = $exchange->mode();
 
         foreach ($exchange->exchangeOptions as $item) {
             if ($item->option_status->isFinal() || $item->option_status === $target) {
                 continue;
             }
 
-            if (! $item->option_status->canTransitionTo($target)) {
+            if (! $item->option_status->canTransitionTo($target, $mode)) {
                 return $item;
             }
         }
@@ -609,13 +684,60 @@ class OrderExchangeService
     /**
      * 지금 완료할 수 있는 상품인지 판정합니다. (완료 절차의 대상 필터 · 상세 [완료 처리] 활성 판정 공용)
      *
+     * 일반 교환은 발송중·발송도착(P3 — 오는 중이면 완료 가능). 선교환은 두 축을 모두 본다(§3-4):
+     * 교환품이 발송중·발송도착이고, **헌 물건도 오는 중이거나 도착했어야** 한다(회수 진행
+     * in_transit·collected). 헌 물건이 아직 출발하지 않은 행은 「미회수로 완료」 로만 끝낸다.
+     *
      * @param  OrderExchangeOption  $item  신청 상품 행
+     * @param  ExchangeModeEnum|null  $mode  진행 방식 (null 이면 행의 신청서에서 읽는다)
      * @return bool 완료 가능하면 true
      */
-    public function isCompletableItem(OrderExchangeOption $item): bool
+    public function isCompletableItem(OrderExchangeOption $item, ?ExchangeModeEnum $mode = null): bool
     {
-        return $item->option_status->canTransitionTo(ExchangeStatusEnum::COMPLETED)
-            && ! $item->option_status->isFinal();
+        if ($item->option_status->isFinal()) {
+            return false;
+        }
+
+        $mode ??= $this->modeOfItem($item);
+
+        if ($mode === ExchangeModeEnum::ADVANCE) {
+            return in_array($item->option_status, [ExchangeStatusEnum::REDELIVERING, ExchangeStatusEnum::REDELIVERED], true)
+                && ClaimItemCollectionState::for($item, $mode)->isOnTheWayOrArrived();
+        }
+
+        return $item->option_status->canTransitionTo(ExchangeStatusEnum::COMPLETED, $mode);
+    }
+
+    /**
+     * 「미회수로 완료」 할 수 있는 상품인지 판정합니다. (D3 — 선교환, 교환품 발송 후 헌 물건 미출발)
+     *
+     * @param  OrderExchangeOption  $item  신청 상품 행
+     * @param  ExchangeModeEnum|null  $mode  진행 방식 (null 이면 행의 신청서에서 읽는다)
+     * @return bool 미회수 완료 대상이면 true
+     */
+    public function isUnreturnedEligibleItem(OrderExchangeOption $item, ?ExchangeModeEnum $mode = null): bool
+    {
+        $mode ??= $this->modeOfItem($item);
+
+        return $mode === ExchangeModeEnum::ADVANCE
+            && ! $item->option_status->isFinal()
+            && in_array($item->option_status, [ExchangeStatusEnum::REDELIVERING, ExchangeStatusEnum::REDELIVERED], true)
+            && ClaimItemCollectionState::for($item, $mode) === ClaimItemCollectionStateEnum::PENDING;
+    }
+
+    /**
+     * 상품 행이 속한 교환의 진행 방식을 반환합니다. (관계가 로드돼 있으면 그 값, 아니면 조회)
+     *
+     * @param  OrderExchangeOption  $item  신청 상품 행
+     * @return ExchangeModeEnum 진행 방식
+     */
+    protected function modeOfItem(OrderExchangeOption $item): ExchangeModeEnum
+    {
+        $exchange = $item->relationLoaded('orderExchange')
+            ? $item->orderExchange
+            : $this->exchangeRepository->findById((int) $item->order_exchange_id);
+
+        return $exchange?->mode() ?? ExchangeModeEnum::STANDARD;
     }
 
     /**
@@ -628,13 +750,14 @@ class OrderExchangeService
      * @param  OrderExchange  $exchange  교환 신청서
      * @param  ExchangeStatusEnum  $target  목표 상태 (게이트 통과 전제)
      * @param  array  $context  부가 정보
+     * @param  array{direction?: ClaimTrackingDirectionEnum, carrier_id?: int|null, tracking_number?: string|null}  $tracking  대상 행에 쓸 송장 (`prepareTransitionTracking()`)
      * @return OrderExchange 전이된 신청서
      */
-    protected function applyTransition(OrderExchange $exchange, ExchangeStatusEnum $target, array $context): OrderExchange
+    protected function applyTransition(OrderExchange $exchange, ExchangeStatusEnum $target, array $context, array $tracking = []): OrderExchange
     {
         $processedBy = $context['processed_by'] ?? null;
 
-        return DB::transaction(function () use ($exchange, $target, $context, $processedBy) {
+        return DB::transaction(function () use ($exchange, $target, $context, $processedBy, $tracking) {
             $updates = ['exchange_status' => $target];
 
             if ($processedBy !== null) {
@@ -649,7 +772,7 @@ class OrderExchangeService
 
             $fresh = $this->exchangeRepository->update($exchange, $updates);
 
-            $this->syncOptionStatuses($fresh, $target, $processedBy);
+            $this->syncOptionStatuses($fresh, $target, $processedBy, $tracking);
 
             return $fresh->fresh(['exchangeOptions']);
         });
@@ -728,7 +851,7 @@ class OrderExchangeService
         }
 
         $processedBy = $context['processed_by'] ?? null;
-        // 상품 칸 반려의 사유 — 신청서 한 칸(`reject_reason`)에 남는다(상품 행에는 사유 칸이 없다).
+        // 상품 칸 반려의 사유 — 반려된 상품 행(`reject_reason`)에 남는다(S3).
         $rejectReason = $target === ExchangeStatusEnum::REJECTED ? trim((string) ($context['reject_reason'] ?? '')) : '';
         $specs = ClaimItemSpecs::normalize($items);
         $quantities = ClaimItemSpecs::quantities($specs);
@@ -757,18 +880,29 @@ class OrderExchangeService
         $skipped = [];
         $changes = [];
         $split = [];
+        $headerBefore = null;
+        $headerAfter = null;
+        $this->trackingChangeLog = [];
 
         // 신청서 행을 잠그고 **잠금 안에서** 상품 행을 다시 읽어 판정한다. 헤더 동기화도 같은
         // 트랜잭션 안에서 한다 — 상품 전이를 커밋한 뒤 잠금 없이 헤더를 옮기면 그 사이에 들어온
         // 다른 전이와 헤더 판정이 겹친다(#599 validate P2 #19). 훅은 커밋 뒤에 나간다(#7).
-        DB::transaction(function () use ($exchange, $itemIds, $quantities, $target, $processedBy, $rejectReason, $context, &$succeeded, &$skipped, &$changes, &$split) {
+        $fresh = DB::transaction(function () use ($exchange, $itemIds, $quantities, $target, $processedBy, $rejectReason, $context, &$succeeded, &$skipped, &$changes, &$split, &$headerBefore, &$headerAfter) {
             $locked = $this->exchangeRepository->findForUpdate((int) $exchange->getKey()) ?? $exchange;
-
-            // 상품 칸의 회수중·발송중도 신청서 전이와 같은 송장 규칙을 지난다. 발송중이면 이 송장이
-            // 교환품의 새 배송 행에 실리므로(`replicateShippingRow`) 상품 전이보다 먼저 기록한다.
-            $this->recordTrackingForTransition($locked, $target, $context);
+            $mode = $locked->mode();
+            $headerBefore = $locked->exchange_status;
 
             $items = $this->resolveItems($locked, $itemIds);
+
+            // 상품 칸의 회수중·발송중도 신청서 전이와 같은 송장 규칙을 지난다(R6·R8). 지시에 실린 송장은
+            // 상품마다 저장점 안에서 **쪼갠 행**에 쓴다 — 발송중이면 그 행 송장이 교환품의 새 배송 행에
+            // 실리므로(`replicateShippingRow`) 상태를 바꾸기 전에 쓴다.
+            $tracking = $this->prepareTransitionTracking($locked, $target, $context, array_values(array_filter(
+                $items,
+                fn (OrderExchangeOption $item) => ! $item->option_status->isFinal()
+                    && $item->option_status !== $target
+                    && $item->option_status->canTransitionTo($target, $mode),
+            )));
 
             foreach ($items as $item) {
                 // 끝난 상품(반려·철회·완료)은 전이 게이트가 막지 못한다 — 자기 전이는 언제나 참이라
@@ -786,7 +920,7 @@ class OrderExchangeService
                     continue;
                 }
 
-                if (! $item->option_status->canTransitionTo($target)) {
+                if (! $item->option_status->canTransitionTo($target, $mode)) {
                     $skipped[] = [
                         'id' => $item->id,
                         'message' => __('sirsoft-ecommerce::exceptions.claim_transition_not_allowed', [
@@ -802,7 +936,7 @@ class OrderExchangeService
                 $previousQuantity = (int) $item->exchange_quantity;
 
                 try {
-                    $remainder = $this->transitionItem($locked, $item, $target, $processedBy, $quantities[$item->id] ?? null);
+                    $remainder = $this->transitionItem($locked, $item, $target, $processedBy, $quantities[$item->id] ?? null, $tracking);
                 } catch (OrderClaimException $e) {
                     // 재고 부족 같은 상품 단위 실패는 그 상품만 건너뛴다 — 같은 TX 안의 다른
                     // 상품은 전이 자체엔 문제가 없고, 저장점(savepoint)이 실패분만 되돌린다.
@@ -840,10 +974,16 @@ class OrderExchangeService
                 $succeeded[] = $item->id;
             }
 
-            // 일부만 반려해 신청서가 그대로여도 사유는 남긴다 — 구매자 화면은 사유가 차 있으면
-            // 신청서 상태와 무관하게 보여 주므로, 어느 상품이 왜 반려됐는지가 거기서 읽힌다.
+            // 상품 단위 반려 사유는 **그 상품 행**에 남긴다(S3). 헤더 사유는 신청서 전체가 반려로 모일 때만
+            // 채워진다(`syncHeaderFromOptions` → `stampFor(REJECTED)` — 사유가 여럿이면 마지막 반려 사유).
+            // 예전에는 헤더 한 칸이라 두 번째 반려가 첫 사유를 덮고, 나머지 상품이 승인돼도 구매자
+            // 화면에 반려 사유가 남았다.
             if ($rejectReason !== '' && $succeeded !== []) {
-                $this->exchangeRepository->update($locked, ['reject_reason' => $rejectReason]);
+                foreach ($locked->fresh(['exchangeOptions'])->exchangeOptions as $rejectedItem) {
+                    if (in_array((int) $rejectedItem->id, array_map('intval', $succeeded), true)) {
+                        $this->exchangeOptionRepository->update($rejectedItem, ['reject_reason' => $rejectReason]);
+                    }
+                }
             }
 
             $fresh = $locked->fresh(['exchangeOptions']);
@@ -864,141 +1004,602 @@ class OrderExchangeService
             }
 
             $this->syncHeaderFromOptions($fresh, $processedBy, $rejectReason !== '' ? ['reject_reason' => $rejectReason] : []);
+
+            $after = $fresh->fresh(['exchangeOptions']);
+            $this->refreshCollectionDue($after);
+            $headerAfter = $after->exchange_status;
+
+            return $after;
         });
+
+        $this->flushTrackingChangeLog($fresh, $headerBefore !== $headerAfter ? $headerAfter : null);
 
         return ['succeeded' => $succeeded, 'skipped' => $skipped, 'split' => $split];
     }
 
     // ───────────────────────────────────────────────
-    // 회수 / 재발송 송장, 금액 수정
+    // 진행 방식 (일반 교환 · 선교환 — D1)
     // ───────────────────────────────────────────────
 
     /**
-     * 회수 운송장을 저장합니다. (상태는 옮기지 않는다)
+     * 교환의 진행 방식(일반·선교환)을 바꿀 수 있는지 판정합니다. (상세 「진행 방식」 줄의 버튼 게이트)
      *
-     * 저장과 상태 전이는 별개다(#599 후속 운영 결정) — 회수중 전이는 상품 칸·신청서 전이가 송장을
-     * 실어 수행한다(`recordTrackingForTransition`). 둘 다 비우고 저장하면 등록된 송장을 지운다.
+     * `setExchangeMode()` 가 실제로 거절하는 조건과 **같은 판정**이다 — 화면이 조건을 따로 적으면
+     * 버튼은 켜졌는데 누르면 422 가 된다.
      *
-     * @param  OrderExchange  $exchange  교환 신청서
-     * @param  int|null  $carrierId  회수 택배사 ID
-     * @param  string|null  $trackingNumber  회수 운송장 번호
-     * @param  int|null  $processedBy  처리 관리자 ID
-     * @return OrderExchange 갱신된 신청서
-     *
-     * @throws OrderClaimException 송장 정보 불완전
+     * @param  OrderExchange  $exchange  교환 신청서 (상품 행 로드)
+     * @param  ExchangeModeEnum  $to  바꿀 방식
+     * @return string|null 막힌 이유의 예외 키 (바꿀 수 있으면 null)
      */
-    public function registerCollectionTracking(
-        OrderExchange $exchange,
-        ?int $carrierId,
-        ?string $trackingNumber,
-        ?int $processedBy = null,
-    ): OrderExchange {
-        [$carrierId, $trackingNumber] = $this->normalizeTracking($carrierId, $trackingNumber);
-
-        return $this->exchangeRepository->update($exchange, [
-            'collection_carrier_id' => $carrierId,
-            'collection_tracking_number' => $trackingNumber,
-            'processed_by' => $processedBy ?? $exchange->processed_by,
-        ]);
-    }
-
-    /**
-     * 재발송 운송장을 저장합니다. (상태는 옮기지 않는다)
-     *
-     * 발송중 전이는 상품 칸·신청서 전이가 송장을 실어 수행한다. 이미 발송된 교환품이 있으면 그
-     * 새 주문상품의 배송 행 송장도 함께 고친다 — 고객 주문 화면의 배송 조회는 배송 행을 읽으므로,
-     * 신청서만 고치면 정정한 송장이 고객에게 닿지 않는다.
-     *
-     * @param  OrderExchange  $exchange  교환 신청서
-     * @param  int|null  $carrierId  재발송 택배사 ID
-     * @param  string|null  $trackingNumber  재발송 운송장 번호
-     * @param  int|null  $processedBy  처리 관리자 ID
-     * @return OrderExchange 갱신된 신청서
-     *
-     * @throws OrderClaimException 송장 정보 불완전
-     */
-    public function registerRedeliveryTracking(
-        OrderExchange $exchange,
-        ?int $carrierId,
-        ?string $trackingNumber,
-        ?int $processedBy = null,
-    ): OrderExchange {
-        [$carrierId, $trackingNumber] = $this->normalizeTracking($carrierId, $trackingNumber);
-
-        return DB::transaction(function () use ($exchange, $carrierId, $trackingNumber, $processedBy) {
-            $updated = $this->exchangeRepository->update($exchange, [
-                'redelivery_carrier_id' => $carrierId,
-                'redelivery_tracking_number' => $trackingNumber,
-                'processed_by' => $processedBy ?? $exchange->processed_by,
-            ]);
-
-            if ($trackingNumber !== null) {
-                $this->syncSuccessorShippingTracking($updated);
-            }
-
-            return $updated;
-        });
-    }
-
-    /**
-     * 회수중·발송중으로 옮기기 전에 지시에 실린 송장을 기록하고, 송장이 갖춰졌는지 확인합니다.
-     *
-     * 신청서 전이·상품 칸·목록 일괄이 모두 이 한 곳을 지난다(`RecordsClaimTracking`). 회수중은 회수
-     * 송장, 발송중은 재발송 송장 칸에 남는다.
-     *
-     * @param  OrderExchange  $exchange  교환 신청서 (잠금 인스턴스 — 기록 후 같은 인스턴스가 갱신된다)
-     * @param  ExchangeStatusEnum  $target  목표 상태
-     * @param  array  $context  전이 부가 정보 (carrier_id / tracking_number)
-     * @return void 반환값 없음
-     *
-     * @throws OrderClaimException 송장 불완전 / 송장 없음
-     */
-    protected function recordTrackingForTransition(OrderExchange $exchange, ExchangeStatusEnum $target, array $context): void
-    {
-        $columns = match ($target) {
-            ExchangeStatusEnum::COLLECTING => ['carrier' => 'collection_carrier_id', 'tracking' => 'collection_tracking_number'],
-            ExchangeStatusEnum::REDELIVERING => ['carrier' => 'redelivery_carrier_id', 'tracking' => 'redelivery_tracking_number'],
-            default => null,
-        };
-
-        if ($columns === null) {
-            return;
-        }
-
-        $updates = $this->trackingUpdatesForTransition($exchange, $columns, $context);
-
-        if ($updates === []) {
-            return;
-        }
-
-        $this->exchangeRepository->update($exchange, $updates);
-
-        // 먼저 발송된 교환품이 있으면(상품별로 나눠 발송) 그 배송 행도 같은 송장으로 맞춘다.
-        if ($target === ExchangeStatusEnum::REDELIVERING) {
-            $this->syncSuccessorShippingTracking($exchange);
-        }
-    }
-
-    /**
-     * 이미 생긴 교환품 새 주문상품의 배송 행에 신청서의 재발송 송장을 반영합니다.
-     *
-     * @param  OrderExchange  $exchange  교환 신청서
-     * @return void 반환값 없음
-     */
-    protected function syncSuccessorShippingTracking(OrderExchange $exchange): void
+    public function exchangeModeBlockReason(OrderExchange $exchange, ExchangeModeEnum $to): ?string
     {
         $exchange->loadMissing('exchangeOptions');
 
+        if ($exchange->mode() === $to) {
+            return 'claim_exchange_mode_not_changeable';
+        }
+
+        if ($to === ExchangeModeEnum::ADVANCE && ! $this->advanceExchangeEnabled()) {
+            return 'claim_advance_exchange_disabled';
+        }
+
+        $reviewStages = [
+            ExchangeStatusEnum::REQUESTED,
+            ExchangeStatusEnum::PAYMENT_PENDING,
+            ExchangeStatusEnum::PAID,
+            ExchangeStatusEnum::ON_HOLD,
+            ExchangeStatusEnum::APPROVED,
+        ];
+
+        if (! in_array($exchange->exchange_status, $reviewStages, true)) {
+            return 'claim_exchange_mode_not_changeable';
+        }
+
+        $living = $exchange->exchangeOptions->reject(fn (OrderExchangeOption $item) => $item->option_status->isFinal());
+
+        foreach ($living as $item) {
+            if (! in_array($item->option_status, $reviewStages, true)) {
+                return 'claim_exchange_mode_not_changeable';
+            }
+        }
+
         foreach ($exchange->exchangeOptions as $item) {
-            if ($item->new_order_option_id === null) {
+            if ($item->redelivery_tracking_number !== null) {
+                return 'claim_exchange_mode_not_changeable';
+            }
+        }
+
+        if ($to === ExchangeModeEnum::STANDARD) {
+            foreach ($exchange->exchangeOptions as $item) {
+                if (ClaimItemCollectionState::hasCollectionTracking($item) || $item->collected_at !== null) {
+                    return 'claim_exchange_mode_locked_by_collection';
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * 교환의 진행 방식을 바꿉니다. (관리자 — 승인 전후 어느 때나, 교환품 발송 전까지)
+     *
+     * 선교환은 새 물건을 먼저 보내고 헌 물건은 기한 안에 받는다. 켜는 것은 운영자가 신청서마다
+     * 정하고, 기능 자체는 쇼핑몰 설정 `claim.advance_exchange_enabled` 로 끈다(설정을 꺼도 이미
+     * 선교환인 건은 되돌릴 수 있다). 선교환에서 되돌리면 회수 기한·지연 알림 기록을 비운다.
+     *
+     * 쓰기 전에 `claim.exchange.before_mode_change`(막기)를 동기로, 커밋 뒤
+     * `claim.exchange.after_mode_change` 를 낸다. filter 는 두지 않는다 — 바꿀 수 있는 값이 방식
+     * 하나뿐이고 그 값은 게이트가 판정한다.
+     *
+     * @param  OrderExchange  $exchange  교환 신청서
+     * @param  ExchangeModeEnum  $to  바꿀 방식
+     * @param  int|null  $by  바꾼 관리자 ID
+     * @return OrderExchange 갱신된 신청서
+     *
+     * @throws OrderClaimException 설정 꺼짐 / 바꿀 수 없는 단계 / 회수 송장이 있는 선교환
+     */
+    public function setExchangeMode(OrderExchange $exchange, ExchangeModeEnum $to, ?int $by = null): OrderExchange
+    {
+        $from = $exchange->mode();
+
+        HookManager::doAction('sirsoft-ecommerce.claim.exchange.before_mode_change', $exchange, $from->value, $to->value);
+
+        $updated = DB::transaction(function () use ($exchange, $to, $by) {
+            $locked = $this->lockClaimForTracking($exchange);
+
+            $blocked = $this->exchangeModeBlockReason($locked, $to);
+
+            if ($blocked !== null) {
+                throw match ($blocked) {
+                    'claim_advance_exchange_disabled' => OrderClaimException::advanceExchangeDisabled(),
+                    'claim_exchange_mode_locked_by_collection' => OrderClaimException::exchangeModeLockedByCollection(),
+                    default => OrderClaimException::exchangeModeNotChangeable(),
+                };
+            }
+
+            $updates = [
+                'exchange_mode' => $to,
+                'exchange_mode_set_by' => $by,
+                'exchange_mode_set_at' => now(),
+            ];
+
+            if ($to === ExchangeModeEnum::STANDARD) {
+                $updates['collection_due_at'] = null;
+                $updates['collection_overdue_notified_at'] = null;
+            }
+
+            return $this->exchangeRepository->update($locked, $updates)->fresh(['exchangeOptions']);
+        });
+
+        $this->fireAfterCommit(fn () => HookManager::doAction(
+            'sirsoft-ecommerce.claim.exchange.after_mode_change',
+            $updated,
+            $from->value,
+            $to->value,
+            $by,
+        ));
+
+        return $updated;
+    }
+
+    /**
+     * 반송 기한을 넘긴 선교환에 회수 지연 관리자 알림을 한 번 보냅니다. (배치 — D2)
+     *
+     * 헌 물건이 아직 출발하지 않은(회수 대기) 행이 남은 건만 알린다. 알린 건은
+     * `collection_overdue_notified_at` 을 적어 다시 알리지 않는다 — 기한이 다시 미래로 계산되면
+     * `refreshCollectionDue()` 가 비워 다음 지연 때 한 번 더 알린다. 훅
+     * `sirsoft-ecommerce.claim.exchange.collection_overdue` 는 커밋 뒤에 나간다.
+     *
+     * @param  int  $limit  한 번에 처리할 최대 건수
+     * @param  bool  $dryRun  true 면 알림·기록 없이 대상만 센다
+     * @return array{scanned: int, notified: int, skipped: int} 처리 결과
+     */
+    public function notifyOverdueCollections(int $limit = 200, bool $dryRun = false): array
+    {
+        $scanned = 0;
+        $notified = 0;
+        $skipped = 0;
+
+        foreach ($this->exchangeRepository->listOverdueCollectionCandidates($limit) as $exchange) {
+            $scanned++;
+
+            $overdue = ClaimTrackingGroups::overdueOf($exchange);
+
+            if (! $overdue['is_overdue']) {
+                $skipped++;
+
                 continue;
             }
 
-            $this->orderShippingRepository->updateTrackingByOrderOptionId((int) $item->new_order_option_id, [
-                'carrier_id' => $exchange->redelivery_carrier_id,
-                'tracking_number' => $exchange->redelivery_tracking_number,
+            if ($dryRun) {
+                $notified++;
+
+                continue;
+            }
+
+            DB::transaction(function () use ($exchange, $overdue) {
+                $locked = $this->exchangeRepository->findForUpdate((int) $exchange->getKey()) ?? $exchange;
+
+                // 두 배치가 겹쳐 돌아도 한 번만 알린다 — 잠금 안에서 다시 본다.
+                if ($locked->collection_overdue_notified_at !== null) {
+                    return;
+                }
+
+                $this->exchangeRepository->update($locked, ['collection_overdue_notified_at' => now()]);
+
+                $this->fireAfterCommit(fn () => HookManager::doAction(
+                    'sirsoft-ecommerce.claim.exchange.collection_overdue',
+                    $locked->fresh(['exchangeOptions']),
+                    (int) $overdue['days'],
+                ));
+            });
+
+            $notified++;
+        }
+
+        return ['scanned' => $scanned, 'notified' => $notified, 'skipped' => $skipped];
+    }
+
+    /**
+     * 선교환 기능이 켜져 있는지 반환합니다. (설정 `claim.advance_exchange_enabled`, 기본 꺼짐)
+     *
+     * @return bool 켜져 있으면 true
+     */
+    public function advanceExchangeEnabled(): bool
+    {
+        return filter_var(
+            $this->settingsService->getSetting('claim.advance_exchange_enabled', false),
+            FILTER_VALIDATE_BOOLEAN,
+        );
+    }
+
+    // ───────────────────────────────────────────────
+    // 회수 / 재발송 송장 (상품 행 — `RecordsClaimTracking`), 금액 수정
+    // ───────────────────────────────────────────────
+
+    /**
+     * 운송장 한 개의 행을 한꺼번에 도착 처리합니다. (배송 정보 탭 운송장 묶음의 [도착 처리] — R9)
+     *
+     * 같은 방향·같은 (택배사, 운송장)을 가진 이 신청서의 행 전부가 대상이다.
+     *
+     *  - 일반 교환: 회수도착·발송도착 전이(P2 건너뛰기 포함). 전이할 수 없는 행은 `skipped`.
+     *  - 선교환 회수: 상태를 바꾸지 않고 행 `collected_at` 만 찍는다(선교환 상태 줄에는 회수 단계가 없다).
+     *  - 선교환 재발송: 발송도착 전이 + 회수 기한 재계산(§3-5).
+     *
+     * 커밋 뒤 `claim.exchange.after_tracking_deliver` 를 낸다.
+     *
+     * @param  OrderExchange  $exchange  교환 신청서
+     * @param  ClaimTrackingDirectionEnum  $direction  방향
+     * @param  int  $carrierId  택배사 ID
+     * @param  string  $trackingNumber  운송장 번호
+     * @param  int|null  $processedBy  처리 관리자 ID
+     * @return array{claim: OrderExchange, succeeded: array<int, int>, skipped: array<int, array{id: int, message: string}>} 처리 결과
+     *
+     * @throws OrderClaimException 그 운송장을 가진 행 없음
+     */
+    public function deliverTracking(
+        OrderExchange $exchange,
+        ClaimTrackingDirectionEnum $direction,
+        int $carrierId,
+        string $trackingNumber,
+        ?int $processedBy = null,
+    ): array {
+        $exchange->loadMissing('exchangeOptions');
+        $items = $this->itemsWithTracking($exchange, $direction, $carrierId, $trackingNumber);
+
+        if ($items === []) {
+            throw OrderClaimException::trackingNotFound();
+        }
+
+        $mode = $exchange->mode();
+        $succeeded = [];
+        $skipped = [];
+
+        if ($mode === ExchangeModeEnum::ADVANCE && $direction === ClaimTrackingDirectionEnum::COLLECTION) {
+            DB::transaction(function () use ($exchange, $items, $processedBy, &$succeeded, &$skipped) {
+                $locked = $this->lockClaimForTracking($exchange);
+
+                foreach ($items as $item) {
+                    $item = $locked->exchangeOptions->firstWhere('id', $item->id) ?? $item;
+
+                    if ($item->option_status->isFinal() || $item->collected_at !== null || $item->unreturned_at !== null) {
+                        $skipped[] = ['id' => (int) $item->id, 'message' => __('sirsoft-ecommerce::exceptions.claim_tracking_already_arrived')];
+
+                        continue;
+                    }
+
+                    $this->exchangeOptionRepository->update($item, [
+                        'collected_at' => now(),
+                        'processed_by' => $processedBy ?? $item->processed_by,
+                    ]);
+
+                    $succeeded[] = (int) $item->id;
+                }
+            });
+        } else {
+            $target = $direction === ClaimTrackingDirectionEnum::COLLECTION
+                ? ExchangeStatusEnum::COLLECTED
+                : ExchangeStatusEnum::REDELIVERED;
+
+            $movable = [];
+
+            foreach ($items as $item) {
+                if ($item->option_status->isFinal() || $item->option_status === $target
+                    || ! $item->option_status->canTransitionTo($target, $mode)) {
+                    $skipped[] = [
+                        'id' => (int) $item->id,
+                        'message' => $item->option_status === $target || $this->itemArrived($item, $direction)
+                            ? __('sirsoft-ecommerce::exceptions.claim_tracking_already_arrived')
+                            : __('sirsoft-ecommerce::exceptions.claim_transition_not_allowed', [
+                                'from' => $item->option_status->label(),
+                                'to' => $target->label(),
+                            ]),
+                    ];
+
+                    continue;
+                }
+
+                $movable[] = (int) $item->id;
+            }
+
+            if ($movable !== []) {
+                $result = $this->transitionOption($exchange, $movable, $target, ['processed_by' => $processedBy]);
+                $succeeded = $result['succeeded'];
+                $skipped = [...$skipped, ...$result['skipped']];
+            }
+        }
+
+        $fresh = $exchange->fresh(['exchangeOptions']);
+
+        $this->refreshCollectionDue($fresh);
+
+        $this->fireAfterCommit(fn () => HookManager::doAction(
+            'sirsoft-ecommerce.claim.exchange.after_tracking_deliver',
+            $fresh,
+            $direction->value,
+            $carrierId,
+            $trackingNumber,
+            ['succeeded' => $succeeded, 'skipped' => $skipped],
+        ));
+
+        return ['claim' => $fresh->fresh(['exchangeOptions']), 'succeeded' => $succeeded, 'skipped' => $skipped];
+    }
+
+    /**
+     * 행이 그 방향으로 이미 도착했는지 반환합니다.
+     *
+     * @param  OrderExchangeOption  $item  상품 행
+     * @param  ClaimTrackingDirectionEnum  $direction  방향
+     * @return bool 도착했으면 true
+     */
+    protected function itemArrived(OrderExchangeOption $item, ClaimTrackingDirectionEnum $direction): bool
+    {
+        return $item->{$direction->arrivedAtColumn()} !== null;
+    }
+
+    /**
+     * 전이 목표가 쓰는 송장 방향을 반환합니다. (회수중·회수도착 → 회수, 발송중·발송도착 → 재발송)
+     *
+     * @param  ExchangeStatusEnum  $target  목표 상태
+     * @return ClaimTrackingDirectionEnum|null 방향 (송장과 무관한 목표면 null)
+     */
+    protected function trackingDirectionForTarget(ExchangeStatusEnum $target): ?ClaimTrackingDirectionEnum
+    {
+        return match ($target) {
+            ExchangeStatusEnum::COLLECTING, ExchangeStatusEnum::COLLECTED => ClaimTrackingDirectionEnum::COLLECTION,
+            ExchangeStatusEnum::REDELIVERING, ExchangeStatusEnum::REDELIVERED => ClaimTrackingDirectionEnum::REDELIVERY,
+            default => null,
+        };
+    }
+
+    /**
+     * 전이 지시에 실린 송장을 해석하고, 이동 대상 행이 송장을 갖출 수 있는지 검증합니다. (R6·R8)
+     *
+     * 회수중·발송중은 송장이 필수다 — 지시에 없으면 대상 행이 이미 자기 송장을 가져야 한다. 회수도착·
+     * 발송도착은 송장이 선택이다(P2) — 지시에 실리면 그 행에 함께 쓴다.
+     *
+     * @param  OrderExchange  $exchange  교환 신청서 (상품 행 로드)
+     * @param  ExchangeStatusEnum  $target  목표 상태
+     * @param  array  $context  전이 부가 정보 (carrier_id / tracking_number)
+     * @param  array<int, OrderExchangeOption>  $targets  이동할 대상 행
+     * @return array{direction?: ClaimTrackingDirectionEnum, carrier_id?: int|null, tracking_number?: string|null} 대상 행에 쓸 송장 (쓸 것이 없으면 빈 배열)
+     *
+     * @throws OrderClaimException 송장 불완전 / 송장 없음 / 회수지 섞임
+     */
+    protected function prepareTransitionTracking(OrderExchange $exchange, ExchangeStatusEnum $target, array $context, array $targets): array
+    {
+        $direction = $this->trackingDirectionForTarget($target);
+
+        if ($direction === null) {
+            return [];
+        }
+
+        [$carrierId, $trackingNumber] = $this->trackingFromContext($context);
+
+        if (in_array($target, [ExchangeStatusEnum::COLLECTING, ExchangeStatusEnum::REDELIVERING], true)) {
+            $this->assertTransitionTracking($exchange, $targets, $direction, $carrierId, $trackingNumber);
+        } elseif ($trackingNumber !== null && $direction === ClaimTrackingDirectionEnum::COLLECTION) {
+            $this->assertSameReturnAddress($exchange, $targets, $carrierId, $trackingNumber);
+        }
+
+        if ($trackingNumber === null) {
+            return [];
+        }
+
+        return ['direction' => $direction, 'carrier_id' => $carrierId, 'tracking_number' => $trackingNumber];
+    }
+
+    /**
+     * 신청서 단위 전이가 끌고 갈 상품 행을 고릅니다. (`syncOptionStatuses()` 와 같은 판정)
+     *
+     * @param  OrderExchange  $exchange  교환 신청서
+     * @param  ExchangeStatusEnum  $target  목표 상태
+     * @return array<int, OrderExchangeOption> 이동할 상품 행
+     */
+    protected function headerTransitionTargets(OrderExchange $exchange, ExchangeStatusEnum $target): array
+    {
+        $exchange->loadMissing('exchangeOptions');
+        $mode = $exchange->mode();
+
+        return $exchange->exchangeOptions
+            ->filter(fn (OrderExchangeOption $item) => $item->option_status !== $target
+                && ! $item->option_status->isFinal()
+                && $item->option_status->canTransitionTo($target, $mode))
+            ->values()
+            ->all();
+    }
+
+    /**
+     * 이번 요청에서 전이와 함께 쓴 송장 변경을 방향별로 알립니다. (`after_tracking_update`)
+     *
+     * @param  OrderExchange  $exchange  교환 신청서
+     * @param  ExchangeStatusEnum|null  $headerTransitionedTo  이번 요청에서 신청서가 옮겨 간 상태 (그대로면 null)
+     * @return void 반환값 없음
+     */
+    protected function flushTrackingChangeLog(OrderExchange $exchange, ?ExchangeStatusEnum $headerTransitionedTo): void
+    {
+        $log = $this->trackingChangeLog;
+        $this->trackingChangeLog = [];
+
+        foreach ($log as $directionValue => $changes) {
+            $this->announceTrackingUpdated($exchange, ClaimTrackingDirectionEnum::from($directionValue), $changes, [
+                'source' => 'transition',
+                'header_transitioned_to' => $headerTransitionedTo?->value,
             ]);
         }
+    }
+
+    // ── RecordsClaimTracking 구현 ──
+
+    /**
+     * {@inheritDoc}
+     */
+    protected function trackingItemsOf(Model $claim): iterable
+    {
+        return $claim->loadMissing('exchangeOptions')->exchangeOptions;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    protected function trackingDirectionsOf(Model $claim): array
+    {
+        return [ClaimTrackingDirectionEnum::COLLECTION, ClaimTrackingDirectionEnum::REDELIVERY];
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * 일반 교환 회수: 승인~회수중 · 일반 교환 재발송: 회수도착~발송중 · 선교환 회수: 승인~발송도착(종결 전
+     * 언제나) · 선교환 재발송: 승인~발송중 (R5).
+     */
+    protected function trackingWritableStatuses(Model $claim, ClaimTrackingDirectionEnum $direction): array
+    {
+        $advance = $claim instanceof OrderExchange && $claim->mode() === ExchangeModeEnum::ADVANCE;
+
+        if ($direction === ClaimTrackingDirectionEnum::COLLECTION) {
+            return $advance
+                ? [ExchangeStatusEnum::APPROVED, ExchangeStatusEnum::REDELIVERY_READY, ExchangeStatusEnum::REDELIVERING, ExchangeStatusEnum::REDELIVERED]
+                : [ExchangeStatusEnum::APPROVED, ExchangeStatusEnum::COLLECTION_READY, ExchangeStatusEnum::COLLECTING];
+        }
+
+        return $advance
+            ? [ExchangeStatusEnum::APPROVED, ExchangeStatusEnum::REDELIVERY_READY, ExchangeStatusEnum::REDELIVERING]
+            : [ExchangeStatusEnum::COLLECTED, ExchangeStatusEnum::REDELIVERY_READY, ExchangeStatusEnum::REDELIVERING];
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    protected function trackingMovingStatus(ClaimTrackingDirectionEnum $direction): ?BackedEnum
+    {
+        return $direction === ClaimTrackingDirectionEnum::COLLECTION
+            ? ExchangeStatusEnum::COLLECTING
+            : ExchangeStatusEnum::REDELIVERING;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    protected function updateTrackingItem(Model $item, array $updates): Model
+    {
+        return $this->exchangeOptionRepository->update($item, $updates);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    protected function splitTrackingItem(Model $item, int $quantity): array
+    {
+        $result = $this->claimItemSplitter->split($item, $quantity);
+        $result['target']->refresh();
+
+        return $result;
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * 재발송 송장이 바뀌면 그 행의 후속 주문옵션 배송 행도 같은 송장으로 고친다(R11) — 고객 주문 화면의
+     * 배송 조회는 배송 행을 읽는다. 선교환이면 재발송 송장 등록이 회수 기한의 기준이 된다(§3-5).
+     */
+    protected function afterItemTrackingWritten(Model $claim, Model $item, ClaimTrackingDirectionEnum $direction): void
+    {
+        if ($direction !== ClaimTrackingDirectionEnum::REDELIVERY) {
+            return;
+        }
+
+        if ($item->new_order_option_id !== null && $item->redelivery_tracking_number !== null) {
+            $this->orderShippingRepository->updateTrackingByOrderOptionId((int) $item->new_order_option_id, [
+                'carrier_id' => $item->redelivery_carrier_id,
+                'tracking_number' => $item->redelivery_tracking_number,
+            ]);
+        }
+
+        if ($claim instanceof OrderExchange) {
+            $this->refreshCollectionDue($claim->fresh(['exchangeOptions']) ?? $claim);
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    protected function trackingHookType(): string
+    {
+        return ClaimTypeEnum::EXCHANGE->value;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    protected function lockClaimForTracking(Model $claim): Model
+    {
+        $locked = $this->exchangeRepository->findForUpdate((int) $claim->getKey()) ?? $claim;
+
+        return $locked->load('exchangeOptions');
+    }
+
+    /**
+     * 선교환의 헌 물건 반송 기한을 다시 계산합니다. (§3-5 — 선교환만)
+     *
+     * 기준은 행 재발송 도착 시각 중 가장 이른 값이고, 도착 기록이 없으면 행 재발송 송장 등록 시각 중
+     * 가장 이른 값이다(PO 예시 「도착한 지 14일」 우선). 기한이 다시 미래가 되면 지연 알림 기록을 비워
+     * 다음 지연 때 다시 한 번 알린다. 선교환이 아니면 기한을 비운다.
+     *
+     * @param  OrderExchange  $exchange  교환 신청서
+     * @return void 반환값 없음
+     */
+    protected function refreshCollectionDue(OrderExchange $exchange): void
+    {
+        $exchange->loadMissing('exchangeOptions');
+
+        $updates = [];
+
+        if ($exchange->mode() !== ExchangeModeEnum::ADVANCE) {
+            if ($exchange->collection_due_at !== null || $exchange->collection_overdue_notified_at !== null) {
+                $updates = ['collection_due_at' => null, 'collection_overdue_notified_at' => null];
+            }
+        } else {
+            $living = $exchange->exchangeOptions->reject(
+                fn (OrderExchangeOption $item) => in_array($item->option_status, [ExchangeStatusEnum::REJECTED, ExchangeStatusEnum::WITHDRAWN], true)
+            );
+
+            $base = $living->pluck('redelivered_at')->filter()->min()
+                ?? $living->pluck('redelivery_shipped_at')->filter()->min();
+
+            $due = $base === null ? null : Carbon::parse($base)->addDays($this->advanceExchangeDueDays());
+            $currentDue = $exchange->collection_due_at;
+
+            if ($due?->getTimestamp() !== $currentDue?->getTimestamp()) {
+                $updates['collection_due_at'] = $due;
+
+                if (($due === null || $due->isFuture()) && $exchange->collection_overdue_notified_at !== null) {
+                    $updates['collection_overdue_notified_at'] = null;
+                }
+            }
+        }
+
+        if ($updates !== []) {
+            $this->exchangeRepository->update($exchange, $updates);
+        }
+    }
+
+    /**
+     * 선교환 헌 물건 반송 기한 일수를 반환합니다. (설정 `claim.advance_exchange_collection_due_days`)
+     *
+     * 상한·하한은 설정 저장 검증(`StoreEcommerceSettingsRequest`)이 판정한다. 여기서 다시 깎지 않는다 —
+     * 한계 밖 값이 저장돼 있으면(직접 DB 수정 등) 기본값으로 돌아간다. 전환 확인 창의 안내 일수
+     * (`AdminClaimService::exchangeModeAbilities`)도 이 값을 읽는다 — 안내와 실제 기한이 한 출처다.
+     *
+     * @return int 일수
+     */
+    public function advanceExchangeDueDays(): int
+    {
+        $days = (int) $this->settingsService->getSetting('claim.advance_exchange_collection_due_days', self::ADVANCE_EXCHANGE_DEFAULT_DUE_DAYS);
+        $min = (int) config('sirsoft-ecommerce.limits.advance_exchange_collection_due_days_min', 1);
+        $max = (int) config('sirsoft-ecommerce.limits.advance_exchange_collection_due_days_max', 90);
+
+        return $days >= $min && $days <= $max ? $days : self::ADVANCE_EXCHANGE_DEFAULT_DUE_DAYS;
     }
 
     /**
@@ -1086,6 +1687,59 @@ class OrderExchangeService
     }
 
     /**
+     * 반려·철회되지 않은 상품으로 청구액을 다시 계산합니다. (S5 — 상품 단위 반려·철회 뒤)
+     *
+     * 옵션 차액(추가 상품금액·환불 상품금액)을 **살아 있는 상품**(반려·철회되지 않은 행 — 완료 포함)의
+     * `price_difference` 합으로 다시 나눈다. 접수 때와 같은 분할 함수(`splitPriceDifference`)다. 왕복
+     * 배송비는 살아 있는 상품이 하나라도 있으면 그대로 둔다 — 회수·재발송 1회는 여전히 일어난다.
+     * 청구액이 0 이 되면 청구 방식을 비운다(결제할 수 없는 청구를 남기지 않는다).
+     *
+     * 결제 대기 건·기수납액과의 정산은 여기서 하지 않는다 — 호출부가 갱신된 신청서로
+     * `ClaimPaymentService::settleChargeDifference()` 를 부른다(`updateRequest()` 와 같은 분담).
+     *
+     * @param  OrderExchange  $exchange  교환 신청서
+     * @return OrderExchange|null 청구가 바뀐 신청서 (살아 있는 상품이 없거나 바뀐 것이 없으면 null)
+     */
+    public function recalculateChargeForLivingItems(OrderExchange $exchange): ?OrderExchange
+    {
+        $exchange->loadMissing(['exchangeOptions', 'order']);
+
+        $living = $exchange->exchangeOptions->reject(fn (OrderExchangeOption $item) => in_array(
+            $item->option_status,
+            [ExchangeStatusEnum::REJECTED, ExchangeStatusEnum::WITHDRAWN],
+            true,
+        ));
+
+        if ($living->isEmpty()) {
+            return null;
+        }
+
+        $priceDifference = (float) $living->sum(fn (OrderExchangeOption $item) => (float) $item->price_difference);
+        [$additional, $refund] = $this->splitPriceDifference($priceDifference);
+        $totalCharge = (float) $exchange->claim_shipping_fee + $additional;
+
+        if (abs($totalCharge - (float) $exchange->total_charge_amount) < 0.005
+            && abs($additional - (float) $exchange->additional_product_amount) < 0.005
+            && abs($refund - (float) $exchange->refund_product_amount) < 0.005) {
+            return null;
+        }
+
+        $currencySnapshot = $exchange->order?->currency_snapshot ?? [];
+        $updates = [
+            'additional_product_amount' => $additional,
+            'refund_product_amount' => $refund,
+            'total_charge_amount' => $totalCharge,
+            'mc_total_charge_amount' => $this->toMultiCurrency($totalCharge, $currencySnapshot),
+        ];
+
+        if ($totalCharge <= 0) {
+            $updates['charge_method'] = null;
+        }
+
+        return $this->exchangeRepository->update($exchange, $updates);
+    }
+
+    /**
      * 금액 수정이 실은 청구 방식이 운영자 허용 목록에 있는지 검증합니다. (반품과 동형)
      *
      * 신청 경로의 `assertChargeMethodUsable` 과 같은 허용 목록(`claim.allowed_charge_methods`)을
@@ -1166,10 +1820,29 @@ class OrderExchangeService
             // (재고 복구에는 멱등 가드가 없다). 주문 행 잠금이 두 완료를 줄 세운다.
             $exchange = $this->exchangeRepository->findForUpdate((int) $exchange->getKey()) ?? $exchange;
             $previousStatus = $exchange->exchange_status;
+            $mode = $exchange->mode();
+            $requested = $this->resolveItems($exchange, $itemIds);
+
+            // 미회수 완료 지시(D3)는 **선교환·발송 후·헌 물건 미출발** 행에만 받는다 — 다른 행에 붙이면
+            // 회수된 물건의 재고가 복구되지 않은 채 「미회수」 로 남는다. 사유는 필수다(운영 기록).
+            foreach (array_keys($options->unreturned) as $unreturnedId) {
+                $candidate = collect($requested)->firstWhere('id', (int) $unreturnedId);
+
+                if ($candidate === null || ! $this->isUnreturnedEligibleItem($candidate, $mode)) {
+                    throw OrderClaimException::unreturnedNotEligible();
+                }
+
+                $reason = $options->unreturnedReason((int) $unreturnedId);
+
+                if ($reason === '' || mb_strlen($reason) > 2000) {
+                    throw OrderClaimException::unreturnedReasonRequired();
+                }
+            }
 
             $targets = array_values(array_filter(
-                $this->resolveItems($exchange, $itemIds),
-                fn (OrderExchangeOption $item) => $this->isCompletableItem($item),
+                $requested,
+                fn (OrderExchangeOption $item) => $this->isCompletableItem($item, $mode)
+                    || ($options->isUnreturned((int) $item->id) && $this->isUnreturnedEligibleItem($item, $mode)),
             ));
 
             if ($targets === []) {
@@ -1177,27 +1850,39 @@ class OrderExchangeService
             }
 
             $restoredAny = false;
-            // 발송중인 교환품의 완료는 발송도착을 건너뛴다 — 발송도착이 하던 일(후속 주문상품 배송완료)을
-            // 대신 하고, 도착 기록을 완료 시각으로 남긴다.
-            $skippedArrival = false;
 
             foreach ($targets as $item) {
+                $itemUpdates = [
+                    'option_status' => ExchangeStatusEnum::COMPLETED,
+                    'completed_at' => now(),
+                    'processed_by' => $processedBy ?? $item->processed_by,
+                ];
+
+                // 발송중인 교환품의 완료는 발송도착을 건너뛴다 — 발송도착이 하던 일(후속 주문상품 배송완료)을
+                // 대신 하고, 행 도착 기록을 완료 시각으로 남긴다.
                 if ($item->option_status === ExchangeStatusEnum::REDELIVERING) {
-                    $skippedArrival = true;
                     $this->markNewOrderOptionDelivered($item);
+
+                    if ($item->redelivered_at === null) {
+                        $itemUpdates['redelivered_at'] = now();
+                    }
+                }
+
+                // 미회수 완료 — 헌 물건 재고는 늘리지 않는다(D3). 신청서·구매자 화면에 「미회수」 로 남는다.
+                $unreturned = $options->isUnreturned((int) $item->id);
+
+                if ($unreturned) {
+                    $itemUpdates['unreturned_at'] = now();
+                    $itemUpdates['unreturned_reason'] = $options->unreturnedReason((int) $item->id);
                 }
 
                 $completionChanges[] = [
                     'option_id' => (int) $item->id,
                     'previous' => $item->option_status->value,
                     'new' => ExchangeStatusEnum::COMPLETED->value,
-                ];
+                ] + ($unreturned ? ['unreturned' => true, 'unreturned_reason' => $itemUpdates['unreturned_reason']] : []);
 
-                $this->exchangeOptionRepository->update($item, [
-                    'option_status' => ExchangeStatusEnum::COMPLETED,
-                    'completed_at' => now(),
-                    'processed_by' => $processedBy ?? $item->processed_by,
-                ]);
+                $this->exchangeOptionRepository->update($item, $itemUpdates);
 
                 $orderOption = $order->options->firstWhere('id', $item->order_option_id);
 
@@ -1207,8 +1892,10 @@ class OrderExchangeService
                     // 재고를 점유한 행이 "복구됨" 으로 보인다(#599 validate P2 #4).
                     $exchangedOption = $this->markOrderOptionExchanged($orderOption, (int) $item->exchange_quantity);
 
-                    if ($options->shouldRestoreStock($item->id)) {
+                    if (! $unreturned && $options->shouldRestoreStock($item->id)) {
                         $this->restoreStockForItem($exchangedOption, (int) $item->exchange_quantity);
+                        // 무엇을 복구했는지는 상품 행이 말한다(S6) — 헤더는 「1개 이상 복구」 뜻으로만 남는다.
+                        $this->exchangeOptionRepository->update($item, ['is_stock_restored' => true]);
                         $restoredAny = true;
                     }
 
@@ -1235,13 +1922,16 @@ class OrderExchangeService
                 $updates['is_stock_restored'] = true;
             }
 
-            if ($skippedArrival && $exchange->redelivered_at === null) {
-                $updates['redelivered_at'] = now();
-            }
-
             if ($this->allItemsCompleted($exchange)) {
                 $updates['exchange_status'] = ExchangeStatusEnum::COMPLETED;
                 $updates['completed_at'] = now();
+
+                // 헤더 「발송 완료」 시각은 헤더가 그 단계를 지날 때만 찍힌다(S2). 발송도착을 건너뛰고
+                // 완료로 끝났으면 여기서 채운다 — 부분 완료 회차가 찍으면 아직 가는 중인 교환품까지
+                // 「배송 완료」 로 보인다. 상품별 도착은 행 `redelivered_at` 이 말한다.
+                if ($exchange->redelivered_at === null) {
+                    $updates['redelivered_at'] = now();
+                }
             }
 
             return $this->exchangeRepository->update($exchange, $updates)->fresh(['exchangeOptions']);
@@ -1360,11 +2050,12 @@ class OrderExchangeService
      * @param  Order  $order  주문
      * @param  array  $items  신청 대상 [{order_option_id, quantity}]
      * @param  int|null  $excludeExchangeId  집계에서 뺄 교환 신청서 ID (수정 중인 자기 자신)
+     * @param  bool  $operator  운영자 직권 접수 여부 (물리 게이트 · 신청 기간 미적용 — D5)
      * @return array<int, array{option: OrderOption, quantity: int}> 주문옵션 ID => 해석 결과
      *
      * @throws OrderClaimException 대상 부재·상태 불가·수량 오류·수량 잠금·기간 경과
      */
-    protected function resolvePreviewItems(Order $order, array $items, ?int $excludeExchangeId = null): array
+    protected function resolvePreviewItems(Order $order, array $items, ?int $excludeExchangeId = null, bool $operator = false): array
     {
         $normalized = [];
 
@@ -1379,11 +2070,14 @@ class OrderExchangeService
             $order,
             $normalized,
             ClaimTypeEnum::EXCHANGE,
-            $this->requestableStatusValues(),
+            $this->requestStatusValuesFor($operator),
             $excludeExchangeId,
         );
 
-        $this->assertWithinRequestPeriod($resolved);
+        // 운영자 직권 접수는 신청 가능 기간을 무시한다(D5).
+        if (! $operator) {
+            $this->assertWithinRequestPeriod($resolved);
+        }
 
         return $resolved;
     }
@@ -1837,6 +2531,8 @@ class OrderExchangeService
     protected function createExchangeOption(OrderExchange $exchange, Order $order, array $plan, array $currencySnapshot): void
     {
         $option = $plan['option'];
+        // 회수지는 **상품마다** 자기 배송정책에서 해석한다(S4) — 분할 전 원 행의 배송 행이 정책을 가리킨다.
+        $returnAddress = $this->resolveReturnAddressSnapshot($order, [['option' => $option]]);
 
         // 감사용 값은 전이 **전에** 캡처한다 — 전이는 원 행의 수량·상태를 그 자리에서 바꾼다.
         $originalStatus = $option->option_status;
@@ -1859,6 +2555,7 @@ class OrderExchangeService
             'order_id' => $order->id,
             'order_option_id' => $courseOption->id,
             'option_status' => ExchangeStatusEnum::REQUESTED,
+            'return_address_snapshot' => $returnAddress,
             'exchange_quantity' => $plan['quantity'],
             'original_quantity' => $originalQuantity,
             'original_option_status' => $originalStatus,
@@ -2114,7 +2811,9 @@ class OrderExchangeService
                 'rejected_at' => now(),
                 'reject_reason' => $context['reject_reason'] ?? null,
             ],
-            ExchangeStatusEnum::WITHDRAWN => ['withdrawn_at' => now()],
+            ExchangeStatusEnum::WITHDRAWN => ['withdrawn_at' => now()] + (isset($context['withdrawn_by_admin'])
+                ? ['withdrawn_by_admin' => (int) $context['withdrawn_by_admin'], 'withdraw_reason' => $context['withdraw_reason'] ?? null]
+                : []),
             ExchangeStatusEnum::COLLECTED => ['collection_completed_at' => now()],
             ExchangeStatusEnum::REDELIVERED => ['redelivered_at' => now()],
             default => [],
@@ -2130,11 +2829,13 @@ class OrderExchangeService
      * @param  OrderExchange  $exchange  교환 신청서
      * @param  ExchangeStatusEnum  $target  목표 상태
      * @param  int|null  $processedBy  처리 관리자 ID
+     * @param  array  $tracking  대상 행에 쓸 송장 (`prepareTransitionTracking()` — 없으면 빈 배열)
      * @return void 반환값 없음
      */
-    protected function syncOptionStatuses(OrderExchange $exchange, ExchangeStatusEnum $target, ?int $processedBy): void
+    protected function syncOptionStatuses(OrderExchange $exchange, ExchangeStatusEnum $target, ?int $processedBy, array $tracking = []): void
     {
         $exchange->loadMissing('exchangeOptions');
+        $mode = $exchange->mode();
 
         $changes = [];
 
@@ -2143,13 +2844,13 @@ class OrderExchangeService
                 continue;
             }
 
-            if (! $item->option_status->canTransitionTo($target)) {
+            if (! $item->option_status->canTransitionTo($target, $mode)) {
                 continue;
             }
 
             $previous = $item->option_status->value;
 
-            $this->transitionItem($exchange, $item, $target, $processedBy);
+            $this->transitionItem($exchange, $item, $target, $processedBy, null, $tracking);
 
             $changes[] = [
                 'option_id' => (int) $item->id,
@@ -2183,8 +2884,10 @@ class OrderExchangeService
      *  - 승인: 재발송할 옵션의 재고를 차감한다(D7). 부족하면 이 상품의 전이를 거절한다.
      *  - 반려·철회: 원 주문옵션을 신청 직전 상태로 되돌린다. 게이트상 승인 뒤에는 도달할 수
      *    없으므로 되돌릴 신규 재고는 없다.
-     *  - 재발송중: 후속 주문옵션을 만든다(멱등).
+     *  - 재발송중: 후속 주문옵션을 만든다(멱등). 그 배송 행은 **이 행의** 재발송 송장을 싣는다(R11).
      *  - 재발송도착: 후속 주문옵션을 배송완료로 옮긴다.
+     *  - 회수도착·발송도착: 이 행의 도착 시각(`collected_at`·`redelivered_at`)을 찍는다(비어 있을 때만).
+     *  - 송장: 지시에 송장이 실려 있으면 쪼갠 뒤·상태를 바꾸기 전에 이 행에 쓴다(R4·R6).
      *
      *  - 수량 분할: 지시에 수량이 실려 있으면 **맨 앞에서** 행을 가른다. 순서가 계약이다 —
      *    분할이 먼저여야 승인의 재고 차감이 줄어든 수량만 차감하고, 반려의 원 주문옵션 복귀가
@@ -2196,6 +2899,7 @@ class OrderExchangeService
      * @param  ExchangeStatusEnum  $target  목표 상태 (게이트 통과 전제)
      * @param  int|null  $processedBy  처리 관리자 ID
      * @param  int|null  $quantity  이번에 전이할 수량 (null 이면 전량)
+     * @param  array  $tracking  이 행에 쓸 송장 (`prepareTransitionTracking()` — 없으면 빈 배열)
      * @return OrderExchangeOption|null 분할로 생긴 잔여 행 (분할하지 않았으면 null)
      *
      * @throws OrderClaimException 승인 시 재고 부족 / 나눌 수 없는 행
@@ -2206,8 +2910,9 @@ class OrderExchangeService
         ExchangeStatusEnum $target,
         ?int $processedBy,
         ?int $quantity = null,
+        array $tracking = [],
     ): ?OrderExchangeOption {
-        return DB::transaction(function () use ($exchange, $item, $target, $processedBy, $quantity) {
+        return DB::transaction(function () use ($exchange, $item, $target, $processedBy, $quantity, $tracking) {
             $remainder = null;
 
             if ($quantity !== null) {
@@ -2215,14 +2920,41 @@ class OrderExchangeService
                 $item->refresh();
             }
 
+            if (($tracking['direction'] ?? null) instanceof ClaimTrackingDirectionEnum) {
+                $change = $this->applyItemTracking(
+                    $exchange,
+                    $item,
+                    $tracking['direction'],
+                    $tracking['carrier_id'] ?? null,
+                    $tracking['tracking_number'] ?? null,
+                    $processedBy,
+                );
+
+                if ($change !== null) {
+                    $this->trackingChangeLog[$tracking['direction']->value][] = $change;
+                }
+
+                $item->refresh();
+            }
+
             if ($target === ExchangeStatusEnum::APPROVED) {
                 $this->deductNewOptionStock($item);
             }
 
-            $updated = $this->exchangeOptionRepository->update($item, [
+            $updates = [
                 'option_status' => $target,
                 'processed_by' => $processedBy ?? $item->processed_by,
-            ]);
+            ];
+
+            if ($target === ExchangeStatusEnum::COLLECTED && $item->collected_at === null) {
+                $updates['collected_at'] = now();
+            }
+
+            if ($target === ExchangeStatusEnum::REDELIVERED && $item->redelivered_at === null) {
+                $updates['redelivered_at'] = now();
+            }
+
+            $updated = $this->exchangeOptionRepository->update($item, $updates);
 
             if ($this->revertsOrderOptions($target)) {
                 $this->revertOrderOptionFor($updated->loadMissing('orderOption'), (int) $updated->exchange_quantity);
@@ -2280,7 +3012,7 @@ class OrderExchangeService
             return;
         }
 
-        $path = $this->headerPathTo($exchange->exchange_status, $target);
+        $path = $this->headerPathTo($exchange->exchange_status, $target, $exchange->mode());
 
         if ($path === []) {
             return;
@@ -2317,11 +3049,14 @@ class OrderExchangeService
     /**
      * 헤더가 현재 상태에서 목표 상태까지 거쳐야 할 단계 목록을 전이 게이트로 찾습니다. (BFS)
      *
+     * 간선은 진행 방식의 전이표다 — 선교환은 승인에서 곧장 발송 단계로 간다.
+     *
      * @param  ExchangeStatusEnum  $from  현재 헤더 상태
      * @param  ExchangeStatusEnum  $to  상품들이 모인 상태
+     * @param  ExchangeModeEnum  $mode  진행 방식
      * @return array<int, ExchangeStatusEnum> 거쳐야 할 상태 목록 (목표 포함, 현재 제외)
      */
-    protected function headerPathTo(ExchangeStatusEnum $from, ExchangeStatusEnum $to): array
+    protected function headerPathTo(ExchangeStatusEnum $from, ExchangeStatusEnum $to, ExchangeModeEnum $mode = ExchangeModeEnum::STANDARD): array
     {
         if ($from === $to) {
             return [];
@@ -2333,7 +3068,7 @@ class OrderExchangeService
         while ($queue !== []) {
             [$node, $path] = array_shift($queue);
 
-            foreach ($node->allowedTransitions() as $next) {
+            foreach ($node->allowedTransitionsIn($mode) as $next) {
                 if (isset($visited[$next->value])) {
                     continue;
                 }
@@ -2585,20 +3320,24 @@ class OrderExchangeService
             'exchange_redelivery',
         ));
 
-        $this->replicateShippingRow($exchange, $original, $successor);
+        $this->replicateShippingRow($item, $original, $successor);
 
         $this->exchangeOptionRepository->update($item, ['new_order_option_id' => $successor->id]);
     }
 
     /**
-     * 원 주문옵션의 배송 행을 후속 옵션에 복사합니다. (정책 승계 + 재발송 송장)
+     * 원 주문옵션의 배송 행을 후속 옵션에 복사합니다. (정책 승계 + **이 행의** 재발송 송장 — R11)
      *
-     * @param  OrderExchange  $exchange  교환 신청서
+     * 송장은 신청서가 아니라 행의 것이다 — 두 상자로 나눠 보낸 교환품은 행마다 다른 운송장을 갖고,
+     * 구매자 주문 화면의 배송 조회가 그 행의 운송장을 읽어야 한다(S9). 송장 없이 곧장 발송도착한
+     * 행은 송장 칸이 비고, 이어지는 배송완료 처리가 상태를 옮긴다.
+     *
+     * @param  OrderExchangeOption  $item  신청 상품 행
      * @param  OrderOption  $original  원 주문옵션
      * @param  OrderOption  $successor  후속 주문옵션
      * @return void 반환값 없음
      */
-    protected function replicateShippingRow(OrderExchange $exchange, OrderOption $original, OrderOption $successor): void
+    protected function replicateShippingRow(OrderExchangeOption $item, OrderOption $original, OrderOption $successor): void
     {
         $shipping = $this->orderShippingRepository->findFirstByOrderOptionId($original->id);
 
@@ -2608,9 +3347,9 @@ class OrderExchangeService
 
         $this->orderShippingRepository->replicateForOrderOption($shipping, $successor->id, [
             'shipping_status' => ShippingStatusEnum::SHIPPED,
-            'carrier_id' => $exchange->redelivery_carrier_id,
-            'tracking_number' => $exchange->redelivery_tracking_number,
-            'shipped_at' => now(),
+            'carrier_id' => $item->redelivery_carrier_id,
+            'tracking_number' => $item->redelivery_tracking_number,
+            'shipped_at' => $item->redelivery_shipped_at ?? now(),
         ]);
     }
 
@@ -2898,8 +3637,7 @@ class OrderExchangeService
             foreach ($exchange->exchangeOptions as $item) {
                 if (in_array((int) $item->id, $assumeIds, true)
                     && $item->option_status !== ExchangeStatusEnum::COMPLETED
-                    && $item->option_status->canTransitionTo(ExchangeStatusEnum::COMPLETED)
-                    && ! $item->option_status->isFinal()) {
+                    && $this->isCompletableItem($item, $exchange->mode())) {
                     $candidates[] = $item;
                 }
             }
@@ -3157,10 +3895,12 @@ class OrderExchangeService
      */
     protected function allItemsCompleted(OrderExchange $exchange): bool
     {
-        return $exchange->exchangeOptions->isNotEmpty()
-            && $exchange->exchangeOptions->every(
-                fn (OrderExchangeOption $item) => $item->option_status === ExchangeStatusEnum::COMPLETED
-            );
+        // 「살아 있는 상품 0 그리고 완료 상품 ≥ 1」(S8) — 반려·철회된 상품이 섞여도 나머지가 모두
+        // 완료되면 신청서는 완료다. 예전 판정(모든 행 완료)은 반려 행 하나가 헤더를 영원히 묶었다.
+        $items = $exchange->exchangeOptions;
+
+        return $items->contains(fn (OrderExchangeOption $item) => $item->option_status === ExchangeStatusEnum::COMPLETED)
+            && ! $items->contains(fn (OrderExchangeOption $item) => ! $item->option_status->isFinal());
     }
 
     // ───────────────────────────────────────────────
@@ -3316,14 +4056,24 @@ class OrderExchangeService
      * `ClaimPaymentService::settleChargeDifference()` 를 부른다(결제 서비스가 이 서비스를 전이에 쓰므로
      * 역방향 의존을 두지 않는다).
      *
+     * 실제로 바뀐 항목은 커밋 뒤 `claim.exchange.request_updated` 로 전/후와 함께 나간다 — 운영자가 고객 대신
+     * 사유를 바꾸면 왕복비를 누가 내는지가 달라지므로 활동 로그가 그 흔적을 남긴다(`ReportsClaimRequestUpdate`).
+     * 재발송지는 개인정보라 바뀐 사실만 싣는다.
+     *
      * @param  OrderExchange  $exchange  교환 신청서
      * @param  array  $payload  수정 페이로드 (reason_code? / reason_detail? / redelivery_address? / charge_method?)
+     * @param  bool  $operator  운영자 수정 여부 (S15 — 판매자 귀책 사유 허용, 판매자 접수 건도 수정)
      * @return OrderExchange 수정된 신청서
      *
      * @throws OrderClaimException 수정 불가 상태 / 사유 부재 / 국가 변경 / 청구 방식 부재·불허·차감 불가
      */
-    public function updateRequest(OrderExchange $exchange, array $payload): OrderExchange
+    public function updateRequest(OrderExchange $exchange, array $payload, bool $operator = false): OrderExchange
     {
+        // 판매자가 접수한 신청은 고객이 수정할 수 없다(D8). 운영자 수정(S15)은 통과한다.
+        if (! $operator && $exchange->isAdminRequested()) {
+            throw OrderClaimException::adminRequestedNotEditable();
+        }
+
         // 수정의 before·filter 훅 — 잠금·쓰기 전이다. 필터는 사유·재발송지
         // (`CLAIM_FILTERABLE_UPDATE_KEYS`)만 바꿀 수 있고, 바뀐 값은 아래 사유 해석·국가 불변 규칙·
         // 배송비 재산정을 고객 입력과 똑같이 지난다. 청구 방식·환불 계좌는 돈의 경로라 되돌린다.
@@ -3335,7 +4085,7 @@ class OrderExchangeService
             self::CLAIM_FILTERABLE_UPDATE_KEYS,
         );
 
-        return DB::transaction(function () use ($exchange, $payload) {
+        return DB::transaction(function () use ($exchange, $payload, $operator) {
             $locked = $this->exchangeRepository->findForUpdate($exchange->id) ?? $exchange;
 
             // 수정 가능 여부는 **잠금 안에서 다시 읽은 상태**로 판정한다(#599 validate P2 #8).
@@ -3346,12 +4096,13 @@ class OrderExchangeService
 
             $locked->load(['exchangeOptions', 'order.options', 'order.shippings', 'order.payment', 'order.shippingAddress']);
             $order = $locked->order;
+            $before = $this->claimRequestUpdateSnapshot($locked);
 
             $updates = [];
             $reason = null;
 
             if (($payload['reason_code'] ?? null) !== null && $payload['reason_code'] !== '' && $payload['reason_code'] !== $locked->reason_code) {
-                $reason = $this->resolveReason((string) $payload['reason_code']);
+                $reason = $this->resolveReason((string) $payload['reason_code'], ! $operator);
                 $updates['reason_code'] = $reason->code;
                 $updates['fault_type'] = $reason->fault_type;
             }
@@ -3447,7 +4198,22 @@ class OrderExchangeService
                 return $locked;
             }
 
-            return $this->exchangeRepository->update($locked, $updates)->fresh(['exchangeOptions']);
+            $updated = $this->exchangeRepository->update($locked, $updates)->fresh(['exchangeOptions']);
+
+            // 같은 값으로 다시 저장한 수정은 알리지 않는다 — 활동 로그에 빈 이력이 쌓이면 실제로 바뀐 줄이 묻힌다.
+            $changes = $this->claimRequestUpdateChanges($before, $this->claimRequestUpdateSnapshot($updated));
+
+            if ($changes !== []) {
+                $context = $this->claimRequestUpdateContext($operator);
+                $this->fireAfterCommit(fn () => HookManager::doAction(
+                    'sirsoft-ecommerce.claim.exchange.request_updated',
+                    $updated,
+                    $changes,
+                    $context,
+                ));
+            }
+
+            return $updated;
         });
     }
 
@@ -3473,5 +4239,49 @@ class OrderExchangeService
         if (! in_array($chargeMethod->value, $allowed, true)) {
             throw OrderClaimException::chargeMethodNotAllowed();
         }
+    }
+
+    /**
+     * 신청 자격 상태 목록을 반환합니다. (운영자 직권 접수면 물리 게이트 — D5)
+     *
+     * @param  bool  $operator  운영자 직권 접수 여부
+     * @return array<string> 상태 값 목록
+     */
+    protected function requestStatusValuesFor(bool $operator): array
+    {
+        return $operator ? ClaimPhysicalGate::statuses(ClaimTypeEnum::EXCHANGE) : $this->requestableStatusValues();
+    }
+
+    /**
+     * 운영자가 정한 클레임 배송비로 산정 결과를 덮습니다. (D7 — 직권 접수 창의 배송비 수정·무료)
+     *
+     * 산정 근거(그룹·모드)는 그대로 두고 금액만 바꾼다 — 운영자가 고친 사실은 신청서 스냅샷의
+     * `admin_adjusted` 표시로 남는다(접수가 산정 근거 스냅샷에 싣는다 — 금액 수정 경로와 같은 표시).
+     *
+     * @param  ClaimShippingFee  $shippingFee  산정 결과
+     * @param  float|null  $override  운영자가 정한 배송비 (null 이면 산정값 그대로)
+     * @param  array  $currencySnapshot  주문 통화 스냅샷
+     * @return ClaimShippingFee 덮은 결과
+     */
+    protected function applyShippingFeeOverride(ClaimShippingFee $shippingFee, ?float $override, array $currencySnapshot): ClaimShippingFee
+    {
+        if ($override === null) {
+            return $shippingFee;
+        }
+
+        $fee = (int) round(max(0.0, $override));
+
+        return new ClaimShippingFee(
+            fee: $fee,
+            mode: $shippingFee->mode,
+            claimType: $shippingFee->claimType,
+            fault: $shippingFee->fault,
+            charged: $fee > 0,
+            reason: $shippingFee->reason,
+            groups: $shippingFee->groups,
+            extraFee: 0,
+            mcFee: $fee > 0 ? ($this->toMultiCurrency((float) $fee, $currencySnapshot) ?? []) : [],
+            redeliveryChanged: $shippingFee->redeliveryChanged,
+        );
     }
 }

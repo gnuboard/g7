@@ -5,10 +5,13 @@ namespace Modules\Sirsoft\Ecommerce\Tests\Unit\Enums;
 use Modules\Sirsoft\Ecommerce\Enums\AdjustmentType;
 use Modules\Sirsoft\Ecommerce\Enums\CancelStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimChargeMethodEnum;
+use Modules\Sirsoft\Ecommerce\Enums\ClaimItemCollectionStateEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimPaymentStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimReasonTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimShippingFeeModeEnum;
+use Modules\Sirsoft\Ecommerce\Enums\ClaimTrackingDirectionEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimTypeEnum;
+use Modules\Sirsoft\Ecommerce\Enums\ExchangeModeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ExchangeStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundSourceTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundStatusEnum;
@@ -1066,5 +1069,125 @@ class ClaimEnumsTest extends ModuleTestCase
     {
         $this->assertSame([CancelStatusEnum::REQUESTED, CancelStatusEnum::COMPLETED], CancelStatusEnum::progressSequence());
         $this->assertFalse(CancelStatusEnum::REQUESTED->isOffProgressPath());
+    }
+
+    // ========================================
+    // 상품 행 송장 · 선교환 Enum (#599 후속 §3-1 · §3-3)
+    // ========================================
+
+    /**
+     * 새 Enum 3종(송장 방향·진행 방식·회수 진행)은 값·라벨·색·라벨 키를 기존 Enum 형식대로 낸다.
+     * 방향은 상품 행 컬럼 접두와 도착 시각 컬럼을 정하고, 진행 방식은 모르는 값을 일반 교환으로 읽는다.
+     *
+     * @scenario exchange_mode=standard, stage=review
+     *
+     * @effects claim_tracking_enums_expose_values_labels_and_variants
+     *
+     * @return void 반환값 없음
+     */
+    public function test_tracking_and_mode_enums_expose_values_labels_and_variants(): void
+    {
+        $this->assertSame(['collection', 'redelivery'], ClaimTrackingDirectionEnum::values());
+        $this->assertSame(['standard', 'advance'], ExchangeModeEnum::values());
+        $this->assertSame(['pending', 'in_transit', 'collected', 'unreturned'], ClaimItemCollectionStateEnum::values());
+
+        $sets = [
+            'claim_tracking_direction' => ClaimTrackingDirectionEnum::cases(),
+            'exchange_mode' => ExchangeModeEnum::cases(),
+            'claim_item_collection_state' => ClaimItemCollectionStateEnum::cases(),
+        ];
+
+        foreach ($sets as $key => $cases) {
+            foreach ($cases as $case) {
+                $this->assertSame('sirsoft-ecommerce::enums.'.$key.'.'.$case->value, $case->labelKey());
+                $this->assertNotSame($case->labelKey(), $case->label(), "{$key}.{$case->value} 라벨이 다국어로 해석되어야 합니다.");
+                $this->assertNotSame('', $case->variant());
+            }
+        }
+
+        $this->assertSame('collection', ClaimTrackingDirectionEnum::COLLECTION->columnPrefix());
+        $this->assertSame('collected_at', ClaimTrackingDirectionEnum::COLLECTION->arrivedAtColumn());
+        $this->assertSame('redelivered_at', ClaimTrackingDirectionEnum::REDELIVERY->arrivedAtColumn());
+
+        $this->assertSame(ExchangeModeEnum::ADVANCE, ExchangeModeEnum::resolve('advance'));
+        $this->assertSame(ExchangeModeEnum::STANDARD, ExchangeModeEnum::resolve('unknown'));
+        $this->assertSame(ExchangeModeEnum::STANDARD, ExchangeModeEnum::resolve(null));
+        $this->assertTrue(ExchangeModeEnum::ADVANCE->isAdvance());
+
+        $this->assertTrue(ClaimItemCollectionStateEnum::IN_TRANSIT->isOnTheWayOrArrived());
+        $this->assertTrue(ClaimItemCollectionStateEnum::COLLECTED->isOnTheWayOrArrived());
+        $this->assertFalse(ClaimItemCollectionStateEnum::PENDING->isOnTheWayOrArrived());
+        $this->assertFalse(ClaimItemCollectionStateEnum::UNRETURNED->isOnTheWayOrArrived());
+    }
+
+    /**
+     * 선교환 전이표를 행 단위로 고정한다 — 심사 단계는 일반과 같고, 승인 뒤로는 발송 단계만 쓰며 회수 단계는
+     * 비어 있다. 인자 없는 `allowedTransitions()` 는 일반 교환 표 그대로다(기존 호출 호환).
+     *
+     * @scenario exchange_mode=advance, stage=approved
+     *
+     * @effects exchange_status_advance_transition_table_is_pinned
+     *
+     * @return void 반환값 없음
+     */
+    public function test_exchange_status_advance_transition_table_is_pinned(): void
+    {
+        foreach (ExchangeStatusEnum::cases() as $status) {
+            $this->assertSame(
+                $status->allowedTransitions(),
+                $status->allowedTransitionsIn(ExchangeModeEnum::STANDARD),
+                "{$status->value} 의 기본 표가 일반 교환 표와 다릅니다."
+            );
+        }
+
+        $advance = [
+            ExchangeStatusEnum::APPROVED->value => [ExchangeStatusEnum::REDELIVERY_READY, ExchangeStatusEnum::REDELIVERING, ExchangeStatusEnum::REDELIVERED],
+            ExchangeStatusEnum::COLLECTION_READY->value => [],
+            ExchangeStatusEnum::COLLECTING->value => [],
+            ExchangeStatusEnum::COLLECTED->value => [],
+            ExchangeStatusEnum::REDELIVERY_READY->value => [ExchangeStatusEnum::REDELIVERING, ExchangeStatusEnum::REDELIVERED],
+            ExchangeStatusEnum::REDELIVERING->value => [ExchangeStatusEnum::REDELIVERED, ExchangeStatusEnum::COMPLETED],
+            ExchangeStatusEnum::REDELIVERED->value => [ExchangeStatusEnum::COMPLETED],
+        ];
+
+        foreach (ExchangeStatusEnum::cases() as $status) {
+            $expected = $advance[$status->value] ?? $status->allowedTransitionsIn(ExchangeModeEnum::STANDARD);
+
+            $this->assertEqualsCanonicalizing(
+                $expected,
+                $status->allowedTransitionsIn(ExchangeModeEnum::ADVANCE),
+                "선교환 {$status->value} 의 허용 간선이 전이표와 달라졌습니다."
+            );
+        }
+
+        $this->assertTrue(ExchangeStatusEnum::APPROVED->canTransitionTo(ExchangeStatusEnum::REDELIVERING, ExchangeModeEnum::ADVANCE));
+        $this->assertFalse(ExchangeStatusEnum::APPROVED->canTransitionTo(ExchangeStatusEnum::COLLECTING, ExchangeModeEnum::ADVANCE));
+        $this->assertTrue(ExchangeStatusEnum::COLLECTING->canTransitionTo(ExchangeStatusEnum::COLLECTING, ExchangeModeEnum::ADVANCE), '같은 상태 전이는 선교환에서도 허용된다.');
+        $this->assertFalse(ExchangeStatusEnum::APPROVED->canTransitionTo(ExchangeStatusEnum::REDELIVERING));
+    }
+
+    /**
+     * 선교환의 진행 순서는 회수 3단계 없이 승인에서 발송 단계로 간다. 인자 없는 순서는 일반 교환이다.
+     *
+     * @scenario exchange_mode=advance, stage=redelivery
+     *
+     * @effects exchange_status_advance_progress_sequence_skips_collection
+     *
+     * @return void 반환값 없음
+     */
+    public function test_exchange_status_advance_progress_sequence_skips_collection(): void
+    {
+        $this->assertSame(ExchangeStatusEnum::progressSequenceIn(ExchangeModeEnum::STANDARD), ExchangeStatusEnum::progressSequence());
+        $this->assertSame([
+            ExchangeStatusEnum::REQUESTED,
+            ExchangeStatusEnum::PAYMENT_PENDING,
+            ExchangeStatusEnum::PAID,
+            ExchangeStatusEnum::APPROVED,
+            ExchangeStatusEnum::REDELIVERY_READY,
+            ExchangeStatusEnum::REDELIVERING,
+            ExchangeStatusEnum::REDELIVERED,
+            ExchangeStatusEnum::COMPLETED,
+        ], ExchangeStatusEnum::progressSequenceIn(ExchangeModeEnum::ADVANCE));
+        $this->assertContains(ExchangeStatusEnum::COLLECTING, ExchangeStatusEnum::progressSequence());
     }
 }

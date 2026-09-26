@@ -496,6 +496,45 @@
           </fragment>
         </div>
       </div>
+      <!-- 접수 출처·회수 지연·환불 미접수 필터 (§3-11 D8 · 선교환 · D9). 유형마다 축이 달라 게이트(`ClaimListRequest`)가 밖의 유형에서 prohibited 로 거절하므로, 아래 조회 파라미터는 그 축을 가진 유형에서만 싣는다. -->
+      <div data-ref="claimFlags_filter_row" data-slot="{{(_local.visibleFilters || []).includes('claimFlags') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="10" class="filter-row">
+        <responsive on="portable" class="filter-row flex-col items-start"/>
+        <!-- 편집모드 체크박스 — claimFlags -->
+        <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('claimFlags')}}">
+          <on type="change">
+            <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('claimFlags') ? (_local.visibleFilters || []).filter(f => f !== 'claimFlags') : [...(_local.visibleFilters || []), 'claimFlags']}}"/>
+          </on>
+        </input>
+        <span data-ref="f_620_claimFlags_label" class="filter-label w-20">$t:sirsoft-ecommerce.admin.claim.filter.claim_flags</span>
+        <div class="flex-center flex-wrap gap-4">
+          <select data-ref="f_630_request_source_select" data-if="{{(query.type || 'exchange') !== 'cancel'}}" name="requestSource" class="w-36" value="{{_local.filter.requestSource || ''}}">
+            <options>
+              <option value="">$t:sirsoft-ecommerce.admin.claim.filter.request_source_option.all</option>
+              <option value="admin">$t:sirsoft-ecommerce.admin.claim.filter.request_source_option.admin</option>
+              <option value="customer">$t:sirsoft-ecommerce.admin.claim.filter.request_source_option.customer</option>
+            </options>
+            <on type="change">
+              <set-state target="_local" filter.requestSource="{{$event.target.value}}"/>
+            </on>
+          </select>
+          <label data-ref="f_640_collection_overdue" data-if="{{(query.type || 'exchange') === 'exchange'}}" class="flex-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
+            <checkbox :autoBinding="false" class="w-4 h-4 rounded border-gray-300 dark:border-gray-600" checked="{{_local.filter.collectionOverdue === '1'}}">
+              <on type="change">
+                <set-state target="_local" filter.collectionOverdue="{{$event.target.checked ? '1' : ''}}"/>
+              </on>
+            </checkbox>
+            <span>$t:sirsoft-ecommerce.admin.claim.filter.collection_overdue</span>
+          </label>
+          <label data-ref="f_650_pending_refund" data-if="{{['exchange', 'return'].includes(query.type || 'exchange')}}" class="flex-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
+            <checkbox :autoBinding="false" class="w-4 h-4 rounded border-gray-300 dark:border-gray-600" checked="{{_local.filter.pendingRefund === '1'}}">
+              <on type="change">
+                <set-state target="_local" filter.pendingRefund="{{$event.target.checked ? '1' : ''}}"/>
+              </on>
+            </checkbox>
+            <span>$t:sirsoft-ecommerce.admin.claim.filter.pending_refund</span>
+          </label>
+        </div>
+      </div>
     </div>
     <!-- 프리셋 영역 — 데이터소스 기반 동적 표시 (카드 안 최상단, D21 ①) -->
     <div data-ref="preset_row" class="flex-center flex-wrap gap-3 mb-4">
@@ -521,6 +560,9 @@
               <field name="chargeMethods" value="{{preset.conditions?.chargeMethods || []}}"/>
               <field name="reasonCode" value="{{preset.conditions?.reasonCode || ''}}"/>
               <field name="requesterType" value="{{preset.conditions?.requesterType || ''}}"/>
+              <field name="requestSource" value="{{preset.conditions?.requestSource || ''}}"/>
+              <field name="collectionOverdue" value="{{preset.conditions?.collectionOverdue || ''}}"/>
+              <field name="pendingRefund" value="{{preset.conditions?.pendingRefund || ''}}"/>
               <field name="minAmount" value="{{preset.conditions?.minAmount || ''}}"/>
               <field name="maxAmount" value="{{preset.conditions?.maxAmount || ''}}"/>
               <field name="currencyCode" value="{{preset.conditions?.currencyCode || ''}}"/>
@@ -530,7 +572,7 @@
           </set-state>
           <!-- audit:allow layout-list-context-navigate-merge-query 프리셋 적용 — 프리셋은 조건 세트를 통째로 갈아끼우는 것이므로 병합하면 직전 조건이 화면에 보이지 않는 채로 남는다. 페이지 크기는 조건이 아니라 보기 설정이라 지금 값을 이어 싣는다 — 떨구면 서버는 기본 20 으로 답하는데 셀렉트(`_local.perPage`)는 앞 값을 붙든 채 남는다. -->
           <navigate path="/admin/ecommerce/claims" :replace="true" :mergeQuery="false" transition_overlay_target="claim_datagrid__body">
-            <query :page="1" per_page="{{query.per_page || null}}" type="{{preset.conditions?.claimType || (query.type || 'exchange')}}" preset_id="{{preset.id}}" search_field="{{preset.conditions?.searchField || null}}" search_keyword="{{preset.conditions?.searchKeyword || null}}" from="{{preset.conditions?.startDate || null}}" to="{{preset.conditions?.endDate || null}}" statuses[]="{{(preset.conditions?.claimStatus || []).length > 0 ? preset.conditions?.claimStatus : null}}" fault_types[]="{{(preset.conditions?.claimType || query.type || 'exchange') !== 'cancel' &amp;&amp; (preset.conditions?.faultTypes || []).length > 0 ? preset.conditions?.faultTypes : null}}" charge_methods[]="{{((preset.conditions?.claimType || query.type || 'exchange') === 'exchange' || (preset.conditions?.claimType || query.type || 'exchange') === 'return') &amp;&amp; (preset.conditions?.chargeMethods || []).length > 0 ? preset.conditions?.chargeMethods : null}}" reason_code="{{preset.conditions?.reasonCode || null}}" requester_type="{{preset.conditions?.requesterType || null}}" min_amount="{{preset.conditions?.minAmount || null}}" max_amount="{{preset.conditions?.maxAmount || null}}" currency_code="{{preset.conditions?.currencyCode || null}}" charge_payment_methods[]="{{((preset.conditions?.claimType || query.type || 'exchange') === 'exchange' || (preset.conditions?.claimType || query.type || 'exchange') === 'return') &amp;&amp; (preset.conditions?.chargePaymentMethods || []).length > 0 ? preset.conditions?.chargePaymentMethods : null}}"/>
+            <query :page="1" per_page="{{query.per_page || null}}" type="{{preset.conditions?.claimType || (query.type || 'exchange')}}" preset_id="{{preset.id}}" search_field="{{preset.conditions?.searchField || null}}" search_keyword="{{preset.conditions?.searchKeyword || null}}" from="{{preset.conditions?.startDate || null}}" to="{{preset.conditions?.endDate || null}}" statuses[]="{{(preset.conditions?.claimStatus || []).length > 0 ? preset.conditions?.claimStatus : null}}" fault_types[]="{{(preset.conditions?.claimType || query.type || 'exchange') !== 'cancel' &amp;&amp; (preset.conditions?.faultTypes || []).length > 0 ? preset.conditions?.faultTypes : null}}" charge_methods[]="{{((preset.conditions?.claimType || query.type || 'exchange') === 'exchange' || (preset.conditions?.claimType || query.type || 'exchange') === 'return') &amp;&amp; (preset.conditions?.chargeMethods || []).length > 0 ? preset.conditions?.chargeMethods : null}}" reason_code="{{preset.conditions?.reasonCode || null}}" requester_type="{{preset.conditions?.requesterType || null}}" request_source="{{(preset.conditions?.claimType || query.type || 'exchange') !== 'cancel' ? (preset.conditions?.requestSource || null) : null}}" collection_overdue="{{(preset.conditions?.claimType || query.type || 'exchange') === 'exchange' &amp;&amp; preset.conditions?.collectionOverdue === '1' ? 1 : null}}" pending_refund="{{['exchange', 'return'].includes(preset.conditions?.claimType || query.type || 'exchange') &amp;&amp; preset.conditions?.pendingRefund === '1' ? 1 : null}}" min_amount="{{preset.conditions?.minAmount || null}}" max_amount="{{preset.conditions?.maxAmount || null}}" currency_code="{{preset.conditions?.currencyCode || null}}" charge_payment_methods[]="{{((preset.conditions?.claimType || query.type || 'exchange') === 'exchange' || (preset.conditions?.claimType || query.type || 'exchange') === 'return') &amp;&amp; (preset.conditions?.chargePaymentMethods || []).length > 0 ? preset.conditions?.chargePaymentMethods : null}}"/>
           </navigate>
           <toast type="info" message="$t:sirsoft-ecommerce.admin.claim.preset.applied|name={{preset.name}}"/>
         </on>
@@ -588,6 +630,7 @@
             <item field="reason_label" header="$t:sirsoft-ecommerce.admin.claim.column.reason"/>
             <item field="fault_type" header="$t:sirsoft-ecommerce.admin.claim.column.fault_type"/>
             <item field="amount" header="$t:sirsoft-ecommerce.admin.claim.column.amount"/>
+            <item field="tracking" header="$t:sirsoft-ecommerce.admin.claim.column.tracking"/>
             <item field="completed_at" header="$t:sirsoft-ecommerce.admin.claim.column.completed_at"/>
           </prop>
           <prop name="defaultColumns">
@@ -600,6 +643,7 @@
             <item>reason_label</item>
             <item>fault_type</item>
             <item>amount</item>
+            <item>tracking</item>
           </prop>
           <on type="change" event="onColumnVisibilityChange">
             <set-state target="_local" visibleColumns="{{$args[0]}}"/>
@@ -669,6 +713,9 @@
                   <field name="chargeMethods" :value="[]"/>
                   <field name="reasonCode" value=""/>
                   <field name="requesterType" value=""/>
+                  <field name="requestSource" value=""/>
+                  <field name="collectionOverdue" value=""/>
+                  <field name="pendingRefund" value=""/>
                   <field name="minAmount" value=""/>
                   <field name="maxAmount" value=""/>
                   <field name="currencyCode" value=""/>

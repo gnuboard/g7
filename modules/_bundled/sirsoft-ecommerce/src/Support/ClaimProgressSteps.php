@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace Modules\Sirsoft\Ecommerce\Support;
 
+use App\Helpers\TimezoneHelper;
 use Modules\Sirsoft\Ecommerce\Enums\CancelStatusEnum;
+use Modules\Sirsoft\Ecommerce\Enums\ClaimItemCollectionStateEnum;
+use Modules\Sirsoft\Ecommerce\Enums\ExchangeModeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ExchangeStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ReturnStatusEnum;
@@ -69,6 +72,56 @@ final class ClaimProgressSteps
     }
 
     /**
+     * 선교환의 「회수」 줄을 만듭니다. (진행단계 카드의 발송 줄 아래 — 일반 교환·반품은 null)
+     *
+     * 선교환의 상태 줄에는 회수 단계가 없다. 헌 물건이 어디쯤 왔는지는 상품 행의 회수 진행
+     * (`ClaimItemCollectionState`)을 행 수로 센다 — 「회수중 1/3」. 반송 기한과 지연 여부를 함께 싣는다.
+     *
+     * @param  OrderExchange|OrderReturn|OrderRefund|OrderCancel  $claim  신청서
+     * @return array{total: int, pending: int, in_transit: int, collected: int, unreturned: int, state: string, state_label: string, state_variant: string, due_date: string|null, is_overdue: bool, overdue_days: int}|null 회수 줄
+     */
+    public static function collectionLane(OrderExchange|OrderReturn|OrderRefund|OrderCancel $claim): ?array
+    {
+        if (! $claim instanceof OrderExchange || $claim->mode() !== ExchangeModeEnum::ADVANCE) {
+            return null;
+        }
+
+        $counts = ['pending' => 0, 'in_transit' => 0, 'collected' => 0, 'unreturned' => 0];
+
+        foreach ($claim->loadMissing('exchangeOptions')->exchangeOptions as $item) {
+            if (in_array($item->option_status, [ExchangeStatusEnum::REJECTED, ExchangeStatusEnum::WITHDRAWN], true)) {
+                continue;
+            }
+
+            $counts[ClaimItemCollectionState::for($item, ExchangeModeEnum::ADVANCE)->value]++;
+        }
+
+        $total = array_sum($counts);
+
+        // 줄 전체의 상태는 가장 뒤처진 행을 따른다 — 하나라도 대기면 대기, 이동 중이 있으면 회수중.
+        $state = match (true) {
+            $total === 0 => ClaimItemCollectionStateEnum::PENDING,
+            $counts['pending'] > 0 => ClaimItemCollectionStateEnum::PENDING,
+            $counts['in_transit'] > 0 => ClaimItemCollectionStateEnum::IN_TRANSIT,
+            $counts['collected'] > 0 => ClaimItemCollectionStateEnum::COLLECTED,
+            default => ClaimItemCollectionStateEnum::UNRETURNED,
+        };
+
+        $overdue = ClaimTrackingGroups::overdueOf($claim);
+
+        return $counts + [
+            'total' => $total,
+            'state' => $state->value,
+            'state_label' => $state->label(),
+            'state_variant' => $state->variant(),
+            // 보는 사람의 타임존 날짜 — 같은 화면의 지연 배너(`collection_due_date_formatted`)와 한 날을 가리킨다.
+            'due_date' => TimezoneHelper::toUserDateString($claim->collection_due_at),
+            'is_overdue' => $overdue['is_overdue'],
+            'overdue_days' => $overdue['days'],
+        ];
+    }
+
+    /**
      * 단계 한 칸을 만듭니다.
      *
      * @param  ExchangeStatusEnum|ReturnStatusEnum|RefundStatusEnum|CancelStatusEnum  $case  상태
@@ -104,8 +157,9 @@ final class ClaimProgressSteps
             return CancelStatusEnum::progressSequence();
         }
 
+        // 선교환은 회수 3단계 없이 승인 → 발송 단계로 간다 — 헌 물건의 회수는 `collectionLane()` 이 따로 그린다.
         $sequence = $claim instanceof OrderExchange
-            ? ExchangeStatusEnum::progressSequence()
+            ? ExchangeStatusEnum::progressSequenceIn($claim->mode())
             : ReturnStatusEnum::progressSequence();
 
         $paymentStages = ['payment_pending', 'paid'];

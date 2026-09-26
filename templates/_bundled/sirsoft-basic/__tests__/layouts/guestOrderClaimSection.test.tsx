@@ -91,6 +91,7 @@ const TRANSLATIONS = {
       total_charge: '총 청구액',
       empty: '신청 내역이 없습니다.',
       go_orders: '쇼핑 계속하기',
+      tracking_more: '외 {{more}}개',
     },
   },
   shop: { count_unit: '개' },
@@ -263,6 +264,64 @@ describe('비회원 주문상세 클레임 섹션 — 같은 카드가 비회원
 
     expect(document.querySelector('[data-icon="image"]')).not.toBeNull();
     expect(document.querySelector('img')).toBeNull();
+  });
+
+  /**
+   * 송장은 상품 행마다 있어 한 신청서에 운송장이 여럿일 수 있다 — 카드의 배송조회 칸은 서버 요약
+   * (`tracking_summary`)의 첫 운송장과 「외 N개」 만 그린다. 헤더 송장 필드(`collection_tracking_number`)는
+   * 응답에 없다. 판매자가 대신 접수한 건은 출처 라벨을 단다.
+   *
+   * @scenario claim_type=return, entry=with_token, screen=order_section
+   * @effects guest_order_claim_section_shows_the_row_waybill_summary
+   */
+  it('배송조회 칸이 첫 운송장과 「외 N개」 를 그리고 판매자 접수 라벨이 선다', async () => {
+    active = makeTest(GUEST_LOCALS, [
+      {
+        ...RETURN_CLAIM,
+        request_source: 'admin',
+        request_source_label: '판매자 접수',
+        tracking_summary: {
+          collection: { first: '612345678901', count: 3 },
+          redelivery: { first: null, count: 0 },
+        },
+      },
+    ]);
+    await active.render();
+
+    expect(screen.getByText('612345678901')).toBeInTheDocument();
+    expect(screen.getByText('외 2개')).toBeInTheDocument();
+    expect(screen.getByText('판매자 접수')).toBeInTheDocument();
+  });
+
+  /**
+   * 운송장이 하나뿐이면 「외 N개」 를 붙이지 않는다(「외 0개」 금지). 송장이 없으면 대시 한 칸이다.
+   *
+   * @effects guest_order_claim_section_shows_the_row_waybill_summary
+   */
+  it('운송장이 하나면 「외 N개」 가 없고, 없으면 대시가 선다', async () => {
+    active = makeTest(GUEST_LOCALS, [
+      {
+        ...RETURN_CLAIM,
+        tracking_summary: {
+          collection: { first: '612345678901', count: 1 },
+          redelivery: { first: null, count: 0 },
+        },
+      },
+      {
+        ...RETURN_CLAIM,
+        claim_number: 'RT20260901-0004',
+        tracking_summary: {
+          collection: { first: null, count: 0 },
+          redelivery: { first: null, count: 0 },
+        },
+      },
+    ]);
+    await active.render();
+
+    expect(screen.getByText('612345678901')).toBeInTheDocument();
+    expect(screen.queryByText(/외 \d+개/)).toBeNull();
+    expect(screen.getAllByText('—').length).toBeGreaterThan(0);
+    expect(screen.queryByText('판매자 접수')).toBeNull();
   });
 
   /** @effects guest_claim_empty_list_returns_to_guest_shop */

@@ -4,11 +4,13 @@ namespace Modules\Sirsoft\Ecommerce\Http\Resources;
 
 use App\Http\Resources\BaseApiResource;
 use Illuminate\Http\Request;
+use Modules\Sirsoft\Ecommerce\Enums\ExchangeModeEnum;
 use Modules\Sirsoft\Ecommerce\Http\Resources\Traits\HasMultiCurrencyPrices;
 use Modules\Sirsoft\Ecommerce\Models\OrderExchangeOption;
 use Modules\Sirsoft\Ecommerce\Models\OrderRefundOption;
 use Modules\Sirsoft\Ecommerce\Models\OrderReturnOption;
 use Modules\Sirsoft\Ecommerce\Services\ClaimItemSplitter;
+use Modules\Sirsoft\Ecommerce\Support\ClaimItemCollectionState;
 use Modules\Sirsoft\Ecommerce\Support\ClaimTransitionVocabulary;
 
 /**
@@ -18,6 +20,10 @@ use Modules\Sirsoft\Ecommerce\Support\ClaimTransitionVocabulary;
  * 화면은 상품 단위 행을 같은 모양으로 그리므로(D24) 여기서 공통 키(`quantity` / `status`)로 정규화하고,
  * 교환 전용 축(교환 대상 옵션·차액)은 있을 때만 싣는다. 상품명·옵션명은 주문옵션 스냅샷에서 읽는다 —
  * `orderOption` 관계는 Repository 가 함께 싣는다.
+ *
+ * 송장은 상품 행마다 있다 — 교환·반품 행은 회수 송장(교환은 재발송 송장도)과 도착 시각·회수 진행
+ * (`collection_state`)을 싣는다. 택배사 이름·조회 URL 은 행의 택배사 관계(`collectionCarrier`·
+ * `redeliveryCarrier`)에서 만든다 — 저장소가 함께 싣는다(N+1 방지).
  */
 class ClaimItemResource extends BaseApiResource
 {
@@ -27,6 +33,24 @@ class ClaimItemResource extends BaseApiResource
      * 관리자 상세의 전이 선택지를 함께 실을지 여부
      */
     protected bool $forAdminTransitions = false;
+
+    /**
+     * 교환 진행 방식 (부모 신청서가 주입 — 선교환이면 전이표·회수 진행 판정이 다르다)
+     */
+    protected ?ExchangeModeEnum $exchangeMode = null;
+
+    /**
+     * 부모 교환의 진행 방식을 주입합니다. (행마다 신청서를 다시 읽지 않는다)
+     *
+     * @param  ExchangeModeEnum  $mode  진행 방식
+     * @return static 자기 자신
+     */
+    public function withExchangeMode(ExchangeModeEnum $mode): static
+    {
+        $this->exchangeMode = $mode;
+
+        return $this;
+    }
 
     /**
      * 행별 전이 선택지를 싣도록 표시합니다. (관리자 **상세** 응답 전용)
@@ -110,9 +134,17 @@ class ClaimItemResource extends BaseApiResource
             if ($this->forAdminTransitions) {
                 $row['transition_options'] = ClaimTransitionVocabulary::optionsFrom(
                     $status instanceof \BackedEnum ? $status : null,
-                    true
+                    true,
+                    $this->exchangeMode,
                 );
             }
+
+            // 상품 단위 반려 사유(S3) — 상품 B 의 반려가 상품 A 의 사유를 덮지 않게 행에 둔다.
+            $row['reject_reason'] = $this->reject_reason ?? null;
+        }
+
+        if ($this->resource instanceof OrderExchangeOption || $this->resource instanceof OrderReturnOption) {
+            $row += $this->trackingFields();
         }
 
         // 별칭 존재 판정은 `array_key_exists` 단독이어야 한다 — 값이 NULL 인 행에서 `!== null` 을
@@ -168,6 +200,68 @@ class ClaimItemResource extends BaseApiResource
         }
 
         return $row;
+    }
+
+    /**
+     * 행 송장·도착·회수 진행 필드를 만듭니다. (교환·반품 행)
+     *
+     * @return array<string, mixed> 송장 필드
+     */
+    protected function trackingFields(): array
+    {
+        $item = $this->resource;
+        $state = ClaimItemCollectionState::for($item, $this->exchangeMode);
+
+        $fields = $this->directionFields('collection') + [
+            'collected_at_formatted' => $this->formatDateTimeStringForUser($item->collected_at),
+            'collection_state' => $state->value,
+            'collection_state_label' => $state->label(),
+            'collection_state_variant' => $state->variant(),
+            'is_stock_restored' => (bool) $item->is_stock_restored,
+            // 뒤늦은 재고 복구(S13) 대상인가 — 완료 · 미복구 · 미회수 아님. 판정은 복구 서비스와 같은 조건이다
+            // (`AdminClaimService::isStockRestorable()`) — 화면이 상태 값으로 다시 판정하지 않는다.
+            'is_stock_restorable' => $item->option_status instanceof \BackedEnum
+                && $item->option_status->value === 'completed'
+                && ! (bool) $item->is_stock_restored
+                && ($item->unreturned_at ?? null) === null,
+            'return_address_snapshot' => $item->return_address_snapshot,
+        ];
+
+        if ($item instanceof OrderExchangeOption) {
+            $fields += $this->directionFields('redelivery') + [
+                'redelivered_at_formatted' => $this->formatDateTimeStringForUser($item->redelivered_at),
+                'is_unreturned' => $item->unreturned_at !== null,
+                'unreturned_at_formatted' => $this->formatDateTimeStringForUser($item->unreturned_at),
+                'unreturned_reason' => $item->unreturned_reason,
+            ];
+        }
+
+        return $fields;
+    }
+
+    /**
+     * 한 방향의 송장 필드를 만듭니다. (택배사·운송장·조회 링크·등록 시각)
+     *
+     * @param  string  $prefix  방향 접두 (collection|redelivery)
+     * @return array<string, mixed> 방향 송장 필드
+     */
+    protected function directionFields(string $prefix): array
+    {
+        $item = $this->resource;
+        $relation = $prefix.'Carrier';
+        $number = $item->getAttribute($prefix.'_tracking_number');
+        $carrier = $item->getAttribute($prefix.'_carrier_id') === null
+            ? null
+            : ($item->relationLoaded($relation) ? $item->getRelation($relation) : $item->{$relation}()->first());
+
+        return [
+            $prefix.'_carrier_id' => $item->getAttribute($prefix.'_carrier_id'),
+            $prefix.'_carrier_name' => $carrier?->getLocalizedName(),
+            $prefix.'_tracking_number' => $number,
+            // 추적 URL 은 배송사 템플릿에서 만든다 — 화면이 규칙을 재조립하면 주문 배송 조회와 두 벌이 된다.
+            $prefix.'_tracking_url' => $number ? $carrier?->buildTrackingUrl((string) $number) : null,
+            $prefix.'_shipped_at_formatted' => $this->formatDateTimeStringForUser($item->getAttribute($prefix.'_shipped_at')),
+        ];
     }
 
     /**

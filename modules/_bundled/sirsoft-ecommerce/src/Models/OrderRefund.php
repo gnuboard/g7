@@ -67,6 +67,8 @@ class OrderRefund extends Model
         'approved_at',
         'on_hold_at',
         'withdrawn_at',
+        'withdrawn_by_admin',
+        'withdraw_reason',
         'rejected_at',
         'reject_reason',
         'processed_by',

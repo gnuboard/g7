@@ -33,6 +33,8 @@ class ClaimNotificationDefinitionsTest extends ModuleTestCase
     /**
      * 고객 가시 상태 전수에 고객 정의가 하나씩 있다.
      *
+     * @return void 반환값 없음
+     *
      * @effects twenty_nine_claim_notification_definitions_exist
      */
     public function test_every_customer_visible_status_has_exactly_one_customer_definition(): void
@@ -50,7 +52,10 @@ class ClaimNotificationDefinitionsTest extends ModuleTestCase
             array_filter(
                 $this->claimDefinitions(),
                 fn (array $definition) => ($definition['audience'] ?? null) === 'customer'
-                    && ! in_array($definition['type'], ['claim_partially_processed'], true)
+                    // 부분 처리 안내·대리 철회 안내는 상태 1:1 이 아니라 사건 알림이다 — 아래 훅 대조가 덮는다.
+                    && ! in_array($definition['type'], ['claim_partially_processed', 'claim_withdrawn_on_behalf'], true)
+                    // 상태가 아닌 사건 알림(송장 등록·회수 지연)은 상태 1:1 대조 밖이다 — 아래 훅 대조가 덮는다.
+                    && ! in_array($definition['type'], array_values(ClaimStatusNotificationListener::eventNotifyHooks()), true)
             )
         ));
         sort($actual);
@@ -65,6 +70,8 @@ class ClaimNotificationDefinitionsTest extends ModuleTestCase
     /**
      * 발화되는 훅과 정의가 묶인 훅이 서로를 덮는다.
      *
+     * @return void 반환값 없음
+     *
      * @effects definition_hooks_match_listener_mapping_one_to_one
      */
     public function test_definition_hooks_and_listener_mapping_cover_each_other(): void
@@ -78,7 +85,9 @@ class ClaimNotificationDefinitionsTest extends ModuleTestCase
 
         $mappedHooks = [
             ClaimStatusNotificationListener::WITHDRAWN_HOOK,
+            ClaimStatusNotificationListener::WITHDRAWN_ON_BEHALF_HOOK,
             ClaimStatusNotificationListener::PARTIALLY_PROCESSED_HOOK,
+            ...array_keys(ClaimStatusNotificationListener::eventNotifyHooks()),
         ];
         foreach (ClaimStatusNotificationListener::notifiableStatuses() as $claimType => $keys) {
             foreach ($keys as $status => $key) {
@@ -102,6 +111,8 @@ class ClaimNotificationDefinitionsTest extends ModuleTestCase
      *
      * 고객 정의와 운영자 정의가 **같은 훅을 공유하는 것은 정상**이다 — 한 사건에 고객 1통 +
      * 운영자 1통이며, 관리자 본문과 고객 본문은 한 템플릿에 담기지 않는다.
+     *
+     * @return void 반환값 없음
      *
      * @effects one_definition_per_hook_and_audience
      */
@@ -129,6 +140,10 @@ class ClaimNotificationDefinitionsTest extends ModuleTestCase
     }
 
     /**
+     * 모든 클레임 알림 정의가 mail·database 채널과 ko·en 템플릿을 갖추는지 검증합니다.
+     *
+     * @return void 반환값 없음
+     *
      * @effects every_claim_definition_has_mail_and_database_templates_in_ko_and_en
      */
     public function test_every_claim_definition_has_both_channels_with_bilingual_templates(): void
@@ -156,6 +171,10 @@ class ClaimNotificationDefinitionsTest extends ModuleTestCase
     }
 
     /**
+     * 템플릿 본문에 쓴 치환 변수가 모두 variables 에 선언되어 있는지 검증합니다.
+     *
+     * @return void 반환값 없음
+     *
      * @effects every_template_placeholder_is_declared_as_a_variable
      */
     public function test_every_placeholder_used_in_a_template_is_declared_as_a_variable(): void
@@ -194,6 +213,8 @@ class ClaimNotificationDefinitionsTest extends ModuleTestCase
      * 유형 이름으로 "이건 관리자 알림" 을 단정하지 않는다 — 그 가정이 결함과 같은 뿌리이고,
      * 관리자 수신 정의가 늘어도 그물에 걸리지 않게 만든다.
      *
+     * @return void 반환값 없음
+     *
      * @effects customer_notifications_target_trigger_user_and_withdrawal_targets_admins
      */
     public function test_recipient_rules_match_the_declared_audience(): void
@@ -220,6 +241,8 @@ class ClaimNotificationDefinitionsTest extends ModuleTestCase
      * `role:admin` 하나만 적히면 **모듈 설치 시 만들어지는 이커머스 관리자 역할이 빠진다** —
      * 그 사람은 클레임 권한을 다 가졌는데 접수도 철회도 통보받지 못한다. 이 단언이 그
      * 누락의 재발을 막는 그물이다.
+     *
+     * @return void 반환값 없음
      *
      * @effects staff_definitions_list_every_operational_role
      */

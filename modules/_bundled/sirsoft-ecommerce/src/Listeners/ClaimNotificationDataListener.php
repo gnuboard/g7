@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace Modules\Sirsoft\Ecommerce\Listeners;
 
 use App\Contracts\Extension\HookListenerInterface;
+use App\Helpers\TimezoneHelper;
 use App\Services\NotificationRecipientCapability;
+use Modules\Sirsoft\Ecommerce\Enums\ClaimTrackingDirectionEnum;
 use Modules\Sirsoft\Ecommerce\Listeners\Concerns\ResolvesClaimIdentity;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderExchange;
@@ -13,6 +15,7 @@ use Modules\Sirsoft\Ecommerce\Models\OrderRefund;
 use Modules\Sirsoft\Ecommerce\Models\OrderReturn;
 use Modules\Sirsoft\Ecommerce\Services\ClaimPaymentService;
 use Modules\Sirsoft\Ecommerce\Services\CurrencyConversionService;
+use Modules\Sirsoft\Ecommerce\Support\ClaimTrackingGroups;
 use Modules\Sirsoft\Ecommerce\Support\ClaimUrl;
 
 /**
@@ -53,6 +56,35 @@ class ClaimNotificationDataListener implements HookListenerInterface
      * 고쳐야 하는 일이 없고, 그 화면을 못 여는 사람에게 관리자 주소를 주지 않는다.
      */
     private const ADMIN_CLAIM_PERMISSION = 'sirsoft-ecommerce.claims.read';
+
+    /**
+     * 상태 알림 키 규칙(`{유형}_{상태키}`) 밖의 클레임 알림 유형 — 철회·부분 처리·송장 등록·회수 지연
+     *
+     * @var array<int, string>
+     */
+    private const EXTRA_CLAIM_TYPES = [
+        'claim_withdrawn',
+        // 대리 철회 안내(고객 수신) — 빠지면 수신자 컨텍스트가 비어 고객에게 0통이 된다.
+        'claim_withdrawn_on_behalf',
+        'claim_partially_processed',
+        'exchange_collection_tracking_registered',
+        'exchange_redelivery_tracking_registered',
+        'return_collection_tracking_registered',
+        'exchange_collection_overdue',
+    ];
+
+    /**
+     * 발행 시점 스냅샷에서 본문 변수로 그대로 싣는 키 (운송장 줄·기한·지연 일수 등)
+     *
+     * @var array<int, string>
+     */
+    private const SNAPSHOT_TEXT_KEYS = [
+        'tracking_lines',
+        'advance_exchange_notice',
+        'overdue_days',
+        'collection_due_date',
+        'unreturned_item_lines',
+    ];
 
     /**
      * @param  CurrencyConversionService  $currencyConversionService  알림 금액의 결제 통화 환산
@@ -129,10 +161,19 @@ class ClaimNotificationDataListener implements HookListenerInterface
             )
             : [];
 
+        // 운송장 줄·기한처럼 발행 시점에 고정한 본문 값은 그대로 싣는다(S10 — 발송 시점 재조회 금지).
+        $snapshotText = [];
+
+        foreach (self::SNAPSHOT_TEXT_KEYS as $key) {
+            if (array_key_exists($key, $snapshot) && is_scalar($snapshot[$key])) {
+                $snapshotText[$key] = (string) $snapshot[$key];
+            }
+        }
+
         return [
             'notifiable' => null,
             'notifiables' => null,
-            'data' => array_merge($this->buildClaimData($claim, $snapshot), $summary),
+            'data' => array_merge($this->buildClaimData($claim, $snapshot), $summary, $snapshotText),
             'context' => $this->buildClaimContext($claim),
         ];
     }
@@ -189,7 +230,7 @@ class ClaimNotificationDataListener implements HookListenerInterface
      */
     private function isClaimNotificationType(string $type): bool
     {
-        if ($type === 'claim_withdrawn' || $type === 'claim_partially_processed') {
+        if (in_array($type, self::EXTRA_CLAIM_TYPES, true)) {
             return true;
         }
 
@@ -319,29 +360,50 @@ class ClaimNotificationDataListener implements HookListenerInterface
      */
     private function buildShippingData(OrderExchange|OrderReturn|OrderRefund $claim): array
     {
+        $empty = [
+            'tracking_lines' => '',
+            'advance_exchange_notice' => '',
+            'request_origin_notice' => '',
+            'withdraw_origin_notice' => $this->withdrawOriginNotice($claim),
+            'collection_due_date' => '',
+            'overdue_days' => '',
+            'unreturned_item_lines' => '',
+        ];
+
         if ($claim instanceof OrderRefund) {
-            return [
-                'collection_carrier_name' => '',
-                'collection_tracking_number' => '',
-                'redelivery_carrier_name' => '',
-                'redelivery_tracking_number' => '',
-            ];
+            return $empty;
         }
 
-        $claim->loadMissing($claim instanceof OrderExchange
-            ? ['collectionCarrier', 'redeliveryCarrier']
-            : ['collectionCarrier']);
+        // 기본값은 **지금** 운송장 줄이다 — 발행 시점 스냅샷이 있으면 `extractData()` 가 덮는다(S10).
+        // 방향은 신청서 상태로 고른다: 발송 단계면 재발송, 그 전이면 회수.
+        $status = $claim instanceof OrderExchange ? $claim->exchange_status?->value : $claim->return_status?->value;
+        $direction = $claim instanceof OrderExchange && in_array($status, ['redelivery_ready', 'redelivering', 'redelivered', 'completed'], true)
+            ? ClaimTrackingDirectionEnum::REDELIVERY
+            : ClaimTrackingDirectionEnum::COLLECTION;
 
         return [
-            'collection_carrier_name' => $claim->collectionCarrier?->getLocalizedName() ?? '',
-            'collection_tracking_number' => (string) ($claim->collection_tracking_number ?? ''),
-            'redelivery_carrier_name' => $claim instanceof OrderExchange
-                ? ($claim->redeliveryCarrier?->getLocalizedName() ?? '')
+            'tracking_lines' => ClaimTrackingGroups::lines($claim, $direction),
+            'request_origin_notice' => $claim->isAdminRequested()
+                ? __('sirsoft-ecommerce::messages.claims.notifications.request_origin_admin')
                 : '',
-            'redelivery_tracking_number' => $claim instanceof OrderExchange
-                ? (string) ($claim->redelivery_tracking_number ?? '')
+            // 반송 기한 날짜는 사용자 타임존 날짜다(화면·배너와 같은 날) — UTC 날짜면 저녁 기한이 하루 당겨진다.
+            'collection_due_date' => $claim instanceof OrderExchange && $claim->collection_due_at !== null
+                ? (string) TimezoneHelper::toUserDateString($claim->collection_due_at)
                 : '',
-        ];
+        ] + $empty;
+    }
+
+    /**
+     * 판매자 대리 철회 안내 문구를 만듭니다. (S14 — 고객 본인 철회면 빈 문자열)
+     *
+     * @param  OrderExchange|OrderReturn|OrderRefund  $claim  신청서
+     * @return string 안내 문구
+     */
+    private function withdrawOriginNotice(OrderExchange|OrderReturn|OrderRefund $claim): string
+    {
+        return $claim->withdrawn_by_admin !== null
+            ? __('sirsoft-ecommerce::messages.claims.notifications.withdraw_origin_admin')
+            : '';
     }
 
     /**

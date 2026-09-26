@@ -66,6 +66,12 @@ class ClaimListRequest extends FormRequest
             'charge_methods.*' => ['string', Rule::in(ClaimChargeMethodEnum::values())],
             'reason_code' => ['nullable', 'string', 'max:50'],
             'requester_type' => ['nullable', 'in:member,guest'],
+            // 접수 출처 (D8 — 판매자 접수 / 고객 접수). 취소는 그 축이 없어 받지 않는다.
+            'request_source' => $type === ClaimTypeEnum::CANCEL ? ['prohibited'] : ['nullable', 'in:admin,customer'],
+            // 선교환 반송 기한 경과 (교환 전용)
+            'collection_overdue' => $type === ClaimTypeEnum::EXCHANGE ? ['nullable', 'boolean'] : ['prohibited'],
+            // 환불 미접수 (D9 — 교환·반품 전용)
+            'pending_refund' => in_array($type, [ClaimTypeEnum::EXCHANGE, ClaimTypeEnum::RETURN], true) ? ['nullable', 'boolean'] : ['prohibited'],
             // 금액은 목록 '금액' 컬럼이 그리는 값과 같은 축이다 — 유형마다 근거 컬럼이 다르지만
             // (교환·반품 = 청구액 / 환불·취소 = 환불액 + 환불 마일리지) 운영자에게는 한 축이다.
             'min_amount' => ['nullable', 'numeric', 'min:0'],
@@ -113,6 +119,10 @@ class ClaimListRequest extends FormRequest
             'charge_methods.prohibited' => __('sirsoft-ecommerce::validation.claims.charge_methods.prohibited'),
             'charge_methods.*.in' => __('sirsoft-ecommerce::validation.claims.charge_methods.in'),
             'requester_type.in' => __('sirsoft-ecommerce::validation.claims.requester_type.in'),
+            'request_source.in' => __('sirsoft-ecommerce::validation.claims.request_source.in'),
+            'request_source.prohibited' => __('sirsoft-ecommerce::validation.claims.request_source.prohibited'),
+            'collection_overdue.prohibited' => __('sirsoft-ecommerce::validation.claims.collection_overdue.prohibited'),
+            'pending_refund.prohibited' => __('sirsoft-ecommerce::validation.claims.pending_refund.prohibited'),
             'min_amount.numeric' => __('sirsoft-ecommerce::validation.claims.min_amount.numeric'),
             'max_amount.numeric' => __('sirsoft-ecommerce::validation.claims.max_amount.numeric'),
             'max_amount.gte' => __('sirsoft-ecommerce::validation.claims.max_amount.gte'),
@@ -303,6 +313,9 @@ class ClaimListRequest extends FormRequest
             'max_amount' => $validated['max_amount'] ?? null,
             'currency_code' => $validated['currency_code'] ?? null,
             'charge_payment_methods' => $validated['charge_payment_methods'] ?? null,
+            'request_source' => $validated['request_source'] ?? null,
+            'collection_overdue' => (bool) ($validated['collection_overdue'] ?? false),
+            'pending_refund' => (bool) ($validated['pending_refund'] ?? false),
         ];
     }
 

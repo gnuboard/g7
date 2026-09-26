@@ -702,6 +702,147 @@ class OrderClaimException extends Exception
     }
 
     /**
+     * 이 상품 상태에서는 그 방향 송장을 적을 수 없을 때 (R5)
+     *
+     * @return self 예외 인스턴스
+     */
+    public static function trackingItemNotEligible(): self
+    {
+        return new self('sirsoft-ecommerce::exceptions.claim_tracking_item_not_eligible');
+    }
+
+    /**
+     * 회수지가 다른 상품을 같은 회수 송장으로 묶으려 할 때 (R8 — 한 상자는 한 회수지로 간다)
+     *
+     * @return self 예외 인스턴스
+     */
+    public static function trackingMixedReturnAddress(): self
+    {
+        return new self('sirsoft-ecommerce::exceptions.claim_tracking_mixed_return_address');
+    }
+
+    /**
+     * 반품에 재발송 송장을 실었을 때 (R1)
+     *
+     * @return self 예외 인스턴스
+     */
+    public static function trackingDirectionNotAllowed(): self
+    {
+        return new self('sirsoft-ecommerce::exceptions.claim_tracking_direction_not_allowed');
+    }
+
+    /**
+     * 운송장 단위 도착 처리에서 그 운송장을 가진 상품이 없을 때
+     *
+     * @return self 예외 인스턴스
+     */
+    public static function trackingNotFound(): self
+    {
+        return new self('sirsoft-ecommerce::exceptions.claim_tracking_not_found');
+    }
+
+    /**
+     * 지시한 상품 행이 이 신청서에 없을 때
+     *
+     * @return self 예외 인스턴스
+     */
+    public static function claimItemNotFound(): self
+    {
+        return new self('sirsoft-ecommerce::exceptions.claim_item_not_found');
+    }
+
+    /**
+     * 진행 방식(일반·선교환)을 지금 바꿀 수 없을 때
+     *
+     * @return self 예외 인스턴스
+     */
+    public static function exchangeModeNotChangeable(): self
+    {
+        return new self('sirsoft-ecommerce::exceptions.claim_exchange_mode_not_changeable');
+    }
+
+    /**
+     * 회수 송장이 있는 선교환을 일반 교환으로 되돌리려 할 때
+     *
+     * @return self 예외 인스턴스
+     */
+    public static function exchangeModeLockedByCollection(): self
+    {
+        return new self('sirsoft-ecommerce::exceptions.claim_exchange_mode_locked_by_collection');
+    }
+
+    /**
+     * 쇼핑몰 설정에서 선교환을 끈 상태에서 선교환으로 바꾸려 할 때
+     *
+     * @return self 예외 인스턴스
+     */
+    public static function advanceExchangeDisabled(): self
+    {
+        return new self('sirsoft-ecommerce::exceptions.claim_advance_exchange_disabled');
+    }
+
+    /**
+     * 미회수 완료에 사유가 없을 때
+     *
+     * @return self 예외 인스턴스
+     */
+    public static function unreturnedReasonRequired(): self
+    {
+        return new self('sirsoft-ecommerce::exceptions.claim_unreturned_reason_required');
+    }
+
+    /**
+     * 미회수로 완료할 수 없는 상품을 지정했을 때 (선교환 발송 후 회수 대기 상품만)
+     *
+     * @return self 예외 인스턴스
+     */
+    public static function unreturnedNotEligible(): self
+    {
+        return new self('sirsoft-ecommerce::exceptions.claim_unreturned_not_eligible');
+    }
+
+    /**
+     * 판매자가 접수한 신청서를 고객이 철회·수정하려 할 때
+     *
+     * @return self 예외 인스턴스
+     */
+    public static function adminRequestedNotEditable(): self
+    {
+        return new self('sirsoft-ecommerce::exceptions.claim_admin_requested_not_editable');
+    }
+
+    /**
+     * 재고 복구할 수 있는 상품이 없을 때 (완료·미복구·미회수 아님)
+     *
+     * @return self 예외 인스턴스
+     */
+    public static function stockRestoreNotEligible(): self
+    {
+        return new self('sirsoft-ecommerce::exceptions.claim_stock_restore_not_eligible');
+    }
+
+    /**
+     * 관리자 대리 철회에 사유가 없을 때
+     *
+     * @return self 예외 인스턴스
+     */
+    public static function withdrawReasonRequired(): self
+    {
+        return new self('sirsoft-ecommerce::exceptions.claim_withdraw_reason_required');
+    }
+
+    /**
+     * 관리자 직권 접수가 상품 상태(물리 게이트)에 맞지 않을 때
+     *
+     * @param  string  $statusLabel  현재 상품 상태 라벨
+     * @return self 예외 인스턴스
+     */
+    public static function adminRequestNotAllowed(string $statusLabel): self
+    {
+        return new self('sirsoft-ecommerce::exceptions.claim_admin_request_not_allowed', ['status' => $statusLabel]);
+    }
+
+    /**
      * 확장이 클레임 before 훅(`claim.{type}.before_*`)에서 동작을 막을 때 던집니다.
      *
      * 생성자가 닫혀 있어 확장은 이 팩토리로만 클레임 도메인 거절을 만들 수 있다. 도메인 거절로

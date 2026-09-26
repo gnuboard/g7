@@ -304,6 +304,68 @@ class OrderOptionService
     }
 
     /**
+     * 주문 옵션에서 지정 수량을 **같은 상태의 새 행**으로 떼어 냅니다. (교환 후속 주문옵션 분할 — R10)
+     *
+     * 교환품을 이미 보낸 교환 행을 수량으로 쪼개면 그 행이 만든 후속 주문옵션도 같은 수량으로
+     * 쪼개야 한다 — 두 교환 조각이 한 후속 옵션을 가리키면 재발송 수량이 어긋나고, 송장·도착을
+     * 조각마다 따로 적을 수 없다. 상태 전이가 없는 분할이라 `changeStatusWithQuantity()` 를 쓰지
+     * 않는다(자기 전이 가드·훅·적립 부수효과를 타지 않게).
+     *
+     * 금액 안분은 상태 변경 분할과 **같은 규칙**(`captureAmounts` → `applySplitAmounts` →
+     * `applyRemainingAmounts`)이라 합계가 보존된다. 떼어 낸 행은 원본의 출처(`source_type`·
+     * `source_option_id`)를 그대로 잇고 `parent_option_id` 는 비운다 — 형제 관계로 묶이면 이후 일반
+     * 상태 변경의 병합(`findMergeCandidate`)이 두 조각을 합쳐, 교환 행이 가리키던 후속 옵션이
+     * 사라진다. 배송 행도 원본의 송장·상태·시각을 그대로 복사한다(같은 상자에서 나뉜 것이다).
+     *
+     * @param  OrderOption  $option  원본 주문 옵션
+     * @param  int  $quantity  떼어 낼 수량 (1 이상, 원본 수량 미만)
+     * @return OrderOption 떼어 낸 새 주문 옵션
+     *
+     * @throws OrderClaimException 수량 범위 밖
+     */
+    public function splitOffQuantity(OrderOption $option, int $quantity): OrderOption
+    {
+        if ($quantity < 1 || $quantity >= (int) $option->quantity) {
+            throw OrderClaimException::quantityInvalid();
+        }
+
+        return DB::transaction(function () use ($option, $quantity) {
+            $remainingQuantity = (int) $option->quantity - $quantity;
+            $ratio = $quantity / (int) $option->quantity;
+            $origAmounts = $this->captureAmounts($option);
+
+            $splitOption = $option->replicate();
+            $splitOption->quantity = $quantity;
+            $splitOption->parent_option_id = null;
+
+            $this->applySplitAmounts(
+                $splitOption,
+                $origAmounts,
+                $ratio,
+                $quantity,
+                MileageRounding::fromOrderSnapshot($option->order?->mileage_policy_snapshot)
+            );
+            $this->orderOptionRepository->save($splitOption);
+
+            $originShipping = $this->orderShippingRepository->findFirstByOrderOptionId($option->id);
+
+            if ($originShipping !== null) {
+                $this->orderShippingRepository->replicateForOrderOption($originShipping, $splitOption->id, [
+                    'shipped_at' => $originShipping->shipped_at,
+                    'estimated_arrival_at' => $originShipping->estimated_arrival_at,
+                    'delivered_at' => $originShipping->delivered_at,
+                    'confirmed_at' => $originShipping->confirmed_at,
+                ]);
+            }
+
+            $this->applyRemainingAmounts($option, $origAmounts, $splitOption, $remainingQuantity);
+            $this->orderOptionRepository->save($option);
+
+            return $splitOption;
+        });
+    }
+
+    /**
      * 배송 관련 상태 전이 시 택배사·송장번호를 해당 옵션의 배송 레코드에 기록합니다.
      *
      * 관리자 주문상태 변경(일괄변경)에서 배송준비중/배송중/배송완료로 전이할 때 입력한

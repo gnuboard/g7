@@ -299,6 +299,10 @@ describe('상세 셸 — 라우트·데이터소스·모달 (S9a)', () => {
       'partials/admin_ecommerce_claim_detail/_modal_claim_item_quantity_confirm.json',
       // 첨부 일괄 정리 확인 모달 — 되돌릴 수 없는 삭제라 한 번 더 묻는다(P7 #4). 상세만 연다.
       'partials/admin_ecommerce_claim_detail/_modal_claim_images_clear.json',
+      // 진행 방식 전환(D1) · 고객 요청 대리 철회(S14) · 신청 내용 수정(S15) — 상세만 여는 확인 모달.
+      'partials/admin_ecommerce_claim_detail/_modal_claim_exchange_mode_confirm.json',
+      'partials/admin_ecommerce_claim_detail/_modal_claim_withdraw_on_behalf.json',
+      'partials/admin_ecommerce_claim_detail/_modal_claim_request_edit.json',
     ]);
     expect(
       fs.existsSync(
@@ -451,6 +455,8 @@ describe('배송 정보 — 회수·재발송 통합 (D17-② · D14)', () => {
 
     expect(blockIds).toEqual([
       undefined,
+      // 운송장 기록·정정 입구 안내 — 이 탭에는 입력칸이 없다(송장은 상품 행마다 — #599).
+      'cs_001_edit_hint',
       'claim_collection_block',
       'claim_redelivery_divider',
       'claim_redelivery_not_applicable',
@@ -496,11 +502,27 @@ describe('배송 정보 — 회수·재발송 통합 (D17-② · D14)', () => {
    * @effects claim_carrier_options_come_from_detail_response
    */
   it('택배사 셀렉트가 상세 응답의 목록을 읽는다', () => {
-    ['cs_004_collection_carrier', 'cs_014_redelivery_carrier'].forEach((id) => {
-      // 맨 앞은 고를 수 있는 빈 선택지다 — Select 는 placeholder 를 그리지 않는다(P7 #5).
-      expect(byId(shippingSection, id).props.options).toBe(
-        "{{[{ value: '', label: $t('sirsoft-ecommerce.admin.claim.detail.shipping.carrier_placeholder') }].concat(claim?.data?.carriers ?? [])}}",
-      );
+    // 송장 입력은 상품 칸 선택 바 하나다 — 배송 정보 탭은 운송장별로 묶어 보여 주기만 한다(#599).
+    expect(byId(itemsSection, 'ci_007_carrier').props.options).toContain('.concat(claim?.data?.carriers ?? [])');
+    expect(collect(shippingSection, (n) => n.name === 'Select' || n.name === 'Input')).toEqual([]);
+  });
+
+  /**
+   * 배송 정보 탭은 운송장 묶음(`tracking_groups`)을 방향별로 그리고, 묶음마다 [도착 처리] 가 운송장 단위
+   * 도착 핸들러를 부른다(R9). 켜짐은 서버 판정(`can_deliver`)을 따른다.
+   *
+   * @effects claim_tracking_deliver_posts_the_waybill
+   */
+  it('운송장 묶음마다 [도착 처리] 가 서버 판정을 따른다', () => {
+    const groups = collect(shippingSection, (n) => typeof n.iteration?.source === 'string'
+      && n.iteration.source.includes('tracking_groups'));
+    const deliver = collect(shippingSection, (n) => Array.isArray(n.actions)
+      && (n.actions as Node[]).some((a) => a.handler === 'sirsoft-ecommerce.deliverClaimTracking'));
+
+    expect(groups.length).toBe(2);
+    expect(deliver.length).toBe(2);
+    deliver.forEach((button) => {
+      expect(String(button.props.disabled)).toContain('group.can_deliver !== true');
     });
   });
 });
@@ -1540,7 +1562,8 @@ describe('#599 후속 — 막히는 입구 정리·반려 사유·탭 고정', (
     expect(button.props.disabled).toContain('(claim?.data?.completable_item_count ?? 0) === 0');
     expect(description.text).toContain('count={{claim?.data?.completable_item_count ?? 0}}');
     expect(description.if).toBe('{{(claim?.data?.completable_item_count ?? 0) > 0}}');
-    expect(unavailable.if).toBe('{{(claim?.data?.completable_item_count ?? 0) === 0}}');
+    // 선교환 「미회수로 완료」 후보가 있거나 이미 끝난 신청서면 「완료할 수 없음」 안내를 세우지 않는다.
+    expect(unavailable.if).toBe('{{(claim?.data?.completable_item_count ?? 0) === 0 && (claim?.data?.unreturned_eligible_count ?? 0) === 0 && claim?.data?.claim?.is_final !== true}}');
   });
 
   /**
@@ -1591,11 +1614,13 @@ describe('#599 후속 — 회수중·발송중 송장 · 저장은 저장만', (
       && (n.actions as Node[]).some((a) => a.handler === 'sirsoft-ecommerce.executeClaimItemBulkStatus'))[0];
     const execute = (confirm.actions as Node[]).find((a) => a.handler === 'sirsoft-ecommerce.executeClaimItemBulkStatus') as Node;
 
-    expect(row.if).toBe("{{['collecting', 'redelivering'].includes(_local.itemBulkStatus ?? '')}}");
+    // 「송장만 저장」 모드에서도 같은 칸이 열린다(R7).
+    expect(row.if).toBe("{{['collecting', 'redelivering'].includes(_local.itemBulkStatus ?? '') || _local.itemTrackingMode === true}}");
     expect(carrier.props.options).toContain('.concat(claim?.data?.carriers ?? [])');
     expect(tracking.props.maxLength).toBe(50);
-    expect(JSON.stringify(statusChange.params)).toContain('redelivery_tracking_number');
-    expect(JSON.stringify(statusChange.params)).toContain('collection_tracking_number');
+    // 미리 채움은 고른 **행들의** 공통 송장이다 — 핸들러가 행 목록을 받아 판정한다(P1).
+    expect(statusChange.handler).toBe('sirsoft-ecommerce.selectClaimItemBulkStatus');
+    expect(statusChange.params.rows).toBe('{{claim?.data?.claim?.items ?? []}}');
     expect(apply.params.carrierId).toBe("{{_local.itemCarrierId ?? ''}}");
     expect(apply.params.trackingNumber).toBe("{{_local.itemTrackingNumber ?? ''}}");
     expect(execute.params.trackingNumber).toBe("{{_global.claimItemQuantityContext?.trackingNumber ?? ''}}");
@@ -1608,7 +1633,43 @@ describe('#599 후속 — 회수중·발송중 송장 · 저장은 저장만', (
    * @effects claim_tracking_inputs_are_capped_at_the_column_length
    */
   it('배송 정보 카드 운송장 입력이 50자로 막힌다', () => {
-    expect(byId(shippingSection, 'cs_005_collection_tracking_number').props.maxLength).toBe(50);
-    expect(byId(shippingSection, 'cs_015_redelivery_tracking_number').props.maxLength).toBe(50);
+    // 운송장 입력은 상품 칸 선택 바 하나다(#599) — 그 칸이 DB 칸 길이(50)로 막힌다.
+    expect(byId(itemsSection, 'ci_008_tracking_number').props.maxLength).toBe(50);
+  });
+});
+
+describe('#599 상품 행 송장 — 진행 방식(선교환) 줄', () => {
+  /**
+   * 쇼핑몰 설정에서 선교환이 꺼져 있어도 [선교환으로 전환] 은 사라지지 않고 **꺼진 채** 선다 — 막힌 이유는
+   * 버튼 옆 문구(`blocked_reason`)가 알린다. 버튼을 숨기면 운영자는 기능이 있는지조차 모른다(계획 §3-9).
+   *
+   * @effects exchange_mode_button_stays_visible_and_disabled_with_reason
+   */
+  it('[선교환으로 전환] 은 설정과 무관하게 서고 능력으로만 꺼진다', () => {
+    const setAdvance = byId(shell, 'cd_016_set_advance');
+    const blocked = byId(shell, 'cd_018_mode_blocked');
+
+    expect(setAdvance.if).toBe('{{claim?.data?.claim?.is_advance_exchange !== true}}');
+    expect(String(setAdvance.props.disabled)).toContain('exchange_mode_abilities?.can_set_advance !== true');
+    expect(String(setAdvance.props.className)).toContain('disabled:opacity-50');
+    expect(blocked.if).toBe('{{!!claim?.data?.exchange_mode_abilities?.blocked_reason}}');
+  });
+});
+
+describe('#599 직권 접수 — 머리의 운영자 이름', () => {
+  /**
+   * 판매자 접수 뱃지 곁에 접수한 운영자, 대리 철회된 건에는 철회한 운영자 이름이 선다(계획 §3-11). 이름은
+   * 관리자 상세 응답에만 있으므로 화면은 그 필드가 있을 때만 그린다.
+   *
+   * @effects admin_detail_names_the_filing_and_withdrawing_operator
+   */
+  it('판매자 접수 건은 접수 운영자, 대리 철회 건은 철회 운영자 이름을 머리에 둔다', () => {
+    const requested = byId(shell, 'cd_008c_requested_by_admin');
+    const withdrawn = byId(shell, 'cd_008d_withdrawn_by_admin');
+
+    expect(requested.if).toBe("{{claim?.data?.claim?.request_source === 'admin' && !!claim?.data?.claim?.requested_by_admin_name}}");
+    expect(JSON.stringify(requested)).toContain('admin.claim.detail.requested_by_admin|name={{claim?.data?.claim?.requested_by_admin_name}}');
+    expect(withdrawn.if).toBe('{{!!claim?.data?.claim?.withdrawn_by_admin_name}}');
+    expect(JSON.stringify(withdrawn)).toContain('admin.claim.detail.withdrawn_by_admin|name={{claim?.data?.claim?.withdrawn_by_admin_name}}');
   });
 });

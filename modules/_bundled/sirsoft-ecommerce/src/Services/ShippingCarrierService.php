@@ -35,8 +35,8 @@ class ShippingCarrierService
      * 배송사가 쓰이고 있는 건수를 셉니다.
      *
      * **배송사를 붙잡는 표는 하나가 아니다.** 일반 배송은 `order_shippings.carrier_id` 로,
-     * 교환은 `collection_carrier_id`·`redelivery_carrier_id` 로, 반품은 `collection_carrier_id`
-     * 로 각자 자기 표에 기록한다. 일반 배송만 세면 **회수 전용으로만 쓰인 배송사가 "안 쓰임"
+     * 교환은 상품 행의 `collection_carrier_id`·`redelivery_carrier_id` 로, 반품은 상품 행의
+     * `collection_carrier_id` 로 기록한다(송장은 상품 행마다 — R12). 일반 배송만 세면 **회수 전용으로만 쓰인 배송사가 "안 쓰임"
      * 으로 판정되고**, 그 세 외래키는 전부 `nullOnDelete` 라 삭제가 200 으로 통과한 뒤
      * 접수된 교환·반품 신청서의 택배사가 오류도 로그도 없이 비워진다.
      *

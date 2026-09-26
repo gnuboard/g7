@@ -2,11 +2,16 @@
 
 namespace Modules\Sirsoft\Ecommerce\Tests\Feature\Admin;
 
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Modules\Sirsoft\Ecommerce\Database\Seeders\ShippingCarrierSeeder;
 use Modules\Sirsoft\Ecommerce\Database\Seeders\ShippingTypeSeeder;
 use Modules\Sirsoft\Ecommerce\Exceptions\ShippingCarrierOperationException;
+use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderExchange;
+use Modules\Sirsoft\Ecommerce\Models\OrderExchangeOption;
 use Modules\Sirsoft\Ecommerce\Models\OrderReturn;
+use Modules\Sirsoft\Ecommerce\Models\OrderReturnOption;
 use Modules\Sirsoft\Ecommerce\Models\ShippingCarrier;
 use Modules\Sirsoft\Ecommerce\Models\ShippingType;
 use Modules\Sirsoft\Ecommerce\Services\ShippingCarrierService;
@@ -20,8 +25,8 @@ use PHPUnit\Framework\Attributes\Test;
  * 이 판정에는 구멍이 두 종류 있었다.
  *
  *  1. **모집단이 한 컬럼**이었다. 배송사 사용량을 `order_shippings.carrier_id` 로만 셌는데,
- *     교환 신청서는 `collection_carrier_id`·`redelivery_carrier_id` 로, 반품 신청서는
- *     `collection_carrier_id` 로 각자 자기 표에 배송사를 붙잡는다. 그래서 회수 전용으로만
+ *     교환 상품 행은 `collection_carrier_id`·`redelivery_carrier_id` 로, 반품 상품 행은
+ *     `collection_carrier_id` 로 각자 자기 표에 배송사를 붙잡는다(송장은 상품 행마다 — #599). 그래서 회수 전용으로만
  *     쓰인 배송사가 "안 쓰임" 으로 판정돼 삭제가 **200 으로 통과**했고, 그 세 외래키는 전부
  *     `nullOnDelete` 라 접수된 신청서의 택배사가 오류도 로그도 없이 비워졌다.
  *  2. **같은 표에 강도가 다른 삭제 경로가 둘**이었다. 설정 화면은 사용 중이면 400 으로 막는데,
@@ -53,30 +58,33 @@ class ShippingCatalogUsageScopeTest extends ModuleTestCase
     }
 
     /**
-     * 마이그레이션 전수에서 배송사를 붙잡는 컬럼을 파생합니다.
+     * 배송사를 붙잡는 컬럼 전수를 **실제 스키마**에서 파생합니다. (이커머스 테이블의 `*carrier_id`)
      *
-     * @return array<int, string> `테이블.컬럼` 형태
+     * 마이그레이션 원문을 읽으면 `Schema::create` 만 보이고 나중에 `Schema::table` 로 붙은 컬럼(상품 행
+     * 송장 — #599)은 빠진다. 적용된 스키마를 읽어야 「새 컬럼이 생겼는데 사용량 계수 밖」 을 잡는다.
+     *
+     * @return array<int, string> `테이블.컬럼` 목록 (접두어 제외, 정렬)
      */
     private function carrierReferencingColumns(): array
     {
+        $prefix = DB::getTablePrefix();
         $found = [];
-        $dir = dirname(__DIR__, 3).'/database/migrations';
 
-        foreach ((array) glob($dir.'/*.php') as $path) {
-            $source = (string) file_get_contents($path);
+        foreach (Schema::getTables() as $table) {
+            $name = (string) ($table['name'] ?? '');
 
-            if (! preg_match("/Schema::create\('([a-z_]+)'/", $source, $table)) {
+            if ($prefix !== '' && str_starts_with($name, $prefix)) {
+                $name = substr($name, strlen($prefix));
+            }
+
+            if (! str_starts_with($name, 'ecommerce_') || $name === 'ecommerce_shipping_carriers') {
                 continue;
             }
 
-            preg_match_all(
-                "/->unsignedBigInteger\('([a-z_]*carrier_id)'\)/",
-                $source,
-                $columns
-            );
-
-            foreach ($columns[1] as $column) {
-                $found[] = $table[1].'.'.$column;
+            foreach (Schema::getColumnListing($name) as $column) {
+                if (str_ends_with($column, 'carrier_id')) {
+                    $found[] = $name.'.'.$column;
+                }
             }
         }
 
@@ -85,6 +93,15 @@ class ShippingCatalogUsageScopeTest extends ModuleTestCase
         return array_values(array_unique($found));
     }
 
+    /**
+     * 스키마에서 파생한 배송사 참조 컬럼이 모두 사용량 계수 또는 휴면 선언에 들어 있는지 검증합니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario catalog=shipping_carrier, delete_path=settings_service
+     *
+     * @effects every_carrier_referencing_column_is_counted_or_declared_dormant
+     */
     #[Test]
     public function every_column_that_holds_a_carrier_is_either_counted_or_declared_dormant(): void
     {
@@ -94,26 +111,23 @@ class ShippingCatalogUsageScopeTest extends ModuleTestCase
         // 계수되거나 ⓑ 휴면(쓰기 0)으로 **명시 선언**되었는지만 본다.
         //
         // `ShippingCarrierService::countUsage()` 가 세는 컬럼
+        // 송장은 신청서 헤더가 아니라 **상품 행**에 있다(#599 — 다중 송장).
         $counted = [
             'ecommerce_order_shippings.carrier_id',
-            'ecommerce_order_exchanges.collection_carrier_id',
-            'ecommerce_order_exchanges.redelivery_carrier_id',
-            'ecommerce_order_returns.collection_carrier_id',
+            'ecommerce_order_exchange_options.collection_carrier_id',
+            'ecommerce_order_exchange_options.redelivery_carrier_id',
+            'ecommerce_order_return_options.collection_carrier_id',
         ];
 
-        // 휴면 컬럼 — `$fillable` 선언만 있고 쓰기가 0이라 계수 대상이 아니다. 여기에 쓰기가
-        // 생기면 `countUsage()` 에 함께 더하고 이 목록에서 뺀다.
-        $dormant = [
-            'ecommerce_order_shippings.return_carrier_id',
-            'ecommerce_order_shippings.exchange_carrier_id',
-        ];
+        // 휴면 컬럼 — 쓰기가 0이라 계수 대상이 아닌 컬럼. 배송 행의 반품·교환 송장 칸(S12)은 삭제했다.
+        $dormant = [];
 
         $derived = $this->carrierReferencingColumns();
 
         $this->assertGreaterThanOrEqual(
-            6,
+            4,
             count($derived),
-            '마이그레이션에서 배송사 참조 컬럼을 파생하지 못했다 — 이 검사가 아무것도 재지 않고 있다'
+            '스키마에서 배송사 참조 컬럼을 파생하지 못했다 — 이 검사가 아무것도 재지 않고 있다'
         );
 
         $this->assertSame(
@@ -126,16 +140,22 @@ class ShippingCatalogUsageScopeTest extends ModuleTestCase
 
     // ===== ① 판정 모집단: 회수 택배사도 "쓰이는 중" 이다 =====
 
+    /**
+     * 교환 회수 택배사로만 쓰인 배송사도 사용 중으로 집계되는지 검증합니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario catalog=shipping_carrier, delete_path=settings_service
+     *
+     * @effects exchange_collection_carrier_counts_as_in_use
+     */
     #[Test]
     public function a_carrier_used_only_as_an_exchange_collection_carrier_counts_as_in_use(): void
     {
         $order = $this->deliveredClaimOrder();
         $carrier = $this->operatorCarrier('s19_ex_collect');
 
-        OrderExchange::factory()->create([
-            'order_id' => $order->id,
-            'collection_carrier_id' => $carrier->id,
-        ]);
+        $this->exchangeRowWith($order, collection: $carrier->id);
 
         $this->assertGreaterThan(
             0,
@@ -145,16 +165,22 @@ class ShippingCatalogUsageScopeTest extends ModuleTestCase
         );
     }
 
+    /**
+     * 교환 재발송 택배사로만 쓰인 배송사도 사용 중으로 집계되는지 검증합니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario catalog=shipping_carrier, delete_path=settings_service
+     *
+     * @effects exchange_redelivery_carrier_counts_as_in_use
+     */
     #[Test]
     public function a_carrier_used_only_as_an_exchange_redelivery_carrier_counts_as_in_use(): void
     {
         $order = $this->deliveredClaimOrder();
         $carrier = $this->operatorCarrier('s19_ex_redeliver');
 
-        OrderExchange::factory()->create([
-            'order_id' => $order->id,
-            'redelivery_carrier_id' => $carrier->id,
-        ]);
+        $this->exchangeRowWith($order, redelivery: $carrier->id);
 
         $this->assertGreaterThan(
             0,
@@ -164,16 +190,22 @@ class ShippingCatalogUsageScopeTest extends ModuleTestCase
         );
     }
 
+    /**
+     * 반품 회수 택배사로만 쓰인 배송사도 사용 중으로 집계되는지 검증합니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario catalog=shipping_carrier, delete_path=settings_service
+     *
+     * @effects return_collection_carrier_counts_as_in_use
+     */
     #[Test]
     public function a_carrier_used_only_as_a_return_collection_carrier_counts_as_in_use(): void
     {
         $order = $this->deliveredClaimOrder();
         $carrier = $this->operatorCarrier('s19_rt_collect');
 
-        OrderReturn::factory()->create([
-            'order_id' => $order->id,
-            'collection_carrier_id' => $carrier->id,
-        ]);
+        $this->returnRowWith($order, $carrier->id);
 
         $this->assertGreaterThan(
             0,
@@ -182,6 +214,15 @@ class ShippingCatalogUsageScopeTest extends ModuleTestCase
         );
     }
 
+    /**
+     * 어디에도 쓰이지 않는 배송사는 사용량 0 으로 판정되어 여전히 지울 수 있는지 검증합니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario catalog=shipping_carrier, delete_path=settings_service
+     *
+     * @effects unused_carrier_counts_as_not_in_use
+     */
     #[Test]
     public function an_unused_carrier_is_still_deletable(): void
     {
@@ -194,16 +235,22 @@ class ShippingCatalogUsageScopeTest extends ModuleTestCase
         );
     }
 
+    /**
+     * 클레임 상품 행만 참조하는 배송사를 지우려 하면 도메인 예외로 거절되는지 검증합니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario catalog=shipping_carrier, delete_path=settings_service
+     *
+     * @effects claim_only_carrier_deletion_is_rejected
+     */
     #[Test]
     public function deleting_a_carrier_that_only_a_claim_references_is_rejected(): void
     {
         $order = $this->deliveredClaimOrder();
         $carrier = $this->operatorCarrier('s19_delete_guard');
 
-        OrderReturn::factory()->create([
-            'order_id' => $order->id,
-            'collection_carrier_id' => $carrier->id,
-        ]);
+        $this->returnRowWith($order, $carrier->id);
 
         $this->expectException(ShippingCarrierOperationException::class);
 
@@ -212,6 +259,15 @@ class ShippingCatalogUsageScopeTest extends ModuleTestCase
 
     // ===== ② 시더의 stale 정리가 설정 경로와 같은 강도인가 =====
 
+    /**
+     * 배송사 시더의 stale 정리가 클레임이 참조하는 배송사는 남기고 미사용 잔여만 지우는지 검증합니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario catalog=shipping_carrier, delete_path=seeder_stale_cleanup
+     *
+     * @effects carrier_seeder_cleanup_keeps_claim_referenced_carriers
+     */
     #[Test]
     public function the_carrier_seeder_stale_cleanup_keeps_carriers_that_claims_still_reference(): void
     {
@@ -220,10 +276,7 @@ class ShippingCatalogUsageScopeTest extends ModuleTestCase
         $inUse = $this->operatorCarrier('s19_seed_in_use');
         $unused = $this->operatorCarrier('s19_seed_unused');
 
-        OrderReturn::factory()->create([
-            'order_id' => $order->id,
-            'collection_carrier_id' => $inUse->id,
-        ]);
+        $this->returnRowWith($order, $inUse->id);
 
         $this->seed(ShippingCarrierSeeder::class);
 
@@ -238,6 +291,15 @@ class ShippingCatalogUsageScopeTest extends ModuleTestCase
         );
     }
 
+    /**
+     * 배송유형 시더의 stale 정리가 주문 배송행이 참조하는 유형은 남기고 미사용 잔여만 지우는지 검증합니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario catalog=shipping_type, delete_path=seeder_stale_cleanup
+     *
+     * @effects shipping_type_seeder_cleanup_keeps_order_referenced_types
+     */
     #[Test]
     public function the_shipping_type_seeder_stale_cleanup_keeps_types_that_orders_still_reference(): void
     {
@@ -273,5 +335,48 @@ class ShippingCatalogUsageScopeTest extends ModuleTestCase
             ShippingType::where('code', $unused->code)->first(),
             '쓰이지 않는 잔여까지 보존하면 stale 정리가 무의미해진다'
         );
+    }
+
+    /**
+     * 회수·재발송 송장이 붙은 교환 상품 행을 만듭니다. (송장은 상품 행에 있다 — #599)
+     *
+     * @param  Order  $order  주문
+     * @param  int|null  $collection  회수 택배사 ID
+     * @param  int|null  $redelivery  재발송 택배사 ID
+     * @return void 반환값 없음
+     */
+    private function exchangeRowWith(Order $order, ?int $collection = null, ?int $redelivery = null): void
+    {
+        $exchange = OrderExchange::factory()->create(['order_id' => $order->id]);
+
+        OrderExchangeOption::factory()->create([
+            'order_exchange_id' => $exchange->id,
+            'order_id' => $order->id,
+            'order_option_id' => $order->options->first()->id,
+            'collection_carrier_id' => $collection,
+            'collection_tracking_number' => $collection !== null ? 'C-'.$collection : null,
+            'redelivery_carrier_id' => $redelivery,
+            'redelivery_tracking_number' => $redelivery !== null ? 'R-'.$redelivery : null,
+        ]);
+    }
+
+    /**
+     * 회수 송장이 붙은 반품 상품 행을 만듭니다. (송장은 상품 행에 있다 — #599)
+     *
+     * @param  Order  $order  주문
+     * @param  int  $carrierId  회수 택배사 ID
+     * @return void 반환값 없음
+     */
+    private function returnRowWith(Order $order, int $carrierId): void
+    {
+        $return = OrderReturn::factory()->create(['order_id' => $order->id]);
+
+        OrderReturnOption::factory()->create([
+            'order_return_id' => $return->id,
+            'order_id' => $order->id,
+            'order_option_id' => $order->options->first()->id,
+            'collection_carrier_id' => $carrierId,
+            'collection_tracking_number' => 'C-'.$carrierId,
+        ]);
     }
 }

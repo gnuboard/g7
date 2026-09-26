@@ -362,6 +362,14 @@
         "create_refund_request_hint": "モーダルの「今すぐ受付」をデフォルト選択にします。",
         "restore_stock_label": "在庫復元",
         "restore_stock_hint": "モーダルの個別在庫復元チェックをデフォルト選択にします。"
+      },
+      "advance_exchange": {
+        "title": "先交換",
+        "description": "新しい商品を先に送信し、既存の商品は後に受け取る交換です。有効にすると、交換詳細に[先交換に変換]が表示されます。",
+        "enabled_label": "先交換を使用",
+        "enabled_hint": "無効にすると、新しく変換することができません。既に先交換である申請書はそのまま進行されます。",
+        "due_days_label": "既存商品返送期限",
+        "due_days_hint": "新商品発送日から計算されます。期限を過ぎると管理者に一度通知されます。"
       }
     },
     "exchange_reasons": {

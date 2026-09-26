@@ -341,6 +341,16 @@
                                                             "className": "inline-flex items-center gap-1 text-xs text-indigo-600 dark:text-indigo-400 hover:underline mt-1 cursor-pointer"
                                                         },
                                                         "text": "$t:claim.list.order_number|number={{claim.data?.claim?.order_number ?? ''}}"
+                                                    },
+                                                    {
+                                                        "comment": "판매자 접수 안내(D8) — 판매자가 접수한 신청은 고객이 고치거나 철회할 수 없다. 버튼이 사라진 이유를 알려 주고 문의 경로를 남긴다. 끝난 신청서에는 더 할 일이 없으므로 세우지 않는다.",
+                                                        "type": "basic",
+                                                        "name": "P",
+                                                        "if": "{{claim.data?.claim?.request_source === 'admin' && claim.data?.claim?.is_final !== true}}",
+                                                        "props": {
+                                                            "className": "text-xs text-yellow-700 dark:text-yellow-400 mt-1"
+                                                        },
+                                                        "text": "$t:claim.detail.admin_requested_notice"
                                                     }
                                                 ]
                                             },

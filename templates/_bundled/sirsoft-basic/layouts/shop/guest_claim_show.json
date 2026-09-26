@@ -252,6 +252,16 @@
                                                                 "text": "{{claim.data?.claim?.claim_type_label ?? ''}}"
                                                             },
                                                             {
+                                                                "comment": "출처 뱃지 — 회원 상세와 같은 서버 필드(`request_source`)를 그린다. 비회원 주문도 판매자가 대신 접수할 수 있다(D8).",
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "if": "{{claim.data?.claim?.request_source === 'admin'}}",
+                                                                "props": {
+                                                                    "className": "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium whitespace-nowrap bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400"
+                                                                },
+                                                                "text": "{{claim.data?.claim?.request_source_label ?? ''}}"
+                                                            },
+                                                            {
                                                                 "type": "basic",
                                                                 "name": "Span",
                                                                 "classMap": {
@@ -324,6 +334,16 @@
                                                             "className": "inline-flex items-center gap-1 text-xs text-indigo-600 dark:text-indigo-400 hover:underline mt-1 cursor-pointer"
                                                         },
                                                         "text": "$t:claim.list.order_number|number={{claim.data?.claim?.order_number ?? ''}}"
+                                                    },
+                                                    {
+                                                        "comment": "판매자 접수 안내(D8) — 판매자가 접수한 신청은 고객이 고치거나 철회할 수 없다. 버튼이 사라진 이유를 알려 주고 문의 경로를 남긴다. 끝난 신청서에는 더 할 일이 없으므로 세우지 않는다.",
+                                                        "type": "basic",
+                                                        "name": "P",
+                                                        "if": "{{claim.data?.claim?.request_source === 'admin' && claim.data?.claim?.is_final !== true}}",
+                                                        "props": {
+                                                            "className": "text-xs text-yellow-700 dark:text-yellow-400 mt-1"
+                                                        },
+                                                        "text": "$t:claim.detail.admin_requested_notice"
                                                     }
                                                 ]
                                             },

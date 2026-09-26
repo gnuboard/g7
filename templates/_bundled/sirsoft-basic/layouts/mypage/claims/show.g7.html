@@ -100,6 +100,8 @@
                 </on>
                 $t:claim.list.order_number|number={{claim.data?.claim?.order_number ?? ''}}
               </button>
+              <!-- 판매자 접수 안내(D8) — 판매자가 접수한 신청은 고객이 고치거나 철회할 수 없다. 버튼이 사라진 이유를 알려 주고 문의 경로를 남긴다. 끝난 신청서에는 더 할 일이 없으므로 세우지 않는다. -->
+              <p data-if="{{claim.data?.claim?.request_source === 'admin' &amp;&amp; claim.data?.claim?.is_final !== true}}" class="text-xs text-yellow-700 dark:text-yellow-400 mt-1">$t:claim.detail.admin_requested_notice</p>
             </div>
             <div data-if="{{claim.data?.claim?.is_editable === true || claim.data?.claim?.is_withdrawable === true}}" class="flex items-center gap-2 flex-shrink-0">
               <!-- [수정] — 작성 화면을 수정 모드로 연다. 주소에는 신청번호만 싣고 유형·주문번호는 그 화면이 신청서를 읽어 세우며, 목록 쿼리를 물려주어 수정·상세를 거쳐 목록으로 돌아와도 보던 서브탭이 남는다. -->

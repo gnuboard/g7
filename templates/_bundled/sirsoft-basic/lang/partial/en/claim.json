@@ -190,7 +190,8 @@
     "total_charge": "Total charge",
     "empty": "No requests yet.",
     "go_orders": "View orders",
-    "order_section_title": "This Order's Cancellations, Returns and Exchanges"
+    "order_section_title": "This Order's Cancellations, Returns and Exchanges",
+    "tracking_more": "+{{more}} more"
   },
   "detail": {
     "back": "Requests",
@@ -204,11 +205,10 @@
     "shipping_title": "Shipping",
     "collection_title": "Pickup",
     "collection_address": "Pickup address",
-    "collection_completed_at": "Picked up",
+    "collection_completed_at": "All items collected",
     "redelivery_title": "Reshipment",
     "redelivery_changed_badge": "Changed by customer",
-    "redelivered_at": "Reshipped",
-    "tracking": "Tracking",
+    "redelivered_at": "All items redelivered",
     "tracking_pending": "Not registered",
     "claim_info_title": "Request details",
     "compare_item": "Item",
@@ -268,7 +268,23 @@
       "row_earned_points": "Expected Points",
       "row_substituted": "Exchange target (option change)",
       "unit_count": ""
-    }
+    },
+    "tracking_no_tracking": "Arrived without tracking",
+    "tracking_arrived": "Arrived",
+    "tracking_in_transit": "In transit",
+    "advance_exchange_notice": "Advance exchange — we ship the new item first. Please send back the original item by {{date}}.",
+    "advance_exchange_notice_no_due": "Advance exchange — we ship the new item first. Please send back the original item after you receive it.",
+    "collection_overdue": "{{days}} day(s) past the return deadline",
+    "unreturned_badge": "Not returned",
+    "collection_address_n": "Return address {{n}}",
+    "item_collection_tracking": "Return tracking",
+    "item_redelivery_tracking": "Redelivery tracking",
+    "item_collection_state": "Original item: {{state}}",
+    "item_reject_reason": "Rejection reason: {{reason}}",
+    "collection_lane_title": "Original item return",
+    "collection_lane_counts": "{{collected}} of {{total}} arrived",
+    "collection_lane_due": "Return by {{date}}",
+    "admin_requested_notice": "This request was filed by the seller. Please contact customer service for changes."
   },
   "edit": {
     "title": "Edit request",

@@ -8,6 +8,10 @@ use Modules\Sirsoft\Ecommerce\Models\ShippingCarrier;
 /**
  * 회수중·발송중 전이에 실리는 송장(택배사 + 운송장 번호) 검증 — 클레임 전이 요청 공용
  *
+ * 송장은 **상품 행**에 쓰인다 — 상품 칸 요청은 고른 행(수량 지정 시 쪼갠 행)에, 신청서 단건·목록 일괄
+ * 요청은 그 신청서의 이동 대상 행 전부에 쓴다. 회수도착·발송도착 직접 전이(P2)는 송장이 선택이다 —
+ * 실리면 그 행에 함께 쓴다.
+ *
  * 회수중·발송중은 택배가 물건을 싣고 가는 중이라는 사실이라 송장이 있어야 들어간다(#599 후속
  * 운영 결정). 신청서 단건·상품 칸 요청은 한 쌍(`carrier_id`·`tracking_number`)을, 목록 일괄 요청은
  * 신청서마다 한 쌍(`trackings[]`)을 싣는다 — 송장은 신청서마다 다르다. 서비스도 같은 규칙으로
@@ -25,6 +29,16 @@ trait ValidatesClaimTransitionTracking
     protected function trackingRequiredStatuses(): array
     {
         return ['collecting', 'redelivering'];
+    }
+
+    /**
+     * 송장을 선택으로 함께 실을 수 있는 도착 상태 값을 반환합니다. (P2 — 회수도착·발송도착)
+     *
+     * @return array<int, string> 상태 값
+     */
+    protected function trackingOptionalStatuses(): array
+    {
+        return ['collected', 'redelivered'];
     }
 
     /**
@@ -77,13 +91,28 @@ trait ValidatesClaimTransitionTracking
      */
     protected function transitionTrackingContext(string $status): array
     {
-        if (! $this->requiresTransitionTracking($status)) {
-            return [];
+        if ($this->requiresTransitionTracking($status)) {
+            return [
+                'carrier_id' => (int) $this->validated('carrier_id'),
+                'tracking_number' => (string) $this->validated('tracking_number'),
+            ];
         }
 
-        return [
-            'carrier_id' => (int) $this->validated('carrier_id'),
-            'tracking_number' => (string) $this->validated('tracking_number'),
-        ];
+        // 도착 직접 전이에 실린 송장은 그 행에 함께 쓴다 — 한쪽만 오면 서비스가 `claim_tracking_incomplete` 로 막는다.
+        if (in_array($status, $this->trackingOptionalStatuses(), true)) {
+            $carrierId = $this->validated('carrier_id');
+            $trackingNumber = $this->validated('tracking_number');
+
+            if (($carrierId === null || $carrierId === '') && ($trackingNumber === null || $trackingNumber === '')) {
+                return [];
+            }
+
+            return [
+                'carrier_id' => $carrierId === null || $carrierId === '' ? null : (int) $carrierId,
+                'tracking_number' => $trackingNumber === null ? null : (string) $trackingNumber,
+            ];
+        }
+
+        return [];
     }
 }

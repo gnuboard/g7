@@ -9,6 +9,7 @@ use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderReturn;
 use Modules\Sirsoft\Ecommerce\Services\OrderReturnService;
 use Modules\Sirsoft\Ecommerce\Tests\Concerns\BuildsClaimFlowOrders;
+use Modules\Sirsoft\Ecommerce\Tests\Concerns\ReadsReturnRefundLink;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
@@ -39,6 +40,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 class SequentialReturnRefundShareTest extends ModuleTestCase
 {
     use BuildsClaimFlowOrders;
+    use ReadsReturnRefundLink;
 
     /**
      * 클레임 사유 카탈로그를 심고 시작합니다.
@@ -102,7 +104,7 @@ class SequentialReturnRefundShareTest extends ModuleTestCase
     private function refundAmountOf(OrderReturn $return): float
     {
         return (float) DB::table('ecommerce_order_refunds')
-            ->where('id', $return->fresh()->refund_id)
+            ->where('id', $this->returnRefundId($return))
             ->value('refund_amount');
     }
 
@@ -115,7 +117,7 @@ class SequentialReturnRefundShareTest extends ModuleTestCase
     private function refundOptionIdsOf(OrderReturn $return): array
     {
         return DB::table('ecommerce_order_refund_options')
-            ->where('order_refund_id', $return->fresh()->refund_id)
+            ->where('order_refund_id', $this->returnRefundId($return))
             ->pluck('order_option_id')
             ->map(fn ($id) => (int) $id)
             ->all();

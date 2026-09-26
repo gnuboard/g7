@@ -319,4 +319,20 @@ class OrderRefundRepository implements OrderRefundRepositoryInterface
             ->where('reason_code', $reasonCode)
             ->count();
     }
+
+    /**
+     * 환불 고유 필터 — 접수 출처 (운영자 대리 접수 = `refund_source_type = admin`)
+     *
+     * @param  Builder  $query  대상 쿼리
+     * @param  array  $filters  필터
+     * @return void 쿼리를 제자리에서 수정한다
+     */
+    protected function applyAdminClaimTypeFilters(Builder $query, array $filters): void
+    {
+        if (($filters['request_source'] ?? null) === 'admin') {
+            $query->where('refund_source_type', RefundSourceTypeEnum::ADMIN->value);
+        } elseif (($filters['request_source'] ?? null) === 'customer') {
+            $query->where('refund_source_type', '!=', RefundSourceTypeEnum::ADMIN->value);
+        }
+    }
 }

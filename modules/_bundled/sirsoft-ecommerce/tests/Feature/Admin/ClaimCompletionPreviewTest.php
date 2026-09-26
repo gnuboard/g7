@@ -18,6 +18,7 @@ use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
 use Modules\Sirsoft\Ecommerce\Services\OrderExchangeService;
 use Modules\Sirsoft\Ecommerce\Services\OrderReturnService;
 use Modules\Sirsoft\Ecommerce\Tests\Concerns\BuildsClaimFlowOrders;
+use Modules\Sirsoft\Ecommerce\Tests\Concerns\ReadsReturnRefundLink;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
@@ -33,6 +34,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 class ClaimCompletionPreviewTest extends ModuleTestCase
 {
     use BuildsClaimFlowOrders;
+    use ReadsReturnRefundLink;
 
     protected User $admin;
 
@@ -396,8 +398,8 @@ class ClaimCompletionPreviewTest extends ModuleTestCase
         $response->assertStatus(201);
 
         $return->refresh();
-        $this->assertNotNull($return->refund_id);
-        $this->assertSame(26000.0, (float) OrderRefund::findOrFail($return->refund_id)->refund_amount);
+        $this->assertNotNull($this->returnRefundId($return));
+        $this->assertSame(26000.0, (float) OrderRefund::findOrFail($this->returnRefundId($return))->refund_amount);
     }
 
     /**
@@ -708,7 +710,7 @@ class ClaimCompletionPreviewTest extends ModuleTestCase
             ->postJson($this->base()."/returns/{$return->fresh()->id}/refund-request")
             ->assertStatus(403);
 
-        $this->assertNull($return->fresh()->refund_id);
+        $this->assertNull($this->returnRefundId($return));
     }
 
     /**
@@ -764,7 +766,7 @@ class ClaimCompletionPreviewTest extends ModuleTestCase
             createRefundRequest: true,
         ));
 
-        $refund = OrderRefund::findOrFail($return->fresh()->refund_id);
+        $refund = OrderRefund::findOrFail($this->returnRefundId($return));
 
         $this->actingAs($this->admin)
             ->putJson($this->base()."/refunds/{$refund->id}/amounts", ['refund_method' => 'not_a_method'])

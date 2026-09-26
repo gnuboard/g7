@@ -176,7 +176,8 @@
         "refund": "返金",
         "none": "-"
       },
-      "empty": "受け付けた件がありません。"
+      "empty": "受け付けた件がありません。",
+      "pending_refund_badge": "返金未受け取り"
     },
     "payment_info": {
       "title": "決済情報",
@@ -822,5 +823,41 @@
       "reshipping_completed": "交換配送完了",
       "completed": "交換完了"
     }
+  },
+  "claim_request": {
+    "button_exchange": "交換受け取り",
+    "button_return": "返品受け取り",
+    "button_cancel_refund": "キャンセル·返金受け取り",
+    "gate_hint": "選択した商品の状態では受け取ることができません — 交換·返品は配送中·配送完了·購入確定のみ、キャンセル·返金はまだ送られていない商品のみ受け取ります。",
+    "no_permission": "交換·返品·キャンセル受け取り権限がありません。",
+    "title_exchange": "交換受け取り（顧客の代わりに）",
+    "title_return": "返品受け取り（顧客の代わりに）",
+    "description": "顧客の代わりに受け取ります。申請期間·申請可能ステータス設定は適用されません。",
+    "same_option": "同じオプションで交換",
+    "sold_out": "品切れ",
+    "reason": "理由",
+    "reason_placeholder": "理由を選択",
+    "seller_fault": "販売者責任",
+    "reason_detail_placeholder": "詳細な理由（相談内容など）",
+    "charge_method": "請求方法",
+    "charge_method_auto": "自動（請求額がある場合に選択）",
+    "redelivery_address": "再発送先",
+    "recipient_name": "受け取り人",
+    "phone": "連絡先",
+    "zipcode": "郵便番号",
+    "address1": "住所",
+    "address2": "詳細な住所",
+    "shipping_fee": "配送料",
+    "total_charge": "請求額 {{amount}}",
+    "refund_estimate": "返金予定 {{amount}}",
+    "preview_needs_reason": "理由を選択すると配送料と請求額が計算されます。",
+    "approve": "受け取りと共に承認",
+    "customer_notice": "顧客に「販売者がお客様の代わりに受け取りました」通知が届き、顧客はこの申請を取り下げ·修正することができません。",
+    "submit": "受け取り",
+    "success": "顧客の代わりに受け取りました。",
+    "error": "受け取ることができませんでした。",
+    "reason_required": "理由を選択してください。",
+    "preview_error": "請求額を計算できませんでした。",
+    "context_load_failed": "受付可否を読み込めませんでした。ページを再読み込みしてください。"
   }
 }

@@ -92,7 +92,7 @@ trait FiltersAdminClaimList
      * 관리자 목록 필터를 쿼리에 적용합니다.
      *
      * @param  Builder  $query  대상 쿼리
-     * @param  array  $filters  필터 (statuses / from / to / fault_types / charge_methods / reason_code / requester_type / search_field / search_keyword / min_amount / max_amount / currency_code / charge_payment_methods)
+     * @param  array  $filters  필터 (statuses / from / to / fault_types / charge_methods / reason_code / requester_type / search_field / search_keyword / min_amount / max_amount / currency_code / charge_payment_methods / request_source / collection_overdue / pending_refund)
      * @return void 쿼리를 제자리에서 수정한다
      */
     protected function applyAdminClaimFilters(Builder $query, array $filters): void
@@ -149,7 +149,21 @@ trait FiltersAdminClaimList
         }
 
         $this->applyAdminClaimSearch($query, $filters, $columns);
+        $this->applyAdminClaimTypeFilters($query, $filters);
     }
+
+    /**
+     * 유형 고유 필터를 적용합니다. (접수 출처 · 회수 지연 · 환불 미접수 — 기본은 없음)
+     *
+     * 유형마다 근거 컬럼이 달라(교환·반품 = `requested_by_admin`, 환불 = `refund_source_type`) 대응표로
+     * 담기지 않는다. 그 축이 없는 유형은 이 메서드를 두지 않아 필터가 조용히 무시된다 — 다른 탭 건수가
+     * 0 이 되지 않는다.
+     *
+     * @param  Builder  $query  대상 쿼리
+     * @param  array  $filters  필터 (request_source / collection_overdue / pending_refund)
+     * @return void 쿼리를 제자리에서 수정한다
+     */
+    protected function applyAdminClaimTypeFilters(Builder $query, array $filters): void {}
 
     /**
      * 금액 범위 필터를 쿼리에 적용합니다.

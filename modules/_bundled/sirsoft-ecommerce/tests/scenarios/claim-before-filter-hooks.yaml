@@ -35,6 +35,8 @@ axes:
     - option_status_change
     - header_sync
     - complete
+    - tracking_update
+    - mode_change
   hook_kind:
     - before
     - filter
@@ -43,6 +45,7 @@ exclusions:
   - { operation: bulk_status_change, hook_kind: filter, reason: "일괄 전이는 건마다 헤더 전이를 부르므로 필터 계약은 status_change 축이 대표한다" }
   - { operation: withdraw, hook_kind: filter, reason: "철회에는 바꿀 입력이 없다 — 이어지는 전이의 filter_status_change_data 가 그 자리다" }
   - { operation: header_sync, hook_kind: filter, reason: "헤더 목표는 상품 상태가 정한 값이다 — 바꾸면 헤더와 상품이 갈린다" }
+  - { operation: mode_change, hook_kind: filter, reason: "바꿀 수 있는 값이 진행 방식 하나뿐이고 그 값은 게이트가 판정한다(#599 후속 §3-7) — 필터를 두지 않는다" }
 
 effects:
   - exchange_request_before_hook_blocks_the_intake_before_any_write
@@ -65,6 +68,10 @@ effects:
   - return_complete_before_hook_blocks_completion_and_restock
   - exchange_complete_filter_changes_the_restock_choice
   - refund_complete_before_hook_blocks_the_execution
+  # 상품 행 송장 · 진행 방식 (#599 후속 §3-7)
+  - tracking_update_before_hook_blocks_the_write
+  - tracking_update_filter_changes_only_the_tracking_pair
+  - exchange_mode_before_hook_blocks_the_change
 
 test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Feature/Claims/ClaimBeforeFilterHooksTest.php

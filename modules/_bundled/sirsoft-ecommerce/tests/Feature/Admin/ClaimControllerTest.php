@@ -6,12 +6,15 @@ use App\Contracts\Extension\StorageInterface;
 use App\Extension\HookManager;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Carbon;
 use Mockery;
 use Modules\Sirsoft\Ecommerce\Enums\CancelStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\CancelTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimChargeMethodEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimImageUploaderTypeEnum;
+use Modules\Sirsoft\Ecommerce\Enums\ClaimTrackingDirectionEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimTypeEnum;
+use Modules\Sirsoft\Ecommerce\Enums\ExchangeModeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ExchangeStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ReturnStatusEnum;
@@ -20,10 +23,13 @@ use Modules\Sirsoft\Ecommerce\Models\ClaimPayment;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderCancel;
 use Modules\Sirsoft\Ecommerce\Models\OrderExchange;
+use Modules\Sirsoft\Ecommerce\Models\OrderExchangeOption;
 use Modules\Sirsoft\Ecommerce\Models\OrderOption;
 use Modules\Sirsoft\Ecommerce\Models\OrderRefund;
 use Modules\Sirsoft\Ecommerce\Models\OrderReturn;
+use Modules\Sirsoft\Ecommerce\Models\OrderReturnOption;
 use Modules\Sirsoft\Ecommerce\Models\OrderShipping;
+use Modules\Sirsoft\Ecommerce\Models\ProductOption;
 use Modules\Sirsoft\Ecommerce\Models\ShippingCarrier;
 use Modules\Sirsoft\Ecommerce\Services\ClaimAttachmentService;
 use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
@@ -48,6 +54,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  * - 상품 단위 전이(D25) — 상위 스코프 422(다른 신청서의 행) + 완료 경로
  * - 송장 — 회수 송장 등록 + collecting 자동 전이 + 불완전 422
  * - 첨부 — 운영자 대리 첨부(uploadFor)·일괄 정리(deleteFor) 소비
+ * - 선교환 — 완료 페이로드 `completion.unreturned` 의 미회수 완료 · 목록 회수 지연 필터(교환 전용)
  */
 class ClaimControllerTest extends ModuleTestCase
 {
@@ -89,6 +96,7 @@ class ClaimControllerTest extends ModuleTestCase
      */
     protected function tearDown(): void
     {
+        Carbon::setTestNow();
         $this->clearTestCurrencySettings();
         Mockery::close();
         parent::tearDown();
@@ -160,6 +168,22 @@ class ClaimControllerTest extends ModuleTestCase
             'reason_detail' => '단순 변심',
             'requested_by' => $order->user_id,
         ])['refund'];
+    }
+
+    /**
+     * 반품 상품 행이 가리키는 환불신청서 ID 를 반환합니다. (S7 — 헤더 `refund_id` 대신 상품 행 연결)
+     *
+     * @param  OrderReturn  $return  반품 신청서
+     * @return int|null 환불신청서 ID (연결된 행이 없으면 null)
+     */
+    protected function refundIdOf(OrderReturn $return): ?int
+    {
+        $id = OrderReturnOption::query()
+            ->where('order_return_id', $return->id)
+            ->whereNotNull('refund_id')
+            ->max('refund_id');
+
+        return $id === null ? null : (int) $id;
     }
 
     /**
@@ -1062,7 +1086,7 @@ class ClaimControllerTest extends ModuleTestCase
             ->assertJsonPath('data.claim.status', 'completed');
 
         $this->assertSame(0, OrderRefund::query()->where('order_id', $return->order_id)->count());
-        $this->assertNull($return->fresh()->refund_id);
+        $this->assertNull($this->refundIdOf($return));
     }
 
     /**
@@ -1087,7 +1111,7 @@ class ClaimControllerTest extends ModuleTestCase
             ->assertJsonPath('data.claim.status', 'completed');
 
         $fresh = $return->fresh();
-        $this->assertNotNull($fresh->refund_id);
+        $this->assertNotNull($this->refundIdOf($fresh));
         $this->assertSame(1, OrderRefund::query()->where('order_id', $return->order_id)->count());
     }
 
@@ -1463,7 +1487,7 @@ class ClaimControllerTest extends ModuleTestCase
         // '지금 접수' 를 골랐으므로 환불신청서가 1건 생긴다 — 단건 경로와 같은 결과다.
         $fresh = $return->fresh();
         $this->assertSame(ReturnStatusEnum::COMPLETED, $fresh->return_status);
-        $this->assertNotNull($fresh->refund_id);
+        $this->assertNotNull($this->refundIdOf($fresh));
         $this->assertSame(1, OrderRefund::query()->where('order_id', $return->order_id)->count());
     }
 
@@ -1491,7 +1515,7 @@ class ClaimControllerTest extends ModuleTestCase
             ->assertJsonPath('data.succeeded.0', $return->id);
 
         $this->assertSame(0, OrderRefund::query()->where('order_id', $return->order_id)->count());
-        $this->assertNull($return->fresh()->refund_id);
+        $this->assertNull($this->refundIdOf($return));
     }
 
     /**
@@ -1558,12 +1582,17 @@ class ClaimControllerTest extends ModuleTestCase
             'is_active' => true,
         ]);
 
-        $this->actingAs($this->admin)->putJson($this->base()."/returns/{$return->id}/collection-tracking", [
+        $item = $return->fresh('returnOptions')->returnOptions->first();
+
+        $this->actingAs($this->admin)->patchJson($this->base()."/returns/{$return->id}/options/tracking", [
+            'direction' => 'collection',
             'carrier_id' => $carrier->id,
             'tracking_number' => '1234567890',
+            'items' => [['id' => $item->id]],
         ])->assertOk()
             ->assertJsonPath('data.claim.status', 'collection_ready')
-            ->assertJsonPath('data.claim.collection_tracking_number', '1234567890');
+            ->assertJsonPath('data.claim.items.0.collection_tracking_number', '1234567890')
+            ->assertJsonPath('data.claim.items.0.status', 'collection_ready');
     }
 
     /**
@@ -1601,12 +1630,16 @@ class ClaimControllerTest extends ModuleTestCase
             'is_active' => true,
         ]);
 
-        $this->actingAs($this->admin)->putJson($this->base()."/exchanges/{$exchange->id}/redelivery-tracking", [
+        $item = $exchange->fresh('exchangeOptions')->exchangeOptions->first();
+
+        $this->actingAs($this->admin)->patchJson($this->base()."/exchanges/{$exchange->id}/options/tracking", [
+            'direction' => 'redelivery',
             'carrier_id' => $carrier->id,
             'tracking_number' => '9876543210',
+            'items' => [['id' => $item->id]],
         ])->assertOk()
             ->assertJsonPath('data.claim.status', 'redelivery_ready')
-            ->assertJsonPath('data.claim.redelivery_tracking_number', '9876543210');
+            ->assertJsonPath('data.claim.items.0.redelivery_tracking_number', '9876543210');
     }
 
     /**
@@ -1618,10 +1651,13 @@ class ClaimControllerTest extends ModuleTestCase
      */
     public function test_collection_tracking_rejects_an_incomplete_pair(): void
     {
-        $return = $this->makeReturn();
+        $return = $this->approveReturn($this->makeReturn());
+        $item = $return->fresh('returnOptions')->returnOptions->first();
 
-        $this->actingAs($this->admin)->putJson($this->base()."/returns/{$return->id}/collection-tracking", [
+        $this->actingAs($this->admin)->patchJson($this->base()."/returns/{$return->id}/options/tracking", [
+            'direction' => 'collection',
             'tracking_number' => '1234567890',
+            'items' => [['id' => $item->id]],
         ])->assertStatus(422)
             ->assertJsonPath('message', __('sirsoft-ecommerce::exceptions.claim_tracking_incomplete'));
     }
@@ -1955,8 +1991,9 @@ class ClaimControllerTest extends ModuleTestCase
     }
 
     /**
-     * 상품 칸 반려의 사유가 신청서에 남는다 — 상품 전부를 반려해 신청서가 따라 반려될 때도
-     * (`syncHeaderFromOptions` 가 사유를 지우지 않는다), 일부만 반려해 신청서가 그대로일 때도.
+     * 상품 칸 반려의 사유는 반려된 상품 행에 남고(S3), 상품 전부를 반려해 신청서가 따라 반려될 때는
+     * 신청서에도 남는다(`syncHeaderFromOptions` → `stampFor(REJECTED)`). 일부만 반려해 신청서가 그대로면
+     * 신청서 사유는 비어 있다 — 나머지 상품이 승인돼도 구매자 화면에 반려 사유가 남던 결함.
      *
      * @effects claim_item_rejection_reason_reaches_the_claim
      *
@@ -1993,7 +2030,9 @@ class ClaimControllerTest extends ModuleTestCase
 
         $partial->refresh();
         $this->assertSame(ReturnStatusEnum::REQUESTED, $partial->return_status);
-        $this->assertSame('1개는 개봉 상품입니다.', $partial->reject_reason);
+        $this->assertNull($partial->reject_reason);
+        $this->assertSame('1개는 개봉 상품입니다.', OrderReturnOption::find($partialItem->id)->reject_reason);
+        $this->assertSame(ReturnStatusEnum::REJECTED, OrderReturnOption::find($partialItem->id)->option_status);
     }
 
     /**
@@ -2085,8 +2124,8 @@ class ClaimControllerTest extends ModuleTestCase
         $fresh = $return->fresh('returnOptions');
         $this->assertSame(ReturnStatusEnum::COLLECTING, $fresh->return_status);
         $this->assertSame(ReturnStatusEnum::COLLECTING, $fresh->returnOptions->first()->option_status);
-        $this->assertSame($carrier->id, $fresh->collection_carrier_id);
-        $this->assertSame('CJ-1234', $fresh->collection_tracking_number);
+        $this->assertSame($carrier->id, (int) $fresh->returnOptions->first()->collection_carrier_id);
+        $this->assertSame('CJ-1234', $fresh->returnOptions->first()->collection_tracking_number);
         // 회수준비중을 거치지 않았다 — 고객에게는 「회수중」 한 통만 나간다.
         $this->assertSame(['approved>collecting'], $seen);
     }
@@ -2113,7 +2152,7 @@ class ClaimControllerTest extends ModuleTestCase
         ])->assertOk();
 
         $this->assertSame(ReturnStatusEnum::COLLECTING, $return->fresh()->return_status);
-        $this->assertSame('HD-0001', $return->fresh()->collection_tracking_number);
+        $this->assertSame('HD-0001', $return->fresh('returnOptions')->returnOptions->first()->collection_tracking_number);
     }
 
     /**
@@ -2152,8 +2191,8 @@ class ClaimControllerTest extends ModuleTestCase
             ],
         ])->assertOk()->assertJsonCount(2, 'data.succeeded');
 
-        $this->assertSame('A-1', $first->fresh()->collection_tracking_number);
-        $this->assertSame('B-2', $second->fresh()->collection_tracking_number);
+        $this->assertSame('A-1', $first->fresh('returnOptions')->returnOptions->first()->collection_tracking_number);
+        $this->assertSame('B-2', $second->fresh('returnOptions')->returnOptions->first()->collection_tracking_number);
         $this->assertSame(ReturnStatusEnum::COLLECTING, $second->fresh()->return_status);
     }
 
@@ -2171,9 +2210,11 @@ class ClaimControllerTest extends ModuleTestCase
         $carrier = $this->testClaimCarrier();
         $tooLong = str_repeat('1', 51);
 
-        $this->actingAs($this->admin)->putJson($this->base()."/returns/{$return->id}/collection-tracking", [
+        $this->actingAs($this->admin)->patchJson($this->base()."/returns/{$return->id}/options/tracking", [
+            'direction' => 'collection',
             'carrier_id' => $carrier->id,
             'tracking_number' => $tooLong,
+            'items' => [['id' => $item->id]],
         ])->assertStatus(422)->assertJsonValidationErrors(['tracking_number']);
 
         $this->actingAs($this->admin)->patchJson($this->base()."/returns/{$return->id}/options/bulk-status", [
@@ -2183,9 +2224,11 @@ class ClaimControllerTest extends ModuleTestCase
             'tracking_number' => $tooLong,
         ])->assertStatus(422)->assertJsonValidationErrors(['tracking_number']);
 
-        $this->actingAs($this->admin)->putJson($this->base()."/returns/{$return->id}/collection-tracking", [
+        $this->actingAs($this->admin)->patchJson($this->base()."/returns/{$return->id}/options/tracking", [
+            'direction' => 'collection',
             'carrier_id' => $carrier->id,
             'tracking_number' => str_repeat('1', 50),
+            'items' => [['id' => $item->id]],
         ])->assertOk();
     }
 
@@ -2357,18 +2400,23 @@ class ClaimControllerTest extends ModuleTestCase
             $exchange = $service->transition($exchange, $step, $this->claimTrackingFor($step));
         }
 
-        $successorId = $exchange->fresh('exchangeOptions')->exchangeOptions->first()->new_order_option_id;
+        $item = $exchange->fresh('exchangeOptions')->exchangeOptions->first();
+        $successorId = $item->new_order_option_id;
 
-        $this->actingAs($this->admin)->putJson($this->base()."/exchanges/{$exchange->id}/redelivery-tracking", [
+        // 발송중 행의 송장 정정 — 그 상품 행의 후속 주문옵션 배송 행이 따라 바뀐다(R11).
+        $this->actingAs($this->admin)->patchJson($this->base()."/exchanges/{$exchange->id}/options/tracking", [
+            'direction' => 'redelivery',
             'carrier_id' => $this->testClaimCarrier()->id,
             'tracking_number' => 'FIXED-9999',
+            'items' => [['id' => $item->id]],
         ])->assertOk();
 
         $this->assertSame('FIXED-9999', OrderShipping::where('order_option_id', $successorId)->first()?->tracking_number);
     }
 
     /**
-     * 목록 응답이 택배사 선택지와 행마다 저장된 송장을 나른다 — 회수중·발송중 일괄 모달이 이 값으로 미리 채운다.
+     * 목록 응답이 택배사 선택지와 저장된 송장을 나른다 — 회수중·발송중 일괄 모달이 이 값으로 미리 채운다.
+     * 송장은 상품 행에 있으므로 살아 있는 행이 모두 같은 송장일 때만 미리 채움(`tracking_prefill`)이 선다.
      * 배송사 엔드포인트는 `settings.read` 게이트라 클레임 권한만 가진 운영자에게는 목록 응답이 유일한 통로다.
      *
      * @effects claim_list_carries_carriers_and_saved_tracking
@@ -2377,15 +2425,194 @@ class ClaimControllerTest extends ModuleTestCase
      */
     public function test_list_carries_carriers_and_saved_tracking(): void
     {
-        $return = $this->makeReturn();
+        $return = $this->approveReturn($this->makeReturn());
         $carrier = $this->testClaimCarrier();
-        app(OrderReturnService::class)->registerCollectionTracking($return, $carrier->id, 'SAVED-1');
+        $itemId = (int) $return->fresh('returnOptions')->returnOptions->first()->id;
+        app(OrderReturnService::class)->writeItemTracking($return, ClaimTrackingDirectionEnum::COLLECTION, [$itemId], $carrier->id, 'SAVED-1');
 
         $response = $this->actingAs($this->admin)->getJson($this->base().'/claims?type=return')->assertOk();
 
         $this->assertNotEmpty($response->json('data.carriers'));
         $row = collect($response->json('data.data'))->firstWhere('id', $return->id);
-        $this->assertSame('SAVED-1', $row['collection_tracking_number']);
-        $this->assertSame($carrier->id, $row['collection_carrier_id']);
+        $this->assertSame('SAVED-1', $row['tracking_prefill']['collection']['tracking_number']);
+        $this->assertSame($carrier->id, $row['tracking_prefill']['collection']['carrier_id']);
+        $this->assertSame('SAVED-1', $row['tracking_summary']['collection']['first']);
+    }
+
+    // ================================================================
+    // 선교환 — 미회수 완료 · 회수 지연 필터 (D1~D3 · §3-5)
+    // ================================================================
+
+    /**
+     * 교환품을 먼저 보낸(발송중) 선교환을 만듭니다. (왕복 배송비 0원 — 미수납 없이 승인)
+     *
+     * @return OrderExchange 발송중 선교환
+     */
+    protected function redeliveringAdvanceExchange(): OrderExchange
+    {
+        app(EcommerceSettingsService::class)->setSetting('claim.advance_exchange_enabled', true);
+
+        $service = app(OrderExchangeService::class);
+        $exchange = $service->setExchangeMode($this->makeFreeExchange(), ExchangeModeEnum::ADVANCE);
+        $exchange = $service->transition($exchange->fresh(), ExchangeStatusEnum::APPROVED);
+
+        return $service->transition($exchange, ExchangeStatusEnum::REDELIVERING, [
+            'carrier_id' => $this->testClaimCarrier()->id,
+            'tracking_number' => 'ADV-RD-'.$exchange->id,
+        ])->fresh(['exchangeOptions']);
+    }
+
+    /**
+     * 선교환의 헌 물건이 출발하지 않은 행은 완료 페이로드의 `completion.unreturned`(행 ID => 사유)로만 완료된다 —
+     * 상품 단위·신청서 단위 두 완료 입구가 같은 페이로드를 미회수 완료로 옮긴다. 미회수 표시 없이 완료하거나
+     * 사유가 비어 있으면 422 이고, 미회수 행은 재고 복구를 골라도 재고가 늘지 않는다(헌 물건이 오지 않았다).
+     *
+     * @effects advance_exchange_unreturned_completion_payload_reaches_the_service
+     *
+     * @return void 반환값 없음
+     */
+    public function test_advance_exchange_unreturned_completion_payload_reaches_the_service(): void
+    {
+        $exchange = $this->redeliveringAdvanceExchange();
+        $item = $exchange->exchangeOptions->first();
+        $productOptionId = (int) OrderOption::find($item->order_option_id)->product_option_id;
+        $stockBefore = (int) ProductOption::find($productOptionId)->stock_quantity;
+        $endpoint = $this->base()."/exchanges/{$exchange->id}/options/bulk-status";
+
+        // 미회수 표시 없이는 완료할 수 없다 — 헌 물건이 출발하지 않았다.
+        $this->actingAs($this->admin)->patchJson($endpoint, [
+            'items' => [['id' => $item->id]],
+            'status' => 'completed',
+            'completion' => ['restore_stock_by_item' => [$item->id => true], 'create_refund_request' => false],
+        ])->assertStatus(422);
+
+        // 사유가 빈 미회수는 받지 않는다.
+        $this->actingAs($this->admin)->patchJson($endpoint, [
+            'items' => [['id' => $item->id]],
+            'status' => 'completed',
+            'completion' => [
+                'restore_stock_by_item' => [$item->id => true],
+                'create_refund_request' => false,
+                'unreturned' => [$item->id => '   '],
+            ],
+        ])->assertStatus(422)
+            ->assertJsonPath('message', __('sirsoft-ecommerce::exceptions.claim_unreturned_reason_required'));
+
+        $this->assertSame(ExchangeStatusEnum::REDELIVERING, OrderExchangeOption::find($item->id)->option_status);
+
+        $this->actingAs($this->admin)->patchJson($endpoint, [
+            'items' => [['id' => $item->id]],
+            'status' => 'completed',
+            'completion' => [
+                'restore_stock_by_item' => [$item->id => true],
+                'create_refund_request' => false,
+                'unreturned' => [$item->id => '고객 연락 두절'],
+            ],
+        ])->assertOk()->assertJsonPath('data.succeeded.0', $item->id);
+
+        $row = OrderExchangeOption::find($item->id);
+        $this->assertSame(ExchangeStatusEnum::COMPLETED, $row->option_status);
+        $this->assertNotNull($row->unreturned_at);
+        $this->assertSame('고객 연락 두절', $row->unreturned_reason);
+        $this->assertFalse((bool) $row->is_stock_restored);
+        $this->assertSame($stockBefore, (int) ProductOption::find($productOptionId)->stock_quantity, '미회수 행의 재고가 복구됐습니다.');
+        $this->assertSame(ExchangeStatusEnum::COMPLETED, $exchange->fresh()->exchange_status);
+
+        // 신청서 단위 완료 입구도 같은 페이로드를 같은 뜻으로 받는다.
+        $header = $this->redeliveringAdvanceExchange();
+        $headerItem = $header->exchangeOptions->first();
+
+        $this->actingAs($this->admin)->patchJson($this->base()."/exchanges/{$header->id}/status", [
+            'status' => 'completed',
+            'completion' => [
+                'restore_stock_by_item' => [$headerItem->id => false],
+                'create_refund_request' => false,
+                'unreturned' => [$headerItem->id => '회수 거부'],
+            ],
+        ])->assertOk();
+
+        $headerRow = OrderExchangeOption::find($headerItem->id);
+        $this->assertSame(ExchangeStatusEnum::COMPLETED, $headerRow->option_status);
+        $this->assertSame('회수 거부', $headerRow->unreturned_reason);
+        $this->assertSame(ExchangeStatusEnum::COMPLETED, $header->fresh()->exchange_status);
+    }
+
+    /**
+     * 완료 미리보기는 「미회수로 완료」 로 고른 행(`unreturned_item_ids`)을 실행과 같게 센다 — 완료 대상에 넣고
+     * 재고 복구 수에서는 뺀다(D26 「미리보기 = 실행」 · D3). 고르지 않으면 헌 물건이 출발하지 않은 행은 완료
+     * 대상이 아니고, 후보가 아닌 행 ID 는 조용히 빠진다(실행은 422 로 막는다).
+     *
+     * @effects advance_exchange_completion_preview_counts_unreturned_rows_like_execution
+     *
+     * @return void 반환값 없음
+     */
+    public function test_completion_preview_counts_unreturned_rows_like_execution(): void
+    {
+        $exchange = $this->redeliveringAdvanceExchange();
+        $itemId = (int) $exchange->exchangeOptions->first()->id;
+        $endpoint = $this->base().'/claims/completion-preview';
+        $claim = ['id' => $exchange->id, 'restore_stock_by_item' => [$itemId => true]];
+
+        // 미회수를 고르지 않으면 완료할 행이 없다 — 헌 물건이 출발하지 않았다.
+        $this->actingAs($this->admin)->postJson($endpoint, [
+            'claim_type' => 'exchange',
+            'create_refund_request' => false,
+            'claims' => [$claim],
+        ])->assertOk()
+            ->assertJsonPath('data.claims.0.completable_item_count', 0)
+            ->assertJsonPath('data.claims.0.unreturned_eligible_items.0.id', $itemId);
+
+        // 미회수로 고르면 완료 대상에 들고, 재고 복구를 켜 두어도 복구 수에는 들지 않는다.
+        $this->actingAs($this->admin)->postJson($endpoint, [
+            'claim_type' => 'exchange',
+            'create_refund_request' => false,
+            'claims' => [$claim + ['unreturned_item_ids' => [$itemId, 999999]]],
+        ])->assertOk()
+            ->assertJsonPath('data.claims.0.completable_item_ids', [$itemId])
+            ->assertJsonPath('data.claims.0.completable_item_count', 1)
+            ->assertJsonPath('data.claims.0.stock_restore_count', 0)
+            ->assertJsonPath('data.claims.0.stock_discard_count', 1);
+    }
+
+    /**
+     * 목록의 회수 지연 필터(`collection_overdue=1`)는 반송 기한이 지났는데 헌 물건이 출발하지 않은 선교환만 돌려준다 —
+     * 회수 송장이 적힌 선교환·일반 교환은 빠진다. 선교환은 교환에만 있으므로 반품 탭에서 이 축은 422(prohibited)다.
+     *
+     * @effects list_collection_overdue_filter_returns_only_overdue_advance_exchanges
+     *
+     * @return void 반환값 없음
+     */
+    public function test_list_collection_overdue_filter_returns_only_overdue_advance_exchanges(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-09-01 10:00:00'));
+
+        $overdue = $this->redeliveringAdvanceExchange();
+        $onTime = $this->redeliveringAdvanceExchange();
+        app(OrderExchangeService::class)->writeItemTracking(
+            $onTime,
+            ClaimTrackingDirectionEnum::COLLECTION,
+            [$onTime->exchangeOptions->first()->id],
+            $this->testClaimCarrier()->id,
+            'CL-ON-TIME',
+        );
+        $standard = $this->makeFreeExchange();
+
+        Carbon::setTestNow(Carbon::parse('2026-09-20 09:00:00'));
+
+        $all = $this->actingAs($this->admin)->getJson($this->base().'/claims?type=exchange')
+            ->assertOk()->json('data.data');
+        $this->assertEqualsCanonicalizing(
+            [$overdue->exchange_number, $onTime->exchange_number, $standard->exchange_number],
+            array_column($all, 'claim_number'),
+        );
+
+        $rows = $this->actingAs($this->admin)->getJson($this->base().'/claims?type=exchange&collection_overdue=1')
+            ->assertOk()->json('data.data');
+        $this->assertSame([$overdue->exchange_number], array_column($rows, 'claim_number'));
+        $this->assertTrue((bool) $rows[0]['is_collection_overdue']);
+
+        $this->actingAs($this->admin)->getJson($this->base().'/claims?type=return&collection_overdue=1')
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['collection_overdue']);
     }
 }

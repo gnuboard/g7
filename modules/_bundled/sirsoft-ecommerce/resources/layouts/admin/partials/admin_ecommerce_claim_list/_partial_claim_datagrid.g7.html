@@ -45,6 +45,13 @@
               </on>
               {{row.claim_number}}
             </span>
+            <!-- 행 뱃지 — 판매자 접수(D8)·선교환·회수 지연(선교환 반송 기한 경과)·환불 미접수(D9). 판정은 전부 서버가 행에 실어 준다. -->
+            <div class="flex flex-wrap gap-1 mt-0.5">
+              <badge data-if="{{row.is_admin_requested === true}}" variant="warning" size="sm">$t:defer:sirsoft-ecommerce.admin.claim.column.admin_requested_badge</badge>
+              <badge data-if="{{row.is_advance_exchange === true}}" variant="info" size="sm">$t:defer:sirsoft-ecommerce.admin.claim.column.advance_badge</badge>
+              <badge data-if="{{row.is_collection_overdue === true}}" variant="danger" size="sm">$t:defer:sirsoft-ecommerce.admin.claim.column.overdue_badge|days={{row.collection_overdue_days ?? 0}}</badge>
+              <badge data-if="{{row.has_pending_refund === true}}" variant="warning" size="sm">$t:defer:sirsoft-ecommerce.admin.claim.column.pending_refund_badge</badge>
+            </div>
           </cell>
         </column>
         <column field="order_number" header="$t:sirsoft-ecommerce.admin.claim.column.order_number" width="150px" :sortable="false" :required="false">
@@ -55,7 +62,7 @@
         </column>
         <column field="item_summary" header="$t:sirsoft-ecommerce.admin.claim.column.item" width="auto" :sortable="false" :required="false">
           <cell>
-            <div class="stack-flush gap-0.5 min-w-0">
+            <div class="stack-flush gap-1 min-w-0">
               <div class="font-medium truncate">
                 <span>{{row.item_summary?.product_name ?? '-'}}</span>
                 <span data-if="{{(row.item_summary?.item_count ?? 0) > 1}}" class="text-gray-500 dark:text-gray-400 font-normal ml-1">$t:defer:sirsoft-ecommerce.admin.claim.column.item_more|count={{(row.item_summary?.item_count ?? 1) - 1}}</span>
@@ -66,7 +73,7 @@
         </column>
         <column field="requester_name" header="$t:sirsoft-ecommerce.admin.claim.column.requester" width="130px" :sortable="false" :required="false">
           <cell>
-            <div class="stack-flush gap-0.5 min-w-0">
+            <div class="stack-flush gap-1 min-w-0">
               <span class="truncate block">{{row.requester_name ?? '-'}}</span>
               <span data-if="{{row.is_guest_request}}" class="text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.claim.column.guest_badge</span>
               <!-- 환불 출처 뱃지 (#599 후속 §5-6). 취소 발 환불이 환불 탭에 서게 되면서(D6) `고객 신청`/`운영자 접수`/`반품 발`/`교환 발` 을 구분해야 한다 — 구분이 없으면 운영자가 자기가 건 취소를 고객 신청으로 읽고, 고객이 철회할 수 있다고 오해한다. 고객 신청(direct)은 기본값이라 뱃지를 세우지 않는다(모든 줄에 같은 뱃지가 서면 정보가 되지 않는다). -->
@@ -91,12 +98,21 @@
         </column>
         <column comment="금액 표기는 서버가 준 `*_formatted` 만 쓴다 — 통화 기호·자릿수를 화면에서 조립하면 기본 통화가 원이 아닌 상점에서 단위만 틀린 금액이 나간다. 어느 필드가 실리는지는 유형이 정하므로(교환·반품=청구액 / 환불·취소=환불 합계) 행이 가진 필드로 분기한다." field="amount" header="$t:sirsoft-ecommerce.admin.claim.column.amount" width="140px" :sortable="false" :required="false">
           <cell>
-            <div class="stack-flush gap-0.5">
+            <div class="stack-flush gap-1">
               <span data-if="{{row.total_charge_amount_formatted != null}}" class="font-medium">{{row.total_charge_amount_formatted}}</span>
               <!-- 미수납 판정은 상태 라벨이 아니라 잔액으로 한다 — 분할 수납 건은 결제대기 라벨 그대로다. -->
               <span data-if="{{(row.outstanding_amount ?? 0) > 0}}" class="text-xs text-red-600 dark:text-red-400">$t:defer:sirsoft-ecommerce.admin.claim.column.outstanding_short|amount={{row.outstanding_amount_formatted}}</span>
               <span data-if="{{row.refund_total_formatted != null}}" class="font-medium">{{row.refund_total_formatted}}</span>
               <span data-if="{{row.total_charge_amount_formatted == null &amp;&amp; row.refund_total_formatted == null}}" class="text-gray-500 dark:text-gray-400">-</span>
+            </div>
+          </cell>
+        </column>
+        <column field="tracking" comment="운송장 열 (교환·반품) — 송장은 상품 행마다 있어 방향별 첫 운송장과 「외 N개」 로 줄인다(서버 `tracking_summary`). 「외 N개」 는 운송장이 둘 이상일 때만 붙인다 — 하나뿐인 대부분의 건에 「외 0개」 가 서면 안 된다(구매자 목록과 같은 규칙)." header="$t:sirsoft-ecommerce.admin.claim.column.tracking" width="170px" :sortable="false" :required="false">
+          <cell>
+            <div class="stack-flush gap-1 text-xs">
+              <div data-if="{{!!row.tracking_summary?.collection?.first}}" class="flex-center gap-1"><span>$t:defer:sirsoft-ecommerce.admin.claim.column.tracking_collection|number={{row.tracking_summary?.collection?.first ?? ''}}</span><span data-if="{{(row.tracking_summary?.collection?.count ?? 0) > 1}}" class="text-gray-500 dark:text-gray-400">$t:defer:sirsoft-ecommerce.admin.claim.column.tracking_more|more={{(row.tracking_summary?.collection?.count ?? 0) - 1}}</span></div>
+              <div data-if="{{!!row.tracking_summary?.redelivery?.first}}" class="flex-center gap-1"><span>$t:defer:sirsoft-ecommerce.admin.claim.column.tracking_redelivery|number={{row.tracking_summary?.redelivery?.first ?? ''}}</span><span data-if="{{(row.tracking_summary?.redelivery?.count ?? 0) > 1}}" class="text-gray-500 dark:text-gray-400">$t:defer:sirsoft-ecommerce.admin.claim.column.tracking_more|more={{(row.tracking_summary?.redelivery?.count ?? 0) - 1}}</span></div>
+              <span data-if="{{!row.tracking_summary?.collection?.first &amp;&amp; !row.tracking_summary?.redelivery?.first}}" class="text-gray-500 dark:text-gray-400">-</span>
             </div>
           </cell>
         </column>

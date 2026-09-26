@@ -2173,6 +2173,33 @@ return [
             'carrier_id_integer' => '택배사 ID 는 숫자여야 합니다.',
             'carrier_id_exists' => '등록되지 않은 택배사입니다.',
             'tracking_number_max' => '운송장 번호는 :max자 이하로 입력해 주세요.',
+            'direction_required' => '송장 방향(회수·재발송)을 선택해 주세요.',
+            'direction_in' => '송장 방향은 회수·재발송 중 하나여야 합니다.',
+            'deliver_carrier_required' => '도착 처리할 운송장의 택배사를 알 수 없습니다.',
+            'deliver_tracking_required' => '도착 처리할 운송장 번호를 알 수 없습니다.',
+        ],
+        'withdraw_reason' => [
+            'required' => '철회 사유를 입력해 주세요.',
+            'max' => '철회 사유는 2000자 이하로 입력해 주세요.',
+        ],
+        'request_source' => [
+            'in' => '접수 출처는 판매자 접수·고객 접수 중 하나여야 합니다.',
+            'prohibited' => '취소 목록은 접수 출처로 거를 수 없습니다.',
+        ],
+        'collection_overdue' => [
+            'prohibited' => '회수 지연 필터는 교환 목록에서만 쓸 수 있습니다.',
+        ],
+        'pending_refund' => [
+            'prohibited' => '환불 미접수 필터는 교환·반품 목록에서만 쓸 수 있습니다.',
+        ],
+        'exchange_mode' => [
+            'required' => '진행 방식을 선택해 주세요.',
+            'in' => '진행 방식은 일반 교환·선교환 중 하나여야 합니다.',
+        ],
+        'unreturned' => [
+            'array' => '미회수 완료 지시 형식이 올바르지 않습니다.',
+            'reason_string' => '미회수 사유는 문자열이어야 합니다.',
+            'reason_max' => '미회수 사유는 :max자 이하로 입력해 주세요.',
         ],
     ],
 

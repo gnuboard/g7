@@ -20,7 +20,11 @@
       "title": "進行段階",
       "approved_at": "承認日時",
       "rejected_at": "却下日時",
-      "withdrawn_at": "取下げ日時"
+      "withdrawn_at": "取下げ日時",
+      "collection_lane": "回収",
+      "collection_counts": "到着 {{collected}} · 運送中 {{in_transit}} · 保留中 {{pending}} · 未回収 {{unreturned}} / {{total}}",
+      "collection_due": "返送期限 {{date}}",
+      "collection_overdue": "{{days}}日遅延"
     },
     "items": {
       "title": "申請商品",
@@ -30,7 +34,8 @@
         "product": "商品",
         "quantity": "数量",
         "amount": "金額",
-        "status": "状態"
+        "status": "状態",
+        "tracking": "送り状"
       },
       "bulk_no_selection": "変更する商品を選択してください。",
       "bulk_no_status_selected": "変更する状態を選択してください。",
@@ -41,14 +46,27 @@
       "quantity_confirm_title": "処理数量確認",
       "quantity_confirm_description": "選択した商品を{{status}}ステータスで処理します。一部の数量のみ処理する場合は、数量を減らしてください。",
       "quantity_not_splittable": "再発送商品としてすでに作成された交換商品は数量を分割できません。全数量で処理されます。",
-      "bulk_split_notice": "{{kept}}個を処理し、{{remaining}}個は申請状態のままにしました。"
+      "bulk_split_notice": "{{kept}}個を処理し、{{remaining}}個は申請状態のままにしました。",
+      "collection_short": "回収",
+      "redelivery_short": "再発送",
+      "arrived_at": "到着 {{at}}",
+      "unreturned_badge": "未回収",
+      "stock_not_restored": "在庫未復旧",
+      "tracking_only": "送り状のみ保存",
+      "tracking_only_description": "選択した商品に{{direction}}送り状のみ保存します。ステータスは変わりません。",
+      "quantity_split_hint": "数量を減らすと、その商品が分割されます。例えば、シャツ3個中1個のみを適用すると、1個と2個に分割されます。",
+      "tracking_mixed_address": "回収先が異なる商品は1つの送り状でまとめることができません。回収先ごとに分けて保存してください。"
     },
     "completion": {
       "title": "完了処理",
       "description": "申請商品 {{count}}件を完了状態に切り替えます。在庫の復元と返金申請書の受付方法は次の画面で選びます。",
       "action": "完了処理",
       "unavailable_return": "回収中または回収到着した商品がないため、まだ完了することができません。商品が回収中になると完了することができます。",
-      "unavailable_exchange": "発送中または発送到着した商品がないため、まだ完了することができません。交換商品が発送中になると完了することができます。"
+      "unavailable_exchange": "発送中または発送到着した商品がないため、まだ完了することができません。交換商品が発送中になると完了することができます。",
+      "restore_stock": "在庫復旧",
+      "restore_stock_success": "在庫を復旧しました。",
+      "restore_stock_error": "在庫を復旧できませんでした。",
+      "stock_unrestored": "完了したが在庫を復旧していない商品{{count}}件"
     },
     "shipping": {
       "title": "配送情報",
@@ -63,11 +81,17 @@
       "redelivered_at": "再発送完了 {{at}}",
       "carrier_placeholder": "配送会社",
       "tracking_placeholder": "送り状番号",
-      "save": "保存",
       "track": "配送照会",
       "tracking_incomplete": "配送会社と送り状番号を一緒に入力してください。",
       "tracking_saved": "送り状情報を保存しました。",
-      "tracking_error": "送り状情報を保存できませんでした。"
+      "tracking_error": "送り状情報を保存できませんでした。",
+      "edit_hint": "送り状を記録または修正するには、「申請商品」欄から商品を選択して[送り状のみ保存]してください。",
+      "no_tracking_yet": "まだ登録された送り状がありません。",
+      "no_tracking_group": "送り状なしで到着",
+      "arrived": "到着",
+      "deliver": "到着処理",
+      "deliver_success": "到着処理を行いました。(処理{{succeeded}}件 · スキップ{{skipped}}件)",
+      "deliver_error": "到着処理に失敗しました。"
     },
     "reason": {
       "title": "申請理由",
@@ -173,7 +197,9 @@
       "fee_basis_live_policy": "注文時点のスナップショットがないため、現在の料金表で算出しました — 料金表を変更するとこの金額も変わります。",
       "file_refund_request": "返金申請書の受付",
       "file_refund_success": "返金申請書を受け付けました。",
-      "file_refund_error": "返金申請書の受付に失敗しました。"
+      "file_refund_error": "返金申請書の受付に失敗しました。",
+      "pending_title": "受け付ける返金額",
+      "payment_refunded": "返金 {{amount}}"
     },
     "refund_execute": {
       "cancellable_title": "キャンセル可能金額の算定",
@@ -251,6 +277,45 @@
       "reject_reason_required": "却下理由を入力してください。",
       "success": "申請書のステータスを変更しました。",
       "error": "申請書のステータス変更に失敗しました。"
+    },
+    "exchange_mode": {
+      "label": "進行方法",
+      "set_advance": "先交換に変換",
+      "set_standard": "通常交換に戻す",
+      "confirm_title": "進行方法の変更",
+      "confirm_advance": "新しい品物を先に送信し、既存の品物は発送日から{{days}}日以内に受け取る必要があります。先交換に変換しますか？",
+      "confirm_standard": "既存の品物を先に受け取った後、新しい品物を送信する通常交換に戻します。",
+      "confirm": "変更",
+      "updated": "進行方法を変更しました。",
+      "error": "進行方法を変更できませんでした。",
+      "overdue_banner": "既存商品の返送期限({{date}})が{{days}}日経過しています。顧客に返送をリクエストするか、「未回収で完了」を検討してください。"
+    },
+    "pending_refund": {
+      "banner": "返金申請書がまだ受け付けられていません — {{amount}}",
+      "card": "受け付ける返金額{{amount}}(商品{{count}}件)",
+      "action": "返金申請書受付"
+    },
+    "request_edit": {
+      "button": "編集",
+      "title": "申請内容の編集",
+      "description": "理由と詳細理由を修正します。販売者責任理由も選択できます。",
+      "detail_placeholder": "詳細理由",
+      "fee_hint": "理由の責任が変わると送料が再計算され、支払い待機案件・支払済み金額がその値に合わせられます。",
+      "save": "保存",
+      "success": "申請内容を編集しました。",
+      "error": "申請内容を編集できませんでした。"
+    },
+    "requested_by_admin": "{{name}}様が受付",
+    "withdrawn_by_admin": "{{name}}様が顧客要求により撤回",
+    "withdraw_on_behalf": {
+      "button": "顧客要求により撤回",
+      "title": "顧客要求により撤回",
+      "description": "顧客が申請キャンセルをリクエストしたときに使用します。顧客に「お客様のご要望により販売者が撤回いたしました」がご案内されます。却下とは異なります。",
+      "reason_placeholder": "撤回理由(必須) — 例：顧客からの電話要求",
+      "reason_required": "撤回理由を入力してください。",
+      "confirm": "撤回",
+      "success": "顧客要求により申請を撤回しました。",
+      "error": "申請を撤回できませんでした。"
     }
   },
   "subtab": {
@@ -287,7 +352,15 @@
     "min_amount": "最小金額",
     "max_amount": "最大金額",
     "currency_all": "すべて",
-    "charge_payment_method": "請求決済方法"
+    "charge_payment_method": "請求決済方法",
+    "claim_flags": "追加条件",
+    "request_source_option": {
+      "all": "受付元全体",
+      "admin": "販売者受付",
+      "customer": "顧客申請"
+    },
+    "collection_overdue": "回収遅延のみ",
+    "pending_refund": "返金未受付のみ"
   },
   "search": {
     "placeholder": "検索ワードを入力してください...",
@@ -351,7 +424,15 @@
     "item_more": "他{{count}}件",
     "item_quantity": "数量{{count}}",
     "guest_badge": "非会員",
-    "outstanding_short": "未収{{amount}}"
+    "outstanding_short": "未収{{amount}}",
+    "admin_requested_badge": "販売者受付",
+    "advance_badge": "先交換",
+    "overdue_badge": "回収遅延{{days}}日",
+    "pending_refund_badge": "返金未受付",
+    "tracking": "送り状",
+    "tracking_collection": "回収{{number}}",
+    "tracking_redelivery": "再発送{{number}}",
+    "tracking_more": "他{{more}}件"
   },
   "datagrid": {
     "total_count": "全{{count}}件"
@@ -415,6 +496,10 @@
     "preview_error": "完了処理の要約を読み込めませんでした。",
     "success": "完了処理を反映しました。",
     "error": "完了処理に失敗しました。",
-    "refund_later_desc_cancellation": "返金申請書を作成しなければ、この完了ではお金が出ていかないため、キャンセル申請書も作成されません。あとから申請書詳細の精算カードで受け付けられます。"
+    "refund_later_desc_cancellation": "返金申請書を作成しなければ、この完了ではお金が出ていかないため、キャンセル申請書も作成されません。あとから申請書詳細の精算カードで受け付けられます。",
+    "unreturned_title": "未回収で完了(先交換)",
+    "unreturned_desc": "新しい商品は送信されましたが、既存の商品が結局戻ってこなかった商品です。チェックすると、在庫を復旧せずに「未回収」で完了します。",
+    "unreturned_reason_placeholder": "未回収理由(必須)",
+    "unreturned_reason_required": "未回収で完了する商品の理由を入力してください。"
   }
 }

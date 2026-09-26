@@ -45,6 +45,9 @@ return [
         'toggle_active' => '활성 상태 변경',
         'tax_invoice_stale' => '세금계산서 미처리',
         'tracking_update' => '운송장 기록·정정',
+        'tracking_deliver' => '송장 도착 처리',
+        'mode_change' => '진행 방식 변경',
+        'stock_restore' => '재고 복구',
         'toggle_status' => '상태 전환',
         'update' => '수정',
         'update_quantity' => '수량 변경',
@@ -61,6 +64,7 @@ return [
         'request' => '신청 접수',
         'option_status_change' => '상품 단위 상태 변경',
         'update_amounts' => '금액 수정',
+        'request_update' => '신청 내용 수정',
         'complete' => '완료',
         'refund' => '환급',
         'execute' => '실행',
@@ -258,12 +262,29 @@ return [
         'claim_return_option_status_change' => '반품 신청서 상품 단위 상태 변경 (:claim_number · :count건)',
         'claim_refund_option_status_change' => '환불 신청서 상품 단위 상태 변경 (:claim_number · :count건)',
         'claim_cancel_option_status_change' => '취소신청서 상품 단위 상태 변경 (:claim_number · :count건)',
+        'claim_exchange_collection_tracking_update' => '교환 신청서 회수 송장 변경 (:claim_number · 상품 :count건)',
+        'claim_exchange_redelivery_tracking_update' => '교환 신청서 재발송 송장 변경 (:claim_number · 상품 :count건)',
+        'claim_return_collection_tracking_update' => '반품 신청서 회수 송장 변경 (:claim_number · 상품 :count건)',
+        'claim_exchange_collection_tracking_deliver' => '교환 신청서 회수 운송장 도착 처리 (:claim_number · :tracking_number · 상품 :count건)',
+        'claim_exchange_redelivery_tracking_deliver' => '교환 신청서 재발송 운송장 도착 처리 (:claim_number · :tracking_number · 상품 :count건)',
+        'claim_return_collection_tracking_deliver' => '반품 신청서 회수 운송장 도착 처리 (:claim_number · :tracking_number · 상품 :count건)',
+        'claim_exchange_mode_change' => '교환 신청서 진행 방식 변경 (:claim_number)',
+        'claim_exchange_stock_restore' => '교환 신청서 재고 복구 (:claim_number · 상품 :count건 · :quantity개)',
+        'claim_return_stock_restore' => '반품 신청서 재고 복구 (:claim_number · 상품 :count건 · :quantity개)',
         'claim_exchange_update_amounts' => '교환 신청서 금액 수정 (:claim_number)',
         'claim_return_update_amounts' => '반품 신청서 금액 수정 (:claim_number)',
         'claim_refund_update_amounts' => '환불 신청서 금액 수정 (:claim_number)',
+        'claim_exchange_request_update' => '교환 신청 내용 수정 (:claim_number)',
+        'claim_return_request_update' => '반품 신청 내용 수정 (:claim_number)',
+        'claim_refund_request_update' => '환불 신청 내용 수정 (:claim_number)',
+        'claim_exchange_request_update_on_behalf' => '교환 신청 내용 수정 — 운영자가 고객 대신 수정 (:claim_number)',
+        'claim_return_request_update_on_behalf' => '반품 신청 내용 수정 — 운영자가 고객 대신 수정 (:claim_number)',
+        'claim_refund_request_update_on_behalf' => '환불 신청 내용 수정 — 운영자가 고객 대신 수정 (:claim_number)',
         'claim_refund_execute' => '환불 실행 (:claim_number)',
         'claim_payment_complete' => '클레임 추가결제 완료 (:payment_number)',
         'claim_payment_refund' => '클레임 추가결제 환급 (:payment_number)',
+        // 금액을 싣는 새 환급 로그 — 옛 키 문구에 자리표시자를 더하면 금액 없이 남은 과거 로그가 「:amount」 를 드러낸다.
+        'claim_payment_refund_amount' => '클레임 추가결제 환급 (:payment_number, :amount)',
         'claim_payment_cancel' => '클레임 추가결제 대기 취소 (:payment_number)',
         'claim_image_upload' => '클레임 첨부 업로드 (:original_name)',
         'claim_image_delete' => '클레임 첨부 삭제 (:original_name)',
@@ -348,6 +369,10 @@ return [
         'meta_description' => 'META 설명',
 
         // OrderOption
+        'collection_tracking' => '회수 송장',
+        'redelivery_tracking' => '재발송 송장',
+        'exchange_mode' => '진행 방식',
+        'unreturned_reason' => '미회수 사유',
         'option_status' => '옵션 상태',
         'carrier_id' => '택배사',
         'tracking_number' => '운송장번호',
@@ -374,6 +399,18 @@ return [
         'refund_amount' => '환불 금액',
         'refund_points_amount' => '환불 마일리지',
         'refund_method' => '환불 수단',
+
+        // 클레임 신청 내용 수정 (D13 · S15)
+        'claim_reason' => '사유',
+        'fault_type' => '귀책',
+        'reason_detail' => '상세 사유',
+        'refund_bank' => '환불 계좌',
+        'redelivery_address' => '재발송지',
+    ],
+
+    // 변경 값 표시 (값을 싣지 않는 항목)
+    'values' => [
+        'masked_change' => '변경됨 (개인정보라 값은 남기지 않음)',
     ],
 
     // 이름을 되찾지 못한 엔티티의 표시 (설명 파라미터 해석 실패 시)

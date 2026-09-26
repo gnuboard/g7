@@ -54,6 +54,10 @@ class ClaimCompletionPreviewRequest extends FormRequest
             'claims.*.item_ids.*' => $this->itemScopeRule(),
             'claims.*.restore_stock_by_item' => ['nullable', 'array'],
             'claims.*.restore_stock_by_item.*' => ['boolean'],
+            // 선교환 「미회수로 완료」 로 고른 행 — 실행과 같은 완료 대상·재고 요약을 내기 위해 받는다(D3·D26).
+            // 신청서별 후보와의 교집합은 서비스가 낸다(후보가 아닌 ID 는 조용히 빠진다 — 실행은 422 로 막는다).
+            'claims.*.unreturned_item_ids' => ['nullable', 'array', 'max:200'],
+            'claims.*.unreturned_item_ids.*' => ['integer'],
         ];
     }
 
@@ -137,6 +141,9 @@ class ClaimCompletionPreviewRequest extends FormRequest
             'claims.*.item_ids.*.in' => __('sirsoft-ecommerce::validation.claims.items.not_in_claim'),
             'claims.*.restore_stock_by_item.array' => __('sirsoft-ecommerce::validation.claims.completion.restore_stock_by_item_array'),
             'claims.*.restore_stock_by_item.*.boolean' => __('sirsoft-ecommerce::validation.claims.completion.restore_stock_by_item_boolean'),
+            'claims.*.unreturned_item_ids.array' => __('sirsoft-ecommerce::validation.claims.items.array'),
+            'claims.*.unreturned_item_ids.max' => __('sirsoft-ecommerce::validation.claims.items.max'),
+            'claims.*.unreturned_item_ids.*.integer' => __('sirsoft-ecommerce::validation.claims.items.id_integer'),
         ];
     }
 
@@ -163,7 +170,7 @@ class ClaimCompletionPreviewRequest extends FormRequest
     /**
      * 대상 신청서 목록을 반환합니다.
      *
-     * @return array<int, array{id: int, item_ids?: array<int, int>, restore_stock_by_item?: array<int|string, bool>}> 대상 목록
+     * @return array<int, array{id: int, item_ids?: array<int, int>, restore_stock_by_item?: array<int|string, bool>, unreturned_item_ids?: array<int, int>}> 대상 목록
      */
     public function claims(): array
     {

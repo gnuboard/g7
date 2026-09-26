@@ -7,6 +7,7 @@ namespace Modules\Sirsoft\Ecommerce\Http\Resources;
 use App\Http\Resources\BaseApiResource;
 use Illuminate\Http\Request;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimTypeEnum;
+use Modules\Sirsoft\Ecommerce\Enums\ExchangeModeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundMethodEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundPriorityEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundSourceTypeEnum;
@@ -21,13 +22,17 @@ use Modules\Sirsoft\Ecommerce\Services\ClaimRefundAccountPolicy;
 use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
 use Modules\Sirsoft\Ecommerce\Services\RefundExecutionService;
 use Modules\Sirsoft\Ecommerce\Support\CalculationSnapshotPresenter;
+use Modules\Sirsoft\Ecommerce\Support\ClaimTrackingGroups;
 
 /**
  * 클레임 신청서 리소스 (교환·반품·환불·취소 공용 — 유저 목록·상세·비회원 공용)
  *
  * 네 유형의 헤더를 같은 모양(`claim_number` / `claim_type` / `status` / `items` / `images`)으로 정규화한다 —
  * 목록의 서브탭과 상세의 유형 분기 partial 이 하나의 데이터 형태를 읽는다(§5-1-1). 유형 고유 축
- * (교환의 재발송지·차액, 반품·교환의 회수 송장, 환불의 환불액·수단)은 있을 때만 싣는다.
+ * (교환의 재발송지·차액·진행 방식, 반품·교환의 운송장 묶음, 환불의 환불액·수단)은 있을 때만 싣는다.
+ *
+ * 송장은 **상품 행**마다 있다 — 헤더에는 송장 칸이 없다. 상세는 운송장별 묶음(`tracking_groups`)을,
+ * 목록은 방향별 첫 운송장과 개수(`tracking_summary`)를 싣는다. 상품 줄의 송장은 `items[]` 가 나른다.
  *
  * 결제 블록(`payments` / `outstanding_amount` / `payment_entry`)은 상세 응답에서 `withPaymentBlock()` 으로
  * 주입한다 — 목록 행마다 결제 건을 조회하지 않는다.
@@ -129,15 +134,22 @@ class ClaimResource extends BaseApiResource
     /**
      * 구매자가 이 신청서를 수정·철회할 수 있는 **출처**인지 판정합니다. (F3)
      *
-     * 서버 게이트(`OrderRefundRequestService::withdraw()`·`updateRequest()`)와 같은 축을 쓴다 —
-     * 화면만 열려 있으면 버튼이 뜨고 누르면 언제나 422 이고, 그것은 오류로 보고되지도 않는다.
-     * 환불 유형에만 출처 축이 있다(교환·반품은 구매자가 직접 낸 신청서뿐이다).
+     * 서버 게이트(`OrderRefundRequestService::withdraw()`·`updateRequest()`, 교환·반품의
+     * `claim_admin_requested_not_editable`)와 같은 축을 쓴다 — 화면만 열려 있으면 버튼이 뜨고 누르면
+     * 언제나 422 이고, 그것은 오류로 보고되지도 않는다. 교환·반품은 판매자 접수(`requested_by_admin`)가,
+     * 환불은 발생 출처가 그 축이다.
      *
      * @param  OrderExchange|OrderReturn|OrderRefund|OrderCancel  $claim  신청서
      * @return bool 구매자 조작 가능하면 true
      */
     protected function buyerMayEdit(OrderExchange|OrderReturn|OrderRefund|OrderCancel $claim): bool
     {
+        // 판매자가 접수한 교환·반품은 고객이 철회·수정할 수 없다(D8 — 서버 게이트
+        // `claim_admin_requested_not_editable` 와 같은 축).
+        if ($claim instanceof OrderExchange || $claim instanceof OrderReturn) {
+            return ! $claim->isAdminRequested();
+        }
+
         if (! $claim instanceof OrderRefund) {
             return true;
         }
@@ -162,8 +174,8 @@ class ClaimResource extends BaseApiResource
      *    로 가르면 회원 주문의 운영자 접수 건이 「비회원」으로 표시돼 운영자가 연락 수단을
      *    잘못 고른다 — 그 함정을 `OrderReturn::isGuestRequest()` 가 이미 기록해 두었다.
      *
-     * 반품·교환에는 대리 접수 경로가 없다(관리자 라우트가 없고 고객·비회원 창구뿐이다) —
-     * 그 유형에서 `admin` 이 나올 수 없으므로 ② 로만 갈린다.
+     * ③ 반품·교환은 판매자가 주문 상세에서 직권 접수할 수 있다(D5~D8) — `requested_by_admin` 이
+     *    있으면 `admin` 이다. 고객은 그 신청서를 철회·수정할 수 없다.
      *
      * @param  OrderExchange|OrderReturn|OrderRefund|OrderCancel  $claim  신청서
      * @return string 출처 코드 (customer|guest|admin)
@@ -171,6 +183,10 @@ class ClaimResource extends BaseApiResource
     protected function resolveRequestSource(OrderExchange|OrderReturn|OrderRefund|OrderCancel $claim): string
     {
         if ($claim instanceof OrderRefund && $claim->refund_source_type === RefundSourceTypeEnum::ADMIN) {
+            return 'admin';
+        }
+
+        if (($claim instanceof OrderExchange || $claim instanceof OrderReturn) && $claim->isAdminRequested()) {
             return 'admin';
         }
 
@@ -222,6 +238,25 @@ class ClaimResource extends BaseApiResource
         $order->loadMissing('user');
 
         return $order->user?->uuid;
+    }
+
+    /**
+     * 판매자 접수·대리 철회를 한 운영자의 이름을 반환합니다. (관계가 실린 응답에서만 — 없으면 null)
+     *
+     * 관리자 상세 조회(`AdminClaimService::findForDetail()`)가 두 관계를 함께 싣는다. 여기서 지연 로드하지
+     * 않는다 — 같은 관리자 확장 필드를 쓰는 주문상세 클레임 내역은 행마다 쿼리가 하나씩 붙는다.
+     *
+     * @param  OrderExchange|OrderReturn  $claim  교환·반품 신청서
+     * @param  string  $relation  운영자 관계명 (`requestedByAdminUser` / `withdrawnByAdminUser`)
+     * @return string|null 운영자 이름 (운영자 접수·철회가 아니거나 관계 미로드면 null)
+     */
+    protected function operatorNameOf(OrderExchange|OrderReturn $claim, string $relation): ?string
+    {
+        if (! $claim->relationLoaded($relation)) {
+            return null;
+        }
+
+        return $claim->getRelation($relation)?->name;
     }
 
     /**
@@ -322,8 +357,13 @@ class ClaimResource extends BaseApiResource
             // 행별 전이 선택지는 **관리자 상세**에서만 실린다 — 목록은 50행 × 200상품마다
             // 전이표를 계산하게 되고, 유저 응답은 그 어휘를 쓰지 않는다.
             'items' => ClaimItemResource::collection($items)->each(
-                function ($r) use ($currency, $snapshot) {
+                function ($r) use ($currency, $snapshot, $claim) {
                     $r->withOrderCurrency($currency)->withCurrencySnapshot($snapshot);
+
+                    // 선교환은 전이표·회수 진행 판정이 다르다 — 행이 그 방식을 알아야 선택지가 서버와 맞는다.
+                    if ($claim instanceof OrderExchange) {
+                        $r->withExchangeMode($claim->mode());
+                    }
 
                     if ($this->withAdminFields && ! $this->forList) {
                         $r->forAdminTransitions();
@@ -357,16 +397,19 @@ class ClaimResource extends BaseApiResource
                 'total_charge_amount_formatted' => $this->formatOrderCurrency((float) $claim->total_charge_amount, $currency),
                 'mc_total_charge_amount' => $this->formatStoredMultiCurrency($claim->mc_total_charge_amount),
                 'requires_additional_payment' => $claim->requiresAdditionalPayment(),
+                // 헤더 회수지는 대표값(첫 상품)이다 — 상품마다 회수지가 다를 수 있어(S4) 화면은
+                // `return_addresses` 로 주소별 묶음을 그린다.
                 'return_address_snapshot' => $this->forList ? null : $claim->return_address_snapshot,
-                'collection_carrier_id' => $claim->collection_carrier_id,
-                'collection_carrier_name' => $this->whenLoaded('collectionCarrier', fn () => $this->collectionCarrier?->getLocalizedName(), null),
-                'collection_tracking_number' => $claim->collection_tracking_number,
-                // 추적 URL 은 배송사 템플릿에서 만든다 — 화면이 규칙을 재조립하면 주문 배송 조회와
-                // 두 벌이 된다(형제 `OrderShippingResource` 는 같은 빌더를 쓴다).
-                'collection_tracking_url' => $this->whenLoaded('collectionCarrier', fn () => $claim->collection_tracking_number
-                    ? $this->collectionCarrier?->buildTrackingUrl((string) $claim->collection_tracking_number)
-                    : null, null),
+                'return_addresses' => $this->forList ? null : ClaimTrackingGroups::returnAddresses($claim),
+                // 운송장별 묶음(상세) · 방향별 첫 운송장과 개수(목록). 송장은 상품 행에 있다 — 추적 URL 은
+                // 배송사 템플릿에서 만든다(형제 `OrderShippingResource` 와 같은 빌더). [도착 처리] 가능
+                // 여부는 관리자 상세에만 싣는다.
+                'tracking_groups' => $this->forList ? null : ClaimTrackingGroups::for($claim, $this->withAdminFields),
+                'tracking_summary' => $this->forList ? ClaimTrackingGroups::summary($claim) : null,
+                // 「전체」 회수 완료 시각 — 신청서의 모든 살아 있는 상품이 회수도착에 이른 시각이다(S2).
+                // 상품별 도착은 `items[].collected_at_formatted`.
                 'collection_completed_at_formatted' => $this->formatDateTimeStringForUser($claim->collection_completed_at),
+                'is_admin_requested' => $claim->isAdminRequested(),
                 // 구매자가 이 신청서에 적어 낸 환불 계좌 — 환불신청서(아래 OrderRefund 블록)와 같은
                 // 키·같은 마스킹 게이트를 쓴다. 유형마다 이름이 다르면 운영자 화면이 유형별로 갈린다.
                 // 환불 계좌는 목록의 어느 칸도 읽지 않는다. 은행명 해석은 행마다 설정을
@@ -397,14 +440,9 @@ class ClaimResource extends BaseApiResource
                 'mc_additional_product_amount' => $this->formatStoredMultiCurrency($this->sumSignedItemPriceDifferences($claim, true)),
                 'mc_refund_product_amount' => $this->formatStoredMultiCurrency($this->sumSignedItemPriceDifferences($claim, false)),
                 'redelivery_address_snapshot' => $this->forList ? null : $claim->redelivery_address_snapshot,
-                'redelivery_carrier_id' => $claim->redelivery_carrier_id,
-                'redelivery_carrier_name' => $this->whenLoaded('redeliveryCarrier', fn () => $this->redeliveryCarrier?->getLocalizedName(), null),
-                'redelivery_tracking_number' => $claim->redelivery_tracking_number,
-                'redelivery_tracking_url' => $this->whenLoaded('redeliveryCarrier', fn () => $claim->redelivery_tracking_number
-                    ? $this->redeliveryCarrier?->buildTrackingUrl((string) $claim->redelivery_tracking_number)
-                    : null, null),
+                // 「전체」 발송 완료 시각(S2). 상품별 도착은 `items[].redelivered_at_formatted`.
                 'redelivered_at_formatted' => $this->formatDateTimeStringForUser($claim->redelivered_at),
-            ];
+            ] + $this->exchangeModeFields($claim);
         }
 
         if ($claim instanceof OrderRefund) {
@@ -498,6 +536,15 @@ class ClaimResource extends BaseApiResource
                 // 링크를 만들면 404 다(주문 상세 `OrderResource.user.uuid` 와 같은 축). 비회원은 null.
                 'requester_user_uuid' => $this->requesterUserUuid($order),
             ];
+
+            // 판매자 접수(D8)·대리 철회(S14)를 한 운영자 이름 — 관리자 상세에만 싣는다. 고객 응답은
+            // 출처(`is_admin_requested`)만 알면 되고, 운영자 이름은 내부 인력 정보라 내보내지 않는다.
+            if ($claim instanceof OrderExchange || $claim instanceof OrderReturn) {
+                $data += [
+                    'requested_by_admin_name' => $this->operatorNameOf($claim, 'requestedByAdminUser'),
+                    'withdrawn_by_admin_name' => $this->operatorNameOf($claim, 'withdrawnByAdminUser'),
+                ];
+            }
         }
 
         if ($this->paymentBlock !== null) {
@@ -516,6 +563,31 @@ class ClaimResource extends BaseApiResource
         }
 
         return $data;
+    }
+
+    /**
+     * 교환 진행 방식(일반·선교환)과 회수 기한·지연 필드를 만듭니다. (D1·D2)
+     *
+     * @param  OrderExchange  $claim  교환 신청서
+     * @return array<string, mixed> 진행 방식 필드
+     */
+    protected function exchangeModeFields(OrderExchange $claim): array
+    {
+        $mode = $claim->mode();
+        $overdue = ClaimTrackingGroups::overdueOf($claim);
+
+        return [
+            'exchange_mode' => $mode->value,
+            'exchange_mode_label' => $mode->label(),
+            'exchange_mode_variant' => $mode->variant(),
+            'is_advance_exchange' => $mode === ExchangeModeEnum::ADVANCE,
+            'collection_due_at_formatted' => $this->formatDateTimeStringForUser($claim->collection_due_at),
+            'collection_due_date_formatted' => $claim->collection_due_at !== null
+                ? $this->formatDateForUser($claim->collection_due_at)
+                : null,
+            'is_collection_overdue' => $overdue['is_overdue'],
+            'collection_overdue_days' => $overdue['days'],
+        ];
     }
 
     /**

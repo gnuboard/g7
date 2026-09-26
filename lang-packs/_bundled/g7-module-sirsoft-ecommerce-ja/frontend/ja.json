@@ -459,7 +459,8 @@
       "claim_reasons": "キャンセル·返品·交換理由",
       "claims": "キャンセル·返品·交換一覧",
       "orderClaims": "注文クレーム履歴",
-      "claim_settings": "配送ポリシークレーム設定"
+      "claim_settings": "配送ポリシークレーム設定",
+      "claimRequestContext": "職権受付文脈"
     },
     "action": {
       "request_pg_payment": {

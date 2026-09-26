@@ -56,10 +56,11 @@ interface OrderReturnRepositoryInterface
     public function listByOrderId(int $orderId, array $relations = []): Collection;
 
     /**
-     * 주문의 진행 중(비터미널)이면서 환불신청서가 아직 없는 반품 신청서를 조회합니다.
+     * 주문의 진행 중(비터미널)이면서 환불이 아직 연결되지 않은 상품 행이 남은 반품 신청서를 조회합니다.
      *
-     * 취소 가능 금액 산정(D19)의 선점액 축이 쓰는 조회다. 환불신청서가 생긴 반품은
-     * 그 환불신청서 쪽에서 이미 선점액으로 잡히므로 여기서 또 세면 두 배가 된다.
+     * 취소 가능 금액 산정(D19)의 선점액 축이 쓰는 조회다. 환불신청서는 완료 회차마다 상품 행에
+     * 연결되므로(S7), 연결된 행의 몫은 그 환불신청서 쪽에서 이미 선점액으로 잡힌다 — 여기서 또 세면
+     * 두 배가 된다. 호출부는 연결되지 않은 행만 재계산한다.
      *
      * @param  int  $orderId  주문 ID
      * @param  array<int>  $excludeIds  집계에서 제외할 반품 신청서 ID (실행 대상 자기 자신)
@@ -101,7 +102,7 @@ interface OrderReturnRepositoryInterface
      * 특정 배송사를 회수 택배사로 지정한 반품 신청 건수를 셉니다.
      *
      * 배송사를 삭제해도 되는지 판단할 때 사용합니다. 반품 신청서는 배송사를 `order_shippings`
-     * 가 아니라 자기 표의 `collection_carrier_id` 로 붙잡으므로, 일반 배송 건수만 세면
+     * 가 아니라 자기 **상품 행**의 `collection_carrier_id` 로 붙잡으므로(R12), 일반 배송 건수만 세면
      * **회수 전용으로만 쓰인 배송사가 "안 쓰임" 으로 판정된다.** 그 외래키는 `nullOnDelete`
      * 라 그 상태로 삭제가 통과하면 접수된 신청서의 택배사가 오류도 로그도 없이 비워진다.
      *

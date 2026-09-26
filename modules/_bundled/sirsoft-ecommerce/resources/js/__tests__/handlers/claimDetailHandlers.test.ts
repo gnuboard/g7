@@ -14,15 +14,27 @@
  * @vitest-environment jsdom
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
 import {
+    selectClaimItemBulkStatusHandler,
+    selectClaimItemTrackingDirectionHandler,
+    openClaimExchangeModeConfirmHandler,
+    setClaimExchangeModeHandler,
+    openClaimWithdrawOnBehalfHandler,
+    withdrawClaimOnBehalfHandler,
+    openClaimRequestEditHandler,
+    updateClaimRequestOnBehalfHandler,
+    restoreClaimStockHandler,
+    toggleClaimCompleteUnreturnedHandler,
+    setClaimCompleteUnreturnedReasonHandler,
     openClaimDetailCompleteHandler,
     executeClaimItemBulkStatusHandler,
     openClaimItemQuantityConfirmHandler,
     syncClaimItemSelectionHandler,
     updateClaimItemQuantityHandler,
-    saveClaimTrackingHandler,
+    openClaimItemTrackingOnlyHandler,
+    deliverClaimTrackingHandler,
     saveClaimAdminMemoHandler,
     saveClaimAmountsHandler,
     openClaimRefundExecuteHandler,
@@ -71,12 +83,38 @@ const PREVIEW_RESPONSE = {
     },
 };
 
+/**
+ * 엔진 `G7Core.state.set` 과 같은 병합으로 전역 상태를 갱신합니다. (기본 deep — 객체는 재귀 병합, 배열·원시값은 교체)
+ *
+ * 얕은 병합 목으로는 「맵에서 키를 빼고 다시 넣기」 가 실제 엔진에서 키를 지우지 못하는 결함이 보이지 않는다
+ * (Chrome 실측 V-M6M7 — 미회수 체크 해제가 풀리지 않음).
+ *
+ * @param target 현재 상태
+ * @param source 갱신 값
+ * @returns 병합 결과
+ */
+function engineDeepMerge(target: Record<string, any>, source: Record<string, any>): Record<string, any> {
+    const out: Record<string, any> = { ...target };
+
+    for (const [key, value] of Object.entries(source)) {
+        const prev = out[key];
+        out[key] = value && typeof value === 'object' && !Array.isArray(value) && prev && typeof prev === 'object' && !Array.isArray(prev)
+            ? engineDeepMerge(prev, value)
+            : value;
+    }
+
+    return out;
+}
+
 const mockG7Core = {
     state: {
         get: () => mockGlobalState,
         getLocal: () => ({}),
-        set: vi.fn((updates: Record<string, any>) => {
-            mockGlobalState = { ...mockGlobalState, ...updates };
+        set: vi.fn((updates: Record<string, any>, options?: { merge?: 'replace' | 'shallow' | 'deep' }) => {
+            const mode = options?.merge ?? 'deep';
+            mockGlobalState = mode === 'replace'
+                ? { ...updates }
+                : mode === 'shallow' ? { ...mockGlobalState, ...updates } : engineDeepMerge(mockGlobalState, updates);
         }),
         setLocal: vi.fn(),
     },
@@ -152,6 +190,17 @@ function lastCall(method: 'post' | 'patch' | 'put'): [string, any] {
     expect(calls.length).toBeGreaterThan(0);
 
     return calls[calls.length - 1];
+}
+
+/**
+ * 다시 읽은 데이터소스 id 를 순서대로 돌려준다.
+ *
+ * @returns 데이터소스 id 목록
+ */
+function refetchedSources(): string[] {
+    return mockG7Core.dispatch.mock.calls
+        .filter(([action]: any[]) => action?.handler === 'refetchDataSource')
+        .map(([action]: any[]) => action.params.dataSourceId);
 }
 
 describe('상품 단위 일괄 전이 (D25)', () => {
@@ -532,10 +581,10 @@ describe('상세 처리 후 재조회 — 신청서와 활동 로그 둘 다', (
             },
             mockContext,
         )],
-        ['송장 저장', async () => saveClaimTrackingHandler(
+        ['송장 저장', async () => executeClaimItemBulkStatusHandler(
             {
-                handler: 'sirsoft-ecommerce.saveClaimTracking',
-                params: { pathSegment: 'exchanges', claimId: 31, kind: 'collection', carrierId: 3, trackingNumber: '1' },
+                handler: 'sirsoft-ecommerce.executeClaimItemBulkStatus',
+                params: { ...DETAIL_TARGET, itemIds: [55], trackingOnly: true, direction: 'collection', carrierId: 3, trackingNumber: '1' },
             },
             mockContext,
         )],
@@ -608,79 +657,106 @@ describe('상세 처리 후 재조회 — 신청서와 활동 로그 둘 다', (
     });
 });
 
-describe('회수·재발송 송장 저장', () => {
+describe('상품 행 송장 저장 (「송장만 저장」 — R3·R4·R7)', () => {
+    /** 송장이 붙은 두 상품 행 (같은 회수 운송장) */
+    const TRACKED_ROWS = [
+        { ...ITEM_ROWS[0], collection_carrier_id: 3, collection_tracking_number: 'CJ-1', return_address_snapshot: { zipcode: '06236' } },
+        { ...ITEM_ROWS[1], collection_carrier_id: 3, collection_tracking_number: 'CJ-1', return_address_snapshot: { zipcode: '06236' } },
+    ];
+
     /**
+     * 처음 누르면 입력칸을 열고 고른 행들의 **공통 송장**을 미리 채운다(P1). 요청은 나가지 않는다.
+     *
      * @scenario claim_type=exchange, claim_stage=in_progress
      * @effects claim_collection_tracking_saved
      */
-    it('회수 송장은 회수 엔드포인트로 나간다', async () => {
-        await saveClaimTrackingHandler(
+    it('처음 누르면 입력칸을 열고 공통 송장을 미리 채운다', async () => {
+        await openClaimItemTrackingOnlyHandler(
             {
-                handler: 'sirsoft-ecommerce.saveClaimTracking',
-                params: { pathSegment: 'returns', claimId: 12, kind: 'collection', carrierId: '3', trackingNumber: '1234567890' },
+                handler: 'sirsoft-ecommerce.openClaimItemTrackingOnly',
+                params: { ...DETAIL_TARGET, itemIds: [55, 56], trackingMode: false, direction: 'collection', rows: TRACKED_ROWS },
             },
             mockContext,
         );
 
-        const [url, body] = lastCall('put');
-        expect(url).toBe(`${BASE}/returns/12/collection-tracking`);
-        expect(body).toEqual({ carrier_id: 3, tracking_number: '1234567890' });
+        expect(mockG7Core.state.setLocal).toHaveBeenCalledWith(expect.objectContaining({
+            itemTrackingMode: true,
+            itemCarrierId: '3',
+            itemTrackingNumber: 'CJ-1',
+        }));
+        expect(mockG7Core.modal.open).not.toHaveBeenCalled();
+        expect(mockG7Core.api.patch).not.toHaveBeenCalled();
     });
 
     /**
-     * 재발송은 교환 전용 라우트다 — 유형 세그먼트가 아니라 고정 경로를 쓴다.
+     * 칸이 열린 뒤 누르면 수량 확인 모달을 「송장만 저장」 모드로 열고, 확인하면 행 송장 엔드포인트로 간다.
      *
      * @scenario claim_type=exchange, claim_stage=in_progress
      * @effects claim_redelivery_tracking_saved
      */
-    it('재발송 송장은 재발송 엔드포인트로 나간다', async () => {
-        await saveClaimTrackingHandler(
+    it('확인하면 방향·송장·수량을 실어 행 송장 엔드포인트로 나간다', async () => {
+        await openClaimItemTrackingOnlyHandler(
             {
-                handler: 'sirsoft-ecommerce.saveClaimTracking',
-                params: { pathSegment: 'exchanges', claimId: 31, kind: 'redelivery', carrierId: 5, trackingNumber: '999' },
+                handler: 'sirsoft-ecommerce.openClaimItemTrackingOnly',
+                params: { ...DETAIL_TARGET, itemIds: [55], trackingMode: true, direction: 'redelivery', carrierId: '5', trackingNumber: ' RD-9 ', rows: TRACKED_ROWS },
             },
             mockContext,
         );
 
-        expect(lastCall('put')[0]).toBe(`${BASE}/exchanges/31/redelivery-tracking`);
+        expect(mockG7Core.modal.open).toHaveBeenCalledWith('modal_claim_item_quantity_confirm');
+        expect(mockGlobalState.claimItemQuantityContext).toEqual(expect.objectContaining({ trackingOnly: true, direction: 'redelivery', trackingNumber: 'RD-9' }));
+
+        await executeClaimItemBulkStatusHandler(
+            {
+                handler: 'sirsoft-ecommerce.executeClaimItemBulkStatus',
+                params: { ...DETAIL_TARGET, itemIds: [55], itemQuantities: { 55: 1 }, trackingOnly: true, direction: 'redelivery', carrierId: '5', trackingNumber: 'RD-9' },
+            },
+            mockContext,
+        );
+
+        const [url, body] = lastCall('patch');
+        expect(url).toBe(`${BASE}/exchanges/31/options/tracking`);
+        expect(body).toEqual({ direction: 'redelivery', carrier_id: 5, tracking_number: 'RD-9', items: [{ id: 55, quantity: 1 }] });
     });
 
     /**
-     * 한쪽만 보내면 서버가 `claim_tracking_incomplete` 로 거절한다 — 왕복 전에 막는다.
+     * 한쪽만 보내면 서버가 `claim_tracking_incomplete` 로 거절한다(R2) — 모달을 열기 전에 막는다.
+     * 회수지가 다른 행을 한 회수 운송장으로 묶는 것도 막는다(R8).
      *
      * @effects claim_tracking_requires_both_fields
      */
     it.each([
-        ['택배사만', { carrierId: '3', trackingNumber: '' }],
-        ['송장번호만', { carrierId: '', trackingNumber: '123' }],
-    ])('%s 입력하면 요청하지 않는다', async (_label, partial) => {
-        await saveClaimTrackingHandler(
+        ['택배사만', { carrierId: '3', trackingNumber: '' }, TRACKED_ROWS],
+        ['송장번호만', { carrierId: '', trackingNumber: '123' }, TRACKED_ROWS],
+        ['회수지가 다른 행', { carrierId: '3', trackingNumber: '123' }, [TRACKED_ROWS[0], { ...TRACKED_ROWS[1], return_address_snapshot: { zipcode: '99999' } }]],
+    ])('%s 이면 모달을 열지 않는다', async (_label, partial, rows) => {
+        await openClaimItemTrackingOnlyHandler(
             {
-                handler: 'sirsoft-ecommerce.saveClaimTracking',
-                params: { pathSegment: 'returns', claimId: 12, kind: 'collection', ...partial },
+                handler: 'sirsoft-ecommerce.openClaimItemTrackingOnly',
+                params: { ...DETAIL_TARGET, itemIds: [55, 56], trackingMode: true, direction: 'collection', rows, ...partial },
             },
             mockContext,
         );
 
-        expect(mockG7Core.api.put).not.toHaveBeenCalled();
+        expect(mockG7Core.modal.open).not.toHaveBeenCalled();
         expect(mockG7Core.toast.warning).toHaveBeenCalled();
     });
 
     /**
-     * 둘 다 비우는 것은 등록 해제다 — 서버가 받는 조합이라 막지 않는다.
+     * 둘 다 비우는 것은 그 행의 송장 삭제다 — 서버가 받는 조합이라 막지 않는다(R7).
      *
      * @effects claim_tracking_allows_clearing_both
      */
-    it('둘 다 비우면 해제 요청으로 나간다', async () => {
-        await saveClaimTrackingHandler(
+    it('둘 다 비우면 삭제 요청으로 나간다', async () => {
+        await executeClaimItemBulkStatusHandler(
             {
-                handler: 'sirsoft-ecommerce.saveClaimTracking',
-                params: { pathSegment: 'returns', claimId: 12, kind: 'collection', carrierId: '', trackingNumber: '' },
+                handler: 'sirsoft-ecommerce.executeClaimItemBulkStatus',
+                params: { ...DETAIL_TARGET, pathSegment: 'returns', claimId: 12, itemIds: [55], trackingOnly: true, direction: 'collection', carrierId: '', trackingNumber: '' },
             },
             mockContext,
         );
 
-        expect(lastCall('put')[1]).toEqual({ carrier_id: null, tracking_number: null });
+        expect(lastCall('patch')[1]).toEqual({ direction: 'collection', carrier_id: null, tracking_number: null, items: [{ id: 55 }] });
     });
 
     /**
@@ -689,19 +765,41 @@ describe('회수·재발송 송장 저장', () => {
      * @effects claim_tracking_restores_button_on_failure
      */
     it('저장이 실패해도 진행 플래그가 내려간다', async () => {
-        mockG7Core.api.put.mockRejectedValueOnce(new Error('boom'));
+        mockG7Core.api.patch.mockRejectedValueOnce(new Error('boom'));
 
         await expect(
-            saveClaimTrackingHandler(
+            executeClaimItemBulkStatusHandler(
                 {
-                    handler: 'sirsoft-ecommerce.saveClaimTracking',
-                    params: { pathSegment: 'returns', claimId: 12, kind: 'collection', carrierId: '3', trackingNumber: '1' },
+                    handler: 'sirsoft-ecommerce.executeClaimItemBulkStatus',
+                    params: { ...DETAIL_TARGET, itemIds: [55], trackingOnly: true, direction: 'collection', carrierId: '3', trackingNumber: '1' },
                 },
                 mockContext,
             ),
         ).rejects.toThrow();
 
-        expect(mockG7Core.state.setLocal).toHaveBeenCalledWith({ isSavingCollection: false });
+        expect(mockG7Core.state.setLocal).toHaveBeenCalledWith({ isUpdatingClaimItems: false, claimItemsUpdateKind: null });
+    });
+
+    /**
+     * 운송장 단위 도착 처리(R9)는 방향·택배사·운송장을 실어 도착 엔드포인트로 간다.
+     *
+     * @scenario claim_type=return, claim_stage=in_progress
+     * @effects claim_tracking_deliver_posts_the_waybill
+     */
+    it('도착 처리는 운송장 단위 엔드포인트로 나간다', async () => {
+        mockG7Core.api.post.mockResolvedValueOnce({ success: true, data: { succeeded: [55], skipped: [] } });
+
+        await deliverClaimTrackingHandler(
+            {
+                handler: 'sirsoft-ecommerce.deliverClaimTracking',
+                params: { pathSegment: 'returns', claimId: 12, direction: 'collection', carrierId: 3, trackingNumber: 'CJ-1' },
+            },
+            mockContext,
+        );
+
+        const [url, body] = lastCall('post');
+        expect(url).toBe(`${BASE}/returns/12/tracking/deliver`);
+        expect(body).toEqual({ direction: 'collection', carrier_id: 3, tracking_number: 'CJ-1' });
     });
 });
 
@@ -1556,5 +1654,661 @@ describe('회수중·발송중 송장 — 상품 칸 (#599 후속 운영 결정)
         expect(body).not.toHaveProperty('carrier_id');
         expect(body).not.toHaveProperty('tracking_number');
         expect(mockG7Core.toast.warning).not.toHaveBeenCalled();
+    });
+});
+
+describe('상품 칸 상태·방향 고르기 — 공통 송장 미리 채움 (P1)', () => {
+    /** 회수·재발송 송장이 붙은 두 행 (재발송은 행마다 다르다) */
+    const TRACKED_ROWS = [
+        { ...ITEM_ROWS[0], collection_carrier_id: 3, collection_tracking_number: 'CJ-1', redelivery_carrier_id: 5, redelivery_tracking_number: 'RD-1' },
+        { ...ITEM_ROWS[1], collection_carrier_id: 3, collection_tracking_number: 'CJ-1', redelivery_carrier_id: 5, redelivery_tracking_number: 'RD-2' },
+    ];
+
+    let getLocalSpy: { mockRestore: () => void } | null = null;
+
+    /**
+     * 고른 상품 행을 `_local.selectedClaimItems` 로 둔다.
+     *
+     * @param ids 고른 행 ID
+     */
+    function selectItems(ids: Array<number | string>): void {
+        getLocalSpy = vi.spyOn(mockG7Core.state, 'getLocal').mockReturnValue({ selectedClaimItems: ids } as any);
+    }
+
+    afterEach(() => {
+        getLocalSpy?.mockRestore();
+        getLocalSpy = null;
+    });
+
+    /**
+     * 방향을 바꾸면 그 방향의 공통 송장으로 칸을 다시 채운다 — 행마다 송장이 다르면 비운다.
+     *
+     * @scenario claim_type=exchange, claim_stage=in_progress
+     * @effects claim_item_tracking_direction_prefills_common_waybill
+     */
+    it('방향을 고르면 그 방향의 공통 송장으로 다시 채운다', () => {
+        selectItems(['55', 56]);
+
+        selectClaimItemTrackingDirectionHandler(
+            { handler: 'sirsoft-ecommerce.selectClaimItemTrackingDirection', params: { direction: 'collection', rows: TRACKED_ROWS } },
+            mockContext,
+        );
+        expect(mockG7Core.state.setLocal).toHaveBeenLastCalledWith({
+            itemTrackingDirection: 'collection',
+            itemCarrierId: '3',
+            itemTrackingNumber: 'CJ-1',
+        });
+
+        selectClaimItemTrackingDirectionHandler(
+            { handler: 'sirsoft-ecommerce.selectClaimItemTrackingDirection', params: { direction: 'redelivery', rows: TRACKED_ROWS } },
+            mockContext,
+        );
+        expect(mockG7Core.state.setLocal).toHaveBeenLastCalledWith({
+            itemTrackingDirection: 'redelivery',
+            itemCarrierId: '',
+            itemTrackingNumber: '',
+        });
+    });
+
+    /**
+     * 모르는 방향 값은 회수로 읽는다 — 빈 값이 그대로 저장 요청의 `direction` 이 되지 않게.
+     *
+     * @effects claim_item_tracking_direction_prefills_common_waybill
+     */
+    it('모르는 방향 값은 회수로 읽는다', () => {
+        selectItems([55]);
+
+        selectClaimItemTrackingDirectionHandler(
+            { handler: 'sirsoft-ecommerce.selectClaimItemTrackingDirection', params: { direction: '', rows: TRACKED_ROWS } },
+            mockContext,
+        );
+
+        expect(mockG7Core.state.setLocal).toHaveBeenLastCalledWith(expect.objectContaining({ itemTrackingDirection: 'collection', itemTrackingNumber: 'CJ-1' }));
+    });
+
+    /**
+     * 회수중·발송중을 고르면 그 방향의 공통 송장을 채우고 「송장만 저장」 칸은 닫는다. 다른 상태는 송장 칸을 비운다.
+     *
+     * @scenario claim_type=exchange, claim_stage=in_progress
+     * @effects claim_item_bulk_status_select_prefills_common_waybill
+     */
+    it('회수중을 고르면 공통 송장을 채우고 다른 상태는 비운다', () => {
+        selectItems([55, 56]);
+
+        selectClaimItemBulkStatusHandler(
+            { handler: 'sirsoft-ecommerce.selectClaimItemBulkStatus', params: { status: 'collecting', rows: TRACKED_ROWS } },
+            mockContext,
+        );
+        expect(mockG7Core.state.setLocal).toHaveBeenLastCalledWith({
+            itemBulkStatus: 'collecting',
+            itemTrackingMode: false,
+            itemCarrierId: '3',
+            itemTrackingNumber: 'CJ-1',
+        });
+
+        selectClaimItemBulkStatusHandler(
+            { handler: 'sirsoft-ecommerce.selectClaimItemBulkStatus', params: { status: 'approved', rows: TRACKED_ROWS } },
+            mockContext,
+        );
+        expect(mockG7Core.state.setLocal).toHaveBeenLastCalledWith({
+            itemBulkStatus: 'approved',
+            itemTrackingMode: false,
+            itemCarrierId: '',
+            itemTrackingNumber: '',
+        });
+    });
+});
+
+describe('진행 방식 전환 — 일반 교환 · 선교환 (D1)', () => {
+    /**
+     * 확인 모달의 문맥은 `_global` 에 둔다 — 모달은 부모 화면의 `_local` 을 읽지 못한다.
+     *
+     * @scenario claim_type=exchange, claim_stage=in_progress
+     * @effects claim_exchange_mode_confirm_opens_with_context
+     */
+    it('확인 모달을 열며 신청서·방식·회수 기한을 문맥에 싣는다', () => {
+        openClaimExchangeModeConfirmHandler(
+            { handler: 'sirsoft-ecommerce.openClaimExchangeModeConfirm', params: { claimId: '31', mode: 'advance', dueDays: 7 } },
+            mockContext,
+        );
+
+        expect(mockGlobalState.claimExchangeModeContext).toEqual({ claimId: 31, mode: 'advance', dueDays: 7 });
+        expect(mockG7Core.modal.open).toHaveBeenCalledWith('modal_claim_exchange_mode_confirm');
+
+        // 모르는 방식은 일반 교환으로 읽는다
+        openClaimExchangeModeConfirmHandler(
+            { handler: 'sirsoft-ecommerce.openClaimExchangeModeConfirm', params: { claimId: 31, mode: 'weird' } },
+            mockContext,
+        );
+        expect(mockGlobalState.claimExchangeModeContext).toEqual({ claimId: 31, mode: 'standard', dueDays: '' });
+    });
+
+    /**
+     * @scenario claim_type=exchange, claim_stage=in_progress
+     * @effects claim_exchange_mode_puts_mode_and_refetches_detail
+     */
+    it('교환 전용 엔드포인트로 방식을 PUT 하고 상세를 다시 읽는다', async () => {
+        mockGlobalState.claimExchangeModeContext = { claimId: 31, mode: 'advance', dueDays: 7 };
+        mockG7Core.api.put.mockResolvedValueOnce({ success: true, message: '진행 방식을 선교환으로 바꿨습니다.', data: {} });
+
+        await setClaimExchangeModeHandler(
+            { handler: 'sirsoft-ecommerce.setClaimExchangeMode', params: { claimId: 31, mode: 'advance' } },
+            mockContext,
+        );
+
+        const [url, body] = lastCall('put');
+        expect(url).toBe(`${BASE}/exchanges/31/exchange-mode`);
+        expect(body).toEqual({ mode: 'advance' });
+        expect(mockG7Core.toast.success).toHaveBeenCalledWith('진행 방식을 선교환으로 바꿨습니다.');
+        expect(mockG7Core.modal.close).toHaveBeenCalledWith('modal_claim_exchange_mode_confirm');
+        expect(mockGlobalState.claimExchangeModeContext).toBeNull();
+        expect(mockGlobalState.isSettingExchangeMode).toBe(false);
+        expect(refetchedSources()).toEqual(['claim', 'claim_logs']);
+    });
+
+    /**
+     * 신청서 ID 가 없으면 `exchanges/NaN/...` 로 나가지 않는다. 진행 중이면 다시 누른 요청도 보내지 않는다.
+     *
+     * @effects claim_exchange_mode_requires_claim_id
+     */
+    it('신청서 ID 가 없거나 진행 중이면 요청하지 않는다', async () => {
+        await setClaimExchangeModeHandler(
+            { handler: 'sirsoft-ecommerce.setClaimExchangeMode', params: { claimId: null, mode: 'advance' } },
+            mockContext,
+        );
+        await setClaimExchangeModeHandler(
+            { handler: 'sirsoft-ecommerce.setClaimExchangeMode', params: { claimId: 'abc', mode: 'advance' } },
+            mockContext,
+        );
+
+        mockGlobalState.isSettingExchangeMode = true;
+        await setClaimExchangeModeHandler(
+            { handler: 'sirsoft-ecommerce.setClaimExchangeMode', params: { claimId: 31, mode: 'advance' } },
+            mockContext,
+        );
+
+        expect(mockG7Core.api.put).not.toHaveBeenCalled();
+    });
+
+    /**
+     * 실패는 서버 사유로 한 번만 알린다(레이아웃 onError 는 suppress). 진행 플래그가 내려가고 모달은 남는다.
+     *
+     * @effects claim_exchange_mode_failure_reports_once_and_unlocks
+     */
+    it('실패하면 한 번만 알리고 진행 플래그를 내린다', async () => {
+        mockG7Core.api.put.mockRejectedValueOnce({ response: { status: 422, data: { message: '회수가 시작된 교환은 방식을 바꿀 수 없습니다.' } } });
+
+        await expect(setClaimExchangeModeHandler(
+            { handler: 'sirsoft-ecommerce.setClaimExchangeMode', params: { claimId: 31, mode: 'standard' } },
+            mockContext,
+        )).rejects.toBeTruthy();
+
+        expect(mockG7Core.toast.error).toHaveBeenCalledTimes(1);
+        expect(mockG7Core.toast.error).toHaveBeenCalledWith('회수가 시작된 교환은 방식을 바꿀 수 없습니다.');
+        expect(mockGlobalState.isSettingExchangeMode).toBe(false);
+        expect(mockG7Core.modal.close).not.toHaveBeenCalled();
+        expect(mockG7Core.dispatch).not.toHaveBeenCalled();
+    });
+});
+
+describe('고객 요청 대리 철회 (S14)', () => {
+    /**
+     * 모달을 열 때 앞 건의 사유를 비운다 — 다른 신청서의 철회 사유가 그대로 실리지 않게.
+     *
+     * @scenario claim_type=return, claim_stage=in_progress
+     * @effects claim_withdraw_on_behalf_modal_resets_reason
+     */
+    it('모달을 열며 세그먼트·신청서를 싣고 사유를 비운다', () => {
+        mockGlobalState.claimWithdrawReason = '앞 건 사유';
+
+        openClaimWithdrawOnBehalfHandler(
+            { handler: 'sirsoft-ecommerce.openClaimWithdrawOnBehalf', params: { pathSegment: 'returns', claimId: '12' } },
+            mockContext,
+        );
+
+        expect(mockGlobalState.claimWithdrawContext).toEqual({ pathSegment: 'returns', claimId: 12 });
+        expect(mockGlobalState.claimWithdrawReason).toBe('');
+        expect(mockG7Core.modal.open).toHaveBeenCalledWith('modal_claim_withdraw_on_behalf');
+    });
+
+    /**
+     * 경로 세그먼트는 서버가 준 값을 그대로 쓰고, 사유는 앞뒤 공백을 걷어 싣는다.
+     *
+     * @scenario claim_type=return, claim_stage=in_progress
+     * @effects claim_withdraw_on_behalf_posts_reason
+     */
+    it('사유를 실어 유형 스코프 철회 엔드포인트로 나가고 상세를 다시 읽는다', async () => {
+        mockG7Core.api.post.mockResolvedValueOnce({ success: true, message: '고객 요청으로 신청을 철회했습니다.', data: {} });
+
+        await withdrawClaimOnBehalfHandler(
+            { handler: 'sirsoft-ecommerce.withdrawClaimOnBehalf', params: { pathSegment: 'returns', claimId: 12, reason: '  고객이 전화로 철회 요청  ' } },
+            mockContext,
+        );
+
+        const [url, body] = lastCall('post');
+        expect(url).toBe(`${BASE}/returns/12/withdraw`);
+        expect(body).toEqual({ reason: '고객이 전화로 철회 요청' });
+        expect(mockG7Core.toast.success).toHaveBeenCalledWith('고객 요청으로 신청을 철회했습니다.');
+        expect(mockG7Core.modal.close).toHaveBeenCalledWith('modal_claim_withdraw_on_behalf');
+        expect(mockGlobalState.claimWithdrawContext).toBeNull();
+        expect(mockGlobalState.claimWithdrawReason).toBe('');
+        expect(mockGlobalState.isWithdrawingClaim).toBe(false);
+        expect(refetchedSources()).toEqual(['claim', 'claim_logs']);
+    });
+
+    /**
+     * 사유는 필수다(서버도 422). 공백뿐인 사유·식별 축이 없는 호출·진행 중 재호출은 요청하지 않는다.
+     *
+     * @effects claim_withdraw_on_behalf_requires_reason
+     */
+    it('사유가 비었거나 식별 축이 없거나 진행 중이면 요청하지 않는다', async () => {
+        await withdrawClaimOnBehalfHandler(
+            { handler: 'sirsoft-ecommerce.withdrawClaimOnBehalf', params: { pathSegment: 'returns', claimId: 12, reason: '   ' } },
+            mockContext,
+        );
+        expect(mockG7Core.toast.warning).toHaveBeenCalledWith('철회 사유를 입력해주세요.');
+
+        await withdrawClaimOnBehalfHandler(
+            { handler: 'sirsoft-ecommerce.withdrawClaimOnBehalf', params: { pathSegment: '', claimId: 12, reason: '사유' } },
+            mockContext,
+        );
+
+        mockGlobalState.isWithdrawingClaim = true;
+        await withdrawClaimOnBehalfHandler(
+            { handler: 'sirsoft-ecommerce.withdrawClaimOnBehalf', params: { pathSegment: 'returns', claimId: 12, reason: '사유' } },
+            mockContext,
+        );
+
+        expect(mockG7Core.api.post).not.toHaveBeenCalled();
+    });
+
+    /**
+     * @effects claim_withdraw_on_behalf_failure_reports_once_and_unlocks
+     */
+    it('실패하면 한 번만 알리고 진행 플래그를 내린다', async () => {
+        mockG7Core.api.post.mockRejectedValueOnce({ response: { status: 422, data: { message: '이미 처리된 신청은 철회할 수 없습니다.' } } });
+
+        await expect(withdrawClaimOnBehalfHandler(
+            { handler: 'sirsoft-ecommerce.withdrawClaimOnBehalf', params: { pathSegment: 'exchanges', claimId: 31, reason: '고객 요청' } },
+            mockContext,
+        )).rejects.toBeTruthy();
+
+        expect(mockG7Core.toast.error).toHaveBeenCalledTimes(1);
+        expect(mockG7Core.toast.error).toHaveBeenCalledWith('이미 처리된 신청은 철회할 수 없습니다.');
+        expect(mockGlobalState.isWithdrawingClaim).toBe(false);
+        expect(mockG7Core.modal.close).not.toHaveBeenCalled();
+    });
+});
+
+describe('신청 내용 수정 (S15)', () => {
+    /**
+     * 모달은 지금 사유로 시작한다 — 빈 칸에서 시작하면 상세 사유만 고치려다 사유가 지워진다.
+     *
+     * @scenario claim_type=exchange, claim_stage=in_progress
+     * @effects claim_request_edit_modal_seeds_current_reason
+     */
+    it('모달을 열며 지금 사유와 선택지를 싣는다', () => {
+        const reasonOptions = [{ value: 'defective', label: '상품 불량' }, { value: 'wrong_delivery', label: '오배송' }];
+
+        openClaimRequestEditHandler(
+            {
+                handler: 'sirsoft-ecommerce.openClaimRequestEdit',
+                params: { pathSegment: 'exchanges', claimId: '31', reasonCode: 'defective', reasonDetail: '실밥 풀림', reasonOptions },
+            },
+            mockContext,
+        );
+
+        expect(mockGlobalState.claimRequestEditContext).toEqual({ pathSegment: 'exchanges', claimId: 31, reasonOptions });
+        expect(mockGlobalState.claimRequestEditReasonCode).toBe('defective');
+        expect(mockGlobalState.claimRequestEditReasonDetail).toBe('실밥 풀림');
+        expect(mockG7Core.modal.open).toHaveBeenCalledWith('modal_claim_request_edit');
+    });
+
+    /**
+     * @scenario claim_type=exchange, claim_stage=in_progress
+     * @effects claim_request_edit_patches_reason
+     */
+    it('사유를 실어 유형 스코프 신청서 경로로 PATCH 하고 상세를 다시 읽는다', async () => {
+        mockG7Core.api.patch.mockResolvedValueOnce({ success: true, message: '신청 내용을 수정했습니다.', data: {} });
+
+        await updateClaimRequestOnBehalfHandler(
+            {
+                handler: 'sirsoft-ecommerce.updateClaimRequestOnBehalf',
+                params: { pathSegment: 'exchanges', claimId: 31, reasonCode: 'wrong_delivery', reasonDetail: '다른 색상 배송' },
+            },
+            mockContext,
+        );
+
+        const [url, body] = lastCall('patch');
+        expect(url).toBe(`${BASE}/exchanges/31`);
+        expect(body).toEqual({ reason_code: 'wrong_delivery', reason_detail: '다른 색상 배송' });
+        expect(mockG7Core.toast.success).toHaveBeenCalledWith('신청 내용을 수정했습니다.');
+        expect(mockG7Core.modal.close).toHaveBeenCalledWith('modal_claim_request_edit');
+        expect(mockGlobalState.claimRequestEditContext).toBeNull();
+        expect(mockGlobalState.isEditingClaimRequest).toBe(false);
+        expect(refetchedSources()).toEqual(['claim', 'claim_logs']);
+    });
+
+    /**
+     * 식별 축이 없으면 `admin//31` 로 나가지 않는다. 진행 중 재호출도 막는다.
+     *
+     * @effects claim_request_edit_requires_identity
+     */
+    it('식별 축이 없거나 진행 중이면 요청하지 않는다', async () => {
+        await updateClaimRequestOnBehalfHandler(
+            { handler: 'sirsoft-ecommerce.updateClaimRequestOnBehalf', params: { pathSegment: 'exchanges', claimId: null, reasonCode: 'defective' } },
+            mockContext,
+        );
+
+        mockGlobalState.isEditingClaimRequest = true;
+        await updateClaimRequestOnBehalfHandler(
+            { handler: 'sirsoft-ecommerce.updateClaimRequestOnBehalf', params: { pathSegment: 'exchanges', claimId: 31, reasonCode: 'defective' } },
+            mockContext,
+        );
+
+        expect(mockG7Core.api.patch).not.toHaveBeenCalled();
+    });
+
+    /**
+     * @effects claim_request_edit_failure_reports_once_and_unlocks
+     */
+    it('실패하면 한 번만 알리고 진행 플래그를 내린다', async () => {
+        mockG7Core.api.patch.mockRejectedValueOnce({ response: { status: 422, data: { message: '선택할 수 없는 사유입니다.' } } });
+
+        await expect(updateClaimRequestOnBehalfHandler(
+            { handler: 'sirsoft-ecommerce.updateClaimRequestOnBehalf', params: { pathSegment: 'returns', claimId: 12, reasonCode: 'x' } },
+            mockContext,
+        )).rejects.toBeTruthy();
+
+        expect(mockG7Core.toast.error).toHaveBeenCalledTimes(1);
+        expect(mockG7Core.toast.error).toHaveBeenCalledWith('선택할 수 없는 사유입니다.');
+        expect(mockGlobalState.isEditingClaimRequest).toBe(false);
+        expect(mockG7Core.modal.close).not.toHaveBeenCalled();
+    });
+});
+
+describe('뒤늦은 재고 복구 (S13)', () => {
+    /**
+     * 진행 플래그는 `claimButtonPending` 이 잠근다 — 여기서는 URL·본문·재조회를 잠근다.
+     *
+     * @scenario claim_type=return, claim_stage=final
+     * @effects claim_restore_stock_posts_item_ids
+     */
+    it('고른 행 ID 를 숫자로 실어 재고 복구 엔드포인트로 나가고 상세를 다시 읽는다', async () => {
+        mockG7Core.api.post.mockResolvedValueOnce({ success: true, message: '재고를 복구했습니다.', data: {} });
+
+        await restoreClaimStockHandler(
+            { handler: 'sirsoft-ecommerce.restoreClaimStock', params: { pathSegment: 'returns', claimId: 12, itemIds: ['55', 56] } },
+            mockContext,
+        );
+
+        const [url, body] = lastCall('post');
+        expect(url).toBe(`${BASE}/returns/12/items/restore-stock`);
+        expect(body).toEqual({ items: [55, 56] });
+        expect(mockG7Core.toast.success).toHaveBeenCalledWith('재고를 복구했습니다.');
+        expect(refetchedSources()).toEqual(['claim', 'claim_logs']);
+    });
+
+    /**
+     * 두 번 복구되지 않는 것은 서버가 막는다 — 화면은 그 사유를 한 번만 알린다.
+     *
+     * @effects claim_restore_stock_posts_item_ids
+     */
+    it('실패하면 서버 사유를 한 번만 알리고 식별 축이 없으면 요청하지 않는다', async () => {
+        mockG7Core.api.post.mockRejectedValueOnce({ response: { status: 409, data: { message: '이미 재고를 복구했습니다.' } } });
+
+        await expect(restoreClaimStockHandler(
+            { handler: 'sirsoft-ecommerce.restoreClaimStock', params: { pathSegment: 'returns', claimId: 12, itemIds: [55] } },
+            mockContext,
+        )).rejects.toBeTruthy();
+        expect(mockG7Core.toast.error).toHaveBeenCalledTimes(1);
+        expect(mockG7Core.toast.error).toHaveBeenCalledWith('이미 재고를 복구했습니다.');
+
+        mockG7Core.api.post.mockClear();
+        await restoreClaimStockHandler(
+            { handler: 'sirsoft-ecommerce.restoreClaimStock', params: { pathSegment: '', claimId: 12, itemIds: [55] } },
+            mockContext,
+        );
+        expect(mockG7Core.api.post).not.toHaveBeenCalled();
+    });
+});
+
+describe('완료 모달 「미회수로 완료」 (선교환 D3)', () => {
+    /**
+     * 체크한 행은 사유 맵의 키가 된다(빈 사유로 시작). 체크를 풀면 키가 빠진다.
+     *
+     * @scenario claim_type=exchange, claim_stage=final
+     * @effects claim_complete_unreturned_toggle_tracks_checked_rows
+     */
+    it('체크한 행만 사유 맵에 두고 풀면 뺀다', () => {
+        const toggle = (itemId: unknown, checked: unknown) => toggleClaimCompleteUnreturnedHandler(
+            { handler: 'sirsoft-ecommerce.toggleClaimCompleteUnreturned', params: { itemId, checked } as any },
+            mockContext,
+        );
+
+        toggle(55, true);
+        toggle('56', 'true');
+        expect(mockGlobalState.claimCompleteUnreturned).toEqual({ '55': '', '56': '' });
+
+        // 이미 적은 사유는 다시 체크 이벤트가 와도 지워지지 않는다
+        mockGlobalState.claimCompleteUnreturned = { '55': '고객 연락 두절', '56': '' };
+        toggle(55, true);
+        expect(mockGlobalState.claimCompleteUnreturned['55']).toBe('고객 연락 두절');
+
+        toggle(56, false);
+        expect(mockGlobalState.claimCompleteUnreturned).toEqual({ '55': '고객 연락 두절' });
+
+        // 행 ID 가 없으면 아무것도 바꾸지 않는다
+        const before = mockG7Core.state.set.mock.calls.length;
+        toggle(undefined, true);
+        expect(mockG7Core.state.set.mock.calls.length).toBe(before);
+    });
+
+    /**
+     * 체크를 풀면 맵에서 그 행이 실제로 빠진다 — 엔진의 전역 set 은 기본이 deep 병합이라, 키를 뺀 맵을 그대로
+     * 넘기면 옛 키가 남아 해제가 풀리지 않는다(Chrome 실측 V-M6M7). 맵은 통째로 바꾼다.
+     *
+     * @scenario claim_type=exchange, claim_stage=final
+     * @effects claim_complete_unreturned_uncheck_removes_the_row_under_engine_merge
+     */
+    it('체크를 풀면 엔진 병합에서도 그 행이 맵에서 빠진다', () => {
+        const toggle = (itemId: unknown, checked: unknown) => toggleClaimCompleteUnreturnedHandler(
+            { handler: 'sirsoft-ecommerce.toggleClaimCompleteUnreturned', params: { itemId, checked } as any },
+            mockContext,
+        );
+
+        toggle(98, true);
+        toggle(99, true);
+        expect(mockGlobalState.claimCompleteUnreturned).toEqual({ '98': '', '99': '' });
+
+        toggle(98, false);
+        expect(mockGlobalState.claimCompleteUnreturned).toEqual({ '99': '' });
+    });
+
+    /**
+     * 사유는 체크된 행에만 쓴다 — 체크하지 않은 행에 사유가 들어가면 그 행이 미회수로 실린다.
+     *
+     * @effects claim_complete_unreturned_reason_only_for_checked_rows
+     */
+    it('사유는 체크된 행에만 쓴다', () => {
+        mockGlobalState.claimCompleteUnreturned = { '55': '' };
+        const setReason = (itemId: unknown, reason: unknown) => setClaimCompleteUnreturnedReasonHandler(
+            { handler: 'sirsoft-ecommerce.setClaimCompleteUnreturnedReason', params: { itemId, reason } as any },
+            mockContext,
+        );
+
+        setReason(55, '고객 연락 두절');
+        setReason(56, '체크 안 한 행');
+        expect(mockGlobalState.claimCompleteUnreturned).toEqual({ '55': '고객 연락 두절' });
+
+        setReason(55, null);
+        expect(mockGlobalState.claimCompleteUnreturned).toEqual({ '55': '' });
+
+        setReason(55, '회수 불가');
+        expect(mockGlobalState.claimCompleteUnreturned).toEqual({ '55': '회수 불가' });
+    });
+
+    /**
+     * 체크한 행의 사유가 완료 본문 `completion.unreturned` 로 실리고, 성공하면 맵을 비운다.
+     *
+     * @scenario claim_type=exchange, claim_stage=final
+     * @effects claim_completion_sends_unreturned_reasons
+     */
+    it('미회수 사유가 완료 본문에 실린다', async () => {
+        await openClaimDetailCompleteHandler(
+            { handler: 'sirsoft-ecommerce.openClaimDetailComplete', params: { ...DETAIL_TARGET, rows: ITEM_ROWS, completeDefaults: {} } },
+            mockContext,
+        );
+        mockGlobalState.claimCompleteUnreturned = { '55': '고객 연락 두절' };
+
+        await executeClaimCompletionHandler({ handler: 'sirsoft-ecommerce.executeClaimCompletion' }, mockContext);
+
+        const [, body] = lastCall('patch');
+        expect(body.completion.unreturned).toEqual({ '55': '고객 연락 두절' });
+        expect(mockGlobalState.claimCompleteUnreturned).toEqual({});
+    });
+
+    /**
+     * @effects claim_completion_sends_unreturned_reasons
+     */
+    it('체크한 행이 없으면 unreturned 키를 싣지 않는다', async () => {
+        await openClaimDetailCompleteHandler(
+            { handler: 'sirsoft-ecommerce.openClaimDetailComplete', params: { ...DETAIL_TARGET, rows: ITEM_ROWS, completeDefaults: {} } },
+            mockContext,
+        );
+        mockGlobalState.claimCompleteUnreturned = {};
+
+        await executeClaimCompletionHandler({ handler: 'sirsoft-ecommerce.executeClaimCompletion' }, mockContext);
+
+        expect(lastCall('patch')[1].completion).not.toHaveProperty('unreturned');
+    });
+
+    /**
+     * 모달을 열 때 앞선 미회수 선택을 비운다 — 취소한 모달의 행 ID 가 다음 신청서 요청에 실리면 화면에
+     * 없는 행의 사유를 요구하거나 서버가 `claim_unreturned_not_eligible` 로 막는다(validate branch M6).
+     *
+     * @scenario claim_type=exchange, claim_stage=final
+     * @effects claim_complete_modal_open_clears_previous_unreturned_selection
+     */
+    it('모달을 열면 앞선 미회수 선택이 남지 않는다', async () => {
+        mockGlobalState.claimCompleteUnreturned = { '99': '앞 신청서의 사유' };
+
+        await openClaimDetailCompleteHandler(
+            { handler: 'sirsoft-ecommerce.openClaimDetailComplete', params: { ...DETAIL_TARGET, rows: ITEM_ROWS, completeDefaults: {} } },
+            mockContext,
+        );
+
+        expect(mockGlobalState.claimCompleteUnreturned).toEqual({});
+    });
+
+    /**
+     * 미회수 행은 실행에서 완료 대상에 들고 재고를 되돌리지 않는다 — 미리보기도 같은 행을 알아야 건수·재고
+     * 요약·환불 예정액이 실행과 맞는다(D26). 체크를 바꾸면 미리보기를 다시 받고 본문에 `unreturned_item_ids` 를 싣는다.
+     *
+     * @scenario claim_type=exchange, claim_stage=final
+     * @effects claim_complete_preview_carries_unreturned_rows
+     */
+    it('미회수 체크가 미리보기 본문에 실리고 미리보기를 다시 받는다', async () => {
+        await openClaimDetailCompleteHandler(
+            { handler: 'sirsoft-ecommerce.openClaimDetailComplete', params: { ...DETAIL_TARGET, rows: ITEM_ROWS, completeDefaults: {} } },
+            mockContext,
+        );
+        vi.useFakeTimers();
+        try {
+            mockG7Core.api.post.mockClear();
+
+            toggleClaimCompleteUnreturnedHandler(
+                { handler: 'sirsoft-ecommerce.toggleClaimCompleteUnreturned', params: { itemId: 55, checked: true } },
+                mockContext,
+            );
+            await vi.advanceTimersByTimeAsync(250);
+
+            const previews = mockG7Core.api.post.mock.calls.filter(([url]: any[]) => String(url).endsWith('/claims/completion-preview'));
+            expect(previews).toHaveLength(1);
+            expect(previews[0][1].claims[0].unreturned_item_ids).toEqual([55]);
+        } finally {
+            vi.useRealTimers();
+        }
+    });
+
+    /**
+     * 체크했는데 사유가 비면(공백 포함) 서버가 422 로 막기 전에 멈추고 실패로 끝낸다 — 모달은 남는다.
+     *
+     * @effects claim_completion_blocks_empty_unreturned_reason
+     */
+    it('사유가 빈 미회수 행이 있으면 요청하지 않고 실패로 끝난다', async () => {
+        await openClaimDetailCompleteHandler(
+            { handler: 'sirsoft-ecommerce.openClaimDetailComplete', params: { ...DETAIL_TARGET, rows: ITEM_ROWS, completeDefaults: {} } },
+            mockContext,
+        );
+        mockGlobalState.claimCompleteUnreturned = { '55': '고객 연락 두절', '56': '   ' };
+        mockG7Core.api.patch.mockClear();
+
+        await expect(executeClaimCompletionHandler({ handler: 'sirsoft-ecommerce.executeClaimCompletion' }, mockContext)).rejects.toThrow();
+
+        expect(mockG7Core.api.patch).not.toHaveBeenCalled();
+        expect(mockG7Core.toast.warning).toHaveBeenCalledWith('미회수로 완료할 상품의 사유를 입력해주세요.');
+        expect(mockG7Core.toast.error).not.toHaveBeenCalled();
+        expect(mockG7Core.modal.close).not.toHaveBeenCalled();
+    });
+});
+
+describe('[case:state-setstate-43] 전역 맵 교체는 shallow 여야 한다 — 엔진 기본 deep 병합이 뺀 키를 남긴다', () => {
+    /**
+     * 엔진과 같은 병합 목(기본 deep)에서, 체크 해제·창 재진입·완료 뒤 초기화가 맵을 실제로 비우는지 한 흐름으로 본다.
+     * shallow 없이 set 하면 세 곳 모두 앞 키가 남는다(Chrome 실측 V-M6M7).
+     *
+     * @scenario claim_type=exchange, claim_stage=final
+     * @effects claim_complete_unreturned_uncheck_removes_the_row_under_engine_merge
+     */
+    it('해제·재진입에서 앞 키가 남지 않는다', async () => {
+        const toggle = (itemId: unknown, checked: unknown) => toggleClaimCompleteUnreturnedHandler(
+            { handler: 'sirsoft-ecommerce.toggleClaimCompleteUnreturned', params: { itemId, checked } as any },
+            mockContext,
+        );
+
+        toggle(55, true);
+        toggle(56, true);
+        toggle(55, false);
+        expect(mockGlobalState.claimCompleteUnreturned).toEqual({ '56': '' });
+
+        await openClaimDetailCompleteHandler(
+            { handler: 'sirsoft-ecommerce.openClaimDetailComplete', params: { ...DETAIL_TARGET, rows: ITEM_ROWS, completeDefaults: {} } },
+            mockContext,
+        );
+        expect(mockGlobalState.claimCompleteUnreturned).toEqual({});
+        expect(mockG7Core.state.set).toHaveBeenCalledWith(expect.objectContaining({ claimCompleteUnreturned: {} }), { merge: 'shallow' });
+    });
+
+    /**
+     * 수량 확인 창은 「송장만 저장」 과 상태 전이가 한 문맥(`claimItemQuantityContext`)을 쓰고, [취소] 는 창만 닫는다.
+     * 상태 전이로 다시 열 때 문맥을 통째로 바꾸지 않으면 앞 창의 `trackingOnly`·`direction` 이 남아
+     * [적용] 이 상태 전이 대신 송장 저장(빈 송장이면 행 송장 삭제)으로 나간다.
+     *
+     * @scenario claim_type=exchange, claim_stage=in_progress
+     * @effects claim_item_quantity_context_reopen_drops_tracking_only_mode
+     */
+    it('송장만 저장 창을 취소하고 상태 전이로 다시 열면 송장 저장 문맥이 남지 않는다', async () => {
+        await openClaimItemTrackingOnlyHandler(
+            {
+                handler: 'sirsoft-ecommerce.openClaimItemTrackingOnly',
+                params: { ...DETAIL_TARGET, itemIds: [55], trackingMode: true, direction: 'redelivery', carrierId: '5', trackingNumber: 'RD-9', rows: ITEM_ROWS },
+            },
+            mockContext,
+        );
+        expect(mockGlobalState.claimItemQuantityContext).toMatchObject({ trackingOnly: true, direction: 'redelivery' });
+
+        await openClaimItemQuantityConfirmHandler(
+            {
+                handler: 'sirsoft-ecommerce.openClaimItemQuantityConfirm',
+                params: { ...DETAIL_TARGET, itemIds: [55], status: 'rejected', rejectReason: '개봉 상품입니다.', rows: ITEM_ROWS },
+            },
+            mockContext,
+        );
+
+        expect(mockGlobalState.claimItemQuantityContext.status).toBe('rejected');
+        expect(mockGlobalState.claimItemQuantityContext.trackingOnly).not.toBe(true);
+        expect(mockGlobalState.claimItemQuantityContext.direction).toBeUndefined();
+        expect(mockGlobalState.claimItemQuantityContext.directionLabel).toBeUndefined();
     });
 });

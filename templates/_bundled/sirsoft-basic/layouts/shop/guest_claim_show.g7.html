@@ -83,6 +83,8 @@
             <div class="min-w-0">
               <div class="flex items-center gap-2">
                 <h1 class="text-xl font-bold text-gray-900 dark:text-white">{{claim.data?.claim?.claim_type_label ?? ''}}</h1>
+                <!-- 출처 뱃지 — 회원 상세와 같은 서버 필드(`request_source`)를 그린다. 비회원 주문도 판매자가 대신 접수할 수 있다(D8). -->
+                <span data-if="{{claim.data?.claim?.request_source === 'admin'}}" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium whitespace-nowrap bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400">{{claim.data?.claim?.request_source_label ?? ''}}</span>
                 <span>
                   <class-map base="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium whitespace-nowrap" key="{{claim.data?.claim?.status_variant}}" default="bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">
                     <variant when="success">bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400</variant>
@@ -108,6 +110,8 @@
                 </on>
                 $t:claim.list.order_number|number={{claim.data?.claim?.order_number ?? ''}}
               </button>
+              <!-- 판매자 접수 안내(D8) — 판매자가 접수한 신청은 고객이 고치거나 철회할 수 없다. 버튼이 사라진 이유를 알려 주고 문의 경로를 남긴다. 끝난 신청서에는 더 할 일이 없으므로 세우지 않는다. -->
+              <p data-if="{{claim.data?.claim?.request_source === 'admin' &amp;&amp; claim.data?.claim?.is_final !== true}}" class="text-xs text-yellow-700 dark:text-yellow-400 mt-1">$t:claim.detail.admin_requested_notice</p>
             </div>
             <div data-if="{{claim.data?.claim?.is_editable === true || claim.data?.claim?.is_withdrawable === true}}" class="flex items-center gap-2 flex-shrink-0">
               <button data-if="{{claim.data?.claim?.is_editable === true}}" type="button" class="px-3 py-1.5 text-sm font-medium border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer">

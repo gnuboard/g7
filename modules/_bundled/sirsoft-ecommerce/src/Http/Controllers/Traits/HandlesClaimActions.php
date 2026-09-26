@@ -251,6 +251,8 @@ trait HandlesClaimActions
                 // 진행단계 — 관리자 상세와 **같은 배열**을 같은 자리에서 만든다. 화면이 순서를
                 // 다시 적으면 그 사본이 어휘의 두 번째 출처가 되어 회원 화면만 낡은 채 남는다.
                 'progress_steps' => ClaimProgressSteps::for($claim),
+                // 선교환의 「회수」 줄 — 관리자 상세와 같은 배열(일반 교환·반품은 null).
+                'collection_lane' => ClaimProgressSteps::collectionLane($claim),
             ]);
         } catch (OrderClaimException $e) {
             return $this->claimNotFound();
@@ -504,8 +506,8 @@ trait HandlesClaimActions
     protected function reloaded(OrderExchange|OrderReturn|OrderRefund|OrderCancel $claim): OrderExchange|OrderReturn|OrderRefund|OrderCancel
     {
         $relations = match (true) {
-            $claim instanceof OrderExchange => ['exchangeOptions.orderOption', 'images', 'order', 'collectionCarrier', 'redeliveryCarrier'],
-            $claim instanceof OrderReturn => ['returnOptions.orderOption', 'images', 'order', 'collectionCarrier'],
+            $claim instanceof OrderExchange => ['exchangeOptions.orderOption', 'exchangeOptions.collectionCarrier', 'exchangeOptions.redeliveryCarrier', 'images', 'order'],
+            $claim instanceof OrderReturn => ['returnOptions.orderOption', 'returnOptions.collectionCarrier', 'images', 'order'],
             $claim instanceof OrderRefund => ['refundOptions.orderOption', 'images', 'order'],
             default => ['cancelOptions.orderOption', 'refund', 'order'],
         };

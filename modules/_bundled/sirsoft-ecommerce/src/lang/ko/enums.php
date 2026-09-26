@@ -398,12 +398,33 @@ return [
     'request_source' => [
         'customer' => '고객 신청',
         'guest' => '비회원 신청',
-        'admin' => '운영자 접수',
+        // 고객에게도 보이는 라벨이다 — 「운영자」 는 쇼핑몰 안쪽 말이라 고객 화면에서는 판매자로 부른다(D8).
+        'admin' => '판매자 접수',
     ],
 
     'refund_priority' => [
         'pg_first' => '결제수단(PG) 먼저 환불',
         'points_first' => '포인트 먼저 환불',
+    ],
+
+    // 클레임 송장 방향 (ClaimTrackingDirectionEnum 값과 일치)
+    'claim_tracking_direction' => [
+        'collection' => '회수',
+        'redelivery' => '재발송',
+    ],
+
+    // 교환 진행 방식 (ExchangeModeEnum 값과 일치)
+    'exchange_mode' => [
+        'standard' => '일반 교환',
+        'advance' => '선교환',
+    ],
+
+    // 신청 상품 회수 진행 (ClaimItemCollectionStateEnum 값과 일치)
+    'claim_item_collection_state' => [
+        'pending' => '회수 대기',
+        'in_transit' => '회수중',
+        'collected' => '회수 도착',
+        'unreturned' => '미회수',
     ],
 
     // 리뷰 상태 (ReviewStatus 값과 일치)

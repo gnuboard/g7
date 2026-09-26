@@ -68,6 +68,8 @@ effects:
   - claim_payment_labels_reuse_order_detail_keys
   - claim_payment_shows_empty_notice
   - claim_payment_renders_refund_rows_after_execution
+  # 정산 칸 추가결제 건의 부분 환급액 (2026-09-26 3차 검증 인터뷰)
+  - claim_settlement_payment_row_shows_partial_refund
   # 이 클레임의 정산 (④)
   - claim_settlement_blocks_split_by_type
   - claim_settlement_preview_comes_from_server

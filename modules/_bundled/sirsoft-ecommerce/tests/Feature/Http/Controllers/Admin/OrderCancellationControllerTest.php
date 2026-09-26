@@ -38,6 +38,11 @@ class OrderCancellationControllerTest extends ModuleTestCase
 {
     protected User $adminUser;
 
+    /**
+     * 주문 수정 권한 운영자를 세우고, 남은 환경설정 파일을 비우고, PG 환불 리스너를 성공으로 고정합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -72,6 +77,8 @@ class OrderCancellationControllerTest extends ModuleTestCase
      *
      * TestingSeeder는 ORDER 시퀀스만 생성하므로,
      * 취소/환불 번호 채번을 위해 CANCEL과 REFUND 시퀀스를 추가합니다.
+     *
+     * @return void 반환값 없음
      */
     private function createCancelSequences(): void
     {
@@ -114,7 +121,8 @@ class OrderCancellationControllerTest extends ModuleTestCase
      * @param  int  $quantity  옵션 수량
      * @param  bool  $withPayment  결제 정보 생성 여부
      * @param  bool  $withShipping  배송 정보 생성 여부
-     * @return array{order: Order, options: array<OrderOption>, payment: ?OrderPayment, shipping: ?OrderShipping}
+     * @param  array  $paymentOverrides  결제행 덮어쓰기 속성 (결제수단 등)
+     * @return array{order: Order, options: array<OrderOption>, payment: ?OrderPayment, shipping: ?OrderShipping} 주문·주문옵션·결제행·배송행 묶음
      */
     private function createPaidOrderWithOptions(
         int $optionCount = 1,
@@ -199,7 +207,13 @@ class OrderCancellationControllerTest extends ModuleTestCase
     // ========================================
 
     /**
-     * 관리자가 유효한 취소 아이템으로 환불 예상금액을 조회할 수 있다.
+     * 관리자가 유효한 취소 아이템으로 환불 예상금액을 조회할 수 있다 — 응답에 환불 예상액이 실린다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario item_selection=multi_subset_full, payment_state=card_paid
+     *
+     * @effects admin_estimate_refund_returns_the_refund_amount
      */
     public function test_admin_estimate_refund(): void
     {
@@ -232,6 +246,12 @@ class OrderCancellationControllerTest extends ModuleTestCase
 
     /**
      * 환불 예상금액 조회 시 items가 비어있으면 422 검증 에러를 반환한다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario item_selection=single_full, payment_state=card_paid
+     *
+     * @effects admin_estimate_refund_requires_items
      */
     public function test_admin_estimate_refund_validation(): void
     {
@@ -253,7 +273,13 @@ class OrderCancellationControllerTest extends ModuleTestCase
     // ========================================
 
     /**
-     * 관리자가 전체취소를 실행하면 주문 상태가 CANCELLED로 변경된다.
+     * 자동 전이를 켜고 전체취소하면 주문 상태가 CANCELLED 로 바뀐다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario item_selection=single_full, payment_state=card_paid
+     *
+     * @effects admin_auto_advance_full_cancel_cancels_the_order
      */
     public function test_admin_full_cancel(): void
     {
@@ -289,7 +315,13 @@ class OrderCancellationControllerTest extends ModuleTestCase
     // ========================================
 
     /**
-     * 관리자가 부분취소를 실행하면 지정된 옵션만 취소된다.
+     * 자동 전이를 켜고 부분취소하면 지정한 옵션만 대상으로 접수가 성공한다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario item_selection=multi_subset_full, payment_state=card_paid
+     *
+     * @effects admin_auto_advance_partial_cancel_is_accepted
      */
     public function test_admin_partial_cancel(): void
     {
@@ -328,7 +360,13 @@ class OrderCancellationControllerTest extends ModuleTestCase
     // ========================================
 
     /**
-     * 자동 전이를 켜면 PG 환불 훅까지 실제로 진입한다. (#599 후속 D7)
+     * 자동 전이를 켜면 PG 환불 훅이 성공을 돌려주는 주문의 취소가 한 요청으로 끝난다. (#599 후속 D7)
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario item_selection=single_full, payment_state=card_paid
+     *
+     * @effects admin_auto_advance_cancel_is_accepted_in_one_request
      */
     public function test_admin_cancel_with_pg(): void
     {
@@ -373,6 +411,8 @@ class OrderCancellationControllerTest extends ModuleTestCase
      * enum case 가 없어 과거에는 이 게이트에서 false 로 떨어져 카드 취소가 누락됐다.
      * 이 테스트는 게이트 판정값이 아니라 실제 훅 발화를 스파이로 관측한다 — 판정과
      * 훅 진입 사이 로직이 바뀌어 환불 누락이 재발하면 이 테스트가 잡는다.
+     *
+     * @return void 반환값 없음
      *
      * @scenario method_kind=extension, capability_declared=declared, capability=refund_method
      *
@@ -459,7 +499,13 @@ class OrderCancellationControllerTest extends ModuleTestCase
     }
 
     /**
-     * 자동 전이를 켜면 취소가 한 번에 끝난다. (#599 후속 D7)
+     * 자동 전이를 켜면 취소가 한 요청으로 끝난다 — 개별 PG 리스너 없이 기본 리스너만으로도 성공한다. (#599 후속 D7)
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario item_selection=single_full, payment_state=card_paid
+     *
+     * @effects admin_auto_advance_cancel_is_accepted_in_one_request
      */
     public function test_admin_cancel_without_pg(): void
     {
@@ -491,7 +537,13 @@ class OrderCancellationControllerTest extends ModuleTestCase
     // ========================================
 
     /**
-     * 배송 중(SHIPPING) 상태의 주문은 취소할 수 없어 422 에러를 반환한다.
+     * 배송 중(SHIPPING) 주문의 취소 요청은 422 로 거절된다. (상품 단위 물리 게이트는 D5 테스트가 따로 잰다)
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario item_selection=single_full, payment_state=card_paid
+     *
+     * @effects admin_cancel_of_a_shipping_order_is_rejected
      */
     public function test_admin_cancel_invalid_order_status(): void
     {
@@ -523,7 +575,13 @@ class OrderCancellationControllerTest extends ModuleTestCase
     }
 
     /**
-     * 배송 중(SHIPPING) 상태 주문 취소 시 422 에러를 반환한다.
+     * 배송 중(SHIPPING) 주문의 취소 요청은 422 와 success=false 봉투로 거절된다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario item_selection=single_full, payment_state=card_paid
+     *
+     * @effects admin_cancel_of_a_shipping_order_is_rejected
      */
     public function test_admin_cancel_invalid_status_returns_error(): void
     {
@@ -556,20 +614,17 @@ class OrderCancellationControllerTest extends ModuleTestCase
     }
 
     /**
-     * 환경설정에서 preparing 상태까지 취소 가능으로 설정하면 preparing 주문도 취소된다.
+     * 결제된 단일 상품 주문을 주문·상품 상태가 모두 주어진 상태인 채로 만듭니다. (취소 게이트 판정용)
+     *
+     * @param  OrderStatusEnum  $status  주문·주문상품 상태
+     * @return Order 주문 (상품 1행 · 결제완료 결제행 포함)
      */
-    public function test_admin_cancel_respects_settings_cancellable_statuses(): void
+    private function paidOrderIn(OrderStatusEnum $status): Order
     {
-        // Given: 상품준비중(PREPARING) 상태의 주문 + 환경설정에 preparing 추가
-        $this->createCancelSequences();
-
-        $settingsService = app(EcommerceSettingsService::class);
-        $settingsService->saveSettings(['order_settings' => ['cancellable_statuses' => ['payment_complete', 'preparing']]]);
-
         $user = User::factory()->create();
         $order = Order::factory()->create([
             'user_id' => $user->id,
-            'order_status' => OrderStatusEnum::PREPARING,
+            'order_status' => $status,
             'subtotal_amount' => 20000,
             'total_amount' => 20000,
             'total_paid_amount' => 20000,
@@ -586,7 +641,7 @@ class OrderCancellationControllerTest extends ModuleTestCase
             'subtotal_price' => 20000,
             'subtotal_paid_amount' => 20000,
             'subtotal_discount_amount' => 0,
-            'option_status' => OrderStatusEnum::PREPARING,
+            'option_status' => $status,
         ]);
         OrderPayment::factory()->forOrder($order)->create([
             'payment_status' => PaymentStatusEnum::PAID,
@@ -595,7 +650,32 @@ class OrderCancellationControllerTest extends ModuleTestCase
             'paid_at' => now(),
         ]);
 
-        // When: 전체취소 요청
+        return $order;
+    }
+
+    /**
+     * 운영자 취소는 설정의 취소 가능 상태(`order_settings.cancellable_statuses`)를 따르지 않는다 — 설정이
+     * 결제완료만 허용해도 아직 보내지 않은 상품준비중 주문은 취소된다.
+     *
+     * 계획 결정 D5(물리 게이트): 취소 가능 상태 설정은 **고객 축**이다. 운영자의 취소·환불 접수는
+     * 물건이 아직 나가지 않았는지만 본다(`ClaimPhysicalGate` — `AdminClaimRequestService::requestCancelOrRefund()`).
+     * 종전에는 운영자 취소도 이 설정을 따라서, 설정 밖이지만 보내지 않은 배송보류·상품준비중 주문을 운영자가
+     * 취소할 길이 없었다. 고객 쪽 설정 게이트는 `User\OrderCancellationControllerTest` 가 그대로 잰다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario item_selection=single_full, payment_state=card_paid
+     *
+     * @effects admin_cancel_ignores_the_cancellable_status_setting_for_unshipped_items
+     */
+    public function test_admin_cancel_ignores_the_cancellable_status_setting_for_unshipped_items(): void
+    {
+        // Given: 설정은 결제완료만 취소 가능 — 상품준비중은 설정 밖이지만 아직 보내지 않았다
+        $this->createCancelSequences();
+        app(EcommerceSettingsService::class)->setSetting('order_settings.cancellable_statuses', ['payment_complete']);
+        $order = $this->paidOrderIn(OrderStatusEnum::PREPARING);
+
+        // When: 자동 전이를 켜고 전체취소
         $response = $this->actingAs($this->adminUser)
             ->postJson("/api/modules/sirsoft-ecommerce/admin/orders/{$order->order_number}/cancel", [
                 'type' => 'full',
@@ -603,49 +683,62 @@ class OrderCancellationControllerTest extends ModuleTestCase
                 'auto_advance_refund' => true,
             ]);
 
-        // Then: 성공 응답 + 주문 상태 CANCELLED
+        // Then: 성공 + 주문 CANCELLED — 운영자 신청서(출처 admin)가 남는다
         $response->assertOk()
-            ->assertJsonPath('success', true);
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.claim.cancelled', true);
 
-        $order->refresh();
-        $this->assertEquals(OrderStatusEnum::CANCELLED, $order->order_status);
+        $this->assertEquals(OrderStatusEnum::CANCELLED, $order->fresh()->order_status);
+        $this->assertSame(
+            RefundSourceTypeEnum::ADMIN,
+            OrderRefund::query()->where('order_id', $order->id)->latest('id')->first()?->refund_source_type,
+        );
     }
 
     /**
-     * 환경설정 미설정 시 preparing 상태 주문은 취소 불가하다 (기본값 사용).
+     * 이미 보낸(배송중) 주문은 설정이 그 상태를 취소 가능으로 적어 두어도 운영자가 취소할 수 없다 — 422 이고
+     * 신청서도 남지 않는다. 물건이 고객에게 가는 중이면 취소가 아니라 반품의 자리다(D5 물리 게이트).
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario item_selection=single_full, payment_state=card_paid
+     *
+     * @effects admin_cancel_refuses_shipped_items_even_when_the_setting_allows
      */
-    public function test_admin_cancel_preparing_order_fails_without_settings(): void
+    public function test_admin_cancel_refuses_shipped_items_even_when_the_setting_allows(): void
     {
-        // Given: 상품준비중(PREPARING) 상태의 주문 (환경설정 미변경 — setUp 에서 파일 초기화됨)
-        $user = User::factory()->create();
-        $order = Order::factory()->create([
-            'user_id' => $user->id,
-            'order_status' => OrderStatusEnum::PREPARING,
-            'subtotal_amount' => 20000,
-            'total_amount' => 20000,
-            'total_paid_amount' => 20000,
-            'total_due_amount' => 0,
-            'total_cancelled_amount' => 0,
-            'cancellation_count' => 0,
-            'paid_at' => now(),
-            'promotions_applied_snapshot' => [],
-            'shipping_policy_applied_snapshot' => [],
-        ]);
+        // Given: 설정이 배송중까지 취소 가능으로 적혀 있어도(고객 축) 물건은 이미 나갔다
+        $this->createCancelSequences();
+        app(EcommerceSettingsService::class)->setSetting(
+            'order_settings.cancellable_statuses',
+            ['payment_complete', 'preparing', 'shipping'],
+        );
+        $order = $this->paidOrderIn(OrderStatusEnum::SHIPPING);
 
-        // When: 전체취소 요청
+        // When: 전체취소
         $response = $this->actingAs($this->adminUser)
             ->postJson("/api/modules/sirsoft-ecommerce/admin/orders/{$order->order_number}/cancel", [
                 'type' => 'full',
                 'reason' => 'changed_mind',
+                'auto_advance_refund' => true,
             ]);
 
-        // Then: 422 에러 (기본 취소 가능 상태에 preparing 미포함)
+        // Then: 422 · 주문 상태 그대로 · 신청서 없음
         $response->assertStatus(422)
             ->assertJsonPath('success', false);
+
+        $this->assertEquals(OrderStatusEnum::SHIPPING, $order->fresh()->order_status);
+        $this->assertSame(0, OrderRefund::query()->where('order_id', $order->id)->count());
     }
 
     /**
-     * 이미 취소된 주문을 다시 취소 요청 시 422 에러를 반환한다.
+     * 이미 취소된 주문을 다시 취소 요청하면 422 로 거절된다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario item_selection=single_full, payment_state=card_paid
+     *
+     * @effects admin_cancel_of_a_cancelled_order_is_rejected
      */
     public function test_admin_cancel_already_cancelled_order_returns_error(): void
     {
@@ -678,7 +771,11 @@ class OrderCancellationControllerTest extends ModuleTestCase
     }
 
     /**
-     * 존재하지 않는 주문번호로 취소 요청 시 404 에러를 반환한다.
+     * 존재하지 않는 주문번호로 취소 요청하면 404 를 반환한다.
+     *
+     * @return void 반환값 없음
+     *
+     * @effects admin_cancel_of_a_missing_order_is_404
      */
     public function test_admin_cancel_nonexistent_order(): void
     {
@@ -698,7 +795,13 @@ class OrderCancellationControllerTest extends ModuleTestCase
     // ========================================
 
     /**
-     * 관리자가 refund_priority=pg_first로 환불 예상금액을 조회하면 PG 우선 배분 결과를 반환한다.
+     * refund_priority=pg_first 로 환불 예상금액을 조회하면 응답이 그 우선순위를 그대로 싣는다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario item_selection=single_full, payment_state=points_used
+     *
+     * @effects cancel_preview_carries_the_requested_refund_priority
      */
     public function test_admin_estimate_refund_with_refund_priority_pg_first(): void
     {
@@ -733,7 +836,13 @@ class OrderCancellationControllerTest extends ModuleTestCase
     }
 
     /**
-     * 관리자가 refund_priority=points_first로 환불 예상금액을 조회하면 포인트 우선 배분 결과를 반환한다.
+     * refund_priority=points_first 로 환불 예상금액을 조회하면 응답이 그 우선순위를 그대로 싣는다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario item_selection=single_full, payment_state=points_used
+     *
+     * @effects cancel_preview_carries_the_requested_refund_priority
      */
     public function test_admin_estimate_refund_with_refund_priority_points_first(): void
     {
@@ -772,6 +881,12 @@ class OrderCancellationControllerTest extends ModuleTestCase
 
     /**
      * 환불 예상금액 응답에 배송비 상세(shipping_details) 키가 포함된다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario item_selection=single_full, payment_state=card_paid
+     *
+     * @effects admin_estimate_refund_carries_shipping_details
      */
     public function test_admin_estimate_refund_includes_shipping_details(): void
     {
@@ -807,6 +922,12 @@ class OrderCancellationControllerTest extends ModuleTestCase
 
     /**
      * 쿠폰이 적용된 주문의 환불 예상금액 응답에 restored_coupons 키가 포함된다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario item_selection=single_full, payment_state=card_paid
+     *
+     * @effects admin_estimate_refund_carries_restored_coupons
      */
     public function test_admin_estimate_refund_includes_restored_coupons(): void
     {
@@ -886,7 +1007,13 @@ class OrderCancellationControllerTest extends ModuleTestCase
     }
 
     /**
-     * 포인트 사용 주문의 환불 예상금액 응답에 잔여 잔액 키가 포함된다.
+     * 포인트 사용 주문의 환불 예상금액 응답에 남은 PG·포인트 잔액 키가 포함된다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario item_selection=multi_subset_full, payment_state=points_used
+     *
+     * @effects cancel_reports_the_remaining_pg_and_point_balances
      */
     public function test_admin_estimate_refund_includes_remaining_balances(): void
     {
@@ -928,7 +1055,13 @@ class OrderCancellationControllerTest extends ModuleTestCase
     // ========================================
 
     /**
-     * 관리자가 refund_priority를 지정하여 취소하면 성공한다.
+     * 환불 우선순위(points_first)를 지정한 자동 전이 전체취소가 성공한다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario item_selection=single_full, payment_state=points_used
+     *
+     * @effects admin_cancel_accepts_a_refund_priority
      */
     public function test_admin_cancel_with_refund_priority(): void
     {
@@ -968,7 +1101,13 @@ class OrderCancellationControllerTest extends ModuleTestCase
     // ========================================
 
     /**
-     * 쿠폰이 적용된 주문을 전체취소하면 쿠폰 복원 훅이 호출되고 DB에 반영된다.
+     * 쿠폰이 적용된 주문을 전체취소하면 쿠폰 복원 훅이 호출되어 발급 쿠폰이 사용 가능 상태로 돌아간다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario item_selection=single_full, payment_state=card_paid
+     *
+     * @effects admin_cancel_restores_the_used_coupon
      */
     public function test_admin_cancel_restores_coupons_in_db(): void
     {
@@ -1065,7 +1204,13 @@ class OrderCancellationControllerTest extends ModuleTestCase
     // ========================================
 
     /**
-     * reason 없이 전체취소 요청 시 422 검증 에러를 반환한다.
+     * 취소 사유(reason) 없이 전체취소를 요청하면 422 검증 에러를 반환한다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario item_selection=single_full, payment_state=card_paid
+     *
+     * @effects admin_cancel_requires_a_reason
      */
     #[Test]
     public function cancel_order_requires_reason(): void
@@ -1095,6 +1240,8 @@ class OrderCancellationControllerTest extends ModuleTestCase
      * 이 테스트는 `[case:backend-41]` 의 회귀 그물도 겸한다 — 컨트롤러가 리소스를
      * `array_merge` 로 펼 때 `resolve()` 대신 `toArray()` 를 부르면 미로드 관계가
      * `MissingValue` 로 남아 이 응답만 500 이 된다.
+     *
+     * @return void 반환값 없음
      *
      * @scenario item_selection=single_full, payment_state=card_paid
      *
@@ -1162,6 +1309,8 @@ class OrderCancellationControllerTest extends ModuleTestCase
      * 목록 밖이면 전이하지 않는다. 술어를 호출부가 아니라 `willAutoAdvance()` 안에 둔 것이
      * 이 축의 근거다 — 관리자 경로는 따로 게이트를 걸지 않았는데도 같은 술어를 지나므로 막힌다.
      *
+     * @return void 반환값 없음
+     *
      * @scenario gate_case=stopped_method_admin_auto_advance
      *
      * @effects stopped_payment_method_ignores_admin_auto_advance
@@ -1206,6 +1355,8 @@ class OrderCancellationControllerTest extends ModuleTestCase
 
     /**
      * 자동 승인 목록에 있는 수단(카드)은 `auto_advance_refund` 로 완료까지 간다. (P16 비회귀)
+     *
+     * @return void 반환값 없음
      *
      * @scenario gate_case=allowed_method_admin_auto_advance
      *

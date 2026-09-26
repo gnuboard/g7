@@ -2028,6 +2028,169 @@
                             ]
                         }
                     ]
+                },
+                {
+                    "comment": "접수 출처·회수 지연·환불 미접수 필터 (§3-11 D8 · 선교환 · D9). 유형마다 축이 달라 게이트(`ClaimListRequest`)가 밖의 유형에서 prohibited 로 거절하므로, 아래 조회 파라미터는 그 축을 가진 유형에서만 싣는다.",
+                    "id": "claimFlags_filter_row",
+                    "type": "basic",
+                    "name": "Div",
+                    "slot": "{{(_local.visibleFilters || []).includes('claimFlags') ? 'basic_filters' : 'detail_filters'}}",
+                    "slotOrder": 10,
+                    "responsive": {
+                        "portable": {
+                            "props": {
+                                "className": "filter-row flex-col items-start"
+                            }
+                        }
+                    },
+                    "props": {
+                        "className": "filter-row"
+                    },
+                    "children": [
+                        {
+                            "comment": "편집모드 체크박스 — claimFlags",
+                            "type": "basic",
+                            "name": "Input",
+                            "actions": [
+                                {
+                                    "type": "change",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "_local",
+                                        "visibleFilters": "{{(_local.visibleFilters || []).includes('claimFlags') ? (_local.visibleFilters || []).filter(f => f !== 'claimFlags') : [...(_local.visibleFilters || []), 'claimFlags']}}"
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "type": "checkbox",
+                                "className": "{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}",
+                                "checked": "{{(_local.visibleFilters || []).includes('claimFlags')}}"
+                            }
+                        },
+                        {
+                            "id": "f_620_claimFlags_label",
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "filter-label w-20"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.claim.filter.claim_flags"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-center flex-wrap gap-4"
+                            },
+                            "children": [
+                                {
+                                    "id": "f_630_request_source_select",
+                                    "type": "basic",
+                                    "name": "Select",
+                                    "if": "{{(query.type || 'exchange') !== 'cancel'}}",
+                                    "actions": [
+                                        {
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "_local",
+                                                "filter.requestSource": "{{$event.target.value}}"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "name": "requestSource",
+                                        "className": "w-36",
+                                        "value": "{{_local.filter.requestSource || ''}}",
+                                        "options": [
+                                            {
+                                                "value": "",
+                                                "label": "$t:sirsoft-ecommerce.admin.claim.filter.request_source_option.all"
+                                            },
+                                            {
+                                                "value": "admin",
+                                                "label": "$t:sirsoft-ecommerce.admin.claim.filter.request_source_option.admin"
+                                            },
+                                            {
+                                                "value": "customer",
+                                                "label": "$t:sirsoft-ecommerce.admin.claim.filter.request_source_option.customer"
+                                            }
+                                        ]
+                                    }
+                                },
+                                {
+                                    "id": "f_640_collection_overdue",
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "if": "{{(query.type || 'exchange') === 'exchange'}}",
+                                    "props": {
+                                        "className": "flex-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Checkbox",
+                                            "actions": [
+                                                {
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "_local",
+                                                        "filter.collectionOverdue": "{{$event.target.checked ? '1' : ''}}"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "autoBinding": false,
+                                                "className": "w-4 h-4 rounded border-gray-300 dark:border-gray-600",
+                                                "checked": "{{_local.filter.collectionOverdue === '1'}}"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "$t:sirsoft-ecommerce.admin.claim.filter.collection_overdue"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "f_650_pending_refund",
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "if": "{{['exchange', 'return'].includes(query.type || 'exchange')}}",
+                                    "props": {
+                                        "className": "flex-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Checkbox",
+                                            "actions": [
+                                                {
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "_local",
+                                                        "filter.pendingRefund": "{{$event.target.checked ? '1' : ''}}"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "autoBinding": false,
+                                                "className": "w-4 h-4 rounded border-gray-300 dark:border-gray-600",
+                                                "checked": "{{_local.filter.pendingRefund === '1'}}"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "$t:sirsoft-ecommerce.admin.claim.filter.pending_refund"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
                 }
             ]
         },
@@ -2103,6 +2266,9 @@
                                             "chargeMethods": "{{preset.conditions?.chargeMethods || []}}",
                                             "reasonCode": "{{preset.conditions?.reasonCode || ''}}",
                                             "requesterType": "{{preset.conditions?.requesterType || ''}}",
+                                            "requestSource": "{{preset.conditions?.requestSource || ''}}",
+                                            "collectionOverdue": "{{preset.conditions?.collectionOverdue || ''}}",
+                                            "pendingRefund": "{{preset.conditions?.pendingRefund || ''}}",
                                             "minAmount": "{{preset.conditions?.minAmount || ''}}",
                                             "maxAmount": "{{preset.conditions?.maxAmount || ''}}",
                                             "currencyCode": "{{preset.conditions?.currencyCode || ''}}",
@@ -2133,6 +2299,9 @@
                                             "charge_methods[]": "{{((preset.conditions?.claimType || query.type || 'exchange') === 'exchange' || (preset.conditions?.claimType || query.type || 'exchange') === 'return') && (preset.conditions?.chargeMethods || []).length > 0 ? preset.conditions?.chargeMethods : null}}",
                                             "reason_code": "{{preset.conditions?.reasonCode || null}}",
                                             "requester_type": "{{preset.conditions?.requesterType || null}}",
+                                            "request_source": "{{(preset.conditions?.claimType || query.type || 'exchange') !== 'cancel' ? (preset.conditions?.requestSource || null) : null}}",
+                                            "collection_overdue": "{{(preset.conditions?.claimType || query.type || 'exchange') === 'exchange' && preset.conditions?.collectionOverdue === '1' ? 1 : null}}",
+                                            "pending_refund": "{{['exchange', 'return'].includes(preset.conditions?.claimType || query.type || 'exchange') && preset.conditions?.pendingRefund === '1' ? 1 : null}}",
                                             "min_amount": "{{preset.conditions?.minAmount || null}}",
                                             "max_amount": "{{preset.conditions?.maxAmount || null}}",
                                             "currency_code": "{{preset.conditions?.currencyCode || null}}",
@@ -2369,6 +2538,10 @@
                                         "header": "$t:sirsoft-ecommerce.admin.claim.column.amount"
                                     },
                                     {
+                                        "field": "tracking",
+                                        "header": "$t:sirsoft-ecommerce.admin.claim.column.tracking"
+                                    },
+                                    {
                                         "field": "completed_at",
                                         "header": "$t:sirsoft-ecommerce.admin.claim.column.completed_at"
                                     }
@@ -2382,7 +2555,8 @@
                                     "status",
                                     "reason_label",
                                     "fault_type",
-                                    "amount"
+                                    "amount",
+                                    "tracking"
                                 ]
                             }
                         },
@@ -2639,6 +2813,9 @@
                                                             "chargeMethods": [],
                                                             "reasonCode": "",
                                                             "requesterType": "",
+                                                            "requestSource": "",
+                                                            "collectionOverdue": "",
+                                                            "pendingRefund": "",
                                                             "minAmount": "",
                                                             "maxAmount": "",
                                                             "currencyCode": "",

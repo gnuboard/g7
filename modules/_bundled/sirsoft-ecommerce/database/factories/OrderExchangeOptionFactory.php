@@ -44,6 +44,19 @@ class OrderExchangeOptionFactory extends Factory
             'new_order_option_id' => null,
             'is_new_stock_deducted' => false,
             'completed_at' => null,
+            'collection_carrier_id' => null,
+            'collection_tracking_number' => null,
+            'collection_shipped_at' => null,
+            'collected_at' => null,
+            'redelivery_carrier_id' => null,
+            'redelivery_tracking_number' => null,
+            'redelivery_shipped_at' => null,
+            'redelivered_at' => null,
+            'reject_reason' => null,
+            'is_stock_restored' => false,
+            'return_address_snapshot' => null,
+            'unreturned_at' => null,
+            'unreturned_reason' => null,
             'processed_by' => null,
         ];
     }
@@ -88,6 +101,42 @@ class OrderExchangeOptionFactory extends Factory
         return $this->state(fn () => [
             'exchange_quantity' => $exchangeQuantity,
             'original_quantity' => $originalQuantity,
+        ]);
+    }
+
+    /**
+     * 회수 송장이 등록된 행으로 설정합니다.
+     *
+     * @param  int  $carrierId  회수 택배사 ID
+     * @param  string  $trackingNumber  회수 운송장 번호
+     * @param  bool  $arrived  회수 도착 시각까지 채울지 여부
+     * @return static
+     */
+    public function withCollectionTracking(int $carrierId, string $trackingNumber = 'C-0001', bool $arrived = false): static
+    {
+        return $this->state(fn () => [
+            'collection_carrier_id' => $carrierId,
+            'collection_tracking_number' => $trackingNumber,
+            'collection_shipped_at' => now(),
+            'collected_at' => $arrived ? now() : null,
+        ]);
+    }
+
+    /**
+     * 재발송 송장이 등록된 행으로 설정합니다.
+     *
+     * @param  int  $carrierId  재발송 택배사 ID
+     * @param  string  $trackingNumber  재발송 운송장 번호
+     * @param  bool  $arrived  재발송 도착 시각까지 채울지 여부
+     * @return static
+     */
+    public function withRedeliveryTracking(int $carrierId, string $trackingNumber = 'R-0001', bool $arrived = false): static
+    {
+        return $this->state(fn () => [
+            'redelivery_carrier_id' => $carrierId,
+            'redelivery_tracking_number' => $trackingNumber,
+            'redelivery_shipped_at' => now(),
+            'redelivered_at' => $arrived ? now() : null,
         ]);
     }
 }

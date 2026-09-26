@@ -27,15 +27,15 @@
 | `OrderCancel` | `ecommerce_order_cancels` | 10 | order→Order, cancelOptions→OrderCancelOption, refund→OrderRefund, cancelledByUser→User | - |
 | `OrderCancelOption` | `ecommerce_order_cancel_options` | 10 | orderCancel→OrderCancel, order→Order, orderOption→OrderOption, processedByUser→User | - |
 | `OrderCashReceipt` | `ecommerce_order_cash_receipts` | 16 | order→Order, payment→OrderPayment | - |
-| `OrderExchange` | `ecommerce_order_exchanges` | 41 | order→Order, exchangeOptions→OrderExchangeOption, images→ClaimImage, claimPayments→ClaimPayment, collectionCarrier→ShippingCarrier, redeliveryCarrier→ShippingCarrier, 외 2개 | - |
-| `OrderExchangeOption` | `ecommerce_order_exchange_options` | 17 | orderExchange→OrderExchange, order→Order, orderOption→OrderOption, newProductOption→ProductOption, newOrderOption→OrderOption, processedByUser→User | - |
+| `OrderExchange` | `ecommerce_order_exchanges` | 45 | order→Order, exchangeOptions→OrderExchangeOption, refunds→OrderRefund, images→ClaimImage, claimPayments→ClaimPayment, requestedByUser→User, 외 4개 | - |
+| `OrderExchangeOption` | `ecommerce_order_exchange_options` | 30 | orderExchange→OrderExchange, order→Order, orderOption→OrderOption, newProductOption→ProductOption, newOrderOption→OrderOption, collectionCarrier→ShippingCarrier, 외 2개 | - |
 | `OrderOption` | `ecommerce_order_options` | 57 | order→Order, parentOption→self, childOptions→self, splitOptions→self, product→Product, productOption→ProductOption, 외 4개 | - |
 | `OrderPayment` | `ecommerce_order_payments` | 58 | order→Order, taxInvoices→OrderTaxInvoice, cashReceipts→OrderCashReceipt | - |
-| `OrderRefund` | `ecommerce_order_refunds` | 37 | order→Order, orderCancel→OrderCancel, images→ClaimImage, requestedByUser→User, refundOptions→OrderRefundOption, processedByUser→User | - |
-| `OrderRefundOption` | `ecommerce_order_refund_options` | 12 | orderRefund→OrderRefund, order→Order, orderOption→OrderOption, processedByUser→User | - |
-| `OrderReturn` | `ecommerce_order_returns` | 36 | order→Order, returnOptions→OrderReturnOption, images→ClaimImage, claimPayments→ClaimPayment, collectionCarrier→ShippingCarrier, refund→OrderRefund, 외 2개 | - |
-| `OrderReturnOption` | `ecommerce_order_return_options` | 11 | orderReturn→OrderReturn, order→Order, orderOption→OrderOption, processedByUser→User | - |
-| `OrderShipping` | `ecommerce_order_shippings` | 32 | order→Order, orderOption→OrderOption, shippingPolicy→ShippingPolicy, carrier→ShippingCarrier | - |
+| `OrderRefund` | `ecommerce_order_refunds` | 39 | order→Order, orderCancel→OrderCancel, images→ClaimImage, requestedByUser→User, refundOptions→OrderRefundOption, processedByUser→User | - |
+| `OrderRefundOption` | `ecommerce_order_refund_options` | 13 | orderRefund→OrderRefund, order→Order, orderOption→OrderOption, processedByUser→User | - |
+| `OrderReturn` | `ecommerce_order_returns` | 36 | order→Order, returnOptions→OrderReturnOption, images→ClaimImage, claimPayments→ClaimPayment, refunds→OrderRefund, requestedByUser→User, 외 3개 | - |
+| `OrderReturnOption` | `ecommerce_order_return_options` | 19 | orderReturn→OrderReturn, order→Order, orderOption→OrderOption, collectionCarrier→ShippingCarrier, refund→OrderRefund, processedByUser→User | - |
+| `OrderShipping` | `ecommerce_order_shippings` | 28 | order→Order, orderOption→OrderOption, shippingPolicy→ShippingPolicy, carrier→ShippingCarrier | - |
 | `OrderTaxInvoice` | `ecommerce_order_tax_invoices` | 21 | order→Order, payment→OrderPayment | - |
 | `Product` | `ecommerce_products` | 34 | options→ProductOption, images→ProductImage, categories→Category, brand→Brand, commonInfo→ProductCommonInfo, shippingPolicy→ShippingPolicy, 외 6개 | SoftDeletes, 검색 색인 |
 | `ProductAdditionalOption` | `ecommerce_product_additional_options` | 4 | product→Product, values→ProductAdditionalOptionValue | - |
@@ -229,7 +229,7 @@
 ## 마이그레이션
 
 <!-- @generated:migrations START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-마이그레이션 118개.
+마이그레이션 122개.
 
 | 파일 | 생성 테이블 | 변경 테이블 | down() |
 |---|---|---|---|
@@ -351,6 +351,10 @@
 | `2026_09_14_000001_add_uploader_type_to_ecommerce_claim_images_table.php` | - | `ecommerce_claim_images` | ✅ |
 | `2026_09_14_000002_add_option_status_index_to_ecommerce_order_refund_options_table.php` | - | - | ✅ |
 | `2026_09_23_000001_add_refund_priority_to_claim_tables.php` | - | - | ✅ |
+| `2026_09_25_000001_add_tracking_columns_to_claim_option_tables.php` | - | - | ✅ |
+| `2026_09_25_000002_add_item_level_columns_to_claim_tables.php` | - | - | ✅ |
+| `2026_09_25_000003_move_claim_tracking_to_option_rows.php` | - | - | ✅ |
+| `2026_09_25_000004_drop_dormant_claim_tracking_from_order_shippings.php` | - | - | ✅ |
 <!-- @generated:migrations END -->
 
 <!-- @intent START -->
@@ -395,10 +399,12 @@
 | `ChargePolicyEnum` | `string` | 14 | `free`, `fixed`, `conditional_free`, `range_amount`, `range_quantity`, `range_weight`, `range_volume`, `range_volume_weight`, `외 6개` |
 | `ClaimChargeMethodEnum` | `string` | 3 | `pay_on_request`, `pay_on_approval`, `deduct_from_refund` |
 | `ClaimImageUploaderTypeEnum` | `string` | 3 | `customer`, `admin`, `unknown` |
+| `ClaimItemCollectionStateEnum` | `string` | 4 | `pending`, `in_transit`, `collected`, `unreturned` |
 | `ClaimPaymentStatusEnum` | `string` | 5 | `pending`, `paid`, `failed`, `cancelled`, `refunded` |
 | `ClaimReasonFaultTypeEnum` | `string` | 3 | `customer`, `seller`, `carrier` |
 | `ClaimReasonTypeEnum` | `string` | 3 | `refund`, `exchange`, `return` |
 | `ClaimShippingFeeModeEnum` | `string` | 2 | `fixed`, `original_policy` |
+| `ClaimTrackingDirectionEnum` | `string` | 2 | `collection`, `redelivery` |
 | `ClaimTypeEnum` | `string` | 4 | `exchange`, `return`, `refund`, `cancel` |
 | `CouponDiscountType` | `string` | 2 | `fixed`, `rate` |
 | `CouponIssueCondition` | `string` | 4 | `manual`, `signup`, `first_purchase`, `birthday` |
@@ -409,6 +415,7 @@
 | `CouponTargetType` | `string` | 3 | `product_amount`, `order_amount`, `shipping_fee` |
 | `DeliveryMemoPresetEnum` | `string` | 4 | `door`, `security`, `parcel_box`, `call` |
 | `DeviceTypeEnum` | `string` | 6 | `pc`, `mobile`, `app_ios`, `app_android`, `admin`, `api` |
+| `ExchangeModeEnum` | `string` | 2 | `standard`, `advance` |
 | `ExchangeStatusEnum` | `string` | 14 | `requested`, `payment_pending`, `paid`, `approved`, `on_hold`, `rejected`, `collection_ready`, `collecting`, `외 6개` |
 | `MileageEarnTriggerEnum` | `string` | 2 | `delivered`, `confirmed` |
 | `MileageTransactionTypeEnum` | `string` | 8 | `purchase_earn`, `admin_earn`, `order_use`, `admin_deduct`, `expired`, `refund_restore`, `order_cancel_restore`, `earn_cancel` |

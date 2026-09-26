@@ -17,10 +17,6 @@
     </error-handling>
     <init-local>
       <field name="adminMemo" value="{{data.claim?.admin_memo ?? ''}}"/>
-      <field name="collectionCarrierId" value="{{data.claim?.collection_carrier_id ? String(data.claim.collection_carrier_id) : ''}}"/>
-      <field name="collectionTrackingNumber" value="{{data.claim?.collection_tracking_number ?? ''}}"/>
-      <field name="redeliveryCarrierId" value="{{data.claim?.redelivery_carrier_id ? String(data.claim.redelivery_carrier_id) : ''}}"/>
-      <field name="redeliveryTrackingNumber" value="{{data.claim?.redelivery_tracking_number ?? ''}}"/>
       <field name="claimShippingFee" value="{{data.claim?.claim_shipping_fee === undefined || data.claim?.claim_shipping_fee === null ? '' : String(data.claim.claim_shipping_fee)}}"/>
       <field name="chargeMethod" value="{{data.claim?.charge_method ?? ''}}"/>
       <field name="refundAmount" value="{{data.claim?.refund_amount === undefined || data.claim?.refund_amount === null ? '' : String(data.claim.refund_amount)}}"/>
@@ -42,12 +38,10 @@
     <field name="claimRejectReason" value=""/>
     <field name="adminMemo" value=""/>
     <field name="isSavingMemo" :value="false"/>
-    <field name="collectionCarrierId" value=""/>
-    <field name="collectionTrackingNumber" value=""/>
-    <field name="isSavingCollection" :value="false"/>
-    <field name="redeliveryCarrierId" value=""/>
-    <field name="redeliveryTrackingNumber" value=""/>
-    <field name="isSavingRedelivery" :value="false"/>
+    <field name="itemTrackingMode" :value="false"/>
+    <field name="itemTrackingDirection" value="collection"/>
+    <field name="isDeliveringTracking" :value="false"/>
+    <field name="isRestoringStock" :value="false"/>
     <field name="claimShippingFee" value=""/>
     <field name="chargeMethod" value=""/>
     <field name="isSavingAmounts" :value="false"/>
@@ -69,7 +63,7 @@
   </transition-overlay>
   <init>
     <!-- 폼 시드는 데이터소스 `initLocal` 이 담당한다 — 여기서는 응답과 무관한 화면 상태만 되돌린다(이탈 후 복귀 시 앞 신청서의 선택이 남지 않게). -->
-    <set-state target="local" activeClaimTab="claim_info" :selectedClaimItems="[]" itemBulkStatus="" itemRejectReason="" itemCarrierId="" itemTrackingNumber="" claimBulkStatus="" claimRejectReason="" :itemTransitionOptions="[]" :isSavingMemo="false" :isSavingCollection="false" :isSavingRedelivery="false" :isSavingAmounts="false" :isExecutingRefund="false" :logsPage="1" :logsPerPage="10" logsSort="date_desc"/>
+    <set-state target="local" activeClaimTab="claim_info" :selectedClaimItems="[]" itemBulkStatus="" itemRejectReason="" itemCarrierId="" itemTrackingNumber="" :itemTrackingMode="false" itemTrackingDirection="collection" claimBulkStatus="" claimRejectReason="" :itemTransitionOptions="[]" :isSavingMemo="false" :isDeliveringTracking="false" :isRestoringStock="false" :isSavingAmounts="false" :isExecutingRefund="false" :logsPage="1" :logsPerPage="10" logsSort="date_desc"/>
   </init>
   <slot name="content">
     <div data-ref="claim_detail_wrapper" class="admin-page-content">
@@ -101,9 +95,19 @@
               <span data-ref="cd_008_requester_plain" data-if="{{!claim?.data?.claim?.requester_user_uuid}}" class="font-medium text-gray-900 dark:text-gray-100">{{claim?.data?.claim?.requester_name ?? '-'}}</span>
               <!-- e2e:allow 출처 뱃지는 서버 필드(`request_source`) 하나를 그대로 그리는 표시 전용 노드다 — 판정 로직이 화면에 없다. 그 필드의 3분류(고객·비회원·운영자 접수)는 PHPUnit 이 조합 전건을 덮고(ClaimResourceRequestSourceTest), 렌더는 Vitest 3건이 잠근다(adminClaimDetailRender.test.tsx 「신청자 출처 뱃지·요청자 링크」 — 4차 라운드 D2 해소). 2026-09-16 브라우저로 3종 전건도 확인했다(RF20260915-1707536717 운영자 접수 · RT20260916-0302483148 고객 신청 · RT20260915-1425436901 비회원 신청). 출처 뱃지(계획 676) — 고객 신청·비회원 신청·운영자 접수. 운영자는 셋을 다르게 대한다: 고객 건은 연락처가 계정에 있고, 비회원 건은 주문서 연락처뿐이며, 대리 접수 건은 고객이 철회·수정할 수 없다. 라벨은 서버가 로케일로 풀어 내려준다(`request_source_label`) — 화면이 코드를 매핑하면 3로케일 사본이 하나 더 생긴다. -->
               <badge data-ref="cd_008b_request_source" variant="{{claim?.data?.claim?.request_source === 'admin' ? 'warning' : (claim?.data?.claim?.request_source === 'guest' ? 'secondary' : 'info')}}" size="sm">{{claim?.data?.claim?.request_source_label}}</badge>
+              <!-- 판매자 접수·대리 철회를 한 운영자 (계획 §3-11 「머리에 판매자 접수 뱃지와 접수 관리자 이름」) — 관리자 상세 응답에만 실리는 이름이다(고객 응답에는 없다). 누가 고객을 대신했는지 알아야 고객 문의에 답한다. -->
+              <span data-ref="cd_008c_requested_by_admin" data-if="{{claim?.data?.claim?.request_source === 'admin' &amp;&amp; !!claim?.data?.claim?.requested_by_admin_name}}" class="text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.claim.detail.requested_by_admin|name={{claim?.data?.claim?.requested_by_admin_name}}</span>
+              <span data-ref="cd_008d_withdrawn_by_admin" data-if="{{!!claim?.data?.claim?.withdrawn_by_admin_name}}" class="text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.claim.detail.withdrawn_by_admin|name={{claim?.data?.claim?.withdrawn_by_admin_name}}</span>
             </div>
           </div>
           <div class="page-actions">
+            <!-- 고객 요청 대리 철회(S14) — 고객이 전화로 신청 취소를 요청하면 반려가 아니라 철회다. 단계는 고객 철회와 같고, 판매자가 접수한 건도 거둘 수 있다(게이트는 서버의 `on_behalf.can_withdraw`). -->
+            <button data-ref="cd_011_withdraw_on_behalf" data-if="{{claim?.data?.on_behalf?.can_withdraw === true &amp;&amp; claim?.data?.abilities?.can_update_status === true}}" type="button" class="btn btn-outline">
+              <on type="click">
+                <action handler="sirsoft-ecommerce.openClaimWithdrawOnBehalf" pathSegment="{{claim?.data?.claim_path_segment ?? ''}}" claimId="{{claim?.data?.claim?.id ?? null}}"/>
+              </on>
+              $t:sirsoft-ecommerce.admin.claim.detail.withdraw_on_behalf.button
+            </button>
             <button data-ref="cd_009_order_link_button" data-if="{{!!claim?.data?.claim?.order_number}}" type="button" class="btn btn-outline">
               <on type="click">
                 <!-- 원 주문은 이 목록 클러스터 밖이다 — 새 창으로 열어 지금 보던 신청서를 잃지 않게 한다. -->
@@ -121,6 +125,40 @@
               $t:sirsoft-ecommerce.common.list
             </button>
           </div>
+        </div>
+        <!-- 환불 미접수(D9) — 완료됐는데 환불신청서가 없고 환불액이 0 보다 크다. 예전에는 완료 모달에서 접수를 끄면 그 뒤로 운영자가 그 사실을 알 길이 없었다. 금액·건수는 서버(`pending_refund`)가 정하고, 버튼은 기존 수동 접수 경로다. -->
+        <div data-ref="cd_012_pending_refund_banner" data-if="{{!!claim?.data?.pending_refund}}" class="mt-4 flex-between gap-3 flex-wrap p-4 rounded-lg border border-orange-200 dark:border-orange-800 bg-orange-50 dark:bg-orange-900/20">
+          <span class="text-sm text-orange-800 dark:text-orange-300">$t:sirsoft-ecommerce.admin.claim.detail.pending_refund.banner|amount={{claim?.data?.pending_refund?.amount_formatted ?? ''}}</span>
+          <button data-ref="cd_012b_pending_refund_action" type="button" class="btn btn-outline" disabled="{{claim?.data?.abilities?.can_update_status !== true}}">
+            <on type="click">
+              <action handler="sirsoft-ecommerce.storeClaimRefundRequest" pathSegment="{{claim?.data?.claim_path_segment ?? ''}}" claimId="{{claim?.data?.claim?.id ?? null}}">
+                <fail>
+                  <suppress/>
+                </fail>
+              </action>
+            </on>
+            $t:sirsoft-ecommerce.admin.claim.detail.pending_refund.action
+          </button>
+        </div>
+        <!-- 선교환 반송 기한 경과 — 새 물건은 보냈는데 헌 물건이 기한까지 오지 않았다. 기한·경과 일수는 서버가 센다. -->
+        <div data-ref="cd_013_overdue_banner" data-if="{{claim?.data?.claim?.is_collection_overdue === true}}" class="mt-4 p-4 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 text-sm text-red-800 dark:text-red-300">$t:sirsoft-ecommerce.admin.claim.detail.exchange_mode.overdue_banner|days={{claim?.data?.claim?.collection_overdue_days ?? 0}}|date={{claim?.data?.claim?.collection_due_date_formatted ?? ''}}</div>
+        <!-- 「진행 방식」 줄 (교환만, D1) — 일반 교환/선교환 뱃지와 전환 버튼. 전환할 수 있는지는 서버(`exchange_mode_abilities`)가 실제 거절 조건과 같은 판정으로 준다. 막힌 이유는 버튼 옆 문구다 — 꺼진 버튼만 두면 운영자는 권한 문제로 읽는다. -->
+        <div data-ref="cd_014_exchange_mode_row" data-if="{{(claim?.data?.claim?.claim_type ?? '') === 'exchange' &amp;&amp; !!claim?.data?.exchange_mode_abilities}}" class="mt-4 flex-center gap-3 flex-wrap">
+          <span class="text-sm text-secondary">$t:sirsoft-ecommerce.admin.claim.detail.exchange_mode.label</span>
+          <badge data-ref="cd_015_exchange_mode_badge" variant="{{claim?.data?.claim?.is_advance_exchange === true ? 'warning' : 'secondary'}}">{{claim?.data?.claim?.exchange_mode_label ?? ''}}</badge>
+          <button data-ref="cd_016_set_advance" data-if="{{claim?.data?.claim?.is_advance_exchange !== true}}" type="button" class="btn btn-outline btn-sm disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{claim?.data?.abilities?.can_update_status !== true || claim?.data?.exchange_mode_abilities?.can_set_advance !== true}}">
+            <on type="click">
+              <action handler="sirsoft-ecommerce.openClaimExchangeModeConfirm" claimId="{{claim?.data?.claim?.id ?? null}}" mode="advance" dueDays="{{claim?.data?.exchange_mode_abilities?.collection_due_days ?? ''}}"/>
+            </on>
+            $t:sirsoft-ecommerce.admin.claim.detail.exchange_mode.set_advance
+          </button>
+          <button data-ref="cd_017_set_standard" data-if="{{claim?.data?.claim?.is_advance_exchange === true}}" type="button" class="btn btn-outline btn-sm disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{claim?.data?.abilities?.can_update_status !== true || claim?.data?.exchange_mode_abilities?.can_set_standard !== true}}">
+            <on type="click">
+              <action handler="sirsoft-ecommerce.openClaimExchangeModeConfirm" claimId="{{claim?.data?.claim?.id ?? null}}" mode="standard" dueDays="{{claim?.data?.exchange_mode_abilities?.collection_due_days ?? ''}}"/>
+            </on>
+            $t:sirsoft-ecommerce.admin.claim.detail.exchange_mode.set_standard
+          </button>
+          <span data-ref="cd_018_mode_blocked" data-if="{{!!claim?.data?.exchange_mode_abilities?.blocked_reason}}" class="text-xs text-gray-500 dark:text-gray-400">{{claim?.data?.exchange_mode_abilities?.blocked_reason ?? ''}}</span>
         </div>
       </div>
       <!-- 탭 배열과 섹션 존재는 **같은 조건**으로 분기한다 (D17-①) — 탭만 남기면 스크롤 대상이 없어 클릭이 무반응이 되고, 섹션만 남기면 scrollSpy 가 없는 탭 id 를 활성화하려다 무시된다. 배송 축의 조건식은 `_partial_claim_shipping.json` 의 `if` 와 문자 그대로 같다. 결제 정보·환불 실행 탭은 그 섹션을 만드는 세션(S9b)이 **탭과 함께** 더한다 — 지금 탭만 세워 두면 그 사이 클릭이 아무 일도 하지 않는다. 모바일 대응 코드는 없다: 컴포넌트가 768px 미만에서 Select 로 자체 전환한다. 탭 클릭은 컴포넌트가 제 상태로 처리한다 — `onChange` 는 TabNavigationScroll 에 없는 이벤트라 걸어도 돌지 않고, `onTabChange` 를 걸면 컴포넌트가 내부 활성 탭 갱신을 넘겨 버려(`activeTabId` 는 초기값 전용) 누른 탭 표시가 따라오지 않는다. 형제 선례(상품·게시판 폼)처럼 핸들러를 두지 않는다. 탭 막대는 헤더 묶음 **밖**에 두고 `sticky-tab-nav` 로 스크롤 영역 위에 붙인다(상품 폼과 같은 형태) — 헤더 묶음 안에 두면 sticky 가 부모 경계에 막혀 스크롤과 함께 사라지고, 네 구역이 길어(신청 정보 약 1,300px·결제 정보 약 1,500px) 운영자가 탭으로 돌아가려면 다시 끝까지 올려야 했다(#599 후속 운영 지적). -->
@@ -141,4 +179,8 @@
   <modal src="partials/admin_ecommerce_claim_detail/_modal_claim_item_quantity_confirm.g7.html"/>
   <!-- 첨부 일괄 정리 확인 모달. 고객이 올린 증빙까지 파일째 지우는 되돌릴 수 없는 처리라 한 번 더 묻는다(개별 삭제는 업로더가 이미 묻는다). 문맥은 `_global.claimImagesClearContext` 하나다 — 모달은 부모 `_local` 을 해석하지 못한다. -->
   <modal src="partials/admin_ecommerce_claim_detail/_modal_claim_images_clear.g7.html"/>
+  <!-- 진행 방식 전환 확인 (D1) · 고객 요청 대리 철회 (S14) · 신청 내용 수정 (S15). 모달은 부모 `_local` 을 해석하지 못하므로 여는 핸들러가 `_global` 문맥으로 값을 넘긴다. -->
+  <modal src="partials/admin_ecommerce_claim_detail/_modal_claim_exchange_mode_confirm.g7.html"/>
+  <modal src="partials/admin_ecommerce_claim_detail/_modal_claim_withdraw_on_behalf.g7.html"/>
+  <modal src="partials/admin_ecommerce_claim_detail/_modal_claim_request_edit.g7.html"/>
 </layout>

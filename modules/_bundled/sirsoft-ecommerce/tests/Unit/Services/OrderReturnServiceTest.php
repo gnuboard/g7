@@ -10,6 +10,7 @@ use Modules\Sirsoft\Ecommerce\DTO\ClaimCompletionOptions;
 use Modules\Sirsoft\Ecommerce\Enums\ChargePolicyEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimChargeMethodEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimReasonFaultTypeEnum;
+use Modules\Sirsoft\Ecommerce\Enums\ClaimTrackingDirectionEnum;
 use Modules\Sirsoft\Ecommerce\Enums\MileageTransactionTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundSourceTypeEnum;
@@ -309,6 +310,24 @@ class OrderReturnServiceTest extends ModuleTestCase
         };
 
         return [$return, $itemIdFor((int) $optionA->id), $itemIdFor((int) $optionB->id)];
+    }
+
+    /**
+     * 반품 상품 행이 가리키는 환불신청서 ID 를 반환합니다. (S7 — 헤더 `refund_id` 대신 상품 행 연결)
+     *
+     * 한 반품이 회차마다 환불신청서를 낼 수 있어 여럿이면 가장 최근 것을 돌려준다.
+     *
+     * @param  OrderReturn  $return  반품 신청서
+     * @return int|null 환불신청서 ID (연결된 행이 없으면 null)
+     */
+    protected function refundIdOf(OrderReturn $return): ?int
+    {
+        $id = OrderReturnOption::query()
+            ->where('order_return_id', $return->id)
+            ->whereNotNull('refund_id')
+            ->max('refund_id');
+
+        return $id === null ? null : (int) $id;
     }
 
     // ================================================================
@@ -1975,20 +1994,21 @@ class OrderReturnServiceTest extends ModuleTestCase
             ReturnStatusEnum::COLLECTION_READY
         );
 
-        $updated = $this->service->registerCollectionTracking($return, null, null);
-        $this->assertSame(ReturnStatusEnum::COLLECTION_READY, $updated->return_status);
-
         $carrier = ShippingCarrier::first()
             ?? ShippingCarrier::create([
                 'code' => 'test-carrier',
                 'name' => ['ko' => '테스트택배', 'en' => 'Test Carrier'],
                 'is_active' => true,
             ]);
+        $itemId = (int) $return->returnOptions->first()->id;
 
-        $tracked = $this->service->registerCollectionTracking($updated, $carrier->id, '1234567890');
+        // 「송장만 저장」 은 고른 상품 행에 송장을 적을 뿐 상태를 옮기지 않는다(R7).
+        $result = $this->service->writeItemTracking($return, ClaimTrackingDirectionEnum::COLLECTION, [$itemId], $carrier->id, '1234567890');
 
-        $this->assertSame('1234567890', $tracked->collection_tracking_number);
-        $this->assertSame(ReturnStatusEnum::COLLECTION_READY, $tracked->return_status, '송장 저장이 상태를 옮겼습니다.');
+        $row = OrderReturnOption::find($itemId);
+        $this->assertSame('1234567890', $row->collection_tracking_number);
+        $this->assertSame(ReturnStatusEnum::COLLECTION_READY, $row->option_status, '송장 저장이 상품 상태를 옮겼습니다.');
+        $this->assertSame(ReturnStatusEnum::COLLECTION_READY, $result['claim']->fresh()->return_status, '송장 저장이 신청서 상태를 옮겼습니다.');
     }
 
     /**
@@ -2005,7 +2025,9 @@ class OrderReturnServiceTest extends ModuleTestCase
         $order = $this->deliveredOrder();
         $return = $this->service->requestReturn($order, $this->payload($order));
 
-        $this->assertClaimException('claim_tracking_incomplete', fn () => $this->service->registerCollectionTracking($return, null, '1234567890'));
+        $itemId = (int) $return->returnOptions->first()->id;
+
+        $this->assertClaimException('claim_tracking_incomplete', fn () => $this->service->writeItemTracking($return, ClaimTrackingDirectionEnum::COLLECTION, [$itemId], null, '1234567890'));
     }
 
     // ================================================================
@@ -2258,7 +2280,7 @@ class OrderReturnServiceTest extends ModuleTestCase
         );
 
         $this->assertSame(0, OrderRefund::where('order_id', $order->id)->count());
-        $this->assertNull($completed->refund_id);
+        $this->assertNull($this->refundIdOf($completed));
     }
 
     /**
@@ -2286,7 +2308,7 @@ class OrderReturnServiceTest extends ModuleTestCase
         );
 
         $this->assertSame(1, OrderRefund::where('order_id', $order->id)->count());
-        $this->assertNotNull($completed->refund_id);
+        $this->assertNotNull($this->refundIdOf($completed));
     }
 
     /**
@@ -2343,7 +2365,7 @@ class OrderReturnServiceTest extends ModuleTestCase
             '새로 생기는 행이므로 이전 값은 null 이다',
         );
         $this->assertSame(
-            OrderRefundOption::where('order_refund_id', $completed->refund_id)->count(),
+            OrderRefundOption::where('order_refund_id', $this->refundIdOf($completed))->count(),
             count($announced),
             '생성된 신청상품 행 전건이 알려져야 한다 — 일부만 알리면 나머지는 로그에 없다',
         );
@@ -2372,7 +2394,7 @@ class OrderReturnServiceTest extends ModuleTestCase
             $this->completionOptions($return, false, true)
         );
 
-        $refund = OrderRefund::find($completed->refund_id);
+        $refund = OrderRefund::find($this->refundIdOf($completed));
 
         $this->assertSame(RefundSourceTypeEnum::RETURN, $refund->refund_source_type);
         $this->assertSame($return->id, $refund->refund_source_id);
@@ -2404,7 +2426,7 @@ class OrderReturnServiceTest extends ModuleTestCase
             $this->completionOptions($return, false, true)
         );
 
-        $this->assertSame(1, OrderRefundOption::where('order_refund_id', $completed->refund_id)->count());
+        $this->assertSame(1, OrderRefundOption::where('order_refund_id', $this->refundIdOf($completed))->count());
     }
 
     /**
@@ -2430,7 +2452,7 @@ class OrderReturnServiceTest extends ModuleTestCase
             $this->completionOptions($return, false, true)
         );
 
-        $refund = OrderRefund::find($completed->refund_id);
+        $refund = OrderRefund::find($this->refundIdOf($completed));
 
         $this->assertSame(29000.0, (float) $refund->refund_amount);
     }
@@ -2716,8 +2738,8 @@ class OrderReturnServiceTest extends ModuleTestCase
 
         // 환불신청서는 신청서당 한 건이므로, 마지막 라운드에서 만든 건이 앞 라운드 상품까지
         // 담아야 한다 — 이번 라운드 몫만 담으면 먼저 완료한 상품이 환불 대상에서 사라진다.
-        $this->assertSame(2, OrderRefundOption::where('order_refund_id', $completed->refund_id)->count());
-        $this->assertSame(30000.0, (float) OrderRefund::find($completed->refund_id)->refund_amount);
+        $this->assertSame(2, OrderRefundOption::where('order_refund_id', $this->refundIdOf($completed))->count());
+        $this->assertSame(30000.0, (float) OrderRefund::find($this->refundIdOf($completed))->refund_amount);
     }
 
     /**
@@ -2738,16 +2760,18 @@ class OrderReturnServiceTest extends ModuleTestCase
     }
 
     /**
-     * 두 번째 환불신청서 접수는 거절한다.
+     * 완료 회차마다 그 회차 상품으로 환불신청서를 접수하고, 이미 연결된 상품으로는 다시 접수하지 않는다. (S7)
      *
+     * 예전에는 헤더 한 칸(`refund_id`)이라 1회차에 접수하면 2회차 상품은 `claim_refund_request_exists`
+     * 로 막혀, 남은 상품 환불을 화면 밖(주문 환불 모달)으로 돌려야 했다.
      *
      * @return void 반환값 없음
      *
-     * @effects return_second_refund_request_is_rejected
-     *
      * @scenario quantity=full, charge_method=none, refund_chain=at_completion
+     *
+     * @effects return_each_completion_round_files_its_own_refund, return_second_refund_request_is_rejected
      */
-    public function test_complete_rejects_a_second_refund_request(): void
+    public function test_each_completion_round_files_its_own_refund_request(): void
     {
         $policy = $this->createClaimShippingPolicy();
         [$productA, $optionA] = $this->createClaimProduct(10000, $policy);
@@ -2766,17 +2790,28 @@ class OrderReturnServiceTest extends ModuleTestCase
         $ids = $return->returnOptions->pluck('id')->all();
 
         $this->service->completeReturn($return, [$ids[0]], new ClaimCompletionOptions([], true));
+        $completed = $this->service->completeReturn($return->fresh(['returnOptions']), [$ids[1]], new ClaimCompletionOptions([], true));
 
-        $this->assertClaimException('claim_refund_request_exists', fn () => $this->service->completeReturn($return->fresh(['returnOptions']), [$ids[1]], new ClaimCompletionOptions([], true)));
+        $first = OrderReturnOption::find($ids[0])->refund_id;
+        $second = OrderReturnOption::find($ids[1])->refund_id;
+
+        $this->assertNotNull($first);
+        $this->assertNotNull($second);
+        $this->assertNotSame($first, $second, '회차마다 자기 환불신청서를 가리켜야 합니다.');
+        $this->assertSame(2, OrderRefund::where('order_id', $order->id)->count());
+        $this->assertSame(1, OrderRefundOption::where('order_refund_id', $first)->count());
+        $this->assertSame(1, OrderRefundOption::where('order_refund_id', $second)->count());
+
+        // 모든 완료 상품이 이미 환불에 연결됐으면 더 접수할 것이 없다.
+        $this->assertClaimException('claim_refund_request_exists', fn () => $this->service->createRefundRequestForCompleted($completed->fresh(['returnOptions'])));
     }
 
     /**
      * 두 처리자가 같은 반품을 거의 동시에 완료해도 환불신청서는 한 건만 만들어진다.
      *
      * 접수 여부를 호출부가 들고 온 모델로만 판정하면, 두 요청이 각자 **접수 전** 상태를
-     * 읽은 뒤 차례로 저장돼 두 건이 생긴다. 헤더 `refund_id` 는 나중 것만 남으므로 앞 건은
-     * 취소 가능 금액의 선점액 집계에서 빠지고, 그만큼 한도가 실제보다 넓게 계산된다 —
-     * 예외도 로그도 남지 않는다.
+     * 읽은 뒤 차례로 저장돼 두 건이 생긴다. 늦은 요청은 잠금 안에서 다시 읽으면 완료할 상품이
+     * 남아 있지 않아 거절된다(`claim_completion_items_invalid`) — 환불신청서는 앞 요청의 한 건뿐이다.
      *
      * @return void 반환값 없음
      *
@@ -2803,7 +2838,7 @@ class OrderReturnServiceTest extends ModuleTestCase
         );
 
         $this->assertClaimException(
-            'claim_refund_request_exists',
+            'claim_completion_items_invalid',
             fn () => $this->service->completeReturn($stale, [], $this->completionOptions($stale, false, true))
         );
 
@@ -2837,7 +2872,7 @@ class OrderReturnServiceTest extends ModuleTestCase
         $refund = $this->service->createRefundRequestForCompleted($completed);
 
         $this->assertSame(RefundSourceTypeEnum::RETURN, $refund->refund_source_type);
-        $this->assertSame($refund->id, $completed->fresh()->refund_id);
+        $this->assertSame($refund->id, $this->refundIdOf($completed));
     }
 
     /**
@@ -2934,7 +2969,7 @@ class OrderReturnServiceTest extends ModuleTestCase
         [$order, $completed] = $this->completedReturn(ClaimChargeMethodEnum::PAY_ON_REQUEST, false);
 
         $this->assertSame(0, OrderRefund::where('order_id', $order->id)->count());
-        $this->assertNull($completed->refund_id);
+        $this->assertNull($this->refundIdOf($completed));
     }
 
     /**
@@ -2952,7 +2987,7 @@ class OrderReturnServiceTest extends ModuleTestCase
         [$order, $completed] = $this->completedReturn(ClaimChargeMethodEnum::PAY_ON_REQUEST, true);
 
         $this->assertSame(1, OrderRefund::where('order_id', $order->id)->count());
-        $this->assertNotNull($completed->refund_id);
+        $this->assertNotNull($this->refundIdOf($completed));
     }
 
     /**
@@ -2973,7 +3008,7 @@ class OrderReturnServiceTest extends ModuleTestCase
 
         $refund = $this->service->createRefundRequestForCompleted($completed);
 
-        $this->assertSame($refund->id, $completed->fresh()->refund_id);
+        $this->assertSame($refund->id, $this->refundIdOf($completed));
         $this->assertSame(1, OrderRefund::where('order_id', $order->id)->count());
     }
 
@@ -2992,7 +3027,7 @@ class OrderReturnServiceTest extends ModuleTestCase
         [$order, $completed] = $this->completedReturn(ClaimChargeMethodEnum::PAY_ON_APPROVAL, false);
 
         $this->assertSame(0, OrderRefund::where('order_id', $order->id)->count());
-        $this->assertNull($completed->refund_id);
+        $this->assertNull($this->refundIdOf($completed));
     }
 
     /**
@@ -3010,7 +3045,7 @@ class OrderReturnServiceTest extends ModuleTestCase
         [$order, $completed] = $this->completedReturn(ClaimChargeMethodEnum::PAY_ON_APPROVAL, true);
 
         $this->assertSame(1, OrderRefund::where('order_id', $order->id)->count());
-        $this->assertNotNull($completed->refund_id);
+        $this->assertNotNull($this->refundIdOf($completed));
     }
 
     /**
@@ -3031,7 +3066,7 @@ class OrderReturnServiceTest extends ModuleTestCase
 
         $refund = $this->service->createRefundRequestForCompleted($completed);
 
-        $this->assertSame($refund->id, $completed->fresh()->refund_id);
+        $this->assertSame($refund->id, $this->refundIdOf($completed));
         $this->assertSame(1, OrderRefund::where('order_id', $order->id)->count());
     }
 
@@ -3049,7 +3084,7 @@ class OrderReturnServiceTest extends ModuleTestCase
     {
         [$order, $completed] = $this->completedReturn(ClaimChargeMethodEnum::DEDUCT_FROM_REFUND, true);
 
-        $refund = OrderRefund::findOrFail($completed->refund_id);
+        $refund = OrderRefund::findOrFail($this->refundIdOf($completed));
 
         $this->assertSame(26000.0, (float) $refund->refund_amount, '29,000 − 회수비 3,000.');
     }
@@ -3090,7 +3125,7 @@ class OrderReturnServiceTest extends ModuleTestCase
         [$order, $completed] = $this->completedReturn(ClaimChargeMethodEnum::PAY_ON_REQUEST, false, 1);
 
         $this->assertSame(0, OrderRefund::where('order_id', $order->id)->count());
-        $this->assertNull($completed->refund_id);
+        $this->assertNull($this->refundIdOf($completed));
     }
 
     /**
@@ -3109,7 +3144,7 @@ class OrderReturnServiceTest extends ModuleTestCase
 
         $this->assertSame(1, OrderRefund::where('order_id', $order->id)->count());
 
-        $refund = OrderRefund::findOrFail($completed->refund_id);
+        $refund = OrderRefund::findOrFail($this->refundIdOf($completed));
 
         $this->assertCount(1, $refund->refundOptions, '나뉜 행 하나만 환불에 실린다.');
     }
@@ -3150,7 +3185,7 @@ class OrderReturnServiceTest extends ModuleTestCase
         [$order, $completed] = $this->completedReturn(null, false, 1);
 
         $this->assertSame(0, OrderRefund::where('order_id', $order->id)->count());
-        $this->assertNull($completed->refund_id);
+        $this->assertNull($this->refundIdOf($completed));
     }
 
     /**
@@ -3169,7 +3204,7 @@ class OrderReturnServiceTest extends ModuleTestCase
 
         $this->assertSame(1, OrderRefund::where('order_id', $order->id)->count());
 
-        $refund = OrderRefund::findOrFail($completed->refund_id);
+        $refund = OrderRefund::findOrFail($this->refundIdOf($completed));
 
         $this->assertCount(1, $refund->refundOptions, '나뉜 행 하나만 환불에 실린다.');
     }
@@ -3766,12 +3801,12 @@ class OrderReturnServiceTest extends ModuleTestCase
                 'is_active' => true,
             ]);
 
-        // 첫 update(송장)는 통과시키고, 두 번째 update(회수중 전이)에서 실패를 주입한다.
+        // 송장은 상품 행에 먼저 쓰이고, 헤더 전이(update)에서 실패를 주입한다 — 같은 트랜잭션이라
+        // 행 송장도 함께 되돌아가야 한다.
         $real = app(OrderReturnRepositoryInterface::class);
         $repository = Mockery::mock(OrderReturnRepositoryInterface::class);
         $repository->shouldReceive('findForUpdate')->andReturnUsing(fn (int $id) => $real->findForUpdate($id));
-        $repository->shouldReceive('update')->once()->ordered()->andReturnUsing(fn ($model, array $data) => $real->update($model, $data));
-        $repository->shouldReceive('update')->once()->ordered()->andThrow(new \RuntimeException('transition failed'));
+        $repository->shouldReceive('update')->andThrow(new \RuntimeException('transition failed'));
         app()->instance(OrderReturnRepositoryInterface::class, $repository);
         $service = app(OrderReturnService::class);
 
@@ -3782,8 +3817,8 @@ class OrderReturnServiceTest extends ModuleTestCase
             $this->assertSame('transition failed', $e->getMessage());
         }
 
-        $fresh = $return->fresh();
-        $this->assertNull($fresh->collection_tracking_number, '전이가 실패했는데 송장만 저장됐습니다.');
+        $fresh = $return->fresh(['returnOptions']);
+        $this->assertNull($fresh->returnOptions->first()->collection_tracking_number, '전이가 실패했는데 송장만 저장됐습니다.');
         $this->assertSame(ReturnStatusEnum::COLLECTION_READY, $fresh->return_status);
     }
 
@@ -4067,5 +4102,156 @@ class OrderReturnServiceTest extends ModuleTestCase
         $this->assertSame('KRW', $return->recalculated_snapshot['base_currency']);
         $this->assertArrayHasKey('subtotal_amount', $return->recalculated_snapshot['formatted']);
         $this->assertArrayNotHasKey('_substituted_items', $return->recalculated_snapshot);
+    }
+
+    // ================================================================
+    // 상품 단위 결함 (S2 · S3 · S4 · S6 · S8 — 헤더 1칸이던 사실을 상품 행으로)
+    // ================================================================
+
+    /**
+     * 한 상품을 회수중에서 완료해도 다른 상품이 아직 회수중이면 헤더 「회수 완료」 시각을 찍지 않는다. (S2)
+     *
+     * 헤더 시각은 헤더가 그 상태에 도달할 때만 찍힌다. 부분 완료 회차가 찍으면 진행단계·구매자 화면이
+     * 아직 오는 중인 상품까지 「회수 완료」 로 그린다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario quantity=full, charge_method=none, refund_chain=none
+     *
+     * @effects return_header_collection_time_is_stamped_only_when_the_header_arrives
+     */
+    public function test_partial_completion_from_collecting_does_not_stamp_header_collection_time(): void
+    {
+        [$return, $itemA] = $this->twoItemReturn();
+        $return = $this->advanceTo($return, ReturnStatusEnum::COLLECTING);
+
+        $completed = $this->service->completeReturn($return, [$itemA], new ClaimCompletionOptions([$itemA => false], false));
+
+        $this->assertNull($completed->fresh()->collection_completed_at);
+        $this->assertNotNull(OrderReturnOption::find($itemA)->collected_at);
+    }
+
+    /**
+     * 상품 단위 반려 사유는 그 상품 행에 남고, 헤더 사유는 신청서 전체가 반려될 때만 채워진다. (S3)
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario quantity=full, charge_method=none, refund_chain=none
+     *
+     * @effects return_item_rejection_reason_lives_on_the_item_row
+     */
+    public function test_item_rejection_reason_lives_on_the_item_row(): void
+    {
+        [$return, $itemA, $itemB] = $this->twoItemReturn();
+
+        $this->service->transitionOption($return, [$itemA], ReturnStatusEnum::REJECTED, ['reject_reason' => '사유 1']);
+
+        $this->assertSame('사유 1', OrderReturnOption::find($itemA)->reject_reason);
+        $this->assertNull($return->fresh()->reject_reason);
+
+        $this->service->transitionOption($return->fresh(), [$itemB], ReturnStatusEnum::REJECTED, ['reject_reason' => '사유 2']);
+
+        $this->assertSame('사유 1', OrderReturnOption::find($itemA)->reject_reason);
+        $this->assertSame('사유 2', OrderReturnOption::find($itemB)->reject_reason);
+        $fresh = $return->fresh();
+        $this->assertSame(ReturnStatusEnum::REJECTED, $fresh->return_status);
+        $this->assertSame('사유 2', $fresh->reject_reason);
+    }
+
+    /**
+     * 배송정책이 다른 상품을 한 신청서로 묶으면 상품 행마다 자기 정책의 회수지를 가진다. (S4)
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario quantity=full, charge_method=none, refund_chain=none
+     *
+     * @effects return_item_row_snapshots_its_own_policy_return_address
+     */
+    public function test_each_item_row_snapshots_its_own_policy_return_address(): void
+    {
+        $policyA = $this->createClaimShippingPolicy();
+        $policyB = $this->createClaimShippingPolicy();
+
+        foreach ([[$policyA, '회수지A'], [$policyB, '회수지B']] as [$policy, $name]) {
+            ShippingPolicyClaimAddress::create([
+                'shipping_policy_id' => $policy->id,
+                'claim_type' => 'return',
+                'recipient_name' => $name,
+                'phone' => '02-000-0000',
+                'zipcode' => '06236',
+                'address1' => '서울시 강남구',
+                'address2' => $name,
+                'country_code' => 'KR',
+            ]);
+        }
+
+        [$productA, $optionA] = $this->createClaimProduct(10000, $policyA);
+        [$productB, $optionB] = $this->createClaimProduct(20000, $policyB);
+
+        $order = $this->attachPolicyShippings($this->createClaimOrder(new CalculationInput(items: [
+            new CalculationItem($productA->id, $optionA->id, 1),
+            new CalculationItem($productB->id, $optionB->id, 1),
+        ])), $policyA);
+
+        foreach ($order->options as $option) {
+            $policy = (int) $option->product_option_id === (int) $optionA->id ? $policyA : $policyB;
+            OrderShipping::query()->where('order_option_id', $option->id)->update(['shipping_policy_id' => $policy->id]);
+        }
+
+        $order = $this->deliver($order->fresh(['options', 'shippings']));
+        $return = $this->service->requestReturn($order, $this->payload($order));
+
+        $names = $return->fresh('returnOptions')->returnOptions
+            ->mapWithKeys(fn (OrderReturnOption $item) => [
+                (int) $order->options->firstWhere('id', $item->order_option_id)?->product_option_id => $item->return_address_snapshot['recipient_name'] ?? null,
+            ]);
+
+        $this->assertSame('회수지A', $names[(int) $optionA->id]);
+        $this->assertSame('회수지B', $names[(int) $optionB->id]);
+    }
+
+    /**
+     * 재고 복구는 상품 행마다 기록된다 — 일부만 복구하면 복구한 행만 참이다. (S6)
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario quantity=full, charge_method=none, refund_chain=none
+     *
+     * @effects return_stock_restoration_is_recorded_per_item_row
+     */
+    public function test_stock_restoration_is_recorded_per_item_row(): void
+    {
+        [$return, $itemA, $itemB] = $this->twoItemReturn();
+        $return = $this->advanceTo($return, ReturnStatusEnum::COLLECTED);
+
+        $this->service->completeReturn($return, [], new ClaimCompletionOptions([$itemA => true, $itemB => false], false));
+
+        $this->assertTrue((bool) OrderReturnOption::find($itemA)->is_stock_restored);
+        $this->assertFalse((bool) OrderReturnOption::find($itemB)->is_stock_restored);
+        $this->assertTrue((bool) $return->fresh()->is_stock_restored);
+    }
+
+    /**
+     * 한 상품이 반려되고 나머지가 모두 완료되면 헤더도 완료된다. (S8)
+     *
+     * 예전 판정은 「모든 행이 완료」 라 반려 행 하나가 헤더를 영원히 진행 중에 묶었다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario quantity=full, charge_method=none, refund_chain=none
+     *
+     * @effects return_header_completes_when_living_items_are_all_completed
+     */
+    public function test_header_completes_when_remaining_items_complete_after_a_rejection(): void
+    {
+        [$return, $itemA, $itemB] = $this->twoItemReturn();
+
+        $this->service->transitionOption($return, [$itemA], ReturnStatusEnum::REJECTED, ['reject_reason' => '불량 아님']);
+        $return = $this->advanceTo($return->fresh(), ReturnStatusEnum::COLLECTED);
+
+        $completed = $this->service->completeReturn($return, [$itemB], new ClaimCompletionOptions([$itemB => false], false));
+
+        $this->assertSame(ReturnStatusEnum::COMPLETED, $completed->fresh()->return_status);
+        $this->assertNotNull($completed->fresh()->collection_completed_at);
     }
 }

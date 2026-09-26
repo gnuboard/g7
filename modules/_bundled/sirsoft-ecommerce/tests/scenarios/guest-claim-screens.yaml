@@ -82,6 +82,8 @@ effects:
   - guest_order_detail_sends_no_type_when_address_has_none
   - guest_order_claim_section_reuses_the_member_list_partial
   - guest_order_detail_offers_the_three_claim_entries
+  # 송장은 상품 행마다(#599) — 카드 배송조회 칸은 서버 요약(`tracking_summary`)의 첫 운송장 + 「외 N개」, 판매자 접수 라벨
+  - guest_order_claim_section_shows_the_row_waybill_summary
   # ⑤ 요청 빈도 제한
   - guest_claim_routes_carry_a_request_rate_limit
   - guest_claim_image_upload_is_bounded_more_tightly

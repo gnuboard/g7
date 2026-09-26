@@ -53,6 +53,7 @@ use Modules\Sirsoft\Ecommerce\Listeners\UserMileageCleanupListener;
 use Modules\Sirsoft\Ecommerce\Listeners\UserMileageInfoListener;
 use Modules\Sirsoft\Ecommerce\Listeners\UserShippingCountryInfoListener;
 use Modules\Sirsoft\Ecommerce\Repositories\OrderRepository;
+use Modules\Sirsoft\Ecommerce\Support\ClaimNotificationHooks;
 
 class Module extends AbstractModule
 {
@@ -273,6 +274,20 @@ class Module extends AbstractModule
                             'description' => [
                                 'ko' => '승인/보류/반려·회수·재발송 등 상태 전이 및 송장 입력',
                                 'en' => 'Approve, hold, reject, pickup, reship transitions and tracking input',
+                            ],
+                            'roles' => ['admin', 'manager', 'sirsoft-ecommerce.manager'],
+                        ],
+                        [
+                            // 관리자 직권 접수(§3-11) — 고객을 대신해 교환·반품·취소·환불을 접수한다.
+                            // 상태 전이와 분리한다: 접수는 수량 잠금·고객 알림·결제 요청을 새로 만드는 행위다.
+                            'action' => 'create',
+                            'name' => [
+                                'ko' => '클레임 직권 접수',
+                                'en' => 'Create Claims on Behalf',
+                            ],
+                            'description' => [
+                                'ko' => '주문 상세에서 고객을 대신해 교환·반품·취소·환불 접수',
+                                'en' => 'Request exchange, return, cancellation or refund on behalf of the customer from the order detail',
                             ],
                             'roles' => ['admin', 'manager', 'sirsoft-ecommerce.manager'],
                         ],
@@ -2599,7 +2614,14 @@ class Module extends AbstractModule
         }
 
         $definitions[] = $this->claimWithdrawnDefinition();
+        $definitions[] = $this->claimWithdrawnOnBehalfDefinition();
         $definitions[] = $this->claimPartiallyProcessedDefinition();
+
+        foreach ($this->claimTrackingRegisteredDefinitions() as $definition) {
+            $definitions[] = $definition;
+        }
+
+        $definitions[] = $this->claimCollectionOverdueDefinition();
 
         return $definitions;
     }
@@ -2632,13 +2654,13 @@ class Module extends AbstractModule
      */
     private function claimNotificationPhrases(): array
     {
+        // 송장은 상품 행마다 있어 한 신청서에 운송장이 여럿일 수 있다 — 운송장별로 묶은 줄
+        // (「택배사 · 운송장 · 상품×수량」)을 한 칸에 싣는다. 값은 발행 시점 스냅샷이다(S10).
         $collectionRows = [
-            ['ko' => '회수 택배사', 'en' => 'Collection Carrier', 'var' => 'collection_carrier_name'],
-            ['ko' => '회수 운송장 번호', 'en' => 'Collection Tracking No.', 'var' => 'collection_tracking_number'],
+            ['ko' => '회수 운송장', 'en' => 'Collection Tracking', 'var' => 'tracking_lines'],
         ];
         $redeliveryRows = [
-            ['ko' => '재발송 택배사', 'en' => 'Redelivery Carrier', 'var' => 'redelivery_carrier_name'],
-            ['ko' => '재발송 운송장 번호', 'en' => 'Redelivery Tracking No.', 'var' => 'redelivery_tracking_number'],
+            ['ko' => '발송 운송장', 'en' => 'Shipping Tracking', 'var' => 'tracking_lines'],
         ];
 
         return [
@@ -2646,15 +2668,17 @@ class Module extends AbstractModule
                 'name' => ['ko' => ':type 신청 접수', 'en' => ':Type Request Received'],
                 'description' => ['ko' => ':type 신청이 접수되면 고객에게 발송', 'en' => 'Sent to the customer when a :type request is received'],
                 'heading' => ['ko' => ':type 신청이 접수되었습니다', 'en' => ':Type Request Received'],
+                // 판매자가 대신 접수했으면 첫 문장 뒤에 그 사실을 덧붙인다(D8 — `request_origin_notice`).
                 'lead' => [
-                    'ko' => '{name}님, :type 신청이 접수되었습니다. 검토 후 처리 결과를 안내드리겠습니다.',
-                    'en' => 'Dear {name}, your :type request has been received. We will let you know once it has been reviewed.',
+                    'ko' => '{name}님, :type 신청이 접수되었습니다. {request_origin_notice} 검토 후 처리 결과를 안내드리겠습니다.',
+                    'en' => 'Dear {name}, your :type request has been received. {request_origin_notice} We will let you know once it has been reviewed.',
                 ],
                 'summary' => [
-                    'ko' => '{name}님, :type 신청({claim_number})이 접수되었습니다.',
-                    'en' => '{name}, your :type request ({claim_number}) has been received.',
+                    'ko' => '{name}님, :type 신청({claim_number})이 접수되었습니다. {request_origin_notice}',
+                    'en' => '{name}, your :type request ({claim_number}) has been received. {request_origin_notice}',
                 ],
                 'rows' => ['*' => [['ko' => '신청 사유', 'en' => 'Reason', 'var' => 'reason_label']]],
+                'extra_variables' => ['request_origin_notice'],
             ],
             'payment_requested' => [
                 'name' => ['ko' => ':type 추가결제 요청', 'en' => ':Type Additional Payment Requested'],
@@ -2753,7 +2777,7 @@ class Module extends AbstractModule
                 'heading' => ['ko' => '회수가 시작되었습니다', 'en' => 'Collection Has Started'],
                 'lead' => [
                     'ko' => '{name}님, :type 상품 회수가 시작되었습니다. 아래 운송장으로 진행 상황을 확인하실 수 있습니다.',
-                    'en' => 'Dear {name}, collection of your :type items has started. You can track it with the number below.',
+                    'en' => 'Dear {name}, collection of your :type items has started. You can track it with the numbers below.',
                 ],
                 'summary' => [
                     'ko' => '{name}님, :type 신청({claim_number})의 상품 회수가 시작되었습니다.',
@@ -2793,15 +2817,17 @@ class Module extends AbstractModule
                 'name' => ['ko' => ':type 재발송 시작', 'en' => ':Type Redelivery Shipped'],
                 'description' => ['ko' => ':type 상품 재발송이 시작되면 고객에게 발송', 'en' => 'Sent to the customer when the :type items have been shipped back'],
                 'heading' => ['ko' => '재발송이 시작되었습니다', 'en' => 'Redelivery Has Shipped'],
+                // 선교환이면 헌 상품 반송 기한을 본문 끝에 붙인다(`advance_exchange_notice` — 일반 교환은 빈 문자열).
                 'lead' => [
-                    'ko' => '{name}님, :type 상품이 발송되었습니다. 아래 운송장으로 배송 상황을 확인하실 수 있습니다.',
-                    'en' => 'Dear {name}, your :type items have been shipped. You can track the delivery with the number below.',
+                    'ko' => '{name}님, :type 상품이 발송되었습니다. 아래 운송장으로 배송 상황을 확인하실 수 있습니다. {advance_exchange_notice}',
+                    'en' => 'Dear {name}, your :type items have been shipped. You can track the delivery with the numbers below. {advance_exchange_notice}',
                 ],
                 'summary' => [
                     'ko' => '{name}님, :type 신청({claim_number})의 상품이 발송되었습니다.',
                     'en' => '{name}, the items for your :type request ({claim_number}) have been shipped.',
                 ],
                 'rows' => ['*' => $redeliveryRows],
+                'extra_variables' => ['advance_exchange_notice'],
             ],
             'redelivered' => [
                 'name' => ['ko' => ':type 재발송 도착', 'en' => ':Type Redelivery Delivered'],
@@ -2864,10 +2890,13 @@ class Module extends AbstractModule
             'paid_amount' => '결제 완료 금액',
             'reject_reason' => '반려 사유',
             'admin_memo' => '보류 안내 메모',
-            'collection_carrier_name' => '회수 택배사',
-            'collection_tracking_number' => '회수 운송장 번호',
-            'redelivery_carrier_name' => '재발송 택배사',
-            'redelivery_tracking_number' => '재발송 운송장 번호',
+            'tracking_lines' => '운송장별 상품 줄 (택배사 · 운송장 · 상품×수량, 줄바꿈 구분)',
+            'advance_exchange_notice' => '선교환 헌 상품 반송 기한 안내 (일반 교환은 빈 값)',
+            'request_origin_notice' => '판매자 대리 접수 안내 (고객 신청은 빈 값)',
+            'withdraw_origin_notice' => '판매자 대리 철회 안내 (고객 철회는 빈 값)',
+            'collection_due_date' => '선교환 헌 상품 반송 기한',
+            'overdue_days' => '반송 기한을 넘긴 일수',
+            'unreturned_item_lines' => '아직 회수되지 않은 상품 목록(줄바꿈 구분)',
             'refund_amount' => '환불 금액',
             'refund_method_label' => '환불 수단',
             'requester_name' => '신청자 이름',
@@ -2906,7 +2935,7 @@ class Module extends AbstractModule
             'description' => $this->claimNotificationText($phrase['description'], $words),
             'channels' => ['mail', 'database'],
             'hooks' => [ClaimStatusNotificationListener::NOTIFY_HOOK_PREFIX.$claimType.'.notify_'.$key],
-            'variables' => $this->claimNotificationVariables($allRows),
+            'variables' => $this->claimNotificationVariablesWith($allRows, $phrase['extra_variables'] ?? []),
             'templates' => [
                 [
                     'channel' => 'mail',
@@ -3130,7 +3159,7 @@ class Module extends AbstractModule
             'description' => ['ko' => '고객이 교환·반품·환불 신청을 철회하면 관리자에게 발송', 'en' => 'Sent to admins when a customer withdraws an exchange, return, or refund request'],
             'channels' => ['mail', 'database'],
             'hooks' => [ClaimStatusNotificationListener::WITHDRAWN_HOOK],
-            'variables' => $this->claimNotificationVariables($rows),
+            'variables' => $this->claimNotificationVariablesWith($rows, ['withdraw_origin_notice']),
             'templates' => [
                 [
                     'channel' => 'mail',
@@ -3143,14 +3172,14 @@ class Module extends AbstractModule
                         'ko' => $this->claimNotificationMailBody(
                             'ko',
                             '클레임 신청이 철회되었습니다',
-                            '{name}님, 고객이 {claim_type_label} 신청을 철회했습니다.',
+                            '{name}님, {claim_type_label} 신청이 철회되었습니다. {withdraw_origin_notice}',
                             $rows,
                             '클레임 관리 바로가기'
                         ),
                         'en' => $this->claimNotificationMailBody(
                             'en',
                             'A Claim Request Has Been Withdrawn',
-                            'Dear {name}, a customer has withdrawn their {claim_type_label} request.',
+                            'Dear {name}, a {claim_type_label} request has been withdrawn. {withdraw_origin_notice}',
                             $rows,
                             'Go to Claim Management'
                         ),
@@ -3161,13 +3190,284 @@ class Module extends AbstractModule
                     'recipients' => $this->staffNotificationRecipients(),
                     'subject' => ['ko' => '클레임 신청 철회', 'en' => 'Claim Request Withdrawn'],
                     'body' => [
-                        'ko' => '{requester_name}님이 {claim_type_label} 신청({claim_number})을 철회했습니다.',
-                        'en' => '{requester_name} withdrew their {claim_type_label} request ({claim_number}).',
+                        'ko' => '{requester_name}님의 {claim_type_label} 신청({claim_number})이 철회되었습니다. {withdraw_origin_notice}',
+                        'en' => '{requester_name}\'s {claim_type_label} request ({claim_number}) was withdrawn. {withdraw_origin_notice}',
                     ],
                     'click_url' => '{claim_url}',
                 ],
             ],
         ];
+    }
+
+    /**
+     * 대리 철회 안내(고객 수신) 알림 정의를 만듭니다. (S14)
+     *
+     * 철회 알림은 관리자 수신 한 종이 원칙이다(`claimWithdrawnDefinition()`) — 고객이 스스로 한 철회를
+     * 본인에게 되돌려 보낼 이유가 없어서다. 그런데 운영자가 고객 요청으로 **대신** 철회하면 고객이 한
+     * 일이 아니므로, 이 알림이 없으면 고객은 자기 신청이 왜 사라졌는지 알 길이 없다(대리 철회 확인 창도
+     * 고객에게 안내된다고 약속한다). 그래서 `withdrawn_by_admin` 이 있을 때만 이 정의가 나간다.
+     *
+     * 유형 3종이 이 정의 하나를 공유하며 유형은 본문 변수로 실린다(관리자 수신 철회 알림과 같은 방식).
+     * 수신자는 다른 고객 알림과 같은 `trigger_user` 규칙이다 — 비회원 신청은 주문서 이메일로 간다.
+     *
+     * @return array<string, mixed> 알림 정의
+     */
+    private function claimWithdrawnOnBehalfDefinition(): array
+    {
+        $rows = [
+            ['ko' => '신청번호', 'en' => 'Claim No.', 'var' => 'claim_number'],
+            ['ko' => '클레임 유형', 'en' => 'Claim Type', 'var' => 'claim_type_label'],
+            ['ko' => '주문번호', 'en' => 'Order No.', 'var' => 'order_number'],
+        ];
+
+        $leadKo = '{name}님, {claim_type_label} 신청({claim_number})을 고객님 요청으로 판매자가 철회했습니다.';
+        $leadEn = 'Dear {name}, the seller withdrew your {claim_type_label} request ({claim_number}) at your request.';
+
+        return [
+            'type' => 'claim_withdrawn_on_behalf',
+            'hook_prefix' => 'sirsoft-ecommerce',
+            'audience' => 'customer',
+            'name' => ['ko' => '고객 요청 대리 철회 안내', 'en' => 'Request Withdrawn on Your Behalf'],
+            'description' => [
+                'ko' => '운영자가 고객 요청으로 교환·반품·환불 신청을 대신 철회하면 고객에게 발송',
+                'en' => 'Sent to the customer when staff withdraw an exchange, return, or refund request at the customer\'s request',
+            ],
+            'channels' => ['mail', 'database'],
+            'hooks' => [ClaimStatusNotificationListener::WITHDRAWN_ON_BEHALF_HOOK],
+            'variables' => $this->claimNotificationVariables($rows),
+            'templates' => [
+                [
+                    'channel' => 'mail',
+                    'recipients' => [['type' => 'trigger_user']],
+                    'subject' => [
+                        'ko' => '[{app_name}] 고객님 요청으로 신청이 철회되었습니다 (신청번호: {claim_number})',
+                        'en' => '[{app_name}] Your request has been withdrawn as you asked (Claim #{claim_number})',
+                    ],
+                    'body' => [
+                        'ko' => $this->claimNotificationMailBody('ko', '신청이 철회되었습니다', $leadKo, $rows, '신청 내역 보기'),
+                        'en' => $this->claimNotificationMailBody('en', 'Your Request Has Been Withdrawn', $leadEn, $rows, 'View Claim Details'),
+                    ],
+                ],
+                [
+                    'channel' => 'database',
+                    'recipients' => [['type' => 'trigger_user']],
+                    'subject' => ['ko' => '신청 철회 안내', 'en' => 'Request Withdrawn'],
+                    'body' => [
+                        'ko' => $leadKo,
+                        'en' => '{name}, the seller withdrew your {claim_type_label} request ({claim_number}) at your request.',
+                    ],
+                    'click_url' => '{claim_url}',
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * 송장 등록 알림(고객 수신) 정의 3종을 만듭니다. (교환 회수·교환 재발송·반품 회수)
+     *
+     * 송장은 상품 행마다 있어, 신청서 상태가 그대로인 채 송장만 새로 적히는 일이 생긴다(「송장만 저장」,
+     * 두 번째 상자의 운송장). 그 사실은 상태 알림이 나가지 않으므로 이 알림이 전한다. 같은 요청에서
+     * 신청서가 회수중·발송중으로 옮겨지면 상태 알림이 운송장 줄을 싣고 이 알림은 나가지 않는다.
+     *
+     * 본문 변수 `tracking_lines` 는 이번 요청에서 송장이 새로 적힌 행을 운송장별로 묶은 줄이다.
+     *
+     * @return array<int, array<string, mixed>> 알림 정의 목록
+     */
+    private function claimTrackingRegisteredDefinitions(): array
+    {
+        $specs = [
+            [
+                'type' => 'exchange_collection_tracking_registered',
+                'hook' => ClaimNotificationHooks::forStatus(ClaimTypeEnum::EXCHANGE->value, 'collection_tracking_registered'),
+                'name' => ['ko' => '교환 회수 송장 등록', 'en' => 'Exchange Collection Tracking Registered'],
+                'description' => ['ko' => '교환 상품의 회수 송장이 새로 등록되면 고객에게 발송', 'en' => 'Sent to the customer when a collection tracking number is registered for exchange items'],
+                'heading' => ['ko' => '회수 송장이 등록되었습니다', 'en' => 'Collection Tracking Registered'],
+                'lead' => [
+                    'ko' => '{name}님, 교환 상품의 회수 송장이 등록되었습니다. 아래 운송장으로 회수 진행을 확인하실 수 있습니다.',
+                    'en' => 'Dear {name}, a collection tracking number has been registered for your exchange items. You can track the collection with the numbers below.',
+                ],
+                'summary' => [
+                    'ko' => '{name}님, 교환 신청({claim_number})의 회수 송장이 등록되었습니다.'."\n".'{tracking_lines}',
+                    'en' => '{name}, a collection tracking number was registered for your exchange request ({claim_number}).'."\n".'{tracking_lines}',
+                ],
+                'row' => ['ko' => '회수 운송장', 'en' => 'Collection Tracking', 'var' => 'tracking_lines'],
+            ],
+            [
+                'type' => 'exchange_redelivery_tracking_registered',
+                'hook' => ClaimNotificationHooks::forStatus(ClaimTypeEnum::EXCHANGE->value, 'redelivery_tracking_registered'),
+                'name' => ['ko' => '교환 상품 발송 송장 등록', 'en' => 'Exchange Redelivery Tracking Registered'],
+                'description' => ['ko' => '교환 상품의 발송 송장이 새로 등록되면 고객에게 발송', 'en' => 'Sent to the customer when a redelivery tracking number is registered for exchange items'],
+                'heading' => ['ko' => '교환 상품을 보냈습니다', 'en' => 'Your Exchange Items Have Been Sent'],
+                'lead' => [
+                    'ko' => '{name}님, 교환 상품을 보냈습니다. 아래 운송장으로 배송 상황을 확인하실 수 있습니다. {advance_exchange_notice}',
+                    'en' => 'Dear {name}, we have sent your exchange items. You can track the delivery with the numbers below. {advance_exchange_notice}',
+                ],
+                'summary' => [
+                    'ko' => '{name}님, 교환 신청({claim_number})의 교환 상품을 보냈습니다.'."\n".'{tracking_lines}',
+                    'en' => '{name}, the items for your exchange request ({claim_number}) have been sent.'."\n".'{tracking_lines}',
+                ],
+                'row' => ['ko' => '발송 운송장', 'en' => 'Shipping Tracking', 'var' => 'tracking_lines'],
+                'extra_variables' => ['advance_exchange_notice'],
+            ],
+            [
+                'type' => 'return_collection_tracking_registered',
+                'hook' => ClaimNotificationHooks::forStatus(ClaimTypeEnum::RETURN->value, 'collection_tracking_registered'),
+                'name' => ['ko' => '반품 회수 송장 등록', 'en' => 'Return Collection Tracking Registered'],
+                'description' => ['ko' => '반품 상품의 회수 송장이 새로 등록되면 고객에게 발송', 'en' => 'Sent to the customer when a collection tracking number is registered for return items'],
+                'heading' => ['ko' => '회수 송장이 등록되었습니다', 'en' => 'Collection Tracking Registered'],
+                'lead' => [
+                    'ko' => '{name}님, 반품 상품의 회수 송장이 등록되었습니다. 아래 운송장으로 회수 진행을 확인하실 수 있습니다.',
+                    'en' => 'Dear {name}, a collection tracking number has been registered for your return items. You can track the collection with the numbers below.',
+                ],
+                'summary' => [
+                    'ko' => '{name}님, 반품 신청({claim_number})의 회수 송장이 등록되었습니다.'."\n".'{tracking_lines}',
+                    'en' => '{name}, a collection tracking number was registered for your return request ({claim_number}).'."\n".'{tracking_lines}',
+                ],
+                'row' => ['ko' => '회수 운송장', 'en' => 'Collection Tracking', 'var' => 'tracking_lines'],
+            ],
+        ];
+
+        $definitions = [];
+
+        foreach ($specs as $spec) {
+            $rows = [
+                ['ko' => '신청번호', 'en' => 'Claim No.', 'var' => 'claim_number'],
+                ['ko' => '주문번호', 'en' => 'Order No.', 'var' => 'order_number'],
+                $spec['row'],
+            ];
+
+            $variables = $this->claimNotificationVariables($rows);
+
+            foreach ($spec['extra_variables'] ?? [] as $key) {
+                $variables[] = ['key' => $key, 'description' => $this->claimNotificationVariableDescriptions()[$key] ?? $key];
+            }
+
+            $definitions[] = [
+                'type' => $spec['type'],
+                'hook_prefix' => 'sirsoft-ecommerce',
+                'audience' => 'customer',
+                'name' => $spec['name'],
+                'description' => $spec['description'],
+                'channels' => ['mail', 'database'],
+                'hooks' => [$spec['hook']],
+                'variables' => $variables,
+                'templates' => [
+                    [
+                        'channel' => 'mail',
+                        'recipients' => [['type' => 'trigger_user']],
+                        'subject' => [
+                            'ko' => '[{app_name}] '.$spec['heading']['ko'].' (신청번호: {claim_number})',
+                            'en' => '[{app_name}] '.$spec['heading']['en'].' (Claim #{claim_number})',
+                        ],
+                        'body' => [
+                            'ko' => $this->claimNotificationMailBody('ko', $spec['heading']['ko'], $spec['lead']['ko'], $rows, '신청 내역 보기'),
+                            'en' => $this->claimNotificationMailBody('en', $spec['heading']['en'], $spec['lead']['en'], $rows, 'View Claim Details'),
+                        ],
+                    ],
+                    [
+                        'channel' => 'database',
+                        'recipients' => [['type' => 'trigger_user']],
+                        'subject' => $spec['heading'],
+                        'body' => $spec['summary'],
+                        'click_url' => '{claim_url}',
+                    ],
+                ],
+            ];
+        }
+
+        return $definitions;
+    }
+
+    /**
+     * 선교환 회수 지연 관리자 알림 정의를 만듭니다. (D2 — 교환 전용, 1회)
+     *
+     * 새 물건을 먼저 보낸 선교환에서 헌 물건이 기한 안에 오지 않으면 운영자에게 한 번 알린다.
+     * 돈 청구는 쇼핑몰 밖에서 한다(D2). 배치(`claims:notify-overdue-collections`)가 발화한다.
+     *
+     * @return array<string, mixed> 알림 정의
+     */
+    private function claimCollectionOverdueDefinition(): array
+    {
+        $rows = [
+            ['ko' => '신청번호', 'en' => 'Claim No.', 'var' => 'claim_number'],
+            ['ko' => '주문번호', 'en' => 'Order No.', 'var' => 'order_number'],
+            ['ko' => '고객', 'en' => 'Customer', 'var' => 'requester_name'],
+            ['ko' => '반송 기한', 'en' => 'Return Due', 'var' => 'collection_due_date'],
+            ['ko' => '지연 일수', 'en' => 'Days Overdue', 'var' => 'overdue_days'],
+            ['ko' => '미회수 상품', 'en' => 'Items Not Returned', 'var' => 'unreturned_item_lines'],
+        ];
+
+        return [
+            'type' => 'exchange_collection_overdue',
+            'hook_prefix' => 'sirsoft-ecommerce',
+            'audience' => 'staff',
+            'name' => ['ko' => '선교환 회수 지연 관리자 알림', 'en' => 'Advance Exchange Collection Overdue (Staff)'],
+            'description' => [
+                'ko' => '선교환에서 헌 상품이 반송 기한까지 오지 않으면 운영자에게 1회 발송',
+                'en' => 'Sent once to staff when the original items of an advance exchange have not been returned by the due date',
+            ],
+            'channels' => ['mail', 'database'],
+            'hooks' => [ClaimNotificationHooks::forStatus(ClaimTypeEnum::EXCHANGE->value, 'collection_overdue')],
+            'variables' => $this->claimNotificationVariables($rows),
+            'templates' => [
+                [
+                    'channel' => 'mail',
+                    'recipients' => $this->staffNotificationRecipients(),
+                    'subject' => [
+                        'ko' => '[{app_name}] 선교환 헌 상품 회수가 늦어지고 있습니다 (신청번호: {claim_number})',
+                        'en' => '[{app_name}] Advance exchange items are overdue for return (Claim #{claim_number})',
+                    ],
+                    'body' => [
+                        'ko' => $this->claimNotificationMailBody(
+                            'ko',
+                            '선교환 회수가 지연되고 있습니다',
+                            '{name}님, 교환 상품을 먼저 보낸 선교환의 헌 상품이 반송 기한을 {overdue_days}일 넘겼습니다. 고객에게 연락해 주세요.',
+                            $rows,
+                            '클레임 관리 바로가기'
+                        ),
+                        'en' => $this->claimNotificationMailBody(
+                            'en',
+                            'Advance Exchange Collection Overdue',
+                            'Dear {name}, the original items of an advance exchange are {overdue_days} day(s) past the return due date. Please contact the customer.',
+                            $rows,
+                            'Go to Claim Management'
+                        ),
+                    ],
+                ],
+                [
+                    'channel' => 'database',
+                    'recipients' => $this->staffNotificationRecipients(),
+                    'subject' => ['ko' => '선교환 회수 지연', 'en' => 'Advance Exchange Collection Overdue'],
+                    'body' => [
+                        'ko' => '{requester_name}님의 선교환({claim_number}) 헌 상품이 기한({collection_due_date})을 {overdue_days}일 넘겼습니다.',
+                        'en' => 'The original items of {requester_name}\'s advance exchange ({claim_number}) are {overdue_days} day(s) past the due date ({collection_due_date}).',
+                    ],
+                    'click_url' => '{claim_url}',
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * 본문 표 변수에 본문 문장에만 쓰이는 변수를 더한 목록을 만듭니다.
+     *
+     * @param  array<int, array{ko: string, en: string, var: string}>  $rows  본문 표 행
+     * @param  array<int, string>  $extraKeys  문장에만 쓰이는 변수 키
+     * @return array<int, array{key: string, description: string}> 변수 목록
+     */
+    private function claimNotificationVariablesWith(array $rows, array $extraKeys): array
+    {
+        $variables = $this->claimNotificationVariables($rows);
+        $descriptions = $this->claimNotificationVariableDescriptions();
+        $known = array_column($variables, 'key');
+
+        foreach ($extraKeys as $key) {
+            if (! in_array($key, $known, true)) {
+                $variables[] = ['key' => $key, 'description' => $descriptions[$key] ?? $key];
+            }
+        }
+
+        return $variables;
     }
 
     /**
@@ -3410,6 +3710,14 @@ class Module extends AbstractModule
                 'schedule' => 'daily',
                 'description' => '종결된 신청서에 남은 클레임 결제 대기 건 자동 취소',
                 // 살아 있는 신청서의 결제 대기 건은 커맨드가 스스로 건너뛴다 (별도 토글 없음).
+                'enabled_config' => null,
+            ],
+            [
+                'command' => 'sirsoft-ecommerce:claims:notify-overdue-collections',
+                'schedule' => 'daily',
+                'description' => '선교환 헌 상품 회수 지연 관리자 알림 (1회)',
+                // 선교환 설정을 꺼도 이미 선교환인 건의 지연은 알려야 하므로 별도 토글 없이 돈다 —
+                // 대상이 없으면 아무 일도 하지 않는다.
                 'enabled_config' => null,
             ],
         ];

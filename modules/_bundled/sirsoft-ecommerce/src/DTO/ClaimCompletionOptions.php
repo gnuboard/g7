@@ -17,17 +17,44 @@ namespace Modules\Sirsoft\Ecommerce\DTO;
  * `ecommerce_order_exchange_options.id`)다. 운영자가 모달에서 체크하는 단위가 신청 상품 행이고
  * (D24 한 신청서에 상품이 여러 건), 한 주문옵션이 여러 신청서에 나뉘어 있을 수 있어 주문옵션
  * ID 로는 어느 신청 건의 선택인지 구분되지 않는다.
+ *
+ * 선교환의 「미회수로 완료」(D3)는 세 번째 선택이다 — 행 ID => 사유. 기본값은 빈 목록이다
+ * (고르지 않으면 아무 행도 미회수로 끝나지 않는다 — 숨은 자동 실행이 아니다).
  */
 final class ClaimCompletionOptions
 {
     /**
      * @param  array<int, bool>  $restoreStockByItem  신청 상품 행 ID => 재고 복구 여부
      * @param  bool  $createRefundRequest  환불신청서를 지금 접수할지 여부
+     * @param  array<int, string>  $unreturned  미회수로 완료할 신청 상품 행 ID => 사유 (선교환 D3)
      */
     public function __construct(
         public readonly array $restoreStockByItem,
         public readonly bool $createRefundRequest,
+        public readonly array $unreturned = [],
     ) {}
+
+    /**
+     * 그 행을 미회수로 완료하라는 지시가 있는지 반환합니다.
+     *
+     * @param  int  $itemId  신청 상품 행 ID
+     * @return bool 미회수 완료 지시가 있으면 true
+     */
+    public function isUnreturned(int $itemId): bool
+    {
+        return array_key_exists($itemId, $this->unreturned);
+    }
+
+    /**
+     * 그 행의 미회수 사유를 반환합니다. (앞뒤 공백 제거)
+     *
+     * @param  int  $itemId  신청 상품 행 ID
+     * @return string 사유 (지시가 없으면 빈 문자열)
+     */
+    public function unreturnedReason(int $itemId): string
+    {
+        return trim((string) ($this->unreturned[$itemId] ?? ''));
+    }
 
     /**
      * 해당 신청 상품의 재고를 복구할지 반환합니다.

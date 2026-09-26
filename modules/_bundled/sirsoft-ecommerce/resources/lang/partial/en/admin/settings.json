@@ -336,6 +336,14 @@
         "create_refund_request_hint": "Preselect \"File now\" in the dialog.",
         "restore_stock_label": "Restore stock",
         "restore_stock_hint": "Preselect the per-item stock restore checkbox in the dialog."
+      },
+      "advance_exchange": {
+        "title": "Advance exchange",
+        "description": "Ship the new item first and receive the original later. When on, exchanges show [Switch to advance exchange].",
+        "enabled_label": "Use advance exchange",
+        "enabled_hint": "When off, no new switches are possible. Existing advance exchanges continue.",
+        "due_days_label": "Return deadline for the original",
+        "due_days_hint": "Counted from the day the new item ships. Staff are notified once when it passes."
       }
     },
     "exchange_reasons": {

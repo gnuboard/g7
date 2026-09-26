@@ -4,6 +4,7 @@ namespace Modules\Sirsoft\Ecommerce\Support;
 
 use BackedEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimTypeEnum;
+use Modules\Sirsoft\Ecommerce\Enums\ExchangeModeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ExchangeStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ReturnStatusEnum;
@@ -48,11 +49,15 @@ class ClaimTransitionVocabulary
     /**
      * 현재 상태에서 제시할 전이 선택지를 만듭니다.
      *
+     * 교환은 진행 방식(일반·선교환)마다 전이표가 다르다 — 선교환 행에 회수 단계가 서면 눌러도
+     * 서비스가 거절한다. `$mode` 를 넘기면 그 방식의 표(`allowedTransitionsIn()`)를 읽는다.
+     *
      * @param  BackedEnum|null  $current  현재 상태 (전이표를 가진 상태 Enum)
      * @param  bool  $excludePaymentPending  결제대기를 뺄지 (상품 행 축이면 true)
+     * @param  ExchangeModeEnum|null  $mode  교환 진행 방식 (교환이 아니거나 null 이면 일반 표)
      * @return array<int, array{value: string, label: string}> 전이 선택지
      */
-    public static function optionsFrom(?BackedEnum $current, bool $excludePaymentPending = false): array
+    public static function optionsFrom(?BackedEnum $current, bool $excludePaymentPending = false, ?ExchangeModeEnum $mode = null): array
     {
         if ($current === null || ! method_exists($current, 'allowedTransitions')) {
             return [];
@@ -67,7 +72,11 @@ class ClaimTransitionVocabulary
         $assignable = $enumClass::adminAssignableValues();
         $options = [];
 
-        foreach ($current->allowedTransitions() as $target) {
+        $targets = $current instanceof ExchangeStatusEnum && $mode !== null
+            ? $current->allowedTransitionsIn($mode)
+            : $current->allowedTransitions();
+
+        foreach ($targets as $target) {
             if (! in_array($target->value, $assignable, true)) {
                 continue;
             }
@@ -120,11 +129,12 @@ class ClaimTransitionVocabulary
      *
      * @param  BackedEnum|null  $current  현재 상태
      * @param  bool  $excludePaymentPending  결제대기를 뺄지
+     * @param  ExchangeModeEnum|null  $mode  교환 진행 방식
      * @return array<int, string> 전이 가능 상태 값
      */
-    public static function valuesFrom(?BackedEnum $current, bool $excludePaymentPending = false): array
+    public static function valuesFrom(?BackedEnum $current, bool $excludePaymentPending = false, ?ExchangeModeEnum $mode = null): array
     {
-        return array_column(self::optionsFrom($current, $excludePaymentPending), 'value');
+        return array_column(self::optionsFrom($current, $excludePaymentPending, $mode), 'value');
     }
 
     /**

@@ -17,6 +17,11 @@ class OrderExchangeOption extends Model
 {
     use HasFactory;
 
+    /**
+     * 모델 팩토리를 돌려줍니다.
+     *
+     * @return OrderExchangeOptionFactory 모델 팩토리
+     */
     protected static function newFactory()
     {
         return OrderExchangeOptionFactory::new();
@@ -51,6 +56,19 @@ class OrderExchangeOption extends Model
         'new_order_option_id',
         'is_new_stock_deducted',
         'completed_at',
+        'collection_carrier_id',
+        'collection_tracking_number',
+        'collection_shipped_at',
+        'collected_at',
+        'redelivery_carrier_id',
+        'redelivery_tracking_number',
+        'redelivery_shipped_at',
+        'redelivered_at',
+        'reject_reason',
+        'is_stock_restored',
+        'return_address_snapshot',
+        'unreturned_at',
+        'unreturned_reason',
         'processed_by',
     ];
 
@@ -73,6 +91,13 @@ class OrderExchangeOption extends Model
             'mc_price_difference' => 'array',
             'is_new_stock_deducted' => 'boolean',
             'completed_at' => 'datetime',
+            'collection_shipped_at' => 'datetime',
+            'collected_at' => 'datetime',
+            'redelivery_shipped_at' => 'datetime',
+            'redelivered_at' => 'datetime',
+            'is_stock_restored' => 'boolean',
+            'return_address_snapshot' => 'array',
+            'unreturned_at' => 'datetime',
         ];
     }
 
@@ -124,6 +149,26 @@ class OrderExchangeOption extends Model
     public function newOrderOption(): BelongsTo
     {
         return $this->belongsTo(OrderOption::class, 'new_order_option_id');
+    }
+
+    /**
+     * 회수 택배사와의 관계 (이 행의 헌 물건을 실은 택배사)
+     *
+     * @return BelongsTo 회수 택배사 관계
+     */
+    public function collectionCarrier(): BelongsTo
+    {
+        return $this->belongsTo(ShippingCarrier::class, 'collection_carrier_id');
+    }
+
+    /**
+     * 재발송 택배사와의 관계 (이 행의 교환품을 실은 택배사)
+     *
+     * @return BelongsTo 재발송 택배사 관계
+     */
+    public function redeliveryCarrier(): BelongsTo
+    {
+        return $this->belongsTo(ShippingCarrier::class, 'redelivery_carrier_id');
     }
 
     /**

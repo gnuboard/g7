@@ -107,6 +107,31 @@
         </div>
       </div>
     </div>
+    <!-- 선교환 (D1) — 새 물건을 먼저 보내고 헌 물건은 기한 안에 받는 진행 방식. 켜야 교환 상세에 [선교환으로 전환] 이 선다. 기한은 발송일부터 센다 — 한계값은 설정 응답의 `_meta.limits` 가 나른다(서버 검증과 같은 출처). -->
+    <div data-ref="claim_advance_exchange_card" class="admin-card">
+      <h3 class="card-title">$t:sirsoft-ecommerce.admin.settings.claim.policy.advance_exchange.title</h3>
+      <div class="card-description">$t:sirsoft-ecommerce.admin.settings.claim.policy.advance_exchange.description</div>
+      <div class="row-stack">
+        <div data-ref="claim_advance_exchange_enabled_field" class="flex-between">
+          <div>
+            <p class="text-sm font-medium text-gray-900 dark:text-gray-100">$t:sirsoft-ecommerce.admin.settings.claim.policy.advance_exchange.enabled_label</p>
+            <p class="form-hint">$t:sirsoft-ecommerce.admin.settings.claim.policy.advance_exchange.enabled_hint</p>
+          </div>
+          <toggle name="claim.advance_exchange_enabled" value="{{_local.form?.claim?.advance_exchange_enabled ?? false}}" disabled="{{_computed.isReadOnly}}"/>
+        </div>
+        <div data-ref="claim_advance_exchange_due_days_field" class="flex-center gap-2 flex-wrap">
+          <span class="text-body w-48 shrink-0">$t:sirsoft-ecommerce.admin.settings.claim.policy.advance_exchange.due_days_label</span>
+          <input type="number" min="{{_local?.form?._meta?.limits?.advance_exchange_collection_due_days_min ?? 1}}" max="{{_local?.form?._meta?.limits?.advance_exchange_collection_due_days_max ?? 90}}" step="1" class="input w-20" disabled="{{_computed.isReadOnly || _local.form?.claim?.advance_exchange_enabled !== true}}" value="{{_local.form?.claim?.advance_exchange_collection_due_days ?? 14}}">
+            <on type="change">
+              <set-state target="local" form.claim.advance_exchange_collection_due_days="{{Number($event.target.value)}}" :hasChanges="true"/>
+            </on>
+          </input>
+          <span class="text-body">$t:sirsoft-ecommerce.admin.settings.claim.policy.days_unit</span>
+          <p class="w-full form-hint">$t:sirsoft-ecommerce.admin.settings.claim.policy.advance_exchange.due_days_hint</p>
+          <span data-if="{{_local.errors?.['claim.advance_exchange_collection_due_days']}}" class="w-full form-error-xs">{{_local.errors?.['claim.advance_exchange_collection_due_days']?.[0] ?? ''}}</span>
+        </div>
+      </div>
+    </div>
     <div data-ref="claim_auto_approve_card" class="admin-card">
       <h3 class="card-title">$t:sirsoft-ecommerce.admin.settings.claim.policy.auto_approve.title</h3>
       <div class="card-description">$t:sirsoft-ecommerce.admin.settings.claim.policy.auto_approve.description</div>

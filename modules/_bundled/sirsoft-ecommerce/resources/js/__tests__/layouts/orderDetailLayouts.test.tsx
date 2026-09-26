@@ -234,6 +234,7 @@ import batchChangeModal from '../../../layouts/admin/partials/admin_ecommerce_or
 import smsModal from '../../../layouts/admin/partials/admin_ecommerce_order_detail/_modal_send_sms.json';
 import emailModal from '../../../layouts/admin/partials/admin_ecommerce_order_detail/_modal_send_email.json';
 import resetGuestPasswordModal from '../../../layouts/admin/partials/admin_ecommerce_order_detail/_modal_reset_guest_password.json';
+import adminClaimRequestModal from '../../../layouts/admin/partials/admin_ecommerce_order_detail/_modal_admin_claim_request.json';
 
 // ========== Mock 주문 데이터 ==========
 
@@ -470,6 +471,8 @@ describe('admin_ecommerce_order_detail.json (메인 레이아웃)', () => {
                     'partials/admin_ecommerce_order_detail/_modal_issue_cash_receipt.json',
                     'partials/admin_ecommerce_order_detail/_modal_reset_guest_password.json',
                     'partials/admin_ecommerce_order_detail/_modal_confirm_deposit.json',
+                    // 관리자 직권 교환·반품·취소 접수(#599 §3-11)
+                    'partials/admin_ecommerce_order_detail/_modal_admin_claim_request.json',
                 ])
             );
         });
@@ -1454,4 +1457,188 @@ describe('비회원 조회 비밀번호 재설정', () => {
             expect(json).toContain('"target":"modal_reset_guest_password"');
         });
     });
+});
+
+describe('#599 직권 접수 — 꺼진 버튼의 이유 문구', () => {
+    /**
+     * 배송완료 주문을 고르면 교환·반품은 켜지고 취소·환불만 꺼진다 — 그 한 버튼이 꺼진 이유도 곁에 서야 한다.
+     * 셋 다 꺼졌을 때만 안내하면 운영자는 꺼진 [취소·환불 접수] 를 권한 문제로 읽는다(Chrome 실측 P-1).
+     *
+     * @effects admin_claim_request_gate_hint_shows_when_any_button_is_disabled
+     */
+    it('버튼이 하나라도 꺼지면 게이트 안내가 선다', () => {
+        const nodes: any[] = [];
+        const walk = (n: any) => {
+            if (Array.isArray(n)) return n.forEach(walk);
+            if (n && typeof n === 'object') {
+                nodes.push(n);
+                Object.values(n).forEach(walk);
+            }
+        };
+        walk(orderInfoPartial);
+        const hint = nodes.find((n) => n.id === 'crb_004_disabled_hint');
+
+        expect(hint).toBeDefined();
+        expect(hint.if).toContain("_computed.claimRequestGateExchange !== true || _computed.claimRequestGateReturn !== true || _computed.claimRequestGateRefund !== true");
+        expect(hint.text ?? JSON.stringify(hint.children ?? '')).toContain('claim_request.gate_hint');
+    });
+});
+
+describe('#599 직권 접수 — 접수 권한이 없을 때', () => {
+    /**
+     * `claims.create` 가 없으면 문맥 조회가 403 이고(fallback `unavailable`), 버튼 셋은 숨지 않고 꺼진 채 선다 —
+     * 곁에는 상태 안내 대신 권한 안내가 선다(Chrome 실측 P-6).
+     *
+     * @effects admin_claim_request_buttons_stay_disabled_without_permission
+     */
+    it('버튼 묶음은 문맥과 무관하게 서고, 권한 안내는 문맥이 없을 때만 선다', () => {
+        const nodes: any[] = [];
+        const walk = (n: any) => {
+            if (Array.isArray(n)) return n.forEach(walk);
+            if (n && typeof n === 'object') {
+                nodes.push(n);
+                Object.values(n).forEach(walk);
+            }
+        };
+        walk(orderInfoPartial);
+        const group = nodes.find((n) => n.id === 'claim_request_buttons');
+        const stateHint = nodes.find((n) => n.id === 'crb_004_disabled_hint');
+        const permissionHint = nodes.find((n) => n.id === 'crb_005_no_permission_hint');
+
+        expect(group.if).toBeUndefined();
+        expect(stateHint.if).toContain('claimRequestContext?.data?.unavailable !== true');
+        const errorHint = nodes.find((n) => n.id === 'crb_005b_context_error_hint');
+
+        // 문맥 조회 실패는 데이터 소스가 남긴 실패 종류(403=forbidden, 그 밖=failed)로 가른다 — 권한이 있는데 500·네트워크로 못 받은 것을
+        // 「권한 없음」 으로 알리면 운영자는 엉뚱하게 권한을 요청하러 간다(3차 검증 인터뷰 2026-09-26).
+        expect(permissionHint.if).toBe("{{claimRequestContext?.data?.unavailable === true && _local.claimRequestContextError !== 'failed'}}");
+        expect(JSON.stringify(permissionHint)).toContain('claim_request.no_permission');
+        expect(errorHint.if).toBe("{{claimRequestContext?.data?.unavailable === true && _local.claimRequestContextError === 'failed'}}");
+        expect(JSON.stringify(errorHint)).toContain('claim_request.context_load_failed');
+    });
+
+    /**
+     * 접수 문맥 조회가 실패하면 데이터 소스가 실패 종류를 남긴다 — 403 만 「권한 없음」, 500·네트워크는 「불러오지 못함」.
+     * 핸들러가 없으면 기본 정책(토스트)으로 번지고, 종류가 없으면 두 안내를 가를 수 없다.
+     *
+     * @effects admin_claim_request_context_error_distinguishes_forbidden_from_failure
+     */
+    it('접수 문맥 조회 실패는 403 과 그 밖을 다른 종류로 남긴다', () => {
+        const source = (mainLayout as any).data_sources.find((d: any) => d.id === 'claimRequestContext');
+
+        expect(source.errorHandling['403']).toMatchObject({ handler: 'setState', params: { target: 'local', claimRequestContextError: 'forbidden' } });
+        expect(source.errorHandling.default).toMatchObject({ handler: 'setState', params: { target: 'local', claimRequestContextError: 'failed' } });
+    });
+});
+
+describe('#599 직권 접수 — 반품의 환불 칸', () => {
+    /**
+     * 반품 접수는 환불이 따라오므로 종전 취소 창의 두 칸(환불 계좌·환불 우선순위)을 같은 조건으로 세운다 —
+     * 계좌는 사람이 송금하는 결제수단에 돌려줄 돈이 있을 때, 우선순위는 PG 환불이 걸릴 때만. 교환에는 서지 않고,
+     * 두 버튼 모두 주문 결제 정보를 넘겨 주문 때 적은 계좌를 미리 채운다(계획 §3-11).
+     *
+     * @effects admin_return_request_carries_refund_priority_and_prefilled_bank
+     */
+    it('환불 계좌·우선순위는 반품에만 종전 취소 창 조건으로 서고, 여는 버튼이 결제 정보를 넘긴다', () => {
+        const nodes: any[] = [];
+        const walk = (n: any) => {
+            if (Array.isArray(n)) return n.forEach(walk);
+            if (n && typeof n === 'object') {
+                nodes.push(n);
+                Object.values(n).forEach(walk);
+            }
+        };
+        walk(adminClaimRequestModal);
+        const bank = nodes.find((n) => n.id === 'acr_012_refund_bank');
+        const priority = nodes.find((n) => n.id === 'acr_013_refund_priority');
+
+        expect(bank.if).toContain("_global.adminClaimRequest?.type === 'return'");
+        expect(bank.if).toContain("['vbank', 'dbank'].includes(order.data?.payment?.payment_method)");
+        expect(bank.if).toContain('total_refunded_amount');
+        expect(priority.if).toContain("_global.adminClaimRequest?.type === 'return'");
+        expect(priority.if).toContain('requires_pg_cancellation === true');
+
+        const bankJson = JSON.stringify(bank);
+        for (const field of ['refundBank.bank_code', 'refundBank.account_number', 'refundBank.holder']) {
+            expect(bankJson).toContain(`"field":"${field}"`);
+        }
+        const priorityJson = JSON.stringify(priority);
+        expect(priorityJson).toContain('"field":"refundPriority","value":"pg_first"');
+        expect(priorityJson).toContain('"field":"refundPriority","value":"points_first"');
+
+        const openers: any[] = [];
+        const collect = (n: any) => {
+            if (Array.isArray(n)) return n.forEach(collect);
+            if (n && typeof n === 'object') {
+                if (n.handler === 'sirsoft-ecommerce.openAdminClaimRequest') openers.push(n);
+                Object.values(n).forEach(collect);
+            }
+        };
+        collect(orderInfoPartial);
+        expect(openers).toHaveLength(2);
+        openers.forEach((opener) => expect(opener.params.payment).toBe('{{order?.data?.payment ?? null}}'));
+    });
+});
+
+describe('#599 직권·대리 입력 창 — 글자 수 제한 prop', () => {
+  /**
+   * Textarea 의 글자 수 제한 prop 은 camelCase(`maxLength`)다 — 소문자 `maxlength` 로 쓰면 React 가 모르는 prop 으로
+   * 흘려 클라이언트 제한이 걸리지 않는다(validate branch M9). 서버 검증 한도와 같은 값이어야 한다.
+   *
+   * @effects admin_claim_textareas_use_camelcase_max_length
+   */
+  it('직권 접수·대리 철회·신청 수정 창의 입력칸이 maxLength 로 한도를 건다', async () => {
+    const modals = await Promise.all([
+      import('../../../layouts/admin/partials/admin_ecommerce_order_detail/_modal_admin_claim_request.json'),
+      import('../../../layouts/admin/partials/admin_ecommerce_claim_detail/_modal_claim_request_edit.json'),
+      import('../../../layouts/admin/partials/admin_ecommerce_claim_detail/_modal_claim_withdraw_on_behalf.json'),
+    ]);
+    const limits = modals.map((m) => {
+      const json = JSON.stringify(m.default ?? m);
+      expect(json).not.toMatch(/"maxlength"/);
+      return (json.match(/"maxLength":(\d+)/) ?? [])[1];
+    });
+
+    expect(limits).toEqual(['1000', '1000', '2000']);
+  });
+});
+
+describe('#599 직권 접수 — 청구 미리보기 금액 표기', () => {
+  /**
+   * 금액 줄은 핸들러가 주문 통화로 만든 `previewFormatted` 를 읽는다 — 응답에 없는 `*_formatted` 키를 읽으면
+   * 반품 환불 예정액 줄이 서지 않고 교환 청구액은 단위 없는 숫자로 나온다(Chrome 실측 V-A1-m). 여는 두 버튼은
+   * 주문 기준 통화를 넘긴다.
+   *
+   * @effects admin_request_preview_amounts_are_formatted_in_order_currency
+   */
+  it('교환 청구액·반품 환불 예정액이 previewFormatted 를 읽고, 여는 버튼이 통화를 넘긴다', () => {
+    const nodes: any[] = [];
+    const walk = (n: any) => {
+      if (Array.isArray(n)) return n.forEach(walk);
+      if (n && typeof n === 'object') {
+        nodes.push(n);
+        Object.values(n).forEach(walk);
+      }
+    };
+    walk(adminClaimRequestModal);
+    const charge = nodes.find((n) => n.id === 'acr_014_total_charge');
+    const refund = nodes.find((n) => n.id === 'acr_015_refund_estimate');
+
+    expect(JSON.stringify(charge)).toContain('previewFormatted?.total_charge_amount');
+    expect(refund.if).toContain("type === 'return'");
+    expect(JSON.stringify(refund)).toContain('previewFormatted?.refund_total');
+    expect(JSON.stringify(adminClaimRequestModal)).not.toContain('total_refund_amount_formatted');
+    expect(JSON.stringify(adminClaimRequestModal)).not.toContain('mc_total_charge_amount_formatted');
+
+    const openers: any[] = [];
+    const collect = (n: any) => {
+      if (Array.isArray(n)) return n.forEach(collect);
+      if (n && typeof n === 'object') {
+        if (n.handler === 'sirsoft-ecommerce.openAdminClaimRequest') openers.push(n);
+        Object.values(n).forEach(collect);
+      }
+    };
+    collect(orderInfoPartial);
+    openers.forEach((opener) => expect(opener.params.currency).toBe('{{order?.data?.base_currency ?? null}}'));
+  });
 });

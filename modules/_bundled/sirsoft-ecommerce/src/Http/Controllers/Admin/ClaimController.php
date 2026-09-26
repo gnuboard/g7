@@ -19,11 +19,16 @@ use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\CancellableAmountRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\ClaimCompletionPreviewRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\ClaimListRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\ClaimLogsRequest;
-use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\ClaimTrackingRequest;
+use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\DeliverClaimTrackingRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\ExecuteRefundRequest;
+use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\RestoreClaimStockRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\UpdateClaimAmountsRequest;
+use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\UpdateClaimItemTrackingRequest;
+use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\UpdateClaimRequestOnBehalfRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\UpdateClaimStatusRequest;
+use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\UpdateExchangeModeRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\UploadClaimImageRequest;
+use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\WithdrawClaimOnBehalfRequest;
 use Modules\Sirsoft\Ecommerce\Http\Resources\ClaimAdminCollection;
 use Modules\Sirsoft\Ecommerce\Http\Resources\ClaimImageResource;
 use Modules\Sirsoft\Ecommerce\Http\Resources\ClaimResource;
@@ -40,6 +45,7 @@ use Modules\Sirsoft\Ecommerce\Services\ClaimScopeGuard;
 use Modules\Sirsoft\Ecommerce\Services\ShippingCarrierService;
 use Modules\Sirsoft\Ecommerce\Services\UserClaimService;
 use Modules\Sirsoft\Ecommerce\Support\ClaimAdminAbilities;
+use Modules\Sirsoft\Ecommerce\Support\ClaimProgressSteps;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 /**
@@ -600,14 +606,16 @@ class ClaimController extends AdminBaseController
     }
 
     /**
-     * 회수 운송장을 저장합니다. (상태는 옮기지 않는다 — 회수중 전이는 상품 칸·신청서 전이가 송장을 실어 수행)
+     * 「송장만 저장」 — 고른 상품 행(수량 지정 시 쪼갠 행)에 한 방향 송장을 적습니다. (상태 불변 — P6·R7)
      *
-     * @param  ClaimTrackingRequest  $request  송장 요청
+     * 지시한 행이 이 신청서에 없으면 404 다(다른 신청서의 행을 422 로 세우면 그 행이 있다는 사실이 드러난다).
+     *
+     * @param  UpdateClaimItemTrackingRequest  $request  송장 요청
      * @param  string  $claimType  유형 세그먼트 (exchanges/returns)
      * @param  int  $id  신청서 ID
-     * @return JsonResponse 갱신 응답
+     * @return JsonResponse 갱신 응답 (`claim` · `split`)
      */
-    public function updateCollectionTracking(ClaimTrackingRequest $request, string $claimType, int $id): JsonResponse
+    public function updateItemTracking(UpdateClaimItemTrackingRequest $request, string $claimType, int $id): JsonResponse
     {
         $type = $this->claimTypeOf($claimType);
         $claim = $this->adminClaimService->findForTransition($type, $id);
@@ -619,30 +627,90 @@ class ClaimController extends AdminBaseController
         try {
             $this->claimScope->assertAccessible($claim, self::PERMISSION_UPDATE_STATUS);
 
-            $this->adminClaimService->registerCollectionTracking($claim, $request->carrierId(), $request->trackingNumber(), Auth::id());
+            $result = $this->adminClaimService->saveItemTracking(
+                $claim,
+                $request->direction(),
+                $request->itemSpecs(),
+                $request->carrierId(),
+                $request->trackingNumber(),
+                Auth::id(),
+            );
 
             return ResponseHelper::moduleSuccess(
                 'sirsoft-ecommerce',
                 'messages.claims.tracking_saved',
-                ['claim' => $this->detailResource($this->adminClaimService->findForDetail($type, $id))]
+                [
+                    'claim' => $this->detailResource($this->adminClaimService->findForDetail($type, $id)),
+                    'split' => $result['split'],
+                ]
+            );
+        } catch (OrderClaimException $e) {
+            if ($e->getMessageKey() === 'sirsoft-ecommerce::exceptions.claim_item_not_found') {
+                return $this->claimNotFound('exceptions.claim_item_not_found');
+            }
+
+            return $this->claimDomainError($e);
+        } catch (AccessDeniedHttpException $e) {
+            return ResponseHelper::forbidden('auth.scope_denied');
+        } catch (Exception $e) {
+            return $this->claimServerError('admin-item-tracking', $e);
+        }
+    }
+
+    /**
+     * 운송장 한 개의 상품 행을 한꺼번에 도착 처리합니다. (배송 정보 탭 [도착 처리] — R9)
+     *
+     * @param  DeliverClaimTrackingRequest  $request  도착 처리 요청
+     * @param  string  $claimType  유형 세그먼트 (exchanges/returns)
+     * @param  int  $id  신청서 ID
+     * @return JsonResponse 처리 결과 응답 (`claim` · `succeeded` · `skipped`)
+     */
+    public function deliverTracking(DeliverClaimTrackingRequest $request, string $claimType, int $id): JsonResponse
+    {
+        $type = $this->claimTypeOf($claimType);
+        $claim = $this->adminClaimService->findForTransition($type, $id);
+
+        if (! $claim instanceof OrderExchange && ! $claim instanceof OrderReturn) {
+            return $this->claimNotFound();
+        }
+
+        try {
+            $this->claimScope->assertAccessible($claim, self::PERMISSION_UPDATE_STATUS);
+
+            $result = $this->adminClaimService->deliverTracking(
+                $claim,
+                $request->direction(),
+                $request->carrierId(),
+                $request->trackingNumber(),
+                Auth::id(),
+            );
+
+            return ResponseHelper::moduleSuccess(
+                'sirsoft-ecommerce',
+                'messages.claims.tracking_delivered',
+                [
+                    'claim' => $this->detailResource($this->adminClaimService->findForDetail($type, $id)),
+                    'succeeded' => $result['succeeded'],
+                    'skipped' => $result['skipped'],
+                ]
             );
         } catch (OrderClaimException $e) {
             return $this->claimDomainError($e);
         } catch (AccessDeniedHttpException $e) {
             return ResponseHelper::forbidden('auth.scope_denied');
         } catch (Exception $e) {
-            return $this->claimServerError('admin-collection-tracking', $e);
+            return $this->claimServerError('admin-tracking-deliver', $e);
         }
     }
 
     /**
-     * 재발송 운송장을 저장합니다. (교환 전용 — 상태는 옮기지 않는다)
+     * 교환의 진행 방식(일반 교환 ↔ 선교환)을 바꿉니다. (D1)
      *
-     * @param  ClaimTrackingRequest  $request  송장 요청
+     * @param  UpdateExchangeModeRequest  $request  진행 방식 요청
      * @param  int  $id  교환 신청서 ID
      * @return JsonResponse 갱신 응답
      */
-    public function updateRedeliveryTracking(ClaimTrackingRequest $request, int $id): JsonResponse
+    public function updateExchangeMode(UpdateExchangeModeRequest $request, int $id): JsonResponse
     {
         $claim = $this->adminClaimService->findForTransition(ClaimTypeEnum::EXCHANGE, $id);
 
@@ -653,11 +721,11 @@ class ClaimController extends AdminBaseController
         try {
             $this->claimScope->assertAccessible($claim, self::PERMISSION_UPDATE_STATUS);
 
-            $this->adminClaimService->registerRedeliveryTracking($claim, $request->carrierId(), $request->trackingNumber(), Auth::id());
+            $this->adminClaimService->setExchangeMode($claim, $request->mode(), Auth::id());
 
             return ResponseHelper::moduleSuccess(
                 'sirsoft-ecommerce',
-                'messages.claims.tracking_saved',
+                'messages.claims.exchange_mode_updated',
                 ['claim' => $this->detailResource($this->adminClaimService->findForDetail(ClaimTypeEnum::EXCHANGE, $id))]
             );
         } catch (OrderClaimException $e) {
@@ -665,7 +733,118 @@ class ClaimController extends AdminBaseController
         } catch (AccessDeniedHttpException $e) {
             return ResponseHelper::forbidden('auth.scope_denied');
         } catch (Exception $e) {
-            return $this->claimServerError('admin-redelivery-tracking', $e);
+            return $this->claimServerError('admin-exchange-mode', $e);
+        }
+    }
+
+    /**
+     * 완료됐지만 재고를 복구하지 않은 상품 행의 재고를 복구합니다. (S13 — 멱등)
+     *
+     * @param  RestoreClaimStockRequest  $request  복구 요청 (`items` 비우면 복구 가능한 행 전부)
+     * @param  string  $claimType  유형 세그먼트 (exchanges/returns)
+     * @param  int  $id  신청서 ID
+     * @return JsonResponse 갱신 응답 (`claim` · `restored`)
+     */
+    public function restoreStock(RestoreClaimStockRequest $request, string $claimType, int $id): JsonResponse
+    {
+        $type = $this->claimTypeOf($claimType);
+        $claim = $this->adminClaimService->findForTransition($type, $id);
+
+        if (! $claim instanceof OrderExchange && ! $claim instanceof OrderReturn) {
+            return $this->claimNotFound();
+        }
+
+        try {
+            $this->claimScope->assertAccessible($claim, self::PERMISSION_UPDATE_STATUS);
+
+            $result = $this->adminClaimService->restoreStock($claim, $request->itemIds(), Auth::id());
+
+            return ResponseHelper::moduleSuccess(
+                'sirsoft-ecommerce',
+                'messages.claims.stock_restored',
+                [
+                    'claim' => $this->detailResource($this->adminClaimService->findForDetail($type, $id)),
+                    'restored' => $result['restored'],
+                ]
+            );
+        } catch (OrderClaimException $e) {
+            return $this->claimDomainError($e);
+        } catch (AccessDeniedHttpException $e) {
+            return ResponseHelper::forbidden('auth.scope_denied');
+        } catch (Exception $e) {
+            return $this->claimServerError('admin-restore-stock', $e);
+        }
+    }
+
+    /**
+     * 고객 요청으로 신청을 대신 철회합니다. (S14 — 판매자 접수 건 포함)
+     *
+     * @param  WithdrawClaimOnBehalfRequest  $request  철회 요청 (`reason` 필수)
+     * @param  string  $claimType  유형 세그먼트 (exchanges/returns/refunds)
+     * @param  int  $id  신청서 ID
+     * @return JsonResponse 갱신 응답
+     */
+    public function withdrawOnBehalf(WithdrawClaimOnBehalfRequest $request, string $claimType, int $id): JsonResponse
+    {
+        $type = $this->claimTypeOf($claimType);
+        $claim = $this->adminClaimService->findForTransition($type, $id);
+
+        if (! $claim || $claim instanceof OrderCancel) {
+            return $this->claimNotFound();
+        }
+
+        try {
+            $this->claimScope->assertAccessible($claim, self::PERMISSION_UPDATE_STATUS);
+
+            $this->adminClaimService->withdrawOnBehalf($claim, $request->reason(), Auth::id());
+
+            return ResponseHelper::moduleSuccess(
+                'sirsoft-ecommerce',
+                'messages.claims.withdrawn_on_behalf',
+                ['claim' => $this->detailResource($this->adminClaimService->findForDetail($type, $id))]
+            );
+        } catch (OrderClaimException $e) {
+            return $this->claimDomainError($e);
+        } catch (AccessDeniedHttpException $e) {
+            return ResponseHelper::forbidden('auth.scope_denied');
+        } catch (Exception $e) {
+            return $this->claimServerError('admin-withdraw', $e);
+        }
+    }
+
+    /**
+     * 신청 내용(사유·상세 사유·교환 재발송지)을 운영자가 고칩니다. (S15)
+     *
+     * @param  UpdateClaimRequestOnBehalfRequest  $request  수정 요청
+     * @param  string  $claimType  유형 세그먼트 (exchanges/returns/refunds)
+     * @param  int  $id  신청서 ID
+     * @return JsonResponse 갱신 응답
+     */
+    public function updateRequest(UpdateClaimRequestOnBehalfRequest $request, string $claimType, int $id): JsonResponse
+    {
+        $type = $this->claimTypeOf($claimType);
+        $claim = $this->adminClaimService->findForTransition($type, $id);
+
+        if (! $claim || $claim instanceof OrderCancel) {
+            return $this->claimNotFound();
+        }
+
+        try {
+            $this->claimScope->assertAccessible($claim, self::PERMISSION_UPDATE_STATUS);
+
+            $this->adminClaimService->updateRequestOnBehalf($claim, $request->payload());
+
+            return ResponseHelper::moduleSuccess(
+                'sirsoft-ecommerce',
+                'messages.claims.request_updated_by_admin',
+                ['claim' => $this->detailResource($this->adminClaimService->findForDetail($type, $id))]
+            );
+        } catch (OrderClaimException $e) {
+            return $this->claimDomainError($e);
+        } catch (AccessDeniedHttpException $e) {
+            return ResponseHelper::forbidden('auth.scope_denied');
+        } catch (Exception $e) {
+            return $this->claimServerError('admin-update-request', $e);
         }
     }
 
@@ -838,6 +1017,8 @@ class ClaimController extends AdminBaseController
             'abilities' => ClaimAdminAbilities::forUser(Auth::user()),
             'complete_defaults' => $this->adminClaimService->completionDefaults(),
             'progress_steps' => $this->adminClaimService->progressSteps($claim),
+            // 선교환의 「회수」 줄(행 수 기준 회수 진행·반송 기한·지연) — 일반 교환·반품은 null.
+            'collection_lane' => ClaimProgressSteps::collectionLane($claim),
             // '배송지 다름' 뱃지의 근거 (D14). 저장된 두 주소의 비교로 도출하므로 화면이
             // 주소 필드를 다시 대조하지 않는다 — 대조 규칙이 두 곳에 생기면 한쪽만 바뀐다.
             'redelivery_address_differs' => $this->adminClaimService->redeliveryAddressDiffers($claim),
@@ -856,6 +1037,18 @@ class ClaimController extends AdminBaseController
             // 결과라 완료 미리보기와 **같은 경로**에서 나온다. 환불신청서는 자기 금액이
             // 헤더 컬럼이라 null 이다.
             'settlement' => $this->adminClaimService->settlementFor($claim),
+            // 「환불 미접수」(D9) — 완료됐는데 환불신청서가 없고 환불액이 0 보다 크면 금액·건수를,
+            // 아니면 null 을 싣는다. 상단 배너·완료 카드·[환불신청서 접수] 버튼이 같은 값을 읽는다.
+            'pending_refund' => $this->adminClaimService->pendingRefundFor($claim),
+            // 고객 요청 대리 철회(S14)·신청 내용 수정(S15) 버튼의 게이트 — 단계는 고객 철회·수정과 같고
+            // 출처(판매자 접수)는 보지 않는다. 신청서 리소스의 `is_withdrawable`·`is_editable` 은 **구매자**
+            // 게이트라(판매자 접수 건은 false) 운영자 버튼에 쓰면 판매자 접수 건에서 버튼이 사라진다.
+            // 신청 내용 수정(S15)의 사유 선택지 — 그 유형의 활성 사유 전부(판매자 귀책 포함).
+            'reason_options' => $this->adminClaimService->reasonOptionsFor($claim),
+            'on_behalf' => [
+                'can_withdraw' => ! $claim instanceof OrderCancel && $claim->isWithdrawable(),
+                'can_edit' => ! $claim instanceof OrderCancel && $claim->isWithdrawable(),
+            ],
             // 상세의 신청서 단위 전이 바 선택지 (F1). 목록 일괄 바에서만 전이할 수 있던
             // 시절에는 운영자가 상세를 열어 내용을 확인한 뒤 목록으로 되돌아가 그 줄을 다시
             // 찾아야 했고, 환불 유형은 상세에 어떤 전이 컨트롤도 없었다.
@@ -863,6 +1056,11 @@ class ClaimController extends AdminBaseController
             // 지금 완료할 수 있는 상품 수 — [완료 처리] 버튼의 활성·안내 건수. 신청서가 끝나지
             // 않았다는 것만 보고 버튼을 켜면 회수도착 전에도 눌려 모달까지 열린 뒤 거절된다.
             'completable_item_count' => $this->adminClaimService->completableItemCount($claim),
+            // 선교환에서 「미회수로 완료」 할 수 있는 행 수 — 완료할 행이 0 이어도 이 값이 있으면 [완료 처리] 가 켜진다(D3).
+            'unreturned_eligible_count' => count($this->adminClaimService->unreturnedEligibleItems($claim)),
+            // 「진행 방식」 줄의 [선교환으로 전환]·[일반 교환으로 되돌리기] 게이트 — 서비스가 실제로
+            // 거절하는 조건과 같은 판정이다(교환이 아니면 null).
+            'exchange_mode_abilities' => $this->adminClaimService->exchangeModeAbilities($claim),
             // 청구 방식 어휘는 운영자 설정(`claim.allowed_charge_methods`)이 정하고 그 조회는
             // `settings.read` 게이트다 — 완료 기본값·택배사와 같은 이유로 봉투가 나른다.
             'charge_methods' => $claim instanceof OrderRefund || $claim instanceof OrderCancel

@@ -225,6 +225,56 @@
                                             "className": "font-medium text-blue-600 dark:text-blue-400 cursor-pointer hover:underline"
                                         },
                                         "text": "{{row.claim_number}}"
+                                    },
+                                    {
+                                        "comment": "행 뱃지 — 판매자 접수(D8)·선교환·회수 지연(선교환 반송 기한 경과)·환불 미접수(D9). 판정은 전부 서버가 행에 실어 준다.",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "flex flex-wrap gap-1 mt-0.5"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "composite",
+                                                "name": "Badge",
+                                                "if": "{{row.is_admin_requested === true}}",
+                                                "props": {
+                                                    "variant": "warning",
+                                                    "size": "sm"
+                                                },
+                                                "text": "$t:defer:sirsoft-ecommerce.admin.claim.column.admin_requested_badge"
+                                            },
+                                            {
+                                                "type": "composite",
+                                                "name": "Badge",
+                                                "if": "{{row.is_advance_exchange === true}}",
+                                                "props": {
+                                                    "variant": "info",
+                                                    "size": "sm"
+                                                },
+                                                "text": "$t:defer:sirsoft-ecommerce.admin.claim.column.advance_badge"
+                                            },
+                                            {
+                                                "type": "composite",
+                                                "name": "Badge",
+                                                "if": "{{row.is_collection_overdue === true}}",
+                                                "props": {
+                                                    "variant": "danger",
+                                                    "size": "sm"
+                                                },
+                                                "text": "$t:defer:sirsoft-ecommerce.admin.claim.column.overdue_badge|days={{row.collection_overdue_days ?? 0}}"
+                                            },
+                                            {
+                                                "type": "composite",
+                                                "name": "Badge",
+                                                "if": "{{row.has_pending_refund === true}}",
+                                                "props": {
+                                                    "variant": "warning",
+                                                    "size": "sm"
+                                                },
+                                                "text": "$t:defer:sirsoft-ecommerce.admin.claim.column.pending_refund_badge"
+                                            }
+                                        ]
                                     }
                                 ]
                             },
@@ -268,7 +318,7 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "stack-flush gap-0.5 min-w-0"
+                                            "className": "stack-flush gap-1 min-w-0"
                                         },
                                         "children": [
                                             {
@@ -318,7 +368,7 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "stack-flush gap-0.5 min-w-0"
+                                            "className": "stack-flush gap-1 min-w-0"
                                         },
                                         "children": [
                                             {
@@ -410,7 +460,7 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "stack-flush gap-0.5"
+                                            "className": "stack-flush gap-1"
                                         },
                                         "children": [
                                             {
@@ -445,6 +495,82 @@
                                                 "type": "basic",
                                                 "name": "Span",
                                                 "if": "{{row.total_charge_amount_formatted == null && row.refund_total_formatted == null}}",
+                                                "props": {
+                                                    "className": "text-gray-500 dark:text-gray-400"
+                                                },
+                                                "text": "-"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "field": "tracking",
+                                "comment": "운송장 열 (교환·반품) — 송장은 상품 행마다 있어 방향별 첫 운송장과 「외 N개」 로 줄인다(서버 `tracking_summary`). 「외 N개」 는 운송장이 둘 이상일 때만 붙인다 — 하나뿐인 대부분의 건에 「외 0개」 가 서면 안 된다(구매자 목록과 같은 규칙).",
+                                "header": "$t:sirsoft-ecommerce.admin.claim.column.tracking",
+                                "width": "170px",
+                                "sortable": false,
+                                "required": false,
+                                "cellChildren": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "stack-flush gap-1 text-xs"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "if": "{{!!row.tracking_summary?.collection?.first}}",
+                                                "props": {
+                                                    "className": "flex-center gap-1"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "text": "$t:defer:sirsoft-ecommerce.admin.claim.column.tracking_collection|number={{row.tracking_summary?.collection?.first ?? ''}}"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "if": "{{(row.tracking_summary?.collection?.count ?? 0) > 1}}",
+                                                        "props": {
+                                                            "className": "text-gray-500 dark:text-gray-400"
+                                                        },
+                                                        "text": "$t:defer:sirsoft-ecommerce.admin.claim.column.tracking_more|more={{(row.tracking_summary?.collection?.count ?? 0) - 1}}"
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "if": "{{!!row.tracking_summary?.redelivery?.first}}",
+                                                "props": {
+                                                    "className": "flex-center gap-1"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "text": "$t:defer:sirsoft-ecommerce.admin.claim.column.tracking_redelivery|number={{row.tracking_summary?.redelivery?.first ?? ''}}"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "if": "{{(row.tracking_summary?.redelivery?.count ?? 0) > 1}}",
+                                                        "props": {
+                                                            "className": "text-gray-500 dark:text-gray-400"
+                                                        },
+                                                        "text": "$t:defer:sirsoft-ecommerce.admin.claim.column.tracking_more|more={{(row.tracking_summary?.redelivery?.count ?? 0) - 1}}"
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "if": "{{!row.tracking_summary?.collection?.first && !row.tracking_summary?.redelivery?.first}}",
                                                 "props": {
                                                     "className": "text-gray-500 dark:text-gray-400"
                                                 },

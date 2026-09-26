@@ -2,7 +2,16 @@
   <!-- 신청사유(+첨부) 와 관리자 메모를 2단으로 둔다 (§6-4). 섹션이 아니라 `#section_claim_info` 안의 블록이므로 `data-section-id` 를 갖지 않는다 — scrollSpy 가 탭 없는 섹션 id 를 잡으면 활성 탭이 어긋난다. -->
   <div data-ref="claim_reason_row" class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
     <div data-ref="claim_reason_card" class="admin-card">
-      <h2 class="text-lg font-bold text-gray-900 dark:text-gray-100 mb-6">$t:sirsoft-ecommerce.admin.claim.detail.reason.title</h2>
+      <div class="flex-between gap-3 mb-6">
+        <h2 class="text-lg font-bold text-gray-900 dark:text-gray-100">$t:sirsoft-ecommerce.admin.claim.detail.reason.title</h2>
+        <!-- 신청 내용 수정(S15) — 고객이 사유를 잘못 골라 귀책·배송비가 틀렸을 때 운영자가 고친다. 단계는 고객 수정과 같고(서버 `on_behalf.can_edit`), 판매자 귀책 사유도 고를 수 있다. -->
+        <button data-ref="cr_000_edit_request" data-if="{{claim?.data?.on_behalf?.can_edit === true &amp;&amp; claim?.data?.abilities?.can_update_status === true}}" type="button" class="btn btn-outline btn-sm">
+          <on type="click">
+            <action handler="sirsoft-ecommerce.openClaimRequestEdit" pathSegment="{{claim?.data?.claim_path_segment ?? ''}}" claimId="{{claim?.data?.claim?.id ?? null}}" reasonCode="{{claim?.data?.claim?.reason_code ?? ''}}" reasonDetail="{{claim?.data?.claim?.reason_detail ?? ''}}" reasonOptions="{{claim?.data?.reason_options ?? []}}"/>
+          </on>
+          $t:sirsoft-ecommerce.admin.claim.detail.request_edit.button
+        </button>
+      </div>
       <div class="flex justify-between text-sm py-1.5">
         <span class="text-secondary">$t:sirsoft-ecommerce.admin.claim.detail.reason.reason_label</span>
         <span data-ref="cr_001_reason_label" class="text-gray-900 dark:text-gray-100">{{claim?.data?.claim?.reason_label ?? '-'}}</span>

@@ -346,13 +346,14 @@ describe('컬럼 표시 영속 — SSoT 는 ColumnSelector 자기 키 하나다 
    *
    * @effects column_selector_matches_datagrid_columns
    */
-  it('ColumnSelector 10종과 DataGrid 컬럼이 같은 집합이다 (30분 확인 4번)', () => {
+  it('ColumnSelector 11종과 DataGrid 컬럼이 같은 집합이다 (30분 확인 4번)', () => {
     const selectorFields = (byId(filterSection, 'f_003_column_selector').props.columns as Node[]).map(
       (c) => c.field,
     );
     const gridFields = (byId(datagrid, 'claim_datagrid').props.columns as Node[]).map((c) => c.field);
 
-    expect(selectorFields).toHaveLength(10);
+    // 11 = 종전 10 + 운송장(tracking — 송장은 상품 행마다, #599)
+    expect(selectorFields).toHaveLength(11);
     expect([...gridFields].sort()).toEqual([...selectorFields].sort());
   });
 });
@@ -892,5 +893,127 @@ describe('목록 일괄 회수중·발송중 송장 (#599 후속 운영 결정)'
     expect(rows.if).toBe('{{(_global.claimBulkConfirmData?.trackings ?? []).length > 0}}');
     expect(handlers).toEqual(['sirsoft-ecommerce.updateClaimBulkTracking', 'sirsoft-ecommerce.updateClaimBulkTracking']);
     expect(String(applyButton.props.disabled)).toContain('trackings ?? []).some(');
+  });
+});
+
+describe('목록 행 뱃지 · 운송장 열 (#599 후속 §3-9·§3-12)', () => {
+  const grid = byId(datagrid, 'claim_datagrid');
+
+  /**
+   * 목록 컬럼 하나를 찾는다.
+   *
+   * @param field 컬럼 필드
+   * @returns 컬럼 정의
+   */
+  const column = (field: string): Node => {
+    const found = (grid.props.columns as Node[]).find((c) => c.field === field);
+
+    if (!found) {
+      throw new Error(`목록에 ${field} 컬럼이 없다`);
+    }
+
+    return found;
+  };
+
+  /**
+   * 판매자 접수·선교환·회수 지연·환불 미접수 넷은 전부 서버가 행에 실어 준 불리언으로만 켠다 — 화면이 상태·
+   * 날짜로 다시 판정하면 서버 필터(`pending_refund=1`·회수 지연만)와 뱃지가 서로 다른 건을 가리킨다.
+   * 회수 지연 일수도 서버 값이다.
+   *
+   * @effects claim_list_row_badges_read_server_flags
+   */
+  it('클레임번호 칸의 뱃지 넷이 서버 행 플래그로만 켜진다', () => {
+    const badges = collect(column('claim_number').cellChildren, (n) => n.name === 'Badge');
+
+    expect(badges.map((b) => [b.if, b.props.variant, b.text])).toEqual([
+      ['{{row.is_admin_requested === true}}', 'warning', '$t:defer:sirsoft-ecommerce.admin.claim.column.admin_requested_badge'],
+      ['{{row.is_advance_exchange === true}}', 'info', '$t:defer:sirsoft-ecommerce.admin.claim.column.advance_badge'],
+      [
+        '{{row.is_collection_overdue === true}}',
+        'danger',
+        '$t:defer:sirsoft-ecommerce.admin.claim.column.overdue_badge|days={{row.collection_overdue_days ?? 0}}',
+      ],
+      ['{{row.has_pending_refund === true}}', 'warning', '$t:defer:sirsoft-ecommerce.admin.claim.column.pending_refund_badge'],
+    ]);
+  });
+
+  /**
+   * 송장은 상품 행마다 있어 한 신청서에 운송장이 여럿일 수 있다 — 목록 칸은 방향별 첫 운송장과 나머지 개수
+   * (`count - 1`)로 줄인다. 요약은 서버(`tracking_summary`)가 만든다. 두 방향 모두 없으면 `-` 한 줄이다.
+   * 「외 N개」 는 운송장이 둘 이상일 때만 붙는다 — 하나뿐인 대부분의 건에 「외 0개」 가 서던 결함의 회귀 가드다.
+   *
+   * @effects claim_list_tracking_column_shows_first_waybill_and_more_count
+   */
+  it('운송장 열이 방향별 첫 운송장과 「외 N개」 를 서버 요약으로 그린다', () => {
+    const lines = (column('tracking').cellChildren as Node[])[0].children as Node[];
+
+    expect(lines.map((n) => n.if)).toEqual([
+      '{{!!row.tracking_summary?.collection?.first}}',
+      '{{!!row.tracking_summary?.redelivery?.first}}',
+      '{{!row.tracking_summary?.collection?.first && !row.tracking_summary?.redelivery?.first}}',
+    ]);
+
+    (['collection', 'redelivery'] as const).forEach((direction, index) => {
+      const [first, more] = lines[index].children as Node[];
+
+      expect(first.text).toBe(
+        `$t:defer:sirsoft-ecommerce.admin.claim.column.tracking_${direction}|number={{row.tracking_summary?.${direction}?.first ?? ''}}`,
+      );
+      expect(more.if).toBe(`{{(row.tracking_summary?.${direction}?.count ?? 0) > 1}}`);
+      expect(more.text).toBe(
+        `$t:defer:sirsoft-ecommerce.admin.claim.column.tracking_more|more={{(row.tracking_summary?.${direction}?.count ?? 0) - 1}}`,
+      );
+    });
+    expect(lines[2].text).toBe('-');
+    // 헤더 송장 필드를 읽지 않는다 — 신청서 헤더에는 송장 칸이 없다.
+    expect(JSON.stringify(column('tracking'))).not.toMatch(/row\.(collection|redelivery)_tracking_number/);
+  });
+});
+
+describe('빌드 CSS 에 있는 간격 클래스만 쓴다 (3차 검증 인터뷰 2026-09-26)', () => {
+  /**
+   * 관리자 템플릿 CSS 는 템플릿 자신의 레이아웃과 safelist 만 훑는다 — 모듈 레이아웃에만 있는 클래스는 만들어지지
+   * 않아 조용히 무효가 된다(완료 창 `min-w-[12rem]`·목록 `gap-0.5` 가 그랬다). 클레임 완료 창·목록의 간격·최소 폭
+   * 클래스가 빌드 CSS 에 실제로 있는지 잰다. 모집단은 파일에서 뽑는다.
+   *
+   * @effects claim_list_spacing_classes_exist_in_the_admin_build
+   */
+  it('완료 창·목록의 gap-*·min-w-* 클래스가 관리자 빌드 CSS 에 있다', () => {
+    const here = path.dirname(fileURLToPath(import.meta.url));
+    const css = fs.readFileSync(path.resolve(here, '../../../../../../../templates/_bundled/sirsoft-admin_basic/dist/css/components.css'), 'utf8');
+    const dir = path.resolve(here, '../../../layouts/admin/partials/admin_ecommerce_claim_list');
+    const classes = new Set<string>();
+
+    for (const file of ['_modal_claim_complete.g7.html', '_partial_claim_datagrid.g7.html']) {
+      const source = fs.readFileSync(path.join(dir, file), 'utf8');
+      for (const [, list] of source.matchAll(/class="([^"]*)"/g)) {
+        list.split(/\s+/).filter((c) => /^(gap|gap-x|gap-y|min-w)-/.test(c)).forEach((c) => classes.add(c));
+      }
+    }
+
+    expect(classes.size).toBeGreaterThan(0);
+
+    // CSS 선택자는 `.`·`[`·`]`·`/`·`:` 를 역슬래시로 이스케이프한다(`.min-w-\[200px\]`).
+    const escape = (c: string) => '.' + c.replace(/([.[\]/:])/g, '\\$1');
+    const missing = [...classes].filter((c) => !css.includes(escape(c)));
+
+    expect(missing).toEqual([]);
+  });
+});
+
+describe('필터 식별자 번호 (3차 검증 인터뷰 2026-09-26)', () => {
+  /**
+   * 필터 칸의 `data-ref` 번호(`f_NNN_…`)는 칸마다 하나다 — 같은 번호가 둘이면 레이아웃 확장·테스트가 번호로 칸을
+   * 가리킬 때 어느 칸인지 갈린다(판정·접수 경로 필터를 넣으며 `f_600`·`f_610` 이 겹쳤다).
+   *
+   * @effects claim_filter_refs_have_unique_numbers
+   */
+  it('필터 칸의 f_NNN 번호가 겹치지 않는다', () => {
+    const here = path.dirname(fileURLToPath(import.meta.url));
+    const source = fs.readFileSync(path.resolve(here, '../../../layouts/admin/partials/admin_ecommerce_claim_list/_partial_filter_section.g7.html'), 'utf8');
+    const numbers = [...source.matchAll(/data-ref="f_(\d+)_/g)].map((m) => m[1]);
+
+    expect(numbers.length).toBeGreaterThan(0);
+    expect(numbers.filter((n, i) => numbers.indexOf(n) !== i)).toEqual([]);
   });
 });

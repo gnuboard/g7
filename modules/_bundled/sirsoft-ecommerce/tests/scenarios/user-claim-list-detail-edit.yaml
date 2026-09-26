@@ -80,6 +80,7 @@ effects:
   - claim_list_amount_column_branches_by_type
   - claim_list_return_row_omits_refund_amount
   - claim_list_shows_secondary_currency
+  - claim_list_item_secondary_currency_matches_subtotal  # 상품 행 보조 통화는 그 위 소계의 다른 표기다(차액 아님)
   - claim_list_row_actions_follow_server_flags
   # 목록 응답의 하위 컬렉션 (③)
   - claim_list_response_drops_what_the_list_does_not_draw
@@ -92,11 +93,22 @@ effects:
   - claim_detail_contrast_axis_shows_both_sides
   - claim_detail_refund_account_reads_the_claim_row
   - claim_detail_reject_reason_leads_the_reason_card
+  # 상품 행 송장·선교환·판매자 접수 (#599 상품 행 송장) — 송장은 상품 행마다, 화면은 서버 묶음을 그린다
+  - claim_detail_shipping_groups_by_waybill
+  - claim_detail_item_row_shows_its_waybill
+  - claim_detail_item_reject_reason_on_the_row
+  - claim_detail_advance_exchange_notice_and_overdue
+  - claim_detail_unreturned_items_marked
+  - claim_detail_final_advance_exchange_drops_the_return_request  # 끝난 선교환에 반송 안내·「등록 전」 이 남지 않는다(Chrome 실측 A-5)
+  - claim_detail_admin_requested_notice
+  - claim_list_tracking_column_first_waybill_and_more
+  - claim_list_admin_requested_badge
   # 상세 — 진행 단계 (관리자 상세와 같은 배열을 같은 자리에서 받는다)
   - claim_detail_response_carries_progress_steps
   - claim_detail_progress_stepper_renders_server_steps
   - claim_progress_steps_single_source_for_admin_and_user
   - claim_progress_cancel_has_two_stages
+  - claim_progress_steps_carry_icon_and_variant
   # 결제 결과 복귀 — 신청서 상세가 서면서 원래 자리로 돌아왔다
   - claim_payment_returns_to_a_screen_that_exists
   - claim_payment_result_banner_distinguishes_three_outcomes

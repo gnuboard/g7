@@ -4025,6 +4025,31 @@
           }
         ]
       },
+      "claimRequestContext": {
+        "data": {
+          "order_id": 1,
+          "gates": {
+            "exchange": ["shipping", "delivered", "confirmed"],
+            "return": ["shipping", "delivered", "confirmed"],
+            "refund": ["pending_order", "pending_payment", "payment_complete", "shipping_hold", "preparing", "shipping_ready"]
+          },
+          "reasons": {
+            "exchange": [
+              { "value": "size_mismatch", "label": "사이즈가 맞지 않음", "fault_type": "customer" },
+              { "value": "defective_product", "label": "상품 불량", "fault_type": "seller" }
+            ],
+            "return": [
+              { "value": "changed_mind", "label": "단순 변심", "fault_type": "customer" },
+              { "value": "defective_product", "label": "상품 불량", "fault_type": "seller" }
+            ]
+          },
+          "charge_methods": [
+            { "value": "deduct_from_refund", "label": "환불금에서 차감" },
+            { "value": "pay_on_approval", "label": "고객 결제 요청" },
+            { "value": "free", "label": "무료" }
+          ]
+        }
+      },
       "availableChannels": {
         "data": {
           "channels": [
@@ -4909,20 +4934,31 @@
                 "subtotal_amount_formatted": "33,000원",
                 "option_status": "requested",
                 "option_status_label": "접수",
-                "option_status_variant": "info"
+                "option_status_variant": "info",
+                "collection_carrier_name": null,
+                "collection_tracking_number": null,
+                "collection_tracking_url": null,
+                "collection_state": null,
+                "collection_state_label": null,
+                "is_unreturned": false
               }
             ],
             "refund_bank_code": null,
             "refund_bank_name": null,
             "refund_bank_account": null,
             "refund_bank_holder": null,
-            "collection_carrier_name": null,
-            "collection_tracking_number": null,
-            "collection_tracking_url": null,
+            "tracking_groups": {
+              "collection": [],
+              "redelivery": []
+            },
+            "return_addresses": [],
+            "exchange_mode": null,
+            "exchange_mode_label": null,
+            "is_advance_exchange": false,
+            "collection_due_date_formatted": null,
+            "is_collection_overdue": false,
+            "collection_overdue_days": 0,
             "collection_completed_at_formatted": null,
-            "redelivery_carrier_name": null,
-            "redelivery_tracking_number": null,
-            "redelivery_tracking_url": null,
             "redelivered_at_formatted": null,
             "redelivery_address_snapshot": null,
             "return_address_snapshot": null,

@@ -40,6 +40,7 @@ axes:
 effects:
   # 카드 구조 (D21)
   - filter_card_node_order_matches_order_screen
+  - claim_list_i18n_partial_declared          # ko·en 사전의 admin.claim partial 선언과 파일 실재
   - filter_rows_registered_through_slot_system
   - filter_visibility_has_a_single_persistence_owner
   - detail_filter_opens_only_by_toggle

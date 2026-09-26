@@ -397,12 +397,32 @@ return [
     'request_source' => [
         'customer' => 'Customer request',
         'guest' => 'Guest request',
-        'admin' => 'Filed by operator',
+        'admin' => 'Filed by seller',
     ],
 
     'refund_priority' => [
         'pg_first' => 'Refund payment method (PG) first',
         'points_first' => 'Refund points first',
+    ],
+
+    // Claim tracking direction (matches ClaimTrackingDirectionEnum values)
+    'claim_tracking_direction' => [
+        'collection' => 'Collection',
+        'redelivery' => 'Redelivery',
+    ],
+
+    // Exchange mode (matches ExchangeModeEnum values)
+    'exchange_mode' => [
+        'standard' => 'Standard exchange',
+        'advance' => 'Advance exchange',
+    ],
+
+    // Claim item collection state (matches ClaimItemCollectionStateEnum values)
+    'claim_item_collection_state' => [
+        'pending' => 'Awaiting collection',
+        'in_transit' => 'Collecting',
+        'collected' => 'Collected',
+        'unreturned' => 'Not returned',
     ],
 
     // Review Status (ReviewStatus values)

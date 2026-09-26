@@ -203,6 +203,11 @@ describe('설정 클레임 탭 렌더링', () => {
     }
   });
 
+  /**
+   * 클레임 탭이 정책과 사유 카탈로그 셋을 검증 오류 없이 그린다.
+   *
+   * @effects settings_claim_tab_composes_policy_and_three_catalogs
+   */
   it('레이아웃 검증 오류 없이 렌더링된다', async () => {
     const { container } = await testUtils.render();
 
@@ -210,6 +215,11 @@ describe('설정 클레임 탭 렌더링', () => {
     expect(() => testUtils.assertNoValidationErrors()).not.toThrow();
   });
 
+  /**
+   * 교환·반품·환불 사유 카탈로그는 각자 자기 목록만 그린다.
+   *
+   * @effects settings_claim_catalogs_render_independently
+   */
   it('사유 카탈로그 3종이 각자의 목록만 그린다', async () => {
     const { container } = await testUtils.render();
 
@@ -231,6 +241,11 @@ describe('설정 클레임 탭 렌더링', () => {
     }
   });
 
+  /**
+   * 사유명은 다국어 입력으로 그린다.
+   *
+   * @effects settings_claim_reason_name_is_multilingual
+   */
   it('사유명은 MultilingualInput 으로 그려지고 목록 행은 compact 다 (D23)', async () => {
     const { container } = await testUtils.render();
 
@@ -245,6 +260,11 @@ describe('설정 클레임 탭 렌더링', () => {
     expect(rowEditors.map((e) => e.textContent)).toContain('사이즈 교환');
   });
 
+  /**
+   * 정책 스칼라(선교환 반송 기한 포함)가 저장된 값으로 그려진다.
+   *
+   * @effects settings_claim_policy_scalars_persist
+   */
   it('정책 스칼라 값이 저장된 값 그대로 그려진다', async () => {
     const { container } = await testUtils.render();
 
@@ -262,7 +282,8 @@ describe('설정 클레임 탭 렌더링', () => {
     const numbers = Array.from(container.querySelectorAll('input[type="number"]')).map(
       (n) => (n as HTMLInputElement).value,
     );
-    expect(numbers).toEqual(['14', '7', '3072']);
+    // 선교환 회수 기한(값이 없으면 기본 14일)이 정책 카드 맨 앞 숫자 입력이다(#599 §3-3).
+    expect(numbers).toEqual(['14', '14', '7', '3072']);
   });
 
   /**
@@ -307,6 +328,11 @@ describe('설정 클레임 탭 렌더링', () => {
     expect(node?.getAttribute('data-disabled')).toBe('true');
   });
 
+  /**
+   * 완료 처리 기본값 토글이 저장된 값을 반영한다.
+   *
+   * @effects settings_claim_complete_defaults_declared_as_modal_seed
+   */
   it('완료 처리 기본값 토글이 저장된 값을 반영한다 (D26)', async () => {
     const { container } = await testUtils.render();
 
@@ -323,6 +349,11 @@ describe('설정 클레임 탭 렌더링', () => {
     expect(toggles['claim.auto_approve_after_payment']).toBe('false');
   });
 
+  /**
+   * 한 카탈로그를 고쳐도 다른 카탈로그는 그대로다.
+   *
+   * @effects settings_claim_save_of_one_catalog_keeps_others
+   */
   it('한 유형의 사유를 지워도 다른 유형의 목록은 그대로다', async () => {
     const { container } = await testUtils.render();
 

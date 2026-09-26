@@ -99,10 +99,12 @@ class OrderReturnRepository implements OrderReturnRepositoryInterface
             ReturnStatusEnum::finalStatuses(),
         );
 
+        // 환불신청서는 완료 회차마다 상품 행에 연결된다(S7) — 살아 있는 환불이 연결되지 않은 상품 행이
+        // 하나라도 남은 반품이 선점 대상이다. 연결된 몫은 그 환불신청서 쪽에서 센다(반려·철회된 신청서는 끊긴 연결).
         $query = $this->model->newQuery()
             ->with($relations)
             ->where('order_id', $orderId)
-            ->whereNull('refund_id')
+            ->whereHas('returnOptions', fn (Builder $options) => $options->withoutLiveRefund())
             ->whereNotIn('return_status', $finalValues);
 
         if ($excludeIds !== []) {
@@ -182,8 +184,9 @@ class OrderReturnRepository implements OrderReturnRepositoryInterface
      */
     public function countByCarrierId(int $carrierId): int
     {
+        // 송장은 상품 행에 있다(R12) — 그 택배사로 회수한 행이 하나라도 있는 반품 신청서를 센다.
         return $this->model->newQuery()
-            ->where('collection_carrier_id', $carrierId)
+            ->whereHas('returnOptions', fn ($query) => $query->where('collection_carrier_id', $carrierId))
             ->count();
     }
 
@@ -216,7 +219,8 @@ class OrderReturnRepository implements OrderReturnRepositoryInterface
         return $this->model->newQuery()
             // 목록이 직렬화하는 것만 싣는다 (형제 저장소와 같은 근거 — 첨부는 상세 소관,
             // 주문 배송지는 이 목록의 어느 칸도 읽지 않는다).
-            ->with(['returnOptions.orderOption', 'order', 'collectionCarrier']);
+            // 송장은 상품 행에 있다 — 행의 택배사를 함께 싣는다(운송장 줄·조회 링크).
+            ->with(['returnOptions.orderOption', 'returnOptions.collectionCarrier', 'order']);
     }
 
     /**
@@ -242,18 +246,18 @@ class OrderReturnRepository implements OrderReturnRepositoryInterface
     {
         // 목록이 직렬화하는 것만 싣는다 — `order` 와 미수납 판정용 `claimPayments`.
         // 상품 요약은 헤더 `items_snapshot` 이 담당한다 (목록 응답의 하위 컬렉션 규율).
-        $query = $this->model->newQuery()->with(['order.shippingAddress', 'claimPayments']);
+        // 상품 행은 운송장 요약·환불 미접수 판정이 읽는 칸만 싣는다(송장은 행에 있다).
+        // 환불 미접수 뱃지(D9)는 행에 연결된 환불신청서의 상태까지 본다(반려·철회면 미연결로 센다).
+        $query = $this->model->newQuery()->with(['order.shippingAddress', 'claimPayments', 'returnOptions:id,order_return_id,order_option_id,option_status,return_quantity,collection_carrier_id,collection_tracking_number,collected_at,refund_id,completed_at', 'returnOptions.refund:id,refund_status']);
 
         $this->applyAdminClaimFilters($query, $filters);
 
         // 컬럼도 목록(`ClaimAdminListResource`)이 실제로 읽는 것만 명시한다 — 주소·배송비
         // 스냅샷 JSON, 반려 사유, 관리자 메모 등은 상세(`ClaimResource`) 소관이다.
         return $query->orderByDesc('id')->paginate($perPage, [
-            'id', 'order_id', 'return_number', 'return_status', 'requested_by',
+            'id', 'order_id', 'return_number', 'return_status', 'requested_by', 'requested_by_admin',
             'reason_code', 'fault_type', 'charge_method', 'total_charge_amount',
             'currency_code', 'items_snapshot', 'created_at', 'completed_at',
-            // 회수중·발송중 일괄 모달이 신청서마다 저장된 송장을 미리 채운다(#599 후속).
-            'collection_carrier_id', 'collection_tracking_number',
         ]);
     }
 
@@ -322,5 +326,29 @@ class OrderReturnRepository implements OrderReturnRepositoryInterface
     public function hasRecordedCurrency(string $code): bool
     {
         return $this->model->newQuery()->where('currency_code', $code)->exists();
+    }
+
+    /**
+     * 반품 고유 필터 — 접수 출처(D8) · 환불 미접수(D9)
+     *
+     * 환불 미접수는 완료된 상품 행 중 환불신청서가 연결되지 않았거나(`refund_id` 없음) 연결된 신청서가
+     * 반려·철회된 행이 있는 신청서다(S7 — 회차별 접수). 금액 0 판정은 상세(`pendingRefundFor`)가 한다.
+     *
+     * @param  Builder  $query  대상 쿼리
+     * @param  array  $filters  필터
+     * @return void 쿼리를 제자리에서 수정한다
+     */
+    protected function applyAdminClaimTypeFilters(Builder $query, array $filters): void
+    {
+        if (($filters['request_source'] ?? null) === 'admin') {
+            $query->whereNotNull('requested_by_admin');
+        } elseif (($filters['request_source'] ?? null) === 'customer') {
+            $query->whereNull('requested_by_admin');
+        }
+
+        if (! empty($filters['pending_refund'])) {
+            // 판정은 모델 한 곳(`OrderReturn::pendingRefundItems` 와 그 쿼리판)이다.
+            $query->pendingRefund();
+        }
     }
 }

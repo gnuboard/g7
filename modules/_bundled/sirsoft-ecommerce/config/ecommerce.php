@@ -130,6 +130,9 @@ return [
         'claim_image_max_size_kb_max' => 20480,
         'claim_request_period_days_min' => 1,
         'claim_request_period_days_max' => 365,
+        // 선교환 헌 상품 반송 기한 (일) — 쇼핑몰 설정 `claim.advance_exchange_collection_due_days`
+        'advance_exchange_collection_due_days_min' => 1,
+        'advance_exchange_collection_due_days_max' => 90,
     ],
 
     // 관리자 대시보드 이커머스 영역 설정

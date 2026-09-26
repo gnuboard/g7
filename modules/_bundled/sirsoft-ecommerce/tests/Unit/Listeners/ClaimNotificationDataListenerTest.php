@@ -4,10 +4,12 @@ namespace Modules\Sirsoft\Ecommerce\Tests\Unit\Listeners;
 
 use Illuminate\Support\Facades\Hash;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimChargeMethodEnum;
+use Modules\Sirsoft\Ecommerce\Enums\ClaimTrackingDirectionEnum;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundMethodEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundSourceTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundStatusEnum;
+use Modules\Sirsoft\Ecommerce\Enums\ReturnStatusEnum;
 use Modules\Sirsoft\Ecommerce\Listeners\ClaimNotificationDataListener;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderAddress;
@@ -39,6 +41,11 @@ class ClaimNotificationDataListenerTest extends ModuleTestCase
 
     protected ClaimNotificationDataListener $listener;
 
+    /**
+     * 통화 설정·클레임 사유와 알림 데이터 리스너를 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -47,17 +54,34 @@ class ClaimNotificationDataListenerTest extends ModuleTestCase
         $this->listener = app(ClaimNotificationDataListener::class);
     }
 
+    /**
+     * 테스트 통화 설정을 되돌립니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         $this->clearTestCurrencySettings();
         parent::tearDown();
     }
 
+    /**
+     * 데이터 필터에 넘길 빈 결과 봉투를 만듭니다.
+     *
+     * @return array 결과 배열
+     */
     private function emptyResult(): array
     {
         return ['notifiable' => null, 'notifiables' => null, 'data' => [], 'context' => []];
     }
 
+    /**
+     * 반품을 접수합니다.
+     *
+     * @param  Order|null  $order  대상 주문 (없으면 배송완료 주문을 만든다)
+     * @param  ClaimChargeMethodEnum  $method  청구 방식
+     * @return OrderReturn 접수된 반품 신청서
+     */
     private function requestedReturn(?Order $order = null, ClaimChargeMethodEnum $method = ClaimChargeMethodEnum::DEDUCT_FROM_REFUND): OrderReturn
     {
         $order ??= $this->deliveredClaimOrder();
@@ -70,6 +94,11 @@ class ClaimNotificationDataListenerTest extends ModuleTestCase
         ]);
     }
 
+    /**
+     * 교환을 접수합니다. (신청 시점 결제)
+     *
+     * @return OrderExchange 접수된 교환 신청서
+     */
     private function requestedExchange(): OrderExchange
     {
         $order = $this->deliveredClaimOrder();
@@ -83,9 +112,11 @@ class ClaimNotificationDataListenerTest extends ModuleTestCase
     }
 
     /**
+     * 회원 신청 알림이 신청자에게 가고 마이페이지 상세로 링크되는지 검증합니다.
+     *
      * @effects member_claim_routes_to_trigger_user_and_links_to_mypage_detail
      *
-     * @return void
+     * @return void 반환값 없음
      */
     public function test_a_member_claim_routes_to_the_requester_and_links_to_the_mypage_detail(): void
     {
@@ -103,9 +134,11 @@ class ClaimNotificationDataListenerTest extends ModuleTestCase
     }
 
     /**
+     * 비회원 신청 알림이 코어 비회원 수신 키와 주문 조회 화면 링크를 쓰는지 검증합니다.
+     *
      * @effects guest_claim_uses_core_guest_recipient_key_and_lookup_screen
      *
-     * @return void
+     * @return void 반환값 없음
      */
     public function test_a_guest_claim_uses_the_core_guest_recipient_key_and_the_lookup_screen(): void
     {
@@ -133,9 +166,11 @@ class ClaimNotificationDataListenerTest extends ModuleTestCase
     }
 
     /**
+     * 결제 요청 알림이 청구액과 미수납액을 싣는지 검증합니다.
+     *
      * @effects payment_request_data_carries_charge_and_outstanding_amounts
      *
-     * @return void
+     * @return void 반환값 없음
      */
     public function test_payment_request_data_carries_the_charge_and_outstanding_amounts(): void
     {
@@ -156,7 +191,7 @@ class ClaimNotificationDataListenerTest extends ModuleTestCase
      *
      * @effects staff_filed_claim_still_notifies_the_order_owner
      *
-     * @return void
+     * @return void 반환값 없음
      */
     public function test_a_staff_filed_claim_still_notifies_the_order_owner(): void
     {
@@ -186,7 +221,7 @@ class ClaimNotificationDataListenerTest extends ModuleTestCase
      *
      * @effects extracted_claim_link_defaults_to_the_customer_screen
      *
-     * @return void
+     * @return void 반환값 없음
      */
     public function test_extracted_claim_link_defaults_to_the_customer_screen(): void
     {
@@ -211,7 +246,7 @@ class ClaimNotificationDataListenerTest extends ModuleTestCase
      * 교환은 실제보다 적게, 반품·취소는 많게 알린다. 화면(`ClaimResource::refund_total`)은
      * 현금 + 마일리지만 더하므로 같은 신청서를 두 곳이 다른 금액으로 말한다.
      *
-     * @return void
+     * @return void 반환값 없음
      *
      * @effects refund_notification_amount_matches_what_the_screen_reports
      */
@@ -263,9 +298,11 @@ class ClaimNotificationDataListenerTest extends ModuleTestCase
     }
 
     /**
+     * 클레임이 아닌 알림 유형은 앞선 필터 결과를 그대로 돌려주는지 검증합니다.
+     *
      * @effects non_claim_notification_types_pass_through_untouched
      *
-     * @return void
+     * @return void 반환값 없음
      */
     public function test_non_claim_types_pass_through_untouched(): void
     {
@@ -277,7 +314,11 @@ class ClaimNotificationDataListenerTest extends ModuleTestCase
     }
 
     /**
+     * 클레임 유형이어도 신청서 인자가 없으면 결과를 그대로 돌려주는지 검증합니다.
+     *
      * @effects a_claim_type_without_a_claim_argument_passes_through
+     *
+     * @return void 반환값 없음
      */
     public function test_a_claim_type_without_a_claim_argument_passes_through(): void
     {
@@ -286,5 +327,42 @@ class ClaimNotificationDataListenerTest extends ModuleTestCase
         $result = $this->listener->extractData($default, 'return_requested', ['not-a-claim']);
 
         $this->assertSame($default, $result);
+    }
+
+    /**
+     * 운송장이 둘이면 `tracking_lines` 는 운송장마다 한 줄이고, 발행 시점 스냅샷이 있으면 그 값이 이긴다(S10 —
+     * 큐가 밀린 사이 송장이 바뀌어도 그때 값이 나간다).
+     *
+     * @effects tracking_lines_list_every_waybill_and_prefer_the_snapshot
+     *
+     * @return void 반환값 없음
+     */
+    public function test_tracking_lines_list_every_waybill_and_prefer_the_snapshot(): void
+    {
+        $order = $this->deliveredClaimOrder(quantity: 2);
+        $service = app(OrderReturnService::class);
+        $return = $service->requestReturn($order, [
+            'items' => [['order_option_id' => $order->options->first()->id, 'quantity' => 2]],
+            'reason_code' => 'changed_mind',
+            'charge_method' => ClaimChargeMethodEnum::DEDUCT_FROM_REFUND,
+            'requested_by' => $order->user_id,
+        ]);
+        $return = $service->transition($return, ReturnStatusEnum::APPROVED);
+        $carrier = $this->testClaimCarrier();
+        $itemId = (int) $return->fresh('returnOptions')->returnOptions->first()->id;
+
+        $remainderId = $service->writeItemTracking($return, ClaimTrackingDirectionEnum::COLLECTION, [['id' => $itemId, 'quantity' => 1]], $carrier->id, 'BOX-ONE')['split'][0]['remainder_id'];
+        $service->writeItemTracking($return->fresh(), ClaimTrackingDirectionEnum::COLLECTION, [$remainderId], $carrier->id, 'BOX-TWO');
+        $collecting = $service->transition($return->fresh(['returnOptions']), ReturnStatusEnum::COLLECTING);
+
+        $lines = explode("\n", $this->listener->extractData($this->emptyResult(), 'return_collecting', [$collecting->fresh()])['data']['tracking_lines']);
+
+        $this->assertCount(2, $lines);
+        $this->assertStringContainsString('BOX-ONE', $lines[0].$lines[1]);
+        $this->assertStringContainsString('BOX-TWO', $lines[0].$lines[1]);
+        $this->assertStringContainsString('× 1', $lines[0]);
+
+        $fromSnapshot = $this->listener->extractData($this->emptyResult(), 'return_collecting', [$collecting->fresh(), ['status' => 'collecting', 'tracking_lines' => 'SNAPSHOT-LINE']]);
+        $this->assertSame('SNAPSHOT-LINE', $fromSnapshot['data']['tracking_lines']);
     }
 }

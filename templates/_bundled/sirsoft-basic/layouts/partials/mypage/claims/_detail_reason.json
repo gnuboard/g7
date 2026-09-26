@@ -45,10 +45,10 @@
             ]
         },
         {
-            "comment": "반려 사유 — 운영자가 거절하며 적은 사유. 이 카드에서 가장 먼저 읽혀야 한다.",
+            "comment": "반려 사유 — 운영자가 거절하며 적은 사유. 이 카드에서 가장 먼저 읽혀야 한다. 신청서 **전체가** 반려됐을 때만 선다(S3) — 일부 상품만 반려됐으면 사유는 그 상품 줄에 있고, 나머지 상품이 진행 중인데 이 카드가 반려를 외치면 구매자가 신청 전체가 거절된 것으로 읽는다.",
             "type": "basic",
             "name": "Div",
-            "if": "{{!!claim.data?.claim?.reject_reason}}",
+            "if": "{{claim.data?.claim?.status === 'rejected' && !!claim.data?.claim?.reject_reason}}",
             "props": {
                 "className": "flex items-start gap-2 p-3 mb-4 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800"
             },

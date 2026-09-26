@@ -24,6 +24,7 @@ use Modules\Sirsoft\Ecommerce\Services\OrderRefundRequestService;
 use Modules\Sirsoft\Ecommerce\Services\OrderReturnService;
 use Modules\Sirsoft\Ecommerce\Services\UserMileageService;
 use Modules\Sirsoft\Ecommerce\Tests\Concerns\BuildsClaimFlowOrders;
+use Modules\Sirsoft\Ecommerce\Tests\Concerns\ReadsReturnRefundLink;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
@@ -40,6 +41,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 class ClaimRefundExecutionTest extends ModuleTestCase
 {
     use BuildsClaimFlowOrders;
+    use ReadsReturnRefundLink;
 
     protected User $admin;
 
@@ -150,7 +152,7 @@ class ClaimRefundExecutionTest extends ModuleTestCase
             createRefundRequest: true,
         ));
 
-        $refund = OrderRefund::findOrFail($return->refund_id);
+        $refund = OrderRefund::findOrFail($this->returnRefundId($return));
         $refund = app(OrderRefundRequestService::class)->transition($refund, RefundStatusEnum::APPROVED);
 
         return [$order, $return, $refund];

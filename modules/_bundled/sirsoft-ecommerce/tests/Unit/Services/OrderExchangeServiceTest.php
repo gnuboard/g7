@@ -9,7 +9,9 @@ use Modules\Sirsoft\Ecommerce\DTO\CalculationItem;
 use Modules\Sirsoft\Ecommerce\DTO\CancellationAdjustment;
 use Modules\Sirsoft\Ecommerce\DTO\ClaimCompletionOptions;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimChargeMethodEnum;
+use Modules\Sirsoft\Ecommerce\Enums\ClaimPaymentStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimReasonFaultTypeEnum;
+use Modules\Sirsoft\Ecommerce\Enums\ClaimTrackingDirectionEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ExchangeStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\MileageTransactionTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\OrderOptionSourceTypeEnum;
@@ -22,6 +24,7 @@ use Modules\Sirsoft\Ecommerce\Enums\RefundPriorityEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundSourceTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ReturnStatusEnum;
+use Modules\Sirsoft\Ecommerce\Models\ClaimPayment;
 use Modules\Sirsoft\Ecommerce\Models\ClaimReason;
 use Modules\Sirsoft\Ecommerce\Models\MileageTransaction;
 use Modules\Sirsoft\Ecommerce\Models\Order;
@@ -39,6 +42,7 @@ use Modules\Sirsoft\Ecommerce\Models\ProductOption;
 use Modules\Sirsoft\Ecommerce\Models\ShippingCarrier;
 use Modules\Sirsoft\Ecommerce\Models\ShippingPolicy;
 use Modules\Sirsoft\Ecommerce\Models\ShippingPolicyClaimAddress;
+use Modules\Sirsoft\Ecommerce\Services\AdminClaimService;
 use Modules\Sirsoft\Ecommerce\Services\ClaimQuantityGuard;
 use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
 use Modules\Sirsoft\Ecommerce\Services\OrderAdjustmentService;
@@ -2732,11 +2736,16 @@ class OrderExchangeServiceTest extends ModuleTestCase
         $exchange = $this->advanceTo($this->service->requestExchange($order, $this->payload($order)), ExchangeStatusEnum::COLLECTION_READY);
         $carrier = $this->carrier();
 
-        $tracked = $this->service->registerCollectionTracking($exchange, $carrier->id, ' 1234567890 ');
+        $itemId = (int) $exchange->exchangeOptions->first()->id;
 
-        $this->assertSame(ExchangeStatusEnum::COLLECTION_READY, $tracked->exchange_status, '송장 저장이 상태를 옮겼습니다.');
-        $this->assertSame('1234567890', $tracked->collection_tracking_number);
-        $this->assertSame($carrier->id, $tracked->collection_carrier_id);
+        // 「송장만 저장」 은 고른 상품 행에 송장을 적을 뿐 상태를 옮기지 않는다(R7). 앞뒤 공백은 다듬는다.
+        $result = $this->service->writeItemTracking($exchange, ClaimTrackingDirectionEnum::COLLECTION, [$itemId], $carrier->id, ' 1234567890 ');
+
+        $row = OrderExchangeOption::find($itemId);
+        $this->assertSame(ExchangeStatusEnum::COLLECTION_READY, $result['claim']->fresh()->exchange_status, '송장 저장이 상태를 옮겼습니다.');
+        $this->assertSame(ExchangeStatusEnum::COLLECTION_READY, $row->option_status);
+        $this->assertSame('1234567890', $row->collection_tracking_number);
+        $this->assertSame($carrier->id, (int) $row->collection_carrier_id);
     }
 
     /**
@@ -2753,15 +2762,17 @@ class OrderExchangeServiceTest extends ModuleTestCase
         $order = $this->deliveredOrder();
         $exchange = $this->advanceTo($this->service->requestExchange($order, $this->payload($order)), ExchangeStatusEnum::COLLECTION_READY);
 
-        $this->assertClaimException('claim_tracking_incomplete', fn () => $this->service->registerCollectionTracking($exchange, null, 'ABC'));
-        $this->assertClaimException('claim_tracking_incomplete', fn () => $this->service->registerRedeliveryTracking($exchange, 1, ''));
+        $itemId = (int) $exchange->exchangeOptions->first()->id;
+
+        $this->assertClaimException('claim_tracking_incomplete', fn () => $this->service->writeItemTracking($exchange, ClaimTrackingDirectionEnum::COLLECTION, [$itemId], null, 'ABC'));
+        $this->assertClaimException('claim_tracking_incomplete', fn () => $this->service->writeItemTracking($exchange, ClaimTrackingDirectionEnum::REDELIVERY, [$itemId], 1, ''));
     }
 
     /**
      * 송장을 실은 발송중 전이가 재발송 송장을 기록하고 후속 주문옵션을 만든다 — 그 배송 행에 송장이 실린다.
      *
-     * 송장 저장(`registerRedeliveryTracking`)은 상태를 옮기지 않는다(#599 후속 운영 결정). 발송중은 전이가 송장을
-     * 실어 들어가고, 후속 주문옵션의 배송 행은 그 송장을 읽는다 — 송장을 전이보다 먼저 기록해야 한다.
+     * 「송장만 저장」(`writeItemTracking`)은 상태를 옮기지 않는다(R7). 발송중은 전이가 송장을 실어 들어가고,
+     * 후속 주문옵션의 배송 행은 **그 상품 행의** 재발송 송장을 읽는다(R11) — 전이가 실은 송장이 먼저 적힌 값을 덮는다.
      *
      * @return void 반환값 없음
      *
@@ -2780,15 +2791,16 @@ class OrderExchangeServiceTest extends ModuleTestCase
         $carrier = $this->carrier();
         $original = $order->options->first()->fresh();
 
-        $saved = $this->service->registerRedeliveryTracking($exchange, $carrier->id, 'RD-0000');
-        $this->assertSame(ExchangeStatusEnum::REDELIVERY_READY, $saved->exchange_status, '송장 저장이 상태를 옮겼습니다.');
+        $itemId = (int) $exchange->exchangeOptions->first()->id;
+        $saved = $this->service->writeItemTracking($exchange, ClaimTrackingDirectionEnum::REDELIVERY, [$itemId], $carrier->id, 'RD-0000')['claim'];
+        $this->assertSame(ExchangeStatusEnum::REDELIVERY_READY, $saved->fresh()->exchange_status, '송장 저장이 상태를 옮겼습니다.');
 
-        $moving = $this->service->transition($saved, ExchangeStatusEnum::REDELIVERING, ['carrier_id' => $carrier->id, 'tracking_number' => 'RD-0001']);
+        $moving = $this->service->transition($saved->fresh(['exchangeOptions']), ExchangeStatusEnum::REDELIVERING, ['carrier_id' => $carrier->id, 'tracking_number' => 'RD-0001']);
 
         $this->assertSame(ExchangeStatusEnum::REDELIVERING, $moving->exchange_status);
-        $this->assertSame('RD-0001', $moving->redelivery_tracking_number);
 
-        $item = $moving->exchangeOptions->first();
+        $item = $moving->fresh(['exchangeOptions'])->exchangeOptions->first();
+        $this->assertSame('RD-0001', $item->redelivery_tracking_number);
         $successor = OrderOption::find($item->new_order_option_id);
 
         $this->assertNotNull($successor);
@@ -4305,5 +4317,84 @@ class OrderExchangeServiceTest extends ModuleTestCase
         $this->assertCount(1, $substituted);
         $this->assertSame((int) $newOption->id, $substituted[0]['product_option_id']);
         $this->assertLessThan(0, $substituted[0]['line_key']);
+    }
+
+    // ================================================================
+    // 부분 반려 뒤 청구 재산정 (S5)
+    // ================================================================
+
+    /**
+     * 차액이 있는 상품 하나를 반려하면 청구액이 살아 있는 상품 기준으로 다시 계산되고, 결제 대기 건이 따라간다. (S5)
+     *
+     * 예전에는 헤더 청구액이 접수 때 값 그대로라, 고객은 반려된 상품의 차액까지 결제해야 했다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario price_delta=higher, charge_method=pay_on_request, additional_options=unchanged
+     *
+     * @effects exchange_partial_rejection_reprices_the_charge_for_living_items
+     */
+    public function test_partial_rejection_reprices_the_charge_for_living_items(): void
+    {
+        $policy = $this->createClaimShippingPolicy();
+        [$productA, $optionA] = $this->createClaimProduct(30000, $policy);
+        [$productB, $optionB] = $this->createClaimProduct(20000, $policy);
+
+        $order = $this->deliver($this->attachPolicyShippings($this->createClaimOrder(new CalculationInput(items: [
+            new CalculationItem($productA->id, $optionA->id, 1),
+            new CalculationItem($productB->id, $optionB->id, 1),
+        ])), $policy));
+
+        $pricier = ProductOptionFactory::new()->forProduct($productA)->create([
+            'price_adjustment' => 5000,
+            'stock_quantity' => 100,
+            'is_default' => false,
+            'is_active' => true,
+        ]);
+
+        $items = [];
+
+        foreach ($order->options as $option) {
+            $items[] = [
+                'order_option_id' => $option->id,
+                'quantity' => (int) $option->quantity,
+                'new_product_option_id' => (int) $option->product_option_id === (int) $optionA->id ? $pricier->id : null,
+            ];
+        }
+
+        $exchange = $this->service->requestExchange($order, [
+            'items' => $items,
+            'reason_code' => 'size_mismatch',
+            'charge_method' => ClaimChargeMethodEnum::PAY_ON_REQUEST,
+            'requested_by' => $order->user_id,
+        ]);
+
+        $this->assertEquals(5000, (float) $exchange->additional_product_amount);
+        $totalBefore = (float) $exchange->total_charge_amount;
+
+        $pending = ClaimPayment::factory()->create([
+            'payable_type' => 'exchange',
+            'payable_id' => $exchange->id,
+            'order_id' => $order->id,
+            'amount' => $totalBefore,
+        ]);
+
+        $itemA = (int) $exchange->exchangeOptions
+            ->firstWhere(fn ($item) => (int) $order->options->firstWhere('id', $item->order_option_id)?->product_option_id === (int) $optionA->id)
+            ->id;
+
+        app(AdminClaimService::class)->transitionOptions($exchange, [$itemA], 'rejected', ['reject_reason' => '재고 없음']);
+
+        $fresh = $exchange->fresh();
+        $this->assertEquals(0, (float) $fresh->additional_product_amount);
+        $this->assertEquals($totalBefore - 5000, (float) $fresh->total_charge_amount);
+
+        $pending = $pending->fresh();
+
+        if ((float) $fresh->total_charge_amount <= 0) {
+            $this->assertNotSame(ClaimPaymentStatusEnum::PENDING, $pending->payment_status);
+        } else {
+            $this->assertEquals((float) $fresh->total_charge_amount, (float) $pending->amount);
+        }
     }
 }

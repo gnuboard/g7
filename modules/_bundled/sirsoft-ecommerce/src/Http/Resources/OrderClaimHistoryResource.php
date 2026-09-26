@@ -5,6 +5,8 @@ namespace Modules\Sirsoft\Ecommerce\Http\Resources;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\ResourceCollection;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimTypeEnum;
+use Modules\Sirsoft\Ecommerce\Models\OrderExchange;
+use Modules\Sirsoft\Ecommerce\Models\OrderReturn;
 use Modules\Sirsoft\Ecommerce\Support\ClaimUrl;
 
 /**
@@ -39,6 +41,8 @@ class OrderClaimHistoryResource extends ClaimResource
         $type = $this->resource->claimType();
 
         $data['detail_url'] = $this->resolveDetailUrl($data['claim_number'] ?? null);
+        // 「환불 미접수」 뱃지(D9) — 클레임 목록 필터 `pending_refund` 와 같은 술어다(금액 0 판정은 상세가 한다).
+        $data['has_pending_refund'] = $this->hasPendingRefund();
 
         // 부모의 items 는 ClaimItemResource 컬렉션(통화 주입 완료)이다 — 배열로 풀어
         // 정규화 금액 축을 행마다 덧붙인다. (each() 체인의 반환형은 Support\Collection 이다)
@@ -52,6 +56,21 @@ class OrderClaimHistoryResource extends ClaimResource
             ->all();
 
         return $data;
+    }
+
+    /**
+     * 완료됐는데 환불신청서가 연결되지 않은 상품이 있는지 판정합니다. (교환·반품 — D9)
+     *
+     * 판정은 모델 `pendingRefundItems()` 한 곳이다 — 상세 배너·목록 뱃지와 같은 판정을 읽는다.
+     *
+     * @return bool 환불 미접수면 true
+     */
+    protected function hasPendingRefund(): bool
+    {
+        $claim = $this->resource;
+
+        return ($claim instanceof OrderReturn || $claim instanceof OrderExchange)
+            && $claim->pendingRefundItems()->isNotEmpty();
     }
 
     /**

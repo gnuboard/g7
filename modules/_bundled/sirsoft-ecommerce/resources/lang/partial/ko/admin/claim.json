@@ -20,7 +20,11 @@
       "title": "진행 단계",
       "approved_at": "승인일시",
       "rejected_at": "반려일시",
-      "withdrawn_at": "철회일시"
+      "withdrawn_at": "철회일시",
+      "collection_lane": "회수",
+      "collection_counts": "도착 {{collected}} · 이동 중 {{in_transit}} · 대기 {{pending}} · 미회수 {{unreturned}} / {{total}}",
+      "collection_due": "반송 기한 {{date}}",
+      "collection_overdue": "{{days}}일 지연"
     },
     "items": {
       "title": "신청상품",
@@ -30,7 +34,8 @@
         "product": "상품",
         "quantity": "수량",
         "amount": "금액",
-        "status": "상태"
+        "status": "상태",
+        "tracking": "송장"
       },
       "bulk_no_selection": "변경할 상품을 선택해주세요.",
       "bulk_no_status_selected": "변경할 상태를 선택해주세요.",
@@ -41,14 +46,27 @@
       "quantity_confirm_title": "처리 수량 확인",
       "quantity_confirm_description": "선택한 상품을 {{status}} 상태로 처리합니다. 일부 수량만 처리하려면 수량을 줄여 주세요.",
       "quantity_not_splittable": "재발송 상품이 이미 만들어진 교환 상품은 수량을 나눌 수 없습니다. 전체 수량으로 처리됩니다.",
-      "bulk_split_notice": "{{kept}}개를 처리하고 {{remaining}}개는 신청 상태로 남겼습니다."
+      "bulk_split_notice": "{{kept}}개를 처리하고 {{remaining}}개는 신청 상태로 남겼습니다.",
+      "collection_short": "회수",
+      "redelivery_short": "재발송",
+      "arrived_at": "도착 {{at}}",
+      "unreturned_badge": "미회수",
+      "stock_not_restored": "재고 미복구",
+      "tracking_only": "송장만 저장",
+      "tracking_only_description": "고른 상품에 {{direction}} 송장만 저장합니다. 상태는 바뀌지 않습니다.",
+      "quantity_split_hint": "수량을 줄이면 그 상품이 나뉩니다 — 예: 셔츠 3개 중 1개에만 적용하면 1개와 2개로 나뉩니다.",
+      "tracking_mixed_address": "회수지가 다른 상품은 한 운송장으로 묶을 수 없습니다. 회수지별로 나눠 저장해 주세요."
     },
     "completion": {
       "title": "완료 처리",
       "description": "신청 상품 {{count}}건을 완료 상태로 전환합니다. 재고 복구와 환불신청서 접수 방식은 다음 화면에서 고릅니다.",
       "unavailable_return": "회수중이거나 회수도착한 상품이 없어 아직 완료할 수 없습니다. 상품이 회수중이 되면 완료할 수 있습니다.",
       "unavailable_exchange": "발송중이거나 발송도착한 상품이 없어 아직 완료할 수 없습니다. 교환 상품이 발송중이 되면 완료할 수 있습니다.",
-      "action": "완료 처리"
+      "action": "완료 처리",
+      "restore_stock": "재고 복구",
+      "restore_stock_success": "재고를 복구했습니다.",
+      "restore_stock_error": "재고를 복구하지 못했습니다.",
+      "stock_unrestored": "완료됐지만 재고를 복구하지 않은 상품 {{count}}건"
     },
     "shipping": {
       "title": "배송 정보",
@@ -63,11 +81,17 @@
       "redelivered_at": "재발송완료 {{at}}",
       "carrier_placeholder": "택배사",
       "tracking_placeholder": "송장번호",
-      "save": "저장",
       "track": "배송조회",
       "tracking_incomplete": "택배사와 송장번호를 함께 입력해주세요.",
       "tracking_saved": "운송장 정보를 저장했습니다.",
-      "tracking_error": "운송장 정보를 저장하지 못했습니다."
+      "tracking_error": "운송장 정보를 저장하지 못했습니다.",
+      "edit_hint": "운송장을 기록하거나 고치려면 「신청 상품」 칸에서 상품을 골라 [송장만 저장] 하세요.",
+      "no_tracking_yet": "아직 등록된 운송장이 없습니다.",
+      "no_tracking_group": "송장 없이 도착",
+      "arrived": "도착",
+      "deliver": "도착 처리",
+      "deliver_success": "도착 처리했습니다. (처리 {{succeeded}}건 · 건너뜀 {{skipped}}건)",
+      "deliver_error": "도착 처리에 실패했습니다."
     },
     "reason": {
       "title": "신청 사유",
@@ -183,6 +207,7 @@
       "error": "금액을 저장하지 못했습니다.",
       "nothing_to_save": "저장할 금액이 없습니다.",
       "payments_title": "추가결제 건",
+      "payment_refunded": "환급 {{amount}}",
       "preview_title": "완료 시 환불 예정",
       "blocked_already_filed": "이 신청서의 환불신청서는 이미 접수됐습니다.",
       "blocked_not_applicable": "완료 처리로 접수할 환불 대상이 없습니다.",
@@ -202,7 +227,8 @@
       "refunded_at": "환불 완료일",
       "file_refund_request": "환불신청서 접수",
       "file_refund_success": "환불신청서를 접수했습니다.",
-      "file_refund_error": "환불신청서 접수에 실패했습니다."
+      "file_refund_error": "환불신청서 접수에 실패했습니다.",
+      "pending_title": "접수할 환불액"
     },
     "refund_execute": {
       "cancellable_title": "취소 가능 금액 산정",
@@ -251,6 +277,45 @@
       "reject_reason_required": "반려 사유를 입력해주세요.",
       "success": "신청서 상태를 변경했습니다.",
       "error": "신청서 상태 변경에 실패했습니다."
+    },
+    "exchange_mode": {
+      "label": "진행 방식",
+      "set_advance": "선교환으로 전환",
+      "set_standard": "일반 교환으로 되돌리기",
+      "confirm_title": "진행 방식 변경",
+      "confirm_advance": "새 물건을 먼저 보내고, 기존 물건은 발송일부터 {{days}}일 안에 받아야 합니다. 선교환으로 전환할까요?",
+      "confirm_standard": "기존 물건을 먼저 받은 뒤 새 물건을 보내는 일반 교환으로 되돌립니다.",
+      "confirm": "변경",
+      "updated": "진행 방식을 바꿨습니다.",
+      "error": "진행 방식을 바꾸지 못했습니다.",
+      "overdue_banner": "기존 상품 반송 기한({{date}})이 {{days}}일 지났습니다. 고객에게 반송을 요청하거나 「미회수로 완료」 를 검토해 주세요."
+    },
+    "pending_refund": {
+      "banner": "환불신청서가 아직 접수되지 않았습니다 — {{amount}}",
+      "card": "접수할 환불액 {{amount}} (상품 {{count}}건)",
+      "action": "환불신청서 접수"
+    },
+    "request_edit": {
+      "button": "수정",
+      "title": "신청 내용 수정",
+      "description": "사유와 상세 사유를 고칩니다. 판매자 귀책 사유도 고를 수 있습니다.",
+      "detail_placeholder": "상세 사유",
+      "fee_hint": "사유의 귀책이 바뀌면 배송비가 다시 계산되고, 결제 대기 건·결제된 금액이 그 값에 맞춰집니다.",
+      "save": "저장",
+      "success": "신청 내용을 수정했습니다.",
+      "error": "신청 내용을 수정하지 못했습니다."
+    },
+    "requested_by_admin": "{{name}} 님이 접수",
+    "withdrawn_by_admin": "{{name}} 님이 고객 요청으로 철회",
+    "withdraw_on_behalf": {
+      "button": "고객 요청으로 철회",
+      "title": "고객 요청으로 철회",
+      "description": "고객이 신청 취소를 요청했을 때 씁니다. 고객에게 「고객님 요청으로 판매자가 철회했습니다」 가 안내됩니다. 반려와 다릅니다.",
+      "reason_placeholder": "철회 사유 (필수) — 예: 고객 전화 요청",
+      "reason_required": "철회 사유를 입력해주세요.",
+      "confirm": "철회",
+      "success": "고객 요청으로 신청을 철회했습니다.",
+      "error": "신청을 철회하지 못했습니다."
     }
   },
   "subtab": {
@@ -287,7 +352,15 @@
       "member": "회원",
       "guest": "비회원"
     },
-    "detail_title": "상세검색"
+    "detail_title": "상세검색",
+    "claim_flags": "추가 조건",
+    "request_source_option": {
+      "all": "접수 출처 전체",
+      "admin": "판매자 접수",
+      "customer": "고객 신청"
+    },
+    "collection_overdue": "회수 지연만",
+    "pending_refund": "환불 미접수만"
   },
   "search": {
     "placeholder": "검색어를 입력하세요...",
@@ -351,7 +424,15 @@
     "item_more": "외 {{count}}건",
     "item_quantity": "수량 {{count}}",
     "guest_badge": "비회원",
-    "outstanding_short": "미수납 {{amount}}"
+    "outstanding_short": "미수납 {{amount}}",
+    "admin_requested_badge": "판매자 접수",
+    "advance_badge": "선교환",
+    "overdue_badge": "회수 지연 {{days}}일",
+    "pending_refund_badge": "환불 미접수",
+    "tracking": "운송장",
+    "tracking_collection": "회수 {{number}}",
+    "tracking_redelivery": "재발송 {{number}}",
+    "tracking_more": "외 {{more}}개"
   },
   "datagrid": {
     "total_count": "총 {{count}}건"
@@ -415,6 +496,10 @@
     "preview_error": "완료 처리 요약을 불러오지 못했습니다.",
     "success": "완료 처리를 반영했습니다.",
     "error": "완료 처리에 실패했습니다.",
-    "refund_later_desc_cancellation": "환불신청서를 만들지 않으면 이 완료로는 돈이 나가지 않고, 따라서 취소신청서도 생기지 않습니다. 나중에 신청서 상세의 정산 카드에서 접수할 수 있습니다."
+    "refund_later_desc_cancellation": "환불신청서를 만들지 않으면 이 완료로는 돈이 나가지 않고, 따라서 취소신청서도 생기지 않습니다. 나중에 신청서 상세의 정산 카드에서 접수할 수 있습니다.",
+    "unreturned_title": "미회수로 완료 (선교환)",
+    "unreturned_desc": "새 상품은 보냈지만 기존 상품이 끝내 돌아오지 않은 상품입니다. 체크하면 재고를 복구하지 않고 「미회수」 로 완료합니다.",
+    "unreturned_reason_placeholder": "미회수 사유 (필수)",
+    "unreturned_reason_required": "미회수로 완료할 상품의 사유를 입력해주세요."
   }
 }

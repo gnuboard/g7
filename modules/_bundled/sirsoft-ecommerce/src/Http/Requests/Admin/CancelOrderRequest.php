@@ -118,21 +118,11 @@ class CancelOrderRequest extends FormRequest
                 return;
             }
 
-            // 환경설정 기반 취소 가능 상태 확인
-            $cancellableStatuses = module_setting(
-                'sirsoft-ecommerce',
-                'order_settings.cancellable_statuses',
-                ['payment_complete']
-            );
-
-            if (! $order->isCancellable($cancellableStatuses)) {
-                $validator->errors()->add(
-                    'order_status',
-                    $order->getCancelDeniedReason($cancellableStatuses)
-                );
-
-                return;
-            }
+            // 취소 가능 상태는 여기서 보지 않는다(D5). 운영자의 취소·환불 접수는 설정
+            // (`order_settings.cancellable_statuses` — 고객 축)이 아니라 물리 게이트(아직 보내지 않은
+            // 상품)를 따르고, 그 판정은 서비스가 주문을 잠근 뒤 상품 단위로 한다
+            // (`AdminClaimRequestService::requestCancelOrRefund()`). 여기서 다시 재면 배송보류·상품준비중
+            // 주문처럼 설정 밖이지만 아직 보내지 않은 상품을 운영자가 취소할 수 없다.
 
             // 환불 계좌 조건부 검증 (결제수단·입금상태 기준)
             $this->validateRefundBank($validator, $order);

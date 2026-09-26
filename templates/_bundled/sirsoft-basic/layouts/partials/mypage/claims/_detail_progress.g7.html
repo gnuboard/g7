@@ -64,5 +64,21 @@
         </div>
       </div>
     </div>
+    <!-- 선교환의 「회수」 줄 — 선교환은 새 상품을 먼저 보내므로 위 단계에 회수가 없다. 헌 상품 회수 진행을 행 수로 센 값과 반송 기한·지연을 관리자 상세와 같은 배열(`collection_lane`)로 그린다. 일반 교환·반품은 서버가 null 을 준다. -->
+    <div data-ref="claim_collection_lane" data-if="{{!!claim.data?.collection_lane}}" class="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700 flex flex-wrap items-center gap-2">
+      <span class="text-sm font-semibold text-gray-900 dark:text-white">$t:claim.detail.collection_lane_title</span>
+      <span>
+        <class-map base="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap" key="{{claim.data?.collection_lane?.state_variant}}" default="bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300">
+          <variant when="success">bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400</variant>
+          <variant when="danger">bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400</variant>
+          <variant when="warning">bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400</variant>
+          <variant when="info">bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400</variant>
+        </class-map>
+        {{claim.data?.collection_lane?.state_label ?? ''}}
+      </span>
+      <span class="text-xs text-gray-600 dark:text-gray-400">$t:claim.detail.collection_lane_counts|collected={{claim.data?.collection_lane?.collected ?? 0}}|total={{claim.data?.collection_lane?.total ?? 0}}</span>
+      <span data-if="{{!!claim.data?.collection_lane?.due_date}}" class="text-xs text-gray-600 dark:text-gray-400">$t:claim.detail.collection_lane_due|date={{claim.data?.collection_lane?.due_date ?? ''}}</span>
+      <span data-if="{{claim.data?.collection_lane?.is_overdue === true}}" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">$t:claim.detail.collection_overdue|days={{claim.data?.collection_lane?.overdue_days ?? 0}}</span>
+    </div>
   </div>
 </partial>

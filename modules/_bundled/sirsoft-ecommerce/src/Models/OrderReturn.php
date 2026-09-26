@@ -3,10 +3,13 @@
 namespace Modules\Sirsoft\Ecommerce\Models;
 
 use App\Models\User;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Modules\Sirsoft\Ecommerce\Database\Factories\OrderReturnFactory;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimChargeMethodEnum;
@@ -62,17 +65,17 @@ class OrderReturn extends Model
         'currency_code',
         'items_snapshot',
         'return_address_snapshot',
-        'collection_carrier_id',
-        'collection_tracking_number',
         'collection_completed_at',
-        'refund_id',
         'is_stock_restored',
         'requested_by',
+        'requested_by_admin',
         'processed_by',
         'approved_at',
         'on_hold_at',
         'rejected_at',
         'withdrawn_at',
+        'withdrawn_by_admin',
+        'withdraw_reason',
         'completed_at',
         'reject_reason',
         'admin_memo',
@@ -157,23 +160,52 @@ class OrderReturn extends Model
     }
 
     /**
-     * 회수 택배사와의 관계
+     * 완료 상품 행을 담아 접수된 환불신청서 목록과의 관계 (상품 행 `refund_id` 경유 — 완료 회차마다 1건)
      *
-     * @return BelongsTo 회수 택배사 관계
+     * 환불신청서는 반품 신청서당 한 건이 아니다 — 부분 완료 회차마다 그때 환불이 연결되지 않은
+     * 완료 상품으로 접수한다. 한 환불신청서가 여러 상품 행에 연결되므로 중복을 없앤다.
+     *
+     * @return HasManyThrough 환불신청서 관계
      */
-    public function collectionCarrier(): BelongsTo
+    public function refunds(): HasManyThrough
     {
-        return $this->belongsTo(ShippingCarrier::class, 'collection_carrier_id');
+        return $this->hasManyThrough(
+            OrderRefund::class,
+            OrderReturnOption::class,
+            'order_return_id',
+            'id',
+            'id',
+            'refund_id',
+        )->distinct();
     }
 
     /**
-     * 반품완료 후 접수된 환불신청서와의 관계
+     * 완료됐는데 살아 있는 환불신청서에 담기지 않은 상품 행을 반환합니다. (「환불 미접수」 — D9 · S7)
      *
-     * @return BelongsTo 환불신청서 관계
+     * 상세 배너 금액(`AdminClaimService::pendingRefundFor`)·목록 뱃지·주문 상세 이력 뱃지가 모두 이 판정을 쓰고,
+     * 목록 필터는 쿼리판 `scopePendingRefund` 를 쓴다 — 한 곳만 바뀌어 배너와 뱃지가 갈리지 않게 한 출처로 둔다.
+     *
+     * @return Collection<int, OrderReturnOption> 환불 미접수 상품 행
      */
-    public function refund(): BelongsTo
+    public function pendingRefundItems(): Collection
     {
-        return $this->belongsTo(OrderRefund::class, 'refund_id');
+        return $this->loadMissing('returnOptions.refund')->returnOptions
+            ->filter(fn (OrderReturnOption $item) => $item->option_status?->value === ReturnStatusEnum::COMPLETED->value
+                && ! $item->hasLiveRefund())
+            ->values();
+    }
+
+    /**
+     * 환불 미접수 상품 행이 있는 반품만 남깁니다. (`pendingRefundItems()` 의 쿼리판)
+     *
+     * @param  Builder  $query  쿼리
+     * @return Builder 쿼리
+     */
+    public function scopePendingRefund(Builder $query): Builder
+    {
+        return $query->whereHas('returnOptions', fn (Builder $items) => $items
+            ->where('option_status', ReturnStatusEnum::COMPLETED->value)
+            ->withoutLiveRefund());
     }
 
     /**
@@ -194,6 +226,36 @@ class OrderReturn extends Model
     public function processedByUser(): BelongsTo
     {
         return $this->belongsTo(User::class, 'processed_by');
+    }
+
+    /**
+     * 대리 접수한 관리자와의 관계 (판매자 접수)
+     *
+     * @return BelongsTo 대리 접수 관리자 관계
+     */
+    public function requestedByAdminUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'requested_by_admin');
+    }
+
+    /**
+     * 고객 요청으로 대신 철회한 관리자와의 관계
+     *
+     * @return BelongsTo 대리 철회 관리자 관계
+     */
+    public function withdrawnByAdminUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'withdrawn_by_admin');
+    }
+
+    /**
+     * 운영자가 고객을 대신해 접수한 신청서인지 반환합니다. (판매자 접수 — 고객 철회·수정 불가)
+     *
+     * @return bool 판매자 접수면 true
+     */
+    public function isAdminRequested(): bool
+    {
+        return $this->requested_by_admin !== null;
     }
 
     /**

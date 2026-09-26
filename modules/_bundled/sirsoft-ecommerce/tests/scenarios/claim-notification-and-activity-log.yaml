@@ -101,6 +101,7 @@ effects:
   - request_fires_only_the_requested_notification_hook
   - transition_fires_only_the_mapped_notification_hook
   - withdrawal_fires_admin_hook_and_no_customer_hook
+  - withdrawal_on_behalf_fires_admin_and_customer_hooks
   - non_customer_visible_status_fires_nothing
   - unchanged_status_recall_fires_nothing
   - mapping_follows_captured_target_not_current_model_state
@@ -110,6 +111,8 @@ effects:
   - payment_request_data_carries_charge_and_outstanding_amounts
   - admin_withdrawal_data_links_to_admin_screen_and_defers_recipient_name
   - non_claim_notification_types_pass_through_untouched
+  - a_claim_type_without_a_claim_argument_passes_through
+  - refund_notification_amount_matches_what_the_screen_reports
   # 활동 로그 (Unit — ClaimActivityLogListenerTest)
   - request_writes_one_activity_row_with_the_claim_number
   - service_transition_writes_exactly_one_status_change_row
@@ -117,11 +120,14 @@ effects:
   - status_change_carries_before_and_after_in_changes
   - amount_edits_are_recorded_in_the_core_changes_shape
   - amount_edits_with_no_effective_change_record_no_changes
+  - customer_request_update_is_logged_with_masked_refund_bank
   - item_level_transition_is_recorded_even_when_the_header_does_not_move
   - item_level_transition_that_moves_the_header_records_both_facts
   - item_level_call_that_moves_nothing_records_nothing
   - pending_claim_payment_cancellation_is_recorded_with_its_reason
   - pending_payment_cancelled_by_the_reaper_is_recorded_without_a_claim
+  - claim_payment_refund_log_names_the_refunded_amount
+  - claim_payment_refund_legacy_log_renders_without_placeholders
   # 훅 순서 (Unit — ClaimPaymentServiceTest)
   - payment_completion_hook_sees_the_claim_already_moved_to_paid
   - partial_payment_does_not_fire_the_completion_hook

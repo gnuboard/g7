@@ -84,7 +84,7 @@
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "w-28 flex-shrink-0 flex flex-col items-end gap-0.5"
+                                        "className": "w-28 flex-shrink-0 flex flex-col items-end gap-1"
                                     },
                                     "children": [
                                         {
@@ -148,7 +148,7 @@
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "w-40 flex-shrink-0 stack-flush gap-0.5"
+                                        "className": "w-40 flex-shrink-0 stack-flush gap-1"
                                     },
                                     "children": [
                                         {
@@ -174,7 +174,7 @@
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "flex-1 min-w-0 stack-flush gap-0.5"
+                                        "className": "flex-1 min-w-0 stack-flush gap-1"
                                     },
                                     "children": [
                                         {
@@ -199,7 +199,7 @@
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "w-28 flex-shrink-0 text-right stack-flush gap-0.5"
+                                        "className": "w-28 flex-shrink-0 text-right stack-flush gap-1"
                                     },
                                     "children": [
                                         {
@@ -294,6 +294,97 @@
                         "className": "p-3 rounded-lg bg-yellow-50 dark:bg-yellow-900/20 text-sm text-yellow-700 dark:text-yellow-400"
                     },
                     "text": "$t:sirsoft-ecommerce.admin.claim.complete.skipped_notice|count={{(_global.claimCompletePreview?.skipped ?? []).length}}"
+                },
+                {
+                    "comment": "선교환 「미회수로 완료」(D3) — 새 물건은 보냈는데 헌 물건이 끝내 오지 않은 행. 체크하면 사유가 필수이고, 그 행은 재고를 복구하지 않으며 신청서·구매자 화면에 「미회수」 로 남는다. 후보는 미리보기(`unreturned_eligible_items`)가 준다.",
+                    "id": "cc_023_unreturned_section",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{(_global.claimCompletePreview?.claims ?? []).some(c => (c.unreturned_eligible_items ?? []).length > 0)}}",
+                    "props": {
+                        "className": "border border-orange-200 dark:border-orange-800 rounded-lg p-3 space-y-2"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "text-sm font-semibold text-gray-900 dark:text-gray-100"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.claim.complete.unreturned_title"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.claim.complete.unreturned_desc"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "iteration": {
+                                "source": "{{(_global.claimCompletePreview?.claims ?? []).flatMap(c => c.unreturned_eligible_items ?? [])}}",
+                                "item_var": "unretItem",
+                                "index_var": "unretIdx"
+                            },
+                            "props": {
+                                "className": "flex-center flex-wrap gap-3"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Checkbox",
+                                    "actions": [
+                                        {
+                                            "type": "change",
+                                            "handler": "sirsoft-ecommerce.toggleClaimCompleteUnreturned",
+                                            "params": {
+                                                "itemId": "{{unretItem.id}}",
+                                                "checked": "{{$event.target.checked}}"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "autoBinding": false,
+                                        "className": "w-4 h-4 rounded border-gray-300 dark:border-gray-600",
+                                        "checked": "{{Object.keys(_global.claimCompleteUnreturned ?? {}).includes(String(unretItem.id))}}"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-sm text-gray-900 dark:text-gray-100"
+                                    },
+                                    "text": "{{unretItem.label}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "if": "{{Object.keys(_global.claimCompleteUnreturned ?? {}).includes(String(unretItem.id))}}",
+                                    "actions": [
+                                        {
+                                            "type": "change",
+                                            "handler": "sirsoft-ecommerce.setClaimCompleteUnreturnedReason",
+                                            "params": {
+                                                "itemId": "{{unretItem.id}}",
+                                                "reason": "{{$event.target.value}}"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "text",
+                                        "maxLength": 2000,
+                                        "className": "flex-1 min-w-[200px] px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg",
+                                        "placeholder": "$t:sirsoft-ecommerce.admin.claim.complete.unreturned_reason_placeholder",
+                                        "value": "{{(_global.claimCompleteUnreturned ?? {})[String(unretItem.id)] ?? ''}}"
+                                    }
+                                }
+                            ]
+                        }
+                    ]
                 },
                 {
                     "id": "cc_009_refund_section",

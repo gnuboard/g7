@@ -112,6 +112,10 @@ effects:
   - claim_redelivery_tracking_correction_reaches_the_successor_shipping
   - exchange_redelivered_marks_the_successor_shipping_delivered
   - claim_list_carries_carriers_and_saved_tracking
+  # ⑪ 선교환 — 완료 페이로드의 미회수 축 · 목록의 회수 지연 축 (계획 검증 §7-1 보강)
+  - advance_exchange_unreturned_completion_payload_reaches_the_service
+  - advance_exchange_completion_preview_counts_unreturned_rows_like_execution
+  - list_collection_overdue_filter_returns_only_overdue_advance_exchanges
 
 test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Feature/Admin/ClaimControllerTest.php

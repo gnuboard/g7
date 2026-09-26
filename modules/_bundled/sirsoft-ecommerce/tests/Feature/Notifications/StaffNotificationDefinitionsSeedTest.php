@@ -30,8 +30,15 @@ class StaffNotificationDefinitionsSeedTest extends ModuleTestCase
         'return_payment_completed_admin',
         'order_confirmed_admin',
         'order_completed_admin',
+        // 선교환 회수 지연(D2) — 배치가 한 번 발화하는 운영자 수신 알림
+        'exchange_collection_overdue',
     ];
 
+    /**
+     * 선언된 알림 정의를 테스트 DB 에 동기화합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -44,6 +51,8 @@ class StaffNotificationDefinitionsSeedTest extends ModuleTestCase
      * 선언된 정의가 하나도 빠짐없이 DB 에 동기화된다.
      *
      * @effects declared_definitions_are_all_synced_to_the_database
+     *
+     * @return void 반환값 없음
      */
     public function test_every_declared_definition_exists_in_the_database(): void
     {
@@ -70,6 +79,8 @@ class StaffNotificationDefinitionsSeedTest extends ModuleTestCase
      * 신설 정의가 활성 목록(훅 구독의 출처)에 나타난다.
      *
      * @effects new_staff_definitions_appear_in_the_active_list
+     *
+     * @return void 반환값 없음
      */
     public function test_new_staff_definitions_appear_in_the_active_list(): void
     {
@@ -93,6 +104,8 @@ class StaffNotificationDefinitionsSeedTest extends ModuleTestCase
      * 신설 정의는 메일·알림센터 두 채널이 **켜진 채로** 시드된다.
      *
      * @effects new_staff_definitions_are_seeded_with_both_channels_active
+     *
+     * @return void 반환값 없음
      */
     public function test_new_staff_definitions_are_seeded_with_both_channels_active(): void
     {
@@ -108,9 +121,34 @@ class StaffNotificationDefinitionsSeedTest extends ModuleTestCase
     }
 
     /**
+     * 선교환 회수 지연 알림은 운영자 수신이고, 수신자는 다른 운영자 수신 알림과 같은 운영 역할 목록이다 —
+     * 한 역할이라도 빠지면 그 역할의 사람은 반송 기한이 지나도 통보받지 못한다.
+     *
+     * @effects collection_overdue_definition_targets_staff_roles
+     *
+     * @return void 반환값 없음
+     */
+    public function test_collection_overdue_definition_targets_the_staff_roles(): void
+    {
+        $definitions = collect(app(ModuleManager::class)->getModule('sirsoft-ecommerce')->getNotificationDefinitions())->keyBy('type');
+
+        $overdue = $definitions->get('exchange_collection_overdue');
+        $reference = $definitions->get('exchange_requested_admin');
+
+        $this->assertNotNull($overdue, '선교환 회수 지연 알림 정의가 없습니다.');
+        $this->assertSame('staff', $overdue['audience']);
+        $this->assertSame(['sirsoft-ecommerce.claim.exchange.notify_collection_overdue'], $overdue['hooks']);
+
+        $recipientsOf = fn (array $definition) => collect($definition['templates'])->firstWhere('channel', 'mail')['recipients'] ?? null;
+
+        $this->assertNotEmpty($recipientsOf($overdue));
+        $this->assertEquals($recipientsOf($reference), $recipientsOf($overdue));
+    }
+
+    /**
      * `module.php::getNotificationDefinitions()` 를 SSoT 로 알림 정의를 동기화합니다.
      *
-     * @return void
+     * @return void 반환값 없음
      */
     private function syncEcommerceNotificationDefinitions(): void
     {

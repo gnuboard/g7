@@ -1311,11 +1311,30 @@
                                         },
                                         {
                                             "type": "basic",
-                                            "name": "Span",
+                                            "name": "Div",
                                             "props": {
-                                                "className": "text-gray-900 dark:text-gray-100"
+                                                "className": "flex-center gap-2"
                                             },
-                                            "text": "{{claimPayment.total_amount_formatted ?? ''}}"
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-gray-900 dark:text-gray-100"
+                                                    },
+                                                    "text": "{{claimPayment.total_amount_formatted ?? ''}}"
+                                                },
+                                                {
+                                                    "comment": "부분 환급 — 차액 상품을 반려해 일부가 되돌아가도 결제 건은 `paid` 로 남는다. 결제 금액만 두면 운영자는 환급이 없었던 것으로 읽는다(구매자 화면 `claim.detail.payment_refunded` 와 같은 정보).",
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "if": "{{(claimPayment.refunded_amount ?? 0) > 0}}",
+                                                    "props": {
+                                                        "className": "text-xs text-orange-600 dark:text-orange-400"
+                                                    },
+                                                    "text": "$t:sirsoft-ecommerce.admin.claim.detail.settlement.payment_refunded|amount={{claimPayment.refunded_amount_formatted ?? ''}}"
+                                                }
+                                            ]
                                         }
                                     ]
                                 }
@@ -1332,12 +1351,23 @@
                             },
                             "children": [
                                 {
+                                    "comment": "제목은 완료 전후로 갈린다(D9) — 완료 전은 「완료 시 환불 예정」, 완료 후 환불 미접수면 「접수할 환불액」. 같은 숫자라도 운영자가 할 일이 다르다(기다림 / 접수).",
                                     "type": "basic",
                                     "name": "Div",
+                                    "if": "{{claim?.data?.claim?.is_final !== true || !claim?.data?.pending_refund}}",
                                     "props": {
                                         "className": "text-label-subtle"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.claim.detail.settlement.preview_title"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{claim?.data?.claim?.is_final === true && !!claim?.data?.pending_refund}}",
+                                    "props": {
+                                        "className": "text-label-subtle"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.claim.detail.settlement.pending_title"
                                 },
                                 {
                                     "comment": "환불신청서 수동 접수 (F5). 라우트·컨트롤러·서비스는 처음부터 완비돼 있었고 상세는 접수 **불가 사유**까지 보여 주는데, 정작 접수 버튼만 없었다 — 완료 모달에서 '환불신청서 생성'을 끈 건은 그 뒤로 환불을 접수할 경로가 화면 어디에도 없었다. 접수 가능한 상태(불가 사유 없음)에서만 선다.",

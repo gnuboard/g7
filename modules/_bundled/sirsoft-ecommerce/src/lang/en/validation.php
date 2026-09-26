@@ -2173,6 +2173,33 @@ return [
             'carrier_id_integer' => 'The carrier ID must be a number.',
             'carrier_id_exists' => 'The carrier is not registered.',
             'tracking_number_max' => 'The tracking number may not be longer than :max characters.',
+            'direction_required' => 'Select the tracking direction (collection or redelivery).',
+            'direction_in' => 'The tracking direction must be collection or redelivery.',
+            'deliver_carrier_required' => 'The carrier of the tracking number to mark as arrived is missing.',
+            'deliver_tracking_required' => 'The tracking number to mark as arrived is missing.',
+        ],
+        'withdraw_reason' => [
+            'required' => 'Enter the reason for withdrawing.',
+            'max' => 'The withdrawal reason may not exceed 2000 characters.',
+        ],
+        'request_source' => [
+            'in' => 'The request source must be seller or customer.',
+            'prohibited' => 'The cancellation list cannot be filtered by request source.',
+        ],
+        'collection_overdue' => [
+            'prohibited' => 'The overdue collection filter is available only on the exchange list.',
+        ],
+        'pending_refund' => [
+            'prohibited' => 'The pending refund filter is available only on the exchange and return lists.',
+        ],
+        'exchange_mode' => [
+            'required' => 'Select the exchange mode.',
+            'in' => 'The exchange mode must be standard or advance.',
+        ],
+        'unreturned' => [
+            'array' => 'The not-returned completion instruction is malformed.',
+            'reason_string' => 'The not-returned reason must be text.',
+            'reason_max' => 'The not-returned reason may not be longer than :max characters.',
         ],
     ],
 

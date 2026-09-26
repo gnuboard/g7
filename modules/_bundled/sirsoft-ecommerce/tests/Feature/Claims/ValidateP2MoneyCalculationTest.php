@@ -33,6 +33,7 @@ use Modules\Sirsoft\Ecommerce\Services\OrderReturnService;
 use Modules\Sirsoft\Ecommerce\Services\RefundExecutionService;
 use Modules\Sirsoft\Ecommerce\Support\CalculationSnapshotPresenter;
 use Modules\Sirsoft\Ecommerce\Tests\Concerns\BuildsClaimFlowOrders;
+use Modules\Sirsoft\Ecommerce\Tests\Concerns\ReadsReturnRefundLink;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 use ReflectionMethod;
 
@@ -52,6 +53,7 @@ use ReflectionMethod;
 class ValidateP2MoneyCalculationTest extends ModuleTestCase
 {
     use BuildsClaimFlowOrders;
+    use ReadsReturnRefundLink;
 
     /**
      * 테스트 통화·사유를 준비합니다.
@@ -217,7 +219,7 @@ class ValidateP2MoneyCalculationTest extends ModuleTestCase
         $optionId = $order->options->first()->id;
 
         $first = $this->completeReturnOf($order, $optionId, 1);
-        $firstRefund = OrderRefund::findOrFail($first->fresh()->refund_id);
+        $firstRefund = OrderRefund::findOrFail($this->returnRefundId($first));
 
         // 1회차를 실행 완료로 만든다 — 이미 나간 돈이 있어야 누적 한도의 이중 계상이 드러난다.
         DB::table('ecommerce_orders')->where('id', $order->id)->update([
@@ -226,7 +228,7 @@ class ValidateP2MoneyCalculationTest extends ModuleTestCase
         ]);
 
         $second = $this->completeReturnOf($order->fresh(['options']), $optionId, 1);
-        $secondRefund = OrderRefund::findOrFail($second->fresh()->refund_id);
+        $secondRefund = OrderRefund::findOrFail($this->returnRefundId($second));
         $filed = (float) $secondRefund->refund_amount + (float) $secondRefund->refund_points_amount;
 
         $cancellable = app(CancellableAmountCalculator::class)->calculateForRefund(

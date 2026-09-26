@@ -25,6 +25,9 @@ use Illuminate\Support\Facades\File;
  * 1.3.0 은 기본값을 미결제 2종까지 넓혔으므로 스텝을 밟는 시점의 파일에 따라 결과가 달라졌다
  * (스텝은 어느 버전의 파일이 깔려 있든 같은 일을 해야 한다). 그래서 1.2.x 기본값을 상수로 둔다.
  *
+ * 선교환 2키(`advance_exchange_enabled` 기본 꺼짐 · `advance_exchange_collection_due_days` 기본 14일)도
+ * 같은 방식으로 없는 키만 채운다.
+ *
  * 1.3.0 이 새로 도입한 자동 승인 3키(`auto_approve_refund_statuses` ·
  * `auto_approve_refund_payment_methods` · `auto_approve_refund_payment_methods_decided`)도 함께
  * 넣는다 — 빠지면 저장본만 보는 도구(백업·이관)가 이 세 값을 모른 채 남는다.
@@ -93,13 +96,18 @@ class MergeClaimSettingsDefaults implements DataMigration
                 'max_images' => 5,
                 'image_max_size_kb' => 2048,
                 'request_period_days' => 7,
+                'advance_exchange_enabled' => false,
+                'advance_exchange_collection_due_days' => 14,
                 'complete_defaults' => [
                     'create_refund_request' => true,
                     'restore_stock' => true,
                 ],
             ])
             // 카테고리가 이미 있는 사이트(부분 적용 후 재실행 등)를 위해 개별 필드도 보강한다.
-            ->addField('claim.instant_cancel_statuses', $instantCancelStatuses);
+            ->addField('claim.instant_cancel_statuses', $instantCancelStatuses)
+            // 선교환 2키(D1·D2)도 없는 키만 채운다 — 카테고리가 이미 있는 사이트는 addCategory 가 건너뛴다.
+            ->addField('claim.advance_exchange_enabled', false)
+            ->addField('claim.advance_exchange_collection_due_days', 14);
 
         foreach (self::AUTO_APPROVE_DEFAULTS as $key => $default) {
             $migrator->addField('claim.'.$key, $default);

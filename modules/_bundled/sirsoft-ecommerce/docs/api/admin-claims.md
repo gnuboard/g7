@@ -14,11 +14,15 @@
 4. 완료 전이(status=completed)는 completion 객체 필수 — 모달이 실행 전에 보여줄 값은 claims/completion-preview 가 SSoT (D26)
 5. 금액 수정({claimType}/{id}/amounts)·환불 실행(refunds/{id}/execute)의 상한은 취소 가능 금액(D19) — 초과는 저장·실행 모두 422, 재실행은 409, 근거는 orders/{order}/cancellable-amount 가 같은 식으로 답한다
 6. 관리자 [주문취소](POST /admin/orders/{order}/cancel)는 **환불신청서를 만든다** — 즉시 취소하지 않는다. auto_advance_refund 를 켜야 승인·환불완료까지 한 번에 간다
+7. 송장은 **상품 행**마다 있다 — 「송장만 저장」 은 PATCH {claimType}/{id}/options/tracking(상태 불변), 운송장 단위 도착은 POST {claimType}/{id}/tracking/deliver. 헤더 송장 API(collection-tracking·redelivery-tracking)는 없앴다
+8. 관리자 직권 접수 — POST /admin/orders/{order}/{exchanges|returns|cancel-refund} (claims.create). 게이트는 물리 게이트 하나, 신청 기간·신청 가능 상태 설정은 따르지 않는다
 ```
 
 ## 관리자 [주문취소]의 결과 계약
 
 `POST /api/modules/sirsoft-ecommerce/admin/orders/{order}/cancel` 은 취소를 **즉시 확정하지 않는다**.
+이 경로는 [관리자 직권 접수](#관리자-직권-접수-교환반품취소환불)의 취소·환불 분기로 위임된다 — 게이트도
+물리 게이트(아직 보내지 않은 상품)이며 `order_settings.cancellable_statuses` 를 보지 않는다.
 운영자 대리 접수(`refund_source_type=admin`)로 환불신청서를 만들고, 금액확인 → 승인 → 환불완료를
 운영자가 하나씩 밟는 것이 기본 운영이다.
 
@@ -46,6 +50,63 @@
 > 찍혀 **고객 카드는 그대로인데 장부만 환불완료**가 됐다. "PG 없이 장부만" 이 필요하면 환불수단을
 > 계좌 환불로 바꿔 수동 처리한다.
 
+## 관리자 직권 접수 (교환·반품·취소·환불)
+
+운영자가 주문 상세에서 고객을 대신해 접수합니다(§3-11). 입구는 주문 상세 상품 표의 선택 바 하나이고,
+종전 [주문취소](`POST /admin/orders/{order}/cancel`)는 [취소·환불 접수]로 흡수됐습니다 — 두 경로는 같은
+서비스(`AdminClaimRequestService`)를 탑니다.
+
+| 메서드 | URI | 라우트명 | 권한 |
+| --- | --- | --- | --- |
+| GET | /api/modules/sirsoft-ecommerce/admin/orders/{order}/claims/request-context | `api.modules.sirsoft-ecommerce.admin.orders.claims.request-context` | `claims.create` |
+| POST | /api/modules/sirsoft-ecommerce/admin/orders/{order}/claims/preview | `api.modules.sirsoft-ecommerce.admin.orders.claims.preview` | `claims.create` |
+| POST | /api/modules/sirsoft-ecommerce/admin/orders/{order}/exchanges | `api.modules.sirsoft-ecommerce.admin.orders.exchanges.store` | `claims.create` |
+| POST | /api/modules/sirsoft-ecommerce/admin/orders/{order}/returns | `api.modules.sirsoft-ecommerce.admin.orders.returns.store` | `claims.create` |
+| POST | /api/modules/sirsoft-ecommerce/admin/orders/{order}/cancel-refund | `api.modules.sirsoft-ecommerce.admin.orders.cancel-refund.store` | `claims.create` |
+
+**게이트 — 물리 게이트 하나(D5).** 신청 기간(`claim.request_period_days`)·신청 가능 상태·취소 가능 상태
+(`order_settings.cancellable_statuses`) 설정은 고객 축이라 따르지 않습니다. 주문 상품 상태로만 판정합니다.
+
+| 유형 | 받는 주문 상품 상태 |
+| --- | --- |
+| 교환·반품 | `shipping` · `delivered` · `confirmed` |
+| 취소·환불 | `pending_order` · `pending_payment` · `payment_complete` · `shipping_hold` · `preparing` · `shipping_ready` |
+
+반대쪽 상태면 `422`(`claim_*_not_requestable`). 다른 신청서가 잡은 수량(수량 잠금)은 그대로 적용됩니다.
+
+**교환·반품 본문**
+
+| 파라미터 | 타입 | 필수 | 설명 |
+| --- | --- | --- | --- |
+| items[].order_option_id / items[].quantity | integer | 예 | 대상 주문 상품과 수량 |
+| items[].new_product_option_id | integer | 아니오 | 교환 옵션 (교환만) |
+| reason_code | string | 예 | 사유 — 판매자 귀책(고객 화면 비노출) 사유도 받는다 |
+| reason_detail | string | 아니오 | 상세 사유 (max 1000) |
+| charge_method | string | 아니오 | `pay_on_request` / `pay_on_approval` / `deduct_from_refund` / `free`(배송비 0, 청구 방식 없음 — D7) |
+| claim_shipping_fee | numeric | 아니오 | 사유로 자동 계산한 배송비를 덮어쓴다 (min 0) |
+| refund_priority · refund_bank | — | 아니오 | 고객 신청과 같다 |
+| redelivery_address | object | 아니오 | 교환 재발송지 |
+| approve | boolean | 아니오 | 「접수와 함께 승인」(기본 `true`, D6). 추가결제가 필요한 건은 승인 대신 결제대기로 간다 |
+
+**응답 `201`**: `data.claim`(ClaimResource) · `data.claim_number` · `data.payment_requested` ·
+`data.approval_skipped`(승인이 막혔으면 `{reason}` — 접수는 남는다). 신청서에는 `requested_by_admin` 이
+남고 `requested_by` 는 비어 있습니다. 고객은 판매자 접수 건을 철회·수정할 수 없고(`claim_admin_requested_not_editable`),
+접수 알림에 「판매자가 고객님을 대신해 접수했습니다」(`request_origin_notice`)가 붙습니다(D8). 접수 훅은
+기존 `claim.{type}.requested` 에 세 번째 인자 `['source' => 'admin']` 이 실립니다.
+
+**취소·환불 본문**은 종전 주문취소와 같습니다(`type` full/partial · `reason` · `items[].cancel_quantity` ·
+`auto_advance_refund` · `refund_priority` · `refund_bank`). 결과는 `refund_source_type = admin` 인
+환불신청서이고, 응답은 `data.branch` · `data.claim_number` · `data.cancelled` 입니다.
+
+**접수 문맥**(`claims/request-context`)은 주문 상세 선택 바와 접수 창이 읽는 선택지입니다(DB 변경 없음).
+응답 `data`: `order_id` · `gates`(`exchange`·`return`·`refund` → 받는 주문 상품 상태 목록 — 위 게이트 표와 같은 값,
+화면은 고른 상품의 상태를 이 목록과 대조해 버튼을 켜고 끈다) · `reasons`(`exchange`·`return` → `{value, label,
+fault_type}` 목록, 판매자 귀책 사유 포함) · `charge_methods`(`{value, label}` 목록 — 설정의 청구 방식 + `free`).
+`claims.create` 권한이 없으면 `403` 이고, 화면은 이때 버튼 셋을 꺼 둔 채 권한 안내를 세웁니다.
+
+**미리보기**(`claims/preview`)는 `type`(`exchange`/`return`/`refund`)과 위 본문으로 청구·환불 예정액을
+계산합니다(DB 변경 없음). 사유는 입력 중일 수 있어 선택입니다.
+
 ## 인증·권한
 
 전 엔드포인트 `auth:sanctum` + 관리자(admin) 미들웨어. 세부 권한:
@@ -53,7 +114,8 @@
 | 권한 | 대상 |
 | --- | --- |
 | `sirsoft-ecommerce.claims.read` | 목록·상세 조회·취소 가능 금액 |
-| `sirsoft-ecommerce.claims.update-status` | 전이(단건·일괄·상품 단위)·송장·첨부·완료 미리보기·환불신청서 수동 접수 |
+| `sirsoft-ecommerce.claims.create` | 관리자 직권 접수 (교환·반품·취소·환불 — 주문 상세 선택 바) |
+| `sirsoft-ecommerce.claims.update-status` | 전이(단건·일괄·상품 단위)·송장·도착 처리·진행 방식·첨부·완료 미리보기·환불신청서 수동 접수·재고 복구·대리 철회·신청 내용 수정 |
 | `sirsoft-ecommerce.claims.update-amounts` | 금액 수정 (D18) |
 | `sirsoft-ecommerce.claims.execute-refund` | 환불 실행 ('환불하기') |
 
@@ -95,8 +157,12 @@
 | DELETE | /api/modules/sirsoft-ecommerce/admin/{claimType}/{id}/images | `api.modules.sirsoft-ecommerce.admin.claims.images.clear` |
 | DELETE | /api/modules/sirsoft-ecommerce/admin/{claimType}/{id}/images/{image} | `api.modules.sirsoft-ecommerce.admin.claims.images.destroy` |
 | PATCH | /api/modules/sirsoft-ecommerce/admin/{claimType}/{id}/options/bulk-status | `api.modules.sirsoft-ecommerce.admin.claims.options.bulk-status` (교환·반품·환불) |
-| PUT | /api/modules/sirsoft-ecommerce/admin/{claimType}/{id}/collection-tracking | `api.modules.sirsoft-ecommerce.admin.claims.collection-tracking` (교환·반품만) |
-| PUT | /api/modules/sirsoft-ecommerce/admin/exchanges/{id}/redelivery-tracking | `api.modules.sirsoft-ecommerce.admin.claims.redelivery-tracking` (교환만) |
+| PATCH | /api/modules/sirsoft-ecommerce/admin/{claimType}/{id}/options/tracking | `api.modules.sirsoft-ecommerce.admin.claims.options.tracking` (교환·반품만) |
+| POST | /api/modules/sirsoft-ecommerce/admin/{claimType}/{id}/tracking/deliver | `api.modules.sirsoft-ecommerce.admin.claims.tracking.deliver` (교환·반품만) |
+| PUT | /api/modules/sirsoft-ecommerce/admin/exchanges/{id}/exchange-mode | `api.modules.sirsoft-ecommerce.admin.claims.exchange-mode` (교환만) |
+| POST | /api/modules/sirsoft-ecommerce/admin/{claimType}/{id}/items/restore-stock | `api.modules.sirsoft-ecommerce.admin.claims.items.restore-stock` (교환·반품만) |
+| POST | /api/modules/sirsoft-ecommerce/admin/{claimType}/{id}/withdraw | `api.modules.sirsoft-ecommerce.admin.claims.withdraw` |
+| PATCH | /api/modules/sirsoft-ecommerce/admin/{claimType}/{id} | `api.modules.sirsoft-ecommerce.admin.claims.update` |
 | PUT | /api/modules/sirsoft-ecommerce/admin/{claimType}/{id}/amounts | `api.modules.sirsoft-ecommerce.admin.claims.amounts` |
 | POST | /api/modules/sirsoft-ecommerce/admin/claims/completion-preview | `api.modules.sirsoft-ecommerce.admin.claims.completion-preview` (교환·반품만) |
 | POST | /api/modules/sirsoft-ecommerce/admin/{claimType}/{id}/refund-request | `api.modules.sirsoft-ecommerce.admin.claims.refund-request` (교환·반품만) |
@@ -130,6 +196,9 @@
 | charge_methods[] | string[] | 아니오 | 청구 방식 필터 (`pay_on_request`/`pay_on_approval`/`deduct_from_refund`) — `type=cancel`/`refund` 에는 사용 불가(422) |
 | reason_code | string | 아니오 | 사유 코드 (max 50 — 취소는 `cancel_reason_type` 대조) |
 | requester_type | string | 아니오 | 회원구분 (`member`/`guest`) |
+| request_source | string | 아니오 | 접수 출처 (`admin` = 판매자 접수 / `customer`). 교환·반품은 `requested_by_admin`, 환불은 `refund_source_type = admin` 으로 가른다. `type=cancel` 에는 사용 불가(422) |
+| collection_overdue | boolean | 아니오 | 선교환 반송 기한 경과 — 끝나지 않은 행 중 회수 송장·도착·미회수 표시가 모두 없는 행이 있는 선교환. `type=exchange` 전용(그 밖 422) |
+| pending_refund | boolean | 아니오 | 환불 미접수(D9) — 완료됐는데 환불신청서가 연결되지 않은 상품이 있는 신청서(반품은 행 `refund_id` 없음·연결 신청서 반려/철회, 교환은 저가 차액 완료 행 + 살아 있는 차액 환불신청서 없음). 금액 0 판정은 상세 `pending_refund` 가 한다. `type=exchange`/`return` 전용(그 밖 422) |
 | min_amount | numeric | 아니오 | 금액 하한 (min 0). 근거 컬럼은 유형마다 다르며 **목록 `amount` 컬럼이 그리는 값과 같다** — 교환·반품은 총 청구액, 환불은 환불액 + 환불 마일리지, 취소는 연결된 환불신청서의 같은 합계 |
 | max_amount | numeric | 아니오 | 금액 상한 (min 0). `min_amount` 를 **함께 보낸 경우에만** 그 값 이상이어야 한다(422) — 상한만 거는 조합은 정상이다 |
 | currency_code | string | 아니오 | 통화 필터(max 10). 어휘는 상점 설정의 **등록 통화(`language_currency.currencies[].code`) + 운영자가 내린 기본 제공 통화(`language_currency.removed_default_currencies`)** 이고, 그 밖의 코드는 **그 유형의 신청서에 실제로 기록돼 있을 때만** 통과한다(교환·반품은 자기 `currency_code`, 환불·취소는 주문의 결제 통화). 거르는 값이 거래 시점에 동결된 통화라 설정에서 내려간 통화도 계속 조회할 수 있어야 하며, 관리자가 직접 추가했다 삭제한 통화는 설정에 흔적이 남지 않으므로 기록이 마지막 근거다. 어디에도 쓰인 적 없는 코드는 422 |
@@ -158,6 +227,11 @@
 | completed_at_formatted | string\|null | `null` | 종결 일시 |
 | charge_method / charge_method_label | string\|null | `pay_on_request` / `신청 시 결제` | 청구 방식 (교환·반품만) |
 | total_charge_amount / _formatted | number / string | `3000` / `3,000원` | 청구액 (교환·반품만) |
+| tracking_summary | object | `{"collection":{"first":"CJ-1","count":2},"redelivery":{"first":null,"count":0}}` | 방향별 서로 다른 운송장 수와 첫 번호 — 목록 「송장」 칸이 「CJ-1 외 1건」 으로 그린다 (교환·반품만) |
+| tracking_prefill | object | `{"collection":{"carrier_id":3,"tracking_number":"CJ-1"},"redelivery":null}` | 회수중·발송중 일괄 모달의 미리 채움 — 살아 있는 행이 **모두 같은 송장**일 때만 값이 선다 (교환·반품만) |
+| is_admin_requested | boolean | `false` | 판매자 접수(D8) 여부 — 목록 「판매자 접수」 뱃지 |
+| exchange_mode / exchange_mode_label / is_advance_exchange | string / string / boolean | `advance` / `선교환` / `true` | 교환 진행 방식 (교환만) |
+| is_collection_overdue / collection_overdue_days | boolean / integer | `true` / `3` | 선교환 반송 기한 경과 여부·경과 일수 (교환만) |
 | outstanding_amount / _formatted | number\|null / string\|null | `3000` / `3,000원` | 미수납 청구액 (교환·반품만) — **미수납 판정은 상태 라벨이 아니라 이 값으로 한다** (분할 수납 건은 결제대기 라벨 그대로다) |
 | refund_source_type | string | `direct` | 환불 출처 (환불만) — `direct` 고객 신청 / `admin` 운영자 대리 접수 / `return`·`exchange` 반품·교환 발 / `cancel` 구형 취소 파이프라인 발. `direct` 만 구매자가 수정·철회할 수 있다 |
 | refund_source_type_label | string | `고객 신청` | 목록의 출처 뱃지가 읽는 라벨 (환불만) |
@@ -245,6 +319,8 @@
 | admin_memo | string\|null | `회수 후 재검수 필요` | 관리자 메모 — 교환·반품 전용 (환불은 저장 컬럼이 없어 항상 `null`) |
 | processed_by | integer\|null | `1` | 마지막 처리 관리자 ID |
 | requester_name | string\|null | `홍길동` | 신청자 표기 (주문자명) |
+| requested_by_admin_name | string\|null | `김운영` | 판매자 접수(`requested_by_admin`)를 한 운영자 이름 — 교환·반품 전용, 고객이 낸 신청이면 `null`. 고객 응답에는 실리지 않는다 |
+| withdrawn_by_admin_name | string\|null | `김운영` | 고객 요청으로 대신 철회(`withdrawn_by_admin`)한 운영자 이름 — 교환·반품 전용, 대리 철회가 아니면 `null`. 고객 응답에는 실리지 않는다 |
 
 상세 표현에는 유저 상세와 같은 **주문금액 비교 블록** `calculation_comparison`(`original` / `recalculated` / `mc_original` /
 `mc_recalculated` / `substituted_items`, 스냅샷이 없는 구형 신청서는 `null`)이 들어 있다 — '이 클레임의 정산' 카드와
@@ -292,6 +368,10 @@
 | charge_methods | array | `[{"value": "pay_on_request", "label": "신청 시 결제"}]` | 청구 방식 선택지 (D18). 허용 목록은 설정 `claim.allowed_charge_methods` 가 정하고 그 조회는 `settings.read` 게이트다. 환불신청서는 빈 배열 |
 | refund_methods | array | `[{"value": "pg", "label": "PG사 환불"}]` | 환불 수단 선택지 (`RefundMethodEnum`). 환불신청서에만 있고 그 밖은 빈 배열 |
 | cancellable | object\|null | — | 취소 가능 금액 산정 결과 (D19). 환불신청서에만 있으며 **그 신청서 문맥**(자기 자신을 선점 집계에서 제외)으로 계산한다. 형태는 [cancellable-amount](#get-apimodulessirsoft-ecommerceadminordersordercancellable-amount) 응답의 `cancellable` 과 동일하다 — 두 응답이 같은 지점에서 만들어진다 |
+| tracking_groups | object\|null | `{"collection":[…],"redelivery":[…]}` | 배송 정보 탭의 운송장 묶음 — 방향마다 `[{key, direction, no_tracking, carrier_id, carrier_name, tracking_number, tracking_url, items[{claim_item_id, product_name, option_name, quantity, status_label, arrived}], all_arrived, can_deliver, blocked_reason}]`. 송장 없이 도착한 행은 `no_tracking: true` 묶음으로 선다. 환불·취소는 `null` (`data.claim.tracking_groups`) |
+| collection_lane | array\|null | — | 선교환의 「회수」 줄 — 행 수 기준 회수 진행·반송 기한·지연. 일반 교환·반품은 `null` |
+| exchange_mode_abilities | object\|null | `{"can_set_advance": true, "can_set_standard": false, "blocked_reason": null, "advance_enabled": true, "collection_due_days": 14}` | 「진행 방식」 줄의 버튼 게이트 — 서비스가 실제로 거절하는 조건과 같은 판정. 교환이 아니면 `null` |
+| pending_refund | object\|null | `{"amount": 12000, "amount_formatted": "12,000원", "item_count": 1}` | 「환불 미접수」(D9) — 완료됐는데 환불신청서가 없고 환불액이 0 보다 클 때만. 상단 배너·완료 카드·[환불신청서 접수] 버튼이 같은 값을 읽는다 |
 | attachment_settings | object\|null | `{"max_images": 5, "image_max_size_kb": 2048, "allowed_extensions": ["jpeg","jpg","png","gif","webp"], "accept": ".jpeg,.jpg,.png,.gif,.webp"}` | 첨부 상한·허용 확장자. 화면이 리터럴로 적으면 운영자가 설정을 바꾼 순간 화면과 서버가 갈려 이유 없는 `422` 만 남는다. 취소신청서는 첨부 축이 없어 `null` |
 
 **order 축** (`data.order`)
@@ -418,16 +498,18 @@
 | --- | --- | --- | --- |
 | status | string | 예 | 목표 상태 — 어휘는 유형별 `adminAssignableValues()`. 교환·반품은 `requested`/`paid`/`withdrawn` 제외 전체(11/8종), 환불은 `approved`/`on_hold`/`rejected` 3종 |
 | reject_reason | string | `status=rejected` 일 때 필수 | 반려 사유 (max 2000). 비우면 `422` — 구매자 화면에 그대로 안내되는 문구다 |
-| carrier_id | integer | `status` 가 `collecting`/`redelivering` 일 때 필수 | 택배사 ID. 회수중은 회수 송장, 발송중은 재발송 송장 칸에 전이보다 먼저 기록된다 |
-| tracking_number | string | `status` 가 `collecting`/`redelivering` 일 때 필수 | 운송장 번호 (max 50 — DB 칸 길이) |
+| carrier_id | integer | 아니오 | 택배사 ID. 회수중·발송중·회수도착·발송도착 전이가 싣는 송장은 **옮겨지는 상품 행**에 쓰인다 |
+| tracking_number | string | 아니오 | 운송장 번호 (max 50 — DB 칸 길이) |
 | admin_memo | string | 아니오 | 관리자 메모 (max 2000 — 보낸 요청만 갱신, 미포함 시 기존값 유지). **교환·반품 전용** — 환불은 저장 컬럼이 없어 반영되지 않는다 |
 | completion | object | `status=completed` 일 때 필수 | 완료 처리 옵션 (D26) |
 | completion.restore_stock_by_item | object | 아니오 | 신청 상품 행 ID → 재고 복구 여부 맵 (`{"55": true}`) — 목록에 없는 행은 복구하지 않음 |
-| completion.create_refund_request | boolean | completion 과 함께 필수 | 환불신청서를 지금 접수할지 — `false` 면 `order_refunds` 를 만들지 않는다 |
+| completion.create_refund_request | boolean | completion 과 함께 필수 | 환불신청서를 지금 접수할지 — `false` 면 `order_refunds` 를 만들지 않는다. 반품은 **회차마다** 환불이 연결되지 않은 완료 상품으로 접수한다(S7) |
+| completion.unreturned | object | 아니오 | 선교환 「미회수로 완료」 — 행 ID → `{reason}`(필수, max 2000). 그 행은 재고를 복구하지 않고 `unreturned_at`·`unreturned_reason` 이 남는다 |
 
-**회수중·발송중은 송장이 있어야 들어갑니다**(#599 후속). 택배가 물건을 싣고 가는 중이라는 사실이라,
-송장 없이 들어가면 고객 알림의 운송장 칸이 빈 채로 나갑니다. 세 입구(이 API·목록 일괄·상품 단위)가
-같은 규칙이며 서비스(`RecordsClaimTracking`)도 한 번 더 막습니다(`claim_tracking_required`).
+**회수중·발송중은 송장이 있어야 들어갑니다**(#599 후속, R6). 택배가 물건을 싣고 가는 중이라는 사실이라,
+송장 없이 들어가면 고객 알림의 운송장 칸이 빈 채로 나갑니다. 판정은 **옮겨지는 상품 행마다**입니다 — 요청이
+송장을 싣지 않으면 각 행이 이미 가진 자기 송장이 있어야 하고, 다른 행의 송장을 빌려 쓰지 않습니다. 세 입구
+(이 API·목록 일괄·상품 단위)가 같은 규칙이며 서비스(`RecordsClaimTracking`)도 한 번 더 막습니다(`claim_tracking_required`).
 
 **회수·재발송 단계는 앞으로 건너뛸 수 있습니다** — 승인 → 회수준비중·회수중·회수도착, 회수준비중 →
 회수중·회수도착, 교환 회수도착 → 발송준비중·발송중·발송도착, 발송준비중 → 발송중·발송도착. 승인은
@@ -577,12 +659,13 @@
 
 ---
 
-### PUT /api/modules/sirsoft-ecommerce/admin/{claimType}/{id}/collection-tracking
+### PATCH /api/modules/sirsoft-ecommerce/admin/{claimType}/{id}/options/tracking
 
-회수 운송장을 저장합니다 (교환·반품). **상태는 옮기지 않습니다** — 저장과 상태 전이는 별개입니다
-(#599 후속). 예전에는 회수준비중에서 저장하면 회수중으로 함께 옮겼는데, 승인 상태에서 먼저 저장한 송장은
-전이를 끌지 못해 신청서가 회수준비중에 멈췄습니다. 회수중 전이는 전이 API 가 송장을 실어 수행합니다.
-둘 다 비우고 저장하면 등록된 송장을 지웁니다.
+「송장만 저장」 — 고른 **상품 행**에 한 방향 송장을 적습니다 (교환·반품). 상태는 옮기지 않습니다(R7).
+송장은 상품 행마다 있습니다 — 한 신청서 안에서 상품마다 다른 택배로 오갈 수 있고(다중 송장), 한 행을
+고쳐도 같은 운송장을 쓰는 다른 행은 바뀌지 않습니다(R3). 수량을 지정하면 그 행을 먼저 쪼개 지정 수량
+행에만 송장을 적고, 잔여 행은 원래 값을 그대로 가집니다(R4). 둘 다 비우고 저장하면 그 행의 송장을
+지웁니다 — 단, 회수중·발송중 행의 송장은 지울 수 없습니다(R6·R7).
 
 **권한**: `sirsoft-ecommerce.claims.update-status`
 
@@ -590,18 +673,112 @@
 
 | 파라미터 | 타입 | 필수 | 설명 |
 | --- | --- | --- | --- |
+| direction | string | 예 | `collection`(회수) / `redelivery`(재발송 — 교환만, 반품이면 `422 claim_tracking_direction_not_allowed`) |
 | carrier_id | integer | 아니오* | 택배사 ID (`ecommerce_shipping_carriers`) |
-| tracking_number | string | 아니오* | 운송장 번호 (max 50 — DB 칸 길이. 예전 상한 100 은 51자부터 저장이 서버 오류로 끊겼다) |
+| tracking_number | string | 아니오* | 운송장 번호 (max 50 — DB 칸 길이) |
+| items | array | 예 | 대상 상품 행 (1~200) |
+| items[].id | integer | 예 | 신청 상품 행 ID. **이 신청서의 행이 아니면 `404`**(다른 신청서의 행이 있다는 사실을 422 로 드러내지 않는다) |
+| items[].quantity | integer | 아니오 | 지정 수량 (행 수량보다 작으면 행을 쪼갠다) |
 
-\* 둘 중 하나만 보내면 `422` `claim_tracking_incomplete` — 함께 입력해야 합니다.
+\* 둘 중 하나만 보내면 `422` `claim_tracking_incomplete`(R2).
 
-**응답**: `200` `data.claim` (ClaimResource — `collection_tracking_number`/`collection_tracking_url` 갱신) / `404` / `422`.
+쓸 수 있는 행 상태(R5): 반품 = 승인·회수준비중·회수중, 교환 회수 = 승인·회수준비중·회수중,
+교환 재발송 = 회수도착·발송준비중·발송중(선교환은 승인부터). 밖이면 `422 claim_tracking_item_not_eligible`.
+회수지가 다른 상품을 한 운송장으로 묶으면 `422 claim_tracking_mixed_return_address`(R8).
+발송중 행의 재발송 송장을 고치면 그 행의 교환품 새 주문상품 배송 행 송장도 함께 바뀝니다(R11).
 
-### PUT /api/modules/sirsoft-ecommerce/admin/exchanges/{id}/redelivery-tracking
+**응답**: `200` `data.claim`(상세 ClaimResource — 행마다 `collection_*`/`redelivery_*` 송장 필드 갱신) ·
+`data.split`(쪼갠 행 `[{id, quantity, remainder_id, remainder_quantity}]`) / `404` / `422`.
 
-재발송 운송장을 저장합니다 (교환 전용). 상태는 옮기지 않습니다. 이미 발송된 교환품이 있으면 그 새
-주문상품의 배송 행 송장도 함께 고칩니다 — 고객 주문 화면의 배송 조회가 배송 행을 읽기 때문입니다.
-파라미터·응답·오류는 회수 송장과 동일하며 `redelivery_*` 필드가 갱신됩니다.
+훅: `sirsoft-ecommerce.claim.{exchange|return}.before_tracking_update` → `filter_tracking_update_data`
+(`carrier_id`·`tracking_number` 만 조정) → 커밋 뒤 `after_tracking_update`(행별 전/후 변경 목록).
+
+### POST /api/modules/sirsoft-ecommerce/admin/{claimType}/{id}/tracking/deliver
+
+운송장 한 개에 묶인 상품 행을 한꺼번에 도착 처리합니다 (교환·반품 — 배송 정보 탭 [도착 처리], R9).
+일반 흐름은 행을 회수도착(`collected`)·발송도착(`redelivered`)으로 옮기고, 선교환의 회수 방향은 상태를
+옮기지 않고 행 `collected_at` 만 찍습니다. 옮길 수 없는 행은 건너뛰고 사유와 함께 돌려줍니다.
+
+**권한**: `sirsoft-ecommerce.claims.update-status`
+
+| 파라미터 | 타입 | 필수 | 설명 |
+| --- | --- | --- | --- |
+| direction | string | 예 | `collection` / `redelivery` |
+| carrier_id | integer | 예 | 택배사 ID |
+| tracking_number | string | 예 | 운송장 번호 |
+
+**응답**: `200` `data.claim` · `data.succeeded`(행 ID) · `data.skipped`(`[{id, message}]` — 이미 도착·전이 불가) /
+`422 claim_tracking_not_found`(그 운송장을 가진 행이 없음).
+
+### PUT /api/modules/sirsoft-ecommerce/admin/exchanges/{id}/exchange-mode
+
+교환의 진행 방식을 바꿉니다 — 일반 교환(`standard`) ↔ 선교환(`advance`, 헌 물건 회수 전에 새 물건을 먼저
+보냄). 설정 `claim.advance_exchange_enabled` 가 꺼져 있으면 `422 claim_advance_exchange_disabled`.
+재발송 송장이 붙은 행이 있거나 승인 뒤 단계로 간 신청서는 `422 claim_exchange_mode_not_changeable`,
+선교환에서 회수 송장이 붙은 행이 있으면 일반으로 되돌릴 수 없습니다(`claim_exchange_mode_locked_by_collection`).
+바꿀 수 있는지는 상세 봉투의 `exchange_mode_abilities` 가 같은 판정으로 미리 알려 줍니다.
+
+선교환은 전이표가 다릅니다 — 승인에서 곧바로 발송준비중·발송중·발송도착으로 가고, 회수는 상태가 아니라
+행 송장·`collected_at` 으로 추적합니다. 발송이 시작되면 반송 기한(`collection_due_at` = 발송일 +
+`claim.advance_exchange_collection_due_days`)이 잡히고, 기한이 지나면 일 배치
+`sirsoft-ecommerce:claims:notify-overdue-collections` 가 관리자에게 한 번 알립니다
+(`claim.exchange.collection_overdue`). 완료 조건은 「발송중·발송도착 **그리고** 회수 이동중·도착」 이며,
+끝내 오지 않은 물건은 완료 본문 `completion.unreturned` 로 「미회수로 완료」 합니다(재고 불변).
+
+**권한**: `sirsoft-ecommerce.claims.update-status`
+
+| 파라미터 | 타입 | 필수 | 설명 |
+| --- | --- | --- | --- |
+| mode | string | 예 | `standard` / `advance` |
+
+**응답**: `200` `data.claim` / `404` / `422`. 훅: `claim.exchange.before_mode_change` · `after_mode_change`.
+
+### POST /api/modules/sirsoft-ecommerce/admin/{claimType}/{id}/items/restore-stock
+
+완료됐지만 재고를 복구하지 않은 상품 행의 재고를 뒤늦게 복구합니다 (교환·반품, S13). 완료 모달에서
+복구를 끄거나 잊은 뒤의 입구입니다. 멱등합니다 — 행을 잠근 뒤 `is_stock_restored` 를 다시 읽어 이미
+복구된 행은 건너뜁니다. 선교환에서 「미회수로 완료」 한 행은 대상이 아닙니다.
+
+**권한**: `sirsoft-ecommerce.claims.update-status`
+
+| 파라미터 | 타입 | 필수 | 설명 |
+| --- | --- | --- | --- |
+| items | integer[] | 아니오 | 복구할 상품 행 ID (비우면 복구 가능한 행 전부) |
+
+**응답**: `200` `data.claim` · `data.restored`(`[{id, quantity}]`) / `422 claim_stock_restore_not_eligible`(복구할 행 없음).
+훅: `sirsoft-ecommerce.claim.{exchange|return}.after_stock_restore`(신청서, 복구 행, 처리자).
+
+### POST /api/modules/sirsoft-ecommerce/admin/{claimType}/{id}/withdraw
+
+고객 요청으로 신청을 대신 철회합니다 (교환·반품·환불, S14). 예전에는 운영자가 반려만 할 수 있어 고객에게
+「반려되었습니다」 가 나갔습니다. 철회할 수 있는 단계는 고객 철회와 같고(`isWithdrawable()`), 판매자가
+접수한 건도 거둘 수 있습니다. 결제 환급은 기존 철회 경로를 그대로 탑니다. 고객 알림에는
+「고객님 요청으로 판매자가 철회했습니다」(`withdraw_origin_notice`)가 붙습니다.
+
+**권한**: `sirsoft-ecommerce.claims.update-status`
+
+| 파라미터 | 타입 | 필수 | 설명 |
+| --- | --- | --- | --- |
+| reason | string | 예 | 철회 사유 (max 2000) — `withdraw_reason` 에 남고 철회자는 `withdrawn_by_admin` |
+
+**응답**: `200` `data.claim` / `404` / `422 claim_not_withdrawable`.
+
+### PATCH /api/modules/sirsoft-ecommerce/admin/{claimType}/{id}
+
+신청 내용(사유·상세 사유·교환 재발송지)을 운영자가 고칩니다 (교환·반품·환불, S15). 고객 수정과 같은
+경로를 운영자 축으로 씁니다 — 판매자 귀책(고객 비노출) 사유도 고를 수 있고, 판매자가 접수한 건도
+고칠 수 있습니다. 수정 가능 단계는 고객 수정과 같습니다. 사유가 바뀌어 배송비가 다시 계산되면 결제
+대기 건·기수납액을 그 값에 맞춥니다.
+
+**권한**: `sirsoft-ecommerce.claims.update-status`
+
+| 파라미터 | 타입 | 필수 | 설명 |
+| --- | --- | --- | --- |
+| reason_code | string | 아니오 | 사유 코드 (그 유형의 활성 사유) |
+| reason_detail | string | 아니오 | 상세 사유 (max 1000) |
+| redelivery_address | object | 아니오 | 교환 재발송지 (국가는 바꿀 수 없다) |
+
+**응답**: `200` `data.claim` / `404` / `422 claim_not_editable`·사유 부재.
 
 ---
 
@@ -1043,6 +1220,7 @@ PG 취소가 불가능한 상황에서 운영자가 계좌로 돌려주고 장�
 | claims[].id | integer | 예 | 신청서 ID |
 | claims[].item_ids[] | integer[] | 아니오 | 이번 라운드 완료 대상 상품 행 (없으면 전체 — 상품 단위 진입점만 보낸다) |
 | claims[].restore_stock_by_item | object | 아니오 | 상품 행 ID → 재고 복구 체크 상태 맵 |
+| claims[].unreturned_item_ids | integer[] | 아니오 | 선교환 「미회수로 완료」 로 고른 상품 행 ID — 실행과 같게 완료 대상(`completable_item_ids`)에 넣고 재고 복구 수에서는 뺀다. 그 신청서의 후보(`unreturned_eligible_items`)가 아닌 ID 는 버린다 |
 
 **응답 예시 (200)**
 

@@ -13,6 +13,7 @@ use Modules\Sirsoft\Ecommerce\Models\OrderReturn;
 use Modules\Sirsoft\Ecommerce\Services\OrderReturnService;
 use Modules\Sirsoft\Ecommerce\Tests\Concerns\BuildsClaimAdjustmentOrders;
 use Modules\Sirsoft\Ecommerce\Tests\Concerns\BuildsClaimFlowOrders;
+use Modules\Sirsoft\Ecommerce\Tests\Concerns\ReadsReturnRefundLink;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
@@ -58,6 +59,7 @@ class ReturnMultiCurrencyTest extends ModuleTestCase
 {
     use BuildsClaimAdjustmentOrders;
     use BuildsClaimFlowOrders;
+    use ReadsReturnRefundLink;
 
     /**
      * 통화 설정 캐시를 비운 뒤 기본 KRW + 보조 통화(USD·JPY) 설정과 클레임 사유를 준비합니다.
@@ -398,7 +400,7 @@ class ReturnMultiCurrencyTest extends ModuleTestCase
             ),
         );
 
-        $refund = OrderRefund::findOrFail($return->fresh()->refund_id);
+        $refund = OrderRefund::findOrFail($this->returnRefundId($return));
 
         $paidLocal = (float) $order->payments->first()->paid_amount_local;
         $paidBase = (float) $order->payments->first()->paid_amount_base;

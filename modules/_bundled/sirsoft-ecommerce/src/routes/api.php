@@ -18,6 +18,7 @@ use Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\DashboardController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\EcommerceSettingsController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\ExtraFeeTemplateController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\MileageTransactionController;
+use Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\OrderClaimController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\OrderController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\ProductCommonInfoController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\ProductController as AdminProductController;
@@ -1520,11 +1521,39 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
             ->middleware('permission:admin,sirsoft-ecommerce.orders.update')
             ->name('admin.orders.estimate-refund');
 
-        // 주문 취소 (전체취소/부분취소)
+        // 주문 취소 (전체취소/부분취소) — 관리자 직권 [취소·환불 접수] 와 같은 서비스로 위임한다(§3-11).
+        // 주문 상세 화면은 아래 `cancel-refund` 를 쓴다. 이 경로는 기존 API 호출부 호환용이다.
         // POST /api/modules/sirsoft-ecommerce/admin/orders/{order}/cancel
         Route::post('/{order}/cancel', [OrderController::class, 'cancelOrder'])
             ->middleware('permission:admin,sirsoft-ecommerce.orders.update')
             ->name('admin.orders.cancel');
+
+        // 관리자 직권 접수 (§3-11 · D5~D8) — 주문 상세 상품 표 선택 바의 [교환 접수]·[반품 접수]·[취소·환불 접수].
+        // 게이트는 물리 게이트(물건이 고객에게 갔는지)이고 신청 기간·신청 가능 상태 설정은 따르지 않는다.
+        // GET  /api/modules/sirsoft-ecommerce/admin/orders/{order}/claims/request-context - 게이트 상태·사유·청구 방식
+        // POST /api/modules/sirsoft-ecommerce/admin/orders/{order}/claims/preview - 접수 창 청구 미리보기 (DB 변경 없음)
+        // POST /api/modules/sirsoft-ecommerce/admin/orders/{order}/exchanges      - 교환 접수
+        // POST /api/modules/sirsoft-ecommerce/admin/orders/{order}/returns        - 반품 접수
+        // POST /api/modules/sirsoft-ecommerce/admin/orders/{order}/cancel-refund  - 취소·환불 접수
+        Route::get('/{order}/claims/request-context', [OrderClaimController::class, 'context'])
+            ->middleware('permission:admin,sirsoft-ecommerce.claims.create')
+            ->name('admin.orders.claims.request-context');
+
+        Route::post('/{order}/claims/preview', [OrderClaimController::class, 'preview'])
+            ->middleware('permission:admin,sirsoft-ecommerce.claims.create')
+            ->name('admin.orders.claims.preview');
+
+        Route::post('/{order}/exchanges', [OrderClaimController::class, 'storeExchange'])
+            ->middleware('permission:admin,sirsoft-ecommerce.claims.create')
+            ->name('admin.orders.exchanges.store');
+
+        Route::post('/{order}/returns', [OrderClaimController::class, 'storeReturn'])
+            ->middleware('permission:admin,sirsoft-ecommerce.claims.create')
+            ->name('admin.orders.returns.store');
+
+        Route::post('/{order}/cancel-refund', [OrderClaimController::class, 'storeCancelRefund'])
+            ->middleware('permission:admin,sirsoft-ecommerce.claims.create')
+            ->name('admin.orders.cancel-refund.store');
 
         // 무통장 입금확인 (무통장·미결제 주문 → 결제완료)
         // PATCH /api/modules/sirsoft-ecommerce/admin/orders/{order}/confirm-deposit
@@ -1582,8 +1611,12 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
     // DELETE /api/modules/sirsoft-ecommerce/admin/{claimType}/{id}/images - 첨부 일괄 정리
     // PATCH  /api/modules/sirsoft-ecommerce/admin/{claimType}/{id}/options/bulk-status - 상품 단위 일괄 전이 (교환·반품·환불)
     // POST   /api/modules/sirsoft-ecommerce/admin/{claimType}/{id}/refund-request - 환불신청서 수동 접수 (교환·반품, D26)
-    // PUT    /api/modules/sirsoft-ecommerce/admin/{claimType}/{id}/collection-tracking - 회수 송장 (교환·반품)
-    // PUT    /api/modules/sirsoft-ecommerce/admin/exchanges/{id}/redelivery-tracking - 재발송 송장 (교환)
+    // PATCH  /api/modules/sirsoft-ecommerce/admin/{claimType}/{id}/options/tracking - 「송장만 저장」 상품 행 송장 (교환·반품)
+    // POST   /api/modules/sirsoft-ecommerce/admin/{claimType}/{id}/tracking/deliver - 운송장 단위 도착 처리 (교환·반품)
+    // POST   /api/modules/sirsoft-ecommerce/admin/{claimType}/{id}/items/restore-stock - 뒤늦은 재고 복구 (교환·반품, S13)
+    // POST   /api/modules/sirsoft-ecommerce/admin/{claimType}/{id}/withdraw - 고객 요청 대리 철회 (S14)
+    // PATCH  /api/modules/sirsoft-ecommerce/admin/{claimType}/{id} - 신청 내용 수정 (S15)
+    // PUT    /api/modules/sirsoft-ecommerce/admin/exchanges/{id}/exchange-mode - 진행 방식 (일반 교환 · 선교환)
     // POST   /api/modules/sirsoft-ecommerce/admin/refunds/{id}/execute - 환불 실행 (D18·D19)
     // GET    /api/modules/sirsoft-ecommerce/admin/orders/{order}/cancellable-amount - 취소 가능 금액 (D19, orders 그룹에 등록)
     // GET    /api/modules/sirsoft-ecommerce/admin/orders/{order}/claims - 주문 스코프 클레임 내역 (D20, orders 그룹에 등록)
@@ -1662,29 +1695,53 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
                 ->whereNumber('id')
                 ->middleware('permission:admin,sirsoft-ecommerce.claims.update-status')
                 ->name('admin.claims.options.bulk-status');
+
+            // 고객 요청 대리 철회 (S14) — 고객 철회와 같은 단계에서만 된다. 판매자 접수 건도 철회할 수 있다.
+            Route::post('/{id}/withdraw', [AdminClaimController::class, 'withdrawOnBehalf'])
+                ->whereNumber('id')
+                ->middleware('permission:admin,sirsoft-ecommerce.claims.update-status')
+                ->name('admin.claims.withdraw');
+
+            // 신청 내용 수정 (S15) — 사유·상세 사유·교환 재발송지. 수정 가능 단계는 고객 수정과 같다.
+            Route::patch('/{id}', [AdminClaimController::class, 'updateRequest'])
+                ->whereNumber('id')
+                ->middleware('permission:admin,sirsoft-ecommerce.claims.update-status')
+                ->name('admin.claims.update');
         });
 
-    // 회수 송장은 교환·반품 축에만 있다 (환불은 상품 회수가 없음).
+    // 송장은 교환·반품 축에만 있다 (환불은 상품 회수가 없음). 송장은 **상품 행**마다 둔다 —
+    // 「송장만 저장」 은 고른 행(수량 지정 시 쪼갠 행)에 쓰고 상태를 바꾸지 않는다.
     Route::whereIn('claimType', ['exchanges', 'returns'])
         ->prefix('{claimType}')
         ->group(function () {
-            Route::put('/{id}/collection-tracking', [AdminClaimController::class, 'updateCollectionTracking'])
+            Route::patch('/{id}/options/tracking', [AdminClaimController::class, 'updateItemTracking'])
                 ->whereNumber('id')
                 ->middleware('permission:admin,sirsoft-ecommerce.claims.update-status')
-                ->name('admin.claims.collection-tracking');
+                ->name('admin.claims.options.tracking');
+
+            Route::post('/{id}/tracking/deliver', [AdminClaimController::class, 'deliverTracking'])
+                ->whereNumber('id')
+                ->middleware('permission:admin,sirsoft-ecommerce.claims.update-status')
+                ->name('admin.claims.tracking.deliver');
 
             Route::post('/{id}/refund-request', [AdminClaimController::class, 'storeRefundRequest'])
                 ->whereNumber('id')
                 ->middleware('permission:admin,sirsoft-ecommerce.claims.update-status')
                 ->name('admin.claims.refund-request');
+
+            // 뒤늦은 재고 복구 (S13) — 완료됐지만 재고를 복구하지 않은 상품 행. 멱등하다.
+            Route::post('/{id}/items/restore-stock', [AdminClaimController::class, 'restoreStock'])
+                ->whereNumber('id')
+                ->middleware('permission:admin,sirsoft-ecommerce.claims.update-status')
+                ->name('admin.claims.items.restore-stock');
         });
 
-    // 재발송 송장 (교환 전용)
-    // PUT /api/modules/sirsoft-ecommerce/admin/exchanges/{id}/redelivery-tracking
-    Route::put('exchanges/{id}/redelivery-tracking', [AdminClaimController::class, 'updateRedeliveryTracking'])
+    // 교환 진행 방식 (일반 교환 · 선교환 — 교환 전용)
+    // PUT /api/modules/sirsoft-ecommerce/admin/exchanges/{id}/exchange-mode
+    Route::put('exchanges/{id}/exchange-mode', [AdminClaimController::class, 'updateExchangeMode'])
         ->whereNumber('id')
         ->middleware('permission:admin,sirsoft-ecommerce.claims.update-status')
-        ->name('admin.claims.redelivery-tracking');
+        ->name('admin.claims.exchange-mode');
 
     // 환불 실행 ('환불하기' — 승인된 환불신청서 전용, D18·D19)
     // POST /api/modules/sirsoft-ecommerce/admin/refunds/{id}/execute

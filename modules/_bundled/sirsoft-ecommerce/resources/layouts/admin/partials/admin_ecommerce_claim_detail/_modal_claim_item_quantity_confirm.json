@@ -23,10 +23,22 @@
                     "id": "ciq_001_description",
                     "type": "basic",
                     "name": "P",
+                    "if": "{{_global.claimItemQuantityContext?.trackingOnly !== true}}",
                     "props": {
                         "className": "text-label"
                     },
                     "text": "$t:sirsoft-ecommerce.admin.claim.detail.items.quantity_confirm_description|status={{_global.claimItemQuantityContext?.statusLabel ?? ''}}"
+                },
+                {
+                    "comment": "「송장만 저장」 모드 — 상태는 옮기지 않고 고른 행(지정 수량)에 송장만 적는다(R7).",
+                    "id": "ciq_007_tracking_only_description",
+                    "type": "basic",
+                    "name": "P",
+                    "if": "{{_global.claimItemQuantityContext?.trackingOnly === true}}",
+                    "props": {
+                        "className": "text-label"
+                    },
+                    "text": "$t:sirsoft-ecommerce.admin.claim.detail.items.tracking_only_description|direction={{_global.claimItemQuantityContext?.directionLabel ?? ''}}"
                 },
                 {
                     "id": "ciq_002_rows",
@@ -65,7 +77,7 @@
                                     },
                                     "children": [
                                         {
-                                            "comment": "나눌 수 없는 행(교환 후속 옵션이 이미 만들어진 행·수량 1)은 입력을 잠근다 — 서버만 막으면 운영자는 입력해 놓고 [확인] 에서야 422 를 본다. 판정은 서버가 `is_splittable` 로 실어 준다.",
+                                            "comment": "나눌 수 없는 행(끝난 행·수량 1)은 입력을 잠근다 — 발송된 교환 행도 후속 주문옵션이 함께 쪼개지므로 나눌 수 있다(R10) — 서버만 막으면 운영자는 입력해 놓고 [확인] 에서야 422 를 본다. 판정은 서버가 `is_splittable` 로 실어 준다.",
                                             "type": "basic",
                                             "name": "Input",
                                             "actions": [
@@ -146,6 +158,17 @@
                     ]
                 },
                 {
+                    "comment": "수량을 줄이면 그 행이 나뉜다(R4) — 「셔츠 3개 중 1개에만 송장을 넣으면 행이 1개와 2개로 나뉩니다」. 표가 한 줄 늘어난 것을 운영자가 스스로 해석하게 두지 않는다.",
+                    "id": "ciq_008_split_hint",
+                    "type": "basic",
+                    "name": "P",
+                    "if": "{{(_global.claimItemQuantityContext?.rows ?? []).some(r => r.splittable === true)}}",
+                    "props": {
+                        "className": "text-xs text-gray-500 dark:text-gray-400"
+                    },
+                    "text": "$t:sirsoft-ecommerce.admin.claim.detail.items.quantity_split_hint"
+                },
+                {
                     "comment": "잠긴 행이 하나라도 있으면 이유를 적는다 — 비활성 입력만 두면 운영자는 화면이 고장 난 줄 안다.",
                     "id": "ciq_003_not_splittable_hint",
                     "type": "basic",
@@ -197,6 +220,8 @@
                                         "itemIds": "{{_global.claimItemQuantityContext?.itemIds ?? []}}",
                                         "itemQuantities": "{{_global.claimItemQuantityContext?.quantities ?? {} }}",
                                         "status": "{{_global.claimItemQuantityContext?.status ?? ''}}",
+                                        "trackingOnly": "{{_global.claimItemQuantityContext?.trackingOnly === true}}",
+                                        "direction": "{{_global.claimItemQuantityContext?.direction ?? ''}}",
                                         "rejectReason": "{{_global.claimItemQuantityContext?.rejectReason ?? ''}}",
                                         "carrierId": "{{_global.claimItemQuantityContext?.carrierId ?? ''}}",
                                         "trackingNumber": "{{_global.claimItemQuantityContext?.trackingNumber ?? ''}}",
@@ -227,7 +252,14 @@
                                 {
                                     "type": "basic",
                                     "name": "Span",
+                                    "if": "{{_global.claimItemQuantityContext?.trackingOnly !== true}}",
                                     "text": "$t:sirsoft-ecommerce.admin.claim.bulk.apply"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{_global.claimItemQuantityContext?.trackingOnly === true}}",
+                                    "text": "$t:sirsoft-ecommerce.admin.claim.detail.items.tracking_only"
                                 }
                             ]
                         }

@@ -232,12 +232,18 @@ partial 안의 partial 은 같은 디렉터리 기준 상대 경로여야 한다
               <span class="text-secondary">{{claimPayment.payment_method_label ?? ''}}</span>
               <badge variant="{{claimPayment.payment_status_variant ?? 'default'}}">{{claimPayment.payment_status_label ?? ''}}</badge>
             </div>
-            <span class="text-gray-900 dark:text-gray-100">{{claimPayment.total_amount_formatted ?? ''}}</span>
+            <div class="flex-center gap-2">
+              <span class="text-gray-900 dark:text-gray-100">{{claimPayment.total_amount_formatted ?? ''}}</span>
+              <!-- 부분 환급 — 차액 상품을 반려해 일부가 되돌아가도 결제 건은 `paid` 로 남는다. 결제 금액만 두면 운영자는 환급이 없었던 것으로 읽는다(구매자 화면 `claim.detail.payment_refunded` 와 같은 정보). -->
+              <span data-if="{{(claimPayment.refunded_amount ?? 0) > 0}}" class="text-xs text-orange-600 dark:text-orange-400">$t:sirsoft-ecommerce.admin.claim.detail.settlement.payment_refunded|amount={{claimPayment.refunded_amount_formatted ?? ''}}</span>
+            </div>
           </div>
         </div>
         <!-- 완료 시 환불 예정 — 헤더에 컬럼이 없는 값이라 완료 미리보기 경로가 SSoT 다(`claim.data.settlement`). 완료 처리 모달이 보여주는 숫자와 같은 곳에서 나오므로 상세와 모달이 서로 다른 금액을 말하지 않는다. -->
         <div data-ref="cst_preview_block" data-if="{{!!claim?.data?.settlement}}" class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 space-y-2">
-          <div class="text-label-subtle">$t:sirsoft-ecommerce.admin.claim.detail.settlement.preview_title</div>
+          <!-- 제목은 완료 전후로 갈린다(D9) — 완료 전은 「완료 시 환불 예정」, 완료 후 환불 미접수면 「접수할 환불액」. 같은 숫자라도 운영자가 할 일이 다르다(기다림 / 접수). -->
+          <div data-if="{{claim?.data?.claim?.is_final !== true || !claim?.data?.pending_refund}}" class="text-label-subtle">$t:sirsoft-ecommerce.admin.claim.detail.settlement.preview_title</div>
+          <div data-if="{{claim?.data?.claim?.is_final === true &amp;&amp; !!claim?.data?.pending_refund}}" class="text-label-subtle">$t:sirsoft-ecommerce.admin.claim.detail.settlement.pending_title</div>
           <!-- 환불신청서 수동 접수 (F5). 라우트·컨트롤러·서비스는 처음부터 완비돼 있었고 상세는 접수 **불가 사유**까지 보여 주는데, 정작 접수 버튼만 없었다 — 완료 모달에서 '환불신청서 생성'을 끈 건은 그 뒤로 환불을 접수할 경로가 화면 어디에도 없었다. 접수 가능한 상태(불가 사유 없음)에서만 선다. -->
           <div data-ref="cst_007_file_refund_request" data-if="{{['exchange', 'return'].includes(claim?.data?.claim?.claim_type ?? '') &amp;&amp; (claim?.data?.settlement?.blocked_reason ?? '') === ''}}" class="flex justify-end">
             <!-- 금액을 싣지 않고 접수만 요청한다 — 무엇을 얼마나 환불할지는 서버가 이 신청서를 보고 정하고, 화면은 성공 뒤 상세와 활동 로그를 다시 읽는다. -->

@@ -40,6 +40,15 @@ class ClaimModelsTest extends ModuleTestCase
     // OrderExchange
     // ========================================
 
+    /**
+     * 교환 신청서가 저장되고 소속 주문 관계로 되돌아갑니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario model=exchange
+     *
+     * @effects exchange_can_be_created_and_belongs_to_order
+     */
     public function test_exchange_can_be_created_and_belongs_to_order(): void
     {
         $order = OrderFactory::new()->create();
@@ -53,6 +62,15 @@ class ClaimModelsTest extends ModuleTestCase
         $this->assertEquals($order->id, $exchange->order->id);
     }
 
+    /**
+     * 교환 신청서의 상태·귀책·청구 방식·배송비 모드는 Enum 으로, 스냅샷·다통화 배송비는 배열로 캐스팅됩니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario model=exchange
+     *
+     * @effects exchange_casts_enums_and_json_columns
+     */
     public function test_exchange_casts_enums_and_json_columns(): void
     {
         $exchange = OrderExchangeFactory::new()->create([
@@ -72,6 +90,15 @@ class ClaimModelsTest extends ModuleTestCase
         $this->assertSame(2.5, $fresh->mc_claim_shipping_fee['USD']);
     }
 
+    /**
+     * 청구액이 0 인 교환은 청구 방식이 비어 있을 수 있고 추가결제를 요구하지 않습니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario model=exchange
+     *
+     * @effects exchange_charge_method_is_nullable_for_zero_charge
+     */
     public function test_exchange_charge_method_is_nullable_for_zero_charge(): void
     {
         $exchange = OrderExchangeFactory::new()->create([
@@ -83,6 +110,15 @@ class ClaimModelsTest extends ModuleTestCase
         $this->assertFalse($exchange->requiresAdditionalPayment());
     }
 
+    /**
+     * 결제형 청구 방식만 추가결제를 요구하고, 환불 차감 방식은 요구하지 않습니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario model=exchange
+     *
+     * @effects exchange_requires_additional_payment_only_for_payment_methods
+     */
     public function test_exchange_requires_additional_payment_only_for_payment_methods(): void
     {
         $payable = OrderExchangeFactory::new()->create([
@@ -99,6 +135,15 @@ class ClaimModelsTest extends ModuleTestCase
         $this->assertFalse($deducted->requiresAdditionalPayment());
     }
 
+    /**
+     * 교환의 철회 가능·종결 판정이 상태 Enum 에 위임됩니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario model=exchange
+     *
+     * @effects exchange_status_helpers_delegate_to_enum
+     */
     public function test_exchange_status_helpers_delegate_to_enum(): void
     {
         $requested = OrderExchangeFactory::new()->status(ExchangeStatusEnum::REQUESTED)->create();
@@ -115,6 +160,12 @@ class ClaimModelsTest extends ModuleTestCase
      *
      * `requested_by` 는 비회원·운영자 대리 접수·시스템 자동 취소가 모두 null 이므로, 그 값으로
      * 가르면 회원 주문의 운영자 접수 건이 「비회원」으로 표시된다(2026-09-12 실측).
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario model=exchange
+     *
+     * @effects exchange_guest_request_is_detected_by_the_order_owner
      */
     public function test_exchange_guest_request_is_detected_by_the_order_owner(): void
     {
@@ -129,11 +180,29 @@ class ClaimModelsTest extends ModuleTestCase
         $this->assertFalse($member->fresh('order')->isGuestRequest());
     }
 
+    /**
+     * 교환 신청서의 클레임 유형은 교환입니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario model=exchange
+     *
+     * @effects exchange_claim_type_is_exchange
+     */
     public function test_exchange_claim_type_is_exchange(): void
     {
         $this->assertSame(ClaimTypeEnum::EXCHANGE, OrderExchangeFactory::new()->create()->claimType());
     }
 
+    /**
+     * 주문이 여러 교환 신청서를 관계로 가집니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario model=exchange
+     *
+     * @effects order_has_many_exchanges
+     */
     public function test_order_has_many_exchanges(): void
     {
         $order = OrderFactory::new()->create();
@@ -146,6 +215,15 @@ class ClaimModelsTest extends ModuleTestCase
     // OrderExchangeOption
     // ========================================
 
+    /**
+     * 교환 상품 행이 교환 신청서와 원 주문상품에 속하고 교환의 상품 행 목록에 잡힙니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario model=exchange_option
+     *
+     * @effects exchange_option_belongs_to_exchange_and_order_option
+     */
     public function test_exchange_option_belongs_to_exchange_and_order_option(): void
     {
         $order = OrderFactory::new()->create();
@@ -163,6 +241,15 @@ class ClaimModelsTest extends ModuleTestCase
         $this->assertCount(1, $exchange->refresh()->exchangeOptions);
     }
 
+    /**
+     * 교환 상품 행의 가격 차액 부호가 추가 청구인지 차액 환불인지를 가릅니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario model=exchange_option
+     *
+     * @effects exchange_option_price_difference_sign_drives_charge_or_refund
+     */
     public function test_exchange_option_price_difference_sign_drives_charge_or_refund(): void
     {
         $higher = OrderExchangeOptionFactory::new()->higherPrice(5000)->create();
@@ -178,6 +265,15 @@ class ClaimModelsTest extends ModuleTestCase
         $this->assertFalse($equal->hasRefundableDifference());
     }
 
+    /**
+     * 원 수량보다 적게 교환하는 상품 행을 부분 수량으로 판정합니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario model=exchange_option
+     *
+     * @effects exchange_option_partial_quantity_detection
+     */
     public function test_exchange_option_partial_quantity_detection(): void
     {
         $partial = OrderExchangeOptionFactory::new()->partialQuantity(1, 3)->create();
@@ -187,6 +283,15 @@ class ClaimModelsTest extends ModuleTestCase
         $this->assertFalse($full->isPartialQuantity());
     }
 
+    /**
+     * 교환 상품 행의 상태가 교환 상태 Enum 으로 캐스팅됩니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario model=exchange_option
+     *
+     * @effects exchange_option_status_is_cast_to_exchange_status_enum
+     */
     public function test_exchange_option_status_is_cast_to_exchange_status_enum(): void
     {
         $option = OrderExchangeOptionFactory::new()->create([
@@ -200,6 +305,15 @@ class ClaimModelsTest extends ModuleTestCase
     // OrderReturn
     // ========================================
 
+    /**
+     * 반품 신청서가 저장되고 소속 주문·상태 Enum·클레임 유형을 갖습니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario model=return
+     *
+     * @effects return_can_be_created_and_belongs_to_order
+     */
     public function test_return_can_be_created_and_belongs_to_order(): void
     {
         $order = OrderFactory::new()->create();
@@ -213,6 +327,15 @@ class ClaimModelsTest extends ModuleTestCase
         $this->assertSame(ClaimTypeEnum::RETURN, $return->claimType());
     }
 
+    /**
+     * 반품 상품 행이 반품 신청서에 연결되고 소계 금액을 싣습니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario model=return
+     *
+     * @effects return_options_are_related_and_carry_subtotal
+     */
     public function test_return_options_are_related_and_carry_subtotal(): void
     {
         $order = OrderFactory::new()->create();
@@ -233,6 +356,15 @@ class ClaimModelsTest extends ModuleTestCase
         $this->assertEquals(20000, (float) $options->first()->subtotal_amount);
     }
 
+    /**
+     * 반품 상품 행이 환불신청서를 가리키고, 반품의 환불 목록은 그 행을 거쳐 모입니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario model=return
+     *
+     * @effects return_links_to_refund_request_when_completed
+     */
     public function test_return_links_to_refund_request_when_completed(): void
     {
         $order = OrderFactory::new()->create();
@@ -246,13 +378,28 @@ class ClaimModelsTest extends ModuleTestCase
 
         $return = OrderReturnFactory::new()->create([
             'order_id' => $order->id,
+        ]);
+        // 환불 연결은 완료된 **상품 행**이 가리킨다(S7) — 한 반품이 회차마다 환불신청서를 낼 수 있다.
+        $row = OrderReturnOptionFactory::new()->create([
+            'order_return_id' => $return->id,
+            'order_id' => $order->id,
             'refund_id' => $refund->id,
         ]);
 
-        $this->assertInstanceOf(OrderRefund::class, $return->refund);
-        $this->assertEquals($refund->id, $return->refund->id);
+        $this->assertInstanceOf(OrderRefund::class, $row->refund);
+        $this->assertEquals($refund->id, $row->refund->id);
+        $this->assertEquals([$refund->id], $return->refunds()->pluck('ecommerce_order_refunds.id')->map(fn ($id) => (int) $id)->all());
     }
 
+    /**
+     * 주문이 여러 반품 신청서를 관계로 가집니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario model=return
+     *
+     * @effects order_has_many_returns
+     */
     public function test_order_has_many_returns(): void
     {
         $order = OrderFactory::new()->create();
@@ -265,6 +412,15 @@ class ClaimModelsTest extends ModuleTestCase
     // OrderRefund 클레임 확장
     // ========================================
 
+    /**
+     * 환불 출처 유형이 Enum 으로 캐스팅되고 취소 출처 레코드로 해석됩니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario model=refund
+     *
+     * @effects refund_source_type_is_cast_and_resolves_source_record
+     */
     public function test_refund_source_type_is_cast_and_resolves_source_record(): void
     {
         $order = OrderFactory::new()->create();
@@ -294,6 +450,15 @@ class ClaimModelsTest extends ModuleTestCase
         $this->assertEquals($cancel->id, $fresh->resolveRefundSource()->id);
     }
 
+    /**
+     * 직접 환불 출처는 오류 없이 null 로 해석됩니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario model=refund
+     *
+     * @effects refund_source_direct_resolves_to_null_without_error
+     */
     public function test_refund_source_direct_resolves_to_null_without_error(): void
     {
         // 'direct' 를 다형 관계로 두면 Eloquent 가 클래스명으로 해석하다 fatal 이 난다.
@@ -312,6 +477,15 @@ class ClaimModelsTest extends ModuleTestCase
         $this->assertNull(OrderRefund::find($refund->id)->resolveRefundSource());
     }
 
+    /**
+     * 반품·교환 출처 환불신청서가 각각 반품·교환 신청서로 해석됩니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario model=refund
+     *
+     * @effects refund_source_resolves_return_and_exchange
+     */
     public function test_refund_source_resolves_return_and_exchange(): void
     {
         $order = OrderFactory::new()->create();
@@ -341,6 +515,15 @@ class ClaimModelsTest extends ModuleTestCase
         $this->assertInstanceOf(OrderExchange::class, $fromExchange->resolveRefundSource());
     }
 
+    /**
+     * 출처 컬럼과 함께 기존 취소 연결 컬럼도 유지되어 취소 관계로 되돌아갑니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario model=refund
+     *
+     * @effects refund_legacy_cancel_link_is_preserved_alongside_source
+     */
     public function test_refund_legacy_cancel_link_is_preserved_alongside_source(): void
     {
         // order_cancel_id 는 하위호환으로 유지된다 — 이중 기록이 계약이다.
@@ -371,6 +554,15 @@ class ClaimModelsTest extends ModuleTestCase
     // ClaimImage (다형 첨부)
     // ========================================
 
+    /**
+     * 첨부 이미지가 생성될 때 12자 해시를 부여받습니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario model=claim_image
+     *
+     * @effects claim_image_generates_hash_on_create
+     */
     public function test_claim_image_generates_hash_on_create(): void
     {
         $image = ClaimImageFactory::new()->create();
@@ -379,6 +571,15 @@ class ClaimModelsTest extends ModuleTestCase
         $this->assertSame(12, strlen($image->hash));
     }
 
+    /**
+     * 첨부 이미지가 교환·반품 신청서에 다형 관계로 붙습니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario model=claim_image
+     *
+     * @effects claim_image_morphs_to_exchange_and_return
+     */
     public function test_claim_image_morphs_to_exchange_and_return(): void
     {
         $exchange = OrderExchangeFactory::new()->create();
@@ -393,6 +594,15 @@ class ClaimModelsTest extends ModuleTestCase
         $this->assertEquals($return->id, $onReturn->claimable->id);
     }
 
+    /**
+     * 첨부 이미지의 다형 유형 값은 클래스 전체 이름이 아닌 짧은 클레임 유형으로 저장됩니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario model=claim_image
+     *
+     * @effects claim_image_stores_short_claim_type_not_fqcn
+     */
     public function test_claim_image_stores_short_claim_type_not_fqcn(): void
     {
         // 저장값이 FQCN 이면 네임스페이스 변경 시 기존 행이 깨진다.
@@ -402,6 +612,15 @@ class ClaimModelsTest extends ModuleTestCase
         $this->assertSame(ClaimTypeEnum::EXCHANGE, $image->claimType());
     }
 
+    /**
+     * 신청서의 첨부 이미지가 정렬 순서대로 로드됩니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario model=claim_image
+     *
+     * @effects claim_owner_loads_images_in_sort_order
+     */
     public function test_claim_owner_loads_images_in_sort_order(): void
     {
         $exchange = OrderExchangeFactory::new()->create();
@@ -414,6 +633,15 @@ class ClaimModelsTest extends ModuleTestCase
         $this->assertSame([0, 1, 2], $sortOrders);
     }
 
+    /**
+     * 첨부 이미지 스코프가 클레임 유형으로 거르고 정렬합니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario model=claim_image
+     *
+     * @effects claim_image_scopes_filter_by_type_and_order
+     */
     public function test_claim_image_scopes_filter_by_type_and_order(): void
     {
         $exchange = OrderExchangeFactory::new()->create();
@@ -429,6 +657,15 @@ class ClaimModelsTest extends ModuleTestCase
     // ClaimPayment (다형 추가결제)
     // ========================================
 
+    /**
+     * 클레임 결제 합계는 PG 금액과 마일리지를 더한 값이고 마일리지 사용 여부를 알립니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario model=claim_payment
+     *
+     * @effects claim_payment_totals_pg_and_points
+     */
     public function test_claim_payment_totals_pg_and_points(): void
     {
         $payment = ClaimPaymentFactory::new()->create([
@@ -440,6 +677,15 @@ class ClaimModelsTest extends ModuleTestCase
         $this->assertTrue($payment->usesPoints());
     }
 
+    /**
+     * 클레임 결제의 수납·환불 가능 판정이 결제 상태를 따릅니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario model=claim_payment
+     *
+     * @effects claim_payment_paid_state_flags
+     */
     public function test_claim_payment_paid_state_flags(): void
     {
         $pending = ClaimPaymentFactory::new()->create();
@@ -452,6 +698,15 @@ class ClaimModelsTest extends ModuleTestCase
         $this->assertTrue($paid->isRefundable());
     }
 
+    /**
+     * 클레임 결제가 교환·반품 신청서에 다형 관계로 붙고 양쪽의 결제 목록에 잡힙니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario model=claim_payment
+     *
+     * @effects claim_payment_morphs_to_exchange_and_return
+     */
     public function test_claim_payment_morphs_to_exchange_and_return(): void
     {
         $exchange = OrderExchangeFactory::new()->create();
@@ -471,6 +726,15 @@ class ClaimModelsTest extends ModuleTestCase
         $this->assertCount(1, $return->refresh()->claimPayments);
     }
 
+    /**
+     * 클레임 결제 번호가 중복되면 저장이 거부됩니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario model=claim_payment
+     *
+     * @effects claim_payment_number_is_unique
+     */
     public function test_claim_payment_number_is_unique(): void
     {
         $first = ClaimPaymentFactory::new()->create();
@@ -479,6 +743,15 @@ class ClaimModelsTest extends ModuleTestCase
         ClaimPaymentFactory::new()->create(['payment_number' => $first->payment_number]);
     }
 
+    /**
+     * 클레임 결제 상태 스코프가 상태별로 거릅니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario model=claim_payment
+     *
+     * @effects claim_payment_status_scope_filters
+     */
     public function test_claim_payment_status_scope_filters(): void
     {
         $exchange = OrderExchangeFactory::new()->create();
@@ -489,6 +762,15 @@ class ClaimModelsTest extends ModuleTestCase
         $this->assertCount(1, ClaimPayment::ofStatus(ClaimPaymentStatusEnum::PENDING)->get());
     }
 
+    /**
+     * 주문이 여러 클레임 결제를 관계로 가집니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario model=claim_payment
+     *
+     * @effects order_has_many_claim_payments
+     */
     public function test_order_has_many_claim_payments(): void
     {
         $exchange = OrderExchangeFactory::new()->create();
@@ -504,6 +786,15 @@ class ClaimModelsTest extends ModuleTestCase
     // ShippingPolicyClaimAddress
     // ========================================
 
+    /**
+     * 같은 배송정책·같은 유형의 회수지를 두 번 저장하면 거부됩니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario model=claim_address
+     *
+     * @effects claim_address_is_unique_per_policy_and_type
+     */
     public function test_claim_address_is_unique_per_policy_and_type(): void
     {
         $address = ShippingPolicyClaimAddressFactory::new()->forReturn()->create();
@@ -514,6 +805,15 @@ class ClaimModelsTest extends ModuleTestCase
         ]);
     }
 
+    /**
+     * 한 배송정책은 클레임 유형마다 회수지를 하나씩 가질 수 있습니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario model=claim_address
+     *
+     * @effects claim_address_allows_one_per_claim_type
+     */
     public function test_claim_address_allows_one_per_claim_type(): void
     {
         $address = ShippingPolicyClaimAddressFactory::new()->forReturn()->create();
@@ -527,6 +827,15 @@ class ClaimModelsTest extends ModuleTestCase
         $this->assertNotNull($policy->getClaimAddress(ClaimTypeEnum::RETURN));
     }
 
+    /**
+     * 회수지 스냅샷이 배송 필드를 싣고 정책 행 ID 는 싣지 않습니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario model=claim_address
+     *
+     * @effects claim_address_snapshot_carries_delivery_fields
+     */
     public function test_claim_address_snapshot_carries_delivery_fields(): void
     {
         $address = ShippingPolicyClaimAddressFactory::new()->forExchange()->create([
@@ -545,6 +854,15 @@ class ClaimModelsTest extends ModuleTestCase
         $this->assertArrayNotHasKey('id', $snapshot, '스냅샷은 정책 행 ID 를 들고 가지 않는다');
     }
 
+    /**
+     * 회수지의 클레임 유형이 클레임 유형 Enum 으로 캐스팅됩니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario model=claim_address
+     *
+     * @effects claim_address_type_is_cast_to_claim_type_enum
+     */
     public function test_claim_address_type_is_cast_to_claim_type_enum(): void
     {
         $address = ShippingPolicyClaimAddressFactory::new()->forExchange()->create();

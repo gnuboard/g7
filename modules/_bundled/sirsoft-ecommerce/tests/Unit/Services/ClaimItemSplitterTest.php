@@ -36,6 +36,11 @@ class ClaimItemSplitterTest extends ModuleTestCase
 
     protected ClaimItemSplitter $splitter;
 
+    /**
+     * 테스트용 통화 설정을 준비하고 분할기 인스턴스를 받아 둡니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -43,6 +48,11 @@ class ClaimItemSplitterTest extends ModuleTestCase
         $this->splitter = app(ClaimItemSplitter::class);
     }
 
+    /**
+     * 테스트용 통화 설정을 정리합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         $this->clearTestCurrencySettings();
@@ -134,6 +144,10 @@ class ClaimItemSplitterTest extends ModuleTestCase
     // ================================================================
 
     /**
+     * 교환 행을 2:1 로 나눠도 차액 합이 원본과 같게 보존되는지 검증합니다.
+     *
+     * @return void 반환값 없음
+     *
      * @effects split_preserves_the_exchange_price_difference_sum
      */
     public function test_split_preserves_the_exchange_price_difference_sum(): void
@@ -162,6 +176,8 @@ class ClaimItemSplitterTest extends ModuleTestCase
      * 잃는다 — 나중에 그 행을 반려할 때 되돌릴 상태의 근거가 사라진다. 특히
      * `is_new_stock_deducted` 는 교환 후속 재고를 이미 뺐는지를 말하는 플래그라, 잔여가
      * 이 값을 잃으면 재고가 두 번 빠지거나 아예 안 빠진다 — 어느 쪽도 오류를 내지 않는다.
+     *
+     * @return void 반환값 없음
      *
      * @effects remainder_inherits_the_request_snapshot_and_clears_completion
      */
@@ -193,6 +209,10 @@ class ClaimItemSplitterTest extends ModuleTestCase
     }
 
     /**
+     * 교환 행을 나눠도 보조 통화별 차액 합이 보존되고 배열로 돌아오는지 검증합니다.
+     *
+     * @return void 반환값 없음
+     *
      * @effects split_preserves_the_multi_currency_difference_sum
      */
     public function test_split_preserves_the_multi_currency_difference_sum(): void
@@ -221,6 +241,10 @@ class ClaimItemSplitterTest extends ModuleTestCase
     }
 
     /**
+     * 반품 행을 나눠도 소계 합이 원본과 같게 보존되는지 검증합니다.
+     *
+     * @return void 반환값 없음
+     *
      * @effects split_preserves_the_return_subtotal_sum
      */
     public function test_split_preserves_the_return_subtotal_sum(): void
@@ -240,6 +264,10 @@ class ClaimItemSplitterTest extends ModuleTestCase
     }
 
     /**
+     * 환불 행을 나눠도 네 금액 컬럼의 합이 모두 보존되는지 검증합니다.
+     *
+     * @return void 반환값 없음
+     *
      * @effects split_preserves_every_refund_money_column_sum
      */
     public function test_split_preserves_every_refund_money_column_sum(): void
@@ -265,6 +293,10 @@ class ClaimItemSplitterTest extends ModuleTestCase
     // ================================================================
 
     /**
+     * 전이분이 원본 행 ID 에 남고 잔여가 새 행으로 생기는지 검증합니다.
+     *
+     * @return void 반환값 없음
+     *
      * @effects split_keeps_the_transitioned_share_on_the_original_row
      */
     public function test_split_keeps_the_transitioned_share_on_the_original_row(): void
@@ -281,6 +313,10 @@ class ClaimItemSplitterTest extends ModuleTestCase
     }
 
     /**
+     * 반품 잔여 행이 신청 시점 스냅샷을 물려받고 완료 시각은 비우는지 검증합니다.
+     *
+     * @return void 반환값 없음
+     *
      * @effects remainder_inherits_the_request_snapshot_and_clears_completion
      */
     public function test_remainder_inherits_the_request_snapshot_and_clears_completion(): void
@@ -305,6 +341,10 @@ class ClaimItemSplitterTest extends ModuleTestCase
     // ================================================================
 
     /**
+     * 전량 분할은 행을 늘리지 않는 no-op 인지 검증합니다.
+     *
+     * @return void 반환값 없음
+     *
      * @effects full_quantity_split_is_a_no_op
      */
     public function test_full_quantity_split_is_a_no_op(): void
@@ -322,6 +362,10 @@ class ClaimItemSplitterTest extends ModuleTestCase
     }
 
     /**
+     * 행 수량 범위 밖(0, 초과) 분할이 거부되는지 검증합니다.
+     *
+     * @return void 반환값 없음
+     *
      * @effects quantity_outside_the_row_is_rejected
      */
     public function test_quantity_outside_the_row_is_rejected(): void
@@ -341,27 +385,55 @@ class ClaimItemSplitterTest extends ModuleTestCase
     }
 
     /**
-     * @effects exchange_row_with_a_redelivery_option_is_not_splittable
+     * 발송된 교환 행도 쪼갤 수 있고, 후속 주문옵션이 같은 수량으로 함께 쪼개진다. (R10 · D11)
+     *
+     * 후속 주문옵션은 `quantity = exchange_quantity` 1:1 산출물이다 — 예전에는 그래서 발송된 행을
+     * 쪼개지 못했고, 선교환에서 3개 중 1개만 회수 송장이 붙은 경우를 적을 수 없었다. 이제 교환 행을
+     * 쪼개면 후속 주문옵션도 같은 수량으로 쪼개 잔여 행이 자기 몫을 가리키고, 금액 합은 보존된다.
+     *
+     * @return void 반환값 없음
+     *
+     * @effects exchange_row_with_a_redelivery_option_splits_its_successor
      */
-    public function test_exchange_row_with_a_redelivery_option_is_not_splittable(): void
+    public function test_exchange_row_with_a_redelivery_option_splits_its_successor(): void
     {
         $order = $this->createSingleItemClaimOrder(29000, 3);
-        $newOption = OrderOption::factory()->create(['order_id' => $order->id]);
-
-        $item = $this->makeExchangeItem($order, $order->options->first(), [
-            'new_order_option_id' => $newOption->id,
+        $successor = OrderOption::factory()->create([
+            'order_id' => $order->id,
+            'quantity' => 3,
+            'subtotal_tax_amount' => 900,
+            'subtotal_discount_amount' => 300,
         ]);
 
-        // 후속 주문옵션은 `quantity = exchange_quantity` 1:1 산출물이라, 두 조각이 같은 것을
-        // 가리키면 재발송 수량이 오류 없이 어긋난다.
-        $this->assertFalse(ClaimItemSplitter::isSplittable($item));
-        $this->assertClaimException(
-            'claim_item_not_splittable',
-            fn () => $this->splitter->split($item, 2)
-        );
+        $item = $this->makeExchangeItem($order, $order->options->first(), [
+            'new_order_option_id' => $successor->id,
+            'option_status' => ExchangeStatusEnum::REDELIVERING,
+        ]);
+
+        $this->assertTrue(ClaimItemSplitter::isSplittable($item));
+
+        ['target' => $target, 'remainder' => $remainder] = $this->splitter->split($item, 1);
+
+        $this->assertSame(1, (int) $target->exchange_quantity);
+        $this->assertSame(2, (int) $remainder->exchange_quantity);
+        $this->assertSame((int) $successor->id, (int) $target->new_order_option_id);
+        $this->assertNotNull($remainder->new_order_option_id);
+        $this->assertNotSame((int) $successor->id, (int) $remainder->new_order_option_id);
+
+        $kept = $successor->fresh();
+        $split = OrderOption::find($remainder->new_order_option_id);
+
+        $this->assertSame(1, (int) $kept->quantity);
+        $this->assertSame(2, (int) $split->quantity);
+        $this->assertEqualsWithDelta(900, (float) $kept->subtotal_tax_amount + (float) $split->subtotal_tax_amount, 0.01);
+        $this->assertEqualsWithDelta(300, (float) $kept->subtotal_discount_amount + (float) $split->subtotal_discount_amount, 0.01);
     }
 
     /**
+     * 종결된 환불 행은 분할할 수 없는지 검증합니다.
+     *
+     * @return void 반환값 없음
+     *
      * @effects finished_row_is_not_splittable
      */
     public function test_finished_row_is_not_splittable(): void
@@ -379,6 +451,10 @@ class ClaimItemSplitterTest extends ModuleTestCase
     }
 
     /**
+     * 진행 중인 반품 행은 분할할 수 있는지 검증합니다.
+     *
+     * @return void 반환값 없음
+     *
      * @effects living_row_is_splittable
      */
     public function test_living_row_is_splittable(): void

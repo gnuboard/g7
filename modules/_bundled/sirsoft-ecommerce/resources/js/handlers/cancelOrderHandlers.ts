@@ -317,7 +317,8 @@ export async function executeCancelOrderHandler(
 
     try {
         const response = await G7Core.api.post(
-            `/api/modules/sirsoft-ecommerce/admin/orders/${orderId}/cancel`,
+            // [취소·환불 접수](§3-11) — 교환·반품 직권 접수와 같은 서비스·물리 게이트로 간다.
+            `/api/modules/sirsoft-ecommerce/admin/orders/${orderId}/cancel-refund`,
             body
         );
 

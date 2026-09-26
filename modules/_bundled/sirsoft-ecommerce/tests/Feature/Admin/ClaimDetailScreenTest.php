@@ -31,6 +31,7 @@ use Modules\Sirsoft\Ecommerce\Services\OrderExchangeService;
 use Modules\Sirsoft\Ecommerce\Services\OrderReturnService;
 use Modules\Sirsoft\Ecommerce\Services\PaymentMethodResolver;
 use Modules\Sirsoft\Ecommerce\Tests\Concerns\BuildsClaimFlowOrders;
+use Modules\Sirsoft\Ecommerce\Tests\Concerns\ReadsReturnRefundLink;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
@@ -50,6 +51,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 class ClaimDetailScreenTest extends ModuleTestCase
 {
     use BuildsClaimFlowOrders;
+    use ReadsReturnRefundLink;
 
     protected User $admin;
 
@@ -205,7 +207,7 @@ class ClaimDetailScreenTest extends ModuleTestCase
     {
         $this->ensureCarrier();
         $return = $this->moveReturnToCompleted($this->makeReturn());
-        $refund = $return->refresh()->refund;
+        $refund = $this->returnRefund($return);
 
         $this->assertNotNull($refund, '반품 완료가 환불신청서를 만들지 않았다');
 
@@ -536,7 +538,7 @@ class ClaimDetailScreenTest extends ModuleTestCase
     public function test_progress_steps_append_an_off_path_stage_for_a_rejected_refund(): void
     {
         $return = $this->moveReturnToCompleted($this->makeReturn());
-        $refund = $return->refresh()->refund;
+        $refund = $this->returnRefund($return);
 
         $this->assertNotNull($refund, '반품 완료가 환불신청서를 만들지 않았다');
 
@@ -969,7 +971,7 @@ class ClaimDetailScreenTest extends ModuleTestCase
     public function test_detail_settlement_is_null_for_a_refund_request(): void
     {
         $return = $this->moveReturnToCompleted($this->makeReturn());
-        $refund = $return->refresh()->refund;
+        $refund = $this->returnRefund($return);
 
         $this->assertNotNull($refund, '반품 완료가 환불신청서를 만들지 않았다');
 
@@ -1026,7 +1028,7 @@ class ClaimDetailScreenTest extends ModuleTestCase
         HookManager::addFilter('sirsoft-ecommerce.payment.refund', fn (array $default) => $default);
 
         $return = $this->moveReturnToCompleted($this->makeReturn());
-        $refund = $return->refresh()->refund;
+        $refund = $this->returnRefund($return);
 
         $methods = $this->actingAs($this->admin)
             ->getJson($this->base().'/claims/'.$refund->refund_number)
@@ -1076,7 +1078,7 @@ class ClaimDetailScreenTest extends ModuleTestCase
         );
 
         $return = $this->moveReturnToCompleted($this->makeReturn());
-        $refund = $return->refresh()->refund;
+        $refund = $this->returnRefund($return);
 
         // 확장 수단으로 결제된 주문 — payment_method 에 enum 캐스트가 없는 이유가 이것이다.
         $refund->order->payments()->update(['payment_method' => 'nhnkcp_naverpay']);
@@ -1113,7 +1115,7 @@ class ClaimDetailScreenTest extends ModuleTestCase
     public function test_detail_cancellable_formatting_honours_the_order_currency_snapshot(): void
     {
         $return = $this->moveReturnToCompleted($this->makeReturn());
-        $refund = $return->refresh()->refund;
+        $refund = $this->returnRefund($return);
         $order = $refund->order;
 
         // 거래 시점에 2자리로 박제된 통화. 현재 설정의 그 통화는 0자리(반올림 단위 1)라,
@@ -1153,7 +1155,7 @@ class ClaimDetailScreenTest extends ModuleTestCase
     public function test_detail_carries_the_cancellable_amount_with_its_three_axes(): void
     {
         $return = $this->moveReturnToCompleted($this->makeReturn());
-        $refund = $return->refresh()->refund;
+        $refund = $this->returnRefund($return);
 
         $cancellable = $this->actingAs($this->admin)
             ->getJson($this->base().'/claims/'.$refund->refund_number)
@@ -1218,7 +1220,7 @@ class ClaimDetailScreenTest extends ModuleTestCase
     public function test_cancellable_endpoint_and_detail_envelope_return_the_same_payload(): void
     {
         $return = $this->moveReturnToCompleted($this->makeReturn());
-        $refund = $return->refresh()->refund;
+        $refund = $this->returnRefund($return);
 
         $fromDetail = $this->actingAs($this->admin)
             ->getJson($this->base().'/claims/'.$refund->refund_number)

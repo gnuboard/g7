@@ -6,7 +6,9 @@ namespace Modules\Sirsoft\Ecommerce\Listeners;
 
 use App\Contracts\Extension\HookListenerInterface;
 use App\Extension\HookManager;
+use App\Helpers\TimezoneHelper;
 use Illuminate\Support\Facades\Log;
+use Modules\Sirsoft\Ecommerce\Enums\ClaimTrackingDirectionEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ExchangeStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundStatusEnum;
@@ -16,7 +18,9 @@ use Modules\Sirsoft\Ecommerce\Models\OrderExchange;
 use Modules\Sirsoft\Ecommerce\Models\OrderRefund;
 use Modules\Sirsoft\Ecommerce\Models\OrderReturn;
 use Modules\Sirsoft\Ecommerce\Services\ClaimPaymentService;
+use Modules\Sirsoft\Ecommerce\Support\ClaimItemCollectionState;
 use Modules\Sirsoft\Ecommerce\Support\ClaimNotificationHooks;
+use Modules\Sirsoft\Ecommerce\Support\ClaimTrackingGroups;
 
 /**
  * 클레임 상태전이 알림 매핑 리스너 (§4-8 — 고객 가시 상태 전수 29종)
@@ -53,6 +57,10 @@ use Modules\Sirsoft\Ecommerce\Support\ClaimNotificationHooks;
  *
  * 신청자가 스스로 철회한 사실을 그 신청자에게 되돌려 보낼 이유가 없다 — 알아야 하는 쪽은
  * 운영자다. 유형 3종이 같은 알림(`claim_withdrawn`)을 쓰며 유형은 본문 변수로 실린다.
+ *
+ * 예외는 **운영자가 고객 요청으로 대신 철회한 경우**(S14 — `withdrawn_by_admin`)다. 고객이 한 철회가
+ * 아니므로 고객은 자기 신청이 왜 사라졌는지 알 길이 없다 — 이때만 고객 수신 알림
+ * (`claim_withdrawn_on_behalf`)을 관리자 수신 알림과 함께 보낸다.
  */
 class ClaimStatusNotificationListener implements HookListenerInterface
 {
@@ -62,6 +70,9 @@ class ClaimStatusNotificationListener implements HookListenerInterface
     /** 철회 알림(관리자 수신) 훅 — 유형 구분 없이 한 종 */
     public const WITHDRAWN_HOOK = ClaimNotificationHooks::WITHDRAWN;
 
+    /** 대리 철회 안내(고객 수신) 훅 — 운영자가 고객 요청으로 대신 철회했을 때만. 유형 구분 없이 한 종 */
+    public const WITHDRAWN_ON_BEHALF_HOOK = ClaimNotificationHooks::WITHDRAWN_ON_BEHALF;
+
     /**
      * 부분 처리 안내(고객 수신) 훅 — 유형 구분 없이 한 종.
      *
@@ -69,6 +80,20 @@ class ClaimStatusNotificationListener implements HookListenerInterface
      * 않는다. 그때 고객이 자기 신청이 어떻게 갈렸는지 알 수 있는 유일한 통로다.
      */
     public const PARTIALLY_PROCESSED_HOOK = ClaimNotificationHooks::PARTIALLY_PROCESSED;
+
+    /**
+     * 부분 처리 안내를 보낼 심사 결정 (S11 — 물류 단계는 제외)
+     *
+     * @var array<int, string>
+     */
+    private const REVIEW_DECISIONS = ['approved', 'rejected', 'on_hold', 'payment_pending'];
+
+    /**
+     * 「아직 검토 중」 으로 셀 심사 단계 상태 (S11)
+     *
+     * @var array<int, string>
+     */
+    private const REVIEW_STAGES = ['requested', 'payment_pending', 'paid', 'on_hold'];
 
     /**
      * 구독할 훅 목록을 반환합니다.
@@ -89,6 +114,12 @@ class ClaimStatusNotificationListener implements HookListenerInterface
             // 상품 단위 전이의 **사실**을 받아, 「부분 처리인가 · 고객에게 알릴 것인가」를
             // 이 축이 단독으로 판정한다. 서비스는 판정하지 않는다. 건수는 발행 시점에 센다.
             ClaimNotificationHooks::ITEMS_TRANSITIONED => ['method' => 'handleItemsTransitioned', 'priority' => 10, 'sync' => true],
+            // 상품 행 송장이 새로 적히거나 바뀐 사실 — 신청서 상태가 그대로면 상태 알림이 나가지 않으므로
+            // 송장 등록 알림이 운송장 줄을 전한다(§3-10).
+            'sirsoft-ecommerce.claim.exchange.after_tracking_update' => ['method' => 'handleTrackingUpdated', 'priority' => 10, 'sync' => true],
+            'sirsoft-ecommerce.claim.return.after_tracking_update' => ['method' => 'handleTrackingUpdated', 'priority' => 10, 'sync' => true],
+            // 선교환 회수 지연(배치 발화) → 관리자 알림 1회(D2).
+            'sirsoft-ecommerce.claim.exchange.collection_overdue' => ['method' => 'handleCollectionOverdue', 'priority' => 10, 'sync' => true],
         ];
     }
 
@@ -149,6 +180,30 @@ class ClaimStatusNotificationListener implements HookListenerInterface
                 RefundStatusEnum::COMPLETED->value => 'completed',
             ],
         ];
+    }
+
+    /**
+     * 상태 전이가 아닌 **사건** 알림의 발화 훅을 반환합니다. (송장 등록 3종 · 선교환 회수 지연)
+     *
+     * 상태 알림(`notifiableStatuses()`)과 달리 상태가 바뀌지 않아도 나간다 — 「송장만 저장」 으로 운송장이
+     * 새로 적혔을 때, 반송 기한이 지났을 때. 정의(`module.php`)와 1:1 이어야 한다(구조 테스트가 대조한다).
+     *
+     * @return array<string, string> 발화 훅 => 알림 정의 type
+     */
+    public static function eventNotifyHooks(): array
+    {
+        $hooks = [];
+
+        foreach ([
+            [ClaimTypeEnum::EXCHANGE, 'collection_tracking_registered'],
+            [ClaimTypeEnum::EXCHANGE, 'redelivery_tracking_registered'],
+            [ClaimTypeEnum::RETURN, 'collection_tracking_registered'],
+            [ClaimTypeEnum::EXCHANGE, 'collection_overdue'],
+        ] as [$type, $event]) {
+            $hooks[ClaimNotificationHooks::forStatus($type->value, $event)] = $type->value.'_'.$event;
+        }
+
+        return $hooks;
     }
 
     /**
@@ -249,7 +304,15 @@ class ClaimStatusNotificationListener implements HookListenerInterface
 
         // 철회는 유형 구분 없이 관리자 수신 1종으로 모은다.
         if ($this->isWithdrawnStatus($type, $target)) {
-            HookManager::doAction(self::WITHDRAWN_HOOK, $claim, $this->publishSnapshot($claim, $target));
+            $snapshot = $this->publishSnapshot($claim, $target);
+            HookManager::doAction(self::WITHDRAWN_HOOK, $claim, $snapshot);
+
+            // 운영자가 고객 요청으로 대신 철회했으면 고객에게도 알린다 — 고객이 한 철회가 아니라서
+            // 이 알림이 없으면 고객은 신청이 사라진 이유를 모른다. 철회는 종착 상태라 모델의 철회자
+            // 기록이 발행 뒤에 바뀌지 않는다(상태처럼 캡처할 필요가 없다).
+            if ($claim->withdrawn_by_admin !== null) {
+                HookManager::doAction(self::WITHDRAWN_ON_BEHALF_HOOK, $claim, $snapshot);
+            }
 
             return;
         }
@@ -311,6 +374,33 @@ class ClaimStatusNotificationListener implements HookListenerInterface
             return $snapshot;
         }
 
+        // 운송장 줄도 발행 시점 값으로 고정한다(S10) — 큐가 알림을 잡을 때 송장이 바뀌었으면
+        // 다른 번호가 나간다. 한 신청서에 운송장이 여럿이면 줄마다 하나씩 싣는다.
+        try {
+            $direction = match ($status) {
+                'collecting' => ClaimTrackingDirectionEnum::COLLECTION,
+                'redelivering', 'redelivered' => ClaimTrackingDirectionEnum::REDELIVERY,
+                default => null,
+            };
+
+            if ($direction !== null) {
+                // 유형마다 상품 행 관계가 하나뿐이다 — 두 관계를 함께 즉시 로드하면 없는 관계에서 예외가 나
+                // 운송장 줄이 스냅샷에서 조용히 빠진다(발송 시점 값으로 대체되어 S10 이 무너진다).
+                $relation = $claim instanceof OrderExchange ? 'exchangeOptions' : 'returnOptions';
+                $snapshot['tracking_lines'] = ClaimTrackingGroups::lines($claim->fresh([$relation]) ?? $claim, $direction);
+            }
+
+            if ($claim instanceof OrderExchange && $status === 'redelivering') {
+                $snapshot['advance_exchange_notice'] = $this->advanceExchangeNotice($claim->fresh() ?? $claim);
+            }
+        } catch (\Throwable $e) {
+            Log::warning('[claim.notification] 발행 시점 운송장 줄 캡처 실패 — 발송 시점 값으로 대체', [
+                'claim_type' => $claim->claimType()->value,
+                'claim_id' => $claim->getKey(),
+                'error' => $e->getMessage(),
+            ]);
+        }
+
         try {
             // 미수납 산식의 단일 출처는 ClaimPaymentService 다. 생성자 주입 대신 여기서 해석하는 것은
             // 이 리스너가 청구액이 필요 없는 환불 축에서도 만들어지기 때문이다(그 경로엔 비용 0).
@@ -355,6 +445,13 @@ class ClaimStatusNotificationListener implements HookListenerInterface
             return;
         }
 
+        // 부분 처리 안내는 **심사 결정**(승인·반려·보류·결제대기)일 때만 보낸다(S11). 회수·발송 같은
+        // 물류 단계는 송장 알림과 상태 알림이 맡는다 — 여기서 보내면 이미 승인된 상품을 두고
+        // 「남은 상품은 계속 검토 중」 이라 안내하게 된다.
+        if (! in_array($target, self::REVIEW_DECISIONS, true)) {
+            return;
+        }
+
         $reloaded = $this->reloadWithItems($claim);
         $rows = $this->claimItemRows($reloaded);
 
@@ -379,7 +476,9 @@ class ClaimStatusNotificationListener implements HookListenerInterface
                 $processed += $quantity;
             }
 
-            if ($value !== $target && ! $isFinal) {
+            // 「검토 중」 은 아직 심사 단계에 있는 수량만 센다(S11) — 이미 승인·회수 등으로 **앞선**
+            // 상품을 검토 중으로 세면 끝난 결정을 다시 기다리라고 안내하게 된다.
+            if ($value !== $target && ! $isFinal && in_array($value, self::REVIEW_STAGES, true)) {
                 $pending += $quantity;
             }
         }
@@ -403,6 +502,117 @@ class ClaimStatusNotificationListener implements HookListenerInterface
                 'status' => $this->headerStatusValue($reloaded),
             ],
         );
+    }
+
+    /**
+     * 상품 행 송장이 새로 적히거나 바뀐 사실을 송장 등록 알림으로 옮깁니다. (§3-10)
+     *
+     * 요청 1건당 1통이다. 같은 요청에서 신청서가 그 방향의 이동 상태(회수중·발송중)로 옮겨졌으면
+     * 상태 알림이 운송장 줄을 싣고 나가므로 이 알림은 보내지 않는다(억제 규칙). 송장을 지운 행만
+     * 있으면 알릴 것이 없다.
+     *
+     * @param  OrderExchange|OrderReturn  $claim  신청서
+     * @param  string  $direction  방향 값 (collection|redelivery)
+     * @param  array<int, array<string, mixed>>  $changes  바뀐 행 (item_id · previous · new)
+     * @param  array<string, mixed>  $context  부가 정보 (source · header_transitioned_to)
+     * @return void
+     */
+    public function handleTrackingUpdated(OrderExchange|OrderReturn $claim, string $direction, array $changes, array $context = []): void
+    {
+        $directionEnum = ClaimTrackingDirectionEnum::tryFrom($direction);
+
+        if ($directionEnum === null) {
+            return;
+        }
+
+        $movingStatus = $directionEnum === ClaimTrackingDirectionEnum::COLLECTION ? 'collecting' : 'redelivering';
+
+        if (($context['header_transitioned_to'] ?? null) === $movingStatus) {
+            return;
+        }
+
+        $registeredIds = [];
+
+        foreach ($changes as $change) {
+            if (($change['new']['tracking_number'] ?? null) !== null) {
+                $registeredIds[] = (int) ($change['item_id'] ?? 0);
+            }
+        }
+
+        if ($registeredIds === []) {
+            return;
+        }
+
+        $type = $claim->claimType()->value;
+        $hook = ClaimNotificationHooks::forStatus($type, $directionEnum->value.'_tracking_registered');
+
+        $snapshot = [
+            'status' => $this->headerStatusValue($claim),
+            'tracking_lines' => ClaimTrackingGroups::lines($claim->fresh() ?? $claim, $directionEnum, $registeredIds),
+        ];
+
+        if ($claim instanceof OrderExchange && $directionEnum === ClaimTrackingDirectionEnum::REDELIVERY) {
+            $snapshot['advance_exchange_notice'] = $this->advanceExchangeNotice($claim->fresh() ?? $claim);
+        }
+
+        HookManager::doAction($hook, $claim, $snapshot);
+    }
+
+    /**
+     * 선교환 회수 지연(배치 발화)을 관리자 알림으로 옮깁니다. (D2)
+     *
+     * @param  OrderExchange  $exchange  교환 신청서
+     * @param  int  $overdueDays  지연 일수
+     * @return void
+     */
+    public function handleCollectionOverdue(OrderExchange $exchange, int $overdueDays = 0): void
+    {
+        $fresh = $exchange->fresh(['exchangeOptions.orderOption']) ?? $exchange;
+        $lines = [];
+
+        foreach ($fresh->exchangeOptions as $item) {
+            if ($item->option_status->isFinal() || $item->collected_at !== null || $item->unreturned_at !== null
+                || ClaimItemCollectionState::hasCollectionTracking($item)) {
+                continue;
+            }
+
+            $name = $item->orderOption?->product_name ?? '';
+
+            if (is_array($name)) {
+                $name = $name[app()->getLocale()] ?? $name[(string) config('app.fallback_locale', 'ko')] ?? (reset($name) ?: '');
+            }
+
+            $lines[] = trim((string) $name).' × '.(int) $item->exchange_quantity;
+        }
+
+        HookManager::doAction(
+            ClaimNotificationHooks::forStatus(ClaimTypeEnum::EXCHANGE->value, 'collection_overdue'),
+            $fresh,
+            [
+                'status' => $this->headerStatusValue($fresh),
+                'overdue_days' => (string) $overdueDays,
+                'collection_due_date' => TimezoneHelper::toUserDateString($fresh->collection_due_at) ?? '',
+                'unreturned_item_lines' => implode("\n", $lines),
+            ],
+        );
+    }
+
+    /**
+     * 선교환 반송 기한 안내 문구를 만듭니다. (일반 교환이면 빈 문자열)
+     *
+     * @param  OrderExchange  $exchange  교환 신청서
+     * @return string 안내 문구
+     */
+    private function advanceExchangeNotice(OrderExchange $exchange): string
+    {
+        if (! $exchange->isAdvanceExchange()) {
+            return '';
+        }
+
+        return __('sirsoft-ecommerce::messages.claims.notifications.advance_exchange_notice', [
+            // 사용자 타임존 날짜 — 화면의 반송 기한과 같은 날을 알린다.
+            'date' => TimezoneHelper::toUserDateString($exchange->collection_due_at) ?? '',
+        ]);
     }
 
     /**

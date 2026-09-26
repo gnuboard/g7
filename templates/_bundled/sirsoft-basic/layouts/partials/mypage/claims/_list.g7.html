@@ -59,6 +59,8 @@
             <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">$t:claim.list.order_number|number={{claim.order_number ?? ''}}</p>
           </div>
           <div class="flex flex-col items-end gap-2 flex-shrink-0">
+            <!-- 판매자 접수 뱃지(D8) — 판매자가 고객을 대신해 접수한 신청서. 고객은 이 신청을 고치거나 철회할 수 없다(서버가 is_editable/is_withdrawable 를 끈다). -->
+            <span data-if="{{claim.request_source === 'admin'}}" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium whitespace-nowrap bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400">{{claim.request_source_label ?? ''}}</span>
             <!-- 상태 배지 — 라벨은 유형 접두 정확 명칭이다(D28, enums 단일 출처). 화면이 자기 어휘를 두면 그 화면만 옛 이름으로 남는다. -->
             <span>
               <class-map base="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium whitespace-nowrap" key="{{claim.status_variant}}" default="bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">
@@ -140,23 +142,17 @@
           <div class="col-span-2 space-y-1">
             <p class="text-xs font-medium text-gray-500 dark:text-gray-400">$t:claim.list.col_tracking</p>
             <p data-if="{{claim.claim_type !== 'exchange' &amp;&amp; claim.claim_type !== 'return'}}" class="text-sm text-gray-400 dark:text-gray-500">—</p>
-            <!-- 회수 — 송장이 있으면 배송사 추적 링크. 추적 URL 은 서버가 배송사 템플릿으로 만든다(화면이 규칙을 재조립하면 주문 배송 조회와 두 벌이 된다). -->
+            <!-- 송장은 상품 행마다 있어(#599) 한 신청서에 운송장이 여럿일 수 있다 — 목록 한 줄에는 방향별 첫 운송장과 「외 N개」만 적고(서버 `tracking_summary`), 운송장별 조회 링크는 상세의 배송 카드가 맡는다. -->
             <div data-if="{{claim.claim_type === 'exchange' || claim.claim_type === 'return'}}" class="space-y-0.5">
               <p class="text-xs text-gray-500 dark:text-gray-400">$t:claim.list.collection</p>
-              <a data-if="{{!!claim.collection_tracking_url}}" href="{{claim.collection_tracking_url}}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 text-sm text-indigo-600 dark:text-indigo-400 hover:underline break-all">
-                <span>{{claim.collection_carrier_name ?? ''}} {{claim.collection_tracking_number ?? ''}}</span>
-                <icon name="arrow-up-right-from-square" class="text-xs"/>
-              </a>
-              <p data-if="{{!claim.collection_tracking_url}}" class="text-sm text-gray-400 dark:text-gray-500">{{claim.collection_tracking_number ?? '—'}}</p>
+              <p data-if="{{!!claim.tracking_summary?.collection?.first}}" class="text-sm text-gray-900 dark:text-white break-all"><span>{{claim.tracking_summary?.collection?.first ?? ''}}</span><span data-if="{{(claim.tracking_summary?.collection?.count ?? 0) > 1}}" class="ml-1 text-xs text-gray-500 dark:text-gray-400">$t:claim.list.tracking_more|more={{(claim.tracking_summary?.collection?.count ?? 0) - 1}}</span></p>
+              <p data-if="{{!claim.tracking_summary?.collection?.first}}" class="text-sm text-gray-400 dark:text-gray-500">—</p>
             </div>
             <!-- 재발송 — 교환만. -->
             <div data-if="{{claim.claim_type === 'exchange'}}" class="space-y-0.5 pt-1">
               <p class="text-xs text-gray-500 dark:text-gray-400">$t:claim.list.redelivery</p>
-              <a data-if="{{!!claim.redelivery_tracking_url}}" href="{{claim.redelivery_tracking_url}}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 text-sm text-indigo-600 dark:text-indigo-400 hover:underline break-all">
-                <span>{{claim.redelivery_carrier_name ?? ''}} {{claim.redelivery_tracking_number ?? ''}}</span>
-                <icon name="arrow-up-right-from-square" class="text-xs"/>
-              </a>
-              <p data-if="{{!claim.redelivery_tracking_url}}" class="text-sm text-gray-400 dark:text-gray-500">{{claim.redelivery_tracking_number ?? '—'}}</p>
+              <p data-if="{{!!claim.tracking_summary?.redelivery?.first}}" class="text-sm text-gray-900 dark:text-white break-all"><span>{{claim.tracking_summary?.redelivery?.first ?? ''}}</span><span data-if="{{(claim.tracking_summary?.redelivery?.count ?? 0) > 1}}" class="ml-1 text-xs text-gray-500 dark:text-gray-400">$t:claim.list.tracking_more|more={{(claim.tracking_summary?.redelivery?.count ?? 0) - 1}}</span></p>
+              <p data-if="{{!claim.tracking_summary?.redelivery?.first}}" class="text-sm text-gray-400 dark:text-gray-500">—</p>
             </div>
           </div>
           <!-- 4열 금액 — 유형마다 구성이 다르다(§6-1). 부호는 한 컬럼 안에서 +/− 로 구분한다(D1): 청구는 +, 환불은 −. 반품 행에는 환불액을 싣지 않는다 — 그 금액은 환불신청서가 접수되기 전에는 도메인 어디에도 없고(접수는 완료 처리 때 일어난다, D26), 접수된 뒤에는 환불 서브탭의 자기 행이 확정 금액을 든다. 화면이 미리보기를 행마다 다시 돌려 추정치를 세우면 목록 한 번이 페이지 크기만큼의 계산이 되고, 그 수는 실제 환불액과 다를 수 있다. 관리자 목록도 같은 근거로 반품 행에 환불액을 싣지 않는다. -->

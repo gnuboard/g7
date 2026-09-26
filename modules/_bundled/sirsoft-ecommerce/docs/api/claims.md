@@ -163,12 +163,12 @@
 | total_charge_amount_formatted | string | `3,000원` | 총 청구액 표기 |
 | mc_total_charge_amount | object | — | 총 청구액 다중 통화 스냅샷 |
 | requires_additional_payment | boolean | `true` | 추가결제가 필요한 건인지 (청구액 > 0 이고 청구 방식이 결제형) |
-| return_address_snapshot | object\|null | — | 회수지(반송지) 스냅샷 |
-| collection_carrier_id | integer\|null | `null` | 회수 택배사 ID |
-| collection_carrier_name | string\|null | `null` | 회수 택배사명 |
-| collection_tracking_number | string\|null | `null` | 회수 송장번호 |
-| collection_tracking_url | string\|null | `null` | 회수 배송 추적 URL (택배사 템플릿으로 서버가 조립. 택배사·송장번호 중 하나라도 없거나 택배사에 추적 주소가 등록돼 있지 않으면 `null`) |
-| collection_completed_at_formatted | string\|null | `null` | 회수 완료 일시 |
+| return_address_snapshot | object\|null | — | 회수지(반송지) 대표값 스냅샷 (첫 상품의 정책). 상품마다 정책이 다르면 `return_addresses` 가 주소별로 묶어 준다(S4) |
+| return_addresses | array | `[{"address_snapshot":{…},"claim_item_ids":[44,45]}]` | 상품 행 회수지의 고유값 목록 — 회수지가 둘 이상이면 화면이 주소별로 나눠 안내한다 |
+| collection_completed_at_formatted | string\|null | `null` | **신청서 전체**의 회수 완료 일시 — 헤더가 회수도착에 도달했거나 완료될 때만 찍힌다(S2). 상품별 도착은 행 `collected_at_formatted` |
+| is_admin_requested | boolean | `false` | 판매자가 고객을 대신해 접수한 신청인지(D8). `true` 면 구매자 수정·철회가 서지 않는다 (`request_source` 도 `admin`) |
+| tracking_summary | object | `{"collection":{"first":"CJ-1","count":2},…}` | (목록) 방향별 서로 다른 운송장 수와 첫 번호 |
+| tracking_groups | object\|null | — | (상세) 방향별 운송장 묶음 — [admin-claims.md](admin-claims.md) 상세 봉투의 `tracking_groups` 와 같은 형태. 구매자 응답은 관리자 전용 필드(`can_deliver`·`blocked_reason`)가 빠진다 |
 | refund_bank_code | string\|null | `004` | 구매자가 이 신청서에 적어 낸 환불 계좌 은행 코드. 계좌 이체로 환불되는 주문에서만 실린다 (교환은 저가 옵션 교환으로 차액이 돌아올 때) |
 | refund_bank_name | string\|null | `국민은행` | 그 은행 코드의 이름. 운영자가 주문설정에 등록한 목록에서 서버가 해석한다 — 화면이 그 코드표를 읽으려면 설정 데이터소스가 필요한데 그 게이트는 클레임 화면의 라우트 권한보다 좁다 |
 | refund_bank_account | string\|null | `*******7890` | 환불 계좌번호. `sirsoft-ecommerce.orders.read` 권한이 없는 열람자에게는 뒤 4자리만 남는다 |
@@ -185,11 +185,13 @@
 | mc_additional_product_amount | object\|null | `{"KRW":3000,"USD":2.25}` | 추가 상품 금액의 보조 통화 맵. 신청 상품 행에 박제된 차액(`mc_price_difference`)을 부호별로 갈라 **서버가 합산**한 값이다 — 화면이 통화별 금액을 직접 더하면 그 규칙이 화면마다 갈리고 환율을 다시 보게 된다. 신청 상품 관계가 로드되지 않은 응답에서는 근거가 없어 `null` 이며 화면은 그 줄을 세우지 않는다 |
 | mc_refund_product_amount | object\|null | `{"KRW":1000,"USD":0.75}` | 환불 상품 금액의 보조 통화 맵. 기준 통화 줄이 `−` 를 앞에 붙여 그리므로 **절대값**으로 낸다 |
 | redelivery_address_snapshot | object\|null | — | 재발송지 스냅샷 (`recipient_name`, `phone`, `zipcode`, `address1`, `address2`, `country_code`, `changed_by_user`) |
-| redelivery_carrier_id | integer\|null | `null` | 재발송 택배사 ID |
-| redelivery_carrier_name | string\|null | `null` | 재발송 택배사명 |
-| redelivery_tracking_number | string\|null | `null` | 재발송 송장번호 |
-| redelivery_tracking_url | string\|null | `null` | 재발송 배송 추적 URL (조립 규칙은 `collection_tracking_url` 과 같다) |
-| redelivered_at_formatted | string\|null | `null` | 재발송 완료 일시 |
+| redelivered_at_formatted | string\|null | `null` | **신청서 전체**의 재발송 완료 일시 (S2 — 상품별은 행 `redelivered_at_formatted`) |
+| exchange_mode / exchange_mode_label / is_advance_exchange | string / string / boolean | `advance` / `선교환` / `true` | 진행 방식 — 선교환은 새 물건을 먼저 보내고 헌 물건을 나중에 회수한다 |
+| collection_due_at_formatted | string\|null | `2026-10-09` | 선교환 헌 물건 반송 기한 (발송이 시작되면 잡힌다) |
+| is_collection_overdue / collection_overdue_days | boolean / integer | `false` / `0` | 반송 기한 경과 여부·경과 일수 |
+
+> 송장 필드(`collection_*`·`redelivery_*`)는 헤더에서 **상품 행**([ClaimItemResource](#claim-item-resource))으로 옮겼습니다 —
+> 한 신청서 안에서 상품마다 다른 택배로 오갈 수 있습니다.
 
 **환불신청 전용 블록** (`claim_type` = `refund`)
 
@@ -283,7 +285,17 @@
 | product_id | integer\|null | `12` | 상품 ID |
 | product_option_id | integer\|null | `55` | 상품 옵션 ID |
 | completed_at | string\|null | `null` | 상품 행 완료 일시 |
-| is_splittable | boolean | `true` | 이 행을 **수량으로 나눠** 일부만 전이할 수 있는지. `false` 면 화면이 그 행의 수량 입력을 잠근다 — 종결된 행이거나, 교환에서 후속 주문옵션이 이미 만들어진 행이다(후속 옵션은 `quantity = exchange_quantity` 1:1 산출물이라 두 조각이 같은 것을 가리키면 재발송 수량이 어긋난다). 취소 행에는 전이 축이 없어 **키가 나오지 않는다** |
+| is_splittable | boolean | `true` | 이 행을 **수량으로 나눠** 일부만 전이·송장 기록할 수 있는지. `false` 면 화면이 그 행의 수량 입력을 잠근다 — 종결된 행이다. 교환에서 후속 주문옵션이 이미 만들어진 행도 쪼갤 수 있다 — 후속 주문옵션이 같은 수량으로 함께 쪼개진다(R10). 취소 행에는 전이 축이 없어 **키가 나오지 않는다** |
+| reject_reason | string\|null | `개봉 상품입니다.` | 이 상품의 반려 사유(S3) — 상품 단위 반려는 행에 남고, 신청서 헤더 `reject_reason` 은 신청서 전체가 반려될 때만 채워진다 |
+| collection_carrier_id / collection_carrier_name | integer / string\|null | `3` / `CJ대한통운` | (교환·반품 행) 회수 택배사 |
+| collection_tracking_number / collection_tracking_url | string\|null | `651234567890` / `https://…` | (교환·반품 행) 회수 운송장과 추적 URL(택배사 템플릿으로 서버가 조립 — 둘 중 하나라도 없거나 추적 주소가 없으면 `null`) |
+| collection_shipped_at_formatted / collected_at_formatted | string\|null | — | (교환·반품 행) 회수 송장 기록·도착 시각 |
+| collection_state / collection_state_label / collection_state_variant | string | `in_transit` / `회수중` / `info` | (교환·반품 행) 회수 진행 — `pending`·`in_transit`·`collected`·`unreturned` |
+| is_stock_restored | boolean | `true` | (교환·반품 행) 이 행의 재고를 복구했는지(S6) |
+| return_address_snapshot | object\|null | — | (교환·반품 행) 이 상품의 회수지(S4 — 자기 배송정책) |
+| redelivery_carrier_id / redelivery_carrier_name / redelivery_tracking_number / redelivery_tracking_url | — | — | (교환 행) 재발송 택배사·운송장·추적 URL |
+| redelivery_shipped_at_formatted / redelivered_at_formatted | string\|null | — | (교환 행) 재발송 송장 기록·도착 시각 |
+| is_unreturned / unreturned_at_formatted / unreturned_reason | boolean / string\|null / string\|null | `false` / `null` / `null` | (선교환 행) 헌 물건이 오지 않아 「미회수로 완료」 됐는지와 그 사유 |
 | refund_amount | number | `29000` | (환불신청 행 전용) 행 단위 환불 금액 — 취소 행에는 이 컬럼이 없어 두 키가 **응답에 나오지 않는다**. 취소의 환불액은 헤더 `refund_amount` 를 읽는다 |
 | refund_amount_formatted | string | `29,000원` | 행 환불 금액 표기 |
 | is_option_change | boolean | `true` | (교환 행) 다른 옵션으로의 교환인지 |
@@ -555,7 +567,7 @@ Authorization: Bearer {YOUR_TOKEN}
 
 `progress_steps` 는 관리자 상세와 같은 지점(`ClaimProgressSteps`)에서 만들어집니다 — 화면이 순서를 다시 적으면 그 사본이 어휘의 두 번째 출처가 되어 회원 화면만 낡은 채 남습니다. 비회원 조회(`guest/orders/{orderNumber}/claims/{claimNumber}`)도 같은 봉투입니다.
 
-상세 응답은 상품 행의 **원 주문옵션**(`product_name`·`product_option_name`·`thumbnail_url`)과 **회수·재발송 배송사**(`collection_carrier_name`·`collection_tracking_url`·`redelivery_carrier_name`·`redelivery_tracking_url`)를 함께 싣습니다. 목록과 달리 첨부(`images`)와 사유 상세·반려 사유·주소/배송비 스냅샷·환불 계좌도 모두 실립니다 — 신청서 상세 화면이 그리는 값들입니다.
+상세 응답은 상품 행의 **원 주문옵션**(`product_name`·`product_option_name`·`thumbnail_url`)과 **행마다의 회수·재발송 배송사**(`items[].collection_carrier_name`·`items[].collection_tracking_url`·`items[].redelivery_carrier_name`·`items[].redelivery_tracking_url`)를 함께 싣고, 운송장 묶음(`claim.tracking_groups`)과 선교환의 회수 줄(`collection_lane`)이 봉투에 더해집니다. 목록과 달리 첨부(`images`)와 사유 상세·반려 사유·주소/배송비 스냅샷·환불 계좌도 모두 실립니다 — 신청서 상세 화면이 그리는 값들입니다.
 
 ---
 
