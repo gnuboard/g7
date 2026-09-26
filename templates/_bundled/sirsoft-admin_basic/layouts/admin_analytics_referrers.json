@@ -1,5 +1,5 @@
 {
-    "comment": "유입 경로 리포트 — 유형·사이트·검색어·캠페인 네 탭. 유형 탭은 종류가 다섯 안팎이라 표 위에 도넛으로\n  비율을 함께 그린다(같은 응답을 두 번 쓴다). 나머지는 페이지 리포트와 같은 공통 조각이다.\n  사이트 탭은 한 단계 더 있다 — 도메인 행을 누르면 주소에 `host` 가 실리고, 그 도메인에서 들어온 실제\n  주소 목록(`analytics_referrer_urls`)이 공통 표 자리를 대신한다. 집계표는 호스트까지만 쌓여 이 목록만\n  원장을 직접 읽는다. 그 자리에서는 CSV 를 감춘다 — 받아지는 것은 사이트 목록이라 화면과 다른 것을 준다\n  (`csvUrl` 을 빈 값으로 두면 기간 바가 단추를 그리지 않는다). #682 라운드 4, PO 지적 ⑥.",
+    "comment": "유입 경로 리포트 — 유형·사이트·검색어·캠페인 네 탭. 유형 탭은 종류가 다섯 안팎이라 표 위에 도넛으로\n  비율을 함께 그린다(같은 응답을 두 번 쓴다). 나머지는 페이지 리포트와 같은 공통 조각이다.\n  사이트 탭은 한 단계 더 있다 — 도메인 행을 누르면 주소에 `host` 가 실리고, 그 도메인에서 들어온 실제\n  주소 목록(`analytics_referrer_urls`)이 공통 표 자리를 대신한다. 집계표는 호스트까지만 쌓여 이 목록만\n  원장을 직접 읽는다. 그 자리에서는 CSV 를 감춘다 — 받아지는 것은 사이트 목록이라 화면과 다른 것을 준다\n  (`csvUrl` 을 빈 값으로 두면 기간 바가 단추를 그리지 않는다). #682 라운드 4, 검수 지적 ⑥.",
     "version": "1.0.0",
     "layout_name": "admin_analytics_referrers",
     "extends": "_admin_base",
@@ -78,7 +78,7 @@
                     }
                 }
             },
-            "comment": "한 유입처의 전체 주소. 집계표에는 호스트까지만 쌓여 이 소스만 원장을 직접 읽는다 —\n       사이트 탭에서 도메인 행을 눌러 `host` 가 주소에 실렸을 때만 부른다(#682 라운드 4, PO 지적 ⑥)."
+            "comment": "한 유입처의 전체 주소. 집계표에는 호스트까지만 쌓여 이 소스만 원장을 직접 읽는다 —\n       사이트 탭에서 도메인 행을 눌러 `host` 가 주소에 실렸을 때만 부른다(#682 라운드 4, 검수 지적 ⑥)."
         },
         {
             "id": "analytics_status",
@@ -261,6 +261,17 @@
                         }
                     },
                     {
+                        "comment": "검색어가 거의 비는 것은 판정 실패가 아니다 — 검색엔진이 HTTPS 로 옮기며 유입 주소에 검색어를 싣지 않는다.\n        빈 표를 본 운영자가 수집이 고장 났다고 읽지 않게 그 탭에서 먼저 알린다.",
+                        "id": "keywords_https_hint",
+                        "type": "basic",
+                        "name": "P",
+                        "if": "{{query.tab === 'keywords'}}",
+                        "props": {
+                            "className": "text-sm text-label mb-3"
+                        },
+                        "text": "$t:admin.analytics.referrers.keywords_https_hint"
+                    },
+                    {
                         "id": "referrer_type_chart_card",
                         "type": "basic",
                         "name": "Div",
@@ -418,6 +429,7 @@
                                         "id": "referrer_urls_grid",
                                         "type": "composite",
                                         "name": "DataGrid",
+                                        "if": "{{analytics_referrer_urls?.loading || (analytics_referrer_urls?.data?.data ?? []).length > 0}}",
                                         "actions": [
                                             {
                                                 "type": "action",
@@ -517,6 +529,15 @@
                                 }
                             }
                         ]
+                    },
+                    {
+                        "comment": "확장이 이 화면에 자기 리포트 조각을 붙이는 자리(데이터는 확장 자기 API).",
+                        "type": "extension_point",
+                        "name": "analytics_referrers_widgets",
+                        "props": {
+                            "className": "space-y-4 mt-4"
+                        },
+                        "default": []
                     }
                 ]
             }

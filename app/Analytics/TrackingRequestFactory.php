@@ -21,9 +21,13 @@ class TrackingRequestFactory
     /**
      * 판정에 쓰는 헤더 목록
      *
+     * `Accept-Language` 는 익명 방문자 키의 언어 재료다 — 브라우저 비콘과 서버가 직접 기록하는
+     * 요청(로그인 전환·서버 폴백)이 **똑같이** 가진 언어 값은 이 헤더뿐이다. 비콘이 보내는
+     * 설정 언어(`navigator.language`)는 화면 언어라 선호 언어 목록과 다른 언어일 수도 있다.
+     *
      * @var array<int, string>
      */
-    private const TRACKED_HEADERS = ['DNT', 'Sec-GPC', 'X-Purpose', 'Purpose', 'Sec-Purpose', 'X-Moz'];
+    private const TRACKED_HEADERS = ['DNT', 'Sec-GPC', 'X-Purpose', 'Purpose', 'Sec-Purpose', 'X-Moz', 'Accept-Language'];
 
     /**
      * HTTP 요청과 페이로드로 수집 요청을 만듭니다.
@@ -230,7 +234,8 @@ class TrackingRequestFactory
                 continue;
             }
 
-            $result[mb_substr((string) $key, 0, 40)] = mb_substr((string) $item, 0, 255);
+            // 이름은 `{확장 식별자}:{키}` 까지 받는다 — 식별자·키가 각각 최대 50자다.
+            $result[mb_substr((string) $key, 0, 101)] = mb_substr((string) $item, 0, 255);
 
             // 등록되지 않은 차원은 적재 단계가 버린다. 여기서는 개수만 막는다.
             if (count($result) >= 20) {

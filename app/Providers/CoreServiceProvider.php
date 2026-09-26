@@ -7,6 +7,9 @@ use App\Benchmark\Axes\ListAxisRunner;
 use App\Benchmark\Axes\ScreenAxisRunner;
 use App\Benchmark\Axes\WriteAxisRunner;
 use App\Console\Commands\BenchCommand;
+use App\Contracts\Analytics\ConversionRecorderInterface as AnalyticsConversionRecorderInterface;
+use App\Contracts\Analytics\DimensionRegistryInterface as AnalyticsDimensionRegistryInterface;
+use App\Contracts\Analytics\GoalRegistryInterface as AnalyticsGoalRegistryInterface;
 use App\Contracts\Extension\CacheInterface;
 use App\Contracts\Extension\ExtensionMiddlewareRegistryInterface;
 use App\Contracts\Extension\HookListenerInterface;
@@ -115,6 +118,9 @@ use App\Repositories\TemplateLayoutAttachmentRepository;
 use App\Repositories\TemplateRepository;
 use App\Repositories\UserConsentRepository;
 use App\Repositories\UserRepository;
+use App\Services\Analytics\ConversionRecorder as AnalyticsConversionRecorder;
+use App\Services\Analytics\DimensionRegistry as AnalyticsDimensionRegistry;
+use App\Services\Analytics\GoalRegistry as AnalyticsGoalRegistry;
 use App\Services\AttachmentService;
 use App\Services\DriverRegistryService;
 use App\Services\LayoutExtensionService;
@@ -298,6 +304,12 @@ class CoreServiceProvider extends ServiceProvider
         $this->app->bind(AnalyticsArchiveRunRepositoryInterface::class, AnalyticsArchiveRunRepository::class);
         $this->app->bind(AnalyticsCollectFailureRepositoryInterface::class, AnalyticsCollectFailureRepository::class);
         $this->app->singleton(AnalyticsSaltRepositoryInterface::class, AnalyticsSaltRepository::class);
+
+        // 방문자 통계 확장 선언 등록부 — 요청(잡) 수명 동안 한 번만 모은다. 싱글톤으로 두면
+        // 큐 워커처럼 오래 사는 프로세스가 확장 활성·비활성 뒤에도 옛 선언을 계속 쓴다.
+        $this->app->scoped(AnalyticsGoalRegistryInterface::class, AnalyticsGoalRegistry::class);
+        $this->app->scoped(AnalyticsDimensionRegistryInterface::class, AnalyticsDimensionRegistry::class);
+        $this->app->bind(AnalyticsConversionRecorderInterface::class, AnalyticsConversionRecorder::class);
 
         // IdentityVerification Repository 바인딩
         $this->app->bind(IdentityVerificationLogRepositoryInterface::class, IdentityVerificationLogRepository::class);

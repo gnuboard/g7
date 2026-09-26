@@ -6,10 +6,10 @@ use App\Analytics\AnalyticsClock;
 use App\Analytics\AnalyticsConfig;
 use App\Contracts\Repositories\Analytics\ActionRepositoryInterface;
 use App\Contracts\Repositories\Analytics\VisitRepositoryInterface;
-use App\Enums\Analytics\PrivacyMode;
 use App\Extension\HookManager;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use App\Http\Requests\Admin\Analytics\UpdateAnalyticsSettingsRequest;
+use App\Services\Analytics\PrivacyService;
 use App\Services\SettingsService;
 use Illuminate\Http\JsonResponse;
 
@@ -85,7 +85,7 @@ class SettingsController extends AdminBaseController
         return $this->success('analytics.settings.save_success', [
             'settings' => $this->currentSettings(),
             'meta' => [
-                'retro_anonymize_available' => $this->becameStricter($before, $after),
+                'retro_anonymize_available' => PrivacyService::tightensPrivacy($before, $after),
                 'ledger_rows' => $this->ledgerRows(),
             ],
         ]);
@@ -123,28 +123,5 @@ class SettingsController extends AdminBaseController
             'visits' => $this->visits->countAll(),
             'actions' => $this->actions->countAll(),
         ];
-    }
-
-    /**
-     * 개인정보 수준이 더 엄격해졌는지 판정합니다.
-     *
-     * 약해진 쪽으로 바꿀 때는 물어보지 않습니다 — 과거 기록은 이미 그보다 약한 정보를
-     * 담고 있어 소급할 것이 없습니다.
-     *
-     * @param  AnalyticsConfig  $before  바꾸기 전 설정
-     * @param  AnalyticsConfig  $after  바꾼 뒤 설정
-     * @return bool 엄격해졌으면 true
-     */
-    private function becameStricter(AnalyticsConfig $before, AnalyticsConfig $after): bool
-    {
-        $rank = static fn (PrivacyMode $mode): int => match ($mode) {
-            PrivacyMode::Full => 0,
-            PrivacyMode::Consent => 1,
-            PrivacyMode::Anonymous => 2,
-        };
-
-        return $rank($after->privacyMode) > $rank($before->privacyMode)
-            || $after->ipMaskOctets > $before->ipMaskOctets
-            || ($after->pseudonymizeUserId && ! $before->pseudonymizeUserId);
     }
 }

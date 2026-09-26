@@ -135,6 +135,24 @@ describe('startClickTracking', () => {
   });
 
   // @scenario source=beacon
+  // @effects repeated_clicks_on_one_link_count_once
+  it('중복 판정 창은 정확히 1초다 — 999ms 뒤는 같은 클릭, 1초가 되면 새 클릭', () => {
+    // 같은 틱·2초 뒤만 재면 창이 0.5초나 1.5초로 바뀌어도 초록이다. 트래커의 같은 화면 되풀이
+    // 이동 창(1초)과 같은 값이어야 링크 클릭과 화면 이동이 같은 기준으로 한 번이 된다.
+    vi.useFakeTimers();
+
+    clickLink('https://other.test/page');
+    vi.advanceTimersByTime(999);
+    clickLink('https://other.test/page');
+    expect(tracker.trackOutlink, '999ms 뒤').toHaveBeenCalledTimes(1);
+
+    // 억제된 클릭은 기준 시각을 옮기지 않는다 — 첫 클릭에서 1초가 되는 순간 다시 센다.
+    vi.advanceTimersByTime(1);
+    clickLink('https://other.test/page');
+    expect(tracker.trackOutlink, '정확히 1초 뒤').toHaveBeenCalledTimes(2);
+  });
+
+  // @scenario source=beacon
   // @effects same_site_links_are_not_counted_as_outlinks
   it('추적을 멈추면 더 이상 세지 않는다', () => {
     stop();

@@ -48,12 +48,17 @@ class StaleRunServiceTest extends TestCase
      * @param  int  $minutesAgo  몇 분 전에 시작했는가
      * @param  string  $runType  실행 유형
      * @param  int|null  $triggeredBy  요청한 관리자 ID
+     * @param  string|null  $date  대상 일자 (사이트 표준시, 없으면 오늘)
      * @return AnalyticsArchiveRun 만들어진 행
      */
-    private function runningRow(int $minutesAgo, string $runType = 'reaggregate', ?int $triggeredBy = null): AnalyticsArchiveRun
+    private function runningRow(int $minutesAgo, string $runType = 'reaggregate', ?int $triggeredBy = null, ?string $date = null): AnalyticsArchiveRun
     {
+        [$periodStart, $periodEnd] = AnalyticsClock::dayRangeUtc($date ?? AnalyticsClock::today());
+
         return AnalyticsArchiveRun::factory()->create([
             'run_type' => $runType,
+            'period_start' => $periodStart,
+            'period_end' => $periodEnd,
             'trigger' => $triggeredBy === null ? 'scheduled' : 'manual',
             'status' => ArchiveRunStatus::Running,
             'progress_percent' => 40,
@@ -141,8 +146,10 @@ class StaleRunServiceTest extends TestCase
         $anonymize = new AnonymizeLedgerJob(1, false, null, null, 7);
         $this->travel(1)->minutes();
 
-        $own = $this->runningRow(0, 'reaggregate', 7);
-        $otherUser = $this->runningRow(0, 'reaggregate', 8);
+        $own = $this->runningRow(0, 'reaggregate', 7, '2026-09-02');
+        $otherUser = $this->runningRow(0, 'reaggregate', 8, '2026-09-02');
+        // 같은 관리자가 다른 기간을 따로 재집계하고 있다(워커 둘) — 그 잡의 행은 그 잡 몫이다.
+        $otherRange = $this->runningRow(0, 'reaggregate', 7, '2026-09-10');
         $anonymizeRun = $this->runningRow(0, 'anonymize', 7);
 
         $reaggregate->failed(new RuntimeException('워커 제한시간 초과'));
@@ -152,8 +159,42 @@ class StaleRunServiceTest extends TestCase
         $this->assertSame(ArchiveRunStatus::Running, $otherUser->fresh()->status, '다른 관리자의 실행');
         $this->assertSame(ArchiveRunStatus::Running, $before->fresh()->status, '잡을 올리기 전에 시작한 실행');
         $this->assertSame(ArchiveRunStatus::Running, $anonymizeRun->fresh()->status, '다른 유형의 실행');
+        $this->assertSame(ArchiveRunStatus::Running, $otherRange->fresh()->status, '같은 관리자의 다른 기간 재집계');
 
         $anonymize->failed(new RuntimeException('메모리 초과'));
         $this->assertSame(ArchiveRunStatus::Failed, $anonymizeRun->fresh()->status);
+    }
+
+    /**
+     * 멈춘 실행으로 보는 기준 시간이 모든 통계 잡의 제한시간보다 길다.
+     *
+     * 기준이 더 짧으면 아직 도는 잡의 행을 매시 정리가 실패로 닫는다 — 잡은 나중에 성공해도
+     * 이력에는 실패 사유가 남는다. 잡 목록은 `app/Jobs/Analytics` 에서 파생해, 새 잡이 더 긴
+     * 제한시간을 가져도 걸린다.
+     *
+     * @return void 없음
+     *
+     * @scenario target=archive_runs, row_age=within, dry_run=false, retention_source=setting
+     *
+     * @effects stale_threshold_outlasts_every_job_timeout
+     */
+    public function test_stale_threshold_outlasts_every_job_timeout(): void
+    {
+        $timeouts = [];
+
+        foreach (glob(app_path('Jobs/Analytics/*.php')) as $file) {
+            $class = 'App\\Jobs\\Analytics\\'.basename($file, '.php');
+            $defaults = (new \ReflectionClass($class))->getDefaultProperties();
+
+            if (isset($defaults['timeout'])) {
+                $timeouts[$class] = (int) $defaults['timeout'];
+            }
+        }
+
+        $this->assertNotEmpty($timeouts, '제한시간을 가진 통계 잡이 없다 — 파생이 깨졌는지 본다');
+
+        foreach ($timeouts as $class => $timeout) {
+            $this->assertGreaterThan($timeout, StaleRunService::STALE_AFTER_SECONDS, $class.' 의 제한시간이 멈춤 판정 기준보다 길다');
+        }
     }
 }

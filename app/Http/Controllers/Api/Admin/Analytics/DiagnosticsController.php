@@ -60,9 +60,18 @@ class DiagnosticsController extends AdminBaseController
             (int) $request->input('per_page', 20),
         );
 
+        // 주소는 현재 접속자 화면과 같은 경계로 가린다 — 가림 0 옥텟(기본값)이면 원래 주소라,
+        // 조회 권한만으로 보이면 방문자 주소를 보는 우회로가 된다.
+        $includeIp = (bool) $request->user()?->hasPermission('core.analytics.privacy');
+
         return $this->success('analytics.collect_failures.fetch_success', [
-            'data' => array_map(static function ($failure): array {
+            'data' => array_map(static function ($failure) use ($includeIp): array {
                 $row = $failure->toArray();
+
+                if (! $includeIp) {
+                    $row['ip'] = null;
+                }
+
                 // 실패 시각도 같은 화면의 다른 시각과 같은 기준이어야 한다(#682 S3 라운드 6).
                 if (isset($row['occurred_at'])) {
                     $row['occurred_at'] = AnalyticsClock::toSiteDateTimeString(Carbon::parse($row['occurred_at']));

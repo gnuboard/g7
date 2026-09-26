@@ -10,8 +10,8 @@
 | 카테고리 | 문서 수 | 링크 상태 |
 |----------|---------|----------|
 | [백엔드](backend/) | 38개 | 정상 |
-| [프론트엔드](frontend/) | 47개 | 정상 |
-| [확장 시스템](extension/) | 34개 | 정상 |
+| [프론트엔드](frontend/) | 48개 | 정상 |
+| [확장 시스템](extension/) | 35개 | 정상 |
 | 공통 | 20개 | 정상 |
 | [절대 금지 패턴](rules/) | 0개 | 정상 |
 | [AI 도구](ai-tools/) | - | 정상 |
@@ -172,7 +172,7 @@ sirsoft-admin_basic 컴포넌트 문서는 확장이 소유합니다 — [templa
 | [user-overrides.md](backend/user-overrides.md) | 사용자 수정 보존 (HasUserOverrides Trait) |
 | [validation.md](backend/validation.md) | 검증 (Validation) |
 
-### 프론트엔드 (47개)
+### 프론트엔드 (48개)
 
 | 문서 | 제목 |
 |------|------|
@@ -182,6 +182,7 @@ sirsoft-admin_basic 컴포넌트 문서는 확장이 소유합니다 — [templa
 | [actions-handlers-ui.md](frontend/actions-handlers-ui.md) | 액션 핸들러 - UI 인터랙션 |
 | [actions-handlers.md](frontend/actions-handlers.md) | 액션 핸들러 - 핸들러별 상세 사용법 |
 | [actions.md](frontend/actions.md) | 액션 핸들러 가이드 |
+| [analytics-tracker.md](frontend/analytics-tracker.md) | 방문자 통계 트래커 |
 | [auth-system.md](frontend/auth-system.md) | 인증 시스템 (AuthManager) |
 | [component-props-composite.md](frontend/component-props-composite.md) | 컴포넌트 Props 레퍼런스 - Composite |
 | [component-props.md](frontend/component-props.md) | 컴포넌트 Props 레퍼런스 |
@@ -224,10 +225,11 @@ sirsoft-admin_basic 컴포넌트 문서는 확장이 소유합니다 — [templa
 | [template-handlers.md](frontend/template-handlers.md) | 템플릿 전용 핸들러 |
 | [README.md](frontend/templates/README.md) | 템플릿별 컴포넌트·핸들러·레이아웃 문서 |
 
-### 확장 시스템 (34개)
+### 확장 시스템 (35개)
 
 | 문서 | 제목 |
 |------|------|
+| [analytics-extension-points.md](extension/analytics-extension-points.md) | 방문자 통계 확장 기여 지점 |
 | [cache-driver.md](extension/cache-driver.md) | 캐시 드라이버 시스템 (CacheInterface) |
 | [changelog-rules.md](extension/changelog-rules.md) | Changelog 규칙 (Changelog Rules) |
 | [editor-spec.md](extension/editor-spec.md) | 편집기 스펙 (editor-spec.json) |

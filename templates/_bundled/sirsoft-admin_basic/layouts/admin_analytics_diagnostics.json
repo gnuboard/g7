@@ -136,6 +136,12 @@
                     }
                 }
             },
+            "errorHandling": {
+                "comment": "보조 소스라 403 을 삼킨다. 화면과 같은 조회 권한이라 권한이 없으면 주 소스(`analytics_diagnostics`)가\n         이미 권한 오류 화면을 띄운다 — 여기서도 띄우거나 토스트를 내면 같은 사실을 두 번 알린다.",
+                "403": {
+                    "handler": "suppress"
+                }
+            },
             "comment": "집계 실행 이력 — 진행률 바의 출처."
         },
         {
@@ -160,6 +166,12 @@
                         "last_page": 1,
                         "total": 0
                     }
+                }
+            },
+            "errorHandling": {
+                "comment": "보조 소스라 403 을 삼킨다. 화면과 같은 조회 권한이라 권한이 없으면 주 소스(`analytics_diagnostics`)가\n         이미 권한 오류 화면을 띄운다 — 여기서도 띄우거나 토스트를 내면 같은 사실을 두 번 알린다.",
+                "403": {
+                    "handler": "suppress"
                 }
             },
             "comment": "최근 적재 실패 로그."
@@ -209,7 +221,7 @@
         "running": ""
     },
     "computed": {
-        "canUpdate": "{{current_user?.data?.is_super_admin === true || (current_user?.data?.permissions ?? []).some(p => (p?.identifier ?? p) === 'core.analytics.update')}}",
+        "canUpdate": "{{(current_user?.data?.permissions ?? []).some(p => (p?.identifier ?? p) === 'core.analytics.update')}}",
         "runningRunId": "{{analytics_diagnostics?.data?.archive?.running_run_id ?? null}}"
     },
     "permissions": [
@@ -280,7 +292,7 @@
                                 },
                                 "children": [
                                     {
-                                        "comment": "이 화면은 시각을 여섯 자리(기간 시작·끝·시작 시각·마지막 적재·마지막 시간 집계·마지막\n            일 집계) 찍는다. 공통 조각 `_partial_status_alerts` 는 순환 안내 때문에 여기 없으므로\n            같은 사실을 배지로 보인다(#682 S3 라운드 7, PO 확정 「두 화면 모두 배지」).\n            보는 사람의 시간대가 사이트와 같으면 군더더기라 띄우지 않는다.",
+                                        "comment": "이 화면은 시각을 여섯 자리(기간 시작·끝·시작 시각·마지막 적재·마지막 시간 집계·마지막\n            일 집계) 찍는다. 공통 조각 `_partial_status_alerts` 는 순환 안내 때문에 여기 없으므로\n            같은 사실을 배지로 보인다(#682 S3 라운드 7, 설계 결정 「두 화면 모두 배지」).\n            보는 사람의 시간대가 사이트와 같으면 군더더기라 띄우지 않는다.",
                                         "id": "site_timezone_badge",
                                         "type": "composite",
                                         "name": "Badge",
@@ -334,6 +346,73 @@
                                                     "name": "refresh",
                                                     "className": "text-xl"
                                                 }
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "comment": "확장이 잘못 선언해 버려진 목표·차원의 사유. 이 화면 말고는 볼 곳이 없다 — 비워 두면 운영자는 「전환이\n      왜 안 쌓이는지」를 나중에 `unknown_goal` 실패로만 간접적으로 안다. 경고가 없으면 그리지 않는다.",
+                        "id": "alert_declaration_warnings",
+                        "type": "basic",
+                        "name": "Div",
+                        "if": "{{(analytics_diagnostics?.data?.declaration_warnings ?? []).length > 0}}",
+                        "props": {
+                            "className": "alert-warning mb-4"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex gap-3"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "triangle-exclamation",
+                                            "className": "text-xl text-yellow-600 dark:text-yellow-400 flex-shrink-0"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "flex-1 min-w-0"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "P",
+                                                "props": {
+                                                    "className": "text-warning-soft font-medium"
+                                                },
+                                                "text": "$t:admin.analytics.diagnostics.declaration_warnings_title"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "P",
+                                                "props": {
+                                                    "className": "text-warning-soft text-sm"
+                                                },
+                                                "text": "$t:admin.analytics.diagnostics.declaration_warnings_description"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "iteration": {
+                                                    "source": "{{analytics_diagnostics?.data?.declaration_warnings ?? []}}",
+                                                    "item_var": "warning",
+                                                    "index_var": "$idx"
+                                                },
+                                                "props": {
+                                                    "className": "text-sm font-mono break-all text-warning-soft mt-1"
+                                                },
+                                                "text": "{{warning}}"
                                             }
                                         ]
                                     }
@@ -408,7 +487,7 @@
                                                 "if": "{{!!analytics_diagnostics?.data?.collection?.anonymous_fallback_reason}}",
                                                 "props": {
                                                     "color": "yellow",
-                                                    "text": "$t:admin.analytics.diagnostics.fields.anonymous_fallback",
+                                                    "text": "{{analytics_diagnostics?.data?.collection?.anonymous_fallback_reason === 'consent_plugin_blocks_cookies' ? $t('admin.analytics.diagnostics.fields.anonymous_for_unconsented') : $t('admin.analytics.diagnostics.fields.anonymous_fallback')}}",
                                                     "size": "sm"
                                                 }
                                             },
@@ -473,11 +552,12 @@
                                                 "text": "$t:admin.analytics.diagnostics.cards.queue"
                                             },
                                             {
+                                                "comment": "연결 이름(`database` 등)은 .env 설정값이라 알려진 것만 사람 말로 바꾸고, 사이트가 따로 정한 이름은 그대로 보인다.",
                                                 "type": "composite",
                                                 "name": "Badge",
                                                 "props": {
                                                     "color": "gray",
-                                                    "text": "{{analytics_diagnostics?.data?.queue?.connection ?? '-'}}",
+                                                    "text": "{{['sync', 'database', 'redis', 'sqs', 'beanstalkd'].includes(analytics_diagnostics?.data?.queue?.connection ?? '') ? $t('admin.analytics.diagnostics.queue_connections.' + analytics_diagnostics.data.queue.connection) : (analytics_diagnostics?.data?.queue?.connection ?? '-')}}",
                                                     "size": "sm"
                                                 }
                                             },
@@ -1048,7 +1128,7 @@
                                         "type": "composite",
                                         "name": "DataGrid",
                                         "props": {
-                                            "data": "{{Object.entries(analytics_diagnostics?.data?.collection?.excluded_today ?? {}).map(e => ({ reason: e[0], count: e[1] }))}}",
+                                            "data": "{{Object.entries(analytics_diagnostics?.data?.collection?.excluded_today ?? {}).map(e => ({ reason: e[0], count: e[1], label: (analytics_diagnostics?.data?.collection?.excluded_reason_labels ?? [])[e[0]] }))}}",
                                             "pagination": false,
                                             "idField": "reason",
                                             "selectable": false,
@@ -1065,7 +1145,7 @@
                                                             "props": {
                                                                 "className": "text-body"
                                                             },
-                                                            "text": "{{$t('admin.analytics.diagnostics.exclusion_reasons.' + row.reason)}}"
+                                                            "text": "{{row.label || $t('admin.analytics.diagnostics.exclusion_reasons.' + row.reason)}}"
                                                         }
                                                     ]
                                                 },
@@ -1269,7 +1349,7 @@
                                                             "props": {
                                                                 "className": "text-label"
                                                             },
-                                                            "text": "{{row.trigger ?? '-'}}"
+                                                            "text": "{{row.trigger ? $t('admin.analytics.diagnostics.run_triggers.' + row.trigger) : '-'}}"
                                                         }
                                                     ]
                                                 },
@@ -1372,10 +1452,6 @@
                                                         {
                                                             "value": "max_actions",
                                                             "label": "$t:admin.analytics.diagnostics.failure_reasons.max_actions"
-                                                        },
-                                                        {
-                                                            "value": "dictionary",
-                                                            "label": "$t:admin.analytics.diagnostics.failure_reasons.dictionary"
                                                         },
                                                         {
                                                             "value": "db_error",
@@ -1520,6 +1596,15 @@
                                 ]
                             }
                         ]
+                    },
+                    {
+                        "comment": "확장이 자기 수집 상태를 붙이는 자리 — 값은 진단 응답의 `extensions.{식별자}`(서버 필터 `core.analytics.diagnostics_sections`)로 온다.",
+                        "type": "extension_point",
+                        "name": "analytics_diagnostics_widgets",
+                        "props": {
+                            "className": "space-y-4 mt-4"
+                        },
+                        "default": []
                     }
                 ]
             }

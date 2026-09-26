@@ -20,7 +20,7 @@ description: |
       404 로 답한다(위젯이 0 을 보고 아무도 오지 않았다고 그리면 안 된다).
 
   적용 지점:
-    - `app/Http/Controllers/Api/Admin/Analytics/**` 열한 컨트롤러, 라우트 24건.
+    - `app/Http/Controllers/Api/Admin/Analytics/**` 열한 컨트롤러, 라우트 27건(공개 요약 1건 제외).
     - `app/Http/Requests/Admin/Analytics/**` FormRequest — 기간·목록·확인 규약.
     - `app/Services/Analytics/{Overview,Series,Report,Pattern,Realtime,Diagnostics}Service`.
     - `app/Services/Analytics/{CsvExporter,DataSubjectService,ReportMailService}`.
@@ -42,6 +42,14 @@ exclusions:
   - { format: csv, endpoint: referrer_urls, reason: "도메인 아래를 펼쳐 보는 목록이다 — 내려받기는 사이트 목록(reports)이 맡는다" }
 
 effects:
+  - every_analytics_route_has_an_api_doc_section
+  - stored_codes_are_shown_as_human_labels
+  - public_analytics_routes_are_throttled
+  - every_emitted_analytics_hook_is_documented
+  - anonymous_visits_are_found_by_recent_salt_hashes
+  - reports_sort_by_the_requested_column
+  - every_admin_route_is_gated_by_exactly_its_permission
+  - same_alert_is_sent_once_a_day
   # 기간 규약
   - period_preset_resolves_to_a_date_range
   - period_echo_path_matches_every_screen_response
@@ -70,9 +78,13 @@ effects:
   - unknown_report_is_not_found
   - report_rows_carry_display_labels
   - page_labels_are_readable_for_display
+  - timeline_conversions_carry_the_declared_goal_name
+  - visitor_detail_shows_every_recorded_visit_detail
   - report_search_matches_what_the_screen_shows
   - report_rows_carry_dimension_extra_values
   - report_rows_without_extra_stay_shaped
+  # 표의 「부가」 칸은 CSV 헤더 이름이 아니라 JSON extra 의 원래 키를 읽는다(매출 = revenue_cents)
+  - report_grid_reads_the_extra_keys_the_api_sends
   - bot_reports_read_bot_typed_rows
   - bot_reports_ignore_the_human_exclude_toggle
   - bot_report_carries_recent_hits
@@ -85,6 +97,8 @@ effects:
   - series_can_be_downloaded_as_csv
   # 실시간·진단
   - realtime_hides_addresses_without_the_privacy_permission
+  - realtime_broadcast_carries_no_address_or_identity
+  - collect_failures_hide_addresses_without_the_privacy_permission
   - realtime_shows_addresses_with_the_privacy_permission
   - diagnostics_report_queue_archive_and_proxy_state
   - collect_failures_can_be_filtered_by_reason
@@ -107,6 +121,7 @@ effects:
   - subject_timeline_carries_search_result_count
   - subject_rows_carry_what_the_screen_shows
   - subject_export_filename_comes_from_the_server
+  - zero_visit_lookup_still_names_the_export_file
   - pseudonymized_visits_are_found_by_member_number
   - subject_delete_leaves_aggregates_intact
   - opt_out_sets_and_clears_a_readable_cookie
@@ -153,6 +168,7 @@ effects:
   - public_summary_returns_four_numbers
   - public_summary_is_not_found_when_disabled
   - report_is_silent_when_the_setting_is_off
+  - report_is_silent_when_the_definition_is_inactive
   - weekly_report_fires_with_last_period_numbers
   - each_period_fires_only_its_own_hook
   - change_percent_is_empty_when_the_previous_period_was_zero
@@ -187,6 +203,7 @@ effects:
   - visitor_csv_filename_carries_the_period
 
 test_files:
+  - tests/Feature/Analytics/Api/ApiSurfaceContractTest.php
   - tests/Feature/Analytics/Api/OverviewControllerTest.php
   - tests/Feature/Analytics/Api/ReportControllerTest.php
   - tests/Feature/Analytics/Api/RealtimeControllerTest.php
@@ -204,6 +221,7 @@ test_files:
   - tests/Feature/Analytics/Api/PublicSummaryControllerTest.php
   - tests/Feature/Analytics/Api/PermissionMatrixTest.php
   - tests/Feature/Analytics/NotificationDefinitionsTest.php
+  - tests/Feature/Analytics/NotificationCooldownTest.php
   - tests/Feature/Analytics/Api/LedgerAlertActionPermissionTest.php
   - tests/Feature/Analytics/Api/PeriodEchoPathTest.php
   - tests/Feature/Console/Analytics/ReportCommandTest.php

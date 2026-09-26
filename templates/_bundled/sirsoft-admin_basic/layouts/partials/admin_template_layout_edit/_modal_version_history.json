@@ -308,7 +308,7 @@
                     ],
                     "props": {
                         "type": "button",
-                        "className": "btn-secondary w-full",
+                        "className": "btn btn-secondary w-full",
                         "data-testid": "layout-version-history-load-more"
                     },
                     "children": [

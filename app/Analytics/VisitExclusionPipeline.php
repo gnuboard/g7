@@ -4,7 +4,9 @@ namespace App\Analytics;
 
 use App\Enums\Analytics\CountryFilterMode;
 use App\Enums\Analytics\ExclusionReason;
+use App\Extension\HookManager;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Log;
 
 /**
  * 수집 제외 판정
@@ -103,6 +105,41 @@ class VisitExclusionPipeline
     }
 
     /**
+     * 확장이 더한 제외 규칙을 검사합니다.
+     *
+     * 코어 판정(`evaluate()`)이 통과시킨 요청에만 부릅니다 — 확장이 봇·추적 거부·수집 제외
+     * 선택 같은 코어 방어를 우회해 「이건 세라」고 뒤집을 수 없게, 확장은 **더 빼는 것만**
+     * 할 수 있습니다.
+     *
+     * 필터 `core.analytics.exclusion_rules` — 인자: `null`, 수집 요청 배열. 제외하려면
+     * 등록한 사유 이름(`{식별자}:{사유}`)을 돌려줍니다. 등록되지 않은 이름은 제외하지 않고
+     * 경고만 남깁니다(세지 못하는 제외는 운영자에게 보이지 않습니다).
+     *
+     * @param  TrackingRequest  $request  수집 요청
+     * @return string|null 카운터 키 `ext:{식별자}:{사유}` (제외하지 않으면 null)
+     */
+    public function evaluateExtensionRules(TrackingRequest $request): ?string
+    {
+        $verdict = HookManager::applyFilters('core.analytics.exclusion_rules', null, $request->toArray());
+
+        if ($verdict === null || $verdict === false || $verdict === '') {
+            return null;
+        }
+
+        $key = is_string($verdict) ? ExclusionCounter::extensionKey($verdict) : null;
+
+        if ($key === null || ! array_key_exists($key, ExclusionCounter::extensionReasons())) {
+            Log::warning('등록되지 않은 확장 제외 사유라 제외하지 않았습니다.', [
+                'reason' => is_scalar($verdict) ? (string) $verdict : get_debug_type($verdict),
+            ]);
+
+            return null;
+        }
+
+        return $key;
+    }
+
+    /**
      * 미리 가져오기·미리 그리기 요청인지 판정합니다.
      *
      * @param  TrackingRequest  $request  수집 요청
@@ -192,12 +229,27 @@ class VisitExclusionPipeline
                 continue;
             }
 
-            if ($path === $pattern) {
+            // 정확 일치는 끝 슬래시를 따지지 않는다 — 서버 폴백은 요청 주소의 끝 슬래시를 떼고(`fullUrl()`)
+            // 비콘은 브라우저 주소를 그대로 보내, 같은 화면이 한 경로에서만 제외되는 일이 생긴다.
+            if (self::withoutTrailingSlash($path) === self::withoutTrailingSlash($pattern)) {
                 return true;
             }
         }
 
         return false;
+    }
+
+    /**
+     * 경로 끝의 슬래시를 뗍니다 (루트는 그대로).
+     *
+     * @param  string  $path  경로
+     * @return string 끝 슬래시를 뗀 경로
+     */
+    private static function withoutTrailingSlash(string $path): string
+    {
+        $trimmed = rtrim($path, '/');
+
+        return $trimmed === '' ? '/' : $trimmed;
     }
 
     /**

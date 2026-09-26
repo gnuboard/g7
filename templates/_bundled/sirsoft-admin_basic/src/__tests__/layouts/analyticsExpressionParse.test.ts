@@ -13,7 +13,7 @@ import path from 'path';
 import { evaluateSafeExpression } from '@core/template-engine/SafeExpressionEvaluator';
 import { scanBindings } from '@core/template-engine/BindingShape';
 import { splitPipes } from '@core/template-engine/PipeRegistry';
-import { TEMPLATE_DIR, collectObjects, loadLayout } from './analyticsLayoutTestUtils';
+import { TEMPLATE_DIR, collectObjects, loadLayout, analyticsLayoutFiles } from './analyticsLayoutTestUtils';
 
 /**
  * 평가기가 식을 읽지 못했음을 뜻하는 오류 — 값이 비어 나는 실행 오류와 구분한다.
@@ -22,19 +22,6 @@ import { TEMPLATE_DIR, collectObjects, loadLayout } from './analyticsLayoutTestU
  */
 const PARSE_ERROR =
   /^(Unexpected|Unterminated|Expected|Invalid|Missing|Only |Assignment operators|Increment operator|Decrement operator|Bitwise|Exponentiation|Keyword|Access to|The comma|new is only|delete is only)/;
-
-/** 방문자 통계가 들인 레이아웃·조각 (구운 JSON 기준) */
-function analyticsLayoutFiles(): string[] {
-  const layoutsDir = path.join(TEMPLATE_DIR, 'layouts');
-  const top = fs
-    .readdirSync(layoutsDir)
-    .filter((f) => /^admin_analytics_.*\.json$/.test(f));
-  const partials = fs
-    .readdirSync(path.join(layoutsDir, 'partials', 'admin_analytics'))
-    .filter((f) => f.endsWith('.json'))
-    .map((f) => `partials/admin_analytics/${f}`);
-  return [...top, ...partials, 'partials/admin_dashboard/_analytics_widget.json', 'admin_dashboard.json'];
-}
 
 /** 트리의 모든 문자열 값을 (경로, 값) 으로 모은다 */
 function collectStrings(root: unknown): Array<{ at: string; value: string }> {
@@ -100,11 +87,18 @@ describe('방문자 통계 레이아웃 식의 구문', () => {
   // @scenario screen=settings, state=normal
   // @effects translation_params_are_substituted
   it('번역 인자는 `$t:key|param={{식}}` 으로만 넘긴다 — 식 안의 `$t()` 는 키만 받아 인자를 버린다', () => {
-    const offenders = analyticsLayoutFiles().flatMap((file) =>
+    const files = analyticsLayoutFiles();
+    // 모집단이 비면 아래 비교는 빈 배열끼리라 조용히 통과한다 — 훑은 파일과 식 안 `$t(` 호출 자리를 먼저 센다.
+    expect(files.length, '훑은 레이아웃·조각').toBeGreaterThan(20);
+    const calls = files.flatMap((file) =>
       collectStrings(loadLayout(file))
-        .filter(({ value }) => /\$t\(\s*['"][^'"]+['"]\s*,/.test(value))
-        .map(({ at, value }) => `${file} ${at}: ${value.slice(0, 100)}`),
+        .filter(({ value }) => /\$t\(\s*['"]/.test(value))
+        .map(({ at, value }) => ({ at: `${file} ${at}`, value })),
     );
+    expect(calls.length, '식 안에서 $t() 를 부르는 자리').toBeGreaterThan(0);
+    const offenders = calls
+      .filter(({ value }) => /\$t\(\s*['"][^'"]+['"]\s*,/.test(value))
+      .map(({ at, value }) => `${at}: ${value.slice(0, 100)}`);
     expect(offenders).toEqual([]);
   });
 
@@ -166,6 +160,7 @@ describe('방문자 통계 레이아웃 식의 구문', () => {
   // @scenario screen=privacy_requests, state=normal
   // @effects action_conditions_are_evaluated
   it('액션의 조건은 `if` 로 적는다 — `data-if` 는 노드 렌더 조건이라 액션에 붙이면 평가되지 않고 모든 갈래가 돈다', () => {
+    // [case:components-misc-action-data-if-ignored]
     // 정보주체 삭제 창이 `<navigate data-if>` 로 적어, 구운 JSON 에서 조건이 `params["data-if"]` 로 들어갔다.
     // 엔진은 `action.if` 만 보므로 삭제 뒤 목록 이동과 결과 재조회가 둘 다 돌았다(#682 S3 라운드 15).
     const actions = analyticsLayoutFiles().flatMap((file) =>

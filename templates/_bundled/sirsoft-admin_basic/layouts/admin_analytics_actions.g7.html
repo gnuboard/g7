@@ -1,6 +1,7 @@
 <!-- 행동 리포트 — 내부 검색어·다운로드·외부 링크·전환(목표)·커스텀 차원 다섯 탭. 검색어 행은 부가 값
   「결과 없음」을, 목표 행은 전환 금액 합을 표의 부가 열에 싣는다(공통 조각이 그린다). 커스텀 차원 탭은
-  확장이 차원을 등록하고 `ext:` 조회가 열려야 채워진다 — 그 전에는 안내만 보인다. -->
+  확장이 선언한 차원을 등록 목록 API 에서 받아 고르게 한다(꺼진 확장이라도 집계가 남은 차원은 「꺼진
+  확장」 표시로 함께 온다) — 등록도 집계도 없는 이름은 서버가 404 로 막으므로 자유 입력을 두지 않는다. -->
 <layout name="admin_analytics_actions" version="1.0.0" extends="_admin_base">
   <meta title="$t:admin.analytics.actions.title"/>
   <data-source id="analytics_report" label_key="$t:editor.data_source.analytics_report" type="api" endpoint="/api/admin/analytics/reports/{{({search: 'site_search', downloads: 'download', outlinks: 'outlink', goals: 'goal', dimensions: (query.dimension ? 'ext:' + query.dimension : 'goal')})[query.tab || 'search'] || 'site_search'}}" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive" if="{{(query.tab || 'search') !== 'dimensions' || !!query.dimension}}">
@@ -33,6 +34,20 @@
     <!-- 조회 권한이 없는 화면(방문자·정보주체·설정)에서는 이 경고 소스가 403 이다. 상단 경고를
          띄우지 못할 뿐 화면은 자기 권한으로 정상 동작하므로 오류를 삼킨다 — 삼키지 않으면 화면을
          열 때마다 전역 오류 토스트가 뜬다(#682 S3 라운드 2). -->
+    <error-handling>
+      <on-code code="403">
+        <suppress/>
+      </on-code>
+    </error-handling>
+  </data-source>
+  <!-- 커스텀 차원 탭의 선택지. 활성 확장의 선언에 더해, 꺼진 확장이라도 집계가 남은 차원을 원값 이름으로 싣는다. -->
+  <data-source id="analytics_registered" label_key="$t:editor.data_source.analytics_registered" type="api" endpoint="/api/admin/analytics/registered" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="background" if="{{(query.tab || 'search') === 'dimensions'}}">
+    <fallback>
+      <field name="data">
+        <field name="dimensions" :value="[]"/>
+        <field name="goals" :value="[]"/>
+      </field>
+    </fallback>
     <error-handling>
       <on-code code="403">
         <suppress/>
@@ -91,21 +106,29 @@
       <div data-ref="dimensions_picker" data-if="{{(query.tab || 'search') === 'dimensions'}}" class="admin-card mb-4">
         <div class="flex-center gap-3 flex-wrap">
           <span class="filter-label">$t:admin.analytics.actions.dimension_label</span>
-          <input data-ref="dimension_input" name="analytics_dimension" type="text" class="input w-64" placeholder="$t:admin.analytics.actions.dimension_placeholder" value="{{query.dimension || ''}}">
-            <on type="keydown" key="Enter">
-              <!-- 확장이 등록한 차원 키를 직접 넣는다(등록 목록 API 는 확장 지점 단계 산출물이라 아직 없다). -->
-              <navigate path="/admin/analytics/actions" :mergeQuery="true" :replace="true">
-                <query dimension="{{$event.target.value || undefined}}" :page="1"/>
+          <select data-ref="dimension_select" name="analytics_dimension" class="w-64" value="{{query.dimension || ''}}" aria-label="$t:admin.analytics.actions.dimension_label" options="{{[Object.fromEntries([['value', ''], ['label', '$t:admin.analytics.actions.dimension_placeholder']])].concat((analytics_registered?.data?.dimensions ?? []).map(d => Object.fromEntries([['value', d.key], ['label', d.label + (d.pii ? ' (' + $t('admin.analytics.actions.dimension_pii_suffix') + ')' : '') + ' · ' + d.owner_identifier]])))}}">
+            <on type="change">
+              <!-- audit:allow layout-list-context-navigate-merge-query 차원 전환 — 차원마다 행이 달라 쪽·검색·정렬을 물려받으면 빈 표가 열린다(서브탭과 같은 규칙). 기간과 쪽 크기만 query 로 명시해 잇는다. -->
+              <navigate path="/admin/analytics/actions" :replace="true">
+                <query tab="dimensions" preset="{{query.preset}}" from="{{query.from}}" to="{{query.to}}" unit="{{query.unit}}" exclude="{{query.exclude}}" per_page="{{query.per_page}}" dimension="{{$event.target.value || undefined}}"/>
               </navigate>
             </on>
-          </input>
+          </select>
           <p class="text-label-subtle">$t:admin.analytics.actions.dimensions_hint</p>
         </div>
       </div>
-      <empty-state data-ref="dimensions_empty" data-if="{{(query.tab || 'search') === 'dimensions' &amp;&amp; !query.dimension}}" iconName="puzzle-piece" title="$t:admin.analytics.actions.dimensions_empty_title" description="$t:admin.analytics.actions.dimensions_empty_description" class="py-10"/>
-      <div data-ref="report_grid_wrap" data-if="{{(query.tab || 'search') !== 'dimensions' || !!query.dimension}}">
+      <empty-state data-ref="dimensions_empty" data-if="{{(query.tab || 'search') === 'dimensions' &amp;&amp; !query.dimension &amp;&amp; (analytics_registered?.data?.dimensions ?? []).length > 0}}" iconName="puzzle-piece" title="$t:admin.analytics.actions.dimensions_empty_title" description="$t:admin.analytics.actions.dimensions_empty_description" class="py-10"/>
+      <empty-state data-ref="dimensions_none" data-if="{{(query.tab || 'search') === 'dimensions' &amp;&amp; !query.dimension &amp;&amp; (analytics_registered?.data?.dimensions ?? []).length === 0}}" iconName="puzzle-piece" title="$t:admin.analytics.actions.dimensions_none_title" description="$t:admin.analytics.actions.dimensions_none_description" class="py-10"/>
+      <!-- 개인정보로 표시된 분류 기준은 집계하지 않는다(#682 S4 라운드 4) — 표가 늘 비어 「수집 진단」으로
+           보내면 수집 고장으로 읽힌다. 고르면 표 대신 이유를 보인다(#682 S4 라운드 8). -->
+      <empty-state data-ref="dimensions_pii" data-if="{{(query.tab || 'search') === 'dimensions' &amp;&amp; !!query.dimension &amp;&amp; (analytics_registered?.data?.dimensions ?? []).some(d =&gt; d.key === query.dimension &amp;&amp; d.pii)}}" iconName="user-shield" title="$t:admin.analytics.actions.dimension_pii_title" description="$t:admin.analytics.actions.dimension_pii_description" class="py-10"/>
+      <div data-ref="report_grid_wrap" data-if="{{(query.tab || 'search') !== 'dimensions' || (!!query.dimension &amp;&amp; !(analytics_registered?.data?.dimensions ?? []).some(d =&gt; d.key === query.dimension &amp;&amp; d.pii))}}">
         <include src="partials/admin_analytics/_partial_report_grid.g7.html"/>
       </div>
+      <!-- 확장이 이 화면에 자기 리포트 조각을 붙이는 자리(데이터는 확장 자기 API). -->
+      <extension-point name="analytics_actions_widgets" class="space-y-4 mt-4">
+        <default/>
+      </extension-point>
     </div>
   </slot>
 </layout>

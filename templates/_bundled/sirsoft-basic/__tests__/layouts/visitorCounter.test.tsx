@@ -10,6 +10,8 @@ import { describe, it, expect } from 'vitest';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { evaluateSafeExpression } from '@core/template-engine/SafeExpressionEvaluator';
+import { scanBindings } from '@core/template-engine/BindingShape';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const T = path.resolve(here, '../..');
@@ -42,6 +44,9 @@ describe('홈 방문자 카운터', () => {
     expect(ds?.auth_required).toBeUndefined();
     expect(JSON.stringify(ds?.errorHandling)).toContain('"404"');
     expect(JSON.stringify(ds?.errorHandling)).toContain('"handler":"suppress"');
+    // fallback 을 두지 않는다 — 0 으로 채우면 요청이 실패한 방문자에게 「오늘 0명」이 그려진다.
+    // 응답이 없을 때는 조각의 `if` 가 카운터를 숨긴다(아래 진리표).
+    expect(ds?.fallback).toBeUndefined();
     expect(JSON.stringify(home)).toContain('partials/_visitor_counter.json');
   });
 
@@ -49,9 +54,20 @@ describe('홈 방문자 카운터', () => {
   // @effects home_counter_hides_when_disabled_or_failed
   it('조각은 설정 켬 + 응답 도착 + 오류 없음일 때만 그려진다 (0 을 그리지 않는다)', () => {
     const root = collect(partial).find((o) => o.id === 'visitor_counter_section');
-    expect(root?.if).toContain('public_summary_enabled === true');
-    expect(root?.if).toContain('!!visitor_summary?.data');
-    expect(root?.if).toContain('!visitor_summary?.error');
+    // 조건 식을 실제로 평가해 진리표로 잰다 — 부분 문자열로 재면 `!` 하나가 뒤집혀도 초록이다(#682 S3 R16-D3).
+    const [expr] = scanBindings(String(root?.if ?? '')).map((b) => b.expr);
+    expect(expr, '카운터 조각의 표시 조건').toBeTruthy();
+    const shown = (enabled: unknown, summary: unknown): boolean =>
+      !!evaluateSafeExpression(expr, { _global: { settings: { analytics: { public_summary_enabled: enabled } } }, visitor_summary: summary });
+    const data = { data: { today: 1, yesterday: 2, max: 3, total: 4 } };
+
+    expect(shown(true, data), '켜짐 + 응답 도착').toBe(true);
+    expect(shown(false, data), '설정 꺼짐 — 0 대신 숨김').toBe(false);
+    expect(shown(undefined, data), '설정 값을 모름(공개 설정에 키 없음)').toBe(false);
+    expect(shown('1', data), '참 비슷한 값이 아니라 정확히 true 만').toBe(false);
+    expect(shown(true, undefined), '응답 전 — 0 을 그리지 않는다').toBe(false);
+    expect(shown(true, { data: null }), '빈 응답').toBe(false);
+    expect(shown(true, { ...data, error: { status: 404 } }), '실패(404 를 삼킨 뒤)').toBe(false);
   });
 
   // @scenario screen=home_widget, state=normal, viewport=390, locale=en

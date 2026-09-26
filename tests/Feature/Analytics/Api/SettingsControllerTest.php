@@ -3,6 +3,7 @@
 namespace Tests\Feature\Analytics\Api;
 
 use App\Extension\HookManager;
+use App\Http\Requests\Admin\Analytics\UpdateAnalyticsSettingsRequest;
 
 /**
  * 설정 API — 무엇이 저장되고 무엇이 거절되는가.
@@ -66,6 +67,52 @@ class SettingsControllerTest extends AnalyticsApiTestCase
         $this->actingAs($admin)
             ->putJson('/api/admin/analytics/settings', ['archive_chunk_size' => 10])
             ->assertStatus(422);
+    }
+
+    /**
+     * 정수 설정은 키마다 하한 아래·상한 위를 거절하고, 경계값은 받는다.
+     *
+     * 모집단은 저장 요청의 검증 규칙에서 파생한다 — 손으로 고른 몇 키만 재면 새 정수 설정의
+     * 범위가 빠져도 아무도 모른다.
+     *
+     * @return void 없음
+     *
+     * @scenario endpoint=settings, role=update
+     *
+     * @effects settings_reject_values_outside_their_range
+     */
+    public function test_every_integer_setting_enforces_its_range(): void
+    {
+        $admin = $this->updateAdmin();
+        $ranges = [];
+
+        foreach ((new UpdateAnalyticsSettingsRequest)->rules() as $key => $rules) {
+            if (! is_array($rules) || ! in_array('integer', $rules, true)) {
+                continue;
+            }
+
+            foreach ($rules as $rule) {
+                if (is_string($rule) && preg_match('/^(min|max):(\d+)$/', $rule, $m) === 1) {
+                    $ranges[$key][$m[1]] = (int) $m[2];
+                }
+            }
+        }
+
+        $this->assertGreaterThanOrEqual(15, count($ranges), '정수 설정 모집단이 줄었다 — 규칙 파생이 깨졌는지 본다');
+
+        foreach ($ranges as $key => $range) {
+            $this->assertArrayHasKey('min', $range, $key.' 에 하한이 없다');
+
+            $this->actingAs($admin)->putJson('/api/admin/analytics/settings', [$key => $range['min'] - 1])
+                ->assertStatus(422)->assertJsonValidationErrors($key);
+            $this->actingAs($admin)->putJson('/api/admin/analytics/settings', [$key => $range['min']])
+                ->assertOk();
+
+            if (isset($range['max'])) {
+                $this->actingAs($admin)->putJson('/api/admin/analytics/settings', [$key => $range['max'] + 1])
+                    ->assertStatus(422)->assertJsonValidationErrors($key);
+            }
+        }
     }
 
     /**

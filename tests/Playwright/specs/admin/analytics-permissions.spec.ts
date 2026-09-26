@@ -255,4 +255,23 @@ test.describe('방문자 통계 권한 3단계', () => {
 
     visitorKey = (runSeed('privacy-visitor').match(/SEED_VISITOR_KEY=(\S+)/) ?? [])[1] ?? '';
   });
+
+  // @scenario screen=privacy_requests, state=empty, viewport=1440, locale=ko, e2e=permissions
+  // @effects subject_actions_stay_available_without_core_visits
+  test('코어 방문이 0건이어도 검색 응답이 오면 내보내기·삭제를 누를 수 있다', async ({ page }) => {
+    // 코어 원장이 보존 기간으로 비었어도 확장은 자기 표에 그 사람의 기록을 가질 수 있고, 서버는 그때도
+    // 확장의 정보주체 필터를 부른다 — 화면이 0건에서 버튼을 잠그면 그 요청을 처리할 길이 없다(#682 S4 라운드 6).
+    await authenticatePage(page, issueScopedToken('core.analytics.privacy'));
+
+    const lookup = page.waitForResponse(
+      (r) => r.url().includes('/api/admin/analytics/privacy/subjects?') && r.request().method() === 'GET',
+      { timeout: 30_000 },
+    );
+    await page.goto('/admin/analytics/privacy-requests?subject=ip&value=2001:db8::682:6');
+    const body = await (await lookup).json();
+    expect(body?.data?.visits ?? [], '문서용 대역 주소라 코어 방문이 없다').toEqual([]);
+
+    await expect(page.locator('#export_button')).toBeEnabled({ timeout: 30_000 });
+    await expect(page.locator('#delete_button')).toBeEnabled();
+  });
 });

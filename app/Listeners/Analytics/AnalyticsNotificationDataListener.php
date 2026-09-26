@@ -3,6 +3,7 @@
 namespace App\Listeners\Analytics;
 
 use App\Contracts\Extension\HookListenerInterface;
+use App\Enums\Analytics\ArchiveRunType;
 
 /**
  * 방문자 통계 알림 데이터 필터 리스너
@@ -68,7 +69,9 @@ class AnalyticsNotificationDataListener implements HookListenerInterface
     private function archiveFailed(array $payload): array
     {
         return [
-            'run_type' => (string) ($payload['run_type'] ?? ''),
+            // 원시값(`day`)은 운영자가 읽는 말이 아니다 — 모르는 값이면 그대로 둔다.
+            'run_type' => ArchiveRunType::tryFrom((string) ($payload['run_type'] ?? ''))?->label()
+                ?? (string) ($payload['run_type'] ?? ''),
             'period' => (string) ($payload['period'] ?? ''),
             'error' => (string) ($payload['error'] ?? ''),
             'diagnostics_url' => $this->adminUrl('/admin/analytics/diagnostics'),
@@ -105,9 +108,23 @@ class AnalyticsNotificationDataListener implements HookListenerInterface
             'visitor_key' => mb_substr((string) ($payload['visitor_key'] ?? ''), 0, 8),
             'actions' => (string) ($payload['actions'] ?? 0),
             'limit' => (string) ($payload['limit'] ?? 0),
-            // 주소는 알림에 싣지 않는다 — 알림함은 개인정보 권한과 무관하게 열린다.
+            // 방문 행에 저장된 주소를 그대로 싣는다 — 수집 모드가 이미 가린 값이라 원래 주소보다
+            // 많은 것을 드러내지 않는다. 알림 템플릿이 {ip_display} 를 쓸 때만 보인다.
             'ip_display' => (string) ($payload['ip_display'] ?? ''),
         ];
+    }
+
+    /**
+     * 증감률을 부호와 단위를 붙인 문자열로 바꿉니다.
+     *
+     * @param  float  $value  증감률 (%)
+     * @return string 예: `+12.5%` · `-3.0%` · `0.0%`
+     */
+    private static function signedPercent(float $value): string
+    {
+        $rounded = round($value, 1);
+
+        return ($rounded > 0 ? '+' : '').number_format($rounded, 1, '.', '').'%';
     }
 
     /**
@@ -126,7 +143,8 @@ class AnalyticsNotificationDataListener implements HookListenerInterface
             'visitors' => (string) ($payload['visitors'] ?? 0),
             'pageviews' => (string) ($payload['pageviews'] ?? 0),
             // 직전 기간이 0 이면 비율이 성립하지 않는다 — 「무한 % 증가」 대신 줄표를 쓴다.
-            'change_pct' => $changePct === null ? '-' : (string) $changePct,
+            // 값이 있으면 부호와 단위를 붙인다 — 「12.5」만으로는 늘었는지 줄었는지 알 수 없다.
+            'change_pct' => $changePct === null ? '-' : self::signedPercent((float) $changePct),
             'top_pages' => $this->rowsAsHtml($payload['top_pages'] ?? []),
             'top_referrers' => $this->rowsAsHtml($payload['top_referrers'] ?? []),
             'report_url' => $this->adminUrl('/admin/analytics'),

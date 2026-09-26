@@ -12,33 +12,34 @@
  * @scenario screen=overview, state=loading, viewport=1440, locale=ko
  * @effects every_analytics_screen_has_fallback_and_blur
  */
-import fs from 'fs';
-import path from 'path';
 import { describe, it, expect } from 'vitest';
-import { TEMPLATE_DIR, collectObjects } from './analyticsLayoutTestUtils';
+import {
+  analyticsScreens,
+  analyticsLayoutFiles,
+  expandedObjects,
+  loadLayout,
+  loadLocale,
+  localeNames,
+  langValue,
+  translationKeys,
+} from './analyticsLayoutTestUtils';
 
-const LAYOUT_DIR = path.join(TEMPLATE_DIR, 'layouts');
-
-/** `layouts/` 에서 통계 화면 JSON 을 파생한다 — 손으로 적은 목록은 항목이 늘면 조용히 지나간다. */
-function analyticsScreens(): string[] {
-  return fs
-    .readdirSync(LAYOUT_DIR)
-    .filter((name) => /^admin_analytics_.+\.json$/.test(name))
-    .sort();
-}
-
-/** 화면 트리를 읽되 `partial` 참조를 따라가 조각까지 펼친다(조각이 계약을 대신 지는 자리가 있다). */
-function expandedObjects(relative: string, seen = new Set<string>()): Record<string, any>[] {
-  if (seen.has(relative)) return [];
-  seen.add(relative);
-  const file = path.join(LAYOUT_DIR, relative);
-  if (!fs.existsSync(file)) return [];
-  const objects = collectObjects(JSON.parse(fs.readFileSync(file, 'utf8')));
-  const nested = objects
-    .map((node) => node.partial)
-    .filter((ref): ref is string => typeof ref === 'string')
-    .flatMap((ref) => expandedObjects(ref, seen));
-  return objects.concat(nested);
+/**
+ * `blur_until_loaded` 가 실제로 켜지는가 — 선언만 있고 꺼진 값(`false`·`{enabled:false}`·빈 식)은 흐림이 없다.
+ *
+ * @returns 켜졌으면 가리키는 데이터소스 id 목록(객체형이 아니면 빈 배열), 꺼졌으면 null
+ */
+function effectiveBlur(value: unknown): string[] | null {
+  if (value === true) return [];
+  if (typeof value === 'string') return value.trim() !== '' && value.trim() !== '{{false}}' ? [] : null;
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    const config = value as { enabled?: unknown; data_sources?: unknown };
+    if (config.enabled === false) return null;
+    const sources = config.data_sources;
+    if (Array.isArray(sources)) return sources.map(String);
+    return typeof sources === 'string' && sources !== '' ? sources.split(',').map((s) => s.trim()).filter(Boolean) : [];
+  }
+  return null;
 }
 
 /** 화면이 스스로 그리는 api 데이터소스(조각은 자기 소스를 갖지 않는다). */
@@ -70,16 +71,43 @@ describe('방문자 통계 화면 — 상태 분기 전수', () => {
 
   // @scenario screen=overview, state=loading, viewport=1440, locale=ko
   // @effects every_analytics_screen_has_fallback_and_blur
-  it('표·차트를 가진 화면마다 blur_until_loaded 가 있다 — 옛 값이 서 있다 툭 바뀌지 않는다', () => {
-    // 설정 화면은 폼이라 해당 없다 — 값이 바뀌는 표가 없고 저장 버튼이 자체 잠금을 건다.
-    const formOnly = new Set(['admin_analytics_settings.json']);
+  it('모든 화면에 켜진 blur_until_loaded 가 있고 그 흐림은 화면이 가진 데이터소스를 기다린다 — 옛 값이 서 있다 툭 바뀌지 않는다', () => {
+    // 예외 목록을 두지 않는다. 종전에는 설정 화면을 「폼이라 해당 없음」으로 손으로 뺐지만, 설정 화면도
+    // 첫 응답 전 입력을 막으려고 탭 본문을 흐린다(`analytics_settings_tab_content`) — 예외가 낡은 채 남아
+    // 그 흐림이 빠져도 이 검사가 모를 자리였다(#682 S3 R2-D8).
+    //
+    // 선언이 있다는 것만으로는 모자란다. `{enabled:false}`·`false` 는 선언이지만 흐림이 없고(R5-D7),
+    // 객체형이 가리키는 소스가 화면에 없으면 영영 풀리지 않거나 아무것도 기다리지 않는다 — 그래서
+    // 켜졌는지와 **기다리는 방향**(화면의 데이터소스 id)까지 잰다.
     const missing: string[] = [];
+    const dangling: string[] = [];
+    let blurs = 0;
     for (const screen of screens) {
-      if (formOnly.has(screen)) continue;
-      const hasBlur = expandedObjects(screen).some((node) => node.blur_until_loaded !== undefined);
-      if (!hasBlur) missing.push(screen);
+      const objects = expandedObjects(screen);
+      const sourceIds = new Set(objects.filter((node) => typeof node.type === 'string' && typeof node.id === 'string' && (node.type === 'api' || node.type === 'websocket')).map((node) => String(node.id)));
+      const effective = objects
+        .filter((node) => node.blur_until_loaded !== undefined)
+        .map((node) => ({ id: String(node.id ?? '?'), sources: effectiveBlur(node.blur_until_loaded) }))
+        .filter((entry): entry is { id: string; sources: string[] } => entry.sources !== null);
+      if (effective.length === 0) missing.push(screen);
+      for (const { id, sources } of effective) {
+        blurs += 1;
+        for (const source of sources) if (!sourceIds.has(source)) dangling.push(`${screen}:${id} → ${source}`);
+      }
     }
-    expect(missing).toEqual([]);
+    expect(blurs, '켜진 흐림 자리').toBeGreaterThanOrEqual(screens.length);
+    expect(missing, '켜진 흐림이 한 자리도 없는 화면').toEqual([]);
+    expect(dangling, '화면에 없는 소스를 기다리는 흐림').toEqual([]);
+  });
+
+  // @scenario screen=overview, state=loading, viewport=1440, locale=ko
+  // @effects every_analytics_screen_has_fallback_and_blur
+  it('흐림 판정기는 꺼진 선언을 흐림으로 세지 않는다', () => {
+    expect(effectiveBlur({ enabled: false, data_sources: 'x' })).toBeNull();
+    expect(effectiveBlur(false)).toBeNull();
+    expect(effectiveBlur('')).toBeNull();
+    expect(effectiveBlur(true)).toEqual([]);
+    expect(effectiveBlur({ enabled: true, data_sources: 'a, b' })).toEqual(['a', 'b']);
   });
 
   // @scenario screen=overview, state=normal, viewport=1440, locale=ko
@@ -110,8 +138,10 @@ describe('방문자 통계 화면 — 상태 분기 전수', () => {
     // `<badge text="$t:defer:…conversions_badge|count={{…}}">` 가 전환이 든 방문에서 키를
     // 그대로 노출했다(#682 S3 라운드 8). 그래서 값이 어디에 실렸든 전수로 본다.
     const bare: string[] = [];
+    let deferred = 0;
     const walk = (node: unknown, where: string): void => {
       if (typeof node === 'string') {
+        if (node.includes('$t:defer:')) deferred += 1;
         if (/^\$t:defer:[a-zA-Z0-9._-]+\|/.test(node)) bare.push(`${where} :: ${node.slice(0, 80)}`);
         return;
       }
@@ -121,6 +151,8 @@ describe('방문자 통계 화면 — 상태 분기 전수', () => {
       }
     };
     for (const screen of screens) walk(expandedObjects(screen), screen);
+    // 모집단이 비면 아래 비교는 빈 배열끼리라 조용히 통과한다 — 미룬 번역 토큰을 실제로 만났는지 먼저 잰다.
+    expect(deferred, '훑은 미룬 번역 토큰').toBeGreaterThan(0);
     expect(bare).toEqual([]);
   });
 
@@ -179,5 +211,45 @@ describe('방문자 통계 화면 — 상태 분기 전수', () => {
     // 모집단이 비면 아래 단언이 조용히 통과한다 — 그 자체를 먼저 잰다.
     expect(checked, '검사한 상태 필드 수').toBeGreaterThan(0);
     expect(unread).toEqual([]);
+  });
+});
+
+describe('방문자 통계 레이아웃 — 번역 키 전수(모든 로케일)', () => {
+  // @scenario screen=overview, state=normal, viewport=1440, locale=ja
+  // @scenario screen=settings, state=normal, viewport=390, locale=en
+  // @effects every_translation_key_exists_in_ko_and_en
+  it('통계 레이아웃·조각이 쓰는 모든 $t: 키가 모든 로케일(템플릿 ko·en + ja 언어팩)에 있다', () => {
+    // 모집단을 손으로 적지 않는다. 종전 가드는 개요·설정 두 화면과 조각 몇 장만 ko·en 으로 쟀고
+    // (`loadLang` 시그니처가 ja 를 타입에서 뺐다), 나머지 화면의 키는 사람 눈으로만 봤다
+    // (#682 S3 R1-D2·R3-D2·R12-D1). 레이아웃은 디렉터리에서, 로케일은 `lang/partial/` 디렉터리와
+    // 언어팩에서, 네임스페이스는 키의 첫 마디에서 판다 — 화면·로케일·네임스페이스가 늘면 같이 걸린다.
+    const files = analyticsLayoutFiles();
+    const locales = localeNames();
+    expect(files.length, '훑은 레이아웃·조각').toBeGreaterThan(20);
+    expect(locales, '로케일 모집단 — ja 가 빠지면 일본어 사이트만 영어로 떨어져도 모른다').toContain('ja');
+    expect(locales.length, '로케일 모집단').toBeGreaterThanOrEqual(3);
+
+    const owners = new Map<string, string>();
+    for (const file of files) {
+      for (const key of translationKeys(loadLayout(file))) if (!owners.has(key)) owners.set(key, file);
+    }
+    // 키가 비면 아래 비교는 빈 배열끼리라 조용히 통과한다.
+    expect(owners.size, '추출한 번역 키').toBeGreaterThan(300);
+
+    const trees = new Map<string, any>();
+    const tree = (locale: string, ns: string): any => {
+      const id = `${locale}/${ns}`;
+      if (!trees.has(id)) trees.set(id, loadLocale(locale, ns));
+      return trees.get(id);
+    };
+    const missing: string[] = [];
+    for (const [key, file] of owners) {
+      const ns = key.split('.')[0];
+      for (const locale of locales) {
+        const value = langValue(tree(locale, ns), key);
+        if (typeof value !== 'string' || value === '') missing.push(`${locale}:${key} (${file})`);
+      }
+    }
+    expect(missing).toEqual([]);
   });
 });

@@ -2,6 +2,10 @@
 
 namespace Tests\Feature\Analytics\Api;
 
+use App\Models\Analytics\AnalyticsArchiveRun;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Route;
+
 /**
  * 권한 매트릭스 — 권한 셋이 실제로 갈리는지.
  *
@@ -144,5 +148,80 @@ class PermissionMatrixTest extends AnalyticsApiTestCase
         $this->actingAs($this->privacyAdmin())
             ->getJson('/api/admin/analytics/visitors?user_id=55')
             ->assertOk();
+    }
+
+    /**
+     * 통계 관리자 라우트마다 선언한 권한 하나로만 열리고, 다른 권한으로는 403 이다.
+     *
+     * 손으로 적은 경로 목록은 새 라우트가 붙어도 늘지 않는다. 라우트 등록부에서 모집단을 파생하고
+     * (라우트 × 권한 셋) 격자를 전부 돈다 — 권한 미들웨어가 빠진 라우트도 여기서 걸린다.
+     *
+     * @scenario endpoint=overview, role=read
+     *
+     * @effects every_admin_route_is_gated_by_exactly_its_permission
+     *
+     * @return void 없음
+     */
+    public function test_every_route_opens_only_for_its_permission(): void
+    {
+        Http::fake();
+
+        $run = AnalyticsArchiveRun::factory()->create();
+        $routes = $this->analyticsRoutes((string) $run->id);
+
+        $this->assertGreaterThanOrEqual(27, count($routes), '통계 관리자 라우트 모집단이 줄었다 — 파생이 깨졌는지 본다');
+
+        $admins = [];
+
+        foreach (['read', 'update', 'privacy'] as $permission) {
+            $admins[$permission] = $this->adminWith(['core.analytics.'.$permission]);
+        }
+
+        foreach ($routes as [$method, $uri, $permission]) {
+            $this->assertArrayHasKey($permission, $admins, "{$method} {$uri}: 통계 권한 게이트가 없다");
+
+            foreach ($admins as $held => $admin) {
+                $status = $this->actingAs($admin)->json($method, $uri)->status();
+
+                if ($held === $permission) {
+                    $this->assertNotContains($status, [401, 403], "{$method} {$uri}: {$held} 권한으로 열려야 한다");
+                } else {
+                    $this->assertSame(403, $status, "{$method} {$uri}: {$held} 권한으로는 막혀야 한다");
+                }
+            }
+        }
+    }
+
+    /**
+     * 등록된 통계 관리자 라우트와 그 권한을 모읍니다.
+     *
+     * @param  string  $runId  실행 이력 경로 인자 (모델 바인딩이 권한보다 먼저 404 를 내지 않게 실재 행)
+     * @return array<int, array{0: string, 1: string, 2: string}> [메서드, 경로, 권한 이름(read·update·privacy)]
+     */
+    private function analyticsRoutes(string $runId): array
+    {
+        $routes = [];
+
+        foreach (Route::getRoutes() as $route) {
+            if (! str_starts_with($route->uri(), 'api/admin/analytics/')) {
+                continue;
+            }
+
+            $permission = '';
+
+            foreach ($route->gatherMiddleware() as $middleware) {
+                if (is_string($middleware) && preg_match('/:admin,core\.analytics\.(\w+)$/', $middleware, $m) === 1) {
+                    $permission = $m[1];
+                }
+            }
+
+            $uri = '/'.strtr($route->uri(), ['{run}' => $runId, '{report}' => 'page_url', '{visitorKey}' => str_repeat('a', 32)]);
+
+            foreach (array_diff($route->methods(), ['HEAD']) as $method) {
+                $routes[] = [$method, $uri, $permission];
+            }
+        }
+
+        return $routes;
     }
 }

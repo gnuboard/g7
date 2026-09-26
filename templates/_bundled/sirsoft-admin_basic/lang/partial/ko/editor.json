@@ -1696,6 +1696,7 @@
     "analytics_realtime_ws": "현재 접속자 방송",
     "analytics_status": "방문자 통계 수집 상태",
     "analytics_report": "방문자 통계 리포트",
+    "analytics_registered": "등록된 확장 분류 기준·전환",
     "analytics_referrer_urls": "유입처 전체 주소",
     "analytics_patterns": "요일·시간대 패턴",
     "analytics_visitors": "방문자 목록",

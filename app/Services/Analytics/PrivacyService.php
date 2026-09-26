@@ -74,6 +74,74 @@ class PrivacyService
     }
 
     /**
+     * 이 방문자의 요청을 익명 모드로 다뤄야 하는지 판정합니다.
+     *
+     * 사이트 전체 판정(`isAnonymous`)과 하나만 다르다 — IP 저장 모드인데 동의 관리 플러그인이
+     * 켜진 사이트에서는 **방문자마다** 가른다. 분석·기능 쿠키에 모두 동의한 방문자는 IP 저장
+     * 모드 그대로(IP·방문자 쿠키) 모으고, 그렇지 않은 방문자만 익명으로 모은다. 기능 동의까지
+     * 보는 이유는 그 플러그인이 기능 동의 전에는 방문자 쿠키를 응답에서 지우기 때문이다 —
+     * 쿠키가 남지 못하는 방문자를 쿠키 방식으로 세면 비콘마다 새 방문이 된다(#682 S4 라운드 8,
+     * 결정 「동의자는 IP 저장 모드」).
+     *
+     * @param  TrackingRequest  $request  수집 요청
+     * @param  AnalyticsConfig  $config  설정
+     * @return bool 익명 모드 여부
+     */
+    public function isAnonymousFor(TrackingRequest $request, AnalyticsConfig $config): bool
+    {
+        $source = $this->consentSource();
+
+        if (! $config->resolvesToAnonymous($source)) {
+            return false;
+        }
+
+        if ($config->anonymousFallbackReason($source) === AnalyticsConfig::ANONYMOUS_REASON_CONSENT_PLUGIN_BLOCKS_COOKIES) {
+            return ! $this->visitorAcceptsTrackingCookies($request);
+        }
+
+        return true;
+    }
+
+    /**
+     * 사이트의 모든 방문자가 익명 모드로 모이는지 판정합니다.
+     *
+     * 진단 화면의 「실제 모드」가 읽는다. 동의 관리 플러그인 때문에 **동의 전 방문자만**
+     * 익명으로 모이는 경우는 사이트 모드가 여전히 IP 저장이다 — 사유는 따로 실린다.
+     *
+     * @param  AnalyticsConfig  $config  설정
+     * @return bool 모든 방문자가 익명이면 true
+     */
+    public function isAnonymousForEveryone(AnalyticsConfig $config): bool
+    {
+        $source = $this->consentSource();
+
+        return $config->resolvesToAnonymous($source)
+            && $config->anonymousFallbackReason($source) !== AnalyticsConfig::ANONYMOUS_REASON_CONSENT_PLUGIN_BLOCKS_COOKIES;
+    }
+
+    /**
+     * 방문자가 분석·기능 쿠키에 모두 동의했는지 확인합니다.
+     *
+     * 동의 관리 플러그인에 직접 묻는다(이 판정은 그 플러그인이 켜진 사이트에서만 불린다).
+     * 확인할 수 없으면 동의하지 않은 것으로 본다 — 모르는 상태에서 IP 를 남기지 않는다.
+     *
+     * @param  TrackingRequest  $request  수집 요청
+     * @return bool 두 항목 모두 동의했으면 true
+     */
+    private function visitorAcceptsTrackingCookies(TrackingRequest $request): bool
+    {
+        try {
+            $consents = $this->installedConsentPluginConsents($request);
+
+            return ($consents['analytics'] ?? false) === true && ($consents['functional'] ?? false) === true;
+        } catch (\Throwable $e) {
+            Log::warning('방문자 통계 동의 확인 실패', ['error' => $e->getMessage()]);
+
+            return false;
+        }
+    }
+
+    /**
      * 운영자가 고른 모드 대신 익명으로 내려간 사유를 돌려줍니다.
      *
      * @param  AnalyticsConfig  $config  설정
@@ -138,15 +206,26 @@ class PrivacyService
      */
     private function askInstalledConsentPlugin(TrackingRequest $request): bool
     {
+        return (bool) ($this->installedConsentPluginConsents($request)['analytics'] ?? false);
+    }
+
+    /**
+     * 설치돼 있는 동의 관리 플러그인에서 이 방문자의 쿠키 동의 항목을 읽습니다.
+     *
+     * @param  TrackingRequest  $request  수집 요청
+     * @return array<string, mixed> 항목 → 동의 여부 (물을 곳이 없으면 빈 배열)
+     */
+    private function installedConsentPluginConsents(TrackingRequest $request): array
+    {
         $serviceClass = 'Plugins\\Sirsoft\\Gdpr\\Services\\GdprConsentService';
 
         if (! class_exists($serviceClass)) {
-            return false;
+            return [];
         }
 
         $consents = app($serviceClass)->getCurrentCookieConsents($request->userId, $request->sessionId);
 
-        return is_array($consents) && (bool) ($consents['analytics'] ?? false);
+        return is_array($consents) ? $consents : [];
     }
 
     /**
@@ -206,26 +285,23 @@ class PrivacyService
      *
      * 약한 쪽으로 바꿀 때는 소급할 것이 없습니다 — 과거 데이터는 이미 그보다 적은
      * 정보만 담고 있습니다. 강한 쪽으로 바뀔 때만 「기존 데이터도 맞출까요」를 묻습니다.
+     * 모드가 올라가거나, 주소를 더 가리거나, 회원 번호 가명화를 새로 켜면 강해진 것입니다.
+     * 설정 저장 응답(`retro_anonymize_available`)이 이 판정 하나만 씁니다.
      *
-     * @param  array<string, mixed>  $before  변경 전 설정 값
-     * @param  array<string, mixed>  $after  변경 후 설정 값
+     * @param  AnalyticsConfig  $before  변경 전 설정
+     * @param  AnalyticsConfig  $after  변경 후 설정
      * @return bool 소급 제안 여부
      */
-    public static function tightensPrivacy(array $before, array $after): bool
+    public static function tightensPrivacy(AnalyticsConfig $before, AnalyticsConfig $after): bool
     {
-        $rank = [
-            PrivacyMode::Full->value => 0,
-            PrivacyMode::Consent->value => 1,
-            PrivacyMode::Anonymous->value => 2,
-        ];
+        $rank = static fn (PrivacyMode $mode): int => match ($mode) {
+            PrivacyMode::Full => 0,
+            PrivacyMode::Consent => 1,
+            PrivacyMode::Anonymous => 2,
+        };
 
-        $beforeMode = $rank[$before['privacy_mode'] ?? PrivacyMode::Full->value] ?? 0;
-        $afterMode = $rank[$after['privacy_mode'] ?? PrivacyMode::Full->value] ?? 0;
-
-        if ($afterMode > $beforeMode) {
-            return true;
-        }
-
-        return (int) ($after['ip_mask_octets'] ?? 0) > (int) ($before['ip_mask_octets'] ?? 0);
+        return $rank($after->privacyMode) > $rank($before->privacyMode)
+            || $after->ipMaskOctets > $before->ipMaskOctets
+            || ($after->pseudonymizeUserId && ! $before->pseudonymizeUserId);
     }
 }

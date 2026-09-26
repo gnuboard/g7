@@ -4,15 +4,16 @@
  *
  * 잠그는 것: 데이터소스 id·엔드포인트·fallback·403 처리, 기간 바의 이동이 `mergeQuery` + `page:1` 인 것,
  * 프리셋이 `setAnalyticsPeriod` 를 거치는 것, 실시간 폴링 타이머 id 고정과 이탈 시 정리, KPI 카드 4장,
- * 추이 LineChart 의 세 계열, `$t:` 키가 ko/en 에 모두 있는 것.
+ * 추이 LineChart 의 세 계열. (`$t:` 키의 로케일 존재는 `analyticsStateBranches.test.ts` 가 통계 레이아웃 전수로 잰다.)
  */
 
 import React from 'react';
 import { describe, it, expect } from 'vitest';
 import { fireEvent, waitFor } from '@testing-library/react';
 import {
-  loadLayout, loadLang, loadJaPack, langValue, dataSource, nodesNamed, nodeById, actionsWithHandler, stringify, translationKeys, collectObjects,
+  loadLayout, loadLang, langValue, dataSource, nodesNamed, nodeById, actionsWithHandler, stringify, collectObjects,
 } from './analyticsLayoutTestUtils';
+import { ANALYTICS_PERIOD_PRESETS } from '../../handlers/setAnalyticsPeriodHandler';
 import { createLayoutTest } from '@core/template-engine/__tests__/utils/layoutTestUtils';
 import { ComponentRegistry } from '@core/template-engine/ComponentRegistry';
 
@@ -48,7 +49,7 @@ describe('개요 화면 — 데이터소스 계약', () => {
     expect(preset?.resultTo).toEqual({ target: '_local', key: 'periodComputed' });
 
     // 화면 상태(`_local.period`)로 그리면 뒤로 가기가 주소만 되돌리고 바는 직전 기간을 가리킨 채
-    // 남는다 — 실측으로 확인한 뒤 바를 주소 기준으로 돌렸다(#682 라운드 4, PO 지적 ①ⓑ).
+    // 남는다 — 실측으로 확인한 뒤 바를 주소 기준으로 돌렸다(#682 라운드 4, 검수 지적 ①ⓑ).
     expect(stringify(periodBar)).not.toContain('_local.period?.');
     expect(stringify(periodBar)).toContain('query.preset');
     expect(stringify(periodBar)).toContain('query.exclude');
@@ -83,7 +84,19 @@ describe('개요 화면 — 데이터소스 계약', () => {
 });
 
 describe('기간 바 조각', () => {
-  const presets = ['today', 'yesterday', '7d', '30d', '90d', 'this_month', 'last_month', 'this_year'];
+  // 모집단은 핸들러 상수다 — 리터럴로 적으면 9번째 프리셋이 생겨도 검사 밖에 남는다(#682 S3 R7-D9).
+  const presets = [...ANALYTICS_PERIOD_PRESETS];
+
+  // @scenario screen=overview, state=normal, viewport=1440, locale=ko
+  // @effects preset_uses_date_only_handler
+  it('기간 바의 프리셋 버튼 집합이 핸들러가 아는 프리셋 집합과 같다 — 한쪽만 늘면 red', () => {
+    expect(presets.length, '핸들러 프리셋 모집단').toBeGreaterThanOrEqual(8);
+    const buttons = collectObjects(periodBar)
+      .map((o) => (typeof o.id === 'string' ? o.id.match(/^preset_(.+)$/)?.[1] : undefined))
+      .filter((id): id is string => !!id);
+    expect(buttons.length, '기간 바의 프리셋 버튼').toBeGreaterThan(0);
+    expect([...new Set(buttons)].sort()).toEqual([...presets].sort());
+  });
 
   // @scenario screen=overview, state=normal, viewport=1440, locale=ko
   // @effects preset_uses_date_only_handler, period_bar_navigates_with_merge_query_and_page_reset
@@ -347,29 +360,6 @@ describe('KPI·실시간 줄·상단 경고 조각', () => {
     expect(nodeById(statusAlerts, 'alert_queue_backlog')?.if).toContain('queue?.backlogged === true');
     const navs = actionsWithHandler(statusAlerts, 'navigate').map((n) => n.params.path);
     expect(navs).toEqual(expect.arrayContaining(['/admin/analytics/settings', '/admin/analytics/diagnostics']));
-  });
-
-  // @scenario screen=overview, state=normal, viewport=1440, locale=en
-  // @effects every_translation_key_exists_in_ko_and_en
-  it('개요·조각의 모든 $t: 키가 ko/en 에 있다', () => {
-    const ko = loadLang('ko', 'admin');
-    const en = loadLang('en', 'admin');
-    const keys = [layout, periodBar, kpiRow, realtimeBar, statusAlerts].flatMap(translationKeys).filter((k) => k.startsWith('admin.'));
-    expect(keys.length).toBeGreaterThan(20);
-    const missing = keys.filter((k) => typeof langValue(ko, k) !== 'string' || typeof langValue(en, k) !== 'string');
-    expect(missing).toEqual([]);
-  });
-
-  // @scenario screen=overview, state=normal, viewport=1440, locale=ja
-  // @effects every_translation_key_exists_in_ko_and_en
-  it('같은 키가 ja 언어팩에도 있다 — 일본어 로케일만 영어로 떨어지지 않는다', () => {
-    // ja 는 빌드 스크립트가 ko 원본에서 만든다(사람이 고치지 않는다). 생성이 빠진 채로 나가면
-    // 일본어 사이트에서 이 화면만 영어가 된다 — #682 S3 에서 실제로 508키가 그 상태였다.
-    const ja = loadJaPack('admin');
-    const keys = [layout, periodBar, kpiRow, realtimeBar, statusAlerts].flatMap(translationKeys).filter((k) => k.startsWith('admin.analytics.'));
-    expect(keys.length).toBeGreaterThan(20);
-    const missing = keys.filter((k) => typeof langValue(ja, k) !== 'string');
-    expect(missing).toEqual([]);
   });
 });
 

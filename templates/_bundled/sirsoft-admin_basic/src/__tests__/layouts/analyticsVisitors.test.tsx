@@ -111,16 +111,30 @@ describe('정보주체 삭제 창', () => {
       if (!n || typeof n !== 'object') return;
       if (Array.isArray(n)) { n.forEach(walk); return; }
       if (typeof n.text === 'string' && /^\$t:defer:[a-zA-Z0-9._]+\|/.test(n.text)) bare.push(n.text);
-      for (const [k, v] of Object.entries(n)) {
-        // prop 자리(`props.text`)는 다른 경로라 정상 해소된다 — 텍스트 노드만 본다.
-        if (k === 'props') continue;
-        walk(v);
-      }
+      // prop 자리(`props.text`)도 본다 — 「다른 경로라 정상 해소된다」던 옛 전제는 브라우저 실측이 뒤집었다
+      // (전환 배지 `props.text` 가 키를 그대로 노출, #682 S3 라운드 8). 모든 값 자리의 전수 가드는
+      // `analyticsStateBranches.test.ts` 가 통계 화면 전체로 잰다.
+      for (const v of Object.values(n)) walk(v);
     };
     walk(detail);
     expect(stringify(detail)).toContain('$t:defer:');
     expect(bare, '토큰이 글자의 전부인 텍스트 노드').toEqual([]);
   });
+  // @scenario screen=visitor_detail, state=normal, viewport=1440, locale=ko
+  // @effects timeline_conversions_show_the_declared_goal_name
+  it('타임라인 전환은 서버가 푼 목표 이름(goal_label)을 먼저 읽고 전환 속성 label 은 이름 자리에 쓰지 않는다', () => {
+    // `conv.label` 은 목표 이름이 아니라 전환 속성(주문번호 등)이다 — 이름 자리에 쓰면 코어 목표가
+    // `core.user_registered` 원키로 찍힌다. 모집단은 원키로 떨어지는 이름 노드 전부(트리에서 판다).
+    const nameNodes = collectObjects(detail).filter(
+      (o) => typeof o.text === 'string' && o.text.includes('conv.goal_key'),
+    );
+    expect(nameNodes.length, '전환 이름 노드').toBeGreaterThan(0);
+    for (const node of nameNodes) {
+      expect(node.text.startsWith('{{conv.goal_label ??'), node.text).toBe(true);
+    }
+    expect(stringify(detail)).not.toContain('conv.label ?? conv.goal_key');
+  });
+
   // @scenario screen=visitor_detail, state=normal, viewport=1440, locale=ko
   // @effects timeline_search_row_shows_result_count
   it('타임라인의 검색 행이 결과 건수를 붙이고 세 로케일에 그 문구가 있다', () => {

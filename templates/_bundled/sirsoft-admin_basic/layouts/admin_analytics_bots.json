@@ -193,7 +193,7 @@
                                 "id": "seo_cache_link",
                                 "type": "basic",
                                 "name": "Button",
-                                "if": "{{(current_user?.data?.is_super === true || (current_user?.data?.permissions ?? []).some(p => (p?.identifier ?? p) === 'core.settings.read'))}}",
+                                "if": "{{((current_user?.data?.permissions ?? []).some(p => (p?.identifier ?? p) === 'core.settings.read'))}}",
                                 "actions": [
                                     {
                                         "type": "click",
@@ -342,6 +342,7 @@
                                                 "id": "bot_names_grid",
                                                 "type": "composite",
                                                 "name": "DataGrid",
+                                                "if": "{{analytics_bots?.loading || (analytics_bots?.data?.data ?? []).length > 0}}",
                                                 "actions": [
                                                     {
                                                         "type": "action",
@@ -460,7 +461,7 @@
                                         },
                                         "children": [
                                             {
-                                                "comment": "최근 요청은 서버가 늘 50건을 한 응답에 실어 준다(`ReportService::RECENT_BOT_HITS`). 전부 펼치면\n              카드 하나가 2,800px 가까이 되어 옆의 「봇별 집계」와 높이가 맞지 않는다 — 받은 배열을 화면에서\n              10건씩 나눈다. 서버 쪽 나눔이 아니라 요청 수는 그대로다(#682 라운드 4, PO 지적 ③).",
+                                                "comment": "최근 요청은 서버가 늘 50건을 한 응답에 실어 준다(`ReportService::RECENT_BOT_HITS`). 전부 펼치면\n              카드 하나가 2,800px 가까이 되어 옆의 「봇별 집계」와 높이가 맞지 않는다 — 받은 배열을 화면에서\n              10건씩 나눈다. 서버 쪽 나눔이 아니라 요청 수는 그대로다(#682 라운드 4, 검수 지적 ③).",
                                                 "id": "recent_hits_grid",
                                                 "type": "composite",
                                                 "name": "DataGrid",
@@ -512,7 +513,7 @@
                                                                     "name": "Badge",
                                                                     "props": {
                                                                         "color": "{{row.cache_status === 'hit' ? 'green' : (row.cache_status === 'miss' ? 'yellow' : 'gray')}}",
-                                                                        "text": "{{String(row.cache_status ?? '-').toUpperCase()}}",
+                                                                        "text": "{{['hit', 'miss', 'bypass', 'none'].includes(row.cache_status ?? '') ? $t('admin.analytics.bots.cache_statuses.' + row.cache_status) : (row.cache_status ?? '-')}}",
                                                                         "size": "sm"
                                                                     }
                                                                 }
@@ -552,6 +553,15 @@
                                 "partial": "partials/admin_analytics/_partial_report_grid.json"
                             }
                         ]
+                    },
+                    {
+                        "comment": "확장이 이 화면에 자기 리포트 조각을 붙이는 자리(데이터는 확장 자기 API).",
+                        "type": "extension_point",
+                        "name": "analytics_bots_widgets",
+                        "props": {
+                            "className": "space-y-4 mt-4"
+                        },
+                        "default": []
                     }
                 ]
             }

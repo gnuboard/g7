@@ -2677,6 +2677,25 @@
   }
 
   /*
+   * Key-Value List — 「라벨 값」 짝을 세로로 나열하는 목록 자산.
+   * 라벨마다 폭이 달라 값이 들쭉날쭉 시작하던 것을(#682 S4 라운드 8) 라벨 칸을 가장 긴 라벨
+   * 폭(max-content)으로 맞춘 격자로 바로잡는다. `items-baseline` 은 라벨(xs)과 값(sm)의 글자 크기가
+   * 달라도 첫 줄 기준선을 맞춘다. 행은 `.kv-row`(display: contents)로 감싸 라벨·값이 격자 칸에 바로
+   * 앉게 한다. `.kv-list-2` 는 sm 이상에서 짝 두 개를 한 줄에 둔다(열마다 라벨 칸을 따로 맞춤).
+   * 확장 레이아웃은 Tailwind 스캔 대상이 아니므로 임의값 격자를 레이아웃에 직접 쓰지 말고 이 자산을 쓴다.
+   */
+  .kv-list {
+    @apply grid grid-cols-[max-content_minmax(0,1fr)] gap-x-4 gap-y-1 items-baseline;
+  }
+  .kv-list-2 {
+    @apply grid grid-cols-[max-content_minmax(0,1fr)] gap-x-4 gap-y-1 items-baseline;
+    @apply sm:grid-cols-[max-content_minmax(0,1fr)_max-content_minmax(0,1fr)];
+  }
+  .kv-row {
+    @apply contents;
+  }
+
+  /*
    * Modal / Form Footer Buttons — 폼 / 모달 하단 액션 버튼 영역 자산.
    * 자산 책임: 우측 정렬(justify-end) + 버튼 간격(gap-3) + 상단 여백(mt-6).
    * 호출처는 정렬/여백 토큰 명시 금지.

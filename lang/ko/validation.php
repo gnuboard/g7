@@ -1177,7 +1177,7 @@ return [
         'url_required' => '방문 주소가 필요합니다.',
         'url_too_long' => '방문 주소가 너무 깁니다.',
         'resolution_invalid' => '화면 해상도 형식이 올바르지 않습니다.',
-        'dimensions_too_many' => '차원 값은 최대 20개까지 보낼 수 있습니다.',
+        'dimensions_too_many' => '분류 값은 최대 20개까지 보낼 수 있습니다.',
         'range_too_long' => '한 번에 조회할 수 있는 기간은 :days일까지입니다.',
         'report_unknown' => '알 수 없는 리포트입니다.',
         'subject_required' => 'IP·회원 번호·방문자 키 중 하나는 지정해야 합니다.',

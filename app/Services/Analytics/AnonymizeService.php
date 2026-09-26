@@ -4,9 +4,12 @@ namespace App\Services\Analytics;
 
 use App\Analytics\AnalyticsClock;
 use App\Analytics\IpAddress;
+use App\Contracts\Analytics\DimensionRegistryInterface;
+use App\Contracts\Repositories\Analytics\ActionRepositoryInterface;
 use App\Contracts\Repositories\Analytics\ArchiveRunRepositoryInterface;
 use App\Contracts\Repositories\Analytics\BotHitRepositoryInterface;
 use App\Contracts\Repositories\Analytics\CollectFailureRepositoryInterface;
+use App\Contracts\Repositories\Analytics\ConversionRepositoryInterface;
 use App\Contracts\Repositories\Analytics\SaltRepositoryInterface;
 use App\Contracts\Repositories\Analytics\VisitRepositoryInterface;
 use App\Enums\Analytics\ArchiveRunStatus;
@@ -47,6 +50,9 @@ class AnonymizeService
      * @param  SaltRepositoryInterface  $salts  솔트 저장소
      * @param  BotHitRepositoryInterface  $botHits  봇 기록 저장소
      * @param  CollectFailureRepositoryInterface  $failures  적재 실패 로그 저장소
+     * @param  ActionRepositoryInterface  $actions  액션 원장 저장소
+     * @param  ConversionRepositoryInterface  $conversions  전환 원장 저장소
+     * @param  DimensionRegistryInterface  $dimensions  확장 차원 등록부 — 개인정보 차원을 찾는다
      */
     public function __construct(
         private readonly VisitRepositoryInterface $visits,
@@ -54,6 +60,9 @@ class AnonymizeService
         private readonly SaltRepositoryInterface $salts,
         private readonly BotHitRepositoryInterface $botHits,
         private readonly CollectFailureRepositoryInterface $failures,
+        private readonly ActionRepositoryInterface $actions,
+        private readonly ConversionRepositoryInterface $conversions,
+        private readonly DimensionRegistryInterface $dimensions,
     ) {}
 
     /**
@@ -87,17 +96,39 @@ class AnonymizeService
         try {
             $total = $this->visits->countInDateRange($from, $to);
             $processed = 0;
+            // 해시 모드는 「익명 수준으로 내린다」는 뜻이다 — 수집 때 익명 모드가 싣지 않는 개인정보
+            // 차원도 같은 기준으로 걷어 낸다.
+            $piiKeys = $hash ? $this->piiDimensionKeys() : [];
+            $context = ['mask_octets' => $maskOctets, 'hash' => $hash];
 
             $this->visits->chunkInDateRange($from, $to, self::CHUNK_SIZE, function ($visits) use (
                 $maskOctets,
                 $hash,
+                $piiKeys,
+                $context,
                 &$processed,
                 $total,
                 $run,
             ): void {
                 foreach ($visits as $visit) {
-                    $this->visits->update($visit, $this->anonymizedAttributes($visit, $maskOctets, $hash));
+                    $attributes = $this->anonymizedAttributes($visit, $maskOctets, $hash, $piiKeys);
+
+                    // 확장은 이 방문을 받아 덮어쓸 값을 보태거나, 자기 표의 같은 방문 기록을 함께
+                    // 익명화한다. 코어가 정한 값(주소·해시·회원 번호)은 필터 결과로 되돌릴 수 없다.
+                    $filtered = HookManager::applyFilters('core.analytics.anonymize_attributes', $attributes, $visit, $context);
+                    $attributes = array_merge(is_array($filtered) ? $filtered : [], $attributes);
+
+                    if ($attributes !== []) {
+                        $this->visits->update($visit, $attributes);
+                    }
+
                     $processed++;
+                }
+
+                if ($piiKeys !== []) {
+                    $visitIds = $visits->pluck('id')->all();
+                    $this->actions->forgetDimensionsForVisits($visitIds, $piiKeys);
+                    $this->conversions->forgetDimensionsForVisits($visitIds, $piiKeys);
                 }
 
                 $this->runs->update($run, [
@@ -186,9 +217,10 @@ class AnonymizeService
      * @param  AnalyticsVisit  $visit  방문
      * @param  int  $maskOctets  가릴 옥텟 수
      * @param  bool  $hash  주소를 지우고 해시만 남길지 여부
+     * @param  array<int, string>  $piiKeys  걷어 낼 개인정보 차원 이름
      * @return array<string, mixed> 덮어쓸 속성
      */
-    private function anonymizedAttributes(AnalyticsVisit $visit, int $maskOctets, bool $hash): array
+    private function anonymizedAttributes(AnalyticsVisit $visit, int $maskOctets, bool $hash, array $piiKeys = []): array
     {
         $ip = $visit->ip;
         $attributes = [];
@@ -215,7 +247,31 @@ class AnonymizeService
             $attributes['user_id'] = null;
         }
 
+        if ($piiKeys !== [] && is_array($visit->custom_dimensions)) {
+            $remaining = array_diff_key($visit->custom_dimensions, array_flip($piiKeys));
+
+            if (count($remaining) !== count($visit->custom_dimensions)) {
+                $attributes['custom_dimensions'] = $remaining === [] ? null : $remaining;
+            }
+        }
+
         return $attributes;
+    }
+
+    /**
+     * 개인정보로 선언된 확장 차원의 원장 이름을 모읍니다.
+     *
+     * 등록부에 없는 차원(확장이 꺼진 뒤)은 알 수 없으므로 걷어 내지 못합니다. 확장을 지울 때
+     * 데이터까지 지우면 전환·집계가 정리되고, 원장 값은 보존 기간이 지나면 함께 사라집니다.
+     *
+     * @return array<int, string> `{식별자}:{키}` 목록
+     */
+    private function piiDimensionKeys(): array
+    {
+        return array_values(array_map(
+            fn ($definition): string => $definition->storageKey(),
+            array_filter($this->dimensions->all(), fn ($definition): bool => $definition->pii),
+        ));
     }
 
     /**

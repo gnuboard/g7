@@ -90,6 +90,10 @@
         </on>
       </tab-navigation>
       <include src="partials/admin_analytics/_partial_report_grid.g7.html"/>
+      <!-- 확장이 이 화면에 자기 리포트 조각을 붙이는 자리(데이터는 확장 자기 API). -->
+      <extension-point name="analytics_pages_widgets" class="space-y-4 mt-4">
+        <default/>
+      </extension-point>
     </div>
   </slot>
 </layout>

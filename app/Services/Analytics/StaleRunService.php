@@ -18,7 +18,7 @@ use Illuminate\Support\Str;
  * (서버 재시작·메모리 초과·잡 제한시간) 닫을 코드가 돌지 못해 행이 「실행 중」으로 남는다. 진단 화면은
  * 실행 중 행이 있으면 「지금 집계」·「어제 확정」을 잠그고 진행률을 따라가므로, 그 행 하나가 정리
  * 배치가 지울 때까지(실패 로그 보존일) 버튼을 잠그고 소켓 없는 사이트에서는 2초 폴링을 멈추지 않는다
- * (#682 S3 라운드 13 — PO 결정: 오래된 실행 중 행을 실패로 + 잡 실패 훅).
+ * (#682 S3 라운드 13 — 설계 결정: 오래된 실행 중 행을 실패로 + 잡 실패 훅).
  */
 class StaleRunService
 {
@@ -71,12 +71,13 @@ class StaleRunService
      * @param  Carbon  $queuedAt  잡을 큐에 올린 시각
      * @param  int|null  $triggeredBy  요청한 관리자 ID
      * @param  string  $reason  잡이 실패한 사유
+     * @param  array{0: Carbon, 1: Carbon}|null  $period  잡이 맡은 기간 (UTC, 주면 그 안의 날짜 행만 닫는다)
      * @return int 닫은 행 수
      */
-    public function failOrphansOf(string $runType, Carbon $queuedAt, ?int $triggeredBy, string $reason): int
+    public function failOrphansOf(string $runType, Carbon $queuedAt, ?int $triggeredBy, string $reason, ?array $period = null): int
     {
         return $this->close(
-            $this->runs->getRunningOfTypeSince($runType, $queuedAt, $triggeredBy),
+            $this->runs->getRunningOfTypeSince($runType, $queuedAt, $triggeredBy, $period),
             __('analytics.archive.job_failed', ['reason' => Str::limit($reason, 300)]),
         );
     }

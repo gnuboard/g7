@@ -22,7 +22,7 @@
   </data-source>
   <!-- 서버 방송 — 값을 쓰지 않고 「바뀌었다」는 신호로만 받아 실시간 소스를 다시 받는다. 방송은 채널의 모든
     연결에 같은 값이라 기본 창(5분)·주소(IP) 없음으로 만들어진다 — 그 값으로 소스를 갈아 끼우면 창을 30분으로
-    고른 화면이 방송마다 「최근 5분」으로 튀고, 주소 열람 권한자의 IP 칸이 비었다(#682 S3 라운드 14, PO 결정).
+    고른 화면이 방송마다 「최근 5분」으로 튀고, 주소 열람 권한자의 IP 칸이 비었다(#682 S3 라운드 14, 설계 결정).
     다시 받으면 이 화면의 창(`query.minutes`)과 보는 사람의 권한이 그대로 반영된다. 소켓이 없는 사이트에서는
     구독만 조용히 실패하고 폴링이 값을 댄다. -->
   <data-source id="analytics_realtime_ws" label_key="$t:editor.data_source.analytics_realtime_ws" type="websocket" channel="core.admin.analytics" event="analytics.realtime.updated" channel_type="private">
@@ -54,7 +54,7 @@
       </on-code>
     </error-handling>
   </data-source>
-  <computed name="canReadUsers">{{current_user?.data?.is_super === true || (current_user?.data?.permissions ?? []).some(p => (p?.identifier ?? p) === 'core.users.read')}}</computed>
+  <computed name="canReadUsers">{{(current_user?.data?.permissions ?? []).some(p => (p?.identifier ?? p) === 'core.users.read')}}</computed>
   <permissions>
     <permission>core.analytics.read</permission>
   </permissions>
@@ -99,6 +99,7 @@
               <options>
                 <option value="1">1</option>
                 <option value="5">5</option>
+                <option value="10">10</option>
                 <option value="15">15</option>
                 <option value="30">30</option>
               </options>
@@ -144,12 +145,12 @@
               </column>
               <column field="country_code" header="$t:admin.analytics.realtime.columns.country" width="80px">
                 <cell>
-                  <span class="text-label">{{row.country_code ?? '-'}}</span>
+                  <span class="text-label">{{row.country_name ?? row.country_code ?? '-'}}</span>
                 </cell>
               </column>
               <column field="device_type" header="$t:admin.analytics.realtime.columns.device" width="100px">
                 <cell>
-                  <span class="text-label">{{row.device_type ?? '-'}}</span>
+                  <span class="text-label">{{row.device_type_label ?? row.device_type ?? '-'}}</span>
                 </cell>
               </column>
               <column field="visitor_type" header="$t:admin.analytics.realtime.columns.type" width="90px">
@@ -177,6 +178,10 @@
           </div>
         </div>
       </div>
+      <!-- 확장이 이 화면에 자기 리포트 조각을 붙이는 자리(데이터는 확장 자기 API). -->
+      <extension-point name="analytics_realtime_widgets" class="space-y-4 mt-4">
+        <default/>
+      </extension-point>
     </div>
   </slot>
 </layout>

@@ -149,18 +149,20 @@ JSON 이 `sequence` + `setState` 로 반환값(`$prev.startDate` 등)을 원하�
 통계 API 가 422 로 거절하므로 재사용하지 않고 따로 둡니다. 계산 규칙은 서버(`PeriodRequest::resolvedRange`)와
 같아 달력에 보이는 값과 서버가 실제로 조회한 구간이 어긋나지 않습니다. 모르는 프리셋은 `7d` 로 떨어집니다.
 
-```html
-<sequence>
-  <action handler="setAnalyticsPeriod" preset="30d"/>
-  <set-state target="local" period.preset="{{$prev.preset}}" period.from="{{$prev.from}}" period.to="{{$prev.to}}"/>
-  <navigate path="/admin/analytics" :mergeQuery="true" :replace="true">
-    <query preset="30d" from="{{undefined}}" to="{{undefined}}" :page="1"/>
-  </navigate>
-</sequence>
-```
+통계 화면은 처음 열릴 때(`<init>`) 주소의 프리셋으로 한 번 부르고, 결과를 `resultTo` 로 `_local.periodComputed` 에
+담아 첫 응답 전의 달력 두 칸과 CSV 저장 이름을 채웁니다. 프리셋 버튼은 이 핸들러를 부르지 않고 주소(`preset`)만
+바꿉니다 — 서버가 그 프리셋을 푼 구간을 응답에 되돌려 주므로 그 뒤의 날짜는 응답이 출처입니다.
 
-`init_actions` 에서는 `resultTo` 로 결과를 담아 프리셋의 날짜 범위를 달력 두 칸에 미리 보여 줄 수 있습니다
-(`<action handler="setAnalyticsPeriod" preset="{{query.preset || '7d'}}"><field name="resultTo">…</field></action>`).
+```html
+<init>
+  <action handler="setAnalyticsPeriod" preset="{{query.preset || '7d'}}">
+    <field name="resultTo">
+      <field name="target" value="_local"/>
+      <field name="key" value="periodComputed"/>
+    </field>
+  </action>
+</init>
+```
 
 ### 사이드바 접힘 핸들러 2종
 

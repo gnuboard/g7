@@ -40,7 +40,7 @@ describe('요일·시간대 패턴 화면', () => {
     const values = (select?.props?.options ?? []).map((option: any) => option.value);
     expect(values).toEqual(['visits', 'visitors', 'pageviews']);
     // 고른 지표는 화면 상태가 아니라 주소에 실린다 — 화면 상태로 두면 새로고침·주소 공유에서
-    // 「방문」으로 되돌아간다(#682 라운드 4, PO 지적 ①).
+    // 「방문」으로 되돌아간다(#682 라운드 4, 검수 지적 ①).
     expect(select?.actions?.[0]).toMatchObject({ type: 'change', handler: 'navigate' });
     expect(select?.actions?.[0]?.params?.query?.metric).toContain('$event.target.value');
     expect(select?.props?.value).toContain('query.metric');

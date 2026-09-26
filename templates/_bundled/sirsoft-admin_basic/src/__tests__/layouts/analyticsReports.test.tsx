@@ -9,59 +9,111 @@
 import fs from 'fs';
 import path from 'path';
 import { describe, it, expect } from 'vitest';
-import { TEMPLATE_DIR, loadLayout, dataSource, nodesNamed, nodeById, actionsWithHandler, stringify, collectObjects } from './analyticsLayoutTestUtils';
+import { TEMPLATE_DIR, loadLayout, dataSource, nodesNamed, nodeById, actionsWithHandler, stringify, collectObjects, analyticsLayoutFiles } from './analyticsLayoutTestUtils';
 import { evaluateSafeExpression } from '@core/template-engine/SafeExpressionEvaluator';
 import { scanBindings } from '@core/template-engine/BindingShape';
 
-const SCREENS: Array<{ file: string; path: string; defaultTab: string; reports: string[] }> = [
-  { file: 'admin_analytics_pages.json', path: '/admin/analytics/pages', defaultTab: 'popular', reports: ['page_url', 'entry_pages', 'exit_pages', 'page_title'] },
-  { file: 'admin_analytics_referrers.json', path: '/admin/analytics/referrers', defaultTab: 'types', reports: ['referrer_type', 'referrer_name', 'referrer_keyword', 'campaign'] },
-  { file: 'admin_analytics_environment.json', path: '/admin/analytics/environment', defaultTab: 'browsers', reports: ['browser', 'os', 'device_type', 'resolution', 'browser_language', 'locale'] },
-  { file: 'admin_analytics_regions.json', path: '/admin/analytics/regions', defaultTab: 'countries', reports: ['country', 'region', 'city'] },
-  { file: 'admin_analytics_actions.json', path: '/admin/analytics/actions', defaultTab: 'search', reports: ['site_search', 'download', 'outlink', 'goal'] },
-];
+/**
+ * 리포트 화면마다 설계로 정한 값(기본 탭·엔드포인트가 고르는 리포트 이름·기간 질의 키). 모집단은 이 표가
+ * 아니라 `layouts/` 에서 **공통 표 조각을 품는 화면**으로 파생하고, 첫 케이스가 둘을 양방향으로 대조한다
+ * — 6번째 리포트 화면이 생기면 이 표에 행을 더하기 전까지 red 다(#682 S3 R7-D4·R11-D2·R12-D3).
+ * `screenKeys` 는 그 화면만의 질의 — 유입의 드릴다운 `host` 는 탭을 옮기면 비우고, 행동의 차원 `dimension` 은 잇는다.
+ */
+const PERIOD_KEYS = ['preset', 'from', 'to', 'unit', 'exclude', 'per_page'];
+const SPEC: Record<string, { defaultTab: string; reports: string[]; periodSource: string; periodKeys: string[]; csvReport: string; screenKeys?: Record<string, string> }> = {
+  'admin_analytics_pages.json': { defaultTab: 'popular', reports: ['page_url', 'entry_pages', 'exit_pages', 'page_title'], periodSource: 'analytics_report', periodKeys: PERIOD_KEYS, csvReport: 'page_url' },
+  'admin_analytics_referrers.json': { defaultTab: 'types', reports: ['referrer_type', 'referrer_name', 'referrer_keyword', 'campaign'], periodSource: 'analytics_report', periodKeys: PERIOD_KEYS, csvReport: 'referrer_type', screenKeys: { host: '{{undefined}}' } },
+  'admin_analytics_environment.json': { defaultTab: 'browsers', reports: ['browser', 'os', 'device_type', 'resolution', 'browser_language', 'locale'], periodSource: 'analytics_report', periodKeys: PERIOD_KEYS, csvReport: 'browser' },
+  'admin_analytics_regions.json': { defaultTab: 'countries', reports: ['country', 'region', 'city'], periodSource: 'analytics_report', periodKeys: PERIOD_KEYS, csvReport: 'country' },
+  'admin_analytics_actions.json': { defaultTab: 'search', reports: ['site_search', 'download', 'outlink', 'goal'], periodSource: 'analytics_report', periodKeys: PERIOD_KEYS, csvReport: 'site_search', screenKeys: { dimension: '{{query.dimension}}' } },
+  // 봇 화면은 단위 칸·제외 토글을 두지 않는다(`showUnit`·`showExclude` false) — 그 두 키를 서브탭 전환에 싣지 않는다.
+  'admin_analytics_bots.json': { defaultTab: 'bots', reports: ['bot_pages'], periodSource: 'analytics_bots', periodKeys: ['preset', 'from', 'to', 'per_page'], csvReport: 'bot_name' },
+};
 
+/** `layouts/` 에서 리포트 화면(공통 표 조각을 품는 화면)을 파생한다. */
+function reportScreens(): string[] {
+  return fs
+    .readdirSync(path.join(TEMPLATE_DIR, 'layouts'))
+    .filter((f) => /^admin_analytics_.+\.json$/.test(f))
+    .filter((f) => collectObjects(loadLayout(f)).some((o) => o.partial === 'partials/admin_analytics/_partial_report_grid.json'))
+    .sort();
+}
+
+/** `routes.json` 에서 레이아웃 → 경로 */
+function routePath(file: string): string | undefined {
+  const routes = JSON.parse(fs.readFileSync(path.join(TEMPLATE_DIR, 'routes.json'), 'utf8'));
+  const list: any[] = Array.isArray(routes) ? routes : (routes.routes ?? []);
+  const route = list.find((r) => `${r?.layout}.json` === file);
+  return typeof route?.path === 'string' ? route.path.replace(/^\*/, '') : undefined;
+}
+
+const SCREENS = reportScreens();
 const grid = loadLayout('partials/admin_analytics/_partial_report_grid.json');
 
-describe('리포트 화면 5종 — 탭·엔드포인트·기간 바', () => {
-  for (const s of SCREENS) {
-    // 이 케이스는 SCREENS 다섯 화면을 모두 돈다 — 축도 다섯을 적어야 「이 화면은 아무도 안 잰다」가
+describe('리포트 화면 — 탭·엔드포인트·기간 바', () => {
+  // @scenario screen=bots, state=normal, viewport=1440, locale=ko
+  // @effects subtab_is_query_only, report_screens_share_period_bar
+  it('리포트 화면 모집단(공통 표 조각을 품는 화면)과 설계 표가 서로를 덮는다', () => {
+    expect(SCREENS.length, '파생한 리포트 화면').toBeGreaterThanOrEqual(6);
+    expect(SCREENS.filter((f) => !(f in SPEC)), '설계 표에 없는 리포트 화면').toEqual([]);
+    expect(Object.keys(SPEC).filter((f) => !SCREENS.includes(f)), '공통 표를 잃은 리포트 화면').toEqual([]);
+
+    // 서브탭 전환은 병합하지 않고 기간 키를 손으로 잇는다(R2-E4 — 목록 컨텍스트를 물려받지 않으려는 설계).
+    // 그 대가로 기간 바가 새 질의 키를 쓰기 시작하면 서브탭이 그 키를 떨어뜨린다 — 기간 바가 실제로 쓰는
+    // 키를 조각에서 파생해 PERIOD_KEYS 와 대조한다(쪽 번호 `page` 는 목록 키라 잇지 않는다).
+    const periodBar = loadLayout('partials/admin_analytics/_partial_period_bar.json');
+    const written = new Set(
+      actionsWithHandler(periodBar, 'navigate').flatMap((n) => Object.keys(n.params?.query ?? {})).filter((k) => k !== 'page'),
+    );
+    expect(written.size, '기간 바가 쓰는 질의 키').toBeGreaterThanOrEqual(4);
+    expect([...written].filter((k) => !PERIOD_KEYS.includes(k)), '서브탭이 잇지 않는 기간 바 키').toEqual([]);
+  });
+
+  for (const file of Object.keys(SPEC)) {
+    const s = SPEC[file];
+    // 이 케이스는 SPEC 여섯 화면을 모두 돈다 — 축도 여섯을 적어야 「이 화면은 아무도 안 잰다」가
     // 매니페스트에서 보이지 않는 일이 없다(#682 S3 라운드 3: screen=environment 소비 0회였다).
     // @scenario screen=pages, state=normal, viewport=1440, locale=ko
     // @scenario screen=referrers, state=normal, viewport=1440, locale=ko
     // @scenario screen=environment, state=normal, viewport=1440, locale=ko
+    // @effects subtab_is_query_only, tab_maps_to_report_name, report_screens_share_period_bar
     // @scenario screen=regions, state=normal, viewport=1440, locale=ko
     // @scenario screen=actions, state=normal, viewport=1440, locale=ko
+    // @scenario screen=bots, state=normal, viewport=1440, locale=ko
     // @effects subtab_is_query_only, tab_maps_to_report_name, report_screens_share_period_bar
-    it(`${s.file}: 서브탭은 query.tab 만 읽고 리포트 이름은 엔드포인트가 정한다`, () => {
-      const layout = loadLayout(s.file);
+    it(`${file}: 서브탭은 query.tab 만 읽고 리포트 이름은 엔드포인트가 정한다`, () => {
+      const layout = loadLayout(file);
+      const screenPath = routePath(file);
+      expect(screenPath, `${file} 의 라우트`).toBeTruthy();
+
       const tabs = nodesNamed(layout, 'TabNavigation')[0];
       expect(tabs?.props?.activeTabId).toBe(`{{query.tab || '${s.defaultTab}'}}`);
       expect(stringify(tabs)).not.toContain('_global.activeAnalyticsTab');
+      expect((tabs?.props?.tabs ?? []).map((t: any) => t.id), '기본 탭이 탭 목록에 있다').toContain(s.defaultTab);
 
       // 서브탭 전환은 병합하지 않는다 — 리포트마다 행이 달라 쪽·검색·정렬을 물려받으면 빈 화면이 열린다.
       // 기간과 쪽 크기만 query 로 명시해 잇는다.
       const tabNav = actionsWithHandler(tabs, 'navigate')[0];
-      expect(tabNav.params).toMatchObject({ path: s.path, replace: true });
+      expect(tabNav.params).toMatchObject({ path: screenPath, replace: true });
       expect(tabNav.params.mergeQuery).toBeUndefined();
-      expect(tabNav.params.query).toMatchObject({
-        tab: '{{$args[0]}}',
-        preset: '{{query.preset}}',
-        from: '{{query.from}}',
-        to: '{{query.to}}',
-        unit: '{{query.unit}}',
-        exclude: '{{query.exclude}}',
-        per_page: '{{query.per_page}}',
-      });
+      expect(tabNav.params.query.tab).toBe('{{$args[0]}}');
+      const screenKeys = s.screenKeys ?? {};
+      expect(Object.keys(tabNav.params.query).filter((k) => k !== 'tab').sort(), '서브탭이 싣는 질의 키').toEqual([...s.periodKeys, ...Object.keys(screenKeys)].sort());
+      for (const key of s.periodKeys) expect(tabNav.params.query[key], key).toBe(`{{query.${key}}}`);
+      for (const [key, value] of Object.entries(screenKeys)) expect(tabNav.params.query[key], key).toBe(value);
       for (const listKey of ['page', 'q', 'sort']) expect(tabNav.params.query, listKey).not.toHaveProperty(listKey);
+      // 숨긴 칸의 키를 잇지 않는다 / 보이는 칸의 키는 잇는다 — 설계 표와 화면 설정이 같은 말을 한다.
+      if (layout.initLocal?.showExclude === false) expect(s.periodKeys).not.toContain('exclude');
+      else expect(s.periodKeys).toContain('exclude');
 
       const ds = dataSource(layout, 'analytics_report');
-      for (const r of s.reports) expect(ds?.endpoint, r).toContain(`'${r}'`);
+      // 매핑식이면 따옴표 붙은 리터럴로, 고정 경로면 마지막 마디로 찾는다 — 맨 글자로 찾으면 `os` 가 아무 데나 걸린다.
+      for (const r of s.reports) expect(String(ds?.endpoint).includes(`'${r}'`) || String(ds?.endpoint).endsWith(`/${r}`), r).toBe(true);
       expect(ds?.params?.page).toBe('{{query.page || 1}}');
       expect(stringify(ds?.errorHandling)).toContain('showErrorPage');
 
-      expect(layout.initLocal?.periodPath).toBe(s.path);
-      expect(layout.initLocal?.periodSource).toBe('analytics_report');
+      expect(layout.initLocal?.periodPath).toBe(screenPath);
+      expect(layout.initLocal?.periodSource).toBe(s.periodSource);
       expect(layout.computed?.csvUrl).toContain('format=csv');
       const includes = stringify(layout);
       expect(includes).toContain('partials/admin_analytics/_partial_period_bar.json');
@@ -101,6 +153,299 @@ describe('리포트 화면 5종 — 탭·엔드포인트·기간 바', () => {
     expect(ds?.if).toContain("!== 'dimensions' || !!query.dimension");
     expect(ds?.endpoint).toContain("'ext:' + query.dimension");
     expect(nodeById(layout, 'dimensions_empty')?.if).toContain('!query.dimension');
+  });
+
+  // @scenario screen=actions, state=normal, viewport=1440, locale=ko
+  // @effects dimension_choices_come_from_the_registered_list
+  it('행동 화면의 차원 선택지는 등록 목록 API 에서 온다(자유 입력 없음)', () => {
+    const layout = loadLayout('admin_analytics_actions.json');
+    const registered = dataSource(layout, 'analytics_registered');
+    expect(registered?.endpoint).toBe('/api/admin/analytics/registered');
+    expect(registered?.if).toContain("=== 'dimensions'");
+    expect(registered?.fallback?.data?.dimensions).toEqual([]);
+    expect(stringify(registered?.errorHandling)).toContain('suppress');
+
+    const select = nodeById(layout, 'dimension_select');
+    expect(select?.name).toBe('Select');
+    expect(nodeById(layout, 'dimension_input')).toBeUndefined();
+
+    // 선택지 식을 실제로 평가해 등록 목록 → {value: 원장 이름, label} 로 바뀌는지 본다.
+    const options = evaluateSafeExpression(String(select?.props?.options).replace(/^\{\{|\}\}$/g, ''), {
+      analytics_registered: { data: { dimensions: [{ key: 'vendor-board:board_id', label: '게시판', owner_identifier: 'vendor-board' }] } },
+    }) as Array<{ value: string; label: string }>;
+    expect(options[0].value).toBe('');
+    expect(options[1]).toEqual({ value: 'vendor-board:board_id', label: '게시판 · vendor-board' });
+
+    // 등록된 차원이 없을 때와 있을 때 안내가 다르다.
+    expect(nodeById(layout, 'dimensions_none')?.if).toContain('.length === 0');
+    expect(nodeById(layout, 'dimensions_empty')?.if).toContain('.length > 0');
+  });
+
+  // @scenario screen=actions, state=empty, viewport=1440, locale=ko
+  // @effects pii_dimension_is_listed_with_the_reason_instead_of_an_empty_table
+  it('개인정보 분류 기준은 목록에 표시를 달고, 고르면 빈 표·진단 안내 대신 집계하지 않는 이유를 보인다', () => {
+    // 개인정보로 표시된 분류 기준은 집계하지 않는다(#682 S4 라운드 4). 목록에서 빼지 않되(선언이 보여야 한다)
+    // 고르면 늘 빈 표와 「수집 진단」 안내가 떠 수집 고장으로 읽혔다(#682 S4 라운드 8).
+    const layout = loadLayout('admin_analytics_actions.json');
+    const dimensions = [
+      { key: 'vendor-board:board_id', label: '게시판', owner_identifier: 'vendor-board', pii: false },
+      { key: 'vendor-shop:buyer_email', label: '주문자 이메일', owner_identifier: 'vendor-shop', pii: true },
+    ];
+    const $t = (key: string) => `[${key}]`;
+    const expr = (value: unknown) => String(value).replace(/^\{\{|\}\}$/g, '');
+
+    const options = evaluateSafeExpression(expr(nodeById(layout, 'dimension_select')?.props?.options), {
+      analytics_registered: { data: { dimensions } }, $t,
+    }) as Array<{ value: string; label: string }>;
+    expect(options[1].label).toBe('게시판 · vendor-board');
+    expect(options[2].label).toBe('주문자 이메일 ([admin.analytics.actions.dimension_pii_suffix]) · vendor-shop');
+
+    const notice = nodeById(layout, 'dimensions_pii');
+    expect(notice?.props?.title).toBe('$t:admin.analytics.actions.dimension_pii_title');
+    const gridIf = expr(nodeById(layout, 'report_grid_wrap')?.if);
+    const cases: Array<[Record<string, string>, boolean, boolean]> = [
+      [{ tab: 'dimensions', dimension: 'vendor-shop:buyer_email' }, true, false],
+      [{ tab: 'dimensions', dimension: 'vendor-board:board_id' }, false, true],
+      [{ tab: 'search' }, false, true],
+    ];
+    for (const [query, showNotice, showGrid] of cases) {
+      const ctx = { query, analytics_registered: { data: { dimensions } } };
+      expect(!!evaluateSafeExpression(expr(notice?.if), ctx), `안내 ${JSON.stringify(query)}`).toBe(showNotice);
+      expect(!!evaluateSafeExpression(gridIf, ctx), `표 ${JSON.stringify(query)}`).toBe(showGrid);
+    }
+  });
+
+  // @scenario screen=referrers, state=empty, viewport=1440, locale=ko
+  // @effects empty_grid_shows_one_empty_message
+  it('0건이면 표의 빈 문구와 같은 데이터의 빈 화면 안내가 함께 보이지 않는다(쪽 번호도 없음)', () => {
+    // 표(빈 문구 + 쪽 번호 「1」)와 아래 빈 화면 안내가 함께 떠 「선택 기간에 기록이 없습니다」가 두 번
+    // 보였다(#682 S4 라운드 8). 모집단은 관리자 레이아웃 전체에서 「표 + 그 표의 데이터가
+    // 0건일 때 뜨는 빈 화면 안내」 짝을 파생한다 — 불러오기가 끝난 0건 상태에서 식을 평가한다.
+    const layoutsDir = path.join(TEMPLATE_DIR, 'layouts');
+    const files: string[] = [];
+    const walk = (dir: string): void => {
+      for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+        const full = path.join(dir, entry.name);
+        if (entry.isDirectory()) walk(full);
+        else if (entry.name.endsWith('.json')) files.push(path.relative(layoutsDir, full));
+      }
+    };
+    walk(layoutsDir);
+
+    const expr = (value: unknown) => String(value ?? '').replace(/^\{\{|\}\}$/g, '');
+    // 표를 감싼 조상의 `if` 도 표시 조건이다 — 조상 조건을 모아 둔다.
+    const withAncestorIfs = (root: unknown): Array<{ node: Record<string, any>; ifs: string[] }> => {
+      const out: Array<{ node: Record<string, any>; ifs: string[] }> = [];
+      const visit = (cur: unknown, ifs: string[]): void => {
+        if (Array.isArray(cur)) { cur.forEach((c) => visit(c, ifs)); return; }
+        if (!cur || typeof cur !== 'object') return;
+        const obj = cur as Record<string, any>;
+        const own = typeof obj.if === 'string' ? [...ifs, obj.if] : ifs;
+        if (obj.name) out.push({ node: obj, ifs: own });
+        Object.values(obj).forEach((v) => visit(v, own));
+      };
+      visit(root, []);
+      return out;
+    };
+    const pairs: string[] = [];
+    for (const file of files) {
+      const entries = withAncestorIfs(loadLayout(file));
+      const nodes = entries.map((e) => e.node);
+      const empties = nodes.filter((n) => n.name === 'EmptyState' && typeof n.if === 'string');
+      for (const { node: grid, ifs: gridIfs } of entries.filter((e) => e.node.name === 'DataGrid' && typeof e.node.props?.data === 'string')) {
+        const dataPath = expr(grid.props.data).replace(/\s*\?\?\s*\[\]\s*$/, '').trim();
+        const source = dataPath.match(/^([A-Za-z_]\w*)\?\./)?.[1];
+        if (!source) continue;
+        for (const empty of empties.filter((e) => e.if.includes(dataPath) && e.if.includes('.length === 0'))) {
+          pairs.push(`${file}#${grid.id}`);
+          // 데이터 경로를 따라 빈 배열을 심은 문맥(불러오기 끝)
+          const ctx: Record<string, any> = {};
+          const segments = dataPath.split('?.');
+          let cursor: any = (ctx[source] = { loading: false });
+          for (const seg of segments.slice(1, -1)) cursor = cursor[seg] = {};
+          cursor[segments[segments.length - 1]] = [];
+          const gridShown = gridIfs.every((cond) => !!evaluateSafeExpression(expr(cond), ctx));
+          const emptyShown = !!evaluateSafeExpression(expr(empty.if), ctx);
+          expect(emptyShown, `${file}#${grid.id} 빈 화면 안내`).toBe(true);
+          expect(gridShown, `${file}#${grid.id} 표가 빈 화면 안내와 함께 보인다`).toBe(false);
+        }
+      }
+    }
+    expect(pairs.length, '표 + 빈 화면 안내 짝 모집단').toBeGreaterThanOrEqual(3);
+  });
+
+  // @scenario screen=diagnostics, state=empty, viewport=1440, locale=ko
+  // @effects button_variant_classes_come_with_the_base_btn_class
+  it('버튼 색 클래스(btn-primary 등)는 기본 모양 클래스 btn 과 함께 쓴다', () => {
+    // `.btn-secondary` 는 색·테두리만 있고 여백·모서리는 `.btn` 이 준다 — 빠지면 테두리만 있는 글자가 된다
+    // (#682 S4 라운드 8, 빈 화면 「수집 진단 열기」). 모집단은 관리자 레이아웃 전체의 className 값.
+    const layoutsDir = path.join(TEMPLATE_DIR, 'layouts');
+    const files: string[] = [];
+    const walk = (dir: string): void => {
+      for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+        const full = path.join(dir, entry.name);
+        if (entry.isDirectory()) walk(full);
+        else if (entry.name.endsWith('.json')) files.push(path.relative(layoutsDir, full));
+      }
+    };
+    walk(layoutsDir);
+
+    let checked = 0;
+    const broken: string[] = [];
+    for (const file of files) {
+      for (const node of collectObjects(loadLayout(file))) {
+        const cls = node.props?.className;
+        if (typeof cls !== 'string') continue;
+        // 식 안의 문자열 리터럴마다 따로 본다('btn btn-primary' : 'btn btn-secondary').
+        const literals = cls.includes("'") ? (cls.match(/'[^']*'/g) ?? []).map((l) => l.slice(1, -1)) : [cls];
+        for (const literal of literals) {
+          const words = literal.split(/\s+/);
+          if (!words.some((w) => /^btn-(primary|secondary|outline|ghost|danger)$/.test(w))) continue;
+          checked++;
+          if (!words.includes('btn')) broken.push(`${file}#${node.id ?? '?'} "${literal}"`);
+        }
+      }
+    }
+    expect(checked, '버튼 색 클래스 모집단').toBeGreaterThan(50);
+    expect(broken).toEqual([]);
+  });
+
+  // @scenario screen=visitor_detail, state=normal, viewport=1440, locale=ko
+  // @effects label_value_lists_align_values_in_one_column
+  it('「라벨 값」 짝을 세 줄 이상 늘어놓은 목록은 라벨 칸을 맞춘 kv-list 격자에 담는다(값이 한 줄로 시작)', () => {
+    // 라벨 폭이 달라 값이 들쭉날쭉 시작하고, 라벨(xs)·값(sm) 기준선이 어긋나던 결함(#682 S4 라운드 8:
+    // 방문자 상세 › 방문 정보). 모집단은 이 템플릿 아래에서 그려지는 레이아웃 전부 — 템플릿 + 번들 모듈·플러그인.
+    // 짝 = 자식이 둘이고 첫째가 고정 문구 라벨(`$t:` 만)인 행. 가로로 흐르는 요약(부모가 flex)은 목록이 아니다.
+    const repo = path.resolve(TEMPLATE_DIR, '../../..');
+    const roots = [
+      path.join(TEMPLATE_DIR, 'layouts'),
+      ...['modules', 'plugins'].flatMap((kind) => {
+        const dir = path.join(repo, kind, '_bundled');
+        return fs.existsSync(dir) ? fs.readdirSync(dir).map((id) => path.join(dir, id, 'resources', 'layouts')) : [];
+      }),
+    ].filter((dir) => fs.existsSync(dir));
+    const files: string[] = [];
+    const walk = (dir: string): void => {
+      for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+        const full = path.join(dir, entry.name);
+        if (entry.isDirectory()) walk(full);
+        else if (entry.name.endsWith('.json')) files.push(full);
+      }
+    };
+    roots.forEach(walk);
+
+    const words = (node: any): string[] => (typeof node?.props?.className === 'string' ? node.props.className.split(/\s+/) : []);
+    const isPairRow = (row: any): boolean => {
+      const kids = Array.isArray(row?.children) ? row.children : [];
+      if (kids.length !== 2 || row.iteration) return false;
+      const label = typeof kids[0]?.text === 'string' ? kids[0].text : '';
+      if (!/^\$t:[\w.-]+$/.test(label.trim())) return false;
+      const cls = words(row);
+      if (cls.includes('kv-row')) return true;
+      const flex = cls.some((w) => ['flex', 'inline-flex', 'flex-center'].includes(w));
+      return flex && !cls.some((w) => ['justify-between', 'flex-between', 'flex-col'].includes(w));
+    };
+
+    let lists = 0;
+    const broken: string[] = [];
+    for (const file of files) {
+      for (const node of collectObjects(JSON.parse(fs.readFileSync(file, 'utf8')))) {
+        const kids = Array.isArray(node.children) ? node.children : [];
+        const pairs = kids.filter(isPairRow);
+        if (pairs.length < 3) continue;
+        const parent = words(node);
+        if (parent.some((w) => ['flex', 'inline-flex', 'flex-center'].includes(w))) continue;
+        lists++;
+        // 라벨에 고정 폭(`w-20`·`min-w-[80px]` 등)을 준 목록(필터 양식 등)도 값이 한 줄로 시작한다.
+        const fixedLabel = (p: any): boolean => words(p.children[0]).some((w) => /^(min-)?w-(\d|\[)|^basis-/.test(w));
+        const aligned = ((parent.includes('kv-list') || parent.includes('kv-list-2')) && pairs.every((p: any) => words(p).includes('kv-row')))
+          || pairs.every(fixedLabel);
+        if (!aligned) broken.push(`${path.relative(repo, file)}#${node.id ?? '?'} (${pairs.length}행)`);
+      }
+    }
+    expect(lists, '「라벨 값」 목록 모집단').toBeGreaterThanOrEqual(15);
+    expect(broken).toEqual([]);
+  });
+
+  // @scenario screen=diagnostics, state=normal, viewport=1440, locale=ko
+  // @effects stored_codes_are_shown_as_human_labels
+  it('통계 화면은 저장 코드값(scheduled·desktop·KR·ko-KR·hit·gdpr·database·표 이름)을 그대로 보이지 않는다', () => {
+    // 집계 실행의 「실행」 열이 `scheduled` 로 찍히던 결함(#682 S4 라운드 8)과 같은 모양 전수.
+    // 모집단 = 통계 레이아웃의 화면 문구(text) 중 코드 필드를 읽는 식. 코드 필드는 번역 키 끝(`$t('…' + x)`),
+    // 비교·포함 검사, 또는 이름 필드 뒤의 대체값(`x_label ?? x`)으로만 쓰일 수 있다.
+    const CODE_FIELDS = ['trigger', 'device_type', 'country_code', 'cache_status', 'consent_source', 'connection', 'browser_language', 'locale', 'table', 'referrer_type', 'visitor_type', 'status', 'run_type', 'reason', 'source'];
+    // 이름 옆에 원래 표 이름을 보조 글자로 함께 보이는 자리(확장이 더한 표는 이름이 없어 그 칸이 이름이다).
+    const SECONDARY_CODE_NODES = ['storage_table_code'];
+    const fieldRe = new RegExp(`[\\w?.\\]]*\\.(${CODE_FIELDS.join('|')})\\b(?!\\s*\\()`, 'g');
+
+    let checked = 0;
+    const raw: string[] = [];
+    for (const file of analyticsLayoutFiles()) {
+      for (const node of collectObjects(loadLayout(file))) {
+        if (SECONDARY_CODE_NODES.includes(node.id)) continue;
+        for (const text of [node.text, node.props?.text]) {
+          if (typeof text !== 'string') continue;
+          for (const expr of text.match(/\{\{[\s\S]*?\}\}/g) ?? []) {
+            for (const m of expr.matchAll(fieldRe)) {
+              checked++;
+              const before = expr.slice(0, m.index);
+              const after = expr.slice((m.index ?? 0) + m[0].length);
+              const ok = /^\s*(===|!==|&amp;&amp;|&&|\?(?!\?)|\))/.test(after) // 비교·조건·호출 인자 끝
+                || /\$t\(\s*'[^']*'\s*\+\s*\(?\s*$/.test(before) // 번역 키 끝
+                || /(_label|_name|\.label)\s*\?\?\s*$/.test(before) // 이름 뒤의 대체값
+                || /\.includes\(\s*$/.test(before)
+                // 알려진 값만 번역하고(`[…].includes(x) ? $t(…) : x`) 사이트가 따로 정한 값(큐 연결 이름 등)은 그대로 둔다.
+                || (/\]\.includes\(/.test(expr) && expr.includes('$t('));
+              if (!ok) raw.push(`${file}#${node.id ?? '?'} ${m[0]} in ${expr.slice(0, 140)}`);
+            }
+          }
+        }
+      }
+    }
+    expect(checked, '코드 필드를 읽는 화면 문구 모집단').toBeGreaterThan(20);
+    expect(raw).toEqual([]);
+  });
+
+  // @scenario screen=actions, state=normal, viewport=1440, locale=ko
+  // @effects report_switch_does_not_inherit_search_sort_page
+  it('리포트를 바꾸는 이동(서브탭·차원 선택)은 검색·정렬·쪽을 물려주지 않고 기간만 잇는다', () => {
+    // 리포트마다 행이 달라 앞 리포트의 검색어·정렬·쪽을 물려받으면 빈 표가 열린다(§4.10 기간 쿼리).
+    // 모집단은 이 화면의 행동 리포트 주소로 가는 이동 중 `tab`·`dimension` 을 새 값으로 바꾸는 것 전부다.
+    const layout = loadLayout('admin_analytics_actions.json');
+    const switches = actionsWithHandler(layout, 'navigate').filter((nav) => {
+      const query = nav.params?.query ?? {};
+      return nav.params?.path === '/admin/analytics/actions'
+        && ['tab', 'dimension'].some((k) => /\$args|\$event/.test(String(query[k] ?? '')));
+    });
+    expect(switches.length, '서브탭 전환과 차원 선택').toBeGreaterThanOrEqual(2);
+    expect(switches.some((nav) => String(nav.params.query.dimension).includes('$event')), '차원 선택').toBe(true);
+
+    for (const nav of switches) {
+      const query = nav.params.query;
+      expect(nav.params.mergeQuery, JSON.stringify(query)).not.toBe(true);
+      for (const inherited of ['q', 'sort', 'page']) expect(query, inherited).not.toHaveProperty(inherited);
+      for (const kept of ['preset', 'from', 'to', 'unit', 'exclude', 'per_page']) expect(query, kept).toHaveProperty(kept);
+    }
+  });
+});
+
+describe('확장 지점 — 통계 화면마다 확장이 조각을 붙일 자리', () => {
+  // @scenario screen=overview, state=normal, viewport=1440, locale=ko
+  // @effects every_report_screen_has_an_extension_point
+  it('리포트·운영 화면 11면 전부에 analytics_{화면}_widgets 확장 지점이 있다', () => {
+    // 모집단은 디렉터리에서 판다 — 화면이 늘면 확장 지점도 함께 늘려야 red 가 풀린다.
+    const exempt = new Set(['settings', 'privacy_requests', 'visitor_detail']);
+    const screens = fs.readdirSync(path.join(TEMPLATE_DIR, 'layouts'))
+      .map((f) => f.match(/^admin_analytics_(.+)\.json$/)?.[1])
+      .filter((name): name is string => !!name && !exempt.has(name));
+
+    expect(screens.length).toBeGreaterThanOrEqual(11);
+    for (const name of screens) {
+      const layout = loadLayout(`admin_analytics_${name}.json`);
+      const points = nodesNamed(layout, 'ExtensionPoint').map((n) => n.props?.name ?? n.name);
+      const found = collectObjects(layout).some((o) => o.type === 'extension_point' && o.name === `analytics_${name}_widgets`);
+      expect(found, `admin_analytics_${name}: ${JSON.stringify(points)}`).toBe(true);
+    }
   });
 });
 
@@ -142,7 +487,10 @@ describe('공통 표 조각', () => {
     const sortOptions = (nodeById(grid, 'report_sort')?.props?.options ?? []).map((o: any) => o.value);
     expect(sortOptions).toEqual(['visits', 'hits']);
     expect(stringify(dg)).toContain('row.extra?.no_result');
-    expect(stringify(dg)).toContain('row.extra?.revenue_sum');
+    // JSON 의 extra 는 집계가 담은 원래 키(센트)다 — `revenue_sum` 은 CSV 헤더 이름일 뿐이라 화면이 읽으면 늘 「-」
+    // (서버 쪽 대조는 ReportControllerTest::test_report_grid_reads_the_extra_keys_the_api_sends).
+    expect(stringify(dg)).toContain('row.extra?.revenue_cents');
+    expect(stringify(dg)).not.toContain('row.extra?.revenue_sum');
     expect(nodeById(grid, 'report_empty')?.if).toContain('length === 0');
   });
 });
@@ -179,15 +527,25 @@ describe('리포트 표 — 긴 라벨', () => {
 });
 
 describe('CSV 저장 파일명', () => {
+  // 기본 탭의 저장 이름 — 리포트 화면은 설계 표(SPEC)에서, 그 밖에 CSV 를 내는 화면은 여기서 더한다.
+  // 방문자 단건(`visitor_detail`)은 규약이 달라(기간이 없으면 접미 없음) 아래 별도 케이스가 잰다.
+  const OTHER_CSV: Record<string, string> = { 'admin_analytics_overview.json': 'series' };
   const FILES: Array<[string, string]> = [
-    ['admin_analytics_overview.json', 'series'],
-    ['admin_analytics_pages.json', 'page_url'],
-    ['admin_analytics_referrers.json', 'referrer_type'],
-    ['admin_analytics_environment.json', 'browser'],
-    ['admin_analytics_regions.json', 'country'],
-    ['admin_analytics_actions.json', 'site_search'],
-    ['admin_analytics_bots.json', 'bot_name'],
+    ...Object.entries(OTHER_CSV),
+    ...Object.entries(SPEC).map(([file, spec]) => [file, spec.csvReport] as [string, string]),
   ];
+
+  // @scenario screen=overview, state=normal, viewport=1440, locale=ko
+  // @effects csv_filename_carries_the_actual_date_range
+  it('저장 이름을 계산하는 화면 전부가 아래 검사 모집단에 있다 — 레이아웃에서 파생해 대조한다', () => {
+    const derived = fs
+      .readdirSync(path.join(TEMPLATE_DIR, 'layouts'))
+      .filter((f) => /^admin_analytics_.+\.json$/.test(f) && f !== 'admin_analytics_visitor_detail.json')
+      .filter((f) => typeof loadLayout(f).computed?.csvFilename === 'string')
+      .sort();
+    expect(derived.length, 'csvFilename 을 가진 화면').toBeGreaterThanOrEqual(7);
+    expect(FILES.map(([file]) => file).sort()).toEqual(derived);
+  });
 
   const evalComputed = (layout: any, name: string, ctx: Record<string, any>): unknown => {
     const [expr] = scanBindings(layout.computed?.[name] ?? '').map((b) => b.expr);
@@ -410,3 +768,19 @@ describe('봇 화면', () => {
     expect(actionsWithHandler(layout, 'navigate').some((n) => n.params.path === '/admin/settings' && n.params.query?.tab === 'seo')).toBe(true);
   });
 });
+
+describe('검색어 탭 안내', () => {
+  // @scenario screen=referrers, state=empty, viewport=1440, locale=ko
+  // @effects keyword_tab_explains_https_empty_keywords
+  it('검색어 탭에서만 「HTTPS 검색엔진은 검색어를 넘기지 않는다」 안내가 보인다', () => {
+    const referrers = loadLayout('admin_analytics_referrers.json');
+    const hint = nodeById(referrers, 'keywords_https_hint');
+    expect(hint, '검색어 탭 안내').toBeTruthy();
+    const [ifExpr] = scanBindings(String(hint?.if ?? '')).map((b) => b.expr);
+    const shown = (tab?: string): boolean => !!evaluateSafeExpression(ifExpr, { query: tab === undefined ? {} : { tab } });
+    expect(shown('keywords')).toBe(true);
+    expect(shown('sites')).toBe(false);
+    expect(shown(undefined), '기본 탭(유형)에서는 숨는다').toBe(false);
+  });
+});
+

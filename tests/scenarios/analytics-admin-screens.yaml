@@ -1,6 +1,6 @@
 # audit:allow test-scenario-coverage[cross_product] reason: |
-#   pairwise 전개(화면 17 × 상태 11 × 뷰포트 2 × 로케일 3 × E2E 4)는 audit 환경의 fallback YAML 파서로 전개하지 않는다.
-#   조합은 Vitest 레이아웃 계약 테스트·Playwright E2E 가 테스트별 @scenario 로 나눠 덮고, 상태 11종 × 뷰포트 × 로케일 실측은
+#   pairwise 전개(화면 17 × 상태 14 × 뷰포트 2 × 로케일 3 × E2E 5)는 audit 환경의 fallback YAML 파서로 전개하지 않는다.
+#   조합은 Vitest 레이아웃 계약 테스트·Playwright E2E 가 테스트별 @scenario 로 나눠 덮고, 상태 14종 × 뷰포트 × 로케일 실측은
 #   Chrome MCP 매트릭스(이력 문서)가 맡는다. effects·test_files 축은 면제하지 않는다.
 
 feature: 방문자 통계 관리자 화면·사용자 위젯 (이슈 #682 S3)
@@ -47,6 +47,10 @@ exclusions:
   - { state: geoip_off, screen: settings, reason: "GeoIP 꺼짐은 지역·봇 설정 힌트로만 드러난다 — 화면 상태가 아니다" }
 
 effects:
+  - keyword_tab_explains_https_empty_keywords
+  - realtime_window_choices_fit_the_server_range
+  - declaration_warnings_are_shown_on_the_diagnostics_screen
+  - every_dashboard_alert_listener_is_covered_by_a_test
   - overview_sources_follow_period_query
   - period_bar_rehydrates_from_query
   - realtime_interval_id_is_fixed_and_cleared_on_unmount
@@ -67,6 +71,14 @@ effects:
   - region_screen_warns_when_geoip_off
   - share_donut_only_on_type_tabs
   - dimension_tab_needs_a_key
+  - dimension_choices_come_from_the_registered_list
+  - pii_dimension_is_listed_with_the_reason_instead_of_an_empty_table
+  - empty_grid_shows_one_empty_message
+  - button_variant_classes_come_with_the_base_btn_class
+  - label_value_lists_align_values_in_one_column
+  - stored_codes_are_shown_as_human_labels
+  - visitor_detail_screen_shows_visit_details
+  - every_report_screen_has_an_extension_point
   - report_grid_pages_via_query
   - report_grid_shows_seven_columns_with_extras
   - csv_filename_carries_the_actual_date_range
@@ -88,6 +100,7 @@ effects:
   - visitor_detail_csv_and_delete_use_the_key
   - visitor_timeline_shows_action_types
   - timeline_search_row_shows_result_count
+  - timeline_conversions_show_the_declared_goal_name
   - subject_delete_modal_is_gated_by_checkbox
   - subject_delete_returns_to_list
   - archive_progress_broadcast_updates_the_bar
@@ -114,6 +127,8 @@ effects:
   - only_one_subject_criterion_is_sent
   - subject_search_moves_form_to_query
   - export_downloads_via_post_blob
+  - subject_actions_stay_available_without_core_visits
+  - report_switch_does_not_inherit_search_sort_page
   - subject_delete_opens_with_search_criteria
   - subject_delete_confirm_names_the_subject
   - privacy_screen_reads_only_fields_the_server_sends
@@ -173,7 +188,7 @@ effects:
   - patterns_metric_select_drives_both_charts
   - patterns_warns_when_the_hour_range_is_beyond_retention
   - patterns_screen_has_no_csv_button
-  # PO 가 브라우저에서 짚은 일곱 가지 (S3 라운드 4)
+  # 브라우저 검수에서 짚은 일곱 가지 (S3 라운드 4)
   - patterns_metric_lives_in_the_query_not_in_screen_state
   - period_bar_navigations_are_pushed_so_back_returns_to_the_previous_period
   - icon_size_utilities_set_the_glyph_size_not_just_the_box
@@ -198,6 +213,10 @@ effects:
   # 라운드 11 — D18 이 못박은 옥텟별 지역 품질이 화면 힌트에 전부 있는가
   - ip_mask_hint_explains_every_octet_level
   - save_failure_header_tells_which_kind_of_failure
+  # S4 — 이월 D 를 파생 모집단 가드로 (403 전수 · 인증 응답 필드 · 서버 설정 키)
+  - every_analytics_source_handles_403
+  - permission_guards_read_only_fields_the_auth_response_sends
+  - settings_keys_match_server_defaults
 
 test_files:
   - templates/_bundled/sirsoft-admin_basic/src/__tests__/layouts/analyticsStateBranches.test.ts

@@ -187,7 +187,7 @@ class UrlNormalizer
         $path = $path === '' ? '/' : $path;
 
         // 추적 파라미터는 페이지를 가르는 값이 아니므로 뺀다.
-        $stripped = (array) config('analytics.stripped_query_params', []);
+        $stripped = AnalyticsTables::strippedQueryParams();
         $kept = array_diff_key($query, array_flip($stripped));
 
         // 같은 파라미터 조합이 순서만 달라도 다른 페이지로 세어지지 않게 정렬한다.

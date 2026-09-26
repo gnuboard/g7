@@ -13,6 +13,7 @@ use App\Contracts\Repositories\Analytics\SaltRepositoryInterface;
 use App\Contracts\Repositories\Analytics\StatsRepositoryInterface;
 use App\Contracts\Repositories\Analytics\VisitRepositoryInterface;
 use App\Extension\HookManager;
+use Illuminate\Support\Facades\DB;
 
 /**
  * 방문자 통계 전체 삭제
@@ -64,6 +65,14 @@ class PurgeService
     {
         $far = AnalyticsClock::now()->addYears(100);
 
+        // 확장이 통계용으로 둔 표를 **먼저** 지운다. 코어 원장은 수백만 행을 청크로 지우므로 한
+        // 트랜잭션에 담지 않는다 — 대신 확장 단계를 앞에 두고 트랜잭션으로 묶어, 확장이 실패하면
+        // 코어 행을 하나도 건드리기 전에 멈춘다(「모두 지웠다」는데 한쪽만 남는 일을 막는다).
+        // 확장은 필터 `core.analytics.purge_all` 에서 자기 표를 비우고 `{식별자} => 건수` 를 더한다.
+        $extensions = DB::transaction(
+            fn () => HookManager::applyFilters('core.analytics.purge_all', []),
+        );
+
         $counts = [
             'actions' => $this->actions->deleteOlderThanInBatches($far, self::CHUNK_SIZE),
             'conversions' => $this->conversions->deleteOlderThanInBatches($far, self::CHUNK_SIZE),
@@ -78,6 +87,12 @@ class PurgeService
             // 「모두 삭제」 뒤에도 방문했던 주소·검색어·파일명이 그대로 남는다.
             'action_names' => $this->names->deleteAllInBatches(self::CHUNK_SIZE),
         ];
+
+        foreach (is_array($extensions) ? $extensions : [] as $identifier => $count) {
+            if (is_string($identifier) && $identifier !== '' && is_numeric($count)) {
+                $counts['ext:'.$identifier] = (int) $count;
+            }
+        }
 
         HookManager::doAction('core.analytics.data_purged', ['counts' => $counts]);
 

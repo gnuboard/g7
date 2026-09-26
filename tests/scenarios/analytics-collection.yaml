@@ -27,7 +27,7 @@ description: |
 coverage_strategy: pairwise
 
 axes:
-  source: [beacon, server, search]
+  source: [beacon, server, search, server+beacon]
   mode: [full, consent, anonymous]
   visitor: [guest, member, admin, bot]
   exclusion:
@@ -49,6 +49,33 @@ axes:
   dispatch: [sync, queue]
   visit_state: [new, open, timed_out, max_actions]
   merge: [within_window, outside_window, different_url]
+  init: [true, false]
+  prev_time_spent: [present, absent]
+  seo: [on, off]
+  mask_octets: [0, 1, 2, 3]
+  # 판정기 단위 축 — 조합을 만들려는 것이 아니라 UA·유입·URL·IP 판정기가 받는 입력 모양을 열거한다
+  ua: [empty, conflicting]
+  browser: [chrome, chromium_derivatives, edge, firefox, kakaotalk, naver_app, opera, safari, samsung, whale]
+  os: [android, chromeos, ios, ipados, linux, macos, windows]
+  os_version: [android, ios, macos, windows]
+  device: [desktop, mobile, tablet]
+  hints: [present, placeholder_only]
+  referrer: [absent, empty, self_host, search, website]
+  keyword: [present, absent]
+  campaign: [present, absent]
+  engine: [google, naver, daum, bing, yahoo, duckduckgo, baidu, yandex, zum, nate]
+  prefix: [http, http_www, https, https_www]
+  case: [mixed]
+  restore: [all_prefixes]
+  strip: [fragment, utm, fbclid, gclid]
+  query: [preserved_for_campaign, reordered]
+  display: [strip_site_host, decode_for_display]
+  url: [relative]
+  hash: [stable, type_separated]
+  cidr: [v4_inside, v4_outside, v6_inside, v6_outside, exact, all, non_byte_boundary, cross_family]
+  input: [invalid]
+  list: [hit, miss]
+  roundtrip: [ipv4, ipv6]
 
 exclusions:
   - { visitor: bot, source: beacon, reason: "봇은 브라우저 비콘을 보내지 않는다 — 서버 경로에서만 판정된다" }
@@ -88,6 +115,10 @@ effects:
   - concurrent_dictionary_insert_falls_back_to_reread
   - tracking_never_throws_to_the_caller
   - failures_are_recorded_with_a_reason
+  - every_failure_reason_has_a_producer_and_a_label
+  - beacon_keys_and_limits_match_the_server_rules
+  - public_analytics_api_never_throws
+  - referrer_url_drops_fragment_and_tracking_params
   - tracking_failure_is_logged_to_application_log
   - after_track_hook_fires_with_ledger_ids
   - visit_limit_notification_hook_fires
@@ -99,8 +130,10 @@ effects:
   - core_goal_is_not_attributed_to_an_extension
   - conversion_revenue_and_currency_are_normalized
   - malformed_conversion_attributes_do_not_break_tracking
+  - goal_attribute_schema_violation_is_logged_as_validation
   - non_goal_actions_record_no_conversion
   - download_action_name_prefers_the_display_name
+  - dictionary_returns_one_row_per_type_and_name
   # 서버 폴백·봇·검색 경로 (미들웨어·훅이 원장에 닿는 배선)
   - server_fallback_records_html_page_loads_only
   - bot_hits_are_recorded_with_cache_status
@@ -133,6 +166,10 @@ effects:
   - tracker_reports_previous_page_dwell_time
   - tracker_caps_dwell_time_at_the_configured_maximum
   - tracker_attaches_bearer_token_when_present
+  - tracker_uses_keepalive_so_unloading_pages_still_deliver
+  - tracker_fits_payload_to_server_field_limits
+  - tracker_clears_dimensions_on_navigation
+  - prerendered_page_counts_its_landing_pageview_when_activated
   - tracker_defers_sending_so_navigation_is_not_delayed
   - tracker_swallows_transport_failures
   - tracker_skips_excluded_requests_before_sending
@@ -156,7 +193,11 @@ effects:
   - admin_template_does_not_track
 
 test_files:
+  - resources/js/core/analytics/__tests__/publicApi.test.ts
+  - resources/js/core/analytics/__tests__/payloadContract.test.ts
+  - tests/Unit/Analytics/CollectFailureReasonTest.php
   - tests/Feature/Analytics/VisitServiceTest.php
+  - tests/Feature/Analytics/ActionNameRepositoryTest.php
   - tests/Feature/Analytics/CollectControllerTest.php
   - tests/Feature/Analytics/TrackServerVisitMiddlewareTest.php
   - tests/Feature/Analytics/TrackBotHitMiddlewareTest.php

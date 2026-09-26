@@ -1211,7 +1211,7 @@ return [
         'url_required' => '訪問アドレスが必要です。',
         'url_too_long' => '訪問アドレスが長すぎます。',
         'resolution_invalid' => '画面解像度形式が正しくありません。',
-        'dimensions_too_many' => 'ディメンション値は最大20個まで送信できます。',
+        'dimensions_too_many' => '分類値は最大20個まで送信できます。',
         'range_too_long' => '一度に照会できる期間は:days日までです。',
         'report_unknown' => '不明なリポートです。',
         'subject_required' => 'IP·会員番号·訪問者キーのいずれかを指定する必要があります。',

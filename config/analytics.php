@@ -44,7 +44,7 @@ return [
         ['name' => 'Baidu', 'hosts' => ['baidu.com'], 'params' => ['wd', 'word']],
         ['name' => 'Yandex', 'hosts' => ['yandex.com', 'yandex.ru'], 'params' => ['text']],
         ['name' => 'Zum', 'hosts' => ['zum.com', 'search.zum.com'], 'params' => ['query']],
-        ['name' => 'Nate', 'hosts' => ['nate.com', 'search.daum.net/nate'], 'params' => ['q']],
+        ['name' => 'Nate', 'hosts' => ['nate.com'], 'params' => ['q']],
     ],
 
     /*
@@ -112,6 +112,30 @@ return [
         'sources' => [
             'aws' => 'https://ip-ranges.amazonaws.com/ip-ranges.json',
             'gcp' => 'https://www.gstatic.com/ipranges/cloud.json',
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | 코어 전환(목표) 선언
+    |--------------------------------------------------------------------------
+    | 확장의 getAnalyticsGoals() 와 같은 스키마다. 기록 키는 core.{key} 로 정규화된다.
+    | 서버가 확실히 아는 순간(가입 완료·로그인 성공)에 CoreGoalsListener 가 기록한다.
+    */
+    'goals' => [
+        [
+            'key' => 'user_registered',
+            'label' => ['ko' => '회원가입', 'en' => 'Sign-up', 'ja' => '会員登録'],
+            'description' => ['ko' => '회원가입이 완료된 시점', 'en' => 'When a sign-up completes', 'ja' => '会員登録が完了した時点'],
+            'category' => 'signup',
+            'dedupe' => 'once_per_visitor',
+        ],
+        [
+            'key' => 'user_logged_in',
+            'label' => ['ko' => '로그인', 'en' => 'Log-in', 'ja' => 'ログイン'],
+            'description' => ['ko' => '로그인에 성공한 시점', 'en' => 'When a log-in succeeds', 'ja' => 'ログインに成功した時点'],
+            'category' => 'engagement',
+            'dedupe' => 'once_per_visit',
         ],
     ],
 

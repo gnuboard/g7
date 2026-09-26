@@ -124,6 +124,20 @@ readonly class TrackingRequest
     }
 
     /**
+     * 일부 값을 바꾼 사본을 만듭니다.
+     *
+     * 적재 서비스가 등록부로 걸러 낸 차원·검증을 통과한 목표 속성처럼, 판정 뒤의 값으로
+     * 요청을 이어 쓸 때 씁니다. 키는 `toArray()` 의 이름을 따릅니다.
+     *
+     * @param  array<string, mixed>  $overrides  바꿀 값 (직렬화 키 → 값)
+     * @return self 값이 바뀐 사본
+     */
+    public function with(array $overrides): self
+    {
+        return self::fromArray(array_merge($this->toArray(), $overrides));
+    }
+
+    /**
      * 큐 직렬화를 위해 배열로 바꿉니다.
      *
      * @return array<string, mixed> 직렬화된 배열

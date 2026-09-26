@@ -44,7 +44,7 @@
                     "id": "definitions_settings_link",
                     "type": "basic",
                     "name": "Button",
-                    "if": "{{(current_user?.data?.is_super === true || (current_user?.data?.permissions ?? []).some(p => (p?.identifier ?? p) === 'core.settings.read'))}}",
+                    "if": "{{((current_user?.data?.permissions ?? []).some(p => (p?.identifier ?? p) === 'core.settings.read'))}}",
                     "actions": [
                         {
                             "type": "click",

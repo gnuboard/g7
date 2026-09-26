@@ -448,4 +448,25 @@ class VisitExclusionPipelineTest extends TestCase
         $this->assertSame(0, $counter->forDate('2026-09-16')['dnt'], '어제 칸은 따로 센다');
         $this->assertCount(13, $today, '사유 12 + 철회 1');
     }
+
+    /**
+     * 정확 일치 제외 패턴은 끝 슬래시를 따지지 않는다.
+     *
+     * 서버 폴백은 요청 주소의 끝 슬래시를 떼고(`fullUrl()`), 비콘은 브라우저 주소를 그대로 보낸다.
+     * 따지면 `/board/` 로 적은 제외가 비콘에만 걸리고 서버 폴백 기록에는 안 걸린다.
+     *
+     * @return void 없음
+     *
+     * @scenario exclusion=url_pattern
+     *
+     * @effects client_and_server_exclusion_rules_agree
+     */
+    public function test_exact_url_patterns_ignore_trailing_slash(): void
+    {
+        $this->assertTrue(VisitExclusionPipeline::pathMatchesAny('/board', ['/board/']));
+        $this->assertTrue(VisitExclusionPipeline::pathMatchesAny('/board/', ['/board']));
+        $this->assertTrue(VisitExclusionPipeline::pathMatchesAny('/', ['/']));
+        $this->assertFalse(VisitExclusionPipeline::pathMatchesAny('/board/1', ['/board/']));
+        $this->assertTrue(VisitExclusionPipeline::pathMatchesAny('/board/1', ['/board/*']));
+    }
 }

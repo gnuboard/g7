@@ -16,7 +16,7 @@ const LAYOUT_DIR = path.resolve(__dirname, '../../../layouts');
 const read = (rel: string): string => fs.readFileSync(path.join(LAYOUT_DIR, rel), 'utf8');
 
 describe('홈 방문자 카운터 — 공개 설정을 읽는 경로', () => {
-  // @scenario screen=home, state=normal, viewport=1440, locale=ko
+  // @scenario screen=home_widget, state=normal, viewport=1440, locale=ko
   // @effects counter_reads_public_settings_from_global
   it('공개 설정은 _global.settings 로 읽는다 — 접두사가 빠지면 조건이 늘 거짓이다', () => {
     const files = ['home.json', 'partials/_visitor_counter.json'];

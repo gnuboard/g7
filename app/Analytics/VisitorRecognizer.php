@@ -120,10 +120,31 @@ class VisitorRecognizer
             $request->ip ?? '',
             $environment['os_name'],
             $environment['browser_name'],
-            $request->browserLanguage ?? '',
+            self::baseLanguage($request->header('accept-language') ?? $request->browserLanguage),
         ]);
 
         return substr(hash('sha256', $material), 0, 32);
+    }
+
+    /**
+     * 방문자 키 재료로 쓸 기본 언어를 돌려줍니다.
+     *
+     * 같은 브라우저라도 언어를 얻는 경로가 둘이다 — 브라우저 비콘은 설정 언어(화면 언어,
+     * `ko-KR`·`en-US`), 서버가 직접 기록하는 요청(로그인 전환·서버 폴백)은 언어 헤더뿐이다.
+     * 두 값은 자세함도, 때로는 언어 자체도 달라 같은 사람이 두 키로 갈렸다(#682 S4 라운드 8).
+     * 그래서 호출부는 두 경로가 똑같이 가진 `Accept-Language` 를 넘기고, 여기서는 그 첫
+     * 항목의 기본 언어만 소문자로 남긴다(헤더가 없던 옛 요청만 설정 언어로 대신한다).
+     * 방문에 저장·표시하는 브라우저 언어는 이 값이 아니다.
+     *
+     * @param  string|null  $language  언어 헤더 또는 언어 태그 (`ko,en;q=0.9`·`ko-KR`·`en_US` 등)
+     * @return string 기본 언어 (없으면 빈 문자열)
+     */
+    public static function baseLanguage(?string $language): string
+    {
+        $first = trim(explode(';', explode(',', (string) $language)[0])[0]);
+        $base = explode('-', str_replace('_', '-', $first))[0];
+
+        return strtolower($base);
     }
 
     /**

@@ -136,7 +136,7 @@ class ReferrerClassifierTest extends TestCase
      *
      * 경로와 쿼리에는 방문자가 그 사이트에서 무엇을 보고 있었는지가 담긴다.
      *
-     * @scenario anonymize_referrer=domain_only
+     * @scenario referrer_anon=domain_only
      *
      * @effects referrer_anonymization_keeps_domain_only
      *
@@ -156,7 +156,7 @@ class ReferrerClassifierTest extends TestCase
     /**
      * 익명화를 끄면 원본 URL 이 그대로 남는다.
      *
-     * @scenario anonymize_referrer=none
+     * @scenario referrer_anon=none
      *
      * @effects referrer_anonymization_keeps_domain_only
      *
@@ -167,6 +167,26 @@ class ReferrerClassifierTest extends TestCase
         $url = 'https://example.org/blog/post?page=2';
 
         $this->assertSame($url, ReferrerClassifier::classify($url)['url']);
+    }
+
+    /**
+     * 유입 주소는 조각(#…)과 추적 파라미터를 떼고 남긴다 — 나머지 쿼리는 원래 순서 그대로다.
+     *
+     * 조각에는 다른 사이트가 붙인 인증 토큰 같은 값이 실릴 수 있고(브라우저가 서버에 보내지 않는 자리라
+     * 그 사이트도 남기려던 값이 아니다), 추적 파라미터는 같은 글을 광고 링크마다 다른 주소로 갈라 놓는다.
+     *
+     * @scenario referrer=website
+     *
+     * @effects referrer_url_drops_fragment_and_tracking_params
+     *
+     * @return void 없음
+     */
+    public function test_referrer_url_drops_fragment_and_tracking_params(): void
+    {
+        $url = 'https://example.org/blog/post?b=2&utm_source=news&a=1&fbclid=XYZ#access_token=secret';
+
+        $this->assertSame('https://example.org/blog/post?b=2&a=1', ReferrerClassifier::classify($url)['url']);
+        $this->assertSame('https://example.org/blog/post', ReferrerClassifier::classify('https://example.org/blog/post?gclid=1#top')['url']);
     }
 
     /**

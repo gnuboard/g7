@@ -4,7 +4,11 @@ namespace App\Http\Controllers\Api\Admin\Analytics;
 
 use App\Analytics\AnalyticsClock;
 use App\Analytics\AnalyticsConfig;
+use App\Analytics\CodeLabelTranslator;
+use App\Analytics\GeoLabelTranslator;
+use App\Analytics\LanguageLabelTranslator;
 use App\Analytics\UrlNormalizer;
+use App\Contracts\Analytics\GoalRegistryInterface;
 use App\Contracts\Repositories\Analytics\VisitRepositoryInterface;
 use App\Contracts\Repositories\UserRepositoryInterface;
 use App\Enums\Analytics\PrivacyMode;
@@ -39,12 +43,14 @@ class VisitorController extends AdminBaseController
      * @param  VisitRepositoryInterface  $visits  방문 원장 저장소
      * @param  UserRepositoryInterface  $users  회원 저장소 — 원장에 번호만 남은 회원을 이름으로 푼다
      * @param  CsvExporter  $csv  CSV 내보내기
+     * @param  GoalRegistryInterface  $goals  목표 등록부 — 타임라인 전환을 선언된 이름으로 푼다
      */
     public function __construct(
         private readonly DataSubjectService $subjects,
         private readonly VisitRepositoryInterface $visits,
         private readonly UserRepositoryInterface $users,
         private readonly CsvExporter $csv,
+        private readonly GoalRegistryInterface $goals,
     ) {
         parent::__construct();
     }
@@ -85,7 +91,10 @@ class VisitorController extends AdminBaseController
                 'pageviews' => (int) $row->pageviews,
                 'last_action_at' => AnalyticsClock::toSiteDateTimeString($row->last_action_at),
                 'country_code' => $row->country_code,
+                // 코드(`KR`·`desktop`)는 그대로 두고 화면이 읽을 이름을 덧붙인다(#682 S4 라운드 8).
+                'country_name' => self::countryName($row->country_code),
                 'device_type' => $row->device_type,
+                'device_type_label' => CodeLabelTranslator::label('analytics.device_type', $row->device_type),
                 'browser_name' => $row->browser_name,
                 'user_id' => $row->user_id !== null ? (int) $row->user_id : null,
                 // 회원 방문자는 번호만 보여서는 누군지 알 수 없다 — 화면이 이름을 쓰고
@@ -181,6 +190,8 @@ class VisitorController extends AdminBaseController
             // 타임라인이 읽힐 이름을 덧붙인다. 저장 이름(`name`)은 정보주체 내보내기 파일이 그대로 싣는
             // 값이라 손대지 않는다 — 화면만 사이트 호스트를 떼고 퍼센트 인코딩을 푼 이름을 쓴다.
             'visits' => $screenVisits,
+            // 조회 시각도 같은 화면의 다른 시각과 같은 기준으로 싣는다(내보내기 파일은 ISO8601 그대로).
+            'exported_at' => self::siteTime($profile['exported_at'] ?? null),
             // 화면의 「방문자 카드」가 읽을 한 덩어리. 방문이 0건이어도 카드가 비지 않도록
             // 키·유형만이라도 채워 둔다 — 목록에서 고른 값이 곧 그 사람의 신원이다.
             'visitor' => $this->visitorCard($visitorKey, $screenVisits),
@@ -280,14 +291,27 @@ class VisitorController extends AdminBaseController
                 return $action;
             }, $visit['actions'] ?? []);
 
-            $visit['conversions'] = array_map(static function (array $conversion): array {
+            $visit['conversions'] = array_map(function (array $conversion): array {
                 $conversion['occurred_at'] = self::siteTime($conversion['occurred_at'] ?? null);
+                // 전환 탭(`ReportService`)과 같은 이름으로 부른다. `label` 은 목표 이름이 아니라 전환
+                // 속성(주문번호 등)이라, 속성 없이 기록되는 코어 목표는 원키가 찍혔다. 등록부에서
+                // 사라진 목표(꺼진 확장)는 원키 그대로다.
+                $goalKey = $conversion['goal_key'] ?? null;
+                $conversion['goal_label'] = is_string($goalKey)
+                    ? ($this->goals->find($goalKey)?->localizedLabel(app()->getLocale()) ?? $goalKey)
+                    : null;
 
                 return $conversion;
             }, $visit['conversions'] ?? []);
 
             $visit['first_action_at'] = self::siteTime($visit['first_action_at'] ?? null);
             $visit['last_action_at'] = self::siteTime($visit['last_action_at'] ?? null);
+            // 저장 값(`desktop`·`search`)은 내보내기 파일이 그대로 싣는다 — 화면만 읽을 이름을 덧붙인다.
+            $visit['device_type_label'] = CodeLabelTranslator::label('analytics.device_type', $visit['device_type'] ?? null);
+            $visit['referrer_type_label'] = CodeLabelTranslator::label('analytics.referrer_type', $visit['referrer_type'] ?? null);
+            $visit['country_name'] = self::countryName($visit['country_code'] ?? null);
+            $visit['browser_language_label'] = LanguageLabelTranslator::language($visit['browser_language'] ?? null);
+            $visit['locale_label'] = LanguageLabelTranslator::language($visit['locale'] ?? null);
 
             return $visit;
         }, $visits);
@@ -311,6 +335,17 @@ class VisitorController extends AdminBaseController
         }
 
         return AnalyticsClock::toSiteDateTimeString(Carbon::parse($value));
+    }
+
+    /**
+     * 국가 코드의 화면 이름을 찾습니다.
+     *
+     * @param  mixed  $code  국가 코드
+     * @return string|null 국가 이름 (값이 없으면 null, 번역이 없으면 코드)
+     */
+    private static function countryName(mixed $code): ?string
+    {
+        return is_string($code) && $code !== '' ? GeoLabelTranslator::country($code) : null;
     }
 
     /**
@@ -343,9 +378,20 @@ class VisitorController extends AdminBaseController
             'visitor_key' => $visitorKey,
             'visitor_type' => $latest['visitor_type'] ?? null,
             'country_code' => $latest['country_code'] ?? null,
+            'country_name' => $latest['country_name'] ?? null,
+            'region_code' => $latest['region_code'] ?? null,
+            'city' => $latest['city'] ?? null,
             'device_type' => $latest['device_type'] ?? null,
+            'device_type_label' => $latest['device_type_label'] ?? null,
             'browser_name' => $latest['browser_name'] ?? null,
+            'browser_version' => $latest['browser_version'] ?? null,
             'os_name' => $latest['os_name'] ?? null,
+            'os_version' => $latest['os_version'] ?? null,
+            'screen_resolution' => $latest['screen_resolution'] ?? null,
+            'browser_language' => $latest['browser_language'] ?? null,
+            'browser_language_label' => $latest['browser_language_label'] ?? null,
+            'locale' => $latest['locale'] ?? null,
+            'locale_label' => $latest['locale_label'] ?? null,
             'visits' => count($visits),
             'first_action_at' => $visits !== [] ? end($visits)['first_action_at'] ?? null : null, // visitsForScreen 이 이미 사이트 표준시로 바꾼 값
             'last_action_at' => $latest['last_action_at'] ?? null,

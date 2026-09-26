@@ -25,7 +25,7 @@ class DataControllerTest extends AnalyticsApiTestCase
      *
      * @scenario endpoint=data, role=read
      *
-     * @effects storage_stats_list_every_analytics_table, storage_stats_count_the_two_ledger_tables_exactly
+     * @effects storage_stats_list_every_analytics_table, storage_stats_count_the_two_ledger_tables_exactly, stored_codes_are_shown_as_human_labels
      */
     public function test_storage_stats_cover_every_table(): void
     {
@@ -39,6 +39,12 @@ class DataControllerTest extends AnalyticsApiTestCase
         $this->assertCount(11, $tables, '방문자 통계 표 열한 개가 모두 보여야 보존일을 정할 수 있다');
         $this->assertContains('analytics_visits', $tables);
         $this->assertContains('analytics_stats_daily', $tables);
+
+        // 표 이름만으로는 무엇이 쌓이는지 모른다 — 코어 표는 전부 화면 이름이 붙는다(#682 S4 라운드 8).
+        $unnamed = collect($response->json('data.tables'))
+            ->filter(fn (array $row): bool => ! is_string($row['label'] ?? null) || $row['label'] === $row['table'])
+            ->pluck('table')->values()->all();
+        $this->assertSame([], $unnamed, '화면 이름이 없는 코어 표');
 
         // 운영자가 지울지 말지를 정하는 두 표는 어림값이 아니라 정확히 센다.
         $this->assertSame(1, $response->json('data.exact.analytics_visits'));

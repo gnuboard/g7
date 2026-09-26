@@ -25,7 +25,7 @@ return new class extends Migration
             $table->id()->comment('ID');
             $table->date('date')->comment('집계 일자 (사이트 표준시 기준)');
             $table->string('visitor_type', 10)->comment('방문자 유형 (guest, member, admin, bot)');
-            $table->string('dimension', 40)->comment('차원 이름 (page_url, referrer_name, browser, country 등, 확장 차원은 ext:식별자:키)');
+            $table->string('dimension', 310)->comment('차원 이름 (page_url, referrer_name, browser, country 등, 확장 차원은 ext:식별자:키 — 식별자 255자·키 50자까지 담는 폭)');
             $table->char('label_hash', 32)->comment('라벨 해시 — 긴 라벨 대신 이 값으로 같은 항목을 묶는다');
             $table->string('label', 512)->comment('라벨 원값');
             $table->unsignedBigInteger('action_name_id')->nullable()->comment('이름 사전 ID — 페이지 차원에서 원본 URL 을 되찾을 때 쓴다');

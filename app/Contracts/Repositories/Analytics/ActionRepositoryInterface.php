@@ -101,6 +101,18 @@ interface ActionRepositoryInterface
     public function deleteForVisits(array $visitIds): int;
 
     /**
+     * 방문들의 차원 칸에서 지정한 이름을 지웁니다.
+     *
+     * 개인정보로 선언된 확장 차원을 소급 익명화 때 걷어 낼 때 씁니다. 데이터베이스마다 JSON
+     * 함수가 달라 행을 읽어 고쳐 씁니다 — 익명화는 청크 단위 배치라 비용을 감당합니다.
+     *
+     * @param  array<int, int>  $visitIds  방문 ID 목록
+     * @param  array<int, string>  $keys  지울 차원 이름
+     * @return int 고친 행 수
+     */
+    public function forgetDimensionsForVisits(array $visitIds, array $keys): int;
+
+    /**
      * 액션 원장의 전체 행 수를 셉니다.
      *
      * @return int 행 수

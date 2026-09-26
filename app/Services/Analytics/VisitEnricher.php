@@ -140,6 +140,12 @@ class VisitEnricher
             $attributes['locale'] = $request->locale;
         }
 
+        // 서버는 언어 헤더 첫 항목(`ko`)만 안다 — 브라우저가 알린 설정 언어(`ko-KR`)가 비콘으로만
+        // 열린 방문과 같은 자세함이다. 두 값이 섞이면 브라우저 언어 리포트가 한 언어를 둘로 센다.
+        if ($request->browserLanguage !== null && $request->browserLanguage !== '') {
+            $attributes['browser_language'] = $request->browserLanguage;
+        }
+
         if ($visit->referrer_url === null && $request->referrer !== null && $request->referrer !== '') {
             $referrer = ReferrerClassifier::classify(
                 $request->referrer,

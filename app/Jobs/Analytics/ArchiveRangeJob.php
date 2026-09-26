@@ -20,7 +20,8 @@ use Throwable;
  * 기간 재집계 잡
  *
  * 관리자 화면의 「다시 집계」 버튼이 부릅니다. 몇 달치를 다시 계산하면 요청 하나가
- * 몇 분씩 걸리므로 워커에게 넘기고, 화면은 실행 이력의 진행률을 물어봅니다.
+ * 몇 분씩 걸리므로 워커에게 넘깁니다. 화면은 진행률 방송을 받아 실행 이력을 다시 읽고,
+ * 방송이 꺼진 사이트에서는 실행 중인 동안만 이력을 주기적으로 다시 읽습니다.
  */
 class ArchiveRangeJob implements ShouldQueue
 {
@@ -117,11 +118,16 @@ class ArchiveRangeJob implements ShouldQueue
      */
     public function failed(Throwable $exception): void
     {
+        // 이 잡이 맡은 기간의 행만 닫는다 — 같은 관리자가 다른 기간을 따로 재집계하는 중일 수 있다.
+        [$periodStart] = AnalyticsClock::dayRangeUtc($this->from);
+        [, $periodEnd] = AnalyticsClock::dayRangeUtc($this->to);
+
         app(StaleRunService::class)->failOrphansOf(
             ArchiveRunType::Reaggregate->value,
             Carbon::parse($this->queuedAt, 'UTC'),
             $this->triggeredBy,
             $exception->getMessage(),
+            [$periodStart, $periodEnd],
         );
     }
 }

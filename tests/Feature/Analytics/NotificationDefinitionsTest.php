@@ -54,7 +54,7 @@ class NotificationDefinitionsTest extends TestCase
             [['run_type' => 'day', 'period' => '2026-09-10', 'error' => '집계 중 예외']],
         );
 
-        $this->assertSame('day', $result['data']['run_type']);
+        $this->assertSame(__('analytics.archive_run_type.day'), $result['data']['run_type'], '원시값(day)이 아니라 읽히는 이름이어야 한다');
         $this->assertSame('2026-09-10', $result['data']['period']);
         $this->assertSame('집계 중 예외', $result['data']['error']);
         $this->assertStringContainsString('/admin/analytics/diagnostics', $result['data']['diagnostics_url']);
@@ -111,6 +111,16 @@ class NotificationDefinitionsTest extends TestCase
 
         $this->assertSame('120', $result['data']['visits']);
         $this->assertSame('-', $result['data']['change_pct'], '직전 기간이 0 이면 비율이 아니라 줄표를 보인다');
+
+        // 증감률은 부호와 단위를 달고 나간다 — 「12.5」만 보이면 늘었는지 줄었는지, 몇 배인지 알 수 없다.
+        foreach ([[12.5, '+12.5%'], [-3.0, '-3.0%'], [0.0, '0.0%']] as [$raw, $shown]) {
+            $formatted = app(AnalyticsNotificationDataListener::class)->extractData(
+                ['notifiable' => null, 'notifiables' => null, 'data' => [], 'context' => []],
+                'analytics_weekly_report',
+                [['period_label' => '2026-09-07 ~ 2026-09-13', 'change_pct' => $raw]],
+            );
+            $this->assertSame($shown, $formatted['data']['change_pct']);
+        }
         $this->assertStringContainsString('/board/free', $result['data']['top_pages']);
         $this->assertStringContainsString('<table>', $result['data']['top_pages']);
         $this->assertSame('', $result['data']['top_referrers'], '빈 목록은 빈 표가 아니라 아무것도 그리지 않는다');
@@ -160,6 +170,9 @@ class NotificationDefinitionsTest extends TestCase
         // 이동 버튼은 목적지를 열 수 있는 관리자에게만 붙는다 — 로그인 사용자가 없는 맥락에는 없다
         // (권한별 갈래는 LedgerAlertActionPermissionTest).
         $this->assertArrayNotHasKey('action_url', $alerts[0]);
+        // 원클릭 복구는 성립하지 않는 알림이다(보존일을 고쳐야 한다) — 복구 배선이 붙으면 화면에
+        // 누를 수 없는 「복구」 단추가 생긴다(대시보드 알림 카드 계약).
+        $this->assertArrayNotHasKey('recover_endpoint', $alerts[0]);
         $this->assertStringNotContainsString('analytics.alerts', $alerts[0]['title'], '번역 키가 그대로 보이면 안 된다');
     }
 

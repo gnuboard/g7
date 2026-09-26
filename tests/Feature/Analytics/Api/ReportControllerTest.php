@@ -4,6 +4,7 @@ namespace Tests\Feature\Analytics\Api;
 
 use App\Enums\Analytics\StatsDimension;
 use App\Enums\Analytics\VisitorType;
+use App\Http\Controllers\Api\Admin\Analytics\ReportController;
 use App\Models\Analytics\AnalyticsBotHit;
 use App\Models\Analytics\AnalyticsDimensionStat;
 use App\Services\Analytics\CsvExporter;
@@ -119,7 +120,7 @@ class ReportControllerTest extends AnalyticsApiTestCase
 
         $labels = [];
 
-        foreach (['ko', 'en'] as $locale) {
+        foreach (['ko', 'en', 'ja'] as $locale) {
             $labels[$locale] = $service->report('country', $today, $today, [
                 'locale' => $locale,
             ])['rows'][0]['label_display'];
@@ -127,6 +128,15 @@ class ReportControllerTest extends AnalyticsApiTestCase
 
         $this->assertSame('한국', $labels['ko']);
         $this->assertSame('South Korea', $labels['en']);
+        $this->assertSame('韓国', $labels['ja'], '세 번째 로케일도 번역된다');
+
+        // 목표 이름도 같은 로케일 옵션을 따른다(앱 로케일이 아니라 조회 옵션).
+        $this->dimensionRow(StatsDimension::Goal->value, 'core.user_logged_in');
+        $goals = [];
+        foreach (['ko', 'en', 'ja'] as $locale) {
+            $goals[$locale] = $service->report('goals', $today, $today, ['locale' => $locale])['rows'][0]['label_display'];
+        }
+        $this->assertSame(['ko' => '로그인', 'en' => 'Log-in', 'ja' => 'ログイン'], $goals);
         $this->assertEqualsWithDelta(20.0, $row['bounce_rate'], 0.01, '이탈 1 / 방문 5');
         $this->assertSame(120, $row['avg_time'], '체류 600초 / 방문 5');
         $this->assertEqualsWithDelta(2.4, $row['pages_per_visit'], 0.01, '조회 12 / 방문 5');
@@ -267,7 +277,11 @@ class ReportControllerTest extends AnalyticsApiTestCase
 
         $this->assertStringStartsWith(CsvExporter::BOM, $body, 'BOM 이 없으면 엑셀에서 한글이 전부 깨진다');
         $this->assertStringContainsString("\r\n", $body);
-        $this->assertStringContainsString('label,label_display,visits', $body);
+        // 공통 아홉 열을 머리행 전체로 잠근다 — 앞 세 열만 재면 가운데 열이 빠지거나 뒤바뀌어도 초록이다.
+        $this->assertSame(
+            'label,label_display,visits,hits,entries,exits,bounce_rate,avg_time_seconds,pages_per_visit',
+            explode("\r\n", substr($body, strlen(CsvExporter::BOM)))[0],
+        );
         $this->assertStringContainsString('자유게시판', $body);
     }
 
@@ -280,7 +294,7 @@ class ReportControllerTest extends AnalyticsApiTestCase
      *
      * @return void 없음
      *
-     * @scenario endpoint=reports, report=site_search, role=read, format=csv
+     * @scenario endpoint=reports, role=read, format=csv
      *
      * @effects csv_export_includes_per_report_extra_columns
      */
@@ -309,7 +323,7 @@ class ReportControllerTest extends AnalyticsApiTestCase
      *
      * @return void 없음
      *
-     * @scenario endpoint=reports, report=goal, role=read, format=csv
+     * @scenario endpoint=reports, role=read, format=csv
      *
      * @effects csv_export_includes_per_report_extra_columns
      */
@@ -330,6 +344,57 @@ class ReportControllerTest extends AnalyticsApiTestCase
     }
 
     /**
+     * 리포트 표의 「부가」 칸이 읽는 `extra` 키가 API 가 실제로 싣는 키와 같은지 확인합니다.
+     *
+     * CSV 는 헤더 이름(`revenue_sum`)으로 내보내지만 JSON 의 `extra` 는 집계가 담은 원래
+     * 키(`revenue_cents`)를 그대로 싣는다. 화면이 CSV 헤더 이름을 읽으면 매출이 있는
+     * 전환도 늘 「-」로 보인다 — 코어 목표에는 매출이 없어 브라우저 실측으로는 드러나지
+     * 않았다. 모집단은 CSV 부가 열 정의(서버)와 표 조각 소스·구운 JSON(화면)에서 뽑는다.
+     *
+     * @return void 없음
+     *
+     * @scenario endpoint=reports, role=read, format=json
+     *
+     * @effects report_grid_reads_the_extra_keys_the_api_sends
+     */
+    public function test_report_grid_reads_the_extra_keys_the_api_sends(): void
+    {
+        $columns = (new \ReflectionClassConstant(ReportController::class, 'EXTRA_CSV_COLUMNS'))->getValue();
+        $this->assertNotEmpty($columns, 'CSV 부가 열 정의가 비면 이 가드가 아무것도 재지 않는다');
+
+        $apiKeys = [];
+
+        foreach ($columns as $dimension => $map) {
+            $keys = array_values($map);
+            $this->dimensionRow($dimension, 'extra-probe-'.$dimension, ['extra' => array_fill_keys($keys, 7)]);
+
+            $extra = $this->actingAs($this->readAdmin())
+                ->getJson("/api/admin/analytics/reports/{$dimension}?preset=today")
+                ->assertOk()
+                ->json('data.data.0.extra') ?? [];
+
+            foreach ($keys as $key) {
+                $this->assertArrayHasKey($key, $extra, "{$dimension} 응답 extra 에 {$key} 가 없다");
+                $apiKeys[] = $key;
+            }
+        }
+
+        $apiKeys = array_values(array_unique($apiKeys));
+        sort($apiKeys);
+
+        $dir = base_path('templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_analytics');
+
+        foreach (['_partial_report_grid.g7.html', '_partial_report_grid.json'] as $file) {
+            preg_match_all('/row\.extra\?\.([A-Za-z_][A-Za-z0-9_]*)/', (string) file_get_contents("{$dir}/{$file}"), $m);
+            $screenKeys = array_values(array_unique($m[1]));
+            sort($screenKeys);
+
+            $this->assertNotEmpty($screenKeys, "{$file} 에서 extra 키를 하나도 못 찾았다 — 표 구조가 바뀌었으면 이 가드를 옮긴다");
+            $this->assertSame($apiKeys, $screenKeys, "{$file} 가 읽는 extra 키와 API 가 싣는 키가 다르다");
+        }
+    }
+
+    /**
      * 별칭 주소로 받은 CSV 도 같은 부가 열을 내는지 확인합니다.
      *
      * `reports/goals` 는 `reports/goal` 의 별칭이라 화면은 둘 중 아무 주소나 쓴다.
@@ -338,7 +403,7 @@ class ReportControllerTest extends AnalyticsApiTestCase
      *
      * @return void 없음
      *
-     * @scenario endpoint=reports, report=goal, role=read, format=csv
+     * @scenario endpoint=reports, role=read, format=csv
      *
      * @effects csv_export_includes_per_report_extra_columns
      */
@@ -362,7 +427,7 @@ class ReportControllerTest extends AnalyticsApiTestCase
      *
      * @return void 없음
      *
-     * @scenario endpoint=reports, report=page_url, role=read, format=csv
+     * @scenario endpoint=reports, role=read, format=csv
      *
      * @effects csv_export_includes_per_report_extra_columns
      */
@@ -648,5 +713,36 @@ class ReportControllerTest extends AnalyticsApiTestCase
 
         // 차원마다 키가 있다 없다 하면 화면이 매번 존재를 확인해야 한다.
         $this->assertSame([], $row['extra']);
+    }
+
+    /**
+     * 정렬 기준을 주면 그 열의 큰 값부터, 허용 밖 값은 422 로 거절한다.
+     *
+     * 방문 수로만 늘 정렬되면 「진입이 많은 페이지」를 보려던 운영자가 같은 표를 다시 본다.
+     *
+     * @return void 없음
+     *
+     * @scenario endpoint=reports, role=read, period=valid
+     *
+     * @effects reports_sort_by_the_requested_column
+     */
+    public function test_reports_sort_by_the_requested_column(): void
+    {
+        $this->dimensionRow('page_url', 'example.test/many-visits', ['visits' => 50, 'entries' => 1, 'exits' => 1, 'hits' => 60]);
+        $this->dimensionRow('page_url', 'example.test/many-entries', ['visits' => 10, 'entries' => 9, 'exits' => 2, 'hits' => 20]);
+        $this->dimensionRow('page_url', 'example.test/many-exits', ['visits' => 5, 'entries' => 1, 'exits' => 8, 'hits' => 90]);
+
+        $admin = $this->readAdmin();
+        $first = fn (?string $sort): string => (string) $this->actingAs($admin)
+            ->getJson('/api/admin/analytics/reports/page_url?preset=today'.($sort !== null ? '&sort='.$sort : ''))
+            ->assertOk()
+            ->json('data.data.0.label');
+
+        $this->assertSame('example.test/many-visits', $first(null), '기본은 방문 수');
+        $this->assertSame('example.test/many-entries', $first('entries'));
+        $this->assertSame('example.test/many-exits', $first('exits'));
+        $this->assertSame('example.test/many-exits', $first('hits'));
+
+        $this->actingAs($admin)->getJson('/api/admin/analytics/reports/page_url?preset=today&sort=bounce_rate')->assertStatus(422);
     }
 }

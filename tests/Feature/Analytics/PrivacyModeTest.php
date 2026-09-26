@@ -5,11 +5,13 @@ namespace Tests\Feature\Analytics;
 use App\Analytics\AnalyticsConfig;
 use App\Analytics\ExclusionCounter;
 use App\Analytics\TrackingRequest;
+use App\Enums\Analytics\CollectFailureReason;
 use App\Enums\Analytics\ReferrerType;
 use App\Extension\HookManager;
 use App\Extension\PluginManager;
 use App\Models\Analytics\AnalyticsCollectFailure;
 use App\Models\Analytics\AnalyticsVisit;
+use App\Services\Analytics\CollectFailureLogger;
 use App\Services\Analytics\PrivacyService;
 use App\Services\Analytics\VisitService;
 use App\Services\GeoIpService;
@@ -188,6 +190,50 @@ class PrivacyModeTest extends TestCase
     }
 
     /**
+     * 익명으로 동작하는 모드에서는 수집 실패 로그에도 IP 를 남기지 않는다.
+     *
+     * 실패 로그를 쓰는 곳은 기록기 한 곳이고 호출부는 마스킹 옥텟만 넘긴다. 모드마다 원장이
+     * 익명으로 동작하는지를 원장과 같은 판정(`PrivacyService::isAnonymous`)으로 구해, 기록기를
+     * 직접 부르는 경로와 실제 수집 요청(형식 오류) 경로 모두에서 그 판정과 같게 남는지 본다.
+     *
+     * @scenario mode=anonymous, gdpr=absent, ip_family=ipv4
+     *
+     * @effects anonymous_mode_failure_log_stores_no_ip
+     *
+     * @return void 없음
+     */
+    public function test_failure_log_follows_the_ledger_ip_rule_in_every_mode(): void
+    {
+        $modes = ['full', 'consent', 'anonymous'];
+        $anonymousModes = [];
+
+        foreach ($modes as $mode) {
+            config(['g7_settings.core.analytics.privacy_mode' => $mode, 'g7_settings.core.analytics.ip_mask_octets' => 0]);
+            AnalyticsCollectFailure::query()->delete();
+
+            $anonymous = $this->privacy->isAnonymous(AnalyticsConfig::fromSettings());
+            if ($anonymous) {
+                $anonymousModes[] = $mode;
+            }
+
+            app(CollectFailureLogger::class)->log(CollectFailureReason::DbError, 'probe', $this->request(), 0);
+
+            $this->withServerVariables(['REMOTE_ADDR' => '198.51.100.43'])
+                ->postJson('/api/analytics/collect', ['t' => 'not-a-real-type', 'url' => 'https://example.test/'])
+                ->assertNoContent();
+
+            $ips = AnalyticsCollectFailure::query()->orderBy('id')->pluck('ip')->all();
+            $this->assertCount(2, $ips, "{$mode}: 기록기 직접 호출과 형식 오류 요청이 각각 한 행");
+            $expected = $anonymous ? [null, null] : ['198.51.100.42', '198.51.100.43'];
+            $this->assertSame($expected, $ips, "{$mode}: 실패 로그 IP 는 원장과 같은 규칙");
+        }
+
+        // 두 쪽 모두 모집단이 비지 않아야 판정이 의미를 가진다.
+        $this->assertNotEmpty($anonymousModes, '익명으로 동작하는 모드가 하나도 없다');
+        $this->assertNotSame($modes, $anonymousModes, 'IP 를 남기는 모드가 하나도 없다');
+    }
+
+    /**
      * 동의 관리 플러그인이 없으면 IP 저장 모드는 그대로 IP 저장 모드다.
      *
      * @scenario mode=full, gdpr=absent
@@ -341,15 +387,31 @@ class PrivacyModeTest extends TestCase
      */
     public function test_tightening_offers_retroactive_anonymization(): void
     {
-        $this->assertTrue(PrivacyService::tightensPrivacy(
-            ['privacy_mode' => 'full', 'ip_mask_octets' => 0],
-            ['privacy_mode' => 'anonymous', 'ip_mask_octets' => 0],
-        ));
+        $before = $this->configWith(['privacy_mode' => 'full', 'ip_mask_octets' => 0, 'pseudonymize_user_id' => false]);
 
-        $this->assertTrue(PrivacyService::tightensPrivacy(
-            ['privacy_mode' => 'full', 'ip_mask_octets' => 0],
-            ['privacy_mode' => 'full', 'ip_mask_octets' => 2],
-        ));
+        foreach ([
+            'mode' => ['privacy_mode' => 'anonymous'],
+            'mask' => ['ip_mask_octets' => 2],
+            'pseudonymize' => ['pseudonymize_user_id' => true],
+        ] as $case => $change) {
+            $after = $this->configWith(array_merge(['privacy_mode' => 'full', 'ip_mask_octets' => 0, 'pseudonymize_user_id' => false], $change));
+            $this->assertTrue(PrivacyService::tightensPrivacy($before, $after), $case);
+        }
+    }
+
+    /**
+     * 주어진 값으로 설정 객체를 만듭니다(저장된 설정을 읽는 실제 경로).
+     *
+     * @param  array<string, mixed>  $values  `analytics.*` 설정 값
+     * @return AnalyticsConfig 설정
+     */
+    private function configWith(array $values): AnalyticsConfig
+    {
+        foreach ($values as $key => $value) {
+            config(['g7_settings.core.analytics.'.$key => $value]);
+        }
+
+        return AnalyticsConfig::fromSettings();
     }
 
     /**
@@ -366,8 +428,8 @@ class PrivacyModeTest extends TestCase
     public function test_loosening_offers_nothing(): void
     {
         $this->assertFalse(PrivacyService::tightensPrivacy(
-            ['privacy_mode' => 'anonymous', 'ip_mask_octets' => 2],
-            ['privacy_mode' => 'full', 'ip_mask_octets' => 0],
+            $this->configWith(['privacy_mode' => 'anonymous', 'ip_mask_octets' => 2, 'pseudonymize_user_id' => true]),
+            $this->configWith(['privacy_mode' => 'full', 'ip_mask_octets' => 0, 'pseudonymize_user_id' => false]),
         ));
     }
 
@@ -685,11 +747,12 @@ class PrivacyModeTest extends TestCase
     }
 
     /**
-     * IP 저장 모드라도 동의 관리 플러그인이 켜져 있으면 익명으로 내려간다.
+     * IP 저장 모드라도 동의 관리 플러그인이 켜져 있으면 **동의 전 방문자는** 익명으로 모인다.
      *
      * 그 플러그인은 동의 전 응답에서 방문자 쿠키를 지운다. 쿠키가 남지 않으면 비콘마다
      * 새 방문자 키가 생겨 한 사람의 이동이 방문 여러 건이 되고, 방문·순방문자가 페이지뷰만큼
-     * 부풀며 이탈률이 100% 가 된다. 처음부터 일자 회전 해시로 묶는 편이 정직하다.
+     * 부풀며 이탈률이 100% 가 된다. 동의 전 방문자는 일자 회전 해시로 묶는 편이 정직하다.
+     * 사이트 모드 자체는 IP 저장 그대로다 — 동의한 방문자는 IP·쿠키로 모인다(다음 테스트).
      *
      * @scenario mode=full, gdpr=active_declined
      *
@@ -703,7 +766,8 @@ class PrivacyModeTest extends TestCase
 
         $config = AnalyticsConfig::fromSettings();
 
-        $this->assertTrue($this->privacy->isAnonymous($config), 'IP 저장 모드인데 쿠키가 막히면 익명으로 센다');
+        $this->assertTrue($this->privacy->isAnonymous($config), 'IP 저장 모드인데 쿠키가 막히면 익명으로 내려갈 수 있다');
+        $this->assertFalse($this->privacy->isAnonymousForEveryone($config), '동의자는 IP 저장으로 모이므로 사이트 모드는 IP 저장');
         $this->assertSame(
             AnalyticsConfig::ANONYMOUS_REASON_CONSENT_PLUGIN_BLOCKS_COOKIES,
             $this->privacy->anonymousFallbackReason($config),
@@ -718,5 +782,55 @@ class PrivacyModeTest extends TestCase
         $this->assertSame('config', $visit->visitor_key_type);
         $this->assertNull($result['new_cookie'], '지워질 쿠키를 심지 않는다');
         $this->assertNull($visit->is_returning);
+    }
+
+    /**
+     * 동의 관리 플러그인이 켜진 IP 저장 사이트에서, 분석·기능 쿠키에 모두 동의한 방문자는 IP·쿠키로 모인다.
+     *
+     * 라운드 12 는 동의 전 방문자의 쿠키가 지워지는 문제를 풀려고 사이트 전체를 익명으로 내렸고,
+     * 동의한 방문자까지 IP 를 잃었다(브라우저 실측 — 전체 동의 뒤 방문자 상세 IP 「-」). 기능
+     * 동의가 없으면 플러그인이 쿠키를 지우므로 분석만 동의한 방문자는 익명으로 남긴다.
+     * 모집단은 두 항목의 동의 조합 4가지 전부다(#682 S4 라운드 8 「동의자는 IP 저장 모드」).
+     *
+     * @scenario mode=full, gdpr=active_consented
+     *
+     * @effects consented_visitor_is_recorded_in_full_mode_when_the_consent_plugin_is_active
+     *
+     * @return void 없음
+     */
+    public function test_consented_visitor_is_recorded_in_full_mode_under_the_consent_plugin(): void
+    {
+        $this->activateConsentPlugin();
+        $service = 'Plugins\Sirsoft\Gdpr\Services\GdprConsentService';
+        $this->assertTrue(class_exists($service), '전제: 동의 관리 플러그인 서비스가 있다');
+
+        $cases = [
+            'analytics+functional' => [['analytics' => true, 'functional' => true], false],
+            'analytics only' => [['analytics' => true, 'functional' => false], true],
+            'functional only' => [['analytics' => false, 'functional' => true], true],
+            'none' => [[], true],
+        ];
+
+        foreach ($cases as $label => [$consents, $expectAnonymous]) {
+            AnalyticsVisit::query()->delete();
+            $this->mock($service, function (MockInterface $mock) use ($consents): void {
+                $mock->shouldReceive('getCurrentCookieConsents')->andReturn($consents);
+            });
+            $this->privacy = app(PrivacyService::class);
+
+            ['visit' => $visit, 'result' => $result] = $this->trackOne();
+
+            $this->assertNotNull($visit, $label);
+            if ($expectAnonymous) {
+                $this->assertNull($visit->ip, "{$label}: 동의가 모자라면 IP 를 남기지 않는다");
+                $this->assertSame('config', $visit->visitor_key_type, $label);
+                $this->assertNull($result['new_cookie'], "{$label}: 지워질 쿠키를 심지 않는다");
+            } else {
+                $this->assertSame('198.51.100.42', $visit->ip, "{$label}: 동의자는 IP 저장 모드");
+                $this->assertSame('cookie', $visit->visitor_key_type, $label);
+                $this->assertNotNull($result['new_cookie'], "{$label}: 방문자 쿠키를 심는다");
+                $this->assertFalse($visit->is_returning, "{$label}: 쿠키 방식이라 재방문을 판정한다");
+            }
+        }
     }
 }

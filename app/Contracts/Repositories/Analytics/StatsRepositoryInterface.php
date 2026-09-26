@@ -132,12 +132,25 @@ interface StatsRepositoryInterface
     public function deleteHourlyOlderThanInBatches(Carbon $before, int $chunkSize = 1000): int;
 
     /**
-     * 확장이 등록한 차원의 집계 행을 삭제합니다.
+     * 확장이 등록한 차원의 집계 행과 그 확장 목표의 전환 집계 행을 삭제합니다.
+     *
+     * 전환 집계는 `goal` 차원에 목표 키(`{식별자}.{키}`)를 라벨로 쌓이므로 `ext:` 행만 지우면
+     * 전환 탭에 그 확장 목표가 수치·매출과 함께 남는다.
      *
      * @param  string  $extensionIdentifier  확장 식별자
      * @return int 삭제한 행 수
      */
     public function deleteDimensionsForExtension(string $extensionIdentifier): int;
+
+    /**
+     * 집계 표에 행이 남아 있는 확장 차원 이름을 반환합니다.
+     *
+     * 확장을 끄거나 데이터를 보존하고 지운 뒤에도 쌓인 집계를 읽을 수 있게, 등록부가 아닌
+     * 집계 표에서 이름을 모읍니다.
+     *
+     * @return array<int, string> 차원 이름 목록 (ext:식별자:키)
+     */
+    public function extensionDimensionNames(): array;
 
     /**
      * 그 날짜의 집계가 확정됐는지 확인합니다.

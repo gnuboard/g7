@@ -3,9 +3,11 @@
 namespace App\Services\Analytics;
 
 use App\Analytics\AnalyticsConfig;
+use App\Analytics\CodeLabelTranslator;
 use App\Contracts\Repositories\Analytics\ActionRepositoryInterface;
 use App\Contracts\Repositories\Analytics\TableStatsRepositoryInterface;
 use App\Contracts\Repositories\Analytics\VisitRepositoryInterface;
+use App\Extension\HookManager;
 
 /**
  * 방문자 통계 저장 용량 현황
@@ -59,15 +61,18 @@ class StorageStatsService
     {
         $exactVisits = $this->visits->countAll();
         $exactActions = $this->actions->countAll();
-        $sizes = $this->tableStats->sizes(self::TABLES);
+        $tables = $this->tables();
+        $sizes = $this->tableStats->sizes($tables);
 
         return [
             'tables' => array_map(fn (string $table): array => [
                 'table' => $table,
+                // 표 이름만으로는 무엇이 쌓이는지 알 수 없다 — 화면 이름을 덧붙인다. 확장이 더한 표는 이름이 없어 원래 이름 그대로다.
+                'label' => CodeLabelTranslator::label('analytics.storage_table', $table),
                 'rows' => $sizes[$table]['rows'] ?? null,
                 'data_bytes' => $sizes[$table]['data_bytes'] ?? null,
                 'index_bytes' => $sizes[$table]['index_bytes'] ?? null,
-            ], self::TABLES),
+            ], $tables),
             'exact' => [
                 'analytics_visits' => $exactVisits,
                 'analytics_actions' => $exactActions,
@@ -76,5 +81,25 @@ class StorageStatsService
                 || $exactActions >= $config->ledgerWarningActions,
             'driver_supported' => $this->tableStats->supportsTableStats(),
         ];
+    }
+
+    /**
+     * 현황을 보여 줄 표 목록을 만듭니다.
+     *
+     * 필터 `core.analytics.storage_tables` — 인자: 빈 배열. 확장이 통계용으로 따로 둔 표를
+     * 더하면 진단 화면의 저장소 현황에 함께 뜹니다. 코어 표는 빼지 못합니다.
+     *
+     * @return array<int, string> 표 이름 목록
+     */
+    private function tables(): array
+    {
+        $extra = HookManager::applyFilters('core.analytics.storage_tables', []);
+
+        $valid = array_filter(
+            is_array($extra) ? $extra : [],
+            fn ($table): bool => is_string($table) && preg_match('/^[a-z0-9_]{1,64}$/', $table) === 1,
+        );
+
+        return array_values(array_unique(array_merge(self::TABLES, $valid)));
     }
 }

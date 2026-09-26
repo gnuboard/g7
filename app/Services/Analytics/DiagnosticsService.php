@@ -5,6 +5,8 @@ namespace App\Services\Analytics;
 use App\Analytics\AnalyticsClock;
 use App\Analytics\AnalyticsConfig;
 use App\Analytics\ExclusionCounter;
+use App\Contracts\Analytics\DimensionRegistryInterface;
+use App\Contracts\Analytics\GoalRegistryInterface;
 use App\Contracts\Repositories\Analytics\ArchiveRunRepositoryInterface;
 use App\Contracts\Repositories\Analytics\CollectFailureRepositoryInterface;
 use App\Contracts\Repositories\Analytics\VisitRepositoryInterface;
@@ -47,6 +49,8 @@ class DiagnosticsService
      * @param  GeoIpService  $geoIp  지역 조회 서비스
      * @param  QueueStatsService  $queue  큐 현황 서비스
      * @param  StaleRunService  $staleRuns  멈춘 실행 판정 서비스
+     * @param  GoalRegistryInterface  $goals  목표 등록부 (선언 경고 노출용)
+     * @param  DimensionRegistryInterface  $dimensions  차원 등록부 (선언 경고 노출용)
      */
     public function __construct(
         private readonly VisitRepositoryInterface $visits,
@@ -59,6 +63,8 @@ class DiagnosticsService
         private readonly GeoIpService $geoIp,
         private readonly QueueStatsService $queue,
         private readonly StaleRunService $staleRuns,
+        private readonly GoalRegistryInterface $goals,
+        private readonly DimensionRegistryInterface $dimensions,
     ) {}
 
     /**
@@ -70,7 +76,7 @@ class DiagnosticsService
      */
     public function diagnostics(AnalyticsConfig $config, ?Request $request = null): array
     {
-        return [
+        $diagnostics = [
             'collection' => $this->collection($config),
             'queue' => $this->queueStatus(),
             'archive' => $this->archive(),
@@ -90,7 +96,38 @@ class DiagnosticsService
             // (#682 S3 라운드 6, 설계 결정 「보는 사람과 다를 때만」).
             'timezone' => AnalyticsClock::siteTimezone(),
             'timezone_differs' => $this->viewerTimezone($request) !== AnalyticsClock::siteTimezone(),
+            // 확장이 잘못 선언해 버려진 목표·차원의 사유. 여기 말고는 볼 곳이 없다 — 비워 두면
+            // 운영자는 「전환이 왜 안 쌓이는지」를 나중에 `unknown_goal` 실패로만 간접적으로 안다.
+            'declaration_warnings' => array_values(array_merge($this->goals->warnings(), $this->dimensions->warnings())),
         ];
+
+        // 확장이 자기 수집 상태를 진단 화면에 붙이는 자리. 코어 섹션을 덮지 못하게
+        // `extensions.{식별자}` 아래로만 받는다 — 화면은 확장이 레이아웃 확장 지점에 둔
+        // 자기 조각으로 그 값을 읽는다.
+        $diagnostics['extensions'] = self::extensionSections(
+            HookManager::applyFilters('core.analytics.diagnostics_sections', [], $config),
+        );
+
+        return $diagnostics;
+    }
+
+    /**
+     * 확장이 돌려준 진단 섹션에서 형식이 맞는 것만 남깁니다.
+     *
+     * @param  mixed  $sections  필터 결과 (식별자 → 섹션 배열)
+     * @return array<string, array<string, mixed>> 식별자 → 섹션
+     */
+    private static function extensionSections(mixed $sections): array
+    {
+        $valid = [];
+
+        foreach (is_array($sections) ? $sections : [] as $identifier => $section) {
+            if (is_string($identifier) && $identifier !== '' && is_array($section)) {
+                $valid[$identifier] = $section;
+            }
+        }
+
+        return $valid;
     }
 
     /**
@@ -129,7 +166,7 @@ class DiagnosticsService
             'mode' => $config->privacyMode->value,
             // 운영자가 고른 모드와 실제로 도는 모드가 다를 수 있다 — 사유 없이 숫자만 보면
             // 「설정은 IP 저장인데 왜 재방문이 0 인가」를 알 길이 없다.
-            'effective_mode' => $this->privacy->isAnonymous($config)
+            'effective_mode' => $this->privacy->isAnonymousForEveryone($config)
                 ? PrivacyMode::Anonymous->value
                 : $config->privacyMode->value,
             'anonymous_fallback_reason' => $this->privacy->anonymousFallbackReason($config),
@@ -144,6 +181,8 @@ class DiagnosticsService
             // 화면이 그 사실을 함께 적는다.
             'excluded_today' => $this->exclusions->forDate($today),
             'excluded_yesterday' => $this->exclusions->forDate($yesterday),
+            // 확장이 등록한 제외 사유는 화면 번역 파일에 없으므로 이름을 함께 싣는다.
+            'excluded_reason_labels' => ExclusionCounter::extensionReasons(),
         ];
     }
 

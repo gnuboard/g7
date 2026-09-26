@@ -144,14 +144,6 @@ class ArchiveRunController extends AdminBaseController
      */
     private function runForScreen(AnalyticsArchiveRun $run): array
     {
-        $row = $run->toArray();
-
-        foreach (['period_start', 'period_end', 'started_at', 'finished_at', 'created_at'] as $key) {
-            if (isset($row[$key])) {
-                $row[$key] = AnalyticsClock::toSiteDateTimeString(Carbon::parse($row[$key]));
-            }
-        }
-
-        return $row;
+        return $run->toScreenArray();
     }
 }

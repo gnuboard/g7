@@ -1074,6 +1074,8 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
             ->middleware('permission:admin,core.analytics.read')->name('api.admin.analytics.referrer-urls');
 
         // 리포트는 차원 이름을 경로로 받는다 — 고정 경로들보다 뒤에 등록해야 가로채지 않는다.
+        Route::get('registered', [AdminAnalyticsReportController::class, 'registered'])
+            ->middleware('permission:admin,core.analytics.read')->name('api.admin.analytics.registered');
         Route::get('reports/{report}', [AdminAnalyticsReportController::class, 'show'])
             ->middleware('permission:admin,core.analytics.read')->name('api.admin.analytics.reports.show');
     });

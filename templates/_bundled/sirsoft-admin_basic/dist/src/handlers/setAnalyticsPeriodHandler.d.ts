@@ -10,7 +10,7 @@
  * (`PeriodRequest::resolvedRange`)과 같은 규칙이라 화면에 표시한 달력 값과 서버가 실제로
  * 조회한 구간이 어긋나지 않는다.
  *
- * 상태 반영은 레이아웃이 sequence + setState 로 처리한다(`$prev.from`·`$prev.to`·`$prev.preset`).
+ * 상태 반영은 레이아웃의 `<init>` 이 `resultTo` 로 처리한다(`_local.periodComputed`) — 아래 핸들러 주석의 예시.
  */
 /**
  * 기간 프리셋 — 서버 `PeriodRequest` 의 허용값과 같다.
@@ -53,18 +53,21 @@ export declare function resolveAnalyticsPeriod(preset: AnalyticsPeriodPreset, no
 /**
  * 기간 프리셋 핸들러
  *
- * 기간 바 프리셋 버튼 클릭 시 호출된다. 시작일·종료일을 날짜 문자열로 계산해 돌려주며,
- * 레이아웃은 `$prev` 로 받아 로컬 상태와 URL 질의에 옮긴다.
+ * 통계 화면이 처음 열릴 때(`<init>`) 주소의 프리셋으로 한 번 호출된다. 시작일·종료일을 날짜 문자열로
+ * 계산해 돌려주고, 레이아웃은 `resultTo` 로 `_local.periodComputed` 에 담아 첫 응답이 오기 전의 달력 두 칸·
+ * CSV 저장 이름을 채운다. 프리셋 버튼 자체는 이 핸들러를 부르지 않고 주소(`preset`)만 바꾼다 — 서버가
+ * 그 프리셋을 푼 구간을 응답에 되돌려 주므로 그 뒤의 날짜는 응답이 출처다.
  *
  * @example
  * ```html
- * <sequence>
- *   <action handler="setAnalyticsPeriod" preset="30d"/>
- *   <set-state target="local" period.preset="{{$prev.preset}}" period.from="{{$prev.from}}" period.to="{{$prev.to}}"/>
- *   <navigate path="/admin/analytics" :mergeQuery="true" :replace="true">
- *     <query preset="{{$prev.preset}}" :from="undefined" :to="undefined" :page="1"/>
- *   </navigate>
- * </sequence>
+ * <init>
+ *   <action handler="setAnalyticsPeriod" preset="{{query.preset || '7d'}}">
+ *     <field name="resultTo">
+ *       <field name="target" value="_local"/>
+ *       <field name="key" value="periodComputed"/>
+ *     </field>
+ *   </action>
+ * </init>
  * ```
  *
  * @param action 액션 정의 (params.preset)

@@ -37,15 +37,25 @@ axes:
     - collect_failures
     - archive_runs
     - salts
+    - menus
   row_age: [within, beyond]
   dry_run: [true, false]
   retention_source: [setting, option, floor]
+  # 확장 제거 정리
+  extension: [module, plugin, module+plugin]
+  delete_data: [true, false]
+  outcome: [success, failure]
 
 exclusions:
   - { retention_source: floor, row_age: beyond, reason: "하한이 적용되면 그 기간 안은 정의상 「보존 안쪽」이 된다" }
   - { target: salts, retention_source: option, reason: "솔트 보존일은 옵션으로 바꾸지 않는다 — 익명 기록 조회 창이 코드 계약이다" }
 
 effects:
+  # 7.1.0 업그레이드 — 방문자 통계 메뉴 자리
+  - core_menus_shift_for_analytics_on_upgrade
+  - operator_menu_order_is_preserved_on_upgrade
+  - menu_order_upgrade_is_idempotent
+  - menu_order_upgrade_skips_when_nothing_matches
   # 정리
   - ledger_beyond_retention_is_deleted
   - ledger_within_retention_is_kept
@@ -54,6 +64,8 @@ effects:
   - daily_stats_survive_pruning
   - action_name_dictionary_survives_pruning
   - retention_floor_protects_recent_ledger
+  - prune_deletes_in_chunks_until_nothing_is_left
+  - salt_retention_never_drops_below_the_subject_lookup_window
   - dry_run_counts_without_deleting
   - prune_hooks_fire_before_and_after
   # 용량 경고
@@ -79,6 +91,7 @@ effects:
   - purge_fires_the_data_purged_hook
   # 확장 제거 정리 (S2 결함 보수 — 호출부·발사부가 없어 죽어 있던 배선)
   - extension_purge_removes_only_that_extensions_rows
+  - extension_purge_removes_that_extensions_goal_rows
   - extension_purge_is_recorded_in_the_run_history
   - extension_purged_hook_fires_with_counts
   - preserved_extension_data_survives_uninstall
@@ -99,12 +112,22 @@ effects:
   - cloud_range_status_reports_presence_and_time
   # 진행률 방송 — 집계가 아닌 실행도 진단 화면의 같은 자리에 뜬다
   - non_archive_runs_broadcast_their_progress
+  - every_run_writing_service_broadcasts_progress
+  - progress_broadcast_times_use_the_site_timezone
   # 멈춘 실행 — 워커가 도중에 죽은 「실행 중」 행이 진단 버튼을 잠그지 않는다
   - stale_running_rows_do_not_lock_the_diagnostics_buttons
   - stale_running_rows_are_closed_by_the_hourly_archive
   - failed_jobs_close_the_runs_they_started
+  - stale_threshold_outlasts_every_job_timeout
+  - extension_purge_command_requires_confirmation
+  - extension_purge_command_refuses_an_active_extension
+  - extension_purge_command_warns_about_an_unknown_identifier
+  - extension_purge_command_removes_only_that_extensions_rows
+  - extension_purge_command_reports_failure
 
 test_files:
+  - tests/Feature/Console/Analytics/PurgeExtensionCommandTest.php
+  - tests/Feature/Upgrade/ShiftCoreMenuOrderForAnalyticsTest.php
   - tests/Feature/Console/Analytics/PruneCommandTest.php
   - tests/Feature/Console/Analytics/CheckVolumeCommandTest.php
   - tests/Feature/Console/Analytics/AnonymizeCommandTest.php

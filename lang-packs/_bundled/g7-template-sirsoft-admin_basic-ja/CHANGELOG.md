@@ -8,16 +8,35 @@
 
 ### Changed
 
+- 행동 화면 「커스텀 차원」 탭의 일본어 문구 3종(`analytics.actions.dimension_placeholder`·`dimensions_hint`·`dimensions_empty_description`)을 고쳤습니다 — 차원 키를 직접 입력하던 칸이 활성 확장이 선언한 차원을 고르는 선택 상자로 바뀌었습니다. `dimensions_hint` 는 꺼졌거나 데이터를 남기고 지운 확장의 차원도 「無効な拡張機能」 표시로 목록에 남아 쌓인 집계를 계속 볼 수 있다는 내용으로 다시 고쳤습니다. 생성기가 아니라 직접 적었습니다(번역 API 키 부재) — 키로 재생성하면 덮어써도 됩니다.
+
+- 통계 설정 화면 설명(`analytics.settings.description`) 일본어 문구를 고쳤습니다 — 「保存は現在表示中のタブのみに反映」는
+  사실과 달랐습니다. 저장은 어느 탭에서 바꾼 값이든 한 번에 반영합니다.
+
 - 수집 진단의 대기 작업 안내(`analytics.diagnostics.fields.worker_hint`) 일본어 문구를 고쳤습니다 —
   방문 수집이 작업 처리기 없이도 기록되도록 바뀌어, 이 안내는 이제 집계·익명화가 밀렸다는 뜻입니다.
 
 ### Removed
+
+- 방문자 목록의 쓰이지 않는 열 이름(`analytics.visitors.columns.timeline`) 일본어 번역을 지웠습니다 — 원본
+  언어 파일에서 같은 키가 빠졌습니다(방문자 목록에 그 열이 없습니다).
 
 - 통계 설정 「적재 방식」 항목의 일본어 번역 4종(`analytics.settings.collection.dispatch_mode`·
   `.dispatch_mode_hint`·`.dispatch_modes.queue`·`.dispatch_modes.sync`)을 지웠습니다 — 설정 항목
   자체가 없어졌습니다.
 
 ### Added
+
+- 방문자 통계 화면이 저장 코드 대신 보일 이름의 일본어 번역을 추가했습니다 — 집계 실행 주체(`analytics.diagnostics.run_triggers.*`)·
+  큐 연결(`analytics.diagnostics.queue_connections.*`)·봇 캐시 상태(`analytics.bots.cache_statuses.*`)·동의 출처
+  (`analytics.settings.privacy.consent_sources.*`). 생성기가 아니라 직접 적었습니다(번역 API 키 부재)
+  — 키로 재생성하면 덮어써도 됩니다.
+
+- 수집 진단 화면의 확장 선언 경고 줄(`analytics.diagnostics.declaration_warnings_title`·`declaration_warnings_description`)과
+  검색어 탭 안내(`analytics.referrers.keywords_https_hint`)의 일본어 번역을 추가했습니다. 생성기가 아니라 직접
+  적었습니다(번역 API 키 부재) — 키로 재생성하면 덮어써도 됩니다.
+
+- 행동 화면 「커스텀 차원」 탭에 등록된 차원이 없을 때의 안내 2종(`analytics.actions.dimensions_none_title`·`dimensions_none_description`)과 편집기 데이터 소스 이름표 「登録済みの拡張ディメンション・コンバージョン」(`data_source.analytics_registered`)의 일본어 번역을 추가했습니다. 생성기가 아니라 직접 적었습니다(번역 API 키 부재) — 키로 재생성하면 덮어써도 됩니다.
 
 - 수집 진단·설정 화면의 시간대 안내 배지(`analytics.common.site_timezone_badge`) 일본어 번역을
   더했습니다 — 보는 사람의 시간대가 사이트와 다를 때 시각의 기준을 알립니다.

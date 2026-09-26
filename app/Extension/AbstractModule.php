@@ -791,6 +791,58 @@ abstract class AbstractModule implements CacheableExtensionInterface, ModuleInte
     }
 
     /**
+     * 방문자 통계 전환(목표) 선언을 반환합니다.
+     *
+     * 이 모듈이 방문자 통계에 공급하는 전환 지점을 미리 선언합니다. 코어는 선언된 목표만
+     * 기록하고(`G7Core.analytics.trackGoal()`·`ConversionRecorderInterface::record()`),
+     * 선언되지 않은 키는 수집 실패 목록에 `unknown_goal` 로 남깁니다. 기록 키는
+     * `{식별자}.{key}` 로 정규화됩니다. 모듈이 비활성화되면 목표는 등록부에서 빠지고
+     * 이미 쌓인 전환은 남습니다.
+     *
+     * @return array<int, array<string, mixed>> 목표 선언 목록
+     *                                          [[
+     *                                          'key' => 'order_completed',                // 영소문자·숫자·밑줄
+     *                                          'label' => ['ko' => '주문 완료', 'en' => 'Order completed'],
+     *                                          'category' => 'purchase',                  // purchase|signup|engagement|custom
+     *                                          'dedupe' => 'once_per_visit',              // every_time|once_per_visit|once_per_visitor
+     *                                          'attributes' => [
+     *                                          'revenue' => ['type' => 'decimal', 'required' => true, 'min' => 0],
+     *                                          'currency' => ['type' => 'enum', 'required' => true, 'values' => ['KRW', 'USD']],
+     *                                          ],
+     *                                          'attribution_window_days' => 30,
+     *                                          'dimensions' => ['board_id'],              // 이 모듈이 선언한 차원 키
+     *                                          ]]
+     */
+    public function getAnalyticsGoals(): array
+    {
+        return [];
+    }
+
+    /**
+     * 방문자 통계 분류 기준(dimension) 선언을 반환합니다.
+     *
+     * 브라우저의 `G7Core.analytics.setDimension()` 이나 서버 필터
+     * `core.analytics.resolve_dimensions` 로 넣는 차원 값은 여기 선언된 것만 원장에 남고,
+     * 집계는 `ext:{식별자}:{key}` 차원 행으로 만들어집니다. `pii` 가 참인 차원은 익명
+     * 모드에서 적재하지 않고 소급 익명화 때 지웁니다.
+     *
+     * @return array<int, array<string, mixed>> 차원 선언 목록
+     *                                          [[
+     *                                          'key' => 'board_id',
+     *                                          'scope' => 'action',                       // action|visit
+     *                                          'label' => ['ko' => '게시판', 'en' => 'Board'],
+     *                                          'value_type' => 'int',                     // int|string|enum
+     *                                          'max_cardinality' => 500,                  // 하루 집계 라벨 수 상한
+     *                                          'label_resolver' => 'resolveBoardLabels',  // (array $values): array<값, 이름>
+     *                                          'pii' => false,
+     *                                          ]]
+     */
+    public function getAnalyticsDimensions(): array
+    {
+        return [];
+    }
+
+    /**
      * 모듈 설치 시 실행할 시더 클래스 목록 반환
      *
      * 빈 배열 반환 시 database/seeders/ 디렉토리의 모든 시더를 자동 검색합니다. (역호환)

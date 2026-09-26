@@ -3,6 +3,7 @@
 namespace App\Services\Analytics;
 
 use App\Analytics\AnalyticsClock;
+use App\Analytics\AnalyticsConfig;
 use App\Analytics\IpAddress;
 use App\Analytics\TrackingRequest;
 use App\Contracts\Repositories\Analytics\CollectFailureRepositoryInterface;
@@ -35,8 +36,12 @@ class CollectFailureLogger
      * 실패 기록기를 생성합니다.
      *
      * @param  CollectFailureRepositoryInterface  $failures  실패 로그 저장소
+     * @param  PrivacyService  $privacy  개인정보 판정 (익명 모드면 주소를 남기지 않는다)
      */
-    public function __construct(private readonly CollectFailureRepositoryInterface $failures) {}
+    public function __construct(
+        private readonly CollectFailureRepositoryInterface $failures,
+        private readonly PrivacyService $privacy,
+    ) {}
 
     /**
      * 수집 요청의 실패를 기록합니다.
@@ -58,7 +63,7 @@ class CollectFailureLogger
                 'reason' => $reason->value,
                 'message' => mb_substr($message, 0, 500),
                 'url' => $request !== null ? mb_substr($request->url, 0, 1024) : null,
-                'ip' => $this->maskedIp($request?->ip, $maskOctets),
+                'ip' => $this->storedIp($request, $maskOctets),
                 'user_agent' => $request?->userAgent !== null ? mb_substr($request->userAgent, 0, 500) : null,
                 'payload_excerpt' => $request !== null ? $this->excerpt($request) : null,
                 'occurred_at' => AnalyticsClock::now(),
@@ -92,15 +97,32 @@ class CollectFailureLogger
     }
 
     /**
-     * 저장할 IP 에 원장과 같은 마스킹을 적용합니다.
+     * 저장할 IP 를 원장과 같은 규칙으로 정합니다.
      *
-     * @param  string|null  $ip  원본 IP
+     * 익명 모드(운영자가 고른 익명, 또는 동의 출처가 없어 내려간 익명)는 원장에 주소를 두지
+     * 않으므로 실패 로그에도 두지 않습니다 — 호출부가 넘기는 것은 마스킹 옥텟뿐이라 기록기가
+     * 직접 판정합니다. 판정 자체가 실패하면 남기지 않는 쪽으로 물러섭니다.
+     *
+     * 판정은 원장과 같은 방문자별 규칙이다 — 동의 관리 플러그인이 켜진 IP 저장 사이트에서는
+     * 동의한 방문자만 IP 를 남긴다(`PrivacyService::isAnonymousFor`).
+     *
+     * @param  TrackingRequest|null  $request  수집 요청 (원본 IP 를 담는다)
      * @param  int  $maskOctets  마스킹 옥텟 수
-     * @return string|null 마스킹된 IP
+     * @return string|null 저장할 IP (익명이면 null)
      */
-    private function maskedIp(?string $ip, int $maskOctets): ?string
+    private function storedIp(?TrackingRequest $request, int $maskOctets): ?string
     {
-        if ($ip === null || $ip === '') {
+        $ip = $request?->ip;
+
+        if ($request === null || $ip === null || $ip === '') {
+            return null;
+        }
+
+        try {
+            if ($this->privacy->isAnonymousFor($request, AnalyticsConfig::fromSettings())) {
+                return null;
+            }
+        } catch (\Throwable) {
             return null;
         }
 

@@ -10,6 +10,8 @@
 import fs from 'fs';
 import path from 'path';
 import { describe, it, expect } from 'vitest';
+import { evaluateSafeExpression } from '@core/template-engine/SafeExpressionEvaluator';
+import { scanBindings } from '@core/template-engine/BindingShape';
 import { TEMPLATE_DIR, loadLayout, dataSource, nodesNamed, nodeById, actionsWithHandler, stringify, collectObjects } from './analyticsLayoutTestUtils';
 
 const REPO_ROOT = path.resolve(TEMPLATE_DIR, '../../..');
@@ -159,7 +161,15 @@ describe('상태 카드와 버튼', () => {
   // @effects reaggregate_modal_posts_range
   it('재집계 창은 from·to 없이는 잠기고 run_type=reaggregate 로 보내며 큐 안내 뒤 이력을 다시 받는다', () => {
     const btn = nodeById(modal, 'reaggregate_run_button');
-    expect(btn?.props?.disabled).toContain('!_global.analyticsReagg?.from');
+    // 잠금 식을 실제로 평가한다 — `!from` 하나만 문자열로 재면 `!to`·실행 중 잠금을 지워도 초록이었다(#682 S3 R16-D1).
+    const [lockExpr] = scanBindings(String(btn?.props?.disabled ?? '')).map((b) => b.expr);
+    expect(lockExpr, '실행 버튼 잠금 식').toBeTruthy();
+    const locked = (reagg: Record<string, unknown>, running: boolean): boolean =>
+      !!evaluateSafeExpression(lockExpr, { _global: { analyticsReagg: reagg, analyticsReaggRunning: running } });
+    expect(locked({ from: '2026-09-01', to: '2026-09-07' }, false), '두 날짜가 있고 실행 중이 아니면 풀린다').toBe(false);
+    expect(locked({ to: '2026-09-07' }, false), '시작일이 없으면 잠긴다').toBe(true);
+    expect(locked({ from: '2026-09-01' }, false), '종료일이 없으면 잠긴다').toBe(true);
+    expect(locked({ from: '2026-09-01', to: '2026-09-07' }, true), '보내는 중이면 잠긴다(두 번 누름 방지)').toBe(true);
     const call = actionsWithHandler(modal, 'apiCall')[0];
     expect(call.target).toBe('/api/admin/analytics/archive-runs');
     expect(call.params.body).toMatchObject({ run_type: 'reaggregate', from: '{{_global.analyticsReagg?.from}}', to: '{{_global.analyticsReagg?.to}}' });
@@ -228,3 +238,25 @@ describe('집계 실행은 그 카드 안에서 한다', () => {
     }
   });
 });
+
+describe('확장 선언 경고', () => {
+  // @scenario screen=diagnostics, state=normal, viewport=1440, locale=ko
+  // @effects declaration_warnings_are_shown_on_the_diagnostics_screen
+  it('서버가 준 선언 경고가 있을 때만 경고 줄을 그리고 사유를 한 줄씩 보인다', () => {
+    // 서버는 `DiagnosticsService` 가 `declaration_warnings` 로 싣는다 — 키 이름이 갈리면 경고가 조용히 사라진다.
+    const php = fs.readFileSync(path.join(REPO_ROOT, 'app/Services/Analytics/DiagnosticsService.php'), 'utf8');
+    expect(php).toContain("'declaration_warnings' =>");
+
+    const alert = nodeById(layout, 'alert_declaration_warnings');
+    expect(alert, '진단 화면에 선언 경고 줄이 있어야 한다').toBeTruthy();
+    const [ifExpr] = scanBindings(String(alert?.if ?? '')).map((b) => b.expr);
+    expect(ifExpr, '경고 줄의 표시 조건').toBeTruthy();
+    const shown = (warnings: unknown): boolean =>
+      !!evaluateSafeExpression(ifExpr, { analytics_diagnostics: { data: { declaration_warnings: warnings } } });
+    expect(shown(['vendor-shop: 목표 키 형식 위반']), '경고가 있으면 보인다').toBe(true);
+    expect(shown([]), '경고가 없으면 그리지 않는다').toBe(false);
+    expect(shown(undefined), '옛 응답(키 없음)에서도 깨지지 않고 숨는다').toBe(false);
+    expect(stringify(alert)).toContain('analytics_diagnostics?.data?.declaration_warnings');
+  });
+});
+

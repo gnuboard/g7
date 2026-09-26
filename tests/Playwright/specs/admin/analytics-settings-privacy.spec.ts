@@ -39,7 +39,8 @@ test.describe('방문자 통계 설정 — 개인정보 모드·검증', () => {
       await page.locator('#save_button').click();
       const response = await saved;
       expect(response.status()).toBe(200);
-      // 저장 본문은 지금 탭(개인정보)의 키만 담는다 — 다른 탭 키가 섞이면 안 본 값까지 덮어쓴다.
+      // 저장 본문은 탭과 무관하게 받아 온 값과 달라진 키만 담는다. 이 흐름은 개인정보 모드 하나만 바꿨으므로
+      // 손대지 않은 보존 탭 키(retention_days)가 실리면 안 본 값까지 덮어쓴 것이다.
       const sent = JSON.parse(response.request().postData() ?? '{}');
       expect(sent.privacy_mode).toBe('anonymous');
       expect(sent).not.toHaveProperty('retention_days');

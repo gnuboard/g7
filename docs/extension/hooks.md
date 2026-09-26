@@ -244,9 +244,67 @@ sitemap.index.collect_for_resource   # SitemapIndexer 가 리소스 index 시 �
 core.seo.sitemap.before_regenerate       # 재생성 시작 직전
 core.seo.sitemap.after_regenerate        # 재생성 성공 후 ($meta)
 core.seo.sitemap.after_regenerate_failed # 재생성 실패 시 (['status'=>'failed', 'success'=>false, ...])
+
+# 방문자 통계 확장 기여 훅 — 페이로드는 아래 "방문자 통계 확장 기여 훅 페이로드" 표 참조
+core.analytics.registered_goals          # (Filter) 모은 목표 선언 보정
+core.analytics.registered_dimensions     # (Filter) 모은 분류 기준 선언 보정
+core.analytics.resolve_dimensions        # (Filter) 수집 요청의 분류 값을 서버가 보탠다
+core.analytics.search_engines            # (Filter) 검색엔진 표
+core.analytics.campaign_params           # (Filter) 캠페인 파라미터 이름
+core.analytics.stripped_query_params     # (Filter) URL 정규화 때 지울 추적 파라미터
+core.analytics.ua_rules                  # (Filter) 브라우저·OS 판정 패턴
+core.analytics.exclusion_rules           # (Filter) 코어 판정 통과 요청을 더 뺀다
+core.analytics.registered_exclusion_reasons # (Filter) 확장 제외 사유 등록
+core.analytics.archive.day               # (Action, sync 필수) 하루 집계에 확장 분류 기준 행을 얹는다
+core.analytics.subject_delete            # (Filter) 정보주체 삭제 — 코어와 같은 트랜잭션
+core.analytics.subject_export            # (Filter) 정보주체 내보내기에 확장 데이터 병합
+core.analytics.purge_all                 # (Filter) 전체 삭제 — 코어보다 먼저, 트랜잭션
+core.analytics.anonymize_attributes      # (Filter) 소급 익명화가 방문 하나에 덮어쓸 값
+core.analytics.csv_columns / csv_row     # (Filter) 리포트 CSV 확장 열
+core.analytics.diagnostics_sections      # (Filter) 진단 응답의 확장 섹션
+core.analytics.realtime_fields           # (Filter) 실시간 행의 확장 값
+core.analytics.storage_tables            # (Filter) 저장소 현황에 확장 표
+core.analytics.extension_purged          # (Action) 확장을 데이터까지 지우며 제거하거나 analytics:purge-extension 을 돌린 뒤 — {extension_type, extension_identifier, counts, failed}
 ```
 
 > `sitemap.index.collect_for_resource` 는 제3자 확장이 리소스 하나에 대한 sitemap 항목을 추가/보정할 때 씁니다(filter — `'type' => 'filter'` 명시 필수). `core.seo.sitemap.after_regenerate_failed` 는 재생성 잡이 실패했을 때 확장이 알림/복구를 걸 수 있는 action 훅입니다.
+
+### 방문자 통계 확장 기여 훅 페이로드
+
+전환·분류 기준(dimension) **선언**은 훅이 아니라 진입 클래스의 `getAnalyticsGoals()`·`getAnalyticsDimensions()`
+오버라이드다 — 선언 스키마와 예시는 [analytics-extension-points.md](analytics-extension-points.md).
+아래 훅은 선언 뒤의 판정·집계·개인정보·출력에 끼어드는 자리다. 판정표·등록부 필터(`search_engines`·`campaign_params`·
+`stripped_query_params`·`ua_rules`·`registered_goals`·`registered_dimensions`)는 반환값이 그대로 쓰이므로 **받은 목록에
+보태서** 돌려준다 — 받은 항목을 빼면 코어 항목도 판정에서 빠진다. `exclusion_rules` 와 출력·개인정보 필터(`csv_columns`·
+`diagnostics_sections`·`realtime_fields`·`storage_tables`·`anonymize_attributes`)는 코어 값을 덮지 못한다. 형식이 틀린
+반환은 그 항목만 버린다.
+
+| 훅 | 값 (첫 인자) | 나머지 인자 | 반환 |
+| --- | --- | --- | --- |
+| `core.analytics.registered_goals` | `array<키, GoalDefinition>` | — | 같은 모양. 정의 객체가 아닌 항목은 버려지고 경고 |
+| `core.analytics.registered_dimensions` | `array<원장이름, DimensionDefinition>` | — | 같은 모양 |
+| `core.analytics.resolve_dimensions` | `array<분류 기준 이름, 값>` | 수집 요청 배열 | 보탠 맵 — 결과는 등록부로 다시 걸러진다 |
+| `core.analytics.search_engines` | `[{name, hosts[], params[]}]` | — | 항목을 더한 목록 — 이름이 100자를 넘으면 잘려 저장된다 |
+| `core.analytics.campaign_params` | `{name, source, medium}` | — | 이름을 바꾼 맵 |
+| `core.analytics.stripped_query_params` | `string[]` | — | 더한 목록 |
+| `core.analytics.ua_rules` | `{browsers: [[찾을값, 이름]], os: [[…]], hint_brands: {브랜드: 이름}}` | — | 판정은 앞에서부터 — 인앱 브라우저는 앞에 끼운다. 이름이 50자를 넘으면 잘려 저장된다 |
+| `core.analytics.exclusion_rules` | `null` | 수집 요청 배열 | 제외할 때 `'{식별자}:{사유}'`, 아니면 그대로 |
+| `core.analytics.registered_exclusion_reasons` | `[]` | — | `'{식별자}:{사유}' => 이름` 을 더한 맵. 등록하지 않은 사유로는 제외되지 않는다 |
+| `core.analytics.subject_delete` | `[]` | 찾을 기준(마스킹·해시 반영), 방문 ID 목록, 시작일, 종료일(`Y-m-d`, 운영자가 기간을 고르지 않으면 `null` = 전 기간) | `{식별자: 지운 건수}` — 던지면 코어 삭제도 롤백. 방문 ID 로 묶이지 않는 표는 기간 안의 것만 지운다 |
+| `core.analytics.subject_export` | `[]` | 찾을 기준, 방문 ID 목록, 시작일, 종료일(삭제와 같음) | `{식별자: 내용}` |
+| `core.analytics.purge_all` | `[]` | — | `{식별자: 지운 건수}` — 던지면 코어 삭제 전에 멈춤 |
+| `core.analytics.anonymize_attributes` | 덮어쓸 속성 배열 | 방문 모델, `{mask_octets, hash}` | 보탠 배열 — 코어가 정한 키는 되돌려지지 않는다 |
+| `core.analytics.csv_columns` | `[]` | 집계 이름(코어 리포트 또는 `ext:` 분류 기준), 리포트 이름 | `{헤더: extra 키}` — 코어 열 이름은 받지 않는다 |
+| `core.analytics.csv_row` | 한 줄 배열 | 화면용 행, 집계 이름 | 같은 길이의 배열 |
+| `core.analytics.diagnostics_sections` | `[]` | 설정 | `{식별자: 섹션 배열}` → 응답 `extensions` |
+| `core.analytics.realtime_fields` | `[]` | 방문 모델 | `{식별자: 값}` → 행의 `extensions` |
+| `core.analytics.storage_tables` | `[]` | — | 표 이름 목록(영소문자·숫자·밑줄) |
+
+`core.analytics.archive.day` 는 액션이며 인자는 `{date, collector, is_final, run_type}` 이다. `date` 는 사이트
+시간대(관리자 환경설정) 기준 날짜다 — 앱 시간대(UTC)가 아니다.
+`collector->addDimensionRow('ext:{식별자}:{키}', 라벨, 방문자유형, 지표)` 로 행을 얹는다 — 집계가
+「지우고 넣기」라 확장이 집계 표에 직접 쓰면 다음 집계가 지운다. 이 훅은 반드시 `'sync' => true` 로
+구독한다(아래 판정표).
 
 ### 스토리지·드라이버 확장 훅 페이로드
 
@@ -496,7 +554,7 @@ public static function getSubscribedHooks(): array
 
 | 판정 | 예 |
 |------|-----|
-| `sync` 필수 | 쿠폰 차감·복원, 적립금 차감·복원 등 실패 시 호출자 트랜잭션을 되돌려야 하는 처리 |
+| `sync` 필수 | 쿠폰 차감·복원, 적립금 차감·복원 등 실패 시 호출자 트랜잭션을 되돌려야 하는 처리 · 호출자가 넘긴 객체에 값을 채워 돌려받는 처리(방문자 통계 `core.analytics.archive.day` 의 수집기 — 큐로 가면 사본에 채워져 집계에 돌아오지 않는다) |
 | 기본값(큐) 유지 | 활동 로그, 알림 발송, 통계 갱신 등 실패해도 호출자를 되돌리지 않는 후속 처리 |
 
 선언만으로는 검증되지 않는다 — 회귀 테스트는 리스너를 손으로 `addAction` 하지 말고 실제 등록 경로(`HookListenerRegistrar::register()`)를 태운 뒤, **호출자 트랜잭션 안에서 반영되는지**와 **예외가 호출자를 롤백시키는지**를 단언한다. 손으로 등록하면 프로덕션이 쓰지 않는 경로를 검증하게 되어, 커밋 이후 실행 문제를 그대로 통과시킨다.

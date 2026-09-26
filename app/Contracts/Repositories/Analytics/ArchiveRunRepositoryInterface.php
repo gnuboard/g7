@@ -94,10 +94,14 @@ interface ArchiveRunRepositoryInterface
     /**
      * 한 잡이 맡은 「실행 중」 행을 찾습니다 — 같은 유형·같은 요청자로 그 시각 이후에 시작한 행.
      *
+     * 기간을 주면 그 기간 안의 날짜 행만 고릅니다. 같은 관리자가 다른 기간을 따로 재집계하는
+     * 중이면(워커 둘) 그 잡의 행까지 닫지 않도록 합니다.
+     *
      * @param  string  $runType  실행 유형
      * @param  Carbon  $since  잡을 큐에 올린 시각
      * @param  int|null  $triggeredBy  요청한 관리자 ID (예약 실행이면 null)
+     * @param  array{0: Carbon, 1: Carbon}|null  $period  잡이 맡은 기간 [시작(포함), 끝(미포함)] (UTC)
      * @return Collection<int, AnalyticsArchiveRun> 실행 중인 이력
      */
-    public function getRunningOfTypeSince(string $runType, Carbon $since, ?int $triggeredBy): Collection;
+    public function getRunningOfTypeSince(string $runType, Carbon $since, ?int $triggeredBy, ?array $period = null): Collection;
 }

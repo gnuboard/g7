@@ -61,6 +61,14 @@
         <field name="visitors" :value="[]"/>
       </field>
     </fallback>
+    <!-- 보조 소스라 403 을 삼킨다. 화면과 같은 조회 권한이라 권한이 없으면 주 소스(`analytics_overview`)가
+         이미 권한 오류 화면을 띄운다 — 여기서도 띄우거나 토스트를 내면 같은 사실을 두 번 알린다.
+         30초마다 다시 부르므로 삼키지 않으면 폴링마다 토스트가 쌓인다. -->
+    <error-handling>
+      <on-code code="403">
+        <suppress/>
+      </on-code>
+    </error-handling>
   </data-source>
   <!-- 수집·큐 상태. 상단 경고 세 줄이 읽는다 — 첫 그림에 필수가 아니라 background 다. -->
   <data-source id="analytics_status" label_key="$t:editor.data_source.analytics_status" type="api" endpoint="/api/admin/analytics/diagnostics" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="background">

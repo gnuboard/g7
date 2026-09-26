@@ -7,17 +7,20 @@
   <data-grid data-ref="notification_log_datagrid" data="{{notificationLogs?.data?.data}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{notificationLogs?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{notificationLogs?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{notificationLogs?.data?.pagination?.has_more_pages ?? false}}" pageSize="{{+(query.per_page || 20)}}" :alwaysShowPagination="true" idField="id" selectable="{{notificationLogs?.data?.abilities?.can_delete === true}}" selectionScope="page" selectedIds="{{_global.selectedIds_admin_notification_logs || []}}" selectedCountText="" loading="{{notificationLogs?.loading}}" :expandable="true" actionsColumnHeader="$t:common.actions">
     <expand>
       <div class="p-4 bg-gray-50 dark:bg-gray-900 space-y-3">
-        <div data-if="{{row.error_message}}" class="flex items-start gap-2">
-          <span class="text-sm font-medium text-red-600 dark:text-red-400 shrink-0">$t:admin.notification_log.detail.error_label</span>
-          <span class="text-sm text-red-500 dark:text-red-300">{{row.error_message}}</span>
-        </div>
-        <div class="flex-center gap-2">
-          <span class="text-body font-medium shrink-0">$t:admin.notification_log.detail.source_label</span>
-          <span class="text-label">{{row.source ?? '-'}}</span>
-        </div>
-        <div class="flex-center gap-2">
-          <span class="text-body font-medium shrink-0">$t:admin.notification_log.detail.notification_type_label</span>
-          <span class="text-sm font-mono text-gray-600 dark:text-gray-400">{{row.notification_type ?? '-'}}</span>
+        <!-- 라벨 칸을 맞춰 값이 한 줄로 시작하게 kv-list(#682 S4 라운드 8 전수조사 — 라벨 폭마다 값이 들쭉날쭉). -->
+        <div class="kv-list gap-y-2">
+          <div data-if="{{row.error_message}}" class="kv-row">
+            <span class="text-sm font-medium text-red-600 dark:text-red-400">$t:admin.notification_log.detail.error_label</span>
+            <span class="text-sm text-red-500 dark:text-red-300">{{row.error_message}}</span>
+          </div>
+          <div class="kv-row">
+            <span class="text-body font-medium">$t:admin.notification_log.detail.source_label</span>
+            <span class="text-label">{{row.source ?? '-'}}</span>
+          </div>
+          <div class="kv-row">
+            <span class="text-body font-medium">$t:admin.notification_log.detail.notification_type_label</span>
+            <span class="text-sm font-mono text-gray-600 dark:text-gray-400">{{row.notification_type ?? '-'}}</span>
+          </div>
         </div>
         <div>
           <span class="form-label">$t:admin.notification_log.detail.body_label</span>

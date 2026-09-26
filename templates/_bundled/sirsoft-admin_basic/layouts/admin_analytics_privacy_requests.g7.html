@@ -144,8 +144,11 @@
             <h2 class="section-heading">$t:admin.analytics.privacy_requests.results_title</h2>
             <p class="text-label-subtle">$t:admin.analytics.privacy_requests.results_summary|visits={{((analytics_subjects?.data?.visits ?? []).length) | number}}|actions={{((analytics_subjects?.data?.visits ?? []).reduce((s, v) => s + (Number(v.actions_count) || 0), 0)) | number}}</p>
           </div>
+          <!-- 두 버튼은 검색 응답이 오면(서버만 싣는 export_filename) 방문이 0건이어도 켠다 — 코어 원장이 보존
+            기간으로 비었어도 확장은 자기 표에 이 사람의 기록을 가질 수 있고, 서버는 그때도 확장의 정보주체
+            필터를 부른다(DataSubjectService). 응답 전에는 잠가 저장 이름이 기본값으로 떨어지지 않게 한다. -->
           <div class="flex-center gap-2">
-            <button data-ref="export_button" type="button" class="btn btn-secondary btn-sm flex-center gap-1.5" disabled="{{(analytics_subjects?.data?.visits ?? []).length === 0}}">
+            <button data-ref="export_button" type="button" class="btn btn-secondary btn-sm flex-center gap-1.5" disabled="{{!analytics_subjects?.data?.export_filename}}">
               <on type="click">
                 <!-- 열람권 이행 파일 — 서버가 파일로 흘려보내므로 토큰 동반 blob 요청으로 받는다(POST).
                   저장 이름은 서버가 조회 응답에 실어 준 것을 쓴다 — 검색값(방문자 IP)을 파일명에 넣지 않고, 날짜는 사이트 기준이다. -->
@@ -162,7 +165,7 @@
               <icon name="file-export" size="sm"/>
               <span>$t:admin.analytics.privacy_requests.export_button</span>
             </button>
-            <button data-ref="delete_button" type="button" class="btn btn-danger btn-sm flex-center gap-1.5" disabled="{{(analytics_subjects?.data?.visits ?? []).length === 0}}">
+            <button data-ref="delete_button" type="button" class="btn btn-danger btn-sm flex-center gap-1.5" disabled="{{!analytics_subjects?.data?.export_filename}}">
               <on type="click">
                 <sequence>
                   <set-state target="global" analyticsSubjectAfter="subjects" :analyticsSubjectConfirm="false">

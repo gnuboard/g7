@@ -33,8 +33,11 @@ export interface AnalyticsClientSettings {
 /**
  * 경로가 제외 글로브 목록에 걸리는지 판정합니다.
  *
- * 서버의 판정식과 같은 규칙입니다 — `*` 로 끝나면 앞부분 일치, 아니면 정확히 같아야
- * 합니다. 두 판정이 어긋나면 브라우저는 보냈는데 서버가 버리거나 그 반대가 됩니다.
+ * 서버의 판정식(`VisitExclusionPipeline::pathMatchesAny`)과 같은 규칙입니다 — `*` 로 끝나면
+ * 끝의 `*` 를 **모두** 떼고 앞부분 일치, 아니면 정확히 같아야 합니다. 그래서 `/admin/**` 는
+ * `/admin/*` 와 같고 `**` 는 `*` 와 같습니다. 가운데의 `*` 는 글자 그대로이며, 끝 슬래시는
+ * 정규화하지 않습니다(`/admin/*` 는 `/admin` 에 걸리지 않습니다). 두 판정이 어긋나면
+ * 브라우저는 보냈는데 서버가 버리거나 그 반대가 됩니다.
  *
  * @param path 검사할 경로
  * @param patterns 글로브 목록
@@ -45,10 +48,26 @@ export function pathMatchesAny(path: string, patterns: string[] | undefined): bo
 
   return patterns.some((pattern) => {
     if (!pattern) return false;
-    if (pattern.endsWith('*')) return path.startsWith(pattern.slice(0, -1));
+    // 서버는 `rtrim($pattern, '*')` 로 끝의 `*` 를 전부 뗀다. 하나만 떼면 `/admin/**` 가
+    // 글자 그대로의 `/admin/*` 로 남아 브라우저는 보내고 서버는 버린다.
+    if (pattern.endsWith('*')) return path.startsWith(pattern.replace(/\*+$/, ''));
 
-    return path === pattern;
+    // 정확 일치는 끝 슬래시를 따지지 않는다 — 서버와 같은 규칙(서버 폴백은 요청 주소의 끝 슬래시를
+    // 떼고 비콘은 브라우저 주소 그대로라, 따지면 같은 화면이 한 경로에서만 제외된다).
+    return withoutTrailingSlash(path) === withoutTrailingSlash(pattern);
   });
+}
+
+/**
+ * 경로 끝의 슬래시를 뗍니다 (루트는 그대로).
+ *
+ * @param path 경로
+ * @returns 끝 슬래시를 뗀 경로
+ */
+function withoutTrailingSlash(path: string): string {
+  const trimmed = path.replace(/\/+$/, '');
+
+  return trimmed === '' ? '/' : trimmed;
 }
 
 /**

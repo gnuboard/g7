@@ -1075,7 +1075,7 @@ return [
             'hooks' => ['core.analytics.archive_failed'],
             'variables' => [
                 ['key' => 'name', 'description' => '수신자 이름'],
-                ['key' => 'run_type', 'description' => '집계 종류(시간/일/재집계)'],
+                ['key' => 'run_type', 'description' => '집계 종류 이름(예: 일 집계)'],
                 ['key' => 'period', 'description' => '대상 기간'],
                 ['key' => 'error', 'description' => '실패 사유 메시지'],
                 ['key' => 'diagnostics_url', 'description' => '수집 진단 화면 URL'],
@@ -1092,12 +1092,12 @@ return [
                     ],
                     'body' => [
                         'ko' => '<h1>방문자 통계 집계 실패</h1>'
-                            .'<p>{period} 기간의 {run_type} 집계가 실패했습니다. 집계가 밀린 동안에는 통계 화면의 숫자가 갱신되지 않습니다.</p>'
+                            .'<p>{period} 기간의 {run_type}가 실패했습니다. 집계가 밀린 동안에는 통계 화면의 숫자가 갱신되지 않습니다.</p>'
                             .'<p>오류: <strong>{error}</strong></p>'
                             .'<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin: 24px 0;"><tr><td align="center"><a href="{diagnostics_url}" style="display: inline-block; padding: 12px 32px; background-color: #2d3748; color: #ffffff; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 14px;">수집 진단 열기</a></td></tr></table>'
                             .'<p>감사합니다,<br><a href="{site_url}">{app_name}</a></p>',
                         'en' => '<h1>Analytics Archiving Failed</h1>'
-                            .'<p>The {run_type} archiving for {period} failed. Statistics screens will not update while archiving is behind.</p>'
+                            .'<p>{run_type} for {period} failed. Statistics screens will not update while archiving is behind.</p>'
                             .'<p>Error: <strong>{error}</strong></p>'
                             .'<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin: 24px 0;"><tr><td align="center"><a href="{diagnostics_url}" style="display: inline-block; padding: 12px 32px; background-color: #2d3748; color: #ffffff; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 14px;">Open Diagnostics</a></td></tr></table>'
                             .'<p>Thank you,<br><a href="{site_url}">{app_name}</a></p>',
@@ -1107,7 +1107,7 @@ return [
                     'channel' => 'database',
                     'recipients' => [['type' => 'role', 'value' => 'admin']],
                     'subject' => ['ko' => '방문자 통계 집계 실패', 'en' => 'Analytics archiving failed'],
-                    'body' => ['ko' => '{period} 기간의 {run_type} 집계가 실패했습니다. 오류: {error}', 'en' => 'The {run_type} archiving for {period} failed. Error: {error}'],
+                    'body' => ['ko' => '{period} 기간의 {run_type}가 실패했습니다. 오류: {error}', 'en' => '{run_type} for {period} failed. Error: {error}'],
                     'click_url' => '/admin/analytics/diagnostics',
                 ],
             ],
@@ -1204,7 +1204,7 @@ return [
                 ['key' => 'visits', 'description' => '방문 수'],
                 ['key' => 'visitors', 'description' => '순방문자 수'],
                 ['key' => 'pageviews', 'description' => '페이지뷰 수'],
-                ['key' => 'change_pct', 'description' => '직전 기간 대비 증감률'],
+                ['key' => 'change_pct', 'description' => '직전 기간 대비 증감률(예: +12.5%, 직전 기간이 0이면 -)'],
                 ['key' => 'top_pages', 'description' => '인기 페이지 표(HTML)'],
                 ['key' => 'top_referrers', 'description' => '유입 경로 표(HTML)'],
                 ['key' => 'report_url', 'description' => '통계 개요 화면 URL'],
@@ -1248,11 +1248,11 @@ return [
             'hooks' => ['core.analytics.monthly_report_ready'],
             'variables' => [
                 ['key' => 'name', 'description' => '수신자 이름'],
-                ['key' => 'period_label', 'description' => '기간 표기(예: 2026년 8월)'],
+                ['key' => 'period_label', 'description' => '기간 표기(예: 2026-08-01 ~ 2026-08-31)'],
                 ['key' => 'visits', 'description' => '방문 수'],
                 ['key' => 'visitors', 'description' => '순방문자 수'],
                 ['key' => 'pageviews', 'description' => '페이지뷰 수'],
-                ['key' => 'change_pct', 'description' => '직전 기간 대비 증감률'],
+                ['key' => 'change_pct', 'description' => '직전 기간 대비 증감률(예: +12.5%, 직전 기간이 0이면 -)'],
                 ['key' => 'top_pages', 'description' => '인기 페이지 표(HTML)'],
                 ['key' => 'top_referrers', 'description' => '유입 경로 표(HTML)'],
                 ['key' => 'report_url', 'description' => '통계 개요 화면 URL'],

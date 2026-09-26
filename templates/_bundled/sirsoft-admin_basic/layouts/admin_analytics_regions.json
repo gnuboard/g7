@@ -72,7 +72,7 @@
                     "handler": "suppress"
                 }
             },
-            "comment": "GeoIP 사용 여부·수집 상태. 지역 화면은 이 값으로 안내를 가른다."
+            "comment": "GeoIP 사용 여부·수집 상태. 지역 화면은 이 값으로 안내를 가른다.\n       fallback 은 GeoIP 를 「켜짐」으로 둔다 — 진단 요청이 실패해 사실을 모를 때 「꺼짐」 경고를 띄우면\n       켜 둔 사이트에 거짓 안내가 된다(모르면 알리지 않는다). 설정 화면이 같은 필드를 「꺼짐」으로 두는 것은\n       거기서는 그 값이 국가 필터 입력을 잠그는 쪽이라서다(모르면 집행할 수 없는 필터를 받지 않는다)."
         }
     ],
     "initLocal": {
@@ -188,7 +188,7 @@
                                         "id": "geoip_settings_link",
                                         "type": "basic",
                                         "name": "Button",
-                                        "if": "{{(current_user?.data?.is_super === true || (current_user?.data?.permissions ?? []).some(p => (p?.identifier ?? p) === 'core.settings.read'))}}",
+                                        "if": "{{((current_user?.data?.permissions ?? []).some(p => (p?.identifier ?? p) === 'core.settings.read'))}}",
                                         "actions": [
                                             {
                                                 "type": "click",
@@ -261,6 +261,15 @@
                     },
                     {
                         "partial": "partials/admin_analytics/_partial_report_grid.json"
+                    },
+                    {
+                        "comment": "확장이 이 화면에 자기 리포트 조각을 붙이는 자리(데이터는 확장 자기 API).",
+                        "type": "extension_point",
+                        "name": "analytics_regions_widgets",
+                        "props": {
+                            "className": "space-y-4 mt-4"
+                        },
+                        "default": []
                     }
                 ]
             }

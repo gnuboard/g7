@@ -16,6 +16,7 @@ use App\Models\Analytics\AnalyticsStatsHourly;
 use App\Models\Analytics\AnalyticsVisit;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 /**
@@ -186,6 +187,94 @@ class PruneCommandTest extends TestCase
         $this->artisan('analytics:prune', ['--days' => 1])->assertSuccessful();
 
         $this->assertDatabaseHas('analytics_visits', ['id' => $recent->id]);
+    }
+
+    /**
+     * 하한 7일의 경계 — 7일 안쪽은 남고 바깥은 지워진다.
+     *
+     * 3일 전 행만 보면 하한이 4여도 통과한다. 경계 양옆(6일·8일)을 함께 본다.
+     *
+     * @return void 없음
+     *
+     * @scenario target=visits, row_age=within
+     *
+     * @effects retention_floor_protects_recent_ledger
+     */
+    public function test_retention_floor_boundary_is_seven_days(): void
+    {
+        $inside = $this->ledgerAt(6);
+        $outside = $this->ledgerAt(8);
+
+        $this->artisan('analytics:prune', ['--days' => 1])->assertSuccessful();
+
+        $this->assertDatabaseHas('analytics_visits', ['id' => $inside->id]);
+        $this->assertDatabaseMissing('analytics_visits', ['id' => $outside->id]);
+    }
+
+    /**
+     * 청크 크기보다 많은 행도 여러 번에 나눠 전부 지운다.
+     *
+     * 청크 크기는 `config/analytics.php` `limits.prune_chunk_size` 가 정한다(하한 100).
+     *
+     * @return void 없음
+     *
+     * @scenario target=actions, row_age=beyond
+     *
+     * @effects prune_deletes_in_chunks_until_nothing_is_left
+     */
+    public function test_rows_beyond_one_chunk_are_all_deleted_in_batches(): void
+    {
+        config(['analytics.limits.prune_chunk_size' => 100]);
+
+        $visit = $this->ledgerAt(200);
+        $moment = Carbon::now('UTC')->subDays(200);
+        $rows = [];
+        for ($i = 0; $i < 249; $i++) {
+            $rows[] = [
+                'visit_id' => $visit->id,
+                'visitor_key' => $visit->visitor_key,
+                'action_type' => ActionType::Pageview->value,
+                'action_name_id' => $visit->entry_action_name_id,
+                'occurred_at' => $moment,
+                'created_at' => $moment,
+            ];
+        }
+        AnalyticsAction::query()->insert($rows);
+        $this->assertSame(250, AnalyticsAction::query()->count());
+
+        $deletes = 0;
+        DB::listen(function ($query) use (&$deletes): void {
+            if (str_starts_with(strtolower($query->sql), 'delete') && str_contains($query->sql, 'analytics_actions')) {
+                $deletes++;
+            }
+        });
+
+        $this->artisan('analytics:prune')->assertSuccessful();
+
+        $this->assertSame(0, AnalyticsAction::query()->count());
+        $this->assertGreaterThanOrEqual(3, $deletes, '250행을 100건씩 — 적어도 세 번에 나눠 지운다');
+    }
+
+    /**
+     * 솔트 보존일을 설정으로 줄여도 정보주체 조회 창(오늘·어제)은 지킨다.
+     *
+     * @return void 없음
+     *
+     * @scenario target=salts, row_age=within
+     *
+     * @effects salt_retention_never_drops_below_the_subject_lookup_window
+     */
+    public function test_salt_retention_setting_is_floored_at_the_lookup_window(): void
+    {
+        config(['analytics.limits.salt_retention_days' => 0]);
+
+        foreach ([0, 1, 3] as $daysAgo) {
+            AnalyticsSalt::factory()->create(['salt_date' => Carbon::now('UTC')->subDays($daysAgo)->toDateString()]);
+        }
+
+        $this->artisan('analytics:prune')->assertSuccessful();
+
+        $this->assertSame(2, AnalyticsSalt::query()->count(), '오늘·어제 솔트는 남는다');
     }
 
     /**

@@ -4,7 +4,9 @@ namespace App\Services\Analytics;
 
 use App\Analytics\AnalyticsClock;
 use App\Analytics\AnalyticsConfig;
+use App\Analytics\DTO\DimensionDefinition;
 use App\Analytics\NotificationCooldown;
+use App\Contracts\Analytics\DimensionRegistryInterface;
 use App\Contracts\Repositories\Analytics\ActionNameRepositoryInterface;
 use App\Contracts\Repositories\Analytics\ActionRepositoryInterface;
 use App\Contracts\Repositories\Analytics\ArchiveRunRepositoryInterface;
@@ -24,6 +26,7 @@ use App\Models\Analytics\AnalyticsActionName;
 use App\Models\Analytics\AnalyticsArchiveRun;
 use App\Models\Analytics\AnalyticsConversion;
 use App\Models\Analytics\AnalyticsVisit;
+use App\Services\Analytics\Concerns\BroadcastsRunProgress;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
@@ -44,6 +47,8 @@ use Throwable;
  */
 class ArchiveService
 {
+    use BroadcastsRunProgress;
+
     /**
      * 같은 기간을 두 번 집계하지 않도록 잡는 락의 유효 시간 (초)
      *
@@ -62,7 +67,8 @@ class ArchiveService
      * 진행률을 방송하는 관리자 채널
      *
      * 현재 접속자 방송(`analytics.realtime.updated`)과 같은 채널을 쓴다 — 채널 인가는
-     * `core.analytics.read` 하나이고, 진단 화면이 두 방송을 한 구독으로 받는다.
+     * `core.analytics.read` 하나다. 진단 화면은 이 진행률 방송만 구독하고, 실시간 화면이 현재
+     * 접속자 방송을 따로 구독한다.
      */
     public const PROGRESS_CHANNEL = 'core.admin.analytics';
 
@@ -89,6 +95,7 @@ class ArchiveService
      * @param  BotHitRepositoryInterface  $botHits  봇 기록 저장소
      * @param  NotificationCooldown  $cooldown  알림 쿨다운
      * @param  ConversionRepositoryInterface  $conversions  전환 원장 저장소
+     * @param  DimensionRegistryInterface  $extensionDimensions  확장 차원 등록부
      */
     public function __construct(
         private readonly StatsRepositoryInterface $stats,
@@ -99,6 +106,7 @@ class ArchiveService
         private readonly BotHitRepositoryInterface $botHits,
         private readonly NotificationCooldown $cooldown,
         private readonly ConversionRepositoryInterface $conversions,
+        private readonly DimensionRegistryInterface $extensionDimensions,
     ) {}
 
     /**
@@ -149,7 +157,7 @@ class ArchiveService
             ]);
         }
 
-        $this->broadcastProgress($run);
+        $this->broadcastRunProgress($run);
 
         try {
             $config = AnalyticsConfig::fromSettings();
@@ -158,8 +166,15 @@ class ArchiveService
             $isFinal = (bool) ($options['is_final'] ?? false);
             $archivedAt = AnalyticsClock::now()->format('Y-m-d H:i:s');
 
+            // 확장 집계 기여는 동기 구독(`'sync' => true`)이어야 한다 — 큐로 가면 수집기가 복제돼
+            // 확장이 넣은 행이 여기 돌아오지 않는다. 복제되면 수집기가 경고를 남긴다.
             $collector = new ArchiveCollector($date);
-            HookManager::doAction('core.analytics.archive.day', ['date' => $date, 'collector' => $collector]);
+            HookManager::doAction('core.analytics.archive.day', [
+                'date' => $date,
+                'collector' => $collector,
+                'is_final' => $isFinal,
+                'run_type' => $runType,
+            ]);
 
             $this->write($date, $result, $collector, $isFinal, $archivedAt);
 
@@ -172,7 +187,7 @@ class ArchiveService
                 'finished_at' => AnalyticsClock::now(),
             ]);
 
-            $this->broadcastProgress($run);
+            $this->broadcastRunProgress($run);
         } catch (Throwable $e) {
             $this->runs->update($run, [
                 'status' => ArchiveRunStatus::Failed->value,
@@ -182,7 +197,7 @@ class ArchiveService
 
             // 실패도 방송한다 — 화면이 「끝났다」는 신호를 못 받으면 진행률 바가 멈춘 채
             // 남고, 운영자는 워커가 죽은 것으로 오해한다.
-            $this->broadcastProgress($run);
+            $this->broadcastRunProgress($run);
 
             Log::error('방문자 통계 집계 실패', [
                 'date' => $date,
@@ -205,25 +220,6 @@ class ArchiveService
         }
 
         return $run->refresh();
-    }
-
-    /**
-     * 실행 이력의 지금 상태를 관리자 채널로 방송합니다.
-     *
-     * 진행 상태의 출처는 실행 이력 행 하나다 — 방송은 그 행을 그대로 싣고, 화면은
-     * 소켓이 없을 때 같은 행을 진단 API 로 물어본다. 두 길이 같은 값을 보게 하려고
-     * 단건 조회 응답과 같은 모양(`toArray()`)으로 보낸다. 방송 드라이버가 꺼져 있으면
-     * `HookManager` 가 건너뛰므로 여기서 분기하지 않는다.
-     *
-     * @param  AnalyticsArchiveRun  $run  실행 이력
-     * @return void 없음
-     */
-    private function broadcastProgress(AnalyticsArchiveRun $run): void
-    {
-        HookManager::broadcast(self::PROGRESS_CHANNEL, self::PROGRESS_EVENT, [
-            'type' => 'archive_progress',
-            'data' => $run->toArray(),
-        ]);
     }
 
     /**
@@ -274,7 +270,7 @@ class ArchiveService
         // 건너뜀도 종료 상태다 — 방송하지 않으면 소켓을 켠 사이트에서 화면의 `skipped` 분기가
         // 도달하지 못해, 전부 건너뛴 재집계는 시작 토스트만 남기고 이력 표가 그대로 선다
         // (#682 S3 라운드 3).
-        $this->broadcastProgress($run);
+        $this->broadcastRunProgress($run);
 
         return $run;
     }
@@ -358,8 +354,8 @@ class ArchiveService
      * @param  Carbon  $periodEnd  구간 끝 (UTC)
      * @param  AnalyticsConfig  $config  설정
      * @param  AnalyticsArchiveRun|null  $run  진행률을 적을 실행 이력
-     * @return array{daily: DailyAccumulator, hourly: HourlyAccumulator, processed_visits: int, processed_actions: int, chunks: int}
-     *                                                                                                                               집계 재료
+     * @return array{daily: DailyAccumulator, hourly: HourlyAccumulator, dimension_caps: array<string, int>, pii_dimensions: array<int, string>, processed_visits: int, processed_actions: int, chunks: int}
+     *                                                                                                                                                                                                       집계 재료
      */
     private function collect(
         string $date,
@@ -370,6 +366,20 @@ class ArchiveService
     ): array {
         $daily = new DailyAccumulator;
         $hourly = new HourlyAccumulator;
+
+        // 개인정보(`pii`) 차원은 집계하지 않는다 — 집계 표는 영구 보존이고 라벨이 값 원문이라,
+        // 정보주체 삭제·소급 익명화가 원장에서 지운 값이 여기 남아 조회 권한 계정에게 보인다.
+        // 값은 원장에만 두어 보존 기간·삭제·익명화의 대상이 되게 한다(#682 S4 라운드 4).
+        $piiDimensions = [];
+        $extensionDimensions = [];
+
+        foreach ($this->extensionDimensions->all() as $name => $definition) {
+            if ($definition->pii) {
+                $piiDimensions[] = $definition->statsDimension();
+            } else {
+                $extensionDimensions[$name] = $definition;
+            }
+        }
 
         $totalVisits = $this->visits->countOnDate($date);
         $processedVisits = 0;
@@ -384,6 +394,7 @@ class ArchiveService
             $hourly,
             $run,
             $totalVisits,
+            $extensionDimensions,
         ) {
             $visitIds = $visits->pluck('id')->all();
             $actions = $this->actions->groupedForVisits($visitIds);
@@ -417,6 +428,8 @@ class ArchiveService
                     $conversions->get($visit->id, collect()),
                 );
 
+                $this->accumulateExtensionDimensions($visit, $visitActions, $extensionDimensions, $daily);
+
                 $processedVisits++;
                 $processedActions += $visitActions->count();
             }
@@ -433,7 +446,7 @@ class ArchiveService
                         : 99,
                 ]);
 
-                $this->broadcastProgress($run);
+                $this->broadcastRunProgress($run);
             }
         });
 
@@ -444,6 +457,11 @@ class ArchiveService
         return [
             'daily' => $daily,
             'hourly' => $hourly,
+            'dimension_caps' => array_combine(
+                array_map(fn ($definition) => $definition->statsDimension(), $extensionDimensions),
+                array_map(fn ($definition) => $definition->maxCardinality, $extensionDimensions),
+            ) ?: [],
+            'pii_dimensions' => $piiDimensions,
             'processed_visits' => $processedVisits,
             'processed_actions' => $processedActions,
             'chunks' => $chunks,
@@ -605,6 +623,65 @@ class ArchiveService
             }
 
             $daily->addDimension(StatsDimension::Goal->value, $goalKey, $visitorType, $metrics);
+        }
+    }
+
+    /**
+     * 등록된 확장 차원 값을 `ext:{식별자}:{키}` 차원에 더합니다.
+     *
+     * 방문 범위 차원은 방문 행의 값을 방문 단위로(조회 = 그 방문의 페이지 수), 액션 범위
+     * 차원은 그 값을 실은 액션마다 한 번씩 셉니다. 등록부에 없는 이름(확장이 비활성·제거된
+     * 뒤 남은 값)은 집계하지 않습니다 — 원장에는 그대로 남아 확장이 돌아오면 다시 집계됩니다.
+     *
+     * @param  AnalyticsVisit  $visit  방문
+     * @param  Collection<int, AnalyticsAction>  $actions  방문의 액션 목록
+     * @param  array<string, DimensionDefinition>  $definitions  등록된 차원 (원장 이름 → 정의)
+     * @param  DailyAccumulator  $daily  일 누적기
+     * @return void 없음
+     */
+    private function accumulateExtensionDimensions(
+        AnalyticsVisit $visit,
+        Collection $actions,
+        array $definitions,
+        DailyAccumulator $daily,
+    ): void {
+        if ($definitions === []) {
+            return;
+        }
+
+        $visitorType = $this->enumValue($visit->visitor_type) ?? VisitorType::Guest->value;
+        $visitKey = (string) $visit->id;
+        $bounce = $visit->is_bounce ? 1 : 0;
+
+        foreach ((array) ($visit->custom_dimensions ?? []) as $name => $value) {
+            $definition = $definitions[$name] ?? null;
+
+            if ($definition === null || $definition->scope !== 'visit' || ! is_scalar($value) || (string) $value === '') {
+                continue;
+            }
+
+            $daily->addDimension($definition->statsDimension(), (string) $value, $visitorType, [
+                'visit_key' => $visitKey,
+                'hits' => (int) $visit->pageviews_count,
+                'bounces' => $bounce,
+                'total_time_seconds' => (int) $visit->total_time_seconds,
+            ]);
+        }
+
+        foreach ($actions as $action) {
+            foreach ((array) ($action->custom_dimensions ?? []) as $name => $value) {
+                $definition = $definitions[$name] ?? null;
+
+                if ($definition === null || $definition->scope !== 'action' || ! is_scalar($value) || (string) $value === '') {
+                    continue;
+                }
+
+                $daily->addDimension($definition->statsDimension(), (string) $value, $visitorType, [
+                    'visit_key' => $visitKey,
+                    'hits' => 1,
+                    'total_time_seconds' => (int) ($action->time_spent_seconds ?? 0),
+                ]);
+            }
         }
     }
 
@@ -865,10 +942,12 @@ class ArchiveService
         $daily = $result['daily'];
         /** @var HourlyAccumulator $hourly */
         $hourly = $result['hourly'];
+        $caps = $result['dimension_caps'] ?? [];
+        $piiDimensions = $result['pii_dimensions'] ?? [];
 
         // 세 표를 한 트랜잭션으로 바꾼다 — 일 숫자는 새것인데 차원 목록은 옛것인
         // 순간을 화면이 보지 않게 한다.
-        DB::transaction(function () use ($date, $daily, $hourly, $collector, $isFinal, $archivedAt): void {
+        DB::transaction(function () use ($date, $daily, $hourly, $collector, $isFinal, $archivedAt, $caps, $piiDimensions): void {
             $this->stats->replaceDaily($date, $daily->dailyRows($date, $isFinal, $archivedAt));
 
             // 그날 집계에 한 건도 없던 시각의 옛 행도 지워야 하므로, 재료에 있는
@@ -877,13 +956,87 @@ class ArchiveService
                 $this->stats->replaceHourly($hourStart, $hourly->hourlyRows($hourStart, $archivedAt));
             }
 
+            $coreRows = $daily->dimensionRows($date, $archivedAt, $caps);
             $dimensionRows = array_merge(
-                $daily->dimensionRows($date, $archivedAt),
-                $this->stampCollectorRows($collector->rows(), $archivedAt),
+                $coreRows,
+                $this->stampCollectorRows(
+                    $this->withoutCoreDuplicates($this->withoutPiiDimensions($collector->rows(), $piiDimensions), $coreRows),
+                    $archivedAt,
+                ),
             );
 
             $this->stats->replaceDimensions($date, $dimensionRows);
         });
+    }
+
+    /**
+     * 개인정보(`pii`)로 선언된 차원의 확장 행을 뺍니다.
+     *
+     * 원장에서 모으는 경로와 같은 규칙이다 — 확장이 수집기로 직접 넘긴 값도 집계 표에
+     * 남으면 정보주체 삭제·소급 익명화가 닿지 않는다.
+     *
+     * @param  array<int, array<string, mixed>>  $rows  확장 차원 행
+     * @param  array<int, string>  $piiDimensions  개인정보 차원 이름(`ext:{식별자}:{키}`)
+     * @return array<int, array<string, mixed>> 개인정보 차원이 아닌 확장 행
+     */
+    private function withoutPiiDimensions(array $rows, array $piiDimensions): array
+    {
+        if ($piiDimensions === []) {
+            return $rows;
+        }
+
+        $pii = array_flip($piiDimensions);
+        $dropped = [];
+
+        $kept = array_values(array_filter($rows, static function (array $row) use ($pii, &$dropped): bool {
+            if (! isset($pii[$row['dimension']])) {
+                return true;
+            }
+
+            $dropped[$row['dimension']] = true;
+
+            return false;
+        }));
+
+        if ($dropped !== []) {
+            Log::warning('개인정보 차원은 집계하지 않아 확장 집계 행을 버렸습니다.', [
+                'dimensions' => array_keys($dropped),
+            ]);
+        }
+
+        return $kept;
+    }
+
+    /**
+     * 코어가 집계한 행과 겹치는 확장 행을 뺍니다.
+     *
+     * @param  array<int, array<string, mixed>>  $rows  확장 차원 행
+     * @param  array<int, array<string, mixed>>  $coreRows  코어 차원 행
+     * @return array<int, array<string, mixed>> 겹치지 않는 확장 행
+     */
+    private function withoutCoreDuplicates(array $rows, array $coreRows): array
+    {
+        $taken = [];
+
+        foreach ($coreRows as $row) {
+            $taken[$row['visitor_type']."\0".$row['dimension']."\0".$row['label_hash']] = true;
+        }
+
+        return array_values(array_filter($rows, static function (array $row) use ($taken): bool {
+            if (! isset($taken[$row['visitor_type']."\0".$row['dimension']."\0".$row['label_hash']])) {
+                return true;
+            }
+
+            // 등록된 차원은 코어가 원장에서 이미 집계했다 — 같은 라벨을 확장이 또 넘기면
+            // 유일키에 걸려 그날 집계 전체가 실패하므로 코어 행을 남긴다.
+            Log::warning('확장 집계 행이 코어가 집계한 행과 겹쳐 버렸습니다.', [
+                'dimension' => $row['dimension'],
+                'label' => mb_substr((string) $row['label'], 0, 80),
+                'visitor_type' => $row['visitor_type'],
+            ]);
+
+            return false;
+        }));
     }
 
     /**

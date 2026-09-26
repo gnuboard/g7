@@ -20,7 +20,7 @@ class ActivityLogTest extends TestCase
 {
     use RefreshDatabase;
 
-    /** 계획서 §4.4 가 정한 훅 9종 */
+    /** 계획서 §4.4 가 정한 훅 9종 — 파생 모집단이 이것을 모두 품는지(하한)만 본다 */
     private const HOOKS = [
         'settings_updated',
         'privacy_mode_changed',
@@ -34,6 +34,27 @@ class ActivityLogTest extends TestCase
     ];
 
     /**
+     * 리스너가 실제로 구독한 통계 훅 전부(모집단 파생).
+     *
+     * 손으로 적은 목록만 돌면 열 번째 훅이 구독에 더해져도 그 훅의 로그 행·설명 키를 아무도 재지
+     * 않는다. 구독 맵에서 파생하고, 위 9종은 빠지면 안 되는 하한으로만 쓴다.
+     *
+     * @return array<int, string> `core.analytics.` 뒤의 이름 목록
+     */
+    private function subscribedActions(): array
+    {
+        $actions = [];
+
+        foreach (CoreActivityLogListener::getSubscribedHooks() as $hook => $config) {
+            if (str_starts_with($hook, 'core.analytics.') && ($config['method'] ?? null) === 'handleAnalyticsHook') {
+                $actions[] = substr($hook, strlen('core.analytics.'));
+            }
+        }
+
+        return $actions;
+    }
+
+    /**
      * 9훅 전부가 리스너에 구독돼 있고 발화하면 활동 로그 행이 남는다.
      *
      * @scenario visitor=admin
@@ -45,8 +66,12 @@ class ActivityLogTest extends TestCase
     public function test_nine_hooks_write_admin_activity_rows(): void
     {
         $subscribed = CoreActivityLogListener::getSubscribedHooks();
+        $actions = $this->subscribedActions();
 
-        foreach (self::HOOKS as $action) {
+        $this->assertNotEmpty($actions);
+        $this->assertSame([], array_values(array_diff(self::HOOKS, $actions)), '§4.4 의 훅이 구독에서 빠졌다');
+
+        foreach ($actions as $action) {
             $hook = 'core.analytics.'.$action;
 
             $this->assertArrayHasKey($hook, $subscribed, $hook.' 구독이 없다');
@@ -61,7 +86,7 @@ class ActivityLogTest extends TestCase
             $this->assertSame('activity_log.analytics.'.$action, $row->description_key);
         }
 
-        $this->assertSame(count(self::HOOKS), DB::table('activity_logs')->where('action', 'like', 'analytics.%')->count());
+        $this->assertSame(count($actions), DB::table('activity_logs')->where('action', 'like', 'analytics.%')->count());
     }
 
     /**

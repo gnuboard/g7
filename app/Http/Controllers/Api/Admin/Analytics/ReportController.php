@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\Admin\Analytics;
 
 use App\Analytics\AnalyticsConfig;
 use App\Enums\Analytics\StatsDimension;
+use App\Extension\HookManager;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use App\Http\Requests\Admin\Analytics\PeriodRequest;
 use App\Http\Requests\Admin\Analytics\ReferrerUrlsRequest;
@@ -44,6 +45,13 @@ class ReportController extends AdminBaseController
      * @var array<int, string>
      */
     private const CENT_CSV_COLUMNS = ['revenue_sum'];
+
+    /**
+     * 차원 리포트 CSV 공통 열 (부록 D)
+     *
+     * @var array<int, string>
+     */
+    private const CORE_CSV_HEADERS = ['label', 'label_display', 'visits', 'hits', 'entries', 'exits', 'bounce_rate', 'avg_time_seconds', 'pages_per_visit'];
 
     /**
      * 리포트 컨트롤러를 생성합니다.
@@ -116,6 +124,19 @@ class ReportController extends AdminBaseController
                 'has_more' => $result['has_more'],
             ],
         ]);
+    }
+
+    /**
+     * 등록된 확장 차원·전환 목록을 조회합니다.
+     *
+     * 행동 화면의 차원·전환 탭이 선택지로 씁니다. 등록부는 활성 확장만 모으므로, 확장이
+     * 꺼지면 그 차원은 목록에서 빠지고 이미 쌓인 집계는 남습니다.
+     *
+     * @return JsonResponse 등록 목록 응답
+     */
+    public function registered(): JsonResponse
+    {
+        return $this->success('analytics.report.fetch_success', $this->reports->registered());
     }
 
     /**
@@ -303,9 +324,22 @@ class ReportController extends AdminBaseController
         // 차원마다 화면에서 보이던 부가 열이 있다. 그 열이 CSV 에서 빠지면 운영자는
         // 내려받은 파일이 틀린 것인지 화면이 틀린 것인지 판단할 근거가 없다.
         // 별칭(`goals` → `goal`)을 먼저 풀어야 별칭 주소로 받은 파일에서만 열이 빠지지 않는다.
-        $extraColumns = self::EXTRA_CSV_COLUMNS[$this->reports->dimensionFor($report)] ?? [];
+        $dimension = $this->reports->dimensionFor($report);
+        $extraColumns = self::EXTRA_CSV_COLUMNS[$dimension] ?? [];
 
-        $rows = function () use ($report, $from, $to, $options, $extraColumns): iterable {
+        // 확장 차원은 자기 집계 행의 `extra` 에 담은 값을 열로 더할 수 있다(헤더 → extra 키).
+        // 코어 열은 빼거나 바꾸지 못하게, 확장이 돌려준 것 중 새 헤더만 붙인다.
+        $contributed = HookManager::applyFilters('core.analytics.csv_columns', [], $dimension, $report);
+        foreach (is_array($contributed) ? $contributed : [] as $header => $extraKey) {
+            if (is_string($header) && is_string($extraKey)
+                && ! isset($extraColumns[$header])
+                && ! in_array($header, self::CORE_CSV_HEADERS, true)
+            ) {
+                $extraColumns[$header] = $extraKey;
+            }
+        }
+
+        $rows = function () use ($report, $dimension, $from, $to, $options, $extraColumns): iterable {
             $page = 1;
 
             do {
@@ -332,6 +366,13 @@ class ReportController extends AdminBaseController
                             : $value;
                     }
 
+                    // 확장이 값을 사람이 읽는 단위로 바꿀 수 있게 한 번 더 건넨다. 열 수가
+                    // 바뀌면 헤더와 어긋나므로 같은 길이일 때만 받는다.
+                    $filtered = HookManager::applyFilters('core.analytics.csv_row', $line, $row, $dimension);
+                    if (is_array($filtered) && count($filtered) === count($line)) {
+                        $line = array_values($filtered);
+                    }
+
                     yield $line;
                 }
 
@@ -340,11 +381,9 @@ class ReportController extends AdminBaseController
         };
 
         return $this->csv->stream(
-            sprintf('analytics-%s-%s_%s.csv', $report, $from, $to),
-            array_merge(
-                ['label', 'label_display', 'visits', 'hits', 'entries', 'exits', 'bounce_rate', 'avg_time_seconds', 'pages_per_visit'],
-                array_keys($extraColumns),
-            ),
+            // 확장 차원 이름의 `:` 는 윈도 파일명에 쓸 수 없다.
+            sprintf('analytics-%s-%s_%s.csv', str_replace(':', '-', $report), $from, $to),
+            array_merge(self::CORE_CSV_HEADERS, array_keys($extraColumns)),
             $rows(),
         );
     }

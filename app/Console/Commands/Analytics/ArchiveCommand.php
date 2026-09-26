@@ -96,10 +96,8 @@ class ArchiveCommand extends Command
     {
         $today = AnalyticsClock::today();
 
-        $run = $service->archiveDay($today, [
-            'run_type' => ArchiveRunType::Hour->value,
+        $run = $service->archiveHour([
             'trigger' => 'scheduled',
-            'is_final' => false,
             'dry_run' => $dryRun,
         ]);
 

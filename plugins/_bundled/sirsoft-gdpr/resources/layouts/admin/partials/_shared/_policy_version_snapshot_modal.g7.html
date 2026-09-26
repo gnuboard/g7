@@ -4,21 +4,21 @@
     <div class="row-stack">
       <!-- 안내문 — DPO 입증 자료 활용 안내 -->
       <p class="text-secondary text-xs leading-relaxed">$t:sirsoft-gdpr.settings.policy_version.snapshot_modal.description</p>
-      <!-- 메타 — 발행일시 + 발행자 + 변경사유 + 변경 종류 (4개를 grid 2열). -->
-      <div data-if="{{gdprPolicyVersionSnapshot?.data?.data}}" class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-xs border border-gray-200 dark:border-gray-700 rounded-md p-3 bg-gray-50 dark:bg-gray-900">
-        <div class="flex items-baseline gap-2">
+      <!-- 메타 — 발행일시 + 발행자 + 변경사유 + 변경 종류 (4개를 grid 2열). 라벨 칸을 맞춰 값이 한 줄로 시작하게 kv-list-2(admin_basic 자산). -->
+      <div data-if="{{gdprPolicyVersionSnapshot?.data?.data}}" class="kv-list-2 gap-y-2 text-xs border border-gray-200 dark:border-gray-700 rounded-md p-3 bg-gray-50 dark:bg-gray-900">
+        <div class="kv-row">
           <span class="text-gray-500 dark:text-gray-400 flex-shrink-0">$t:sirsoft-gdpr.settings.policy_version.published_at_label</span>
           <span class="text-gray-900 dark:text-gray-100">{{gdprPolicyVersionSnapshot?.data?.data?.created_at ?? '-'}}</span>
         </div>
-        <div class="flex items-baseline gap-2">
+        <div class="kv-row">
           <span class="text-gray-500 dark:text-gray-400 flex-shrink-0">$t:sirsoft-gdpr.settings.policy_version.publisher_label</span>
           <span class="text-gray-900 dark:text-gray-100">{{gdprPolicyVersionSnapshot?.data?.data?.publisher?.name ? (gdprPolicyVersionSnapshot?.data?.data?.publisher?.email ? gdprPolicyVersionSnapshot.data.data.publisher.name + ' (' + gdprPolicyVersionSnapshot.data.data.publisher.email + ')' : gdprPolicyVersionSnapshot.data.data.publisher.name) : (gdprPolicyVersionSnapshot?.data?.data?.publisher?.email ?? '$t:sirsoft-gdpr.settings.policy_version.publisher_system')}}</span>
         </div>
-        <div class="flex items-baseline gap-2">
+        <div class="kv-row">
           <span class="text-gray-500 dark:text-gray-400 flex-shrink-0">$t:sirsoft-gdpr.settings.policy_version.history.col.change_type</span>
           <span class="text-gray-900 dark:text-gray-100">{{gdprPolicyVersionSnapshot?.data?.data?.change_type === 'material' ? '$t:sirsoft-gdpr.settings.policy_version.change_type.material' : (gdprPolicyVersionSnapshot?.data?.data?.change_type === 'initial' ? '$t:sirsoft-gdpr.settings.policy_version.change_type.initial' : '$t:sirsoft-gdpr.settings.policy_version.change_type.non_material')}}</span>
         </div>
-        <div class="flex items-baseline gap-2 min-w-0">
+        <div class="kv-row">
           <span class="text-gray-500 dark:text-gray-400 flex-shrink-0">$t:sirsoft-gdpr.settings.policy_version.memo_label</span>
           <span class="text-gray-900 dark:text-gray-100 truncate">{{gdprPolicyVersionSnapshot?.data?.data?.memo ?? '-'}}</span>
         </div>

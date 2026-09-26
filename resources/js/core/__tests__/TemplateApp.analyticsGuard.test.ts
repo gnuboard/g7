@@ -189,6 +189,37 @@ describe('TemplateApp 방문자 통계 가드', () => {
         expect(collectCalls()).toBe(2);
     });
 
+    // @scenario visitor=guest, source=beacon, visit_state=open
+    // @effects tracker_defers_sending_so_navigation_is_not_delayed
+    it('통계의 routeChange 핸들러는 undefined 를 동기로 돌려준다 — 라우터가 기다릴 것이 없다', async () => {
+        // 라우터는 routeChange 핸들러들을 Promise.all 로 기다린다. 누군가 이 화살표를 async 로
+        // 바꾸면 화면 전환이 통계 처리를 기다리게 된다 — 반환값으로 직접 잠근다(#682 R6-D1).
+        const admin = new TemplateApp(makeConfig('admin'));
+        await admin.init();
+        const withoutAnalytics = (routerBus.handlers.get('routeChange') ?? []).length;
+
+        routerBus.handlers.clear();
+        delete (window as any).G7Core;
+
+        const app = new TemplateApp(makeConfig('user'));
+        await app.init();
+        await new Promise((resolve) => setTimeout(resolve, 0));
+
+        const handlers = routerBus.handlers.get('routeChange') ?? [];
+        // 사용자 템플릿에만 더 붙는 한 개가 통계 구독이다(등록 순서상 마지막).
+        expect(handlers).toHaveLength(withoutAnalytics + 1);
+        const analyticsHandler = handlers[handlers.length - 1];
+
+        const before = collectCalls();
+        const returned = analyticsHandler({ path: '/board/notice', layout: 'board', meta: {}, params: {}, query: {} });
+
+        expect(returned).toBeUndefined();
+
+        // 그 핸들러가 정말 통계 구독인지 — 이동을 한 건 센다.
+        await new Promise((resolve) => setTimeout(resolve, 0));
+        expect(collectCalls()).toBe(before + 1);
+    });
+
     // @scenario visitor=guest, exclusion=disabled
     // @effects excluded_requests_record_nothing
     it('수집이 꺼져 있으면 사용자 템플릿도 트래커를 만들지 않는다', async () => {

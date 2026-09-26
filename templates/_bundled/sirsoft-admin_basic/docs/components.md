@@ -416,7 +416,7 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다. 모든 Basic �
 | `Badge` | 색상 기반 라벨 뱃지 | color, text, size, style |
 | `StatusBadge` | 상태 뱃지 (아이콘 포함) | status, label, showIcon, iconName, style |
 | `StatCard` | 통계 카드 (값, 라벨, 추이 표시) | value, label, change, changeLabel, iconName, ... |
-| `LineChart` | Chart.js 선 차트 (방문자 추이처럼 시간 축 여러 계열) | labels, datasets[{label,data,color,fill,yAxisID}], height, showLegend, showGrid, showYGrid, showYAxis |
+| `LineChart` | Chart.js 선 차트 (방문자 추이처럼 시간 축 여러 계열) | labels, datasets[{label,data,color,fill,yAxisID}], height, showLegend, showGrid, showYGrid, showYAxis, className, id, editorAttrs |
 | `EmptyState` | 데이터 없음 상태 표시 | title, description, iconName, illustrationSrc, ... |
 
 > **선택 건수는 한 곳에서만 그린다 — `selectedCountText=""`**

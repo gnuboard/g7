@@ -120,4 +120,39 @@ class ArchiveRangeJobTest extends TestCase
             'status' => ArchiveRunStatus::Failed->value,
         ]);
     }
+
+    /**
+     * 잡이 요청자와 「확정된 날 건너뛰기」를 서비스까지 그대로 넘기는지 확인합니다.
+     *
+     * 서비스 단위 테스트는 옵션을 직접 넣으므로, 잡이 생성자 인자를 빠뜨리거나 뒤바꿔도
+     * 거기서는 드러나지 않는다 — 이력의 요청자가 비고 확정된 날이 조용히 다시 계산된다.
+     *
+     * @return void 없음
+     *
+     * @scenario period=range, data=all_types, trigger=manual
+     *
+     * @effects range_job_passes_requester_and_force_to_the_service
+     */
+    public function test_job_passes_requester_and_force_to_the_service(): void
+    {
+        $this->visit('2026-09-17');
+        $this->visit('2026-09-18');
+        app(ArchiveService::class)->archiveDay('2026-09-17', ['is_final' => true]);
+
+        (new ArchiveRangeJob('2026-09-17', '2026-09-18', false, 7))->handle(app(ArchiveService::class));
+
+        $runs = AnalyticsArchiveRun::where('run_type', ArchiveRunType::Reaggregate->value)
+            ->orderBy('period_start')
+            ->get()
+            ->map(fn (AnalyticsArchiveRun $run): array => [
+                'status' => $run->status instanceof \BackedEnum ? $run->status->value : (string) $run->status,
+                'triggered_by' => $run->triggered_by,
+            ])
+            ->all();
+
+        $this->assertSame([
+            ['status' => ArchiveRunStatus::Skipped->value, 'triggered_by' => 7],
+            ['status' => ArchiveRunStatus::Success->value, 'triggered_by' => 7],
+        ], $runs, '확정된 17일은 건너뛰고 18일만 계산하며, 두 이력 모두 요청자를 남긴다');
+    }
 }

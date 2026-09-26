@@ -136,7 +136,7 @@ class ReferrerUrlsControllerTest extends AnalyticsApiTestCase
      *
      * @return void 없음
      *
-     * @scenario endpoint=referrer_urls, role=read, period=invalid
+     * @scenario endpoint=referrer_urls, role=read
      *
      * @effects referrer_urls_require_a_host
      */

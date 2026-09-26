@@ -6,11 +6,22 @@
 
 ## [1.1.0] - 2026-08-20
 
+### Changed
+
+- 방문자 통계의 「보존 기간」 일본어 용어를 「保持期間」으로 통일했습니다 — 기록이 많이 쌓였을 때의 경고
+  (`analytics.alerts.ledger_limit_message`)·조치 링크(`ledger_limit_action`, 「保持設定を開く」)와 재집계
+  건너뜀 안내(`analytics.archive.skipped_beyond_retention`)가 「保存」(저장)으로 옮겨져, 관리자 화면의
+  「保持期間」과 다른 말로 보였습니다.
+
 ### Added
 
+- 방문자 통계 설정 › 보존의 저장 현황 표 이름(`analytics.storage_table.*`, 11종) 일본어 번역을 추가했습니다 — 없으면
+  일본어 로케일에서 표 이름(`analytics_visits` 등)이 그대로 보입니다.
 - 방문자 통계 집계가 **이미 확정된 날을 건너뛸 때**의 안내 문구 일본어 번역을 추가했습니다
   (`analytics.archive.skipped_finalized`). 없으면 일본어 로케일의 집계 실행 이력에서 그 행만
   번역 키 원문이 보입니다.
+- 꺼진 확장의 커스텀 차원 이름 표시(`analytics.report.inactive_dimension`, 「:key（無効な拡張機能）」)
+  일본어 번역을 추가했습니다. 행동 › 커스텀 차원 탭의 선택 목록에 보입니다.
 - 재집계가 보존 기간이 지난 날을 건너뛸 때의 안내 문구 일본어 번역을 추가했습니다
   (`analytics.archive.skipped_beyond_retention`). 없으면 일본어 로케일의 집계 실행 이력에
   키가 그대로 노출됩니다.

@@ -3,7 +3,7 @@
   사이트 탭은 한 단계 더 있다 — 도메인 행을 누르면 주소에 `host` 가 실리고, 그 도메인에서 들어온 실제
   주소 목록(`analytics_referrer_urls`)이 공통 표 자리를 대신한다. 집계표는 호스트까지만 쌓여 이 목록만
   원장을 직접 읽는다. 그 자리에서는 CSV 를 감춘다 — 받아지는 것은 사이트 목록이라 화면과 다른 것을 준다
-  (`csvUrl` 을 빈 값으로 두면 기간 바가 단추를 그리지 않는다). #682 라운드 4, PO 지적 ⑥. -->
+  (`csvUrl` 을 빈 값으로 두면 기간 바가 단추를 그리지 않는다). #682 라운드 4, 검수 지적 ⑥. -->
 <layout name="admin_analytics_referrers" version="1.0.0" extends="_admin_base">
   <meta title="$t:admin.analytics.referrers.title"/>
   <data-source id="analytics_report" label_key="$t:editor.data_source.analytics_report" type="api" endpoint="/api/admin/analytics/reports/{{({types: 'referrer_type', sites: 'referrer_name', keywords: 'referrer_keyword', campaigns: 'campaign'})[query.tab || 'types'] || 'referrer_type'}}" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive">
@@ -23,7 +23,7 @@
     </error-handling>
   </data-source>
   <!-- 한 유입처의 전체 주소. 집계표에는 호스트까지만 쌓여 이 소스만 원장을 직접 읽는다 —
-       사이트 탭에서 도메인 행을 눌러 `host` 가 주소에 실렸을 때만 부른다(#682 라운드 4, PO 지적 ⑥). -->
+       사이트 탭에서 도메인 행을 눌러 `host` 가 주소에 실렸을 때만 부른다(#682 라운드 4, 검수 지적 ⑥). -->
   <data-source id="analytics_referrer_urls" label_key="$t:editor.data_source.analytics_referrer_urls" type="api" endpoint="/api/admin/analytics/referrer-urls" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive" if="{{(query.tab || 'types') === 'sites' &amp;&amp; !!query.host}}">
     <params host="{{query.host}}" preset="{{query.from ? undefined : (query.preset || '7d')}}" from="{{query.from}}" to="{{query.to}}" exclude[]="{{(query.exclude || '').split(',').filter(Boolean)}}" page="{{query.page || 1}}" per_page="{{query.per_page}}"/>
     <fallback>
@@ -120,6 +120,9 @@
           </sequence>
         </on>
       </tab-navigation>
+      <!-- 검색어가 거의 비는 것은 판정 실패가 아니다 — 검색엔진이 HTTPS 로 옮기며 유입 주소에 검색어를 싣지 않는다.
+        빈 표를 본 운영자가 수집이 고장 났다고 읽지 않게 그 탭에서 먼저 알린다. -->
+      <p data-ref="keywords_https_hint" data-if="{{query.tab === 'keywords'}}" class="text-sm text-label mb-3">$t:admin.analytics.referrers.keywords_https_hint</p>
       <div data-ref="referrer_type_chart_card" data-if="{{(query.tab || 'types') === 'types' &amp;&amp; (analytics_report?.data?.data ?? []).length > 0}}" class="admin-card mb-4">
         <h2 class="section-heading mb-3">$t:admin.analytics.referrers.type_share_title</h2>
         <div class="flex justify-center">
@@ -153,7 +156,7 @@
         </div>
         <div class="overflow-x-auto">
           <blur-until-loaded sources="analytics_referrer_urls"/>
-          <data-grid data-ref="referrer_urls_grid" data="{{analytics_referrer_urls?.data?.data ?? []}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{+(query.page || 1)}}" :serverTotalPages="null" serverHasMorePages="{{analytics_referrer_urls?.data?.pagination?.has_more ?? false}}" pageSize="{{+(query.per_page || 25)}}" :alwaysShowPagination="true" idField="url" :selectable="false" :sortable="false" emptyMessage="$t:admin.analytics.common.empty_title">
+          <data-grid data-ref="referrer_urls_grid" data-if="{{analytics_referrer_urls?.loading || (analytics_referrer_urls?.data?.data ?? []).length &gt; 0}}" data="{{analytics_referrer_urls?.data?.data ?? []}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{+(query.page || 1)}}" :serverTotalPages="null" serverHasMorePages="{{analytics_referrer_urls?.data?.pagination?.has_more ?? false}}" pageSize="{{+(query.per_page || 25)}}" :alwaysShowPagination="true" idField="url" :selectable="false" :sortable="false" emptyMessage="$t:admin.analytics.common.empty_title">
             <on type="action" event="onPageChange">
               <navigate path="/admin/analytics/referrers" :mergeQuery="true" :replace="true" transition_overlay_target="referrer_urls_grid__body">
                 <query page="{{$args[0]}}"/>
@@ -179,6 +182,10 @@
         </div>
         <empty-state data-ref="referrer_urls_empty" data-if="{{!analytics_referrer_urls?.loading &amp;&amp; (analytics_referrer_urls?.data?.data ?? []).length === 0}}" iconName="link" title="$t:admin.analytics.common.empty_title" description="$t:admin.analytics.referrers.urls_empty_description" class="py-10"/>
       </div>
+      <!-- 확장이 이 화면에 자기 리포트 조각을 붙이는 자리(데이터는 확장 자기 API). -->
+      <extension-point name="analytics_referrers_widgets" class="space-y-4 mt-4">
+        <default/>
+      </extension-point>
     </div>
   </slot>
 </layout>

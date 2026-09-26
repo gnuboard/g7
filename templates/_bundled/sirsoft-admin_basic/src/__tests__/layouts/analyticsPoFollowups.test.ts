@@ -1,5 +1,5 @@
 /**
- * #682 라운드 4 — PO 가 브라우저에서 짚은 일곱 가지를 잠근다.
+ * #682 라운드 4 — 브라우저 검수에서 짚은 일곱 가지를 잠근다.
  *
  * 합성 입력이 아니라 구운 `.json`·실제 CSS·실제 PHP 설정을 읽는다. 모집단은 저장소에서 파생한다 —
  * 「고친 한 곳」만 세면 같은 결함이 다른 화면에 남아도 초록이다.
@@ -16,13 +16,18 @@
 import fs from 'fs';
 import path from 'path';
 import { describe, expect, it } from 'vitest';
+import { evaluateSafeExpression } from '@core/template-engine/SafeExpressionEvaluator';
+import { scanBindings } from '@core/template-engine/BindingShape';
 
 import {
   TEMPLATE_DIR,
   collectObjects,
   dataSource,
+  langValue,
   loadLang,
   loadLayout,
+  loadLocale,
+  localeNames,
   nodeById,
   nodesNamed,
   stringify,
@@ -30,6 +35,32 @@ import {
 
 /** 저장소 루트 (템플릿 디렉터리 기준 세 단계 위) */
 const REPO_ROOT = path.resolve(TEMPLATE_DIR, '../../..');
+
+/** `{{…}}` 한 겹을 벗긴다 */
+function unwrap(expression: string): string {
+  const t = expression.trim();
+  return t.startsWith('{{') && t.endsWith('}}') ? t.slice(2, -2) : t;
+}
+
+/**
+ * 조건 식을 화면 계산값까지 풀어 평가한다 — 부분문자열 검사는 뒤집힌 조건도 통과시킨다(#682 S3 R6-D1).
+ *
+ * @returns 평가값, 평가기에서 실패하면 `'error'`
+ */
+function evaluateWith(expression: string, computeds: Record<string, unknown>, context: Record<string, unknown>): unknown {
+  let out = unwrap(expression);
+  for (let pass = 0; pass < 4; pass += 1) {
+    const next = out.replace(/_computed\.([A-Za-z0-9_]+)/g, (whole, name: string) =>
+      typeof computeds[name] === 'string' ? `(${unwrap(computeds[name] as string)})` : whole);
+    if (next === out) break;
+    out = next;
+  }
+  try {
+    return evaluateSafeExpression(out, { _computed: {}, _global: {}, _local: {}, query: {}, $t: (key: string) => key, ...context });
+  } catch {
+    return 'error';
+  }
+}
 
 /** `navigate` 핸들러 액션을 모두 모은다 */
 function navigateActions(root: unknown): Record<string, any>[] {
@@ -312,7 +343,7 @@ describe('⑦ 회원 방문자는 이름으로 알아본다', () => {
 
   // @scenario screen=visitors, state=normal, viewport=1440, locale=en
   // @effects member_column_labels_exist_in_both_locales
-  it('회원 칸이 쓰는 이름이 ko·en 에 모두 있다', () => {
+  it('회원 칸이 쓰는 이름이 모든 로케일(ko·en·ja)에 있다', () => {
     const keys = [
       'analytics.visitors.columns.member',
       'analytics.visitors.action.view_member',
@@ -325,11 +356,13 @@ describe('⑦ 회원 방문자는 이름으로 알아본다', () => {
       'analytics.referrers.urls_empty_description',
     ];
 
-    for (const locale of ['ko', 'en'] as const) {
-      const tree = loadLang(locale, 'admin');
-      const missing = keys.filter(
-        (k) => typeof k.split('.').reduce((cur: any, part) => (cur && typeof cur === 'object' ? cur[part] : undefined), tree) !== 'string',
-      );
+    // 로케일은 디렉터리·언어팩에서 판다(ja 포함). 모집단이 비면 아래 비교가 조용히 통과한다.
+    const locales = localeNames();
+    expect(keys.length, '검사할 키').toBeGreaterThan(0);
+    expect(locales, '로케일 모집단').toContain('ja');
+    for (const locale of locales) {
+      const tree = loadLocale(locale, 'admin');
+      const missing = keys.filter((k) => typeof langValue(tree, `admin.${k}`) !== 'string');
       expect(missing, `${locale} 에 없는 키`).toEqual([]);
     }
   });
@@ -342,7 +375,7 @@ describe('⑧ 설치 현황 칩은 상태 카드 곁에 선다', () => {
     const layout = loadLayout('admin_dashboard.json');
 
     // 구운 JSON 을 문자열로 훑어 두 블록의 등장 순서를 본다 — 칩이 화면 맨 위에 떨어져 있으면
-    // 「3/3」이 무엇의 3인지 알 수 없다(#682 라운드 4, PO 지적 ⑧).
+    // 「3/3」이 무엇의 3인지 알 수 없다(#682 라운드 4, 검수 지적 ⑧).
     const json = stringify(layout);
     const chips = json.indexOf('"secondary_stats_badges"');
     const cards = json.indexOf('"extension_status_grid"');
@@ -419,11 +452,44 @@ describe('⑩ 주소를 그리는 화면은 그 주소가 마스킹된 값임을
 
     for (const file of files) {
       if (file === REALTIME) continue;
-      const json = stringify(loadLayout(file));
+      const layout = loadLayout(file);
+      const json = stringify(layout);
       // 주소 「값」을 그리는 자리만 센다 — 검색 입력·파라미터의 ip 는 그리는 것이 아니다.
       if (!/\{\{[^}]*\.ip\s*\?\?/.test(json) && !/row\.ip\b/.test(json)) continue;
       drawsIp.push(file);
-      if (!json.includes('ip_mask_octets')) missing.push(file);
+      // 문자열에 이름이 있는지가 아니라, 그리는 자리의 식이 마스킹 옥텟 수에 따라 **달리 그리는지**를 잰다.
+      // 주석·fallback·요청 파라미터는 그리는 자리가 아니다.
+      const sites: string[] = [];
+      const walk = (value: unknown, key: string): void => {
+        if (typeof value === 'string') {
+          if (value.includes('ip_mask_octets') && value.includes('{{')) sites.push(...scanBindings(value).map((b) => b.expr).filter((e) => e.includes('ip_mask_octets')));
+          return;
+        }
+        if (Array.isArray(value)) { value.forEach((v) => walk(v, key)); return; }
+        if (value && typeof value === 'object') {
+          for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+            if (k === 'comment' || k === 'fallback' || k === 'params' || k === 'data_sources' || k === 'actions') continue;
+            walk(v, k);
+          }
+        }
+      };
+      walk(layout, '');
+      const reacts = sites.some((expr) => {
+        const ctxFor = (octets: number): Record<string, unknown> => {
+          const ctx: Record<string, any> = {};
+          for (const m of expr.matchAll(/([A-Za-z_]+)((?:\?\.[A-Za-z_]+)*)\?\.ip_mask_octets/g)) {
+            const path = [m[1], ...m[2].split('?.').filter(Boolean)];
+            let cur = ctx;
+            for (const part of path) cur = (cur[part] = cur[part] ?? {});
+            cur.ip_mask_octets = octets;
+          }
+          return ctx;
+        };
+        const off = evaluateWith(expr, {}, ctxFor(0));
+        const on = evaluateWith(expr, {}, ctxFor(2));
+        return off !== 'error' && on !== 'error' && JSON.stringify(off) !== JSON.stringify(on);
+      });
+      if (!reacts) missing.push(`${file} (옥텟 수를 읽는 그리는 식 ${sites.length}개 — 0 과 2 에서 같은 것을 그린다)`);
     }
 
     expect(drawsIp.length, '주소를 그리는 통계 화면').toBeGreaterThanOrEqual(2);
@@ -443,14 +509,35 @@ describe('⑪ 회원 화면으로 건너뛰는 자리는 목적지 권한을 먼
     const jumps: string[] = [];
     const ungated: string[] = [];
 
+    const perms = (list: string[]) => ({ current_user: { data: { permissions: list.map((identifier) => ({ identifier })) } } });
     for (const file of files) {
       const layout = loadLayout(file);
-      const json = stringify(layout);
-      if (!json.includes('/admin/users/')) continue;
-      jumps.push(file);
-      // 가드는 목적지 권한 문자열을 실제로 평가하는 computed 여야 한다.
-      const computed = stringify(layout.computed ?? layout.computedProps ?? {});
-      if (!computed.includes('core.users.read')) ungated.push(`${file}: computed 가드 없음`);
+      const computeds = (layout.computed ?? {}) as Record<string, unknown>;
+      // 이동 액션마다 조상 사슬의 조건(노드 `if` 와 메뉴 항목 `if`)을 모아, 그중 하나가 목적지 권한으로
+      // 실제로 갈리는지 평가한다 — 권한 없는 계정에서 거짓, 있는 계정에서 참. 문자열 포함으로 재면
+      // 뒤집힌 가드(`!…`)도 통과한다(#682 S3 R6-D1).
+      const walk = (value: unknown, chain: Record<string, any>[]): void => {
+        if (Array.isArray(value)) { value.forEach((v) => walk(v, chain)); return; }
+        if (!value || typeof value !== 'object') return;
+        const node = value as Record<string, any>;
+        if ((node.handler === 'openWindow' || node.handler === 'navigate') && String(node.params?.path ?? '').startsWith('/admin/users/')) {
+          jumps.push(file);
+          const guards = chain.flatMap((owner) => [
+            ...(typeof owner.if === 'string' ? [owner.if] : []),
+            ...((owner.props?.items ?? []) as any[]).filter((item) => typeof item?.if === 'string').map((item) => item.if as string),
+          ]);
+          const row = { row: { user: { uuid: 'u-1', name: 'n' } } };
+          const verdicts = guards.map((g) => ({
+            without: evaluateWith(g, computeds, { ...row, ...perms(['core.analytics.read', 'core.analytics.privacy']) }),
+            with: evaluateWith(g, computeds, { ...row, ...perms(['core.analytics.read', 'core.analytics.privacy', 'core.users.read']) }),
+          }));
+          if (!verdicts.some((v) => !v.without && v.without !== 'error' && !!v.with && v.with !== 'error')) {
+            ungated.push(`${file}: ${node.params.path} 앞 조건 ${guards.length}개 중 core.users.read 로 갈리는 것이 없다`);
+          }
+        }
+        for (const v of Object.values(node)) walk(v, [...chain, node]);
+      };
+      walk(layout, []);
     }
 
     expect(jumps.length, '회원 화면으로 건너뛰는 통계 화면').toBeGreaterThanOrEqual(2);

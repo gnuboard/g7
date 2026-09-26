@@ -10,7 +10,8 @@
 import fs from 'fs';
 import path from 'path';
 import { describe, it, expect } from 'vitest';
-import { TEMPLATE_DIR, loadLayout, loadLang, loadJaPack, langValue, dataSource, nodesNamed, nodeById, actionsWithHandler, stringify, translationKeys, collectObjects } from './analyticsLayoutTestUtils';
+import { evaluateSafeExpression } from '@core/template-engine/SafeExpressionEvaluator';
+import { TEMPLATE_DIR, loadLayout, loadLang, loadJaPack, langValue, dataSource, nodesNamed, nodeById, actionsWithHandler, stringify, collectObjects } from './analyticsLayoutTestUtils';
 
 const REPO_ROOT = path.resolve(TEMPLATE_DIR, '../../..');
 
@@ -19,6 +20,11 @@ const retro = loadLayout('partials/admin_analytics/_modal_retro_anonymize.json')
 const purge = loadLayout('partials/admin_analytics/_modal_purge_all.json');
 const defs = loadLayout('partials/admin_analytics/_partial_notification_definitions.json');
 
+/**
+ * 탭별 설정 키 — 어느 탭에 무엇을 두는지는 화면 설계라 여기 적는다. 다만 **모집단**은 서버 기본값
+ * (`config/settings/defaults.json` 의 `defaults.analytics`)과 아래 첫 케이스가 양방향으로 대조한다 —
+ * 서버가 키를 더하고 이 표를 안 늘리면 red 다(#682 S3 R7-D3·R11-D3·R12-D2).
+ */
 const TAB_KEYS: Record<string, string[]> = {
   collection: ['enabled', 'visit_timeout_minutes', 'max_actions_per_visit', 'excluded_url_patterns', 'site_search_enabled', 'track_downloads', 'track_outlinks', 'download_extensions', 'public_summary_enabled'],
   privacy: ['privacy_mode', 'respect_dnt', 'ip_mask_octets', 'geo_before_mask', 'anonymize_referrer', 'pseudonymize_user_id', 'visitor_cookie_days'],
@@ -27,7 +33,47 @@ const TAB_KEYS: Record<string, string[]> = {
   reports: ['report_weekly_enabled', 'report_monthly_enabled'],
 };
 
+/**
+ * 서버 기본값에는 있지만 폼 입력이 아닌 키와 그 이유. 사유 없이 빼면 새 키가 조용히 무가드가 된다.
+ */
+const DISPLAY_ONLY: Record<string, string> = {
+  // 클라우드 IP 대역을 마지막으로 받아 온 시각 — 서버의 갱신 작업이 찍고, 화면은 봇 탭 힌트로 보여 줄 뿐
+  // 운영자가 고치는 값이 아니다(입력 이름이 없고 저장 본문에도 싣지 않는다).
+  cloud_ip_ranges_updated_at: 'server-stamped timestamp, shown as a hint only',
+};
+
 describe('설정 화면 — 탭·폼·저장', () => {
+  // @scenario screen=settings, state=normal, viewport=1440, locale=ko
+  // @effects settings_keys_match_server_defaults
+  it('탭별 키 모집단이 서버 기본값(defaults.analytics)과 같고 저장 본문의 묶음도 같은 표다 — 표시 전용 키만 사유와 함께 뺀다', () => {
+    const defaults = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, 'config/settings/defaults.json'), 'utf8'));
+    const serverKeys = Object.keys(defaults?.defaults?.analytics ?? {});
+    // 모집단이 비면 아래 차집합은 빈 배열끼리라 조용히 통과한다.
+    expect(serverKeys.length, '서버 기본값의 통계 설정 키').toBeGreaterThan(30);
+
+    const tabKeys = Object.values(TAB_KEYS).flat();
+    expect(tabKeys.length, '탭별 키').toBeGreaterThan(30);
+    expect(tabKeys.filter((k, i) => tabKeys.indexOf(k) !== i), '두 탭에 걸친 키').toEqual([]);
+
+    // 표시 전용 예외는 실재하는 서버 키이고, 입력으로 바인딩되지 않으며, 화면이 실제로 읽는다.
+    const names = stringify(layout).match(/"name":"settings\.[a-z_]+"/g) ?? [];
+    for (const key of Object.keys(DISPLAY_ONLY)) {
+      expect(serverKeys, key).toContain(key);
+      expect(names, `${key} 는 입력이 아니다`).not.toContain(`"name":"settings.${key}"`);
+      expect(stringify(layout), `${key} 를 읽는 자리`).toContain(`settings?.${key}`);
+    }
+
+    expect(serverKeys.filter((k) => !tabKeys.includes(k) && !(k in DISPLAY_ONLY)), '폼 어느 탭에도 없는 서버 키').toEqual([]);
+    expect(tabKeys.filter((k) => !serverKeys.includes(k)), '서버가 모르는 폼 키').toEqual([]);
+
+    // 저장 본문이 쓰는 묶음 표(`const groups = {…}`)를 실제로 평가해 이 표와 대조한다 — 문자열 포함으로 재면
+    // 키가 다른 탭으로 옮겨 가도 초록이다.
+    const call = actionsWithHandler(nodeById(layout, 'save_button'), 'apiCall')[0];
+    const literal = String(call?.params?.body ?? '').match(/const groups = (\{[^;]*\});/)?.[1];
+    expect(literal, '저장 본문의 묶음 표').toBeTruthy();
+    expect(evaluateSafeExpression(`(${literal})`, {})).toEqual(TAB_KEYS);
+  });
+
   // @scenario screen=settings, state=normal, viewport=1440, locale=ko
   // @effects settings_tab_is_query_only
   it('update 권한을 요구하고 탭 5개는 query.tab 하나가 출처다', () => {
@@ -206,15 +252,6 @@ describe('내 방문 제외(opt-out)', () => {
     expect(stringify(call.onSuccess)).toContain('"dataSourceId":"analytics_opt_out"');
   });
 
-  // @scenario screen=settings, state=normal, viewport=390, locale=en
-  // @effects every_translation_key_exists_in_ko_and_en
-  it('설정 화면·창·카드의 모든 $t: 키가 ko/en 에 있다', () => {
-    const ko = loadLang('ko', 'admin');
-    const en = loadLang('en', 'admin');
-    const keys = [layout, retro, purge, defs].flatMap(translationKeys).filter((k) => k.startsWith('admin.'));
-    const missing = keys.filter((k) => typeof langValue(ko, k) !== 'string' || typeof langValue(en, k) !== 'string');
-    expect(missing).toEqual([]);
-  });
   // @scenario screen=settings, state=forbidden, viewport=1440, locale=ko
   // @effects every_analytics_screen_only_calls_its_own_permission
   it('교차 소스(진단)로 입력을 잠그는 자리는 전부 조회 권한을 먼저 본다 — 403 을 「꺼짐」으로 읽지 않는다', () => {

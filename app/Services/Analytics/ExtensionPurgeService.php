@@ -50,7 +50,7 @@ class ExtensionPurgeService
      *
      * @param  string  $type  확장 종류 (module, plugin)
      * @param  string  $identifier  확장 식별자
-     * @return array{conversions: int, dimensions: int} 대상별 삭제 건수
+     * @return array{conversions: int, dimensions: int, failed: bool} 대상별 삭제 건수와 실패 여부
      */
     public function purge(string $type, string $identifier): array
     {
@@ -106,7 +106,7 @@ class ExtensionPurgeService
                 'failed' => true,
             ]);
 
-            return ['conversions' => 0, 'dimensions' => 0];
+            return ['conversions' => 0, 'dimensions' => 0, 'failed' => true];
         }
 
         $this->runs->update($run, [
@@ -126,6 +126,6 @@ class ExtensionPurgeService
             'failed' => false,
         ]);
 
-        return $counts;
+        return [...$counts, 'failed' => false];
     }
 }

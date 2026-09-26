@@ -2,12 +2,15 @@
 
 namespace Tests\Feature\Analytics\Api;
 
+use App\Contracts\Analytics\GoalRegistryInterface;
 use App\Enums\Analytics\ActionType;
 use App\Enums\Analytics\VisitorType;
 use App\Models\Analytics\AnalyticsAction;
+use App\Models\Analytics\AnalyticsConversion;
 use App\Models\User;
 use App\Services\Analytics\CsvExporter;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Schema;
 
 /**
  * 방문자 API — 목록에서 사람을 고르고, 그 사람의 활동을 펼친다.
@@ -287,6 +290,176 @@ class VisitorControllerTest extends AnalyticsApiTestCase
     }
 
     /**
+     * 타임라인 전환이 전환 탭과 같은 목표 이름을 싣는지 확인합니다.
+     *
+     * 전환의 `label` 은 목표 이름이 아니라 전환 속성(주문번호 등)이다. 속성 없이 기록되는 코어
+     * 목표(가입·로그인)는 화면에 `core.user_registered` 원키가 찍혔다. 등록부에서 사라진 목표는
+     * 원키 그대로, 전환 속성은 손대지 않는다.
+     *
+     * @return void 없음
+     *
+     * @scenario endpoint=visitors, role=privacy, period=valid
+     *
+     * @effects timeline_conversions_carry_the_declared_goal_name
+     */
+    public function test_the_timeline_names_conversions_like_the_goal_tab(): void
+    {
+        $key = str_repeat('7', 32);
+        $visit = $this->visit(['visitor_key' => $key]);
+
+        foreach ([['core.user_registered', null], ['gone-shop.order_completed', 'ORD-1']] as [$goalKey, $label]) {
+            AnalyticsConversion::factory()->create([
+                'visit_id' => $visit->id,
+                'visitor_key' => $key,
+                'goal_key' => $goalKey,
+                'label' => $label,
+                'occurred_at' => Carbon::now('UTC'),
+            ]);
+        }
+
+        $expected = app(GoalRegistryInterface::class)->find('core.user_registered')?->localizedLabel(app()->getLocale());
+        $this->assertNotNull($expected, '코어 가입 목표가 등록부에 없다');
+        $this->assertNotSame('core.user_registered', $expected, '코어 목표 이름이 원키와 같아 이 단언이 무의미하다');
+
+        $response = $this->actingAs($this->privacyAdmin())
+            ->getJson('/api/admin/analytics/visitors/'.$key);
+
+        $response->assertOk();
+        $conversions = collect($response->json('data.visits.0.conversions'))->keyBy('goal_key');
+
+        $this->assertCount(2, $conversions);
+        $this->assertSame($expected, $conversions['core.user_registered']['goal_label'] ?? null);
+        $this->assertSame('gone-shop.order_completed', $conversions['gone-shop.order_completed']['goal_label'] ?? null, '등록부에 없는 목표는 원키');
+        $this->assertSame('ORD-1', $conversions['gone-shop.order_completed']['label'], '전환 속성은 그대로');
+    }
+
+    /**
+     * 방문자 상세는 원장이 아는 방문 부수정보를 모두 싣고 모두 그린다.
+     *
+     * 해상도·브라우저/OS 버전·언어·로케일·지역·도시·유입 검색어·캠페인이 원장에 있는데 화면과
+     * 정보주체 열람 파일에서 빠져 있었다(#682 S4 라운드 8 「방문자 정보에는 해상도 등
+     * 부수정보가 모두 나와야 한다」). 모집단은 **원장 스키마의 열 전부**이고, 내부용 열만 사유와
+     * 함께 뺀다 — 열이 늘면 응답·화면 어디에도 없어 red 다. 응답에 실린 방문 값은 다시 화면
+     * 레이아웃이 그리는지 대조한다.
+     *
+     * @return void 없음
+     *
+     * @scenario endpoint=visitors, role=privacy, period=valid
+     *
+     * @effects visitor_detail_shows_every_recorded_visit_detail
+     */
+    public function test_visitor_detail_shows_every_recorded_visit_detail(): void
+    {
+        $key = str_repeat('8', 32);
+        $this->visit([
+            'visitor_key' => $key,
+            'country_code' => 'KR', 'region_code' => '11', 'city' => 'Seoul',
+            'browser_name' => 'Chrome', 'browser_version' => '153', 'os_name' => 'Windows', 'os_version' => '10',
+            'screen_resolution' => '1920x1080', 'browser_language' => 'ko-KR', 'locale' => 'ko',
+            'referrer_keyword' => 'g7', 'campaign_name' => 'fall', 'campaign_source' => 'news', 'campaign_medium' => 'email',
+        ]);
+
+        // 방문자가 아니라 원장 운영에 쓰는 열 — 사유가 없으면 여기 두지 않는다.
+        $internal = [
+            'visitor_key_type' => '식별 방식(쿠키·해시) — 방문자 정보가 아니다',
+            'visit_date' => '첫 활동 시각으로 대신한다',
+            'entry_action_name_id' => '액션 목록이 진입 페이지를 보여 준다',
+            'exit_action_name_id' => '액션 목록이 이탈 페이지를 보여 준다',
+            'actions_count' => '액션 목록이 그 자체다',
+            'ip_hash' => '익명 모드 조회용 해시 — 사람이 읽을 값이 아니다',
+            'created_at' => '행 관리 시각',
+            'updated_at' => '행 관리 시각',
+        ];
+        $renamed = ['id' => 'visit_id', 'pageviews_count' => 'pageviews'];
+
+        $columns = Schema::getColumnListing('analytics_visits');
+        $this->assertGreaterThan(20, count($columns), '원장 열 모집단을 읽지 못했다');
+        $this->assertSame([], array_values(array_diff(array_keys($internal), $columns)), '내부용으로 뺀 열이 원장에 없다 — 목록이 낡았다');
+
+        $response = $this->actingAs($this->privacyAdmin())->getJson('/api/admin/analytics/visitors/'.$key)->assertOk();
+        $screenVisit = $response->json('data.visits.0');
+
+        $missing = [];
+        foreach ($columns as $column) {
+            if (! isset($internal[$column]) && ! array_key_exists($renamed[$column] ?? $column, $screenVisit)) {
+                $missing[] = $column;
+            }
+        }
+        $this->assertSame([], $missing, '원장 열이 방문자 상세 응답(= 정보주체 열람 파일)에 없다');
+
+        // 응답의 방문 값은 방문 펼침(`visit.`)이 그린다 — 카드는 가장 최근 방문 하나만 보여 줘, 방문마다
+        // 다를 수 있는 값을 카드로 대신하면 앞 방문의 값이 화면 어디에도 없다.
+        $notDrawn = [
+            'visitor_key' => '머리에 한 번 보인다(방문마다 같다)',
+            'user_id' => '카드 회원 칸',
+            'user_hash' => '카드 회원 칸',
+            'custom_dimensions' => '확장이 넣은 분류 값 — 확장별 분류 탭이 보인다',
+        ];
+        $layout = (string) file_get_contents(base_path('templates/_bundled/sirsoft-admin_basic/layouts/admin_analytics_visitor_detail.json'));
+        $undrawn = [];
+        foreach (array_keys($screenVisit) as $field) {
+            if (isset($notDrawn[$field])) {
+                continue;
+            }
+            if (! str_contains($layout, 'visit.'.$field)) {
+                $undrawn[] = $field;
+            }
+        }
+        $this->assertSame([], $undrawn, '방문자 상세 화면이 그리지 않는 방문 값');
+
+        $card = $response->json('data.visitor');
+        foreach (['screen_resolution' => '1920x1080', 'browser_version' => '153', 'os_version' => '10', 'browser_language' => 'ko-KR', 'locale' => 'ko', 'region_code' => '11', 'city' => 'Seoul'] as $field => $value) {
+            $this->assertSame($value, $card[$field] ?? null, "방문자 카드 {$field}");
+        }
+    }
+
+    /**
+     * 방문자 화면이 받는 코드값마다 사람이 읽을 이름이 함께 오는지 확인합니다.
+     *
+     * 집계 실행의 「실행」 열이 `scheduled` 로 찍히던 결함과 같은 모양 전수(#682 S4 라운드 8).
+     * 모집단 = 방문자 목록 행 · 방문자 카드 · 방문 펼침 × 코드 필드. 코드는 그대로 두고(내보내기·CSV 정본)
+     * 이름 필드가 코드와 다른 사람 말이어야 한다.
+     *
+     * @return void 없음
+     *
+     * @scenario endpoint=visitors, role=privacy, period=valid
+     *
+     * @effects stored_codes_are_shown_as_human_labels
+     */
+    public function test_visitor_screens_carry_human_names_for_stored_codes(): void
+    {
+        $key = str_repeat('9', 32);
+        $this->visit([
+            'visitor_key' => $key, 'pageviews_count' => 1,
+            'country_code' => 'KR', 'device_type' => 'desktop', 'browser_language' => 'ko-KR', 'locale' => 'ko',
+        ]);
+
+        $user = $this->privacyAdmin();
+        $row = collect($this->actingAs($user)->getJson('/api/admin/analytics/visitors?preset=today')->assertOk()->json('data.data'))
+            ->firstWhere('visitor_key', $key);
+        $detail = $this->actingAs($user)->getJson('/api/admin/analytics/visitors/'.$key)->assertOk();
+
+        $surfaces = [
+            'list' => [$row, ['country_code' => 'country_name', 'device_type' => 'device_type_label']],
+            'card' => [$detail->json('data.visitor'), ['country_code' => 'country_name', 'device_type' => 'device_type_label', 'browser_language' => 'browser_language_label', 'locale' => 'locale_label']],
+            'visit' => [$detail->json('data.visits.0'), ['country_code' => 'country_name', 'device_type' => 'device_type_label', 'browser_language' => 'browser_language_label', 'locale' => 'locale_label']],
+        ];
+
+        $raw = [];
+        foreach ($surfaces as $surface => [$payload, $pairs]) {
+            foreach ($pairs as $codeField => $nameField) {
+                $code = $payload[$codeField] ?? null;
+                $name = $payload[$nameField] ?? null;
+                if (! is_string($code) || ! is_string($name) || $name === '' || $name === $code) {
+                    $raw[] = "{$surface}.{$nameField} (".var_export($name, true).' ← '.var_export($code, true).')';
+                }
+            }
+        }
+        $this->assertSame([], $raw, '코드만 있고 사람이 읽을 이름이 없는 자리');
+        $this->assertSame(__('analytics.device_type.desktop'), $row['device_type_label']);
+    }
+
+    /**
      * 방문자 활동 내역을 CSV 로 내려받을 수 있는지 확인합니다.
      *
      * 정보주체가 열람을 요구하면 운영자는 그 사람의 기록을 건네줘야 합니다. 화면으로만
@@ -323,9 +496,11 @@ class VisitorControllerTest extends AnalyticsApiTestCase
         $this->assertStringStartsWith(CsvExporter::BOM, $body, 'BOM 이 없으면 엑셀에서 한글이 전부 깨진다');
         // 전체 유입 주소는 집계표에 없는 값이라 CSV 에도 실어야 한다 — 호스트만으로는
         // 어느 글에서 왔는지 알 수 없다(#682 라운드 4, 검수 지적 ⑥).
-        $this->assertStringContainsString(
-            "referrer_type,referrer_name,referrer_url,pageviews,total_time_seconds,action_occurred_at,action_type,action_name,time_spent_seconds\r\n",
-            $body,
+        // 열 전체를 머리행으로 잠근다 — 뒤쪽만 재면 앞의 방문 열이 빠져도 초록이다.
+        $this->assertSame(
+            'visit_id,first_action_at,last_action_at,visitor_type,country_code,device_type,browser,os,'
+            .'referrer_type,referrer_name,referrer_url,pageviews,total_time_seconds,action_occurred_at,action_type,action_name,time_spent_seconds',
+            explode("\r\n", substr($body, strlen(CsvExporter::BOM)))[0],
         );
         // 액션 줄에 방문 정보가 함께 실려야 엑셀에서 한 줄만 보고도 맥락을 안다.
         $this->assertStringContainsString('naver.com', $body);

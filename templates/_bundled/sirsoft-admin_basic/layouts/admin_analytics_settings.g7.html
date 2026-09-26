@@ -4,7 +4,7 @@
   (`settings.retention_days`)이고, 바꾸면 `hasChanges` 가 켜져 저장 버튼이 풀린다.
   e2e:allow 이번 변경(받아오는 동안 표를 흐림 · 실패 시 설정 폼이 빈 값으로 섬)은 화면 14면 전수를
   모집단으로 파생해 재는 `analyticsStateBranches.test.ts` 가 잠근다 — 되돌리면 blur 6면·fallback 1건이 red 다.
-  브라우저 spec 은 PO 가 이번 라운드 범위를 화면 결함 2건으로 한정해 이월했다(계획서 §12 「S3 라운드 1」).
+  브라우저 spec 은 그 라운드의 범위를 화면 결함 2건으로 한정한 결정에 따라 뒤로 미뤘다(S3 라운드 1).
   개인정보 수준을 더 엄격하게 바꿔 저장하면 서버가 `retro_anonymize_available` 을 주고, 그때 소급 익명화
   확인 창을 연다. 리포트 탭의 정의 상태는 알림 정의 API 를 따로 불러 읽는다(카드가 그 API 로 편집하므로).
   이 화면은 통계 설정 권한으로 열리지만 저장소 현황은 통계 조회 권한 API 를, 알림 정의는 알림 설정 권한
@@ -37,6 +37,13 @@
         <field name="opted_out" :value="false"/>
       </field>
     </fallback>
+    <!-- 보조 소스라 403 을 삼킨다. 화면과 같은 설정 권한이라 권한이 없으면 주 소스(`analytics_settings`)가
+         이미 권한 오류 화면을 띄운다 — 여기서도 띄우거나 토스트를 내면 같은 사실을 두 번 알린다. -->
+    <error-handling>
+      <on-code code="403">
+        <suppress/>
+      </on-code>
+    </error-handling>
   </data-source>
   <!-- 저장소 현황(보존 탭) — 표별 행 수·크기와 경고 한계. 전체 삭제 창도 이 값을 읽는다. -->
   <data-source id="analytics_storage" label_key="$t:editor.data_source.analytics_storage" type="api" endpoint="/api/admin/analytics/data" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="background" if="{{(query.tab || 'collection') === 'retention'}}">
@@ -115,14 +122,14 @@
     <field name="cloudRefreshing" :value="false"/>
   </init-local>
   <computed name="isReadOnly">{{!!analytics_settings?.error}}</computed>
-  <computed name="canReadAnalytics">{{current_user?.data?.is_super === true || (current_user?.data?.permissions ?? []).some(p => (p?.identifier ?? p) === 'core.analytics.read')}}</computed>
+  <computed name="canReadAnalytics">{{(current_user?.data?.permissions ?? []).some(p => (p?.identifier ?? p) === 'core.analytics.read')}}</computed>
   <computed name="siteTimezoneDiffers">{{_computed.canReadAnalytics === true &amp;&amp; analytics_status?.data?.timezone_differs === true}}</computed>
   <computed name="siteTimezoneName">{{_computed.canReadAnalytics === true ? (analytics_status?.data?.timezone ?? '') : ''}}</computed>
   <computed name="queueBacklogged">{{_computed.canReadAnalytics === true &amp;&amp; analytics_status?.data?.queue?.backlogged === true}}</computed>
   <computed name="consentFallbackReason">{{_computed.canReadAnalytics === true ? (analytics_status?.data?.collection?.anonymous_fallback_reason ?? '') : ''}}</computed>
   <computed name="consentFallback">{{_computed.canReadAnalytics &amp;&amp; (!!_computed.consentFallbackReason || (_local.form?.settings?.privacy_mode === 'consent' &amp;&amp; (!analytics_status?.data?.collection?.consent_source || analytics_status?.data?.collection?.consent_source === 'none')))}}</computed>
-  <computed name="canReadDefinitions">{{current_user?.data?.is_super === true || (current_user?.data?.permissions ?? []).some(p => (p?.identifier ?? p) === 'core.settings.read')}}</computed>
-  <computed name="canManageDefinitions">{{current_user?.data?.is_super === true || (current_user?.data?.permissions ?? []).some(p => (p?.identifier ?? p) === 'core.settings.update')}}</computed>
+  <computed name="canReadDefinitions">{{(current_user?.data?.permissions ?? []).some(p => (p?.identifier ?? p) === 'core.settings.read')}}</computed>
+  <computed name="canManageDefinitions">{{(current_user?.data?.permissions ?? []).some(p => (p?.identifier ?? p) === 'core.settings.update')}}</computed>
   <computed name="activeTab">{{query.tab || 'collection'}}</computed>
   <permissions>
     <permission>core.analytics.update</permission>
@@ -140,7 +147,7 @@
         <div class="flex-center gap-2 flex-wrap">
           <!-- 봇 탭의 「클라우드 대역 갱신 시각」이 사이트 표준시로 나간다. 공통 조각
             `_partial_status_alerts` 는 「설정에서 켜세요」가 순환 안내가 되어 여기 없으므로
-            같은 사실을 배지로 보인다(#682 S3 라운드 7, PO 확정 「두 화면 모두 배지」).
+            같은 사실을 배지로 보인다(#682 S3 라운드 7, 설계 결정 「두 화면 모두 배지」).
             조회 권한이 없으면 진단 API 가 403 이고 fallback 이 false 라 뜨지 않는다. -->
           <badge data-ref="site_timezone_badge" data-if="{{_computed.siteTimezoneDiffers}}" color="blue" size="sm" text="$t:admin.analytics.common.site_timezone_badge|timezone={{_computed.siteTimezoneName}}"/>
           <!-- 큐 적체도 같은 자리에서 보인다. 공통 조각 `_partial_status_alerts` 가 띄우는 Alert 3종 중
@@ -304,11 +311,11 @@
         <div data-ref="tab_privacy" data-if="{{(query.tab || 'collection') === 'privacy'}}" class="space-y-4">
           <div data-ref="gdpr_status_row" class="flex-center gap-2 flex-wrap">
             <span class="text-label-subtle">$t:admin.analytics.settings.privacy.consent_source_label</span>
-            <badge color="{{!_computed.canReadAnalytics ? 'gray' : (analytics_status?.data?.collection?.consent_source &amp;&amp; analytics_status?.data?.collection?.consent_source !== 'none' ? 'green' : 'gray')}}" text="{{!_computed.canReadAnalytics ? $t('admin.analytics.settings.privacy.consent_source_unknown') : (analytics_status?.data?.collection?.consent_source &amp;&amp; analytics_status?.data?.collection?.consent_source !== 'none' ? analytics_status.data.collection.consent_source : $t('admin.analytics.settings.privacy.consent_source_none'))}}" size="sm"/>
+            <badge color="{{!_computed.canReadAnalytics ? 'gray' : (analytics_status?.data?.collection?.consent_source &amp;&amp; analytics_status?.data?.collection?.consent_source !== 'none' ? 'green' : 'gray')}}" text="{{!_computed.canReadAnalytics ? $t('admin.analytics.settings.privacy.consent_source_unknown') : (analytics_status?.data?.collection?.consent_source &amp;&amp; analytics_status?.data?.collection?.consent_source !== 'none' ? (['gdpr', 'filter'].includes(analytics_status.data.collection.consent_source) ? $t('admin.analytics.settings.privacy.consent_sources.' + analytics_status.data.collection.consent_source) : analytics_status.data.collection.consent_source) : $t('admin.analytics.settings.privacy.consent_source_none'))}}" size="sm"/>
           </div>
           <!-- 세 모드 카드에는 KPI 카드와 같은 아이콘 상자를 둔다 — 글만 있으면 어느 것이 무엇을 덜 모으는
             모드인지 훑어서 구분되지 않는다. 아이콘은 장식이라 `aria-hidden` 으로 이름에서 뺀다 — 빼지 않으면
-            버튼 이름이 「users 전체 수집 …」이 된다(#682 라운드 4, PO 지적 ④). -->
+            버튼 이름이 「users 전체 수집 …」이 된다(#682 라운드 4, 검수 지적 ④). -->
           <div data-ref="privacy_mode_cards" role="radiogroup" aria-label="$t:admin.analytics.settings.privacy.mode_label" class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <button data-ref="mode_full" type="button" role="radio" aria-checked="{{(_local.form?.settings?.privacy_mode ?? 'full') === 'full'}}" class="{{(_local.form?.settings?.privacy_mode ?? 'full') === 'full' ? 'admin-card admin-card-clickable admin-card-selected text-left' : 'admin-card admin-card-clickable text-left'}}" disabled="{{_computed.isReadOnly}}">
               <on type="click">
@@ -600,7 +607,8 @@
               <data-grid data-ref="storage_grid" data="{{analytics_storage?.data?.tables ?? []}}" :pagination="false" idField="table" :selectable="false" :sortable="false">
                 <column field="table" header="$t:admin.analytics.settings.retention.storage_columns.table">
                   <cell>
-                    <span class="text-body font-mono">{{row.table}}</span>
+                    <span class="text-body block">{{row.label ?? row.table}}</span>
+                    <span data-ref="storage_table_code" data-if="{{!!row.label &amp;&amp; row.label !== row.table}}" class="text-hint font-mono block">{{row.table}}</span>
                   </cell>
                 </column>
                 <column field="rows" header="$t:admin.analytics.settings.retention.storage_columns.rows" width="120px" align="right">

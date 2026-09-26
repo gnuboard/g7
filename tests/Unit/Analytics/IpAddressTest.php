@@ -17,7 +17,7 @@ class IpAddressTest extends TestCase
     /**
      * IPv4 는 옥텟 수만큼 뒤에서부터 지운다.
      *
-     * @scenario mask_octets=0|1|2|3, family=ipv4
+     * @scenario mask_octets=0|1|2|3, ip_family=ipv4
      *
      * @effects ip_masking_clears_requested_octets_for_ipv4
      *
@@ -34,7 +34,7 @@ class IpAddressTest extends TestCase
     /**
      * IPv6 는 같은 수만큼 16비트 블록을 지운다.
      *
-     * @scenario mask_octets=0|1|2|3, family=ipv6
+     * @scenario mask_octets=0|1|2|3, ip_family=ipv6
      *
      * @effects ip_masking_clears_requested_blocks_for_ipv6
      *
@@ -53,7 +53,7 @@ class IpAddressTest extends TestCase
     /**
      * 주소 전체를 지우지는 않는다 — 주소가 아니게 되면 저장할 의미가 없다.
      *
-     * @scenario mask_octets=over_max, family=ipv4
+     * @scenario mask_octets=over_max, ip_family=ipv4
      *
      * @effects ip_masking_never_clears_the_entire_address
      *

@@ -2,7 +2,9 @@
 
 namespace Tests\Feature\Analytics\Api;
 
+use App\Analytics\AnalyticsClock;
 use App\Analytics\VisitorRecognizer;
+use App\Contracts\Repositories\Analytics\SaltRepositoryInterface;
 use App\Enums\Analytics\ActionType;
 use App\Enums\Analytics\ArchiveRunType;
 use App\Enums\Analytics\VisitorType;
@@ -263,6 +265,29 @@ class PrivacyControllerTest extends AnalyticsApiTestCase
     }
 
     /**
+     * 코어 방문이 0건인 조회도 내보내기 파일 이름을 싣는지 확인합니다.
+     *
+     * 정보주체 화면은 이 이름이 왔는지로 「검색 응답이 도착했다」를 알고 내보내기·삭제를 켠다. 코어
+     * 원장이 보존 기간으로 비었어도 확장은 자기 표에 그 사람의 기록을 가질 수 있어 0건에서도 두 버튼이
+     * 눌려야 한다 — 0건 응답이 이름을 빼면 확장 기록을 지울 길이 화면에서 사라진다.
+     *
+     * @return void 없음
+     *
+     * @scenario endpoint=privacy_subjects, role=privacy
+     *
+     * @effects zero_visit_lookup_still_names_the_export_file
+     */
+    public function test_a_lookup_without_core_visits_still_names_the_export_file(): void
+    {
+        $response = $this->actingAs($this->privacyAdmin())
+            ->getJson('/api/admin/analytics/privacy/subjects?ip=203.0.113.99');
+
+        $response->assertOk();
+        $this->assertSame([], $response->json('data.visits'));
+        $this->assertMatchesRegularExpression('/^analytics-subject-\d{8}\.json$/', (string) $response->json('data.export_filename'));
+    }
+
+    /**
      * 주소로 찾을 때 한계 안내가 함께 오는지 확인합니다.
      *
      * @return void 없음
@@ -371,7 +396,7 @@ class PrivacyControllerTest extends AnalyticsApiTestCase
      *
      * @return void 없음
      *
-     * @scenario endpoint=privacy_subjects, role=privacy, mode=full
+     * @scenario endpoint=privacy_subjects, role=privacy
      *
      * @effects masked_ip_is_labelled_as_masked
      */
@@ -451,5 +476,36 @@ class PrivacyControllerTest extends AnalyticsApiTestCase
             $this->assertArrayHasKey('search_result_count', $action);
             $this->assertNull($action['search_result_count']);
         }
+    }
+
+    /**
+     * 익명 모드로 모은 방문은 어제·오늘 솔트로 만든 주소 해시로 찾아지고, 그보다 오래된 것은 찾아지지 않는다.
+     *
+     * 익명 모드는 주소를 저장하지 않고 그날 솔트로 만든 해시만 남긴다. 정보주체가 「이 주소의 기록」을
+     * 물으면 남아 있는 솔트로 해시 후보를 만들어 대 본다 — 솔트가 지워진 날은 원리상 찾을 수 없고,
+     * 화면이 그 한계를 알린다. 조회가 오늘 솔트만 쓰면 어제 방문을 「없음」으로 답하게 된다.
+     *
+     * @return void 없음
+     *
+     * @scenario endpoint=privacy_subjects, role=privacy
+     *
+     * @effects anonymous_visits_are_found_by_recent_salt_hashes
+     */
+    public function test_anonymous_visits_are_found_with_the_recent_salts(): void
+    {
+        $ip = '203.0.113.77';
+        $salts = app(SaltRepositoryInterface::class);
+        $today = Carbon::parse(AnalyticsClock::today());
+
+        foreach ([0 => 'today', 1 => 'yesterday', 3 => 'three_days_ago'] as $offset => $label) {
+            $salt = $salts->forDate($today->copy()->subDays($offset)->toDateString());
+            $this->visit(['ip' => null, 'ip_hash' => hash_hmac('sha256', $ip, $salt), 'visitor_key' => str_pad($label, 32, 'x')]);
+        }
+
+        $response = $this->actingAs($this->privacyAdmin())
+            ->getJson('/api/admin/analytics/privacy/subjects?ip='.$ip)
+            ->assertOk();
+
+        $this->assertCount(2, $response->json('data.visits'), '오늘·어제 솔트의 방문만 찾아져야 한다');
     }
 }

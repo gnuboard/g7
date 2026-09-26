@@ -462,6 +462,7 @@
                                         ]
                                     },
                                     {
+                                        "comment": "두 버튼은 검색 응답이 오면(서버만 싣는 export_filename) 방문이 0건이어도 켠다 — 코어 원장이 보존\n            기간으로 비었어도 확장은 자기 표에 이 사람의 기록을 가질 수 있고, 서버는 그때도 확장의 정보주체\n            필터를 부른다(DataSubjectService). 응답 전에는 잠가 저장 이름이 기본값으로 떨어지지 않게 한다.",
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
@@ -494,7 +495,7 @@
                                                 "props": {
                                                     "type": "button",
                                                     "className": "btn btn-secondary btn-sm flex-center gap-1.5",
-                                                    "disabled": "{{(analytics_subjects?.data?.visits ?? []).length === 0}}"
+                                                    "disabled": "{{!analytics_subjects?.data?.export_filename}}"
                                                 },
                                                 "children": [
                                                     {
@@ -546,7 +547,7 @@
                                                 "props": {
                                                     "type": "button",
                                                     "className": "btn btn-danger btn-sm flex-center gap-1.5",
-                                                    "disabled": "{{(analytics_subjects?.data?.visits ?? []).length === 0}}"
+                                                    "disabled": "{{!analytics_subjects?.data?.export_filename}}"
                                                 },
                                                 "children": [
                                                     {

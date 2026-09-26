@@ -2,7 +2,9 @@
 
 namespace Tests\Feature\Analytics\Api;
 
+use App\Events\GenericBroadcastEvent;
 use App\Models\User;
+use Illuminate\Support\Facades\Event;
 
 /**
  * 현재 접속자 API — 주소가 권한에 따라 갈리는 자리.
@@ -100,6 +102,27 @@ class RealtimeControllerTest extends AnalyticsApiTestCase
     }
 
     /**
+     * 현재 접속자 행이 국가·기기 코드에 사람이 읽을 이름을 붙이는지 확인합니다(#682 S4 라운드 8).
+     *
+     * @return void 없음
+     *
+     * @scenario endpoint=realtime, role=read, period=valid
+     *
+     * @effects stored_codes_are_shown_as_human_labels
+     */
+    public function test_realtime_rows_carry_human_names_for_codes(): void
+    {
+        $this->visit(['country_code' => 'KR', 'device_type' => 'mobile']);
+
+        $row = $this->actingAs($this->readAdmin())->getJson('/api/admin/analytics/realtime')->assertOk()->json('data.visitors.0');
+
+        $this->assertSame('KR', $row['country_code']);
+        $this->assertNotSame('KR', $row['country_name'] ?? 'KR', '국가 이름');
+        $this->assertSame(__('analytics.device_type.mobile'), $row['device_type_label'] ?? null);
+        $this->assertNotSame('mobile', $row['device_type_label']);
+    }
+
+    /**
      * 구간을 벗어난 방문이 빠지고 범위 밖 값이 거절되는지 확인합니다.
      *
      * @return void 없음
@@ -169,5 +192,39 @@ class RealtimeControllerTest extends AnalyticsApiTestCase
             ->json('data.visitors.0');
 
         $this->assertNull($row['user'] ?? null, '조회 권한만으로는 회원 이름이 나가면 안 된다');
+    }
+
+    /**
+     * 현재 접속자 방송은 정해진 채널·이벤트로 나가고, 주소와 회원 신원을 싣지 않는다.
+     *
+     * 방송 채널은 통계 조회 권한만으로 구독된다. 방송에 주소나 회원 이름이 실리면 API 가
+     * 개인정보 권한으로 가린 값이 소켓으로 새어 나간다.
+     *
+     * @return void 없음
+     *
+     * @scenario endpoint=realtime, role=read
+     *
+     * @effects realtime_broadcast_carries_no_address_or_identity
+     */
+    public function test_realtime_broadcast_carries_no_address_or_identity(): void
+    {
+        config(['broadcasting.default' => 'reverb', 'broadcasting.connections.reverb.options.host' => 'localhost']);
+        Event::fake([GenericBroadcastEvent::class]);
+
+        $member = User::factory()->create(['name' => '가려야 할 회원']);
+        $this->visit(['ip' => '203.0.113.50', 'user_id' => $member->id, 'visitor_type' => 'member']);
+
+        $this->artisan('analytics:broadcast-realtime')->assertSuccessful();
+
+        $events = Event::dispatched(GenericBroadcastEvent::class, fn (GenericBroadcastEvent $event): bool => $event->eventName === 'analytics.realtime.updated');
+        $this->assertCount(1, $events, '현재 접속자 방송이 한 번 나가야 한다');
+
+        $event = $events->first()[0];
+        $this->assertSame('core.admin.analytics', $event->channel);
+        $this->assertSame(1, $event->payload['data']['count'] ?? null);
+
+        $payload = json_encode($event->payload, JSON_UNESCAPED_UNICODE);
+        $this->assertStringNotContainsString('203.0.113.50', $payload, '방송에 방문자 주소가 실렸다');
+        $this->assertStringNotContainsString('가려야 할 회원', $payload, '방송에 회원 이름이 실렸다');
     }
 }

@@ -61,6 +61,21 @@ return [
         'extension_purge' => 'Extension data cleanup',
     ],
 
+    // Storage table names (Settings › Retention)
+    'storage_table' => [
+        'analytics_visits' => 'Visit records',
+        'analytics_actions' => 'Pageview and event records',
+        'analytics_action_names' => 'Page and event names',
+        'analytics_conversions' => 'Conversion records',
+        'analytics_bot_hits' => 'Bot visit records',
+        'analytics_stats_hourly' => 'Hourly aggregates',
+        'analytics_stats_daily' => 'Daily aggregates',
+        'analytics_dimension_stats' => 'Per-extension category aggregates',
+        'analytics_salts' => 'Anonymous key material',
+        'analytics_archive_runs' => 'Aggregation run history',
+        'analytics_collect_failures' => 'Collection failure records',
+    ],
+
     // Batch run statuses
     'archive_run_status' => [
         'running' => 'Running',
@@ -73,11 +88,10 @@ return [
     'collect_failure_reason' => [
         'validation' => 'Invalid request format',
         'max_actions' => 'Action limit per visit exceeded',
-        'dictionary' => 'Name dictionary write failed',
         'db_error' => 'Database error',
         'listener_exception' => 'Extension listener error',
         'unknown_goal' => 'Unregistered goal',
-        'unknown_dimension' => 'Unregistered dimension',
+        'unknown_dimension' => 'Unregistered breakdown',
     ],
 
     // Exclusion reasons
@@ -143,7 +157,6 @@ return [
         'skipped_locked' => 'Skipped because the same period is already being archived.',
         'skipped_beyond_retention' => 'Skipped because the raw records for this day are past the retention period. Existing aggregates are kept as they are.',
         'skipped_finalized' => 'Skipped because this day is already finalized. Turn on "Re-archive finalized days" to recalculate it.',
-        'range_invalid' => 'The re-aggregation period is invalid.',
         'stale_run' => 'Closed as failed because the run stopped without reporting its end (worker stopped, timed out, etc.). Run it again if needed.',
         'job_failed' => 'The job failed, so the run was closed: :reason',
     ],
@@ -169,6 +182,7 @@ return [
     ],
     'report' => [
         'fetch_success' => 'Loaded the report.',
+        'inactive_dimension' => ':key (inactive extension)',
     ],
     'series' => [
         'fetch_success' => 'Loaded the trend series.',

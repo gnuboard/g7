@@ -89,7 +89,7 @@
           </options>
           <on type="change">
             <!-- 지표도 기간과 똑같이 주소에 싣는다 — 화면 상태로만 두면 새로고침·주소 공유에서 「방문」으로 되돌아간다.
-              기본값 `visits` 는 질의에서 빼 주소를 짧게 둔다(#682 라운드 4, PO 지적 ①). -->
+              기본값 `visits` 는 질의에서 빼 주소를 짧게 둔다(#682 라운드 4, 검수 지적 ①). -->
             <navigate path="/admin/analytics/patterns" :mergeQuery="true">
               <query metric="{{$event.target.value === 'visits' ? undefined : $event.target.value}}"/>
             </navigate>
@@ -110,6 +110,10 @@
         </div>
       </div>
       <p class="text-label-subtle mt-3">$t:admin.analytics.patterns.average_note</p>
+      <!-- 확장이 이 화면에 자기 리포트 조각을 붙이는 자리(데이터는 확장 자기 API). -->
+      <extension-point name="analytics_patterns_widgets" class="space-y-4 mt-4">
+        <default/>
+      </extension-point>
     </div>
   </slot>
 </layout>

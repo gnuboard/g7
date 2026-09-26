@@ -28,12 +28,16 @@ coverage_strategy: pairwise
 
 axes:
   mode: [full, consent, anonymous]
-  mask_octets: [0, 1, 2, 3]
+  mask_octets: [0, 1, 2, 3, over_max]
   geo_before_mask: [true, false]
   referrer_anon: [none, domain_only]
   pseudonymize: [true, false]
   gdpr: [active_consented, active_declined, inactive, absent]
   ip_family: [ipv4, ipv6]
+  # 모드가 판정을 바꾸는 자리 — 수집 매니페스트의 같은 이름 축 중 이 매니페스트가 쓰는 값
+  exclusion: [none, consent, dnt]
+  visitor: [guest, member]
+  visit_state: [new, open]
 
 exclusions:
   - { mode: anonymous, gdpr: active_consented, reason: "익명 모드는 동의 출처와 무관하게 동작한다 — 동의 축이 판정에 관여하지 않는다" }
@@ -42,9 +46,11 @@ exclusions:
 
 effects:
   - full_mode_falls_back_to_anonymous_when_the_consent_plugin_blocks_cookies
+  - consented_visitor_is_recorded_in_full_mode_when_the_consent_plugin_is_active
   - full_mode_stores_masked_ip_and_issues_cookie
   - full_mode_reports_returning_visitors
   - anonymous_mode_stores_no_ip
+  - anonymous_mode_failure_log_stores_no_ip
   - anonymous_mode_stores_salted_ip_hash_instead
   - anonymous_mode_issues_no_cookie
   - anonymous_mode_leaves_returning_flag_null

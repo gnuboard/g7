@@ -20,7 +20,8 @@
 import fs from 'fs';
 import path from 'path';
 import { describe, it, expect } from 'vitest';
-import { TEMPLATE_DIR, collectObjects } from './analyticsLayoutTestUtils';
+import { evaluateSafeExpression } from '@core/template-engine/SafeExpressionEvaluator';
+import { TEMPLATE_DIR, collectObjects, analyticsScreens, expandedObjects, analyticsLayoutFiles, loadLayout, adminAuthUserFields } from './analyticsLayoutTestUtils';
 
 const LAYOUT_DIR = path.join(TEMPLATE_DIR, 'layouts');
 const REPO_ROOT = path.resolve(TEMPLATE_DIR, '../../..');
@@ -37,28 +38,6 @@ const CROSS_PERMISSION_SOURCES = new Set([
   'analytics_storage',
   'analytics_notification_definitions',
 ]);
-
-/** `layouts/` 에서 통계 화면 JSON 을 파생한다. */
-function analyticsScreens(): string[] {
-  return fs
-    .readdirSync(LAYOUT_DIR)
-    .filter((name) => /^admin_analytics_.+\.json$/.test(name))
-    .sort();
-}
-
-/** 화면 트리를 조각(`partial`)까지 펼친다. */
-function expandedObjects(relative: string, seen = new Set<string>()): Record<string, any>[] {
-  if (seen.has(relative)) return [];
-  seen.add(relative);
-  const file = path.join(LAYOUT_DIR, relative);
-  if (!fs.existsSync(file)) return [];
-  const objects = collectObjects(JSON.parse(fs.readFileSync(file, 'utf8')));
-  const nested = objects
-    .map((node) => node.partial)
-    .filter((ref): ref is string => typeof ref === 'string')
-    .flatMap((ref) => expandedObjects(ref, seen));
-  return objects.concat(nested);
-}
 
 /** 화면 → 권한. `routes.json` 의 통계 라우트에서 파생한다. */
 function screenPermissions(): Map<string, string> {
@@ -234,6 +213,40 @@ function resolveGuard(guard: string, computeds: Record<string, string>): string 
   return out;
 }
 
+/** `{{…}}` 한 겹을 벗긴다 */
+function unwrap(expression: string): string {
+  const t = expression.trim();
+  return t.startsWith('{{') && t.endsWith('}}') ? t.slice(2, -2) : t;
+}
+
+/**
+ * 가드 식을 계산값까지 풀어 **실제로 평가**한다 — 권한 문자열이 식 어딘가에 적혀 있는지(부분문자열)가
+ * 아니라, 그 권한을 가진 계정과 못 가진 계정에서 참·거짓이 갈리는지를 본다. 부분문자열로 재면
+ * `!…some(p => … === 'x')` 처럼 뒤집힌 가드도 통과한다(#682 S3 R5-D8).
+ *
+ * @returns 평가값, 식이 평가기에서 실패하면 `'error'`
+ */
+function evaluateGuard(guard: string, computeds: Record<string, string>, permissions: string[]): unknown {
+  let expression = unwrap(guard);
+  for (let pass = 0; pass < 4; pass += 1) {
+    const next = expression.replace(/_computed\.([A-Za-z0-9_]+)/g, (whole, name: string) => (computeds[name] !== undefined ? `(${unwrap(computeds[name])})` : whole));
+    if (next === expression) break;
+    expression = next;
+  }
+  try {
+    return evaluateSafeExpression(expression, {
+      current_user: { data: { permissions: permissions.map((identifier) => ({ identifier })) } },
+      _computed: {},
+      _global: {},
+      _local: {},
+      query: {},
+      route: {},
+    });
+  } catch {
+    return 'error';
+  }
+}
+
 /** 라우트 패턴이 이 목적지를 받는가 — `:key` 칸은 아무 값이나 받는다. */
 function routeMatches(pattern: string, target: string): boolean {
   const a = pattern.split('/');
@@ -253,8 +266,10 @@ describe('방문자 통계 화면 — 권한 교차 전수', () => {
     expect(screens.length).toBeGreaterThanOrEqual(14);
     expect(permissions.size).toBeGreaterThanOrEqual(14);
     expect(api.filter((entry) => entry.pattern.includes('/analytics')).length).toBeGreaterThanOrEqual(20);
-    // 화면 목록과 라우트 목록이 서로를 덮는지 — 한쪽만 늘어도 red 다.
-    expect([...permissions.keys()].filter((screen) => !screens.includes(screen))).toEqual([]);
+    // 화면 목록과 라우트 목록이 서로를 덮는지 — 한쪽만 늘어도 red 다. 종전에는 「라우트 ⊆ 화면」 한 방향만
+    // 재서, 라우트 없는 새 화면은 아래 세 케이스가 `permissions.get()` 이 비어 조용히 건너뛰었다(#682 S3 R15-D1).
+    expect([...permissions.keys()].filter((screen) => !screens.includes(screen)), '레이아웃 없는 라우트').toEqual([]);
+    expect(screens.filter((screen) => !permissions.has(screen)), '라우트(권한)가 없는 통계 화면').toEqual([]);
   });
 
   // @scenario screen=visitors, state=forbidden, viewport=1440, locale=ko
@@ -332,9 +347,17 @@ describe('방문자 통계 화면 — 권한 교차 전수', () => {
           if (!route || route.permission === screenPermission) continue;
 
           crossings += 1;
-          const guard = resolveGuard(typeof node.if === 'string' ? node.if : '', computeds);
-          if (!guard.includes(route.permission)) {
-            offenders.push(`${screen}: ${target} 는 ${route.permission} 인데 버튼에 가드가 없다`);
+          const guard = typeof node.if === 'string' ? node.if : '';
+          // 화면 권한만 가진 계정 → 숨어야 하고, 목적지 권한까지 가진 계정 → 보여야 한다. 둘 다 재야
+          // 「늘 거짓」(버튼이 영영 안 뜸)과 「뒤집힘」(못 가는 계정에게만 뜸)을 함께 잡는다.
+          const without = evaluateGuard(guard, computeds, [screenPermission]);
+          const withTarget = evaluateGuard(guard, computeds, [screenPermission, route.permission]);
+          if (guard === '' || without === 'error' || withTarget === 'error') {
+            offenders.push(`${screen}: ${target} 는 ${route.permission} 인데 버튼 가드를 평가하지 못했다 — ${resolveGuard(guard, computeds).slice(0, 80)}`);
+          } else if (without) {
+            offenders.push(`${screen}: ${target} 는 ${route.permission} 인데 그 권한이 없는 계정에게도 버튼이 뜬다`);
+          } else if (!withTarget) {
+            offenders.push(`${screen}: ${target} 는 ${route.permission} 인데 그 권한이 있는 계정에게도 버튼이 안 뜬다`);
           }
         }
       }
@@ -431,6 +454,55 @@ describe('방문자 통계 화면 — 권한 교차 전수', () => {
 
     expect(sources).toBeGreaterThanOrEqual(7);
     expect(offenders).toEqual([]);
+  });
+
+  // @scenario screen=diagnostics, state=forbidden, viewport=1440, locale=ko
+  // @effects every_analytics_source_handles_403
+  it('모든 화면의 모든 api 소스가 403 을 처리한다 — 화면마다 권한 오류 화면은 하나 이상, 나머지는 삼킨다', () => {
+    // 개별 화면 테스트가 403 을 재는 화면은 8/14 였고, 주 소스만 봤다 — 보조 소스 4개(개요 실시간·진단
+    // 이력·실패 로그·설정 opt-out)는 처리 없이 전역 토스트로 떨어졌다(#682 S3 R3-D7·R5-D6·R9-D2·R13-D1).
+    // 모집단을 화면 트리(조각 포함)에서 파생해, 소스마다 403 이 권한 오류 화면(주 소스) 또는 삼킴(보조
+    // 소스)인지 본다. 권한 오류 화면이 하나도 없는 화면은 권한 없는 계정에게 빈 화면만 남긴다.
+    const unhandled: string[] = [];
+    const withoutErrorPage: string[] = [];
+    let sources = 0;
+    for (const screen of screens) {
+      let errorPages = 0;
+      for (const node of expandedObjects(screen)) {
+        if (node.type !== 'api' || typeof node.endpoint !== 'string' || typeof node.id !== 'string') continue;
+        sources += 1;
+        const handled = node.errorHandling?.['403'] ?? node.error_handling?.['403'];
+        const action = Array.isArray(handled) ? handled[0] : handled;
+        const kind = typeof action === 'string' ? action : (action?.handler ?? action?.type);
+        if (kind === 'showErrorPage') errorPages += 1;
+        else if (kind !== 'suppress') unhandled.push(`${screen}:${node.id} (${String(kind)})`);
+      }
+      if (errorPages === 0) withoutErrorPage.push(screen);
+    }
+    expect(sources, '훑은 api 소스').toBeGreaterThanOrEqual(screens.length * 2);
+    expect(unhandled, '403 을 처리하지 않는 소스').toEqual([]);
+    expect(withoutErrorPage, '권한 오류 화면을 띄우는 소스가 없는 화면').toEqual([]);
+  });
+
+  // @scenario screen=dashboard_widget, state=forbidden, viewport=1440, locale=ko
+  // @effects permission_guards_read_only_fields_the_auth_response_sends
+  it('권한 가드가 읽는 current_user 필드는 관리자 인증 응답이 실제로 싣는 필드다 — 없는 필드의 분기는 죽은 가지다', () => {
+    // 진단·대시보드는 `is_super_admin`, 나머지는 `is_super` 를 봤는데 `/api/admin/auth/user`
+    // (`UserResource::toArray`)는 둘 다 싣지 않는다 — 두 철자 모두 늘 undefined 인 가지였다(#682 S3 R2-E2·R3-E1·R12-D6).
+    // 모집단은 레이아웃 전수와 응답 리소스에서 판다 — 서버가 필드를 더하면 그 필드는 자동으로 허용된다.
+    const fields = adminAuthUserFields();
+    expect(fields.length, '관리자 인증 응답의 필드').toBeGreaterThan(10);
+    expect(fields, '권한 배열은 응답에 있어야 한다').toContain('permissions');
+
+    const reads = new Map<string, string>();
+    for (const file of analyticsLayoutFiles()) {
+      for (const m of JSON.stringify(loadLayout(file)).matchAll(/current_user\?\.data\?\.([A-Za-z_]+)/g)) {
+        if (!reads.has(m[1])) reads.set(m[1], file);
+      }
+    }
+    expect(reads.size, '레이아웃이 읽는 current_user 필드').toBeGreaterThan(0);
+    const absent = [...reads].filter(([field]) => !fields.includes(field)).map(([field, file]) => `${field} (${file})`);
+    expect(absent, '응답에 없는 필드를 읽는 자리').toEqual([]);
   });
 });
 

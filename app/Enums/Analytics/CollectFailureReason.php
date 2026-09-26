@@ -21,11 +21,6 @@ enum CollectFailureReason: string
     case MaxActions = 'max_actions';
 
     /**
-     * 이름 사전 기록 실패
-     */
-    case Dictionary = 'dictionary';
-
-    /**
      * 데이터베이스 오류
      */
     case DbError = 'db_error';

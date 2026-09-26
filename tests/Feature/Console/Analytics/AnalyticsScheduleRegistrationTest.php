@@ -138,7 +138,7 @@ class AnalyticsScheduleRegistrationTest extends TestCase
     {
         $allowlist = (array) config('schedule_security.artisan.allowlist', []);
 
-        foreach (['analytics:purge', 'analytics:anonymize'] as $command) {
+        foreach (['analytics:purge', 'analytics:anonymize', 'analytics:purge-extension'] as $command) {
             $this->assertArrayNotHasKey(
                 $command,
                 $allowlist,

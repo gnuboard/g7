@@ -5,8 +5,12 @@ namespace Tests\Feature\Console\Analytics;
 use App\Analytics\AnalyticsClock;
 use App\Enums\Analytics\VisitorType;
 use App\Extension\HookManager;
+use App\Listeners\NotificationHookListener;
 use App\Models\Analytics\AnalyticsStatsDaily;
+use App\Models\NotificationDefinition;
 use App\Services\Analytics\ReportMailService;
+use App\Services\NotificationDefinitionService;
+use Database\Seeders\NotificationDefinitionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Tests\TestCase;
@@ -72,6 +76,41 @@ class ReportCommandTest extends TestCase
         $this->artisan('analytics:report', ['--period' => 'weekly'])->assertSuccessful();
 
         $this->assertSame(0, $fired);
+    }
+
+    /**
+     * 설정은 켜져 있어도 알림 정의가 꺼져 있으면 메일이 나가지 않는다(두 게이트는 별개).
+     *
+     * 설정 끔(위 케이스)과 정의 비활성은 다른 스위치다. 발송 게이트는 「부팅 때 활성 정의만 훅에
+     * 구독한다」이고, 그 게이트가 리포트 서비스 쪽으로 옮겨지면 이 케이스가 red 가 된다. 정의를 켠
+     * 대조군이 실제로 한 통을 보내는지도 함께 본다 — 대조군이 없으면 「아무것도 안 나감」이 발송
+     * 경로 자체의 고장일 수도 있다.
+     *
+     * @return void 없음
+     *
+     * @scenario endpoint=reports, role=superadmin, period=valid
+     *
+     * @effects report_is_silent_when_the_definition_is_inactive
+     */
+    public function test_an_inactive_definition_sends_no_mail(): void
+    {
+        $this->seed(NotificationDefinitionSeeder::class);
+
+        $subscribers = function (): int {
+            HookManager::resetAll();
+            app(NotificationHookListener::class)->registerDynamicHooks();
+
+            return count(HookManager::getHooks()['core.analytics.weekly_report_ready'] ?? []);
+        };
+
+        // 대조군 — 켜진 정의는 리포트 훅을 구독한다(발송 경로가 살아 있다).
+        $this->assertGreaterThan(0, $subscribers(), '켜진 정의가 리포트 훅을 구독하지 않는다');
+
+        // 관리자 화면의 끄기와 같은 경로(정의 캐시 무효화 포함)로 끄면 발송 구독이 없다.
+        app(NotificationDefinitionService::class)->toggleActive(
+            NotificationDefinition::query()->where('type', 'analytics_weekly_report')->firstOrFail(),
+        );
+        $this->assertSame(0, $subscribers(), '꺼진 정의가 여전히 리포트 훅을 구독한다');
     }
 
     /**

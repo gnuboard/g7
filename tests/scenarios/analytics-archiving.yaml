@@ -30,7 +30,7 @@ axes:
   period: [hour, day, range]
   trigger: [scheduled, manual]
   lock: [free, held]
-  data: [empty, single_type, all_types, bot_only, extension_rows]
+  data: [empty, single_type, all_types, bot_only, extension_rows, conversions]
   timezone: [Asia/Seoul, America/New_York, UTC]
   final: [true, false]
 
@@ -40,6 +40,7 @@ exclusions:
   - { period: range, trigger: scheduled, reason: "기간 재집계는 운영자가 화면·커맨드로 부르는 길이다" }
 
 effects:
+  - every_stats_dimension_gets_rows_from_its_source
   # 일 집계
   - daily_rows_are_written_per_visitor_type
   - daily_metrics_match_hand_checked_ledger
@@ -83,6 +84,7 @@ effects:
   - command_reports_failure_by_exit_code_not_exception
   - command_rejects_invalid_period_and_inverted_range
   - range_job_reports_failed_days
+  - range_job_passes_requester_and_force_to_the_service
   # 봇·확장
   - bot_hits_become_bot_typed_rows
   - bot_visits_are_counted_by_name_and_address_pair

@@ -44,6 +44,19 @@ return [
         'purge' => '完全削除',
         'extension_purge' => '拡張データ整理',
     ],
+    'storage_table' => [
+        'analytics_visits' => '訪問記録',
+        'analytics_actions' => 'ページビュー・イベント記録',
+        'analytics_action_names' => 'ページ・イベント名',
+        'analytics_conversions' => 'コンバージョン記録',
+        'analytics_bot_hits' => 'ボット訪問記録',
+        'analytics_stats_hourly' => '時間別集計',
+        'analytics_stats_daily' => '日別集計',
+        'analytics_dimension_stats' => '拡張別分類集計',
+        'analytics_salts' => '匿名キー素材',
+        'analytics_archive_runs' => '集計実行履歴',
+        'analytics_collect_failures' => '収集失敗記録',
+    ],
     'archive_run_status' => [
         'running' => '実行中',
         'success' => '成功',
@@ -53,11 +66,10 @@ return [
     'collect_failure_reason' => [
         'validation' => 'リクエスト形式エラー',
         'max_actions' => '訪問あたりのアクション上限超過',
-        'dictionary' => '名前辞書記録失敗',
         'db_error' => 'データベースエラー',
         'listener_exception' => '拡張リスナーエラー',
         'unknown_goal' => '登録されていない目標',
-        'unknown_dimension' => '登録されていないディメンション',
+        'unknown_dimension' => '登録されていない分類基準',
     ],
     'exclusion_reason' => [
         'disabled' => '収集オフ',
@@ -111,16 +123,15 @@ return [
     ],
     'archive' => [
         'skipped_locked' => '同じ期間は既に集計中のためスキップしました。',
-        'skipped_beyond_retention' => '元の記録が保存期間を過ぎて再計算できないためスキップしました。既存の集計はそのまま残します。',
-        'range_invalid' => '再集計期間が正しくありません。',
+        'skipped_beyond_retention' => '元の記録が保持期間を過ぎて再計算できないためスキップしました。既存の集計はそのまま残します。',
         'stale_run' => '終了を報告しないまま止まった実行のため、失敗として閉じました(ワーカー停止・タイムアウトなど)。必要なら再実行してください。',
         'job_failed' => 'ジョブが失敗したため実行を閉じました: :reason',
         'skipped_finalized' => '既に確定された日付のためスキップしました。再度計算するには「既に確定された日付も再度集計」をオンにしてください。',
     ],
     'alerts' => [
         'ledger_limit_title' => '訪問者統計の記録が多く蓄積されています',
-        'ledger_limit_message' => ':visits行の訪問、:actions行のアクションが蓄積されました。現在の保存期間は:days日です — 保存期間を短縮すると、古い記録は次のクリーンアップで削除されます。',
-        'ledger_limit_action' => '保存設定を開く',
+        'ledger_limit_message' => ':visits行の訪問、:actions行のアクションが蓄積されました。現在の保持期間は:days日です — 保持期間を短縮すると、古い記録は次のクリーンアップで削除されます。',
+        'ledger_limit_action' => '保持設定を開く',
     ],
     'privacy' => [
         'ip_lookup_limited' => '匿名モードで収集された期間は、最近:days日以内のみIPで検索できます — それより前の記録はアドレスを復元できません。',
@@ -133,6 +144,7 @@ return [
     ],
     'report' => [
         'fetch_success' => 'レポートを読み込みました。',
+        'inactive_dimension' => ':key（無効な拡張機能）',
     ],
     'series' => [
         'fetch_success' => 'トレンドを読み込みました。',

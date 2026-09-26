@@ -5,11 +5,14 @@ namespace Tests\Feature\Analytics;
 use App\Contracts\Repositories\Analytics\StatsRepositoryInterface;
 use App\Enums\Analytics\ArchiveRunStatus;
 use App\Enums\Analytics\ArchiveRunType;
+use App\Enums\Analytics\StatsDimension;
 use App\Extension\HookManager;
 use App\Listeners\Analytics\PurgeExtensionDataListener;
 use App\Models\Analytics\AnalyticsArchiveRun;
 use App\Models\Analytics\AnalyticsConversion;
 use App\Models\Analytics\AnalyticsDimensionStat;
+use App\Models\Analytics\AnalyticsVisit;
+use App\Services\Analytics\ArchiveService;
 use App\Services\Analytics\ExtensionPurgeService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -62,11 +65,44 @@ class ExtensionPurgeTest extends TestCase
 
         $counts = app(ExtensionPurgeService::class)->purge('module', 'sirsoft-ecommerce');
 
-        $this->assertSame(['conversions' => 1, 'dimensions' => 1], $counts);
+        $this->assertSame(['conversions' => 1, 'dimensions' => 1, 'failed' => false], $counts);
         $this->assertSame(0, AnalyticsConversion::where('extension_identifier', 'sirsoft-ecommerce')->count());
         // 코어 전환과 다른 확장의 차원은 남아야 한다.
         $this->assertSame(1, AnalyticsConversion::count());
         $this->assertSame(2, AnalyticsDimensionStat::count());
+    }
+
+    /**
+     * 확장 목표의 전환 집계 행도 함께 지운다 — 전환 탭에 그 확장 목표가 수치·매출과 함께 남지 않는다.
+     *
+     * 전환 집계는 `goal` 차원에 목표 키를 라벨로 쌓는다. 행을 손으로 만들지 않고 실제 집계로
+     * 만들어, 라벨 형식이 바뀌어도 이 가드가 같은 행을 재게 한다.
+     *
+     * @scenario extension=module, delete_data=true
+     *
+     * @effects extension_purge_removes_that_extensions_goal_rows
+     *
+     * @return void 없음
+     */
+    public function test_purge_removes_that_extensions_goal_rows(): void
+    {
+        $date = '2026-09-01';
+        $visit = AnalyticsVisit::factory()->onDate($date)->create();
+
+        AnalyticsConversion::factory()->forVisit($visit)->forExtension('sirsoft-ecommerce', 'order_completed')->create(['revenue' => 45000]);
+        AnalyticsConversion::factory()->forVisit($visit)->forExtension('sirsoft-board', 'post_written')->create();
+        AnalyticsConversion::factory()->forVisit($visit)->create(['goal_key' => 'core.user_registered', 'extension_identifier' => null]);
+
+        app(ArchiveService::class)->archiveDay($date);
+
+        $goalLabels = fn (): array => AnalyticsDimensionStat::query()
+            ->where('dimension', StatsDimension::Goal->value)->distinct()->orderBy('label')->pluck('label')->all();
+
+        $this->assertSame(['core.user_registered', 'sirsoft-board.post_written', 'sirsoft-ecommerce.order_completed'], $goalLabels(), '집계가 목표 행을 만들어야 가드가 잰다');
+
+        app(ExtensionPurgeService::class)->purge('module', 'sirsoft-ecommerce');
+
+        $this->assertSame(['core.user_registered', 'sirsoft-board.post_written'], $goalLabels(), '그 확장 목표 행만 사라진다');
     }
 
     /**
@@ -210,7 +246,7 @@ class ExtensionPurgeTest extends TestCase
 
         // 전환 삭제가 되돌려져 두 건 모두 남아 있어야 한다.
         $this->assertSame(2, AnalyticsConversion::count());
-        $this->assertSame(['conversions' => 0, 'dimensions' => 0], $counts);
+        $this->assertSame(['conversions' => 0, 'dimensions' => 0, 'failed' => true], $counts);
 
         // 실패가 훅으로 드러나야 활동 로그에 한 줄이라도 남는다.
         $this->assertIsArray($received);
@@ -218,5 +254,24 @@ class ExtensionPurgeTest extends TestCase
 
         $run = AnalyticsArchiveRun::where('run_type', ArchiveRunType::ExtensionPurge->value)->first();
         $this->assertSame(ArchiveRunStatus::Failed, $run->status);
+    }
+
+    /**
+     * 플러그인을 「데이터 보존」으로 제거하면 아무것도 지우지 않는다(플러그인 훅 인자 순서로).
+     *
+     * @scenario extension=plugin, delete_data=false
+     *
+     * @effects preserved_extension_data_survives_uninstall
+     *
+     * @return void 없음
+     */
+    public function test_plugin_uninstall_preserving_data_purges_nothing(): void
+    {
+        $this->seedLedger();
+
+        app(PurgeExtensionDataListener::class)->handlePlugin('sirsoft-board', false, ['success' => true]);
+
+        $this->assertSame(1, AnalyticsDimensionStat::where('dimension', 'like', 'ext:sirsoft-board:%')->count());
+        $this->assertSame(0, AnalyticsArchiveRun::count());
     }
 }

@@ -1,5 +1,5 @@
 {
-    "comment": "방문자 통계 설정 — 수집·개인정보·봇·보존·리포트 다섯 탭. 탭은 질의 `tab` 하나가 출처다.\n  값은 전용 API(`GET/PUT /api/admin/analytics/settings`)로 읽고 쓰며, 저장은 **받아 온 값과 달라진 키만**\n  보낸다(PUT 은 보낸 키만 바꾼다 — 손대지 않은 키는 어느 탭이든 빠지고, 여러 탭을 고쳐 두고 한 번 눌러도 다 담긴다). 폼은 `data-key=\"form\"` 자동 바인딩이라 입력 이름이 곧 저장 키\n  (`settings.retention_days`)이고, 바꾸면 `hasChanges` 가 켜져 저장 버튼이 풀린다.\n  e2e:allow 이번 변경(받아오는 동안 표를 흐림 · 실패 시 설정 폼이 빈 값으로 섬)은 화면 14면 전수를\n  모집단으로 파생해 재는 `analyticsStateBranches.test.ts` 가 잠근다 — 되돌리면 blur 6면·fallback 1건이 red 다.\n  브라우저 spec 은 PO 가 이번 라운드 범위를 화면 결함 2건으로 한정해 이월했다(계획서 §12 「S3 라운드 1」).\n  개인정보 수준을 더 엄격하게 바꿔 저장하면 서버가 `retro_anonymize_available` 을 주고, 그때 소급 익명화\n  확인 창을 연다. 리포트 탭의 정의 상태는 알림 정의 API 를 따로 불러 읽는다(카드가 그 API 로 편집하므로).\n  이 화면은 통계 설정 권한으로 열리지만 저장소 현황은 통계 조회 권한 API 를, 알림 정의는 알림 설정 권한\n  API 를 읽는다 — 권한이 없으면 403 이라 값이 비는데 0 행·빈 목록으로 그리면 거짓이 되므로 권한이 없다고\n  말한다(#682 S3 라운드 2).\n  동의 모드인데 실제로는 익명으로 도는 경고는 공통 조각과 같은 근거(`anonymous_fallback_reason`)를 쓴다 —\n  두 자리가 서로 다른 식으로 판정하면 같은 사실을 한쪽만 말한다. 이 화면은 저장 전 라디오 선택에도\n  반응해야 해서 「동의 출처가 없다」를 함께 본다(저장 전에는 서버가 아직 폴백 사유를 내지 않는다).",
+    "comment": "방문자 통계 설정 — 수집·개인정보·봇·보존·리포트 다섯 탭. 탭은 질의 `tab` 하나가 출처다.\n  값은 전용 API(`GET/PUT /api/admin/analytics/settings`)로 읽고 쓰며, 저장은 **받아 온 값과 달라진 키만**\n  보낸다(PUT 은 보낸 키만 바꾼다 — 손대지 않은 키는 어느 탭이든 빠지고, 여러 탭을 고쳐 두고 한 번 눌러도 다 담긴다). 폼은 `data-key=\"form\"` 자동 바인딩이라 입력 이름이 곧 저장 키\n  (`settings.retention_days`)이고, 바꾸면 `hasChanges` 가 켜져 저장 버튼이 풀린다.\n  e2e:allow 이번 변경(받아오는 동안 표를 흐림 · 실패 시 설정 폼이 빈 값으로 섬)은 화면 14면 전수를\n  모집단으로 파생해 재는 `analyticsStateBranches.test.ts` 가 잠근다 — 되돌리면 blur 6면·fallback 1건이 red 다.\n  브라우저 spec 은 그 라운드의 범위를 화면 결함 2건으로 한정한 결정에 따라 뒤로 미뤘다(S3 라운드 1).\n  개인정보 수준을 더 엄격하게 바꿔 저장하면 서버가 `retro_anonymize_available` 을 주고, 그때 소급 익명화\n  확인 창을 연다. 리포트 탭의 정의 상태는 알림 정의 API 를 따로 불러 읽는다(카드가 그 API 로 편집하므로).\n  이 화면은 통계 설정 권한으로 열리지만 저장소 현황은 통계 조회 권한 API 를, 알림 정의는 알림 설정 권한\n  API 를 읽는다 — 권한이 없으면 403 이라 값이 비는데 0 행·빈 목록으로 그리면 거짓이 되므로 권한이 없다고\n  말한다(#682 S3 라운드 2).\n  동의 모드인데 실제로는 익명으로 도는 경고는 공통 조각과 같은 근거(`anonymous_fallback_reason`)를 쓴다 —\n  두 자리가 서로 다른 식으로 판정하면 같은 사실을 한쪽만 말한다. 이 화면은 저장 전 라디오 선택에도\n  반응해야 해서 「동의 출처가 없다」를 함께 본다(저장 전에는 서버가 아직 폴백 사유를 내지 않는다).",
     "version": "1.0.0",
     "layout_name": "admin_analytics_settings",
     "extends": "_admin_base",
@@ -45,6 +45,12 @@
             "fallback": {
                 "data": {
                     "opted_out": false
+                }
+            },
+            "errorHandling": {
+                "comment": "보조 소스라 403 을 삼킨다. 화면과 같은 설정 권한이라 권한이 없으면 주 소스(`analytics_settings`)가\n         이미 권한 오류 화면을 띄운다 — 여기서도 띄우거나 토스트를 내면 같은 사실을 두 번 알린다.",
+                "403": {
+                    "handler": "suppress"
                 }
             },
             "comment": "내 브라우저의 수집 제외 상태(수집 탭)."
@@ -152,14 +158,14 @@
     },
     "computed": {
         "isReadOnly": "{{!!analytics_settings?.error}}",
-        "canReadAnalytics": "{{current_user?.data?.is_super === true || (current_user?.data?.permissions ?? []).some(p => (p?.identifier ?? p) === 'core.analytics.read')}}",
+        "canReadAnalytics": "{{(current_user?.data?.permissions ?? []).some(p => (p?.identifier ?? p) === 'core.analytics.read')}}",
         "siteTimezoneDiffers": "{{_computed.canReadAnalytics === true && analytics_status?.data?.timezone_differs === true}}",
         "siteTimezoneName": "{{_computed.canReadAnalytics === true ? (analytics_status?.data?.timezone ?? '') : ''}}",
         "queueBacklogged": "{{_computed.canReadAnalytics === true && analytics_status?.data?.queue?.backlogged === true}}",
         "consentFallbackReason": "{{_computed.canReadAnalytics === true ? (analytics_status?.data?.collection?.anonymous_fallback_reason ?? '') : ''}}",
         "consentFallback": "{{_computed.canReadAnalytics && (!!_computed.consentFallbackReason || (_local.form?.settings?.privacy_mode === 'consent' && (!analytics_status?.data?.collection?.consent_source || analytics_status?.data?.collection?.consent_source === 'none')))}}",
-        "canReadDefinitions": "{{current_user?.data?.is_super === true || (current_user?.data?.permissions ?? []).some(p => (p?.identifier ?? p) === 'core.settings.read')}}",
-        "canManageDefinitions": "{{current_user?.data?.is_super === true || (current_user?.data?.permissions ?? []).some(p => (p?.identifier ?? p) === 'core.settings.update')}}",
+        "canReadDefinitions": "{{(current_user?.data?.permissions ?? []).some(p => (p?.identifier ?? p) === 'core.settings.read')}}",
+        "canManageDefinitions": "{{(current_user?.data?.permissions ?? []).some(p => (p?.identifier ?? p) === 'core.settings.update')}}",
         "activeTab": "{{query.tab || 'collection'}}"
     },
     "permissions": [
@@ -222,7 +228,7 @@
                                 },
                                 "children": [
                                     {
-                                        "comment": "봇 탭의 「클라우드 대역 갱신 시각」이 사이트 표준시로 나간다. 공통 조각\n            `_partial_status_alerts` 는 「설정에서 켜세요」가 순환 안내가 되어 여기 없으므로\n            같은 사실을 배지로 보인다(#682 S3 라운드 7, PO 확정 「두 화면 모두 배지」).\n            조회 권한이 없으면 진단 API 가 403 이고 fallback 이 false 라 뜨지 않는다.",
+                                        "comment": "봇 탭의 「클라우드 대역 갱신 시각」이 사이트 표준시로 나간다. 공통 조각\n            `_partial_status_alerts` 는 「설정에서 켜세요」가 순환 안내가 되어 여기 없으므로\n            같은 사실을 배지로 보인다(#682 S3 라운드 7, 설계 결정 「두 화면 모두 배지」).\n            조회 권한이 없으면 진단 API 가 403 이고 fallback 이 false 라 뜨지 않는다.",
                                         "id": "site_timezone_badge",
                                         "type": "composite",
                                         "name": "Badge",
@@ -1011,14 +1017,14 @@
                                                 "name": "Badge",
                                                 "props": {
                                                     "color": "{{!_computed.canReadAnalytics ? 'gray' : (analytics_status?.data?.collection?.consent_source && analytics_status?.data?.collection?.consent_source !== 'none' ? 'green' : 'gray')}}",
-                                                    "text": "{{!_computed.canReadAnalytics ? $t('admin.analytics.settings.privacy.consent_source_unknown') : (analytics_status?.data?.collection?.consent_source && analytics_status?.data?.collection?.consent_source !== 'none' ? analytics_status.data.collection.consent_source : $t('admin.analytics.settings.privacy.consent_source_none'))}}",
+                                                    "text": "{{!_computed.canReadAnalytics ? $t('admin.analytics.settings.privacy.consent_source_unknown') : (analytics_status?.data?.collection?.consent_source && analytics_status?.data?.collection?.consent_source !== 'none' ? (['gdpr', 'filter'].includes(analytics_status.data.collection.consent_source) ? $t('admin.analytics.settings.privacy.consent_sources.' + analytics_status.data.collection.consent_source) : analytics_status.data.collection.consent_source) : $t('admin.analytics.settings.privacy.consent_source_none'))}}",
                                                     "size": "sm"
                                                 }
                                             }
                                         ]
                                     },
                                     {
-                                        "comment": "세 모드 카드에는 KPI 카드와 같은 아이콘 상자를 둔다 — 글만 있으면 어느 것이 무엇을 덜 모으는\n            모드인지 훑어서 구분되지 않는다. 아이콘은 장식이라 `aria-hidden` 으로 이름에서 뺀다 — 빼지 않으면\n            버튼 이름이 「users 전체 수집 …」이 된다(#682 라운드 4, PO 지적 ④).",
+                                        "comment": "세 모드 카드에는 KPI 카드와 같은 아이콘 상자를 둔다 — 글만 있으면 어느 것이 무엇을 덜 모으는\n            모드인지 훑어서 구분되지 않는다. 아이콘은 장식이라 `aria-hidden` 으로 이름에서 뺀다 — 빼지 않으면\n            버튼 이름이 「users 전체 수집 …」이 된다(#682 라운드 4, 검수 지적 ④).",
                                         "id": "privacy_mode_cards",
                                         "type": "basic",
                                         "name": "Div",
@@ -2635,7 +2641,17 @@
                                                                             "type": "basic",
                                                                             "name": "Span",
                                                                             "props": {
-                                                                                "className": "text-body font-mono"
+                                                                                "className": "text-body block"
+                                                                            },
+                                                                            "text": "{{row.label ?? row.table}}"
+                                                                        },
+                                                                        {
+                                                                            "id": "storage_table_code",
+                                                                            "type": "basic",
+                                                                            "name": "Span",
+                                                                            "if": "{{!!row.label && row.label !== row.table}}",
+                                                                            "props": {
+                                                                                "className": "text-hint font-mono block"
                                                                             },
                                                                             "text": "{{row.table}}"
                                                                         }

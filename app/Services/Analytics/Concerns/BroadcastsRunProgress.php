@@ -13,7 +13,7 @@ use App\Services\Analytics\ArchiveService;
  * 방송을 받아 바를 움직이며 종료 상태에서 목록을 다시 받는다. 그런데 같은 표에 쓰는 실행이 집계만은
  * 아니다 — 소급 익명화와 확장 데이터 정리도 `running` 행을 만들고 진행률을 갱신한다. 그 둘이 방송하지
  * 않으면 소켓을 켠 사이트에서 배지는 떴는데 바는 멈춰 있고, 작업이 끝나도 새로고침 전까지 「실행 중」이
- * 그대로 남는다(#682 S3 라운드 2 — PO 결정: 익명화·정리도 방송한다).
+ * 그대로 남는다(#682 S3 라운드 2 — 설계 결정: 익명화·정리도 방송한다).
  *
  * 채널·이벤트 이름은 집계와 같은 것을 쓴다. 화면은 한 자리에서만 듣고, 행 안의 `run_type` 으로 무엇이
  * 도는지 가린다.
@@ -32,7 +32,8 @@ trait BroadcastsRunProgress
     {
         HookManager::broadcast(ArchiveService::PROGRESS_CHANNEL, ArchiveService::PROGRESS_EVENT, [
             'type' => 'archive_progress',
-            'data' => $run->toArray(),
+            // 목록 API 와 같은 화면용 모양(시각은 사이트 표준시) — 두 길이 같은 값을 보게 한다.
+            'data' => $run->toScreenArray(),
         ]);
     }
 }

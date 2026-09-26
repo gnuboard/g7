@@ -3004,7 +3004,7 @@
       "collection_disabled": "방문자 통계 수집이 꺼져 있습니다 — 숫자가 더 늘지 않습니다.",
       "collection_disabled_link": "설정에서 켜기",
       "consent_fallback": "동의 연동 모드인데 동의를 물어볼 플러그인이 없어 익명 모드로 모으고 있습니다.",
-      "consent_cookie_fallback": "동의 관리 플러그인이 동의 전 방문자 쿠키를 막아 익명 모드로 모으고 있습니다.",
+      "consent_cookie_fallback": "동의 관리 플러그인이 켜져 있어, 쿠키(분석·기능)에 모두 동의한 방문자는 IP 저장 모드로, 그렇지 않은 방문자는 익명 모드(IP·방문자 쿠키 없음)로 모읍니다.",
       "queue_backlog": "큐에 적재 대기 {{count}}건 — 워커가 돌고 있는지 확인하세요.",
       "queue_backlog_link": "수집 진단 열기",
       "geoip_off": "GeoIP 가 꺼져 있어 국가는 브라우저 언어로 추정하고, 지역·도시는 모으지 않습니다.",
@@ -3051,6 +3051,7 @@
       }
     },
     "referrers": {
+      "keywords_https_hint": "대부분의 검색엔진은 HTTPS 로 옮기며 유입 주소에 검색어를 싣지 않습니다. 이 표가 거의 비어 있어도 수집이 잘못된 것은 아닙니다.",
       "title": "유입 경로",
       "description": "방문자가 어디서 왔는지 — 직접·검색·외부 사이트·캠페인.",
       "tabs": {
@@ -3114,15 +3115,20 @@
         "downloads": "다운로드",
         "outlinks": "외부 링크",
         "goals": "전환",
-        "dimensions": "커스텀 차원"
+        "dimensions": "확장별 분류"
       },
       "no_result": "결과 없음",
       "revenue": "매출",
-      "dimension_label": "차원 키",
-      "dimension_placeholder": "확장이 등록한 차원 키 (Enter)",
-      "dimensions_hint": "확장이 커스텀 차원을 등록하면 그 키로 조회합니다.",
-      "dimensions_empty_title": "조회할 차원을 고르세요",
-      "dimensions_empty_description": "확장이 등록한 커스텀 차원 키를 입력하면 그 차원의 상위 목록을 봅니다."
+      "dimension_label": "분류 기준",
+      "dimension_placeholder": "분류 기준 선택",
+      "dimensions_hint": "설치된 확장이 알려 준 분류 기준(예: 게시판별)으로 방문을 나눠 봅니다. 확장을 끄거나 데이터를 남기고 지우면 「꺼진 확장」으로 표시되고, 쌓인 통계는 계속 볼 수 있습니다.",
+      "dimensions_empty_title": "볼 분류 기준을 고르세요",
+      "dimensions_empty_description": "위에서 분류 기준을 고르면 그 기준으로 나눈 상위 목록을 봅니다.",
+      "dimensions_none_title": "확장이 알려 준 분류 기준이 없습니다",
+      "dimensions_none_description": "켜진 확장 중 분류 기준을 알려 준 것이 없습니다. 확장이 분류 기준을 선언하면 여기서 고를 수 있습니다.",
+      "dimension_pii_suffix": "개인정보 — 통계 표 없음",
+      "dimension_pii_title": "개인정보 분류 기준은 통계 표로 만들지 않습니다",
+      "dimension_pii_description": "확장이 이 기준의 값을 개인정보로 표시했습니다. 값이 날짜별 통계에 영구히 남지 않도록 표를 만들지 않으며, 값은 방문 기록에만 남아 보존 기간이 지나거나 정보주체 삭제 요청 때 함께 지워집니다."
     },
     "realtime": {
       "title": "실시간",
@@ -3163,8 +3169,7 @@
         "pageviews": "페이지뷰",
         "last_visit": "마지막 방문",
         "country": "국가",
-        "device": "기기",
-        "timeline": "타임라인"
+        "device": "기기"
       },
       "timeline_button": "타임라인",
       "action": {
@@ -3190,7 +3195,23 @@
         "returning": "재방문",
         "returning_yes": "다시 옴",
         "returning_no": "첫 방문",
-        "ip_masked": "마스킹 {octets}옥텟"
+        "ip_masked": "마스킹 {octets}옥텟",
+        "region": "지역",
+        "resolution": "해상도",
+        "browser_language": "브라우저 언어",
+        "locale": "사이트 언어"
+      },
+      "visit_info": {
+        "source": "기록 경로",
+        "source_beacon": "브라우저",
+        "source_server": "서버(스크립트 없음)",
+        "referrer": "유입",
+        "keyword": "유입 검색어",
+        "campaign": "캠페인",
+        "bounce": "이탈",
+        "bounce_yes": "한 페이지만 보고 떠남",
+        "bounce_no": "여러 페이지 봄",
+        "last_action": "마지막 활동"
       },
       "visits_title": "방문 이력",
       "referrer_label": "유입 주소",
@@ -3228,9 +3249,17 @@
         "url": "주소",
         "cache_status": "캐시",
         "time": "시각"
+      },
+      "cache_statuses": {
+        "hit": "캐시 사용",
+        "miss": "새로 만듦",
+        "bypass": "캐시 건너뜀",
+        "none": "캐시 없음"
       }
     },
     "diagnostics": {
+      "declaration_warnings_title": "확장 선언 중 버려진 항목이 있습니다",
+      "declaration_warnings_description": "확장이 선언한 전환·분류 기준 중 형식이 맞지 않아 기록 대상에서 뺀 것과 그 사유입니다. 확장 개발자에게 전달하세요.",
       "title": "수집 진단",
       "description": "숫자가 늘지 않는 이유를 한 화면에서 찾습니다 — 수집·큐·집계·저장소.",
       "cards": {
@@ -3243,6 +3272,7 @@
         "enabled_on": "켜짐",
         "enabled_off": "꺼짐",
         "anonymous_fallback": "익명 폴백",
+        "anonymous_for_unconsented": "미동의 방문자 익명",
         "tracked_today": "오늘 방문자 {{count}}",
         "last_tracked": "마지막 수집 {{at}}",
         "queue_not_countable": "셀 수 없는 큐",
@@ -3307,6 +3337,17 @@
         "purge": "전체 삭제",
         "extension_purge": "확장 정리"
       },
+      "run_triggers": {
+        "scheduled": "자동(예약)",
+        "manual": "수동"
+      },
+      "queue_connections": {
+        "sync": "즉시 실행(큐 없음)",
+        "database": "데이터베이스 큐",
+        "redis": "Redis 큐",
+        "sqs": "Amazon SQS 큐",
+        "beanstalkd": "Beanstalkd 큐"
+      },
       "run_status": {
         "running": "실행 중",
         "success": "성공",
@@ -3336,11 +3377,10 @@
         "all": "전체 사유",
         "validation": "형식 오류",
         "max_actions": "액션 상한",
-        "dictionary": "사전 오류",
         "db_error": "DB 오류",
         "listener_exception": "리스너 예외",
         "unknown_goal": "미등록 목표",
-        "unknown_dimension": "미등록 차원"
+        "unknown_dimension": "미등록 분류 기준"
       }
     },
     "privacy_requests": {
@@ -3374,7 +3414,7 @@
     },
     "settings": {
       "title": "방문자 통계 설정",
-      "description": "수집·개인정보·봇·보존·리포트 설정. 저장은 지금 보고 있는 탭만 반영됩니다.",
+      "description": "수집·개인정보·봇·보존·리포트 설정. 저장하면 어느 탭이든 바꾼 값이 함께 반영됩니다.",
       "tabs": {
         "collection": "수집",
         "privacy": "개인정보",
@@ -3416,6 +3456,10 @@
       "privacy": {
         "consent_source_label": "동의 출처",
         "consent_source_none": "없음",
+        "consent_sources": {
+          "gdpr": "동의 관리 플러그인(GDPR)",
+          "filter": "확장이 연결한 동의 판정"
+        },
         "mode_label": "개인정보 수준",
         "modes": {
           "full": {

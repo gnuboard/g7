@@ -528,7 +528,7 @@ const Header: React.FC<HeaderProps> = ({
                 onClick={onMobileMenuOpen}
                 className="p-2 text-gray-600 dark:text-gray-400"
               >
-                <Icon name="menu" className="w-6 h-6" />
+                <Icon name="menu" className="w-6 h-6 text-2xl leading-none" />
               </Button>
             )}
           </Div>

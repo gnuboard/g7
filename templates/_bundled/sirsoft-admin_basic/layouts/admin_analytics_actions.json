@@ -1,5 +1,5 @@
 {
-    "comment": "행동 리포트 — 내부 검색어·다운로드·외부 링크·전환(목표)·커스텀 차원 다섯 탭. 검색어 행은 부가 값\n  「결과 없음」을, 목표 행은 전환 금액 합을 표의 부가 열에 싣는다(공통 조각이 그린다). 커스텀 차원 탭은\n  확장이 차원을 등록하고 `ext:` 조회가 열려야 채워진다 — 그 전에는 안내만 보인다.",
+    "comment": "행동 리포트 — 내부 검색어·다운로드·외부 링크·전환(목표)·커스텀 차원 다섯 탭. 검색어 행은 부가 값\n  「결과 없음」을, 목표 행은 전환 금액 합을 표의 부가 열에 싣는다(공통 조각이 그린다). 커스텀 차원 탭은\n  확장이 선언한 차원을 등록 목록 API 에서 받아 고르게 한다(꺼진 확장이라도 집계가 남은 차원은 「꺼진\n  확장」 표시로 함께 온다) — 등록도 집계도 없는 이름은 서버가 404 로 막으므로 자유 입력을 두지 않는다.",
     "version": "1.0.0",
     "layout_name": "admin_analytics_actions",
     "extends": "_admin_base",
@@ -69,6 +69,29 @@
                     "handler": "suppress"
                 }
             }
+        },
+        {
+            "id": "analytics_registered",
+            "label_key": "$t:editor.data_source.analytics_registered",
+            "type": "api",
+            "endpoint": "/api/admin/analytics/registered",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "background",
+            "if": "{{(query.tab || 'search') === 'dimensions'}}",
+            "fallback": {
+                "data": {
+                    "dimensions": [],
+                    "goals": []
+                }
+            },
+            "errorHandling": {
+                "403": {
+                    "handler": "suppress"
+                }
+            },
+            "comment": "커스텀 차원 탭의 선택지. 활성 확장의 선언에 더해, 꺼진 확장이라도 집계가 남은 차원을 원값 이름으로 싣는다."
         }
     ],
     "initLocal": {
@@ -230,32 +253,36 @@
                                         "text": "$t:admin.analytics.actions.dimension_label"
                                     },
                                     {
-                                        "id": "dimension_input",
+                                        "id": "dimension_select",
                                         "type": "basic",
-                                        "name": "Input",
+                                        "name": "Select",
                                         "actions": [
                                             {
-                                                "comment": "확장이 등록한 차원 키를 직접 넣는다(등록 목록 API 는 확장 지점 단계 산출물이라 아직 없다).",
-                                                "type": "keydown",
-                                                "key": "Enter",
+                                                "comment": "audit:allow layout-list-context-navigate-merge-query 차원 전환 — 차원마다 행이 달라 쪽·검색·정렬을 물려받으면 빈 표가 열린다(서브탭과 같은 규칙). 기간과 쪽 크기만 query 로 명시해 잇는다.",
+                                                "type": "change",
                                                 "handler": "navigate",
                                                 "params": {
                                                     "path": "/admin/analytics/actions",
-                                                    "mergeQuery": true,
                                                     "replace": true,
                                                     "query": {
-                                                        "dimension": "{{$event.target.value || undefined}}",
-                                                        "page": 1
+                                                        "tab": "dimensions",
+                                                        "preset": "{{query.preset}}",
+                                                        "from": "{{query.from}}",
+                                                        "to": "{{query.to}}",
+                                                        "unit": "{{query.unit}}",
+                                                        "exclude": "{{query.exclude}}",
+                                                        "per_page": "{{query.per_page}}",
+                                                        "dimension": "{{$event.target.value || undefined}}"
                                                     }
                                                 }
                                             }
                                         ],
                                         "props": {
                                             "name": "analytics_dimension",
-                                            "type": "text",
-                                            "className": "input w-64",
-                                            "placeholder": "$t:admin.analytics.actions.dimension_placeholder",
-                                            "value": "{{query.dimension || ''}}"
+                                            "className": "w-64",
+                                            "value": "{{query.dimension || ''}}",
+                                            "aria-label": "$t:admin.analytics.actions.dimension_label",
+                                            "options": "{{[Object.fromEntries([['value', ''], ['label', '$t:admin.analytics.actions.dimension_placeholder']])].concat((analytics_registered?.data?.dimensions ?? []).map(d => Object.fromEntries([['value', d.key], ['label', d.label + (d.pii ? ' (' + $t('admin.analytics.actions.dimension_pii_suffix') + ')' : '') + ' · ' + d.owner_identifier]])))}}"
                                         }
                                     },
                                     {
@@ -274,7 +301,7 @@
                         "id": "dimensions_empty",
                         "type": "composite",
                         "name": "EmptyState",
-                        "if": "{{(query.tab || 'search') === 'dimensions' && !query.dimension}}",
+                        "if": "{{(query.tab || 'search') === 'dimensions' && !query.dimension && (analytics_registered?.data?.dimensions ?? []).length > 0}}",
                         "props": {
                             "iconName": "puzzle-piece",
                             "title": "$t:admin.analytics.actions.dimensions_empty_title",
@@ -283,15 +310,49 @@
                         }
                     },
                     {
+                        "id": "dimensions_none",
+                        "type": "composite",
+                        "name": "EmptyState",
+                        "if": "{{(query.tab || 'search') === 'dimensions' && !query.dimension && (analytics_registered?.data?.dimensions ?? []).length === 0}}",
+                        "props": {
+                            "iconName": "puzzle-piece",
+                            "title": "$t:admin.analytics.actions.dimensions_none_title",
+                            "description": "$t:admin.analytics.actions.dimensions_none_description",
+                            "className": "py-10"
+                        }
+                    },
+                    {
+                        "comment": "개인정보로 표시된 분류 기준은 집계하지 않는다(#682 S4 라운드 4) — 표가 늘 비어 「수집 진단」으로\n           보내면 수집 고장으로 읽힌다. 고르면 표 대신 이유를 보인다(#682 S4 라운드 8).",
+                        "id": "dimensions_pii",
+                        "type": "composite",
+                        "name": "EmptyState",
+                        "if": "{{(query.tab || 'search') === 'dimensions' && !!query.dimension && (analytics_registered?.data?.dimensions ?? []).some(d => d.key === query.dimension && d.pii)}}",
+                        "props": {
+                            "iconName": "user-shield",
+                            "title": "$t:admin.analytics.actions.dimension_pii_title",
+                            "description": "$t:admin.analytics.actions.dimension_pii_description",
+                            "className": "py-10"
+                        }
+                    },
+                    {
                         "id": "report_grid_wrap",
                         "type": "basic",
                         "name": "Div",
-                        "if": "{{(query.tab || 'search') !== 'dimensions' || !!query.dimension}}",
+                        "if": "{{(query.tab || 'search') !== 'dimensions' || (!!query.dimension && !(analytics_registered?.data?.dimensions ?? []).some(d => d.key === query.dimension && d.pii))}}",
                         "children": [
                             {
                                 "partial": "partials/admin_analytics/_partial_report_grid.json"
                             }
                         ]
+                    },
+                    {
+                        "comment": "확장이 이 화면에 자기 리포트 조각을 붙이는 자리(데이터는 확장 자기 API).",
+                        "type": "extension_point",
+                        "name": "analytics_actions_widgets",
+                        "props": {
+                            "className": "space-y-4 mt-4"
+                        },
+                        "default": []
                     }
                 ]
             }

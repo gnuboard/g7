@@ -80,4 +80,56 @@ class DashboardAlertContractTest extends TestCase
             );
         }
     }
+
+    /**
+     * 대시보드 알림 필터의 구독자 전부가 필터로 구독하고, 각각 계약을 재는 테스트를 가진다.
+     *
+     * 이 클래스는 호환성 리스너 하나만 계약을 잰다. 모집단을 `app/Listeners` 에서 파생해, 새 알림
+     * 리스너가 붙으면 그 리스너를 부르는 테스트가 있어야 green 이 되게 한다(이동 단추·복구 배선을
+     * 한 알림에 함께 싣는 회귀를 새 리스너에서도 잡기 위함).
+     *
+     * @return void 없음
+     *
+     * @scenario screen=dashboard_widget, state=normal, viewport=1440, locale=ko
+     *
+     * @effects every_dashboard_alert_listener_is_covered_by_a_test
+     */
+    public function test_every_dashboard_alert_listener_is_a_tested_filter(): void
+    {
+        $listeners = [];
+        $iterator = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator(app_path('Listeners'), \FilesystemIterator::SKIP_DOTS));
+
+        foreach ($iterator as $file) {
+            if ($file->getExtension() !== 'php') {
+                continue;
+            }
+
+            $class = 'App\\Listeners\\'.str_replace(['/', '.php'], ['\\', ''], substr($file->getPathname(), strlen(app_path('Listeners')) + 1));
+            $class = str_replace('\\\\', '\\', $class);
+
+            if (! class_exists($class) || ! method_exists($class, 'getSubscribedHooks')) {
+                continue;
+            }
+
+            $hooks = $class::getSubscribedHooks();
+
+            if (isset($hooks['core.dashboard.alerts'])) {
+                $listeners[$class] = $hooks['core.dashboard.alerts'];
+            }
+        }
+
+        $this->assertNotEmpty($listeners, '파생 모집단이 비었다');
+
+        $testSources = '';
+        foreach (new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator(base_path('tests'), \FilesystemIterator::SKIP_DOTS)) as $file) {
+            if ($file->getExtension() === 'php') {
+                $testSources .= file_get_contents($file->getPathname());
+            }
+        }
+
+        foreach ($listeners as $class => $config) {
+            $this->assertSame('filter', $config['type'] ?? null, "{$class} 는 필터로 구독해야 한다(값을 돌려받는 훅)");
+            $this->assertStringContainsString(class_basename($class), $testSources, "{$class} 를 부르는 테스트가 없다");
+        }
+    }
 }

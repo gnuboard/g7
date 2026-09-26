@@ -98,7 +98,7 @@ class SettingsSchemaTest extends TestCase
     }
 
     /**
-     * 공개 설정에는 ✅ 11키만 실리고 나머지 31키는 명시적으로 막혀 있다.
+     * 공개 설정에는 ✅ 11키만 실리고 나머지 30키는 명시적으로 막혀 있다(모두 41키).
      *
      * @scenario mode=full
      *

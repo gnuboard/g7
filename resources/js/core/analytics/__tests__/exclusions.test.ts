@@ -58,6 +58,55 @@ describe('pathMatchesAny', () => {
     expect(pathMatchesAny('/board/free', ['/admin*', '/health'])).toBe(false);
   });
 
+  /**
+   * 서버 판정식(`VisitExclusionPipeline::pathMatchesAny` — 끝의 `*` 를 `rtrim` 으로 모두 뗀
+   * 앞부분 일치, 아니면 완전 일치)에 같은 입력을 넣어 얻은 결과표다(#682 R12-D4, PHP 로 실측).
+   * 서버 규칙을 바꾸면 이 표를 서버 결과로 다시 채운다.
+   */
+  const SERVER_GLOB_CASES: Array<[pattern: string, path: string, serverResult: boolean]> = [
+    ['/admin*', '/admin', true],
+    ['/admin*', '/admin/users', true],
+    ['/admin*', '/administrator', true],
+    // `**` 는 서버에서 `*` 와 같다 — 하나만 떼면 글자 그대로의 `/admin/*` 가 남아 갈린다.
+    ['/admin/**', '/admin/users/1', true],
+    ['/admin/**', '/admin/', true],
+    ['/admin/**', '/admin', false],
+    ['**', '/anything', true],
+    ['*', '/anything', true],
+    // 끝 슬래시는 정규화하지 않는다 — 양쪽 모두 글자 그대로 비교한다.
+    ['/admin/*', '/admin', false],
+    ['/admin/*', '/admin/', true],
+    // 정확 일치는 끝 슬래시를 따지지 않는다(서버 폴백은 끝 슬래시를 떼고 비콘은 남긴다 — 서버·클라이언트
+    // 모두 같은 규칙, VisitExclusionPipelineTest 가 서버 쪽을 잠근다).
+    ['/admin/', '/admin', true],
+    ['/admin', '/admin/', true],
+    // 가운데 `*` 는 글로브가 아니라 글자다.
+    ['/board/*/edit', '/board/1/edit', false],
+    ['/board/*/edit', '/board/*/edit', true],
+    ['', '/x', false],
+    ['/', '/', true],
+    ['/health', '/health', true],
+    ['/health', '/health/live', false],
+  ];
+
+  // @scenario exclusion=url_pattern
+  // @effects client_and_server_exclusion_rules_agree
+  it.each(SERVER_GLOB_CASES)('서버와 같은 결과표 — 패턴 %s · 경로 %s → %s', (pattern, path, serverResult) => {
+    expect(pathMatchesAny(path, [pattern])).toBe(serverResult);
+  });
+
+  // @scenario exclusion=url_pattern
+  // @effects client_and_server_exclusion_rules_agree
+  it('경로 추출도 서버와 같다 — 경로 없음은 `/`, 쿼리·조각은 빼고 끝 슬래시는 따지지 않는다', () => {
+    // 서버는 `parse_url($url, PHP_URL_PATH)`(비면 `/`)로 경로를 뽑는다. 비콘의 url 은 브라우저가 보던
+    // 주소 그대로라 끝 슬래시가 살아 있고 서버 폴백은 Laravel `fullUrl()` 이 뗀다 — 그래서 정확 일치는
+    // 양쪽 모두 끝 슬래시를 무시한다.
+    expect(shouldSkip('https://example.test', { excluded_url_patterns: ['/'] })).toBe('url_pattern');
+    expect(shouldSkip('https://example.test/admin?x=1#h', { excluded_url_patterns: ['/admin'] })).toBe('url_pattern');
+    expect(shouldSkip('https://example.test/admin/', { excluded_url_patterns: ['/admin'] })).toBe('url_pattern');
+    expect(shouldSkip('https://example.test/admin/', { excluded_url_patterns: ['/admin/**'] })).toBe('url_pattern');
+  });
+
   // @scenario exclusion=none
   // @effects client_and_server_exclusion_rules_agree
   it('목록이 비어 있으면 아무것도 걸리지 않는다', () => {

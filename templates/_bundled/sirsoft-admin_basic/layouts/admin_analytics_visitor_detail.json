@@ -476,6 +476,8 @@
                                                 ]
                                             },
                                             {
+                                                "comment": "방문자 정보는 원장이 아는 부수정보를 모두 보인다 — 가장 최근 방문 기준(방문마다 다를 수 있는 값은\n                 오른쪽 방문 이력을 펼치면 방문별로 보인다). #682 S4 라운드 8.",
+                                                "id": "card_country_row",
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "props": {
@@ -494,13 +496,40 @@
                                                         "type": "basic",
                                                         "name": "Span",
                                                         "props": {
-                                                            "className": "text-body"
+                                                            "className": "text-body text-right break-all"
                                                         },
-                                                        "text": "{{analytics_visitor?.data?.visitor?.country_code ?? '-'}}"
+                                                        "text": "{{analytics_visitor?.data?.visitor?.country_name ?? analytics_visitor?.data?.visitor?.country_code ?? '-'}}"
                                                     }
                                                 ]
                                             },
                                             {
+                                                "id": "card_region_row",
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "flex-between gap-3"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "text-label-subtle"
+                                                        },
+                                                        "text": "$t:admin.analytics.visitor_detail.card.region"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "text-body text-right break-all"
+                                                        },
+                                                        "text": "{{[analytics_visitor?.data?.visitor?.region_code, analytics_visitor?.data?.visitor?.city].filter(Boolean).join(' · ') || '-'}}"
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "id": "card_device_row",
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "props": {
@@ -519,13 +548,14 @@
                                                         "type": "basic",
                                                         "name": "Span",
                                                         "props": {
-                                                            "className": "text-body"
+                                                            "className": "text-body text-right break-all"
                                                         },
-                                                        "text": "{{analytics_visitor?.data?.visitor?.device_type ?? '-'}}"
+                                                        "text": "{{analytics_visitor?.data?.visitor?.device_type_label ?? analytics_visitor?.data?.visitor?.device_type ?? '-'}}"
                                                     }
                                                 ]
                                             },
                                             {
+                                                "id": "card_browser_row",
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "props": {
@@ -544,9 +574,87 @@
                                                         "type": "basic",
                                                         "name": "Span",
                                                         "props": {
-                                                            "className": "text-body"
+                                                            "className": "text-body text-right break-all"
                                                         },
-                                                        "text": "{{(analytics_visitor?.data?.visitor?.browser_name ?? '-') + ' / ' + (analytics_visitor?.data?.visitor?.os_name ?? '-')}}"
+                                                        "text": "{{([analytics_visitor?.data?.visitor?.browser_name, analytics_visitor?.data?.visitor?.browser_version].filter(Boolean).join(' ') || '-') + ' / ' + ([analytics_visitor?.data?.visitor?.os_name, analytics_visitor?.data?.visitor?.os_version].filter(Boolean).join(' ') || '-')}}"
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "id": "card_resolution_row",
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "flex-between gap-3"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "text-label-subtle"
+                                                        },
+                                                        "text": "$t:admin.analytics.visitor_detail.card.resolution"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "text-body text-right break-all"
+                                                        },
+                                                        "text": "{{analytics_visitor?.data?.visitor?.screen_resolution ?? '-'}}"
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "id": "card_browser_language_row",
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "flex-between gap-3"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "text-label-subtle"
+                                                        },
+                                                        "text": "$t:admin.analytics.visitor_detail.card.browser_language"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "text-body text-right break-all"
+                                                        },
+                                                        "text": "{{analytics_visitor?.data?.visitor?.browser_language_label ?? analytics_visitor?.data?.visitor?.browser_language ?? '-'}}"
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "id": "card_locale_row",
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "flex-between gap-3"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "text-label-subtle"
+                                                        },
+                                                        "text": "$t:admin.analytics.visitor_detail.card.locale"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "text-body text-right break-all"
+                                                        },
+                                                        "text": "{{analytics_visitor?.data?.visitor?.locale_label ?? analytics_visitor?.data?.visitor?.locale ?? '-'}}"
                                                     }
                                                 ]
                                             },
@@ -568,7 +676,7 @@
                                                     {
                                                         "comment": "설정이 뒤 옥텟을 지운 주소를 원본으로 읽으면 정보주체 요청에 그 주소로 잘못 답한다\n                   — 서버가 내려준 마스킹 옥텟 수를 배지로 함께 보인다(§4.10 「IP(마스킹 표시)」).",
                                                         "type": "basic",
-                                                        "name": "Span",
+                                                        "name": "Div",
                                                         "props": {
                                                             "className": "flex-center gap-2"
                                                         },
@@ -777,7 +885,393 @@
                                                 },
                                                 "children": [
                                                     {
-                                                        "comment": "전체 유입 URL. 머리의 뱃지와 유입 경로 화면은 호스트(`referrer_name`)까지만 보여 줘 어느 글에서\n                왔는지 말해 주지 못하는데, 원장에는 처음부터 전체 URL 이 있었다. 익명화(`referrer_anonymization`)를\n                켠 구간은 저장 시점에 이미 도메인까지만 남아 여기서도 도메인만 보인다(#682 라운드 4, PO 지적 ⑥).\n                바깥 주소라 `noopener noreferrer nofollow` 로 연다.",
+                                                        "comment": "이 방문의 부수정보 — 원장이 아는 환경·지역·언어·유입 값 전부(#682 S4 라운드 8).",
+                                                        "id": "visit_info_{{$idx}}",
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "props": {
+                                                            "className": "kv-list-2 text-sm pb-2 border-b border-dashed border-gray-200 dark:border-gray-700"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Div",
+                                                                "props": {
+                                                                    "className": "kv-row"
+                                                                },
+                                                                "children": [
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "props": {
+                                                                            "className": "text-hint whitespace-nowrap"
+                                                                        },
+                                                                        "text": "$t:admin.analytics.visitor_detail.card.type"
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "props": {
+                                                                            "className": "text-body break-all"
+                                                                        },
+                                                                        "text": "{{$t('admin.analytics.visitors.types.' + (visit.visitor_type ?? 'guest'))}}"
+                                                                    }
+                                                                ]
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Div",
+                                                                "props": {
+                                                                    "className": "kv-row"
+                                                                },
+                                                                "children": [
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "props": {
+                                                                            "className": "text-hint whitespace-nowrap"
+                                                                        },
+                                                                        "text": "$t:admin.analytics.visitor_detail.card.ip"
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "props": {
+                                                                            "className": "text-body break-all"
+                                                                        },
+                                                                        "text": "{{visit.ip ?? '-'}}"
+                                                                    }
+                                                                ]
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Div",
+                                                                "props": {
+                                                                    "className": "kv-row"
+                                                                },
+                                                                "children": [
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "props": {
+                                                                            "className": "text-hint whitespace-nowrap"
+                                                                        },
+                                                                        "text": "$t:admin.analytics.visitor_detail.visit_info.last_action"
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "props": {
+                                                                            "className": "text-body break-all"
+                                                                        },
+                                                                        "text": "{{visit.last_action_at | datetime | default('-')}}"
+                                                                    }
+                                                                ]
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Div",
+                                                                "props": {
+                                                                    "className": "kv-row"
+                                                                },
+                                                                "children": [
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "props": {
+                                                                            "className": "text-hint whitespace-nowrap"
+                                                                        },
+                                                                        "text": "$t:admin.analytics.visitor_detail.visit_info.source"
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "props": {
+                                                                            "className": "text-body break-all"
+                                                                        },
+                                                                        "text": "{{visit.source === 'server' ? $t('admin.analytics.visitor_detail.visit_info.source_server') : (visit.source === 'beacon' ? $t('admin.analytics.visitor_detail.visit_info.source_beacon') : '-')}}"
+                                                                    }
+                                                                ]
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Div",
+                                                                "props": {
+                                                                    "className": "kv-row"
+                                                                },
+                                                                "children": [
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "props": {
+                                                                            "className": "text-hint whitespace-nowrap"
+                                                                        },
+                                                                        "text": "$t:admin.analytics.visitor_detail.card.device"
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "props": {
+                                                                            "className": "text-body break-all"
+                                                                        },
+                                                                        "text": "{{visit.device_type_label ?? visit.device_type ?? '-'}}"
+                                                                    }
+                                                                ]
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Div",
+                                                                "props": {
+                                                                    "className": "kv-row"
+                                                                },
+                                                                "children": [
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "props": {
+                                                                            "className": "text-hint whitespace-nowrap"
+                                                                        },
+                                                                        "text": "$t:admin.analytics.visitor_detail.card.browser"
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "props": {
+                                                                            "className": "text-body break-all"
+                                                                        },
+                                                                        "text": "{{([visit.browser_name, visit.browser_version].filter(Boolean).join(' ') || '-') + ' / ' + ([visit.os_name, visit.os_version].filter(Boolean).join(' ') || '-')}}"
+                                                                    }
+                                                                ]
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Div",
+                                                                "props": {
+                                                                    "className": "kv-row"
+                                                                },
+                                                                "children": [
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "props": {
+                                                                            "className": "text-hint whitespace-nowrap"
+                                                                        },
+                                                                        "text": "$t:admin.analytics.visitor_detail.card.resolution"
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "props": {
+                                                                            "className": "text-body break-all"
+                                                                        },
+                                                                        "text": "{{visit.screen_resolution ?? '-'}}"
+                                                                    }
+                                                                ]
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Div",
+                                                                "props": {
+                                                                    "className": "kv-row"
+                                                                },
+                                                                "children": [
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "props": {
+                                                                            "className": "text-hint whitespace-nowrap"
+                                                                        },
+                                                                        "text": "$t:admin.analytics.visitor_detail.card.browser_language"
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "props": {
+                                                                            "className": "text-body break-all"
+                                                                        },
+                                                                        "text": "{{visit.browser_language_label ?? visit.browser_language ?? '-'}}"
+                                                                    }
+                                                                ]
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Div",
+                                                                "props": {
+                                                                    "className": "kv-row"
+                                                                },
+                                                                "children": [
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "props": {
+                                                                            "className": "text-hint whitespace-nowrap"
+                                                                        },
+                                                                        "text": "$t:admin.analytics.visitor_detail.card.locale"
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "props": {
+                                                                            "className": "text-body break-all"
+                                                                        },
+                                                                        "text": "{{visit.locale_label ?? visit.locale ?? '-'}}"
+                                                                    }
+                                                                ]
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Div",
+                                                                "props": {
+                                                                    "className": "kv-row"
+                                                                },
+                                                                "children": [
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "props": {
+                                                                            "className": "text-hint whitespace-nowrap"
+                                                                        },
+                                                                        "text": "$t:admin.analytics.visitor_detail.card.country"
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "props": {
+                                                                            "className": "text-body break-all"
+                                                                        },
+                                                                        "text": "{{[visit.country_name ?? visit.country_code, visit.region_code, visit.city].filter(Boolean).join(' · ') || '-'}}"
+                                                                    }
+                                                                ]
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Div",
+                                                                "props": {
+                                                                    "className": "kv-row"
+                                                                },
+                                                                "children": [
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "props": {
+                                                                            "className": "text-hint whitespace-nowrap"
+                                                                        },
+                                                                        "text": "$t:admin.analytics.visitor_detail.visit_info.referrer"
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "props": {
+                                                                            "className": "text-body break-all"
+                                                                        },
+                                                                        "text": "{{[visit.referrer_type_label ?? visit.referrer_type, visit.referrer_name].filter(Boolean).join(' · ') || '-'}}"
+                                                                    }
+                                                                ]
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Div",
+                                                                "props": {
+                                                                    "className": "kv-row"
+                                                                },
+                                                                "children": [
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "props": {
+                                                                            "className": "text-hint whitespace-nowrap"
+                                                                        },
+                                                                        "text": "$t:admin.analytics.visitor_detail.visit_info.keyword"
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "props": {
+                                                                            "className": "text-body break-all"
+                                                                        },
+                                                                        "text": "{{visit.referrer_keyword ?? '-'}}"
+                                                                    }
+                                                                ]
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Div",
+                                                                "props": {
+                                                                    "className": "kv-row"
+                                                                },
+                                                                "children": [
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "props": {
+                                                                            "className": "text-hint whitespace-nowrap"
+                                                                        },
+                                                                        "text": "$t:admin.analytics.visitor_detail.visit_info.campaign"
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "props": {
+                                                                            "className": "text-body break-all"
+                                                                        },
+                                                                        "text": "{{[visit.campaign_name, visit.campaign_source, visit.campaign_medium].filter(Boolean).join(' · ') || '-'}}"
+                                                                    }
+                                                                ]
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Div",
+                                                                "props": {
+                                                                    "className": "kv-row"
+                                                                },
+                                                                "children": [
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "props": {
+                                                                            "className": "text-hint whitespace-nowrap"
+                                                                        },
+                                                                        "text": "$t:admin.analytics.visitor_detail.visit_info.bounce"
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "props": {
+                                                                            "className": "text-body break-all"
+                                                                        },
+                                                                        "text": "{{visit.is_bounce === true ? $t('admin.analytics.visitor_detail.visit_info.bounce_yes') : (visit.is_bounce === false ? $t('admin.analytics.visitor_detail.visit_info.bounce_no') : '-')}}"
+                                                                    }
+                                                                ]
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Div",
+                                                                "props": {
+                                                                    "className": "kv-row"
+                                                                },
+                                                                "children": [
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "props": {
+                                                                            "className": "text-hint whitespace-nowrap"
+                                                                        },
+                                                                        "text": "$t:admin.analytics.visitor_detail.card.returning"
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "props": {
+                                                                            "className": "text-body break-all"
+                                                                        },
+                                                                        "text": "{{visit.is_returning === true ? $t('admin.analytics.visitor_detail.card.returning_yes') : (visit.is_returning === false ? $t('admin.analytics.visitor_detail.card.returning_no') : '-')}}"
+                                                                    }
+                                                                ]
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "comment": "전체 유입 URL. 머리의 뱃지와 유입 경로 화면은 호스트(`referrer_name`)까지만 보여 줘 어느 글에서\n                왔는지 말해 주지 못하는데, 원장에는 처음부터 전체 URL 이 있었다. 익명화(`referrer_anonymization`)를\n                켠 구간은 저장 시점에 이미 도메인까지만 남아 여기서도 도메인만 보인다(#682 라운드 4, 검수 지적 ⑥).\n                바깥 주소라 `noopener noreferrer nofollow` 로 연다.",
                                                         "id": "visit_referrer_{{$idx}}",
                                                         "type": "basic",
                                                         "name": "Div",
@@ -914,12 +1408,22 @@
                                                                         }
                                                                     },
                                                                     {
+                                                                        "comment": "목표 이름은 서버가 등록부에서 푼 `goal_label`(전환 탭과 같은 이름). `label` 은 목표\n                       이름이 아니라 전환 속성(주문번호 등)이라 옆에 덧붙인다.",
                                                                         "type": "basic",
                                                                         "name": "Span",
                                                                         "props": {
-                                                                            "className": "text-body flex-1"
+                                                                            "className": "text-body flex-1 min-w-0 break-all"
                                                                         },
-                                                                        "text": "{{conv.label ?? conv.goal_key ?? '-'}}"
+                                                                        "text": "{{conv.goal_label ?? conv.goal_key ?? '-'}}"
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "if": "{{conv.label}}",
+                                                                        "props": {
+                                                                            "className": "text-hint min-w-0 break-all"
+                                                                        },
+                                                                        "text": "{{conv.label}}"
                                                                     },
                                                                     {
                                                                         "type": "basic",

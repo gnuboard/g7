@@ -4,6 +4,7 @@ namespace App\Analytics;
 
 use App\Contracts\Extension\CacheInterface;
 use App\Enums\Analytics\ExclusionReason;
+use App\Extension\HookManager;
 
 /**
  * 제외 사유 카운터
@@ -86,7 +87,11 @@ class ExclusionCounter
         $date ??= AnalyticsClock::today();
         $result = [];
 
-        $keys = array_merge(array_column(ExclusionReason::cases(), 'value'), self::EVENT_KEYS);
+        $keys = array_merge(
+            array_column(ExclusionReason::cases(), 'value'),
+            self::EVENT_KEYS,
+            array_keys(self::extensionReasons()),
+        );
 
         foreach ($keys as $key) {
             try {
@@ -97,6 +102,53 @@ class ExclusionCounter
         }
 
         return $result;
+    }
+
+    /**
+     * 확장이 등록한 제외 사유와 표시 이름을 반환합니다.
+     *
+     * 필터 `core.analytics.registered_exclusion_reasons` — 인자: 빈 배열. 확장은
+     * `'{식별자}:{사유}' => 이름(문자열 또는 로케일 맵)` 을 더합니다. 카운터 키는
+     * `ext:{식별자}:{사유}` 로 정규화됩니다 — 코어 사유와 이름이 겹치지 않게 합니다.
+     *
+     * 등록하지 않은 사유로는 제외할 수 없습니다(`VisitExclusionPipeline`). 진단 화면이 셀 수
+     * 없는 제외는 운영자에게 보이지 않는 구멍이 되기 때문입니다.
+     *
+     * @return array<string, string> 카운터 키 → 현재 로케일 표시 이름
+     */
+    public static function extensionReasons(): array
+    {
+        $declared = HookManager::applyFilters('core.analytics.registered_exclusion_reasons', []);
+        $reasons = [];
+
+        foreach (is_array($declared) ? $declared : [] as $name => $label) {
+            $key = self::extensionKey((string) $name);
+
+            if ($key === null) {
+                continue;
+            }
+
+            $reasons[$key] = LocalizedText::pick(LocalizedText::normalize($label), substr($key, 4));
+        }
+
+        return $reasons;
+    }
+
+    /**
+     * 확장 제외 사유 이름을 카운터 키로 바꿉니다.
+     *
+     * @param  string  $name  `{식별자}:{사유}` 또는 `ext:{식별자}:{사유}`
+     * @return string|null `ext:{식별자}:{사유}` (형식이 아니면 null)
+     */
+    public static function extensionKey(string $name): ?string
+    {
+        $name = str_starts_with($name, 'ext:') ? substr($name, 4) : $name;
+
+        if (preg_match('/^[a-z0-9][a-z0-9_-]{0,63}:[a-z0-9_]{1,50}$/', $name) !== 1) {
+            return null;
+        }
+
+        return 'ext:'.$name;
     }
 
     /**

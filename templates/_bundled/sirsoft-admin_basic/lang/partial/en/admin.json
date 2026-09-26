@@ -3004,7 +3004,7 @@
       "collection_disabled": "Visitor statistics collection is off — numbers will not grow.",
       "collection_disabled_link": "Turn on in settings",
       "consent_fallback": "Consent mode is on but no plugin can ask for consent, so visits are collected anonymously.",
-      "consent_cookie_fallback": "The consent plugin blocks the visitor cookie before consent, so visits are collected anonymously.",
+      "consent_cookie_fallback": "The consent plugin is active: visitors who accepted both analytics and functional cookies are recorded in IP mode, and all others anonymously (no IP, no visitor cookie).",
       "queue_backlog": "{{count}} jobs waiting in the queue — check that a worker is running.",
       "queue_backlog_link": "Open diagnostics",
       "geoip_off": "GeoIP is off: countries are estimated from the browser language and regions/cities are not collected.",
@@ -3051,6 +3051,7 @@
       }
     },
     "referrers": {
+      "keywords_https_hint": "Most search engines moved to HTTPS and no longer put the search term in the referring address. A mostly empty table here does not mean collection is broken.",
       "title": "Referrers",
       "description": "Where visitors come from — direct, search, other sites, campaigns.",
       "tabs": {
@@ -3114,15 +3115,20 @@
         "downloads": "Downloads",
         "outlinks": "Outbound links",
         "goals": "Goals",
-        "dimensions": "Custom dimensions"
+        "dimensions": "Extension breakdowns"
       },
       "no_result": "No results",
       "revenue": "Revenue",
-      "dimension_label": "Dimension key",
-      "dimension_placeholder": "Dimension key registered by an extension (Enter)",
-      "dimensions_hint": "When an extension registers a custom dimension, query it by its key.",
-      "dimensions_empty_title": "Choose a dimension",
-      "dimensions_empty_description": "Enter the key of a custom dimension registered by an extension to see its top list."
+      "dimension_label": "Breakdown",
+      "dimension_placeholder": "Choose a breakdown",
+      "dimensions_hint": "Breakdowns provided by installed extensions (e.g. by board) split visits here. If an extension is turned off or removed with its data kept, it is marked \"inactive extension\" and its stats remain viewable.",
+      "dimensions_empty_title": "Choose a breakdown",
+      "dimensions_empty_description": "Choose a breakdown above to see its top list.",
+      "dimensions_none_title": "No breakdowns from extensions",
+      "dimensions_none_description": "None of the active extensions provides a breakdown. When an extension declares one, you can choose it here.",
+      "dimension_pii_suffix": "personal data — no stats table",
+      "dimension_pii_title": "Personal-data breakdowns are not turned into stats tables",
+      "dimension_pii_description": "The extension marked the values of this breakdown as personal data. To keep them out of the permanent daily stats, no table is built; the values stay only in visit records and are removed when the retention period ends or on a data subject deletion request."
     },
     "realtime": {
       "title": "Realtime",
@@ -3163,8 +3169,7 @@
         "pageviews": "Pageviews",
         "last_visit": "Last visit",
         "country": "Country",
-        "device": "Device",
-        "timeline": "Timeline"
+        "device": "Device"
       },
       "timeline_button": "Timeline",
       "action": {
@@ -3190,7 +3195,23 @@
         "returning": "Returning",
         "returning_yes": "Returning",
         "returning_no": "First visit",
-        "ip_masked": "Masked {octets} octet(s)"
+        "ip_masked": "Masked {octets} octet(s)",
+        "region": "Region",
+        "resolution": "Resolution",
+        "browser_language": "Browser language",
+        "locale": "Site language"
+      },
+      "visit_info": {
+        "source": "Recorded by",
+        "source_beacon": "Browser",
+        "source_server": "Server (no script)",
+        "referrer": "Referrer",
+        "keyword": "Search keyword",
+        "campaign": "Campaign",
+        "bounce": "Bounce",
+        "bounce_yes": "Left after one page",
+        "bounce_no": "Viewed several pages",
+        "last_action": "Last activity"
       },
       "visits_title": "Visit history",
       "referrer_label": "Referrer",
@@ -3228,9 +3249,17 @@
         "url": "URL",
         "cache_status": "Cache",
         "time": "Time"
+      },
+      "cache_statuses": {
+        "hit": "Served from cache",
+        "miss": "Freshly rendered",
+        "bypass": "Cache bypassed",
+        "none": "No cache"
       }
     },
     "diagnostics": {
+      "declaration_warnings_title": "Some extension declarations were dropped",
+      "declaration_warnings_description": "Conversions or breakdowns an extension declared that were left out because they are malformed, with the reason. Pass this on to the extension developer.",
       "title": "Diagnostics",
       "description": "Find out why numbers stop growing — collection, queue, archive and storage.",
       "cards": {
@@ -3243,6 +3272,7 @@
         "enabled_on": "On",
         "enabled_off": "Off",
         "anonymous_fallback": "Anonymous fallback",
+        "anonymous_for_unconsented": "Anonymous until consent",
         "tracked_today": "{{count}} visitors today",
         "last_tracked": "Last tracked {{at}}",
         "queue_not_countable": "Queue not countable",
@@ -3307,6 +3337,17 @@
         "purge": "Purge",
         "extension_purge": "Extension cleanup"
       },
+      "run_triggers": {
+        "scheduled": "Automatic (scheduled)",
+        "manual": "Manual"
+      },
+      "queue_connections": {
+        "sync": "Immediate (no queue)",
+        "database": "Database queue",
+        "redis": "Redis queue",
+        "sqs": "Amazon SQS queue",
+        "beanstalkd": "Beanstalkd queue"
+      },
       "run_status": {
         "running": "Running",
         "success": "Success",
@@ -3336,11 +3377,10 @@
         "all": "All reasons",
         "validation": "Validation",
         "max_actions": "Action limit",
-        "dictionary": "Dictionary",
         "db_error": "DB error",
         "listener_exception": "Listener exception",
         "unknown_goal": "Unknown goal",
-        "unknown_dimension": "Unknown dimension"
+        "unknown_dimension": "Unknown breakdown"
       }
     },
     "privacy_requests": {
@@ -3374,7 +3414,7 @@
     },
     "settings": {
       "title": "Analytics settings",
-      "description": "Collection, privacy, bots, retention and reports. Saving applies to the current tab only.",
+      "description": "Collection, privacy, bots, retention and reports. Saving applies every value you changed, on any tab.",
       "tabs": {
         "collection": "Collection",
         "privacy": "Privacy",
@@ -3416,6 +3456,10 @@
       "privacy": {
         "consent_source_label": "Consent source",
         "consent_source_none": "None",
+        "consent_sources": {
+          "gdpr": "Consent management plugin (GDPR)",
+          "filter": "Consent check connected by an extension"
+        },
         "mode_label": "Privacy level",
         "modes": {
           "full": {

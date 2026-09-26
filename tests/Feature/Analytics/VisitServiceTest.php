@@ -18,6 +18,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Mockery\MockInterface;
+use Tests\Feature\Analytics\Concerns\FakesAnalyticsExtensions;
 use Tests\TestCase;
 
 /**
@@ -29,6 +30,7 @@ use Tests\TestCase;
  */
 class VisitServiceTest extends TestCase
 {
+    use FakesAnalyticsExtensions;
     use RefreshDatabase;
 
     private VisitService $service;
@@ -42,6 +44,8 @@ class VisitServiceTest extends TestCase
     {
         parent::setUp();
 
+        // 목표는 등록부에 선언된 것만 기록된다 — 이커머스 주문 완료 목표를 선언한 가짜 확장을 켠다.
+        $this->activateSampleAnalyticsExtensions();
         $this->service = app(VisitService::class);
     }
 
@@ -741,9 +745,11 @@ class VisitServiceTest extends TestCase
      */
     public function test_core_goal_is_not_attributed_to_extension(): void
     {
+        // 코어 목표는 서버 경로로만 받는다(비콘 위조 차단 — ConversionRecorderTest).
         $this->service->track($this->request([
             'type' => 'goal',
             'goalKey' => 'core.user_registered',
+            'source' => 'server',
         ]));
 
         $conversion = AnalyticsConversion::first();
@@ -754,14 +760,15 @@ class VisitServiceTest extends TestCase
     }
 
     /**
-     * 망가진 전환 속성이 적재 전체를 깨뜨리지 않는다.
+     * 선언된 스키마를 어긴 전환 속성은 그 목표 비콘을 버리고 사유를 남긴다.
      *
-     * 금액 자리에 문자열이 오거나 컬럼 상한을 넘는 값이 와도 방문과 액션은 남아야 한다.
-     * 전환 하나 때문에 그 방문의 페이지뷰까지 사라지면 통계가 통째로 어긋난다.
+     * 금액 자리에 문자열이 오면 확장이 선언한 `decimal` 스키마 위반이다. 조용히 금액만 비워
+     * 기록하면 「매출 0 원 주문」이 쌓여 매출 합계가 틀린다 — 버리고 실패 목록에 남긴다.
+     * 예외는 여전히 밖으로 나가지 않는다.
      *
      * @scenario source=beacon, visit_state=new, visitor=guest
      *
-     * @effects malformed_conversion_attributes_do_not_break_tracking
+     * @effects malformed_conversion_attributes_do_not_break_tracking, goal_attribute_schema_violation_is_logged_as_validation
      *
      * @return void 없음
      */
@@ -770,17 +777,43 @@ class VisitServiceTest extends TestCase
         $result = $this->service->track($this->request([
             'type' => 'goal',
             'goalKey' => 'sirsoft-ecommerce.order_completed',
-            'goalAttributes' => ['revenue' => '공짜', 'currency' => 'KRW1', 'label' => ''],
+            'goalAttributes' => ['revenue' => '공짜', 'currency' => 'KRW', 'label' => ''],
         ]));
 
-        $this->assertNotNull($result['visit_id']);
-        $this->assertNotNull($result['action_id']);
-        $this->assertSame(1, AnalyticsConversion::count());
+        $this->assertNull($result['action_id']);
+        $this->assertSame(0, AnalyticsConversion::count());
+        $this->assertSame(0, AnalyticsAction::count());
+
+        $failure = AnalyticsCollectFailure::first();
+        $this->assertNotNull($failure);
+        $this->assertSame(CollectFailureReason::Validation->value, $failure->reason instanceof \BackedEnum ? $failure->reason->value : $failure->reason);
+        $this->assertStringContainsString('revenue', (string) $failure->message);
+    }
+
+    /**
+     * 통화 칸에 3자리가 아닌 값이 오면 통화만 비운다.
+     *
+     * 통화는 원장 칸 규칙(대문자 3자리)이 따로 있다. 스키마를 통과한 문자열이라도 그 규칙에
+     * 어긋나면 칸을 비워 적재를 깨뜨리지 않는다.
+     *
+     * @scenario source=beacon, visit_state=new, visitor=guest
+     *
+     * @effects conversion_revenue_and_currency_are_normalized
+     *
+     * @return void 없음
+     */
+    public function test_invalid_currency_code_is_left_empty(): void
+    {
+        $this->service->track($this->request([
+            'type' => 'goal',
+            'goalKey' => 'sirsoft-ecommerce.order_completed',
+            'goalAttributes' => ['revenue' => 100, 'currency' => 'KRW1', 'label' => ''],
+        ]));
 
         $conversion = AnalyticsConversion::first();
 
-        $this->assertNull($conversion->revenue);
-        // 3자리 문자만 통화 코드다 — 아니면 비운다.
+        $this->assertNotNull($conversion);
+        $this->assertSame('100.00', $conversion->revenue);
         $this->assertNull($conversion->currency);
         $this->assertNull($conversion->label);
     }

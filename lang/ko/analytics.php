@@ -61,6 +61,21 @@ return [
         'extension_purge' => '확장 데이터 정리',
     ],
 
+    // 저장 현황 표 이름 (설정 › 보존 — 표 이름 옆에 보인다)
+    'storage_table' => [
+        'analytics_visits' => '방문 기록',
+        'analytics_actions' => '페이지뷰·이벤트 기록',
+        'analytics_action_names' => '페이지·이벤트 이름',
+        'analytics_conversions' => '전환 기록',
+        'analytics_bot_hits' => '봇 방문 기록',
+        'analytics_stats_hourly' => '시간별 집계',
+        'analytics_stats_daily' => '일별 집계',
+        'analytics_dimension_stats' => '확장별 분류 집계',
+        'analytics_salts' => '익명 키 재료',
+        'analytics_archive_runs' => '집계 실행 이력',
+        'analytics_collect_failures' => '수집 실패 기록',
+    ],
+
     // 배치 실행 상태
     'archive_run_status' => [
         'running' => '실행 중',
@@ -73,11 +88,10 @@ return [
     'collect_failure_reason' => [
         'validation' => '요청 형식 오류',
         'max_actions' => '방문당 액션 상한 초과',
-        'dictionary' => '이름 사전 기록 실패',
         'db_error' => '데이터베이스 오류',
         'listener_exception' => '확장 리스너 오류',
         'unknown_goal' => '등록되지 않은 목표',
-        'unknown_dimension' => '등록되지 않은 차원',
+        'unknown_dimension' => '등록되지 않은 분류 기준',
     ],
 
     // 수집 제외 사유
@@ -143,7 +157,6 @@ return [
         'skipped_locked' => '같은 기간을 이미 집계하고 있어 건너뛰었습니다.',
         'skipped_beyond_retention' => '원장 보존 기간이 지나 다시 계산할 기록이 없어 건너뛰었습니다. 이미 있는 집계는 그대로 둡니다.',
         'skipped_finalized' => '이미 확정된 날이라 건너뛰었습니다. 다시 계산하려면 「이미 확정된 날도 다시 집계」를 켜세요.',
-        'range_invalid' => '재집계 기간이 올바르지 않습니다.',
         'stale_run' => '끝을 알리지 못하고 멈춘 실행이라 실패로 닫았습니다(워커 종료·시간 초과 등). 필요하면 다시 실행하세요.',
         'job_failed' => '작업이 실패해 실행을 닫았습니다: :reason',
     ],
@@ -169,6 +182,7 @@ return [
     ],
     'report' => [
         'fetch_success' => '리포트를 불러왔습니다.',
+        'inactive_dimension' => ':key (꺼진 확장)',
     ],
     'series' => [
         'fetch_success' => '추이를 불러왔습니다.',

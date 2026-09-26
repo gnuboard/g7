@@ -4,11 +4,14 @@ namespace App\Services\Analytics;
 
 use App\Analytics\AnalyticsClock;
 use App\Analytics\AnalyticsConfig;
+use App\Analytics\CodeLabelTranslator;
+use App\Analytics\GeoLabelTranslator;
 use App\Analytics\UrlNormalizer;
 use App\Contracts\Repositories\Analytics\ActionNameRepositoryInterface;
 use App\Contracts\Repositories\Analytics\VisitRepositoryInterface;
 use App\Contracts\Repositories\UserRepositoryInterface;
 use App\Enums\Analytics\VisitorType;
+use App\Extension\HookManager;
 use App\Models\User;
 
 /**
@@ -101,10 +104,15 @@ class RealtimeService
                     'last_action_at' => AnalyticsClock::toSiteDateTimeString($visit->last_action_at),
                     'visitor_type' => $this->enumValue($visit->visitor_type),
                     'country_code' => $visit->country_code,
+                    // 코드는 그대로 두고 화면이 읽을 이름을 덧붙인다(#682 S4 라운드 8).
+                    'country_name' => is_string($visit->country_code) && $visit->country_code !== '' ? GeoLabelTranslator::country($visit->country_code) : null,
                     'device_type' => $this->enumValue($visit->device_type),
+                    'device_type_label' => CodeLabelTranslator::label('analytics.device_type', $visit->device_type),
                     'browser_name' => $visit->browser_name,
                     'ip' => $includeIp && $visit->ip !== null ? (string) $visit->ip : null,
                     'user' => $this->memberSummary($memberMap[(int) ($visit->user_id ?? 0)] ?? null),
+                    // 확장이 이 방문에 붙이는 값(장바구니 금액 등). 코어 필드를 덮지 못하게 한 칸 아래에 둔다.
+                    'extensions' => $this->extensionFields($visit),
                 ];
             })->all(),
         ];
@@ -155,5 +163,26 @@ class RealtimeService
         }
 
         return $value instanceof \BackedEnum ? (string) $value->value : (string) $value;
+    }
+
+    /**
+     * 확장이 현재 접속자 행에 붙이는 값을 모읍니다.
+     *
+     * 필터 `core.analytics.realtime_fields` — 인자: 빈 배열, 방문 모델. 확장은 `{식별자} => 값`
+     * 으로 돌려줍니다. 방송은 이 목록을 싣지 않고 화면이 다시 조회하는 신호로만 쓰므로, 값은
+     * 조회 응답에만 들어갑니다.
+     *
+     * @param  object  $visit  방문
+     * @return array<string, mixed> 식별자 → 값
+     */
+    private function extensionFields(object $visit): array
+    {
+        $fields = HookManager::applyFilters('core.analytics.realtime_fields', [], $visit);
+
+        return array_filter(
+            is_array($fields) ? $fields : [],
+            fn ($value, $key): bool => is_string($key) && $key !== '',
+            ARRAY_FILTER_USE_BOTH,
+        );
     }
 }

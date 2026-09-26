@@ -9,7 +9,7 @@
   이 조각을 쓰는 리포트 화면 전부(페이지·유입·환경·지역·행동·봇)가 같은 소스를 읽어 여기 한 번이면 된다.
   e2e:allow 이번 변경(받아오는 동안 표를 흐림 · 실패 시 설정 폼이 빈 값으로 섬)은 화면 14면 전수를
   모집단으로 파생해 재는 `analyticsStateBranches.test.ts` 가 잠근다 — 되돌리면 blur 6면·fallback 1건이 red 다.
-  브라우저 spec 은 PO 가 이번 라운드 범위를 화면 결함 2건으로 한정해 이월했다(계획서 §12 「S3 라운드 1」). -->
+  브라우저 spec 은 그 라운드의 범위를 화면 결함 2건으로 한정한 결정에 따라 뒤로 미뤘다(S3 라운드 1). -->
 <partial description="방문자 통계 리포트 공통 표 — 검색·정렬·쪽·부가 열·빈 상태">
   <div data-ref="analytics_report_section" class="admin-card">
     <div data-ref="report_toolbar" class="flex-between flex-wrap gap-3 mb-4">
@@ -51,8 +51,10 @@
       <blur-until-loaded sources="analytics_report"/>
       <!-- 열은 차원이 답할 수 있는 것만 보인다. 행동 차원(검색어·다운로드·외부 링크·전환·확장)은 방문이 아니라
         행동을 세므로 이탈률·체류·방문당 페이지가 0·0:00·1 로만 채워진다 — 보이면 읽는 사람을 속인다. 부가 열은
-        값을 싣는 차원(검색어의 결과 없음·전환 금액·확장)에만 둔다. 화면은 `_computed.reportName` 을 채운다. -->
-      <data-grid data-ref="analytics_report_grid" visibleColumns="{{(function(r) { const name = String(r ?? ''); const ext = name.startsWith('ext:'); const action = ext || ['site_search', 'download', 'outlink', 'goal'].includes(name); const extra = ext || ['site_search', 'goal'].includes(name); return ['label_display', 'visits', 'hits'].concat(action ? [] : ['bounce_rate', 'avg_time', 'pages_per_visit'], extra ? ['extra'] : []); })(_computed.reportName)}}" data="{{analytics_report?.data?.data ?? []}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{+(query.page || 1)}}" :serverTotalPages="null" serverHasMorePages="{{analytics_report?.data?.pagination?.has_more ?? false}}" pageSize="{{+(query.per_page || 25)}}" :alwaysShowPagination="true" idField="label" :selectable="false" :sortable="false" emptyMessage="$t:admin.analytics.common.empty_title">
+        값을 싣는 차원(검색어의 결과 없음·전환 금액·확장)에만 둔다. 화면은 `_computed.reportName` 을 채운다.
+        0건이면 표(빈 문구·쪽 번호 「1」)를 숨기고 아래 빈 화면 안내 하나만 남긴다 — 둘 다 그리면 「선택 기간에 기록이
+        없습니다」가 두 번 보였다(#682 S4 라운드 8). 불러오는 동안은 표 뼈대를 그대로 둔다. -->
+      <data-grid data-ref="analytics_report_grid" data-if="{{analytics_report?.loading || (analytics_report?.data?.data ?? []).length &gt; 0}}" visibleColumns="{{(function(r) { const name = String(r ?? ''); const ext = name.startsWith('ext:'); const action = ext || ['site_search', 'download', 'outlink', 'goal'].includes(name); const extra = ext || ['site_search', 'goal'].includes(name); return ['label_display', 'visits', 'hits'].concat(action ? [] : ['bounce_rate', 'avg_time', 'pages_per_visit'], extra ? ['extra'] : []); })(_computed.reportName)}}" data="{{analytics_report?.data?.data ?? []}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{+(query.page || 1)}}" :serverTotalPages="null" serverHasMorePages="{{analytics_report?.data?.pagination?.has_more ?? false}}" pageSize="{{+(query.per_page || 25)}}" :alwaysShowPagination="true" idField="label" :selectable="false" :sortable="false" emptyMessage="$t:admin.analytics.common.empty_title">
         <on type="action" event="onPageChange">
           <!-- 쪽 이동 — 주소를 갈아 끼워 다시 받는다. 돌아온 목록이 곧 화면이다. -->
           <navigate path="{{_local.periodPath}}" :mergeQuery="true" :replace="true">
@@ -64,7 +66,7 @@
             <!-- 라벨을 눌러 한 단계 더 들어가는 화면은 `_local.labelDrilldownKey` 를 채운다. 지금은
               유입 경로>유입 사이트 하나가 쓴다 — 도메인 행을 누르면 그 도메인의 전체 유입 주소가 열린다.
               질의 키(`host`)는 `<query>` 가 정적 이름만 받아 여기 박아 두고, 켤지 말지만 화면이 정한다.
-              켜지 않은 화면은 종전대로 글자다(#682 라운드 4, PO 지적 ⑥). -->
+              켜지 않은 화면은 종전대로 글자다(#682 라운드 4, 검수 지적 ⑥). -->
             <button data-ref="report_label_link" data-if="{{_local.labelDrilldownKey === 'host'}}" type="button" class="text-link whitespace-normal break-all text-left" title="{{row.label ?? ''}}">
               <on type="click">
                 <navigate path="{{_local.periodPath}}" :mergeQuery="true">
@@ -104,8 +106,8 @@
         <column field="extra" header="$t:admin.analytics.common.extra" width="120px" align="right">
           <cell>
             <span data-if="{{row.extra?.no_result !== undefined}}" class="text-label" title="$t:admin.analytics.actions.no_result">{{$t('admin.analytics.actions.no_result')}}: {{(row.extra?.no_result ?? 0) | number}}</span>
-            <span data-if="{{row.extra?.revenue_sum !== undefined}}" class="text-label" title="$t:admin.analytics.actions.revenue">{{$t('admin.analytics.actions.revenue')}}: {{(Number(row.extra?.revenue_sum ?? 0) / 100) | number}}</span>
-            <span data-if="{{row.extra?.no_result === undefined &amp;&amp; row.extra?.revenue_sum === undefined}}" class="text-gray-400 dark:text-gray-500">-</span>
+            <span data-if="{{row.extra?.revenue_cents !== undefined}}" class="text-label" title="$t:admin.analytics.actions.revenue">{{$t('admin.analytics.actions.revenue')}}: {{(Number(row.extra?.revenue_cents ?? 0) / 100) | number}}</span>
+            <span data-if="{{row.extra?.no_result === undefined &amp;&amp; row.extra?.revenue_cents === undefined}}" class="text-gray-400 dark:text-gray-500">-</span>
           </cell>
         </column>
       </data-grid>
@@ -114,8 +116,8 @@
     <!-- 빈 표에서 「수집 상태는 진단에서」를 읽고도 그 자리에서 갈 수 없으면 안내가 반쪽이다
          (계획서 §4.11 리포트 와이어프레임의 `[진단]`). 이 조각을 쓰는 화면은 전부 조회 권한이라
          목적지가 막다른 길이 되지 않는다 — 그래도 최고 관리자·권한 보유자만 그려 규약을 지킨다. -->
-    <div data-ref="report_empty_actions" data-if="{{!analytics_report?.loading &amp;&amp; (analytics_report?.data?.data ?? []).length === 0 &amp;&amp; (current_user?.data?.is_super === true || (current_user?.data?.permissions ?? []).some(p =&gt; (p?.identifier ?? p) === 'core.analytics.read'))}}" class="flex justify-center pb-10">
-      <button data-ref="report_empty_diagnostics_link" type="button" class="btn-secondary">
+    <div data-ref="report_empty_actions" data-if="{{!analytics_report?.loading &amp;&amp; (analytics_report?.data?.data ?? []).length === 0 &amp;&amp; ((current_user?.data?.permissions ?? []).some(p =&gt; (p?.identifier ?? p) === 'core.analytics.read'))}}" class="flex justify-center pb-10">
+      <button data-ref="report_empty_diagnostics_link" type="button" class="btn btn-secondary">
         <on type="click">
           <navigate path="/admin/analytics/diagnostics"/>
         </on>

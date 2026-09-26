@@ -2,6 +2,7 @@
 
 namespace App\Models\Analytics;
 
+use App\Analytics\AnalyticsClock;
 use App\Enums\Analytics\ArchiveRunStatus;
 use App\Enums\Analytics\ArchiveRunType;
 use Database\Factories\Analytics\AnalyticsArchiveRunFactory;
@@ -95,5 +96,27 @@ class AnalyticsArchiveRun extends Model
             'progress_percent' => 'integer',
             'triggered_by' => 'integer',
         ];
+    }
+
+    /**
+     * 화면·방송에 내보낼 배열을 만듭니다.
+     *
+     * 시각 다섯 칸은 원장과 같은 UTC 로 저장돼 있다. 화면은 모든 통계 시각을 사이트 표준시로
+     * 읽으므로, 목록 API 와 진행률 방송이 같은 변환을 한곳에서 거쳐야 두 길이 다른 시각을 보이지
+     * 않는다(방송만 UTC 원값을 실으면 그 값을 그리는 순간 시각이 어긋난다).
+     *
+     * @return array<string, mixed> 화면용 실행 이력
+     */
+    public function toScreenArray(): array
+    {
+        $row = $this->toArray();
+
+        foreach (['period_start', 'period_end', 'started_at', 'finished_at', 'created_at'] as $key) {
+            if (isset($row[$key])) {
+                $row[$key] = AnalyticsClock::toSiteDateTimeString(Carbon::parse($row[$key]));
+            }
+        }
+
+        return $row;
     }
 }

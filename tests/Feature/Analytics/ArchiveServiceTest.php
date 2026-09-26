@@ -299,6 +299,115 @@ class ArchiveServiceTest extends TestCase
     }
 
     /**
+     * 모든 차원(`StatsDimension` 전수)이 재료가 있으면 행을 얻는지 확인합니다.
+     *
+     * 모집단을 손으로 적으면 차원이 하나 늘어도 케이스 없이 통과한다 — 열거형에서 파생하고,
+     * 픽스처가 그 차원의 재료를 만들지 못하면 여기서 red 가 되어 픽스처를 고치게 한다.
+     *
+     * @return void 없음
+     *
+     * @scenario period=day, data=all_types, trigger=manual
+     *
+     * @effects every_stats_dimension_gets_rows_from_its_source, page_title_is_recorded_alongside_page_url
+     */
+    public function test_every_stats_dimension_gets_rows_from_its_source(): void
+    {
+        $date = '2026-09-14';
+        $visit = $this->visit($date, [
+            'referrer_name' => 'google',
+            'referrer_keyword' => '그누보드',
+            'campaign_name' => 'spring',
+            'campaign_source' => 'newsletter',
+            'browser_name' => 'Chrome',
+            'browser_version' => '128',
+            'os_name' => 'Windows',
+            'screen_resolution' => '1920x1080',
+            'browser_language' => 'ko',
+            'locale' => 'ko',
+            'country_code' => 'KR',
+            'region_code' => '11',
+            'city' => 'Seoul',
+        ], ['example.test/a']);
+
+        $at = Carbon::parse($date.' 01:10:00', 'UTC');
+        AnalyticsAction::query()->where('visit_id', $visit->id)->update(['page_title_id' => $this->actionName('title', '첫 화면')->id]);
+
+        foreach ([
+            [ActionType::SiteSearch, 'search', '그누보드'],
+            [ActionType::Download, 'download', 'report.pdf'],
+            [ActionType::Outlink, 'outlink', 'https://other.test/'],
+        ] as [$type, $nameType, $name]) {
+            AnalyticsAction::factory()->create([
+                'visit_id' => $visit->id,
+                'visitor_key' => $visit->visitor_key,
+                'action_type' => $type,
+                'action_name_id' => $this->actionName($nameType, $name)->id,
+                'occurred_at' => $at,
+                'search_result_count' => $type === ActionType::SiteSearch ? 3 : null,
+            ]);
+        }
+
+        AnalyticsConversion::factory()->create([
+            'visit_id' => $visit->id,
+            'visitor_key' => $visit->visitor_key,
+            'goal_key' => 'core.user_logged_in',
+            'occurred_at' => $at,
+        ]);
+
+        AnalyticsBotHit::factory()->create([
+            'bot_name' => 'Googlebot',
+            'url' => '/robots-page',
+            'occurred_at' => $at,
+        ]);
+
+        $this->service->archiveDay($date);
+
+        $dimensions = StatsDimension::values();
+        $this->assertNotEmpty($dimensions);
+
+        $missing = array_values(array_filter(
+            $dimensions,
+            fn (string $dimension): bool => ! AnalyticsDimensionStat::query()->where('date', $date)->where('dimension', $dimension)->exists(),
+        ));
+
+        $this->assertSame([], $missing, '재료를 넣었는데 행이 없는 차원');
+
+        // 제목은 URL 과 같은 페이지뷰에서 나오며 따로 센다.
+        $title = AnalyticsDimensionStat::query()->where('date', $date)->where('dimension', StatsDimension::PageTitle->value)->first();
+        $this->assertSame('첫 화면', $title->label);
+        $this->assertSame(1, (int) $title->visits);
+    }
+
+    /**
+     * 다시 집계했을 때 활동이 사라진 시각의 옛 시간 행이 지워지는지 확인합니다.
+     *
+     * 재집계의 멱등은 「지우고 넣기」다. 재료가 있는 시각만 갈아 끼우면, 원장 정리·정보주체
+     * 삭제로 활동이 사라진 시각의 옛 숫자가 영영 남아 시간대 패턴이 부푼다.
+     *
+     * @return void 없음
+     *
+     * @scenario period=day, data=single_type, trigger=manual
+     *
+     * @effects hour_slots_with_no_activity_are_cleared
+     */
+    public function test_hour_slots_with_no_activity_are_cleared_on_rerun(): void
+    {
+        $date = '2026-09-14';
+        $visit = $this->visit($date);
+
+        $this->service->archiveDay($date);
+        $this->assertTrue(AnalyticsStatsHourly::query()->where('hour_start', $date.' 01:00:00')->exists());
+
+        // 그 방문이 지워진 뒤(정보주체 삭제 등) 다시 집계한다.
+        AnalyticsAction::query()->where('visit_id', $visit->id)->delete();
+        $visit->delete();
+
+        $this->service->archiveDay($date);
+
+        $this->assertSame(0, AnalyticsStatsHourly::query()->whereBetween('hour_start', [$date.' 00:00:00', $date.' 23:59:59'])->count());
+    }
+
+    /**
      * 리포트 파생 지표가 차원마다 뜻 있는 값을 갖는지 확인합니다.
      *
      * 방문 차원(브라우저·국가·유입 등)은 방문마다 조회 1로 적혀 「방문당 페이지」가 늘 1 이었고, 페이지

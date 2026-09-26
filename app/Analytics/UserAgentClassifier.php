@@ -24,7 +24,7 @@ class UserAgentClassifier
      *
      * @var array<int, array{0: string, 1: string}>
      */
-    private const BROWSER_PATTERNS = [
+    public const BROWSER_PATTERNS = [
         ['KAKAOTALK', 'KakaoTalk'],
         ['NAVER(', 'Naver App'],
         ['Whale', 'Whale'],
@@ -44,7 +44,7 @@ class UserAgentClassifier
      *
      * @var array<int, array{0: string, 1: string}>
      */
-    private const OS_PATTERNS = [
+    public const OS_PATTERNS = [
         ['iPad', 'iPadOS'],
         ['iPhone', 'iOS'],
         ['iPod', 'iOS'],
@@ -54,6 +54,22 @@ class UserAgentClassifier
         ['Macintosh', 'macOS'],
         ['Mac OS X', 'macOS'],
         ['Linux', 'Linux'],
+    ];
+
+    /**
+     * 클라이언트 힌트 브랜드 → 브라우저 이름
+     *
+     * 힌트의 brands 에는 위장용 항목("Not;A=Brand" 등)이 섞여 오므로 아는 이름만 고릅니다.
+     *
+     * @var array<string, string>
+     */
+    public const HINT_BRANDS = [
+        'Microsoft Edge' => 'Edge',
+        'Google Chrome' => 'Chrome',
+        'Opera' => 'Opera',
+        'Samsung Internet' => 'Samsung Internet',
+        'Whale' => 'Whale',
+        'Firefox' => 'Firefox',
     ];
 
     /**
@@ -68,8 +84,17 @@ class UserAgentClassifier
     {
         $ua = $userAgent ?? '';
 
-        $browser = self::browserFromHints($clientHints) ?? self::browserFromUserAgent($ua);
-        $os = self::osFromHints($clientHints) ?? self::osFromUserAgent($ua);
+        // 판정표는 확장이 필터(`core.analytics.ua_rules`)로 보탤 수 있다 — 국내 인앱 브라우저나
+        // 새 브라우저를 코어 릴리스를 기다리지 않고 잡게 한다.
+        $rules = AnalyticsTables::uaRules([
+            'browsers' => self::BROWSER_PATTERNS,
+            'os' => self::OS_PATTERNS,
+            'hint_brands' => self::HINT_BRANDS,
+        ]);
+
+        $browser = self::browserFromHints($clientHints, $rules['hint_brands'])
+            ?? self::browserFromUserAgent($ua, $rules['browsers']);
+        $os = self::osFromHints($clientHints) ?? self::osFromUserAgent($ua, $rules['os']);
 
         return [
             'browser_name' => $browser['name'],
@@ -86,24 +111,16 @@ class UserAgentClassifier
      * 힌트의 brands 에는 위장용 항목("Not;A=Brand" 등)이 섞여 오므로 아는 이름만 고릅니다.
      *
      * @param  array<string, mixed>  $hints  클라이언트 힌트
+     * @param  array<string, string>  $known  힌트 브랜드 → 브라우저 이름
      * @return array{name: string, version: string|null}|null 판정 결과 (판정 불가 시 null)
      */
-    private static function browserFromHints(array $hints): ?array
+    private static function browserFromHints(array $hints, array $known = self::HINT_BRANDS): ?array
     {
         $brands = $hints['brands'] ?? null;
 
         if (! is_array($brands)) {
             return null;
         }
-
-        $known = [
-            'Microsoft Edge' => 'Edge',
-            'Google Chrome' => 'Chrome',
-            'Opera' => 'Opera',
-            'Samsung Internet' => 'Samsung Internet',
-            'Whale' => 'Whale',
-            'Firefox' => 'Firefox',
-        ];
 
         foreach ($brands as $entry) {
             if (! is_array($entry)) {
@@ -128,15 +145,16 @@ class UserAgentClassifier
      * User-Agent 문자열에서 브라우저를 판정합니다.
      *
      * @param  string  $ua  User-Agent 문자열
+     * @param  array<int, array{0: string, 1: string}>  $patterns  판정 순서
      * @return array{name: string, version: string|null} 판정 결과
      */
-    private static function browserFromUserAgent(string $ua): array
+    private static function browserFromUserAgent(string $ua, array $patterns = self::BROWSER_PATTERNS): array
     {
         if ($ua === '') {
             return ['name' => 'Other', 'version' => null];
         }
 
-        foreach (self::BROWSER_PATTERNS as [$needle, $name]) {
+        foreach ($patterns as [$needle, $name]) {
             if (! str_contains($ua, $needle)) {
                 continue;
             }
@@ -186,15 +204,16 @@ class UserAgentClassifier
      * User-Agent 문자열에서 운영체제를 판정합니다.
      *
      * @param  string  $ua  User-Agent 문자열
+     * @param  array<int, array{0: string, 1: string}>  $patterns  판정 순서
      * @return array{name: string, version: string|null} 판정 결과
      */
-    private static function osFromUserAgent(string $ua): array
+    private static function osFromUserAgent(string $ua, array $patterns = self::OS_PATTERNS): array
     {
         if ($ua === '') {
             return ['name' => 'Other', 'version' => null];
         }
 
-        foreach (self::OS_PATTERNS as [$needle, $name]) {
+        foreach ($patterns as [$needle, $name]) {
             if (! str_contains($ua, $needle)) {
                 continue;
             }

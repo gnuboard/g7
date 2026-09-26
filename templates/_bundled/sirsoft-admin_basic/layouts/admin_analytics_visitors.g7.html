@@ -4,7 +4,7 @@
   개인을 보는 화면이라 `core.analytics.privacy` 가 필요하고, 합산 토글(제외)은 쓰지 않는다.
   e2e:allow 이번 변경(받아오는 동안 표를 흐림 · 실패 시 설정 폼이 빈 값으로 섬)은 화면 14면 전수를
   모집단으로 파생해 재는 `analyticsStateBranches.test.ts` 가 잠근다 — 되돌리면 blur 6면·fallback 1건이 red 다.
-  브라우저 spec 은 PO 가 이번 라운드 범위를 화면 결함 2건으로 한정해 이월했다(계획서 §12 「S3 라운드 1」). -->
+  브라우저 spec 은 그 라운드의 범위를 화면 결함 2건으로 한정한 결정에 따라 뒤로 미뤘다(S3 라운드 1). -->
 <layout name="admin_analytics_visitors" version="1.0.0" extends="_admin_base">
   <meta title="$t:admin.analytics.visitors.title"/>
   <data-source id="analytics_visitors" label_key="$t:editor.data_source.analytics_visitors" type="api" endpoint="/api/admin/analytics/visitors" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive">
@@ -52,7 +52,7 @@
     <field name="showExclude" :value="false"/>
   </init-local>
   <computed name="csvUrl">{{''}}</computed>
-  <computed name="canReadUsers">{{current_user?.data?.is_super === true || (current_user?.data?.permissions ?? []).some(p => (p?.identifier ?? p) === 'core.users.read')}}</computed>
+  <computed name="canReadUsers">{{(current_user?.data?.permissions ?? []).some(p => (p?.identifier ?? p) === 'core.users.read')}}</computed>
   <computed name="periodFrom">{{query.from || analytics_visitors?.data?.from || _local.periodComputed?.from || ''}}</computed>
   <computed name="periodTo">{{query.to || query.from || analytics_visitors?.data?.to || _local.periodComputed?.to || ''}}</computed>
   <permissions>
@@ -124,7 +124,9 @@
               <item id="timeline" label="$t:admin.analytics.visitors.timeline_button" iconName="clock-rotate-left"/>
             </prop>
             <on event="onRowAction">
-              <!-- 「타임라인」 — 상세 화면으로. 기간은 그대로 따라간다(mergeQuery). -->
+              <!-- 「타임라인」 — 상세 화면으로. 질의를 병합해 넘기므로 주소의 기간 키는 따라가지만, 상세 API 는
+                   `from`·`to` 만 읽고 `preset` 은 쓰지 않는다 — 달력으로 고른 기간이면 그 구간만, 프리셋이면
+                   전체 이력을 보인다(상세의 기간 규칙은 따로 정하지 않았다). -->
               <navigate path="/admin/analytics/visitors/{{$args[1].visitor_key}}" :mergeQuery="true">
                 <query/>
               </navigate>
@@ -158,7 +160,7 @@
                       실어 주므로 활동 로그·알림 이력과 같은 행위자 메뉴를 단다 — 「회원 정보 보기」는 보던 목록을
                       잃지 않도록 새 창으로 열고, 「이 회원으로 검색」은 검색 칸에 회원 번호를 앉힌 채 곧바로
                       조회한다(검색 칸 하나가 방문자 키·IP·회원 번호를 함께 받는다). 회원이 지워진 뒤 남은
-                      기록은 붙일 이름이 없어 번호만 보인다(#682 라운드 4, PO 지적 ⑦). -->
+                      기록은 붙일 이름이 없어 번호만 보인다(#682 라운드 4, 검수 지적 ⑦). -->
                     <switch>
                       <case when="view_member">
                         <open-window path="/admin/users/{{row.user.uuid}}"/>
@@ -202,18 +204,22 @@
             </column>
             <column field="country_code" header="$t:admin.analytics.visitors.columns.country" width="80px">
               <cell>
-                <span class="text-label">{{row.country_code ?? '-'}}</span>
+                <span class="text-label">{{row.country_name ?? row.country_code ?? '-'}}</span>
               </cell>
             </column>
             <column field="device_type" header="$t:admin.analytics.visitors.columns.device" width="110px">
               <cell>
-                <span class="text-label">{{row.device_type ?? '-'}}</span>
+                <span class="text-label">{{row.device_type_label ?? row.device_type ?? '-'}}</span>
                 <span data-if="{{!!row.browser_name}}" class="text-hint block">{{row.browser_name}}</span>
               </cell>
             </column>
           </data-grid>
         </div>
       </div>
+      <!-- 확장이 이 화면에 자기 리포트 조각을 붙이는 자리(데이터는 확장 자기 API). -->
+      <extension-point name="analytics_visitors_widgets" class="space-y-4 mt-4">
+        <default/>
+      </extension-point>
     </div>
   </slot>
 </layout>

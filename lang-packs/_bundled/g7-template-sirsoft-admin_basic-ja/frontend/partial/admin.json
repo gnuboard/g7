@@ -3133,7 +3133,7 @@
       "collection_disabled": "訪問者統計の収集がオフになっています — 数値がこれ以上増加しません。",
       "collection_disabled_link": "設定でオンにする",
       "consent_fallback": "同意連携モードですが、同意を確認するプラグインがないため、匿名モードで収集しています。",
-      "consent_cookie_fallback": "同意管理プラグインが同意前の訪問者クッキーをブロックしているため、匿名モードで収集しています。",
+      "consent_cookie_fallback": "同意管理プラグインが有効なため、Cookie（分析・機能）の両方に同意した訪問者はIP保存モードで、それ以外の訪問者は匿名モード（IP・訪問者Cookieなし）で収集しています。",
       "queue_backlog": "キューに待機中{{count}}件 — ワーカーが実行されているか確認してください。",
       "queue_backlog_link": "収集診断を開く",
       "geoip_off": "GeoIPがオフになっているため、国はブラウザ言語で推定され、地域・都市は収集されません。",
@@ -3180,6 +3180,7 @@
       }
     },
     "referrers": {
+      "keywords_https_hint": "多くの検索エンジンは HTTPS へ移行し、流入元アドレスに検索語を含めなくなりました。この表がほとんど空でも収集の不具合ではありません。",
       "title": "流入経路",
       "description": "訪問者がどこから来たか — 直接·検索·外部サイト·キャンペーン。",
       "tabs": {
@@ -3243,15 +3244,20 @@
         "downloads": "ダウンロード",
         "outlinks": "外部リンク",
         "goals": "コンバージョン",
-        "dimensions": "カスタムディメンション"
+        "dimensions": "拡張機能別の分類"
       },
       "no_result": "結果なし",
       "revenue": "売上",
-      "dimension_label": "ディメンションキー",
-      "dimension_placeholder": "拡張機能が登録したディメンションキー (Enter)",
-      "dimensions_hint": "拡張機能がカスタムディメンションを登録した場合、そのキーで検索します。",
-      "dimensions_empty_title": "検索するディメンションを選択してください",
-      "dimensions_empty_description": "拡張機能が登録したカスタムディメンションキーを入力すると、そのディメンションの上位リストが表示されます。"
+      "dimension_label": "分類基準",
+      "dimension_placeholder": "分類基準を選択",
+      "dimensions_hint": "インストールした拡張機能が提供する分類基準(例: 掲示板別)で訪問を分けて表示します。拡張機能を無効にするか、データを残して削除すると「無効な拡張機能」と表示され、蓄積された統計は引き続き確認できます。",
+      "dimensions_empty_title": "表示する分類基準を選択してください",
+      "dimensions_empty_description": "上で分類基準を選ぶと、その基準で分けた上位リストが表示されます。",
+      "dimensions_none_title": "拡張機能が提供する分類基準がありません",
+      "dimensions_none_description": "有効な拡張機能のうち、分類基準を提供しているものがありません。拡張機能が分類基準を宣言すると、ここで選択できます。",
+      "dimension_pii_suffix": "個人情報 — 統計表なし",
+      "dimension_pii_title": "個人情報の分類基準は統計表にしません",
+      "dimension_pii_description": "拡張機能がこの基準の値を個人情報として指定しました。値が日別統計に永久に残らないよう表は作成せず、値は訪問記録にのみ残り、保存期間の経過時またはデータ主体の削除要求時に一緒に削除されます。"
     },
     "realtime": {
       "title": "リアルタイム",
@@ -3292,7 +3298,6 @@
         "last_visit": "最後の訪問",
         "country": "国",
         "device": "デバイス",
-        "timeline": "タイムライン",
         "member": "会員"
       },
       "timeline_button": "タイムライン",
@@ -3319,7 +3324,23 @@
         "returning": "再訪問",
         "returning_yes": "再訪問",
         "returning_no": "初回訪問",
-        "ip_masked": "マスク {octets} オクテット"
+        "ip_masked": "マスク {octets} オクテット",
+        "region": "地域",
+        "resolution": "解像度",
+        "browser_language": "ブラウザ言語",
+        "locale": "サイト言語"
+      },
+      "visit_info": {
+        "source": "記録経路",
+        "source_beacon": "ブラウザ",
+        "source_server": "サーバー（スクリプトなし）",
+        "referrer": "流入元",
+        "keyword": "流入検索語",
+        "campaign": "キャンペーン",
+        "bounce": "直帰",
+        "bounce_yes": "1ページだけ見て離脱",
+        "bounce_no": "複数ページを閲覧",
+        "last_action": "最終アクティビティ"
       },
       "visits_title": "訪問履歴",
       "visit_summary": "{{pages}}ページ · {{minutes}}分{{seconds}}秒",
@@ -3357,9 +3378,17 @@
         "url": "アドレス",
         "cache_status": "キャッシュ",
         "time": "時刻"
+      },
+      "cache_statuses": {
+        "hit": "キャッシュ使用",
+        "miss": "新規生成",
+        "bypass": "キャッシュ迂回",
+        "none": "キャッシュなし"
       }
     },
     "diagnostics": {
+      "declaration_warnings_title": "拡張機能の宣言から除外された項目があります",
+      "declaration_warnings_description": "拡張機能が宣言したコンバージョン・分類基準のうち、形式が正しくないため記録対象から外したものとその理由です。拡張機能の開発者に伝えてください。",
       "title": "収集診断",
       "description": "数字が増えない理由を1つの画面で見つけます — 収集·キュー·集計·ストレージ。",
       "cards": {
@@ -3372,6 +3401,7 @@
         "enabled_on": "オン",
         "enabled_off": "オフ",
         "anonymous_fallback": "匿名フォールバック",
+        "anonymous_for_unconsented": "未同意の訪問者は匿名",
         "tracked_today": "本日の訪問者 {{count}}",
         "last_tracked": "最後の収集 {{at}}",
         "queue_not_countable": "カウント不可キュー",
@@ -3436,6 +3466,17 @@
         "purge": "全削除",
         "extension_purge": "拡張クリーンアップ"
       },
+      "run_triggers": {
+        "scheduled": "自動(スケジュール)",
+        "manual": "手動"
+      },
+      "queue_connections": {
+        "sync": "即時実行(キューなし)",
+        "database": "データベースキュー",
+        "redis": "Redis キュー",
+        "sqs": "Amazon SQS キュー",
+        "beanstalkd": "Beanstalkd キュー"
+      },
       "run_status": {
         "running": "実行中",
         "success": "成功",
@@ -3465,11 +3506,10 @@
         "all": "全理由",
         "validation": "フォーマットエラー",
         "max_actions": "アクション上限",
-        "dictionary": "辞書エラー",
         "db_error": "DBエラー",
         "listener_exception": "リスナー例外",
         "unknown_goal": "未登録目標",
-        "unknown_dimension": "未登録ディメンション"
+        "unknown_dimension": "未登録の分類基準"
       }
     },
     "privacy_requests": {
@@ -3503,7 +3543,7 @@
     },
     "settings": {
       "title": "訪問者統計設定",
-      "description": "収集·個人情報·ボット·保存·レポート設定。保存は現在表示中のタブのみに反映されます。",
+      "description": "収集·個人情報·ボット·保存·レポート設定。保存すると、どのタブで変更した値もまとめて反映されます。",
       "tabs": {
         "collection": "収集",
         "privacy": "個人情報",
@@ -3545,6 +3585,10 @@
       "privacy": {
         "consent_source_label": "同意ソース",
         "consent_source_none": "なし",
+        "consent_sources": {
+          "gdpr": "同意管理プラグイン(GDPR)",
+          "filter": "拡張が接続した同意判定"
+        },
         "mode_label": "プライバシーレベル",
         "modes": {
           "full": {

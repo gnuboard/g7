@@ -14846,6 +14846,38 @@
         ]
       }
     },
+    "analytics_registered": {
+      "data": {
+        "dimensions": [
+          {
+            "key": "sirsoft-board:board_id",
+            "dimension": "ext:sirsoft-board:board_id",
+            "owner_type": "module",
+            "owner_identifier": "sirsoft-board",
+            "scope": "action",
+            "label": "게시판",
+            "value_type": "int",
+            "values": [],
+            "max_cardinality": 500,
+            "pii": false
+          }
+        ],
+        "goals": [
+          {
+            "key": "core.user_registered",
+            "owner_type": "core",
+            "owner_identifier": "core",
+            "label": "회원가입",
+            "description": "회원가입이 완료된 시점",
+            "category": "signup",
+            "dedupe": "once_per_visitor",
+            "attributes": [],
+            "attribution_window_days": 30,
+            "dimensions": []
+          }
+        ]
+      }
+    },
     "analytics_status": {
       "data": {
         "collection": {

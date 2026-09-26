@@ -110,7 +110,7 @@ class ReferrerClassifier
      */
     private static function campaignFrom(array $query): array
     {
-        $keys = (array) config('analytics.campaign_params', []);
+        $keys = AnalyticsTables::campaignParams();
 
         $pick = static function (?string $key) use ($query): ?string {
             if ($key === null || ! isset($query[$key])) {
@@ -137,12 +137,8 @@ class ReferrerClassifier
      */
     private static function searchEngineFor(string $host): ?array
     {
-        foreach ((array) config('analytics.search_engines', []) as $engine) {
-            if (! is_array($engine)) {
-                continue;
-            }
-
-            foreach ((array) ($engine['hosts'] ?? []) as $candidate) {
+        foreach (AnalyticsTables::searchEngines() as $engine) {
+            foreach ($engine['hosts'] as $candidate) {
                 if (! is_string($candidate)) {
                     continue;
                 }
@@ -190,6 +186,34 @@ class ReferrerClassifier
     }
 
     /**
+     * 유입 주소에서 조각(#…)과 추적 파라미터를 뗍니다.
+     *
+     * 조각은 브라우저가 서버에 보내지 않는 자리라 그 사이트도 남기려던 값이 아니고, 인증 토큰 같은 값이
+     * 실릴 수 있습니다. 추적 파라미터는 페이지 주소 정규화와 같은 목록을 씁니다. 나머지 쿼리는 순서와
+     * 인코딩을 건드리지 않습니다 — 유입 주소는 다시 열어 볼 수 있어야 하는 원문입니다.
+     *
+     * @param  string  $referrer  유입 URL
+     * @return string 정리한 URL
+     */
+    private static function withoutFragmentAndTracking(string $referrer): string
+    {
+        $clean = explode('#', $referrer, 2)[0];
+        $pieces = explode('?', $clean, 2);
+
+        if (! isset($pieces[1]) || $pieces[1] === '') {
+            return $pieces[0];
+        }
+
+        $stripped = array_flip(AnalyticsTables::strippedQueryParams());
+        $kept = array_filter(
+            explode('&', $pieces[1]),
+            static fn (string $pair): bool => $pair !== '' && ! isset($stripped[urldecode(explode('=', $pair, 2)[0])]),
+        );
+
+        return $pieces[0].($kept !== [] ? '?'.implode('&', $kept) : '');
+    }
+
+    /**
      * 저장할 유입 URL 을 만듭니다.
      *
      * 익명화를 켜면 경로와 쿼리를 버리고 도메인까지만 남깁니다 — 유입처가 어디인지는
@@ -206,7 +230,7 @@ class ReferrerClassifier
         }
 
         if ($anonymization !== ReferrerAnonymization::DomainOnly) {
-            return mb_substr($referrer, 0, 1024);
+            return mb_substr(self::withoutFragmentAndTracking($referrer), 0, 1024);
         }
 
         $parts = parse_url($referrer);

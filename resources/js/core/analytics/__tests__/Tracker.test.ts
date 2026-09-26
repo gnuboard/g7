@@ -10,7 +10,9 @@
  *   tracker_reports_previous_page_dwell_time, tracker_caps_dwell_time_at_the_configured_maximum,
  *   tracker_attaches_bearer_token_when_present, tracker_defers_sending_so_navigation_is_not_delayed,
  *   tracker_swallows_transport_failures, tracker_skips_excluded_requests_before_sending,
- *   download_and_outlink_actions_store_target_in_dictionary
+ *   download_and_outlink_actions_store_target_in_dictionary,
+ *   tracker_uses_keepalive_so_unloading_pages_still_deliver, tracker_fits_payload_to_server_field_limits,
+ *   prerendered_page_counts_its_landing_pageview_when_activated
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -54,6 +56,39 @@ describe('AnalyticsTracker', () => {
     vi.useRealTimers();
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
+  });
+
+  /** 수집 경로로 나간 비콘의 페이로드 */
+  const collected = (): Array<Record<string, unknown>> => fetchMock.mock.calls
+    .filter(([url]) => String(url).includes('/api/analytics/collect'))
+    .map(([, init]) => JSON.parse(init.body));
+
+  /**
+   * 동의 조회 응답을 흉내 낸다 — 수집 요청은 성공으로 돌려준다.
+   *
+   * @param status 조회 결과 (`fail` 이면 네트워크 오류, 숫자면 그 상태 코드의 !ok 응답)
+   */
+  const mockConsentLookup = (status: Record<string, boolean> | 'fail' | number): void => {
+    fetchMock.mockReset();
+    fetchMock.mockImplementation(async (url: string) => {
+      if (String(url).includes('/consent/cookie/status')) {
+        if (status === 'fail') throw new Error('network');
+        if (typeof status === 'number') {
+          // 본문은 동의로 읽히는 모양이다 — !ok 를 무시하고 본문을 읽으면 red 가 된다.
+          return { ok: false, status, json: async () => ({ data: { consents: { analytics: true } } }) };
+        }
+
+        return { ok: true, json: async () => ({ data: { consents: status } }) };
+      }
+
+      return { ok: true };
+    });
+  };
+
+  /** 동의 연동 모드 트래커 (플러그인 활성) */
+  const consentTracker = (): AnalyticsTracker => new AnalyticsTracker({
+    settings: { ...SETTINGS, privacy_mode: 'consent' },
+    consentPluginActive: true,
   });
 
   /** 예약된 전송을 실행하고 마지막 페이로드를 돌려준다 */
@@ -361,6 +396,25 @@ describe('AnalyticsTracker', () => {
   });
 
   // @scenario source=beacon
+  // @effects tracker_clears_dimensions_on_navigation
+  it('차원 값은 넣은 화면의 비콘에만 싣고 다른 화면으로 넘어가면 비운다', () => {
+    const tracker = new AnalyticsTracker({ settings: SETTINGS });
+
+    tracker.trackPageview({ path: '/board/12' });
+    tracker.setDimension('sirsoft-board:board_id', '12');
+    tracker.trackDownload('https://example.test/a.pdf');
+    tracker.trackPageview({ path: '/' });
+    tracker.trackDownload('https://example.test/b.pdf');
+    vi.runAllTimers();
+
+    const [landing, sameScreen, nextScreen, nextAction] = collected();
+    expect(landing.dims).toBeUndefined();
+    expect(sameScreen.dims).toEqual({ 'sirsoft-board:board_id': '12' });
+    expect(nextScreen.dims).toBeUndefined();
+    expect(nextAction.dims).toBeUndefined();
+  });
+
+  // @scenario source=beacon
   // @effects tracker_sends_beacon_on_route_change
   it('목표·이벤트를 알린다', () => {
     const tracker = new AnalyticsTracker({ settings: SETTINGS });
@@ -374,7 +428,7 @@ describe('AnalyticsTracker', () => {
     expect(flush()?.t).toBe('event');
   });
 
-  // @scenario source=admin, exclusion=opt_out
+  // @scenario visitor=admin, exclusion=opt_out
   // @effects tracker_toggles_opt_out_through_the_server
   it('수집 제외·해제를 서버에 요청한다', async () => {
     const tracker = new AnalyticsTracker({ settings: SETTINGS });
@@ -392,7 +446,7 @@ describe('AnalyticsTracker', () => {
     expect(fetchMock.mock.calls[1][1].method).toBe('DELETE');
   });
 
-  // @scenario source=admin, exclusion=opt_out
+  // @scenario visitor=admin, exclusion=opt_out
   // @effects tracker_toggles_opt_out_through_the_server
   it('제외 토글에 인증 토큰을 싣고 실패해도 던지지 않는다', async () => {
     const tracker = new AnalyticsTracker({ settings: SETTINGS, getAuthToken: () => 'tok-1' });
@@ -405,5 +459,204 @@ describe('AnalyticsTracker', () => {
 
     // 실패가 호출자에게 새면 관리자 설정 화면이 깨진다(D15).
     await expect(tracker.optIn()).resolves.toBeUndefined();
+  });
+
+  // @scenario source=beacon, visit_state=open
+  // @effects tracker_uses_keepalive_so_unloading_pages_still_deliver
+  it('fetch 전송은 keepalive 로 보내 화면을 떠나는 중에도 끊기지 않는다', () => {
+    // keepalive 가 빠지면 링크를 눌러 떠나는 순간의 비콘(외부 링크·마지막 화면)이 조용히 끊긴다.
+    // sendBeacon 분기는 따로 남아 있어 이 단언이 없으면 떼어도 다른 테스트가 모두 초록이다.
+    const tracker = new AnalyticsTracker({ settings: SETTINGS });
+
+    tracker.trackOutlink('https://other.test/x');
+    vi.runAllTimers();
+
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe('/api/analytics/collect');
+    expect(init).toMatchObject({ method: 'POST', keepalive: true, credentials: 'same-origin' });
+  });
+
+  // @scenario mode=consent, source=beacon, visit_state=new
+  // @effects consented_visitors_first_page_is_held_until_consent_is_known
+  it('동의 조회 전에 들고 있는 비콘은 5건까지만이고, 동의로 확인되면 그 5건만 보낸다', async () => {
+    mockConsentLookup({ analytics: true });
+    const tracker = consentTracker();
+
+    // 조회가 오래 걸리는 동안 화면을 7번 옮겼다 — 무한히 쌓지 않는다.
+    for (let i = 1; i <= 7; i++) tracker.trackPageview({ path: `/p${i}` });
+    vi.runAllTimers();
+    expect(collected(), '조회 전에는 보내지 않는다').toHaveLength(0);
+
+    await tracker.start();
+    vi.runAllTimers();
+
+    expect(collected().map((body) => body.title)).toEqual(['/p1', '/p2', '/p3', '/p4', '/p5']);
+    tracker.stop();
+  });
+
+  // @scenario mode=consent, source=beacon, exclusion=opt_out
+  // @effects tracker_honours_do_not_track_and_opt_out, consented_visitors_first_page_is_held_until_consent_is_known
+  it('들고 있는 사이에 수집 제외를 고르면 동의로 확인돼도 그 비콘을 보내지 않는다', async () => {
+    mockConsentLookup({ analytics: true });
+    const tracker = consentTracker();
+
+    tracker.trackPageview({ path: '/' });
+
+    // 동의 조회가 끝나기 전에 방문자가 「내 방문은 세지 않기」를 골랐다(서버가 쿠키를 심음).
+    document.cookie = 'g7_analytics_optout=1';
+
+    await tracker.start();
+    vi.runAllTimers();
+
+    expect(collected()).toHaveLength(0);
+    tracker.stop();
+  });
+
+  // @scenario mode=consent, source=beacon, exclusion=consent
+  // @effects consented_visitors_first_page_is_held_until_consent_is_known, consent_bridge_blocks_sending_until_consent_is_known
+  it('동의 조회가 !ok 로 끝나면 본문을 믿지 않고 들고 있던 비콘을 버린다', async () => {
+    for (const status of [401, 500]) {
+      mockConsentLookup(status);
+      const tracker = consentTracker();
+
+      tracker.trackPageview({ path: '/' });
+      await tracker.start();
+      vi.runAllTimers();
+
+      expect(collected(), `상태 ${status}`).toHaveLength(0);
+
+      // 조회는 끝났다 — 그 뒤의 화면도 「모름」이 아니라 미동의로 다뤄 들고 있지 않는다.
+      tracker.trackPageview({ path: '/next' });
+      vi.runAllTimers();
+      expect(collected(), `상태 ${status} 이후`).toHaveLength(0);
+      tracker.stop();
+    }
+  });
+
+  // @scenario source=beacon
+  // @effects tracker_swallows_transport_failures
+  it('수집 응답이 !ok(429·5xx)여도 다시 보내지 않고 호출자에게 던지지 않는다', async () => {
+    fetchMock.mockResolvedValue({ ok: false, status: 429 });
+    const tracker = new AnalyticsTracker({ settings: SETTINGS });
+
+    expect(() => {
+      tracker.trackPageview({ path: '/' });
+      vi.runAllTimers();
+    }).not.toThrow();
+
+    // 응답을 기다리지 않는 전송이다 — 재시도가 붙으면 과부하(429) 중인 서버를 더 두드린다.
+    await Promise.resolve();
+    await Promise.resolve();
+    vi.runAllTimers();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  // @scenario source=beacon, visit_state=new
+  // @effects tracker_fits_payload_to_server_field_limits
+  it('서버 검증 상한을 넘는 필드는 보내기 전에 맞춰 비콘 전체가 버려지지 않게 한다', () => {
+    // 서버(CollectRequest)는 한 필드라도 넘으면 비콘 전체를 검증 실패로 버린다 —
+    // 긴 게시글 제목 하나 때문에 그 화면 열람이 통째로 빠졌다(#682 R12-D2).
+    Object.defineProperty(document, 'referrer', {
+      value: `https://ref.test/?q=${'r'.repeat(1100)}`,
+      configurable: true,
+    });
+    window.history.pushState({}, '', `/long/path?q=${'u'.repeat(3000)}#frag`);
+
+    try {
+      const tracker = new AnalyticsTracker({ settings: SETTINGS });
+      for (let i = 0; i < 25; i++) tracker.setDimension(`d${i}`, i === 0 ? '값'.repeat(300) : String(i));
+
+      // 경계에 서로게이트 쌍(이모지)을 둔다 — UTF-16 단위로 자르면 반쪽이 남아 서버 JSON 해석이 깨진다.
+      const emoji = String.fromCodePoint(0x1f600);
+      tracker.trackPageview({ path: '/long/path', meta: { title: `${'a'.repeat(511)}${emoji}${emoji}` } });
+      const page = flush();
+
+      expect(page?.title).toBe(`${'a'.repeat(511)}${emoji}`);
+      expect(Array.from(String(page?.title))).toHaveLength(512);
+      // 주소는 자르면 다른 주소가 된다 — 넘는 유입은 뺀다.
+      expect(page).not.toHaveProperty('ref');
+      // 방문 URL 은 필수라 빼지 못한다 — 쿼리·조각을 떼어 상한 안에 둔다.
+      expect(page?.url).toBe(`${window.location.origin}/long/path`);
+      const dims = page?.dims as Record<string, string>;
+      expect(Object.keys(dims)).toHaveLength(20);
+      expect(Object.keys(dims)[19]).toBe('d19');
+      expect(Array.from(dims.d0)).toHaveLength(255);
+
+      tracker.trackEvent('e'.repeat(300));
+      expect(Array.from(String(flush()?.name))).toHaveLength(255);
+
+      tracker.trackOutlink(`https://other.test/${'t'.repeat(1100)}`);
+      const outlink = flush();
+      expect(outlink?.t).toBe('outlink');
+      expect(outlink).not.toHaveProperty('target');
+
+      // 상한 안의 값은 건드리지 않는다.
+      tracker.trackDownload('https://example.test/a.pdf', 'a.pdf');
+      expect(flush()).toMatchObject({ target: 'https://example.test/a.pdf', name: 'a.pdf' });
+    } finally {
+      window.history.pushState({}, '', '/');
+      Object.defineProperty(document, 'referrer', { value: '', configurable: true });
+    }
+  });
+
+  // @scenario source=beacon, visit_state=new, exclusion=prefetch
+  // @effects prerendered_page_counts_its_landing_pageview_when_activated, tracker_skips_excluded_requests_before_sending
+  it('미리 그리던 화면은 보내지 않다가 실제로 열리면 그 첫 화면을 init 비콘으로 보낸다', () => {
+    // 브라우저가 미리 그린 화면을 방문자가 실제로 열면 그때가 랜딩이다. 미리 그릴 때 버리고
+    // 끝나면 그 방문의 첫 화면이 브라우저·서버 어디에도 남지 않는다(#682 R12-D5).
+    const doc = document as Document & { prerendering?: boolean };
+    doc.prerendering = true;
+
+    try {
+      const tracker = new AnalyticsTracker({ settings: SETTINGS });
+
+      tracker.trackPageview({ path: '/', meta: { title: '홈' } });
+      vi.advanceTimersByTime(5000);
+      expect(fetchMock, '미리 그리는 동안에는 보내지 않는다').not.toHaveBeenCalled();
+
+      doc.prerendering = false;
+      document.dispatchEvent(new Event('prerenderingchange'));
+      vi.runAllTimers();
+
+      expect(collected()).toHaveLength(1);
+      expect(collected()[0]).toMatchObject({ t: 'pageview', init: true, title: '홈' });
+      expect(collected()[0]).not.toHaveProperty('prev');
+
+      // 한 번 열린 뒤에는 알림을 다시 받아도 되풀이해 보내지 않는다.
+      document.dispatchEvent(new Event('prerenderingchange'));
+      vi.runAllTimers();
+      expect(collected()).toHaveLength(1);
+
+      tracker.stop();
+    } finally {
+      delete doc.prerendering;
+    }
+  });
+
+  // @scenario source=beacon, exclusion=prefetch
+  // @effects prerendered_page_counts_its_landing_pageview_when_activated
+  it('미리 그리다 열리기 전에 멈추면 보내지 않고, 미리 가져오기 제외를 끄면 미루지 않는다', () => {
+    const doc = document as Document & { prerendering?: boolean };
+    doc.prerendering = true;
+
+    try {
+      const stopped = new AnalyticsTracker({ settings: SETTINGS });
+      stopped.trackPageview({ path: '/' });
+      stopped.stop();
+
+      doc.prerendering = false;
+      document.dispatchEvent(new Event('prerenderingchange'));
+      vi.runAllTimers();
+      expect(fetchMock, '멈춘 트래커는 열려도 보내지 않는다').not.toHaveBeenCalled();
+
+      // 운영자가 미리 그린 화면도 세기로 했으면 그 자리에서 보낸다.
+      doc.prerendering = true;
+      const counting = new AnalyticsTracker({ settings: { ...SETTINGS, exclude_prefetch: false } });
+      counting.trackPageview({ path: '/' });
+      vi.runAllTimers();
+      expect(collected()).toHaveLength(1);
+    } finally {
+      delete doc.prerendering;
+    }
   });
 });

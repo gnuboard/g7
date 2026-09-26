@@ -9,7 +9,7 @@
         <h4 class="text-body font-medium">$t:admin.analytics.settings.reports.definitions_title</h4>
         <p class="text-label-subtle">$t:admin.analytics.settings.reports.definitions_description</p>
       </div>
-      <button data-ref="definitions_settings_link" data-if="{{(current_user?.data?.is_super === true || (current_user?.data?.permissions ?? []).some(p =&gt; (p?.identifier ?? p) === 'core.settings.read'))}}" type="button" class="btn btn-secondary btn-sm">
+      <button data-ref="definitions_settings_link" data-if="{{((current_user?.data?.permissions ?? []).some(p =&gt; (p?.identifier ?? p) === 'core.settings.read'))}}" type="button" class="btn btn-secondary btn-sm">
         <on type="click">
           <navigate path="/admin/settings">
             <query tab="notification_definitions"/>

@@ -1618,6 +1618,7 @@
     "analytics_realtime_ws": "現在のアクセス者ブロードキャスト",
     "analytics_status": "訪問者統計収集ステータス",
     "analytics_report": "訪問者統計レポート",
+    "analytics_registered": "登録済みの拡張機能の分類基準・コンバージョン",
     "analytics_patterns": "曜日·時間帯パターン",
     "analytics_visitors": "訪問者リスト",
     "analytics_visitor": "訪問者詳細",

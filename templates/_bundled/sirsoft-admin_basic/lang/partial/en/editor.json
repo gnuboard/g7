@@ -1696,6 +1696,7 @@
     "analytics_realtime_ws": "Realtime broadcast",
     "analytics_status": "Analytics collection status",
     "analytics_report": "Analytics report",
+    "analytics_registered": "Registered extension breakdowns and goals",
     "analytics_referrer_urls": "Referrer URLs",
     "analytics_patterns": "Weekday/hour patterns",
     "analytics_visitors": "Visitor list",

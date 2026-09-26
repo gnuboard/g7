@@ -5,6 +5,8 @@ namespace App\Services\Analytics;
 use App\Analytics\AnalyticsClock;
 use App\Analytics\GeoLabelTranslator;
 use App\Analytics\UrlNormalizer;
+use App\Contracts\Analytics\DimensionRegistryInterface;
+use App\Contracts\Analytics\GoalRegistryInterface;
 use App\Contracts\Repositories\Analytics\BotHitRepositoryInterface;
 use App\Contracts\Repositories\Analytics\StatsRepositoryInterface;
 use App\Contracts\Repositories\Analytics\VisitRepositoryInterface;
@@ -57,11 +59,15 @@ class ReportService
      * @param  StatsRepositoryInterface  $stats  집계 저장소
      * @param  BotHitRepositoryInterface  $botHits  봇 요청 원장 저장소
      * @param  VisitRepositoryInterface  $visits  방문 원장 저장소 — 집계에 없는 전체 유입 주소를 읽는다
+     * @param  GoalRegistryInterface  $goals  전환(목표) 등록부 — 목표 키를 이름으로 푼다
+     * @param  DimensionRegistryInterface  $extensionDimensions  확장 차원 등록부
      */
     public function __construct(
         private readonly StatsRepositoryInterface $stats,
         private readonly BotHitRepositoryInterface $botHits,
         private readonly VisitRepositoryInterface $visits,
+        private readonly GoalRegistryInterface $goals,
+        private readonly DimensionRegistryInterface $extensionDimensions,
     ) {}
 
     /**
@@ -109,12 +115,63 @@ class ReportService
     /**
      * 리포트 이름이 유효한지 확인합니다.
      *
+     * 확장 차원(`ext:{식별자}:{키}`)은 지금 등록된 것과, 확장을 끄거나 데이터를 보존하고 지운 뒤
+     * **집계 행이 남아 있는 것**을 받습니다 — 쌓인 수치는 확장이 사라져도 원값 라벨로 읽혀야 합니다.
+     * 등록도 집계도 없는 임의 이름은 받지 않습니다.
+     *
      * @param  string  $report  리포트 이름
      * @return bool 유효하면 true
      */
     public function isValidReport(string $report): bool
     {
-        return isset(self::ALIASES[$report]) || StatsDimension::isValid($report);
+        return isset(self::ALIASES[$report])
+            || StatsDimension::isValid($report)
+            || $this->extensionDimensions->findByStatsDimension($report) !== null
+            || (str_starts_with($report, 'ext:') && in_array($report, $this->stats->extensionDimensionNames(), true));
+    }
+
+    /**
+     * 등록된 확장 차원·목표 목록을 반환합니다.
+     *
+     * 행동 화면이 차원·전환 탭의 선택지로 씁니다. 원장 이름 대신 선언한 이름을 보여 주려면
+     * 등록부를 거쳐야 합니다.
+     *
+     * @return array{dimensions: array<int, array<string, mixed>>, goals: array<int, array<string, mixed>>} 등록 목록
+     */
+    public function registered(): array
+    {
+        $dimensions = array_values(array_map(fn ($definition) => $definition->toArray(), $this->extensionDimensions->all()));
+        $active = array_column($dimensions, 'dimension');
+
+        // 꺼졌거나 데이터를 보존하고 지운 확장의 차원도 집계가 남아 있으면 고를 수 있어야 한다 —
+        // 선언이 없으니 이름은 원값으로, 꺼진 확장이라는 표시를 붙여 보낸다.
+        foreach ($this->stats->extensionDimensionNames() as $name) {
+            if (in_array($name, $active, true)) {
+                continue;
+            }
+
+            $key = substr($name, strlen('ext:'));
+            $separator = strpos($key, ':');
+
+            $dimensions[] = [
+                'key' => $key,
+                'dimension' => $name,
+                'owner_type' => null,
+                'owner_identifier' => $separator === false ? $key : substr($key, 0, $separator),
+                'scope' => null,
+                'label' => __('analytics.report.inactive_dimension', ['key' => $separator === false ? $key : substr($key, $separator + 1)]),
+                'value_type' => null,
+                'values' => [],
+                'max_cardinality' => null,
+                'pii' => false,
+                'inactive' => true,
+            ];
+        }
+
+        return [
+            'dimensions' => $dimensions,
+            'goals' => array_values(array_map(fn ($definition) => $definition->toArray(), $this->goals->all())),
+        ];
     }
 
     /**
@@ -191,6 +248,12 @@ class ReportService
             $types,
         );
 
+        // 확장 차원의 원값(게시판 번호 등)은 그 확장이 선언한 풀이 함수로 이름을 얻는다.
+        // 확장이 비활성이면 등록부에 없어 원값 그대로 보인다.
+        $options['extension_labels'] = $this->extensionDimensions
+            ->findByStatsDimension($dimension)
+            ?->resolveLabels($rows->pluck('label')->map(fn ($label): string => (string) $label)->all()) ?? [];
+
         return [
             'rows' => $rows->map(fn ($row): array => $this->presentRow($row, $dimension, $options, $extra))->all(),
             'page' => $page,
@@ -249,7 +312,9 @@ class ReportService
             StatsDimension::EntryPage->value,
             StatsDimension::ExitPage->value,
             StatsDimension::BotPage->value => UrlNormalizer::forDisplay($label),
-            default => $label,
+            // 목표 키(`core.user_registered`)는 선언한 이름으로 — 확장이 사라졌으면 키 그대로.
+            StatsDimension::Goal->value => $this->goals->find($label)?->localizedLabel($locale) ?? $label,
+            default => $options['extension_labels'][$label] ?? $label,
         };
     }
 

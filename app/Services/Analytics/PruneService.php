@@ -35,17 +35,12 @@ class PruneService
     public const MINIMUM_RETENTION_DAYS = 7;
 
     /**
-     * 한 번에 지울 건수
-     */
-    private const CHUNK_SIZE = 1000;
-
-    /**
-     * 솔트를 남겨 두는 일수
+     * 솔트 보존 일수의 하한
      *
-     * 정보주체 요청에서 어제까지의 익명 기록을 찾아보려면 그 날의 솔트가 있어야
-     * 합니다.
+     * 정보주체 요청은 오늘·어제 솔트로 익명 기록을 찾습니다(`DataSubjectService`). 설정으로
+     * 이보다 짧게 두면 어제 기록을 주소로 찾을 수 없게 되므로 서비스가 자릅니다.
      */
-    private const SALT_RETENTION_DAYS = 5;
+    public const MINIMUM_SALT_RETENTION_DAYS = 2;
 
     /**
      * 정리기를 생성합니다.
@@ -101,26 +96,26 @@ class PruneService
         // 액션·전환을 먼저 지우고 방문을 지운다 — 외래키 연쇄 삭제에 기대지 않고
         // 순서를 코드가 소유한다(연쇄가 없으면 방문만 사라지고 액션이 고아가 된다).
         $counts = [
-            'actions' => $this->actions->deleteOlderThanInBatches($ledgerBefore, self::CHUNK_SIZE),
-            'conversions' => $this->conversions->deleteOlderThanInBatches($ledgerBefore, self::CHUNK_SIZE),
-            'visits' => $this->visits->deleteOlderThanInBatches($ledgerBefore, self::CHUNK_SIZE),
+            'actions' => $this->actions->deleteOlderThanInBatches($ledgerBefore, $this->chunkSize()),
+            'conversions' => $this->conversions->deleteOlderThanInBatches($ledgerBefore, $this->chunkSize()),
+            'visits' => $this->visits->deleteOlderThanInBatches($ledgerBefore, $this->chunkSize()),
             'stats_hourly' => $this->stats->deleteHourlyOlderThanInBatches(
                 $now->copy()->subDays(max(1, $config->hourlyRetentionDays)),
-                self::CHUNK_SIZE,
+                $this->chunkSize(),
             ),
             'bot_hits' => $this->botHits->deleteOlderThanInBatches(
                 $now->copy()->subDays(max(1, $config->botHitsRetentionDays)),
-                self::CHUNK_SIZE,
+                $this->chunkSize(),
             ),
             'collect_failures' => $this->failures->deleteOlderThanInBatches(
                 $now->copy()->subDays(max(1, $config->failureLogRetentionDays)),
-                self::CHUNK_SIZE,
+                $this->chunkSize(),
             ),
             'archive_runs' => $this->runs->deleteOlderThanInBatches(
                 $now->copy()->subDays(max(1, $config->failureLogRetentionDays)),
-                self::CHUNK_SIZE,
+                $this->chunkSize(),
             ),
-            'salts' => $this->salts->deleteOlderThan($now->copy()->subDays(self::SALT_RETENTION_DAYS)),
+            'salts' => $this->salts->deleteOlderThan($now->copy()->subDays($this->saltRetentionDays())),
         ];
 
         // 이름 사전은 지우지 않는다 — 집계 행이 이 사전을 가리키고 있어, 고아로 보이는
@@ -161,7 +156,33 @@ class PruneService
             'archive_runs' => $this->runs->countOlderThan(
                 $now->copy()->subDays(max(1, $config->failureLogRetentionDays)),
             ),
-            'salts' => $this->salts->countOlderThan($now->copy()->subDays(self::SALT_RETENTION_DAYS)),
+            'salts' => $this->salts->countOlderThan($now->copy()->subDays($this->saltRetentionDays())),
         ];
+    }
+
+    /**
+     * 한 번에 지울 건수를 반환합니다.
+     *
+     * 값은 `config/analytics.php` `limits.prune_chunk_size` 가 정하고, 너무 작거나 크면
+     * 잠금 시간·왕복 횟수가 나빠지므로 100~10,000 으로 자릅니다.
+     *
+     * @return int 청크 크기
+     */
+    private function chunkSize(): int
+    {
+        return max(100, min(10000, (int) config('analytics.limits.prune_chunk_size', 1000)));
+    }
+
+    /**
+     * 솔트를 남겨 두는 일수를 반환합니다.
+     *
+     * 값은 `config/analytics.php` `limits.salt_retention_days` 가 정합니다. 솔트가 지워진 날의
+     * 익명 기록은 주소로 찾을 수 없으므로 정보주체 조회 창보다 짧아지지 않게 합니다.
+     *
+     * @return int 보존 일수
+     */
+    private function saltRetentionDays(): int
+    {
+        return max(self::MINIMUM_SALT_RETENTION_DAYS, (int) config('analytics.limits.salt_retention_days', 5));
     }
 }

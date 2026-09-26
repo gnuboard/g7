@@ -23,7 +23,7 @@ return new class extends Migration
 
         Schema::create('analytics_collect_failures', function (Blueprint $table) {
             $table->id()->comment('ID');
-            $table->string('reason', 40)->comment('실패 사유 (validation, max_actions, dictionary, db_error, listener_exception, unknown_goal, unknown_dimension)');
+            $table->string('reason', 40)->comment('실패 사유 (validation, max_actions, db_error, listener_exception, unknown_goal, unknown_dimension)');
             $table->string('message', 500)->comment('실패 메시지');
             $table->string('url', 1024)->nullable()->comment('요청 URL');
             $table->binary('ip', 16)->nullable()->comment('요청 IP 이진값 — 방문 원장과 같은 마스킹 규칙을 적용한다');

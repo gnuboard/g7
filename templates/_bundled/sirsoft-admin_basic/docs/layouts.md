@@ -343,6 +343,24 @@ GDPR 배너)을 코어 대시보드 위젯 형태로만 받고, 이 템플릿이
 "템플릿 오버라이드").
 <!-- @intent END -->
 
+## 방문자 통계 화면의 확장 지점
+
+방문자 통계 화면 11면은 본문 맨 아래에 확장이 조각을 붙이는 `extension-point` 를 둡니다 —
+이름은 `analytics_{화면}_widgets` 입니다(`admin_analytics_{화면}` 의 `{화면}` 그대로). 대시보드
+통계 카드는 `admin_dashboard_analytics` 로 감싸 있습니다. 조각의 데이터는 확장 자기 API 로 읽고,
+수집 진단 화면의 조각은 진단 응답의 `extensions.{식별자}`(코어 필터 `core.analytics.diagnostics_sections`)를
+읽습니다. 설정·정보주체 요청·방문자 상세 세 화면은 운영 도구라 두지 않았습니다.
+
+| 화면 | 확장 지점 |
+| --- | --- |
+| 개요 | `analytics_overview_widgets` |
+| 페이지 · 유입 경로 · 환경 · 지역 · 요일/시간대 | `analytics_pages_widgets` · `analytics_referrers_widgets` · `analytics_environment_widgets` · `analytics_regions_widgets` · `analytics_patterns_widgets` |
+| 검색어·다운로드·전환 · 실시간 · 봇 · 방문자 · 수집 진단 | `analytics_actions_widgets` · `analytics_realtime_widgets` · `analytics_bots_widgets` · `analytics_visitors_widgets` · `analytics_diagnostics_widgets` |
+
+「검색어·다운로드·전환」 화면의 「커스텀 차원」 탭은 `GET /api/admin/analytics/registered` 로 활성 확장이
+선언한 차원을 받아 고르게 합니다(데이터 소스 `analytics_registered`, 차원 탭에서만 요청). 선언이 없으면
+안내만 보이고, 편집기 미리보기는 `editor-spec/sampleData.json` 의 같은 이름 샘플을 씁니다.
+
 ## 이관 원문 상세
 
 > 아래는 코어 `docs/frontend/templates/sirsoft-admin_basic/layouts.md` 에 있던 원문을

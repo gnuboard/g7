@@ -85,7 +85,8 @@ class DataSubjectService
      */
     public function export(array $subject, AnalyticsConfig $config, ?string $from = null, ?string $to = null): array
     {
-        $found = $this->find($subject, $config, $from, $to);
+        $resolved = $this->resolveSubject($subject, $config);
+        $found = ['visits' => $this->visits->findBySubject($resolved, $from, $to), 'notice' => $this->notice($subject)];
         $visits = $found['visits'];
         $visitIds = $visits->pluck('id')->all();
 
@@ -95,12 +96,19 @@ class DataSubjectService
             $actions->flatten(1)->flatMap(fn ($action): array => [$action->action_name_id, $action->page_title_id])->all(),
         );
 
+        // 확장이 이 정보주체에 대해 자기 표에 둔 것도 같은 파일에 실린다. 열람권은 「이 사이트가
+        // 나에 대해 아는 것」 전부이지 코어 원장만이 아니다. 확장은 `{식별자} => 내용` 으로 돌려준다.
+        // 운영자가 고른 기간(없으면 null = 전 기간)도 넘긴다 — 방문 ID 로 묶이지 않는 확장 표도
+        // 코어와 같은 범위만 내보내게 한다.
+        $extensions = HookManager::applyFilters('core.analytics.subject_export', [], $resolved, $visitIds, $from, $to);
+
         HookManager::doAction('core.analytics.subject_exported', [
             'subject' => array_keys(array_filter($subject)),
             'visits' => count($visitIds),
         ]);
 
         return [
+            'extensions' => is_array($extensions) ? $extensions : [],
             'exported_at' => AnalyticsClock::now()->toIso8601String(),
             'subject' => array_keys(array_filter($subject)),
             'notice' => $found['notice'],
@@ -116,10 +124,23 @@ class DataSubjectService
                 'first_action_at' => $visit->first_action_at?->toIso8601String(),
                 'last_action_at' => $visit->last_action_at?->toIso8601String(),
                 'ip' => $visit->ip !== null ? (string) $visit->ip : null,
+                // 이 방문에 대해 원장이 아는 환경·지역·언어 값 전부. 정보주체 열람 파일이 「나에 대해
+                // 무엇을 아는가」를 빠짐없이 답해야 하고, 방문자 상세 화면도 이 값을 그린다(#682 S4
+                // 라운드 8 「방문자 정보에는 해상도 등 부수정보가 모두 나와야 한다」).
+                'source' => $this->enumValue($visit->source),
                 'country_code' => $visit->country_code,
+                'region_code' => $visit->region_code,
+                'city' => $visit->city,
                 'browser_name' => $visit->browser_name,
+                'browser_version' => $visit->browser_version,
                 'os_name' => $visit->os_name,
+                'os_version' => $visit->os_version,
                 'device_type' => $this->enumValue($visit->device_type),
+                'screen_resolution' => $visit->screen_resolution,
+                'browser_language' => $visit->browser_language,
+                'locale' => $visit->locale,
+                'is_returning' => $visit->is_returning,
+                'is_bounce' => $visit->is_bounce,
                 // 유입과 방문 규모는 정보주체가 「나에 대해 무엇을 아는가」를 볼 때 함께
                 // 읽어야 하는 값이고, 방문자 상세 CSV(부록 D)가 그대로 내보낸다.
                 'referrer_type' => $this->enumValue($visit->referrer_type),
@@ -128,8 +149,14 @@ class DataSubjectService
                 // 알 수 없는데, 원장에는 처음부터 이 값이 있었다. 익명화 설정이 켜진 구간은
                 // 저장 시점에 이미 도메인까지만 남아 여기서도 도메인만 나온다(#682 라운드 4, 검수 지적 ⑥).
                 'referrer_url' => $visit->referrer_url,
+                'referrer_keyword' => $visit->referrer_keyword,
+                'campaign_name' => $visit->campaign_name,
+                'campaign_source' => $visit->campaign_source,
+                'campaign_medium' => $visit->campaign_medium,
                 'pageviews' => $visit->pageviews_count,
                 'total_time_seconds' => $visit->total_time_seconds,
+                // 확장이 넣은 차원 값도 이 방문에 대해 사이트가 아는 것이다.
+                'custom_dimensions' => $visit->custom_dimensions,
                 'actions' => $actions->get($visit->id, collect())->map(fn ($action): array => [
                     'occurred_at' => $action->occurred_at?->toIso8601String(),
                     'action_type' => $this->enumValue($action->action_type),
@@ -142,12 +169,15 @@ class DataSubjectService
                     // 있던 값이고(`VisitService`), 검색이 아닌 액션에서는 null 이다.
                     'search_result_count' => $action->search_result_count,
                     'time_spent_seconds' => $action->time_spent_seconds,
+                    'custom_dimensions' => $action->custom_dimensions,
                 ])->all(),
                 'conversions' => $conversions->get($visit->id, collect())->map(fn ($conversion): array => [
                     'occurred_at' => $conversion->occurred_at?->toIso8601String(),
                     'goal_key' => $conversion->goal_key,
                     'label' => $conversion->label,
                     'revenue' => $conversion->revenue,
+                    'currency' => $conversion->currency,
+                    'custom_dimensions' => $conversion->custom_dimensions,
                 ])->all(),
             ])->all(),
         ];
@@ -164,20 +194,34 @@ class DataSubjectService
      */
     public function delete(array $subject, AnalyticsConfig $config, ?string $from = null, ?string $to = null): array
     {
-        $visits = $this->visits->findBySubject($this->resolveSubject($subject, $config), $from, $to);
+        $resolved = $this->resolveSubject($subject, $config);
+        $visits = $this->visits->findBySubject($resolved, $from, $to);
         $visitIds = $visits->pluck('id')->all();
 
-        if ($visitIds === []) {
-            return ['visits' => 0, 'actions' => 0, 'conversions' => 0];
-        }
+        // 코어 원장에 방문이 없어도 확장은 자기 표에 이 사람의 기록을 가질 수 있다 — 삭제권은
+        // 코어 원장만이 아니라 사이트 전체에 대한 것이므로 확장 단계는 늘 돈다.
+        //
+        // 확장 삭제는 코어 삭제와 **같은 트랜잭션**에서 돈다. 확장이 던지면 코어 삭제도 함께
+        // 되돌아가 「일부만 지워졌는데 완료로 보이는」 상태가 생기지 않는다. 확장은 필터
+        // `core.analytics.subject_delete` 에서 자기 표를 지우고 `{식별자} => 지운 건수` 를 더한다.
+        // 운영자가 고른 기간(없으면 null = 전 기간)도 넘긴다 — 기간을 모르는 확장은 그 주만
+        // 지우라는 요청에 전 기간을 지운다(되돌릴 수 없다).
+        $counts = DB::transaction(function () use ($resolved, $visitIds, $from, $to): array {
+            $extensions = HookManager::applyFilters('core.analytics.subject_delete', [], $resolved, $visitIds, $from, $to);
 
-        // 액션·전환을 먼저 지우고 방문을 지운다 — 연쇄 삭제에 기대지 않고 순서를
-        // 코드가 소유한다. 집계는 건드리지 않는다.
-        $counts = DB::transaction(fn (): array => [
-            'actions' => $this->actions->deleteForVisits($visitIds),
-            'conversions' => $this->conversions->deleteForVisits($visitIds),
-            'visits' => $this->visits->deleteByIds($visitIds),
-        ]);
+            // 액션·전환을 먼저 지우고 방문을 지운다 — 연쇄 삭제에 기대지 않고 순서를
+            // 코드가 소유한다. 집계는 건드리지 않는다.
+            return [
+                'actions' => $visitIds === [] ? 0 : $this->actions->deleteForVisits($visitIds),
+                'conversions' => $visitIds === [] ? 0 : $this->conversions->deleteForVisits($visitIds),
+                'visits' => $visitIds === [] ? 0 : $this->visits->deleteByIds($visitIds),
+                'extensions' => self::extensionCounts($extensions),
+            ];
+        });
+
+        if ($visitIds === [] && $counts['extensions'] === []) {
+            return $counts;
+        }
 
         HookManager::doAction('core.analytics.subject_deleted', [
             'subject' => array_keys(array_filter($subject)),
@@ -185,6 +229,25 @@ class DataSubjectService
         ]);
 
         return $counts;
+    }
+
+    /**
+     * 확장이 돌려준 삭제 건수에서 형식이 맞는 것만 남깁니다.
+     *
+     * @param  mixed  $counts  필터 결과 (식별자 → 건수)
+     * @return array<string, int> 식별자 → 건수
+     */
+    private static function extensionCounts(mixed $counts): array
+    {
+        $valid = [];
+
+        foreach (is_array($counts) ? $counts : [] as $identifier => $count) {
+            if (is_string($identifier) && $identifier !== '' && is_numeric($count)) {
+                $valid[$identifier] = (int) $count;
+            }
+        }
+
+        return $valid;
     }
 
     /**

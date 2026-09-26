@@ -120,3 +120,20 @@ describe('실시간 화면', () => {
     expect(dg.props.selectable).toBe(false);
   });
 });
+
+describe('창 선택지', () => {
+  // @scenario screen=realtime, state=normal, viewport=1440, locale=ko
+  // @effects realtime_window_choices_fit_the_server_range
+  it('기본 5분과 10분을 고를 수 있고, 모든 선택지가 서버가 받는 범위 안이다', () => {
+    // 현재 접속자는 10분 창이 흔히 쓰는 기준이다 — 선택지에 없으면 운영자가 주소를 손으로 고쳐야 한다.
+    const php = fs.readFileSync(path.resolve(TEMPLATE_DIR, '../../../app/Http/Requests/Admin/Analytics/RealtimeRequest.php'), 'utf8');
+    const max = Number(/'minutes'\s*=>\s*\[[^\]]*'max:(\d+)'/.exec(php)?.[1]);
+    expect(max, 'RealtimeRequest 의 minutes 상한').toBeGreaterThan(0);
+
+    const values = ((nodeById(layout, 'window_select')?.props?.options ?? []) as Array<{ value: string }>).map((o) => Number(o.value));
+    expect(values.length, '창 선택지').toBeGreaterThanOrEqual(3);
+    expect(values).toEqual(expect.arrayContaining([5, 10]));
+    expect(values.filter((v: number) => v < 1 || v > max), '서버 범위 밖 선택지').toEqual([]);
+  });
+});
+

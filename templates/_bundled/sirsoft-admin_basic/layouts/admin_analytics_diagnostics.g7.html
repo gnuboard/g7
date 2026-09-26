@@ -89,6 +89,13 @@
         </field>
       </field>
     </fallback>
+    <!-- 보조 소스라 403 을 삼킨다. 화면과 같은 조회 권한이라 권한이 없으면 주 소스(`analytics_diagnostics`)가
+         이미 권한 오류 화면을 띄운다 — 여기서도 띄우거나 토스트를 내면 같은 사실을 두 번 알린다. -->
+    <error-handling>
+      <on-code code="403">
+        <suppress/>
+      </on-code>
+    </error-handling>
   </data-source>
   <!-- 최근 적재 실패 로그. -->
   <data-source id="analytics_collect_failures" label_key="$t:editor.data_source.analytics_collect_failures" type="api" endpoint="/api/admin/analytics/collect-failures" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive">
@@ -103,6 +110,13 @@
         </field>
       </field>
     </fallback>
+    <!-- 보조 소스라 403 을 삼킨다. 화면과 같은 조회 권한이라 권한이 없으면 주 소스(`analytics_diagnostics`)가
+         이미 권한 오류 화면을 띄운다 — 여기서도 띄우거나 토스트를 내면 같은 사실을 두 번 알린다. -->
+    <error-handling>
+      <on-code code="403">
+        <suppress/>
+      </on-code>
+    </error-handling>
   </data-source>
   <!-- 재집계 진행률 방송. 받은 행을 전역에 두고 진행률 바가 이력 표의 같은 행보다 우선해 읽는다. 끝난 방송이면 이력·진단을 다시 받는다. -->
   <data-source id="analytics_archive_progress_ws" label_key="$t:editor.data_source.analytics_archive_progress_ws" type="websocket" channel="core.admin.analytics" event="analytics.archive.progress" channel_type="private">
@@ -119,7 +133,7 @@
   <init-local>
     <field name="running" value=""/>
   </init-local>
-  <computed name="canUpdate">{{current_user?.data?.is_super_admin === true || (current_user?.data?.permissions ?? []).some(p => (p?.identifier ?? p) === 'core.analytics.update')}}</computed>
+  <computed name="canUpdate">{{(current_user?.data?.permissions ?? []).some(p => (p?.identifier ?? p) === 'core.analytics.update')}}</computed>
   <computed name="runningRunId">{{analytics_diagnostics?.data?.archive?.running_run_id ?? null}}</computed>
   <permissions>
     <permission>core.analytics.read</permission>
@@ -142,7 +156,7 @@
         <div class="flex-center gap-2 flex-wrap">
           <!-- 이 화면은 시각을 여섯 자리(기간 시작·끝·시작 시각·마지막 적재·마지막 시간 집계·마지막
             일 집계) 찍는다. 공통 조각 `_partial_status_alerts` 는 순환 안내 때문에 여기 없으므로
-            같은 사실을 배지로 보인다(#682 S3 라운드 7, PO 확정 「두 화면 모두 배지」).
+            같은 사실을 배지로 보인다(#682 S3 라운드 7, 설계 결정 「두 화면 모두 배지」).
             보는 사람의 시간대가 사이트와 같으면 군더더기라 띄우지 않는다. -->
           <badge data-ref="site_timezone_badge" data-if="{{analytics_diagnostics?.data?.timezone_differs === true}}" color="blue" size="sm" text="$t:admin.analytics.common.site_timezone_badge|timezone={{analytics_diagnostics?.data?.timezone ?? ''}}"/>
           <button data-ref="refresh_button" type="button" class="btn-icon" aria-label="$t:admin.analytics.common.refresh">
@@ -157,6 +171,18 @@
           </button>
         </div>
       </div>
+      <!-- 확장이 잘못 선언해 버려진 목표·차원의 사유. 이 화면 말고는 볼 곳이 없다 — 비워 두면 운영자는 「전환이
+      왜 안 쌓이는지」를 나중에 `unknown_goal` 실패로만 간접적으로 안다. 경고가 없으면 그리지 않는다. -->
+      <div data-ref="alert_declaration_warnings" data-if="{{(analytics_diagnostics?.data?.declaration_warnings ?? []).length &gt; 0}}" class="alert-warning mb-4">
+        <div class="flex gap-3">
+          <icon name="triangle-exclamation" class="text-xl text-yellow-600 dark:text-yellow-400 flex-shrink-0"/>
+          <div class="flex-1 min-w-0">
+            <p class="text-warning-soft font-medium">$t:admin.analytics.diagnostics.declaration_warnings_title</p>
+            <p class="text-warning-soft text-sm">$t:admin.analytics.diagnostics.declaration_warnings_description</p>
+            <div data-each="warning, $idx in {{analytics_diagnostics?.data?.declaration_warnings ?? []}}" class="text-sm font-mono break-all text-warning-soft mt-1">{{warning}}</div>
+          </div>
+        </div>
+      </div>
       <div data-ref="status_cards" class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
         <blur-until-loaded sources="analytics_diagnostics"/>
         <div data-ref="card_collection" class="admin-card">
@@ -165,7 +191,7 @@
             <span class="text-heading">$t:admin.analytics.diagnostics.cards.collection</span>
             <badge color="{{analytics_diagnostics?.data?.collection?.enabled ? 'green' : 'red'}}" text="{{analytics_diagnostics?.data?.collection?.enabled ? $t('admin.analytics.diagnostics.fields.enabled_on') : $t('admin.analytics.diagnostics.fields.enabled_off')}}" size="sm"/>
             <badge color="blue" text="{{$t('admin.analytics.settings.privacy.modes.' + (analytics_diagnostics?.data?.collection?.effective_mode ?? 'full') + '.title')}}" size="sm"/>
-            <badge data-if="{{!!analytics_diagnostics?.data?.collection?.anonymous_fallback_reason}}" color="yellow" text="$t:admin.analytics.diagnostics.fields.anonymous_fallback" size="sm"/>
+            <badge data-if="{{!!analytics_diagnostics?.data?.collection?.anonymous_fallback_reason}}" color="yellow" text="{{analytics_diagnostics?.data?.collection?.anonymous_fallback_reason === 'consent_plugin_blocks_cookies' ? $t('admin.analytics.diagnostics.fields.anonymous_for_unconsented') : $t('admin.analytics.diagnostics.fields.anonymous_fallback')}}" size="sm"/>
             <span class="text-label-subtle">$t:admin.analytics.diagnostics.fields.tracked_today|count={{(analytics_diagnostics?.data?.collection?.tracked_today ?? 0) | number}}</span>
             <span class="text-label-subtle">$t:admin.analytics.diagnostics.fields.last_tracked|at={{analytics_diagnostics?.data?.collection?.last_tracked_at | datetime | default('-')}}</span>
             <span data-if="{{!!analytics_diagnostics?.data?.collection?.anonymous_fallback_reason}}" class="text-hint w-full">{{analytics_diagnostics?.data?.collection?.anonymous_fallback_reason === 'consent_plugin_blocks_cookies' ? $t('admin.analytics.alerts.consent_cookie_fallback') : $t('admin.analytics.alerts.consent_fallback')}}</span>
@@ -175,7 +201,8 @@
           <div class="flex flex-wrap items-center gap-2">
             <icon name="layer-group" class="text-gray-500 dark:text-gray-400"/>
             <span class="text-heading">$t:admin.analytics.diagnostics.cards.queue</span>
-            <badge color="gray" text="{{analytics_diagnostics?.data?.queue?.connection ?? '-'}}" size="sm"/>
+            <!-- 연결 이름(`database` 등)은 .env 설정값이라 알려진 것만 사람 말로 바꾸고, 사이트가 따로 정한 이름은 그대로 보인다. -->
+            <badge color="gray" text="{{['sync', 'database', 'redis', 'sqs', 'beanstalkd'].includes(analytics_diagnostics?.data?.queue?.connection ?? '') ? $t('admin.analytics.diagnostics.queue_connections.' + analytics_diagnostics.data.queue.connection) : (analytics_diagnostics?.data?.queue?.connection ?? '-')}}" size="sm"/>
             <badge data-if="{{analytics_diagnostics?.data?.queue?.countable === false}}" color="gray" text="$t:admin.analytics.diagnostics.fields.queue_not_countable" size="sm"/>
             <span data-if="{{analytics_diagnostics?.data?.queue?.countable !== false}}" class="text-label-subtle">$t:admin.analytics.diagnostics.fields.pending_jobs|count={{(analytics_diagnostics?.data?.queue?.pending_jobs ?? 0) | number}}</span>
             <span data-if="{{analytics_diagnostics?.data?.queue?.countable !== false}}" class="text-label-subtle">$t:admin.analytics.diagnostics.fields.failed_jobs|count={{(analytics_diagnostics?.data?.queue?.failed_jobs ?? 0) | number}}</span>
@@ -287,10 +314,10 @@
         <!-- 사유가 열두 가지라 배지로 늘어놓으면 줄바꿈에 묻혀 어느 사유가 큰지 읽기 어렵다 — 건수를
              나란히 세우는 표로 둔다(계획서 §4.10·§4.11 이 「표」로 못박은 자리). -->
         <div class="overflow-x-auto">
-          <data-grid data-ref="exclusions_grid" data="{{Object.entries(analytics_diagnostics?.data?.collection?.excluded_today ?? {}).map(e => ({ reason: e[0], count: e[1] }))}}" :pagination="false" idField="reason" :selectable="false" :sortable="false" emptyMessage="$t:admin.analytics.diagnostics.exclusions_empty">
+          <data-grid data-ref="exclusions_grid" data="{{Object.entries(analytics_diagnostics?.data?.collection?.excluded_today ?? {}).map(e => ({ reason: e[0], count: e[1], label: (analytics_diagnostics?.data?.collection?.excluded_reason_labels ?? [])[e[0]] }))}}" :pagination="false" idField="reason" :selectable="false" :sortable="false" emptyMessage="$t:admin.analytics.diagnostics.exclusions_empty">
             <column field="reason" header="$t:admin.analytics.diagnostics.exclusion_columns.reason">
               <cell>
-                <span class="text-body">{{$t('admin.analytics.diagnostics.exclusion_reasons.' + row.reason)}}</span>
+                <span class="text-body">{{row.label || $t('admin.analytics.diagnostics.exclusion_reasons.' + row.reason)}}</span>
               </cell>
             </column>
             <column field="count" header="$t:admin.analytics.diagnostics.exclusion_columns.count" width="120px" align="right">
@@ -350,7 +377,7 @@
             </column>
             <column field="trigger" header="$t:admin.analytics.diagnostics.run_columns.trigger" width="90px">
               <cell>
-                <span class="text-label">{{row.trigger ?? '-'}}</span>
+                <span class="text-label">{{row.trigger ? $t('admin.analytics.diagnostics.run_triggers.' + row.trigger) : '-'}}</span>
               </cell>
             </column>
             <column field="started_at" header="$t:admin.analytics.diagnostics.run_columns.started" width="160px">
@@ -372,7 +399,6 @@
                 <option value="">$t:admin.analytics.diagnostics.failure_reasons.all</option>
                 <option value="validation">$t:admin.analytics.diagnostics.failure_reasons.validation</option>
                 <option value="max_actions">$t:admin.analytics.diagnostics.failure_reasons.max_actions</option>
-                <option value="dictionary">$t:admin.analytics.diagnostics.failure_reasons.dictionary</option>
                 <option value="db_error">$t:admin.analytics.diagnostics.failure_reasons.db_error</option>
                 <option value="listener_exception">$t:admin.analytics.diagnostics.failure_reasons.listener_exception</option>
                 <option value="unknown_goal">$t:admin.analytics.diagnostics.failure_reasons.unknown_goal</option>
@@ -421,6 +447,10 @@
           </data-grid>
         </div>
       </div>
+      <!-- 확장이 자기 수집 상태를 붙이는 자리 — 값은 진단 응답의 `extensions.{식별자}`(서버 필터 `core.analytics.diagnostics_sections`)로 온다. -->
+      <extension-point name="analytics_diagnostics_widgets" class="space-y-4 mt-4">
+        <default/>
+      </extension-point>
     </div>
   </slot>
   <!-- 구간 재집계 창. -->

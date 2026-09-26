@@ -160,15 +160,24 @@ class DailyAccumulator
     /**
      * 차원 집계 표에 넣을 행을 만듭니다.
      *
+     * 확장 차원은 선언한 라벨 수 상한(`$caps`)을 넘으면 방문 수가 많은 라벨부터 그 수만큼만
+     * 남깁니다(원장은 그대로). 상한 없이 두면 값의 종류가 많은 차원(회원 번호 등) 하나가 하루
+     * 차원 표를 수십만 행으로 부풀립니다.
+     *
      * @param  string  $date  집계 일자 (Y-m-d)
      * @param  string  $archivedAt  집계 수행 시각 (Y-m-d H:i:s)
+     * @param  array<string, int>  $caps  차원 이름 → 라벨 수 상한
      * @return array<int, array<string, mixed>> 차원 집계 행 목록
      */
-    public function dimensionRows(string $date, string $archivedAt): array
+    public function dimensionRows(string $date, string $archivedAt, array $caps = []): array
     {
         $rows = [];
 
         foreach ($this->dimensions as $dimension => $labels) {
+            if (isset($caps[$dimension])) {
+                $labels = $this->keepTopLabels($labels, max(1, $caps[$dimension]));
+            }
+
             foreach ($labels as $row) {
                 $rows[] = [
                     'date' => $date,
@@ -190,6 +199,34 @@ class DailyAccumulator
         }
 
         return $rows;
+    }
+
+    /**
+     * 방문 수가 많은 라벨만 상한 수만큼 남깁니다.
+     *
+     * 방문 수가 같으면 라벨 순으로 고릅니다 — 재집계할 때마다 남는 라벨이 바뀌면 안 됩니다.
+     *
+     * @param  array<string, array<string, mixed>>  $rows  한 차원의 행 (유형|라벨 → 행)
+     * @param  int  $limit  남길 라벨 수
+     * @return array<string, array<string, mixed>> 남은 행
+     */
+    private function keepTopLabels(array $rows, int $limit): array
+    {
+        $visitsByLabel = [];
+
+        foreach ($rows as $row) {
+            $visitsByLabel[$row['label']] = ($visitsByLabel[$row['label']] ?? 0) + count($row['visit_keys']);
+        }
+
+        if (count($visitsByLabel) <= $limit) {
+            return $rows;
+        }
+
+        // 방문 수가 같으면 라벨 순으로 — 재집계할 때마다 남는 라벨이 바뀌면 안 된다.
+        uksort($visitsByLabel, fn ($a, $b) => [$visitsByLabel[$b], (string) $a] <=> [$visitsByLabel[$a], (string) $b]);
+        $kept = array_flip(array_slice(array_map('strval', array_keys($visitsByLabel)), 0, $limit));
+
+        return array_filter($rows, fn (array $row): bool => isset($kept[(string) $row['label']]));
     }
 
     /**

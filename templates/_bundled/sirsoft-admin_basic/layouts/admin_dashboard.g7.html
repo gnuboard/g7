@@ -132,7 +132,7 @@
   <init>
     <action handler="checkAssetUrlModeDrift"/>
   </init>
-  <computed name="canReadAnalytics">{{current_user?.data?.is_super_admin === true || (current_user?.data?.permissions ?? []).some(p =&gt; (p?.identifier ?? p) === 'core.analytics.read')}}</computed>
+  <computed name="canReadAnalytics">{{(current_user?.data?.permissions ?? []).some(p =&gt; (p?.identifier ?? p) === 'core.analytics.read')}}</computed>
   <slot name="content">
     <div data-ref="dashboard_content" class="admin-page-content-responsive-fluid">
       <div data-ref="page_header" class="flex-between mb-6">

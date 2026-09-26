@@ -48,7 +48,7 @@
                             "id": "collection_disabled_link",
                             "type": "basic",
                             "name": "Button",
-                            "if": "{{(current_user?.data?.is_super === true || (current_user?.data?.permissions ?? []).some(p => (p?.identifier ?? p) === 'core.analytics.update'))}}",
+                            "if": "{{((current_user?.data?.permissions ?? []).some(p => (p?.identifier ?? p) === 'core.analytics.update'))}}",
                             "actions": [
                                 {
                                     "type": "click",
@@ -109,7 +109,7 @@
             ]
         },
         {
-            "comment": "통계의 집계 경계는 사이트 표준시 자정에 잠겨 있고 시각 표기도 사이트 기준이다(PO 확정).\n      보는 사람의 시간대가 그와 다르면 「오늘」의 숫자와 자기 시계가 어긋나 보이므로 그 사실을\n      알린다. 같은 시간대면 군더더기라 띄우지 않는다(#682 S3 라운드 6).",
+            "comment": "통계의 집계 경계는 사이트 표준시 자정에 잠겨 있고 시각 표기도 사이트 기준이다(설계 결정).\n      보는 사람의 시간대가 그와 다르면 「오늘」의 숫자와 자기 시계가 어긋나 보이므로 그 사실을\n      알린다. 같은 시간대면 군더더기라 띄우지 않는다(#682 S3 라운드 6).",
             "id": "alert_site_timezone",
             "type": "basic",
             "name": "Div",
@@ -181,7 +181,7 @@
                             "id": "queue_backlog_link",
                             "type": "basic",
                             "name": "Button",
-                            "if": "{{(current_user?.data?.is_super === true || (current_user?.data?.permissions ?? []).some(p => (p?.identifier ?? p) === 'core.analytics.read'))}}",
+                            "if": "{{((current_user?.data?.permissions ?? []).some(p => (p?.identifier ?? p) === 'core.analytics.read'))}}",
                             "actions": [
                                 {
                                     "type": "click",

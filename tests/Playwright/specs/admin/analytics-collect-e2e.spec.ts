@@ -9,8 +9,7 @@
  * 아무것도 남지 않는다. 운영자는 「방문자가 0명」이라는 화면을 보고서야 알아차린다.
  *
  * 축 요약(마커 아님 — 평문): 첫 진입·SPA 이동은 게스트 비콘, 관리자 화면은 수집 제외.
- * 효과 요약(마커 아님 — 평문): beacon_reaches_server_with_204,
- *   spa_navigation_sends_another_beacon, admin_template_does_not_track.
+ * SPA 이동이 비콘을 한 건 더 보내는 것은 「같은 화면 거듭 이동」 케이스가 `/boards` 비콘 1건으로 잰다.
  */
 import { authenticatePage, expect, issueToken, test } from '../../fixtures/auth';
 import { AnalyticsSettingsGuard, runArtisan, todayPageHits } from '../../fixtures/analytics';
@@ -94,7 +93,7 @@ test.describe('방문자 통계 비콘', () => {
   });
 
   // @scenario source=beacon, visitor=guest, visit_state=open, exclusion=none
-  // @effects repeated_navigation_to_the_same_page_counts_once
+  // @effects repeated_navigation_to_the_same_page_counts_once, spa_navigation_sends_another_beacon
   test('같은 화면으로 거듭 이동하면(메뉴 더블클릭) 페이지뷰는 1건이다', async ({ page }) => {
     // 브라우저 실측(§8 M1-T10): 라우터는 같은 주소로의 이동도 매번 알려, 메뉴 더블클릭 한 번이
     // 같은 페이지뷰 2건이 됐다. 메뉴 데이터에 기대지 않도록 같은 이동을 한 틱에 두 번 부른다.
@@ -123,6 +122,54 @@ test.describe('방문자 통계 비콘', () => {
     await page.waitForTimeout(2_000);
 
     expect(pageviews.slice(before).filter((url) => url.includes('/boards'))).toHaveLength(1);
+  });
+
+  // @scenario source=beacon, visitor=guest, visit_state=open, exclusion=none
+  // @effects tracker_clears_dimensions_on_navigation
+  test('확장이 넣은 차원 값은 그 화면의 비콘에만 실리고 다른 화면으로 가면 빠진다', async ({ page }) => {
+    // 비우지 않으면 게시판에서 넣은 board_id 가 홈·다른 메뉴 조회에도 붙어 그 게시판 수치가 부푼다.
+    // 서버에 흔적을 남기지 않도록 수집 요청은 여기서 204 로 받아 두고, 브라우저가 보낸 본문만 잰다.
+    const payloads: Record<string, unknown>[] = [];
+    await page.route(`**${COLLECT_PATH}`, async (route) => {
+      try {
+        payloads.push(JSON.parse(route.request().postData() ?? '{}'));
+      } catch {
+        // 아래 단언이 판정한다.
+      }
+      await route.fulfill({ status: 204 });
+    });
+
+    type Analytics = { setDimension: (k: string, v: string) => void; trackEvent: (n: string) => void };
+    type Core = { analytics?: Analytics; dispatch: (a: unknown) => void };
+
+    await page.goto('/');
+    await expect.poll(() => payloads.length, { timeout: 20_000 }).toBeGreaterThan(0);
+
+    await page.evaluate(() => {
+      const core = (window as unknown as { G7Core: Core }).G7Core;
+      core.analytics?.setDimension('vendor-probe:thing', '12');
+      core.analytics?.trackEvent('probe_same_screen');
+    });
+    await expect.poll(() => payloads.some((p) => p.name === 'probe_same_screen'), { timeout: 20_000 }).toBe(true);
+
+    await page.evaluate(() => {
+      (window as unknown as { G7Core: Core }).G7Core.dispatch({ handler: 'navigate', params: { path: '/boards' } });
+    });
+    await page.waitForURL(/\/boards/, { timeout: 20_000 });
+    await expect.poll(() => payloads.some((p) => p.t === 'pageview' && String(p.url).includes('/boards')), { timeout: 20_000 }).toBe(true);
+
+    await page.evaluate(() => {
+      (window as unknown as { G7Core: Core }).G7Core.analytics?.trackEvent('probe_next_screen');
+    });
+    await expect.poll(() => payloads.some((p) => p.name === 'probe_next_screen'), { timeout: 20_000 }).toBe(true);
+
+    const sameScreen = payloads.find((p) => p.name === 'probe_same_screen');
+    const nextPageview = payloads.find((p) => p.t === 'pageview' && String(p.url).includes('/boards'));
+    const nextScreen = payloads.find((p) => p.name === 'probe_next_screen');
+
+    expect(sameScreen?.dims).toEqual({ 'vendor-probe:thing': '12' });
+    expect(nextPageview?.dims).toBeUndefined();
+    expect(nextScreen?.dims).toBeUndefined();
   });
 
   // @scenario source=beacon, visitor=guest, visit_state=open, exclusion=none
@@ -182,7 +229,7 @@ test.describe('방문자 통계 비콘', () => {
     expect(requests).toHaveLength(0);
   });
 
-  // @scenario source=admin, exclusion=opt_out
+  // @scenario visitor=admin, exclusion=opt_out
   // @effects tracker_toggles_opt_out_through_the_server
   test('수집 제외를 켜면 이후 이동이 비콘을 만들지 않는다', async ({ page }) => {
     // 제외 토글은 운영자 기능이다 — 엔드포인트가 core.analytics.update 를 요구하므로

@@ -19,7 +19,10 @@
       </on-code>
     </error-handling>
   </data-source>
-  <!-- GeoIP 사용 여부·수집 상태. 지역 화면은 이 값으로 안내를 가른다. -->
+  <!-- GeoIP 사용 여부·수집 상태. 지역 화면은 이 값으로 안내를 가른다.
+       fallback 은 GeoIP 를 「켜짐」으로 둔다 — 진단 요청이 실패해 사실을 모를 때 「꺼짐」 경고를 띄우면
+       켜 둔 사이트에 거짓 안내가 된다(모르면 알리지 않는다). 설정 화면이 같은 필드를 「꺼짐」으로 두는 것은
+       거기서는 그 값이 국가 필터 입력을 잠그는 쪽이라서다(모르면 집행할 수 없는 필터를 받지 않는다). -->
   <data-source id="analytics_status" label_key="$t:editor.data_source.analytics_status" type="api" endpoint="/api/admin/analytics/diagnostics" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="background">
     <fallback>
       <field name="data">
@@ -81,7 +84,7 @@
         <div class="flex-center gap-3">
           <icon name="triangle-exclamation" class="text-xl text-yellow-600 dark:text-yellow-400 flex-shrink-0"/>
           <p class="text-warning-soft flex-1">$t:admin.analytics.alerts.geoip_off</p>
-          <button data-ref="geoip_settings_link" data-if="{{(current_user?.data?.is_super === true || (current_user?.data?.permissions ?? []).some(p =&gt; (p?.identifier ?? p) === 'core.settings.read'))}}" type="button" class="text-sm font-medium underline text-yellow-800 dark:text-yellow-200">
+          <button data-ref="geoip_settings_link" data-if="{{((current_user?.data?.permissions ?? []).some(p =&gt; (p?.identifier ?? p) === 'core.settings.read'))}}" type="button" class="text-sm font-medium underline text-yellow-800 dark:text-yellow-200">
             <on type="click">
               <navigate path="/admin/settings">
                 <query tab="advanced"/>
@@ -106,6 +109,10 @@
         </on>
       </tab-navigation>
       <include src="partials/admin_analytics/_partial_report_grid.g7.html"/>
+      <!-- 확장이 이 화면에 자기 리포트 조각을 붙이는 자리(데이터는 확장 자기 API). -->
+      <extension-point name="analytics_regions_widgets" class="space-y-4 mt-4">
+        <default/>
+      </extension-point>
     </div>
   </slot>
 </layout>

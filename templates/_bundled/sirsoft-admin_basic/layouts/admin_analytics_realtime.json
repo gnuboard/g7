@@ -50,7 +50,7 @@
                     }
                 }
             ],
-            "comment": "서버 방송 — 값을 쓰지 않고 「바뀌었다」는 신호로만 받아 실시간 소스를 다시 받는다. 방송은 채널의 모든\n    연결에 같은 값이라 기본 창(5분)·주소(IP) 없음으로 만들어진다 — 그 값으로 소스를 갈아 끼우면 창을 30분으로\n    고른 화면이 방송마다 「최근 5분」으로 튀고, 주소 열람 권한자의 IP 칸이 비었다(#682 S3 라운드 14, PO 결정).\n    다시 받으면 이 화면의 창(`query.minutes`)과 보는 사람의 권한이 그대로 반영된다. 소켓이 없는 사이트에서는\n    구독만 조용히 실패하고 폴링이 값을 댄다."
+            "comment": "서버 방송 — 값을 쓰지 않고 「바뀌었다」는 신호로만 받아 실시간 소스를 다시 받는다. 방송은 채널의 모든\n    연결에 같은 값이라 기본 창(5분)·주소(IP) 없음으로 만들어진다 — 그 값으로 소스를 갈아 끼우면 창을 30분으로\n    고른 화면이 방송마다 「최근 5분」으로 튀고, 주소 열람 권한자의 IP 칸이 비었다(#682 S3 라운드 14, 설계 결정).\n    다시 받으면 이 화면의 창(`query.minutes`)과 보는 사람의 권한이 그대로 반영된다. 소켓이 없는 사이트에서는\n    구독만 조용히 실패하고 폴링이 값을 댄다."
         },
         {
             "id": "analytics_status",
@@ -84,7 +84,7 @@
         }
     ],
     "computed": {
-        "canReadUsers": "{{current_user?.data?.is_super === true || (current_user?.data?.permissions ?? []).some(p => (p?.identifier ?? p) === 'core.users.read')}}"
+        "canReadUsers": "{{(current_user?.data?.permissions ?? []).some(p => (p?.identifier ?? p) === 'core.users.read')}}"
     },
     "permissions": [
         "core.analytics.read"
@@ -285,6 +285,10 @@
                                                         {
                                                             "value": "5",
                                                             "label": "5"
+                                                        },
+                                                        {
+                                                            "value": "10",
+                                                            "label": "10"
                                                         },
                                                         {
                                                             "value": "15",
@@ -499,7 +503,7 @@
                                                                     "props": {
                                                                         "className": "text-label"
                                                                     },
-                                                                    "text": "{{row.country_code ?? '-'}}"
+                                                                    "text": "{{row.country_name ?? row.country_code ?? '-'}}"
                                                                 }
                                                             ]
                                                         },
@@ -514,7 +518,7 @@
                                                                     "props": {
                                                                         "className": "text-label"
                                                                     },
-                                                                    "text": "{{row.device_type ?? '-'}}"
+                                                                    "text": "{{row.device_type_label ?? row.device_type ?? '-'}}"
                                                                 }
                                                             ]
                                                         },
@@ -596,6 +600,15 @@
                                 ]
                             }
                         ]
+                    },
+                    {
+                        "comment": "확장이 이 화면에 자기 리포트 조각을 붙이는 자리(데이터는 확장 자기 API).",
+                        "type": "extension_point",
+                        "name": "analytics_realtime_widgets",
+                        "props": {
+                            "className": "space-y-4 mt-4"
+                        },
+                        "default": []
                     }
                 ]
             }

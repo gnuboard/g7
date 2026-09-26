@@ -168,6 +168,30 @@ class DiagnosticsControllerTest extends AnalyticsApiTestCase
     }
 
     /**
+     * 실패 목록의 주소는 개인정보 권한이 있을 때만 채워진다.
+     *
+     * 실패 기록은 수집 모드대로 가린 주소를 남기지만, 가림이 0 옥텟(기본값)이면 원래 주소다.
+     * 현재 접속자 화면은 같은 권한 경계에서 주소를 비우는데 실패 목록만 조회 권한에게 주소를
+     * 보이면, 조회만 준 계정이 방문자 주소를 보는 우회로가 된다.
+     *
+     * @return void 없음
+     *
+     * @scenario endpoint=collect_failures, role=read
+     *
+     * @effects collect_failures_hide_addresses_without_the_privacy_permission
+     */
+    public function test_failure_addresses_need_the_privacy_permission(): void
+    {
+        AnalyticsCollectFailure::factory()->create(['ip' => '203.0.113.50']);
+
+        $read = $this->actingAs($this->readAdmin())->getJson('/api/admin/analytics/collect-failures')->assertOk();
+        $this->assertNull($read->json('data.data.0.ip'), '조회 권한만으로 방문자 주소가 보이면 안 된다');
+
+        $privacy = $this->actingAs($this->privacyAdmin())->getJson('/api/admin/analytics/collect-failures')->assertOk();
+        $this->assertSame('203.0.113.50', $privacy->json('data.data.0.ip'));
+    }
+
+    /**
      * 통계 응답의 시각이 사이트 표준시로 나가는지 확인합니다.
      *
      * @return void 없음
@@ -250,6 +274,52 @@ class DiagnosticsControllerTest extends AnalyticsApiTestCase
             '응답에서 시각을 찾지 못했다 — 파생이 깨졌거나 픽스처가 비었다',
         );
         $this->assertSame([], $offenders, '사이트 표준시가 아닌 시각: '.implode(' · ', $offenders));
+    }
+
+    /**
+     * 시각을 싣는 다른 통계 응답도 **모든** 시각이 사이트 표준시인지 확인합니다.
+     *
+     * 진단 응답만 재면 같은 원장 시각을 싣는 방문자 목록·상세·현재 접속자·실행 이력·실패 목록이
+     * 무가드로 남는다. 응답마다 같은 재귀 파생으로 훑고, 응답마다 시각을 하나 이상 찾아야 한다.
+     *
+     * @return void 없음
+     *
+     * @scenario endpoint=visitors, role=privacy
+     *
+     * @effects analytics_times_are_rendered_in_the_site_timezone
+     */
+    public function test_every_time_in_other_time_bearing_payloads_is_site_standard(): void
+    {
+        config(['g7_settings.core.general.timezone' => 'Asia/Seoul']);
+        $this->travelTo(Carbon::parse('2026-09-22 00:30:00', 'UTC'));
+
+        $visit = $this->visit(['last_action_at' => Carbon::parse('2026-09-22 00:30:00', 'UTC')]);
+        AnalyticsCollectFailure::factory()->create(['occurred_at' => Carbon::parse('2026-09-22 00:30:00', 'UTC')]);
+        AnalyticsArchiveRun::factory()->create([
+            'run_type' => ArchiveRunType::Hour,
+            'status' => ArchiveRunStatus::Success,
+            'started_at' => Carbon::parse('2026-09-22 00:30:00', 'UTC'),
+            'finished_at' => Carbon::parse('2026-09-22 00:31:00', 'UTC'),
+        ]);
+
+        $admin = $this->privacyAdmin();
+        $endpoints = [
+            '/api/admin/analytics/realtime',
+            '/api/admin/analytics/visitors?preset=today',
+            '/api/admin/analytics/visitors/'.$visit->visitor_key,
+            '/api/admin/analytics/archive-runs',
+            '/api/admin/analytics/collect-failures',
+        ];
+
+        foreach ($endpoints as $endpoint) {
+            $body = $this->actingAs($admin)->getJson($endpoint)->assertOk()->json();
+
+            $offenders = [];
+            $times = self::collectTimeLikeStrings($body, '', $offenders);
+
+            $this->assertNotEmpty($times, "{$endpoint}: 응답에서 시각을 찾지 못했다 — 파생이 깨졌거나 픽스처가 비었다");
+            $this->assertSame([], $offenders, "{$endpoint}: 사이트 표준시가 아닌 시각: ".implode(' · ', $offenders));
+        }
     }
 
     /**

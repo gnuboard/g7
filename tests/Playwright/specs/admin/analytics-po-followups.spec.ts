@@ -317,9 +317,10 @@ test.describe('#682 라운드 8 — 실측이 드러낸 자리', () => {
 
     await page.goto('/admin/analytics?preset=7d');
     await expect(page.locator('#analytics_period_bar')).toBeVisible({ timeout: 30_000 });
-    await expect(
-      page.getByText('익명 모드로 모으고', { exact: false }),
-      '사유가 실렸는데 안내가 없으면 운영자는 익명 수집을 모른 채 지표를 읽는다',
-    ).toBeVisible({ timeout: 20_000 });
+    // 문구는 사유마다 다르다(동의 플러그인이면 「동의하지 않은 방문자는 익명」 — #682 S4 라운드 8) — 안내 요소가
+    // 뜨고 익명 수집을 말하는지만 본다.
+    const alert = page.locator('#alert_consent_fallback');
+    await expect(alert, '사유가 실렸는데 안내가 없으면 운영자는 익명 수집을 모른 채 지표를 읽는다').toBeVisible({ timeout: 20_000 });
+    await expect(alert).toContainText('익명');
   });
 });

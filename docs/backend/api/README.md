@@ -238,7 +238,7 @@ CSS 가 아닌 자산은 바이트 그대로 서빙됩니다. 정적 게시본(`
 | 문서 | 도메인 | 엔드포인트 |
 | --- | --- | --- |
 | [activity-logs.md](activity-logs.md) | `activity-logs` | 3 |
-| [analytics.md](analytics.md) | `analytics` | 27 |
+| [analytics.md](analytics.md) | `analytics` | 29 |
 | [attachment.md](attachment.md) | `attachment` | 1 |
 | [attachments.md](attachments.md) | `attachments` | 4 |
 | [auth.md](auth.md) | `auth` | 18 |

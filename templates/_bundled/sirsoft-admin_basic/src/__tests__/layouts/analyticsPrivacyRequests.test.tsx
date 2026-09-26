@@ -7,7 +7,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { loadLayout, dataSource, nodeById, actionsWithHandler, stringify } from './analyticsLayoutTestUtils';
+import { loadLayout, dataSource, nodeById, actionsWithHandler, stringify, collectObjects } from './analyticsLayoutTestUtils';
 
 const layout = loadLayout('admin_analytics_privacy_requests.json');
 
@@ -47,6 +47,27 @@ describe('정보주체 요청 화면', () => {
     expect(seq.actions[0].params.analyticsSubjectAfter).toBe('subjects');
     expect(seq.actions[1]).toMatchObject({ handler: 'openModal', target: 'analytics_subject_delete_modal' });
     expect(stringify(layout.modals)).toContain('_modal_subject_delete.json');
+  });
+
+  // @scenario screen=privacy_requests, state=empty, viewport=1440, locale=ko
+  // @effects subject_actions_stay_available_without_core_visits
+  it('검색 응답이 오면 코어 방문이 0건이어도 내보내기·삭제를 누를 수 있고, 응답 전에는 잠근다', () => {
+    // 코어 원장이 보존 기간으로 비었어도 확장은 자기 표에 이 사람의 기록을 가질 수 있고 서버는 그때도
+    // 확장의 정보주체 필터를 부른다 — 화면이 0건에서 잠그면 그 삭제·열람 요청을 처리할 길이 없다.
+    const card = nodeById(layout, 'results_card');
+    const buttons = collectObjects(card).filter((n) => n.name === 'Button' && typeof n.props?.disabled === 'string');
+    expect(buttons.map((b) => b.id).sort()).toEqual(['delete_button', 'export_button']);
+
+    const fallback = { data: dataSource(layout, 'analytics_subjects')?.fallback?.data };
+    const empty = { data: { visits: [], notice: null, export_filename: 'analytics-subject-20260925.json' } };
+    const found = { data: { visits: [{ visit_id: 1, actions_count: 2 }], export_filename: 'analytics-subject-20260925.json' } };
+
+    for (const button of buttons) {
+      const disabled = new Function('analytics_subjects', `return (${String(button.props.disabled).replace(/^\{\{|\}\}$/g, '')});`);
+      expect(disabled(fallback), `${button.id} 응답 전`).toBe(true);
+      expect(disabled(empty), `${button.id} 코어 0건`).toBe(false);
+      expect(disabled(found), `${button.id} 방문 있음`).toBe(false);
+    }
   });
 
   // @scenario screen=privacy_requests, state=anonymous, viewport=390, locale=en

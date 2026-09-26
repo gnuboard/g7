@@ -196,7 +196,7 @@
         }
     ],
     "computed": {
-        "canReadAnalytics": "{{current_user?.data?.is_super_admin === true || (current_user?.data?.permissions ?? []).some(p => (p?.identifier ?? p) === 'core.analytics.read')}}"
+        "canReadAnalytics": "{{(current_user?.data?.permissions ?? []).some(p => (p?.identifier ?? p) === 'core.analytics.read')}}"
     },
     "permissions": [
         "core.dashboard.read"

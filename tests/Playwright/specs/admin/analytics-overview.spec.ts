@@ -92,3 +92,83 @@ test.describe('방문자 통계 개요 — 기간 왕복과 CSV', () => {
     expect(bytes.toString('utf8')).toContain('label,label_display,visits');
   });
 });
+
+test.describe('방문자 통계 — 빈 화면과 방문자 상세 (#682 S4 라운드 8)', () => {
+  // @scenario screen=referrers, state=empty, viewport=1440, locale=ko, e2e=overview
+  // @effects empty_grid_shows_one_empty_message
+  test('기록이 없는 기간의 유입 사이트 탭은 빈 안내를 한 번만 보이고 쪽 번호를 그리지 않는다', async ({ page }) => {
+    await authenticatePage(page, issueToken('core.analytics.read'));
+    const report = page.waitForResponse((r) => r.url().includes('/api/admin/analytics/reports/referrer_name'), { timeout: 30_000 });
+    // 통계를 들이기 전의 과거 이틀 — 원장·집계 어디에도 기록이 없다.
+    await page.goto('/admin/analytics/referrers?tab=sites&from=2020-01-01&to=2020-01-02');
+    const body = await (await report).json();
+    expect(body?.data?.data ?? [], '전제: 이 기간은 비어 있다').toEqual([]);
+
+    const empty = page.locator('#report_empty');
+    await expect(empty).toBeVisible({ timeout: 20_000 });
+    const title = ((await empty.locator('h2').innerText()) ?? '').trim();
+    await expect(page.getByText(title, { exact: true }), '빈 안내 문구는 한 번만').toHaveCount(1);
+    await expect(page.locator('#analytics_report_grid'), '빈 표·쪽 번호는 그리지 않는다').toHaveCount(0);
+    // 진단으로 가는 버튼은 버튼 모양(`.btn`)이어야 한다 — 색 클래스만 있으면 테두리만 남는다.
+    await expect(page.locator('#report_empty_diagnostics_link')).toHaveClass(/(^|\s)btn(\s|$)/);
+  });
+
+  // @scenario screen=visitor_detail, state=normal, viewport=1440, locale=ko, e2e=overview
+  // @effects visitor_detail_screen_shows_visit_details
+  test('방문자 상세는 방문을 펼치면 해상도 등 부수정보를 보인다', async ({ page }) => {
+    const token = issueToken('core.analytics.privacy');
+    await authenticatePage(page, token);
+    const list = await page.request.get('/api/admin/analytics/visitors?preset=30d&per_page=50', {
+      headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
+    });
+    const rows: any[] = (await list.json())?.data?.data ?? [];
+    let target: { key: string; resolution: string } | null = null;
+    for (const row of rows) {
+      const detail = await page.request.get(`/api/admin/analytics/visitors/${row.visitor_key}?preset=30d`, {
+        headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
+      });
+      const visit = (await detail.json())?.data?.visits?.[0];
+      if (visit?.screen_resolution) {
+        target = { key: row.visitor_key, resolution: visit.screen_resolution };
+        break;
+      }
+    }
+    test.skip(target === null, '최근 30일에 해상도가 기록된 방문이 없다');
+
+    await page.goto(`/admin/analytics/visitors/${target!.key}?preset=30d`);
+    await expect(page.locator('#visitor_card_resolution, #card_resolution_row')).toContainText(target!.resolution, { timeout: 30_000 });
+    await page.locator('#visit_item_0 button').first().click();
+    await expect(page.locator('#visit_info_0')).toContainText(target!.resolution);
+
+    // 라벨 폭이 달라도 값은 열마다 한 줄로 시작하고, 라벨(작은 글자)과 값의 기준선이 맞는다(#682 S4 라운드 8).
+    const geometry = await page.locator('#visit_info_0').evaluate((grid) => {
+      // 행 요소의 클래스와 무관하게 짝(라벨·값 span)을 잰다 — 모양 규칙이 아니라 보이는 위치가 기준이다.
+      const spans = Array.from(grid.querySelectorAll(':scope > div > span')) as HTMLElement[];
+      const pairs: Array<{ label: DOMRect; value: DOMRect }> = [];
+      for (let i = 0; i + 1 < spans.length; i += 2) pairs.push({ label: spans[i].getBoundingClientRect(), value: spans[i + 1].getBoundingClientRect() });
+      return pairs.map((p) => ({ valueLeft: Math.round(p.value.left), labelLeft: Math.round(p.label.left), bottomGap: Math.abs(p.label.bottom - p.value.bottom), valueHeight: p.value.height }));
+    });
+    expect(geometry.length, '방문 정보 짝').toBeGreaterThanOrEqual(10);
+    const columns = new Set(geometry.map((g) => g.labelLeft));
+    const valueStarts = new Set(geometry.map((g) => g.valueLeft));
+    expect(valueStarts.size, `값 시작 위치(열 ${columns.size}개)`).toBe(columns.size);
+    for (const g of geometry.filter((x) => x.valueHeight < 24)) expect(g.bottomGap, '라벨·값 기준선').toBeLessThanOrEqual(2);
+  });
+
+  // @scenario screen=diagnostics, state=normal, viewport=1440, locale=ko, e2e=overview
+  // @effects stored_codes_are_shown_as_human_labels
+  test('수집 진단의 집계 실행 이력은 실행 주체를 코드(scheduled·manual)가 아니라 사람 말로 보인다', async ({ page }) => {
+    await authenticatePage(page, issueToken('core.analytics.read'));
+    const runs = page.waitForResponse((r) => r.url().includes('/api/admin/analytics/archive-runs'), { timeout: 30_000 });
+    await page.goto('/admin/analytics/diagnostics');
+    const body = await (await runs).json();
+    test.skip((body?.data?.data ?? []).length === 0, '집계 실행 이력이 없다');
+
+    const grid = page.locator('#archive_runs_grid');
+    // 첫 그림은 불러오기 전의 빈 줄이다 — 행이 채워질 때까지 기다린다.
+    await expect(grid.locator('tbody'), '실행 주체가 사람 말로 보인다').toContainText(/자동\(예약\)|수동/, { timeout: 30_000 });
+    const text = await grid.locator('tbody').innerText();
+    expect(text, '실행 주체 코드가 그대로 보이지 않는다').not.toMatch(/\b(scheduled|manual)\b/);
+  });
+});
+

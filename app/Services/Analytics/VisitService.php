@@ -5,13 +5,17 @@ namespace App\Services\Analytics;
 use App\Analytics\ActionNameHasher;
 use App\Analytics\AnalyticsClock;
 use App\Analytics\AnalyticsConfig;
+use App\Analytics\DTO\GoalDefinition;
 use App\Analytics\ExclusionCounter;
+use App\Analytics\ExtensionFilter;
 use App\Analytics\GeoLocator;
 use App\Analytics\NotificationCooldown;
 use App\Analytics\TrackingRequest;
 use App\Analytics\UrlNormalizer;
 use App\Analytics\VisitExclusionPipeline;
 use App\Analytics\VisitorRecognizer;
+use App\Contracts\Analytics\DimensionRegistryInterface;
+use App\Contracts\Analytics\GoalRegistryInterface;
 use App\Contracts\Repositories\Analytics\ActionNameRepositoryInterface;
 use App\Contracts\Repositories\Analytics\ActionRepositoryInterface;
 use App\Contracts\Repositories\Analytics\ConversionRepositoryInterface;
@@ -66,6 +70,8 @@ class VisitService
      * @param  CollectFailureLogger  $failures  실패 기록기
      * @param  ExclusionCounter  $counter  제외 사유 카운터
      * @param  NotificationCooldown  $cooldown  알림 쿨다운
+     * @param  GoalRegistryInterface  $goals  전환(목표) 등록부
+     * @param  DimensionRegistryInterface  $dimensions  커스텀 차원 등록부
      */
     public function __construct(
         private readonly VisitRepositoryInterface $visits,
@@ -79,6 +85,8 @@ class VisitService
         private readonly CollectFailureLogger $failures,
         private readonly ExclusionCounter $counter,
         private readonly NotificationCooldown $cooldown,
+        private readonly GoalRegistryInterface $goals,
+        private readonly DimensionRegistryInterface $dimensions,
     ) {}
 
     /**
@@ -94,7 +102,7 @@ class VisitService
      */
     public function identify(TrackingRequest $request, AnalyticsConfig $config): array
     {
-        return $this->recognizer->resolve($request, $config, $this->privacy->isAnonymous($config));
+        return $this->recognizer->resolve($request, $config, $this->privacy->isAnonymousFor($request, $config));
     }
 
     /**
@@ -109,9 +117,12 @@ class VisitService
         $result = ['visit_id' => null, 'action_id' => null, 'excluded' => null, 'new_cookie' => null];
         $config = null;
 
+        // 앞선 다른 작업(집계·리포트)에서 남은 필터 실패를 이 요청 몫으로 세지 않는다.
+        ExtensionFilter::takeFailures();
+
         try {
             $config = AnalyticsConfig::fromSettings();
-            $anonymous = $this->privacy->isAnonymous($config);
+            $anonymous = $this->privacy->isAnonymousFor($request, $config);
             $consent = $this->privacy->hasAnalyticsConsent($request, $config);
 
             // 국가 필터는 지역 판정이 있어야 하므로 방문 조립 뒤에 다시 보지 않고
@@ -128,22 +139,50 @@ class VisitService
                 return $result;
             }
 
+            // 코어가 통과시킨 요청에만 확장 규칙을 건다 — 확장은 더 뺄 수만 있다.
+            $extensionExcluded = $this->isolateExtension(
+                'core.analytics.exclusion_rules',
+                $request,
+                $config,
+                fn (): ?string => $this->exclusions->evaluateExtensionRules($request),
+                null,
+            );
+
+            if ($extensionExcluded !== null) {
+                $this->counter->incrementKey($extensionExcluded);
+                $result['excluded'] = $extensionExcluded;
+
+                return $result;
+            }
+
+            // 등록부에 없는 목표·차원은 여기서 걸러 낸다. 목표가 거부되면 비콘 전체를 버리고,
+            // 차원은 등록된 것만 남긴다 — 둘 다 이유를 실패 목록에 남긴다.
+            $prepared = $this->prepareExtensionValues($request, $config, $anonymous);
+
+            if ($prepared === null) {
+                return $result;
+            }
+
+            $request = $prepared['request'];
+
             $identity = $this->recognizer->resolve($request, $config, $anonymous);
             $result['new_cookie'] = $identity['new_cookie'];
 
-            $stored = DB::transaction(fn (): array => $this->store($request, $config, $identity, $anonymous));
+            $stored = DB::transaction(fn (): array => $this->store($request, $config, $identity, $anonymous, $prepared));
 
             $result['visit_id'] = $stored['visit_id'];
             $result['action_id'] = $stored['action_id'];
 
             if ($stored['visit_id'] !== null) {
                 // 확장이 적재 결과를 관찰할 수 있게 알린다. 실패해도 적재는 이미 끝났다.
-                HookManager::doAction('core.analytics.after_track', [
-                    'visit_id' => $stored['visit_id'],
-                    'action_id' => $stored['action_id'],
-                    'action_type' => $request->type,
-                    'dto' => $request->toArray(),
-                ]);
+                $this->isolateExtension('core.analytics.after_track', $request, $config, function () use ($stored, $request): void {
+                    HookManager::doAction('core.analytics.after_track', [
+                        'visit_id' => $stored['visit_id'],
+                        'action_id' => $stored['action_id'],
+                        'action_type' => $request->type,
+                        'dto' => $request->toArray(),
+                    ]);
+                }, null);
             }
         } catch (\Throwable $e) {
             // 전용 실패 로그는 진단 화면이 읽고, 애플리케이션 로그는 로그 수집기가 읽는다.
@@ -162,9 +201,55 @@ class VisitService
                 $request,
                 $config?->ipMaskOctets ?? 0,
             );
+        } finally {
+            // 판정표·등록부 필터는 판정 코드 깊은 곳에서 불려 여기서 감쌀 수 없다 — 그 자리에서
+            // 코어 기본값으로 이어 간 실패를 이 요청의 실패 목록으로 옮긴다.
+            foreach (ExtensionFilter::takeFailures() as $failure) {
+                $this->failures->log(
+                    CollectFailureReason::ListenerException,
+                    $failure['hook'].': '.$failure['message'],
+                    $request,
+                    $config?->ipMaskOctets ?? 0,
+                );
+            }
         }
 
         return $result;
+    }
+
+    /**
+     * 수집 경로 안에서 확장 훅을 부르고, 확장이 던지면 그 기여만 빼고 이어 갑니다.
+     *
+     * 확장 훅은 수집 요청 안에서 동기로 돕니다. 여기서 난 예외를 밖의 catch 에 맡기면
+     * 데이터베이스 오류로 분류되고 방문까지 버려집니다 — 확장 하나의 결함이 사이트 통계
+     * 전체를 멈추고, 진단 화면은 엉뚱한 원인을 가리킵니다. 실패는 `listener_exception` 으로
+     * 훅 이름과 함께 남깁니다.
+     *
+     * @template T
+     *
+     * @param  string  $hook  훅 이름 (실패 로그에 남김)
+     * @param  TrackingRequest  $request  수집 요청
+     * @param  AnalyticsConfig  $config  설정
+     * @param  callable(): T  $call  훅을 부르는 함수
+     * @param  T  $fallback  확장이 실패했을 때 쓸 값 (확장이 없었던 것과 같은 값)
+     * @return T 훅 결과 또는 대체값
+     */
+    private function isolateExtension(string $hook, TrackingRequest $request, AnalyticsConfig $config, callable $call, mixed $fallback): mixed
+    {
+        try {
+            return $call();
+        } catch (\Throwable $e) {
+            Log::warning('방문자 통계 확장 훅 실패', ['hook' => $hook, 'error' => $e->getMessage()]);
+
+            $this->failures->log(
+                CollectFailureReason::ListenerException,
+                $hook.': '.$e->getMessage(),
+                $request,
+                $config->ipMaskOctets,
+            );
+
+            return $fallback;
+        }
     }
 
     /**
@@ -174,9 +259,10 @@ class VisitService
      * @param  AnalyticsConfig  $config  설정
      * @param  array{key: string, key_type: string, new_cookie: string|null, is_returning: bool|null}  $identity  방문자 식별 결과
      * @param  bool  $anonymous  익명 모드 여부
+     * @param  array{request: TrackingRequest, goal: GoalDefinition|null, visit_dimensions: array<string, string>, action_dimensions: array<string, string>}  $prepared  등록부 판정 결과
      * @return array{visit_id: int|null, action_id: int|null} 적재 결과
      */
-    private function store(TrackingRequest $request, AnalyticsConfig $config, array $identity, bool $anonymous): array
+    private function store(TrackingRequest $request, AnalyticsConfig $config, array $identity, bool $anonymous, array $prepared): array
     {
         $visit = null;
 
@@ -213,7 +299,18 @@ class VisitService
         }
 
         if ($visit === null) {
-            $visit = $this->visits->create($this->enricher->build($request, $config, $identity, $anonymous));
+            // 새 방문에는 방문 범위 차원만 싣는다 — 액션 범위 값은 그 액션 행에 남는다.
+            $visit = $this->visits->create($this->enricher->build(
+                $request->with(['dimensions' => $prepared['visit_dimensions']]),
+                $config,
+                $identity,
+                $anonymous,
+            ));
+        } elseif ($prepared['visit_dimensions'] !== []) {
+            // 방문 도중 들어온 방문 범위 차원은 방문 행에 합친다(같은 키는 나중 값).
+            $this->visits->update($visit, [
+                'custom_dimensions' => array_merge($visit->custom_dimensions ?? [], $prepared['visit_dimensions']),
+            ]);
         }
 
         // 페이지 요청과 첫 비콘의 신원이 어긋난 전체 로드(웹 세션과 토큰의 수명이 달라 한쪽만
@@ -227,8 +324,16 @@ class VisitService
         // 서버 폴백이 먼저 연 방문에 첫 비콘이 합류하면, 서버가 알 수 없던 값(해상도·보던
         // 로케일·빠진 유입)을 채우고 출처를 비콘으로 바꾼다(D14). 그러지 않으면 전체 로드로
         // 시작한 거의 모든 방문이 해상도 없이 「서버로만 잡힌 방문」으로 남는다.
-        if ($this->isFirstBeaconJoiningServerVisit($request, $visit)) {
+        // 첫 화면 비콘(init)만 보지 않는다 — 서버 측 전환 기록(로그인 등)이 방문을 먼저 연
+        // 뒤 화면이 새로고침 없이 넘어가면, 합류하는 비콘은 이동 비콘(init 아님)이다.
+        if ($this->isBeaconJoiningServerVisit($request, $visit)) {
             $this->visits->update($visit, $this->enricher->enrichFromFirstBeacon($request, $config, $visit));
+        }
+
+        // 한 번만 세는 목표가 이미 기록됐으면 이 비콘은 남기지 않는다. 실패가 아니라 선언된
+        // 규칙이므로 실패 목록에도 올리지 않는다.
+        if ($prepared['goal'] !== null && $this->isDuplicateConversion($prepared['goal'], $visit)) {
+            return ['visit_id' => $visit->id, 'action_id' => null];
         }
 
         // 한 방문이 끝없이 늘어나면 조회가 느려지고 저장소를 잠식한다. 상한을 넘으면
@@ -262,9 +367,9 @@ class VisitService
             ? $this->actions->findLatestForVisit($visit->id, ActionType::Pageview->value)
             : null;
 
-        $recorded = $this->recordAction($request, $visit);
+        $recorded = $this->recordAction($request, $visit, $prepared['action_dimensions']);
         $this->updateVisitCounters($request, $visit, $recorded['action'], $previousPageview, $recorded['merged']);
-        $this->recordConversion($request, $visit);
+        $this->recordConversion($request, $visit, $prepared);
 
         return ['visit_id' => $visit->id, 'action_id' => $recorded['action']?->id];
     }
@@ -365,10 +470,25 @@ class VisitService
      */
     private function isFirstBeaconJoiningServerVisit(TrackingRequest $request, AnalyticsVisit $visit): bool
     {
+        return $request->init && $this->isBeaconJoiningServerVisit($request, $visit);
+    }
+
+    /**
+     * 서버 출처 방문에 브라우저 비콘이 합류하는지 판정합니다.
+     *
+     * 첫 화면 비콘이 아니어도 참입니다 — 서버 측 전환 기록이 방문을 연 뒤 새로고침 없는
+     * 화면 이동으로 오는 비콘도 그 방문의 첫 비콘입니다. 합류한 순간 출처가 비콘으로
+     * 바뀌므로 두 번째부터는 거짓입니다.
+     *
+     * @param  TrackingRequest  $request  수집 요청
+     * @param  AnalyticsVisit  $visit  대상 방문
+     * @return bool 서버 출처 방문에 합류하는 비콘이면 true
+     */
+    private function isBeaconJoiningServerVisit(TrackingRequest $request, AnalyticsVisit $visit): bool
+    {
         $visitSource = $visit->source instanceof VisitSource ? $visit->source->value : (string) $visit->source;
 
         return $request->source === VisitSource::Beacon->value
-            && $request->init
             && $visitSource === VisitSource::Server->value;
     }
 
@@ -381,10 +501,11 @@ class VisitService
      *
      * @param  TrackingRequest  $request  수집 요청
      * @param  AnalyticsVisit  $visit  대상 방문
+     * @param  array<string, string>  $actionDimensions  액션 범위 차원 값 (등록부 통과분)
      * @return array{action: AnalyticsAction|null, merged: bool}
      *                                                           적재된 액션과, 기존 행을 채운 것인지 여부
      */
-    private function recordAction(TrackingRequest $request, AnalyticsVisit $visit): array
+    private function recordAction(TrackingRequest $request, AnalyticsVisit $visit, array $actionDimensions = []): array
     {
         $normalized = UrlNormalizer::normalize($request->url);
         $nameType = $this->nameTypeFor($request);
@@ -432,7 +553,7 @@ class VisitService
             'time_spent_seconds' => null,
             'search_result_count' => $request->searchTotal,
             'search_tab' => $request->searchTab,
-            'custom_dimensions' => $request->dimensions === [] ? null : $request->dimensions,
+            'custom_dimensions' => $actionDimensions === [] ? null : $actionDimensions,
             'created_at' => $now,
         ]);
 
@@ -446,72 +567,175 @@ class VisitService
      * 라벨을 따로 들고 확장별로 집계되어야 하므로 전용 원장에 한 행을 더 씁니다.
      * 액션과 같은 트랜잭션 안이므로 둘 중 하나만 남는 일이 없습니다.
      *
-     * 목표 키는 `{확장식별자}.{목표}` 또는 `core.{목표}` 형태입니다. 앞자리를 떼어
-     * `extension_identifier` 로 남겨 두어야, 확장을 데이터까지 지우며 제거할 때 그
-     * 확장이 남긴 전환만 골라 지울 수 있습니다.
+     * 공급자(종류·식별자)는 등록부의 정의에서 옵니다 — 확장을 데이터까지 지우며 제거할 때
+     * 그 확장이 남긴 전환만 골라 지울 수 있는 유일한 단서입니다.
      *
-     * 등록된 목표인지 확인하는 레지스트리는 아직 없습니다(계획서 §4.13-1, S4). 그때까지는
-     * 들어온 키를 그대로 받습니다 — 버리면 그 전환은 어디에도 남지 않기 때문입니다.
-     *
-     * @param  TrackingRequest  $request  수집 요청
+     * @param  TrackingRequest  $request  수집 요청 (목표 속성은 스키마 검증을 통과한 값)
      * @param  AnalyticsVisit  $visit  대상 방문
+     * @param  array{goal: GoalDefinition|null, visit_dimensions: array<string, string>, action_dimensions: array<string, string>}  $prepared  등록부 판정 결과
      * @return void
      */
-    private function recordConversion(TrackingRequest $request, AnalyticsVisit $visit): void
+    private function recordConversion(TrackingRequest $request, AnalyticsVisit $visit, array $prepared): void
     {
-        if ($request->type !== ActionType::Goal->value) {
-            return;
-        }
+        $goal = $prepared['goal'];
 
-        $goalKey = $request->goalKey;
-
-        if ($goalKey === null || $goalKey === '') {
+        if ($request->type !== ActionType::Goal->value || $goal === null) {
             return;
         }
 
         $attributes = $request->goalAttributes;
-        $owner = $this->goalOwner($goalKey);
+        $dimensions = array_merge($prepared['visit_dimensions'], $prepared['action_dimensions']);
 
         $this->conversions->create([
             'visit_id' => $visit->id,
             'visitor_key' => $visit->visitor_key,
-            'goal_key' => $goalKey,
-            'extension_type' => $owner['type'],
-            'extension_identifier' => $owner['identifier'],
+            'goal_key' => $goal->qualifiedKey(),
+            'extension_type' => $goal->isExtension() ? $goal->ownerType : null,
+            'extension_identifier' => $goal->isExtension() ? $goal->ownerIdentifier : null,
             'label' => self::goalLabel($attributes),
             'revenue' => self::goalRevenue($attributes),
             'currency' => self::goalCurrency($attributes),
             'occurred_at' => AnalyticsClock::now(),
-            'custom_dimensions' => $request->dimensions === [] ? null : $request->dimensions,
+            'custom_dimensions' => $dimensions === [] ? null : $dimensions,
         ]);
     }
 
     /**
-     * 목표 키에서 공급한 확장을 가려냅니다.
+     * 목표 선언의 중복 규칙에 걸리는지 확인합니다.
      *
-     * 코어 목표(`core.`)와 앞자리가 없는 키는 확장 소유가 아닙니다. 모듈인지 플러그인인지는
-     * 설치된 확장 목록을 봐야 알 수 있는데, 수집 경로에서 확장 목록을 매번 읽으면 비콘마다
-     * 부하가 붙습니다. 지금은 식별자만 남기고 종류는 비워 둡니다 — 삭제 시 정리는
-     * 식별자로 찾습니다(`deleteForExtension`).
-     *
-     * @param  string  $goalKey  목표 키
-     * @return array{type: string|null, identifier: string|null} 확장 종류와 식별자
+     * @param  GoalDefinition  $goal  목표 정의
+     * @param  AnalyticsVisit  $visit  대상 방문
+     * @return bool 이미 기록돼 이번 것을 버려야 하면 true
      */
-    private function goalOwner(string $goalKey): array
+    private function isDuplicateConversion(GoalDefinition $goal, AnalyticsVisit $visit): bool
     {
-        $separator = strpos($goalKey, '.');
+        return match ($goal->dedupe) {
+            'once_per_visit' => $this->conversions->existsForGoal($goal->qualifiedKey(), visitId: $visit->id),
+            'once_per_visitor' => $this->conversions->existsForGoal($goal->qualifiedKey(), visitorKey: (string) $visit->visitor_key),
+            default => false,
+        };
+    }
 
-        if ($separator === false || $separator === 0) {
-            return ['type' => null, 'identifier' => null];
+    /**
+     * 확장이 보낸 목표·차원을 등록부로 판정합니다.
+     *
+     * - 차원: 서버 필터 `core.analytics.resolve_dimensions` 로 값을 보탠 뒤, 등록된 것만
+     *   원장 이름(`{식별자}:{키}`)으로 바꿔 범위(방문·액션)별로 나눕니다. 등록되지 않았거나
+     *   값 종류가 맞지 않는 차원은 그 차원만 버리고 `unknown_dimension` 으로 남깁니다.
+     *   개인정보로 선언된 차원은 익명 모드에서 싣지 않습니다(실패가 아니라 규칙).
+     * - 목표: 등록되지 않았으면 `unknown_goal`, 속성이 스키마를 어기면 `validation` 으로
+     *   남기고 비콘 전체를 버립니다 — 액션만 남으면 전환 없는 목표 행이 타임라인에 뜹니다.
+     *
+     * @param  TrackingRequest  $request  수집 요청
+     * @param  AnalyticsConfig  $config  설정
+     * @param  bool  $anonymous  익명 모드 여부
+     * @return array{request: TrackingRequest, goal: GoalDefinition|null, visit_dimensions: array<string, string>, action_dimensions: array<string, string>}|null
+     *                                                                                                                                                            판정 결과 (목표가 거부되면 null)
+     */
+    private function prepareExtensionValues(TrackingRequest $request, AnalyticsConfig $config, bool $anonymous): ?array
+    {
+        $resolved = $this->isolateExtension(
+            'core.analytics.resolve_dimensions',
+            $request,
+            $config,
+            fn (): mixed => HookManager::applyFilters('core.analytics.resolve_dimensions', $request->dimensions, $request->toArray()),
+            $request->dimensions,
+        );
+        $visitDimensions = [];
+        $actionDimensions = [];
+        $rejected = [];
+
+        foreach (is_array($resolved) ? $resolved : $request->dimensions as $name => $value) {
+            if (! is_scalar($value) || (string) $value === '') {
+                continue;
+            }
+
+            [$definition, $reason] = $this->dimensions->resolve((string) $name);
+            $value = mb_substr((string) $value, 0, 255);
+
+            if ($definition === null) {
+                $rejected[] = $reason;
+
+                continue;
+            }
+
+            if (! $definition->accepts($value)) {
+                $rejected[] = "값 형식 위반: {$definition->storageKey()} ({$definition->valueType})";
+
+                continue;
+            }
+
+            if ($definition->pii && $anonymous) {
+                continue;
+            }
+
+            if ($definition->scope === 'visit') {
+                $visitDimensions[$definition->storageKey()] = $value;
+            } else {
+                $actionDimensions[$definition->storageKey()] = $value;
+            }
         }
 
-        $prefix = substr($goalKey, 0, $separator);
-
-        if ($prefix === 'core') {
-            return ['type' => null, 'identifier' => null];
+        if ($rejected !== []) {
+            $this->failures->log(
+                CollectFailureReason::UnknownDimension,
+                implode(' / ', $rejected),
+                $request,
+                $config->ipMaskOctets,
+            );
         }
 
-        return ['type' => null, 'identifier' => $prefix];
+        $goal = null;
+
+        if ($request->type === ActionType::Goal->value) {
+            $goal = $request->goalKey !== null ? $this->goals->find($request->goalKey) : null;
+
+            if ($goal === null) {
+                $this->failures->log(
+                    CollectFailureReason::UnknownGoal,
+                    '등록되지 않은 목표: '.($request->goalKey ?? '(없음)'),
+                    $request,
+                    $config->ipMaskOctets,
+                );
+
+                return null;
+            }
+
+            // 코어 목표(가입·로그인)는 서버가 완료를 확인한 순간에만 남는다. 비콘으로도 받으면 방문자가
+            // 콘솔에서 가입 수를 부풀릴 수 있다 — 내부 검색어를 비콘으로 받지 않는 것과 같은 이유다.
+            if (! $goal->isExtension() && $request->source !== VisitSource::Server->value) {
+                $this->failures->log(
+                    CollectFailureReason::Validation,
+                    $goal->qualifiedKey().': 코어 목표는 서버만 기록합니다.',
+                    $request,
+                    $config->ipMaskOctets,
+                );
+
+                return null;
+            }
+
+            [$attributes, $error] = $goal->validateAttributes($request->goalAttributes);
+
+            if ($error !== null) {
+                $this->failures->log(
+                    CollectFailureReason::Validation,
+                    $goal->qualifiedKey().': '.$error,
+                    $request,
+                    $config->ipMaskOctets,
+                );
+
+                return null;
+            }
+
+            $request = $request->with(['goal_attributes' => $attributes]);
+        }
+
+        return [
+            'request' => $request,
+            'goal' => $goal,
+            'visit_dimensions' => $visitDimensions,
+            'action_dimensions' => $actionDimensions,
+        ];
     }
 
     /**

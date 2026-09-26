@@ -3,6 +3,7 @@
 namespace App\Repositories\Analytics;
 
 use App\Contracts\Repositories\Analytics\StatsRepositoryInterface;
+use App\Enums\Analytics\StatsDimension;
 use App\Models\Analytics\AnalyticsDimensionStat;
 use App\Models\Analytics\AnalyticsStatsDaily;
 use App\Models\Analytics\AnalyticsStatsHourly;
@@ -278,7 +279,23 @@ class StatsRepository implements StatsRepositoryInterface
     }
 
     /**
-     * 확장이 등록한 차원의 집계 행을 삭제합니다.
+     * 집계 표에 행이 남아 있는 확장 차원 이름을 반환합니다.
+     *
+     * @return array<int, string> 차원 이름 목록 (ext:식별자:키)
+     */
+    public function extensionDimensionNames(): array
+    {
+        return AnalyticsDimensionStat::query()
+            ->where('dimension', 'like', 'ext:%')
+            ->distinct()
+            ->orderBy('dimension')
+            ->pluck('dimension')
+            ->map(fn ($dimension): string => (string) $dimension)
+            ->all();
+    }
+
+    /**
+     * 확장이 등록한 차원의 집계 행과 그 확장 목표의 전환 집계 행을 삭제합니다.
      *
      * @param  string  $extensionIdentifier  확장 식별자
      * @return int 삭제한 행 수
@@ -287,6 +304,9 @@ class StatsRepository implements StatsRepositoryInterface
     {
         return AnalyticsDimensionStat::query()
             ->where('dimension', 'like', 'ext:'.$extensionIdentifier.':%')
+            ->orWhere(fn (Builder $query) => $query
+                ->where('dimension', StatsDimension::Goal->value)
+                ->where('label', 'like', $extensionIdentifier.'.%'))
             ->delete();
     }
 
