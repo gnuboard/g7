@@ -35,7 +35,7 @@
     <!-- 수정 모드에서 폼 로드 시 현재 슬러그는 유효하므로 slugChecked 초기화 -->
     <set-state if="{{!!route?.id}}" target="local" :slugChecked="true" :slugAvailable="true"/>
     <!-- tempKey 생성 (신규/수정 모두 - 취소 시 임시파일 정리 목적) -->
-    <set-state target="local" tempKey="{{('temp_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9))}}"/>
+    <set-state target="local" tempKey="{{$uuid()}}"/>
   </init>
   <slot name="content">
     <div data-ref="page_form_content" data-key="form" :data-blur-until-loaded="true" class="admin-page-content-responsive-fluid">
@@ -161,7 +161,7 @@
           <icon name="paperclip" class="text-secondary text-lg"/>
           <h3 class="section-heading">$t:sirsoft-page.admin.page.form.attachments</h3>
         </div>
-        <file-uploader data-ref="file_uploader" collection="page_attachments" :maxFiles="5" :maxSize="10" accept=".jpg,.jpeg,.png,.gif,.webp,.pdf,.zip" initialFiles="{{_local.form?.attachments ?? []}}" :autoUpload="false" uploadTriggerEvent="upload:page_attachments" disabled="{{_computed.isReadOnly}}" :compact="true" :confirmBeforeRemove="true" confirmRemoveTitle="$t:sirsoft-page.admin.page.form.confirm_remove_attachment_title" confirmRemoveMessage="$t:sirsoft-page.admin.page.form.confirm_remove_attachment_message">
+        <file-uploader data-ref="file_uploader" collection="page_attachments" :maxFiles="5" :maxSize="10" accept=".jpg,.jpeg,.png,.gif,.webp,.pdf,.zip" initialFiles="{{_local.form?.attachments ?? []}}" :autoUpload="false" uploadTriggerEvent="upload:page_attachments" disabled="{{_computed.isReadOnly}}" :confirmBeforeRemove="true" confirmRemoveTitle="$t:sirsoft-page.admin.page.form.confirm_remove_attachment_title" confirmRemoveMessage="$t:sirsoft-page.admin.page.form.confirm_remove_attachment_message">
           <prop name="uploadParams">
             <field name="temp_key" value="{{_local.tempKey}}"/>
           </prop>

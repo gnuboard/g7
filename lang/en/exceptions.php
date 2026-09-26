@@ -248,6 +248,13 @@ return [
         'composer_binary_not_found' => 'Composer binary not found. Set the COMPOSER_BINARY environment variable or add composer to your PATH.',
     ],
 
+    // 스토리지 드라이버 경로 가드 예외
+    'storage' => [
+        'unsafe_path' => 'The storage path is not allowed.',
+        'destructive_on_root' => 'The top-level storage path cannot be deleted this way.',
+        'local_safe_option_package' => 'The :option option of a local-safe disk requires the :package package.',
+    ],
+
     // SEO / Sitemap 관련 예외
     'seo' => [
         'sitemap_write_failed' => 'Failed to write sitemap file: :path',

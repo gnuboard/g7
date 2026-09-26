@@ -46,7 +46,7 @@
     <!-- tempKey 생성 (신규/수정 모두 - 취소 시 안전을 위해) -->
     <set-state target="global">
       <field name="_local">
-        <field name="tempKey" value="{{('temp_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9))}}"/>
+        <field name="tempKey" value="{{$uuid()}}"/>
       </field>
     </set-state>
   </init>

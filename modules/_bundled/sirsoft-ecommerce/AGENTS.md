@@ -204,6 +204,7 @@ CRUD 를 바꾸고 싶으면 이 4종 중 하나를 잡으면 되고, 이 모듈
 | 특정 PG 이름을 이 모듈 코드에 분기로 넣기 (`if ($pg === 'tosspayments')`) | 결제수단 카탈로그 선언(`needs_pg`/`pg_locked`/`pg_provider`)과 `payment.*` 훅 | PG 가 늘 때마다 이 모듈이 커지고, 플러그인만 설치하면 되는 구조가 깨진다 |
 | 주문번호·상품코드를 `max(id)+1` 이나 타임스탬프 조합으로 직접 생성 | `SequenceService::generateCode()` | 채번은 DB UNIQUE 제약과 함께 원자적으로 수행된다 — 직접 생성은 동시 주문에서 중복을 만든다 |
 | 취소·환불을 주문 단위로 처리 | 옵션 단위(`OrderCancelOption`/`OrderRefundOption`) | 부분 취소가 이 도메인의 기본이며, 주문 단위로 처리하면 남은 옵션의 안분 금액이 계산되지 않는다 |
+| 요청의 `temp_key` · `image_temp_key` 를 형식 검증 없이 `products/temp/{키}` 경로에 넣거나, 임시 이미지가 없는데도 그 디렉토리를 `deleteDirectory` | `ValidatesTempKey`(UUID 만) + 조회된 임시 이미지가 있을 때만 이동·정리 | 순회 키가 정리 경로를 모듈 저장소 루트로 끌어올린다 (게시판 KVE-2026-2349 와 같은 패턴) |
 <!-- @intent END -->
 
 ## 7. 테스트 실행
@@ -211,10 +212,10 @@ CRUD 를 바꾸고 싶으면 이 4종 중 하나를 잡으면 되고, 이 모듈
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 414개 | `modules/_bundled/sirsoft-ecommerce/tests` |
+| PHPUnit | 417개 | `modules/_bundled/sirsoft-ecommerce/tests` |
 | Vitest | 150개 | `vitest.config.ts` |
 | Playwright | 44개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 100개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 103개 | `tests/scenarios` |
 
 기저 TestCase: `tests/ModuleTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

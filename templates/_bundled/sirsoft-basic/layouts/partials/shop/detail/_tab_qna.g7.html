@@ -21,7 +21,7 @@
         <on type="click">
           <conditions>
             <when if="{{!!_global.currentUser?.uuid}}">
-              <set-state target="global" qnaProductId="{{product.data.id}}" qnaProductName="{{product.data.name_localized ?? ''}}" qnaProductImage="{{product.data.thumbnail_url ?? null}}" qnaModalBoardSettings="{{qna.data.meta.board_settings ?? null}}" qnaBoardSlug="{{_global.modules?.['sirsoft-ecommerce']?.inquiry?.board_slug ?? ''}}" :qnaSubmitting="false" qnaTempKey="{{'temp_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9)}}">
+              <set-state target="global" qnaProductId="{{product.data.id}}" qnaProductName="{{product.data.name_localized ?? ''}}" qnaProductImage="{{product.data.thumbnail_url ?? null}}" qnaModalBoardSettings="{{qna.data.meta.board_settings ?? null}}" qnaBoardSlug="{{_global.modules?.['sirsoft-ecommerce']?.inquiry?.board_slug ?? ''}}" :qnaSubmitting="false" qnaTempKey="{{$uuid()}}">
                 <field name="qnaForm">
                   <field name="title" value=""/>
                   <field name="category" value=""/>

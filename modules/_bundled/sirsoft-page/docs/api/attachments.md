@@ -30,7 +30,7 @@
 | file | body | file | 예 | max: 첨부 최대 용량 설정(MB→KB 환산, 기본 10MB) · mimetypes: 허용 형식 설정 | 업로드 파일 (용량·형식 모두 페이지 모듈 환경설정이 SSoT) |
 | page_id | body | integer | 아니오 | min 1 | page 식별자 |
 | collection | body | string | 아니오 | max 100 | 첨부 컬렉션 그룹명 (첨부를 용도별로 묶는 키, 미지정 시 default) |
-| temp_key | body | string | 아니오 | max 64 | 저장 전 임시 귀속 키. 아직 저장되지 않은 페이지의 첨부를 임시로 묶어 두고, 이후 페이지 저장 시 이 키로 확정 귀속합니다 (`page_id` 미지정 시 사용) |
+| temp_key | body | string | 아니오 | UUID | 저장 전 임시 귀속 키(`page_id` 와 함께 생략하면 서버가 UUID 를 발급). 아직 저장되지 않은 페이지의 첨부를 임시로 묶어 두고, 이후 페이지 저장 시 이 키로 확정 귀속합니다 (`page_id` 미지정 시 사용) |
 
 **요청 예시**
 
@@ -57,7 +57,7 @@ Content-Disposition: form-data; name="collection"
 ------G7ExampleBoundary
 Content-Disposition: form-data; name="temp_key"
 
-예시값
+5f0c3a3e-1b2c-4d5e-8f90-a1b2c3d4e5f6
 ------G7ExampleBoundary--
 ```
 

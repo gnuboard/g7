@@ -112,6 +112,12 @@ class AttachmentService
         string $collection = 'attachments',
         ?string $tempKey = null
     ): Attachment {
+        // 글도 임시 키도 없는 업로드(업로드 후 attachment_ids 로 잇는 흐름)는 서버가 키를 만든다 —
+        // 비워 두면 임시 경로가 `{slug}/temp//파일` 이 되어 저장소 경로 가드가 거부한다
+        if (! $postId && ! $tempKey) {
+            $tempKey = Str::uuid()->toString();
+        }
+
         // 개수 상한 최종 방어선 — 단일 업로드를 N 번 반복하는 경로도 여기서 막힌다
         $this->assertAttachmentCountWithin($slug, $postId, 1, $tempKey);
 
@@ -233,6 +239,11 @@ class AttachmentService
      * - 임시 경로: {slug}/temp/{tempKey}/{filename}
      * - 최종 경로: {slug}/{Y/m/d}/{filename}
      *
+     * temp_key 는 요청에서 온 값이다. 연결할 임시 첨부(현재 사용자가 올린 것)가 한 건도
+     * 없으면 파일도 디렉토리도 건드리지 않고 0 을 반환한다 — 임시 디렉토리 정리는 실제로
+     * 옮긴 파일이 있을 때만 한다(KVE-2026-2349: 첨부 없이 보낸 temp_key 가 정리 경로를
+     * 모듈 저장소 루트로 끌어올려 전체가 삭제됐다).
+     *
      * @param  string  $slug  게시판 슬러그
      * @param  string  $tempKey  임시 업로드 키
      * @param  int  $postId  게시글 ID
@@ -246,7 +257,11 @@ class AttachmentService
             throw new ModelNotFoundException(__('sirsoft-board::messages.errors.board_not_found'));
         }
 
-        $tempAttachments = $this->repository->getByTempKey($slug, $tempKey);
+        $tempAttachments = $this->ownedTempAttachments($this->repository->getByTempKey($slug, $tempKey));
+
+        if ($tempAttachments->isEmpty()) {
+            return 0;
+        }
 
         // 개수 상한 최종 방어선 — FormRequest 는 files[] 만 보므로 temp_key 경로가 그대로 뚫린다.
         // 이미 연결된 첨부와 합산해 판정한다 (수정 시 기존 첨부 + 신규 임시첨부).
@@ -292,6 +307,29 @@ class AttachmentService
         }
 
         return $linkedCount;
+    }
+
+    /**
+     * 현재 사용자가 올린 임시 첨부만 남깁니다.
+     *
+     * 임시 키를 알아낸 다른 사용자가 남의 임시 첨부를 자기 글에 붙이거나 그 임시 디렉토리를
+     * 지우지 못하게 한다. 인증 컨텍스트가 없으면(콘솔·큐) 판정하지 않고, 비회원 업로드
+     * (created_by=null)는 키 소지만으로 판단한다.
+     *
+     * @param  Collection<int, Attachment>  $attachments  임시 첨부 목록
+     * @return Collection<int, Attachment> 현재 사용자 소유 임시 첨부
+     */
+    private function ownedTempAttachments(Collection $attachments): Collection
+    {
+        $userId = Auth::id();
+        if ($userId === null) {
+            return $attachments;
+        }
+
+        return $attachments
+            ->filter(fn (Attachment $attachment) => $attachment->created_by === null
+                || (int) $attachment->created_by === (int) $userId)
+            ->values();
     }
 
     /**

@@ -1,0 +1,38 @@
+feature: 페이지 임시 첨부 키 경로 순회 방어 (KVE-2026-2349 부수의무)
+
+description: |
+  페이지 첨부의 임시 키(temp_key)가 저장소 경로를 조작하지 못하게 한다.
+
+  배경:
+    - 게시판 temp_key 경로 순회(KVE-2026-2349)와 같은 패턴이 페이지 첨부에 복제돼 있었다.
+      페이지 첨부는 basePath 없이 `temp/{temp_key}` 에 저장해 게시판보다 한 단계 얕고,
+      페이지 저장 시 조회 결과와 무관하게 그 임시 디렉토리를 지웠다.
+
+  계층 결정:
+    - 요청: ValidatesTempKey 트레잇 — 페이지 생성·수정·첨부 업로드가 UUID 만 받는다
+      (화면은 $uuid() 로 발급)
+    - 서비스: 임시 첨부가 없으면 정리하지 않고, 페이지도 키도 없는 업로드는 서버가 UUID 키를 만든다
+    - 드라이버 가드(코어 storage-path-guard 시나리오)가 최후 방어선
+
+  관리자 첨부 API 테스트(PageAttachmentControllerTest)는 temp_key 형식 변경에 맞춰 함께 소유한다.
+
+axes:
+  entry_point: [page_store, upload]
+  temp_key_shape: [uuid, path_traversal]
+
+effects:
+  - traversal_temp_key_rejected_with_422
+  - empty_temp_link_deletes_nothing
+  - uuid_temp_attachment_linked_and_temp_dir_cleaned
+  - keyless_upload_gets_server_generated_temp_key
+  - admin_upload_to_existing_page_succeeds
+  - temp_upload_with_uuid_key_succeeds
+  - upload_rejects_invalid_file
+  - upload_policy_from_settings_enforced
+  - admin_delete_attachment_handles_missing
+  - admin_reorder_attachments_validated
+  - unauthenticated_upload_rejected
+
+test_files:
+  - modules/_bundled/sirsoft-page/tests/Feature/TempKeyPathSafetyTest.php
+  - modules/_bundled/sirsoft-page/tests/Feature/Admin/PageAttachmentControllerTest.php

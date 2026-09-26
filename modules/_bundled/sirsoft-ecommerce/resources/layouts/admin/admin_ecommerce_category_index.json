@@ -185,7 +185,7 @@
                                                             "selectedCategoryId": null,
                                                             "selectedCategory": null,
                                                             "panelMode": "create",
-                                                            "tempKey": "{{'temp_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9)}}"
+                                                            "tempKey": "{{$uuid()}}"
                                                         }
                                                     },
                                                     {

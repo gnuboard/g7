@@ -7,7 +7,8 @@ use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Modules\Sirsoft\Board\Http\Requests\Concerns\ResolvesAllowedExtensions;
 use Modules\Sirsoft\Board\Http\Requests\Concerns\ValidatesAttachmentCount;
-use Modules\Sirsoft\Board\Models\Board;
+use Modules\Sirsoft\Board\Http\Requests\Concerns\ValidatesTempKey;
+use Modules\Sirsoft\Board\Repositories\Contracts\BoardRepositoryInterface;
 
 /**
  * 게시판 첨부파일 업로드 요청 검증
@@ -21,6 +22,7 @@ class UploadAttachmentRequest extends FormRequest
 {
     use ResolvesAllowedExtensions;
     use ValidatesAttachmentCount;
+    use ValidatesTempKey;
 
     /**
      * 요청 권한 확인
@@ -40,7 +42,7 @@ class UploadAttachmentRequest extends FormRequest
     public function rules(): array
     {
         $slug = $this->route('slug');
-        $board = Board::where('slug', $slug)->first();
+        $board = app(BoardRepositoryInterface::class)->findBySlug((string) $slug);
 
         // 게시판이 없으면 기본 규칙 반환
         if (! $board) {
@@ -48,7 +50,7 @@ class UploadAttachmentRequest extends FormRequest
                 'file' => ['required', 'file'],
                 'post_id' => ['nullable', 'integer', 'min:1'],
                 'collection' => ['sometimes', 'string', 'max:100'],
-                'temp_key' => ['nullable', 'string', 'max:64'],
+                'temp_key' => $this->tempKeyRules(),
             ];
         }
 
@@ -70,7 +72,7 @@ class UploadAttachmentRequest extends FormRequest
             'file' => ['required', 'file', 'max:'.$maxSizeKB, 'mimes:'.$mimes],
             'post_id' => ['nullable', 'integer', 'min:1'],
             'collection' => ['sometimes', 'string', 'max:100'],
-            'temp_key' => ['nullable', 'string', 'max:64'],
+            'temp_key' => $this->tempKeyRules(),
         ];
 
         // 모듈/플러그인이 validation rules를 동적으로 추가할 수 있도록 훅 제공
@@ -85,7 +87,7 @@ class UploadAttachmentRequest extends FormRequest
     public function messages(): array
     {
         $slug = $this->route('slug');
-        $board = Board::where('slug', $slug)->first();
+        $board = app(BoardRepositoryInterface::class)->findBySlug((string) $slug);
 
         $maxSizeMB = $board?->max_file_size ?? 10;
 
@@ -103,6 +105,7 @@ class UploadAttachmentRequest extends FormRequest
      * 첨부 개수 상한을 선차단합니다.
      *
      * @param  Validator  $validator  검증기
+     * @return void
      */
     public function withValidator(Validator $validator): void
     {
@@ -116,7 +119,7 @@ class UploadAttachmentRequest extends FormRequest
             $postId = $this->input('post_id');
 
             $this->assertSingleAttachmentSlotAvailable(
-                Board::where('slug', $this->route('slug'))->first(),
+                app(BoardRepositoryInterface::class)->findBySlug((string) $this->route('slug')),
                 $postId !== null && $postId !== '' ? (int) $postId : null,
                 $this->input('temp_key')
             );
@@ -125,6 +128,8 @@ class UploadAttachmentRequest extends FormRequest
 
     /**
      * 검증 전 데이터 준비
+     *
+     * @return void
      */
     protected function prepareForValidation(): void
     {

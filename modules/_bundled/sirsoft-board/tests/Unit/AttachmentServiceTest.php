@@ -43,6 +43,11 @@ class AttachmentServiceTest extends ModuleTestCase
 
     private User $user;
 
+    /**
+     * 테스트 환경을 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -70,12 +75,24 @@ class AttachmentServiceTest extends ModuleTestCase
         Auth::login($this->user);
     }
 
+    /**
+     * 테스트 환경을 정리합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         Mockery::close();
         parent::tearDown();
     }
 
+    /**
+     * 업로드한 파일을 저장소에 쓰고 첨부 행을 만든다.
+     *
+     * @return void 반환값 없음
+     *
+     * @effects upload_stores_file_and_creates_row
+     */
     #[Test]
     public function test_upload_stores_file_and_creates_attachment(): void
     {
@@ -138,6 +155,13 @@ class AttachmentServiceTest extends ModuleTestCase
         $this->assertEquals('document.pdf', $result->original_filename);
     }
 
+    /**
+     * temp_key 로 올린 첨부는 키를 보존한 임시 첨부 행으로 저장된다.
+     *
+     * @return void 반환값 없음
+     *
+     * @effects temp_upload_stored_under_temp_key_path
+     */
     #[Test]
     public function test_upload_with_temp_key_creates_temp_attachment(): void
     {
@@ -188,6 +212,13 @@ class AttachmentServiceTest extends ModuleTestCase
         $this->assertEquals($tempKey, $result->temp_key);
     }
 
+    /**
+     * 글 없이 올린 첨부는 {slug}/temp/{temp_key} 임시 경로에 저장된다.
+     *
+     * @return void 반환값 없음
+     *
+     * @effects temp_upload_stored_under_temp_key_path
+     */
     #[Test]
     public function test_upload_creates_file_in_temp_path_when_no_post_id(): void
     {
@@ -229,6 +260,13 @@ class AttachmentServiceTest extends ModuleTestCase
         $this->assertEquals(1, $result->id);
     }
 
+    /**
+     * 글이 있으면 날짜별 최종 경로에 바로 저장한다.
+     *
+     * @return void 반환값 없음
+     *
+     * @effects upload_stores_file_and_creates_row
+     */
     #[Test]
     public function test_upload_creates_file_in_final_path_when_post_id_exists(): void
     {
@@ -273,6 +311,13 @@ class AttachmentServiceTest extends ModuleTestCase
         $this->assertEquals(1, $result->id);
     }
 
+    /**
+     * 임시 첨부를 최종 경로로 옮겨 글에 잇고 임시 디렉토리를 정리한다.
+     *
+     * @return void 반환값 없음
+     *
+     * @effects owned_temp_attachments_moved_and_temp_dir_cleaned
+     */
     #[Test]
     public function test_link_temp_attachments_with_move_moves_files_and_updates_db(): void
     {
@@ -363,12 +408,19 @@ class AttachmentServiceTest extends ModuleTestCase
         $this->assertEquals(2, $result);
     }
 
+    /**
+     * 옮길 임시 첨부가 없으면 어떤 파일·디렉토리도 건드리지 않고 0 을 반환한다.
+     *
+     * @return void 반환값 없음
+     *
+     * @effects empty_temp_link_deletes_nothing
+     */
     #[Test]
     public function test_link_temp_attachments_with_move_handles_empty_temp_files(): void
     {
         // Arrange
         $slug = 'notice';
-        $tempKey = 'temp-uuid-empty';
+        $tempKey = '5f0c3a3e-1b2c-4d5e-8f90-a1b2c3d4e5f6';
         $postId = 5;
 
         $this->repository
@@ -377,12 +429,12 @@ class AttachmentServiceTest extends ModuleTestCase
             ->with($slug, $tempKey)
             ->andReturn(new EloquentCollection([]));
 
-        // 파일이 없어도 임시 디렉토리 정리는 실행
-        $this->storage
-            ->shouldReceive('deleteDirectory')
-            ->once()
-            ->with('attachments', "{$slug}/temp/{$tempKey}")
-            ->andReturn(true);
+        // 옮길 임시 첨부가 없으면 어떤 파일·디렉토리도 건드리지 않는다 (KVE-2026-2349 —
+        // 종전에는 여기서 정리를 실행해 temp_key 조작으로 저장소 루트까지 지워졌다)
+        $this->storage->shouldNotReceive('deleteDirectory');
+        $this->storage->shouldNotReceive('get');
+        $this->storage->shouldNotReceive('put');
+        $this->storage->shouldNotReceive('delete');
 
         // Act
         $result = $this->service->linkTempAttachmentsWithMove($slug, $tempKey, $postId);
@@ -391,6 +443,13 @@ class AttachmentServiceTest extends ModuleTestCase
         $this->assertEquals(0, $result);
     }
 
+    /**
+     * 업로드 전후 훅이 발화한다.
+     *
+     * @return void 반환값 없음
+     *
+     * @effects attachment_lifecycle_hooks_fire
+     */
     #[Test]
     public function test_upload_fires_hooks(): void
     {
@@ -437,6 +496,13 @@ class AttachmentServiceTest extends ModuleTestCase
         HookManager::clearAction('sirsoft-board.attachment.after_upload');
     }
 
+    /**
+     * 삭제는 소프트 삭제이며 실제 파일은 남긴다.
+     *
+     * @return void 반환값 없음
+     *
+     * @effects soft_delete_keeps_physical_file
+     */
     #[Test]
     public function test_delete_soft_deletes_without_removing_physical_file(): void
     {
@@ -481,6 +547,13 @@ class AttachmentServiceTest extends ModuleTestCase
         $this->assertTrue($result);
     }
 
+    /**
+     * 삭제 전후 훅이 발화한다.
+     *
+     * @return void 반환값 없음
+     *
+     * @effects attachment_lifecycle_hooks_fire
+     */
     #[Test]
     public function test_delete_fires_hooks(): void
     {
@@ -516,6 +589,13 @@ class AttachmentServiceTest extends ModuleTestCase
         HookManager::clearAction('sirsoft-board.attachment.after_delete');
     }
 
+    /**
+     * 파일 이동 없는 임시 첨부 연결은 행만 글에 잇는다.
+     *
+     * @return void 반환값 없음
+     *
+     * @effects temp_link_without_move_links_rows
+     */
     #[Test]
     public function test_link_temp_attachments_links_temp_files_to_post(): void
     {
@@ -562,6 +642,13 @@ class AttachmentServiceTest extends ModuleTestCase
         $this->assertEquals(3, $result);
     }
 
+    /**
+     * 순서 변경이 각 첨부의 order 를 갱신한다.
+     *
+     * @return void 반환값 없음
+     *
+     * @effects reorder_updates_order
+     */
     #[Test]
     public function test_reorder_updates_attachment_order(): void
     {
@@ -586,6 +673,13 @@ class AttachmentServiceTest extends ModuleTestCase
         $this->assertTrue($result);
     }
 
+    /**
+     * 순서 변경 훅이 발화한다.
+     *
+     * @return void 반환값 없음
+     *
+     * @effects attachment_lifecycle_hooks_fire
+     */
     #[Test]
     public function test_reorder_fires_hooks(): void
     {
@@ -616,6 +710,13 @@ class AttachmentServiceTest extends ModuleTestCase
         HookManager::clearAction('sirsoft-board.attachment.after_reorder');
     }
 
+    /**
+     * 다운로드는 저장 파일을 스트림 응답으로 돌려준다.
+     *
+     * @return void 반환값 없음
+     *
+     * @effects download_streams_stored_file
+     */
     #[Test]
     public function test_download_returns_streamed_response(): void
     {
@@ -654,6 +755,13 @@ class AttachmentServiceTest extends ModuleTestCase
         $this->assertInstanceOf(StreamedResponse::class, $result);
     }
 
+    /**
+     * 첨부가 없으면 다운로드는 null 을 돌려준다.
+     *
+     * @return void 반환값 없음
+     *
+     * @effects download_streams_stored_file
+     */
     #[Test]
     public function test_download_returns_null_when_not_found(): void
     {
@@ -670,6 +778,13 @@ class AttachmentServiceTest extends ModuleTestCase
         $this->assertNull($result);
     }
 
+    /**
+     * 한글 파일명도 다운로드 응답에 그대로 실린다.
+     *
+     * @return void 반환값 없음
+     *
+     * @effects download_streams_stored_file
+     */
     #[Test]
     public function test_download_with_korean_filename(): void
     {
@@ -710,6 +825,13 @@ class AttachmentServiceTest extends ModuleTestCase
         $this->assertInstanceOf(StreamedResponse::class, $result);
     }
 
+    /**
+     * 다운로드 후 훅이 발화한다.
+     *
+     * @return void 반환값 없음
+     *
+     * @effects attachment_lifecycle_hooks_fire
+     */
     #[Test]
     public function test_download_fires_after_download_hook(): void
     {
@@ -755,6 +877,13 @@ class AttachmentServiceTest extends ModuleTestCase
         HookManager::clearAction('sirsoft-board.attachment.after_download');
     }
 
+    /**
+     * 다운로드 훅에 관리자 여부가 함께 전달된다.
+     *
+     * @return void 반환값 없음
+     *
+     * @effects attachment_lifecycle_hooks_fire
+     */
     #[Test]
     public function test_download_passes_admin_context_to_hook(): void
     {
@@ -794,6 +923,13 @@ class AttachmentServiceTest extends ModuleTestCase
         HookManager::clearAction('sirsoft-board.attachment.after_download');
     }
 
+    /**
+     * 첨부가 없으면 다운로드 훅을 발화하지 않는다.
+     *
+     * @return void 반환값 없음
+     *
+     * @effects attachment_lifecycle_hooks_fire
+     */
     #[Test]
     public function test_download_does_not_fire_hook_when_not_found(): void
     {
@@ -830,6 +966,8 @@ class AttachmentServiceTest extends ModuleTestCase
      * 게시판 첨부는 비밀글·삭제글 게이트가 걸려 있으므로 직접 URL 로 바꾸지 않고,
      * 그 게이트를 통과하는 다운로드 서빙 URL 로 채운다.
      *
+     * @return void 반환값 없음
+     *
      * @effects board_upload_response_url_uses_gated_route, download_url_falls_back_to_api_path_when_direct_unavailable
      */
     #[Test]
@@ -862,6 +1000,10 @@ class AttachmentServiceTest extends ModuleTestCase
 
     /**
      * 첨부가 없으면 null 이어야 합니다 (기존 계약 유지).
+     *
+     * @return void 반환값 없음
+     *
+     * @effects url_null_when_attachment_missing
      */
     #[Test]
     public function test_get_url_returns_null_when_attachment_missing(): void

@@ -92,7 +92,7 @@
             "handler": "setState",
             "params": {
                 "target": "local",
-                "tempKey": "{{('temp_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9))}}"
+                "tempKey": "{{$uuid()}}"
             }
         }
     ],
@@ -759,7 +759,6 @@
                                     "autoUpload": false,
                                     "uploadTriggerEvent": "upload:page_attachments",
                                     "disabled": "{{_computed.isReadOnly}}",
-                                    "compact": true,
                                     "confirmBeforeRemove": true,
                                     "confirmRemoveTitle": "$t:sirsoft-page.admin.page.form.confirm_remove_attachment_title",
                                     "confirmRemoveMessage": "$t:sirsoft-page.admin.page.form.confirm_remove_attachment_message",
