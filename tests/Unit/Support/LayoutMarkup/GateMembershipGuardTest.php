@@ -128,7 +128,6 @@ class GateMembershipGuardTest extends LayoutMarkupTestCase
         'tests/Unit/Benchmark/ListIndexCoverageTest.php' => '성능 계측 트랙 소유 (목록 프로파일 ↔ 인덱스 선언 대조).',
         'tests/Unit/Installer/InstallerStep3EnvValueGuardTest.php' => '설치 마법사 트랙 소유 (3단계 입력의 줄바꿈 주입으로 .env 항목이 끼워지는 것 방지, KVE-2026-2042 — develop 8차 유입).',
         'tests/Unit/Http/Resources/HasRowNumberBoundedTotalTest.php' => '대용량 목록 상한 트랙 소유 (총 건수 절사 시 행번호 표기).',
-        'tests/Unit/Repositories/Concerns/SortableColumnsGateContractTest.php' => '정렬 화이트리스트 트랙 소유 (저장소 ↔ 게이트 포함관계).',
         'tests/Unit/Search/KeywordSearchTest.php' => '검색 트랙 소유 (키워드 술어의 활성 엔진 위임).',
         'tests/Unit/Services/LanguagePackServiceUpdateCheckScopeTest.php' => '언어팩 트랙 소유 (업데이트 확인 범위).',
         'tests/Unit/Services/UserServiceWithdrawTest.php' => '회원 트랙 소유 (탈퇴 처리의 멱등성·컬럼 한계).',

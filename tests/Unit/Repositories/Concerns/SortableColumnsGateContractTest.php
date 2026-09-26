@@ -233,6 +233,14 @@ class SortableColumnsGateContractTest extends TestCase
 
     /**
      * 모든 resolveSortSpec 호출처가 매핑에 등록되어 있는지 검사합니다.
+     *
+     * 매핑에만 남고 더 이상 호출하지 않는 항목도 함께 거절한다.
+     *
+     * @scenario contract_check=call_site_mapping
+     *
+     * @effects every_call_site_mapped, stale_gate_map_entry_rejected
+     *
+     * @return void 없음
      */
     public function test_every_call_site_is_mapped(): void
     {
@@ -263,6 +271,11 @@ class SortableColumnsGateContractTest extends TestCase
      *
      * @param  string  $repositoryPath  저장소 상대 경로 (Repository)
      * @param  string  $requestPath  저장소 상대 경로 (FormRequest)
+     * @return void 없음
+     *
+     * @scenario contract_check=whitelist_covers_gate
+     *
+     * @effects repo_whitelist_covers_gate
      */
     #[DataProvider('gatePairProvider')]
     public function test_repository_whitelist_covers_gate(string $repositoryPath, string $requestPath): void
