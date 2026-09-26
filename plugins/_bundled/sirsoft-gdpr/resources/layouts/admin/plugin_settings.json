@@ -40,6 +40,75 @@
             "comment": "연간 통지 대상 건수 — 발송 판정과 같은 조건이며 꺼져 있어도 센다(켜기 전에 규모를 본다, #636). 저장 뒤 다시 받는다"
         },
         {
+            "id": "privacyManualRuns",
+            "label_key": "$t:sirsoft-gdpr.editor.data_source.privacyManualRuns",
+            "type": "api",
+            "endpoint": "/api/admin/privacy/manual-runs",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "params": {
+                "targets": "sirsoft-gdpr:annual_notice",
+                "since": "{{_global.privacyRunWatchSince ?? ''}}"
+            },
+            "fallback": {
+                "data": {
+                    "targets": {},
+                    "has_active": false,
+                    "finished_since": false
+                }
+            },
+            "onSuccess": [
+                {
+                    "handler": "setState",
+                    "if": "{{response?.data?.data?.has_active === true}}",
+                    "params": {
+                        "target": "global",
+                        "privacyRunWatchSince": "{{response?.data?.data?.checked_at}}"
+                    }
+                },
+                {
+                    "handler": "startInterval",
+                    "if": "{{response?.data?.data?.has_active === true}}",
+                    "params": {
+                        "id": "privacy_manual_run_poll",
+                        "intervalMs": 3000,
+                        "actions": [
+                            {
+                                "handler": "refetchDataSource",
+                                "params": {
+                                    "dataSourceId": "privacyManualRuns"
+                                }
+                            }
+                        ]
+                    }
+                },
+                {
+                    "handler": "stopInterval",
+                    "if": "{{response?.data?.data?.has_active !== true}}",
+                    "params": {
+                        "id": "privacy_manual_run_poll"
+                    }
+                },
+                {
+                    "handler": "refetchDataSource",
+                    "if": "{{response?.data?.data?.has_active !== true && response?.data?.data?.finished_since === true}}",
+                    "params": {
+                        "dataSourceId": "gdprAnnualNoticePreview"
+                    }
+                },
+                {
+                    "handler": "setState",
+                    "if": "{{response?.data?.data?.has_active !== true}}",
+                    "params": {
+                        "target": "global",
+                        "privacyRunWatchSince": null
+                    }
+                }
+            ],
+            "comment": "개인정보 조치 직권 실행 상태 — 「지금 실행」 버튼과 상태 줄(처리 대기/처리 중 · 마지막 결과)이 쓴다(코어 직권 실행 API).\n       진행 중이면 3초마다 다시 받고 끝나면 멈춘다. 진행 중일 때 받은 서버 시각(`checked_at`)을 다음 조회의 `since` 로\n       돌려보내 그 뒤에 끝난 작업이 있으면(`finished_since`) 대상 건수를 다시 받는다 — 판정을 응답값으로만 하는 까닭은\n       직전에 넣은 전역 값이 이 성공 핸들러에서 낡은 값으로 읽히기 때문이다(코어 환경설정 개인정보 탭과 같은 방식)."
+        },
+        {
             "id": "privacyTargets",
             "label_key": "$t:sirsoft-gdpr.editor.data_source.privacyTargets",
             "type": "api",
@@ -2610,73 +2679,236 @@
                                                 ]
                                             },
                                             {
-                                                "comment": "이번 주기 대상 회원 수 — 꺼져 있어도 보인다(켜기 전에 규모를 본다, #636). 옆 버튼은 명단 창을 여는데,\n                 회원 읽기 권한이 있으면 대상이 0명이어도 그린다(빈 명단은 창이 안내한다).",
+                                                "comment": "조치 대상 — 코어 개인정보 탭과 같은 「대상 행」 양식(이름 · 건수 배지 · 오른쪽 끝 대상 보기·지금 실행 · 그 행의 결과 줄).\n                 건수는 꺼져 있어도 보인다(켜기 전에 규모를 본다, #636). 「대상 보기」는 회원 읽기 권한이 있으면 0명이어도 그린다(빈 명단은 창이 안내한다).\n                 되돌릴 수 없는 발송은 채운 강조색을 쓰지 않는다(2026-09-26 결정).",
                                                 "id": "annual_notice_targets",
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "if": "{{gdprAnnualNoticePreview?.data?.count !== null && gdprAnnualNoticePreview?.data?.count !== undefined}}",
+                                                "if": "{{(gdprAnnualNoticePreview?.data?.count !== null && gdprAnnualNoticePreview?.data?.count !== undefined) || privacyManualRuns?.data?.targets?.['sirsoft-gdpr:annual_notice']?.can_run}}",
                                                 "props": {
-                                                    "className": "flex flex-wrap items-center gap-2"
+                                                    "className": "space-y-2"
                                                 },
                                                 "children": [
                                                     {
                                                         "type": "basic",
-                                                        "name": "Span",
+                                                        "name": "Div",
                                                         "props": {
-                                                            "className": "badge badge-yellow"
+                                                            "className": "rounded-lg border border-gray-200 dark:border-gray-700"
                                                         },
-                                                        "text": "$t:sirsoft-gdpr.annual_notice.targets.count|count={{gdprAnnualNoticePreview?.data?.count ?? 0}}"
-                                                    },
-                                                    {
-                                                        "id": "view_annual_notice_targets",
-                                                        "type": "basic",
-                                                        "name": "Button",
-                                                        "if": "{{gdprAnnualNoticePreview?.data?.can_view_targets}}",
-                                                        "actions": [
+                                                        "children": [
                                                             {
-                                                                "type": "click",
-                                                                "handler": "sequence",
-                                                                "actions": [
+                                                                "id": "annual_notice_target_row",
+                                                                "type": "basic",
+                                                                "name": "Div",
+                                                                "props": {
+                                                                    "className": "px-4 py-3"
+                                                                },
+                                                                "children": [
                                                                     {
-                                                                        "handler": "setState",
-                                                                        "params": {
-                                                                            "target": "global",
-                                                                            "privacyTargets": "{{({ currentPage: 1, hasMore: true, isLoadingMore: false })}}"
-                                                                        }
+                                                                        "type": "basic",
+                                                                        "name": "Div",
+                                                                        "props": {
+                                                                            "className": "flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
+                                                                        },
+                                                                        "children": [
+                                                                            {
+                                                                                "type": "basic",
+                                                                                "name": "Div",
+                                                                                "props": {
+                                                                                    "className": "flex-wrap-center gap-2 min-w-0"
+                                                                                },
+                                                                                "children": [
+                                                                                    {
+                                                                                        "type": "basic",
+                                                                                        "name": "Span",
+                                                                                        "props": {
+                                                                                            "className": "text-heading"
+                                                                                        },
+                                                                                        "text": "$t:sirsoft-gdpr.annual_notice.targets.row_label"
+                                                                                    },
+                                                                                    {
+                                                                                        "type": "basic",
+                                                                                        "name": "Span",
+                                                                                        "if": "{{gdprAnnualNoticePreview?.data?.count !== null && gdprAnnualNoticePreview?.data?.count !== undefined}}",
+                                                                                        "props": {
+                                                                                            "className": "badge badge-yellow"
+                                                                                        },
+                                                                                        "text": "$t:sirsoft-gdpr.annual_notice.targets.count|count={{gdprAnnualNoticePreview?.data?.count ?? 0}}"
+                                                                                    }
+                                                                                ]
+                                                                            },
+                                                                            {
+                                                                                "type": "basic",
+                                                                                "name": "Div",
+                                                                                "props": {
+                                                                                    "className": "flex-wrap-center gap-2"
+                                                                                },
+                                                                                "children": [
+                                                                                    {
+                                                                                        "id": "view_annual_notice_targets",
+                                                                                        "type": "basic",
+                                                                                        "name": "Button",
+                                                                                        "if": "{{gdprAnnualNoticePreview?.data?.can_view_targets}}",
+                                                                                        "actions": [
+                                                                                            {
+                                                                                                "type": "click",
+                                                                                                "handler": "sequence",
+                                                                                                "actions": [
+                                                                                                    {
+                                                                                                        "handler": "setState",
+                                                                                                        "params": {
+                                                                                                            "target": "global",
+                                                                                                            "privacyTargets": "{{({ currentPage: 1, hasMore: true, isLoadingMore: false })}}"
+                                                                                                        }
+                                                                                                    },
+                                                                                                    {
+                                                                                                        "handler": "setState",
+                                                                                                        "params": {
+                                                                                                            "target": "global",
+                                                                                                            "privacyTargets.title": "$t:sirsoft-gdpr.annual_notice.targets.title"
+                                                                                                        }
+                                                                                                    },
+                                                                                                    {
+                                                                                                        "handler": "refetchDataSource",
+                                                                                                        "params": {
+                                                                                                            "dataSourceId": "privacyTargets"
+                                                                                                        }
+                                                                                                    },
+                                                                                                    {
+                                                                                                        "handler": "openModal",
+                                                                                                        "target": "privacy_targets_modal"
+                                                                                                    }
+                                                                                                ]
+                                                                                            }
+                                                                                        ],
+                                                                                        "props": {
+                                                                                            "type": "button",
+                                                                                            "className": "btn btn-sm btn-ghost"
+                                                                                        },
+                                                                                        "text": "$t:sirsoft-gdpr.annual_notice.targets.view"
+                                                                                    },
+                                                                                    {
+                                                                                        "id": "run_annual_notice",
+                                                                                        "type": "basic",
+                                                                                        "name": "Button",
+                                                                                        "if": "{{privacyManualRuns?.data?.targets?.['sirsoft-gdpr:annual_notice']?.can_run}}",
+                                                                                        "actions": [
+                                                                                            {
+                                                                                                "type": "click",
+                                                                                                "handler": "sequence",
+                                                                                                "actions": [
+                                                                                                    {
+                                                                                                        "handler": "setState",
+                                                                                                        "params": {
+                                                                                                            "target": "global",
+                                                                                                            "privacyRun": "{{({ key: 'sirsoft-gdpr:annual_notice', label: privacyManualRuns?.data?.targets?.['sirsoft-gdpr:annual_notice']?.label ?? '', supportsSkip: false, skipWaiting: false, preview: null, loading: true, submitting: false })}}"
+                                                                                                        }
+                                                                                                    },
+                                                                                                    {
+                                                                                                        "handler": "openModal",
+                                                                                                        "target": "privacy_run_modal"
+                                                                                                    },
+                                                                                                    {
+                                                                                                        "handler": "apiCall",
+                                                                                                        "target": "/api/admin/privacy/manual-runs/sirsoft-gdpr:annual_notice/preview",
+                                                                                                        "auth_required": true,
+                                                                                                        "params": {
+                                                                                                            "method": "GET"
+                                                                                                        },
+                                                                                                        "onSuccess": {
+                                                                                                            "handler": "setState",
+                                                                                                            "params": {
+                                                                                                                "target": "global",
+                                                                                                                "privacyRun.preview": "{{response.data}}",
+                                                                                                                "privacyRun.loading": false
+                                                                                                            }
+                                                                                                        },
+                                                                                                        "onError": [
+                                                                                                            {
+                                                                                                                "handler": "setState",
+                                                                                                                "params": {
+                                                                                                                    "target": "global",
+                                                                                                                    "privacyRun.loading": false
+                                                                                                                }
+                                                                                                            },
+                                                                                                            {
+                                                                                                                "handler": "toast",
+                                                                                                                "params": {
+                                                                                                                    "type": "error",
+                                                                                                                    "message": "{{error.message ?? '$t:sirsoft-gdpr.annual_notice.manual_run.preview_failed'}}"
+                                                                                                                }
+                                                                                                            }
+                                                                                                        ]
+                                                                                                    }
+                                                                                                ]
+                                                                                            }
+                                                                                        ],
+                                                                                        "props": {
+                                                                                            "type": "button",
+                                                                                            "className": "btn btn-sm btn-outline",
+                                                                                            "disabled": "{{_local.hasChanges || privacyManualRuns?.data?.targets?.['sirsoft-gdpr:annual_notice']?.run?.is_active}}"
+                                                                                        },
+                                                                                        "text": "$t:sirsoft-gdpr.annual_notice.manual_run.run"
+                                                                                    }
+                                                                                ]
+                                                                            }
+                                                                        ]
                                                                     },
                                                                     {
-                                                                        "handler": "setState",
-                                                                        "params": {
-                                                                            "target": "global",
-                                                                            "privacyTargets.title": "$t:sirsoft-gdpr.annual_notice.targets.title"
-                                                                        }
-                                                                    },
-                                                                    {
-                                                                        "handler": "refetchDataSource",
-                                                                        "params": {
-                                                                            "dataSourceId": "privacyTargets"
-                                                                        }
-                                                                    },
-                                                                    {
-                                                                        "handler": "openModal",
-                                                                        "target": "privacy_targets_modal"
+                                                                        "id": "annual_notice_manual_run_status",
+                                                                        "type": "basic",
+                                                                        "name": "Div",
+                                                                        "if": "{{privacyManualRuns?.data?.targets?.['sirsoft-gdpr:annual_notice']?.run}}",
+                                                                        "props": {
+                                                                            "className": "text-hint mt-1"
+                                                                        },
+                                                                        "children": [
+                                                                            {
+                                                                                "type": "basic",
+                                                                                "name": "Span",
+                                                                                "if": "{{privacyManualRuns?.data?.targets?.['sirsoft-gdpr:annual_notice']?.run?.is_active}}",
+                                                                                "props": {
+                                                                                    "className": "text-blue-600 dark:text-blue-400"
+                                                                                },
+                                                                                "text": "$t:sirsoft-gdpr.annual_notice.manual_run.status_active|status={{privacyManualRuns?.data?.targets?.['sirsoft-gdpr:annual_notice']?.run?.status_label ?? ''}}|at={{privacyManualRuns?.data?.targets?.['sirsoft-gdpr:annual_notice']?.run?.queued_at ?? ''}}|by={{privacyManualRuns?.data?.targets?.['sirsoft-gdpr:annual_notice']?.run?.requester_name ?? $t('sirsoft-gdpr.annual_notice.manual_run.unknown_requester')}}"
+                                                                            },
+                                                                            {
+                                                                                "type": "basic",
+                                                                                "name": "Span",
+                                                                                "if": "{{privacyManualRuns?.data?.targets?.['sirsoft-gdpr:annual_notice']?.run?.status === 'completed'}}",
+                                                                                "text": "$t:sirsoft-gdpr.annual_notice.manual_run.last_completed|at={{privacyManualRuns?.data?.targets?.['sirsoft-gdpr:annual_notice']?.run?.finished_at ?? ''}}|by={{privacyManualRuns?.data?.targets?.['sirsoft-gdpr:annual_notice']?.run?.requester_name ?? $t('sirsoft-gdpr.annual_notice.manual_run.unknown_requester')}}|count={{privacyManualRuns?.data?.targets?.['sirsoft-gdpr:annual_notice']?.run?.processed_count ?? 0}}|remaining={{privacyManualRuns?.data?.targets?.['sirsoft-gdpr:annual_notice']?.run?.remaining_count ?? 0}}"
+                                                                            },
+                                                                            {
+                                                                                "type": "basic",
+                                                                                "name": "Span",
+                                                                                "if": "{{privacyManualRuns?.data?.targets?.['sirsoft-gdpr:annual_notice']?.run?.status === 'failed'}}",
+                                                                                "props": {
+                                                                                    "className": "text-error-soft"
+                                                                                },
+                                                                                "text": "$t:sirsoft-gdpr.annual_notice.manual_run.last_failed|at={{privacyManualRuns?.data?.targets?.['sirsoft-gdpr:annual_notice']?.run?.finished_at ?? ''}}|by={{privacyManualRuns?.data?.targets?.['sirsoft-gdpr:annual_notice']?.run?.requester_name ?? $t('sirsoft-gdpr.annual_notice.manual_run.unknown_requester')}}|error={{privacyManualRuns?.data?.targets?.['sirsoft-gdpr:annual_notice']?.run?.error ?? ''}}"
+                                                                            }
+                                                                        ]
                                                                     }
                                                                 ]
                                                             }
-                                                        ],
-                                                        "props": {
-                                                            "type": "button",
-                                                            "className": "btn btn-sm btn-outline"
-                                                        },
-                                                        "text": "$t:sirsoft-gdpr.annual_notice.targets.view"
+                                                        ]
                                                     },
                                                     {
                                                         "type": "basic",
                                                         "name": "P",
                                                         "props": {
-                                                            "className": "form-hint w-full"
+                                                            "className": "form-hint"
                                                         },
                                                         "text": "$t:sirsoft-gdpr.annual_notice.targets.hint"
+                                                    },
+                                                    {
+                                                        "id": "annual_notice_save_first",
+                                                        "type": "basic",
+                                                        "name": "P",
+                                                        "if": "{{_local.hasChanges && privacyManualRuns?.data?.targets?.['sirsoft-gdpr:annual_notice']?.can_run}}",
+                                                        "props": {
+                                                            "className": "form-hint"
+                                                        },
+                                                        "text": "$t:sirsoft-gdpr.annual_notice.manual_run.save_first_hint"
                                                     }
                                                 ]
                                             },
@@ -3566,6 +3798,10 @@
         {
             "comment": "연간 통지 대상 회원 창(연간 통지 카드).",
             "partial": "partials/plugin_settings/_modal_privacy_targets.json"
+        },
+        {
+            "comment": "연간 통지 직권 발송 확인 창.",
+            "partial": "partials/plugin_settings/_modal_privacy_run.json"
         }
     ]
 }

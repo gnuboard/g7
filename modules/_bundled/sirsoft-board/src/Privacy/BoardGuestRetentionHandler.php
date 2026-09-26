@@ -159,9 +159,18 @@ class BoardGuestRetentionHandler implements PrivacyRetentionHandlerInterface
     /**
      * {@inheritDoc}
      */
-    public function process(bool $dryRun): array
+    public function runPermissions(): array
     {
-        if (! $this->isEnabled()) {
+        return $this->boardRunPermissions();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function process(bool $dryRun, bool $force = false): array
+    {
+        // 관리자 직권 실행(`$force`)만 토글 가드를 넘는다 — 권한은 코어 직권 실행 API 가 검사했다.
+        if (! $force && ! $this->isEnabled()) {
             return ['count' => 0, 'mode' => 'disabled'];
         }
 

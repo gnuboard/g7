@@ -1215,8 +1215,25 @@ return [
         ],
     ],
 
+    'privacy_manual_run' => [
+        'since' => [
+            'date' => 'The reference time is not a valid date.',
+        ],
+        'skip_waiting' => [
+            'boolean' => 'The skip-waiting value must be true or false.',
+        ],
+        'targets' => [
+            'required' => 'Specify the targets to look up.',
+            'string' => 'The target list must be a comma-separated string.',
+            'max' => 'The target list is too long (max :max characters).',
+        ],
+    ],
+
     // Validation attribute names (validation.attributes)
     'attributes' => [
+        'since' => 'reference time',
+        'skip_waiting' => 'skip waiting period',
+        'targets' => 'targets',
         'page' => 'page number',
         'per_page' => 'page size',
         'ids' => 'ID list',

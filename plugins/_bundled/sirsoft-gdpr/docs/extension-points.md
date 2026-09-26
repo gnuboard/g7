@@ -9,10 +9,10 @@
 
 | 훅 이름 | 유형 | 설명 | 발행 위치 |
 |---|---|---|---|
-| `core.privacy.notice_sections` | filter | — | `src/Services/GdprAnnualNoticeService.php:162` |
+| `core.privacy.notice_sections` | filter | — | `src/Services/GdprAnnualNoticeService.php:167` |
 | `sirsoft-gdpr.consent.granted` | action | 동의 부여 시 발화 | 선언 (호출 위치 미확인) |
 | `sirsoft-gdpr.consent.revoked` | action | 동의 철회 시 발화 | 선언 (호출 위치 미확인) |
-| `sirsoft-gdpr.privacy.annual_notice_due` | action | 개인정보 연간 통지 접수 후 발화 | `src/Services/GdprAnnualNoticeService.php:181` |
+| `sirsoft-gdpr.privacy.annual_notice_due` | action | 개인정보 연간 통지 접수 후 발화 | `src/Services/GdprAnnualNoticeService.php:186` |
 <!-- @generated:hooks-published END -->
 
 <!-- @intent START -->
@@ -40,6 +40,7 @@
 | `core.notification.after_channel_send` | action (미선언) | `GdprAnnualNoticeListener` | `sent` | - |
 | `core.notification.channel_send_failed` | action (미선언) | `GdprAnnualNoticeListener` | `failed` | - |
 | `core.notification.filter_default_definitions` | filter | `GdprAnnualNoticeListener` | `defaults` | 20 |
+| `core.privacy.manual_run_targets` | filter | `GdprAnnualNoticeListener` | `addManualRunTarget` | 20 |
 | `core.user.after_withdraw` | action (미선언) | `GdprUserWithdrawListener` | `handleWithdraw` | 10 |
 | `core.user.before_delete` | action (미선언) | `GdprUserDeleteListener` | `cascadePluginData` | 10 |
 | `sirsoft-gdpr.notification.extract_data` | filter | `GdprAnnualNoticeListener` | `extract` | - |
@@ -58,7 +59,7 @@
 <!-- @generated:listeners START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 리스너 | 구독 훅 | 등록 방식 | HookListenerInterface | 파일 |
 |---|---|---|---|---|
-| `GdprAnnualNoticeListener` | 4개 | 명시 등록 | ✅ | `src/Listeners/GdprAnnualNoticeListener.php` |
+| `GdprAnnualNoticeListener` | 5개 | 명시 등록 | ✅ | `src/Listeners/GdprAnnualNoticeListener.php` |
 | `GdprAuthConsentListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/GdprAuthConsentListener.php` |
 | `GdprAuthLogoutListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/GdprAuthLogoutListener.php` |
 | `GdprUserDeleteListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/GdprUserDeleteListener.php` |

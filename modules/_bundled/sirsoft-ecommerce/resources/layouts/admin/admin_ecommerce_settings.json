@@ -45,6 +45,76 @@
             "comment": "개인정보 보유기간 대상 건수 — 「개인정보 보유기간」 탭의 뱃지가 읽는다. 저장된 설정 기준이라 저장 성공 뒤 다시 읽는다. 꺼져 있어도 서버가 센다(꺼짐은 `enabled` 로 구분) — null 은 응답을 받기 전 fallback 뿐이다"
         },
         {
+            "id": "privacyManualRuns",
+            "label_key": "$t:sirsoft-ecommerce.editor.data_source.privacyManualRuns",
+            "type": "api",
+            "endpoint": "/api/admin/privacy/manual-runs",
+            "method": "GET",
+            "if": "{{(query.tab || _global.activeEcommerceSettingsTab || 'basic_info') === 'privacy_retention'}}",
+            "auto_fetch": true,
+            "auth_required": true,
+            "params": {
+                "targets": "retention:sirsoft-ecommerce.order",
+                "since": "{{_global.privacyRunWatchSince ?? ''}}"
+            },
+            "fallback": {
+                "data": {
+                    "targets": {},
+                    "has_active": false,
+                    "finished_since": false
+                }
+            },
+            "onSuccess": [
+                {
+                    "handler": "setState",
+                    "if": "{{response?.data?.data?.has_active === true}}",
+                    "params": {
+                        "target": "global",
+                        "privacyRunWatchSince": "{{response?.data?.data?.checked_at}}"
+                    }
+                },
+                {
+                    "handler": "startInterval",
+                    "if": "{{response?.data?.data?.has_active === true}}",
+                    "params": {
+                        "id": "privacy_manual_run_poll",
+                        "intervalMs": 3000,
+                        "actions": [
+                            {
+                                "handler": "refetchDataSource",
+                                "params": {
+                                    "dataSourceId": "privacyManualRuns"
+                                }
+                            }
+                        ]
+                    }
+                },
+                {
+                    "handler": "stopInterval",
+                    "if": "{{response?.data?.data?.has_active !== true}}",
+                    "params": {
+                        "id": "privacy_manual_run_poll"
+                    }
+                },
+                {
+                    "handler": "refetchDataSource",
+                    "if": "{{response?.data?.data?.has_active !== true && response?.data?.data?.finished_since === true}}",
+                    "params": {
+                        "dataSourceId": "ecommercePrivacyRetentionPreview"
+                    }
+                },
+                {
+                    "handler": "setState",
+                    "if": "{{response?.data?.data?.has_active !== true}}",
+                    "params": {
+                        "target": "global",
+                        "privacyRunWatchSince": null
+                    }
+                }
+            ],
+            "comment": "개인정보 조치 직권 실행 상태 — 「지금 실행」 버튼과 상태 줄(처리 대기/처리 중 · 마지막 결과)이 쓴다(코어 직권 실행 API).\n       진행 중이면 3초마다 다시 받고 끝나면 멈춘다. 진행 중일 때 받은 서버 시각(`checked_at`)을 다음 조회의 `since` 로\n       돌려보내 그 뒤에 끝난 작업이 있으면(`finished_since`) 대상 건수를 다시 받는다 — 판정을 응답값으로만 하는 까닭은\n       직전에 넣은 전역 값이 이 성공 핸들러에서 낡은 값으로 읽히기 때문이다(코어 환경설정 개인정보 탭과 같은 방식)."
+        },
+        {
             "id": "privacyTargets",
             "label_key": "$t:sirsoft-ecommerce.editor.data_source.privacyTargets",
             "type": "api",
@@ -248,6 +318,7 @@
             "settings",
             "seoStats",
             "ecommercePrivacyRetentionPreview",
+            "privacyManualRuns",
             "carriers",
             "ecommerceNotificationDefinitions",
             "availableChannels"
@@ -712,6 +783,10 @@
         {
             "comment": "개인정보 보유기간 대상 주문 창(개인정보 보유기간 탭).",
             "partial": "partials/admin_ecommerce_settings/_modal_privacy_targets.json"
+        },
+        {
+            "comment": "개인정보 보유기간 직권 실행 확인 창(개인정보 보유기간 탭).",
+            "partial": "partials/admin_ecommerce_settings/_modal_privacy_run.json"
         }
     ]
 }

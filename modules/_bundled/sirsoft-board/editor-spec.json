@@ -1993,6 +1993,46 @@
           ]
         }
       },
+      "privacyManualRuns": {
+        "data": {
+          "targets": {
+            "retention:sirsoft-board.ip": {
+              "key": "retention:sirsoft-board.ip",
+              "label": "게시판 작성 IP",
+              "can_run": true,
+              "enabled": false,
+              "supports_skip_waiting": false,
+              "run": {
+                "id": 7,
+                "target": "retention:sirsoft-board.ip",
+                "status": "completed",
+                "status_label": "완료",
+                "is_active": false,
+                "skip_waiting": false,
+                "processed_count": 134,
+                "remaining_count": null,
+                "mode": "mask",
+                "error": null,
+                "requester_name": "관리자",
+                "queued_at": "2026-09-25 14:02:11",
+                "started_at": "2026-09-25 14:02:12",
+                "finished_at": "2026-09-25 14:02:15"
+              }
+            },
+            "retention:sirsoft-board.guest": {
+              "key": "retention:sirsoft-board.guest",
+              "label": "게시판 비회원 작성자 정보",
+              "can_run": true,
+              "enabled": false,
+              "supports_skip_waiting": false,
+              "run": null
+            }
+          },
+          "has_active": false,
+          "finished_since": false,
+          "checked_at": "2026-09-25T14:02:20+09:00"
+        }
+      },
       "privacyTargets": {
         "data": {
           "data": [
@@ -2560,7 +2600,7 @@
         ]
       },
       {
-        "comment": "admin 게시판 설정 — {{_global.activeBoardSettingsTab || query.tab || 'general'}} 으로 7개 탭 화면을 if 분기한다(각 _tab_*.json partial, 본문 line 488/674~). query.tab + 우선 키 _global.activeBoardSettingsTab 함께 주입.",
+        "comment": "admin 게시판 설정 — {{_global.activeBoardSettingsTab || query.tab || 'general'}} 으로 8개 탭 화면을 if 분기한다(각 _tab_*.json partial, 본문 line 488/674~). query.tab + 우선 키 _global.activeBoardSettingsTab 함께 주입.",
         "scope": {
           "kind": "route",
           "match": "*/admin/boards/settings"
@@ -2668,6 +2708,18 @@
               },
               "global": {
                 "activeBoardSettingsTab": "identity_policies"
+              }
+            }
+          },
+          {
+            "id": "tab_privacy_retention",
+            "label": "$t:editor.state.tab.privacy_retention",
+            "initialState": {
+              "query": {
+                "tab": "privacy_retention"
+              },
+              "global": {
+                "activeBoardSettingsTab": "privacy_retention"
               }
             }
           }

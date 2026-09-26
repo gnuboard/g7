@@ -581,4 +581,39 @@ class BoardRetentionHandlerTest extends BoardTestCase
         $this->assertSame(1, app(BoardIpRetentionHandler::class)->retentionDays());
         $this->assertSame('203.0.113.30', DB::table('board_posts')->find($postId)->ip_address, '오늘 쓴 글의 IP 는 남는다');
     }
+
+    /**
+     * 관리자 직권 실행(`force`)은 꺼져 있어도 저장된 기간값으로 IP 를 지우고, 자동 배치는 여전히 꺼짐으로 멈춘다.
+     * 두 축의 직권 실행 권한은 설정 수정 + 게시판 관리 수정이다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario axis=ip, toggle=off, guest_mode=anonymize
+     *
+     * @effects board_manual_run_processes_while_off, board_manual_run_requires_settings_and_board_update
+     */
+    #[Test]
+    public function manual_run_erases_ips_while_off_and_requires_update_permissions(): void
+    {
+        $this->fakeRetentionSettings([
+            'privacy_retention.enabled' => false,
+            'privacy_retention.ip_retention_days' => 365,
+        ]);
+        $handler = app(BoardIpRetentionHandler::class);
+        $post = $this->createTestPost(['created_at' => $this->oldTimestamp(), 'ip_address' => '203.0.113.21']);
+
+        $this->assertSame(['count' => 0, 'mode' => 'disabled'], $handler->process(false), '자동 배치는 토글을 본다');
+        $this->assertSame('203.0.113.21', DB::table('board_posts')->find($post)->ip_address);
+
+        $expected = $handler->preview();
+        $result = $handler->process(false, true);
+
+        $this->assertSame($expected, $result['count'], '직권 실행도 미리보기와 같은 모집단');
+        $this->assertSame('erase_ip', $result['mode']);
+        $this->assertNull(DB::table('board_posts')->find($post)->ip_address, '직권 실행은 꺼져 있어도 지운다');
+
+        $expectedPermissions = ['sirsoft-board.settings.update', 'sirsoft-board.boards.update'];
+        $this->assertSame($expectedPermissions, $handler->runPermissions());
+        $this->assertSame($expectedPermissions, app(BoardGuestRetentionHandler::class)->runPermissions());
+    }
 }

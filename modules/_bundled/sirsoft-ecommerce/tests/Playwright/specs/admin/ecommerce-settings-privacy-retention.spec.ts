@@ -169,7 +169,7 @@ test('저장하면 본문에 privacy_retention 이 실리고 뱃지가 미리보
 
   await page.reload();
   await page.waitForLoadState('networkidle', { timeout: 30_000 });
-  const badge = page.locator(`${TOGGLE_FIELD} .badge`);
+  const badge = page.locator('#privacy_retention_target_row .badge');
   await expect(badge).toBeVisible({ timeout: 20_000 });
   await expect(badge).toContainText(String(preview.body.data.orders));
   await expect(page.locator(YEARS)).toHaveValue('6');
@@ -190,7 +190,7 @@ test('기능이 꺼져 있어도 대상 주문 건수가 보이고 「대상 주
 
     await page.reload();
     await page.waitForLoadState('networkidle', { timeout: 30_000 });
-    await expect(page.locator(`${TOGGLE_FIELD} .badge`)).toContainText(String(preview.body.data.orders), { timeout: 20_000 });
+    await expect(page.locator('#privacy_retention_target_row .badge')).toContainText(String(preview.body.data.orders), { timeout: 20_000 });
 
     await page.locator('#view_privacy_retention_targets').click();
     const rows = page.locator('#privacy_targets_list tbody tr');

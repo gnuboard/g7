@@ -2127,8 +2127,6 @@
         "desc": "Long-inactive members become dormant after an advance notice. When a dormant member signs in, that sign-in counts as identity confirmation and the account is restored immediately.",
         "enabled": "Move long-inactive members to dormant",
         "enabled_desc": "Off by default. When on, an advance notice is sent first, then the transition follows.",
-        "stage_counts": "{{notice}} to notify · {{convert}} to convert",
-        "withdraw_stage_counts": "{{notice}} pending notice · {{withdraw}} to withdraw",
         "days": "Inactivity before dormancy (days)",
         "days_hint": "Counted from the last activity — sign-in or app/token use. Default 730 days.",
         "notice_days": "Advance notice period (days)",
@@ -2141,11 +2139,7 @@
         "restore_hint": "Dormancy is lifted automatically when the member signs in — no application is required."
       },
       "targets": {
-        "view_withdrawn": "View targets",
-        "view_pre_notice": "View notice targets",
-        "view_convert": "View conversion targets",
-        "view_withdraw_notice": "View withdrawal notice targets",
-        "view_withdraw": "View withdrawal targets",
+        "view": "View targets",
         "title": {
           "withdrawn": "Withdrawn members to be purged",
           "pre_notice": "Members to receive the dormancy notice",
@@ -2153,11 +2147,49 @@
           "withdraw_notice": "Dormant members to receive the withdrawal notice",
           "withdraw": "Dormant members to be withdrawn"
         },
+        "rows": {
+          "withdrawn": "Withdrawn members' residual data",
+          "pre_notice": "Advance notice before dormancy",
+          "convert": "Convert to dormant",
+          "withdraw_notice": "Notice before withdrawing dormant accounts",
+          "withdraw": "Withdraw dormant accounts"
+        },
         "hint": "Counts and lists follow the saved settings. Even while a feature is off, they show what would be processed once it is turned on.",
         "total": "{{count}} in total",
         "empty": "There are no targets.",
         "loading": "Loading...",
         "close": "Close"
+      },
+      "manual_run": {
+        "section_desc": "Run once now without waiting for the scheduler. It processes with the saved settings even when automatic runs are off.",
+        "run": "Run now",
+        "save_first_hint": "You have unsaved changes. Manual runs use the saved settings, so save first.",
+        "status_active": "{{status}} — queued {{at}} · {{by}}",
+        "last_completed": "Last manual run: {{at}} · {{by}} · {{count}} processed",
+        "last_failed": "Last manual run failed: {{at}} · {{by}} — {{error}}",
+        "unknown_requester": "Unknown",
+        "modal_title": "{{target}} — manual run",
+        "confirm_desc": "Run once now without waiting for the scheduler. The job is queued and processed in order; the result appears on the card when it finishes.",
+        "count_label": "To be processed",
+        "count_value": "{{count}}",
+        "loading": "Counting...",
+        "mode_label": "Method",
+        "modes": {
+          "anonymize": "Anonymize",
+          "delete": "Delete",
+          "erase_ip": "Erase author IP"
+        },
+        "disabled_notice": "Automatic runs are off. A manual run ignores the toggle and processes once with the saved retention period.",
+        "skip_waiting": "Skip waiting period",
+        "skip_waiting_desc": "Also processes members who were not notified, or whose notice period has not passed, as long as the period has elapsed. This skips the advance notice the law requires, so use it only under your own responsibility.",
+        "irreversible": "This cannot be undone. Check the count and the target list before running.",
+        "queue_hint": "A queue worker must be running. You cannot run the same target again until its queued job finishes.",
+        "cancel": "Cancel",
+        "execute": "Run",
+        "executing": "Queuing...",
+        "queued_toast": "The run has been queued. The result will appear on the card when it finishes.",
+        "queue_failed": "Could not queue the run.",
+        "preview_failed": "Could not load the target count."
       }
     }
   },

@@ -104,10 +104,19 @@ class BoardIpRetentionHandler implements PrivacyRetentionHandlerInterface
     /**
      * {@inheritDoc}
      */
-    public function process(bool $dryRun): array
+    public function runPermissions(): array
+    {
+        return $this->boardRunPermissions();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function process(bool $dryRun, bool $force = false): array
     {
         // 토글을 스스로 다시 본다 — 수집기가 걸러 주지만 되돌릴 수 없는 파기라 호출자를 믿지 않는다.
-        if (! $this->isEnabled()) {
+        // 관리자 직권 실행(`$force`)만 이 가드를 넘는다 — 권한은 코어 직권 실행 API 가 검사했다.
+        if (! $force && ! $this->isEnabled()) {
             return ['count' => 0, 'mode' => 'disabled'];
         }
 

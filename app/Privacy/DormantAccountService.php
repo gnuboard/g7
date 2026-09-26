@@ -77,6 +77,20 @@ class DormantAccountService
     public const STAGES = ['pre_notice', 'convert', 'withdraw_notice', 'withdraw'];
 
     /**
+     * 관리자 직권 실행에서 「대기기간 생략」을 고를 수 있는 단계.
+     *
+     * @var array<int, string>
+     */
+    public const SKIPPABLE_STAGES = ['convert', 'withdraw'];
+
+    /**
+     * 직권 실행 권한 — 명단 권한({@see TARGET_PERMISSIONS})의 쓰기 대칭.
+     *
+     * @var array<int, string>
+     */
+    public const RUN_PERMISSIONS = ['core.settings.update', 'core.users.update'];
+
+    /**
      * 휴면 서비스를 생성합니다.
      *
      * @param  UserService  $userService  탈퇴 처리 재사용 (익명화·훅·연계 정리 포함)
@@ -159,17 +173,60 @@ class DormantAccountService
      * 미리보기·대상 목록·커맨드가 **같은 쿼리 메서드**를 쓰도록 한 곳에서 고른다.
      *
      * @param  string  $stage  단계 식별자 ({@see STAGES})
+     * @param  bool  $skipWaiting  관리자 직권의 「대기기간 생략」 — 전환·탈퇴 단계만 의미가 있다
      * @return Builder<User> 대상 쿼리
      *
      * @throws UnknownDormantStageException 알 수 없는 단계
      */
-    public function stageQuery(string $stage): Builder
+    public function stageQuery(string $stage, bool $skipWaiting = false): Builder
     {
         return match ($stage) {
             'pre_notice' => $this->preNoticeQuery(),
-            'convert' => $this->convertQuery(),
+            'convert' => $this->convertQuery($skipWaiting),
             'withdraw_notice' => $this->withdrawNoticeQuery(),
-            'withdraw' => $this->withdrawQuery(),
+            'withdraw' => $this->withdrawQuery($skipWaiting),
+            default => throw new UnknownDormantStageException($stage),
+        };
+    }
+
+    /**
+     * 「대기기간 생략」이 의미 있는 단계인지 — 안내 뒤 기다리는 조건을 가진 전환·탈퇴 단계뿐이다.
+     *
+     * @param  string  $stage  단계 식별자 ({@see STAGES})
+     * @return bool 생략 가능 여부
+     */
+    public function supportsSkipWaiting(string $stage): bool
+    {
+        return in_array($stage, self::SKIPPABLE_STAGES, true);
+    }
+
+    /**
+     * 한 단계를 관리자 직권으로 실행합니다.
+     *
+     * 자동 배치(커맨드)와 달리 **휴면 토글·자동 탈퇴 토글을 보지 않습니다** — 자동 실행은 끄고
+     * 운영자가 필요할 때만 손으로 돌리는 운영을 허용한다(2026-09-25 확정). 권한은 직권 실행
+     * API 가 접수 시점에 검사했다. 처리 조건식은 배치·건수·명단과 같은 쿼리 메서드가 만든다.
+     *
+     * `$skipWaiting` 은 전환·탈퇴 단계에서 「안내 후 `dormant_notice_days` 경과」 조건을 뺀다 —
+     * 안내를 받지 못한 회원도 기간만 지났으면 처리된다(사전 안내 의무를 운영자가 직권으로
+     * 넘는 선택이라 확인 창에서 기본 해제). 관리자 계정 보호 제외는 그대로다.
+     *
+     * @param  string  $stage  단계 식별자 ({@see STAGES})
+     * @param  bool  $dryRun  true 면 건수만 셉니다
+     * @param  bool  $skipWaiting  대기기간 생략 (전환·탈퇴 단계만)
+     * @return int 처리 건수
+     *
+     * @throws UnknownDormantStageException 알 수 없는 단계
+     */
+    public function runStage(string $stage, bool $dryRun, bool $skipWaiting = false): int
+    {
+        $skipWaiting = $skipWaiting && $this->supportsSkipWaiting($stage);
+
+        return match ($stage) {
+            'pre_notice' => $this->notifyUpcomingDormancy($dryRun),
+            'convert' => $this->convertToDormant($dryRun, $skipWaiting),
+            'withdraw_notice' => $this->notifyUpcomingWithdrawal($dryRun, force: true),
+            'withdraw' => $this->withdrawDormant($dryRun, force: true, skipWaiting: $skipWaiting),
             default => throw new UnknownDormantStageException($stage),
         };
     }
@@ -307,17 +364,18 @@ class DormantAccountService
      * ② 사전 안내 후 기간이 지난 회원을 휴면으로 전환합니다.
      *
      * @param  bool  $dryRun  true 면 건수만 셉니다
+     * @param  bool  $skipWaiting  관리자 직권의 대기기간 생략 ({@see runStage()})
      * @return int 처리 건수
      */
-    public function convertToDormant(bool $dryRun): int
+    public function convertToDormant(bool $dryRun, bool $skipWaiting = false): int
     {
         if ($dryRun) {
-            return $this->convertQuery()->count();
+            return $this->convertQuery($skipWaiting)->count();
         }
 
         $processed = 0;
 
-        $this->convertQuery()->chunkById(self::CHUNK_SIZE, function ($users) use (&$processed) {
+        $this->convertQuery($skipWaiting)->chunkById(self::CHUNK_SIZE, function ($users) use (&$processed) {
             foreach ($users as $user) {
                 // 건별 격리 — 전환은 상태 전이라 한 건이 던져도 그 회원은 다음 실행에 다시
                 // 잡힌다(조건에서 빠지지 않는다). 감싸지 않으면 나머지 회원만 하루씩 밀린다.
@@ -382,11 +440,12 @@ class DormantAccountService
      * ④-1 곧 탈퇴 처리될 휴면 회원에게 사전 안내를 보냅니다.
      *
      * @param  bool  $dryRun  true 면 건수만 셉니다
+     * @param  bool  $force  관리자 직권 실행 — 자동 탈퇴 토글을 보지 않는다 ({@see runStage()})
      * @return int 처리 건수
      */
-    public function notifyUpcomingWithdrawal(bool $dryRun): int
+    public function notifyUpcomingWithdrawal(bool $dryRun, bool $force = false): int
     {
-        if (! $this->isWithdrawEnabled()) {
+        if (! $force && ! $this->isWithdrawEnabled()) {
             return 0;
         }
 
@@ -432,21 +491,23 @@ class DormantAccountService
      * (`assertWithdrawable`)도 함께 적용되므로 **관리자 계정은 자동 탈퇴되지 않습니다.**
      *
      * @param  bool  $dryRun  true 면 건수만 셉니다
+     * @param  bool  $force  관리자 직권 실행 — 자동 탈퇴 토글을 보지 않는다 ({@see runStage()})
+     * @param  bool  $skipWaiting  관리자 직권의 대기기간 생략 ({@see runStage()})
      * @return int 처리 건수
      */
-    public function withdrawDormant(bool $dryRun): int
+    public function withdrawDormant(bool $dryRun, bool $force = false, bool $skipWaiting = false): int
     {
-        if (! $this->isWithdrawEnabled()) {
+        if (! $force && ! $this->isWithdrawEnabled()) {
             return 0;
         }
 
         if ($dryRun) {
-            return $this->withdrawQuery()->count();
+            return $this->withdrawQuery($skipWaiting)->count();
         }
 
         $processed = 0;
 
-        $this->withdrawQuery()->chunkById(self::CHUNK_SIZE, function ($users) use (&$processed) {
+        $this->withdrawQuery($skipWaiting)->chunkById(self::CHUNK_SIZE, function ($users) use (&$processed) {
             foreach ($users as $user) {
                 // 집행 직전에 상태를 다시 읽는다 — 이 청크의 인스턴스는 `withdrawQuery()` 의
                 // SELECT 시점 스냅샷이고, 청크 하나를 처리하는 동안(건별 트랜잭션 + 훅 +
@@ -518,16 +579,19 @@ class DormantAccountService
     /**
      * ② 휴면 전환 대상 쿼리.
      *
+     * @param  bool  $skipWaiting  관리자 직권의 대기기간 생략 — 안내 조건을 빼고 기간 경과만 본다
      * @return Builder<User> 대상 쿼리
      */
-    public function convertQuery(): Builder
+    public function convertQuery(bool $skipWaiting = false): Builder
     {
-        $query = User::query()
-            ->where('status', UserStatus::Active->value)
+        $query = User::query()->where('status', UserStatus::Active->value);
+
+        if (! $skipWaiting) {
             // 사전 안내를 보냈고 그로부터 통지 기간이 지난 회원만 — 이 두 조건이 법정
-            // 사전 안내를 구조적으로 강제한다.
-            ->whereNotNull('dormant_notified_at')
-            ->where('dormant_notified_at', '<=', now()->subDays($this->noticeDays()));
+            // 사전 안내를 구조적으로 강제한다. 빠지는 경로는 관리자 직권의 명시적 생략뿐이다.
+            $query->whereNotNull('dormant_notified_at')
+                ->where('dormant_notified_at', '<=', now()->subDays($this->noticeDays()));
+        }
 
         $this->applyInactiveSince($query, now()->subDays($this->dormantDays()));
 
@@ -577,16 +641,20 @@ class DormantAccountService
     /**
      * ④-2 탈퇴 처리 대상 쿼리.
      *
+     * @param  bool  $skipWaiting  관리자 직권의 대기기간 생략 — 탈퇴 예고 조건을 빼고 기간 경과만 본다
      * @return Builder<User> 대상 쿼리
      */
-    public function withdrawQuery(): Builder
+    public function withdrawQuery(bool $skipWaiting = false): Builder
     {
+        $query = User::query()->where('status', UserStatus::Dormant->value);
+
+        if (! $skipWaiting) {
+            $query->whereNotNull('dormant_notified_at')
+                ->where('dormant_notified_at', '<=', now()->subDays($this->noticeDays()));
+        }
+
         return $this->excludeWithdrawalProtected(
-            User::query()
-                ->where('status', UserStatus::Dormant->value)
-                ->whereNotNull('dormant_notified_at')
-                ->where('dormant_notified_at', '<=', now()->subDays($this->noticeDays()))
-                ->whereNotNull('dormant_at')
+            $query->whereNotNull('dormant_at')
                 ->where('dormant_at', '<=', now()->subDays($this->withdrawDays()))
         );
     }

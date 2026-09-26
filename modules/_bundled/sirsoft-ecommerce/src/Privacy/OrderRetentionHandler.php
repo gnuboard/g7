@@ -182,11 +182,29 @@ class OrderRetentionHandler implements PrivacyRetentionHandlerInterface
 
     /**
      * {@inheritDoc}
+     *
+     * 설정 수정 + 주문 수정. 삭제 방식이면 주문 삭제 권한을 더한다 — 주문을 지울 수 없는 운영자가
+     * 설정 화면의 직권 실행으로 종결 주문을 통째로 지우는 우회 경로를 막는다.
      */
-    public function process(bool $dryRun): array
+    public function runPermissions(): array
+    {
+        $permissions = ['sirsoft-ecommerce.settings.update', 'sirsoft-ecommerce.orders.update'];
+
+        if ($this->mode() === self::MODE_DELETE) {
+            $permissions[] = 'sirsoft-ecommerce.orders.delete';
+        }
+
+        return $permissions;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function process(bool $dryRun, bool $force = false): array
     {
         // 토글을 스스로 다시 본다 — 수집기가 걸러 주지만 되돌릴 수 없는 파기라 호출자를 믿지 않는다.
-        if (! $this->isEnabled()) {
+        // 관리자 직권 실행(`$force`)만 이 가드를 넘는다 — 권한은 코어 직권 실행 API 가 검사했다.
+        if (! $force && ! $this->isEnabled()) {
             return ['count' => 0, 'mode' => 'disabled'];
         }
 

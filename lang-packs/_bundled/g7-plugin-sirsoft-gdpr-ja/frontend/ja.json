@@ -12,7 +12,8 @@
       "gdprSettings": "GDPR設定",
       "gdprNoticeLog": "個人情報通知履歴",
       "gdprAnnualNoticePreview": "年間通知対象件数",
-      "privacyTargets": "年間通知対象会員一覧"
+      "privacyTargets": "年間通知対象会員一覧",
+      "privacyManualRuns": "個人情報対策の職権実行ステータス"
     }
   },
   "consent": {
@@ -393,7 +394,36 @@
       "total": "合計{{count}}件",
       "empty": "対象がありません。",
       "loading": "読み込み中...",
-      "close": "閉じる"
+      "close": "閉じる",
+      "row_label": "個人情報利用内訳 年間通知"
+    },
+    "manual_run": {
+      "run": "今すぐ実行",
+      "save_first_hint": "保存していない変更があります。職権実行は保存された設定で処理されるため、まず保存してください。",
+      "status_active": "{{status}} — {{at}}に受け付け · {{by}}",
+      "last_completed": "前回の職権発送: {{at}} · {{by}} · {{count}}名受け付け · 残り対象{{remaining}}名",
+      "last_failed": "前回の職権発送失敗: {{at}} · {{by}} — {{error}}",
+      "unknown_requester": "不明",
+      "modal_title": "{{target}} — 職権実行",
+      "confirm_desc": "スケジューラーを待たずに今すぐ1回通知を受け付けます。1回に送信上限までのみ受け付けられ、残りの会員は再実行で継続して受け付けられます。今週期にすでに受け取った会員には再度送信されません。",
+      "count_label": "今週期の対象",
+      "count_value": "{{count}}名",
+      "loading": "件数をカウント中...",
+      "mode_label": "処理方式",
+      "modes": {
+        "anonymize": "匿名化",
+        "delete": "削除",
+        "erase_ip": "作成IP削除"
+      },
+      "disabled_notice": "年間通知の自動発送はオフになっています。職権実行はトグルに関係なく保存されたチャネル·文言で今回1回のみ受け付けます。",
+      "irreversible": "受け付けた通知はキャンセルできません。通知文言とチャネルを保存したか確認してから実行してください。",
+      "queue_hint": "キューワーカーが動作する必要があります。同じ対象に受け付けたジョブが終了する前には再実行できません。",
+      "cancel": "キャンセル",
+      "execute": "実行",
+      "executing": "受け付け中...",
+      "queued_toast": "通知送信をキューに受け付けました。処理が完了すると結果が表示されます。",
+      "queue_failed": "実行を受け付けることができませんでした。",
+      "preview_failed": "対象件数を取得できませんでした。"
     }
   },
   "edit_template": "テンプレート編集",

@@ -1473,6 +1473,7 @@
       "seo": "SEO 탭",
       "notification_definitions": "알림 정의 탭",
       "identity_policies": "본인인증 정책 탭",
+      "privacy_retention": "개인정보 보유기간 탭",
       "basic_info": "기본 정보 탭",
       "language_currency": "언어·통화 탭",
       "order_settings": "주문 설정 탭",
@@ -1725,6 +1726,7 @@
     "user": "사용자",
     "users": "사용자 목록",
     "privacyPreview": "개인정보 처리 대상 건수",
+    "privacyManualRuns": "개인정보 조치 직권 실행 상태",
     "privacyTargets": "개인정보 조치 대상 목록"
   }
 }

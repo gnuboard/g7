@@ -5,11 +5,11 @@
 ## 레이아웃
 
 <!-- @generated:layouts START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-레이아웃 53개 (루트: `resources/layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
+레이아웃 55개 (루트: `resources/layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
 
 | 그룹 | 개수 |
 |---|---|
-| `admin` | 53개 |
+| `admin` | 55개 |
 
 | 레이아웃 | 그룹 | 종류 | extends |
 |---|---|---|---|
@@ -48,6 +48,7 @@
 | `_modal_notification_definition_reset` | `admin` | partial | - |
 | `_modal_notification_template_edit` | `admin` | partial | - |
 | `_modal_notification_template_preview` | `admin` | partial | - |
+| `_modal_privacy_run` | `admin` | partial | - |
 | `_modal_privacy_targets` | `admin` | partial | - |
 | `_reaction_type_cards` | `admin` | partial | - |
 | `_reaction_type_editor` | `admin` | partial | - |
@@ -63,20 +64,21 @@
 | `_tab_general` | `admin` | partial | - |
 | `_tab_identity_policies` | `admin` | partial | - |
 | `_tab_notification_definitions` | `admin` | partial | - |
+| `_tab_privacy_retention` | `admin` | partial | - |
 | `_tab_report_policy` | `admin` | partial | - |
 | `_tab_seo` | `admin` | partial | - |
 | `_tab_spam_security` | `admin` | partial | - |
 <!-- @generated:layouts END -->
 
 <!-- @intent START -->
-46개 레이아웃이 **전부** `admin` 그룹입니다 — 이것은 이 모듈이 방문자 화면을 그리지 않는다는
+56개 레이아웃이 **전부** `admin` 그룹입니다 — 이것은 이 모듈이 방문자 화면을 그리지 않는다는
 증거입니다(§1, §architecture.md 참고). 새로 방문자용 게시판 화면(예: 다른 스타일의 목록)이
 필요하면 이 디렉토리가 아니라 그 화면을 쓸 템플릿의 `layouts/` 에 추가합니다. `_tab_*` partial
-이 24개로 가장 많은 것은 이 모듈에 탭 구조를 쓰는 화면이 최소 세 곳이기 때문입니다 —
+이 21개로 가장 많은 것은 이 모듈에 탭 구조를 쓰는 화면이 최소 세 곳이기 때문입니다 —
 게시판 생성/수정 폼(`_tab_basic`/`list`/`post`/`permissions`/`notification`), 게시판별
 개별 설정 화면(`_tab_board_settings_*` 9개 — attachment/basic/bulk_apply/comment/list/
 notification/permissions/post/reply), 모듈 전역 환경설정 화면(`_tab_general`/
-`identity_policies`/`notification_definitions`/`report_policy`/`seo`/`spam_security`).
+`identity_policies`/`notification_definitions`/`privacy_retention`/`report_policy`/`seo`/`spam_security`).
 세 화면의 탭 이름이 겹치더라도(`_tab_basic`, `_tab_board_settings_basic` 등) 서로 다른
 partial 파일이므로 한쪽만 고치면 다른 화면은 그대로입니다 — 같은 항목을 여러 화면에
 반영해야 한다면 파일을 전부 찾아 고쳐야 합니다.

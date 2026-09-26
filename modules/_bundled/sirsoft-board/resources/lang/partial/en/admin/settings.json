@@ -15,7 +15,8 @@
     "seo": "SEO Settings",
     "mail_templates": "Mail Templates",
     "notification_definitions": "Notification Settings",
-    "identity_policies": "Identity Policies"
+    "identity_policies": "Identity Policies",
+    "privacy_retention": "Privacy Retention"
   },
   "board_settings_tabs": {
     "basic": "Basic",
@@ -531,16 +532,44 @@
     "preview_hint": "Target counts are based on the saved settings. If you changed a value, save first and check again.",
     "withdrawn_notice": "Posts by withdrawn members are shown as “Withdrawn user”, so they are not processed here. Member information erasure is configured in the Privacy tab of the core settings.",
     "targets": {
-      "ip_count": "Author IPs: {{count}}",
-      "guest_count": "Guest posts: {{count}}",
-      "view_ip": "View IP targets",
-      "view_guest": "View guest targets",
+      "row_ip": "Author IPs (posts and comments)",
+      "row_guest": "Guest author information (posts and comments)",
+      "count": "{{count}} targets",
+      "view": "View targets",
       "title_ip": "Author IPs to be erased (posts and comments)",
       "title_guest": "Guest author information to be processed (posts and comments)",
       "total": "{{count}} in total",
       "empty": "There are no targets.",
       "loading": "Loading...",
       "close": "Close"
+    },
+    "manual_run": {
+      "run": "Run now",
+      "save_first_hint": "You have unsaved changes. Manual runs use the saved settings, so save first.",
+      "status_active": "{{status}} — queued {{at}} · {{by}}",
+      "last_completed": "Last manual run: {{at}} · {{by}} · {{count}} processed",
+      "last_failed": "Last manual run failed: {{at}} · {{by}} — {{error}}",
+      "unknown_requester": "Unknown",
+      "modal_title": "{{target}} — manual run",
+      "confirm_desc": "Run once now without waiting for the scheduler. The job is queued and processed in order; the result appears on this screen when it finishes.",
+      "count_label": "To be processed",
+      "count_value": "{{count}}",
+      "loading": "Counting...",
+      "mode_label": "Method",
+      "modes": {
+        "anonymize": "Anonymize",
+        "delete": "Delete",
+        "erase_ip": "Erase author IP"
+      },
+      "disabled_notice": "Automatic runs are off. A manual run ignores the toggle and processes once with the saved settings.",
+      "irreversible": "This cannot be undone. Check the count and the target list before running.",
+      "queue_hint": "A queue worker must be running. You cannot run the same target again until its queued job finishes.",
+      "cancel": "Cancel",
+      "execute": "Run",
+      "executing": "Queuing...",
+      "queued_toast": "The run has been queued. The result will appear when it finishes.",
+      "queue_failed": "Could not queue the run.",
+      "preview_failed": "Could not load the target count."
     }
   }
 }

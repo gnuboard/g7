@@ -361,7 +361,7 @@ HTTP/1.1 200
 
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
-| _tab | body | string | 아니오 | `basic_defaults`, `report_policy`, `spam_security`, `general`, `seo`, `notifications`, `notification_definitions` | 현재 편집 중인 탭을 나타내는 메타 값. 탭 단위 부분 저장의 컨텍스트를 식별하는 용도이며 설정값으로는 저장되지 않습니다. |
+| _tab | body | string | 아니오 | `basic_defaults`, `report_policy`, `spam_security`, `general`, `seo`, `notifications`, `notification_definitions`, `privacy_retention` | 현재 편집 중인 탭을 나타내는 메타 값. 탭 단위 부분 저장의 컨텍스트를 식별하는 용도이며 설정값으로는 저장되지 않습니다. |
 | notifications | body | array | 아니오 | — | 알림 채널 설정. `channels` 배열의 각 항목에 채널 식별자(id), 활성화 여부(is_active), 정렬 순서(sort_order)를 담아 저장합니다. |
 | basic_defaults | body | array | 아니오 | — | 기본 설정 카테고리 값. 게시판 타입·페이지당 글 수·정렬·댓글/답글·길이 제한·파일 업로드·기본 권한 등 basic_defaults 하위 키를 저장합니다. `basic_defaults.allowed_extensions` 는 `basic_defaults.use_file_upload` 가 `true` 일 때만 최소 1개가 필수이며, `false`/`null` 이면 검증에서 제외되어 빈 배열도 허용됩니다. `min_title_length`·`min_comment_length`·`new_display_hours` 의 하한은 `config('sirsoft-board.limits')` 선언을 따르며 `0` 을 허용합니다. |
 | basic_defaults.reply_delete_policy | body | string | 아니오 | `block`, `cascade` | 게시판 생성 시 적용될 답글 삭제 정책 기본값 (block 답글이 살아 있으면 원글 삭제 차단 / cascade 원글 삭제 시 답글도 함께 소프트 삭제). 허용값 밖이면 422 |
@@ -400,7 +400,7 @@ HTTP/1.1 200
 | attachment_settings | body | array | 아니오 | — | 첨부 정리 정책 카테고리 값. 삭제된 첨부의 물리 파일을 언제 파기할지 정합니다. |
 | attachment_settings.purge_enabled | body | boolean | 아니오 | — | 삭제 첨부 영구 정리 활성화 여부. **기본 false** — 사용자 파일을 실제로 파기하므로 운영자가 직접 켜야 동작합니다. 예약 작업(`sirsoft-board:prune-attachments --scheduled`)이 이 값을 false 폴백으로 재확인합니다. |
 | attachment_settings.purge_retention_days | body | integer | 아니오 | min 1, max 3650 | 삭제 첨부 보존기간(일, 기본 30). 게시글을 휴지통에서 복원하면 이 기간 안의 첨부는 함께 복원되므로, 휴지통 복원 가능 기간과 같게 유지해야 합니다. 하한·상한은 `config('sirsoft-board.limits')` 가 정하며 화면 입력도 같은 값을 읽습니다. |
-| privacy_retention | body | array | 아니오 | — | 개인정보 보유기간 카테고리 값(이슈 #636). 「일반」 탭 저장이 함께 보냅니다. 코어 보유기간 커맨드(`privacy:process-retention`)가 게시판 핸들러 두 개(`sirsoft-board.ip`·`sirsoft-board.guest`)를 통해 이 값을 읽어 실행합니다. |
+| privacy_retention | body | array | 아니오 | — | 개인정보 보유기간 카테고리 값(이슈 #636). 「개인정보 보유기간」 탭 저장이 `_tab=privacy_retention` 과 함께 보냅니다. 코어 보유기간 커맨드(`privacy:process-retention`)가 게시판 핸들러 두 개(`sirsoft-board.ip`·`sirsoft-board.guest`)를 통해 이 값을 읽어 실행합니다. |
 | privacy_retention.enabled | body | boolean | 아니오 | — | 보유기간 자동 파기 사용 여부. **기본 false** — 되돌릴 수 없는 파기라 운영자가 직접 켜야 동작하고, 각 핸들러가 실행 시점에 이 값을 false 폴백으로 다시 읽습니다. |
 | privacy_retention.ip_retention_days | body | integer | 아니오 | min 1, max 3650 | 작성 IP 보유기간(일, 기본 365). 회원 글을 포함한 모든 게시글·댓글(휴지통 포함)의 `ip_address` 를 작성 후 이 기간이 지나면 NULL 로 지웁니다. 판독부 바닥값도 1일입니다. |
 | privacy_retention.guest_retention_days | body | integer | 아니오 | min 0, max 3650 | 비회원 작성자 정보 보유기간(일, 기본 0). 0 이면 비회원 축을 쓰지 않으며 `enabled` 가 켜져 있어도 그 축은 「꺼짐」으로 보고됩니다. |
@@ -963,7 +963,7 @@ _단건 응답: `data` 객체의 필드._
 
 <!-- @generated:end -->
 
-**설명** 개인정보 보유기간 처리 대상 건수를 미리 조회합니다(이슈 #636). 「일반」 탭 보유기간 카드의 대상 건수 뱃지가 쓰는 값이며, 코어 보유기간 커맨드의 `--dry-run` 과 **같은 조건식**(각 핸들러의 `preview()`)을 지나므로 화면 숫자와 실제 처리 건수가 같습니다. **저장된 설정 기준**이라 화면에서 값을 바꾼 뒤 저장하기 전에는 이전 설정의 건수입니다. **꺼진 축도 건수를 셉니다** — 켜기 전에 규모를 확인하는 자리입니다. 「꺼짐」과 「대상 0건」은 `ip_enabled`·`guest_enabled` 로 구분합니다. 명단은 코어의 공통 대상 목록 API 가 두 핸들러(`sirsoft-board.ip`·`sirsoft-board.guest`)를 식별자로 찾아 내려주며, 게시판 관리 읽기 권한이 없으면 403 입니다.
+**설명** 개인정보 보유기간 처리 대상 건수를 미리 조회합니다(이슈 #636). 「개인정보 보유기간」 탭 대상 행의 건수 뱃지가 쓰는 값이며, 코어 보유기간 커맨드의 `--dry-run` 과 **같은 조건식**(각 핸들러의 `preview()`)을 지나므로 화면 숫자와 실제 처리 건수가 같습니다. **저장된 설정 기준**이라 화면에서 값을 바꾼 뒤 저장하기 전에는 이전 설정의 건수입니다. **꺼진 축도 건수를 셉니다** — 켜기 전에 규모를 확인하는 자리입니다. 「꺼짐」과 「대상 0건」은 `ip_enabled`·`guest_enabled` 로 구분합니다. 명단은 코어의 공통 대상 목록 API 가 두 핸들러(`sirsoft-board.ip`·`sirsoft-board.guest`)를 식별자로 찾아 내려주며, 게시판 관리 읽기 권한이 없으면 403 입니다.
 
 
 ### POST /api/modules/sirsoft-board/admin/settings/clear-cache

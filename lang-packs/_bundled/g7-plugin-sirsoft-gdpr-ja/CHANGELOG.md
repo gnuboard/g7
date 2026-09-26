@@ -8,6 +8,7 @@
 
 ### Added
 
+- 개인정보 연간 통지 「지금 발송」 직권 실행의 일본어 번역을 추가했습니다 — 확인 창·진행 상태 줄·남은 건수 문구(`annual_notice.manual_run.*`)와 직권 실행 대상 이름(`messages.annual_notice.manual_run_label`), 연간 통지 대상 줄 이름(`annual_notice.targets.row_label`)입니다.
 - 개인정보 연간 통지 설정의 통지 대상 건수와 「대상 보기」 명단 창 문구(`annual_notice.targets.*`), 명단 열 이름(이름·이메일·가입일, `annual_notice.target_columns.*`), 레이아웃 편집기의 데이터 소스 이름(`editor.data_source.privacyTargets`)의 일본어 번역을 추가했습니다.
 - 알림 템플릿 카드와 편집·미리보기·기본값 복원 창의 일본어 번역을 추가했습니다 — 채널별 제목·본문·수신자를 고치는 화면 문구와 0건 안내 문구입니다. 없으면 일본어 로케일에서 이 카드가 통째로 한국어로 남습니다.
 - 저장 오류 문구의 항목명 12건 일본어 번역을 추가했습니다 — 통지 이력 조회·시험 발송·쿠키 카테고리·차단 도메인 입력칸의 이름입니다.

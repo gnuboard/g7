@@ -54,8 +54,8 @@
           <loading-spinner data-ref="privacy_targets_loading" data-if="{{_global.privacyTargets?.isLoadingMore}}" size="sm" text="$t:sirsoft-gdpr.annual_notice.targets.loading" color="text-blue-600 dark:text-blue-400" class="py-3"/>
         </div>
       </div>
-      <div data-ref="privacy_targets_empty" data-if="{{(privacyTargets?.data?.data ?? []).length === 0}}" class="text-center text-gray-400 dark:text-gray-500 py-6">
-        <icon name="inbox" class="text-4xl mx-auto mb-3"/>
+      <div data-ref="privacy_targets_empty" data-if="{{(privacyTargets?.data?.data ?? []).length === 0}}" class="flex flex-col items-center gap-3 text-center text-gray-400 dark:text-gray-500 py-6">
+        <icon name="inbox" class="text-4xl"/>
         <span class="text-sm">$t:sirsoft-gdpr.annual_notice.targets.empty</span>
       </div>
     </div>

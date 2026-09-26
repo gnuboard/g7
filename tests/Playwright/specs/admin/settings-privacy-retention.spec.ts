@@ -241,22 +241,19 @@ test('카드의 dry-run 뱃지는 미리보기 API 가 돌려준 바로 그 숫�
   await expect(page.locator(DORMANT_TOGGLE)).toBeChecked({ timeout: 20_000 });
 
   // 뱃지가 실제로 그려져야 한다 — 존재하지 않는 색 토큰으로 무색 렌더되던 전례가 있다.
-  const withdrawnBadge = page.locator('#toggle_withdrawn_retention .badge');
-  const dormantBadge = page.locator('#toggle_dormant .badge');
-  // 탈퇴 단계 건수는 휴면 토글 바로 아래 줄에 있다 — 탈퇴 토글 줄은 휴면이 꺼지면 사라지므로 그 안에 두지 않는다.
-  const withdrawBadge = page.locator('#dormant_withdraw_targets .badge');
-
+  // 조치 대상은 대상마다 한 행이다 — 휴면 네 단계도 단계마다 자기 행과 배지를 가진다(2026-09-26 재배치).
+  // 탈퇴 단계 행은 휴면 토글과 무관하게 보인다 — 탈퇴 토글 줄은 휴면이 꺼지면 사라지므로 그 안에 두지 않는다.
+  const withdrawnBadge = page.locator('#withdrawn_target_row .badge');
   await expect(withdrawnBadge).toBeVisible();
-  await expect(dormantBadge).toBeVisible();
-  await expect(withdrawBadge).toBeVisible();
 
   // 그리고 그 숫자는 API 가 돌려준 값과 같아야 한다 — 화면이 다른 모집단을 세면
   // 운영자가 규모를 오판한 채 되돌릴 수 없는 파기를 켠다.
   await expect(withdrawnBadge).toContainText(String(withdrawnCount));
-  await expect(dormantBadge).toContainText(String(dormant.pre_notice));
-  await expect(dormantBadge).toContainText(String(dormant.convert));
-  await expect(withdrawBadge).toContainText(String(dormant.withdraw_notice));
-  await expect(withdrawBadge).toContainText(String(dormant.withdraw));
+  for (const stage of ['pre_notice', 'convert', 'withdraw_notice', 'withdraw'] as const) {
+    const stageBadge = page.locator(`#dormant_target_row_${stage} .badge`);
+    await expect(stageBadge, stage).toBeVisible();
+    await expect(stageBadge, stage).toContainText(String(dormant[stage]));
+  }
 });
 
 // @scenario toggle=on, row_age=beyond_retention, run_mode=dry_run
@@ -273,7 +270,7 @@ test('화면에서 기간을 바꿔 저장하면 새로고침 없이 뱃지가 �
     await page.waitForLoadState('domcontentloaded', { timeout: 30_000 });
 
     const convertButton = page.locator('#view_convert_targets');
-    const dormantBadge = page.locator(`${DORMANT_ROW} .badge`);
+    const dormantBadge = page.locator('#dormant_target_row_convert .badge');
     await expect(convertButton).toBeVisible({ timeout: 20_000 });
 
     // 저장 버튼을 실제로 눌러 저장한다 — API 로 저장하고 새로고침하면 이 결함이 보이지 않는다(#636 브라우저 실측).
@@ -291,7 +288,7 @@ test('화면에서 기간을 바꿔 저장하면 새로고침 없이 뱃지가 �
     // 시드 2명은 3650일 기준에서 빠진다 — 숫자가 그대로면 이 단언은 공허하다.
     expect(convert).toBe(0);
 
-    await expect(dormantBadge).toContainText(new RegExp(`전환 대상 ${convert}명|${convert} to convert`), { timeout: 20_000 });
+    await expect(dormantBadge).toContainText(new RegExp(`대상 ${convert}명|${convert} member`), { timeout: 20_000 });
     // 0명이어도 「대상 보기」는 남고, 창은 빈 명단 안내를 보인다 — 0명인 까닭을 창에서 확인한다.
     await expect(convertButton).toBeVisible();
     await convertButton.click();
@@ -396,9 +393,9 @@ test('회원 읽기 권한이 없으면 건수는 보이되 「대상 보기」�
     await page.goto('/admin/settings?tab=privacy');
     await page.waitForLoadState('domcontentloaded', { timeout: 30_000 });
 
-    const dormantBadge = page.locator('#toggle_dormant .badge');
+    const dormantBadge = page.locator('#dormant_target_row_convert .badge');
     await expect(dormantBadge).toBeVisible({ timeout: 20_000 });
-    await expect(dormantBadge).not.toContainText('전환 대상 0명');
+    await expect(dormantBadge).not.toContainText('대상 0명');
     await expect(page.locator('#view_convert_targets')).toHaveCount(0);
     await expect(page.locator('#view_withdrawn_targets')).toHaveCount(0);
 
@@ -410,6 +407,51 @@ test('회원 읽기 권한이 없으면 건수는 보이되 「대상 보기」�
       return response.status;
     }, settingsOnly);
     expect(status).toBe(403);
+  } finally {
+    await context.close();
+    seedDormant('--purge-users');
+  }
+});
+
+// @scenario toggle=off, row_age=beyond_retention, run_mode=real_run
+// @effects manual_run_is_queued_and_processed_by_the_job, manual_run_ignores_the_disabled_toggle, confirm_modal_recounts_before_queueing, card_shows_active_status_and_last_result
+test('(#636 후속) 「지금 실행」은 꺼진 상태에서도 확인 창의 건수만큼 직권 실행하고 카드에 결과를 남긴다', async ({ browser }) => {
+  // 실행은 되돌릴 수 없는 파기다 — 이 spec 이 심은 시험 계정만 대상일 때만 돌린다(사이트의 실제 탈퇴 회원 보호).
+  const runner = issueToken('core.settings.read', 'core.settings.update', 'core.users.read', 'core.users.update');
+  seedDormant('--purge-users');
+  seedDormant('--stage=withdrawn --count=2');
+  const context = await browser.newContext();
+  const page = await context.newPage();
+
+  try {
+    await authenticatePage(page, runner);
+    await page.goto('/admin/settings?tab=privacy');
+    await page.waitForLoadState('domcontentloaded', { timeout: 30_000 });
+
+    const preview = await page.evaluate(async (bearer) => {
+      const response = await fetch('/api/admin/privacy/manual-runs/retention:user-withdrawn/preview', {
+        headers: { Authorization: `Bearer ${bearer}`, Accept: 'application/json' },
+      });
+
+      return (await response.json())?.data;
+    }, runner);
+    test.skip(preview?.count !== 2, '이 사이트에는 시험 계정 밖의 파기 대상이 있어 직권 실행을 돌리지 않는다');
+
+    const run = page.locator('#run_withdrawn');
+    await expect(run).toBeVisible({ timeout: 20_000 });
+    await run.click();
+
+    const dialog = page.getByRole('dialog');
+    await expect(dialog).toContainText('2건', { timeout: 10_000 });
+    await expect(dialog).toContainText('익명화');
+    await dialog.getByRole('button', { name: '실행', exact: true }).click();
+    await expect(dialog).toHaveCount(0, { timeout: 10_000 });
+
+    // 큐가 동기면 곧바로, 워커가 있으면 폴링으로 끝난다 — 어느 쪽이든 카드가 결과를 그린다.
+    const status = page.locator('#withdrawn_manual_run_status');
+    await expect(status).toContainText(/처리 대기|처리 중|마지막 직권 실행/, { timeout: 20_000 });
+    await expect(status).toContainText('2건 처리', { timeout: 60_000 });
+    await expect(page.locator('#withdrawn_target_row .badge')).toContainText('대상 0명', { timeout: 20_000 });
   } finally {
     await context.close();
     seedDormant('--purge-users');

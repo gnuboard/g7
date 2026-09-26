@@ -7,6 +7,7 @@ use App\Extension\HookManager;
 use App\Models\User;
 use App\Privacy\Contracts\PrivacyRetentionHandlerInterface;
 use App\Privacy\Handlers\WithdrawnUserRetentionHandler;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
@@ -37,6 +38,9 @@ class PrivacyRetentionManager
 {
     /** 확장이 보유기간 핸들러를 등록하는 필터 훅 */
     public const HANDLERS_FILTER = 'core.privacy.retention_handlers';
+
+    /** 처리 락 유지 시간(초) — 한 핸들러의 최대 처리 시간보다 길게 */
+    private const RUN_LOCK_SECONDS = 3600;
 
     /**
      * 해석된 핸들러 캐시 (요청 수명)
@@ -125,6 +129,20 @@ class PrivacyRetentionManager
     }
 
     /**
+     * 핸들러 하나를 처리하는 동안 잡는 락의 키를 반환합니다.
+     *
+     * 새벽 배치({@see process()})와 관리자 직권 실행 큐 작업이 같은 키를 잡아 같은 도메인을
+     * 동시에 처리하지 않는다.
+     *
+     * @param  string  $id  핸들러 식별자
+     * @return string 캐시 락 키
+     */
+    public static function lockKey(string $id): string
+    {
+        return 'privacy-run:retention:'.$id;
+    }
+
+    /**
      * 모든 핸들러의 활성 여부와 대상 건수를 미리 봅니다.
      *
      * **꺼진 핸들러도 건수를 셉니다** — 운영자는 켜기 전에 규모를 확인해야 합니다(되돌릴 수
@@ -188,6 +206,95 @@ class PrivacyRetentionManager
     }
 
     /**
+     * 관리자가 이 핸들러를 직권 실행할 수 있는지 판정합니다.
+     *
+     * 판정식은 명단 열람과 같다({@see canViewTargetList()}) — 권한을 **모두** 가져야 하고 각
+     * 권한의 적용 범위가 전체여야 한다. 직권 실행은 도메인 전체를 처리하므로 범위를 좁혀 위임받은
+     * 관리자에게 열면 자기 범위 밖의 행까지 파기하게 된다.
+     *
+     * @param  PrivacyRetentionHandlerInterface  $handler  핸들러
+     * @param  User|null  $user  관리자
+     * @return bool 실행 가능 여부 (권한 조회 실패 시 false)
+     */
+    public function canRun(PrivacyRetentionHandlerInterface $handler, ?User $user): bool
+    {
+        return $this->canViewTargetList($this->runPermissions($handler), $user);
+    }
+
+    /**
+     * 핸들러의 직권 실행 권한 목록을 안전하게 조회합니다.
+     *
+     * @param  PrivacyRetentionHandlerInterface  $handler  핸들러
+     * @return array<int, string> 권한 식별자 목록 (조회 실패 시 빈 배열 — 판정이 거부로 떨어진다)
+     */
+    public function runPermissions(PrivacyRetentionHandlerInterface $handler): array
+    {
+        try {
+            return array_values(array_filter(
+                $handler->runPermissions(),
+                fn ($permission) => is_string($permission) && $permission !== '',
+            ));
+        } catch (Throwable $e) {
+            Log::warning('개인정보 보유기간 핸들러 실행 권한 조회 실패 — 거부', [
+                'handler' => $this->identify($handler) ?? get_class($handler),
+                'error' => $e->getMessage(),
+            ]);
+
+            return [];
+        }
+    }
+
+    /**
+     * 핸들러 하나를 관리자 직권으로 실행합니다 — 활성 토글을 보지 않습니다.
+     *
+     * 자동 배치({@see process()})와 달리 예외를 삼키지 않는다 — 직권 실행은 큐 작업 한 건이
+     * 한 핸들러이므로, 던져서 작업이 실패 기록을 남기게 하는 편이 운영자에게 정확하다.
+     *
+     * @param  string  $id  핸들러 식별자
+     * @param  bool  $dryRun  true 면 건수만 셉니다
+     * @return array{count: int, mode: string} 처리 건수와 방식
+     *
+     * @throws \InvalidArgumentException 등록되지 않은 식별자
+     */
+    public function runManually(string $id, bool $dryRun = false): array
+    {
+        $handler = $this->handler($id);
+
+        if ($handler === null) {
+            throw new \InvalidArgumentException(__('privacy.targets.unknown_handler'));
+        }
+
+        $outcome = $handler->process($dryRun, true);
+
+        return [
+            'count' => (int) ($outcome['count'] ?? 0),
+            'mode' => (string) ($outcome['mode'] ?? 'unknown'),
+        ];
+    }
+
+    /**
+     * 핸들러의 표시 이름을 안전하게 반환합니다.
+     *
+     * @param  PrivacyRetentionHandlerInterface  $handler  핸들러
+     * @return string 라벨 (실패 시 식별자)
+     */
+    public function labelOf(PrivacyRetentionHandlerInterface $handler): string
+    {
+        return $this->label($handler);
+    }
+
+    /**
+     * 핸들러의 활성 여부를 안전하게 반환합니다.
+     *
+     * @param  PrivacyRetentionHandlerInterface  $handler  핸들러
+     * @return bool 활성 여부 (판독 실패 시 false)
+     */
+    public function enabledOf(PrivacyRetentionHandlerInterface $handler): bool
+    {
+        return $this->isEnabled($handler);
+    }
+
+    /**
      * 권한 목록으로 대상 명단 열람 가능 여부를 판정합니다 — 코어 휴면·확장 명단도 이 판정을 씁니다.
      *
      * 권한을 **모두** 가져야 하고, 각 권한의 적용 범위가 **전체**여야 한다. 회원·주문·게시판 목록은
@@ -226,7 +333,7 @@ class PrivacyRetentionManager
      *
      * @param  bool  $dryRun  true 면 건수만 셉니다
      * @param  string|null  $only  지정하면 그 식별자 하나만 실행합니다
-     * @return array<string, array{status: string, count: int, mode: string, label: string, error?: string}> 식별자별 실행 결과
+     * @return array<string, array{status: string, count: int, mode: string, label: string, error?: string}> 식별자별 실행 결과 (status: processed·disabled·failed·locked — locked 는 직권 실행이 처리 중이라 건너뜀)
      */
     public function process(bool $dryRun = false, ?string $only = null): array
     {
@@ -243,6 +350,17 @@ class PrivacyRetentionManager
 
             if (! $this->isEnabled($handler)) {
                 $result[$id] = ['status' => 'disabled', 'count' => 0, 'mode' => 'none', 'label' => $label];
+
+                continue;
+            }
+
+            // 직권 실행과 같은 락 — 관리자가 화면에서 돌린 작업이 이 핸들러를 처리하는 중이면
+            // 건너뛴다. 같은 행을 두 프로세스가 동시에 처리하면 prune 훅이 두 번 나가고 삭제
+            // 방식은 서로의 대상을 지운다. 건너뛴 것은 다음 주기가 다시 잡는다.
+            $lock = $dryRun ? null : Cache::lock(self::lockKey($id), self::RUN_LOCK_SECONDS);
+
+            if ($lock !== null && ! $lock->get()) {
+                $result[$id] = ['status' => 'locked', 'count' => 0, 'mode' => 'none', 'label' => $label];
 
                 continue;
             }
@@ -268,6 +386,8 @@ class PrivacyRetentionManager
                     'dry_run' => $dryRun,
                     'error' => $e->getMessage(),
                 ]);
+            } finally {
+                $lock?->release();
             }
         }
 

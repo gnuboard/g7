@@ -19,6 +19,31 @@
       </field>
     </fallback>
   </data-source>
+  <!-- 개인정보 조치 직권 실행 상태 — 「지금 실행」 버튼과 상태 줄(처리 대기/처리 중 · 마지막 결과)이 쓴다(코어 직권 실행 API).
+       진행 중이면 3초마다 다시 받고 끝나면 멈춘다. 진행 중일 때 받은 서버 시각(`checked_at`)을 다음 조회의 `since` 로
+       돌려보내 그 뒤에 끝난 작업이 있으면(`finished_since`) 대상 건수를 다시 받는다 — 판정을 응답값으로만 하는 까닭은
+       직전에 넣은 전역 값이 이 성공 핸들러에서 낡은 값으로 읽히기 때문이다(코어 환경설정 개인정보 탭과 같은 방식). -->
+  <data-source id="privacyManualRuns" label_key="$t:sirsoft-ecommerce.editor.data_source.privacyManualRuns" type="api" endpoint="/api/admin/privacy/manual-runs" method="GET" if="{{(query.tab || _global.activeEcommerceSettingsTab || 'basic_info') === 'privacy_retention'}}" :auto_fetch="true" :auth_required="true">
+    <params targets="retention:sirsoft-ecommerce.order" since="{{_global.privacyRunWatchSince ?? ''}}"/>
+    <fallback>
+      <field name="data">
+        <field name="targets" :value="{}"/>
+        <field name="has_active" :value="false"/>
+        <field name="finished_since" :value="false"/>
+      </field>
+    </fallback>
+    <success>
+      <set-state if="{{response?.data?.data?.has_active === true}}" target="global" privacyRunWatchSince="{{response?.data?.data?.checked_at}}"/>
+      <start-interval if="{{response?.data?.data?.has_active === true}}" id="privacy_manual_run_poll" :intervalMs="3000">
+        <actions>
+          <refetch-data-source dataSourceId="privacyManualRuns"/>
+        </actions>
+      </start-interval>
+      <stop-interval if="{{response?.data?.data?.has_active !== true}}" id="privacy_manual_run_poll"/>
+      <refetch-data-source if="{{response?.data?.data?.has_active !== true &amp;&amp; response?.data?.data?.finished_since === true}}" dataSourceId="ecommercePrivacyRetentionPreview"/>
+      <set-state if="{{response?.data?.data?.has_active !== true}}" target="global" :privacyRunWatchSince="null"/>
+    </success>
+  </data-source>
   <!-- 개인정보 보유기간 대상 주문 창 — 여는 버튼이 목록 경로를 `_global.privacyTargets.path` 에 넣고 다시 받은 뒤 연다.
        명단은 코어 공통 대상 목록 API 가 이 모듈 핸들러를 식별자로 찾아 내려준다. -->
   <data-source id="privacyTargets" label_key="$t:sirsoft-ecommerce.editor.data_source.privacyTargets" type="api" endpoint="/api/admin/privacy/{{_global.privacyTargets?.path ?? 'retention-targets/sirsoft-ecommerce.order'}}" method="GET" :auto_fetch="false" :auth_required="true" loading_strategy="progressive">
@@ -131,6 +156,7 @@
     <wait-for>settings</wait-for>
     <wait-for>seoStats</wait-for>
     <wait-for>ecommercePrivacyRetentionPreview</wait-for>
+    <wait-for>privacyManualRuns</wait-for>
     <wait-for>carriers</wait-for>
     <wait-for>ecommerceNotificationDefinitions</wait-for>
     <wait-for>availableChannels</wait-for>
@@ -251,4 +277,6 @@
   <modal src="partials/admin_ecommerce_settings/_modal_identity_policy_delete.g7.html"/>
   <!-- 개인정보 보유기간 대상 주문 창(개인정보 보유기간 탭). -->
   <modal src="partials/admin_ecommerce_settings/_modal_privacy_targets.g7.html"/>
+  <!-- 개인정보 보유기간 직권 실행 확인 창(개인정보 보유기간 탭). -->
+  <modal src="partials/admin_ecommerce_settings/_modal_privacy_run.g7.html"/>
 </layout>

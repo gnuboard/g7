@@ -19,8 +19,10 @@ import { describe, expect, it } from 'vitest';
 import { actionsOf, callbacksOf } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 
 import generalTab from '../../../layouts/admin/partials/admin_board_settings/_tab_general.json';
+import privacyTab from '../../../layouts/admin/partials/admin_board_settings/_tab_privacy_retention.json';
 import settingsLayout from '../../../layouts/admin/admin_board_settings.json';
 import targetsModal from '../../../layouts/admin/partials/admin_board_settings/_modal_privacy_targets.json';
+import runModalLayout from '../../../layouts/admin/partials/admin_board_settings/_modal_privacy_run.json';
 
 /**
  * 모듈 루트(module.json 기준)를 위로 훑어 찾는다.
@@ -59,7 +61,7 @@ function findNode(node: any, predicate: (n: any) => boolean): any {
     return null;
 }
 
-const section = findNode(generalTab, (n) => n.id === 'privacy_retention_section');
+const section = findNode(privacyTab, (n) => n.id === 'privacy_retention_section');
 
 describe('게시판 개인정보 보유기간 설정 — 계약', () => {
     /**
@@ -67,8 +69,40 @@ describe('게시판 개인정보 보유기간 설정 — 계약', () => {
      *
      * @effects board_settings_retention_section_binds_saved_keys
      */
-    it('일반 탭에 보유기간 섹션이 있다', () => {
+    it('보유기간 섹션은 자기 탭(「개인정보 보유기간」)에 있고 기본 설정 탭에는 없다', () => {
+        // 2026-09-26 결정 — 코어 개인정보 탭·쇼핑몰 보유기간 탭·gdpr 통지 탭처럼 개인정보 조치를 자기 탭에 둔다.
         expect(section).not.toBeNull();
+        expect(findNode(generalTab, (n) => n.id === 'privacy_retention_section')).toBeNull();
+
+        const raw = JSON.stringify(settingsLayout);
+        const tabNav = manualRunNode(settingsLayout, 'tab_navigation');
+        const tabIds = (tabNav?.props?.tabs ?? []).map((t: any) => t.id);
+        expect(tabIds).toContain('privacy_retention');
+        expect(raw).toContain('_tab_privacy_retention.json');
+        // 탭 전환만으로 그려지고 사라져야 한다 — 다른 탭에서 카드가 함께 보이면 저장 payload 와 화면이 어긋난다.
+        expect(String(manualRunNode(privacyTab, 'tab_content_privacy_retention')?.if ?? '')).toContain("=== 'privacy_retention'");
+        for (const id of ['boardPrivacyRetentionPreview', 'privacyManualRuns']) {
+            const dataSource = (settingsLayout as any).data_sources.find((d: any) => d.id === id);
+            expect(dataSource.if, id).toContain("=== 'privacy_retention'");
+        }
+        for (const locale of ['ko', 'en']) {
+            expect(typeof settingsLang(locale).tabs?.privacy_retention, locale).toBe('string');
+        }
+    });
+
+    /**
+     * @scenario axis=guest, toggle=on, guest_mode=delete
+     *
+     * @effects board_settings_retention_section_binds_saved_keys
+     */
+    it('켜기 스위치는 이름·설명 오른쪽 끝에 있다', () => {
+        // 2026-09-26 결정 — 쇼핑몰 보유기간 탭처럼 이름·설명 왼쪽, 스위치 오른쪽.
+        const field = findNode(section, (n) => n.id === 'privacy_retention_enabled_field');
+        const children = field.children ?? [];
+
+        expect(String(field.props?.className ?? '')).toMatch(/\bflex-between\b/);
+        expect(children.at(-1)?.name).toBe('Toggle');
+        expect(children.length).toBe(2);
     });
 
     /**
@@ -137,13 +171,25 @@ describe('게시판 개인정보 보유기간 설정 — 계약', () => {
      *
      * @effects board_retention_settings_are_saved
      */
-    it('일반 탭 저장 payload 에 privacy_retention 이 실린다', () => {
+    it('보유기간 탭 저장 payload 에만 privacy_retention 이 실리고 서버가 그 탭 이름을 받는다', () => {
         const raw = JSON.stringify(settingsLayout);
-        const start = raw.indexOf("if (tab === 'general')");
-        const branch = raw.slice(start, raw.indexOf('; }', start));
+        const branchOf = (tab: string): string => {
+            const start = raw.indexOf(`if (tab === '${tab}')`);
+            expect(start, tab).toBeGreaterThan(-1);
 
-        expect(start).toBeGreaterThan(-1);
-        expect(branch).toContain('privacy_retention: form.privacy_retention || {}');
+            return raw.slice(start, raw.indexOf('; }', start));
+        };
+
+        expect(branchOf('privacy_retention')).toContain("_tab: 'privacy_retention'");
+        expect(branchOf('privacy_retention')).toContain('privacy_retention: form.privacy_retention || {}');
+        // 기본 설정 탭이 계속 싣으면 그 탭 저장이 보이지 않는 보유기간 값을 함께 덮어쓴다.
+        expect(branchOf('general')).not.toContain('privacy_retention');
+
+        const request = fs.readFileSync(
+            path.join(moduleRoot(), 'src/Http/Requests/Admin/StoreBoardSettingsRequest.php'),
+            'utf-8',
+        );
+        expect(request.match(/'_tab' => \[[^\]]*\]/)?.[0] ?? '').toContain('privacy_retention');
     });
 
     /**
@@ -228,7 +274,7 @@ function settingsLang(locale: string): any {
 }
 
 describe('개인정보 조치 대상 — 건수 상시 노출 + 대상 목록 창 (#636 §1-E)', () => {
-    const viewButtons = collectWithAncestors(generalTab, (n) => /^view_.*targets$/.test(n.id ?? ''));
+    const viewButtons = collectWithAncestors(privacyTab, (n) => /^view_.*targets$/.test(n.id ?? ''));
 
     /**
      * @scenario axis=ip, toggle=off, guest_mode=anonymize
@@ -319,6 +365,13 @@ describe('개인정보 조치 대상 — 건수 상시 노출 + 대상 목록 �
         expect(row.iteration.item_var).toBe('target');
         expect(raw).toContain('"target":"_blank"');
         expect(empty.if).toContain('length === 0');
+        // 아이콘과 문구는 감싸는 줄이 세로로 쌓는다 — 아이콘 클래스의 mx-auto·mb 는 Font Awesome 의 display(inline-block)에
+        // 무시되어 아이콘과 「대상이 없습니다」가 한 줄에 겹쳐 붙었다(2026-09-26 실측).
+        expect(String(empty.props?.className ?? '')).toMatch(/\bflex\b/);
+        expect(String(empty.props?.className ?? '')).toMatch(/\bflex-col\b/);
+        const emptyIcon = (empty.children ?? []).find((c: any) => c.name === 'Icon');
+        expect(emptyIcon, 'empty icon').toBeTruthy();
+        expect(String(emptyIcon.props?.className ?? '')).not.toMatch(/\b(mx-auto|mb-\d+|block)\b/);
     });
 
     /**
@@ -327,7 +380,7 @@ describe('개인정보 조치 대상 — 건수 상시 노출 + 대상 목록 �
      * @effects board_retention_targets_match_the_population
      */
     it('버튼·창이 쓰는 대상 문구가 ko/en 모두에 있고 편집기 샘플이 명단 데이터소스를 가진다', () => {
-        const raw = JSON.stringify(generalTab) + JSON.stringify(targetsModal);
+        const raw = JSON.stringify(privacyTab) + JSON.stringify(targetsModal);
         const keys = [...new Set([...raw.matchAll(/\$t:(sirsoft-board\.admin\.settings\.privacy_retention\.targets\.[a-z0-9_.]+)/g)].map((m) => m[1]))];
 
         expect(keys.length).toBeGreaterThan(3);
@@ -340,5 +393,144 @@ describe('개인정보 조치 대상 — 건수 상시 노출 + 대상 목록 �
 
         const spec = fs.readFileSync(path.join(moduleRoot(), 'editor-spec.json'), 'utf-8');
         expect(spec).toContain('"privacyTargets"');
+    });
+});
+
+
+/**
+ * 직권 실행 블록 전용 — 레이아웃 트리에서 id 로 노드를 찾는다(props 의 id 는 무시).
+ *
+ * @param node 탐색 시작 노드
+ * @param id 노드 id
+ * @returns 노드 또는 null
+ */
+function manualRunNode(node: any, id: string): any {
+    if (!node || typeof node !== 'object') return null;
+    if (!Array.isArray(node) && node.id === id && (node.type || node.name)) return node;
+    for (const child of Object.values(node)) {
+        const found = manualRunNode(child, id);
+        if (found) return found;
+    }
+
+    return null;
+}
+
+/**
+ * 직권 실행 블록 전용 — 이 확장의 다국어 파일에서 점 경로 값을 읽는다.
+ *
+ * @param locale 로케일
+ * @param key 확장 접두사를 뺀 점 경로
+ * @returns 값 또는 undefined
+ */
+function manualRunLang(locale: string, key: string): any {
+    let current = path.dirname(fileURLToPath(import.meta.url));
+    for (let depth = 0; depth < 10 && !fs.existsSync(path.join(current, 'module.json')); depth++) {
+        current = path.dirname(current);
+    }
+    const lang = JSON.parse(fs.readFileSync(path.join(current, `resources/lang/partial/${locale}/admin/settings.json`), 'utf-8'));
+
+    return key.split('.').reduce((acc: any, part: string) => (acc == null ? undefined : acc[part]), lang);
+}
+
+describe('개인정보 조치 직권 실행 — 「지금 실행」 (#636 후속)', () => {
+    const buttons: Array<[string, string]> = [['run_ip_retention', 'retention:sirsoft-board.ip'], ['run_guest_retention', 'retention:sirsoft-board.guest']];
+    const runModal: any = runModalLayout;
+
+    /**
+     * @scenario axis=ip, toggle=off, guest_mode=anonymize
+     *
+     * @effects board_manual_run_buttons_open_the_confirm_modal
+     */
+    it('「지금 실행」은 실행 권한으로만 그리고, 저장 전 변경·진행 중 작업이면 막으며, 확인 창을 연 뒤 건수를 다시 센다', () => {
+        for (const [id, key] of buttons) {
+            const button = manualRunNode(privacyTab, id);
+            expect(button, id).toBeTruthy();
+            expect(button.if, id).toContain(`['${key}']?.can_run`);
+            expect(button.props.disabled, id).toContain('_local.hasChanges');
+            expect(button.props.disabled, id).toContain('?.run?.is_active');
+
+            const click = actionsOf(button).find((a: any) => a.type === 'click');
+            const steps = actionsOf(click);
+            expect(steps.map((s: any) => s.handler), id).toEqual(['setState', 'openModal', 'apiCall']);
+            expect(steps[0].params.privacyRun, id).toContain(`key: '${key}'`);
+            expect(steps[1].target).toBe('privacy_run_modal');
+            expect(steps[2].target).toBe(`/api/admin/privacy/manual-runs/${key}/preview`);
+        }
+    });
+
+    /**
+     * @scenario axis=ip, toggle=off, guest_mode=anonymize
+     *
+     * @effects board_manual_run_buttons_open_the_confirm_modal
+     */
+    it('대상마다 한 행에 건수·대상 보기·지금 실행·결과 줄이 함께 있고, 실행은 채운 강조색을 쓰지 않는다', () => {
+        // 2026-09-26 결정 — 코어 개인정보 탭과 같은 「대상 행」 양식. 실행 버튼이 자기 대상과 떨어지면 짝을 눈으로 맞춰야 한다.
+        const rows: Array<[string, string, string, string]> = [
+            ['ip_target_row', 'view_ip_targets', 'run_ip_retention', 'ip_manual_run_status'],
+            ['guest_target_row', 'view_guest_targets', 'run_guest_retention', 'guest_manual_run_status'],
+        ];
+        const hasBadge = (node: any): boolean =>
+            !!node && typeof node === 'object'
+            && (String(node.props?.className ?? '').includes('badge') || Object.values(node).some((child: any) => hasBadge(child)));
+
+        for (const [rowId, viewId, runId, statusId] of rows) {
+            const row = manualRunNode(privacyTab, rowId);
+            expect(row, rowId).toBeTruthy();
+            for (const id of [viewId, runId, statusId]) {
+                expect(manualRunNode(row, id), `${rowId} > ${id}`).toBeTruthy();
+            }
+            expect(hasBadge(row), rowId).toBe(true);
+            expect(manualRunNode(row, runId).props.className, runId).not.toMatch(/btn-(warning|primary|danger)\b/);
+        }
+    });
+
+    /**
+     * @scenario axis=ip, toggle=off, guest_mode=anonymize
+     *
+     * @effects board_manual_run_buttons_open_the_confirm_modal
+     */
+    it('상태 소스는 이 화면 대상만 조회하고, 진행 중이면 폴링·끝나면 응답값으로만 건수를 다시 받는다', () => {
+        const dataSource = (settingsLayout as any).data_sources.find((d: any) => d.id === 'privacyManualRuns');
+        expect(dataSource.endpoint).toBe('/api/admin/privacy/manual-runs');
+        expect(dataSource.params.targets.split(',')).toEqual(buttons.map(([, key]) => key));
+
+        const handlers = callbacksOf(dataSource, 'onSuccess');
+        expect(handlers.find((h: any) => h.handler === 'startInterval').if).toContain('has_active === true');
+        expect(handlers.find((h: any) => h.handler === 'stopInterval').if).toContain('has_active !== true');
+        const refetch = handlers.find((h: any) => h.handler === 'refetchDataSource');
+        expect(refetch.params.dataSourceId).toBe('boardPrivacyRetentionPreview');
+        expect(refetch.if).toContain('finished_since === true');
+        for (const handler of handlers) {
+            expect(String(handler.if ?? ''), handler.handler).not.toContain('_global');
+        }
+    });
+
+    /**
+     * @scenario axis=ip, toggle=off, guest_mode=anonymize
+     *
+     * @effects board_manual_run_buttons_open_the_confirm_modal
+     */
+    it('확인 창은 코어 직권 실행 API 로 접수하고 이 확장의 문구(ko·en)만 쓴다', () => {
+        const execute = manualRunNode(runModal, 'privacy_run_execute');
+        const call = actionsOf(actionsOf(execute).find((a: any) => a.type === 'click')).find((a: any) => a.handler === 'apiCall');
+        expect(call.params.method).toBe('POST');
+        expect(call.target).toBe('/api/admin/privacy/manual-runs/{{_global.privacyRun?.key}}');
+        expect(callbacksOf(call, 'onSuccess').filter((a: any) => a.handler === 'refetchDataSource').map((a: any) => a.params.dataSourceId))
+            .toEqual(['privacyManualRuns', 'boardPrivacyRetentionPreview']);
+        expect(JSON.stringify(settingsLayout)).toContain('_modal_privacy_run.json');
+
+        const source = JSON.stringify(runModal) + JSON.stringify(privacyTab);
+        expect(source).not.toContain('admin.settings.privacy.manual_run.');
+        expect(source).not.toContain('skip_waiting_checkbox');
+        const keys = new Set([...source.matchAll(/sirsoft-board\.admin\.settings\.privacy_retention\.manual_run\.([a-z_]+)/g)].map((m) => m[1]));
+        if (keys.delete('modes')) {
+            ['anonymize', 'delete', 'erase_ip'].forEach((mode) => keys.add(`modes.${mode}`));
+        }
+        expect(keys.size).toBeGreaterThan(10);
+        for (const locale of ['ko', 'en']) {
+            for (const key of keys) {
+                expect(typeof manualRunLang(locale, `privacy_retention.manual_run.${key}`), `${locale}:${key}`).toBe('string');
+            }
+        }
     });
 });

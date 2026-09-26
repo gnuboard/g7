@@ -113,6 +113,34 @@
       </field>
     </fallback>
   </data-source>
+  <!-- 개인정보 조치 직권 실행 상태 — 카드의 「지금 실행」 버튼과 상태 줄(처리 대기/처리 중 · 마지막 결과)이 쓴다.
+       접수된 작업이 끝나지 않았으면(`has_active`) 3초마다 다시 받고, 끝나면 멈춘다(사이트맵 상태와 같은 방식).
+       진행 중일 때 받은 서버 시각(`checked_at`)을 다음 조회의 `since` 로 돌려보내고, 그 뒤에 끝난 작업이 있으면
+       (`finished_since`) 대상 건수를 다시 받는다 — 처리된 만큼 줄어든 숫자가 보여야 결과를 확인할 수 있다.
+       판정을 응답값으로만 하는 까닭: 직전에 넣은 전역 값은 이 성공 핸들러에서 낡은 값으로 읽힌다(엔진 제약,
+       인터벌 캡처와 같은 결). 파라미터는 조회 시점에 평가되므로 `since` 는 최신 값이 나간다.
+       권한이 없는 대상은 서버가 `can_run=false` 로 가린다. -->
+  <data-source id="privacyManualRuns" label_key="$t:editor.data_source.privacyManualRuns" type="api" endpoint="/api/admin/privacy/manual-runs" method="GET" if="{{(query.tab || _global.activeSettingsTab || 'general') === 'privacy'}}" :auto_fetch="true" :auth_required="true">
+    <params targets="retention:user-withdrawn,dormant:pre_notice,dormant:convert,dormant:withdraw_notice,dormant:withdraw" since="{{_global.privacyRunWatchSince ?? ''}}"/>
+    <fallback>
+      <field name="data">
+        <field name="targets" :value="{}"/>
+        <field name="has_active" :value="false"/>
+        <field name="finished_since" :value="false"/>
+      </field>
+    </fallback>
+    <success>
+      <set-state if="{{response?.data?.data?.has_active === true}}" target="global" privacyRunWatchSince="{{response?.data?.data?.checked_at}}"/>
+      <start-interval if="{{response?.data?.data?.has_active === true}}" id="privacy_manual_run_poll" :intervalMs="3000">
+        <actions>
+          <refetch-data-source dataSourceId="privacyManualRuns"/>
+        </actions>
+      </start-interval>
+      <stop-interval if="{{response?.data?.data?.has_active !== true}}" id="privacy_manual_run_poll"/>
+      <refetch-data-source if="{{response?.data?.data?.has_active !== true &amp;&amp; response?.data?.data?.finished_since === true}}" dataSourceId="privacyPreview"/>
+      <set-state if="{{response?.data?.data?.has_active !== true}}" target="global" :privacyRunWatchSince="null"/>
+    </success>
+  </data-source>
   <!-- 개인정보 조치 대상 명단 창 — 여는 버튼이 목록 경로(보유기간 핸들러·휴면 단계)를 `_global.privacyTargets.path` 에
        넣고 다시 받은 뒤 창을 연다. 스스로 조회하지 않고, 다음 쪽은 창의 스크롤이 이어 붙인다. -->
   <data-source id="privacyTargets" label_key="$t:editor.data_source.privacyTargets" type="api" endpoint="/api/admin/privacy/{{_global.privacyTargets?.path ?? 'retention-targets/user-withdrawn'}}" method="GET" :auto_fetch="false" :auth_required="true" loading_strategy="progressive">
@@ -246,6 +274,7 @@
     <wait-for>staticCacheStatus</wait-for>
     <wait-for>trustedProxy</wait-for>
     <wait-for>privacyPreview</wait-for>
+    <wait-for>privacyManualRuns</wait-for>
   </transition-overlay>
   <init>
     <!-- 확장 목록 보기 방식(갤러리/목록) 복원 — 4화면이 같은 키를 공유한다.
@@ -446,4 +475,6 @@
   <modal src="partials/admin_settings/_modal_identity_message_definition_reset.g7.html"/>
   <!-- 개인정보 조치 대상 명단 창(개인정보 탭) — 탈퇴 잔여정보 파기와 휴면 네 단계가 함께 쓴다. -->
   <modal src="partials/admin_settings/_modal_privacy_targets.g7.html"/>
+  <!-- 개인정보 조치 직권 실행 확인 창(개인정보 탭) — 탈퇴 잔여정보 파기와 휴면 네 단계가 함께 쓴다. -->
+  <modal src="partials/admin_settings/_modal_privacy_run.g7.html"/>
 </layout>

@@ -5,14 +5,14 @@
 ## 레이아웃 목록
 
 <!-- @generated:layouts START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-레이아웃 153개 (루트: `layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
+레이아웃 154개 (루트: `layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
 
 | 그룹 | 개수 |
 |---|---|
 | `(root)` | 27개 |
 | `auth` | 1개 |
 | `errors` | 6개 |
-| `partials` | 119개 |
+| `partials` | 120개 |
 
 | 레이아웃 | 그룹 | 종류 | extends |
 |---|---|---|---|
@@ -126,6 +126,7 @@
 | `_modal_notification_template_form` | `partials` | partial | - |
 | `_modal_notification_template_preview` | `partials` | partial | - |
 | `_modal_password_confirm` | `partials` | partial | - |
+| `_modal_privacy_run` | `partials` | partial | - |
 | `_modal_privacy_targets` | `partials` | partial | - |
 | `_modal_static_cache_republish` | `partials` | partial | - |
 | `_tab_advanced` | `partials` | partial | - |
@@ -367,8 +368,9 @@ _admin_base.g7.html (베이스 레이아웃)
 │           ├── _tab_notification_definitions.g7.html (알림 정의)
 │           ├── _tab_security.g7.html (보안)
 │           ├── _tab_security_ip_restriction.g7.html (보안 > IP 접근 제한 카드)
-│           ├── _tab_privacy.g7.html (개인정보 — 보유기간 파기·휴면 계정)
+│           ├── _tab_privacy.g7.html (개인정보 — 보유기간 파기·휴면 계정, 조치 대상은 대상마다 한 행: 건수 · 대상 보기 · 지금 실행 · 결과 줄)
 │           ├── _modal_privacy_targets.g7.html (개인정보 — 조치 대상 명단 창, 무한 스크롤 · 0건이면 빈 명단 안내)
+│           ├── _modal_privacy_run.g7.html (개인정보 — 직권 실행 확인 창, 건수 재조회 · 휴면 전환·탈퇴의 대기기간 생략)
 │           ├── _tab_upload.g7.html (업로드)
 │           ├── _tab_drivers.g7.html (드라이버)
 │           ├── _tab_seo.g7.html (SEO)

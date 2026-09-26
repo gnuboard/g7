@@ -12,7 +12,8 @@
             "gdprSettings": "GDPR 설정",
             "gdprNoticeLog": "개인정보 통지 이력",
             "gdprAnnualNoticePreview": "연간 통지 대상 건수",
-            "privacyTargets": "연간 통지 대상 회원 목록"
+            "privacyTargets": "연간 통지 대상 회원 목록",
+            "privacyManualRuns": "개인정보 조치 직권 실행 상태"
         }
     },
     "consent": {
@@ -388,12 +389,41 @@
         "targets": {
             "count": "이번 주기 대상 {{count}}명",
             "view": "대상 보기",
+            "row_label": "개인정보 이용내역 연간 통지",
             "title": "연간 통지 대상 회원",
             "hint": "켜져 있지 않아도 켜면 통지할 회원 수를 미리 보여 줍니다. 한 번 실행에 보내는 수는 발송 상한으로 잘립니다.",
             "total": "총 {{count}}건",
             "empty": "대상이 없습니다.",
             "loading": "불러오는 중...",
             "close": "닫기"
+        },
+        "manual_run": {
+            "run": "지금 실행",
+            "save_first_hint": "저장하지 않은 변경이 있습니다. 직권 실행은 저장된 설정으로 처리되므로 먼저 저장하세요.",
+            "status_active": "{{status}} — {{at}} 접수 · {{by}}",
+            "last_completed": "마지막 직권 발송: {{at}} · {{by}} · {{count}}명 접수 · 남은 대상 {{remaining}}명",
+            "last_failed": "마지막 직권 발송 실패: {{at}} · {{by}} — {{error}}",
+            "unknown_requester": "알 수 없음",
+            "modal_title": "{{target}} — 직권 실행",
+            "confirm_desc": "스케줄러를 기다리지 않고 지금 한 번 통지를 접수합니다. 한 번에 발송 상한만큼만 접수되며, 남은 회원은 다시 실행하면 이어서 접수됩니다. 이번 주기에 이미 받은 회원에게는 다시 보내지 않습니다.",
+            "count_label": "이번 주기 대상",
+            "count_value": "{{count}}명",
+            "loading": "건수를 세는 중...",
+            "mode_label": "처리 방식",
+            "modes": {
+                "anonymize": "익명화",
+                "delete": "삭제",
+                "erase_ip": "작성 IP 삭제"
+            },
+            "disabled_notice": "연간 통지 자동 발송은 꺼져 있습니다. 직권 실행은 토글과 무관하게 저장된 채널·문구로 이번 한 번만 접수합니다.",
+            "irreversible": "접수된 통지는 취소할 수 없습니다. 통지 문구와 채널을 저장했는지 확인한 뒤 실행하세요.",
+            "queue_hint": "큐 워커가 동작해야 처리됩니다. 같은 대상에 접수된 작업이 끝나기 전에는 다시 실행할 수 없습니다.",
+            "cancel": "취소",
+            "execute": "실행",
+            "executing": "접수 중...",
+            "queued_toast": "통지 발송을 큐에 접수했습니다. 처리가 끝나면 결과가 표시됩니다.",
+            "queue_failed": "실행을 접수하지 못했습니다.",
+            "preview_failed": "대상 건수를 불러오지 못했습니다."
         }
     },
     "edit_template": "템플릿 편집",

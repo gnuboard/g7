@@ -15,4 +15,22 @@ return [
         'unknown_handler' => '登録されていない個人情報処理対象です。',
         'unknown_stage' => '不明な休眠ステージです。',
     ],
+    'manual_run' => [
+        'queued' => '実行をキューに受け付けました。処理が終わるとカードに結果が表示されます。',
+        'unknown_target' => '登録されていない職権実行対象です。',
+        'target_missing' => '受け付け後、対象が消えて実行できませんでした (拡張が無効化されている可能性があります)。',
+        'stale' => ':minutes分を超えても終わらないため、失敗として処理しました。キューワーカーが動作しているか確認してください。',
+        'status' => [
+            'queued' => '処理待機中',
+            'running' => '処理中',
+            'completed' => '完了',
+            'failed' => '失敗',
+        ],
+        'dormant_stages' => [
+            'pre_notice' => '休眠転換事前通知',
+            'convert' => '休眠転換',
+            'withdraw_notice' => '休眠アカウント退会予定通知',
+            'withdraw' => '休眠アカウント退会処理',
+        ],
+    ],
 ];

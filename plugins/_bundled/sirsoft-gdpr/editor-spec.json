@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$comment": "레이아웃 편집기 스펙 — GDPR 플러그인 도메인 sampleData. 관리자 레이아웃(plugin_settings / gdpr_consent_log + 정책 버전 모달)의 data_source ID 전수 스캔 기반: gdprSettings / gdprAnnualNoticePreview / privacyTargets / gdprPolicyVersionCurrent / gdprPolicyVersionHistory / gdprPolicyVersionSnapshot / gdprConsentLog. 응답 shape 는 각 레이아웃의 실제 바인딩 경로(gdprSettings.data.* / gdprPolicyVersion*.data.data.* / gdprConsentLog.data.data[] + pagination) 역추론. 편집기 캔버스 프리뷰에서 generic 폴백 차단용 mock.",
+  "$comment": "레이아웃 편집기 스펙 — GDPR 플러그인 도메인 sampleData. 관리자 레이아웃(plugin_settings / gdpr_consent_log + 정책 버전 모달)의 data_source ID 전수 스캔 기반: gdprSettings / gdprAnnualNoticePreview / privacyTargets / privacyManualRuns / gdprPolicyVersionCurrent / gdprPolicyVersionHistory / gdprPolicyVersionSnapshot / gdprConsentLog. 응답 shape 는 각 레이아웃의 실제 바인딩 경로(gdprSettings.data.* / gdprPolicyVersion*.data.data.* / gdprConsentLog.data.data[] + pagination) 역추론. 편집기 캔버스 프리뷰에서 generic 폴백 차단용 mock.",
   "pluginId": "sirsoft-gdpr",
   "version": "1.0.0",
   "description": "GDPR 플러그인 레이아웃 편집기 샘플 데이터 (쿠키 동의 설정 / 동의 이력 / 개인정보 정책 버전).",
@@ -739,6 +739,38 @@
           "enabled": false,
           "count": 128,
           "can_view_targets": true
+        }
+      },
+      "privacyManualRuns": {
+        "data": {
+          "targets": {
+            "sirsoft-gdpr:annual_notice": {
+              "key": "sirsoft-gdpr:annual_notice",
+              "label": "개인정보 연간 통지 발송",
+              "can_run": true,
+              "enabled": false,
+              "supports_skip_waiting": false,
+              "run": {
+                "id": 7,
+                "target": "sirsoft-gdpr:annual_notice",
+                "status": "completed",
+                "status_label": "완료",
+                "is_active": false,
+                "skip_waiting": false,
+                "processed_count": 5,
+                "remaining_count": 0,
+                "mode": null,
+                "error": null,
+                "requester_name": "관리자",
+                "queued_at": "2026-09-25 14:02:11",
+                "started_at": "2026-09-25 14:02:12",
+                "finished_at": "2026-09-25 14:02:15"
+              }
+            }
+          },
+          "has_active": false,
+          "finished_since": false,
+          "checked_at": "2026-09-25T14:02:20+09:00"
         }
       },
       "privacyTargets": {

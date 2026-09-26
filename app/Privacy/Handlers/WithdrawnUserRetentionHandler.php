@@ -158,12 +158,21 @@ class WithdrawnUserRetentionHandler implements PrivacyRetentionHandlerInterface
     /**
      * {@inheritDoc}
      */
-    public function process(bool $dryRun): array
+    public function runPermissions(): array
+    {
+        return ['core.settings.update', 'core.users.update'];
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function process(bool $dryRun, bool $force = false): array
     {
         // 토글을 스스로 다시 본다 — 수집기(Manager)가 이미 걸러 주지만, 이 메서드는
         // 되돌릴 수 없는 파기라 호출자를 믿지 않는다. 다른 경로(커맨드의 --handler,
-        // 확장 코드)가 직접 부르면 가드 없이 지워지던 자리다.
-        if (! $this->isEnabled()) {
+        // 확장 코드)가 직접 부르면 가드 없이 지워지던 자리다. 관리자 직권 실행(`$force`)만
+        // 이 가드를 넘는다 — 권한 검사는 직권 실행 API 가 이미 마쳤다.
+        if (! $force && ! $this->isEnabled()) {
             return ['count' => 0, 'mode' => 'disabled'];
         }
 

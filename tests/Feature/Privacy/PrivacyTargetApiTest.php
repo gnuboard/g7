@@ -456,7 +456,15 @@ class ListingFakeRetentionHandler implements PrivacyRetentionHandlerInterface
     /**
      * {@inheritDoc}
      */
-    public function process(bool $dryRun): array
+    public function runPermissions(): array
+    {
+        return ['core.settings.update', 'core.users.update'];
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function process(bool $dryRun, bool $force = false): array
     {
         return ['count' => 0, 'mode' => 'disabled'];
     }

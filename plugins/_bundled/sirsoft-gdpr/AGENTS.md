@@ -118,7 +118,7 @@ immutable append-only)으로 이중 기록합니다 — 지금 상태 조회와 
 | 확장점 | 수 | 상세 |
 |---|---|---|
 | 발행 훅 | 4개 | [발행 훅](docs/extension-points.md#발행-훅) |
-| 구독 훅 | 8개 | [구독 훅](docs/extension-points.md#구독-훅) |
+| 구독 훅 | 9개 | [구독 훅](docs/extension-points.md#구독-훅) |
 | 훅 리스너 | 5개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
 | 레이아웃 확장 | 2개 | [레이아웃 확장](docs/extension-points.md#레이아웃-확장) |
 | 미들웨어 | 1개 | [미들웨어](docs/extension-points.md#미들웨어) |

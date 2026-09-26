@@ -12,7 +12,8 @@
             "gdprSettings": "GDPR Settings",
             "gdprNoticeLog": "Privacy notice log",
             "gdprAnnualNoticePreview": "Annual notice target count",
-            "privacyTargets": "Annual notice target members"
+            "privacyTargets": "Annual notice target members",
+            "privacyManualRuns": "Privacy action manual run status"
         }
     },
     "consent": {
@@ -388,12 +389,41 @@
         "targets": {
             "count": "Due this cycle: {{count}}",
             "view": "View targets",
+            "row_label": "Annual privacy usage notice",
             "title": "Members due for the annual notice",
             "hint": "Shows how many members would be notified even while this is off. Each run sends at most the send limit.",
             "total": "{{count}} in total",
             "empty": "There are no targets.",
             "loading": "Loading...",
             "close": "Close"
+        },
+        "manual_run": {
+            "run": "Run now",
+            "save_first_hint": "You have unsaved changes. Manual runs use the saved settings, so save first.",
+            "status_active": "{{status}} — queued {{at}} · {{by}}",
+            "last_completed": "Last manual send: {{at}} · {{by}} · {{count}} queued · {{remaining}} remaining",
+            "last_failed": "Last manual send failed: {{at}} · {{by}} — {{error}}",
+            "unknown_requester": "Unknown",
+            "modal_title": "{{target}} — manual run",
+            "confirm_desc": "Queue the notice once now without waiting for the scheduler. Each run queues up to the batch limit; run again to continue with the rest. Members who already received it this cycle are skipped.",
+            "count_label": "Due this cycle",
+            "count_value": "{{count}} members",
+            "loading": "Counting...",
+            "mode_label": "Method",
+            "modes": {
+                "anonymize": "Anonymize",
+                "delete": "Delete",
+                "erase_ip": "Erase author IP"
+            },
+            "disabled_notice": "Automatic annual notices are off. A manual run ignores the toggle and queues once with the saved channels and text.",
+            "irreversible": "Queued notices cannot be cancelled. Make sure the text and channels are saved before running.",
+            "queue_hint": "A queue worker must be running. You cannot run the same target again until its queued job finishes.",
+            "cancel": "Cancel",
+            "execute": "Run",
+            "executing": "Queuing...",
+            "queued_toast": "The notice has been queued. The result will appear when it finishes.",
+            "queue_failed": "Could not queue the run.",
+            "preview_failed": "Could not load the target count."
         }
     },
     "edit_template": "Edit template",

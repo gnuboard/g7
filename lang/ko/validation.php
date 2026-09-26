@@ -1208,8 +1208,25 @@ return [
         ],
     ],
 
+    'privacy_manual_run' => [
+        'since' => [
+            'date' => '기준 시각 형식이 올바르지 않습니다.',
+        ],
+        'skip_waiting' => [
+            'boolean' => '대기기간 생략 값은 참/거짓이어야 합니다.',
+        ],
+        'targets' => [
+            'required' => '조회할 대상을 지정하세요.',
+            'string' => '대상 목록은 쉼표로 구분한 문자열이어야 합니다.',
+            'max' => '대상 목록이 너무 깁니다 (최대 :max자).',
+        ],
+    ],
+
     // 검증 속성명 (validation.attributes)
     'attributes' => [
+        'since' => '기준 시각',
+        'skip_waiting' => '대기기간 생략',
+        'targets' => '조회 대상',
         'page' => '페이지 번호',
         'per_page' => '페이지 크기',
         'ids' => 'ID 목록',

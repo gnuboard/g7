@@ -3965,6 +3965,38 @@
           "can_view_targets": true
         }
       },
+      "privacyManualRuns": {
+        "data": {
+          "targets": {
+            "retention:sirsoft-ecommerce.order": {
+              "key": "retention:sirsoft-ecommerce.order",
+              "label": "이커머스 종결 주문 개인정보",
+              "can_run": true,
+              "enabled": false,
+              "supports_skip_waiting": false,
+              "run": {
+                "id": 7,
+                "target": "retention:sirsoft-ecommerce.order",
+                "status": "completed",
+                "status_label": "완료",
+                "is_active": false,
+                "skip_waiting": false,
+                "processed_count": 2,
+                "remaining_count": null,
+                "mode": "anonymize",
+                "error": null,
+                "requester_name": "관리자",
+                "queued_at": "2026-09-25 14:02:11",
+                "started_at": "2026-09-25 14:02:12",
+                "finished_at": "2026-09-25 14:02:15"
+              }
+            }
+          },
+          "has_active": false,
+          "finished_since": false,
+          "checked_at": "2026-09-25T14:02:20+09:00"
+        }
+      },
       "privacyTargets": {
         "data": {
           "data": [
@@ -8518,7 +8550,7 @@
         ]
       },
       {
-        "comment": "admin 이커머스 설정 — {{_global.activeEcommerceSettingsTab || query.tab || 'basic_info'}} 으로 9개 탭 화면을 if 분기한다(본문 line 303/344~). query.tab + 우선 키 함께 주입.",
+        "comment": "admin 이커머스 설정 — {{_global.activeEcommerceSettingsTab || query.tab || 'basic_info'}} 으로 11개 탭 화면을 if 분기한다(본문 line 303/344~). query.tab + 우선 키 함께 주입.",
         "scope": {
           "kind": "route",
           "match": "*/admin/ecommerce/settings"
@@ -8630,6 +8662,18 @@
               },
               "global": {
                 "activeEcommerceSettingsTab": "identity_policies"
+              }
+            }
+          },
+          {
+            "id": "tab_privacy_retention",
+            "label": "$t:editor.state.tab.privacy_retention",
+            "initialState": {
+              "query": {
+                "tab": "privacy_retention"
+              },
+              "global": {
+                "activeEcommerceSettingsTab": "privacy_retention"
               }
             }
           }

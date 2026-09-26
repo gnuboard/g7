@@ -15,7 +15,8 @@
     "mail_templates": "メールテンプレート",
     "notification_definitions": "通知設定",
     "seo": "SEO設定",
-    "identity_policies": "本人認証ポリシー"
+    "identity_policies": "本人認証ポリシー",
+    "privacy_retention": "個人情報の保有期間"
   },
   "board_settings_tabs": {
     "basic": "基本",
@@ -533,16 +534,44 @@
     "preview_hint": "対象件数は保存された設定基準です。値を変更した場合は保存した後に再度確認してください。",
     "withdrawn_notice": "退会した会員の投稿は画面に「退会したユーザー」と表示されるため、ここで別途処理することはありません。会員情報破棄はコア環境設定の個人情報タブで設定します。",
     "targets": {
-      "ip_count": "作成IP {{count}}件",
-      "guest_count": "非会員投稿 {{count}}件",
-      "view_ip": "IP対象表示",
-      "view_guest": "非会員対象表示",
       "title_ip": "作成IP削除対象 (投稿·コメント)",
       "title_guest": "非会員作成者情報処理対象 (投稿·コメント)",
       "total": "合計 {{count}}件",
       "empty": "対象がありません。",
       "loading": "読み込み中...",
-      "close": "閉じる"
+      "close": "閉じる",
+      "row_ip": "掲示板作成IP（投稿·コメント）",
+      "row_guest": "非会員作成者情報（投稿·コメント）",
+      "count": "対象 {{count}}件",
+      "view": "対象を表示"
+    },
+    "manual_run": {
+      "run": "今すぐ実行",
+      "save_first_hint": "保存されていない変更があります。職権実行は保存された設定で処理されるため、まず保存してください。",
+      "status_active": "{{status}} — {{at}}受け取り · {{by}}",
+      "last_completed": "最後の職権実行：{{at}} · {{by}} · {{count}}件処理",
+      "last_failed": "最後の職権実行失敗：{{at}} · {{by}} — {{error}}",
+      "unknown_requester": "不明",
+      "modal_title": "{{target}} — 職権実行",
+      "confirm_desc": "スケジューラーを待たずに今すぐ1回実行します。タスクはキューに受け取られ、順番に処理され、終了するとこの画面に結果が表示されます。",
+      "count_label": "処理予定",
+      "count_value": "{{count}}件",
+      "loading": "件数をカウント中...",
+      "mode_label": "処理方法",
+      "modes": {
+        "anonymize": "匿名化",
+        "delete": "削除",
+        "erase_ip": "作成IP削除"
+      },
+      "disabled_notice": "自動実行がオフになっています。職権実行はトグルと無関係に保存された設定値でこの1回だけ処理します。",
+      "irreversible": "実行するともとに戻せません。処理予定件数と対象リストを確認してから実行してください。",
+      "queue_hint": "キューワーカーが動作する必要があります。同じ対象に受け取られたタスクが終わる前は再実行できません。",
+      "cancel": "キャンセル",
+      "execute": "実行",
+      "executing": "受け取り中...",
+      "queued_toast": "実行をキューに受け取りました。処理が終了すると結果が表示されます。",
+      "queue_failed": "実行を受け取れませんでした。",
+      "preview_failed": "対象件数を読み込めませんでした。"
     }
   }
 }

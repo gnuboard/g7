@@ -90,6 +90,10 @@ return [
         'dormant_converted' => 'Marked Dormant',
         'dormant_withdrawn' => 'Dormant Account Withdrawn',
 
+        // Privacy manual run (privacy.manual_run_*) — compound words that do not collide with common segments
+        'manual_run_queued' => 'Privacy action manual run queued',
+        'manual_run_finished' => 'Privacy action manual run finished',
+
         // Ecommerce/Board common
     ],
 
@@ -171,6 +175,10 @@ return [
         'user_dormant_restored' => 'Dormancy lifted by sign-in (ID: :user_id)',
         'user_dormant_converted' => 'Marked dormant after long inactivity (ID: :user_id)',
         'user_dormant_withdrawn' => 'Withdrawn after the dormancy period (ID: :user_id)',
+        'privacy_manual_run_queued' => 'Privacy action manual run queued (:target)',
+        'privacy_manual_run_queued_skip_waiting' => 'Privacy action manual run queued — waiting period skipped (:target)',
+        'privacy_manual_run_completed' => 'Privacy action manual run completed (:target, :count items)',
+        'privacy_manual_run_failed' => 'Privacy action manual run failed (:target)',
         'security_ip_restriction_disabled' => 'IP access restriction emergency-disabled (console)',
 
         // Schedule management

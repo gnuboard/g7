@@ -87,7 +87,11 @@ HookManager::addFilter('core.privacy.retention_handlers', function (array $handl
 - `isEnabled()`는 **자기 도메인 설정을 기본 false 폴백으로** 읽습니다. 확장을 설치했다는
   사실만으로 회원 데이터가 지워지면 안 됩니다.
 - `process()`는 수집기가 이미 걸러 주더라도 **자기 토글을 다시 봅니다.** 되돌릴 수 없는
-  파기라 호출자를 믿지 않습니다.
+  파기라 호출자를 믿지 않습니다. 단 관리자 직권 실행(`process($dryRun, force: true)`)은 토글만
+  건너뜁니다 — 처리 조건식은 그대로입니다.
+- `runPermissions()`는 설정 화면 「지금 실행」의 권한(**설정 수정 + 그 도메인 수정**, 행을 지우는
+  방식이면 도메인 삭제까지)을 돌려줍니다. 핸들러를 등록하면 코어가 `retention:{id}` 직권 실행 대상을
+  자동으로 만듭니다.
 - `preview()`·`targets()`·`process()`는 **같은 조건식**을 공유합니다. 어긋나면 운영자가 화면에서 본
   숫자·명단과 실제로 지워진 양이 달라집니다. 멱등(이미 처리된 행 제외)도 그 조건식이 책임집니다.
 - `preview()`·`targets()`는 기능이 **꺼져 있어도** 저장된 기간값으로 셉니다 — 운영자는 켜기 전에
@@ -106,6 +110,32 @@ HookManager::addFilter('core.privacy.retention_handlers', function (array $handl
 실제 처리 때만 발행합니다. 번들 핸들러의 접두사 전수는 아래 「보존 기간 자동 파기」 카탈로그에 있습니다.
 코어 탈퇴 회원 핸들러의 접두사는 `core.privacy.withdrawn_user`입니다.
 구현 예시·규약 표·검증 매트릭스는 [개인정보 보유기간 처리 가이드](../backend/privacy-retention.md)에 있습니다.
+
+### 개인정보 조치 직권 실행 대상·알림 훅
+
+`core.privacy.manual_run_targets`는 코어 소유 필터입니다. 입력·반환 모두 `array<int, class-string>`이고,
+각 클래스는 `App\Privacy\Contracts\PrivacyManualRunnerInterface`를 구현합니다. 보유기간 핸들러와 휴면
+단계는 코어가 이미 등록하므로, **핸들러가 아닌 조치**(예: gdpr 연간 통지 발송)만 이 필터로 더합니다.
+리스너는 DB 에 접근하지 않고 클래스명만 더하며, 대상 키는 `{확장 식별자}:{이름}` 으로 전역 유일해야
+합니다(같은 키가 둘이면 먼저 등록된 쪽만 남습니다 — 확장이 코어 대상을 가로채지 못하게).
+
+```php
+HookManager::addFilter('core.privacy.manual_run_targets', function (array $runners) {
+    $runners[] = AnnualNoticeManualRunner::class;
+
+    return $runners;
+});
+```
+
+접수·종료는 코어 소유 액션 훅으로 알립니다. 인자는 `(PrivacyManualRun $run, string $label)` 이고 코어 활동
+로그 리스너가 구독합니다.
+
+| 훅 | 발행 시점 | 비고 |
+| --- | --- | --- |
+| `core.privacy.manual_run_queued` | 「지금 실행」 접수 직후(관리자 요청 안) | `$run->skip_waiting` 로 휴면 대기기간 생략 여부를 안다 |
+| `core.privacy.manual_run_finished` | 큐 작업이 완료·실패로 기록을 닫은 뒤(버려진 기록을 닫을 때 포함) | 인증 사용자가 없다 — 접수자는 `$run->requested_by` |
+
+계약·운영 규약은 [개인정보 보유기간 처리 가이드 — 관리자 직권 실행](../backend/privacy-retention.md#10-관리자-직권-실행)에 있습니다.
 
 ### 휴면 계정 생명주기 알림 훅
 
@@ -275,6 +305,8 @@ core.menu.store_validation_rules
 core.menu.update_validation_rules
 core.privacy.target_list_validation_rules           # 개인정보 조치 대상 명단 조회 (page · per_page)
 core.settings.privacy_preview_validation_rules      # 개인정보 탭 대상 건수 미리보기 (기본 규칙 없음)
+core.privacy.manual_run_validation_rules            # 개인정보 조치 직권 실행 접수·건수 확인 (skip_waiting)
+core.privacy.manual_run_status_validation_rules     # 개인정보 조치 직권 실행 상태 조회 (targets · since)
 
 # 구 이름에서 표준 이름으로 옮긴 훅 (7.0.6) — 구 이름도 함께 발행되므로 기존 구독은 유지되나,
 # 새로 구독할 때는 표준 이름을 쓴다. 구 이름에 구독자가 있으면 로그에 1회 안내가 남는다.

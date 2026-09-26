@@ -66,6 +66,9 @@ effects:
   - board_guest_post_is_deleted_and_scrubbed
   - board_guest_attachments_are_purged
   - board_retention_targets_match_the_population
+  - board_manual_run_processes_while_off
+  - board_manual_run_requires_settings_and_board_update
+  - board_manual_run_buttons_open_the_confirm_modal
 
 test_files:
   - modules/_bundled/sirsoft-board/tests/Feature/Privacy/BoardRetentionHandlerTest.php

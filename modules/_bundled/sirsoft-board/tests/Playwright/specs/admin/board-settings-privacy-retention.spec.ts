@@ -1,5 +1,5 @@
 /**
- * E2E: 게시판 환경설정 > 일반 — 「개인정보 보유기간」 카드 (이슈 #636 S5)
+ * E2E: 게시판 환경설정 > 「개인정보 보유기간」 탭 (이슈 #636 S5)
  *
  * 검증:
  *  1. 카드가 **꺼진 채** 번역문과 함께 마운트되고, 꺼져 있으면 기간·방식 칸이 없다
@@ -21,7 +21,7 @@ import { fileURLToPath } from 'node:url';
 import type { Page } from '@playwright/test';
 import { test, expect, authenticatePage } from '../../fixtures/board-auth';
 
-const SETTINGS_URL = '/admin/boards/settings?tab=general';
+const SETTINGS_URL = '/admin/boards/settings?tab=privacy_retention';
 const SECTION = '#privacy_retention_section';
 const TOGGLE_FIELD = '#privacy_retention_enabled_field';
 const AXES = '#privacy_retention_axes';
@@ -92,7 +92,7 @@ async function api(page: Page, token: string, path: string, body?: unknown): Pro
  * @returns 상태 코드와 본문
  */
 async function saveRetention(page: Page, token: string, retention: Retention) {
-  return api(page, token, API, { _tab: 'general', privacy_retention: retention });
+  return api(page, token, API, { _tab: 'privacy_retention', privacy_retention: retention });
 }
 
 /**
@@ -141,6 +141,42 @@ test('카드는 꺼진 채 번역문과 함께 열리고, 꺼져 있으면 기�
   await expect(page.locator(AXES)).toHaveCount(0);
 });
 
+// @scenario axis=ip, toggle=off, guest_mode=anonymize
+// @effects board_settings_retention_section_binds_saved_keys
+test('카드는 자기 탭에만 있고, 두 탭의 켜기 스위치가 이름·설명 줄의 오른쪽 끝에 놓인다', async ({ page }) => {
+  // 2026-09-26 결정 — 코어·쇼핑몰·gdpr 처럼 개인정보 조치를 자기 탭에 두고, 스위치는 설명 아래가 아니라 오른쪽 끝.
+  const placement = async (field: string) => page.locator(field).evaluate((row) => {
+    const sw = row.querySelector('.toggle-switch-wrapper') as HTMLElement;
+    const label = row.querySelector('label') as HTMLElement;
+    const r = row.getBoundingClientRect();
+    const s = sw.getBoundingClientRect();
+    const l = label.getBoundingClientRect();
+    return { rightGap: Math.round(r.right - s.right), switchLeftOfLabelEnd: s.left < l.right, belowLabel: s.top >= l.bottom };
+  });
+
+  const privacy = await placement(TOGGLE_FIELD);
+  test.info().annotations.push({ type: 'placement:privacy_retention', description: JSON.stringify(privacy) });
+  await test.info().attach('privacy-retention-tab', { body: await page.locator(SECTION).screenshot(), contentType: 'image/png' });
+  expect(privacy.rightGap).toBeLessThanOrEqual(2);
+  expect(privacy.belowLabel).toBe(false);
+  expect(privacy.switchLeftOfLabelEnd).toBe(false);
+
+  // 탭 머리를 눌러 기본 설정으로 옮기면 카드가 사라지고, 그 탭의 첨부 정리 스위치도 같은 줄 양식이다.
+  await clickCentered(page.locator('#tab_navigation').getByText(/^기본 설정$|^General$/).first());
+  await expect(page).toHaveURL(/tab=general/);
+  await expect(page.locator('#attachment_purge_enabled_field')).toBeVisible({ timeout: 20_000 });
+  await expect(page.locator(SECTION)).toHaveCount(0);
+  const attachment = await placement('#attachment_purge_enabled_field');
+  test.info().annotations.push({ type: 'placement:general', description: JSON.stringify(attachment) });
+  await test.info().attach('general-tab-attachment-cleanup', { body: await page.locator('#attachment_cleanup_section').screenshot(), contentType: 'image/png' });
+  expect(attachment.rightGap).toBeLessThanOrEqual(2);
+  expect(attachment.belowLabel).toBe(false);
+
+  await clickCentered(page.locator('#tab_navigation').getByText(/^개인정보 보유기간$|^Privacy Retention$/).first());
+  await expect(page).toHaveURL(/tab=privacy_retention/);
+  await expect(page.locator(SECTION)).toBeVisible({ timeout: 20_000 });
+});
+
 // @scenario axis=guest, toggle=on, guest_mode=delete
 // @effects board_settings_delete_warning_is_mode_conditional
 test('켜면 두 기간 칸과 방식이 나타나고, 삭제 경고는 삭제를 골랐을 때만 보인다', async ({ page }) => {
@@ -173,6 +209,7 @@ test('저장하면 본문에 privacy_retention 이 실리고 뱃지가 미리보
   const payload = (await request).postDataJSON() as Record<string, any>;
   expect((await response).status()).toBe(200);
   expect(payload).toHaveProperty('privacy_retention');
+  expect(payload._tab).toBe('privacy_retention');
   expect(Boolean(payload.privacy_retention.enabled)).toBe(true);
 
   // 화면이 읽는 것과 같은 자료를 API 에서 받아 둔다 — 켰으니 두 축 모두 숫자다.

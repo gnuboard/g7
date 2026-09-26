@@ -1473,6 +1473,7 @@
       "seo": "SEO tab",
       "notification_definitions": "Notification definitions tab",
       "identity_policies": "Identity policy tab",
+      "privacy_retention": "Privacy retention tab",
       "basic_info": "Basic info tab",
       "language_currency": "Language & currency tab",
       "order_settings": "Order settings tab",
@@ -1725,6 +1726,7 @@
     "user": "User",
     "users": "Users",
     "privacyPreview": "Privacy processing target counts",
+    "privacyManualRuns": "Privacy action manual run status",
     "privacyTargets": "Privacy action target list"
   }
 }

@@ -15,7 +15,8 @@
     "mail_templates": "메일 템플릿",
     "notification_definitions": "알림 설정",
     "seo": "SEO 설정",
-    "identity_policies": "본인인증 정책"
+    "identity_policies": "본인인증 정책",
+    "privacy_retention": "개인정보 보유기간"
   },
   "board_settings_tabs": {
     "basic": "기본",
@@ -531,16 +532,44 @@
     "preview_hint": "대상 건수는 저장된 설정 기준입니다. 값을 바꿨다면 저장한 뒤에 다시 확인하세요.",
     "withdrawn_notice": "탈퇴한 회원의 글은 화면에 「탈퇴한 사용자」로 표시되므로 여기서 따로 처리하지 않습니다. 회원 정보 파기는 코어 환경설정의 개인정보 탭에서 설정합니다.",
     "targets": {
-      "ip_count": "작성 IP {{count}}건",
-      "guest_count": "비회원 글 {{count}}건",
-      "view_ip": "IP 대상 보기",
-      "view_guest": "비회원 대상 보기",
+      "row_ip": "게시판 작성 IP (글·댓글)",
+      "row_guest": "비회원 작성자 정보 (글·댓글)",
+      "count": "대상 {{count}}건",
+      "view": "대상 보기",
       "title_ip": "작성 IP 파기 대상 (글·댓글)",
       "title_guest": "비회원 작성자 정보 처리 대상 (글·댓글)",
       "total": "총 {{count}}건",
       "empty": "대상이 없습니다.",
       "loading": "불러오는 중...",
       "close": "닫기"
+    },
+    "manual_run": {
+      "run": "지금 실행",
+      "save_first_hint": "저장하지 않은 변경이 있습니다. 직권 실행은 저장된 설정으로 처리되므로 먼저 저장하세요.",
+      "status_active": "{{status}} — {{at}} 접수 · {{by}}",
+      "last_completed": "마지막 직권 실행: {{at}} · {{by}} · {{count}}건 처리",
+      "last_failed": "마지막 직권 실행 실패: {{at}} · {{by}} — {{error}}",
+      "unknown_requester": "알 수 없음",
+      "modal_title": "{{target}} — 직권 실행",
+      "confirm_desc": "스케줄러를 기다리지 않고 지금 한 번 실행합니다. 작업은 큐에 접수되어 차례로 처리되며, 끝나면 이 화면에 결과가 표시됩니다.",
+      "count_label": "처리 예정",
+      "count_value": "{{count}}건",
+      "loading": "건수를 세는 중...",
+      "mode_label": "처리 방식",
+      "modes": {
+        "anonymize": "익명화",
+        "delete": "삭제",
+        "erase_ip": "작성 IP 삭제"
+      },
+      "disabled_notice": "자동 실행은 꺼져 있습니다. 직권 실행은 토글과 무관하게 저장된 설정값으로 이번 한 번만 처리합니다.",
+      "irreversible": "실행하면 되돌릴 수 없습니다. 처리 예정 건수와 대상 명단을 확인한 뒤 실행하세요.",
+      "queue_hint": "큐 워커가 동작해야 처리됩니다. 같은 대상에 접수된 작업이 끝나기 전에는 다시 실행할 수 없습니다.",
+      "cancel": "취소",
+      "execute": "실행",
+      "executing": "접수 중...",
+      "queued_toast": "실행을 큐에 접수했습니다. 처리가 끝나면 결과가 표시됩니다.",
+      "queue_failed": "실행을 접수하지 못했습니다.",
+      "preview_failed": "대상 건수를 불러오지 못했습니다."
     }
   }
 }

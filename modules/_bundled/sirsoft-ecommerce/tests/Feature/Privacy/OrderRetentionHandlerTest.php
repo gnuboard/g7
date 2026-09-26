@@ -545,4 +545,34 @@ class OrderRetentionHandlerTest extends ModuleTestCase
         $this->assertNotNull($english);
         $this->assertStringContainsString('anonymized 7 years', $english['body']);
     }
+
+    /**
+     * 관리자 직권 실행(`force`)은 꺼져 있어도 같은 모집단을 처리하고, 자동 배치(`force` 없음)는 여전히 꺼짐으로 멈춘다.
+     * 직권 실행 권한은 설정 수정 + 주문 수정이며, 삭제 방식이면 주문 삭제 권한을 더한다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario order_state=confirmed, toggle=off, mode=anonymize
+     *
+     * @effects order_manual_run_processes_while_off, order_delete_mode_manual_run_requires_order_delete_permission
+     */
+    #[Test]
+    public function manual_run_processes_while_off_and_delete_mode_requires_order_delete(): void
+    {
+        $this->fakeRetentionSettings(['privacy_retention.enabled' => false, 'privacy_retention.mode' => 'anonymize']);
+        $order = $this->closedOrder();
+        $handler = app(OrderRetentionHandler::class);
+
+        $this->assertSame(['count' => 0, 'mode' => 'disabled'], $handler->process(false), '자동 배치는 토글을 본다');
+        $this->assertSame('홍길동', OrderAddress::where('order_id', $order->id)->value('orderer_name'));
+
+        $this->assertSame(['count' => 1, 'mode' => 'anonymize'], $handler->process(true, true), '직권 dry-run 은 꺼져 있어도 센다');
+        $this->assertSame(['count' => 1, 'mode' => 'anonymize'], $handler->process(false, true));
+        $this->assertNotSame('홍길동', OrderAddress::where('order_id', $order->id)->value('orderer_name'), '직권 실행은 꺼져 있어도 익명화한다');
+
+        $this->assertSame(['sirsoft-ecommerce.settings.update', 'sirsoft-ecommerce.orders.update'], $handler->runPermissions());
+
+        $this->fakeRetentionSettings(['privacy_retention.enabled' => false, 'privacy_retention.mode' => 'delete']);
+        $this->assertContains('sirsoft-ecommerce.orders.delete', app(OrderRetentionHandler::class)->runPermissions(), '주문을 지우는 방식은 주문 삭제 권한까지 요구한다');
+    }
 }

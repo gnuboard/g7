@@ -25,7 +25,8 @@
             "reactionTypes": "반응 유형",
             "reactions": "반응 목록",
             "reaction_boards": "반응 게시판 선택지",
-            "privacyTargets": "보유기간 처리 대상 목록 (작성 IP·비회원)"
+            "privacyTargets": "보유기간 처리 대상 목록 (작성 IP·비회원)",
+            "privacyManualRuns": "개인정보 조치 직권 실행 상태"
         }
     },
     "common": {

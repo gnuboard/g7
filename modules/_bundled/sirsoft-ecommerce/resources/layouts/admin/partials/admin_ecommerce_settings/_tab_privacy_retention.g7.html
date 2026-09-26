@@ -20,24 +20,61 @@
       <div class="row-stack">
         <div data-ref="privacy_retention_enabled_field" class="flex-between">
           <div>
-            <div class="flex-wrap-center gap-2">
-              <span class="text-heading">$t:sirsoft-ecommerce.admin.settings.privacy_retention.enabled</span>
-              <span data-if="{{ecommercePrivacyRetentionPreview?.data?.orders !== null &amp;&amp; ecommercePrivacyRetentionPreview?.data?.orders !== undefined}}" class="badge badge-yellow">$t:sirsoft-ecommerce.admin.settings.privacy_retention.target_count|count={{ecommercePrivacyRetentionPreview?.data?.orders ?? 0}}</span>
-              <button data-ref="view_privacy_retention_targets" data-if="{{ecommercePrivacyRetentionPreview?.data?.can_view_targets}}" type="button" class="btn btn-sm btn-outline">
-                <on type="click">
-                  <sequence>
-                    <set-state target="global" privacyTargets="{{({ path: 'retention-targets/sirsoft-ecommerce.order', currentPage: 1, hasMore: true, isLoadingMore: false })}}"/>
-                    <set-state target="global" privacyTargets.title="$t:sirsoft-ecommerce.admin.settings.privacy_retention.targets.title"/>
-                    <refetch-data-source dataSourceId="privacyTargets"/>
-                    <open-modal target="privacy_targets_modal"/>
-                  </sequence>
-                </on>
-                $t:sirsoft-ecommerce.admin.settings.privacy_retention.targets.view
-              </button>
-            </div>
+            <span class="text-heading">$t:sirsoft-ecommerce.admin.settings.privacy_retention.enabled</span>
             <p class="text-label-subtle">$t:sirsoft-ecommerce.admin.settings.privacy_retention.enabled_hint</p>
           </div>
           <toggle name="privacy_retention.enabled" disabled="{{_computed.isReadOnly}}"/>
+        </div>
+        <!-- 조치 대상 — 코어 개인정보 탭과 같은 「대상 행」 양식(이름 · 건수 배지 · 오른쪽 끝 대상 보기·지금 실행 · 그 행의 결과 줄).
+             되돌릴 수 없는 실행은 채운 강조색을 쓰지 않는다(2026-09-26 결정). -->
+        <div data-ref="privacy_retention_target_list" data-if="{{(ecommercePrivacyRetentionPreview?.data?.orders !== null &amp;&amp; ecommercePrivacyRetentionPreview?.data?.orders !== undefined) || privacyManualRuns?.data?.targets?.['retention:sirsoft-ecommerce.order']?.can_run}}" class="space-y-2">
+          <div class="rounded-lg border border-gray-200 dark:border-gray-700">
+            <div data-ref="privacy_retention_target_row" class="px-4 py-3">
+              <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <div class="flex-wrap-center gap-2 min-w-0">
+                  <span class="text-heading">$t:sirsoft-ecommerce.admin.settings.privacy_retention.targets.row_label</span>
+                  <span data-if="{{ecommercePrivacyRetentionPreview?.data?.orders !== null &amp;&amp; ecommercePrivacyRetentionPreview?.data?.orders !== undefined}}" class="badge badge-yellow">$t:sirsoft-ecommerce.admin.settings.privacy_retention.target_count|count={{ecommercePrivacyRetentionPreview?.data?.orders ?? 0}}</span>
+                </div>
+                <div class="flex-wrap-center gap-2">
+                  <button data-ref="view_privacy_retention_targets" data-if="{{ecommercePrivacyRetentionPreview?.data?.can_view_targets}}" type="button" class="btn btn-sm btn-ghost">
+                    <on type="click">
+                      <sequence>
+                        <set-state target="global" privacyTargets="{{({ path: 'retention-targets/sirsoft-ecommerce.order', currentPage: 1, hasMore: true, isLoadingMore: false })}}"/>
+                        <set-state target="global" privacyTargets.title="$t:sirsoft-ecommerce.admin.settings.privacy_retention.targets.title"/>
+                        <refetch-data-source dataSourceId="privacyTargets"/>
+                        <open-modal target="privacy_targets_modal"/>
+                      </sequence>
+                    </on>
+                    $t:sirsoft-ecommerce.admin.settings.privacy_retention.targets.view
+                  </button>
+                  <button data-ref="run_privacy_retention" data-if="{{privacyManualRuns?.data?.targets?.['retention:sirsoft-ecommerce.order']?.can_run}}" type="button" class="btn btn-sm btn-outline" disabled="{{_local.hasChanges || privacyManualRuns?.data?.targets?.['retention:sirsoft-ecommerce.order']?.run?.is_active}}">
+                    <on type="click">
+                      <sequence>
+                        <set-state target="global" privacyRun="{{({ key: 'retention:sirsoft-ecommerce.order', label: privacyManualRuns?.data?.targets?.['retention:sirsoft-ecommerce.order']?.label ?? '', supportsSkip: false, skipWaiting: false, preview: null, loading: true, submitting: false })}}"/>
+                        <open-modal target="privacy_run_modal"/>
+                        <api-call :auth_required="true" target="/api/admin/privacy/manual-runs/retention:sirsoft-ecommerce.order/preview" method="GET">
+                          <success>
+                            <set-state target="global" privacyRun.preview="{{response.data}}" :privacyRun.loading="false"/>
+                          </success>
+                          <fail>
+                            <set-state target="global" :privacyRun.loading="false"/>
+                            <toast type="error" message="{{error.message ?? '$t:sirsoft-ecommerce.admin.settings.privacy_retention.manual_run.preview_failed'}}"/>
+                          </fail>
+                        </api-call>
+                      </sequence>
+                    </on>
+                    $t:sirsoft-ecommerce.admin.settings.privacy_retention.manual_run.run
+                  </button>
+                </div>
+              </div>
+              <div data-ref="privacy_retention_manual_run_status" data-if="{{privacyManualRuns?.data?.targets?.['retention:sirsoft-ecommerce.order']?.run}}" class="text-hint mt-1">
+                <span data-if="{{privacyManualRuns?.data?.targets?.['retention:sirsoft-ecommerce.order']?.run?.is_active}}" class="text-blue-600 dark:text-blue-400">$t:sirsoft-ecommerce.admin.settings.privacy_retention.manual_run.status_active|status={{privacyManualRuns?.data?.targets?.['retention:sirsoft-ecommerce.order']?.run?.status_label ?? ''}}|at={{privacyManualRuns?.data?.targets?.['retention:sirsoft-ecommerce.order']?.run?.queued_at ?? ''}}|by={{privacyManualRuns?.data?.targets?.['retention:sirsoft-ecommerce.order']?.run?.requester_name ?? $t('sirsoft-ecommerce.admin.settings.privacy_retention.manual_run.unknown_requester')}}</span>
+                <span data-if="{{privacyManualRuns?.data?.targets?.['retention:sirsoft-ecommerce.order']?.run?.status === 'completed'}}">$t:sirsoft-ecommerce.admin.settings.privacy_retention.manual_run.last_completed|at={{privacyManualRuns?.data?.targets?.['retention:sirsoft-ecommerce.order']?.run?.finished_at ?? ''}}|by={{privacyManualRuns?.data?.targets?.['retention:sirsoft-ecommerce.order']?.run?.requester_name ?? $t('sirsoft-ecommerce.admin.settings.privacy_retention.manual_run.unknown_requester')}}|count={{privacyManualRuns?.data?.targets?.['retention:sirsoft-ecommerce.order']?.run?.processed_count ?? 0}}</span>
+                <span data-if="{{privacyManualRuns?.data?.targets?.['retention:sirsoft-ecommerce.order']?.run?.status === 'failed'}}" class="text-error-soft">$t:sirsoft-ecommerce.admin.settings.privacy_retention.manual_run.last_failed|at={{privacyManualRuns?.data?.targets?.['retention:sirsoft-ecommerce.order']?.run?.finished_at ?? ''}}|by={{privacyManualRuns?.data?.targets?.['retention:sirsoft-ecommerce.order']?.run?.requester_name ?? $t('sirsoft-ecommerce.admin.settings.privacy_retention.manual_run.unknown_requester')}}|error={{privacyManualRuns?.data?.targets?.['retention:sirsoft-ecommerce.order']?.run?.error ?? ''}}</span>
+              </div>
+            </div>
+          </div>
+          <p data-ref="privacy_retention_save_first" data-if="{{_local.hasChanges &amp;&amp; privacyManualRuns?.data?.targets?.['retention:sirsoft-ecommerce.order']?.can_run}}" class="text-hint">$t:sirsoft-ecommerce.admin.settings.privacy_retention.manual_run.save_first_hint</p>
         </div>
         <div data-ref="privacy_retention_fields" data-if="{{!!_local.form?.privacy_retention?.enabled}}" class="space-y-6">
           <div data-ref="privacy_retention_years_field">

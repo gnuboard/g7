@@ -8,6 +8,7 @@
 
 ### Added
 
+- 개인정보 조치 관리자 직권 실행의 코어 문구 일본어 번역을 추가했습니다 — 접수·처리 상태와 결과 안내(`privacy.manual_run.*`), 같은 대상에 작업이 이미 있을 때의 거절 문구(`exceptions.privacy_manual_run_conflict`), 요청 검증 문구와 항목명(`validation.privacy_manual_run.*`·`validation.attributes.skip_waiting`·`targets`·`since`), 접수·완료·실패 활동 로그 문구(`activity_log.*.privacy_manual_run_*`)입니다. 없으면 일본어 관리자 화면에서 직권 실행 결과와 활동 로그가 폴백 문구로 나옵니다. 휴면 단계 이름(`privacy.manual_run.dormant_stages.*`)은 다른 휴면 문구와 같은 「休眠」 표기로 맞췄습니다.
 - 개인정보 조치 대상 명단 창의 코어 문구 일본어 번역을 추가했습니다 — 회원 명단의 열 이름(이름·이메일·탈퇴일·마지막 활동일·휴면 전환일, `privacy.targets.columns.*`), 등록되지 않은 처리 대상이나 알 수 없는 휴면 단계를 요청했을 때의 안내(`privacy.targets.unknown_*`), 명단을 쪽 단위로 불러올 때의 검증 문구(`validation.privacy_targets.*`·`validation.attributes.page`·`validation.attributes.per_page`)입니다. 없으면 일본어 로케일에서 환경설정 > 개인정보의 「대상 보기」 창 열 이름이 한국어로 보입니다. 휴면은 팩 전체와 같은 「休眠」으로 적었습니다.
 - 휴면 계정과 개인정보 보유기간 파기 관련 코어 문구의 일본어 번역을 추가했습니다 — 휴면 전환·해제·자동 탈퇴가 남는 활동 로그 문구와 설명(`activity_log.action.dormant_*`·`activity_log.description.user_dormant_*`), 휴면 계정이 기존 토큰으로 API 를 부를 때 받는 안내(`auth.account_dormant`), 회원 상태 라벨 「휴면」과 「가입대기」(`user.status.dormant`·`pending_verification`), 환경설정 > 개인정보 탭의 검증 문구와 항목명(`validation.settings.privacy_*`·`validation.attributes.privacy_*`), 그리고 파기 핸들러 이름을 담은 `privacy.php`(`privacy.handlers.user_withdrawn`) 입니다. 없으면 일본어 로케일에서 이 문구들이 한국어로 남습니다. 휴면 해제 안내는 코어가 아니라 템플릿 문구(`auth.dormancy_restored`)라 `g7-template-sirsoft-basic-ja` 팩이 담당합니다.
 - 휴면 생명주기 알림 3종(전환 사전 안내·전환 완료·탈퇴 예정)의 일본어 메일·사이트내 알림 템플릿을 시드에 추가했습니다. 없으면 일본어 사이트의 회원이 법정 사전 안내와 탈퇴 예고를 한국어로 받습니다.

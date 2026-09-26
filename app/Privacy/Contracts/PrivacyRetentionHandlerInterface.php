@@ -119,10 +119,30 @@ interface PrivacyRetentionHandlerInterface
     public function targetPermissions(): array;
 
     /**
+     * 관리자 직권 실행(화면의 「지금 실행」)에 필요한 권한 식별자를 반환합니다 (모두 필요).
+     *
+     * 명단 권한({@see targetPermissions()})의 **쓰기 대칭** — 설정 수정 + 그 도메인 수정
+     * (예: `sirsoft-ecommerce.settings.update` + `sirsoft-ecommerce.orders.update`). 처리 방식이
+     * 행을 지우는 것이면 그 도메인의 삭제 권한도 더합니다 — 삭제 권한 없이 설정 화면을 거쳐
+     * 행을 지우는 우회 경로가 생기면 안 됩니다. 코어 실행 API 가 요청 시점에 검사하며, 명단과
+     * 같이 각 권한의 적용 범위가 **전체**일 때만 허용합니다.
+     *
+     * @return array<int, string> 권한 식별자 목록
+     */
+    public function runPermissions(): array;
+
+    /**
      * 보유기간이 지난 대상을 처리합니다.
      *
+     * 자동 배치(`$force = false`)는 {@see isEnabled()} 를 다시 확인해 꺼져 있으면 아무것도 바꾸지
+     * 않습니다. **관리자 직권 실행**(`$force = true`)은 토글과 무관하게 저장된 기간값(없으면
+     * 기본값)으로 처리합니다 — 자동 배치는 끄고 운영자가 필요할 때만 손으로 돌리는 운영을
+     * 허용하기 위함입니다(2026-09-25 확정). 직권 실행도 처리 조건식은 {@see preview()}·
+     * {@see targets()} 와 같습니다.
+     *
      * @param  bool  $dryRun  true 면 건수만 세고 데이터를 바꾸지 않습니다
+     * @param  bool  $force  true 면 관리자 직권 실행 — 활성 토글을 보지 않습니다
      * @return array{count: int, mode: string} 처리 건수와 처리 방식(anonymize|delete 등)
      */
-    public function process(bool $dryRun): array;
+    public function process(bool $dryRun, bool $force = false): array;
 }

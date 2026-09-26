@@ -3,7 +3,9 @@
 namespace App\Console\Commands;
 
 use App\Privacy\DormantAccountService;
+use App\Privacy\ManualRun\DormantStageRunner;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -23,11 +25,15 @@ use Illuminate\Support\Facades\Log;
  * 회원 상태를 바꾸고 계정을 파기하므로 기본 꺼짐(운영자 옵트인)입니다.
  *
  * `--scheduled` 는 **판정에 쓰이지 않습니다** — `privacy.dormant_enabled` 재확인이 이 플래그와
- * 무관하게 항상 선행하므로 수동 실행도 꺼진 기능을 돌리지 못합니다. 선례
+ * 무관하게 항상 선행하므로 CLI 수동 실행도 꺼진 기능을 돌리지 못합니다(토글과 무관하게 한 단계를
+ * 돌리는 길은 관리자 화면의 직권 실행 하나뿐이다 — `PrivacyManualRunService`). 선례
  * (`attachments:prune-orphans`)는 이 플래그를 읽어 "스케줄 실행일 때만" 조기 종료하지만,
  * 계정을 파기하는 커맨드에 그 느슨함을 두지 않았습니다. 플래그를 남겨 두는 것은
  * `config/schedule_security.php` 허용목록과 `routes/console.php` 등록이 옵션까지 일치해야
  * 하기 때문입니다.
+ *
+ * 관리자 직권 실행 큐 작업과 같은 락(`privacy-run:dormant`)을 잡는다 — 직권 실행이 처리 중이면
+ * 이번 주기를 건너뛴다.
  *
  * @example php artisan privacy:process-dormant --dry-run
  * @example php artisan privacy:process-dormant --scheduled
@@ -74,6 +80,33 @@ class ProcessDormantAccountsCommand extends Command
         $isDryRun = (bool) $this->option('dry-run');
         $prefix = $isDryRun ? '[DRY RUN] ' : '';
 
+        // 관리자 직권 실행 큐 작업과 같은 락 — 네 단계가 같은 회원 행을 옮기므로 단계와 무관하게
+        // 하나를 잡는다. 직권 실행이 처리 중이면 이번 주기는 건너뛰고 다음 주기에 맡긴다
+        // (겹치면 같은 회원에게 안내가 두 번 나가거나 전환과 탈퇴가 엇갈린다).
+        $lock = $isDryRun ? null : Cache::lock(DormantStageRunner::LOCK_KEY, 3600);
+
+        if ($lock !== null && ! $lock->get()) {
+            $this->warn('관리자 직권 실행이 휴면 단계를 처리 중이라 이번 주기는 건너뛰었습니다.');
+
+            return Command::SUCCESS;
+        }
+
+        try {
+            return $this->runStages($isDryRun, $prefix);
+        } finally {
+            $lock?->release();
+        }
+    }
+
+    /**
+     * 네 단계를 차례로 실행하고 보고합니다.
+     *
+     * @param  bool  $isDryRun  건수만 세는지 여부
+     * @param  string  $prefix  출력 접두사
+     * @return int 종료 코드
+     */
+    private function runStages(bool $isDryRun, string $prefix): int
+    {
         // 단계 간 격리 — 한 단계가 통째로 던져도 나머지 단계는 돈다. 감싸지 않으면 1단계의
         // 예외 하나가 전환·탈퇴 예고·탈퇴를 그날 전부 건너뛰게 하고, 단계별 건수조차 출력되지
         // 않는다. 형제 `privacy:process-retention` 이 핸들러별로 같은 방어를 갖고 있다

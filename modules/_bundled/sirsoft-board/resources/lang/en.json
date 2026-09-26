@@ -25,7 +25,8 @@
             "reactionTypes": "Reaction Types",
             "reactions": "Reaction list",
             "reaction_boards": "Reaction board options",
-            "privacyTargets": "Retention processing targets (author IP and guest)"
+            "privacyTargets": "Retention processing targets (author IP and guest)",
+            "privacyManualRuns": "Privacy action manual run status"
         }
     },
     "common": {

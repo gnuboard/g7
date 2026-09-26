@@ -17,10 +17,15 @@ use Illuminate\Support\Facades\Log;
  * 건드리지 않습니다.
  *
  * `--scheduled` 는 **판정에 쓰이지 않습니다** — 토글 재확인이 이 플래그와 무관하게 항상
- * 일어나므로 수동 실행도 꺼진 도메인을 건드리지 못합니다. 선례(`attachments:prune-orphans`)는
- * 이 플래그를 읽어 "스케줄 실행일 때만" 조기 종료하는데, 되돌릴 수 없는 파기에는 그 느슨함을
+ * 일어나므로 CLI 수동 실행도 꺼진 도메인을 건드리지 못합니다(토글과 무관하게 처리하는 길은
+ * 관리자 화면의 직권 실행 하나뿐이다 — `PrivacyManualRunService`, 핸들러 `process(force: true)`).
+ * 선례(`attachments:prune-orphans`)는 이 플래그를 읽어 "스케줄 실행일 때만" 조기 종료하는데,
+ * 되돌릴 수 없는 파기에는 그 느슨함을
  * 두지 않았습니다. 플래그를 남겨 두는 것은 `config/schedule_security.php` 허용목록과
  * `routes/console.php` 등록이 옵션까지 일치해야 하기 때문입니다.
+ *
+ * 핸들러마다 관리자 직권 실행 큐 작업과 같은 락을 잡는다 — 직권 실행이 처리 중인 도메인은
+ * 「건너뜀」으로 보고하고 다음 주기에 맡긴다.
  *
  * 출력은 "꺼짐" 과 "대상 0건" 을 구분합니다 — 둘을 같은 0 으로 뭉개면 운영자가 켠 줄 아는
  * 기능이 실제로는 놀고 있어도 알아챌 수 없습니다.
@@ -99,6 +104,14 @@ class ProcessPrivacyRetentionCommand extends Command
         foreach ($results as $id => $result) {
             if ($result['status'] === 'disabled') {
                 $this->line("{$prefix}{$id} ({$result['label']}): 꺼져 있어 실행하지 않았습니다.");
+
+                continue;
+            }
+
+            if ($result['status'] === 'locked') {
+                // 관리자가 화면에서 직권 실행한 큐 작업이 이 도메인을 처리하는 중이다 — 겹쳐 돌리지
+                // 않고 다음 주기에 맡긴다. 실패가 아니므로 종료 코드에 반영하지 않는다.
+                $this->warn("{$prefix}{$id} ({$result['label']}): 관리자 직권 실행이 처리 중이라 건너뛰었습니다.");
 
                 continue;
             }

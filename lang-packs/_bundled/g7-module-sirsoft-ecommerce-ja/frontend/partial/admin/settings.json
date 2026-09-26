@@ -595,7 +595,36 @@
       "total": "合計 {{count}}件",
       "empty": "対象がありません。",
       "loading": "読み込み中...",
-      "close": "閉じる"
+      "close": "閉じる",
+      "row_label": "保有期間が経過した終結注文"
+    },
+    "manual_run": {
+      "run": "今すぐ実行",
+      "save_first_hint": "保存されていない変更があります。職権実行は保存された設定で処理されるため、先に保存してください。",
+      "status_active": "{{status}} — {{at}} 受け付け · {{by}}",
+      "last_completed": "最後の職権実行: {{at}} · {{by}} · {{count}}件 処理",
+      "last_failed": "最後の職権実行失敗: {{at}} · {{by}} — {{error}}",
+      "unknown_requester": "不明",
+      "modal_title": "{{target}} — 職権実行",
+      "confirm_desc": "スケジューラーを待たずに今すぐ1回実行します。作業はキューに受け付けられ順番に処理され、終わるとこの画面に結果が表示されます。",
+      "count_label": "処理予定",
+      "count_value": "{{count}}件",
+      "loading": "件数をカウント中...",
+      "mode_label": "処理方式",
+      "modes": {
+        "anonymize": "匿名化",
+        "delete": "削除",
+        "erase_ip": "作成IP削除"
+      },
+      "disabled_notice": "自動実行は無効になっています。職権実行はトグルとは関係なく保存された設定値で今回1回だけ処理します。",
+      "irreversible": "実行するとやり直せません。処理予定件数と対象リストを確認してから実行してください。",
+      "queue_hint": "キューワーカーが動作する必要があります。同じ対象に受け付けられた作業が終わるまでは再度実行できません。",
+      "cancel": "キャンセル",
+      "execute": "実行",
+      "executing": "受け付け中...",
+      "queued_toast": "実行をキューに受け付けました。処理が終わると結果が表示されます。",
+      "queue_failed": "実行を受け付けることができませんでした。",
+      "preview_failed": "対象件数を読み込むことができませんでした。"
     }
   }
 }

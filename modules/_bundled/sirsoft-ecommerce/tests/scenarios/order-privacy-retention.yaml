@@ -72,6 +72,9 @@ effects:
   - order_anonymize_hook_failure_rolls_back
   - order_retention_targets_match_the_population
   - order_retention_target_button_wraps_on_narrow_viewports
+  - order_manual_run_processes_while_off
+  - order_delete_mode_manual_run_requires_order_delete_permission
+  - order_manual_run_button_opens_the_confirm_modal
 
 test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Feature/Privacy/OrderRetentionHandlerTest.php

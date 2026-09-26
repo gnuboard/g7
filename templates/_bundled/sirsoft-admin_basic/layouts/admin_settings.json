@@ -174,6 +174,76 @@
             "comment": "개인정보 탭의 대상 건수 뱃지 — 커맨드의 `--dry-run` 과 같은 조건식을 지나므로\n       화면 숫자와 실제 처리 건수가 어긋나지 않는다. 기능이 꺼져 있어도 건수를 보여 준다(#636)."
         },
         {
+            "id": "privacyManualRuns",
+            "label_key": "$t:editor.data_source.privacyManualRuns",
+            "type": "api",
+            "endpoint": "/api/admin/privacy/manual-runs",
+            "method": "GET",
+            "if": "{{(query.tab || _global.activeSettingsTab || 'general') === 'privacy'}}",
+            "auto_fetch": true,
+            "auth_required": true,
+            "params": {
+                "targets": "retention:user-withdrawn,dormant:pre_notice,dormant:convert,dormant:withdraw_notice,dormant:withdraw",
+                "since": "{{_global.privacyRunWatchSince ?? ''}}"
+            },
+            "fallback": {
+                "data": {
+                    "targets": {},
+                    "has_active": false,
+                    "finished_since": false
+                }
+            },
+            "onSuccess": [
+                {
+                    "handler": "setState",
+                    "if": "{{response?.data?.data?.has_active === true}}",
+                    "params": {
+                        "target": "global",
+                        "privacyRunWatchSince": "{{response?.data?.data?.checked_at}}"
+                    }
+                },
+                {
+                    "handler": "startInterval",
+                    "if": "{{response?.data?.data?.has_active === true}}",
+                    "params": {
+                        "id": "privacy_manual_run_poll",
+                        "intervalMs": 3000,
+                        "actions": [
+                            {
+                                "handler": "refetchDataSource",
+                                "params": {
+                                    "dataSourceId": "privacyManualRuns"
+                                }
+                            }
+                        ]
+                    }
+                },
+                {
+                    "handler": "stopInterval",
+                    "if": "{{response?.data?.data?.has_active !== true}}",
+                    "params": {
+                        "id": "privacy_manual_run_poll"
+                    }
+                },
+                {
+                    "handler": "refetchDataSource",
+                    "if": "{{response?.data?.data?.has_active !== true && response?.data?.data?.finished_since === true}}",
+                    "params": {
+                        "dataSourceId": "privacyPreview"
+                    }
+                },
+                {
+                    "handler": "setState",
+                    "if": "{{response?.data?.data?.has_active !== true}}",
+                    "params": {
+                        "target": "global",
+                        "privacyRunWatchSince": null
+                    }
+                }
+            ],
+            "comment": "개인정보 조치 직권 실행 상태 — 카드의 「지금 실행」 버튼과 상태 줄(처리 대기/처리 중 · 마지막 결과)이 쓴다.\n       접수된 작업이 끝나지 않았으면(`has_active`) 3초마다 다시 받고, 끝나면 멈춘다(사이트맵 상태와 같은 방식).\n       진행 중일 때 받은 서버 시각(`checked_at`)을 다음 조회의 `since` 로 돌려보내고, 그 뒤에 끝난 작업이 있으면\n       (`finished_since`) 대상 건수를 다시 받는다 — 처리된 만큼 줄어든 숫자가 보여야 결과를 확인할 수 있다.\n       판정을 응답값으로만 하는 까닭: 직전에 넣은 전역 값은 이 성공 핸들러에서 낡은 값으로 읽힌다(엔진 제약,\n       인터벌 캡처와 같은 결). 파라미터는 조회 시점에 평가되므로 `since` 는 최신 값이 나간다.\n       권한이 없는 대상은 서버가 `can_run=false` 로 가린다."
+        },
+        {
             "id": "privacyTargets",
             "label_key": "$t:editor.data_source.privacyTargets",
             "type": "api",
@@ -434,7 +504,8 @@
             "sitemap_status",
             "staticCacheStatus",
             "trustedProxy",
-            "privacyPreview"
+            "privacyPreview",
+            "privacyManualRuns"
         ]
     },
     "init_actions": [
@@ -1103,6 +1174,10 @@
         {
             "comment": "개인정보 조치 대상 명단 창(개인정보 탭) — 탈퇴 잔여정보 파기와 휴면 네 단계가 함께 쓴다.",
             "partial": "partials/admin_settings/_modal_privacy_targets.json"
+        },
+        {
+            "comment": "개인정보 조치 직권 실행 확인 창(개인정보 탭) — 탈퇴 잔여정보 파기와 휴면 네 단계가 함께 쓴다.",
+            "partial": "partials/admin_settings/_modal_privacy_run.json"
         }
     ]
 }

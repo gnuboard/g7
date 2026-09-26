@@ -52,7 +52,8 @@
             "carts": "Carts",
             "addresses": "Member addresses",
             "inquiries": "Product inquiries",
-            "privacyTargets": "Orders due for retention processing"
+            "privacyTargets": "Orders due for retention processing",
+            "privacyManualRuns": "Privacy action manual run status"
         }
     },
     "common": {

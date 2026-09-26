@@ -82,7 +82,8 @@ class BoardPrivacyRetentionSettingsTest extends ModuleTestCase
     }
 
     /**
-     * 일반 탭 저장이 보유기간 값을 정수·불리언으로 저장하고 다시 읽힌다.
+     * 「개인정보 보유기간」 탭 저장(`_tab=privacy_retention`)이 보유기간 값을 정수·불리언으로 저장하고
+     * 다시 읽힌다. 탭 이름이 `_tab` 허용 목록에서 빠지면 이 탭의 저장이 422 로 막힌다.
      *
      * @return void 반환값 없음
      *
@@ -91,10 +92,10 @@ class BoardPrivacyRetentionSettingsTest extends ModuleTestCase
      * @effects board_retention_settings_are_saved
      */
     #[Test]
-    public function general_tab_save_persists_retention_values_with_types(): void
+    public function privacy_tab_save_persists_retention_values_with_types(): void
     {
         $this->actingAs($this->admin)->putJson('/api/modules/sirsoft-board/admin/settings', [
-            '_tab' => 'general',
+            '_tab' => 'privacy_retention',
             'privacy_retention' => [
                 'enabled' => '1',
                 'ip_retention_days' => '400',
@@ -125,7 +126,7 @@ class BoardPrivacyRetentionSettingsTest extends ModuleTestCase
     public function invalid_retention_values_are_rejected(): void
     {
         $this->actingAs($this->admin)->putJson('/api/modules/sirsoft-board/admin/settings', [
-            '_tab' => 'general',
+            '_tab' => 'privacy_retention',
             'privacy_retention' => [
                 'enabled' => true,
                 'ip_retention_days' => 0,
@@ -165,7 +166,7 @@ class BoardPrivacyRetentionSettingsTest extends ModuleTestCase
         $this->assertIsInt($response->json('data.ip'), '꺼져 있어도 IP 축 건수를 센다');
 
         $this->actingAs($this->admin)->putJson('/api/modules/sirsoft-board/admin/settings', [
-            '_tab' => 'general',
+            '_tab' => 'privacy_retention',
             'privacy_retention' => ['enabled' => true, 'ip_retention_days' => 365, 'guest_retention_days' => 30, 'guest_mode' => 'anonymize'],
         ])->assertOk();
 

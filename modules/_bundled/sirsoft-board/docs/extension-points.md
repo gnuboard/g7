@@ -21,8 +21,8 @@
 | `sirsoft-board.attachment.filter_upload_file` | filter | — | `src/Services/AttachmentService.php:122` |
 | `sirsoft-board.attachment.reorder_validation_rules` | filter | — | `src/Http/Requests/ReorderAttachmentsRequest.php:35` |
 | `sirsoft-board.attachment.upload_validation_rules` | filter | — | `src/Http/Requests/UploadAttachmentRequest.php:77` |
-| `sirsoft-board.author_ip.after_prune` | action | — | `src/Privacy/BoardIpRetentionHandler.php:126` |
-| `sirsoft-board.author_ip.before_prune` | action | — | `src/Privacy/BoardIpRetentionHandler.php:121` |
+| `sirsoft-board.author_ip.after_prune` | action | — | `src/Privacy/BoardIpRetentionHandler.php:135` |
+| `sirsoft-board.author_ip.before_prune` | action | — | `src/Privacy/BoardIpRetentionHandler.php:130` |
 | `sirsoft-board.board.after_add_to_menu` | action | — | `src/Services/BoardService.php:1059` |
 | `sirsoft-board.board.after_create` | action | — | `src/Services/BoardService.php:457` |
 | `sirsoft-board.board.after_delete` | action | — | `src/Services/BoardService.php:623` |
@@ -63,8 +63,8 @@
 | `sirsoft-board.comment.filter_update_data` | filter | — | `src/Services/CommentService.php:422` |
 | `sirsoft-board.comment.store_validation_rules` | filter | — | `src/Http/Requests/StoreCommentRequest.php:91` |
 | `sirsoft-board.comment.update_validation_rules` | filter | — | `src/Http/Requests/UpdateCommentRequest.php:67` |
-| `sirsoft-board.guest_author.after_prune` | action | — | `src/Privacy/BoardGuestRetentionHandler.php:183` |
-| `sirsoft-board.guest_author.before_prune` | action | — | `src/Privacy/BoardGuestRetentionHandler.php:177` |
+| `sirsoft-board.guest_author.after_prune` | action | — | `src/Privacy/BoardGuestRetentionHandler.php:192` |
+| `sirsoft-board.guest_author.before_prune` | action | — | `src/Privacy/BoardGuestRetentionHandler.php:186` |
 | `sirsoft-board.permissions.after_create` | action | — | `src/Services/BoardService.php:431` |
 | `sirsoft-board.permissions.after_delete` | action | — | `src/Services/BoardService.php:600` |
 | `sirsoft-board.permissions.after_update` | action | — | `src/Services/BoardService.php:523` |

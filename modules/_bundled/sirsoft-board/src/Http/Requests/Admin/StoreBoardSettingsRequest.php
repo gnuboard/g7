@@ -198,7 +198,7 @@ class StoreBoardSettingsRequest extends FormRequest
 
         return [
             // 현재 탭 정보 (메타 데이터)
-            '_tab' => ['sometimes', 'string', 'in:basic_defaults,report_policy,spam_security,general,seo,notifications,notification_definitions'],
+            '_tab' => ['sometimes', 'string', 'in:basic_defaults,report_policy,spam_security,general,seo,notifications,notification_definitions,privacy_retention'],
 
             // ========================================
             // notifications (알림 채널 설정) 카테고리

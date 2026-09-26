@@ -20,7 +20,9 @@ _`getSettingsSchema()` 선언이 없습니다._
 
 ### 개인정보 보유기간 (`privacy_retention`, 이슈 #636)
 
-모듈 환경설정의 「일반」 탭이 저장하는 전역 카테고리입니다(`config/settings/defaults.json`).
+모듈 환경설정의 「개인정보 보유기간」 탭(`?tab=privacy_retention`, 저장 `_tab=privacy_retention`)이 저장하는
+전역 카테고리입니다(`config/settings/defaults.json`). 코어 개인정보 탭·쇼핑몰 보유기간 탭·gdpr 통지 탭처럼
+개인정보 조치를 자기 탭에 둡니다.
 게시판 하나가 아니라 **모든 게시판의 행**에 걸리므로 일괄 적용 대상이 아닙니다.
 
 | 키 | 기본값 | 의미 |
@@ -61,6 +63,12 @@ _`getSettingsSchema()` 선언이 없습니다._
   단일 비교라 휴면(`dormant`) 회원에게는 영향이 없습니다.
 - **운영자 사전 고지**: 켜기 전에 개인정보 처리방침에 보유기간과 파기 방법을 안내해야 합니다 —
   설정 카드 설명이 이를 적고 있습니다.
+- **관리자 직권 실행**: 두 축의 대상 행(`ip_target_row` · `guest_target_row` — 이름 · 건수 · 대상 보기 · 결과 줄)에 있는
+  「지금 실행」은 코어 직권 실행
+  (`retention:sirsoft-board.ip` · `retention:sirsoft-board.guest`)입니다. 핸들러 등록만으로 코어가 대상을 만들므로
+  별도 등록이 없고, 토글이 꺼져 있어도 저장된 기간·방식으로 `process(force: true)` 를 한 번 큐에서 돌립니다.
+  권한은 두 축 모두 `sirsoft-board.settings.update` + `sirsoft-board.boards.update`(전체 범위). 확인 창은
+  `_modal_privacy_run`, 상태 줄은 코어 상태 API(`privacyManualRuns`). 계약은 코어 가이드 「관리자 직권 실행」 절.
 <!-- @intent END -->
 
 ## 권한

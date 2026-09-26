@@ -35,11 +35,16 @@ class GdprAnnualNoticeService
     /**
      * 기본 비활성 게이트와 실행당 회원 수 상한을 적용합니다.
      *
+     * 관리자 직권 실행(`$force`)은 활성 게이트만 넘는다 — 실행당 상한(`batch_size`)과 「이번 주기에
+     * 이미 받은 회원 제외」는 그대로 적용된다(2026-09-25 확정). 남은 인원은 다시 실행하면 이어서
+     * 접수된다.
+     *
+     * @param  bool  $force  관리자 직권 실행 — 연간 통지 토글을 보지 않는다
      * @return int 처리 결과
      */
-    public function run(): int
+    public function run(bool $force = false): int
     {
-        if (! $this->settings->get('sirsoft-gdpr', 'annual_notice.enabled', false)) {
+        if (! $force && ! $this->settings->get('sirsoft-gdpr', 'annual_notice.enabled', false)) {
             return 0;
         }
 

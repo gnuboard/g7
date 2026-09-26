@@ -18,4 +18,24 @@ return [
         'unknown_handler' => 'This personal data processing target is not registered.',
         'unknown_stage' => 'Unknown dormant stage.',
     ],
+
+    // Manual run by an administrator — the "Run now" button on settings cards (queue → process → result on the card).
+    'manual_run' => [
+        'queued' => 'The run has been queued. The result will appear on the card when processing finishes.',
+        'unknown_target' => 'This manual run target is not registered.',
+        'target_missing' => 'The target disappeared after the run was queued, so it could not run (the extension may have been deactivated).',
+        'stale' => 'Marked as failed because it did not finish within :minutes minutes. Check that a queue worker is running.',
+        'status' => [
+            'queued' => 'Queued',
+            'running' => 'Running',
+            'completed' => 'Completed',
+            'failed' => 'Failed',
+        ],
+        'dormant_stages' => [
+            'pre_notice' => 'Advance notice before dormancy',
+            'convert' => 'Convert to dormant',
+            'withdraw_notice' => 'Notice before withdrawing dormant accounts',
+            'withdraw' => 'Withdraw dormant accounts',
+        ],
+    ],
 ];

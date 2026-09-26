@@ -18,4 +18,24 @@ return [
         'unknown_handler' => '등록되지 않은 개인정보 처리 대상입니다.',
         'unknown_stage' => '알 수 없는 휴면 단계입니다.',
     ],
+
+    // 관리자 직권 실행 — 설정 화면 카드의 「지금 실행」(큐 접수 → 처리 → 카드에 결과).
+    'manual_run' => [
+        'queued' => '실행을 큐에 접수했습니다. 처리가 끝나면 카드에 결과가 표시됩니다.',
+        'unknown_target' => '등록되지 않은 직권 실행 대상입니다.',
+        'target_missing' => '접수 후 대상이 사라져 실행하지 못했습니다 (확장이 비활성화되었을 수 있습니다).',
+        'stale' => ':minutes분 넘게 끝나지 않아 실패로 처리했습니다. 큐 워커가 동작하는지 확인하세요.',
+        'status' => [
+            'queued' => '처리 대기',
+            'running' => '처리 중',
+            'completed' => '완료',
+            'failed' => '실패',
+        ],
+        'dormant_stages' => [
+            'pre_notice' => '휴면 전환 사전 안내',
+            'convert' => '휴면 전환',
+            'withdraw_notice' => '휴면 계정 탈퇴 예정 안내',
+            'withdraw' => '휴면 계정 탈퇴 처리',
+        ],
+    ],
 ];

@@ -84,6 +84,13 @@ _`getSettingsSchema()` 선언이 없습니다._
 그대로 나오므로 `sirsoft-ecommerce.settings.read` + `sirsoft-ecommerce.orders.read` 가 모두 있어야 보입니다.
 핸들러 계약 전체는 코어 [개인정보 보유기간 처리 가이드](../../../../docs/backend/privacy-retention.md)에 있습니다.
 
+「보유기간이 지난 종결 주문」 대상 행(`privacy_retention_target_row` — 이름 · 건수 · 대상 보기 · 결과 줄)의 **「지금 실행」**은 코어 관리자 직권 실행(`retention:sirsoft-ecommerce.order`)입니다 — 핸들러를 등록한 것만으로
+코어가 대상을 만들므로 이 모듈에 별도 등록은 없습니다. 확인 창이 코어 `…/manual-runs/{target}/preview` 로 건수·방식을
+다시 세고, 「실행」은 큐에 접수합니다(`enabled` 가 꺼져 있어도 저장된 기간·방식으로 `process(force: true)` 한 번).
+결과는 탭의 상태 줄이 코어 상태 API(`privacyManualRuns` 데이터 소스)로 보여 주고, 진행 중이면 3초마다 다시 받습니다.
+실행 권한은 `runPermissions()` — `sirsoft-ecommerce.settings.update` + `sirsoft-ecommerce.orders.update`, 방식이
+`delete` 면 `sirsoft-ecommerce.orders.delete` 까지(전체 범위). 계약은 코어 가이드 「관리자 직권 실행」 절 참조.
+
 - **「종결」**: 주문 상태 구매확정·취소 + 진행 중 환불(요청·승인·처리 중·보류) 없음. 종결 시각은
   `confirmed_at`/`cancelled_at` 과 완료된 환불의 `refunded_at` 중 늦은 것이고, 비어 있는 레거시 주문은
   `updated_at` 으로 대신합니다(실제보다 늦거나 같아 더 오래 보존하는 쪽으로만 틀립니다).

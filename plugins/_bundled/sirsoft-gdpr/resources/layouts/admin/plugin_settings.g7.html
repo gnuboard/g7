@@ -16,6 +16,31 @@
       </field>
     </fallback>
   </data-source>
+  <!-- 개인정보 조치 직권 실행 상태 — 「지금 실행」 버튼과 상태 줄(처리 대기/처리 중 · 마지막 결과)이 쓴다(코어 직권 실행 API).
+       진행 중이면 3초마다 다시 받고 끝나면 멈춘다. 진행 중일 때 받은 서버 시각(`checked_at`)을 다음 조회의 `since` 로
+       돌려보내 그 뒤에 끝난 작업이 있으면(`finished_since`) 대상 건수를 다시 받는다 — 판정을 응답값으로만 하는 까닭은
+       직전에 넣은 전역 값이 이 성공 핸들러에서 낡은 값으로 읽히기 때문이다(코어 환경설정 개인정보 탭과 같은 방식). -->
+  <data-source id="privacyManualRuns" label_key="$t:sirsoft-gdpr.editor.data_source.privacyManualRuns" type="api" endpoint="/api/admin/privacy/manual-runs" method="GET" :auto_fetch="true" :auth_required="true">
+    <params targets="sirsoft-gdpr:annual_notice" since="{{_global.privacyRunWatchSince ?? ''}}"/>
+    <fallback>
+      <field name="data">
+        <field name="targets" :value="{}"/>
+        <field name="has_active" :value="false"/>
+        <field name="finished_since" :value="false"/>
+      </field>
+    </fallback>
+    <success>
+      <set-state if="{{response?.data?.data?.has_active === true}}" target="global" privacyRunWatchSince="{{response?.data?.data?.checked_at}}"/>
+      <start-interval if="{{response?.data?.data?.has_active === true}}" id="privacy_manual_run_poll" :intervalMs="3000">
+        <actions>
+          <refetch-data-source dataSourceId="privacyManualRuns"/>
+        </actions>
+      </start-interval>
+      <stop-interval if="{{response?.data?.data?.has_active !== true}}" id="privacy_manual_run_poll"/>
+      <refetch-data-source if="{{response?.data?.data?.has_active !== true &amp;&amp; response?.data?.data?.finished_since === true}}" dataSourceId="gdprAnnualNoticePreview"/>
+      <set-state if="{{response?.data?.data?.has_active !== true}}" target="global" :privacyRunWatchSince="null"/>
+    </success>
+  </data-source>
   <!-- 연간 통지 대상 명단 — 창을 여는 버튼이 다시 받는다(스스로 조회하지 않음). 다음 쪽은 창의 스크롤이 이어 붙인다 -->
   <data-source id="privacyTargets" label_key="$t:sirsoft-gdpr.editor.data_source.privacyTargets" type="api" endpoint="/api/plugins/sirsoft-gdpr/admin/annual-notice/targets" method="GET" :auto_fetch="false" :auth_required="true" loading_strategy="progressive">
     <params :per_page="20"/>
@@ -540,22 +565,58 @@
               <label class="form-label">$t:sirsoft-gdpr.annual_notice.enabled</label>
               <toggle name="annual_notice.enabled"/>
             </div>
-            <!-- 이번 주기 대상 회원 수 — 꺼져 있어도 보인다(켜기 전에 규모를 본다, #636). 옆 버튼은 명단 창을 여는데,
-                 회원 읽기 권한이 있으면 대상이 0명이어도 그린다(빈 명단은 창이 안내한다). -->
-            <div data-ref="annual_notice_targets" data-if="{{gdprAnnualNoticePreview?.data?.count !== null &amp;&amp; gdprAnnualNoticePreview?.data?.count !== undefined}}" class="flex flex-wrap items-center gap-2">
-              <span class="badge badge-yellow">$t:sirsoft-gdpr.annual_notice.targets.count|count={{gdprAnnualNoticePreview?.data?.count ?? 0}}</span>
-              <button data-ref="view_annual_notice_targets" data-if="{{gdprAnnualNoticePreview?.data?.can_view_targets}}" type="button" class="btn btn-sm btn-outline">
-                <on type="click">
-                  <sequence>
-                    <set-state target="global" privacyTargets="{{({ currentPage: 1, hasMore: true, isLoadingMore: false })}}"/>
-                    <set-state target="global" privacyTargets.title="$t:sirsoft-gdpr.annual_notice.targets.title"/>
-                    <refetch-data-source dataSourceId="privacyTargets"/>
-                    <open-modal target="privacy_targets_modal"/>
-                  </sequence>
-                </on>
-                $t:sirsoft-gdpr.annual_notice.targets.view
-              </button>
-              <p class="form-hint w-full">$t:sirsoft-gdpr.annual_notice.targets.hint</p>
+            <!-- 조치 대상 — 코어 개인정보 탭과 같은 「대상 행」 양식(이름 · 건수 배지 · 오른쪽 끝 대상 보기·지금 실행 · 그 행의 결과 줄).
+                 건수는 꺼져 있어도 보인다(켜기 전에 규모를 본다, #636). 「대상 보기」는 회원 읽기 권한이 있으면 0명이어도 그린다(빈 명단은 창이 안내한다).
+                 되돌릴 수 없는 발송은 채운 강조색을 쓰지 않는다(2026-09-26 결정). -->
+            <div data-ref="annual_notice_targets" data-if="{{(gdprAnnualNoticePreview?.data?.count !== null &amp;&amp; gdprAnnualNoticePreview?.data?.count !== undefined) || privacyManualRuns?.data?.targets?.['sirsoft-gdpr:annual_notice']?.can_run}}" class="space-y-2">
+              <div class="rounded-lg border border-gray-200 dark:border-gray-700">
+                <div data-ref="annual_notice_target_row" class="px-4 py-3">
+                  <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <div class="flex-wrap-center gap-2 min-w-0">
+                      <span class="text-heading">$t:sirsoft-gdpr.annual_notice.targets.row_label</span>
+                      <span data-if="{{gdprAnnualNoticePreview?.data?.count !== null &amp;&amp; gdprAnnualNoticePreview?.data?.count !== undefined}}" class="badge badge-yellow">$t:sirsoft-gdpr.annual_notice.targets.count|count={{gdprAnnualNoticePreview?.data?.count ?? 0}}</span>
+                    </div>
+                    <div class="flex-wrap-center gap-2">
+                      <button data-ref="view_annual_notice_targets" data-if="{{gdprAnnualNoticePreview?.data?.can_view_targets}}" type="button" class="btn btn-sm btn-ghost">
+                        <on type="click">
+                          <sequence>
+                            <set-state target="global" privacyTargets="{{({ currentPage: 1, hasMore: true, isLoadingMore: false })}}"/>
+                            <set-state target="global" privacyTargets.title="$t:sirsoft-gdpr.annual_notice.targets.title"/>
+                            <refetch-data-source dataSourceId="privacyTargets"/>
+                            <open-modal target="privacy_targets_modal"/>
+                          </sequence>
+                        </on>
+                        $t:sirsoft-gdpr.annual_notice.targets.view
+                      </button>
+                      <button data-ref="run_annual_notice" data-if="{{privacyManualRuns?.data?.targets?.['sirsoft-gdpr:annual_notice']?.can_run}}" type="button" class="btn btn-sm btn-outline" disabled="{{_local.hasChanges || privacyManualRuns?.data?.targets?.['sirsoft-gdpr:annual_notice']?.run?.is_active}}">
+                        <on type="click">
+                          <sequence>
+                            <set-state target="global" privacyRun="{{({ key: 'sirsoft-gdpr:annual_notice', label: privacyManualRuns?.data?.targets?.['sirsoft-gdpr:annual_notice']?.label ?? '', supportsSkip: false, skipWaiting: false, preview: null, loading: true, submitting: false })}}"/>
+                            <open-modal target="privacy_run_modal"/>
+                            <api-call :auth_required="true" target="/api/admin/privacy/manual-runs/sirsoft-gdpr:annual_notice/preview" method="GET">
+                              <success>
+                                <set-state target="global" privacyRun.preview="{{response.data}}" :privacyRun.loading="false"/>
+                              </success>
+                              <fail>
+                                <set-state target="global" :privacyRun.loading="false"/>
+                                <toast type="error" message="{{error.message ?? '$t:sirsoft-gdpr.annual_notice.manual_run.preview_failed'}}"/>
+                              </fail>
+                            </api-call>
+                          </sequence>
+                        </on>
+                        $t:sirsoft-gdpr.annual_notice.manual_run.run
+                      </button>
+                    </div>
+                  </div>
+                  <div data-ref="annual_notice_manual_run_status" data-if="{{privacyManualRuns?.data?.targets?.['sirsoft-gdpr:annual_notice']?.run}}" class="text-hint mt-1">
+                    <span data-if="{{privacyManualRuns?.data?.targets?.['sirsoft-gdpr:annual_notice']?.run?.is_active}}" class="text-blue-600 dark:text-blue-400">$t:sirsoft-gdpr.annual_notice.manual_run.status_active|status={{privacyManualRuns?.data?.targets?.['sirsoft-gdpr:annual_notice']?.run?.status_label ?? ''}}|at={{privacyManualRuns?.data?.targets?.['sirsoft-gdpr:annual_notice']?.run?.queued_at ?? ''}}|by={{privacyManualRuns?.data?.targets?.['sirsoft-gdpr:annual_notice']?.run?.requester_name ?? $t('sirsoft-gdpr.annual_notice.manual_run.unknown_requester')}}</span>
+                    <span data-if="{{privacyManualRuns?.data?.targets?.['sirsoft-gdpr:annual_notice']?.run?.status === 'completed'}}">$t:sirsoft-gdpr.annual_notice.manual_run.last_completed|at={{privacyManualRuns?.data?.targets?.['sirsoft-gdpr:annual_notice']?.run?.finished_at ?? ''}}|by={{privacyManualRuns?.data?.targets?.['sirsoft-gdpr:annual_notice']?.run?.requester_name ?? $t('sirsoft-gdpr.annual_notice.manual_run.unknown_requester')}}|count={{privacyManualRuns?.data?.targets?.['sirsoft-gdpr:annual_notice']?.run?.processed_count ?? 0}}|remaining={{privacyManualRuns?.data?.targets?.['sirsoft-gdpr:annual_notice']?.run?.remaining_count ?? 0}}</span>
+                    <span data-if="{{privacyManualRuns?.data?.targets?.['sirsoft-gdpr:annual_notice']?.run?.status === 'failed'}}" class="text-error-soft">$t:sirsoft-gdpr.annual_notice.manual_run.last_failed|at={{privacyManualRuns?.data?.targets?.['sirsoft-gdpr:annual_notice']?.run?.finished_at ?? ''}}|by={{privacyManualRuns?.data?.targets?.['sirsoft-gdpr:annual_notice']?.run?.requester_name ?? $t('sirsoft-gdpr.annual_notice.manual_run.unknown_requester')}}|error={{privacyManualRuns?.data?.targets?.['sirsoft-gdpr:annual_notice']?.run?.error ?? ''}}</span>
+                  </div>
+                </div>
+              </div>
+              <p class="form-hint">$t:sirsoft-gdpr.annual_notice.targets.hint</p>
+              <p data-ref="annual_notice_save_first" data-if="{{_local.hasChanges &amp;&amp; privacyManualRuns?.data?.targets?.['sirsoft-gdpr:annual_notice']?.can_run}}" class="form-hint">$t:sirsoft-gdpr.annual_notice.manual_run.save_first_hint</p>
             </div>
             <!-- 토글이 꺼지면 하위 입력을 비활성화한다. 서버(UpdateAdminSettingsRequest)도 같은
                  조건에서 채널·상한을 강제하지 않는다 — 한쪽만 고치면 "끌 수 없는 설정"이 된다.
@@ -789,4 +850,6 @@
   <modal src="partials/_shared/_policy_version_snapshot_modal.g7.html"/>
   <!-- 연간 통지 대상 회원 창(연간 통지 카드). -->
   <modal src="partials/plugin_settings/_modal_privacy_targets.g7.html"/>
+  <!-- 연간 통지 직권 발송 확인 창. -->
+  <modal src="partials/plugin_settings/_modal_privacy_run.g7.html"/>
 </layout>

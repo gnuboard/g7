@@ -52,7 +52,8 @@
             "carts": "장바구니 목록",
             "addresses": "회원 배송지 목록",
             "inquiries": "상품문의 목록",
-            "privacyTargets": "보유기간 처리 대상 주문 목록"
+            "privacyTargets": "보유기간 처리 대상 주문 목록",
+            "privacyManualRuns": "개인정보 조치 직권 실행 상태"
         }
     },
     "common": {

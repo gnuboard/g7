@@ -352,7 +352,15 @@ class FakeRetentionHandler implements PrivacyRetentionHandlerInterface
     /**
      * {@inheritDoc}
      */
-    public function process(bool $dryRun): array
+    public function runPermissions(): array
+    {
+        return ['core.settings.update', 'core.users.update'];
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function process(bool $dryRun, bool $force = false): array
     {
         return ['count' => 7, 'mode' => 'anonymize'];
     }
@@ -422,7 +430,15 @@ class ThrowingRetentionHandler implements PrivacyRetentionHandlerInterface
     /**
      * {@inheritDoc}
      */
-    public function process(bool $dryRun): array
+    public function runPermissions(): array
+    {
+        return ['core.settings.update', 'core.users.update'];
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function process(bool $dryRun, bool $force = false): array
     {
         throw new \RuntimeException('의도된 실패');
     }
@@ -477,10 +493,10 @@ class CountingRetentionHandler extends FakeRetentionHandler
     /**
      * {@inheritDoc}
      */
-    public function process(bool $dryRun): array
+    public function process(bool $dryRun, bool $force = false): array
     {
         self::$calls++;
 
-        return parent::process($dryRun);
+        return parent::process($dryRun, $force);
     }
 }

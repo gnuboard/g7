@@ -92,6 +92,10 @@ return [
         'dormant_converted' => '휴면 전환',
         'dormant_withdrawn' => '휴면 계정 탈퇴 처리',
 
+        // 개인정보 조치 직권 실행 (privacy.manual_run_*) — 흔한 낱말과 겹치지 않는 복합어
+        'manual_run_queued' => '개인정보 조치 직권 실행 접수',
+        'manual_run_finished' => '개인정보 조치 직권 실행 종료',
+
         // 이커머스/게시판 공용
     ],
 
@@ -173,6 +177,10 @@ return [
         'user_dormant_restored' => '로그인으로 휴면 해제 (ID: :user_id)',
         'user_dormant_converted' => '장기 미접속으로 휴면 전환 (ID: :user_id)',
         'user_dormant_withdrawn' => '휴면 기간 경과로 탈퇴 처리 (ID: :user_id)',
+        'privacy_manual_run_queued' => '개인정보 조치 직권 실행 접수 (:target)',
+        'privacy_manual_run_queued_skip_waiting' => '개인정보 조치 직권 실행 접수 — 대기기간 생략 (:target)',
+        'privacy_manual_run_completed' => '개인정보 조치 직권 실행 완료 (:target, :count건)',
+        'privacy_manual_run_failed' => '개인정보 조치 직권 실행 실패 (:target)',
         'security_ip_restriction_disabled' => 'IP 접근 제한 비상 해제 (콘솔)',
 
         // 스케줄 관리

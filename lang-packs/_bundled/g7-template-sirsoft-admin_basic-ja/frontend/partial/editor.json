@@ -1399,6 +1399,7 @@
       "seo": "SEOタブ",
       "notification_definitions": "通知定義タブ",
       "identity_policies": "本人認証ポリシータブ",
+      "privacy_retention": "個人情報の保有期間タブ",
       "basic_info": "基本情報タブ",
       "language_currency": "言語·通貨タブ",
       "order_settings": "注文設定タブ",
@@ -1647,7 +1648,8 @@
     "layout_search": "レイアウト コンテンツ検索",
     "memberNotifications": "会員通知箱",
     "privacyPreview": "個人情報処理対象件数",
-    "privacyTargets": "個人情報対策対象リスト"
+    "privacyTargets": "個人情報対策対象リスト",
+    "privacyManualRuns": "個人情報措置職権実行ステータス"
   },
   "array_group": {
     "chart_labels": "項目ラベル",

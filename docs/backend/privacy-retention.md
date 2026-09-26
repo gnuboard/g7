@@ -7,9 +7,10 @@
 ```text
 1. 확장은 PrivacyRetentionHandlerInterface 를 구현한 백엔드 클래스(핸들러)를 core.privacy.retention_handlers 필터로 등록한다
 2. 코어가 수집·실행·건수·대상 명단·권한 검사를 맡는다 — 확장은 "무엇이 대상이고 어떻게 지우는가"만 구현한다
-3. isEnabled() 는 자기 설정을 기본 false 로 읽고, process() 는 그 토글을 다시 본다 (되돌릴 수 없는 파기)
+3. isEnabled() 는 자기 설정을 기본 false 로 읽고, process() 는 그 토글을 다시 본다 (되돌릴 수 없는 파기) — 관리자 직권 실행(force)만 토글을 넘는다
 4. preview()·targets()·process() 는 같은 조건식 — 화면 건수 = 모달 명단 = 배치가 처리할 대상
 5. 건수·명단은 기능이 꺼져 있어도 저장된 기간값으로 보인다 · 명단 권한은 targetPermissions() (설정 읽기 + 도메인 읽기) · 「대상 보기」는 권한만 보고 그린다 — 대상이 0건이어도 창을 열어 빈 명단을 확인할 수 있다
+6. 핸들러를 등록하면 설정 화면의 「지금 실행」(관리자 직권 실행 — 큐 적재)도 따라온다 · 실행 권한은 runPermissions() (설정 수정 + 도메인 수정, 삭제 방식이면 도메인 삭제까지)
 ```
 
 ---
@@ -27,6 +28,7 @@
 | 배치 `privacy:process-retention` | 코어 | 매일 새벽 등록된 핸들러 전부를 실행하고 도메인별로 보고 |
 | 건수 API | 코어 · 각 모듈 | 설정 화면의 「대상 N건」 배지 |
 | 대상 명단 API `GET /api/admin/privacy/retention-targets/{handler}` | 코어 | 「대상 보기」 모달의 무한 스크롤 목록 — 핸들러를 식별자로 찾고 권한을 요청 시점에 검사 |
+| 직권 실행 `…/manual-runs/retention:{handler}` | 코어 | 설정 화면 「지금 실행」 — 큐에 접수해 토글과 무관하게 한 번 처리하고 결과를 기록([10절](#10-관리자-직권-실행)) |
 
 확장이 핸들러를 등록하는 순간 배치·건수·명단·권한 검사가 코어 코드 수정 없이 따라옵니다. 확장이 비활성이면 등록이 빠지므로 명단 API 는 그 식별자에 404 를 돌려줍니다.
 
@@ -105,9 +107,15 @@ class InquiryRetentionHandler implements PrivacyRetentionHandlerInterface
         return ['vendor-shop.settings.read', 'vendor-shop.inquiries.read'];
     }
 
-    public function process(bool $dryRun): array
+    public function runPermissions(): array
     {
-        if (! $this->isEnabled()) {                   // 호출자를 믿지 않는다
+        // 설정 수정 + 도메인 수정 — 명단 권한의 쓰기 대칭. 행을 지우는 방식이면 도메인 삭제 권한도 더한다
+        return ['vendor-shop.settings.update', 'vendor-shop.inquiries.update'];
+    }
+
+    public function process(bool $dryRun, bool $force = false): array
+    {
+        if (! $force && ! $this->isEnabled()) {       // 호출자를 믿지 않는다 — 관리자 직권 실행만 넘는다
             return ['count' => 0, 'mode' => 'disabled'];
         }
 
@@ -156,8 +164,10 @@ class InquiryRetentionHandler implements PrivacyRetentionHandlerInterface
 | `targets()` | `preview()` 와 **같은 조건식**. 한 쪽씩 `LengthAwarePaginator`, 항목은 `PrivacyRetentionTarget`. 기준일 오름차순 권장 | 모달에서 본 명단과 실제 처리 대상이 달라진다 |
 | `targetColumns()` | `title`·`subtitle`·`context`·`date` 중 쓰는 열만 라벨과 함께 | 빠진 열은 화면이 그리지 않는다(값이 있어도 보이지 않는다) |
 | `targetPermissions()` | **설정 읽기 + 그 도메인 읽기** (모두 필요). 코어는 각 권한의 적용 범위가 **전체**일 때만 명단을 연다(`self`·`role` 범위면 거부 — `PrivacyRetentionManager::canViewTargetList()`) | 설정 화면만 볼 수 있는 운영자가 회원·주문 명단을 보는 우회 경로가 생긴다. 빈 배열이면 코어가 거부한다. 범위를 좁혀 위임받은 관리자는 목록 화면에서 본인·같은 역할 것만 보므로, 도메인 전체 명단을 열면 목록보다 넓게 보게 된다 |
+| `runPermissions()` | **설정 수정 + 그 도메인 수정** (모두 필요, 전체 범위만). 처리 방식이 행을 지우는 것이면 도메인 삭제 권한을 더한다 | 설정만 고칠 수 있는 운영자가 「지금 실행」으로 도메인 전체를 파기하거나, 삭제 권한 없이 행을 지운다 |
 | `process(true)` | 건수만 센다 — 쓰기 0, prune 훅 발행 0 | 리허설이 실제 파기가 되거나, 확장 리스너가 돌았다고 착각한다 |
 | `process(false)` | 토글 재확인 → `before_prune` → 행 단위 격리 처리 → `after_prune`. 멱등(두 번째 실행 0건) | 한 행의 예외가 나머지 법정 파기를 멈추거나, 같은 행을 매일 다시 처리한다 |
+| `process(…, force: true)` | **관리자 직권 실행** — 토글만 건너뛰고 나머지(저장된 기간값·같은 조건식·prune 훅·멱등)는 `process(false)` 와 같다. 자동 배치는 `force` 를 넘기지 않는다 | 직권 실행이 다른 모집단을 처리해 확인 창의 숫자와 결과가 어긋나거나, 토글이 꺼진 사이트에서 자동 배치가 파기한다 |
 
 ### 대상 명단의 행 (`PrivacyRetentionTarget`)
 
@@ -222,6 +232,7 @@ php artisan privacy:process-retention                                   # 실제
 - 매일 새벽(05:05) 서버 한 대에서 예약 실행됩니다. 꺼진 핸들러는 「꺼져 있어 실행하지 않았습니다」로, 켜져 있으나 대상이 없으면 「0건」으로 **구분해** 보고합니다.
 - `--handler=` 에 빈 값을 주면 전 핸들러를 돌리지 않고 실패합니다(오타·빈 변수가 모든 도메인의 파기로 번지지 않게).
 - 한 도메인이 실패해도 나머지는 처리되고, 커맨드는 실패 종료 코드로 알립니다. 실패한 행은 표지가 찍히지 않아 다음 실행이 다시 잡습니다.
+- 관리자가 화면에서 직권 실행한 작업이 그 도메인을 처리하는 중이면(공유 락 `privacy-run:retention:{id}`) 배치는 그 도메인을 「건너뜀」으로 보고하고 다음 주기에 맡깁니다(실패 아님).
 
 ## 7. prune 훅
 
@@ -244,12 +255,14 @@ php artisan privacy:process-retention                                   # 실제
 | 명단 권한 | 설정 읽기만 가진 관리자는 명단 API 403, 건수 API 의 `can_view_targets` false |
 | 명단 페이지 | 마지막 쪽에서 `has_more_pages` false, 쪽이 겹치거나 빠지지 않는다 |
 | 코어 연결 | 핸들러가 코어 명단 API 에 식별자로 붙는다(등록 경로 그대로) |
+| 직권 실행 | `process(false, true)` 가 꺼진 상태에서도 `preview()` 와 같은 건수를 처리하고, `process(false)` 는 여전히 꺼짐으로 멈춘다 · `runPermissions()` 가 설정 수정 + 도메인 수정(삭제 방식이면 삭제까지) |
 
 ## 9. 잘못된 패턴 (DO NOT)
 
 | ❌ 금지 | ✅ 올바른 패턴 |
 | --- | --- |
 | 미리보기·명단·실행에 조건식을 따로 적는다 | 대상 쿼리 메서드 하나를 셋이 함께 쓴다 |
+| 직권 실행용 조건식을 따로 만든다(`force` 면 다른 쿼리) | `force` 는 토글 확인만 건너뛴다 — 확인 창 건수 = 명단 = 처리 건수 |
 | 기능이 꺼져 있으면 건수·명단을 비운다 | 저장된 기간값으로 세고, 꺼짐은 `enabled` 로 알린다 |
 | `targetPermissions()` 에 설정 읽기만 넣는다 | 설정 읽기 + 그 도메인 읽기 |
 | 명단 행에 본문·연락처·첨부를 싣는다 | 식별 최소 열 + 상세 `url` |
@@ -258,7 +271,37 @@ php artisan privacy:process-retention                                   # 실제
 | 파기 완료를 `updated_at` 을 바꾸는 Eloquent update 로 기록한다 | 값만 지우고 수정 시각은 보존한다(`toBase()` update) — 파기는 글의 수정이 아니다 |
 | 삭제 모드에서 DB CASCADE 에 기대 연관 행을 지운다 | 서비스가 연관 행을 명시적으로 지운다 |
 
-## 10. 관련 코드 진입점
+## 10. 관리자 직권 실행
+
+설정 화면의 「지금 실행」은 스케줄러를 기다리지 않고 한 번 처리합니다. 요청은 **큐에 접수만** 하고 끝나며, 큐 작업이 처리한 결과를 실행 기록(`privacy_manual_runs`)에 남겨 화면 카드가 「처리 대기/처리 중 · 마지막 직권 실행: 일시 · 실행자 · N건」을 보여 줍니다.
+
+| 항목 | 규약 |
+| --- | --- |
+| 대상 | 보유기간 핸들러마다 `retention:{id}`, 휴면 네 단계 `dormant:{stage}` 를 코어가 자동 등록한다. 핸들러를 등록한 확장은 **추가 작업이 없다** |
+| 그 밖의 조치 | 핸들러가 아닌 조치(예: gdpr 연간 통지 발송)는 `PrivacyManualRunnerInterface` 를 구현해 `core.privacy.manual_run_targets` 필터로 등록한다(키는 `{확장 식별자}:{이름}`) |
+| 토글 | 자동 실행 토글이 꺼져 있어도 저장된 설정값으로 처리한다 — 자동 배치는 끄고 필요할 때만 손으로 돌리는 운영을 허용한다 |
+| 권한 | 대상이 선언한 권한(설정 수정 + 도메인 수정)을 모두, 전체 범위로. 상태 API 는 권한 없는 대상의 기록을 가린다 |
+| 중복 | 같은 대상에 처리 대기·처리 중 기록이 있으면 새 접수를 409 로 거절한다. 워커가 멈춰 6시간이 지난 기록은 실패로 닫고 새 접수를 받는다 |
+| 배치와의 겹침 | 대상의 `lockKey()` 를 직권 작업과 자동 배치가 함께 잡는다 — 배치가 잡고 있으면 작업이 1분 뒤 다시 시도하고, 직권 작업이 잡고 있으면 배치가 그 대상을 건너뛴다. 멱등이라 겹쳐도 안전한 조치는 `null` |
+| 휴면 대기기간 생략 | 휴면 전환·탈퇴 단계만 「대기기간 생략」을 받는다 — 안내 여부와 무관하게 기간 경과자 전원(관리자 계정 보호 제외는 유지). 생략 모집단은 기존 쿼리 메서드가 인자로 만든다 |
+| 화면 양식 | 조치 대상은 **대상마다 한 행** — 이름 · 대상 건수 배지 · 오른쪽 끝 「대상 보기」(`btn-ghost`)·「지금 실행」(`btn-outline`) · 그 행 바로 아래 마지막 실행 결과 줄. 실행 버튼을 대상과 떨어진 별도 줄에 모으지 않고, 되돌릴 수 없는 실행에 채운 강조색(`btn-warning`·`btn-primary`)을 쓰지 않는다 — 코어 개인정보 탭·이커머스·게시판·gdpr 화면이 이 양식이다 |
+| 감사 | 접수는 관리자 활동 로그 `privacy.manual_run_queued`, 종료는 시스템 로그 `privacy.manual_run_finished`(건수·실패 사유·접수자). 서버 로그에도 `scheduled=false` 로 남는다 |
+
+```php
+class NoticeManualRunner implements PrivacyManualRunnerInterface
+{
+    public function key(): string { return 'vendor-shop:notice'; }
+    public function permissions(): array { return ['vendor-shop.settings.update']; }
+    public function isEnabled(): bool { /* 자동 실행 토글 — 안내용 */ }
+    public function supportsSkipWaiting(): bool { return false; }
+    public function count(bool $skipWaiting = false): int { /* 확인 창 건수 — run() 과 같은 조건식 */ }
+    public function run(bool $skipWaiting = false): array { return ['count' => $n, 'mode' => 'notify', 'remaining' => $left]; }
+    public function lockKey(): ?string { return null; }
+    // label()·mode() 생략
+}
+```
+
+## 11. 관련 코드 진입점
 
 - **계약**: `app/Privacy/Contracts/PrivacyRetentionHandlerInterface.php`
 - **명단 행**: `app/Privacy/DTO/PrivacyRetentionTarget.php`
@@ -268,12 +311,13 @@ php artisan privacy:process-retention                                   # 실제
 - **코어 참조 구현**: `app/Privacy/Handlers/WithdrawnUserRetentionHandler.php` (탈퇴 회원 잔여 정보)
 - **휴면**: `app/Privacy/DormantAccountService.php` (코어 전용)
 - **번들 확장 구현**: 이커머스 `modules/_bundled/sirsoft-ecommerce/src/Privacy/OrderRetentionHandler.php` · 게시판 `modules/_bundled/sirsoft-board/src/Privacy/BoardIpRetentionHandler.php`(가장 단순한 예) · `BoardGuestRetentionHandler.php`
-- **회귀 테스트**: `tests/Feature/Privacy/PrivacyRetentionManagerTest.php` · `tests/Feature/Privacy/PrivacyTargetApiTest.php`
+- **직권 실행**: `app/Privacy/Contracts/PrivacyManualRunnerInterface.php` · `app/Privacy/ManualRun/`(수집기·서비스·러너) · `app/Jobs/RunPrivacyManualActionJob.php` · `app/Http/Controllers/Api/Admin/PrivacyManualRunController.php` · 확장 러너 예 `plugins/_bundled/sirsoft-gdpr/src/Privacy/AnnualNoticeManualRunner.php`
+- **회귀 테스트**: `tests/Feature/Privacy/PrivacyRetentionManagerTest.php` · `tests/Feature/Privacy/PrivacyTargetApiTest.php` · `tests/Feature/Privacy/PrivacyManualRunTest.php`
 
-## 11. 관련 문서
+## 12. 관련 문서
 
 - [../extension/hooks.md](../extension/hooks.md) — `core.privacy.retention_handlers` 필터 계약, prune 훅 카탈로그, 휴면 알림 훅
-- [api/privacy.md](api/privacy.md) — 대상 명단 API 레퍼런스
+- [api/privacy.md](api/privacy.md) — 대상 명단·직권 실행 API 레퍼런스
 - [api/settings.md](api/settings.md) — 개인정보 탭 건수 API(`privacy-preview`)
 - [identity-providers.md](identity-providers.md) — 같은 방식(계약 구현 + 훅 등록)의 형제 인프라
 - [notification-system.md](notification-system.md) — 휴면 안내 알림 정의

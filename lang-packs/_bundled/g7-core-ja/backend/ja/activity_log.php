@@ -76,6 +76,8 @@ return [
         'dormant_restored' => '休眠解除',
         'dormant_converted' => '休眠に変更',
         'dormant_withdrawn' => '休眠アカウント退会処理',
+        'manual_run_queued' => '個人情報措置職権実行受付',
+        'manual_run_finished' => '個人情報措置職権実行終了',
     ],
     'description' => [
         'user_index' => 'ユーザーリスト閲覧',
@@ -225,6 +227,10 @@ return [
         'user_dormant_restored' => 'ログインで休眠解除 (ID: :user_id)',
         'user_dormant_converted' => '長期未アクセスで休眠に変更 (ID: :user_id)',
         'user_dormant_withdrawn' => '休眠期間経過による退会処理 (ID: :user_id)',
+        'privacy_manual_run_queued' => '個人情報措置職権実行受付 (:target)',
+        'privacy_manual_run_queued_skip_waiting' => '個人情報措置職権実行受付 — 待機期間スキップ (:target)',
+        'privacy_manual_run_completed' => '個人情報措置職権実行完了 (:target, :count件)',
+        'privacy_manual_run_failed' => '個人情報措置職権実行失敗 (:target)',
     ],
     'fields' => [
         'name' => '名前',

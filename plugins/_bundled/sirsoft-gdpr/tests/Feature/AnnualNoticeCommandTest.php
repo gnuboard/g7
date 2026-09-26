@@ -11,6 +11,7 @@ use App\Extension\HookManager;
 use App\Listeners\NotificationHookListener;
 use App\Models\NotificationTemplate;
 use App\Models\Permission;
+use App\Models\PrivacyManualRun;
 use App\Models\Role;
 use App\Models\User;
 use App\Notifications\GenericNotification;
@@ -558,5 +559,39 @@ class AnnualNoticeCommandTest extends PluginTestCase
         $this->assertFileExists($path);
         $this->assertStringContainsString('S3 retention verification', file_get_contents($path));
         @unlink($path);
+    }
+
+    /**
+     * 관리자 직권 발송: 코어 직권 실행 API 로 접수하면 연간 통지 토글이 꺼져 있어도 발송 상한만큼 접수하고
+     * 남은 인원을 기록에 남긴다. 통지 조회 권한만으로는 실행하지 못한다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario flow=api
+     *
+     * @effects manual_send_ignores_the_toggle_and_keeps_the_batch_limit, permission_enforced
+     */
+    public function test_manual_send_ignores_the_toggle_and_keeps_the_batch_limit(): void
+    {
+        $this->configure(false, 1);
+        $this->oldUser();
+        $this->oldUser();
+
+        $viewer = $this->adminWith(['sirsoft-gdpr.privacy.view']);
+        $this->actingAs($viewer)->postJson('/api/admin/privacy/manual-runs/sirsoft-gdpr:annual_notice')->assertForbidden();
+
+        $runner = $this->adminWith(['sirsoft-gdpr.privacy.update']);
+        $preview = $this->actingAs($runner)->getJson('/api/admin/privacy/manual-runs/sirsoft-gdpr:annual_notice/preview')->assertOk();
+        $this->assertSame(2, $preview->json('data.count'));
+        $this->assertFalse($preview->json('data.enabled'), '자동 발송은 꺼진 상태');
+        $this->assertSame('notify', $preview->json('data.mode'));
+
+        $response = $this->actingAs($runner)->postJson('/api/admin/privacy/manual-runs/sirsoft-gdpr:annual_notice')->assertStatus(202);
+
+        $run = PrivacyManualRun::findOrFail($response->json('data.id'));
+        $this->assertSame('completed', $run->status->value);
+        $this->assertSame(1, $run->processed_count, '발송 상한 1 — 한 번에 한 명만 접수');
+        $this->assertSame(1, $run->remaining_count, '남은 인원은 다시 실행하면 이어서 접수된다');
+        $this->assertSame(0, app(GdprAnnualNoticeService::class)->run(), '자동 경로는 여전히 토글을 본다');
     }
 }

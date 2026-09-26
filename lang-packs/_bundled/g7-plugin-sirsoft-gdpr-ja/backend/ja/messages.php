@@ -22,6 +22,7 @@ return [
             'email' => 'メールアドレス',
             'joined_at' => '登録日',
         ],
+        'manual_run_label' => '個人情報年間通知発送',
     ],
     'consent' => [
         'granted' => '同意が保存されました。',

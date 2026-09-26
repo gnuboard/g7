@@ -14,6 +14,13 @@
 
 통지문 자체는 알림 정의 `annual_privacy_notice` 의 채널별 템플릿입니다. 코어 관리자의 「알림 정의」 화면은 `extension_identifier=core` 로 코어 정의만 받으므로, 확장이 들인 정의는 그 확장의 설정 화면에서 편집합니다 — 이 플러그인은 설정 화면 「알림 템플릿」 카드가 그 자리입니다. 발송 채널을 고르고(저장 버튼으로 반영), 채널별 템플릿을 켜고 끄며, 제목·본문·수신자를 고치고 치환 결과를 미리 볼 수 있습니다. 「기본값 복원」은 `core.notification.filter_default_definitions` 로 플러그인이 제공하는 원본을 되돌립니다.
 
+카드의 대상 행(`annual_notice_target_row` — 이름 · 이번 주기 대상 · 대상 보기 · 결과 줄)에 있는 **「지금 실행」**은 코어 관리자 직권 실행입니다. 플러그인은 `GdprAnnualNoticeListener` 가
+`core.privacy.manual_run_targets` 필터로 `Privacy\AnnualNoticeManualRunner`(키 `sirsoft-gdpr:annual_notice`)를
+등록할 뿐이고, 접수·큐 작업·실행 기록·상태 조회는 코어가 합니다. 러너는 `GdprAnnualNoticeService::run(force: true)`
+— 활성 토글만 건너뛰고 실행당 상한과 「이번 주기 수신자 제외」는 정기 실행과 같습니다 — 를 부르고, 처리 뒤
+`dueCount()` 를 「남은 대상」으로 기록합니다. 권한은 `sirsoft-gdpr.privacy.update`. 접수는 회원 행 잠금으로
+직렬화되어 정기 실행과 겹쳐도 중복 발송이 없으므로 공유 락은 두지 않습니다(`lockKey()` 가 `null`).
+
 자동 통지를 끄면 채널·상한·서문 입력이 비활성화되고 저장 검증도 그 항목을 강제하지 않습니다. 저장해 둔 채널·상한은 유지되므로 다시 켜면 그대로 쓸 수 있습니다.
 
 기설치본에는 신규 마이그레이션과 1.1.0 업그레이드 데이터 작업이 테이블을 멱등 생성합니다. 공개 설정 페이로드에는 통지 설정을 노출하지 않습니다.

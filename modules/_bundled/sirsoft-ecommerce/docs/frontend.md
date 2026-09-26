@@ -5,11 +5,11 @@
 ## 레이아웃
 
 <!-- @generated:layouts START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-레이아웃 211개 (루트: `resources/layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
+레이아웃 212개 (루트: `resources/layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
 
 | 그룹 | 개수 |
 |---|---|
-| `admin` | 211개 |
+| `admin` | 212개 |
 
 | 레이아웃 | 그룹 | 종류 | extends |
 |---|---|---|---|
@@ -183,6 +183,7 @@
 | `_modal_notification_definition_reset` | `admin` | partial | - |
 | `_modal_notification_template_edit` | `admin` | partial | - |
 | `_modal_notification_template_preview` | `admin` | partial | - |
+| `_modal_privacy_run` | `admin` | partial | - |
 | `_modal_privacy_targets` | `admin` | partial | - |
 | `_payment_methods_cards` | `admin` | partial | - |
 | `_payment_methods_list` | `admin` | partial | - |

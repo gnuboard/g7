@@ -120,4 +120,16 @@ trait PaginatesBoardTargets
     {
         return ['sirsoft-board.settings.read', 'sirsoft-board.boards.read'];
     }
+
+    /**
+     * 게시판 보유기간 처리를 관리자 직권으로 실행할 수 있는 권한 — 설정 수정 + 게시판 관리 수정.
+     *
+     * 목록 권한({@see boardTargetPermissions()})의 쓰기 대칭이다.
+     *
+     * @return array<int, string> 권한 식별자 목록
+     */
+    protected function boardRunPermissions(): array
+    {
+        return ['sirsoft-board.settings.update', 'sirsoft-board.boards.update'];
+    }
 }

@@ -75,6 +75,25 @@ function adminLang(locale: string): any {
     return JSON.parse(fs.readFileSync(path.join(templateRoot(), `lang/partial/${locale}/admin.json`), 'utf-8'));
 }
 
+/** 휴면 네 단계 — 탭은 단계마다 한 행을 반복 하나로 그린다(2026-09-26 대상 행 재배치). */
+const DORMANT_STAGES = ['pre_notice', 'convert', 'withdraw_notice', 'withdraw'];
+
+/**
+ * 「대상 보기」 버튼이 가리키는 대상 수 — 반복 안의 버튼은 반복 원본의 항목 수만큼 센다.
+ *
+ * @param buttons collectWithAncestors 결과
+ * @returns 화면에 그려지는 대상 수
+ */
+function renderedTargetCount(buttons: Array<[any, any[]]>): number {
+    return buttons.reduce((sum, [button, ancestors]) => {
+        const loop = [button, ...ancestors].find((n: any) => n.iteration?.item_var === 'stage');
+        if (!loop) return sum + 1;
+        expect(loop.iteration.source, button.id).toBe(`{{${JSON.stringify(DORMANT_STAGES).replace(/"/g, "'").replace(/,/g, ', ')}}}`);
+
+        return sum + DORMANT_STAGES.length;
+    }, 0);
+}
+
 describe('개인정보 조치 대상 — 건수 상시 노출 + 대상 목록 창 (#636 §1-E)', () => {
     const viewButtons = collectWithAncestors(privacyTab, (n) => /^view_.*targets$/.test(n.id ?? ''));
 
@@ -85,7 +104,8 @@ describe('개인정보 조치 대상 — 건수 상시 노출 + 대상 목록 �
      */
     it('「대상 보기」 버튼이 있고, 권한으로만 게이트되며(0건이어도 보인다) 기능 토글 안에 갇히지 않는다', () => {
         // 모집단은 레이아웃에서 파생한다 — 버튼이 하나도 없으면 이 단언 자체가 공허해진다.
-        expect(viewButtons.length).toBe(5);
+        // 탈퇴 잔여정보 1 + 휴면 단계 반복(4) = 5 대상.
+        expect(renderedTargetCount(viewButtons)).toBe(5);
 
         for (const [button, ancestors] of viewButtons) {
             expect(button.if, button.id).toContain('can_view_targets');
@@ -111,7 +131,8 @@ describe('개인정보 조치 대상 — 건수 상시 노출 + 대상 목록 �
             expect(steps, button.id).toEqual(['setState', 'setState', 'refetchDataSource', 'openModal']);
             expect(actionsOf(click)[0].params.privacyTargets, button.id).toContain('currentPage: 1');
             expect(actionsOf(click)[0].params.privacyTargets, button.id).toContain('hasMore: true');
-            expect(actionsOf(click)[1].params['privacyTargets.title'], button.id).toMatch(/^\$t:/);
+            // 고정 대상은 `$t:` 리터럴, 단계 반복 안에서는 단계 이름으로 키를 만든다.
+            expect(actionsOf(click)[1].params['privacyTargets.title'], button.id).toMatch(/^\$t:|^\{\{\$t\('admin\.settings\.privacy\.targets\.title\.' \+ stage\)\}\}$/);
             expect(actionsOf(click)[2].params.dataSourceId).toBe('privacyTargets');
             expect(actionsOf(click)[3].target).toBe('privacy_targets_modal');
         }
@@ -167,6 +188,13 @@ describe('개인정보 조치 대상 — 건수 상시 노출 + 대상 목록 �
         expect(row.iteration.item_var).toBe('target');
         expect(raw).toContain('"target":"_blank"');
         expect(empty.if).toContain('length === 0');
+        // 아이콘과 문구는 감싸는 줄이 세로로 쌓는다 — 아이콘 클래스의 mx-auto·mb 는 Font Awesome 의 display(inline-block)에
+        // 무시되어 아이콘과 「대상이 없습니다」가 한 줄에 겹쳐 붙었다(2026-09-26 실측).
+        expect(String(empty.props?.className ?? '')).toMatch(/\bflex\b/);
+        expect(String(empty.props?.className ?? '')).toMatch(/\bflex-col\b/);
+        const emptyIcon = (empty.children ?? []).find((c: any) => c.name === 'Icon');
+        expect(emptyIcon, 'empty icon').toBeTruthy();
+        expect(String(emptyIcon.props?.className ?? '')).not.toMatch(/\b(mx-auto|mb-\d+|block)\b/);
     });
 
     /**
@@ -179,9 +207,13 @@ describe('개인정보 조치 대상 — 건수 상시 노출 + 대상 목록 �
         const keys = [...new Set([...raw.matchAll(/\$t:(admin\.settings\.privacy\.targets\.[a-z0-9_.]+)/g)].map((m) => m[1]))];
 
         expect(keys.length).toBeGreaterThan(3);
+        // 단계 반복이 식으로 만드는 키(`targets.rows.{stage}` 행 이름 · `targets.title.{stage}` 창 제목)도 모두 있어야 한다.
+        const stageKeys = DORMANT_STAGES.flatMap((stage) => [`admin.settings.privacy.targets.rows.${stage}`, `admin.settings.privacy.targets.title.${stage}`]);
+        expect(raw).toContain("$t('admin.settings.privacy.targets.rows.' + stage)");
+        expect(raw).toContain("$t('admin.settings.privacy.targets.title.' + stage)");
         for (const locale of ['ko', 'en']) {
             const bundle = adminLang(locale);
-            for (const key of keys) {
+            for (const key of [...keys, ...stageKeys]) {
                 expect(typeof readPath(bundle, key.replace(/^admin\./, '')), `${locale}:${key}`).toBe('string');
             }
         }
@@ -231,7 +263,7 @@ describe('개인정보 탭 — 대상 보기 줄의 좁은 화면 줄바꿈 (#63
      */
     it('「대상 보기」 버튼의 부모 줄은 줄바꿈되는 flex 이고, 간격은 gap 으로 준다', () => {
         const viewButtons = collectWithAncestors(privacyTab, (n) => /^view_.*targets$/.test(n.id ?? ''));
-        expect(viewButtons.length).toBe(5);
+        expect(renderedTargetCount(viewButtons)).toBe(5);
 
         for (const [button, ancestors] of viewButtons) {
             const row = ancestors[ancestors.length - 1];
