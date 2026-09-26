@@ -161,6 +161,8 @@
           <badge data-ref="site_timezone_badge" data-if="{{analytics_diagnostics?.data?.timezone_differs === true}}" color="blue" size="sm" text="$t:admin.analytics.common.site_timezone_badge|timezone={{analytics_diagnostics?.data?.timezone ?? ''}}"/>
           <button data-ref="refresh_button" type="button" class="btn-icon" aria-label="$t:admin.analytics.common.refresh">
             <on type="click">
+              <!-- 새로고침 — 이 화면이 받는 세 소스(진단·집계 이력·실패 로그)를 한꺼번에 다시 받는다. 하나만 받으면 상태 카드와
+                   이력 표가 서로 다른 시각의 값을 보인다. -->
               <sequence>
                 <refetch-data-source dataSourceId="analytics_diagnostics"/>
                 <refetch-data-source dataSourceId="analytics_archive_runs"/>
@@ -250,6 +252,8 @@
             </button>
             <button data-ref="finalize_yesterday_button" type="button" class="btn btn-secondary btn-sm flex-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{!_computed.canUpdate || _local.running !== '' || !!_computed.runningRunId}}">
               <on type="click">
+                <!-- 어제 확정 — 사이트 날짜 기준 전날 하루를 확정본으로 집계한다(시간 집계와 같은 API, `run_type=day`). 누르는 동안
+                     두 집계 버튼이 함께 잠겨(`running`) 겹쳐 돌리지 못하고, 실행 중인 이력이 있어도 잠긴다. -->
                 <sequence>
                   <set-state target="local" running="day"/>
                   <api-call :auth_required="true" target="/api/admin/analytics/archive-runs" method="POST">
@@ -275,6 +279,8 @@
             </button>
             <button data-ref="reaggregate_button" type="button" class="btn btn-primary btn-sm flex-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{!_computed.canUpdate}}">
               <on type="click">
+                <!-- 구간 재집계 창 열기 — 지난번 입력(시작·종료·확정일 포함 여부)을 비운 채로 연다. 위 두 버튼과 달리 실행 중에도
+                     잠그지 않고 권한만 본다 — 기간을 받아 워커에게 넘기는 일은 창이 맡는다. -->
                 <sequence>
                   <set-state target="global">
                     <field name="analyticsReagg">
@@ -334,6 +340,8 @@
         <div class="overflow-x-auto">
           <data-grid data-ref="archive_runs_grid" data="{{analytics_archive_runs?.data?.data ?? []}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{analytics_archive_runs?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{analytics_archive_runs?.data?.pagination?.last_page ?? null}}" :pageSize="10" :alwaysShowPagination="true" idField="id" :selectable="false" :sortable="false" emptyMessage="$t:admin.analytics.common.empty_title">
             <on type="action" event="onPageChange">
+              <!-- 집계 이력의 쪽 이동 — 이력 전용 키 `runs_page` 를 쓴다. 같은 화면의 실패 로그가 `failures_page` 를 따로 쓰므로
+                   한쪽 표를 넘겨도 다른 표의 쪽이 따라 움직이지 않는다. -->
               <navigate path="/admin/analytics/diagnostics" :mergeQuery="true" :replace="true">
                 <query runs_page="{{$args[0]}}"/>
               </navigate>
@@ -405,6 +413,7 @@
                 <option value="unknown_dimension">$t:admin.analytics.diagnostics.failure_reasons.unknown_dimension</option>
               </options>
               <on type="change">
+                <!-- 실패 사유 필터 — 질의 `reason` 에 싣고(전체면 키를 지운다) 실패 로그만 1쪽으로 돌린다. 집계 이력의 쪽은 건드리지 않는다. -->
                 <navigate path="/admin/analytics/diagnostics" :mergeQuery="true" :replace="true">
                   <query reason="{{$event.target.value || undefined}}" :failures_page="1"/>
                 </navigate>
@@ -425,6 +434,7 @@
         <div class="overflow-x-auto">
           <data-grid data-ref="collect_failures_grid" data="{{analytics_collect_failures?.data?.data ?? []}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{analytics_collect_failures?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{analytics_collect_failures?.data?.pagination?.last_page ?? null}}" :pageSize="10" :alwaysShowPagination="true" idField="id" :selectable="false" :sortable="false" emptyMessage="$t:admin.analytics.diagnostics.failures_empty">
             <on type="action" event="onPageChange">
+              <!-- 실패 로그의 쪽 이동 — `failures_page` 만 바꾼다. 걸어 둔 사유 필터(`reason`)는 병합으로 그대로 남는다. -->
               <navigate path="/admin/analytics/diagnostics" :mergeQuery="true" :replace="true">
                 <query failures_page="{{$args[0]}}"/>
               </navigate>

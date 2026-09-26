@@ -41,7 +41,8 @@
                         "target": "content"
                     }
                 }
-            }
+            },
+            "comment": "탭 → 리포트 이름. 공통 표와 유형 탭의 도넛이 읽는다. 사이트 탭에서 한 도메인의 주소 목록을 보는 동안에는 표 자리를\n       아래 소스가 대신하지만, 이 소스는 조건 없이 사이트 집계를 계속 받는다."
         },
         {
             "id": "analytics_referrer_urls",
@@ -104,7 +105,8 @@
                 "403": {
                     "handler": "suppress"
                 }
-            }
+            },
+            "comment": "상단 경고용 진단 상태(background). 큐가 밀리면 방금 들어온 유입이 아직 원장에 없다 — 표 숫자가 모자라 보이는 까닭을\n       공통 경고가 이 값으로 알린다."
         }
     ],
     "initLocal": {
@@ -203,6 +205,7 @@
                         "name": "TabNavigation",
                         "actions": [
                             {
+                                "comment": "탭 전환 — 라벨 링크 여부를 새 탭에 맞춘 뒤 이동한다. 사이트 탭에서 열어 둔 도메인(`host`)은 새 탭에 의미가 없어 지운다.",
                                 "type": "change",
                                 "event": "onTabChange",
                                 "handler": "sequence",
@@ -344,6 +347,7 @@
                                         "name": "Button",
                                         "actions": [
                                             {
+                                                "comment": "사이트 목록으로 — 라벨 링크를 다시 켜고 `host` 만 지워 1쪽으로 돌아간다. 기간·쪽 크기는 병합으로 남는다.",
                                                 "type": "click",
                                                 "handler": "sequence",
                                                 "actions": [
@@ -432,6 +436,7 @@
                                         "if": "{{analytics_referrer_urls?.loading || (analytics_referrer_urls?.data?.data ?? []).length > 0}}",
                                         "actions": [
                                             {
+                                                "comment": "유입 주소 목록의 쪽 이동. 이 목록은 원장을 직접 읽어 총 건수를 세지 않으므로 다음 쪽 여부는 응답의 `has_more` 로만 안다.",
                                                 "type": "action",
                                                 "event": "onPageChange",
                                                 "handler": "navigate",

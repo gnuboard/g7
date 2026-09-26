@@ -41,7 +41,8 @@
                         "target": "content"
                     }
                 }
-            }
+            },
+            "comment": "탭 → 리포트 이름(기기 탭은 `device_type`). 기기 탭에서는 같은 응답을 도넛과 표가 함께 쓴다 — 두 번 받지 않는다."
         },
         {
             "id": "analytics_status",
@@ -67,7 +68,8 @@
                 "403": {
                     "handler": "suppress"
                 }
-            }
+            },
+            "comment": "수집·큐 상태 — 상단 경고 조각이 읽는다. 첫 그림을 늦추지 않게 background 로 받고, fallback 은 「수집 켜짐·적체 없음」이라\n       응답 전이나 실패 때 경고가 헛뜨지 않는다."
         }
     ],
     "initLocal": {

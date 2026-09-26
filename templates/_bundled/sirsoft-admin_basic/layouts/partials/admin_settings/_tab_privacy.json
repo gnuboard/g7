@@ -234,6 +234,7 @@
                                                             "if": "{{privacyPreview?.data?.retention?.['user-withdrawn']?.can_view_targets}}",
                                                             "actions": [
                                                                 {
+                                                                    "comment": "탈퇴 잔여정보 대상 명단 — 휴면 네 단계와 같은 창이라 목록 경로·제목을 탈퇴 보유기간 쪽으로 바꾸고\n                         1쪽부터 다시 받은 뒤 연다.",
                                                                     "type": "click",
                                                                     "handler": "sequence",
                                                                     "actions": [
@@ -277,6 +278,7 @@
                                                             "if": "{{privacyManualRuns?.data?.targets?.['retention:user-withdrawn']?.can_run}}",
                                                             "actions": [
                                                                 {
+                                                                    "comment": "탈퇴 잔여정보 파기 지금 실행 — 확인 창을 먼저 열고 실행 시점 건수를 받아 채운다. 이 대상에는 대기기간이 없으므로\n                         생략 선택(`supportsSkip`)을 끈 채로 연다. 저장 전 변경이 있거나 접수된 작업이 아직 돌고 있으면 잠긴다.",
                                                                     "type": "click",
                                                                     "handler": "sequence",
                                                                     "actions": [
@@ -587,6 +589,7 @@
                                                             "if": "{{privacyPreview?.data?.dormant?.can_view_targets}}",
                                                             "actions": [
                                                                 {
+                                                                    "comment": "휴면 단계별 대상 명단 — 반복 중인 단계(`stage`)를 휴면 대상 목록 경로 끝에 붙이고 제목도 단계별로 만들어 같은 창을 연다.\n                         네 단계가 이 한 블록을 돌려 쓴다.",
                                                                     "type": "click",
                                                                     "handler": "sequence",
                                                                     "actions": [
@@ -630,6 +633,7 @@
                                                             "if": "{{privacyManualRuns?.data?.targets?.['dormant:' + stage]?.can_run}}",
                                                             "actions": [
                                                                 {
+                                                                    "comment": "휴면 단계 지금 실행 — 대기기간 생략을 이 단계가 지원하는지는 서버가 단계마다 알려 주는 값(`supports_skip_waiting`)으로\n                         넣는다. 생략 선택은 늘 꺼진 채 시작하고, 창에서 켜면 건수를 다시 센다(안내를 받지 못한 회원까지 대상이 되므로).",
                                                                     "type": "click",
                                                                     "handler": "sequence",
                                                                     "actions": [

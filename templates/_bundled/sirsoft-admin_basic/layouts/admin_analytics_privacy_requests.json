@@ -66,7 +66,8 @@
                 "403": {
                     "handler": "suppress"
                 }
-            }
+            },
+            "comment": "상단 경고용 진단 상태(background). 이 화면은 개인정보 권한으로 열려 통계 조회 권한이 없는 계정이면 403 이 나는데,\n       아래 처리가 조용히 삼켜 경고만 빠진다."
         }
     ],
     "initLocal": {
@@ -230,6 +231,7 @@
                                                 "name": "RadioGroup",
                                                 "actions": [
                                                     {
+                                                        "comment": "찾는 기준 고르기 — 폼 상태만 바꾼다. 값 칸의 안내 문구가 기준에 맞춰 바뀌고, 조회는 검색 버튼·Enter 때만 일어난다.",
                                                         "type": "change",
                                                         "handler": "setState",
                                                         "params": {
@@ -281,6 +283,7 @@
                                                 "name": "Input",
                                                 "actions": [
                                                     {
+                                                        "comment": "입력값을 폼에 담아 둔다. 조회하지 않는다 — 주소에 올릴 때까지 결과 카드는 앞선 검색 그대로다.",
                                                         "type": "change",
                                                         "handler": "setState",
                                                         "params": {
@@ -289,6 +292,7 @@
                                                         }
                                                     },
                                                     {
+                                                        "comment": "Enter 로 바로 검색 — change 가 아직 오지 않았을 수 있어 지금 칸의 값을 먼저 폼에 넣고 검색을 부른다.\n                     순서가 바뀌면 직전 값으로 찾는다.",
                                                         "type": "keydown",
                                                         "key": "Enter",
                                                         "handler": "sequence",
@@ -343,6 +347,7 @@
                                                         "name": "Input",
                                                         "actions": [
                                                             {
+                                                                "comment": "기간 시작을 폼에 담는다. 비워 두면 검색할 때 질의에서 키가 빠져 시작 없이 찾는다.",
                                                                 "type": "change",
                                                                 "handler": "setState",
                                                                 "params": {
@@ -371,6 +376,7 @@
                                                         "name": "Input",
                                                         "actions": [
                                                             {
+                                                                "comment": "기간 끝을 폼에 담는다. 시작과 마찬가지로 비워 두면 끝 키 없이 보낸다.",
                                                                 "type": "change",
                                                                 "handler": "setState",
                                                                 "params": {
@@ -563,6 +569,7 @@
                                                 "name": "Button",
                                                 "actions": [
                                                     {
+                                                        "comment": "삭제 기준은 폼이 아니라 **질의**(지금 결과로 보이는 조건)에서 채운다 — 폼을 고쳐 두고 검색하지 않은 채 누르면\n                     화면에 보이는 결과와 다른 기록을 지우게 된다. 끝나면 이 화면의 검색 결과를 다시 받도록 돌아올 곳을 `subjects` 로 두고,\n                     확인 체크는 매번 꺼진 채로 연다.",
                                                         "type": "click",
                                                         "handler": "sequence",
                                                         "actions": [

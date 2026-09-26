@@ -38,6 +38,8 @@
       </on-code>
     </error-handling>
   </data-source>
+  <!-- 상단 경고용 진단 상태 — 봇 표보다 먼저 올 필요가 없어 background 로 받고, 응답 전에는 fallback 의 「정상」 값으로
+       경고를 띄우지 않는다. -->
   <data-source id="analytics_status" label_key="$t:editor.data_source.analytics_status" type="api" endpoint="/api/admin/analytics/diagnostics" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="background">
     <fallback>
       <field name="data">
@@ -93,6 +95,7 @@
         </div>
         <button data-ref="seo_cache_link" data-if="{{((current_user?.data?.permissions ?? []).some(p =&gt; (p?.identifier ?? p) === 'core.settings.read'))}}" type="button" class="btn btn-secondary btn-sm">
           <on type="click">
+            <!-- 검색엔진 캐시 설정으로 — 환경설정 SEO 탭을 연다. 환경설정 읽기 권한이 있어야 버튼이 보인다(없으면 가도 권한 안내뿐이다). -->
             <navigate path="/admin/settings">
               <query tab="seo"/>
             </navigate>
@@ -113,6 +116,8 @@
           <item id="pages" label="$t:admin.analytics.bots.tabs.pages"/>
         </prop>
         <on type="change" event="onTabChange">
+          <!-- 탭을 옮기면 기간 바의 새로고침 대상부터 그 탭의 소스로 바꾼 뒤 이동한다 — 봇 탭은 `analytics_bots`,
+               페이지 탭은 공통 표의 `analytics_report` 다. 바꾸지 않으면 새로고침이 보이지 않는 탭의 소스를 다시 받는다. -->
           <sequence>
             <set-state target="local" periodSource="{{$args[0] === 'pages' ? 'analytics_report' : 'analytics_bots'}}"/>
             <!-- audit:allow layout-list-context-navigate-merge-query 서브탭 전환 — 봇 이름·봇 페이지 표는 행이 달라 쪽·검색·정렬을 물려받지 않도록 병합하지 않는다. 기간(preset·from·to)과 쪽 크기만 query 로 명시해 잇는다. -->
@@ -128,6 +133,8 @@
           <div class="overflow-x-auto">
             <data-grid data-ref="bot_names_grid" data-if="{{analytics_bots?.loading || (analytics_bots?.data?.data ?? []).length &gt; 0}}" data="{{analytics_bots?.data?.data ?? []}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{+(query.page || 1)}}" :serverTotalPages="null" serverHasMorePages="{{analytics_bots?.data?.pagination?.has_more ?? false}}" pageSize="{{+(query.per_page || 25)}}" :alwaysShowPagination="true" idField="label" :selectable="false" :sortable="false" emptyMessage="$t:admin.analytics.common.empty_title">
               <on type="action" event="onPageChange">
+                <!-- 봇 이름 표의 쪽 이동 — 질의 `page` 만 바꿔 주소를 갈아 끼우고 전환 표시는 표 몸통에만 띄운다. 총 쪽 수를 모르는
+                     목록이라 다음 쪽이 있는지는 응답의 `has_more` 가 가른다. -->
                 <navigate path="/admin/analytics/bots" :mergeQuery="true" :replace="true" transition_overlay_target="bot_names_grid__body">
                   <query page="{{$args[0]}}"/>
                 </navigate>

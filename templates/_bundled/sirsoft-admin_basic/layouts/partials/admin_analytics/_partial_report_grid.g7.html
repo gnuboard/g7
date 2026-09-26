@@ -31,6 +31,8 @@
             <option value="hits">$t:admin.analytics.common.hits</option>
           </options>
           <on type="change">
+            <!-- 정렬 바꾸기 — 기본값(방문)은 주소에서 지워 짧게 두고, 조회로 바꿀 때만 `sort` 를 싣는다. 순서가 바뀌면 앞서 보던
+                 쪽 번호는 의미가 없어 1쪽으로 돌린다. -->
             <navigate path="{{_local.periodPath}}" :mergeQuery="true" :replace="true">
               <query sort="{{$event.target.value === 'visits' ? undefined : $event.target.value}}" :page="1"/>
             </navigate>

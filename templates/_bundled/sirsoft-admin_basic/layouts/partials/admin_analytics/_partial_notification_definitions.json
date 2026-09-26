@@ -47,6 +47,7 @@
                     "if": "{{((current_user?.data?.permissions ?? []).some(p => (p?.identifier ?? p) === 'core.settings.read'))}}",
                     "actions": [
                         {
+                            "comment": "템플릿 편집은 환경설정의 알림 정의 탭 몫이다 — 그 탭으로 바로 간다. 환경설정 읽기 권한이 없으면 버튼을 그리지 않는다.",
                             "type": "click",
                             "handler": "navigate",
                             "params": {

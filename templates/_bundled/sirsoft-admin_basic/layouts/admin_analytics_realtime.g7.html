@@ -5,6 +5,7 @@
   옮길 때 새 화면이 켠 타이머를 떠나는 화면의 정리가 그대로 꺼, 돌아온 화면이 한 번도 갱신되지 않는다. -->
 <layout name="admin_analytics_realtime" version="1.0.0" extends="_admin_base">
   <meta title="$t:admin.analytics.realtime.title"/>
+  <!-- 지금 접속자 수·목록 — 창(분)은 질의 `minutes`. 폴링 타이머·서버 방송·새로고침 버튼 세 계기가 모두 이 소스 하나를 다시 받는다. -->
   <data-source id="analytics_realtime" label_key="$t:editor.data_source.analytics_realtime" type="api" endpoint="/api/admin/analytics/realtime" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive">
     <params minutes="{{query.minutes}}"/>
     <fallback>
@@ -104,6 +105,8 @@
                 <option value="30">30</option>
               </options>
               <on type="change">
+                <!-- 창(분) 바꾸기 — 질의 `minutes` 에 실어 새로고침·주소 공유에 남긴다. 폴링·방송으로 다시 받을 때도 이 질의를 읽으므로
+                     고른 창이 그대로 유지된다. -->
                 <navigate path="/admin/analytics/realtime" :mergeQuery="true" :replace="true">
                   <query minutes="{{$event.target.value}}"/>
                 </navigate>

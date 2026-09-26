@@ -32,6 +32,8 @@
               <div class="flex-wrap-center gap-2">
                 <button data-ref="view_ip_targets" data-if="{{boardPrivacyRetentionPreview?.data?.can_view_targets}}" type="button" class="btn btn-sm btn-ghost">
                   <on type="click">
+                    <!-- 작성 IP 대상 명단 — 창 하나를 두 축이 돌려 쓰므로 목록 경로·제목을 IP 축으로 바꾸고 쪽 상태를 1쪽으로 되돌린 뒤
+                         첫 쪽을 다시 받고 나서 연다. 받기 전에 열면 창이 앞서 본 축의 명단을 잠깐 보인다. -->
                     <sequence>
                       <set-state target="global" privacyTargets="{{({ path: 'retention-targets/sirsoft-board.ip', currentPage: 1, hasMore: true, isLoadingMore: false })}}"/>
                       <set-state target="global" privacyTargets.title="$t:sirsoft-board.admin.settings.privacy_retention.targets.title_ip"/>
@@ -43,6 +45,8 @@
                 </button>
                 <button data-ref="run_ip_retention" data-if="{{privacyManualRuns?.data?.targets?.['retention:sirsoft-board.ip']?.can_run}}" type="button" class="btn btn-sm btn-outline" disabled="{{_local.hasChanges || privacyManualRuns?.data?.targets?.['retention:sirsoft-board.ip']?.run?.is_active}}">
                   <on type="click">
+                    <!-- 작성 IP 축 지금 실행 — 대상 키를 넣고 확인 창부터 연 뒤 실행 시점의 건수·처리 방식을 받아 채운다(받는 동안 창은 로딩을 보인다).
+                         저장하지 않은 변경이 있거나 이 축의 작업이 진행 중이면 버튼이 잠긴다 — 실행은 저장된 설정을 기준으로 한다. -->
                     <sequence>
                       <set-state target="global" privacyRun="{{({ key: 'retention:sirsoft-board.ip', label: privacyManualRuns?.data?.targets?.['retention:sirsoft-board.ip']?.label ?? '', supportsSkip: false, skipWaiting: false, preview: null, loading: true, submitting: false })}}"/>
                       <open-modal target="privacy_run_modal"/>
@@ -76,6 +80,7 @@
               <div class="flex-wrap-center gap-2">
                 <button data-ref="view_guest_targets" data-if="{{boardPrivacyRetentionPreview?.data?.can_view_targets}}" type="button" class="btn btn-sm btn-ghost">
                   <on type="click">
+                    <!-- 비회원 작성자 정보 대상 명단 — IP 축과 같은 창을 비회원 경로·제목으로 바꿔 연다. 비회원 기간이 0(미적용)이면 명단도 비어 온다. -->
                     <sequence>
                       <set-state target="global" privacyTargets="{{({ path: 'retention-targets/sirsoft-board.guest', currentPage: 1, hasMore: true, isLoadingMore: false })}}"/>
                       <set-state target="global" privacyTargets.title="$t:sirsoft-board.admin.settings.privacy_retention.targets.title_guest"/>
@@ -87,6 +92,8 @@
                 </button>
                 <button data-ref="run_guest_retention" data-if="{{privacyManualRuns?.data?.targets?.['retention:sirsoft-board.guest']?.can_run}}" type="button" class="btn btn-sm btn-outline" disabled="{{_local.hasChanges || privacyManualRuns?.data?.targets?.['retention:sirsoft-board.guest']?.run?.is_active}}">
                   <on type="click">
+                    <!-- 비회원 축 지금 실행 — 흐름은 IP 축과 같고 대상 키만 `retention:sirsoft-board.guest` 다. 건수 미리보기가 실패하면 창은 열린 채
+                         로딩만 멈추고, 실행 버튼은 건수가 없어 잠긴 채로 남는다(오류는 토스트로 알린다). -->
                     <sequence>
                       <set-state target="global" privacyRun="{{({ key: 'retention:sirsoft-board.guest', label: privacyManualRuns?.data?.targets?.['retention:sirsoft-board.guest']?.label ?? '', supportsSkip: false, skipWaiting: false, preview: null, loading: true, submitting: false })}}"/>
                       <open-modal target="privacy_run_modal"/>

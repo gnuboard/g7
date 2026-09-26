@@ -42,7 +42,8 @@
                         "target": "content"
                     }
                 }
-            }
+            },
+            "comment": "한 방문자의 카드 정보와 방문 목록(경로의 방문자 키). 기간은 달력으로 고른 `from`·`to` 만 읽고 프리셋은 쓰지 않는다.\n       없는 키(404)도 권한 없음(403)처럼 에러 화면으로 보낸다."
         },
         {
             "id": "analytics_status",
@@ -118,6 +119,7 @@
                                         "name": "Button",
                                         "actions": [
                                             {
+                                                "comment": "목록으로 — 질의를 병합해 돌아가므로 목록에서 들고 온 기간·검색어·유형·쪽이 그대로 살아난다.",
                                                 "type": "click",
                                                 "handler": "navigate",
                                                 "params": {

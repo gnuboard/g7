@@ -4,6 +4,8 @@
   확장」 표시로 함께 온다) — 등록도 집계도 없는 이름은 서버가 404 로 막으므로 자유 입력을 두지 않는다. -->
 <layout name="admin_analytics_actions" version="1.0.0" extends="_admin_base">
   <meta title="$t:admin.analytics.actions.title"/>
+  <!-- 탭 → 리포트 이름. 커스텀 차원 탭은 고른 차원(`query.dimension`)을 `ext:` 접두로 붙여 부르고, 아직 고르지 않았으면
+       부를 대상이 없어 요청하지 않는다. 공통 표가 이 소스를 읽는다. -->
   <data-source id="analytics_report" label_key="$t:editor.data_source.analytics_report" type="api" endpoint="/api/admin/analytics/reports/{{({search: 'site_search', downloads: 'download', outlinks: 'outlink', goals: 'goal', dimensions: (query.dimension ? 'ext:' + query.dimension : 'goal')})[query.tab || 'search'] || 'site_search'}}" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive" if="{{(query.tab || 'search') !== 'dimensions' || !!query.dimension}}">
     <params preset="{{query.from ? undefined : (query.preset || '7d')}}" from="{{query.from}}" to="{{query.to}}" exclude[]="{{(query.exclude || '').split(',').filter(Boolean)}}" page="{{query.page || 1}}" per_page="{{query.per_page}}" sort="{{query.sort}}" q="{{query.q}}"/>
     <fallback>
@@ -20,6 +22,8 @@
       </on-code>
     </error-handling>
   </data-source>
+  <!-- 상단 경고 세 줄(수집 꺼짐·익명 폴백·큐 적체)의 근거가 되는 진단 상태. 표보다 늦게 와도 되므로 background 로 받는다 —
+       검색어·전환 행이 비어 보일 때 그것이 수집이 멈춘 탓인지 먼저 알려 주는 자리다. -->
   <data-source id="analytics_status" label_key="$t:editor.data_source.analytics_status" type="api" endpoint="/api/admin/analytics/diagnostics" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="background">
     <fallback>
       <field name="data">

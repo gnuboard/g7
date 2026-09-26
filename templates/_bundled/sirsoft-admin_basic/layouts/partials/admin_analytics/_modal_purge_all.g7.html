@@ -20,6 +20,7 @@
       <label class="inline-clickable">
         <input type="checkbox" class="checkbox" checked="{{_global.analyticsPurgeConfirm === true}}">
           <on type="change">
+            <!-- 확인 체크 — 켜야 삭제 버튼이 풀린다. 서버도 `confirm` 없이는 거절하지만 화면에서 먼저 막는다. -->
             <set-state target="global" analyticsPurgeConfirm="{{$event.target.checked}}"/>
           </on>
         </input>
@@ -29,6 +30,7 @@
     <div class="modal-footer-buttons">
       <button type="button" class="btn btn-secondary" disabled="{{_global.analyticsPurging}}">
         <on type="click">
+          <!-- 취소 — 체크를 걷고 닫는다. 다시 열었을 때 체크가 켜진 채면 클릭 한 번으로 전부 지워진다. -->
           <sequence>
             <set-state target="global" :analyticsPurgeConfirm="false"/>
             <close-modal/>

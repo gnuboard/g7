@@ -2,6 +2,7 @@
   도넛을 함께 그린다. 나머지는 공통 조각이다. -->
 <layout name="admin_analytics_environment" version="1.0.0" extends="_admin_base">
   <meta title="$t:admin.analytics.environment.title"/>
+  <!-- 탭 → 리포트 이름(기기 탭은 `device_type`). 기기 탭에서는 같은 응답을 도넛과 표가 함께 쓴다 — 두 번 받지 않는다. -->
   <data-source id="analytics_report" label_key="$t:editor.data_source.analytics_report" type="api" endpoint="/api/admin/analytics/reports/{{({browsers: 'browser', os: 'os', devices: 'device_type', resolutions: 'resolution', languages: 'browser_language', locales: 'locale'})[query.tab || 'browsers'] || 'browser'}}" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive">
     <params preset="{{query.from ? undefined : (query.preset || '7d')}}" from="{{query.from}}" to="{{query.to}}" exclude[]="{{(query.exclude || '').split(',').filter(Boolean)}}" page="{{query.page || 1}}" per_page="{{query.per_page}}" sort="{{query.sort}}" q="{{query.q}}"/>
     <fallback>
@@ -18,6 +19,8 @@
       </on-code>
     </error-handling>
   </data-source>
+  <!-- 수집·큐 상태 — 상단 경고 조각이 읽는다. 첫 그림을 늦추지 않게 background 로 받고, fallback 은 「수집 켜짐·적체 없음」이라
+       응답 전이나 실패 때 경고가 헛뜨지 않는다. -->
   <data-source id="analytics_status" label_key="$t:editor.data_source.analytics_status" type="api" endpoint="/api/admin/analytics/diagnostics" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="background">
     <fallback>
       <field name="data">

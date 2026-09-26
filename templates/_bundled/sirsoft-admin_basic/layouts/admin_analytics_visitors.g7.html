@@ -7,6 +7,7 @@
   브라우저 spec 은 그 라운드의 범위를 화면 결함 2건으로 한정한 결정에 따라 뒤로 미뤘다(S3 라운드 1). -->
 <layout name="admin_analytics_visitors" version="1.0.0" extends="_admin_base">
   <meta title="$t:admin.analytics.visitors.title"/>
+  <!-- 방문자 목록 한 쪽 — 기간·검색어·유형·쪽이 전부 질의라 상세에서 돌아와도 같은 목록이 선다. 쪽 크기 기본은 25. -->
   <data-source id="analytics_visitors" label_key="$t:editor.data_source.analytics_visitors" type="api" endpoint="/api/admin/analytics/visitors" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive">
     <params preset="{{query.from ? undefined : (query.preset || '7d')}}" from="{{query.from}}" to="{{query.to}}" q="{{query.q}}" type="{{query.type}}" page="{{query.page || 1}}" per_page="{{query.per_page || 25}}"/>
     <fallback>
@@ -25,6 +26,8 @@
       </on-code>
     </error-handling>
   </data-source>
+  <!-- 상단 경고용 진단 상태. 방문자 목록은 개인정보 권한 화면이라 통계 조회 권한이 없을 수 있다 — 그때의 403 은 아래에서
+       삼키고 경고만 빠진다(background). -->
   <data-source id="analytics_status" label_key="$t:editor.data_source.analytics_status" type="api" endpoint="/api/admin/analytics/diagnostics" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="background">
     <fallback>
       <field name="data">
@@ -91,6 +94,7 @@
             <icon name="fa-solid fa-search" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 text-sm pointer-events-none"/>
             <input data-ref="visitors_search" name="analytics_visitors_q" type="text" placeholder="$t:admin.analytics.visitors.search_placeholder" class="input pl-10" value="{{query.q || ''}}">
               <on type="keydown" key="Enter">
+                <!-- 검색 — Enter 때만 보낸다. 방문자 키·주소·회원 번호를 서버가 한 칸 값으로 모두 대 보므로 기준을 고르지 않는다. 1쪽으로 돌린다. -->
                 <navigate path="/admin/analytics/visitors" :mergeQuery="true" :replace="true" transition_overlay_target="analytics_visitors_grid__body">
                   <query q="{{$event.target.value || undefined}}" :page="1"/>
                 </navigate>
@@ -106,6 +110,7 @@
               <option value="bot">$t:admin.analytics.visitors.types.bot</option>
             </options>
             <on type="change">
+              <!-- 방문자 유형 필터 — 전체면 키를 지우고, 바꾸면 1쪽으로 돌린다. -->
               <navigate path="/admin/analytics/visitors" :mergeQuery="true" :replace="true" transition_overlay_target="analytics_visitors_grid__body">
                 <query type="{{$event.target.value || undefined}}" :page="1"/>
               </navigate>
@@ -126,6 +131,7 @@
           <blur-until-loaded sources="analytics_visitors"/>
           <data-grid data-ref="analytics_visitors_grid" data="{{analytics_visitors?.data?.data ?? []}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{+(query.page || 1)}}" :serverTotalPages="null" serverHasMorePages="{{analytics_visitors?.data?.pagination?.has_more ?? false}}" pageSize="{{+(query.per_page || 25)}}" :alwaysShowPagination="true" idField="visitor_key" :selectable="false" :sortable="false" emptyMessage="$t:admin.analytics.common.empty_title" actionsColumnHeader="$t:common.actions">
             <on type="action" event="onPageChange">
+              <!-- 쪽 이동 — `page` 만 바꾼다. 총 쪽 수를 모르는 목록이라 다음 쪽 버튼은 응답의 `has_more` 가 가른다. -->
               <navigate path="/admin/analytics/visitors" :mergeQuery="true" :replace="true" transition_overlay_target="analytics_visitors_grid__body">
                 <query page="{{$args[0]}}"/>
               </navigate>
@@ -145,6 +151,7 @@
               <cell>
                 <button type="button" class="text-blue-600 dark:text-blue-400 hover:underline font-mono text-sm">
                   <on type="click">
+                    <!-- 방문자 키(앞 8자리)를 눌러도 행 동작 「타임라인」과 같은 상세 화면으로 간다 — 질의를 병합해 넘겨 돌아올 때 목록 조건이 살아난다. -->
                     <navigate path="/admin/analytics/visitors/{{row.visitor_key}}" :mergeQuery="true">
                       <query/>
                     </navigate>

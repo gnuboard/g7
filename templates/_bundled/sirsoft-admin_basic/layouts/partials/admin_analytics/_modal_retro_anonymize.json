@@ -47,6 +47,7 @@
                             "name": "Input",
                             "actions": [
                                 {
+                                    "comment": "확인 체크 — 소급은 되돌릴 수 없어 켜야 적용 버튼이 풀린다.",
                                     "type": "change",
                                     "handler": "setState",
                                     "params": {
@@ -85,6 +86,7 @@
                     "name": "Button",
                     "actions": [
                         {
+                            "comment": "건너뛰기 — 소급 없이 닫는다. 새 설정은 이미 저장돼 앞으로 모이는 값에만 적용되고, 체크는 걷어 둔다.",
                             "type": "click",
                             "handler": "sequence",
                             "actions": [

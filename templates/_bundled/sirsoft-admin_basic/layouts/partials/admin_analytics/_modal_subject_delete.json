@@ -48,6 +48,7 @@
                             "name": "Input",
                             "actions": [
                                 {
+                                    "comment": "확인 체크 — 켜야 삭제 버튼이 풀린다. 여는 두 화면이 매번 꺼진 값으로 열어, 앞선 요청의 체크가 다음 사람에게 넘어가지 않는다.",
                                     "type": "change",
                                     "handler": "setState",
                                     "params": {
@@ -86,6 +87,7 @@
                     "name": "Button",
                     "actions": [
                         {
+                            "comment": "취소 — 체크를 걷고 닫는다. 지울 기준(`analyticsSubject`)은 여는 쪽이 매번 새로 채우므로 여기서 비우지 않는다.",
                             "type": "click",
                             "handler": "sequence",
                             "actions": [
@@ -121,6 +123,7 @@
                     "name": "Button",
                     "actions": [
                         {
+                            "comment": "삭제 실행 — 여는 쪽이 넣어 둔 기준(주소·회원·방문자 키 중 하나)과 기간을 보낸다. 빈 칸은 `|| undefined` 로 본문에서\n               빼 빈 문자열을 조건으로 보내지 않는다. 끝나면 여는 쪽이 정한 곳(`analyticsSubjectAfter`)으로 — 방문자 상세면 목록으로 가고,\n               정보주체 화면이면 결과를 다시 받는다.",
                             "type": "click",
                             "handler": "sequence",
                             "actions": [

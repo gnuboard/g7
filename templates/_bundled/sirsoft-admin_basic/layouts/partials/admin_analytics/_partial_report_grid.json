@@ -78,6 +78,7 @@
                             "name": "Select",
                             "actions": [
                                 {
+                                    "comment": "정렬 바꾸기 — 기본값(방문)은 주소에서 지워 짧게 두고, 조회로 바꿀 때만 `sort` 를 싣는다. 순서가 바뀌면 앞서 보던\n                 쪽 번호는 의미가 없어 1쪽으로 돌린다.",
                                     "type": "change",
                                     "handler": "navigate",
                                     "params": {

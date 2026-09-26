@@ -32,6 +32,7 @@
         </button>
         <button data-ref="preset_yesterday" type="button" class="{{(query.from ? '' : (query.preset || '7d')) === 'yesterday' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
           <on type="click">
+            <!-- 어제 — 서버가 사이트 날짜 기준 전날 하루(시작=끝)로 푼다. -->
             <sequence>
               <navigate path="{{_local.periodPath}}" :mergeQuery="true">
                 <query preset="yesterday" from="{{undefined}}" to="{{undefined}}" :page="1"/>
@@ -42,6 +43,8 @@
         </button>
         <button data-ref="preset_7d" type="button" class="{{(query.from ? '' : (query.preset || '7d')) === '7d' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
           <on type="click">
+            <!-- 최근 7일 — 오늘 포함 7일. 질의에 기간이 하나도 없을 때의 기본값과 같은 구간이라, 아무것도 고르지 않은 화면에서
+                 이 칩이 이미 켜져 보인다. -->
             <sequence>
               <navigate path="{{_local.periodPath}}" :mergeQuery="true">
                 <query preset="7d" from="{{undefined}}" to="{{undefined}}" :page="1"/>
@@ -52,6 +55,7 @@
         </button>
         <button data-ref="preset_30d" type="button" class="{{(query.from ? '' : (query.preset || '7d')) === '30d' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
           <on type="click">
+            <!-- 최근 30일 — 오늘 포함 30일. 달이 아니라 날 수라 월 경계와 무관하다. -->
             <sequence>
               <navigate path="{{_local.periodPath}}" :mergeQuery="true">
                 <query preset="30d" from="{{undefined}}" to="{{undefined}}" :page="1"/>
@@ -62,6 +66,7 @@
         </button>
         <button data-ref="preset_90d" type="button" class="{{(query.from ? '' : (query.preset || '7d')) === '90d' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
           <on type="click">
+            <!-- 최근 90일 — 오늘 포함 90일. 분기 규모의 추세를 보는 자리다. -->
             <sequence>
               <navigate path="{{_local.periodPath}}" :mergeQuery="true">
                 <query preset="90d" from="{{undefined}}" to="{{undefined}}" :page="1"/>
@@ -72,6 +77,7 @@
         </button>
         <button data-ref="preset_this_month" type="button" class="{{(query.from ? '' : (query.preset || '7d')) === 'this_month' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
           <on type="click">
+            <!-- 이번 달 — 1일부터 오늘까지. 달이 끝나지 않았으므로 지난달 칩과 길이가 다르다. -->
             <sequence>
               <navigate path="{{_local.periodPath}}" :mergeQuery="true">
                 <query preset="this_month" from="{{undefined}}" to="{{undefined}}" :page="1"/>
@@ -82,6 +88,7 @@
         </button>
         <button data-ref="preset_last_month" type="button" class="{{(query.from ? '' : (query.preset || '7d')) === 'last_month' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
           <on type="click">
+            <!-- 지난달 — 전달 1일부터 말일까지 전체. 서버가 월 넘침 없이 계산해 31일에 눌러도 짧은 전달을 온전히 잡는다. -->
             <sequence>
               <navigate path="{{_local.periodPath}}" :mergeQuery="true">
                 <query preset="last_month" from="{{undefined}}" to="{{undefined}}" :page="1"/>
@@ -92,6 +99,7 @@
         </button>
         <button data-ref="preset_this_year" type="button" class="{{(query.from ? '' : (query.preset || '7d')) === 'this_year' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
           <on type="click">
+            <!-- 올해 — 1월 1일부터 오늘까지. 기간 한도(366일) 안이라 연중 어느 날 눌러도 거절되지 않는다. -->
             <sequence>
               <navigate path="{{_local.periodPath}}" :mergeQuery="true">
                 <query preset="this_year" from="{{undefined}}" to="{{undefined}}" :page="1"/>
@@ -121,6 +129,8 @@
         <span class="text-gray-400 dark:text-gray-500">~</span>
         <input data-ref="period_to" name="analytics_period_to" type="date" class="input flex-1 min-w-0 sm:flex-none sm:w-40" value="{{_computed.periodTo || ''}}" aria-label="$t:admin.analytics.period.to">
           <on type="change">
+            <!-- 끝 날짜를 고치면 시작 칸은 화면에 보이던 값을 잇되, 새 끝보다 늦으면 끝 날짜 하루로 당긴다(시작 칸 쪽과 짝을 이루는 규칙).
+                 비운 값으로는 이동하지 않는다. -->
             <sequence if="{{!!$event.target.value}}">
               <navigate path="{{_local.periodPath}}" :mergeQuery="true">
                 <query from="{{(function(f, t) { return f &amp;&amp; t >= f ? f : t; })(_computed.periodFrom || '', $event.target.value)}}" to="{{$event.target.value}}" preset="{{undefined}}" :page="1"/>
@@ -160,6 +170,8 @@
         </toggle>
         <toggle data-ref="exclude_member_toggle" checked="{{(query.exclude || '').split(',').filter(Boolean).includes('member')}}" size="sm" label="$t:admin.analytics.period.exclude_member">
           <on type="change">
+            <!-- 「회원 제외」 — 관리자 제외와 같은 방식으로 질의 `exclude` 목록에 `member` 를 넣고 뺀다. 목록의 다른 값은 보존하므로
+                 한쪽 토글을 꺼도 다른 쪽 제외는 남는다. -->
             <sequence>
               <navigate path="{{_local.periodPath}}" :mergeQuery="true">
                 <query exclude="{{(function(cur, on) { const next = on ? [...cur.filter(t =&gt; t !== 'member'), 'member'] : cur.filter(t =&gt; t !== 'member'); return next.length > 0 ? next.join(',') : undefined; })((query.exclude || '').split(',').filter(Boolean), ($event?.target?.checked ?? $event) === true)}}" :page="1"/>

@@ -157,6 +157,8 @@
           <badge data-ref="queue_backlog_badge" data-if="{{_computed.queueBacklogged}}" color="red" size="sm" text="$t:admin.analytics.common.queue_backlog_badge|count={{(_computed.canReadAnalytics === true ? (analytics_status?.data?.queue?.pending_jobs ?? 0) : 0) | number}}"/>
           <button data-ref="refresh_button" type="button" class="btn-icon" aria-label="$t:admin.analytics.common.refresh">
             <on type="click">
+              <!-- 새로고침 — 고친 값을 버리고 서버 값으로 다시 채운다. 변경 표시와 검증 오류를 먼저 걷어야 저장 버튼이 잠기고
+                   지난 오류 문구가 새 값 옆에 남지 않는다. -->
               <sequence>
                 <set-state target="local" :hasChanges="false" :errors="null"/>
                 <refetch-data-source dataSourceId="analytics_settings"/>
@@ -319,6 +321,8 @@
           <div data-ref="privacy_mode_cards" role="radiogroup" aria-label="$t:admin.analytics.settings.privacy.mode_label" class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <button data-ref="mode_full" type="button" role="radio" aria-checked="{{(_local.form?.settings?.privacy_mode ?? 'full') === 'full'}}" class="{{(_local.form?.settings?.privacy_mode ?? 'full') === 'full' ? 'admin-card admin-card-clickable admin-card-selected text-left' : 'admin-card admin-card-clickable text-left'}}" disabled="{{_computed.isReadOnly}}">
               <on type="click">
+                <!-- 「전체 수집」 고르기 — 카드는 이름 있는 입력이 아니라 폼 자동 바인딩이 닿지 않으므로 폼 값과 변경 표시를 직접 세운다.
+                     저장 전에는 서버에 아무것도 가지 않는다. -->
                 <set-state target="local" form.settings.privacy_mode="full" :hasChanges="true"/>
               </on>
               <span class="stats-icon stats-icon-blue inline-block mb-2"><icon name="users" class="icon-lg" aria-hidden="true"/></span>
@@ -328,6 +332,8 @@
             </button>
             <button data-ref="mode_consent" type="button" role="radio" aria-checked="{{_local.form?.settings?.privacy_mode === 'consent'}}" class="{{_local.form?.settings?.privacy_mode === 'consent' ? 'admin-card admin-card-clickable admin-card-selected text-left' : 'admin-card admin-card-clickable text-left'}}" disabled="{{_computed.isReadOnly}}">
               <on type="click">
+                <!-- 「동의 기반」 고르기 — 저장 전이라도 이 선택만으로 아래 동의 출처 경고가 판정된다(동의 출처가 없으면 저장했을 때
+                     익명으로 떨어진다는 예고). -->
                 <set-state target="local" form.settings.privacy_mode="consent" :hasChanges="true"/>
               </on>
               <span class="stats-icon stats-icon-green inline-block mb-2"><icon name="user-shield" class="icon-lg" aria-hidden="true"/></span>
@@ -337,6 +343,7 @@
             </button>
             <button data-ref="mode_anonymous" type="button" role="radio" aria-checked="{{_local.form?.settings?.privacy_mode === 'anonymous'}}" class="{{_local.form?.settings?.privacy_mode === 'anonymous' ? 'admin-card admin-card-clickable admin-card-selected text-left' : 'admin-card admin-card-clickable text-left'}}" disabled="{{_computed.isReadOnly}}">
               <on type="click">
+                <!-- 「익명」 고르기 — 지금보다 엄격한 쪽이라, 저장하면 서버가 소급 익명화 가능 여부를 돌려주고 그때 확인 창이 뜬다. -->
                 <set-state target="local" form.settings.privacy_mode="anonymous" :hasChanges="true"/>
               </on>
               <span class="stats-icon stats-icon-purple inline-block mb-2"><icon name="eye-slash" class="icon-lg" aria-hidden="true"/></span>

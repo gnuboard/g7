@@ -4,6 +4,8 @@
   있어, 기간이 그 밖으로 나가면 안내를 띄운다. -->
 <layout name="admin_analytics_patterns" version="1.0.0" extends="_admin_base">
   <meta title="$t:admin.analytics.patterns.title"/>
+  <!-- 요일·시간대 평균 한 장. 지표 선택은 이 응답의 열만 바꾸므로 질의에 없다. 시간 집계가 남아 있는 첫날
+       (`hourly_available_from`)을 함께 받아, 기간이 그보다 앞으로 나가면 안내를 띄운다. -->
   <data-source id="analytics_patterns" label_key="$t:editor.data_source.analytics_patterns" type="api" endpoint="/api/admin/analytics/patterns" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive">
     <params preset="{{query.from ? undefined : (query.preset || '7d')}}" from="{{query.from}}" to="{{query.to}}" exclude[]="{{(query.exclude || '').split(',').filter(Boolean)}}"/>
     <fallback>
@@ -19,6 +21,8 @@
       </on-code>
     </error-handling>
   </data-source>
+  <!-- 상단 경고용 진단 상태(background). 평균을 보는 화면이라 수집이 멈춘 날이 기간에 섞이면 그 요일·시간대가 낮게 나온다 —
+       그 까닭을 여기서 받은 경고가 먼저 알린다. -->
   <data-source id="analytics_status" label_key="$t:editor.data_source.analytics_status" type="api" endpoint="/api/admin/analytics/diagnostics" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="background">
     <fallback>
       <field name="data">

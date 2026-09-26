@@ -3,6 +3,8 @@
   `label_display` 를 쓰고 원값(`label`)은 title 로 남긴다. -->
 <layout name="admin_analytics_regions" version="1.0.0" extends="_admin_base">
   <meta title="$t:admin.analytics.regions.title"/>
+  <!-- 탭 → 리포트 이름(국가·지역·도시). GeoIP 가 꺼진 사이트에서 국가는 브라우저 언어 추정값이고 지역·도시는 비어 온다 —
+       그 안내 여부는 아래 진단 상태가 가른다. -->
   <data-source id="analytics_report" label_key="$t:editor.data_source.analytics_report" type="api" endpoint="/api/admin/analytics/reports/{{({countries: 'country', regions: 'region', cities: 'city'})[query.tab || 'countries'] || 'country'}}" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive">
     <params preset="{{query.from ? undefined : (query.preset || '7d')}}" from="{{query.from}}" to="{{query.to}}" exclude[]="{{(query.exclude || '').split(',').filter(Boolean)}}" page="{{query.page || 1}}" per_page="{{query.per_page}}" sort="{{query.sort}}" q="{{query.q}}"/>
     <fallback>
@@ -86,6 +88,7 @@
           <p class="text-warning-soft flex-1">$t:admin.analytics.alerts.geoip_off</p>
           <button data-ref="geoip_settings_link" data-if="{{((current_user?.data?.permissions ?? []).some(p =&gt; (p?.identifier ?? p) === 'core.settings.read'))}}" type="button" class="text-sm font-medium underline text-yellow-800 dark:text-yellow-200">
             <on type="click">
+              <!-- GeoIP 설정으로 — 환경설정 고급 탭을 연다. 환경설정 읽기 권한이 있을 때만 버튼이 보인다(안내 문구는 권한과 무관하게 남는다). -->
               <navigate path="/admin/settings">
                 <query tab="advanced"/>
               </navigate>

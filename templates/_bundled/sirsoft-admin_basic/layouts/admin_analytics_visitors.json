@@ -42,7 +42,8 @@
                         "target": "content"
                     }
                 }
-            }
+            },
+            "comment": "방문자 목록 한 쪽 — 기간·검색어·유형·쪽이 전부 질의라 상세에서 돌아와도 같은 목록이 선다. 쪽 크기 기본은 25."
         },
         {
             "id": "analytics_status",
@@ -68,7 +69,8 @@
                 "403": {
                     "handler": "suppress"
                 }
-            }
+            },
+            "comment": "상단 경고용 진단 상태. 방문자 목록은 개인정보 권한 화면이라 통계 조회 권한이 없을 수 있다 — 그때의 403 은 아래에서\n       삼키고 경고만 빠진다(background)."
         }
     ],
     "initLocal": {
@@ -224,6 +226,7 @@
                                                 "name": "Input",
                                                 "actions": [
                                                     {
+                                                        "comment": "검색 — Enter 때만 보낸다. 방문자 키·주소·회원 번호를 서버가 한 칸 값으로 모두 대 보므로 기준을 고르지 않는다. 1쪽으로 돌린다.",
                                                         "type": "keydown",
                                                         "key": "Enter",
                                                         "handler": "navigate",
@@ -255,6 +258,7 @@
                                         "name": "Select",
                                         "actions": [
                                             {
+                                                "comment": "방문자 유형 필터 — 전체면 키를 지우고, 바꾸면 1쪽으로 돌린다.",
                                                 "type": "change",
                                                 "handler": "navigate",
                                                 "params": {
@@ -360,6 +364,7 @@
                                         "name": "DataGrid",
                                         "actions": [
                                             {
+                                                "comment": "쪽 이동 — `page` 만 바꾼다. 총 쪽 수를 모르는 목록이라 다음 쪽 버튼은 응답의 `has_more` 가 가른다.",
                                                 "type": "action",
                                                 "event": "onPageChange",
                                                 "handler": "navigate",
@@ -416,6 +421,7 @@
                                                             "name": "Button",
                                                             "actions": [
                                                                 {
+                                                                    "comment": "방문자 키(앞 8자리)를 눌러도 행 동작 「타임라인」과 같은 상세 화면으로 간다 — 질의를 병합해 넘겨 돌아올 때 목록 조건이 살아난다.",
                                                                     "type": "click",
                                                                     "handler": "navigate",
                                                                     "params": {

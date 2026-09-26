@@ -65,6 +65,7 @@
                             "name": "Button",
                             "actions": [
                                 {
+                                    "comment": "어제 — 서버가 사이트 날짜 기준 전날 하루(시작=끝)로 푼다.",
                                     "type": "click",
                                     "handler": "sequence",
                                     "actions": [
@@ -96,6 +97,7 @@
                             "name": "Button",
                             "actions": [
                                 {
+                                    "comment": "최근 7일 — 오늘 포함 7일. 질의에 기간이 하나도 없을 때의 기본값과 같은 구간이라, 아무것도 고르지 않은 화면에서\n                 이 칩이 이미 켜져 보인다.",
                                     "type": "click",
                                     "handler": "sequence",
                                     "actions": [
@@ -127,6 +129,7 @@
                             "name": "Button",
                             "actions": [
                                 {
+                                    "comment": "최근 30일 — 오늘 포함 30일. 달이 아니라 날 수라 월 경계와 무관하다.",
                                     "type": "click",
                                     "handler": "sequence",
                                     "actions": [
@@ -158,6 +161,7 @@
                             "name": "Button",
                             "actions": [
                                 {
+                                    "comment": "최근 90일 — 오늘 포함 90일. 분기 규모의 추세를 보는 자리다.",
                                     "type": "click",
                                     "handler": "sequence",
                                     "actions": [
@@ -189,6 +193,7 @@
                             "name": "Button",
                             "actions": [
                                 {
+                                    "comment": "이번 달 — 1일부터 오늘까지. 달이 끝나지 않았으므로 지난달 칩과 길이가 다르다.",
                                     "type": "click",
                                     "handler": "sequence",
                                     "actions": [
@@ -220,6 +225,7 @@
                             "name": "Button",
                             "actions": [
                                 {
+                                    "comment": "지난달 — 전달 1일부터 말일까지 전체. 서버가 월 넘침 없이 계산해 31일에 눌러도 짧은 전달을 온전히 잡는다.",
                                     "type": "click",
                                     "handler": "sequence",
                                     "actions": [
@@ -251,6 +257,7 @@
                             "name": "Button",
                             "actions": [
                                 {
+                                    "comment": "올해 — 1월 1일부터 오늘까지. 기간 한도(366일) 안이라 연중 어느 날 눌러도 거절되지 않는다.",
                                     "type": "click",
                                     "handler": "sequence",
                                     "actions": [
@@ -336,6 +343,7 @@
                             "name": "Input",
                             "actions": [
                                 {
+                                    "comment": "끝 날짜를 고치면 시작 칸은 화면에 보이던 값을 잇되, 새 끝보다 늦으면 끝 날짜 하루로 당긴다(시작 칸 쪽과 짝을 이루는 규칙).\n                 비운 값으로는 이동하지 않는다.",
                                     "type": "change",
                                     "handler": "sequence",
                                     "if": "{{!!$event.target.value}}",
@@ -469,6 +477,7 @@
                             "name": "Toggle",
                             "actions": [
                                 {
+                                    "comment": "「회원 제외」 — 관리자 제외와 같은 방식으로 질의 `exclude` 목록에 `member` 를 넣고 뺀다. 목록의 다른 값은 보존하므로\n                 한쪽 토글을 꺼도 다른 쪽 제외는 남는다.",
                                     "type": "change",
                                     "handler": "sequence",
                                     "actions": [

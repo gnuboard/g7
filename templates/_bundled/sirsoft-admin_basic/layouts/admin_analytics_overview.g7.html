@@ -192,6 +192,7 @@
             <h3 class="section-heading">$t:admin.analytics.overview.top.pages</h3>
             <button type="button" class="text-sm text-blue-600 dark:text-blue-400 hover:underline">
               <on type="click">
+                <!-- 인기 페이지 전체 — 지금 질의(기간·단위·제외)를 병합해 페이지 리포트로 간다. 기본 탭이 이 목록과 같은 페이지 주소 집계다. -->
                 <navigate path="/admin/analytics/pages" :mergeQuery="true">
                   <query/>
                 </navigate>
@@ -221,6 +222,8 @@
             <h3 class="section-heading">$t:admin.analytics.overview.top.referrers</h3>
             <button type="button" class="text-sm text-blue-600 dark:text-blue-400 hover:underline">
               <on type="click">
+                <!-- 유입 전체 — 같은 조건으로 유입 리포트의 사이트 탭을 연다. 개요의 상위 유입은 사이트(도메인) 단위라 유형 탭이 아니라
+                     이 탭이 짝이다. -->
                 <navigate path="/admin/analytics/referrers" :mergeQuery="true">
                   <query tab="sites"/>
                 </navigate>
@@ -250,6 +253,7 @@
             <h3 class="section-heading">$t:admin.analytics.overview.top.countries</h3>
             <button type="button" class="text-sm text-blue-600 dark:text-blue-400 hover:underline">
               <on type="click">
+                <!-- 국가 전체 — 같은 조건으로 지역 리포트를 연다(기본 탭이 국가다). -->
                 <navigate path="/admin/analytics/regions" :mergeQuery="true">
                   <query/>
                 </navigate>

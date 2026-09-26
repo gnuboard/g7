@@ -11,6 +11,7 @@
           <label class="form-label">$t:admin.analytics.modals.reaggregate.from</label>
           <input name="analytics_reagg_from" type="date" class="input w-full" value="{{_global.analyticsReagg?.from ?? ''}}">
             <on type="change">
+              <!-- 시작일 — 전역 입력에 담는다. 두 날짜가 다 차야 실행 버튼이 풀린다. -->
               <set-state target="global" analyticsReagg.from="{{$event.target.value}}"/>
             </on>
           </input>
@@ -19,6 +20,7 @@
           <label class="form-label">$t:admin.analytics.modals.reaggregate.to</label>
           <input name="analytics_reagg_to" type="date" class="input w-full" value="{{_global.analyticsReagg?.to ?? ''}}">
             <on type="change">
+              <!-- 종료일 — 원장 보존 기간 밖의 날이 섞여도 막지 않는다. 그날은 서버가 건너뜀으로 남긴다. -->
               <set-state target="global" analyticsReagg.to="{{$event.target.value}}"/>
             </on>
           </input>
@@ -27,6 +29,7 @@
       <label class="inline-clickable">
         <input type="checkbox" class="checkbox" checked="{{_global.analyticsReagg?.force === true}}">
           <on type="change">
+            <!-- 「확정된 날도 다시」 — 켜면 이미 확정본이 있는 날까지 다시 집계한다. 끄면 확정된 날은 그대로 둔다. -->
             <set-state target="global" analyticsReagg.force="{{$event.target.checked}}"/>
           </on>
         </input>

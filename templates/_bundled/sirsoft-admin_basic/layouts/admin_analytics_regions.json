@@ -41,7 +41,8 @@
                         "target": "content"
                     }
                 }
-            }
+            },
+            "comment": "탭 → 리포트 이름(국가·지역·도시). GeoIP 가 꺼진 사이트에서 국가는 브라우저 언어 추정값이고 지역·도시는 비어 온다 —\n       그 안내 여부는 아래 진단 상태가 가른다."
         },
         {
             "id": "analytics_status",
@@ -191,6 +192,7 @@
                                         "if": "{{((current_user?.data?.permissions ?? []).some(p => (p?.identifier ?? p) === 'core.settings.read'))}}",
                                         "actions": [
                                             {
+                                                "comment": "GeoIP 설정으로 — 환경설정 고급 탭을 연다. 환경설정 읽기 권한이 있을 때만 버튼이 보인다(안내 문구는 권한과 무관하게 남는다).",
                                                 "type": "click",
                                                 "handler": "navigate",
                                                 "params": {

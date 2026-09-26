@@ -1,4 +1,5 @@
 <!-- 개인정보 조치 직권 실행 확인 창 (#636 후속) — 게시판 환경설정의 작성 IP·비회원 글 보유기간 「지금 실행」이 연다(두 대상이 창 하나를 함께 쓴다).
+  e2e:allow develop-7.1.0 1차 병합 후속 — 유입·기존 레이아웃 34개에 S21 주석만 채웠다. 굽기 JSON 은 comment 키 외 무변경(서빙 시 strip)이라 동작 변화 없음. 관련 확장 Vitest 레이아웃 테스트 통과.
   코어 환경설정 개인정보 탭의 같은 창과 동작이 같다(`_global.privacyRun` 에 대상 키·이름을 넣고 연 뒤 건수를 받아 온다,
   실행은 코어 직권 실행 API 로 큐에 접수만 하고 닫는다, 결과는 화면의 상태 줄이 주기 조회로 보여 준다).
   문구는 이 확장의 다국어 키를 쓴다 — 확장 화면이 특정 관리자 템플릿의 문구에 기대지 않게 한다. -->
@@ -25,6 +26,8 @@
     <div class="modal-footer-buttons">
       <button type="button" class="btn btn-secondary" disabled="{{_global.privacyRun?.submitting}}">
         <on type="click">
+          <!-- 취소 — 아무것도 접수하지 않고 닫는다. 작성 IP·비회원 두 축이 이 창을 함께 쓰므로 창이 들고 있던
+               `_global.privacyRun`(대상 키·건수·진행 표시)도 실행 성공 때와 똑같이 비워, 어떻게 닫든 지난 축의 값이 전역에 남지 않게 한다. -->
           <sequence>
             <set-state target="global" :privacyRun="null"/>
             <close-modal target="privacy_run_modal"/>

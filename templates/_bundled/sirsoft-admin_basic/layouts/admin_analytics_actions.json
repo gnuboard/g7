@@ -42,7 +42,8 @@
                         "target": "content"
                     }
                 }
-            }
+            },
+            "comment": "탭 → 리포트 이름. 커스텀 차원 탭은 고른 차원(`query.dimension`)을 `ext:` 접두로 붙여 부르고, 아직 고르지 않았으면\n       부를 대상이 없어 요청하지 않는다. 공통 표가 이 소스를 읽는다."
         },
         {
             "id": "analytics_status",
@@ -68,7 +69,8 @@
                 "403": {
                     "handler": "suppress"
                 }
-            }
+            },
+            "comment": "상단 경고 세 줄(수집 꺼짐·익명 폴백·큐 적체)의 근거가 되는 진단 상태. 표보다 늦게 와도 되므로 background 로 받는다 —\n       검색어·전환 행이 비어 보일 때 그것이 수집이 멈춘 탓인지 먼저 알려 주는 자리다."
         },
         {
             "id": "analytics_registered",

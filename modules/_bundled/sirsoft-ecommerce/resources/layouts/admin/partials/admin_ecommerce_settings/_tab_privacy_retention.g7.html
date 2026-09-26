@@ -38,6 +38,8 @@
                 <div class="flex-wrap-center gap-2">
                   <button data-ref="view_privacy_retention_targets" data-if="{{ecommercePrivacyRetentionPreview?.data?.can_view_targets}}" type="button" class="btn btn-sm btn-ghost">
                     <on type="click">
+                      <!-- 대상 주문 명단 — 목록 경로·제목을 주문 핸들러로 맞추고 쪽 상태를 1쪽으로 되돌린 뒤 첫 쪽을 다시 받아 창을 연다.
+                           창은 스스로 조회하지 않으므로 이 버튼이 받아 주지 않으면 빈 명단이 뜬다. -->
                       <sequence>
                         <set-state target="global" privacyTargets="{{({ path: 'retention-targets/sirsoft-ecommerce.order', currentPage: 1, hasMore: true, isLoadingMore: false })}}"/>
                         <set-state target="global" privacyTargets.title="$t:sirsoft-ecommerce.admin.settings.privacy_retention.targets.title"/>
@@ -49,6 +51,8 @@
                   </button>
                   <button data-ref="run_privacy_retention" data-if="{{privacyManualRuns?.data?.targets?.['retention:sirsoft-ecommerce.order']?.can_run}}" type="button" class="btn btn-sm btn-outline" disabled="{{_local.hasChanges || privacyManualRuns?.data?.targets?.['retention:sirsoft-ecommerce.order']?.run?.is_active}}">
                     <on type="click">
+                      <!-- 주문 보유기간 지금 실행 — 확인 창을 먼저 열고 실행 시점의 대상 건수와 처리 방식(익명화·삭제)을 받아 채운다.
+                           삭제 방식이면 창이 연쇄 영향 경고를 한 줄 더 띄운다. 저장 전 변경이 있으면 잠긴다 — 실행은 저장된 설정을 따른다. -->
                       <sequence>
                         <set-state target="global" privacyRun="{{({ key: 'retention:sirsoft-ecommerce.order', label: privacyManualRuns?.data?.targets?.['retention:sirsoft-ecommerce.order']?.label ?? '', supportsSkip: false, skipWaiting: false, preview: null, loading: true, submitting: false })}}"/>
                         <open-modal target="privacy_run_modal"/>

@@ -33,7 +33,8 @@
                         "target": "content"
                     }
                 }
-            }
+            },
+            "comment": "지금 접속자 수·목록 — 창(분)은 질의 `minutes`. 폴링 타이머·서버 방송·새로고침 버튼 세 계기가 모두 이 소스 하나를 다시 받는다."
         },
         {
             "id": "analytics_realtime_ws",
@@ -261,6 +262,7 @@
                                                 "name": "Select",
                                                 "actions": [
                                                     {
+                                                        "comment": "창(분) 바꾸기 — 질의 `minutes` 에 실어 새로고침·주소 공유에 남긴다. 폴링·방송으로 다시 받을 때도 이 질의를 읽으므로\n                     고른 창이 그대로 유지된다.",
                                                         "type": "change",
                                                         "handler": "navigate",
                                                         "params": {

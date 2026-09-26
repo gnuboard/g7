@@ -11,6 +11,7 @@
       <label class="inline-clickable">
         <input type="checkbox" class="checkbox" checked="{{_global.analyticsRetroConfirm === true}}">
           <on type="change">
+            <!-- 확인 체크 — 소급은 되돌릴 수 없어 켜야 적용 버튼이 풀린다. -->
             <set-state target="global" analyticsRetroConfirm="{{$event.target.checked}}"/>
           </on>
         </input>
@@ -20,6 +21,7 @@
     <div class="modal-footer-buttons">
       <button type="button" class="btn btn-secondary" disabled="{{_global.analyticsRetroRunning}}">
         <on type="click">
+          <!-- 건너뛰기 — 소급 없이 닫는다. 새 설정은 이미 저장돼 앞으로 모이는 값에만 적용되고, 체크는 걷어 둔다. -->
           <sequence>
             <set-state target="global" :analyticsRetroConfirm="false"/>
             <close-modal/>

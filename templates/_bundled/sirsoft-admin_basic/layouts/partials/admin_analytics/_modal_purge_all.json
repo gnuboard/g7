@@ -85,6 +85,7 @@
                             "name": "Input",
                             "actions": [
                                 {
+                                    "comment": "확인 체크 — 켜야 삭제 버튼이 풀린다. 서버도 `confirm` 없이는 거절하지만 화면에서 먼저 막는다.",
                                     "type": "change",
                                     "handler": "setState",
                                     "params": {
@@ -123,6 +124,7 @@
                     "name": "Button",
                     "actions": [
                         {
+                            "comment": "취소 — 체크를 걷고 닫는다. 다시 열었을 때 체크가 켜진 채면 클릭 한 번으로 전부 지워진다.",
                             "type": "click",
                             "handler": "sequence",
                             "actions": [
