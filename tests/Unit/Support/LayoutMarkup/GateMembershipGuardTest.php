@@ -144,6 +144,8 @@ class GateMembershipGuardTest extends LayoutMarkupTestCase
      * @scenario compile_unit=install,source_health=valid
      *
      * @effects gate_artisan_commands_are_runnable_today
+     *
+     * @return void 반환값 없음
      */
     public function test_gate_artisan_commands_are_runnable_today(): void
     {
@@ -187,6 +189,8 @@ class GateMembershipGuardTest extends LayoutMarkupTestCase
      * @scenario compile_unit=install,source_health=valid
      *
      * @effects pending_gate_artisan_commands_are_pruned_when_they_become_runnable
+     *
+     * @return void 반환값 없음
      */
     public function test_pending_gate_artisan_commands_are_still_unrunnable(): void
     {
@@ -214,6 +218,8 @@ class GateMembershipGuardTest extends LayoutMarkupTestCase
      * @scenario compile_unit=install,source_health=valid
      *
      * @effects pending_gate_ledger_predicate_is_self_tested_when_the_ledger_is_empty
+     *
+     * @return void 반환값 없음
      */
     public function test_pending_ledger_predicate_still_detects_a_runnable_command(): void
     {
@@ -249,6 +255,8 @@ class GateMembershipGuardTest extends LayoutMarkupTestCase
      * @scenario compile_unit=install,source_health=valid
      *
      * @effects declared_test_files_are_reachable_by_gate_filters
+     *
+     * @return void 반환값 없음
      */
     public function test_every_declared_php_test_file_is_reachable_by_gate_filters(): void
     {
@@ -290,6 +298,8 @@ class GateMembershipGuardTest extends LayoutMarkupTestCase
      * @scenario compile_unit=install,source_health=valid
      *
      * @effects gate_resident_tests_are_declared_in_manifest
+     *
+     * @return void 반환값 없음
      */
     public function test_every_gate_resident_test_is_declared_in_manifest(): void
     {
@@ -318,6 +328,8 @@ class GateMembershipGuardTest extends LayoutMarkupTestCase
      * @scenario compile_unit=install,source_health=valid
      *
      * @effects gate_filters_each_match_at_least_one_declared_test
+     *
+     * @return void 반환값 없음
      */
     public function test_every_gate_filter_matches_something(): void
     {
@@ -354,6 +366,8 @@ class GateMembershipGuardTest extends LayoutMarkupTestCase
      * @scenario compile_unit=install,source_health=valid
      *
      * @effects phpunit_suite_directories_each_contribute_collected_tests
+     *
+     * @return void 반환값 없음
      */
     public function test_every_declared_suite_directory_contributes_tests(): void
     {
@@ -412,6 +426,8 @@ class GateMembershipGuardTest extends LayoutMarkupTestCase
      * @scenario compile_unit=install,source_health=valid
      *
      * @effects forward_declared_suite_slots_are_pruned_when_they_gain_tests
+     *
+     * @return void 반환값 없음
      */
     public function test_forward_declared_slots_are_still_barren(): void
     {
@@ -466,6 +482,8 @@ class GateMembershipGuardTest extends LayoutMarkupTestCase
      * @scenario compile_unit=install,source_health=valid
      *
      * @effects gate_filters_each_have_resident_tests_on_disk
+     *
+     * @return void 반환값 없음
      */
     public function test_every_gate_filter_has_resident_tests(): void
     {
@@ -514,6 +532,8 @@ class GateMembershipGuardTest extends LayoutMarkupTestCase
      * @scenario compile_unit=install,source_health=valid
      *
      * @effects declared_effects_cover_every_marked_effect
+     *
+     * @return void 반환값 없음
      */
     public function test_declared_effects_cover_every_marked_effect(): void
     {
@@ -579,6 +599,8 @@ class GateMembershipGuardTest extends LayoutMarkupTestCase
      * @scenario compile_unit=install,source_health=valid
      *
      * @effects marked_test_files_are_declared_in_some_manifest
+     *
+     * @return void 반환값 없음
      */
     public function test_every_marked_test_file_is_declared_in_some_manifest(): void
     {
