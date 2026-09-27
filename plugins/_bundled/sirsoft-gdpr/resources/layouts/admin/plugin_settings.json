@@ -2750,6 +2750,7 @@
                                                                                         "if": "{{gdprAnnualNoticePreview?.data?.can_view_targets}}",
                                                                                         "actions": [
                                                                                             {
+                                                                                                "comment": "연간 통지 대상 명단 — 목록 주소가 이 플러그인 전용 소스에 고정돼 있어 경로는 넣지 않고, 쪽 상태·제목만 초기화한 뒤\n                               첫 쪽을 다시 받아 창을 연다.",
                                                                                                 "type": "click",
                                                                                                 "handler": "sequence",
                                                                                                 "actions": [
@@ -2793,6 +2794,7 @@
                                                                                         "if": "{{privacyManualRuns?.data?.targets?.['sirsoft-gdpr:annual_notice']?.can_run}}",
                                                                                         "actions": [
                                                                                             {
+                                                                                                "comment": "연간 통지 지금 실행 — 확인 창을 먼저 열고 실행 시점의 통지 대상 수를 받아 채운다. 파기가 아니라 통지 접수라 처리 방식 줄은\n                               없고, 한 번에 발송 상한만큼만 접수된다(남은 인원은 결과 줄에 따로 보인다). 저장 전 변경이 있으면 잠긴다.",
                                                                                                 "type": "click",
                                                                                                 "handler": "sequence",
                                                                                                 "actions": [
@@ -2931,6 +2933,7 @@
                                                         "name": "TagInput",
                                                         "actions": [
                                                             {
+                                                                "comment": "고른 채널 배열을 폼에 넣고 변경 표시를 세운다. 변경 표시가 서 있는 동안 시험 발송·지금 실행이 잠기므로\n                       (둘 다 저장된 설정으로 보낸다) 채널을 바꾸면 저장부터 하게 된다.",
                                                                 "type": "change",
                                                                 "handler": "setState",
                                                                 "params": {
@@ -3038,6 +3041,7 @@
                                                         "name": "Button",
                                                         "actions": [
                                                             {
+                                                                "comment": "본인 시험 발송 — 저장된 설정으로 지금 로그인한 관리자에게 통지 하나를 큐에 접수한다. 누르는 동안 버튼을 잠가\n                       중복 접수를 막고, 성공·실패 어느 쪽이든 잠금을 푼다. 실제 채널별 결과는 통지 이력 화면에서 본다.",
                                                                 "type": "click",
                                                                 "handler": "sequence",
                                                                 "actions": [
@@ -3786,9 +3790,11 @@
             "partial": "partials/plugin_settings/_modal_notification_template_edit.json"
         },
         {
+            "comment": "알림 템플릿 미리보기 창 — 편집 창 안의 미리보기 버튼이 연다. 편집 창이 만들어 둔 치환 결과를 보여 주기만 한다.",
             "partial": "partials/plugin_settings/_modal_notification_template_preview.json"
         },
         {
+            "comment": "알림 정의 기본값 복원 확인 창 — 정의 행의 초기화 버튼이 대상 ID·이름을 전역에 넣고 연다.\n       손으로 고친 내용이 사라지므로 한 번 더 묻는다.",
             "partial": "partials/plugin_settings/_modal_notification_definition_reset.json"
         },
         {

@@ -1210,7 +1210,7 @@
                                                                 "type": "basic",
                                                                 "name": "Icon",
                                                                 "props": {
-                                                                    "name": "flask-conical",
+                                                                    "name": "flask",
                                                                     "className": "text-xl text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5"
                                                                 }
                                                             },
@@ -1695,7 +1695,7 @@
                                                                                 "name": "Span",
                                                                                 "if": "{{!(_local.cbtConnCheckResult?.callback?.app_url_https && _local.cbtConnCheckResult?.callback?.callback_url_https)}}",
                                                                                 "props": {
-                                                                                    "className": "font-semiboldtext-danger-soft"
+                                                                                    "className": "font-semibold text-danger-soft"
                                                                                 },
                                                                                 "text": "$t:sirsoft-pay_kginicis.settings.cbt_callback_check"
                                                                             },
@@ -1721,7 +1721,7 @@
                                                                                 "name": "Span",
                                                                                 "if": "{{!(_local.cbtConnCheckResult?.callback?.app_url_public && _local.cbtConnCheckResult?.callback?.callback_url_public)}}",
                                                                                 "props": {
-                                                                                    "className": "font-semiboldtext-danger-soft"
+                                                                                    "className": "font-semibold text-danger-soft"
                                                                                 },
                                                                                 "text": "$t:sirsoft-pay_kginicis.settings.cbt_callback_check"
                                                                             },
@@ -1747,7 +1747,7 @@
                                                                                 "name": "Span",
                                                                                 "if": "{{!_local.cbtConnCheckResult?.callback?.host_matches_app_url}}",
                                                                                 "props": {
-                                                                                    "className": "font-semiboldtext-danger-soft"
+                                                                                    "className": "font-semibold text-danger-soft"
                                                                                 },
                                                                                 "text": "$t:sirsoft-pay_kginicis.settings.cbt_callback_check"
                                                                             }

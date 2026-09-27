@@ -31,19 +31,19 @@
                     "text": "$t:sirsoft-gdpr.settings.policy_version.snapshot_modal.description"
                 },
                 {
-                    "comment": "메타 — 발행일시 + 발행자 + 변경사유 + 변경 종류 (4개를 grid 2열).",
+                    "comment": "메타 — 발행일시 + 발행자 + 변경사유 + 변경 종류 (4개를 grid 2열). 라벨 칸을 맞춰 값이 한 줄로 시작하게 kv-list-2(admin_basic 자산).",
                     "type": "basic",
                     "name": "Div",
                     "if": "{{gdprPolicyVersionSnapshot?.data?.data}}",
                     "props": {
-                        "className": "grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-xs border border-gray-200 dark:border-gray-700 rounded-md p-3 bg-gray-50 dark:bg-gray-900"
+                        "className": "kv-list-2 gap-y-2 text-xs border border-gray-200 dark:border-gray-700 rounded-md p-3 bg-gray-50 dark:bg-gray-900"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "flex items-baseline gap-2"
+                                "className": "kv-row"
                             },
                             "children": [
                                 {
@@ -68,7 +68,7 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "flex items-baseline gap-2"
+                                "className": "kv-row"
                             },
                             "children": [
                                 {
@@ -93,7 +93,7 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "flex items-baseline gap-2"
+                                "className": "kv-row"
                             },
                             "children": [
                                 {
@@ -118,7 +118,7 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "flex items-baseline gap-2 min-w-0"
+                                "className": "kv-row"
                             },
                             "children": [
                                 {

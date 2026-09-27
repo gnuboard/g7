@@ -5,12 +5,12 @@
 ## 제공 컴포넌트
 
 <!-- @generated:components START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-컴포넌트 131개 (루트: `src/components`).
+컴포넌트 132개 (루트: `src/components`).
 
 | 분류 | 개수 |
 |---|---|
 | `basic` | 39개 |
-| `composite` | 85개 |
+| `composite` | 86개 |
 | `layout` | 5개 |
 | `modals` | 1개 |
 | `shared` | 1개 |
@@ -416,13 +416,14 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다. 모든 Basic �
 | `Badge` | 색상 기반 라벨 뱃지 | color, text, size, style |
 | `StatusBadge` | 상태 뱃지 (아이콘 포함) | status, label, showIcon, iconName, style |
 | `StatCard` | 통계 카드 (값, 라벨, 추이 표시) | value, label, change, changeLabel, iconName, ... |
+| `LineChart` | Chart.js 선 차트 (방문자 추이처럼 시간 축 여러 계열) | labels, datasets[{label,data,color,fill,yAxisID}], height, showLegend, showGrid, showYGrid, showYAxis, className, id, editorAttrs |
 | `EmptyState` | 데이터 없음 상태 표시 | title, description, iconName, illustrationSrc, ... |
 
 > **선택 건수는 한 곳에서만 그린다 — `selectedCountText=""`**
 >
 > `DataGrid` 는 `selectable` 이 켜지고 선택된 행이 있으면 목록 위에 「N개 선택됨」을 **스스로**
 > 그린다. 그런데 관리자 목록 화면은 대개 일괄 처리 바(`bulk-actions-bar`)를 따로 두고 거기에도
-> 같은 문장을 적는다 — 그대로 두면 화면에 두 번 뜬다(2026-09-15 제보).
+> 같은 문장을 적는다 — 그대로 두면 화면에 두 번 뜬다(검수 제보 2026-09-15).
 >
 > 일괄 바에 건수를 적는 화면은 `<data-grid selectedCountText="">` 로 내장 줄을 끈다. 빈 문자열이면
 > `selectedCountText ?? t(...)` 의 `??` 가 폴백하지 않아 카드형·표형 두 렌더 지점의

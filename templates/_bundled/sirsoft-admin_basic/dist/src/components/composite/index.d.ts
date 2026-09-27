@@ -156,3 +156,5 @@ export { BarChart } from './BarChart';
 export type { BarChartProps, BarChartDataset } from './BarChart';
 export { DonutChart } from './DonutChart';
 export type { DonutChartProps, DonutChartDataItem } from './DonutChart';
+export { LineChart } from './LineChart';
+export type { LineChartProps, LineChartDataset } from './LineChart';

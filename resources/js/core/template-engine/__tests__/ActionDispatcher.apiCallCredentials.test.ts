@@ -6,7 +6,7 @@
  * 를 붙였으므로, 레이아웃 편집 권한만 있는 계정이 관리자 브라우저의 토큰을 외부 호스트로 보내게 할 수 있었다
  * (권한전이 → 설치 API). 인증 정보(Bearer·X-XSRF-TOKEN)는 동일 출처 대상에만 싣는다 — ApiClient 와 같은 원칙.
  *
- * @since engine-v1.72.0
+ * @since engine-v1.73.0
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
@@ -32,7 +32,7 @@ vi.mock('../../auth/AuthManager', () => ({
     },
 }));
 
-describe('ActionDispatcher - apiCall 인증 정보는 동일 출처에만 (engine-v1.72.0)', () => {
+describe('ActionDispatcher - apiCall 인증 정보는 동일 출처에만 (engine-v1.73.0)', () => {
     let dispatcher: ActionDispatcher;
     let requests: Array<{ url: string; headers: Record<string, string> }>;
     let originalFetch: typeof fetch;

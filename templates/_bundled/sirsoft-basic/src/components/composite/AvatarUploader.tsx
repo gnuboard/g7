@@ -540,7 +540,7 @@ export function AvatarUploader({
       {/* 오류 메시지 표시 */}
       {errorMessage && !isConfirmMode && (
         <Div className="flex items-center gap-2 text-sm text-red-600 dark:text-red-400">
-          <Icon name="alert-circle" size="sm" />
+          <Icon name="circle-exclamation" size="sm" />
           <Span>{errorMessage}</Span>
         </Div>
       )}

@@ -1230,6 +1230,21 @@ return [
     ],
 
     // Validation attribute names (validation.attributes)
+    // Analytics beacon validation messages
+    'analytics' => [
+        'type_required' => 'An action type is required.',
+        'type_invalid' => 'Unknown action type.',
+        'url_required' => 'A visit URL is required.',
+        'url_too_long' => 'The visit URL is too long.',
+        'resolution_invalid' => 'The screen resolution format is invalid.',
+        'dimensions_too_many' => 'At most 20 breakdown values may be sent.',
+        'range_too_long' => 'You can query at most :days days at a time.',
+        'report_unknown' => 'Unknown report.',
+        'subject_required' => 'Specify at least one of IP address, member id or visitor key.',
+        'confirm_required' => 'This cannot be undone — tick the confirmation box to proceed.',
+        'anonymize_target_required' => 'Specify either a mask octet count or hashing.',
+    ],
+
     'attributes' => [
         'since' => 'reference time',
         'skip_waiting' => 'skip waiting period',
@@ -1348,6 +1363,7 @@ return [
         'settings_tab_advanced' => 'advanced settings',
         'settings_tab_notifications' => 'notification settings',
         'settings_tab_identity' => 'identity verification settings',
+        'settings_tab_analytics' => 'visitor analytics settings',
         'settings_tab_privacy' => 'privacy settings',
         'notification_channel_id' => 'notification channel id',
         'notification_channel_is_active' => 'notification channel active flag',

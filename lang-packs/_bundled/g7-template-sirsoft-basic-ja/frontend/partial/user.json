@@ -183,5 +183,12 @@
       "reactionBulkDeleteModal": "反応一括解除確認",
       "reportCancelModal": "通報キャンセル確認"
     }
+  },
+  "visitor_counter": {
+    "title": "訪問者",
+    "today": "今日",
+    "yesterday": "昨日",
+    "max": "最大",
+    "total": "全体"
   }
 }

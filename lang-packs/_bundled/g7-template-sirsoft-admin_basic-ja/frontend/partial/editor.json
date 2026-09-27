@@ -1228,7 +1228,8 @@
     "notification_center": "通知センター",
     "column_selector": "列セレクター",
     "section_header": "セクションヘッダー",
-    "extension_card_grid": "拡張カードグリッド"
+    "extension_card_grid": "拡張カードグリッド",
+    "line_chart": "折れ線グラフ"
   },
   "action": {
     "go_to_page": {
@@ -1311,6 +1312,14 @@
       "param_storage_key": "ブラウザストレージキー",
       "param_state_key": "グローバル状態キー",
       "param_value": "保存する値（リテラル）"
+    },
+    "set_analytics_period": {
+      "label": "統計期間プリセット",
+      "param_preset": "期間",
+      "preset_today": "今日",
+      "preset_7d": "7日",
+      "preset_30d": "30日",
+      "preset_this_month": "今月"
     }
   },
   "condition": {
@@ -1647,6 +1656,27 @@
     "staticCacheStatus": "初期画面静的ファイル状態",
     "layout_search": "レイアウト コンテンツ検索",
     "memberNotifications": "会員通知箱",
+    "analytics_overview": "訪問者統計概要",
+    "analytics_realtime": "現在のアクセス者",
+    "analytics_realtime_ws": "現在のアクセス者ブロードキャスト",
+    "analytics_status": "訪問者統計収集ステータス",
+    "analytics_report": "訪問者統計レポート",
+    "analytics_registered": "登録済みの拡張機能の分類基準・コンバージョン",
+    "analytics_patterns": "曜日·時間帯パターン",
+    "analytics_visitors": "訪問者リスト",
+    "analytics_visitor": "訪問者詳細",
+    "analytics_bots": "ボット集計",
+    "analytics_diagnostics": "訪問者統計診断",
+    "analytics_archive_runs": "集計実行履歴",
+    "analytics_collect_failures": "ロード失敗ログ",
+    "analytics_archive_progress_ws": "再集計進捗率ブロードキャスト",
+    "analytics_settings": "訪問者統計設定",
+    "analytics_opt_out": "自分の訪問除外ステータス",
+    "analytics_storage": "訪問者統計ストレージ",
+    "analytics_notification_definitions": "訪問者統計アラート定義",
+    "analytics_subjects": "情報主体記録",
+    "dashboard_analytics": "ダッシュボード訪問者統計",
+    "analytics_referrer_urls": "流入元フルアドレス",
     "privacyPreview": "個人情報処理対象件数",
     "privacyTargets": "個人情報対策対象リスト",
     "privacyManualRuns": "個人情報措置職権実行ステータス"

@@ -40,7 +40,7 @@
  */
 @source "../../layouts/**/*.json";
 /* SAFELIST-START */
-@source inline("bg-blue-600 bg-gray-100 bg-gray-50 bg-gray-800 bg-gray-900 bg-red-600 bg-white block border border-0 border-blue-600 border-dashed border-dotted border-gray-300 border-gray-500 border-gray-700 border-gray-900 border-green-600 border-red-600 border-solid border-white dark:bg-amber-500 dark:bg-amber-900 dark:bg-amber-900/20 dark:bg-amber-900/30 dark:bg-amber-900/40 dark:bg-blue-400 dark:bg-blue-500 dark:bg-blue-600 dark:bg-blue-800 dark:bg-blue-900 dark:bg-blue-900/20 dark:bg-blue-900/30 dark:bg-blue-900/40 dark:bg-blue-900/50 dark:bg-emerald-400 dark:bg-gray-100 dark:bg-gray-50 dark:bg-gray-600 dark:bg-gray-700 dark:bg-gray-700/50 dark:bg-gray-800 dark:bg-gray-800/50 dark:bg-gray-900 dark:bg-gray-900/50 dark:bg-gray-950 dark:bg-green-900 dark:bg-green-900/20 dark:bg-green-900/30 dark:bg-indigo-500 dark:bg-indigo-900 dark:bg-orange-900 dark:bg-purple-900 dark:bg-purple-900/20 dark:bg-purple-900/30 dark:bg-purple-900/50 dark:bg-red-500 dark:bg-red-600 dark:bg-red-700 dark:bg-red-900 dark:bg-red-900/20 dark:bg-red-900/30 dark:bg-rose-400 dark:bg-slate-300 dark:bg-slate-700 dark:bg-slate-800 dark:bg-white dark:bg-yellow-700 dark:bg-yellow-900 dark:bg-yellow-900/30 dark:block dark:border dark:border-0 dark:border-amber-400 dark:border-amber-600 dark:border-amber-700 dark:border-amber-800 dark:border-blue-600 dark:border-blue-700 dark:border-blue-800 dark:border-dashed dark:border-dotted dark:border-gray-300 dark:border-gray-500 dark:border-gray-600 dark:border-gray-700 dark:border-gray-900 dark:border-green-600 dark:border-green-700 dark:border-green-800 dark:border-indigo-400 dark:border-orange-600 dark:border-purple-600 dark:border-purple-700 dark:border-red-500 dark:border-red-600 dark:border-red-700 dark:border-red-800 dark:border-solid dark:border-white dark:border-yellow-600 dark:disabled:bg-blue-800 dark:disabled:bg-gray-600 dark:disabled:hover:bg-indigo-500 dark:disabled:text-gray-600 dark:flex dark:flex-1 dark:flex-auto dark:flex-col dark:flex-none dark:flex-row dark:flex-wrap dark:focus:ring-amber-400 dark:focus:ring-blue-400 dark:focus:ring-indigo-400 dark:focus:ring-offset-gray-900 dark:focus:ring-slate-500 dark:font-bold dark:font-medium dark:font-normal dark:from-blue-900 dark:hover:bg-amber-600 dark:hover:bg-blue-600 dark:hover:bg-gray-100 dark:hover:bg-gray-200 dark:hover:bg-gray-500 dark:hover:bg-gray-600 dark:hover:bg-gray-700 dark:hover:bg-gray-700/30 dark:hover:bg-indigo-600 dark:hover:bg-indigo-900/30 dark:hover:bg-orange-900/30 dark:hover:bg-red-600 dark:hover:bg-red-800 dark:hover:bg-red-900/20 dark:hover:bg-red-900/30 dark:hover:bg-slate-200 dark:hover:bg-slate-600 dark:hover:bg-yellow-800 dark:hover:text-blue-300 dark:hover:text-blue-400 dark:hover:text-gray-200 dark:hover:text-gray-300 dark:hover:text-purple-200 dark:hover:text-red-400 dark:hover:text-slate-800 dark:hover:text-white dark:italic dark:items-center dark:items-end dark:items-start dark:items-stretch dark:justify-around dark:justify-between dark:justify-center dark:justify-end dark:justify-start dark:opacity-0 dark:opacity-100 dark:opacity-25 dark:opacity-50 dark:opacity-75 dark:overflow-auto dark:overflow-hidden dark:overflow-visible dark:overflow-x-auto dark:overflow-y-auto dark:placeholder-gray-500 dark:prose-invert dark:ring-gray-800 dark:rounded dark:rounded-full dark:rounded-lg dark:rounded-none dark:rounded-sm dark:rounded-xl dark:self-center dark:self-end dark:self-start dark:self-stretch dark:shadow dark:shadow-2xl dark:shadow-lg dark:shadow-none dark:shadow-sm dark:shadow-xl dark:text-2xl dark:text-amber-200 dark:text-amber-300 dark:text-amber-400 dark:text-base dark:text-blue-100 dark:text-blue-200 dark:text-blue-300 dark:text-blue-400 dark:text-blue-600 dark:text-center dark:text-gray-100 dark:text-gray-200 dark:text-gray-300 dark:text-gray-400 dark:text-gray-500 dark:text-gray-600 dark:text-gray-700 dark:text-gray-900 dark:text-green-100 dark:text-green-200 dark:text-green-300 dark:text-green-400 dark:text-green-600 dark:text-indigo-200 dark:text-indigo-300 dark:text-indigo-400 dark:text-justify dark:text-left dark:text-lg dark:text-orange-200 dark:text-orange-400 dark:text-orange-500 dark:text-purple-100 dark:text-purple-200 dark:text-purple-300 dark:text-purple-400 dark:text-red-200 dark:text-red-300 dark:text-red-400 dark:text-red-500 dark:text-red-600 dark:text-right dark:text-slate-300 dark:text-slate-400 dark:text-sm dark:text-white dark:text-xl dark:text-xs dark:text-yellow-100 dark:text-yellow-200 dark:text-yellow-300 dark:text-yellow-400 dark:text-yellow-500 dark:to-indigo-900 dark:underline dark:whitespace-normal dark:whitespace-nowrap dark:whitespace-pre-wrap disabled:bg-blue-400 disabled:bg-gray-100 disabled:bg-gray-400 disabled:cursor-not-allowed disabled:hover:bg-indigo-600 disabled:hover:bg-transparent disabled:no-underline disabled:opacity-50 disabled:text-gray-400 flex flex-1 flex-auto flex-col flex-none flex-row flex-wrap focus:border-blue-500 focus:border-indigo-500 focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-blue-500 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-red-500 focus:ring-slate-400 font-bold font-medium font-normal hover:-translate-y-0.5 hover:bg-amber-50 hover:bg-amber-700 hover:bg-blue-700 hover:bg-gray-100 hover:bg-gray-200 hover:bg-gray-300 hover:bg-gray-50 hover:bg-gray-800 hover:bg-gray-900 hover:bg-green-700 hover:bg-indigo-50 hover:bg-indigo-700 hover:bg-orange-50 hover:bg-orange-700 hover:bg-red-100 hover:bg-red-50 hover:bg-red-700 hover:bg-slate-50 hover:bg-slate-700 hover:bg-yellow-700 hover:no-underline hover:text-blue-500 hover:text-blue-600 hover:text-gray-600 hover:text-gray-700 hover:text-gray-900 hover:text-purple-800 hover:text-red-500 hover:text-white hover:underline italic items-center items-end items-start items-stretch justify-around justify-between justify-center justify-end justify-start lg:grid-cols-2 lg:grid-cols-3 lg:mb-8 lg:px-8 max-h-[400px] max-h-[500px] max-h-[70vh] max-w-[200px] md: md:col-span-2 md:flex md:flex-1 md:flex-row md:gap-2 md:gap-3 md:grid-cols-2 md:grid-cols-3 md:grid-cols-4 md:h-20 md:hidden md:items-center md:justify-between md:mb-6 md:p-6 md:pb-0 md:rounded-2xl md:space-y-0 md:text-xl md:text-xs md:w-20 md:w-40 md:w-64 md:w-72 md:w-80 md:w-auto min-h-[200px] min-h-[420px] min-h-[480px] min-h-[60vh] min-w-[200px] min-w-[80px] opacity-0 opacity-100 opacity-25 opacity-50 opacity-75 overflow-auto overflow-hidden overflow-visible overflow-x-auto overflow-y-auto rounded rounded-full rounded-lg rounded-none rounded-sm rounded-xl self-center self-end self-start self-stretch shadow shadow-2xl shadow-lg shadow-none shadow-sm shadow-xl sm:flex-row sm:gap-6 sm:grid-cols-2 sm:inline sm:items-start sm:justify-between sm:mt-6 sm:px-6 sm:text-2xl sm:text-3xl sm:w-40 text-2xl text-[10px] text-[11px] text-base text-blue-600 text-center text-gray-500 text-gray-700 text-gray-900 text-green-600 text-justify text-left text-lg text-red-600 text-right text-sm text-white text-xl text-xs underline whitespace-normal whitespace-nowrap whitespace-pre-wrap");
+@source inline("bg-blue-600 bg-gray-100 bg-gray-50 bg-gray-800 bg-gray-900 bg-red-600 bg-white block border border-0 border-blue-600 border-dashed border-dotted border-gray-300 border-gray-500 border-gray-700 border-gray-900 border-green-600 border-red-600 border-solid border-white dark:bg-amber-500 dark:bg-amber-900 dark:bg-amber-900/20 dark:bg-amber-900/30 dark:bg-amber-900/40 dark:bg-blue-400 dark:bg-blue-500 dark:bg-blue-600 dark:bg-blue-800 dark:bg-blue-900 dark:bg-blue-900/20 dark:bg-blue-900/30 dark:bg-blue-900/40 dark:bg-blue-900/50 dark:bg-emerald-400 dark:bg-emerald-900/20 dark:bg-gray-100 dark:bg-gray-50 dark:bg-gray-600 dark:bg-gray-700 dark:bg-gray-700/50 dark:bg-gray-800 dark:bg-gray-800/50 dark:bg-gray-900 dark:bg-gray-900/50 dark:bg-gray-950 dark:bg-green-700 dark:bg-green-900 dark:bg-green-900/20 dark:bg-green-900/30 dark:bg-indigo-500 dark:bg-indigo-900 dark:bg-orange-900 dark:bg-purple-900 dark:bg-purple-900/20 dark:bg-purple-900/30 dark:bg-purple-900/50 dark:bg-red-500 dark:bg-red-600 dark:bg-red-700 dark:bg-red-900 dark:bg-red-900/20 dark:bg-red-900/30 dark:bg-rose-400 dark:bg-slate-300 dark:bg-slate-700 dark:bg-slate-800 dark:bg-white dark:bg-yellow-700 dark:bg-yellow-900 dark:bg-yellow-900/30 dark:block dark:border dark:border-0 dark:border-amber-400 dark:border-amber-600 dark:border-amber-700 dark:border-amber-800 dark:border-blue-600 dark:border-blue-700 dark:border-blue-800 dark:border-dashed dark:border-dotted dark:border-emerald-800 dark:border-gray-300 dark:border-gray-500 dark:border-gray-600 dark:border-gray-700 dark:border-gray-900 dark:border-green-600 dark:border-green-700 dark:border-green-800 dark:border-indigo-400 dark:border-orange-600 dark:border-purple-600 dark:border-purple-700 dark:border-red-500 dark:border-red-600 dark:border-red-700 dark:border-red-800 dark:border-solid dark:border-white dark:border-yellow-600 dark:border-yellow-700 dark:disabled:bg-blue-800 dark:disabled:bg-gray-600 dark:disabled:hover:bg-indigo-500 dark:disabled:text-gray-600 dark:divide-gray-700 dark:flex dark:flex-1 dark:flex-auto dark:flex-col dark:flex-none dark:flex-row dark:flex-wrap dark:focus:ring-amber-400 dark:focus:ring-blue-400 dark:focus:ring-indigo-400 dark:focus:ring-offset-gray-900 dark:focus:ring-slate-500 dark:font-bold dark:font-medium dark:font-normal dark:from-blue-900 dark:hover:bg-amber-600 dark:hover:bg-blue-600 dark:hover:bg-gray-100 dark:hover:bg-gray-200 dark:hover:bg-gray-500 dark:hover:bg-gray-600 dark:hover:bg-gray-700 dark:hover:bg-gray-700/30 dark:hover:bg-green-600 dark:hover:bg-indigo-600 dark:hover:bg-indigo-900/30 dark:hover:bg-orange-900/30 dark:hover:bg-red-600 dark:hover:bg-red-800 dark:hover:bg-red-900/20 dark:hover:bg-red-900/30 dark:hover:bg-slate-200 dark:hover:bg-slate-600 dark:hover:bg-yellow-800 dark:hover:text-blue-300 dark:hover:text-blue-400 dark:hover:text-gray-200 dark:hover:text-gray-300 dark:hover:text-purple-200 dark:hover:text-red-400 dark:hover:text-slate-800 dark:hover:text-white dark:italic dark:items-center dark:items-end dark:items-start dark:items-stretch dark:justify-around dark:justify-between dark:justify-center dark:justify-end dark:justify-start dark:opacity-0 dark:opacity-100 dark:opacity-25 dark:opacity-50 dark:opacity-75 dark:overflow-auto dark:overflow-hidden dark:overflow-visible dark:overflow-x-auto dark:overflow-y-auto dark:placeholder-gray-500 dark:prose-invert dark:ring-gray-800 dark:rounded dark:rounded-full dark:rounded-lg dark:rounded-none dark:rounded-sm dark:rounded-xl dark:self-center dark:self-end dark:self-start dark:self-stretch dark:shadow dark:shadow-2xl dark:shadow-lg dark:shadow-none dark:shadow-sm dark:shadow-xl dark:text-2xl dark:text-amber-200 dark:text-amber-300 dark:text-amber-400 dark:text-base dark:text-blue-100 dark:text-blue-200 dark:text-blue-300 dark:text-blue-400 dark:text-blue-600 dark:text-center dark:text-emerald-300 dark:text-gray-100 dark:text-gray-200 dark:text-gray-300 dark:text-gray-400 dark:text-gray-500 dark:text-gray-600 dark:text-gray-700 dark:text-gray-900 dark:text-green-100 dark:text-green-200 dark:text-green-300 dark:text-green-400 dark:text-green-600 dark:text-indigo-200 dark:text-indigo-300 dark:text-indigo-400 dark:text-justify dark:text-left dark:text-lg dark:text-orange-200 dark:text-orange-400 dark:text-orange-500 dark:text-purple-100 dark:text-purple-200 dark:text-purple-300 dark:text-purple-400 dark:text-red-200 dark:text-red-300 dark:text-red-400 dark:text-red-500 dark:text-red-600 dark:text-right dark:text-slate-300 dark:text-slate-400 dark:text-sm dark:text-white dark:text-xl dark:text-xs dark:text-yellow-100 dark:text-yellow-200 dark:text-yellow-300 dark:text-yellow-400 dark:text-yellow-500 dark:to-indigo-900 dark:underline dark:whitespace-normal dark:whitespace-nowrap dark:whitespace-pre-wrap disabled:bg-blue-400 disabled:bg-gray-100 disabled:bg-gray-400 disabled:cursor-not-allowed disabled:hover:bg-indigo-600 disabled:hover:bg-transparent disabled:no-underline disabled:opacity-50 disabled:text-gray-400 flex flex-1 flex-auto flex-col flex-none flex-row flex-wrap focus:border-blue-500 focus:border-indigo-500 focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-blue-500 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-red-500 focus:ring-slate-400 font-bold font-medium font-normal h-[220px] hover:-translate-y-0.5 hover:bg-amber-50 hover:bg-amber-700 hover:bg-blue-700 hover:bg-gray-100 hover:bg-gray-200 hover:bg-gray-300 hover:bg-gray-50 hover:bg-gray-800 hover:bg-gray-900 hover:bg-green-700 hover:bg-indigo-50 hover:bg-indigo-700 hover:bg-orange-50 hover:bg-orange-700 hover:bg-red-100 hover:bg-red-50 hover:bg-red-700 hover:bg-slate-50 hover:bg-slate-700 hover:bg-yellow-700 hover:no-underline hover:text-blue-500 hover:text-blue-600 hover:text-gray-600 hover:text-gray-700 hover:text-gray-900 hover:text-purple-800 hover:text-red-500 hover:text-white hover:underline italic items-center items-end items-start items-stretch justify-around justify-between justify-center justify-end justify-start lg:col-span-2 lg:grid-cols-2 lg:grid-cols-3 lg:grid-cols-4 lg:mb-8 lg:px-8 max-h-[400px] max-h-[500px] max-h-[70vh] max-w-[200px] md: md:col-span-2 md:flex md:flex-1 md:flex-row md:gap-2 md:gap-3 md:grid-cols-2 md:grid-cols-3 md:grid-cols-4 md:h-20 md:hidden md:items-center md:justify-between md:mb-6 md:p-6 md:pb-0 md:rounded-2xl md:space-y-0 md:text-xl md:text-xs md:w-20 md:w-40 md:w-64 md:w-72 md:w-80 md:w-auto min-h-[200px] min-h-[420px] min-h-[480px] min-h-[60vh] min-w-[200px] min-w-[220px] min-w-[80px] opacity-0 opacity-100 opacity-25 opacity-50 opacity-75 overflow-auto overflow-hidden overflow-visible overflow-x-auto overflow-y-auto rounded rounded-full rounded-lg rounded-none rounded-sm rounded-xl self-center self-end self-start self-stretch shadow shadow-2xl shadow-lg shadow-none shadow-sm shadow-xl sm:flex-none sm:flex-row sm:gap-6 sm:grid-cols-2 sm:grid-cols-3 sm:h-[260px] sm:inline sm:items-center sm:items-start sm:justify-between sm:mt-6 sm:px-6 sm:text-2xl sm:text-3xl sm:w-40 sm:w-auto text-2xl text-[10px] text-[11px] text-base text-blue-600 text-center text-gray-500 text-gray-700 text-gray-900 text-green-600 text-justify text-left text-lg text-red-600 text-right text-sm text-white text-xl text-xs underline whitespace-normal whitespace-nowrap whitespace-pre-wrap");
 /* SAFELIST-END */
 @source "../../layouts/**/*.g7.html";
 
@@ -55,6 +55,11 @@
  * SAFELIST-START/END 구간은 `extract-safelist.cjs` 가 재생성하므로 그 안에 넣지 않는다.
  */
 @source inline("text-5xl text-[4rem]");
+/*
+ * 이커머스 필터 칩의 「고른 상태」 테두리 색(엑셀 다운로드·결제 실패 이력·개인결제·주문 필터). 파랑·회색만 이 템플릿
+ * 레이아웃에도 있어 생성됐고 나머지 색은 한 번도 그려지지 않았다(#682 PO 실측 후속 4).
+ */
+@source inline("ring-green-400 ring-cyan-400 ring-orange-400 ring-red-400 ring-yellow-400 dark:ring-blue-500 dark:ring-gray-500 dark:ring-green-500 dark:ring-cyan-500 dark:ring-orange-500 dark:ring-red-500 dark:ring-yellow-500");
 
 
 
@@ -1266,6 +1271,15 @@
     @apply bg-blue-50 text-blue-600;
     @apply dark:bg-blue-900/20 dark:text-blue-400;
   }
+  /* 대기(발급만 됨 — 예: 가상계좌 입금 대기) · 진행(사람 손이 필요한 처리 — 예: 수동 매칭) */
+  .badge-status-ready {
+    @apply bg-purple-50 text-purple-600;
+    @apply dark:bg-purple-900/20 dark:text-purple-400;
+  }
+  .badge-status-progress {
+    @apply bg-amber-50 text-amber-700;
+    @apply dark:bg-amber-900/20 dark:text-amber-400;
+  }
   .badge-status-error {
     @apply bg-red-50 text-red-600;
     @apply dark:bg-red-900/20 dark:text-red-400;
@@ -1654,6 +1668,11 @@
   .danger-confirm-icon svg,
   .danger-confirm-icon .icon {
     @apply w-6 h-6 text-red-600;
+    @apply dark:text-red-400;
+  }
+  /* 글꼴 아이콘(FontAwesome `<i>`)은 너비·높이가 아니라 글자 크기로 커진다 — 칸 안 글리프 24px. */
+  .danger-confirm-icon > i {
+    @apply text-2xl leading-none text-red-600;
     @apply dark:text-red-400;
   }
   .danger-confirm-title {
@@ -2338,24 +2357,35 @@
     @apply dark:text-blue-400 dark:hover:text-blue-300;
   }
 
-  /* Icon Sizes */
+  /* Icon Sizes
+     상자 크기(w/h)와 글리프 크기(font-size)를 함께 정한다. 아이콘은 FontAwesome `<i>` 웹폰트로
+     그려지므로 w-*/h- 만 주면 상자만 커지고 글리프는 본문에서 물려받은 14px 에 머문다 — KPI 카드의
+     48px 상자 안에서 아이콘이 14px 로 그려지던 원인이다(#682 라운드 4, 검수 지적 ②). `leading-none` 은
+     h- 와 줄 높이를 맞춰 상자가 세로로 3px 늘어나지 않게 하고, `text-center` 는 글리프가 상자보다
+     좁을 때 가운데 두기 위함이다. `<svg>` 로 쓰는 자리에서는 이 세 값이 무해하다. */
   .icon-xs {
-    @apply w-3 h-3;
+    @apply w-3 h-3 leading-none text-center;
+    font-size: 0.75rem;
   }
   .icon-sm {
-    @apply w-4 h-4;
+    @apply w-4 h-4 leading-none text-center;
+    font-size: 1rem;
   }
   .icon-md {
-    @apply w-5 h-5;
+    @apply w-5 h-5 leading-none text-center;
+    font-size: 1.25rem;
   }
   .icon-lg {
-    @apply w-6 h-6;
+    @apply w-6 h-6 leading-none text-center;
+    font-size: 1.5rem;
   }
   .icon-xl {
-    @apply w-8 h-8;
+    @apply w-8 h-8 leading-none text-center;
+    font-size: 2rem;
   }
   .icon-2xl {
-    @apply w-10 h-10;
+    @apply w-10 h-10 leading-none text-center;
+    font-size: 2.5rem;
   }
   .icon-action {
     @apply text-gray-400 hover:text-gray-600 cursor-pointer;
@@ -2690,6 +2720,25 @@
    */
   .divider-list {
     @apply divide-y divide-gray-200 dark:divide-gray-700;
+  }
+
+  /*
+   * Key-Value List — 「라벨 값」 짝을 세로로 나열하는 목록 자산.
+   * 라벨마다 폭이 달라 값이 들쭉날쭉 시작하던 것을(#682 S4 라운드 8) 라벨 칸을 가장 긴 라벨
+   * 폭(max-content)으로 맞춘 격자로 바로잡는다. `items-baseline` 은 라벨(xs)과 값(sm)의 글자 크기가
+   * 달라도 첫 줄 기준선을 맞춘다. 행은 `.kv-row`(display: contents)로 감싸 라벨·값이 격자 칸에 바로
+   * 앉게 한다. `.kv-list-2` 는 sm 이상에서 짝 두 개를 한 줄에 둔다(열마다 라벨 칸을 따로 맞춤).
+   * 확장 레이아웃은 Tailwind 스캔 대상이 아니므로 임의값 격자를 레이아웃에 직접 쓰지 말고 이 자산을 쓴다.
+   */
+  .kv-list {
+    @apply grid grid-cols-[max-content_minmax(0,1fr)] gap-x-4 gap-y-1 items-baseline;
+  }
+  .kv-list-2 {
+    @apply grid grid-cols-[max-content_minmax(0,1fr)] gap-x-4 gap-y-1 items-baseline;
+    @apply sm:grid-cols-[max-content_minmax(0,1fr)_max-content_minmax(0,1fr)];
+  }
+  .kv-row {
+    @apply contents;
   }
 
   /*

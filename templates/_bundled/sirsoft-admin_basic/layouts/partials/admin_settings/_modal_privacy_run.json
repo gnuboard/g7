@@ -299,6 +299,7 @@
                     "name": "Button",
                     "actions": [
                         {
+                            "comment": "취소 — 접수 없이 닫고 `_global.privacyRun` 을 비운다. 대기기간 생략 선택도 그 안에 있어 함께 사라진다 —\n               다음에 열면 늘 생략하지 않는 쪽(대상이 더 좁은 쪽)에서 시작한다.",
                             "type": "click",
                             "handler": "sequence",
                             "actions": [

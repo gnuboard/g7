@@ -6,7 +6,7 @@
  * origin 에서 실행되고 `?redirect=//evil` 이 오프사이트로 나갔다. sink 자체가 판정해야 레이아웃이
  * 어떻게 적혀 있든 막힌다.
  *
- * @since engine-v1.72.0
+ * @since engine-v1.73.0
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
@@ -28,7 +28,7 @@ vi.mock('../../api/ApiClient', () => ({
   })),
 }));
 
-describe('ActionDispatcher - 이동 sink 정책 (engine-v1.72.0)', () => {
+describe('ActionDispatcher - 이동 sink 정책 (engine-v1.73.0)', () => {
   let dispatcher: ActionDispatcher;
   let mockNavigate: ReturnType<typeof vi.fn>;
   let mockMatch: ReturnType<typeof vi.fn>;

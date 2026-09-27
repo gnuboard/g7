@@ -23,6 +23,15 @@
       </field>
     </fallback>
   </data-source>
+  <!-- 방문자 카운터용 공개 요약 — 네 숫자뿐이고 로그인이 필요 없다. 운영자가 카운터를 끄면 404 라 소스 자체를 설정으로 가른다.
+       실패하면 카운터를 그리지 않는다(0 을 그리면 아무도 오지 않은 것처럼 읽힌다). -->
+  <data-source id="visitor_summary" label_key="$t:editor.data_source.visitor_summary" type="api" endpoint="/api/analytics/summary" method="GET" :auto_fetch="true" loading_strategy="background" if="{{_global.settings?.analytics?.public_summary_enabled === true}}">
+    <error-handling>
+      <on-code code="404">
+        <suppress/>
+      </on-code>
+    </error-handling>
+  </data-source>
   <!-- 최근 글 5건 — 게시판을 가리지 않고 새로 올라온 순서다(인기순인 아래 목록과 다르다). -->
   <data-source id="recent_posts" label_key="$t:editor.data_source.recent_posts" type="api" endpoint="/api/modules/sirsoft-board/boards/posts/recent?limit=5" method="GET" :auto_fetch="true" loading_strategy="progressive">
     <fallback>
@@ -86,6 +95,8 @@
           <include src="partials/home/_board_summary.g7.html"/>
         </div>
       </div>
+      <!-- === 맨 아래: 방문자 카운터 (설정으로 켜고 끈다) === -->
+      <include src="partials/_visitor_counter.g7.html"/>
     </container>
   </slot>
 </layout>

@@ -2471,7 +2471,7 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
       // 2.6. URL 속성의 실행 스킴 무해화 (KVE-2026-2348)
       // 바인딩 결과가 `javascript:` 등이면 클릭 한 번으로 현재 origin 에서 코드가 돈다
       // (`<a href="{{_local.redirect_url}}">` ← query). origin 은 제한하지 않는다 —
-      // 정상 외부 링크·mailto·tel 은 그대로 둔다. @since engine-v1.72.0
+      // 정상 외부 링크·mailto·tel 은 그대로 둔다. @since engine-v1.73.0
       for (const key of Object.keys(props)) {
         const value = props[key];
         if (typeof value !== 'string') {

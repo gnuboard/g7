@@ -15,12 +15,13 @@ description: |
   `$event`·`error`·`$args` 는 plain 사본(DTO)으로만 실린다 — 두 층이 이중 방어다.
 
 axes:
-  case: [safe_expression, arrow_template_literal, destructuring_param, constructor_escape, nonstring_key_escape, object_facade_safe, host_graph_escape]
+  case: [safe_expression, arrow_template_literal, destructuring_param, constructor_escape, nonstring_key_escape, object_facade_safe, whitelisted_global_call, host_graph_escape]
 
 effects:
   - same_expression_same_value_across_paths
   - sandbox_escape_blocked
   - dangerous_payload_does_not_set_global
+  - whitelisted_globals_stay_callable
 
 # 저장측 외부 URL 차단은 표현식 실행 축(case)과 곱해지지 않는 별개 관심사다 — case 는 "그 식이
 # 실행되는가" 를, URL 축은 "그 값이 외부 origin 을 가리키는가" 를 본다. 축으로 올리면 조합을

@@ -28,6 +28,9 @@ class HasUserOverridesTest extends TestCase
 
     /**
      * 외래키 충족용 알림 정의 생성 후 NotificationTemplate 을 생성합니다.
+     *
+     * @param  array<string, mixed>  $attributes  기본 속성을 덮어쓸 속성
+     * @return NotificationTemplate 생성된 알림 템플릿
      */
     private function createTemplate(array $attributes = []): NotificationTemplate
     {
@@ -45,6 +48,12 @@ class HasUserOverridesTest extends TestCase
 
     /**
      * 시나리오 1: 신규 생성 시 user_overrides 가 null.
+     *
+     * @scenario write_path=user_create
+     *
+     * @effects new_record_starts_without_overrides
+     *
+     * @return void 없음
      */
     public function test_new_template_has_null_user_overrides(): void
     {
@@ -55,6 +64,12 @@ class HasUserOverridesTest extends TestCase
 
     /**
      * 시나리오 2: 사용자 수정 시 trackable 필드 자동 기록.
+     *
+     * @scenario write_path=user_update
+     *
+     * @effects user_edit_records_trackable_fields_per_locale
+     *
+     * @return void 없음
      */
     public function test_user_update_records_trackable_fields(): void
     {
@@ -62,11 +77,18 @@ class HasUserOverridesTest extends TestCase
         $template->subject = ['ko' => '수정된 제목', 'en' => 'Modified'];
         $template->save();
 
-        $this->assertEquals(['subject'], $template->fresh()->user_overrides);
+        // subject 는 다국어 trackable 필드라 언어 키 단위(dot-path)로 기록된다 (HasUserOverrides::translatableTrackableFields, 7.0.0-beta.4).
+        $this->assertEquals(['subject.ko', 'subject.en'], $template->fresh()->user_overrides);
     }
 
     /**
      * 시나리오 3: trackable 외 필드 수정 → 기록 안 됨.
+     *
+     * @scenario write_path=user_update
+     *
+     * @effects non_trackable_edit_not_recorded
+     *
+     * @return void 없음
      */
     public function test_non_trackable_field_update_is_not_recorded(): void
     {
@@ -81,6 +103,12 @@ class HasUserOverridesTest extends TestCase
 
     /**
      * 시나리오 4: syncFromUpgrade 호출 시 user_overrides 에 기록된 필드는 갱신 스킵.
+     *
+     * @scenario write_path=sync_from_upgrade
+     *
+     * @effects upgrade_sync_skips_user_overridden_fields
+     *
+     * @return void 없음
      */
     public function test_sync_from_upgrade_preserves_overridden_fields(): void
     {
@@ -101,6 +129,12 @@ class HasUserOverridesTest extends TestCase
 
     /**
      * 시나리오 5: syncFromUpgrade 호출 시 trackable 외 필드는 항상 갱신.
+     *
+     * @scenario write_path=sync_from_upgrade
+     *
+     * @effects upgrade_sync_always_updates_non_trackable_fields
+     *
+     * @return void 없음
      */
     public function test_sync_from_upgrade_always_updates_non_trackable_fields(): void
     {
@@ -115,6 +149,12 @@ class HasUserOverridesTest extends TestCase
 
     /**
      * 시나리오 6: syncFromUpgrade 후 user_overrides 자체는 변경 안 됨 (자동 기록 비활성).
+     *
+     * @scenario write_path=sync_from_upgrade
+     *
+     * @effects upgrade_sync_does_not_record_overrides
+     *
+     * @return void 없음
      */
     public function test_sync_from_upgrade_does_not_record_overrides(): void
     {
@@ -130,6 +170,12 @@ class HasUserOverridesTest extends TestCase
 
     /**
      * 시나리오 7: createFromUpgrade 로 생성 시 자동 기록 비활성.
+     *
+     * @scenario write_path=create_from_upgrade
+     *
+     * @effects upgrade_create_does_not_record_overrides
+     *
+     * @return void 없음
      */
     public function test_create_from_upgrade_does_not_record_overrides(): void
     {
@@ -149,6 +195,12 @@ class HasUserOverridesTest extends TestCase
 
     /**
      * 시나리오 8: 동일 필드를 두 번 수정 시 user_overrides 에 중복 기록 안 됨.
+     *
+     * @scenario write_path=user_update
+     *
+     * @effects repeated_edit_does_not_duplicate_override_entries
+     *
+     * @return void 없음
      */
     public function test_repeated_user_update_does_not_duplicate_overrides(): void
     {
@@ -159,11 +211,18 @@ class HasUserOverridesTest extends TestCase
         $template->subject = ['ko' => '두 번째 수정', 'en' => 'Second'];
         $template->save();
 
-        $this->assertEquals(['subject'], $template->fresh()->user_overrides);
+        // 언어 키 단위 기록이 두 번째 수정에서 중복 누적되지 않는다.
+        $this->assertEquals(['subject.ko', 'subject.en'], $template->fresh()->user_overrides);
     }
 
     /**
      * 추가: syncOrCreateFromUpgrade — 존재하지 않으면 생성.
+     *
+     * @scenario write_path=sync_or_create_missing
+     *
+     * @effects sync_or_create_creates_missing_record_without_overrides
+     *
+     * @return void 없음
      */
     public function test_sync_or_create_from_upgrade_creates_when_missing(): void
     {
@@ -185,6 +244,12 @@ class HasUserOverridesTest extends TestCase
 
     /**
      * 추가: syncOrCreateFromUpgrade — 존재하면 syncFromUpgrade 호출.
+     *
+     * @scenario write_path=sync_or_create_existing
+     *
+     * @effects sync_or_create_preserves_existing_user_overrides
+     *
+     * @return void 없음
      */
     public function test_sync_or_create_from_upgrade_preserves_existing_overrides(): void
     {

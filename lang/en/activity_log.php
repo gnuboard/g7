@@ -333,4 +333,17 @@ return [
         'body' => 'Body',
         'is_default' => 'Default',
     ],
+
+    // Analytics operations
+    'analytics' => [
+        'settings_updated' => 'Analytics settings updated',
+        'privacy_mode_changed' => 'Analytics privacy mode changed (:mode)',
+        'data_purged' => 'All analytics data purged',
+        'anonymized' => 'Analytics data anonymized retroactively',
+        'subject_exported' => 'Data subject visits exported (:subject)',
+        'subject_deleted' => 'Data subject visits deleted (:subject)',
+        'opt_out_changed' => 'Administrator opt-out setting changed',
+        'archive_requested' => 'Analytics archiving run manually (:run_type)',
+        'extension_purged' => 'Extension analytics data cleaned up (:identifier)',
+    ],
 ];

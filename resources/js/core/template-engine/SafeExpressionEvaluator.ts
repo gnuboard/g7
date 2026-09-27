@@ -151,6 +151,9 @@ const WHITELIST_GLOBALS: Record<string, unknown> = {
     parseFloat,
     isNaN,
     isFinite,
+    // 주소 조각(검색어 등)을 쿼리에 실을 때 쓴다. 인자를 문자열로 바꿔 돌려줄 뿐 전역·프로토타입에
+    // 닿지 않는다. 역함수(decode)는 잘못된 입력에 던지므로 필요해지기 전까지 두지 않는다.
+    encodeURIComponent,
 };
 
 /**
@@ -253,7 +256,7 @@ const HOST_OBJECT_TAGS = new Set([
  *
  * @param value 검사할 값
  * @return 호스트 capability 객체면 true
- * @since engine-v1.72.0
+ * @since engine-v1.73.0
  */
 export function isUnsafeHostValue(value: unknown): boolean {
     if (value === null || typeof value !== 'object') {
@@ -327,7 +330,9 @@ function buildSafeNativeFunctions(): Set<unknown> {
     [Math, JSON, Number, String, Array, Date, SAFE_OBJECT].forEach(addOwnFunctions);
 
     // 식별자로 노출되는 전역 함수·변환 함수 (`arr.filter(Boolean)` · `Number(x)`)
-    [parseInt, parseFloat, isNaN, isFinite, Number, String, Boolean, Array, Date].forEach(fn => out.add(fn));
+    // encodeURIComponent 는 WHITELIST_GLOBALS 가 노출하는 전역이라 호출 허용목록에도 있어야 한다 —
+    // 두 목록이 따로 자라 한쪽에만 들면 식별자는 풀리고 호출은 막힌다(#695 ← develop-7.1.0 병합에서 실측).
+    [parseInt, parseFloat, isNaN, isFinite, Number, String, Boolean, Array, Date, encodeURIComponent].forEach(fn => out.add(fn));
 
     // 원시·컨테이너 프로토타입 메서드
     [
@@ -395,7 +400,7 @@ function isNativeFunction(fn: object): boolean {
  *
  * @param fn 함수 값
  * @return 허용이면 true
- * @since engine-v1.72.0
+ * @since engine-v1.73.0
  */
 export function isExpressionSafeFunction(fn: unknown): boolean {
     return typeof fn === 'function' && isAllowedFunction(fn);

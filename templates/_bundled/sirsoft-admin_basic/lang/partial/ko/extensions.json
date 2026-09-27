@@ -13,7 +13,8 @@
     "dismissed": "알림을 닫았습니다.",
     "auto_deactivated_listed": "자동 비활성화된 확장 목록입니다.",
     "recover_action": "다시 활성화",
-    "dismiss_action": "알림 닫기"
+    "dismiss_action": "알림 닫기",
+    "open_action": "열기"
   },
   "badges": {
     "incompatible": "코어 업그레이드 필요",

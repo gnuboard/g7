@@ -189,6 +189,7 @@
         "escrow_delivery_invoice_placeholder": "Enter invoice number",
         "escrow_delivery_courier_label": "Courier",
         "escrow_delivery_courier_placeholder": "Select courier",
+        "escrow_delivery_courier_etc": "Other",
         "escrow_delivery_register_button": "Register",
         "escrow_delivery_change_button": "Update",
         "escrow_delivery_registering": "Registering...",
@@ -208,7 +209,8 @@
         "escrow_deny_confirm_done": "Denial Confirmed",
         "escrow_deny_confirm_done_at": "Confirmed At",
         "escrow_deny_confirm_status_label": "Purchase Status",
-        "escrow_deny_confirm_buyer_denied": "Denied by Buyer"
+        "escrow_deny_confirm_buyer_denied": "Denied by Buyer",
+        "escrow_deny_confirm_buyer_denied_at": "Date"
     },
     "settings": {
         "title": "KG Inicis Settings",

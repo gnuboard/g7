@@ -157,7 +157,7 @@ class ApiClient {
    *
    * @param url 요청 대상 (절대·상대 모두)
    * @returns 같은 출처면 true (문자열이 아니거나 파싱할 수 없으면 false)
-   * @since engine-v1.72.0
+   * @since engine-v1.73.0
    */
   isSameOriginUrl(url: unknown): boolean {
     return isSameOriginRequestUrl(url);

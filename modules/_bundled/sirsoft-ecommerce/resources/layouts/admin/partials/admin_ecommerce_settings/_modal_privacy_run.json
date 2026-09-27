@@ -152,6 +152,7 @@
                     "name": "Button",
                     "actions": [
                         {
+                            "comment": "취소 — 주문 보유기간 처리를 접수하지 않고 닫는다. 창이 쓰던 `_global.privacyRun`(대상 키·건수·처리 방식)을 실행 성공 때와\n               같은 방식으로 비워, 창을 어떻게 닫든 전역에 지난 미리보기가 남지 않게 한다.",
                             "type": "click",
                             "handler": "sequence",
                             "actions": [

@@ -95,8 +95,8 @@ API 까지만 소유하고, 그 API 를 소비해 실제로 그리는 것은 이
 <!-- @generated:extension-points-summary START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 확장점 | 수 | 상세 |
 |---|---|---|
-| 제공 컴포넌트 | 78개 | [제공 컴포넌트](docs/components.md#제공-컴포넌트) |
-| 레이아웃 | 173개 | [레이아웃 목록](docs/layouts.md#레이아웃-목록) |
+| 제공 컴포넌트 | 79개 | [제공 컴포넌트](docs/components.md#제공-컴포넌트) |
+| 레이아웃 | 174개 | [레이아웃 목록](docs/layouts.md#레이아웃-목록) |
 | 전용 핸들러 | 32개 | [템플릿 전용 핸들러](docs/handlers.md#템플릿-전용-핸들러) |
 | 확장 오버라이드 | 1개 | [확장 오버라이드](docs/layouts.md#확장-오버라이드) |
 <!-- @generated:extension-points-summary END -->
@@ -156,6 +156,7 @@ API 까지만 소유하고, 그 API 를 소비해 실제로 그리는 것은 이
 | `onSuccess`·시퀀스 안에서 방금 저장한 상태(`_global.*`/`_local.*`)를 형제 액션의 `if`·값으로 재독 | 그 자리에서는 `{{response.*}}` 만 읽는다 | 그 시점 컨텍스트는 아직 갱신 전이라 stale 값으로 조용히 분기한다 |
 | 컴포넌트·핸들러가 `fetch` 로 직접 요청하며 대상 출처를 보지 않고 토큰(Bearer·XSRF)을 싣기 | `src/support/sameOriginRequest.ts` 의 `isSameOriginRequest(url)` 이 true 일 때만 토큰을 싣는다 | 주소가 레이아웃 prop·응답 본문이면 레이아웃 편집 권한만으로 회원 토큰을 외부로 보낼 수 있다(KVE-2026-2350) |
 | 첨부 임시 키(`tempKey`)를 `'temp_' + Date.now() + …` 같은 임의 문자열로 만들기 | `{{$uuid()}}` 로 발급 | 게시판·페이지·이커머스 모듈은 UUID 형식의 임시 키만 받는다 — 그 밖의 값은 422 로 거부되어 첨부 업로드와 글 저장이 실패한다 (임시 키가 저장 경로에 들어가 경로 조작에 쓰였던 결함의 재발 방지) |
+| 사용자 화면에서 변환표(`IconTypes.ts` 의 `iconNameMap`)에 없는 Lucide 식 이름(`log-out`·`alert-circle`·`loader-2` 등) | Font Awesome 6.4.0 이름(`right-from-bracket`·`circle-exclamation`·`spinner`) 또는 변환표에 있는 별칭 | 변환표에 없는 이름은 `fa-{이름}` 로 그대로 붙어 **빈칸**으로 그려진다. 관리자 화면에 들어가는 조각은 변환표가 없다. 가드: `tests/Unit/Extension/FontIconNameTest.php` |
 <!-- @intent END -->
 
 ## 7. 테스트 실행
@@ -164,7 +165,7 @@ API 까지만 소유하고, 그 API 를 소비해 실제로 그리는 것은 이
 | 종류 | 개수 | 위치 |
 |---|---|---|
 | PHPUnit | 0개 | — |
-| Vitest | 160개 | `vitest.config.ts` |
+| Vitest | 163개 | `vitest.config.ts` |
 | Playwright | 8개 | `tests/Playwright` |
 | 시나리오 매니페스트 | 6개 | `tests/scenarios` |
 

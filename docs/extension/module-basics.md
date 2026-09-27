@@ -162,6 +162,8 @@
 | `getMetadata()` | `[]` | 메타데이터 |
 | `getMiddleware()` | `[]` | 확장 미들웨어 선언 (self-gate targets) — `{class, groups, timing?, targets}` ([middleware.md](../backend/middleware.md)) |
 | `getBenchmarkProfiles()` | `[]` | 성능 계측 대상 선언 (`g7:bench` 가 수집) — 목록/화면/쓰기/배치 4축 ([benchmark.md](../backend/benchmark.md)) |
+| `getAnalyticsGoals()` | `[]` | 방문자 통계 전환(목표) 선언 — 선언된 목표만 기록된다 ([analytics-extension-points.md](analytics-extension-points.md)) |
+| `getAnalyticsDimensions()` | `[]` | 방문자 통계 분류 기준(dimension) 선언 — 선언된 분류 기준의 값만 원장·집계에 남는다 ([analytics-extension-points.md](analytics-extension-points.md)) |
 | `upgrades()` | `[]` | 업그레이드 스텝 (`upgrades/` 디렉토리 자동 발견). **`g7_version >= 7.0.0-beta.5` 인 모듈은 신규 step 이 `AbstractUpgradeStep` 상속 의무** ([upgrade-step-guide §13](upgrade-step-guide.md)) — 미상속 시 `ModuleManager::runUpgradeSteps` 가 `RuntimeException` throw |
 
 #### 수명주기 훅이 실패를 알리는 방법

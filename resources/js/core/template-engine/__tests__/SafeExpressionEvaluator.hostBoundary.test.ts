@@ -6,7 +6,7 @@
  * 이제 값의 종류로 막는다 — 호스트 객체는 쥐는 순간 거부, 함수는 허용목록만 호출.
  * 거부축과 정상 통과축을 쌍으로 둔다(허용목록 누락은 대량 회귀로 이어진다).
  *
- * @since engine-v1.72.0
+ * @since engine-v1.73.0
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';

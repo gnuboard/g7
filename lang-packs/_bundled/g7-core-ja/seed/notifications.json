@@ -79,6 +79,74 @@
       }
     }
   },
+  "analytics_archive_failed": {
+    "definition": {
+      "name": "訪問者統計集計失敗",
+      "description": "訪問者統計集計バッチが失敗した場合に管理者に送信される通知"
+    },
+    "templates": {
+      "mail": {
+        "subject": "[{app_name}] 訪問者統計集計が失敗しました",
+        "body": "<h1>訪問者統計集計失敗</h1><p>{period}期間の{run_type}が失敗しました。集計が遅れている間は、統計画面の数字が更新されません。</p><p>エラー: <strong>{error}</strong></p><table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"margin: 24px 0;\"><tr><td align=\"center\"><a href=\"{diagnostics_url}\" style=\"display: inline-block; padding: 12px 32px; background-color: #2d3748; color: #ffffff; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 14px;\">収集診断を開く</a></td></tr></table><p>ありがとうございます。<br><a href=\"{site_url}\">{app_name}</a></p>"
+      },
+      "database": {
+        "subject": "訪問者統計集計失敗",
+        "body": "{period}期間の{run_type}が失敗しました。エラー: {error}"
+      }
+    }
+  },
+  "analytics_ledger_limit_exceeded": {
+    "definition": {
+      "name": "訪問者統計台帳の閾値超過",
+      "description": "訪問·アクション台帳の行数が設定した警告閾値を超えた場合に管理者に送信される通知"
+    },
+    "templates": {
+      "mail": {
+        "subject": "[{app_name}] 訪問者統計台帳が閾値を超えました",
+        "body": "<h1>訪問者統計台帳の閾値超過</h1><p>訪問 {visits}行(閾値 {threshold_visits}) · アクション {actions}行(閾値 {threshold_actions})です。現在の保持日数は{retention_days}日です。</p><p>保持日数を減らすか、クリーンアップバッチが実行されているか確認してください。</p><table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"margin: 24px 0;\"><tr><td align=\"center\"><a href=\"{settings_url}\" style=\"display: inline-block; padding: 12px 32px; background-color: #2d3748; color: #ffffff; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 14px;\">保持設定を開く</a></td></tr></table><p>ありがとうございます。<br><a href=\"{site_url}\">{app_name}</a></p>"
+      },
+      "database": {
+        "subject": "訪問者統計台帳の閾値超過",
+        "body": "訪問 {visits}行 · アクション {actions}行で警告閾値を超えました。"
+      }
+    }
+  },
+  "analytics_visit_limit_exceeded": {
+    "definition": {
+      "name": "訪問あたりアクション上限超過",
+      "description": "1回の訪問のアクション数が上限を超えてその後のアクションが記録されない場合に管理者に残される通知"
+    },
+    "templates": {
+      "database": {
+        "subject": "訪問あたりアクション上限超過",
+        "body": "訪問者 {visitor_key}({ip_display})のアクションが上限 {limit}件を超え、その後のアクションは記録されませんでした。"
+      }
+    }
+  },
+  "analytics_weekly_report": {
+    "definition": {
+      "name": "訪問者統計週間レポート",
+      "description": "毎週月曜日に先週の訪問者統計概要を管理者に送信するレポート"
+    },
+    "templates": {
+      "mail": {
+        "subject": "[{app_name}] 週間訪問者統計 ({period_label})",
+        "body": "<h1>週間訪問者統計</h1><p>{period_label}期間の概要です。</p><p>訪問 <strong>{visits}</strong> · ユニークユーザー <strong>{visitors}</strong> · ページビュー <strong>{pageviews}</strong> (前期間比 {change_pct})</p><h2>人気ページ</h2>{top_pages}<h2>流入経路</h2>{top_referrers}<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"margin: 24px 0;\"><tr><td align=\"center\"><a href=\"{report_url}\" style=\"display: inline-block; padding: 12px 32px; background-color: #2d3748; color: #ffffff; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 14px;\">統計全体を表示</a></td></tr></table><p>ありがとうございます。<br><a href=\"{site_url}\">{app_name}</a></p>"
+      }
+    }
+  },
+  "analytics_monthly_report": {
+    "definition": {
+      "name": "訪問者統計月間レポート",
+      "description": "毎月1日に先月の訪問者統計概要を管理者に送信するレポート"
+    },
+    "templates": {
+      "mail": {
+        "subject": "[{app_name}] 月間訪問者統計 ({period_label})",
+        "body": "<h1>月間訪問者統計</h1><p>{period_label}の概要です。</p><p>訪問 <strong>{visits}</strong> · ユニークユーザー <strong>{visitors}</strong> · ページビュー <strong>{pageviews}</strong> (前期間比 {change_pct})</p><h2>人気ページ</h2>{top_pages}<h2>流入経路</h2>{top_referrers}<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"margin: 24px 0;\"><tr><td align=\"center\"><a href=\"{report_url}\" style=\"display: inline-block; padding: 12px 32px; background-color: #2d3748; color: #ffffff; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 14px;\">統計全体を表示</a></td></tr></table><p>ありがとうございます。<br><a href=\"{site_url}\">{app_name}</a></p>"
+      }
+    }
+  },
   "dormant_pre_notice": {
     "definition": {
       "name": "休眠転換事前通知",

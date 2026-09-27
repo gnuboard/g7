@@ -45,6 +45,7 @@ class ExtensionSettingsMirror
         'seo',
         'identity',
         'pagination',
+        'analytics',
         // 빠뜨리면 관리자가 토글을 켜고 저장에 성공하고 privacy.json 에 true 가 찍혀도
         // 커맨드는 영원히 기본값(false)을 읽어 "대상 0건" 이라는 정상 출력을 낸다 —
         // 실패가 아니라 정상처럼 보이므로 아무도 알아채지 못한다.

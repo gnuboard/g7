@@ -138,6 +138,7 @@ class UserRepository implements UserRepositoryInterface
      *
      * @param  Builder  $query  Eloquent 쿼리 빌더
      * @param  array  $filters  적용할 필터 조건 배열
+     * @return void 없음
      */
     private function applyFilters(Builder $query, array $filters): void
     {
@@ -155,6 +156,7 @@ class UserRepository implements UserRepositoryInterface
      *
      * @param  Builder  $query  Eloquent 쿼리 빌더
      * @param  array  $filters  필터 조건 배열
+     * @return void 없음
      */
     private function applyDateFilters(Builder $query, array $filters): void
     {
@@ -251,6 +253,24 @@ class UserRepository implements UserRepositoryInterface
     }
 
     /**
+     * 사용자 번호 목록으로 사용자들을 조회하고 번호 키 맵으로 반환합니다.
+     *
+     * 화면에 필요한 칸만 읽는다 — 회원 목록을 통째로 들고 오면 응답에 실을 일이 없는
+     * 값까지 메모리에 앉는다.
+     *
+     * @param  array<int, int>  $ids  사용자 번호 목록
+     * @return Collection<int, User> id => User 매핑
+     */
+    public function findManyByIdsKeyed(array $ids): Collection
+    {
+        if ($ids === []) {
+            return new Collection;
+        }
+
+        return User::whereIn('id', $ids)->get(['id', 'uuid', 'name', 'email'])->keyBy('id');
+    }
+
+    /**
      * UUID 목록으로 사용자들을 조회합니다.
      *
      * @param  array<int, string>  $uuids  사용자 UUID 목록
@@ -339,6 +359,7 @@ class UserRepository implements UserRepositoryInterface
      * 멱등 — 모든 컬럼이 이미 초기 상태면 UPDATE 를 발행하지 않습니다.
      *
      * @param  User  $user  대상 사용자
+     * @return void 없음
      */
     public function resetLoginAttempts(User $user): void
     {

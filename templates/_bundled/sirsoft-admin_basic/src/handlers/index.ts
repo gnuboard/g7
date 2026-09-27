@@ -21,6 +21,8 @@ import {
   updateMultilingualTagValueHandler,
 } from './multilingualTagHandler';
 import { setDateRangeHandler } from './setDateRangeHandler';
+// 방문자 통계 기간 프리셋 — 날짜 문자열(YYYY-MM-DD)을 돌려준다 (setDateRange 는 datetime 이라 통계 API 가 422)
+import { setAnalyticsPeriodHandler } from './setAnalyticsPeriodHandler';
 import { toggleSidebarHandler, initSidebarHandler } from './sidebarHandler';
 // 게시판 첨부 다운로드 핸들러 (토큰 동반 → 활동이력 행위자 기록, #413 item 58b)
 import { downloadAttachmentHandler } from './downloadAttachment';
@@ -57,6 +59,8 @@ export const handlerMap = {
   updateMultilingualTagValue: updateMultilingualTagValueHandler,
   // 날짜 범위 프리셋 핸들러
   setDateRange: setDateRangeHandler,
+  // 방문자 통계 기간 프리셋 (#682) — 통계 화면 기간 바 8버튼이 부른다
+  setAnalyticsPeriod: setAnalyticsPeriodHandler,
   // 데스크톱 사이드바 접기 핸들러
   toggleSidebar: toggleSidebarHandler,
   initSidebar: initSidebarHandler,

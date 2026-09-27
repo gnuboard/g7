@@ -5,7 +5,7 @@
 >
 > 형식: [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)
 
-## [engine-v1.72.0] - 2026-09-27
+## [engine-v1.73.0] - 2026-09-27
 
 ### Security
 
@@ -22,10 +22,64 @@
 - `$event`(원본 DOM 이벤트)·`error`(원본 Error)·`$args`(원본 콜백 인자)가 그대로 표현식 컨텍스트에 실려 `$event.target.ownerDocument.defaultView.localStorage`·`fetch` 가 정상 읽기·호출로 통과했다.
 - 신규 `helpers/expressionData` — `toExpressionEvent`/`toExpressionArgs`/`toExpressionData`/`toExpressionError`. 이벤트는 스칼라 필드 + target 스냅샷(value·checked·name·type·tagName·dataset·files·selectedOptions, scroll 필드는 scroll 이벤트만, form 은 이름 있는 컨트롤), 오류는 own 필드 + message·name(stack 제외), 그 외는 재귀 사본(호스트 객체 null). 필드는 번들 레이아웃 전수 집계 기준. `extractEventData` 는 이 변환기에 위임한다. 핸들러의 `context.event` 는 원본 그대로다.
 - `SafeExpressionEvaluator` 타입 경계: 식별자 해석·프로퍼티 읽기·호출 결과·최종 결과에서 호스트 capability 객체(EventTarget·Window·Document·Storage·Location·History·Navigator·Promise 등)를 거부하고, 함수는 평가기 클로저·순수 계산 네이티브(원시/컨테이너 프로토타입·Math/JSON/Number/String/Array/Date/Object facade static)·JS 로 작성된 함수만 호출한다(`call`/`apply`/`bind`·리플렉션·bound 는 거부). 공개: `isUnsafeHostValue`·`isExpressionSafeFunction`.
+- 허용 전역 함수(`parseInt`·`encodeURIComponent` 등)는 호출 허용목록에도 함께 둔다 — engine-v1.72.0 이 허용한 `encodeURIComponent` 가 이 목록에 없으면 식별자는 풀리고 호출만 막혀, 검색어가 있는 동안 방문자 통계 CSV 주소가 비고 회원 상세의 마일리지 내역 링크가 빈다.
 - `DataBindingEngine.resolvePath`(호출 없는 경로 바인딩)와 엔진 `$get` 헬퍼도 경로 한 단계마다 같은 판정으로 호스트 객체·허용목록 밖 네이티브 함수에 닿으면 기본값(폴백)으로 끊는다 — 평가기는 헬퍼의 최종 반환값만 보므로 중간 호스트 객체를 건너 문자열을 꺼낼 수 있었다.
 - `apiCall` 은 인증 정보(`Authorization: Bearer`·`X-XSRF-TOKEN`)를 **동일 출처 대상에만** 싣는다(신규 `navPolicy.isSameOriginRequestUrl` — `fetch` 와 같은 URL 파서). 대상은 표현식으로 조립할 수 있어 저장측 정적 규칙이 다 잡지 못하는데, 출처와 무관하게 토큰을 실어 레이아웃 편집 권한만으로 관리자 토큰을 외부로 보낼 수 있었다. 데이터 소스(ApiClient)는 이미 같은 원칙이다. 교차 출처 요청 자체는 막지 않는다.
 - 교차 출처 **응답**은 인증 흐름을 조종하지 못한다. `apiCall`·`ApiClient` 는 교차 출처 응답의 428(`identity_verification_required`)을 `IdentityGuardInterceptor` 로 넘기지 않는다 — launcher 가 응답의 `challenge_start_url` 로 토큰을 실어 보내므로, 외부 서버가 428 을 흉내 내면 요청에서 뺀 토큰을 후속 요청으로 받아 갔다. `ApiClient` 는 교차 출처 401 에 토큰 갱신·재시도(갱신 토큰을 헤더에 직접 붙여 같은 외부 주소로 재요청)와 세션 정리를 하지 않는다. 판정은 토큰 첨부와 같은 출처 판정이다.
 - `G7Core.api.isSameOriginUrl(url)` 신설 — 확장이 `fetch` 로 직접 요청하며 `getToken()` 을 실을 때 쓰는 판정(apiCall 과 같은 `navPolicy.isSameOriginRequestUrl`). 번들 템플릿의 본인인증 launcher·언어 선택·프로필 메뉴·프로필 사진 컴포넌트가 이 판정으로 동일 출처 대상에만 토큰을 싣는다.
+
+## [engine-v1.72.0] - 2026-09-26
+
+### Added
+
+#### 방문자 통계 트래커 — 사용자 템플릿에서만 켜지고, 실패해도 화면을 막지 않는다
+
+- `TemplateApp` 초기화 8.1 단계에 트래커가 붙는다. `templateType` 이 `user` 일 때만 만든다 —
+  관리자 화면까지 세면 인기 페이지 1위가 관리자 대시보드가 되어 통계가 쓸모없어진다.
+  설정(`G7Config.settings.analytics`)이 없거나 꺼져 있으면 아무것도 만들지 않는다.
+- SPA 이동은 라우터의 `routeChange` 로 잡는다. 라우터가 핸들러를 `Promise.all` 로 기다리므로
+  이 구독은 **동기로 반환**하고, 전송은 트래커 안에서 다음 틱으로 미룬다 — 화면 전환이 비콘
+  왕복만큼 늦어지면 안 된다. 첫 화면은 라우터가 매칭되지 않는 경우(404 등)까지 세려고 직접
+  한 번 알리고, 라우터가 같은 경로로 내는 첫 `routeChange` 는 한 번 거른다 — 거르지 않으면
+  모든 첫 로드가 페이지뷰 2건이 되고 한 쪽만 본 방문이 이탈로 잡히지 않는다.
+- `window.G7Core.analytics` 로 확장이 쓸 수 있는 6가지가 열린다 — `trackGoal`·`trackEvent`·
+  `setDimension`·`isOptedOut` 에 더해 `optOut`·`optIn` 으로 방문자가 자기 방문을 세지 말라고
+  고를 수 있다(쿠키는 서버가 심는다). 여섯 다 안에서 예외를 삼킨다. 통계가 깨졌다고 남의
+  화면이 깨지면 안 된다.
+- 트래커 초기화가 실패해도 부팅은 계속된다(`setupAnalytics` 전체가 `try`/`catch`). 실패는
+  경고로 남고, 방문자는 아무 차이를 느끼지 않는다.
+- 내려받기 중 받아 둔 내용을 임시 링크로 저장시키는 `blob:`·`data:` 주소는 `target` 없이
+  표시 이름만 보낸다. 게시판 첨부가 이 방식이라, 그 주소를 실으면 서버가 URL 이 아니라며
+  거절해 첨부 내려받기가 통째로 빠졌다(브라우저 실측 이슈 #682 §8 M1-T7).
+- 같은 화면(주소 + 라우트 경로)으로의 되풀이 이동이 1초 안에 다시 오면 페이지뷰를 한 번만
+  보낸다. 라우터는 같은 주소로의 이동도 매번 알려, 메뉴 더블클릭 한 번이 페이지뷰 2건이 됐다
+  (§8 M1-T10). 창은 링크 클릭 중복 억제와 같은 1초다.
+- 브라우저가 미리 그리는(prerender) 화면은 페이지뷰를 보류했다가 실제로 열릴 때(`prerenderingchange`·
+  `visibilitychange`) 한 번 보낸다. 열리지 않고 버려진 화면은 세지 않는다.
+- 비콘 값을 서버의 검증 한계에 맞춰 보낸다 — 주소 2,048자(넘으면 쿼리를 떼고 자름)·제목 512자·
+  이름 255자·분류 값 20개·각 255자. 넘는 유입·대상 주소는 뺀다. 한 값이 넘치면 서버가 비콘 전체를
+  거절해 그 방문이 통째로 빠졌다.
+- 제외 경로 규칙을 서버 판정과 맞췄다 — 끝의 `*` 를 **모두** 떼고 앞부분 일치(`/admin/**` = `/admin/*`),
+  정확 일치는 끝 슬래시를 따지지 않는다. 동의 조회를 기다리며 보관한 비콘도 보내기 직전 제외 규칙을
+  다시 본다.
+- `setDimension` 으로 넣은 분류 값은 그 화면의 비콘에만 실린다 — 다음 페이지로 옮기면 비운다.
+
+### Changed
+
+#### 요청이 실패해도 마지막으로 받은 값을 지킨다
+
+- `fallback` 은 **아직 한 번도 못 받았을 때**의 첫 그림이다. 종전에는 이미 값을 그리고 있는 소스가
+  다시 부르다 실패해도 `fallback` 으로 되돌아가, 30초마다 도는 실시간 화면이 서버 오류 한 번에
+  「지금 0명」이라는 거짓을 띄웠다(이슈 #682 §8 M4-T4). 이제 한 번이라도 성공한 소스는 마지막 값을
+  그대로 두고, 실패는 종전처럼 `errorHandling`·토스트로 알린다. 성공한 적이 없으면 종전대로
+  `fallback` 을 쓴다. 세 경로(첫 그림·결과 추적·백그라운드)와 방송 수신이 같은 규칙을 따른다.
+
+#### 표현식 평가기가 `encodeURIComponent` 를 부를 수 있다
+
+- 허용 전역에 `encodeURIComponent` 를 더했다. 레이아웃이 검색어처럼 사용자가 넣은 값을 주소에
+  실을 때 필요하다 — 없으면 호출이 「non-function」으로 실패해 식 전체가 비고, 방문자 통계 리포트는
+  검색어가 있는 동안 CSV 주소가 사라져 내려받기 버튼이 숨었다(이슈 #682 §8 M3). 인자를 문자열로
+  바꿔 돌려줄 뿐 전역이나 프로토타입에 닿지 않는다. 역함수는 잘못된 입력에 예외를 던지므로 넣지 않았다.
 
 ## [engine-v1.71.1] - 2026-09-21
 

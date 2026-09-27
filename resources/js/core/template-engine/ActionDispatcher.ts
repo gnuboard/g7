@@ -3398,7 +3398,7 @@ export class ActionDispatcher {
    *
    * 프리뷰에서는 {@link PREVIEW_SUPPRESSED_HANDLERS} 가 막는다 — 미리보기 창이 사라지기 때문이다.
    *
-   * 이동 대상은 same-origin 경로로 제한한다(engine-v1.72.0). 레이아웃은 이 주소를 `query` 에서
+   * 이동 대상은 same-origin 경로로 제한한다(engine-v1.73.0). 레이아웃은 이 주소를 `query` 에서
    * 채우기도 하므로(`identity_challenge` 의 `redirect_url`) 검증 없이 넘기면 `javascript:` 실행·
    * 오프사이트 이동 sink 가 된다(KVE-2026-2348). 본인인증 제공자의 외부 origin 이동은 명시
    * 허용목록이 생기기 전까지 기본 경로(`/`)로 떨어진다.

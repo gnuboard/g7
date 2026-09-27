@@ -5,7 +5,7 @@
  * `target.ownerDocument.defaultView` 로 Window 에 닿는다. 변환기는 표현식이 실제로 읽는
  * 필드만 plain 사본으로 싣는다 — 번들 레이아웃 전수 집계에서 나온 경로가 모두 살아 있어야 한다.
  *
- * @since engine-v1.72.0
+ * @since engine-v1.73.0
  */
 
 import { describe, it, expect } from 'vitest';

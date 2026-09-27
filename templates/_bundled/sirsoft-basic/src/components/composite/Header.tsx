@@ -365,7 +365,7 @@ const Header: React.FC<HeaderProps> = ({
             <Button onClick={() => navigate(`${shopBase}/cart`)} className="relative p-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white cursor-pointer">
               <Icon name="shopping-cart" className="w-5 h-5" />
               {cartCount > 0 && (
-                <Span className="absolute -top-1 -right-1 w-5 h-5 flex items-center justify-center text-xs bg-blue-500 text-white rounded-full">
+                <Span className="absolute -top-1 -right-1 w-5 h-5 flex items-center justify-center text-xs bg-blue-500 dark:bg-blue-600 text-white rounded-full">
                   {cartCount > 99 ? '99+' : cartCount}
                 </Span>
               )}
@@ -492,7 +492,7 @@ const Header: React.FC<HeaderProps> = ({
                       onClick={handleLogout}
                       className="block w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
                     >
-                      <Icon name="log-out" className="inline w-4 h-4 mr-2" />
+                      <Icon name="right-from-bracket" className="inline w-4 h-4 mr-2" />
                       {t('auth.logout')}
                     </Button>
                   </Div>
@@ -515,7 +515,7 @@ const Header: React.FC<HeaderProps> = ({
                 </Button>
                 <Button
                   onClick={() => navigate('/register')}
-                  className="ml-1 px-3 py-2 text-sm font-medium text-white bg-emerald-500 rounded-lg hover:bg-emerald-600 cursor-pointer"
+                  className="ml-1 px-3 py-2 text-sm font-medium text-white bg-emerald-500 dark:bg-emerald-600 rounded-lg hover:bg-emerald-600 dark:hover:bg-emerald-500 cursor-pointer"
                 >
                   {t('auth.register_link')}
                 </Button>
@@ -528,7 +528,7 @@ const Header: React.FC<HeaderProps> = ({
                 onClick={onMobileMenuOpen}
                 className="p-2 text-gray-600 dark:text-gray-400"
               >
-                <Icon name="menu" className="w-6 h-6" />
+                <Icon name="menu" className="w-6 h-6 text-2xl leading-none" />
               </Button>
             )}
           </Div>

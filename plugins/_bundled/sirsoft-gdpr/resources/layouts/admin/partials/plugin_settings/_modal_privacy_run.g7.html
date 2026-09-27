@@ -20,6 +20,7 @@
     <div class="modal-footer-buttons">
       <button type="button" class="btn btn-secondary" disabled="{{_global.privacyRun?.submitting}}">
         <on type="click">
+          <!-- 취소 — 통지를 접수하지 않고 닫는다. 창이 쓰던 `_global.privacyRun`(대상 키·통지 대상 수)을 실행 성공 때와 같이 비운다. -->
           <sequence>
             <set-state target="global" :privacyRun="null"/>
             <close-modal target="privacy_run_modal"/>

@@ -46,6 +46,7 @@ import {
     isAllowedScriptSrc as isAllowedScriptSrcImpl,
 } from './support/scriptSrcPolicy';
 import { resetLocalInitTracking } from './template-engine/localInitSlot';
+import { createPublicApi, createTracker, type TrackerHandle } from './analytics';
 /**
  * DevTools 추적 - G7DevToolsCore.getInstance() 직접 호출 대신 G7Core.devTools를 사용합니다.
  */
@@ -247,6 +248,16 @@ declare global {
 
 export class TemplateApp {
     private router: Router | null = null;
+
+    /**
+     * 방문자 통계 트래커
+     *
+     * 사용자 템플릿에서만 만들어집니다 — 관리자 화면까지 세면 인기 페이지 1위가
+     * 관리자 대시보드가 되어 통계가 쓸모없어집니다.
+     *
+     * @since engine-v1.72.0
+     */
+    private analytics: TrackerHandle | null = null;
     private layoutLoader: LayoutLoader | null = null;
     private errorPageHandler: ErrorPageHandler | null = null;
     private config: TemplateAppConfig;
@@ -734,6 +745,13 @@ export class TemplateApp {
             // 8. 라우트 변경 이벤트 핸들러 등록
             this.router.on('routeChange', (route: Route) => this.handleRouteChange(route));
 
+            // 8.1 방문자 통계 트래커
+            //
+            // 라우터가 핸들러들을 Promise.all 로 기다리므로 이 구독은 **동기로 반환**한다.
+            // 트래커 내부가 전송을 다음 틱으로 미루기 때문에 화면 전환이 비콘만큼
+            // 늦어지지 않는다.
+            this.setupAnalytics();
+
             // 8.5 routeNotFound 이벤트 핸들러 등록 (404 에러 페이지 처리)
             this.router.on('routeNotFound', (path: string) => this.handleRouteNotFound(path));
 
@@ -835,6 +853,72 @@ export class TemplateApp {
         if (pluginAssets.length > 0) {
             logger.log('Loading plugin assets (individual fallback):', pluginAssets.map(p => p.identifier));
             await moduleAssetLoader.loadActiveExtensionAssets(pluginAssets);
+        }
+    }
+
+    /**
+     * 방문자 통계 트래커를 켭니다.
+     *
+     * 관리자 템플릿에서는 만들지 않습니다 — 관리자가 사용자 사이트를 볼 때의 방문은
+     * 사용자 템플릿에서 잡히고, 관리자 화면 자체는 통계 대상이 아닙니다.
+     *
+     * @returns 없음
+     *
+     * @since engine-v1.72.0
+     */
+    private setupAnalytics(): void {
+        try {
+            if (this.config.templateType !== 'user') return;
+
+            const config = (window as any).G7Config ?? {};
+            const settings = config.settings?.analytics;
+
+            if (!settings || settings.enabled === false) return;
+
+            this.analytics = createTracker({
+                settings,
+                consentPluginActive: Array.isArray(config.activePlugins)
+                    && config.activePlugins.some((plugin: any) => plugin?.identifier === 'sirsoft-gdpr'),
+                locale: this.config.locale,
+                getAuthToken: () => {
+                    try {
+                        return localStorage.getItem('auth_token');
+                    } catch {
+                        return null;
+                    }
+                },
+                translate: (key: string) => (window as any).G7Core?.t?.(key) ?? key,
+            });
+
+            if (!this.analytics) return;
+
+            (window as any).G7Core = (window as any).G7Core || {};
+            (window as any).G7Core.analytics = createPublicApi(this.analytics);
+
+            // 첫 화면도 라우터가 `navigateToCurrentPath()` 로 routeChange 를 한 번 낸다. 아래에서
+            // 직접 알린 그 한 번을 거르지 않으면 모든 첫 로드가 페이지뷰 2건이 되고, 한 쪽만
+            // 보고 떠난 방문이 이탈로 잡히지 않는다. 그 뒤의 이동은 전부 그대로 센다.
+            const initialPath = window.location.pathname;
+            let initialRouteChangeSeen = false;
+
+            // 라우트 구독은 동기로 반환한다 — 라우터가 핸들러를 기다리기 때문이다.
+            this.router?.on('routeChange', (route: Route) => {
+                if (!initialRouteChangeSeen) {
+                    initialRouteChangeSeen = true;
+
+                    if ((route as any)?.path === initialPath) return;
+                }
+
+                this.analytics?.tracker.trackPageview(route);
+            });
+
+            // 404 등 라우터가 routeChange 를 내지 않는 경우까지 첫 화면을 세려면 여기서 한 번
+            // 알려야 한다. 매칭이 안 되면 라우트 없이 보낸다 — 제목은 경로로 떨어진다.
+            const initialMatch = this.router?.match(window.location.pathname);
+            this.analytics.tracker.trackPageview(initialMatch?.route ?? null);
+        } catch (error) {
+            // 통계 초기화 실패가 사이트 부팅을 막지 않는다.
+            logger.warn('Analytics tracker initialization skipped:', error);
         }
     }
 

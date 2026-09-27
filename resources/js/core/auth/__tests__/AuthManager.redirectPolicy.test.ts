@@ -4,7 +4,7 @@
  * 종전 가드 `decoded.startsWith('/')` 는 `//evil.com`·`/\evil.com` 을 통과시켜 로그인 후
  * 오프사이트로 내보냈다. sink 와 같은 판정(navPolicy)을 써야 두 경로의 차집합이 생기지 않는다.
  *
- * @since engine-v1.72.0
+ * @since engine-v1.73.0
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';

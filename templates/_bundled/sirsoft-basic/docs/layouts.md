@@ -5,7 +5,7 @@
 ## 레이아웃 목록
 
 <!-- @generated:layouts START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-레이아웃 173개 (루트: `layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
+레이아웃 174개 (루트: `layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
 
 | 그룹 | 개수 |
 |---|---|
@@ -15,7 +15,7 @@
 | `errors` | 6개 |
 | `mypage` | 12개 |
 | `page` | 1개 |
-| `partials` | 130개 |
+| `partials` | 131개 |
 | `search` | 1개 |
 | `shop` | 9개 |
 | `users` | 2개 |
@@ -55,6 +55,7 @@
 | `show` | `page` | 화면 | `_user_base` |
 | `_identity_challenge_modal` | `partials` | partial | - |
 | `_modal_notification_delete_all_confirm` | `partials` | partial | - |
+| `_visitor_counter` | `partials` | partial | - |
 | `_login_form` | `partials` | partial | - |
 | `_modal_privacy` | `partials` | partial | - |
 | `_modal_terms` | `partials` | partial | - |
@@ -374,7 +375,8 @@ _user_base.g7.html (베이스 레이아웃)
 │       ├── _popular_boards.g7.html (인기 게시판)
 │       ├── _board_summary.g7.html (게시판 요약)
 │       ├── _community_guide.g7.html (커뮤니티 가이드)
-│       └── _shop_promo.g7.html (쇼핑 프로모션)
+│       ├── _shop_promo.g7.html (쇼핑 프로모션)
+│       └── _visitor_counter.g7.html (방문자 카운터 — 설정을 켰을 때만, 공개 요약 API #682 S3)
 │
 ├── 인증 (auth/)
 │   ├── login.g7.html (로그인)
@@ -489,6 +491,8 @@ _user_base.g7.html (베이스 레이아웃)
 │   └── reorder.g7.html (재주문)
 │
 ├── 마이페이지 (mypage/)
+│   ├── mileage.g7.html (마일리지 내역)
+│   ├── scrap.g7.html (스크랩 — 일괄 삭제 확인 조각 포함)
 │   ├── profile.g7.html (프로필 보기)
 │   ├── profile-edit.g7.html (프로필 수정)
 │   │   └── partials/mypage/profile/

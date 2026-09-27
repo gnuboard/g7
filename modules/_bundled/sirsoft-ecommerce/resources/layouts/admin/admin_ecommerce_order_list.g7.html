@@ -188,8 +188,8 @@
       <div data-ref="page_header" class="page-header">
         <div class="flex-center gap-3">
           <!-- MB-001 모바일 뒤로가기 버튼 -->
-          <button data-ref="mb_001_back_button" type="button" class="btn btn-ghost btn-square hidden">
-            <responsive on="portable" class="btn btn-ghost btn-square flex"/>
+          <button data-ref="mb_001_back_button" type="button" class="btn-icon hidden">
+            <responsive on="portable" class="btn-icon flex"/>
             <on type="click">
               <!-- 브라우저 히스토리 뒤로가기 — navigate 는 path 를 주소로 해석하므로 "back" 을 주면 /back 으로 이동한다 -->
               <navigate-back/>
@@ -212,7 +212,7 @@
                 <query/>
               </navigate>
             </on>
-            <icon name="refresh-cw" class="text-xl"/>
+            <icon name="arrows-rotate" class="text-xl"/>
           </button>
         </div>
       </div>
@@ -224,7 +224,7 @@
           <on type="click">
             <set-state target="_local" isEditMode="{{!_local.isEditMode}}"/>
           </on>
-          <icon name="settings" class="text-base"/>
+          <icon name="gear" class="text-base"/>
           <span>$t:sirsoft-ecommerce.admin.order.search.edit_search</span>
         </button>
         <!-- MB-011 -->

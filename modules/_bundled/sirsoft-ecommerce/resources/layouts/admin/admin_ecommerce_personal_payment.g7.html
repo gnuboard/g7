@@ -29,7 +29,7 @@
         </div>
         <div class="flex-center gap-2">
           <button type="button" class="btn btn-icon">
-            <icon name="refresh-cw" class="text-xl"/>
+            <icon name="arrows-rotate" class="text-xl"/>
           </button>
           <button type="button" class="btn btn-primary">
             <icon name="plus" class="text-base"/>
@@ -62,7 +62,7 @@
               <!-- 검색 초기화 — 아래 상태·결제수단·기간·금액 필터까지 함께 되돌린다 -->
               <set-state target="_local" statusFilter="" paymentMethodFilter="" dateType="created_at" startDate="" endDate="" minAmount="" maxAmount="" searchField="payment_number" searchKeyword=""/>
             </on>
-            <icon name="refresh-cw" class="text-base"/>
+            <icon name="arrows-rotate" class="text-base"/>
             <span>$t:sirsoft-ecommerce.admin.personal_payment.search.reset</span>
           </button>
         </div>
@@ -70,28 +70,28 @@
           <span class="filter-label">$t:sirsoft-ecommerce.admin.personal_payment.filter.status</span>
           <div class="filter-buttons">
             <!-- 진행 상태를 가리지 않고 모두 -->
-            <div class="{{_local.statusFilter === '' ? 'btn-badge cursor-pointer bg-gray-200 text-gray-700 ring-1 ring-gray-400 dark:bg-gray-700 dark:text-gray-300' : 'btn-badge cursor-pointer'}}">
+            <div class="{{_local.statusFilter === '' ? 'btn-badge cursor-pointer bg-gray-200 text-gray-700 ring-1 ring-gray-400 dark:ring-gray-500 dark:bg-gray-700 dark:text-gray-300' : 'btn-badge cursor-pointer'}}">
               <on type="click">
                 <set-state target="_local" statusFilter=""/>
               </on>
               $t:sirsoft-ecommerce.admin.personal_payment.filter.all
             </div>
             <!-- 결제대기 — 링크는 보냈고 아직 안 낸 건. 기한이 지나면 만료로 넘어간다 -->
-            <div class="{{_local.statusFilter === 'pending' ? 'btn-badge btn-badge-yellow cursor-pointer ring-1 ring-yellow-400' : 'btn-badge cursor-pointer'}}">
+            <div class="{{_local.statusFilter === 'pending' ? 'btn-badge btn-badge-yellow cursor-pointer ring-1 ring-yellow-400 dark:ring-yellow-500' : 'btn-badge cursor-pointer'}}">
               <on type="click">
                 <set-state target="_local" statusFilter="pending"/>
               </on>
               $t:sirsoft-ecommerce.admin.personal_payment.filter.pending
             </div>
             <!-- 결제완료 -->
-            <div class="{{_local.statusFilter === 'completed' ? 'btn-badge btn-badge-green cursor-pointer ring-1 ring-green-400' : 'btn-badge cursor-pointer'}}">
+            <div class="{{_local.statusFilter === 'completed' ? 'btn-badge btn-badge-green cursor-pointer ring-1 ring-green-400 dark:ring-green-500' : 'btn-badge cursor-pointer'}}">
               <on type="click">
                 <set-state target="_local" statusFilter="completed"/>
               </on>
               $t:sirsoft-ecommerce.admin.personal_payment.filter.completed
             </div>
             <!-- 만료 — 기한이 지나 링크가 죽은 건. 다시 보내려면 새로 만들어야 한다 -->
-            <div class="{{_local.statusFilter === 'expired' ? 'btn-badge btn-badge-gray cursor-pointer ring-1 ring-gray-400' : 'btn-badge cursor-pointer'}}">
+            <div class="{{_local.statusFilter === 'expired' ? 'btn-badge btn-badge-gray cursor-pointer ring-1 ring-gray-400 dark:ring-gray-500' : 'btn-badge cursor-pointer'}}">
               <on type="click">
                 <set-state target="_local" statusFilter="expired"/>
               </on>
@@ -102,7 +102,7 @@
         <div data-ref="payment_method_filter_row" class="filter-row">
           <span class="filter-label">$t:sirsoft-ecommerce.admin.personal_payment.filter.payment_method</span>
           <div class="filter-buttons">
-            <div class="{{_local.paymentMethodFilter === '' ? 'btn-badge cursor-pointer bg-gray-200 text-gray-700 ring-1 ring-gray-400 dark:bg-gray-700 dark:text-gray-300' : 'btn-badge cursor-pointer'}}">
+            <div class="{{_local.paymentMethodFilter === '' ? 'btn-badge cursor-pointer bg-gray-200 text-gray-700 ring-1 ring-gray-400 dark:ring-gray-500 dark:bg-gray-700 dark:text-gray-300' : 'btn-badge cursor-pointer'}}">
               <on type="click">
                 <!-- 결제수단을 가리지 않고 모두 -->
                 <set-state target="_local" paymentMethodFilter=""/>
@@ -110,7 +110,7 @@
               <icon name="list" class="text-xs"/>
               <span>$t:sirsoft-ecommerce.admin.personal_payment.filter.all</span>
             </div>
-            <div class="{{_local.paymentMethodFilter === 'card' ? 'btn-badge btn-badge-blue cursor-pointer ring-1 ring-blue-400' : 'btn-badge cursor-pointer'}}">
+            <div class="{{_local.paymentMethodFilter === 'card' ? 'btn-badge btn-badge-blue cursor-pointer ring-1 ring-blue-400 dark:ring-blue-500' : 'btn-badge cursor-pointer'}}">
               <on type="click">
                 <!-- 신용카드 -->
                 <set-state target="_local" paymentMethodFilter="card"/>
@@ -118,7 +118,7 @@
               <icon name="credit-card" class="text-xs"/>
               <span>$t:sirsoft-ecommerce.admin.personal_payment.filter.card</span>
             </div>
-            <div class="{{_local.paymentMethodFilter === 'bank_transfer' ? 'btn-badge btn-badge-cyan cursor-pointer ring-1 ring-cyan-400' : 'btn-badge cursor-pointer'}}">
+            <div class="{{_local.paymentMethodFilter === 'bank_transfer' ? 'btn-badge btn-badge-cyan cursor-pointer ring-1 ring-cyan-400 dark:ring-cyan-500' : 'btn-badge cursor-pointer'}}">
               <on type="click">
                 <!-- 계좌이체 — 입금 확인이 따로 붙으므로 대기 상태가 길어질 수 있다 -->
                 <set-state target="_local" paymentMethodFilter="bank_transfer"/>
@@ -126,7 +126,7 @@
               <icon name="landmark" class="text-xs"/>
               <span>$t:sirsoft-ecommerce.admin.personal_payment.filter.bank_transfer</span>
             </div>
-            <div class="{{_local.paymentMethodFilter === 'kakao_pay' ? 'btn-badge btn-badge-yellow cursor-pointer ring-1 ring-yellow-400' : 'btn-badge cursor-pointer'}}">
+            <div class="{{_local.paymentMethodFilter === 'kakao_pay' ? 'btn-badge btn-badge-yellow cursor-pointer ring-1 ring-yellow-400 dark:ring-yellow-500' : 'btn-badge cursor-pointer'}}">
               <on type="click">
                 <!-- 카카오페이 -->
                 <set-state target="_local" paymentMethodFilter="kakao_pay"/>
@@ -134,7 +134,7 @@
               <icon name="wallet" class="text-xs"/>
               <span>$t:sirsoft-ecommerce.admin.personal_payment.filter.kakao_pay</span>
             </div>
-            <div class="{{_local.paymentMethodFilter === 'naver_pay' ? 'btn-badge btn-badge-green cursor-pointer ring-1 ring-green-400' : 'btn-badge cursor-pointer'}}">
+            <div class="{{_local.paymentMethodFilter === 'naver_pay' ? 'btn-badge btn-badge-green cursor-pointer ring-1 ring-green-400 dark:ring-green-500' : 'btn-badge cursor-pointer'}}">
               <on type="click">
                 <!-- 네이버페이 -->
                 <set-state target="_local" paymentMethodFilter="naver_pay"/>
@@ -199,7 +199,7 @@
       </div>
       <div data-ref="table_card" class="admin-card">
         <div data-ref="table_header" class="flex-between flex-wrap gap-4 mb-6">
-          <span class="text-secondary">총 9개</span>
+          <span class="text-secondary">$t:sirsoft-ecommerce.admin.personal_payment.table.total_count|count=9</span>
           <div class="flex-center gap-3">
             <select name="sortBy" class="w-44" value="{{_local.sortBy}}">
               <options>
@@ -229,11 +229,11 @@
               <div class="admin-card">
                 <div class="flex justify-between items-start mb-3">
                   <div class="flex-center gap-2">
-                    <span class="badge badge-yellow">대기중</span>
+                    <span class="badge badge-yellow">$t:sirsoft-ecommerce.admin.personal_payment.status.pending</span>
                     <span class="text-primary font-medium">PP20251028-007</span>
                   </div>
                   <button class="btn-icon">
-                    <icon name="more-horizontal" class="text-xl"/>
+                    <icon name="ellipsis" class="text-xl"/>
                   </button>
                 </div>
                 <div class="mb-3">
@@ -260,11 +260,11 @@
               <div class="admin-card">
                 <div class="flex justify-between items-start mb-3">
                   <div class="flex-center gap-2">
-                    <span class="badge badge-yellow">대기중</span>
+                    <span class="badge badge-yellow">$t:sirsoft-ecommerce.admin.personal_payment.status.pending</span>
                     <span class="text-primary font-medium">PP20251028-006</span>
                   </div>
                   <button class="btn-icon">
-                    <icon name="more-horizontal" class="text-xl"/>
+                    <icon name="ellipsis" class="text-xl"/>
                   </button>
                 </div>
                 <div class="mb-3">
@@ -291,11 +291,11 @@
               <div class="admin-card">
                 <div class="flex justify-between items-start mb-3">
                   <div class="flex-center gap-2">
-                    <span class="badge badge-yellow">대기중</span>
+                    <span class="badge badge-yellow">$t:sirsoft-ecommerce.admin.personal_payment.status.pending</span>
                     <span class="text-primary font-medium">PP20251028-005</span>
                   </div>
                   <button class="btn-icon">
-                    <icon name="more-horizontal" class="text-xl"/>
+                    <icon name="ellipsis" class="text-xl"/>
                   </button>
                 </div>
                 <div class="mb-3">
@@ -322,11 +322,11 @@
               <div class="admin-card">
                 <div class="flex justify-between items-start mb-3">
                   <div class="flex-center gap-2">
-                    <span class="badge badge-green">완료</span>
+                    <span class="badge badge-green">$t:sirsoft-ecommerce.admin.personal_payment.status.completed</span>
                     <span class="text-primary font-medium">PP20251027-004</span>
                   </div>
                   <button class="btn-icon">
-                    <icon name="more-horizontal" class="text-xl"/>
+                    <icon name="ellipsis" class="text-xl"/>
                   </button>
                 </div>
                 <div class="mb-3">
@@ -350,18 +350,18 @@
                   </div>
                 </div>
                 <div class="mt-3 pt-3 flex-center gap-2">
-                  <span class="btn-badge btn-badge-green text-xs">네이버페이</span>
+                  <span class="btn-badge btn-badge-green text-xs">$t:sirsoft-ecommerce.admin.personal_payment.filter.naver_pay</span>
                   <span class="text-xs text-secondary">2025-10-27 18:25:30</span>
                 </div>
               </div>
               <div class="admin-card">
                 <div class="flex justify-between items-start mb-3">
                   <div class="flex-center gap-2">
-                    <span class="badge badge-green">완료</span>
+                    <span class="badge badge-green">$t:sirsoft-ecommerce.admin.personal_payment.status.completed</span>
                     <span class="text-primary font-medium">PP20251027-003</span>
                   </div>
                   <button class="btn-icon">
-                    <icon name="more-horizontal" class="text-xl"/>
+                    <icon name="ellipsis" class="text-xl"/>
                   </button>
                 </div>
                 <div class="mb-3">
@@ -385,18 +385,18 @@
                   </div>
                 </div>
                 <div class="mt-3 pt-3 flex-center gap-2">
-                  <span class="btn-badge btn-badge-yellow text-xs">카카오페이</span>
+                  <span class="btn-badge btn-badge-yellow text-xs">$t:sirsoft-ecommerce.admin.personal_payment.filter.kakao_pay</span>
                   <span class="text-xs text-secondary">2025-10-27 16:50:10</span>
                 </div>
               </div>
               <div class="admin-card">
                 <div class="flex justify-between items-start mb-3">
                   <div class="flex-center gap-2">
-                    <span class="badge badge-green">완료</span>
+                    <span class="badge badge-green">$t:sirsoft-ecommerce.admin.personal_payment.status.completed</span>
                     <span class="text-primary font-medium">PP20251027-001</span>
                   </div>
                   <button class="btn-icon">
-                    <icon name="more-horizontal" class="text-xl"/>
+                    <icon name="ellipsis" class="text-xl"/>
                   </button>
                 </div>
                 <div class="mb-3">
@@ -420,18 +420,18 @@
                   </div>
                 </div>
                 <div class="mt-3 pt-3 flex-center gap-2">
-                  <span class="btn-badge btn-badge-blue text-xs">신용카드</span>
+                  <span class="btn-badge btn-badge-blue text-xs">$t:sirsoft-ecommerce.admin.personal_payment.filter.card</span>
                   <span class="text-xs text-secondary">2025-10-27 14:45:20</span>
                 </div>
               </div>
               <div class="admin-card">
                 <div class="flex justify-between items-start mb-3">
                   <div class="flex-center gap-2">
-                    <span class="badge badge-green">완료</span>
+                    <span class="badge badge-green">$t:sirsoft-ecommerce.admin.personal_payment.status.completed</span>
                     <span class="text-primary font-medium">PP20251027-002</span>
                   </div>
                   <button class="btn-icon">
-                    <icon name="more-horizontal" class="text-xl"/>
+                    <icon name="ellipsis" class="text-xl"/>
                   </button>
                 </div>
                 <div class="mb-3">
@@ -455,18 +455,18 @@
                   </div>
                 </div>
                 <div class="mt-3 pt-3 flex-center gap-2">
-                  <span class="btn-badge btn-badge-cyan text-xs">계좌이체</span>
+                  <span class="btn-badge btn-badge-cyan text-xs">$t:sirsoft-ecommerce.admin.personal_payment.filter.bank_transfer</span>
                   <span class="text-xs text-secondary">2025-10-27 11:35:15</span>
                 </div>
               </div>
               <div class="admin-card">
                 <div class="flex justify-between items-start mb-3">
                   <div class="flex-center gap-2">
-                    <span class="badge badge-gray">만료</span>
+                    <span class="badge badge-gray">$t:sirsoft-ecommerce.admin.personal_payment.status.expired</span>
                     <span class="text-primary font-medium">PP20251025-008</span>
                   </div>
                   <button class="btn-icon">
-                    <icon name="more-horizontal" class="text-xl"/>
+                    <icon name="ellipsis" class="text-xl"/>
                   </button>
                 </div>
                 <div class="mb-3">
@@ -493,11 +493,11 @@
               <div class="admin-card">
                 <div class="flex justify-between items-start mb-3">
                   <div class="flex-center gap-2">
-                    <span class="badge badge-gray">만료</span>
+                    <span class="badge badge-gray">$t:sirsoft-ecommerce.admin.personal_payment.status.expired</span>
                     <span class="text-primary font-medium">PP20251025-009</span>
                   </div>
                   <button class="btn-icon">
-                    <icon name="more-horizontal" class="text-xl"/>
+                    <icon name="ellipsis" class="text-xl"/>
                   </button>
                 </div>
                 <div class="mb-3">
@@ -545,7 +545,7 @@
                 <td class="empty-state-cell text-sm text-secondary">1</td>
                 <td class="py-4 px-4 text-sm text-primary">PP20251028-007</td>
                 <td class="empty-state-cell">
-                  <span class="badge badge-yellow">대기중</span>
+                  <span class="badge badge-yellow">$t:sirsoft-ecommerce.admin.personal_payment.status.pending</span>
                 </td>
                 <td class="py-4 px-4">
                   <dropdown label="송하늘" subLabel="비회원" position="bottom-left" variant="text">
@@ -569,7 +569,7 @@
                 <td class="empty-state-cell text-sm text-secondary">-</td>
                 <td class="empty-state-cell text-sm text-secondary">-</td>
                 <td class="empty-state-cell">
-                  <dropdown trigger="icon" iconName="more-horizontal" position="bottom-right">
+                  <dropdown trigger="icon" iconName="ellipsis" position="bottom-right">
                     <prop name="items">
                       <item label="$t:sirsoft-ecommerce.admin.personal_payment.dropdown.view_detail" value="view"/>
                       <item label="$t:sirsoft-ecommerce.admin.personal_payment.dropdown.edit" value="edit"/>
@@ -584,7 +584,7 @@
                 <td class="empty-state-cell text-sm text-secondary">2</td>
                 <td class="py-4 px-4 text-sm text-primary">PP20251028-006</td>
                 <td class="empty-state-cell">
-                  <span class="badge badge-yellow">대기중</span>
+                  <span class="badge badge-yellow">$t:sirsoft-ecommerce.admin.personal_payment.status.pending</span>
                 </td>
                 <td class="py-4 px-4">
                   <dropdown label="강현우" subLabel="user006" position="bottom-left" variant="text">
@@ -608,7 +608,7 @@
                 <td class="empty-state-cell text-sm text-secondary">-</td>
                 <td class="empty-state-cell text-sm text-secondary">-</td>
                 <td class="empty-state-cell">
-                  <dropdown trigger="icon" iconName="more-horizontal" position="bottom-right">
+                  <dropdown trigger="icon" iconName="ellipsis" position="bottom-right">
                     <prop name="items">
                       <item label="$t:sirsoft-ecommerce.admin.personal_payment.dropdown.view_detail" value="view"/>
                       <item label="$t:sirsoft-ecommerce.admin.personal_payment.dropdown.edit" value="edit"/>
@@ -623,7 +623,7 @@
                 <td class="empty-state-cell text-sm text-secondary">3</td>
                 <td class="py-4 px-4 text-sm text-primary">PP20251028-005</td>
                 <td class="empty-state-cell">
-                  <span class="badge badge-yellow">대기중</span>
+                  <span class="badge badge-yellow">$t:sirsoft-ecommerce.admin.personal_payment.status.pending</span>
                 </td>
                 <td class="py-4 px-4">
                   <dropdown label="정수진" subLabel="user005" position="bottom-left" variant="text">
@@ -653,7 +653,7 @@
                 <td class="empty-state-cell text-sm text-secondary">-</td>
                 <td class="empty-state-cell text-sm text-secondary">-</td>
                 <td class="empty-state-cell">
-                  <dropdown trigger="icon" iconName="more-horizontal" position="bottom-right">
+                  <dropdown trigger="icon" iconName="ellipsis" position="bottom-right">
                     <prop name="items">
                       <item label="$t:sirsoft-ecommerce.admin.personal_payment.dropdown.view_detail" value="view"/>
                       <item label="$t:sirsoft-ecommerce.admin.personal_payment.dropdown.edit" value="edit"/>
@@ -668,7 +668,7 @@
                 <td class="empty-state-cell text-sm text-secondary">4</td>
                 <td class="py-4 px-4 text-sm text-primary">PP20251027-004</td>
                 <td class="empty-state-cell">
-                  <span class="badge badge-green">완료</span>
+                  <span class="badge badge-green">$t:sirsoft-ecommerce.admin.personal_payment.status.completed</span>
                 </td>
                 <td class="py-4 px-4">
                   <dropdown label="최지훈" subLabel="비회원" position="bottom-left" variant="text">
@@ -690,14 +690,14 @@
                   <div>18:20:45</div>
                 </td>
                 <td class="empty-state-cell">
-                  <span class="btn-badge btn-badge-green">네이버페이</span>
+                  <span class="btn-badge btn-badge-green">$t:sirsoft-ecommerce.admin.personal_payment.filter.naver_pay</span>
                 </td>
                 <td class="empty-state-cell text-sm text-secondary">
                   <div>2025-10-27</div>
                   <div>18:25:30</div>
                 </td>
                 <td class="empty-state-cell">
-                  <dropdown trigger="icon" iconName="more-horizontal" position="bottom-right">
+                  <dropdown trigger="icon" iconName="ellipsis" position="bottom-right">
                     <prop name="items">
                       <item label="$t:sirsoft-ecommerce.admin.personal_payment.dropdown.view_detail" value="view"/>
                       <item label="$t:sirsoft-ecommerce.admin.personal_payment.dropdown.edit" value="edit"/>
@@ -712,7 +712,7 @@
                 <td class="empty-state-cell text-sm text-secondary">5</td>
                 <td class="py-4 px-4 text-sm text-primary">PP20251027-003</td>
                 <td class="empty-state-cell">
-                  <span class="badge badge-green">완료</span>
+                  <span class="badge badge-green">$t:sirsoft-ecommerce.admin.personal_payment.status.completed</span>
                 </td>
                 <td class="py-4 px-4">
                   <dropdown label="박민수" subLabel="비회원" position="bottom-left" variant="text">
@@ -740,14 +740,14 @@
                   <div>16:45:20</div>
                 </td>
                 <td class="empty-state-cell">
-                  <span class="btn-badge btn-badge-yellow">카카오페이</span>
+                  <span class="btn-badge btn-badge-yellow">$t:sirsoft-ecommerce.admin.personal_payment.filter.kakao_pay</span>
                 </td>
                 <td class="empty-state-cell text-sm text-secondary">
                   <div>2025-10-27</div>
                   <div>16:50:10</div>
                 </td>
                 <td class="empty-state-cell">
-                  <dropdown trigger="icon" iconName="more-horizontal" position="bottom-right">
+                  <dropdown trigger="icon" iconName="ellipsis" position="bottom-right">
                     <prop name="items">
                       <item label="$t:sirsoft-ecommerce.admin.personal_payment.dropdown.view_detail" value="view"/>
                       <item label="$t:sirsoft-ecommerce.admin.personal_payment.dropdown.edit" value="edit"/>
@@ -762,7 +762,7 @@
                 <td class="empty-state-cell text-sm text-secondary">6</td>
                 <td class="py-4 px-4 text-sm text-primary">PP20251027-001</td>
                 <td class="empty-state-cell">
-                  <span class="badge badge-green">완료</span>
+                  <span class="badge badge-green">$t:sirsoft-ecommerce.admin.personal_payment.status.completed</span>
                 </td>
                 <td class="py-4 px-4">
                   <dropdown label="김철수" subLabel="user001" position="bottom-left" variant="text">
@@ -790,14 +790,14 @@
                   <div>14:32:15</div>
                 </td>
                 <td class="empty-state-cell">
-                  <span class="btn-badge btn-badge-blue">신용카드</span>
+                  <span class="btn-badge btn-badge-blue">$t:sirsoft-ecommerce.admin.personal_payment.filter.card</span>
                 </td>
                 <td class="empty-state-cell text-sm text-secondary">
                   <div>2025-10-27</div>
                   <div>14:45:20</div>
                 </td>
                 <td class="empty-state-cell">
-                  <dropdown trigger="icon" iconName="more-horizontal" position="bottom-right">
+                  <dropdown trigger="icon" iconName="ellipsis" position="bottom-right">
                     <prop name="items">
                       <item label="$t:sirsoft-ecommerce.admin.personal_payment.dropdown.view_detail" value="view"/>
                       <item label="$t:sirsoft-ecommerce.admin.personal_payment.dropdown.edit" value="edit"/>
@@ -812,7 +812,7 @@
                 <td class="empty-state-cell text-sm text-secondary">7</td>
                 <td class="py-4 px-4 text-sm text-primary">PP20251027-002</td>
                 <td class="empty-state-cell">
-                  <span class="badge badge-green">완료</span>
+                  <span class="badge badge-green">$t:sirsoft-ecommerce.admin.personal_payment.status.completed</span>
                 </td>
                 <td class="py-4 px-4">
                   <dropdown label="이영희" subLabel="user002" position="bottom-left" variant="text">
@@ -834,14 +834,14 @@
                   <div>11:20:30</div>
                 </td>
                 <td class="empty-state-cell">
-                  <span class="btn-badge btn-badge-cyan">계좌이체</span>
+                  <span class="btn-badge btn-badge-cyan">$t:sirsoft-ecommerce.admin.personal_payment.filter.bank_transfer</span>
                 </td>
                 <td class="empty-state-cell text-sm text-secondary">
                   <div>2025-10-27</div>
                   <div>11:35:15</div>
                 </td>
                 <td class="empty-state-cell">
-                  <dropdown trigger="icon" iconName="more-horizontal" position="bottom-right">
+                  <dropdown trigger="icon" iconName="ellipsis" position="bottom-right">
                     <prop name="items">
                       <item label="$t:sirsoft-ecommerce.admin.personal_payment.dropdown.view_detail" value="view"/>
                       <item label="$t:sirsoft-ecommerce.admin.personal_payment.dropdown.edit" value="edit"/>
@@ -856,7 +856,7 @@
                 <td class="empty-state-cell text-sm text-secondary">8</td>
                 <td class="py-4 px-4 text-sm text-primary">PP20251025-008</td>
                 <td class="empty-state-cell">
-                  <span class="badge badge-gray">만료</span>
+                  <span class="badge badge-gray">$t:sirsoft-ecommerce.admin.personal_payment.status.expired</span>
                 </td>
                 <td class="py-4 px-4">
                   <dropdown label="윤서연" subLabel="user008" position="bottom-left" variant="text">
@@ -886,7 +886,7 @@
                 <td class="empty-state-cell text-sm text-secondary">-</td>
                 <td class="empty-state-cell text-sm text-secondary">-</td>
                 <td class="empty-state-cell">
-                  <dropdown trigger="icon" iconName="more-horizontal" position="bottom-right">
+                  <dropdown trigger="icon" iconName="ellipsis" position="bottom-right">
                     <prop name="items">
                       <item label="$t:sirsoft-ecommerce.admin.personal_payment.dropdown.view_detail" value="view"/>
                       <item label="$t:sirsoft-ecommerce.admin.personal_payment.dropdown.edit" value="edit"/>
@@ -901,7 +901,7 @@
                 <td class="empty-state-cell text-sm text-secondary">9</td>
                 <td class="py-4 px-4 text-sm text-primary">PP20251025-009</td>
                 <td class="empty-state-cell">
-                  <span class="badge badge-gray">만료</span>
+                  <span class="badge badge-gray">$t:sirsoft-ecommerce.admin.personal_payment.status.expired</span>
                 </td>
                 <td class="py-4 px-4">
                   <dropdown label="임바다" subLabel="비회원" position="bottom-left" variant="text">
@@ -925,7 +925,7 @@
                 <td class="empty-state-cell text-sm text-secondary">-</td>
                 <td class="empty-state-cell text-sm text-secondary">-</td>
                 <td class="empty-state-cell">
-                  <dropdown trigger="icon" iconName="more-horizontal" position="bottom-right">
+                  <dropdown trigger="icon" iconName="ellipsis" position="bottom-right">
                     <prop name="items">
                       <item label="$t:sirsoft-ecommerce.admin.personal_payment.dropdown.view_detail" value="view"/>
                       <item label="$t:sirsoft-ecommerce.admin.personal_payment.dropdown.edit" value="edit"/>
@@ -942,7 +942,7 @@
         <div data-ref="pagination_container" class="flex justify-center mt-6">
           <div class="flex-center gap-1">
             <button class="btn btn-icon" :disabled="true">
-              <icon name="chevrons-left" class="text-base"/>
+              <icon name="angles-left" class="text-base"/>
             </button>
             <button class="btn btn-icon" :disabled="true">
               <icon name="chevron-left" class="text-base"/>
@@ -952,7 +952,7 @@
               <icon name="chevron-right" class="text-base"/>
             </button>
             <button class="btn btn-icon">
-              <icon name="chevrons-right" class="text-base"/>
+              <icon name="angles-right" class="text-base"/>
             </button>
           </div>
         </div>

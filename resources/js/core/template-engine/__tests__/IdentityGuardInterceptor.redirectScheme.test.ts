@@ -5,7 +5,7 @@
  * `window.location.href = …` 가 현재 origin 에서 코드를 돌리는 sink 가 된다
  * (KVE-2026-2348 과 같은 원인 — 이동 sink 무검증).
  *
- * @since engine-v1.72.0
+ * @since engine-v1.73.0
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';

@@ -95,6 +95,13 @@
     "home": {
         "page_title": "홈"
     },
+    "visitor_counter": {
+        "title": "방문자",
+        "today": "오늘",
+        "yesterday": "어제",
+        "max": "최대",
+        "total": "전체"
+    },
     "auth": {
         "login_title": "로그인",
         "register_title": "회원가입",

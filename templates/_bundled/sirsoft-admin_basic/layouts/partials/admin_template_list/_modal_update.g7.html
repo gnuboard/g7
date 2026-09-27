@@ -40,16 +40,16 @@
         <img data-if="{{_global.selectedTemplate?.icon_url}}" src="{{_global.selectedTemplate.icon_url}}" alt="" loading="lazy" decoding="async" class="w-5 h-5 object-contain"/>
         <icon data-if="{{!_global.selectedTemplate?.icon_url}}" name="{{_global.selectedTemplate?.type === 'admin' ? 'cog' : 'palette'}}" class="text-xs text-gray-600 dark:text-gray-400" aria-hidden="true"/>
       </span><span>$t:admin.templates.modals.update_confirm|name={{_global.selectedTemplate.name ?? ''}}</span></p>
-      <div class="mt-3 p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg space-y-2">
-        <div class="flex-center gap-2 text-sm">
+      <div class="kv-list gap-y-2 text-sm mt-3 p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
+        <div class="kv-row">
           <span class="text-gray-500 dark:text-gray-400">$t:admin.templates.modals.field_version</span>
           <span class="text-primary font-medium">$t:admin.templates.modals.update_version_info|from={{_global.selectedTemplate.version ?? ''}}|to={{_global.selectedTemplate.latest_version ?? ''}}</span>
         </div>
-        <div class="flex-center gap-2 text-sm">
+        <div class="kv-row">
           <span class="text-gray-500 dark:text-gray-400">$t:admin.templates.modals.field_vendor</span>
           <span class="text-gray-700 dark:text-gray-300">{{_global.selectedTemplate.vendor ?? ''}}</span>
         </div>
-        <div class="flex-center gap-2 text-sm">
+        <div class="kv-row">
           <span class="text-gray-500 dark:text-gray-400">$t:admin.templates.modals.field_update_source</span>
           <span class="text-gray-700 dark:text-gray-300">{{_global.selectedTemplate.update_source === 'github' ? '$t:admin.templates.modals.update_source_github' : (_global.selectedTemplate.update_source === 'pending' ? '$t:admin.templates.modals.update_source_pending' : '$t:admin.templates.modals.update_source_bundled')}}</span>
         </div>

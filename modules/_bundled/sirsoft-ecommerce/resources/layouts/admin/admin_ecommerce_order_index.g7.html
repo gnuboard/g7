@@ -91,14 +91,14 @@
                 <query/>
               </navigate>
             </on>
-            <icon name="refresh-cw" class="text-xl"/>
+            <icon name="arrows-rotate" class="text-xl"/>
           </button>
         </div>
       </div>
       <div data-ref="mobile_top_actions" class="hidden">
         <responsive on="portable" class="flex gap-2 mb-4"/>
         <button type="button" class="btn btn-outline flex-1">
-          <icon name="settings" class="text-base"/>
+          <icon name="gear" class="text-base"/>
           <span>$t:sirsoft-ecommerce.admin.order.search.edit_search</span>
         </button>
         <button type="button" class="btn btn-outline flex-1">
@@ -146,7 +146,7 @@
             <icon name="search" class="text-base absolute right-3 top-1/2 -translate-y-1/2 icon-muted pointer-events-none"/>
           </div>
           <button type="button" class="btn btn-outline">
-            <icon name="settings" class="text-base"/>
+            <icon name="gear" class="text-base"/>
             <span>$t:sirsoft-ecommerce.admin.order.search.column_select</span>
             <span class="text-secondary">({{_local.selectedColumns}})</span>
           </button>
@@ -200,7 +200,7 @@
               <span class="w-2 h-2 rounded-full border border-current"/>
               <span>$t:sirsoft-ecommerce.admin.order.filter.order_status_options.payment_pending</span>
             </div>
-            <div class="badge-status badge-status-success cursor-pointer ring-1 ring-green-400">
+            <div class="badge-status badge-status-success cursor-pointer ring-1 ring-green-400 dark:ring-green-500">
               <span class="w-2 h-2 rounded-full bg-current"/>
               <span>$t:sirsoft-ecommerce.admin.order.filter.order_status_options.payment_complete</span>
             </div>
@@ -208,19 +208,19 @@
               <span class="w-2 h-2 rounded-full border border-current"/>
               <span>$t:sirsoft-ecommerce.admin.order.filter.order_status_options.shipping_hold</span>
             </div>
-            <div class="badge-status badge-status-success cursor-pointer ring-1 ring-green-400">
+            <div class="badge-status badge-status-success cursor-pointer ring-1 ring-green-400 dark:ring-green-500">
               <span class="w-2 h-2 rounded-full bg-current"/>
               <span>$t:sirsoft-ecommerce.admin.order.filter.order_status_options.preparing</span>
             </div>
-            <div class="badge-status badge-status-success cursor-pointer ring-1 ring-green-400">
+            <div class="badge-status badge-status-success cursor-pointer ring-1 ring-green-400 dark:ring-green-500">
               <span class="w-2 h-2 rounded-full bg-current"/>
               <span>$t:sirsoft-ecommerce.admin.order.filter.order_status_options.shipping_ready</span>
             </div>
-            <div class="badge-status badge-status-success cursor-pointer ring-1 ring-green-400">
+            <div class="badge-status badge-status-success cursor-pointer ring-1 ring-green-400 dark:ring-green-500">
               <span class="w-2 h-2 rounded-full bg-current"/>
               <span>$t:sirsoft-ecommerce.admin.order.filter.order_status_options.shipping</span>
             </div>
-            <div class="badge-status badge-status-success cursor-pointer ring-1 ring-green-400">
+            <div class="badge-status badge-status-success cursor-pointer ring-1 ring-green-400 dark:ring-green-500">
               <span class="w-2 h-2 rounded-full bg-current"/>
               <span>$t:sirsoft-ecommerce.admin.order.filter.order_status_options.delivered</span>
             </div>
@@ -228,7 +228,7 @@
               <span class="w-2 h-2 rounded-full border border-current"/>
               <span>$t:sirsoft-ecommerce.admin.order.filter.order_status_options.cancelled</span>
             </div>
-            <div class="badge-status badge-status-processing cursor-pointer ring-1 ring-blue-400">
+            <div class="badge-status badge-status-processing cursor-pointer ring-1 ring-blue-400 dark:ring-blue-500">
               <span class="w-2 h-2 rounded-full bg-current"/>
               <span>$t:sirsoft-ecommerce.admin.order.filter.order_status_options.confirmed</span>
             </div>
@@ -244,15 +244,15 @@
               <responsive on="portable" class="row-stack mb-3"/>
               <span class="text-tertiary text-xs w-12 pt-1.5 flex-shrink-0">$t:sirsoft-ecommerce.admin.order.filter.claim_refund</span>
               <div class="flex flex-wrap gap-2">
-                <div class="badge-status cursor-pointer bg-orange-50 text-orange-600 dark:text-orange-400 border border-orange-300 ring-1 ring-orange-400">
+                <div class="badge-status cursor-pointer bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 border border-orange-300 dark:border-orange-600 ring-1 ring-orange-400 dark:ring-orange-500">
                   <icon name="clock" class="text-xs"/>
                   <span>$t:sirsoft-ecommerce.admin.order.filter.claim_refund_options.requested</span>
                 </div>
                 <div class="badge-status cursor-pointer bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400">
-                  <icon name="x-circle" class="text-xs"/>
+                  <icon name="circle-xmark" class="text-xs"/>
                   <span>$t:sirsoft-ecommerce.admin.order.filter.claim_refund_options.hold</span>
                 </div>
-                <div class="badge-status badge-status-processing cursor-pointer ring-1 ring-blue-400">
+                <div class="badge-status badge-status-processing cursor-pointer ring-1 ring-blue-400 dark:ring-blue-500">
                   <icon name="check-circle" class="text-xs"/>
                   <span>$t:sirsoft-ecommerce.admin.order.filter.claim_refund_options.approved</span>
                 </div>
@@ -260,7 +260,7 @@
                   <icon name="x" class="text-xs"/>
                   <span>$t:sirsoft-ecommerce.admin.order.filter.claim_refund_options.rejected</span>
                 </div>
-                <div class="badge-status badge-status-success cursor-pointer ring-1 ring-green-400">
+                <div class="badge-status badge-status-success cursor-pointer ring-1 ring-green-400 dark:ring-green-500">
                   <icon name="check-circle" class="text-xs"/>
                   <span>$t:sirsoft-ecommerce.admin.order.filter.claim_refund_options.completed</span>
                 </div>
@@ -270,7 +270,7 @@
               <responsive on="portable" class="row-stack mb-3"/>
               <span class="text-tertiary text-xs w-12 pt-1.5 flex-shrink-0">$t:sirsoft-ecommerce.admin.order.filter.claim_return</span>
               <div class="flex flex-wrap gap-2">
-                <div class="badge-status cursor-pointer bg-orange-50 text-orange-600 dark:text-orange-400 border border-orange-300 ring-1 ring-orange-400">
+                <div class="badge-status cursor-pointer bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 border border-orange-300 dark:border-orange-600 ring-1 ring-orange-400 dark:ring-orange-500">
                   <icon name="clock" class="text-xs"/>
                   <span>$t:sirsoft-ecommerce.admin.order.filter.claim_return_options.requested</span>
                 </div>
@@ -279,26 +279,26 @@
                   <span>$t:sirsoft-ecommerce.admin.order.filter.claim_return_options.payment_pending</span>
                 </div>
                 <div class="badge-status cursor-pointer bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400">
-                  <icon name="x-circle" class="text-xs"/>
+                  <icon name="circle-xmark" class="text-xs"/>
                   <span>$t:sirsoft-ecommerce.admin.order.filter.claim_return_options.hold</span>
                 </div>
-                <div class="badge-status badge-status-processing cursor-pointer ring-1 ring-blue-400">
+                <div class="badge-status badge-status-processing cursor-pointer ring-1 ring-blue-400 dark:ring-blue-500">
                   <icon name="check-circle" class="text-xs"/>
                   <span>$t:sirsoft-ecommerce.admin.order.filter.claim_return_options.approved</span>
                 </div>
-                <div class="badge-status cursor-pointer bg-orange-50 text-orange-600 dark:text-orange-400 border border-orange-300 ring-1 ring-orange-400">
+                <div class="badge-status cursor-pointer bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 border border-orange-300 dark:border-orange-600 ring-1 ring-orange-400 dark:ring-orange-500">
                   <icon name="truck" class="text-xs"/>
                   <span>$t:sirsoft-ecommerce.admin.order.filter.claim_return_options.pickup_in_progress</span>
                 </div>
-                <div class="badge-status cursor-pointer bg-orange-50 text-orange-600 dark:text-orange-400 border border-orange-300 ring-1 ring-orange-400">
-                  <icon name="package" class="text-xs"/>
+                <div class="badge-status cursor-pointer bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 border border-orange-300 dark:border-orange-600 ring-1 ring-orange-400 dark:ring-orange-500">
+                  <icon name="box" class="text-xs"/>
                   <span>$t:sirsoft-ecommerce.admin.order.filter.claim_return_options.pickup_completed</span>
                 </div>
                 <div class="badge-status cursor-pointer bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400">
                   <icon name="x" class="text-xs"/>
                   <span>$t:sirsoft-ecommerce.admin.order.filter.claim_return_options.rejected</span>
                 </div>
-                <div class="badge-status badge-status-success cursor-pointer ring-1 ring-green-400">
+                <div class="badge-status badge-status-success cursor-pointer ring-1 ring-green-400 dark:ring-green-500">
                   <icon name="check-circle" class="text-xs"/>
                   <span>$t:sirsoft-ecommerce.admin.order.filter.claim_return_options.completed</span>
                 </div>
@@ -308,7 +308,7 @@
               <responsive on="portable" class="row-stack"/>
               <span class="text-tertiary text-xs w-12 pt-1.5 flex-shrink-0">$t:sirsoft-ecommerce.admin.order.filter.claim_exchange</span>
               <div class="flex flex-wrap gap-2">
-                <div class="badge-status cursor-pointer bg-orange-50 text-orange-600 dark:text-orange-400 border border-orange-300 ring-1 ring-orange-400">
+                <div class="badge-status cursor-pointer bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 border border-orange-300 dark:border-orange-600 ring-1 ring-orange-400 dark:ring-orange-500">
                   <icon name="clock" class="text-xs"/>
                   <span>$t:sirsoft-ecommerce.admin.order.filter.claim_exchange_options.requested</span>
                 </div>
@@ -317,42 +317,42 @@
                   <span>$t:sirsoft-ecommerce.admin.order.filter.claim_exchange_options.payment_pending</span>
                 </div>
                 <div class="badge-status cursor-pointer bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400">
-                  <icon name="x-circle" class="text-xs"/>
+                  <icon name="circle-xmark" class="text-xs"/>
                   <span>$t:sirsoft-ecommerce.admin.order.filter.claim_exchange_options.hold</span>
                 </div>
-                <div class="badge-status badge-status-processing cursor-pointer ring-1 ring-blue-400">
+                <div class="badge-status badge-status-processing cursor-pointer ring-1 ring-blue-400 dark:ring-blue-500">
                   <icon name="check-circle" class="text-xs"/>
                   <span>$t:sirsoft-ecommerce.admin.order.filter.claim_exchange_options.approved</span>
                 </div>
-                <div class="badge-status cursor-pointer bg-orange-50 text-orange-600 dark:text-orange-400 border border-orange-300 ring-1 ring-orange-400">
+                <div class="badge-status cursor-pointer bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 border border-orange-300 dark:border-orange-600 ring-1 ring-orange-400 dark:ring-orange-500">
                   <icon name="truck" class="text-xs"/>
                   <span>$t:sirsoft-ecommerce.admin.order.filter.claim_exchange_options.pickup_in_progress</span>
                 </div>
-                <div class="badge-status cursor-pointer bg-orange-50 text-orange-600 dark:text-orange-400 border border-orange-300 ring-1 ring-orange-400">
-                  <icon name="package" class="text-xs"/>
+                <div class="badge-status cursor-pointer bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 border border-orange-300 dark:border-orange-600 ring-1 ring-orange-400 dark:ring-orange-500">
+                  <icon name="box" class="text-xs"/>
                   <span>$t:sirsoft-ecommerce.admin.order.filter.claim_exchange_options.pickup_completed</span>
                 </div>
                 <div class="badge-status cursor-pointer bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400">
                   <icon name="x" class="text-xs"/>
                   <span>$t:sirsoft-ecommerce.admin.order.filter.claim_exchange_options.rejected</span>
                 </div>
-                <div class="badge-status cursor-pointer bg-orange-50 text-orange-600 dark:text-orange-400 border border-orange-300 ring-1 ring-orange-400">
+                <div class="badge-status cursor-pointer bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 border border-orange-300 dark:border-orange-600 ring-1 ring-orange-400 dark:ring-orange-500">
                   <icon name="truck" class="text-xs"/>
                   <span>$t:sirsoft-ecommerce.admin.order.filter.claim_exchange_options.reshipping</span>
                 </div>
-                <div class="badge-status cursor-pointer bg-orange-50 text-orange-600 dark:text-orange-400 border border-orange-300 ring-1 ring-orange-400">
+                <div class="badge-status cursor-pointer bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 border border-orange-300 dark:border-orange-600 ring-1 ring-orange-400 dark:ring-orange-500">
                   <icon name="clock" class="text-xs"/>
                   <span>$t:sirsoft-ecommerce.admin.order.filter.claim_exchange_options.reshipping_completed</span>
                 </div>
-                <div class="badge-status badge-status-success cursor-pointer ring-1 ring-green-400">
+                <div class="badge-status badge-status-success cursor-pointer ring-1 ring-green-400 dark:ring-green-500">
                   <icon name="check-circle" class="text-xs"/>
                   <span>$t:sirsoft-ecommerce.admin.order.filter.claim_exchange_options.completed</span>
                 </div>
               </div>
             </div>
           </div>
-          <div class="flex-center gap-1 text-tertiary text-xs cursor-pointer hover:text-secondary">
-            <icon name="settings" class="text-xs"/>
+          <div class="flex-center gap-1 text-tertiary text-xs cursor-pointer hover:text-gray-700 dark:hover:text-gray-300">
+            <icon name="gear" class="text-xs"/>
             <span class="border-b border-current">$t:sirsoft-ecommerce.admin.order.filter.claim_mode</span>
           </div>
         </div>
@@ -509,7 +509,7 @@
       <div data-ref="batch_bar" class="bg-slate-100 dark:bg-slate-800 p-4 rounded-xl mb-6 flex-between flex-wrap gap-4">
         <div class="flex-center flex-wrap gap-4">
           <span class="font-bold text-sm text-secondary">$t:sirsoft-ecommerce.admin.order.batch.selected_count|count=0</span>
-          <select name="batchAction" class="w-40 select-white" placeholder="$t:sirsoft-ecommerce.admin.order.batch.status_change" value="{{_local.batchAction}}">
+          <select name="batchAction" class="w-40" placeholder="$t:sirsoft-ecommerce.admin.order.batch.status_change" value="{{_local.batchAction}}">
             <options>
               <option value="preparing">$t:sirsoft-ecommerce.admin.order.filter.order_status_options.preparing</option>
               <option value="shipping_ready">$t:sirsoft-ecommerce.admin.order.filter.order_status_options.shipping_ready</option>
@@ -523,13 +523,13 @@
           </select>
           <span class="text-gray-300 dark:text-gray-600">|</span>
           <span class="text-sm text-secondary">$t:sirsoft-ecommerce.admin.order.batch.shipping_process:</span>
-          <select name="carrier_id" class="w-32 select-white" placeholder="$t:sirsoft-ecommerce.admin.order.batch.carrier" value="{{_local.carrier_id}}" options="{{active_carriers?.data ?? []}}">
+          <select name="carrier_id" class="w-32" placeholder="$t:sirsoft-ecommerce.admin.order.batch.carrier" value="{{_local.carrier_id}}" options="{{active_carriers?.data ?? []}}">
             <on type="change">
               <!-- 일괄 출고에 쓸 택배사 — 옆 운송장번호와 짝을 이룬다 -->
               <set-state target="_local" carrier_id="{{$event.target.value}}"/>
             </on>
           </select>
-          <input type="text" placeholder="$t:sirsoft-ecommerce.admin.order.batch.tracking_number" class="input input-white w-48" value="{{_local.trackingNumber}}">
+          <input type="text" placeholder="$t:sirsoft-ecommerce.admin.order.batch.tracking_number" class="input w-48" value="{{_local.trackingNumber}}">
             <on type="change">
               <!-- 운송장번호 — 선택한 주문 전체에 같은 번호가 붙으므로 합포장 건에만 쓴다 -->
               <set-state target="_local" trackingNumber="{{$event.target.value}}"/>
@@ -571,7 +571,7 @@
               <on type="click">
                 <open-modal target="modal_excel_download"/>
               </on>
-              <icon name="file-spreadsheet" class="text-base"/>
+              <icon name="file-excel" class="text-base"/>
               <span>$t:sirsoft-ecommerce.admin.order.table.excel_download</span>
             </button>
           </div>
@@ -589,7 +589,7 @@
                 </div>
                 <div class="text-xs text-tertiary mb-4">2024-10-10 18:25:00</div>
                 <div class="flex gap-3 mb-4">
-                  <div class="w-16 h-16 bg-gray-800 rounded flex-shrink-0"/>
+                  <div class="w-16 h-16 bg-gray-800 dark:bg-gray-700 rounded flex-shrink-0"/>
                   <div class="flex-1">
                     <div class="text-sm font-bold text-primary mb-1">청소 스토퍼</div>
                     <div class="text-xs text-tertiary mb-2">0.9kg / 0.0065m³</div>
@@ -652,7 +652,7 @@
                 </td>
                 <td class="py-4 px-4">
                   <div class="flex-center gap-3">
-                    <div class="w-12 h-12 bg-gray-800 rounded overflow-hidden flex-shrink-0"/>
+                    <div class="w-12 h-12 bg-gray-800 dark:bg-gray-700 rounded overflow-hidden flex-shrink-0"/>
                     <div>
                       <div class="text-sm font-bold text-primary">청소 스토퍼</div>
                       <div class="text-xs text-tertiary">0.9kg / 0.0065m³</div>
@@ -667,19 +667,19 @@
                 <td class="empty-state-cell text-sm text-secondary">🇰🇷 대한민국</td>
                 <td class="empty-state-cell text-sm text-secondary">택배</td>
                 <td class="empty-state-cell">
-                  <button type="button" class="text-tertiary hover:text-secondary">•••</button>
+                  <button type="button" class="text-tertiary hover:text-gray-700 dark:hover:text-gray-300">•••</button>
                 </td>
               </tr>
             </tbody>
           </table>
         </div>
         <div data-ref="pagination" class="flex-center justify-center gap-2 mt-8">
-          <button type="button" class="flex-center w-8 h-8 justify-center text-tertiary hover:text-secondary">«</button>
-          <button type="button" class="flex-center w-8 h-8 justify-center text-tertiary hover:text-secondary">‹</button>
+          <button type="button" class="flex-center w-8 h-8 justify-center text-tertiary hover:text-gray-700 dark:hover:text-gray-300">«</button>
+          <button type="button" class="flex-center w-8 h-8 justify-center text-tertiary hover:text-gray-700 dark:hover:text-gray-300">‹</button>
           <button type="button" class="flex-center w-8 h-8 justify-center border border-gray-300 dark:border-gray-600 rounded text-primary font-bold">1</button>
-          <button type="button" class="flex-center w-8 h-8 justify-center text-tertiary hover:text-secondary">2</button>
-          <button type="button" class="flex-center w-8 h-8 justify-center text-tertiary hover:text-secondary">›</button>
-          <button type="button" class="flex-center w-8 h-8 justify-center text-tertiary hover:text-secondary">»</button>
+          <button type="button" class="flex-center w-8 h-8 justify-center text-tertiary hover:text-gray-700 dark:hover:text-gray-300">2</button>
+          <button type="button" class="flex-center w-8 h-8 justify-center text-tertiary hover:text-gray-700 dark:hover:text-gray-300">›</button>
+          <button type="button" class="flex-center w-8 h-8 justify-center text-tertiary hover:text-gray-700 dark:hover:text-gray-300">»</button>
         </div>
       </div>
     </div>

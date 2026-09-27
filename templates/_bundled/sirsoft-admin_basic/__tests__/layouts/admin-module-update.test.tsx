@@ -171,6 +171,8 @@ const translations = {
 // ==============================
 
 describe('모듈 업데이트 - check-updates auth_required 검증', () => {
+  // @scenario kind=module, area=auth
+  // @effects check_updates_call_requires_auth
   it('check-updates apiCall에 auth_required: true가 설정되어 있다', async () => {
     const fs = await import('fs');
     const path = await import('path');
@@ -281,6 +283,8 @@ describe('모듈 업데이트 - 상태 배지', () => {
     if (testUtils) testUtils.cleanup();
   });
 
+  // @scenario kind=module, area=status_badge
+  // @effects update_status_badge_matches_row_state
   it('updating 상태일 때 보라색 배지가 표시된다', async () => {
     testUtils = createLayoutTest(
       createBadgeLayout({ status: 'updating', update_available: true }),
@@ -295,6 +299,8 @@ describe('모듈 업데이트 - 상태 배지', () => {
     expect(badge.className).toContain('dark:bg-purple-900');
   });
 
+  // @scenario kind=module, area=status_badge
+  // @effects update_status_badge_matches_row_state
   it('update_available일 때 (updating 아닌) 황색 배지가 표시된다', async () => {
     testUtils = createLayoutTest(
       createBadgeLayout({ status: 'active', update_available: true }),
@@ -308,6 +314,8 @@ describe('모듈 업데이트 - 상태 배지', () => {
     expect(badge.className).toContain('bg-amber-100');
   });
 
+  // @scenario kind=module, area=status_badge
+  // @effects update_status_badge_matches_row_state
   it('update_available=false일 때 업데이트 배지가 표시되지 않는다', async () => {
     testUtils = createLayoutTest(
       createBadgeLayout({ status: 'active', update_available: false }),
@@ -319,6 +327,8 @@ describe('모듈 업데이트 - 상태 배지', () => {
     expect(screen.queryByText('업데이트 중')).toBeNull();
   });
 
+  // @scenario kind=module, area=status_badge
+  // @effects update_status_badge_matches_row_state
   it('uninstalled 상태에서는 update_available이어도 배지가 표시되지 않는다', async () => {
     testUtils = createLayoutTest(
       createBadgeLayout({ status: 'uninstalled', update_available: true }),
@@ -329,6 +339,8 @@ describe('모듈 업데이트 - 상태 배지', () => {
     expect(screen.queryByText('업데이트 필요')).toBeNull();
   });
 
+  // @scenario kind=module, area=status_badge
+  // @effects update_status_badge_matches_row_state
   it('update_available이고 latest_version이 있으면 버전 정보가 표시된다', async () => {
     testUtils = createLayoutTest(
       createBadgeLayout({ status: 'active', update_available: true, latest_version: '2.0.0' }),
@@ -339,6 +351,8 @@ describe('모듈 업데이트 - 상태 배지', () => {
     expect(screen.getByText('(v2.0.0 사용 가능)')).toBeTruthy();
   });
 
+  // @scenario kind=module, area=status_badge
+  // @effects update_status_badge_matches_row_state
   it('update_available이지만 latest_version이 null이면 버전 정보가 표시되지 않는다', async () => {
     testUtils = createLayoutTest(
       createBadgeLayout({ status: 'active', update_available: true, latest_version: null }),
@@ -413,6 +427,8 @@ describe('모듈 업데이트 - 업데이트 확인 버튼', () => {
     if (testUtils) testUtils.cleanup();
   });
 
+  // @scenario kind=module, area=check_button
+  // @effects check_updates_button_calls_and_reloads
   it('업데이트 확인 버튼이 렌더링된다', async () => {
     testUtils = createLayoutTest(checkUpdatesButtonLayout, {
       translations,
@@ -424,6 +440,8 @@ describe('모듈 업데이트 - 업데이트 확인 버튼', () => {
     expect(screen.getByText('업데이트 확인')).toBeTruthy();
   });
 
+  // @scenario kind=module, area=check_button
+  // @effects check_updates_button_calls_and_reloads
   it('로딩 중이 아닐 때 refresh 아이콘이 표시된다', async () => {
     testUtils = createLayoutTest(checkUpdatesButtonLayout, {
       translations,
@@ -436,6 +454,8 @@ describe('모듈 업데이트 - 업데이트 확인 버튼', () => {
     expect(screen.queryByTestId('icon-spinner')).toBeNull();
   });
 
+  // @scenario kind=module, area=check_button
+  // @effects check_updates_button_calls_and_reloads
   it('isCheckingUpdates=true일 때 spinner 아이콘이 표시되고 버튼이 disabled된다', async () => {
     const loadingLayout = {
       ...checkUpdatesButtonLayout,
@@ -511,6 +531,8 @@ describe('모듈 업데이트 - 행별 업데이트 버튼', () => {
     if (testUtils) testUtils.cleanup();
   });
 
+  // @scenario kind=module, area=row_button
+  // @effects row_update_button_shows_only_when_available
   it('update_available && active 상태에서 업데이트 버튼이 표시된다', async () => {
     testUtils = createLayoutTest(
       createRowButtonLayout({ status: 'active', update_available: true }),
@@ -523,6 +545,8 @@ describe('모듈 업데이트 - 행별 업데이트 버튼', () => {
     expect(screen.getByTestId('icon-arrow-up-circle')).toBeTruthy();
   });
 
+  // @scenario kind=module, area=row_button
+  // @effects row_update_button_shows_only_when_available
   it('update_available=false일 때 업데이트 버튼이 표시되지 않는다', async () => {
     testUtils = createLayoutTest(
       createRowButtonLayout({ status: 'active', update_available: false }),
@@ -533,6 +557,8 @@ describe('모듈 업데이트 - 행별 업데이트 버튼', () => {
     expect(screen.queryByTestId('row-update-btn')).toBeNull();
   });
 
+  // @scenario kind=module, area=row_button
+  // @effects row_update_button_shows_only_when_available
   it('updating 상태에서는 업데이트 버튼이 표시되지 않는다', async () => {
     testUtils = createLayoutTest(
       createRowButtonLayout({ status: 'updating', update_available: true }),
@@ -543,6 +569,8 @@ describe('모듈 업데이트 - 행별 업데이트 버튼', () => {
     expect(screen.queryByTestId('row-update-btn')).toBeNull();
   });
 
+  // @scenario kind=module, area=row_button
+  // @effects row_update_button_shows_only_when_available
   it('uninstalled 상태에서는 업데이트 버튼이 표시되지 않는다', async () => {
     testUtils = createLayoutTest(
       createRowButtonLayout({ status: 'uninstalled', update_available: true }),
@@ -738,6 +766,8 @@ describe('모듈 업데이트 - 업데이트 모달', () => {
   });
 
   describe('레이아웃 구조 검증', () => {
+    // @scenario kind=module, area=layout_structure
+    // @effects update_modal_layout_structure_is_declared
     it('레이아웃 정보가 올바르게 로드된다', () => {
       testUtils = createLayoutTest(updateModalLayout, {
         translations,
@@ -750,6 +780,8 @@ describe('모듈 업데이트 - 업데이트 모달', () => {
       expect(info.version).toBe('1.0.0');
     });
 
+    // @scenario kind=module, area=layout_structure
+    // @effects update_modal_layout_structure_is_declared
     it('초기 전역 상태가 올바르게 설정된다', () => {
       testUtils = createLayoutTest(updateModalLayout, {
         translations,
@@ -769,6 +801,8 @@ describe('모듈 업데이트 - 업데이트 모달', () => {
       expect(state._global.isModuleUpdating).toBe(false);
     });
 
+    // @scenario kind=module, area=layout_structure
+    // @effects update_modal_layout_structure_is_declared
     it('모달 크기가 sm 으로 설정되어 있다', () => {
       const modal = updateModalLayout.modals[0];
       expect(modal.props.size).toBe('sm');
@@ -776,6 +810,8 @@ describe('모듈 업데이트 - 업데이트 모달', () => {
   });
 
   describe('모달 열기/닫기', () => {
+    // @scenario kind=module, area=modal_open_close
+    // @effects update_modal_opens_and_closes
     it('업데이트 모달을 열고 닫을 수 있다', async () => {
       testUtils = createLayoutTest(updateModalLayout, {
         translations,
@@ -794,11 +830,15 @@ describe('모듈 업데이트 - 업데이트 모달', () => {
   });
 
   describe('모달 콘텐츠 구조 검증', () => {
+    // @scenario kind=module, area=modal_content
+    // @effects update_modal_content_lists_versions
     it('모달 타이틀이 업데이트 확인으로 설정되어 있다', () => {
       const modal = updateModalLayout.modals[0];
       expect(modal.props.title).toBe('$t:admin.modules.modals.update_title');
     });
 
+    // @scenario kind=module, area=modal_content
+    // @effects update_modal_content_lists_versions
     it('모달에 업데이트 확인 메시지가 포함되어 있다', () => {
       const modal = updateModalLayout.modals[0];
       // children[0] = py-2 Div > children[0] = P (confirm message)
@@ -807,6 +847,8 @@ describe('모듈 업데이트 - 업데이트 모달', () => {
       expect(confirmP.text).toContain('_global.selectedModule.name');
     });
 
+    // @scenario kind=module, area=modal_content
+    // @effects update_modal_content_lists_versions
     it('모달에 버전 정보가 포함되어 있다 (from → to)', () => {
       const modal = updateModalLayout.modals[0];
       // children[0] > children[1] = version info Div > children[0] = version row Div > children[1] = Span
@@ -819,6 +861,8 @@ describe('모듈 업데이트 - 업데이트 모달', () => {
       expect(versionValue.text).toContain('_global.selectedModule.latest_version');
     });
 
+    // @scenario kind=module, area=modal_content
+    // @effects update_modal_content_lists_versions
     it('모달에 update_source 표시가 포함되어 있다', () => {
       const modal = updateModalLayout.modals[0];
       // children[0] > children[1] = info Div > children[1] = vendor row
@@ -829,6 +873,8 @@ describe('모듈 업데이트 - 업데이트 모달', () => {
       expect(vendorValue.text).toContain('update_source_github');
     });
 
+    // @scenario kind=module, area=modal_content
+    // @effects update_modal_content_lists_versions
     it('모달에 changelog 링크가 조건부로 포함되어 있다', () => {
       const modal = updateModalLayout.modals[0];
       // children[0] > children[2] = changelog Div (if 조건)
@@ -841,6 +887,8 @@ describe('모듈 업데이트 - 업데이트 모달', () => {
       expect(linkA.props.href).toContain('_global.selectedModule.github_changelog_url');
     });
 
+    // @scenario kind=module, area=modal_content
+    // @effects update_modal_content_lists_versions
     it('changelog URL이 없으면 조건에 의해 렌더링되지 않는다', () => {
       // github_changelog_url이 null이면 if 조건이 falsy
       const noChangelogState = { ...updateModalLayout.initGlobal.selectedModule, github_changelog_url: null };
@@ -854,6 +902,8 @@ describe('모듈 업데이트 - 업데이트 모달', () => {
   });
 
   describe('버튼 구조 및 상태 검증', () => {
+    // @scenario kind=module, area=button_state
+    // @effects update_modal_buttons_reflect_progress
     it('취소/확인 버튼이 모달에 정의되어 있다', () => {
       const modal = updateModalLayout.modals[0];
       // children[1] = 버튼 영역 Div > children = [cancel, confirm]
@@ -873,6 +923,8 @@ describe('모듈 업데이트 - 업데이트 모달', () => {
       expect(confirmBtn.props.disabled).toBe('{{_global.isModuleUpdating}}');
     });
 
+    // @scenario kind=module, area=button_state
+    // @effects update_modal_buttons_reflect_progress
     it('확인 버튼에 스피너 조건부 렌더링이 설정되어 있다', () => {
       const modal = updateModalLayout.modals[0];
       const confirmBtn = modal.children[1].children[1];
@@ -890,6 +942,8 @@ describe('모듈 업데이트 - 업데이트 모달', () => {
       expect(textSpan.text).toContain('$t:admin.modules.actions.update');
     });
 
+    // @scenario kind=module, area=button_state
+    // @effects update_modal_buttons_reflect_progress
     it('isModuleUpdating 상태가 올바르게 변경될 수 있다', async () => {
       testUtils = createLayoutTest(updateModalLayout, {
         translations,

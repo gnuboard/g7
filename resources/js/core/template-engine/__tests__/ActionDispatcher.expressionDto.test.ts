@@ -5,7 +5,7 @@
  * → Window → localStorage.auth_token. 이벤트·오류·콜백 인자는 이제 plain 사본으로만 실리고,
  * 핸들러(신뢰 코드)는 종전대로 `context.event` 로 원본을 받는다.
  *
- * @since engine-v1.72.0
+ * @since engine-v1.73.0
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
@@ -22,7 +22,7 @@ vi.mock('../../api/ApiClient', () => ({
     getApiClient: vi.fn(() => ({ getToken: vi.fn() })),
 }));
 
-describe('ActionDispatcher — 표현식 컨텍스트 DTO (engine-v1.72.0)', () => {
+describe('ActionDispatcher — 표현식 컨텍스트 DTO (engine-v1.73.0)', () => {
     let dispatcher: ActionDispatcher;
 
     beforeEach(() => {

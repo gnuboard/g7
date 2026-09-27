@@ -264,4 +264,15 @@ return [
         'body' => '本文',
         'is_default' => 'デフォルト値',
     ],
+    'analytics' => [
+        'settings_updated' => '訪問者統計設定の変更',
+        'privacy_mode_changed' => '訪問者統計プライバシーモード変更 (:mode)',
+        'data_purged' => '訪問者統計データ全体削除',
+        'anonymized' => '訪問者統計遡及匿名化',
+        'subject_exported' => '情報主体訪問記録エクスポート (:subject)',
+        'subject_deleted' => '情報主体訪問記録削除 (:subject)',
+        'opt_out_changed' => '管理者収集除外設定変更',
+        'archive_requested' => '訪問者統計手動集計実行 (:run_type)',
+        'extension_purged' => '拡張統計データ整理 (:identifier)',
+    ],
 ];

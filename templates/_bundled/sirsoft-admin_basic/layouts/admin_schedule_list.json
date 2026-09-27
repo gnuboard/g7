@@ -240,7 +240,7 @@
                                         {
                                             "id": "queue",
                                             "label": "$t:admin.schedules.tabs.queue",
-                                            "iconName": "bar-chart-2",
+                                            "iconName": "chart-column",
                                             "disabled": true
                                         }
                                     ]

@@ -11,7 +11,7 @@
  * 교차 출처 응답의 401·428 은 따르지 않는다(토큰 첨부와 같은 출처 판정). 확장이 직접 fetch 할 때 쓰는
  * `isSameOriginUrl` 은 apiCall 과 같은 판정을 노출한다.
  *
- * @since engine-v1.72.0
+ * @since engine-v1.73.0
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
@@ -65,7 +65,7 @@ const identity428Body = {
   },
 };
 
-describe('ApiClient — 교차 출처 응답은 인증 흐름을 조종하지 못한다 (engine-v1.72.0)', () => {
+describe('ApiClient — 교차 출처 응답은 인증 흐름을 조종하지 못한다 (engine-v1.73.0)', () => {
   beforeEach(() => {
     localStorage.setItem('auth_token', 'ADMIN-TOKEN');
   });

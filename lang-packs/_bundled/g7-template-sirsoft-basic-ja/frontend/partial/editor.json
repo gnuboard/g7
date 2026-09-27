@@ -660,6 +660,23 @@
       "label": "ドロップダウン並べ替え",
       "left": "左",
       "right": "右"
+    },
+    "vc_today": {
+      "label": "今日"
+    },
+    "vc_yesterday": {
+      "label": "昨日"
+    },
+    "vc_max": {
+      "label": "最大"
+    },
+    "vc_total": {
+      "label": "すべて"
+    },
+    "vc_layout": {
+      "label": "バッチ",
+      "row": "横",
+      "column": "縦"
     }
   },
   "component": {
@@ -713,7 +730,8 @@
     "header": "サイトヘッダー",
     "footer": "サイトフッター",
     "theme_toggle": "テーマ切り替え",
-    "notification_center": "通知センター"
+    "notification_center": "通知センター",
+    "visitor_counter": "訪問者カウンター"
   },
   "action": {
     "go_to_page": {
@@ -1086,7 +1104,11 @@
     "footer_social_links": "ソーシャルリンク",
     "footer_link_groups": "リンクグループ",
     "notification_items": "通知リスト",
-    "notification_unread_count": "未読通知数"
+    "notification_unread_count": "未読通知数",
+    "visitor_today": "本日の訪問",
+    "visitor_yesterday": "昨日の訪問",
+    "visitor_max": "最大訪問",
+    "visitor_total": "全訪問"
   },
   "state_label": {
     "current_user": "現在のユーザー",
@@ -1159,6 +1181,7 @@
     "userProfile": "ユーザープロフィール",
     "user_notification_ws": "通知 (リアルタイム)",
     "wishlist": "ウィッシュリスト",
-    "scrap": "スクラップ"
+    "scrap": "スクラップ",
+    "visitor_summary": "訪問者サマリー"
   }
 }

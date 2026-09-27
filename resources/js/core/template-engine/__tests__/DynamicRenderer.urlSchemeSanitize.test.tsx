@@ -7,7 +7,7 @@
  * 에서 온다. 검증 없이 렌더하면 `?redirect_url=javascript:…` 링크 클릭 한 번으로 현재 origin 에서
  * 코드가 돈다. origin 은 제한하지 않는다 — 정상 외부 링크·mailto·tel 은 그대로여야 한다.
  *
- * @since engine-v1.72.0
+ * @since engine-v1.73.0
  */
 
 import React from 'react';

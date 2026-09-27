@@ -81,6 +81,7 @@
         "ProductCard",
         "TemplateCard",
         "BarChart",
+        "LineChart",
         "DonutChart",
         "ImageGallery",
         "PermissionTree",
@@ -873,6 +874,29 @@
             {
               "label": "$t:layout_editor.palette.bar_chart.label",
               "data": [30, 70]
+            }
+          ]
+        }
+      }
+    },
+    "LineChart": {
+      "label": "$t:layout_editor.palette.line_chart.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "composite",
+        "name": "LineChart",
+        "props": {
+          "labels": [
+            "$t:layout_editor.palette.line_chart.default_label1",
+            "$t:layout_editor.palette.line_chart.default_label2",
+            "$t:layout_editor.palette.line_chart.default_label3"
+          ],
+          "datasets": [
+            {
+              "label": "$t:layout_editor.palette.line_chart.label",
+              "data": [30, 70, 50],
+              "color": "#7C3AED",
+              "fill": true
             }
           ]
         }

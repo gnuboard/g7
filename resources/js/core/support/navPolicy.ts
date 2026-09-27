@@ -22,7 +22,7 @@
  * origin 판정 전 정규화는 `normalizeScriptSrcForOriginCheck` 를 그대로 재사용한다.
  * 브라우저 URL 파서와 다른 정규화를 따로 두면 그 차집합이 우회로가 된다(KVE-2026-1915 B-2).
  *
- * @since engine-v1.72.0 (KVE-2026-2348)
+ * @since engine-v1.73.0 (KVE-2026-2348)
  */
 
 import { normalizeScriptSrcForOriginCheck } from './scriptSrcPolicy';
@@ -139,7 +139,7 @@ export function isScriptScheme(target: unknown): boolean {
  *
  * @param target 요청 대상 문자열 (절대·상대 모두)
  * @returns 같은 출처면 true (문자열이 아니거나 파싱할 수 없으면 false)
- * @since engine-v1.72.0
+ * @since engine-v1.73.0
  */
 export function isSameOriginRequestUrl(target: unknown): boolean {
     if (typeof target !== 'string') {

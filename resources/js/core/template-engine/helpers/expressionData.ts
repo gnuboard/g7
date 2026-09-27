@@ -18,7 +18,7 @@
  *
  * 필드 목록은 번들 레이아웃 전수 집계(2026-09-27, 2836 파일)에서 쓰이는 `$event.*` 경로를 모두 포함한다.
  *
- * @since engine-v1.72.0
+ * @since engine-v1.73.0
  */
 
 import { isUnsafeHostValue, isExpressionSafeFunction } from '../SafeExpressionEvaluator';
