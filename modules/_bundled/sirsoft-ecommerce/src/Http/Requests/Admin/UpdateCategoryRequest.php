@@ -7,6 +7,7 @@ use App\Rules\LocaleRequiredTranslatable;
 use App\Rules\TranslatableField;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Modules\Sirsoft\Ecommerce\Http\Requests\Concerns\ValidatesTempKey;
 use Modules\Sirsoft\Ecommerce\Models\Category;
 use Modules\Sirsoft\Ecommerce\Rules\NotCircularCategoryParent;
 
@@ -15,6 +16,8 @@ use Modules\Sirsoft\Ecommerce\Rules\NotCircularCategoryParent;
  */
 class UpdateCategoryRequest extends FormRequest
 {
+    use ValidatesTempKey;
+
     /**
      * 사용자가 이 요청을 수행할 권한이 있는지 확인
      *
@@ -31,6 +34,8 @@ class UpdateCategoryRequest extends FormRequest
      * 검증 전 데이터 전처리
      *
      * 프론트엔드에서 문자열 "true"/"false"로 전송되는 boolean 값을 변환합니다.
+     *
+     * @return void
      */
     protected function prepareForValidation(): void
     {
@@ -70,7 +75,7 @@ class UpdateCategoryRequest extends FormRequest
             'is_active' => 'boolean',
             'meta_title' => 'nullable|string|max:200',
             'meta_description' => 'nullable|string',
-            'temp_key' => 'nullable|string|max:64',
+            'temp_key' => $this->tempKeyRules(),
         ];
 
         // 훅을 통한 동적 규칙 확장

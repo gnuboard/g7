@@ -161,7 +161,7 @@ HTTP/1.1 200
 | seo_meta.title | body | string | 아니오 | max 255 | SEO 메타 제목 (검색엔진/소셜 공유 표시 제목) |
 | seo_meta.description | body | string | 아니오 | max 500 | SEO 메타 설명 (검색엔진/소셜 공유 표시 요약) |
 | seo_meta.keywords | body | string | 아니오 | max 500 | SEO 메타 키워드 (검색엔진 노출 키워드, 쉼표 구분) |
-| temp_key | body | string | 아니오 | max 64 | 저장 전 첨부 업로드 시 발급받은 임시 키. 생성된 페이지에 임시 첨부를 귀속시키는 데 사용합니다 |
+| temp_key | body | string | 아니오 | UUID | 저장 전 첨부 업로드 시 발급받은 임시 키. 생성된 페이지에 임시 첨부를 귀속시키는 데 사용합니다 |
 
 **요청 예시**
 
@@ -186,7 +186,7 @@ Content-Type: application/json
     "seo_meta.title": "예시 제목",
     "seo_meta.description": "예시 내용입니다.",
     "seo_meta.keywords": "예시값",
-    "temp_key": "예시값"
+    "temp_key": "5f0c3a3e-1b2c-4d5e-8f90-a1b2c3d4e5f6"
 }
 ```
 
@@ -605,7 +605,7 @@ HTTP/1.1 200
 | seo_meta.title | body | string | 아니오 | max 255 | SEO 메타 제목 (검색엔진/소셜 공유 표시 제목) |
 | seo_meta.description | body | string | 아니오 | max 500 | SEO 메타 설명 (검색엔진/소셜 공유 표시 요약) |
 | seo_meta.keywords | body | string | 아니오 | max 500 | SEO 메타 키워드 (검색엔진 노출 키워드, 쉼표 구분) |
-| temp_key | body | string | 아니오 | max 64 | 저장 전 첨부 업로드 시 발급받은 임시 키. 새로 업로드한 첨부를 이 페이지에 귀속시키는 데 사용합니다 |
+| temp_key | body | string | 아니오 | UUID | 저장 전 첨부 업로드 시 발급받은 임시 키. 새로 업로드한 첨부를 이 페이지에 귀속시키는 데 사용합니다 |
 
 **요청 예시**
 
@@ -630,7 +630,7 @@ Content-Type: application/json
     "seo_meta.title": "예시 제목",
     "seo_meta.description": "예시 내용입니다.",
     "seo_meta.keywords": "예시값",
-    "temp_key": "예시값"
+    "temp_key": "5f0c3a3e-1b2c-4d5e-8f90-a1b2c3d4e5f6"
 }
 ```
 

@@ -250,7 +250,7 @@ HTTP/1.1 200
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
 | name | body | array | 예 | — | 대상의 이름/명칭 |
-| product_code | body | string | 예 | max 50 | 상품코드 (상품 고유 관리 식별자, 상품 간 중복 불가) |
+| product_code | body | string | 예 | max 50, 영문·숫자·`-`·`_` 만 | 상품코드 (상품 고유 관리 식별자, 상품 간 중복 불가). 이미지 저장 폴더 이름에 쓰이므로 그 밖의 문자(`/`·`\`·`.`·`%`·공백 등)는 422 |
 | sales_product_code | body | string | 아니오 | max 50 | 판매자 상품코드 (판매자가 직접 입력하는 관리용 코드) |
 | sku | body | string | 아니오 | max 100 | 재고관리코드(SKU) |
 | category_ids | body | array | 예 | min 1, max 5 | category 식별자 배열 |
@@ -269,7 +269,7 @@ HTTP/1.1 200
 | description | body | array | 아니오 | — | 설명 |
 | description_mode | body | string | 아니오 | `text`, `html` | 상세 설명 편집 모드 (text 일반 텍스트 / html HTML 에디터) |
 | thumbnail_hash | body | string | 아니오 | max 64 | 대표 이미지로 지정할 이미지 해시 (업로드된 이미지 중 썸네일 선택) |
-| image_temp_key | body | string | 아니오 | max 64 | 임시 업로드 세션 키 (사전 업로드한 이미지를 이 상품에 연결) |
+| image_temp_key | body | string | 아니오 | UUID | 임시 업로드 세션 키 (사전 업로드한 이미지를 이 상품에 연결) |
 | images | body | array | 아니오 | max 20 | 상품 이미지 목록 (각 항목: id/hash/url/alt_text/is_thumbnail/sort_order) |
 | meta_title | body | array | 아니오 | — | SEO 메타 제목 (검색엔진/소셜 공유 표시 제목) |
 | meta_description | body | array | 아니오 | — | SEO 메타 설명 (검색엔진/소셜 공유 표시 요약) |
@@ -328,7 +328,7 @@ Content-Type: application/json
     ],
     "description_mode": "text",
     "thumbnail_hash": "예시값",
-    "image_temp_key": "예시값",
+    "image_temp_key": "5f0c3a3e-1b2c-4d5e-8f90-a1b2c3d4e5f6",
     "images": [
         "예시값"
     ],
@@ -921,7 +921,7 @@ HTTP/1.1 200
 | --- | --- | --- | --- | --- | --- |
 | code | path | string | 예 | — | 대상 리소스의 코드 |
 | name | body | array | 아니오 | — | 대상의 이름/명칭 |
-| product_code | body | string | 예 | max 50 | 상품코드 (상품 고유 관리 식별자, 상품 간 중복 불가) |
+| product_code | body | string | 예 | max 50, 코드를 바꿀 때 영문·숫자·`-`·`_` 만 | 상품코드 (상품 고유 관리 식별자, 상품 간 중복 불가). 이미지 저장 폴더 이름에 쓰이므로 다른 값으로 바꿀 때 그 밖의 문자(`/`·`\`·`.`·`%`·공백 등)는 422 — 현재 코드를 그대로 보내면 이 규칙을 적용하지 않음(규칙 이전 코드의 상품도 수정 가능) |
 | sales_product_code | body | string | 아니오 | max 50 | 판매자 상품코드 (판매자가 직접 입력하는 관리용 코드) |
 | sku | body | string | 아니오 | max 100 | 재고관리코드(SKU) |
 | category_ids | body | array | 아니오 | min 1, max 5 | category 식별자 배열 |
@@ -940,7 +940,7 @@ HTTP/1.1 200
 | description | body | array | 아니오 | — | 설명 |
 | description_mode | body | string | 아니오 | `text`, `html` | 상세 설명 편집 모드 (text 일반 텍스트 / html HTML 에디터) |
 | thumbnail_hash | body | string | 아니오 | max 64 | 대표 이미지로 지정할 이미지 해시 (업로드된 이미지 중 썸네일 선택) |
-| image_temp_key | body | string | 아니오 | max 64 | 임시 업로드 세션 키 (사전 업로드한 이미지를 이 상품에 연결) |
+| image_temp_key | body | string | 아니오 | UUID | 임시 업로드 세션 키 (사전 업로드한 이미지를 이 상품에 연결) |
 | images | body | array | 아니오 | max 20 | 상품 이미지 목록 (각 항목: id/hash/url/alt_text/is_thumbnail/sort_order) |
 | meta_title | body | array | 아니오 | — | SEO 메타 제목 (검색엔진/소셜 공유 표시 제목) |
 | meta_description | body | array | 아니오 | — | SEO 메타 설명 (검색엔진/소셜 공유 표시 요약) |
@@ -999,7 +999,7 @@ Content-Type: application/json
     ],
     "description_mode": "text",
     "thumbnail_hash": "예시값",
-    "image_temp_key": "예시값",
+    "image_temp_key": "5f0c3a3e-1b2c-4d5e-8f90-a1b2c3d4e5f6",
     "images": [
         "예시값"
     ],
@@ -1244,7 +1244,7 @@ HTTP/1.1 200
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
 | file | body | file | 예 | max 10240 | 업로드 파일 |
-| temp_key | body | string | 아니오 | max 64 | 임시 업로드 세션 키 (같은 상품의 여러 이미지를 한 세션으로 묶음, 생략 시 서버가 UUID 자동 발급) |
+| temp_key | body | string | 아니오 | UUID | 임시 업로드 세션 키 (같은 상품의 여러 이미지를 한 세션으로 묶음, 생략 시 서버가 UUID 자동 발급) |
 | collection | body | string | 아니오 | — | 첨부 컬렉션 그룹명 (첨부를 용도별로 묶는 키, 미지정 시 default) |
 | alt_text | body | array | 아니오 | — | 이미지 대체 텍스트 (접근성/이미지 미표시 시 대체 문구) |
 | alt_text.ko | body | string | 아니오 | max 255 | 이미지 대체 텍스트 (접근성/이미지 미표시 시 대체 문구) — `ko` 로케일 값 |
@@ -1269,7 +1269,7 @@ Content-Type: application/octet-stream
 ------G7ExampleBoundary
 Content-Disposition: form-data; name="temp_key"
 
-예시값
+5f0c3a3e-1b2c-4d5e-8f90-a1b2c3d4e5f6
 ------G7ExampleBoundary
 Content-Disposition: form-data; name="collection"
 
@@ -1619,7 +1619,7 @@ HTTP/1.1 200
 | --- | --- | --- | --- | --- | --- |
 | productId | path | string | 예 | — | 대상 product의 식별자 |
 | file | body | file | 예 | max 10240 | 업로드 파일 |
-| temp_key | body | string | 아니오 | max 64 | 임시 업로드 세션 키 (같은 상품의 여러 이미지를 한 세션으로 묶음, 생략 시 서버가 UUID 자동 발급) |
+| temp_key | body | string | 아니오 | UUID | 임시 업로드 세션 키 (같은 상품의 여러 이미지를 한 세션으로 묶음, 생략 시 서버가 UUID 자동 발급) |
 | collection | body | string | 아니오 | — | 첨부 컬렉션 그룹명 (첨부를 용도별로 묶는 키, 미지정 시 default) |
 | alt_text | body | array | 아니오 | — | 이미지 대체 텍스트 (접근성/이미지 미표시 시 대체 문구) |
 | alt_text.ko | body | string | 아니오 | max 255 | 이미지 대체 텍스트 (접근성/이미지 미표시 시 대체 문구) — `ko` 로케일 값 |
@@ -1644,7 +1644,7 @@ Content-Type: application/octet-stream
 ------G7ExampleBoundary
 Content-Disposition: form-data; name="temp_key"
 
-예시값
+5f0c3a3e-1b2c-4d5e-8f90-a1b2c3d4e5f6
 ------G7ExampleBoundary
 Content-Disposition: form-data; name="collection"
 
@@ -1848,7 +1848,7 @@ HTTP/1.1 200
 | --- | --- | --- | --- | --- | --- |
 | product | path | string | 예 | — | 대상 product의 식별자 |
 | name | body | array | 아니오 | — | 대상의 이름/명칭 |
-| product_code | body | string | 예 | max 50 | 상품코드 (상품 고유 관리 식별자, 상품 간 중복 불가) |
+| product_code | body | string | 예 | max 50, 코드를 바꿀 때 영문·숫자·`-`·`_` 만 | 상품코드 (상품 고유 관리 식별자, 상품 간 중복 불가). 이미지 저장 폴더 이름에 쓰이므로 다른 값으로 바꿀 때 그 밖의 문자(`/`·`\`·`.`·`%`·공백 등)는 422 — 현재 코드를 그대로 보내면 이 규칙을 적용하지 않음(규칙 이전 코드의 상품도 수정 가능) |
 | sales_product_code | body | string | 아니오 | max 50 | 판매자 상품코드 (판매자가 직접 입력하는 관리용 코드) |
 | sku | body | string | 아니오 | max 100 | 재고관리코드(SKU) |
 | category_ids | body | array | 아니오 | min 1, max 5 | category 식별자 배열 |
@@ -1867,7 +1867,7 @@ HTTP/1.1 200
 | description | body | array | 아니오 | — | 설명 |
 | description_mode | body | string | 아니오 | `text`, `html` | 상세 설명 편집 모드 (text 일반 텍스트 / html HTML 에디터) |
 | thumbnail_hash | body | string | 아니오 | max 64 | 대표 이미지로 지정할 이미지 해시 (업로드된 이미지 중 썸네일 선택) |
-| image_temp_key | body | string | 아니오 | max 64 | 임시 업로드 세션 키 (사전 업로드한 이미지를 이 상품에 연결) |
+| image_temp_key | body | string | 아니오 | UUID | 임시 업로드 세션 키 (사전 업로드한 이미지를 이 상품에 연결) |
 | images | body | array | 아니오 | max 20 | 상품 이미지 목록 (각 항목: id/hash/url/alt_text/is_thumbnail/sort_order) |
 | meta_title | body | array | 아니오 | — | SEO 메타 제목 (검색엔진/소셜 공유 표시 제목) |
 | meta_description | body | array | 아니오 | — | SEO 메타 설명 (검색엔진/소셜 공유 표시 요약) |
@@ -1926,7 +1926,7 @@ Content-Type: application/json
     ],
     "description_mode": "text",
     "thumbnail_hash": "예시값",
-    "image_temp_key": "예시값",
+    "image_temp_key": "5f0c3a3e-1b2c-4d5e-8f90-a1b2c3d4e5f6",
     "images": [
         "예시값"
     ],
@@ -3539,7 +3539,7 @@ HTTP/1.1 200
 | category | body | string | 아니오 | — | 문의 분류 (게시판 설정에 정의된 카테고리, 미지정 시 기본값) |
 | content | body | string | 예 | min 10, max 10000 | 본문 내용 |
 | is_secret | body | boolean | 아니오 | — | secret 여부 |
-| temp_key | body | string | 아니오 | — | 첨부파일 임시 업로드 키 (사전 업로드한 첨부를 이 문의에 연결) |
+| temp_key | body | string | 아니오 | UUID | 첨부파일 임시 업로드 키 (사전 업로드한 첨부를 이 문의에 연결) |
 
 > 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`sirsoft-ecommerce.inquiry.store_validation_rules`, `sirsoft-ecommerce.inquiry.store_validation_messages`).
 
@@ -3557,7 +3557,7 @@ Content-Type: application/json
     "category": "예시값",
     "content": "예시 내용입니다.",
     "is_secret": true,
-    "temp_key": "예시값"
+    "temp_key": "5f0c3a3e-1b2c-4d5e-8f90-a1b2c3d4e5f6"
 }
 ```
 

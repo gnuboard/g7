@@ -9,8 +9,9 @@ use Illuminate\Validation\Rule;
 use Modules\Sirsoft\Board\Enums\PostStatus;
 use Modules\Sirsoft\Board\Http\Requests\Concerns\ResolvesAllowedExtensions;
 use Modules\Sirsoft\Board\Http\Requests\Concerns\ValidatesAttachmentCount;
-use Modules\Sirsoft\Board\Models\Board;
+use Modules\Sirsoft\Board\Http\Requests\Concerns\ValidatesTempKey;
 use Modules\Sirsoft\Board\Models\Post;
+use Modules\Sirsoft\Board\Repositories\Contracts\BoardRepositoryInterface;
 use Modules\Sirsoft\Board\Rules\BlockedKeywordsRule;
 use Modules\Sirsoft\Board\Rules\CooldownRule;
 use Modules\Sirsoft\Board\Rules\ParentPostValidationRule;
@@ -22,6 +23,7 @@ class StorePostRequest extends FormRequest
 {
     use ResolvesAllowedExtensions;
     use ValidatesAttachmentCount;
+    use ValidatesTempKey;
 
     /**
      * 사용자가 이 요청을 수행할 권한이 있는지 확인
@@ -41,7 +43,7 @@ class StorePostRequest extends FormRequest
     public function rules(): array
     {
         $slug = $this->route('slug');
-        $board = Board::where('slug', $slug)->first();
+        $board = app(BoardRepositoryInterface::class)->findBySlug((string) $slug);
 
         // 게시판이 없으면 모듈 환경설정 기본값 사용
         $defaults = g7_module_settings('sirsoft-board', 'basic_defaults', []);
@@ -82,8 +84,8 @@ class StorePostRequest extends FormRequest
             // user_id는 Controller에서 Auth::id()로 자동 설정되므로 검증하지 않음
             'author_name' => ['nullable', 'string', 'max:50'],
             'password' => ['nullable', 'string', 'min:4'],
-            // temp_key는 게시판 존재 여부와 무관하게 항상 허용
-            'temp_key' => ['nullable', 'string', 'max:64'],
+            // temp_key는 게시판 존재 여부와 무관하게 항상 허용 (UUID 형식만 — 저장 경로에 들어간다)
+            'temp_key' => $this->tempKeyRules(),
         ];
 
         // 게시판이 있는 경우에만 parent_id와 attachment_ids 검증
@@ -174,11 +176,12 @@ class StorePostRequest extends FormRequest
      * 필드 단위 규칙으로 판정할 수 없는 첨부 총합을 검증합니다.
      *
      * @param  Validator  $validator  검증기
+     * @return void
      */
     public function withValidator(Validator $validator): void
     {
         $validator->after(function (Validator $validator) {
-            $board = Board::where('slug', $this->route('slug'))->first();
+            $board = app(BoardRepositoryInterface::class)->findBySlug((string) $this->route('slug'));
             $this->validateAttachmentTotal($validator, $board);
         });
     }

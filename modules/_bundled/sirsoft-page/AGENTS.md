@@ -164,6 +164,7 @@
 | 소프트 삭제를 다시 도입 | 삭제는 실삭제, 되돌리기는 버전 이력 | 지운 페이지가 남아 있으면 같은 slug 를 다시 쓸 수 없고, slug 는 이 도메인에서 주소 그 자체다 |
 | 첨부 개수·용량 상한을 서비스에 리터럴로 재클램프 | 설정(`attachment.*`) 을 읽고 검증은 FormRequest 에 둔다 | 이중 클램프가 생기면 설정을 올려도 반영되지 않는다 |
 | 페이지 목록을 만들기 위해 공개 목록 API 를 추가 | 목록이 필요하면 게시판 모듈을 쓴다 | 페이지는 "주소 하나 = 문서 하나" 도메인이다. 목록을 들이면 게시판과 역할이 겹치면서 둘 다 애매해진다 |
+| 요청의 `temp_key` 를 형식 검증 없이 `temp/{temp_key}` 경로에 넣거나, 임시 첨부가 없는데도 그 디렉토리를 `deleteDirectory` | `ValidatesTempKey`(UUID 만) + 조회된 임시 첨부가 있을 때만 이동·정리 | 페이지 첨부는 basePath 없이 저장해 게시판보다 얕다 — 순회 키 한 단계로 모듈 저장소 루트에 닿는다 (게시판 KVE-2026-2349 와 같은 패턴) |
 <!-- @intent END -->
 
 ## 7. 테스트 실행
@@ -171,10 +172,10 @@
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 30개 | `modules/_bundled/sirsoft-page/tests` |
+| PHPUnit | 33개 | `modules/_bundled/sirsoft-page/tests` |
 | Vitest | 4개 | `vitest.config.ts` |
 | Playwright | 7개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 9개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 12개 | `tests/scenarios` |
 
 기저 TestCase: `tests/ModuleTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

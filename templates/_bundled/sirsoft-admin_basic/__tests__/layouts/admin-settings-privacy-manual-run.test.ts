@@ -167,7 +167,7 @@ describe('[case:state-closure-9] 개인정보 조치 직권 실행 — 상태 �
      *
      * @effects card_polls_until_finished_and_refreshes_counts
      */
-    it('탭의 다섯 대상을 조회하고, 진행 중이면 폴링·끝나면 멈추고 응답값으로만 건수를 다시 받는다', () => {
+    it('[case:state-closure-9] 탭의 다섯 대상을 조회하고, 진행 중이면 폴링·끝나면 멈추고 응답값으로만 건수를 다시 받는다', () => {
         expect(dataSource).toBeTruthy();
         expect(dataSource.endpoint).toBe('/api/admin/privacy/manual-runs');
         expect(dataSource.params.targets.split(',')).toEqual([
@@ -204,7 +204,7 @@ describe('[case:state-closure-10] 개인정보 조치 직권 실행 — 확인 �
      *
      * @effects confirm_modal_recounts_before_queueing
      */
-    it('「대기기간 생략」은 체크 여부를 분기에서 한 번만 읽고, 갈래마다 고정값으로 다시 센다', () => {
+    it('[case:state-closure-10] 「대기기간 생략」은 체크 여부를 분기에서 한 번만 읽고, 갈래마다 고정값으로 다시 센다', () => {
         const checkbox = flattenNodes(runModal).find((n: any) => n.name === 'Checkbox' && n.props?.id === 'privacy_run_skip_waiting_checkbox') as any;
         const change = actionsOf(checkbox).find((a: any) => a.type === 'change');
         const branches = callbacksOf(change, 'conditions');

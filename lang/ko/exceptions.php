@@ -247,6 +247,13 @@ return [
         'composer_binary_not_found' => 'Composer 바이너리를 찾을 수 없습니다. COMPOSER_BINARY 환경변수를 설정하거나 composer를 PATH에 추가하세요.',
     ],
 
+    // 스토리지 드라이버 경로 가드 예외
+    'storage' => [
+        'unsafe_path' => '허용되지 않는 저장 경로입니다.',
+        'destructive_on_root' => '저장소의 최상위 경로는 이 방식으로 삭제할 수 없습니다.',
+        'local_safe_option_package' => 'local-safe 디스크의 :option 옵션에는 :package 패키지가 필요합니다.',
+    ],
+
     // SEO / Sitemap 관련 예외
     'seo' => [
         'sitemap_write_failed' => 'Sitemap 파일 기록에 실패했습니다: :path',
