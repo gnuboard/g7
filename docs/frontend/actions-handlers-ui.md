@@ -580,7 +580,7 @@
       <navigate path="/edit/{{row.id}}"/>
     </when>
     <when if="{{$args[0] === 'delete'}}">
-      <open-modal id="delete_confirm_modal"/>
+      <open-modal target="delete_confirm_modal"/>
     </when>
     <else>
       <toast message="알 수 없는 액션"/>
@@ -602,7 +602,7 @@
     },
     {
       "if": "{{$args[0] === 'delete'}}",
-      "then": { "handler": "openModal", "params": { "id": "delete_confirm_modal" } }
+      "then": { "handler": "openModal", "target": "delete_confirm_modal" }
     },
     {
       "then": { "handler": "toast", "params": { "message": "알 수 없는 액션" } }
@@ -737,7 +737,7 @@ interface ConditionBranch {
   <conditions>
     <when if="{{$args[0] === 'delete'}}">
       <set-state target="_local" deleteTargetId="{{row.id}}"/>
-      <open-modal id="delete_confirm_modal"/>
+      <open-modal target="delete_confirm_modal"/>
     </when>
   </conditions>
 </on>
@@ -754,7 +754,7 @@ interface ConditionBranch {
       "if": "{{$args[0] === 'delete'}}",
       "then": [
         { "handler": "setState", "params": { "target": "_local", "deleteTargetId": "{{row.id}}" } },
-        { "handler": "openModal", "params": { "id": "delete_confirm_modal" } }
+        { "handler": "openModal", "target": "delete_confirm_modal" }
       ]
     }
   ]
@@ -790,7 +790,7 @@ interface ConditionBranch {
     </when>
     <when if="{{$args[0] === 'delete'}}">
       <set-state target="_local" deleteTargetId="{{$args[1].id}}"/>
-      <open-modal id="delete_confirm_modal"/>
+      <open-modal target="delete_confirm_modal"/>
     </when>
     <when if="{{$args[0] === 'view'}}">
       <navigate path="/products/view/{{$args[1].id}}"/>
@@ -818,7 +818,7 @@ interface ConditionBranch {
       "if": "{{$args[0] === 'delete'}}",
       "then": [
         { "handler": "setState", "params": { "target": "_local", "deleteTargetId": "{{$args[1].id}}" } },
-        { "handler": "openModal", "params": { "id": "delete_confirm_modal" } }
+        { "handler": "openModal", "target": "delete_confirm_modal" }
       ]
     },
     {

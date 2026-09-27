@@ -43,6 +43,34 @@
 | 플러그인 | vendor-plugin | Plugins\Vendor\Plugin\ | sirsoft-payment |
 | 템플릿 | vendor-template | - | sirsoft-admin_basic |
 
+## 버전 동기화 의무
+
+코어 또는 번들 확장의 공개 표면을 수정할 때, 그 변경의 영향 범위에 있는 다른 확장의 버전 제약(`g7_version`, `dependencies.{modules|plugins}`)을 함께 갱신한다.
+
+### ① 코어 → 확장 동기화 (`g7_version`)
+
+- 트리거: 코어 공개 확장 표면(`app/Extension/Abstract*`, `HookManager`, `ExtensionManager`, `ModuleManager`, `PluginManager`, `TemplateManager`, `app/Contracts/Extension/**`, `app/Extension/Helpers/**`, `app/Repositories/Concerns/**`, `app/Seo/Contracts/**`, `app/ActivityLog/**` 공개 API, 루트 `CHANGELOG.md` 의 Added/Changed/Removed) 수정
+- 조치: 영향 받는 번들 확장의 `g7_version` 상향 + 각 확장 CHANGELOG 에 변경 기재
+
+### ② 확장 → 확장 동기화 (`dependencies.{modules|plugins}`)
+
+- 트리거: 번들 모듈/플러그인의 공개 Service/Contract/Repository/Model/Route, 발행 훅·이벤트, CHANGELOG 수정
+- 조치: 그 확장에 의존하는 다른 번들 확장 전수 스캔 → 최소 버전 제약 상향 여부 판정
+
+### ③ manifest ↔ 패키지 파일 동기화
+
+- 트리거: `module.json`·`plugin.json`·`template.json` 의 `version` 변경
+- 조치: 같은 확장 디렉토리의 `package.json` → `composer.json` 순으로 같은 버전으로 갱신하고, 버전 섹션을 CHANGELOG 에 기록한다. 번들 확장의 `composer.json` 버전을 올리면 같은 디렉토리의 `composer.lock` 도 `composer update --lock` 으로 맞춘다
+
+### 판정 순서
+
+1. 기존 소비자 API 시그니처/동작을 건드렸는가 → 소비 확장 최소 버전 상향
+2. 새 공개 API 가 도입되었는가 → 후보 확장 전수 스캔 후 검토
+3. 의존 관계 B 의 공개 API 가 변경되었는가 → A 의 `dependencies.B` 상향
+4. 동기화 대상이 없다면 그 근거("순수 내부 리팩토링" 등)를 변경 이력에 기록
+
+> 표기 규칙·재검토 트리거·CHANGELOG 기재 형식: [changelog-rules.md "코어 버전 제약 정책"](../extension/changelog-rules.md#8-코어-버전-제약-정책)
+
 ## 확장·템플릿 구동 에셋은 자체 제공한다
 
 브라우저가 화면을 그리기 위해 제3자 CDN 에 도달해야 하면, 그 도달 실패는 **예외도 로그도 남기지 않고 화면 기능만 조용히 사라진다.** 폐쇄망·방화벽·광고차단기에서 재현되며 자체 서버 로그에 흔적이 없어 운영자가 원인을 특정할 수 없다.

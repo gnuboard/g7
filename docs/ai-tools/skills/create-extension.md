@@ -29,15 +29,19 @@
 1. 규정 문서 읽기 — 공통: [changelog-rules.md](../../extension/changelog-rules.md), [extension-documentation.md](../../extension/extension-documentation.md), [sample-extensions.md](../../extension/sample-extensions.md). type 별 목록은 각 references 상단에 있다.
 2. 이름 파싱 — 위 표대로 디렉토리·네임스페이스·클래스명을 정한다. 같은 식별자의 기존 확장이 없는지 먼저 확인한다.
 3. 디렉토리 구조 생성 — references 의 트리를 그대로 만든다. 빈 디렉토리도 포함한다.
-4. 기본 파일 생성 — references 의 골격을 `[자리표시자]` 치환으로 만든다. 공통 필수: manifest(메타데이터 SSoT, version `0.1.0`), `CHANGELOG.md`(Keep a Changelog, `[0.1.0]`), `LICENSE`(MIT), 다국어 ko/en, 테스트 골격.
-5. 빌드·활성화 확인 — module/plugin: `php artisan extension:update-autoload`. template: `npm install` → `php artisan template:build <id>` → `template.json` `externals` 정합 점검(`components.basic` 에 `icon` 이 있으면 Font Awesome `style` 항목, 웹폰트는 `type: "webfont"`, `url` 은 https 만). `php artisan <type>:install <id>` → `<type>:activate <id>` 는 DB 를 바꾸므로 기존 허가 범위 안에서만 실행하고, 실행하지 않았으면 명령을 보고에 남긴다.
-7. 보고 — 생성 파일 목록·네임스페이스·실행한 명령과 출력(건수)·다음 단계 명령. 운영자가 실제로 쓰려면 더 필요한 것(module: 엔티티별 마이그레이션·설정 UI·시더 / plugin: 설정값·외부 연동 키 / template: 레이아웃 페이지·`features` 에 맞는 클래스·컴포넌트 패턴)을 자율 식별해 적고, 실제 도메인 규모(엔티티·훅·페이지 수)에 맞춰 각 계층을 N 배 확장해야 함을 명시한다.
+4. 기본 파일 생성 — references 의 골격을 `[자리표시자]` 치환으로 만든다. 공통 필수: manifest(메타데이터 SSoT, version `0.1.0`), `CHANGELOG.md`(Keep a Changelog, `[0.1.0]`), `LICENSE`(MIT), 다국어 ko/en, 테스트 골격. type 별 포함 의무 — 디렉토리·manifest 만 만들고 끝내지 않는다:
+   - plugin: 설정 UI(`plugins/_bundled/<id>/resources/layouts/admin/plugin_settings.g7.html` + 굽기 산출 짝 `.json`, `config/settings/defaults.json`)와 훅 리스너 1개 이상(`src/Listeners/*Listener.php` + `plugin.php` 의 `getHookListeners()` 등록)을 함께 만든다 — plugin.md(아래 「plugin」 절).
+   - template: 베이스 레이아웃에 전역 호스트(`toast` 노드 — 옛 문서의 Toast/ModalRoot)를 둔다. 없으면 자식 레이아웃의 `toast`·`openModal` 이 성공으로 기록되고 화면에는 아무것도 안 뜬다 — template.md(아래 「template」 절).
+5. 컴포넌트 구현 (template) — `components.json` 에 선언한 컴포넌트(basic·composite·layout)마다 `src/components/{basic,composite,layout}/<Name>.tsx` 를 쓰고 폴더별 `index.ts` 에서 named export 한다. 베이스가 쓰는 전역 호스트(Toast)와 모달(Modal) composite 도 이 단계의 산출물이다. 선언만 하고 구현이 없으면 레지스트리가 그 노드를 렌더하지 않고, `templates/_bundled/<id>/src/index.ts` 가 없는 파일을 export 하면 6단계 build 가 실패한다.
+6. 빌드·활성화 확인 — module/plugin: `php artisan extension:update-autoload`. template: 5단계를 마친 뒤 `npm install` → `php artisan template:build <id>` → `template.json` `externals` 정합 점검(`components.basic` 에 `icon` 이 있으면 Font Awesome `style` 항목, 웹폰트는 `type: "webfont"`, `url` 은 https 만). `php artisan <type>:install <id>` → `<type>:activate <id>` 는 DB 를 바꾸므로 기존 허가 범위 안에서만 실행하고, 실행하지 않았으면 명령을 보고에 남긴다.
+8. 보고 — 생성 파일 목록·네임스페이스·실행한 명령과 출력(건수)·다음 단계 명령. template 은 타입(`admin`/`user`)과 컴포넌트 수(basic N · composite N · layout N, 선언 수와 구현 수)를 적는다. 운영자가 실제로 쓰려면 더 필요한 것(module: 엔티티별 마이그레이션·설정 UI·시더 / plugin: 설정값·외부 연동 키 / template: 레이아웃 페이지·`features` 에 맞는 클래스·컴포넌트 패턴)을 자율 식별해 적고, 실제 도메인 규모(엔티티·훅·페이지 수)에 맞춰 각 계층을 N 배 확장해야 함을 명시한다.
 
 ## 완료 조건
 
 - references 골격 파일이 전부 존재하고 manifest 가 유효한 JSON 이며 `_bundled` 밖을 건드리지 않았다.
-- 5단계 명령(오토로드 또는 빌드)의 실행 결과가 기록됐다. 실행하지 못한 명령은 이유와 명령을 적었다.
-- 6단계 `ext:docgen --init` 을 실행하고 TODO 3곳을 채웠으며 `--check` 와 6단계에 적은 문서 정합 검사가 통과했다.
+- (plugin) 설정 UI 소스·짝 `.json`·훅 리스너가 있고 `getHookListeners()` 에 등록됐다. (template) 베이스에 전역 호스트가 있고 선언한 컴포넌트가 전부 구현·export 됐다.
+- 6단계 명령(오토로드 또는 빌드)의 실행 결과가 기록됐다. 실행하지 못한 명령은 이유와 명령을 적었다.
+- 7단계 `ext:docgen --init` 을 실행하고 TODO 3곳을 채웠으며 `--check` 와 7단계에 적은 문서 정합 검사가 통과했다.
 - 보고에 다음 단계와 추가 필요 항목이 있고, 이력 문서(`/auto-document`)에 명령 출력·건수를 실측으로 남겼다.
 
 ## 참조
@@ -336,10 +340,11 @@ plugins/_bundled/<id>/
 ├── resources/
 │   ├── extensions/              # layout_extensions JSON
 │   ├── lang/{ko,en}.json        # 프론트엔드 다국어 (JSON 만 — 백엔드 PHP 다국어 없음)
-│   ├── layouts/admin/plugin_settings.g7.html  # 설정 UI 소스 SSoT (유일한 완전 레이아웃)
-│   └── layouts/admin/plugin_settings.json     # 위 소스의 컴파일 산출 — 디스크 상주 필수
+│   ├── layouts/admin/plugin_settings.g7.html  # 설정 UI 소스 SSoT (유일한 완전 레이아웃) — 필수
+│   └── layouts/admin/plugin_settings.json     # 위 소스의 굽기 산출(layout:decompile --sync) — 필수
 ├── src/
-│   ├── Listeners/  Services/
+│   ├── Listeners/[Name]Listener.php  # 훅 리스너 — 필수, plugin.php getHookListeners() 에 등록
+│   └── Services/
 │   └── routes/web.php           # 웹 라우트 (선택)
 └── tests/
     ├── PluginTestCase.php
@@ -431,17 +436,19 @@ class Plugin extends AbstractPlugin
     }
 
     /**
-     * 훅 리스너 목록 반환
+     * 훅 리스너 목록 반환 — 플러그인 리스너는 자동 발견되지 않으므로 여기 올린 것만 등록된다
      *
      * @return array<class-string> 리스너 클래스 목록
      */
     public function getHookListeners(): array
     {
-        return [];
+        return [
+            \Plugins\[Vendor]\[Plugin]\Listeners\[Name]Listener::class,
+        ];
     }
 
     /**
-     * 플러그인이 제공하는 훅 정보 반환
+     * 플러그인이 발행하는 훅 선언 (AbstractPlugin::getHooks) — 구독은 리스너의 getSubscribedHooks() 가 맡는다
      *
      * @return array<int, array<string, mixed>> 훅 정의 배열
      */
@@ -474,6 +481,76 @@ class Plugin extends AbstractPlugin
     "psr-4": { "Plugins\\[Vendor]\\[Plugin]\\": ["src/", "./"] }
   }
 }
+```
+
+#### src/Listeners/[Name]Listener.php
+
+구독은 `HookListenerInterface::getSubscribedHooks()`(static, `'훅.이름' => [옵션]` 맵)로 선언한다. 인터페이스 원본: `app/Contracts/Extension/HookListenerInterface.php`. 실물: `plugins/_bundled/gnuboard7-hello_plugin/src/Listeners/`.
+
+```php
+<?php
+
+namespace Plugins\[Vendor]\[Plugin]\Listeners;
+
+use App\Contracts\Extension\HookListenerInterface;
+
+/**
+ * [리스너 설명]
+ */
+class [Name]Listener implements HookListenerInterface
+{
+    /**
+     * 구독할 훅과 메서드 매핑 반환
+     *
+     * @return array<string, array<string, mixed>> 훅 이름 => 옵션(method·priority·type·sync)
+     */
+    public static function getSubscribedHooks(): array
+    {
+        return [
+            '[vendor-module].[entity].after_create' => ['method' => 'handleCreated', 'priority' => 10],
+            '[vendor-module].[entity].filter_list_data' => ['method' => 'filterList', 'priority' => 10, 'type' => 'filter'],
+        ];
+    }
+
+    /**
+     * 인터페이스 기본 핸들러 (개별 메서드에서 처리)
+     *
+     * @param  mixed  ...$args  훅 인자
+     * @return void
+     */
+    public function handle(...$args): void
+    {
+    }
+
+    /**
+     * 생성 직후 처리
+     *
+     * @param  mixed  ...$args  훅 인자
+     * @return void
+     */
+    public function handleCreated(...$args): void
+    {
+    }
+
+    /**
+     * 목록 데이터 가공 — Filter 는 값을 반환한다
+     *
+     * @param  array  $data  앞선 필터의 반환값
+     * @return array 가공한 데이터
+     */
+    public function filterList(array $data): array
+    {
+        return $data;
+    }
+}
+```
+
+#### resources/layouts/admin/plugin_settings.g7.html
+
+설정 UI 는 샘플 `plugins/_bundled/gnuboard7-hello_plugin/resources/layouts/admin/plugin_settings.g7.html` 을 복사해 식별자·필드를 치환한다(데이터소스 `GET /api/admin/plugins/{{route.identifier}}/settings` · 저장 `PUT` + `onError` · 권한 `core.plugins.update`). 작성 뒤 짝 `.json` 을 굽는다.
+
+```bash
+php artisan layout:decompile plugins/_bundled/[vendor-plugin]/resources/layouts/admin/plugin_settings.g7.html --sync
 ```
 
 #### config/settings/defaults.json
@@ -553,10 +630,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - `plugin.php` 는 루트에 두고 `AbstractPlugin` 을 상속한다. `composer.json` autoload 에 `"./"` 를 포함한다.
 - 플러그인은 모듈에만 의존한다. 플러그인 간 직접 의존은 금지이며 통신이 필요하면 API·훅 경로를 골격에 반영한다.
 - 완전한 레이아웃은 등록하지 않는다 — `layout_extensions` 만 사용(예외: `plugin_settings`).
-- 설정 UI 소스 SSoT 는 `plugin_settings.g7.html` 이지만, DB 설치 레이아웃과 달리 짝 `plugin_settings.json` 이 디스크에 있어야 한다 — `AbstractPlugin::getSettingsLayout()` 이 그 `.json` 경로를 `file_exists` 로 직접 읽는다.
+- 설정 UI 와 훅 리스너는 골격의 필수 산출물이다 — 빈 `getHookListeners()` 와 설정 화면 없는 플러그인을 완료로 보고하지 않는다.
+- 설정 UI 소스 SSoT 는 `plugin_settings.g7.html` 이다. `AbstractPlugin::getSettingsLayout()` 은 `.g7.html` → 짝 `.json` 순으로 실재하는 첫 파일을 읽지만(`layoutSourceCandidates`), 편집기·검증 소비처는 짝 `.json` 을 읽으므로 굽기(`layout:decompile --sync`)를 생략하지 않는다.
 - 다국어는 `resources/lang/*.json` 만 있다(백엔드 PHP 다국어 없음).
 - `Storage::disk()` 직접 호출 금지 → `StorageInterface`.
-- Filter 훅 리스너는 `type: 'filter'` 를 명시한다(미지정 시 반환값 무시).
+- Filter 훅 리스너는 `getSubscribedHooks()` 옵션에 `'type' => 'filter'` 를 명시한다(미지정 시 반환값 무시). `Plugin::getHooks()` 는 발행 훅 선언이지 구독이 아니다.
 - 설정 저장 `apiCall` 에는 `onError` 를 둔다 — 저장 실패가 화면에 보이지 않으면 사용자는 성공한 줄 안다. 오류 바인딩은 `{{error.message}}`·`{{error.errors}}`(`$error` 접두사는 엔진이 채우지 않는다).
 - `CHANGELOG.md` 필수. 작업은 `_bundled` 에서만 하고 활성 디렉토리는 직접 수정하지 않는다.
 - 샘플 `plugins/_bundled/gnuboard7-hello_plugin/` — Listener(Action + Filter)·Service·Settings Schema·Layout Extension·Test 각 1파일. 여러 훅을 구독하면 Listener 를 N 배로 확장한다.
@@ -584,7 +662,7 @@ templates/_bundled/<id>/
 │   ├── admin_dashboard.g7.html 또는 home.g7.html # 초기 페이지
 │   └── errors/{401,403,404,500,503,maintenance}.json   # 6종 필수
 ├── src/index.ts · src/test-setup.ts
-├── src/components/{basic,composite,layout}/
+├── src/components/{basic,composite,layout}/  # <Name>.tsx + 폴더별 index.ts (SKILL 5단계 컴포넌트 구현)
 ├── assets/{css,fonts,images}/
 ├── assets/icon.svg                # 확장 아이콘(관례, 선택) — 정사각·100KB 이하
 └── __tests__/layouts/           # 레이아웃 렌더링 테스트 (createLayoutTest)
@@ -693,10 +771,13 @@ templates/_bundled/<id>/
 > 소스는 `.g7.html`(layout-markup.md), 설치 시 서버가 JSON 으로 컴파일해 DB(`template_layouts`)에 등록한다(키 계약: layout-json.md).
 > **슬롯은 실제 노드의 `data-slot`** — `type: "slot"` 자리표시 노드 + 별도 `slots` 섹션은 정본이 아니고 강검증도 통과하지 못한다.
 > **스캐폴드는 기본 컴포넌트로 조립한다** — `components.composite` 에 선언해도 React 구현이 없으면 `registry.getComponent()` 가 null 이라 그 노드가 통째로 렌더되지 않는다. 구현 뒤 태그(`<admin-sidebar/>`)로 교체한다.
+> **전역 호스트는 베이스의 필수 노드다** — `toast` 핸들러는 `_global.toasts` 에 push 만 하고 그리는 것은 `toast` 호스트 노드다(layout-json-inheritance.md). 호스트가 없으면 자식 레이아웃의 토스트가 success 로 기록되고 화면에는 안 뜬다. 호스트가 쓰는 `Toast`·`Modal` composite 는 SKILL 5단계에서 구현한다(참고 구현: `templates/_bundled/sirsoft-admin_basic/src/components/composite/{Toast,Modal}.tsx`).
 
 ```html
 <layout name="_admin_base" version="1.0.0">
   <meta title="$t:admin.base_layout_title" :is_base="true"/>
+  <!-- 전역 호스트 — 자식 레이아웃의 toast 핸들러가 여기로 그려진다 -->
+  <toast data-ref="global_toast" toasts="{{_global.toasts}}" position="bottom-center" :duration="5000"/>
   <div data-ref="admin_shell" class="flex min-h-screen bg-gray-100 dark:bg-gray-900">
     <div data-ref="sidebar" class="w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 p-4">
       <h2 data-ref="sidebar_title" class="text-lg font-bold mb-4">$t:admin.sidebar.title</h2>
@@ -718,6 +799,8 @@ templates/_bundled/<id>/
 ```html
 <layout name="_user_base" version="1.0.0">
   <meta title="$t:user.base_layout_title" description="$t:user.base_layout_description" :is_base="true"/>
+  <!-- 전역 호스트 — 자식 레이아웃의 toast 핸들러가 여기로 그려진다 -->
+  <toast data-ref="global_toast" toasts="{{_global.toasts}}" position="bottom-center" :duration="5000"/>
   <div data-ref="user_layout_root" class="min-h-screen flex flex-col bg-white dark:bg-gray-900">
     <div data-ref="site_header" class="border-b border-gray-200 dark:border-gray-700 px-4 py-3 flex justify-between">
       <a href="/" class="text-lg font-bold">$t:user.header.home_link</a>
@@ -729,7 +812,7 @@ templates/_bundled/<id>/
 </layout>
 ```
 
-베이스가 아닌 독립 레이아웃(extends 없음)은 Toast·ModalRoot 같은 글로벌 호스트 컴포넌트를 직접 마운트한다.
+베이스가 아닌 독립 레이아웃(extends 없음, 예: 로그인)은 위 `global_toast` 블록을 그대로 복사해 직접 마운트한다 — 베이스의 호스트를 물려받지 않는다.
 
 #### layouts/errors/404.g7.html (401·403·500·503·maintenance 동일 패턴)
 
@@ -758,18 +841,22 @@ templates/_bundled/<id>/
 
 #### components.json
 
-`composite` 는 타입에 맞는 컴포넌트(Admin: AdminHeader 등 / User: Header 등)를 매핑한다.
+`ComponentRegistry` 가 읽는 매니페스트다. `components.{basic,composite,layout}` 은 **배열**이고 항목마다 `name`·`type` 이 필수다(객체 매핑 `{ "div": "Div" }` 은 로드 단계에서 `MANIFEST_INVALID` 로 거부된다). 레지스트리는 번들의 named export `module[name]` 을 찾아 등록하고 없으면 경고 후 건너뛴다 — 선언한 이름은 전부 번들 진입점(`templates/_bundled/<id>/src/index.ts`)에서 export 돼야 한다. 선언 전량 형태: `templates/_bundled/gnuboard7-hello_admin_template/components.json`. 아래는 항목 형태만 보인 것이다 — 골격 레이아웃이 쓰는 태그(`div`·`a`·`h1`·`h2`·`p`·`span`·`button`·`icon` 등, `template.json` `components.basic` 목록)는 전부 basic 으로 선언하고 구현한다.
 
 ```json
 {
-  "basic": {
-    "a": "A", "button": "Button", "checkbox": "Checkbox", "div": "Div", "form": "Form", "h1": "H1", "h2": "H2", "h3": "H3",
-    "icon": "Icon", "img": "Img", "input": "Input", "label": "Label", "li": "Li", "nav": "Nav", "p": "P", "section": "Section",
-    "select": "Select", "span": "Span", "table": "Table", "tbody": "Tbody", "td": "Td", "textarea": "Textarea", "th": "Th",
-    "thead": "Thead", "tr": "Tr", "ul": "Ul"
-  },
-  "composite": {},
-  "layout": { "container": "Container", "flex": "Flex", "grid": "Grid", "section": "Section" }
+  "templateId": "[vendor-template]",
+  "version": "0.1.0",
+  "components": {
+    "basic": [
+      { "name": "Div", "type": "basic", "description": "HTML div wrapper", "path": "src/components/basic/Div.tsx", "props": { "className": { "type": "string", "required": false, "description": "사용자 정의 클래스" } } }
+    ],
+    "composite": [
+      { "name": "Toast", "type": "composite", "description": "전역 토스트 호스트", "path": "src/components/composite/Toast.tsx", "props": { "toasts": { "type": "array", "required": true, "description": "토스트 목록" } } },
+      { "name": "Modal", "type": "composite", "description": "modals 섹션 모달", "path": "src/components/composite/Modal.tsx", "props": {} }
+    ],
+    "layout": []
+  }
 }
 ```
 
@@ -783,17 +870,41 @@ json
 { "common": { "home": "Home", "login": "Login", "dashboard": "Dashboard", "go_back": "Go Back", "not_found": "Page Not Found", "page_not_found": "The page you are looking for could not be found.", "forbidden": "Access Denied", "server_error": "Server Error", "unauthorized": "Authentication Required", "service_unavailable": "Service Unavailable", "maintenance": "Under Maintenance" } }
 ```
 
-#### src/index.ts
+#### src/index.ts · src/components/*/index.ts
+
+템플릿은 컴포넌트를 스스로 등록하지 않는다 — 코어가 `components.json` 을 읽고 이 번들의 export 에서 구현체를 찾는다. 그래서 이 파일은 **구현한 파일만** 다시 내보낸다. 존재하지 않는 파일을 export 하면 `template:build` 가 실패하므로, 폴더별 `index.ts` 에 SKILL 5단계에서 실제로 만든 컴포넌트만 한 줄씩 추가한다.
 
 ```typescript
-// 컴포넌트 레지스트리 — 빌드 시 IIFE 로 출력된다.
-export { default as Div } from './components/basic/Div';
-export { default as Button } from './components/basic/Button';
-export { default as Span } from './components/basic/Span';
-export { default as Input } from './components/basic/Input';
-// composite: export { default as Modal } from './components/composite/Modal';
-// layout:    export { default as Container } from './components/layout/Container';
+// src/index.ts — 빌드 시 IIFE 로 출력된다
+export * from './components/basic';
+export * from './components/composite';
+// layout 컴포넌트를 구현했으면: export * from './components/layout';
+typescript
+// src/components/basic/index.ts — 구현한 파일마다 한 줄
+export { Div, type DivProps } from './Div';
+typescript
+// src/components/composite/index.ts
+export { Toast } from './Toast';
+export { Modal } from './Modal';
+tsx
+// src/components/basic/Div.tsx — basic 컴포넌트 공통 형태(named export + forwardRef)
+import React from 'react';
+
+export interface DivProps extends React.HTMLAttributes<HTMLDivElement> {}
+
+/**
+ * 기본 div 컴포넌트
+ */
+export const Div = React.forwardRef<HTMLDivElement, DivProps>(({ children, className = '', ...props }, ref) => (
+  <div ref={ref} className={className} {...props}>
+    {children}
+  </div>
+));
+
+Div.displayName = 'Div';
 ```
+
+`Toast`·`Modal` 은 참고 구현(`sirsoft-admin_basic/src/components/composite/`)을 보고 이 템플릿의 스타일로 작성한다. 컴포넌트마다 `src/**/__tests__/` 에 렌더 테스트를 둔다.
 
 #### package.json
 
@@ -890,7 +1001,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - `template.json` 이 메타데이터 SSoT. `type` 은 `admin`·`user` 중 하나(필수). `error_config` 에 에러 레이아웃 6종 매핑.
 - HTML 태그 직접 사용 금지 → 기본 컴포넌트(Div, Button, Span). `components.json` 에 등록된 컴포넌트만 레이아웃에서 쓴다.
 - 다크 모드는 `dark:` variant 를 쌍으로. `features.dark_mode`·`responsive` 를 선언하면 그 동작에 필요한 클래스·컴포넌트 패턴까지 골격에 둔다.
-- 빌드 출력은 IIFE(`dist/js/components.iife.js`). `__tests__/layouts/` 에 레이아웃 렌더링 테스트를 쓴다.
+- 빌드 출력은 IIFE(`dist/js/components.iife.js`). build 는 SKILL 5단계(컴포넌트 구현) 뒤에 돌린다 — `components.json` 선언·진입점 export·실제 파일 세 목록이 일치해야 한다. `__tests__/layouts/` 에 레이아웃 렌더링 테스트를 쓴다.
+- 베이스 레이아웃에 전역 호스트(`toast`)를 둔다. 독립 레이아웃도 같은 블록을 직접 둔다.
 - Font Awesome 6.x 는 `fa-solid` 접두사(`fas` 금지). `icon` 등록 시 `externals` Font Awesome style 항목 필수.
 - `CHANGELOG.md` 필수. 작업은 `_bundled` 에서만 하고 활성 디렉토리는 직접 수정하지 않는다.
 - 샘플 `templates/_bundled/gnuboard7-hello_admin_template/`(Basic 8 + 에러 6종), `gnuboard7-hello_user_template/`(홈 + Memo 리스트). 페이지가 N 개면 `layouts/` 를 N 배로 확장한다.
