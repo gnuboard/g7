@@ -163,9 +163,9 @@ API 까지만 소유하고, 그 API 를 소비해 실제로 그리는 것은 이
 | 종류 | 개수 | 위치 |
 |---|---|---|
 | PHPUnit | 0개 | — |
-| Vitest | 156개 | `vitest.config.ts` |
+| Vitest | 157개 | `vitest.config.ts` |
 | Playwright | 8개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 4개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 5개 | `tests/scenarios` |
 
 ```bash
 # Vitest (확장 디렉토리에서) (PowerShell)

@@ -280,8 +280,19 @@ class PostController extends PublicBaseController
             // 요청 데이터 준비
             $data = $request->validated();
 
+            // 공지 지정은 게시판 관리 권한 또는 공지 등록 권한 보유자만 가능하다.
+            // 화면은 권한자에게만 옵션을 노출하지만 UI 은닉일 뿐이므로 서버가 판정한다.
+            if (! empty($data['is_notice']) && ! $this->canSetNotice($slug)) {
+                return $this->forbidden('sirsoft-board::messages.permission.notice_denied');
+            }
+
             // user_id 설정 (인증 필수)
             $data['user_id'] = Auth::id();
+
+            // 회원 글의 작성자명은 계정 이름이 SSoT — 요청값을 저장하면 작성자 검색·정렬이 오염된다.
+            if (Auth::check()) {
+                unset($data['author_name']);
+            }
 
             // IP 주소 설정
             $data['ip_address'] = $request->ip();
@@ -369,6 +380,29 @@ class PostController extends PublicBaseController
             // 남고 이후 본인 확인이 "bcrypt 가 아니다" 예외로 끝나 본인이 자기 글을 수정·삭제할
             // 수 없게 된다. 댓글 수정 경로(CommentController::update)와 같은 규칙이다.
             $data = collect($request->validated())->except(['password', 'verification_token'])->toArray();
+
+            // 공지 등록·해제는 게시판 관리 권한 또는 공지 등록 권한 보유자만 가능하다.
+            // 수정 폼은 서버가 준 기존 값을 통째로 되돌려 보내므로, 값이 바뀔 때만 판정한다 —
+            // 권한자가 공지로 지정한 글을 작성자가 고칠 때 같은 값이 다시 오는 것은 막지 않는다.
+            if (array_key_exists('is_notice', $data)
+                && (bool) $data['is_notice'] !== (bool) $post->is_notice
+                && ! $this->canSetNotice($slug)) {
+                return $this->forbidden('sirsoft-board::messages.permission.notice_denied');
+            }
+
+            // secret_mode 에 따른 비밀글 설정 검증 (작성 경로와 같은 규칙)
+            if (array_key_exists('is_secret', $data)) {
+                if ($board->secret_mode === SecretMode::Disabled) {
+                    // 비밀글 기능이 꺼진 게시판에서 일반글을 비밀글로 바꾸는 요청은 거부한다.
+                    // 기능을 끄기 전에 쓴 비밀글이 같은 값으로 다시 오는 것은 전환이 아니므로 통과시킨다.
+                    if (! empty($data['is_secret']) && ! $post->is_secret) {
+                        return $this->error('sirsoft-board::messages.posts.secret_post_not_allowed', 403);
+                    }
+                } elseif ($board->secret_mode === SecretMode::Always) {
+                    // 비밀글 필수 게시판에서는 비밀글 해제를 허용하지 않는다.
+                    $data['is_secret'] = true;
+                }
+            }
 
             // `attachment_ids` 를 Service 로 넘기지 않으면 검증(형식·개수 상한 합산)은 통과하고
             // 첨부만 조용히 연결되지 않는다 (200 + 첨부 0 건). 관리자 경로는 넘기고 있으므로
@@ -806,6 +840,25 @@ class PostController extends PublicBaseController
 
         return $this->checkBoardPermission($slug, 'admin.manage')
             || $this->checkBoardPermission($slug, 'manager', PermissionType::User);
+    }
+
+    /**
+     * 공지 지정 권한 보유 여부를 확인합니다.
+     *
+     * 게시판 관리 권한(admin.manage / manager)은 상위 권한이므로 함께 인정하고,
+     * 공지 등록 권한(posts.write-notice)도 단독으로 인정합니다.
+     *
+     * @param  string  $slug  게시판 슬러그
+     * @return bool 공지 지정 가능 여부
+     */
+    private function canSetNotice(string $slug): bool
+    {
+        if (! Auth::check()) {
+            return false;
+        }
+
+        return $this->hasBoardManagePermission($slug)
+            || $this->checkBoardPermission($slug, 'posts.write-notice', PermissionType::User);
     }
 
     /**

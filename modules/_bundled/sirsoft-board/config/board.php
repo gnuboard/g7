@@ -82,6 +82,10 @@ return [
             'description' => ['ko' => '비밀글 조회', 'en' => 'View secret posts'],
             'scope' => ['resource_route_key' => 'post', 'owner_key' => 'user_id'],
         ],
+        'posts.write-notice' => [
+            'name' => ['ko' => '공지 등록', 'en' => 'Create Notice Posts'],
+            'description' => ['ko' => '게시글을 공지로 등록/해제', 'en' => 'Set and unset posts as notice'],
+        ],
         'comments.read' => [
             'name' => ['ko' => '댓글 조회', 'en' => 'View Comments'],
             'description' => ['ko' => '댓글 목록 조회', 'en' => 'View comment list'],

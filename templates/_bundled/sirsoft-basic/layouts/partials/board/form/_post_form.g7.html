@@ -21,11 +21,11 @@
         <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">$t:board.created_at: {{form_data?.data?.created_at}}</p>
       </div>
     </div>
-    <!-- 게시글 옵션 (공지사항/비밀글) -->
-    <div data-if="{{form_meta?.data?.board?.user_abilities?.can_manage || form_meta?.data?.board?.secret_mode === 'enabled' || form_meta?.data?.board?.secret_mode === 'always'}}">
+    <!-- 게시글 옵션 (공지사항/비밀글) — 공지는 게시판 관리 또는 공지 등록 권한, 비밀글은 게시판 비밀글 모드가 켜진 경우에만 카드가 생긴다 -->
+    <div data-if="{{form_meta?.data?.board?.user_abilities?.can_manage || form_meta?.data?.board?.user_abilities?.can_write_notice || form_meta?.data?.board?.secret_mode === 'enabled' || form_meta?.data?.board?.secret_mode === 'always'}}">
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <!-- 공지사항 카드 (관리자 전용) -->
-        <label data-if="{{form_meta?.data?.board?.user_abilities?.can_manage &amp;&amp; !_local.form?.parent_id}}" class="block bg-white dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors">
+        <!-- 공지사항 카드 (게시판 관리 권한 또는 공지 등록 권한 보유자 전용 — 서버도 같은 권한으로 판정한다) -->
+        <label data-if="{{(form_meta?.data?.board?.user_abilities?.can_manage || form_meta?.data?.board?.user_abilities?.can_write_notice) &amp;&amp; !_local.form?.parent_id}}" class="block bg-white dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors">
           <div class="flex items-start gap-3">
             <input type="checkbox" name="is_notice" class="mt-0.5 w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"/>
             <div class="flex-1">
@@ -136,7 +136,7 @@
         <span>$t:board.form.attachments</span>
       </label>
       <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">$t:board.form.attachments_desc|maxFiles={{form_meta?.data?.board?.max_file_count ?? 5}}|maxSize={{form_meta?.data?.board?.max_file_size ?? 10}}</p>
-      <file-uploader collection="post_attachments" maxFiles="{{form_meta?.data?.board?.max_file_count ?? 5}}" maxSize="{{form_meta?.data?.board?.max_file_size ?? 10}}" accept="{{form_meta?.data?.board?.allowed_extensions?.length ? '.' + form_meta?.data?.board?.allowed_extensions?.join(',.') : '.jpg,.jpeg,.png,.gif,.pdf,.zip'}}" initialFiles="{{form_meta?.data?.attachments ?? []}}" :autoUpload="false" uploadTriggerEvent="upload:board_attachments" :compact="true" :confirmBeforeRemove="true" confirmRemoveTitle="$t:board.posts.form.confirm_remove_attachment_title" confirmRemoveMessage="$t:board.posts.form.confirm_remove_attachment_message">
+      <file-uploader collection="post_attachments" maxFiles="{{form_meta?.data?.board?.max_file_count ?? 5}}" maxSize="{{form_meta?.data?.board?.max_file_size ?? 10}}" accept="{{form_meta?.data?.board?.allowed_extensions?.length ? '.' + form_meta?.data?.board?.allowed_extensions?.join(',.') : '.jpg,.jpeg,.png,.gif,.pdf,.zip'}}" initialFiles="{{form_meta?.data?.attachments ?? []}}" :autoUpload="false" uploadTriggerEvent="upload:board_attachments" :confirmBeforeRemove="true" confirmRemoveTitle="$t:board.posts.form.confirm_remove_attachment_title" confirmRemoveMessage="$t:board.posts.form.confirm_remove_attachment_message">
         <prop name="uploadParams">
           <field name="temp_key" value="{{_local.tempKey}}"/>
         </prop>

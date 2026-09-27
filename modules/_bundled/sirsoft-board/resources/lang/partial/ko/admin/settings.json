@@ -264,6 +264,7 @@
       "posts.read": "게시글 조회",
       "posts.write": "게시글 작성/수정/삭제",
       "posts.read-secret": "비밀글 조회",
+      "posts.write-notice": "공지 등록",
       "comments.read": "댓글 조회",
       "comments.write": "댓글 작성/수정/삭제",
       "attachments.upload": "파일 업로드/삭제",

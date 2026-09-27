@@ -528,6 +528,7 @@ return [
             'read' => '投稿閲覧',
             'write' => '投稿作成',
             'read-secret' => '非公開投稿閲覧',
+            'write-notice' => 'お知らせ登録',
         ],
         'comments' => [
             'read' => 'コメント閲覧',

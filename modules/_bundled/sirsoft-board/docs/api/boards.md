@@ -2997,6 +2997,9 @@ HTTP/1.1 200
 | --- | --- | --- | --- | --- | --- |
 | slug | path | string | 예 | — | 대상 리소스의 slug (URL 친화 식별자) |
 | is_secret | body | boolean | 아니오 | — | 비밀글 여부. 문자열 `"true"`/`"false"`/`"1"`/`"0"` 도 수용해 boolean 으로 정규화한다 (해석 불가값은 422) |
+| is_notice | body | boolean | 아니오 | — | 공지 여부. `true` 는 게시판 관리 권한(`admin.manage`/`manager`) 또는 공지 등록 권한(`sirsoft-board.{slug}.posts.write-notice`) 보유자만 보낼 수 있다 — 없으면 403(`게시글을 공지로 지정할 권한이 없습니다.`). 비회원이 `true` 를 보내면 422 |
+| status | body | string | 아니오 | `published` | 게시 상태. 사용자 경로는 `published` 만 허용한다 — `blinded`/`deleted` 는 422 |
+| author_name | body | string | 비회원 예 | — | 비회원 작성자명 (최대 50자). 회원이 보내면 저장하지 않는다 — 회원 글의 작성자명은 계정 이름 |
 
 > 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`sirsoft-board.user_post.store_validation_rules`).
 
@@ -3146,14 +3149,14 @@ HTTP/1.1 201
 
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
-| 403 | Forbidden | 요구 권한(`sirsoft-board.{slug}.posts.write`)이 없는 경우, 게시판이 파일 업로드를 허용하지 않는데 파일을 첨부한 경우(`이 게시판은 파일 업로드가 허용되지 않습니다.`), 첨부 업로드 권한이 없는 경우, 비밀글 기능이 꺼진 게시판에 `is_secret=true` 로 요청한 경우 |
+| 403 | Forbidden | 요구 권한(`sirsoft-board.{slug}.posts.write`)이 없는 경우, 게시판이 파일 업로드를 허용하지 않는데 파일을 첨부한 경우(`이 게시판은 파일 업로드가 허용되지 않습니다.`), 첨부 업로드 권한이 없는 경우, 비밀글 기능이 꺼진 게시판에 `is_secret=true` 로 요청한 경우, 공지 지정 권한 없이 `is_notice=true` 로 요청한 경우(`게시글을 공지로 지정할 권한이 없습니다.`) |
 | 404 | Not Found | 게시판 슬러그에 해당하는 활성 게시판이 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지 — 제목/본문 길이, 금지어, 작성 쿨다운 등) |
 | 500 | Internal Server Error | 게시글 저장 중 예외 (`게시글 등록에 실패했습니다.`) |
 
 <!-- @generated:end -->
 
-**설명** 게시글을 작성합니다. `auth:sanctum` + `sirsoft-board.{slug}.posts.write` 권한이 필요하며, `StorePostRequest` 로 검증된 제목/본문/카테고리 등을 받아 현재 로그인 사용자를 작성자로 저장합니다. 파일이 첨부되면 게시판의 업로드 허용 여부와 첨부 업로드 권한을 함께 확인하고, 게시판 `secret_mode` 에 따라 비밀글 설정을 강제(always)하거나 거부(disabled)합니다. 스팸 방지 쿨다운이 설정되어 있으면 작성 성공 후 쿨다운을 기록합니다.
+**설명** 게시글을 작성합니다. `auth:sanctum` + `sirsoft-board.{slug}.posts.write` 권한이 필요하며, `StorePostRequest` 로 검증된 제목/본문/카테고리 등을 받아 현재 로그인 사용자를 작성자로 저장합니다. 파일이 첨부되면 게시판의 업로드 허용 여부와 첨부 업로드 권한을 함께 확인하고, 게시판 `secret_mode` 에 따라 비밀글 설정을 강제(always)하거나 거부(disabled)합니다. 공지 지정(`is_notice=true`)은 게시판 관리 권한 또는 공지 등록 권한(`posts.write-notice`) 보유자만 할 수 있으며 — 화면의 공지 옵션 은닉은 UI 일 뿐이라 서버가 판정한다 — 회원이 보낸 `author_name` 은 저장하지 않습니다. 스팸 방지 쿨다운이 설정되어 있으면 작성 성공 후 쿨다운을 기록합니다.
 
 
 ### GET /api/modules/sirsoft-board/boards/{slug}/posts/form-data
@@ -3326,7 +3329,9 @@ HTTP/1.1 200
                 "can_write_comments": true,
                 "can_upload": true,
                 "can_download": true,
-                "can_manage": true
+                "can_manage": true,
+                "can_write_notice": true,
+                "can_access_admin": true
             },
             "abilities": {
                 "can_create": true,
@@ -3347,7 +3352,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 게시글 작성/수정 폼 렌더링에 필요한 게시판 메타 정보를 반환합니다. `auth:sanctum` + `sirsoft-board.{slug}.posts.write` 권한이 필요하며, 게시판 설정과 사용자 권한(`user_abilities`)을 담습니다. `post_id` 가 있으면 수정 모드로 작성자/작성일/첨부 목록을 포함하되 회원 글은 본인 또는 관리자만, 비회원 글은 비밀번호/검증 토큰 확인을 요구합니다. `parent_id` 가 있으면 답변 모드로 원글 정보를 포함하며, 답변 기능이 꺼져 있거나 원글이 블라인드/삭제 상태면 차단합니다.
+**설명** 게시글 작성/수정 폼 렌더링에 필요한 게시판 메타 정보를 반환합니다. `auth:sanctum` + `sirsoft-board.{slug}.posts.write` 권한이 필요하며, 게시판 설정과 사용자 권한(`user_abilities`)을 담습니다. `user_abilities.can_write_notice` 는 공지 등록 권한(`sirsoft-board.{slug}.posts.write-notice`) 보유 여부로, 화면은 `can_manage` 또는 이 값이 참일 때 공지 옵션을 보여 준다(서버의 공지 지정 판정과 같은 기준 — 게시판이 권한 행을 갖지 않으면 키가 빠진다). `post_id` 가 있으면 수정 모드로 작성자/작성일/첨부 목록을 포함하되 회원 글은 본인 또는 관리자만, 비회원 글은 비밀번호/검증 토큰 확인을 요구합니다. `parent_id` 가 있으면 답변 모드로 원글 정보를 포함하며, 답변 기능이 꺼져 있거나 원글이 블라인드/삭제 상태면 차단합니다.
 
 비회원 글의 본인 확인 값(`verification_token`)은 요청 헤더 `X-Board-Post-Verify-Token` 으로 보냅니다 — 자격증명을 쿼리 문자열에 실으면 웹서버 접근 기록과 `Referer` 에 그대로 남기 때문입니다. 호환을 위해 본문/쿼리의 `verification_token` 도 계속 받으며, 헤더가 있으면 헤더를 먼저 사용합니다. 이 값은 조회 단계에서 소비되지 않고 확인만 하며, 저장·삭제 요청에서 한 번 사용되면 폐기됩니다.
 
@@ -3673,6 +3678,8 @@ HTTP/1.1 200
 | attachment_ids | body | integer[] | 아니오 | — | 미리 업로드해 둔 첨부 ID 목록. 게시글에 연결된다 (관리자 수정 경로와 동일) |
 | temp_key | body | string | 아니오 | UUID | 임시 업로드 묶음 키. 해당 묶음의 첨부가 게시글로 이동·연결된다 |
 | is_secret | body | boolean | 아니오 | — | 비밀글 여부. 문자열 `"true"`/`"false"`/`"1"`/`"0"` 도 수용해 boolean 으로 정규화한다 (해석 불가값은 422) |
+| is_notice | body | boolean | 아니오 | — | 공지 여부. 현재 값과 **다르게** 보내면(등록·해제 모두) 게시판 관리 권한 또는 공지 등록 권한(`posts.write-notice`)이 있어야 한다 — 없으면 403. 수정 폼이 기존 값을 그대로 되돌려 보내는 것은 판정하지 않는다 |
+| status | body | string | 아니오 | `published` | 게시 상태. 사용자 경로는 `published` 만 허용 |
 | password | body | string | 아니오 | min 4 | 비회원 게시글 수정 시 소유권 확인용 비밀번호. 형식(문자열, 4자 이상)만 여기서 검증하며 배열 주입 등 형식 위반은 422. 소유권 판정은 컨트롤러(`canModifyPost`)가 수행 |
 | verification_token | body | string | 아니오 | max 255 | 비회원 게시글 수정 시 소유권 확인용 검증 토큰 (비밀번호 검증 후 발급). 문자열 형식 위반 시 422 |
 
@@ -3858,13 +3865,13 @@ HTTP/1.1 200
 
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
-| 403 | Forbidden | 요구 권한(`sirsoft-board.{slug}.posts.write\|sirsoft-board.{slug}.manager`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`sirsoft-board.{slug}.posts.write\|sirsoft-board.{slug}.manager`)이 없는 경우, 수정 권한(작성자·관리자·비회원 검증)이 없는 경우(`게시글 수정 권한이 없습니다.`), 공지 지정 권한 없이 공지 여부를 바꾸려는 경우(`게시글을 공지로 지정할 권한이 없습니다.`), 비밀글 기능이 꺼진 게시판에서 일반글을 비밀글로 바꾸려는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
 
-**설명** 게시글을 수정합니다. `auth:sanctum` + `sirsoft-board.{slug}.posts.write` 또는 게시판 manager 권한이 필요하며, `UpdatePostRequest` 로 검증된 값으로 갱신합니다. 작성자 본인, 게시판 관리자, 또는 비회원 글의 검증 토큰·비밀번호 확인 중 하나를 만족해야 수정할 수 있고, 조건 미충족 시 403을 반환합니다.
+**설명** 게시글을 수정합니다. `auth:sanctum` + `sirsoft-board.{slug}.posts.write` 또는 게시판 manager 권한이 필요하며, `UpdatePostRequest` 로 검증된 값으로 갱신합니다. 작성자 본인, 게시판 관리자, 또는 비회원 글의 검증 토큰·비밀번호 확인 중 하나를 만족해야 수정할 수 있고, 조건 미충족 시 403을 반환합니다. 작성 경로와 같은 권한·설정 규칙을 적용합니다 — 공지 여부를 바꾸려면 게시판 관리 권한 또는 공지 등록 권한이 필요하고, 비밀글 기능이 꺼진 게시판에서는 일반글을 비밀글로 바꿀 수 없으며(기능을 끄기 전의 비밀글은 그대로 수정 가능), 비밀글 필수 게시판에서는 `is_secret` 을 보내면 항상 비밀글로 저장됩니다.
 
 `password` 와 `verification_token` 은 **본인 확인용 자격증명이며 저장되지 않습니다.** 게시글 비밀번호는 작성 시점에 설정된 값이 그대로 유지되며, 이 엔드포인트로 변경할 수 없습니다(수정 요청에 실린 값을 저장하면 저장된 해시가 평문으로 덮여 이후 본인 확인이 불가능해집니다). 같은 규칙이 댓글 수정 엔드포인트에도 적용됩니다.
 
@@ -4285,6 +4292,7 @@ HTTP/1.1 200
 | --- | --- | --- | --- | --- | --- |
 | slug | path | string | 예 | — | 대상 리소스의 slug (URL 친화 식별자) |
 | postId | path | string | 예 | — | 대상 post의 식별자 |
+| status | body | string | 아니오 | `published` | 댓글 상태. 요청으로 지정할 수 있는 값은 `published` 뿐이다 — `blinded`/`deleted` 는 422 (블라인드·복구는 관리자 전용 엔드포인트) |
 
 > 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`sirsoft-board.comment.store_validation_rules`).
 
@@ -4379,7 +4387,7 @@ HTTP/1.1 201
 | --- | --- | --- |
 | 403 | Forbidden | 요구 권한(`sirsoft-board.{slug}.comments.write`)이 없거나, 게시판의 댓글 기능이 꺼진 경우 (`이 게시판은 댓글 기능이 비활성화되어 있습니다.`) |
 | 404 | Not Found | 게시판 슬러그에 해당하는 게시판이 없는 경우 (`게시판을 찾을 수 없습니다.`) |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지 — 댓글 길이, 금지어, 작성 쿨다운 등) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지 — 댓글 길이, 금지어, 작성 쿨다운, `published` 가 아닌 `status` 등) |
 | 500 | Internal Server Error | 댓글 저장 중 예외 (`댓글 등록에 실패했습니다.`) |
 
 <!-- @generated:end -->
@@ -4436,7 +4444,7 @@ HTTP/1.1 200
 | --- | --- | --- |
 | 403 | Forbidden | 요구 권한(`sirsoft-board.{slug}.comments.write\|sirsoft-board.{slug}.manager`)이 없거나, 게시판의 댓글 기능이 꺼진 경우, 또는 작성자 본인·게시판 관리자·비회원 댓글 비밀번호 확인 중 어느 조건도 만족하지 않는 경우 (`댓글 삭제 권한이 없습니다.`) |
 | 404 | Not Found | 게시판 또는 댓글이 없는 경우 (`댓글을 찾을 수 없습니다.`) |
-| 422 | Unprocessable Entity | `password` 가 형식 검증(문자열, 4~20자)을 위반한 경우 (`error.errors.password` — 배열 주입 차단) |
+| 422 | Unprocessable Entity | `password` 가 형식 검증(문자열, 4~20자)을 위반한 경우 (`error.errors.password` — 배열 주입 차단), `status` 가 `published` 가 아닌 경우 (`error.errors.status`) |
 | 500 | Internal Server Error | 삭제 처리 중 예외 (`댓글 삭제에 실패했습니다.`) |
 
 <!-- @generated:end -->
@@ -4460,6 +4468,7 @@ HTTP/1.1 200
 | content | body | string | 예 | 게시판 설정의 min/max 길이 | 수정할 댓글 본문 (금지 키워드 검사 포함) |
 | password | body | string | 조건부 | min 4, max 20 | 비회원 댓글 수정 시 소유권 확인용 비밀번호 (검증 토큰이 있으면 생략 가능) |
 | verification_token | body | string | 아니오 | max 255 | 비회원 댓글 수정 시 비밀번호 재입력을 대체하는 임시 검증 토큰 (verify-password 로 발급, 1회 소비) |
+| status | body | string | 아니오 | `published` | 댓글 상태. 요청으로 지정할 수 있는 값은 `published` 뿐이다 — `blinded`/`deleted` 는 422 (블라인드·복구는 관리자 전용 엔드포인트) |
 
 > 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`sirsoft-board.comment.update_validation_rules`).
 

@@ -1768,6 +1768,8 @@ HTTP/1.1 200
 | slug | path | string | 예 | — | 대상 리소스의 slug (URL 친화 식별자) |
 | postId | path | string | 예 | — | 대상 post의 식별자 |
 
+> `status` 는 요청으로 `published` 만 지정할 수 있습니다(사용자 경로와 같은 검증 규칙 공유) — 블라인드·복구는 전용 `/blind`·`/restore` 엔드포인트를 씁니다.
+
 > 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`sirsoft-board.comment.store_validation_rules`).
 
 **요청 예시**
@@ -1940,6 +1942,8 @@ HTTP/1.1 200
 | slug | path | string | 예 | — | 대상 리소스의 slug (URL 친화 식별자) |
 | postId | path | string | 예 | — | 대상 post의 식별자 |
 | id | path | string | 예 | — | 대상 리소스의 식별자 |
+
+> `status` 는 요청으로 `published` 만 지정할 수 있습니다(사용자 경로와 같은 검증 규칙 공유) — 블라인드·복구는 전용 `/blind`·`/restore` 엔드포인트를 씁니다.
 
 > 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`sirsoft-board.comment.update_validation_rules`).
 

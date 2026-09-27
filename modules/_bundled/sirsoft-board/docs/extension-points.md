@@ -61,8 +61,8 @@
 | `sirsoft-board.comment.before_update` | action | — | `src/Services/CommentService.php:417` |
 | `sirsoft-board.comment.filter_create_data` | filter | — | `src/Services/CommentService.php:362` |
 | `sirsoft-board.comment.filter_update_data` | filter | — | `src/Services/CommentService.php:422` |
-| `sirsoft-board.comment.store_validation_rules` | filter | — | `src/Http/Requests/StoreCommentRequest.php:91` |
-| `sirsoft-board.comment.update_validation_rules` | filter | — | `src/Http/Requests/UpdateCommentRequest.php:67` |
+| `sirsoft-board.comment.store_validation_rules` | filter | — | `src/Http/Requests/StoreCommentRequest.php:94` |
+| `sirsoft-board.comment.update_validation_rules` | filter | — | `src/Http/Requests/UpdateCommentRequest.php:68` |
 | `sirsoft-board.guest_author.after_prune` | action | — | `src/Privacy/BoardGuestRetentionHandler.php:192` |
 | `sirsoft-board.guest_author.before_prune` | action | — | `src/Privacy/BoardGuestRetentionHandler.php:186` |
 | `sirsoft-board.permissions.after_create` | action | — | `src/Services/BoardService.php:431` |
@@ -109,7 +109,7 @@
 | `sirsoft-board.settings.after_bulk_apply` | action | — | `src/Services/BoardService.php:1368` |
 | `sirsoft-board.settings.after_bulk_apply_aborted` | action | — | `src/Services/BoardService.php:1359` |
 | `sirsoft-board.settings.before_bulk_apply` | action | — | `src/Services/BoardService.php:1263` |
-| `sirsoft-board.user_post.store_validation_rules` | filter | — | `src/Http/Requests/User/StorePostRequest.php:166` |
+| `sirsoft-board.user_post.store_validation_rules` | filter | — | `src/Http/Requests/User/StorePostRequest.php:167` |
 | `sirsoft-board.user_post.update_validation_rules` | filter | — | `src/Http/Requests/User/UpdatePostRequest.php:116` |
 <!-- @generated:hooks-published END -->
 
