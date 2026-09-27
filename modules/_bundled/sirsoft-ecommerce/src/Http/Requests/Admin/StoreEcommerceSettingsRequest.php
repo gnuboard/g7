@@ -193,7 +193,7 @@ class StoreEcommerceSettingsRequest extends FormRequest
         $locale = app()->getLocale();
 
         return [
-            '_tab' => ['sometimes', 'string', 'in:basic_info,language_currency,seo,order_settings,claim,shipping,review_settings,notification_definitions,notifications,inquiry,mileage'],
+            '_tab' => ['sometimes', 'string', 'in:basic_info,language_currency,seo,order_settings,claim,shipping,review_settings,notification_definitions,notifications,inquiry,mileage,privacy_retention'],
 
             'notifications' => ['sometimes', 'array'],
             'notifications.channels' => ['sometimes', 'array'],
@@ -311,6 +311,14 @@ class StoreEcommerceSettingsRequest extends FormRequest
             'order_settings.pending_order_expire_minutes' => ['sometimes', 'required', 'integer', 'min:'.config('sirsoft-ecommerce.limits.pending_order_expire_minutes_min', 0), 'max:'.config('sirsoft-ecommerce.limits.pending_order_expire_minutes_max', 20160)],
             'order_settings.cart_expiry_days' => ['nullable', 'integer', 'min:'.config('sirsoft-ecommerce.limits.cart_expiry_days_min', 1), 'max:'.config('sirsoft-ecommerce.limits.cart_expiry_days_max', 365)],
             'order_settings.stock_restore_on_cancel' => ['nullable', 'boolean'],
+
+            // 개인정보 보유기간 (이슈 #636) — 종결 주문의 개인정보를 보유기간 경과 후 익명화·삭제한다.
+            // 되돌릴 수 없는 파기라 하한(전자상거래법 5년)을 서버가 강제한다.
+            'privacy_retention' => ['sometimes', 'array'],
+            'privacy_retention.enabled' => ['nullable', 'boolean'],
+            'privacy_retention.retention_years' => ['sometimes', 'required', 'integer', 'min:'.config('sirsoft-ecommerce.limits.privacy_retention_years_min', 5), 'max:'.config('sirsoft-ecommerce.limits.privacy_retention_years_max', 20)],
+            'privacy_retention.mode' => ['sometimes', 'required', 'string', 'in:anonymize,delete'],
+
             'order_settings.cancellable_statuses' => ['sometimes', 'array'],
             'order_settings.cancellable_statuses.*' => ['string', Rule::in(self::claimInstantCancelStatuses())],
             'order_settings.confirmable_statuses' => ['nullable', 'array'],
@@ -532,7 +540,15 @@ class StoreEcommerceSettingsRequest extends FormRequest
      */
     public function attributes(): array
     {
-        return __('sirsoft-ecommerce::validation.attributes');
+        $attributes = __('sirsoft-ecommerce::validation.attributes');
+
+        return array_merge(is_array($attributes) ? $attributes : [], [
+            // 개인정보 보유기간 (이슈 #636) — 키별로 명시해 오류 문구에 필드 키가 노출되지 않게 한다
+            'privacy_retention' => __('sirsoft-ecommerce::validation.privacy_retention_attributes.section'),
+            'privacy_retention.enabled' => __('sirsoft-ecommerce::validation.privacy_retention_attributes.enabled'),
+            'privacy_retention.retention_years' => __('sirsoft-ecommerce::validation.privacy_retention_attributes.retention_years'),
+            'privacy_retention.mode' => __('sirsoft-ecommerce::validation.privacy_retention_attributes.mode'),
+        ]);
     }
 
     /**
@@ -1857,7 +1873,7 @@ class StoreEcommerceSettingsRequest extends FormRequest
     public function validatedSettings(): array
     {
         $validated = $this->validated();
-        $validCategories = ['basic_info', 'language_currency', 'seo', 'order_settings', 'claim', 'shipping', 'review_settings', 'inquiry', 'notifications', 'mileage'];
+        $validCategories = ['basic_info', 'language_currency', 'seo', 'order_settings', 'claim', 'shipping', 'review_settings', 'inquiry', 'notifications', 'mileage', 'privacy_retention'];
 
         return array_filter(
             $validated,

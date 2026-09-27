@@ -31,7 +31,7 @@ use Modules\Sirsoft\Board\Enums\TriggerType;
  * @property array|null $action_logs
  * @property int $depth
  * @property array|null $reaction_counts
- * @property string $ip_address
+ * @property string|null $ip_address 작성 IP (보유기간 경과 시 NULL 로 파기)
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property Carbon|null $deleted_at

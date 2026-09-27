@@ -153,6 +153,7 @@ return [
         'boards_delete_denied' => '掲示板削除権限がありません。',
         'reports_view_denied' => '通報閲覧権限がありません。',
         'reports_manage_denied' => '通報管理権限がありません。',
+        'notice_denied' => '投稿をお知らせとして指定する権限がありません。',
     ],
     'confirm' => [
         'delete_board' => '本当にこの掲示板を削除しますか？この操作は元に戻すことはできません。',
@@ -362,5 +363,21 @@ return [
         'cancel_failed' => '通報のキャンセルに失敗しました。',
         'cancel_not_allowed' => '受付状態でのみキャンセルできます（現在：:status）。',
         'log_not_found' => '通報履歴が見つかりません。',
+    ],
+    'privacy_retention' => [
+        'handlers' => [
+            'ip' => '掲示板作成IP',
+            'guest' => '掲示板非会員作成者情報',
+        ],
+        'target_columns' => [
+            'title' => 'タイトル',
+            'author' => '投稿者',
+            'board' => '掲示板·カテゴリー',
+            'created_at' => '投稿日',
+        ],
+        'target_kinds' => [
+            'post' => '投稿',
+            'comment' => 'コメント',
+        ],
     ],
 ];

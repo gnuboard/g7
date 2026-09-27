@@ -13,7 +13,8 @@
     "dismissed": "通知を閉じました。",
     "auto_deactivated_listed": "自動的に無効化された拡張のリストです。",
     "recover_action": "再度有効化",
-    "dismiss_action": "通知を閉じる"
+    "dismiss_action": "通知を閉じる",
+    "open_action": "開く"
   },
   "badges": {
     "incompatible": "コアのアップグレードが必要です",

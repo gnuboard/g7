@@ -31,6 +31,11 @@ class ExpressionEvaluator
      */
     private const RAW_PREFIX = 'raw:';
 
+    /**
+     * 평가기를 생성합니다.
+     *
+     * 파이프는 화면 쪽과 같은 이름·같은 순서로 풀어야 하므로 전용 레지스트리를 함께 만든다.
+     */
     public function __construct()
     {
         $this->pipeRegistry = new PipeRegistry;
@@ -50,6 +55,7 @@ class ExpressionEvaluator
      * 템플릿 번역 사전을 설정합니다.
      *
      * @param  array  $translations  번역 사전 (dot notation 접근 가능)
+     * @return void 없음
      */
     public function setTranslations(array $translations): void
     {
@@ -64,6 +70,7 @@ class ExpressionEvaluator
      * 와일드카드("*")를 통해 동적 접근 시 기본값을 반환할 수 있습니다.
      *
      * @param  array  $overrides  오버라이드 정의 (예: {"_local": {"collapsedReplies": {"*": false}}})
+     * @return void 없음
      */
     public function setSeoOverrides(array $overrides): void
     {
@@ -2069,7 +2076,11 @@ class ExpressionEvaluator
             'parseFloat' => is_numeric($value) ? (float) $value : null,
             'isNaN' => ! is_numeric($value),
             'isFinite' => is_numeric($value) && is_finite((float) $value),
-            'encodeURIComponent' => is_string($value) ? rawurlencode($value) : '',
+            // 자바스크립트 `encodeURIComponent` 는 `!*'()` 를 남기는데 `rawurlencode` 는 인코딩한다 —
+            // 같은 식이 봇 화면에서만 다른 주소가 되지 않도록 그 다섯 글자를 되돌린다.
+            'encodeURIComponent' => is_string($value)
+                ? strtr(rawurlencode($value), ['%21' => '!', '%2A' => '*', '%27' => "'", '%28' => '(', '%29' => ')'])
+                : '',
             'decodeURIComponent' => is_string($value) ? rawurldecode($value) : '',
             '$t' => $this->evaluateTranslationFunction($argsStr, $context),
             '$localized' => $this->evaluateLocalizedFunction($value, $context),
@@ -2548,6 +2559,11 @@ class ExpressionEvaluator
 
     /**
      * Array.prototype.find 구현
+     *
+     * @param  array  $values  대상 배열
+     * @param  array  $callback  콜백 정의 (params·body)
+     * @param  array  $context  평가 컨텍스트
+     * @return mixed 조건을 처음 만족한 값 (없으면 null)
      */
     private function arrayFind(array $values, array $callback, array $context): mixed
     {
@@ -2562,6 +2578,11 @@ class ExpressionEvaluator
 
     /**
      * Array.prototype.findIndex 구현
+     *
+     * @param  array  $values  대상 배열
+     * @param  array  $callback  콜백 정의 (params·body)
+     * @param  array  $context  평가 컨텍스트
+     * @return int 조건을 처음 만족한 자리 (없으면 -1)
      */
     private function arrayFindIndex(array $values, array $callback, array $context): int
     {
@@ -2576,6 +2597,11 @@ class ExpressionEvaluator
 
     /**
      * Array.prototype.some 구현
+     *
+     * @param  array  $values  대상 배열
+     * @param  array  $callback  콜백 정의 (params·body)
+     * @param  array  $context  평가 컨텍스트
+     * @return bool 하나라도 만족하면 true
      */
     private function arraySome(array $values, array $callback, array $context): bool
     {
@@ -2590,6 +2616,11 @@ class ExpressionEvaluator
 
     /**
      * Array.prototype.every 구현
+     *
+     * @param  array  $values  대상 배열
+     * @param  array  $callback  콜백 정의 (params·body)
+     * @param  array  $context  평가 컨텍스트
+     * @return bool 모두 만족하면 true
      */
     private function arrayEvery(array $values, array $callback, array $context): bool
     {
@@ -2604,6 +2635,12 @@ class ExpressionEvaluator
 
     /**
      * Array.prototype.reduce 구현
+     *
+     * @param  array  $values  대상 배열
+     * @param  array  $callback  콜백 정의 (params·body)
+     * @param  mixed  $initialValue  누적 시작값
+     * @param  array  $context  평가 컨텍스트
+     * @return mixed 누적 결과
      */
     private function arrayReduce(array $values, array $callback, mixed $initialValue, array $context): mixed
     {
@@ -2628,6 +2665,11 @@ class ExpressionEvaluator
 
     /**
      * Array.prototype.sort (콜백 비교) 구현
+     *
+     * @param  array  $values  대상 배열
+     * @param  array  $callback  콜백 정의 (params·body)
+     * @param  array  $context  평가 컨텍스트
+     * @return array 정렬된 배열
      */
     private function arraySort(array $values, array $callback, array $context): array
     {

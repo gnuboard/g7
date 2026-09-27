@@ -4,6 +4,7 @@
             "availableChannels": "Available Channels",
             "boardIdentityPolicies": "Board Identity Policies",
             "boardIdentityPurposes": "Board Identity Purposes",
+            "boardPrivacyRetentionPreview": "Board Privacy Retention Targets",
             "boardNotificationDefinitions": "Board Notification Definitions",
             "board_list_for_inquiry": "Board List for Inquiry",
             "board_types": "Board Types",
@@ -23,7 +24,9 @@
             "scrap_boards": "Scrap board options",
             "reactionTypes": "Reaction Types",
             "reactions": "Reaction list",
-            "reaction_boards": "Reaction board options"
+            "reaction_boards": "Reaction board options",
+            "privacyTargets": "Retention processing targets (author IP and guest)",
+            "privacyManualRuns": "Privacy action manual run status"
         }
     },
     "common": {

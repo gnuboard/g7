@@ -82,7 +82,7 @@
         <tab-navigation data-ref="tab_navigation" activeTabId="{{route.path === '/admin/schedules/queue' ? 'queue' : 'schedules'}}" variant="default">
           <prop name="tabs">
             <item id="schedules" label="$t:admin.schedules.tabs.schedules" iconName="clock"/>
-            <item id="queue" label="$t:admin.schedules.tabs.queue" iconName="bar-chart-2" :disabled="true"/>
+            <item id="queue" label="$t:admin.schedules.tabs.queue" iconName="chart-column" :disabled="true"/>
           </prop>
           <on type="change" event="onTabChange">
             <!-- 탭 전환 — 탭이 **URL 경로**라 이동이다. 기본 탭만 경로 뒤가 비고 나머지는 이름이 붙는다.

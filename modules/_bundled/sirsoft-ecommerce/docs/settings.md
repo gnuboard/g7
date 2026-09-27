@@ -99,6 +99,68 @@ _`getSettingsSchema()` 선언이 없습니다._
 하나뿐이며, `$source` 가 선택된 제공자가 아니면 거부합니다. 적용 후에는
 `sirsoft-ecommerce.currency.after_apply_rates` 액션만 발행합니다(`settings.after_save` 를 쓰면
 구독 플러그인과 무한 재귀합니다).
+
+### 개인정보 보유기간 (`privacy_retention`, 이슈 #636)
+
+「개인정보 보유기간」 탭이 저장하는 카테고리입니다. 종결 주문의 개인정보를 보유기간이 지나면
+익명화하거나 주문째 삭제합니다.
+
+| 키 | 기본값 | 의미 |
+|---|---|---|
+| `enabled` | `false` | 보유기간 처리 사용 여부 — 되돌릴 수 없는 처리라 기본 꺼짐 |
+| `retention_years` | `5` | 종결 후 보유기간(년). **하한 5년**(전자상거래법 §6) — 저장 검증(`limits.privacy_retention_years_min`)과 판독부 바닥값 둘 다 강제 |
+| `mode` | `anonymize` | `anonymize`(개인정보만 가림) / `delete`(주문째 삭제) |
+
+실행은 이 모듈이 하지 않습니다 — 코어 `privacy:process-retention`(매일)이 `core.privacy.retention_handlers`
+로 등록된 `sirsoft-ecommerce.order`(`src/Privacy/OrderRetentionHandler.php`)를 부르고, 주문 한 건의
+처리는 `OrderPrivacyRetentionService` 가 합니다. 대상 건수는 `GET …/admin/settings/privacy-retention-preview`
+(저장된 설정 기준, **꺼져 있어도 센다** — 꺼짐은 `enabled` 로 구분)가 커맨드의 `--dry-run` 과 같은 조건식으로 셉니다.
+건수 옆 「대상 주문 보기」는 코어 공통 대상 명단 API(`GET /api/admin/privacy/retention-targets/sirsoft-ecommerce.order`)를
+무한 스크롤 모달로 엽니다(대상이 0건이어도 버튼은 보이고, 창은 빈 명단을 안내합니다) — 행은 주문번호·주문자·주문 상태·종결일이고 주문 상세로 새 탭을 엽니다(휴지통 주문은 관리자 상세가 없어 링크 없이 주문번호만 — 대상에는 든다). 권한은 적용 범위가 전체여야 합니다(범위를 좁혀 위임받은 관리자는 건수만 봅니다). 명단은 주문자 이름이
+그대로 나오므로 `sirsoft-ecommerce.settings.read` + `sirsoft-ecommerce.orders.read` 가 모두 있어야 보입니다.
+핸들러 계약 전체는 코어 [개인정보 보유기간 처리 가이드](../../../../docs/backend/privacy-retention.md)에 있습니다.
+
+「보유기간이 지난 종결 주문」 대상 행(`privacy_retention_target_row` — 이름 · 건수 · 대상 보기 · 결과 줄)의 **「지금 실행」**은 코어 관리자 직권 실행(`retention:sirsoft-ecommerce.order`)입니다 — 핸들러를 등록한 것만으로
+코어가 대상을 만들므로 이 모듈에 별도 등록은 없습니다. 확인 창이 코어 `…/manual-runs/{target}/preview` 로 건수·방식을
+다시 세고, 「실행」은 큐에 접수합니다(`enabled` 가 꺼져 있어도 저장된 기간·방식으로 `process(force: true)` 한 번).
+결과는 탭의 상태 줄이 코어 상태 API(`privacyManualRuns` 데이터 소스)로 보여 주고, 진행 중이면 3초마다 다시 받습니다.
+실행 권한은 `runPermissions()` — `sirsoft-ecommerce.settings.update` + `sirsoft-ecommerce.orders.update`, 방식이
+`delete` 면 `sirsoft-ecommerce.orders.delete` 까지(전체 범위). 계약은 코어 가이드 「관리자 직권 실행」 절 참조.
+
+- **「종결」**: 주문 상태 구매확정·취소 + 진행 중 환불(요청·승인·처리 중·보류) 없음. 종결 시각은
+  `confirmed_at`/`cancelled_at` 과 완료된 환불의 `refunded_at` 중 늦은 것이고, 비어 있는 레거시 주문은
+  `updated_at` 으로 대신합니다(실제보다 늦거나 같아 더 오래 보존하는 쪽으로만 틀립니다).
+  배송 중·구매확정 전 주문은 어떤 경우에도 대상이 아닙니다.
+- **익명화가 NULL 이 아니라 `***` 인 이유**: 주소 테이블의 이름·연락처·우편번호·주소가 NOT NULL 이라
+  스키마를 건드리지 않고 치환값을 넣습니다(nullable 칸만 NULL). 주문번호·금액·상태는 법정 거래
+  기록이라 남으므로 결제 플러그인의 주문번호 역조회(영수증·정산 대사)는 계속 동작합니다. 대신
+  **비회원 주문조회(주문자 연락처 인증)와 관리자 주문 검색(이름·연락처)으로는 찾을 수 없습니다**.
+- **결제 칸에서 지우는 것과 남기는 것**: 구매자 연락처·입금/환불 계좌 명의·현금영수증 식별번호·
+  **카드번호 마스킹본**(앞뒤 자리가 카드를 가리키는 파생 식별자)·접속 환경은 지웁니다. 카드 승인번호·
+  카드사명·할부개월은 결제 대행사와의 대사·취소 조회에 쓰는 대금결제 기록이라 남깁니다. 세금계산서는
+  사업자 정보(상호·등록번호·주소)를 두고 대표자명·담당자 연락처만 지웁니다.
+- **주문 메타의 사본**: 주소 테이블만 가리면 사본이 남습니다. PG 결제에서 「배송지 저장」을 고르고
+  결제가 끝나지 않아 자동 취소된 주문은 저장 대기 배송지 전체(`order_meta.shipping_info_for_save`)를,
+  임시 주문을 거친 주문은 배송비 계산 주소(`order_meta.calculation_input.shipping_address`)를 갖고
+  있습니다. 익명화는 앞의 것을 지우고 뒤의 것은 국가 코드만 남깁니다.
+- **확장이 남긴 사본 — `sirsoft-ecommerce.order.after_anonymize`**: 주문 한 건을 익명화할 때마다
+  주문 ID 를 인자로 발행합니다. 결제 플러그인처럼 자기 칸에 주문자·수령인 정보를 복사해 둔 확장은
+  이 훅에서 그 사본을 지웁니다(예: `sirsoft-pay_kginicis` 가 에스크로 배송 등록의 수령인 이름·주소를
+  지운다). 익명화 트랜잭션 안에서 발행하므로 리스너는 `sync: true` 로 구독하고, 던지면 그 주문의
+  익명화 전체가 롤백되어 다음 실행이 다시 잡습니다.
+- **삭제가 잃게 하는 것**: 주문 옵션에 NOT NULL 로 묶인 **상품 리뷰가 이미지째** 사라지고(평점 변동),
+  결제 플러그인 화면의 영수증·거래 조회가 그 주문번호로 열리지 않으며(FK 없는 문자열 참조),
+  쿠폰 발급·마일리지 거래는 남지만 주문 연결이 끊깁니다. 그래서 기본은 익명화이고, 설정 화면이
+  삭제를 고를 때 이를 적색으로 경고합니다.
+- **FK 없는 문자열 참조 — 삭제가 고아로 만드는 것**: 결제 플러그인 네 개(`sirsoft-pay_kginicis` ·
+  `sirsoft-pay_nhnkcp` · `sirsoft-pay_nicepayments` · `sirsoft-tosspayments`)의 거래·영수증 기록은
+  주문을 `order_number` 문자열로 가리킵니다. 외래키가 없어 이 모듈의 명시 삭제 목록에 잡히지 않고,
+  삭제 모드 뒤에는 그 기록이 가리킬 주문이 없어집니다(익명화는 주문번호를 남기므로 해당 없음).
+- **운영자 사전 고지**: 켜기 전에 개인정보 처리방침에 보유기간과 파기 방법을 안내해야 합니다.
+
+연간 개인정보 이용내역 통지(`core.privacy.notice_sections`)에는 `PrivacyRetentionListener` 가
+「주문 정보」 섹션을 수신자 로케일로 기여합니다 — 법정 보존(5년) 사실을 적고, 처리를 켰다면
+방식과 기간을 덧붙입니다. 개인 식별정보는 넣지 않습니다.
 <!-- @intent END -->
 
 ## 권한

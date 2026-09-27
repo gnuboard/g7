@@ -5,11 +5,11 @@
 ## 발행 훅
 
 <!-- @generated:hooks-published START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-발행 훅 582종 / 호출 지점 679곳. 이 중 580종은 `getHooks()` 선언에 없어 소스에서 자동 감지한 것입니다 — 선언에 추가하면 유형과 설명이 함께 실립니다. 훅 이름이 상수·변수로 조립된 호출이 21곳 있어 호출 위치가 표에 다 실리지 않을 수 있습니다.
+발행 훅 585종 / 호출 지점 683곳. 이 중 583종은 `getHooks()` 선언에 없어 소스에서 자동 감지한 것입니다 — 선언에 추가하면 유형과 설명이 함께 실립니다. 훅 이름이 상수·변수로 조립된 호출이 21곳 있어 호출 위치가 표에 다 실리지 않을 수 있습니다.
 
 | 훅 이름 | 유형 | 설명 | 발행 위치 |
 |---|---|---|---|
-| `core.module_settings.after_save` | action | — | `src/Http/Controllers/Admin/EcommerceSettingsController.php:167` 외 1곳 |
+| `core.module_settings.after_save` | action | — | `src/Http/Controllers/Admin/EcommerceSettingsController.php:169` 외 1곳 |
 | `sirsoft-ecommerce.adjustment.filter_restore_promotions` | filter | — | `src/Services/OrderAdjustmentService.php:841` |
 | `sirsoft-ecommerce.admin.user_currency.changed` | action | — | `src/Services/UserCurrencyService.php:72` |
 | `sirsoft-ecommerce.admin.user_shipping_country.changed` | action | — | `src/Services/UserShippingCountryService.php:74` |
@@ -91,7 +91,7 @@
 | `sirsoft-ecommerce.category-image.filter_reorder_validation_rules` | filter | — | `src/Http/Requests/Admin/ReorderCategoryImagesRequest.php:36` |
 | `sirsoft-ecommerce.category-image.filter_update_data` | filter | — | `src/Services/CategoryImageService.php:374` |
 | `sirsoft-ecommerce.category-image.filter_upload_file` | filter | — | `src/Services/CategoryImageService.php:69` |
-| `sirsoft-ecommerce.category-image.filter_upload_validation_rules` | filter | — | `src/Http/Requests/Admin/UploadCategoryImageRequest.php:64` |
+| `sirsoft-ecommerce.category-image.filter_upload_validation_rules` | filter | — | `src/Http/Requests/Admin/UploadCategoryImageRequest.php:66` |
 | `sirsoft-ecommerce.category.after_create` | action | — | `src/Services/CategoryService.php:176` |
 | `sirsoft-ecommerce.category.after_delete` | action | — | `src/Services/CategoryService.php:287` |
 | `sirsoft-ecommerce.category.after_list` | action | — | `src/Services/CategoryService.php:53` |
@@ -110,7 +110,7 @@
 | `sirsoft-ecommerce.category.before_show` | action | — | `src/Services/CategoryService.php:116` |
 | `sirsoft-ecommerce.category.before_toggle_status` | action | — | `src/Services/CategoryService.php:379` |
 | `sirsoft-ecommerce.category.before_update` | action | — | `src/Services/CategoryService.php:198` |
-| `sirsoft-ecommerce.category.create_validation_rules` | filter | — | `src/Http/Requests/Admin/CreateCategoryRequest.php:73` |
+| `sirsoft-ecommerce.category.create_validation_rules` | filter | — | `src/Http/Requests/Admin/CreateCategoryRequest.php:78` |
 | `sirsoft-ecommerce.category.filter_create_data` | filter | — | `src/Services/CategoryService.php:147` |
 | `sirsoft-ecommerce.category.filter_list_query` | filter | — | `src/Services/CategoryService.php:37` |
 | `sirsoft-ecommerce.category.filter_list_result` | filter | — | `src/Services/CategoryService.php:50` |
@@ -119,7 +119,7 @@
 | `sirsoft-ecommerce.category.filter_show_result` | filter | — | `src/Services/CategoryService.php:126` |
 | `sirsoft-ecommerce.category.filter_update_data` | filter | — | `src/Services/CategoryService.php:204` |
 | `sirsoft-ecommerce.category.reorder_validation_rules` | filter | — | `src/Http/Requests/Admin/ReorderCategoriesRequest.php:50` |
-| `sirsoft-ecommerce.category.update_validation_rules` | filter | — | `src/Http/Requests/Admin/UpdateCategoryRequest.php:77` |
+| `sirsoft-ecommerce.category.update_validation_rules` | filter | — | `src/Http/Requests/Admin/UpdateCategoryRequest.php:82` |
 | `sirsoft-ecommerce.checkout.before_payment` | action | — | `src/Http/Controllers/Traits/HandlesOrderCreation.php:84` |
 | `sirsoft-ecommerce.checkout.filter_response_data` | filter | — | `src/Services/CheckoutDataService.php:96` |
 | `sirsoft-ecommerce.checkout.update_validation_rules` | filter | — | `src/Http/Requests/Public/UpdateCheckoutRequest.php:55` |
@@ -259,8 +259,8 @@
 | `sirsoft-ecommerce.inquiry.delete_reply` | filter | — | `src/Services/ProductInquiryService.php:560` |
 | `sirsoft-ecommerce.inquiry.get_by_ids` | filter | — | `src/Services/ProductInquiryService.php:200` 외 1곳 |
 | `sirsoft-ecommerce.inquiry.get_settings` | filter | — | `src/Listeners/ProductInquiryBoardListener.php:270` 외 2곳 |
-| `sirsoft-ecommerce.inquiry.store_validation_messages` | filter | — | `src/Http/Requests/Public/StoreInquiryRequest.php:57` |
-| `sirsoft-ecommerce.inquiry.store_validation_rules` | filter | — | `src/Http/Requests/Public/StoreInquiryRequest.php:41` |
+| `sirsoft-ecommerce.inquiry.store_validation_messages` | filter | — | `src/Http/Requests/Public/StoreInquiryRequest.php:60` |
+| `sirsoft-ecommerce.inquiry.store_validation_rules` | filter | — | `src/Http/Requests/Public/StoreInquiryRequest.php:44` |
 | `sirsoft-ecommerce.inquiry.update` | filter | — | `src/Services/ProductInquiryService.php:436` |
 | `sirsoft-ecommerce.inquiry.update_reply` | filter | — | `src/Services/ProductInquiryService.php:519` |
 | `sirsoft-ecommerce.inquiry.update_validation_rules` | filter | — | `src/Http/Requests/User/UpdateInquiryRequest.php:40` |
@@ -294,14 +294,16 @@
 | `sirsoft-ecommerce.order-option.after_confirm` | action | — | `src/Services/OrderOptionService.php:300` 외 1곳 |
 | `sirsoft-ecommerce.order-option.before_confirm` | action | — | `src/Services/OrderService.php:953` |
 | `sirsoft-ecommerce.order.after_admin_notify` | action | — | `src/Services/OrderProcessingService.php:265` 외 2곳 |
+| `sirsoft-ecommerce.order.after_anonymize` | action | — | `src/Services/OrderPrivacyRetentionService.php:85` |
 | `sirsoft-ecommerce.order.after_bulk_shipping_update` | action | — | `src/Services/OrderService.php:740` |
 | `sirsoft-ecommerce.order.after_bulk_status_update` | action | — | `src/Services/OrderService.php:705` |
 | `sirsoft-ecommerce.order.after_bulk_update` | action | — | `src/Services/OrderService.php:628` |
 | `sirsoft-ecommerce.order.after_confirm` | action | — | `src/Services/OrderProcessingService.php:371` 외 1곳 |
 | `sirsoft-ecommerce.order.after_create` | action | — | `src/Services/OrderProcessingService.php:257` |
-| `sirsoft-ecommerce.order.after_delete` | action | — | `src/Services/OrderService.php:451` |
+| `sirsoft-ecommerce.order.after_delete` | action | — | `src/Services/OrderPrivacyRetentionService.php:138` 외 1곳 |
 | `sirsoft-ecommerce.order.after_deposit_recorded` | action | — | `src/Services/OrderProcessingService.php:1985` |
 | `sirsoft-ecommerce.order.after_payment_complete` | action | — | `src/Services/OrderProcessingService.php:370` 외 1곳 |
+| `sirsoft-ecommerce.order.after_prune` | action | — | `src/Privacy/OrderRetentionHandler.php:245` |
 | `sirsoft-ecommerce.order.after_purchase_confirmed` | action | — | `src/Services/OrderOptionService.php:1032` 외 1곳 |
 | `sirsoft-ecommerce.order.after_read` | action | — | `src/Services/OrderService.php:181` 외 1곳 |
 | `sirsoft-ecommerce.order.after_reset_guest_password` | action | — | `src/Services/OrderService.php:1036` |
@@ -317,6 +319,7 @@
 | `sirsoft-ecommerce.order.before_create` | action | — | `src/Services/OrderProcessingService.php:131` |
 | `sirsoft-ecommerce.order.before_delete` | action | — | `src/Services/OrderService.php:437` |
 | `sirsoft-ecommerce.order.before_payment_complete` | action | — | `src/Services/OrderProcessingService.php:359` 외 1곳 |
+| `sirsoft-ecommerce.order.before_prune` | action | — | `src/Privacy/OrderRetentionHandler.php:221` |
 | `sirsoft-ecommerce.order.before_reset_guest_password` | action | — | `src/Services/OrderService.php:1030` |
 | `sirsoft-ecommerce.order.before_update` | action | — | `src/Services/OrderService.php:218` |
 | `sirsoft-ecommerce.order.before_update_shipping_address` | action | — | `src/Services/OrderService.php:851` |
@@ -371,15 +374,15 @@
 | `sirsoft-ecommerce.product-common-info.filter_show_result` | filter | — | `src/Services/ProductCommonInfoService.php:85` |
 | `sirsoft-ecommerce.product-common-info.filter_update_data` | filter | — | `src/Services/ProductCommonInfoService.php:154` |
 | `sirsoft-ecommerce.product-common-info.update_validation_rules` | filter | — | `src/Http/Requests/Admin/UpdateProductCommonInfoRequest.php:42` |
-| `sirsoft-ecommerce.product-image.after_delete` | action | — | `src/Services/ProductImageService.php:295` |
-| `sirsoft-ecommerce.product-image.after_reorder` | action | — | `src/Services/ProductImageService.php:314` |
-| `sirsoft-ecommerce.product-image.after_upload` | action | — | `src/Services/ProductImageService.php:146` |
-| `sirsoft-ecommerce.product-image.before_delete` | action | — | `src/Services/ProductImageService.php:273` |
-| `sirsoft-ecommerce.product-image.before_reorder` | action | — | `src/Services/ProductImageService.php:309` |
-| `sirsoft-ecommerce.product-image.before_upload` | action | — | `src/Services/ProductImageService.php:78` |
+| `sirsoft-ecommerce.product-image.after_delete` | action | — | `src/Services/ProductImageService.php:304` |
+| `sirsoft-ecommerce.product-image.after_reorder` | action | — | `src/Services/ProductImageService.php:323` |
+| `sirsoft-ecommerce.product-image.after_upload` | action | — | `src/Services/ProductImageService.php:147` |
+| `sirsoft-ecommerce.product-image.before_delete` | action | — | `src/Services/ProductImageService.php:282` |
+| `sirsoft-ecommerce.product-image.before_reorder` | action | — | `src/Services/ProductImageService.php:318` |
+| `sirsoft-ecommerce.product-image.before_upload` | action | — | `src/Services/ProductImageService.php:79` |
 | `sirsoft-ecommerce.product-image.filter_reorder_validation_rules` | filter | — | `src/Http/Requests/Admin/ReorderProductImagesRequest.php:36` |
-| `sirsoft-ecommerce.product-image.filter_upload_file` | filter | — | `src/Services/ProductImageService.php:81` |
-| `sirsoft-ecommerce.product-image.filter_upload_validation_rules` | filter | — | `src/Http/Requests/Admin/UploadProductImageRequest.php:73` |
+| `sirsoft-ecommerce.product-image.filter_upload_file` | filter | — | `src/Services/ProductImageService.php:82` |
+| `sirsoft-ecommerce.product-image.filter_upload_validation_rules` | filter | — | `src/Http/Requests/Admin/UploadProductImageRequest.php:72` |
 | `sirsoft-ecommerce.product-notice-template.after_copy` | action | — | `src/Services/ProductNoticeTemplateService.php:247` |
 | `sirsoft-ecommerce.product-notice-template.after_create` | action | — | `src/Services/ProductNoticeTemplateService.php:120` |
 | `sirsoft-ecommerce.product-notice-template.after_delete` | action | — | `src/Services/ProductNoticeTemplateService.php:216` |
@@ -401,10 +404,10 @@
 | `sirsoft-ecommerce.product-notice-template.filter_show_result` | filter | — | `src/Services/ProductNoticeTemplateService.php:85` |
 | `sirsoft-ecommerce.product-notice-template.filter_update_data` | filter | — | `src/Services/ProductNoticeTemplateService.php:149` |
 | `sirsoft-ecommerce.product-notice-template.update_validation_rules` | filter | — | `src/Http/Requests/Admin/UpdateProductNoticeTemplateRequest.php:43` |
-| `sirsoft-ecommerce.product-review.after_bulk_delete` | action | — | `src/Services/ProductReviewService.php:310` |
+| `sirsoft-ecommerce.product-review.after_bulk_delete` | action | — | `src/Services/ProductReviewService.php:340` |
 | `sirsoft-ecommerce.product-review.after_create` | action | — | `src/Services/ProductReviewService.php:165` |
 | `sirsoft-ecommerce.product-review.after_delete` | action | — | `src/Services/ProductReviewService.php:253` |
-| `sirsoft-ecommerce.product-review.before_bulk_delete` | action | — | `src/Services/ProductReviewService.php:288` |
+| `sirsoft-ecommerce.product-review.before_bulk_delete` | action | — | `src/Services/ProductReviewService.php:318` |
 | `sirsoft-ecommerce.product-review.before_create` | action | — | `src/Services/ProductReviewService.php:146` |
 | `sirsoft-ecommerce.product-review.before_delete` | action | — | `src/Services/ProductReviewService.php:234` |
 | `sirsoft-ecommerce.product.after_bulk_price_update` | action | — | `src/Services/ProductService.php:573` |
@@ -449,8 +452,8 @@
 | `sirsoft-ecommerce.product.public_popular_validation_rules` | filter | — | `src/Http/Requests/Public/PublicProductPopularRequest.php:37` |
 | `sirsoft-ecommerce.product.public_recent_validation_rules` | filter | — | `src/Http/Requests/Public/PublicProductRecentRequest.php:37` |
 | `sirsoft-ecommerce.product.show_for_copy_validation_rules` | filter | — | `src/Http/Requests/Admin/ProductShowForCopyRequest.php:58` |
-| `sirsoft-ecommerce.product.store_validation_rules` | filter | — | `src/Http/Requests/Admin/StoreProductRequest.php:180` |
-| `sirsoft-ecommerce.product.update_validation_rules` | filter | — | `src/Http/Requests/Admin/UpdateProductRequest.php:61` |
+| `sirsoft-ecommerce.product.store_validation_rules` | filter | — | `src/Http/Requests/Admin/StoreProductRequest.php:192` |
+| `sirsoft-ecommerce.product.update_validation_rules` | filter | — | `src/Http/Requests/Admin/UpdateProductRequest.php:67` |
 | `sirsoft-ecommerce.product_inquiry.after_bulk_delete` | action | — | `src/Services/ProductInquiryService.php:827` |
 | `sirsoft-ecommerce.product_inquiry.after_create` | action | — | `src/Services/ProductInquiryService.php:314` |
 | `sirsoft-ecommerce.product_inquiry.after_reply` | action | — | `src/Services/ProductInquiryService.php:767` |
@@ -486,7 +489,7 @@
 | `sirsoft-ecommerce.search_preset.list_validation_rules` | filter | — | `src/Http/Requests/Admin/SearchPresetListRequest.php:40` |
 | `sirsoft-ecommerce.sequence.after_generate` | action | — | `src/Services/SequenceService.php:57` 외 1곳 |
 | `sirsoft-ecommerce.sequence.before_generate` | action | — | `src/Services/SequenceService.php:44` |
-| `sirsoft-ecommerce.settings.after_save` | action | — | `src/Http/Controllers/Admin/EcommerceSettingsController.php:164` |
+| `sirsoft-ecommerce.settings.after_save` | action | — | `src/Http/Controllers/Admin/EcommerceSettingsController.php:166` |
 | `sirsoft-ecommerce.settings.filter_available_payment_methods` | filter | — | `src/Services/EcommerceSettingsService.php:908` |
 | `sirsoft-ecommerce.shipping.calculate_fee` | filter | — | `src/Services/OrderCalculationService.php:2141` |
 | `sirsoft-ecommerce.shipping_carrier.after_create` | action | — | `src/Services/ShippingCarrierService.php:156` |
@@ -758,6 +761,15 @@ FormRequest 쪽 `{동작}_validation_rules`(filter). `brand.*` 19종을 한 번 
 
 훅 이름이 상수·변수로 조립되는 호출이 5곳 있어 표에 위치가 다 실리지 않습니다. 그 자리를 정확히
 알아야 하면 소스에서 `HookManager::` 호출부를 직접 확인합니다.
+
+`sirsoft-ecommerce.order.before_prune`(보존일) / `.after_prune`(보존일, 건수)는 종결 주문 개인정보
+보유기간 핸들러(이슈 #636)가 코어 prune 훅 규약(7.0.7)에 따라 발행합니다. **`--dry-run` 에서는
+발행하지 않습니다.** 삭제 방식이면 주문을 영구 삭제한 뒤(트랜잭션 커밋 후) 주문마다 관리자 삭제와 같은
+`sirsoft-ecommerce.order.after_delete`(주문 모델)를 발행합니다 — 주문 활동 로그가 「주문 삭제」를 남기고,
+주문 삭제에 반응하는 확장은 같은 훅으로 자기 자료를 정리합니다. 구독자가 받는 시점에 주문 행은 이미
+없으므로 모델은 메모리 값으로만 읽습니다. `order.before_delete` 는 발행하지 않습니다 — 관리자 요청을
+전제한 사전 검사를 무인 배치에 걸지 않습니다(게시판 보유기간 삭제와 같은 판단). 익명화 방식은 주문마다
+`sirsoft-ecommerce.order.after_anonymize`(주문 ID)를 익명화와 같은 트랜잭션 안에서 발행합니다.
 <!-- @intent END -->
 
 ## 구독 훅
@@ -774,6 +786,8 @@ FormRequest 쪽 `{동작}_validation_rules`(filter). `brand.*` 19종을 한 번 
 | `core.frontend.filter_app_config` | filter | `InjectAppConfigDeviceListener` | `injectDeviceFlags` | 20 |
 | `core.module_settings.after_save` | action (미선언) | `SeoSettingsCacheListener` | `onModuleSettingsSave` | 20 |
 | `core.notification.filter_default_definitions` | filter | `EcommerceNotificationDataListener` | `contributeDefaultDefinitions` | 20 |
+| `core.privacy.notice_sections` | filter | `PrivacyRetentionListener` | `addOrderNoticeSection` | 20 |
+| `core.privacy.retention_handlers` | filter | `PrivacyRetentionListener` | `addOrderHandler` | 20 |
 | `core.search.build_response` | filter | `SearchProductsListener` | `buildProductsResponse` | 20 |
 | `core.search.index_validation_rules` | filter | `SearchProductsListener` | `addValidationRules` | 20 |
 | `core.search.results` | filter | `SearchProductsListener` | `searchProducts` | 20 |
@@ -1033,6 +1047,7 @@ FormRequest 쪽 `{동작}_validation_rules`(filter). `brand.*` 19종을 한 번 
 | `MileageTransactionListener` | 5개 | 명시 등록 | ✅ | `src/Listeners/MileageTransactionListener.php` |
 | `OrderActivityLogListener` | 25개 | 명시 등록 | ✅ | `src/Listeners/OrderActivityLogListener.php` |
 | `OrderStatusNotificationListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/OrderStatusNotificationListener.php` |
+| `PrivacyRetentionListener` | 2개 | 명시 등록 | ✅ | `src/Listeners/PrivacyRetentionListener.php` |
 | `ProductActivityLogListener` | 7개 | 명시 등록 | ✅ | `src/Listeners/ProductActivityLogListener.php` |
 | `ProductInquiryBoardListener` | 5개 | 명시 등록 | ✅ | `src/Listeners/ProductInquiryBoardListener.php` |
 | `PurgeCashReceiptIdentifierListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/PurgeCashReceiptIdentifierListener.php` |

@@ -1,0 +1,31 @@
+feature: 관리자 주문 목록 레이아웃 계약 (이커머스)
+
+description: |
+  관리자 주문 목록(`admin_ecommerce_order_list` 와 그 조각 — 검색·필터·DataGrid·셀)이 백엔드 요청 키·API 응답
+  경로·DataGrid 컴포넌트 계약과 어긋나지 않는지를 구운 레이아웃 JSON 으로 잰다. 축은 화면 영역이고, 영역마다
+  그 영역이 지켜야 할 계약 하나를 효과로 둔다.
+
+  배경:
+    - DataGrid 가 받지 않는 prop(`columnSelectorId`·`loading`)을 싣고 테스트가 그 값을 고정하고 있었다 — 열 연결은
+      외부 ColumnSelector 의 id 가 맡고, 불러오는 동안 표시는 blur·전환 오버레이가 맡는다(#682 PO 실측 후속 4).
+
+axes:
+  area: [search_input, pagination, filter_params, grid_columns, grid_config, visible_columns, dynamic_filters, claim_filter_wired, shipping_filters, item_count_cell, amount_cell, orderer_filter, member_type_filter]
+
+effects:
+  - search_input_submits_on_enter_with_debounce
+  - pagination_reads_the_api_pagination_path
+  - filter_query_keys_match_the_backend_request
+  - datagrid_declares_the_expected_columns
+  - datagrid_props_match_the_component_contract
+  - visible_columns_follow_the_column_selector
+  - dynamic_filters_iterate_server_options
+  - claim_filters_are_wired
+  - shipping_filters_send_the_expected_keys
+  - order_item_cell_shows_extra_count
+  - order_amount_cell_shows_sub_lines
+  - orderer_filter_sends_the_expected_keys
+  - member_type_filter_sends_the_expected_keys
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/orderListLayouts.test.tsx

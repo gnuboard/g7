@@ -199,8 +199,9 @@
             </div>
             <div data-ref="field_status">
               <label class="form-label">$t:admin.users.form.fields.status</label>
-              <!-- 커스텀 Select 는 value-제어 전용 — defaultValue 는 렌더되지 않아 create 모드 표시가 비었다. 미전송 시 서버(CreateUserRequest)가 active 로 보정하므로 표시 기본값과 서버 기본값이 일치한다. -->
-              <select name="status" class="w-full" value="{{_local.form?.status ?? 'active'}}" options="{{route?.id ? [{label: '$t:admin.users.form.status_options.active', value: 'active'}, {label: '$t:admin.users.form.status_options.inactive', value: 'inactive'}, {label: '$t:admin.users.form.status_options.blocked', value: 'blocked'}, {label: '$t:admin.users.form.status_options.withdrawn', value: 'withdrawn'}] : [{label: '$t:admin.users.form.status_options.active', value: 'active'}, {label: '$t:admin.users.form.status_options.inactive', value: 'inactive'}, {label: '$t:admin.users.form.status_options.blocked', value: 'blocked'}] ?? []}}">
+              <!-- 커스텀 Select 는 value-제어 전용 — defaultValue 는 렌더되지 않아 create 모드 표시가 비었다. 미전송 시 서버(CreateUserRequest)가 active 로 보정하므로 표시 기본값과 서버 기본값이 일치한다.
+                   수정 모드에만 탈퇴·휴면·가입대기를 둔다 — 셋 다 "그 상태가 되기까지의 이력"(탈퇴 처리·장기 미접속·인증 미완료)이 전제라 생성으로 건너뛰면 그 이력을 가진 회원과 구분되지 않는다. 휴면이 빠져 있으면 휴면 회원을 열었을 때 select 값이 옵션에 없어 칸이 빈다. -->
+              <select name="status" class="w-full" value="{{_local.form?.status ?? 'active'}}" options="{{route?.id ? [{label: '$t:admin.users.form.status_options.active', value: 'active'}, {label: '$t:admin.users.form.status_options.inactive', value: 'inactive'}, {label: '$t:admin.users.form.status_options.blocked', value: 'blocked'}, {label: '$t:admin.users.form.status_options.withdrawn', value: 'withdrawn'}, {label: '$t:admin.users.form.status_options.dormant', value: 'dormant'}, {label: '$t:admin.users.form.status_options.pending_verification', value: 'pending_verification'}] : [{label: '$t:admin.users.form.status_options.active', value: 'active'}, {label: '$t:admin.users.form.status_options.inactive', value: 'inactive'}, {label: '$t:admin.users.form.status_options.blocked', value: 'blocked'}] ?? []}}">
                 <on type="change">
                   <set-state target="local" form.status="{{$event.target.value}}"/>
                 </on>
@@ -332,9 +333,10 @@
         <div data-ref="section_activity_info" data-if="{{route?.id}}" id="activity_info" class="admin-card">
           <h3 class="card-title">$t:admin.users.form.sections.activity_info</h3>
           <div class="row-stack">
-            <!-- 여섯 항목 모두 **시스템이 적는 기록**이라 잠근 채로 둔다. 종전에는 가입일·마지막
+            <!-- 일곱 항목 모두 **시스템이 적는 기록**이라 잠근 채로 둔다. 종전에는 가입일·마지막
                  로그인·IP 셋만 있어, 상세에서 본 잠금 상태·탈퇴일시·차단일시가 수정 화면에서
-                 사라졌다(요구사항 2026-09-21). 잠금은 상세 헤더의 「잠금 해제」 버튼이 푼다.
+                 사라졌다(요구사항 2026-09-21). 휴면 전환일도 상세에 있는 기록이라 같은 이유로
+                 함께 세운다. 잠금은 상세 헤더의 「잠금 해제」 버튼이 푼다.
                  3열 고정은 규약(§6-0)대로 `md:` 대신 responsive 로 가른다. -->
             <div class="grid grid-cols-3 gap-4">
               <responsive on="portable" class="grid grid-cols-1 gap-4"/>
@@ -363,6 +365,10 @@
               <div data-ref="field_blocked_at">
                 <label class="form-label">$t:admin.users.detail.blocked_at</label>
                 <input type="text" value="{{user?.data?.blocked_at ?? ''}}" :disabled="true" class="text-gray-500 dark:text-gray-400"/>
+              </div>
+              <div data-ref="field_dormant_at">
+                <label class="form-label">$t:admin.users.detail.dormant_at</label>
+                <input type="text" value="{{user?.data?.dormant_at ?? ''}}" :disabled="true" class="text-gray-500 dark:text-gray-400"/>
               </div>
             </div>
           </div>

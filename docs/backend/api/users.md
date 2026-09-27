@@ -63,7 +63,7 @@ _목록 응답: `data.data[]` 배열 항목의 필드 + `data.pagination`._
 | country | null | `null` | 국가 코드 (ISO 3166-1 alpha-2) |
 | country_flag | null | `null` | 국가 코드의 국기 이모지 (country 값에서 파생) |
 | country_name | null | `null` | 국가 코드의 현지화 국가명 (country 값에서 파생) |
-| status | string | `active` | 계정 상태 (active: 활성, inactive: 비활성, blocked: 차단, withdrawn: 탈퇴) |
+| status | string | `active` | 계정 상태 (active: 활성, inactive: 비활성, blocked: 차단, withdrawn: 탈퇴, dormant: 휴면) |
 | status_label | string | `활성` | 상태의 사람이 읽는 라벨 (상태 Enum label() 산물) |
 | status_variant | string | `success` | 상태 표시 색상/스타일 변형 키 (상태 Enum variant() 산물 — UI 배지용) |
 | mobile | null | `null` | 휴대폰 번호 |
@@ -224,7 +224,7 @@ HTTP/1.1 200
 | language | body | string | 아니오 | `ko`, `en` | 언어 코드 |
 | country | body | string | 아니오 | — | 국가 코드 (ISO 3166-1 alpha-2) |
 | timezone | body | string | 아니오 | — | 타임존 식별자 |
-| status | body | string | 아니오 | `active`, `inactive`, `blocked`, `withdrawn` | 계정 상태 (미지정 시 active) |
+| status | body | string | 아니오 | `active`, `inactive`, `blocked`, `withdrawn`, `dormant` | 계정 상태 (미지정 시 active) |
 | homepage | body | string | 아니오 | max 255 | 홈페이지 URL |
 | mobile | body | string | 아니오 | max 20 | 휴대전화 번호 |
 | phone | body | string | 아니오 | max 20 | 전화번호 |
@@ -305,7 +305,7 @@ _단건 응답: `data` 객체의 필드 (생성된 사용자 — `UserResource::
 | language | string | `ko` | 사용자 언어 설정 (ko: 한국어, en: English) |
 | language_label | string | `한국어` | 언어 코드의 현지화 라벨 (`user.language.{code}` 번역) |
 | country | string\|null | `KR` | 국가 코드 (ISO 3166-1 alpha-2) |
-| status | string | `active` | 계정 상태 (UserStatus Enum: active/inactive/blocked/withdrawn) |
+| status | string | `active` | 계정 상태 (UserStatus Enum: active/inactive/blocked/withdrawn/dormant) |
 | status_label | string | `활성` | 상태의 사람이 읽는 라벨 (UserStatus::label()) |
 | status_variant | string | `success` | 상태 표시 색상/스타일 변형 키 (UserStatus::variant() — UI 배지용) |
 | is_admin | boolean | `false` | 관리자 역할 보유 여부 (User::isAdmin()) |
@@ -400,7 +400,7 @@ HTTP/1.1 201
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
 | ids | body | array | 예 | min 1 | 대상 리소스 식별자 배열 (대량 작업 대상) |
-| status | body | string | 예 | — | 일괄 적용할 계정 상태 (UserStatus Enum 값: active/inactive/blocked/withdrawn/pending_verification) |
+| status | body | string | 예 | — | 일괄 적용할 계정 상태 (UserStatus Enum 값: active/inactive/blocked/withdrawn/pending_verification/dormant) |
 
 > 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.user.bulk_update_status_validation_rules`).
 
@@ -464,7 +464,7 @@ HTTP/1.1 200
 
 **설명**
 
-여러 사용자의 계정 상태를 한 번에 변경합니다. `ids` 는 대상 사용자 UUID 배열이며, `status` 는 `active`/`inactive`/`blocked`/`withdrawn`/`pending_verification`(UserStatus Enum 값) 중 하나이다. `ExcludeCurrentUser` 규칙으로 요청자 본인은 대상에서 제외된다. 목록 화면의 다중 선택 후 일괄 상태 변경에 사용한다.
+여러 사용자의 계정 상태를 한 번에 변경합니다. `ids` 는 대상 사용자 UUID 배열이며, `status` 는 `active`/`inactive`/`blocked`/`withdrawn`/`pending_verification`/`dormant`(UserStatus Enum 값) 중 하나이다. `ExcludeCurrentUser` 규칙으로 요청자 본인은 대상에서 제외된다. 목록 화면의 다중 선택 후 일괄 상태 변경에 사용한다.
 
 `status=withdrawn` 요청은 상태 컬럼만 바꾸지 않고 **건별로 정식 탈퇴 처리**를 수행한다 (익명화 + 연계 데이터 정리 + 탈퇴 훅). 회원이 직접 탈퇴한 경우와 결과가 같다. 관리자 역할을 가진 대상은 건너뛰고 `failed_count` 로 집계되며, 나머지 대상의 처리는 계속된다.
 
@@ -699,7 +699,7 @@ Authorization: Bearer {YOUR_TOKEN}
 | language | string | `ko` | 사용자 언어 설정 (ko: 한국어, en: 영어) |
 | language_label | string | `한국어` | 언어 코드의 현지화 라벨 (user.language.{code} 번역) |
 | country | null | `null` | 국가 코드 (ISO 3166-1 alpha-2) |
-| status | string | `active` | 계정 상태 (active: 활성, inactive: 비활성, blocked: 차단, withdrawn: 탈퇴) |
+| status | string | `active` | 계정 상태 (active: 활성, inactive: 비활성, blocked: 차단, withdrawn: 탈퇴, dormant: 휴면) |
 | status_label | string | `활성` | 상태의 사람이 읽는 라벨 (상태 Enum label() 산물) |
 | status_variant | string | `success` | 상태 표시 색상/스타일 변형 키 (상태 Enum variant() 산물 — UI 배지용) |
 | is_admin | boolean | `true` | 관리자 역할 보유 여부 (User::isAdmin() — 역할 관계 기반 파생) |
@@ -845,7 +845,7 @@ _목록 응답: `data[]` 배열 항목의 필드 (페이지네이션 없는 단�
 | language | string | `ko` | 사용자 언어 설정 (ko: 한국어, en: English) |
 | language_label | string | `한국어` | 언어 코드의 현지화 라벨 (`user.language.{code}` 번역) |
 | country | string\|null | `KR` | 국가 코드 (ISO 3166-1 alpha-2) |
-| status | string | `active` | 계정 상태 (UserStatus Enum: active/inactive/blocked/withdrawn) |
+| status | string | `active` | 계정 상태 (UserStatus Enum: active/inactive/blocked/withdrawn/dormant) |
 | status_label | string | `활성` | 상태의 사람이 읽는 라벨 (UserStatus::label()) |
 | status_variant | string | `success` | 상태 표시 색상/스타일 변형 키 (UserStatus::variant() — UI 배지용) |
 | is_admin | boolean | `true` | 관리자 역할 보유 여부 (User::isAdmin()) |
@@ -1095,7 +1095,7 @@ _단건 응답: `data` 객체의 필드._
 | language | string | `ko` | 사용자 언어 설정 (ko: 한국어, en: 영어) |
 | language_label | string | `한국어` | 언어 코드의 현지화 라벨 (user.language.{code} 번역) |
 | country | null | `null` | 국가 코드 (ISO 3166-1 alpha-2) |
-| status | string | `active` | 계정 상태 (active: 활성, inactive: 비활성, blocked: 차단, withdrawn: 탈퇴) |
+| status | string | `active` | 계정 상태 (active: 활성, inactive: 비활성, blocked: 차단, withdrawn: 탈퇴, dormant: 휴면) |
 | status_label | string | `활성` | 상태의 사람이 읽는 라벨 (상태 Enum label() 산물) |
 | status_variant | string | `success` | 상태 표시 색상/스타일 변형 키 (상태 Enum variant() 산물 — UI 배지용) |
 | is_admin | boolean | `true` | 관리자 역할 보유 여부 (User::isAdmin() — 역할 관계 기반 파생) |
@@ -1129,6 +1129,7 @@ _단건 응답: `data` 객체의 필드._
 | ip_address | null | `null` | 마지막 접속 IP 주소 |
 | withdrawn_at | null | `null` | withdrawn 일시 |
 | blocked_at | null | `null` | blocked 일시 |
+| dormant_at | null | `null` | 휴면 전환 일시 (해제 시 NULL. 관리자 전용 필드) |
 | failed_login_attempts | integer | `0` | 연속 로그인 실패 횟수 |
 | locked_permanently | boolean | `false` | 영구 잠금 여부. true 면 `locked_until` 과 무관하게 잠금이 유지되며, 해제는 성공 로그인 또는 관리자의 잠금 해제로만 이뤄진다 (잠금 시간 설정이 `0`= 무기한일 때 세워진다) |
 | locked_until | null | `null` | 계정 잠금 해제 시각 (NULL = 잠금 없음) |
@@ -1311,7 +1312,7 @@ HTTP/1.1 200
 | language | body | string | 아니오 | `ko`, `en` | 언어 코드 |
 | country | body | string | 아니오 | — | 국가 코드 (ISO 3166-1 alpha-2) |
 | timezone | body | string | 아니오 | — | 타임존 식별자 |
-| status | body | string | 아니오 | `active`, `inactive`, `blocked`, `withdrawn` | 계정 상태 (미지정 시 active) |
+| status | body | string | 아니오 | `active`, `inactive`, `blocked`, `withdrawn`, `dormant` | 계정 상태 (미지정 시 active) |
 | homepage | body | string | 아니오 | max 255 | 홈페이지 URL |
 | mobile | body | string | 아니오 | max 20 | 휴대전화 번호 |
 | phone | body | string | 아니오 | max 20 | 전화번호 |
@@ -1392,7 +1393,7 @@ _단건 응답: `data` 객체의 필드 (수정된 사용자 — `UserResource::
 | language | string | `ko` | 사용자 언어 설정 (ko: 한국어, en: English) |
 | language_label | string | `한국어` | 언어 코드의 현지화 라벨 (`user.language.{code}` 번역) |
 | country | string\|null | `KR` | 국가 코드 (ISO 3166-1 alpha-2) |
-| status | string | `active` | 계정 상태 (UserStatus Enum: active/inactive/blocked/withdrawn) |
+| status | string | `active` | 계정 상태 (UserStatus Enum: active/inactive/blocked/withdrawn/dormant) |
 | status_label | string | `활성` | 상태의 사람이 읽는 라벨 (UserStatus::label()) |
 | status_variant | string | `success` | 상태 표시 색상/스타일 변형 키 (UserStatus::variant() — UI 배지용) |
 | is_admin | boolean | `true` | 관리자 역할 보유 여부 (User::isAdmin()) |
@@ -1628,7 +1629,7 @@ _단건 응답: `data` 객체의 필드._
 | --- | --- | --- | --- |
 | uuid | string | `a26219fc-94a0-4f63-9404-04c2a6ac99e4` | 외부 노출용 UUID (URL/API 식별자, 내부 id 비노출) |
 | name | string | `최고관리자` | 사용자 이름 |
-| status | string | `active` | 계정 상태 (active: 활성, inactive: 비활성, blocked: 차단, withdrawn: 탈퇴) |
+| status | string | `active` | 계정 상태 (active: 활성, inactive: 비활성, blocked: 차단, withdrawn: 탈퇴, dormant: 휴면) |
 | status_label | string | `활성` | 상태의 사람이 읽는 라벨 (상태 Enum label() 산물) |
 | avatar | null | `null` | 프로필 아바타 이미지 URL (미설정 시 null) |
 | bio | null | `null` | 자기소개 |

@@ -1121,6 +1121,14 @@ if (isset($_GET['ajax_action'])) {
                                     <span>의존성 취약점 점검</span>
                                     <span class="text-[10px] opacity-60">(security:audit-dependencies)</span>
                                 </button>
+                                <button onclick="runCommand('security:ip-restriction --status')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded transition-colors">
+                                    <span>IP 접근 제한 점검</span>
+                                    <span class="text-[10px] opacity-60">(security:ip-restriction --status)</span>
+                                </button>
+                                <button onclick="runCommand('security:ip-restriction --disable')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded transition-colors">
+                                    <span>IP 접근 제한 비상 해제</span>
+                                    <span class="text-[10px] opacity-60">(security:ip-restriction --disable)</span>
+                                </button>
                                 <button onclick="runCommand('seo:prune-stats')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded transition-colors">
                                     <span>SEO 캐시 통계 정리</span>
                                     <span class="text-[10px] opacity-60">(seo:prune-stats)</span>
@@ -1153,6 +1161,22 @@ if (isset($_GET['ajax_action'])) {
                                     <span>스토리지 잔존물 정리 (실행)</span>
                                     <span class="text-[10px] opacity-60">(storage:prune-leftovers)</span>
                                 </button>
+                                <button onclick="runCommand('privacy:process-retention --dry-run')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded transition-colors">
+                                    <span>보유기간 경과 개인정보 (미리보기)</span>
+                                    <span class="text-[10px] opacity-60">(privacy:process-retention --dry-run)</span>
+                                </button>
+                                <button onclick="runCommand('privacy:process-retention')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded transition-colors">
+                                    <span>보유기간 경과 개인정보 (실행)</span>
+                                    <span class="text-[10px] opacity-60">(privacy:process-retention)</span>
+                                </button>
+                                <button onclick="runCommand('privacy:process-dormant --dry-run')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded transition-colors">
+                                    <span>휴면 계정 처리 (미리보기)</span>
+                                    <span class="text-[10px] opacity-60">(privacy:process-dormant --dry-run)</span>
+                                </button>
+                                <button onclick="runCommand('privacy:process-dormant')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded transition-colors">
+                                    <span>휴면 계정 처리 (실행)</span>
+                                    <span class="text-[10px] opacity-60">(privacy:process-dormant)</span>
+                                </button>
                                 <button onclick="runCommand('identity:expire-challenges')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded transition-colors">
                                     <span>본인인증 challenge 만료 처리</span>
                                     <span class="text-[10px] opacity-60">(identity:expire-challenges)</span>
@@ -1168,6 +1192,38 @@ if (isset($_GET['ajax_action'])) {
                                 <button onclick="runCommand('dashboard:broadcast-resources')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-cyan-600 hover:bg-cyan-700 text-white text-xs font-medium rounded transition-colors">
                                     <span>대시보드 리소스 브로드캐스트</span>
                                     <span class="text-[10px] opacity-60">(dashboard:broadcast-resources)</span>
+                                </button>
+                                <button onclick="runCommand('analytics:archive --period=hour')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded transition-colors">
+                                    <span>방문자 통계 집계 (시간)</span>
+                                    <span class="text-[10px] opacity-60">(analytics:archive --period=hour)</span>
+                                </button>
+                                <button onclick="runCommand('analytics:archive --period=day')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded transition-colors">
+                                    <span>방문자 통계 집계 (일)</span>
+                                    <span class="text-[10px] opacity-60">(analytics:archive --period=day)</span>
+                                </button>
+                                <button onclick="runCommand('analytics:check-volume')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded transition-colors">
+                                    <span>방문자 통계 용량 점검</span>
+                                    <span class="text-[10px] opacity-60">(analytics:check-volume)</span>
+                                </button>
+                                <button onclick="runCommand('analytics:report --period=weekly')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded transition-colors">
+                                    <span>방문자 통계 주간 리포트</span>
+                                    <span class="text-[10px] opacity-60">(analytics:report --period=weekly)</span>
+                                </button>
+                                <button onclick="runCommand('analytics:update-cloud-ranges')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded transition-colors">
+                                    <span>클라우드 IP 대역 갱신</span>
+                                    <span class="text-[10px] opacity-60">(analytics:update-cloud-ranges)</span>
+                                </button>
+                                <button onclick="runCommand('analytics:broadcast-realtime')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-cyan-600 hover:bg-cyan-700 text-white text-xs font-medium rounded transition-colors">
+                                    <span>현재 접속자 브로드캐스트</span>
+                                    <span class="text-[10px] opacity-60">(analytics:broadcast-realtime)</span>
+                                </button>
+                                <button onclick="runCommand('analytics:prune --dry-run')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded transition-colors">
+                                    <span>방문자 통계 정리 (미리보기)</span>
+                                    <span class="text-[10px] opacity-60">(analytics:prune --dry-run)</span>
+                                </button>
+                                <button onclick="runCommand('analytics:prune')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded transition-colors">
+                                    <span>방문자 통계 정리 (실행)</span>
+                                    <span class="text-[10px] opacity-60">(analytics:prune)</span>
                                 </button>
                             </div>
                         </div>

@@ -1,5 +1,5 @@
 /**
- * E2E: SPA 목록 → 목록 이동 시 `_local` 격리 (트러블슈팅 state-closure 사례 4, engine-v1.71.1)
+ * E2E: SPA 목록 → 목록 이동 시 `_local` 격리 (트러블슈팅 state-closure 사례 4, engine-v1.72.1)
  *
  * 관리자 base 의 `admin_layout_root` 는 `_fromBase` 로 페이지 전환에도 보존된다. 그 인스턴스의
  * React 내부 상태(저장소 A)에는 이전 페이지의 `_local` 전체가 남는데, 초기화가 새 페이지의

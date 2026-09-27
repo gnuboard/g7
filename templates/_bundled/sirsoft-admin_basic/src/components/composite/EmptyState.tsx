@@ -88,10 +88,13 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
           className="w-48 h-48 mb-6 object-contain"
         />
       ) : iconName ? (
-        <Div className="mb-6 p-4 rounded-full bg-gray-100 dark:bg-gray-700">
+        // 아이콘은 글꼴 아이콘이라 크기가 글자 크기를 따른다 — 너비·높이만 주면 칸만 커지고
+        // 글리프는 기본 글자 크기로 칸 위쪽에 놓인다. 원이 크기·가운데 정렬을 맡고 아이콘은
+        // 글자 크기로 키운다.
+        <Div className="mb-6 w-20 h-20 flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700">
           <Icon
             name={iconName}
-            className="w-12 h-12 text-gray-400 dark:text-gray-500"
+            className="text-4xl leading-none text-gray-400 dark:text-gray-500"
           />
         </Div>
       ) : null}

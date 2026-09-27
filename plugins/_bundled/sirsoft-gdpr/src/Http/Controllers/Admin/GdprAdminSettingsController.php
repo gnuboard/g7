@@ -58,6 +58,7 @@ class GdprAdminSettingsController extends AdminBaseController
 
         return ResponseHelper::success('common.success', [
             'settings' => $settings,
+            'annual_notice_limits' => ['min' => Plugin::ANNUAL_NOTICE_MIN, 'max' => Plugin::ANNUAL_NOTICE_MAX],
             'default_blocked_domains_preview' => Plugin::DEFAULT_BLOCKED_DOMAINS_CATALOG,
             'default_necessary_allowlist_preview' => Plugin::DEFAULT_NECESSARY_ALLOWLIST_CATALOG,
         ]);

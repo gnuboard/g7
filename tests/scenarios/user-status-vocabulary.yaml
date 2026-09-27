@@ -1,0 +1,59 @@
+feature: 회원 상태 어휘 ↔ 화면 패리티 (UserStatus SSoT)
+
+description: |
+  `App\Enums\UserStatus` 가 회원 상태의 단일 출처다. 서버 검증은 이미 그 전량을 자동으로
+  받지만(`Rule::in(UserStatus::values())`) 화면은 손으로 적은 목록·삼항식을 쓴다. 그래서
+  상태가 하나 늘 때마다 **서버는 받는데 화면만 옛 어휘를 보내는 비대칭**이 생기고, 그 비대칭은
+  예외도 경고도 남기지 않는다.
+
+  이슈 #636 S4 가 `Dormant` 를 더했을 때 그 비대칭이 세 자리에서 동시에 났다:
+
+  - 회원 수정 폼의 상태 select 이 4종 하드코딩이라 휴면 회원을 열면 **선택된 값이 옵션에 없어
+    칸이 빈 채** 렌더됐다.
+  - 상태 뱃지 매핑을 관리자 목록·상세 2곳에서만 교체해, 같은 삼항식을 쓰는 **사용자 마이페이지**
+    에서는 `info`(가입대기)가 계속 노랑으로 떨어졌다. CHANGELOG 는 그 결함을 고쳤다고 적은
+    뒤였다.
+  - `UserResource` 가 `dormant_at` 을 내려보내는데 회원 상세 레이아웃이 그리지 않아 **API 에만
+    있는 값**이 됐다.
+
+  셋 다 "고쳐야 할 자리를 손으로 열거했기 때문에" 빠졌다. 그래서 이 시나리오는 **모집단을
+  저장소에서 파생**한다 — 상태 목록은 `UserStatus::cases()`, 뱃지를 그리는 레이아웃은
+  `LayoutCorpus`(왕복·이관 게이트와 같은 SSoT)에서 가져온다. 파일 목록을 다시 손으로 적으면
+  다음 화면이 같은 방식으로 빠진다.
+
+  모집단이 비면 green 이 되지 않도록 뱃지 축에는 하한(3)을 둔다 — 정규식이 좁아져 대상이
+  0건이 되어도 `assertSame([], [])` 는 조용히 통과하기 때문이다.
+
+  화면과 같은 비대칭이 **공개 문서**에서도 났다. `docs/backend/api/**` 가 `status` 의 허용값과
+  응답 필드를 손으로 열거하는데 `dormant` 가 그중 어디에도 없었고, 여덟 라운드의 검증과
+  `api:docgen --check` 가 전부 초록이었다 — 생성기는 「표·필드 설명은 전량 보존」이 규약이라
+  새 값·새 행을 넣지 않는다. 그래서 문서 채널도 같은 파생 모집단으로 함께 잠근다.
+
+axes:
+  surface: [admin_user_form, admin_user_detail, badge_layouts, template_component_status_union, login_dormancy_notice, public_api_docs]
+
+effects:
+  - admin_user_form_status_select_covers_every_user_status
+  - admin_user_detail_renders_dormant_at
+  - every_user_status_badge_layout_maps_all_variants
+  - template_component_status_union_covers_every_user_status
+  - every_login_surface_announces_the_dormancy_release
+  - every_user_status_value_is_named_in_the_api_docs
+  - status_paired_timestamp_columns_are_documented
+  - every_transition_timestamp_reader_is_listed_in_the_developer_docs
+
+test_files:
+  - tests/Feature/User/UserStatusVocabularyTest.php
+  - tests/Unit/Docs/UserStatusDocCoverageTest.php
+
+rules_layer_coverage:
+  - rule: enum-single-source-of-vocabulary
+    coverage: |
+      화면이 쓰는 상태 어휘를 `UserStatus::cases()`·`variant()` 에서 파생해 대조한다. Enum 에
+      케이스가 더해지면 그것을 반영하지 않은 화면이 red 가 된다.
+
+validation:
+  manual: |
+    ① `/admin/users/{id}/edit` 의 상태 드롭다운에 휴면·가입대기가 있고, 휴면 회원을 열었을 때
+    칸이 차 있는지 ② `/admin/users/{id}` 기본정보 탭에 「휴면 전환일」이 보이는지 ③ `/mypage`
+    에서 가입대기 회원의 상태 뱃지가 파랑(노랑 아님)인지, 휴면 회원이 회색인지 브라우저 실측.

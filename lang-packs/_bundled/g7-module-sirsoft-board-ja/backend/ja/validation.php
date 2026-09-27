@@ -458,9 +458,6 @@ return [
             'required' => 'パスワードを入力してください。',
             'min' => 'パスワードは最小:min文字以上である必要があります。',
         ],
-        'ip_address' => [
-            'required' => 'IPアドレスは必須です。',
-        ],
         'blocked_keyword' => '禁止用語":keyword"が含まれています。',
     ],
     'attachment' => [
@@ -531,6 +528,7 @@ return [
             'read' => '投稿閲覧',
             'write' => '投稿作成',
             'read-secret' => '非公開投稿閲覧',
+            'write-notice' => 'お知らせ登録',
         ],
         'comments' => [
             'read' => 'コメント閲覧',
@@ -648,5 +646,11 @@ return [
         'status' => [
             'in' => '有効でない処理ステータスです。',
         ],
+    ],
+    'privacy_retention_attributes' => [
+        'enabled' => '個人情報保有期間自動削除',
+        'ip_retention_days' => '作成IP保有期間',
+        'guest_retention_days' => '非会員作成者情報保有期間',
+        'guest_mode' => '非会員投稿処理方式',
     ],
 ];

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Api\Base\AdminBaseController;
+use App\Http\Requests\Settings\PrivacyPreviewRequest;
 use App\Http\Requests\Settings\RegenerateAppKeyRequest;
 use App\Http\Requests\Settings\RestoreSettingsRequest;
 use App\Http\Requests\Settings\SaveSettingsRequest;
@@ -11,6 +12,8 @@ use App\Http\Requests\Settings\TestMailRequest;
 use App\Http\Requests\Settings\TestOutboundProxyRequest;
 use App\Http\Requests\Settings\UpdateSettingRequest;
 use App\Http\Resources\SettingsResource;
+use App\Privacy\DormantAccountService;
+use App\Privacy\PrivacyRetentionManager;
 use App\Services\DriverConnectionTester;
 use App\Services\DriverRegistryService;
 use App\Services\ExtensionStaticCacheService;
@@ -29,12 +32,25 @@ use Illuminate\Validation\ValidationException;
  */
 class SettingsController extends AdminBaseController
 {
+    /**
+     * 설정 컨트롤러를 생성합니다.
+     *
+     * @param  SettingsService  $settingsService  설정 조회·저장 서비스
+     * @param  DriverConnectionTester  $driverConnectionTester  드라이버 연결 테스트
+     * @param  DriverRegistryService  $driverRegistryService  사용 가능 드라이버 카탈로그
+     * @param  OutboundProxyTester  $outboundProxyTester  아웃바운드 프록시 테스트
+     * @param  ExtensionStaticCacheService  $staticCacheService  초기 화면 정적 게시
+     * @param  PrivacyRetentionManager  $privacyRetentionManager  개인정보 보유기간 처리 진입점
+     * @param  DormantAccountService  $dormantAccountService  휴면 계정 생명주기 서비스
+     */
     public function __construct(
         private SettingsService $settingsService,
         private DriverConnectionTester $driverConnectionTester,
         private DriverRegistryService $driverRegistryService,
         private OutboundProxyTester $outboundProxyTester,
-        private ExtensionStaticCacheService $staticCacheService
+        private ExtensionStaticCacheService $staticCacheService,
+        private PrivacyRetentionManager $privacyRetentionManager,
+        private DormantAccountService $dormantAccountService
     ) {
         parent::__construct();
     }
@@ -190,6 +206,45 @@ class SettingsController extends AdminBaseController
     public function trustedProxy(): JsonResponse
     {
         return $this->success('common.success', TrustedProxyDiagnostic::forRequest(request()));
+    }
+
+    /**
+     * 개인정보 보유기간·휴면의 처리 대상 건수를 미리 조회합니다 (#636).
+     *
+     * 화면의 「대상 N건」 배지가 쓰는 값이며, 커맨드의 `--dry-run` 과 **같은 조건식**을 지납니다 —
+     * 화면에서 본 숫자와 실제 처리 건수가 어긋나면 운영자가 규모를 오판한 채 켜게 됩니다.
+     *
+     * **기능이 꺼져 있어도 건수를 돌려줍니다** — 켜기 전에 규모와 명단을 확인하는 자리이기
+     * 때문입니다(2026-09-23 확정). "꺼짐" 과 "대상 0건" 은 `enabled` 로 구분합니다.
+     * `can_view_targets` 는 요청 관리자가 「더보기」 목록을 볼 권한(설정 읽기 + 도메인 읽기)을
+     * 가졌는지다 — 없으면 화면이 버튼을 그리지 않는다.
+     *
+     * 읽기 전용이며 입력은 없습니다 — FormRequest 는 요청 관리자를 얻는 자리입니다.
+     *
+     * @param  PrivacyPreviewRequest  $request  현재 요청 (목록 권한 판정용, 입력 없음)
+     * @return JsonResponse 핸들러별·휴면 단계별 대상 건수 JSON 응답
+     */
+    public function privacyPreview(PrivacyPreviewRequest $request): JsonResponse
+    {
+        $user = $request->user();
+        $retention = [];
+
+        foreach ($this->privacyRetentionManager->preview() as $id => $row) {
+            $handler = $this->privacyRetentionManager->handler($id);
+            $retention[$id] = $row + [
+                'can_view_targets' => $handler !== null && $this->privacyRetentionManager->canViewTargets($handler, $user),
+            ];
+        }
+
+        return $this->success('common.success', [
+            'retention' => $retention,
+            'dormant' => [
+                'enabled' => $this->dormantAccountService->isEnabled(),
+                'withdraw_enabled' => $this->dormantAccountService->isWithdrawEnabled(),
+                'can_view_targets' => $this->privacyRetentionManager->canViewTargetList(DormantAccountService::TARGET_PERMISSIONS, $user),
+                ...$this->dormantAccountService->preview(),
+            ],
+        ]);
     }
 
     /**

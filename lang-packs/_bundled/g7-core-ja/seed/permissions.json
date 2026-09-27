@@ -362,5 +362,21 @@
   "core.member-notifications.delete": {
     "name": "会員通知箱削除",
     "description": "会員が受け取った通知を削除することができます。"
+  },
+  "core.analytics": {
+    "name": "訪問者統計",
+    "description": "訪問者統計権限"
+  },
+  "core.analytics.read": {
+    "name": "訪問者統計閲覧",
+    "description": "概要·レポート·パターン·リアルタイム·ボット·診断統計とCSVエクスポートを閲覧できます。個別訪問者のIPは表示されません。"
+  },
+  "core.analytics.update": {
+    "name": "訪問者統計設定",
+    "description": "収集設定保存、手動集計·再集計、統計データ削除、遡及匿名化ができます。"
+  },
+  "core.analytics.privacy": {
+    "name": "訪問者個人情報閲覧",
+    "description": "訪問者プロフィールとアクションタイムライン、リアルタイムIP原値、情報主体検索·エクスポート·削除ができます。"
   }
 }

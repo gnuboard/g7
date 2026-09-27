@@ -8,17 +8,77 @@
       <field name="form" value="settings"/>
     </init-local>
   </data-source>
+  <!-- 연간 통지 대상 건수 — 발송 판정과 같은 조건이며 꺼져 있어도 센다(켜기 전에 규모를 본다, #636). 저장 뒤 다시 받는다 -->
+  <data-source id="gdprAnnualNoticePreview" label_key="$t:sirsoft-gdpr.editor.data_source.gdprAnnualNoticePreview" type="api" endpoint="/api/plugins/sirsoft-gdpr/admin/annual-notice/preview" method="GET" :auto_fetch="true" :auth_required="true">
+    <fallback>
+      <field name="data">
+        <field name="count" :value="null"/>
+      </field>
+    </fallback>
+  </data-source>
+  <!-- 개인정보 조치 직권 실행 상태 — 「지금 실행」 버튼과 상태 줄(처리 대기/처리 중 · 마지막 결과)이 쓴다(코어 직권 실행 API).
+       진행 중이면 3초마다 다시 받고 끝나면 멈춘다. 진행 중일 때 받은 서버 시각(`checked_at`)을 다음 조회의 `since` 로
+       돌려보내 그 뒤에 끝난 작업이 있으면(`finished_since`) 대상 건수를 다시 받는다 — 판정을 응답값으로만 하는 까닭은
+       직전에 넣은 전역 값이 이 성공 핸들러에서 낡은 값으로 읽히기 때문이다(코어 환경설정 개인정보 탭과 같은 방식). -->
+  <data-source id="privacyManualRuns" label_key="$t:sirsoft-gdpr.editor.data_source.privacyManualRuns" type="api" endpoint="/api/admin/privacy/manual-runs" method="GET" :auto_fetch="true" :auth_required="true">
+    <params targets="sirsoft-gdpr:annual_notice" since="{{_global.privacyRunWatchSince ?? ''}}"/>
+    <fallback>
+      <field name="data">
+        <field name="targets" :value="{}"/>
+        <field name="has_active" :value="false"/>
+        <field name="finished_since" :value="false"/>
+      </field>
+    </fallback>
+    <success>
+      <set-state if="{{response?.data?.data?.has_active === true}}" target="global" privacyRunWatchSince="{{response?.data?.data?.checked_at}}"/>
+      <start-interval if="{{response?.data?.data?.has_active === true}}" id="privacy_manual_run_poll" :intervalMs="3000">
+        <actions>
+          <refetch-data-source dataSourceId="privacyManualRuns"/>
+        </actions>
+      </start-interval>
+      <stop-interval if="{{response?.data?.data?.has_active !== true}}" id="privacy_manual_run_poll"/>
+      <refetch-data-source if="{{response?.data?.data?.has_active !== true &amp;&amp; response?.data?.data?.finished_since === true}}" dataSourceId="gdprAnnualNoticePreview"/>
+      <set-state if="{{response?.data?.data?.has_active !== true}}" target="global" :privacyRunWatchSince="null"/>
+    </success>
+  </data-source>
+  <!-- 연간 통지 대상 명단 — 창을 여는 버튼이 다시 받는다(스스로 조회하지 않음). 다음 쪽은 창의 스크롤이 이어 붙인다 -->
+  <data-source id="privacyTargets" label_key="$t:sirsoft-gdpr.editor.data_source.privacyTargets" type="api" endpoint="/api/plugins/sirsoft-gdpr/admin/annual-notice/targets" method="GET" :auto_fetch="false" :auth_required="true" loading_strategy="progressive">
+    <params :per_page="20"/>
+  </data-source>
   <!-- 현재 유효한 정책 버전 — 화면 상단 배지의 근거 -->
   <data-source id="gdprPolicyVersionCurrent" label_key="$t:sirsoft-gdpr.editor.data_source.gdprPolicyVersionCurrent" type="api" endpoint="/api/plugins/sirsoft-gdpr/admin/policy-versions/current" method="GET" :auto_fetch="true" :auth_required="true" :refetchOnMount="true"/>
   <!-- 정책 버전 이력 — 페이지는 _local.policyHistoryPage 로 관리하고 페이저가 setState + refetchDataSource 로 이동시킨다. -->
   <data-source id="gdprPolicyVersionHistory" label_key="$t:sirsoft-gdpr.editor.data_source.gdprPolicyVersionHistory" type="api" endpoint="/api/plugins/sirsoft-gdpr/admin/policy-versions?page={{_local.policyHistoryPage ?? 1}}" method="GET" :auto_fetch="false" :auth_required="true"/>
   <!-- 정책 버전 단건 snapshot — _global.viewingPolicyVersion 정수를 endpoint path 에 보간. v배지/이력 행 클릭 시 setState global.viewingPolicyVersion → openModal policy_version_snapshot_modal 시퀀스에서 자동 fetch. -->
   <data-source id="gdprPolicyVersionSnapshot" label_key="$t:sirsoft-gdpr.editor.data_source.gdprPolicyVersionSnapshot" type="api" endpoint="/api/plugins/sirsoft-gdpr/admin/policy-versions/{{_global.viewingPolicyVersion}}" method="GET" :auto_fetch="false" :auth_required="true" :refetchOnMount="true"/>
+  <!-- 알림 정의·채널 — 코어 「알림 정의」 화면은 extension_identifier=core 로 코어 정의만 받는다.
+       확장이 들인 정의는 그 확장의 설정 화면이 보여 준다는 것이 저장소 규약이라(형제: 게시판·
+       이커머스·환율) 여기서 자기 정의만 받아 그린다. -->
+  <data-source id="gdprNotificationChannels" label_key="$t:sirsoft-gdpr.notifications" type="api" endpoint="/api/admin/notification-channels" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive">
+    <fallback>
+      <field name="data">
+        <field name="channels" :value="[]"/>
+      </field>
+    </fallback>
+  </data-source>
+  <!-- 켠 채널 전부의 템플릿을 한 번에 받는다(params template_channel=all) — 이 인자가 없으면
+       응답의 templates 가 비어 편집 버튼이 그려지지 않는다(형제 확장과 같은 규약). -->
+  <data-source id="gdprNotificationDefinitions" label_key="$t:sirsoft-gdpr.notifications" type="api" endpoint="/api/admin/notification-definitions?extension_type=plugin&amp;extension_identifier=sirsoft-gdpr" method="GET" :auto_fetch="true" :auth_required="true">
+    <params template_channel="all"/>
+    <fallback>
+      <field name="data">
+        <field name="data" :value="[]"/>
+      </field>
+    </fallback>
+  </data-source>
+  <computed name="isNotificationReadOnly">{{gdprNotificationDefinitions?.data?.abilities?.can_update !== true}}</computed>
   <permissions>
     <permission>core.plugins.update</permission>
   </permissions>
   <transition-overlay target="settings_main_content" fallback-target="plugin_settings_content">
     <wait-for>gdprSettings</wait-for>
+    <wait-for>gdprNotificationDefinitions</wait-for>
+    <wait-for>gdprNotificationChannels</wait-for>
   </transition-overlay>
   <init>
     <set-state target="local" :isSaving="false" :hasChanges="false" :errors="null" :policyHistoryOpen="false" :policyHistoryPage="1"/>
@@ -40,6 +100,8 @@
               <item id="card_cookie_banner" label="$t:sirsoft-gdpr.settings.nav.cookie_banner"/>
               <item id="card_auto_blocking_policy" label="$t:sirsoft-gdpr.settings.nav.auto_blocking_policy"/>
               <item id="card_necessary_storage" label="$t:sirsoft-gdpr.settings.nav.necessary_storage"/>
+              <item id="card_annual_notice" label="$t:sirsoft-gdpr.annual_notice.title"/>
+              <item id="card_gdpr_notifications" label="$t:sirsoft-gdpr.notifications"/>
             </prop>
           </tab-navigation-scroll>
         </div>
@@ -491,6 +553,262 @@
             </div>
           </div>
         </div>
+        <!-- 정기 통지는 쿠키 배너·정책 버전 발행과 독립입니다. 저장된 설정으로 본인 시험 발송을 접수합니다. -->
+        <div data-ref="card_annual_notice" class="mt-4 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 scroll-mt-32">
+          <div class="panel-header-row">
+            <h3 class="section-heading-md">$t:sirsoft-gdpr.annual_notice.title</h3>
+            <p class="form-hint">$t:sirsoft-gdpr.annual_notice.description</p>
+          </div>
+          <div class="p-6 space-y-6">
+            <p class="alert-warning">$t:sirsoft-gdpr.annual_notice.policy_hint</p>
+            <div>
+              <label class="form-label">$t:sirsoft-gdpr.annual_notice.enabled</label>
+              <toggle name="annual_notice.enabled"/>
+            </div>
+            <!-- 조치 대상 — 코어 개인정보 탭과 같은 「대상 행」 양식(이름 · 건수 배지 · 오른쪽 끝 대상 보기·지금 실행 · 그 행의 결과 줄).
+                 건수는 꺼져 있어도 보인다(켜기 전에 규모를 본다, #636). 「대상 보기」는 회원 읽기 권한이 있으면 0명이어도 그린다(빈 명단은 창이 안내한다).
+                 되돌릴 수 없는 발송은 채운 강조색을 쓰지 않는다(2026-09-26 결정). -->
+            <div data-ref="annual_notice_targets" data-if="{{(gdprAnnualNoticePreview?.data?.count !== null &amp;&amp; gdprAnnualNoticePreview?.data?.count !== undefined) || privacyManualRuns?.data?.targets?.['sirsoft-gdpr:annual_notice']?.can_run}}" class="space-y-2">
+              <div class="rounded-lg border border-gray-200 dark:border-gray-700">
+                <div data-ref="annual_notice_target_row" class="px-4 py-3">
+                  <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <div class="flex-wrap-center gap-2 min-w-0">
+                      <span class="text-heading">$t:sirsoft-gdpr.annual_notice.targets.row_label</span>
+                      <span data-if="{{gdprAnnualNoticePreview?.data?.count !== null &amp;&amp; gdprAnnualNoticePreview?.data?.count !== undefined}}" class="badge badge-yellow">$t:sirsoft-gdpr.annual_notice.targets.count|count={{gdprAnnualNoticePreview?.data?.count ?? 0}}</span>
+                    </div>
+                    <div class="flex-wrap-center gap-2">
+                      <button data-ref="view_annual_notice_targets" data-if="{{gdprAnnualNoticePreview?.data?.can_view_targets}}" type="button" class="btn btn-sm btn-ghost">
+                        <on type="click">
+                          <!-- 연간 통지 대상 명단 — 목록 주소가 이 플러그인 전용 소스에 고정돼 있어 경로는 넣지 않고, 쪽 상태·제목만 초기화한 뒤
+                               첫 쪽을 다시 받아 창을 연다. -->
+                          <sequence>
+                            <set-state target="global" privacyTargets="{{({ currentPage: 1, hasMore: true, isLoadingMore: false })}}"/>
+                            <set-state target="global" privacyTargets.title="$t:sirsoft-gdpr.annual_notice.targets.title"/>
+                            <refetch-data-source dataSourceId="privacyTargets"/>
+                            <open-modal target="privacy_targets_modal"/>
+                          </sequence>
+                        </on>
+                        $t:sirsoft-gdpr.annual_notice.targets.view
+                      </button>
+                      <button data-ref="run_annual_notice" data-if="{{privacyManualRuns?.data?.targets?.['sirsoft-gdpr:annual_notice']?.can_run}}" type="button" class="btn btn-sm btn-outline" disabled="{{_local.hasChanges || privacyManualRuns?.data?.targets?.['sirsoft-gdpr:annual_notice']?.run?.is_active}}">
+                        <on type="click">
+                          <!-- 연간 통지 지금 실행 — 확인 창을 먼저 열고 실행 시점의 통지 대상 수를 받아 채운다. 파기가 아니라 통지 접수라 처리 방식 줄은
+                               없고, 한 번에 발송 상한만큼만 접수된다(남은 인원은 결과 줄에 따로 보인다). 저장 전 변경이 있으면 잠긴다. -->
+                          <sequence>
+                            <set-state target="global" privacyRun="{{({ key: 'sirsoft-gdpr:annual_notice', label: privacyManualRuns?.data?.targets?.['sirsoft-gdpr:annual_notice']?.label ?? '', supportsSkip: false, skipWaiting: false, preview: null, loading: true, submitting: false })}}"/>
+                            <open-modal target="privacy_run_modal"/>
+                            <api-call :auth_required="true" target="/api/admin/privacy/manual-runs/sirsoft-gdpr:annual_notice/preview" method="GET">
+                              <success>
+                                <set-state target="global" privacyRun.preview="{{response.data}}" :privacyRun.loading="false"/>
+                              </success>
+                              <fail>
+                                <set-state target="global" :privacyRun.loading="false"/>
+                                <toast type="error" message="{{error.message ?? '$t:sirsoft-gdpr.annual_notice.manual_run.preview_failed'}}"/>
+                              </fail>
+                            </api-call>
+                          </sequence>
+                        </on>
+                        $t:sirsoft-gdpr.annual_notice.manual_run.run
+                      </button>
+                    </div>
+                  </div>
+                  <div data-ref="annual_notice_manual_run_status" data-if="{{privacyManualRuns?.data?.targets?.['sirsoft-gdpr:annual_notice']?.run}}" class="text-hint mt-1">
+                    <span data-if="{{privacyManualRuns?.data?.targets?.['sirsoft-gdpr:annual_notice']?.run?.is_active}}" class="text-blue-600 dark:text-blue-400">$t:sirsoft-gdpr.annual_notice.manual_run.status_active|status={{privacyManualRuns?.data?.targets?.['sirsoft-gdpr:annual_notice']?.run?.status_label ?? ''}}|at={{privacyManualRuns?.data?.targets?.['sirsoft-gdpr:annual_notice']?.run?.queued_at ?? ''}}|by={{privacyManualRuns?.data?.targets?.['sirsoft-gdpr:annual_notice']?.run?.requester_name ?? $t('sirsoft-gdpr.annual_notice.manual_run.unknown_requester')}}</span>
+                    <span data-if="{{privacyManualRuns?.data?.targets?.['sirsoft-gdpr:annual_notice']?.run?.status === 'completed'}}">$t:sirsoft-gdpr.annual_notice.manual_run.last_completed|at={{privacyManualRuns?.data?.targets?.['sirsoft-gdpr:annual_notice']?.run?.finished_at ?? ''}}|by={{privacyManualRuns?.data?.targets?.['sirsoft-gdpr:annual_notice']?.run?.requester_name ?? $t('sirsoft-gdpr.annual_notice.manual_run.unknown_requester')}}|count={{privacyManualRuns?.data?.targets?.['sirsoft-gdpr:annual_notice']?.run?.processed_count ?? 0}}|remaining={{privacyManualRuns?.data?.targets?.['sirsoft-gdpr:annual_notice']?.run?.remaining_count ?? 0}}</span>
+                    <span data-if="{{privacyManualRuns?.data?.targets?.['sirsoft-gdpr:annual_notice']?.run?.status === 'failed'}}" class="text-error-soft">$t:sirsoft-gdpr.annual_notice.manual_run.last_failed|at={{privacyManualRuns?.data?.targets?.['sirsoft-gdpr:annual_notice']?.run?.finished_at ?? ''}}|by={{privacyManualRuns?.data?.targets?.['sirsoft-gdpr:annual_notice']?.run?.requester_name ?? $t('sirsoft-gdpr.annual_notice.manual_run.unknown_requester')}}|error={{privacyManualRuns?.data?.targets?.['sirsoft-gdpr:annual_notice']?.run?.error ?? ''}}</span>
+                  </div>
+                </div>
+              </div>
+              <p class="form-hint">$t:sirsoft-gdpr.annual_notice.targets.hint</p>
+              <p data-ref="annual_notice_save_first" data-if="{{_local.hasChanges &amp;&amp; privacyManualRuns?.data?.targets?.['sirsoft-gdpr:annual_notice']?.can_run}}" class="form-hint">$t:sirsoft-gdpr.annual_notice.manual_run.save_first_hint</p>
+            </div>
+            <!-- 토글이 꺼지면 하위 입력을 비활성화한다. 서버(UpdateAdminSettingsRequest)도 같은
+                 조건에서 채널·상한을 강제하지 않는다 — 한쪽만 고치면 "끌 수 없는 설정"이 된다.
+                 조건식은 느슨한 참 판정(저장값이 '0'·'1' 문자열일 수 있음, 보안 탭 scope 선례와 동일). -->
+            <div>
+              <label class="form-label">$t:sirsoft-gdpr.annual_notice.channels</label>
+              <tag-input data-ref="annual_notice_channels" value="{{_local.form?.annual_notice?.channels ?? []}}" :creatable="false" disabled="{{!_local.form?.annual_notice?.enabled || _local.form?.annual_notice?.enabled === '0'}}">
+                <prop name="options">
+                  <item value="mail" label="$t:sirsoft-gdpr.annual_notice.mail"/>
+                  <item value="database" label="$t:sirsoft-gdpr.annual_notice.database"/>
+                </prop>
+                <on type="change">
+                  <!-- 고른 채널 배열을 폼에 넣고 변경 표시를 세운다. 변경 표시가 서 있는 동안 시험 발송·지금 실행이 잠기므로
+                       (둘 다 저장된 설정으로 보낸다) 채널을 바꾸면 저장부터 하게 된다. -->
+                  <set-state target="local" form.annual_notice.channels="{{$event?.target?.value ?? []}}" :hasChanges="true"/>
+                </on>
+              </tag-input>
+              <span data-if="{{_local.errors?.['annual_notice.channels']}}" class="form-error">{{_local.errors?.['annual_notice.channels']?.[0]}}</span>
+            </div>
+            <div>
+              <label class="form-label">$t:sirsoft-gdpr.annual_notice.batch_size</label>
+              <input type="number" name="annual_notice.batch_size" min="{{gdprSettings?.data?.annual_notice_limits?.min}}" max="{{gdprSettings?.data?.annual_notice_limits?.max}}" disabled="{{!_local.form?.annual_notice?.enabled || _local.form?.annual_notice?.enabled === '0'}}"/>
+              <span data-if="{{_local.errors?.['annual_notice.batch_size']}}" class="form-error">{{_local.errors?.['annual_notice.batch_size']?.[0]}}</span>
+            </div>
+            <div>
+              <label class="form-label">$t:sirsoft-gdpr.annual_notice.introduction</label>
+              <multilingual-input name="annual_notice.introduction" inputType="textarea" :maxLength="2000" disabled="{{!_local.form?.annual_notice?.enabled || _local.form?.annual_notice?.enabled === '0'}}"/>
+            </div>
+            <div class="flex flex-wrap gap-3">
+              <button data-ref="annual_notice_test" type="button" class="btn btn-primary" disabled="{{_local.hasChanges || _local.noticeSending}}">
+                <on type="click">
+                  <!-- 본인 시험 발송 — 저장된 설정으로 지금 로그인한 관리자에게 통지 하나를 큐에 접수한다. 누르는 동안 버튼을 잠가
+                       중복 접수를 막고, 성공·실패 어느 쪽이든 잠금을 푼다. 실제 채널별 결과는 통지 이력 화면에서 본다. -->
+                  <sequence>
+                    <set-state target="local" :noticeSending="true"/>
+                    <api-call target="/api/plugins/sirsoft-gdpr/admin/annual-notice/test" method="POST" :auth_required="true">
+                      <success>
+                        <set-state target="local" :noticeSending="false"/>
+                        <toast type="success" message="$t:sirsoft-gdpr.annual_notice.test_queued"/>
+                      </success>
+                      <fail>
+                        <set-state target="local" :noticeSending="false"/>
+                        <toast type="error" message="{{error.message}}"/>
+                      </fail>
+                    </api-call>
+                  </sequence>
+                </on>
+                <span>$t:sirsoft-gdpr.annual_notice.test_send</span>
+              </button>
+              <button type="button" class="btn btn-secondary">
+                <on type="click"><navigate path="/admin/plugins/sirsoft-gdpr/notice-log"/></on>
+                <span>$t:sirsoft-gdpr.annual_notice.log_title</span>
+              </button>
+            </div>
+            <p class="form-hint">$t:sirsoft-gdpr.annual_notice.save_before_test</p>
+          </div>
+        </div>
+        <!-- 알림 템플릿 카드 — 이 플러그인 소유 알림 정의(연간 개인정보 통지)마다 발송 채널(복수)을 고르고,
+             켠 채널의 템플릿을 활성화·편집한다. 채널 선택은 저장 버튼으로, 템플릿 활성화는 토글 즉시 서버에 반영한다.
+             코어 「알림 정의」 화면은 extension_identifier=core 로 코어 정의만 받으므로, 확장이 들인 정의는
+             그 확장의 설정 화면이 유일한 진입점이다(형제: 게시판·이커머스·환율). -->
+        <div data-ref="card_gdpr_notifications" class="mt-4 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 scroll-mt-32">
+          <div data-ref="card_gdpr_notifications_header" class="panel-header-row">
+            <h3 class="section-heading-md">$t:sirsoft-gdpr.notifications</h3>
+            <p class="form-hint">$t:sirsoft-gdpr.notification_definitions.card_description</p>
+          </div>
+          <div data-ref="card_gdpr_notifications_fields" class="p-6 space-y-6">
+          <div data-each="def, defIdx in {{gdprNotificationDefinitions?.data?.data ?? []}}" data-ref="gdpr_notification_definition_{{defIdx}}">
+            <p class="text-heading">{{$localized(def.name)}}</p>
+
+            <!-- 발송 수단 — 코어가 core.notification.filter_available_channels 로 런타임에 정하는 목록을
+                 그대로 깔고 복수로 켠다. 화면에 채널을 적어 두면 확장이 들인 채널에 도달할 수 없다.
+                 켠 값은 폼에만 두고 저장 버튼을 눌러야 서버에 반영한다(코어 알림 정의 탭과 같은 규약). -->
+            <p class="form-label mt-3">$t:sirsoft-gdpr.notification_channels</p>
+            <div data-each="ch, chIdx in {{gdprNotificationChannels?.data?.channels ?? []}}" data-ref="gdpr_channel_row_{{defIdx}}_{{chIdx}}" class="flex-between p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg my-2">
+              <div class="flex-center gap-2">
+                <icon name="{{ch.icon ?? 'fas fa-bell'}}" class="text-gray-500 dark:text-gray-400"/>
+                <div>
+                  <span class="text-heading">{{ch.name ?? ch.id}}</span>
+                  <span data-if="{{ch.source && ch.source !== 'core'}}" class="text-hint block">{{ch.source_label ?? ch.source}}</span>
+                  <!-- 켰는데 그 채널 템플릿이 없으면 발송 때 조용히 건너뛴다(코어가 로그에만 남긴다).
+                       화면이 그 사실을 말해 주지 않으면 "켰는데 안 온다" 로만 보인다. -->
+                  <span data-if="{{(_local.gdprChannels?.[def.id] ?? def.channels ?? []).includes(ch.id) &amp;&amp; !(def.templates ?? []).some(t => t.channel === ch.id)}}" class="text-hint block text-amber-600 dark:text-amber-400">$t:sirsoft-gdpr.channel_template_missing</span>
+                </div>
+              </div>
+              <toggle label="{{(ch.name ?? ch.id)}}" checked="{{(_local.gdprChannels?.[def.id] ?? def.channels ?? []).includes(ch.id)}}" disabled="{{_computed.isNotificationReadOnly}}">
+                <on type="change">
+                  <!-- 배열을 제자리에서 바꾸지 않고 새 배열로 갈아 끼운다. -->
+                  <set-state target="local" gdprChannels="{{({...(_local.gdprChannels ?? {}), [def.id]: ((_local.gdprChannels?.[def.id] ?? def.channels ?? []).includes(ch.id) ? (_local.gdprChannels?.[def.id] ?? def.channels ?? []).filter(c => c !== ch.id) : [...(_local.gdprChannels?.[def.id] ?? def.channels ?? []), ch.id])})}}"/>
+                </on>
+              </toggle>
+            </div>
+            <div class="flex-center gap-2 my-2">
+              <!-- 채널을 모두 끄면 알림이 사라지므로 코어가 min:1 로 거절한다 — 버튼에서 먼저 막는다. -->
+              <button type="button" data-ref="gdpr_save_channels_{{defIdx}}" class="btn btn-primary disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isNotificationReadOnly || _local.gdprSavingChannels !== null &amp;&amp; _local.gdprSavingChannels !== undefined || !(JSON.stringify([...(_local.gdprChannels?.[def.id] ?? def.channels ?? [])].sort()) !== JSON.stringify([...(def.channels ?? [])].sort())) || (_local.gdprChannels?.[def.id] ?? def.channels ?? []).length === 0}}">
+                <on type="click">
+                  <sequence>
+                    <set-state target="local" gdprSavingChannels="{{def.id}}"/>
+                    <api-call target="/api/admin/notification-definitions/{{def.id}}" method="PUT" :auth_required="true">
+                      <body channels="{{_local.gdprChannels?.[def.id] ?? def.channels ?? []}}"/>
+                      <success>
+                        <sequence>
+                          <!-- 폼의 임시 값은 **비우지 않는다**. 목록 재조회가 끝나기 전에 비우면 화면이
+                               낡은 `def.channels` 로 되돌아가, 방금 끈 스위치가 켜졌다가 다시 꺼진다
+                               (제보 2026-09-15). 「고칠 것 없음」 판정은 저장값과의 비교가 하므로,
+                               재조회가 도착하면 버튼은 저절로 가라앉는다. -->
+                          <set-state target="local" :gdprSavingChannels="null"/>
+                          <refetch-data-source dataSourceId="gdprNotificationDefinitions"/>
+                          <toast type="success" message="{{response.message}}"/>
+                        </sequence>
+                      </success>
+                      <fail>
+                        <sequence>
+                          <!-- 실패하면 고친 값은 남긴다 — 다시 누를 수 있어야 한다. -->
+                          <set-state target="local" :gdprSavingChannels="null"/>
+                          <toast type="error" message="{{error.message}}"/>
+                        </sequence>
+                      </fail>
+                    </api-call>
+                  </sequence>
+                </on>
+                <icon data-if="{{_local.gdprSavingChannels === def.id}}" name="spinner" class="spinner-sm"/>
+                <span>$t:sirsoft-gdpr.save_channels</span>
+              </button>
+              <button type="button" data-ref="gdpr_cancel_channels_{{defIdx}}" data-if="{{JSON.stringify([...(_local.gdprChannels?.[def.id] ?? def.channels ?? [])].sort()) !== JSON.stringify([...(def.channels ?? [])].sort())}}" class="btn btn-secondary disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_local.gdprSavingChannels !== null &amp;&amp; _local.gdprSavingChannels !== undefined}}">
+                <on type="click">
+                  <!-- 취소 — 폼의 임시 채널 값을 전부 버려 저장된 def.channels 로 되돌린다(이 버튼은 저장값과 다를 때만 보인다) -->
+                  <set-state target="local" :gdprChannels="{}"/>
+                </on>
+                <span>$t:sirsoft-gdpr.cancel</span>
+              </button>
+            </div>
+
+            <!-- 템플릿 — 채널을 나눠 그리지 않는다. 목록을 template_channel=all 로 받아 켠 채널 전부를
+                 한 번에 보여주므로 채널을 바꾸려고 화면을 다시 부를 일이 없다. -->
+            <div data-each="template, tplIdx in {{def.templates ?? []}}" data-ref="gdpr_template_row_{{defIdx}}_{{tplIdx}}" class="flex flex-wrap items-center gap-3 my-3">
+              <span>{{((gdprNotificationChannels?.data?.channels ?? []).find(c => c.id === template.channel)?.name ?? template.channel)}}</span>
+              <toggle label="{{$localized(def.name) + ' / ' + ((gdprNotificationChannels?.data?.channels ?? []).find(c => c.id === template.channel)?.name ?? template.channel)}}" checked="{{template.is_active}}" disabled="{{_computed.isNotificationReadOnly}}">
+                <on type="change">
+                  <!-- 채널 템플릿 켜고 끄기 — 저장 버튼과 무관하게 즉시 서버에 반영하고 정의 목록을 다시 받는다 -->
+                  <api-call target="/api/admin/notification-templates/{{template.id}}/toggle-active" method="PATCH" :auth_required="true">
+                    <success><refetch-data-source dataSourceId="gdprNotificationDefinitions"/></success>
+                    <fail><toast type="error" message="{{error.message}}"/></fail>
+                  </api-call>
+                </on>
+              </toggle>
+              <button type="button" class="btn btn-secondary" disabled="{{_computed.isNotificationReadOnly}}">
+                <on type="click">
+                  <!-- 템플릿 편집 창 열기 — 템플릿·수신자를 깊은 복사로 전역 폼에 실어, 창 안의 편집이 목록 데이터를 건드리지 않게 한다 -->
+                  <sequence>
+                    <set-state target="global">
+                      <field name="gdpr_notification_template_form_modal">
+                        <field name="template" value="{{JSON.parse(JSON.stringify(template))}}"/>
+                        <field name="definition" value="{{def}}"/>
+                        <field name="recipients" value="{{JSON.parse(JSON.stringify(template.recipients ?? []))}}"/>
+                        <field name="editLang" value="{{$locale}}"/>
+                        <field name="errors" :value="null"/>
+                        <field name="isSaving" :value="false"/>
+                        <field name="roleSearchResults" :value="[]"/>
+                        <field name="userSearchResults" :value="[]"/>
+                      </field>
+                    </set-state>
+                    <open-modal target="modal_gdpr_notification_template_edit"/>
+                  </sequence>
+                </on>
+                <span>$t:sirsoft-gdpr.edit_template</span>
+              </button>
+            </div>
+
+            <button type="button" class="btn btn-secondary" disabled="{{_computed.isNotificationReadOnly}}">
+              <on type="click">
+                <!-- 정의 초기화 창 열기 — 대상 ID·이름을 전역에 두고 확인 창에서 실제 초기화를 보낸다 -->
+                <sequence>
+                  <set-state target="global" resetTargetId="{{def.id}}" resetTargetName="{{$localized(def.name)}}"/>
+                  <open-modal target="modal_gdpr_notification_definition_reset"/>
+                </sequence>
+              </on>
+              <span>$t:sirsoft-gdpr.reset</span>
+            </button>
+          </div>
+          </div>
+          <!-- 0건 안내 — 형제(게시판·이커머스)와 같은 규약이다. 정의 조회가 실패하면 fallback 이
+               빈 배열을 주므로 카드가 아무 말 없이 비는데, 그 침묵은 "기능이 없다" 와 구분되지 않는다. -->
+          <div data-ref="gdpr_notification_empty" data-if="{{(gdprNotificationDefinitions?.data?.data ?? []).length === 0}}" class="row-stack">
+            <icon name="fa-solid fa-envelope" class="text-4xl text-gray-300 dark:text-gray-600 mb-3"/>
+            <p class="text-label-subtle">$t:sirsoft-gdpr.notification_definitions.empty_message</p>
+          </div>
+        </div>
       </div>
       <!-- 하단 sticky 저장/취소 바 — 게시판 설정(admin_board_settings.json footer_buttons)과 동일 패턴으로 통일 (상단 헤더 배치는 스크롤 시 밀리는 것으로 오인되어 재배치). -->
       <div data-ref="footer_buttons" class="sticky-footer-buttons">
@@ -513,6 +831,7 @@
                 <success>
                   <set-state target="local" :isSaving="false" :hasChanges="false"/>
                   <refetch-data-source dataSourceId="gdprSettings"/>
+                  <refetch-data-source dataSourceId="gdprAnnualNoticePreview"/>
                   <toast type="success" message="$t:sirsoft-gdpr.settings.save_success"/>
                 </success>
                 <fail>
@@ -531,6 +850,17 @@
   </slot>
   <!-- 정책 버전 발행 창 — 발행하면 전 회원이 재동의 대상이 되므로 별도 확인 단계를 둔다 -->
   <modal src="partials/plugin_settings/_policy_version_publish_modal.g7.html"/>
+  <!-- 알림 템플릿 편집·미리보기·기본값 복원 (형제 확장과 같은 3종 구성) -->
+  <modal src="partials/plugin_settings/_modal_notification_template_edit.g7.html"/>
+  <!-- 알림 템플릿 미리보기 창 — 편집 창 안의 미리보기 버튼이 연다. 편집 창이 만들어 둔 치환 결과를 보여 주기만 한다. -->
+  <modal src="partials/plugin_settings/_modal_notification_template_preview.g7.html"/>
+  <!-- 알림 정의 기본값 복원 확인 창 — 정의 행의 초기화 버튼이 대상 ID·이름을 전역에 넣고 연다.
+       손으로 고친 내용이 사라지므로 한 번 더 묻는다. -->
+  <modal src="partials/plugin_settings/_modal_notification_definition_reset.g7.html"/>
   <!-- 정책 버전 스냅샷 창 — 동의 이력 화면과 같은 조각을 쓴다 -->
   <modal src="partials/_shared/_policy_version_snapshot_modal.g7.html"/>
+  <!-- 연간 통지 대상 회원 창(연간 통지 카드). -->
+  <modal src="partials/plugin_settings/_modal_privacy_targets.g7.html"/>
+  <!-- 연간 통지 직권 발송 확인 창. -->
+  <modal src="partials/plugin_settings/_modal_privacy_run.g7.html"/>
 </layout>

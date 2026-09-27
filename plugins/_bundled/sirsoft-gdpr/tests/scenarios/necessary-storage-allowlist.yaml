@@ -46,10 +46,13 @@ effects:
   - locked_set_absent_from_shipped_catalog
   - shipped_catalog_items_pass_save_validation
   - shipped_catalog_contains_view_mode_pattern
+  - shipped_catalog_contains_analytics_opt_out_cookie
 
   # 업그레이드 스텝 (기설치본 백필)
   - upgrade_appends_view_mode_pattern_when_absent
   - upgrade_leaves_allowlist_untouched_when_pattern_present
+  - upgrade_appends_analytics_opt_out_cookie_when_absent
+  - upgrade_leaves_allowlist_untouched_when_opt_out_cookie_present
 
   # 클라이언트 소비 (storageInterceptor)
   - storage_allows_item_listed_in_settings
@@ -127,6 +130,7 @@ test_files:
   - plugins/_bundled/sirsoft-gdpr/tests/Feature/Api/Admin/GdprAdminSettingsControllerTest.php
   - plugins/_bundled/sirsoft-gdpr/tests/Unit/Upgrades/SeedNecessaryStorageAllowlistTest.php
   - plugins/_bundled/sirsoft-gdpr/tests/Unit/Upgrades/AppendViewModeToNecessaryAllowlistTest.php
+  - plugins/_bundled/sirsoft-gdpr/tests/Unit/Upgrades/AppendAnalyticsOptOutToNecessaryAllowlistTest.php
 
   # Vitest (프론트엔드)
   - plugins/_bundled/sirsoft-gdpr/resources/js/__tests__/storageInterceptor.test.ts

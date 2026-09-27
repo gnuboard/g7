@@ -1,0 +1,24 @@
+feature: 게시판 생성·수정·삭제·복사 생명주기 훅 발행 회귀 고정
+
+description: |
+  BoardService 는 게시판 생명주기마다 action/filter 훅을 발행한다(before_* / filter_*_data /
+  after_* / permissions.after_*). 다른 확장은 이 훅으로 게시판 흐름에 끼어들므로, 발행 여부·
+  데이터 변형·삭제 거부·실행 순서가 바뀌면 조용히 연동이 끊긴다. HookIntegrationTest 가 실제
+  서비스 호출로 이를 고정한다.
+
+  게시판 권한 생성 훅(permissions.after_create)은 생성된 게시판별 권한 행 개수(board_permission_definitions
+  키 수)까지 확인하므로, 권한 정의를 추가하면 이 테스트의 기대 개수도 함께 바뀐다.
+
+axes:
+  lifecycle: [create, update, delete, copy, priority]
+
+effects:
+  - before_hook_fires
+  - filter_hook_modifies_payload
+  - after_hook_fires
+  - permission_hook_fires
+  - before_delete_hook_can_veto
+  - hooks_run_in_priority_order
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Feature/HookIntegrationTest.php

@@ -69,3 +69,13 @@ Listener (RegisterKcpProviderListener 등)
 | `docs/` | 개발자 문서 | 표면 변경 시 `php artisan ext:docgen` 재실행 |
 | `lang/` | 다국어 | 키 추가 시 ko·en 동시 반영 + 번들 ja 팩 동기화 |
 <!-- @generated:directory-map END -->
+
+## 마이페이지 카드 라우트의 상태 게이트 (이슈 #636 S4)
+
+카드 조회 라우트는 `auth:sanctum` + `check.user_status` 를 씁니다. 종전 표기 `check.user_status:active` 의
+`:active` 는 **아무 일도 하지 않았습니다** — 이 미들웨어는 파라미터를 받지 않고 Laravel 이 초과 인자를
+조용히 버립니다. 「이 라우트만 active 로 좁혔다」는 거짓 신호였으므로 제거했습니다.
+
+통과 어휘는 미들웨어가 단독으로 소유합니다(활성만 통과 / 비활성·차단·**휴면**·탈퇴는 403). 라우트별로
+상태 어휘를 갈라 두면 휴면처럼 상태가 새로 생길 때 게이트 강도가 라우트마다 어긋납니다 — 그래서 이
+플러그인은 상태 판정을 재선언하지 않습니다.

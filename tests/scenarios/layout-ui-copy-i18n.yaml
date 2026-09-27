@@ -1,0 +1,29 @@
+feature: 레이아웃 화면 문구 번역 — 화면이 보여 주는 말은 번역 키를 거친다
+
+description: |
+  레이아웃에 한국어를 그대로 적으면 언어를 바꿔도 그 문구만 한국어로 남는다. 같은 화면의 다른 자리(필터·머리글)가
+  이미 번역 키를 쓰고 있으면 한 화면 안에서 같은 말이 두 언어로 갈린다.
+
+  배경:
+    - 아이콘 이름을 고치느라 연 파일에서 드러났다(#682 PO 실측 후속 4). NHN KCP 환경설정 「시스템 점검」 카드
+      전체(제목·배지·결제 경로 이름·「다시 검사」), 결제 조회 확장의 택배사 「기타」·구매거절 「일시」, 주문 목록의
+      추가옵션 「외 N건」, 개인결제 세 화면의 상태·결제수단·총 건수·버튼 도움말.
+    - 택배사 이름은 회사 고유명이라, 개인결제 화면의 사람 이름·상품명은 예시 값이라 그대로 둔다.
+
+  적용 지점:
+    - 번들 모듈·플러그인 레이아웃(`.g7.html` → 구운 `.json`)의 텍스트·도움말(title)·식 안 문자열.
+    - 새 키는 확장 ko·en 과 번들 일본어 언어팩에 함께 넣는다.
+
+axes:
+  surface: [nhnkcp_settings, nhnkcp_escrow_delivery, kginicis_escrow_delivery, order_list_option_summary, personal_payment_list, personal_payment_create, personal_payment_detail]
+
+effects:
+  - ui_copy_goes_through_translation_keys
+  - every_used_key_exists_in_ko_and_en
+  - order_option_summary_shows_label_and_extra_count   # 번역으로 옮기며 쪼갠 노드가 요약 표기를 잃지 않았는지
+
+test_files:
+  - plugins/_bundled/sirsoft-pay_nhnkcp/resources/js/__tests__/layouts/settingsHealthI18n.test.ts
+  - plugins/_bundled/sirsoft-pay_kginicis/resources/js/__tests__/layouts/escrowDeliveryI18n.test.ts
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminOrderListAdditionalOptionsSummary.test.ts
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/personalPaymentI18n.test.ts

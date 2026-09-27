@@ -282,6 +282,7 @@ return [
         'product_code' => [
             'required' => 'Please enter the product code.',
             'unique' => 'This product code is already in use.',
+            'regex' => 'The product code may only contain letters, numbers, hyphens (-) and underscores (_).',
         ],
         'list_price' => [
             'required' => 'Please enter the list price.',
@@ -2248,5 +2249,12 @@ return [
             'integer' => 'Product ID must be a number.',
             'item_min' => 'Product ID must be at least 1.',
         ],
+    ],
+    // 개인정보 보유기간 설정 필드 라벨 (이슈 #636) — StoreEcommerceSettingsRequest::attributes() 가 키별로 읽는다
+    'privacy_retention_attributes' => [
+        'section' => 'Privacy Retention Settings',
+        'enabled' => 'Automatic Order Privacy Retention Processing',
+        'retention_years' => 'Order Personal Information Retention Period',
+        'mode' => 'Expired Order Processing Mode',
     ],
 ];

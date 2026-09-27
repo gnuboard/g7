@@ -5,16 +5,22 @@
 ## 레이아웃
 
 <!-- @generated:layouts START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-레이아웃 4개 (루트: `resources/layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
+레이아웃 10개 (루트: `resources/layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
 
 | 그룹 | 개수 |
 |---|---|
-| `admin` | 4개 |
+| `admin` | 10개 |
 
 | 레이아웃 | 그룹 | 종류 | extends |
 |---|---|---|---|
 | `gdpr_consent_log` | `admin` | 화면 | `_admin_base` |
+| `gdpr_notice_log` | `admin` | 화면 | `_admin_base` |
 | `_policy_version_snapshot_modal` | `admin` | partial | - |
+| `_modal_notification_definition_reset` | `admin` | partial | - |
+| `_modal_notification_template_edit` | `admin` | partial | - |
+| `_modal_notification_template_preview` | `admin` | partial | - |
+| `_modal_privacy_run` | `admin` | partial | - |
+| `_modal_privacy_targets` | `admin` | partial | - |
 | `_policy_version_publish_modal` | `admin` | partial | - |
 | `plugin_settings` | `admin` | 화면 | `_admin_base` |
 <!-- @generated:layouts END -->
@@ -25,6 +31,11 @@
 `mypage_privacy_tab.g7.html`, §extension-points.md)으로 다른 확장/템플릿 레이아웃에 주입되는
 형태라 별도 수집 축에 잡힙니다. 방문자가 실제로 보는 UI를 찾으려면 이 표가 아니라
 확장점 문서를 봐야 합니다.
+
+관리자 레이아웃의 모양은 관리자 템플릿(`sirsoft-admin_basic`)의 스타일 자산 클래스(`row-stack`·`kv-list-2`·`kv-row` 등)에
+기댑니다. 템플릿의 Tailwind 는 **템플릿 자신의 레이아웃만** 훑어 CSS 를 만들므로, 플러그인 레이아웃에만 쓰인 임의값
+유틸리티(`grid-cols-[…]` 등)는 CSS 가 생기지 않을 수 있습니다 — 「라벨 값」 목록처럼 모양을 맞춰야 하는 자리는 자산
+클래스를 씁니다(정책 버전 스냅샷 창의 메타 목록이 `kv-list-2`).
 <!-- @intent END -->
 
 ## 액션 핸들러

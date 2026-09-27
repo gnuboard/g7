@@ -105,7 +105,7 @@
                                                 "type": "basic",
                                                 "name": "Icon",
                                                 "props": {
-                                                    "name": "refresh-cw",
+                                                    "name": "arrows-rotate",
                                                     "className": "text-base"
                                                 }
                                             }
@@ -123,7 +123,7 @@
                                                 "type": "basic",
                                                 "name": "Icon",
                                                 "props": {
-                                                    "name": "eye-off",
+                                                    "name": "eye-slash",
                                                     "className": "text-base mr-1"
                                                 }
                                             },

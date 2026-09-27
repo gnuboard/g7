@@ -92,6 +92,7 @@
 |---|---|
 | `dist/js/plugin.iife.js` | 빌드 산출물 (커밋 대상) |
 | `dist/vendor/ckeditor5/43.3.1` | 동봉 제3자 자산 (자체 제공) |
+| `editor-spec.json` | 레이아웃 편집기 스펙 (manifest) |
 
 로딩 설정: `{"strategy":"global","priority":100,"dependencies":[]}`
 <!-- @generated:assets END -->

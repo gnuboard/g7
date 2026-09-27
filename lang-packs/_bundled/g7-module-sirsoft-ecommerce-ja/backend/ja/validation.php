@@ -251,6 +251,7 @@ return [
         'product_code' => [
             'required' => '商品コードを入力してください。',
             'unique' => '既に使用中の商品コードです。',
+            'regex' => '商品コードには英字、数字、ハイフン(-)、アンダースコア(_)のみ使用できます。',
         ],
         'list_price' => [
             'required' => '定価を入力してください。',
@@ -2090,4 +2091,10 @@ return [
     ],
     'exchange_rate_save_failed' => '為替レート設定を保存できませんでした。',
     'exchange_rate_provider_unavailable' => '使用できない為替レートプロバイダーです。',
+    'privacy_retention_attributes' => [
+        'section' => '個人情報保有期間設定',
+        'enabled' => '注文個人情報保有期間自動削除',
+        'retention_years' => '注文個人情報保有期間',
+        'mode' => '保有期間経過注文処理方式',
+    ],
 ];

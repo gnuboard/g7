@@ -131,12 +131,12 @@ const diagnosticRules: DiagnosticRule[] = [
             return localKeysOutsideLayout(ctx.currentState?._local, ctx.currentLayoutJson).length > 0;
         },
         probability: 0.7,
-        solution: '감지기는 현재 레이아웃이 알지 못하는 _local 키(이전 화면 전용 키)가 남았을 때만 발화한다 — g7-state 로 그 키를 확인. 남았다면 _fromBase 보존 컴포넌트의 저장소 A 가 새 페이지 첫 렌더에 병합된 뒤 자식 마운트 콜백이 되쓴 경로 — 엔진 engine-v1.71.1 의 렌더 단계 초기화(appliedLayoutKey)가 살아 있는지 확인하고 시크릿 창(목록 컬럼 저장값 없음)에서 재현',
-        docLink: 'troubleshooting-state-closure.md#사례-4-spa-이동-시-보존된-base-루트의-stale-저장소-a-가-첫-렌더에-병합되어-마운트-콜백이-이전-페이지-값을-되쓴다-engine-v1711',
+        solution: '감지기는 현재 레이아웃이 알지 못하는 _local 키(이전 화면 전용 키)가 남았을 때만 발화한다 — g7-state 로 그 키를 확인. 남았다면 _fromBase 보존 컴포넌트의 저장소 A 가 새 페이지 첫 렌더에 병합된 뒤 자식 마운트 콜백이 되쓴 경로 — 엔진 engine-v1.72.1 의 렌더 단계 초기화(appliedLayoutKey)가 살아 있는지 확인하고 시크릿 창(목록 컬럼 저장값 없음)에서 재현',
+        docLink: 'troubleshooting-state-closure.md#사례-4-spa-이동-시-보존된-base-루트의-stale-저장소-a-가-첫-렌더에-병합되어-마운트-콜백이-이전-페이지-값을-되쓴다-engine-v1721',
         codeExample: `
 // 진단: 쿠폰 목록인데 _local 에 주문 목록 키가 남고 visibleColumns 가 주문 컬럼
 // g7-state _local → { bulkCourier, ordererSearchResults, visibleColumns: ['ordered_at', ...] }
-// 원인: DynamicRenderer 보존(_fromBase) 루트의 저장소 A 초기화가 첫 렌더보다 늦음 (engine-v1.71.1 에서 렌더 단계로 이동)
+// 원인: DynamicRenderer 보존(_fromBase) 루트의 저장소 A 초기화가 첫 렌더보다 늦음 (engine-v1.72.1 에서 렌더 단계로 이동)
         `,
     },
     {

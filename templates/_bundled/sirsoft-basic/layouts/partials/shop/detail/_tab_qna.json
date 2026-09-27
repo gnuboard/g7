@@ -87,7 +87,7 @@
                                                 "qnaModalBoardSettings": "{{qna.data.meta.board_settings ?? null}}",
                                                 "qnaBoardSlug": "{{_global.modules?.['sirsoft-ecommerce']?.inquiry?.board_slug ?? ''}}",
                                                 "qnaSubmitting": false,
-                                                "qnaTempKey": "{{'temp_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9)}}",
+                                                "qnaTempKey": "{{$uuid()}}",
                                                 "qnaForm": {
                                                     "title": "",
                                                     "category": "",

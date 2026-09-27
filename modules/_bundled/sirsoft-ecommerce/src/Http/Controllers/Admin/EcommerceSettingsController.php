@@ -6,6 +6,7 @@ use App\Extension\HookManager;
 use App\Helpers\PermissionHelper;
 use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Api\Base\AdminBaseController;
+use App\Privacy\PrivacyRetentionManager;
 use App\Seo\Contracts\SeoCacheManagerInterface;
 use Exception;
 use Illuminate\Http\JsonResponse;
@@ -19,6 +20,7 @@ use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\GetSettingRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\StoreBanksRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\StoreEcommerceSettingsRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\UpdateSettingRequest;
+use Modules\Sirsoft\Ecommerce\Privacy\OrderRetentionHandler;
 use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsAdminService;
 use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
 
@@ -391,5 +393,35 @@ class EcommerceSettingsController extends AdminBaseController
         $i = min($i, count($units) - 1);
 
         return round($bytes / (1024 ** $i), 1).' '.$units[$i];
+    }
+
+    /**
+     * 종결 주문 개인정보 보유기간 처리 대상 건수를 미리 조회합니다 (이슈 #636).
+     *
+     * 설정 화면의 대상 건수 뱃지가 쓰는 값이며, 코어 보유기간 커맨드의 `--dry-run` 과 **같은
+     * 조건식**({@see OrderRetentionHandler::preview()})을 지납니다. **저장된 설정** 기준이라 화면에서
+     * 값을 바꾸고 저장하기 전에는 이전 설정의 건수입니다. **꺼져 있어도 건수를 셉니다**(켜기 전에
+     * 규모를 본다 — 2026-09-23 확정). 「꺼짐」과 「대상 0건」은 `enabled` 로 구분합니다.
+     * `can_view_targets` 는 요청 관리자가 「더보기」 명단(코어 목록 API)을 볼 권한이 있는지입니다.
+     *
+     * 읽기 전용이며 입력이 없어 FormRequest 를 두지 않습니다 (`seoCacheInfo` 와 동형).
+     *
+     * @param  OrderRetentionHandler  $handler  종결 주문 보유기간 핸들러
+     * @param  PrivacyRetentionManager  $retentionManager  코어 보유기간 수집기 (목록 권한 판정)
+     * @return JsonResponse 대상 건수 JSON 응답
+     */
+    public function privacyRetentionPreview(OrderRetentionHandler $handler, PrivacyRetentionManager $retentionManager): JsonResponse
+    {
+        try {
+            return ResponseHelper::moduleSuccess('sirsoft-ecommerce', 'messages.settings.fetch_success', [
+                'orders' => $handler->preview(),
+                'enabled' => $handler->isEnabled(),
+                'mode' => $handler->mode(),
+                'retention_years' => $handler->retentionYears(),
+                'can_view_targets' => $retentionManager->canViewTargets($handler, $this->getCurrentUser()),
+            ]);
+        } catch (Exception $e) {
+            return ResponseHelper::moduleError('sirsoft-ecommerce', 'messages.settings.fetch_failed', 500);
+        }
     }
 }

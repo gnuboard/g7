@@ -2,13 +2,13 @@
 <extension target-layout="admin_ecommerce_order_detail">
   <inject target-id="sticky_header_container" position="append_child">
     <div data-if="{{kginicis_status.data?._is_test_mode === true}}" class="mx-6 mb-3 px-3 py-2 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-700 rounded-lg flex items-center gap-2">
-      <icon name="flask-conical" class="text-base text-orange-600 dark:text-orange-400 flex-shrink-0"/>
+      <icon name="flask" class="text-base text-orange-600 dark:text-orange-400 flex-shrink-0"/>
       <span class="text-sm font-semibold text-orange-800 dark:text-orange-300">$t:sirsoft-pay_kginicis.admin.test_mode_warning_badge</span>
       <span class="text-sm text-orange-700 dark:text-orange-400">$t:sirsoft-pay_kginicis.admin.test_mode_order_notice</span>
     </div>
     <div data-if="{{kginicis_cbt_reconciliation.data?.status === 'manual_refund_required' || kginicis_cbt_reconciliation.data?.status === 'auto_refunded'}}" class="mx-6 mb-3 px-3 py-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-lg space-y-2">
       <div class="flex items-center flex-wrap gap-2">
-        <icon name="alert-triangle" class="text-base text-red-600 dark:text-red-400 flex-shrink-0"/>
+        <icon name="triangle-exclamation" class="text-base text-red-600 dark:text-red-400 flex-shrink-0"/>
         <span class="text-sm font-semibold text-red-900 dark:text-red-200">$t:sirsoft-pay_kginicis.admin.cbt_reconciliation_title</span>
         <span data-if="{{kginicis_cbt_reconciliation.data?.status === 'manual_refund_required'}}" class="px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 dark:bg-red-900/40 text-danger-soft">$t:sirsoft-pay_kginicis.admin.cbt_reconciliation_manual_badge</span>
         <span data-if="{{kginicis_cbt_reconciliation.data?.status === 'auto_refunded'}}" class="px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 dark:bg-green-900/40 text-success-soft">$t:sirsoft-pay_kginicis.admin.cbt_reconciliation_refunded_badge</span>
@@ -50,7 +50,7 @@
             </sequence>
           </on>
           <icon data-if="{{_local._kginicisCbtRetrying}}" name="spinner" class="text-xs animate-spin"/>
-          <icon data-if="{{!_local._kginicisCbtRetrying}}" name="refresh-cw" class="text-xs"/>
+          <icon data-if="{{!_local._kginicisCbtRetrying}}" name="arrows-rotate" class="text-xs"/>
           <span data-if="{{_local._kginicisCbtRetrying}}">$t:sirsoft-pay_kginicis.admin.cbt_reconciliation_retrying</span>
           <span data-if="{{!_local._kginicisCbtRetrying}}">$t:sirsoft-pay_kginicis.admin.cbt_reconciliation_retry_button</span>
         </button>
@@ -113,7 +113,7 @@
             </sequence>
           </on>
           <icon data-if="{{_local._kginicisCvsRechecking}}" name="spinner" class="text-xs animate-spin"/>
-          <icon data-if="{{!_local._kginicisCvsRechecking}}" name="refresh-cw" class="text-xs"/>
+          <icon data-if="{{!_local._kginicisCvsRechecking}}" name="arrows-rotate" class="text-xs"/>
           <span data-if="{{_local._kginicisCvsRechecking}}">$t:sirsoft-pay_kginicis.admin.cbt_cvs_rechecking</span>
           <span data-if="{{!_local._kginicisCvsRechecking}}">$t:sirsoft-pay_kginicis.admin.cbt_cvs_recheck_button</span>
         </button>
@@ -139,7 +139,7 @@
             </sequence>
           </on>
           <icon data-if="{{_local._kginicisCvsSimulating}}" name="spinner" class="text-xs animate-spin"/>
-          <icon data-if="{{!_local._kginicisCvsSimulating}}" name="check-circle-2" class="text-xs"/>
+          <icon data-if="{{!_local._kginicisCvsSimulating}}" name="circle-check" class="text-xs"/>
           <span data-if="{{_local._kginicisCvsSimulating}}">$t:sirsoft-pay_kginicis.admin.cbt_cvs_simulating</span>
           <span data-if="{{!_local._kginicisCvsSimulating}}">$t:sirsoft-pay_kginicis.admin.cbt_cvs_simulate_button</span>
         </button>
@@ -212,7 +212,7 @@
               <span data-if="{{((_local._kginicisResult ?? kginicis_status.data)?.resultCode !== '00') &amp;&amp; ((_local._kginicisResult ?? kginicis_status.data)?.resultCode !== 'SUCCESS')}}" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">$t:sirsoft-pay_kginicis.admin.pay_status_unknown</span>
               <span data-if="{{(_local._kginicisResult ?? kginicis_status.data)?._cancel_price &amp;&amp; Number((_local._kginicisResult ?? kginicis_status.data)._cancel_price) > 0}}" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300">$t:sirsoft-pay_kginicis.admin.pay_status_cancelled</span>
               <span data-if="{{(_local._kginicisResult ?? kginicis_status.data)?._local_is_escrow === true}}" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
-                <icon name="shield-check" class="text-xs"/>
+                <icon name="shield-halved" class="text-xs"/>
                 <span>$t:sirsoft-pay_kginicis.admin.escrow_badge</span>
               </span>
               <span data-if="{{(_local._kginicisResult ?? kginicis_status.data)?._is_test_mode === true}}" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300">$t:sirsoft-pay_kginicis.admin.test_mode_badge</span>
@@ -395,7 +395,7 @@
             <option value="daesin">대신택배</option>
             <option value="kunyoung">건영택배</option>
             <option value="gsilogis">GSI Express</option>
-            <option value="etc">기타</option>
+            <option value="etc">$t:sirsoft-pay_kginicis.admin.escrow_delivery_courier_etc</option>
           </select>
         </div>
         <div class="flex justify-end">
@@ -434,11 +434,11 @@
       </div>
       <div class="mb-4 p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-700/50 text-xs">
         <div class="flex items-center gap-2 mb-2">
-          <icon name="x-circle" class="text-sm text-red-600 dark:text-red-400 flex-shrink-0"/>
+          <icon name="circle-xmark" class="text-sm text-red-600 dark:text-red-400 flex-shrink-0"/>
           <span class="text-xs font-semibold text-red-700 dark:text-red-400">$t:sirsoft-pay_kginicis.admin.escrow_deny_confirm_buyer_denied</span>
         </div>
         <div class="grid grid-cols-2 gap-x-4 gap-y-1">
-          <span class="text-gray-500 dark:text-gray-400">일시</span>
+          <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-pay_kginicis.admin.escrow_deny_confirm_buyer_denied_at</span>
           <span class="text-gray-900 dark:text-gray-100 font-mono">{{kginicis_escrow_delivery.data.escrow_confirm.confirmed_at ?? '-'}}</span>
         </div>
       </div>

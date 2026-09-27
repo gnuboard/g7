@@ -163,7 +163,7 @@
           <on type="click">
             <!-- 편집 진입 — 모드 전환과 함께 임시 업로드 키를 새로 뽑고, 보고 있던 분류를 폼의 `_local.form` 에 부어 준다. 폼은 상세를 다시 부르지 않으므로 이 자리가 편집 초깃값의 유일한 출처다. -->
             <sequence>
-              <set-state target="global" panelMode="edit" tempKey="{{'temp_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9)}}"/>
+              <set-state target="global" panelMode="edit" tempKey="{{$uuid()}}"/>
               <set-state target="local" form="{{_global.selectedCategory }}" :isSaving="false" :errors="null"/>
             </sequence>
           </on>

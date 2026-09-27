@@ -76,6 +76,7 @@ const RECORD_ONLY = [
   'field_ip_address',
   'field_withdrawn_at',
   'field_blocked_at',
+  'field_dormant_at',
   'field_terms_consent',
   'field_privacy_consent',
   'field_notifications_total',

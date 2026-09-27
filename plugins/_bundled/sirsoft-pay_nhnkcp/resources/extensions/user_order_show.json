@@ -23,7 +23,7 @@
                             "type": "basic",
                             "name": "Icon",
                             "props": {
-                                "name": "shield-check",
+                                "name": "shield-halved",
                                 "className": "text-xs"
                             }
                         },

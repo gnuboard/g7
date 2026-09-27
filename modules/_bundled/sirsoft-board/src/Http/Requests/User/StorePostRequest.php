@@ -11,6 +11,7 @@ use Illuminate\Validation\Rule;
 use Modules\Sirsoft\Board\Enums\PostStatus;
 use Modules\Sirsoft\Board\Http\Requests\Concerns\ResolvesAllowedExtensions;
 use Modules\Sirsoft\Board\Http\Requests\Concerns\ValidatesAttachmentCount;
+use Modules\Sirsoft\Board\Http\Requests\Concerns\ValidatesTempKey;
 use Modules\Sirsoft\Board\Models\Post;
 use Modules\Sirsoft\Board\Repositories\Contracts\BoardRepositoryInterface;
 use Modules\Sirsoft\Board\Rules\BlockedKeywordsRule;
@@ -29,6 +30,7 @@ class StorePostRequest extends FormRequest
 {
     use ResolvesAllowedExtensions;
     use ValidatesAttachmentCount;
+    use ValidatesTempKey;
 
     /**
      * 사용자가 이 요청을 수행할 권한이 있는지 확인
@@ -45,6 +47,8 @@ class StorePostRequest extends FormRequest
      *
      * 비밀글 여부를 문자열 "true"/"false" 로 보내는 클라이언트도 수용하도록
      * boolean 으로 정규화합니다. (해석 불가값은 유지 → boolean 규칙이 422 처리)
+     *
+     * @return void
      */
     protected function prepareForValidation(): void
     {
@@ -106,9 +110,10 @@ class StorePostRequest extends FormRequest
             'content_mode' => ['nullable', 'string', 'in:text,html'],
             'category' => ['nullable', 'string', 'max:50'],
             'is_secret' => ['nullable', 'boolean'],
-            'status' => ['nullable', 'string', Rule::in(PostStatus::values())],
-            // temp_key는 게시판 존재 여부와 무관하게 항상 허용
-            'temp_key' => ['nullable', 'string', 'max:64'],
+            // 사용자가 지정할 수 있는 상태는 published 뿐 — 블라인드·삭제는 관리 경로의 몫이다
+            'status' => ['nullable', 'string', Rule::in([PostStatus::Published->value])],
+            // temp_key는 게시판 존재 여부와 무관하게 항상 허용 (UUID 형식만 — 저장 경로에 들어간다)
+            'temp_key' => $this->tempKeyRules(),
         ];
 
         // 비회원인 경우 author_name, password 필수
@@ -243,6 +248,7 @@ class StorePostRequest extends FormRequest
      * 필드 단위 규칙으로 판정할 수 없는 첨부 총합을 검증합니다.
      *
      * @param  Validator  $validator  검증기
+     * @return void
      */
     public function withValidator(Validator $validator): void
     {

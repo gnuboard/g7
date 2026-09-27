@@ -33,6 +33,7 @@
 | [activity-log-hooks.md](activity-log-hooks.md) | 활동 로그 훅 레퍼런스 (Activity Log Hooks Reference) | 코어 70훅 + 확장 167훅 = 총 237훅 (확장별 목록은 그 확장이 소유) |
 | [activity-log.md](activity-log.md) | 활동 로그 시스템 (Activity Log System) | Monolog 기반: Service 훅 → Listener → Log::channel... |
 | [admin-settings-access.md](admin-settings-access.md) | Admin 환경설정 값 접근 (`g7_core_settings` vs `config()`) | 동기화 SSoT: storage/app/settings/*.json → Setting... |
+| [analytics.md](analytics.md) | 방문자 통계 | 세 경로(브라우저 비콘·서버 폴백·내부 검색 훅)가 하나의 적재 파이프라인으로 모인다 |
 | [api-documentation.md](api-documentation.md) | API 레퍼런스 문서 규정 (API Documentation) | 모든 API 엔드포인트는 레퍼런스 문서 필수 — 메서드/URI/파라미터/응답 필드 +... |
 | [api-resources.md](api-resources.md) | API 리소스 | Resource: BaseApiResource 상속 필수 / Collection: B... |
 | [authentication.md](authentication.md) | 인증 및 세션 처리 | Laravel Sanctum 토큰 전용 인증 (Bearer 토큰만 사용) |
@@ -54,6 +55,7 @@
 | [middleware.md](middleware.md) | 미들웨어 등록 규칙 | 인증 필요 미들웨어 → 전역 등록 금지! |
 | [notification-system.md](notification-system.md) | 알림 시스템 (Notification System) | GenericNotification 범용 클래스 1개로 모든 알림 처리 (개별 클래스... |
 | [pagination.md](pagination.md) | 대용량 목록 페이지네이션 (Pagination) | 총 건수만 상한을 받는다 — 상한 이하면 정확, 초과면 "이상"(total_relat... |
+| [privacy-retention.md](privacy-retention.md) | 개인정보 보유기간 처리 (Privacy Retention) | 확장은 PrivacyRetentionHandlerInterface 를 구현한 백엔드 ... |
 | [response-helper.md](response-helper.md) | API 응답 규칙 (ResponseHelper) | 모든 API 응답은 ResponseHelper 사용 |
 | [reverse-proxy.md](reverse-proxy.md) | 리버스 프록시 환경 (Reverse Proxy) | 프록시 뒤에서는 요청이 스스로 스킴·IP 를 증명하지 못한다 — 신뢰할 프록시를 지정... |
 | [routing.md](routing.md) | 라우트 네이밍 및 경로 | 모든 라우트는 name() 필수: ->name('api.users.index') |

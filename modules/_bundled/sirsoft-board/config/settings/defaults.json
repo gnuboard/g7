@@ -2,7 +2,7 @@
   "_meta": {
     "version": "1.0.0",
     "description": "게시판 모듈 환경설정",
-    "categories": ["basic_defaults", "report_policy", "spam_security", "display", "seo", "notifications", "attachment_settings"]
+    "categories": ["basic_defaults", "report_policy", "spam_security", "display", "seo", "notifications", "attachment_settings", "privacy_retention"]
   },
   "defaults": {
     "basic_defaults": {
@@ -61,6 +61,7 @@
         "posts.read": ["admin", "user", "guest"],
         "posts.write": ["admin", "user"],
         "posts.read-secret": ["admin"],
+        "posts.write-notice": ["admin"],
         "comments.read": ["admin", "user", "guest"],
         "comments.write": ["admin", "user"],
         "attachments.upload": ["admin", "user"],
@@ -109,6 +110,12 @@
     "attachment_settings": {
       "purge_enabled": false,
       "purge_retention_days": 30
+    },
+    "privacy_retention": {
+      "enabled": false,
+      "ip_retention_days": 365,
+      "guest_retention_days": 0,
+      "guest_mode": "anonymize"
     }
   },
   "frontend_schema": {
@@ -129,6 +136,9 @@
       "expose": false
     },
     "attachment_settings": {
+      "expose": false
+    },
+    "privacy_retention": {
       "expose": false
     }
   }

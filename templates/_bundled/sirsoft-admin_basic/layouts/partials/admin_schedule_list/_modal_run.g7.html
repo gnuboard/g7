@@ -18,7 +18,7 @@
     <div data-if="{{_global.runResult}}" class="mt-4 p-3 rounded-lg {{_global.runResult?.status === 'success' ? 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800' : 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800'}}">
       <div class="flex-center gap-2 mb-2">
         <icon data-if="{{_global.runResult?.status === 'success'}}" name="check-circle" class="text-xl text-green-600 dark:text-green-400"/>
-        <icon data-if="{{_global.runResult?.status !== 'success'}}" name="x-circle" class="text-xl text-red-600 dark:text-red-400"/>
+        <icon data-if="{{_global.runResult?.status !== 'success'}}" name="circle-xmark" class="text-xl text-red-600 dark:text-red-400"/>
         <span class="font-medium {{_global.runResult?.status === 'success' ? 'text-success-soft' : 'text-danger-soft'}}">{{_global.runResult?.status === 'success' ? '$t:admin.schedules.result.success' : '$t:admin.schedules.result.failed'}}</span>
       </div>
       <div data-if="{{_global.runResult?.duration}}" class="text-label">$t:admin.schedules.modals.run_duration|duration={{_global.runResult?.duration_formatted}}</div>
@@ -38,7 +38,7 @@
         </on>
         $t:common.close
       </button>
-      <button data-if="{{!_global.runResult}}" class="flex-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isRunning}}">
+      <button data-if="{{!_global.runResult}}" class="flex-center gap-2 px-4 py-2 bg-green-600 dark:bg-green-700 text-white rounded-lg hover:bg-green-700 dark:hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isRunning}}">
         <on type="click">
           <!-- 성공해도 창을 닫지 않는다 — 결과를 담아 두면 위 영역이 펼쳐지고 이 버튼은 조건에서 빠져 사라진다. 목록은 다시 받아 마지막 실행 시각을 갱신한다. -->
           <sequence>

@@ -2833,6 +2833,60 @@
         }
       },
       {
+        "name": "LineChart",
+        "type": "composite",
+        "description": "Chart.js 기반 선 차트 컴포넌트 — 방문자 추이처럼 시간 축을 따라 변하는 값을 여러 계열로 그린다",
+        "path": "src/components/composite/LineChart.tsx",
+        "props": {
+          "labels": {
+            "type": "array",
+            "required": true,
+            "description": "X축 라벨 배열"
+          },
+          "datasets": {
+            "type": "array",
+            "required": true,
+            "description": "데이터셋 배열 [{ label, data, color?, fill?, yAxisID? }]"
+          },
+          "height": {
+            "type": "number",
+            "required": false,
+            "default": 260,
+            "description": "차트 높이 (px)"
+          },
+          "showLegend": {
+            "type": "boolean",
+            "required": false,
+            "default": false,
+            "description": "범례 표시 여부"
+          },
+          "showGrid": {
+            "type": "boolean",
+            "required": false,
+            "default": false,
+            "description": "X축 그리드 표시 여부"
+          },
+          "showYGrid": {
+            "type": "boolean",
+            "required": false,
+            "default": true,
+            "description": "Y축 그리드 표시 여부"
+          },
+          "showYAxis": {
+            "type": "boolean",
+            "required": false,
+            "default": true,
+            "description": "Y축 눈금 표시 여부"
+          },
+          "className": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "추가 CSS 클래스"
+          }
+        }
+      },
+      {
         "name": "DonutChart",
         "type": "composite",
         "description": "Chart.js 기반 도넛 차트 컴포넌트",

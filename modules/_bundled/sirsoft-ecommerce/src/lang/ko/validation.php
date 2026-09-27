@@ -282,6 +282,7 @@ return [
         'product_code' => [
             'required' => '상품코드를 입력해주세요.',
             'unique' => '이미 사용중인 상품코드입니다.',
+            'regex' => '상품코드는 영문, 숫자, 하이픈(-), 밑줄(_)만 사용할 수 있습니다.',
         ],
         'list_price' => [
             'required' => '정가를 입력해주세요.',
@@ -2248,5 +2249,12 @@ return [
             'integer' => '상품 ID는 숫자여야 합니다.',
             'item_min' => '상품 ID는 1 이상이어야 합니다.',
         ],
+    ],
+    // 개인정보 보유기간 설정 필드 라벨 (이슈 #636) — StoreEcommerceSettingsRequest::attributes() 가 키별로 읽는다
+    'privacy_retention_attributes' => [
+        'section' => '개인정보 보유기간 설정',
+        'enabled' => '주문 개인정보 보유기간 자동 파기',
+        'retention_years' => '주문 개인정보 보유기간',
+        'mode' => '보유기간 경과 주문 처리 방식',
     ],
 ];

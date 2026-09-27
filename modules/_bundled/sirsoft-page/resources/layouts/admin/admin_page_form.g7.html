@@ -39,7 +39,7 @@
     <!-- 수정 모드에서 폼 로드 시 현재 슬러그는 유효하므로 slugChecked 초기화 -->
     <set-state if="{{!!route?.id}}" target="local" :slugChecked="true" :slugAvailable="true"/>
     <!-- tempKey 생성 (신규/수정 모두 - 취소 시 임시파일 정리 목적) -->
-    <set-state target="local" tempKey="{{('temp_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9))}}"/>
+    <set-state target="local" tempKey="{{$uuid()}}"/>
   </init>
   <slot name="content">
     <div data-ref="page_form_content" data-key="form" :data-blur-until-loaded="true" class="admin-page-content-responsive-fluid">

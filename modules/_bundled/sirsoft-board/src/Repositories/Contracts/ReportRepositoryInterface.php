@@ -288,6 +288,19 @@ interface ReportRepositoryInterface
     public function latestLogCreatedAt(int $reportId);
 
     /**
+     * 신고 대상의 스냅샷에서 개인정보 필드를 덮어씁니다 (개인정보 보유기간 처리, 이슈 #636).
+     *
+     * 신고 로그는 신고 당시 글의 작성자명·제목·본문을 스냅샷으로 복사해 둔다. 원본 글만
+     * 익명화·파기하면 그 사본이 남아 「지웠다」가 거짓이 되므로 같은 처리에서 함께 덮는다.
+     *
+     * @param  string  $targetType  신고 대상 종류 (post|comment)
+     * @param  array<int, int>  $targetIds  대상 ID 목록
+     * @param  array<string, string>  $replacements  스냅샷 키 => 치환값
+     * @return int 갱신한 신고 로그 수
+     */
+    public function scrubSnapshotsForTargets(string $targetType, array $targetIds, array $replacements): int;
+
+    /**
      * 케이스의 신고 로그 중 기준 시각 이후(포함) 것만 셉니다.
      *
      * 기준 시각이 없으면 케이스 전체를 셉니다 — 재활성화된 적 없는 케이스의 "현재 주기" 는

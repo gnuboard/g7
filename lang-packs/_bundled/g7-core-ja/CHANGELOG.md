@@ -17,6 +17,39 @@
 
 ### Added
 
+- 개인정보 조치 관리자 직권 실행의 코어 문구 일본어 번역을 추가했습니다 — 접수·처리 상태와 결과 안내(`privacy.manual_run.*`), 같은 대상에 작업이 이미 있을 때의 거절 문구(`exceptions.privacy_manual_run_conflict`), 요청 검증 문구와 항목명(`validation.privacy_manual_run.*`·`validation.attributes.skip_waiting`·`targets`·`since`), 접수·완료·실패 활동 로그 문구(`activity_log.*.privacy_manual_run_*`)입니다. 없으면 일본어 관리자 화면에서 직권 실행 결과와 활동 로그가 폴백 문구로 나옵니다. 휴면 단계 이름(`privacy.manual_run.dormant_stages.*`)은 다른 휴면 문구와 같은 「休眠」 표기로 맞췄습니다.
+- 개인정보 조치 대상 명단 창의 코어 문구 일본어 번역을 추가했습니다 — 회원 명단의 열 이름(이름·이메일·탈퇴일·마지막 활동일·휴면 전환일, `privacy.targets.columns.*`), 등록되지 않은 처리 대상이나 알 수 없는 휴면 단계를 요청했을 때의 안내(`privacy.targets.unknown_*`), 명단을 쪽 단위로 불러올 때의 검증 문구(`validation.privacy_targets.*`·`validation.attributes.page`·`validation.attributes.per_page`)입니다. 없으면 일본어 로케일에서 환경설정 > 개인정보의 「대상 보기」 창 열 이름이 한국어로 보입니다. 휴면은 팩 전체와 같은 「休眠」으로 적었습니다.
+- 휴면 계정과 개인정보 보유기간 파기 관련 코어 문구의 일본어 번역을 추가했습니다 — 휴면 전환·해제·자동 탈퇴가 남는 활동 로그 문구와 설명(`activity_log.action.dormant_*`·`activity_log.description.user_dormant_*`), 휴면 계정이 기존 토큰으로 API 를 부를 때 받는 안내(`auth.account_dormant`), 회원 상태 라벨 「휴면」과 「가입대기」(`user.status.dormant`·`pending_verification`), 환경설정 > 개인정보 탭의 검증 문구와 항목명(`validation.settings.privacy_*`·`validation.attributes.privacy_*`), 그리고 파기 핸들러 이름을 담은 `privacy.php`(`privacy.handlers.user_withdrawn`) 입니다. 없으면 일본어 로케일에서 이 문구들이 한국어로 남습니다. 휴면 해제 안내는 코어가 아니라 템플릿 문구(`auth.dormancy_restored`)라 `g7-template-sirsoft-basic-ja` 팩이 담당합니다.
+- 휴면 생명주기 알림 3종(전환 사전 안내·전환 완료·탈퇴 예정)의 일본어 메일·사이트내 알림 템플릿을 시드에 추가했습니다. 없으면 일본어 사이트의 회원이 법정 사전 안내와 탈퇴 예고를 한국어로 받습니다.
+- 환경설정 저장 오류 문구의 항목명 일본어 번역을 추가했습니다 — 탭 묶음 10건(`validation.attributes.settings_tab*`)과 알림 채널 3건(`validation.attributes.notification_channel_*`)입니다. 없으면 일본어 로케일에서 저장 오류 문구에 화면 라벨 대신 내부 필드 이름이 그대로 나옵니다.
+- IP 접근 제한 문구의 일본어 번역을 추가했습니다 — 허용되지 않은 IP 가 받는 403 화면의 제목·설명·접속 IP 표시(`errors.ip_restricted.*`), 환경설정 > 보안에서 목록·규칙을 저장할 때의 검증 문구와 항목명(`validation.settings.ip_*`·`validation.attributes.*`), 차단과 비상 해제가 남는 활동 로그 문구(`activity_log.action.ip_blocked`·`ip_restriction_disabled`와 그 설명)입니다. 없으면 일본어 로케일에서 차단 화면과 저장 오류가 한국어로 남습니다.
+- 인증 앱(OTP) 2단계 인증 관련 코어 문구의 일본어 번역을 추가했습니다 — 인증 앱으로 코드를 받을 때의 로그인 안내(`auth.two_factor_required_app`), 인증 앱 등록이 필요해 로그인이 막혔을 때의 안내(`auth.two_factor_enrollment_required`), 본인인증 채널 「인증 앱」 이름(`identity.channels.app`), 환경설정의 2단계 인증 적용 범위 항목명(`validation.attributes.two_factor_scope`) 입니다. 없으면 일본어 로케일에서 이 문구들이 한국어로 남습니다.
+- 방문자 통계 설정 › 보존의 저장 현황 표 이름(`analytics.storage_table.*`, 11종) 일본어 번역을 추가했습니다 — 없으면
+  일본어 로케일에서 표 이름(`analytics_visits` 등)이 그대로 보입니다.
+- 방문자 통계 집계가 **이미 확정된 날을 건너뛸 때**의 안내 문구 일본어 번역을 추가했습니다
+  (`analytics.archive.skipped_finalized`). 없으면 일본어 로케일의 집계 실행 이력에서 그 행만
+  번역 키 원문이 보입니다.
+- 꺼진 확장의 커스텀 차원 이름 표시(`analytics.report.inactive_dimension`, 「:key（無効な拡張機能）」)
+  일본어 번역을 추가했습니다. 행동 › 커스텀 차원 탭의 선택 목록에 보입니다.
+- 재집계가 보존 기간이 지난 날을 건너뛸 때의 안내 문구 일본어 번역을 추가했습니다
+  (`analytics.archive.skipped_beyond_retention`). 없으면 일본어 로케일의 집계 실행 이력에
+  키가 그대로 노출됩니다.
+- 코어에 새로 들어온 **방문자 통계**의 일본어 번역을 추가했습니다 (`analytics.php` 87키 신설 ·
+  `validation.php` 6키 · `activity_log.php` 9키). 개인정보 수집 모드 3종·방문자 유형·액션 종류·
+  유입 경로·기기·집계 차원 25종·수집 제외 사유 12종의 라벨과, 비콘 검증 오류 문구, 통계 관련
+  활동 로그 문구, 정보주체 요청 3종(조회·삭제·소급 익명화)의 응답 문구입니다. 없으면 일본어
+  로케일의 통계 화면에 키가 그대로 노출됩니다.
+  메뉴·권한·알림 시드도 함께 갱신했습니다(관리자 메뉴 「방문자 통계」와 하위 13항목, 권한 3건,
+  알림 정의 5건).
+- 방문자 통계 요청·설정의 검증 항목명 일본어 번역을 추가했습니다(`analytics.attributes` 75키 · `validation.attributes.settings_tab_analytics`).
+  없으면 일본어 로케일의 검증 오류 문구에 필드 키(`retention_days` 등)가 그대로 나옵니다.
+- 방문자 통계의 **집계·보존·관리자 API** 단계에서 늘어난 문구의 일본어 번역을 추가했습니다
+  (`analytics.php` 30키 · `validation.php` 5키). 집계가 겹쳐 돌아 건너뛰었을 때와 기간이
+  잘못됐을 때의 안내, 기록이 한계를 넘었을 때 대시보드·메일에 뜨는 경고와 그 조치 링크,
+  IP 로 정보주체를 찾을 때의 한계 안내, 조회·저장·삭제의 결과 알림, 그리고 조회 기간이
+  너무 길거나(`range_too_long`) 없는 리포트를 부르거나(`report_unknown`) 되돌릴 수 없는
+  작업에서 확인을 빠뜨렸을 때(`confirm_required`)의 검증 문구입니다. 없으면 일본어 로케일에서
+  이 자리에 키가 그대로 노출됩니다.
 - 확장 카드가 새로 내보내는 동작 3종(주 버튼·보조 버튼·더보기 메뉴)의 편집기 라벨
   일본어 번역을 추가했습니다. 없으면 동작 탭에 키가 그대로 노출됩니다.
 - 確認画面と拡張アイコンの案内文言（アイコン規格の警告 25 件）を追加しました。
@@ -60,6 +93,16 @@
 
 - 확장 공통 권한 2건(`core.extensions`·`core.extensions.custom_assets.manage`)의 일본어 번역을 추가했습니다 — 모듈·플러그인·템플릿에 운영자 CSS·JS·폰트·이미지를 추가하는 권한으로, 일본어 로케일의 역할 수정 화면에서 한국어로 남아 있었습니다.
 - 회원 알림함 관리 기능의 일본어 번역을 추가했습니다. 관리자가 회원에게 나간 알림을 목록으로 보고 지울 때 뜨는 안내 문구(`member_notification.*` 7건)와, 좌측 메뉴 「회원 알림함」, 권한 3종(`core.member-notifications`·`.read`·`.delete`)이 일본어 로케일에서 자연스럽게 표시됩니다.
+- 저장소 경로 거부 안내 문구의 일본어 번역을 추가했습니다(`exceptions.storage.unsafe_path`·`destructive_on_root`·`local_safe_option_package`) — 허용되지 않는 저장 경로나 저장소 최상위 폴더 삭제 요청이 거부될 때, 저장소 디스크 설정에 필요한 패키지가 없을 때의 안내입니다. 없으면 일본어 로케일에서 이 안내가 한국어로 나옵니다.
+
+### Changed
+
+- 휴면을 가리키는 일본어 낱말을 「休眠」 하나로 맞췄습니다 — 회원 상태 라벨(`user.status.dormant`), 휴면 전환·해제·자동 탈퇴 활동 로그 문구(`activity_log.action.dormant_*`·`activity_log.description.user_dormant_*`), 환경설정 > 개인정보의 검증 문구와 항목명(`validation.settings.privacy_dormant_*`·`validation.attributes.privacy_dormant_*`)이 「休止」였습니다. 알림 시드와 `auth.account_dormant` 는 이미 「休眠」이라, 일본어 회원이 메일로는 「休眠アカウントに転換されました」를 받고 화면에서는 「休止中」을 보는 상태였습니다. 휴면은 법정 사전 안내가 붙는 흐름이라, 받은 고지와 화면 표시가 같은 낱말이어야 되돌릴 기회(로그인 한 번)를 놓치지 않습니다.
+
+- 방문자 통계의 「보존 기간」 일본어 용어를 「保持期間」으로 통일했습니다 — 기록이 많이 쌓였을 때의 경고
+  (`analytics.alerts.ledger_limit_message`)·조치 링크(`ledger_limit_action`, 「保持設定を開く」)와 재집계
+  건너뜀 안내(`analytics.archive.skipped_beyond_retention`)가 「保存」(저장)으로 옮겨져, 관리자 화면의
+  「保持期間」과 다른 말로 보였습니다.
 
 - 알림이 아무에게도 가지 않아 발송 이력에 「건너뜀」으로 남을 때 표시되는 사유 문구의 일본어 번역을 추가했습니다 — 수신자를 찾지 못한 경우와 비회원 이메일이 비어 있는 경우가 일본어 로케일에서 각각 구분되어 표시됩니다.
 - 알림 템플릿의 역할 수신자 값이 잘못된 형태로 저장되려 할 때 표시되는 안내 문구의 일본어 번역을 추가했습니다.
@@ -68,6 +111,8 @@
 ### Removed
 
 - 더 이상 사용하지 않는 검사 문구를 정리했습니다 — 항목명이 바뀌었거나 검사 자체가 없어진 자리입니다.
+- 방문자 통계 「적재 방식」 라벨 2종(`analytics.dispatch_mode.queue`·`.sync`)의 일본어 번역을
+  지웠습니다 — 방문 기록이 언제나 요청 안에서 끝나게 바뀌어 설정 항목 자체가 없어졌습니다.
 
 ## [1.0.10] - 2026-09-09
 

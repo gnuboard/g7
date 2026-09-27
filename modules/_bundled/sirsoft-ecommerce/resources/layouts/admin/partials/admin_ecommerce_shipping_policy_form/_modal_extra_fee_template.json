@@ -1468,7 +1468,7 @@
                     "name": "Div",
                     "if": "{{(extra_fee_templates?.data?.data ?? []).length === 0 && $parent._local.isAddingTemplate !== true}}",
                     "props": {
-                        "className": "text-center text-gray-400 dark:text-gray-500"
+                        "className": "flex flex-col items-center gap-3 text-center text-gray-400 dark:text-gray-500"
                     },
                     "children": [
                         {
@@ -1476,7 +1476,7 @@
                             "name": "Icon",
                             "props": {
                                 "name": "inbox",
-                                "className": "text-4xl mx-auto mb-3"
+                                "className": "text-4xl"
                             }
                         },
                         {

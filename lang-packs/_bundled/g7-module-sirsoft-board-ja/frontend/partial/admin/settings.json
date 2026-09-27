@@ -15,7 +15,8 @@
     "mail_templates": "メールテンプレート",
     "notification_definitions": "通知設定",
     "seo": "SEO設定",
-    "identity_policies": "本人認証ポリシー"
+    "identity_policies": "本人認証ポリシー",
+    "privacy_retention": "個人情報の保有期間"
   },
   "board_settings_tabs": {
     "basic": "基本",
@@ -267,7 +268,8 @@
       "comments.write": "コメント作成·編集·削除",
       "attachments.upload": "ファイルアップロード·削除",
       "attachments.download": "ファイルダウンロード",
-      "manager": "掲示板管理"
+      "manager": "掲示板管理",
+      "posts.write-notice": "お知らせ登録"
     }
   },
   "notification_channels": {
@@ -510,5 +512,65 @@
       "icon_delete_failed": "アイコンの削除に失敗しました"
     },
     "delete_blocked_suffix": "提案に反応があるため削除できません — 使用を無効化することのみ可能です"
+  },
+  "privacy_retention": {
+    "title": "個人情報保有期間",
+    "description": "保有期間が過ぎた投稿·コメントの作成IPと非会員作成者情報を毎日自動的に破棄します。有効化する前に個人情報処理方針に保有期間と破棄方法を事前にご案内ください。",
+    "enabled": "保有期間自動破棄",
+    "enabled_hint": "有効化すると、コア個人情報保有期間タスク(毎日実行)が以下の2つの基準で掲示板データを処理します。処理した内容は取り消すことができません。",
+    "target_count": "対象 {{count}}件",
+    "ip_retention_days": "作成IP保有期間 (日)",
+    "ip_retention_days_hint": "会員投稿を含むすべての投稿·コメントの作成IPを、作成後この期間が経過すると削除します。アクセス記録は最低1年(大規模事業者は2年)保管する必要があるため、それより短い期間に設定しないでください。",
+    "guest_retention_days": "非会員作成者情報保有期間 (日)",
+    "guest_retention_days_hint": "非会員が作成した投稿·コメントを、作成後この期間が経過すると以下の方法で処理します。0の場合は処理しません。",
+    "guest_mode": "非会員投稿処理方法",
+    "guest_mode_hint": "匿名化は作成者名のみ非表示にし、投稿はそのままにします。削除は投稿を一覧から削除し、タイトル·本文·添付ファイルまで破棄します。",
+    "modes": {
+      "anonymize": "匿名化 (作成者名非表示)",
+      "delete": "削除"
+    },
+    "delete_warning": "削除は取り消すことができません。非会員投稿に付いた返信とコメント(会員が作成したものを含む)も一緒に削除され、添付ファイルは直ちに削除されます。",
+    "preview_hint": "対象件数は保存された設定基準です。値を変更した場合は保存した後に再度確認してください。",
+    "withdrawn_notice": "退会した会員の投稿は画面に「退会したユーザー」と表示されるため、ここで別途処理することはありません。会員情報破棄はコア環境設定の個人情報タブで設定します。",
+    "targets": {
+      "title_ip": "作成IP削除対象 (投稿·コメント)",
+      "title_guest": "非会員作成者情報処理対象 (投稿·コメント)",
+      "total": "合計 {{count}}件",
+      "empty": "対象がありません。",
+      "loading": "読み込み中...",
+      "close": "閉じる",
+      "row_ip": "掲示板作成IP（投稿·コメント）",
+      "row_guest": "非会員作成者情報（投稿·コメント）",
+      "count": "対象 {{count}}件",
+      "view": "対象を表示"
+    },
+    "manual_run": {
+      "run": "今すぐ実行",
+      "save_first_hint": "保存されていない変更があります。職権実行は保存された設定で処理されるため、まず保存してください。",
+      "status_active": "{{status}} — {{at}}受け取り · {{by}}",
+      "last_completed": "最後の職権実行：{{at}} · {{by}} · {{count}}件処理",
+      "last_failed": "最後の職権実行失敗：{{at}} · {{by}} — {{error}}",
+      "unknown_requester": "不明",
+      "modal_title": "{{target}} — 職権実行",
+      "confirm_desc": "スケジューラーを待たずに今すぐ1回実行します。タスクはキューに受け取られ、順番に処理され、終了するとこの画面に結果が表示されます。",
+      "count_label": "処理予定",
+      "count_value": "{{count}}件",
+      "loading": "件数をカウント中...",
+      "mode_label": "処理方法",
+      "modes": {
+        "anonymize": "匿名化",
+        "delete": "削除",
+        "erase_ip": "作成IP削除"
+      },
+      "disabled_notice": "自動実行がオフになっています。職権実行はトグルと無関係に保存された設定値でこの1回だけ処理します。",
+      "irreversible": "実行するともとに戻せません。処理予定件数と対象リストを確認してから実行してください。",
+      "queue_hint": "キューワーカーが動作する必要があります。同じ対象に受け取られたタスクが終わる前は再実行できません。",
+      "cancel": "キャンセル",
+      "execute": "実行",
+      "executing": "受け取り中...",
+      "queued_toast": "実行をキューに受け取りました。処理が終了すると結果が表示されます。",
+      "queue_failed": "実行を受け取れませんでした。",
+      "preview_failed": "対象件数を読み込めませんでした。"
+    }
   }
 }

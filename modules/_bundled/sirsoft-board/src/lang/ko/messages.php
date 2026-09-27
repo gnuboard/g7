@@ -217,6 +217,7 @@ return [
         'posts_delete_denied' => '게시글 삭제 권한이 없습니다.',
         'posts_manage_others_denied' => '타인의 게시글을 관리할 권한이 없습니다.',
         'posts_secret_read_denied' => '비밀글 조회 권한이 없습니다.',
+        'notice_denied' => '게시글을 공지로 지정할 권한이 없습니다.',
 
         // 댓글 권한
         'comments_read_denied' => '댓글 조회 권한이 없습니다.',
@@ -436,6 +437,23 @@ return [
     ],
     'inquiry' => [
         'default_title' => '상품 문의',
+    ],
+    // 개인정보 보유기간 처리 (이슈 #636) — 코어 보유기간 커맨드·미리보기가 핸들러 이름으로 쓴다
+    'privacy_retention' => [
+        'target_columns' => [
+            'title' => '제목',
+            'author' => '작성자',
+            'board' => '게시판 · 구분',
+            'created_at' => '작성일',
+        ],
+        'target_kinds' => [
+            'post' => '글',
+            'comment' => '댓글',
+        ],
+        'handlers' => [
+            'ip' => '게시판 작성 IP',
+            'guest' => '게시판 비회원 작성자 정보',
+        ],
     ],
     'dashboard' => [
         'fetch_success' => '대시보드 데이터를 조회했습니다.',

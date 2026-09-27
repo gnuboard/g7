@@ -62,7 +62,11 @@ _프론트 엔트리포인트가 없습니다._
 ## 에셋
 
 <!-- @generated:assets START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-_프론트 에셋이 없습니다._
+| 경로 | 구분 |
+|---|---|
+| `editor-spec.json` | 레이아웃 편집기 스펙 (manifest) |
+
+로딩 설정: `{"strategy":"global","priority":100,"dependencies":[]}`
 <!-- @generated:assets END -->
 
 <!-- @intent START -->

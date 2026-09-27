@@ -20,9 +20,12 @@
  *    확장이 주입되는 호스트 레이아웃의 라우트 path 를 `hostRoutePath` 로 받아 그 호스트의
  *    route scope states 를 적용한다(게이트/모달 뒤 확장 조각을 상태 시뮬레이션으로 노출).
  *    호스트 path 미상이면 null(디그레이드 — 폴백 안내).
- *  - iteration_item → `__iteration__/{sourcePath}` (states scope 미지원 — 디그레이드)
+ *  - iteration_item → `__iteration__/{sourcePath}` — **호스트 scope 로 매칭**(extension 과 동형).
+ *    반복 항목 템플릿은 그 항목을 그리는 화면의 상태 뒤에 있다(예: 알림톡 템플릿 행은
+ *    `query.tab=templates` 상태에서만 존재). 호스트 scope 를 물려받지 않으면 항목 편집에
+ *    들어가는 순간 상태가 풀려 **편집 대상 자체가 캔버스에서 사라진다**. 호스트 path 는
+ *    호출부가 진입 직전 라우트(`returnRoute`)에서 도출해 `hostRoutePath` 로 넘긴다.
  *
- * @since engine-v1.50.0
  * @since engine-v1.50.0
  */
 
@@ -42,15 +45,16 @@ export interface CurrentStateScope {
 /**
  * 편집기 도메인 상태로부터 현재 편집 대상의 scope 기준을 도출한다.
  *
- * route/base/modal 만 states scope 를 가질 수 있다. extension 모드는 그 확장이
- * 주입되는 **호스트 레이아웃의 라우트 path**(`hostRoutePath`)로 route scope 를 도출한다
- * 호스트 path
- * 미상이면 null. iteration_item, 또는 라우트 미선택 시도 `null` 을 반환해 디그레이드한다.
+ * route/base/modal 만 states scope 를 **직접** 가질 수 있다. extension·iteration_item
+ * 모드는 자기 scope 가 없고, 그 조각이 놓이는 **호스트의 scope**(`hostRoutePath`)를
+ * 물려받는다 — 조각은 호스트 화면의 상태 뒤에 있으므로 그 상태를 풀면 편집 대상이
+ * 캔버스에서 사라진다. 호스트 path 미상이면 null. 라우트 미선택 시도 `null` 을 반환해
+ * 디그레이드한다.
  *
  * @param editMode 현재 편집 모드
  * @param selectedRoutePath selectedRoute.path (가상 path 인코딩 포함)
- * @param hostRoutePath extension 모드에서 호스트 레이아웃의 라우트 path (옵션 — 비파괴).
- *   route/base/modal 모드는 무시. extension 모드에서만 route scope 도출에 사용.
+ * @param hostRoutePath 호스트 레이아웃의 라우트 path (옵션 — 비파괴). route/base/modal
+ *   모드는 무시. extension·iteration_item 모드에서만 scope 도출에 사용한다.
  * @return scope 기준 또는 null(디그레이드)
  */
 export function deriveCurrentScope(
@@ -58,12 +62,15 @@ export function deriveCurrentScope(
   selectedRoutePath: string | null | undefined,
   hostRoutePath?: string | null,
 ): CurrentStateScope | null {
-  if (editMode === 'extension') {
-    // 확장 편집 — 호스트 라우트 path 로 route scope 도출. 호스트 path 미상이면 디그레이드.
-    // (호스트가 base 레이아웃이면 호출부가 `__base__/` path 를 넘겨 base scope 로 매칭 가능.)
+  // 자기 scope 가 없고 호스트의 scope 를 물려받는 모드 — 확장 조각과 반복 항목 템플릿.
+  // 호스트 path 미상이면 디그레이드. 호스트가 base 레이아웃이면 호출부가 `__base__/`,
+  // 모달이면 `__modal__/` path 를 넘겨 그 scope 로 매칭한다.
+  if (editMode === 'extension' || editMode === 'iteration_item') {
     if (typeof hostRoutePath === 'string' && hostRoutePath.length > 0) {
       const baseName = stripPrefix(hostRoutePath, '__base__/');
       if (baseName) return { kind: 'base', match: baseName };
+      const modalId = stripPrefix(hostRoutePath, '__modal__/');
+      if (modalId) return { kind: 'modal', match: modalId };
       return { kind: 'route', match: hostRoutePath };
     }
     return null;
@@ -84,7 +91,8 @@ export function deriveCurrentScope(
       const id = stripPrefix(selectedRoutePath, '__modal__/');
       return id ? { kind: 'modal', match: id } : null;
     }
-    // iteration_item 은 states scope 비대상 — 디그레이드
+    // extension·iteration_item 은 위에서 호스트 scope 로 처리했다. 여기 오는 것은
+    // 알려지지 않은 모드뿐 — 디그레이드.
     default:
       return null;
   }
@@ -133,6 +141,49 @@ export function resolveDefaultStateId(items: EditorStateItemSpec[]): string | nu
   if (items.length === 0) return null;
   const def = items.find((i) => i.default === true);
   return def ? def.id : items[0].id;
+}
+
+/**
+ * scope 를 하나의 문자열 키로 접는다 — 상태 기억을 「어느 화면의 것인지」로 한정하기 위한 것.
+ *
+ * scope 가 없으면(호스트 미상 디그레이드) null 이고, 그때는 기억을 이어 가지 않는다.
+ *
+ * @param scope 현재 편집 대상 scope (없으면 null)
+ * @return `kind|match` 형태의 키 또는 null
+ *
+ * @since engine-v1.71.1
+ */
+export function stateScopeKey(scope: CurrentStateScope | null): string | null {
+  return scope ? `${scope.kind}|${scope.match}` : null;
+}
+
+/**
+ * scope 가 다시 도출됐을 때 이어 갈 상태 id 를 결정한다.
+ *
+ * 직전 선택이 **같은 scope 의 것이고** 새 목록에도 있으면 그대로 이어 간다. 반복 항목·모달
+ * 편집에 들어갔다 나오면 scope 가 재도출되는데, 무조건 기본 상태로 되돌리면 저작자가 고른
+ * 화면으로 돌아오지 못한다(고른 상태에서만 보이던 구역이 다시 사라진다).
+ *
+ * **scope 를 함께 보는 이유**: 상태 id 는 화면마다 재사용된다 — 번들 실측으로 `modal_filled`
+ * 하나가 170개 scope, `validation_failed` 가 17개 scope 에 쓰인다. id 만 대조하면 A 화면에서
+ * 고른 `validation_failed` 가 B 화면으로 옮겨도 「새 목록에 있다」는 이유로 되살아나, B 는
+ * 기본 상태가 아니라 검증 실패 모습으로 열린다. scope 가 다르면 기억을 버리고 기본으로 간다.
+ *
+ * @param items 새로 매칭된 상태 items
+ * @param previous 직전 활성 상태의 scope 키와 id (없으면 null)
+ * @param currentScopeKey 새로 도출된 scope 의 키 (없으면 null)
+ * @return 이어 갈 상태 id 또는 null
+ *
+ * @since engine-v1.71.1
+ */
+export function resolveNextActiveStateId(
+  items: EditorStateItemSpec[],
+  previous: { scopeKey: string | null; id: string | null } | null | undefined,
+  currentScopeKey: string | null,
+): string | null {
+  const sameScope = !!currentScopeKey && previous?.scopeKey === currentScopeKey;
+  if (sameScope && previous?.id && items.some((item) => item.id === previous.id)) return previous.id;
+  return resolveDefaultStateId(items);
 }
 
 /**

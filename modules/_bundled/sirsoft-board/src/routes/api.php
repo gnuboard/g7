@@ -126,6 +126,11 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
         ->middleware('permission:admin,sirsoft-board.settings.update')
         ->name('admin.settings.clear-cache');
 
+    // 개인정보 보유기간 처리 대상 건수 미리보기 (와일드카드 라우트보다 먼저 등록, 이슈 #636)
+    Route::get('settings/privacy-retention-preview', [BoardSettingsController::class, 'privacyRetentionPreview'])
+        ->middleware('permission:admin,sirsoft-board.settings.read')
+        ->name('admin.settings.privacy-retention-preview');
+
     // 환경설정 카테고리별 조회 (와일드카드 라우트 - 마지막에 배치)
     Route::get('settings/{category}', [BoardSettingsController::class, 'show'])
         ->middleware('permission:admin,sirsoft-board.settings.read')

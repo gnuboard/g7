@@ -40,7 +40,7 @@
                             "type": "basic",
                             "name": "Icon",
                             "props": {
-                                "name": "flask-conical",
+                                "name": "flask",
                                 "className": "text-base text-orange-600 dark:text-orange-400 flex-shrink-0"
                             }
                         },
@@ -654,7 +654,7 @@
                                                     "props": {
                                                         "value": "40"
                                                     },
-                                                    "text": "기타"
+                                                    "text": "$t:sirsoft-pay_nhnkcp.admin.escrow_delivery_courier_etc"
                                                 }
                                             ]
                                         }

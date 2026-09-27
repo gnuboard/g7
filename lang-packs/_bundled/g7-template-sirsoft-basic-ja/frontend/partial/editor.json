@@ -660,6 +660,23 @@
       "label": "ドロップダウン並べ替え",
       "left": "左",
       "right": "右"
+    },
+    "vc_today": {
+      "label": "今日"
+    },
+    "vc_yesterday": {
+      "label": "昨日"
+    },
+    "vc_max": {
+      "label": "最大"
+    },
+    "vc_total": {
+      "label": "すべて"
+    },
+    "vc_layout": {
+      "label": "バッチ",
+      "row": "横",
+      "column": "縦"
     }
   },
   "component": {
@@ -713,7 +730,8 @@
     "header": "サイトヘッダー",
     "footer": "サイトフッター",
     "theme_toggle": "テーマ切り替え",
-    "notification_center": "通知センター"
+    "notification_center": "通知センター",
+    "visitor_counter": "訪問者カウンター"
   },
   "action": {
     "go_to_page": {
@@ -1002,7 +1020,11 @@
     "user_base_default": "デフォルト",
     "mobile_menu_open": "モバイルメニュー展開",
     "gdpr_cookie_banner_visible": "クッキーバナー表示",
-    "identity_challenge_inicis": "本人認証モーダル (イニシス)"
+    "identity_challenge_inicis": "本人認証モーダル (イニシス)",
+    "modal_filled": "ウィンドウの内容を表示",
+    "screen_filled": "画面の状態を表示",
+    "two_factor_challenge": "2段階認証の入力",
+    "comment_editing": "コメント編集中"
   },
   "cell_border": {
     "side_all": "すべて",
@@ -1082,7 +1104,11 @@
     "footer_social_links": "ソーシャルリンク",
     "footer_link_groups": "リンクグループ",
     "notification_items": "通知リスト",
-    "notification_unread_count": "未読通知数"
+    "notification_unread_count": "未読通知数",
+    "visitor_today": "本日の訪問",
+    "visitor_yesterday": "昨日の訪問",
+    "visitor_max": "最大訪問",
+    "visitor_total": "全訪問"
   },
   "state_label": {
     "current_user": "現在のユーザー",
@@ -1156,6 +1182,7 @@
     "user_notification_ws": "通知 (リアルタイム)",
     "wishlist": "ウィッシュリスト",
     "scrap": "スクラップ",
+    "visitor_summary": "訪問者サマリー",
     "claimable": "クレーム申請可能商品",
     "claims": "クレーム申請履歴",
     "claim": "クレーム申請書"

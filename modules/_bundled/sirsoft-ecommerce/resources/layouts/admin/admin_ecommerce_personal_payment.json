@@ -97,7 +97,7 @@
                                                 "type": "basic",
                                                 "name": "Icon",
                                                 "props": {
-                                                    "name": "refresh-cw",
+                                                    "name": "arrows-rotate",
                                                     "className": "text-xl"
                                                 }
                                             }
@@ -239,7 +239,7 @@
                                                 "type": "basic",
                                                 "name": "Icon",
                                                 "props": {
-                                                    "name": "refresh-cw",
+                                                    "name": "arrows-rotate",
                                                     "className": "text-base"
                                                 }
                                             },
@@ -290,7 +290,7 @@
                                                     }
                                                 ],
                                                 "props": {
-                                                    "className": "{{_local.statusFilter === '' ? 'btn-badge cursor-pointer bg-gray-200 text-gray-700 ring-1 ring-gray-400 dark:bg-gray-700 dark:text-gray-300' : 'btn-badge cursor-pointer'}}"
+                                                    "className": "{{_local.statusFilter === '' ? 'btn-badge cursor-pointer bg-gray-200 text-gray-700 ring-1 ring-gray-400 dark:ring-gray-500 dark:bg-gray-700 dark:text-gray-300' : 'btn-badge cursor-pointer'}}"
                                                 },
                                                 "text": "$t:sirsoft-ecommerce.admin.personal_payment.filter.all"
                                             },
@@ -309,7 +309,7 @@
                                                     }
                                                 ],
                                                 "props": {
-                                                    "className": "{{_local.statusFilter === 'pending' ? 'btn-badge btn-badge-yellow cursor-pointer ring-1 ring-yellow-400' : 'btn-badge cursor-pointer'}}"
+                                                    "className": "{{_local.statusFilter === 'pending' ? 'btn-badge btn-badge-yellow cursor-pointer ring-1 ring-yellow-400 dark:ring-yellow-500' : 'btn-badge cursor-pointer'}}"
                                                 },
                                                 "text": "$t:sirsoft-ecommerce.admin.personal_payment.filter.pending"
                                             },
@@ -328,7 +328,7 @@
                                                     }
                                                 ],
                                                 "props": {
-                                                    "className": "{{_local.statusFilter === 'completed' ? 'btn-badge btn-badge-green cursor-pointer ring-1 ring-green-400' : 'btn-badge cursor-pointer'}}"
+                                                    "className": "{{_local.statusFilter === 'completed' ? 'btn-badge btn-badge-green cursor-pointer ring-1 ring-green-400 dark:ring-green-500' : 'btn-badge cursor-pointer'}}"
                                                 },
                                                 "text": "$t:sirsoft-ecommerce.admin.personal_payment.filter.completed"
                                             },
@@ -347,7 +347,7 @@
                                                     }
                                                 ],
                                                 "props": {
-                                                    "className": "{{_local.statusFilter === 'expired' ? 'btn-badge btn-badge-gray cursor-pointer ring-1 ring-gray-400' : 'btn-badge cursor-pointer'}}"
+                                                    "className": "{{_local.statusFilter === 'expired' ? 'btn-badge btn-badge-gray cursor-pointer ring-1 ring-gray-400 dark:ring-gray-500' : 'btn-badge cursor-pointer'}}"
                                                 },
                                                 "text": "$t:sirsoft-ecommerce.admin.personal_payment.filter.expired"
                                             }
@@ -393,7 +393,7 @@
                                                     }
                                                 ],
                                                 "props": {
-                                                    "className": "{{_local.paymentMethodFilter === '' ? 'btn-badge cursor-pointer bg-gray-200 text-gray-700 ring-1 ring-gray-400 dark:bg-gray-700 dark:text-gray-300' : 'btn-badge cursor-pointer'}}"
+                                                    "className": "{{_local.paymentMethodFilter === '' ? 'btn-badge cursor-pointer bg-gray-200 text-gray-700 ring-1 ring-gray-400 dark:ring-gray-500 dark:bg-gray-700 dark:text-gray-300' : 'btn-badge cursor-pointer'}}"
                                                 },
                                                 "children": [
                                                     {
@@ -426,7 +426,7 @@
                                                     }
                                                 ],
                                                 "props": {
-                                                    "className": "{{_local.paymentMethodFilter === 'card' ? 'btn-badge btn-badge-blue cursor-pointer ring-1 ring-blue-400' : 'btn-badge cursor-pointer'}}"
+                                                    "className": "{{_local.paymentMethodFilter === 'card' ? 'btn-badge btn-badge-blue cursor-pointer ring-1 ring-blue-400 dark:ring-blue-500' : 'btn-badge cursor-pointer'}}"
                                                 },
                                                 "children": [
                                                     {
@@ -459,7 +459,7 @@
                                                     }
                                                 ],
                                                 "props": {
-                                                    "className": "{{_local.paymentMethodFilter === 'bank_transfer' ? 'btn-badge btn-badge-cyan cursor-pointer ring-1 ring-cyan-400' : 'btn-badge cursor-pointer'}}"
+                                                    "className": "{{_local.paymentMethodFilter === 'bank_transfer' ? 'btn-badge btn-badge-cyan cursor-pointer ring-1 ring-cyan-400 dark:ring-cyan-500' : 'btn-badge cursor-pointer'}}"
                                                 },
                                                 "children": [
                                                     {
@@ -492,7 +492,7 @@
                                                     }
                                                 ],
                                                 "props": {
-                                                    "className": "{{_local.paymentMethodFilter === 'kakao_pay' ? 'btn-badge btn-badge-yellow cursor-pointer ring-1 ring-yellow-400' : 'btn-badge cursor-pointer'}}"
+                                                    "className": "{{_local.paymentMethodFilter === 'kakao_pay' ? 'btn-badge btn-badge-yellow cursor-pointer ring-1 ring-yellow-400 dark:ring-yellow-500' : 'btn-badge cursor-pointer'}}"
                                                 },
                                                 "children": [
                                                     {
@@ -525,7 +525,7 @@
                                                     }
                                                 ],
                                                 "props": {
-                                                    "className": "{{_local.paymentMethodFilter === 'naver_pay' ? 'btn-badge btn-badge-green cursor-pointer ring-1 ring-green-400' : 'btn-badge cursor-pointer'}}"
+                                                    "className": "{{_local.paymentMethodFilter === 'naver_pay' ? 'btn-badge btn-badge-green cursor-pointer ring-1 ring-green-400 dark:ring-green-500' : 'btn-badge cursor-pointer'}}"
                                                 },
                                                 "children": [
                                                     {
@@ -789,7 +789,7 @@
                                         "props": {
                                             "className": "text-secondary"
                                         },
-                                        "text": "총 9개"
+                                        "text": "$t:sirsoft-ecommerce.admin.personal_payment.table.total_count|count=9"
                                     },
                                     {
                                         "type": "basic",
@@ -906,7 +906,7 @@
                                                                                 "props": {
                                                                                     "className": "badge badge-yellow"
                                                                                 },
-                                                                                "text": "대기중"
+                                                                                "text": "$t:sirsoft-ecommerce.admin.personal_payment.status.pending"
                                                                             },
                                                                             {
                                                                                 "type": "basic",
@@ -929,7 +929,7 @@
                                                                                 "type": "basic",
                                                                                 "name": "Icon",
                                                                                 "props": {
-                                                                                    "name": "more-horizontal",
+                                                                                    "name": "ellipsis",
                                                                                     "className": "text-xl"
                                                                                 }
                                                                             }
@@ -1075,7 +1075,7 @@
                                                                                 "props": {
                                                                                     "className": "badge badge-yellow"
                                                                                 },
-                                                                                "text": "대기중"
+                                                                                "text": "$t:sirsoft-ecommerce.admin.personal_payment.status.pending"
                                                                             },
                                                                             {
                                                                                 "type": "basic",
@@ -1098,7 +1098,7 @@
                                                                                 "type": "basic",
                                                                                 "name": "Icon",
                                                                                 "props": {
-                                                                                    "name": "more-horizontal",
+                                                                                    "name": "ellipsis",
                                                                                     "className": "text-xl"
                                                                                 }
                                                                             }
@@ -1244,7 +1244,7 @@
                                                                                 "props": {
                                                                                     "className": "badge badge-yellow"
                                                                                 },
-                                                                                "text": "대기중"
+                                                                                "text": "$t:sirsoft-ecommerce.admin.personal_payment.status.pending"
                                                                             },
                                                                             {
                                                                                 "type": "basic",
@@ -1267,7 +1267,7 @@
                                                                                 "type": "basic",
                                                                                 "name": "Icon",
                                                                                 "props": {
-                                                                                    "name": "more-horizontal",
+                                                                                    "name": "ellipsis",
                                                                                     "className": "text-xl"
                                                                                 }
                                                                             }
@@ -1413,7 +1413,7 @@
                                                                                 "props": {
                                                                                     "className": "badge badge-green"
                                                                                 },
-                                                                                "text": "완료"
+                                                                                "text": "$t:sirsoft-ecommerce.admin.personal_payment.status.completed"
                                                                             },
                                                                             {
                                                                                 "type": "basic",
@@ -1436,7 +1436,7 @@
                                                                                 "type": "basic",
                                                                                 "name": "Icon",
                                                                                 "props": {
-                                                                                    "name": "more-horizontal",
+                                                                                    "name": "ellipsis",
                                                                                     "className": "text-xl"
                                                                                 }
                                                                             }
@@ -1566,7 +1566,7 @@
                                                                         "props": {
                                                                             "className": "btn-badge btn-badge-green text-xs"
                                                                         },
-                                                                        "text": "네이버페이"
+                                                                        "text": "$t:sirsoft-ecommerce.admin.personal_payment.filter.naver_pay"
                                                                     },
                                                                     {
                                                                         "type": "basic",
@@ -1607,7 +1607,7 @@
                                                                                 "props": {
                                                                                     "className": "badge badge-green"
                                                                                 },
-                                                                                "text": "완료"
+                                                                                "text": "$t:sirsoft-ecommerce.admin.personal_payment.status.completed"
                                                                             },
                                                                             {
                                                                                 "type": "basic",
@@ -1630,7 +1630,7 @@
                                                                                 "type": "basic",
                                                                                 "name": "Icon",
                                                                                 "props": {
-                                                                                    "name": "more-horizontal",
+                                                                                    "name": "ellipsis",
                                                                                     "className": "text-xl"
                                                                                 }
                                                                             }
@@ -1760,7 +1760,7 @@
                                                                         "props": {
                                                                             "className": "btn-badge btn-badge-yellow text-xs"
                                                                         },
-                                                                        "text": "카카오페이"
+                                                                        "text": "$t:sirsoft-ecommerce.admin.personal_payment.filter.kakao_pay"
                                                                     },
                                                                     {
                                                                         "type": "basic",
@@ -1801,7 +1801,7 @@
                                                                                 "props": {
                                                                                     "className": "badge badge-green"
                                                                                 },
-                                                                                "text": "완료"
+                                                                                "text": "$t:sirsoft-ecommerce.admin.personal_payment.status.completed"
                                                                             },
                                                                             {
                                                                                 "type": "basic",
@@ -1824,7 +1824,7 @@
                                                                                 "type": "basic",
                                                                                 "name": "Icon",
                                                                                 "props": {
-                                                                                    "name": "more-horizontal",
+                                                                                    "name": "ellipsis",
                                                                                     "className": "text-xl"
                                                                                 }
                                                                             }
@@ -1954,7 +1954,7 @@
                                                                         "props": {
                                                                             "className": "btn-badge btn-badge-blue text-xs"
                                                                         },
-                                                                        "text": "신용카드"
+                                                                        "text": "$t:sirsoft-ecommerce.admin.personal_payment.filter.card"
                                                                     },
                                                                     {
                                                                         "type": "basic",
@@ -1995,7 +1995,7 @@
                                                                                 "props": {
                                                                                     "className": "badge badge-green"
                                                                                 },
-                                                                                "text": "완료"
+                                                                                "text": "$t:sirsoft-ecommerce.admin.personal_payment.status.completed"
                                                                             },
                                                                             {
                                                                                 "type": "basic",
@@ -2018,7 +2018,7 @@
                                                                                 "type": "basic",
                                                                                 "name": "Icon",
                                                                                 "props": {
-                                                                                    "name": "more-horizontal",
+                                                                                    "name": "ellipsis",
                                                                                     "className": "text-xl"
                                                                                 }
                                                                             }
@@ -2148,7 +2148,7 @@
                                                                         "props": {
                                                                             "className": "btn-badge btn-badge-cyan text-xs"
                                                                         },
-                                                                        "text": "계좌이체"
+                                                                        "text": "$t:sirsoft-ecommerce.admin.personal_payment.filter.bank_transfer"
                                                                     },
                                                                     {
                                                                         "type": "basic",
@@ -2189,7 +2189,7 @@
                                                                                 "props": {
                                                                                     "className": "badge badge-gray"
                                                                                 },
-                                                                                "text": "만료"
+                                                                                "text": "$t:sirsoft-ecommerce.admin.personal_payment.status.expired"
                                                                             },
                                                                             {
                                                                                 "type": "basic",
@@ -2212,7 +2212,7 @@
                                                                                 "type": "basic",
                                                                                 "name": "Icon",
                                                                                 "props": {
-                                                                                    "name": "more-horizontal",
+                                                                                    "name": "ellipsis",
                                                                                     "className": "text-xl"
                                                                                 }
                                                                             }
@@ -2358,7 +2358,7 @@
                                                                                 "props": {
                                                                                     "className": "badge badge-gray"
                                                                                 },
-                                                                                "text": "만료"
+                                                                                "text": "$t:sirsoft-ecommerce.admin.personal_payment.status.expired"
                                                                             },
                                                                             {
                                                                                 "type": "basic",
@@ -2381,7 +2381,7 @@
                                                                                 "type": "basic",
                                                                                 "name": "Icon",
                                                                                 "props": {
-                                                                                    "name": "more-horizontal",
+                                                                                    "name": "ellipsis",
                                                                                     "className": "text-xl"
                                                                                 }
                                                                             }
@@ -2664,7 +2664,7 @@
                                                                         "props": {
                                                                             "className": "badge badge-yellow"
                                                                         },
-                                                                        "text": "대기중"
+                                                                        "text": "$t:sirsoft-ecommerce.admin.personal_payment.status.pending"
                                                                     }
                                                                 ]
                                                             },
@@ -2787,7 +2787,7 @@
                                                                         "name": "Dropdown",
                                                                         "props": {
                                                                             "trigger": "icon",
-                                                                            "iconName": "more-horizontal",
+                                                                            "iconName": "ellipsis",
                                                                             "position": "bottom-right",
                                                                             "items": [
                                                                                 {
@@ -2853,7 +2853,7 @@
                                                                         "props": {
                                                                             "className": "badge badge-yellow"
                                                                         },
-                                                                        "text": "대기중"
+                                                                        "text": "$t:sirsoft-ecommerce.admin.personal_payment.status.pending"
                                                                     }
                                                                 ]
                                                             },
@@ -2976,7 +2976,7 @@
                                                                         "name": "Dropdown",
                                                                         "props": {
                                                                             "trigger": "icon",
-                                                                            "iconName": "more-horizontal",
+                                                                            "iconName": "ellipsis",
                                                                             "position": "bottom-right",
                                                                             "items": [
                                                                                 {
@@ -3042,7 +3042,7 @@
                                                                         "props": {
                                                                             "className": "badge badge-yellow"
                                                                         },
-                                                                        "text": "대기중"
+                                                                        "text": "$t:sirsoft-ecommerce.admin.personal_payment.status.pending"
                                                                     }
                                                                 ]
                                                             },
@@ -3181,7 +3181,7 @@
                                                                         "name": "Dropdown",
                                                                         "props": {
                                                                             "trigger": "icon",
-                                                                            "iconName": "more-horizontal",
+                                                                            "iconName": "ellipsis",
                                                                             "position": "bottom-right",
                                                                             "items": [
                                                                                 {
@@ -3247,7 +3247,7 @@
                                                                         "props": {
                                                                             "className": "badge badge-green"
                                                                         },
-                                                                        "text": "완료"
+                                                                        "text": "$t:sirsoft-ecommerce.admin.personal_payment.status.completed"
                                                                     }
                                                                 ]
                                                             },
@@ -3355,7 +3355,7 @@
                                                                         "props": {
                                                                             "className": "btn-badge btn-badge-green"
                                                                         },
-                                                                        "text": "네이버페이"
+                                                                        "text": "$t:sirsoft-ecommerce.admin.personal_payment.filter.naver_pay"
                                                                     }
                                                                 ]
                                                             },
@@ -3390,7 +3390,7 @@
                                                                         "name": "Dropdown",
                                                                         "props": {
                                                                             "trigger": "icon",
-                                                                            "iconName": "more-horizontal",
+                                                                            "iconName": "ellipsis",
                                                                             "position": "bottom-right",
                                                                             "items": [
                                                                                 {
@@ -3456,7 +3456,7 @@
                                                                         "props": {
                                                                             "className": "badge badge-green"
                                                                         },
-                                                                        "text": "완료"
+                                                                        "text": "$t:sirsoft-ecommerce.admin.personal_payment.status.completed"
                                                                     }
                                                                 ]
                                                             },
@@ -3580,7 +3580,7 @@
                                                                         "props": {
                                                                             "className": "btn-badge btn-badge-yellow"
                                                                         },
-                                                                        "text": "카카오페이"
+                                                                        "text": "$t:sirsoft-ecommerce.admin.personal_payment.filter.kakao_pay"
                                                                     }
                                                                 ]
                                                             },
@@ -3615,7 +3615,7 @@
                                                                         "name": "Dropdown",
                                                                         "props": {
                                                                             "trigger": "icon",
-                                                                            "iconName": "more-horizontal",
+                                                                            "iconName": "ellipsis",
                                                                             "position": "bottom-right",
                                                                             "items": [
                                                                                 {
@@ -3681,7 +3681,7 @@
                                                                         "props": {
                                                                             "className": "badge badge-green"
                                                                         },
-                                                                        "text": "완료"
+                                                                        "text": "$t:sirsoft-ecommerce.admin.personal_payment.status.completed"
                                                                     }
                                                                 ]
                                                             },
@@ -3805,7 +3805,7 @@
                                                                         "props": {
                                                                             "className": "btn-badge btn-badge-blue"
                                                                         },
-                                                                        "text": "신용카드"
+                                                                        "text": "$t:sirsoft-ecommerce.admin.personal_payment.filter.card"
                                                                     }
                                                                 ]
                                                             },
@@ -3840,7 +3840,7 @@
                                                                         "name": "Dropdown",
                                                                         "props": {
                                                                             "trigger": "icon",
-                                                                            "iconName": "more-horizontal",
+                                                                            "iconName": "ellipsis",
                                                                             "position": "bottom-right",
                                                                             "items": [
                                                                                 {
@@ -3906,7 +3906,7 @@
                                                                         "props": {
                                                                             "className": "badge badge-green"
                                                                         },
-                                                                        "text": "완료"
+                                                                        "text": "$t:sirsoft-ecommerce.admin.personal_payment.status.completed"
                                                                     }
                                                                 ]
                                                             },
@@ -4014,7 +4014,7 @@
                                                                         "props": {
                                                                             "className": "btn-badge btn-badge-cyan"
                                                                         },
-                                                                        "text": "계좌이체"
+                                                                        "text": "$t:sirsoft-ecommerce.admin.personal_payment.filter.bank_transfer"
                                                                     }
                                                                 ]
                                                             },
@@ -4049,7 +4049,7 @@
                                                                         "name": "Dropdown",
                                                                         "props": {
                                                                             "trigger": "icon",
-                                                                            "iconName": "more-horizontal",
+                                                                            "iconName": "ellipsis",
                                                                             "position": "bottom-right",
                                                                             "items": [
                                                                                 {
@@ -4115,7 +4115,7 @@
                                                                         "props": {
                                                                             "className": "badge badge-gray"
                                                                         },
-                                                                        "text": "만료"
+                                                                        "text": "$t:sirsoft-ecommerce.admin.personal_payment.status.expired"
                                                                     }
                                                                 ]
                                                             },
@@ -4254,7 +4254,7 @@
                                                                         "name": "Dropdown",
                                                                         "props": {
                                                                             "trigger": "icon",
-                                                                            "iconName": "more-horizontal",
+                                                                            "iconName": "ellipsis",
                                                                             "position": "bottom-right",
                                                                             "items": [
                                                                                 {
@@ -4320,7 +4320,7 @@
                                                                         "props": {
                                                                             "className": "badge badge-gray"
                                                                         },
-                                                                        "text": "만료"
+                                                                        "text": "$t:sirsoft-ecommerce.admin.personal_payment.status.expired"
                                                                     }
                                                                 ]
                                                             },
@@ -4443,7 +4443,7 @@
                                                                         "name": "Dropdown",
                                                                         "props": {
                                                                             "trigger": "icon",
-                                                                            "iconName": "more-horizontal",
+                                                                            "iconName": "ellipsis",
                                                                             "position": "bottom-right",
                                                                             "items": [
                                                                                 {
@@ -4506,7 +4506,7 @@
                                                         "type": "basic",
                                                         "name": "Icon",
                                                         "props": {
-                                                            "name": "chevrons-left",
+                                                            "name": "angles-left",
                                                             "className": "text-base"
                                                         }
                                                     }
@@ -4566,7 +4566,7 @@
                                                         "type": "basic",
                                                         "name": "Icon",
                                                         "props": {
-                                                            "name": "chevrons-right",
+                                                            "name": "angles-right",
                                                             "className": "text-base"
                                                         }
                                                     }

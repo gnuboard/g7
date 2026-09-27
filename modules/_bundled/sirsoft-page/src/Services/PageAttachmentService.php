@@ -28,8 +28,10 @@ use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 class PageAttachmentService
 {
     /**
-     * @param  PageAttachmentRepositoryInterface  $attachmentRepository  첨부 Repository
-     * @param  StorageInterface  $storage  스토리지 (attachments 카테고리 디스크 주입)
+     * PageAttachmentService 생성자
+     *
+     * @param  PageAttachmentRepositoryInterface  $attachmentRepository  첨부파일 저장소
+     * @param  StorageInterface  $storage  스토리지 드라이버 (모듈 서비스 프로바이더가 주입 — attachments 카테고리 디스크)
      */
     public function __construct(
         private PageAttachmentRepositoryInterface $attachmentRepository,
@@ -149,6 +151,12 @@ class PageAttachmentService
         string $collection = 'attachments',
         ?string $tempKey = null
     ): PageAttachment {
+        // 페이지도 임시 키도 없는 업로드는 서버가 키를 만든다 (이커머스 이미지 업로드와 동일) —
+        // 비워 두면 임시 경로가 `temp//파일` 이 되어 저장소 경로 가드가 거부한다
+        if (! $pageId && ! $tempKey) {
+            $tempKey = Str::uuid()->toString();
+        }
+
         // 개수 상한 최종 방어선 — 단일 업로드를 N 번 반복하는 경로도 여기서 막힌다
         $this->assertAttachmentCountWithin($pageId, 1, $tempKey);
 
@@ -219,6 +227,12 @@ class PageAttachmentService
     public function linkTempAttachmentsWithMove(string $tempKey, int $pageId): int
     {
         $tempAttachments = $this->attachmentRepository->getByTempKey($tempKey);
+
+        // 연결할 임시 첨부가 없으면 디렉토리 정리도 하지 않는다 — temp_key 는 요청에서 온 값이라
+        // 조회 결과 없이 정리 경로를 만들면 사용자 입력으로 삭제 대상을 고르게 된다 (KVE-2026-2349)
+        if ($tempAttachments->isEmpty()) {
+            return 0;
+        }
 
         // 개수 상한 최종 방어선 — FormRequest 는 단건 업로드만 보므로 temp_key 연결 경로가 그대로 뚫린다
         $this->assertAttachmentCountWithin($pageId, $tempAttachments->count());

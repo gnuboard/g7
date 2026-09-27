@@ -88,6 +88,7 @@
 | 경로 | 구분 |
 |---|---|
 | `dist/js/plugin.iife.js` | 빌드 산출물 (커밋 대상) |
+| `editor-spec.json` | 레이아웃 편집기 스펙 (manifest) |
 
 로딩 설정: `{"strategy":"global","priority":100,"dependencies":[]}`
 <!-- @generated:assets END -->

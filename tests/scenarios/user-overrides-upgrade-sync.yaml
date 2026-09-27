@@ -1,0 +1,33 @@
+feature: 사용자 수정 필드 보존 — 업그레이드 재동기화가 운영자가 고친 값을 덮지 않는다
+
+description: |
+  시더·업그레이드가 다시 실행돼도 운영자가 관리자 화면에서 고친 값은 살아남아야 한다.
+  `HasUserOverrides` 트레이트는 일반 저장 경로에서 추적 대상(trackable) 필드가 바뀌면 그 이름을
+  `user_overrides` 에 기록하고, 업그레이드 경로(`syncFromUpgrade` · `createFromUpgrade` ·
+  `syncOrCreateFromUpgrade`)는 기록된 필드만 건너뛰고 나머지를 갱신한다. 업그레이드 경로 자체는
+  기록을 남기지 않는다 — 남기면 시더 값이 사용자 수정으로 둔갑해 이후 갱신이 영영 막힌다.
+
+  다국어 필드는 언어 키 단위(`subject.ko`)로 기록된다. 알림 템플릿(NotificationTemplate)을 대표 모델로
+  검증한다.
+
+  축은 값이 어느 쓰기 경로로 들어오는가 하나다.
+
+axes:
+  write_path: [user_create, user_update, sync_from_upgrade, create_from_upgrade, sync_or_create_missing, sync_or_create_existing]
+
+effects:
+  # 일반 저장 경로 — 기록
+  - new_record_starts_without_overrides
+  - user_edit_records_trackable_fields_per_locale
+  - non_trackable_edit_not_recorded
+  - repeated_edit_does_not_duplicate_override_entries
+  # 업그레이드 경로 — 보존과 비기록
+  - upgrade_sync_skips_user_overridden_fields
+  - upgrade_sync_always_updates_non_trackable_fields
+  - upgrade_sync_does_not_record_overrides
+  - upgrade_create_does_not_record_overrides
+  - sync_or_create_creates_missing_record_without_overrides
+  - sync_or_create_preserves_existing_user_overrides
+
+test_files:
+  - tests/Unit/Models/Concerns/HasUserOverridesTest.php

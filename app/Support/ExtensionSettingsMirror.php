@@ -45,12 +45,18 @@ class ExtensionSettingsMirror
         'seo',
         'identity',
         'pagination',
+        'analytics',
+        // 빠뜨리면 관리자가 토글을 켜고 저장에 성공하고 privacy.json 에 true 가 찍혀도
+        // 커맨드는 영원히 기본값(false)을 읽어 "대상 0건" 이라는 정상 출력을 낸다 —
+        // 실패가 아니라 정상처럼 보이므로 아무도 알아채지 못한다.
+        'privacy',
     ];
 
     /**
      * 코어 설정 미러(`g7_settings.core`)를 다시 채웁니다.
      *
      * @param  JsonConfigRepository|null  $configRepository  설정 저장소 (미지정 시 새로 생성)
+     * @return void
      */
     public function refreshCore(?JsonConfigRepository $configRepository = null): void
     {
@@ -73,6 +79,8 @@ class ExtensionSettingsMirror
 
     /**
      * 활성 모듈 전체의 설정 미러를 다시 채웁니다.
+     *
+     * @return void
      */
     public function refreshAllModules(): void
     {
@@ -94,6 +102,7 @@ class ExtensionSettingsMirror
      * 모듈 하나의 설정 미러를 다시 채웁니다.
      *
      * @param  string  $identifier  모듈 식별자 (예: sirsoft-ecommerce)
+     * @return void
      */
     public function refreshModule(string $identifier): void
     {
@@ -110,6 +119,8 @@ class ExtensionSettingsMirror
 
     /**
      * 활성 플러그인 전체의 설정 미러를 다시 채웁니다.
+     *
+     * @return void
      */
     public function refreshAllPlugins(): void
     {
@@ -131,6 +142,7 @@ class ExtensionSettingsMirror
      * 플러그인 하나의 설정 미러를 다시 채웁니다.
      *
      * @param  string  $identifier  플러그인 식별자 (예: sirsoft-gdpr)
+     * @return void
      */
     public function refreshPlugin(string $identifier): void
     {

@@ -103,9 +103,9 @@
 <!-- @generated:extension-points-summary START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 확장점 | 수 | 상세 |
 |---|---|---|
-| 발행 훅 | 98개 | [발행 훅](docs/extension-points.md#발행-훅) |
-| 구독 훅 | 83개 | [구독 훅](docs/extension-points.md#구독-훅) |
-| 훅 리스너 | 18개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
+| 발행 훅 | 102개 | [발행 훅](docs/extension-points.md#발행-훅) |
+| 구독 훅 | 84개 | [구독 훅](docs/extension-points.md#구독-훅) |
+| 훅 리스너 | 19개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
 | 레이아웃 확장 | 7개 | [레이아웃 확장](docs/extension-points.md#레이아웃-확장) |
 | 미들웨어 | 0개 | [미들웨어](docs/extension-points.md#미들웨어) |
 | 브로드캐스트 채널 | 0개 | [브로드캐스트 채널](docs/extension-points.md#브로드캐스트-채널) |
@@ -138,6 +138,8 @@ CRUD 흐름 자체를 **자기 도메인으로 대체**하는 가장 무거운 �
 - [ ] `boards`/`board_posts`/`board_comments` 의 count 컬럼(`posts_count`/`comments_count`/`replies_count`/`attachments_count`)은 훅 리스너(`*CountSyncListener`)가 갱신 — Service 에서 직접 증감 금지
 - [ ] 게시판 삭제 시 `getDynamicPermissionIdentifiers()`/`getDynamicRoleIdentifiers()`/`getDynamicMenuSlugs()` 가 최신 상태를 반영하도록 동일 트랜잭션에서 정리 (module.php `uninstall()` 의 `chunkById` 패턴 참고 — OFFSET 순회로 삭제 금지)
 - [ ] 레이아웃·컴포넌트·`data_source` 를 건드렸다면 [`docs/editor-spec.md`](docs/editor-spec.md) 의 동반 의무 표를 따라 `editor-spec.json` 을 함께 갱신 — 샘플이 없는 `data_source` 는 편집기 캔버스에서만 빈 화면이 되고 실제 화면은 정상이라 오류도 경고도 남지 않는다. 반영은 `php artisan module:update sirsoft-board --force`
+- [ ] 개인정보 보유기간 핸들러(`src/Privacy/`)를 고칠 때는 건수(`preview()`)·대상 명단(`targets()`)·실행(`process()`)이 **같은 조건식**을 쓰는지, 명단 권한(`targetPermissions()` = 설정 읽기 + 게시판 관리 읽기)과 식별 최소 열(본문·첨부 제외)을 지키는지 확인 — 계약 전체는 [코어 개인정보 보유기간 처리 가이드](../../../docs/backend/privacy-retention.md)
+- [ ] 새 `.g7.html` 을 만들었다면 저작 트랙 종료 게이트(`LayoutMarkup` PHPUnit 스위트)의 코퍼스 목록에 등재하고, 파일 헤더·데이터소스·모달·액션 블록 주석(S21, `docs/frontend/layout-markup.md` §10.5)을 채운다 — 굽기·왕복이 초록이어도 이 스위트만 미등재·미주석을 잡는다(2026-09-26 develop-7.1.0 1차 병합 판독: 게시판 개인정보 조치 창이 미등재·미주석으로 들어왔다).
 - [ ] 수정 라우트와 등록 라우트가 한 레이아웃을 공유하는 폼(`admin_board_form`·`admin_board_post_form`)은 생성 조건 `init_actions` 에서 `form: null` 로 직전 레코드를 비우고, 생성 모드에서도 폼을 채우는 데이터소스(`boards` form-data·`form_data`)의 `initLocal` 은 `{"_merge":"replace","form":"{{data}}"}` 맵으로 둔다 — 문자열형 `initLocal` 은 엔진이 기존 form 과 깊은 병합해 직전 글의 id·게시판 다국어 이름이 등록 폼에 남는다(트러블슈팅 state-global 사례 7)
 
 ## 6. 금지 패턴
@@ -152,6 +154,7 @@ CRUD 흐름 자체를 **자기 도메인으로 대체**하는 가장 무거운 �
 | 새 콘텐츠 타입을 board 코드에 `if ($type === 'inquiry')` 로 직접 분기 | `EcommerceInquiryHookListener` 처럼 필터 훅으로 CRUD 를 위임 | board 코드가 알지 못하는 도메인이 늘어날수록 분기가 무한 증식한다 |
 | 레이아웃 표현식에서 누산기에 멤버 대입 (`grouped[k] = []` · `.push()`) 하거나 rest 구조분해 (`const { a, ...rest } = obj`) 사용 | `map` / `filter` / `reduce(Object.assign)` / `Object.fromEntries` 로 누산 없이 구성 | 표현식 평가기가 그 구문을 거부해 **식 전체가 평가되지 않는다.** `iteration.source` 면 배열이 아니게 되어 그 목록이 통째로 렌더되지 않고, `apiCall` body 면 원문 문자열이 그대로 전송된다 — 둘 다 오류도 경고도 남지 않는다 (일괄 적용 확인 창에서 실제 발생) |
 | 일괄 적용 대상 설정 키를 `sectionMap` 에만 추가 | 같은 키의 `bulk_apply.field_labels` 라벨을 ko/en(+번들 ja)에 함께 추가 | 라벨이 없으면 확인 창에 원시 다국어 키가 그대로 노출된다 |
+| 요청의 `temp_key` 를 형식 검증 없이 임시 경로(`{slug}/temp/{temp_key}`)에 넣거나, 조회된 임시 첨부가 없는데도 그 디렉토리를 `deleteDirectory` | `ValidatesTempKey`(UUID 만) + 현재 사용자가 올린 임시 첨부가 있을 때만 이동·정리 | `../../..` 같은 키가 정리 경로를 모듈 저장소 루트로 끌어올려 전 모듈 파일이 지워진다 (KVE-2026-2349 — 응답은 201 이라 드러나지 않았다) |
 <!-- @intent END -->
 
 ## 7. 테스트 실행
@@ -159,10 +162,10 @@ CRUD 흐름 자체를 **자기 도메인으로 대체**하는 가장 무거운 �
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 184개 | `modules/_bundled/sirsoft-board/tests` |
-| Vitest | 49개 | `vitest.config.ts` |
-| Playwright | 32개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 59개 | `tests/scenarios` |
+| PHPUnit | 193개 | `modules/_bundled/sirsoft-board/tests` |
+| Vitest | 51개 | `vitest.config.ts` |
+| Playwright | 33개 | `tests/Playwright` |
+| 시나리오 매니페스트 | 67개 | `tests/scenarios` |
 
 기저 TestCase: `tests/ModuleTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

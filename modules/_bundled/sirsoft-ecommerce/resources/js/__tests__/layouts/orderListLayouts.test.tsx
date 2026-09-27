@@ -72,6 +72,8 @@ describe('주문 목록 검색 Input 디바운스/Enter 검증', () => {
      * @scenario surface=order_list
      * @effects order_list_search_input_debounce_and_enter
      */
+    // @scenario area=search_input
+    // @effects search_input_submits_on_enter_with_debounce
     it('검색 키워드 Input 의 change 액션에 debounce 가 설정되어야 함', () => {
         const searchInput = getSearchInput();
         expect(searchInput).toBeDefined();
@@ -91,6 +93,8 @@ describe('주문 목록 검색 Input 디바운스/Enter 검증', () => {
      * @scenario surface=order_list
      * @effects order_list_search_input_debounce_and_enter
      */
+    // @scenario area=search_input
+    // @effects search_input_submits_on_enter_with_debounce
     it('검색 키워드 Input의 Enter 는 sequence[setState 선행 → searchOrders] 여야 함', () => {
         const searchInput = getSearchInput();
         expect(searchInput).toBeDefined();
@@ -118,6 +122,8 @@ describe('주문 목록 페이지네이션 경로 검증', () => {
      * @scenario surface=order_list
      * @effects order_list_pagination_reads_response_meta
      */
+    // @scenario area=pagination
+    // @effects pagination_reads_the_api_pagination_path
     it('DataGrid serverCurrentPage가 orders?.data?.pagination?.current_page 경로를 사용해야 함', () => {
         const datagridNode = findNodes(datagrid, (n: any) => n.name === 'DataGrid')[0];
         expect(datagridNode).toBeDefined();
@@ -129,6 +135,8 @@ describe('주문 목록 페이지네이션 경로 검증', () => {
      * @scenario surface=order_list
      * @effects order_list_pagination_reads_response_meta
      */
+    // @scenario area=pagination
+    // @effects pagination_reads_the_api_pagination_path
     it('DataGrid serverTotalPages가 orders?.data?.pagination?.last_page 경로를 사용해야 함', () => {
         const datagridNode = findNodes(datagrid, (n: any) => n.name === 'DataGrid')[0];
         expect(datagridNode.props.serverTotalPages).toContain('pagination?.last_page');
@@ -138,6 +146,8 @@ describe('주문 목록 페이지네이션 경로 검증', () => {
      * @scenario surface=order_list
      * @effects order_list_pagination_reads_response_meta
      */
+    // @scenario area=pagination
+    // @effects pagination_reads_the_api_pagination_path
     it('총건수 표시가 orders?.data?.pagination?.total 경로를 사용해야 함', () => {
         // total_count 텍스트 노드 찾기
         const totalPaths = findInObject(datagrid, 'pagination?.total');
@@ -157,6 +167,8 @@ describe('주문 목록 필터 파라미터 키 검증', () => {
      * @scenario surface=order_list
      * @effects order_list_filter_param_keys_match_request
      */
+    // @scenario area=filter_params
+    // @effects filter_query_keys_match_the_backend_request
     it('data_source orders가 존재해야 함', () => {
         expect(ordersDS).toBeDefined();
     });
@@ -165,6 +177,8 @@ describe('주문 목록 필터 파라미터 키 검증', () => {
      * @scenario surface=order_list
      * @effects order_list_filter_param_keys_match_request
      */
+    // @scenario area=filter_params
+    // @effects filter_query_keys_match_the_backend_request
     it('shipping_type 파라미터 키를 사용해야 함 (delivery_method 아닌)', () => {
         expect(ordersDS.params.shipping_type).toBeDefined();
         expect(ordersDS.params.delivery_method).toBeUndefined();
@@ -174,6 +188,8 @@ describe('주문 목록 필터 파라미터 키 검증', () => {
      * @scenario surface=order_list
      * @effects order_list_filter_param_keys_match_request
      */
+    // @scenario area=filter_params
+    // @effects filter_query_keys_match_the_backend_request
     it('min_amount 파라미터 키를 사용해야 함 (min_price 아닌)', () => {
         expect(ordersDS.params.min_amount).toBeDefined();
         expect(ordersDS.params.min_price).toBeUndefined();
@@ -183,6 +199,8 @@ describe('주문 목록 필터 파라미터 키 검증', () => {
      * @scenario surface=order_list
      * @effects order_list_filter_param_keys_match_request
      */
+    // @scenario area=filter_params
+    // @effects filter_query_keys_match_the_backend_request
     it('max_amount 파라미터 키를 사용해야 함 (max_price 아닌)', () => {
         expect(ordersDS.params.max_amount).toBeDefined();
         expect(ordersDS.params.max_price).toBeUndefined();
@@ -192,6 +210,8 @@ describe('주문 목록 필터 파라미터 키 검증', () => {
      * @scenario surface=order_list
      * @effects order_list_filter_param_keys_match_request
      */
+    // @scenario area=filter_params
+    // @effects filter_query_keys_match_the_backend_request
     it('country_codes 파라미터 키를 사용해야 함 (country 아닌)', () => {
         expect(ordersDS.params.country_codes).toBeDefined();
         expect(ordersDS.params.country).toBeUndefined();
@@ -201,6 +221,8 @@ describe('주문 목록 필터 파라미터 키 검증', () => {
      * @scenario surface=order_list
      * @effects order_list_filter_param_keys_match_request
      */
+    // @scenario area=filter_params
+    // @effects filter_query_keys_match_the_backend_request
     it('order_device 파라미터 키를 사용해야 함 (device 아닌)', () => {
         expect(ordersDS.params.order_device).toBeDefined();
         expect(ordersDS.params.device).toBeUndefined();
@@ -219,6 +241,8 @@ describe('주문 목록 DataGrid 컬럼 검증', () => {
      * @scenario surface=order_list
      * @effects order_list_datagrid_columns_bind_server_fields
      */
+    // @scenario area=grid_columns
+    // @effects datagrid_declares_the_expected_columns
     it('device 컬럼이 존재해야 함', () => {
         const deviceColumn = columns.find((c: any) => c.field === 'device');
         expect(deviceColumn).toBeDefined();
@@ -229,6 +253,8 @@ describe('주문 목록 DataGrid 컬럼 검증', () => {
      * @scenario surface=order_list
      * @effects order_list_datagrid_columns_bind_server_fields
      */
+    // @scenario area=grid_columns
+    // @effects datagrid_declares_the_expected_columns
     it('device 컬럼이 order_device_label 바인딩을 사용해야 함', () => {
         const deviceColumn = columns.find((c: any) => c.field === 'device');
         const textNodes = findNodes({ children: deviceColumn.cellChildren }, (n: any) => n.text);
@@ -240,6 +266,8 @@ describe('주문 목록 DataGrid 컬럼 검증', () => {
      * @scenario surface=order_list
      * @effects order_list_datagrid_columns_bind_server_fields
      */
+    // @scenario area=grid_columns
+    // @effects datagrid_declares_the_expected_columns
     it('orderer 컬럼에 첫구매 표시가 있어야 함', () => {
         const ordererColumn = columns.find((c: any) => c.field === 'orderer');
         // ActionMenu 내부에 중첩된 is_first_order 조건 확인
@@ -251,6 +279,8 @@ describe('주문 목록 DataGrid 컬럼 검증', () => {
      * @scenario surface=order_list
      * @effects order_list_datagrid_columns_bind_server_fields
      */
+    // @scenario area=grid_columns
+    // @effects datagrid_declares_the_expected_columns
     it('orderer 컬럼에 ActionMenu가 적용되어야 함', () => {
         const ordererColumn = columns.find((c: any) => c.field === 'orderer');
         const actionMenuNodes = findNodes({ children: ordererColumn.cellChildren }, (n: any) =>
@@ -271,6 +301,8 @@ describe('주문 목록 DataGrid 컬럼 검증', () => {
      * @scenario surface=order_list
      * @effects order_list_datagrid_columns_bind_server_fields
      */
+    // @scenario area=grid_columns
+    // @effects datagrid_declares_the_expected_columns
     it('ordered_at 컬럼이 formatted 날짜를 사용해야 함', () => {
         const orderedAtColumn = columns.find((c: any) => c.field === 'ordered_at');
         const orderedAtJson = JSON.stringify(orderedAtColumn);
@@ -282,6 +314,8 @@ describe('주문 목록 DataGrid 컬럼 검증', () => {
      * @scenario surface=order_list
      * @effects order_list_datagrid_columns_bind_server_fields
      */
+    // @scenario area=grid_columns
+    // @effects datagrid_declares_the_expected_columns
     it('country 컬럼 국기가 address?.recipient_country_code 경로를 사용해야 함', () => {
         const countryColumn = columns.find((c: any) => c.field === 'country');
         const flagNodes = findNodes({ children: countryColumn.cellChildren }, (n: any) =>
@@ -306,6 +340,8 @@ describe('주문 목록 DataGrid 설정 검증', () => {
      * @scenario surface=order_list
      * @effects order_list_datagrid_props_are_defined
      */
+    // @scenario area=grid_config
+    // @effects datagrid_props_match_the_component_contract
     it('showColumnSelector가 false여야 함 (외부 ColumnSelector 사용)', () => {
         expect(datagridNode.props.showColumnSelector).toBe(false);
     });
@@ -314,6 +350,8 @@ describe('주문 목록 DataGrid 설정 검증', () => {
      * @scenario surface=order_list
      * @effects order_list_datagrid_props_are_defined
      */
+    // @scenario area=grid_config
+    // @effects datagrid_props_match_the_component_contract
     it('responsiveBreakpoint가 768이어야 함 (모바일 대응)', () => {
         expect(datagridNode.props.responsiveBreakpoint).toBe(768);
     });
@@ -322,7 +360,9 @@ describe('주문 목록 DataGrid 설정 검증', () => {
      * @scenario surface=order_list
      * @effects order_list_datagrid_props_are_defined
      */
-    it('DataGrid 에 정의 없는 columnSelectorId·loading 을 넘기지 않는다 (컬럼 선택은 visibleColumns 상태로 잇는다)', () => {
+    // @scenario area=grid_config
+    // @effects datagrid_props_match_the_component_contract
+    it('DataGrid 에 정의 없는 columnSelectorId·loading 을 넘기지 않는다 (열 연결은 외부 ColumnSelector 의 id 가 맡고, 컬럼 선택은 visibleColumns 상태로 잇는다)', () => {
         expect(datagridNode.props).not.toHaveProperty('columnSelectorId');
         expect(datagridNode.props).not.toHaveProperty('loading');
     });
@@ -331,6 +371,8 @@ describe('주문 목록 DataGrid 설정 검증', () => {
      * @scenario surface=order_list
      * @effects order_list_datagrid_props_are_defined
      */
+    // @scenario area=grid_config
+    // @effects datagrid_props_match_the_component_contract
     it('selectedIds prop을 사용해야 함 (selectedItems 아닌)', () => {
         expect(datagridNode.props.selectedIds).toBeDefined();
         expect(datagridNode.props.selectedItems).toBeUndefined();
@@ -340,6 +382,8 @@ describe('주문 목록 DataGrid 설정 검증', () => {
      * @scenario surface=order_list
      * @effects order_list_datagrid_props_are_defined
      */
+    // @scenario area=grid_config
+    // @effects datagrid_props_match_the_component_contract
     it('외부 ColumnSelector 컴포넌트가 필터 섹션에 존재해야 함', () => {
         const columnSelectors = findNodes(filterSection, (n: any) =>
             n.name === 'ColumnSelector'
@@ -352,6 +396,8 @@ describe('주문 목록 DataGrid 설정 검증', () => {
      * @scenario surface=order_list
      * @effects order_list_datagrid_props_are_defined
      */
+    // @scenario area=grid_config
+    // @effects datagrid_props_match_the_component_contract
     it('ColumnSelector에 device 컬럼이 포함되어야 함', () => {
         const columnSelector = findNodes(filterSection, (n: any) =>
             n.name === 'ColumnSelector'
@@ -372,6 +418,8 @@ describe('주문 목록 visibleColumns 검증', () => {
      * @scenario surface=order_list
      * @effects order_list_visible_columns_share_one_default
      */
+    // @scenario area=visible_columns
+    // @effects visible_columns_follow_the_column_selector
     it('visibleColumns에 device가 포함되어야 함', () => {
         expect(state.visibleColumns).toContain('device');
     });
@@ -380,6 +428,8 @@ describe('주문 목록 visibleColumns 검증', () => {
      * @scenario surface=order_list
      * @effects order_list_visible_columns_share_one_default
      */
+    // @scenario area=visible_columns
+    // @effects visible_columns_follow_the_column_selector
     it('visibleColumns에 no가 포함되지 않아야 함 (기본 숨김)', () => {
         expect(state.visibleColumns).not.toContain('no');
     });
@@ -460,6 +510,8 @@ describe('주문 목록 동적 필터 검증', () => {
      * @scenario surface=order_list
      * @effects order_list_dynamic_filters_follow_settings
      */
+    // @scenario area=dynamic_filters
+    // @effects dynamic_filters_iterate_server_options
     it('배송국가 필터가 iteration으로 동적 렌더링되어야 함', () => {
         const countryRow = findNodes(filterSection, (n: any) => n.id === 'country_filter_row')[0];
         expect(countryRow).toBeDefined();
@@ -476,6 +528,8 @@ describe('주문 목록 동적 필터 검증', () => {
      * @scenario surface=order_list
      * @effects order_list_dynamic_filters_follow_settings
      */
+    // @scenario area=dynamic_filters
+    // @effects dynamic_filters_iterate_server_options
     it('결제수단 필터가 iteration으로 동적 렌더링되어야 함', () => {
         const paymentRow = findNodes(filterSection, (n: any) => n.id === 'paymentMethod_filter_row')[0];
         expect(paymentRow).toBeDefined();
@@ -491,6 +545,8 @@ describe('주문 목록 동적 필터 검증', () => {
      * @scenario surface=order_list
      * @effects order_list_dynamic_filters_follow_settings
      */
+    // @scenario area=dynamic_filters
+    // @effects dynamic_filters_iterate_server_options
     it('ecommerce_settings 데이터소스가 존재해야 함', () => {
         const dataSources = (orderList as any).data_sources;
         const settingsDS = dataSources.find((ds: any) => ds.id === 'ecommerce_settings');
@@ -502,6 +558,8 @@ describe('주문 목록 동적 필터 검증', () => {
      * @scenario surface=order_list
      * @effects order_list_dynamic_filters_follow_settings
      */
+    // @scenario area=dynamic_filters
+    // @effects dynamic_filters_iterate_server_options
     it('computed에 availableCountries가 정의되어야 함', () => {
         const computed = (orderList as any).computed;
         expect(computed.availableCountries).toBeDefined();
@@ -513,6 +571,8 @@ describe('주문 목록 동적 필터 검증', () => {
      * @scenario surface=order_list
      * @effects order_list_dynamic_filters_follow_settings
      */
+    // @scenario area=dynamic_filters
+    // @effects dynamic_filters_iterate_server_options
     it('computed에 availablePaymentMethods가 정의되어야 함', () => {
         const computed = (orderList as any).computed;
         expect(computed.availablePaymentMethods).toBeDefined();
@@ -542,6 +602,8 @@ describe('주문 목록 클레임 기준 필터 배선 (D22)', () => {
      * @scenario surface=order_list
      * @effects order_list_claim_filter_wired
      */
+    // @scenario area=claim_filter_wired
+    // @effects claim_filters_are_wired
     it('필터 섹션에 클레임 노드가 있어야 함', () => {
         const claimNodes = findNodes(filterSection, (n: any) =>
             n.id?.includes('claim') || n.id?.includes('Claim')
@@ -563,6 +625,8 @@ describe('주문 목록 클레임 기준 필터 배선 (D22)', () => {
      * @scenario surface=order_list
      * @effects order_list_claim_filter_wired
      */
+    // @scenario area=claim_filter_wired
+    // @effects claim_filters_are_wired
     it('data_sources params 에 클레임 축이 실려야 함', () => {
         const ordersDS = (orderList as any).data_sources.find((ds: any) => ds.id === 'orders');
         const claimKeys = Object.keys(ordersDS.params).filter((k: string) => k.includes('claim'));
@@ -575,6 +639,8 @@ describe('주문 목록 클레임 기준 필터 배선 (D22)', () => {
      * @scenario surface=order_list
      * @effects order_list_claim_filter_wired
      */
+    // @scenario area=claim_filter_wired
+    // @effects claim_filters_are_wired
     it('state 에 클레임 필터 필드가 있어야 함', () => {
         const state = initStateOf(orderList as any);
         const filterState = state.filter || {};
@@ -603,6 +669,8 @@ describe('주문 목록 배송정책/배송비 필터 검증', () => {
      * @scenario surface=order_list
      * @effects order_list_shipping_filters_wired
      */
+    // @scenario area=shipping_filters
+    // @effects shipping_filters_send_the_expected_keys
     it('orders 데이터소스에 shipping_policy_id 파라미터가 있어야 함', () => {
         expect(ordersDS.params.shipping_policy_id).toBeDefined();
     });
@@ -611,6 +679,8 @@ describe('주문 목록 배송정책/배송비 필터 검증', () => {
      * @scenario surface=order_list
      * @effects order_list_shipping_filters_wired
      */
+    // @scenario area=shipping_filters
+    // @effects shipping_filters_send_the_expected_keys
     it('orders 데이터소스에 min_shipping_amount 파라미터가 있어야 함', () => {
         expect(ordersDS.params.min_shipping_amount).toBeDefined();
     });
@@ -619,6 +689,8 @@ describe('주문 목록 배송정책/배송비 필터 검증', () => {
      * @scenario surface=order_list
      * @effects order_list_shipping_filters_wired
      */
+    // @scenario area=shipping_filters
+    // @effects shipping_filters_send_the_expected_keys
     it('orders 데이터소스에 max_shipping_amount 파라미터가 있어야 함', () => {
         expect(ordersDS.params.max_shipping_amount).toBeDefined();
     });
@@ -629,6 +701,8 @@ describe('주문 목록 배송정책/배송비 필터 검증', () => {
      * @scenario surface=order_list
      * @effects order_list_shipping_filters_wired
      */
+    // @scenario area=shipping_filters
+    // @effects shipping_filters_send_the_expected_keys
     it('shipping_policies 데이터소스가 존재해야 함', () => {
         const shippingPoliciesDS = dataSources.find((ds: any) => ds.id === 'shipping_policies');
         expect(shippingPoliciesDS).toBeDefined();
@@ -641,6 +715,8 @@ describe('주문 목록 배송정책/배송비 필터 검증', () => {
      * @scenario surface=order_list
      * @effects order_list_shipping_filters_wired
      */
+    // @scenario area=shipping_filters
+    // @effects shipping_filters_send_the_expected_keys
     it('state.filter에 shippingPolicy 필드가 있어야 함', () => {
         expect(state.filter).toHaveProperty('shippingPolicy');
     });
@@ -649,6 +725,8 @@ describe('주문 목록 배송정책/배송비 필터 검증', () => {
      * @scenario surface=order_list
      * @effects order_list_shipping_filters_wired
      */
+    // @scenario area=shipping_filters
+    // @effects shipping_filters_send_the_expected_keys
     it('state.filter에 minShippingFee 필드가 있어야 함', () => {
         expect(state.filter).toHaveProperty('minShippingFee');
     });
@@ -657,6 +735,8 @@ describe('주문 목록 배송정책/배송비 필터 검증', () => {
      * @scenario surface=order_list
      * @effects order_list_shipping_filters_wired
      */
+    // @scenario area=shipping_filters
+    // @effects shipping_filters_send_the_expected_keys
     it('state.filter에 maxShippingFee 필드가 있어야 함', () => {
         expect(state.filter).toHaveProperty('maxShippingFee');
     });
@@ -667,6 +747,8 @@ describe('주문 목록 배송정책/배송비 필터 검증', () => {
      * @scenario surface=order_list
      * @effects order_list_shipping_filters_wired
      */
+    // @scenario area=shipping_filters
+    // @effects shipping_filters_send_the_expected_keys
     it('computed에 filterShippingPolicy가 정의되어야 함', () => {
         expect(computed.filterShippingPolicy).toBeDefined();
         expect(computed.filterShippingPolicy).toContain('shippingPolicy');
@@ -676,6 +758,8 @@ describe('주문 목록 배송정책/배송비 필터 검증', () => {
      * @scenario surface=order_list
      * @effects order_list_shipping_filters_wired
      */
+    // @scenario area=shipping_filters
+    // @effects shipping_filters_send_the_expected_keys
     it('computed에 shippingPolicyOptions가 정의되어야 함', () => {
         expect(computed.shippingPolicyOptions).toBeDefined();
         expect(computed.shippingPolicyOptions).toContain('shipping_policies');
@@ -685,6 +769,8 @@ describe('주문 목록 배송정책/배송비 필터 검증', () => {
      * @scenario surface=order_list
      * @effects order_list_shipping_filters_wired
      */
+    // @scenario area=shipping_filters
+    // @effects shipping_filters_send_the_expected_keys
     it('computed에 filterMinShippingFee가 정의되어야 함', () => {
         expect(computed.filterMinShippingFee).toBeDefined();
         expect(computed.filterMinShippingFee).toContain('minShippingFee');
@@ -694,6 +780,8 @@ describe('주문 목록 배송정책/배송비 필터 검증', () => {
      * @scenario surface=order_list
      * @effects order_list_shipping_filters_wired
      */
+    // @scenario area=shipping_filters
+    // @effects shipping_filters_send_the_expected_keys
     it('computed에 filterMaxShippingFee가 정의되어야 함', () => {
         expect(computed.filterMaxShippingFee).toBeDefined();
         expect(computed.filterMaxShippingFee).toContain('maxShippingFee');
@@ -705,6 +793,8 @@ describe('주문 목록 배송정책/배송비 필터 검증', () => {
      * @scenario surface=order_list
      * @effects order_list_shipping_filters_wired
      */
+    // @scenario area=shipping_filters
+    // @effects shipping_filters_send_the_expected_keys
     it('필터 섹션에 shippingPolicy_filter_row가 존재해야 함', () => {
         const shippingPolicyRow = findNodes(filterSection, (n: any) => n.id === 'shippingPolicy_filter_row');
         expect(shippingPolicyRow.length).toBe(1);
@@ -714,6 +804,8 @@ describe('주문 목록 배송정책/배송비 필터 검증', () => {
      * @scenario surface=order_list
      * @effects order_list_shipping_filters_wired
      */
+    // @scenario area=shipping_filters
+    // @effects shipping_filters_send_the_expected_keys
     it('필터 섹션에 shippingFee_filter_row가 존재해야 함', () => {
         const shippingFeeRow = findNodes(filterSection, (n: any) => n.id === 'shippingFee_filter_row');
         expect(shippingFeeRow.length).toBe(1);
@@ -723,6 +815,8 @@ describe('주문 목록 배송정책/배송비 필터 검증', () => {
      * @scenario surface=order_list
      * @effects order_list_shipping_filters_wired
      */
+    // @scenario area=shipping_filters
+    // @effects shipping_filters_send_the_expected_keys
     it('배송정책 필터에 Select 컴포넌트가 있어야 함', () => {
         const shippingPolicyRow = findNodes(filterSection, (n: any) => n.id === 'shippingPolicy_filter_row')[0];
         const selects = findNodes(shippingPolicyRow, (n: any) => n.name === 'Select');
@@ -733,6 +827,8 @@ describe('주문 목록 배송정책/배송비 필터 검증', () => {
      * @scenario surface=order_list
      * @effects order_list_shipping_filters_wired
      */
+    // @scenario area=shipping_filters
+    // @effects shipping_filters_send_the_expected_keys
     it('배송비 필터에 number 타입 Input이 2개 (min/max) 있어야 함', () => {
         const shippingFeeRow = findNodes(filterSection, (n: any) => n.id === 'shippingFee_filter_row')[0];
         const numberInputs = findNodes(shippingFeeRow, (n: any) =>
@@ -755,6 +851,8 @@ describe('주문 목록 주문상품 컬럼 "외 X건" 표시 검증', () => {
      * @scenario surface=order_list
      * @effects order_list_product_cell_shows_more_count
      */
+    // @scenario area=item_count_cell
+    // @effects order_item_cell_shows_extra_count
     it('product 컬럼이 존재해야 함', () => {
         expect(productColumn).toBeDefined();
     });
@@ -763,6 +861,8 @@ describe('주문 목록 주문상품 컬럼 "외 X건" 표시 검증', () => {
      * @scenario surface=order_list
      * @effects order_list_product_cell_shows_more_count
      */
+    // @scenario area=item_count_cell
+    // @effects order_item_cell_shows_extra_count
     it('상품명이 first_option?.product_name 바인딩을 사용해야 함', () => {
         const cellJson = JSON.stringify(productColumn.cellChildren);
         expect(cellJson).toContain('first_option?.product_name');
@@ -772,6 +872,8 @@ describe('주문 목록 주문상품 컬럼 "외 X건" 표시 검증', () => {
      * @scenario surface=order_list
      * @effects order_list_product_cell_shows_more_count
      */
+    // @scenario area=item_count_cell
+    // @effects order_item_cell_shows_extra_count
     it('options_count > 1일 때 "외 X건" 텍스트가 표시되어야 함', () => {
         const moreNodes = findNodes({ children: productColumn.cellChildren }, (n: any) =>
             n.text?.includes('product.more') && n.if?.includes('options_count')
@@ -783,6 +885,8 @@ describe('주문 목록 주문상품 컬럼 "외 X건" 표시 검증', () => {
      * @scenario surface=order_list
      * @effects order_list_product_cell_shows_more_count
      */
+    // @scenario area=item_count_cell
+    // @effects order_item_cell_shows_extra_count
     it('"외 X건" 텍스트가 $t:defer: + 파이프 문법으로 count 파라미터를 전달해야 함', () => {
         const moreNode = findNodes({ children: productColumn.cellChildren }, (n: any) =>
             n.text?.includes('product.more')
@@ -798,6 +902,8 @@ describe('주문 목록 주문상품 컬럼 "외 X건" 표시 검증', () => {
      * @scenario surface=order_list
      * @effects order_list_product_cell_shows_more_count
      */
+    // @scenario area=item_count_cell
+    // @effects order_item_cell_shows_extra_count
     it('"외 X건"은 options_count > 1 조건에서만 표시되어야 함', () => {
         const moreNode = findNodes({ children: productColumn.cellChildren }, (n: any) =>
             n.text?.includes('product.more')
@@ -809,6 +915,8 @@ describe('주문 목록 주문상품 컬럼 "외 X건" 표시 검증', () => {
      * @scenario surface=order_list
      * @effects order_list_product_cell_shows_more_count
      */
+    // @scenario area=item_count_cell
+    // @effects order_item_cell_shows_extra_count
     it('옵션명이 first_option?.product_option_name 바인딩을 사용해야 함', () => {
         const optionNodes = findNodes({ children: productColumn.cellChildren }, (n: any) =>
             n.text?.includes('first_option?.product_option_name')
@@ -820,6 +928,8 @@ describe('주문 목록 주문상품 컬럼 "외 X건" 표시 검증', () => {
      * @scenario surface=order_list
      * @effects order_list_product_cell_shows_more_count
      */
+    // @scenario area=item_count_cell
+    // @effects order_item_cell_shows_extra_count
     it('대표상품 썸네일이 표시되어야 함', () => {
         const imgNodes = findNodes({ children: productColumn.cellChildren }, (n: any) =>
             n.name === 'Img' && n.props?.src?.includes('thumbnail_url')
@@ -831,6 +941,8 @@ describe('주문 목록 주문상품 컬럼 "외 X건" 표시 검증', () => {
      * @scenario surface=order_list
      * @effects order_list_product_cell_shows_more_count
      */
+    // @scenario area=item_count_cell
+    // @effects order_item_cell_shows_extra_count
     it('상품명이 상품수정 페이지 링크(A 태그, target=_blank)여야 함', () => {
         const linkNodes = findNodes({ children: productColumn.cellChildren }, (n: any) =>
             n.name === 'A' && n.props?.target === '_blank' && n.props?.href?.includes('products')
@@ -854,6 +966,8 @@ describe('주문 목록 주문금액 셀 하위 표시 검증', () => {
      * @scenario surface=order_list
      * @effects order_list_amount_cell_sub_lines
      */
+    // @scenario area=amount_cell
+    // @effects order_amount_cell_shows_sub_lines
     it('order_amount 컬럼이 존재해야 함', () => {
         expect(orderAmountColumn).toBeDefined();
     });
@@ -862,6 +976,8 @@ describe('주문 목록 주문금액 셀 하위 표시 검증', () => {
      * @scenario surface=order_list
      * @effects order_list_amount_cell_sub_lines
      */
+    // @scenario area=amount_cell
+    // @effects order_amount_cell_shows_sub_lines
     it('주문금액 셀에 배송비 표시가 $t:defer: 패턴이어야 함', () => {
         const cellJson = JSON.stringify(orderAmountColumn.cellChildren);
         expect(cellJson).toContain('$t:defer:');
@@ -872,6 +988,8 @@ describe('주문 목록 주문금액 셀 하위 표시 검증', () => {
      * @scenario surface=order_list
      * @effects order_list_amount_cell_sub_lines
      */
+    // @scenario area=amount_cell
+    // @effects order_amount_cell_shows_sub_lines
     it('주문금액 셀에 결제금액 표시가 $t:defer: 패턴이어야 함', () => {
         const cellJson = JSON.stringify(orderAmountColumn.cellChildren);
         expect(cellJson).toContain('total_paid_amount_formatted');
@@ -881,6 +999,8 @@ describe('주문 목록 주문금액 셀 하위 표시 검증', () => {
      * @scenario surface=order_list
      * @effects order_list_amount_cell_sub_lines
      */
+    // @scenario area=amount_cell
+    // @effects order_amount_cell_shows_sub_lines
     it('주문금액 셀에 미결제금액 표시가 $t:defer: 패턴이어야 함', () => {
         const cellJson = JSON.stringify(orderAmountColumn.cellChildren);
         expect(cellJson).toContain('total_unpaid_amount_formatted');
@@ -890,6 +1010,8 @@ describe('주문 목록 주문금액 셀 하위 표시 검증', () => {
      * @scenario surface=order_list
      * @effects order_list_amount_cell_sub_lines
      */
+    // @scenario area=amount_cell
+    // @effects order_amount_cell_shows_sub_lines
     it('결제금액에 초록색 스타일이 적용되어야 함', () => {
         const paidNodes = findNodes({ children: orderAmountColumn.cellChildren }, (n: any) => {
             const json = JSON.stringify(n);
@@ -902,6 +1024,8 @@ describe('주문 목록 주문금액 셀 하위 표시 검증', () => {
      * @scenario surface=order_list
      * @effects order_list_amount_cell_sub_lines
      */
+    // @scenario area=amount_cell
+    // @effects order_amount_cell_shows_sub_lines
     it('미결제금액에 적색 스타일이 적용되어야 함', () => {
         const unpaidNodes = findNodes({ children: orderAmountColumn.cellChildren }, (n: any) => {
             const json = JSON.stringify(n);
@@ -916,6 +1040,8 @@ describe('주문 목록 주문금액 셀 하위 표시 검증', () => {
      * @scenario surface=order_list
      * @effects order_list_amount_cell_sub_lines
      */
+    // @scenario area=amount_cell
+    // @effects order_amount_cell_shows_sub_lines
     it('주문금액 셀에 마일리지 사용 표시가 $t:defer: 패턴으로 존재해야 함', () => {
         const cellJson = JSON.stringify(orderAmountColumn.cellChildren);
         expect(cellJson).toContain('mileage_used_short');
@@ -926,6 +1052,8 @@ describe('주문 목록 주문금액 셀 하위 표시 검증', () => {
      * @scenario surface=order_list
      * @effects order_list_amount_cell_sub_lines
      */
+    // @scenario area=amount_cell
+    // @effects order_amount_cell_shows_sub_lines
     it('주문금액 셀에 적립 예정 표시가 $t:defer: 패턴으로 존재해야 함', () => {
         const cellJson = JSON.stringify(orderAmountColumn.cellChildren);
         expect(cellJson).toContain('points_earned_short');
@@ -936,6 +1064,8 @@ describe('주문 목록 주문금액 셀 하위 표시 검증', () => {
      * @scenario surface=order_list
      * @effects order_list_amount_cell_sub_lines
      */
+    // @scenario area=amount_cell
+    // @effects order_amount_cell_shows_sub_lines
     it('마일리지 사용 표시는 total_points_used_amount > 0 조건으로 노출되어야 함', () => {
         const usedNodes = findNodes({ children: orderAmountColumn.cellChildren }, (n: any) =>
             typeof n.if === 'string' && n.if.includes('total_points_used_amount') && n.if.includes('> 0')
@@ -961,6 +1091,8 @@ describe('주문 목록 주문자 필터 검증', () => {
      * @scenario surface=order_list
      * @effects order_list_orderer_filter_wired
      */
+    // @scenario area=orderer_filter
+    // @effects orderer_filter_sends_the_expected_keys
     it('orders 데이터소스에 orderer_uuid 파라미터가 있어야 함', () => {
         expect(ordersDS.params.orderer_uuid).toBeDefined();
         expect(ordersDS.params.orderer_uuid).toContain('query.orderer_uuid');
@@ -972,6 +1104,8 @@ describe('주문 목록 주문자 필터 검증', () => {
      * @scenario surface=order_list
      * @effects order_list_orderer_filter_wired
      */
+    // @scenario area=orderer_filter
+    // @effects orderer_filter_sends_the_expected_keys
     it('state에 ordererSearchResults 필드가 있어야 함', () => {
         expect(state).toHaveProperty('ordererSearchResults');
         expect(state.ordererSearchResults).toEqual([]);
@@ -983,6 +1117,8 @@ describe('주문 목록 주문자 필터 검증', () => {
      * @scenario surface=order_list
      * @effects order_list_orderer_filter_wired
      */
+    // @scenario area=orderer_filter
+    // @effects orderer_filter_sends_the_expected_keys
     it('init_actions에 orderer_uuid 기반 사용자 검색 apiCall이 있어야 함', () => {
         const ordererInitAction = initActions.find((a: any) =>
             a.handler === 'apiCall' &&
@@ -997,6 +1133,8 @@ describe('주문 목록 주문자 필터 검증', () => {
      * @scenario surface=order_list
      * @effects order_list_orderer_filter_wired
      */
+    // @scenario area=orderer_filter
+    // @effects orderer_filter_sends_the_expected_keys
     it('init_actions setState에 ordererUuid 필터 초기화가 있어야 함', () => {
         const setStateAction = initActions.find((a: any) =>
             a.handler === 'setState' && a.params?._local?.filter?.ordererUuid !== undefined
@@ -1010,6 +1148,8 @@ describe('주문 목록 주문자 필터 검증', () => {
      * @scenario surface=order_list
      * @effects order_list_orderer_filter_wired
      */
+    // @scenario area=orderer_filter
+    // @effects orderer_filter_sends_the_expected_keys
     it('searchOrders named_action에 orderer_uuid 쿼리 파라미터가 있어야 함', () => {
         const searchQuery = namedActions.searchOrders.params.query;
         expect(searchQuery.orderer_uuid).toBeDefined();
@@ -1022,6 +1162,8 @@ describe('주문 목록 주문자 필터 검증', () => {
      * @scenario surface=order_list
      * @effects order_list_orderer_filter_wired
      */
+    // @scenario area=orderer_filter
+    // @effects orderer_filter_sends_the_expected_keys
     it('필터 섹션에 orderer_filter_row가 존재해야 함', () => {
         const ordererRow = findNodes(filterSection, (n: any) => n.id === 'orderer_filter_row');
         expect(ordererRow.length).toBe(1);
@@ -1031,6 +1173,8 @@ describe('주문 목록 주문자 필터 검증', () => {
      * @scenario surface=order_list
      * @effects order_list_orderer_filter_wired
      */
+    // @scenario area=orderer_filter
+    // @effects orderer_filter_sends_the_expected_keys
     it('주문자 필터에 SearchableDropdown 컴포넌트가 있어야 함', () => {
         const ordererRow = findNodes(filterSection, (n: any) => n.id === 'orderer_filter_row')[0];
         const dropdowns = findNodes(ordererRow, (n: any) => n.name === 'SearchableDropdown');
@@ -1041,6 +1185,8 @@ describe('주문 목록 주문자 필터 검증', () => {
      * @scenario surface=order_list
      * @effects order_list_orderer_filter_wired
      */
+    // @scenario area=orderer_filter
+    // @effects orderer_filter_sends_the_expected_keys
     it('SearchableDropdown에 ordererSearchResults 옵션이 바인딩되어야 함', () => {
         const ordererRow = findNodes(filterSection, (n: any) => n.id === 'orderer_filter_row')[0];
         const dropdown = findNodes(ordererRow, (n: any) => n.name === 'SearchableDropdown')[0];
@@ -1051,6 +1197,8 @@ describe('주문 목록 주문자 필터 검증', () => {
      * @scenario surface=order_list
      * @effects order_list_orderer_filter_wired
      */
+    // @scenario area=orderer_filter
+    // @effects orderer_filter_sends_the_expected_keys
     it('SearchableDropdown의 onSearch 이벤트가 /api/admin/users/search를 호출해야 함', () => {
         const ordererRow = findNodes(filterSection, (n: any) => n.id === 'orderer_filter_row')[0];
         const dropdown = findNodes(ordererRow, (n: any) => n.name === 'SearchableDropdown')[0];
@@ -1063,6 +1211,8 @@ describe('주문 목록 주문자 필터 검증', () => {
      * @scenario surface=order_list
      * @effects order_list_orderer_filter_wired
      */
+    // @scenario area=orderer_filter
+    // @effects orderer_filter_sends_the_expected_keys
     it('주문자 필터 클리어 버튼이 존재해야 함', () => {
         const clearButton = findNodes(filterSection, (n: any) => n.id === 'f_162_orderer_clear_button');
         expect(clearButton.length).toBe(1);
@@ -1085,6 +1235,8 @@ describe('주문 목록 회원 구분 필터 검증', () => {
      * @scenario surface=order_list
      * @effects order_list_member_type_filter_wired
      */
+    // @scenario area=member_type_filter
+    // @effects member_type_filter_sends_the_expected_keys
     it('orders 데이터소스에 member_type 파라미터가 있어야 함', () => {
         expect(ordersDS.params.member_type).toBeDefined();
         expect(ordersDS.params.member_type).toContain('query.member_type');
@@ -1096,6 +1248,8 @@ describe('주문 목록 회원 구분 필터 검증', () => {
      * @scenario surface=order_list
      * @effects order_list_member_type_filter_wired
      */
+    // @scenario area=member_type_filter
+    // @effects member_type_filter_sends_the_expected_keys
     it('init_actions setState에 memberType 필터 초기화가 있어야 함', () => {
         const setStateAction = initActions.find((a: any) =>
             a.handler === 'setState' && a.params?._local?.filter?.memberType !== undefined
@@ -1109,6 +1263,8 @@ describe('주문 목록 회원 구분 필터 검증', () => {
      * @scenario surface=order_list
      * @effects order_list_member_type_filter_wired
      */
+    // @scenario area=member_type_filter
+    // @effects member_type_filter_sends_the_expected_keys
     it('searchOrders named_action에 member_type 쿼리 파라미터가 있어야 함', () => {
         const searchQuery = namedActions.searchOrders.params.query;
         expect(searchQuery.member_type).toBeDefined();
@@ -1121,6 +1277,8 @@ describe('주문 목록 회원 구분 필터 검증', () => {
      * @scenario surface=order_list
      * @effects order_list_member_type_filter_wired
      */
+    // @scenario area=member_type_filter
+    // @effects member_type_filter_sends_the_expected_keys
     it('필터 섹션에 member_type_filter_row가 존재해야 함', () => {
         const row = findNodes(filterSection, (n: any) => n.id === 'member_type_filter_row');
         expect(row.length).toBe(1);
@@ -1130,6 +1288,8 @@ describe('주문 목록 회원 구분 필터 검증', () => {
      * @scenario surface=order_list
      * @effects order_list_member_type_filter_wired
      */
+    // @scenario area=member_type_filter
+    // @effects member_type_filter_sends_the_expected_keys
     it('회원 구분 필터에 Select 컴포넌트가 있어야 함', () => {
         const row = findNodes(filterSection, (n: any) => n.id === 'member_type_filter_row')[0];
         const selects = findNodes(row, (n: any) => n.name === 'Select');
@@ -1140,6 +1300,8 @@ describe('주문 목록 회원 구분 필터 검증', () => {
      * @scenario surface=order_list
      * @effects order_list_member_type_filter_wired
      */
+    // @scenario area=member_type_filter
+    // @effects member_type_filter_sends_the_expected_keys
     it('Select 옵션이 전체/회원/비회원 3개 값(빈값/member/guest)을 가져야 함', () => {
         const row = findNodes(filterSection, (n: any) => n.id === 'member_type_filter_row')[0];
         const select = findNodes(row, (n: any) => n.name === 'Select')[0];
@@ -1151,6 +1313,8 @@ describe('주문 목록 회원 구분 필터 검증', () => {
      * @scenario surface=order_list
      * @effects order_list_member_type_filter_wired
      */
+    // @scenario area=member_type_filter
+    // @effects member_type_filter_sends_the_expected_keys
     it('Select change 핸들러가 filter.memberType 를 setState 해야 함', () => {
         const row = findNodes(filterSection, (n: any) => n.id === 'member_type_filter_row')[0];
         const select = findNodes(row, (n: any) => n.name === 'Select')[0];

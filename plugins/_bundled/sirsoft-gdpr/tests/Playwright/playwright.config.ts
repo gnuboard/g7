@@ -66,6 +66,11 @@ function resolveBaseUrl(): string {
 export default defineConfig({
   testDir: './specs',
   outputDir: resolve(CORE_ROOT, 'test-results', ARTIFACT_SLUG),
+  // 통지 설정 spec 한 건이 저장·새로고침을 네 번 왕복하고 시험 발송 뒤 이력까지 확인한다.
+  // Playwright 기본 30초로는 이력 표본이 쌓인 환경에서 그 한 건이 먼저 끊기고, serial 이라
+  // 뒤 두 건이 아예 실행되지 않아 **설정 원복까지 건너뛴다**. 형제 확장(koreaexim)도 같은
+  // 이유로 config 에 시간을 명시한다.
+  timeout: 90_000,
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,

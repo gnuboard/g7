@@ -144,6 +144,12 @@ function registerSyncHandler(): void {
         // 1. blocker.ts (MutationObserver 백업 라인) 동기화 — rescan 으로 placeholder 복원
         setCurrentConsent({ categories: snapshot.categories, needs_renewal: snapshot.needs_renewal });
 
+        // 1-1. 동의가 바뀐 사실을 화면 전체에 알린다. 이 이벤트만 바라보는 소비자(코어
+        // 방문자 통계 트래커 등)는 알림이 없으면 새로고침 전까지 옛 판정을 그대로 쓴다.
+        window.dispatchEvent(new CustomEvent('gdpr:consent-changed', {
+            detail: { categories: snapshot.categories, needs_renewal: snapshot.needs_renewal },
+        }));
+
         // 2. preblocker (1차 라인) 동기화 — 새 차단 판정에 즉시 반영
         const blockedDomains = readInlineBlockedDomains();
         updatePreblockerConfig({

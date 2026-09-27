@@ -18,6 +18,7 @@ use Modules\Sirsoft\Ecommerce\Console\Commands\ExpireMileageCommand;
 use Modules\Sirsoft\Ecommerce\Console\Commands\NotifyExpiringMileageCommand;
 use Modules\Sirsoft\Ecommerce\Console\Commands\NotifyOverdueCollectionsCommand;
 use Modules\Sirsoft\Ecommerce\Console\Commands\PlaywrightSeedMemberData;
+use Modules\Sirsoft\Ecommerce\Console\Commands\PlaywrightSeedOrderRetention;
 use Modules\Sirsoft\Ecommerce\Console\Commands\PruneExpiredCartsCommand;
 use Modules\Sirsoft\Ecommerce\Console\Commands\PruneExpiredTempOrdersCommand;
 use Modules\Sirsoft\Ecommerce\Console\Commands\PrunePendingClaimImagesCommand;
@@ -59,6 +60,7 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderExchangeOptionReposito
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderExchangeRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderOptionRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderPaymentRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderPrivacyRetentionRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderRefundOptionRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderRefundRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderRepositoryInterface;
@@ -99,6 +101,7 @@ use Modules\Sirsoft\Ecommerce\Repositories\OrderExchangeOptionRepository;
 use Modules\Sirsoft\Ecommerce\Repositories\OrderExchangeRepository;
 use Modules\Sirsoft\Ecommerce\Repositories\OrderOptionRepository;
 use Modules\Sirsoft\Ecommerce\Repositories\OrderPaymentRepository;
+use Modules\Sirsoft\Ecommerce\Repositories\OrderPrivacyRetentionRepository;
 use Modules\Sirsoft\Ecommerce\Repositories\OrderRefundOptionRepository;
 use Modules\Sirsoft\Ecommerce\Repositories\OrderRefundRepository;
 use Modules\Sirsoft\Ecommerce\Repositories\OrderRepository;
@@ -205,6 +208,7 @@ class EcommerceServiceProvider extends BaseModuleServiceProvider
         OrderRefundOptionRepositoryInterface::class => OrderRefundOptionRepository::class,
         OrderExchangeRepositoryInterface::class => OrderExchangeRepository::class,
         OrderExchangeOptionRepositoryInterface::class => OrderExchangeOptionRepository::class,
+        OrderPrivacyRetentionRepositoryInterface::class => OrderPrivacyRetentionRepository::class,
         OrderRepositoryInterface::class => OrderRepository::class,
         OrderReturnRepositoryInterface::class => OrderReturnRepository::class,
         OrderReturnOptionRepositoryInterface::class => OrderReturnOptionRepository::class,
@@ -250,6 +254,7 @@ class EcommerceServiceProvider extends BaseModuleServiceProvider
         NotifyOverdueCollectionsCommand::class,
         // E2E·실측 시드 — 3중 가드(CLI · G7_PLAYWRIGHT_BYPASS · APP_DEBUG)가 커맨드 안에 있다.
         PlaywrightSeedMemberData::class,
+        PlaywrightSeedOrderRetention::class,
         PruneExpiredCartsCommand::class,
         PruneExpiredTempOrdersCommand::class,
         PrunePendingClaimImagesCommand::class,

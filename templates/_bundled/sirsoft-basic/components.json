@@ -1085,6 +1085,55 @@
         }
       },
       {
+        "name": "VisitorCounter",
+        "type": "composite",
+        "description": "방문자 카운터 (오늘·어제·최대·전체) — 순수 표시 컴포넌트, 데이터는 레이아웃 데이터소스가 넘긴다",
+        "path": "src/components/composite/VisitorCounter.tsx",
+        "autoBinding": false,
+        "props": {
+          "today": {
+            "type": "number",
+            "required": false,
+            "default": 0,
+            "description": "오늘 방문자"
+          },
+          "yesterday": {
+            "type": "number",
+            "required": false,
+            "default": 0,
+            "description": "어제 방문자"
+          },
+          "max": {
+            "type": "number",
+            "required": false,
+            "default": 0,
+            "description": "하루 최대 방문자"
+          },
+          "total": {
+            "type": "number",
+            "required": false,
+            "default": 0,
+            "description": "전체 방문자(일별 순방문자 합)"
+          },
+          "layout": {
+            "type": "string",
+            "required": false,
+            "default": "row",
+            "description": "배치 (row | column) — row 는 모바일에서 2×2"
+          },
+          "labels": {
+            "type": "object",
+            "required": false,
+            "description": "항목 라벨 { today, yesterday, max, total }"
+          },
+          "className": {
+            "type": "string",
+            "required": false,
+            "description": "사용자 정의 클래스"
+          }
+        }
+      },
+      {
         "name": "UserInfo",
         "type": "composite",
         "description": "사용자 정보 표시 및 드롭다운 메뉴 (이름, 서브텍스트, 프로필 링크, 비회원 배지)",

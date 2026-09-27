@@ -291,8 +291,9 @@ class PluginSettingsService
         if ($pluginInstance) {
             $storage = $pluginInstance->getStorage();
 
-            // 플러그인 전체 스토리지 디렉토리 삭제 ({identifier}/)
-            $storage->deleteDirectory('', '');
+            // 설정 카테고리 디렉토리 삭제 ({identifier}/settings) — 확장 루트는 드라이버가
+            // 파괴 작업 대상으로 허용하지 않으므로 카테고리 전체 삭제 API 로만 정리한다
+            $storage->deleteAll('settings');
         }
 
         // 캐시 초기화

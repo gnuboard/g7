@@ -129,7 +129,7 @@ HTML을 렌더링해야 하는 경우 (게시판 본문, 상품 설명 등) **�
 
 템플릿 엔진은 `{{expression}}` 내부를 **화이트리스트 AST 평가기**(`SafeExpressionEvaluator`)로 해석합니다. `new Function()`·`with(ctx)` 를 사용하지 않으므로, `''.constructor.constructor('code')()` 같은 프로토타입 체인 우회로 임의 코드를 실행할 수 없습니다.
 
-평가기는 프로퍼티/옵셔널체이닝 접근, 산술·비교·논리·삼항·nullish, 배열/객체/문자열 리터럴, 화살표 함수·템플릿 리터럴·스프레드, 그리고 화이트리스트 전역(`Math`/`JSON`/`Date`/`Array`/`Object`/`Number`/`String` 등)만 허용합니다. `constructor`/`__proto__`/`prototype` 프로퍼티 접근, `Function(`/`eval(`/`import(` 는 파싱·평가 양쪽에서 거부됩니다.
+평가기는 프로퍼티/옵셔널체이닝 접근, 산술·비교·논리·삼항·nullish, 배열/객체/문자열 리터럴, 화살표 함수·템플릿 리터럴·스프레드, 그리고 화이트리스트 전역(`Math`/`JSON`/`Date`/`Array`/`Object`/`Number`/`String`/`encodeURIComponent` 등)만 허용합니다. `constructor`/`__proto__`/`prototype` 프로퍼티 접근, `Function(`/`eval(`/`import(` 는 파싱·평가 양쪽에서 거부됩니다.
 
 ### 표현식 샌드박스 우회 토큰
 

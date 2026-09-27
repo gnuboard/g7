@@ -518,9 +518,6 @@ return [
             'required' => 'Please enter a password.',
             'min' => 'Password must be at least :min characters.',
         ],
-        'ip_address' => [
-            'required' => 'IP address is required.',
-        ],
         'blocked_keyword' => 'Content contains blocked keyword: ":keyword".',
     ],
 
@@ -609,6 +606,7 @@ return [
             'read' => 'View Posts',
             'write' => 'Create Posts',
             'read-secret' => 'View Secret Posts',
+            'write-notice' => 'Create Notice Posts',
         ],
         'comments' => [
             'read' => 'View Comments',
@@ -738,5 +736,12 @@ return [
         'status' => [
             'in' => 'Invalid status.',
         ],
+    ],
+    // 개인정보 보유기간 설정 필드 라벨 (이슈 #636) — StoreBoardSettingsRequest::attributes() 가 키별로 읽는다
+    'privacy_retention_attributes' => [
+        'enabled' => 'Automatic Privacy Retention Processing',
+        'ip_retention_days' => 'Author IP Retention Period',
+        'guest_retention_days' => 'Guest Author Information Retention Period',
+        'guest_mode' => 'Guest Post Processing Mode',
     ],
 ];

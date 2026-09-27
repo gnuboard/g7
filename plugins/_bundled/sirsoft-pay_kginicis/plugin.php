@@ -366,6 +366,7 @@ class Plugin extends AbstractPlugin
             Listeners\ClaimPaymentApproveListener::class,
             Listeners\ClaimPaymentRefundListener::class,
             Listeners\CancelActivityLogListener::class,
+            Listeners\ScrubEscrowRecipientOnOrderAnonymizeListener::class,
             Listeners\RegisterEasyPayMethodsListener::class,
             Listeners\AdjustEcommercePaymentMethodsLayoutListener::class,
             Listeners\EnsureAdminOrderListTestBadgeLayoutListener::class,

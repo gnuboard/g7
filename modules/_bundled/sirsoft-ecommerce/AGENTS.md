@@ -172,9 +172,9 @@ FormRequest → `CheckoutDataService`(주문서에 필요한 배송지·쿠폰·
 <!-- @generated:extension-points-summary START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 확장점 | 수 | 상세 |
 |---|---|---|
-| 발행 훅 | 582개 | [발행 훅](docs/extension-points.md#발행-훅) |
-| 구독 훅 | 200개 | [구독 훅](docs/extension-points.md#구독-훅) |
-| 훅 리스너 | 39개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
+| 발행 훅 | 585개 | [발행 훅](docs/extension-points.md#발행-훅) |
+| 구독 훅 | 202개 | [구독 훅](docs/extension-points.md#구독-훅) |
+| 훅 리스너 | 40개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
 | 레이아웃 확장 | 14개 | [레이아웃 확장](docs/extension-points.md#레이아웃-확장) |
 | 미들웨어 | 3개 | [미들웨어](docs/extension-points.md#미들웨어) |
 | 브로드캐스트 채널 | 0개 | [브로드캐스트 채널](docs/extension-points.md#브로드캐스트-채널) |
@@ -217,7 +217,7 @@ CRUD 를 바꾸고 싶으면 이 4종 중 하나를 잡으면 되고, 이 모듈
 
 ## 5. 수정 시 동반 의무
 
-- [ ] 새 `.g7.html` 을 만들었다면 저작 트랙 종료 게이트(`LayoutMarkup` PHPUnit 스위트)의 코퍼스 목록에 등재하고, 파일 헤더·데이터소스·모달·액션 블록 주석(S21, `docs/frontend/layout-markup.md` §10.5)을 채운다 — 굽기·왕복이 초록이어도 이 스위트만 미등재·미주석을 잡는다(2026-09-17 develop-7.1.0 2차 병합 전수 보존 검사에서 이 확장의 미등재 레이아웃이 red)
+- [ ] 새 `.g7.html` 을 만들었다면 저작 트랙 종료 게이트(`LayoutMarkup` PHPUnit 스위트)의 코퍼스 목록에 등재하고, 파일 헤더·데이터소스·모달·액션 블록 주석(S21, `docs/frontend/layout-markup.md` §10.5)을 채운다 — 굽기·왕복이 초록이어도 이 스위트만 미등재·미주석을 잡는다(2026-09-17 develop-7.1.0 2차 병합 전수 보존 검사에서 이 확장의 미등재 레이아웃이 red; 재발 — 2026-09-26 1차 병합 판독에서 개인정보 조치 창·보유기간 탭이 다시 미주석으로 들어왔다).
 - [ ] `_bundled` 에서만 수정하고 `php artisan module:update sirsoft-ecommerce --force` 로 반영
 - [ ] manifest version 상향 시 `package.json` · `package-lock.json` · `composer.json` 동기화 + CHANGELOG 기재
 - [ ] 스키마 변경 시 마이그레이션(한국어 comment + `down()`) + 기설치본 백필용 업그레이드 스텝
@@ -235,6 +235,7 @@ CRUD 를 바꾸고 싶으면 이 4종 중 하나를 잡으면 되고, 이 모듈
 - [ ] 결제수단·PG 관련 선언을 바꾸면 기설치본 `order_settings.json` 을 정정하는 업그레이드 스텝 동반 (자기 접두사만, 멱등)
 - [ ] 새 관리자 화면을 추가하면 그 화면의 권한(`getPermissions()`)·메뉴(`getAdminMenus()`)·라우트 이름이 서로 가리키는 대상이 일치하는지 확인
 - [ ] 레이아웃·컴포넌트·`data_source` 를 건드렸다면 [`docs/editor-spec.md`](docs/editor-spec.md) 의 동반 의무 표를 따라 `editor-spec.json` 을 함께 갱신 — 샘플이 없는 `data_source` 는 편집기 캔버스에서만 빈 화면이 되고 실제 화면은 정상이라 오류도 경고도 남지 않는다. 반영은 `php artisan module:update sirsoft-ecommerce --force`
+- [ ] 개인정보 보유기간 핸들러(`src/Privacy/`)를 고칠 때는 건수(`preview()`)·대상 명단(`targets()`)·실행(`process()`)이 **같은 조건식**을 쓰는지, 명단 권한(`targetPermissions()` = 설정 읽기 + 주문 읽기)을 지키는지, 명단 행을 코어 값 객체 `App\Privacy\DTO\PrivacyRetentionTarget` 로 내는지 확인 — 계약 전체는 [코어 개인정보 보유기간 처리 가이드](../../../docs/backend/privacy-retention.md)
 
 - [ ] 클레임 상태 Enum(`ExchangeStatusEnum` · `ReturnStatusEnum` · `RefundStatusEnum`)의 전이를 바꾸면 `canTransitionTo()` · 알림 정의(상태별 항목) · `ClaimActivityLogListener` · 화면의 `adminAssignableValues()` 를 함께 본다 — 한 곳만 고치면 전이는 되는데 알림·로그만 조용히 빠진다
 - [ ] 클레임 추가결제 계약(`claim_payment.approve` / `.refund` 필터의 인자·반환 키)을 바꾸면 결제 플러그인 4종의 리스너와 그 플러그인들의 `dependencies.modules.sirsoft-ecommerce` 하한을 함께 올린다
@@ -254,6 +255,8 @@ CRUD 를 바꾸고 싶으면 이 4종 중 하나를 잡으면 되고, 이 모듈
 | 특정 PG 이름을 이 모듈 코드에 분기로 넣기 (`if ($pg === 'tosspayments')`) | 결제수단 카탈로그 선언(`needs_pg`/`pg_locked`/`pg_provider`/`auto_approve_refund`)과 `payment.*` 훅 | PG 가 늘 때마다 이 모듈이 커지고, 플러그인만 설치하면 되는 구조가 깨진다 |
 | 주문번호·상품코드를 `max(id)+1` 이나 타임스탬프 조합으로 직접 생성 | `SequenceService::generateCode()` | 채번은 DB UNIQUE 제약과 함께 원자적으로 수행된다 — 직접 생성은 동시 주문에서 중복을 만든다 |
 | 취소·환불을 주문 단위로 처리 | 옵션 단위(`OrderCancelOption`/`OrderRefundOption`) | 부분 취소가 이 도메인의 기본이며, 주문 단위로 처리하면 남은 옵션의 안분 금액이 계산되지 않는다 |
+| 요청의 `temp_key` · `image_temp_key` 를 형식 검증 없이 `products/temp/{키}` 경로에 넣거나, 임시 이미지가 없는데도 그 디렉토리를 `deleteDirectory` | `ValidatesTempKey`(UUID 만) + 조회된 임시 이미지가 있을 때만 이동·정리 | 순회 키가 정리 경로를 모듈 저장소 루트로 끌어올린다 (게시판 KVE-2026-2349 와 같은 패턴) |
+| 레이아웃·TSX 에서 Lucide·Heroicons 식 아이콘 이름(`x-circle`·`refresh-cw`·`more-horizontal`·`alert-circle`·`chevrons-left`·`arrow-down-tray` 등) | Font Awesome 6.4.0 이름(`circle-xmark`·`arrows-rotate`·`ellipsis`·`circle-exclamation`·`angles-left`·`download`) | 관리자 템플릿 `Icon` 은 이름을 `fa-{이름}` 로만 바꾼다 — FA 에 없는 이름은 오류 없이 **빈칸**으로 그려진다. 가드: `tests/Unit/Extension/FontIconNameTest.php` |
 | `OrderCancel` 을 `recordCancellation()` 밖에서 만들기 | 그 메서드 한 지점 | 만드는 지점이 둘이면 합계 재계산·누적 컬럼 갱신이 경로마다 갈리고, 같은 취소가 경로에 따라 다른 장부를 남긴다 |
 | 최종 상태를 바로 INSERT 해 전이 단계를 건너뛰기 | `transition()` 으로 실제로 거치기 | 활동 로그가 한 줄만 남아 운영자가 승인 경위를 되짚을 수 없다. 한 트랜잭션 안이어도 단계를 밟는다 |
 | PG 를 부르지 않은 취소에 `COMPLETED` + `refunded_at` 찍기 | `APPROVED`(수동 송금 대기) | 고객 카드는 그대로인데 장부만 환불완료가 된다. 완료는 [환불하기]가 찍는다 |
@@ -289,10 +292,10 @@ CRUD 를 바꾸고 싶으면 이 4종 중 하나를 잡으면 되고, 이 모듈
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 561개 | `modules/_bundled/sirsoft-ecommerce/tests` |
-| Vitest | 184개 | `vitest.config.ts` |
-| Playwright | 65개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 204개 | `tests/scenarios` |
+| PHPUnit | 566개 | `modules/_bundled/sirsoft-ecommerce/tests` |
+| Vitest | 187개 | `vitest.config.ts` |
+| Playwright | 66개 | `tests/Playwright` |
+| 시나리오 매니페스트 | 210개 | `tests/scenarios` |
 
 기저 TestCase: `tests/ModuleTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

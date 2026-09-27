@@ -5,6 +5,7 @@
 namespace Modules\Sirsoft\Page\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Modules\Sirsoft\Page\Http\Requests\Concerns\ValidatesTempKey;
 use Modules\Sirsoft\Page\Support\AttachmentLimits;
 
 /**
@@ -12,6 +13,8 @@ use Modules\Sirsoft\Page\Support\AttachmentLimits;
  */
 class UploadPageAttachmentRequest extends FormRequest
 {
+    use ValidatesTempKey;
+
     /**
      * 권한 체크는 라우트의 permission 미들웨어에서 수행됩니다.
      *
@@ -60,7 +63,7 @@ class UploadPageAttachmentRequest extends FormRequest
             'file' => $fileRules,
             'page_id' => ['nullable', 'integer', 'min:1'],
             'collection' => ['sometimes', 'string', 'max:100'],
-            'temp_key' => ['nullable', 'string', 'max:64'],
+            'temp_key' => $this->tempKeyRules(),
         ];
     }
 

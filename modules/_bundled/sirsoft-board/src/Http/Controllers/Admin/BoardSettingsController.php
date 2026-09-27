@@ -6,6 +6,7 @@ use App\Extension\HookManager;
 use App\Helpers\PermissionHelper;
 use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Api\Base\AdminBaseController;
+use App\Privacy\PrivacyRetentionManager;
 use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Arr;
@@ -15,6 +16,8 @@ use Modules\Sirsoft\Board\Http\Requests\Admin\BulkApplySettingsRequest;
 use Modules\Sirsoft\Board\Http\Requests\Admin\IndexBoardSettingsRequest;
 use Modules\Sirsoft\Board\Http\Requests\Admin\ShowBoardSettingsRequest;
 use Modules\Sirsoft\Board\Http\Requests\Admin\StoreBoardSettingsRequest;
+use Modules\Sirsoft\Board\Privacy\BoardGuestRetentionHandler;
+use Modules\Sirsoft\Board\Privacy\BoardIpRetentionHandler;
 use Modules\Sirsoft\Board\Services\BoardService;
 use Modules\Sirsoft\Board\Services\BoardSettingsService;
 use Modules\Sirsoft\Board\Services\ReactionTypeService;
@@ -281,6 +284,44 @@ class BoardSettingsController extends AdminBaseController
                 'messages.settings.clear_cache_error',
                 500
             );
+        }
+    }
+
+    /**
+     * 개인정보 보유기간 처리 대상 건수를 미리 조회합니다 (이슈 #636).
+     *
+     * 설정 화면의 대상 건수 뱃지가 쓰는 값이며, 코어 보유기간 커맨드의 `--dry-run` 과 **같은
+     * 조건식**(각 핸들러의 `preview()`)을 지납니다 — 화면에서 본 숫자와 실제 처리 건수가
+     * 어긋나면 운영자가 규모를 오판한 채 켜게 됩니다. **저장된 설정** 기준이므로 화면에서 값을
+     * 바꾸고 저장하기 전에는 이전 설정의 건수입니다.
+     *
+     * **꺼진 축도 건수를 셉니다**(켜기 전에 규모를 본다 — 2026-09-23 확정). 「꺼짐」과 「대상 0건」은
+     * `ip_enabled`·`guest_enabled` 로 구분합니다. 비회원 보존기간 0(미적용)이면 비회원 건수는 0 입니다.
+     * `can_view_targets` 는 요청 관리자가 「더보기」 명단(코어 목록 API)을 볼 권한이 있는지입니다.
+     * 읽기 전용이며 입력이 없어 FormRequest 를 두지 않습니다 (`clearCache` 와 동형).
+     *
+     * @param  BoardIpRetentionHandler  $ipHandler  작성 IP 핸들러
+     * @param  BoardGuestRetentionHandler  $guestHandler  비회원 작성자 정보 핸들러
+     * @param  PrivacyRetentionManager  $retentionManager  코어 보유기간 수집기 (목록 권한 판정)
+     * @return JsonResponse 축별 대상 건수 JSON 응답
+     */
+    public function privacyRetentionPreview(
+        BoardIpRetentionHandler $ipHandler,
+        BoardGuestRetentionHandler $guestHandler,
+        PrivacyRetentionManager $retentionManager,
+    ): JsonResponse {
+        try {
+            return ResponseHelper::moduleSuccess('sirsoft-board', 'messages.settings.fetch_success', [
+                'ip' => $ipHandler->preview(),
+                'guest' => $guestHandler->preview(),
+                'ip_enabled' => $ipHandler->isEnabled(),
+                'guest_enabled' => $guestHandler->isEnabled(),
+                'guest_mode' => $guestHandler->mode(),
+                // 두 축의 목록 권한은 같다(설정 읽기 + 게시판 관리 읽기).
+                'can_view_targets' => $retentionManager->canViewTargets($ipHandler, $this->getCurrentUser()),
+            ]);
+        } catch (Exception $e) {
+            return ResponseHelper::moduleError('sirsoft-board', 'messages.settings.fetch_failed', 500);
         }
     }
 }

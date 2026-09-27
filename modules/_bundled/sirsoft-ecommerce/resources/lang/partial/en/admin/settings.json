@@ -11,7 +11,8 @@
     "review_settings": "Review Settings",
     "notification_definitions": "Notifications",
     "identity_policies": "Identity Policies",
-    "mileage": "Mileage"
+    "mileage": "Mileage",
+    "privacy_retention": "Privacy Retention"
   },
   "save_success": "Settings saved successfully.",
   "save_error": "Failed to save settings.",
@@ -718,6 +719,63 @@
       "module": "Module",
       "plugin": "Plugin",
       "admin": "Admin"
+    }
+  },
+  "privacy_retention": {
+    "notice_title": "Legal notice — read first",
+    "notice_desc": "Under the Act on the Consumer Protection in Electronic Commerce, records of contracts, withdrawals, payments and supply of goods must be kept for 5 years, so the retention period cannot be shorter than 5 years. Announce the retention period and erasure method in your privacy policy before turning this on.",
+    "title": "Closed order personal information retention",
+    "description": "Automatically processes, every day, the orderer and recipient information of orders closed by purchase confirmation or cancellation (with no refund in progress) once the retention period has passed. Orders in delivery or not yet confirmed are never processed.",
+    "enabled": "Automatic retention processing",
+    "enabled_hint": "When on, the core privacy retention job (runs daily) processes orders with the method below. Processed data cannot be restored.",
+    "target_count": "{{count}} targets",
+    "retention_years": "Retention period",
+    "years_unit": "years",
+    "retention_years_hint": "Counted from when the order was closed. At least 5 years (e-commerce law).",
+    "mode": "Processing method",
+    "modes": {
+      "anonymize": "Anonymize (keep the order, mask personal information)",
+      "delete": "Delete (delete the whole order)"
+    },
+    "anonymize_notice": "Order number, amounts and product records remain, and the orderer and recipient name, contact number and address are masked. Processed orders can no longer be found through guest order lookup or the admin order search by name or contact number, but can still be opened by order number.",
+    "delete_warning": "Deletion cannot be undone. The order is deleted together with its payment, shipping, cancellation and refund records, and product reviews written for it disappear with their images, which changes product ratings. Receipt and transaction lookups on the payment provider screens no longer open for that order number, and coupon issues and mileage history remain but lose their link to the order.",
+    "preview_hint": "Target counts are based on the saved settings. If you changed a value, save first and check again.",
+    "targets": {
+      "view": "View target orders",
+      "row_label": "Closed orders past the retention period",
+      "title": "Orders due for retention processing",
+      "total": "{{count}} in total",
+      "empty": "There are no targets.",
+      "loading": "Loading...",
+      "close": "Close"
+    },
+    "manual_run": {
+      "run": "Run now",
+      "save_first_hint": "You have unsaved changes. Manual runs use the saved settings, so save first.",
+      "status_active": "{{status}} — queued {{at}} · {{by}}",
+      "last_completed": "Last manual run: {{at}} · {{by}} · {{count}} processed",
+      "last_failed": "Last manual run failed: {{at}} · {{by}} — {{error}}",
+      "unknown_requester": "Unknown",
+      "modal_title": "{{target}} — manual run",
+      "confirm_desc": "Run once now without waiting for the scheduler. The job is queued and processed in order; the result appears on this screen when it finishes.",
+      "count_label": "To be processed",
+      "count_value": "{{count}}",
+      "loading": "Counting...",
+      "mode_label": "Method",
+      "modes": {
+        "anonymize": "Anonymize",
+        "delete": "Delete",
+        "erase_ip": "Erase author IP"
+      },
+      "disabled_notice": "Automatic runs are off. A manual run ignores the toggle and processes once with the saved settings.",
+      "irreversible": "This cannot be undone. Check the count and the target list before running.",
+      "queue_hint": "A queue worker must be running. You cannot run the same target again until its queued job finishes.",
+      "cancel": "Cancel",
+      "execute": "Run",
+      "executing": "Queuing...",
+      "queued_toast": "The run has been queued. The result will appear when it finishes.",
+      "queue_failed": "Could not queue the run.",
+      "preview_failed": "Could not load the target count."
     }
   }
 }

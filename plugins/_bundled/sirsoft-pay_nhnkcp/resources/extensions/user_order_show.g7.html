@@ -2,7 +2,7 @@
 <extension extension-point="mypage_order_payment_provider_slot" mode="append" priority="100">
     <div data-if="{{order.data.payment?.pg_provider === 'nhnkcp' &amp;&amp; order.data.payment?.is_escrow}}" class="pt-2 mt-1">
       <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300">
-        <icon name="shield-check" class="text-xs"/>
+        <icon name="shield-halved" class="text-xs"/>
         <span>$t:sirsoft-pay_nhnkcp.user.escrow_badge</span>
       </span>
     </div>

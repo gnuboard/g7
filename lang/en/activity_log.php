@@ -80,6 +80,20 @@ return [
         'version_restore' => 'Version Restored',
         'reset' => 'Reset',
 
+        // IP access restriction (security.*) — compound words that do not collide with existing segments
+        // (so the 4th-stage "last segment" lookup never attaches an unrelated label)
+        'ip_blocked' => 'IP Access Blocked',
+        'ip_restriction_disabled' => 'IP Restriction Disabled',
+
+        // Dormant accounts (user.dormant_*)
+        'dormant_restored' => 'Dormancy Lifted',
+        'dormant_converted' => 'Marked Dormant',
+        'dormant_withdrawn' => 'Dormant Account Withdrawn',
+
+        // Privacy manual run (privacy.manual_run_*) — compound words that do not collide with common segments
+        'manual_run_queued' => 'Privacy action manual run queued',
+        'manual_run_finished' => 'Privacy action manual run finished',
+
         // Ecommerce/Board common
     ],
 
@@ -155,6 +169,17 @@ return [
         'auth_account_locked' => 'Account locked (:attempts attempts, :minutes min lockout)',
         'auth_account_locked_permanently' => 'Account locked permanently (:attempts attempts, administrator unlock required)',
         'auth_account_unlocked' => 'Account unlocked (:email)',
+
+        // Security — IP access restriction
+        'security_ip_blocked' => 'IP access blocked (:ip → :path)',
+        'user_dormant_restored' => 'Dormancy lifted by sign-in (ID: :user_id)',
+        'user_dormant_converted' => 'Marked dormant after long inactivity (ID: :user_id)',
+        'user_dormant_withdrawn' => 'Withdrawn after the dormancy period (ID: :user_id)',
+        'privacy_manual_run_queued' => 'Privacy action manual run queued (:target)',
+        'privacy_manual_run_queued_skip_waiting' => 'Privacy action manual run queued — waiting period skipped (:target)',
+        'privacy_manual_run_completed' => 'Privacy action manual run completed (:target, :count items)',
+        'privacy_manual_run_failed' => 'Privacy action manual run failed (:target)',
+        'security_ip_restriction_disabled' => 'IP access restriction emergency-disabled (console)',
 
         // Schedule management
         'schedule_index' => 'Schedule list viewed',
@@ -307,5 +332,18 @@ return [
         'subject' => 'Subject',
         'body' => 'Body',
         'is_default' => 'Default',
+    ],
+
+    // Analytics operations
+    'analytics' => [
+        'settings_updated' => 'Analytics settings updated',
+        'privacy_mode_changed' => 'Analytics privacy mode changed (:mode)',
+        'data_purged' => 'All analytics data purged',
+        'anonymized' => 'Analytics data anonymized retroactively',
+        'subject_exported' => 'Data subject visits exported (:subject)',
+        'subject_deleted' => 'Data subject visits deleted (:subject)',
+        'opt_out_changed' => 'Administrator opt-out setting changed',
+        'archive_requested' => 'Analytics archiving run manually (:run_type)',
+        'extension_purged' => 'Extension analytics data cleaned up (:identifier)',
     ],
 ];

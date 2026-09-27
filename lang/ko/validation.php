@@ -961,6 +961,22 @@ return [
         'force_https_required' => 'HTTPS 강제 적용 설정을 선택해주세요.',
         'force_https_boolean' => 'HTTPS 강제 적용은 true 또는 false 값이어야 합니다.',
         'allow_internal_outbound_urls_boolean' => '내부 네트워크 주소 호출 허용은 true 또는 false 값이어야 합니다.',
+        // IP 접근 제한
+        'ip_restriction_enabled_boolean' => 'IP 접근 제한 사용은 true 또는 false 값이어야 합니다.',
+        'ip_or_cidr_invalid' => '":value" 은(는) IP 주소 또는 CIDR(예: 203.0.113.0/24) 형식이 아닙니다.',
+        'admin_allowed_ips_array' => '관리자 영역 허용 IP 는 목록이어야 합니다.',
+        'admin_allowed_ips_max' => '관리자 영역 허용 IP 는 :max개까지 등록할 수 있습니다.',
+        'ip_restriction_rules_array' => '라우트별 규칙은 목록이어야 합니다.',
+        'ip_restriction_rules_max' => '라우트별 규칙은 :max개까지 등록할 수 있습니다.',
+        'ip_restriction_rule_pattern_required' => '규칙의 URI 패턴을 입력해주세요.',
+        'ip_restriction_rule_pattern_max' => '규칙의 URI 패턴은 :max자를 초과할 수 없습니다.',
+        'ip_restriction_rule_pattern_invalid' => '규칙의 URI 패턴에는 공백·?·# 을 쓸 수 없습니다. 경로와 * 만 적어주세요 (예: /api/admin/users*).',
+        'ip_restriction_rule_ips_required' => '규칙마다 허용할 IP 를 하나 이상 입력해주세요.',
+        'ip_restriction_rule_ips_max' => '규칙 하나에 허용 IP 는 :max개까지 등록할 수 있습니다.',
+        'ip_restriction_rule_memo_max' => '규칙 메모는 :max자를 초과할 수 없습니다.',
+        'ip_restriction_rule_enabled_boolean' => '규칙 사용 여부는 true 또는 false 값이어야 합니다.',
+        'ip_restriction_self_lockout' => '현재 접속 IP(:ip)가 관리자 영역 허용 목록에 없습니다. 이대로 저장하면 이 화면을 포함한 관리자 영역에 다시 들어올 수 없습니다 — 현재 IP 를 목록에 추가한 뒤 저장하세요.',
+        'ip_restriction_self_lockout_rule' => '규칙 ":pattern" 이(가) 현재 접속 IP(:ip)를 막습니다. 이대로 저장하면 이 화면에 다시 들어올 수 없습니다 — 그 규칙의 허용 IP 에 현재 IP 를 추가하거나 규칙을 끈 뒤 저장하세요.',
         'login_attempt_enabled_required' => '로그인 시도 제한 설정을 선택해주세요.',
         'login_attempt_enabled_boolean' => '로그인 시도 제한은 true 또는 false 값이어야 합니다.',
         'auth_token_lifetime_integer' => '인증 토큰 유지시간은 정수여야 합니다.',
@@ -1124,6 +1140,15 @@ return [
         'identity_max_attempts_integer' => '최대 시도 횟수는 정수여야 합니다.',
         'identity_max_attempts_min' => '최대 시도 횟수는 최소 1회 이상이어야 합니다.',
         'identity_max_attempts_max' => '최대 시도 횟수는 최대 20회를 초과할 수 없습니다.',
+
+        // 개인정보 보유기간·휴면
+        'privacy_days_integer' => '기간은 일 단위 정수여야 합니다.',
+        'privacy_retention_days_min' => '보유기간은 1일 이상이어야 합니다.',
+        'privacy_retention_days_max' => '보유기간은 최대 3650일(10년)을 초과할 수 없습니다.',
+        'privacy_dormant_days_min' => '휴면 전환 기간은 30일 이상이어야 합니다.',
+        'privacy_dormant_notice_days_min' => '사전 통지 기간은 1일 이상이어야 합니다.',
+        'privacy_dormant_notice_days_max' => '사전 통지 기간은 최대 365일을 초과할 수 없습니다.',
+        'privacy_dormant_notice_days_lt_dormant_days' => '사전 통지 기간은 휴면 전환 기간보다 짧아야 합니다. 같거나 길면 사전 안내 없이 전환과 통지가 같은 날 일어납니다.',
     ],
 
     // 본인인증 정책 검증 메시지
@@ -1170,8 +1195,55 @@ return [
         ],
     ],
 
+    // 개인정보 조치 대상 목록 조회
+    'privacy_targets' => [
+        'page' => [
+            'integer' => '페이지 번호는 숫자여야 합니다.',
+            'min' => '페이지 번호는 1 이상이어야 합니다.',
+        ],
+        'per_page' => [
+            'integer' => '페이지 크기는 숫자여야 합니다.',
+            'min' => '페이지 크기는 1 이상이어야 합니다.',
+            'max' => '페이지 크기는 최대 :max건입니다.',
+        ],
+    ],
+
+    'privacy_manual_run' => [
+        'since' => [
+            'date' => '기준 시각 형식이 올바르지 않습니다.',
+        ],
+        'skip_waiting' => [
+            'boolean' => '대기기간 생략 값은 참/거짓이어야 합니다.',
+        ],
+        'targets' => [
+            'required' => '조회할 대상을 지정하세요.',
+            'string' => '대상 목록은 쉼표로 구분한 문자열이어야 합니다.',
+            'max' => '대상 목록이 너무 깁니다 (최대 :max자).',
+        ],
+    ],
+
+    // 방문자 통계 비콘 검증 메시지
+    'analytics' => [
+        'type_required' => '액션 종류가 필요합니다.',
+        'type_invalid' => '알 수 없는 액션 종류입니다.',
+        'url_required' => '방문 주소가 필요합니다.',
+        'url_too_long' => '방문 주소가 너무 깁니다.',
+        'resolution_invalid' => '화면 해상도 형식이 올바르지 않습니다.',
+        'dimensions_too_many' => '분류 값은 최대 20개까지 보낼 수 있습니다.',
+        'range_too_long' => '한 번에 조회할 수 있는 기간은 :days일까지입니다.',
+        'report_unknown' => '알 수 없는 리포트입니다.',
+        'subject_required' => 'IP·회원 번호·방문자 키 중 하나는 지정해야 합니다.',
+        'confirm_required' => '되돌릴 수 없는 작업입니다 — 확인란을 선택해야 진행합니다.',
+        'anonymize_target_required' => '가릴 옥텟 수 또는 해시 처리 중 하나는 지정해야 합니다.',
+    ],
+
     // 검증 속성명 (validation.attributes)
     'attributes' => [
+        'since' => '기준 시각',
+        'skip_waiting' => '대기기간 생략',
+        'targets' => '조회 대상',
+        'page' => '페이지 번호',
+        'per_page' => '페이지 크기',
         'ids' => 'ID 목록',
         'user_ids' => '사용자 ID 목록',
         'user_id' => '사용자 ID',
@@ -1189,6 +1261,13 @@ return [
         'identity_purpose_providers' => '목적별 프로바이더',
         'identity_challenge_ttl_minutes' => 'Challenge 만료 시간',
         'identity_max_attempts' => '최대 시도 횟수',
+        'privacy_withdrawn_retention_enabled' => '탈퇴 회원 잔여정보 파기',
+        'privacy_withdrawn_retention_days' => '탈퇴 회원 잔여정보 보유기간',
+        'privacy_dormant_enabled' => '휴면 계정 전환',
+        'privacy_dormant_days' => '휴면 전환 기간',
+        'privacy_dormant_notice_days' => '휴면 사전 통지 기간',
+        'privacy_dormant_withdraw_enabled' => '휴면 계정 자동 탈퇴',
+        'privacy_dormant_withdraw_days' => '휴면 후 탈퇴 기간',
         // 본인인증 정책 필드
         'identity_policy_key' => '정책 키',
         'identity_policy_scope' => 'Scope',
@@ -1266,6 +1345,22 @@ return [
         // 일반 설정 (추가)
         'channels' => '채널',
         'notification_channels' => '알림 채널',
+        // 환경설정 탭 묶음 — 탭 자체가 배열이 아닐 때의 문구에 쓰인다(키 노출 방지).
+        'settings_tab' => '설정 탭',
+        'settings_tab_general' => '일반 설정',
+        'settings_tab_mail' => '메일 설정',
+        'settings_tab_upload' => '업로드 설정',
+        'settings_tab_seo' => 'SEO 설정',
+        'settings_tab_security' => '보안 설정',
+        'settings_tab_drivers' => '드라이버 설정',
+        'settings_tab_advanced' => '고급 설정',
+        'settings_tab_notifications' => '알림 설정',
+        'settings_tab_identity' => '본인인증 설정',
+        'settings_tab_analytics' => '방문자 통계 설정',
+        'settings_tab_privacy' => '개인정보 설정',
+        'notification_channel_id' => '알림 채널 식별자',
+        'notification_channel_is_active' => '알림 채널 사용 여부',
+        'notification_channel_sort_order' => '알림 채널 정렬 순서',
         'currency' => '통화',
         'default_currency' => '기본 통화',
         'maintenance_mode' => '점검 모드',
@@ -1304,7 +1399,15 @@ return [
         'password_min_length' => '비밀번호 최소 길이',
         'require_password_special_char' => '비밀번호 특수문자 필수',
         'two_factor_auth' => '2단계 인증',
+        'two_factor_scope' => '2단계 인증 적용 범위',
         'allow_internal_outbound_urls' => '내부 네트워크 주소 호출 허용',
+        'ip_restriction_enabled' => 'IP 접근 제한 사용',
+        'admin_allowed_ips' => '관리자 영역 허용 IP',
+        'ip_restriction_rules' => '라우트별 접근 규칙',
+        'ip_restriction_rule_pattern' => '규칙 URI 패턴',
+        'ip_restriction_rule_ips' => '규칙 허용 IP',
+        'ip_restriction_rule_memo' => '규칙 메모',
+        'ip_restriction_rule_enabled' => '규칙 사용 여부',
         // 고급 설정 (추가)
         'advanced_cache_enabled' => '캐시 사용',
         'layout_cache_enabled' => '레이아웃 캐시 사용',

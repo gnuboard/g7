@@ -23,6 +23,8 @@ use Illuminate\Support\Facades\Schema;
 class NotificationHookListener implements HookListenerInterface
 {
     /**
+     * 필요한 서비스를 주입합니다.
+     *
      * @param  NotificationDefinitionService  $definitionService  활성 알림 정의 조회 서비스
      */
     public function __construct(
@@ -46,7 +48,7 @@ class NotificationHookListener implements HookListenerInterface
      * 기본 핸들러 (미사용 — 동적 핸들러에서 처리).
      *
      * @param  mixed  ...$args
-     * @return void
+     * @return void 반환값 없음
      */
     public function handle(...$args): void {}
 
@@ -55,7 +57,7 @@ class NotificationHookListener implements HookListenerInterface
      *
      * ServiceProvider boot() 시점에 호출됩니다.
      *
-     * @return void
+     * @return void 반환값 없음
      */
     public function registerDynamicHooks(): void
     {
@@ -104,7 +106,7 @@ class NotificationHookListener implements HookListenerInterface
      *
      * @param  NotificationDefinition  $definition  알림 정의 (큐 직렬화 후 PK 로 복원됨)
      * @param  mixed  ...$hookArgs  원래 훅 발화 시 전달된 인자들
-     * @return void
+     * @return void 반환값 없음
      */
     public function dispatchForDefinition(NotificationDefinition $definition, ...$hookArgs): void
     {
@@ -121,7 +123,7 @@ class NotificationHookListener implements HookListenerInterface
      *
      * @param  NotificationDefinition  $definition  알림 정의
      * @param  array  $args  훅 파라미터
-     * @return void
+     * @return void 반환값 없음
      */
     private function dispatch(NotificationDefinition $definition, array $args): void
     {
@@ -151,6 +153,12 @@ class NotificationHookListener implements HookListenerInterface
         $resolver = app(NotificationRecipientResolver::class);
 
         foreach ($templates as $template) {
+            // 발행자가 채널을 제한한 알림은 해당 채널의 템플릿만 사용합니다.
+            // 키 부재는 기존 전체 채널 동작, 빈 배열은 발송하지 않음을 뜻합니다.
+            if (isset($context['channels']) && ! in_array($template->channel, $context['channels'], true)) {
+                continue;
+            }
+
             // 채널별 수신자 결정: template.recipients 사용
             $recipientRules = $template->recipients ?? [];
 

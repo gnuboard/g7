@@ -76,6 +76,7 @@ return [
 
     'channels' => [
         'email' => '이메일',
+        'app' => '인증 앱',
     ],
 
     'origin_types' => [

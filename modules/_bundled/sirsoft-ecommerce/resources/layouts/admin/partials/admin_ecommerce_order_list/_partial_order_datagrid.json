@@ -200,7 +200,7 @@
                                     "type": "basic",
                                     "name": "Icon",
                                     "props": {
-                                        "name": "arrow-down-tray",
+                                        "name": "download",
                                         "className": "text-base"
                                     }
                                 },
@@ -318,7 +318,7 @@
                             {
                                 "id": "excel_download",
                                 "label": "$t:sirsoft-ecommerce.admin.order.action.excel_download",
-                                "iconName": "arrow-down-tray",
+                                "iconName": "download",
                                 "if": false
                             }
                         ],
@@ -463,7 +463,22 @@
                                                         "props": {
                                                             "className": "text-tertiary text-xs"
                                                         },
-                                                        "text": "{{row.first_option?.additional_options_summary?.label}}{{(row.first_option?.additional_options_summary?.extra_count ?? 0) > 0 ? ' 외 ' + row.first_option.additional_options_summary.extra_count + '건' : ''}}"
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "text": "{{row.first_option?.additional_options_summary?.label}}"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "if": "{{(row.first_option?.additional_options_summary?.extra_count ?? 0) > 0}}",
+                                                                "props": {
+                                                                    "className": "ml-1"
+                                                                },
+                                                                "text": "$t:defer:sirsoft-ecommerce.admin.order.product.more|count={{row.first_option.additional_options_summary.extra_count}}"
+                                                            }
+                                                        ]
                                                     }
                                                 ]
                                             }

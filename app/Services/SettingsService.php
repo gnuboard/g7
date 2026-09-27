@@ -33,6 +33,14 @@ class SettingsService
     // 않는다 — 트레이트가 고정 `CoreCacheDriver` + 메모이즈 스토어를 쓰는 이유가 그 안에 있다.
     use ClearsTemplateCaches;
 
+    /**
+     * 설정 서비스를 생성합니다.
+     *
+     * @param  ConfigRepositoryInterface  $configRepository  설정 카테고리 저장소
+     * @param  AttachmentRepositoryInterface  $attachmentRepository  설정 첨부 저장소
+     * @param  CacheInterface  $cache  설정 캐시
+     * @param  AttachmentService  $attachmentService  첨부 파기·정리 서비스
+     */
     public function __construct(
         private ConfigRepositoryInterface $configRepository,
         private AttachmentRepositoryInterface $attachmentRepository,
@@ -47,6 +55,8 @@ class SettingsService
      * config 캐시는 clear 후 즉시 재생성한다(ConfigCacheHelper). config:clear 만
      * 하면 config:cache 가 비워진 채 재생성되지 않아 이후 모든 요청이 config 파일을
      * 재파싱하는 성능 손실이 발생하기 때문이다.
+     *
+     * @return void 반환값 없음
      */
     private function invalidateSettingsCache(): void
     {
@@ -67,6 +77,8 @@ class SettingsService
      * 신호가 없으면 워커가 부팅 시점의 옛 드라이버로 계속 동작한다.
      *
      * 신호 전송 실패가 설정 저장을 되돌리지는 않는다 (경고 로깅 후 계속).
+     *
+     * @return void 반환값 없음
      */
     private function restartQueueWorkers(): void
     {
@@ -88,6 +100,8 @@ class SettingsService
      *
      * 캐시 삭제 실패가 설정 저장 자체를 되돌리지는 않는다 — 설정은 이미 저장됐고,
      * 캐시는 TTL 만료나 `seo:clear` 로도 회복 가능한 부수 상태다.
+     *
+     * @return void 반환값 없음
      */
     private function clearSeoCacheForAssetUrlMode(): void
     {
@@ -932,6 +946,7 @@ class SettingsService
      *
      * @param  array<int, int>  $removedIds  파기 대상 첨부 ID 목록
      * @param  string  $label  로그 표기용 설정 이름
+     * @return void 반환값 없음
      */
     private function purgeRemovedAttachments(array $removedIds, string $label): void
     {
@@ -995,6 +1010,7 @@ class SettingsService
      * 이미 없는 첨부 id 가 남아 로고가 깨집니다.
      *
      * @param  array<int, int>  $removedIds  파기 대상 첨부 ID 목록
+     * @return void 반환값 없음
      */
     private function purgeSiteLogoAttachments(array $removedIds): void
     {
@@ -1163,6 +1179,8 @@ class SettingsService
      * 게시본은 캐시 버전으로 키드되어 있어, 버전이 오르지 않으면 모드를 바꿔도 옛 형태의
      * URL 이 남고 그 참조(글꼴·이미지)가 서버에서 404 가 된다(#651 F5). bump 단일 지점이
      * 번들 재병합과 정적 재게시를 함께 예약한다.
+     *
+     * @return void 반환값 없음
      */
     private function bumpExtensionCacheForAssetUrlMode(): void
     {

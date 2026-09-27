@@ -70,6 +70,7 @@
     "escrow_delivery_invoice_placeholder": "送り状番号入力",
     "escrow_delivery_courier_label": "配送業者",
     "escrow_delivery_courier_placeholder": "配送業者選択",
+    "escrow_delivery_courier_etc": "その他",
     "escrow_delivery_already_registered": "配送登録完了",
     "escrow_delivery_registered_at": "登録日時",
     "escrow_delivery_invoice_info": "送り状番号",
@@ -149,7 +150,27 @@
     "cancel_server_ip_unavailable": "サーバーIP確認が必要です",
     "cancel_server_ip_copied": "サーバーIPがクリップボードにコピーされました。",
     "cancel_server_ip_link": "NHN KCP店舗管理者を開く",
-    "vbank_notify_path": "登録パス: NHN KCP店舗管理者 > 技術管理センター > ウェブフック(Webhook)管理 > ウェブフックURL設定"
+    "vbank_notify_path": "登録パス: NHN KCP店舗管理者 > 技術管理センター > ウェブフック(Webhook)管理 > ウェブフックURL設定",
+    "health": {
+      "title": "システム点検",
+      "error_count": "エラー {{count}}件",
+      "warning_count": "警告 {{count}}件",
+      "fixed_count": "自動復旧 {{count}}件",
+      "all_ok": "すべて正常",
+      "recheck": "再検査",
+      "ready": "動作可能",
+      "not_ready": "動作不可",
+      "pc_payment": "PC決済 (Standard Pay)",
+      "pc_payment_requires": "CLIバイナリが必要",
+      "mobile_payment": "モバイルカード/一般決済",
+      "mobile_payment_requires": "SmartPhone Pay (SOAP) と CLIバイナリの両方が必要",
+      "mobile_vbank": "モバイル仮想口座",
+      "mobile_vbank_requires": "SmartPhone Pay (SOAP) のみ必要(平文コールバック)",
+      "category_pc": "PC",
+      "category_mobile": "モバイル",
+      "auto_fixed": "自動復旧済み",
+      "action_required": "↓ ユーザー対応が必要"
+    }
   },
   "easy_pay": {
     "section_title": "簡便決済"

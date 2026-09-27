@@ -124,10 +124,10 @@
             ]
         },
         {
-            "comment": "게시글 옵션 (공지사항/비밀글)",
+            "comment": "게시글 옵션 (공지사항/비밀글) — 공지는 게시판 관리 또는 공지 등록 권한, 비밀글은 게시판 비밀글 모드가 켜진 경우에만 카드가 생긴다",
             "type": "basic",
             "name": "Div",
-            "if": "{{form_meta?.data?.board?.user_abilities?.can_manage || form_meta?.data?.board?.secret_mode === 'enabled' || form_meta?.data?.board?.secret_mode === 'always'}}",
+            "if": "{{form_meta?.data?.board?.user_abilities?.can_manage || form_meta?.data?.board?.user_abilities?.can_write_notice || form_meta?.data?.board?.secret_mode === 'enabled' || form_meta?.data?.board?.secret_mode === 'always'}}",
             "children": [
                 {
                     "type": "basic",
@@ -137,10 +137,10 @@
                     },
                     "children": [
                         {
-                            "comment": "공지사항 카드 (관리자 전용)",
+                            "comment": "공지사항 카드 (게시판 관리 권한 또는 공지 등록 권한 보유자 전용 — 서버도 같은 권한으로 판정한다)",
                             "type": "basic",
                             "name": "Label",
-                            "if": "{{form_meta?.data?.board?.user_abilities?.can_manage && !_local.form?.parent_id}}",
+                            "if": "{{(form_meta?.data?.board?.user_abilities?.can_manage || form_meta?.data?.board?.user_abilities?.can_write_notice) && !_local.form?.parent_id}}",
                             "props": {
                                 "className": "block bg-white dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors"
                             },
@@ -708,7 +708,6 @@
                         "initialFiles": "{{form_meta?.data?.attachments ?? []}}",
                         "autoUpload": false,
                         "uploadTriggerEvent": "upload:board_attachments",
-                        "compact": true,
                         "confirmBeforeRemove": true,
                         "confirmRemoveTitle": "$t:board.posts.form.confirm_remove_attachment_title",
                         "confirmRemoveMessage": "$t:board.posts.form.confirm_remove_attachment_message",

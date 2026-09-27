@@ -518,9 +518,6 @@ return [
             'required' => '비밀번호를 입력해주세요.',
             'min' => '비밀번호는 최소 :min자 이상이어야 합니다.',
         ],
-        'ip_address' => [
-            'required' => 'IP 주소는 필수입니다.',
-        ],
         'blocked_keyword' => '금지어 ":keyword"가 포함되어 있습니다.',
     ],
 
@@ -609,6 +606,7 @@ return [
             'read' => '게시글 조회',
             'write' => '게시글 작성',
             'read-secret' => '비밀글 조회',
+            'write-notice' => '공지 등록',
         ],
         'comments' => [
             'read' => '댓글 조회',
@@ -738,5 +736,12 @@ return [
         'status' => [
             'in' => '유효하지 않은 처리 상태입니다.',
         ],
+    ],
+    // 개인정보 보유기간 설정 필드 라벨 (이슈 #636) — StoreBoardSettingsRequest::attributes() 가 키별로 읽는다
+    'privacy_retention_attributes' => [
+        'enabled' => '개인정보 보유기간 자동 파기',
+        'ip_retention_days' => '작성 IP 보유기간',
+        'guest_retention_days' => '비회원 작성자 정보 보유기간',
+        'guest_mode' => '비회원 글 처리 방식',
     ],
 ];

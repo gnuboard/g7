@@ -16,7 +16,8 @@ export default defineConfig({
     dts({
       insertTypesEntry: true,
       include: ['src/**/*.ts', 'src/**/*.tsx'],
-      exclude: ['src/**/*.test.ts', 'src/**/*.test.tsx', 'node_modules'],
+      // 테스트 폴더의 공용 도우미(`*TestUtils.ts`)는 테스트 파일명 규칙에 걸리지 않아 배포 타입에 섞인다 — 폴더째 뺀다.
+      exclude: ['src/**/*.test.ts', 'src/**/*.test.tsx', 'src/**/__tests__/**/*', 'node_modules'],
     }),
   ],
 

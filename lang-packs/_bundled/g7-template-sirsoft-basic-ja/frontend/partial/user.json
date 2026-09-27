@@ -206,5 +206,12 @@
       "detail_reason": "申請理由",
       "image_viewer_modal": "添付写真を表示"
     }
+  },
+  "visitor_counter": {
+    "title": "訪問者",
+    "today": "今日",
+    "yesterday": "昨日",
+    "max": "最大",
+    "total": "全体"
   }
 }

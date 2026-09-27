@@ -115,6 +115,12 @@ return [
         'decimal_places_min' => 0,
         'decimal_places_max' => 8,
 
+        // 개인정보 보유기간 (이슈 #636) — 종결 주문의 주문자·수령인 정보 보유기간(년).
+        // 하한 5년: 전자상거래법 §6(계약·청약철회·대금결제·재화공급 기록 5년 보존) — 그보다 짧게
+        // 파기하면 법정 보존 의무 위반이라 서버가 막는다.
+        'privacy_retention_years_min' => 5,
+        'privacy_retention_years_max' => 20,
+
         // 리뷰
         'write_deadline_days_min' => 1,
         'write_deadline_days_max' => 365,

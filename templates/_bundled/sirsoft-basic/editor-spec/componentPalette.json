@@ -52,6 +52,7 @@
         "Pagination",
         "SearchBar",
         "Avatar",
+        "VisitorCounter",
         "UserInfo",
         "QuantitySelector",
         "ProductImageViewer"
@@ -612,6 +613,21 @@
           "src": "https://via.placeholder.com/64",
           "alt": "$t:layout_editor.palette.avatar.default_alt",
           "size": "md"
+        }
+      }
+    },
+    "VisitorCounter": {
+      "label": "$t:layout_editor.palette.visitor_counter.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "composite",
+        "name": "VisitorCounter",
+        "props": {
+          "today": 128,
+          "yesterday": 96,
+          "max": 391,
+          "total": 21455,
+          "layout": "row"
         }
       }
     },

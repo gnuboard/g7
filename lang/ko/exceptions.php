@@ -15,6 +15,9 @@ return [
     'template_not_found' => '템플릿을 찾을 수 없습니다: :identifier',
     'template_not_active' => '템플릿이 활성화되지 않았습니다: :identifier (상태: :status)',
 
+    // 개인정보 조치 직권 실행 — 대상당 작업 하나
+    'privacy_manual_run_conflict' => '같은 대상에 처리 대기 중이거나 처리 중인 직권 실행이 이미 있습니다. 끝난 뒤 다시 실행하세요.',
+
     // 낙관적 잠금 — 동시 저장 충돌
     'concurrent_modification' => '다른 사용자가 먼저 저장했습니다. (리소스: :resource, 현재 버전: :current, 보낸 버전: :expected)',
 
@@ -242,6 +245,13 @@ return [
         'no_composer_lock' => 'composer.lock 파일이 필요합니다. 먼저 composer install을 실행하세요: :path',
         'vendor_dir_not_found' => 'vendor/ 디렉토리가 존재하지 않습니다. 먼저 composer install을 실행하세요: :path',
         'composer_binary_not_found' => 'Composer 바이너리를 찾을 수 없습니다. COMPOSER_BINARY 환경변수를 설정하거나 composer를 PATH에 추가하세요.',
+    ],
+
+    // 스토리지 드라이버 경로 가드 예외
+    'storage' => [
+        'unsafe_path' => '허용되지 않는 저장 경로입니다.',
+        'destructive_on_root' => '저장소의 최상위 경로는 이 방식으로 삭제할 수 없습니다.',
+        'local_safe_option_package' => 'local-safe 디스크의 :option 옵션에는 :package 패키지가 필요합니다.',
     ],
 
     // SEO / Sitemap 관련 예외

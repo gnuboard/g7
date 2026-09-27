@@ -1,0 +1,23 @@
+feature: 게시판 환경설정 설정 스위치 줄 배치 (#636 후속 · 2026-09-26)
+
+description: |
+  게시판 환경설정의 설정 스위치는 이름·설명이 왼쪽, 스위치가 오른쪽 끝에 놓인다. 「게시판 설정」 탭의
+  스위치 10개는 이미 그랬지만 「기본 설정」 탭의 삭제 첨부 영구 정리와 개인정보 보유기간 스위치만
+  설명 아래에 따로 놓여 같은 화면 안에서 줄 모양이 갈렸다(결정 「게시판 전체를 오른쪽으로」).
+  개인정보 보유기간은 같은 날 자기 탭(「개인정보 보유기간」)으로 옮겼다.
+
+# axis 의미:
+#   스위치가 놓인 설정 탭. 단언은 설정 탭 partial 전량에서 폼 값에 묶인 스위치를 파생해
+#   한 번에 판정하므로 탭별로 나눈 케이스가 필요 없다 — 대표로 지적된 기본 설정 탭을 든다.
+axes:
+  tab: [general, privacy_retention, basic_defaults]
+
+exclusions:
+  - { tab: privacy_retention, reason: "모집단 파생 단언 하나가 모든 탭의 스위치를 함께 판정한다 — 이 탭 스위치의 포함 여부는 두 번째 케이스가 이름으로 고정한다" }
+  - { tab: basic_defaults, reason: "모집단 파생 단언 하나가 모든 탭의 스위치를 함께 판정한다 — 이 탭 스위치 10개는 원래 오른쪽 끝이었고 같은 단언이 회귀를 잡는다" }
+
+effects:
+  - board_settings_toggles_sit_at_row_end
+
+test_files:
+  - modules/_bundled/sirsoft-board/resources/js/__tests__/layouts/boardSettingsToggleAlignment.test.ts

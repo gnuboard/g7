@@ -77,6 +77,7 @@
         "escrow_delivery_invoice_placeholder": "Enter tracking number",
         "escrow_delivery_courier_label": "Courier",
         "escrow_delivery_courier_placeholder": "Select courier",
+        "escrow_delivery_courier_etc": "Other",
         "escrow_delivery_already_registered": "Delivery Registered",
         "escrow_delivery_registered_at": "Registered At",
         "escrow_delivery_invoice_info": "Tracking No.",
@@ -149,7 +150,27 @@
         "escrow_test_site_cd_hint": "KCP escrow test site_cd (default: T0007)",
         "section_escrow_notify": "Escrow Common Notification URL",
         "escrow_common_notify_hint": "Register this URL as the common notification URL in the NHN KCP merchant admin to enable automatic escrow purchase confirmation/cancellation processing.",
-        "escrow_common_notify_copied": "URL copied to clipboard."
+        "escrow_common_notify_copied": "URL copied to clipboard.",
+        "health": {
+            "title": "System check",
+            "error_count": "{{count}} error(s)",
+            "warning_count": "{{count}} warning(s)",
+            "fixed_count": "{{count}} auto-fixed",
+            "all_ok": "All good",
+            "recheck": "Check again",
+            "ready": "Ready",
+            "not_ready": "Not ready",
+            "pc_payment": "PC payment (Standard Pay)",
+            "pc_payment_requires": "Requires the CLI binary",
+            "mobile_payment": "Mobile card/general payment",
+            "mobile_payment_requires": "Requires both SmartPhone Pay (SOAP) and the CLI binary",
+            "mobile_vbank": "Mobile virtual account",
+            "mobile_vbank_requires": "Requires SmartPhone Pay (SOAP) only (plain-text callback)",
+            "category_pc": "PC",
+            "category_mobile": "Mobile",
+            "auto_fixed": "Auto-fixed",
+            "action_required": "↓ Action required"
+        }
     },
     "easy_pay": {
         "section_title": "Easy Pay"

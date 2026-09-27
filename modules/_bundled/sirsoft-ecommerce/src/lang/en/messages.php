@@ -1352,6 +1352,23 @@ return [
         'admin_bulk_deleted' => ':count inquiry(ies) deleted.',
     ],
 
+    // 개인정보 보유기간 (이슈 #636) — 코어 보유기간 커맨드의 핸들러 이름과 연간 통지문 「주문 정보」 섹션
+    'privacy_retention' => [
+        'handler_label' => 'E-commerce closed order personal information',
+        'target_columns' => [
+            'order_number' => 'Order number',
+            'orderer' => 'Orderer',
+            'status' => 'Order status',
+            'closed_at' => 'Closed on',
+        ],
+        'notice_section' => [
+            'title' => 'Order information',
+            'body' => 'When you place an order, we collect the orderer and recipient name, contact number and address to process and deliver the order. Under the Act on the Consumer Protection in Electronic Commerce, records of contracts, withdrawals, payments and supply of goods are kept for 5 years.',
+            'after_anonymize' => 'For orders closed by purchase confirmation or cancellation, the orderer and recipient information is anonymized :years years after closing.',
+            'after_delete' => 'Orders closed by purchase confirmation or cancellation are deleted together with their records :years years after closing.',
+        ],
+    ],
+
     // Dashboard
     'dashboard' => [
         'fetch_success' => 'Dashboard data loaded.',

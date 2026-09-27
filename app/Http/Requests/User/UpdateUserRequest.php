@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\User;
 
+use App\Enums\UserStatus;
 use App\Extension\HookManager;
 use App\Models\Role;
 use App\Models\User;
@@ -27,6 +28,8 @@ class UpdateUserRequest extends FormRequest
      *
      * API 응답에서 로드된 roles(객체 배열)와 사용자가 선택한 role_ids가
      * 동시에 전송될 수 있으므로, role_ids가 있으면 roles를 제거합니다.
+     *
+     * @return void
      */
     protected function prepareForValidation(): void
     {
@@ -59,7 +62,8 @@ class UpdateUserRequest extends FormRequest
             'language' => 'nullable|string|in:'.$supportedLocales,
             'country' => 'nullable|string|size:2|alpha',
             'timezone' => ['nullable', 'string', 'timezone'],
-            'status' => 'nullable|string|in:active,inactive,blocked,withdrawn',
+            // 어휘는 Enum 단독 소유다 — 일괄 변경 경로와 같은 목록을 써야 강도가 갈리지 않는다.
+            'status' => ['nullable', 'string', Rule::in(UserStatus::values())],
 
             // 연락처 정보
             'homepage' => 'nullable|url|max:255',

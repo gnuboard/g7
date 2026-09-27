@@ -38,6 +38,10 @@ effects:
   - unlimited_board_not_restricted
   - limit_violation_returns_422_not_500
   - existing_over_limit_attachments_are_not_deleted
+  - direct_files_at_limit_pass_and_persist
+  - direct_files_over_limit_blocked
+  - single_upload_within_limit_passes
+  - update_attachment_ids_linked_on_user_path
 
 test_files:
   - modules/_bundled/sirsoft-board/tests/Feature/AttachmentLimitTest.php

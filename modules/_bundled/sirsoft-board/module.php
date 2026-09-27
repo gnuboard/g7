@@ -21,6 +21,7 @@ use Modules\Sirsoft\Board\Listeners\EcommerceInquiryHookListener;
 use Modules\Sirsoft\Board\Listeners\PostAttachmentCountSyncListener;
 use Modules\Sirsoft\Board\Listeners\PostCountSyncListener;
 use Modules\Sirsoft\Board\Listeners\PostReplySyncListener;
+use Modules\Sirsoft\Board\Listeners\PrivacyRetentionHandlerListener;
 use Modules\Sirsoft\Board\Listeners\SearchPostsListener;
 use Modules\Sirsoft\Board\Listeners\SeoBoardCacheListener;
 use Modules\Sirsoft\Board\Listeners\SeoBoardSettingsCacheListener;
@@ -548,6 +549,7 @@ class Module extends AbstractModule
             Ckeditor5ReferenceSourcesListener::class,
             UserScrapInfoListener::class,
             UserReactionInfoListener::class,
+            PrivacyRetentionHandlerListener::class,
         ];
     }
 

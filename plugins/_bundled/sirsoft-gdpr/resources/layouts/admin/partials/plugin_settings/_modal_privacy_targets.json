@@ -1,0 +1,318 @@
+{
+    "comment": "연간 통지 대상 회원 창 (#636) — 연간 통지 카드의 대상 건수 옆 버튼이 연다.\n  명단은 발송 판정과 같은 조건(활성 · 가입 1년 경과 · 설정 채널 중 최근 1년 미발송)이라 여기 보이는 회원이\n  다음 정기 실행이 통지할 회원이다(한 번에 보내는 수는 발송 상한으로 잘린다). 행 형태는 코어 개인정보\n  조치 대상 목록과 같다. 무한 스크롤은 도서산간 추가배송비 템플릿 창과 같은 방식이다.",
+    "meta": {
+        "is_partial": true,
+        "description": "GDPR 설정 연간 통지 카드 - 통지 대상 회원 목록 모달"
+    },
+    "id": "privacy_targets_modal",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "title": "{{_global.privacyTargets?.title ?? ''}}",
+        "width": "800px",
+        "className": "max-w-[calc(100vw-2rem)]"
+    },
+    "children": [
+        {
+            "id": "privacy_targets_content",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "space-y-3"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex-between"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "text-label"
+                            },
+                            "text": "$t:sirsoft-gdpr.annual_notice.targets.total|count={{privacyTargets?.data?.pagination?.total ?? 0}}"
+                        }
+                    ]
+                },
+                {
+                    "id": "privacy_targets_table",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{(privacyTargets?.data?.data ?? []).length > 0}}",
+                    "props": {
+                        "className": "border border-gray-200 dark:border-gray-700 rounded-lg"
+                    },
+                    "children": [
+                        {
+                            "id": "privacy_targets_list",
+                            "type": "basic",
+                            "name": "Div",
+                            "actions": [
+                                {
+                                    "comment": "통지 대상 회원 무한 스크롤 — 목록 바닥에서 100px 안에 닿으면 다음 쪽(20명)을 받아 이어 붙인다. 목록 주소는\n                 이 플러그인 전용 소스와 같은 곳이다. 200ms 로 몰아 판정하고, 더 없거나 받는 중이면 부르지 않으며, 실패하면 로딩 표시만 거둔다.",
+                                    "type": "scroll",
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "switch",
+                                            "params": {
+                                                "value": "{{$event.target.scrollHeight - $event.target.scrollTop <= $event.target.clientHeight + 100 && _global.privacyTargets?.hasMore !== false && privacyTargets?.data?.pagination?.has_more_pages === true && !_global.privacyTargets?.isLoadingMore}}"
+                                            },
+                                            "cases": {
+                                                "true": {
+                                                    "handler": "sequence",
+                                                    "actions": [
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "privacyTargets.isLoadingMore": true
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "scrollIntoView",
+                                                            "params": {
+                                                                "selector": "#privacy_targets_loading",
+                                                                "scrollContainer": "#privacy_targets_list",
+                                                                "behavior": "smooth",
+                                                                "block": "end",
+                                                                "waitForElement": true,
+                                                                "timeout": 2000
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "apiCall",
+                                                            "target": "/api/plugins/sirsoft-gdpr/admin/annual-notice/targets",
+                                                            "auth_required": true,
+                                                            "params": {
+                                                                "method": "GET",
+                                                                "query": {
+                                                                    "page": "{{(_global.privacyTargets?.currentPage ?? 1) + 1}}",
+                                                                    "per_page": 20
+                                                                }
+                                                            },
+                                                            "onSuccess": [
+                                                                {
+                                                                    "handler": "appendDataSource",
+                                                                    "params": {
+                                                                        "dataSourceId": "privacyTargets",
+                                                                        "dataPath": "data.data",
+                                                                        "newData": "{{response.data.data}}"
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "global",
+                                                                        "privacyTargets.currentPage": "{{response.data?.pagination?.current_page ?? ((_global.privacyTargets?.currentPage ?? 1) + 1)}}",
+                                                                        "privacyTargets.hasMore": "{{response.data?.pagination?.has_more_pages ?? false}}",
+                                                                        "privacyTargets.isLoadingMore": false
+                                                                    }
+                                                                }
+                                                            ],
+                                                            "onError": {
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "global",
+                                                                    "privacyTargets.isLoadingMore": false
+                                                                }
+                                                            }
+                                                        }
+                                                    ]
+                                                }
+                                            }
+                                        }
+                                    ],
+                                    "debounce": 200
+                                }
+                            ],
+                            "props": {
+                                "className": "max-h-96 overflow-y-auto overflow-x-auto"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Table",
+                                    "props": {
+                                        "className": "table whitespace-nowrap"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Thead",
+                                            "props": {
+                                                "className": "sticky top-0 z-10 bg-white dark:bg-gray-800"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Tr",
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Th",
+                                                            "text": "{{privacyTargets?.data?.columns?.title ?? ''}}"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Th",
+                                                            "if": "{{privacyTargets?.data?.columns?.subtitle}}",
+                                                            "text": "{{privacyTargets?.data?.columns?.subtitle ?? ''}}"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Th",
+                                                            "if": "{{privacyTargets?.data?.columns?.context}}",
+                                                            "text": "{{privacyTargets?.data?.columns?.context ?? ''}}"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Th",
+                                                            "if": "{{privacyTargets?.data?.columns?.date}}",
+                                                            "props": {
+                                                                "className": "w-28"
+                                                            },
+                                                            "text": "{{privacyTargets?.data?.columns?.date ?? ''}}"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Tbody",
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Tr",
+                                                    "iteration": {
+                                                        "source": "{{privacyTargets?.data?.data ?? []}}",
+                                                        "item_var": "target"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Td",
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "A",
+                                                                    "if": "{{target.url}}",
+                                                                    "props": {
+                                                                        "href": "{{target.url}}",
+                                                                        "target": "_blank",
+                                                                        "className": "text-blue-600 dark:text-blue-400 hover:underline"
+                                                                    },
+                                                                    "text": "{{target.title}}"
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "if": "{{!target.url}}",
+                                                                    "text": "{{target.title}}"
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Td",
+                                                            "if": "{{privacyTargets?.data?.columns?.subtitle}}",
+                                                            "text": "{{target.subtitle ?? ''}}"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Td",
+                                                            "if": "{{privacyTargets?.data?.columns?.context}}",
+                                                            "text": "{{target.context ?? ''}}"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Td",
+                                                            "if": "{{privacyTargets?.data?.columns?.date}}",
+                                                            "props": {
+                                                                "className": "tabular-nums"
+                                                            },
+                                                            "text": "{{target.date ?? ''}}"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "privacy_targets_loading",
+                                    "type": "composite",
+                                    "name": "LoadingSpinner",
+                                    "if": "{{_global.privacyTargets?.isLoadingMore}}",
+                                    "props": {
+                                        "size": "sm",
+                                        "text": "$t:sirsoft-gdpr.annual_notice.targets.loading",
+                                        "color": "text-blue-600 dark:text-blue-400",
+                                        "className": "py-3"
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "privacy_targets_empty",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{(privacyTargets?.data?.data ?? []).length === 0}}",
+                    "props": {
+                        "className": "flex flex-col items-center gap-3 text-center text-gray-400 dark:text-gray-500 py-6"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "inbox",
+                                "className": "text-4xl"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "text-sm"
+                            },
+                            "text": "$t:sirsoft-gdpr.annual_notice.targets.empty"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "privacy_targets_footer",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "flex justify-end mt-6"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "closeModal"
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "btn btn-secondary"
+                    },
+                    "text": "$t:sirsoft-gdpr.annual_notice.targets.close"
+                }
+            ]
+        }
+    ]
+}

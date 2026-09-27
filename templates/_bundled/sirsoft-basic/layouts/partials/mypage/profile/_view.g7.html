@@ -98,7 +98,7 @@
             <!-- 닉네임 (있는 경우만 표시) -->
             <span data-if="{{user.data?.nickname}}" class="text-base text-gray-500 dark:text-gray-400 leading-none">({{user.data?.nickname}})</span>
             <!-- 상태 배지 (Active가 아닌 경우만 표시) -->
-            <span data-if="{{user.data?.status &amp;&amp; user.data?.status !== 'active'}}" class="{{user.data?.status_variant === 'secondary' ? 'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300' : user.data?.status_variant === 'danger' ? 'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300' : 'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300'}}">{{user.data?.status_label}}</span>
+            <span data-if="{{user.data?.status &amp;&amp; user.data?.status !== 'active'}}" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {{({success: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300', secondary: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300', danger: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300', warning: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300', info: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'})[user.data?.status_variant] ?? 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'}}">{{user.data?.status_label}}</span>
           </div>
           <!-- 이메일 -->
           <div class="text-base text-gray-600 dark:text-gray-300">

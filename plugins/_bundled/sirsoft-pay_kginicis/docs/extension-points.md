@@ -42,6 +42,7 @@
 | `sirsoft-ecommerce.claim_payment.approve` | filter | `ClaimPaymentApproveListener` | `processApprove` | 10 |
 | `sirsoft-ecommerce.claim_payment.refund` | filter | `ClaimPaymentRefundListener` | `processRefund` | 10 |
 | `sirsoft-ecommerce.claim_payment.void_approval` | filter | `ClaimPaymentApproveListener` | `voidApproval` | 10 |
+| `sirsoft-ecommerce.order.after_anonymize` | action | `ScrubEscrowRecipientOnOrderAnonymizeListener` | `scrubEscrowRecipient` | 10 |
 | `sirsoft-ecommerce.payment.get_client_config` | filter | `RegisterPgProviderListener` | `getClientConfig` | 10 |
 | `sirsoft-ecommerce.payment.refund` | filter | `CancelActivityLogListener` | `logCancelConfirmed` | 20 |
 | `sirsoft-ecommerce.payment.refund` | filter | `PaymentRefundListener` | `processRefund` | 10 |
@@ -57,6 +58,12 @@
 (`PaymentRefundListener`=10, `CancelActivityLogListener`=20)는 §AGENTS.md 핵심 흐름에서
 설명한 대로 "취소 성공 후에만 로그 기록"을 강제하기 위한 순서입니다 — 뒤바뀌면 실패한 취소도
 로그에 성공처럼 남을 수 있습니다.
+
+`sirsoft-ecommerce.order.after_anonymize`를 구독하는 `ScrubEscrowRecipientOnOrderAnonymizeListener`는
+쇼핑몰의 개인정보 보유기간 익명화가 주문 한 건을 처리할 때 에스크로 배송 등록 기록
+(`payment_meta.escrow_delivery`)의 수령인 이름·연락처·주소를 지웁니다. 이 훅은 익명화 트랜잭션
+안에서 발행되므로 `sync: true` 로 구독합니다 — 큐로 미루면 익명화 표지만 커밋되고 사본이 남을 수
+있고, 동기로 돌다 실패하면 그 주문의 익명화 전체가 롤백되어 다음 실행이 다시 잡습니다.
 
 `sirsoft-ecommerce.claim_payment.approve` / `.refund` 두 필터는 클레임 추가결제(`CP` 채번)의
 승인·환급을 이 플러그인이 맡는 접합면입니다. 콜백 컨트롤러는 결제번호가 `CP` 로 시작하면 주문
@@ -128,6 +135,7 @@ API 가 그 자리에서 환불하므로 `true` 입니다. 예외는 `kginicis_j
 | `RegisterEasyPayMethodsListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/RegisterEasyPayMethodsListener.php` |
 | `RegisterPgProviderListener` | 2개 | 명시 등록 | ✅ | `src/Listeners/RegisterPgProviderListener.php` |
 | `RestoreLayoutExtensionsAfterUpdateListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/RestoreLayoutExtensionsAfterUpdateListener.php` |
+| `ScrubEscrowRecipientOnOrderAnonymizeListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/ScrubEscrowRecipientOnOrderAnonymizeListener.php` |
 | `ValidateCbtSettingsListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/ValidateCbtSettingsListener.php` |
 <!-- @generated:listeners END -->
 

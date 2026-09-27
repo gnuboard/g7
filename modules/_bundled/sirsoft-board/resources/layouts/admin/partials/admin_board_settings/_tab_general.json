@@ -261,24 +261,33 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "mt-4"
+                        "className": "flex-between gap-4 mt-4"
                     },
                     "children": [
                         {
                             "type": "basic",
-                            "name": "Label",
+                            "name": "Div",
                             "props": {
-                                "className": "form-label"
+                                "className": "min-w-0"
                             },
-                            "text": "$t:sirsoft-board.admin.settings.fields.attachment_purge_enabled"
-                        },
-                        {
-                            "type": "basic",
-                            "name": "P",
-                            "props": {
-                                "className": "text-tertiary"
-                            },
-                            "text": "$t:sirsoft-board.admin.settings.fields.attachment_purge_enabled_hint"
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "form-label"
+                                    },
+                                    "text": "$t:sirsoft-board.admin.settings.fields.attachment_purge_enabled"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-tertiary"
+                                    },
+                                    "text": "$t:sirsoft-board.admin.settings.fields.attachment_purge_enabled_hint"
+                                }
+                            ]
                         },
                         {
                             "type": "composite",
@@ -297,6 +306,7 @@
                             ],
                             "props": {
                                 "name": "attachment_settings.purge_enabled",
+                                "className": "flex-shrink-0",
                                 "disabled": "{{_computed.isReadOnly}}",
                                 "checked": "{{!!_local.form?.attachment_settings?.purge_enabled}}"
                             }

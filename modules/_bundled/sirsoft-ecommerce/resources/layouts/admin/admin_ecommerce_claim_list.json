@@ -361,7 +361,7 @@
                                                 "type": "basic",
                                                 "name": "Icon",
                                                 "props": {
-                                                    "name": "refresh-cw",
+                                                    "name": "arrows-rotate",
                                                     "className": "text-xl"
                                                 }
                                             }

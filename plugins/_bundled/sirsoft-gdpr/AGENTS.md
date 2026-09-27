@@ -117,14 +117,14 @@ immutable append-only)으로 이중 기록합니다 — 지금 상태 조회와 
 <!-- @generated:extension-points-summary START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 확장점 | 수 | 상세 |
 |---|---|---|
-| 발행 훅 | 2개 | [발행 훅](docs/extension-points.md#발행-훅) |
-| 구독 훅 | 4개 | [구독 훅](docs/extension-points.md#구독-훅) |
-| 훅 리스너 | 4개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
+| 발행 훅 | 4개 | [발행 훅](docs/extension-points.md#발행-훅) |
+| 구독 훅 | 10개 | [구독 훅](docs/extension-points.md#구독-훅) |
+| 훅 리스너 | 6개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
 | 레이아웃 확장 | 2개 | [레이아웃 확장](docs/extension-points.md#레이아웃-확장) |
 | 미들웨어 | 1개 | [미들웨어](docs/extension-points.md#미들웨어) |
 | 브로드캐스트 채널 | 0개 | [브로드캐스트 채널](docs/extension-points.md#브로드캐스트-채널) |
-| 스케줄 | 0개 | [스케줄](docs/extension-points.md#스케줄) |
-| 알림 정의 | 0개 | [알림 정의](docs/extension-points.md#알림-정의) |
+| 스케줄 | 1개 | [스케줄](docs/extension-points.md#스케줄) |
+| 알림 정의 | 1개 | [알림 정의](docs/extension-points.md#알림-정의) |
 <!-- @generated:extension-points-summary END -->
 
 <!-- @intent START -->
@@ -156,6 +156,8 @@ immutable append-only)으로 이중 기록합니다 — 지금 상태 조회와 
 - [ ] 설정 키를 새로 노출할 때는 `config/settings/defaults.json` 의 `frontend_schema` 에 `expose: true` 를 **함께** 넣는다 — 빠지면 저장도 화면도 정상인데 브라우저 인라인 페이로드에만 값이 오지 않아 인터셉터가 빈 목록으로 선다
 - [ ] 그 문구를 고쳤으면 기설치본의 **저장된** 안내도 정정하는 업그레이드 스텝을 동반한다 — 카테고리 정의는 설치 시점에 시드되고 이후 갱신되지 않는다 (선례: `plugins/_bundled/sirsoft-gdpr/upgrades/data/1.0.4/migrations/01_RetagThemeAsStrictlyNecessary.php`)
 - [ ] 레이아웃·컴포넌트·`data_source` 를 건드렸다면 [`docs/editor-spec.md`](docs/editor-spec.md) 의 동반 의무 표를 따라 `editor-spec.json` 을 함께 갱신 — 샘플이 없는 `data_source` 는 편집기 캔버스에서만 빈 화면이 되고 실제 화면은 정상이라 오류도 경고도 남지 않는다. 반영은 `php artisan plugin:update sirsoft-gdpr --force`
+- [ ] 연간 통지 대상 조건(`GdprPrivacyNoticeRepository::candidates()`·`dueChannels()`)을 고치면 관리자 화면의 대상 건수·명단이 쓰는 `dueQuery()` 도 **같이** 고친다 — 둘이 갈리면 화면 숫자가 실제 발송 대상과 달라진다. 명단 행은 코어 값 객체 `App\Privacy\DTO\PrivacyRetentionTarget` 로 내며 모양은 [코어 개인정보 보유기간 처리 가이드](../../../docs/backend/privacy-retention.md)의 대상 행과 같다
+- [ ] 새 `.g7.html` 을 만들었다면 저작 트랙 종료 게이트(`LayoutMarkup` PHPUnit 스위트)의 코퍼스 목록에 등재하고, 파일 헤더·데이터소스·모달·액션 블록 주석(S21, `docs/frontend/layout-markup.md` §10.5)을 채운다 — 굽기·왕복이 초록이어도 이 스위트만 미등재·미주석을 잡는다(2026-09-26 develop-7.1.0 1차 병합 판독: 동의 관리 플러그인 개인정보 조치 창이 미등재·미주석으로 들어왔다).
 
 ## 6. 금지 패턴
 
@@ -170,7 +172,7 @@ immutable append-only)으로 이중 기록합니다 — 지금 상태 조회와 
 | `plugin.php` 의 `getConfigValues()`/`getSettingsSchema()` 등이 `src/` 클래스를 직접 호출(정적 메서드·`new`·상수) | 값은 진입 파일이 소유하고 `src/` 쪽이 위임한다 (`::class` 참조는 무방) | 신규 설치 흐름은 클래스 경로 등록 전에 진입 파일을 읽어 "Class not found" 로 멈춘다. 업그레이드에서는 재현되지 않아 출시 전 검증을 통과한다 (`tests/Unit/EntryFileAutoloadIndependenceTest.php` 가 잠근다) |
 | 세션 쿠키 이름을 `'laravel_session'` 으로 하드코딩 | `config('session.cookie')` 런타임 해석 | `SESSION_COOKIE` 를 지정한 사이트에서 그 항목이 죽고, 그 사실이 어디에도 드러나지 않는다 |
 | 새 확장의 저장 키를 플러그인이 관측·수집해 자동 등재 | 운영자가 화면에서 직접 추가 | 저장 키 관측은 그 자체가 추적이다 — 동의 없이 하는 관측을 이 플러그인이 할 수는 없다 |
-| 정책 버전 발행을 코드/배치로 자동화 | 운영자가 매번 명시적으로 "+ 새 버전 발행" 클릭 | 자동화하면 사소한 문구 수정에도 전 회원이 재동의 화면을 보게 된다 |
+| 정책 버전 발행을 코드/배치로 자동화 | 운영자가 매번 명시적으로 "+ 새 버전 발행" 클릭. 개인정보 이용내역의 연간 통지는 별도 자동 작업 | 정책 재동의와 처리 내역 안내는 서로 다른 작업이며 연간 통지는 정책 버전을 발행하지 않는다 |
 | 저장소 허용목록만 고치고 동의 안내 문구는 그대로 두기 | 목록·문구 4곳·업그레이드 스텝을 한 작업 단위로 | 안내가 "이 항목은 기능 쿠키이고 거부하면 저장되지 않는다" 라고 말하는데 실제로는 항상 저장되면, 고지 자체가 사실과 달라진다 |
 <!-- @intent END -->
 
@@ -179,10 +181,10 @@ immutable append-only)으로 이중 기록합니다 — 지금 상태 조회와 
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 27개 | `plugins/_bundled/sirsoft-gdpr/tests` |
-| Vitest | 13개 | `vitest.config.ts` |
-| Playwright | 5개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 7개 | `tests/scenarios` |
+| PHPUnit | 31개 | `plugins/_bundled/sirsoft-gdpr/tests` |
+| Vitest | 15개 | `vitest.config.ts` |
+| Playwright | 6개 | `tests/Playwright` |
+| 시나리오 매니페스트 | 8개 | `tests/scenarios` |
 
 기저 TestCase: `tests/PluginTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

@@ -42,6 +42,7 @@ Art.6/ePrivacy Art.5(3) 관점에서 게스트(디바이스 단위)와 회원(�
 | 마이페이지 동의 관리 | 회원이 자신의 동의 현황을 조회·개별 철회·재동의·전체 일괄 재동의 |
 | 관리자 동의 이력 조회 | 회원/게스트 동의 변경 이력(이메일·세션 검색, 카테고리·출처 다중 필터, 카테고리 스냅샷 표) |
 | 정책 버전 발행 | 정책 본문 변경 시 수동 발행으로 모든 회원에게 재동의를 트리거 |
+| 개인정보 연간 통지 | 활성 회원에게 수집 항목·이용 목적·보유 기간을 연 1회 메일·사이트 알림으로 안내(기본 OFF, 1회 실행 상한, 본인 시험 발송, 통지 이력 화면). 정책 버전 발행과는 별개 작업 |
 <!-- @intent END -->
 
 ## 동작 방식
@@ -98,13 +99,14 @@ php artisan plugin:update sirsoft-gdpr --force
 <!-- @generated:settings-summary START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 키 | 의미 | 기본값 |
 |---|---|---|
+| `annual_notice` | 개인정보 연간 통지 | `{"enabled":false,"channels":["mail","database"],"batch_size":500,"introduction":[]}` |
 | `privacy_policy_slug` | 개인정보처리방침 페이지 슬러그 | `privacy` |
 | `legal_entity_name` | 운영 주체명 | - |
 | `data_storage_location` | 데이터 저장 위치 | - |
 | `banner_enabled` | 쿠키 배너 노출 | `true` |
 | `banner_position` | 배너 위치 | `bottom_bar` |
 | `blocked_domains` | 추적 도메인 차단 목록 | `{"functional":["*.crisp.chat","client.crisp.chat","*.intercom.io","widget.intercom.io","*.tawk.to","embed.tawk.to","cdn.weglot.com","*.weglot.com","*.usercentrics.eu"],"analytics":["google-analytics.com","*.google-analytics.com","googletagmanager.com","*.googletagmanager.com","ssl.google-analytics.com","*.hotjar.com","static.hotjar.com","*.mixpanel.com","cdn.mxpnl.com","*.amplitude.com","cdn.amplitude.com","*.segment.io","*.segment.com","wcs.naver.net","wcs.naver.com","*.beusable.net"],"marketing":["facebook.net","connect.facebook.net","facebook.com","*.facebook.com","doubleclick.net","*.doubleclick.net","googleadservices.com","googlesyndication.com","ads.google.com","*.criteo.com","static.criteo.net","*.adnxs.com","*.taboola.com","cdn.taboola.com","*.outbrain.com","*.kakao.com","analytics.ad.daum.net","platform.twitter.com","*.twitter.com","platform.linkedin.com","*.linkedin.com"]}` |
-| `necessary_storage_allowlist` | 필수 저장 항목 허용목록 | `{"localStorage":["g7_locale","g7_color_scheme","g7_cache_version","g7_asset_url_mode*","g7_cart_key","g7-devtools-panel","g7_guest_order_token","g7_guest_order_number","g7_guest_order_expires_at","g7_devtools_*","g7_filters_*","g7_columns_*","g7_order_*","g7_admin_sidebar_collapsed","g7_filter_visibility_*","g7_dismissed_warnings","g7_view_mode_*","g7le.*","__sirsoftKginicisMobilePaymentReturnPending","g7.identity.redirectStash","sirsoft-verification_nhnkcp.formStash"],"sessionStorage":["g7:sirsoft-pay_kginicis:pendingClose","g7:sirsoft-pay_nhnkcp:pendingClose","g7:sirsoft-tosspayments:pendingClose","g7.identity.redirectStash","sirsoft-verification_nhnkcp.formStash","__sirsoftKginicisMobilePaymentReturnPending","g7le.*","g7_devtools_*","g7_filters_*","g7_columns_*","g7_order_*","g7_filter_visibility_*"],"cookie":["laravel_maintenance"]}` |
+| `necessary_storage_allowlist` | 필수 저장 항목 허용목록 | `{"localStorage":["g7_locale","g7_color_scheme","g7_cache_version","g7_asset_url_mode*","g7_cart_key","g7-devtools-panel","g7_guest_order_token","g7_guest_order_number","g7_guest_order_expires_at","g7_devtools_*","g7_filters_*","g7_columns_*","g7_order_*","g7_admin_sidebar_collapsed","g7_filter_visibility_*","g7_dismissed_warnings","g7_view_mode_*","g7le.*","__sirsoftKginicisMobilePaymentReturnPending","g7.identity.redirectStash","sirsoft-verification_nhnkcp.formStash"],"sessionStorage":["g7:sirsoft-pay_kginicis:pendingClose","g7:sirsoft-pay_nhnkcp:pendingClose","g7:sirsoft-tosspayments:pendingClose","g7.identity.redirectStash","sirsoft-verification_nhnkcp.formStash","__sirsoftKginicisMobilePaymentReturnPending","g7le.*","g7_devtools_*","g7_filters_*","g7_columns_*","g7_order_*","g7_filter_visibility_*"],"cookie":["laravel_maintenance","g7_analytics_optout"]}` |
 | `cookie_categories` | 쿠키 카테고리 정의 | `[]` |
 
 개발자용 상세(타입·검증·저장 위치)는 [설정 스키마](docs/settings.md#설정-스키마) 를 보세요.

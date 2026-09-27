@@ -7,7 +7,7 @@
 회원·비회원 주문상세의 클레임 신청 버튼은 상품 목록 바로 아래에서 환불 빨강·반품 주황·교환 파랑으로 표시한다. 공통 클레임 목록의 탭·페이지는 로컬 상태와 `replaceUrl`을 갱신한 뒤 `claims` 데이터소스만 동기 재조회하여 스크롤을 유지한다. 탭 대기 중에는 스피너와 `aria-disabled`·액션 가드를 함께 사용해 포커스와 중복 클릭 방지를 유지한다. 다른 비동기 신청·저장 버튼은 기존 `Icon` 스피너와 `disabled` 패턴을 따른다.
 
 <!-- @generated:layouts START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-레이아웃 192개 (루트: `layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
+레이아웃 193개 (루트: `layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
 
 | 그룹 | 개수 |
 |---|---|
@@ -17,7 +17,7 @@
 | `errors` | 6개 |
 | `mypage` | 15개 |
 | `page` | 1개 |
-| `partials` | 144개 |
+| `partials` | 145개 |
 | `search` | 1개 |
 | `shop` | 11개 |
 | `users` | 2개 |
@@ -60,6 +60,7 @@
 | `show` | `page` | 화면 | `_user_base` |
 | `_identity_challenge_modal` | `partials` | partial | - |
 | `_modal_notification_delete_all_confirm` | `partials` | partial | - |
+| `_visitor_counter` | `partials` | partial | - |
 | `_login_form` | `partials` | partial | - |
 | `_modal_privacy` | `partials` | partial | - |
 | `_modal_terms` | `partials` | partial | - |
@@ -236,6 +237,12 @@
 **로그인 리다이렉트를 여기서 구현하지 않습니다** — 코어 `TemplateApp.showRouteError` 가드가
 처리하므로, 이 레이아웃에서 다시 이동시키면 이중 리다이렉트가 됩니다.
 
+**휴면 해제 안내(이슈 #636 S4)**: `partials/auth/_login_form` 은 로그인 응답에 `dormancy_restored` 가
+실렸을 때만 안내 토스트를 띄웁니다(`auth.dormancy_restored`). 서버는 **해제됐을 때만** 그 키를 보내므로
+키의 존재 자체가 조건입니다 — `false` 를 늘 보내는 형태로 바꾸면 매 로그인마다 안내가 뜹니다.
+1단계(2FA 없는 사이트)와 2단계 완료 경로 **둘 다**에 같은 토스트를 둡니다. 한쪽만 두면 사이트의 2FA
+설정에 따라 해제 사실이 보이기도 하고 안 보이기도 합니다.
+
 `mypage/claims*` 와 `shop/guest_claim_*` 는 한 클러스터입니다 — 목록·상세·작성/수정 셸이
 `partials/mypage/claims/` 의 같은 조각을 공유하고, 비회원 셸은 데이터소스 endpoint 와 헤더만
 다릅니다. 서브탭·페이지·필터는 `navigate + mergeQuery` URL 왕복이며, 모달 id 는 `modal_claim_*`
@@ -324,6 +331,13 @@
 `/mypage` 자체는 레이아웃이 `-` 입니다 — 진입하면 하위 탭 중 하나로 넘기는 자리이며 자기
 화면을 갖지 않습니다.
 
+게시글 작성·수정(`board/form` → `_post_form`)의 옵션 카드는 폼 메타의 권한 값으로 갈립니다.
+공지 옵션은 `user_abilities.can_manage`(게시판 관리) **또는** `can_write_notice`(공지 등록) 가
+참일 때만, 답글이 아닐 때만 보입니다 — 서버(게시판 모듈)가 공지 지정을 같은 두 권한으로
+판정하므로 조건을 한쪽만 바꾸면 화면과 서버가 갈립니다. 숨김은 UI 은닉일 뿐이고 차단은 서버가
+합니다. 수정 모드의 폼은 서버가 준 기존 값(`is_notice` 포함)을 통째로 되돌려 보내며, 서버는
+값이 바뀔 때만 공지 권한을 판정합니다.
+
 라우트를 바꾸면 `php artisan template:update sirsoft-basic --force` 로 반영합니다. 빌드는
 필요 없습니다.
 <!-- @intent END -->
@@ -408,7 +422,8 @@ _user_base.g7.html (베이스 레이아웃)
 │       ├── _popular_boards.g7.html (인기 게시판)
 │       ├── _board_summary.g7.html (게시판 요약)
 │       ├── _community_guide.g7.html (커뮤니티 가이드)
-│       └── _shop_promo.g7.html (쇼핑 프로모션)
+│       ├── _shop_promo.g7.html (쇼핑 프로모션)
+│       └── _visitor_counter.g7.html (방문자 카운터 — 설정을 켰을 때만, 공개 요약 API #682 S3)
 │
 ├── 인증 (auth/)
 │   ├── login.g7.html (로그인)
@@ -525,6 +540,8 @@ _user_base.g7.html (베이스 레이아웃)
 │   └── reorder.g7.html (재주문)
 │
 ├── 마이페이지 (mypage/)
+│   ├── mileage.g7.html (마일리지 내역)
+│   ├── scrap.g7.html (스크랩 — 일괄 삭제 확인 조각 포함)
 │   ├── profile.g7.html (프로필 보기)
 │   ├── profile-edit.g7.html (프로필 수정)
 │   │   └── partials/mypage/profile/
@@ -690,6 +707,11 @@ slots.content:
   전역 상태라 화면을 떠나도 남기 때문에, 이 리셋이 없으면 다시 들어왔을 때 1단계가 보이지 않습니다.
 - 만료 시각은 정적 표기입니다(`| datetime`). 카운트다운을 쓰지 않습니다 — `startInterval` 은 등록
   시점 컨텍스트를 고정하고 정지 호출처가 없어 화면을 떠난 뒤에도 남습니다.
+- **인증 수단(`provider_id`)에 따라 화면이 갈립니다.** challenge 응답의 `provider_id` 를
+  `_global.twoFactor` 에 실어 두고 그 값으로 분기합니다. `'totp'`(인증 앱)이면 서버가
+  아무것도 보내지 않으므로 앱 코드 안내로 바꾸고 **「인증번호 다시 받기」 버튼을 감춥니다** —
+  남겨 두면 눌러도 아무 일이 없는 것처럼 보입니다. 백업 코드(`xxxxx-xxxxx`)도 같은 칸에
+  받으므로 `maxLength` 를 넓힙니다. 그 외 수단(메일 등)은 종전 화면 그대로입니다.
 
 **금지 — 같은 시퀀스·onSuccess 안에서 방금 저장한 상태를 다시 읽지 않습니다**
 

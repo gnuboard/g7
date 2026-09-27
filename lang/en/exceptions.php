@@ -15,6 +15,9 @@ return [
     'template_not_found' => 'Template not found: :identifier',
     'template_not_active' => 'Template is not active: :identifier (status: :status)',
 
+    // Privacy manual run — one job per target
+    'privacy_manual_run_conflict' => 'A manual run for this target is already queued or running. Try again after it finishes.',
+
     // Optimistic lock — concurrent save conflict
     'concurrent_modification' => 'Another user has saved first. (resource: :resource, current version: :current, your version: :expected)',
 
@@ -243,6 +246,13 @@ return [
         'no_composer_lock' => 'composer.lock is required. Run composer install first: :path',
         'vendor_dir_not_found' => 'vendor/ directory does not exist. Run composer install first: :path',
         'composer_binary_not_found' => 'Composer binary not found. Set the COMPOSER_BINARY environment variable or add composer to your PATH.',
+    ],
+
+    // 스토리지 드라이버 경로 가드 예외
+    'storage' => [
+        'unsafe_path' => 'The storage path is not allowed.',
+        'destructive_on_root' => 'The top-level storage path cannot be deleted this way.',
+        'local_safe_option_package' => 'The :option option of a local-safe disk requires the :package package.',
     ],
 
     // SEO / Sitemap 관련 예외

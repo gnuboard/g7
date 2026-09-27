@@ -242,7 +242,7 @@
 | `type`/`name` | 태그명 자동 판정 (`<data-grid>` `<button>`) |
 | `props` | 무접두 속성 + `<prop name="…">JSON</prop>` |
 | `children` / `text` | 자식 태그 / 태그 본문 (둘 공존 = `mixed_text_and_children` 에러) |
-| `id` | `data-ref="…"` (HTML `id` 는 props.id 로 감) |
+| `id` | `data-ref="…"` (HTML `id` 는 props.id 로 감). 렌더 시 props.id 가 없으면 이 값이 DOM `id` 가 되고 `data-ref` 속성은 DOM 에 남지 않는다 — E2E 는 `#…` 로 찾는다 |
 | `if`/`condition` | `data-if="{{…}}"` (불리언은 `:data-if="false"`) |
 | `iteration` | `data-each="item, i in {{source}}"` |
 | `conditions` | `<all-of>/<any-of>` |
@@ -343,7 +343,7 @@
 
 ## 8. 액션
 
-top-level 속성/자식: `handler`(태그명) `event`(`<on>`) `target` `if`(`data-if`) `confirm="메시지"`(진입점만) `auth_mode`/`auth_required` `identity_target` `resultTo` `debounce` `actionRef` `render` `onLoad` `stopPropagation`(진입점만). **그 외 전부 `params`**(자식 `<body>`/`<query>` 또는 속성).
+top-level 속성/자식: `handler`(태그명) `event`(`<on>`) `target` `if`(액션에서는 **무접두** `if="{{…}}"` — 노드의 `data-if` 와 다르다. 액션에 `data-if` 를 달면 `params` 로 들어가 조건이 무시된 채 항상 실행된다) `confirm="메시지"`(진입점만) `auth_mode`/`auth_required` `identity_target` `resultTo` `debounce` `actionRef` `render` `onLoad` `stopPropagation`(진입점만). **그 외 전부 `params`**(자식 `<body>`/`<query>` 또는 속성).
 
 > `:stopPropagation="true"` 는 engine-v1.68.0 에서 신설된 **액션 키**다(불리언이므로 타입 리터럴 `:attr` 로 적는다)(핸들러가 아니다 — `stopPropagation` 이라는 핸들러는 등록된 적이 없다). `true` 일 때만 진입점 액션에서 `event.stopPropagation()` 을 부르는 opt-in 이라, 목록 행 안의 토글처럼 부모 클릭까지 발화되던 자리에 쓴다. `change` 이벤트에서 `preventDefault` 는 부르지 않는다(토글의 네이티브 상태 변경이 취소되면 React 상태와 어긋난다). 배치는 {@see \App\Support\LayoutMarkup\ActionHandlerManifest} 의 `UNIVERSAL_TOP_LEVEL_KEYS` 가 SSoT 다.
 >
@@ -353,7 +353,7 @@ top-level 속성/자식: `handler`(태그명) `event`(`<on>`) `target` `if`(`dat
 >
 > | `params` 에 실린 키 | 정본 자리 |
 > |---|---|
-> | `condition` | 액션 `data-if`(=top-level `if`) |
+> | `condition` | 액션의 무접두 `if` 속성(=top-level `if`) |
 > | `trigger` | `<on event="…">` 트리거 |
 > | `id` | 해당 핸들러가 실제로 읽는 인자명. `startInterval`·`stopInterval` 만 `params.id` 를 정당하게 읽으므로 그 둘은 경고하지 않는다 |
 >

@@ -7,12 +7,26 @@ use App\Benchmark\Axes\ListAxisRunner;
 use App\Benchmark\Axes\ScreenAxisRunner;
 use App\Benchmark\Axes\WriteAxisRunner;
 use App\Console\Commands\BenchCommand;
+use App\Contracts\Analytics\ConversionRecorderInterface as AnalyticsConversionRecorderInterface;
+use App\Contracts\Analytics\DimensionRegistryInterface as AnalyticsDimensionRegistryInterface;
+use App\Contracts\Analytics\GoalRegistryInterface as AnalyticsGoalRegistryInterface;
 use App\Contracts\Extension\CacheInterface;
 use App\Contracts\Extension\ExtensionMiddlewareRegistryInterface;
 use App\Contracts\Extension\HookListenerInterface;
 use App\Contracts\Extension\StorageInterface;
 use App\Contracts\Extension\TemplateManagerInterface;
 use App\Contracts\Repositories\ActivityLogRepositoryInterface;
+use App\Contracts\Repositories\Analytics\ActionNameRepositoryInterface as AnalyticsActionNameRepositoryInterface;
+use App\Contracts\Repositories\Analytics\ActionRepositoryInterface as AnalyticsActionRepositoryInterface;
+use App\Contracts\Repositories\Analytics\ArchiveRunRepositoryInterface as AnalyticsArchiveRunRepositoryInterface;
+use App\Contracts\Repositories\Analytics\BotHitRepositoryInterface as AnalyticsBotHitRepositoryInterface;
+use App\Contracts\Repositories\Analytics\CollectFailureRepositoryInterface as AnalyticsCollectFailureRepositoryInterface;
+use App\Contracts\Repositories\Analytics\ConversionRepositoryInterface as AnalyticsConversionRepositoryInterface;
+use App\Contracts\Repositories\Analytics\QueueStatsRepositoryInterface as AnalyticsQueueStatsRepositoryInterface;
+use App\Contracts\Repositories\Analytics\SaltRepositoryInterface as AnalyticsSaltRepositoryInterface;
+use App\Contracts\Repositories\Analytics\StatsRepositoryInterface as AnalyticsStatsRepositoryInterface;
+use App\Contracts\Repositories\Analytics\TableStatsRepositoryInterface as AnalyticsTableStatsRepositoryInterface;
+use App\Contracts\Repositories\Analytics\VisitRepositoryInterface as AnalyticsVisitRepositoryInterface;
 use App\Contracts\Repositories\AttachmentRepositoryInterface;
 use App\Contracts\Repositories\ConfigRepositoryInterface;
 use App\Contracts\Repositories\IdentityMessageDefinitionRepositoryInterface;
@@ -34,6 +48,7 @@ use App\Contracts\Repositories\NotificationTemplateRepositoryInterface;
 use App\Contracts\Repositories\PasswordResetTokenRepositoryInterface;
 use App\Contracts\Repositories\PermissionRepositoryInterface;
 use App\Contracts\Repositories\PluginRepositoryInterface;
+use App\Contracts\Repositories\PrivacyManualRunRepositoryInterface;
 use App\Contracts\Repositories\RoleRepositoryInterface;
 use App\Contracts\Repositories\ScheduleHistoryRepositoryInterface;
 use App\Contracts\Repositories\ScheduleRepositoryInterface;
@@ -62,6 +77,17 @@ use App\Extension\TemplateManager;
 use App\Listeners\ExtensionCompatibilityAlertListener;
 use App\Listeners\Identity\EnforceIdentityPolicyListener;
 use App\Repositories\ActivityLogRepository;
+use App\Repositories\Analytics\ActionNameRepository as AnalyticsActionNameRepository;
+use App\Repositories\Analytics\ActionRepository as AnalyticsActionRepository;
+use App\Repositories\Analytics\ArchiveRunRepository as AnalyticsArchiveRunRepository;
+use App\Repositories\Analytics\BotHitRepository as AnalyticsBotHitRepository;
+use App\Repositories\Analytics\CollectFailureRepository as AnalyticsCollectFailureRepository;
+use App\Repositories\Analytics\ConversionRepository as AnalyticsConversionRepository;
+use App\Repositories\Analytics\QueueStatsRepository as AnalyticsQueueStatsRepository;
+use App\Repositories\Analytics\SaltRepository as AnalyticsSaltRepository;
+use App\Repositories\Analytics\StatsRepository as AnalyticsStatsRepository;
+use App\Repositories\Analytics\TableStatsRepository as AnalyticsTableStatsRepository;
+use App\Repositories\Analytics\VisitRepository as AnalyticsVisitRepository;
 use App\Repositories\AttachmentRepository;
 use App\Repositories\IdentityMessageDefinitionRepository;
 use App\Repositories\IdentityMessageTemplateRepository;
@@ -83,6 +109,7 @@ use App\Repositories\NotificationTemplateRepository;
 use App\Repositories\PasswordResetTokenRepository;
 use App\Repositories\PermissionRepository;
 use App\Repositories\PluginRepository;
+use App\Repositories\PrivacyManualRunRepository;
 use App\Repositories\RoleRepository;
 use App\Repositories\ScheduleHistoryRepository;
 use App\Repositories\ScheduleRepository;
@@ -93,6 +120,9 @@ use App\Repositories\TemplateLayoutAttachmentRepository;
 use App\Repositories\TemplateRepository;
 use App\Repositories\UserConsentRepository;
 use App\Repositories\UserRepository;
+use App\Services\Analytics\ConversionRecorder as AnalyticsConversionRecorder;
+use App\Services\Analytics\DimensionRegistry as AnalyticsDimensionRegistry;
+use App\Services\Analytics\GoalRegistry as AnalyticsGoalRegistry;
 use App\Services\AttachmentService;
 use App\Services\DriverRegistryService;
 use App\Services\LayoutExtensionService;
@@ -244,6 +274,7 @@ class CoreServiceProvider extends ServiceProvider
         $this->app->bind(ModuleRepositoryInterface::class, ModuleRepository::class);
         $this->app->bind(PermissionRepositoryInterface::class, PermissionRepository::class);
         $this->app->bind(PluginRepositoryInterface::class, PluginRepository::class);
+        $this->app->bind(PrivacyManualRunRepositoryInterface::class, PrivacyManualRunRepository::class);
         $this->app->bind(RoleRepositoryInterface::class, RoleRepository::class);
         $this->app->bind(ScheduleHistoryRepositoryInterface::class, ScheduleHistoryRepository::class);
         $this->app->bind(ScheduleRepositoryInterface::class, ScheduleRepository::class);
@@ -262,6 +293,27 @@ class CoreServiceProvider extends ServiceProvider
 
         // SEO Repository 바인딩
         $this->app->bind(SeoCacheStatRepositoryInterface::class, SeoCacheStatRepository::class);
+
+        // 방문자 통계 Repository 바인딩
+        // 솔트 저장소는 싱글톤이다 — 익명 모드에서 방문마다 그날 솔트를 찾는데,
+        // 요청 안에서 인스턴스가 새로 생기면 캐시가 매번 비어 DB 를 다시 읽는다.
+        $this->app->bind(AnalyticsActionNameRepositoryInterface::class, AnalyticsActionNameRepository::class);
+        $this->app->bind(AnalyticsVisitRepositoryInterface::class, AnalyticsVisitRepository::class);
+        $this->app->bind(AnalyticsActionRepositoryInterface::class, AnalyticsActionRepository::class);
+        $this->app->bind(AnalyticsConversionRepositoryInterface::class, AnalyticsConversionRepository::class);
+        $this->app->bind(AnalyticsBotHitRepositoryInterface::class, AnalyticsBotHitRepository::class);
+        $this->app->bind(AnalyticsStatsRepositoryInterface::class, AnalyticsStatsRepository::class);
+        $this->app->bind(AnalyticsTableStatsRepositoryInterface::class, AnalyticsTableStatsRepository::class);
+        $this->app->bind(AnalyticsQueueStatsRepositoryInterface::class, AnalyticsQueueStatsRepository::class);
+        $this->app->bind(AnalyticsArchiveRunRepositoryInterface::class, AnalyticsArchiveRunRepository::class);
+        $this->app->bind(AnalyticsCollectFailureRepositoryInterface::class, AnalyticsCollectFailureRepository::class);
+        $this->app->singleton(AnalyticsSaltRepositoryInterface::class, AnalyticsSaltRepository::class);
+
+        // 방문자 통계 확장 선언 등록부 — 요청(잡) 수명 동안 한 번만 모은다. 싱글톤으로 두면
+        // 큐 워커처럼 오래 사는 프로세스가 확장 활성·비활성 뒤에도 옛 선언을 계속 쓴다.
+        $this->app->scoped(AnalyticsGoalRegistryInterface::class, AnalyticsGoalRegistry::class);
+        $this->app->scoped(AnalyticsDimensionRegistryInterface::class, AnalyticsDimensionRegistry::class);
+        $this->app->bind(AnalyticsConversionRecorderInterface::class, AnalyticsConversionRecorder::class);
 
         // IdentityVerification Repository 바인딩
         $this->app->bind(IdentityVerificationLogRepositoryInterface::class, IdentityVerificationLogRepository::class);

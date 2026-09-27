@@ -67,6 +67,8 @@ class StoreBoardSettingsRequest extends FormRequest
             'spam_security.report_cooldown_seconds',
             'spam_security.view_count_cache_ttl',
             'attachment_settings.purge_retention_days',
+            'privacy_retention.ip_retention_days',
+            'privacy_retention.guest_retention_days',
         ];
 
         $booleanFields = [
@@ -86,6 +88,7 @@ class StoreBoardSettingsRequest extends FormRequest
             'seo.seo_board',
             'seo.seo_post_detail',
             'attachment_settings.purge_enabled',
+            'privacy_retention.enabled',
         ];
 
         $data = $this->all();
@@ -195,7 +198,7 @@ class StoreBoardSettingsRequest extends FormRequest
 
         return [
             // 현재 탭 정보 (메타 데이터)
-            '_tab' => ['sometimes', 'string', 'in:basic_defaults,report_policy,spam_security,general,seo,notifications,notification_definitions'],
+            '_tab' => ['sometimes', 'string', 'in:basic_defaults,report_policy,spam_security,general,seo,notifications,notification_definitions,privacy_retention'],
 
             // ========================================
             // notifications (알림 채널 설정) 카테고리
@@ -231,7 +234,7 @@ class StoreBoardSettingsRequest extends FormRequest
             'basic_defaults.active_reaction_types.*' => ['string', 'max:50'],
 
             // 반응 유형 인라인 편집기 행 (설정 JSON 에 저장하지 않고 컨트롤러가 떼어내
-            // ReactionTypeService::syncTypes() 로 DB 에 반영한다 — PO 결정 R2)
+            // ReactionTypeService::syncTypes() 로 DB 에 반영한다)
             'basic_defaults.reaction_types' => ['sometimes', 'array', 'max:50'],
             'basic_defaults.reaction_types.*.id' => ['nullable', 'integer', Rule::exists(ReactionType::class, 'id')],
             'basic_defaults.reaction_types.*.code' => ['required', 'string', 'regex:/^[a-z][a-z0-9_]{1,49}$/', 'distinct'],
@@ -336,6 +339,14 @@ class StoreBoardSettingsRequest extends FormRequest
             // 상한(3650일)은 "사실상 정리하지 않음" 과 구분되지 않는 값을 저장하지 않기 위함이다.
             'attachment_settings.purge_enabled' => ['nullable', 'boolean'],
             'attachment_settings.purge_retention_days' => ['nullable', 'integer', 'min:'.$limits['attachment_purge_retention_days_min'], 'max:'.$limits['attachment_purge_retention_days_max']],
+
+            // 개인정보 보유기간 (이슈 #636) — 되돌릴 수 없는 파기라 하한을 서버가 강제한다.
+            // IP 축은 게시물·댓글 전체(회원 글 포함)의 작성 IP 를, 비회원 축은 비회원 글의 작성자
+            // 정보를 다룬다. 비회원 기간 0 은 「그 축을 쓰지 않음」이다.
+            'privacy_retention.enabled' => ['nullable', 'boolean'],
+            'privacy_retention.ip_retention_days' => ['nullable', 'integer', 'min:'.$limits['privacy_ip_retention_days_min'], 'max:'.$limits['privacy_ip_retention_days_max']],
+            'privacy_retention.guest_retention_days' => ['nullable', 'integer', 'min:'.$limits['privacy_guest_retention_days_min'], 'max:'.$limits['privacy_guest_retention_days_max']],
+            'privacy_retention.guest_mode' => ['nullable', 'string', 'in:anonymize,delete'],
         ];
     }
 
@@ -405,7 +416,13 @@ class StoreBoardSettingsRequest extends FormRequest
     {
         $attributes = __('sirsoft-board::validation.attributes.settings');
 
-        return is_array($attributes) ? $attributes : [];
+        return array_merge(is_array($attributes) ? $attributes : [], [
+            // 개인정보 보유기간 (이슈 #636) — 키별로 명시해 오류 문구에 필드 키가 노출되지 않게 한다
+            'privacy_retention.enabled' => __('sirsoft-board::validation.privacy_retention_attributes.enabled'),
+            'privacy_retention.ip_retention_days' => __('sirsoft-board::validation.privacy_retention_attributes.ip_retention_days'),
+            'privacy_retention.guest_retention_days' => __('sirsoft-board::validation.privacy_retention_attributes.guest_retention_days'),
+            'privacy_retention.guest_mode' => __('sirsoft-board::validation.privacy_retention_attributes.guest_mode'),
+        ]);
     }
 
     /**
@@ -442,7 +459,7 @@ class StoreBoardSettingsRequest extends FormRequest
     public function validatedSettings(): array
     {
         $validated = $this->validated();
-        $validCategories = ['basic_defaults', 'report_policy', 'spam_security', 'display', 'seo', 'notifications', 'attachment_settings'];
+        $validCategories = ['basic_defaults', 'report_policy', 'spam_security', 'display', 'seo', 'notifications', 'attachment_settings', 'privacy_retention'];
 
         return array_filter(
             $validated,

@@ -70,7 +70,7 @@
             <on type="click">
               <!-- 오른쪽 패널을 등록 모드로 전환. `tempKey` 는 아직 id 가 없는 신규 분류의 이미지 업로드를 서버에서 묶어 두는 임시 식별자라 등록을 누를 때마다 새로 만든다 -->
               <sequence>
-                <set-state target="global" :selectedCategoryId="null" :selectedCategory="null" panelMode="create" tempKey="{{'temp_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9)}}"/>
+                <set-state target="global" :selectedCategoryId="null" :selectedCategory="null" panelMode="create" tempKey="{{$uuid()}}"/>
                 <set-state target="local" :form="null" :errors="null" :isSaving="false"/>
                 <set-state target="local">
                   <field name="form">

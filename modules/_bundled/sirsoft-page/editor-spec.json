@@ -563,6 +563,173 @@
             }
           }
         ]
+      },
+      {
+        "comment": "페이지 목록의 일괄 작업 모달 3종 — 대상은 선택 행(_global.selectedIds_admin_pages)과 행 [삭제] 클릭이 담는 _global.deletePageId 다. 편집기는 체크박스도 행 버튼도 누르지 않으므로 상태로 담지 않으면 안내 문구가 0건으로 열린다.",
+        "scope": {
+          "kind": "route",
+          "match": "*/admin/pages"
+        },
+        "items": [
+          {
+            "id": "with_data",
+            "label": "$t:editor.state.with_data",
+            "default": true
+          },
+          {
+            "id": "rows_selected",
+            "label": "$t:editor.state.rows_selected",
+            "comment": "선택 행이 있어야 일괄 발행/발행 취소 버튼 줄이 열린다.",
+            "initialState": {
+              "global": {
+                "selectedIds_admin_pages": [
+                  12,
+                  13,
+                  14
+                ],
+                "isBulkPublishing": false,
+                "isDeletingPage": false
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "일괄 발행 확인 모달 — 안내 문구가 선택 건수를 끼워 넣는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "bulk_publish_modal"
+        },
+        "items": [
+          {
+            "id": "bulk_publish_confirm",
+            "label": "$t:editor.state.bulk_publish_confirm",
+            "default": true,
+            "initialState": {
+              "global": {
+                "selectedIds_admin_pages": [
+                  12,
+                  13,
+                  14
+                ],
+                "isBulkPublishing": false
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "일괄 발행 취소 확인 모달 — 안내 문구가 선택 건수를 끼워 넣는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "bulk_unpublish_modal"
+        },
+        "items": [
+          {
+            "id": "bulk_unpublish_confirm",
+            "label": "$t:editor.state.bulk_unpublish_confirm",
+            "default": true,
+            "initialState": {
+              "global": {
+                "selectedIds_admin_pages": [
+                  12,
+                  13,
+                  14
+                ],
+                "isBulkPublishing": false
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "목록의 단건 삭제 확인 모달 — 대상 페이지 ID 가 _global.deletePageId 에 담긴다.",
+        "scope": {
+          "kind": "modal",
+          "match": "delete_confirm_modal"
+        },
+        "items": [
+          {
+            "id": "delete_confirm",
+            "label": "$t:editor.state.delete_confirm",
+            "default": true,
+            "initialState": {
+              "global": {
+                "deletePageId": 12,
+                "isDeletingPage": false
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "상세 화면의 삭제 확인 모달.",
+        "scope": {
+          "kind": "modal",
+          "match": "deletePageModal"
+        },
+        "items": [
+          {
+            "id": "delete_confirm",
+            "label": "$t:editor.state.delete_confirm",
+            "default": true,
+            "initialState": {
+              "global": {
+                "isDeletingPage": false
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "버전 되돌리기 확인 모달 — 되돌릴 버전 ID 가 _global.restoreVersionId 에 담긴다.",
+        "scope": {
+          "kind": "modal",
+          "match": "restoreVersionModal"
+        },
+        "items": [
+          {
+            "id": "restore_confirm",
+            "label": "$t:editor.state.version_restore_confirm",
+            "default": true,
+            "initialState": {
+              "global": {
+                "restoreVersionId": 2,
+                "isRestoringVersion": false
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "버전 미리보기 모달 — 본문 전체가 _global.previewVersion 을 읽는다. 이력 행의 [미리보기] 클릭이 담는 값이라 상태 없이는 빈 상자로 열린다.",
+        "scope": {
+          "kind": "modal",
+          "match": "versionPreviewModal"
+        },
+        "items": [
+          {
+            "id": "version_preview",
+            "label": "$t:editor.state.version_preview",
+            "default": true,
+            "initialState": {
+              "global": {
+                "previewVersion": {
+                  "id": 2,
+                  "version": 2,
+                  "title": "회사 소개 (2판)",
+                  "content": "<h2>회사 소개</h2><p>2판에서는 연혁과 핵심 가치를 보강했습니다.</p>",
+                  "content_mode": "html",
+                  "seo_meta": {
+                    "title": "회사 소개 | 시르소프트",
+                    "description": "오픈소스 콘텐츠 관리 플랫폼을 만드는 시르소프트를 소개합니다.",
+                    "keywords": "시르소프트, 회사소개, 오픈소스"
+                  }
+                }
+              }
+            }
+          }
+        ]
       }
     ]
   }

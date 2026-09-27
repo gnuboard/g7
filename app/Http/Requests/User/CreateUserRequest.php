@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\User;
 
+use App\Enums\UserStatus;
 use App\Extension\HookManager;
 use App\Models\Role;
 use App\Models\User;
@@ -40,7 +41,10 @@ class CreateUserRequest extends FormRequest
             'language' => 'nullable|string|in:'.$supportedLocales,
             'country' => 'nullable|string|size:2|alpha',
             'timezone' => ['nullable', 'string', 'timezone'],
-            'status' => 'nullable|string|in:active,inactive,blocked,withdrawn',
+            // 어휘는 Enum 단독 소유다 — 여기에 목록을 박아 두면 일괄 변경 경로
+            // (`Rule::in(UserStatus::values())`)와 어휘가 갈려, 일괄은 통과하는 값이
+            // 개별에서만 거부되는 강도 비대칭이 생긴다.
+            'status' => ['nullable', 'string', Rule::in(UserStatus::values())],
 
             // 연락처 정보
             'homepage' => 'nullable|url|max:255',
@@ -125,6 +129,8 @@ class CreateUserRequest extends FormRequest
      * 유효성 검사를 위해 데이터를 준비합니다.
      *
      * role_ids와 roles가 동시에 전송될 경우 role_ids를 우선하여 roles를 제거합니다.
+     *
+     * @return void
      */
     protected function prepareForValidation(): void
     {

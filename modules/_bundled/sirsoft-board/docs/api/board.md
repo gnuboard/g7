@@ -57,7 +57,7 @@ FULLTEXT 연산자를 제거한 뒤 검색하며, 연산자만 입력한 경우�
 | file | body | file | 예 | — | 업로드 파일 |
 | post_id | body | integer | 아니오 | min 1 | post 식별자 |
 | collection | body | string | 아니오 | max 100 | 첨부 컬렉션 그룹명 (첨부를 용도별로 묶는 키, 미지정 시 default) |
-| temp_key | body | string | 아니오 | max 64 | 게시글 작성 전 임시 업로드 세션 키. `post_id`가 없을 때 이 키로 첨부를 임시 보관했다가 게시글 저장 시점에 연결합니다 (쿼리스트링으로 보내면 body로 병합). |
+| temp_key | body | string | 아니오 | UUID | 게시글 작성 전 임시 업로드 세션 키(화면이 `$uuid()` 로 발급, `post_id` 와 함께 생략하면 서버가 UUID 를 발급). `post_id`가 없을 때 이 키로 첨부를 임시 보관했다가 게시글 저장 시점에 연결합니다 (쿼리스트링으로 보내면 body로 병합). |
 
 > 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`sirsoft-board.attachment.upload_validation_rules`).
 
@@ -86,7 +86,7 @@ Content-Disposition: form-data; name="collection"
 ------G7ExampleBoundary
 Content-Disposition: form-data; name="temp_key"
 
-예시값
+5f0c3a3e-1b2c-4d5e-8f90-a1b2c3d4e5f6
 ------G7ExampleBoundary--
 ```
 
@@ -544,7 +544,7 @@ _단건 응답: `data` 객체의 필드 (`PostResource` — 게시글 수정(PUT
 | trigger_type | string | `user` | 상태 변경을 유발한 주체 (`report`/`admin`/`system`/`auto_hide`/`user`/`cascade`) |
 | updated_at | string | `2026-07-08 10:41:34` | 최종 수정 일시 |
 | deleted_at | null | `null` | 소프트 삭제 일시 (미삭제 시 null) |
-| ip_address | string | `127.0.0.1` | 작성 요청이 발생한 IP 주소 |
+| ip_address | string\|null | `127.0.0.1` | 작성 요청이 발생한 IP 주소 (보유기간이 지나 파기되면 null — 게시판 개인정보 보유기간, 이슈 #636) |
 | action_logs | array | `[]` | 블라인드/복원/삭제 처리 이력 목록. `admin.manage` 권한 보유자에게만 노출. |
 | board | null | `null` | 소속 게시판 정보 객체. board 관계 미로드 시 null. |
 | navigation | null | `null` | 이전/다음 게시글 이동 정보. 쓰기 응답에서는 계산하지 않아 null. |
@@ -896,7 +896,7 @@ _단건 응답: `data` 객체의 필드._
 | trigger_type | string | `admin` | 동작을 유발한 방식/주체 구분 값 |
 | updated_at | string | `2026-07-08 15:01:43` | 최종 수정 일시 |
 | deleted_at | string | `2026-07-08 15:01:43` | 소프트 삭제 일시 (미삭제 시 null) |
-| ip_address | string | `127.0.0.1` | 요청/행위가 발생한 IP 주소 |
+| ip_address | string\|null | `127.0.0.1` | 요청/행위가 발생한 IP 주소 (보유기간이 지나 파기되면 null — 게시판 개인정보 보유기간, 이슈 #636) |
 | action_logs | array | `[{"action":"delete","reason":null,"admin_name":"API 문서 샘플…` | 블라인드/복원/삭제 등 처리 이력 목록(항목별 action·reason·admin_name·created_at). `admin.manage` 권한 보유자에게만 노출되며, 민감 필드(admin_id·ip_address)는 제외됩니다. 비권한자에게는 null. |
 | board | null | `null` | 소속 게시판 정보 객체(슬러그·이름·유형·댓글/답글/신고 사용 여부·조회수 표시·최대 답글/댓글 깊이·신고 사유 목록). board 관계가 로드된 경우에만 채워지며, 아니면 null. |
 | navigation | null | `null` | 이전/다음 게시글 이동 정보(`prev`·`next`). 상세 로드 시 계산되며, 쓰기 응답처럼 인접 게시글을 계산하지 않은 경우 null. |
@@ -1058,7 +1058,7 @@ _단건 응답: `data` 객체의 필드._
 | trigger_type | string | `user` | 상태 변경(삭제/블라인드 등)을 유발한 주체. `report`(신고) / `admin`(관리자 직권) / `system`(시스템) / `auto_hide`(신고 누적 자동 블라인드) / `user`(사용자 직접) / `cascade`(상위 삭제 연쇄) 중 하나입니다. |
 | updated_at | string | `2026-07-07 09:39:03` | 최종 수정 일시 |
 | deleted_at | null | `null` | 소프트 삭제 일시 (미삭제 시 null) |
-| ip_address | string | `127.0.0.1` | 요청/행위가 발생한 IP 주소 |
+| ip_address | string\|null | `127.0.0.1` | 요청/행위가 발생한 IP 주소 (보유기간이 지나 파기되면 null — 게시판 개인정보 보유기간, 이슈 #636) |
 | action_logs | array | `[]` | 블라인드/복원/삭제 등 처리 이력 목록(항목별 action·reason·admin_name·created_at). `admin.manage` 권한 보유자에게만 노출되며, 민감 필드(admin_id·ip_address)는 제외됩니다. 비권한자에게는 null. |
 | board | object | `{"slug":"apidoc-sample-board","name":"API 문서 샘플 게시판","typ…` | 소속 게시판 정보 객체(슬러그·이름·유형·댓글/답글/신고 사용 여부·조회수 표시·최대 답글/댓글 깊이·신고 사유 목록). board 관계가 로드된 경우에만 채워지며, 아니면 null. |
 | navigation | object | `{"prev":null,"next":null}` | 이전/다음 게시글 이동 정보. `prev`·`next` 키에 인접 게시글 요약(없으면 null)이 담기며, 상세 로드 시 함께 계산됩니다. |
@@ -1321,7 +1321,7 @@ _단건 응답: `data` 객체의 필드._
 | trigger_type | string | `user` | 동작을 유발한 방식/주체 구분 값 |
 | updated_at | string | `2026-07-08 15:01:44` | 최종 수정 일시 |
 | deleted_at | null | `null` | 소프트 삭제 일시 (미삭제 시 null) |
-| ip_address | string | `127.0.0.1` | 요청/행위가 발생한 IP 주소 |
+| ip_address | string\|null | `127.0.0.1` | 요청/행위가 발생한 IP 주소 (보유기간이 지나 파기되면 null — 게시판 개인정보 보유기간, 이슈 #636) |
 | action_logs | array | `[]` | 블라인드/복원/삭제 등 처리 이력 목록(항목별 action·reason·admin_name·created_at). `admin.manage` 권한 보유자에게만 노출되며, 민감 필드(admin_id·ip_address)는 제외됩니다. 비권한자에게는 null. |
 | board | null | `null` | 소속 게시판 정보 객체(슬러그·이름·유형·댓글/답글/신고 사용 여부·조회수 표시·최대 답글/댓글 깊이·신고 사유 목록). board 관계가 로드된 경우에만 채워지며, 아니면 null. |
 | navigation | null | `null` | 이전/다음 게시글 이동 정보(`prev`·`next`). 상세 로드 시 계산되며, 쓰기 응답처럼 인접 게시글을 계산하지 않은 경우 null. |
@@ -1482,7 +1482,7 @@ _단건 응답: `data` 객체의 필드._
 | trigger_type | string | `user` | 동작을 유발한 방식/주체 구분 값 |
 | updated_at | string | `2026-07-08 15:01:44` | 최종 수정 일시 |
 | deleted_at | null | `null` | 소프트 삭제 일시 (미삭제 시 null) |
-| ip_address | string | `127.0.0.1` | 요청/행위가 발생한 IP 주소 |
+| ip_address | string\|null | `127.0.0.1` | 요청/행위가 발생한 IP 주소 (보유기간이 지나 파기되면 null — 게시판 개인정보 보유기간, 이슈 #636) |
 | action_logs | array | `[{"action":"blind","reason":"실측 예시값","admin_name":"API 문서…` | 블라인드/복원/삭제 등 처리 이력 목록(항목별 action·reason·admin_name·created_at). `admin.manage` 권한 보유자에게만 노출되며, 민감 필드(admin_id·ip_address)는 제외됩니다. 비권한자에게는 null. |
 | board | null | `null` | 소속 게시판 정보 객체(슬러그·이름·유형·댓글/답글/신고 사용 여부·조회수 표시·최대 답글/댓글 깊이·신고 사유 목록). board 관계가 로드된 경우에만 채워지며, 아니면 null. |
 | navigation | null | `null` | 이전/다음 게시글 이동 정보(`prev`·`next`). 상세 로드 시 계산되며, 쓰기 응답처럼 인접 게시글을 계산하지 않은 경우 null. |
@@ -1650,7 +1650,7 @@ _단건 응답: `data` 객체의 필드 (`PostResource` — 복원된 게시글.
 | trigger_type | string | `admin` | 상태 변경을 유발한 주체 (복원은 관리자 직권이므로 `admin`) |
 | updated_at | string | `2026-07-08 15:01:45` | 최종 수정 일시 |
 | deleted_at | null | `null` | 소프트 삭제 일시 (복원 후 null) |
-| ip_address | string | `127.0.0.1` | 작성 요청이 발생한 IP 주소 |
+| ip_address | string\|null | `127.0.0.1` | 작성 요청이 발생한 IP 주소 (보유기간이 지나 파기되면 null — 게시판 개인정보 보유기간, 이슈 #636) |
 | action_logs | array | `[{"action":"restore","reason":null,"admin_name":"API 문서 샘플 사용자","created_at":"2026-07-08 06:01:45"}]` | 블라인드/복원/삭제 처리 이력 목록. `admin.manage` 권한 보유자에게만 노출. |
 | board | null | `null` | 소속 게시판 정보 객체 (관계 미로드 시 null) |
 | navigation | null | `null` | 이전/다음 게시글 이동 정보 (쓰기 응답은 미계산 → null) |
@@ -1768,6 +1768,8 @@ HTTP/1.1 200
 | slug | path | string | 예 | — | 대상 리소스의 slug (URL 친화 식별자) |
 | postId | path | string | 예 | — | 대상 post의 식별자 |
 
+> `status` 는 요청으로 `published` 만 지정할 수 있습니다(사용자 경로와 같은 검증 규칙 공유) — 블라인드·복구는 전용 `/blind`·`/restore` 엔드포인트를 씁니다.
+
 > 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`sirsoft-board.comment.store_validation_rules`).
 
 **요청 예시**
@@ -1800,7 +1802,7 @@ _단건 응답: `data` 객체의 필드 (`CommentResource`)._
 | updated_at | string | `2026-07-08 10:41:34` | 최종 수정 일시 |
 | deleted_at | null | `null` | 소프트 삭제 일시 (미삭제 시 null) |
 | is_cascade_deleted | boolean | `false` | 상위 게시글/댓글 삭제로 연쇄 삭제된 댓글인지 여부 |
-| ip_address | string | `127.0.0.1` | 작성 요청이 발생한 IP 주소 (권한자에게만 노출) |
+| ip_address | string\|null | `127.0.0.1` | 작성 요청이 발생한 IP 주소 (권한자에게만 노출) (보유기간이 지나 파기되면 null — 게시판 개인정보 보유기간, 이슈 #636) |
 | action_logs | array | `[]` | 블라인드/복원/삭제 처리 이력 목록. `admin.manage` 권한 보유자에게만 노출. |
 | is_author | boolean | `true` | 현재 사용자가 작성자인지 여부 |
 | is_guest_comment | boolean | `false` | 비회원 작성 댓글 여부 |
@@ -1940,6 +1942,8 @@ HTTP/1.1 200
 | slug | path | string | 예 | — | 대상 리소스의 slug (URL 친화 식별자) |
 | postId | path | string | 예 | — | 대상 post의 식별자 |
 | id | path | string | 예 | — | 대상 리소스의 식별자 |
+
+> `status` 는 요청으로 `published` 만 지정할 수 있습니다(사용자 경로와 같은 검증 규칙 공유) — 블라인드·복구는 전용 `/blind`·`/restore` 엔드포인트를 씁니다.
 
 > 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`sirsoft-board.comment.update_validation_rules`).
 

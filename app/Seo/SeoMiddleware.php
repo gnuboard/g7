@@ -11,6 +11,14 @@ use Symfony\Component\HttpFoundation\Response;
 
 class SeoMiddleware
 {
+    /**
+     * SEO 미들웨어를 생성합니다.
+     *
+     * @param  BotDetector  $botDetector  검색 봇 판별기
+     * @param  SeoCacheManagerInterface  $cacheManager  SEO 캐시 관리자
+     * @param  SeoRendererInterface  $renderer  SEO HTML 렌더러
+     * @param  SeoCacheStatsService  $statsService  캐시 적중 통계 기록기
+     */
     public function __construct(
         private readonly BotDetector $botDetector,
         private readonly SeoCacheManagerInterface $cacheManager,
@@ -36,6 +44,10 @@ class SeoMiddleware
         if (! $this->botDetector->isBot($request)) {
             return $next($request);
         }
+
+        // 봇 판정을 요청에 남긴다 — 방문자 통계가 같은 판정을 다시 하지 않고 이 값을
+        // 읽어 봇을 사람 방문에서 가른다(판정이 두 벌이면 두 기능의 숫자가 갈린다).
+        $request->attributes->set('seo.is_bot', true);
 
         // 기본 로케일을 setLocale() 전에 저장 (setLocale이 config('app.locale')을 변경하므로)
         $defaultLocale = config('app.locale');
@@ -207,6 +219,7 @@ class SeoMiddleware
      *
      * @param  string  $ip  요청 IP
      * @param  callable  $record  기록 동작
+     * @return void 없음
      */
     private function recordStat(string $ip, callable $record): void
     {

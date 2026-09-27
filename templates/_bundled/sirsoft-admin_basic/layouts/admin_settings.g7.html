@@ -1,5 +1,5 @@
 <!-- 환경설정 — 이 템플릿에서 가장 넓은 화면이다. 탭 11개의 본문이 모두 조각 파일로 나뉘어 있고
-  여기에는 **소스·탭 뼈대·공용 저장 버튼·창 스물셋**만 있다.
+  여기에는 **소스·탭 뼈대·공용 저장 버튼·창 스물넷**만 있다.
 
   두 가지가 이 화면의 뼈대를 정한다.
   ⑴ **탭마다 필요한 소스만 받는다** — 소스 대부분에 `if="지금 이 탭인가"` 가 걸려 있어, 설정 화면에
@@ -88,8 +88,9 @@
       </field>
     </fallback>
   </data-source>
-  <!-- 리버스 프록시 진단 — 고급 탭에서만 받는다. 신뢰 프록시 설정 여부와 이 요청이 지나온 전달 헤더·클라이언트 IP 를 서버가 판정해 돌려주고, 응답이 없으면 fallback 의 status=not_applicable 로 「진단 불가」를 그린다. -->
-  <data-source id="trustedProxy" label_key="$t:editor.data_source.trustedProxy" type="api" endpoint="/api/admin/settings/trusted-proxy" method="GET" if="{{(query.tab || _global.activeSettingsTab || 'general') === 'advanced'}}" :auto_fetch="true" :auth_required="true">
+  <!-- 리버스 프록시 진단 — 고급 탭과 보안 탭에서 받는다. 신뢰 프록시 설정 여부와 이 요청이 지나온 전달 헤더·클라이언트 IP 를 서버가 판정해 돌려주고, 응답이 없으면 fallback 의 status=not_applicable 로 「진단 불가」를 그린다.
+       보안 탭의 접근 제한 카드는 이 값으로 현재 접속 IP 를 보여 주고 프록시 경고를 띄운다 — 저장 검증이 자기 잠금을 판정할 때 쓰는 IP 와 같은 해석(신뢰 프록시 반영)이라, 화면에 보이는 IP 를 넣으면 그 검증을 통과한다. -->
+  <data-source id="trustedProxy" label_key="$t:editor.data_source.trustedProxy" type="api" endpoint="/api/admin/settings/trusted-proxy" method="GET" if="{{['advanced', 'security'].includes(query.tab || _global.activeSettingsTab || 'general')}}" :auto_fetch="true" :auth_required="true">
     <fallback>
       <field name="data">
         <field name="forwarded_headers" :value="[]"/>
@@ -101,6 +102,49 @@
         <field name="status" value="not_applicable"/>
       </field>
     </fallback>
+  </data-source>
+  <!-- 개인정보 탭의 대상 건수 뱃지 — 커맨드의 `--dry-run` 과 같은 조건식을 지나므로
+       화면 숫자와 실제 처리 건수가 어긋나지 않는다. 기능이 꺼져 있어도 건수를 보여 준다(#636). -->
+  <data-source id="privacyPreview" label_key="$t:editor.data_source.privacyPreview" type="api" endpoint="/api/admin/settings/privacy-preview" method="GET" if="{{(query.tab || _global.activeSettingsTab || 'general') === 'privacy'}}" :auto_fetch="true" :auth_required="true">
+    <fallback>
+      <field name="data">
+        <field name="retention" :value="null"/>
+        <field name="dormant" :value="null"/>
+      </field>
+    </fallback>
+  </data-source>
+  <!-- 개인정보 조치 직권 실행 상태 — 카드의 「지금 실행」 버튼과 상태 줄(처리 대기/처리 중 · 마지막 결과)이 쓴다.
+       접수된 작업이 끝나지 않았으면(`has_active`) 3초마다 다시 받고, 끝나면 멈춘다(사이트맵 상태와 같은 방식).
+       진행 중일 때 받은 서버 시각(`checked_at`)을 다음 조회의 `since` 로 돌려보내고, 그 뒤에 끝난 작업이 있으면
+       (`finished_since`) 대상 건수를 다시 받는다 — 처리된 만큼 줄어든 숫자가 보여야 결과를 확인할 수 있다.
+       판정을 응답값으로만 하는 까닭: 직전에 넣은 전역 값은 이 성공 핸들러에서 낡은 값으로 읽힌다(엔진 제약,
+       인터벌 캡처와 같은 결). 파라미터는 조회 시점에 평가되므로 `since` 는 최신 값이 나간다.
+       권한이 없는 대상은 서버가 `can_run=false` 로 가린다. -->
+  <data-source id="privacyManualRuns" label_key="$t:editor.data_source.privacyManualRuns" type="api" endpoint="/api/admin/privacy/manual-runs" method="GET" if="{{(query.tab || _global.activeSettingsTab || 'general') === 'privacy'}}" :auto_fetch="true" :auth_required="true">
+    <params targets="retention:user-withdrawn,dormant:pre_notice,dormant:convert,dormant:withdraw_notice,dormant:withdraw" since="{{_global.privacyRunWatchSince ?? ''}}"/>
+    <fallback>
+      <field name="data">
+        <field name="targets" :value="{}"/>
+        <field name="has_active" :value="false"/>
+        <field name="finished_since" :value="false"/>
+      </field>
+    </fallback>
+    <success>
+      <set-state if="{{response?.data?.data?.has_active === true}}" target="global" privacyRunWatchSince="{{response?.data?.data?.checked_at}}"/>
+      <start-interval if="{{response?.data?.data?.has_active === true}}" id="privacy_manual_run_poll" :intervalMs="3000">
+        <actions>
+          <refetch-data-source dataSourceId="privacyManualRuns"/>
+        </actions>
+      </start-interval>
+      <stop-interval if="{{response?.data?.data?.has_active !== true}}" id="privacy_manual_run_poll"/>
+      <refetch-data-source if="{{response?.data?.data?.has_active !== true &amp;&amp; response?.data?.data?.finished_since === true}}" dataSourceId="privacyPreview"/>
+      <set-state if="{{response?.data?.data?.has_active !== true}}" target="global" :privacyRunWatchSince="null"/>
+    </success>
+  </data-source>
+  <!-- 개인정보 조치 대상 명단 창 — 여는 버튼이 목록 경로(보유기간 핸들러·휴면 단계)를 `_global.privacyTargets.path` 에
+       넣고 다시 받은 뒤 창을 연다. 스스로 조회하지 않고, 다음 쪽은 창의 스크롤이 이어 붙인다. -->
+  <data-source id="privacyTargets" label_key="$t:editor.data_source.privacyTargets" type="api" endpoint="/api/admin/privacy/{{_global.privacyTargets?.path ?? 'retention-targets/user-withdrawn'}}" method="GET" :auto_fetch="false" :auth_required="true" loading_strategy="progressive">
+    <params :per_page="20"/>
   </data-source>
   <!-- 애플리케이션 키 — 보안 탭에서만 받는다. 값이 민감해 그 탭을 실제로 열기 전에는 부르지 않는다. -->
   <data-source id="appKey" label_key="$t:editor.data_source.appKey" type="api" endpoint="/api/admin/settings/app-key" method="GET" if="{{(query.tab || _global.activeSettingsTab || 'general') === 'security'}}" :auto_fetch="true" :auth_required="true">
@@ -210,6 +254,7 @@
   </init-local>
   <computed name="isReadOnly">{{!!_global.settingsAbilities &amp;&amp; !(_global.settingsAbilities?.can_update ?? false)}}</computed>
   <computed name="envLocked">{{_local.form?._meta?.env_locked ?? null}}</computed>
+  <computed name="ipRestrictionEnabled">{{!!_local.form?.security?.ip_restriction_enabled &amp;&amp; _local.form?.security?.ip_restriction_enabled !== '0' &amp;&amp; _local.form?.security?.ip_restriction_enabled !== 'false'}}</computed>
   <permissions>
     <permission>core.settings.read</permission>
   </permissions>
@@ -228,6 +273,8 @@
     <wait-for>sitemap_status</wait-for>
     <wait-for>staticCacheStatus</wait-for>
     <wait-for>trustedProxy</wait-for>
+    <wait-for>privacyPreview</wait-for>
+    <wait-for>privacyManualRuns</wait-for>
   </transition-overlay>
   <init>
     <!-- 확장 목록 보기 방식(갤러리/목록) 복원 — 4화면이 같은 키를 공유한다.
@@ -281,6 +328,7 @@
             <item id="notification_definitions" label="$t:admin.settings.tabs.notification_definitions"/>
             <item id="language_packs" label="$t:admin.settings.tabs.language_packs"/>
             <item id="identity" label="$t:admin.settings.tabs.identity"/>
+            <item id="privacy" label="$t:admin.settings.tabs.privacy"/>
             <item id="info" label="$t:admin.settings.tabs.info"/>
           </prop>
           <on type="change" event="onTabChange">
@@ -329,6 +377,7 @@
         <include src="partials/admin_settings/_tab_notification_definitions.g7.html"/>
         <include src="partials/admin_settings/_tab_language_packs.g7.html"/>
         <include src="partials/admin_settings/_tab_identity.g7.html"/>
+        <include src="partials/admin_settings/_tab_privacy.g7.html"/>
         <include src="partials/admin_settings/_tab_info.g7.html"/>
       </div>
       <div data-ref="footer_buttons" data-if="{{!_computed.isReadOnly &amp;&amp; (_global.activeSettingsTab || query.tab || 'general') !== 'info' &amp;&amp; (_global.activeSettingsTab || query.tab || 'general') !== 'language_packs'}}" class="sticky-footer-buttons">
@@ -345,7 +394,9 @@
                  다른 유일한 자리다.
                  맨 앞의 이벤트는 아직 올라가지 않은 로고 파일을 먼저 올리라는 신호다 — 그 조각이 받아
                  처리하므로 여기서 파일을 다루지 않는다.
-                 성공 뒤 설정을 다시 받는 것은 서버가 정규화한 값으로 폼을 되맞추기 위함이다. -->
+                 성공 뒤 설정을 다시 받는 것은 서버가 정규화한 값으로 폼을 되맞추기 위함이다.
+                 개인정보 탭이면 대상 건수도 다시 받는다 — 저장한 기간으로 센 숫자가 즉시 보여야 방금 켠 기능이
+                 처리할 규모를 옛 숫자로 오독하지 않는다(#636 브라우저 실측으로 잡은 결함, 이커머스 탭과 같은 방식). -->
             <sequence>
               <emit-event event="upload:site_logo"/>
               <set-state target="local" :isSaving="true" :errors="null"/>
@@ -355,6 +406,7 @@
                   <set-state target="global" settings="{{result.data.settings}}" uploadSettings="{{result.data.settings.upload}}"/>
                   <toast type="success" message="$t:admin.settings.save_success"/>
                   <refetch-data-source dataSourceId="settings"/>
+                  <refetch-data-source if="{{(_global.activeSettingsTab || query.tab) === 'privacy'}}" dataSourceId="privacyPreview"/>
                 </success>
                 <fail>
                   <set-state target="local" :isSaving="false" errors="{{error.errors}}"/>
@@ -405,6 +457,8 @@
   <!-- 코어 업데이트 안내 창. **확장 화면 셋(모듈·플러그인·템플릿)이 이 조각을 함께 쓴다** —
        자동 비활성 배너의 안내 링크가 여는 것이 이것이다. -->
   <modal src="partials/admin_settings/_modal_core_update_guide.g7.html"/>
+  <!-- IP 접근 제한 규칙 추가·편집 겸용 창(보안 탭) — 서버에 저장하지 않고 설정 폼의 규칙 배열만 고친다. -->
+  <modal src="partials/admin_settings/_modal_ip_restriction_rule_form.g7.html"/>
   <!-- 인증 정책 등록·수정 겸용 창. -->
   <modal src="partials/admin_settings/_modal_identity_policy_form.g7.html"/>
   <!-- 인증 정책 삭제 확인 창. -->
@@ -419,4 +473,8 @@
   <modal src="partials/admin_settings/_modal_identity_message_definition_delete.g7.html"/>
   <!-- 인증 메시지 정의를 기본값으로 되돌리는 확인 창. -->
   <modal src="partials/admin_settings/_modal_identity_message_definition_reset.g7.html"/>
+  <!-- 개인정보 조치 대상 명단 창(개인정보 탭) — 탈퇴 잔여정보 파기와 휴면 네 단계가 함께 쓴다. -->
+  <modal src="partials/admin_settings/_modal_privacy_targets.g7.html"/>
+  <!-- 개인정보 조치 직권 실행 확인 창(개인정보 탭) — 탈퇴 잔여정보 파기와 휴면 네 단계가 함께 쓴다. -->
+  <modal src="partials/admin_settings/_modal_privacy_run.g7.html"/>
 </layout>

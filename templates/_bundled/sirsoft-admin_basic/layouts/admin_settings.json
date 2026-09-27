@@ -1,5 +1,5 @@
 {
-    "comment": "환경설정 — 이 템플릿에서 가장 넓은 화면이다. 탭 11개의 본문이 모두 조각 파일로 나뉘어 있고\n  여기에는 **소스·탭 뼈대·공용 저장 버튼·창 스물셋**만 있다.\n\n  두 가지가 이 화면의 뼈대를 정한다.\n  ⑴ **탭마다 필요한 소스만 받는다** — 소스 대부분에 `if=\"지금 이 탭인가\"` 가 걸려 있어, 설정 화면에\n     들어왔다고 시스템 정보·언어팩·인증 정책을 한꺼번에 부르지 않는다. 그래서 같은 판정식\n     (`query.tab || _global.activeSettingsTab || 'general'`)이 여러 소스에 반복해 적혀 있다.\n  ⑵ **저장은 지금 보고 있는 탭 것만 보낸다** — 폼은 `_local.form` 한 덩어리지만 요청 본문은 그중\n     현재 탭 몫만 잘라 담는다(아래 저장 버튼). 한 번에 전부 보내면 안 본 탭의 값까지 덮어쓴다.\n\n  언어팩 탭은 조각·창을 **언어팩 관리 화면 것을 그대로 빌려 쓴다** — 아래 창 목록 앞쪽 일곱이 그것이다.",
+    "comment": "환경설정 — 이 템플릿에서 가장 넓은 화면이다. 탭 11개의 본문이 모두 조각 파일로 나뉘어 있고\n  여기에는 **소스·탭 뼈대·공용 저장 버튼·창 스물넷**만 있다.\n\n  두 가지가 이 화면의 뼈대를 정한다.\n  ⑴ **탭마다 필요한 소스만 받는다** — 소스 대부분에 `if=\"지금 이 탭인가\"` 가 걸려 있어, 설정 화면에\n     들어왔다고 시스템 정보·언어팩·인증 정책을 한꺼번에 부르지 않는다. 그래서 같은 판정식\n     (`query.tab || _global.activeSettingsTab || 'general'`)이 여러 소스에 반복해 적혀 있다.\n  ⑵ **저장은 지금 보고 있는 탭 것만 보낸다** — 폼은 `_local.form` 한 덩어리지만 요청 본문은 그중\n     현재 탭 몫만 잘라 담는다(아래 저장 버튼). 한 번에 전부 보내면 안 본 탭의 값까지 덮어쓴다.\n\n  언어팩 탭은 조각·창을 **언어팩 관리 화면 것을 그대로 빌려 쓴다** — 아래 창 목록 앞쪽 일곱이 그것이다.",
     "version": "1.0.0",
     "layout_name": "admin_settings",
     "extends": "_admin_base",
@@ -140,7 +140,7 @@
             "type": "api",
             "endpoint": "/api/admin/settings/trusted-proxy",
             "method": "GET",
-            "if": "{{(query.tab || _global.activeSettingsTab || 'general') === 'advanced'}}",
+            "if": "{{['advanced', 'security'].includes(query.tab || _global.activeSettingsTab || 'general')}}",
             "auto_fetch": true,
             "auth_required": true,
             "fallback": {
@@ -154,7 +154,108 @@
                     "status": "not_applicable"
                 }
             },
-            "comment": "리버스 프록시 진단 — 고급 탭에서만 받는다. 신뢰 프록시 설정 여부와 이 요청이 지나온 전달 헤더·클라이언트 IP 를 서버가 판정해 돌려주고, 응답이 없으면 fallback 의 status=not_applicable 로 「진단 불가」를 그린다."
+            "comment": "리버스 프록시 진단 — 고급 탭과 보안 탭에서 받는다. 신뢰 프록시 설정 여부와 이 요청이 지나온 전달 헤더·클라이언트 IP 를 서버가 판정해 돌려주고, 응답이 없으면 fallback 의 status=not_applicable 로 「진단 불가」를 그린다.\n       보안 탭의 접근 제한 카드는 이 값으로 현재 접속 IP 를 보여 주고 프록시 경고를 띄운다 — 저장 검증이 자기 잠금을 판정할 때 쓰는 IP 와 같은 해석(신뢰 프록시 반영)이라, 화면에 보이는 IP 를 넣으면 그 검증을 통과한다."
+        },
+        {
+            "id": "privacyPreview",
+            "label_key": "$t:editor.data_source.privacyPreview",
+            "type": "api",
+            "endpoint": "/api/admin/settings/privacy-preview",
+            "method": "GET",
+            "if": "{{(query.tab || _global.activeSettingsTab || 'general') === 'privacy'}}",
+            "auto_fetch": true,
+            "auth_required": true,
+            "fallback": {
+                "data": {
+                    "retention": null,
+                    "dormant": null
+                }
+            },
+            "comment": "개인정보 탭의 대상 건수 뱃지 — 커맨드의 `--dry-run` 과 같은 조건식을 지나므로\n       화면 숫자와 실제 처리 건수가 어긋나지 않는다. 기능이 꺼져 있어도 건수를 보여 준다(#636)."
+        },
+        {
+            "id": "privacyManualRuns",
+            "label_key": "$t:editor.data_source.privacyManualRuns",
+            "type": "api",
+            "endpoint": "/api/admin/privacy/manual-runs",
+            "method": "GET",
+            "if": "{{(query.tab || _global.activeSettingsTab || 'general') === 'privacy'}}",
+            "auto_fetch": true,
+            "auth_required": true,
+            "params": {
+                "targets": "retention:user-withdrawn,dormant:pre_notice,dormant:convert,dormant:withdraw_notice,dormant:withdraw",
+                "since": "{{_global.privacyRunWatchSince ?? ''}}"
+            },
+            "fallback": {
+                "data": {
+                    "targets": {},
+                    "has_active": false,
+                    "finished_since": false
+                }
+            },
+            "onSuccess": [
+                {
+                    "handler": "setState",
+                    "if": "{{response?.data?.data?.has_active === true}}",
+                    "params": {
+                        "target": "global",
+                        "privacyRunWatchSince": "{{response?.data?.data?.checked_at}}"
+                    }
+                },
+                {
+                    "handler": "startInterval",
+                    "if": "{{response?.data?.data?.has_active === true}}",
+                    "params": {
+                        "id": "privacy_manual_run_poll",
+                        "intervalMs": 3000,
+                        "actions": [
+                            {
+                                "handler": "refetchDataSource",
+                                "params": {
+                                    "dataSourceId": "privacyManualRuns"
+                                }
+                            }
+                        ]
+                    }
+                },
+                {
+                    "handler": "stopInterval",
+                    "if": "{{response?.data?.data?.has_active !== true}}",
+                    "params": {
+                        "id": "privacy_manual_run_poll"
+                    }
+                },
+                {
+                    "handler": "refetchDataSource",
+                    "if": "{{response?.data?.data?.has_active !== true && response?.data?.data?.finished_since === true}}",
+                    "params": {
+                        "dataSourceId": "privacyPreview"
+                    }
+                },
+                {
+                    "handler": "setState",
+                    "if": "{{response?.data?.data?.has_active !== true}}",
+                    "params": {
+                        "target": "global",
+                        "privacyRunWatchSince": null
+                    }
+                }
+            ],
+            "comment": "개인정보 조치 직권 실행 상태 — 카드의 「지금 실행」 버튼과 상태 줄(처리 대기/처리 중 · 마지막 결과)이 쓴다.\n       접수된 작업이 끝나지 않았으면(`has_active`) 3초마다 다시 받고, 끝나면 멈춘다(사이트맵 상태와 같은 방식).\n       진행 중일 때 받은 서버 시각(`checked_at`)을 다음 조회의 `since` 로 돌려보내고, 그 뒤에 끝난 작업이 있으면\n       (`finished_since`) 대상 건수를 다시 받는다 — 처리된 만큼 줄어든 숫자가 보여야 결과를 확인할 수 있다.\n       판정을 응답값으로만 하는 까닭: 직전에 넣은 전역 값은 이 성공 핸들러에서 낡은 값으로 읽힌다(엔진 제약,\n       인터벌 캡처와 같은 결). 파라미터는 조회 시점에 평가되므로 `since` 는 최신 값이 나간다.\n       권한이 없는 대상은 서버가 `can_run=false` 로 가린다."
+        },
+        {
+            "id": "privacyTargets",
+            "label_key": "$t:editor.data_source.privacyTargets",
+            "type": "api",
+            "endpoint": "/api/admin/privacy/{{_global.privacyTargets?.path ?? 'retention-targets/user-withdrawn'}}",
+            "method": "GET",
+            "auto_fetch": false,
+            "auth_required": true,
+            "loading_strategy": "progressive",
+            "params": {
+                "per_page": 20
+            },
+            "comment": "개인정보 조치 대상 명단 창 — 여는 버튼이 목록 경로(보유기간 핸들러·휴면 단계)를 `_global.privacyTargets.path` 에\n       넣고 다시 받은 뒤 창을 연다. 스스로 조회하지 않고, 다음 쪽은 창의 스크롤이 이어 붙인다."
         },
         {
             "id": "appKey",
@@ -379,7 +480,8 @@
     },
     "computed": {
         "isReadOnly": "{{!!_global.settingsAbilities && !(_global.settingsAbilities?.can_update ?? false)}}",
-        "envLocked": "{{_local.form?._meta?.env_locked ?? null}}"
+        "envLocked": "{{_local.form?._meta?.env_locked ?? null}}",
+        "ipRestrictionEnabled": "{{!!_local.form?.security?.ip_restriction_enabled && _local.form?.security?.ip_restriction_enabled !== '0' && _local.form?.security?.ip_restriction_enabled !== 'false'}}"
     },
     "permissions": [
         "core.settings.read"
@@ -401,7 +503,9 @@
             "language_packs",
             "sitemap_status",
             "staticCacheStatus",
-            "trustedProxy"
+            "trustedProxy",
+            "privacyPreview",
+            "privacyManualRuns"
         ]
     },
     "init_actions": [
@@ -649,6 +753,10 @@
                                             "label": "$t:admin.settings.tabs.identity"
                                         },
                                         {
+                                            "id": "privacy",
+                                            "label": "$t:admin.settings.tabs.privacy"
+                                        },
+                                        {
                                             "id": "info",
                                             "label": "$t:admin.settings.tabs.info"
                                         }
@@ -801,6 +909,9 @@
                                 "partial": "partials/admin_settings/_tab_identity.json"
                             },
                             {
+                                "partial": "partials/admin_settings/_tab_privacy.json"
+                            },
+                            {
                                 "partial": "partials/admin_settings/_tab_info.json"
                             }
                         ]
@@ -844,7 +955,7 @@
                                 "name": "Button",
                                 "actions": [
                                     {
-                                        "comment": "저장 — **지금 보고 있는 탭 몫만** 잘라 보낸다(한꺼번에 보내면 안 본 탭까지 덮어쓴다).\n                 알림 정의 탭만 예외로 다른 이름(`notifications`)의 묶음을 만든다 — 탭 이름과 저장 키가\n                 다른 유일한 자리다.\n                 맨 앞의 이벤트는 아직 올라가지 않은 로고 파일을 먼저 올리라는 신호다 — 그 조각이 받아\n                 처리하므로 여기서 파일을 다루지 않는다.\n                 성공 뒤 설정을 다시 받는 것은 서버가 정규화한 값으로 폼을 되맞추기 위함이다.",
+                                        "comment": "저장 — **지금 보고 있는 탭 몫만** 잘라 보낸다(한꺼번에 보내면 안 본 탭까지 덮어쓴다).\n                 알림 정의 탭만 예외로 다른 이름(`notifications`)의 묶음을 만든다 — 탭 이름과 저장 키가\n                 다른 유일한 자리다.\n                 맨 앞의 이벤트는 아직 올라가지 않은 로고 파일을 먼저 올리라는 신호다 — 그 조각이 받아\n                 처리하므로 여기서 파일을 다루지 않는다.\n                 성공 뒤 설정을 다시 받는 것은 서버가 정규화한 값으로 폼을 되맞추기 위함이다.\n                 개인정보 탭이면 대상 건수도 다시 받는다 — 저장한 기간으로 센 숫자가 즉시 보여야 방금 켠 기능이\n                 처리할 규모를 옛 숫자로 오독하지 않는다(#636 브라우저 실측으로 잡은 결함, 이커머스 탭과 같은 방식).",
                                         "type": "click",
                                         "handler": "sequence",
                                         "actions": [
@@ -898,6 +1009,13 @@
                                                         "handler": "refetchDataSource",
                                                         "params": {
                                                             "dataSourceId": "settings"
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "refetchDataSource",
+                                                        "if": "{{(_global.activeSettingsTab || query.tab) === 'privacy'}}",
+                                                        "params": {
+                                                            "dataSourceId": "privacyPreview"
                                                         }
                                                     }
                                                 ],
@@ -1022,6 +1140,10 @@
             "partial": "partials/admin_settings/_modal_core_update_guide.json"
         },
         {
+            "comment": "IP 접근 제한 규칙 추가·편집 겸용 창(보안 탭) — 서버에 저장하지 않고 설정 폼의 규칙 배열만 고친다.",
+            "partial": "partials/admin_settings/_modal_ip_restriction_rule_form.json"
+        },
+        {
             "comment": "인증 정책 등록·수정 겸용 창.",
             "partial": "partials/admin_settings/_modal_identity_policy_form.json"
         },
@@ -1048,6 +1170,14 @@
         {
             "comment": "인증 메시지 정의를 기본값으로 되돌리는 확인 창.",
             "partial": "partials/admin_settings/_modal_identity_message_definition_reset.json"
+        },
+        {
+            "comment": "개인정보 조치 대상 명단 창(개인정보 탭) — 탈퇴 잔여정보 파기와 휴면 네 단계가 함께 쓴다.",
+            "partial": "partials/admin_settings/_modal_privacy_targets.json"
+        },
+        {
+            "comment": "개인정보 조치 직권 실행 확인 창(개인정보 탭) — 탈퇴 잔여정보 파기와 휴면 네 단계가 함께 쓴다.",
+            "partial": "partials/admin_settings/_modal_privacy_run.json"
         }
     ]
 }

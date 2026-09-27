@@ -401,6 +401,18 @@ Every verification point — signup, password reset, sensitive operations, the m
 
 > Details: [docs/backend/identity-policies.md](docs/backend/identity-policies.md), [docs/backend/identity-providers.md](docs/backend/identity-providers.md), [docs/backend/identity-messages.md](docs/backend/identity-messages.md) (Korean)
 
+#### 7. Privacy retention
+
+Personal data whose retention period has ended is destroyed or anonymized per domain. The core owns the shared procedure — collection, the nightly batch, target counts, target lists and permission checks — and each domain owner (core members, the e-commerce module, the board module, …) implements only what its targets are and how to erase them.
+
+- **Handler contract** — a module or plugin implements `PrivacyRetentionHandlerInterface` and registers it through the `core.privacy.retention_handlers` filter; the nightly `privacy:process-retention` batch, the target count and the target list API pick it up without core changes
+- **Off by default** — every handler reads its own setting with a `false` fallback, and the batch re-checks the toggle before any irreversible processing
+- **See before you turn it on** — each settings screen shows how many records would be processed even while the feature is off, and "View targets" opens an infinite-scroll list of exactly the records the batch will process (settings read + domain read permission required)
+- **Same population everywhere** — the count, the list and the batch share one condition, so the number on screen is what actually gets processed
+- **Dormant accounts** — a core-only lifecycle (advance notice → dormant → withdrawal notice → automatic withdrawal) with the same count and list screens
+
+> Details: [docs/backend/privacy-retention.md](docs/backend/privacy-retention.md), [docs/backend/api/privacy.md](docs/backend/api/privacy.md) (Korean)
+
 ---
 
 ## Quick Start
@@ -460,6 +472,7 @@ The setup wizard creates the application key, configures the database connection
 | **sirsoft-tosspayments** | Toss Payments integration (Korean payment gateway) |
 | **sirsoft-verification_kginicis** | KG Inicis identity verification (Korean identity verification) |
 | **sirsoft-verification_nhnkcp** | NHN KCP mobile identity verification (Korean identity verification) |
+| **sirsoft-totp** | Authenticator app two-factor login (RFC 6238 TOTP) |
 | **sirsoft-daum_postcode** | Daum postcode lookup (Korean address search) |
 | **sirsoft-marketing** | Marketing tools |
 | **sirsoft-koreaexim** | Korea Eximbank exchange rate updates and history |
@@ -494,6 +507,7 @@ Official language packs you can install alongside the initial setup, so the core
 | **g7-plugin-sirsoft-pay_nicepayments-ja** | NICE Payments plugin, Japanese |
 | **g7-plugin-sirsoft-pay_nhnkcp-ja** | NHN KCP payment plugin, Japanese |
 | **g7-plugin-sirsoft-tosspayments-ja** | Toss Payments plugin, Japanese |
+| **g7-plugin-sirsoft-totp-ja** | Authenticator app (TOTP) two-factor plugin, Japanese |
 | **g7-plugin-sirsoft-verification_kginicis-ja** | KG Inicis identity verification plugin, Japanese |
 | **g7-plugin-sirsoft-verification_nhnkcp-ja** | NHN KCP mobile identity verification plugin, Japanese |
 | **g7-template-sirsoft-admin_basic-ja** | Default admin template, Japanese |

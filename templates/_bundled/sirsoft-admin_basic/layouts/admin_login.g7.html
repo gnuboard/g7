@@ -58,6 +58,10 @@
                   </field>
                 </set-state>
                 <set-state if="{{!response.two_factor_required}}" target="local" :isLoggingIn="false"/>
+                <!-- 휴면이 풀린 로그인에만 실린다 — 관리자 계정도 휴면 전환 대상이다(자동 탈퇴만
+                     제외된다). 사용자 템플릿에만 이 안내를 두면 관리자는 자기 계정이 잠겼다 풀린
+                     사실을 끝내 모른 채 되돌아간다. -->
+                <toast if="{{!response.two_factor_required &amp;&amp; response.dormancy_restored}}" type="info" message="$t:auth.dormancy_restored"/>
                 <navigate if="{{!response.two_factor_required}}" path="{{query.redirect ?? '/admin'}}"/>
               </success>
               <fail>
@@ -68,6 +72,9 @@
             <action handler="loginTwoFactor" target="admin" if="{{_local.twoFactor?.required}}">
               <success>
                 <set-state target="local" :isLoggingIn="false" :twoFactor="null"/>
+                <!-- 2단계 인증을 쓰는 관리자도 같은 안내를 받는다 — 한쪽에만 두면 사이트 설정에
+                     따라 해제 사실이 보이기도 하고 안 보이기도 한다. -->
+                <toast if="{{response.dormancy_restored}}" type="info" message="$t:auth.dormancy_restored"/>
                 <navigate path="{{query.redirect ?? '/admin'}}"/>
               </success>
               <fail>
@@ -117,22 +124,28 @@
         <!-- 2단계 인증 — 비밀번호 확인만 통과한 상태다. 인증번호를 확인해야 로그인이 완료된다. -->
         <div data-ref="login_two_factor_step" data-if="{{_local.twoFactor?.required}}" class="space-y-6">
           <div data-ref="login_two_factor_notice" class="p-4 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800" role="status" aria-live="polite">
-            <p data-ref="login_two_factor_notice_sent" data-if="{{!_local.twoFactor?.resent}}" class="text-sm text-blue-700 dark:text-blue-300">$t:auth.login.two_factor.sent</p>
-            <p data-ref="login_two_factor_notice_resent" data-if="{{_local.twoFactor?.resent}}" class="text-sm text-blue-700 dark:text-blue-300">$t:auth.login.two_factor.resent</p>
+            <!-- 인증 앱은 서버가 아무것도 보내지 않는다 — 「보냈습니다」로 안내하면 오지 않는 메일을 기다리게 된다. -->
+            <p data-ref="login_two_factor_notice_sent" data-if="{{!_local.twoFactor?.resent && _local.twoFactor?.provider_id !== 'totp'}}" class="text-sm text-blue-700 dark:text-blue-300">$t:auth.login.two_factor.sent</p>
+            <p data-ref="login_two_factor_notice_app" data-if="{{_local.twoFactor?.provider_id === 'totp'}}" class="text-sm text-blue-700 dark:text-blue-300">$t:auth.login.two_factor.sent_app</p>
+            <p data-ref="login_two_factor_notice_resent" data-if="{{_local.twoFactor?.resent && _local.twoFactor?.provider_id !== 'totp'}}" class="text-sm text-blue-700 dark:text-blue-300">$t:auth.login.two_factor.resent</p>
           </div>
           <div data-ref="login_two_factor_error" data-if="{{_local.twoFactor?.error}}" class="alert-danger" role="alert">
             <p data-ref="login_two_factor_error_text" class="text-sm text-red-600 dark:text-red-400">{{_local.twoFactor?.error ?? ''}}</p>
           </div>
           <div data-ref="login_two_factor_field">
-            <label data-ref="login_two_factor_label" for="two_factor_code" class="form-label">$t:auth.login.two_factor.code_label</label>
-            <!-- 자동바인딩을 쓰지 않는다 — 재발송 시 입력값을 비워야 하므로 상태가 값을 소유한다 -->
-            <input data-ref="login_two_factor_input" id="two_factor_code" type="text" name="two_factor_code" value="{{_local.twoFactor?.code ?? ''}}" inputMode="numeric" autoComplete="one-time-code" :maxLength="10" placeholder="$t:auth.login.two_factor.code_placeholder" class="input py-3 text-center text-xl tracking-widest font-mono" disabled="{{_local.isLoggingIn}}">
+            <label data-ref="login_two_factor_label" for="two_factor_code" data-if="{{_local.twoFactor?.provider_id !== 'totp'}}" class="form-label">$t:auth.login.two_factor.code_label</label>
+            <label data-ref="login_two_factor_label_app" for="two_factor_code" data-if="{{_local.twoFactor?.provider_id === 'totp'}}" class="form-label">$t:auth.login.two_factor.code_label_app</label>
+            <!-- 자동바인딩을 쓰지 않는다 — 재발송 시 입력값을 비워야 하므로 상태가 값을 소유한다.
+                 인증 앱 경로는 백업 코드(xxxxx-xxxxx)도 받으므로 자릿수 상한을 늘리고 안내 문구를 바꾼다.
+                 inputMode 는 numeric 을 유지해 6자리 코드 입력이 휴대폰에서 숫자 키패드로 열리게 한다. -->
+            <input data-ref="login_two_factor_input" id="two_factor_code" type="text" name="two_factor_code" value="{{_local.twoFactor?.code ?? ''}}" inputMode="numeric" autoComplete="one-time-code" maxLength="{{_local.twoFactor?.provider_id === 'totp' ? 24 : 10}}" placeholder="{{_local.twoFactor?.provider_id === 'totp' ? $t('auth.login.two_factor.code_placeholder_app') : $t('auth.login.two_factor.code_placeholder')}}" class="input py-3 text-center text-xl tracking-widest font-mono" disabled="{{_local.isLoggingIn}}">
               <on event="onChange">
                 <set-state target="local" twoFactor.code="{{$event.target.value}}" :twoFactor.error="null"/>
               </on>
             </input>
             <!-- 유효시각 정적 표기 — 카운트다운은 SPA 이탈 후에도 타이머가 남아 쓰지 않는다 -->
             <p data-ref="login_two_factor_valid_until" data-if="{{_local.twoFactor?.expires_at}}" class="mt-2 text-sm text-gray-500 dark:text-gray-400">$t:auth.login.two_factor.valid_until|until={{_local.twoFactor?.expires_at | datetime}}</p>
+            <p data-ref="login_two_factor_backup_hint" data-if="{{_local.twoFactor?.provider_id === 'totp'}}" class="mt-2 text-sm text-gray-500 dark:text-gray-400">$t:auth.login.two_factor.backup_hint</p>
           </div>
           <!-- 인증번호 확인 — submit 이라 Enter 키로도 제출된다 -->
           <button data-ref="login_two_factor_submit" type="submit" class="flex-center w-full px-4 py-3 rounded-lg font-medium bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 justify-center gap-2" disabled="{{!_local.twoFactor?.code || _local.twoFactor.code.length < 4 || _local.isLoggingIn}}">
@@ -141,7 +154,9 @@
             <span data-ref="login_two_factor_submit_processing" data-if="{{_local.isLoggingIn}}">$t:auth.login.two_factor.verifying</span>
           </button>
           <div data-ref="login_two_factor_actions" class="flex flex-col sm:flex-row gap-2">
-            <button data-ref="login_two_factor_resend" type="button" class="flex-1 px-4 py-3 rounded-lg font-medium border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 cursor-pointer" disabled="{{_local.twoFactor?.resending || _local.isLoggingIn}}">
+            <!-- 인증 앱 경로에서는 숨긴다 — 서버가 보내는 것이 없으므로 「다시 받기」가 새 challenge 발급
+                 이상의 의미가 없고, 누르면 아무 일도 일어나지 않은 것처럼 보인다. -->
+            <button data-ref="login_two_factor_resend" type="button" data-if="{{_local.twoFactor?.provider_id !== 'totp'}}" class="flex-1 px-4 py-3 rounded-lg font-medium border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 cursor-pointer" disabled="{{_local.twoFactor?.resending || _local.isLoggingIn}}">
               <on type="click">
                 <!-- 인증번호 다시 받기 — 진행 표시를 켜고 새 challenge 를 발급받는다. 성공하면 응답 값으로 2단계 상태를 통째로 교체해
                      입력값을 비우고 「다시 보냈다」 안내로 바꾼다(같은 시퀀스 안에서는 상태가 아직 갱신 전이라 응답 값만 읽는다). 실패 문구는 2단계 오류 자리에 싣는다. -->

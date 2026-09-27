@@ -122,7 +122,7 @@ _단건 응답: `data` 객체의 필드._
 | language | string | `ko` | 사용자 언어 설정 (ko: 한국어, en: 영어) |
 | timezone | string | `Asia/Seoul` | 사용자 시간대 (예: Asia/Seoul, UTC) |
 | country | null | `null` | 국가 코드 (ISO 3166-1 alpha-2) |
-| status | string | `active` | 계정 상태 (active: 활성, inactive: 비활성, blocked: 차단, withdrawn: 탈퇴) |
+| status | string | `active` | 계정 상태 (active: 활성, inactive: 비활성, blocked: 차단, withdrawn: 탈퇴, dormant: 휴면) |
 | status_label | string | `활성` | 상태의 사람이 읽는 라벨 (상태 Enum label() 산물) |
 | status_variant | string | `success` | 상태 표시 색상/스타일 변형 키 (상태 Enum variant() 산물 — UI 배지용) |
 | homepage | null | `null` | 홈페이지 URL |
@@ -353,7 +353,7 @@ _단건 응답: `data` 객체의 필드 (`UserResource::toArray()` 산물 — GE
 | language | string | `ko` | 사용자 언어 설정 (ko: 한국어, en: 영어) |
 | language_label | string\|null | `한국어` | 언어 코드의 다국어 라벨 (`user.language.{code}` 번역문) |
 | country | string\|null | `KR` | 국가 코드 (ISO 3166-1 alpha-2) |
-| status | string | `active` | 계정 상태 (active, inactive, blocked, withdrawn, pending_verification) |
+| status | string | `active` | 계정 상태 (active, inactive, blocked, withdrawn, pending_verification, dormant) |
 | status_label | string\|null | `활성` | 상태의 사람이 읽는 라벨 (UserStatus::label() 산물) |
 | status_variant | string\|null | `success` | 상태 표시 색상/스타일 변형 키 (UserStatus::variant() 산물 — UI 배지용) |
 | is_admin | boolean | `false` | 관리자 역할 보유 여부 (`User::isAdmin()` — 역할 관계 기반 파생) |
