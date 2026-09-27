@@ -4,6 +4,7 @@ namespace App\Http\Requests\Attachment;
 
 use App\Enums\AttachmentSourceType;
 use App\Extension\HookManager;
+use App\Http\Requests\Attachment\Concerns\ValidatesAttachmentFileType;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -12,6 +13,8 @@ use Illuminate\Validation\Rule;
  */
 class UploadBatchAttachmentRequest extends FormRequest
 {
+    use ValidatesAttachmentFileType;
+
     /**
      * 요청 권한 확인
      *
@@ -31,13 +34,9 @@ class UploadBatchAttachmentRequest extends FormRequest
     {
         // config/attachment.max_file_size 는 KB 단위 (관리자 설정 MB → KB 변환은 SettingsServiceProvider 담당)
         $maxSize = (int) config('attachment.max_file_size', 10240);
-        $extensions = $this->allowedExtensions();
-
-        $fileRules = ['file', 'max:'.$maxSize];
-        // 목록이 비면 확장자 제한 없음 (탈출구) — 빈 규칙을 붙이면 전 파일이 거부된다
-        if ($extensions !== []) {
-            $fileRules[] = 'extensions:'.implode(',', $extensions);
-        }
+        // 파일명 확장자(extensions:)와 내용 추론 확장자(AttachmentFileContent)가 모두 허용 목록에 들어야 통과한다.
+        // 목록이 비면 확장자 제한 없음 (탈출구) — ValidatesAttachmentFileType::fileTypeRules()
+        $fileRules = ['file', 'max:'.$maxSize, ...$this->fileTypeRules()];
 
         $rules = [
             'files' => ['required', 'array', 'min:1'],
@@ -74,6 +73,8 @@ class UploadBatchAttachmentRequest extends FormRequest
 
     /**
      * 검증 전 데이터 준비
+     *
+     * @return void
      */
     protected function prepareForValidation(): void
     {
@@ -81,26 +82,5 @@ class UploadBatchAttachmentRequest extends FormRequest
             'collection' => $this->collection ?? 'default',
             'source_type' => $this->source_type ?? AttachmentSourceType::Core->value,
         ]);
-    }
-
-    /**
-     * 허용 확장자 목록을 반환합니다 (소문자 정규화 + 확장 훅 적용).
-     *
-     * 빈 배열은 "확장자 제한 없음" 을 의미합니다.
-     *
-     * @return array<int, string> 허용 확장자 목록
-     */
-    protected function allowedExtensions(): array
-    {
-        $extensions = (array) config('attachment.allowed_extensions', []);
-
-        $extensions = array_values(array_filter(array_map(
-            static fn ($ext) => strtolower(trim(ltrim((string) $ext, '.'))),
-            $extensions
-        )));
-
-        return array_values(array_unique(
-            (array) HookManager::applyFilters('core.attachment.allowed_extensions', $extensions, $this)
-        ));
     }
 }

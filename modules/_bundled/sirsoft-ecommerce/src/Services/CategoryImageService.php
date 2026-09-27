@@ -4,6 +4,7 @@ namespace Modules\Sirsoft\Ecommerce\Services;
 
 use App\Contracts\Extension\StorageInterface;
 use App\Extension\HookManager;
+use App\Helpers\InlineMediaPolicy;
 use App\Support\ImageResizer;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\UploadedFile;
@@ -197,6 +198,9 @@ class CategoryImageService
             return null;
         }
 
+        // 인라인 표시는 래스터 이미지만, 그 외(SVG 등)는 다운로드로 — 모든 응답에 nosniff (KVE-2026-2366)
+        InlineMediaPolicy::harden($response, $image->mime_type, $image->original_filename);
+
         return $response;
     }
 
@@ -315,6 +319,7 @@ class CategoryImageService
      *
      * @param  int  $categoryId  카테고리 ID
      * @param  string  $collection  컬렉션명
+     * @return void
      */
     protected function reorderAfterDelete(int $categoryId, string $collection): void
     {
@@ -348,6 +353,7 @@ class CategoryImageService
      * 카테고리 저장 실패 시 업로드된 이미지들을 정리하기 위해 사용됩니다.
      *
      * @param  array<int>  $imageIds  이미지 ID 배열
+     * @return void
      */
     public function rollbackUploadedImages(array $imageIds): void
     {

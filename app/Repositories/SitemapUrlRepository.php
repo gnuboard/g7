@@ -28,6 +28,8 @@ class SitemapUrlRepository implements SitemapUrlRepositoryInterface
 
     /**
      * {@inheritDoc}
+     *
+     * @return void
      */
     public function upsertForResource(string $type, string $id, array $entries): void
     {
@@ -57,6 +59,8 @@ class SitemapUrlRepository implements SitemapUrlRepositoryInterface
 
     /**
      * {@inheritDoc}
+     *
+     * @return void
      */
     public function removeForResource(string $type, string $id): void
     {
@@ -68,6 +72,64 @@ class SitemapUrlRepository implements SitemapUrlRepositoryInterface
 
     /**
      * {@inheritDoc}
+     *
+     * @return int
+     */
+    public function removeManyForResource(string $type, array $ids): int
+    {
+        $ids = array_values(array_unique(array_map('strval', $ids)));
+        $deleted = 0;
+
+        // 호출자가 청크를 넘기지 않아도 IN 목록이 무한정 길어지지 않도록 저장소에서 다시 자른다.
+        foreach (array_chunk($ids, self::INSERT_CHUNK) as $chunk) {
+            $deleted += SitemapUrl::query()
+                ->where('resource_type', $type)
+                ->whereIn('resource_id', $chunk)
+                ->delete();
+        }
+
+        return $deleted;
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @return int
+     */
+    public function replaceManyForResources(string $type, array $entriesById): int
+    {
+        $now = now();
+        $inserted = 0;
+
+        foreach (array_chunk($entriesById, self::INSERT_CHUNK, true) as $chunk) {
+            $rows = [];
+            foreach ($chunk as $id => $entries) {
+                foreach ($entries as $entry) {
+                    $rows[] = $this->toRow($type, (string) $id, (string) ($entry['contributor'] ?? ''), $entry, $now);
+                }
+            }
+
+            DB::transaction(function () use ($type, $chunk, $rows): void {
+                SitemapUrl::query()
+                    ->where('resource_type', $type)
+                    ->whereIn('resource_id', array_map('strval', array_keys($chunk)))
+                    ->delete();
+
+                foreach (array_chunk($rows, self::INSERT_CHUNK) as $rowChunk) {
+                    SitemapUrl::insert($rowChunk);
+                }
+            });
+
+            $inserted += count($rows);
+        }
+
+        return $inserted;
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @return iterable
      */
     public function streamVisible(?string $contributor = null): iterable
     {
@@ -83,6 +145,8 @@ class SitemapUrlRepository implements SitemapUrlRepositoryInterface
 
     /**
      * {@inheritDoc}
+     *
+     * @return int
      */
     public function countVisible(): int
     {
@@ -91,6 +155,8 @@ class SitemapUrlRepository implements SitemapUrlRepositoryInterface
 
     /**
      * {@inheritDoc}
+     *
+     * @return int
      */
     public function replaceAllForContributor(string $contributor, iterable $entries): int
     {

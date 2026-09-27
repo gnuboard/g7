@@ -13,6 +13,7 @@
 6. response() 메서드로 StreamedResponse 생성 (파일 다운로드/표시)
 7. 경로에 `..`·`.`·절대경로·역슬래시·`%2e`/`%2f`/`%5c`·빈 조각(`a//b`, 끝 `/`)이 섞이면 드라이버가 거부한다 — 요청값(임시 키 등)을 경로에 넣기 전에 형식을 검증한다
 8. deleteDirectory() 는 카테고리와 그 하위 폴더를 지운다(빈 디렉토리 인자 = 카테고리 전체, deleteAll() 과 같음) — 확장 최상위·디스크 루트는 어떤 API 로도 지우지 않는다
+9. 업로드 파일을 브라우저로 내보내는 응답은 반드시 `InlineMediaPolicy::harden($response, $mime, $filename)` 을 거친다 — 래스터 이미지만 인라인, 그 밖(SVG 포함)은 다운로드 + nosniff. "이미지인가" 판정은 `str_starts_with($mime, 'image/')` 가 아니라 `InlineMediaPolicy::isInlineImage()`
 ```
 
 ---
@@ -552,6 +553,7 @@ class AttachmentController extends BaseApiController
 namespace Modules\Sirsoft\Ecommerce\Services;
 
 use App\Contracts\Extension\StorageInterface;
+use App\Helpers\InlineMediaPolicy;
 use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Ecommerce\Models\ProductImage;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductImageRepositoryInterface;
@@ -613,6 +615,9 @@ class ProductImageService
 
             return null;
         }
+
+        // 래스터 이미지만 인라인, 그 외(SVG 등)는 다운로드로 — 모든 응답에 nosniff
+        InlineMediaPolicy::harden($response, $image->mime_type, $image->original_filename);
 
         return $response;
     }
@@ -1084,6 +1089,13 @@ public function response(string $category, string $path, string $filename, array
 **반환값**:
 
 - `StreamedResponse|null`: 파일 스트림 (파일이 없으면 null)
+
+> **업로드 파일을 브라우저로 내보낼 때 (필수)**: `response()` 는 `Content-Type` 을 행에 저장된 MIME 그대로 쓰고
+> 기본이 `inline` 이다. SVG·HTML 처럼 스크립트를 품을 수 있는 파일이 사이트 주소에서 인라인으로 열리면
+> 그 스크립트가 로그인 토큰에 닿는다. 그래서 받은 응답을 `App\Helpers\InlineMediaPolicy::harden($response, $mime, $filename)`
+> 에 통과시킨다 — 래스터 이미지(JPEG·PNG·GIF·WebP·AVIF·BMP)만 인라인을 유지하고, 그 밖은
+> `Content-Disposition: attachment` + CSP sandbox 로 바꾸며, 모든 응답에 `X-Content-Type-Options: nosniff` 를 붙인다.
+> 미리보기·썸네일 대상인지 가르는 판정도 `InlineMediaPolicy::isInlineImage($mime)` 을 쓴다(`image/` 접두사 판정 금지).
 
 **예시**:
 ```php

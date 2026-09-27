@@ -101,6 +101,7 @@ Content-Type: application/json
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 404 | Not Found | 토큰에 해당하는 미리보기가 없거나 **만료된 경우** (`templates.layout_not_found`). 조회 시 `notExpired()` 스코프가 적용되므로 만료 토큰은 미존재와 동일하게 404 다 |
+| 429 | Too Many Requests | 공개 lane 속도 제한 초과 — 비로그인은 IP, 로그인은 사용자 단위로 분당 `auth.throttle.public`(기본 600회, `.env` `THROTTLE_PUBLIC`) · 접두사 `public_ext`. `Retry-After` 헤더 동봉 (KVE-2026-2336) |
 
 <!-- @generated:end -->
 
@@ -215,6 +216,7 @@ _이 엔드포인트는 `success`/`message`/`data` 봉투를 사용하지 않습
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 404 | Not Found | 토큰에 해당하는 미리보기가 없거나 만료된 경우 (`templates.layout_not_found`) |
+| 429 | Too Many Requests | 공개 lane 속도 제한 초과 — 비로그인은 IP, 로그인은 사용자 단위로 분당 `auth.throttle.public`(기본 600회, `.env` `THROTTLE_PUBLIC`) · 접두사 `public_ext`. `Retry-After` 헤더 동봉 (KVE-2026-2336) |
 
 <!-- @generated:end -->
 
@@ -285,6 +287,7 @@ Content-Type: application/json
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 404 | Not Found | 토큰에 해당하는 미리보기가 없거나 **만료된 경우** (`templates.layout_not_found`). 서버의 정적 최적화 블록이 `.json` 확장자를 가로채도 404 가 되므로, 이 경우 확장자 없는 형태로 재요청한다 |
+| 429 | Too Many Requests | 공개 lane 속도 제한 초과 — 비로그인은 IP, 로그인은 사용자 단위로 분당 `auth.throttle.public`(기본 600회, `.env` `THROTTLE_PUBLIC`) · 접두사 `public_ext`. `Retry-After` 헤더 동봉 (KVE-2026-2336) |
 
 <!-- @generated:end -->
 
@@ -391,6 +394,7 @@ _단건 응답: `data` 는 병합된 레이아웃 JSON 객체입니다 (상속 �
 | 401 | Unauthorized | 비회원이 `permissions` 요구 레이아웃에 접근 (`auth.layout_guest_permission_denied`), 또는 비회원이 `with_source_meta=1` 요청 |
 | 403 | Forbidden | 회원이지만 레이아웃 `permissions` 미충족 (`auth.layout_permission_denied`), 또는 `with_source_meta=1` 요청 시 `core.templates.layouts.edit` 권한 없음 |
 | 404 | Not Found | 템플릿이 없거나 비활성 상태, 또는 레이아웃/부모 레이아웃 미존재 (`templates.layout_not_found`) |
+| 429 | Too Many Requests | 공개 lane 속도 제한 초과 — 비로그인은 IP, 로그인은 사용자 단위로 분당 `auth.throttle.public`(기본 600회, `.env` `THROTTLE_PUBLIC`) · 접두사 `public_ext`. `Retry-After` 헤더 동봉 (KVE-2026-2336) |
 
 <!-- @generated:end -->
 

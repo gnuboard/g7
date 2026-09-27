@@ -3,6 +3,7 @@
 namespace Plugins\Sirsoft\Ckeditor5\Services;
 
 use App\Contracts\Extension\StorageInterface;
+use App\Helpers\InlineMediaPolicy;
 use Illuminate\Support\Facades\Log;
 use Plugins\Sirsoft\Ckeditor5\Models\Ckeditor5ImageUpload;
 use Plugins\Sirsoft\Ckeditor5\Repositories\Contracts\ImageUploadRepositoryInterface;
@@ -82,6 +83,9 @@ class ImageServeService
 
             return null;
         }
+
+        // 인라인 표시는 래스터 이미지만, 그 외(SVG 등)는 다운로드로 — 모든 응답에 nosniff (KVE-2026-2366)
+        InlineMediaPolicy::harden($response, $image->mime_type, $image->original_name);
 
         return $response;
     }
