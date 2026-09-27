@@ -217,6 +217,7 @@ return [
         'posts_delete_denied' => '게시글 삭제 권한이 없습니다.',
         'posts_manage_others_denied' => '타인의 게시글을 관리할 권한이 없습니다.',
         'posts_secret_read_denied' => '비밀글 조회 권한이 없습니다.',
+        'notice_denied' => '게시글을 공지로 지정할 권한이 없습니다.',
 
         // 댓글 권한
         'comments_read_denied' => '댓글 조회 권한이 없습니다.',

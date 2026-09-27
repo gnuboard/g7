@@ -110,7 +110,8 @@ class StorePostRequest extends FormRequest
             'content_mode' => ['nullable', 'string', 'in:text,html'],
             'category' => ['nullable', 'string', 'max:50'],
             'is_secret' => ['nullable', 'boolean'],
-            'status' => ['nullable', 'string', Rule::in(PostStatus::values())],
+            // 사용자가 지정할 수 있는 상태는 published 뿐 — 블라인드·삭제는 관리 경로의 몫이다
+            'status' => ['nullable', 'string', Rule::in([PostStatus::Published->value])],
             // temp_key는 게시판 존재 여부와 무관하게 항상 허용 (UUID 형식만 — 저장 경로에 들어간다)
             'temp_key' => $this->tempKeyRules(),
         ];

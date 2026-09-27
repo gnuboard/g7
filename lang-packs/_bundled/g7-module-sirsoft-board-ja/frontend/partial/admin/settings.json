@@ -268,7 +268,8 @@
       "comments.write": "コメント作成·編集·削除",
       "attachments.upload": "ファイルアップロード·削除",
       "attachments.download": "ファイルダウンロード",
-      "manager": "掲示板管理"
+      "manager": "掲示板管理",
+      "posts.write-notice": "お知らせ登録"
     }
   },
   "notification_channels": {

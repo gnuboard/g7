@@ -8,6 +8,7 @@
 
 ### Added
 
+- 게시판 사용자 권한 「공지 등록」(`posts.write-notice`)의 일본어 번역을 추가했습니다 — 권한 설정 화면의 권한 이름·설명(「お知らせ登録」), 게시판 기본 권한 표와 저장 검증의 항목 이름, 권한 없이 공지로 지정할 때의 거부 메시지(`permission.notice_denied`)입니다.
 - 게시판 환경설정 「개인정보 보유기간」 카드(작성 IP·비회원 글)의 「지금 실행」 버튼과 직권 실행 확인 창·진행 상태 줄 문구(`admin/settings.privacy_retention.manual_run.*`)와 편집기 데이터 소스 이름의 일본어 번역을 추가했습니다. 두 축을 한 줄씩 정리하면서 줄 이름·대상 건수·공용 「対象を表示」(`privacy_retention.targets.row_ip`·`row_guest`·`count`·`view`)를 더하고, 쓰지 않게 된 축별 건수·보기 문구는 뺐습니다.
 - 게시판 환경설정 「개인정보 보유기간」 카드의 대상 건수(작성 IP·비회원 글)와 「대상 보기」 명단 창 문구(`admin/settings.privacy_retention.targets.*`), 명단 열 이름과 글·댓글 구분(`messages.privacy_retention.target_columns.*`·`target_kinds.*`), 레이아웃 편집기의 데이터 소스 이름(`editor.data_source.privacyTargets`)의 일본어 번역을 추가했습니다.
 - 拡張アイコンを同梱しました。管理者の拡張管理画面とインストールウィザードに表示されます。

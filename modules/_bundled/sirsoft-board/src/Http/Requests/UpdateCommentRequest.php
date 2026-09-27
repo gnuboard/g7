@@ -57,7 +57,8 @@ class UpdateCommentRequest extends FormRequest
                 new BlockedKeywordsRule($blockedKeywords),
             ],
             'is_secret' => ['boolean'],
-            'status' => ['nullable', 'string', Rule::in(PostStatus::values())],
+            // 요청으로 지정할 수 있는 상태는 published 뿐 — 블라인드·복구는 관리자 전용 엔드포인트의 몫이다
+            'status' => ['nullable', 'string', Rule::in([PostStatus::Published->value])],
             // 비회원인 경우 비밀번호 필수 (수정 권한 검증용). 단, 검증 토큰이 있으면 선택.
             'password' => [$isGuest && ! $hasVerificationToken ? 'required' : 'nullable', 'string', 'min:4', 'max:20'],
             'verification_token' => ['nullable', 'string', 'max:255'],
