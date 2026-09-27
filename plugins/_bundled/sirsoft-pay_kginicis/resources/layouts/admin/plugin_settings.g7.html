@@ -217,7 +217,7 @@
             </div>
             <div data-ref="cbt_test_helper_card" class="rounded-lg border border-blue-200 dark:border-blue-700 bg-blue-50 dark:bg-blue-900/20 p-4">
               <div class="flex-start gap-3 mb-3">
-                <icon name="flask-conical" class="text-xl text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5"/>
+                <icon name="flask" class="text-xl text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5"/>
                 <div>
                   <h4 class="text-sm font-semibold text-blue-900 dark:text-blue-200">$t:sirsoft-pay_kginicis.settings.cbt_helper_title</h4>
                   <p class="mt-1 text-warning-soft leading-relaxed">$t:sirsoft-pay_kginicis.settings.cbt_helper_description</p>
@@ -311,13 +311,13 @@
                     <span class="font-mono text-gray-700 dark:text-gray-300 break-all select-all">{{_local.cbtConnCheckResult?.callback?.callback_url ?? '-'}}</span>
                     <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-pay_kginicis.settings.cbt_callback_https_label</span>
                     <span data-if="{{_local.cbtConnCheckResult?.callback?.app_url_https &amp;&amp; _local.cbtConnCheckResult?.callback?.callback_url_https}}" class="mt-1 text-warning-soft">$t:sirsoft-pay_kginicis.settings.cbt_callback_ok</span>
-                    <span data-if="{{!(_local.cbtConnCheckResult?.callback?.app_url_https &amp;&amp; _local.cbtConnCheckResult?.callback?.callback_url_https)}}" class="font-semiboldtext-danger-soft">$t:sirsoft-pay_kginicis.settings.cbt_callback_check</span>
+                    <span data-if="{{!(_local.cbtConnCheckResult?.callback?.app_url_https &amp;&amp; _local.cbtConnCheckResult?.callback?.callback_url_https)}}" class="font-semibold text-danger-soft">$t:sirsoft-pay_kginicis.settings.cbt_callback_check</span>
                     <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-pay_kginicis.settings.cbt_callback_public_label</span>
                     <span data-if="{{_local.cbtConnCheckResult?.callback?.app_url_public &amp;&amp; _local.cbtConnCheckResult?.callback?.callback_url_public}}" class="mt-1 text-warning-soft">$t:sirsoft-pay_kginicis.settings.cbt_callback_ok</span>
-                    <span data-if="{{!(_local.cbtConnCheckResult?.callback?.app_url_public &amp;&amp; _local.cbtConnCheckResult?.callback?.callback_url_public)}}" class="font-semiboldtext-danger-soft">$t:sirsoft-pay_kginicis.settings.cbt_callback_check</span>
+                    <span data-if="{{!(_local.cbtConnCheckResult?.callback?.app_url_public &amp;&amp; _local.cbtConnCheckResult?.callback?.callback_url_public)}}" class="font-semibold text-danger-soft">$t:sirsoft-pay_kginicis.settings.cbt_callback_check</span>
                     <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-pay_kginicis.settings.cbt_callback_host_match_label</span>
                     <span data-if="{{_local.cbtConnCheckResult?.callback?.host_matches_app_url}}" class="mt-1 text-warning-soft">$t:sirsoft-pay_kginicis.settings.cbt_callback_ok</span>
-                    <span data-if="{{!_local.cbtConnCheckResult?.callback?.host_matches_app_url}}" class="font-semiboldtext-danger-soft">$t:sirsoft-pay_kginicis.settings.cbt_callback_check</span>
+                    <span data-if="{{!_local.cbtConnCheckResult?.callback?.host_matches_app_url}}" class="font-semibold text-danger-soft">$t:sirsoft-pay_kginicis.settings.cbt_callback_check</span>
                   </div>
                   <p class="text-[11px] text-gray-500 dark:text-gray-400 leading-relaxed">$t:sirsoft-pay_kginicis.settings.cbt_callback_hint</p>
                 </div>

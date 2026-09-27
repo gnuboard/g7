@@ -335,4 +335,17 @@ return [
         'body' => '본문',
         'is_default' => '기본값',
     ],
+
+    // 방문자 통계 운영 행위
+    'analytics' => [
+        'settings_updated' => '방문자 통계 설정 변경',
+        'privacy_mode_changed' => '방문자 통계 개인정보 모드 변경 (:mode)',
+        'data_purged' => '방문자 통계 데이터 전체 삭제',
+        'anonymized' => '방문자 통계 소급 익명화',
+        'subject_exported' => '정보주체 방문 기록 내보내기 (:subject)',
+        'subject_deleted' => '정보주체 방문 기록 삭제 (:subject)',
+        'opt_out_changed' => '관리자 수집 제외 설정 변경',
+        'archive_requested' => '방문자 통계 수동 집계 실행 (:run_type)',
+        'extension_purged' => '확장 통계 데이터 정리 (:identifier)',
+    ],
 ];

@@ -35,6 +35,7 @@
 <!-- @generated:hooks-subscribed START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 훅 이름 | 유형 | 리스너 | 메서드 | 우선순위 |
 |---|---|---|---|---|
+| `core.analytics.consent_session_id` | filter | `GdprAnalyticsConsentListener` | `resolveConsentSessionId` | 10 |
 | `core.auth.logout` | action (미선언) | `GdprAuthLogoutListener` | `forgetGdprCookies` | 10 |
 | `core.auth.record_consents` | action (미선언) | `GdprAuthConsentListener` | `recordRegisterConsents` | 10 |
 | `core.notification.after_channel_send` | action (미선언) | `GdprAnnualNoticeListener` | `sent` | - |
@@ -59,6 +60,7 @@
 <!-- @generated:listeners START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 리스너 | 구독 훅 | 등록 방식 | HookListenerInterface | 파일 |
 |---|---|---|---|---|
+| `GdprAnalyticsConsentListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/GdprAnalyticsConsentListener.php` |
 | `GdprAnnualNoticeListener` | 5개 | 명시 등록 | ✅ | `src/Listeners/GdprAnnualNoticeListener.php` |
 | `GdprAuthConsentListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/GdprAuthConsentListener.php` |
 | `GdprAuthLogoutListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/GdprAuthLogoutListener.php` |
@@ -72,6 +74,12 @@
 `GdprAuthLogoutListener` 는 로그아웃 시 `gdpr_session` 게스트 쿠키를 폐기합니다 — 로그인
 후에는 신원이 회원으로 바뀌므로, 로그아웃 시 남아 있는 게스트 세션 쿠키가 다음 방문자와
 뒤섞이지 않도록 정리하는 것입니다.
+
+`gdpr_session` 은 쿠키 암호화 대상에서 빠져 있습니다(`GdprServiceProvider::boot()` 의
+`EncryptCookies::except`). 이 쿠키는 API 응답이 서명값 그대로 심는데, 화면 요청 쪽의 쿠키 암호화가
+그 값을 복호화하다 버리면 화면 요청에서는 동의한 게스트도 「식별 불가 = 미동의」로 읽힙니다 —
+코어 방문자 통계의 서버 기록이 동의자의 첫 화면을 빠뜨리던 원인입니다. 위변조는 서명
+(`IssuesGuestSessionCookie`)으로 막습니다.
 <!-- @intent END -->
 
 ## 레이아웃 확장

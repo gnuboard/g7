@@ -11,6 +11,8 @@
       <div data-ref="privacy_targets_table" data-if="{{(privacyTargets?.data?.data ?? []).length > 0}}" class="border border-gray-200 dark:border-gray-700 rounded-lg">
         <div data-ref="privacy_targets_list" class="max-h-96 overflow-y-auto overflow-x-auto">
           <on type="scroll">
+            <!-- 통지 대상 회원 무한 스크롤 — 목록 바닥에서 100px 안에 닿으면 다음 쪽(20명)을 받아 이어 붙인다. 목록 주소는
+                 이 플러그인 전용 소스와 같은 곳이다. 200ms 로 몰아 판정하고, 더 없거나 받는 중이면 부르지 않으며, 실패하면 로딩 표시만 거둔다. -->
             <sequence :debounce="200">
               <switch on="{{$event.target.scrollHeight - $event.target.scrollTop <= $event.target.clientHeight + 100 &amp;&amp; _global.privacyTargets?.hasMore !== false &amp;&amp; privacyTargets?.data?.pagination?.has_more_pages === true &amp;&amp; !_global.privacyTargets?.isLoadingMore}}">
                 <case when="true">

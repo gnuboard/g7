@@ -5,6 +5,17 @@ use App\Http\Controllers\Api\Admin\AdminExtensionCustomAssetController;
 use App\Http\Controllers\Api\Admin\AdminTemplateAssetController;
 // Admin Controllers
 use App\Http\Controllers\Api\Admin\AdminTemplateLayoutAttachmentController;
+use App\Http\Controllers\Api\Admin\Analytics\ArchiveRunController as AdminAnalyticsArchiveRunController;
+use App\Http\Controllers\Api\Admin\Analytics\CloudRangeController as AdminAnalyticsCloudRangeController;
+use App\Http\Controllers\Api\Admin\Analytics\DataController as AdminAnalyticsDataController;
+use App\Http\Controllers\Api\Admin\Analytics\DiagnosticsController as AdminAnalyticsDiagnosticsController;
+use App\Http\Controllers\Api\Admin\Analytics\OptOutController as AdminAnalyticsOptOutController;
+use App\Http\Controllers\Api\Admin\Analytics\OverviewController as AdminAnalyticsOverviewController;
+use App\Http\Controllers\Api\Admin\Analytics\PrivacyController as AdminAnalyticsPrivacyController;
+use App\Http\Controllers\Api\Admin\Analytics\RealtimeController as AdminAnalyticsRealtimeController;
+use App\Http\Controllers\Api\Admin\Analytics\ReportController as AdminAnalyticsReportController;
+use App\Http\Controllers\Api\Admin\Analytics\SettingsController as AdminAnalyticsSettingsController;
+use App\Http\Controllers\Api\Admin\Analytics\VisitorController as AdminAnalyticsVisitorController;
 use App\Http\Controllers\Api\Admin\AttachmentController as AdminAttachmentController;
 use App\Http\Controllers\Api\Admin\AuthController as AdminAuthController;
 use App\Http\Controllers\Api\Admin\BroadcastCatalogController;
@@ -24,12 +35,15 @@ use App\Http\Controllers\Api\Admin\LicenseController as AdminLicenseController;
 use App\Http\Controllers\Api\Admin\MemberNotificationController as AdminMemberNotificationController;
 use App\Http\Controllers\Api\Admin\MenuController as AdminMenuController;
 use App\Http\Controllers\Api\Admin\ModuleController as AdminModuleController;
+// Auth Controllers (Authenticated Users)
 use App\Http\Controllers\Api\Admin\NotificationChannelController as AdminNotificationChannelController;
 use App\Http\Controllers\Api\Admin\NotificationController as AdminNotificationController;
+// Identity Verification
 use App\Http\Controllers\Api\Admin\NotificationDefinitionController as AdminNotificationDefinitionController;
 use App\Http\Controllers\Api\Admin\NotificationLogController as AdminNotificationLogController;
 use App\Http\Controllers\Api\Admin\NotificationTemplateController as AdminNotificationTemplateController;
 use App\Http\Controllers\Api\Admin\PermissionController as AdminPermissionController;
+// Public Controllers
 use App\Http\Controllers\Api\Admin\PluginController as AdminPluginController;
 use App\Http\Controllers\Api\Admin\PluginSettingsController as AdminPluginSettingsController;
 use App\Http\Controllers\Api\Admin\PrivacyManualRunController as AdminPrivacyManualRunController;
@@ -37,20 +51,19 @@ use App\Http\Controllers\Api\Admin\PrivacyTargetController as AdminPrivacyTarget
 use App\Http\Controllers\Api\Admin\RoleController as AdminRoleController;
 use App\Http\Controllers\Api\Admin\ScheduleController as AdminScheduleController;
 use App\Http\Controllers\Api\Admin\SeoBotPreviewController;
-// Auth Controllers (Authenticated Users)
 use App\Http\Controllers\Api\Admin\SeoCacheController as AdminSeoCacheController;
 use App\Http\Controllers\Api\Admin\SeoCandidateController;
-// Identity Verification
 use App\Http\Controllers\Api\Admin\SeoOgPreviewController;
 use App\Http\Controllers\Api\Admin\SettingsController as AdminSettingsController;
 use App\Http\Controllers\Api\Admin\TemplateController as AdminTemplateController;
 use App\Http\Controllers\Api\Admin\TemplateCustomTranslationController as AdminTemplateCustomTranslationController;
-// Public Controllers
 use App\Http\Controllers\Api\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Api\Auth\AuthController as UserAuthController;
 use App\Http\Controllers\Api\Auth\NotificationController as UserNotificationController;
 use App\Http\Controllers\Api\Auth\ProfileController as UserProfileController;
 use App\Http\Controllers\Api\Identity\IdentityVerificationController;
+use App\Http\Controllers\Api\Public\AnalyticsCollectController;
+use App\Http\Controllers\Api\Public\AnalyticsSummaryController;
 use App\Http\Controllers\Api\Public\AssetProbeController;
 use App\Http\Controllers\Api\Public\LayoutPreviewController;
 use App\Http\Controllers\Api\Public\LocaleController as PublicLocaleController;
@@ -81,6 +94,19 @@ use Illuminate\Support\Facades\Route;
 
 // 공개 API 라우트 (인증 불필요, 속도 제한 없음)
 Route::group([], function () {
+    // 방문자 통계 수집 비콘 — 브라우저가 페이지 이동·내려받기·외부 링크를 알려 온다.
+    // optional.sanctum 을 두는 이유: 토큰이 있으면 회원·관리자 방문으로 가르고, 없으면
+    // 비회원으로 센다. 응답은 언제나 204 이므로 스로틀에 걸려도 화면에 영향이 없다.
+    Route::post('analytics/collect', [AnalyticsCollectController::class, 'store'])
+        ->middleware(['throttle:120,1,analytics_collect', 'optional.sanctum'])
+        ->name('api.public.analytics.collect');
+
+    // 사용자 화면 방문자 카운터가 읽는 요약 — 오늘·어제·최대·전체 네 숫자뿐이다.
+    // 로그인 없이 누구나 부르므로 스로틀을 걸고, 응답은 컨트롤러가 짧게 캐시한다.
+    Route::get('analytics/summary', [AnalyticsSummaryController::class, 'index'])
+        ->middleware('throttle:60,1,analytics_summary')
+        ->name('api.public.analytics.summary');
+
     // 템플릿 라우트 정보 조회
     Route::prefix('templates')->group(function () {
         // 아래 dual* 매크로는 확장자 형태와 확장자 없는 형태를 동시에 등록한다.
@@ -999,5 +1025,79 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
         Route::delete('{templateName}/custom-translations', [AdminTemplateCustomTranslationController::class, 'bulkDestroy'])->middleware('permission:admin,core.templates.layouts.edit')->name('api.admin.templates.custom-translations.bulk-destroy');
         Route::put('{templateName}/custom-translations/{id}', [AdminTemplateCustomTranslationController::class, 'update'])->middleware('permission:admin,core.templates.layouts.edit')->name('api.admin.templates.custom-translations.update')->whereNumber('id');
         Route::delete('{templateName}/custom-translations/{id}', [AdminTemplateCustomTranslationController::class, 'destroy'])->middleware('permission:admin,core.templates.layouts.edit')->name('api.admin.templates.custom-translations.destroy')->whereNumber('id');
+    });
+
+    /*
+    | 방문자 통계 관리자 API
+    |
+    | 권한 셋으로 갈린다 — read 는 숫자를 보는 것, update 는 설정·집계·삭제처럼 상태를
+    | 바꾸는 것, privacy 는 개별 방문자를 들여다보는 것이다. 한 화면 안에서도 갈린다:
+    | 현재 접속자 목록은 read 로 보이되 그 IP 는 privacy 가 있어야 채워진다.
+    */
+    Route::prefix('analytics')->group(function () {
+        // 조회 (read)
+        Route::get('overview', [AdminAnalyticsOverviewController::class, 'index'])
+            ->middleware('permission:admin,core.analytics.read')->name('api.admin.analytics.overview');
+        Route::get('series', [AdminAnalyticsReportController::class, 'series'])
+            ->middleware('permission:admin,core.analytics.read')->name('api.admin.analytics.series');
+        Route::get('patterns', [AdminAnalyticsReportController::class, 'patterns'])
+            ->middleware('permission:admin,core.analytics.read')->name('api.admin.analytics.patterns');
+        Route::get('bots', [AdminAnalyticsReportController::class, 'bots'])
+            ->middleware('permission:admin,core.analytics.read')->name('api.admin.analytics.bots');
+        Route::get('realtime', [AdminAnalyticsRealtimeController::class, 'index'])
+            ->middleware('permission:admin,core.analytics.read')->name('api.admin.analytics.realtime');
+        Route::get('diagnostics', [AdminAnalyticsDiagnosticsController::class, 'index'])
+            ->middleware('permission:admin,core.analytics.read')->name('api.admin.analytics.diagnostics');
+        Route::get('collect-failures', [AdminAnalyticsDiagnosticsController::class, 'failures'])
+            ->middleware('permission:admin,core.analytics.read')->name('api.admin.analytics.collect-failures');
+        Route::get('archive-runs', [AdminAnalyticsArchiveRunController::class, 'index'])
+            ->middleware('permission:admin,core.analytics.read')->name('api.admin.analytics.archive-runs.index');
+        Route::get('archive-runs/{run}', [AdminAnalyticsArchiveRunController::class, 'show'])
+            ->middleware('permission:admin,core.analytics.read')->name('api.admin.analytics.archive-runs.show')->whereNumber('run');
+        Route::get('data', [AdminAnalyticsDataController::class, 'show'])
+            ->middleware('permission:admin,core.analytics.read')->name('api.admin.analytics.data.show');
+
+        // 상태 변경 (update)
+        Route::post('archive-runs', [AdminAnalyticsArchiveRunController::class, 'store'])
+            ->middleware('permission:admin,core.analytics.update')->name('api.admin.analytics.archive-runs.store');
+        Route::get('settings', [AdminAnalyticsSettingsController::class, 'show'])
+            ->middleware('permission:admin,core.analytics.update')->name('api.admin.analytics.settings.show');
+        Route::put('settings', [AdminAnalyticsSettingsController::class, 'update'])
+            ->middleware('permission:admin,core.analytics.update')->name('api.admin.analytics.settings.update');
+        Route::get('opt-out', [AdminAnalyticsOptOutController::class, 'show'])
+            ->middleware('permission:admin,core.analytics.update')->name('api.admin.analytics.opt-out.show');
+        Route::post('opt-out', [AdminAnalyticsOptOutController::class, 'store'])
+            ->middleware('permission:admin,core.analytics.update')->name('api.admin.analytics.opt-out.store');
+        Route::delete('opt-out', [AdminAnalyticsOptOutController::class, 'destroy'])
+            ->middleware('permission:admin,core.analytics.update')->name('api.admin.analytics.opt-out.destroy');
+        Route::delete('data', [AdminAnalyticsDataController::class, 'destroy'])
+            ->middleware('permission:admin,core.analytics.update')->name('api.admin.analytics.data.destroy');
+        Route::post('privacy/anonymize', [AdminAnalyticsPrivacyController::class, 'anonymize'])
+            ->middleware('permission:admin,core.analytics.update')->name('api.admin.analytics.privacy.anonymize');
+        Route::post('cloud-ranges/refresh', [AdminAnalyticsCloudRangeController::class, 'refresh'])
+            ->middleware('permission:admin,core.analytics.update')->name('api.admin.analytics.cloud-ranges.refresh');
+
+        // 개별 방문자 열람 (privacy)
+        // 목록 → 단건 두 걸음이다. 단건은 방문자 키를 경로에 받으므로 목록보다 뒤에 둔다.
+        Route::get('visitors', [AdminAnalyticsVisitorController::class, 'index'])
+            ->middleware('permission:admin,core.analytics.privacy')->name('api.admin.analytics.visitors.index');
+        Route::get('visitors/{visitorKey}', [AdminAnalyticsVisitorController::class, 'show'])
+            ->middleware('permission:admin,core.analytics.privacy')->name('api.admin.analytics.visitors.show');
+        Route::get('privacy/subjects', [AdminAnalyticsPrivacyController::class, 'subjects'])
+            ->middleware('permission:admin,core.analytics.privacy')->name('api.admin.analytics.privacy.subjects');
+        Route::post('privacy/subjects/export', [AdminAnalyticsPrivacyController::class, 'export'])
+            ->middleware('permission:admin,core.analytics.privacy')->name('api.admin.analytics.privacy.subjects.export');
+        Route::delete('privacy/subjects', [AdminAnalyticsPrivacyController::class, 'deleteSubject'])
+            ->middleware('permission:admin,core.analytics.privacy')->name('api.admin.analytics.privacy.subjects.destroy');
+
+        // 유입처 한 곳의 전체 유입 주소. 집계표에는 호스트까지만 쌓여 이 한 갈래만 원장을 직접 읽는다.
+        Route::get('referrer-urls', [AdminAnalyticsReportController::class, 'referrerUrls'])
+            ->middleware('permission:admin,core.analytics.read')->name('api.admin.analytics.referrer-urls');
+
+        // 리포트는 차원 이름을 경로로 받는다 — 고정 경로들보다 뒤에 등록해야 가로채지 않는다.
+        Route::get('registered', [AdminAnalyticsReportController::class, 'registered'])
+            ->middleware('permission:admin,core.analytics.read')->name('api.admin.analytics.registered');
+        Route::get('reports/{report}', [AdminAnalyticsReportController::class, 'show'])
+            ->middleware('permission:admin,core.analytics.read')->name('api.admin.analytics.reports.show');
     });
 });

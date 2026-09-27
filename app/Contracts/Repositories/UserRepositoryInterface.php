@@ -106,6 +106,17 @@ interface UserRepositoryInterface
     public function findManyByUuidsKeyed(array $uuids): Collection;
 
     /**
+     * 사용자 번호 목록으로 사용자들을 조회하고 번호 키 맵으로 반환합니다.
+     *
+     * 번호만 들고 있는 목록(방문자 통계의 원장 행 등)이 한 쪽에 실린 회원을 한 번에
+     * 읽을 때 씁니다 — 행마다 읽으면 한 쪽에 쪽 크기만큼 질의가 납니다.
+     *
+     * @param  array<int, int>  $ids  사용자 번호 목록
+     * @return Collection<int, User> id => User 매핑
+     */
+    public function findManyByIdsKeyed(array $ids): Collection;
+
+    /**
      * UUID 목록으로 사용자들을 조회합니다.
      *
      * @param  array<int, string>  $uuids  사용자 UUID 목록
@@ -161,6 +172,7 @@ interface UserRepositoryInterface
      * `last_failed_login_at=null`).
      *
      * @param  User  $user  대상 사용자
+     * @return void 없음
      */
     public function resetLoginAttempts(User $user): void;
 

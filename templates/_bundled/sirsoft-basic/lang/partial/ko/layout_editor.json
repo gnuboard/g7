@@ -151,6 +151,9 @@
       "label": "아바타",
       "default_alt": "사용자 아바타"
     },
+    "visitor_counter": {
+      "label": "방문자 카운터"
+    },
     "user_info": {
       "label": "사용자 정보",
       "default_name": "사용자명"

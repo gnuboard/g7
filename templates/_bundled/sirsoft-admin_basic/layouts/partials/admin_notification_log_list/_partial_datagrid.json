@@ -88,78 +88,88 @@
                 },
                 "children": [
                     {
+                        "comment": "라벨 칸을 맞춰 값이 한 줄로 시작하게 kv-list(#682 S4 라운드 8 전수조사 — 라벨 폭마다 값이 들쭉날쭉).",
                         "type": "basic",
                         "name": "Div",
-                        "if": "{{row.error_message}}",
                         "props": {
-                            "className": "flex items-start gap-2"
+                            "className": "kv-list gap-y-2"
                         },
                         "children": [
                             {
                                 "type": "basic",
-                                "name": "Span",
+                                "name": "Div",
+                                "if": "{{row.error_message}}",
                                 "props": {
-                                    "className": "text-sm font-medium text-red-600 dark:text-red-400 shrink-0"
+                                    "className": "kv-row"
                                 },
-                                "text": "$t:admin.notification_log.detail.error_label"
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "props": {
+                                            "className": "text-sm font-medium text-red-600 dark:text-red-400"
+                                        },
+                                        "text": "$t:admin.notification_log.detail.error_label"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "props": {
+                                            "className": "text-sm text-red-500 dark:text-red-300"
+                                        },
+                                        "text": "{{row.error_message}}"
+                                    }
+                                ]
                             },
                             {
                                 "type": "basic",
-                                "name": "Span",
+                                "name": "Div",
                                 "props": {
-                                    "className": "text-sm text-red-500 dark:text-red-300"
+                                    "className": "kv-row"
                                 },
-                                "text": "{{row.error_message}}"
-                            }
-                        ]
-                    },
-                    {
-                        "type": "basic",
-                        "name": "Div",
-                        "props": {
-                            "className": "flex-center gap-2"
-                        },
-                        "children": [
-                            {
-                                "type": "basic",
-                                "name": "Span",
-                                "props": {
-                                    "className": "text-body font-medium shrink-0"
-                                },
-                                "text": "$t:admin.notification_log.detail.source_label"
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "props": {
+                                            "className": "text-body font-medium"
+                                        },
+                                        "text": "$t:admin.notification_log.detail.source_label"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "props": {
+                                            "className": "text-label"
+                                        },
+                                        "text": "{{row.source ?? '-'}}"
+                                    }
+                                ]
                             },
                             {
                                 "type": "basic",
-                                "name": "Span",
+                                "name": "Div",
                                 "props": {
-                                    "className": "text-label"
+                                    "className": "kv-row"
                                 },
-                                "text": "{{row.source ?? '-'}}"
-                            }
-                        ]
-                    },
-                    {
-                        "type": "basic",
-                        "name": "Div",
-                        "props": {
-                            "className": "flex-center gap-2"
-                        },
-                        "children": [
-                            {
-                                "type": "basic",
-                                "name": "Span",
-                                "props": {
-                                    "className": "text-body font-medium shrink-0"
-                                },
-                                "text": "$t:admin.notification_log.detail.notification_type_label"
-                            },
-                            {
-                                "type": "basic",
-                                "name": "Span",
-                                "props": {
-                                    "className": "text-sm font-mono text-gray-600 dark:text-gray-400"
-                                },
-                                "text": "{{row.notification_type ?? '-'}}"
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "props": {
+                                            "className": "text-body font-medium"
+                                        },
+                                        "text": "$t:admin.notification_log.detail.notification_type_label"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "props": {
+                                            "className": "text-sm font-mono text-gray-600 dark:text-gray-400"
+                                        },
+                                        "text": "{{row.notification_type ?? '-'}}"
+                                    }
+                                ]
                             }
                         ]
                     },

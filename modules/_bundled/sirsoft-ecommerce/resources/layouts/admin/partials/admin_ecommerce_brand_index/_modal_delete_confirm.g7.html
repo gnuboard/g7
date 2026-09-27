@@ -16,7 +16,7 @@
               <icon name="times-circle" class="text-xl text-red-600 dark:text-red-400"/>
             </div>
             <div class="flex-1">
-              <p class="text-sm font-semiboldtext-danger-soft mb-1">$t:sirsoft-ecommerce.admin.brand.delete_modal.cannot_delete_title</p>
+              <p class="text-sm font-semibold text-danger-soft mb-1">$t:sirsoft-ecommerce.admin.brand.delete_modal.cannot_delete_title</p>
               <p class="text-error-soft">{{$t('sirsoft-ecommerce.admin.brand.delete_modal.has_products_cannot_delete').replace('{count}', _global.modal_data?.productsCount ?? 0)}}</p>
             </div>
           </div>
@@ -31,7 +31,7 @@
         </on>
         <span>$t:common.cancel</span>
       </button>
-      <button class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_local.isDeleting || (_global.modal_data?.productsCount ?? 0) > 0}}">
+      <button class="px-4 py-2 bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_local.isDeleting || (_global.modal_data?.productsCount ?? 0) > 0}}">
         <on type="click">
           <!-- 삭제 실행. `isDeleting` 은 버튼 잠금과 라벨을 함께 쥐고 있어 성공·실패 **양쪽 갈래에서
             모두** 풀어야 한다 — 한쪽만 풀면 실패한 뒤 버튼이 영영 잠긴 채 "처리 중" 으로 남는다.

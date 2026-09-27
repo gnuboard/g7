@@ -222,6 +222,40 @@
       }
     }
   },
+  "setAnalyticsPeriod": {
+    "label": "$t:editor.action.set_analytics_period.label",
+    "params": [
+      {
+        "key": "preset",
+        "label": "$t:editor.action.set_analytics_period.param_preset",
+        "widget": "select",
+        "options": [
+          {
+            "value": "today",
+            "label": "$t:editor.action.set_analytics_period.preset_today"
+          },
+          {
+            "value": "7d",
+            "label": "$t:editor.action.set_analytics_period.preset_7d"
+          },
+          {
+            "value": "30d",
+            "label": "$t:editor.action.set_analytics_period.preset_30d"
+          },
+          {
+            "value": "this_month",
+            "label": "$t:editor.action.set_analytics_period.preset_this_month"
+          }
+        ]
+      }
+    ],
+    "build": {
+      "handler": "setAnalyticsPeriod",
+      "params": {
+        "preset": "{{preset}}"
+      }
+    }
+  },
   "toggleFilterVisibility": {
     "label": "$t:editor.action.toggle_filter_visibility.label",
     "params": [

@@ -259,3 +259,7 @@ export type { BarChartProps, BarChartDataset } from './BarChart';
 
 export { DonutChart } from './DonutChart';
 export type { DonutChartProps, DonutChartDataItem } from './DonutChart';
+
+// 방문자 통계 추이(선 차트) — 방문자·방문·페이지뷰 세 계열을 시간 축으로 그린다 (#682)
+export { LineChart } from './LineChart';
+export type { LineChartProps, LineChartDataset } from './LineChart';

@@ -82,7 +82,7 @@
                                 "type": "basic",
                                 "name": "Icon",
                                 "props": {
-                                    "name": "loader-2",
+                                    "name": "spinner",
                                     "className": "text-4xl animate-spin text-gray-500 dark:text-gray-400"
                                 }
                             },

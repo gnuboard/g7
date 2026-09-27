@@ -28,7 +28,7 @@
         <div data-ref="page_header_actions" class="flex-center gap-2 flex-shrink-0">
           <button type="button" class="btn btn-outline">$t:sirsoft-ecommerce.admin.personal_payment_detail.actions.list</button>
           <button type="button" class="btn btn-outline">$t:sirsoft-ecommerce.admin.personal_payment_detail.actions.edit</button>
-          <button type="button" class="btn btn-primary bg-red-600 hover:bg-red-700">$t:sirsoft-ecommerce.admin.personal_payment_detail.actions.delete</button>
+          <button type="button" class="btn btn-primary bg-red-600 dark:bg-red-700 hover:bg-red-700">$t:sirsoft-ecommerce.admin.personal_payment_detail.actions.delete</button>
         </div>
       </div>
       <div data-ref="product_info_card" class="admin-card mb-6">
@@ -47,7 +47,7 @@
             </div>
             <div class="flex-center gap-2">
               <span class="text-secondary">$t:sirsoft-ecommerce.admin.personal_payment_detail.product_info.payment_method</span>
-              <span class="text-heading">카카오페이</span>
+              <span class="text-heading">$t:sirsoft-ecommerce.admin.personal_payment.filter.kakao_pay</span>
             </div>
             <div class="flex-center gap-2">
               <span class="text-secondary">$t:sirsoft-ecommerce.admin.personal_payment_detail.product_info.payer_name</span>
@@ -153,7 +153,7 @@
               <h3 class="card-title">$t:sirsoft-ecommerce.admin.personal_payment_detail.memo.title</h3>
             </div>
             <button type="button" class="flex-center text-sm text-blue-600 dark:text-blue-400 hover:underline gap-1">
-              <icon name="edit-2" class="text-base"/>
+              <icon name="pen" class="text-base"/>
               <span>$t:sirsoft-ecommerce.admin.personal_payment_detail.memo.edit</span>
             </button>
           </div>
@@ -252,7 +252,7 @@
           </div>
           <div data-ref="pagination" class="flex-center justify-center gap-1 mt-4 pt-4">
             <button type="button" class="btn btn-icon" :disabled="true">
-              <icon name="chevrons-left" class="text-base"/>
+              <icon name="angles-left" class="text-base"/>
             </button>
             <button type="button" class="btn btn-icon" :disabled="true">
               <icon name="chevron-left" class="text-base"/>
@@ -262,7 +262,7 @@
               <icon name="chevron-right" class="text-base"/>
             </button>
             <button type="button" class="btn btn-icon">
-              <icon name="chevrons-right" class="text-base"/>
+              <icon name="angles-right" class="text-base"/>
             </button>
           </div>
         </div>

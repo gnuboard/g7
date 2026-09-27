@@ -35,7 +35,7 @@
     <!-- 전체 에러 메시지 박스 -->
     <div data-if="{{_local.profileErrors &amp;&amp; Object.keys(_local.profileErrors).length > 0}}" class="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
       <div class="flex items-start gap-3">
-        <icon name="alert-circle" size="lg" class="text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"/>
+        <icon name="circle-exclamation" size="lg" class="text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"/>
         <div class="flex-1">
           <h4 class="text-sm font-semibold text-red-800 dark:text-red-200 mb-2">$t:common.validation_error_title</h4>
           <ul data-each="message in Object.entries(_local.profileErrors ?? {}).flatMap(([field, messages]) => Array.isArray(messages) ? messages : [messages])" class="list-disc list-inside space-y-1 text-sm text-red-700 dark:text-red-300">

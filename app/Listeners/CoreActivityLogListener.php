@@ -10,6 +10,7 @@ use App\Contracts\Repositories\ScheduleRepositoryInterface;
 use App\Contracts\Repositories\UserRepositoryInterface;
 use App\Enums\ActivityLogType;
 use App\Enums\PrivacyManualRunStatus;
+use App\Extension\HookManager;
 use App\Extension\IdentityVerification\DTO\VerificationChallenge;
 use App\Extension\IdentityVerification\DTO\VerificationResult;
 use App\Models\Attachment;
@@ -158,6 +159,22 @@ class CoreActivityLogListener implements HookListenerInterface
             // ─── Plugin Settings ───
             'core.plugin_settings.after_save' => ['method' => 'handlePluginSettingsAfterSave', 'priority' => 20],
             'core.plugin_settings.after_reset' => ['method' => 'handlePluginSettingsAfterReset', 'priority' => 20],
+
+            // ─── Analytics ───
+            // 운영자가 방문 데이터에 손대는 행위만 남긴다. 수집 자체(초당 여러 건)는
+            // 활동 로그에 넣지 않는다 — 감사 기록이 통계 트래픽에 묻힌다.
+            // 동기(sync)여야 한다 — 아홉 훅이 한 메서드를 나눠 쓰며 어느 훅인지를 실행 중인
+            // 훅 이름으로 가린다(handleAnalyticsHook). 큐 워커는 그 이름을 되살리지 않아
+            // 기본 큐(database)에서는 감사 기록이 한 줄도 남지 않는다.
+            'core.analytics.settings_updated' => ['method' => 'handleAnalyticsHook', 'priority' => 20, 'sync' => true],
+            'core.analytics.privacy_mode_changed' => ['method' => 'handleAnalyticsHook', 'priority' => 20, 'sync' => true],
+            'core.analytics.data_purged' => ['method' => 'handleAnalyticsHook', 'priority' => 20, 'sync' => true],
+            'core.analytics.anonymized' => ['method' => 'handleAnalyticsHook', 'priority' => 20, 'sync' => true],
+            'core.analytics.subject_exported' => ['method' => 'handleAnalyticsHook', 'priority' => 20, 'sync' => true],
+            'core.analytics.subject_deleted' => ['method' => 'handleAnalyticsHook', 'priority' => 20, 'sync' => true],
+            'core.analytics.opt_out_changed' => ['method' => 'handleAnalyticsHook', 'priority' => 20, 'sync' => true],
+            'core.analytics.archive_requested' => ['method' => 'handleAnalyticsHook', 'priority' => 20, 'sync' => true],
+            'core.analytics.extension_purged' => ['method' => 'handleAnalyticsHook', 'priority' => 20, 'sync' => true],
         ];
     }
 
@@ -1450,6 +1467,79 @@ class CoreActivityLogListener implements HookListenerInterface
             'description_key' => 'activity_log.description.plugin_settings_reset',
             'description_params' => ['plugin_name' => $identifier],
         ]);
+    }
+
+    // ─────────────────────────────────────────────
+    // 방문자 통계 핸들러
+    // ─────────────────────────────────────────────
+
+    /**
+     * 방문자 통계 운영 행위를 활동 로그에 남깁니다.
+     *
+     * 아홉 개 훅이 이 메서드 하나를 공유합니다 — 남길 내용이 「누가 무엇을 했는가」로
+     * 같고, 훅마다 메서드를 두면 같은 코드가 아홉 벌이 됩니다. 어느 훅이었는지는
+     * 실행 중인 훅 이름에서 얻습니다.
+     *
+     * @param  mixed  ...$args  훅 인자 (첫 인자가 맥락 배열이면 로그 파라미터로 쓴다)
+     * @return void
+     */
+    public function handleAnalyticsHook(...$args): void
+    {
+        $hook = HookManager::getRunningHook();
+
+        if ($hook === null || ! str_starts_with($hook, 'core.analytics.')) {
+            return;
+        }
+
+        $action = substr($hook, strlen('core.analytics.'));
+        $context = is_array($args[0] ?? null) ? $args[0] : [];
+
+        // 이 훅들은 전부 운영자의 결정(설정·삭제·익명화·정보주체 처리)이다. 콘솔 명령이나
+        // 큐 워커에서 발화해도 관리자 활동으로 남겨야 관리자 활동 로그 화면에서 보인다.
+        $this->logActivity('analytics.'.$action, [
+            'log_type' => ActivityLogType::Admin,
+            'description_key' => 'activity_log.analytics.'.$action,
+            'description_params' => $this->analyticsDescriptionParams($context),
+            'properties' => $context,
+        ]);
+    }
+
+    /**
+     * 활동 로그 설명에 넣을 값을 고릅니다.
+     *
+     * 맥락 배열을 통째로 문구에 넣으면 개인정보가 설명문에 섞일 수 있으므로,
+     * 사람이 읽을 만한 몇 개만 고릅니다.
+     *
+     * @param  array<string, mixed>  $context  훅이 넘긴 맥락
+     * @return array<string, mixed> 설명 파라미터
+     */
+    private function analyticsDescriptionParams(array $context): array
+    {
+        $params = [];
+
+        foreach (['mode', 'run_type', 'period', 'subject', 'identifier', 'count'] as $key) {
+            if (isset($context[$key]) && is_scalar($context[$key])) {
+                $params[$key] = (string) $context[$key];
+            }
+        }
+
+        // 발화부가 쓰는 키 이름이 문구의 자리표시자와 다른 훅 — 맞춰 주지 않으면 설명문에
+        // `(:mode)` 같은 글자가 그대로 보인다. 모드는 바뀐 뒤 값, 확장은 식별자다.
+        if (! isset($params['mode']) && isset($context['to']) && is_scalar($context['to'])) {
+            $params['mode'] = (string) $context['to'];
+        }
+
+        if (! isset($params['identifier']) && isset($context['extension_identifier']) && is_scalar($context['extension_identifier'])) {
+            $params['identifier'] = (string) $context['extension_identifier'];
+        }
+
+        // 정보주체는 「무엇으로 찾았는가」(ip·user_id·visitor_key) 이름 목록으로 온다 —
+        // 값이 아니라 기준 이름이라 설명문에 넣어도 개인정보가 섞이지 않는다.
+        if (! isset($params['subject']) && isset($context['subject']) && is_array($context['subject'])) {
+            $params['subject'] = implode(', ', array_filter($context['subject'], 'is_string'));
+        }
+
+        return $params;
     }
 
     // ─────────────────────────────────────────────

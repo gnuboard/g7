@@ -4,7 +4,11 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
-## [1.1.3] - 2026-09-21
+## [1.1.3] - 2026-09-26
+
+### Added
+
+- 에스크로 배송 등록의 택배사 「기타」와 구매거절 「일시」의 일본어 번역을 추가했습니다.
 
 ### Removed
 

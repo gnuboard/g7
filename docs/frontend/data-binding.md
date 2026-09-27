@@ -12,6 +12,7 @@
 3. Optional Chaining: {{user?.profile?.name ?? '기본값'}}
 4. 파이프 함수: {{created_at | date}}, {{name | truncate(50)}}
 5. $get 헬퍼: {{$get(obj, ['key1', 'key2'], fallback)}}
+6. 대입문·정규식 리터럴·괄호 안 파이프는 평가기가 조용히 거부 → "평가기가 거부하는 문법" 절
 ```
 
 ---
@@ -252,6 +253,21 @@ DataBindingEngine은 `{{}}` 내부에서 다양한 표현식을 지원합니다.
   "variant": "{{score >= 90 ? 'excellent' : score >= 70 ? 'good' : 'poor'}}"
 }
 ```
+
+### 평가기가 거부하는 문법 (조용한 실패)
+
+표현식 평가기는 JavaScript 의 **부분집합**이다. 아래 문법은 파싱 단계에서 거부되고, 예외가 화면에 드러나지 않은 채 그 식이 원본 `{{…}}` 문자열이나 빈 값으로 흘러간다(저장 본문이 문자열이 되어 서버가 아무것도 바꾸지 않는 식). 블록 몸체 화살표 함수·즉시 실행 함수 안이라도 마찬가지다.
+
+| ❌ 거부됨 | ✅ 대신 |
+| --- | --- |
+| 대입문 — `body[k] = v`, `acc[p] = (acc[p] \|\| 0) + 1`, `x += 1` | 새 값을 만드는 식 — `Object.fromEntries(keys.map(k => [k, s[k]]))`, `reduce((acc, v) => ({ ...acc, [v.p]: (acc[v.p] \|\| 0) + 1 }), {})` |
+| 정규식 리터럴 — `url.replace(/^https?:\/\/[^/]+/, '')` | 문자열 메서드 — `url.startsWith('http') ? '/' + url.split('/').slice(3).join('/') : url` |
+| 괄호·삼항·함수 인자 **안의** 파이프 — `x ? (x \| datetime) : '-'` | 파이프를 식 최상위로 — `{{x \| datetime \| default('-')}}`, 번역 인자면 `$t:key\|at={{x \| datetime}}` |
+| 증감(`++`/`--`)·비트 연산·쉼표 연산자 | 산술·논리 연산으로 다시 쓴다 |
+
+주소에 싣는 값은 `encodeURIComponent(query.q)` 로 인코딩한다(engine-v1.72.0 허용). 허용 목록 밖의 전역(`encodeURI`·`decodeURIComponent`·`URLSearchParams` 등)은 호출하면 `Attempted to call a non-function value` 로 식 전체가 실패한다.
+
+`const`/`let` 선언·`if`·`for (const x of …)`·`return`·`try` 는 블록 안에서 쓸 수 있다. 식이 평가되는지 의심스러우면 구운 `.json` 의 바인딩을 `evaluateSafeExpression` 에 넣어 보는 테스트로 잠근다(구문 오류는 `Unexpected token`·`… is not allowed` 로 던진다).
 
 ### 사용 가능 위치
 

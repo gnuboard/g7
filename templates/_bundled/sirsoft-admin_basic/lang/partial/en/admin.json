@@ -1968,6 +1968,11 @@
         "password_changed": "Password Changed",
         "sitemap_regenerated": "Sitemap Regeneration Complete",
         "sitemap_regenerate_failed": "Sitemap Regeneration Failed",
+        "analytics_archive_failed": "Analytics Archiving Failed",
+        "analytics_ledger_limit_exceeded": "Analytics Ledger Threshold Exceeded",
+        "analytics_visit_limit_exceeded": "Visit Action Limit Exceeded",
+        "analytics_weekly_report": "Weekly Analytics Report",
+        "analytics_monthly_report": "Monthly Analytics Report",
         "dormant_pre_notice": "Dormancy Advance Notice",
         "dormant_converted": "Dormancy Applied",
         "dormant_withdraw_notice": "Dormant Account Withdrawal Notice"
@@ -3076,6 +3081,671 @@
       }
     }
   },
+  "analytics": {
+    "common": {
+      "refresh": "Refresh",
+      "csv_download": "Download CSV (for Excel)",
+      "more": "More",
+      "empty_title": "No records in the selected period",
+      "empty_description": "Check collection status on the Diagnostics screen.",
+      "visits": "Visits",
+      "visitors": "Visitors",
+      "pageviews": "Pageviews",
+      "hits": "Hits",
+      "bounce_rate": "Bounce rate",
+      "avg_time": "Avg. time",
+      "pages_per_visit": "Pages / visit",
+      "label": "Label",
+      "extra": "Extra",
+      "search_placeholder": "Search labels (Enter)",
+      "sort_label": "Sort",
+      "per_page": "Per page",
+      "empty_diagnostics_link": "Open collection diagnostics",
+      "toggle_list": "Expand or collapse list",
+      "site_timezone_badge": "Times shown in site timezone ({timezone})",
+      "queue_backlog_badge": "{count} jobs queued"
+    },
+    "period": {
+      "presets": {
+        "today": "Today",
+        "yesterday": "Yesterday",
+        "7d": "7 days",
+        "30d": "30 days",
+        "90d": "90 days",
+        "this_month": "This month",
+        "last_month": "Last month",
+        "this_year": "This year"
+      },
+      "from": "From",
+      "to": "To",
+      "unit_label": "Unit",
+      "units": {
+        "auto": "Auto",
+        "hour": "Hour",
+        "day": "Day",
+        "week": "Week",
+        "month": "Month",
+        "year": "Year"
+      },
+      "exclude_admin": "Exclude admins",
+      "exclude_member": "Exclude members",
+      "range_too_long": "You can view up to {{days}} days at a time — change the start or end date."
+    },
+    "alerts": {
+      "collection_disabled": "Visitor statistics collection is off — numbers will not grow.",
+      "collection_disabled_link": "Turn on in settings",
+      "consent_fallback": "Consent mode is on but no plugin can ask for consent, so visits are collected anonymously.",
+      "consent_cookie_fallback": "The consent plugin is active: visitors who accepted both analytics and functional cookies are recorded in IP mode, and all others anonymously (no IP, no visitor cookie).",
+      "queue_backlog": "{{count}} jobs waiting in the queue — check that a worker is running.",
+      "queue_backlog_link": "Open diagnostics",
+      "geoip_off": "GeoIP is off: countries are estimated from the browser language and regions/cities are not collected.",
+      "geoip_off_link": "Open advanced settings",
+      "anonymous_mode": "In anonymous mode the visitor key changes daily, so one person's visits are only grouped within a day.",
+      "unit_downgraded": "Hourly aggregates are outside their retention window, so the series is shown per day.",
+      "load_failed": "Could not load the statistics. Please try again in a moment.",
+      "load_failed_retry": "Try again",
+      "site_timezone": "Times on this screen follow the site timezone ({timezone}), which differs from your computer."
+    },
+    "overview": {
+      "title": "Analytics overview",
+      "description": "Today, yesterday, peak and total visitors, the trend, and top pages, referrers and countries.",
+      "realtime_now": "{{count}} visitors right now",
+      "realtime_link": "View realtime",
+      "kpi": {
+        "today": "Today",
+        "yesterday": "Yesterday",
+        "max": "Peak",
+        "total": "Total",
+        "change_label": "vs yesterday"
+      },
+      "trend_title": "Trend",
+      "quality": {
+        "bounce_rate": "Bounce rate",
+        "avg_time": "Avg. time on site",
+        "pages_per_visit": "Pages per visit"
+      },
+      "top": {
+        "pages": "Top pages",
+        "referrers": "Top referrers",
+        "countries": "Top countries"
+      },
+      "visitors_daily_sum_note": "Visitors is the sum of daily unique visitors — the visitor key rotates daily, so unique visitors across days cannot be counted."
+    },
+    "pages": {
+      "title": "Pages",
+      "description": "Which pages are read, where visitors enter and where they leave.",
+      "tabs": {
+        "popular": "Popular",
+        "entry": "Entry pages",
+        "exit": "Exit pages",
+        "titles": "Page titles"
+      }
+    },
+    "referrers": {
+      "keywords_https_hint": "Most search engines moved to HTTPS and no longer put the search term in the referring address. A mostly empty table here does not mean collection is broken.",
+      "title": "Referrers",
+      "description": "Where visitors come from — direct, search, other sites, campaigns.",
+      "tabs": {
+        "types": "Types",
+        "sites": "Sites",
+        "keywords": "Keywords",
+        "campaigns": "Campaigns"
+      },
+      "type_share_title": "Referrer type share",
+      "urls_title": "Referrer URLs for {{host}}",
+      "urls_back": "Back to referring sites",
+      "urls_column": "Referrer URL",
+      "urls_hint": "The actual URLs visitors came from on this domain. Visits recorded while referrer URL anonymization was on kept only the domain, so they collapse into a single row.",
+      "urls_empty_description": "No visits from this domain in the selected period."
+    },
+    "environment": {
+      "title": "Environment",
+      "description": "Browser, OS, device, resolution, language and locale breakdown.",
+      "tabs": {
+        "browsers": "Browsers",
+        "os": "OS",
+        "devices": "Devices",
+        "resolutions": "Resolutions",
+        "languages": "Browser languages",
+        "locales": "Site locales"
+      },
+      "device_share_title": "Device share"
+    },
+    "regions": {
+      "title": "Regions",
+      "description": "Visits by country, region and city. Regions and cities need GeoIP.",
+      "tabs": {
+        "countries": "Countries",
+        "regions": "Regions",
+        "cities": "Cities"
+      }
+    },
+    "patterns": {
+      "title": "Weekday & hour",
+      "description": "Average visit pattern by weekday and hour of day.",
+      "weekday_title": "By weekday",
+      "hour_title": "By hour",
+      "metric_label": "Metric",
+      "weekdays": {
+        "0": "Sun",
+        "1": "Mon",
+        "2": "Tue",
+        "3": "Wed",
+        "4": "Thu",
+        "5": "Fri",
+        "6": "Sat"
+      },
+      "hourly_from": "Hourly patterns are available from {{date}} — earlier hourly aggregates were pruned.",
+      "average_note": "Values are averages over the same weekday/hour in the period, not sums."
+    },
+    "actions": {
+      "title": "Search, downloads & goals",
+      "description": "Site search keywords, downloaded files, outbound links and goals recorded by extensions.",
+      "tabs": {
+        "search": "Search keywords",
+        "downloads": "Downloads",
+        "outlinks": "Outbound links",
+        "goals": "Goals",
+        "dimensions": "Extension breakdowns"
+      },
+      "no_result": "No results",
+      "revenue": "Revenue",
+      "dimension_label": "Breakdown",
+      "dimension_placeholder": "Choose a breakdown",
+      "dimensions_hint": "Breakdowns provided by installed extensions (e.g. by board) split visits here. If an extension is turned off or removed with its data kept, it is marked \"inactive extension\" and its stats remain viewable.",
+      "dimensions_empty_title": "Choose a breakdown",
+      "dimensions_empty_description": "Choose a breakdown above to see its top list.",
+      "dimensions_none_title": "No breakdowns from extensions",
+      "dimensions_none_description": "None of the active extensions provides a breakdown. When an extension declares one, you can choose it here.",
+      "dimension_pii_suffix": "personal data — no stats table",
+      "dimension_pii_title": "Personal-data breakdowns are not turned into stats tables",
+      "dimension_pii_description": "The extension marked the values of this breakdown as personal data. To keep them out of the permanent daily stats, no table is built; the values stay only in visit records and are removed when the retention period ends or on a data subject deletion request."
+    },
+    "realtime": {
+      "title": "Realtime",
+      "description": "Who is on the site right now and what they are viewing.",
+      "count_label": "in the last {{minutes}} min",
+      "window_label": "Window (min)",
+      "badge_ws": "Live connection",
+      "badge_polling": "Refreshes every {{seconds}}s",
+      "pages_title": "Pages being viewed",
+      "visitors_title": "Recent visitors",
+      "empty": "No visitors in the recent window",
+      "columns": {
+        "time": "Time",
+        "page": "Page",
+        "country": "Country",
+        "device": "Device",
+        "type": "Type",
+        "visitor": "Visitor"
+      }
+    },
+    "visitors": {
+      "title": "Visitors",
+      "description": "Visit records grouped per person. Pick one to see the action timeline.",
+      "search_placeholder": "Visitor key, IP or member ID (Enter)",
+      "type_label": "Type",
+      "types": {
+        "all": "All",
+        "guest": "Guest",
+        "member": "Member",
+        "admin": "Admin",
+        "bot": "Bot"
+      },
+      "columns": {
+        "key": "Visitor key",
+        "member": "Member",
+        "type": "Type",
+        "visits": "Visits",
+        "pageviews": "Pageviews",
+        "last_visit": "Last visit",
+        "country": "Country",
+        "device": "Device"
+      },
+      "timeline_button": "Timeline",
+      "action": {
+        "view_member": "View member",
+        "search_by_member": "Search by this member"
+      }
+    },
+    "visitor_detail": {
+      "title": "Visitor detail",
+      "back": "Back to list",
+      "delete_button": "Delete this visitor's data",
+      "card": {
+        "title": "Visitor",
+        "type": "Type",
+        "visits": "Visits",
+        "country": "Country",
+        "device": "Device",
+        "browser": "Browser / OS",
+        "ip": "IP",
+        "first_visit": "First visit",
+        "last_visit": "Last visit",
+        "member": "Member",
+        "returning": "Returning",
+        "returning_yes": "Returning",
+        "returning_no": "First visit",
+        "ip_masked": "Masked {octets} octet(s)",
+        "region": "Region",
+        "resolution": "Resolution",
+        "browser_language": "Browser language",
+        "locale": "Site language"
+      },
+      "visit_info": {
+        "source": "Recorded by",
+        "source_beacon": "Browser",
+        "source_server": "Server (no script)",
+        "referrer": "Referrer",
+        "keyword": "Search keyword",
+        "campaign": "Campaign",
+        "bounce": "Bounce",
+        "bounce_yes": "Left after one page",
+        "bounce_no": "Viewed several pages",
+        "last_action": "Last activity"
+      },
+      "visits_title": "Visit history",
+      "referrer_label": "Referrer",
+      "visit_summary": "{{pages}} pages · {{minutes}}m {{seconds}}s",
+      "conversions_badge": "{{count}}",
+      "conversions_badge_label": "Conversions",
+      "conversions_title": "Conversions",
+      "timeline": {
+        "pageview": "Pageview",
+        "download": "Download",
+        "outlink": "Outbound link",
+        "event": "Event",
+        "goal": "Goal",
+        "site_search": "Search",
+        "search_result_count": "{{count}} results"
+      }
+    },
+    "bots": {
+      "title": "Bots & crawlers",
+      "description": "How much search engines and crawlers fetch, and which URLs.",
+      "seo_cache_link": "SEO cache settings",
+      "kpi": {
+        "hits": "Bot requests",
+        "names": "Bot names"
+      },
+      "tabs": {
+        "bots": "Bots",
+        "pages": "Fetched pages"
+      },
+      "names_title": "By bot",
+      "recent_title": "Recent requests",
+      "columns": {
+        "bot": "Bot",
+        "hits": "Requests",
+        "url": "URL",
+        "cache_status": "Cache",
+        "time": "Time"
+      },
+      "cache_statuses": {
+        "hit": "Served from cache",
+        "miss": "Freshly rendered",
+        "bypass": "Cache bypassed",
+        "none": "No cache"
+      }
+    },
+    "diagnostics": {
+      "declaration_warnings_title": "Some extension declarations were dropped",
+      "declaration_warnings_description": "Conversions or breakdowns an extension declared that were left out because they are malformed, with the reason. Pass this on to the extension developer.",
+      "title": "Diagnostics",
+      "description": "Find out why numbers stop growing — collection, queue, archive and storage.",
+      "cards": {
+        "collection": "Collection",
+        "queue": "Queue",
+        "archive": "Archive",
+        "storage": "Storage"
+      },
+      "fields": {
+        "enabled_on": "On",
+        "enabled_off": "Off",
+        "anonymous_fallback": "Anonymous fallback",
+        "anonymous_for_unconsented": "Anonymous until consent",
+        "tracked_today": "{{count}} visitors today",
+        "last_tracked": "Last tracked {{at}}",
+        "queue_not_countable": "Queue not countable",
+        "pending_jobs": "{{count}} pending",
+        "failed_jobs": "{{count}} failed",
+        "backlogged": "Backlogged",
+        "worker_hint": "Jobs are waiting — archiving and anonymization need a running worker (queue:work). Visit collection is recorded without one.",
+        "last_hour_run": "Hourly {{at}}",
+        "last_day_run": "Daily {{at}}",
+        "lag_hours": "{{hours}}h behind",
+        "running": "Running #{{id}}",
+        "visits_rows": "{{count}} visit rows",
+        "actions_rows": "{{count}} action rows",
+        "storage_mb": "{{mb}} MB",
+        "over_limit": "Over warning limit",
+        "on": "on",
+        "off": "off",
+        "cloud_ranges": "Cloud ranges",
+        "trusted_proxy_warning": "warning"
+      },
+      "progress_source": {
+        "ws": "Progress: live",
+        "polling": "Progress: polling"
+      },
+      "exclusions_title": "Today's exclusions",
+      "exclusion_note": "Lives in cache — clears when the cache is flushed",
+      "exclusion_columns": {
+        "reason": "Reason",
+        "count": "Count"
+      },
+      "exclusions_empty": "No requests were excluded today",
+      "exclusion_reasons": {
+        "disabled": "Collection off",
+        "prefetch": "Prefetch",
+        "dnt": "DNT",
+        "opt_out": "Opted out",
+        "url_pattern": "URL pattern",
+        "ip_rule": "IP rule",
+        "ua_rule": "UA rule",
+        "headless": "Headless",
+        "cloud_ip": "Cloud IP",
+        "country": "Country filter",
+        "bot": "Bot",
+        "consent": "No consent",
+        "consent_revoked": "Consent revoked"
+      },
+      "runs_title": "Archive runs",
+      "run_columns": {
+        "type": "Type",
+        "period": "Period",
+        "status": "Status",
+        "progress": "Progress",
+        "processed": "Visits",
+        "trigger": "Trigger",
+        "started": "Started"
+      },
+      "run_types": {
+        "hour": "Hourly",
+        "day": "Daily",
+        "reaggregate": "Re-aggregate",
+        "anonymize": "Anonymize",
+        "purge": "Purge",
+        "extension_purge": "Extension cleanup"
+      },
+      "run_triggers": {
+        "scheduled": "Automatic (scheduled)",
+        "manual": "Manual"
+      },
+      "queue_connections": {
+        "sync": "Immediate (no queue)",
+        "database": "Database queue",
+        "redis": "Redis queue",
+        "sqs": "Amazon SQS queue",
+        "beanstalkd": "Beanstalkd queue"
+      },
+      "run_status": {
+        "running": "Running",
+        "success": "Success",
+        "failed": "Failed",
+        "skipped": "Skipped"
+      },
+      "buttons": {
+        "archive_hour": "Archive now (hour)",
+        "finalize_yesterday": "Finalize yesterday",
+        "reaggregate": "Re-aggregate range…"
+      },
+      "queued_toast": "Re-aggregation queued. Watch the progress in the run history.",
+      "started_toast": "Archive run started.",
+      "skipped_toast": "Skipped — another aggregation is already running.",
+      "failures_title": "Recent collection failures",
+      "failures_24h": "{{count}} in the last 24h",
+      "failures_empty": "No collection failures",
+      "failure_columns": {
+        "time": "Time",
+        "reason": "Reason",
+        "message": "Message",
+        "url": "URL",
+        "ip": "IP",
+        "ip_masked": "IP (masked)"
+      },
+      "failure_reasons": {
+        "all": "All reasons",
+        "validation": "Validation",
+        "max_actions": "Action limit",
+        "db_error": "DB error",
+        "listener_exception": "Listener exception",
+        "unknown_goal": "Unknown goal",
+        "unknown_dimension": "Unknown breakdown"
+      }
+    },
+    "privacy_requests": {
+      "title": "Data subject requests",
+      "description": "Find, export or delete the records of a person who filed an access or erasure request.",
+      "anonymous_notice": "For periods collected in anonymous mode only the last two days can be looked up by IP.",
+      "search": {
+        "subject_label": "Look up by",
+        "subject_ip": "IP address",
+        "subject_user": "Member ID",
+        "subject_key": "Visitor key",
+        "value_label": "Value",
+        "placeholder_ip": "203.0.113.9",
+        "placeholder_user": "Member ID",
+        "placeholder_key": "Visitor key",
+        "period_label": "Period",
+        "button": "Search"
+      },
+      "results_title": "Matching records",
+      "results_summary": "{{visits}} visits · {{actions}} actions",
+      "export_button": "Export JSON",
+      "delete_button": "Delete",
+      "no_results": "No records match",
+      "columns": {
+        "visit_at": "Visited at",
+        "visitor_key": "Visitor key",
+        "ip": "IP",
+        "actions": "Actions",
+        "ip_masked": "IP (masked)"
+      }
+    },
+    "settings": {
+      "title": "Analytics settings",
+      "description": "Collection, privacy, bots, retention and reports. Saving applies every value you changed, on any tab.",
+      "tabs": {
+        "collection": "Collection",
+        "privacy": "Privacy",
+        "bots": "Bots & exclusions",
+        "retention": "Retention & storage",
+        "reports": "Reports"
+      },
+      "saved": "Settings saved.",
+      "save_error": "Failed to save settings.",
+      "validation_error": "Please check the values",
+      "units": {
+        "minutes": "min",
+        "days": "days"
+      },
+      "collection": {
+        "enabled": "Collect visitor statistics",
+        "enabled_hint": "When off, beacons still get 204 but nothing is recorded.",
+        "visit_timeout": "Visit timeout",
+        "max_actions": "Max actions per visit",
+        "excluded_url_patterns": "Excluded URL patterns",
+        "excluded_url_patterns_placeholder": "/admin*",
+        "excluded_url_patterns_hint": "Paths never counted, such as admin screens. The tracker filters with the same rules.",
+        "site_search": "Record site search keywords",
+        "site_search_hint": "The search API hook records keywords and result counts.",
+        "track_downloads": "Track downloads",
+        "track_outlinks": "Track outbound link clicks",
+        "download_extensions": "Extensions counted as downloads",
+        "public_summary": "Visitor counter on the site",
+        "public_summary_hint": "Enables the public summary API read by the home page counter."
+      },
+      "opt_out": {
+        "title": "Don't count my visits",
+        "hint": "Excludes this browser from statistics — so your own visits don't top the page list while you work on the site.",
+        "badge_on": "Counting",
+        "badge_off": "Excluded",
+        "enable": "Exclude me",
+        "disable": "Count me again"
+      },
+      "privacy": {
+        "consent_source_label": "Consent source",
+        "consent_source_none": "None",
+        "consent_sources": {
+          "gdpr": "Consent management plugin (GDPR)",
+          "filter": "Consent check connected by an extension"
+        },
+        "mode_label": "Privacy level",
+        "modes": {
+          "full": {
+            "title": "Full",
+            "description": "Recognises returning visitors with a cookie and stores masked IPs.",
+            "traits": "Returning ✅ · Cookie ✅ · Masked IP stored"
+          },
+          "consent": {
+            "title": "Consent",
+            "description": "Only visitors allowed by the consent plugin get a cookie and IP storage.",
+            "traits": "Returning ✅ (consented) · Cookie on consent · IP on consent"
+          },
+          "anonymous": {
+            "title": "Anonymous",
+            "description": "No cookie: visits are grouped by a daily hash and IPs are never stored.",
+            "traits": "Returning ❌ · Cookie ❌ · No IP"
+          }
+        },
+        "respect_dnt": "Respect Do Not Track",
+        "respect_dnt_hint": "Visitors sending the DNT signal are not counted.",
+        "ip_mask_octets": "IP masking",
+        "ip_mask": {
+          "0": "No masking",
+          "1": "Last octet (10.20.30.0)",
+          "2": "Last 2 octets (10.20.0.0)",
+          "3": "Last 3 octets (10.0.0.0)"
+        },
+        "ip_mask_hint": "With no masking the city stays accurate, and at 1 octet the city usually survives. From 2 octets only the country is reliable; 3 octets makes even the country inaccurate.",
+        "anonymize_referrer": "Anonymize referrer URL",
+        "referrer_modes": {
+          "none": "Keep",
+          "domain_only": "Domain only"
+        },
+        "visitor_cookie_days": "Visitor cookie lifetime",
+        "geo_before_mask": "Geolocate before masking",
+        "geo_before_mask_hint": "Uses the original IP for geolocation to keep accuracy.",
+        "pseudonymize_user_id": "Pseudonymize member ID",
+        "pseudonymize_user_id_hint": "Stores a hash instead of the member ID.",
+        "consent_source_unknown": "no read permission"
+      },
+      "bots": {
+        "bot_detector_enabled": "Use SEO bot detection",
+        "bot_detector_enabled_hint": "Shares the bot verdict of SEO settings. Even when off, the built-in classifier filters bots.",
+        "bot_tracking_enabled": "Record bot requests",
+        "bot_tracking_enabled_hint": "Counts bot visits separately and shows them on the Bots screen.",
+        "block_headless": "Exclude automated browsers",
+        "exclude_prefetch": "Exclude prefetch",
+        "exclude_prefetch_hint": "Requests prefetched by the browser are not real views.",
+        "excluded_ips": "Excluded IPs / ranges",
+        "excluded_ips_hint": "CIDR notation accepted.",
+        "ip_allowlist": "Allowed IPs",
+        "ip_allowlist_hint": "These addresses are counted even if another exclusion rule matches.",
+        "excluded_user_agents": "Excluded UA strings",
+        "block_cloud_ip_ranges": "Block cloud IP ranges",
+        "cloud_ranges_updated": "List updated: {{at}}",
+        "cloud_ranges_refresh": "Refresh list",
+        "country_filter_mode": "Country filter",
+        "country_filter_modes": {
+          "none": "Off",
+          "include": "Only listed countries",
+          "exclude": "Exclude listed countries"
+        },
+        "country_filter_geoip_hint": "GeoIP must be on to use the country filter.",
+        "country_filter_codes": "Country codes"
+      },
+      "retention": {
+        "retention_days": "Ledger retention",
+        "retention_days_hint": "When visit/action ledgers are pruned. Daily and monthly aggregates are kept forever.",
+        "hourly_retention_days": "Hourly aggregate retention",
+        "bot_hits_retention_days": "Bot log retention (days)",
+        "failure_log_retention_days": "Failure log retention (days)",
+        "ledger_warning_actions": "Action row warning",
+        "ledger_warning_visits": "Visit row warning",
+        "archive_chunk_size": "Archive chunk (visits)",
+        "realtime_poll_seconds": "Realtime polling (s)",
+        "realtime_window_minutes": "Realtime window (min)",
+        "top_n": "Top list sizes",
+        "top_n_overview": "Overview",
+        "top_n_dashboard": "Dashboard",
+        "top_n_detail": "Detail",
+        "top_n_hint": "Overview · dashboard · detail, in that order.",
+        "storage_title": "Storage",
+        "storage_unsupported": "This database driver does not report table sizes.",
+        "storage_permission_required": "Storage usage requires the analytics view permission.",
+        "storage_columns": {
+          "table": "Table",
+          "rows": "Rows",
+          "size": "Size"
+        },
+        "purge_all": "Delete all analytics data"
+      },
+      "reports": {
+        "weekly": "Weekly report mail",
+        "weekly_hint": "Sent to the admin role every Monday at 08:00.",
+        "monthly": "Monthly report mail",
+        "monthly_hint": "Sent to the admin role on the 1st at 08:00.",
+        "definitions_title": "Notification definitions",
+        "definitions_description": "Whether report and alert notifications are active and their channels. Edit templates in Settings › Notification definitions.",
+        "definition_inactive_alert": "Report mail is on but its notification definition is off, so no mail will be sent — enable the definition below.",
+        "definitions_empty": "No analytics notification definitions.",
+        "definitions_permission_required": "Notification definitions require the notification settings permission to view or change.",
+        "definition_active": "Active",
+        "definition_inactive": "Inactive",
+        "edit_templates": "Edit templates",
+        "reset_button": "Reset",
+        "reset_confirm": "Reset this notification's templates to the defaults?",
+        "reset_success": "Templates reset."
+      }
+    },
+    "modals": {
+      "retro": {
+        "title": "Apply to existing data as well?",
+        "body": "IPs, referrer URLs and member IDs of {{visits}} visits and {{actions}} actions will be rewritten to the new setting. This cannot be undone.",
+        "hint": "Aggregates are untouched — they contain nothing that identifies a person.",
+        "confirm_label": "I understand this cannot be undone",
+        "apply": "Apply retroactively",
+        "skip": "Skip",
+        "queued": "Retroactive anonymization started. Watch the progress in the Diagnostics run history."
+      },
+      "purge": {
+        "title": "Delete all analytics data",
+        "body": "Deletes visit/action ledgers, aggregates, bot logs, failure logs, run history and salts. This cannot be undone.",
+        "rows": "Currently {{visits}} visit rows · {{actions}} action rows",
+        "confirm_label": "I understand everything will be deleted and cannot be restored",
+        "button": "Delete everything",
+        "success": "All analytics data deleted."
+      },
+      "reaggregate": {
+        "title": "Re-aggregate a range",
+        "hint": "Days past the ledger retention are skipped (their aggregates stay). Several months can take minutes.",
+        "from": "From",
+        "to": "To",
+        "force": "Re-aggregate finalized days too",
+        "button": "Start"
+      },
+      "subject_delete": {
+        "title": "Delete data subject records",
+        "body": "Actions and conversions of the matching visits are deleted first, then the visits. Aggregates stay. This cannot be undone.",
+        "confirm_label": "I understand this cannot be undone",
+        "button": "Delete",
+        "success": "Deleted {{visits}} visits · {{actions}} actions."
+      }
+    },
+    "dashboard_widget": {
+      "title": "Visitors",
+      "today": "Today",
+      "yesterday": "Yesterday",
+      "max": "Peak",
+      "total": "Total",
+      "now": "{{count}} online",
+      "detail": "Details",
+      "collection_off": "Collection off",
+      "trend": "Visitors, last 7 days"
+    }
+  },
   "modal_label": {
     "activity_log_list": {
       "delete_confirm_modal": "Delete Activity Log",
@@ -3198,6 +3868,12 @@
     },
     "changelog_modal": "Core Changelog",
     "license_modal": "Core License",
-    "notification_delete_all_confirm_modal": "Delete All Notifications"
+    "notification_delete_all_confirm_modal": "Delete All Notifications",
+    "analytics": {
+      "retro_anonymize_modal": "Retroactive anonymization confirm",
+      "purge_all_modal": "Delete all analytics data confirm",
+      "reaggregate_modal": "Re-aggregate range",
+      "subject_delete_modal": "Delete data subject records confirm"
+    }
   }
 }

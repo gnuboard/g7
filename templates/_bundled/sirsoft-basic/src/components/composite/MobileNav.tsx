@@ -154,7 +154,7 @@ const MobileNav: React.FC<MobileNavProps> = ({
             className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
             aria-label="메뉴 닫기"
           >
-            <Icon name="x" className="w-6 h-6" />
+            <Icon name="x" className="w-6 h-6 text-2xl leading-none" />
           </Button>
         </Div>
 

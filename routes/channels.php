@@ -27,6 +27,11 @@ Broadcast::channel('core.admin.dashboard', function ($user) {
     return $user->hasPermission('core.dashboard.read');
 });
 
+// 관리자 방문자 통계 실시간 채널 - core.analytics.read 권한 필요
+Broadcast::channel('core.admin.analytics', function ($user) {
+    return $user->hasPermission('core.analytics.read');
+});
+
 // 관리자 Sitemap 재생성 진행상황 채널 - core.settings.read 권한 필요 (SEO 탭 읽기 권한과 일치)
 Broadcast::channel('core.admin.seo.sitemap', function ($user) {
     return $user->hasPermission('core.settings.read');

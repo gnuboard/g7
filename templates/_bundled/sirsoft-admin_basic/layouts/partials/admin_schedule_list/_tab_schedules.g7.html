@@ -34,7 +34,7 @@
       <div class="admin-card">
         <div class="flex-between">
           <span class="text-label-subtle">$t:admin.schedules.stats.failed</span>
-          <icon name="x-circle" class="text-xl text-red-500"/>
+          <icon name="circle-xmark" class="text-xl text-red-500"/>
         </div>
         <div class="mt-2 text-2xl font-bold text-red-600 dark:text-red-400">{{schedules?.data?.statistics?.failed ?? 0}}</div>
       </div>
@@ -282,7 +282,7 @@
           <on type="click">
             <refetch-data-source dataSourceId="schedules"/>
           </on>
-          <icon name="refresh-cw" class="text-base"/>
+          <icon name="arrows-rotate" class="text-base"/>
         </button>
         <button data-ref="reset_button" class="flex-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 font-medium transition-colors">
           <on type="click">

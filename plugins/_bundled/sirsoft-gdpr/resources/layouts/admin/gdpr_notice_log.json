@@ -15,7 +15,8 @@
             "method": "GET",
             "auto_fetch": true,
             "auth_required": true,
-            "refetchOnMount": true
+            "refetchOnMount": true,
+            "comment": "통지 이력 한 쪽 — 쪽 번호는 질의 `page` 라 새로고침에 살아난다. 화면에 들어올 때마다 다시 받아(`refetchOnMount`)\n       설정 화면에서 시험 발송을 접수하고 넘어와도 최신 이력을 본다."
         }
     ],
     "permissions": [
@@ -95,6 +96,7 @@
                         },
                         "actions": [
                             {
+                                "comment": "쪽 이동 — 질의 `page` 만 바꿔 주소를 갈아 끼운다(`replace`). 뒤로 가기가 쪽마다 쌓이지 않고, 전환 표시는 표 몸통에만 뜬다.",
                                 "type": "change",
                                 "event": "onPageChange",
                                 "handler": "navigate",

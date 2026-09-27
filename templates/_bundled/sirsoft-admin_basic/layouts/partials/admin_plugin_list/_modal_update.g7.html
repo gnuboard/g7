@@ -43,16 +43,16 @@
         <img data-if="{{_global.selectedPlugin?.icon_url}}" src="{{_global.selectedPlugin.icon_url}}" alt="" loading="lazy" decoding="async" class="w-5 h-5 object-contain"/>
         <icon data-if="{{!_global.selectedPlugin?.icon_url}}" name="puzzle-piece" class="text-xs text-gray-600 dark:text-gray-400" aria-hidden="true"/>
       </span><span>$t:admin.plugins.modals.update_confirm|name={{_global.selectedPlugin.name ?? ''}}</span></p>
-      <div class="mt-3 p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg space-y-2">
-        <div class="flex-center gap-2 text-sm">
+      <div class="kv-list gap-y-2 text-sm mt-3 p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
+        <div class="kv-row">
           <span class="text-gray-500 dark:text-gray-400">$t:admin.plugins.modals.field_version</span>
           <span class="text-primary font-medium">$t:admin.plugins.modals.update_version_info|from={{_global.selectedPlugin.version ?? ''}}|to={{_global.selectedPlugin.latest_version ?? ''}}</span>
         </div>
-        <div class="flex-center gap-2 text-sm">
+        <div class="kv-row">
           <span class="text-gray-500 dark:text-gray-400">$t:admin.plugins.modals.field_vendor</span>
           <span class="text-gray-700 dark:text-gray-300">{{_global.selectedPlugin.vendor ?? ''}}</span>
         </div>
-        <div class="flex-center gap-2 text-sm">
+        <div class="kv-row">
           <span class="text-gray-500 dark:text-gray-400">$t:admin.plugins.modals.field_update_source</span>
           <span class="text-gray-700 dark:text-gray-300">{{_global.selectedPlugin.update_source === 'github' ? '$t:admin.plugins.modals.update_source_github' : (_global.selectedPlugin.update_source === 'pending' ? '$t:admin.plugins.modals.update_source_pending' : '$t:admin.plugins.modals.update_source_bundled')}}</span>
         </div>

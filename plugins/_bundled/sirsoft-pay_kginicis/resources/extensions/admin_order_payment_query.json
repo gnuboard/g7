@@ -59,7 +59,7 @@
                             "type": "basic",
                             "name": "Icon",
                             "props": {
-                                "name": "flask-conical",
+                                "name": "flask",
                                 "className": "text-base text-orange-600 dark:text-orange-400 flex-shrink-0"
                             }
                         },
@@ -100,7 +100,7 @@
                                     "type": "basic",
                                     "name": "Icon",
                                     "props": {
-                                        "name": "alert-triangle",
+                                        "name": "triangle-exclamation",
                                         "className": "text-base text-red-600 dark:text-red-400 flex-shrink-0"
                                     }
                                 },
@@ -117,7 +117,7 @@
                                     "name": "Span",
                                     "if": "{{kginicis_cbt_reconciliation.data?.status === 'manual_refund_required'}}",
                                     "props": {
-                                        "className": "px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 dark:bg-red-900/40text-danger-soft"
+                                        "className": "px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 dark:bg-red-900/40 text-danger-soft"
                                     },
                                     "text": "$t:sirsoft-pay_kginicis.admin.cbt_reconciliation_manual_badge"
                                 },
@@ -359,7 +359,7 @@
                                             "name": "Icon",
                                             "if": "{{!_local._kginicisCbtRetrying}}",
                                             "props": {
-                                                "name": "refresh-cw",
+                                                "name": "arrows-rotate",
                                                 "className": "text-xs"
                                             }
                                         },
@@ -743,7 +743,7 @@
                                             "name": "Icon",
                                             "if": "{{!_local._kginicisCvsRechecking}}",
                                             "props": {
-                                                "name": "refresh-cw",
+                                                "name": "arrows-rotate",
                                                 "className": "text-xs"
                                             }
                                         },
@@ -866,7 +866,7 @@
                                             "name": "Icon",
                                             "if": "{{!_local._kginicisCvsSimulating}}",
                                             "props": {
-                                                "name": "check-circle-2",
+                                                "name": "circle-check",
                                                 "className": "text-xs"
                                             }
                                         },
@@ -1241,7 +1241,7 @@
                                                                     "type": "basic",
                                                                     "name": "Icon",
                                                                     "props": {
-                                                                        "name": "shield-check",
+                                                                        "name": "shield-halved",
                                                                         "className": "text-xs"
                                                                     }
                                                                 },
@@ -1968,7 +1968,7 @@
                                                                                             "type": "basic",
                                                                                             "name": "Td",
                                                                                             "props": {
-                                                                                                "className": "px-2 py-1.5text-danger-soft font-mono"
+                                                                                                "className": "px-2 py-1.5 text-danger-soft font-mono"
                                                                                             },
                                                                                             "text": "{{pcItem.price ?? '-'}}"
                                                                                         },
@@ -2411,7 +2411,7 @@
                                                     "props": {
                                                         "value": "etc"
                                                     },
-                                                    "text": "기타"
+                                                    "text": "$t:sirsoft-pay_kginicis.admin.escrow_delivery_courier_etc"
                                                 }
                                             ]
                                         }
@@ -2595,7 +2595,7 @@
                                             "type": "basic",
                                             "name": "Icon",
                                             "props": {
-                                                "name": "x-circle",
+                                                "name": "circle-xmark",
                                                 "className": "text-sm text-red-600 dark:text-red-400 flex-shrink-0"
                                             }
                                         },
@@ -2622,7 +2622,7 @@
                                             "props": {
                                                 "className": "text-gray-500 dark:text-gray-400"
                                             },
-                                            "text": "일시"
+                                            "text": "$t:sirsoft-pay_kginicis.admin.escrow_deny_confirm_buyer_denied_at"
                                         },
                                         {
                                             "type": "basic",

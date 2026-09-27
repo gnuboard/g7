@@ -76,7 +76,7 @@
                                             "type": "basic",
                                             "name": "Icon",
                                             "props": {
-                                                "name": "trash-2",
+                                                "name": "trash-can",
                                                 "className": "text-base"
                                             }
                                         }
@@ -138,7 +138,7 @@
                                             "type": "basic",
                                             "name": "Icon",
                                             "props": {
-                                                "name": "trash-2",
+                                                "name": "trash-can",
                                                 "className": "text-base"
                                             }
                                         }

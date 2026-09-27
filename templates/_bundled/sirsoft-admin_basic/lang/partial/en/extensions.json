@@ -13,7 +13,8 @@
     "dismissed": "Notification dismissed.",
     "auto_deactivated_listed": "List of auto-deactivated extensions.",
     "recover_action": "Re-activate",
-    "dismiss_action": "Dismiss"
+    "dismiss_action": "Dismiss",
+    "open_action": "Open"
   },
   "badges": {
     "incompatible": "Core upgrade required",

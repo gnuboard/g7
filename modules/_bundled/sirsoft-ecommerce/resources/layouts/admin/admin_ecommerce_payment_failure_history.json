@@ -88,7 +88,7 @@
                                         "type": "basic",
                                         "name": "Icon",
                                         "props": {
-                                            "name": "refresh-cw",
+                                            "name": "arrows-rotate",
                                             "className": "text-xl"
                                         }
                                     }
@@ -210,7 +210,7 @@
                                                 "type": "basic",
                                                 "name": "Icon",
                                                 "props": {
-                                                    "name": "refresh-cw",
+                                                    "name": "arrows-rotate",
                                                     "className": "text-base"
                                                 }
                                             },
@@ -261,7 +261,7 @@
                                                     }
                                                 ],
                                                 "props": {
-                                                    "className": "{{_local.paymentMethodFilter === '' ? 'btn-badge cursor-pointer bg-gray-200 text-gray-700 ring-1 ring-gray-400 dark:bg-gray-700 dark:text-gray-300' : 'btn-badge cursor-pointer'}}"
+                                                    "className": "{{_local.paymentMethodFilter === '' ? 'btn-badge cursor-pointer bg-gray-200 text-gray-700 ring-1 ring-gray-400 dark:ring-gray-500 dark:bg-gray-700 dark:text-gray-300' : 'btn-badge cursor-pointer'}}"
                                                 },
                                                 "children": [
                                                     {
@@ -294,7 +294,7 @@
                                                     }
                                                 ],
                                                 "props": {
-                                                    "className": "{{_local.paymentMethodFilter === 'card' ? 'btn-badge btn-badge-blue cursor-pointer ring-1 ring-blue-400' : 'btn-badge cursor-pointer'}}"
+                                                    "className": "{{_local.paymentMethodFilter === 'card' ? 'btn-badge btn-badge-blue cursor-pointer ring-1 ring-blue-400 dark:ring-blue-500' : 'btn-badge cursor-pointer'}}"
                                                 },
                                                 "children": [
                                                     {
@@ -327,7 +327,7 @@
                                                     }
                                                 ],
                                                 "props": {
-                                                    "className": "{{_local.paymentMethodFilter === 'bank_transfer' ? 'btn-badge btn-badge-cyan cursor-pointer ring-1 ring-cyan-400' : 'btn-badge cursor-pointer'}}"
+                                                    "className": "{{_local.paymentMethodFilter === 'bank_transfer' ? 'btn-badge btn-badge-cyan cursor-pointer ring-1 ring-cyan-400 dark:ring-cyan-500' : 'btn-badge cursor-pointer'}}"
                                                 },
                                                 "children": [
                                                     {
@@ -360,7 +360,7 @@
                                                     }
                                                 ],
                                                 "props": {
-                                                    "className": "{{_local.paymentMethodFilter === 'virtual_account' ? 'btn-badge btn-badge-orange cursor-pointer ring-1 ring-orange-400' : 'btn-badge cursor-pointer'}}"
+                                                    "className": "{{_local.paymentMethodFilter === 'virtual_account' ? 'btn-badge btn-badge-orange cursor-pointer ring-1 ring-orange-400 dark:ring-orange-500' : 'btn-badge cursor-pointer'}}"
                                                 },
                                                 "children": [
                                                     {
@@ -393,14 +393,14 @@
                                                     }
                                                 ],
                                                 "props": {
-                                                    "className": "{{_local.paymentMethodFilter === 'easy_payment' ? 'btn-badge btn-badge-yellow cursor-pointer ring-1 ring-yellow-400' : 'btn-badge cursor-pointer'}}"
+                                                    "className": "{{_local.paymentMethodFilter === 'easy_payment' ? 'btn-badge btn-badge-yellow cursor-pointer ring-1 ring-yellow-400 dark:ring-yellow-500' : 'btn-badge cursor-pointer'}}"
                                                 },
                                                 "children": [
                                                     {
                                                         "type": "basic",
                                                         "name": "Icon",
                                                         "props": {
-                                                            "name": "smartphone",
+                                                            "name": "mobile-screen",
                                                             "className": "text-xs"
                                                         }
                                                     },
@@ -426,14 +426,14 @@
                                                     }
                                                 ],
                                                 "props": {
-                                                    "className": "{{_local.paymentMethodFilter === 'bank_deposit' ? 'btn-badge btn-badge-red cursor-pointer ring-1 ring-red-400' : 'btn-badge cursor-pointer'}}"
+                                                    "className": "{{_local.paymentMethodFilter === 'bank_deposit' ? 'btn-badge btn-badge-red cursor-pointer ring-1 ring-red-400 dark:ring-red-500' : 'btn-badge cursor-pointer'}}"
                                                 },
                                                 "children": [
                                                     {
                                                         "type": "basic",
                                                         "name": "Icon",
                                                         "props": {
-                                                            "name": "banknote",
+                                                            "name": "money-bill",
                                                             "className": "text-xs"
                                                         }
                                                     },
@@ -486,7 +486,7 @@
                                                     }
                                                 ],
                                                 "props": {
-                                                    "className": "{{_local.deviceFilter === '' ? 'btn-badge btn-badge-blue cursor-pointer ring-1 ring-blue-400' : 'btn-badge cursor-pointer'}}"
+                                                    "className": "{{_local.deviceFilter === '' ? 'btn-badge btn-badge-blue cursor-pointer ring-1 ring-blue-400 dark:ring-blue-500' : 'btn-badge cursor-pointer'}}"
                                                 },
                                                 "text": "$t:sirsoft-ecommerce.admin.payment_failure_history.filter.all"
                                             },
@@ -505,7 +505,7 @@
                                                     }
                                                 ],
                                                 "props": {
-                                                    "className": "{{_local.deviceFilter === 'desktop' ? 'btn-badge cursor-pointer bg-gray-200 text-gray-700 ring-1 ring-gray-400 dark:bg-gray-700 dark:text-gray-300' : 'btn-badge cursor-pointer'}}"
+                                                    "className": "{{_local.deviceFilter === 'desktop' ? 'btn-badge cursor-pointer bg-gray-200 text-gray-700 ring-1 ring-gray-400 dark:ring-gray-500 dark:bg-gray-700 dark:text-gray-300' : 'btn-badge cursor-pointer'}}"
                                                 },
                                                 "text": "$t:sirsoft-ecommerce.admin.payment_failure_history.filter.desktop"
                                             },
@@ -524,7 +524,7 @@
                                                     }
                                                 ],
                                                 "props": {
-                                                    "className": "{{_local.deviceFilter === 'mobile' ? 'btn-badge cursor-pointer bg-gray-200 text-gray-700 ring-1 ring-gray-400 dark:bg-gray-700 dark:text-gray-300' : 'btn-badge cursor-pointer'}}"
+                                                    "className": "{{_local.deviceFilter === 'mobile' ? 'btn-badge cursor-pointer bg-gray-200 text-gray-700 ring-1 ring-gray-400 dark:ring-gray-500 dark:bg-gray-700 dark:text-gray-300' : 'btn-badge cursor-pointer'}}"
                                                 },
                                                 "text": "$t:sirsoft-ecommerce.admin.payment_failure_history.filter.mobile"
                                             }
@@ -869,7 +869,7 @@
                                                                         "type": "basic",
                                                                         "name": "Icon",
                                                                         "props": {
-                                                                            "name": "alert-circle",
+                                                                            "name": "circle-exclamation",
                                                                             "className": "text-base text-error shrink-0 mt-0.5"
                                                                         }
                                                                     },
@@ -922,7 +922,7 @@
                                                                                         "type": "basic",
                                                                                         "name": "Icon",
                                                                                         "props": {
-                                                                                            "name": "alert-circle",
+                                                                                            "name": "circle-exclamation",
                                                                                             "className": "text-base text-error"
                                                                                         }
                                                                                     },
@@ -1108,7 +1108,7 @@
                                                                                         "type": "basic",
                                                                                         "name": "Icon",
                                                                                         "props": {
-                                                                                            "name": "monitor",
+                                                                                            "name": "desktop",
                                                                                             "className": "text-base icon-muted"
                                                                                         }
                                                                                     },
@@ -1305,7 +1305,7 @@
                                                                         "type": "basic",
                                                                         "name": "Icon",
                                                                         "props": {
-                                                                            "name": "alert-circle",
+                                                                            "name": "circle-exclamation",
                                                                             "className": "text-base text-error shrink-0 mt-0.5"
                                                                         }
                                                                     },
@@ -1428,7 +1428,7 @@
                                                                         "type": "basic",
                                                                         "name": "Icon",
                                                                         "props": {
-                                                                            "name": "alert-circle",
+                                                                            "name": "circle-exclamation",
                                                                             "className": "text-base text-error shrink-0 mt-0.5"
                                                                         }
                                                                     },
@@ -1701,7 +1701,7 @@
                                                                                 "type": "basic",
                                                                                 "name": "Icon",
                                                                                 "props": {
-                                                                                    "name": "alert-circle",
+                                                                                    "name": "circle-exclamation",
                                                                                     "className": "text-base text-error shrink-0 mt-0.5"
                                                                                 }
                                                                             },
@@ -1820,7 +1820,7 @@
                                                                                                 "type": "basic",
                                                                                                 "name": "Icon",
                                                                                                 "props": {
-                                                                                                    "name": "alert-circle",
+                                                                                                    "name": "circle-exclamation",
                                                                                                     "className": "text-xl text-error"
                                                                                                 }
                                                                                             },
@@ -2178,7 +2178,7 @@
                                                                                                         "type": "basic",
                                                                                                         "name": "Icon",
                                                                                                         "props": {
-                                                                                                            "name": "monitor",
+                                                                                                            "name": "desktop",
                                                                                                             "className": "text-base icon-muted"
                                                                                                         }
                                                                                                     },
@@ -2418,7 +2418,7 @@
                                                                                 "type": "basic",
                                                                                 "name": "Icon",
                                                                                 "props": {
-                                                                                    "name": "alert-circle",
+                                                                                    "name": "circle-exclamation",
                                                                                     "className": "text-base text-error shrink-0 mt-0.5"
                                                                                 }
                                                                             },
@@ -2605,7 +2605,7 @@
                                                                                 "type": "basic",
                                                                                 "name": "Icon",
                                                                                 "props": {
-                                                                                    "name": "alert-circle",
+                                                                                    "name": "circle-exclamation",
                                                                                     "className": "text-base text-error shrink-0 mt-0.5"
                                                                                 }
                                                                             },
@@ -2792,7 +2792,7 @@
                                                                                 "type": "basic",
                                                                                 "name": "Icon",
                                                                                 "props": {
-                                                                                    "name": "alert-circle",
+                                                                                    "name": "circle-exclamation",
                                                                                     "className": "text-base text-error shrink-0 mt-0.5"
                                                                                 }
                                                                             },
@@ -2979,7 +2979,7 @@
                                                                                 "type": "basic",
                                                                                 "name": "Icon",
                                                                                 "props": {
-                                                                                    "name": "alert-circle",
+                                                                                    "name": "circle-exclamation",
                                                                                     "className": "text-base text-error shrink-0 mt-0.5"
                                                                                 }
                                                                             },
@@ -3166,7 +3166,7 @@
                                                                                 "type": "basic",
                                                                                 "name": "Icon",
                                                                                 "props": {
-                                                                                    "name": "alert-circle",
+                                                                                    "name": "circle-exclamation",
                                                                                     "className": "text-base text-error shrink-0 mt-0.5"
                                                                                 }
                                                                             },
@@ -3353,7 +3353,7 @@
                                                                                 "type": "basic",
                                                                                 "name": "Icon",
                                                                                 "props": {
-                                                                                    "name": "alert-circle",
+                                                                                    "name": "circle-exclamation",
                                                                                     "className": "text-base text-error shrink-0 mt-0.5"
                                                                                 }
                                                                             },
@@ -3540,7 +3540,7 @@
                                                                                 "type": "basic",
                                                                                 "name": "Icon",
                                                                                 "props": {
-                                                                                    "name": "alert-circle",
+                                                                                    "name": "circle-exclamation",
                                                                                     "className": "text-base text-error shrink-0 mt-0.5"
                                                                                 }
                                                                             },
@@ -3727,7 +3727,7 @@
                                                                                 "type": "basic",
                                                                                 "name": "Icon",
                                                                                 "props": {
-                                                                                    "name": "alert-circle",
+                                                                                    "name": "circle-exclamation",
                                                                                     "className": "text-base text-error shrink-0 mt-0.5"
                                                                                 }
                                                                             },
@@ -3914,7 +3914,7 @@
                                                                                 "type": "basic",
                                                                                 "name": "Icon",
                                                                                 "props": {
-                                                                                    "name": "alert-circle",
+                                                                                    "name": "circle-exclamation",
                                                                                     "className": "text-base text-error shrink-0 mt-0.5"
                                                                                 }
                                                                             },
@@ -4016,7 +4016,7 @@
                                                         "type": "basic",
                                                         "name": "Icon",
                                                         "props": {
-                                                            "name": "chevrons-left",
+                                                            "name": "angles-left",
                                                             "className": "text-base"
                                                         }
                                                     }
@@ -4089,7 +4089,7 @@
                                                         "type": "basic",
                                                         "name": "Icon",
                                                         "props": {
-                                                            "name": "chevrons-right",
+                                                            "name": "angles-right",
                                                             "className": "text-base"
                                                         }
                                                     }

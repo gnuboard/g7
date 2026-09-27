@@ -579,6 +579,8 @@
                     <div class="flex-wrap-center gap-2">
                       <button data-ref="view_annual_notice_targets" data-if="{{gdprAnnualNoticePreview?.data?.can_view_targets}}" type="button" class="btn btn-sm btn-ghost">
                         <on type="click">
+                          <!-- 연간 통지 대상 명단 — 목록 주소가 이 플러그인 전용 소스에 고정돼 있어 경로는 넣지 않고, 쪽 상태·제목만 초기화한 뒤
+                               첫 쪽을 다시 받아 창을 연다. -->
                           <sequence>
                             <set-state target="global" privacyTargets="{{({ currentPage: 1, hasMore: true, isLoadingMore: false })}}"/>
                             <set-state target="global" privacyTargets.title="$t:sirsoft-gdpr.annual_notice.targets.title"/>
@@ -590,6 +592,8 @@
                       </button>
                       <button data-ref="run_annual_notice" data-if="{{privacyManualRuns?.data?.targets?.['sirsoft-gdpr:annual_notice']?.can_run}}" type="button" class="btn btn-sm btn-outline" disabled="{{_local.hasChanges || privacyManualRuns?.data?.targets?.['sirsoft-gdpr:annual_notice']?.run?.is_active}}">
                         <on type="click">
+                          <!-- 연간 통지 지금 실행 — 확인 창을 먼저 열고 실행 시점의 통지 대상 수를 받아 채운다. 파기가 아니라 통지 접수라 처리 방식 줄은
+                               없고, 한 번에 발송 상한만큼만 접수된다(남은 인원은 결과 줄에 따로 보인다). 저장 전 변경이 있으면 잠긴다. -->
                           <sequence>
                             <set-state target="global" privacyRun="{{({ key: 'sirsoft-gdpr:annual_notice', label: privacyManualRuns?.data?.targets?.['sirsoft-gdpr:annual_notice']?.label ?? '', supportsSkip: false, skipWaiting: false, preview: null, loading: true, submitting: false })}}"/>
                             <open-modal target="privacy_run_modal"/>
@@ -629,6 +633,8 @@
                   <item value="database" label="$t:sirsoft-gdpr.annual_notice.database"/>
                 </prop>
                 <on type="change">
+                  <!-- 고른 채널 배열을 폼에 넣고 변경 표시를 세운다. 변경 표시가 서 있는 동안 시험 발송·지금 실행이 잠기므로
+                       (둘 다 저장된 설정으로 보낸다) 채널을 바꾸면 저장부터 하게 된다. -->
                   <set-state target="local" form.annual_notice.channels="{{$event?.target?.value ?? []}}" :hasChanges="true"/>
                 </on>
               </tag-input>
@@ -646,6 +652,8 @@
             <div class="flex flex-wrap gap-3">
               <button data-ref="annual_notice_test" type="button" class="btn btn-primary" disabled="{{_local.hasChanges || _local.noticeSending}}">
                 <on type="click">
+                  <!-- 본인 시험 발송 — 저장된 설정으로 지금 로그인한 관리자에게 통지 하나를 큐에 접수한다. 누르는 동안 버튼을 잠가
+                       중복 접수를 막고, 성공·실패 어느 쪽이든 잠금을 푼다. 실제 채널별 결과는 통지 이력 화면에서 본다. -->
                   <sequence>
                     <set-state target="local" :noticeSending="true"/>
                     <api-call target="/api/plugins/sirsoft-gdpr/admin/annual-notice/test" method="POST" :auth_required="true">
@@ -844,7 +852,10 @@
   <modal src="partials/plugin_settings/_policy_version_publish_modal.g7.html"/>
   <!-- 알림 템플릿 편집·미리보기·기본값 복원 (형제 확장과 같은 3종 구성) -->
   <modal src="partials/plugin_settings/_modal_notification_template_edit.g7.html"/>
+  <!-- 알림 템플릿 미리보기 창 — 편집 창 안의 미리보기 버튼이 연다. 편집 창이 만들어 둔 치환 결과를 보여 주기만 한다. -->
   <modal src="partials/plugin_settings/_modal_notification_template_preview.g7.html"/>
+  <!-- 알림 정의 기본값 복원 확인 창 — 정의 행의 초기화 버튼이 대상 ID·이름을 전역에 넣고 연다.
+       손으로 고친 내용이 사라지므로 한 번 더 묻는다. -->
   <modal src="partials/plugin_settings/_modal_notification_definition_reset.g7.html"/>
   <!-- 정책 버전 스냅샷 창 — 동의 이력 화면과 같은 조각을 쓴다 -->
   <modal src="partials/_shared/_policy_version_snapshot_modal.g7.html"/>

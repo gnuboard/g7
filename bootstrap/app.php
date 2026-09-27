@@ -7,6 +7,8 @@ use App\Exceptions\IdentityVerificationRequiredException;
 use App\Exceptions\PermissionEscalationException;
 use App\Helpers\ResponseHelper;
 use App\Http\Middleware\AdminMiddleware;
+use App\Http\Middleware\Analytics\TrackBotHit;
+use App\Http\Middleware\Analytics\TrackServerVisit;
 use App\Http\Middleware\CheckTemplateDependencies;
 use App\Http\Middleware\CheckUserStatus;
 use App\Http\Middleware\DatabaseCredentialGuard;
@@ -122,6 +124,19 @@ $app = Application::configure(basePath: dirname(__DIR__))
         // Gzip 압축 미들웨어 (웹서버 설정 없이 애플리케이션 레벨에서 압축)
         $middleware->append(GzipEncodeResponse::class);
 
+        // 방문자 통계 수집 제외 표식은 암호화하지 않는다.
+        // 사용자 화면의 트래커가 `document.cookie` 로 이 값을 직접 읽고 보내기 전에 스스로
+        // 멈춘다 — 서버가 암호문으로만 받으면 그 표식을 서버가 되읽지 못해, 트래커를 거치지
+        // 않는 경로(서버 폴백·내부 검색 훅)에서 제외가 무시된다. 담긴 값은 「제외됨」이라는
+        // 사실 하나뿐이라 위조돼도 잃는 것이 자기 방문 통계뿐이다.
+        // 방문자 쿠키(`g7_vid`)도 같은 이유로 암호화하지 않는다. 이 쿠키는 수집 API(api 그룹 —
+        // 쿠키 암호화 미들웨어가 없다)가 평문으로 심는데, 화면 요청(web 그룹)이 그것을
+        // 복호화하려다 실패해 없는 쿠키로 본다. 그러면 재방문자의 서버 폴백이 임시 키로
+        // 따로 방문을 열어 전체 로드마다 방문이 둘로 갈라진다. 담긴 값은 뜻 없는 난수다.
+        // 이 지점은 설정이 아직 올라오기 전이라 `config()` 를 쓸 수 없다 — 이름을 그대로 적는다
+        // (`config/analytics.php` 의 `cookies.opt_out`·`cookies.visitor` 기본값과 같아야 한다).
+        $middleware->encryptCookies(except: ['g7_analytics_optout', 'g7_vid']);
+
         // 토큰 만료 시간 슬라이딩 갱신 미들웨어 (API 요청 시 토큰 만료 시간 자동 연장)
         $middleware->appendToGroup('api', [
             RefreshTokenExpiration::class,
@@ -175,6 +190,10 @@ $app = Application::configure(basePath: dirname(__DIR__))
             'identity.policy' => EnforceIdentityPolicy::class,
             'extension.middleware' => ExtensionMiddlewareGate::class,
             'debug.gate' => EnsureDebugMode::class,
+            // 방문자 통계: 봇 기록은 SEO 앞(그 판정과 캐시 상태를 함께 읽는다),
+            // 서버 폴백은 SEO 뒤(봇으로 판정된 요청을 사람 방문으로 세지 않는다).
+            'analytics.bots' => TrackBotHit::class,
+            'analytics.fallback' => TrackServerVisit::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

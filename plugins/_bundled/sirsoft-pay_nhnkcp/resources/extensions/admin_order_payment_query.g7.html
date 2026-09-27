@@ -2,7 +2,7 @@
 <extension target-layout="admin_ecommerce_order_detail">
   <inject target-id="sticky_header_container" position="append_child">
     <div data-if="{{kcp_status.data?._is_test_mode === true}}" class="mx-6 mb-3 px-3 py-2 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-700 rounded-lg flex-center gap-2">
-      <icon name="flask-conical" class="text-base text-orange-600 dark:text-orange-400 flex-shrink-0"/>
+      <icon name="flask" class="text-base text-orange-600 dark:text-orange-400 flex-shrink-0"/>
       <span class="text-sm font-semibold text-orange-800 dark:text-orange-300">$t:sirsoft-pay_nhnkcp.admin.test_mode_badge</span>
       <span class="text-sm text-orange-700 dark:text-orange-400">$t:sirsoft-pay_nhnkcp.admin.test_mode_order_notice</span>
     </div>
@@ -92,7 +92,7 @@
             <option value="20">드림택배</option>
             <option value="23">천일택배</option>
             <option value="26">건영택배</option>
-            <option value="40">기타</option>
+            <option value="40">$t:sirsoft-pay_nhnkcp.admin.escrow_delivery_courier_etc</option>
           </select>
         </div>
         <div class="flex justify-end">

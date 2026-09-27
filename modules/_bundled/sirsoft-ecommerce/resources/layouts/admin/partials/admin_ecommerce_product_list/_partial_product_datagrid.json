@@ -183,7 +183,6 @@
                 "alwaysShowPagination": true,
                 "showColumnSelector": false,
                 "visibleColumns": "{{_local.visibleColumns}}",
-                "columnSelectorId": "admin_product_list_columns",
                 "emptyMessage": "$t:sirsoft-ecommerce.admin.product.table.no_data",
                 "actionsColumnHeader": "$t:sirsoft-ecommerce.admin.product.table.column.actions",
                 "columnSelectorText": "$t:common.column_selector",
@@ -252,7 +251,7 @@
                                         "name": "Icon",
                                         "if": "{{!row.thumbnail_url}}",
                                         "props": {
-                                            "name": "photo",
+                                            "name": "image",
                                             "className": "text-2xl text-gray-400 dark:text-gray-500"
                                         }
                                     }

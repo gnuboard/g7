@@ -4,6 +4,7 @@ namespace App\Http\Requests\Settings;
 
 use App\Contracts\Repositories\ConfigRepositoryInterface;
 use App\Extension\HookManager;
+use App\Http\Requests\Admin\Analytics\Concerns\HasAnalyticsSettingsRules;
 use App\Models\Attachment;
 use App\Rules\IpOrCidr;
 use App\Rules\ValidOutboundProxyUrl;
@@ -19,6 +20,8 @@ use Illuminate\Validation\Rule;
 
 class SaveSettingsRequest extends FormRequest
 {
+    use HasAnalyticsSettingsRules;
+
     /**
      * 지원되는 메일러 목록
      */
@@ -332,7 +335,7 @@ class SaveSettingsRequest extends FormRequest
         $rules = [
             // 탭 식별자
             // 여기 빠진 탭 이름으로 저장하면 본문이 아무리 올바라도 422 다 — 탭을 신설하면 반드시 함께 넣는다.
-            '_tab' => ['nullable', 'string', Rule::in(['general', 'mail', 'upload', 'seo', 'security', 'drivers', 'advanced', 'notifications', 'identity', 'privacy'])],
+            '_tab' => ['nullable', 'string', Rule::in(['general', 'mail', 'upload', 'seo', 'security', 'drivers', 'advanced', 'notifications', 'identity', 'analytics', 'privacy'])],
 
             // 각 탭의 컨테이너
             'general' => ['sometimes', 'array'],
@@ -344,6 +347,7 @@ class SaveSettingsRequest extends FormRequest
             'advanced' => ['sometimes', 'array'],
             'notifications' => ['sometimes', 'array'],
             'identity' => ['sometimes', 'array'],
+            'analytics' => ['sometimes', 'array'],
             'privacy' => ['sometimes', 'array'],
             'notifications.channels' => ['sometimes', 'array'],
             'notifications.channels.*.id' => ['required_with:notifications.channels', 'string', 'max:50'],
@@ -557,8 +561,38 @@ class SaveSettingsRequest extends FormRequest
             'privacy.dormant_withdraw_days' => $this->getTabRules($tab, 'privacy', 'integer|min:'.config('core.settings_limits.privacy_retention_days_min', 1).'|max:'.config('core.settings_limits.privacy_retention_days_max', 3650)),
         ];
 
+        // 방문자 통계 설정은 전용 API 와 이 경로 둘 다로 저장될 수 있다 — 규칙을 한
+        // 곳(트레이트)에 두고 양쪽이 같이 써야 한쪽으로 들어온 값만 검증 없이 통과하는
+        // 일이 생기지 않는다.
+        $rules = array_merge($rules, $this->analyticsSettingsRules('analytics'));
+
         // 모듈/플러그인이 validation rules를 동적으로 추가할 수 있도록 훅 제공
         return HookManager::applyFilters('core.settings.save_validation_rules', $rules, $this);
+    }
+
+    /**
+     * 검증을 마친 값을 돌려줍니다 — 방문자 통계 절은 선언한 형으로 바꿉니다.
+     *
+     * 화면이 보낸 "45" 를 그대로 저장하면 전용 API 로 저장했을 때와 형이 달라집니다.
+     *
+     * @param  string|null  $key  뽑아 올 키 (null 이면 전부)
+     * @param  mixed  $default  키가 없을 때 돌려줄 값
+     * @return mixed 검증을 마친 값
+     */
+    public function validated($key = null, $default = null): mixed
+    {
+        $validated = parent::validated();
+
+        if (is_array($validated) && isset($validated['analytics']) && is_array($validated['analytics'])) {
+            $validated['analytics'] = $this->castAnalyticsSettings($validated['analytics']);
+        }
+
+        if (! is_array($validated)) {
+            return $validated;
+        }
+
+        // 뽑아 오는 방식은 부모와 같게 둔다 — `data_get` 이라야 점 표기·와일드카드가 그대로 산다.
+        return data_get($validated, $key, $default);
     }
 
     /**
@@ -1277,6 +1311,7 @@ class SaveSettingsRequest extends FormRequest
             'advanced' => __('validation.attributes.settings_tab_advanced'),
             'notifications' => __('validation.attributes.settings_tab_notifications'),
             'identity' => __('validation.attributes.settings_tab_identity'),
+            'analytics' => __('validation.attributes.settings_tab_analytics'),
             'privacy' => __('validation.attributes.settings_tab_privacy'),
             // 배열 항목 — 인덱스가 붙은 원시 키(seo.bot_user_agents.0 …)가 문구에 실리지 않도록
             // 와일드카드 한 줄로 전 인덱스를 덮는다.
@@ -1426,6 +1461,9 @@ class SaveSettingsRequest extends FormRequest
         ];
 
         // 규칙을 더한 확장이 같은 자리에서 라벨도 더한다 (rules() 의 훅과 짝).
+        // 방문자 통계 탭 필드 — 규칙이 트레이트에서 오므로 항목명도 같은 곳에서 파생한다.
+        $attributes = array_merge($attributes, $this->analyticsSettingsAttributes('analytics'));
+
         return HookManager::applyFilters('core.settings.save_validation_attributes', $attributes, $this);
     }
 }
