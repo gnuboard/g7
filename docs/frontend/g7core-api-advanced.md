@@ -500,7 +500,14 @@ await G7Core.api.put('/api/users/1', { name: 'Jane' });
 
 // DELETE 요청
 await G7Core.api.delete('/api/users/1');
+
+// 확장이 fetch 로 직접 요청하며 토큰을 실을 때 — 같은 출처 대상에만 싣는다
+const token = G7Core.api.isSameOriginUrl(endpoint) ? G7Core.api.getToken() : null;
 ```
+
+`G7Core.api` 자체의 요청(`get`/`post` …)은 교차 출처 대상에 토큰을 싣지 않는다. 교차 출처 응답의 401(토큰 갱신·재시도)과 428(본인인증 요구)도 따르지 않는다.
+
+확장이 `fetch` 로 직접 요청하며 `getToken()` 을 실을 때도 같은 원칙을 따른다. 대상 주소가 레이아웃 prop 이나 응답 본문처럼 바깥에서 정해지는 값이면 먼저 `isSameOriginUrl(url)` 로 확인한다. 이 판정은 `apiCall` 이 토큰을 실을지 정할 때와 같은 기준이다(engine-v1.72.0).
 
 ---
 

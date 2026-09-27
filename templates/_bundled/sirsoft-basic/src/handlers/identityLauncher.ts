@@ -18,6 +18,8 @@
  * 자기 컴포넌트 + scripts 를 주입하여 launcher 변경 없이 자기 SDK 를 띄울 수 있습니다.
  */
 
+import { isSameOriginRequest } from '../support/sameOriginRequest';
+
 const logger = ((window as any).G7Core?.createLogger?.('Template:sirsoft-basic:IdentityLauncher')) ?? {
   log: (...args: unknown[]) => console.log('[Template:sirsoft-basic:IdentityLauncher]', ...args),
   warn: (...args: unknown[]) => console.warn('[Template:sirsoft-basic:IdentityLauncher]', ...args),
@@ -108,9 +110,18 @@ function resolveTarget(payload: VerificationPayload): IdentityVerificationTarget
 }
 
 /**
- * Bearer 토큰을 안전하게 추출합니다 (있으면).
+ * Bearer 토큰 헤더를 만듭니다 — 요청 대상이 동일 출처일 때만.
+ *
+ * challenge 시작 주소는 428 응답 본문(`challenge_start_url`)에서 온다. 교차 출처 서버가 428 을 흉내 내
+ * 자기 주소를 넣으면 회원 토큰을 그 주소로 보내게 되므로 출처를 먼저 본다(KVE-2026-2350).
+ *
+ * @param url 요청 대상
+ * @return 토큰이 있고 대상이 동일 출처면 Authorization 헤더, 아니면 빈 객체
  */
-function getAuthHeader(): Record<string, string> {
+function getAuthHeader(url: string): Record<string, string> {
+  if (!isSameOriginRequest(url)) {
+    return {};
+  }
   const G7Core = (window as any).G7Core;
   const token = G7Core?.api?.getToken?.() ?? null;
   return token ? { Authorization: `Bearer ${token}` } : {};
@@ -166,7 +177,7 @@ async function startChallenge(
       'Content-Type': 'application/json',
       Accept: 'application/json',
       ...getLocaleHeader(),
-      ...getAuthHeader(),
+      ...getAuthHeader(url),
     },
     body: JSON.stringify(body),
   });

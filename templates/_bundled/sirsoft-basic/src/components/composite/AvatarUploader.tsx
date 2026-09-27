@@ -22,6 +22,7 @@ import { Input } from '../basic/Input';
 import { Img } from '../basic/Img';
 import { Avatar } from './Avatar';
 import type { EditorAttrs } from '../../types';
+import { isSameOriginRequest } from '../../support/sameOriginRequest';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const G7Core = (window as any).G7Core;
@@ -33,9 +34,9 @@ export interface AvatarUploaderProps {
   fallbackText?: string;
   /** 아바타 크기 */
   size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl';
-  /** 업로드 API 엔드포인트 (기본: /api/me/avatar) */
+  /** 업로드 API 엔드포인트 (기본: /api/me/avatar). 동일 출처일 때만 토큰을 싣는다 */
   uploadEndpoint?: string;
-  /** 삭제 API 엔드포인트 (기본: /api/me/avatar) */
+  /** 삭제 API 엔드포인트 (기본: /api/me/avatar). 동일 출처일 때만 토큰을 싣는다 */
   deleteEndpoint?: string;
   /** 업로드 성공 콜백 */
   onUploadSuccess?: (data: { avatar: string; attachment_id: number }) => void;
@@ -175,9 +176,10 @@ export function AvatarUploader({
       const formData = new FormData();
       formData.append('avatar', file);
 
-      // API 호출
-      const csrfToken = getCsrfToken();
-      const authToken = getAuthToken();
+      // API 호출 — 토큰은 동일 출처 대상에만 싣는다(엔드포인트는 레이아웃 prop, KVE-2026-2350)
+      const sameOrigin = isSameOriginRequest(uploadEndpoint);
+      const csrfToken = sameOrigin ? getCsrfToken() : null;
+      const authToken = sameOrigin ? getAuthToken() : null;
       const response = await fetch(uploadEndpoint, {
         method: 'POST',
         headers: {
@@ -275,8 +277,10 @@ export function AvatarUploader({
     setErrorMessage(null);
 
     try {
-      const csrfToken = getCsrfToken();
-      const authToken = getAuthToken();
+      // 토큰은 동일 출처 대상에만 싣는다(엔드포인트는 레이아웃 prop, KVE-2026-2350)
+      const sameOrigin = isSameOriginRequest(deleteEndpoint);
+      const csrfToken = sameOrigin ? getCsrfToken() : null;
+      const authToken = sameOrigin ? getAuthToken() : null;
       const response = await fetch(deleteEndpoint, {
         method: 'DELETE',
         headers: {
@@ -444,7 +448,7 @@ export function AvatarUploader({
               'w-32 h-32'
             }`}
           />
-          <Div className="absolute inset-0 rounded-full bg-blue-500/20 border-2 border-blue-500 border-dashed" />
+          <Div className="absolute inset-0 rounded-full bg-blue-500/20 dark:bg-blue-400/20 border-2 border-blue-500 dark:border-blue-400 border-dashed" />
         </Div>
       ) : (
         <Avatar
@@ -472,7 +476,7 @@ export function AvatarUploader({
               <Div className="grid grid-cols-2 gap-2">
                 <Button
                   type="button"
-                  className="inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-medium transition-colors disabled:opacity-50"
+                  className="inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white dark:text-white rounded-md text-sm font-medium transition-colors disabled:opacity-50"
                   onClick={handleUploadConfirm}
                   disabled={isUploading}
                 >
@@ -506,7 +510,7 @@ export function AvatarUploader({
               <Div className="grid grid-cols-2 gap-2">
                 <Button
                   type="button"
-                  className="inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md text-sm font-medium transition-colors disabled:opacity-50"
+                  className="inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 text-white dark:text-white rounded-md text-sm font-medium transition-colors disabled:opacity-50"
                   onClick={executeDelete}
                   disabled={isDeleting}
                 >

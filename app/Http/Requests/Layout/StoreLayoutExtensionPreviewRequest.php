@@ -5,6 +5,7 @@ namespace App\Http\Requests\Layout;
 use App\Contracts\Repositories\LayoutExtensionRepositoryInterface;
 use App\Extension\HookManager;
 use App\Http\Requests\Layout\Concerns\CompilesMarkupContent;
+use App\Rules\LayoutContentGate;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
@@ -66,7 +67,8 @@ class StoreLayoutExtensionPreviewRequest extends FormRequest
         $rules = [
             // 본문 형식 — `json`(기본) | `markup`(`.g7.html` 문자열, 검증 전 컴파일)
             'format' => ['nullable', 'string', 'in:json,markup'],
-            'content' => ['required', 'array'],
+            // 미리보기도 저장 경로와 같은 보안 게이트를 거친다 (KVE-2026-2350 — 게이트 없는 저장 경로였다)
+            'content' => ['required', 'array', ...LayoutContentGate::rules()],
             'preview_layout' => ['nullable', 'string', 'max:255'],
         ];
 

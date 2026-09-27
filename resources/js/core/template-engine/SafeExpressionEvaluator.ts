@@ -196,6 +196,234 @@ const FORBIDDEN_KEYWORDS = new Set(['function']);
 const SHORT_CIRCUIT = Symbol('short-circuit');
 
 /* ------------------------------------------------------------------ *
+ * 호스트 capability 타입 경계 (KVE-2026-2350)
+ *
+ * 금지 프로퍼티 이름 목록(BLOCKED_PROPERTIES)은 "프로토타입 체인" 만 막는다. 표현식이 도달한
+ * 객체가 DOM 노드면 `.ownerDocument.defaultView` 로 Window 에 닿고, 거기서 `localStorage`·`fetch`
+ * 를 **정상 프로퍼티 읽기·함수 호출**로 쓴다 — 이름을 막는 방식으로는 끝이 없다.
+ *
+ * 그래서 이름이 아니라 **값의 종류**로 막는다.
+ * - 호스트 capability 객체(DOM 노드·Window·Storage·Location·History·Promise 등)는 표현식이
+ *   손에 쥐는 순간(식별자 해석·프로퍼티 읽기·호출 결과) 거부한다.
+ * - 함수는 허용목록만 호출한다: 평가기가 만든 클로저, 순수 계산 네이티브(Math/JSON/Number/String/
+ *   Array/Date/Object facade 의 static 과 원시·컨테이너 프로토타입 메서드), 그리고 JS 로 작성된
+ *   함수(엔진 헬퍼 `$t`/`$get` 등). 허용목록 밖의 네이티브(`fetch`·`Storage.getItem`·DOM 메서드·
+ *   `Function.prototype.call/apply/bind`)는 호출하지 않는다.
+ * ------------------------------------------------------------------ */
+
+/**
+ * `Object.prototype.toString` 태그로 식별하는 호스트 capability 객체 종류.
+ *
+ * EventTarget 이 아닌 capability(Storage·Location·History·Navigator …)와 다른 realm
+ * (iframe) 의 객체는 instanceof 로 잡히지 않아 태그로 함께 판정한다.
+ */
+const HOST_OBJECT_TAGS = new Set([
+    'Window',
+    'global',
+    'Document',
+    'HTMLDocument',
+    'XMLDocument',
+    'Storage',
+    'Location',
+    'History',
+    'Navigator',
+    'Promise',
+    'CSSStyleDeclaration',
+    'Crypto',
+    'SubtleCrypto',
+    'IDBFactory',
+    'CacheStorage',
+    'CookieStore',
+    'Clipboard',
+    'ServiceWorkerContainer',
+    'CustomElementRegistry',
+    'StorageManager',
+    'XMLHttpRequest',
+    'WebSocket',
+    'Worker',
+    'SharedWorker',
+    'EventSource',
+    'BroadcastChannel',
+]);
+
+/**
+ * 값이 표현식에 노출되면 안 되는 호스트 capability 객체인지 판정합니다.
+ *
+ * SSR·테스트(비 DOM) 환경에서는 전역 생성자가 없을 수 있어 각 판정을 존재 여부로 가드한다.
+ *
+ * @param value 검사할 값
+ * @return 호스트 capability 객체면 true
+ * @since engine-v1.72.0
+ */
+export function isUnsafeHostValue(value: unknown): boolean {
+    if (value === null || typeof value !== 'object') {
+        return false;
+    }
+
+    // DOM 노드·Window·XHR·WebSocket 등 이벤트를 받는 호스트 객체 전부
+    if (typeof EventTarget !== 'undefined' && value instanceof EventTarget) {
+        return true;
+    }
+
+    let tag: string;
+    try {
+        tag = Object.prototype.toString.call(value).slice(8, -1);
+    } catch {
+        // 다른 origin 의 WindowProxy 는 태그 읽기조차 거부한다
+        return true;
+    }
+
+    if (HOST_OBJECT_TAGS.has(tag)) {
+        return true;
+    }
+
+    // 다른 realm 의 Window 는 태그가 가려져도 자기 자신을 `window` 로 가리킨다
+    try {
+        if ((value as { window?: unknown }).window === value) {
+            return true;
+        }
+    } catch {
+        return true;
+    }
+
+    return false;
+}
+
+/** 평가기가 만든 화살표·함수 표현식 클로저 (항상 호출 허용) */
+const EVALUATOR_FUNCTIONS = new WeakSet<object>();
+
+/** 네이티브 여부 판정 캐시 (JS 헬퍼의 소스 문자열화를 매 호출마다 반복하지 않는다) */
+const NATIVE_FUNCTION_CACHE = new WeakMap<object, boolean>();
+
+/**
+ * 호출을 허용하는 네이티브 함수 집합 — 순수 계산·부작용 없는 static 과 원시·컨테이너 프로토타입 메서드.
+ *
+ * `Function.prototype` 계열(call/apply/bind)은 포함하지 않는다 — this 를 바꿔 허용목록 판정을
+ * 다른 객체로 옮기는 수단이다. legacy 접근자 4종은 BLOCKED_PROPERTIES 가 이름으로 막지만 여기서도 뺀다.
+ */
+const SAFE_NATIVE_FUNCTIONS: Set<unknown> = buildSafeNativeFunctions();
+
+/**
+ * 허용 네이티브 함수 집합을 만듭니다.
+ *
+ * @return 허용 함수 참조 집합
+ */
+function buildSafeNativeFunctions(): Set<unknown> {
+    const out = new Set<unknown>();
+    const excluded = new Set(['constructor', ...BLOCKED_PROPERTIES]);
+
+    const addOwnFunctions = (holder: object | null | undefined): void => {
+        if (!holder) return;
+        for (const key of Object.getOwnPropertyNames(holder)) {
+            if (excluded.has(key)) continue;
+            const descriptor = Object.getOwnPropertyDescriptor(holder, key);
+            if (descriptor && typeof descriptor.value === 'function') {
+                out.add(descriptor.value);
+            }
+        }
+    };
+
+    // static 네임스페이스·생성자 static, Object facade
+    [Math, JSON, Number, String, Array, Date, SAFE_OBJECT].forEach(addOwnFunctions);
+
+    // 식별자로 노출되는 전역 함수·변환 함수 (`arr.filter(Boolean)` · `Number(x)`)
+    [parseInt, parseFloat, isNaN, isFinite, Number, String, Boolean, Array, Date].forEach(fn => out.add(fn));
+
+    // 원시·컨테이너 프로토타입 메서드
+    [
+        String.prototype,
+        Number.prototype,
+        Boolean.prototype,
+        Array.prototype,
+        Date.prototype,
+        Map.prototype,
+        Set.prototype,
+        WeakMap.prototype,
+        WeakSet.prototype,
+        RegExp.prototype,
+        Error.prototype,
+        Object.prototype,
+        // for…of·전개가 쓰는 반복자 next
+        Object.getPrototypeOf([][Symbol.iterator]()),
+        Object.getPrototypeOf(new Map().entries()),
+        Object.getPrototypeOf(new Set().values()),
+        Object.getPrototypeOf(''[Symbol.iterator]()),
+    ].forEach(addOwnFunctions);
+
+    return out;
+}
+
+/**
+ * 함수가 표현식에서 호출·보유해도 되는지 판정합니다.
+ *
+ * @param fn 함수 값
+ * @return 허용이면 true
+ */
+function isAllowedFunction(fn: object): boolean {
+    if (EVALUATOR_FUNCTIONS.has(fn)) return true;
+    if (SAFE_NATIVE_FUNCTIONS.has(fn)) return true;
+
+    return !isNativeFunction(fn);
+}
+
+/**
+ * 네이티브(또는 bound) 함수인지 판정합니다.
+ *
+ * JS 로 작성된 함수는 소스 문자열을 돌려주고, 네이티브·bound 함수는 `[native code]` 를 돌려준다.
+ * 판정할 수 없으면 안전하게 네이티브로 본다.
+ *
+ * @param fn 함수 값
+ * @return 네이티브면 true
+ */
+function isNativeFunction(fn: object): boolean {
+    const cached = NATIVE_FUNCTION_CACHE.get(fn);
+    if (cached !== undefined) return cached;
+
+    let native = true;
+    try {
+        native = /\{\s*\[native code\]\s*\}\s*$/.test(Function.prototype.toString.call(fn));
+    } catch {
+        native = true;
+    }
+
+    NATIVE_FUNCTION_CACHE.set(fn, native);
+    return native;
+}
+
+/**
+ * 표현식에 흘려도 되는 함수인지 판정합니다 (평가기 밖 DTO 복사기와 판정을 공유한다).
+ *
+ * @param fn 함수 값
+ * @return 허용이면 true
+ * @since engine-v1.72.0
+ */
+export function isExpressionSafeFunction(fn: unknown): boolean {
+    return typeof fn === 'function' && isAllowedFunction(fn);
+}
+
+/**
+ * 표현식이 손에 쥔 값을 검사하고, 호스트 capability 면 거부합니다.
+ *
+ * @param value 식별자 해석·프로퍼티 읽기·호출 결과 값
+ * @return 그대로의 값 (검사 통과 시)
+ * @throws {Error} 호스트 capability 객체이거나 허용목록 밖 네이티브 함수일 때
+ */
+function assertSafeValue<T>(value: T): T {
+    if (typeof value === 'function') {
+        if (!isAllowedFunction(value)) {
+            throw new Error('Access to a native host function is not allowed in expressions');
+        }
+        return value;
+    }
+
+    if (isUnsafeHostValue(value)) {
+        throw new Error('Access to a host object (DOM/Window/Storage) is not allowed in expressions');
+    }
+
+    return value;
+}
+
+/* ------------------------------------------------------------------ *
  * 토큰
  * ------------------------------------------------------------------ */
 
@@ -1419,7 +1647,8 @@ function resolveIdentifier(name: string, scope: Scope): unknown {
     let s: Scope | null = scope;
     while (s) {
         if (Object.prototype.hasOwnProperty.call(s.vars, name)) {
-            return s.vars[name];
+            // context·지역 변수 값도 타입 경계를 거친다 — 호스트 객체가 식별자로 들어와 있어도 쥘 수 없다
+            return assertSafeValue(s.vars[name]);
         }
         s = s.parent;
     }
@@ -1483,7 +1712,8 @@ function evalMember(node: Node & { type: 'Member' }, scope: Scope): unknown {
         return undefined;
     }
 
-    return (obj as Record<PropertyKey, unknown>)[safeKey];
+    // 타입 경계: `.ownerDocument`·`.defaultView`·`.localStorage` 로 호스트 객체를 얻는 즉시 거부
+    return assertSafeValue((obj as Record<PropertyKey, unknown>)[safeKey]);
 }
 
 function evalCall(node: Node & { type: 'Call' }, scope: Scope): unknown {
@@ -1523,8 +1753,14 @@ function evalCall(node: Node & { type: 'Call' }, scope: Scope): unknown {
         throw new Error('Attempted to call a non-function value');
     }
 
+    // 함수 허용목록: 허용목록 밖 네이티브(fetch·Storage·DOM 메서드·call/apply/bind)는 호출하지 않는다
+    if (!isAllowedFunction(fn)) {
+        throw new Error('Calling a native host function is not allowed in expressions');
+    }
+
     const args = evalArguments(node.args, scope);
-    return (fn as (...a: unknown[]) => unknown).apply(thisArg, args);
+    // 반환값도 타입 경계를 거친다 — `$get(x, ['ownerDocument'])` 같은 헬퍼 경유 우회 차단
+    return assertSafeValue((fn as (...a: unknown[]) => unknown).apply(thisArg, args));
 }
 
 function evalArguments(argNodes: Node[], scope: Scope): unknown[] {
@@ -1731,11 +1967,13 @@ function evalNode(node: Node, scope: Scope): unknown {
             const params = node.params;
             const body = node.body;
             const isBlock = node.isBlock;
-            return function arrowFn(...args: unknown[]): unknown {
+            const arrow = function arrowFn(...args: unknown[]): unknown {
                 const local: Scope = { vars: {}, parent: closure };
                 bindParams(params, args, local);
                 return isBlock ? runFunctionBody(body, local) : evalNode(body, local);
             };
+            EVALUATOR_FUNCTIONS.add(arrow);
+            return arrow;
         }
 
         case 'Function': {
@@ -1749,6 +1987,7 @@ function evalNode(node: Node, scope: Scope): unknown {
                 bindParams(params, args, local);
                 return runFunctionBody(body, local);
             };
+            EVALUATOR_FUNCTIONS.add(fn);
             return fn;
         }
 
@@ -1922,5 +2161,6 @@ export function evaluateSafeExpression(expression: string, context: Record<strin
 
     const ast = parseToAst(expression);
     const rootScope: Scope = { vars: context || {}, parent: null };
-    return evalNode(ast, rootScope);
+    // 최종 결과도 타입 경계를 한 번 더 거친다 (바인딩 결과로 호스트 객체가 prop 에 실리지 않게)
+    return assertSafeValue(evalNode(ast, rootScope));
 }

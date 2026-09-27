@@ -120,6 +120,7 @@ admin/`)이 이 템플릿의 베이스(`_admin_base`)를 extends 하고 이 템�
 | 사이드바 접힘 상태를 레이아웃 `init_actions` 로 매번 복원 | 템플릿 부트스트랩(`src/index.ts`)에서 1회 복원 | `init_actions` 는 화면 진입마다 재실행되어 불필요한 반복 처리가 된다 |
 | `_admin_base` 를 상속하는데 로그인 화면처럼 `initTheme`/메뉴 초기화를 다시 호출 | `_admin_base` 상속 화면은 이미 초기화된 전역 상태를 그대로 사용 | 중복 호출은 낭비이며, 두 초기화 지점의 결과가 어긋나면 화면 간 상태 불일치가 생긴다 |
 | `onSuccess`·시퀀스 안에서 방금 저장한 상태(`_global.*`/`_local.*`)를 형제 액션의 `if`·값으로 재독 | 그 자리에서는 `{{response.*}}` 만 읽는다 | 그 시점 컨텍스트는 아직 갱신 전이라 stale 값으로 조용히 분기한다 |
+| 컴포넌트·핸들러가 `fetch` 로 직접 요청하며 대상 출처를 보지 않고 토큰(Bearer·XSRF)을 싣거나, prop 으로 받은 주소로 곧장 `location.href` 이동 | `src/support/sameOriginRequest.ts` 의 `isSameOriginRequest(url)` 이 true 일 때만 토큰을 싣고 이동한다 | 주소가 레이아웃 prop·응답 본문이면 레이아웃 편집 권한만으로 관리자 토큰을 외부로 보내거나 `javascript:` 를 실행시킬 수 있다(KVE-2026-2350) |
 <!-- @intent END -->
 
 ## 7. 테스트 실행
@@ -128,9 +129,9 @@ admin/`)이 이 템플릿의 베이스(`_admin_base`)를 extends 하고 이 템�
 | 종류 | 개수 | 위치 |
 |---|---|---|
 | PHPUnit | 0개 | — |
-| Vitest | 231개 | `vitest.config.ts` |
+| Vitest | 235개 | `vitest.config.ts` |
 | Playwright | 17개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 11개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 12개 | `tests/scenarios` |
 
 ```bash
 # Vitest (확장 디렉토리에서) (PowerShell)

@@ -1,5 +1,6 @@
 import { getApiClient } from '../api/ApiClient';
 import { createLogger } from '../utils/Logger';
+import { sanitizeNavPath } from '../support/navPolicy';
 
 const logger = createLogger('AuthManager');
 
@@ -706,11 +707,13 @@ export class AuthManager {
     const redirectUrl = urlParams.get('redirect');
 
     if (redirectUrl) {
-      // 보안: 같은 도메인 경로만 허용
+      // 보안: 같은 도메인 경로만 허용. `startsWith('/')` 만으로는 `//evil.com`·`/\evil.com` 이
+      // 통과해 오프사이트로 나가므로 sink 와 같은 판정(navPolicy)을 쓴다(KVE-2026-2348).
       try {
         const decoded = decodeURIComponent(redirectUrl);
-        if (decoded.startsWith('/')) {
-          return decoded;
+        const safe = sanitizeNavPath(decoded);
+        if (safe !== null) {
+          return safe;
         }
       } catch {
         // 디코딩 실패 시 기본 경로 반환

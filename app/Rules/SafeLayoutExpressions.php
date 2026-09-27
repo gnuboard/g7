@@ -18,6 +18,8 @@ use Illuminate\Contracts\Validation\ValidationRule;
  * - 프로토타입 체인 접근: `.constructor` / `.__proto__` / `.prototype`,
  *   `['constructor']` 등 문자열 리터럴 computed 접근 → Function 도달 경로
  * - 함수 생성/코드 실행: `Function(`, `eval(`, 동적 `import(`
+ * - 호스트 capability 그래프(KVE-2026-2350): `ownerDocument`·`defaultView`·`XMLHttpRequest`·`fetch(`·
+ *   `localStorage.getItem(` 류 저장소 호출 — DOM 노드에서 Window 로 올라가 토큰을 읽고 내보내는 경로
  * - 원격 스크립트: `scripts[].src` 는 same-origin path-only(`/` 시작, `//`·scheme 금지),
  *   단 확장이 manifest(`trusted_script_hosts`)로 선언한 신뢰 호스트는 예외로 허용
  * - 외부 데이터 소스: `data_sources[].endpoint` 도 동일 (same-origin 또는 신뢰 호스트)
@@ -55,6 +57,14 @@ class SafeLayoutExpressions implements ValidationRule
         // Object 리플렉션 static 과 같은 능력을 모든 객체가 상속으로 제공하므로 같은 강도로
         // 막는다. 배포 레이아웃 전수에서 사용 0건이라 정상 표현식 회귀가 없다.
         '/\b__(lookup|define)(Getter|Setter)__\b/',
+        // 호스트 capability 그래프 (KVE-2026-2350) — DOM 노드에서 Window 로 올라가는 연결과 네트워크·
+        // 저장소 호출. 배포 레이아웃 전수(2026-09-27, json+g7.html 2836 파일) 사용 0건 확인분만 채택한다.
+        // `localStorage`·`sessionStorage` 단어 자체는 gdpr 설정 키(`necessary_storage_locked.localStorage`)
+        // 로 정상 사용되므로 **호출 형태**만, `fetch` 는 주석의 `refetch (` 오탐을 피해 단어 경계로 잡는다.
+        '/\b(ownerDocument|defaultView)\b/',
+        '/\bXMLHttpRequest\b/',
+        '/\bfetch\s*\(/',
+        '/\b(localStorage|sessionStorage)\s*\.\s*(getItem|setItem|removeItem|clear|key)\s*\(/',
     ];
 
     // 주의: 문자열 조립 난독화(`['const' + 'ructor']`)는 정적 토큰 매칭으로 잡을 수 없다.
@@ -72,6 +82,11 @@ class SafeLayoutExpressions implements ValidationRule
 
     /**
      * 검증 수행
+     *
+     * @param  string  $attribute  검증 대상 속성명
+     * @param  mixed  $value  레이아웃 JSON(배열) — 배열이 아니면 검사하지 않는다
+     * @param  Closure  $fail  검증 실패 콜백
+     * @return void
      */
     public function validate(string $attribute, mixed $value, Closure $fail): void
     {
@@ -87,6 +102,7 @@ class SafeLayoutExpressions implements ValidationRule
      *
      * @param  array<mixed>  $node  현재 노드
      * @param  Closure  $fail  검증 실패 콜백
+     * @return void
      */
     private function walk(array $node, Closure $fail): void
     {
@@ -121,6 +137,7 @@ class SafeLayoutExpressions implements ValidationRule
      *
      * @param  string  $value  검사 대상 문자열
      * @param  Closure  $fail  검증 실패 콜백
+     * @return void
      */
     private function assertSafeExpression(string $value, Closure $fail): void
     {
@@ -143,6 +160,7 @@ class SafeLayoutExpressions implements ValidationRule
      * @param  array<mixed>  $list  scripts 또는 data_sources 배열
      * @param  string  $field  검사할 필드명 (src | endpoint)
      * @param  Closure  $fail  검증 실패 콜백
+     * @return void
      */
     private function assertSameOriginList(array $list, string $field, Closure $fail): void
     {

@@ -5,6 +5,28 @@
 >
 > 형식: [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)
 
+## [engine-v1.72.0] - 2026-09-27
+
+### Security
+
+#### 같은 탭 이동 sink 가 레이아웃 입력을 검증 없이 따라가던 문제 (KVE-2026-2348)
+
+- 관리자 로그인 레이아웃은 `{{query.redirect}}` 를 그대로 `navigate` 로 넘기고, 라우트 미매칭 폴백 `openWindow{_self}` 의 `location.assign` 이 무검증이었다. `?redirect=javascript:…` 가 관리자 origin 에서 실행되고(실 Chrome 재현) `//evil` 은 오프사이트로 나갔다.
+- 신규 `support/navPolicy` — `sanitizeNavPath`(same-origin 절대 경로만, 정규화는 `normalizeScriptSrcForOriginCheck` 재사용) · `resolveSafeNavPath` · `isDangerousScheme`(`javascript:`/`vbscript:`/`data:`) · `isScriptScheme`.
+- 적용: `openWindow` `_self`(= navigate 폴백)·`redirect` 는 same-origin 만(아니면 `/`), `openWindow` `_blank` 는 실행 스킴만 차단, `AuthManager.getRedirectUrl` 은 `startsWith('/')` 대신 같은 판정, `IdentityGuardInterceptor.redirectExternally` 는 실행 스킴 거부(`UNSAFE_REDIRECT_URL`).
+- `DynamicRenderer` 가 바인딩된 `href`/`xlinkHref` 의 실행 스킴을 `#` 로, `formAction`/`action`/`poster` 는 속성 제거, `src` 는 스크립트 스킴만 제거한다(정상 외부 링크·mailto·tel·`data:` 이미지는 유지).
+- **동작 변화**: `redirect` 핸들러가 외부 origin 으로 나가지 않는다(engine-v1.70.0 의 외부 이동 용례). 명시 허용목록은 후속.
+
+#### 표현식이 DOM 객체 그래프로 Window 에 닿던 문제 (KVE-2026-2350)
+
+- `$event`(원본 DOM 이벤트)·`error`(원본 Error)·`$args`(원본 콜백 인자)가 그대로 표현식 컨텍스트에 실려 `$event.target.ownerDocument.defaultView.localStorage`·`fetch` 가 정상 읽기·호출로 통과했다.
+- 신규 `helpers/expressionData` — `toExpressionEvent`/`toExpressionArgs`/`toExpressionData`/`toExpressionError`. 이벤트는 스칼라 필드 + target 스냅샷(value·checked·name·type·tagName·dataset·files·selectedOptions, scroll 필드는 scroll 이벤트만, form 은 이름 있는 컨트롤), 오류는 own 필드 + message·name(stack 제외), 그 외는 재귀 사본(호스트 객체 null). 필드는 번들 레이아웃 전수 집계 기준. `extractEventData` 는 이 변환기에 위임한다. 핸들러의 `context.event` 는 원본 그대로다.
+- `SafeExpressionEvaluator` 타입 경계: 식별자 해석·프로퍼티 읽기·호출 결과·최종 결과에서 호스트 capability 객체(EventTarget·Window·Document·Storage·Location·History·Navigator·Promise 등)를 거부하고, 함수는 평가기 클로저·순수 계산 네이티브(원시/컨테이너 프로토타입·Math/JSON/Number/String/Array/Date/Object facade static)·JS 로 작성된 함수만 호출한다(`call`/`apply`/`bind`·리플렉션·bound 는 거부). 공개: `isUnsafeHostValue`·`isExpressionSafeFunction`.
+- `DataBindingEngine.resolvePath`(호출 없는 경로 바인딩)와 엔진 `$get` 헬퍼도 경로 한 단계마다 같은 판정으로 호스트 객체·허용목록 밖 네이티브 함수에 닿으면 기본값(폴백)으로 끊는다 — 평가기는 헬퍼의 최종 반환값만 보므로 중간 호스트 객체를 건너 문자열을 꺼낼 수 있었다.
+- `apiCall` 은 인증 정보(`Authorization: Bearer`·`X-XSRF-TOKEN`)를 **동일 출처 대상에만** 싣는다(신규 `navPolicy.isSameOriginRequestUrl` — `fetch` 와 같은 URL 파서). 대상은 표현식으로 조립할 수 있어 저장측 정적 규칙이 다 잡지 못하는데, 출처와 무관하게 토큰을 실어 레이아웃 편집 권한만으로 관리자 토큰을 외부로 보낼 수 있었다. 데이터 소스(ApiClient)는 이미 같은 원칙이다. 교차 출처 요청 자체는 막지 않는다.
+- 교차 출처 **응답**은 인증 흐름을 조종하지 못한다. `apiCall`·`ApiClient` 는 교차 출처 응답의 428(`identity_verification_required`)을 `IdentityGuardInterceptor` 로 넘기지 않는다 — launcher 가 응답의 `challenge_start_url` 로 토큰을 실어 보내므로, 외부 서버가 428 을 흉내 내면 요청에서 뺀 토큰을 후속 요청으로 받아 갔다. `ApiClient` 는 교차 출처 401 에 토큰 갱신·재시도(갱신 토큰을 헤더에 직접 붙여 같은 외부 주소로 재요청)와 세션 정리를 하지 않는다. 판정은 토큰 첨부와 같은 출처 판정이다.
+- `G7Core.api.isSameOriginUrl(url)` 신설 — 확장이 `fetch` 로 직접 요청하며 `getToken()` 을 실을 때 쓰는 판정(apiCall 과 같은 `navPolicy.isSameOriginRequestUrl`). 번들 템플릿의 본인인증 launcher·언어 선택·프로필 메뉴·프로필 사진 컴포넌트가 이 판정으로 동일 출처 대상에만 토큰을 싣는다.
+
 ## [engine-v1.71.1] - 2026-09-21
 
 ### Fixed

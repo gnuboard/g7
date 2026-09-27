@@ -1097,6 +1097,10 @@ if (isset($_GET['ajax_action'])) {
                                     <span>설치본 레이아웃 점검</span>
                                     <span class="text-[10px] opacity-60">(layout:check-installed)</span>
                                 </button>
+                                <button onclick="runCommand('layout:audit-expressions')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium rounded transition-colors">
+                                    <span>저장 레이아웃 보안 재검사</span>
+                                    <span class="text-[10px] opacity-60">(layout:audit-expressions)</span>
+                                </button>
                                 <button onclick="runCommand('ext-bundles:cleanup')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded transition-colors">
                                     <span>확장 번들 정리</span>
                                     <span class="text-[10px] opacity-60">(ext-bundles:cleanup)</span>

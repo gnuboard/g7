@@ -16,6 +16,7 @@ use App\Http\Resources\LayoutListResource;
 use App\Http\Resources\LayoutResource;
 use App\Http\Resources\LayoutSearchResource;
 use App\Http\Resources\LayoutVersionResource;
+use App\Rules\LayoutContentGate;
 use App\Services\LayoutFileService;
 use App\Services\LayoutMarkupService;
 use App\Services\LayoutPreviewService;
@@ -409,6 +410,18 @@ class LayoutController extends AdminBaseController
             $payload['compile_error'] = $described;
 
             return $response->setData($payload);
+        }
+
+        // 컴파일 산출 JSON 도 저장 경로와 같은 보안 게이트를 거친다 (KVE-2026-2350) — 편집기는 이 결과를
+        // 그대로 미리보기·저장에 쓰므로, 저장에서 막힐 값을 여기서 먼저 알린다.
+        $violations = LayoutContentGate::violations($result->json);
+        if ($violations !== []) {
+            return $this->error(
+                'validation.layout.content.markup_compile_failed',
+                422,
+                ['content' => $violations],
+                ['detail' => $violations[0]],
+            );
         }
 
         return $this->success('common.success', [

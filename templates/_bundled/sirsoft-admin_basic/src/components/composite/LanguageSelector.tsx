@@ -5,6 +5,7 @@ import { Icon } from '../basic/Icon';
 import { IconName } from '../basic/IconTypes';
 import { Span } from '../basic/Span';
 import type { EditorAttrs } from '../../types';
+import { isSameOriginRequest } from '../../support/sameOriginRequest';
 
 // Logger 설정 (G7Core 초기화 전에도 동작하도록 폴백 포함)
 const logger = ((window as any).G7Core?.createLogger?.('Comp:LanguageSelector')) ?? {
@@ -42,7 +43,7 @@ export interface LanguageSelectorProps {
   availableLocales?: string[];
   /** 언어 설정 텍스트 */
   languageText?: string;
-  /** 언어 변경 API 엔드포인트 */
+  /** 언어 변경 API 엔드포인트. 동일 출처일 때만 토큰을 싣는다 */
   apiEndpoint?: string;
   /** 언어 변경 후 콜백 */
   onLanguageChange?: (locale: string) => void;
@@ -149,8 +150,14 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
     try {
       setIsChanging(true);
 
-      const xsrfToken = getXsrfToken();
-      const bearerToken = getBearerToken();
+      // 토큰은 동일 출처 대상에만 싣는다 — 엔드포인트는 레이아웃 prop 이라 표현식으로 외부 주소를
+      // 만들 수 있고, 그대로 실으면 관리자 토큰이 그 주소로 간다(KVE-2026-2350)
+      const sameOrigin = isSameOriginRequest(apiEndpoint);
+      if (!sameOrigin) {
+        logger.warn('교차 출처 언어 저장 주소라 인증 정보를 싣지 않습니다.', apiEndpoint);
+      }
+      const xsrfToken = sameOrigin ? getXsrfToken() : null;
+      const bearerToken = sameOrigin ? getBearerToken() : null;
 
       // API 호출로 DB에 저장 (실패해도 UI는 변경)
       try {

@@ -154,6 +154,7 @@ API 까지만 소유하고, 그 API 를 소비해 실제로 그리는 것은 이
 | 레이아웃 JSON 에 빌드된 CSS 에 없는 Tailwind 클래스 사용 | 기존 레이아웃에 쓰인 클래스이거나 빌드 산출물에 존재하는지 확인 | 그 스타일만 조용히 빠져 화면이 어긋난다 |
 | `dist/` 재빌드 없이 `src/` 만 고치고 커밋 | `template:build --production` 후 `dist/` 동반 커밋 | 브라우저가 받는 것은 커밋된 `dist/` 다 — 소스 수정이 사문화된다 |
 | `onSuccess`·시퀀스 안에서 방금 저장한 상태(`_global.*`/`_local.*`)를 형제 액션의 `if`·값으로 재독 | 그 자리에서는 `{{response.*}}` 만 읽는다 | 그 시점 컨텍스트는 아직 갱신 전이라 stale 값으로 조용히 분기한다 |
+| 컴포넌트·핸들러가 `fetch` 로 직접 요청하며 대상 출처를 보지 않고 토큰(Bearer·XSRF)을 싣기 | `src/support/sameOriginRequest.ts` 의 `isSameOriginRequest(url)` 이 true 일 때만 토큰을 싣는다 | 주소가 레이아웃 prop·응답 본문이면 레이아웃 편집 권한만으로 회원 토큰을 외부로 보낼 수 있다(KVE-2026-2350) |
 | 첨부 임시 키(`tempKey`)를 `'temp_' + Date.now() + …` 같은 임의 문자열로 만들기 | `{{$uuid()}}` 로 발급 | 게시판·페이지·이커머스 모듈은 UUID 형식의 임시 키만 받는다 — 그 밖의 값은 422 로 거부되어 첨부 업로드와 글 저장이 실패한다 (임시 키가 저장 경로에 들어가 경로 조작에 쓰였던 결함의 재발 방지) |
 <!-- @intent END -->
 
@@ -163,9 +164,9 @@ API 까지만 소유하고, 그 API 를 소비해 실제로 그리는 것은 이
 | 종류 | 개수 | 위치 |
 |---|---|---|
 | PHPUnit | 0개 | — |
-| Vitest | 157개 | `vitest.config.ts` |
+| Vitest | 160개 | `vitest.config.ts` |
 | Playwright | 8개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 5개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 6개 | `tests/scenarios` |
 
 ```bash
 # Vitest (확장 디렉토리에서) (PowerShell)

@@ -422,7 +422,7 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다. 모든 Basic �
 >
 > `DataGrid` 는 `selectable` 이 켜지고 선택된 행이 있으면 목록 위에 「N개 선택됨」을 **스스로**
 > 그린다. 그런데 관리자 목록 화면은 대개 일괄 처리 바(`bulk-actions-bar`)를 따로 두고 거기에도
-> 같은 문장을 적는다 — 그대로 두면 화면에 두 번 뜬다(PO 제보 2026-09-15).
+> 같은 문장을 적는다 — 그대로 두면 화면에 두 번 뜬다(2026-09-15 제보).
 >
 > 일괄 바에 건수를 적는 화면은 `<data-grid selectedCountText="">` 로 내장 줄을 끈다. 빈 문자열이면
 > `selectedCountText ?? t(...)` 의 `??` 가 폴백하지 않아 카드형·표형 두 렌더 지점의
@@ -503,10 +503,10 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다. 모든 Basic �
 | `AdminFooter` | 관리자 푸터 | copyright, version, quickLinks |
 | `PageHeader` | 페이지 헤더 (제목, 브레드크럼, 액션) | title, subtitle, breadcrumbItems, tabs, onTabChange, ... |
 | `LoginForm` | 로그인 폼 (이메일/비밀번호 검증) | submitButtonText, emailPlaceholder, passwordPlaceholder, forgotPasswordText, forgotPasswordUrl, ... |
-| `UserProfile` | 사용자 프로필 드롭다운 | user, profileText, logoutText, onProfileClick, onLogoutClick |
+| `UserProfile` | 사용자 프로필 드롭다운 (`logoutEndpoint` 는 동일 출처일 때만 토큰을 싣고, `redirectPath` 가 동일 출처가 아니면 `/admin/login` 으로 이동) | user, profileText, logoutText, onProfileClick, onLogoutClick, logoutEndpoint, redirectPath |
 | `NotificationCenter` | 알림 센터 | notifications, titleText, emptyText, onNotificationClick |
 | `ThemeToggle` | 테마 모드 전환 (다크/라이트/자동) | onThemeChange, autoText, lightText, darkText |
-| `LanguageSelector` | 언어 선택 드롭다운 | availableLocales, languageText, apiEndpoint, onLanguageChange, inline |
+| `LanguageSelector` | 언어 선택 드롭다운 (`apiEndpoint` 가 동일 출처일 때만 토큰을 싣는다) | availableLocales, languageText, apiEndpoint, onLanguageChange, inline |
 | `PageTransitionIndicator` | 페이지 전환 로딩 표시 | style |
 
 #### 레이아웃 편집

@@ -95911,7 +95911,7 @@ _단건 응답: `data` 객체의 필드._
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`core.templates.read`)이 없는 경우 |
 | 404 | Not Found | 템플릿/확장이 없거나, 확장이 경로의 템플릿 소속이 아닌 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터 검증 위반 또는 `extension_point` 타입인데 `preview_layout` 이 없는 경우 (대표 레이아웃 결정 불가) |
+| 422 | Unprocessable Entity | 요청 파라미터 검증 위반, `extension_point` 타입인데 `preview_layout` 이 없는 경우 (대표 레이아웃 결정 불가), 또는 `content` 가 저장측 보안 게이트(SafeLayoutExpressions·NoExternalUrls)에 걸린 경우 — `errors.content` 에 위반 메시지 |
 | 500 | Server Error | 미리보기 생성 실패 |
 
 <!-- @generated:end -->
@@ -95976,7 +95976,7 @@ _단건 응답: `data` 객체의 필드._
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`core.templates.read`)이 없는 경우 |
 | 404 | Not Found | 템플릿/확장이 없거나, 확장이 경로의 템플릿 소속이 아닌 경우 |
-| 422 | Unprocessable Entity | `markup` 누락, 또는 컴파일 실패 — `errors.markup` 에 메시지, 최상위 `compile_error {code,message,line,column}`(같은 값이 `errors.compile_error` 에도 실린다 — 화면 정의가 `{{error.errors?.compile_error}}` 로 읽는 자리) 에 위치 |
+| 422 | Unprocessable Entity | `markup` 누락, 또는 컴파일 실패 — `errors.markup` 에 메시지, 최상위 `compile_error {code,message,line,column}`(같은 값이 `errors.compile_error` 에도 실린다 — 화면 정의가 `{{error.errors?.compile_error}}` 로 읽는 자리) 에 위치. 컴파일은 됐지만 산출 JSON 이 저장측 보안 게이트(SafeLayoutExpressions·NoExternalUrls)에 걸리면 `errors.content` 에 위반 메시지(`compile_error` 없음) |
 
 <!-- @generated:end -->
 
@@ -96939,7 +96939,7 @@ _단건 응답: `data` 객체의 필드._
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`core.templates.read`)이 없는 경우 |
 | 404 | Not Found | 대상 템플릿이 존재하지 않는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지). `format=markup` 컴파일 실패면 최상위 `compile_error {code,message,line,column}`(같은 값이 `errors.compile_error` 에도 실린다 — 화면 정의가 `{{error.errors?.compile_error}}` 로 읽는 자리) 이 함께 실린다 |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지). `content` 가 저장측 보안 게이트(SafeLayoutExpressions·NoExternalUrls)에 걸린 경우도 여기다(`errors.content`). `format=markup` 컴파일 실패면 최상위 `compile_error {code,message,line,column}`(같은 값이 `errors.compile_error` 에도 실린다 — 화면 정의가 `{{error.errors?.compile_error}}` 로 읽는 자리) 이 함께 실린다 |
 | 500 | Server Error | 미리보기 생성 실패 |
 
 <!-- @generated:end -->
@@ -97004,7 +97004,7 @@ _단건 응답: `data` 객체의 필드._
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`core.templates.read`)이 없는 경우 |
 | 404 | Not Found | 대상 템플릿 또는 해당 이름의 레이아웃이 없는 경우 |
-| 422 | Unprocessable Entity | `markup` 누락, 또는 컴파일 실패 — `errors.markup` 에 메시지, 최상위 `compile_error {code,message,line,column}`(같은 값이 `errors.compile_error` 에도 실린다 — 화면 정의가 `{{error.errors?.compile_error}}` 로 읽는 자리) 에 위치 |
+| 422 | Unprocessable Entity | `markup` 누락, 또는 컴파일 실패 — `errors.markup` 에 메시지, 최상위 `compile_error {code,message,line,column}`(같은 값이 `errors.compile_error` 에도 실린다 — 화면 정의가 `{{error.errors?.compile_error}}` 로 읽는 자리) 에 위치. 컴파일은 됐지만 산출 JSON 이 저장측 보안 게이트(SafeLayoutExpressions·NoExternalUrls)에 걸리면 `errors.content` 에 위반 메시지(`compile_error` 없음) |
 
 <!-- @generated:end -->
 

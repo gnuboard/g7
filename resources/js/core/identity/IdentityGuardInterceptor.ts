@@ -19,6 +19,7 @@
  */
 
 import { createLogger } from '../utils/Logger';
+import { isDangerousScheme } from '../support/navPolicy';
 import {
   IDENTITY_REDIRECT_STASH_KEY,
   type IdentityResponse428,
@@ -243,6 +244,17 @@ export class IdentityGuardInterceptor {
         status: 'failed',
         failureCode: 'MISSING_REDIRECT_URL',
         reason: 'verification.redirect_url is required for external_redirect flow',
+      });
+    }
+
+    // 제공자 외부 인증 페이지(https)는 정당한 이동이지만 실행 스킴은 현재 origin 에서
+    // 코드를 돌리는 sink 가 된다 — 이동 전에 막는다(KVE-2026-2348 과 같은 원인).
+    if (isDangerousScheme(redirectUrl)) {
+      logger.error('redirectExternally: 실행 스킴 redirect_url 은 이동하지 않습니다.');
+      return Promise.resolve({
+        status: 'failed',
+        failureCode: 'UNSAFE_REDIRECT_URL',
+        reason: 'verification.redirect_url uses an executable scheme',
       });
     }
 
