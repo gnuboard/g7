@@ -1050,6 +1050,7 @@
         "posts.read": "View Posts",
         "posts.write": "Create/Edit/Delete Posts",
         "posts.read-secret": "View Secret Posts",
+        "posts.write-notice": "Create Notice Posts",
         "comments.read": "View Comments",
         "comments.write": "Create/Edit/Delete Comments",
         "attachments.upload": "Upload/Delete Files",

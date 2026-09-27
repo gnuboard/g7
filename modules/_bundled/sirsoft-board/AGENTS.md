@@ -159,10 +159,10 @@ CRUD 흐름 자체를 **자기 도메인으로 대체**하는 가장 무거운 �
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 188개 | `modules/_bundled/sirsoft-board/tests` |
+| PHPUnit | 190개 | `modules/_bundled/sirsoft-board/tests` |
 | Vitest | 49개 | `vitest.config.ts` |
 | Playwright | 33개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 57개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 60개 | `tests/scenarios` |
 
 기저 TestCase: `tests/ModuleTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

@@ -93,6 +93,14 @@ _`getSettingsSchema()` 선언이 없습니다._
 전수를 확인할 수 있습니다. `boards`/`reports` 카테고리에 `resource_route_key`/`owner_key` 가
 붙어 있는 것은 소유자 기반 스코프 판정(자기 글만 관리 가능한 `manager` 이하 역할 등)이 걸려
 있다는 뜻입니다.
+
+게시판 동적 권한 중 `posts.write-notice`(공지 등록)는 **필드 설정 권한**입니다 — `posts.write` 를
+통과한 사용자 중 글을 공지로 등록·해제할 수 있는 사람을 가립니다. 사용자 글 작성·수정 컨트롤러가
+게시판 관리 권한(`admin.manage`/`manager`) 또는 이 권한으로 판정하며, 폼 메타의
+`user_abilities.can_write_notice` 가 같은 권한을 화면에 내려 줍니다. 기본값은 `admin` 이고 게시판
+생성 시 그 게시판의 관리자·스텝 역할이 자동 주입됩니다. 기존 설치본은 1.2.0 업그레이드 스텝이 기존
+게시판의 권한 행과 저장된 기본 권한 설정(`basic_defaults.default_board_permissions`)을 함께 채웁니다
+— 설정이 통째로 저장되는 구조라 기본값 병합만으로는 새 키가 들어가지 않기 때문입니다.
 <!-- @intent END -->
 
 ## 메뉴

@@ -217,6 +217,7 @@ return [
         'posts_delete_denied' => 'You do not have permission to delete posts.',
         'posts_manage_others_denied' => 'You do not have permission to manage others\' posts.',
         'posts_secret_read_denied' => 'You do not have permission to view secret posts.',
+        'notice_denied' => 'You do not have permission to mark posts as notice.',
 
         // Comment permissions
         'comments_read_denied' => 'You do not have permission to view comments.',

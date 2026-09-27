@@ -606,6 +606,7 @@ return [
             'read' => 'View Posts',
             'write' => 'Create Posts',
             'read-secret' => 'View Secret Posts',
+            'write-notice' => 'Create Notice Posts',
         ],
         'comments' => [
             'read' => 'View Comments',

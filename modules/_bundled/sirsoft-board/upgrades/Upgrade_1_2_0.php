@@ -12,6 +12,10 @@ use App\Extension\AbstractUpgradeStep;
  * 실제 접속 IP 가 될 수 없는 값이라 뜻은 "모름" 이다. 남겨 두면 개인정보 보유기간 처리가 그 행을
  * IP 가 남은 행으로 세므로, 기존 행의 자리표시값을 NULL 로 되돌린다.
  *
+ * 1.2.0 은 게시판 사용자 권한에 공지 등록(posts.write-notice)을 신설한다. 기존 게시판에는 그
+ * 권한 행이 없고 저장된 기본 권한 설정에도 키가 없으므로, 둘 다 기본값(admin + 게시판
+ * 관리자·스텝)으로 채운다.
+ *
  * 모든 비즈니스 로직은 data/1.2.0/migrations/ 로 격리(AbstractUpgradeStep 규약).
  *
  * @upgrade-path A

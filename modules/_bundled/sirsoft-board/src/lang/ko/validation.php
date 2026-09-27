@@ -606,6 +606,7 @@ return [
             'read' => '게시글 조회',
             'write' => '게시글 작성',
             'read-secret' => '비밀글 조회',
+            'write-notice' => '공지 등록',
         ],
         'comments' => [
             'read' => '댓글 조회',

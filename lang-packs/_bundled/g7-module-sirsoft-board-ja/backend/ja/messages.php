@@ -153,6 +153,7 @@ return [
         'boards_delete_denied' => '掲示板削除権限がありません。',
         'reports_view_denied' => '通報閲覧権限がありません。',
         'reports_manage_denied' => '通報管理権限がありません。',
+        'notice_denied' => '投稿をお知らせとして指定する権限がありません。',
     ],
     'confirm' => [
         'delete_board' => '本当にこの掲示板を削除しますか？この操作は元に戻すことはできません。',

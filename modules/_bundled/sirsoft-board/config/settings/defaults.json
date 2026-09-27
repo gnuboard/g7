@@ -61,6 +61,7 @@
         "posts.read": ["admin", "user", "guest"],
         "posts.write": ["admin", "user"],
         "posts.read-secret": ["admin"],
+        "posts.write-notice": ["admin"],
         "comments.read": ["admin", "user", "guest"],
         "comments.write": ["admin", "user"],
         "attachments.upload": ["admin", "user"],
