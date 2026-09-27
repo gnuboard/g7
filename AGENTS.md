@@ -114,6 +114,7 @@ PHP 8.2+ · Laravel 12.x · MySQL 8.0 · Sanctum 4.x · PHPUnit 11.x · Pint(PSR
 | `app/Http/View/Composers/**` | [service-repository](docs/backend/service-repository.md), [template-basics](docs/extension/template-basics.md), [testing-guide](docs/testing-guide.md) |
 | `resources/views/**/*.blade.php` | [template-basics](docs/extension/template-basics.md), [testing-guide](docs/testing-guide.md) |
 | 코어 공개 확장 표면(`app/Extension/Abstract*`·`HookManager`·`app/Contracts/Extension/**`) | [changelog-rules](docs/extension/changelog-rules.md) |
+| `resources/js/core/{template-engine/**,TemplateApp.ts,template-engine.ts,auth/**,identity/**,support/**}` | [state-management](docs/frontend/state-management.md) |
 | 번들 확장 공개 표면(`src/{Services,Contracts,Repositories,Models}/**`·`routes/**`) | [changelog-rules](docs/extension/changelog-rules.md) |
 | `**/extensions/**/*.{g7.html,json}` | [layout-markup](docs/frontend/layout-markup.md), [layout-extensions](docs/extension/layout-extensions.md), [layout-json](docs/frontend/layout-json.md) |
 | `(modules|plugins|templates)/**/editor-spec.json`·`editor-spec/**/*.json` | [editor-spec](docs/extension/editor-spec.md) |
