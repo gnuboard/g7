@@ -68,7 +68,7 @@ Service → doAction('hook.name') → ActivityLogListener → Log::channel('acti
 | `core.auth.record_consents` | `handleAuthRecordConsents` | `auth.record_consents` | User | User |
 | `core.auth.login_failed` | `handleAuthLoginFailed` | `auth.login_failed` | User | - |
 | `core.auth.account_locked` | `handleAuthAccountLocked` | `auth.account_locked` | User | User |
-| `core.auth.account_unlocked` | `handleAuthAccountUnlocked` | `auth.account_unlocked` | User | User |
+| `core.auth.account_unlocked` | `handleAuthAccountUnlocked` | `auth.account_unlocked` (관리자 해제·비밀번호 재설정 — `context.reason=password_reset` 이면 설명 키 `auth_account_unlocked_by_password_reset`) | User | User |
 
 ### Identity (3훅)
 

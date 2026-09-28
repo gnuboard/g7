@@ -36,6 +36,32 @@ trait ExposesMemberContact
             return true;
         }
 
+        return $this->reachedAdminController($request);
+    }
+
+    /**
+     * 이 응답에 관리자 내부 메모(주문 관리자 메모·마일리지 처리 메모 등)를 실어도 되는지 판정합니다.
+     *
+     * 판정 근거는 이메일 게이트와 같다 — 요청이 도달한 컨트롤러가 관리자 컨트롤러인가.
+     * 다만 본인 예외는 두지 않는다. 관리자 내부 메모는 그 대상이 본인이어도 보여서는 안 되는
+     * 값이다 — 고객 자신의 주문·마일리지 화면이 이 값을 받아 온 것이 바로 막으려는 결함이다.
+     *
+     * @param  Request|null  $request  HTTP 요청 (생략 시 현재 요청)
+     * @return bool 관리자 내부 메모를 직렬화해도 되는지 여부
+     */
+    protected function canExposeAdminNote(?Request $request = null): bool
+    {
+        return $this->reachedAdminController($request);
+    }
+
+    /**
+     * 요청이 관리자 컨트롤러에 도달했는지 판정합니다.
+     *
+     * @param  Request|null  $request  HTTP 요청 (생략 시 현재 요청)
+     * @return bool 관리자 컨트롤러 도달 여부
+     */
+    private function reachedAdminController(?Request $request = null): bool
+    {
         $request = $request ?? request();
 
         return $request->route()?->getController() instanceof AdminBaseController;

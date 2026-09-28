@@ -660,7 +660,7 @@ HTTP/1.1 200
 
 **설명**
 
-일반 사용자 로그인(공개). 관리자 로그인과 달리 `isAdmin()` 검사가 없다. 성공 시 `data.token`(Sanctum Bearer) 과 `data.user` 를 반환하며 `message: auth.login_success`. 계정 잠금 시 `423 auth.account_locked` 를 잠금 해제까지 남은 정보(`errors.locked_until`, `errors.retry_after_seconds`)와 함께 반환한다. 보안 환경설정의 잠금 시간이 `0`(무한대)이면 무기한 잠금이 되어 `423 auth.account_locked_permanently` 와 함께 `errors.permanent=true`, `errors.locked_until=null`, `errors.retry_after_seconds=null` 을 반환하며 `Retry-After` 헤더도 붙지 않는다. 이 경우 해제 수단은 관리자 해제 API(`POST /api/admin/users/{user}/unlock`) 뿐이다. 프론트 로그인 폼(`partials/auth/_register_form.g7.html` 인접)에서 소비한다.
+일반 사용자 로그인(공개). 관리자 로그인과 달리 `isAdmin()` 검사가 없다. 성공 시 `data.token`(Sanctum Bearer) 과 `data.user` 를 반환하며 `message: auth.login_success`. 계정 잠금 시 `423 auth.account_locked` 를 잠금 해제까지 남은 정보(`errors.locked_until`, `errors.retry_after_seconds`)와 함께 반환한다. 보안 환경설정의 잠금 시간이 `0`(무한대)이면 무기한 잠금이 되어 `423 auth.account_locked_permanently` 와 함께 `errors.permanent=true`, `errors.locked_until=null`, `errors.retry_after_seconds=null` 을 반환하며 `Retry-After` 헤더도 붙지 않는다. 이 경우 해제 수단은 관리자 해제 API(`POST /api/admin/users/{user}/unlock`) 와 본인의 비밀번호 재설정(`POST /api/auth/reset-password`)이다. 실패 횟수는 보안 환경설정의 잠금 시간 안의 연속 실패만 센다 — 직전 실패가 잠금 시간보다 오래됐으면 1 부터 다시 센다(잠금 시간 `0` 이면 기간 없이 누적). 실패 횟수 증가·잠금과 성공 시 초기화는 큐 드라이버와 무관하게 로그인 요청 안에서 바로 반영된다 — 큐로 미루면 워커가 없는 사이트에서 잠금이 걸리지 않는다. 프론트 로그인 폼(`partials/auth/_register_form.g7.html` 인접)에서 소비한다.
 
 **2단계 인증이 켜져 있는 경우**: 보안 환경설정 `security.two_factor_auth` 가 켜져 있으면 비밀번호가 맞아도 **토큰을 발급하지 않는다**. 대신 `200` 과 함께 `message: auth.two_factor_required` 및 아래 필드를 반환하며, 클라이언트는 `POST /api/auth/login/two-factor` 로 코드를 확인해야 로그인이 완료된다.
 
@@ -1076,6 +1076,8 @@ HTTP/1.1 200
 **설명**
 
 비밀번호 재설정을 실제 반영한다(공개). 재설정 메일의 `token` 과 `email`, 새 `password` 를 받아 비밀번호를 갱신하고 `message: auth.password_reset_success`. 토큰 만료/불일치 등 검증 실패 시 `422 auth.password_reset_failed`. 반영 전 토큰 유효성만 먼저 확인하려면 `/api/auth/validate-reset-token` 을 사용한다.
+
+**재설정은 로그인 잠금도 푼다.** 재설정 메일을 받아 링크를 연 것이 본인 확인이므로, 반영과 같은 트랜잭션에서 로그인 실패 횟수·잠금(시한·무기한 모두)을 초기화한다. 잠금은 이메일만 알면 남이 걸 수 있어, 이 경로가 없으면 피해자는 차단 시간이 끝나기를 기다리거나 관리자 해제를 받아야 했다. 실제로 잠겨 있던 계정이면 `core.auth.account_unlocked` 훅이 `reason=password_reset` 과 함께 발화되어 활동 로그에 "비밀번호 재설정으로 계정 잠금 해제" 로 남는다.
 
 
 ### GET /api/auth/user

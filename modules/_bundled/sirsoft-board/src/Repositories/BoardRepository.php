@@ -393,7 +393,7 @@ class BoardRepository implements BoardRepositoryInterface
      * 최신글 위젯 한 줄에 실을 반응 합계를 만듭니다.
      *
      * 게시판이 반응을 껐거나 활성 유형이 없으면 **빈 배열**을 돌려 `reaction_total`
-     * 키 자체가 payload 에 실리지 않게 한다(PO 결정 2026-09-16). 켜져 있으면 활성
+     * 키 자체가 payload 에 실리지 않게 한다(2026-09-16 결정). 켜져 있으면 활성
      * 유형의 카운트만 더한다 — 비활성으로 돌린 유형의 잔여 카운트는 제외해야
      * 목록·상세(PostResource)와 같은 수가 나온다.
      *
@@ -522,7 +522,6 @@ class BoardRepository implements BoardRepositoryInterface
                 'board_posts.user_id',
                 'board_posts.author_name as guest_author_name',
                 "{$usersTable}.name as user_name",
-                "{$usersTable}.email as user_email",
                 "{$usersTable}.status as user_status",
                 "{$attachmentsTable}.hash as attachment_hash",
                 'board_posts.view_count',
@@ -568,7 +567,9 @@ class BoardRepository implements BoardRepositoryInterface
                 'author' => [
                     'id' => $post->user_id,
                     'name' => $authorName,
-                    'email' => $isWithdrawn ? null : $post->user_email,
+                    // 이메일은 싣지 않는다 — 이 배열은 호출자 권한과 무관하게 캐시에 저장되어 모든 요청이
+                    // 같은 값을 받으므로 응답 시점 게이트가 닿지 않는다. 키는 응답 구조 호환을 위해 유지한다.
+                    'email' => null,
                     'is_guest' => ! $post->user_id,
                     'avatar' => $isWithdrawn ? null : $avatarUrl,
                     'status' => $post->user_status,
