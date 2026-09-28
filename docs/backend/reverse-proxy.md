@@ -118,6 +118,7 @@ IP 기록·IP 기반 차단·통보 화이트리스트가 전부 위조 가능�
 - 프록시에서 **클라이언트가 보낸 `X-Forwarded-*` 를 제거**하고 프록시가 직접 설정한다
 - 웹서버의 `server_name`(Apache 는 `ServerName`)을 실제 서비스 호스트로 엄격히 둔다
 - 가능하면 `*` 대신 프록시의 IP·CIDR 목록을 지정한다
+- 프록시가 전달하는 Host(또는 신뢰된 `X-Forwarded-Host`)가 `APP_URL` 의 도메인이 아니면 앱이 요청을 받지 않는다(운영 환경의 신뢰 호스트 검사, `config/trustedhosts.php`). 프록시가 다른 도메인을 넘긴다면 `TRUSTED_HOSTS` 에 그 도메인을 적는다
 
 ---
 

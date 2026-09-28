@@ -83,13 +83,11 @@ effects:
 sub_flows:
   - id: bot_request_transport
     description: |
-      봇 판정 경로별 실제 HTTP 응답. 봇용 렌더링은 `?_escaped_fragment_=` 쿼리와
-      봇 User-Agent 두 경로로 진입하는데, 한쪽만 검증하면 다른 경로에서 본문이 비어도
-      드러나지 않는다. 응답 캐시에 빈 본문이 굳는 경우까지 함께 확인한다.
+      봇 판정 경로의 실제 HTTP 응답. 봇용 렌더링은 검색엔진 User-Agent 로만 진입한다
+      (`?_escaped_fragment_=` 쿼리 경로는 KVE-2026-2333/2334/2335 조치로 폐지 — 그 회귀는
+      seo-host-trust.yaml 이 잠근다). 응답 캐시에 빈 본문이 굳는 경우까지 함께 확인한다.
     effects:
-      - escaped_fragment_request_renders_content
       - bot_user_agent_request_renders_content
-      - both_transports_render_same_content
       - cached_response_keeps_content
 
   - id: bot_screen_data_completeness

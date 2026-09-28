@@ -875,9 +875,9 @@ class ComponentHtmlMapper
                 continue;
             }
 
-            // src 속성의 상대 경로를 절대 경로로 변환
+            // src 속성의 상대 경로를 사이트 주소 기준 절대 경로로 변환 (요청 Host 비의존)
             if ($attrName === 'src' && ! str_starts_with($value, 'http')) {
-                $value = url($value);
+                $value = SeoUrl::absolute($value);
             }
 
             $attrStr .= " {$attrName}=\"".e($value).'"';
@@ -1337,9 +1337,9 @@ class ComponentHtmlMapper
         foreach ($field['attrs'] as $attrName => $fieldPattern) {
             $value = $this->resolveFieldPattern($fieldPattern, $data);
             if ($value !== '') {
-                // src 속성의 상대 경로를 절대 경로로 변환
+                // src 속성의 상대 경로를 사이트 주소 기준 절대 경로로 변환 (요청 Host 비의존)
                 if ($attrName === 'src' && ! str_starts_with($value, 'http')) {
-                    $value = url($value);
+                    $value = SeoUrl::absolute($value);
                 }
                 $attrStr .= " {$attrName}=\"".e($value).'"';
             }

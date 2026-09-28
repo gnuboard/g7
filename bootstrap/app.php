@@ -27,6 +27,7 @@ use App\Http\Middleware\SetTimezone;
 use App\Http\Middleware\StartApiSession;
 use App\Http\Middleware\SyncBoostWithDebugMode;
 use App\Seo\SeoMiddleware;
+use App\Support\TrustedHosts;
 use App\Support\UmaskHelper;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Application;
@@ -120,6 +121,12 @@ $app = Application::configure(basePath: dirname(__DIR__))
         // 미들웨어보다는 먼저 돌아 withoutMiddleware() 로 빠져나갈 수 없다. Gzip 보다 앞에 두어 차단
         // 응답이 압축 단계를 거치지 않게 한다.
         $middleware->append(RestrictIpAccess::class);
+
+        // 신뢰 Host (전역, 인증 불필요) — 사이트 주소(APP_URL)의 도메인·하위 도메인과 TRUSTED_HOSTS 가
+        // 아닌 Host 헤더로 온 요청을 받지 않는다. 위조 Host 로 절대 URL 을 만드는 코드가 남아 있을 때의
+        // 마지막 겹이다(KVE-2026-2333/2334 — 근본 조치는 SEO 렌더러가 Host 를 쓰지 않게 한 것).
+        // 설치 전·TRUSTED_HOSTS_ENABLED=false 면 빈 목록(제한 없음), 로컬·테스트는 Laravel 이 건너뛴다.
+        $middleware->trustHosts(at: fn (): array => TrustedHosts::patterns(), subdomains: false);
 
         // Gzip 압축 미들웨어 (웹서버 설정 없이 애플리케이션 레벨에서 압축)
         $middleware->append(GzipEncodeResponse::class);
