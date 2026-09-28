@@ -108,4 +108,9 @@ KCP 가 제공하는 `payplus_web.jsp` SDK 는 이 목록에 없습니다 — `r
 주문 상세 화면의 경로 판정(`ORDER_SHOW_RE`)도 회원(`/mypage/orders/{N}`)과
 비회원(`/shop/guest/orders/{N}`) 두 주소를 함께 매칭해야 한다. 한쪽을 빼면 그 화면에서는
 조회가 시작조차 되지 않는다.
+
+영수증 조회 응답은 공통 형식(`{ success, message, data }`)이고 매출전표·현금영수증 주소는 `data` 안에 있다.
+주입 스크립트는 응답 본문의 `data` 를, 레이아웃 조각은 `response.data.*`(주문 완료) · 직전 apiCall 결과
+`$prev.data.*`(마이페이지 「매출전표 보기」)를 읽는다. 최상위에서 읽으면 버튼은 그려져도 빈 주소로 팝업이 열린다.
+주입 스크립트가 그리는 버튼·가상계좌 안내 글자는 `resources/lang` 의 `user.*` 키로 그린다(`translate.ts`).
 <!-- @intent END -->

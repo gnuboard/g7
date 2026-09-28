@@ -44,7 +44,8 @@ function mountPaymentPanel(): void {
 async function installAt(path: string) {
     history.replaceState({}, '', path);
     const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-        new Response(JSON.stringify({ receipt_url: 'https://receipt.example/1' }), {
+        // 영수증 조회 응답은 공통 형식({ success, message, data })이다.
+        new Response(JSON.stringify({ success: true, data: { receipt_url: 'https://receipt.example/1' } }), {
             status: 200,
             headers: { 'Content-Type': 'application/json' },
         }),

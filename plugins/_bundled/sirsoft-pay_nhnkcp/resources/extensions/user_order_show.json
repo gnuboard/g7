@@ -322,8 +322,8 @@
                                             "params": {
                                                 "constructor": "KcpReceiptPopup",
                                                 "args": {
-                                                    "url": "{{$prev.receipt_url}}",
-                                                    "cash_url": "{{$prev.cash_receipt_url}}"
+                                                    "url": "{{$prev.data.receipt_url}}",
+                                                    "cash_url": "{{$prev.data.cash_receipt_url}}"
                                                 }
                                             }
                                         },

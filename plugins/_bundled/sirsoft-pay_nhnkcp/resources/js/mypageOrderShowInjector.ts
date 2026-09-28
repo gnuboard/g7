@@ -1,4 +1,5 @@
 import { buildOrderRequestHeaders } from './guestOrderToken';
+import { translateNhnkcp as t } from './translate';
 
 const PLUGIN_ID = 'sirsoft-pay_nhnkcp';
 const FLAG = '__kcpMpShowInjectorInstalled';
@@ -67,7 +68,9 @@ async function fetchReceiptUrls(orderNumber: string): Promise<ReceiptInfo | null
             credentials: 'same-origin',
         });
         if (!res.ok) return null;
-        return (await res.json()) as ReceiptInfo;
+        // 응답은 공통 형식({ success, message, data }) — 영수증 정보는 data 에 있다.
+        const body = (await res.json()) as { data?: ReceiptInfo | null };
+        return body?.data ?? null;
     } catch {
         return null;
     }
@@ -248,21 +251,21 @@ function buildVbankInfoBlock(payment: Payment, totalAmountFormatted: string): HT
 
     const title = document.createElement('p');
     title.className = 'text-sm font-semibold text-gray-800 dark:text-gray-200';
-    title.textContent = '가상계좌 입금 안내';
+    title.textContent = t('user.vbank_title', '가상계좌 입금 안내');
 
     const rows = document.createElement('div');
     rows.className = 'space-y-1.5';
-    rows.appendChild(makeInfoRow('은행', payment.vbank_name ?? ''));
-    rows.appendChild(makeInfoRow('계좌번호', payment.vbank_number ?? '', 'font-medium text-gray-900 dark:text-white font-mono tracking-wide'));
-    rows.appendChild(makeInfoRow('예금주', payment.vbank_holder ?? ''));
-    rows.appendChild(makeInfoRow('입금 금액', totalAmountFormatted));
+    rows.appendChild(makeInfoRow(t('user.vbank_bank_name', '은행'), payment.vbank_name ?? ''));
+    rows.appendChild(makeInfoRow(t('user.vbank_account', '계좌번호'), payment.vbank_number ?? '', 'font-medium text-gray-900 dark:text-white font-mono tracking-wide'));
+    rows.appendChild(makeInfoRow(t('user.vbank_holder', '예금주'), payment.vbank_holder ?? ''));
+    rows.appendChild(makeInfoRow(t('user.vbank_amount', '입금 금액'), totalAmountFormatted));
     if (payment.due_date_formatted) {
-        rows.appendChild(makeInfoRow('입금 기한', payment.due_date_formatted));
+        rows.appendChild(makeInfoRow(t('user.vbank_due', '입금 기한'), payment.due_date_formatted));
     }
 
     const notice = document.createElement('p');
     notice.className = 'text-xs text-amber-600 dark:text-amber-400';
-    notice.textContent = '입금 기한 내에 입금하지 않으시면 주문이 자동 취소됩니다.';
+    notice.textContent = t('user.vbank_notice', '입금 기한 내에 입금하지 않으시면 주문이 자동 취소됩니다.');
 
     wrap.appendChild(title);
     wrap.appendChild(rows);
@@ -280,19 +283,20 @@ function buildReceiptRow(orderNumber: string): HTMLElement {
 
     const label = document.createElement('span');
     label.className = 'text-gray-500 dark:text-gray-400 text-sm';
-    label.textContent = '영수증';
+    label.textContent = t('user.receipt_label', '영수증');
 
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'inline-flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:underline disabled:opacity-50';
-    btn.textContent = '영수증 조회';
+    const viewLabel = t('user.receipt_view', '영수증 조회');
+    btn.textContent = viewLabel;
 
     btn.addEventListener('click', async () => {
         btn.disabled = true;
-        btn.textContent = '로딩 중...';
+        btn.textContent = t('user.loading', '로딩 중...');
         const data = await fetchReceiptUrls(orderNumber);
         btn.disabled = false;
-        btn.textContent = '영수증 조회';
+        btn.textContent = viewLabel;
         if (data) {
             const KcpPopup = (window as unknown as Record<string, unknown>).KcpReceiptPopup as
                 (new (p: { url?: string; cash_url?: string | null }) => unknown) | undefined;

@@ -58,8 +58,8 @@
               </api-call>
               <call-external constructor="KcpReceiptPopup">
                 <field name="args">
-                  <field name="url" value="{{$prev.receipt_url}}"/>
-                  <field name="cash_url" value="{{$prev.cash_receipt_url}}"/>
+                  <field name="url" value="{{$prev.data.receipt_url}}"/>
+                  <field name="cash_url" value="{{$prev.data.cash_receipt_url}}"/>
                 </field>
               </call-external>
               <set-state target="local" :_kcpReceiptLoading="false"/>

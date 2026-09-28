@@ -1,4 +1,5 @@
 import { buildOrderRequestHeaders } from './guestOrderToken';
+import { translateNhnkcp as t } from './translate';
 
 const PLUGIN_ID = 'sirsoft-pay_nhnkcp';
 const FLAG = '__kcpOcReceiptInjectorInstalled';
@@ -48,7 +49,9 @@ async function fetchReceiptUrl(orderNumber: string): Promise<ReceiptInfo | null>
             credentials: 'same-origin',
         });
         if (!res.ok) return null;
-        return (await res.json()) as ReceiptInfo;
+        // 응답은 공통 형식({ success, message, data }) — 영수증 정보는 data 에 있다.
+        const body = (await res.json()) as { data?: ReceiptInfo | null };
+        return body?.data ?? null;
     } catch {
         return null;
     }
@@ -111,12 +114,14 @@ async function injectOnOrderComplete(orderNumber: string): Promise<void> {
 
     const container = blueBtn.parentElement;
 
-    const receiptBtn = makeBtn('영수증 조회', blueBtn.className.replace(/bg-blue-\d+/g, 'bg-green-600').replace(/hover:bg-blue-\d+/g, 'hover:bg-green-700'), async (btn) => {
+    const viewLabel = t('user.receipt_view', '영수증 조회');
+    const loadingLabel = t('user.loading', '로딩 중...');
+    const receiptBtn = makeBtn(viewLabel, blueBtn.className.replace(/bg-blue-\d+/g, 'bg-green-600').replace(/hover:bg-blue-\d+/g, 'hover:bg-green-700'), async (btn) => {
         btn.disabled = true;
-        btn.textContent = '로딩 중...';
+        btn.textContent = loadingLabel;
         const data = await fetchReceiptUrl(orderNumber);
         btn.disabled = false;
-        btn.textContent = '영수증 조회';
+        btn.textContent = viewLabel;
         if (data) {
             const KcpPopup = (window as unknown as Record<string, unknown>).KcpReceiptPopup as
                 (new (p: { url?: string; cash_url?: string }) => unknown) | undefined;
@@ -132,12 +137,13 @@ async function injectOnOrderComplete(orderNumber: string): Promise<void> {
     // 현금영수증 버튼 (가상계좌/계좌이체)
     const cashBtnId = 'kcp-oc-cash-receipt-btn';
     if (!document.getElementById(cashBtnId) && (payment.payment_method === 'vbank' || payment.payment_method === 'bank_transfer')) {
-        const cashBtn = makeBtn('현금영수증 조회', receiptBtn.className.replace(/bg-green-\d+/g, 'bg-teal-600').replace(/hover:bg-green-\d+/g, 'hover:bg-teal-700'), async (btn) => {
+        const cashViewLabel = t('user.cash_receipt_view', '현금영수증 조회');
+        const cashBtn = makeBtn(cashViewLabel, receiptBtn.className.replace(/bg-green-\d+/g, 'bg-teal-600').replace(/hover:bg-green-\d+/g, 'hover:bg-teal-700'), async (btn) => {
             btn.disabled = true;
-            btn.textContent = '로딩 중...';
+            btn.textContent = loadingLabel;
             const data = await fetchReceiptUrl(orderNumber);
             btn.disabled = false;
-            btn.textContent = '현금영수증 조회';
+            btn.textContent = cashViewLabel;
             if (data) {
                 const KcpPopup = (window as unknown as Record<string, unknown>).KcpReceiptPopup as
                     (new (p: { url?: string; cash_url?: string }) => unknown) | undefined;

@@ -44,7 +44,9 @@
         "supply_amount": "공급가액",
         "vat_amount": "부가세",
         "tax_free_amount": "면세금액",
-        "escrow_badge": "에스크로"
+        "escrow_badge": "에스크로",
+        "loading": "로딩 중...",
+        "vbank_amount": "입금 금액"
     },
     "admin": {
         "test_mode_badge": "테스트 결제",

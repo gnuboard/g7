@@ -28,7 +28,7 @@
 | --- | --- | --- |
 | orderNumber | string | 주문번호. `pg_provider = nhnkcp` 이고 거래번호(`transaction_id`)가 있는 결제 레코드만 대상 |
 
-**응답 (200)** — 코어 envelope 없이 원시 JSON
+**응답 (200)** — 공통 형식(`ResponseHelper`: `{ success, message, data }`). 아래 필드는 모두 `data` 안에 있다
 
 | 필드 | 타입 | 설명 |
 | --- | --- | --- |
@@ -39,14 +39,18 @@
 
 ```json
 {
-    "receipt_url": "https://…/assist/bill.BillActionNew.do?cmd=card_bill&tno=…&order_no=ORD20260917001&trade_mony=10000",
-    "cash_receipt_url": null,
-    "is_test_mode": true,
-    "payment_method_label": "신용카드",
-    "payment_method_display_label": "신용카드",
-    "selected_payment_method": "card",
-    "embedded_pg_provider": null,
-    "embedded_pg_provider_label": null
+    "success": true,
+    "message": "성공적으로 처리되었습니다.",
+    "data": {
+        "receipt_url": "https://…/assist/bill.BillActionNew.do?cmd=card_bill&tno=…&order_no=ORD20260917001&trade_mony=10000",
+        "cash_receipt_url": null,
+        "is_test_mode": true,
+        "payment_method_label": "신용카드",
+        "payment_method_display_label": "신용카드",
+        "selected_payment_method": "card",
+        "embedded_pg_provider": null,
+        "embedded_pg_provider_label": null
+    }
 }
 ```
 
@@ -54,11 +58,11 @@
 
 | 상태코드 | 발생 조건 |
 | --- | --- |
-| 404 | 주문이 없거나, 소유 증명(회원 본인·게스트 토큰·영수증 쿠키)에 실패했거나, NHN KCP 결제 레코드에 거래번호가 없는 경우. 소유권 실패도 존재 여부를 드러내지 않도록 같은 404 다 |
+| 404 | 주문이 없거나, 소유 증명(회원 본인·게스트 토큰·영수증 쿠키)에 실패했거나, NHN KCP 결제 레코드에 거래번호가 없는 경우. 소유권 실패도 존재 여부를 드러내지 않도록 같은 404 다. 본문은 공통 형식 `{ "success": false, "message": "…" }` |
 
 **설명**
 
-주문 완료·마이페이지 화면이 「영수증 보기」 버튼에 넣을 KCP 영수증 주소를 받는 경로다. 영수증 URL 이 결제 레코드에 저장돼 있지 않아도 거래번호(`tno`)로 동적으로 만든다. 현금영수증은 승인번호(`app_no` → `receipt_no` → `tno` 순 폴백)와 상점 코드(`site_cd`)로 만든다.
+주문 완료·마이페이지 화면이 「영수증 보기」 버튼에 넣을 KCP 영수증 주소를 받는 경로다. 화면은 `data` 에서 주소를 읽는다(레이아웃 조각은 `response.data.*` · 직전 apiCall 결과 `$prev.data.*`, 주입 스크립트는 응답 본문의 `data`). 영수증 URL 이 결제 레코드에 저장돼 있지 않아도 거래번호(`tno`)로 동적으로 만든다. 현금영수증은 승인번호(`app_no` → `receipt_no` → `tno` 순 폴백)와 상점 코드(`site_cd`)로 만든다.
 
 ---
 

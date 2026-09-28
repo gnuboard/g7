@@ -34,7 +34,7 @@
                 <set-state target="local" :_kcpOcReceiptLoading="true"/>
                 <api-call :auth_required="true" target="/api/plugins/sirsoft-pay_nhnkcp/user/orders/{{route.id}}/receipt" method="GET">
                   <success>
-                    <set-state target="local" :_kcpOcReceiptLoading="false" :_kcpOcReceiptLoaded="true" _kcpOcReceiptUrl="{{response.receipt_url}}" _kcpOcCashReceiptUrl="{{response.cash_receipt_url}}"/>
+                    <set-state target="local" :_kcpOcReceiptLoading="false" :_kcpOcReceiptLoaded="true" _kcpOcReceiptUrl="{{response.data.receipt_url}}" _kcpOcCashReceiptUrl="{{response.data.cash_receipt_url}}"/>
                   </success>
                   <fail>
                     <set-state target="local" :_kcpOcReceiptLoading="false"/>

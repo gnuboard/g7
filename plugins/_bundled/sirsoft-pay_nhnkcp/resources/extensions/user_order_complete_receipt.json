@@ -201,8 +201,8 @@
                                                                     "target": "local",
                                                                     "_kcpOcReceiptLoading": false,
                                                                     "_kcpOcReceiptLoaded": true,
-                                                                    "_kcpOcReceiptUrl": "{{response.receipt_url}}",
-                                                                    "_kcpOcCashReceiptUrl": "{{response.cash_receipt_url}}"
+                                                                    "_kcpOcReceiptUrl": "{{response.data.receipt_url}}",
+                                                                    "_kcpOcCashReceiptUrl": "{{response.data.cash_receipt_url}}"
                                                                 }
                                                             },
                                                             "onError": {
