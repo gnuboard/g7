@@ -133,8 +133,32 @@
                     ]
                 },
                 {
+                    "comment": "영수증 주소는 플러그인 API 가 내려준다 — 레이아웃에 결제사 외부 주소를 적으면 편집기 저장 게이트(외부 URL 금지)가 거절한다. 회원은 토큰, 비회원은 조회 토큰 헤더로 같은 API 를 부른다",
                     "type": "basic",
                     "name": "Div",
+                    "lifecycle": {
+                        "onMount": [
+                            {
+                                "handler": "apiCall",
+                                "target": "/api/plugins/sirsoft-pay_kginicis/user/orders/{{route.order_number}}/receipt",
+                                "auth_mode": "optional",
+                                "auth_required": true,
+                                "params": {
+                                    "method": "GET",
+                                    "headers": {
+                                        "X-Guest-Order-Token": "{{_global.guestOrderToken ?? ''}}"
+                                    }
+                                },
+                                "onSuccess": {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "_kgReceiptUrl": "{{response.receipt_url}}"
+                                    }
+                                }
+                            }
+                        ]
+                    },
                     "props": {
                         "className": "flex-between"
                     },
@@ -150,8 +174,9 @@
                         {
                             "type": "basic",
                             "name": "A",
+                            "if": "{{_local._kgReceiptUrl}}",
                             "props": {
-                                "href": "https://iniweb.inicis.com/DefaultWebApp/mall/cr/cm/mCmReceipt_head.jsp?noTid={{order.data.payment.transaction_id}}&noMethod=1",
+                                "href": "{{_local._kgReceiptUrl}}",
                                 "target": "_blank",
                                 "rel": "noopener noreferrer",
                                 "className": "text-sm text-blue-600 dark:text-blue-400 hover:underline"

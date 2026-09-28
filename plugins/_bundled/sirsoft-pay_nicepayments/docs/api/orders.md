@@ -51,3 +51,5 @@
 - **인증/권한**: `optional.sanctum` — 회원이면 본인 주문만, 비회원이면 `X-Guest-Order-Token` 헤더 검증
 
 주문의 나이스페이 **매출전표(영수증) URL** 을 반환한다. 소유권 검증에 실패하면 대상 없음으로 처리된다(다른 사용자의 주문번호로는 조회 불가).
+
+응답 필드: `receipt_url`(매출전표, `type=0`) · `payment_receipt_url`(마이페이지 「결제 영수증」 링크가 여는 주소, `type=2` — 거래번호가 없으면 `null`) · `cash_receipt_url`(현금영수증, `type=1`) · `is_test_mode` · 결제수단 표시 라벨(`payment_method_label` 등). 영수증 주소는 레이아웃에 적지 않고 이 응답에서 받아 쓴다.

@@ -96,3 +96,9 @@
 비회원(`/shop/guest/orders/{N}`) 두 주소를 함께 매칭해야 한다. 한쪽을 빼면 그 화면에서는
 조회가 시작조차 되지 않는다.
 <!-- @intent END -->
+
+마이페이지 주문 상세의 영수증 조각(`resources/extensions/user_mypage_order_receipt.g7.html`)도 결제사 주소를 글자
+그대로 적지 않는다 — 적으면 레이아웃 편집기의 저장 게이트(외부 URL 금지)가 이 조각을 거절한다. 조각은 마운트 때
+영수증 조회 API 를 불러 `payment_receipt_url`(첫 출시부터 링크가 열어 온 `type=2` 주소)을 로컬 상태
+(`_npMpPaymentReceiptUrl`)에 담고 그 값으로 「결제 영수증」 링크를 그린다. 회원은 토큰(`auth_mode=optional`),
+비회원은 `X-Guest-Order-Token` 헤더를 실어 같은 API 를 부른다. 주소를 받지 못하면 링크를 그리지 않는다.

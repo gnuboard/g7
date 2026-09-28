@@ -20,9 +20,20 @@
         <span class="text-sm text-gray-500 dark:text-gray-400">$t:sirsoft-pay_kginicis.user.payment_type_label</span>
         <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">$t:sirsoft-pay_kginicis.admin.escrow_yes</span>
       </div>
+      <!-- 영수증 주소는 플러그인 API 가 내려준다 — 레이아웃에 결제사 외부 주소를 적으면 편집기 저장 게이트(외부 URL 금지)가 거절한다. 회원은 토큰, 비회원은 조회 토큰 헤더로 같은 API 를 부른다 -->
       <div class="flex-between">
+        <on event="mount">
+          <api-call :auth_required="true" auth_mode="optional" target="/api/plugins/sirsoft-pay_kginicis/user/orders/{{route.order_number}}/receipt" method="GET">
+            <field name="headers">
+              <field name="X-Guest-Order-Token" value="{{_global.guestOrderToken ?? ''}}"/>
+            </field>
+            <success>
+              <set-state target="local" _kgReceiptUrl="{{response.receipt_url}}"/>
+            </success>
+          </api-call>
+        </on>
         <span class="text-sm text-gray-500 dark:text-gray-400">$t:sirsoft-pay_kginicis.user.receipt_label</span>
-        <a href="https://iniweb.inicis.com/DefaultWebApp/mall/cr/cm/mCmReceipt_head.jsp?noTid={{order.data.payment.transaction_id}}&amp;noMethod=1" target="_blank" rel="noopener noreferrer" class="text-sm text-blue-600 dark:text-blue-400 hover:underline">$t:sirsoft-pay_kginicis.user.receipt_view</a>
+        <a data-if="{{_local._kgReceiptUrl}}" href="{{_local._kgReceiptUrl}}" target="_blank" rel="noopener noreferrer" class="text-sm text-blue-600 dark:text-blue-400 hover:underline">$t:sirsoft-pay_kginicis.user.receipt_view</a>
       </div>
       <div data-if="{{!!order.data.payment?.is_escrow}}" class="pt-1">
         <a href="/plugins/sirsoft-pay_kginicis/payment/escrow-confirm/{{route.orderNumber}}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">

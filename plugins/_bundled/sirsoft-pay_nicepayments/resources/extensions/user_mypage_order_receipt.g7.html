@@ -50,12 +50,22 @@
         <span class="text-sm text-gray-500 dark:text-gray-400">$t:sirsoft-pay_nicepayments.user.easy_pay_label</span>
         <span class="text-sm font-medium text-gray-900 dark:text-white">{{({'NAVERPAY':'네이버페이','KAKAOPAY':'카카오페이','SAMSUNGPAY':'삼성페이','APPLEPAY':'애플페이','PAYCO':'PAYCO','SKPAY':'11pay','SSGPAY':'SSG페이','LPAY':'L.pay'})[order.data.payment?.payment_meta?.PayMethod] ?? order.data.payment?.payment_meta?.PayMethod}}</span>
       </div>
-      <!-- 영수증 링크 행 -->
+      <!-- 영수증 링크 행 — 결제 영수증 주소는 플러그인 API(payment_receipt_url)가 내려준다. 레이아웃에 결제사 외부 주소를 적으면 편집기 저장 게이트(외부 URL 금지)가 거절한다. 회원은 토큰, 비회원은 조회 토큰 헤더로 같은 API 를 부른다 -->
       <div class="flex-between">
+        <on event="mount">
+          <api-call :auth_required="true" auth_mode="optional" target="/api/plugins/sirsoft-pay_nicepayments/user/orders/{{route.order_number}}/receipt" method="GET">
+            <field name="headers">
+              <field name="X-Guest-Order-Token" value="{{_global.guestOrderToken ?? ''}}"/>
+            </field>
+            <success>
+              <set-state target="local" _npMpPaymentReceiptUrl="{{response.payment_receipt_url}}"/>
+            </success>
+          </api-call>
+        </on>
         <span class="text-sm text-gray-500 dark:text-gray-400">$t:sirsoft-pay_nicepayments.user.receipt_label</span>
         <div class="flex items-center gap-3">
           <!-- 결제 영수증 -->
-          <a href="https://npg.nicepay.co.kr/issue/IssueLoader.do?type=2&amp;TID={{order.data.payment?.transaction_id}}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:underline">
+          <a data-if="{{_local._npMpPaymentReceiptUrl}}" href="{{_local._npMpPaymentReceiptUrl}}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:underline">
             <icon name="file-text" class="text-sm"/>
             <span>$t:sirsoft-pay_nicepayments.user.view_receipt</span>
           </a>
