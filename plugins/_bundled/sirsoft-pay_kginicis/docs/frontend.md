@@ -42,6 +42,10 @@
 확인서 팝업의 인쇄 버튼, 서버가 이름을 주지 않았을 때의 버튼 이름은 `resources/lang` 의 `user.*` 키로 그린다
 (`receiptPopup.ts` 의 `translateKginicis`).
 
+입금 안내의 입금 기한은 쇼핑몰이 사용자 언어·시간대로 서식을 입혀 주는 `payment.vbank_due_at_formatted` 를 그대로 쓴다.
+플러그인은 날짜에 서식을 입히지 않는다 — 원시 값(`vbank_due_at`)을 한국 서식·한국 시간으로 바꿔 쓰면 영어·일본어 화면에도
+한국식 날짜가 나온다. 주문 완료 화면의 날짜도 쇼핑몰의 서식 값을 템플릿이 그대로 표시하므로 플러그인이 건드리지 않는다.
+
 ## 액션 핸들러
 
 <!-- @generated:handlers START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->

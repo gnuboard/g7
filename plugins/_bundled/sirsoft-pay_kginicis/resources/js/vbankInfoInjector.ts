@@ -4,7 +4,6 @@ const PLUGIN_ID = 'sirsoft-pay_kginicis';
 const FLAG = '__kginicisVbankInfoInjectorInstalled';
 const MP_SECTION_ID = 'kginicis-mp-vbank-info';
 
-const ORDER_COMPLETE_RE = /^\/shop\/orders\/([^/]+)\/complete$/;
 // 회원 주문 상세(/mypage/orders/{N}) + 비회원 주문 상세(/shop/guest/orders/{N}) — 두 경로 모두 주소 조각이
 // 주문번호다. 회원 경로만 보면 비회원 가상계좌 주문의 입금 안내가 오류 없이 빠진다.
 const ORDER_SHOW_RE = /^(?:\/mypage\/orders\/([^/]+)|\/shop\/guest\/orders\/([^/]+))$/;
@@ -15,9 +14,6 @@ const ORDER_SHOW_RE = /^(?:\/mypage\/orders\/([^/]+)|\/shop\/guest\/orders\/([^/
 // 같은 카드를 쓰므로 함께 매칭한다.
 const CLAIM_SHOW_RE = /^(?:\/mypage\/claims\/([^/]+)|\/shop\/guest\/claims\/([^/]+))$/;
 
-// ISO 8601 날짜 패턴 (2026-06-11T23:59:59+00:00 등)
-const ISO_DATE_RE = /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+\-]\d{2}:\d{2}/;
-
 interface Payment {
     pg_provider?: string;
     payment_status?: string;
@@ -27,6 +23,8 @@ interface Payment {
     vbank_number?: string | null;
     vbank_holder?: string | null;
     vbank_due_at?: string | null;
+    /** 쇼핑몰이 사용자 언어·시간대로 서식을 입힌 입금 기한 — 화면에는 이 값을 그대로 쓴다 */
+    vbank_due_at_formatted?: string | null;
     [key: string]: unknown;
 }
 
@@ -75,44 +73,6 @@ interface OrderData {
     total_due_amount?: number;
     total_due_amount_formatted?: string;
     payment?: Payment;
-}
-
-function formatKoreanDate(isoString: string): string {
-    try {
-        const date = new Date(isoString);
-        return date.toLocaleString('ko-KR', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-            timeZone: 'Asia/Seoul',
-        });
-    } catch {
-        return isoString;
-    }
-}
-
-// ──────────────────────────────────────────────
-// 주문완료 페이지: ISO 날짜 텍스트를 한국어로 포맷
-// ──────────────────────────────────────────────
-function fixOrderCompleteDates(): void {
-    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
-    const toFix: { node: Text; formatted: string }[] = [];
-
-    let node = walker.nextNode();
-    while (node) {
-        const text = (node as Text).textContent ?? '';
-        const match = text.match(ISO_DATE_RE);
-        if (match) {
-            toFix.push({ node: node as Text, formatted: text.replace(match[0], formatKoreanDate(match[0])) });
-        }
-        node = walker.nextNode();
-    }
-
-    for (const { node: n, formatted } of toFix) {
-        n.textContent = formatted;
-    }
 }
 
 // ──────────────────────────────────────────────
@@ -260,7 +220,8 @@ async function tryInjectMypage(orderNumber: string | null): Promise<boolean> {
     if (!container) return false;
 
     const receiptInfo = await fetchKginicisReceiptInfo(resolvedOrderNumber);
-    const dueDateStr = payment.vbank_due_at ? formatKoreanDate(payment.vbank_due_at as string) : '';
+    // 입금 기한은 쇼핑몰이 사용자 언어·시간대로 서식을 입혀 준 값을 그대로 쓴다 — 플러그인이 다시 서식을 입히지 않는다.
+    const dueDateStr = payment.vbank_due_at_formatted ?? '';
     container.appendChild(
         isCbtCvsPayment(payment, receiptInfo)
             ? buildCbtCvsSection(payment, receiptInfo, dueDateStr)
@@ -282,13 +243,6 @@ function startMypagePolling(orderNumber: string | null): void {
 }
 
 function onRouteChange(): void {
-    const oc = location.pathname.match(ORDER_COMPLETE_RE);
-    if (oc) {
-        // 주문완료 페이지: ISO 날짜 텍스트 포맷
-        setTimeout(fixOrderCompleteDates, 500);
-        return;
-    }
-
     const mp = location.pathname.match(ORDER_SHOW_RE);
     if (mp) {
         startMypagePolling(mp[1] ?? mp[2]);
