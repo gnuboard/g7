@@ -94,6 +94,20 @@ error_reporting(E_ALL);
 addLog('=== Install Worker SSE Started ===');
 addLog('Client IP: '.($_SERVER['REMOTE_ADDR'] ?? 'unknown'));
 
+// 설치 계획 검증 — 이 워커는 세션을 쓰지 않으므로(세션 잠금 방지) 요청자를 세션으로 확인할 수 없다.
+// 대신 소유 게이트를 통과한 install-process 만 쓸 수 있는 running 상태 + 계획 서명을 확인한다.
+// 서명이 없거나 어긋나면 어떤 작업도 실행하지 않는다.
+$planVerdict = installer_plan_verify(getInstallationState(), readInstallerRuntime());
+if ($planVerdict !== 'ok') {
+    addLog('=== SSE Worker rejected — install plan not verified ('.$planVerdict.') ===');
+    setProgressEmitter(new SseEmitter);
+    sendSSEEvent('aborted', [
+        'message' => lang('error_install_plan_unverified'),
+        'reason' => 'plan_unverified',
+    ]);
+    exit;
+}
+
 // 워커 lock 획득 — 다른 워커가 활동 중이면 진입 거부 (race 차단).
 // SSE 응답으로 거부 사유 전달 후 종료.
 $lockResult = acquireWorkerLock(15);

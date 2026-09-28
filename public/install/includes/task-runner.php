@@ -12,6 +12,7 @@ require_once __DIR__.'/config.php';
 require_once __DIR__.'/functions.php';
 require_once __DIR__.'/installer-state.php';
 require_once __DIR__.'/installer-runtime.php';
+require_once __DIR__.'/installer-ownership.php';
 require_once __DIR__.'/progress-emitter.php';
 require_once __DIR__.'/../api/rollback-functions.php';
 
@@ -955,6 +956,24 @@ if (! function_exists('cleanupExistingTablesSSE')) {
             sendSSEEvent('task_complete', ['task' => 'db_cleanup', 'message' => lang('log_db_cleanup_skipped')]);
 
             return ['success' => true];
+        }
+
+        // 파괴 작업 직전 재검증 — 이 함수는 세션이 없는 워커에서도 돈다. 소유 게이트를 통과한
+        // install-process 가 서명한 계획이고, 그 요청이 삭제 확인 토큰을 소비했을 때만 DROP 한다.
+        // 조건이 깨졌으면 조용히 건너뛰지 않고 실패시킨다 — 건너뛰면 migrate 가 1050(테이블 존재)로
+        // 실패해 원인이 가려진다. 재시도는 install-process 재서명을 거친다.
+        $planVerdict = installer_plan_verify($state, readInstallerRuntime());
+        $dropConfirmed = is_array($state['drop_confirm'] ?? null) && ! empty($state['drop_confirm']['consumed']);
+        if ($planVerdict !== 'ok' || ! $dropConfirmed) {
+            $reason = $planVerdict !== 'ok' ? $planVerdict : 'drop_not_confirmed';
+            addLog('[db_cleanup] 설치 계획 검증 실패 — DROP 미실행: '.$reason);
+
+            return [
+                'success' => false,
+                'message' => lang('error_install_plan_unverified'),
+                'message_key' => 'error_install_plan_unverified',
+                'detail' => $reason,
+            ];
         }
 
         // state.config 에는 DB 비밀번호가 기록되지 않으므로(이슈 #465) runtime.php 에서

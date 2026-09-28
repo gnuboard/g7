@@ -57,6 +57,8 @@ $config = $state['config'] ?? $_SESSION['install_config'] ?? [];
         </button>
     </div>
 
+    <?php require __DIR__.'/partials/recovery-token-notice.php'; ?>
+
     <!-- 완료 섹션 -->
     <?php
     $completionButtons = '<a href="../admin/login" class="btn btn-success">'.htmlspecialchars(lang('go_to_admin_login')).'</a>';

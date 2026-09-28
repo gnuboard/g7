@@ -96,6 +96,20 @@
         return window.INSTALLER_LANG && window.INSTALLER_LANG[key] ? window.INSTALLER_LANG[key] : key;
     }
 
+    /**
+     * 상태변경 API 요청 헤더 — 세션 CSRF 토큰을 싣는다.
+     *
+     * 설치 소유권은 서버가 세션으로 판정하므로 소유 토큰 원문은 보내지 않는다.
+     *
+     * @return {Object} fetch headers
+     */
+    function stateChangeHeaders() {
+        return {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': window.INSTALLER_CSRF || '',
+        };
+    }
+
     // =========================================================================
     // Step 1: 라이선스 동의 체크박스
     // =========================================================================
@@ -1107,7 +1121,7 @@
             const apiUrl = `${window.location.origin}${window.INSTALLER_BASE_URL}/api/check-configuration.php?action=test-db`;
             const response = await fetch(apiUrl, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: stateChangeHeaders(),
                 body: JSON.stringify(dbData)
             });
 
@@ -1163,6 +1177,13 @@
                         </div>
                     `;
                     window.__g7_existing_tables = info;
+                    // 서버가 발급한 삭제 확인 토큰 — 설치 시작 시 drop_tables 와 함께 제시해야
+                    // 삭제가 실행된다 (요청 본문의 액션 값만으로는 삭제되지 않음).
+                    if (result.drop_confirm) {
+                        sessionStorage.setItem('drop_confirm', result.drop_confirm);
+                    } else {
+                        sessionStorage.removeItem('drop_confirm');
+                    }
                     // FormValidator에 동의 요구 등록
                     if (typeof FormValidator !== 'undefined') {
                         FormValidator.setDbCleanupRequired(true);
@@ -1172,6 +1193,7 @@
                     // 빈 DB → 동의 요구 해제 + sessionStorage 정리
                     window.__g7_existing_tables = null;
                     sessionStorage.removeItem('existing_db_action');
+                    sessionStorage.removeItem('drop_confirm');
                     if (typeof FormValidator !== 'undefined') {
                         FormValidator.setDbCleanupRequired(false);
                         FormValidator.setDbCleanupConsented(false);
@@ -3191,7 +3213,7 @@
         try {
             const response = await fetch(INSTALLER_BASE_URL + '/api/save-extensions.php', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: stateChangeHeaders(),
                 body: JSON.stringify({
                     ...selectedExtensions,
                     extension_names: extensionNames
@@ -3557,18 +3579,27 @@
             const saveConfigUrl = `${window.location.origin}${window.INSTALLER_BASE_URL}/api/install-process.php`;
 
             const existingDbAction = sessionStorage.getItem('existing_db_action') || 'skip';
+            const dropConfirm = existingDbAction === 'drop_tables'
+                ? (sessionStorage.getItem('drop_confirm') || '')
+                : '';
 
             const response = await fetch(saveConfigUrl, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: stateChangeHeaders(),
                 body: JSON.stringify({
                     config: configData,
                     installation_mode: installationMode,
                     existing_db_action: existingDbAction,
+                    drop_confirm: dropConfirm,
                 }),
             });
 
             const result = await response.json();
+
+            // 삭제 확인이 거부돼 삭제 없이 진행되는 경우 — 사용자에게 알린다
+            if (result.success && result.drop_confirm_rejected && result.warning) {
+                addLogMessage(result.warning);
+            }
 
             if (!result.success) {
                 if (result.env_required) {
@@ -4016,7 +4047,10 @@
             fetch('/install/api/finalize-env.php', {
                 method: 'POST',
                 keepalive: true,
-                headers: { 'X-Installer-Finalize': '1' },
+                headers: {
+                    'X-Installer-Finalize': '1',
+                    'X-CSRF-Token': window.INSTALLER_CSRF || '',
+                },
             }).catch(() => { /* 의도된 abort */ });
         } catch (_) {
             // fetch 자체가 실패해도 무시 — runtime.php 가 보존되어 다음 부팅 시 앱 정상 동작
@@ -4314,7 +4348,7 @@
                 const abortUrl = `${window.location.origin}${window.INSTALLER_BASE_URL}/api/state-management.php?action=abort`;
                 fetch(abortUrl, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: stateChangeHeaders(),
                     body: JSON.stringify({})
                 }).then(() => {
 
@@ -4525,7 +4559,7 @@
                 // 상태 초기화 API 호출
                 const response = await fetch(getStateApiUrl('reset'), {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: stateChangeHeaders(),
                     body: JSON.stringify({})
                 });
 
@@ -4571,7 +4605,10 @@
                     const apiUrl = `${window.location.origin}${window.INSTALLER_BASE_URL}/api/state-management.php?action=abort`;
 
                     // sendBeacon은 페이지 언로드 중에도 전송을 보장
-                    navigator.sendBeacon(apiUrl, new Blob([JSON.stringify({})], {type: 'application/json'}));
+                    navigator.sendBeacon(apiUrl, new Blob(
+                        [JSON.stringify({ csrf_token: window.INSTALLER_CSRF || '' })],
+                        { type: 'application/json' }
+                    ));
                 }
             });
 
@@ -4627,7 +4664,7 @@
             // Abort API 호출
             const response = await fetch(getStateApiUrl('abort'), {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' }
+                headers: stateChangeHeaders()
             });
 
             const result = await response.json();
@@ -5180,6 +5217,52 @@
      *
      * @param {HTMLButtonElement} btn 클릭된 복사 버튼
      */
+    /**
+     * 복구 토큰으로 설치 소유권 되찾기 (소유권 잠금 화면)
+     *
+     * @param {Event} event submit 이벤트
+     * @returns {boolean} 기본 폼 제출 방지용 false
+     */
+    async function submitRecoveryToken(event) {
+        if (event) event.preventDefault();
+
+        const input = document.getElementById('recovery-token-input');
+        const button = document.getElementById('recovery-submit-btn');
+        const resultBox = document.getElementById('recovery-result');
+        if (!input || !resultBox) return false;
+
+        const showResult = (message, isSuccess) => {
+            resultBox.textContent = message;
+            resultBox.classList.remove('hidden', 'alert-error', 'alert-success');
+            resultBox.classList.add(isSuccess ? 'alert-success' : 'alert-error');
+        };
+
+        if (button) button.disabled = true;
+
+        try {
+            const response = await fetch(getStateApiUrl('reclaim'), {
+                method: 'POST',
+                headers: stateChangeHeaders(),
+                body: JSON.stringify({ recovery_token: input.value }),
+            });
+            const result = await response.json();
+
+            if (result.success) {
+                showResult(result.message || lang('recovery_success'), true);
+                setTimeout(() => { window.location.href = `${window.INSTALLER_BASE_URL}/`; }, 1500);
+                return false;
+            }
+
+            showResult(result.message || lang('error_recovery_token_invalid'), false);
+        } catch (error) {
+            showResult(`${lang('error')}: ${error.message}`, false);
+        }
+
+        if (button) button.disabled = false;
+        return false;
+    }
+    window.submitRecoveryToken = submitRecoveryToken;
+
     function copyPermissionCommand(btn) {
         const pre = btn.previousElementSibling;
         if (!pre) return;

@@ -16,8 +16,7 @@ declare(strict_types=1);
  *
  * 둘 중 하나라도 참이면 HTTP 410 Gone 으로 즉시 종료.
  */
-
-if (!function_exists('installer_resolve_base_path')) {
+if (! function_exists('installer_resolve_base_path')) {
     function installer_resolve_base_path(): string
     {
         if (defined('BASE_PATH')) {
@@ -30,41 +29,59 @@ if (!function_exists('installer_resolve_base_path')) {
     }
 }
 
-if (!function_exists('installer_is_completed')) {
+if (! function_exists('installer_env_completed_flag')) {
+    /**
+     * .env 의 INSTALLER_COMPLETED 가 참인지 한 줄 단위로 읽어 판정한다.
+     *
+     * parse_ini_file 을 쓰지 않는다 — .env 는 INI 가 아니어서, 배포 템플릿의 `#` 주석에 괄호 같은
+     * 문자가 있으면 파일 전체 파싱이 실패하고 판정이 "미완료" 로 떨어져 가드가 열린 채 남는다.
+     *
+     * @param  string  $envFile  .env 절대 경로
+     * @return bool 완료 플래그가 참(true·1·yes, 따옴표·대소문자 무관)이면 true
+     */
+    function installer_env_completed_flag(string $envFile): bool
+    {
+        if (! is_file($envFile)) {
+            return false;
+        }
+
+        $content = @file_get_contents($envFile);
+        if (! is_string($content)) {
+            return false;
+        }
+
+        if (! preg_match('/^[ \t]*INSTALLER_COMPLETED[ \t]*=(.*)$/m', $content, $matches)) {
+            return false;
+        }
+
+        $flag = strtolower(trim(trim($matches[1]), "\"'"));
+
+        return in_array($flag, ['true', '1', 'yes'], true);
+    }
+}
+
+if (! function_exists('installer_is_completed')) {
     function installer_is_completed(): bool
     {
         $basePath = installer_resolve_base_path();
 
-        $lockFile = $basePath . '/storage/app/g7_installed';
+        $lockFile = $basePath.'/storage/app/g7_installed';
         if (is_file($lockFile)) {
             return true;
         }
 
-        $envFile = $basePath . '/.env';
-        if (is_file($envFile)) {
-            $env = @parse_ini_file($envFile, false, INI_SCANNER_RAW);
-            if (is_array($env)) {
-                $flag = strtolower(trim((string) ($env['INSTALLER_COMPLETED'] ?? '')));
-                // parse_ini_file 은 따옴표가 보존된 raw 모드이므로 양 끝 따옴표 제거
-                $flag = trim($flag, "\"'");
-                if (in_array($flag, ['true', '1', 'yes'], true)) {
-                    return true;
-                }
-            }
-        }
-
-        return false;
+        return installer_env_completed_flag($basePath.'/.env');
     }
 }
 
-if (!function_exists('installer_guard_or_410')) {
+if (! function_exists('installer_guard_or_410')) {
     function installer_guard_or_410(): void
     {
-        if (!installer_is_completed()) {
+        if (! installer_is_completed()) {
             return;
         }
 
-        if (!headers_sent()) {
+        if (! headers_sent()) {
             http_response_code(410);
             header('Content-Type: application/json; charset=utf-8');
             header('X-Installer: disabled');
@@ -80,7 +97,7 @@ if (!function_exists('installer_guard_or_410')) {
     }
 }
 
-if (!function_exists('installer_finalize_is_completed')) {
+if (! function_exists('installer_finalize_is_completed')) {
     /**
      * finalize-env.php 전용 멱등 차단 신호.
      *
@@ -90,26 +107,11 @@ if (!function_exists('installer_finalize_is_completed')) {
      */
     function installer_finalize_is_completed(): bool
     {
-        $basePath = installer_resolve_base_path();
-        $envFile = $basePath . '/.env';
-
-        if (!is_file($envFile)) {
-            return false;
-        }
-
-        $env = @parse_ini_file($envFile, false, INI_SCANNER_RAW);
-        if (!is_array($env)) {
-            return false;
-        }
-
-        $flag = strtolower(trim((string) ($env['INSTALLER_COMPLETED'] ?? '')));
-        $flag = trim($flag, "\"'");
-
-        return in_array($flag, ['true', '1', 'yes'], true);
+        return installer_env_completed_flag(installer_resolve_base_path().'/.env');
     }
 }
 
-if (!function_exists('installer_guard_finalize_or_410')) {
+if (! function_exists('installer_guard_finalize_or_410')) {
     /**
      * finalize-env.php 전용 진입 가드.
      *
@@ -122,11 +124,11 @@ if (!function_exists('installer_guard_finalize_or_410')) {
      */
     function installer_guard_finalize_or_410(): void
     {
-        if (!installer_finalize_is_completed()) {
+        if (! installer_finalize_is_completed()) {
             return;
         }
 
-        if (!headers_sent()) {
+        if (! headers_sent()) {
             http_response_code(410);
             header('Content-Type: application/json; charset=utf-8');
             header('X-Installer: disabled');
