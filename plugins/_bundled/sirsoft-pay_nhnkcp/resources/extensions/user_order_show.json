@@ -307,10 +307,14 @@
                                         },
                                         {
                                             "handler": "apiCall",
-                                            "target": "/api/plugins/sirsoft-pay_nhnkcp/user/orders/{{route.order_number}}/receipt",
+                                            "target": "/api/plugins/sirsoft-pay_nhnkcp/user/orders/{{order.data.order_number}}/receipt",
+                                            "auth_mode": "optional",
                                             "auth_required": true,
                                             "params": {
-                                                "method": "GET"
+                                                "method": "GET",
+                                                "headers": {
+                                                    "X-Guest-Order-Token": "{{_global.guestOrderToken ?? ''}}"
+                                                }
                                             }
                                         },
                                         {

@@ -102,3 +102,5 @@
 영수증 조회 API 를 불러 `payment_receipt_url`(첫 출시부터 링크가 열어 온 `type=2` 주소)을 로컬 상태
 (`_npMpPaymentReceiptUrl`)에 담고 그 값으로 「결제 영수증」 링크를 그린다. 회원은 토큰(`auth_mode=optional`),
 비회원은 `X-Guest-Order-Token` 헤더를 실어 같은 API 를 부른다. 주소를 받지 못하면 링크를 그리지 않는다.
+주문번호는 주소가 아니라 불러온 주문(`order.data.order_number`)에서 읽는다 — 이 결제 정보 카드(결제 영수증 링크·현금영수증 조회 버튼)는 주소에 주문번호가 없는
+교환·반품·환불 신청서 상세(회원·비회원)에서도 같은 조각으로 쓰인다.

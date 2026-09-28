@@ -30,6 +30,8 @@
 `GET /api/plugins/sirsoft-pay_kginicis/user/orders/{orderNumber}/receipt` 를 불러 `receipt_url` 을 로컬 상태
 (`_kgReceiptUrl`)에 담고 그 값으로 링크를 그린다. 회원·비회원 주문 상세가 같은 조각을 쓰므로 회원은 토큰
 (`auth_mode=optional`), 비회원은 `X-Guest-Order-Token` 헤더를 실어 같은 API 를 부른다. 주소를 받지 못하면 링크를 그리지 않는다.
+주문번호는 주소가 아니라 불러온 주문(`order.data.order_number`)에서 읽는다 — 이 결제 정보 카드(영수증 링크·에스크로 구매확정 링크)는 주소에 주문번호가 없는
+교환·반품·환불 신청서 상세(회원·비회원)에서도 같은 조각으로 쓰인다.
 
 ## 액션 핸들러
 

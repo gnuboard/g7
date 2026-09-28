@@ -140,7 +140,7 @@
                         "onMount": [
                             {
                                 "handler": "apiCall",
-                                "target": "/api/plugins/sirsoft-pay_kginicis/user/orders/{{route.order_number}}/receipt",
+                                "target": "/api/plugins/sirsoft-pay_kginicis/user/orders/{{order.data.order_number}}/receipt",
                                 "auth_mode": "optional",
                                 "auth_required": true,
                                 "params": {
@@ -197,7 +197,7 @@
                             "type": "basic",
                             "name": "A",
                             "props": {
-                                "href": "/plugins/sirsoft-pay_kginicis/payment/escrow-confirm/{{route.orderNumber}}",
+                                "href": "/plugins/sirsoft-pay_kginicis/payment/escrow-confirm/{{order.data.order_number}}",
                                 "target": "_blank",
                                 "rel": "noopener noreferrer",
                                 "className": "inline-flex items-center gap-2 px-4 py-2 text-sm font-medium bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"

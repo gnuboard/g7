@@ -71,7 +71,7 @@ function receiptLink(): Node {
  */
 function mountCall(): Node {
   const call = find(extensionLayout, (n) => n.handler === 'apiCall'
-    && typeof n.target === 'string' && (n.target as string).endsWith('/user/orders/{{route.order_number}}/receipt'));
+    && typeof n.target === 'string' && (n.target as string).endsWith('/user/orders/{{order.data.order_number}}/receipt'));
   expect(call, '영수증 조회 apiCall 을 찾지 못함').toBeDefined();
 
   return call as Node;
@@ -141,5 +141,24 @@ describe('마이페이지 나이스페이먼츠 결제 영수증 링크', () => 
    */
   it('비회원: 조회에 실패해 주소가 없으면 링크를 그리지 않는다', () => {
     expect(renderLink(undefined).visible).toBe(false);
+  });
+  /**
+   * @effects order_number_from_loaded_order
+   */
+  it('주문번호는 불러온 주문(order.data.order_number)에서 읽는다 — 주소에 주문번호가 없는 신청서 상세에서도 같은 조각이 쓰인다', () => {
+    const urls: string[] = [];
+    find(extensionLayout, (n) => {
+      if (typeof n.target === 'string' && (n.target as string).includes('/orders/')) urls.push(n.target as string);
+      const props = n.props as Node | undefined;
+      if (typeof props?.href === 'string' && (props.href as string).includes('/')) urls.push(props.href as string);
+
+      return false;
+    });
+    const orderUrls = urls.filter((u) => u.includes('/orders/') || u.includes('escrow-confirm'));
+    expect(orderUrls.length).toBeGreaterThan(0);
+    for (const url of orderUrls) {
+      expect(url, url).not.toContain('route.');
+      expect(url, url).toContain('{{order.data.order_number}}');
+    }
   });
 });

@@ -1,0 +1,21 @@
+feature: 마이페이지 주문·신청서 상세 › NHN KCP 매출전표 보기 요청의 주문번호·자격 증명
+
+description: |
+  결제 정보 카드의 「매출전표 보기」 버튼은 공용 슬롯 조각이라 주문 상세와 신청서 상세(회원·비회원)에서
+  함께 쓰인다. 신청서 상세 주소에는 주문번호가 없어, 주소에서 주문번호를 읽던 요청은 주문번호 없이 나가
+  버튼이 아무것도 열지 못했다. 주문번호는 불러온 주문(order.data.order_number)에서 읽는다.
+  비회원 주문 상세에서는 전역 헤더가 이 플러그인 주소에 조회 토큰을 붙이지 않으므로 요청이 직접 싣는다.
+
+  E2E 는 두지 않는다 — 로컬·CI 에 NHN KCP 결제 완료 주문 픽스처가 없다. 설치되는 조각 원본(JSON)과
+  저작본(.g7.html)을 직접 읽어 요청 정의를 단언한다.
+
+axes:
+  viewer: [member, guest]
+
+effects:
+  - order_number_from_loaded_order
+  - member_token_sent_optionally
+  - guest_token_header_sent
+
+test_files:
+  - plugins/_bundled/sirsoft-pay_nhnkcp/resources/js/__tests__/layouts/mypageReceiptButtonOrderScope.test.ts

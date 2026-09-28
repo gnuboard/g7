@@ -53,7 +53,7 @@
       <!-- 영수증 링크 행 — 결제 영수증 주소는 플러그인 API(payment_receipt_url)가 내려준다. 레이아웃에 결제사 외부 주소를 적으면 편집기 저장 게이트(외부 URL 금지)가 거절한다. 회원은 토큰, 비회원은 조회 토큰 헤더로 같은 API 를 부른다 -->
       <div class="flex-between">
         <on event="mount">
-          <api-call :auth_required="true" auth_mode="optional" target="/api/plugins/sirsoft-pay_nicepayments/user/orders/{{route.order_number}}/receipt" method="GET">
+          <api-call :auth_required="true" auth_mode="optional" target="/api/plugins/sirsoft-pay_nicepayments/user/orders/{{order.data.order_number}}/receipt" method="GET">
             <field name="headers">
               <field name="X-Guest-Order-Token" value="{{_global.guestOrderToken ?? ''}}"/>
             </field>
@@ -75,7 +75,10 @@
               <!-- 매출전표 보기 — 전표를 받아 팝업으로 띄운다 -->
               <sequence>
                 <set-state target="local" :_npMpReceiptLoading="true"/>
-                <api-call :auth_required="true" target="/api/plugins/sirsoft-pay_nicepayments/user/orders/{{route.order_number}}/receipt" method="GET">
+                <api-call :auth_required="true" auth_mode="optional" target="/api/plugins/sirsoft-pay_nicepayments/user/orders/{{order.data.order_number}}/receipt" method="GET">
+                  <field name="headers">
+                    <field name="X-Guest-Order-Token" value="{{_global.guestOrderToken ?? ''}}"/>
+                  </field>
                   <success>
                     <set-state target="local" :_npMpReceiptLoading="false" :_npMpReceiptLoaded="true" _npMpCashReceiptUrl="{{response.cash_receipt_url}}"/>
                   </success>

@@ -51,7 +51,11 @@
             <!-- 매출전표 보기 — 전표를 받아 외부 팝업 생성자에 넘긴다(새 창은 사용자 클릭 안에서 열어야 차단되지 않는다) -->
             <sequence>
               <set-state target="local" :_kcpReceiptLoading="true"/>
-              <api-call :auth_required="true" target="/api/plugins/sirsoft-pay_nhnkcp/user/orders/{{route.order_number}}/receipt" method="GET"/>
+              <api-call :auth_required="true" auth_mode="optional" target="/api/plugins/sirsoft-pay_nhnkcp/user/orders/{{order.data.order_number}}/receipt" method="GET">
+                <field name="headers">
+                  <field name="X-Guest-Order-Token" value="{{_global.guestOrderToken ?? ''}}"/>
+                </field>
+              </api-call>
               <call-external constructor="KcpReceiptPopup">
                 <field name="args">
                   <field name="url" value="{{$prev.receipt_url}}"/>
