@@ -161,7 +161,7 @@ class UserReceiptControllerTest extends PluginTestCase
         return OrderFactory::new()->create([
             'user_id' => null,
             'guest_lookup_password_hash' => Hash::make('test1234'),
-            'order_number' => 'ORD-NICE-GUEST-' . random_int(10000, 99999),
+            'order_number' => 'ORD-NICE-GUEST-'.random_int(10000, 99999),
             'order_status' => OrderStatusEnum::PAYMENT_COMPLETE,
             'total_amount' => 1000,
             'total_due_amount' => 0,
