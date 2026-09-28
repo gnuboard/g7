@@ -10,7 +10,7 @@
 1. 영수증 조회는 회원이면 본인 주문만, 비회원이면 X-Guest-Order-Token 또는 결제 직후 발급된 영수증 쿠키로 접근 제어
 2. 영수증 URL 은 KCP 매출전표(카드·계좌이체·가상계좌) + 현금영수증(계좌이체·가상계좌만) 두 종류
 3. 모의입금 정보는 테스트 모드 + 가상계좌 발급 + 입금 전 + 본인(또는 관리자) 일 때만 available: true
-4. 모의입금 조회는 조건 불충족을 404 가 아니라 200 { available: false } 로 답한다 — 화면이 버튼을 감추기만 하면 된다
+4. 모의입금 조회는 조건 불충족을 404 가 아니라 200 공통 형식의 data.available=false 로 답한다 — 화면이 버튼을 감추기만 하면 된다
 5. 두 경로 모두 주문 상태를 바꾸지 않는다 (모의입금 실행은 KCP 테스트 페이지 → 입금통보 경로가 담당)
 ```
 
@@ -78,7 +78,7 @@
 | --- | --- | --- |
 | orderNumber | string | 가상계좌가 발급된 주문의 주문번호 |
 
-**응답 (200)** — 코어 envelope 없이 원시 JSON. 아래 조건 중 하나라도 어긋나면 `{ "available": false }` 만 돌려준다 (404 아님)
+**응답 (200)** — 공통 형식(`ResponseHelper`: `{ success, message, data }`). 아래 필드는 모두 `data` 안에 있다. 아래 조건 중 하나라도 어긋나면 `data` 에 `{ "available": false }` 만 담는다 (404 아님)
 
 - 플러그인 테스트 모드가 켜져 있다 (미설정 기본값 `true`)
 - 주문이 존재하고 요청자가 소유자이거나 관리자다
@@ -95,15 +95,19 @@
 
 ```json
 {
-    "available": true,
-    "trade_no": "…",
-    "account_no": "…",
-    "notify_url": "https://example.com/plugins/sirsoft-pay_nhnkcp/payment/vbank-notify",
-    "mock_url": "https://testadmin.kcp.co.kr/Modules/Noti/TEST_Vcnt_Noti.jsp",
-    "is_admin_view": false
+    "success": true,
+    "message": "성공적으로 처리되었습니다.",
+    "data": {
+        "available": true,
+        "trade_no": "…",
+        "account_no": "…",
+        "notify_url": "https://example.com/plugins/sirsoft-pay_nhnkcp/payment/vbank-notify",
+        "mock_url": "https://testadmin.kcp.co.kr/Modules/Noti/TEST_Vcnt_Noti.jsp",
+        "is_admin_view": false
+    }
 }
 ```
 
 **설명**
 
-테스트 환경에서 가상계좌 입금을 시뮬레이션하려면 KCP 테스트 관리자 페이지에 거래번호·계좌번호·입금통보 주소를 넣어야 한다. 이 경로는 그 폼에 채울 값을 모아 주는 조회일 뿐이며, 실제 입금 처리는 KCP 가 `notify_url` 로 보내는 입금통보를 [vbank.md](vbank.md) 경로가 받아 수행한다. 운영 모드에서는 항상 `available: false` 다.
+테스트 환경에서 가상계좌 입금을 시뮬레이션하려면 KCP 테스트 관리자 페이지에 거래번호·계좌번호·입금통보 주소를 넣어야 한다. 이 경로는 그 폼에 채울 값을 모아 주는 조회일 뿐이며, 실제 입금 처리는 KCP 가 `notify_url` 로 보내는 입금통보를 [vbank.md](vbank.md) 경로가 받아 수행한다. 운영 모드에서는 항상 `data.available: false` 다. 화면(주입 스크립트)은 응답 본문의 `data` 를 읽는다.

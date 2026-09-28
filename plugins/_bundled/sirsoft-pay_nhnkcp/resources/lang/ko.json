@@ -46,7 +46,14 @@
         "tax_free_amount": "면세금액",
         "escrow_badge": "에스크로",
         "loading": "로딩 중...",
-        "vbank_amount": "입금 금액"
+        "vbank_amount": "입금 금액",
+        "mock_title": "모의입금처리",
+        "mock_trade_no": "KCP 거래번호",
+        "mock_deposit_no": "입금계좌",
+        "mock_depositor": "입금자명",
+        "mock_notify_url": "입금통보 URL",
+        "mock_submit": "입금통보 테스트",
+        "mock_admin_notice": "관리자에게만 출력되는 내용"
     },
     "admin": {
         "test_mode_badge": "테스트 결제",

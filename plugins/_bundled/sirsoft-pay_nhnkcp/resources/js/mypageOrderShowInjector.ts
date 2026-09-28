@@ -94,7 +94,9 @@ async function fetchMockDepositInfo(orderNumber: string): Promise<MockDepositInf
             credentials: 'same-origin',
         });
         if (!res.ok) return null;
-        return (await res.json()) as MockDepositInfo;
+        // 응답은 공통 형식({ success, message, data }) — 모의입금 정보는 data 에 있다.
+        const body = (await res.json()) as { data?: MockDepositInfo | null };
+        return body?.data ?? null;
     } catch {
         return null;
     }
@@ -114,7 +116,7 @@ function buildMockDepositBlock(info: MockDepositInfo): HTMLElement {
 
     const title = document.createElement('p');
     title.className = 'text-sm font-semibold text-orange-700 dark:text-orange-300';
-    title.textContent = '모의입금처리';
+    title.textContent = t('user.mock_title', '모의입금처리');
 
     header.appendChild(badge);
     header.appendChild(title);
@@ -126,10 +128,10 @@ function buildMockDepositBlock(info: MockDepositInfo): HTMLElement {
     form.className = 'space-y-2';
 
     const fields: Array<{ label: string; name: string; value: string; editable?: boolean }> = [
-        { label: 'KCP 거래번호', name: 'e_trade_no', value: info.trade_no ?? '' },
-        { label: '입금계좌',    name: 'deposit_no',  value: info.account_no ?? '' },
-        { label: '입금자명',    name: 'req_name',    value: 'NHN KCP', editable: true },
-        { label: '입금통보 URL', name: 'noti_url',   value: info.notify_url ?? '' },
+        { label: t('user.mock_trade_no', 'KCP 거래번호'), name: 'e_trade_no', value: info.trade_no ?? '' },
+        { label: t('user.mock_deposit_no', '입금계좌'), name: 'deposit_no', value: info.account_no ?? '' },
+        { label: t('user.mock_depositor', '입금자명'), name: 'req_name', value: 'NHN KCP', editable: true },
+        { label: t('user.mock_notify_url', '입금통보 URL'), name: 'noti_url', value: info.notify_url ?? '' },
     ];
 
     for (const f of fields) {
@@ -160,7 +162,7 @@ function buildMockDepositBlock(info: MockDepositInfo): HTMLElement {
     const btn = document.createElement('button');
     btn.type = 'submit';
     btn.className = 'w-full py-1.5 text-xs font-semibold rounded border border-orange-400 dark:border-orange-600 bg-orange-50 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 hover:bg-orange-100 dark:hover:bg-orange-900/50 transition-colors';
-    btn.textContent = '입금통보 테스트';
+    btn.textContent = t('user.mock_submit', '입금통보 테스트');
 
     submitRow.appendChild(btn);
     form.appendChild(submitRow);
@@ -171,7 +173,7 @@ function buildMockDepositBlock(info: MockDepositInfo): HTMLElement {
     if (info.is_admin_view) {
         const adminNotice = document.createElement('p');
         adminNotice.className = 'mt-2 text-xs text-center text-orange-500 dark:text-orange-400 font-medium';
-        adminNotice.textContent = '관리자에게만 출력되는 내용';
+        adminNotice.textContent = t('user.mock_admin_notice', '관리자에게만 출력되는 내용');
         wrap.appendChild(adminNotice);
     }
 

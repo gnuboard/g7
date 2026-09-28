@@ -46,7 +46,14 @@
     "tax_free_amount": "非課税金額",
     "escrow_badge": "エスクロー",
     "loading": "読み込み中...",
-    "vbank_amount": "入金金額"
+    "vbank_amount": "入金金額",
+    "mock_title": "仮想入金処理",
+    "mock_trade_no": "KCP取引番号",
+    "mock_deposit_no": "入金口座",
+    "mock_depositor": "入金者名",
+    "mock_notify_url": "入金通知 URL",
+    "mock_submit": "入金通知 テスト",
+    "mock_admin_notice": "管理者にのみ表示されるコンテンツ"
   },
   "admin": {
     "test_mode_badge": "テスト決済",

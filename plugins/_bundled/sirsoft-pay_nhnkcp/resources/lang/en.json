@@ -46,7 +46,14 @@
         "tax_free_amount": "Tax-Free Amount",
         "escrow_badge": "Escrow",
         "loading": "Loading...",
-        "vbank_amount": "Deposit Amount"
+        "vbank_amount": "Deposit Amount",
+        "mock_title": "Mock Deposit",
+        "mock_trade_no": "KCP Transaction No.",
+        "mock_deposit_no": "Deposit Account",
+        "mock_depositor": "Depositor Name",
+        "mock_notify_url": "Deposit Notification URL",
+        "mock_submit": "Test Deposit Notification",
+        "mock_admin_notice": "Shown to administrators only"
     },
     "admin": {
         "test_mode_badge": "Test Payment",
