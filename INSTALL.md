@@ -619,6 +619,24 @@ TRUSTED_PROXIES=*
 방문자가 같은 IP 로 기록됩니다. 값 선택 기준과 도입 시 후속 조치는
 [docs/backend/reverse-proxy.md](docs/backend/reverse-proxy.md) 를 참고하세요.
 
+### 사이트 주소(APP_URL)와 허용 도메인
+
+`APP_URL` 은 **방문자가 실제로 접속하는 사이트 주소**여야 합니다(예: `https://www.example.com`).
+검색엔진용 화면의 대표 주소(canonical·og:url)와 그 화면을 채우는 내부 데이터 호출이 요청의 Host
+헤더가 아니라 이 값을 기준으로 만들어지기 때문입니다 — Host 헤더는 방문자가 위조할 수 있습니다.
+설치 뒤 도메인을 옮겼다면 `APP_URL` 도 함께 바꾸세요.
+
+운영 환경에서는 요청 Host 가 `APP_URL` 의 도메인(하위 도메인 포함)이 아니면 요청을 받지 않습니다.
+다른 도메인으로도 같은 사이트를 서빙한다면 콤마로 나열합니다.
+
+```dotenv
+# APP_URL 과 다른 도메인으로도 접속하는 경우에만 지정합니다.
+TRUSTED_HOSTS=example.org,www.example.org
+```
+
+도메인이 맞지 않아 사이트 전체가 열리지 않을 때의 비상 조치는 `TRUSTED_HOSTS_ENABLED=false` 이며,
+근본 해결은 `APP_URL` 을 실제 주소로 맞추거나 `TRUSTED_HOSTS` 에 추가하는 것입니다.
+
 ### `.env` 를 운영 기준값으로 삼기 (선택)
 
 기본 설계에서 **관리자 환경설정 화면이 운영 기준**입니다. 설치가 끝나면 메일·드라이버·디버그

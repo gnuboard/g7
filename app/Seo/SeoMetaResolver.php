@@ -11,6 +11,11 @@ class SeoMetaResolver
     use LocalizesSeoValues;
     use SubstitutesSeoVariables;
 
+    /**
+     * SEO 메타 해석기를 생성합니다.
+     *
+     * @param  ExpressionEvaluator  $evaluator  표현식 평가기
+     */
     public function __construct(
         private readonly ExpressionEvaluator $evaluator,
     ) {}
@@ -739,8 +744,8 @@ class SeoMetaResolver
 
         // JSON-LD 는 `<script type="application/ld+json">` 안에 임베드된다. 사용자 제어 값
         // (검색어·상품명 등)에 포함된 `</script>` 가 스크립트 컨텍스트를 조기 종료하면 그
-        // 뒤의 페이로드가 실행 가능한 script 요소로 재생성된다(반사형 XSS — 봇 렌더는
-        // _escaped_fragment_ 로 일반 UA 도 강제됨). JSON_HEX_TAG 로 `<`·`>` 를 <·>
+        // 뒤의 페이로드가 실행 가능한 script 요소로 재생성된다(반사형 XSS — 봇 UA 는 누구나
+        // 위장할 수 있다). JSON_HEX_TAG 로 `<`·`>` 를 <·>
         // 로 이스케이프해 브레이크아웃을 차단한다. JSON_HEX_AMP 는 방어 심화.
         return json_encode(
             $resolved,
@@ -757,6 +762,10 @@ class SeoMetaResolver
      *
      * 'Array to string conversion' / TypeError 회귀 방지 — resolveOgData/resolveTwitterData 에서
      * 모든 표현식 평가 지점은 본 헬퍼를 거쳐야 함.
+     *
+     * @param  mixed  $expr  평가할 표현식 또는 값
+     * @param  array  $context  평가 컨텍스트
+     * @return string 평가 결과 문자열
      */
     private function safeEval(mixed $expr, array $context): string
     {
@@ -768,7 +777,10 @@ class SeoMetaResolver
     }
 
     /**
-     * 상대 경로 URL 을 절대 URL 로 변환.
+     * 상대 경로 URL 을 사이트 주소 기준 절대 URL 로 변환 (요청 Host 비의존 — SeoUrl 참고).
+     *
+     * @param  string  $url  URL 또는 상대 경로
+     * @return string 절대 URL (빈 값이면 빈 문자열)
      */
     private function absoluteUrl(string $url): string
     {
@@ -776,7 +788,7 @@ class SeoMetaResolver
             return '';
         }
 
-        return str_starts_with($url, 'http') ? $url : url($url);
+        return str_starts_with($url, 'http') ? $url : SeoUrl::absolute($url);
     }
 
     /**
