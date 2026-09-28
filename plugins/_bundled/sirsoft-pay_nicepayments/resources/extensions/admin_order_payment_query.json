@@ -940,7 +940,7 @@
                                             "props": {
                                                 "className": "text-gray-900 dark:text-gray-100 font-mono"
                                             },
-                                            "text": "{{$formatDate(_local._vbankNotiData.summary?.first_received_at, 'YYYY-MM-DD HH:mm:ss') ?? '-'}}"
+                                            "text": "{{_local._vbankNotiData.summary?.first_received_at | datetime('YYYY-MM-DD HH:mm:ss') | default('-')}}"
                                         },
                                         {
                                             "type": "basic",
@@ -956,7 +956,7 @@
                                             "props": {
                                                 "className": "text-gray-900 dark:text-gray-100 font-mono"
                                             },
-                                            "text": "{{$formatDate(_local._vbankNotiData.summary?.last_received_at, 'YYYY-MM-DD HH:mm:ss') ?? '-'}}"
+                                            "text": "{{_local._vbankNotiData.summary?.last_received_at | datetime('YYYY-MM-DD HH:mm:ss') | default('-')}}"
                                         },
                                         {
                                             "type": "basic",
@@ -972,7 +972,7 @@
                                             "props": {
                                                 "className": "text-emerald-700 dark:text-emerald-400 font-mono"
                                             },
-                                            "text": "{{$formatDate(_local._vbankNotiData.summary?.deposited_at, 'YYYY-MM-DD HH:mm:ss') ?? '-'}}"
+                                            "text": "{{_local._vbankNotiData.summary?.deposited_at | datetime('YYYY-MM-DD HH:mm:ss') | default('-')}}"
                                         },
                                         {
                                             "type": "basic",
@@ -990,7 +990,7 @@
                                             "props": {
                                                 "className": "text-rose-700 dark:text-rose-400 font-mono"
                                             },
-                                            "text": "{{$formatDate(_local._vbankNotiData.summary?.cancelled_at, 'YYYY-MM-DD HH:mm:ss')}}"
+                                            "text": "{{_local._vbankNotiData.summary?.cancelled_at | datetime('YYYY-MM-DD HH:mm:ss')}}"
                                         },
                                         {
                                             "type": "basic",
@@ -1077,7 +1077,7 @@
                                                             "props": {
                                                                 "className": "font-mono text-gray-700 dark:text-gray-300"
                                                             },
-                                                            "text": "{{$formatDate(noti.received_at, 'YYYY-MM-DD HH:mm:ss')}}"
+                                                            "text": "{{noti.received_at | datetime('YYYY-MM-DD HH:mm:ss')}}"
                                                         },
                                                         {
                                                             "type": "basic",
