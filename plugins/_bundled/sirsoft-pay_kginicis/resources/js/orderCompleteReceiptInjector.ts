@@ -60,32 +60,29 @@ async function fetchPayment(orderNumber: string): Promise<Payment | null> {
     }
 }
 
-function patchPaymentMethodDisplay(displayLabel: string | null | undefined): boolean {
+export function patchPaymentMethodDisplay(displayLabel: string | null | undefined): boolean {
     if (!displayLabel) return false;
 
-    const rows = Array.from(document.querySelectorAll<HTMLElement>('div'));
-    for (const row of rows) {
-        const spans = Array.from(row.children).filter(
-            (child): child is HTMLElement => child instanceof HTMLElement && child.tagName === 'SPAN',
-        );
-        if (spans.length < 2) continue;
+    // 결제 방법 행은 템플릿이 약속한 id(order_payment_method_row)로만 찾는다. 행 이름 글자(「결제 방법」 등)는 언어마다
+    // 달라 찾는 기준이 될 수 없다 — id 가 없는 템플릿에서는 건드리지 않는다(약속: sirsoft-ecommerce docs/extension-points.md).
+    const row = document.getElementById('order_payment_method_row');
+    if (!row) return false;
 
-        const label = spans[0].textContent?.trim();
-        if (label !== '결제 방법' && label !== '결제수단' && label !== '결제 방식') continue;
+    const spans = Array.from(row.children).filter(
+        (child): child is HTMLElement => child instanceof HTMLElement && child.tagName === 'SPAN',
+    );
+    if (spans.length < 2) return false;
 
-        const value = spans[spans.length - 1];
-        if (value.textContent?.trim() === displayLabel) {
-            row.dataset.kginicisPaymentMethodRow = 'true';
-            return true;
-        }
-
-        value.textContent = displayLabel;
-        value.dataset.kginicisPaymentMethodPatched = 'true';
+    const value = spans[spans.length - 1];
+    if (value.textContent?.trim() === displayLabel) {
         row.dataset.kginicisPaymentMethodRow = 'true';
         return true;
     }
 
-    return false;
+    value.textContent = displayLabel;
+    value.dataset.kginicisPaymentMethodPatched = 'true';
+    row.dataset.kginicisPaymentMethodRow = 'true';
+    return true;
 }
 
 async function injectOnOrderComplete(orderNumber: string): Promise<void> {

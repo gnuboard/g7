@@ -37,7 +37,7 @@ beforeEach(() => {
     localStorage.setItem('auth_token', 'member-token');
     history.replaceState({}, '', '/shop/orders/ORD-OC-1/complete');
     document.body.innerHTML = `
-        <div><span>결제수단</span><span>신용카드</span></div>
+        <div id="order_payment_method_row"><span>결제수단</span><span>신용카드</span></div>
         <div><button type="button" class="bg-blue-600 hover:bg-blue-700">주문 상세</button><button type="button">쇼핑 계속</button></div>`;
     vi.spyOn(console, 'info').mockImplementation(() => {});
 });

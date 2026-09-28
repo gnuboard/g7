@@ -367,7 +367,9 @@
 
 `partials/mypage/orders/_payment` 의 `id="order_payment_info_panel"` 은 지우거나 바꾸지 않는다. PG 플러그인(KG이니시스·NHN KCP·
 나이스페이먼츠)이 영수증 버튼·가상계좌 입금 안내를 붙일 카드를 이 id 로만 찾는다 — 화면 제목 글자는 언어마다 달라 기준이 되지 않는다.
-id 가 사라지면 오류 없이 그 안내들만 빠진다. 약속 원문: 이커머스 `docs/extension-points.md` 「PG 플러그인이 결제 정보 카드에 붙일 때의 약속」.
+id 가 사라지면 오류 없이 그 안내들만 빠진다. 같은 조각의 결제 방법 행 `id="order_payment_method_row"` 도 같은 약속이다 — PG 플러그인이
+간편결제 이름(예: 카카오페이)을 이 행의 값(마지막 `span`)에 덧붙인다. 주문 완료 화면에 결제 방법 행을 두는 템플릿은 같은 id 를 단다.
+약속 원문: 이커머스 `docs/extension-points.md` 「PG 플러그인이 결제 정보 카드에 붙일 때의 약속」.
 
 ## 이관 원문 상세
 

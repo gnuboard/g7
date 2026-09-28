@@ -148,6 +148,8 @@
                                             },
                                             "children": [
                                                 {
+                                                    "comment": "결제수단 칸 — id 는 PG 플러그인과의 약속이다. 간편결제 이름을 값에 덧붙이려고 이 id 로만 찾는다(칸 이름 글자는 관리자 언어마다 다르다). 첫 칸이 이름, 다음 칸이 값이다.",
+                                                    "id": "payment_method_block_{{payIdx}}",
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "children": [

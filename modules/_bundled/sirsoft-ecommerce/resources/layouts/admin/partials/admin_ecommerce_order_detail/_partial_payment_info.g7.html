@@ -30,7 +30,8 @@
           <hr class="border-gray-100 dark:border-gray-800 mb-4"/>
           <div class="row-stack">
             <div class="grid-2col-responsive">
-              <div>
+              <!-- 결제수단 칸 — id 는 PG 플러그인과의 약속이다. 간편결제 이름을 값에 덧붙이려고 이 id 로만 찾는다(칸 이름 글자는 관리자 언어마다 다르다). 첫 칸이 이름, 다음 칸이 값이다. -->
+              <div data-ref="payment_method_block_{{payIdx}}">
                 <span class="text-tertiary block">$t:sirsoft-ecommerce.admin.order.detail.payment_info.payment_method</span>
                 <span class="text-sm font-semibold text-gray-900 dark:text-gray-100 block">{{payment.payment_method_label}}</span>
                 <span data-if="{{payment.account_info}}" class="text-tertiary block">{{payment.account_info}}</span>

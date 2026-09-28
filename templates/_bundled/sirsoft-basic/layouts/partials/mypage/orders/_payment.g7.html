@@ -194,8 +194,8 @@
       </div>
       <!-- 구분선 -->
       <div class="border-t border-gray-200 dark:border-gray-700 my-3"/>
-      <!-- 결제 방법 -->
-      <div class="flex items-center justify-between">
+      <!-- 결제 방법 — id 는 PG 플러그인과의 약속이다. 간편결제 이름(예: 카카오페이)을 이 행의 값에 덧붙이려고 이 id 로만 찾는다(행 이름 글자는 언어마다 다르다). -->
+      <div data-ref="order_payment_method_row" class="flex items-center justify-between">
         <span class="text-gray-500 dark:text-gray-400">
           <responsive on="portable" class="text-gray-500 dark:text-gray-400 text-sm"/>
           $t:mypage.order_detail.payment_method

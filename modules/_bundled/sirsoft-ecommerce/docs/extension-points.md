@@ -1199,6 +1199,10 @@ FormRequest 쪽 `{동작}_validation_rules`(filter). `brand.*` 19종을 한 번 
 - **카드는 id 로만 찾는다.** 템플릿은 결제 정보 카드에 `id="order_payment_info_panel"` 을 단다(sirsoft-basic 의
   `partials/mypage/orders/_payment` — 회원·비회원 주문 상세와 신청서 상세가 함께 쓴다). 플러그인은 이 id 로만 카드를 찾고,
   화면 제목 글자(「결제 정보」 등)로 찾지 않는다 — 제목은 언어마다 다르다. id 가 없는 템플릿에서는 붙이지 않는다.
+- **결제 방법 행도 id 로만 찾는다.** 간편결제 이름(예: 카카오페이)을 결제 방법 값에 덧붙일 때, 사용자 화면은 템플릿이 단
+  `id="order_payment_method_row"`(같은 `_payment` 조각의 결제 방법 행 — 주문 완료 화면에 그 행을 두는 템플릿도 같은 id 를 쓴다),
+  관리자 주문 상세는 이 모듈이 단 `id="payment_method_block_{결제 순번}"`(`admin_ecommerce_order_detail/_partial_payment_info` —
+  첫 칸이 이름, 다음 칸이 값)로만 찾는다. 행 이름 글자(「결제 방법」「결제수단」)로 찾지 않는다. id 가 없으면 건드리지 않는다.
 - **날짜는 표시용 값을 그대로 쓴다.** 결제 정보의 입금 기한은 `vbank_due_at_formatted`(사용자 언어·시간대로 서식을 입힌 값)를
   보여 주고, 원시 값(`vbank_due_at`, ISO8601)에 플러그인이 다시 서식을 입히지 않는다. 날짜 서식은 이 모듈(서버)의 책임이다.
 

@@ -73,29 +73,26 @@ async function fetchReceiptInfo(orderNumber: string): Promise<ReceiptInfo | null
     }
 }
 
-function patchPaymentMethodDisplay(container: Element, displayLabel: string | null | undefined): boolean {
+export function patchMypagePaymentMethodDisplay(container: Element, displayLabel: string | null | undefined): boolean {
     if (!displayLabel) return false;
 
-    const rows = Array.from(container.querySelectorAll<HTMLElement>('div'));
-    for (const row of rows) {
-        const spans = Array.from(row.children).filter(
-            (child): child is HTMLElement => child instanceof HTMLElement && child.tagName === 'SPAN',
-        );
-        if (spans.length < 2) continue;
+    // 결제 방법 행은 템플릿이 약속한 id(order_payment_method_row)로만 찾는다. 행 이름 글자(「결제 방법」 등)는 언어마다
+    // 달라 찾는 기준이 될 수 없다 — id 가 없는 템플릿에서는 건드리지 않는다(약속: sirsoft-ecommerce docs/extension-points.md).
+    const row = container.querySelector<HTMLElement>('#order_payment_method_row');
+    if (!row) return false;
 
-        const label = spans[0].textContent?.trim();
-        if (label !== '결제 방법' && label !== '결제수단' && label !== 'Payment Method') continue;
+    const spans = Array.from(row.children).filter(
+        (child): child is HTMLElement => child instanceof HTMLElement && child.tagName === 'SPAN',
+    );
+    if (spans.length < 2) return false;
 
-        const value = spans[spans.length - 1];
-        if (value.textContent?.trim() !== displayLabel) {
-            value.textContent = displayLabel;
-            value.dataset.nicepayPaymentMethodPatched = 'true';
-        }
-        row.dataset.nicepayPaymentMethodRow = 'true';
-        return true;
+    const value = spans[spans.length - 1];
+    if (value.textContent?.trim() !== displayLabel) {
+        value.textContent = displayLabel;
+        value.dataset.nicepayPaymentMethodPatched = 'true';
     }
-
-    return false;
+    row.dataset.nicepayPaymentMethodRow = 'true';
+    return true;
 }
 
 // 결제 정보 카드는 템플릿이 약속한 id(order_payment_info_panel)로만 찾는다. 화면 제목 글자는 언어마다 달라
@@ -228,7 +225,7 @@ async function tryInject(orderNumber: string | null): Promise<boolean> {
     const container = findPaymentContainer();
     if (!container) return false;
     const receiptInfo = await fetchReceiptInfo(resolvedOrderNumber);
-    patchPaymentMethodDisplay(container, receiptInfo?.payment_method_display_label);
+    patchMypagePaymentMethodDisplay(container, receiptInfo?.payment_method_display_label);
 
     // 가상계좌 입금 안내 — 결제수단이 vbank 이고 가상계좌 번호 발급된 경우 표시 (paid_at 무관: 입금 전후 모두 표시).
     if (payment.payment_method === 'vbank' && payment.vbank_number && !document.getElementById(VBANK_BLOCK_ID)) {

@@ -39,15 +39,18 @@ function directElementChildren(el: Element): HTMLElement[] {
 function patchLabeledPaymentMethod(root: Element, displayLabel: string): boolean {
     let patched = false;
 
-    const rows = Array.from(root.querySelectorAll<HTMLElement>('div'));
+    // 결제수단 칸은 이커머스 관리자 주문 상세가 약속한 id(payment_method_block_{결제 순번})로만 찾는다. 칸 이름 글자
+    // (「결제수단」)는 관리자 언어마다 달라 찾는 기준이 될 수 없다(약속: sirsoft-ecommerce docs/extension-points.md).
+    const rows = Array.from(root.querySelectorAll<HTMLElement>('[id^="payment_method_block_"]'));
     for (const row of rows) {
         const children = directElementChildren(row);
-        const labelIndex = children.findIndex(child => child.textContent?.trim() === '결제수단');
-        if (labelIndex < 0) continue;
+        // 첫 칸이 이름, 그 뒤 처음으로 글자가 있는 칸이 값이다.
+        const labelIndex = 0;
+        if (children.length < 2) continue;
 
         const value = children
             .slice(labelIndex + 1)
-            .find(child => child.textContent?.trim() && child.textContent.trim() !== '결제수단');
+            .find(child => child.textContent?.trim());
         if (!value) continue;
 
         const installment = children
