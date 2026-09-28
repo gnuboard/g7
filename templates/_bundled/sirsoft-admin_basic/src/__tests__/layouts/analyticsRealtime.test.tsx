@@ -136,4 +136,3 @@ describe('창 선택지', () => {
     expect(values.filter((v: number) => v < 1 || v > max), '서버 범위 밖 선택지').toEqual([]);
   });
 });
-

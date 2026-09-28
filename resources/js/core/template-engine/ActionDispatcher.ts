@@ -34,6 +34,13 @@ import type { GlobalHeaderRule } from './LayoutLoader';
 import { IdentityGuardInterceptor } from '../identity/IdentityGuardInterceptor';
 import { isAbortError, isNetworkFailure, loadScriptWithRetry, loadStylesheetWithRetry } from './networkResilience';
 import { isAllowedScriptSrc, getTrustedScriptHosts } from '../support/scriptSrcPolicy';
+import { resolveSafeNavPath, isDangerousScheme, isSameOriginRequestUrl } from '../support/navPolicy';
+import {
+  toExpressionEvent,
+  toExpressionArgs,
+  toExpressionData,
+  toExpressionError,
+} from './helpers/expressionData';
 
 const logger = createLogger('ActionDispatcher');
 
@@ -2106,6 +2113,9 @@ export class ActionDispatcher {
         }
       }
 
+      // 표현식용 이벤트 스냅샷 — 본 실행·onError 가 같은 값을 공유한다 (KVE-2026-2350)
+      const eventData = toExpressionEvent(event);
+
       try {
         // 기본 이벤트 동작 방지 (폼 제출 시 페이지 리로드 방지)
         // 단, change 이벤트에서는 preventDefault()를 호출하면 안됨
@@ -2147,8 +2157,10 @@ export class ActionDispatcher {
             form: formData, // 폼 데이터를 form 객체로 추가
             // _local: 레이아웃 수준의 로컬 상태 (componentContext.state)
             _local: componentContext?.state || {},
-            // $event: 이벤트 객체를 data에 추가 ({{$event.target.value}} 바인딩 지원)
-            $event: event,
+            // $event: 이벤트의 plain 스냅샷 ({{$event.target.value}} 바인딩 지원).
+            // 원본 이벤트는 target.ownerDocument.defaultView 로 Window 에 닿으므로 싣지 않는다(KVE-2026-2350).
+            // 핸들러는 context.event 로 원본을 받는다.
+            $event: eventData,
           },
           event,
           // 컴포넌트 컨텍스트 병합
@@ -2209,11 +2221,12 @@ export class ActionDispatcher {
             ...this.defaultContext,
             data: {
               ...dataContext,
-              error: errorData, // 에러 객체 추가
+              // 에러 DTO — own 필드(response·status·errors·code …)+message·name, stack·호스트 객체 제외
+              error: toExpressionError(errorData),
               // _local: 레이아웃 수준의 로컬 상태 (componentContext.state)
               _local: componentContext?.state || {},
-              // $event: 이벤트 객체를 data에 추가
-              $event: event,
+              // $event: 본 실행과 같은 이벤트 스냅샷
+              $event: eventData,
             },
             event,
             // 컴포넌트 컨텍스트 병합 (setState를 통해 에러 상태 업데이트 가능)
@@ -3354,8 +3367,20 @@ export class ActionDispatcher {
     logger.log('handleOpenWindow:', { target, params, finalPath, windowTarget });
 
     if (windowTarget === '_self') {
-      window.location.assign(finalPath);
+      // 같은 탭 이동은 same-origin 경로만 — navigate 미매칭 폴백도 이 자리로 온다.
+      // `?redirect=javascript:…`·`//evil` 이 레이아웃을 거쳐 그대로 흘러드는 sink 다(KVE-2026-2348).
+      const safePath = resolveSafeNavPath(finalPath, '/');
+      if (safePath !== finalPath) {
+        logger.warn('[handleOpenWindow] same-origin 경로가 아니라 기본 경로로 이동합니다.', finalPath);
+      }
+      window.location.assign(safePath);
     } else {
+      // 새 창은 정상 외부 링크가 있으므로 실행 스킴만 막는다(과차단 방지).
+      if (isDangerousScheme(finalPath)) {
+        logger.warn('[handleOpenWindow] 실행 스킴 주소라 새 창을 열지 않습니다.', finalPath);
+
+        return;
+      }
       window.open(finalPath, '_blank');
     }
   }
@@ -3373,7 +3398,12 @@ export class ActionDispatcher {
    *
    * 프리뷰에서는 {@link PREVIEW_SUPPRESSED_HANDLERS} 가 막는다 — 미리보기 창이 사라지기 때문이다.
    *
-   * @param target 이동할 주소 (절대·상대 모두)
+   * 이동 대상은 same-origin 경로로 제한한다(engine-v1.73.0). 레이아웃은 이 주소를 `query` 에서
+   * 채우기도 하므로(`identity_challenge` 의 `redirect_url`) 검증 없이 넘기면 `javascript:` 실행·
+   * 오프사이트 이동 sink 가 된다(KVE-2026-2348). 본인인증 제공자의 외부 origin 이동은 명시
+   * 허용목록이 생기기 전까지 기본 경로(`/`)로 떨어진다.
+   *
+   * @param target 이동할 주소 (same-origin 절대 경로)
    * @param params `replace: true` 면 뒤로가기 이력을 남기지 않는다
    * @since engine-v1.70.0
    */
@@ -3384,12 +3414,17 @@ export class ActionDispatcher {
       return;
     }
 
-    logger.log('handleRedirect:', { target, replace: params.replace === true });
+    const safeTarget = resolveSafeNavPath(target, '/');
+    if (safeTarget !== target.trim()) {
+      logger.warn('[handleRedirect] same-origin 경로가 아니라 기본 경로로 이동합니다.', target);
+    }
+
+    logger.log('handleRedirect:', { target: safeTarget, replace: params.replace === true });
 
     if (params.replace === true) {
-      window.location.replace(target);
+      window.location.replace(safeTarget);
     } else {
-      window.location.assign(target);
+      window.location.assign(safeTarget);
     }
   }
 
@@ -3718,15 +3753,23 @@ export class ActionDispatcher {
       await this.ensureCsrfToken();
     }
 
+    // 인증 정보(Bearer·XSRF)는 동일 출처 대상에만 싣는다 (KVE-2026-2350). 레이아웃은 대상 주소를
+    // 표현식으로 조립할 수 있어, 출처를 보지 않고 실으면 레이아웃 편집 권한만으로 관리자 토큰을 외부로
+    // 보낼 수 있다. ApiClient(데이터 소스)도 같은 원칙이다. 교차 출처 요청 자체는 막지 않는다.
+    const sameOrigin = isSameOriginRequestUrl(target);
+    if (!sameOrigin && authMode !== 'none') {
+      logger.warn('[handleApiCall] 교차 출처 대상이라 인증 정보를 싣지 않습니다.', target);
+    }
+
     // CSRF 토큰을 쿠키에서 추출하여 헤더에 추가
-    const csrfToken = this.getCsrfTokenFromCookie();
+    const csrfToken = sameOrigin ? this.getCsrfTokenFromCookie() : null;
 
     // authMode에 따라 Bearer 토큰 추가
     // - 'none': 토큰 미포함
     // - 'required': 토큰 필수 (토큰이 있으면 포함)
     // - 'optional': 토큰이 있으면 포함, 없으면 미포함
     let authHeader: Record<string, string> = {};
-    if (authMode === 'required' || authMode === 'optional') {
+    if (sameOrigin && (authMode === 'required' || authMode === 'optional')) {
       const apiClient = getApiClient();
       const token = apiClient.getToken();
       if (token) {
@@ -3825,7 +3868,12 @@ export class ActionDispatcher {
 
       // HTTP 428 + identity_verification_required → IDV Guard 인터셉트
       // Challenge 모달 launcher 호출 후 성공 시 원 요청을 재실행합니다.
-      if (IdentityGuardInterceptor.isIdentityRequired(response.status, responseData)) {
+      // 동일 출처 응답만 믿는다 — launcher 는 응답의 challenge_start_url 로 토큰을 실어 보내므로,
+      // 교차 출처 서버가 428 을 흉내 내면 위에서 뺀 토큰을 후속 요청으로 받아 간다(KVE-2026-2350).
+      if (!sameOrigin && IdentityGuardInterceptor.isIdentityRequired(response.status, responseData)) {
+        logger.warn('[handleApiCall] 교차 출처 응답의 본인인증 요구는 따르지 않습니다.', target);
+      }
+      if (sameOrigin && IdentityGuardInterceptor.isIdentityRequired(response.status, responseData)) {
         // retry fetch 가 원 요청의 body/headers/credentials 를 그대로 재사용해야 백엔드가
         // 빈 body 로 422 를 던지지 않음 (회원가입 등 모든 POST 흐름의 핵심 회귀 방지)
         const replayed = await IdentityGuardInterceptor.handle(
@@ -6328,7 +6376,7 @@ export class ActionDispatcher {
           if (callbackAction) {
             const callbackContext = {
               ...context,
-              data: { ...context.data, $event: data },
+              data: { ...context.data, $event: toExpressionData(data) },
             };
             const actions = Array.isArray(callbackAction) ? callbackAction : [callbackAction];
             for (const cbAction of actions) {
@@ -6489,7 +6537,7 @@ export class ActionDispatcher {
           if (callbackAction) {
             const callbackContext = {
               ...context,
-              data: { ...context.data, $event: data },
+              data: { ...context.data, $event: toExpressionData(data) },
             };
             const actions = Array.isArray(callbackAction) ? callbackAction : [callbackAction];
             for (const cbAction of actions) {
@@ -7401,7 +7449,7 @@ export class ActionDispatcher {
       // onError 액션 실행
       if (action.onError) {
         const errorData = error instanceof ActionError && error.originalError
-          ? { message: error.originalError.message, response: (error.originalError as any).response }
+          ? { message: error.originalError.message, response: toExpressionData((error.originalError as any).response) }
           : { message: error instanceof Error ? error.message : String(error) };
 
         const errorContext: ActionContext = {
@@ -7529,56 +7577,9 @@ export class ActionDispatcher {
    * @returns 추출된 이벤트 데이터
    */
   private extractEventData(event: Event): Record<string, any> {
-    const target = event.target as HTMLInputElement | HTMLSelectElement | null;
-
-    // 커스텀 이벤트 감지 (예: MultilingualInput에서 emit하는 { target: { name, value } })
-    // 커스텀 이벤트는 tagName이 없고, value가 객체일 수 있음
-    const isCustomEvent = target && !('tagName' in target);
-
-    if (isCustomEvent) {
-      // 커스텀 이벤트: target 속성을 그대로 복사
-      const result: Record<string, any> = {
-        type: (event as any).type ?? 'custom',
-        target: {
-          value: (target as any).value,
-          name: (target as any).name ?? '',
-        },
-      };
-
-      // _changedKeys 메타데이터 보존 (디바운스 병합에 사용)
-      if ((event as any)._changedKeys) {
-        result._changedKeys = (event as any)._changedKeys;
-      }
-
-      return result;
-    }
-
-    // DOM 이벤트: 기존 로직
-    const targetData: Record<string, any> = target
-      ? {
-          value: target.value,
-          name: target.name ?? '',
-          checked: (target as HTMLInputElement).checked ?? false,
-          type: target.type ?? '',
-          tagName: target.tagName,
-        }
-      : {};
-
-    // scroll 이벤트인 경우 스크롤 관련 속성 추가
-    if (event.type === 'scroll' && target) {
-      const element = target as HTMLElement;
-      targetData.scrollHeight = element.scrollHeight ?? 0;
-      targetData.scrollTop = element.scrollTop ?? 0;
-      targetData.clientHeight = element.clientHeight ?? 0;
-      targetData.scrollLeft = element.scrollLeft ?? 0;
-      targetData.clientWidth = element.clientWidth ?? 0;
-      targetData.scrollWidth = element.scrollWidth ?? 0;
-    }
-
-    return {
-      type: event.type,
-      target: target ? targetData : null,
-    };
+    // 표현식용 이벤트 스냅샷과 같은 변환기를 쓴다 — 디바운스 경로와 즉시 실행 경로가 같은 필드를 싣는다.
+    // 합성 컴포넌트의 { target: { name, value } } 도 value(다국어 객체 포함)를 그대로 복사한다.
+    return toExpressionEvent(event) as Record<string, any>;
   }
 
   /**
@@ -7601,7 +7602,7 @@ export class ActionDispatcher {
     const contextWithEvent = {
       ...dataContext,
       $event: extractedEvent,
-      $args: args,
+      $args: toExpressionArgs(args),
     };
 
     // 가짜 이벤트 객체 생성 (extractedEvent 기반)
@@ -7987,7 +7988,7 @@ export class ActionDispatcher {
 
               // 커스텀 이벤트인 경우 $args 컨텍스트 추가
               const contextForDebounce = action.event
-                ? { ...dataContext, $args: args }
+                ? { ...dataContext, $args: toExpressionArgs(args) }
                 : dataContext;
 
               this.handleDebouncedAction(
@@ -8016,7 +8017,8 @@ export class ActionDispatcher {
                 // 커스텀 콜백의 모든 인자를 $args 배열로 전달
                 const contextWithArgs = {
                   ...freshContext,
-                  $args: args,
+                  // 콜백 인자는 plain 사본으로 싣는다 — 원본 이벤트·DOM 참조 차단(KVE-2026-2350)
+                  $args: toExpressionArgs(args),
                 };
 
                 // 이벤트 객체 결정: 표준 DOM 이벤트 > 커스텀 컴포넌트 이벤트 > 빈 이벤트.

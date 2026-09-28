@@ -11,6 +11,7 @@ use App\Http\Requests\Layout\UpdateLayoutExtensionContentRequest;
 use App\Http\Resources\LayoutExtensionResource;
 use App\Http\Resources\LayoutExtensionVersionResource;
 use App\Models\LayoutExtension;
+use App\Rules\LayoutContentGate;
 use App\Services\LayoutExtensionService;
 use App\Services\LayoutMarkupService;
 use App\Services\LayoutPreviewService;
@@ -151,6 +152,17 @@ class LayoutExtensionController extends AdminBaseController
             $payload['compile_error'] = $described;
 
             return $response->setData($payload);
+        }
+
+        // 컴파일 산출 JSON 도 저장 경로와 같은 보안 게이트를 거친다 (KVE-2026-2350)
+        $violations = LayoutContentGate::violations($result->json);
+        if ($violations !== []) {
+            return $this->error(
+                'validation.layout_extension.content.markup_compile_failed',
+                422,
+                ['content' => $violations],
+                ['detail' => $violations[0]],
+            );
         }
 
         return $this->success('common.success', [

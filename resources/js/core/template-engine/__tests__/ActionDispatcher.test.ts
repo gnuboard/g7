@@ -7639,9 +7639,9 @@ describe('ActionDispatcher', () => {
      * @effects redirect_assigns_current_tab_to_given_url
      */
     it('url 로 현재 탭을 통째로 이동시킨다', async () => {
-      await run({ url: 'https://idp.example/verify?token=abc' });
+      await run({ url: '/identity/callback?token=abc' });
 
-      expect(assignSpy).toHaveBeenCalledWith('https://idp.example/verify?token=abc');
+      expect(assignSpy).toHaveBeenCalledWith('/identity/callback?token=abc');
       expect(replaceSpy).not.toHaveBeenCalled();
     });
 
@@ -7651,10 +7651,38 @@ describe('ActionDispatcher', () => {
      * @effects redirect_replace_leaves_no_history_entry
      */
     it('replace: true 면 뒤로가기 이력을 남기지 않는다', async () => {
-      await run({ url: 'https://idp.example/verify', replace: true });
+      await run({ url: '/identity/verify', replace: true });
 
-      expect(replaceSpy).toHaveBeenCalledWith('https://idp.example/verify');
+      expect(replaceSpy).toHaveBeenCalledWith('/identity/verify');
       expect(assignSpy).not.toHaveBeenCalled();
+    });
+
+    /**
+     * @effects redirect_offsite_target_falls_back_to_root
+     */
+    it('외부 origin·protocol-relative 주소는 따라가지 않고 기본 경로(/)로 간다 (KVE-2026-2348)', async () => {
+      for (const url of ['https://idp.example/verify', '//evil.example/', '/\\evil.example/']) {
+        assignSpy.mockClear();
+        await run({ url });
+        expect(assignSpy).toHaveBeenCalledWith('/');
+      }
+
+      replaceSpy.mockClear();
+      await run({ url: 'https://evil.example/', replace: true });
+      expect(replaceSpy).toHaveBeenCalledWith('/');
+    });
+
+    /**
+     * @effects redirect_script_scheme_never_executes
+     */
+    it('javascript:/data: 주소는 sink 에 닿지 않는다 (KVE-2026-2348)', async () => {
+      await run({ url: 'javascript:localStorage.setItem("m","1")' });
+      await run({ url: ' JaVaScRiPt:alert(1)', replace: true });
+
+      for (const call of [...assignSpy.mock.calls, ...replaceSpy.mock.calls]) {
+        expect(String(call[0]).toLowerCase()).not.toContain('javascript:');
+        expect(call[0]).toBe('/');
+      }
     });
 
     /**
@@ -7676,7 +7704,7 @@ describe('ActionDispatcher', () => {
      */
     it('프리뷰 모드에서는 실행되지 않는다 — 미리보기 창이 사라지기 때문', async () => {
       dispatcher.setPreviewMode(true);
-      await run({ url: 'https://idp.example/verify' });
+      await run({ url: '/identity/verify' });
       dispatcher.setPreviewMode(false);
 
       expect(assignSpy).not.toHaveBeenCalled();

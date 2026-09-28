@@ -122,6 +122,7 @@ admin/`)이 이 템플릿의 베이스(`_admin_base`)를 extends 하고 이 템�
 | `onSuccess`·시퀀스 안에서 방금 저장한 상태(`_global.*`/`_local.*`)를 형제 액션의 `if`·값으로 재독 | 그 자리에서는 `{{response.*}}` 만 읽는다 | 그 시점 컨텍스트는 아직 갱신 전이라 stale 값으로 조용히 분기한다 |
 | 레이아웃·TSX 에서 Lucide·Heroicons 식 아이콘 이름(`x-circle`·`refresh-cw`·`more-horizontal`·`alert-circle`·`chevrons-left`·`arrow-down-tray` 등) | Font Awesome 6.4.0 이름(`circle-xmark`·`arrows-rotate`·`ellipsis`·`circle-exclamation`·`angles-left`·`download`) | 관리자 템플릿 `Icon` 은 이름을 `fa-{이름}` 로만 바꾼다 — FA 에 없는 이름은 오류 없이 **빈칸**으로 그려진다. 가드: `tests/Unit/Extension/FontIconNameTest.php` |
 | 원·칸을 그리는 스타일 자산(`danger-confirm-icon` 등, 글자 크기 없음)을 `<icon>` 요소에 직접 부여 | 자산은 감싸는 요소에, 아이콘은 그 안에(`<div class="danger-confirm-icon"><icon …/></div>`) | Font Awesome 의 `display` 가 자산의 가운데 정렬을 이기고 글리프는 상속 글자 크기에 머문다 — 원 위쪽에 작게 붙는다. 가드: `tests/Unit/Extension/FontIconSizingTest.php` |
+| 컴포넌트·핸들러가 `fetch` 로 직접 요청하며 대상 출처를 보지 않고 토큰(Bearer·XSRF)을 싣거나, prop 으로 받은 주소로 곧장 `location.href` 이동 | `src/support/sameOriginRequest.ts` 의 `isSameOriginRequest(url)` 이 true 일 때만 토큰을 싣고 이동한다 | 주소가 레이아웃 prop·응답 본문이면 레이아웃 편집 권한만으로 관리자 토큰을 외부로 보내거나 `javascript:` 를 실행시킬 수 있다(KVE-2026-2350) |
 <!-- @intent END -->
 
 ## 7. 테스트 실행
@@ -130,9 +131,9 @@ admin/`)이 이 템플릿의 베이스(`_admin_base`)를 extends 하고 이 템�
 | 종류 | 개수 | 위치 |
 |---|---|---|
 | PHPUnit | 0개 | — |
-| Vitest | 248개 | `vitest.config.ts` |
+| Vitest | 252개 | `vitest.config.ts` |
 | Playwright | 17개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 11개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 12개 | `tests/scenarios` |
 
 ```bash
 # Vitest (확장 디렉토리에서) (PowerShell)

@@ -180,13 +180,13 @@
           <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-pay_nicepayments.admin.vbank_noti_count</span>
           <span class="text-gray-900 dark:text-gray-100 font-semibold">{{(_local._vbankNotiData.summary?.count ?? 0) + '회'}}</span>
           <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-pay_nicepayments.admin.vbank_noti_first_at</span>
-          <span class="text-gray-900 dark:text-gray-100 font-mono">{{$formatDate(_local._vbankNotiData.summary?.first_received_at, 'YYYY-MM-DD HH:mm:ss') ?? '-'}}</span>
+          <span class="text-gray-900 dark:text-gray-100 font-mono">{{_local._vbankNotiData.summary?.first_received_at | datetime('YYYY-MM-DD HH:mm:ss') | default('-')}}</span>
           <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-pay_nicepayments.admin.vbank_noti_last_at</span>
-          <span class="text-gray-900 dark:text-gray-100 font-mono">{{$formatDate(_local._vbankNotiData.summary?.last_received_at, 'YYYY-MM-DD HH:mm:ss') ?? '-'}}</span>
+          <span class="text-gray-900 dark:text-gray-100 font-mono">{{_local._vbankNotiData.summary?.last_received_at | datetime('YYYY-MM-DD HH:mm:ss') | default('-')}}</span>
           <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-pay_nicepayments.admin.vbank_noti_deposited_at</span>
-          <span class="text-emerald-700 dark:text-emerald-400 font-mono">{{$formatDate(_local._vbankNotiData.summary?.deposited_at, 'YYYY-MM-DD HH:mm:ss') ?? '-'}}</span>
+          <span class="text-emerald-700 dark:text-emerald-400 font-mono">{{_local._vbankNotiData.summary?.deposited_at | datetime('YYYY-MM-DD HH:mm:ss') | default('-')}}</span>
           <span data-if="{{!!_local._vbankNotiData.summary?.cancelled_at}}" class="text-gray-500 dark:text-gray-400">$t:sirsoft-pay_nicepayments.admin.vbank_noti_cancelled_at</span>
-          <span data-if="{{!!_local._vbankNotiData.summary?.cancelled_at}}" class="text-rose-700 dark:text-rose-400 font-mono">{{$formatDate(_local._vbankNotiData.summary?.cancelled_at, 'YYYY-MM-DD HH:mm:ss')}}</span>
+          <span data-if="{{!!_local._vbankNotiData.summary?.cancelled_at}}" class="text-rose-700 dark:text-rose-400 font-mono">{{_local._vbankNotiData.summary?.cancelled_at | datetime('YYYY-MM-DD HH:mm:ss')}}</span>
           <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-pay_nicepayments.admin.vbank_noti_depositor</span>
           <span class="text-gray-900 dark:text-gray-100">{{_local._vbankNotiData.summary?.last_depositor ?? '-'}}</span>
         </div>
@@ -197,7 +197,7 @@
               <span data-if="{{noti.type === 'deposited'}}" class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300 flex-shrink-0">$t:sirsoft-pay_nicepayments.admin.vbank_noti_type_deposited</span>
               <span data-if="{{noti.type === 'cancelled'}}" class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-300 flex-shrink-0">$t:sirsoft-pay_nicepayments.admin.vbank_noti_type_cancelled</span>
               <span data-if="{{noti.type !== 'deposited' &amp;&amp; noti.type !== 'cancelled'}}" class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 flex-shrink-0">$t:sirsoft-pay_nicepayments.admin.vbank_noti_type_other</span>
-              <span class="font-mono text-gray-700 dark:text-gray-300">{{$formatDate(noti.received_at, 'YYYY-MM-DD HH:mm:ss')}}</span>
+              <span class="font-mono text-gray-700 dark:text-gray-300">{{noti.received_at | datetime('YYYY-MM-DD HH:mm:ss')}}</span>
               <span class="text-gray-500 dark:text-gray-400 font-mono">{{noti.result_code ?? '-'}}</span>
               <span class="text-gray-700 dark:text-gray-300">{{noti.result_msg ?? ''}}</span>
               <span data-if="{{noti.depositor}}" class="text-secondary ml-auto">{{noti.depositor + ' / ' + (noti.amt ?? 0).toLocaleString() + '원'}}</span>

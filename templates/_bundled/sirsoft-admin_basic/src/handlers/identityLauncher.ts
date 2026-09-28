@@ -12,6 +12,8 @@
  * - 기본 purpose 추정값이 `sensitive_action` (admin 정책은 대부분 민감 작업)
  */
 
+import { isSameOriginRequest } from '../support/sameOriginRequest';
+
 const logger = ((window as any).G7Core?.createLogger?.('Template:sirsoft-admin_basic:IdentityLauncher')) ?? {
   log: (...args: unknown[]) => console.log('[Template:sirsoft-admin_basic:IdentityLauncher]', ...args),
   warn: (...args: unknown[]) => console.warn('[Template:sirsoft-admin_basic:IdentityLauncher]', ...args),
@@ -41,7 +43,19 @@ type VerificationResult =
   | { status: 'cancelled' }
   | { status: 'failed'; failureCode: string; reason?: string };
 
-function getAuthHeader(): Record<string, string> {
+/**
+ * Bearer 토큰 헤더를 만듭니다 — 요청 대상이 동일 출처일 때만.
+ *
+ * challenge 시작 주소는 428 응답 본문(`challenge_start_url`)에서 온다. 교차 출처 서버가 428 을 흉내 내
+ * 자기 주소를 넣으면 관리자 토큰을 그 주소로 보내게 되므로 출처를 먼저 본다(KVE-2026-2350).
+ *
+ * @param url 요청 대상
+ * @return 토큰이 있고 대상이 동일 출처면 Authorization 헤더, 아니면 빈 객체
+ */
+function getAuthHeader(url: string): Record<string, string> {
+  if (!isSameOriginRequest(url)) {
+    return {};
+  }
   const G7Core = (window as any).G7Core;
   const token = G7Core?.api?.getToken?.() ?? null;
   return token ? { Authorization: `Bearer ${token}` } : {};
@@ -90,7 +104,7 @@ async function startChallenge(payload: VerificationPayload, target: IdentityVeri
       'Content-Type': 'application/json',
       Accept: 'application/json',
       ...getLocaleHeader(),
-      ...getAuthHeader(),
+      ...getAuthHeader(url),
     },
     body: JSON.stringify(body),
   });

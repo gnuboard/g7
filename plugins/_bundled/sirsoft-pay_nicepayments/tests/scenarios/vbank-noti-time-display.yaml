@@ -1,0 +1,30 @@
+feature: 주문 상세 › 결제 조회의 가상계좌 입금 통보 시각 표시
+
+description: |
+  관리자 주문 상세의 결제 조회 패널에서 가상계좌 입금 통보를 불러오면, 요약(첫·마지막 통보 수신,
+  입금 확인, 입금 취소)과 통보 이력의 시각이 `YYYY-MM-DD HH:mm:ss` 로 보여야 한다. 조각이 엔진에
+  없는 `$formatDate(...)` 를 부르던 동안 식이 풀리지 않아 시각 대신 식 원문이 그대로 나왔다 — 엔진
+  제공 표시(`| datetime(...)`, 없을 때 `| default('-')`)로 바꿨다.
+
+  입금 취소 시각 칸은 값이 있을 때만 그려지고(data-if), 이력의 수신 시각은 통보가 있을 때만 행이
+  생기므로 「값 없음」 조합은 요약의 세 칸에만 있다.
+
+  E2E 는 두지 않는다 — 로컬·CI 에 나이스페이먼츠 가상계좌 주문과 PG 통보 픽스처가 없어 화면까지
+  재현하지 못한다. 대신 설치되는 조각 원본(JSON)과 저작본(.g7.html)을 엔진 바인딩에 그대로 넣어
+  렌더 문자열을 단언한다.
+
+axes:
+  field: [summary_first_received, summary_last_received, summary_deposited, summary_cancelled, history_received]
+  value: [present, missing]
+
+exclusions:
+  - { field: summary_cancelled, value: missing, reason: "입금 취소 칸은 값이 있을 때만 그려진다(data-if)" }
+  - { field: history_received, value: missing, reason: "이력 행은 통보가 있을 때만 생기고 수신 시각은 서버가 항상 채운다" }
+
+effects:
+  - time_rendered_as_datetime
+  - missing_summary_time_shows_dash
+  - no_undefined_engine_helper_in_fragment
+
+test_files:
+  - plugins/_bundled/sirsoft-pay_nicepayments/resources/js/__tests__/layouts/vbankNotiDateDisplay.test.ts
