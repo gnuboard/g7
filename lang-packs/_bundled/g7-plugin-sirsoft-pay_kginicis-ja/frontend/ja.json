@@ -84,7 +84,8 @@
     "cvs_code": "コンビニコード",
     "cvs_confirmation_no": "コンビニ確認番号",
     "cvs_receipt_no": "コンビニ受付番号",
-    "cvs_payment_term": "入金締切日時"
+    "cvs_payment_term": "入金締切日時",
+    "loading": "読み込み中..."
   },
   "admin": {
     "test_mode_badge": "テスト決済",

@@ -5,7 +5,7 @@
       <!-- 간편결제 서비스명 표시 -->
       <div data-if="{{(['NAVERPAY','KAKAOPAY','SAMSUNGPAY','APPLEPAY','PAYCO','SKPAY','SSGPAY','LPAY']).includes(orderData?.data?.payment?.payment_meta?.PayMethod)}}" class="flex-between mb-2">
         <span class="text-gray-600 dark:text-gray-400 text-sm">$t:sirsoft-pay_nicepayments.user.easy_pay_label</span>
-        <span class="text-sm font-medium text-gray-900 dark:text-white">{{({'NAVERPAY':'네이버페이','KAKAOPAY':'카카오페이','SAMSUNGPAY':'삼성페이','APPLEPAY':'애플페이','PAYCO':'PAYCO','SKPAY':'11pay','SSGPAY':'SSG페이','LPAY':'L.pay'})[orderData?.data?.payment?.payment_meta?.PayMethod] ?? orderData?.data?.payment?.payment_meta?.PayMethod}}</span>
+        <span class="text-sm font-medium text-gray-900 dark:text-white">{{$t('sirsoft-pay_nicepayments.user.easy_pay_names.' + orderData?.data?.payment?.payment_meta?.PayMethod)}}</span>
       </div>
       <!-- 영수증 링크 행 -->
       <div class="flex-between">

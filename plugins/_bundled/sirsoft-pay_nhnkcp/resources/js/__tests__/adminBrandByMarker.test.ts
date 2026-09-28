@@ -1,0 +1,74 @@
+/**
+ * 관리자 결제수단 설정의 NHN KCP 브랜드 표시는 화면이 단 결제수단 id 표식으로만 찾는다 (#599)
+ *
+ * 종전에는 결제수단 항목을 이름 글자(한국어·영어 이름표)와 클래스 모양으로 찾아, 다른 언어 관리자 화면에서는 브랜드 표시가
+ * 빠졌다(PO 결정 2026-09-28 「id 표식으로만 찾음」). 이제 이커머스 관리자 화면이 항목마다 단 data-payment-method
+ * (결제수단 id)로만 찾는다.
+ */
+
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+
+import { resetAdminPaymentMethodBrandInjectorForTests, syncRenderedAdminPaymentMethodBrands } from '../adminPaymentMethodBrandInjector';
+import { patchAdminApplePayNotice, resetAdminApplePayNoticeInjectorForTests } from '../adminApplePayNoticeInjector';
+
+function item(method: string, title: string): string {
+    return `<div class="excel-card" data-payment-method="${method}"><svg data-original-icon="true"></svg><span class="font-medium">${title}</span></div>`;
+}
+
+describe('NHN KCP — 관리자 결제수단 항목 찾기', () => {
+    beforeEach(() => {
+        window.history.pushState({}, '', '/admin/ecommerce/settings?tab=order_settings');
+    });
+
+    afterEach(() => {
+        resetAdminPaymentMethodBrandInjectorForTests();
+        resetAdminApplePayNoticeInjectorForTests();
+        delete (window as any).G7Core;
+        document.body.innerHTML = '';
+    });
+
+    /**
+     * @scenario target=brand_mark,item=with_marker
+     * @effects item_found_by_marker_only
+     */
+    it('브랜드 표시: 표식이 있으면 이름이 일본어여도 브랜드 배지를 붙인다', () => {
+        document.body.innerHTML = item('nhnkcp_kakaopay', 'カカオペイ');
+
+        expect(syncRenderedAdminPaymentMethodBrands()).toBe(true);
+        expect(document.querySelector('[data-nhnkcp-admin-payment-brand-mark="true"]')).not.toBeNull();
+    });
+
+    /**
+     * @scenario target=brand_mark,item=without_marker
+     * @effects item_found_by_marker_only
+     */
+    it('브랜드 표시: 표식이 없으면 한국어 이름이 같아도 건드리지 않는다', () => {
+        document.body.innerHTML = '<div class="excel-card"><svg data-original-icon="true"></svg><span class="font-medium">카카오페이 (NHN KCP)</span></div>';
+
+        expect(syncRenderedAdminPaymentMethodBrands()).toBe(false);
+        expect(document.querySelector('[data-nhnkcp-admin-payment-brand-mark="true"]')).toBeNull();
+    });
+
+    /**
+     * @scenario target=apple_pay_notice,item=with_marker
+     * @effects item_found_by_marker_only
+     */
+    it('애플페이 안내: 표식이 있으면 이름이 일본어여도 안내를 번역 키 문구로 붙인다', () => {
+        (window as any).G7Core = { t: (key: string) => (key === 'sirsoft-pay_nhnkcp.payment.error.applepay_ios_only' ? 'Apple PayはiOS端末のみ' : key) };
+        document.body.innerHTML = item('nhnkcp_applepay', 'Apple Pay (NHN KCP・日本語)');
+
+        expect(patchAdminApplePayNotice()).toBe(true);
+        expect(document.querySelector('[data-nhnkcp-admin-apple-pay-notice="true"]')?.textContent).toBe('Apple PayはiOS端末のみ');
+    });
+
+    /**
+     * @scenario target=apple_pay_notice,item=without_marker
+     * @effects item_found_by_marker_only
+     */
+    it('애플페이 안내: 표식이 없으면 「애플페이」 글자가 있어도 붙이지 않는다', () => {
+        document.body.innerHTML = '<div class="excel-card"><span class="font-medium">애플페이</span></div>';
+
+        expect(patchAdminApplePayNotice()).toBe(false);
+        expect(document.querySelector('[data-nhnkcp-admin-apple-pay-notice="true"]')).toBeNull();
+    });
+});

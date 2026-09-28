@@ -136,7 +136,19 @@
         "vbank_holder": "예금주",
         "vbank_amount": "입금 금액",
         "vbank_due": "입금 기한",
-        "vbank_notice": "입금 기한 내에 입금이 완료되지 않으면 주문이 자동 취소됩니다."
+        "vbank_notice": "입금 기한 내에 입금이 완료되지 않으면 주문이 자동 취소됩니다.",
+        "receipt_view": "영수증 조회",
+        "loading": "로딩 중...",
+        "easy_pay_names": {
+            "NAVERPAY": "네이버페이",
+            "KAKAOPAY": "카카오페이",
+            "SAMSUNGPAY": "삼성페이",
+            "APPLEPAY": "애플페이",
+            "PAYCO": "PAYCO",
+            "SKPAY": "11pay",
+            "SSGPAY": "SSG페이",
+            "LPAY": "L.pay"
+        }
     },
     "messages": {
         "refund": {
@@ -154,7 +166,9 @@
     },
     "payment": {
         "error": {
-            "sdk_url_untrusted": "결제 모듈 주소가 올바르지 않아 결제를 진행할 수 없습니다. 관리자에게 문의해 주세요."
+            "sdk_url_untrusted": "결제 모듈 주소가 올바르지 않아 결제를 진행할 수 없습니다. 관리자에게 문의해 주세요.",
+            "sdk_load_failed": "나이스페이먼츠 SDK를 불러올 수 없습니다. 잠시 후 다시 시도해주세요.",
+            "request_failed": "결제 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요."
         }
     }
 }

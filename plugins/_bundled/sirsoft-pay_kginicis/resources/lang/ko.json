@@ -71,6 +71,7 @@
         "vat_amount": "부가세",
         "tax_free_amount": "면세금액",
         "receipt_print": "인쇄",
+        "loading": "로딩 중...",
         "cbt_confirmation_title": "KG 이니시스 CBT 결제확인서",
         "vbank_title": "가상계좌 입금 안내",
         "vbank_bank": "은행",

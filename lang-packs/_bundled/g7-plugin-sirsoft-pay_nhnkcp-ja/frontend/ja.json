@@ -186,7 +186,11 @@
   },
   "payment": {
     "error": {
-      "sdk_url_untrusted": "決済モジュールのアドレスが正しくないため、決済を進めることができません。管理者にお問い合わせください。"
+      "sdk_url_untrusted": "決済モジュールのアドレスが正しくないため、決済を進めることができません。管理者にお問い合わせください。",
+      "krw_only": "NHN KCP は KRW 決済のみに対応しています。({{currency}})",
+      "mobile_approval_key_failed": "KCP モバイル承認キーの取得に失敗しました",
+      "pg_error": "KCP エラー [{{code}}]: {{message}}",
+      "applepay_ios_only": "Apple Pay は iOS デバイスでのモバイル決済のみ可能です。"
     }
   }
 }

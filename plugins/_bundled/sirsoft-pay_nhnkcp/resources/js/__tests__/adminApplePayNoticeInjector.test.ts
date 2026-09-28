@@ -10,8 +10,8 @@ describe('adminApplePayNoticeInjector', () => {
         window.history.pushState({}, '', '/admin/ecommerce/settings?tab=order_settings');
         document.body.innerHTML = `
             <section>
-                <div>
-                    <span>애플페이</span>
+                <div data-payment-method="nhnkcp_applepay">
+                    <span class="font-medium">애플페이</span>
                 </div>
             </section>
         `;

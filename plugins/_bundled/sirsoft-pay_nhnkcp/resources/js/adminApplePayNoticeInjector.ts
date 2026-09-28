@@ -1,9 +1,9 @@
+import { applePayUnsupportedMessage, NHNKCP_APPLEPAY_METHOD } from './support/applePayDevice';
+
 const PLUGIN_ID = 'sirsoft-pay_nhnkcp';
 const FLAG = '__kcpAdminApplePayNoticeInjectorInstalled';
 const ADMIN_SETTINGS_RE = /^\/admin\/ecommerce\/settings\/?$/;
 const LISTENER_FLAG = '__kcpAdminApplePayNoticeListenerAttached';
-const NOTICE_KO = '애플페이는 IOS 기기에 모바일결제만 가능합니다.';
-const NOTICE_EN = 'Apple Pay is available only for mobile payments on iOS devices.';
 
 let observer: MutationObserver | null = null;
 let retryTimer: number | null = null;
@@ -20,22 +20,6 @@ function isOrderSettingsPage(): boolean {
     return tab === null || tab === 'order_settings';
 }
 
-function noticeText(): string {
-    const lang = document.documentElement.lang || navigator.language || '';
-
-    return lang.toLowerCase().startsWith('ko') ? NOTICE_KO : NOTICE_EN;
-}
-
-function normalizedText(value: string | null | undefined): string {
-    return (value ?? '').replace(/\s+/g, ' ').trim();
-}
-
-function isApplePayLabel(element: HTMLElement): boolean {
-    const text = normalizedText(element.textContent);
-
-    return text === '애플페이' || text === 'Apple Pay';
-}
-
 function createNotice(): HTMLSpanElement {
     const notice = document.createElement('span');
     notice.dataset.nhnkcpAdminApplePayNotice = 'true';
@@ -46,7 +30,8 @@ function createNotice(): HTMLSpanElement {
     notice.style.marginTop = '2px';
     notice.style.fontSize = '12px';
     notice.style.lineHeight = '1rem';
-    notice.textContent = noticeText();
+    // 문구는 번역 키(payment.error.applepay_ios_only)가 정한다 — 주문서의 애플페이 차단 안내와 같은 문구다.
+    notice.textContent = applePayUnsupportedMessage();
 
     return notice;
 }
@@ -54,14 +39,15 @@ function createNotice(): HTMLSpanElement {
 export function patchAdminApplePayNotice(root: ParentNode = document): boolean {
     if (typeof window === 'undefined' || typeof document === 'undefined') return false;
     if (!isOrderSettingsPage()) return false;
-    const bodyText = normalizedText(document.body?.innerText ?? document.body?.textContent);
-    if (bodyText.includes(noticeText())) return false;
+    // 애플페이 항목은 이커머스 관리자 화면이 단 data-payment-method(결제수단 id)로만 찾는다. 이름 글자(「애플페이」
+    // 「Apple Pay」)는 관리자 언어마다 달라 찾는 기준이 될 수 없다(PO 결정 2026-09-28 「id 표식으로만 찾음」).
+    const item = root.querySelector<HTMLElement>(`[data-payment-method="${NHNKCP_APPLEPAY_METHOD}"]`);
+    if (!item || item.querySelector('[data-nhnkcp-admin-apple-pay-notice="true"]')) return false;
 
-    const applePayLabel = Array.from(root.querySelectorAll<HTMLElement>('span, p, div'))
-        .find(isApplePayLabel);
-    if (!applePayLabel) return false;
+    const title = item.querySelector<HTMLElement>('.font-medium');
+    if (!title) return false;
 
-    applePayLabel.insertAdjacentElement('afterend', createNotice());
+    title.insertAdjacentElement('afterend', createNotice());
     return true;
 }
 

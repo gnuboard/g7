@@ -1,0 +1,14 @@
+feature: 나이스페이먼츠 화면 글자·결제 오류 알림은 번역 키로 낸다
+
+description: |
+  주문 완료 화면 영수증 버튼 글자, 결제 실패 알림, 영수증 조각의 간편결제 이름표를 한국어로 박아 두어 영어·일본어 화면에서도
+  한국어로 나오던 것을 플러그인 번역 키(ko·en, 일본어는 언어팩)로 옮긴다(PO 결정 2026-09-28 「모두 번역 키로」).
+
+axes:
+  surface: [order_complete_button, payment_error_toast, easy_pay_name]
+
+effects:
+  - text_from_translation_key
+
+test_files:
+  - plugins/_bundled/sirsoft-pay_nicepayments/resources/js/__tests__/paymentTextTranslated.test.ts

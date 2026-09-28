@@ -71,6 +71,7 @@
         "vat_amount": "VAT",
         "tax_free_amount": "Tax-Free Amount",
         "receipt_print": "Print",
+        "loading": "Loading...",
         "cbt_confirmation_title": "KG Inicis CBT payment confirmation",
         "vbank_title": "Virtual account deposit details",
         "vbank_bank": "Bank",

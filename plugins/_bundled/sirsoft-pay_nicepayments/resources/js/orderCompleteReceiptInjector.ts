@@ -1,4 +1,5 @@
 import { buildOrderRequestHeaders } from './guestOrderToken';
+import { translateNicepay as t } from './translate';
 
 const PLUGIN_ID = 'sirsoft-pay_nicepayments';
 const FLAG = '__nicepayOcReceiptInjectorInstalled';
@@ -100,14 +101,14 @@ async function injectOnOrderComplete(orderNumber: string): Promise<void> {
     receiptBtn.className = blueBtn.className
         .replace(/bg-blue-\d+/g, 'bg-green-600')
         .replace(/hover:bg-blue-\d+/g, 'hover:bg-green-700');
-    receiptBtn.textContent = '영수증 조회';
+    receiptBtn.textContent = t('user.receipt_view', '영수증 조회');
 
     receiptBtn.addEventListener('click', async () => {
         receiptBtn.disabled = true;
-        receiptBtn.textContent = '로딩 중...';
+        receiptBtn.textContent = t('user.loading', '로딩 중...');
         const data = await fetchReceiptInfo(orderNumber);
         receiptBtn.disabled = false;
-        receiptBtn.textContent = '영수증 조회';
+        receiptBtn.textContent = t('user.receipt_view', '영수증 조회');
         const url = data?.receipt_url ?? null;
         if (url) {
             window.open(url, 'nicepay_receipt', 'width=800,height=600,scrollbars=yes,resizable=yes');
@@ -129,7 +130,7 @@ function tryInject(): void {
 
 export function installOrderCompleteReceiptInjector(): void {
     if (typeof window === 'undefined') return;
-    const w = window as Record<string, unknown>;
+    const w = window as unknown as Record<string, unknown>;
     if (w[FLAG]) return;
     w[FLAG] = true;
 

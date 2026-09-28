@@ -7,6 +7,7 @@ import {
     openKginicisReceipt,
     receiptButtonLabel,
     receiptRowLabel,
+    translateKginicis,
 } from './receiptPopup';
 
 const PLUGIN_ID = 'sirsoft-pay_kginicis';
@@ -44,7 +45,7 @@ interface OrderData {
 
 function getOrderFromState(routeSegment: string | null): OrderData | null {
     try {
-        const g7 = (window as Record<string, unknown>).G7Core as Record<string, unknown> | undefined;
+        const g7 = (window as unknown as Record<string, unknown>).G7Core as Record<string, unknown> | undefined;
         const getState = g7?.getState as (() => Record<string, unknown>) | undefined;
         const ctx = getState?.()?.currentDataContext as Record<string, unknown> | undefined;
         const order = ctx?.order as { data?: OrderData } | undefined;
@@ -114,7 +115,7 @@ function buildReceiptRow(orderNumber: string, receiptInfo: KginicisReceiptInfo):
 
     btn.addEventListener('click', async () => {
         btn.disabled = true;
-        btn.textContent = '로딩 중...';
+        btn.textContent = translateKginicis('user.loading', '로딩 중...');
         const latestReceiptInfo = await fetchKginicisReceiptInfo(orderNumber);
         btn.disabled = false;
         btn.textContent = receiptButtonLabel(latestReceiptInfo ?? receiptInfo);

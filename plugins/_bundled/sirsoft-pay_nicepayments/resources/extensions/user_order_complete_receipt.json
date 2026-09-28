@@ -37,7 +37,7 @@
                                     "props": {
                                         "className": "text-sm font-medium text-gray-900 dark:text-white"
                                     },
-                                    "text": "{{({'NAVERPAY':'네이버페이','KAKAOPAY':'카카오페이','SAMSUNGPAY':'삼성페이','APPLEPAY':'애플페이','PAYCO':'PAYCO','SKPAY':'11pay','SSGPAY':'SSG페이','LPAY':'L.pay'})[orderData?.data?.payment?.payment_meta?.PayMethod] ?? orderData?.data?.payment?.payment_meta?.PayMethod}}"
+                                    "text": "{{$t('sirsoft-pay_nicepayments.user.easy_pay_names.' + orderData?.data?.payment?.payment_meta?.PayMethod)}}"
                                 }
                             ]
                         },

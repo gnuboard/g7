@@ -186,7 +186,11 @@
     },
     "payment": {
         "error": {
-            "sdk_url_untrusted": "결제 모듈 주소가 올바르지 않아 결제를 진행할 수 없습니다. 관리자에게 문의해 주세요."
+            "sdk_url_untrusted": "결제 모듈 주소가 올바르지 않아 결제를 진행할 수 없습니다. 관리자에게 문의해 주세요.",
+            "krw_only": "NHN KCP는 KRW 결제만 지원합니다. ({{currency}})",
+            "mobile_approval_key_failed": "KCP 모바일 승인키 획득 실패",
+            "pg_error": "KCP 오류 [{{code}}]: {{message}}",
+            "applepay_ios_only": "애플페이는 IOS 기기에 모바일결제만 가능합니다."
         }
     }
 }

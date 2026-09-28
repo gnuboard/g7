@@ -8,8 +8,6 @@ const SYNC_RETRY_ATTEMPTS = 120;
 
 interface AdminPaymentBrandDefinition {
     id: string;
-    labels: string[];
-    shortLabels: string[];
     markLines: string[];
     markClassName: string;
 }
@@ -17,57 +15,41 @@ interface AdminPaymentBrandDefinition {
 const ADMIN_PAYMENT_BRAND_DEFINITIONS: AdminPaymentBrandDefinition[] = [
     {
         id: 'nicepay_naverpay',
-        labels: ['네이버페이 (나이스페이먼츠)', '네이버페이로 결제 (나이스페이먼츠)', 'Naver Pay (NicePayments)', 'Pay with Naver Pay (NicePayments)'],
-        shortLabels: [],
         markLines: ['N'],
         markClassName: 'bg-green-500 text-white',
     },
     {
         id: 'nicepay_kakaopay',
-        labels: ['카카오페이 (나이스페이먼츠)', '카카오페이로 결제 (나이스페이먼츠)', 'Kakao Pay (NicePayments)', 'Pay with Kakao Pay (NicePayments)'],
-        shortLabels: [],
         markLines: ['K'],
         markClassName: 'bg-yellow-400 text-gray-950',
     },
     {
         id: 'nicepay_samsungpay',
-        labels: ['삼성페이 (나이스페이먼츠)', '삼성페이로 결제 (나이스페이먼츠)', 'Samsung Pay (NicePayments)', 'Pay with Samsung Pay (NicePayments)'],
-        shortLabels: [],
         markLines: ['S'],
         markClassName: 'bg-blue-600 text-white',
     },
     {
         id: 'nicepay_applepay',
-        labels: ['애플페이 (나이스페이먼츠)', '애플페이로 결제 (나이스페이먼츠)', 'Apple Pay (NicePayments)', 'Pay with Apple Pay (NicePayments)'],
-        shortLabels: [],
         markLines: ['A'],
         markClassName: 'bg-gray-900 text-white',
     },
     {
         id: 'nicepay_payco',
-        labels: ['PAYCO (나이스페이먼츠)', 'PAYCO로 결제 (나이스페이먼츠)', 'PAYCO (NicePayments)', 'Pay with PAYCO (NicePayments)'],
-        shortLabels: [],
         markLines: ['P'],
         markClassName: 'bg-red-500 text-white',
     },
     {
         id: 'nicepay_skpay',
-        labels: ['11pay (나이스페이먼츠)', '11pay로 결제 (나이스페이먼츠)', '11pay (NicePayments)', 'Pay with 11pay (NicePayments)'],
-        shortLabels: [],
         markLines: ['11'],
         markClassName: 'bg-orange-500 text-white',
     },
     {
         id: 'nicepay_ssgpay',
-        labels: ['SSG페이 (나이스페이먼츠)', 'SSG페이로 결제 (나이스페이먼츠)', 'SSG Pay (NicePayments)', 'Pay with SSG Pay (NicePayments)'],
-        shortLabels: [],
         markLines: ['SSG'],
         markClassName: 'bg-red-700 text-white',
     },
     {
         id: 'nicepay_lpay',
-        labels: ['L.pay (나이스페이먼츠)', 'L.pay로 결제 (나이스페이먼츠)', 'L.pay (NicePayments)', 'Pay with L.pay (NicePayments)'],
-        shortLabels: [],
         markLines: ['L'],
         markClassName: 'bg-purple-600 text-white',
     },
@@ -88,41 +70,20 @@ function isOrderSettingsPage(): boolean {
     return tab === null || tab === '' || tab === 'order_settings';
 }
 
-function classNameOf(element: Element): string {
-    return element instanceof HTMLElement ? element.className : '';
-}
-
-function comparableText(value: string | null | undefined): string {
-    return (value ?? '')
-        .replace(/\u200B/g, '')
-        .replace(/\s+/g, ' ')
-        .trim();
-}
-
-function isPaymentMethodItem(element: HTMLElement): boolean {
-    const className = classNameOf(element);
-
-    return className.includes('excel-card')
-        || (className.includes('flex-center') && className.includes('border') && className.includes('gap-4'));
-}
-
 function findTitleElement(item: HTMLElement): HTMLElement | null {
     return item.querySelector<HTMLElement>('.font-medium');
 }
 
+// 결제수단 항목은 이커머스 관리자 화면이 항목마다 단 data-payment-method(결제수단 id)로만 찾는다. 이름 글자·클래스 모양은
+// 관리자 언어·화면 폭마다 달라 찾는 기준이 될 수 없다(약속: sirsoft-ecommerce docs/extension-points.md, PO 결정 2026-09-28).
 function findDefinitionForItem(item: HTMLElement): AdminPaymentBrandDefinition | null {
-    const title = comparableText(findTitleElement(item)?.textContent);
-    const text = comparableText(item.textContent);
+    const method = item.dataset.paymentMethod;
 
-    return ADMIN_PAYMENT_BRAND_DEFINITIONS.find((definition) => (
-        definition.shortLabels.some((label) => title === label)
-        || definition.labels.some((label) => text.includes(label))
-    )) ?? null;
+    return ADMIN_PAYMENT_BRAND_DEFINITIONS.find((definition) => definition.id === method) ?? null;
 }
 
 function findPaymentMethodItems(root: ParentNode): HTMLElement[] {
-    return Array.from(root.querySelectorAll<HTMLElement>('div'))
-        .filter(isPaymentMethodItem);
+    return Array.from(root.querySelectorAll<HTMLElement>('[data-payment-method]'));
 }
 
 function findPaymentIcon(item: HTMLElement): Element | null {

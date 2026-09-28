@@ -22,20 +22,6 @@ const KNOWN_PAYMENT_METHODS = new Set([
     'kginicis_japan_cvs',
 ]);
 
-const DOM_METHOD_LABELS: Array<{ id: string; labels: string[] }> = [
-    { id: 'card', labels: ['신용카드', 'Credit Card', 'クレジットカード'] },
-    { id: 'vbank', labels: ['가상계좌', 'Virtual Account', 'バーチャル口座'] },
-    { id: 'dbank', labels: ['무통장입금', 'Bank Transfer', '銀行振込'] },
-    { id: 'bank', labels: ['계좌이체', 'Account Transfer', '口座振替'] },
-    { id: 'phone', labels: ['휴대폰결제', 'Mobile Payment', '携帯電話決済'] },
-    { id: 'kginicis_naverpay', labels: ['네이버페이 (KG이니시스)', 'Naver Pay (KG Inicis)'] },
-    { id: 'kginicis_samsung_pay', labels: ['삼성페이 (KG이니시스)', 'Samsung Pay (KG Inicis)'] },
-    { id: 'kginicis_lpay', labels: ['L.pay (KG이니시스)', 'L.pay (KG Inicis)'] },
-    { id: 'kginicis_kakaopay', labels: ['카카오페이 (KG이니시스)', 'Kakao Pay (KG Inicis)'] },
-    { id: 'kginicis_japan_paypay', labels: ['PayPay (일본 KG이니시스)', 'PayPay (KG Inicis Japan)'] },
-    { id: 'kginicis_japan_cvs', labels: ['일본 편의점결제 (KG이니시스)', 'Japan Convenience Store (KG Inicis)'] },
-];
-
 interface PaymentMethodSetting {
     id?: string;
     is_active?: boolean;
@@ -272,36 +258,18 @@ function mutateResponse(originalResponse: Response, body: PaymentSettingsBody): 
     });
 }
 
+// 주문서 결제수단 칸과 버튼은 템플릿이 약속한 id(checkout_payment_method_section)와 표식(data-payment-method = 결제수단 id)으로만
+// 찾는다. 칸 제목·버튼 이름 글자는 언어마다 달라 찾는 기준이 될 수 없다 — 표식이 없으면 건드리지 않는다
+// (약속: sirsoft-ecommerce docs/extension-points.md, PO 결정 2026-09-28 「id·표식으로만 찾음」).
 function findPaymentContainer(): Element | null {
-    const h2 = Array.from(document.querySelectorAll<HTMLElement>('h2')).find((el) => {
-        const text = el.textContent ?? '';
-        return text.includes('결제 수단') || text.includes('결제 방법') || text.includes('Payment Method');
-    });
-    if (!h2) return null;
-
-    let el: Element | null = h2.parentElement;
-    while (el && el !== document.body) {
-        if (el.tagName === 'DIV' && String((el as HTMLElement).className).includes('rounded-lg')) {
-            return el;
-        }
-        el = el.parentElement;
-    }
-
-    return null;
+    return document.getElementById('checkout_payment_method_section');
 }
 
-function inferButtonPaymentMethod(button: HTMLElement): string | null {
-    const title = button.querySelector('p')?.textContent?.trim() ?? button.textContent?.trim() ?? '';
-    for (const method of DOM_METHOD_LABELS) {
-        if (method.labels.some((label) => title.includes(label))) {
-            return method.id;
-        }
-    }
-
-    return null;
+function buttonPaymentMethod(button: HTMLElement): string | null {
+    return button.dataset.paymentMethod || null;
 }
 
-function patchRenderedPaymentButtons(): boolean {
+export function patchRenderedPaymentButtons(): boolean {
     const isJpy = shouldUseJpyRestriction();
     const isHideJapan = shouldHideJapanMethods();
     if (!isJpy && !isHideJapan) return false;
@@ -310,8 +278,8 @@ function patchRenderedPaymentButtons(): boolean {
     if (!container) return false;
 
     let patched = false;
-    container.querySelectorAll<HTMLButtonElement>('button[type="button"]').forEach((button) => {
-        const methodId = inferButtonPaymentMethod(button);
+    container.querySelectorAll<HTMLButtonElement>('button[data-payment-method]').forEach((button) => {
+        const methodId = buttonPaymentMethod(button);
         if (!methodId || !KNOWN_PAYMENT_METHODS.has(methodId)) return;
 
         const allowed = isJpy

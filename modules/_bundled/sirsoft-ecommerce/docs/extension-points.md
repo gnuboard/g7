@@ -1207,6 +1207,20 @@ FormRequest 쪽 `{동작}_validation_rules`(filter). `brand.*` 19종을 한 번 
   보여 주고, 원시 값(`vbank_due_at`, ISO8601)에 플러그인이 다시 서식을 입히지 않는다. 날짜 서식은 이 모듈(서버)의 책임이다.
   번들 PG 세 플러그인은 모두 표시용 값만 쓴다(나이스페이먼츠 마이페이지 입금 안내도 레이아웃 조각이 `vbank_due_at_formatted` 를 쓴다).
 
+### PG 플러그인이 주문서 결제수단 칸을 볼 때의 약속
+
+주문서의 결제수단 칸은 템플릿이 `id="checkout_payment_method_section"` 을 달고, 결제수단 버튼마다 `data-payment-method`
+(결제수단 id — 이 모듈의 결제수단 카탈로그 id)를 단다(sirsoft-basic `partials/shop/_checkout_payment`). 이미 그려진 버튼을
+숨기거나 고치는 플러그인(예: KG이니시스 엔화 결제수단 제한)은 이 id·표식으로만 찾고, 칸 제목이나 버튼 이름 글자로 찾지 않는다 —
+글자는 언어마다 다르다. 표식이 없는 버튼은 건드리지 않는다.
+
+### PG 플러그인이 관리자 결제수단 설정 항목을 볼 때의 약속
+
+관리자 쇼핑몰 설정의 결제수단 목록(`admin_ecommerce_settings/_payment_methods_list`·`_payment_methods_cards` — 넓은 화면 표와
+좁은 화면 카드)은 항목 루트마다 `data-payment-method`(결제수단 id)를 단다. 브랜드 배지·안내를 붙이는 PG 플러그인(KG이니시스·
+NHN KCP·나이스페이먼츠·토스페이먼츠)은 이 표식으로만 항목을 찾고, 이름 글자나 클래스 모양으로 찾지 않는다 — 관리자 언어·화면
+폭마다 다르다. 표식이 없는 항목은 건드리지 않는다.
+
 ## 미들웨어
 
 <!-- @generated:middleware START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->

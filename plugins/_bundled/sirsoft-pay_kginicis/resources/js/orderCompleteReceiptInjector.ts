@@ -3,6 +3,7 @@ import {
     fetchKginicisReceiptInfo,
     openKginicisReceipt,
     receiptButtonLabel,
+    translateKginicis,
 } from './receiptPopup';
 
 const PLUGIN_ID = 'sirsoft-pay_kginicis';
@@ -127,7 +128,7 @@ async function injectOnOrderComplete(orderNumber: string): Promise<void> {
 
     receiptBtn.addEventListener('click', async () => {
         receiptBtn.disabled = true;
-        receiptBtn.textContent = '로딩 중...';
+        receiptBtn.textContent = translateKginicis('user.loading', '로딩 중...');
         const latestReceiptInfo = await fetchKginicisReceiptInfo(orderNumber);
         receiptBtn.disabled = false;
         receiptBtn.textContent = receiptButtonLabel(latestReceiptInfo ?? receiptInfo);
@@ -151,7 +152,7 @@ function tryInject(): void {
 
 export function installOrderCompleteReceiptInjector(): void {
     if (typeof window === 'undefined') return;
-    const w = window as Record<string, unknown>;
+    const w = window as unknown as Record<string, unknown>;
     if (w[FLAG]) return;
     w[FLAG] = true;
 

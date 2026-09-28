@@ -1,5 +1,5 @@
 {
-    "comment": "쇼핑몰 설정 — 결제수단 목록, 넓은 화면용 표. 좁은 화면용 카드(`_payment_methods_cards`)와\n  같은 배열을 같은 방식으로 편집한다. 순서가 쇼핑몰 결제창의 노출 순서다.",
+    "comment": "쇼핑몰 설정 — 결제수단 목록, 넓은 화면용 표. 좁은 화면용 카드(`_payment_methods_cards`)와\n  같은 배열을 같은 방식으로 편집한다. 순서가 쇼핑몰 결제창의 노출 순서다.\n  항목 루트의 data-payment-method(결제수단 id)는 PG 플러그인과의 약속이다 — 브랜드 배지·안내를 붙일 항목을 이름 글자가 아니라 이 표식으로만 찾는다.",
     "meta": {
         "is_partial": true,
         "description": "결제수단 설정 - Desktop Sortable 리스트"
@@ -26,6 +26,7 @@
             }
         },
         "props": {
+            "data-payment-method": "{{$method.id}}",
             "className": "flex-center border rounded-lg p-3 gap-4"
         },
         "children": [

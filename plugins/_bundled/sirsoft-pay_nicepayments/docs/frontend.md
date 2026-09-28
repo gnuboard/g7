@@ -119,3 +119,16 @@
 
 간편결제 이름을 결제 방법 행에 덧붙일 때도 행을 id 로만 찾는다 — 사용자 주문 상세·주문 완료는 `order_payment_method_row`, 관리자 주문 상세는
 `payment_method_block_{결제 순번}`. 행 이름 글자(「결제 방법」「결제수단」)로 찾지 않는다(PO 결정 2026-09-28).
+
+### 관리자 결제수단 설정의 브랜드 표시는 결제수단 id 표식으로만 찾는다
+
+관리자 쇼핑몰 설정의 결제수단 목록에서 브랜드 배지를 붙일 항목은 이커머스 관리자 화면이 항목마다 단
+`data-payment-method`(결제수단 id)로만 찾는다. 이름 글자(한국어·영어 이름표)와 클래스 모양으로 찾지 않는다 — 관리자 언어·화면 폭마다
+다르다(PO 결정 2026-09-28). 약속 원문: 이커머스 `docs/extension-points.md` 「PG 플러그인이 관리자 결제수단 설정 항목을 볼 때의 약속」.
+
+### 스크립트·조각이 그리는 글자는 번역 키로 낸다
+
+주문 완료 화면 영수증 버튼(`user.receipt_view`·`user.loading`)과 결제 실패 알림(`payment.error.sdk_load_failed`·`request_failed`)은
+`translateNicepay(key, 대체 문구, 값)`(`resources/js/translate.ts`)로 낸다. 영수증 조각의 간편결제 이름은
+`$t('sirsoft-pay_nicepayments.user.easy_pay_names.' + PayMethod)` 로 푼다 — 조각 안에 한국어 이름표를 두지 않는다.
+플러그인은 ko·en 을 갖고 일본어는 언어팩이 채운다.

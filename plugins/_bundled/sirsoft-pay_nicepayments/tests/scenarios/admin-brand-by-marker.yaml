@@ -1,0 +1,16 @@
+feature: 관리자 결제수단 설정의 브랜드 표시는 결제수단 id 표식으로만 찾는다
+
+description: |
+  관리자 쇼핑몰 설정의 결제수단 목록에서 브랜드 배지를 붙일 항목을 이름 글자(한국어·영어 이름표)로
+  찾아 다른 언어 관리자 화면에서 빠지던 것을, 이커머스 관리자 화면이 항목마다 단 data-payment-method(결제수단 id)로만
+  찾도록 바꾼다(PO 결정 2026-09-28 「id 표식으로만 찾음」). 표식이 없는 항목은 건드리지 않는다.
+
+axes:
+  target: [brand_mark]
+  item: [with_marker, without_marker]
+
+effects:
+  - item_found_by_marker_only
+
+test_files:
+  - plugins/_bundled/sirsoft-pay_nicepayments/resources/js/__tests__/adminBrandByMarker.test.ts

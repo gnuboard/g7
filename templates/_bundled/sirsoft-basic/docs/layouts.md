@@ -371,6 +371,13 @@ id 가 사라지면 오류 없이 그 안내들만 빠진다. 같은 조각의 �
 간편결제 이름(예: 카카오페이)을 이 행의 값(마지막 `span`)에 덧붙인다. 주문 완료 화면에 결제 방법 행을 두는 템플릿은 같은 id 를 단다.
 약속 원문: 이커머스 `docs/extension-points.md` 「PG 플러그인이 결제 정보 카드에 붙일 때의 약속」.
 
+### 주문서 결제수단 칸의 id·버튼 표식도 PG 플러그인과의 약속
+
+`partials/shop/_checkout_payment` 의 칸 `id="checkout_payment_method_section"` 과 버튼의 `data-payment-method="{{method.id}}"` 는
+지우거나 바꾸지 않는다. KG이니시스 엔화 결제수단 제한이 이미 그려진 버튼을 숨길 때 이것으로만 찾는다 — 사라지면 오류 없이
+화면 보정만 빠진다(응답을 거르는 앞단 제한은 그대로 동작). 약속 원문: 이커머스 `docs/extension-points.md`
+「PG 플러그인이 주문서 결제수단 칸을 볼 때의 약속」.
+
 ## 이관 원문 상세
 
 > 아래는 코어 `docs/frontend/templates/sirsoft-basic/layouts.md` 에 있던 원문을 이 문서로 옮긴 것입니다(#601). 이관 시점 그대로

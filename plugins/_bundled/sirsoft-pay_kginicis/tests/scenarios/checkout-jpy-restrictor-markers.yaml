@@ -1,0 +1,17 @@
+feature: KG이니시스 엔화 결제수단 제한 — 화면 보정은 id·결제수단 표식으로만 찾는다
+
+description: |
+  이미 그려진 주문서 결제수단 버튼을 숨기는 화면 보정이 결제수단 칸을 제목 글자로, 버튼을 이름 글자(플러그인 안의
+  한국어·영어·일본어 이름표)로 찾아 번역이 다르면 빠지던 것을 고친다(PO 결정 2026-09-28 「id·표식으로만 찾음」).
+  칸은 템플릿이 단 id(checkout_payment_method_section), 버튼은 data-payment-method(결제수단 id)로만 찾는다.
+  응답을 거르는 앞단 제한은 원래 결제수단 id 기준이라 바뀌지 않는다.
+
+axes:
+  currency: [jpy, krw]
+  section: [with_id, without_id]
+
+effects:
+  - buttons_found_by_marker_only
+
+test_files:
+  - plugins/_bundled/sirsoft-pay_kginicis/resources/js/__tests__/checkoutJpyRestrictorMarkers.test.ts
