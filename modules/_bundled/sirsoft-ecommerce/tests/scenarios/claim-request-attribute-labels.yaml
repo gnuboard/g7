@@ -1,0 +1,31 @@
+feature: 클레임 요청 검증 문구의 필드 라벨 — 오류 문구에 필드 키 대신 화면의 칸 이름을 싣는다
+
+description: |
+  라벨이 없으면 Laravel 은 필드 키를 풀어쓴 영문을 검증 오류 문구에 넣는다(「redelivery address.recipient
+  name 필드는 50자를 초과하면 안 됩니다」). 화면 라벨은 한국어인데 오류 문구만 영문 키라 운영자·고객이
+  어느 칸을 고칠지 알 수 없다.
+
+  배경:
+    - develop 7.1.0 이 FormRequest 라벨 검사(`formrequest-attribute-label-coverage`)를 들였고, 16차 병합 뒤
+      이 브랜치의 클레임 요청 31곳 입력 항목 242개가 그 검사에 걸렸고, 이 브랜치에서 라벨을 붙였다.
+
+  핵심 동작:
+    - 클레임 요청은 `attributes()` 로 규칙 키마다 라벨을 준다. 목록 항목(`items.*.quantity`)은 와일드카드 한
+      줄이 모든 번호를 덮는다.
+    - 라벨 문구는 모듈 언어 파일 `validation.request_attributes`(요청 필드)·`validation.claim_settings_attributes`
+      (환경설정 클레임 정책 — 설정 화면 라벨과 같은 문구)에 두고, 일본어는 언어팩이 같은 키로 싣는다.
+    - 요청 코드가 가리키는 라벨 키가 번역문으로 풀리지 않으면 키 문자열이 그대로 나가므로 테스트가 막는다.
+    - 관리자 직권 접수·상태 변경 요청은 규칙 일부를 트레이트에서 받는다. 라벨 검사는 요청 파일에 글자로 적힌 키만
+      읽으므로, 테스트가 요청을 실제로 만들어 `rules()` 의 키 전부를 `attributes()` 와 대조한다(브라우저 실측에서
+      관리자 접수 미리보기가 「refund bank.holder 필드는 …」 을 돌려준 빈틈).
+
+axes:
+  check: [label_keys_resolve, validation_message, trait_rule_keys]
+
+effects:
+  - claim_request_label_keys_resolve_in_every_locale
+  - claim_request_validation_message_names_the_field_in_korean
+  - claim_request_trait_rule_keys_have_labels
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Http/Requests/ClaimRequestAttributeLabelsTest.php

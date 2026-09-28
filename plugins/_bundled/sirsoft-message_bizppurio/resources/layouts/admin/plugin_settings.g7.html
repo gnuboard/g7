@@ -817,7 +817,7 @@
               <action handler="sirsoft-message_bizppurio.uploadTemplateImage" stateTarget="global" statePathUrl="bz_tpl_modal.content.templateImageUrl" statePathName="bz_tpl_modal.content.templateImageName" statePathStatus="bz_tpl_upload"/>
             </on>
           </input>
-          <p class="text-xs text-gray-400 dark:text-gray-500">$t:sirsoft-message_bizppurio.template.form.image_hint</p>
+          <p class="text-xs text-gray-400 dark:text-gray-500">$t:sirsoft-message_bizppurio.template.form.image_hint|max=500&amp;width=500</p>
           <span data-if="{{_global.bz_tpl_upload?.uploading}}" class="text-xs text-amber-600 dark:text-amber-400">$t:sirsoft-message_bizppurio.template.form.image_uploading</span>
           <span data-if="{{_global.bz_tpl_upload?.error}}" class="text-xs text-red-600 dark:text-red-400">{{_global.bz_tpl_upload?.error ?? ''}}</span>
           <span data-if="{{_global.bz_tpl_modal?.content?.templateImageUrl}}" class="text-xs text-green-700 dark:text-green-400 break-all">{{_global.bz_tpl_modal?.content?.templateImageName}} — {{_global.bz_tpl_modal?.content?.templateImageUrl}}</span>

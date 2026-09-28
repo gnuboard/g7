@@ -14,28 +14,28 @@
       <div>
         <p class="text-label">$t:sirsoft-ecommerce.admin.order.excel.description</p>
         <div>
-          <label class="flex items-start gap-3 p-3 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors {{_local.excelDownloadType === 'search' ? 'bg-primary-50 dark:bg-primary-900/20 ring-2 ring-primary-500' : ''}}">
-            <input type="radio" name="excelDownloadType" value="search" checked="{{_local.excelDownloadType === 'search'}}" class="radio mt-1">
+          <label class="flex items-start gap-3 p-3 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors {{_global.excelDownloadContext?.type === 'search' ? 'bg-primary-50 dark:bg-primary-900/20 ring-2 ring-primary-500' : ''}}">
+            <input type="radio" name="excelDownloadType" value="search" checked="{{_global.excelDownloadContext?.type === 'search'}}" class="radio mt-1">
               <on type="change">
                 <!-- 라디오 두 개가 같은 name 을 쓰지만 무엇이 선택됐는지는 브라우저가 아니라 이 키가 정한다 — 아래 요청 본문이 이 값으로 보낼 것을 가른다. -->
-                <set-state target="_local" excelDownloadType="search"/>
+                <set-state target="global" excelDownloadContext.type="search"/>
               </on>
             </input>
             <div class="flex-1">
               <span class="block text-heading">$t:sirsoft-ecommerce.admin.order.excel.option_search</span>
-              <span class="block text-tertiary mt-0.5">$t:sirsoft-ecommerce.admin.order.excel.option_search_desc:count={{orders?.data?.total ?? 0}}</span>
+              <span class="block text-tertiary mt-0.5">$t:sirsoft-ecommerce.admin.order.excel.option_search_desc:count={{_global.excelDownloadContext?.total ?? 0}}</span>
             </div>
           </label>
-          <label class="flex items-start gap-3 p-3 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors {{_local.excelDownloadType === 'selected' ? 'bg-primary-50 dark:bg-primary-900/20 ring-2 ring-primary-500' : ''}} {{_local.selectedItems.length === 0 ? 'opacity-50 cursor-not-allowed' : ''}}">
-            <input type="radio" name="excelDownloadType" value="selected" checked="{{_local.excelDownloadType === 'selected'}}" disabled="{{_local.selectedItems.length === 0}}" class="radio mt-1">
+          <label class="flex items-start gap-3 p-3 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors {{_global.excelDownloadContext?.type === 'selected' ? 'bg-primary-50 dark:bg-primary-900/20 ring-2 ring-primary-500' : ''}} {{(_global.excelDownloadContext?.selectedItems ?? []).length === 0 ? 'opacity-50 cursor-not-allowed' : ''}}">
+            <input type="radio" name="excelDownloadType" value="selected" checked="{{_global.excelDownloadContext?.type === 'selected'}}" disabled="{{(_global.excelDownloadContext?.selectedItems ?? []).length === 0}}" class="radio mt-1">
               <on type="change">
                 <!-- 체크한 주문이 없으면 이 갈래는 잠긴다(라디오 자체가 disabled). 다만 아래 내려받기가 부르는 `admin/orders/export-excel` 은 모듈 라우트에 없어, 지금은 어느 갈래를 골라도 파일이 나오지 않는다 — 파일 머리 참조. -->
-                <set-state target="_local" excelDownloadType="selected"/>
+                <set-state target="global" excelDownloadContext.type="selected"/>
               </on>
             </input>
             <div class="flex-1">
               <span class="block text-heading">$t:sirsoft-ecommerce.admin.order.excel.option_selected</span>
-              <span class="block text-tertiary mt-0.5">$t:sirsoft-ecommerce.admin.order.excel.option_selected_desc:count={{_local.selectedItems.length}}</span>
+              <span class="block text-tertiary mt-0.5">$t:sirsoft-ecommerce.admin.order.excel.option_selected_desc:count={{(_global.excelDownloadContext?.selectedItems ?? []).length}}</span>
             </div>
           </label>
         </div>
@@ -66,7 +66,7 @@
                 <set-state target="global" :isDownloading="false"/>
                 <toast type="error" message="{{error.message}}"/>
               </fail>
-              <body type="{{_local.excelDownloadType}}" order_ids="{{_local.excelDownloadType === 'selected' ? _local.selectedItems : []}}" filters="{{_local.excelDownloadType === 'search' ? { search_field: _local.filter.searchField, search_keyword: _local.filter.searchKeyword, date_type: _local.filter.dateType, start_date: _local.filter.startDate, end_date: _local.filter.endDate, order_status: _local.filter.orderStatus, claim_refund_status: _local.filter.claimRefundStatus, claim_return_status: _local.filter.claimReturnStatus, claim_exchange_status: _local.filter.claimExchangeStatus, delivery_method: _local.filter.deliveryMethods, payment_method: _local.filter.paymentMethods, category_id: _local.filter.category4 || _local.filter.category3 || _local.filter.category2 || _local.filter.category1, min_price: _local.filter.minPrice, max_price: _local.filter.maxPrice, country: _local.filter.countries, device: _local.filter.devices } : {}}}"/>
+              <body type="{{_global.excelDownloadContext?.type}}" order_ids="{{_global.excelDownloadContext?.type === 'selected' ? (_global.excelDownloadContext?.selectedItems ?? []) : []}}" filters="{{_global.excelDownloadContext?.type === 'search' ? { search_field: _global.excelDownloadContext?.filter?.searchField, search_keyword: _global.excelDownloadContext?.filter?.searchKeyword, date_type: _global.excelDownloadContext?.filter?.dateType, start_date: _global.excelDownloadContext?.filter?.startDate, end_date: _global.excelDownloadContext?.filter?.endDate, order_status: _global.excelDownloadContext?.filter?.orderStatus, claim_presence: _global.excelDownloadContext?.filter?.claimPresence, claim_exchange_statuses: _global.excelDownloadContext?.filter?.claimExchangeStatuses, claim_return_statuses: _global.excelDownloadContext?.filter?.claimReturnStatuses, claim_refund_statuses: _global.excelDownloadContext?.filter?.claimRefundStatuses, claim_cancel_types: _global.excelDownloadContext?.filter?.claimCancelTypes, claim_fault_types: _global.excelDownloadContext?.filter?.claimFaultTypes, claim_requested_from: _global.excelDownloadContext?.filter?.claimRequestedFrom, claim_requested_to: _global.excelDownloadContext?.filter?.claimRequestedTo, delivery_method: _global.excelDownloadContext?.filter?.deliveryMethods, payment_method: _global.excelDownloadContext?.filter?.paymentMethods, category_id: _global.excelDownloadContext?.filter?.category4 || _global.excelDownloadContext?.filter?.category3 || _global.excelDownloadContext?.filter?.category2 || _global.excelDownloadContext?.filter?.category1, min_price: _global.excelDownloadContext?.filter?.minPrice, max_price: _global.excelDownloadContext?.filter?.maxPrice, country: _global.excelDownloadContext?.filter?.countries, device: _global.excelDownloadContext?.filter?.devices } : {}}}"/>
             </api-call>
           </sequence>
         </on>

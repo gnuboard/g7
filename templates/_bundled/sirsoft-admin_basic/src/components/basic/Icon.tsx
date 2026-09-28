@@ -1,5 +1,5 @@
 import React from 'react';
-import { IconName, IconStyle, IconSize } from './IconTypes';
+import { IconName, IconStyle, IconSize, iconNameMap } from './IconTypes';
 
 export interface IconProps extends Omit<React.HTMLAttributes<HTMLElement>, 'style'> {
   /**
@@ -136,6 +136,14 @@ export const Icon: React.FC<IconProps> = ({
 
   // 아이콘 이름에서 'fa-' 접두사 제거 (이미 있으면)
   iconName = iconName.replace(/^fa-/, '');
+
+  // 상태 의미 토큰(status-*) → 이 템플릿의 글리프. 서버(상태 Enum)는 아이콘 라이브러리를 알지
+  // 않고 라이브러리 중립 토큰만 내보내므로, 토큰을 글리프로 바꾸는 표(IconTypes.iconNameMap)를
+  // 여기서 해석한다. 토큰 접두에만 적용한다 — 표 전체를 무조건 태우면 FA5 별칭 항목이 기존 화면의
+  // 유효한 글리프(map-marker 등)를 다른 그림으로 바꾼다.
+  if (iconName.startsWith('status-') && iconNameMap[iconName]) {
+    iconName = String(iconNameMap[iconName]).replace(/^fa-/, '');
+  }
 
   // 클래스 조합
   const classes = [

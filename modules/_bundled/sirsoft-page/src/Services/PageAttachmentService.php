@@ -17,6 +17,7 @@ use Illuminate\Support\Str;
 use Modules\Sirsoft\Page\Exceptions\AttachmentLimitExceededException;
 use Modules\Sirsoft\Page\Models\PageAttachment;
 use Modules\Sirsoft\Page\Repositories\Contracts\PageAttachmentRepositoryInterface;
+use Modules\Sirsoft\Page\Support\AttachmentLimits;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
@@ -31,7 +32,7 @@ class PageAttachmentService
      * PageAttachmentService 생성자
      *
      * @param  PageAttachmentRepositoryInterface  $attachmentRepository  첨부파일 저장소
-     * @param  StorageInterface  $storage  스토리지 드라이버 (모듈 서비스 프로바이더가 주입)
+     * @param  StorageInterface  $storage  스토리지 드라이버 (모듈 서비스 프로바이더가 주입 — attachments 카테고리 디스크)
      */
     public function __construct(
         private PageAttachmentRepositoryInterface $attachmentRepository,
@@ -58,7 +59,7 @@ class PageAttachmentService
             return;
         }
 
-        $limit = (int) g7_module_settings('sirsoft-page', 'attachment.max_count', 0);
+        $limit = AttachmentLimits::maxCount();
         if ($limit <= 0) {
             // 상한 미설정은 제한하지 않는다 (기존 동작 유지)
             return;
@@ -75,6 +76,65 @@ class PageAttachmentService
         if ($total > $limit) {
             throw new AttachmentLimitExceededException($limit, $total);
         }
+    }
+
+    /**
+     * 화면이 상한 안내·입력 제약에 쓰는 공개 설정을 반환합니다.
+     *
+     * 상한·허용 형식을 화면이 리터럴로 적으면 운영자가 설정을 바꾼 순간 화면과 서버가
+     * 갈린다 — 사용자에게는 "왜 갑자기 안 되는지" 만 남는다.
+     *
+     * MIME → 확장자 변환도 **서버에서 한 번만** 한다. 화면이 변환하면 같은 매핑이 화면마다
+     * 생기고, 형식을 추가할 때 한쪽만 늘어난다.
+     *
+     * @return array<string, mixed> 공개 설정
+     */
+    public function publicLimits(): array
+    {
+        // 해석(기본값·폴백)은 업로드 검증과 같은 하위 지점을 쓴다 — Service 가 FormRequest 의
+        // 상수를 읽으면 하위 계층이 HTTP 계층에 기대는 역전이 된다.
+        $maxCount = AttachmentLimits::maxCount();
+        $maxSizeMb = AttachmentLimits::maxSizeMb();
+        $allowedTypes = AttachmentLimits::allowedTypes();
+
+        return [
+            // 0 이하는 "제한 없음" 이다(서버 판정과 같은 뜻) — 화면은 컴포넌트 기본값을 쓴다.
+            'max_count' => $maxCount > 0 ? $maxCount : null,
+            'max_size_mb' => $maxSizeMb,
+            'allowed_types' => $allowedTypes,
+            'accept' => $this->acceptFromMimeTypes($allowedTypes),
+        ];
+    }
+
+    /**
+     * MIME 목록을 파일 선택창 필터 문자열로 바꿉니다.
+     *
+     * 매핑에 없는 MIME 은 그대로 실어 보낸다 — 브라우저가 MIME 자체도 `accept` 값으로
+     * 받아 주므로, 모르는 형식을 조용히 버려 고를 수 없게 만드는 것보다 낫다.
+     *
+     * @param  array<int, string>  $mimeTypes  허용 MIME 목록
+     * @return string `accept` 문자열
+     */
+    private function acceptFromMimeTypes(array $mimeTypes): string
+    {
+        $map = [
+            'image/jpeg' => ['.jpg', '.jpeg'],
+            'image/png' => ['.png'],
+            'image/gif' => ['.gif'],
+            'image/webp' => ['.webp'],
+            'application/pdf' => ['.pdf'],
+            'application/zip' => ['.zip'],
+            'application/x-zip-compressed' => ['.zip'],
+        ];
+
+        $extensions = [];
+        foreach ($mimeTypes as $mimeType) {
+            foreach ($map[$mimeType] ?? [$mimeType] as $extension) {
+                $extensions[$extension] = true;
+            }
+        }
+
+        return implode(',', array_keys($extensions));
     }
 
     /**

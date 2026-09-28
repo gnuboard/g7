@@ -1,14 +1,18 @@
-import { fetchKginicisReceiptInfo, KginicisReceiptInfo } from './receiptPopup';
+import { fetchKginicisReceiptInfo, KginicisReceiptInfo, translateKginicis as t } from './receiptPopup';
 
 const PLUGIN_ID = 'sirsoft-pay_kginicis';
 const FLAG = '__kginicisVbankInfoInjectorInstalled';
 const MP_SECTION_ID = 'kginicis-mp-vbank-info';
 
-const ORDER_COMPLETE_RE = /^\/shop\/orders\/([^/]+)\/complete$/;
-const ORDER_SHOW_RE = /^\/mypage\/orders\/([^/]+)$/;
-
-// ISO 8601 날짜 패턴 (2026-06-11T23:59:59+00:00 등)
-const ISO_DATE_RE = /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+\-]\d{2}:\d{2}/;
+// 회원 주문 상세(/mypage/orders/{N}) + 비회원 주문 상세(/shop/guest/orders/{N}) — 두 경로 모두 주소 조각이
+// 주문번호다. 회원 경로만 보면 비회원 가상계좌 주문의 입금 안내가 오류 없이 빠진다.
+const ORDER_SHOW_RE = /^(?:\/mypage\/orders\/([^/]+)|\/shop\/guest\/orders\/([^/]+))$/;
+// 클레임 신청서 상세도 같은 결제 정보 카드(partials/mypage/orders/_payment.json)를 재사용한다.
+// 그 주소에 실린 것은 클레임 번호라 주문번호를 뽑을 수 없으므로, 이 경로에서는 화면이 이미
+// 읽어 둔 주문을 그대로 쓴다(주문번호 대조 생략). 이 갈래가 없으면 결제 정보 카드는 뜨는데
+// 입금 안내만 빠진 채 열리고, 오류도 경고도 남지 않는다. 비회원 신청서 상세(/shop/guest/claims/{N})도
+// 같은 카드를 쓰므로 함께 매칭한다.
+const CLAIM_SHOW_RE = /^(?:\/mypage\/claims\/([^/]+)|\/shop\/guest\/claims\/([^/]+))$/;
 
 interface Payment {
     pg_provider?: string;
@@ -19,6 +23,8 @@ interface Payment {
     vbank_number?: string | null;
     vbank_holder?: string | null;
     vbank_due_at?: string | null;
+    /** 쇼핑몰이 사용자 언어·시간대로 서식을 입힌 입금 기한 — 화면에는 이 값을 그대로 쓴다 */
+    vbank_due_at_formatted?: string | null;
     [key: string]: unknown;
 }
 
@@ -69,48 +75,16 @@ interface OrderData {
     payment?: Payment;
 }
 
-function formatKoreanDate(isoString: string): string {
-    try {
-        const date = new Date(isoString);
-        return date.toLocaleString('ko-KR', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-            timeZone: 'Asia/Seoul',
-        });
-    } catch {
-        return isoString;
-    }
-}
-
-// ──────────────────────────────────────────────
-// 주문완료 페이지: ISO 날짜 텍스트를 한국어로 포맷
-// ──────────────────────────────────────────────
-function fixOrderCompleteDates(): void {
-    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
-    const toFix: { node: Text; formatted: string }[] = [];
-
-    let node = walker.nextNode();
-    while (node) {
-        const text = (node as Text).textContent ?? '';
-        const match = text.match(ISO_DATE_RE);
-        if (match) {
-            toFix.push({ node: node as Text, formatted: text.replace(match[0], formatKoreanDate(match[0])) });
-        }
-        node = walker.nextNode();
-    }
-
-    for (const { node: n, formatted } of toFix) {
-        n.textContent = formatted;
-    }
-}
-
 // ──────────────────────────────────────────────
 // 마이페이지: G7Core 상태에서 vbank 정보 주입
 // ──────────────────────────────────────────────
-function getOrderFromState(orderNumber: string): OrderData | null {
+/**
+ * 화면이 읽어 둔 주문을 돌려줍니다.
+ *
+ * @param orderNumber 주소에서 뽑은 주문번호. 주소가 주문번호를 싣지 않는 화면(클레임 신청서
+ *                    상세)에서는 null 이며, 그때는 대조 없이 로드된 주문을 그대로 쓴다.
+ */
+function getOrderFromState(orderNumber: string | null): OrderData | null {
     try {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const g7 = (window as any).G7Core as Record<string, unknown> | undefined;
@@ -118,26 +92,22 @@ function getOrderFromState(orderNumber: string): OrderData | null {
         const ctx = getState?.()?.currentDataContext as Record<string, unknown> | undefined;
         const order = ctx?.order as { data?: OrderData } | undefined;
         const data = order?.data;
-        if (!data || data.order_number !== orderNumber) return null;
+        if (!data) return null;
+        if (orderNumber !== null && data.order_number !== orderNumber) return null;
+        if (orderNumber === null && !data.order_number) return null;
         return data;
     } catch {
         return null;
     }
 }
 
+// 결제 정보 카드는 템플릿이 약속한 id(order_payment_info_panel)로만 찾는다. 화면 제목 글자는 언어마다 달라
+// 찾는 기준이 될 수 없다 — id 가 없는 템플릿에서는 조용히 붙이지 않는다(약속: sirsoft-ecommerce docs/extension-points.md).
 function findPaymentContainer(): Element | null {
     const panel = document.getElementById('order_payment_info_panel');
-    if (panel) {
-        return Array.from(panel.children).find(el => el.className?.includes('space-y')) ?? panel;
-    }
+    if (!panel) return null;
 
-    const h3 = Array.from(document.querySelectorAll<HTMLElement>('h3')).find(
-        el => el.textContent?.includes('결제 정보'),
-    );
-    if (!h3) return null;
-    const panelDiv = h3.parentElement?.parentElement;
-    if (!panelDiv) return null;
-    return Array.from(panelDiv.children).find(el => el.className?.includes('space-y')) ?? panelDiv;
+    return Array.from(panel.children).find(el => el.className?.includes('space-y')) ?? panel;
 }
 
 function buildInfoRow(label: string, value: string, highlight = false): HTMLElement {
@@ -166,30 +136,32 @@ function buildVbankSection(payment: Payment, dueDateStr: string): HTMLElement {
 
     const title = document.createElement('p');
     title.className = 'text-sm font-semibold text-gray-700 dark:text-gray-300';
-    title.textContent = '가상계좌 입금 안내';
+    title.textContent = t('user.vbank_title', '가상계좌 입금 안내');
     section.appendChild(title);
 
-    if (payment.vbank_name) section.appendChild(buildInfoRow('은행', payment.vbank_name));
+    if (payment.vbank_name) section.appendChild(buildInfoRow(t('user.vbank_bank', '은행'), payment.vbank_name));
     if (isCurrentUserAdmin()) {
         const bankCode = resolveBankCode(payment);
-        if (bankCode) section.appendChild(buildInfoRow('은행코드', bankCode));
+        if (bankCode) section.appendChild(buildInfoRow(t('user.vbank_bank_code', '은행코드'), bankCode));
     }
-    if (payment.vbank_number) section.appendChild(buildInfoRow('계좌번호', payment.vbank_number));
-    if (payment.vbank_holder) section.appendChild(buildInfoRow('예금주', payment.vbank_holder));
-    if (dueDateStr) section.appendChild(buildInfoRow('입금 기한', dueDateStr, true));
+    if (payment.vbank_number) section.appendChild(buildInfoRow(t('user.vbank_account_number', '계좌번호'), payment.vbank_number));
+    if (payment.vbank_holder) section.appendChild(buildInfoRow(t('user.vbank_holder', '예금주'), payment.vbank_holder));
+    if (dueDateStr) section.appendChild(buildInfoRow(t('user.vbank_due', '입금 기한'), dueDateStr, true));
 
     return section;
 }
 
-function receiptField(receiptInfo: KginicisReceiptInfo | null, label: string): string {
-    return receiptInfo?.receipt_fields?.find(field => field.label === label)?.value ?? '';
+/**
+ * 영수증 조회 응답의 확인서 항목 값을 고정 키로 찾습니다 — 항목 이름(label)은 요청 언어로 번역되므로 쓰지 않는다.
+ */
+function receiptField(receiptInfo: KginicisReceiptInfo | null, key: string): string {
+    return receiptInfo?.receipt_fields?.find(field => field.key === key)?.value ?? '';
 }
 
 function isCbtCvsPayment(payment: Payment, receiptInfo: KginicisReceiptInfo | null): boolean {
     if (receiptInfo?.receipt_type !== 'cbt_confirmation') return false;
 
-    const methodLabel = receiptField(receiptInfo, '결제수단');
-    if (methodLabel.includes('편의점')) return true;
+    if (String(receiptInfo.cbt_pay_method ?? '').toUpperCase() === 'CVS') return true;
 
     const tid = String(payment.transaction_id ?? '');
     return String(payment.currency ?? '').toUpperCase() === 'JPY'
@@ -203,29 +175,32 @@ function buildCbtCvsSection(payment: Payment, receiptInfo: KginicisReceiptInfo |
 
     const title = document.createElement('p');
     title.className = 'text-sm font-semibold text-gray-700 dark:text-gray-300';
-    title.textContent = '일본 편의점 입금 안내';
+    title.textContent = t('user.cvs_title', '일본 편의점 입금 안내');
     section.appendChild(title);
 
-    const status = receiptField(receiptInfo, '입금 상태');
-    const amount = receiptField(receiptInfo, '입금예정금액') || receiptField(receiptInfo, '결제금액');
-    const convenienceCode = receiptField(receiptInfo, '편의점 코드');
-    const confirmationNo = receiptField(receiptInfo, '편의점 확인번호') || String(payment.vbank_number ?? '');
-    const receiptNo = receiptField(receiptInfo, '편의점 접수번호');
-    const paymentTerm = receiptField(receiptInfo, '입금 마감일시') || dueDateStr;
+    const status = receiptField(receiptInfo, 'deposit_status');
+    const amount = receiptField(receiptInfo, 'amount');
+    const convenienceCode = receiptField(receiptInfo, 'cvs_code');
+    const confirmationNo = receiptField(receiptInfo, 'cvs_confirmation_no') || String(payment.vbank_number ?? '');
+    const receiptNo = receiptField(receiptInfo, 'cvs_receipt_no');
+    const paymentTerm = receiptField(receiptInfo, 'cvs_payment_term') || dueDateStr;
 
-    if (status) section.appendChild(buildInfoRow('상태', status));
-    if (amount) section.appendChild(buildInfoRow('입금예정금액', amount, true));
-    if (convenienceCode) section.appendChild(buildInfoRow('편의점 코드', convenienceCode));
-    if (confirmationNo) section.appendChild(buildInfoRow('편의점 확인번호', confirmationNo));
-    if (receiptNo) section.appendChild(buildInfoRow('편의점 접수번호', receiptNo));
-    if (paymentTerm) section.appendChild(buildInfoRow('입금 마감일시', paymentTerm, true));
+    if (status) section.appendChild(buildInfoRow(t('user.cvs_status', '상태'), status));
+    if (amount) section.appendChild(buildInfoRow(t('user.cvs_due_amount', '입금예정금액'), amount, true));
+    if (convenienceCode) section.appendChild(buildInfoRow(t('user.cvs_code', '편의점 코드'), convenienceCode));
+    if (confirmationNo) section.appendChild(buildInfoRow(t('user.cvs_confirmation_no', '편의점 확인번호'), confirmationNo));
+    if (receiptNo) section.appendChild(buildInfoRow(t('user.cvs_receipt_no', '편의점 접수번호'), receiptNo));
+    if (paymentTerm) section.appendChild(buildInfoRow(t('user.cvs_payment_term', '입금 마감일시'), paymentTerm, true));
 
     return section;
 }
 
-async function tryInjectMypage(orderNumber: string): Promise<boolean> {
+async function tryInjectMypage(orderNumber: string | null): Promise<boolean> {
     const orderData = getOrderFromState(orderNumber);
     if (!orderData) return false;
+
+    // 영수증 조회는 언제나 실제 주문번호로 한다 — 클레임 상세는 주소에 클레임 번호를 싣는다.
+    const resolvedOrderNumber = orderData.order_number as string;
 
     const { payment } = orderData;
     if (!payment) return true;
@@ -238,8 +213,9 @@ async function tryInjectMypage(orderNumber: string): Promise<boolean> {
     const container = findPaymentContainer();
     if (!container) return false;
 
-    const receiptInfo = await fetchKginicisReceiptInfo(orderNumber);
-    const dueDateStr = payment.vbank_due_at ? formatKoreanDate(payment.vbank_due_at as string) : '';
+    const receiptInfo = await fetchKginicisReceiptInfo(resolvedOrderNumber);
+    // 입금 기한은 쇼핑몰이 사용자 언어·시간대로 서식을 입혀 준 값을 그대로 쓴다 — 플러그인이 다시 서식을 입히지 않는다.
+    const dueDateStr = payment.vbank_due_at_formatted ?? '';
     container.appendChild(
         isCbtCvsPayment(payment, receiptInfo)
             ? buildCbtCvsSection(payment, receiptInfo, dueDateStr)
@@ -250,7 +226,7 @@ async function tryInjectMypage(orderNumber: string): Promise<boolean> {
     return true;
 }
 
-function startMypagePolling(orderNumber: string): void {
+function startMypagePolling(orderNumber: string | null): void {
     let attempts = 0;
     const id = setInterval(() => {
         attempts++;
@@ -261,16 +237,17 @@ function startMypagePolling(orderNumber: string): void {
 }
 
 function onRouteChange(): void {
-    const oc = location.pathname.match(ORDER_COMPLETE_RE);
-    if (oc) {
-        // 주문완료 페이지: ISO 날짜 텍스트 포맷
-        setTimeout(fixOrderCompleteDates, 500);
+    const mp = location.pathname.match(ORDER_SHOW_RE);
+    if (mp) {
+        startMypagePolling(mp[1] ?? mp[2]);
+
         return;
     }
 
-    const mp = location.pathname.match(ORDER_SHOW_RE);
-    if (mp) {
-        startMypagePolling(mp[1]);
+    // 클레임 신청서 상세 — 주소가 클레임 번호라 주문번호를 뽑을 수 없다. 화면이 읽어 둔
+    // 주문을 그대로 쓴다.
+    if (CLAIM_SHOW_RE.test(location.pathname)) {
+        startMypagePolling(null);
     }
 }
 

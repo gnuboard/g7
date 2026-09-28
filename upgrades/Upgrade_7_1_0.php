@@ -10,6 +10,10 @@ use App\Extension\AbstractUpgradeStep;
  * 모든 비즈니스 로직은 본 클래스 파일이 아닌 `upgrades/data/7.1.0/` 안에 격리된다:
  *
  *   - migrations/
+ *       01_BackfillNotificationDefinitionRelations.php
+ *         7.1.0 에 추가된 `notification_definitions.relations`(관련 사용자 수신자로 고를 수 있는
+ *         relation 키 선언)를 기존 정의에 채운다. 비어 있으면 그 정의의 「관련 사용자」 규칙을
+ *         편집·저장할 수 없다.
  *       01_ShiftCoreMenuOrderForAnalytics.php
  *         기존 설치본의 코어 관리자 메뉴 순서를 방문자 통계 자리만큼 밀어 낸다.
  *         7.1.0 에서 「방문자 통계」가 대시보드 다음(order 2)에 들어가는데, 메뉴

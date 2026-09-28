@@ -38,6 +38,12 @@ interface CountrySetting {
     extra_fee_settings: Array<{ zipcode: string; fee: number; region?: string }> | null;
     extra_fee_multiply: boolean;
     is_active: boolean;
+    /** 클레임 배송비 산정 모드 (fixed 고정액 / original_policy 원 정책 재계산) */
+    claim_fee_mode: string;
+    /** 반품 클레임 배송비 고정액 — 편도 */
+    return_fixed_fee: number;
+    /** 교환 클레임 배송비 고정액 — 왕복 */
+    exchange_fixed_fee: number;
 }
 
 interface RangeTier {
@@ -69,6 +75,10 @@ interface RangeTierError {
 /** 기본 배송비가 필요한 정책 */
 const REQUIRES_BASE_FEE = [
     'fixed', 'conditional_free',
+    // 계산 API 정책의 base_fee 는 외부 API 장애 시의 폴백 배송비다. 서버
+    // (ChargePolicyEnum::requiresBaseFee)가 0 을 거절하는데 화면이 입력칸을 감추면
+    // 그 정책은 관리자 화면에서 영영 저장할 수 없다(S17 B4).
+    'api',
     'per_quantity', 'per_weight', 'per_volume', 'per_volume_weight', 'per_amount',
 ];
 
@@ -160,6 +170,11 @@ const DEFAULT_COUNTRY_SETTING: Omit<CountrySetting, 'country_code'> = {
     extra_fee_settings: [],
     extra_fee_multiply: false,
     is_active: true,
+    // 클레임 배송비 축 — DB 컬럼 기본값과 같은 값을 명시로 싣는다. 비워 두면 본 폼 저장의
+    // 승계 판정이 "값 없음" 으로 읽어, 화면이 보여 준 기본값과 저장된 값이 갈린다.
+    claim_fee_mode: 'fixed',
+    return_fixed_fee: 0,
+    exchange_fixed_fee: 0,
 };
 
 // ===== 헬퍼 함수 =====

@@ -27,7 +27,7 @@
 
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
-| oid | body | string | 예 | max 40 | 주문번호 (`CbtCheckoutTokenRequest` 검증 — 40자 초과·문자열 아님은 422) |
+| oid | body | string | 예 | max 40 | 주문번호 **또는 클레임 추가결제번호(`CP` 접두사)** (`CbtCheckoutTokenRequest` 검증 — 40자 초과·문자열 아님은 422). `CP` 로 시작하면 주문이 아니라 클레임 결제 건으로 조회한다 |
 | price | body | integer | 예 | min 1 | 결제 금액 (하한은 국내 결제와 동일한 `PaymentLimits::MIN_PRICE` SSoT — JPY 도 1 단위 결제 성립) |
 | buyer_email | body | string | 아니오 | max 255 | 구매자 이메일 (주문 구매자 대조용) |
 | buyer_phone | body | string | 아니오 | max 30 | 구매자 전화번호 (주문 구매자 대조용) |
@@ -41,7 +41,7 @@ Accept: application/json
 Content-Type: application/json
 
 {
-    "oid": "ORD20260714001",
+    "oid": "20260714-1200001234",
     "price": 10000,
     "buyer_email": "buyer@example.com"
 }
@@ -83,6 +83,8 @@ _이 엔드포인트는 `ResponseHelper` 봉투를 쓰지 않고 `response()->js
 
 일본 CBT(국경 간) 결제 흐름의 첫 단계로, 프론트엔드 결제창이 후속 해시 생성 요청에 사용할 단기 체크아웃 토큰을 발급합니다. `CbtCheckoutTokenService::issue()` 가 주문번호·금액·구매자(이메일/전화)·요청 IP·User-Agent 를 HMAC-SHA256 으로 봉인한 서명 토큰을 만들어 반환하며, 이 토큰은 hash-data 단계에서 결제 컨텍스트가 위변조되지 않았는지 검증하는 데 쓰입니다. 인증은 필요 없고(결제창에서 직접 호출), 대신 `oid` 기준 IP별 분당 10회 레이트리밋과 일본 결제 활성화·설정 여부, 주문 존재·결제 가능 상태·통화 JPY 여부·구매자 일치·금액 일치를 순차 검증합니다. 요청 형식·길이는 `CbtCheckoutTokenRequest` 가 국내 짝(`SignatureRequest`)과 동일 강도로 검증하며(`oid` max 40, `price` 하한은 `PaymentLimits::MIN_PRICE`), 위반 시 표준 validation 422, 레이트리밋 초과 시 429, 주문 미존재 시 404, 구매자 검증 실패 시 403, 그 외 결제 불가 조건은 422 로 응답합니다.
 
+`oid` 가 `CP` 로 시작하면 **클레임 추가결제**(교환·반품의 배송비·차액)로 판정해 주문 대신 클레임 결제 건을 조회합니다. 엔화 기준 상점에서는 구매자 화면이 결제 통화(JPY)로 CBT 경로를 고르므로 클레임 결제도 이 엔드포인트를 그대로 탑니다. 검증 축은 주문 분기와 1:1 로 대응합니다 — 대상 존재(404) / 결제 대기 상태(422) / 청구 통화 JPY(422) / 구매자 대조(403) / 청구액 일치(422). 원화로 청구되는 클레임 결제가 이 경로로 오면 `CBT payment is only available for JPY claim payments.` 로 거절하며, 그 건은 국내 표준결제(서명 발급) 경로를 써야 합니다.
+
 
 ### POST /api/plugins/sirsoft-pay_kginicis/payment/cbt/hash-data
 <!-- @generated:start:api.plugins.sirsoft-pay_kginicis.payment.cbt.hash-data -->
@@ -94,7 +96,7 @@ _이 엔드포인트는 `ResponseHelper` 봉투를 쓰지 않고 `response()->js
 
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
-| oid | body | string | 예 | max 40 | 주문번호 (`CbtHashDataRequest` 검증) |
+| oid | body | string | 예 | max 40 | 주문번호 **또는 클레임 추가결제번호(`CP` 접두사)** (`CbtHashDataRequest` 검증). checkout-token 단계와 같은 값을 보낸다 |
 | price | body | integer | 예 | min 1 | 결제 금액 (하한은 `PaymentLimits::MIN_PRICE` SSoT) |
 | timestamp | body | string | 예 | max 20 | 결제창 타임스탬프 (해시 재료 — 신선도 검사 대상) |
 | checkout_token | body | string | 예 | max 1024 | checkout-token 단계에서 발급받은 체크아웃 토큰. **필수 검증으로 승격** — 누락·빈 값은 422 (종전에는 토큰 검증 단계에서 403) |
@@ -110,7 +112,7 @@ Accept: application/json
 Content-Type: application/json
 
 {
-    "oid": "ORD20260714001",
+    "oid": "20260714-1200001234",
     "price": 10000,
     "timestamp": "20260714120000123",
     "checkout_token": "eyJvaWQiOiJPUkQyMDI2MDcxNDAwMSIsInByaWNlIjoxMDAwMH0.5f1c…"
@@ -226,6 +228,7 @@ _단건 응답: `data` 객체의 필드._
 PC 표준결제창(KRW)에서 사용자가 결제를 완료하지 않고 창을 닫았을 때 프론트엔드가 이를 서버에 보고하는 엔드포인트로, 해당 주문의 결제 실패/취소 이력을 기록합니다. `OrderProcessingService::failPayment()` 로 주문을 `USER_CANCEL` 사유로 실패 처리하고 `recordPaymentCancellation()` 으로 취소 이력을 남기며, 간편결제 선택 정보가 있으면 결제 메타에 병합합니다. 인증은 불필요하나(결제창 컨텍스트에서 호출) FormRequest 검증과 `oid` 기준 IP별 분당 20회 레이트리밋, 주문 존재·통화 KRW·구매자 일치·금액 일치를 검증하고, 이미 결제 가능 상태가 아니거나(`order_not_payable`) 이미 결제 완료(`payment_already_paid`)면 성공 응답에 `status: ignored` 로 무시 처리해 결제 성공 콜백과의 경쟁 상태를 차단합니다. 검증 규칙 위반 시 422, 레이트리밋 초과 429, 주문 미존재 404, 구매자 검증 실패 403 으로 응답합니다.
 
 이 엔드포인트가 **주문을 실패로 전이시키는 유일한 결제창 경로**입니다. 브라우저 리턴 콜백(PC `/payment/callback`, 모바일 `/payment/mobile/callback`, 해외결제 `/payment/cbt/callback`)은 PG 서명도 IP 증명도 없고 주문번호도 요청자가 고른 값이므로, 서버 승인이 실패해도 주문 상태를 바꾸지 않고 실패 URL 로 되돌려 보내기만 합니다. 정당한 결제창 닫힘은 구매자 대조를 통과한 이 요청으로만 기록됩니다.
+`oid` 가 클레임 추가결제 결제번호(`CP` 채번)이면 기록할 주문 결제 이력이 없으므로 보고를 무시하고 성공(`recorded: false, reason: claim_payment`)으로 응답합니다 — 클레임 결제 건은 결제 대기로 남아 신청서 상세에서 재시도합니다.
 
 
 ### POST /api/plugins/sirsoft-pay_kginicis/payment/mobile/signature
@@ -297,6 +300,8 @@ _이 엔드포인트는 `ResponseHelper` 봉투를 쓰지 않고 `response()->js
 **설명**
 
 모바일 KRW 결제창이 요구하는 위변조 방지 해시(P_CHKFAKE)와 모바일 결제 URL 을 생성해 반환합니다. `KgInicisApiService::generateMobileChkfake()` 로 주문번호·금액·타임스탬프 기반 해시를 만들고 `getMobilePaymentUrl()` 로 결제창 진입 URL 을 함께 내려줍니다. 인증은 불필요하지만(결제창에서 직접 호출) FormRequest 검증에 더해 재생 공격 방지를 위한 타임스탬프 신선도 확인, `oid` 기준 IP별 분당 20회 레이트리밋, 그리고 주문 존재·결제 가능 상태·통화 KRW·구매자 일치·금액 일치를 검증하며 모바일 결제 자격증명 설정 여부도 확인합니다. 파라미터 검증 실패·타임스탬프 만료·통화 불일치·금액 불일치·자격증명 미설정은 422, 레이트리밋 초과 429, 주문 미존재 404, 구매자 검증 실패 403 으로 응답합니다.
+
+클레임 추가결제(취소/반품/교환)의 결제번호(`CP` 채번)도 `oid` 로 받을 수 있으며, PC 서명과 같은 규칙으로 클레임 결제 건 기준 검증을 수행합니다.
 
 
 ### POST /api/plugins/sirsoft-pay_kginicis/payment/signature
@@ -371,6 +376,8 @@ _이 엔드포인트는 `ResponseHelper` 봉투를 쓰지 않고 `response()->js
 
 PC 표준결제창(KRW)이 요구하는 서명(signature)·검증값(verification)·mKey 를 생성해 반환하는, PC 결제 흐름의 시작점입니다. `KgInicisApiService` 의 `generateSignature()`·`generateVerification()`·`getMKey()` 를 호출해 주문번호·금액·타임스탬프로 만든 서명 세트를 내려주며, 프론트엔드는 이 값으로 KG 이니시스 표준결제창을 호출합니다. 인증은 불필요하나(결제창에서 직접 호출) FormRequest 검증, 재생 공격 방지용 타임스탬프 신선도 확인, `oid` 기준 IP별 분당 20회 레이트리밋, 주문 존재·결제 가능 상태·통화 KRW·구매자 일치·금액 일치 검증과 표준결제 자격증명 설정 여부를 확인합니다. 파라미터 검증 실패·타임스탬프 만료·통화/금액 불일치·자격증명 미설정은 422, 레이트리밋 초과 429, 주문 미존재 404, 구매자 검증 실패 403 으로 응답합니다.
 
+클레임 추가결제(취소/반품/교환)의 결제번호(`CP` 채번)도 `oid` 로 받을 수 있습니다. 이 경우 주문 대신 클레임 결제 건을 조회해 같은 강도(대상 존재 / 결제 가능 상태 / KRW / 구매자 대조 / 금액 일치)로 검증합니다 — 기대 금액은 쇼핑몰 모듈의 클레임 결제 청구액(스냅샷 환산 최소 화폐단위)입니다. 계약 상세는 쇼핑몰 모듈 `modules/_bundled/sirsoft-ecommerce/docs/api/claim-payments.md` 의 "결제 플러그인 연동 계약 (필터 훅)" 절을 참조하십시오.
+
 
 ### POST /plugins/sirsoft-pay_kginicis/payment/callback
 <!-- @generated:start:web.plugins.sirsoft-pay_kginicis.payment.callback -->
@@ -429,14 +436,14 @@ _이 엔드포인트는 JSON `data` 를 반환하지 않습니다. 브라우저 
 
 ```http
 HTTP/1.1 302 Found
-Location: https://example.com/shop/orders/ORD20260714001/complete
+Location: https://example.com/shop/orders/20260714-1200001234/complete
 ```
 
 실패 시:
 
 ```http
 HTTP/1.1 302 Found
-Location: https://example.com/shop/checkout?error=amount_mismatch&orderId=ORD20260714001
+Location: https://example.com/shop/checkout?error=amount_mismatch&orderId=20260714-1200001234
 ```
 
 **에러 응답**
@@ -450,6 +457,8 @@ Location: https://example.com/shop/checkout?error=amount_mismatch&orderId=ORD202
 **설명**
 
 PC 표준결제창(KRW)의 인증 결과를 브라우저 POST 로 수신해 서버 승인(2단계)까지 마무리하는 콜백입니다. KG 이니시스 표준결제는 결제창 인증(1단계)과 서버 승인(2단계)이 분리되어 있어, 이 엔드포인트가 콜백으로 받은 `authToken` 을 `authUrl` 로 재전송해 최종 승인을 얻은 뒤 주문을 결제완료 처리하고 결과 페이지로 리다이렉트합니다. 응답은 항상 JSON 이 아니라 리다이렉트(302)이며, 성공 시 결제완료 URL, 실패 시 체크아웃 URL 에 `error`·`message`·`orderId` 쿼리를 붙여 보냅니다.
+
+주문번호 자리(`MOID`/`orderNumber`)에 클레임 추가결제 결제번호(`CP` 채번)가 실려 오면 주문이 아니라 클레임 결제 건으로 처리합니다 — 승인은 쇼핑몰 모듈의 `claim_payment.approve` 필터로 위임되고, 완료 후 주문 완료 페이지가 아니라 신청서 상세(`?claim_payment=success|failed|cancelled`)로 리다이렉트합니다. 승인 금액 불일치로 거절되면 망취소로 보상합니다.
 
 주의사항: (1) `authUrl`·`netCancelUrl` 은 콜백으로 들어온 값을 그대로 신뢰하지 않고 `idc_name` 기준 화이트리스트로 검증해 SSRF 를 차단하며, 검증 실패 시 `error=auth_url_invalid` 로 되돌립니다. (2) 승인 응답의 결제수단이 가상계좌(`VBank`)면 결제완료 처리를 하지 않고 계좌 정보만 저장해 입금대기 상태로 두며, 실제 완료는 입금통보(vbank-notify) 시점에 이뤄집니다. (3) 같은 거래번호가 이미 결제완료인 경우 재처리하지 않고 성공 페이지로 복귀합니다(재전송 방어). (4) 승인 후 금액 불일치나 예외가 발생하면 즉시 망취소(net cancel)를 보내 PG 측 승인 잔존을 해제합니다. (5) 사용자가 결제창을 닫은 취소(`2001`/`0021`/`0022`/빈값, 또는 메시지에 '취소'·'사용자' 포함)는 실패가 아니므로 에러 쿼리 없이 체크아웃으로 조용히 복귀합니다.
 
@@ -493,19 +502,23 @@ _이 엔드포인트는 JSON `data` 를 반환하지 않습니다. 브라우저 
 | 성공 URL (`redirect_success_url`, 기본 `{shopBase}/orders/{orderId}/complete`) | CBT 서버 승인 성공(결제완료 또는 편의점 입금대기 등록), 이미 결제완료된 거래(재전송) | 없음 (주문번호는 경로에 치환) |
 | 실패 URL (`redirect_fail_url`, 기본 `{shopBase}/checkout`) | 인증 실패·MID 불일치·검증 실패·승인 실패 | `error` (`invalid_params` \| `mid_mismatch` \| `order_not_found` \| `cbt_failed` 등), `message` (PG 결과 메시지), `orderId` |
 | 실패 URL (쿼리 없음) | 사용자 취소(취소 코드 또는 일본어·한국어 취소 문구) | 없음 (조용한 복귀) |
+| 신청서 상세 (클레임 추가결제) | `oid` 가 `CP` 채번일 때의 승인 성공 | `claim_payment=success`, `claim_number` |
+| 신청서 상세 (클레임 추가결제) | `oid` 가 `CP` 채번일 때의 인증 실패·승인 실패·모듈 거절 | `claim_payment=failed`, `error` (`claim_payment_not_approvable` \| `amount_mismatch` \| `approve_failed` \| PG 결과 코드 등), `claim_number` |
+| 신청서 상세 (클레임 추가결제) | `oid` 가 `CP` 채번일 때의 사용자 취소 | `claim_payment=cancelled`, `claim_number` |
+| 실패 URL (`redirect_fail_url`) | `CP` 채번인데 그 클레임 결제 건을 찾지 못함 | `error=claim_payment_not_found`, `orderId` |
 
 **응답 예시**
 
 ```http
 HTTP/1.1 302 Found
-Location: https://example.com/shop/orders/ORD20260714001/complete
+Location: https://example.com/shop/orders/20260714-1200001234/complete
 ```
 
 실패 시:
 
 ```http
 HTTP/1.1 302 Found
-Location: https://example.com/shop/checkout?error=mid_mismatch&orderId=ORD20260714001
+Location: https://example.com/shop/checkout?error=mid_mismatch&orderId=20260714-1200001234
 ```
 
 **에러 응답**
@@ -519,6 +532,8 @@ Location: https://example.com/shop/checkout?error=mid_mismatch&orderId=ORD202607
 **설명**
 
 일본 CBT(국경 간 결제) 인증 결과를 수신해 서버 승인(`/cbtapprove`)까지 마무리하는 콜백입니다(GET·POST 동일 처리). 브라우저가 KG 이니시스 일본 결제창에서 인증을 마치면 `sid` 와 주문번호가 붙어 이 주소로 되돌아오고, 서버는 그 `sid` 로 최종 승인을 요청한 뒤 결제완료 또는 편의점 입금대기 처리를 하고 결과 페이지로 리다이렉트합니다. GET 은 결제창이 리다이렉트로 되돌려보내는 경로, POST 는 폼 전송으로 되돌려보내는 경로이며 파라미터 위치만 다릅니다.
+
+주문번호 자리(`orderID`/`orderId`/`oid`)에 클레임 추가결제 결제번호(`CP` 채번)가 실려 오면 주문이 아니라 클레임 결제 건으로 처리합니다 — 승인은 쇼핑몰 모듈의 `claim_payment.approve` 필터로 위임되고(CBT 는 승인 재료가 `sid` 하나이므로 `cbt_sid` 로 실어 보냅니다), 완료 후 주문 완료 페이지가 아니라 신청서 상세(`?claim_payment=success|failed|cancelled` + `claim_number`)로 리다이렉트합니다. 결제창 단계 실패와 사용자 취소도 체크아웃이 아니라 같은 신청서 상세로 돌려보내며, PG 원문 메시지는 싣지 않고 오류 코드만 전달합니다. 승인이 확정된 뒤 모듈이 거절하면 CBT 환불 API 로 보상합니다.
 
 주의사항: (1) 브라우저가 전달한 인증 결과는 무인증 값이므로 그것만으로 주문 상태를 바꾸지 않고, 반드시 서버 승인 응답을 권위 있는 결과로 사용합니다. (2) 콜백의 `mid` 가 설정된 일본 가맹점 MID 와 다르면 위조 콜백으로 보고 즉시 중단합니다(`error=mid_mismatch`). (3) 승인 응답의 주문번호·MID·통화(JPY)·결제수단이 주문·체크아웃 선택값과 모두 일치해야 하며, 하나라도 어긋나면 승인 이후라도 실패로 처리합니다. (4) 결제수단이 `CVS`(편의점)면 결제완료가 아니라 입금대기로 저장하고 확인번호·접수번호·입금기한을 기록하며, 실제 완료는 편의점 입금통보(cvs-notify) 시점입니다. (5) 승인이 확정된 뒤 후속 처리에서 예외가 나면 자동 환불을 시도하고, 환불까지 실패하면 수동 환불 필요 상태로 대사 레코드를 남깁니다. (6) 사용자 취소(취소 코드 또는 일본어·한국어 취소 문구)는 실패가 아니므로 에러 없이 체크아웃으로 복귀하며, PayPay 업스트림 처리 실패는 별도 안내 메시지로 치환됩니다.
 
@@ -575,19 +590,23 @@ _이 엔드포인트는 JSON `data` 를 반환하지 않습니다. 브라우저 
 | 성공 URL (`redirect_success_url`, 기본 `{shopBase}/orders/{orderId}/complete`) | CBT 서버 승인 성공(결제완료 또는 편의점 입금대기 등록), 이미 결제완료된 거래(재전송) | 없음 (주문번호는 경로에 치환) |
 | 실패 URL (`redirect_fail_url`, 기본 `{shopBase}/checkout`) | 인증 실패·MID 불일치·검증 실패·승인 실패 | `error` (`invalid_params` \| `mid_mismatch` \| `order_not_found` \| `cbt_failed` 등), `message` (PG 결과 메시지), `orderId` |
 | 실패 URL (쿼리 없음) | 사용자 취소(취소 코드 또는 일본어·한국어 취소 문구) | 없음 (조용한 복귀) |
+| 신청서 상세 (클레임 추가결제) | `oid` 가 `CP` 채번일 때의 승인 성공 | `claim_payment=success`, `claim_number` |
+| 신청서 상세 (클레임 추가결제) | `oid` 가 `CP` 채번일 때의 인증 실패·승인 실패·모듈 거절 | `claim_payment=failed`, `error` (`claim_payment_not_approvable` \| `amount_mismatch` \| `approve_failed` \| PG 결과 코드 등), `claim_number` |
+| 신청서 상세 (클레임 추가결제) | `oid` 가 `CP` 채번일 때의 사용자 취소 | `claim_payment=cancelled`, `claim_number` |
+| 실패 URL (`redirect_fail_url`) | `CP` 채번인데 그 클레임 결제 건을 찾지 못함 | `error=claim_payment_not_found`, `orderId` |
 
 **응답 예시**
 
 ```http
 HTTP/1.1 302 Found
-Location: https://example.com/shop/orders/ORD20260714001/complete
+Location: https://example.com/shop/orders/20260714-1200001234/complete
 ```
 
 실패 시:
 
 ```http
 HTTP/1.1 302 Found
-Location: https://example.com/shop/checkout?error=cbt_failed&orderId=ORD20260714001
+Location: https://example.com/shop/checkout?error=cbt_failed&orderId=20260714-1200001234
 ```
 
 **에러 응답**
@@ -601,6 +620,8 @@ Location: https://example.com/shop/checkout?error=cbt_failed&orderId=ORD20260714
 **설명**
 
 일본 CBT(국경 간 결제) 인증 결과를 수신해 서버 승인(`/cbtapprove`)까지 마무리하는 콜백입니다(GET·POST 동일 처리). 브라우저가 KG 이니시스 일본 결제창에서 인증을 마치면 `sid` 와 주문번호가 붙어 이 주소로 되돌아오고, 서버는 그 `sid` 로 최종 승인을 요청한 뒤 결제완료 또는 편의점 입금대기 처리를 하고 결과 페이지로 리다이렉트합니다. GET 은 결제창이 리다이렉트로 되돌려보내는 경로, POST 는 폼 전송으로 되돌려보내는 경로이며 파라미터 위치만 다릅니다.
+
+주문번호 자리(`orderID`/`orderId`/`oid`)에 클레임 추가결제 결제번호(`CP` 채번)가 실려 오면 주문이 아니라 클레임 결제 건으로 처리합니다 — 승인은 쇼핑몰 모듈의 `claim_payment.approve` 필터로 위임되고(CBT 는 승인 재료가 `sid` 하나이므로 `cbt_sid` 로 실어 보냅니다), 완료 후 주문 완료 페이지가 아니라 신청서 상세(`?claim_payment=success|failed|cancelled` + `claim_number`)로 리다이렉트합니다. 결제창 단계 실패와 사용자 취소도 체크아웃이 아니라 같은 신청서 상세로 돌려보내며, PG 원문 메시지는 싣지 않고 오류 코드만 전달합니다. 승인이 확정된 뒤 모듈이 거절하면 CBT 환불 API 로 보상합니다.
 
 주의사항: (1) 브라우저가 전달한 인증 결과는 무인증 값이므로 그것만으로 주문 상태를 바꾸지 않고, 반드시 서버 승인 응답을 권위 있는 결과로 사용합니다. (2) 콜백의 `mid` 가 설정된 일본 가맹점 MID 와 다르면 위조 콜백으로 보고 즉시 중단합니다(`error=mid_mismatch`). (3) 승인 응답의 주문번호·MID·통화(JPY)·결제수단이 주문·체크아웃 선택값과 모두 일치해야 하며, 하나라도 어긋나면 승인 이후라도 실패로 처리합니다. (4) 결제수단이 `CVS`(편의점)면 결제완료가 아니라 입금대기로 저장하고 확인번호·접수번호·입금기한을 기록하며, 실제 완료는 편의점 입금통보(cvs-notify) 시점입니다. (5) 승인이 확정된 뒤 후속 처리에서 예외가 나면 자동 환불을 시도하고, 환불까지 실패하면 수동 환불 필요 상태로 대사 레코드를 남깁니다. (6) 사용자 취소(취소 코드 또는 일본어·한국어 취소 문구)는 실패가 아니므로 에러 없이 체크아웃으로 복귀하며, PayPay 업스트림 처리 실패는 별도 안내 메시지로 치환됩니다.
 
@@ -827,7 +848,7 @@ _KG 이니시스가 POST 로 보내는 필드(라우트 FormRequest 로 선언�
 
 ```http
 HTTP/1.1 302 Found
-Location: https://example.com/mypage/orders/ORD20260714001
+Location: https://example.com/mypage/orders/20260714-1200001234
 ```
 
 **에러 응답**
@@ -1005,14 +1026,14 @@ _이 엔드포인트는 JSON `data` 를 반환하지 않습니다. 브라우저 
 
 ```http
 HTTP/1.1 302 Found
-Location: https://example.com/shop/orders/ORD20260714001/complete
+Location: https://example.com/shop/orders/20260714-1200001234/complete
 ```
 
 실패 시:
 
 ```http
 HTTP/1.1 302 Found
-Location: https://example.com/shop/checkout?error=req_url_invalid&orderId=ORD20260714001
+Location: https://example.com/shop/checkout?error=req_url_invalid&orderId=20260714-1200001234
 ```
 
 **에러 응답**
@@ -1026,6 +1047,8 @@ Location: https://example.com/shop/checkout?error=req_url_invalid&orderId=ORD202
 **설명**
 
 모바일 표준결제창(KRW)의 인증 결과를 수신해 서버 승인까지 마무리하는 콜백입니다(GET·POST 동일 처리). 모바일 결제는 결제창 인증 후 KG 이니시스가 이 주소로 결과를 돌려보내고, 서버가 전달받은 승인 요청 URL 로 거래번호를 재전송해 최종 승인을 얻은 뒤 주문을 결제완료 처리하고 결과 페이지로 리다이렉트합니다. GET 은 일부 PG 환경의 리다이렉트 복귀 패턴을 위해 함께 열어 둔 경로로, 동작은 POST 와 같습니다.
+
+주문번호 자리(`P_OID`)에 클레임 추가결제 결제번호(`CP` 채번)가 실려 오면 PC 콜백과 같은 규칙으로 클레임 결제 건을 승인하고 신청서 상세로 리다이렉트합니다. 모바일 경로에는 망취소 URL 이 없어 승인 확정 뒤의 거절은 취소 API 로 보상합니다.
 
 주의사항: (1) 응답은 JSON 이 아니라 리다이렉트(302)이며, 실패 시 체크아웃 URL 에 `error`·`message`·`orderId` 쿼리가 붙습니다. (2) 승인 요청 URL 은 콜백 값을 그대로 신뢰하지 않고 IDC 코드 기준 화이트리스트로 검증해 SSRF 를 차단합니다(실패 시 `error=req_url_invalid`). (3) 모바일 표준 응답에는 주문번호가 빠질 수 있어, 없으면 콜백 URL 쿼리스트링의 `orderId` 를 대체로 사용합니다. (4) 승인 결과가 가상계좌면 결제완료 처리를 하지 않고 계좌 정보만 저장해 입금대기로 두며, 완료는 모바일 가상계좌 입금통보 시점입니다. (5) 같은 거래번호가 이미 결제완료면 재처리하지 않고 성공 페이지로 복귀합니다. (6) 승인 후 금액 불일치나 예외가 발생하면 자동 취소를 호출해 PG 측 승인 잔존을 해제하며, 자동 취소마저 실패하면 수동 정산이 필요합니다. (7) 사용자가 결제창을 닫은 취소는 결과 코드만으로 일반 실패와 구분되지 않으므로 결과 메시지의 취소 문구로 판별하며, 이 경우 에러 없이 체크아웃으로 조용히 복귀합니다.
 
@@ -1083,14 +1106,14 @@ _이 엔드포인트는 JSON `data` 를 반환하지 않습니다. 브라우저 
 
 ```http
 HTTP/1.1 302 Found
-Location: https://example.com/shop/orders/ORD20260714001/complete
+Location: https://example.com/shop/orders/20260714-1200001234/complete
 ```
 
 실패 시:
 
 ```http
 HTTP/1.1 302 Found
-Location: https://example.com/shop/checkout?error=amount_mismatch&orderId=ORD20260714001
+Location: https://example.com/shop/checkout?error=amount_mismatch&orderId=20260714-1200001234
 ```
 
 **에러 응답**
@@ -1104,6 +1127,8 @@ Location: https://example.com/shop/checkout?error=amount_mismatch&orderId=ORD202
 **설명**
 
 모바일 표준결제창(KRW)의 인증 결과를 수신해 서버 승인까지 마무리하는 콜백입니다(GET·POST 동일 처리). 모바일 결제는 결제창 인증 후 KG 이니시스가 이 주소로 결과를 돌려보내고, 서버가 전달받은 승인 요청 URL 로 거래번호를 재전송해 최종 승인을 얻은 뒤 주문을 결제완료 처리하고 결과 페이지로 리다이렉트합니다. GET 은 일부 PG 환경의 리다이렉트 복귀 패턴을 위해 함께 열어 둔 경로로, 동작은 POST 와 같습니다.
+
+주문번호 자리(`P_OID`)에 클레임 추가결제 결제번호(`CP` 채번)가 실려 오면 PC 콜백과 같은 규칙으로 클레임 결제 건을 승인하고 신청서 상세로 리다이렉트합니다. 모바일 경로에는 망취소 URL 이 없어 승인 확정 뒤의 거절은 취소 API 로 보상합니다.
 
 주의사항: (1) 응답은 JSON 이 아니라 리다이렉트(302)이며, 실패 시 체크아웃 URL 에 `error`·`message`·`orderId` 쿼리가 붙습니다. (2) 승인 요청 URL 은 콜백 값을 그대로 신뢰하지 않고 IDC 코드 기준 화이트리스트로 검증해 SSRF 를 차단합니다(실패 시 `error=req_url_invalid`). (3) 모바일 표준 응답에는 주문번호가 빠질 수 있어, 없으면 콜백 URL 쿼리스트링의 `orderId` 를 대체로 사용합니다. (4) 승인 결과가 가상계좌면 결제완료 처리를 하지 않고 계좌 정보만 저장해 입금대기로 두며, 완료는 모바일 가상계좌 입금통보 시점입니다. (5) 같은 거래번호가 이미 결제완료면 재처리하지 않고 성공 페이지로 복귀합니다. (6) 승인 후 금액 불일치나 예외가 발생하면 자동 취소를 호출해 PG 측 승인 잔존을 해제하며, 자동 취소마저 실패하면 수동 정산이 필요합니다. (7) 사용자가 결제창을 닫은 취소는 결과 코드만으로 일반 실패와 구분되지 않으므로 결과 메시지의 취소 문구로 판별하며, 이 경우 에러 없이 체크아웃으로 조용히 복귀합니다.
 

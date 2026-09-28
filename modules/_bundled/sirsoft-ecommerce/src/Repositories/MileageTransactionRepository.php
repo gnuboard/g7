@@ -170,6 +170,20 @@ class MileageTransactionRepository implements MileageTransactionRepositoryInterf
     /**
      * {@inheritdoc}
      */
+    public function existsRestoreForRefund(int $orderRefundId): bool
+    {
+        return MileageTransaction::query()
+            ->where('order_refund_id', $orderRefundId)
+            ->whereIn('type', [
+                MileageTransactionTypeEnum::REFUND_RESTORE->value,
+                MileageTransactionTypeEnum::ORDER_CANCEL_RESTORE->value,
+            ])
+            ->exists();
+    }
+
+    /**
+     * {@inheritdoc}
+     */
     public function linkUsageToCancel(int $orderId, int $orderCancelId): int
     {
         // 해당 주문의 사용 거래 중 아직 취소에 묶이지 않은 건에 cancel_id 를 채워
@@ -179,6 +193,20 @@ class MileageTransactionRepository implements MileageTransactionRepositoryInterf
             ->where('type', MileageTransactionTypeEnum::ORDER_USE->value)
             ->whereNull('order_cancel_id')
             ->update(['order_cancel_id' => $orderCancelId]);
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function linkUsageToRefund(int $orderId, int $orderRefundId): int
+    {
+        // 취소 축과 동형 — 해당 주문의 사용 거래 중 아직 환불에 묶이지 않은 건에
+        // refund_id 를 채워 환급 거래와 동일 order_refund_id 로 연결되게 한다.
+        return MileageTransaction::query()
+            ->where('order_id', $orderId)
+            ->where('type', MileageTransactionTypeEnum::ORDER_USE->value)
+            ->whereNull('order_refund_id')
+            ->update(['order_refund_id' => $orderRefundId]);
     }
 
     /**
@@ -282,6 +310,7 @@ class MileageTransactionRepository implements MileageTransactionRepositoryInterf
      *
      * @param  Builder  $query  쿼리 빌더
      * @param  string  $sort  정렬 슬러그
+     * @return void 반환값 없음
      */
     protected function applySort($query, string $sort): void
     {
@@ -392,6 +421,11 @@ class MileageTransactionRepository implements MileageTransactionRepositoryInterf
                 // 동일 주문취소로 연결된 거래
                 if ($transaction->order_cancel_id !== null) {
                     $q->orWhere('order_cancel_id', $transaction->order_cancel_id);
+                }
+
+                // 동일 주문환불로 연결된 거래 (클레임 환불 발 환급 축 — 취소 축과 대칭)
+                if ($transaction->order_refund_id !== null) {
+                    $q->orWhere('order_refund_id', $transaction->order_refund_id);
                 }
             })
             ->where('id', '!=', $transaction->id)
@@ -528,5 +562,38 @@ class MileageTransactionRepository implements MileageTransactionRepositoryInterf
         }
 
         return $map[$category] ?? [];
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function existsRestoreForClaimPayment(int $claimPaymentId): bool
+    {
+        return MileageTransaction::query()
+            ->where('claim_payment_id', $claimPaymentId)
+            ->where('type', MileageTransactionTypeEnum::REFUND_RESTORE->value)
+            ->exists();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function sumRestoredForClaimPayment(int $claimPaymentId): float
+    {
+        return (float) MileageTransaction::query()
+            ->where('claim_payment_id', $claimPaymentId)
+            ->where('type', MileageTransactionTypeEnum::REFUND_RESTORE->value)
+            ->sum('amount');
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function findUsageForClaimPayment(int $claimPaymentId): ?MileageTransaction
+    {
+        return MileageTransaction::query()
+            ->where('claim_payment_id', $claimPaymentId)
+            ->where('type', MileageTransactionTypeEnum::ORDER_USE->value)
+            ->first();
     }
 }

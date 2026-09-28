@@ -713,7 +713,15 @@ class CartService
         $addedCount = 0;
         $skipped = [];
 
-        $topLevelOptions = $order->options->filter(fn ($opt) => $opt->parent_option_id === null);
+        // 최상위 행 = 자식이 아닌 행. 수량 분할이 일어나면 **분할 가족의 머리 행이
+        // `parent_option_id` 에 자기 id** 를 담으므로(자식만 남의 id 를 가리킨다),
+        // `null` 만 최상위로 보면 분할을 겪은 상품이 통째로 빠진다. 루프 이전에 걸러져
+        // `skipped` 에도 안 잡혀 **조용히 사라졌다**(S1-D5 — 실측: 3상품 주문 재주문이
+        // `added_count=1 · skipped=[]`, 분할된 2상품 소실).
+        $topLevelOptions = $order->options->filter(
+            fn ($opt) => $opt->parent_option_id === null
+                || (int) $opt->parent_option_id === (int) $opt->id
+        );
 
         $locale = app()->getLocale();
         foreach ($topLevelOptions as $orderOption) {
@@ -747,7 +755,13 @@ class CartService
             } catch (\Exception $e) {
                 $skipped[] = [
                     'product_name' => $productName,
-                    'reason' => $e->getMessage(),
+                    // 구매불가 사유는 `getUserMessage()` 가 구체 문구(필수 추가옵션 미선택·재고
+                    // 부족·구매수량 한도 등)를 만든다. `getMessage()` 만 쓰면 전부 일반 문구
+                    // 「구매할 수 없는 상품이 있습니다.」 로 뭉개져 **왜 못 담았는지 알 수 없다**
+                    // (S1-D7 — 실측: 필수 A/S 보증이 걸린 상품이 그 문구로만 표시됐다).
+                    'reason' => $e instanceof CartUnavailableException
+                        ? $e->getUserMessage()
+                        : $e->getMessage(),
                 ];
             }
         }
@@ -827,6 +841,7 @@ class CartService
      * @param  int  $requestedQuantity  요청 수량
      * @param  int  $currentQuantity  현재 장바구니에 담긴 수량 (합산용, 기본값 0)
      * @return void
+     * @return void 반환값 없음
      *
      * @throws \Exception 재고 초과 시 예외
      */
@@ -869,6 +884,7 @@ class CartService
      *
      * @param  int  $productOptionId  상품 옵션 ID
      * @return void
+     * @return void 반환값 없음
      *
      * @throws CartUnavailableException 판매중지/품절/출시예정/전시중지 상품인 경우
      * @throws \Exception 옵션/상품을 찾을 수 없는 경우
@@ -900,6 +916,7 @@ class CartService
      * @param  int  $productId  상품 ID
      * @param  int  $totalQuantity  검증 후 상품 총수량 (기존 장바구니 + 이번 요청)
      * @return void
+     * @return void 반환값 없음
      *
      * @throws CartUnavailableException 최소 미달/최대 초과 시
      */
@@ -941,6 +958,7 @@ class CartService
      * @param  Cart  $cart  현재 장바구니 아이템
      * @param  int  $newProductOptionId  변경하려는 옵션 ID
      * @return void
+     * @return void 반환값 없음
      *
      * @throws \Exception 다른 상품의 옵션으로 변경 시도 시
      */
@@ -1027,6 +1045,7 @@ class CartService
      *
      * @param  int  $totalQuantity  합산 후 라인 수량
      * @return void
+     * @return void 반환값 없음
      *
      * @throws CartOperationException 상한 초과 시
      */

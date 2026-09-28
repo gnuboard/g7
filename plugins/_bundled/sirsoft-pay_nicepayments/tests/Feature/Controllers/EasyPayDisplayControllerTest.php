@@ -10,11 +10,21 @@ use Modules\Sirsoft\Ecommerce\Database\Factories\OrderPaymentFactory;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentStatusEnum;
+use Modules\Sirsoft\Ecommerce\Models\Order;
 use Plugins\Sirsoft\PayNicepayments\Services\NicePaymentsApiService;
 use Plugins\Sirsoft\PayNicepayments\Tests\PluginTestCase;
 
 class EasyPayDisplayControllerTest extends PluginTestCase
 {
+    /**
+     * 관리자 주문 목록용 간편결제 표시 맵이 주문별 표시 이름을 준다.
+     *
+     * @scenario surface=admin_order_list_map
+     *
+     * @effects easy_pay_display_label_returned
+     *
+     * @return void 반환값 없음
+     */
     public function test_admin_order_list_easy_pay_display_map_returns_display_labels(): void
     {
         app()->setLocale('ko');
@@ -34,11 +44,20 @@ class EasyPayDisplayControllerTest extends PluginTestCase
         $this->assertSame('payco', $display['embedded_pg_provider'] ?? null);
         $this->assertContains($display['embedded_pg_provider_label'] ?? null, ['PAYCO (페이코)', 'PAYCO']);
         $this->assertSame(
-            ($display['embedded_pg_provider_label'] ?? '') . ' (' . ($display['payment_method_label'] ?? '') . ')',
+            ($display['embedded_pg_provider_label'] ?? '').' ('.($display['payment_method_label'] ?? '').')',
             $display['payment_method_display_label'] ?? null,
         );
     }
 
+    /**
+     * 관리자 거래 상태 조회에 간편결제 표시 이름이 실린다.
+     *
+     * @scenario surface=admin_transaction_status
+     *
+     * @effects easy_pay_display_label_returned
+     *
+     * @return void 반환값 없음
+     */
     public function test_admin_transaction_status_includes_easy_pay_display_label(): void
     {
         app()->setLocale('ko');
@@ -52,11 +71,11 @@ class EasyPayDisplayControllerTest extends PluginTestCase
         $apiServiceMock = $this->createMock(NicePaymentsApiService::class);
         $apiServiceMock->expects($this->once())
             ->method('queryTransaction')
-            ->with('NICE_TID_' . $order->id)
+            ->with('NICE_TID_'.$order->id)
             ->willReturn([
                 'ResultCode' => '3001',
                 'ResultMsg' => '정상처리',
-                'TID' => 'NICE_TID_' . $order->id,
+                'TID' => 'NICE_TID_'.$order->id,
                 'PayMethod' => 'CARD',
             ]);
         $this->app->instance(NicePaymentsApiService::class, $apiServiceMock);
@@ -70,11 +89,20 @@ class EasyPayDisplayControllerTest extends PluginTestCase
         $data = $response->json('data');
         $this->assertContains($data['_embedded_pg_provider_label'] ?? null, ['카카오페이', 'KakaoPay']);
         $this->assertSame(
-            ($data['_embedded_pg_provider_label'] ?? '') . ' (' . ($data['_base_pay_method_label'] ?? '') . ')',
+            ($data['_embedded_pg_provider_label'] ?? '').' ('.($data['_base_pay_method_label'] ?? '').')',
             $data['_pay_method_label'] ?? null,
         );
     }
 
+    /**
+     * 사용자 영수증 조회 응답(data)에 간편결제 표시 이름이 실린다.
+     *
+     * @scenario surface=user_receipt
+     *
+     * @effects easy_pay_display_label_returned, response_uses_common_envelope
+     *
+     * @return void 반환값 없음
+     */
     public function test_user_receipt_response_includes_easy_pay_display_label(): void
     {
         app()->setLocale('ko');
@@ -89,29 +117,35 @@ class EasyPayDisplayControllerTest extends PluginTestCase
             ->getJson("/api/plugins/sirsoft-pay_nicepayments/user/orders/{$order->order_number}/receipt");
 
         $response->assertOk()
-            ->assertJsonPath('selected_payment_method', 'nicepay_naverpay')
-            ->assertJsonPath('embedded_pg_provider', 'naverpay');
+            ->assertJsonPath('data.selected_payment_method', 'nicepay_naverpay')
+            ->assertJsonPath('data.embedded_pg_provider', 'naverpay');
 
-        $data = $response->json();
+        $data = $response->json('data');
         $this->assertContains($data['embedded_pg_provider_label'] ?? null, ['네이버페이', 'NaverPay']);
         $this->assertSame(
-            ($data['embedded_pg_provider_label'] ?? '') . ' (' . ($data['payment_method_label'] ?? '') . ')',
+            ($data['embedded_pg_provider_label'] ?? '').' ('.($data['payment_method_label'] ?? '').')',
             $data['payment_method_display_label'] ?? null,
         );
     }
 
     /**
-     * @param array{ko: string, en: string} $label
+     * 간편결제로 결제를 마친 나이스페이먼츠 주문을 만듭니다.
+     *
+     * @param  string  $method  결제수단 코드
+     * @param  string  $provider  간편결제 제공자 코드
+     * @param  array{ko: string, en: string}  $label  간편결제 표시 이름
+     * @param  User|null  $user  주문 회원(없으면 새로 만든다)
+     * @return Order 결제를 마친 주문
      */
     private function createPaidEasyPayOrder(
         string $method,
         string $provider,
         array $label,
         ?User $user = null,
-    ): \Modules\Sirsoft\Ecommerce\Models\Order {
+    ): Order {
         $order = OrderFactory::new()->create([
             'user_id' => ($user ?? User::factory()->create())->id,
-            'order_number' => 'ORD-NICE-EASY-' . random_int(10000, 99999),
+            'order_number' => 'ORD-NICE-EASY-'.random_int(10000, 99999),
             'order_status' => OrderStatusEnum::PAYMENT_COMPLETE,
             'subtotal_amount' => 50000,
             'total_amount' => 50000,
@@ -127,7 +161,7 @@ class EasyPayDisplayControllerTest extends PluginTestCase
             'payment_status' => PaymentStatusEnum::PAID,
             'payment_method' => PaymentMethodEnum::CARD,
             'pg_provider' => 'nicepayments',
-            'transaction_id' => 'NICE_TID_' . $order->id,
+            'transaction_id' => 'NICE_TID_'.$order->id,
             'embedded_pg_provider' => $provider,
             'paid_amount_local' => 50000,
             'paid_at' => now(),

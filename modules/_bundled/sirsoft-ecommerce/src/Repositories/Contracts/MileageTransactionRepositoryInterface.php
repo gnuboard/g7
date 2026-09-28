@@ -54,6 +54,7 @@ interface MileageTransactionRepositoryInterface
      *
      * @param  MileageTransaction  $lot  대상 적립건
      * @param  float  $amount  차감액
+     * @return void 반환값 없음
      */
     public function decrementRemaining(MileageTransaction $lot, float $amount): void;
 
@@ -107,6 +108,7 @@ interface MileageTransactionRepositoryInterface
      *
      * @param  MileageTransaction  $lot  대상 적립건
      * @param  float  $delta  증액할 금액 (> 0)
+     * @return void 반환값 없음
      */
     public function incrementEarnLotAmount(MileageTransaction $lot, float $delta): void;
 
@@ -117,6 +119,17 @@ interface MileageTransactionRepositoryInterface
      * @return bool 존재 여부
      */
     public function existsRestoreForCancel(int $orderCancelId): bool;
+
+    /**
+     * 해당 주문 환불에 대한 복원 거래가 이미 존재하는지 확인합니다 (클레임 환불 실행 멱등 가드).
+     *
+     * 취소 발 복원의 `order_cancel_id` 와 같은 역할을 클레임 발 환불 실행(S6b)에서
+     * `order_refund_id` 가 담당한다 — 같은 환불의 실행이 재시도되어도 환급 lot 은 한 번만 발행된다.
+     *
+     * @param  int  $orderRefundId  주문 환불 ID
+     * @return bool 존재 여부
+     */
+    public function existsRestoreForRefund(int $orderRefundId): bool;
 
     /**
      * 복원의 원 사용 거래에 동일 order_cancel_id 를 역주입합니다 (연결 거래 추적).
@@ -130,6 +143,19 @@ interface MileageTransactionRepositoryInterface
      * @return int 갱신된 사용 거래 수
      */
     public function linkUsageToCancel(int $orderId, int $orderCancelId): int;
+
+    /**
+     * 환급의 원 사용 거래에 동일 order_refund_id 를 역주입합니다 (연결 거래 추적).
+     *
+     * 취소 발(`linkUsageToCancel`)과 대칭인 환불 발 축이다. 이 역주입이 없으면 클레임 환불
+     * 발 환급(REFUND_RESTORE)은 `source_transaction_id` 도 NULL 이라 연결 거래가 항상
+     * 비어, 취소 발 환급만 원 사용 거래가 보이는 비대칭이 된다.
+     *
+     * @param  int  $orderId  주문 ID
+     * @param  int  $orderRefundId  주문 환불 ID
+     * @return int 갱신된 사용 거래 수
+     */
+    public function linkUsageToRefund(int $orderId, int $orderRefundId): int;
 
     /**
      * 관리자 내역 화면용 필터링된 목록을 조회합니다 (페이지네이션).
@@ -164,6 +190,7 @@ interface MileageTransactionRepositoryInterface
      *
      * @param  MileageTransaction  $lot  대상 적립건
      * @param  Carbon  $now  소멸 처리 시각
+     * @return void 반환값 없음
      */
     public function markExpired(MileageTransaction $lot, Carbon $now): void;
 
@@ -247,6 +274,7 @@ interface MileageTransactionRepositoryInterface
      *
      * @param  MileageTransaction  $lot  대상 적립건
      * @param  Carbon  $expiresAt  새 만료일
+     * @return void 반환값 없음
      */
     public function updateExpiry(MileageTransaction $lot, Carbon $expiresAt): void;
 
@@ -257,4 +285,28 @@ interface MileageTransactionRepositoryInterface
      * @return int 삭제된 행 수
      */
     public function deleteForUser(int $userId): int;
+
+    /**
+     * 클레임 추가결제 건의 마일리지 환급 거래가 이미 있는지 확인합니다. (환급 멱등 축)
+     *
+     * @param  int  $claimPaymentId  클레임 추가결제 ID
+     * @return bool 환급 거래가 있으면 true
+     */
+    public function existsRestoreForClaimPayment(int $claimPaymentId): bool;
+
+    /**
+     * 클레임 추가결제 건의 마일리지 환급 누적액(양수)을 반환합니다.
+     *
+     * @param  int  $claimPaymentId  클레임 추가결제 ID
+     * @return float 환급 누적액
+     */
+    public function sumRestoredForClaimPayment(int $claimPaymentId): float;
+
+    /**
+     * 클레임 추가결제 건으로 이미 기록된 마일리지 사용(차감) 거래를 찾습니다. (차감 멱등 축)
+     *
+     * @param  int  $claimPaymentId  클레임 추가결제 ID
+     * @return MileageTransaction|null 사용 거래 (없으면 null)
+     */
+    public function findUsageForClaimPayment(int $claimPaymentId): ?MileageTransaction;
 }

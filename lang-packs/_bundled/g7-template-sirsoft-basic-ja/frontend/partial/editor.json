@@ -1182,6 +1182,9 @@
     "user_notification_ws": "通知 (リアルタイム)",
     "wishlist": "ウィッシュリスト",
     "scrap": "スクラップ",
-    "visitor_summary": "訪問者サマリー"
+    "visitor_summary": "訪問者サマリー",
+    "claimable": "クレーム申請可能商品",
+    "claims": "クレーム申請履歴",
+    "claim": "クレーム申請書"
   }
 }

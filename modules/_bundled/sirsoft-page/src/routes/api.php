@@ -95,6 +95,12 @@ Route::prefix('admin/pages')->middleware(['auth:sanctum', 'throttle:600,1'])->na
 |
 */
 Route::prefix('admin/attachments')->middleware(['auth:sanctum', 'throttle:600,1'])->name('admin.attachments.')->group(function () {
+    // 첨부 상한·허용 형식 (화면 전용 경량 조회 — 신규 작성 화면에는 읽을 상세가 없다)
+    // `/{id}` 보다 먼저 등록한다: 세그먼트가 하나로 같아 순서가 뒤면 삭제 라우트가 가로챈다.
+    Route::get('/settings', [PageAttachmentController::class, 'settings'])
+        ->middleware('permission:admin,sirsoft-page.pages.read')
+        ->name('settings');
+
     // 첨부파일 업로드
     Route::post('/', [PageAttachmentController::class, 'upload'])
         ->middleware('permission:admin,sirsoft-page.pages.create')

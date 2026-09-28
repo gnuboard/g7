@@ -48,9 +48,14 @@
                   <field name="endDate" value="{{_global.savingPresetConditions.endDate || ''}}"/>
                   <field name="dateQuick" value="{{_global.savingPresetConditions.dateQuick || ''}}"/>
                   <field name="orderStatus" value="{{_global.savingPresetConditions.orderStatus || []}}"/>
-                  <field name="claimRefundStatus" value="{{_global.savingPresetConditions.claimRefundStatus || []}}"/>
-                  <field name="claimReturnStatus" value="{{_global.savingPresetConditions.claimReturnStatus || []}}"/>
-                  <field name="claimExchangeStatus" value="{{_global.savingPresetConditions.claimExchangeStatus || []}}"/>
+                  <field name="claimPresence" value="{{_global.savingPresetConditions.claimPresence || ''}}"/>
+                  <field name="claimExchangeStatuses" value="{{_global.savingPresetConditions.claimExchangeStatuses || []}}"/>
+                  <field name="claimReturnStatuses" value="{{_global.savingPresetConditions.claimReturnStatuses || []}}"/>
+                  <field name="claimRefundStatuses" value="{{_global.savingPresetConditions.claimRefundStatuses || []}}"/>
+                  <field name="claimCancelTypes" value="{{_global.savingPresetConditions.claimCancelTypes || []}}"/>
+                  <field name="claimFaultTypes" value="{{_global.savingPresetConditions.claimFaultTypes || []}}"/>
+                  <field name="claimRequestedFrom" value="{{_global.savingPresetConditions.claimRequestedFrom || ''}}"/>
+                  <field name="claimRequestedTo" value="{{_global.savingPresetConditions.claimRequestedTo || ''}}"/>
                   <field name="deliveryMethods" value="{{_global.savingPresetConditions.deliveryMethods || []}}"/>
                   <field name="paymentMethods" value="{{_global.savingPresetConditions.paymentMethods || []}}"/>
                   <field name="category1" value="{{_global.savingPresetConditions.category1 || ''}}"/>
@@ -61,6 +66,11 @@
                   <field name="maxPrice" value="{{_global.savingPresetConditions.maxPrice || ''}}"/>
                   <field name="countries" value="{{_global.savingPresetConditions.countries || []}}"/>
                   <field name="devices" value="{{_global.savingPresetConditions.devices || []}}"/>
+                  <field name="shippingPolicy" value="{{_global.savingPresetConditions.shippingPolicy || ''}}"/>
+                  <field name="minShippingFee" value="{{_global.savingPresetConditions.minShippingFee || ''}}"/>
+                  <field name="maxShippingFee" value="{{_global.savingPresetConditions.maxShippingFee || ''}}"/>
+                  <field name="ordererUuid" value="{{_global.savingPresetConditions.ordererUuid || ''}}"/>
+                  <field name="memberType" value="{{_global.savingPresetConditions.memberType || ''}}"/>
                 </field>
               </field>
             </api-call>

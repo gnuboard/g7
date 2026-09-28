@@ -39,7 +39,7 @@
     </field>
     <field name="selectedItems" :value="[]"/>
     <field name="expandedRows" :value="[]"/>
-    <field name="linkedTransactions" :value="[]"/>
+    <field name="linkedTransactions" :value="{}"/>
     <field name="batchAction" value=""/>
     <field name="manualModalOpen" :value="false"/>
     <field name="extendModalOpen" :value="false"/>
@@ -54,6 +54,7 @@
     <field name="extendDays" :value="30"/>
     <field name="memberSearchKeyword" value=""/>
     <field name="memberSearchResults" :value="[]"/>
+    <field name="memberSearchResultsKeyword" :value="null"/>
     <field name="selectedMember" :value="null"/>
   </init-local>
   <permissions>
@@ -93,6 +94,7 @@
                     <field name="selectedMember" :value="null"/>
                     <field name="memberSearchKeyword" value=""/>
                     <field name="memberSearchResults" :value="[]"/>
+                    <field name="memberSearchResultsKeyword" :value="null"/>
                     <field name="action" value="earn"/>
                     <field name="amount" value=""/>
                     <field name="currency" value="{{_global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency ?? ''}}"/>
@@ -112,7 +114,7 @@
       <include src="partials/admin_ecommerce_mileage_transaction_index/_filters.g7.html"/>
       <div data-ref="bulk_action_bar" class="bg-gray-100 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg p-3 mb-4 flex flex-wrap items-center justify-between gap-3">
         <span class="text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap">$t:sirsoft-ecommerce.admin.mileage_transactions.bulk.selected|count={{(_local.selectedItems ?? []).length}}</span>
-        <button data-ref="bulk_extend_button" type="button" disabled="{{transactions?.data?.abilities?.can_manage !== true || (_local.selectedItems ?? []).length === 0}}" class="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+        <button data-ref="bulk_extend_button" type="button" disabled="{{transactions?.data?.abilities?.can_manage !== true || (_local.selectedItems ?? []).length === 0}}" class="px-4 py-2 text-sm bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
           <on type="click">
             <!-- 선택한 적립 건들의 만료일 연장 창을 연다. 연장은 회원 단위로 처리되므로 고른 것 중 첫 건에서 회원 식별자를 따로 뽑아 넘긴다 -->
             <sequence>

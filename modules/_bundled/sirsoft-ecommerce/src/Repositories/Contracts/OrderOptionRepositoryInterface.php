@@ -113,6 +113,18 @@ interface OrderOptionRepositoryInterface
     public function transferChildren(int $fromParentId, int $toParentId): int;
 
     /**
+     * 병합으로 사라지는 옵션을 가리키던 클레임 신청상품 행을 생존 옵션으로 옮깁니다. (S1-D6)
+     *
+     * 환불·취소·반품·교환 신청상품 4종은 모두 `order_option_id` 에 `cascadeOnDelete()` 가 걸려
+     * 있어, 옮기지 않고 피흡수 행을 지우면 접수 때 기록한 신청상품이 함께 지워진다.
+     *
+     * @param  int  $fromOrderOptionId  피흡수 옵션 ID
+     * @param  int  $toOrderOptionId  생존 옵션 ID
+     * @return int 옮긴 신청상품 행 수 (4종 합계)
+     */
+    public function transferClaimOptionReferences(int $fromOrderOptionId, int $toOrderOptionId): int;
+
+    /**
      * 취소(복원)된 옵션의 재고 차감 플래그를 해제합니다.
      *
      * 주문 취소 재고 복원 후, 해당 주문·상품옵션의 CANCELLED 상태 행 중

@@ -538,6 +538,7 @@ class Plugin extends AbstractPlugin
         return [[
             'type' => 'annual_privacy_notice',
             'hook_prefix' => 'sirsoft-gdpr',
+            'audience' => 'customer',
             'name' => ['ko' => '개인정보 이용내역 안내', 'en' => 'Annual Privacy Notice'],
             'description' => ['ko' => '활성 회원에게 개인정보 처리 내역을 연 1회 안내', 'en' => 'Annual notice of personal data processing for active members'],
             'channels' => ['mail', 'database'],

@@ -106,7 +106,7 @@ class KgInicisApiServiceTest extends PluginTestCase
         $price = 50000;
         $timestamp = '1714000000000';
 
-        $expected = hash('sha256', 'oid=' . $oid . '&price=' . $price . '&timestamp=' . $timestamp);
+        $expected = hash('sha256', 'oid='.$oid.'&price='.$price.'&timestamp='.$timestamp);
         $this->assertEquals($expected, $service->generateSignature($oid, $price, $timestamp));
     }
 
@@ -247,6 +247,87 @@ class KgInicisApiServiceTest extends PluginTestCase
         });
     }
 
+    /**
+     * P5 — 입금완료 가상계좌는 **환불받을 계좌**가 취소 요청에 실려야 PG 가 받아 준다.
+     *
+     * 이 값들이 취소 API 가 아닌 거래조회 API 에 붙어 있으면, 조회는 멀쩡히 돌고 취소만
+     * 조용히 거절된다 — 운영자에게는 "취소가 안 된다" 로만 보인다. 그래서 단언 대상은
+     * `cancelPayment()` 가 보낸 payload 다.
+     */
+    public function test_cancel_payment_sends_the_refund_account_for_a_settled_virtual_account(): void
+    {
+        $service = $this->makeService();
+
+        Http::fake([
+            'stginiapi.inicis.com/v2/pg/refund' => Http::response([
+                'resultCode' => '00',
+                'resultMsg' => '취소 성공',
+            ], 200),
+        ]);
+
+        $service->cancelPayment('TID_ORIG', 'VBank', null, '고객 요청', null, [
+            'bank_code' => '004',
+            'account_number' => '12345678901234',
+            'holder' => '홍길동',
+        ]);
+
+        Http::assertSent(function ($request) {
+            $data = $request['data'] ?? [];
+
+            return $request['type'] === 'refund'
+                && ($data['refundAcctNum'] ?? null) === '12345678901234'
+                && ($data['refundBankCode'] ?? null) === '004'
+                && ($data['refundAcctName'] ?? null) === '홍길동';
+        });
+    }
+
+    /** P5 — 계좌가 없는 수단(카드 등)에는 세 키를 붙이지 않는다. */
+    public function test_cancel_payment_omits_the_refund_account_when_none_is_given(): void
+    {
+        $service = $this->makeService();
+
+        Http::fake([
+            'stginiapi.inicis.com/v2/pg/refund' => Http::response([
+                'resultCode' => '00',
+                'resultMsg' => '취소 성공',
+            ], 200),
+        ]);
+
+        $service->cancelPayment('TID_ORIG', 'Card', null, '고객 요청');
+
+        Http::assertSent(function ($request) {
+            $data = $request['data'] ?? [];
+
+            return ! isset($data['refundAcctNum'])
+                && ! isset($data['refundBankCode'])
+                && ! isset($data['refundAcctName']);
+        });
+    }
+
+    /** P5 — 거래조회는 환불계좌를 받지 않는다. 그 자리에 붙으면 취소가 값을 잃는다. */
+    public function test_query_transaction_does_not_carry_refund_account_keys(): void
+    {
+        $service = $this->makeService();
+
+        Http::fake([
+            'stginiapi.inicis.com/v2/pg/inquiry' => Http::response([
+                'resultCode' => '00',
+                'resultMsg' => '조회 성공',
+            ], 200),
+        ]);
+
+        $service->queryTransaction('TID_ORIG');
+
+        Http::assertSent(function ($request) {
+            $data = $request['data'] ?? [];
+
+            return $request['type'] === 'inquiry'
+                && ! isset($data['refundAcctNum'])
+                && ! isset($data['refundBankCode'])
+                && ! isset($data['refundAcctName']);
+        });
+    }
+
     public function test_cancel_payment_throws_on_non_00_result_code(): void
     {
         $service = $this->makeService();
@@ -302,10 +383,10 @@ class KgInicisApiServiceTest extends PluginTestCase
             $expectedHash = hash(
                 'sha512',
                 self::TEST_INIAPI_KEY
-                    . self::TEST_MID
-                    . 'partialRefund'
-                    . $request['timestamp']
-                    . $detailJson
+                    .self::TEST_MID
+                    .'partialRefund'
+                    .$request['timestamp']
+                    .$detailJson
             );
 
             return $request['hashData'] === $expectedHash
@@ -334,12 +415,12 @@ class KgInicisApiServiceTest extends PluginTestCase
             $expectedHash = hash(
                 'sha512',
                 '5AL5Djb1Ipualn0F'
-                . 'Refund'
-                . 'CBT'
-                . $request['timestamp']
-                . $request['clientIp']
-                . KgInicisApiService::JAPAN_TEST_MID
-                . 'CBT_TID'
+                .'Refund'
+                .'CBT'
+                .$request['timestamp']
+                .$request['clientIp']
+                .KgInicisApiService::JAPAN_TEST_MID
+                .'CBT_TID'
             );
 
             return $request->url() === 'https://deviniapi.inicis.com/api/v1/refund'
@@ -370,14 +451,14 @@ class KgInicisApiServiceTest extends PluginTestCase
             $expectedHash = hash(
                 'sha512',
                 '5AL5Djb1Ipualn0F'
-                . 'PartialRefund'
-                . 'CBT'
-                . $request['timestamp']
-                . $request['clientIp']
-                . KgInicisApiService::JAPAN_TEST_MID
-                . 'CBT_TID'
-                . '300'
-                . '700'
+                .'PartialRefund'
+                .'CBT'
+                .$request['timestamp']
+                .$request['clientIp']
+                .KgInicisApiService::JAPAN_TEST_MID
+                .'CBT_TID'
+                .'300'
+                .'700'
             );
 
             return $request['type'] === 'PartialRefund'
@@ -410,12 +491,12 @@ class KgInicisApiServiceTest extends PluginTestCase
             $expectedHash = hash(
                 'sha512',
                 'LIVE_CBT_KEY'
-                . 'Refund'
-                . 'CBT'
-                . $request['timestamp']
-                . $request['clientIp']
-                . 'JP_LIVE_PAID'
-                . 'CBT_LIVE_TID'
+                .'Refund'
+                .'CBT'
+                .$request['timestamp']
+                .$request['clientIp']
+                .'JP_LIVE_PAID'
+                .'CBT_LIVE_TID'
             );
 
             return $request->url() === 'https://iniapi.inicis.com/api/v1/refund'

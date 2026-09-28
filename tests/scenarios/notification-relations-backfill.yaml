@@ -1,0 +1,25 @@
+feature: 알림 정의 relations 백필과 선언 전 저장 호환 (7.1.0 업그레이드, #599 validate)
+
+description: |
+  7.1.0 은 알림 템플릿의 「관련 사용자」 수신자(related_user.relation)를 정의가 선언한 키로만 받는다.
+  relations 컬럼은 추가만 되고 기존 정의는 NULL 이라, 확장이 다시 동기화되기 전까지 기존 related_user
+  규칙이 든 템플릿을 저장하면 422 가 났고 화면은 그 타입을 감췄다.
+
+  막는 층: 코어 7.1.0 업그레이드 스텝이 템플릿이 쓰는 relation 키로 NULL 을 채운다(선언 경로와 같은 규칙).
+  그래도 NULL 인 정의는 저장 검증이 선언 밖으로 막지 않는다 — NULL 은 "선언 전", [] 는 "선언했는데 없음".
+
+axes:
+  definition_state: [null, declared]
+  entry: [upgrade_step, template_save]
+
+exclusions:
+  - { definition_state: declared, entry: upgrade_step, reason: "선언된 정의는 스텝이 건드리지 않는다 — null 행 테스트가 같은 실행에서 함께 단언한다" }
+
+effects:
+  - null_relations_are_backfilled_from_template_rules        # NULL → 템플릿이 쓰는 relation 키(없으면 [])
+  - declared_relations_are_left_untouched                    # 이미 선언된 relations 는 그대로
+  - undeclared_definition_does_not_block_related_user_save   # NULL 정의는 저장이 막히지 않는다
+  - declared_relations_still_reject_unknown_keys             # 선언된 정의는 선언 밖 키를 계속 거절
+
+test_files:
+  - tests/Feature/Upgrades/Upgrade710NotificationRelationsBackfillTest.php

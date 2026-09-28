@@ -1,0 +1,51 @@
+feature: 관리자 주문 수정 경로의 배송지 변경 활동 로그 (S2-D6)
+
+description: |
+  활동 로그에는 배송지 변경 전용 줄이 있다 — `order.update_shipping_address` ·
+  「배송지 변경 (:order_number)」 · loggable 은 `OrderAddress` · 전/후값 포함.
+  `OrderActivityLogListener` 가 `sirsoft-ecommerce.order.after_update_shipping_address`
+  를 구독해 기록하고, 회원·비회원 경로(`OrderService::updateShippingAddress()`)는
+  그 훅을 발화한다.
+
+  **그런데 관리자 주문상세의 배송지 저장은 그 경로를 타지 않는다.**
+
+  관리자 폼은 `PATCH /admin/orders/{order_number}` → `OrderService::update()` 로 간다.
+  이 메서드는 수취인 필드(`recipient_*`·`delivery_memo`)를 본문에서 분리해
+  `$shippingAddress->update($addressData)` 로 **직접** 쓰고, 끝에
+  `order.after_update` 만 발화한다. 거기 실리는 스냅샷은 `$order->toArray()` —
+  **주소 컬럼이 처음부터 없다.** `ChangeDetector` 가 대조할 것이 없으니
+  배송지 변경이 로그에서 통째로 사라진다.
+
+  #599 통합실측 세션2 실측(주문 517 · 2026-09-15 · 관리자 주문상세에서
+  수취인명 `MEAS599-S2-R` → `MEAS599-S2-R2` · 상세주소 `10층` → `11층 (2-P 변경)` 저장):
+
+    200 PATCH /api/modules/sirsoft-ecommerce/admin/orders/20260915-0843073161
+    ecommerce_order_addresses  → 정상 반영 (name=MEAS599-S2-R2 · detail=MEAS599-S2 11층 (2-P 변경))
+    activity_logs 최신 행      → order.update 하나뿐
+                                  changes = [{"field":"paid_at","old":"…","new":"…"}]  (old == new)
+    order.update_shipping_address 행 → **0건**
+
+  관리자가 남의 주문 배송지를 바꿔도 **누가 무엇을 무엇으로 바꿨는지 추적할 수 없다.**
+  주문 축 활동 로그가 감사 근거로 쓰이는 화면이라 그대로 둘 수 없다.
+
+  수정: 배송지를 쓰기 **전에** `OrderAddress` 스냅샷을 따로 뜨고, 실제로 쓴 경우에만
+  회원·비회원 경로와 **같은 훅**을 발화한다. 리스너는 이미 있으므로 배선만 이으면
+  로그 모양이 세 경로에서 같아진다.
+
+  계약: 이 매니페스트는 **훅 배선**을 잠근다 — 훅을 받은 뒤의 로그 모양
+  (loggable = OrderAddress · description_key · 전/후값)은
+  `modules/_bundled/sirsoft-ecommerce/tests/Unit/Listeners/OrderActivityLogListenerTest.php` 가 이미 잠그고 있다.
+
+axes:
+  admin_order_update:
+    - writes_address_inline
+    - fires_address_hook
+    - passes_address_snapshot
+
+effects:
+  - admin_update_writes_shipping_address_directly
+  - admin_shipping_address_change_is_logged
+  - admin_shipping_address_change_carries_before_values
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/AdminOrderUpdateFiresShippingAddressHookTest.php

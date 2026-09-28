@@ -51,14 +51,38 @@ class ClaimReasonController extends AdminBaseController
      */
     public function store(StoreClaimReasonRequest $request): JsonResponse
     {
-        $reason = $this->service->createReason($request->validated());
+        try {
+            $reason = $this->service->createReason($request->validated());
 
-        return ResponseHelper::moduleSuccess(
-            'sirsoft-ecommerce',
-            'messages.claim_reasons.created',
-            new ClaimReasonResource($reason),
-            201
-        );
+            return ResponseHelper::moduleSuccess(
+                'sirsoft-ecommerce',
+                'messages.claim_reasons.created',
+                new ClaimReasonResource($reason),
+                201
+            );
+        } catch (ClaimReasonException $e) {
+            // 도메인 규칙 위반 — 형제 3메서드(update·destroy·toggleStatus)와 같은 400.
+            // 생성 경로도 확장에 열려 있다(`filter_create_data` 훅 리스너가 던지거나 생성
+            // 가드가 추가되면 도달한다). typed catch 가 없으면 운영자가 조치할 수 있는
+            // 사유가 500 으로 위장돼, 같은 거절이 화면마다 다르게 보인다.
+            $messageKey = $e->getMessageKey();
+
+            return ResponseHelper::error(
+                $messageKey,
+                400,
+                null,
+                $e->getMessageParams()
+            );
+        } catch (\Exception $e) {
+            // 서버 결함/인프라 장애 — 형제 3메서드(update·destroy·toggleStatus)와 같은 형태로
+            // 돌려준다. 이 메서드만 catch 가 없으면 같은 장애가 화면마다 다른 응답 형태로
+            // 보인다(여기만 프레임워크 기본 500 본문).
+            return ResponseHelper::moduleError(
+                'sirsoft-ecommerce',
+                'exceptions.operation_failed',
+                500
+            );
+        }
     }
 
     /**
@@ -121,11 +145,17 @@ class ClaimReasonController extends AdminBaseController
                 new ClaimReasonResource($reason)
             );
         } catch (ClaimReasonException $e) {
-            // 도메인 규칙 위반 — 운영자에게 안내 가능한 상황이므로 기존 400 유지
-            return ResponseHelper::moduleError(
-                'sirsoft-ecommerce',
-                'exceptions.operation_failed',
-                400
+            // 도메인 규칙 위반(미존재 / 사용 중 코드·유형 잠금) — 기존 400 유지.
+            // 예외가 든 전용 키로 안내한다. `operation_failed` 일반문으로 뭉개면 설정 탭·삭제
+            // 경로는 "사용 중 N건이라 바꿀 수 없다" 를 안내하는데 이 경로만 이유가 사라져,
+            // 같은 거절이 화면마다 다르게 보인다.
+            $messageKey = $e->getMessageKey();
+
+            return ResponseHelper::error(
+                $messageKey,
+                400,
+                null,
+                $e->getMessageParams()
             );
         } catch (\Exception $e) {
             // 서버 결함/인프라 장애 — 4xx 로 뭉개면 장애가 입력 오류로 위장된다
@@ -201,11 +231,14 @@ class ClaimReasonController extends AdminBaseController
                 new ClaimReasonResource($reason)
             );
         } catch (ClaimReasonException $e) {
-            // 도메인 규칙 위반 — 운영자에게 안내 가능한 상황이므로 기존 400 유지
-            return ResponseHelper::moduleError(
-                'sirsoft-ecommerce',
-                'exceptions.operation_failed',
-                400
+            // 도메인 규칙 위반 — 기존 400 유지. 형제 update/destroy 와 같이 예외의 전용 키로 안내한다.
+            $messageKey = $e->getMessageKey();
+
+            return ResponseHelper::error(
+                $messageKey,
+                400,
+                null,
+                $e->getMessageParams()
             );
         } catch (\Exception $e) {
             // 서버 결함/인프라 장애 — 4xx 로 뭉개면 장애가 입력 오류로 위장된다

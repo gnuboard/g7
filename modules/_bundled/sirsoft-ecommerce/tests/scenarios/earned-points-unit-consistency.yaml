@@ -1,0 +1,45 @@
+feature: 적립 마일리지 단위 — 같은 값은 어느 화면에서도 같은 단위로 읽힌다
+
+description: |
+  마일리지는 화폐가 아니라 포인트다. 1P 가 1원과 같은 값이라 해도 **단위가 화면마다 바뀌면**
+  구매자는 그것이 같은 것인지 다른 것인지 알 수 없다.
+
+  조용히 깨지는 지점은 **포맷터가 둘로 갈린 자리**다. 같은 주문의 같은 값(710)이
+  장바구니·주문서에서는 `+710P`(`Summary::mileage_formatted` → `number_format().'P'`),
+  주문완료·비회원 주문상세·관리자 주문목록에서는 `+710원`(`*_earned_points_amount_formatted`
+  → `formatOrderCurrency()`)으로 나왔다. 구매자는 주문서에서 [결제하기]를 누른 **한 클릭
+  사이에** 단위가 바뀌는 것을 본다(#599 세션A 실측 2026-09-21 · 주문 20260921-1536333520).
+
+  어긋난 쪽이 어디인지는 같은 도메인이 이미 말하고 있었다 — 관리자 주문상세의 「적립예정
+  포인트 710P」, 주문상품 행의 「460P/250P」, 클레임 비교표의 「적립예정포인트 710P → 480P」,
+  ja 언어팩 마일리지 만료 알림의 `{amount}ポイント` 가 모두 포인트 단위다.
+  운영 결정(2026-09-22): **P 로 통일**.
+
+  한쪽만 고치면 다음 화면에서 다시 갈리므로, 두 경로가 **같은 문자열**을 내는지를 함께 잠근다.
+  금액 포맷(`formatOrderCurrency`)은 통화 그대로 남아야 한다 — 이 수정이 돈 표기까지 바꾸면
+  주문서 합계가 `74,000P` 가 된다.
+
+# axis 의미: 갈라지는 축은 «그 값이 포인트인가 돈인가» 하나다. 화면(장바구니/주문완료/관리자)은
+# 축이 아니다 — 화면과 무관하게 같은 단위여야 한다는 것이 곧 이 계약이고, 그 불변은
+# cart_summary 케이스가 두 포맷터의 출력을 직접 대조해 잠근다.
+axes:
+  surface: [cart_summary, order_resource]
+
+effects:
+  - earned_points_formatted_uses_point_suffix          # 적립은 통화 기호 없이 P 로 끝난다
+  - earned_points_formatting_matches_across_surfaces   # 두 포맷 경로가 같은 문자열을 낸다
+  - earned_points_change_does_not_touch_money_formatting  # 금액 표기는 통화 그대로다
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Resources/EarnedPointsFormattedAsPointsTest.php
+
+validation:
+  audit_rule: backend-change-requires-test
+  browser_check: |
+    #599 세션A 실측(2026-09-22 · 주문 20260921-1536333520).
+    수정 전 주문서 `+710P` ↔ 주문완료·비회원 주문상세 `+710원` ↔ 관리자 주문목록 `적립 +710원`.
+    수정 후 네 화면 모두 `+710P`.
+  note: |
+    `total_earned_points_amount_formatted` 를 내는 리소스가 5개(Order·OrderList·UserOrderList·
+    GuestOrder·OrderOption)라 한 곳만 고치면 남은 화면이 갈린다. 공용 포맷터
+    `HasMultiCurrencyPrices::formatEarnedPoints()` 한 자리로 모아 두 경로의 관례를 맞췄다.

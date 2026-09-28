@@ -10,8 +10,11 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentStatusEnum;
 use Modules\Sirsoft\Ecommerce\Exceptions\PaymentAmountMismatchException;
+use Modules\Sirsoft\Ecommerce\Models\ClaimPayment;
 use Modules\Sirsoft\Ecommerce\Models\Order;
+use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ClaimPaymentRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Services\OrderProcessingService;
+use Plugins\Sirsoft\PayKginicis\Concerns\HandlesClaimPaymentCallbacks;
 use Plugins\Sirsoft\PayKginicis\Concerns\IssuesReceiptCookie;
 use Plugins\Sirsoft\PayKginicis\Concerns\PreventsReplayCallback;
 use Plugins\Sirsoft\PayKginicis\Concerns\ResolvesEasyPaySelection;
@@ -33,6 +36,7 @@ use Plugins\Sirsoft\PayKginicis\Support\ShopRedirectUrl;
  */
 class MobileCallbackController
 {
+    use HandlesClaimPaymentCallbacks;
     use IssuesReceiptCookie;
     use PreventsReplayCallback;
     use ResolvesEasyPaySelection;
@@ -82,10 +86,17 @@ class MobileCallbackController
         'P_GOODS',
     ];
 
+    /**
+     * @param  OrderProcessingService  $orderService  주문 결제 처리 서비스
+     * @param  PluginSettingsService  $pluginSettingsService  플러그인 설정 조회 서비스
+     * @param  KgInicisApiService  $apiService  KG 이니시스 API 서비스
+     * @param  ClaimPaymentRepositoryInterface  $claimPaymentRepository  클레임 결제 Repository
+     */
     public function __construct(
         private readonly OrderProcessingService $orderService,
         private readonly PluginSettingsService $pluginSettingsService,
         private readonly KgInicisApiService $apiService,
+        private readonly ClaimPaymentRepositoryInterface $claimPaymentRepository,
     ) {}
 
     /**
@@ -103,7 +114,6 @@ class MobileCallbackController
         // KG 이니시스 모바일 메뉴얼(STEP 2) 표준 응답에는 P_OID 가 없으므로 P_NEXT_URL 쿼리스트링의
         // orderId 를 fallback 으로 사용한다. 일부 PG 환경에서 P_OID 를 echo 하면 우선 채택.
         $moid = $validated['P_OID'] ?? $request->query('orderId') ?? null;
-        $pAmt = $validated['P_AMT'] ?? null;
 
         Log::info('KG Inicis mobile: callback received', [
             'order_id' => $moid,
@@ -135,6 +145,15 @@ class MobileCallbackController
                 'is_user_cancel' => $isUserCancel,
             ]);
 
+            // 클레임 추가결제(CP 채번)는 체크아웃이 아니라 신청서 상세로 돌려보낸다.
+            if (ClaimPayment::isClaimPaymentNumber($moid)) {
+                $claimRedirect = $this->redirectClaimWindowFailure($moid, $isUserCancel ? null : $pStatus);
+
+                if ($claimRedirect !== null) {
+                    return $claimRedirect;
+                }
+            }
+
             // 사용자가 결제창을 직접 닫은 취소는 오류 모달 없이 체크아웃으로 조용히 복귀
             if ($isUserCancel) {
                 return redirect($this->resolveFailUrl());
@@ -142,7 +161,8 @@ class MobileCallbackController
 
             return redirect($this->resolveFailUrl([
                 'error' => $pStatus,
-                'message' => $pMesg,
+                // PC 콜백과 같은 이유 — 결제 건을 못 찾은 CP 콜백에는 PG 원문을 싣지 않는다.
+                'message' => ClaimPayment::isClaimPaymentNumber($moid) ? null : $pMesg,
                 'orderId' => $moid,
             ]));
         }
@@ -171,6 +191,26 @@ class MobileCallbackController
             ]);
 
             return redirect($this->resolveFailUrl(['error' => 'req_url_invalid', 'orderId' => $moid]));
+        }
+
+        // 클레임 추가결제(CP 채번)는 주문이 아니다 — 주문 분기를 태우면 order_not_found 로 끝난다.
+        // 승인은 모듈 위임(필터 발화 → 이 플러그인의 승인 리스너)이고, 승인 금액 불일치는 승인이
+        // 확정된 뒤의 거절이므로 취소 API 로 보상한다 (모바일 경로에는 망취소 URL 이 없다).
+        if (ClaimPayment::isClaimPaymentNumber($moid)) {
+            $payment = $this->findClaimPayment($moid);
+
+            if (! $payment) {
+                Log::error('KG Inicis mobile: claim payment not found', ['P_OID' => $moid]);
+
+                return redirect($this->resolveFailUrl(['error' => 'claim_payment_not_found', 'orderId' => $moid]));
+            }
+
+            // 주문 경로와 같은 직렬화 락을 건다 — 같은 콜백이 겹쳐 들어오는 것을 PG 의 중복
+            // 승인 거절에만 맡기면 방어 층이 주문 경로와 달라진다. 키는 결제번호(CP)다.
+            // 락 대기 초과는 500 이 아니라 신청서 상세 복귀로 끝난다(`approveClaimPaymentSerialized`).
+            // 승인 뒤 거절의 보상은 모듈의 `claim_payment.void_approval` 필터(승인 리스너의
+            // `voidApproval()`)가 맡는다 — API 승인 경로와 같은 한 구현이다.
+            return $this->approveClaimPaymentSerialized('mobileAuthCallback', $payment, $validated);
         }
 
         // Approve 성공 후 후속 처리 실패 시 PG 측 자동 cancel 을 위한 추적 변수.
@@ -215,7 +255,9 @@ class MobileCallbackController
             }
 
             $tid = $result['P_TID'] ?? $pTid;
-            $totPrice = (int) ($result['P_AMT'] ?? $pAmt ?? 0);
+            // 승인액은 승인 응답의 P_AMT 만 쓴다 — 콜백 P_AMT 는 브라우저를 거친 값이라 대조 근거가 될 수
+            // 없다. 응답에 없으면 0 이 되어 아래 대조에서 자동 취소 + 실패로 끝난다 (#599 validate P2).
+            $totPrice = (int) ($result['P_AMT'] ?? 0);
             $payType = (string) ($result['P_TYPE'] ?? '');
 
             // 가상계좌: completePayment 없이 발급 정보만 저장 (입금 통보 시점에 completePayment)
@@ -238,6 +280,18 @@ class MobileCallbackController
             $approvedTid = $tid;
             $approvedTotPrice = $totPrice;
             $embeddedPgProvider = $this->resolveEmbeddedPgProvider($selectedEasyPayMethod);
+
+            // 취소된 주문은 결제완료로 되살리지 않는다 (코어 P4 와 같은 가드).
+            //
+            // 결제창을 띄운 뒤 다른 탭·관리자 화면에서 주문이 취소될 수 있고, 그 사이 PG 승인은
+            // 이미 끝난다. 통과시키면 `CANCELLED` 주문이 결제완료로 되돌아가 재고·마일리지가
+            // 재차감된다. 형제 경로(`CbtCallbackController::assertPayableCbtOrder`)와 같은 판정이며,
+            // 승인된 돈은 붙들지 않고 즉시 PG 취소로 돌려준다.
+            if (! $order->order_status->isBeforePayment()) {
+                $this->autoCancelIfApproved($approvedTid, $moid, $approvedTotPrice, 'order_not_payable');
+
+                return redirect($this->resolveFailUrl(['error' => 'order_not_payable', 'orderId' => $moid]));
+            }
 
             $expectedAmount = $this->resolveExpectedPaymentPriceOrNull($order, 'mobile_auth_callback', [
                 'tid' => $tid,
@@ -338,6 +392,12 @@ class MobileCallbackController
      *
      * cancel 자체가 실패해도 사용자 응답 흐름은 막지 않음 — 로깅만 수행하고
      * 운영자가 KG 이니시스 가맹점 관리자에서 수동 처리하도록 신호.
+     *
+     * @param  string|null  $tid  승인된 거래번호 (없으면 아무것도 하지 않음)
+     * @param  string  $moid  주문번호
+     * @param  int  $totPrice  승인 금액 (결제 통화)
+     * @param  string  $reason  취소 사유 코드 (로그 문맥)
+     * @return void 반환값 없음
      */
     private function autoCancelIfApproved(
         ?string $tid,
@@ -382,6 +442,11 @@ class MobileCallbackController
      * KG 이니시스 모바일 승인 응답에서 P_TYPE=VBank 로 판별된 경우 호출.
      * 실제 결제 완료(completePayment)는 입금 통보(mobileVbankNotify) 시점에 처리.
      * 응답 필드는 manual.inicis.com/pay/stdpay_m.html 표준에 따른 P_VACT_* 형식.
+     *
+     * @param  Order  $order  대상 주문
+     * @param  array  $result  모바일 승인 응답
+     * @param  string  $tid  PG 거래번호
+     * @return void 반환값 없음
      */
     private function handleVbankIssued(Order $order, array $result, string $tid): void
     {
@@ -428,6 +493,12 @@ class MobileCallbackController
         ]);
     }
 
+    /**
+     * 결제 성공 리다이렉트 URL 을 만듭니다.
+     *
+     * @param  string  $orderId  주문번호
+     * @return string 절대 URL
+     */
     private function resolveSuccessUrl(string $orderId): string
     {
         $settings = $this->pluginSettingsService->get(self::PLUGIN_IDENTIFIER) ?? [];
@@ -436,6 +507,12 @@ class MobileCallbackController
         return $this->absolutize(ShopRedirectUrl::resolve($urlTemplate, ['{orderId}' => $orderId]));
     }
 
+    /**
+     * 결제 실패 리다이렉트 URL 을 만듭니다.
+     *
+     * @param  array  $queryParams  리다이렉트에 붙일 쿼리 파라미터
+     * @return string 절대 URL
+     */
     private function resolveFailUrl(array $queryParams = []): string
     {
         $settings = $this->pluginSettingsService->get(self::PLUGIN_IDENTIFIER) ?? [];
@@ -456,6 +533,9 @@ class MobileCallbackController
      *
      * P_STATUS=01 은 일반 실패(예: MX1006)와 사용자 취소가 공유하므로, P_RMESG1
      * 메시지의 한국어 문구로 분기. 시제/존대 변형을 흡수하기 위해 부분 일치.
+     *
+     * @param  string  $message  PG 결과 메시지
+     * @return bool 사용자 취소 메시지이면 true
      */
     private function isUserCancelMessage(string $message): bool
     {
@@ -479,6 +559,9 @@ class MobileCallbackController
      * 으로 Host 헤더를 localhost 로 바꿔서 PHP 에 전달하는 경우, Laravel 의
      * redirect('/path') 가 http://localhost/path 를 생성해버린다. config('app.url')
      * (.env 의 APP_URL)을 명시적 base 로 사용하여 도메인을 보존한다.
+     *
+     * @param  string  $url  리다이렉트 URL (상대 또는 절대)
+     * @return string 절대 URL
      */
     private function absolutize(string $url): string
     {

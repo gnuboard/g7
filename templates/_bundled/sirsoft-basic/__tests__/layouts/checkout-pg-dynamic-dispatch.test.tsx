@@ -53,15 +53,20 @@ const conditionsNode = findNode(
 );
 
 /**
- * PG 결제 진입 분기 = if 를 가진 conditions 항목 중 then 안 어딘가에 pgPaymentData 를 넘기는 액션이 있는 것.
- * then 은 단일 액션이 아니라 sequence 다 — 비회원 조회 토큰을 결제창을 열기 전에 발급한 뒤 동적 핸들러를
- * dispatch 한다(결제창을 닫자마자 호출되는 취소 기록 경로가 토큰을 요구하므로). 그래서 분기 노드와
- * 동적 dispatch 액션을 따로 잡는다.
+ * PG 결제 진입 분기 = if 가드가 pg_payment_handler 를 보는 conditions 항목.
+ * then 은 sequence 다 — 결제창을 열기 전에 비회원 조회 토큰을 먼저 발급해야 하므로
+ * (결제창을 닫으면 곧바로 취소 이력 기록이 호출되고 그 엔드포인트는 소유권을 대조한다),
+ * 실제 dispatch 액션은 그 sequence 안에 있다.
  */
 const pgBranch = conditionsNode?.conditions?.find(
-  (c: any) => c?.if !== undefined && findNode(c.then, (n) => n?.params && 'pgPaymentData' in n.params)
+  (c: any) => typeof c?.if === 'string' && c.if.includes('pg_payment_handler')
 );
-const pgDispatch = findNode(pgBranch?.then, (n) => n?.params && 'pgPaymentData' in n.params);
+
+/** PG 분기 안의 실제 결제 진입 dispatch 액션 = params.pgPaymentData 를 가진 노드. */
+const pgDispatch = findNode(
+  pgBranch?.then,
+  (n) => n?.params && typeof n.params === 'object' && 'pgPaymentData' in n.params
+);
 
 /** non-PG fallback 분기 = if 없는 (else) 분기. */
 const fallbackBranch = conditionsNode?.conditions?.find((c: any) => c?.if === undefined);

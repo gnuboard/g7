@@ -393,10 +393,33 @@
                                 "handler": "sequence",
                                 "actions": [
                                     {
+                                        "comment": "탭을 옮기면 열어 둔 인라인 추가 폼도 함께 정리한다. 페이지 [저장] 가드는 이 플래그들을 **탭과 무관하게** 읽으므로, 남겨 두면 폼을 연 채 다른 탭으로 간 운영자는 그 뒤로 어느 탭에서도 저장하지 못하고 화면에 있지도 않은 폼을 확정하라는 안내만 받는다(브라우저 실측으로 재현 — S10 17차). 각 폼의 '취소' 가 비우는 것과 같은 범위를 비운다: 플래그 + 입력 버퍼 + 그 폼의 오류. 가드가 열거식이므로 새 인라인 폼이 생기면 여기에도 더해야 한다.",
                                         "handler": "setState",
                                         "params": {
                                             "target": "local",
-                                            "errors": null
+                                            "errors": null,
+                                            "isAddingExchangeReason": false,
+                                            "exchangeReasonForm": null,
+                                            "exchangeReasonFormErrors": null,
+                                            "isAddingReturnReason": false,
+                                            "returnReasonForm": null,
+                                            "returnReasonFormErrors": null,
+                                            "isAddingRefundReason": false,
+                                            "refundReasonForm": null,
+                                            "refundReasonFormErrors": null,
+                                            "isAddingCarrier": false,
+                                            "carrierForm": null,
+                                            "carrierFormErrors": null,
+                                            "isAddingShippingType": false,
+                                            "shippingTypeForm": null,
+                                            "shippingTypeFormErrors": null,
+                                            "isAddingCountry": false,
+                                            "newCountry": null,
+                                            "isAddingCurrency": false,
+                                            "form.newCurrency": null,
+                                            "isAddingMileageCurrency": false,
+                                            "form.newMileageCurrency": null,
+                                            "claimReasonTab": null
                                         }
                                     },
                                     {
@@ -639,8 +662,17 @@
                                                 }
                                             },
                                             {
+                                                "comment": "통화 2축과 같은 가드를 사유 3종·배송사·배송유형·배송가능국가의 추가 폼에도 둔다 — 폼을 연 채 저장하면 그 버퍼(*Form)는 form.* 로 옮겨지지 않은 채 조용히 버려지고 성공 토스트가 뜬다. 가드가 열거식이라 새 인라인 폼이 생기면 여기에도 더해야 한다. 문구는 지금 열려 있는 폼만 지목한다 — 종전엔 세 가지를 고정으로 나열해, 배송가능국가 폼만 연 운영자가 열려 있지도 않은 폼을 확정하라는 안내를 받았다($t 는 치환 인자를 받지 않으므로 :forms 자리를 여기서 채운다).",
+                                                "handler": "toast",
+                                                "if": "{{_local.isAddingExchangeReason === true || _local.isAddingReturnReason === true || _local.isAddingRefundReason === true || _local.isAddingCarrier === true || _local.isAddingShippingType === true || _local.isAddingCountry === true}}",
+                                                "params": {
+                                                    "type": "error",
+                                                    "message": "{{$t('sirsoft-ecommerce.admin.settings.save_pending_form').replace(':forms', [[_local.isAddingExchangeReason, 'exchange_reason'], [_local.isAddingReturnReason, 'return_reason'], [_local.isAddingRefundReason, 'refund_reason'], [_local.isAddingCarrier, 'carrier'], [_local.isAddingShippingType, 'shipping_type'], [_local.isAddingCountry, 'country']].filter(pair => pair[0] === true).map(pair => $t('sirsoft-ecommerce.admin.settings.save_pending_form_targets.' + pair[1])).join(', '))}}"
+                                                }
+                                            },
+                                            {
                                                 "handler": "setState",
-                                                "if": "{{!(_local.isAddingMileageCurrency === true || _local.isAddingCurrency === true)}}",
+                                                "if": "{{!(_local.isAddingMileageCurrency === true || _local.isAddingCurrency === true || _local.isAddingExchangeReason === true || _local.isAddingReturnReason === true || _local.isAddingRefundReason === true || _local.isAddingCarrier === true || _local.isAddingShippingType === true || _local.isAddingCountry === true)}}",
                                                 "params": {
                                                     "target": "local",
                                                     "isSaving": true,
@@ -650,7 +682,7 @@
                                             {
                                                 "handler": "apiCall",
                                                 "target": "/api/modules/sirsoft-ecommerce/admin/settings",
-                                                "if": "{{!(_local.isAddingMileageCurrency === true || _local.isAddingCurrency === true)}}",
+                                                "if": "{{!(_local.isAddingMileageCurrency === true || _local.isAddingCurrency === true || _local.isAddingExchangeReason === true || _local.isAddingReturnReason === true || _local.isAddingRefundReason === true || _local.isAddingCarrier === true || _local.isAddingShippingType === true || _local.isAddingCountry === true)}}",
                                                 "auth_required": true,
                                                 "params": {
                                                     "method": "PUT",

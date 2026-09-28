@@ -2,6 +2,8 @@
 
 namespace Modules\Sirsoft\Ecommerce\Repositories;
 
+use Carbon\Carbon;
+use Illuminate\Support\Collection;
 use Modules\Sirsoft\Ecommerce\Models\OrderCancelOption;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderCancelOptionRepositoryInterface;
 
@@ -23,5 +25,40 @@ class OrderCancelOptionRepository implements OrderCancelOptionRepositoryInterfac
     public function create(array $data): OrderCancelOption
     {
         return $this->model->create($data);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function bulkUpdateStatus(int $cancelId, string $status, ?int $processedBy = null, ?Carbon $completedAt = null): int
+    {
+        $updates = [
+            'option_status' => $status,
+            'updated_at' => now(),
+        ];
+
+        // 처리자·완료 시각은 값이 주어졌을 때만 기입한다 — 원값을 무조건 덮어쓰면
+        // 처리자 미상 호출이 이미 기록된 상세 행의 처리자를 NULL 로 지운다.
+        if ($processedBy !== null) {
+            $updates['processed_by'] = $processedBy;
+        }
+
+        if ($completedAt !== null) {
+            $updates['completed_at'] = $completedAt;
+        }
+
+        return $this->model->newQuery()
+            ->where('order_cancel_id', $cancelId)
+            ->update($updates);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function listByCancelId(int $cancelId): Collection
+    {
+        return $this->model->newQuery()
+            ->where('order_cancel_id', $cancelId)
+            ->get();
     }
 }

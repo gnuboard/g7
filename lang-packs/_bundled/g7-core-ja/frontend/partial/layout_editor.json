@@ -393,7 +393,8 @@
       "onComponentEvent": "特定のイベントが発生したら",
       "onPrimaryAction": "主ボタンをクリックすると",
       "onSecondaryAction": "副ボタンをクリックすると",
-      "onAction": "メニューを選択すると"
+      "onAction": "メニューを選択すると",
+      "onSearch": "検索キーワードを入力すると"
     },
     "advanced": "詳細",
     "add_search": "アクションを検索…",

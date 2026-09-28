@@ -146,13 +146,7 @@
     "issue_period_label": "발급기간",
     "issue_count_label": "발급수량",
     "status_label": "상태",
-    "creator_label": "등록자",
-    "target_type:": "적용대상:",
-    "issue:": "발급:",
-    "valid_period: ": "유효기간: ",
-    "issue_period: ": "발급기간: ",
-    "issue_count: ": "발급수량: ",
-    "status:": "상태:"
+    "creator_label": "등록자"
   },
   "modal": {
     "status_change": {

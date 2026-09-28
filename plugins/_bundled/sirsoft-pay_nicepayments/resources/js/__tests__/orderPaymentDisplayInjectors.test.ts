@@ -5,7 +5,7 @@ describe('NicePayments order payment display injectors', () => {
     it('관리자 주문상세 결제수단 행을 간편결제 표시명으로 교체한다', () => {
         document.body.innerHTML = `
             <section id="section_payment_info">
-                <div>
+                <div id="payment_method_block_0">
                     <div>결제수단</div>
                     <div>신용카드</div>
                     <div>(일시불)</div>

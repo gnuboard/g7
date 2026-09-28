@@ -5,9 +5,12 @@ namespace Modules\Sirsoft\Ecommerce\Http\Resources;
 use App\Helpers\PermissionHelper;
 use App\Http\Resources\BaseApiResource;
 use Illuminate\Http\Request;
+use Modules\Sirsoft\Ecommerce\Enums\TaxInvoiceStatusEnum;
 use Modules\Sirsoft\Ecommerce\Http\Resources\Traits\HasMultiCurrencyPrices;
 use Modules\Sirsoft\Ecommerce\Models\OrderCashReceipt;
+use Modules\Sirsoft\Ecommerce\Services\ClaimPaymentService;
 use Modules\Sirsoft\Ecommerce\Services\CurrencyConversionService;
+use Modules\Sirsoft\Ecommerce\Support\OrderProgressSteps;
 use Modules\Sirsoft\Ecommerce\Support\ShippingPolicySnapshot;
 
 /**
@@ -31,6 +34,12 @@ class OrderResource extends BaseApiResource
         $currencySnapshot = $this->resource->currency_snapshot ?? null;
         $this->withCurrencySnapshot($currencySnapshot);
 
+        // 클레임 추가결제 실수납 합계 — 결제 완료 건의 청구액에서 부분 환급을 뺀 값. 주문 1건당 집계 1회.
+        // 산정은 ClaimPaymentService 의 게터를 경유한다 — 같은 값을 리소스가 저장소에서 따로 집계하면
+        // 뒤에 이 합계의 정의가 바뀔 때(예: 환급 반영 범위) 두 곳이 갈린다. 단건 상세 전용이라
+        // 목록에서 행마다 해석되지 않는다(목록은 OrderListResource).
+        $claimPaid = app(ClaimPaymentService::class)->paidTotalForOrder($this->resource);
+
         // 결제 통화(order_currency) — 유저가 선택·결제한 통화. base 통화와 다를 때 화면에 함께 표기한다.
         $paymentCurrency = $this->currency
             ?: (data_get($this->currency_snapshot, 'order_currency') ?: $orderCurrency);
@@ -46,6 +55,10 @@ class OrderResource extends BaseApiResource
             'order_status' => $this->order_status,
             'order_status_label' => $this->order_status ? $this->order_status->label() : null,
             'order_status_variant' => $this->order_status ? $this->order_status->variant() : null,
+            // 아이콘 의미 토큰(status-*) — 글리프 이름이 아니다. 템플릿 Icon 이 해석한다.
+            'order_status_icon' => $this->order_status ? $this->order_status->icon() : null,
+            // 진행단계 배열 — 관리자·회원·비회원 상세가 같은 배열로 스텝퍼를 그린다(OrderProgressSteps 단일 출처).
+            'progress_steps' => OrderProgressSteps::for($this->resource),
             // 부분취소 파생 플래그 — 일부 옵션만 취소된 주문(취소옵션 ∧ 잔여 활성옵션). 별도 order_status 아님.
             // 주문 상태는 잔여 활성 옵션 기준으로 결정되고, "일부 취소됨" 표시는 이 플래그로 한다 (partial_cancelled 제거).
             'is_partially_cancelled' => $this->isPartiallyCancelled(),
@@ -80,10 +93,38 @@ class OrderResource extends BaseApiResource
             'depositor_name' => $this->whenLoaded('payment', fn () => $this->payment?->depositor_name),
             'total_cancelled_amount' => $this->roundToOrderCurrency($this->total_cancelled_amount, $orderCurrency),
             'total_cancelled_amount_formatted' => $this->formatOrderCurrency($this->total_cancelled_amount, $orderCurrency),
+            // 취소가 일어났는데 발급 완료 세금계산서가 그대로 남아 있는가 (P15).
+            //
+            // 세금계산서는 취소·부분취소에 반응하지 않는다 — 현금영수증과 달리 취소·재발급
+            // 경로가 없고, 국세청 연동 자동화는 이번 범위 밖이다(§12-A). 그래서 **누락을
+            // 드러내는** 플래그를 낸다: 관리자 주문상세가 이 값으로 경고 배지를 세운다.
+            // 표시가 없으면 운영자는 계산서가 이미 정리된 줄 알고 넘어가고, 어긋남은 신고
+            // 시점에야 드러난다.
+            //
+            // 판정은 **적재된 관계에서만** 한다. Resource 는 행마다 실행되므로 여기서
+            // `taxInvoices()` 를 재쿼리하면 주문 목록 한 페이지가 행 수만큼의 추가 쿼리를
+            // 부른다. 이 값을 읽는 곳은 관리자 주문상세 하나뿐이고 그 경로는 관계를 적재하므로
+            // (`OrderRepository::findWithRelations`), 목록에서는 키 자체가 나오지 않는다 —
+            // 화면은 `=== true` 로 판정하므로 키 부재는 배지 미표시와 같다.
+            'tax_invoice_needs_review' => $this->whenLoaded(
+                'taxInvoices',
+                fn (): bool => (float) $this->total_cancelled_amount > 0
+                    && $this->taxInvoices->contains(
+                        fn ($invoice): bool => ($invoice->invoice_status instanceof TaxInvoiceStatusEnum
+                            ? $invoice->invoice_status->value
+                            : (string) $invoice->invoice_status) === TaxInvoiceStatusEnum::ISSUED->value
+                    ),
+            ),
             'total_refunded_amount' => $this->roundToOrderCurrency($this->total_refunded_amount, $orderCurrency),
             'total_refunded_amount_formatted' => $this->formatOrderCurrency($this->total_refunded_amount, $orderCurrency),
             'total_refunded_points_amount' => $this->roundToOrderCurrency($this->total_refunded_points_amount, $orderCurrency),
             'total_refunded_points_amount_formatted' => $this->formatOrderCurrency($this->total_refunded_points_amount, $orderCurrency),
+
+            // 클레임 추가결제 합계 (교환·반품 청구액의 실수납 합계 — 부분 환급 차감, 0원이면 화면 미표시)
+            // 주문 총 배송비와 분리해 표기한다(§2 해석 확정). ClaimPaymentService::paidTotalForOrder 가 SSoT.
+            'claim_additional_paid_total' => $this->roundToOrderCurrency($claimPaid['amount'], $orderCurrency),
+            'claim_additional_paid_total_formatted' => $this->formatOrderCurrency($claimPaid['amount'], $orderCurrency),
+            'mc_claim_additional_paid_total' => $this->formatStoredMultiCurrency($claimPaid['mc'] ?: null),
 
             // 할인 상세
             'total_product_coupon_discount_amount' => $this->roundToOrderCurrency($this->total_product_coupon_discount_amount, $orderCurrency),
@@ -101,7 +142,7 @@ class OrderResource extends BaseApiResource
             'total_deposit_used_amount' => $this->roundToOrderCurrency($this->total_deposit_used_amount, $orderCurrency),
             'total_deposit_used_amount_formatted' => $this->formatOrderCurrency($this->total_deposit_used_amount, $orderCurrency),
             'total_earned_points_amount' => $this->roundToOrderCurrency($this->total_earned_points_amount, $orderCurrency),
-            'total_earned_points_amount_formatted' => $this->formatOrderCurrency($this->total_earned_points_amount, $orderCurrency),
+            'total_earned_points_amount_formatted' => $this->formatEarnedPoints($this->total_earned_points_amount),
 
             // 다중 통화 금액 (주문 시점 스냅샷)
             'mc_subtotal_amount' => $this->formatStoredMultiCurrency($this->mc_subtotal_amount),
@@ -178,10 +219,17 @@ class OrderResource extends BaseApiResource
             'delivery_memo' => $this->shippingAddress?->delivery_memo,
             'delivery_memo_label' => $this->shippingAddress?->delivery_memo_label,
 
-            // 주문 옵션 (품목) — 주문 시점 통화를 자식에 전파
-            'options' => $this->whenLoaded('options', fn () => OrderOptionResource::collection($this->options)->each(
-                fn ($r) => $r->withOrderCurrency($orderCurrency)->withCurrencySnapshot($currencySnapshot)
-            )),
+            // 주문 옵션 (품목) — 주문 시점 통화를 자식에 전파. 클레임 점유 수량은 옵션마다 구하면
+            // 옵션 수 × 3 쿼리라 여기서 한 번에 구해 주입한다.
+            'options' => $this->whenLoaded('options', function () use ($orderCurrency, $currencySnapshot) {
+                $locked = OrderOptionResource::lockedQuantitiesFor($this->options);
+
+                return OrderOptionResource::collection($this->options)->each(
+                    fn ($r) => $r->withOrderCurrency($orderCurrency)
+                        ->withCurrencySnapshot($currencySnapshot)
+                        ->withClaimLockedQuantity($locked[(int) $r->resource->id] ?? null)
+                );
+            }),
 
             // 배송지 정보
             'shipping_address' => new OrderAddressResource($this->whenLoaded('shippingAddress')),

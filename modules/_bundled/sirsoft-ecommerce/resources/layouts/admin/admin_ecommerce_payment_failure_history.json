@@ -1175,7 +1175,7 @@
                                                                                                 "props": {
                                                                                                     "className": "text-primary"
                                                                                                 },
-                                                                                                "text": "Chrome 120.0.0.0"
+                                                                                                "text": "Chrome 120"
                                                                                             }
                                                                                         ]
                                                                                     },
@@ -2239,7 +2239,7 @@
                                                                                                                 "props": {
                                                                                                                     "className": "text-primary text-sm"
                                                                                                                 },
-                                                                                                                "text": "Chrome 120.0.0.0"
+                                                                                                                "text": "Chrome 120"
                                                                                                             }
                                                                                                         ]
                                                                                                     },

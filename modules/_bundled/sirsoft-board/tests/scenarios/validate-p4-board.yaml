@@ -1,0 +1,27 @@
+feature: 게시판 알림 데이터 리스너의 조회를 Repository 로만 (#599 validate P4 board)
+
+description: |
+  리스너는 Repository 경유가 규정이다(board AGENTS.md — Model·DB 직접 접근 금지). #599 가 게시판
+  관리자 해석을 헬퍼로 뽑으면서 `$role->users()->get()` · `User::superAdmins()` 를 그대로 옮겼고,
+  신고 접수 알림은 `$report->logs()` 로 현재 주기 로그를 직접 세고 `loadMissing(['logs'])` 로 전
+  로그를 읽었다. 역할 사용자·최고관리자 폴백은 코어 Repository, 신고 로그 수·최근 로그는
+  `ReportRepositoryInterface` 신규 메서드(countLogsByReportSince·findLatestLogByReport)로 옮긴다.
+
+axes:
+  case: [source_scan, board_managers, super_admin_fallback, report_logs]
+
+effects:
+  - board_notification_listener_has_no_direct_model_queries  # 소스에 모델·관계 직접 조회가 없다
+  - board_managers_are_resolved_through_role_repository      # 게시판 관리자는 역할 Repository 로
+  - super_admin_fallback_goes_through_user_repository        # 최고관리자 폴백은 사용자 Repository 로
+  - report_logs_are_read_through_report_repository           # 신고 로그 수·최근 로그는 신고 Repository 로
+  - per_case_report_notice_is_sent_once_per_cycle            # 케이스당 1회 판정은 그대로
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Unit/Listeners/BoardNotificationRepositoryRoutingTest.php
+
+validation:
+  audit_rule: test-scenario-coverage
+  note: |
+    기존 `BoardNotificationDataListenerTest` 는 생성자 인자(사용자·신고 Repository)와 Mock 기대
+    (findByIdentifier → getUsersByIdentifier, 신고 로그 → findLatestLogByReport)를 새 경로에 맞췄다.

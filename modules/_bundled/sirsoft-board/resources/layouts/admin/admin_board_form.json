@@ -19,11 +19,14 @@
             "auth_required": true,
             "cache": false,
             "loading_strategy": "blocking",
-            "initLocal": "form",
             "refetchOnMount": true,
             "params": {
                 "board_slug": "{{route?.slug}}",
                 "copy_id": "{{query?.copy_id}}"
+            },
+            "initLocal": {
+                "_merge": "replace",
+                "form": "{{data}}"
             },
             "errorHandling": {
                 "403": {
@@ -104,6 +107,18 @@
             "availableChannels"
         ]
     },
+    "init_actions": [
+        {
+            "comment": "생성 모드: 게시판 수정 화면에서 SPA 로 넘어오면 같은 레이아웃(admin_board_form)이라 엔진이 `_local` 을 비우지 않아 직전 게시판의 form(다국어 이름 등)이 남는다. form=null 로 먼저 지운다(객체 대신 null 로 덮어써 완전 삭제). boards 데이터소스의 initLocal(_merge: replace)이 이 뒤에 병합돼 서버가 준 새 게시판 폼(복사 진입 포함)만 남는다 — 문자열 initLocal 은 엔진이 기존 form 과 깊은 병합해 두므로 replace 가 함께 필요하다.",
+            "handler": "setState",
+            "if": "{{!route?.slug}}",
+            "params": {
+                "target": "local",
+                "form": null,
+                "hasChanges": false
+            }
+        }
+    ],
     "slots": {
         "content": [
             {

@@ -71,7 +71,7 @@ _단건 응답: `data` 객체의 필드 (`ProductOptionService::bulkUpdatePriceB
 ```json
 {
     "success": true,
-    "message": ":count개 옵션의 가격이 수정되었습니다.",
+    "message": "2개 옵션의 가격이 수정되었습니다.",
     "data": {
         "updated_count": 3,
         "requested_product_count": 1
@@ -79,7 +79,7 @@ _단건 응답: `data` 객체의 필드 (`ProductOptionService::bulkUpdatePriceB
 }
 ```
 
-> `message` 는 `sirsoft-ecommerce::messages.options.bulk_price_updated` 를 그대로 사용합니다. 컨트롤러가 `messageParams` 를 전달하지 않으므로 `:count` 플레이스홀더는 치환되지 않은 채 응답됩니다 (변경 건수는 `data.updated_count` 로 확인).
+> 응답 `message` 의 `:count` 는 `updated_count` 로 치환됩니다.
 
 **에러 응답**
 
@@ -147,7 +147,7 @@ _단건 응답: `data` 객체의 필드 (`ProductOptionService::bulkUpdateStockB
 ```json
 {
     "success": true,
-    "message": ":count개 옵션의 재고가 수정되었습니다.",
+    "message": "2개 옵션의 재고가 수정되었습니다.",
     "data": {
         "updated_count": 3,
         "requested_product_count": 1
@@ -155,7 +155,7 @@ _단건 응답: `data` 객체의 필드 (`ProductOptionService::bulkUpdateStockB
 }
 ```
 
-> `message` 는 `sirsoft-ecommerce::messages.options.bulk_stock_updated` 를 그대로 사용합니다. 컨트롤러가 `messageParams` 를 전달하지 않으므로 `:count` 플레이스홀더는 치환되지 않은 채 응답됩니다 (변경 건수는 `data.updated_count` 로 확인).
+> 응답 `message` 의 `:count` 는 `updated_count` 로 치환됩니다.
 
 **에러 응답**
 

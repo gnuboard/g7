@@ -16,6 +16,11 @@
     <div class="space-y-4 pb-16">
       <!-- 안내 메시지 -->
       <p class="text-label-subtle">$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.description</p>
+      <!-- 부분취소 불가 안내 (P6). 어떤 수단·PG 조합은 원천적으로 전액취소만 된다 — NICE 가상계좌가 그렇다(코어 취소는 PG 가 항상 거절하고, 우회 API 는 전액취소 전용이며 이는 NICE API 자체의 제약이다). 미리 말하지 않으면 운영자는 수량을 줄여 [취소]를 누르고 원인 없는 실패를 받는다. -->
+      <div data-ref="cancel_partial_unsupported_notice" data-if="{{order.data?.payment?.supports_partial_cancel === false}}" class="flex items-start gap-2 rounded-lg border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20 p-3">
+        <icon name="triangle-exclamation" size="sm" class="text-amber-600 dark:text-amber-400 mt-0.5"/>
+        <span class="text-sm text-amber-700 dark:text-amber-300">$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.partial_unsupported</span>
+      </div>
       <!-- PG 에러 알림 영역 -->
       <div data-if="{{_local.cancelError}}" class="alert-danger">
         <div class="flex-center gap-2 text-red-700 dark:text-red-400 font-medium text-sm mb-1">
@@ -32,7 +37,8 @@
           <span>$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.validation_error_title</span>
         </div>
         <ul class="list-disc list-inside space-y-1">
-          <li data-each="errMsg, errIdx in Object.entries(_local.cancelValidationErrors ?? {}).flatMap(([k, v]) => Array.isArray(v) ? v : [v])" class="text-xs text-red-600 dark:text-red-400">{{errMsg}}</li>
+          <!-- 같은 문장이 여러 키에 함께 붙는 검증(환불계좌 필수는 세 키에 같은 안내를 건다)이 있어 **중복을 접는다**. 접지 않으면 한 문장이 세 줄로 쌓여, 무엇이 문제인지보다 분량이 먼저 보인다(브라우저 실측). -->
+          <li data-each="errMsg, errIdx in Object.entries(_local.cancelValidationErrors ?? {}).flatMap(([k, v]) => Array.isArray(v) ? v : [v]).filter(Boolean).filter((message, index, all) => all.indexOf(message) === index)" class="text-xs text-red-600 dark:text-red-400">{{errMsg}}</li>
         </ul>
       </div>
       <!-- 취소 상품 목록 테이블 -->
@@ -118,8 +124,8 @@
         <!-- 상세 사유 필드 에러 -->
         <span data-if="{{_local.cancelValidationErrors?.reason_detail}}" class="form-error-xs mt-1 block">{{Array.isArray(_local.cancelValidationErrors?.reason_detail) ? _local.cancelValidationErrors.reason_detail[0] : _local.cancelValidationErrors?.reason_detail}}</span>
       </div>
-      <!-- 환불 계좌 (W-4 / #454). 가상계좌·무통장에서만 노출한다 — 카드·간편결제는 원 결제수단으로 환불되므로 계좌가 불필요하다. 가상계좌 입금완료 건은 서버(CancelOrderRequest)가 필수로 강제한다. 주문 시 입력값은 레이아웃 initLocal 이 프리필하며, cancelOrderHandlers 가 _local.refundBank* 를 읽어 전송한다. 신설 블록이므로 responsive.portable 로 작성한다(§6-0). -->
-      <div data-ref="cancel_refund_bank_section" data-if="{{['vbank', 'dbank'].includes(order.data?.payment?.payment_method)}}">
+      <!-- 환불 계좌 (W-4 / #454). 가상계좌·무통장에서만 노출한다 — 카드·간편결제는 원 결제수단으로 환불되므로 계좌가 불필요하다. 가상계좌 입금완료 건은 서버(CancelOrderRequest)가 필수로 강제한다. 주문 시 입력값은 레이아웃 initLocal 이 프리필하며, cancelOrderHandlers 가 _local.refundBank* 를 읽어 전송한다. 신설 블록이므로 responsive.portable 로 작성한다(§6-0). **돌려줄 돈이 없으면 감춘다** — 아직 입금되지 않은 무통장 주문에까지 계좌칸을 세우면 운영자는 존재하지 않는 환불을 위해 계좌를 찾게 된다(브라우저 실측). 서버의 같은 판정(CancelOrderRequest::hasMoneyToReturn)과 축을 맞춘다. -->
+      <div data-ref="cancel_refund_bank_section" data-if="{{['vbank', 'dbank'].includes(order.data?.payment?.payment_method) &amp;&amp; ((Number(order.data?.total_paid_amount ?? 0) - Number(order.data?.total_refunded_amount ?? 0)) > 0)}}">
         <span class="text-body font-medium block mb-2">$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.refund_bank_label</span>
         <!-- 가상계좌 입금완료 건은 필수임을 미리 안내한다 (서버가 422 로 막기 전에) -->
         <p data-if="{{order.data?.payment?.payment_method === 'vbank' &amp;&amp; order.data?.payment?.payment_status === 'paid'}}" class="text-xs text-amber-600 dark:text-amber-400 mb-2">$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.refund_bank_required_hint</p>
@@ -145,19 +151,19 @@
             </on>
           </input>
         </div>
-        <!-- 서버 검증 오류 — 부분 입력 거부 / 가상계좌 입금완료 필수 (필드별 인라인) -->
+        <!-- 서버 검증 오류 — 부분 입력 거부 / 사람이 송금하는 수단의 계좌 필수. 같은 문장이 세 키에 함께 붙는 경우가 있어(계좌 필수) **중복을 접어** 낸다. 접지 않으면 한 문장이 세 번 쌓여, 무엇이 문제인지보다 분량이 먼저 보인다(브라우저 실측). -->
         <div data-if="{{!!(_local.cancelValidationErrors?.['refund_bank.bank_code'] || _local.cancelValidationErrors?.['refund_bank.account_number'] || _local.cancelValidationErrors?.['refund_bank.holder'])}}" class="mt-1 space-y-0.5">
-          <span data-if="{{!!_local.cancelValidationErrors?.['refund_bank.bank_code']}}" class="form-error-xs block">{{Array.isArray(_local.cancelValidationErrors?.['refund_bank.bank_code']) ? _local.cancelValidationErrors['refund_bank.bank_code'][0] : _local.cancelValidationErrors?.['refund_bank.bank_code']}}</span>
-          <span data-if="{{!!_local.cancelValidationErrors?.['refund_bank.account_number']}}" class="form-error-xs block">{{Array.isArray(_local.cancelValidationErrors?.['refund_bank.account_number']) ? _local.cancelValidationErrors['refund_bank.account_number'][0] : _local.cancelValidationErrors?.['refund_bank.account_number']}}</span>
-          <span data-if="{{!!_local.cancelValidationErrors?.['refund_bank.holder']}}" class="form-error-xs block">{{Array.isArray(_local.cancelValidationErrors?.['refund_bank.holder']) ? _local.cancelValidationErrors['refund_bank.holder'][0] : _local.cancelValidationErrors?.['refund_bank.holder']}}</span>
+          <span data-ref="cancel_refund_bank_error_{{bankErrorIdx}}" data-each="bankError, bankErrorIdx in {{['refund_bank.bank_code', 'refund_bank.account_number', 'refund_bank.holder'].map(key => Array.isArray(_local.cancelValidationErrors?.[key]) ? _local.cancelValidationErrors[key][0] : _local.cancelValidationErrors?.[key]).filter(Boolean).filter((message, index, all) => all.indexOf(message) === index)}}" class="form-error-xs block">{{bankError}}</span>
         </div>
+        <!-- 은행 목록이 비었을 때의 안내 (브라우저 실측). 사람이 송금해야 하는 수단은 환불계좌가 **필수**인데, 운영자가 은행을 아직 등록하지 않았으면 고를 수 있는 값이 하나도 없다. 그 상태에서는 빈 드롭다운과 '계좌를 입력하세요' 422 만 남아, 무엇을 어디서 고쳐야 하는지가 화면 어디에도 없다 — 설정 자리를 지목해 막다른 길을 1분짜리 설정 작업으로 바꾼다. -->
+        <p data-ref="cancel_refund_bank_empty_hint" data-if="{{(paymentSettings.data?.order_settings?.banks ?? []).length === 0}}" class="text-xs text-amber-600 dark:text-amber-400 mt-1">$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.refund_bank_empty_hint</p>
         <p class="text-xs text-secondary mt-1">$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.refund_bank_partial_notice</p>
       </div>
       <!-- 환불 우선순위 라디오 — PG 환불 가능(requires_pg_cancellation)일 때 노출한다. 포인트 사용분이 없으면(total_points_used_amount=0) PG↔포인트 배분 순서가 무의미하므로 노출은 하되 선택 불가(disabled)로 둔다 (A28, 2026-06-22). -->
       <div data-if="{{order.data?.payment?.requires_pg_cancellation === true}}">
         <span class="text-body font-medium block mb-2">$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.refund_priority_label</span>
         <!-- 포인트 미사용 안내 (선택 불가 사유) -->
-        <span data-if="{{(order.data?.total_points_used_amount ?? 0) <= 0}}" class="text-caption text-gray-500 dark:text-gray-400 block mb-2">$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.refund_priority_no_points_hint</span>
+        <span data-if="{{(order.data?.total_points_used_amount ?? 0) <= 0}}" class="text-xs text-gray-500 dark:text-gray-400 block mb-2">$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.refund_priority_no_points_hint</span>
         <div class="flex gap-3">
           <label class="flex-center gap-2 p-2 rounded-lg border {{(order.data?.total_points_used_amount ?? 0) <= 0 ? 'cursor-not-allowed opacity-50 border-gray-200 dark:border-gray-700' : (_local.refundPriority === 'pg_first' ? 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 border-gray-200 dark:border-gray-700')}}">
             <input type="radio" name="refundPriority" value="pg_first" checked="{{_local.refundPriority === 'pg_first'}}" disabled="{{(order.data?.total_points_used_amount ?? 0) <= 0}}" class="radio">
@@ -178,6 +184,23 @@
             <span class="text-body">$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.refund_priority_points_first</span>
           </label>
         </div>
+      </div>
+      <!-- 환불까지 한 번에 처리 (D7) — 기본 꺼짐. 관리자 [주문취소]는 환불신청서를 만들 뿐이고, 금액확인 → 승인 → 환불완료는 운영자가 하나씩 밟는 것이 기본 운영이다. 체크하면 승인·완료까지 자동으로 민다(계좌 환불 수단은 그래도 승인에서 멈춘다). -->
+      <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+        <label data-ref="cancel_auto_advance_refund_field" class="flex items-start gap-2 cursor-pointer select-none">
+          <!-- 이번 취소에 한해 환불 단계를 자동으로 밀지 고르는 표식이다 — 체크만으로는 서버에 아무것도 가지 않고, [주문 취소] 실행 요청에 실려 가서야 효력이 생긴다. -->
+          <input id="cancel_auto_advance_refund_checkbox" type="checkbox" checked="{{_local.autoAdvanceRefund === true}}" class="checkbox mt-0.5">
+            <on type="change">
+              <set-state target="local" autoAdvanceRefund="{{!(_local.autoAdvanceRefund === true)}}"/>
+            </on>
+          </input>
+          <div class="flex-1">
+            <span class="text-body font-medium block">$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.auto_advance_refund_label</span>
+            <span class="text-xs text-gray-500 dark:text-gray-400 block mt-1">$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.auto_advance_refund_hint</span>
+            <!-- 정지 수단 안내 (P16) — 체크박스는 그대로 두되, 이 주문의 결제수단이 자동 승인 목록 밖이면 체크해도 환불신청에서 멈춘다는 것을 미리 알린다. 판정은 서버가 준 auto_approves_refund 하나를 읽는다 — 레이아웃에서 목록을 다시 비교하면 설정 변경·플러그인 추가 때 안내와 실제 전이가 갈린다. -->
+            <span data-if="{{order.data?.payment?.auto_approves_refund === false}}" class="text-xs text-amber-600 dark:text-amber-400 block mt-1">$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.auto_advance_refund_blocked_hint</span>
+          </div>
+        </label>
       </div>
       <!-- 주문금액 비교 영역 -->
       <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
@@ -394,10 +417,10 @@
         </on>
         <span>$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.close_btn</span>
       </button>
-      <button type="button" class="flex-center gap-2 px-4 py-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_local.isCancelling || _local.refundLoading || _local.refundEstimate?.cancel_blocked}}">
+      <button type="button" class="flex-center gap-2 px-4 py-2 text-sm bg-red-600 dark:bg-red-500 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_local.isCancelling || _local.refundLoading || _local.refundEstimate?.cancel_blocked}}">
         <on type="click">
-          <!-- 취소 실행 — 화면에 흩어진 여섯 값을 그대로 핸들러에 넘긴다. 재고 복원·마일리지 회수·PG 취소가 한 흐름으로 얽혀 있어 화면에서 조립하지 않고, 검증 오류 표시와 창 닫기도 핸들러 몫이다. -->
-          <action handler="sirsoft-ecommerce.executeCancelOrder" orderId="{{route.orderNumber}}" cancelItems="{{_local.cancelItems}}" cancelReason="{{_local.cancelReason ?? ''}}" cancelReasonDetail="{{_local.cancelReasonDetail ?? ''}}" cancelPg="{{_local.cancelPg ?? true}}" refundPriority="{{_local.refundPriority ?? 'pg_first'}}"/>
+          <!-- 취소 실행 — 화면에 흩어진 여섯 값을 그대로 핸들러에 넘긴다. 클레임 열람 가능 여부(`canViewClaims`)도 함께 넘긴다 — 셸의 orderClaims 가 403 이면 unavailable 이고, 그 운영자를 방금 만든 신청서 상세로 보내면 403 화면에 떨어진다. 재고 복원·마일리지 회수·PG 취소가 한 흐름으로 얽혀 있어 화면에서 조립하지 않고, 검증 오류 표시와 창 닫기도 핸들러 몫이다. -->
+          <action handler="sirsoft-ecommerce.executeCancelOrder" orderId="{{route.orderNumber}}" cancelItems="{{_local.cancelItems}}" cancelReason="{{_local.cancelReason ?? ''}}" cancelReasonDetail="{{_local.cancelReasonDetail ?? ''}}" autoAdvanceRefund="{{_local.autoAdvanceRefund === true}}" refundPriority="{{_local.refundPriority ?? 'pg_first'}}" canViewClaims="{{orderClaims?.data?.unavailable !== true}}"/>
         </on>
         <icon data-if="{{_local.isCancelling}}" name="spinner" class="animate-spin" size="sm"/>
         <span>$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.cancel_btn</span>

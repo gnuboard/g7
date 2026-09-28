@@ -1699,7 +1699,7 @@
                                                             "params": {
                                                                 "target": "local",
                                                                 "geoipUpdating": true,
-                                                                "errors": []
+                                                                "errors": {}
                                                             },
                                                             "onSuccess": {
                                                                 "handler": "apiCall",

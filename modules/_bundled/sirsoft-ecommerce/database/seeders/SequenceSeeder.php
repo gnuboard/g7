@@ -55,7 +55,7 @@ class SequenceSeeder extends Seeder
      *
      * @param  SequenceType  $type  시퀀스 타입
      * @param  array<string, mixed>  $defaultConfig  기본 설정
-     * @return array{0: Sequence, 1: bool}  [모델, 신규생성여부]
+     * @return array{0: Sequence, 1: bool} [모델, 신규생성여부]
      */
     private function firstOrCreateSequence(SequenceType $type, array $defaultConfig): array
     {
@@ -90,6 +90,9 @@ class SequenceSeeder extends Seeder
             SequenceType::SHIPPING => '배송',
             SequenceType::CANCEL => '취소',
             SequenceType::REFUND => '환불',
+            SequenceType::EXCHANGE => '교환',
+            SequenceType::ORDER_RETURN => '반품',
+            SequenceType::CLAIM_PAYMENT => '클레임 추가결제',
         };
     }
 }

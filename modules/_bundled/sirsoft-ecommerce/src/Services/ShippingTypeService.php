@@ -165,12 +165,88 @@ class ShippingTypeService
     }
 
     /**
+     * 저장 payload 가 사용 중인 배송유형을 지우려 하는지 **쓰기 없이** 판정합니다
+     *
+     * 설정 저장은 JSON 파일 쓰기라 트랜잭션으로 되돌릴 수 없다. `syncShippingTypes()` 안의
+     * 가드는 파일이 이미 기록된 뒤에 돌아, 거절되면 배송 스칼라만 반영된 반쪽 상태가 남는다.
+     * 그래서 컨트롤러가 파일 쓰기 **앞에서** 이 선행 판정을 부른다
+     * (`ClaimReasonService::assertSyncDeletable()` 과 같은 형태).
+     *
+     * `syncShippingTypes()` 안의 가드는 그대로 둔다 — 이 서비스는 확장에 열려 있어 다른 호출
+     * 경로가 이 선행 판정을 건너뛸 수 있다.
+     *
+     * @param  array  $typesData  저장하려는 types 배열
+     * @return void 반환값 없음 (판정 결과는 예외로만 통지)
+     *
+     * @throws ShippingTypeOperationException 사용 중인 배송유형을 지우려 할 때
+     */
+    public function assertSyncDeletable(array $typesData): void
+    {
+        $existingIds = $this->repository->pluckIds();
+        $incomingIds = array_filter(array_column($typesData, 'id'));
+
+        foreach (array_diff($existingIds, $incomingIds) as $id) {
+            $type = $this->repository->findById((int) $id);
+
+            if (! $type) {
+                continue;
+            }
+
+            $usageCount = $this->orderShippingRepository->countByShippingType($type->code);
+
+            if ($usageCount > 0) {
+                throw new ShippingTypeOperationException('sirsoft-ecommerce::exceptions.shipping_type_in_use', [
+                    'name' => $type->getLocalizedName(),
+                    'count' => $usageCount,
+                ]);
+            }
+        }
+
+        // 코드 변경도 같은 강도로 막는다 — 사유 카탈로그(`ClaimReasonService::assertSyncDeletable`)와
+        // 같은 이유다. 주문 배송행은 배송유형을 `shipping_type` **코드 문자열**로만 기억하므로
+        // (FK 없음), 코드를 바꾸면 삭제와 똑같이 그 유형으로 접수된 전건이 카탈로그를 잃는다:
+        // 목록의 배송방법 라벨이 빈칸이 되고, 그 코드가 실린 북마크·프리셋 URL 은 목록 전체를
+        // 422 로 만들며, 새 코드 기준 사용량이 0 이라 **삭제 가드마저 통과**한다.
+        // 삭제만 막으면 평범한 오타 교정 한 번이 그 셋을 한꺼번에 낸다.
+        foreach ($typesData as $data) {
+            if (empty($data['id']) || ! in_array($data['id'], $existingIds)) {
+                continue;
+            }
+
+            $type = $this->repository->findById((int) $data['id']);
+
+            if (! $type || ! array_key_exists('code', $data) || $data['code'] === $type->code) {
+                continue;
+            }
+
+            $usageCount = $this->orderShippingRepository->countByShippingType($type->code);
+
+            if ($usageCount > 0) {
+                throw new ShippingTypeOperationException('sirsoft-ecommerce::exceptions.shipping_type_code_locked_in_use', [
+                    'name' => $type->getLocalizedName(),
+                    'count' => $usageCount,
+                ]);
+            }
+        }
+    }
+
+    /**
      * 배송유형 일괄 동기화 (설정 저장 시 사용)
      *
      * payload에 있는 types를 DB와 동기화합니다.
-     * - id 있음 → 기존 type 업데이트
+     * - id 있음 → 기존 type 업데이트 (**실제로 바뀐 행만**)
      * - id 없음 → 새 type 생성
      * - DB에 있지만 payload에 없음 → 삭제 (주문에서 사용 중이면 예외)
+     *
+     * 생성·수정·삭제마다 상세 REST 경로(`createType`·`updateType`·`deleteType`)와 같은 훅
+     * (`shipping_type.before_*` → `filter_*_data` → `after_*`)을 쏜다. 종전에는 이 경로만 훅 없이
+     * 리포지토리를 직접 불러, 확장이 REST 경로에서만 배송유형 변경에 개입할 수 있었다
+     * (`ClaimReasonService::syncReasons()` 가 같은 결함을 먼저 고쳤다).
+     *
+     * - 바뀌지 않은 행은 쓰지도, 훅을 쏘지도 않는다. 설정 탭은 저장마다 유형 전부를 보내므로,
+     *   전부 갱신하면 아무것도 고치지 않은 저장이 다른 운영자의 `updated_by` 로 행을 덮는다.
+     * - after 훅은 커밋 뒤에 쏜다 — 뒤 행에서 예외가 나 전체가 되돌아가도 이미 나간 after 훅은
+     *   되돌릴 수 없다.
      *
      * @param  array  $typesData  types 배열
      * @return void
@@ -195,7 +271,10 @@ class ShippingTypeService
                             'count' => $usageCount,
                         ]);
                     }
+                    HookManager::doAction('sirsoft-ecommerce.shipping_type.before_delete', $type);
                     $this->repository->delete((int) $type->id);
+                    $deletedId = (int) $type->id;
+                    DB::afterCommit(fn () => HookManager::doAction('sirsoft-ecommerce.shipping_type.after_delete', $deletedId));
                 }
             }
 
@@ -207,20 +286,120 @@ class ShippingTypeService
                     'category' => $data['category'],
                     'is_active' => $data['is_active'] ?? true,
                     'sort_order' => $index,
-                    'updated_by' => Auth::id(),
                 ];
 
                 if (! empty($data['id']) && in_array($data['id'], $existingIds)) {
-                    $this->repository->update((int) $data['id'], $typeData);
+                    $this->syncExistingType((int) $data['id'], $typeData);
                 } else {
+                    HookManager::doAction('sirsoft-ecommerce.shipping_type.before_create', $typeData);
+                    $typeData = HookManager::applyFilters('sirsoft-ecommerce.shipping_type.filter_create_data', $typeData);
                     $typeData['created_by'] = Auth::id();
-                    $this->repository->create($typeData);
+                    $typeData['updated_by'] = Auth::id();
+                    $created = $this->repository->create($typeData);
+                    DB::afterCommit(fn () => HookManager::doAction('sirsoft-ecommerce.shipping_type.after_create', $created, $typeData));
                 }
             }
         });
 
         // 캐시 초기화
         ShippingType::clearCodeCache();
+    }
+
+    /**
+     * 동기화 대상 중 기존 배송유형 한 건을 반영합니다. (바뀐 경우에만)
+     *
+     * @param  int  $id  배송유형 ID
+     * @param  array<string, mixed>  $typeData  반영할 값 (updated_by 제외)
+     * @return void
+     *
+     * @throws ShippingTypeOperationException 사용 중인 배송유형의 코드를 바꾸려 할 때
+     */
+    protected function syncExistingType(int $id, array $typeData): void
+    {
+        $existing = $this->repository->findById($id);
+
+        if (! $existing || ! $this->wouldChange($existing, $typeData)) {
+            return;
+        }
+
+        // 선행 판정(assertSyncDeletable)을 거치지 않는 호출 경로가 있을 수 있으므로
+        // 여기서도 코드 변경을 막는다 — 삭제 가드와 같은 이유다
+        // (`ClaimReasonService::syncReasons()` 와 같은 형태).
+        if ($existing->code !== $typeData['code']) {
+            $usageCount = $this->orderShippingRepository->countByShippingType($existing->code);
+
+            if ($usageCount > 0) {
+                throw new ShippingTypeOperationException('sirsoft-ecommerce::exceptions.shipping_type_code_locked_in_use', [
+                    'name' => $existing->getLocalizedName(),
+                    'count' => $usageCount,
+                ]);
+            }
+        }
+
+        HookManager::doAction('sirsoft-ecommerce.shipping_type.before_update', $id, $typeData);
+        $snapshot = $existing->toArray();
+        $typeData = HookManager::applyFilters('sirsoft-ecommerce.shipping_type.filter_update_data', $typeData, $id);
+        $typeData['updated_by'] = Auth::id();
+
+        $updated = $this->repository->update($id, $typeData);
+        DB::afterCommit(fn () => HookManager::doAction('sirsoft-ecommerce.shipping_type.after_update', $updated, $typeData, $snapshot));
+    }
+
+    /**
+     * 값을 반영하면 배송유형이 실제로 바뀌는지 판정합니다. (쓰기 없음)
+     *
+     * 복제본에 채워 캐스트 기준 dirty 를 본다. 다국어 이름은 로케일 순서·빈 번역만 다른 것을 같은
+     * 값으로 본다(화면이 키 순서를 보장하지 않는다).
+     *
+     * @param  ShippingType  $type  기존 배송유형
+     * @param  array<string, mixed>  $data  반영할 값
+     * @return bool 바뀌면 true
+     */
+    protected function wouldChange(ShippingType $type, array $data): bool
+    {
+        $probe = clone $type;
+        $probe->fill($data);
+
+        foreach (array_keys($probe->getDirty()) as $key) {
+            if (! array_key_exists($key, $data)) {
+                continue;
+            }
+
+            if ($key === 'name' && $this->normalizeTranslations($type->name) === $this->normalizeTranslations($data['name'])) {
+                continue;
+            }
+
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * 다국어 이름을 비교용으로 정규화합니다. (빈 번역 제거 + 로케일 정렬)
+     *
+     * @param  mixed  $name  다국어 이름 (배열 또는 그 밖의 값)
+     * @return array<string, string>|string 정규화된 이름
+     */
+    protected function normalizeTranslations(mixed $name): array|string
+    {
+        if (! is_array($name)) {
+            return (string) $name;
+        }
+
+        $normalized = [];
+
+        foreach ($name as $locale => $value) {
+            if ($value === null || $value === '') {
+                continue;
+            }
+
+            $normalized[(string) $locale] = (string) $value;
+        }
+
+        ksort($normalized);
+
+        return $normalized;
     }
 
     /**

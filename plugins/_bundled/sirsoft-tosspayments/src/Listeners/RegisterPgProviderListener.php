@@ -61,7 +61,10 @@ class RegisterPgProviderListener implements HookListenerInterface
             'name_key' => 'sirsoft-tosspayments::provider.name',
             'name' => localized_label(nameKey: 'sirsoft-tosspayments::provider.name'),
             'icon' => 'credit-card',
-            'supported_methods' => ['card', 'virtual_account', 'bank_transfer', 'mobile'],
+            // 어휘는 **코어 결제수단 ID** 다(P18). 토스 API 의 이름(`virtual_account` 등)을 그대로
+            // 적으면 코어가 그 문자열을 자기 수단 목록과 대조하지 못해, 가상계좌·계좌이체·휴대폰에
+            // 토스를 PG 로 지정할 수 없다 — 설정 화면의 선택지에서 조용히 빠진다.
+            'supported_methods' => ['card', 'vbank', 'bank', 'phone'],
             // 프론트 결제 진입 핸들러 — HandlesOrderCreation::resolvePgPaymentHandler() 가 이 키를
             // 응답의 pg_payment_handler 로 내려 템플릿이 dispatch 한다. 미선언 시 PG 분기가
             // 발화하지 못하고 결제창 없이 완료 페이지로 navigate 하던 결함을 정공법으로 해소한다.

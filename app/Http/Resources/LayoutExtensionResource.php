@@ -1,5 +1,7 @@
 <?php
 
+// audit:allow api-doc-coverage reason: 자식의 중복 private formatFileSize() 를 제거해 부모 BaseApiResource 의 공용 포맷터를 상속하게 한 내부 수정(S3-D11 — 가시성 축소로 인한 FatalError 해소). 응답 키(size_formatted)·상태코드·payload 형태 모두 불변 — `api:docgen --scope=core --check` drift 없음 확인.
+
 namespace App\Http\Resources;
 
 use App\Extension\Traits\ComputesLayoutContentHash;
@@ -175,24 +177,5 @@ class LayoutExtensionResource extends BaseApiResource
         }
 
         return $this->computeContentHash($content) !== $originalHash;
-    }
-
-    /**
-     * 파일 크기를 사람이 읽기 쉬운 형태로 변환
-     *
-     * @param  int  $bytes  바이트 크기
-     * @return string 포맷된 크기 (예: "12.5 KB")
-     */
-    private function formatFileSize(int $bytes): string
-    {
-        if ($bytes < 1024) {
-            return $bytes.' B';
-        }
-
-        if ($bytes < 1048576) {
-            return round($bytes / 1024, 1).' KB';
-        }
-
-        return round($bytes / 1048576, 1).' MB';
     }
 }

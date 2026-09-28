@@ -22,8 +22,6 @@ const SYNC_RETRY_ATTEMPTS = 120;
 
 interface AdminPaymentBrandDefinition {
     id: string;
-    labels: string[];
-    shortLabels: string[];
     markLines: string[];
     markClassName: string;
 }
@@ -31,36 +29,26 @@ interface AdminPaymentBrandDefinition {
 const ADMIN_PAYMENT_BRAND_DEFINITIONS: AdminPaymentBrandDefinition[] = [
     {
         id: 'toss_tosspay',
-        labels: ['토스페이 (토스페이먼츠)', '토스페이 간편결제 — 토스페이먼츠를 통해 처리', 'TossPay (TossPayments)', 'TossPay easy payment — processed via TossPayments'],
-        shortLabels: [],
         markLines: ['T'],
         markClassName: 'bg-blue-500 text-white',
     },
     {
         id: 'toss_kakaopay',
-        labels: ['카카오페이 (토스페이먼츠)', '카카오페이 간편결제 — 토스페이먼츠를 통해 처리', 'KakaoPay (TossPayments)', 'KakaoPay easy payment — processed via TossPayments'],
-        shortLabels: [],
         markLines: ['K'],
         markClassName: 'bg-yellow-400 text-gray-950',
     },
     {
         id: 'toss_naverpay',
-        labels: ['네이버페이 (토스페이먼츠)', '네이버페이 간편결제 — 토스페이먼츠를 통해 처리', 'NaverPay (TossPayments)', 'NaverPay easy payment — processed via TossPayments'],
-        shortLabels: [],
         markLines: ['N'],
         markClassName: 'bg-green-500 text-white',
     },
     {
         id: 'toss_payco',
-        labels: ['페이코 (토스페이먼츠)', '페이코 간편결제 — 토스페이먼츠를 통해 처리', 'PAYCO (TossPayments)', 'PAYCO easy payment — processed via TossPayments'],
-        shortLabels: [],
         markLines: ['P'],
         markClassName: 'bg-red-500 text-white',
     },
     {
         id: 'toss_samsungpay',
-        labels: ['삼성페이 (토스페이먼츠)', '삼성페이 간편결제 — 토스페이먼츠를 통해 처리', 'Samsung Pay (TossPayments)', 'Samsung Pay easy payment — processed via TossPayments'],
-        shortLabels: [],
         markLines: ['S'],
         markClassName: 'bg-blue-600 text-white',
     },
@@ -81,41 +69,20 @@ function isOrderSettingsPage(): boolean {
     return tab === null || tab === '' || tab === 'order_settings';
 }
 
-function classNameOf(element: Element): string {
-    return element instanceof HTMLElement ? element.className : '';
-}
-
-function comparableText(value: string | null | undefined): string {
-    return (value ?? '')
-        .replace(/​/g, '')
-        .replace(/\s+/g, ' ')
-        .trim();
-}
-
-function isPaymentMethodItem(element: HTMLElement): boolean {
-    const className = classNameOf(element);
-
-    return className.includes('excel-card')
-        || (className.includes('flex-center') && className.includes('border') && className.includes('gap-4'));
-}
-
 function findTitleElement(item: HTMLElement): HTMLElement | null {
     return item.querySelector<HTMLElement>('.font-medium');
 }
 
+// 결제수단 항목은 이커머스 관리자 화면이 항목마다 단 data-payment-method(결제수단 id)로만 찾는다. 이름 글자·클래스 모양은
+// 관리자 언어·화면 폭마다 달라 찾는 기준이 될 수 없다(약속: sirsoft-ecommerce docs/extension-points.md, PO 결정 2026-09-28).
 function findDefinitionForItem(item: HTMLElement): AdminPaymentBrandDefinition | null {
-    const title = comparableText(findTitleElement(item)?.textContent);
-    const text = comparableText(item.textContent);
+    const method = item.dataset.paymentMethod;
 
-    return ADMIN_PAYMENT_BRAND_DEFINITIONS.find((definition) => (
-        definition.shortLabels.some((label) => title === label)
-        || definition.labels.some((label) => text.includes(label))
-    )) ?? null;
+    return ADMIN_PAYMENT_BRAND_DEFINITIONS.find((definition) => definition.id === method) ?? null;
 }
 
 function findPaymentMethodItems(root: ParentNode): HTMLElement[] {
-    return Array.from(root.querySelectorAll<HTMLElement>('div'))
-        .filter(isPaymentMethodItem);
+    return Array.from(root.querySelectorAll<HTMLElement>('[data-payment-method]'));
 }
 
 function findPaymentIcon(item: HTMLElement): Element | null {

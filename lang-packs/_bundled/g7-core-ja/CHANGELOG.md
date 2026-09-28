@@ -4,7 +4,16 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
-## [1.1.0] - 2026-08-20
+## [작업 중]
+
+### Added
+
+- 코어에 새로 생긴 두 안내의 일본어 문구를 채웠습니다 — 본인확인 코드 발송 실패
+  (`identity.errors.challenge_dispatch_failed`) · 탈퇴 회원 외부 채널 발송 제외
+  (`notification.skipped.withdrawn_recipient`). 없으면 ja 화면에 원문 키가 그대로 보입니다.
+- 「삭제된 회원이라 발송하지 않음」 발송 이력 사유(`notification.skipped.member_account_missing`)의 일본어 문구를 채웠습니다.
+
+## [1.1.0] - 2026-09-14
 
 ### Added
 
@@ -97,6 +106,10 @@
   건너뜀 안내(`analytics.archive.skipped_beyond_retention`)가 「保存」(저장)으로 옮겨져, 관리자 화면의
   「保持期間」과 다른 말로 보였습니다.
 - 계정 잠김 안내(`auth.account_locked`·`auth.account_locked_permanently`)와 무기한 잠금 활동 로그 문구(`activity_log.description.auth_account_locked_permanently`)가 비밀번호 재설정으로도 풀 수 있음을 알리도록 고쳤습니다 — 코어가 재설정 완료 시 잠금을 풀도록 바뀌었습니다. 직접 적었습니다(번역 API 키 부재).
+
+- 알림이 아무에게도 가지 않아 발송 이력에 「건너뜀」으로 남을 때 표시되는 사유 문구의 일본어 번역을 추가했습니다 — 수신자를 찾지 못한 경우와 비회원 이메일이 비어 있는 경우가 일본어 로케일에서 각각 구분되어 표시됩니다.
+- 알림 템플릿의 역할 수신자 값이 잘못된 형태로 저장되려 할 때 표시되는 안내 문구의 일본어 번역을 추가했습니다.
+- 화면 편집기 [화면 동작] 탭의 「검색어를 입력하면」 항목 이름의 일본어 번역을 추가했습니다.
 
 ### Removed
 

@@ -25,7 +25,7 @@ describe('order payment display injectors', () => {
     it('마이페이지 주문 상세의 결제 방법 행을 간편결제 표시로 바꾼다', () => {
         const container = document.createElement('div');
         container.innerHTML = `
-            <div class="flex items-center justify-between">
+            <div id="order_payment_method_row" class="flex items-center justify-between">
                 <span class="text-gray-500">결제 방법</span>
                 <span class="text-gray-900">신용카드</span>
             </div>
@@ -40,7 +40,7 @@ describe('order payment display injectors', () => {
         const root = document.createElement('div');
         root.innerHTML = `
             <span class="inline-flex rounded-full font-medium">신용카드</span>
-            <div>
+            <div id="payment_method_block_0">
                 <span class="text-xs block">결제수단</span>
                 <span class="text-sm font-semibold block">신용카드</span>
                 <span class="text-xs text-gray-500">(일시불)</span>
@@ -85,12 +85,12 @@ describe('order payment display injectors', () => {
         const fetchMock = vi.fn().mockResolvedValue({
             ok: true,
             status: 200,
-            json: async () => ({
+            json: async () => ({ success: true, data: {
                 receipt_type: 'inicis_receipt',
                 receipt_url: 'https://iniweb.inicis.com/receipt',
                 receipt_view_label: '영수증 조회',
                 payment_method_display_label: '네이버페이 (신용카드)',
-            }),
+            } }),
         } as Response);
         globalThis.fetch = fetchMock;
 
@@ -166,13 +166,13 @@ describe('order payment display injectors', () => {
         const fetchMock = vi.fn().mockResolvedValue({
             ok: true,
             status: 200,
-            json: async () => ({
+            json: async () => ({ success: true, data: {
                 receipt_type: 'inicis_receipt',
                 receipt_url: 'https://iniweb.inicis.com/receipt',
                 receipt_label: '영수증',
                 receipt_view_label: '영수증 조회',
                 payment_method_display_label: '신용카드',
-            }),
+            } }),
         } as Response);
         globalThis.fetch = fetchMock;
 
@@ -180,6 +180,7 @@ describe('order payment display injectors', () => {
         await vi.advanceTimersByTimeAsync(2100);
 
         const receiptRow = document.getElementById('kginicis-mp-receipt-row');
+        expect(document.getElementById('order_payment_info_panel')!.contains(receiptRow!)).toBe(true);
         expect(receiptRow?.textContent?.replace(/\s+/g, '')).toContain('영수증영수증조회');
         expect(fetchMock).toHaveBeenCalledWith(
             '/api/plugins/sirsoft-pay_kginicis/user/orders/ORD-GUEST-RECEIPT/receipt',
@@ -189,7 +190,8 @@ describe('order payment display injectors', () => {
         delete (window as any).G7Core;
     });
 
-    it('영어 비회원 주문 상세의 Payment Information 영역에도 영수증 행을 붙인다', async () => {
+    // 결제 정보 카드는 제목 글자가 아니라 템플릿이 약속한 id 로 찾는다 — 영어 화면도 같은 id 를 가진 카드에 붙는다.
+    it('영어 비회원 주문 상세에서도 결제 정보 카드(id)에 영수증 행을 붙인다', async () => {
         vi.useFakeTimers();
         history.pushState(null, '', '/shop/guest/orders');
         (window as any).G7Core = {
@@ -209,12 +211,12 @@ describe('order payment display injectors', () => {
             }),
         };
         document.body.innerHTML = `
-            <section>
+            <section id="order_payment_info_panel">
                 <div>
                     <h3>Payment Information</h3>
                 </div>
                 <div class="space-y-2">
-                    <div class="flex items-center justify-between">
+                    <div id="order_payment_method_row" class="flex items-center justify-between">
                         <span>Payment Method</span>
                         <span>Credit Card</span>
                     </div>
@@ -225,13 +227,13 @@ describe('order payment display injectors', () => {
         const fetchMock = vi.fn().mockResolvedValue({
             ok: true,
             status: 200,
-            json: async () => ({
+            json: async () => ({ success: true, data: {
                 receipt_type: 'inicis_receipt',
                 receipt_url: 'https://iniweb.inicis.com/receipt',
                 receipt_label: 'Receipt',
                 receipt_view_label: 'View Receipt',
                 payment_method_display_label: 'Naver Pay (Credit Card)',
-            }),
+            } }),
         } as Response);
         globalThis.fetch = fetchMock;
 

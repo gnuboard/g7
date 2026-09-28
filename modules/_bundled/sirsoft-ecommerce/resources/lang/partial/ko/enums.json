@@ -5,7 +5,7 @@
     "payment_complete": "결제완료",
     "shipping_hold": "배송보류",
     "preparing": "상품준비중",
-    "shipping_ready": "배송준비완료",
+    "shipping_ready": "배송준비중",
     "shipping": "배송중",
     "delivered": "배송완료",
     "confirmed": "구매확정",
@@ -34,7 +34,7 @@
   "shipping_status": {
     "pending": "배송대기",
     "preparing": "상품준비중",
-    "ready": "배송준비완료",
+    "ready": "배송준비중",
     "shipped": "배송중",
     "in_transit": "이동중",
     "out_for_delivery": "배송출발",
@@ -61,7 +61,8 @@
   "target_screen": {
     "products": "상품",
     "orders": "주문",
-    "customers": "고객"
+    "customers": "고객",
+    "claims": "취소/반품/교환"
   },
   "price_type": {
     "list_price": "정가",
@@ -191,5 +192,71 @@
     "US": "미국",
     "CN": "중국",
     "JP": "일본"
+  },
+  "claim_type": {
+    "exchange": "교환",
+    "return": "반품",
+    "refund": "환불",
+    "cancel": "취소"
+  },
+  "exchange_status": {
+    "requested": "교환신청",
+    "payment_pending": "교환결제대기",
+    "paid": "교환결제완료",
+    "approved": "교환승인",
+    "on_hold": "교환보류",
+    "rejected": "교환반려",
+    "collection_ready": "교환회수준비중",
+    "collecting": "교환회수중",
+    "collected": "교환회수도착",
+    "redelivery_ready": "교환발송준비중",
+    "redelivering": "교환발송중",
+    "redelivered": "교환발송도착",
+    "completed": "교환완료",
+    "withdrawn": "교환철회"
+  },
+  "return_status": {
+    "requested": "반품신청",
+    "payment_pending": "반품결제대기",
+    "paid": "반품결제완료",
+    "approved": "반품승인",
+    "on_hold": "반품보류",
+    "rejected": "반품반려",
+    "collection_ready": "반품회수준비중",
+    "collecting": "반품회수중",
+    "collected": "반품회수도착",
+    "completed": "반품완료",
+    "withdrawn": "반품철회"
+  },
+  "refund_status": {
+    "requested": "환불신청",
+    "approved": "환불승인",
+    "processing": "환불처리중",
+    "on_hold": "환불보류",
+    "completed": "환불완료",
+    "rejected": "환불반려",
+    "withdrawn": "환불철회"
+  },
+  "cancel_status": {
+    "requested": "취소신청",
+    "completed": "취소완료"
+  },
+  "cancel_type": {
+    "full": "전체취소",
+    "partial": "부분취소"
+  },
+  "claim_reason_fault_type": {
+    "customer": "고객 귀책",
+    "seller": "판매자 귀책",
+    "carrier": "배송사 귀책"
+  },
+  "claim_charge_method": {
+    "pay_on_request": "신청 시 결제",
+    "pay_on_approval": "승인 후 결제",
+    "deduct_from_refund": "환불액에서 차감"
+  },
+  "claim_shipping_fee_mode": {
+    "fixed": "고정 금액",
+    "original_policy": "원래 배송정책 재계산"
   }
 }

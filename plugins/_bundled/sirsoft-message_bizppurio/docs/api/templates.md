@@ -684,7 +684,7 @@ Content-Type: application/json
 Authorization: Bearer {YOUR_TOKEN}
 
 {
-    "comment": "변수 예시: #{name}=홍길동, #{order_number}=20260823-0001"
+    "comment": "변수 예시: #{name}=홍길동, #{order_number}=20260823-1043226571"
 }
 ```
 
@@ -954,6 +954,12 @@ Authorization: Bearer {YOUR_TOKEN}
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
 | image | body (multipart) | file | 예 | jpg/jpeg/png · ≤500KB · 가로 ≥500px · 가로:세로 = 2:1 | 이미지형(IMAGE) 템플릿용 이미지 파일 |
+
+상한 500KB·가로 500px 은 **kapi 고정 제약**이며 운영자 설정으로 바뀌지 않습니다 — 설정 축을
+열면 "설정을 올리면 더 큰 파일이 된다" 는 거짓 여지가 생깁니다. 두 값은
+`BizppurioTemplateImageRequest::MAX_KILOBYTES` · `MIN_WIDTH` 공개 상수 하나에서 나오고, 화면
+두 곳(플러그인 설정 · 알림 템플릿 폼 슬롯)의 안내 문구가 같은 값을 인용합니다. 드리프트
+테스트가 세 자리(서버 상수 · 두 화면)를 함께 잠급니다.
 
 **요청 예시**
 

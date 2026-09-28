@@ -22,7 +22,7 @@
             },
             "children": [
                 {
-                    "comment": "신청 체크박스 — 해제 시 하위 3필드를 if 로 숨기고 확장 칸을 비운다",
+                    "comment": "신청 체크박스 — 해제 시 하위 3필드를 if 로 숨기고 확장 칸을 비운다. 표시 게이트는 모듈 스크래치(cashReceiptRequested)와 제출 payload(checkoutExtraPayload.cash_receipt_requested)의 **합의**를 본다: 해제는 스크래치를 false 로 내려 꺼지고, 결제수단 전환은 템플릿이 payload 를 통째로 치환해 꺼진다. 한쪽만 보면 다른 경로에서 화면과 제출 내용이 갈린다 — 전환 후에는 화면이 신청 켜짐인데 payload 는 비어 있었다.",
                     "type": "basic",
                     "name": "Div",
                     "props": {
@@ -41,10 +41,10 @@
                                     "params": {
                                         "target": "local",
                                         "cashReceiptRequested": "{{$event.target.checked}}",
-                                        "cashReceiptType": "{{$event.target.checked ? (_local.cashReceiptType ?? 'income') : null}}",
-                                        "cashReceiptIdentifierType": "{{$event.target.checked ? (_local.cashReceiptIdentifierType ?? 'phone') : null}}",
-                                        "cashReceiptIdentifier": "{{$event.target.checked ? (_local.cashReceiptIdentifier ?? '') : null}}",
-                                        "checkoutExtraPayload": "{{$event.target.checked ? { cash_receipt_requested: true, cash_receipt_type: (_local.cashReceiptType ?? 'income'), cash_receipt_identifier_type: (_local.cashReceiptIdentifierType ?? 'phone'), cash_receipt_identifier: (_local.cashReceiptIdentifier ?? '') } : {}}}"
+                                        "cashReceiptType": "{{$event.target.checked ? (_local.checkoutExtraPayload?.cash_receipt_type ?? 'income') : null}}",
+                                        "cashReceiptIdentifierType": "{{$event.target.checked ? (_local.checkoutExtraPayload?.cash_receipt_identifier_type ?? 'phone') : null}}",
+                                        "cashReceiptIdentifier": "{{$event.target.checked ? (_local.checkoutExtraPayload?.cash_receipt_identifier ?? '') : null}}",
+                                        "checkoutExtraPayload": "{{$event.target.checked ? { cash_receipt_requested: true, cash_receipt_type: (_local.checkoutExtraPayload?.cash_receipt_type ?? 'income'), cash_receipt_identifier_type: (_local.checkoutExtraPayload?.cash_receipt_identifier_type ?? 'phone'), cash_receipt_identifier: (_local.checkoutExtraPayload?.cash_receipt_identifier ?? '') } : {}}}"
                                     }
                                 }
                             ],

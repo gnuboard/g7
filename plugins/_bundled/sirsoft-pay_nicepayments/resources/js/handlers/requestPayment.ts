@@ -1,11 +1,12 @@
 import { reportPaymentWindowClosed } from '../paymentCloseReport';
+import { translateNicepay as t } from '../translate';
 
 interface G7ApiResponse {
     data?: unknown;
 }
 
 interface G7CoreApi {
-    get: (url: string) => Promise<G7ApiResponse>;
+    get: (url: string, options?: { headers?: Record<string, string> }) => Promise<G7ApiResponse>;
     post?: (url: string, data?: Record<string, unknown>) => Promise<G7ApiResponse>;
 }
 
@@ -15,6 +16,7 @@ interface G7CoreToast {
 
 interface G7CoreStateApi {
     setLocal: (state: Record<string, unknown>) => void;
+    get?: (scope: string) => Record<string, any> | undefined;
 }
 
 interface G7Core {
@@ -101,19 +103,6 @@ export const KNOWN_SDK_HOSTS: readonly string[] = ['web.nicepay.co.kr'];
  * @param fallback 번역 엔진 부재 시 사용할 문구
  * @returns 번역된 문자열
  */
-function t(key: string, fallback: string): string {
-    const translate = (window as any)?.G7Core?.t;
-
-    if (typeof translate !== 'function') {
-        return fallback;
-    }
-
-    const full = `sirsoft-pay_nicepayments.${key}`;
-    const result = translate(full);
-
-    return typeof result === 'string' && result !== full ? result : fallback;
-}
-
 /**
  * SDK URL 이 신뢰 호스트인지 확인하고, 아니면 예외를 던집니다.
  *
@@ -290,7 +279,7 @@ export async function requestPaymentHandler(action: PaymentAction, _context?: un
             await loadScript(config.sdk_url);
 
             if (typeof window.goPay !== 'function') {
-                G7Core?.toast?.error?.('나이스페이먼츠 SDK를 불러올 수 없습니다. 잠시 후 다시 시도해주세요.');
+                G7Core?.toast?.error?.(t('payment.error.sdk_load_failed', '나이스페이먼츠 SDK를 불러올 수 없습니다. 잠시 후 다시 시도해주세요.'));
                 G7Core?.state?.setLocal?.({ isSubmittingOrder: false, paymentMethod });
                 return;
             }
@@ -501,6 +490,6 @@ export async function requestPaymentHandler(action: PaymentAction, _context?: un
         console.error('[sirsoft-pay_nicepayments] requestPayment error', error);
         (window as unknown as Record<string, unknown>)['__sirsoftNicepayPaymentInProgress'] = false;
         G7Core?.state?.setLocal?.({ isSubmittingOrder: false, paymentMethod });
-        G7Core?.toast?.error?.('결제 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+        G7Core?.toast?.error?.(t('payment.error.request_failed', '결제 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.'));
     }
 }

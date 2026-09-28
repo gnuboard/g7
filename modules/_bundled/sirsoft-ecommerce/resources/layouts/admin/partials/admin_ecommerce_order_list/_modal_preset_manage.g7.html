@@ -4,11 +4,11 @@
 <partial description="Order List - Preset Management Modal">
   <modal data-ref="modal_preset_manage" title="$t:sirsoft-ecommerce.admin.order.modal.preset_manage.title" description="$t:sirsoft-ecommerce.admin.order.modal.preset_manage.description" size="md">
     <div data-if="{{!presets.data || presets.data.length === 0}}" class="text-center py-8 text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.order.modal.preset_manage.empty</div>
-    <div data-if="{{presets.data &amp;&amp; presets.data.length > 0}}">
+    <div data-if="{{presets.data &amp;&amp; presets.data.length > 0}}" class="stack-tight">
       <div data-each="presetItem in presets.data" class="flex-between p-3 border border-gray-200 dark:border-gray-700 rounded-lg">
         <span class="text-heading">{{presetItem.name}}</span>
         <div class="flex-center gap-2">
-          <button type="button" class="p-1.5 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-700 rounded-lg">
+          <button type="button" class="p-1.5 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
             <on type="click">
               <!-- 이름 바꾸기. 반복 변수 `presetItem` 은 이 목록 안에서만 살아 있으므로, 열릴 창이 읽을 수 있도록 값을 `_global` 로 옮겨 담고 연다. -->
               <sequence>
@@ -32,7 +32,7 @@
       </div>
     </div>
     <div class="mt-6">
-      <button type="button" class="w-full px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+      <button type="button" class="w-full px-4 py-2 text-sm bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600">
         <on type="click">
           <open-modal target="modal_preset_save"/>
         </on>

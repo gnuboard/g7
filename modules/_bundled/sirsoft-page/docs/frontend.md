@@ -28,6 +28,11 @@
 레이아웃 JSON 만 고쳤다면 빌드는 필요 없고 `php artisan module:update sirsoft-page --force`
 로 반영합니다. 새로 쓴 Tailwind 클래스가 빌드된 CSS 에 없으면 그 스타일만 조용히 빠지므로,
 기존 레이아웃에 없던 클래스를 도입할 때는 확인이 필요합니다.
+
+작성 화면의 첨부 업로더는 한도를 서버 공개 설정(`attachmentSettings` = `publicLimits()`)에서 그대로 받습니다.
+개수 상한이 없으면 서버가 `max_count: null` 을 내므로 `maxFiles` 를 비워(`?? undefined`) 컴포넌트 기본값을 쓰고,
+허용 형식이 비면 빈 `accept` 가 모든 형식을 열므로 `||` 로 기본 목록에 떨어뜨립니다. `??` 로 숫자 기본값을 주면
+"제한 없음" 이 그 숫자 상한으로 바뀝니다.
 <!-- @intent END -->
 
 ## 액션 핸들러

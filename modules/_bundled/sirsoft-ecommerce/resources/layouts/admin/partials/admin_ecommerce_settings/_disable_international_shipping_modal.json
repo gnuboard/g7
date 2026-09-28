@@ -60,9 +60,14 @@
                                     "handler": "sequence",
                                     "actions": [
                                         {
+                                            "comment": "해외배송을 끈 지점이 배송가능국가 추가 폼도 함께 내렸다(그 폼이 도달 불가가 되기 때문). [취소] 는 그 결정을 되돌리는 경로이므로 입력 중이던 국가도 함께 되살린다 — 되살리지 않으면 \"끄지 않겠다\" 를 고른 운영자의 입력이 안내 없이 사라진다.",
                                             "handler": "setState",
                                             "params": {
                                                 "target": "$parent._local",
+                                                "isAddingCountry": "{{$parent._local.disableIntlWasAddingCountry === true}}",
+                                                "newCountry": "{{$parent._local.disableIntlCountryBuffer}}",
+                                                "disableIntlWasAddingCountry": false,
+                                                "disableIntlCountryBuffer": null,
                                                 "form": {
                                                     "shipping": {
                                                         "international_shipping_enabled": true
@@ -102,6 +107,8 @@
                                             "params": {
                                                 "target": "$parent._local",
                                                 "hasChanges": true,
+                                                "disableIntlWasAddingCountry": false,
+                                                "disableIntlCountryBuffer": null,
                                                 "form": {
                                                     "shipping": {
                                                         "international_shipping_enabled": false,

@@ -6,6 +6,7 @@ import {
     rememberPendingClose,
     reportPaymentWindowClosed,
 } from '../paymentCloseReport';
+import { translateNhnkcp as t } from '../translate';
 import {
     applePayUnsupportedMessage,
     isIosMobileDevice,
@@ -66,19 +67,6 @@ export const KNOWN_SDK_HOSTS: readonly string[] = ['testpay.kcp.co.kr', 'pay.kcp
  * @param fallback 번역 엔진 부재 시 사용할 문구
  * @returns 번역된 문자열
  */
-function t(key: string, fallback: string): string {
-    const translate = (window as any)?.G7Core?.t;
-
-    if (typeof translate !== 'function') {
-        return fallback;
-    }
-
-    const full = `sirsoft-pay_nhnkcp.${key}`;
-    const result = translate(full);
-
-    return typeof result === 'string' && result !== full ? result : fallback;
-}
-
 /**
  * SDK URL 이 신뢰 호스트인지 확인하고, 아니면 예외를 던집니다.
  *
@@ -107,13 +95,8 @@ export function assertTrustedSdkUrl(url: string): void {
 
 function unsupportedCurrencyMessage(currency?: string): string {
     const normalized = normalizeCurrency(currency);
-    const isKo = ((typeof document !== 'undefined' ? document.documentElement.lang : '') || '')
-        .toLowerCase()
-        .startsWith('ko');
 
-    return isKo
-        ? `NHN KCP는 KRW 결제만 지원합니다. (${normalized})`
-        : `NHN KCP supports KRW payments only. (${normalized})`;
+    return t('payment.error.krw_only', 'NHN KCP는 KRW 결제만 지원합니다. ({{currency}})', { currency: normalized ?? '' });
 }
 
 export function buildKcpTaxFields(pgPaymentData: PgPaymentData): Record<string, string> {
@@ -403,7 +386,7 @@ async function handleMobilePayment(
     G7Core: any,
     pgPaymentData: PgPaymentData,
     paymentMethod: string,
-    isEasyPay: boolean,
+    _isEasyPay: boolean,
     callbackUrl: string,
 ): Promise<void> {
     const approvalJson = await G7Core.api.post('/plugins/sirsoft-pay_nhnkcp/mobile/approval-key', {
@@ -430,7 +413,7 @@ async function handleMobilePayment(
             approvalJson.error
                 ?? approvalJson.message
                 ?? firstFieldError
-                ?? 'KCP 모바일 승인키 획득 실패',
+                ?? t('payment.error.mobile_approval_key_failed', 'KCP 모바일 승인키 획득 실패'),
         );
     }
 
@@ -531,7 +514,7 @@ async function handlePcPayment(
     // 진행하지 않는다(fail-closed).
     assertTrustedSdkUrl(config.sdk_url);
 
-    await new Promise<void>((resolve, reject) => {
+    await new Promise<void>((_resolve, reject) => {
         // 기존 요소 정리
         document.getElementById('kcp-sdk-iframe')?.remove();
         document.getElementById('kcp-dim-overlay')?.remove();
@@ -627,7 +610,7 @@ async function handlePcPayment(
             } else {
                 // 취소 또는 오류
                 const isCancelled = resCode === '' || resCode === '7777' || resMsg.includes('취소');
-                rejectOnce(isCancelled ? new KcpCancelledError(resMsg) : new Error(`KCP 오류 [${resCode}]: ${resMsg}`));
+                rejectOnce(isCancelled ? new KcpCancelledError(resMsg) : new Error(t('payment.error.pg_error', 'KCP 오류 [{{code}}]: {{message}}', { code: resCode, message: resMsg })));
             }
         };
 

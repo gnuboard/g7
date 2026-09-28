@@ -14,6 +14,7 @@ use Illuminate\Validation\ValidationException;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Exceptions\OrderAmountChangedException;
 use Modules\Sirsoft\Ecommerce\Exceptions\OrderCancellationException;
+use Modules\Sirsoft\Ecommerce\Exceptions\OrderClaimException;
 use Modules\Sirsoft\Ecommerce\Exceptions\OrderProcessingException;
 use Modules\Sirsoft\Ecommerce\Exceptions\PaymentAmountMismatchException;
 use Modules\Sirsoft\Ecommerce\Exceptions\ResourceScopeMismatchException;
@@ -30,6 +31,7 @@ use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\UpdateOrderRequest;
 use Modules\Sirsoft\Ecommerce\Http\Resources\OrderCollection;
 use Modules\Sirsoft\Ecommerce\Http\Resources\OrderResource;
 use Modules\Sirsoft\Ecommerce\Models\Order;
+use Modules\Sirsoft\Ecommerce\Services\AdminClaimRequestService;
 use Modules\Sirsoft\Ecommerce\Services\OrderCancellationService;
 use Modules\Sirsoft\Ecommerce\Services\OrderOptionService;
 use Modules\Sirsoft\Ecommerce\Services\OrderProcessingService;
@@ -43,12 +45,23 @@ use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
  */
 class OrderController extends AdminBaseController
 {
+    /**
+     * 주문 관리 서비스들을 주입받습니다.
+     *
+     * @param  OrderService  $orderService  주문 조회·수정·일괄변경 서비스
+     * @param  OrderOptionService  $orderOptionService  주문상품(옵션) 상태·수량 서비스
+     * @param  OrderCancellationService  $cancellationService  주문 취소 서비스
+     * @param  ActivityLogService  $activityLogService  활동 로그 서비스
+     * @param  OrderProcessingService  $orderProcessingService  결제·입금 처리 서비스
+     * @param  AdminClaimRequestService  $adminClaimRequestService  관리자 직권 접수 서비스 ([취소·환불 접수] — §3-11)
+     */
     public function __construct(
         private OrderService $orderService,
         private OrderOptionService $orderOptionService,
         private OrderCancellationService $cancellationService,
         private ActivityLogService $activityLogService,
         private OrderProcessingService $orderProcessingService,
+        private AdminClaimRequestService $adminClaimRequestService,
     ) {}
 
     /**
@@ -166,7 +179,9 @@ class OrderController extends AdminBaseController
             return ResponseHelper::moduleSuccess(
                 'sirsoft-ecommerce',
                 'messages.orders.bulk_updated',
-                $result
+                $result,
+                200,
+                ['count' => $result['updated_count'] ?? 0]
             );
         } catch (ValidationException $e) {
             return ResponseHelper::moduleError(
@@ -244,7 +259,9 @@ class OrderController extends AdminBaseController
             return ResponseHelper::moduleSuccess(
                 'sirsoft-ecommerce',
                 'messages.orders.option_status_changed',
-                $result
+                $result,
+                200,
+                ['count' => $result['changed_count'] ?? 0]
             );
         } catch (ValidationException $e) {
             return ResponseHelper::moduleError(
@@ -260,6 +277,21 @@ class OrderController extends AdminBaseController
                 'sirsoft-ecommerce',
                 'messages.orders.option_status_change_failed',
                 400
+            );
+        } catch (OrderClaimException $e) {
+            // 교환·반품 진행 중인 상품의 상태 변경 차단 (D15 후단). FormRequest 가 1차로 422 를
+            // 내지만, 훅·내부 호출로 Service 2차 방어가 트립한 경우에도 500 이 아닌 422 로 응답해
+            // 화면 경로와 같은 운영자 안내를 전달한다 — 위 스코프 불일치 catch 와 같은 이유다.
+            // 이미 번역된 원문($e->getMessage())이 아니라 키+치환 파라미터로 응답을 구성한다.
+            // getMessageKey() 는 모듈 접두를 이미 포함한 완전한 키라 moduleError() 가 아닌
+            // error() 에 그대로 넘긴다 — 접두를 두 번 붙이면 키가 해석되지 않는다.
+            $messageKey = $e->getMessageKey();
+
+            return ResponseHelper::error(
+                $messageKey,
+                422,
+                null,
+                $e->getMessageParams()
             );
         } catch (AccessDeniedHttpException $e) {
             return ResponseHelper::forbidden('auth.scope_denied');
@@ -322,6 +354,15 @@ class OrderController extends AdminBaseController
                 'messages.orders.estimate_refund_success',
                 $result->toPreviewArray()
             );
+        } catch (OrderCancellationException $e) {
+            // 클레임 수량 잠금 등 도메인 거절 — 실행(cancelOrder)과 같은 422 로 미리보기/실행 비대칭을 없앤다.
+            // detail 은 조치 근거다 — 관리자 전용 면의 errors 페이로드는 진단 정보로 허용된다.
+            return ResponseHelper::moduleError(
+                'sirsoft-ecommerce',
+                'messages.orders.estimate_refund_failed',
+                422,
+                ['detail' => $e->getMessage()]
+            );
         } catch (AccessDeniedHttpException $e) {
             return ResponseHelper::forbidden('auth.scope_denied');
         } catch (Exception $e) {
@@ -339,7 +380,17 @@ class OrderController extends AdminBaseController
     }
 
     /**
-     * 주문을 취소합니다. (전체취소/부분취소)
+     * 주문을 취소합니다. (전체취소/부분취소 — #599 후속 D7)
+     *
+     * **취소 즉시 환불되지 않는다.** 이 API 는 환불신청서를 만들 뿐이고, 금액확인 → 승인 →
+     * 환불완료는 운영자가 클레임 상세에서 하나씩 밟는다. 취소신청서는 그 환불이 완료되는
+     * 순간에 생긴다(D3) — 그래서 응답 시점의 주문은 아직 취소로 확정돼 있지 않다.
+     *
+     * 모달의 "환불까지 한 번에 처리"(`auto_advance_refund`, 기본 꺼짐)를 켜면 승인·완료까지
+     * 자동으로 민다(§4-2). 계좌 환불 수단은 그래도 승인에서 멈춘다(D4) — 사람이 송금해야
+     * 하기 때문이고, 그때 취소신청서도 아직 생기지 않는다(D5).
+     *
+     * 환불할 돈이 없는 주문(미결제·0원)은 환불신청서 없이 취소신청서가 즉시 생긴다(D1·D3).
      *
      * @param  CancelOrderRequest  $request  주문 취소 요청 데이터
      * @param  Order  $order  대상 주문 모델
@@ -348,38 +399,53 @@ class OrderController extends AdminBaseController
     public function cancelOrder(CancelOrderRequest $request, Order $order): JsonResponse
     {
         try {
-            $cancelledBy = Auth::id();
-
-            if ($request->isFullCancel()) {
-                $result = $this->cancellationService->cancelOrder(
-                    order: $order,
-                    reason: $request->getReason(),
-                    reasonDetail: $request->getReasonDetail(),
-                    cancelledBy: $cancelledBy,
-                    cancelPg: $request->shouldCancelPg(),
-                    refundPriority: $request->getRefundPriority(),
-                    refundBankInfo: $request->getRefundBankInfo(),
-                );
-            } else {
-                $result = $this->cancellationService->cancelOrderOptions(
-                    order: $order,
-                    cancelItems: $request->getCancelItems(),
-                    reason: $request->getReason(),
-                    reasonDetail: $request->getReasonDetail(),
-                    cancelledBy: $cancelledBy,
-                    cancelPg: $request->shouldCancelPg(),
-                    refundPriority: $request->getRefundPriority(),
-                    refundBankInfo: $request->getRefundBankInfo(),
-                );
-            }
+            $outcome = $this->adminClaimRequestService->requestCancelOrRefund(
+                $order,
+                [
+                    'full_cancel' => $request->isFullCancel(),
+                    'items' => $request->getCancelItems(),
+                    'reason_code' => $request->getReason(),
+                    'reason_detail' => $request->getReasonDetail(),
+                    'refund_priority' => $request->getRefundPriority(),
+                    'refund_bank' => $request->getRefundBankInfo(),
+                    'auto_advance' => $request->shouldAutoAdvanceRefund(),
+                ],
+                Auth::id(),
+            );
 
             // 주문 상세 정보를 새로 로드하여 반환
             $updatedOrder = $this->orderService->getDetail($order->id);
 
+            // 접수 결과를 함께 싣는다 — 기본 운영(자동 전이 꺼짐)에서는 **아무것도 취소되지
+            // 않고** 환불신청서만 생긴다. 응답 문구도 그 사실을 따라 간다: 실제로 취소가 확정됐을
+            // 때만 "주문이 취소되었습니다" 이고, 신청서만 생겼으면 "환불신청서가 접수되었습니다" 다.
+            // 같은 문구를 내면 운영자는 취소가 끝났다고 믿고 방금 만든 신청서를 보지 않는다.
             return ResponseHelper::moduleSuccess(
                 'sirsoft-ecommerce',
-                'messages.orders.cancelled',
-                new OrderResource($updatedOrder)
+                $outcome['cancelled'] ? 'messages.orders.cancelled' : 'messages.orders.cancel_refund_requested',
+                array_merge(
+                    // `resolve()` 로 편다 — `toArray()` 를 직접 부르면 로드되지 않은 관계가
+                    // `MissingValue` 로 남고, 그것을 감싼 중첩 리소스가 응답 직렬화 단계에서
+                    // null 을 읽어 500 이 된다. 필터는 `resolve()` 안에 있다.
+                    (new OrderResource($updatedOrder))->resolve($request),
+                    [
+                        'claim' => [
+                            'branch' => $outcome['branch'],
+                            'claim_number' => $outcome['claim_number'],
+                            'cancelled' => $outcome['cancelled'],
+                        ],
+                    ],
+                )
+            );
+        } catch (OrderClaimException $e) {
+            // 신청 자격·사유·수량 잠금 위반 — 취소 도메인 거절과 같은 422 계약. 사유는 키+치환
+            // 파라미터로 다시 만든다 — 예외 메시지는 이미 번역된 문장이라 `__()` 에 넣으면 키로
+            // 재번역을 시도해 파라미터 없이 원문이 그대로 남는다.
+            return ResponseHelper::moduleError(
+                'sirsoft-ecommerce',
+                'messages.orders.cancel_failed',
+                422,
+                ['detail' => __($e->getMessageKey(), $e->getMessageParams())]
             );
         } catch (OrderCancellationException $e) {
             // 취소 도메인 규칙 위반 — 운영자에게 안내 가능한 상황이므로 422.
@@ -421,18 +487,25 @@ class OrderController extends AdminBaseController
     public function confirmDeposit(ConfirmDepositRequest $request, Order $order): JsonResponse
     {
         try {
+            $markComplete = $request->shouldMarkOrderComplete();
+
             $this->orderProcessingService->confirmManualDeposit(
                 $order,
                 $request->getAmount(),
                 $request->getDepositorName(),
-                $request->shouldMarkOrderComplete(),
+                $markComplete,
             );
 
             $updatedOrder = $this->orderService->getDetail($order->id);
 
+            // 「입금 내역만 기록」은 주문을 결제대기로 남겨 둔다(모달이 그렇게 안내한다).
+            // 두 경우에 같은 문장을 돌려주면 응답만 읽는 소비자는 결제되지 않은 주문을
+            // 결제완료로 읽는다 — 운영자가 후속 입금 확인을 건너뛸 수 있다.
             return ResponseHelper::moduleSuccess(
                 'sirsoft-ecommerce',
-                'messages.orders.deposit_confirmed',
+                $markComplete
+                    ? 'messages.orders.deposit_confirmed'
+                    : 'messages.orders.deposit_recorded',
                 new OrderResource($updatedOrder)
             );
         } catch (PaymentAmountMismatchException $e) {

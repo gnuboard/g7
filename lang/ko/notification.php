@@ -56,6 +56,14 @@ return [
         'unknown' => '채널 설정이 완료되지 않았습니다.',
     ],
 
+    // 발송 건너뜀 사유
+    'skipped' => [
+        'no_recipient_resolved' => '수신자 규칙(:rules)으로 받을 사람을 찾지 못해 발송하지 않았습니다.',
+        'guest_email_empty' => '비회원 수신자의 이메일이 없어 발송하지 않았습니다. (수신자 규칙: :rules)',
+        'withdrawn_recipient' => '탈퇴한 회원이라 바깥 채널(메일·SMS·알림톡)로는 발송하지 않았습니다. 탈퇴 시 연락처가 익명화되어 받을 수 있는 주소가 없습니다.',
+        'member_account_missing' => '알림 대상 회원의 계정이 삭제되어 발송하지 않았습니다. 주문서 등에 남은 연락처로 대신 보내지 않습니다. (수신자 규칙: :rules)',
+    ],
+
     // 사용자 알림
     'user' => [
         'list_success' => '알림 목록을 조회했습니다.',
@@ -74,6 +82,12 @@ return [
     ],
 
     // 알림 채널 메타 (config/notification.php default_channels 참조)
+    'validation' => [
+        // 역할 수신자는 다중 선택이 되면서 값이 배열일 수 있다. 객체·숫자가 섞이면
+        // 저장은 되고 발송 시점에 수신자 0명으로만 드러나므로 여기서 세운다.
+        'role_value_shape' => '역할 수신자 값은 식별자 문자열 또는 문자열 배열이어야 합니다.',
+    ],
+
     'channels' => [
         'core_default' => '코어 기본 채널',
         'mail' => [

@@ -9,6 +9,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\RateLimiter;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentStatusEnum;
+use Modules\Sirsoft\Ecommerce\Models\ClaimPayment;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Services\OrderProcessingService;
 use Plugins\Sirsoft\PayNicepayments\Concerns\RecordsPaymentWindowClosure;
@@ -45,6 +46,16 @@ class PaymentCloseReportController
             ]);
         }
         RateLimiter::hit($rateLimitKey, 60);
+
+        // 클레임 추가결제(CP 채번)는 기록할 주문 결제 이력이 없다 — 결제 건은 결제 대기로 남아
+        // 신청서 상세에서 재시도하므로 보고만 받고 무시한다 (주문 조회로 흘리면 404 가 프론트
+        // 흐름을 끊고 error 로그만 쌓인다).
+        if (ClaimPayment::isClaimPaymentNumber($oid)) {
+            return ResponseHelper::success('common.success', [
+                'recorded' => false,
+                'reason' => 'claim_payment',
+            ]);
+        }
 
         $order = $this->orderService->findByOrderNumber($oid);
         if (! $order) {

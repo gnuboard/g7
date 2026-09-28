@@ -16,15 +16,24 @@ _`getSettingsSchema()` 선언이 없습니다._
 
 | 키 | 역할 |
 |---|---|
-| `_meta.categories` | 설정 그룹 9개의 목록과 순서 (`basic_info` · `language_currency` · `order_settings` · `shipping` · `seo` · `review_settings` · `inquiry` · `notifications` · `mileage`) |
+| `_meta.categories` | 설정 그룹 10개의 목록과 순서 (`basic_info` · `language_currency` · `order_settings` · `claim` · `shipping` · `seo` · `review_settings` · `inquiry` · `notifications` · `mileage`) |
 | `defaults` | 그룹별 기본값. 설치 시 `storage/app/settings/` 로 동기화되어 `module_setting()` 이 읽는 값이 됩니다 |
 | `frontend_schema` | 관리자 화면이 자동으로 그리는 입력 폼 정의 |
 
-**`frontend_schema` 는 8개 그룹뿐이고 `mileage` 가 없습니다.** 자동 생성 폼으로는 표현할 수 없는
-입력(통화별 적립 규칙 표 등)이 있어서 마일리지 탭만 레이아웃 JSON 으로 직접 그리기 때문입니다
-(`resources/layouts/admin/partials/admin_ecommerce_settings/_tab_mileage*.json` 6개). 새 그룹을
+**`frontend_schema` 는 8개 그룹뿐이고 `claim` 과 `mileage` 가 없습니다.** 자동 생성 폼으로는
+표현할 수 없는 입력(통화별 적립 규칙 표, 유형별 신청 가능 상태·환불 자동 승인 결제수단 같은
+다중 선택 묶음)이 있어서 이 두 탭만 레이아웃 JSON 으로 직접 그리기 때문입니다
+(`resources/layouts/admin/partials/admin_ecommerce_settings/_tab_mileage*.json` 6개,
+`_tab_claim.json` 과 `_claim_policy_section.json`). 새 그룹을
 추가할 때는 이 셋 중 어디까지 손댈지를 먼저 정합니다 — `_meta.categories` 에만 넣고 `defaults`
 를 빠뜨리면 그 그룹은 화면에 뜨지만 저장할 값이 없습니다.
+
+클레임 탭의 사유 카탈로그 3종(교환·반품·환불)은 **하위 탭**으로 한 번에 하나만 그립니다. 어느
+하위 탭인지는 URL 쿼리 `sub_tab`(`exchange` · `return` · `refund`, 없거나 모르는 값이면 `exchange`)
+이 정하므로 `?tab=claim&sub_tab=return` 처럼 링크로 특정 카탈로그를 열 수 있습니다. 세 카탈로그는
+같은 폼(`claim.*_reasons`) 안의 배열이라 하위 탭을 옮겨도 편집 내용은 남고 페이지 [저장] 한 번에
+함께 저장됩니다. 하위 탭을 옮길 때는 열려 있던 사유 추가 폼을 비웁니다 — 저장 가드가 그 폼
+플래그를 하위 탭과 무관하게 읽어, 남겨 두면 보이지 않는 폼 때문에 저장이 막힙니다.
 
 설정 값을 코드에서 읽을 때는 `EcommerceSettingsService` 를 거칩니다. 통화 설정처럼 요청마다
 여러 번 읽히는 값은 `CurrencySettingsCache` 가 따로 캐시하며, 설정 저장 후 캐시를 비우는 것은
@@ -50,6 +59,33 @@ _`getSettingsSchema()` 선언이 없습니다._
 기한(`vbank_due_at`·`deposit_due_at`)이 있는 결제수단만 훑고, 임시주문 정리는 다른 테이블을 봅니다.
 브라우저 리턴 콜백이 주문 상태를 바꾸지 않게 된 뒤로는 승인 거절분도 여기에 머무르므로, 이 정리가
 선차감 마일리지 복원의 최종 안전망입니다.
+
+`claim` 그룹(스키마 1.5.0)은 신청 가능 조건(교환·반품·즉시취소·환불신청 가능 상품 상태, 신청
+가능 기간) · 청구(허용 청구 방식 · 추가 결제수단) · 자동 승인 3종 · **환불 자동 승인 결제수단** ·
+첨부 상한 · 완료 처리 기본값 2종을 담습니다. `complete_defaults.*` 는 **완료 처리 모달의 초기
+선택값**일 뿐 서비스가 읽지 않습니다 — 서비스가 읽으면 "요청에 없으면 설정대로" 라는 숨은 자동
+실행이 됩니다. 즉시취소 가능 상태는 업그레이드 시 기존 `order_settings.cancellable_statuses` 를
+승계합니다.
+
+`auto_approve_refund_payment_methods`(기본 `card · point · free`)는 **사람의 개입 없이 환불이
+집행되는 결제수단**의 목록입니다. 목록 밖 수단(무통장입금·가상계좌·계좌이체·휴대폰·예치금 등)은
+결제완료 상품이라도 환불신청서가 `requested` 에서 멈추고, 운영자가 승인한 뒤 [환불하기]로
+송금을 마칩니다. 자동 승인 3종 토글과 **독립적으로 항상** 적용되며, 세 경로(즉시취소 분기 ·
+`auto_approve_refund_request` 토글 · 관리자 [주문취소] '자동 전이' 체크)가 모두 이 목록을
+지납니다. 자동 승인해 두면 신청서만 완료로 앞서 나가고 고객에게 "환불 완료" 알림이 가는데 돈은
+아직 나가지 않은 상태가 되기 때문입니다.
+
+선택지는 주문 설정 탭의 결제수단 카탈로그에서 파생하며(`is_active` 로 거르지 않습니다 — 이 축이
+판정하는 것은 앞으로 받을 주문이 아니라 **이미 그 수단으로 결제된 주문의 환불**입니다), 결제
+플러그인이 카탈로그 항목에 능력 키 `auto_approve_refund: true` 를 선언한 수단은 화면에 `PG 즉시
+환불` 배지로 표시되고 **운영자가 아직 결정한 적 없을 때만** 목록에 자동 합류합니다. 합류 규칙이
+필요한 이유는 PG 플러그인을 새로 설치했을 때 그 수단의 환불이 전부 승인 대기로 쌓이는 것을 막기
+위함이고, 저장 시점에 화면이 제시한 선언 수단 전부를 `auto_approve_refund_payment_methods_decided`
+(운영자 결정 이력)에 남겨 **운영자가 뺀 수단이 다음 조회에서 되살아나지 않게** 합니다. 이 이력
+키는 화면이 보내지 않고 저장 직전에 서버가 채웁니다 — 요청에 실으면 422 이고, 관리자 조회 응답에도
+실리지 않습니다(화면이 조회한 claim 섹션을 되보내도 저장이 막히지 않게). 전체 저장이든 개별 설정
+저장이든 목록을 고치면 같은 이력이 남으며, 이 조립은 `EcommerceSettingsAdminService` 한 곳에 있습니다.
+<!-- @intent END -->
 
 `language_currency.rate_provider` 는 환율을 자동으로 갱신할 **제공자 선택값**입니다(기본 `null`
 = 운영자 직접 입력). 모듈은 제공자를 구현하지도 자동 선택하지도 않습니다 — 필터 훅
@@ -91,10 +127,11 @@ _`getSettingsSchema()` 선언이 없습니다._
 실행 권한은 `runPermissions()` — `sirsoft-ecommerce.settings.update` + `sirsoft-ecommerce.orders.update`, 방식이
 `delete` 면 `sirsoft-ecommerce.orders.delete` 까지(전체 범위). 계약은 코어 가이드 「관리자 직권 실행」 절 참조.
 
-- **「종결」**: 주문 상태 구매확정·취소 + 진행 중 환불(요청·승인·처리 중·보류) 없음. 종결 시각은
-  `confirmed_at`/`cancelled_at` 과 완료된 환불의 `refunded_at` 중 늦은 것이고, 비어 있는 레거시 주문은
-  `updated_at` 으로 대신합니다(실제보다 늦거나 같아 더 오래 보존하는 쪽으로만 틀립니다).
-  배송 중·구매확정 전 주문은 어떤 경우에도 대상이 아닙니다.
+- **「종결」**: 주문 상태 구매확정·취소 + 진행 중 환불·교환·반품 없음(완료·거절·철회가 아닌 상태 — 교환·반품은
+  주문 상태를 바꾸지 않고 주문 곁에서 진행되므로 신청서 상태로 봅니다). 종결 시각은 `confirmed_at`/`cancelled_at` 과
+  완료된 환불의 `refunded_at`·완료된 교환·반품의 `completed_at` 중 가장 늦은 것이고, 비어 있는 레거시 주문은
+  `updated_at` 으로 대신합니다(실제보다 늦거나 같아 더 오래 보존하는 쪽으로만 틀립니다). 거절·철회로 끝난
+  신청서는 종결 시각을 늦추지 않습니다. 배송 중·구매확정 전 주문은 어떤 경우에도 대상이 아닙니다.
 - **익명화가 NULL 이 아니라 `***` 인 이유**: 주소 테이블의 이름·연락처·우편번호·주소가 NOT NULL 이라
   스키마를 건드리지 않고 치환값을 넣습니다(nullable 칸만 NULL). 주문번호·금액·상태는 법정 거래
   기록이라 남으므로 결제 플러그인의 주문번호 역조회(영수증·정산 대사)는 계속 동작합니다. 대신
@@ -103,6 +140,10 @@ _`getSettingsSchema()` 선언이 없습니다._
   **카드번호 마스킹본**(앞뒤 자리가 카드를 가리키는 파생 식별자)·접속 환경은 지웁니다. 카드 승인번호·
   카드사명·할부개월은 결제 대행사와의 대사·취소 조회에 쓰는 대금결제 기록이라 남깁니다. 세금계산서는
   사업자 정보(상호·등록번호·주소)를 두고 대표자명·담당자 연락처만 지웁니다.
+- **교환·반품·환불 신청서**: 환불 계좌 명의·번호와 상세 사유·관리자 메모(상담 중 받아 적은 연락처가 섞이는
+  자유 기재 칸)는 NULL, 교환 재배송지 스냅샷은 주문 배송지와 같은 기준(받는 분·연락처·우편번호·주소 `***`,
+  상세 주소 NULL, 국가 유지)으로 가립니다. 신청서 번호·은행 코드·사유 코드·금액·상태와 첨부 사진은
+  청약철회 기록이라 남깁니다.
 - **주문 메타의 사본**: 주소 테이블만 가리면 사본이 남습니다. PG 결제에서 「배송지 저장」을 고르고
   결제가 끝나지 않아 자동 취소된 주문은 저장 대기 배송지 전체(`order_meta.shipping_info_for_save`)를,
   임시 주문을 거친 주문은 배송비 계산 주소(`order_meta.calculation_input.shipping_address`)를 갖고
@@ -113,8 +154,9 @@ _`getSettingsSchema()` 선언이 없습니다._
   지운다). 익명화 트랜잭션 안에서 발행하므로 리스너는 `sync: true` 로 구독하고, 던지면 그 주문의
   익명화 전체가 롤백되어 다음 실행이 다시 잡습니다.
 - **삭제가 잃게 하는 것**: 주문 옵션에 NOT NULL 로 묶인 **상품 리뷰가 이미지째** 사라지고(평점 변동),
+  교환·반품 신청서·클레임 결제와 **클레임 첨부 사진이 파일째**(신청으로 이어지지 않은 임시 첨부 포함) 사라지며,
   결제 플러그인 화면의 영수증·거래 조회가 그 주문번호로 열리지 않으며(FK 없는 문자열 참조),
-  쿠폰 발급·마일리지 거래는 남지만 주문 연결이 끊깁니다. 그래서 기본은 익명화이고, 설정 화면이
+  쿠폰 발급·마일리지 거래는 남지만 주문·클레임 결제·환불 연결이 끊깁니다. 그래서 기본은 익명화이고, 설정 화면이
   삭제를 고를 때 이를 적색으로 경고합니다.
 - **FK 없는 문자열 참조 — 삭제가 고아로 만드는 것**: 결제 플러그인 네 개(`sirsoft-pay_kginicis` ·
   `sirsoft-pay_nhnkcp` · `sirsoft-pay_nicepayments` · `sirsoft-tosspayments`)의 거래·영수증 기록은
@@ -134,6 +176,7 @@ _`getSettingsSchema()` 선언이 없습니다._
 |---|---|---|---|
 | `products` | 상품 관리 | `read`, `create`, `update`, `delete` | `product` |
 | `orders` | 주문 관리 | `read`, `update` | `order` |
+| `claims` | 취소/반품/교환 관리 | `read`, `update-status`, `create`, `update-amounts`, `execute-refund` | `order` |
 | `categories` | 카테고리 관리 | `read`, `create`, `update`, `delete` | - |
 | `brands` | 브랜드 관리 | `read`, `create`, `update`, `delete` | `brand` |
 | `product-notice-templates` | 상품정보제공고시 관리 | `read`, `create`, `update`, `delete` | - |
@@ -148,6 +191,7 @@ _`getSettingsSchema()` 선언이 없습니다._
 | `dashboard` | 대시보드 | `view` | - |
 | `user-products` | 사용자 상품 | `read` | - |
 | `user-orders` | 사용자 주문 | `create`, `cancel`, `confirm` | - |
+| `user-claims` | 사용자 클레임 | `request`, `read`, `withdraw`, `pay` | - |
 | `user-reviews` | 사용자 리뷰 | `write` | - |
 | `wishlists` | 찜 관리 | `read`, `manage` | `wishlist` |
 | `carts` | 장바구니 관리 | `read`, `manage` | `cart` |
@@ -158,15 +202,15 @@ _`getSettingsSchema()` 선언이 없습니다._
 <!-- @generated:permissions END -->
 
 <!-- @intent START -->
-권한 20종은 세 무리로 갈립니다.
+권한 22종은 세 무리로 갈립니다.
 
-- **관리자 CRUD 12종** (`products` · `orders` · `categories` · `brands` ·
+- **관리자 CRUD 13종** (`products` · `orders` · `claims` · `categories` · `brands` ·
   `product-notice-templates` · `product-common-infos` · `promotion-coupon` ·
   `shipping-policies` · `product-labels` · `reviews` · `inquiries` · `mileage`): 관리자 화면과
   1:1 대응하며, 라우트 키가 있는 것은 그 라우트에 스코프 미들웨어가 걸립니다.
-- **사용자 측 5종** (`user-products` · `user-orders` · `user-reviews` · `user-currency` ·
-  `user-shipping-country`): 구매자가 자기 자원에 대해 갖는 권한입니다. 관리자 권한과 이름이
-  겹치지 않도록 `user-` 접두사를 씁니다.
+- **사용자 측 6종** (`user-products` · `user-orders` · `user-claims` · `user-reviews` ·
+  `user-currency` · `user-shipping-country`): 구매자가 자기 자원에 대해 갖는 권한입니다. 관리자
+  권한과 이름이 겹치지 않도록 `user-` 접두사를 씁니다.
 - **횡단 3종** (`settings` · `dashboard` · `identity.policies`): 화면 하나에 대응합니다.
 
 `orders` 에 `create`/`delete` 가 없는 것은 의도입니다 — 주문은 구매자 결제로 생기고
@@ -176,6 +220,16 @@ _`getSettingsSchema()` 선언이 없습니다._
 
 새 관리자 화면을 추가하면 권한·메뉴·라우트 이름 셋이 서로를 정확히 가리키는지 확인합니다.
 권한만 추가하고 메뉴를 빠뜨리면 화면에 도달할 길이 없고, 반대면 눌러도 403 입니다.
+
+클레임은 관리자 `claims`(조회·상태 변경·금액 수정·환불 실행)와 사용자 `user-claims`(신청·조회·
+철회·결제) 두 그룹입니다. 사용자 그룹이 따로 있는 이유는 **특정 회원의 신청 권한만 회수**할 수
+있게 하기 위해서입니다 — 신청 권한을 뺀 회원은 화면 진입부터 막힙니다. 비회원 클레임 경로도 같은
+`user-claims.*` 를 guest 역할로 판정하므로, guest 역할에서 빼면 비회원 창구가 함께 닫힙니다.
+
+관리자 `claims` 의 스코프 축은 **주문의 것을 물려받습니다**(`orders` 와 같은 라우트 키 `order` ·
+소유자 컬럼 `user_id`). 신청서는 언제나 한 주문에 속하므로, 역할에 `self`·`role` 스코프를 걸면 그 신청서가
+속한 주문이 스코프 안일 때만 목록에 보이고 열리고 처리됩니다 — 주문을 볼 수 없는 운영자가 신청서로는
+같은 주문의 환불 계좌를 보거나 환불을 실행하는 우회로를 막습니다.
 <!-- @intent END -->
 
 ## 메뉴
@@ -183,7 +237,7 @@ _`getSettingsSchema()` 선언이 없습니다._
 <!-- @generated:menus START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 구분 | slug | 이름 | URL | 하위 |
 |---|---|---|---|---|
-| 관리자 | `sirsoft-ecommerce` | 이커머스 | - | 15개 |
+| 관리자 | `sirsoft-ecommerce` | 이커머스 | - | 16개 |
 <!-- @generated:menus END -->
 
 <!-- @intent START -->
@@ -198,6 +252,9 @@ _`getSettingsSchema()` 선언이 없습니다._
 독립 메뉴가 아니라 다른 화면 안에 들어 있기 때문입니다 — 대시보드는 코어 관리자 첫 화면에
 레이아웃 조각으로 주입되고, 본인인증 정책은 코어 IDV 설정 화면에서 함께 다뤄지며, 상품 라벨은
 상품 관리 화면 안에 있습니다.
+
+주문 관리 직후에 '취소/반품/교환 관리'(`admin/ecommerce/claims`) 메뉴가 붙습니다 — `claims`
+그룹의 조회 권한과 짝입니다.
 <!-- @intent END -->
 
 ## 라우트
@@ -229,6 +286,12 @@ _`getSettingsSchema()` 선언이 없습니다._
 모든 라우트에 `name()` 이 필요합니다 — 이름이 없으면 미들웨어 self-gate 의 `targets` 패턴과
 IDV 정책의 라우트명 인덱스가 그 라우트를 찾지 못해, 보호가 걸린 것처럼 보이지만 실제로는
 통과합니다.
+
+클레임 라우트는 세 무리 모두에 걸칩니다 — 관리자 `admin/claims` · `admin/{exchanges,returns,refunds}/{id}`
+계열, 구매자 `user/orders/{id}/claims/…` + `user/claims/{claimNumber}` 단일 서브트리(클레임 번호의
+접두사 EX/RT/RF/CN 이 유형을 내포하므로 유형 세그먼트를 두지 않습니다), 비회원
+`guest/orders/{orderNumber}/claims/…` 동형. 목록 `page` 상한은 코어
+`PaginationLimits::maxPage('ecommerce.claims')` 를 그대로 씁니다.
 <!-- @intent END -->
 
 ## 의존 관계
@@ -243,11 +306,11 @@ IDV 정책의 라우트명 인덱스가 그 라우트를 찾지 못해, 보호�
 | 확장 | 유형 | 요구 버전 |
 |---|---|---|
 | `sirsoft-koreaexim` | 플러그인 | `>=1.3.0` |
-| `sirsoft-pay_kginicis` | 플러그인 | `>=1.1.0` |
-| `sirsoft-pay_nhnkcp` | 플러그인 | `>=1.1.0` |
-| `sirsoft-pay_nicepayments` | 플러그인 | `>=1.1.0` |
-| `sirsoft-tosspayments` | 플러그인 | `>=1.1.0` |
-| `sirsoft-basic` | 템플릿 | `>=1.1.0` |
+| `sirsoft-pay_kginicis` | 플러그인 | `>=1.3.0` |
+| `sirsoft-pay_nhnkcp` | 플러그인 | `>=1.3.0` |
+| `sirsoft-pay_nicepayments` | 플러그인 | `>=1.3.0` |
+| `sirsoft-tosspayments` | 플러그인 | `>=1.3.0` |
+| `sirsoft-basic` | 템플릿 | `>=1.3.0` |
 <!-- @generated:dependencies END -->
 
 <!-- @intent START -->
@@ -270,4 +333,9 @@ manifest 에는 없지만 **실제로 맞물리는 확장이 둘 더** 있습니
 
 이 모듈의 공개 표면(Service·Repository·Contracts·라우트·발행 훅)을 바꿀 때는 위 4+1 개 확장의
 `dependencies` 최소 버전 상향이 필요한지 검토합니다.
+
+클레임 추가결제가 이 방향을 유지하는 예입니다 — 결제 플러그인 4종은 이 모듈의
+`claim_payment.approve` / `claim_payment.refund` 필터를 **구현**하고, 그 필터가 처음 생긴 1.3.0 을
+`dependencies.modules.sirsoft-ecommerce` 하한으로 잡습니다. 하한이 그보다 낮으면 필터가 없는
+모듈로도 제약이 충족되어, 플러그인은 정상 활성화된 채 추가결제만 동작하지 않습니다(오류·로그 없음).
 <!-- @intent END -->

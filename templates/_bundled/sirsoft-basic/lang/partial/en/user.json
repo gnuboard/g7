@@ -67,7 +67,14 @@
         "notifications_title": "Notifications",
         "board_title": "Board Activity",
         "scrap_title": "Scrap",
-        "inquiries_title": "Product Inquiries"
+        "inquiries_title": "Product Inquiries",
+        "claim_apply_title": "Exchange / Return / Cancel",
+        "claim_apply_description": "Request an exchange, return, cancellation or refund for your order.",
+        "claims_title": "Exchange, return and cancellation requests",
+        "claims_description": "Review, edit or withdraw your exchange, return, refund and cancellation requests.",
+        "claim_detail_title": "Request details",
+        "claim_detail_description": "Review the items, shipping, amounts and reason of the request.",
+        "claim_edit_title": "Edit request"
     },
     "identity": {
         "challenge": {
@@ -175,7 +182,6 @@
             "tempOrderNotFoundModal": "Order Not Found"
         },
         "mypage_orders": {
-            "modal_cancel_order": "Cancel Order",
             "changeAddressModal": "Change Address",
             "modal_confirm_purchase": "Confirm Purchase",
             "modal_write_review": "Write Review"
@@ -189,6 +195,23 @@
             "reactionDeleteModal": "Confirm reaction removal",
             "reactionBulkDeleteModal": "Confirm bulk reaction removal",
             "reportCancelModal": "Confirm report cancellation"
+        },
+        "mypage_claims": {
+            "apply_items": "Claim items",
+            "apply_redelivery": "Redelivery address",
+            "apply_reason": "Claim reason",
+            "apply_summary": "Claim summary",
+            "apply_comparison": "Order amount comparison",
+            "apply_refund_account": "Refund account",
+            "change_product_modal": "Change exchange option",
+            "withdraw_modal": "Withdraw request confirmation",
+            "list": "Request list",
+            "detail_items": "Requested items",
+            "detail_shipping": "Shipping",
+            "detail_claim_info": "Request details",
+            "detail_progress": "Progress",
+            "detail_reason": "Reason",
+            "image_viewer_modal": "Photo viewer"
         }
     }
 }

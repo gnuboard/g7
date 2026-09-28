@@ -39,6 +39,8 @@ axes:
   kg_coexists: [false, true]
   # 주문 생성 시 서버로 보내는 payment_method — toss_* 는 코어 enum 이 거부하므로 core 값으로 번역해 전송
   core_payment_method_sent: [translated, raw_fallback]
+  # 입금통보가 발급 시점 paymentKey 를 건드리는지 (S1-D10)
+  webhook_case: [deposit_done_keeps_payment_key]
   # 관리자 설정 저장 서버측 범위 검증 (UI max 는 클라 힌트일 뿐 — API 직접 호출 우회 차단)
   settings_range: [valid, out_of_range]
 
@@ -60,6 +62,11 @@ axis_notes:
   settings_range: >-
     out_of_range = vbank_valid_hours 가 1~2160(90일) 밖이거나 use_escrow 가 3-상태 밖 → 422 로 저장 차단.
     valid = 범위 내 → 200 저장. UI input[max] 는 클라이언트 힌트라 API 직접 호출을 막지 못한다.
+  webhook_case: >-
+    deposit_done_keeps_payment_key = 입금통보(DONE)가 싣고 온 `transactionKey`(`txrd_…`, 회차마다
+    바뀌는 별개 식별자)로 `transaction_id`(= 취소 API 가 쓰는 paymentKey)를 덮어쓰지 않는지.
+    덮어쓰면 환불이 승인까지 간 뒤 실행에서만 「존재하지 않는 결제 정보 입니다」로 거절된다(S1-D10).
+    통보 식별자는 `payment_meta.deposit_transaction_key` 로 분리 보관한다.
 
 # 의미 없는 조합 컷
 exclusions:
@@ -80,8 +87,17 @@ effects:
   - webhook_secret_verified
   - webhook_replay_idempotent
   - deposit_done_completes_payment
+  # 입금통보가 취소 API 의 paymentKey 를 보존한다 (S1-D10)
+  - deposit_webhook_preserves_payment_key
   - deposit_canceled_fails_payment
   - non_waiting_deposit_is_noop
+  # 알 수 없는 주문번호는 200 + 본문 FAIL — 토스가 재시도를 멈추도록 수신은 성립시킨다
+  - deposit_for_an_unknown_order_number_answers_fail
+  # status 값 자체가 규격 밖이면 검증에서 422 로 거른다 (분기 진입 전)
+  - deposit_with_an_unknown_status_is_rejected_by_validation
+  # 클레임 추가결제(CP 채번) 상태변경 웹훅은 주문 조회로 내려가지 않는다 — 정상 동작마다
+  # `order not found` warning 이 남으면 운영자 로그에서 결함으로 읽힌다
+  - claim_payment_status_webhook_terminates_without_an_order_lookup
   - non_krw_domestic_method_blocked
   - sdk_method_mapped_from_enabled_methods
   - virtual_account_payload_built
@@ -92,6 +108,8 @@ effects:
   - toss_methods_declare_pg_locked_to_tosspayments
   - locked_pg_id_matches_registered_provider
   - other_plugin_methods_untouched_by_toss_injection
+  # 환불 자동 승인 능력 선언 (코어 P16·P17) — 카드 계열만 true
+  - only_card_backed_methods_declare_auto_approve_refund
   # 코어 결제수단 번역 (본 이슈 수정분)
   - core_payment_method_preserved_through_settings_merge
   - core_payment_method_preserved_through_save_snapshot

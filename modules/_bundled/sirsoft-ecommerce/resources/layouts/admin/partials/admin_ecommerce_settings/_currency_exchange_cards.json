@@ -18,7 +18,7 @@
                 "index_var": "currencyIndex"
             },
             "props": {
-                "className": "excel-card"
+                "className": "excel-card mb-3"
             },
             "children": [
                 {
@@ -602,7 +602,7 @@
                                         "value": "{{currency.decimal_places ?? 0}}",
                                         "min": 0,
                                         "max": 8,
-                                        "className": "w-full",
+                                        "className": "input w-full",
                                         "disabled": "{{_computed.isReadOnly}}"
                                     }
                                 }
@@ -1068,7 +1068,7 @@
                                         "value": "{{_local.form?.newCurrency?.decimal_places ?? 2}}",
                                         "min": "{{_local?.form?._meta?.limits?.decimal_places_min ?? 0}}",
                                         "max": "{{_local?.form?._meta?.limits?.decimal_places_max ?? 8}}",
-                                        "className": "w-full",
+                                        "className": "input w-full",
                                         "disabled": "{{_computed.isReadOnly}}"
                                     }
                                 }

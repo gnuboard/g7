@@ -1,7 +1,15 @@
 import { default as React } from 'react';
 import { IconName } from '../basic/IconTypes';
 import { EditorAttrs } from '../../types';
-export type StatusType = 'success' | 'warning' | 'error' | 'info' | 'pending' | 'default';
+/**
+ * 뱃지 상태 어휘.
+ *
+ * `danger`·`primary`·`secondary`·`dark` 는 도메인 Enum 의 `variant()` 가 실제로 내려보내는
+ * 값이다(이커머스 클레임 상태 등). 이 유니언에 없으면 스타일 조회가 `undefined` 가 되어
+ * className 에 리터럴 `"undefined"` 가 박히고 배경·글자색·테두리가 통째로 사라진다 —
+ * 레이아웃 JSON 은 TS 타입 검사 밖이라 컴파일에도 걸리지 않는다.
+ */
+export type StatusType = 'success' | 'warning' | 'error' | 'danger' | 'info' | 'primary' | 'secondary' | 'dark' | 'pending' | 'default';
 export interface StatusBadgeProps {
     status: StatusType;
     label?: string;
@@ -30,7 +38,7 @@ export interface StatusBadgeProps {
  *   "name": "StatusBadge",
  *   "props": {
  *     "status": "success",
- *     "label": "완료",
+ *     "label": "$t:common.status_badge.success",
  *     "showIcon": true
  *   }
  * }

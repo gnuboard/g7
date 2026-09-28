@@ -27,6 +27,7 @@ axes:
     - deposit_due_vbank        # 가상계좌 — vbank_due_at 도과분
     - deposit_due_dbank        # 무통장입금 — deposit_due_at 도과분
     - pending_order_never_paid # 결제창까지 갔으나 승인되지 않은 주문 (PG 카드 등)
+    - bank_transfer            # 계좌이체(BANK) — 입금기한 부류가 아니다 → 제외 (DBANK 오매칭 회귀 가드)
   elapsed:
     - past_threshold           # 기준 경과 → 대상
     - within_threshold         # 기준 이내 → 구매자가 결제창을 열어 둔 상태일 수 있어 제외
@@ -63,6 +64,10 @@ effects:
   - limit_option_is_respected
   - disabled_toggle_skips_the_whole_run
   - pending_class_due_display_falls_back_to_ordered_at  # 입금 기한이 없는 부류의 표기 기준
+  - cleanup_command_is_registered                       # 커맨드 등록 — dry-run 실행이 성공 종료
+  - bank_transfer_order_is_not_a_deposit_due_class      # 계좌이체는 기한이 지나도 취소하지 않는다
+  - already_paid_deposit_due_order_is_left_alone        # 입금기한 부류라도 결제완료 주문은 제외
+  - empty_run_reports_no_orders                         # 대상 0건이면 안내 문구 출력 후 성공 종료
 
 test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Console/CancelPendingPaymentOrdersCommandTest.php

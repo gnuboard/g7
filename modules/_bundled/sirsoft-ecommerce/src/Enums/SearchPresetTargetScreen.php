@@ -10,6 +10,7 @@ enum SearchPresetTargetScreen: string
     case PRODUCTS = 'products';     // 상품 목록
     case ORDERS = 'orders';         // 주문 목록
     case CUSTOMERS = 'customers';   // 고객 목록
+    case CLAIMS = 'claims';         // 취소/반품/교환 목록
 
     /**
      * 다국어 라벨을 반환합니다.

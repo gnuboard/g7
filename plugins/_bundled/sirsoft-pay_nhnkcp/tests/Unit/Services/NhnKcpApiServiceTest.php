@@ -274,6 +274,53 @@ class NhnKcpApiServiceTest extends PluginTestCase
         }
     }
 
+    /**
+     * P5 — 입금완료 가상계좌는 **환불받을 계좌**가 취소 요청에 실려야 KCP 가 받아 준다.
+     *
+     * 세 값이 취소 payload 밖(예: 거래조회)으로 새면 조회는 멀쩡히 돌고 취소만 조용히
+     * 거절되어, 운영자에게는 원인 없는 실패로만 보인다. 그래서 CLI 인자에서 직접 잰다.
+     */
+    public function test_cancel_payment_sends_the_refund_account_for_a_settled_virtual_account(): void
+    {
+        $stub = $this->makeServiceWithStubbedCli('res_cd=0000'.chr(31).'res_msg=취소완료');
+        /** @var NhnKcpApiService $service */
+        $service = $stub['service'];
+
+        try {
+            $service->cancelPayment('TNO_VB', 'ORD-VB', 9000, '고객 요청', false, 0, [
+                'bank_code' => '004',
+                'account_number' => '12345678901234',
+                'holder' => '홍길동',
+            ]);
+
+            $args = $this->capturedCliArgs($stub['log']);
+            $this->assertStringContainsString('bank_code=004', $args);
+            $this->assertStringContainsString('account=12345678901234', $args);
+            $this->assertStringContainsString('depositor=홍길동', $args);
+        } finally {
+            $this->removeStubbedCliDirectory($stub['dir']);
+        }
+    }
+
+    /** P5 — 계좌가 없는 수단(카드 등)에는 세 키를 붙이지 않는다. */
+    public function test_cancel_payment_omits_the_refund_account_when_none_is_given(): void
+    {
+        $stub = $this->makeServiceWithStubbedCli('res_cd=0000'.chr(31).'res_msg=취소완료');
+        /** @var NhnKcpApiService $service */
+        $service = $stub['service'];
+
+        try {
+            $service->cancelPayment('TNO_CARD', 'ORD-CARD', 9000, '고객 요청', false);
+
+            $args = $this->capturedCliArgs($stub['log']);
+            $this->assertStringNotContainsString('bank_code=', $args);
+            $this->assertStringNotContainsString('account=', $args);
+            $this->assertStringNotContainsString('depositor=', $args);
+        } finally {
+            $this->removeStubbedCliDirectory($stub['dir']);
+        }
+    }
+
     public function test_register_escrow_delivery_uses_test_site_cd_when_escrow_test_site_cd_is_empty(): void
     {
         $stub = $this->makeServiceWithStubbedCli(

@@ -1,11 +1,12 @@
 {
     "_meta": {
-        "version": "1.4.0",
+        "version": "1.5.0",
         "description": "이커머스 모듈 환경설정",
         "categories": [
             "basic_info",
             "language_currency",
             "order_settings",
+            "claim",
             "shipping",
             "seo",
             "review_settings",
@@ -423,6 +424,8 @@
             "cart_expiry_days": 30,
             "stock_restore_on_cancel": true,
             "cancellable_statuses": [
+                "pending_order",
+                "pending_payment",
                 "payment_complete"
             ],
             "confirmable_statuses": [
@@ -583,6 +586,57 @@
             "enabled": false,
             "retention_years": 5,
             "mode": "anonymize"
+        },
+        "claim": {
+            "exchange_requestable_statuses": [
+                "delivered",
+                "confirmed"
+            ],
+            "return_requestable_statuses": [
+                "delivered",
+                "confirmed"
+            ],
+            "instant_cancel_statuses": [
+                "pending_order",
+                "pending_payment",
+                "payment_complete"
+            ],
+            "refund_request_statuses": [
+                "preparing",
+                "shipping_ready",
+                "shipping"
+            ],
+            "allowed_charge_methods": [
+                "pay_on_request",
+                "pay_on_approval",
+                "deduct_from_refund"
+            ],
+            "charge_payment_methods": [
+                "card",
+                "point"
+            ],
+            "auto_approve_zero_charge": false,
+            "auto_approve_after_payment": false,
+            "auto_approve_refund_request": false,
+            "auto_approve_refund_statuses": [
+                "payment_complete",
+                "preparing"
+            ],
+            "auto_approve_refund_payment_methods": [
+                "card",
+                "point",
+                "free"
+            ],
+            "auto_approve_refund_payment_methods_decided": [],
+            "max_images": 5,
+            "image_max_size_kb": 2048,
+            "request_period_days": 7,
+            "advance_exchange_enabled": false,
+            "advance_exchange_collection_due_days": 14,
+            "complete_defaults": {
+                "create_refund_request": true,
+                "restore_stock": true
+            }
         }
     },
     "frontend_schema": {

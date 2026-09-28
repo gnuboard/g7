@@ -102,7 +102,7 @@ _단건 응답: `data` 객체의 필드._
 | subject | body | array | 아니오 | — | 다국어 제목. 컬럼이 nullable 이므로 미전송·`null` 이 허용된다(제목 개념이 없는 채널 대응). 전송하는 경우 로케일별 문자열 배열이어야 하며 각 값은 500자 이하 |
 | body | body | array | 예 | — | 본문 |
 | click_url | body | string | 아니오 | max 500 | 알림 클릭 시 이동할 대상 URL (미설정 시 이동 없음) |
-| recipients | body | array | 아니오 | — | 수신자 규칙 목록. 각 원소는 type(trigger_user: 이벤트 유발 사용자, related_user: 연관 사용자, role: 역할 대상, specific_users: 지정 사용자), value(대상 식별값), relation(연관 사용자 관계명), exclude_trigger_user(유발 사용자 제외 여부)로 구성 |
+| recipients | body | array | 아니오 | — | 수신자 규칙 목록. 각 원소는 type(trigger_user: 이벤트 유발 사용자, related_user: 연관 사용자, role: 역할 대상, specific_users: 지정 사용자), value(대상 식별값), relation(연관 사용자 관계명), exclude_trigger_user(유발 사용자 제외 여부)로 구성. `related_user` 의 relation 은 그 알림 정의가 선언한 관계 목록(`relations`) 안이어야 한다 — 목록이 비어 있으면(`[]`) 어떤 관계도 422, 목록이 아직 없으면(`NULL` — 코어 업그레이드 직후 확장이 재동기화되기 전) 목록으로 막지 않는다 |
 | is_active | body | boolean | 아니오 | — | 활성 여부 (true 활성 / false 비활성) |
 
 > 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.notification_template.update_validation_rules`).

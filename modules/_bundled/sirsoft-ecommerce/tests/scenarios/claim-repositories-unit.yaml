@@ -1,0 +1,56 @@
+feature: claim_repositories_unit
+
+description: |
+  클레임 저장소(교환·반품·환불·취소 헤더와 상품 행, 첨부 이미지, 클레임 결제, 배송정책 회수지)의
+  컨테이너 바인딩과 조회·집계·일괄 변경 계약을 실제 DB 로 고정하는 Unit 테스트의 시나리오 소유
+  매니페스트.
+
+  핵심 동작:
+    - 진행 중 수량 합계는 종결 상태(철회·반려·완료)를 빼고, 수정 경로에서는 자기 신청서를 뺀다.
+    - 사유 코드 계수는 그 유형의 카탈로그에서 고른 행만 센다(환불은 DIRECT 출처만).
+    - 상품 행 일괄 상태 변경은 지정 신청서(와 지정 행)로 범위가 좁혀지고, 처리자·완료 시각은
+      전달받은 경로에서만 기입한다.
+    - 다건 상품 행 조회는 신청서별로 묶어 돌려준다(합집합 금지).
+    - 클레임 결제 합계는 수납 완료 건만 더한다.
+    - 회수지는 정책·유형당 한 행이며 삭제도 유형 단위다.
+
+axes:
+  area:
+    - binding
+    - exchange
+    - return
+    - refund
+    - cancel
+    - image
+    - payment
+    - claim_address
+
+effects:
+  - all_claim_repository_interfaces_are_bound
+  - exchange_repository_crud_and_lookup
+  - exchange_repository_lists_by_order_newest_first
+  - exchange_repository_active_quantity_excludes_terminal_states
+  - exchange_repository_counts_by_reason_code
+  - refund_repository_counts_only_direct_refunds_by_reason_code
+  - exchange_option_repository_bulk_status_update_scopes_to_exchange
+  - exchange_option_repository_bulk_status_update_can_target_subset
+  - return_repository_crud_and_lookup
+  - return_repository_active_quantity_excludes_terminal_states
+  - return_option_repository_bulk_update
+  - claim_image_repository_scopes_by_claimable
+  - claim_image_repository_finds_by_hash_and_deletes
+  - claim_payment_repository_lookup_by_number_and_transaction
+  - claim_payment_repository_sums_only_paid_amounts
+  - claim_payment_repository_sum_is_zero_when_none_paid
+  - claim_address_repository_upsert_is_idempotent_per_type
+  - claim_address_repository_delete_scopes_to_type
+  - cancel_option_repository_bulk_status_update_records_completion
+  - refund_option_repository_bulk_status_update_sets_completed_at_only_when_given
+  - exchange_option_repository_lists_option_ids_grouped_by_claim
+  - return_option_repository_lists_option_ids_grouped_by_claim
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Repositories/ClaimRepositoriesTest.php
+
+validation:
+  audit_rule: test-scenario-coverage

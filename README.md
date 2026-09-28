@@ -459,7 +459,7 @@ The setup wizard creates the application key, configures the database connection
 | Module | Description |
 |--------|-------------|
 | **sirsoft-board** | Boards — multiple boards, comments, file attachments |
-| **sirsoft-ecommerce** | Storefront — products, orders, payments, shipping, coupons, product inquiries |
+| **sirsoft-ecommerce** | Storefront — products, orders, payments, shipping, cancellations/returns/exchanges/refunds, coupons, mileage, product inquiries |
 | **sirsoft-page** | Pages — static content management |
 
 ### Plugins
@@ -535,7 +535,7 @@ One Gnuboard7 installation can run a range of businesses.
 | Model | Description | Status |
 |-------|-------------|--------|
 | **Community** | Boards, comments, member management | Stable |
-| **Commerce** | Product registration, orders, payments, shipping management | Stable |
+| **Commerce** | Product registration, orders, payments, shipping, cancellation/return/exchange/refund management | Stable |
 
 ---
 

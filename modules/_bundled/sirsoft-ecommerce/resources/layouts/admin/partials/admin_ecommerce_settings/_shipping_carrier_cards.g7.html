@@ -42,7 +42,7 @@
         </div>
         <div class="form-group">
           <label class="form-label">$t:sirsoft-ecommerce.admin.settings.shipping.carriers.columns.name</label>
-          <multilingual-input value="{{$carrier.name ?? {}}}" layout="compact" placeholder="$t:sirsoft-ecommerce.admin.settings.shipping.carriers.form.name_ko_placeholder" error="{{_local.errors?.['shipping.carriers.' + $carrier._idx + '.name.ko']?.[0] ?? _local.errors?.['shipping.carriers.' + $carrier._idx + '.name']?.[0] ?? ''}}" disabled="{{_computed.isReadOnly}}">
+          <multilingual-input value="{{$carrier.name ?? {}}}" layout="compact" placeholder="$t:sirsoft-ecommerce.admin.settings.shipping.carriers.form.name_ko_placeholder" error="{{_local.errors?.['shipping.carriers.' + $carrier._idx + '.name.' + ($locale ?? 'ko')]?.[0] ?? _local.errors?.['shipping.carriers.' + $carrier._idx + '.name']?.[0] ?? ''}}" disabled="{{_computed.isReadOnly}}">
             <on type="change">
               <!-- 택배사 이름(언어별). 고객 화면에 그대로 보인다. -->
               <set-state target="local" form.shipping.carriers="{{(_local.form?.shipping?.carriers ?? []).map((c, i) => i === $carrier._idx ? {...c, name: $event.target.value} : c)}}" :hasChanges="true"/>

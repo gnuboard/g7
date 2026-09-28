@@ -4,6 +4,24 @@
   <div data-if="{{_local?.isPasswordVerified}}" class="space-y-6">
     <blur-until-loaded sources="user"/>
     <responsive on="portable" class="space-y-4"/>
+    <!-- 계정 상태 안내 — 보기 화면과 같은 자리·같은 양식이다(요구사항 2026-09-21). 수정 화면에만
+         없으면, 차단·탈퇴 상태라 저장이 거절되는 사람이 그 이유를 이 화면에서 알 수 없다 —
+         보기 화면으로 되돌아 나가야 비로소 읽게 된다. -->
+    <div data-if="{{user.data?.status === 'inactive'}}" class="flex items-center gap-3 p-4 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
+      <icon name="circle-pause" size="lg" class="text-gray-500 dark:text-gray-400 flex-shrink-0"/>
+      <p class="text-sm text-gray-700 dark:text-gray-300">$t:mypage.profile.status_inactive_notice</p>
+    </div>
+    <div data-if="{{user.data?.status === 'blocked'}}" class="flex items-center gap-3 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+      <icon name="ban" size="lg" class="text-red-600 dark:text-red-400 flex-shrink-0"/>
+      <p class="text-sm text-red-800 dark:text-red-200">$t:mypage.profile.status_blocked_notice</p>
+    </div>
+    <div data-if="{{user.data?.status === 'withdrawn'}}" class="flex items-center gap-3 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+      <icon name="circle-xmark" size="lg" class="text-yellow-600 dark:text-yellow-400 flex-shrink-0"/>
+      <div class="flex flex-col gap-1">
+        <p class="text-sm text-yellow-800 dark:text-yellow-200">$t:mypage.profile.status_withdrawn_notice</p>
+        <p data-if="{{user.data?.withdrawn_at}}" class="text-xs text-yellow-600 dark:text-yellow-300">$t:mypage.profile.withdrawn_at: {{user.data?.withdrawn_at}}</p>
+      </div>
+    </div>
     <!-- 섹션 헤더 - 프로필 수정 + 취소/저장 버튼 (카드 외부) -->
     <div class="flex items-center justify-between">
       <responsive on="portable" class="flex flex-col gap-3"/>
@@ -86,6 +104,67 @@
         <responsive on="portable" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4"/>
         <h3 class="text-base font-semibold text-gray-900 dark:text-white mb-4 pb-3 border-b border-gray-200 dark:border-gray-700">$t:mypage.profile.section_basic</h3>
         <div class="space-y-4">
+          <!-- 아바타 — 보기 화면과 **같은 업로더**를 같은 자리에 세운다. 종전에는 사진을 바꾸려면
+               「수정하기」 를 눌러 들어온 화면에서 되돌아 나가 보기 화면에서 눌러야 했다(요구사항
+               2026-09-21). 이 컴포넌트는 폼 본문과 무관하게 자기 엔드포인트로 즉시 올리므로
+               아래 [저장] 을 누르지 않아도 반영되고, 성공하면 두 데이터소스를 다시 부른다. -->
+          <div data-ref="profile_edit_avatar" class="flex items-center gap-4 pb-4 border-b border-gray-200 dark:border-gray-700">
+            <responsive on="portable" class="flex flex-col items-center gap-3 pb-4 border-b border-gray-200 dark:border-gray-700"/>
+            <avatar-uploader src="{{user.data?.avatar}}" fallbackText="{{user.data?.name?.charAt(0) ?? 'U'}}" size="xl" :showDeleteButton="true" :confirmDelete="true">
+              <responsive on="portable" size="lg"/>
+              <prop name="uploadSuccessActions">
+                <item>
+                  <field name="handler" value="refetchDataSource"/>
+                  <field name="params">
+                    <field name="dataSourceId" value="user"/>
+                  </field>
+                </item>
+                <item>
+                  <field name="handler" value="refetchDataSource"/>
+                  <field name="params">
+                    <field name="dataSourceId" value="current_user"/>
+                  </field>
+                </item>
+              </prop>
+              <prop name="deleteSuccessActions">
+                <item>
+                  <field name="handler" value="refetchDataSource"/>
+                  <field name="params">
+                    <field name="dataSourceId" value="user"/>
+                  </field>
+                </item>
+                <item>
+                  <field name="handler" value="refetchDataSource"/>
+                  <field name="params">
+                    <field name="dataSourceId" value="current_user"/>
+                  </field>
+                </item>
+              </prop>
+            </avatar-uploader>
+            <!-- 상태 배지 · 가입일 · 마지막 로그인 · 탈퇴일시 — **시스템이 적는 기록**이라 읽기
+                 전용이다. 그래도 보기 화면과 같은 자리에 세우는 것은, 보기에서 본 「휴면」 이나
+                 가입일을 수정 화면에서 찾지 못하면 「고칠 수 있는데 칸이 없는 것」 인지
+                 「원래 고칠 수 없는 것」 인지 화면이 말해 주지 않기 때문이다. -->
+            <div class="flex-1 space-y-2">
+              <responsive on="portable" class="w-full space-y-2 text-center"/>
+              <span data-if="{{user.data?.status &amp;&amp; user.data?.status !== 'active'}}" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {{({success: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300', secondary: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300', danger: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300', warning: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300', info: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'})[user.data?.status_variant] ?? 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'}}">{{user.data?.status_label}}</span>
+              <div class="flex flex-wrap gap-x-6 gap-y-1 text-sm text-gray-500 dark:text-gray-400">
+                <responsive on="portable" class="flex flex-col gap-1 text-sm text-gray-500 dark:text-gray-400"/>
+                <div>
+                  <span class="text-gray-500 dark:text-gray-400">$t:mypage.profile.joined_at</span>
+                  <span class="ml-2 text-purple-600 dark:text-purple-400 font-mono">{{user.data?.created_at ?? '-'}}</span>
+                </div>
+                <div>
+                  <span class="text-gray-500 dark:text-gray-400">$t:mypage.profile.last_login</span>
+                  <span class="ml-2 text-purple-600 dark:text-purple-400" title="{{user.data?.last_login_at ?? ''}}">{{user.data?.last_login_human ?? '-'}}</span>
+                </div>
+                <div data-if="{{user.data?.status === 'withdrawn' &amp;&amp; user.data?.withdrawn_at}}">
+                  <span class="text-gray-500 dark:text-gray-400">$t:mypage.profile.withdrawn_at</span>
+                  <span class="ml-2 text-red-600 dark:text-red-400 font-mono">{{user.data?.withdrawn_at}}</span>
+                </div>
+              </div>
+            </div>
+          </div>
           <!-- 이메일 (읽기 전용) -->
           <div class="space-y-1">
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">$t:mypage.profile.email</label>
@@ -298,7 +377,7 @@
           <h3 class="text-base font-semibold text-gray-900 dark:text-white">$t:mypage.shipping_country_settings.title</h3>
         </div>
         <p class="text-sm text-gray-500 dark:text-gray-400 mb-3">$t:mypage.shipping_country_settings.description</p>
-        <select name="ecommerce_preferred_shipping_country" value="{{user.data?.ecommerce_preferred_shipping_country ?? _global.modules?.['sirsoft-ecommerce']?.shipping?.default_country ?? 'KR'}}" options="{{(_global.modules?.['sirsoft-ecommerce']?.shipping?.available_countries ?? []).filter(c => c.is_active).map(c => ({ value: c.code, label: (c.name?.[$locale] ?? c.name?.ko ?? c.code) }))}}" class="w-full sm:w-64"/>
+        <select name="ecommerce_preferred_shipping_country" value="{{user.data?.ecommerce_preferred_shipping_country ?? _global.modules?.['sirsoft-ecommerce']?.shipping?.default_country ?? 'KR'}}" options="{{(_global.modules?.['sirsoft-ecommerce']?.shipping?.available_countries ?? []).filter(c => c.is_active).map(c => ({ value: c.code, label: ($localized(c.name) || c.code) }))}}" class="w-full sm:w-64"/>
       </div>
       <!-- 하단 버튼 그룹 -->
       <div class="flex justify-end gap-2">

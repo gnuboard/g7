@@ -38,8 +38,15 @@ return [
         'send_email' => 'Email Sent',
         'set_default' => 'Set as Default',
         'status_change' => 'Status Changed',
+        'sync_status' => 'Status Applied by Sync',
+        'status_sync' => 'Status Auto-synced',
         'stock_sync' => 'Stock Synchronized',
         'toggle_active' => 'Active Status Changed',
+        'tax_invoice_stale' => 'Tax Invoice Not Handled',
+        'tracking_update' => 'Tracking Recorded/Corrected',
+        'tracking_deliver' => 'Tracking Delivered',
+        'mode_change' => 'Mode Changed',
+        'stock_restore' => 'Stock Restored',
         'toggle_status' => 'Status Toggled',
         'update' => 'Updated',
         'update_quantity' => 'Quantity Updated',
@@ -52,6 +59,14 @@ return [
         'admin_deduct' => 'Admin Deduct',
         'extend_expiry' => 'Expiry Extended',
         'adjust' => 'Earning Edited',
+        // Claims (exchange / return / refund / additional payment / attachment)
+        'request' => 'Request Received',
+        'option_status_change' => 'Item Status Change',
+        'update_amounts' => 'Amounts Updated',
+        'request_update' => 'Request Updated',
+        'complete' => 'Completed',
+        'refund' => 'Refunded',
+        'execute' => 'Executed',
     ],
 
     'description' => [
@@ -85,6 +100,10 @@ return [
         'order_reset_guest_password' => 'Guest lookup password reset (:order_number)',
         'order_option_status_change' => 'Order option status changed (Order: :order_number)',
         'order_option_bulk_status_change' => 'Order option statuses bulk changed (:count items)',
+        'order_option_sync_status' => 'Item status changed by order status sync (:order_number, :count item(s))',
+        'order_shipping_tracking_update' => 'Tracking number recorded/corrected (item ID: :option_id)',
+        'order_tax_invoice_stale' => 'Tax invoice not handled after cancellation (:order_number, :count invoice(s))',
+        'order_status_sync' => 'Order status auto-synced from item statuses (:order_number)',
 
         // Coupon management (Admin)
         'coupon_index' => 'Coupon list viewed',
@@ -198,6 +217,12 @@ return [
         'ecommerce_settings_index' => 'Ecommerce settings viewed',
         'ecommerce_settings_update' => 'Ecommerce settings saved (:categories)',
 
+        // Claim reason catalog
+        'claim_reason_create' => 'Claim reason created (:reason_type · :reason_code)',
+        'claim_reason_update' => 'Claim reason updated (:reason_type · :reason_code)',
+        'claim_reason_delete' => 'Claim reason deleted (:reason_type · :reason_code)',
+        'claim_reason_toggle_status' => 'Claim reason status toggled (:reason_type · :reason_code)',
+
         // Payment (Admin)
         'payment_refund' => 'Payment refunded (Order: :order_number)',
 
@@ -223,6 +248,46 @@ return [
         'mileage_admin_deduct' => 'Admin deducted mileage (:amount)',
         'mileage_extend_expiry' => 'Mileage expiry extended (:days days)',
         'mileage_adjust' => 'Mileage earning edited (:amount)',
+
+        // Claims (exchange / return / refund) — status values live in properties, the text carries identifiers only
+        'claim_exchange_request' => 'Exchange request received (:claim_number)',
+        'claim_return_request' => 'Return request received (:claim_number)',
+        'claim_refund_request' => 'Refund request received (:claim_number)',
+        'claim_cancel_request' => 'Cancellation record created (:claim_number)',
+        'claim_exchange_status_change' => 'Exchange request status changed (:claim_number)',
+        'claim_return_status_change' => 'Return request status changed (:claim_number)',
+        'claim_refund_status_change' => 'Refund request status changed (:claim_number)',
+        'claim_cancel_status_change' => 'Cancellation record status changed (:claim_number)',
+        'claim_exchange_option_status_change' => 'Exchange request item status changed (:claim_number, :count item(s))',
+        'claim_return_option_status_change' => 'Return request item status changed (:claim_number, :count item(s))',
+        'claim_refund_option_status_change' => 'Refund request item status changed (:claim_number, :count item(s))',
+        'claim_cancel_option_status_change' => 'Cancellation record item status changed (:claim_number, :count item(s))',
+        'claim_exchange_collection_tracking_update' => 'Exchange request collection tracking changed (:claim_number · :count item(s))',
+        'claim_exchange_redelivery_tracking_update' => 'Exchange request redelivery tracking changed (:claim_number · :count item(s))',
+        'claim_return_collection_tracking_update' => 'Return request collection tracking changed (:claim_number · :count item(s))',
+        'claim_exchange_collection_tracking_deliver' => 'Exchange collection tracking marked as arrived (:claim_number · :tracking_number · :count item(s))',
+        'claim_exchange_redelivery_tracking_deliver' => 'Exchange redelivery tracking marked as arrived (:claim_number · :tracking_number · :count item(s))',
+        'claim_return_collection_tracking_deliver' => 'Return collection tracking marked as arrived (:claim_number · :tracking_number · :count item(s))',
+        'claim_exchange_mode_change' => 'Exchange request mode changed (:claim_number)',
+        'claim_exchange_stock_restore' => 'Exchange claim stock restored (:claim_number · :count item(s) · qty :quantity)',
+        'claim_return_stock_restore' => 'Return claim stock restored (:claim_number · :count item(s) · qty :quantity)',
+        'claim_exchange_update_amounts' => 'Exchange request amounts updated (:claim_number)',
+        'claim_return_update_amounts' => 'Return request amounts updated (:claim_number)',
+        'claim_refund_update_amounts' => 'Refund request amounts updated (:claim_number)',
+        'claim_exchange_request_update' => 'Exchange request details updated (:claim_number)',
+        'claim_return_request_update' => 'Return request details updated (:claim_number)',
+        'claim_refund_request_update' => 'Refund request details updated (:claim_number)',
+        'claim_exchange_request_update_on_behalf' => 'Exchange request details updated by an operator for the customer (:claim_number)',
+        'claim_return_request_update_on_behalf' => 'Return request details updated by an operator for the customer (:claim_number)',
+        'claim_refund_request_update_on_behalf' => 'Refund request details updated by an operator for the customer (:claim_number)',
+        'claim_refund_execute' => 'Refund executed (:claim_number)',
+        'claim_payment_complete' => 'Claim additional payment completed (:payment_number)',
+        'claim_payment_refund' => 'Claim additional payment refunded (:payment_number)',
+        // 금액을 싣는 새 환급 로그 — 옛 키 문구에 자리표시자를 더하면 금액 없이 남은 과거 로그가 「:amount」 를 드러낸다.
+        'claim_payment_refund_amount' => 'Claim additional payment refunded (:payment_number, :amount)',
+        'claim_payment_cancel' => 'Claim additional payment request cancelled (:payment_number)',
+        'claim_image_upload' => 'Claim attachment uploaded (:original_name)',
+        'claim_image_delete' => 'Claim attachment deleted (:original_name)',
     ],
 
     // ChangeDetector field labels
@@ -304,7 +369,13 @@ return [
         'meta_description' => 'Meta Description',
 
         // OrderOption
+        'collection_tracking' => 'Collection Tracking',
+        'redelivery_tracking' => 'Redelivery Tracking',
+        'exchange_mode' => 'Exchange Mode',
+        'unreturned_reason' => 'Not-returned Reason',
         'option_status' => 'Option Status',
+        'carrier_id' => 'Carrier',
+        'tracking_number' => 'Tracking number',
         'quantity' => 'Quantity',
         'cancelled_quantity' => 'Cancelled Quantity',
 
@@ -320,5 +391,28 @@ return [
         'option_name' => 'Option Name',
         'sku' => 'SKU',
         'price_adjustment' => 'Price Adjustment',
+
+        // Claim amount edits (D18)
+        'claim_shipping_fee' => 'Claim Shipping Fee',
+        'total_charge_amount' => 'Total Amount Due',
+        'charge_method' => 'Charge Method',
+        'refund_amount' => 'Refund Amount',
+        'refund_points_amount' => 'Refunded Mileage',
+        'refund_method' => 'Refund Method',
+
+        // Claim request edits (D13 · S15)
+        'claim_reason' => 'Reason',
+        'fault_type' => 'Fault',
+        'reason_detail' => 'Reason Detail',
+        'refund_bank' => 'Refund Bank Account',
+        'redelivery_address' => 'Redelivery Address',
     ],
+
+    // Change value display (items whose values are not stored)
+    'values' => [
+        'masked_change' => 'Changed (value not stored — personal information)',
+    ],
+
+    // Display for an entity whose name could not be resolved
+    'entity_id_fallback' => 'ID: :id',
 ];

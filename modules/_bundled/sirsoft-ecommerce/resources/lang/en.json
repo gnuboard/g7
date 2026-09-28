@@ -53,7 +53,14 @@
             "addresses": "Member addresses",
             "inquiries": "Product inquiries",
             "privacyTargets": "Orders due for retention processing",
-            "privacyManualRuns": "Privacy action manual run status"
+            "privacyManualRuns": "Privacy action manual run status",
+            "claim_detail": "Claim Detail",
+            "claim_logs": "Claim Activity Logs",
+            "claim_reasons": "Claim Reasons",
+            "claim_settings": "Shipping policy claim settings",
+            "claims": "Claims",
+            "orderClaims": "Order Claim History",
+            "claimRequestContext": "Claim request context"
         }
     },
     "common": {
@@ -275,8 +282,8 @@
             }
         },
         "user_addresses": {
-            "title": "Member Addresses",
-            "description": "Browse and clean up saved member addresses.",
+            "title": "Member addresses",
+            "description": "Browse and tidy up the shipping addresses members have saved.",
             "search_fields": {
                 "member": "Member",
                 "member_id": "Member ID",
@@ -284,24 +291,28 @@
                 "recipient": "Recipient",
                 "address": "Address"
             },
-            "filters": {
-                "search_label": "Search in",
-                "keyword_label": "Keyword",
-                "keyword_placeholder": "Enter a keyword",
-                "date_label": "Added on",
-                "search": "Search",
-                "reset": "Reset",
-                "is_default_label": "Default",
-                "is_default_all": "All",
+            "search": {
+                "placeholder": "Search by recipient or address",
+                "column_select": "Columns"
+            },
+            "filter": {
+                "member": "Member",
+                "member_select": "Select members",
+                "member_selected_count": "{count} selected",
+                "member_search_placeholder": "Search by name or email",
+                "member_search_initial": "Type a name or email",
+                "created_at": "Added on",
+                "is_default": "Default",
                 "is_default_only": "Default only",
                 "is_default_except": "Non-default",
-                "member_filter_notice": "Showing addresses for one member only",
-                "member_filter_clear": "Clear member filter"
+                "search": "Search",
+                "reset": "Reset"
             },
             "columns": {
                 "created_at": "Added on",
                 "member": "Member",
                 "recipient": "Recipient",
+                "contact": "Phone",
                 "address": "Address"
             },
             "badges": {
@@ -311,29 +322,30 @@
             },
             "actions": {
                 "delete": "Delete",
-                "view_member": "Member details"
+                "view_member": "Member details",
+                "search_member": "Search by this member"
             },
             "bulk": {
-                "selected_count": "{{count}} selected",
                 "delete": "Delete selected"
             },
             "sort": {
-                "created_at_desc": "Newest",
-                "created_at_asc": "Oldest"
+                "created_at_desc": "Newest first",
+                "created_at_asc": "Oldest first"
             },
             "table": {
                 "total_count": "{{count}} total",
+                "selected_count": "{{count}} selected",
                 "empty": "No addresses."
             },
             "modal": {
                 "delete": {
                     "title": "Delete this address?",
-                    "message": "It disappears from the member's address book. Existing orders are unaffected."
+                    "message": "Deletes {{member}}'s address (recipient {{recipient}}).",
+                    "warning": "It disappears from the member's address book. Addresses on existing orders are unaffected."
                 },
                 "bulk_delete": {
                     "title": "Delete the selected addresses?",
-                    "message": "Delete {{count}} selected address(es)?",
-                    "deleting": "Deleting..."
+                    "message": "Deletes the {{count}} selected addresses."
                 }
             }
         },
@@ -425,7 +437,14 @@
             "view_wishlists": "Wishlists",
             "view_carts": "Carts",
             "view_addresses": "Addresses",
-            "view_inquiries": "Inquiries"
+            "view_inquiries": "Inquiries",
+            "saved_addresses": "Saved addresses",
+            "address_empty": "No saved addresses.",
+            "address_default": "Default",
+            "address_more": "{{count}} more in address management."
+        },
+        "claim": {
+            "$partial": "partial/en/admin/claim.json"
         }
     },
     "user": {
@@ -447,6 +466,12 @@
         "expiring_soon": "Expiring {{amount}} P",
         "view_history": "Mileage History",
         "disabled_notice": "Mileage is disabled."
+    },
+    "user_address_card": {
+        "title": "Default shipping address",
+        "manage": "Manage addresses",
+        "default_badge": "Default",
+        "empty_notice": "No shipping address yet. Once you add one, checkout fills it in for you."
     },
     "product": {
         "$partial": "partial/en/product.json"

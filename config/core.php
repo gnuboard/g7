@@ -871,6 +871,7 @@ return [
     'notification_definitions' => [
         'welcome' => [
             'hook_prefix' => 'core.auth',
+            'audience' => 'customer',
             'name' => ['ko' => '회원가입 환영', 'en' => 'Welcome'],
             'description' => ['ko' => '회원가입 완료 시 발송되는 환영 알림', 'en' => 'Welcome notification sent upon registration'],
             'channels' => ['mail', 'database'],
@@ -913,6 +914,7 @@ return [
         ],
         'reset_password' => [
             'hook_prefix' => 'core.auth',
+            'audience' => 'customer',
             'name' => ['ko' => '비밀번호 재설정', 'en' => 'Password Reset'],
             'description' => ['ko' => '비밀번호 재설정 요청 시 발송되는 알림', 'en' => 'Notification sent when password reset is requested'],
             'channels' => ['mail', 'database'],
@@ -958,6 +960,7 @@ return [
         ],
         'password_changed' => [
             'hook_prefix' => 'core.auth',
+            'audience' => 'customer',
             'name' => ['ko' => '비밀번호 변경', 'en' => 'Password Changed'],
             'description' => ['ko' => '비밀번호 변경 완료 시 발송되는 알림', 'en' => 'Notification sent when password is changed'],
             'channels' => ['mail', 'database'],
@@ -1004,6 +1007,7 @@ return [
         // 기본 활성 채널은 database(앱 내 알림)만. mail 템플릿은 존재하되 비활성(운영자가 필요 시 활성화).
         'sitemap_regenerated' => [
             'hook_prefix' => 'core.seo',
+            'audience' => 'staff',
             'name' => ['ko' => '사이트맵 재생성 완료', 'en' => 'Sitemap Regeneration Complete'],
             'description' => ['ko' => '관리자가 수동으로 실행한 사이트맵 재생성이 완료되면 실행한 관리자에게 발송되는 알림', 'en' => 'Notification sent to the admin who manually triggered sitemap regeneration when it completes'],
             'channels' => ['database'],
@@ -1050,6 +1054,7 @@ return [
         // 사이트맵 재생성 실패 — 관리자 수동 재생성이 실패하면 실행한 관리자에게 발송.
         'sitemap_regenerate_failed' => [
             'hook_prefix' => 'core.seo',
+            'audience' => 'staff',
             'name' => ['ko' => '사이트맵 재생성 실패', 'en' => 'Sitemap Regeneration Failed'],
             'description' => ['ko' => '관리자가 수동으로 실행한 사이트맵 재생성이 최종 실패(재시도 소진)하면 실행한 관리자에게 발송되는 알림', 'en' => 'Notification sent to the admin who manually triggered sitemap regeneration when it finally fails after retries'],
             'channels' => ['database'],
@@ -1101,6 +1106,7 @@ return [
         */
         'dormant_pre_notice' => [
             'hook_prefix' => 'core.privacy',
+            'audience' => 'customer',
             'name' => ['ko' => '휴면 전환 사전 안내', 'en' => 'Dormancy Advance Notice'],
             'description' => ['ko' => '장기 미접속으로 곧 휴면 전환될 회원에게 미리 보내는 안내', 'en' => 'Notice sent before a long-inactive account becomes dormant'],
             'channels' => ['mail', 'database'],
@@ -1148,6 +1154,7 @@ return [
         ],
         'dormant_converted' => [
             'hook_prefix' => 'core.privacy',
+            'audience' => 'customer',
             'name' => ['ko' => '휴면 전환 완료', 'en' => 'Dormancy Applied'],
             'description' => ['ko' => '휴면 계정으로 전환되었음을 알리는 고지', 'en' => 'Notice sent when an account has become dormant'],
             'channels' => ['mail', 'database'],
@@ -1193,6 +1200,7 @@ return [
         ],
         'dormant_withdraw_notice' => [
             'hook_prefix' => 'core.privacy',
+            'audience' => 'customer',
             'name' => ['ko' => '휴면 계정 탈퇴 예정 안내', 'en' => 'Dormant Account Withdrawal Notice'],
             'description' => ['ko' => '휴면 기간이 지나 탈퇴 처리될 예정임을 미리 알리는 안내', 'en' => 'Notice sent before a dormant account is withdrawn'],
             'channels' => ['mail', 'database'],
@@ -1242,6 +1250,7 @@ return [
         // 운영자가 모르면 며칠치 통계가 조용히 비므로 관리자 역할 전체에 알린다.
         'analytics_archive_failed' => [
             'hook_prefix' => 'core.analytics',
+            'audience' => 'staff',
             'name' => ['ko' => '방문자 통계 집계 실패', 'en' => 'Analytics Archiving Failed'],
             'description' => ['ko' => '방문자 통계 집계 배치가 실패하면 관리자에게 발송되는 알림', 'en' => 'Notification sent to administrators when the analytics archiving batch fails'],
             'channels' => ['mail', 'database'],
@@ -1290,6 +1299,7 @@ return [
         // 보존일을 줄이거나 정리 배치를 확인하라는 신호.
         'analytics_ledger_limit_exceeded' => [
             'hook_prefix' => 'core.analytics',
+            'audience' => 'staff',
             'name' => ['ko' => '방문자 통계 원장 임계 초과', 'en' => 'Analytics Ledger Threshold Exceeded'],
             'description' => ['ko' => '방문·액션 원장 행수가 설정한 경고 임계치를 넘으면 관리자에게 발송되는 알림', 'en' => 'Notification sent to administrators when visit or action ledger rows exceed the configured warning threshold'],
             'channels' => ['mail', 'database'],
@@ -1340,6 +1350,7 @@ return [
         // 자동화 트래픽이거나 상한이 너무 낮다는 신호라 화면 알림만 남긴다.
         'analytics_visit_limit_exceeded' => [
             'hook_prefix' => 'core.analytics',
+            'audience' => 'staff',
             'name' => ['ko' => '방문당 액션 상한 초과', 'en' => 'Visit Action Limit Exceeded'],
             'description' => ['ko' => '한 방문의 액션 수가 상한을 넘어 이후 액션이 기록되지 않을 때 관리자에게 남기는 알림', 'en' => 'Notification left for administrators when a single visit exceeds the action limit and further actions are dropped'],
             'channels' => ['database'],
@@ -1367,6 +1378,7 @@ return [
         // 주간 리포트 — 설정의 report_weekly_enabled 와 이 정의의 활성 상태가 둘 다 참일 때만 발송된다.
         'analytics_weekly_report' => [
             'hook_prefix' => 'core.analytics',
+            'audience' => 'staff',
             'name' => ['ko' => '방문자 통계 주간 리포트', 'en' => 'Weekly Analytics Report'],
             'description' => ['ko' => '매주 월요일 지난 한 주의 방문자 통계 요약을 관리자에게 보내는 리포트', 'en' => 'Weekly summary of visitor statistics sent to administrators every Monday'],
             'channels' => ['mail'],
@@ -1415,6 +1427,7 @@ return [
         // 월간 리포트 — 주간과 같은 구성, 매월 1일 발송.
         'analytics_monthly_report' => [
             'hook_prefix' => 'core.analytics',
+            'audience' => 'staff',
             'name' => ['ko' => '방문자 통계 월간 리포트', 'en' => 'Monthly Analytics Report'],
             'description' => ['ko' => '매월 1일 지난달의 방문자 통계 요약을 관리자에게 보내는 리포트', 'en' => 'Monthly summary of visitor statistics sent to administrators on the first of each month'],
             'channels' => ['mail'],

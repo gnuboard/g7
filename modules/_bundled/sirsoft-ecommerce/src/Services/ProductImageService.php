@@ -20,6 +20,7 @@ use Modules\Sirsoft\Ecommerce\Models\ProductImage;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductImageRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Services\Concerns\ResolvesRowStorage;
+use Modules\Sirsoft\Ecommerce\Services\Concerns\ResolvesStoredExtension;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
@@ -30,6 +31,7 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 class ProductImageService
 {
     use ResolvesRowStorage;
+    use ResolvesStoredExtension;
 
     /**
      * ProductImageService 생성자
@@ -81,7 +83,7 @@ class ProductImageService
         $file = HookManager::applyFilters('sirsoft-ecommerce.product-image.filter_upload_file', $file);
 
         // 저장 경로 결정
-        $storedFilename = Str::uuid().'.'.$file->getClientOriginalExtension();
+        $storedFilename = Str::uuid().'.'.$this->storedExtension($file);
 
         if ($productId) {
             $product = $this->productRepository->find($productId);

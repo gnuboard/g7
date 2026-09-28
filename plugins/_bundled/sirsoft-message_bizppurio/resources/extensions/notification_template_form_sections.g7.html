@@ -87,7 +87,7 @@
     </on>
     <div data-ref="bizppurio_tpl_alimtalk_section" class="rounded-lg border border-teal-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 space-y-3">
       <div class="flex-between flex-wrap gap-2">
-        <div class="flex-center flex-wrap gap-2">
+        <div class="flex items-center flex-wrap gap-2">
           <icon name="fas fa-comment-dots" class="text-base text-teal-600 dark:text-teal-400 flex-shrink-0"/>
           <h4 class="text-sm font-semibold text-gray-800 dark:text-gray-100">$t:sirsoft-message_bizppurio.template.section.alimtalk_title</h4>
           <!-- 승인 여부 2단 배지(제품 결정 2026-08-23): 1차 = 승인됨/미승인, 2차(괄호) = 세부 상태(미작성·작성중·검수중·반려·휴면·중지·차단). approved 는 세부 없이 단독 표기. -->
@@ -98,7 +98,7 @@
           <span data-if="{{bizppurioTemplates?.data?.templates?.[extensionPointProps.definition?.type]?.requested_at}}" class="text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-message_bizppurio.template.row.requested_on|date={{(bizppurioTemplates?.data?.templates?.[extensionPointProps.definition?.type]?.requested_at ?? '').slice(5, 10)}}</span>
           <span data-if="{{bizppurioTemplates?.data?.templates?.[extensionPointProps.definition?.type]?.last_synced_at}}" class="text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-message_bizppurio.template.row.synced_on|date={{(bizppurioTemplates?.data?.templates?.[extensionPointProps.definition?.type]?.last_synced_at ?? '').slice(5, 10)}}</span>
         </div>
-        <div class="flex-center flex-wrap gap-1.5">
+        <div class="flex items-center flex-wrap gap-1.5">
           <button data-if="{{!!(_global.bz_tpl_modal?.template_code)}}" type="button" class="text-xs px-2.5 py-1 rounded-md border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{(_global.bz_tpl_modal?.isSaving ?? false)}}">
             <on type="click">
               <!-- 카카오 상태 동기화 — 검수 결과는 카카오 쪽에서 바뀌므로 서버가 다시 조회해 맞춘 뒤 상세를 다시 읽어 모달 상태를 갱신한다. -->
@@ -237,13 +237,13 @@
         </div>
       </div>
       <div data-if="{{_global.bz_tpl_modal?.status === 'rejected' &amp;&amp; (_global.bz_tpl_modal?.inspection_detail ?? []).length > 0}}" class="p-3 rounded-lg bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700">
-        <div class="flex-center gap-2">
+        <div class="flex items-center gap-2">
           <icon name="fas fa-circle-exclamation" size="sm" class="text-red-600 dark:text-red-400 flex-shrink-0"/>
           <span class="text-xs font-medium text-red-800 dark:text-red-200">$t:sirsoft-message_bizppurio.template.form.rejected_banner</span>
         </div>
         <p data-each="cm in {{_global.bz_tpl_modal?.inspection_detail ?? []}}" class="text-xs text-red-700 dark:text-red-300 mt-1">{{(cm.createdAt ?? '').slice(0, 10)}} — {{cm.content ?? ''}}</p>
       </div>
-      <div data-if="{{_global.bz_tpl_modal?.error}}" class="flex-center gap-2 p-3 rounded-lg bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700">
+      <div data-if="{{_global.bz_tpl_modal?.error}}" class="flex items-center gap-2 p-3 rounded-lg bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700">
         <icon name="fas fa-triangle-exclamation" size="sm" class="text-red-600 dark:text-red-400 flex-shrink-0"/>
         <span class="text-xs text-red-800 dark:text-red-200">{{_global.bz_tpl_modal?.error}}</span>
       </div>
@@ -253,14 +253,14 @@
         </ul>
       </div>
       <!-- 상세(content) 를 받아오는 동안 편집 폼을 열지 않는다 — 시딩 내용으로 저장되거나 입력이 상세 도착에 덮이는 경쟁 차단(Playwright 실측). -->
-      <div data-ref="bizppurio_tpl_loading" data-if="{{!((_global.bz_tpl_modal?.notification_type === extensionPointProps.definition?.type) &amp;&amp; !(_global.bz_tpl_modal?.loading ?? false))}}" class="flex-center gap-2 text-xs text-gray-500 dark:text-gray-400 py-2">
+      <div data-ref="bizppurio_tpl_loading" data-if="{{!((_global.bz_tpl_modal?.notification_type === extensionPointProps.definition?.type) &amp;&amp; !(_global.bz_tpl_modal?.loading ?? false))}}" class="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 py-2">
         <icon name="spinner" class="animate-spin text-sm"/>
         <span>$t:sirsoft-message_bizppurio.template.section.loading</span>
       </div>
       <!-- 검수중/승인/휴면/중지/차단 — 내용 잠금. 요약만 보여주고 수정은 [신청 취소]/[승인 취소 후 수정] 뒤에만 가능(서버 가드 content_locked 와 동일 규칙). -->
       <div data-ref="bizppurio_tpl_locked" data-if="{{!(['draft', 'rejected'].includes(_global.bz_tpl_modal?.status ?? 'draft')) &amp;&amp; ((_global.bz_tpl_modal?.notification_type === extensionPointProps.definition?.type) &amp;&amp; !(_global.bz_tpl_modal?.loading ?? false))}}" class="space-y-2">
         <p class="text-xs text-gray-600 dark:text-gray-300 p-3 rounded-lg bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700">$t:sirsoft-message_bizppurio.template.section.locked_hint</p>
-        <div class="flex-center flex-wrap gap-3 text-xs text-gray-600 dark:text-gray-300">
+        <div class="flex items-center flex-wrap gap-3 text-xs text-gray-600 dark:text-gray-300">
           <span>{{$t('sirsoft-message_bizppurio.template.form.message_type') + ': ' + $t('sirsoft-message_bizppurio.template.form.templateMessageType_options.' + (_global.bz_tpl_modal?.content?.templateMessageType ?? 'BA'))}}</span>
           <span>{{$t('sirsoft-message_bizppurio.template.form.emphasize_type') + ': ' + $t('sirsoft-message_bizppurio.template.form.templateEmphasizeType_options.' + (_global.bz_tpl_modal?.content?.templateEmphasizeType ?? 'NONE'))}}</span>
         </div>
@@ -270,7 +270,7 @@
       <div data-ref="bizppurio_tpl_editor" data-if="{{(['draft', 'rejected'].includes(_global.bz_tpl_modal?.status ?? 'draft')) &amp;&amp; ((_global.bz_tpl_modal?.notification_type === extensionPointProps.definition?.type) &amp;&amp; !(_global.bz_tpl_modal?.loading ?? false))}}" class="space-y-4">
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <label class="text-secondary block text-xs font-medium mb-1">$t:sirsoft-message_bizppurio.template.form.sender_profile</label>
+            <label class="text-gray-600 dark:text-gray-400 block text-xs font-medium mb-1">$t:sirsoft-message_bizppurio.template.form.sender_profile</label>
             <select class="w-full text-sm" value="{{_global.bz_tpl_modal?.sender_profile ?? ''}}" options="{{[{value: '', label: $t('sirsoft-message_bizppurio.template.form.sender_profile_placeholder')}, ...((bizppurioProfiles?.data?.profiles ?? []).map(pr => ({value: pr.senderKey ?? '', label: (pr.name ?? pr.senderKey ?? '')})))]}}">
               <on type="change">
                 <!-- 발신프로필 선택값을 모달 상태(bz_tpl_modal.sender_profile)에 담는다 — 검수 신청 시 카카오에 함께 보낸다. -->
@@ -280,7 +280,7 @@
             <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">$t:sirsoft-message_bizppurio.template.form.sender_profile_hint</p>
           </div>
           <div>
-            <label class="text-secondary block text-xs font-medium mb-1">$t:sirsoft-message_bizppurio.template.form.category *</label>
+            <label class="text-gray-600 dark:text-gray-400 block text-xs font-medium mb-1">$t:sirsoft-message_bizppurio.template.form.category *</label>
             <select class="w-full text-sm" value="{{_global.bz_tpl_modal?.content?.categoryCode ?? ''}}" options="{{[{value: '', label: $t('sirsoft-message_bizppurio.template.form.category_placeholder')}, ...((bizppurioCategories?.data?.categories ?? []).map(cat => ({value: cat.code ?? '', label: ((cat.groupName ? cat.groupName + ' › ' : '') + (cat.name ?? cat.code ?? ''))})))]}}">
               <on type="change">
                 <!-- 카카오 템플릿 카테고리 코드 — 검수 신청 필수값이라 content.categoryCode 에 담는다. -->
@@ -290,7 +290,7 @@
           </div>
         </div>
         <div>
-          <label class="text-secondary block text-xs font-medium mb-1">$t:sirsoft-message_bizppurio.template.form.name *</label>
+          <label class="text-gray-600 dark:text-gray-400 block text-xs font-medium mb-1">$t:sirsoft-message_bizppurio.template.form.name *</label>
           <input class="w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100" value="{{_global.bz_tpl_modal?.content.templateName ?? ''}}" name="bz_template_name" :maxLength="200">
             <on type="change">
               <!-- 템플릿 이름 — content.templateName 에 담는다(카카오 검수 화면에 표시되는 이름). -->
@@ -299,7 +299,7 @@
           </input>
         </div>
         <div>
-          <label class="text-secondary block text-xs font-medium mb-1">$t:sirsoft-message_bizppurio.template.form.message_type *</label>
+          <label class="text-gray-600 dark:text-gray-400 block text-xs font-medium mb-1">$t:sirsoft-message_bizppurio.template.form.message_type *</label>
           <!-- 메시지 유형 — BA 기본형 / EX 부가정보형 / AD 채널추가형 / MI 복합형 -->
           <div class="flex flex-wrap gap-1.5">
             <button type="button" class="{{'px-3 py-1.5 rounded-md text-xs font-medium border ' + ((_global.bz_tpl_modal?.content?.templateMessageType ?? 'BA') === 'BA' ? 'border-teal-500 bg-teal-50 dark:bg-teal-900/40 text-teal-700 dark:text-teal-300' : 'border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700')}}">
@@ -333,7 +333,7 @@
           </div>
         </div>
         <div>
-          <label class="text-secondary block text-xs font-medium mb-1">$t:sirsoft-message_bizppurio.template.form.emphasize_type *</label>
+          <label class="text-gray-600 dark:text-gray-400 block text-xs font-medium mb-1">$t:sirsoft-message_bizppurio.template.form.emphasize_type *</label>
           <!-- 강조 유형 — NONE / TEXT 강조표기 / IMAGE 이미지 / ITEM_LIST 아이템리스트 -->
           <div class="flex flex-wrap gap-1.5">
             <button type="button" class="{{'px-3 py-1.5 rounded-md text-xs font-medium border ' + ((_global.bz_tpl_modal?.content?.templateEmphasizeType ?? 'NONE') === 'NONE' ? 'border-teal-500 bg-teal-50 dark:bg-teal-900/40 text-teal-700 dark:text-teal-300' : 'border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700')}}">
@@ -368,7 +368,7 @@
         </div>
         <div data-if="{{_global.bz_tpl_modal?.content?.templateEmphasizeType === 'TEXT'}}" class="grid grid-cols-2 gap-3">
           <div>
-            <label class="text-secondary block text-xs font-medium mb-1">$t:sirsoft-message_bizppurio.template.form.emphasize_title *</label>
+            <label class="text-gray-600 dark:text-gray-400 block text-xs font-medium mb-1">$t:sirsoft-message_bizppurio.template.form.emphasize_title *</label>
             <input class="w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100" value="{{_global.bz_tpl_modal?.content.templateTitle ?? ''}}">
               <on type="change">
                 <!-- 강조 제목(TEXT 강조형) — content.templateTitle. -->
@@ -377,7 +377,7 @@
             </input>
           </div>
           <div>
-            <label class="text-secondary block text-xs font-medium mb-1">$t:sirsoft-message_bizppurio.template.form.emphasize_subtitle *</label>
+            <label class="text-gray-600 dark:text-gray-400 block text-xs font-medium mb-1">$t:sirsoft-message_bizppurio.template.form.emphasize_subtitle *</label>
             <input class="w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100" value="{{_global.bz_tpl_modal?.content.templateSubtitle ?? ''}}">
               <on type="change">
                 <!-- 강조 보조 문구(TEXT 강조형) — content.templateSubtitle. -->
@@ -387,20 +387,20 @@
           </div>
         </div>
         <div data-if="{{_global.bz_tpl_modal?.content?.templateEmphasizeType === 'IMAGE'}}" class="space-y-1">
-          <label class="text-secondary block text-xs font-medium mb-1">$t:sirsoft-message_bizppurio.template.form.image *</label>
+          <label class="text-gray-600 dark:text-gray-400 block text-xs font-medium mb-1">$t:sirsoft-message_bizppurio.template.form.image *</label>
           <input type="file" accept=".jpg,.jpeg,.png" class="block w-full text-xs text-gray-600 dark:text-gray-300">
             <on type="change">
               <!-- 강조 이미지 업로드 — 플러그인 핸들러가 카카오 이미지 규격으로 올리고 URL·파일명·상태를 모달 상태의 세 경로에 나눠 적는다. -->
               <action handler="sirsoft-message_bizppurio.uploadTemplateImage" stateTarget="global" statePathUrl="bz_tpl_modal.content.templateImageUrl" statePathName="bz_tpl_modal.content.templateImageName" statePathStatus="bz_tpl_upload"/>
             </on>
           </input>
-          <p class="text-xs text-gray-400 dark:text-gray-500">$t:sirsoft-message_bizppurio.template.form.image_hint</p>
+          <p class="text-xs text-gray-400 dark:text-gray-500">$t:sirsoft-message_bizppurio.template.form.image_hint|max=500&amp;width=500</p>
           <span data-if="{{_global.bz_tpl_upload?.uploading}}" class="text-xs text-amber-600 dark:text-amber-400">$t:sirsoft-message_bizppurio.template.form.image_uploading</span>
           <span data-if="{{_global.bz_tpl_upload?.error}}" class="text-xs text-red-600 dark:text-red-400">{{_global.bz_tpl_upload?.error ?? ''}}</span>
           <span data-if="{{_global.bz_tpl_modal?.content?.templateImageUrl}}" class="text-xs text-green-700 dark:text-green-400 break-all">{{_global.bz_tpl_modal?.content?.templateImageName}} — {{_global.bz_tpl_modal?.content?.templateImageUrl}}</span>
         </div>
         <div data-if="{{_global.bz_tpl_modal?.content?.templateEmphasizeType === 'ITEM_LIST'}}" class="space-y-2">
-          <label class="text-secondary text-xs font-medium">$t:sirsoft-message_bizppurio.template.form.item_highlight</label>
+          <label class="text-gray-600 dark:text-gray-400 text-xs font-medium">$t:sirsoft-message_bizppurio.template.form.item_highlight</label>
           <div class="grid grid-cols-2 gap-1.5">
             <input class="w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 text-xs" placeholder="$t:sirsoft-message_bizppurio.template.form.hl_title" value="{{_global.bz_tpl_modal?.content?.templateItemHighlight?.title ?? ''}}">
               <on type="change">
@@ -422,7 +422,7 @@
             </on>
           </input>
           <div class="flex-between mt-2">
-            <label class="text-secondary text-xs font-medium">$t:sirsoft-message_bizppurio.template.form.item_list</label>
+            <label class="text-gray-600 dark:text-gray-400 text-xs font-medium">$t:sirsoft-message_bizppurio.template.form.item_list</label>
             <button type="button" class="text-xs font-medium px-2.5 py-1 rounded-md whitespace-nowrap flex-shrink-0 border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700" disabled="{{(_global.bz_tpl_modal?.content?.templateItem?.list ?? []).length >= 10}}">
               <on type="click">
                 <!-- 아이템 리스트에 빈 행(title·description)을 하나 더한다 — 배열 전체를 새로 만들어 넣어야 화면이 갱신된다. -->
@@ -453,7 +453,7 @@
               <icon name="fas fa-trash-can" size="sm"/>
             </button>
           </div>
-          <label class="text-secondary text-xs font-medium mt-2">$t:sirsoft-message_bizppurio.template.form.item_summary</label>
+          <label class="text-gray-600 dark:text-gray-400 text-xs font-medium mt-2">$t:sirsoft-message_bizppurio.template.form.item_summary</label>
           <div class="grid grid-cols-2 gap-1.5">
             <input class="w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 text-xs" :maxLength="6" placeholder="$t:sirsoft-message_bizppurio.template.form.item_title" value="{{_global.bz_tpl_modal?.content?.templateItem?.summary?.title ?? ''}}">
               <on type="change">
@@ -471,7 +471,7 @@
         </div>
         <div>
           <div class="flex-between">
-            <label class="text-secondary block text-xs font-medium mb-1">$t:sirsoft-message_bizppurio.template.form.content *</label>
+            <label class="text-gray-600 dark:text-gray-400 block text-xs font-medium mb-1">$t:sirsoft-message_bizppurio.template.form.content *</label>
             <span class="text-xs text-gray-400 dark:text-gray-500">{{(_global.bz_tpl_modal?.content?.templateContent ?? '').length}}/1000</span>
           </div>
           <textarea name="bz_template_content" :rows="6" :maxLength="1000" class="w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 font-mono" value="{{_global.bz_tpl_modal?.content?.templateContent ?? ''}}">
@@ -494,7 +494,7 @@
           </div>
         </div>
         <div data-if="{{_global.bz_tpl_modal?.content?.templateMessageType === 'EX' || _global.bz_tpl_modal?.content?.templateMessageType === 'MI'}}">
-          <label class="text-secondary block text-xs font-medium mb-1">$t:sirsoft-message_bizppurio.template.form.extra *</label>
+          <label class="text-gray-600 dark:text-gray-400 block text-xs font-medium mb-1">$t:sirsoft-message_bizppurio.template.form.extra *</label>
           <textarea :rows="2" class="w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100" value="{{_global.bz_tpl_modal?.content?.templateExtra ?? ''}}">
             <on type="change">
               <!-- 부가 정보(EX·MI 유형) — content.templateExtra. -->
@@ -503,7 +503,7 @@
           </textarea>
         </div>
         <div>
-          <label class="text-secondary block text-xs font-medium mb-1">$t:sirsoft-message_bizppurio.template.form.header</label>
+          <label class="text-gray-600 dark:text-gray-400 block text-xs font-medium mb-1">$t:sirsoft-message_bizppurio.template.form.header</label>
           <input class="w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100" value="{{_global.bz_tpl_modal?.content.templateHeader ?? ''}}" :maxLength="16">
             <on type="change">
               <!-- 헤더 문구 — content.templateHeader. -->
@@ -514,7 +514,7 @@
         </div>
         <div class="space-y-2">
           <div class="flex-between">
-            <label class="text-secondary text-xs font-medium">$t:sirsoft-message_bizppurio.template.form.buttons</label>
+            <label class="text-gray-600 dark:text-gray-400 text-xs font-medium">$t:sirsoft-message_bizppurio.template.form.buttons</label>
             <button type="button" class="text-xs font-medium px-2.5 py-1 rounded-md whitespace-nowrap flex-shrink-0 border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700" disabled="{{(_global.bz_tpl_modal?.content?.buttons ?? []).length >= 5}}">
               <on type="click">
                 <!-- 버튼 행 추가 — 기본 링크 유형 WL(웹링크)로 빈 버튼을 덧붙인다. -->
@@ -587,7 +587,7 @@
         </div>
         <div class="space-y-2">
           <div class="flex-between">
-            <label class="text-secondary text-xs font-medium">$t:sirsoft-message_bizppurio.template.form.quick_replies</label>
+            <label class="text-gray-600 dark:text-gray-400 text-xs font-medium">$t:sirsoft-message_bizppurio.template.form.quick_replies</label>
             <button type="button" class="text-xs font-medium px-2.5 py-1 rounded-md whitespace-nowrap flex-shrink-0 border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700" disabled="{{(_global.bz_tpl_modal?.content?.quickReplies ?? []).length >= 10}}">
               <on type="click">
                 <!-- 바로연결 행 추가 — 기본 링크 유형 WL 로 빈 항목을 덧붙인다. -->
@@ -661,7 +661,7 @@
         <!-- 검수자 전달 의견 — kapi template/request 의 comment(≤500). 카카오 심사 가이드가 요구하는 변수 예시값 등을 검수자에게 전할 유일한 통로(제품 결정 2026-08-23 §18.7). 신청 시에만 전송되며 행에 저장되지 않는다. -->
         <div data-ref="bizppurio_tpl_request_comment">
           <div class="flex-between">
-            <label class="text-secondary block text-xs font-medium mb-1">$t:sirsoft-message_bizppurio.template.form.request_comment</label>
+            <label class="text-gray-600 dark:text-gray-400 block text-xs font-medium mb-1">$t:sirsoft-message_bizppurio.template.form.request_comment</label>
             <span class="text-xs text-gray-400 dark:text-gray-500">{{(_global.bz_tpl_modal?.request_comment ?? '').length}}/500</span>
           </div>
           <textarea name="bz_request_comment" :rows="3" :maxLength="500" class="w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100" placeholder="$t:sirsoft-message_bizppurio.template.form.request_comment_placeholder" value="{{_global.bz_tpl_modal?.request_comment ?? ''}}">
@@ -677,11 +677,11 @@
     <!-- 문자(SMS) — 검수 대상 아님(카카오 검수는 알림톡 템플릿만). 대체 SMS/SMS 단독 토글 + 로케일별 본문. 통합 [저장]으로 delivery 필드와 함께 저장된다. -->
     <div data-ref="bizppurio_tpl_sms_section" class="rounded-lg border border-gray-200 dark:border-gray-700 p-4 space-y-3">
       <div class="flex-between flex-wrap gap-2">
-        <div class="flex-center gap-2">
+        <div class="flex items-center gap-2">
           <icon name="fas fa-comment-sms" class="text-base text-gray-500 dark:text-gray-400 flex-shrink-0"/>
           <h4 class="text-sm font-semibold text-gray-800 dark:text-gray-100">$t:sirsoft-message_bizppurio.template.section.sms_title</h4>
         </div>
-        <div class="flex-center flex-wrap gap-3">
+        <div class="flex items-center flex-wrap gap-3">
           <label class="inline-flex items-center gap-1.5 cursor-pointer select-none">
             <checkbox :autoBinding="false" checked="{{!!(_global.bz_sms_modal?.fallback_sms_enabled)}}" class="h-3.5 w-3.5 rounded border-gray-300 dark:border-gray-600 text-teal-600">
               <on type="change">

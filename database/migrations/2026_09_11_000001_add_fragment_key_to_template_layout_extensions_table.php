@@ -32,6 +32,12 @@ return new class extends Migration
             'fragment_key' => DB::raw('target_name'),
         ]);
 
+        // 재실행 가드 — MySQL 은 DDL 을 되돌리지 않으므로 앞선 실행이 고유 키까지 만든 뒤 멈췄다면
+        // 다음 실행은 여기서 `Duplicate key name` 으로 매번 실패한다(컬럼 가드만으로는 막히지 않는다).
+        if (Schema::hasIndex('template_layout_extensions', 'uk_layout_extension_fragment')) {
+            return;
+        }
+
         // utf8mb4 에서 여섯 열 전체 길이는 InnoDB 키 상한(3072 바이트)을 넘는다 — 가변 길이 세 열은 191자
         // 접두 인덱스로 건다(실제 값은 모두 그보다 짧다). 접두 길이는 MySQL 문법이라 그 드라이버에서만 쓴다.
         if (DB::getDriverName() === 'mysql') {
@@ -56,9 +62,11 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('template_layout_extensions', function (Blueprint $table) {
-            $table->dropUnique('uk_layout_extension_fragment');
-        });
+        if (Schema::hasIndex('template_layout_extensions', 'uk_layout_extension_fragment')) {
+            Schema::table('template_layout_extensions', function (Blueprint $table) {
+                $table->dropUnique('uk_layout_extension_fragment');
+            });
+        }
 
         Schema::table('template_layout_extensions', function (Blueprint $table) {
             if (Schema::hasColumn('template_layout_extensions', 'fragment_key')) {

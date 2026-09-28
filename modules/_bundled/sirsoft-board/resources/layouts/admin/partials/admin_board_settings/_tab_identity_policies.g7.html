@@ -27,7 +27,7 @@
                       <field name="fail_mode" value="block"/>
                       <field name="enabled" :value="true"/>
                       <field name="priority" :value="100"/>
-                      <field name="conditions" :value="[]"/>
+                      <field name="conditions" :value="{}"/>
                       <field name="source_type" value="admin"/>
                     </field>
                     <field name="isNew" :value="true"/>
@@ -73,7 +73,7 @@
             </navigate>
           </on>
         </select>
-        <input type="text" name="filter.search" value="{{query.search ?? ''}}" placeholder="$t:admin.identity.policies.search_placeholder" class="md:flex-1">
+        <input type="text" name="filter.search" value="{{query.search ?? ''}}" placeholder="$t:admin.identity.policies.search_placeholder" class="input flex-1 min-w-[200px]">
           <on type="keypress" key="Enter">
             <!-- 엔터로 검색 — 범위 셀렉트와 같은 규칙(빈 검색어는 키를 빼고, 쪽수는 1 로). 옆 「검색」 버튼과 달리 이쪽은 URL 을 갈아 조건 자체를 바꾼다 -->
             <navigate path="/admin/board/settings" :replace="true" :mergeQuery="true" transition_overlay_target="policy_table_card">

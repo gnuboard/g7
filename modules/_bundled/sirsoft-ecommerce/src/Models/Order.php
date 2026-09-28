@@ -361,6 +361,36 @@ class Order extends Model
     }
 
     /**
+     * 교환 신청 이력 관계
+     *
+     * @return HasMany 교환 신청서 모델과의 관계
+     */
+    public function exchanges(): HasMany
+    {
+        return $this->hasMany(OrderExchange::class, 'order_id');
+    }
+
+    /**
+     * 반품 신청 이력 관계
+     *
+     * @return HasMany 반품 신청서 모델과의 관계
+     */
+    public function returns(): HasMany
+    {
+        return $this->hasMany(OrderReturn::class, 'order_id');
+    }
+
+    /**
+     * 클레임 추가결제 이력 관계
+     *
+     * @return HasMany 클레임 추가결제 모델과의 관계
+     */
+    public function claimPayments(): HasMany
+    {
+        return $this->hasMany(ClaimPayment::class, 'order_id');
+    }
+
+    /**
      * 주문자명 반환 (배송지 기준)
      *
      * @return string|null 주문자명

@@ -76,7 +76,8 @@
         <div data-ref="field_address" class="form-group">
           <label class="form-label">$t:sirsoft-ecommerce.admin.settings.basic_info.business_info.address</label>
           <div>
-            <div>
+            <!-- 우편번호 줄·기본주소·상세주소가 세로로 쌓이는 묶음 — 줄 사이 간격이 없으면 입력칸 테두리가 서로 붙는다. -->
+            <div class="stack-tight">
               <div class="flex-center gap-2">
                 <input type="text" name="basic_info.zipcode" placeholder="$t:sirsoft-ecommerce.admin.settings.basic_info.business_info.zipcode" class="input w-28" :readOnly="false" disabled="{{_computed.isReadOnly}}"/>
                 <extension-point name="address_search_slot" data-ref="address_search_slot">
@@ -182,7 +183,7 @@
     <div data-ref="inquiry_settings_card" class="admin-card">
       <h3 data-ref="inquiry_settings_title" class="card-title">$t:sirsoft-ecommerce.admin.settings.basic_info.inquiry_settings.title</h3>
       <div data-ref="inquiry_settings_description" class="card-description">$t:sirsoft-ecommerce.admin.settings.basic_info.inquiry_settings.description</div>
-      <div data-ref="inquiry_settings_body" class="card-body">
+      <div data-ref="inquiry_settings_body">
         <extension-point name="inquiry_board_setting">
           <default>
             <div data-ref="inquiry_board_setting_fallback" class="alert-info">

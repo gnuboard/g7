@@ -1,0 +1,47 @@
+feature: 구매확정 활동 로그의 전/후 표 (S2-D7)
+
+description: |
+  구매확정은 두 경로로 일어나고, 둘 다 같은 훅
+  (`sirsoft-ecommerce.order-option.after_confirm`)을 발화해 같은 리스너
+  (`OrderActivityLogListener::handleOrderOptionAfterConfirm`)가 받는다.
+
+    - 회원 셀프 확정 : `OrderService::confirmOption()`
+    - 관리자 상태전이 : `OrderOptionService` 의 상태 변경 경로
+
+  리스너는 **세 번째 인자로 받은 변경 전 스냅샷**으로 `changes` 를 만든다.
+  그 독블록이 이유를 명시한다:
+
+    > `changes` 를 싣는 이유: 활동 로그 화면은 여기에 실린 항목만
+    > "변경 전 → 변경 후" 표로 그린다. 줄만 남기면 이 사건으로
+    > 무엇이 바뀌었는지를 로그에서 읽을 수 없다.
+
+  **그런데 관리자 경로만 스냅샷 없이 2인자로 발화했다.**
+  `ChangeDetector::detect($option, null)` 은 빈 결과를 내므로, 같은 사건인데
+  관리자가 확정한 건만 전/후 표가 통째로 빈다. 스냅샷은 그 메서드 안에
+  이미 떠 있었고(`after_status_change` 발화에 쓰인다) 넘기지 않았을 뿐이다.
+
+  #599 통합실측 세션2 실측(2026-09-15):
+
+    | 경로 | 옵션 | activity_logs.changes |
+    | --- | --- | --- |
+    | 회원 셀프(주문 107) | 231 · 232 | option_status: delivered → confirmed  **있음** |
+    | 관리자(주문 115)    | 245       | **빈 문자열** |
+
+  구매확정은 적립이 확정되고 취소·환불이 막히는 전이다. 그 사건의 전/후가
+  누가 눌렀는지에 따라 로그에서 사라지면 감사 근거가 되지 못한다.
+
+  계약: 이 매니페스트는 **두 경로가 같은 인자수로 발화하는 것**을 잠근다 —
+  훅을 받은 뒤의 로그 모양은 `modules/_bundled/sirsoft-ecommerce/tests/Unit/Listeners/OrderActivityLogListenerTest.php`
+  가 이미 잠그고 있으므로 중복하지 않는다. 한쪽만 고쳐지면 red 가 된다.
+
+axes:
+  confirm_path:
+    - user_self
+    - admin_transition
+
+effects:
+  - user_confirm_carries_option_snapshot
+  - admin_confirm_carries_option_snapshot
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/AdminConfirmPassesOptionSnapshotTest.php

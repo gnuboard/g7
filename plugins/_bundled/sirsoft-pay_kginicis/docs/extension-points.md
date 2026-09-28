@@ -9,11 +9,11 @@
 
 | 훅 이름 | 유형 | 설명 | 발행 위치 |
 |---|---|---|---|
-| `sirsoft-pay_kginicis.payment.after_authorize` | action | KG 이니시스 서버 승인 완료 후 | `src/Controllers/PaymentCallbackController.php:247` |
-| `sirsoft-pay_kginicis.payment.after_cancel` | action | KG 이니시스 결제 취소 완료 후 | `src/Services/KgInicisApiService.php:784` |
+| `sirsoft-pay_kginicis.payment.after_authorize` | action | KG 이니시스 서버 승인 완료 후 | `src/Controllers/PaymentCallbackController.php:290` |
+| `sirsoft-pay_kginicis.payment.after_cancel` | action | KG 이니시스 결제 취소 완료 후 | `src/Services/KgInicisApiService.php:802` |
 | `sirsoft-pay_kginicis.payment.after_cbt_refund` | action | KG 이니시스 일본 CBT 결제 취소 완료 후 | `src/Services/KgInicisApiService.php:594` |
-| `sirsoft-pay_kginicis.payment.before_authorize` | action | KG 이니시스 서버 승인 API 호출 전 | `src/Controllers/PaymentCallbackController.php:243` |
-| `sirsoft-pay_kginicis.payment.before_cancel` | action | KG 이니시스 결제 취소 API 호출 전 (본인인증 등 확장 지점) | `src/Services/KgInicisApiService.php:762` |
+| `sirsoft-pay_kginicis.payment.before_authorize` | action | KG 이니시스 서버 승인 API 호출 전 | `src/Controllers/PaymentCallbackController.php:286` |
+| `sirsoft-pay_kginicis.payment.before_cancel` | action | KG 이니시스 결제 취소 API 호출 전 (본인인증 등 확장 지점) | `src/Services/KgInicisApiService.php:780` |
 | `sirsoft-pay_kginicis.payment.before_cbt_refund` | action | KG 이니시스 일본 CBT 결제 취소 API 호출 전 | `src/Services/KgInicisApiService.php:566` |
 <!-- @generated:hooks-published END -->
 
@@ -39,6 +39,9 @@
 | `sirsoft-ecommerce.cash_receipt.cancel` | filter | `RegisterCashReceiptProviderListener` | `cancel` | 10 |
 | `sirsoft-ecommerce.cash_receipt.issue` | filter | `RegisterCashReceiptProviderListener` | `issue` | 10 |
 | `sirsoft-ecommerce.cash_receipt.registered_providers` | filter | `RegisterCashReceiptProviderListener` | `registerProvider` | 10 |
+| `sirsoft-ecommerce.claim_payment.approve` | filter | `ClaimPaymentApproveListener` | `processApprove` | 10 |
+| `sirsoft-ecommerce.claim_payment.refund` | filter | `ClaimPaymentRefundListener` | `processRefund` | 10 |
+| `sirsoft-ecommerce.claim_payment.void_approval` | filter | `ClaimPaymentApproveListener` | `voidApproval` | 10 |
 | `sirsoft-ecommerce.order.after_anonymize` | action | `ScrubEscrowRecipientOnOrderAnonymizeListener` | `scrubEscrowRecipient` | 10 |
 | `sirsoft-ecommerce.payment.get_client_config` | filter | `RegisterPgProviderListener` | `getClientConfig` | 10 |
 | `sirsoft-ecommerce.payment.refund` | filter | `CancelActivityLogListener` | `logCancelConfirmed` | 20 |
@@ -61,6 +64,35 @@
 (`payment_meta.escrow_delivery`)의 수령인 이름·연락처·주소를 지웁니다. 이 훅은 익명화 트랜잭션
 안에서 발행되므로 `sync: true` 로 구독합니다 — 큐로 미루면 익명화 표지만 커밋되고 사본이 남을 수
 있고, 동기로 돌다 실패하면 그 주문의 익명화 전체가 롤백되어 다음 실행이 다시 잡습니다.
+
+`sirsoft-ecommerce.claim_payment.approve` / `.refund` 두 필터는 클레임 추가결제(`CP` 채번)의
+승인·환급을 이 플러그인이 맡는 접합면입니다. 콜백 컨트롤러는 결제번호가 `CP` 로 시작하면 주문
+경로를 타지 않고 모듈의 `approvePgPayment()` 에 위임하며, 그 안에서 이 필터가 발화합니다 —
+서버 콜백 경로와 API 승인 경로가 같은 구현을 탑니다. 인자·반환 키·멱등 규칙은 쇼핑몰 모듈
+`modules/_bundled/sirsoft-ecommerce/docs/api/claim-payments.md` 가 단일 출처입니다.
+
+승인 응답이 이 결제 건·청구액의 것인지는 승인 리스너가 판정합니다 — PC 는 응답 `TotPrice`(콜백 값으로
+채우지 않음)·`MOID`, 모바일은 `P_AMT`·`P_OID`, CBT 는 응답에 금액이 실려 오면 그 금액을 청구액과
+대조하고, 어긋나면 리스너가 직접 되돌린 뒤(PC 망취소 · 모바일 취소 · CBT 환불) 실패(`AMOUNT_MISMATCH`
+/ `ORDER_ID_MISMATCH`)로 돌려줍니다. 모듈도 승인 뒤 금액을 한 번 더 대조하며, 모듈이 따로 거절한 건은
+`sirsoft-ecommerce.claim_payment.void_approval` 필터(같은 리스너의 `voidApproval()`)로 되돌립니다 —
+콜백 컨트롤러는 보상 클로저를 따로 넘기지 않으므로 서버 콜백 경로와 API 승인 경로의 판정·보상이
+한 구현입니다. CBT 편의점(CVS)은 응답의
+결제수단 또는 CVS 전용 응답 필드(`confNo`·`receiptNo`·`convenience`·`paymentTerm`)로 판정하고,
+콜백 `paymethod` 는 거절 쪽으로만 씁니다. 주문 결제 콜백도 같은 규칙입니다 — PC 는 승인 응답 `TotPrice`,
+모바일은 응답 `P_AMT` 만 승인액으로 쓰고(응답에 없으면 취소 + 실패), 주문 CBT 의 CVS 판정은 같은
+`Support/CbtCvsResponse` 를 씁니다.
+
+콜백 컨트롤러의 `CP` 분기는 결제번호 단위 캐시 락(`sirsoft-pay_kginicis:callback:{문맥}:{sha1(결제번호)}`)으로
+직렬화됩니다. 락을 기다리다 시간을 넘기면 오류(500)가 아니라 결제 건 상태를 읽어 신청서 상세로
+돌려보냅니다 — 이미 결제완료면 `?claim_payment=success`, 아니면 `?claim_payment=failed&error=callback_locked`.
+
+주입하는 결제수단 항목은 이커머스의 결제수단 **능력 키**를 함께 선언합니다. 그중
+`auto_approve_refund` 는 "사람의 개입 없이 환불이 집행되는가" 이고, 간편결제 수단은 KG 결제취소
+API 가 그 자리에서 환불하므로 `true` 입니다. 예외는 `kginicis_japan_cvs`(편의점 결제)로, 고객이
+현금으로 낸 돈이라 환불도 사람이 계좌로 송금해야 끝나므로 `false` 입니다 — `true` 로 잘못
+선언하면 코어가 환불신청서를 완료까지 보내 고객에게 "환불 완료" 알림이 가는데 돈은 아직 나가지
+않은 상태가 됩니다. 계약은 이커머스 `modules/_bundled/sirsoft-ecommerce/docs/extension-points.md` "결제수단 능력 선언" 절이 갖습니다.
 <!-- @intent END -->
 
 ## 활동 로그 훅
@@ -93,6 +125,8 @@
 |---|---|---|---|---|
 | `AdjustEcommercePaymentMethodsLayoutListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/AdjustEcommercePaymentMethodsLayoutListener.php` |
 | `CancelActivityLogListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/CancelActivityLogListener.php` |
+| `ClaimPaymentApproveListener` | 2개 | 명시 등록 | ✅ | `src/Listeners/ClaimPaymentApproveListener.php` |
+| `ClaimPaymentRefundListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/ClaimPaymentRefundListener.php` |
 | `EnsureAdminOrderDetailPaymentQueryLayoutListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/EnsureAdminOrderDetailPaymentQueryLayoutListener.php` |
 | `EnsureAdminOrderDetailTestModeLayoutListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/EnsureAdminOrderDetailTestModeLayoutListener.php` |
 | `EnsureAdminOrderListTestBadgeLayoutListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/EnsureAdminOrderListTestBadgeLayoutListener.php` |
@@ -120,7 +154,7 @@ KG 이니시스가 보이지 않습니다. 나머지는 전부 부가 UI(`Ensure
 | `resources/extensions/admin_order_list_test_badge.g7.html` | 다른 확장/템플릿 레이아웃에 주입되는 조각 — 대상 레이아웃 `admin_ecommerce_order_list` |
 | `resources/extensions/admin_order_payment_query.g7.html` | 다른 확장/템플릿 레이아웃에 주입되는 조각 — 대상 레이아웃 `admin_ecommerce_order_detail` |
 | `resources/extensions/checkout_payment_error.g7.html` | 다른 확장/템플릿 레이아웃에 주입되는 조각 — 대상 레이아웃 `shop/checkout` |
-| `resources/extensions/user_order_show.g7.html` | 다른 확장/템플릿 레이아웃에 주입되는 조각 — 대상 레이아웃 `mypage/orders/show` |
+| `resources/extensions/user_order_show.g7.html` | 다른 확장/템플릿 레이아웃에 주입되는 조각 — 확장점 `mypage_order_payment_provider_slot` |
 <!-- @generated:layout-extensions END -->
 
 <!-- @intent START -->
@@ -137,6 +171,19 @@ KG 이니시스가 보이지 않습니다. 나머지는 전부 부가 UI(`Ensure
 `LayoutFragmentSourceHelper::readDirectoryKeyed()` 로 파일에서 키를 얻어 그대로 넘깁니다. 키 없이
 등록하면 대상 화면 이름이 키가 되어 두 경로가 갈리고, 그 뒤로는 같은 대상에 행이 둘 생겨 복원이
 어느 행인지 가리지 못한 채 조용히 멈춥니다.
+`user_order_show.g7.html` 은 대상 레이아웃 이름이 아니라 **공용 확장 슬롯**
+(`mypage_order_payment_provider_slot`)을 겨냥합니다. 이 슬롯이 사는 결제 정보 카드
+(`partials/mypage/orders/_payment`)는 주문 상세 말고도 클레임 신청서 상세가 그대로 재사용하기
+때문입니다. `target_layout`(`mypage/orders/show`)으로 겨냥하면 그 한 화면에서만 뜨고, 나머지
+화면은 카드는 나오는데 이 블록만 빠진 채 열립니다 — 오류도 경고도 남지 않아 알아채기 어렵습니다.
+슬롯은 partial 을 따라가므로 그 카드가 새 화면에 마운트돼도 조각이 함께 갑니다.
+
+**템플릿 요구 사항 — `mypage_order_payment_provider_slot` 슬롯이 필수입니다.** 이 조각은 예전처럼 대상
+화면 이름(`target_layout: mypage/orders/show`)으로 붙지 않고 이 슬롯에만 붙습니다. 그래서 사용자 템플릿의
+결제 정보 카드에 이 확장점이 없으면(자체 제작 템플릿, 슬롯 도입 전에 복사한 템플릿) 주문 상세·클레임
+신청서 상세 어디에도 이 블록이 뜨지 않으며, 오류도 경고도 남지 않습니다. 사용자 템플릿을 만들거나 고칠 때는
+결제 정보 카드 partial 에 `<extension-point name="mypage_order_payment_provider_slot">` 을 둡니다 — 기본
+사용자 템플릿(sirsoft-basic)은 `partials/mypage/orders/_payment` 에 두고 있습니다.
 <!-- @intent END -->
 
 ## 미들웨어

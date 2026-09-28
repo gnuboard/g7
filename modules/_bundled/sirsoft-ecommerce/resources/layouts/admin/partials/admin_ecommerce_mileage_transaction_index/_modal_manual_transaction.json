@@ -133,10 +133,12 @@
                                                 }
                                             },
                                             "onSuccess": {
+                                                "comment": "결과를 만든 키워드는 **응답이 실어 온 값**(`meta.keyword`)을 쓴다 — `$event.target.value` 로 찍으면 그것은 **응답이 도착한 순간의 입력칸**이라, 가장 큰 옛 응답(한 글자가 부른 전체 회원)이 가장 늦게 와서 현재 키워드의 것으로 둔갑한다. 아래 가드가 그대로 통과해 엉뚱한 목록이 그려졌다(2026-09-22 #599 3차 실측 T2-D1 — `MEAS599T-S2` 를 친 화면에 전체 회원 83행). 서버가 자기 키워드를 답하므로 화면은 그것과 지금 입력값을 견주기만 한다.",
                                                 "handler": "setState",
                                                 "params": {
                                                     "target": "global",
-                                                    "mileageManual.memberSearchResults": "{{response?.data ?? []}}"
+                                                    "mileageManual.memberSearchResults": "{{response?.data ?? []}}",
+                                                    "mileageManual.memberSearchResultsKeyword": "{{response?.meta?.keyword ?? ''}}"
                                                 }
                                             }
                                         }
@@ -152,10 +154,11 @@
                             }
                         },
                         {
+                            "comment": "목록은 지금 입력값이 만든 결과일 때만 그린다 — 늦게 온 옛 응답은 잠시 감출 뿐 잘못된 행을 보여주지 않는다. 입력값은 trim 해 견준다: 서버는 검색어를 trim 해 `meta.keyword` 로 돌려주므로 앞뒤 공백이 있는 입력(붙여넣은 이메일 등)과 그대로 견주면 결과가 영영 숨는다.",
                             "id": "member_search_results",
                             "type": "basic",
                             "name": "Div",
-                            "if": "{{(_global.mileageManual?.memberSearchKeyword ?? '').length > 0}}",
+                            "if": "{{(_global.mileageManual?.memberSearchKeyword ?? '').length > 0 && (_global.mileageManual?.memberSearchResultsKeyword ?? null) === (_global.mileageManual?.memberSearchKeyword ?? '').trim()}}",
                             "props": {
                                 "className": "absolute left-0 right-0 top-full z-50 mt-1 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 shadow-lg divide-y divide-gray-100 dark:divide-gray-700 max-h-60 overflow-y-auto"
                             },
@@ -177,6 +180,7 @@
                                                 "target": "global",
                                                 "mileageManual.selectedMember": "{{({ uuid: member.uuid, name: member.name, email: member.email, balance: member.ecommerce_mileage?.available ?? null })}}",
                                                 "mileageManual.memberSearchResults": [],
+                                                "mileageManual.memberSearchResultsKeyword": null,
                                                 "mileageManual.memberSearchKeyword": "",
                                                 "mileageManual.errors": null
                                             }
@@ -732,7 +736,7 @@
                     "props": {
                         "type": "button",
                         "disabled": "{{_global.mileageManual?.isSaving || !_global.mileageManual?.selectedMember || !(Number(_global.mileageManual?.amount ?? 0) > 0) || !(_global.mileageManual?.reason ?? '').trim() || (_global.mileageManual?.action === 'deduct' && _global.mileageManual?.selectedMember?.balance !== null && Number(_global.mileageManual?.amount ?? 0) > Number(_global.mileageManual?.selectedMember?.balance ?? 0))}}",
-                        "className": "flex items-center gap-2 btn text-sm bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                        "className": "flex items-center gap-2 btn text-sm bg-red-600 dark:bg-red-500 text-white hover:bg-red-700 dark:hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
                     },
                     "children": [
                         {

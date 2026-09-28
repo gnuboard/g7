@@ -69,6 +69,11 @@ effects:
   # 이미지 업로드 프록시 (S2 — 부록 A-7)
   - image_upload_proxies_to_kapi_and_returns_url
   - image_upload_rejects_out_of_spec_file_before_kapi
+  # 상한 안내가 두 화면·서버 상수와 어긋나지 않는다 (#599 후속 F8)
+  - template_image_hint_matches_the_server_constraint
+  - template_image_widget_copies_stay_identical
+  - template_image_hint_keeps_numbers_out_of_the_sentence
+  - template_image_hint_passes_params_in_the_engine_form
   # 동기화 (S3)
   - scheduler_skips_kapi_when_no_requested_rows
   - scheduler_uses_list_batch_not_per_row_detail
@@ -137,6 +142,9 @@ test_files:
   - plugins/_bundled/sirsoft-message_bizppurio/resources/js/__tests__/layouts/notification_tab_lifecycle.test.tsx
   - plugins/_bundled/sirsoft-message_bizppurio/resources/js/__tests__/layouts/plugin_settings_manage.test.tsx
   - plugins/_bundled/sirsoft-message_bizppurio/resources/js/__tests__/layouts/template_request_reentrancy_guard.test.ts
+  # 이미지 위젯 2벌 드리프트 — 상한 숫자가 PHP 상수·두 레이아웃·번역문 네 곳에 흩어져 있어
+  # 한쪽만 고치면 그 화면을 여는 운영자에게만 어긋난 안내가 남는다.
+  - plugins/_bundled/sirsoft-message_bizppurio/resources/js/__tests__/layouts/template_image_upload_parity.test.ts
   # 3면 패리티(오버레이 전문 동일성) — 파일째 지워도 룰이 울지 않던 사각을 닫는다.
   # plugin_settings.test.tsx 는 plugin-settings.yaml 이 소유하므로 여기에 중복 등재하지 않는다.
   - plugins/_bundled/sirsoft-message_bizppurio/resources/js/__tests__/layouts/notification_tab_board_ecommerce.test.tsx

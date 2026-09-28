@@ -7,6 +7,7 @@ import {
     openKginicisReceipt,
     receiptButtonLabel,
     receiptRowLabel,
+    translateKginicis,
 } from './receiptPopup';
 
 const PLUGIN_ID = 'sirsoft-pay_kginicis';
@@ -17,6 +18,13 @@ const ROW_ID = 'kginicis-mp-receipt-row';
 // 두 페이지가 동일 _payment.g7.html partial 을 공유하므로 DOM 구조도 동일 — 같은 injector 가 양쪽 처리.
 // 단 URL 세그먼트의 의미가 다르다: 회원 경로는 주문 ID, 비회원 경로는 주문번호.
 const ORDER_SHOW_RE = /^(?:\/mypage\/orders\/([^/]+)|\/shop\/guest\/orders\/([^/]+))$/;
+// 클레임 신청서 상세도 같은 결제 정보 카드를 재사용한다(§6-2). 그 주소에 실린 것은 클레임
+// 번호라 주문번호도 주문 ID 도 뽑을 수 없으므로, 이 경로에서는 화면이 이미 읽어 둔 주문을
+// 그대로 쓴다(세그먼트 대조 생략). 이 갈래가 없으면 카드는 뜨는데 영수증·세금내역만 빠진 채
+// 열리고, 오류도 경고도 남지 않는다. 회원(/mypage/claims/{N})과 비회원(/shop/guest/claims/{N})
+// 신청서 상세가 같은 카드를 쓰므로 둘을 함께 매칭한다 — 비회원 쪽은 영수증 조회가 비회원 주문
+// 조회 토큰을 실어 보낸다(receiptPopup).
+const CLAIM_SHOW_RE = /^(?:\/mypage\/claims\/([^/]+)|\/shop\/guest\/claims\/([^/]+))$/;
 
 const activePolls = new Map<string, number>();
 
@@ -35,14 +43,16 @@ interface OrderData {
     payment?: Payment;
 }
 
-function getOrderFromState(routeSegment: string): OrderData | null {
+function getOrderFromState(routeSegment: string | null): OrderData | null {
     try {
-        const g7 = (window as Record<string, unknown>).G7Core as Record<string, unknown> | undefined;
+        const g7 = (window as unknown as Record<string, unknown>).G7Core as Record<string, unknown> | undefined;
         const getState = g7?.getState as (() => Record<string, unknown>) | undefined;
         const ctx = getState?.()?.currentDataContext as Record<string, unknown> | undefined;
         const order = ctx?.order as { data?: OrderData } | undefined;
         const data = order?.data;
         if (!data) return null;
+        // 주소가 주문을 가리키지 않는 화면(클레임 신청서 상세)에서는 대조 없이 그대로 쓴다.
+        if (routeSegment === null) return data.order_number ? data : null;
         // 회원 경로 세그먼트는 주문 ID, 비회원 경로 세그먼트는 주문번호 — 양쪽 모두 허용.
         const matches = data.order_number === routeSegment
             || (data.id !== undefined && String(data.id) === routeSegment);
@@ -52,52 +62,38 @@ function getOrderFromState(routeSegment: string): OrderData | null {
     }
 }
 
+// 결제 정보 카드는 템플릿이 약속한 id(order_payment_info_panel)로만 찾는다. 화면 제목 글자는 언어마다 달라
+// 찾는 기준이 될 수 없다 — id 가 없는 템플릿에서는 조용히 붙이지 않는다(약속: sirsoft-ecommerce docs/extension-points.md).
 function findPaymentContainer(): Element | null {
     const panel = document.getElementById('order_payment_info_panel');
-    if (panel) {
-        return Array.from(panel.children).find(el => el.className?.includes('space-y')) ?? panel;
-    }
+    if (!panel) return null;
 
-    const h3 = Array.from(document.querySelectorAll<HTMLElement>('h3')).find(
-        el => {
-            const text = el.textContent?.trim() ?? '';
-            return text.includes('결제 정보') || /^Payment Information$/i.test(text);
-        },
-    );
-    if (!h3) return null;
-
-    const panelDiv = h3.parentElement?.parentElement;
-    if (!panelDiv) return null;
-
-    return Array.from(panelDiv.children).find(el => el.className?.includes('space-y')) ?? panelDiv;
+    return Array.from(panel.children).find(el => el.className?.includes('space-y')) ?? panel;
 }
 
 export function patchMypagePaymentMethodDisplay(container: Element, displayLabel: string | null | undefined): boolean {
     if (!displayLabel) return false;
 
-    const rows = Array.from(container.querySelectorAll<HTMLElement>('div'));
-    for (const row of rows) {
-        const spans = Array.from(row.children).filter(
-            (child): child is HTMLElement => child instanceof HTMLElement && child.tagName === 'SPAN',
-        );
-        if (spans.length < 2) continue;
+    // 결제 방법 행은 템플릿이 약속한 id(order_payment_method_row)로만 찾는다. 행 이름 글자(「결제 방법」 등)는 언어마다
+    // 달라 찾는 기준이 될 수 없다 — id 가 없는 템플릿에서는 건드리지 않는다(약속: sirsoft-ecommerce docs/extension-points.md).
+    const row = container.querySelector<HTMLElement>('#order_payment_method_row');
+    if (!row) return false;
 
-        const label = spans[0].textContent?.trim();
-        if (label !== '결제 방법' && label !== '결제수단' && label !== 'Payment Method') continue;
+    const spans = Array.from(row.children).filter(
+        (child): child is HTMLElement => child instanceof HTMLElement && child.tagName === 'SPAN',
+    );
+    if (spans.length < 2) return false;
 
-        const value = spans[spans.length - 1];
-        if (value.textContent?.trim() === displayLabel) {
-            row.dataset.kginicisPaymentMethodRow = 'true';
-            return true;
-        }
-
-        value.textContent = displayLabel;
-        value.dataset.kginicisPaymentMethodPatched = 'true';
+    const value = spans[spans.length - 1];
+    if (value.textContent?.trim() === displayLabel) {
         row.dataset.kginicisPaymentMethodRow = 'true';
         return true;
     }
 
-    return false;
+    value.textContent = displayLabel;
+    value.dataset.kginicisPaymentMethodPatched = 'true';
+    row.dataset.kginicisPaymentMethodRow = 'true';
+    return true;
 }
 
 function buildReceiptRow(orderNumber: string, receiptInfo: KginicisReceiptInfo): HTMLElement {
@@ -119,7 +115,7 @@ function buildReceiptRow(orderNumber: string, receiptInfo: KginicisReceiptInfo):
 
     btn.addEventListener('click', async () => {
         btn.disabled = true;
-        btn.textContent = '로딩 중...';
+        btn.textContent = translateKginicis('user.loading', '로딩 중...');
         const latestReceiptInfo = await fetchKginicisReceiptInfo(orderNumber);
         btn.disabled = false;
         btn.textContent = receiptButtonLabel(latestReceiptInfo ?? receiptInfo);
@@ -133,7 +129,7 @@ function buildReceiptRow(orderNumber: string, receiptInfo: KginicisReceiptInfo):
     return row;
 }
 
-async function tryInject(routeSegment: string, isGuestRoute: boolean): Promise<boolean> {
+async function tryInject(routeSegment: string | null, isGuestRoute: boolean): Promise<boolean> {
     const orderData = getOrderFromState(routeSegment);
     const payment = orderData?.payment;
     if (payment) {
@@ -180,8 +176,11 @@ async function tryInject(routeSegment: string, isGuestRoute: boolean): Promise<b
     return Boolean(document.getElementById(ROW_ID) || patched);
 }
 
-function startPolling(routeSegment: string, isGuestRoute: boolean): void {
-    if (activePolls.has(routeSegment)) return;
+function startPolling(routeSegment: string | null, isGuestRoute: boolean): void {
+    // 주소가 주문을 가리키지 않는 화면은 세그먼트가 없다 — 중복 폴링 방지 키를 따로 둔다.
+    const pollKey = routeSegment ?? '__claim_detail__';
+
+    if (activePolls.has(pollKey)) return;
 
     let attempts = 0;
     const id = window.setInterval(() => {
@@ -189,11 +188,11 @@ function startPolling(routeSegment: string, isGuestRoute: boolean): void {
         void tryInject(routeSegment, isGuestRoute).then(done => {
             if (done || attempts >= 30) {
                 window.clearInterval(id);
-                activePolls.delete(routeSegment);
+                activePolls.delete(pollKey);
             }
         });
     }, 400);
-    activePolls.set(routeSegment, id);
+    activePolls.set(pollKey, id);
 }
 
 function onRouteChange(): void {
@@ -204,7 +203,14 @@ function onRouteChange(): void {
         const guestSegment = match[2];
         const segment = memberSegment ?? guestSegment;
         if (segment) startPolling(segment, guestSegment !== undefined);
+
+        return;
     }
+
+    // 클레임 신청서 상세 — 주소가 클레임 번호라 화면이 읽어 둔 주문을 그대로 쓴다.
+    // 비회원 경로(match[2])는 토큰 준비 지연으로 일시 404 가 날 수 있어 비회원 재시도 규칙을 탄다.
+    const claim = location.pathname.match(CLAIM_SHOW_RE);
+    if (claim) startPolling(null, claim[2] !== undefined);
 }
 
 export function installMypageOrderShowInjector(): void {
@@ -246,7 +252,7 @@ export function installMypageOrderShowInjector(): void {
 
     const observeTarget = document.getElementById('app') ?? document.body;
     const observer = new MutationObserver(() => {
-        if (ORDER_SHOW_RE.test(location.pathname)) schedule(250);
+        if (ORDER_SHOW_RE.test(location.pathname) || CLAIM_SHOW_RE.test(location.pathname)) schedule(250);
     });
     observer.observe(observeTarget, { childList: true, subtree: true });
 }

@@ -7,6 +7,9 @@
     "id": "bank_accounts_cards",
     "type": "basic",
     "name": "Div",
+    "props": {
+        "className": "stack-tight"
+    },
     "children": [
         {
             "type": "basic",

@@ -26,6 +26,7 @@ return [
         'target_mismatch' => '인증한 대상과 요청한 대상이 일치하지 않습니다.',
         'purpose_not_supported' => '선택된 프로바이더는 이 목적을 지원하지 않습니다.',
         'provider_unavailable' => '본인인증 프로바이더를 사용할 수 없습니다.',
+        'challenge_dispatch_failed' => '인증 코드를 보내지 못했습니다. 잠시 후 다시 시도하시거나 다른 인증 수단을 이용해주세요.',
         'generic' => '본인인증에 실패했습니다.',
         'missing_scope_or_target' => '정책 조회를 위해 scope 와 target 이 모두 필요합니다.',
         'admin_policy_has_no_default' => '관리자가 직접 생성한 정책에는 선언 기본값이 없습니다.',

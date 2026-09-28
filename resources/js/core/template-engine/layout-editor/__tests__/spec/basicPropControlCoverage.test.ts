@@ -17,6 +17,11 @@
  *  5. 모든 $t:editor.* 라벨이 ko/en editor.json 에서 해석.
  *
  * @since engine-v1.50.0
+ *
+ * @effects children_capability_declared_on_ul_ol_nav_form_li_both_templates,
+ *   dataprops_declared_exhaustively_both_templates_admin18_basic10,
+ *   dataprops_orthogonal_to_propcontrols_and_nodeeditor_no_overlap,
+ *   structural_numeric_enum_boolean_props_have_zero_data_binding_ui
  */
 
 import { describe, it, expect } from 'vitest';

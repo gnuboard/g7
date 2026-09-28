@@ -8,7 +8,6 @@
             "nhnkcp_easy_pay_config": "간편결제 설정",
             "nhnkcp_easy_pay_display_map": "간편결제 표시 맵",
             "nhnkcp_test_map": "테스트 결제 맵",
-            "nicepay_test_map": "테스트 결제 맵",
             "settings": "결제 설정",
             "vbank_info": "가상계좌 정보"
         }
@@ -45,7 +44,16 @@
         "supply_amount": "공급가액",
         "vat_amount": "부가세",
         "tax_free_amount": "면세금액",
-        "escrow_badge": "에스크로"
+        "escrow_badge": "에스크로",
+        "loading": "로딩 중...",
+        "vbank_amount": "입금 금액",
+        "mock_title": "모의입금처리",
+        "mock_trade_no": "KCP 거래번호",
+        "mock_deposit_no": "입금계좌",
+        "mock_depositor": "입금자명",
+        "mock_notify_url": "입금통보 URL",
+        "mock_submit": "입금통보 테스트",
+        "mock_admin_notice": "관리자에게만 출력되는 내용"
     },
     "admin": {
         "test_mode_badge": "테스트 결제",
@@ -178,7 +186,11 @@
     },
     "payment": {
         "error": {
-            "sdk_url_untrusted": "결제 모듈 주소가 올바르지 않아 결제를 진행할 수 없습니다. 관리자에게 문의해 주세요."
+            "sdk_url_untrusted": "결제 모듈 주소가 올바르지 않아 결제를 진행할 수 없습니다. 관리자에게 문의해 주세요.",
+            "krw_only": "NHN KCP는 KRW 결제만 지원합니다. ({{currency}})",
+            "mobile_approval_key_failed": "KCP 모바일 승인키 획득 실패",
+            "pg_error": "KCP 오류 [{{code}}]: {{message}}",
+            "applepay_ios_only": "애플페이는 IOS 기기에 모바일결제만 가능합니다."
         }
     }
 }

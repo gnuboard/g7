@@ -20,7 +20,7 @@ return new class extends Migration
                 ->constrained('ecommerce_orders')->cascadeOnDelete();
             $table->foreignId('order_option_id')->comment('주문옵션 FK')
                 ->constrained('ecommerce_order_options')->cascadeOnDelete();
-            $table->string('option_status', 30)->comment('옵션 환불 상태 (RefundOptionStatusEnum: requested, approved, processing, on_hold, completed, rejected)');
+            $table->string('option_status', 30)->comment('옵션 환불 상태 (RefundStatusEnum: requested, approved, processing, on_hold, completed, rejected)');
             $table->unsignedInteger('quantity')->comment('환불 수량');
             $table->decimal('unit_price', 12, 2)->comment('환불 시점 단가');
             $table->decimal('subtotal_amount', 12, 2)->comment('수량 × 단가');
@@ -38,7 +38,7 @@ return new class extends Migration
         });
 
         if (DB::getDriverName() === 'mysql') {
-            DB::statement("ALTER TABLE `".DB::getTablePrefix()."ecommerce_order_refund_options` COMMENT '주문 환불 옵션별 상세'");
+            DB::statement('ALTER TABLE `'.DB::getTablePrefix()."ecommerce_order_refund_options` COMMENT '주문 환불 옵션별 상세'");
         }
     }
 

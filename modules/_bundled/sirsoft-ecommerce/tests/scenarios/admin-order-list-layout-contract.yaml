@@ -10,7 +10,7 @@ description: |
       외부 ColumnSelector 의 id 가 맡고, 불러오는 동안 표시는 blur·전환 오버레이가 맡는다(#682 PO 실측 후속 4).
 
 axes:
-  area: [search_input, pagination, filter_params, grid_columns, grid_config, visible_columns, dynamic_filters, claim_filter_removed, shipping_filters, item_count_cell, amount_cell, orderer_filter, member_type_filter]
+  area: [search_input, pagination, filter_params, grid_columns, grid_config, visible_columns, dynamic_filters, claim_filter_wired, shipping_filters, item_count_cell, amount_cell, orderer_filter, member_type_filter]
 
 effects:
   - search_input_submits_on_enter_with_debounce
@@ -20,7 +20,7 @@ effects:
   - datagrid_props_match_the_component_contract
   - visible_columns_follow_the_column_selector
   - dynamic_filters_iterate_server_options
-  - removed_claim_filters_stay_removed
+  - claim_filters_are_wired
   - shipping_filters_send_the_expected_keys
   - order_item_cell_shows_extra_count
   - order_amount_cell_shows_sub_lines

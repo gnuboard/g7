@@ -81,7 +81,7 @@
                                                         "fail_mode": "block",
                                                         "enabled": true,
                                                         "priority": 100,
-                                                        "conditions": [],
+                                                        "conditions": {},
                                                         "source_type": "admin"
                                                     },
                                                     "isNew": true,
@@ -333,7 +333,7 @@
                                 "autoBinding": false,
                                 "value": "{{_local.identityPolicySearch ?? query.search ?? ''}}",
                                 "placeholder": "$t:admin.identity.policies.search_placeholder",
-                                "className": "md:flex-1"
+                                "className": "input flex-1 min-w-[200px]"
                             }
                         },
                         {

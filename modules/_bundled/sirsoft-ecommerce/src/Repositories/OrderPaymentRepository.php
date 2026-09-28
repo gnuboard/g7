@@ -122,6 +122,16 @@ class OrderPaymentRepository implements OrderPaymentRepositoryInterface
     /**
      * {@inheritDoc}
      */
+    public function savePendingChanges(OrderPayment $payment): OrderPayment
+    {
+        $payment->save();
+
+        return $payment;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     public function isTransactionPaid(?string $transactionId): bool
     {
         if ($transactionId === null || $transactionId === '') {

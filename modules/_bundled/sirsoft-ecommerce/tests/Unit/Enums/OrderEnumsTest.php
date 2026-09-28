@@ -3,6 +3,7 @@
 namespace Modules\Sirsoft\Ecommerce\Tests\Unit\Enums;
 
 use Modules\Sirsoft\Ecommerce\Enums\DeviceTypeEnum;
+use Modules\Sirsoft\Ecommerce\Enums\ExchangeStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\OrderDateTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\OrderOptionSourceTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
@@ -40,9 +41,14 @@ class OrderEnumsTest extends ModuleTestCase
         $values = OrderStatusEnum::values();
 
         $this->assertIsArray($values);
-        $this->assertCount(10, $values);
+        // 진행 9종 + 취소 1종 + 클레임 코스 4종(교환/반품 진행·완료)
+        $this->assertCount(14, $values);
         $this->assertContains('pending_order', $values);
         $this->assertContains('cancelled', $values);
+        $this->assertContains('exchange_in_progress', $values);
+        $this->assertContains('return_in_progress', $values);
+        $this->assertContains('exchanged', $values);
+        $this->assertContains('returned', $values);
         $this->assertNotContains('partial_cancelled', $values, '부분취소는 별도 주문 상태가 아니다');
     }
 
@@ -51,7 +57,7 @@ class OrderEnumsTest extends ModuleTestCase
         $options = OrderStatusEnum::toSelectOptions();
 
         $this->assertIsArray($options);
-        $this->assertCount(10, $options);
+        $this->assertCount(14, $options);
 
         // 각 옵션에 value와 label이 있는지 확인
         foreach ($options as $option) {
@@ -116,13 +122,17 @@ class OrderEnumsTest extends ModuleTestCase
         $this->assertFalse(OrderStatusEnum::CANCELLED->isCompleted());
     }
 
-    public function test_order_status_sync_excluded_statuses_are_cancel_lifecycle(): void
+    public function test_order_status_sync_excluded_statuses_are_separate_lifecycles(): void
     {
         $excluded = OrderStatusEnum::syncExcludedStatuses();
 
-        // 주문→옵션 동기화에서 제외할 별도 라이프사이클(취소) SSoT.
-        // 부분취소는 별도 상태가 아니므로(잔여 옵션 기준 파생) 제외 목록은 CANCELLED 뿐이다.
+        // 주문→옵션 동기화에서 제외할 별도 라이프사이클 SSoT.
+        // 부분취소는 별도 상태가 아니므로(잔여 옵션 기준 파생) 취소는 CANCELLED 뿐이고,
+        // 여기에 클레임(교환/반품) 코스 상태 4종이 함께 들어간다.
         $this->assertContains(OrderStatusEnum::CANCELLED, $excluded);
+        foreach (OrderStatusEnum::claimCourseStatuses() as $claimStatus) {
+            $this->assertContains($claimStatus, $excluded);
+        }
 
         // 활성 진행 상태는 동기화 대상이므로 제외 목록에 없어야 한다.
         $this->assertNotContains(OrderStatusEnum::PENDING_ORDER, $excluded);
@@ -135,8 +145,76 @@ class OrderEnumsTest extends ModuleTestCase
         $values = OrderStatusEnum::syncExcludedValues();
 
         $this->assertEquals(
-            ['cancelled'],
+            ['cancelled', 'exchange_in_progress', 'return_in_progress', 'exchanged', 'returned'],
             $values
+        );
+    }
+
+    public function test_claim_course_statuses_are_excluded_from_admin_assignable(): void
+    {
+        $assignable = OrderStatusEnum::adminAssignableValues();
+
+        // 클레임 코스 상태는 교환·반품 서비스가 신청서와 짝을 맞춰 기록하는 값이라
+        // 관리자 주문 화면의 상태 변경 선택지가 아니다.
+        foreach (OrderStatusEnum::claimCourseValues() as $claimValue) {
+            $this->assertNotContains($claimValue, $assignable);
+        }
+
+        // 취소도 제외한다 — 취소는 상태 변경이 아니라 장부 행위이고, 입구는 클레임 접수 하나다.
+        // 일괄 상태변경으로 찍으면 재고만 복원되고 돈·결제행은 그대로인 취소가 남는다.
+        $this->assertNotContains('cancelled', $assignable);
+
+        // 그 외 상태는 전부 남아 있어야 한다 (기존 계약 보존).
+        $this->assertCount(9, $assignable);
+        $this->assertContains('pending_order', $assignable);
+        $this->assertContains('payment_complete', $assignable);
+    }
+
+    public function test_claim_course_statuses_are_not_in_progress_or_sales_order(): void
+    {
+        // 진행 순서·매출 반영 집합은 불변이어야 한다 — 기존 계산·통계 계약 보호.
+        foreach (OrderStatusEnum::claimCourseStatuses() as $claimStatus) {
+            $this->assertNotContains($claimStatus, OrderStatusEnum::progressOrder());
+            $this->assertNotContains($claimStatus, OrderStatusEnum::salesEligibleStatuses());
+        }
+
+        $this->assertCount(9, OrderStatusEnum::progressOrder());
+        $this->assertCount(7, OrderStatusEnum::salesEligibleStatuses());
+    }
+
+    public function test_claim_in_progress_statuses_can_return_to_sales_states(): void
+    {
+        // 교환·반품이 반려·철회되면 그 상품옵션은 신청 직전 상태로 돌아가야 한다.
+        // 게이트가 막으면 클레임 서비스가 게이트를 우회해야 하므로 구간을 연다 —
+        // 정확한 복귀 대상은 신청 상품의 original_option_status 가 좁힌다.
+        foreach (OrderStatusEnum::revertibleClaimCourseStatuses() as $courseStatus) {
+            $this->assertSame(
+                OrderStatusEnum::salesEligibleStatuses(),
+                $courseStatus->allowedTransitions()
+            );
+            $this->assertTrue($courseStatus->canTransitionTo(OrderStatusEnum::DELIVERED));
+            $this->assertTrue($courseStatus->canTransitionTo(OrderStatusEnum::SHIPPING));
+
+            // 결제 전 상태로의 복귀는 취소 reactivation 과 동일하게 막는다.
+            $this->assertFalse($courseStatus->canTransitionTo(OrderStatusEnum::PENDING_PAYMENT));
+        }
+    }
+
+    public function test_claim_terminal_statuses_stay_terminal(): void
+    {
+        // 완료 시점에 환불 집행·재고 복구가 끝나 있어 상태만 되돌리면 기록과 어긋난다 (확정).
+        foreach ([OrderStatusEnum::EXCHANGED, OrderStatusEnum::RETURNED] as $terminal) {
+            $this->assertSame([], $terminal->allowedTransitions());
+            $this->assertFalse($terminal->canTransitionTo(OrderStatusEnum::DELIVERED));
+            $this->assertNotContains($terminal, OrderStatusEnum::revertibleClaimCourseStatuses());
+        }
+    }
+
+    public function test_revertible_claim_course_is_the_in_progress_pair(): void
+    {
+        $this->assertSame(
+            [OrderStatusEnum::EXCHANGE_IN_PROGRESS, OrderStatusEnum::RETURN_IN_PROGRESS],
+            OrderStatusEnum::revertibleClaimCourseStatuses()
         );
     }
 
@@ -548,5 +626,81 @@ class OrderEnumsTest extends ModuleTestCase
             [OrderStatusEnum::SHIPPING->value],
             OrderStatusEnum::expandStatisticsFilter(OrderStatusEnum::SHIPPING->value)
         );
+    }
+
+    // ========================================
+    // 상태 아이콘 · 진행단계 순서 (스텝퍼 · 상태 뱃지 공용)
+    // ========================================
+
+    /**
+     * 모든 주문 상태가 라이브러리 중립 의미 토큰(`status-*`)을 가진다. 백엔드가 특정 아이콘
+     * 라이브러리의 글리프 이름을 박으면 그 라이브러리에 묶인다 — 토큰을 글리프로 바꾸는 표는
+     * 템플릿의 Icon 컴포넌트가 가진다. 어휘 밖 토큰은 화면에서 빈 네모로 그려진다.
+     *
+     * @scenario surface=admin_detail, order_stage=in_progress, viewport=desktop
+     *
+     * @effects order_progress_steps_carry_icon_and_variant
+     */
+    public function test_every_order_status_has_a_library_neutral_icon_token(): void
+    {
+        $allowed = [
+            'status-request', 'status-payment-pending', 'status-paid', 'status-approved', 'status-on-hold',
+            'status-rejected', 'status-pickup-ready', 'status-pickup', 'status-received', 'status-dispatch-ready',
+            'status-dispatch', 'status-delivered', 'status-completed', 'status-withdrawn', 'status-processing',
+            'status-preparing', 'status-cancelled', 'status-exchange', 'status-return', 'status-exchanged', 'status-returned',
+        ];
+
+        foreach (OrderStatusEnum::cases() as $case) {
+            $this->assertContains($case->icon(), $allowed, "OrderStatusEnum::{$case->name} 의 아이콘 토큰이 어휘 밖입니다.");
+            $this->assertStringStartsWith('status-', $case->icon());
+            $this->assertStringStartsNotWith('fa-', $case->icon(), '백엔드는 아이콘 라이브러리 글리프 이름을 알지 않습니다.');
+        }
+    }
+
+    /**
+     * 클레임과 같은 단계는 같은 그림이어야 구매자가 화면마다 단계를 다시 익히지 않는다.
+     *
+     * @scenario surface=mypage_detail, order_stage=in_progress, viewport=desktop
+     *
+     * @effects order_status_badge_carries_icon
+     */
+    public function test_shared_stages_use_the_same_icon_as_claims(): void
+    {
+        $this->assertSame(ExchangeStatusEnum::PAYMENT_PENDING->icon(), OrderStatusEnum::PENDING_PAYMENT->icon());
+        $this->assertSame(ExchangeStatusEnum::PAID->icon(), OrderStatusEnum::PAYMENT_COMPLETE->icon());
+        $this->assertSame(ExchangeStatusEnum::ON_HOLD->icon(), OrderStatusEnum::SHIPPING_HOLD->icon());
+        $this->assertSame(ExchangeStatusEnum::REDELIVERY_READY->icon(), OrderStatusEnum::SHIPPING_READY->icon());
+        $this->assertSame(ExchangeStatusEnum::REDELIVERING->icon(), OrderStatusEnum::SHIPPING->icon());
+        $this->assertSame(ExchangeStatusEnum::REDELIVERED->icon(), OrderStatusEnum::DELIVERED->icon());
+        $this->assertSame(ExchangeStatusEnum::COMPLETED->icon(), OrderStatusEnum::CONFIRMED->icon());
+    }
+
+    /**
+     * 진행단계는 7단계이고, 이탈 상태 6종은 순서 밖이다. 주문대기는 순서 밖이지만 이탈이 아니다.
+     *
+     * @scenario surface=admin_detail, order_stage=off_path, viewport=desktop
+     *
+     * @effects order_progress_steps_seven_stages, order_progress_off_path_appends_last_cell
+     */
+    public function test_progress_sequence_is_seven_stages_and_off_path_is_outside(): void
+    {
+        $sequence = OrderStatusEnum::progressSequence();
+
+        $this->assertSame(
+            ['pending_payment', 'payment_complete', 'preparing', 'shipping_ready', 'shipping', 'delivered', 'confirmed'],
+            array_map(fn ($case) => $case->value, $sequence),
+        );
+
+        foreach ($sequence as $case) {
+            $this->assertFalse($case->isOffProgressPath(), "{$case->name} 은 순서 안의 단계입니다.");
+        }
+
+        foreach ([OrderStatusEnum::SHIPPING_HOLD, OrderStatusEnum::CANCELLED, OrderStatusEnum::EXCHANGE_IN_PROGRESS, OrderStatusEnum::RETURN_IN_PROGRESS, OrderStatusEnum::EXCHANGED, OrderStatusEnum::RETURNED] as $case) {
+            $this->assertTrue($case->isOffProgressPath(), "{$case->name} 은 이탈 상태입니다.");
+            $this->assertNotContains($case, $sequence);
+        }
+
+        $this->assertFalse(OrderStatusEnum::PENDING_ORDER->isOffProgressPath());
+        $this->assertNotContains(OrderStatusEnum::PENDING_ORDER, $sequence);
     }
 }

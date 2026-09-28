@@ -7,6 +7,7 @@ namespace Plugins\Sirsoft\PayKginicis\Services;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentStatusEnum;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
@@ -131,6 +132,22 @@ class CbtCvsOperationsService
                 $this->logReplayDetected($tid, $orderId, 'CBT CVS notify');
 
                 return $this->notifyResult('OK', 'ignored', 'already_paid');
+            }
+
+            // 취소된 주문의 입금통보는 받지 않는다 (코어 P4 와 같은 가드).
+            //
+            // 고객이 취소한 뒤에 편의점에 입금해도 통보는 도착한다. 통과시키면 `CANCELLED`
+            // 주문이 결제완료로 되살아나 재고·마일리지가 재차감된다. 아래 결제상태 가드만으로는
+            // 부족하다 — 미입금 취소가 결제행을 `waiting_deposit` 그대로 두던 시절의 행이 그
+            // 가드를 통과한다. 입금된 돈은 환불 절차로 돌려주어야 하는 별개 사건이다.
+            if ($order->order_status === OrderStatusEnum::CANCELLED) {
+                $this->storeNotifyHistory($payment, $existingMeta, $payload, 'ignored', 'order_cancelled', $source, $remoteIp);
+                Log::warning('KG Inicis CBT CVS: order is cancelled', [
+                    'order_id' => $orderId,
+                    'tid' => $tid,
+                ]);
+
+                return $this->notifyResult('OK', 'ignored', 'order_cancelled');
             }
 
             if (! $this->paymentStatusEquals($payment->payment_status, PaymentStatusEnum::WAITING_DEPOSIT)) {

@@ -38,7 +38,12 @@ export const FileUploader = forwardRef<FileUploaderRef, FileUploaderProps>(
       attachmentableId,
       collection = 'default',
       maxFiles = 10,
-      maxSize = 10,
+      // 용량 상한은 **기본값을 두지 않는다**. 리터럴 기본(10MB)을 두면 상한을 넘기지 않은
+      // 화면까지 드롭존이 「각 10MB까지」를 광고하는데, 그 화면의 진짜 거절선은 서버 설정이라
+      // 한 화면에서 두 상한이 맞선다(#599 세션A 실측 SA-D5 — 클레임 신청서 안내 「1장당
+      // 2048KB」 ↔ 드롭존 「각 10MB까지」 · 원 계획서 고정값 image_max_size_kb=2048).
+      // 미선언이면 컴포지트는 상한을 말하지도, 스스로 거르지도 않는다 — 판정은 호출부 몫이다(S2-D10).
+      maxSize,
       maxConcurrentUploads = 3,
       accept,
       imageCompression: compressionOptions,

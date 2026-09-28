@@ -6,9 +6,10 @@ description: |
   「주문 정보」 섹션을 기여한다. 코어 매니페스트 `tests/scenarios/privacy-retention.yaml` 이
   계약(수집·꺼짐 보고·실패 격리)을 소유하고, 이 매니페스트는 이커머스 도메인의 처리 결과만 소유한다.
 
-  「종결」 = 주문 상태 구매확정·취소 + 진행 중 환불 없음. 종결 시각 = 상태 도달 시각과 환불 완료
-  시각 중 늦은 것(부수의무 #41 — 「환불완료」는 주문 상태가 아니라 환불 레코드의 상태다). 종결 시각이
-  빈 레거시 주문은 수정 시각으로 대신한다(더 오래 보존하는 쪽으로만 틀린다).
+  「종결」 = 주문 상태 구매확정·취소 + 진행 중 환불·교환·반품 없음. 종결 시각 = 상태 도달 시각과 환불·
+  교환·반품 완료 시각 중 늦은 것(부수의무 #41 — 「환불완료」는 주문 상태가 아니라 환불 레코드의 상태다.
+  교환·반품도 주문 상태를 바꾸지 않고 주문 곁에서 진행된다). 거절·철회로 끝난 신청서는 진행 중이 아니다.
+  종결 시각이 빈 레거시 주문은 수정 시각으로 대신한다(더 오래 보존하는 쪽으로만 틀린다).
 
   설계에서 못박은 것:
     - **기본 꺼짐**, 하한 5년(전자상거래법)을 저장 검증과 판독부 바닥값 둘 다에서 강제한다.
@@ -16,9 +17,11 @@ description: |
       법정 거래 기록이라 남는다. 처리 후 비회원 주문조회·관리자 이름 검색으로 찾을 수 없다(설정 화면 고지).
       주문 메타의 수령인 사본(저장 대기 배송지·배송비 계산 주소)도 지우고, 주문 한 건마다
       `sirsoft-ecommerce.order.after_anonymize` 를 같은 트랜잭션에서 발행해 확장이 자기 사본을 지우게 한다
-      (리스너가 던지면 표지까지 롤백).
+      (리스너가 던지면 표지까지 롤백). 교환·반품·환불 신청서의 환불 계좌 명의·번호와 상세 사유·관리자 메모도
+      비우고, 교환 재배송지는 주문 배송지와 같은 기준으로 가린다(#599 — 16차 병합 뒤 보완).
     - **삭제**: DB CASCADE 에 기대지 않고 참조 행을 전부 명시 삭제한다(#33). 주문 옵션에 묶인 상품 리뷰는
-      이미지 파일째 사라지고, 쿠폰 발급·마일리지 거래는 행을 남기고 주문 연결만 끊는다. 결제 플러그인의
+      이미지 파일째 사라지고, 교환·반품·클레임 결제와 클레임 첨부 사진(임시 첨부 포함 — 주문 FK 가 없는
+      다형 연결)도 행·파일째 사라진다. 쿠폰 발급·마일리지 거래는 행을 남기고 주문·클레임 결제·환불 연결만 끊는다. 결제 플러그인의
       주문번호 역조회는 FK 가 없어 끊긴다(#46) — 삭제 경고 문구에 적고 기본을 익명화로 둔다.
     - **미리보기 = 처리 건수**, 재실행 멱등(익명화 표지는 익명화 모드에서만 제외 조건).
 
@@ -75,10 +78,18 @@ effects:
   - order_manual_run_processes_while_off
   - order_delete_mode_manual_run_requires_order_delete_permission
   - order_manual_run_button_opens_the_confirm_modal
+  - claim_personal_data_is_anonymized_with_the_order
+  - claim_records_are_purged_with_images_without_cascade
+  - open_claims_hold_order_closure
+  - completed_claims_extend_closure
+  - withdrawn_claims_do_not_hold_closure
+  - claim_image_files_survive_a_rolled_back_purge
 
 test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Feature/Privacy/OrderRetentionHandlerTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Feature/Privacy/OrderPrivacyRetentionSettingsTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Privacy/OrderRetentionClaimRecordsTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Privacy/OrderPrivacyRetentionServiceTest.php
   - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/admin-ecommerce-privacy-retention-settings.test.ts
   - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminEcommerceSettingsSavePerTab.test.tsx
   - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/admin/ecommerce-settings-privacy-retention.spec.ts

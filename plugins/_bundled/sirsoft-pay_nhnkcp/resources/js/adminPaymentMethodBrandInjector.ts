@@ -8,8 +8,6 @@ const SYNC_RETRY_ATTEMPTS = 120;
 
 interface AdminPaymentBrandDefinition {
     id: string;
-    labels: string[];
-    shortLabels: string[];
     markLines: string[];
     markClassName: string;
 }
@@ -17,36 +15,26 @@ interface AdminPaymentBrandDefinition {
 const ADMIN_PAYMENT_BRAND_DEFINITIONS: AdminPaymentBrandDefinition[] = [
     {
         id: 'nhnkcp_payco',
-        labels: ['PAYCO (NHN KCP)', 'PAYCO로 결제 (NHN KCP)', 'Pay with PAYCO (NHN KCP)'],
-        shortLabels: ['PAYCO'],
         markLines: ['P'],
         markClassName: 'bg-red-500 text-white',
     },
     {
         id: 'nhnkcp_naverpay',
-        labels: ['네이버페이 (NHN KCP)', '네이버페이 신용카드로 결제 (NHN KCP)', 'Naver Pay (NHN KCP)', 'Pay by Naver Pay credit card (NHN KCP)'],
-        shortLabels: ['네이버페이 (카드)', 'Naver Pay (Card)'],
         markLines: ['N'],
         markClassName: 'bg-green-500 text-white',
     },
     {
         id: 'nhnkcp_naverpay_point',
-        labels: ['네이버페이 포인트 (NHN KCP)', '네이버페이 머니/포인트로 결제 (NHN KCP)', 'Naver Pay Point (NHN KCP)', 'Pay with Naver Pay Money/Points (NHN KCP)'],
-        shortLabels: ['네이버페이 (포인트)', 'Naver Pay (Point)'],
         markLines: ['NP'],
         markClassName: 'bg-green-600 text-white',
     },
     {
         id: 'nhnkcp_kakaopay',
-        labels: ['카카오페이 (NHN KCP)', '카카오페이로 결제 (NHN KCP)', 'Kakao Pay (NHN KCP)', 'Pay with Kakao Pay (NHN KCP)'],
-        shortLabels: ['카카오페이', 'Kakao Pay'],
         markLines: ['K'],
         markClassName: 'bg-yellow-400 text-gray-950',
     },
     {
         id: 'nhnkcp_applepay',
-        labels: ['애플페이 (NHN KCP)', '애플페이로 결제 (NHN KCP)', 'Apple Pay (NHN KCP)', 'Pay with Apple Pay (NHN KCP)'],
-        shortLabels: ['애플페이', 'Apple Pay'],
         markLines: ['A'],
         markClassName: 'bg-gray-900 text-white',
     },
@@ -67,41 +55,20 @@ function isOrderSettingsPage(): boolean {
     return tab === null || tab === '' || tab === 'order_settings';
 }
 
-function classNameOf(element: Element): string {
-    return element instanceof HTMLElement ? element.className : '';
-}
-
-function comparableText(value: string | null | undefined): string {
-    return (value ?? '')
-        .replace(/\u200B/g, '')
-        .replace(/\s+/g, ' ')
-        .trim();
-}
-
-function isPaymentMethodItem(element: HTMLElement): boolean {
-    const className = classNameOf(element);
-
-    return className.includes('excel-card')
-        || (className.includes('flex-center') && className.includes('border') && className.includes('gap-4'));
-}
-
 function findTitleElement(item: HTMLElement): HTMLElement | null {
     return item.querySelector<HTMLElement>('.font-medium');
 }
 
+// 결제수단 항목은 이커머스 관리자 화면이 항목마다 단 data-payment-method(결제수단 id)로만 찾는다. 이름 글자·클래스 모양은
+// 관리자 언어·화면 폭마다 달라 찾는 기준이 될 수 없다(약속: sirsoft-ecommerce docs/extension-points.md, PO 결정 2026-09-28).
 function findDefinitionForItem(item: HTMLElement): AdminPaymentBrandDefinition | null {
-    const title = comparableText(findTitleElement(item)?.textContent);
-    const text = comparableText(item.textContent);
+    const method = item.dataset.paymentMethod;
 
-    return ADMIN_PAYMENT_BRAND_DEFINITIONS.find((definition) => (
-        definition.shortLabels.some((label) => title === label)
-        || definition.labels.some((label) => text.includes(label))
-    )) ?? null;
+    return ADMIN_PAYMENT_BRAND_DEFINITIONS.find((definition) => definition.id === method) ?? null;
 }
 
 function findPaymentMethodItems(root: ParentNode): HTMLElement[] {
-    return Array.from(root.querySelectorAll<HTMLElement>('div'))
-        .filter(isPaymentMethodItem);
+    return Array.from(root.querySelectorAll<HTMLElement>('[data-payment-method]'));
 }
 
 function findPaymentIcon(item: HTMLElement): Element | null {

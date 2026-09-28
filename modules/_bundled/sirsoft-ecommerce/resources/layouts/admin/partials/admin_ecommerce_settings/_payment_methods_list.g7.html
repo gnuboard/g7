@@ -1,10 +1,11 @@
 <!-- 쇼핑몰 설정 — 결제수단 목록, 넓은 화면용 표. 좁은 화면용 카드(`_payment_methods_cards`)와
-  같은 배열을 같은 방식으로 편집한다. 순서가 쇼핑몰 결제창의 노출 순서다. -->
+  같은 배열을 같은 방식으로 편집한다. 순서가 쇼핑몰 결제창의 노출 순서다.
+  항목 루트의 data-payment-method(결제수단 id)는 PG 플러그인과의 약속이다 — 브랜드 배지·안내를 붙일 항목을 이름 글자가 아니라 이 표식으로만 찾는다. -->
 <partial description="결제수단 설정 - Desktop Sortable 리스트">
   <div data-ref="payment_methods_sortable">
     <sortable source="{{_local.form?.order_settings?.payment_methods ?? []}}" item-var="$method" item-key="id" index-var="$methodIndex" strategy="verticalList" handle="[data-drag-handle]"/>
     <item-template>
-      <div class="flex-center border rounded-lg p-3 gap-4">
+      <div data-payment-method="{{$method.id}}" class="flex-center border rounded-lg p-3 gap-4">
         <class-map key="{{$method._orphaned ? 'orphaned' : 'normal'}}">
           <variant when="normal">bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700</variant>
           <variant when="orphaned">bg-red-50 dark:bg-red-900/20 opacity-60 border-red-300 dark:border-red-700</variant>
@@ -20,6 +21,8 @@
             <span data-if="{{$method._orphaned}}" class="inline-flex items-center whitespace-nowrap shrink-0 px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.orphaned_badge</span>
             <!-- 지정 PG 가 레지스트리에서 사라진 상태. _orphaned 와 달리 행 편집 컨트롤은 그대로 둔다 — 살아있는 PG 로 바꿔 복구하는 경로를 막지 않기 위함. -->
             <span data-if="{{$method._orphaned_pg}}" data-testid="orphaned-pg-badge-{{$method.id}}" class="inline-flex items-center whitespace-nowrap shrink-0 px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400">$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.orphaned_pg_badge</span>
+            <!-- 고객이 고를 수 없는 수단 — 코어에 결제 실행 경로가 없다(마일리지·예치금·무료). 토글이 잠긴 이유를 그 자리에서 말해 주지 않으면 운영자는 왜 켤 수 없는지 알 수 없다. -->
+            <span data-if="{{$method.customer_selectable === false}}" data-testid="internal-only-badge-{{$method.id}}" class="inline-flex items-center whitespace-nowrap shrink-0 px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300">$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.internal_only_badge</span>
           </div>
           <span data-if="{{$localized($method._cached_description)}}" class="text-label-subtle">{{$localized($method._cached_description)}}</span>
         </div>
@@ -74,7 +77,8 @@
           </input>
         </div>
         <div data-if="{{!$method._orphaned}}">
-          <toggle value="{{$method.is_active}}" disabled="{{_computed.isReadOnly || (!$method.pg_locked &amp;&amp; $method.needs_pg &amp;&amp; !$method.pg_provider &amp;&amp; !_local.form?.order_settings?.default_pg_provider)}}">
+          <!-- 고객이 고를 수 없는 수단(customer_selectable === false)은 토글을 잠근다 — 마일리지·예치금·무료는 코어에 결제 실행 경로가 없어 켜면 주문서에는 뜨는데 주문 생성이 422 로 거절된다(P8·P10). 잠그지 않으면 운영자는 '켰는데 왜 안 되지' 를 겪고 원인을 찾을 자리가 없다. -->
+          <toggle value="{{$method.is_active}}" disabled="{{_computed.isReadOnly || $method.customer_selectable === false || (!$method.pg_locked &amp;&amp; $method.needs_pg &amp;&amp; !$method.pg_provider &amp;&amp; !_local.form?.order_settings?.default_pg_provider)}}">
             <on type="change">
               <!-- 사용 여부. 끄면 결제창에서 사라지고 설정은 남는다. -->
               <set-state target="local" form.order_settings.payment_methods="{{(_local.form?.order_settings?.payment_methods ?? []).map((m, i) => i === $methodIndex ? {...m, is_active: !m.is_active} : m)}}" :hasChanges="true"/>

@@ -516,7 +516,7 @@ config 소스(`config/*.php`, `.env`, `storage/app/settings/*.json`, 활성 확�
 
 | 라이프사이클 | 재생성 위치 |
 | --- | --- |
-| 코어 설치 완료 | 인스톨러 `complete_flag` 직후 `config:cache` task |
+| 코어 설치 완료 | 인스톨러 `complete_flag` 직후 `config:cache` task (라우트 캐시도 같은 자리에서 굽는다 — `docs/backend/routing.md` 「갱신이 필요한 지점」) |
 | 코어 업데이트 | `CoreUpdateCommand` Step 11 완료 지점 |
 | 코어 업그레이드 스텝(단독 실행) | `ExecuteUpgradeStepsCommand` 캐시 정리 블록 (spawn 자식은 부모가 처리) |
 | 코어 관리자 설정 저장 / 캐시 정리 / GeoIP / APP_KEY | `SettingsService` / `GeoIpDatabaseService` 의 각 지점 |

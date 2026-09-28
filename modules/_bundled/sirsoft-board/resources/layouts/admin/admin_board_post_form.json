@@ -18,8 +18,11 @@
             "auth_required": true,
             "cache": false,
             "refetchOnMount": true,
-            "initLocal": "form",
             "loading_strategy": "blocking",
+            "initLocal": {
+                "_merge": "replace",
+                "form": "{{data}}"
+            },
             "errorHandling": {
                 "404": {
                     "handler": "showErrorPage",
@@ -91,6 +94,17 @@
         ]
     },
     "init_actions": [
+        {
+            "comment": "생성·답글 모드: 게시글 수정 화면에서 SPA 로 넘어오면 같은 레이아웃이라 엔진이 `_local` 을 비우지 않아 직전 글의 form(id 등)이 남는다. form=null 로 먼저 지운다(객체 대신 null 로 덮어써 완전 삭제). form_data 의 initLocal(_merge: replace)이 이 뒤에 병합돼 서버가 준 새 글 폼만 남는다 — 문자열 initLocal 은 엔진이 기존 form 과 깊은 병합해 두므로 replace 가 함께 필요하다.",
+            "handler": "setState",
+            "if": "{{!route?.id}}",
+            "params": {
+                "target": "local",
+                "form": null,
+                "hasChanges": false,
+                "errors": null
+            }
+        },
         {
             "comment": "tempKey 생성 (신규/수정 모두 - 취소 시 안전을 위해)",
             "handler": "setState",

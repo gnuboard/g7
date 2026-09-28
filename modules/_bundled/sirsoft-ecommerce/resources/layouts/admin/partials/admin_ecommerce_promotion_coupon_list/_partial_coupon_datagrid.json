@@ -308,6 +308,7 @@
                                         "directIssueSelectedUsers": [],
                                         "directIssueSearchKeyword": "",
                                         "directIssueSearchResults": [],
+                                        "directIssueSearchResultsKeyword": null,
                                         "directIssueSubmitting": false,
                                         "directIssueCoupon": {
                                             "id": "{{$args[1].id}}",
@@ -358,7 +359,6 @@
                 "visibleColumns": "{{_local.visibleColumns}}",
                 "selectedCountText": "",
                 "emptyMessage": "$t:sirsoft-ecommerce.admin.promotion_coupon.table.empty",
-                "loading": "{{coupons?.$loading}}",
                 "actionsColumnHeader": "$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.actions",
                 "rowActions": [
                     {
@@ -846,6 +846,7 @@
                                                                                 "directIssueSearchKeyword": "",
                                                                                 "directIssueSearchResults": [],
                                                                                 "directIssueSubmitting": false,
+                                                                                "directIssueSearchResultsKeyword": null,
                                                                                 "directIssueCoupon": {
                                                                                     "id": "{{coupon.id}}",
                                                                                     "name": "{{coupon.localized_name}}"
@@ -952,7 +953,7 @@
                                                             "props": {
                                                                 "className": "text-gray-500 dark:text-gray-400"
                                                             },
-                                                            "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.mobile.target_type:"
+                                                            "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.mobile.target_type_label:"
                                                         },
                                                         {
                                                             "type": "composite",
@@ -977,7 +978,7 @@
                                                             "props": {
                                                                 "className": "text-gray-500 dark:text-gray-400"
                                                             },
-                                                            "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.mobile.issue:"
+                                                            "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.mobile.issue_label:"
                                                         },
                                                         {
                                                             "type": "composite",
@@ -1007,7 +1008,7 @@
                                                             "props": {
                                                                 "className": "text-gray-500 dark:text-gray-400"
                                                             },
-                                                            "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.mobile.valid_period: "
+                                                            "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.mobile.validity_period_label: "
                                                         },
                                                         {
                                                             "type": "basic",
@@ -1026,7 +1027,7 @@
                                                             "props": {
                                                                 "className": "text-gray-500 dark:text-gray-400"
                                                             },
-                                                            "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.mobile.issue_period: "
+                                                            "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.mobile.issue_period_label: "
                                                         },
                                                         {
                                                             "type": "basic",
@@ -1045,7 +1046,7 @@
                                                             "props": {
                                                                 "className": "text-gray-500 dark:text-gray-400"
                                                             },
-                                                            "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.mobile.issue_count: "
+                                                            "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.mobile.issue_count_label: "
                                                         },
                                                         {
                                                             "type": "basic",
@@ -1074,7 +1075,7 @@
                                                                     "props": {
                                                                         "className": "text-gray-500 dark:text-gray-400"
                                                                     },
-                                                                    "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.mobile.status:"
+                                                                    "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.mobile.status_label:"
                                                                 },
                                                                 {
                                                                     "type": "composite",

@@ -1,6 +1,9 @@
 /**
  * NOTE: @since versions (engine-v1.x.x) refer to internal template engine
  * development iterations, not G7 platform release versions.
+ *
+ * audit:allow seo-renderer-parity-sync engine-v1.72.1 는 _fromBase 저장소 A 초기화 시점(렌더 단계)만 바꿨다 —
+ * 노드 키·컨텍스트 해석·SEO 봇 렌더 표면은 변경 없음
  */
 /**
  * DynamicRenderer.tsx
@@ -1286,6 +1289,7 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
 
     /**
      * @since engine-v1.24.8 _fromBase 컴포넌트의 localDynamicState 초기화
+     * @since engine-v1.72.1 초기화 시점을 useEffect 에서 **렌더 단계**로 앞당김
      *
      * _fromBase: true인 컴포넌트는 stable key로 SPA 네비게이션 시에도 보존(unmount/remount 없음).
      * 하지만 이전 페이지에서 설정된 localDynamicState(visibleFilters, hasChanges 등)가
@@ -1294,16 +1298,39 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
      * layoutKey(= layout_name)가 변경되면 보존된 컴포넌트의 localDynamicState를 초기화하여
      * 이전 페이지 상태가 새 페이지에 오염되는 것을 방지.
      *
+     * engine-v1.24.8 은 이 초기화를 useEffect 에 두었다. useEffect 는 새 페이지의 **첫 렌더와
+     * 자식들의 useEffect 뒤**에 실행되므로 두 가지가 먼저 일어난다:
+     *   1. 첫 렌더의 extendedDataContext 가 deepMergeState(dataContext._local, dynamicState) 로
+     *      stale 저장소 A 를 새 페이지의 `_local` 위에 덮은 컨텍스트를 자식에게 준다
+     *      (`_localInit` 이 없는 목록 화면은 hasUnappliedInit 게이트에 걸리지 않는다).
+     *   2. 자식의 마운트 콜백(ColumnSelector·FilterVisibilitySelector 의 init 동기화)이 그 오염값을
+     *      `setState(target:"_local")` 로 되쓴다. engine-v1.50.0 부터 COMPONENT 경로 setState 가
+     *      `_global._local`(저장소 B)을 동기화하므로 되쓴 값이 B 에 영구 고정된다 — 뒤늦은 A 초기화로는
+     *      되돌릴 수 없다. 증상: 주문 목록 → 쿠폰 목록 이동 시 visibleColumns 가 주문 컬럼으로 남아
+     *      표에 체크박스·작업 열만 남는다(트러블슈팅 state-closure 사례 4).
+     *
+     * 그래서 초기화를 렌더 단계에서 수행한다 — React 의 "이전 렌더 정보 저장" 패턴(렌더 중 자기 자신의
+     * setState 는 허용되며 React 가 그 렌더 결과를 버리고 즉시 같은 컴포넌트를 재렌더한다). 새 페이지의
+     * 자식은 오염된 컨텍스트를 단 한 번도 받지 않는다. 조건이 한 번 참이면 appliedLayoutKey 가 갱신되어
+     * 다음 렌더에서는 거짓이므로 무한 루프가 아니다.
+     *
      * - sidebar 메뉴 open/close: React 컴포넌트 내부 useState → localDynamicState와 무관 → 보존됨
      * - Form 자동 바인딩 값: localDynamicState에 저장 → 초기화됨 (새 페이지에서 재설정)
+     * - non-_fromBase 컴포넌트: key 에 layoutKey 가 붙어 remount 되므로 이 분기와 무관
+     *
+     * React 는 렌더 중 setState 가 있어도 그 패스의 함수 본문을 끝까지 실행한다(결과만 버린다). 그 버려지는
+     * 패스에서 이 컴포넌트 자신의 props 바인딩이 stale A 로 평가되면 DataBindingEngine 의 렌더 사이클 캐시
+     * (표현식 문자열만 키, 커밋 후 startRenderCycle 에서만 비움)에 남아 재실행 패스·자식이 그 값을 받을 수
+     * 있다. 그래서 `isBaseLayoutSwitch` 인 패스는 dynamicState 자체를 빈 값으로 파생시켜(아래 dynamicState
+     * 정의) 버려지는 패스조차 stale A 를 한 번도 평가하지 않게 한다 — 초기화의 정합성이 React 가 첫 패스를
+     * 버린다는 사실에 의존하지 않는다.
      */
-    const prevLayoutKeyRef = useRef(layoutKey);
-    useEffect(() => {
-      if (componentDef._fromBase && layoutKey && prevLayoutKeyRef.current !== layoutKey) {
-        prevLayoutKeyRef.current = layoutKey;
-        setLocalDynamicState({ loadingActions: {} });
-      }
-    }, [layoutKey, componentDef._fromBase]);
+    const [appliedLayoutKey, setAppliedLayoutKey] = useState<string | undefined>(layoutKey);
+    const isBaseLayoutSwitch = !!componentDef._fromBase && !!layoutKey && appliedLayoutKey !== layoutKey;
+    if (isBaseLayoutSwitch) {
+      setAppliedLayoutKey(layoutKey);
+      setLocalDynamicState({ loadingActions: {} });
+    }
 
     // _localInit 데이터의 해시값 추적 (데이터 변경 감지용)
     const localInitHashRef = useRef<string>('');
@@ -1696,7 +1723,10 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
      * parentComponentContext가 전달되면 부모의 상태를 사용하고,
      * 그렇지 않으면 자체 로컬 상태를 사용합니다.
      */
-    const dynamicState = parentComponentContext?.state ?? localDynamicState;
+    // @since engine-v1.72.1: 레이아웃 전환 렌더(isBaseLayoutSwitch)에서는 stale 저장소 A 대신 빈 값을 쓴다.
+    // setLocalDynamicState 가 반영된 재실행 패스에서는 localDynamicState 자체가 이미 빈 값이다.
+    const dynamicState = parentComponentContext?.state
+      ?? (isBaseLayoutSwitch ? { loadingActions: {} } : localDynamicState);
     const handleSetState = parentComponentContext?.setState ?? handleLocalSetState;
 
     /**

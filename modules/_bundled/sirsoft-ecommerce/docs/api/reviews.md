@@ -75,7 +75,7 @@ _목록 응답: `data.data[]` 배열 항목의 필드._
 | status_badge_color | string | `blue` | 상태 뱃지 색상 (visible=blue / hidden=gray) |
 | images | array | `[]` | 첨부 이미지 목록 (이미지 리소스 배열, `images` 관계 로드 시) |
 | image_count | integer | `0` | image 개수 (집계) |
-| orderOption | object | `{"id":859,"order_id":455,"order_number":"ORD-20260707-000…` | 리뷰가 연결된 주문 옵션 정보 (주문 ID·주문번호·수량·주문일) |
+| orderOption | object | `{"id":859,"order_id":455,"order_number":"20260707-14400…` | 리뷰가 연결된 주문 옵션 정보 (주문 ID·주문번호·수량·주문일) |
 | has_reply | boolean | `false` | reply 여부 |
 | has_reply_label | string | `미답변` | `has_reply` 값의 사람이 읽는 라벨 (현지화/Enum 파생) |
 | has_reply_badge_color | string | `gray` | 답변 여부 뱃지 색상 (답변완료=green / 미답변=gray) |
@@ -340,7 +340,7 @@ _단건 응답: `data` 객체의 필드._
 | status_badge_color | string | `blue` | 상태 뱃지 색상 (visible=blue / hidden=gray) |
 | images | array | `[]` | 첨부 이미지 목록 (이미지 리소스 배열, `images` 관계 로드 시) |
 | image_count | integer | `0` | image 개수 (집계) |
-| orderOption | object | `{"id":859,"order_id":455,"order_number":"ORD-20260707-000…` | 리뷰가 연결된 주문 옵션 정보 (주문 ID·주문번호·수량·주문일) |
+| orderOption | object | `{"id":859,"order_id":455,"order_number":"20260707-14400…` | 리뷰가 연결된 주문 옵션 정보 (주문 ID·주문번호·수량·주문일) |
 | has_reply | boolean | `false` | reply 여부 |
 | has_reply_label | string | `미답변` | `has_reply` 값의 사람이 읽는 라벨 (현지화/Enum 파생) |
 | has_reply_badge_color | string | `gray` | 답변 여부 뱃지 색상 (답변완료=green / 미답변=gray) |
@@ -392,7 +392,7 @@ HTTP/1.1 200
         "orderOption": {
             "id": 859,
             "order_id": 455,
-            "order_number": "ORD-20260707-000123",
+            "order_number": "20260707-1440007351",
             "quantity": 1,
             "ordered_at": "2026-07-07 14:40:00"
         },

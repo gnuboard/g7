@@ -63,6 +63,11 @@ class EcommerceDashboardServiceTest extends ModuleTestCase
         ]);
     }
 
+    /**
+     * 오늘 배지 네 칸은 오늘자 집계 행의 상태 버킷을 그대로 읽는다.
+     *
+     * @effects today_order_status_badges_reflect_overview_api
+     */
     #[Test]
     public function test_get_overview_reads_today_buckets_from_ecommerce_stats(): void
     {
@@ -86,6 +91,11 @@ class EcommerceDashboardServiceTest extends ModuleTestCase
         $this->assertSame(0, $overview['cancellations']);
     }
 
+    /**
+     * 오늘자 집계 행이 아직 없으면 모든 버킷이 0 이다 — null 이 새어 나가지 않는다.
+     *
+     * @effects overview_buckets_are_zero_when_todays_aggregate_row_is_missing
+     */
     #[Test]
     public function test_get_overview_returns_zero_when_today_row_missing(): void
     {
@@ -96,6 +106,11 @@ class EcommerceDashboardServiceTest extends ModuleTestCase
         }
     }
 
+    /**
+     * 7일 막대와 합계 — 날짜는 오래된 쪽부터, 합계는 기본 통화 자릿수로 정규화된다.
+     *
+     * @effects sales_graph_chart_renders_7_days_from_sales_graph_api, total_quantity_displays_sum_of_7_days, total_sales_displays_sum_of_7_days
+     */
     #[Test]
     public function test_get_sales_graph_returns_current_7_day_bars_and_totals(): void
     {
@@ -119,6 +134,11 @@ class EcommerceDashboardServiceTest extends ModuleTestCase
         $this->assertSame($today->toDateString(), $graph['days'][6]['date']);
     }
 
+    /**
+     * 증감률은 직전 같은 길이 구간(8~14일 전)과 비교해 산출한다.
+     *
+     * @effects sales_change_rate_compares_against_the_previous_window_of_the_same_length
+     */
     #[Test]
     public function test_sales_graph_change_rate_is_calculated_vs_previous_7_days(): void
     {
@@ -138,6 +158,11 @@ class EcommerceDashboardServiceTest extends ModuleTestCase
         $this->assertSame(100.0, $graph['quantity_change']);
     }
 
+    /**
+     * 비교할 직전 구간이 비면 0% 가 아니라 null 이다 — 화면의 대시(–) 가 이 값에 선다.
+     *
+     * @effects sales_change_rate_is_null_when_the_previous_window_has_no_rows
+     */
     #[Test]
     public function test_sales_graph_change_rate_is_null_when_no_previous_data(): void
     {
@@ -152,6 +177,11 @@ class EcommerceDashboardServiceTest extends ModuleTestCase
         $this->assertNull($graph['sales_change']);
     }
 
+    /**
+     * 집계 행이 하나도 없으면 갱신 시각 캡션은 서지 않는다.
+     *
+     * @effects sales_graph_updated_at_caption_hidden_when_no_aggregated_rows
+     */
     #[Test]
     public function test_sales_graph_updated_at_display_is_empty_when_no_rows(): void
     {
@@ -161,6 +191,11 @@ class EcommerceDashboardServiceTest extends ModuleTestCase
         $this->assertSame('', $graph['updated_at_display']);
     }
 
+    /**
+     * 순매출은 매출 반영 상태의 주문상품만 더한다 — 결제전·취소는 제외된다.
+     *
+     * @effects net_sales_sums_only_sales_eligible_statuses
+     */
     #[Test]
     public function test_aggregate_only_sums_sales_eligible_statuses(): void
     {
@@ -184,6 +219,11 @@ class EcommerceDashboardServiceTest extends ModuleTestCase
         $this->assertSame('7000.00', $row->sales_amount);
     }
 
+    /**
+     * 부분취소 수량은 순매출에서 빠진다 — 유효수량 × 단가가 기준이다.
+     *
+     * @effects net_sales_deducts_cancelled_quantity
+     */
     #[Test]
     public function test_aggregate_deducts_cancelled_quantity_from_net_sales(): void
     {
@@ -199,6 +239,11 @@ class EcommerceDashboardServiceTest extends ModuleTestCase
         $this->assertSame('3000.00', $row->sales_amount);
     }
 
+    /**
+     * 매출 귀속일은 주문의 `ordered_at` 이다 — 집계일이 아니다.
+     *
+     * @effects net_sales_attributed_by_order_ordered_at
+     */
     #[Test]
     public function test_aggregate_attributes_sales_by_order_ordered_at_date(): void
     {
@@ -220,6 +265,11 @@ class EcommerceDashboardServiceTest extends ModuleTestCase
         $this->assertSame(7, $threeDaysAgoRow->sales_quantity, '3일 전 행은 3일 전 주문 귀속');
     }
 
+    /**
+     * 상태 버킷은 취소 옵션을 cancellations 한 칸으로 모은다.
+     *
+     * @effects status_buckets_merge_cancelled_options_into_one_cancellations_count
+     */
     #[Test]
     public function test_aggregate_builds_status_buckets_with_cancellation_merge(): void
     {
@@ -238,6 +288,42 @@ class EcommerceDashboardServiceTest extends ModuleTestCase
         $this->assertSame(3, $counts['cancellations']);
     }
 
+    /**
+     * #599 통합 실측 P15 ① · S0-D1 — 반품 배지가 0 에 고정돼 있었다.
+     *
+     * 취소 배지가 취소 옵션(cancelled)을 세는 것과 같은 규칙으로, 반품 배지는 반품완료 옵션(returned)을
+     * 센다. 반품 진행 중(return_in_progress)은 아직 돌려받지 않은 상품이라 완료 배지에 넣지 않는다 —
+     * 취소 배지도 취소 신청 중(환불신청)은 세지 않는다. 실측 DB 에서 2026-09-15 반품완료 수량 16 ·
+     * 09-16 22 인데 집계 행의 returns 가 전부 0 이었다.
+     *
+     * @scenario module_state=active, data_state=has_orders, user_role=admin_with_dashboard_permission
+     *
+     * @effects today_returns_badge_counts_returned_options
+     */
+    #[Test]
+    public function test_aggregate_builds_returns_bucket_from_returned_options(): void
+    {
+        $today = CarbonImmutable::today()->toDateString();
+
+        $this->makeOption($today, OrderStatusEnum::RETURNED, 2, 1000);
+        $this->makeOption($today, OrderStatusEnum::RETURNED, 3, 1000);
+        $this->makeOption($today, OrderStatusEnum::RETURN_IN_PROGRESS, 4, 1000);
+        $this->makeOption($today, OrderStatusEnum::CANCELLED, 1, 1000);
+
+        $this->service->aggregateRecentDays(7);
+
+        $counts = EcommerceStat::where('date', $today)->first()->option_status_counts;
+
+        // 방향까지 고정한다 — returned 만 세고 return_in_progress(4) 는 섞이지 않는다.
+        $this->assertSame(5, $counts['returns']);
+        $this->assertSame(1, $counts['cancellations']);
+    }
+
+    /**
+     * 최근 N일만 upsert 한다 — 그 밖의 과거 행은 그대로 남는다.
+     *
+     * @effects aggregate_recent_days_upserts_only_the_window_and_preserves_older_rows
+     */
     #[Test]
     public function test_aggregate_recent_days_upserts_only_recent_7_days_preserving_older(): void
     {
@@ -257,6 +343,11 @@ class EcommerceDashboardServiceTest extends ModuleTestCase
         $this->assertSame(8, EcommerceStat::count());
     }
 
+    /**
+     * 같은 구간을 다시 돌려도 행이 늘지 않는다 (스케줄러 재실행 안전).
+     *
+     * @effects aggregate_recent_days_is_idempotent_on_rerun
+     */
     #[Test]
     public function test_aggregate_recent_days_is_idempotent_on_rerun(): void
     {
@@ -266,6 +357,11 @@ class EcommerceDashboardServiceTest extends ModuleTestCase
         $this->assertSame(7, EcommerceStat::count());
     }
 
+    /**
+     * 최근 리뷰 카드 재료는 최신순이다.
+     *
+     * @effects latest_reviews_card_renders_recent_reviews_api_items
+     */
     #[Test]
     public function test_get_recent_reviews_returns_visible_reviews_latest_first(): void
     {
@@ -278,6 +374,11 @@ class EcommerceDashboardServiceTest extends ModuleTestCase
         $this->assertSame($latest->id, $reviews->first()->id);
     }
 
+    /**
+     * 미답변 문의만 세고, 게시판 이동용 slug 를 함께 낸다.
+     *
+     * @effects pending_inquiries_card_renders_pending_inquiries_api_items, pending_inquiries_count_badge_shows_total, pending_inquiries_payload_carries_the_board_slug_for_navigation
+     */
     #[Test]
     public function test_get_pending_inquiries_returns_unanswered_items_and_total(): void
     {

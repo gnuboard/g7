@@ -30,7 +30,8 @@ class UpdateOrderRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'order_status' => ['nullable', 'string', Rule::in(OrderStatusEnum::values())],
+            // 클레임 코스 상태는 교환·반품 서비스 전담 — 주문 단건 수정에서 직접 지정 불가.
+            'order_status' => ['nullable', 'string', Rule::in(OrderStatusEnum::adminAssignableValues())],
             'admin_memo' => ['nullable', 'string', 'max:2000'],
             'recipient_name' => ['required', 'string', 'max:50'],
             'recipient_phone' => ['required_without:recipient_tel', 'nullable', 'string', 'max:20'],

@@ -796,6 +796,29 @@ class ReportRepository implements ReportRepositoryInterface
     }
 
     /**
+     * {@inheritDoc}
+     */
+    public function countLogsByReportSince(int $reportId, ?\DateTimeInterface $since): int
+    {
+        return ReportLog::query()
+            ->where('report_id', $reportId)
+            ->when($since, fn (Builder $query) => $query->where('created_at', '>=', $since))
+            ->count();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function findLatestLogByReport(int $reportId): ?ReportLog
+    {
+        return ReportLog::query()
+            ->where('report_id', $reportId)
+            ->latest()
+            ->latest('id')
+            ->first();
+    }
+
+    /**
      * 댓글 대상 신고 로그의 부모 글 ID 를 일괄 프리로드합니다.
      *
      * 댓글 신고는 대상이 댓글이라 "어느 글의 댓글인지" 를 알아야 이동 링크를 만든다 —

@@ -79,6 +79,12 @@ describe('W-1 체크아웃 현금영수증 신청 폼', () => {
         };
 
         expect(evalIf(fields.if, { _local: {} })).toBe(false);
+        // 표시 게이트는 스크래치와 제출 payload 의 **합의**를 본다 — 한쪽만 보면
+        // "화면은 신청 켜짐, 제출 payload 는 비어 있음" 이 생긴다(결제수단 전환 경로).
+        expect(evalIf(fields.if, { _local: { cashReceiptRequested: true } })).toBe(false);
+        expect(
+            evalIf(fields.if, { _local: { checkoutExtraPayload: { cash_receipt_requested: true } } }),
+        ).toBe(false);
         expect(evalIf(fields.if, requested)).toBe(true);
     });
 
@@ -117,6 +123,59 @@ describe('W-1 체크아웃 현금영수증 신청 폼', () => {
             { $event: { target: { checked: false } }, _local: {} }
         );
         expect(off).toEqual({});
+    });
+
+    it('신청 토글의 켜짐 표시도 스크래치와 제출 payload 의 합의를 본다 (전환 후 잔류 금지)', () => {
+        const toggle = byId(checkoutExt, 'ext_checkout_cash_receipt_toggle');
+        const checkedExpr = String(toggle.props.checked).slice(2, -2);
+        const evalChecked = (_local: Record<string, unknown>) =>
+            engine.evaluateExpression(checkedExpr, { _local });
+
+        expect(evalChecked({})).toBe(false);
+
+        // 결제수단을 바꾸면 템플릿이 공유 계약 키(checkoutExtraPayload)를 통째로 치환한다.
+        // 모듈 스크래치(cashReceiptRequested)는 그 치환의 대상이 아니라 그대로 남는데,
+        // 표시가 스크래치만 보면 무통장으로 돌아왔을 때 "토글은 켜짐, 제출 payload 는 비어 있음"
+        // 이 된다 — 화면이 예고한 것과 실제 제출이 갈린다.
+        expect(evalChecked({ cashReceiptRequested: true })).toBe(false);
+        expect(evalChecked({ checkoutExtraPayload: { cash_receipt_requested: true } })).toBe(false);
+        expect(
+            evalChecked({
+                cashReceiptRequested: true,
+                checkoutExtraPayload: { cash_receipt_requested: true },
+            }),
+        ).toBe(true);
+
+        // 표시 게이트와 입력 영역 게이트는 같은 판정을 공유해야 한다 (한쪽만 열리면 빈 칸이 뜬다).
+        const fields = byId(checkoutExt, 'ext_checkout_cash_receipt_fields');
+        expect(String(fields.if)).toBe(String(toggle.props.checked));
+    });
+
+    it('전환 뒤 다시 신청하면 이전 수단에서 입력한 값이 아니라 기본값으로 시작한다', () => {
+        const toggle = byId(checkoutExt, 'ext_checkout_cash_receipt_toggle');
+        const params = toggle.actions[0].params;
+
+        // 전환이 비우는 것은 payload 뿐이고 스크래치 3키는 옛 입력을 그대로 들고 있다.
+        // 재체크의 기본값을 스크래치에서 읽으면 그 옛 값이 되살아난다.
+        const stale = {
+            cashReceiptType: 'expense',
+            cashReceiptIdentifierType: 'business',
+            cashReceiptIdentifier: '01012345678',
+            checkoutExtraPayload: {},
+        };
+        const ctx = { $event: { target: { checked: true } }, _local: stale };
+        const evalParam = (key: string) =>
+            engine.evaluateExpression(String(params[key]).slice(2, -2), ctx);
+
+        expect(evalParam('cashReceiptType')).toBe('income');
+        expect(evalParam('cashReceiptIdentifierType')).toBe('phone');
+        expect(evalParam('cashReceiptIdentifier')).toBe('');
+        expect(evalParam('checkoutExtraPayload')).toEqual({
+            cash_receipt_requested: true,
+            cash_receipt_type: 'income',
+            cash_receipt_identifier_type: 'phone',
+            cash_receipt_identifier: '',
+        });
     });
 
     it('소득공제로 전환하면 사업자등록번호 선택이 휴대폰번호로 리셋된다 (M5)', () => {
@@ -508,13 +567,42 @@ describe('W-3 관리자 발급 모달', () => {
 describe('W-4 취소 모달 환불계좌', () => {
     const section = byId(cancelModal, 'cancel_refund_bank_section');
 
-    it('가상계좌·무통장에서만 노출한다 (카드·간편결제는 계좌 불필요)', () => {
-        const ctx = (m: string) => ({ order: { data: { payment: { payment_method: m } } } });
+    /** 수단 × 잔여 환불액 두 축 — 돈이 남아 있는 주문을 기본 문맥으로 쓴다 */
+    const ctx = (m: string, paid = 20000, refunded = 0) => ({
+        order: { data: { total_paid_amount: paid, total_refunded_amount: refunded, payment: { payment_method: m } } },
+    });
 
+    /**
+     * @scenario surface=admin_cancel_modal, payment_method=dbank, refund_bank_requirement=dbank_required
+     *
+     * @effects cancel_refund_bank_visible_only_for_vbank_dbank
+     */
+    it('가상계좌·무통장에서만 노출한다 (카드·간편결제는 계좌 불필요)', () => {
         expect(evalIf(section.if, ctx('vbank'))).toBe(true);
         expect(evalIf(section.if, ctx('dbank'))).toBe(true);
         expect(evalIf(section.if, ctx('card'))).toBe(false);
         expect(evalIf(section.if, ctx('point'))).toBe(false);
+    });
+
+    /**
+     * **돌려줄 돈이 없으면 수단과 무관하게 감춘다.** (브라우저 실측 회귀)
+     *
+     * 예전에는 수단만 봤다. 그래서 아직 입금되지 않은 무통장 주문에도 계좌칸이 서고, 서버는
+     * 그 칸을 필수로 요구해 **운영자가 미입금 주문을 취소할 수 없었다** — 환불 예정액이
+     * 0원인데 존재하지 않는 환불을 위해 계좌를 지어내야 했다. 서버의 같은 판정
+     * (`CancelOrderRequest::hasMoneyToReturn`)과 축을 맞춘다.
+     *
+     * @scenario surface=admin_cancel_modal, payment_method=dbank, refund_bank_requirement=nothing_to_refund_skip
+     *
+     * @effects cancel_refund_bank_hidden_when_nothing_to_refund
+     */
+    it('돌려줄 돈이 없으면 감춘다 (미입금·전액 환불 완료)', () => {
+        // 미입금 무통장 — 받은 돈이 없다
+        expect(evalIf(section.if, ctx('dbank', 0, 0))).toBe(false);
+        // 이미 전액 환불된 가상계좌 — 남은 돈이 없다
+        expect(evalIf(section.if, ctx('vbank', 20000, 20000))).toBe(false);
+        // 일부만 환불된 건은 잔액이 남아 있으므로 계속 노출한다
+        expect(evalIf(section.if, ctx('vbank', 20000, 5000))).toBe(true);
     });
 
     it('3필드가 _local.refundBank* 에 저장된다 (cancelOrderHandlers 가 읽는 키)', () => {
@@ -528,11 +616,29 @@ describe('W-4 취소 모달 환불계좌', () => {
 
     it('가상계좌 입금완료 건에만 필수 안내를 띄운다', () => {
         const hint = flatten(section).find((n: any) => String(n.text ?? '').includes('refund_bank_required_hint'));
-        const ctx = (m: string, s: string) => ({ order: { data: { payment: { payment_method: m, payment_status: s } } } });
+        const hintCtx = (m: string, s: string) => ({ order: { data: { payment: { payment_method: m, payment_status: s } } } });
 
-        expect(evalIf(hint.if, ctx('vbank', 'paid'))).toBe(true);
-        expect(evalIf(hint.if, ctx('vbank', 'waiting_deposit'))).toBe(false);
-        expect(evalIf(hint.if, ctx('dbank', 'paid'))).toBe(false);
+        expect(evalIf(hint.if, hintCtx('vbank', 'paid'))).toBe(true);
+        expect(evalIf(hint.if, hintCtx('vbank', 'waiting_deposit'))).toBe(false);
+        expect(evalIf(hint.if, hintCtx('dbank', 'paid'))).toBe(false);
+    });
+
+    /**
+     * 은행 목록이 비어 있으면 **어디서 등록하는지** 지목한다. (브라우저 실측 회귀)
+     *
+     * 계좌는 필수인데 고를 은행이 하나도 없으면 운영자는 빈 드롭다운과 "계좌를 입력하세요"
+     * 422 만 보게 된다 — 무엇을 어디서 고쳐야 하는지가 화면 어디에도 없는 막다른 길이다.
+     *
+     * @scenario surface=admin_cancel_modal, payment_method=dbank, refund_bank_requirement=dbank_required
+     *
+     * @effects cancel_refund_bank_empty_list_points_to_settings
+     */
+    it('은행 목록이 비면 설정 자리를 지목하는 안내를 띄운다', () => {
+        const hint = flatten(section).find((n: any) => n.id === 'cancel_refund_bank_empty_hint');
+
+        expect(hint).toBeTruthy();
+        expect(evalIf(hint.if, { paymentSettings: { data: { order_settings: { banks: [] } } } })).toBe(true);
+        expect(evalIf(hint.if, { paymentSettings: { data: { order_settings: { banks: [{ code: '004' }] } } } })).toBe(false);
     });
 
     it('3열 → portable 1열로 접힌다', () => {

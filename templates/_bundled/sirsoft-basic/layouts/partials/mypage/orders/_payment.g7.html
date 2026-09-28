@@ -148,6 +148,24 @@
           -{{order.data.total_deposit_used_amount_formatted ?? ''}}
         </span>
       </div>
+      <!-- 클레임(교환·반품) 추가결제 실수납 합계 (D20 · §2 해석 확정). 원 주문서 총 결제금액에 합산하지 않고 별도 표기하며, 합계 0원이면 행 자체를 렌더하지 않는다. 표기는 서버가 준 claim_additional_paid_total_formatted 를 그대로 쓴다 — 화면이 통화 기호를 붙이면 기본 통화가 다른 상점에서 단위만 틀린 금액이 나간다. -->
+      <div data-if="{{(order.data.claim_additional_paid_total ?? 0) > 0}}" class="flex items-center justify-between">
+        <span class="text-blue-600 dark:text-blue-400 font-medium">
+          <responsive on="portable" class="text-blue-600 dark:text-blue-400 font-medium text-sm"/>
+          $t:mypage.order_detail.claim_additional_paid
+        </span>
+        <!-- 기준통화 표기 + 보조통화 병기. 형제 금액 줄과 같은 규약이다 — 이 줄만 기준통화 단독이면 보조통화를 쓰는 구매자가 같은 카드 안에서 한 줄만 자기 통화로 읽지 못한다. -->
+        <div class="text-right">
+          <span class="text-blue-600 dark:text-blue-400 font-medium">
+            <responsive on="portable" class="text-blue-600 dark:text-blue-400 font-medium text-sm"/>
+            +{{order.data.claim_additional_paid_total_formatted ?? ''}}
+          </span>
+          <!-- 보조 통화들 -->
+          <div data-each="claimPaidCurrency in {{Object.entries(order.data.mc_claim_additional_paid_total ?? {}).filter(([code]) => code !== (order.data.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}" class="flex flex-wrap gap-x-2 justify-end mt-0.5">
+            <span class="text-xs text-gray-400 dark:text-gray-500">{{claimPaidCurrency[1]?.formatted ?? ''}}</span>
+          </div>
+        </div>
+      </div>
       <!-- 구분선 -->
       <div class="border-t border-gray-200 dark:border-gray-700 my-3"/>
       <!-- 총 결제금액 -->
@@ -176,8 +194,8 @@
       </div>
       <!-- 구분선 -->
       <div class="border-t border-gray-200 dark:border-gray-700 my-3"/>
-      <!-- 결제 방법 -->
-      <div class="flex items-center justify-between">
+      <!-- 결제 방법 — id 는 PG 플러그인과의 약속이다. 간편결제 이름(예: 카카오페이)을 이 행의 값에 덧붙이려고 이 id 로만 찾는다(행 이름 글자는 언어마다 다르다). -->
+      <div data-ref="order_payment_method_row" class="flex items-center justify-between">
         <span class="text-gray-500 dark:text-gray-400">
           <responsive on="portable" class="text-gray-500 dark:text-gray-400 text-sm"/>
           $t:mypage.order_detail.payment_method
@@ -189,6 +207,10 @@
       </div>
       <!-- 현금영수증 카드 확장 슬롯 — 이커머스 모듈이 resources/extensions/mypage_order_cash_receipt.json 으로 주입한다. 결제수단/프로바이더/발급상태에 따른 표시 분기는 주입 측이 if 로 처리한다(무통장이 아니거나 프로바이더 미설정이면 카드 자체 미렌더). -->
       <extension-point name="mypage_order_cash_receipt_slot">
+        <default/>
+      </extension-point>
+      <!-- PG 제공 블록(가상계좌 입금 안내 · 영수증 · 부가세 내역) 확장 슬롯 — 결제 플러그인 4종(kginicis / nhnkcp / nicepayments / tosspayments)이 resources/extensions/ 로 주입한다. 표시 분기(pg_provider·결제수단·발급상태)는 주입 측이 if 로 처리한다. -->
+      <extension-point name="mypage_order_payment_provider_slot">
         <default/>
       </extension-point>
     </div>

@@ -29,6 +29,8 @@ class NotificationDefinition extends Model
 
     /**
      * 모델 이벤트 등록 — 모든 변경 시 알림 정의 캐시 자동 삭제.
+     *
+     * @return void 반환값 없음
      */
     protected static function booted(): void
     {
@@ -83,6 +85,7 @@ class NotificationDefinition extends Model
         'variables',
         'channels',
         'hooks',
+        'relations',
         'is_active',
         'is_default',
         'user_overrides',
@@ -101,6 +104,7 @@ class NotificationDefinition extends Model
             'variables' => 'array',
             'channels' => 'array',
             'hooks' => 'array',
+            'relations' => 'array',
             'is_active' => 'boolean',
             'is_default' => 'boolean',
             'user_overrides' => 'array',
@@ -120,7 +124,7 @@ class NotificationDefinition extends Model
     /**
      * 활성 알림 정의만 조회.
      *
-     * @param Builder $query
+     * @param  Builder  $query
      * @return Builder
      */
     public function scopeActive(Builder $query): Builder
@@ -131,8 +135,8 @@ class NotificationDefinition extends Model
     /**
      * 특정 타입의 알림 정의 조회.
      *
-     * @param Builder $query
-     * @param string $type
+     * @param  Builder  $query
+     * @param  string  $type
      * @return Builder
      */
     public function scopeByType(Builder $query, string $type): Builder
@@ -143,9 +147,9 @@ class NotificationDefinition extends Model
     /**
      * 특정 확장의 알림 정의 조회.
      *
-     * @param Builder $query
-     * @param string $extensionType
-     * @param string $extensionIdentifier
+     * @param  Builder  $query
+     * @param  string  $extensionType
+     * @param  string  $extensionIdentifier
      * @return Builder
      */
     public function scopeByExtension(Builder $query, string $extensionType, string $extensionIdentifier): Builder
@@ -157,7 +161,7 @@ class NotificationDefinition extends Model
     /**
      * 현재 로케일의 이름 반환.
      *
-     * @param string|null $locale
+     * @param  string|null  $locale
      * @return string
      */
     public function getLocalizedName(?string $locale = null): string
@@ -171,7 +175,7 @@ class NotificationDefinition extends Model
     /**
      * 현재 로케일의 설명 반환.
      *
-     * @param string|null $locale
+     * @param  string|null  $locale
      * @return string
      */
     public function getLocalizedDescription(?string $locale = null): string

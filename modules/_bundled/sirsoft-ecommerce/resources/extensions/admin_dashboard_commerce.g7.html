@@ -9,7 +9,7 @@
 <extension extension-point="admin_dashboard_commerce" mode="append" priority="100">
   <div data-ref="commerce_section_wrapper" class="mb-4 md:mb-6 lg:mb-8">
     <div data-ref="commerce_section_grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 lg:gap-5">
-      <div data-ref="commerce_today_summary" class="flex-center flex-wrap gap-2 md:col-span-2 lg:col-span-4">
+      <div data-ref="commerce_today_summary" class="flex items-center flex-wrap gap-2 md:col-span-2 lg:col-span-4">
         <blur-until-loaded sources="commerce_overview"/>
         <span data-ref="commerce_today_label" class="text-sm font-semibold text-slate-500 dark:text-slate-400">$t:admin.dashboard.stats.today</span>
         <span data-ref="today_pending_payment_badge" class="px-2 py-1 text-xs font-medium rounded-full bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200 cursor-pointer hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors">
@@ -62,12 +62,12 @@
         </blur-until-loaded>
         <div data-ref="sales_graph_header" class="flex flex-col gap-2 md:flex-row md:items-center md:justify-between mb-4 md:mb-6">
           <h3 data-ref="sales_graph_title" class="text-lg font-semibold text-slate-900 dark:text-white">$t:sirsoft-ecommerce.admin.dashboard.community.sales_graph</h3>
-          <div data-ref="sales_graph_legend" class="flex-center gap-4">
-            <div data-ref="quantity_legend_item" class="flex-center gap-2">
+          <div data-ref="sales_graph_legend" class="flex items-center gap-4">
+            <div data-ref="quantity_legend_item" class="flex items-center gap-2">
               <span data-ref="quantity_legend_dot" class="w-3 h-3 rounded-full bg-violet-500"/>
               <span data-ref="quantity_legend_label" class="text-sm text-slate-500 dark:text-slate-400">$t:sirsoft-ecommerce.admin.dashboard.community.quantity</span>
             </div>
-            <div data-ref="sales_legend_item" class="flex-center gap-2">
+            <div data-ref="sales_legend_item" class="flex items-center gap-2">
               <span data-ref="sales_legend_dot" class="w-3 h-3 rounded-full bg-violet-200"/>
               <span data-ref="sales_legend_label" class="text-sm text-slate-500 dark:text-slate-400">$t:sirsoft-ecommerce.admin.dashboard.community.sales_amount</span>
             </div>
@@ -106,7 +106,7 @@
             </on>
             <div data-ref="latest_review_header_{{i}}" class="flex-between gap-2">
               <p data-ref="latest_review_product_{{i}}" class="flex-1 min-w-0 text-sm font-medium text-slate-900 dark:text-white truncate">{{review?.product_name ?? ''}}</p>
-              <span data-ref="latest_review_rating_{{i}}" class="shrink-0 flex-center gap-1 text-rose-500 text-xs font-medium">
+              <span data-ref="latest_review_rating_{{i}}" class="shrink-0 flex items-center gap-1 text-rose-500 text-xs font-medium">
                 <icon data-ref="latest_review_star_{{i}}" name="star" variant="solid"/>
                 <span data-ref="latest_review_rating_text_{{i}}">{{review?.rating ?? 0}}</span>
               </span>
@@ -118,7 +118,7 @@
       <div data-ref="pending_inquiries_card" class="bg-slate-100 dark:bg-slate-800 p-4 md:p-6 rounded-xl md:rounded-2xl h-full flex flex-col">
         <blur-until-loaded sources="commerce_pending_inquiries"/>
         <div data-ref="pending_inquiries_header" class="flex-between mb-4">
-          <h3 data-ref="pending_inquiries_title_wrapper" class="flex-center text-base font-semibold text-slate-900 dark:text-white gap-1">
+          <h3 data-ref="pending_inquiries_title_wrapper" class="flex items-center text-base font-semibold text-slate-900 dark:text-white gap-1">
             <span data-ref="pending_inquiries_title_text">$t:sirsoft-ecommerce.admin.dashboard.community.unanswered_inquiries</span>
             <span data-ref="pending_inquiries_count" data-if="{{(commerce_pending_inquiries?.data?.total ?? 0) > 0}}" class="text-purple-600 dark:text-purple-400">({{commerce_pending_inquiries?.data?.total ?? 0}})</span>
           </h3>

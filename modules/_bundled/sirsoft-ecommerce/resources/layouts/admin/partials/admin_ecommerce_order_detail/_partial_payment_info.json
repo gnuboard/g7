@@ -148,6 +148,8 @@
                                             },
                                             "children": [
                                                 {
+                                                    "comment": "결제수단 칸 — id 는 PG 플러그인과의 약속이다. 간편결제 이름을 값에 덧붙이려고 이 id 로만 찾는다(칸 이름 글자는 관리자 언어마다 다르다). 첫 칸이 이름, 다음 칸이 값이다.",
+                                                    "id": "payment_method_block_{{payIdx}}",
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "children": [
@@ -563,6 +565,35 @@
                                             ]
                                         },
                                         {
+                                            "comment": "세금계산서 미처리 경고 (P15). 세금계산서는 취소·부분취소에 전혀 반응하지 않는다 — 현금영수증과 달리 취소·재발급 경로가 없고, 국세청 연동 자동화는 이번 범위 밖이다. 표시가 없으면 운영자는 계산서가 이미 정리된 줄 알고 넘어가고, 그 어긋남은 신고 시점에야 드러난다. 이 배지가 누락을 드러내 수동 처리를 유도한다.",
+                                            "id": "payment_tax_invoice_review_warning_{{payIdx}}",
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "if": "{{order.data?.tax_invoice_needs_review === true}}",
+                                            "props": {
+                                                "className": "flex items-start gap-2 rounded-lg border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20 p-3"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Icon",
+                                                    "props": {
+                                                        "name": "triangle-exclamation",
+                                                        "size": "sm",
+                                                        "className": "text-amber-600 dark:text-amber-400 mt-0.5"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-sm text-amber-700 dark:text-amber-300"
+                                                    },
+                                                    "text": "$t:sirsoft-ecommerce.admin.order.detail.tax_invoice.needs_review"
+                                                }
+                                            ]
+                                        },
+                                        {
                                             "comment": "취소/환불 요약 — 취소·환불 금액은 주문(Order) 레벨 집계(total_cancelled/refunded_amount, total_refunded_points_amount)가 SSoT. 결제(payment) 레벨에는 환불 마일리지/환불액 합계가 없으므로 order.data 를 바인딩한다. 개별 환불 레코드의 상태는 환불 탭(claim_history)에서 표시.",
                                             "type": "basic",
                                             "name": "Div",
@@ -648,6 +679,34 @@
                                                             "text": "-{{order.data?.total_refunded_points_amount_formatted}}"
                                                         }
                                                     ]
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "comment": "클레임(교환·반품) 추가결제 실수납 합계 (D20 · §2 해석 확정). 원 주문서 총 배송비에 합산하지 않고 별도 표기하며, 합계 0원이면 행 자체를 렌더하지 않는다. 서버 필드는 claim_additional_paid_total 하나이고 표기는 claim_additional_paid_total_formatted 를 그대로 쓴다 — 화면이 통화 기호를 붙이면 기본 통화가 다른 상점에서 단위만 틀린 금액이 나간다.",
+                                            "id": "claim_additional_paid_row_{{payIdx}}",
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "if": "{{(order.data?.claim_additional_paid_total ?? 0) > 0}}",
+                                            "props": {
+                                                "className": "flex justify-between text-sm border-t border-blue-200 dark:border-blue-800"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-blue-600 dark:text-blue-400 font-medium"
+                                                    },
+                                                    "text": "$t:sirsoft-ecommerce.admin.order.detail.payment_info.claim_additional_paid"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-blue-600 dark:text-blue-400 font-medium"
+                                                    },
+                                                    "text": "+{{order.data?.claim_additional_paid_total_formatted}}"
                                                 }
                                             ]
                                         },

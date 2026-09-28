@@ -208,6 +208,7 @@ return [
         'fetch_success' => '주문 정보를 조회했습니다.',
         'fetch_failed' => '주문 정보 조회에 실패했습니다.',
         'cancelled' => '주문이 취소되었습니다.',
+        'cancel_refund_requested' => '환불신청서가 접수되었습니다. 환불이 완료되면 주문이 취소됩니다.',
         'cancel_failed' => '주문 취소에 실패했습니다.',
         'estimate_refund_success' => '환불 예상금액을 조회했습니다.',
         'estimate_refund_failed' => '환불 예상금액 조회에 실패했습니다.',
@@ -215,9 +216,11 @@ return [
         'guest_password_reset_failed' => '비회원 조회 비밀번호 재설정에 실패했습니다.',
         'guest_password_reset_not_guest' => '비회원 주문만 조회 비밀번호를 재설정할 수 있습니다.',
         'deposit_confirmed' => '입금이 확인되어 결제완료 처리되었습니다.',
+        'deposit_recorded' => '입금 내역을 기록했습니다. 주문 상태는 결제대기로 유지됩니다.',
         'deposit_confirm_failed' => '입금확인 처리에 실패했습니다.',
         'deposit_amount_mismatch' => '입금액이 결제예정금액과 일치하지 않습니다.',
         'deposit_not_dbank' => '무통장입금 주문만 입금확인할 수 있습니다.',
+        'deposit_order_cancelled' => '취소된 주문은 입금확인할 수 없습니다.',
         'deposit_not_pending' => '미결제 상태의 주문만 입금확인할 수 있습니다.',
         'payment_name_summary' => ':name 외 :count건',
         'deposit' => [
@@ -377,6 +380,8 @@ return [
         'not_earning' => '적립 거래만 수정할 수 있습니다.',
         'expiry_not_editable' => '이미 소멸되었거나 모두 사용된 적립건은 유효기간을 변경할 수 없습니다.',
         'expiry_before_earned' => '유효기간은 적립일시보다 이전일 수 없습니다.',
+        // 적립 마일리지 표기 — 통화가 아니라 포인트 단위다(`:points` 는 천 단위 구분이 끝난 숫자).
+        'points_format' => ':pointsP',
     ],
 
     // 임시주문 메시지
@@ -467,7 +472,67 @@ return [
         'updated' => '클레임 사유가 수정되었습니다.',
         'deleted' => '클레임 사유가 삭제되었습니다.',
         'toggled' => '클레임 사유 상태가 변경되었습니다.',
-        'delete_failed_in_use' => '주문 취소에서 사용 중인 사유는 삭제할 수 없습니다. 비활성화를 권장합니다.',
+        'delete_failed_in_use' => '이미 사용 중인 사유는 삭제할 수 없습니다. 비활성화를 권장합니다.',
+    ],
+
+    // 클레임 공통 메시지
+    'claims' => [
+        // 취소 가능 금액의 한도를 정한 축 (D19) — 관리자 화면이 근거로 표시한다.
+        'cancellable_binding' => [
+            'domain_refundable' => '환불 대상 금액이 한도입니다.',
+            'payment_capacity' => '결제수단 잔여 한도가 한도입니다.',
+        ],
+        // 수단별 잔여 한도의 표시 라벨 (D19) — 마일리지는 결제행이 없는 주문 컬럼 원장이라
+        // 결제수단 어휘(PaymentMethodEnum)에 없다. 라벨이 없으면 원시값이 화면에 나간다.
+        'cancellable_method' => [
+            'payment' => '결제수단',
+            'mileage' => '마일리지',
+        ],
+        'payment_order_name' => ':type 추가결제 (:number)',
+        'claimable_retrieved' => '신청 가능 상품을 조회했습니다.',
+        'preview_success' => '신청 예상 금액을 계산했습니다.',
+        'requested' => '신청이 접수되었습니다.',
+        'cancelled_instantly' => '주문이 취소되었습니다.',
+        'list_retrieved' => '신청 내역을 조회했습니다.',
+        'retrieved' => '신청서를 조회했습니다.',
+        'updated' => '신청 내용이 수정되었습니다.',
+        'rejected' => '신청이 반려되었습니다.',
+        'withdrawn' => '신청이 철회되었습니다.',
+        'image_uploaded' => '이미지를 첨부했습니다.',
+        'image_deleted' => '첨부 이미지를 삭제했습니다.',
+        'payment_started' => '결제를 시작합니다.',
+        'payment_completed' => '결제가 완료되었습니다.',
+        'settings_retrieved' => '클레임 설정을 조회했습니다.',
+        'operation_failed' => '클레임 처리 중 오류가 발생했습니다.',
+        // 관리자 클레임 API
+        'status_updated' => '신청 상태가 변경되었습니다.',
+        'payment_requested' => '추가결제를 요청했습니다. 결제 완료 후 승인 처리됩니다.',
+        'bulk_status_processed' => '일괄 상태 변경을 처리했습니다.',
+        'option_status_processed' => '신청 상품 상태 변경을 처리했습니다.',
+        'tracking_saved' => '운송장 정보를 저장했습니다.',
+        'tracking_delivered' => '운송장의 상품을 도착 처리했습니다.',
+        'notifications' => [
+            'advance_exchange_notice' => '선교환입니다 — 기존 상품은 :date까지 보내 주세요.',
+            'request_origin_admin' => '판매자가 고객님을 대신해 접수했습니다.',
+            'withdraw_origin_admin' => '고객님 요청으로 판매자가 철회했습니다.',
+        ],
+        'tracking_deliver_not_ready' => '지금 상태에서는 도착 처리할 수 없습니다.',
+        'exchange_mode_updated' => '진행 방식을 바꿨습니다.',
+        'admin_requested' => '고객을 대신해 접수했습니다.',
+        'admin_requested_approval_skipped' => '접수했지만 승인하지 못했습니다. 신청서에서 사유를 확인해 주세요.',
+        'stock_restored' => '재고를 복구했습니다.',
+        'withdrawn_on_behalf' => '고객 요청으로 신청을 철회했습니다.',
+        'request_updated_by_admin' => '신청 내용을 수정했습니다.',
+        'charge_repriced_after_partial_rejection' => '일부 상품 반려·철회로 청구액이 줄어 차액을 환급합니다.',
+        'charge_free' => '무료 (배송비 0)',
+        'images_cleared' => '첨부 이미지를 모두 삭제했습니다.',
+        'amounts_updated' => '금액을 수정했습니다.',
+        'cancellable_retrieved' => '취소 가능 금액을 산정했습니다.',
+        'refund_executed' => '환불을 실행했습니다.',
+        'refund_execute_failed' => '환불 실행에 실패했습니다.',
+        'completion_preview_retrieved' => '완료 처리 요약을 계산했습니다.',
+        'refund_request_created' => '환불신청서를 접수했습니다.',
+        'logs_retrieved' => '활동 로그를 조회했습니다.',
     ],
 
     // 배송정책 메시지
@@ -485,6 +550,8 @@ return [
         'bulk_toggled' => ':count개 배송정책의 사용여부가 변경되었습니다.',
         'set_default_success' => '기본 배송정책이 설정되었습니다.',
         'api_test_done' => '계산 API 테스트 호출을 완료했습니다.',
+        'claim_settings_retrieved' => '클레임 배송 설정을 조회했습니다.',
+        'claim_settings_updated' => '클레임 배송 설정이 저장되었습니다.',
         'fee_summary' => [
             'free' => '무료배송',
             'fixed' => '배송비: :fee',
@@ -721,8 +788,6 @@ return [
                     'cancel' => [
                         'title' => '주문 취소',
                         'description' => '선택한 상품의 주문을 취소합니다. 환불 예상금액을 확인 후 진행해주세요.',
-                        'cancel_pg' => 'PG 결제도 취소합니다',
-                        'cancel_pg_hint' => '체크 해제 시 PG 취소 없이 주문 상태만 변경합니다.',
                         'reason' => '취소 사유',
                         'reason_placeholder' => '취소 사유를 선택해주세요',
                         'reason_detail' => '상세 사유',

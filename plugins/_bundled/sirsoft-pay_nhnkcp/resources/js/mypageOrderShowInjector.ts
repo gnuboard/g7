@@ -1,4 +1,5 @@
 import { buildOrderRequestHeaders } from './guestOrderToken';
+import { translateNhnkcp as t } from './translate';
 
 const PLUGIN_ID = 'sirsoft-pay_nhnkcp';
 const FLAG = '__kcpMpShowInjectorInstalled';
@@ -9,6 +10,13 @@ const MOCK_DEPOSIT_ID = 'kcp-mp-mock-deposit';
 // 회원 마이페이지(/mypage/orders/{N}) 와 비회원 주문 상세(/shop/guest/orders/{N}) 를 함께 매칭한다.
 // 비회원 경로를 빼면 그 화면에서는 영수증 정보가 조회조차 되지 않는다 (서버는 지원한다).
 const ORDER_SHOW_RE = /^(?:\/mypage\/orders\/([^/]+)|\/shop\/guest\/orders\/([^/]+))$/;
+// 클레임 신청서 상세도 같은 결제 정보 카드를 재사용한다(§6-2). 그 주소에 실린 것은
+// 클레임 번호라 주문번호를 뽑을 수 없으므로, 이 경로에서는 화면이 이미 읽어 둔 주문을
+// 그대로 쓴다(주문번호 대조 생략). 이 갈래가 없으면 카드는 뜨는데 이 블록만 빠진 채
+// 열리고, 오류도 경고도 남지 않는다. 회원(/mypage/claims/{N})과 비회원
+// (/shop/guest/claims/{N}) 신청서 상세가 같은 카드를 쓰므로 둘을 함께 매칭한다 —
+// 비회원 쪽은 요청 헤더 도구가 비회원 주문 조회 토큰을 실어 준다.
+const CLAIM_SHOW_RE = /^(?:\/mypage\/claims\/([^/]+)|\/shop\/guest\/claims\/([^/]+))$/;
 
 interface Payment {
     pg_provider?: string;
@@ -28,14 +36,16 @@ interface OrderData {
     payment?: Payment;
 }
 
-function getOrderFromState(orderNumber: string): OrderData | null {
+function getOrderFromState(orderNumber: string | null): OrderData | null {
     try {
         const g7 = (window as unknown as Record<string, unknown>).G7Core as Record<string, unknown> | undefined;
         const getState = g7?.getState as (() => Record<string, unknown>) | undefined;
         const ctx = getState?.()?.currentDataContext as Record<string, unknown> | undefined;
         const order = ctx?.order as { data?: OrderData } | undefined;
         const data = order?.data;
-        if (!data || data.order_number !== orderNumber) return null;
+        if (!data) return null;
+        if (orderNumber !== null && data.order_number !== orderNumber) return null;
+        if (orderNumber === null && !data.order_number) return null;
         return data;
     } catch {
         return null;
@@ -58,7 +68,9 @@ async function fetchReceiptUrls(orderNumber: string): Promise<ReceiptInfo | null
             credentials: 'same-origin',
         });
         if (!res.ok) return null;
-        return (await res.json()) as ReceiptInfo;
+        // 응답은 공통 형식({ success, message, data }) — 영수증 정보는 data 에 있다.
+        const body = (await res.json()) as { data?: ReceiptInfo | null };
+        return body?.data ?? null;
     } catch {
         return null;
     }
@@ -82,7 +94,9 @@ async function fetchMockDepositInfo(orderNumber: string): Promise<MockDepositInf
             credentials: 'same-origin',
         });
         if (!res.ok) return null;
-        return (await res.json()) as MockDepositInfo;
+        // 응답은 공통 형식({ success, message, data }) — 모의입금 정보는 data 에 있다.
+        const body = (await res.json()) as { data?: MockDepositInfo | null };
+        return body?.data ?? null;
     } catch {
         return null;
     }
@@ -102,7 +116,7 @@ function buildMockDepositBlock(info: MockDepositInfo): HTMLElement {
 
     const title = document.createElement('p');
     title.className = 'text-sm font-semibold text-orange-700 dark:text-orange-300';
-    title.textContent = '모의입금처리';
+    title.textContent = t('user.mock_title', '모의입금처리');
 
     header.appendChild(badge);
     header.appendChild(title);
@@ -114,10 +128,10 @@ function buildMockDepositBlock(info: MockDepositInfo): HTMLElement {
     form.className = 'space-y-2';
 
     const fields: Array<{ label: string; name: string; value: string; editable?: boolean }> = [
-        { label: 'KCP 거래번호', name: 'e_trade_no', value: info.trade_no ?? '' },
-        { label: '입금계좌',    name: 'deposit_no',  value: info.account_no ?? '' },
-        { label: '입금자명',    name: 'req_name',    value: 'NHN KCP', editable: true },
-        { label: '입금통보 URL', name: 'noti_url',   value: info.notify_url ?? '' },
+        { label: t('user.mock_trade_no', 'KCP 거래번호'), name: 'e_trade_no', value: info.trade_no ?? '' },
+        { label: t('user.mock_deposit_no', '입금계좌'), name: 'deposit_no', value: info.account_no ?? '' },
+        { label: t('user.mock_depositor', '입금자명'), name: 'req_name', value: 'NHN KCP', editable: true },
+        { label: t('user.mock_notify_url', '입금통보 URL'), name: 'noti_url', value: info.notify_url ?? '' },
     ];
 
     for (const f of fields) {
@@ -148,7 +162,7 @@ function buildMockDepositBlock(info: MockDepositInfo): HTMLElement {
     const btn = document.createElement('button');
     btn.type = 'submit';
     btn.className = 'w-full py-1.5 text-xs font-semibold rounded border border-orange-400 dark:border-orange-600 bg-orange-50 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 hover:bg-orange-100 dark:hover:bg-orange-900/50 transition-colors';
-    btn.textContent = '입금통보 테스트';
+    btn.textContent = t('user.mock_submit', '입금통보 테스트');
 
     submitRow.appendChild(btn);
     form.appendChild(submitRow);
@@ -159,31 +173,20 @@ function buildMockDepositBlock(info: MockDepositInfo): HTMLElement {
     if (info.is_admin_view) {
         const adminNotice = document.createElement('p');
         adminNotice.className = 'mt-2 text-xs text-center text-orange-500 dark:text-orange-400 font-medium';
-        adminNotice.textContent = '관리자에게만 출력되는 내용';
+        adminNotice.textContent = t('user.mock_admin_notice', '관리자에게만 출력되는 내용');
         wrap.appendChild(adminNotice);
     }
 
     return wrap;
 }
 
+// 결제 정보 카드는 템플릿이 약속한 id(order_payment_info_panel)로만 찾는다. 화면 제목 글자는 언어마다 달라
+// 찾는 기준이 될 수 없다 — id 가 없는 템플릿에서는 조용히 붙이지 않는다(약속: sirsoft-ecommerce docs/extension-points.md).
 function findPaymentRowsContainer(): Element | null {
     const panel = document.getElementById('order_payment_info_panel');
-    if (panel) {
-        const spaceY = Array.from(panel.children).find(el => el.className?.includes('space-y'));
-        return spaceY ?? panel;
-    }
+    if (!panel) return null;
 
-    // "결제 정보" 헤딩 탐색
-    const h3 = Array.from(document.querySelectorAll<HTMLElement>('h3')).find(
-        el => el.textContent?.includes('결제 정보'),
-    );
-    if (!h3) return null;
-
-    const panelDiv = h3.parentElement?.parentElement;
-    if (!panelDiv) return null;
-
-    const spaceY = Array.from(panelDiv.children).find(el => el.className?.includes('space-y'));
-    return spaceY ?? panelDiv;
+    return Array.from(panel.children).find(el => el.className?.includes('space-y')) ?? panel;
 }
 
 // 라벨 + 값 행 생성 헬퍼
@@ -207,29 +210,26 @@ function makeInfoRow(label: string, value: string, valueClass = 'font-medium tex
 export function patchMypagePaymentMethodDisplay(container: Element, displayLabel: string | null | undefined): boolean {
     if (!displayLabel) return false;
 
-    const rows = Array.from(container.querySelectorAll<HTMLElement>('div'));
-    for (const row of rows) {
-        const spans = Array.from(row.children).filter(
-            (child): child is HTMLElement => child instanceof HTMLElement && child.tagName === 'SPAN',
-        );
-        if (spans.length < 2) continue;
+    // 결제 방법 행은 템플릿이 약속한 id(order_payment_method_row)로만 찾는다. 행 이름 글자(「결제 방법」 등)는 언어마다
+    // 달라 찾는 기준이 될 수 없다 — id 가 없는 템플릿에서는 건드리지 않는다(약속: sirsoft-ecommerce docs/extension-points.md).
+    const row = container.querySelector<HTMLElement>('#order_payment_method_row');
+    if (!row) return false;
 
-        const label = spans[0].textContent?.trim();
-        if (label !== '결제 방법' && label !== '결제수단' && label !== 'Payment Method') continue;
+    const spans = Array.from(row.children).filter(
+        (child): child is HTMLElement => child instanceof HTMLElement && child.tagName === 'SPAN',
+    );
+    if (spans.length < 2) return false;
 
-        const value = spans[spans.length - 1];
-        if (value.textContent?.trim() === displayLabel) {
-            row.dataset.nhnkcpPaymentMethodRow = 'true';
-            return true;
-        }
-
-        value.textContent = displayLabel;
-        value.dataset.nhnkcpPaymentMethodPatched = 'true';
+    const value = spans[spans.length - 1];
+    if (value.textContent?.trim() === displayLabel) {
         row.dataset.nhnkcpPaymentMethodRow = 'true';
         return true;
     }
 
-    return false;
+    value.textContent = displayLabel;
+    value.dataset.nhnkcpPaymentMethodPatched = 'true';
+    row.dataset.nhnkcpPaymentMethodRow = 'true';
+    return true;
 }
 
 function buildVbankInfoBlock(payment: Payment, totalAmountFormatted: string): HTMLElement {
@@ -239,21 +239,21 @@ function buildVbankInfoBlock(payment: Payment, totalAmountFormatted: string): HT
 
     const title = document.createElement('p');
     title.className = 'text-sm font-semibold text-gray-800 dark:text-gray-200';
-    title.textContent = '가상계좌 입금 안내';
+    title.textContent = t('user.vbank_title', '가상계좌 입금 안내');
 
     const rows = document.createElement('div');
     rows.className = 'space-y-1.5';
-    rows.appendChild(makeInfoRow('은행', payment.vbank_name ?? ''));
-    rows.appendChild(makeInfoRow('계좌번호', payment.vbank_number ?? '', 'font-medium text-gray-900 dark:text-white font-mono tracking-wide'));
-    rows.appendChild(makeInfoRow('예금주', payment.vbank_holder ?? ''));
-    rows.appendChild(makeInfoRow('입금 금액', totalAmountFormatted));
+    rows.appendChild(makeInfoRow(t('user.vbank_bank_name', '은행'), payment.vbank_name ?? ''));
+    rows.appendChild(makeInfoRow(t('user.vbank_account', '계좌번호'), payment.vbank_number ?? '', 'font-medium text-gray-900 dark:text-white font-mono tracking-wide'));
+    rows.appendChild(makeInfoRow(t('user.vbank_holder', '예금주'), payment.vbank_holder ?? ''));
+    rows.appendChild(makeInfoRow(t('user.vbank_amount', '입금 금액'), totalAmountFormatted));
     if (payment.due_date_formatted) {
-        rows.appendChild(makeInfoRow('입금 기한', payment.due_date_formatted));
+        rows.appendChild(makeInfoRow(t('user.vbank_due', '입금 기한'), payment.due_date_formatted));
     }
 
     const notice = document.createElement('p');
     notice.className = 'text-xs text-amber-600 dark:text-amber-400';
-    notice.textContent = '입금 기한 내에 입금하지 않으시면 주문이 자동 취소됩니다.';
+    notice.textContent = t('user.vbank_notice', '입금 기한 내에 입금하지 않으시면 주문이 자동 취소됩니다.');
 
     wrap.appendChild(title);
     wrap.appendChild(rows);
@@ -271,22 +271,23 @@ function buildReceiptRow(orderNumber: string): HTMLElement {
 
     const label = document.createElement('span');
     label.className = 'text-gray-500 dark:text-gray-400 text-sm';
-    label.textContent = '영수증';
+    label.textContent = t('user.receipt_label', '영수증');
 
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'inline-flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:underline disabled:opacity-50';
-    btn.textContent = '영수증 조회';
+    const viewLabel = t('user.receipt_view', '영수증 조회');
+    btn.textContent = viewLabel;
 
     btn.addEventListener('click', async () => {
         btn.disabled = true;
-        btn.textContent = '로딩 중...';
+        btn.textContent = t('user.loading', '로딩 중...');
         const data = await fetchReceiptUrls(orderNumber);
         btn.disabled = false;
-        btn.textContent = '영수증 조회';
+        btn.textContent = viewLabel;
         if (data) {
             const KcpPopup = (window as unknown as Record<string, unknown>).KcpReceiptPopup as
-                (new (p: { url?: string; cash_url?: string }) => unknown) | undefined;
+                (new (p: { url?: string; cash_url?: string | null }) => unknown) | undefined;
             if (KcpPopup) {
                 new KcpPopup({ url: data.receipt_url, cash_url: data.cash_receipt_url });
             }
@@ -299,12 +300,16 @@ function buildReceiptRow(orderNumber: string): HTMLElement {
     return row;
 }
 
-async function tryInject(orderNumber: string): Promise<boolean> {
+async function tryInject(orderNumber: string | null): Promise<boolean> {
     const orderData = getOrderFromState(orderNumber);
 
     if (!orderData) {
         // ctx.order가 null — 관리자가 타인 주문 열람 시 mypage API 404로 상태 없음.
         // 컨테이너가 렌더링됐으면 모의입금 API만 직접 시도 후 종료.
+        // 주소가 주문을 가리키지 않는 화면(클레임 신청서 상세)에서는 부를 주문번호가 없다 —
+        // 주문이 아직 안 실렸다는 뜻이므로 재시도한다.
+        if (orderNumber === null) return false;
+
         if (!document.getElementById(MOCK_DEPOSIT_ID)) {
             const container = findPaymentRowsContainer();
             if (!container) return false; // 컨테이너 미렌더링 → 재시도
@@ -319,6 +324,10 @@ async function tryInject(orderNumber: string): Promise<boolean> {
 
     const { payment } = orderData;
     if (!payment || payment.pg_provider !== 'nhnkcp') return true; // nhnkcp 아님
+
+    // 영수증·모의입금 API 는 주문번호 기반이다. 클레임 신청서 상세는 주소가 클레임 번호라
+    // 주문번호를 상태에서 가져온다 — 주소 세그먼트를 그대로 쓰면 404 가 된다.
+    const resolvedOrderNumber = orderData.order_number as string;
 
     const needsVbank = payment.payment_method === 'vbank' && !!payment.vbank_name;
     // 영수증 버튼은 결제완료(paid_at 채워짐) 시점에만 표시 — 가상계좌 입금대기 상태 차단
@@ -336,7 +345,7 @@ async function tryInject(orderNumber: string): Promise<boolean> {
     const container = findPaymentRowsContainer();
     if (!container) return false; // DOM 미렌더링 → 재시도
 
-    const receiptInfo = needsReceipt ? await fetchReceiptUrls(orderNumber) : null;
+    const receiptInfo = needsReceipt ? await fetchReceiptUrls(resolvedOrderNumber) : null;
     const displayPatched = patchMypagePaymentMethodDisplay(
         container,
         receiptInfo?.payment_method_display_label,
@@ -349,7 +358,7 @@ async function tryInject(orderNumber: string): Promise<boolean> {
     }
 
     if (!document.getElementById(ROW_ID) && needsReceipt) {
-        container.appendChild(buildReceiptRow(orderNumber));
+        container.appendChild(buildReceiptRow(resolvedOrderNumber));
         console.info(`[${PLUGIN_ID}] receipt button injected on mypage order show`);
         return false;
     }
@@ -359,7 +368,7 @@ async function tryInject(orderNumber: string): Promise<boolean> {
     }
 
     if (!document.getElementById(MOCK_DEPOSIT_ID) && mightNeedMock) {
-        const info = await fetchMockDepositInfo(orderNumber);
+        const info = await fetchMockDepositInfo(resolvedOrderNumber);
         if (info?.available) {
             container.appendChild(buildMockDepositBlock(info));
             console.info(`[${PLUGIN_ID}] mock deposit form injected on mypage order show`);
@@ -372,7 +381,7 @@ async function tryInject(orderNumber: string): Promise<boolean> {
     return true;
 }
 
-function startPolling(orderNumber: string): void {
+function startPolling(orderNumber: string | null): void {
     let attempts = 0;
     const id = setInterval(() => {
         attempts++;
@@ -386,7 +395,14 @@ function onRouteChange(): void {
     const match = location.pathname.match(ORDER_SHOW_RE);
     // 회원 그룹(match[1]) 또는 비회원 그룹(match[2]) 중 한쪽이 채워진다.
     const segment = match?.[1] ?? match?.[2];
-    if (segment) startPolling(segment);
+    if (segment) {
+        startPolling(segment);
+
+        return;
+    }
+
+    // 클레임 신청서 상세(회원·비회원) — 주소가 클레임 번호라 화면이 읽어 둔 주문을 그대로 쓴다.
+    if (CLAIM_SHOW_RE.test(location.pathname)) startPolling(null);
 }
 
 export function installMypageOrderShowInjector(): void {

@@ -33,7 +33,7 @@
                     <field name="fail_mode" value="block"/>
                     <field name="enabled" :value="true"/>
                     <field name="priority" :value="100"/>
-                    <field name="conditions" :value="[]"/>
+                    <field name="conditions" :value="{}"/>
                     <field name="source_type" value="admin"/>
                   </field>
                   <field name="isNew" :value="true"/>
@@ -101,7 +101,7 @@
           </on>
         </select>
         <!-- 검색 필터는 설정 폼의 일부가 아니다 — 자동바인딩되면 검색어가 설정 폼 상태(filter.search)에 남아 초기화 후에도 입력창에 되살아나고, 설정 dirty 판정까지 오염시킨다. -->
-        <input type="text" name="filter.search" :autoBinding="false" value="{{_local.identityPolicySearch ?? query.search ?? ''}}" placeholder="$t:admin.identity.policies.search_placeholder" class="md:flex-1">
+        <input type="text" name="filter.search" :autoBinding="false" value="{{_local.identityPolicySearch ?? query.search ?? ''}}" placeholder="$t:admin.identity.policies.search_placeholder" class="input flex-1 min-w-[200px]">
           <on type="change">
             <!-- 검색어는 로컬 상태에만 담아 둔다(자동바인딩을 끈 대신 직접 받는다) — 실제 조회는 아래 Enter 블록이 이 값을 쿼리로 실을 때 일어난다. -->
             <set-state target="local" identityPolicySearch="{{$event.target.value}}"/>

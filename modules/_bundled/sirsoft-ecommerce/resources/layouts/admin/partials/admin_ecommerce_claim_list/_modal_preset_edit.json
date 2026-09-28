@@ -1,0 +1,161 @@
+{
+    "comment": "클레임 목록 — 검색 프리셋 이름 바꾸기 창(관리 창 위에 겹쳐 뜬다). 서버에 보내는 것은 이름뿐이라 저장된 조건은 그대로 남고, 대상 id 와 편집 중인 이름은 관리 창이 `_global` 에 담아 둔 값을 쓴다.",
+    "meta": {
+        "is_partial": true,
+        "description": "Claim List - Preset Edit Modal"
+    },
+    "id": "modal_claim_preset_edit",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "title": "$t:sirsoft-ecommerce.admin.claim.modal.preset_edit.title",
+        "size": "sm"
+    },
+    "children": [
+        {
+            "comment": "이름 입력칸. 관리 창이 채워 둔 현재 이름에서 시작해 같은 `_global.editingPresetName` 을 고쳐 쓴다 — 저장 버튼의 잠금 식과 요청 본문이 그 키를 읽으므로, 입력을 다른 자리에 쓰면 화면에 친 이름과 저장되는 이름이 갈린다.",
+            "type": "basic",
+            "name": "Input",
+            "actions": [
+                {
+                    "type": "input",
+                    "handler": "setState",
+                    "params": {
+                        "target": "global",
+                        "editingPresetName": "{{$event.target.value}}"
+                    }
+                }
+            ],
+            "props": {
+                "type": "text",
+                "placeholder": "$t:sirsoft-ecommerce.admin.claim.modal.preset_save.placeholder",
+                "className": "input",
+                "value": "{{_global.editingPresetName}}"
+            }
+        },
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "modal-footer-buttons"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "closeModal"
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "px-4 py-2 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                        "disabled": "{{_global.isSaving}}"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:common.cancel"
+                        }
+                    ]
+                },
+                {
+                    "comment": "이름 저장. 같은 운영자의 이 화면 프리셋끼리는 이름이 겹칠 수 없어 서버가 거절할 수 있으므로 실패하면 창을 연 채 사유를 띄우고, 성공하면 프리셋 목록을 다시 불러 필터 카드의 버튼 이름도 바뀐다.",
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "isSaving": true
+                                    }
+                                },
+                                {
+                                    "handler": "apiCall",
+                                    "target": "/api/modules/sirsoft-ecommerce/admin/presets/{{_global.editingPresetId}}",
+                                    "auth_required": true,
+                                    "params": {
+                                        "method": "PUT",
+                                        "body": {
+                                            "name": "{{_global.editingPresetName}}"
+                                        }
+                                    },
+                                    "onSuccess": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "isSaving": false
+                                            }
+                                        },
+                                        {
+                                            "handler": "refetchDataSource",
+                                            "params": {
+                                                "dataSourceId": "presets"
+                                            }
+                                        },
+                                        {
+                                            "handler": "toast",
+                                            "params": {
+                                                "type": "success",
+                                                "message": "$t:sirsoft-ecommerce.messages.presets.updated"
+                                            }
+                                        },
+                                        {
+                                            "handler": "closeModal"
+                                        }
+                                    ],
+                                    "onError": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "isSaving": false
+                                            }
+                                        },
+                                        {
+                                            "handler": "toast",
+                                            "params": {
+                                                "type": "error",
+                                                "message": "{{error.message}}"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "flex-center gap-2 px-4 py-2 text-sm bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed",
+                        "disabled": "{{!_global.editingPresetName || _global.editingPresetName.trim() === '' || _global.isSaving}}"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "if": "{{_global.isSaving}}",
+                            "props": {
+                                "name": "spinner",
+                                "className": "spinner-sm"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "{{_global.isSaving ? '$t:common.saving' : '$t:common.save'}}"
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

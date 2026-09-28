@@ -1,0 +1,54 @@
+feature: exchange_multi_currency
+
+description: |
+  교환 흐름이 **통화 조합 네 가지 전부**에서 성립하는지 고정한다.
+
+  KRW 단일 통화 주문만으로는 이 축이 서지 않는다 — 기준 통화 금액과 결제 통화 금액이 **같은
+  숫자**라서, 화면이 어느 쪽을 읽든 통과한다. 단위를 혼용하는 오류가 드러나려면 두 값이 달라야
+  한다(50 USD ↔ 50,000 KRW).
+
+  네 조합:
+    - **기본 KRW · 표시 KRW** — 기존 KRW 실측이 덮는다.
+    - **기본 KRW · 표시 비KRW** — 보는 사람이 통화를 바꾼 경우. 주문 후 화면은 표시통화를
+      따라가면 안 된다(S3-D10: 배송비 줄에서 기준통화 금액이 통째로 사라졌다).
+    - **결제 통화 ≠ 기준 통화**(cross) — 해외 결제. 픽스처 `foreignPaidClaimOrder()` 는
+      있었지만 **교환 경로에서 한 번도 쓰이지 않았다**(환불 축만 쓰고 있었다).
+    - **상점 기본 통화가 비KRW** — 기본 통화를 원화로 하드코딩한 자리가 드러나는 조합.
+      과거 주문의 표기 통화는 상점 설정이 바뀌어도 **불변**이어야 한다.
+
+  핵심 계약:
+    - 금액 산정은 **기준 통화**로 한다. 결제 통화로 세면 50 과 50,000 이 뒤섞여 1,000배 어긋난다.
+    - 보조 통화 맵은 기준 줄과 **같은 값의 다른 표기**다. 어긋나도 둘 다 정상 서식이라 흔적이 없다.
+    - 응답의 `mc_*` 는 `{amount, formatted}` 객체다. 맨숫자면 화면이 `[1]?.formatted ?? [1]` 로
+      폴백해 **기호도 자릿수도 없는 숫자**를 그린다(S3-D14 전례).
+    - 접수 시점 금액은 상점 통화를 바꿔도 **재환산되지 않는다** — 같은 신청서가 조회 시점마다
+      다른 금액을 보이면 운영자와 구매자가 서로 다른 숫자를 읽는다.
+
+axes:
+  base_currency: [krw, non_krw]
+  payment_currency: [same_as_base, cross]
+
+exclusions:
+  # 상점 기본 통화를 바꾸는 축은 과거 주문의 불변성을 보는 것이라, 그 주문은 이미 cross 로 만든다.
+  - { base_currency: non_krw, payment_currency: same_as_base, reason: "기본 통화를 바꾼 뒤의 신규 주문은 세션3(교환·복합) 범위 밖 — 주문 생성 축은 다른 세션이 덮는다" }
+
+effects:
+  # ── 금액 축 (P0) ──
+  - exchange_amounts_are_computed_in_the_base_currency
+  - exchange_secondary_currency_matches_the_base_line
+  # ── 표기 축 (P0) ──
+  - exchange_response_secondary_currency_is_formatted
+  # ── 관통 축 (P0) ──
+  # 금액이 맞아도 전이가 통화에 걸려 멈추면 교환이 끝나지 않는다.
+  - exchange_transitions_complete_under_cross_currency_payment
+  # ── 상점 통화 변경 (P0) ──
+  - exchange_amounts_hold_when_the_store_base_currency_is_not_krw
+  - exchange_frozen_amounts_survive_a_store_currency_change
+  # ── 복합 경로 (P0) ──
+  # 교환 완료가 만드는 차액 환불이 결제 통화로 세어지면 고객이 1,000분의 1 만 돌려받는다 —
+  # 금액이 0 이 아니라 **그럴듯한 숫자**라 화면만 보면 드러나지 않는다.
+  - exchange_sourced_refund_is_computed_in_the_base_currency
+
+test_files:
+  # 교환 관통 × 결제통화 USD × 상점 기본통화 변경 (시뮬레이션 — 실 해외결제 대체)
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Claim/ExchangeMultiCurrencyTest.php

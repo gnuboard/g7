@@ -139,7 +139,7 @@
     <!-- 장바구니 이동 로딩 상태 초기화 -->
     <set-state target="global" :isNavigatingToCart="false"/>
     <!-- 옵션 선택 상태 초기화 -->
-    <set-state target="local" :selectedOptionItems="[]" :currentSelection="[]" :noOptionQuantity="1" :additionalOptions="[]" :wishlistLoading="false" :isOrdering="false" :downloadableCoupons="null" :downloadableCouponsLoading="false" :downloadingMore="false" :downloadingCouponId="null" :selectedCouponForDownload="null" :reviewsPage="1" reviewSortBy="created_at_desc" :reviewPhotoOnly="false" reviewRating="" :reviewOptionFilters="[]" activeTab="{{query.tab ?? 'info'}}" :starNums="[5,4,3,2,1]" :starList="[1,2,3,4,5]"/>
+    <set-state target="local" :selectedOptionItems="[]" :currentSelection="{}" :noOptionQuantity="1" :additionalOptions="{}" :wishlistLoading="false" :isOrdering="false" :downloadableCoupons="null" :downloadableCouponsLoading="false" :downloadingMore="false" :downloadingCouponId="null" :selectedCouponForDownload="null" :reviewsPage="1" reviewSortBy="created_at_desc" :reviewPhotoOnly="false" reviewRating="" :reviewOptionFilters="{}" activeTab="{{query.tab ?? 'info'}}" :starNums="[5,4,3,2,1]" :starList="[1,2,3,4,5]"/>
   </init>
   <slot name="content">
     <container class="py-4">

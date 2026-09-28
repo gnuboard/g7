@@ -1,0 +1,26 @@
+feature: 배송비 쿠폰 최소 주문금액 판정 기준 (P18)
+
+description: |
+  배송비 쿠폰의 min_order_amount 는 상품소계와 비교한다. 배송비 총액과 비교하면
+  최소금액이 배송비보다 큰 쿠폰(예: 최소 30,000 / 배송비 5,500)은 어떤 주문에도
+  적용되지 않는다 — 주문서 드롭다운(UserCouponService::getCheckoutCoupons)은 이미
+  상품소계로 노출 여부를 판정하므로, 선택은 되는데 계산에서만 탈락하는 어긋남이었다.
+
+  할인 상한은 종전대로 재계산 배송비 총액이다(min(할인, 배송비)). 부분취소 재계산의
+  스냅샷 모드도 같은 기준을 쓴다 — 정책 그룹이 소멸해 배송비 총액이 줄어도 상품소계가
+  최소금액 이상이면 쿠폰은 유지되고, 상한만 줄어든 배송비로 낮아진다.
+
+axes:
+  basis_case:
+    - subtotal_meets_min      # 상품소계 >= 최소금액 (배송비 총액은 미달) → 적용
+    - subtotal_below_min      # 상품소계 < 최소금액 → 미적용
+    - policy_group_dissolved  # 부분취소로 배송정책 그룹 소멸 → 재계산 배송비로 상한만 축소
+
+effects:
+  - shipping_coupon_min_compared_to_product_subtotal  # 판정 기준이 상품소계
+  - shipping_coupon_discount_capped_by_shipping_total # 할인 상한은 배송비 총액 유지
+  - shipping_coupon_survives_policy_group_dissolution # 그룹 소멸 후에도 상품소계 기준으로 유지
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/OrderCalculationServiceTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/OrderAdjustmentServiceTest.php

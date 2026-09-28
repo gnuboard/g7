@@ -17,7 +17,11 @@
  *
  * @scenario comment_trigger=cascade
  * @scenario comment_trigger=user
- * @effects cascade_comment_content_visible
+ * @effects deleted_parent_with_live_child_shown_as_tombstone,
+ *   tombstone_content_filtered_for_non_privileged,
+ *   manager_sees_tombstone_original_content,
+ *   cascade_comment_content_visible,
+ *   cascade_comment_flag_exposed
  */
 
 import { describe, it, expect } from 'vitest';

@@ -29,10 +29,17 @@ class OrderService
 {
     use ReappliesPermissionScope;
 
+    /**
+     * @param  OrderRepositoryInterface  $repository  주문 Repository
+     * @param  UserAddressRepositoryInterface  $userAddressRepository  회원 배송지 Repository
+     * @param  StockService  $stockService  재고 서비스 (취소 복원 · 재활성 재차감)
+     * @param  ClaimAttachmentService  $claimAttachmentService  클레임 첨부 서비스
+     */
     public function __construct(
         protected OrderRepositoryInterface $repository,
         protected UserAddressRepositoryInterface $userAddressRepository,
-        protected StockService $stockService
+        protected StockService $stockService,
+        protected ClaimAttachmentService $claimAttachmentService,
     ) {}
 
     /**
@@ -63,6 +70,7 @@ class OrderService
      *
      * @param  array  $snapshots  ID 키 스냅샷 맵 (getSnapshotsByIds 결과 — 변경 전 상태 포함)
      * @param  string  $newStatus  일괄 변경 대상 상태 값
+     * @return void
      *
      * @throws InsufficientStockException 재고 부족 시
      */
@@ -120,6 +128,43 @@ class OrderService
     public function getUserStatistics(int $userId): array
     {
         return $this->repository->getUserStatistics($userId);
+    }
+
+    /**
+     * 마이페이지 목록 상단 건수 칸 배열을 만듭니다.
+     *
+     * 칸의 순서·키·건수는 `getUserStatistics()` 가 정한다(클릭 필터도 같은 키를 보낸다). 여기서는
+     * 그 키에 아이콘 토큰·색·라벨을 붙여, 화면이 상태 어휘를 다시 적지 않게 한다. 합산 카운터
+     * (상품준비중 + 배송준비중)는 한 상태의 라벨이 아니므로 그룹 라벨을 쓴다.
+     *
+     * @param  array<string, int>  $statistics  상태별 주문 건수 (getUserStatistics 결과)
+     * @return array<int, array{key: string, label: string, icon: string, variant: string, count: int}> 건수 칸 배열
+     */
+    public function getUserStatusSummary(array $statistics): array
+    {
+        $summary = [];
+
+        foreach ($statistics as $key => $count) {
+            $status = OrderStatusEnum::tryFrom((string) $key);
+
+            if ($status === null) {
+                continue;
+            }
+
+            $isGroup = count(OrderStatusEnum::expandStatisticsFilter($status->value)) > 1;
+
+            $summary[] = [
+                'key' => $status->value,
+                'label' => $isGroup
+                    ? __('sirsoft-ecommerce::enums.order_status_groups.'.$status->value)
+                    : $status->label(),
+                'icon' => $status->icon(),
+                'variant' => $status->variant(),
+                'count' => (int) $count,
+            ];
+        }
+
+        return $summary;
     }
 
     /**
@@ -236,7 +281,10 @@ class OrderService
         // 상태 변경 + 재고 재차감을 동일 트랜잭션으로 묶는다.
         // 취소 → 판매상태 복원 시 재고가 부족하면 재차감이 InsufficientStockException 을 던져
         // 상태 변경까지 롤백되어야 하므로(오버셀 방지) 같은 트랜잭션 경계 안에서 처리한다.
-        $order = DB::transaction(function () use ($order, $orderData, $oldStatus) {
+        // 주문상품 상태 동기화의 전/후 내역 — 훅은 트랜잭션이 커밋된 뒤 Service 가 발행한다.
+        $optionSyncChanges = [];
+
+        $order = DB::transaction(function () use ($order, $orderData, $oldStatus, &$optionSyncChanges) {
             $order = $this->repository->update($order, $orderData);
 
             $newStatus = $order->order_status?->value;
@@ -261,16 +309,27 @@ class OrderService
                 && $newStatus !== $oldStatus
                 && ! in_array($newStatus, OrderStatusEnum::syncExcludedValues(), true)
             ) {
-                $this->repository->bulkUpdateOptionStatus([$order->id], $newStatus);
+                $optionSyncChanges = $this->syncOptionStatus([$order->id], $newStatus);
             }
 
             return $order;
         });
 
+        $this->fireOptionStatusSynced($optionSyncChanges);
+
         // 수취인 정보가 포함된 경우 배송지 주소 업데이트
+        $addressSnapshot = null;
+        $updatedShippingAddress = null;
         if (! empty($recipientData)) {
             $shippingAddress = $order->shippingAddress;
             if ($shippingAddress) {
+                // 변경 전 스냅샷 (활동 로그용) — 위의 $snapshot 은 Order::toArray() 라
+                // 주소 컬럼이 없다. 주소 변경을 전/후로 남기려면 OrderAddress 를 따로 떠야 한다.
+                // 스냅샷은 로그 부가 정보일 뿐이라, 뜨지 못해도 주소 저장 자체를 막지 않는다.
+                $addressSnapshot = method_exists($shippingAddress, 'toArray')
+                    ? $shippingAddress->toArray()
+                    : null;
+
                 // 프론트엔드 필드명 → DB 필드명 매핑
                 $addressData = [];
                 if (array_key_exists('recipient_name', $recipientData)) {
@@ -328,12 +387,28 @@ class OrderService
 
                 if (! empty($addressData)) {
                     $shippingAddress->update($addressData);
+                    $updatedShippingAddress = method_exists($shippingAddress, 'refresh')
+                        ? $shippingAddress->refresh()
+                        : $shippingAddress;
                 }
             }
         }
 
         // 수정 후 훅 (스냅샷 전달 — OrderActivityLogListener가 활동 로그 기록)
         HookManager::doAction('sirsoft-ecommerce.order.after_update', $order, $snapshot);
+
+        // 배송지가 실제로 바뀐 경우에만 전용 훅을 발화한다.
+        // `after_update` 는 Order 스냅샷만 들고 있어 주소 변경을 전혀 못 본다 — 그래서
+        // 관리자 배송지 변경이 "주문 수정" 한 줄로만 남고 전/후값이 사라졌다(S2-D6).
+        // 회원·비회원 경로(updateShippingAddress)와 같은 훅을 써서 로그 모양을 맞춘다.
+        if ($updatedShippingAddress !== null) {
+            HookManager::doAction(
+                'sirsoft-ecommerce.order.after_update_shipping_address',
+                $order,
+                $updatedShippingAddress,
+                $addressSnapshot
+            );
+        }
 
         // 주문 상태 전이 시 단일 전이 훅 발화 → OrderStatusNotificationListener 가
         // 현재 상태(payment_complete/shipping/delivered/confirmed)에 맞는 알림 훅으로 매핑 발화한다 (A35/A36/D9/D10).
@@ -361,6 +436,31 @@ class OrderService
         // 삭제 전 훅
         HookManager::doAction('sirsoft-ecommerce.order.before_delete', $order);
 
+        // 첨부 대상은 신청서가 사라지기 **전에** 모아 둔다(아래 클레임 계열 설명 참조).
+        $claimImages = $this->claimAttachmentService->imagesForOrder($order);
+
+        // DB 정리는 한 트랜잭션이다 — 중간 단계가 실패하면 신청서 헤더만 지워지고 상품 행이
+        // 남거나, 주문은 살아 있는데 결제·배송지만 사라진 상태가 남는다.
+        $result = DB::transaction(function () use ($order) {
+            return $this->deleteOrderRecords($order);
+        });
+
+        $this->claimAttachmentService->deleteImages($claimImages);
+
+        // 삭제 후 훅
+        HookManager::doAction('sirsoft-ecommerce.order.after_delete', $order);
+
+        return $result;
+    }
+
+    /**
+     * 주문과 그 관계 레코드를 명시적으로 지웁니다. (트랜잭션 안에서 호출)
+     *
+     * @param  Order  $order  주문 모델
+     * @return bool 삭제 성공 여부
+     */
+    private function deleteOrderRecords(Order $order): bool
+    {
         // 관계 레코드 명시적 삭제 (CASCADE 의존 금지)
         $order->taxInvoices()->delete();
         $order->shippings()->delete();
@@ -368,14 +468,70 @@ class OrderService
         // 현금영수증 이력은 결제(order_payment_id)를 참조하므로 결제보다 먼저 삭제한다.
         $order->cashReceipts()->delete();
         $order->payment()->delete();
+
+        // 클레임 계열도 명시적으로 지운다. 주문옵션을 먼저 지우면 교환·반품·환불의 **상품 행만**
+        // FK CASCADE 로 사라지고 금액을 든 신청서 헤더가 상품 0개로 남는다(주문은 soft-delete 라
+        // 헤더까지 내려가는 CASCADE 는 발화하지 않는다). 첨부는 주문 FK 가 없어 신청서를 지워도
+        // 파일과 행이 남으므로 먼저 정리하고, 평문으로 저장되는 환불 계좌도 이때 함께 사라진다.
+        // 첨부 대상은 신청서가 사라지기 **전에** 모아 두고(호출부), 파일 삭제는 DB 정리가 끝난 뒤에
+        // 한다 — 파일 삭제는 되돌릴 수 없어, 중간 단계가 실패하면 주문은 살아 있는데 그 주문의
+        // 첨부만 전멸한 상태가 남는다.
+        //
+        // 신청 상품 행(교환·반품·취소·환불)도 헤더보다 먼저 명시적으로 지운다. 헤더의 FK CASCADE 에
+        // 기대면 외래키가 꺼진 환경에서 헤더 없는 상품 행이 남고, 그 행이 잔여 수량 집계에 섞인다.
+        $order->claimPayments()->delete();
+        $this->repository->deleteClaimItemRows((int) $order->id);
+        $order->exchanges()->delete();
+        $order->returns()->delete();
+        $order->cancels()->delete();
+        $order->refunds()->delete();
+
         $order->options()->delete();
 
-        $result = $this->repository->delete($order);
+        return $this->repository->delete($order);
+    }
 
-        // 삭제 후 훅
-        HookManager::doAction('sirsoft-ecommerce.order.after_delete', $order);
+    /**
+     * 주문상품 상태를 주문 상태에 맞춰 옮기고, 옮긴 전/후 내역을 돌려줍니다.
+     *
+     * 전/후는 갱신 **전에** 읽어야 하므로 읽기와 쓰기를 이 한 곳에서 순서대로 부른다. 훅은
+     * 발행하지 않는다 — 호출부가 트랜잭션이 끝난 뒤 `fireOptionStatusSynced()` 로 낸다.
+     *
+     * @param  array<int, int>  $ids  주문 ID 배열
+     * @param  string  $status  목표 상태 값
+     * @return array<int, array{order_option_id: int, order_id: int, previous: string, new: string}> 상품별 전이 내역
+     */
+    private function syncOptionStatus(array $ids, string $status): array
+    {
+        $changes = $this->repository->collectOptionStatusSyncChanges($ids, $status);
 
-        return $result;
+        $this->repository->bulkUpdateOptionStatus($ids, $status);
+
+        return $changes;
+    }
+
+    /**
+     * 주문 상태 동기화가 끌고 간 주문상품 전이를 훅으로 알립니다.
+     *
+     * 이 경로는 관계 빌더의 raw update 라 `OrderOptionService` 의 어떤 훅도 지나지 않는다 —
+     * 이 훅이 없으면 관리자 주문 수정·일괄 상태변경이 옮긴 상품이 활동로그에 한 줄도 남지 않는다.
+     * 예전에는 Repository 가 이 훅을 발행했다(계층 규약상 훅은 Service 의 몫이다).
+     *
+     * @param  array<int, array{order_option_id: int, order_id: int, previous: string, new: string}>  $changes  상품별 전이 내역
+     * @return void
+     */
+    private function fireOptionStatusSynced(array $changes): void
+    {
+        if ($changes === []) {
+            return;
+        }
+
+        HookManager::doAction(
+            'sirsoft-ecommerce.order_option.after_sync_status',
+            $changes,
+            (string) ($changes[0]['new'] ?? ''),
+            'bulk_update',
+        );
     }
 
     /**
@@ -442,8 +598,9 @@ class OrderService
         }
 
         $updatedCount = 0;
+        $optionSyncChanges = [];
 
-        DB::transaction(function () use ($ids, $orderStatus, $carrierId, $trackingNumber, $snapshots, &$updatedCount) {
+        DB::transaction(function () use ($ids, $orderStatus, $carrierId, $trackingNumber, $snapshots, &$updatedCount, &$optionSyncChanges) {
             // 주문 상태 일괄 변경
             if ($orderStatus !== null) {
                 // 취소 → 판매상태 복원 전이 주문에 대해 재고 재차감 (부족 시 예외 → 롤백)
@@ -452,7 +609,10 @@ class OrderService
                 $updatedCount = $this->repository->bulkUpdateStatus($ids, $orderStatus);
 
                 // 주문상품옵션 상태도 동일하게 일괄 변경
-                $this->repository->bulkUpdateOptionStatus($ids, $orderStatus);
+                $optionSyncChanges = $this->syncOptionStatus(
+                    $ids,
+                    $orderStatus instanceof OrderStatusEnum ? $orderStatus->value : (string) $orderStatus,
+                );
             }
 
             // 배송 정보 일괄 변경 (운송장 번호 또는 택배사)
@@ -461,6 +621,8 @@ class OrderService
                 $updatedCount = max($updatedCount, $shippingUpdatedCount);
             }
         });
+
+        $this->fireOptionStatusSynced($optionSyncChanges);
 
         // after 훅 (스냅샷 전달)
         HookManager::doAction('sirsoft-ecommerce.order.after_bulk_update', $ids, $updatedCount, $snapshots);
@@ -485,6 +647,7 @@ class OrderService
      * @param  array<int>  $ids  대상 주문 ID 배열
      * @param  string  $newStatus  전이된 목표 상태 값
      * @param  array<int, array>  $snapshots  전이 전 스냅샷 (id 키, order_status 포함)
+     * @return void
      */
     private function fireStatusChangeForBulk(array $ids, string $newStatus, array $snapshots): void
     {
@@ -588,6 +751,7 @@ class OrderService
      * @param  Order  $order  주문 모델
      * @param  string  $email  수신자 이메일
      * @param  string  $message  이메일 본문
+     * @return void
      */
     public function sendEmail(Order $order, string $email, string $message): void
     {
@@ -782,7 +946,10 @@ class OrderService
         $previousStatus = $order->order_status?->value;
         $purchaseConfirmed = false;
 
-        $result = DB::transaction(function () use ($order, $option, $previousStatus, &$purchaseConfirmed) {
+        // 변경 전 상품 속성 — 구매확정 줄의 "변경 전 → 변경 후" 표가 읽는 근거다(§7-1 D).
+        $confirmSnapshot = $option->toArray();
+
+        $result = DB::transaction(function () use ($order, $option, $previousStatus, $confirmSnapshot, &$purchaseConfirmed) {
             HookManager::doAction('sirsoft-ecommerce.order-option.before_confirm', $order, $option);
 
             $option->update([
@@ -813,13 +980,23 @@ class OrderService
             }
 
             // 마일리지 적립용 훅 (유지) — 별개 훅
-            HookManager::doAction('sirsoft-ecommerce.order-option.after_confirm', $order, $option);
+            // 변경 전 상품 속성 — 구매확정 줄에 "변경 전 → 변경 후" 표를 세우는 근거다(§7-1 D).
+            HookManager::doAction('sirsoft-ecommerce.order-option.after_confirm', $order, $option, $confirmSnapshot ?? null);
 
             // 주문 전체가 CONFIRMED 로 전이된 경우 구매확정 알림 발화 (A36/D10).
             // 목표 상태(CONFIRMED)를 스칼라로 명시 전달 — 큐 지연 재로드 오매핑 방지 (N1).
             if ($orderTransitioned && $previousStatus !== OrderStatusEnum::CONFIRMED->value) {
                 HookManager::doAction(
                     'sirsoft-ecommerce.order.after_status_change',
+                    $order->fresh(),
+                    $previousStatus,
+                    OrderStatusEnum::CONFIRMED->value
+                );
+
+                // 파생 전이 이력 — 상품 확정에서 따라온 주문 확정을 활동 로그에 전/후와 함께
+                // 남긴다 (OrderOptionService::transitionOrderStatus 와 같은 축).
+                HookManager::doAction(
+                    'sirsoft-ecommerce.order.after_status_sync',
                     $order->fresh(),
                     $previousStatus,
                     OrderStatusEnum::CONFIRMED->value

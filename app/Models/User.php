@@ -313,7 +313,15 @@ class User extends Authenticatable implements HasLocalePreference
 
         $grants = [];
 
-        foreach ($this->roles()->with('permissions')->get() as $role) {
+        // 이미 eager load 된 관계가 있으면 그것을 쓴다. `roles()` 쿼리를 다시 돌리면, 사용자
+        // 여럿을 한 번에 판정하는 경로(알림 수신자 루프)에서 쿼리가 **사람 수에 비례해** 늘어난다.
+        // 적재되지 않았으면 종전대로 조회하므로 단건 판정의 동작은 그대로다.
+        $roles = $this->relationLoaded('roles')
+            && $this->roles->every(static fn (Role $role): bool => $role->relationLoaded('permissions'))
+            ? $this->roles
+            : $this->roles()->with('permissions')->get();
+
+        foreach ($roles as $role) {
             foreach ($role->permissions as $permission) {
                 $grants[$permission->identifier][] = [
                     'type' => $this->enumValue($permission->type),

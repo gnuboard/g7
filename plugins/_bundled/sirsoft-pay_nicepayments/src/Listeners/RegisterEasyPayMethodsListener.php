@@ -177,6 +177,7 @@ class RegisterEasyPayMethodsListener implements HookListenerInterface
 
     /**
      * 간편결제 수단 한 건의 결제수단 항목을 만든다.
+     * 형식은 코어 EcommerceSettingsService 의 builtin 결제수단 항목과 같다.
      *
      * @param  string  $id  결제수단 ID
      * @param  string  $nameKey  이름 번역 키
@@ -214,6 +215,9 @@ class RegisterEasyPayMethodsListener implements HookListenerInterface
                 'pg_locked' => true,
                 'needs_pg' => true,
                 'refund_method' => 'pg',
+                // 간편결제는 PG 결제취소 API 가 그 자리에서 환불을 집행한다 — 사람의 개입이 없으므로
+                // 코어 환불 자동 승인 목록에 기본 포함된다 (코어 P16·P17 능력 키).
+                'auto_approve_refund' => true,
                 'is_active' => false,
                 'min_order_amount' => 0,
                 'stock_deduction_timing' => 'payment_complete',

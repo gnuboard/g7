@@ -288,6 +288,18 @@
             "roles"
         ]
     },
+    "init_actions": [
+        {
+            "comment": "생성 모드: 회원 수정 화면에서 SPA 로 넘어오면 같은 레이아웃(admin_user_form)이라 엔진이 `_local` 을 비우지 않아 직전 회원의 form(이메일·이름 등)이 등록 폼에 남는다. form=null 로 지운다(깊은 병합이 객체 대신 null 로 덮어써 완전 삭제). 이 레이아웃은 `state.form` 기본값이 없으므로 다시 쓸 기본값도 없다.",
+            "handler": "setState",
+            "if": "{{!route?.id}}",
+            "params": {
+                "target": "local",
+                "form": null,
+                "hasChanges": false
+            }
+        }
+    ],
     "slots": {
         "content": [
             {
@@ -357,6 +369,16 @@
                                         {
                                             "id": "activity_info",
                                             "label": "$t:admin.users.detail.tabs.activity_info",
+                                            "if": "{{route?.id}}"
+                                        },
+                                        {
+                                            "id": "consent_info",
+                                            "label": "$t:admin.users.detail.tabs.consent_info",
+                                            "if": "{{route?.id}}"
+                                        },
+                                        {
+                                            "id": "notifications_info",
+                                            "label": "$t:admin.users.detail.tabs.notifications_info",
                                             "if": "{{route?.id}}"
                                         }
                                     ]
@@ -549,61 +571,13 @@
                                                 ]
                                             },
                                             {
+                                                "comment": "이메일은 **연락처** 칸에 있다 — 상세가 그 자리에 두고, 두 화면이 어긋나면\n                 상세에서 본 값을 수정 화면에서 다시 찾아야 한다. 수정 모드에서는 계정 식별자라\n                 잠긴다(종전과 같다).",
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "props": {
                                                     "className": "grid-2col-responsive"
                                                 },
                                                 "children": [
-                                                    {
-                                                        "id": "field_email_top",
-                                                        "type": "basic",
-                                                        "name": "Div",
-                                                        "children": [
-                                                            {
-                                                                "type": "basic",
-                                                                "name": "Label",
-                                                                "props": {
-                                                                    "className": "form-label"
-                                                                },
-                                                                "children": [
-                                                                    {
-                                                                        "type": "basic",
-                                                                        "name": "Span",
-                                                                        "text": "$t:admin.users.form.fields.email"
-                                                                    },
-                                                                    {
-                                                                        "type": "basic",
-                                                                        "name": "Span",
-                                                                        "props": {
-                                                                            "className": "text-red-500 ml-1"
-                                                                        },
-                                                                        "text": "*"
-                                                                    }
-                                                                ]
-                                                            },
-                                                            {
-                                                                "type": "basic",
-                                                                "name": "Input",
-                                                                "props": {
-                                                                    "type": "email",
-                                                                    "name": "email",
-                                                                    "placeholder": "$t:admin.users.form.fields.email",
-                                                                    "disabled": "{{!!route?.id}}",
-                                                                    "className": ""
-                                                                }
-                                                            },
-                                                            {
-                                                                "type": "basic",
-                                                                "name": "Span",
-                                                                "if": "{{_local.errors?.email}}",
-                                                                "props": {
-                                                                    "className": "text-red-500 text-xs mt-1"
-                                                                },
-                                                                "text": "{{_local.errors?.email?.[0] ?? ''}}"
-                                                            }
-                                                        ]
-                                                    },
                                                     {
                                                         "id": "field_name",
                                                         "type": "basic",
@@ -651,43 +625,9 @@
                                                                 "text": "{{_local.errors?.name?.[0] ?? ''}}"
                                                             }
                                                         ]
-                                                    }
-                                                ]
-                                            },
-                                            {
-                                                "id": "field_nickname",
-                                                "type": "basic",
-                                                "name": "Div",
-                                                "children": [
-                                                    {
-                                                        "type": "basic",
-                                                        "name": "Label",
-                                                        "props": {
-                                                            "className": "form-label"
-                                                        },
-                                                        "text": "$t:admin.users.form.fields.nickname"
                                                     },
                                                     {
-                                                        "type": "basic",
-                                                        "name": "Input",
-                                                        "props": {
-                                                            "type": "text",
-                                                            "name": "nickname",
-                                                            "placeholder": "$t:admin.users.form.fields.nickname",
-                                                            "className": ""
-                                                        }
-                                                    }
-                                                ]
-                                            },
-                                            {
-                                                "type": "basic",
-                                                "name": "Div",
-                                                "props": {
-                                                    "className": "grid-2col-responsive"
-                                                },
-                                                "children": [
-                                                    {
-                                                        "id": "field_password",
+                                                        "id": "field_nickname",
                                                         "type": "basic",
                                                         "name": "Div",
                                                         "children": [
@@ -697,79 +637,15 @@
                                                                 "props": {
                                                                     "className": "form-label"
                                                                 },
-                                                                "children": [
-                                                                    {
-                                                                        "type": "basic",
-                                                                        "name": "Span",
-                                                                        "text": "$t:admin.users.form.fields.password"
-                                                                    },
-                                                                    {
-                                                                        "type": "basic",
-                                                                        "name": "Span",
-                                                                        "if": "{{!route?.id}}",
-                                                                        "props": {
-                                                                            "className": "text-red-500 ml-1"
-                                                                        },
-                                                                        "text": "*"
-                                                                    }
-                                                                ]
+                                                                "text": "$t:admin.users.form.fields.nickname"
                                                             },
                                                             {
                                                                 "type": "basic",
                                                                 "name": "Input",
                                                                 "props": {
-                                                                    "type": "password",
-                                                                    "name": "password",
-                                                                    "placeholder": "{{route?.id ? '$t:admin.users.form.fields.password_hint' : '$t:admin.users.form.fields.password'}}",
-                                                                    "className": ""
-                                                                }
-                                                            },
-                                                            {
-                                                                "type": "basic",
-                                                                "name": "Span",
-                                                                "if": "{{_local.errors?.password}}",
-                                                                "props": {
-                                                                    "className": "text-red-500 text-xs mt-1"
-                                                                },
-                                                                "text": "{{_local.errors?.password?.[0] ?? ''}}"
-                                                            }
-                                                        ]
-                                                    },
-                                                    {
-                                                        "id": "field_password_confirmation",
-                                                        "type": "basic",
-                                                        "name": "Div",
-                                                        "children": [
-                                                            {
-                                                                "type": "basic",
-                                                                "name": "Label",
-                                                                "props": {
-                                                                    "className": "form-label"
-                                                                },
-                                                                "children": [
-                                                                    {
-                                                                        "type": "basic",
-                                                                        "name": "Span",
-                                                                        "text": "$t:admin.users.form.fields.password_confirmation"
-                                                                    },
-                                                                    {
-                                                                        "type": "basic",
-                                                                        "name": "Span",
-                                                                        "if": "{{!route?.id}}",
-                                                                        "props": {
-                                                                            "className": "text-red-500 ml-1"
-                                                                        },
-                                                                        "text": "*"
-                                                                    }
-                                                                ]
-                                                            },
-                                                            {
-                                                                "type": "basic",
-                                                                "name": "Input",
-                                                                "props": {
-                                                                    "type": "password",
-                                                                    "name": "password_confirmation",
-                                                                    "placeholder": "$t:admin.users.form.fields.password_confirmation",
+                                                                    "type": "text",
+                                                                    "name": "nickname",
+                                                                    "placeholder": "$t:admin.users.form.fields.nickname",
                                                                     "className": ""
                                                                 }
                                                             }
@@ -877,6 +753,147 @@
                                                         }
                                                     }
                                                 ]
+                                            },
+                                            {
+                                                "comment": "이메일 인증 여부 — 읽기 전용이다. 이 값은 회원이 받은 메일의 링크를 눌러야 서는\n                 것이라 운영자가 「인증됨」 으로 바꿔 줄 성질이 아니다. 그래도 상세와 같은 자리에\n                 세워, 상세에서 「미인증」 을 본 운영자가 수정 화면에서 그 칸을 찾아 헤매지 않게 한다.",
+                                                "id": "field_email_verified",
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Label",
+                                                        "props": {
+                                                            "className": "form-label"
+                                                        },
+                                                        "text": "$t:admin.users.detail.email_verification"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "props": {
+                                                            "className": "flex-center gap-1"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Icon",
+                                                                "if": "{{user?.data?.email_verified_at}}",
+                                                                "props": {
+                                                                    "name": "check-circle",
+                                                                    "className": "text-base text-green-500"
+                                                                }
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "props": {
+                                                                    "className": "text-primary text-sm"
+                                                                },
+                                                                "text": "{{user?.data?.email_verified_at ? '$t:admin.users.form.fields.email_verified' : '$t:admin.users.detail.not_verified'}}"
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "id": "field_password_group",
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "grid-2col-responsive"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "id": "field_password",
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Label",
+                                                                "props": {
+                                                                    "className": "form-label"
+                                                                },
+                                                                "children": [
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "text": "$t:admin.users.form.fields.password"
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "if": "{{!route?.id}}",
+                                                                        "props": {
+                                                                            "className": "text-red-500 ml-1"
+                                                                        },
+                                                                        "text": "*"
+                                                                    }
+                                                                ]
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Input",
+                                                                "props": {
+                                                                    "type": "password",
+                                                                    "name": "password",
+                                                                    "placeholder": "{{route?.id ? '$t:admin.users.form.fields.password_hint' : '$t:admin.users.form.fields.password'}}",
+                                                                    "className": ""
+                                                                }
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "if": "{{_local.errors?.password}}",
+                                                                "props": {
+                                                                    "className": "text-red-500 text-xs mt-1"
+                                                                },
+                                                                "text": "{{_local.errors?.password?.[0] ?? ''}}"
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "id": "field_password_confirmation",
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Label",
+                                                                "props": {
+                                                                    "className": "form-label"
+                                                                },
+                                                                "children": [
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "text": "$t:admin.users.form.fields.password_confirmation"
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "if": "{{!route?.id}}",
+                                                                        "props": {
+                                                                            "className": "text-red-500 ml-1"
+                                                                        },
+                                                                        "text": "*"
+                                                                    }
+                                                                ]
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Input",
+                                                                "props": {
+                                                                    "type": "password",
+                                                                    "name": "password_confirmation",
+                                                                    "placeholder": "$t:admin.users.form.fields.password_confirmation",
+                                                                    "className": ""
+                                                                }
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
                                             }
                                         ]
                                     }
@@ -906,6 +923,89 @@
                                             "className": "row-stack"
                                         },
                                         "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "grid-2col-responsive"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "id": "field_email",
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Label",
+                                                                "props": {
+                                                                    "className": "form-label"
+                                                                },
+                                                                "children": [
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "text": "$t:admin.users.form.fields.email"
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "props": {
+                                                                            "className": "text-red-500 ml-1"
+                                                                        },
+                                                                        "text": "*"
+                                                                    }
+                                                                ]
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Input",
+                                                                "props": {
+                                                                    "type": "email",
+                                                                    "name": "email",
+                                                                    "placeholder": "$t:admin.users.form.fields.email",
+                                                                    "disabled": "{{!!route?.id}}",
+                                                                    "className": ""
+                                                                }
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "if": "{{_local.errors?.email}}",
+                                                                "props": {
+                                                                    "className": "text-red-500 text-xs mt-1"
+                                                                },
+                                                                "text": "{{_local.errors?.email?.[0] ?? ''}}"
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "id": "field_homepage",
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Label",
+                                                                "props": {
+                                                                    "className": "form-label"
+                                                                },
+                                                                "text": "$t:admin.users.form.fields.homepage"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Input",
+                                                                "props": {
+                                                                    "type": "url",
+                                                                    "name": "homepage",
+                                                                    "placeholder": "https://",
+                                                                    "className": ""
+                                                                }
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            },
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
@@ -964,31 +1064,6 @@
                                                         ]
                                                     }
                                                 ]
-                                            },
-                                            {
-                                                "id": "field_homepage",
-                                                "type": "basic",
-                                                "name": "Div",
-                                                "children": [
-                                                    {
-                                                        "type": "basic",
-                                                        "name": "Label",
-                                                        "props": {
-                                                            "className": "form-label"
-                                                        },
-                                                        "text": "$t:admin.users.form.fields.homepage"
-                                                    },
-                                                    {
-                                                        "type": "basic",
-                                                        "name": "Input",
-                                                        "props": {
-                                                            "type": "url",
-                                                            "name": "homepage",
-                                                            "placeholder": "https://",
-                                                            "className": ""
-                                                        }
-                                                    }
-                                                ]
                                             }
                                         ]
                                     }
@@ -1018,85 +1093,6 @@
                                             "className": "row-stack"
                                         },
                                         "children": [
-                                            {
-                                                "id": "field_address",
-                                                "type": "basic",
-                                                "name": "Div",
-                                                "props": {
-                                                    "className": "space-y-2"
-                                                },
-                                                "children": [
-                                                    {
-                                                        "type": "basic",
-                                                        "name": "Label",
-                                                        "props": {
-                                                            "className": "form-label"
-                                                        },
-                                                        "text": "$t:admin.users.form.fields.address"
-                                                    },
-                                                    {
-                                                        "comment": "우편번호 + 주소 검색 버튼",
-                                                        "type": "basic",
-                                                        "name": "Div",
-                                                        "props": {
-                                                            "className": "flex gap-2"
-                                                        },
-                                                        "children": [
-                                                            {
-                                                                "type": "basic",
-                                                                "name": "Input",
-                                                                "props": {
-                                                                    "type": "text",
-                                                                    "name": "zipcode",
-                                                                    "placeholder": "$t:admin.users.form.fields.zipcode",
-                                                                    "readOnly": false,
-                                                                    "className": "w-32"
-                                                                }
-                                                            },
-                                                            {
-                                                                "id": "admin_user_address_search_slot",
-                                                                "type": "extension_point",
-                                                                "name": "address_search_slot",
-                                                                "props": {
-                                                                    "readOnlyFields": [
-                                                                        "zipcode",
-                                                                        "address"
-                                                                    ],
-                                                                    "targetFields": {
-                                                                        "zipcode": "form.zipcode",
-                                                                        "address": "form.address",
-                                                                        "region": "form.region",
-                                                                        "city": "form.city"
-                                                                    }
-                                                                }
-                                                            }
-                                                        ]
-                                                    },
-                                                    {
-                                                        "comment": "기본 주소",
-                                                        "type": "basic",
-                                                        "name": "Input",
-                                                        "props": {
-                                                            "type": "text",
-                                                            "name": "address",
-                                                            "placeholder": "$t:admin.users.form.fields.address",
-                                                            "readOnly": false,
-                                                            "className": ""
-                                                        }
-                                                    },
-                                                    {
-                                                        "comment": "상세 주소",
-                                                        "type": "basic",
-                                                        "name": "Input",
-                                                        "props": {
-                                                            "type": "text",
-                                                            "name": "address_detail",
-                                                            "placeholder": "$t:admin.users.form.fields.address_detail",
-                                                            "className": ""
-                                                        }
-                                                    }
-                                                ]
-                                            },
                                             {
                                                 "id": "field_country",
                                                 "type": "basic",
@@ -1195,6 +1191,85 @@
                                                                 }
                                                             }
                                                         ]
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "id": "field_address",
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "space-y-2"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Label",
+                                                        "props": {
+                                                            "className": "form-label"
+                                                        },
+                                                        "text": "$t:admin.users.form.fields.address"
+                                                    },
+                                                    {
+                                                        "comment": "우편번호 + 주소 검색 버튼",
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "props": {
+                                                            "className": "flex gap-2"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Input",
+                                                                "props": {
+                                                                    "type": "text",
+                                                                    "name": "zipcode",
+                                                                    "placeholder": "$t:admin.users.form.fields.zipcode",
+                                                                    "readOnly": false,
+                                                                    "className": "w-32"
+                                                                }
+                                                            },
+                                                            {
+                                                                "id": "admin_user_address_search_slot",
+                                                                "type": "extension_point",
+                                                                "name": "address_search_slot",
+                                                                "props": {
+                                                                    "readOnlyFields": [
+                                                                        "zipcode",
+                                                                        "address"
+                                                                    ],
+                                                                    "targetFields": {
+                                                                        "zipcode": "form.zipcode",
+                                                                        "address": "form.address",
+                                                                        "region": "form.region",
+                                                                        "city": "form.city"
+                                                                    }
+                                                                }
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "comment": "기본 주소",
+                                                        "type": "basic",
+                                                        "name": "Input",
+                                                        "props": {
+                                                            "type": "text",
+                                                            "name": "address",
+                                                            "placeholder": "$t:admin.users.form.fields.address",
+                                                            "readOnly": false,
+                                                            "className": ""
+                                                        }
+                                                    },
+                                                    {
+                                                        "comment": "상세 주소",
+                                                        "type": "basic",
+                                                        "name": "Input",
+                                                        "props": {
+                                                            "type": "text",
+                                                            "name": "address_detail",
+                                                            "placeholder": "$t:admin.users.form.fields.address_detail",
+                                                            "className": ""
+                                                        }
                                                     }
                                                 ]
                                             }
@@ -1331,10 +1406,18 @@
                                         },
                                         "children": [
                                             {
+                                                "comment": "일곱 항목 모두 **시스템이 적는 기록**이라 잠근 채로 둔다. 종전에는 가입일·마지막\n                 로그인·IP 셋만 있어, 상세에서 본 잠금 상태·탈퇴일시·차단일시가 수정 화면에서\n                 사라졌다(요구사항 2026-09-21). 휴면 전환일도 상세에 있는 기록이라 같은 이유로\n                 함께 세운다. 잠금은 상세 헤더의 「잠금 해제」 버튼이 푼다.\n                 3열 고정은 규약(§6-0)대로 `md:` 대신 responsive 로 가른다.",
                                                 "type": "basic",
                                                 "name": "Div",
+                                                "responsive": {
+                                                    "portable": {
+                                                        "props": {
+                                                            "className": "grid grid-cols-1 gap-4"
+                                                        }
+                                                    }
+                                                },
                                                 "props": {
-                                                    "className": "grid grid-cols-1 md:grid-cols-3 gap-4"
+                                                    "className": "grid grid-cols-3 gap-4"
                                                 },
                                                 "children": [
                                                     {
@@ -1388,6 +1471,48 @@
                                                         ]
                                                     },
                                                     {
+                                                        "id": "field_lock_status",
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Label",
+                                                                "props": {
+                                                                    "className": "form-label"
+                                                                },
+                                                                "text": "$t:admin.users.form.fields.lock_status"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Div",
+                                                                "if": "{{user?.data?.locked_permanently === true}}",
+                                                                "props": {
+                                                                    "className": "text-error-soft text-sm py-2"
+                                                                },
+                                                                "text": "$t:admin.users.detail.locked_permanently_value"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Div",
+                                                                "if": "{{user?.data?.locked_permanently !== true && user?.data?.is_locked === true}}",
+                                                                "props": {
+                                                                    "className": "text-error-soft text-sm py-2"
+                                                                },
+                                                                "text": "$t:admin.users.detail.locked_until_value|until={{user?.data?.locked_until ?? ''}}"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Div",
+                                                                "if": "{{user?.data?.is_locked !== true}}",
+                                                                "props": {
+                                                                    "className": "text-primary text-sm py-2"
+                                                                },
+                                                                "text": "$t:admin.users.detail.not_locked_value"
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
                                                         "id": "field_ip_address",
                                                         "type": "basic",
                                                         "name": "Div",
@@ -1409,6 +1534,294 @@
                                                                     "disabled": true,
                                                                     "className": "text-gray-500 dark:text-gray-400"
                                                                 }
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "id": "field_withdrawn_at",
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Label",
+                                                                "props": {
+                                                                    "className": "form-label"
+                                                                },
+                                                                "text": "$t:admin.users.detail.withdrawn_at"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Input",
+                                                                "props": {
+                                                                    "type": "text",
+                                                                    "value": "{{user?.data?.withdrawn_at ?? ''}}",
+                                                                    "disabled": true,
+                                                                    "className": "text-gray-500 dark:text-gray-400"
+                                                                }
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "id": "field_blocked_at",
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Label",
+                                                                "props": {
+                                                                    "className": "form-label"
+                                                                },
+                                                                "text": "$t:admin.users.detail.blocked_at"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Input",
+                                                                "props": {
+                                                                    "type": "text",
+                                                                    "value": "{{user?.data?.blocked_at ?? ''}}",
+                                                                    "disabled": true,
+                                                                    "className": "text-gray-500 dark:text-gray-400"
+                                                                }
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "id": "field_dormant_at",
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Label",
+                                                                "props": {
+                                                                    "className": "form-label"
+                                                                },
+                                                                "text": "$t:admin.users.detail.dormant_at"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Input",
+                                                                "props": {
+                                                                    "type": "text",
+                                                                    "value": "{{user?.data?.dormant_at ?? ''}}",
+                                                                    "disabled": true,
+                                                                    "className": "text-gray-500 dark:text-gray-400"
+                                                                }
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "comment": "동의정보 — 회원이 언제 동의했는가는 기록이지 설정이 아니라 잠긴 채로 세운다.\n             동의를 되돌리는 일은 회원 본인의 화면(마이페이지)이나 GDPR 플러그인이 맡는다.\n\n             **고칠 수 없는 값인데도 이 구획과 아래 알림함 구획을 수정 화면에 세우는 이유**는,\n             상세에서 본 것을 수정 화면에서 찾지 못하면 「고칠 수 있는데 칸이 없는 것」 인지\n             「원래 고칠 수 없는 것」 인지 화면이 말해 주지 않기 때문이다(요구사항 2026-09-21 —\n             상세에 나오는 것은 수정 화면에도 같은 자리·같은 양식으로 선다). 등록 모드에는\n             회원이 아직 없어 둘 다 빈 값이라 `route?.id` 로 닫는다.",
+                                "id": "section_consent_info",
+                                "type": "basic",
+                                "name": "Div",
+                                "if": "{{route?.id}}",
+                                "props": {
+                                    "id": "consent_info",
+                                    "className": "admin-card"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "H3",
+                                        "props": {
+                                            "className": "card-title"
+                                        },
+                                        "text": "$t:admin.users.detail.consent_history"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "row-stack"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "grid-2col-responsive"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "id": "field_terms_consent",
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Label",
+                                                                "props": {
+                                                                    "className": "form-label"
+                                                                },
+                                                                "text": "$t:admin.users.detail.consent_type.terms"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Input",
+                                                                "props": {
+                                                                    "type": "text",
+                                                                    "value": "{{user?.data?.terms_consent?.agreed_at ?? ''}}",
+                                                                    "disabled": true,
+                                                                    "className": "text-gray-500 dark:text-gray-400"
+                                                                }
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "id": "field_privacy_consent",
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Label",
+                                                                "props": {
+                                                                    "className": "form-label"
+                                                                },
+                                                                "text": "$t:admin.users.detail.consent_type.privacy"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Input",
+                                                                "props": {
+                                                                    "type": "text",
+                                                                    "value": "{{user?.data?.privacy_consent?.agreed_at ?? ''}}",
+                                                                    "disabled": true,
+                                                                    "className": "text-gray-500 dark:text-gray-400"
+                                                                }
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "comment": "알림함 요약 — 건수는 읽기 전용이고, 실제 수신함은 전용 목록이 소유한다(상세와 같다).",
+                                "id": "section_notifications_info",
+                                "type": "basic",
+                                "name": "Div",
+                                "if": "{{route?.id}}",
+                                "props": {
+                                    "id": "notifications_info",
+                                    "className": "admin-card"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "H3",
+                                        "props": {
+                                            "className": "card-title"
+                                        },
+                                        "text": "$t:admin.users.detail.tabs.notifications_info"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "row-stack"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "grid-2col-responsive"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "id": "field_notifications_total",
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Label",
+                                                                "props": {
+                                                                    "className": "form-label"
+                                                                },
+                                                                "text": "$t:admin.users.detail.notifications.total"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Input",
+                                                                "props": {
+                                                                    "type": "text",
+                                                                    "value": "{{user?.data?.notifications_summary?.total ?? 0}}",
+                                                                    "disabled": true,
+                                                                    "className": "text-gray-500 dark:text-gray-400"
+                                                                }
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "id": "field_notifications_unread",
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Label",
+                                                                "props": {
+                                                                    "className": "form-label"
+                                                                },
+                                                                "text": "$t:admin.users.detail.notifications.unread"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Input",
+                                                                "props": {
+                                                                    "type": "text",
+                                                                    "value": "{{user?.data?.notifications_summary?.unread ?? 0}}",
+                                                                    "disabled": true,
+                                                                    "className": "text-gray-500 dark:text-gray-400"
+                                                                }
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "id": "notifications_inbox_link",
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Button",
+                                                        "actions": [
+                                                            {
+                                                                "comment": "이 회원의 알림 발송 이력으로 이동한다 — 회원 UUID 로 목록을 거른다",
+                                                                "type": "click",
+                                                                "handler": "navigate",
+                                                                "params": {
+                                                                    "path": "/admin/member-notifications",
+                                                                    "query": {
+                                                                        "user_uuid": "{{user?.data?.uuid}}"
+                                                                    }
+                                                                }
+                                                            }
+                                                        ],
+                                                        "props": {
+                                                            "type": "button",
+                                                            "className": "btn btn-secondary"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "text": "$t:admin.users.detail.notifications.view_inbox"
                                                             }
                                                         ]
                                                     }

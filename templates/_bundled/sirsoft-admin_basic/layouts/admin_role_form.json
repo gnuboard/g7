@@ -128,6 +128,28 @@
             "permissions"
         ]
     },
+    "init_actions": [
+        {
+            "comment": "생성 모드: 역할 수정 화면에서 SPA 로 넘어오면 같은 레이아웃(admin_role_form)이라 엔진이 `_local` 을 비우지 않아 직전 역할의 form(id·identifier 등)이 등록 폼에 남는다. form=null 로 먼저 지운다(깊은 병합이 객체 대신 null 로 덮어써 완전 삭제). 복제 진입(clone_from)은 clone_source 의 initLocal 이 init_actions 뒤에 병합되므로 영향 없음.",
+            "handler": "setState",
+            "if": "{{!route?.id}}",
+            "params": {
+                "target": "local",
+                "form": null
+            }
+        },
+        {
+            "comment": "생성 모드 기본값 복원 — 레이아웃 `state.form` 은 같은 레이아웃 재진입에서 다시 적용되지 않으므로(기존 키 유지) 같은 값을 여기서 다시 쓴다.",
+            "handler": "setState",
+            "if": "{{!route?.id}}",
+            "params": {
+                "target": "local",
+                "form": {
+                    "is_active": true
+                }
+            }
+        }
+    ],
     "slots": {
         "content": [
             {

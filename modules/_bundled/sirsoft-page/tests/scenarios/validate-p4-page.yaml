@@ -1,0 +1,22 @@
+feature: 첨부 공개 설정(publicLimits)의 계층 역전 제거 (#599 validate P4 page)
+
+description: |
+  #599 가 화면용 공개 설정 `PageAttachmentService::publicLimits()` 를 만들면서 허용 형식 폴백을
+  `UploadPageAttachmentRequest::FALLBACK_ALLOWED_TYPES`(private 을 public 으로 열어)에서 읽었다.
+  Service 가 HTTP 계층(FormRequest)에 기대는 역전이다. 상한·허용 형식 해석을 하위 지점
+  `Support\AttachmentLimits` 로 내리고, 업로드 검증과 공개 설정이 그것을 함께 쓴다 — 두 계층이
+  따로 해석하면 화면이 안내한 상한과 서버가 거절하는 상한이 갈린다.
+
+axes:
+  case: [layering, shared_resolution]
+
+effects:
+  - attachment_service_does_not_depend_on_http_layer     # Service 가 FormRequest 를 참조하지 않는다
+  - upload_rules_and_public_limits_share_one_resolution  # 폴백·용량 상한이 양쪽에서 같다
+  - empty_allowed_types_is_unrestricted_on_both_layers   # 빈 목록 = 형식 제한 없음이 양쪽에서 같다
+
+test_files:
+  - modules/_bundled/sirsoft-page/tests/Unit/Support/AttachmentLimitsLayeringTest.php
+
+validation:
+  audit_rule: test-scenario-coverage

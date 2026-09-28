@@ -398,7 +398,9 @@ describe('관리자 취소 모달 — 액션 버튼', () => {
         expect(clickAction.params).toHaveProperty('cancelItems');
         expect(clickAction.params).toHaveProperty('cancelReason');
         expect(clickAction.params).toHaveProperty('cancelReasonDetail');
-        expect(clickAction.params).toHaveProperty('cancelPg');
+        // `cancelPg` 는 없앴다(P2) — 자리에 자동 전이 옵션(D7)이 들어왔다.
+        expect(clickAction.params).not.toHaveProperty('cancelPg');
+        expect(clickAction.params).toHaveProperty('autoAdvanceRefund');
         expect(clickAction.params).toHaveProperty('refundPriority');
     });
 

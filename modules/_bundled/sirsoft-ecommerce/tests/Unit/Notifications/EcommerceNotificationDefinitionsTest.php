@@ -6,6 +6,8 @@ use App\Extension\Helpers\NotificationSyncHelper;
 use App\Extension\ModuleManager;
 use App\Models\NotificationDefinition;
 use App\Models\NotificationTemplate;
+use Modules\Sirsoft\Ecommerce\Listeners\ClaimStatusNotificationListener;
+use Modules\Sirsoft\Ecommerce\Module;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
@@ -30,18 +32,39 @@ class EcommerceNotificationDefinitionsTest extends ModuleTestCase
         'order_completed',
         'order_cancelled',
         'new_order_admin',
+        'order_confirmed_admin',
+        'order_completed_admin',
         'inquiry_received',
         'inquiry_replied',
     ];
 
     /**
      * module.php::getNotificationDefinitions() 가 모든 알림 정의를 반환하는지 확인.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario stage=declaration
+     *
+     * @effects module_getter_returns_every_declared_definition
      */
     public function test_module_getter_returns_all_definitions(): void
     {
         $definitions = $this->getModuleDefinitions();
 
-        $this->assertCount(count($this->expectedTypes), $definitions);
+        // 클레임 알림(§4-8)은 유형 × 고객 가시 상태의 곱이라 여기에 다시 열거하지 않는다 —
+        // 두 벌이 되면 한쪽만 늘어난 채로 통과한다. 그 집합의 전수 검증은
+        // ClaimNotificationDefinitionsTest 가 담당하고, 여기서는 개수만 합산한다.
+        // 운영자 사본(접수·추가결제 완료처럼 운영자도 알아야 하는 사건)은 모듈 상수가 정하므로 같은
+        // 목록을 읽어 센다 — 숫자를 적어 두면 상수가 늘 때 이 합산만 낡는다.
+        $staffKeys = (new \ReflectionClassConstant(Module::class, 'STAFF_NOTIFIED_CLAIM_KEYS'))->getValue();
+        $claimCount = 3; // claim_withdrawn (관리자 수신) · claim_withdrawn_on_behalf (고객 수신) · claim_partially_processed
+        foreach (ClaimStatusNotificationListener::notifiableStatuses() as $keys) {
+            $claimCount += count($keys) + count(array_intersect($keys, $staffKeys));
+        }
+        // 상태가 아닌 사건 알림(송장 등록 3종 · 선교환 회수 지연 — #599) — 목록은 리스너가 소유한다.
+        $claimCount += count(ClaimStatusNotificationListener::eventNotifyHooks());
+
+        $this->assertCount(count($this->expectedTypes) + $claimCount, $definitions);
 
         $types = array_column($definitions, 'type');
         foreach ($this->expectedTypes as $expected) {
@@ -51,6 +74,12 @@ class EcommerceNotificationDefinitionsTest extends ModuleTestCase
 
     /**
      * 모든 정의의 channels 배열에 mail 과 database 모두 포함되는지 확인.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario stage=declaration
+     *
+     * @effects every_definition_declares_mail_and_database_channels
      */
     public function test_all_definitions_have_both_channels(): void
     {
@@ -62,6 +91,12 @@ class EcommerceNotificationDefinitionsTest extends ModuleTestCase
 
     /**
      * 모든 정의의 templates 배열에 mail + database 두 채널 템플릿이 존재하는지 확인.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario stage=declaration
+     *
+     * @effects every_definition_has_mail_and_database_templates
      */
     public function test_all_definitions_have_both_channel_templates(): void
     {
@@ -74,6 +109,12 @@ class EcommerceNotificationDefinitionsTest extends ModuleTestCase
 
     /**
      * database 채널 템플릿에 ko/en subject/body 가 모두 존재하는지 확인.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario stage=declaration
+     *
+     * @effects database_templates_carry_ko_and_en_subject_and_body
      */
     public function test_database_templates_have_bilingual_content(): void
     {
@@ -93,6 +134,12 @@ class EcommerceNotificationDefinitionsTest extends ModuleTestCase
 
     /**
      * NotificationSyncHelper 동기화 시 DB 에 NotificationTemplate 이 실제 생성되는지 확인.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario stage=database_sync
+     *
+     * @effects sync_creates_active_database_templates_in_db
      */
     public function test_sync_creates_database_templates_in_db(): void
     {
@@ -136,7 +183,7 @@ class EcommerceNotificationDefinitionsTest extends ModuleTestCase
     /**
      * module.php::getNotificationDefinitions() 결과를 가져옵니다.
      *
-     * @return array<int, array<string, mixed>>
+     * @return array<int, array<string, mixed>> 이커머스 모듈이 선언한 알림 정의 목록
      */
     private function getModuleDefinitions(): array
     {

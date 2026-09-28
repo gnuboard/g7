@@ -225,7 +225,10 @@ class EcommerceDashboardService
      *
      * 취소(cancelled)는 cancellations 버킷으로, 그 외 상태는 동일 키로 매핑합니다.
      * 부분취소는 별도 상태가 아니라 취소된 옵션(option_status=cancelled)으로 집계되므로 cancellations 에 포함됩니다.
-     * returns(반품) 버킷은 환불 도메인 미반영이므로 0 으로 둡니다.
+     * returns(반품) 버킷은 취소 배지와 같은 규칙으로 반품완료 옵션(option_status=returned)을 셉니다 —
+     * 반품 진행 중(return_in_progress)은 아직 돌려받지 않은 상품이라 넣지 않는다(취소 배지도 환불신청 중은 세지 않는다).
+     * #599 통합 실측 P15 ① · S0-D1: 클레임 도메인이 생긴 뒤에도 0 으로 고정돼 있어 반품 완료 38건 위에서
+     * 배지가 계속 0 이었다.
      *
      * @param  array<string, int>  $rawCounts  option_status 값 => 수량
      * @return array<string, int> 배지 7버킷 (상태 키 => 수량)
@@ -242,7 +245,7 @@ class EcommerceDashboardService
         // 부분취소는 별도 주문 상태가 아니라 잔여 옵션 기준 진행 상태로 집계되므로(partial_cancelled 제거),
         // 취소 배지는 전체취소(CANCELLED)만 합산한다.
         $buckets['cancellations'] = (int) ($rawCounts[OrderStatusEnum::CANCELLED->value] ?? 0);
-        $buckets['returns'] = 0;
+        $buckets['returns'] = (int) ($rawCounts[OrderStatusEnum::RETURNED->value] ?? 0);
 
         return $buckets;
     }

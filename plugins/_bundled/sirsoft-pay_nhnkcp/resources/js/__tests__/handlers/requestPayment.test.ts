@@ -34,7 +34,7 @@ describe('requestPaymentHandler', () => {
         setLocalSpy = vi.fn();
         modalOpenSpy = vi.fn();
         document.documentElement.lang = 'ko';
-        (window as Record<string, unknown>).G7Core = {
+        (window as unknown as Record<string, unknown>).G7Core = {
             api: { get: apiGet },
             state: { setLocal: setLocalSpy },
             modal: { open: modalOpenSpy },
@@ -43,7 +43,7 @@ describe('requestPaymentHandler', () => {
     });
 
     afterEach(() => {
-        delete (window as Record<string, unknown>).G7Core;
+        delete (window as unknown as Record<string, unknown>).G7Core;
         vi.useRealTimers();
         vi.restoreAllMocks();
         document.body.innerHTML = '';

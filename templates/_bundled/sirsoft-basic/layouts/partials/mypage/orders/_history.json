@@ -188,6 +188,47 @@
                     ]
                 },
                 {
+                    "comment": "구매확정일시 (구매확정된 경우만)",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{order.data.confirmed_at_formatted}}",
+                    "props": {
+                        "className": "flex items-center justify-between"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "responsive": {
+                                "portable": {
+                                    "props": {
+                                        "className": "text-gray-500 dark:text-gray-400 text-sm"
+                                    }
+                                }
+                            },
+                            "props": {
+                                "className": "text-gray-500 dark:text-gray-400"
+                            },
+                            "text": "$t:mypage.order_detail.confirmed_at"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "responsive": {
+                                "portable": {
+                                    "props": {
+                                        "className": "text-gray-900 dark:text-white text-sm"
+                                    }
+                                }
+                            },
+                            "props": {
+                                "className": "text-gray-900 dark:text-white"
+                            },
+                            "text": "{{order.data.confirmed_at_formatted ?? ''}}"
+                        }
+                    ]
+                },
+                {
                     "comment": "취소일시 (취소된 경우만)",
                     "type": "basic",
                     "name": "Div",

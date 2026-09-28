@@ -9,7 +9,7 @@
   메일 보내기는 받는 주소를 지역 상태에 담고 창을 연다 — **그 창이 값을 `$parent._local` 에서
   읽으므로** 여기서 담는 자리가 그 창의 입력이 된다.
   수정 가능한 칸은 전부 서버 권한(`abilities.can_update`)으로 잠긴다. -->
-<partial description="Order Detail - Order Info Tab">
+<partial description="e2e:allow 상품 일괄 상태 Select 폭 클래스(w-48)만 변경 — Chrome MCP 매트릭스(이력 20260913_2132)가 대체 커버. Order Detail - Order Info Tab">
   <div data-ref="section_order_info" data-section-id="order_info">
     <div data-ref="order_info_card" data-key="form" data-debounce="300" class="admin-card">
       <h2 data-ref="order_info_title" class="text-lg font-bold text-gray-900 dark:text-gray-100 mb-6">$t:sirsoft-ecommerce.admin.order.detail.order_info.title</h2>
@@ -18,7 +18,7 @@
         <div data-ref="bulk_action_bar" class="flex-center bg-gray-100 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg p-3 mb-4 flex-wrap gap-3">
           <span class="text-body font-medium whitespace-nowrap">$t:sirsoft-ecommerce.admin.order.detail.order_info.selected_count|count={{(_local.selectedProducts || []).length}}</span>
           <div class="flex-center flex-wrap gap-2">
-            <select name="batchOrderStatus" class="w-44 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed" value="{{_local.batchOrderStatus || ''}}" disabled="{{order?.data?.abilities?.can_update !== true}}">
+            <select name="batchOrderStatus" class="w-48 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed" value="{{_local.batchOrderStatus || ''}}" disabled="{{order?.data?.abilities?.can_update !== true}}">
               <options>
                 <option value="" disabled>$t:sirsoft-ecommerce.admin.order.detail.order_info.change_status</option>
                 <option value="pending_payment">$t:sirsoft-ecommerce.admin.order.filter.order_status_options.payment_pending</option>
@@ -29,7 +29,6 @@
                 <option value="shipping">$t:sirsoft-ecommerce.admin.order.filter.order_status_options.shipping</option>
                 <option value="delivered">$t:sirsoft-ecommerce.admin.order.filter.order_status_options.delivered</option>
                 <option value="confirmed">$t:sirsoft-ecommerce.admin.order.filter.order_status_options.confirmed</option>
-                <option value="cancelled">$t:sirsoft-ecommerce.admin.order.filter.order_status_options.cancelled</option>
               </options>
               <on type="change">
                 <!-- 일괄 변경할 상태. 이 값 하나가 옆 칸들의 등장을 정한다 — 배송 관련 상태면 택배사·송장이, 취소면 PG 취소 체크가 나타난다. -->
@@ -52,20 +51,41 @@
               </on>
             </input>
           </div>
-          <div data-if="{{(_local.batchOrderStatus === 'cancelled') &amp;&amp; (order.data?.payment?.requires_pg_cancellation === true)}}" class="flex-center gap-2">
-            <input id="batch_cancel_pg_checkbox" type="checkbox" checked="{{_local.cancelPg ?? true}}" disabled="{{order?.data?.abilities?.can_update !== true}}">
-              <on type="change">
-                <!-- PG 취소까지 함께 할지. 체크박스 값을 읽지 않고 **현재 값을 뒤집는다** — 기본이 켬(`?? true`)이라 아직 아무도 쓴 적 없는 상태에서도 첫 클릭이 끔으로 가야 하기 때문이다. -->
-                <set-state target="local" cancelPg="{{!(_local.cancelPg ?? true)}}"/>
-              </on>
-            </input>
-            <label for="batch_cancel_pg_checkbox" class="text-body whitespace-nowrap cursor-pointer select-none">$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.cancel_pg</label>
-          </div>
           <div class="flex-1"/>
+          <!-- 관리자 직권 접수 (§3-11) — 고객을 대신해 교환·반품·취소·환불을 접수한다. 입구는 이 선택 바 하나다(입구가 둘이면 게이트가 둘이 된다 — 종전 「취소」 상태 선택은 [취소·환불 접수] 로 대체). 버튼은 고른 상품이 모두 그 유형의 물리 게이트 상태일 때만 켜진다(D5 — 신청 기간·신청 가능 상태 설정은 따르지 않는다). -->
+          <div data-ref="claim_request_buttons" class="flex-center flex-wrap gap-2">
+            <button data-ref="crb_001_exchange" type="button" class="btn btn-outline disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.claimRequestGateExchange !== true}}">
+              <on type="click">
+                <!-- 고른 주문상품으로 운영자 직권 교환 신청 창을 연다 — 배송지·옵션을 창 문맥으로 넘긴다 -->
+                <action handler="sirsoft-ecommerce.openAdminClaimRequest" type="exchange" orderNumber="{{route.orderNumber}}" selectedIds="{{_local.selectedProducts ?? []}}" options="{{order?.data?.options ?? []}}" shippingAddress="{{order?.data?.shipping_address ?? null}}" payment="{{order?.data?.payment ?? null}}" currency="{{order?.data?.base_currency ?? null}}"/>
+              </on>
+              $t:sirsoft-ecommerce.admin.order.claim_request.button_exchange
+            </button>
+            <button data-ref="crb_002_return" type="button" class="btn btn-outline disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.claimRequestGateReturn !== true}}">
+              <on type="click">
+                <!-- 고른 주문상품으로 운영자 직권 반품 신청 창을 연다 — 교환과 같은 창을 type 만 바꿔 쓴다 -->
+                <action handler="sirsoft-ecommerce.openAdminClaimRequest" type="return" orderNumber="{{route.orderNumber}}" selectedIds="{{_local.selectedProducts ?? []}}" options="{{order?.data?.options ?? []}}" shippingAddress="{{order?.data?.shipping_address ?? null}}" payment="{{order?.data?.payment ?? null}}" currency="{{order?.data?.base_currency ?? null}}"/>
+              </on>
+              $t:sirsoft-ecommerce.admin.order.claim_request.button_return
+            </button>
+            <button data-ref="crb_003_cancel_refund" type="button" class="btn btn-outline disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.claimRequestGateRefund !== true}}">
+              <on type="click">
+                <!-- 종전 취소 모달을 그대로 연다 — 같은 서비스(`cancel-refund`)로 위임한다. -->
+                <action handler="sirsoft-ecommerce.buildOrderDetailBulkConfirmData" selectedProducts="{{_local.selectedProducts ?? []}}" batchOrderStatus="cancelled" batchCarrierId="" batchTrackingNumber=""/>
+              </on>
+              $t:sirsoft-ecommerce.admin.order.claim_request.button_cancel_refund
+            </button>
+            <!-- 꺼진 이유 — 고른 상품이 있는데 버튼이 하나라도 꺼졌으면 그 까닭(교환·반품은 보낸 뒤, 취소·환불은 보내기 전)을 곁에 둔다. 꺼진 버튼만 두면 운영자는 권한 문제로 읽는다(Chrome 실측 P-1). -->
+            <span data-ref="crb_004_disabled_hint" data-if="{{(_local.selectedProducts ?? []).length > 0 &amp;&amp; claimRequestContext?.data?.unavailable !== true &amp;&amp; (_computed.claimRequestGateExchange !== true || _computed.claimRequestGateReturn !== true || _computed.claimRequestGateRefund !== true)}}" class="text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.order.claim_request.gate_hint</span>
+            <!-- 접수 권한(`claims.create`)이 없으면 버튼 셋이 꺼진 채 서고 그 까닭을 곁에 둔다 — 버튼을 숨기면 기능이 있는지조차 모른다(Chrome 실측 P-6). -->
+            <span data-ref="crb_005_no_permission_hint" data-if="{{claimRequestContext?.data?.unavailable === true &amp;&amp; _local.claimRequestContextError !== 'failed'}}" class="text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.order.claim_request.no_permission</span>
+            <!-- 권한은 있는데 문맥을 못 받은 경우(500·네트워크) — 「권한 없음」 으로 뜨면 운영자는 권한을 요청하러 간다. 실패 종류는 데이터 소스 `error-handling` 이 `_local.claimRequestContextError` 에 남긴다(403=forbidden, 그 밖=failed). -->
+            <span data-ref="crb_005b_context_error_hint" data-if="{{claimRequestContext?.data?.unavailable === true &amp;&amp; _local.claimRequestContextError === 'failed'}}" class="text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.order.claim_request.context_load_failed</span>
+          </div>
           <!-- 고른 상품만 부분 취소·환불한다. 대상 선택이 표 안에 있고 그 표는 페이지를 나누지 않으므로 선택 범위를 free 로 둔다 -->
           <button type="button" class="px-4 py-2 bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-800 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{!_local.selectedProducts || _local.selectedProducts.length === 0 || order?.data?.abilities?.can_update !== true}}">
             <on type="click">
-              <action handler="sirsoft-ecommerce.buildOrderDetailBulkConfirmData" selectedProducts="{{_local.selectedProducts ?? []}}" batchOrderStatus="{{_local.batchOrderStatus ?? ''}}" batchCarrierId="{{_local.batchCarrierId ?? ''}}" batchTrackingNumber="{{_local.batchTrackingNumber ?? ''}}" cancelPg="{{_local.cancelPg ?? true}}"/>
+              <action handler="sirsoft-ecommerce.buildOrderDetailBulkConfirmData" selectedProducts="{{_local.selectedProducts ?? []}}" batchOrderStatus="{{_local.batchOrderStatus ?? ''}}" batchCarrierId="{{_local.batchCarrierId ?? ''}}" batchTrackingNumber="{{_local.batchTrackingNumber ?? ''}}"/>
             </on>
             $t:sirsoft-ecommerce.admin.order.detail.order_info.batch_change
           </button>
@@ -157,14 +177,16 @@
                 <span class="text-sm text-blue-600 dark:text-blue-400 font-medium">{{row.subtotal_earned_points_amount | number}}P</span>
                 <!-- 실제 적립 여부 배지 (적립예정액이 있을 때만 노출) -->
                 <badge data-if="{{row.subtotal_earned_points_amount > 0 &amp;&amp; row.is_points_earned}}" size="sm" color="green">$t:sirsoft-ecommerce.admin.order.detail.order_info.earn_status.earned</badge>
-                <badge data-if="{{row.subtotal_earned_points_amount > 0 &amp;&amp; !row.is_points_earned}}" size="sm" color="gray">$t:sirsoft-ecommerce.admin.order.detail.order_info.earn_status.pending</badge>
+                <badge data-if="{{row.subtotal_earned_points_amount > 0 &amp;&amp; !row.is_points_earned &amp;&amp; !row.is_points_earn_cancelled}}" size="sm" color="gray">$t:sirsoft-ecommerce.admin.order.detail.order_info.earn_status.pending</badge>
+                <!-- S1-D19: 취소된 옵션은 다시 적립 대상이 되지 않는다 — 「적립예정」이 아니라 「적립 없음」 -->
+                <badge data-if="{{row.subtotal_earned_points_amount > 0 &amp;&amp; row.is_points_earn_cancelled}}" size="sm" color="red">$t:sirsoft-ecommerce.admin.order.detail.order_info.earn_status.cancelled</badge>
               </div>
             </cell>
           </column>
           <column field="status" header="$t:sirsoft-ecommerce.admin.order.detail.order_info.columns.status" width="100px" :sortable="false">
             <cell>
               <div class="whitespace-nowrap">
-                <badge variant="{{row.option_status_variant}}">{{row.option_status_label}}</badge>
+                <badge variant="{{row.option_status_variant}}" icon="{{row.option_status_icon ?? ''}}">{{row.option_status_label}}</badge>
               </div>
             </cell>
           </column>
@@ -396,18 +418,14 @@
               </div>
               <div class="flex-center gap-2">
                 <input type="text" class="{{_local.errors?.recipient_zipcode ? 'input-readonly input-error flex-1' : 'input-readonly flex-1'}}" value="{{_local.form.recipient_zipcode}}" name="recipient_zipcode" :readOnly="true" disabled="{{order?.data?.abilities?.can_update !== true}}"/>
+                <!-- 콜백은 callbacks 에 둔다 — props 는 평가되어 전달되고 주입 컴포넌트는 extensionPointCallbacks 를 읽는다 -->
                 <extension-point name="address_search_slot" data-ref="order_detail_address_search_slot">
                   <prop name="readOnlyFields">
                     <item>recipient_zipcode</item>
                   </prop>
-                  <prop name="onAddressSelect">
-                    <field name="handler" value="setState"/>
-                    <field name="params">
-                      <field name="target" value="local"/>
-                      <field name="form.recipient_zipcode" value="{{$event.zipcode}}"/>
-                      <field name="form.recipient_address" value="{{$event.address}}"/>
-                    </field>
-                  </prop>
+                  <callback name="onAddressSelect">
+                    <set-state target="local" form.recipient_zipcode="{{$event.zipcode}}" form.recipient_address="{{$event.address}}"/>
+                  </callback>
                 </extension-point>
               </div>
               <span data-if="{{_local.errors?.recipient_zipcode}}" class="form-error-xs mt-1 block">{{_local.errors?.recipient_zipcode?.[0] ?? ''}}</span>

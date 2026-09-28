@@ -1,0 +1,62 @@
+# audit:allow test-scenario-coverage[cross_product] reason: |
+#   축(모달 × 상태 접점)의 조합마다 테스트를 두지 않는다 — 두 모달은 같은 규율("상태는 한
+#   네임스페이스에 통째로")을 지키는지가 커버리지 단위이고, 접점마다 한 테스트가 그것을 본다.
+#   effects 축은 면제하지 않는다.
+feature: admin_settings_modal_global_namespace
+
+description: |
+  관리자 환경설정의 편집 모달은 상태를 **`_global` 네임스페이스 하나**에 통째로 둔다.
+  모달 partial 은 목록 화면과 다른 컨텍스트에서 렌더되므로, 목록의 `_local` 을 읽으면
+  모달에서 그 바인딩이 **조용히 빈다** — 오류도 경고도 없고 입력만 사라진다.
+
+  핵심 동작:
+    - `lifecycle.onMount` 로 상태를 세우지 않는다. 모달은 열릴 때마다 다시 마운트되지
+      않을 수 있어, onMount 에 기대면 두 번째 열람에서 이전 값이 남는다.
+    - 모든 입력 액션이 `target: "global"` 이다. 하나라도 `local` 이면 그 칸만 저장되지 않는다.
+    - 목록이 모달을 열 때 네임스페이스를 **통째로** set 한다. 부분 갱신은 이전 신청서의
+      값이 남은 채 새 신청서를 그리게 만든다.
+    - 저장 성공 뒤 네임스페이스를 비운다 — 비우지 않으면 다음 열람이 이전 값으로 시작한다.
+    - 드롭다운은 저장된 선택값을 options 에 시드한다. `SearchableDropdown` 은 options 에서
+      value 를 찾아 라벨을 그리므로, 검색 전에는 **고른 것이 없는 것처럼** 보인다.
+
+  이 규율은 게시판·이커머스 두 모듈이 같은 모양으로 복제한다(화면 3벌 규칙). 그래서 두
+  파일이 같은 효과 목록을 검증한다 — 한쪽만 고쳐지면 그 모듈의 모달만 다르게 동작한다.
+
+axes:
+  modal:
+    - identity_policy
+    - notification_template
+  touchpoint:
+    - mount
+    - input
+    - open
+    - save
+    - dropdown_seed
+
+exclusions:
+  - { modal: identity_policy, touchpoint: dropdown_seed, reason: "본인인증 정책 모달에는 검색형 드롭다운이 없다" }
+
+effects:
+  - identity_policy_modal_has_no_onmount_lifecycle
+  - identity_policy_modal_actions_target_global
+  - identity_policy_list_sets_the_whole_namespace
+  - identity_policy_modal_reads_and_writes_one_namespace
+  - identity_policy_save_carries_source_identifier_and_datasource
+  - identity_policy_save_clears_the_namespace
+  - notification_template_modal_has_no_onmount_lifecycle
+  - notification_template_modal_actions_target_global
+  - notification_template_list_sets_the_whole_namespace
+  - notification_template_modal_reads_one_namespace
+  - notification_template_subject_and_body_set_whole_objects
+  - notification_template_recipients_replace_the_whole_array
+  - notification_template_preview_reads_the_namespace
+  - notification_template_save_refetches_and_clears_the_namespace
+  - notification_template_role_dropdown_seeds_selected_values
+  - notification_template_users_dropdown_seeds_selected_values
+
+test_files:
+  - modules/_bundled/sirsoft-board/resources/js/__tests__/layouts/admin-board-settings-modal-perf.test.tsx
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/admin-ecommerce-settings-modal-perf.test.tsx
+
+validation:
+  audit_rule: test-scenario-coverage

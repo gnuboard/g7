@@ -175,6 +175,28 @@ describe('배송유형 추가 폼', () => {
         expect(clickAction?.conditions).toBeDefined();
         expect(clickAction.conditions.length).toBeGreaterThanOrEqual(2);
     });
+
+    // 이름 필수 판정은 **현재 로케일**이다 — `ko` 고정이 아니다. 형제인 배송사·사유 3종과 같은
+    // 계약이며(S10), en/ja 로케일 운영자가 자기 언어 칸을 채우고도 폼 게이트에서 막히던 것을 없앤다.
+    //
+    // 배송사에는 이 단언이 있었고 배송유형에는 없었다 — 같은 수정을 두 파셜에 넣었는데 한쪽만
+    // 계약으로 고정돼, 배송유형은 `ko` 로 되돌려도 어느 테스트도 붉어지지 않는 상태였다.
+    it('이름 필수 판정이 현재 로케일을 읽는다 (ko 고정 금지)', () => {
+        const saveBtn = findButtonByChildText(allNodes, 'types.form.save');
+        const clickAction = saveBtn.actions?.find((a: any) => a.type === 'click');
+
+        const validCondition = clickAction.conditions[0];
+        expect(validCondition.if).toContain("shippingTypeForm?.name?.[($locale ?? 'ko')]");
+        expect(validCondition.if).not.toContain('shippingTypeForm?.name?.ko');
+
+        const elseCondition = clickAction.conditions[clickAction.conditions.length - 1];
+        expect(elseCondition.then.params?.shippingTypeFormErrors?.name_ko).toContain(
+            "shippingTypeForm?.name?.[($locale ?? 'ko')]"
+        );
+        expect(elseCondition.then.params?.shippingTypeFormErrors?.name_ko).not.toContain(
+            'shippingTypeForm?.name?.ko'
+        );
+    });
 });
 
 // ══════════════════════════════════════════════════════════

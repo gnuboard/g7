@@ -123,6 +123,7 @@
         "receipt_label": "Receipt",
         "view_receipt": "View Receipt",
         "view_cash_receipt": "View Cash Receipt",
+        "view_sales_slip": "View Sales Slip",
         "easy_pay_label": "Easy Pay",
         "test_mode_badge": "TEST",
         "tax_breakdown_title": "Tax Breakdown",
@@ -135,7 +136,19 @@
         "vbank_holder": "Account Holder",
         "vbank_amount": "Deposit Amount",
         "vbank_due": "Deposit Due",
-        "vbank_notice": "If deposit is not completed by the due date, the order will be auto-cancelled."
+        "vbank_notice": "If deposit is not completed by the due date, the order will be auto-cancelled.",
+        "receipt_view": "View Receipt",
+        "loading": "Loading...",
+        "easy_pay_names": {
+            "NAVERPAY": "Naver Pay",
+            "KAKAOPAY": "Kakao Pay",
+            "SAMSUNGPAY": "Samsung Pay",
+            "APPLEPAY": "Apple Pay",
+            "PAYCO": "PAYCO",
+            "SKPAY": "11pay",
+            "SSGPAY": "SSG Pay",
+            "LPAY": "L.pay"
+        }
     },
     "messages": {
         "refund": {
@@ -153,7 +166,9 @@
     },
     "payment": {
         "error": {
-            "sdk_url_untrusted": "The payment module address is not valid, so the payment cannot proceed. Please contact the administrator."
+            "sdk_url_untrusted": "The payment module address is not valid, so the payment cannot proceed. Please contact the administrator.",
+            "sdk_load_failed": "Could not load the NicePayments SDK. Please try again later.",
+            "request_failed": "An error occurred during payment. Please try again later."
         }
     }
 }

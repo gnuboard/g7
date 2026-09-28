@@ -51,6 +51,10 @@
         <!-- D-070 (요청 사항: 숨김 처리) -->
         <button data-ref="d_070_excel_download" :data-if="false" type="button" class="btn btn-outline btn-sm">
           <on type="click">
+            <!-- 모달은 별도 컨텍스트라 페이지의 _local 을 읽지 못한다(형제 _modal_preset_save 와 같은 규약). 다운로드 대상·필터를 여는 지점에서 _global 브리지에 실어 건넨다 — 이것이 없으면 '검색결과' 다운로드의 filters 가 빈 채로 나가 전건이 된다. -->
+            <set-state target="global" excelDownloadContext="{{ { type: 'search', selectedItems: (_local.selectedItems ?? []), filter: _local.filter, total: (orders?.data?.pagination?.total ?? 0) } }}"/>
+          </on>
+          <on type="click">
             <open-modal target="modal_excel_download"/>
           </on>
           <icon name="download" class="text-base"/>
@@ -174,9 +178,11 @@
             </action-menu>
           </cell>
         </column>
-        <column field="payment_method" header="$t:sirsoft-ecommerce.admin.order.column.payment_method" width="100px" :sortable="false" :required="false">
+        <column field="payment_method" header="$t:sirsoft-ecommerce.admin.order.column.payment_method" width="100px" :sortable="false" :required="false" comment="결제 플러그인이 이 칸에 배지(테스트 결제 등)를 덧붙인다. 래퍼 Div 와 결제수단 라벨은 **호스트가 소유**하고, 플러그인은 `columns._patch` → `cellChildren._patch`(by: id) → `children._append` 로 자기 배지만 더한다 — 셋 이상이 함께 설치돼도 서로 지우지 않는다. 라벨 자체를 바꿔야 하는 플러그인(간편결제 표시명 등)은 `children._patch`(by: id)로 `payment_method_label` 노드의 text 만 덮는다(#599). 두 `id` 는 확장이 지목하는 **공개 앵커**이므로 이름을 바꾸지 않는다.">
           <cell>
-            <span>{{row.payment?.payment_method_label}}</span>
+            <div data-ref="payment_method_cell" class="row-stack">
+              <span data-ref="payment_method_label">{{row.payment?.payment_method_label}}</span>
+            </div>
           </cell>
         </column>
         <column field="delivery_method" header="$t:sirsoft-ecommerce.admin.order.column.delivery_method" width="100px" :sortable="false" :required="false">
@@ -195,6 +201,18 @@
         <column field="device" header="$t:sirsoft-ecommerce.admin.order.column.device" width="80px" :sortable="false" :required="false">
           <cell>
             <span>{{row.order_device_label}}</span>
+          </cell>
+        </column>
+        <column comment="클레임 컬럼 (D22) — 유형별 최신 상태 배지. 서버는 claim_summary 를 항상 싣는다(접수 건이 있는 유형만 항목으로 실리므로, 클레임이 없는 주문은 빈 배열이다). 표시 여부는 표시 컬럼 선택 하나가 정한다." field="claim" header="$t:sirsoft-ecommerce.admin.order.column.claim" width="150px" :sortable="false" :required="false">
+          <cell>
+            <span data-if="{{(row.claim_summary || []).length === 0}}" class="text-gray-500 dark:text-gray-400">-</span>
+            <div data-if="{{(row.claim_summary || []).length > 0}}" class="flex flex-col items-start gap-1">
+              <div data-each="claimEntry, claimIdx in row.claim_summary || []" class="flex-center gap-1">
+                <status-badge status="{{claimEntry.status_variant || 'default'}}" label="{{claimEntry.status_label || claimEntry.status || ''}}" :showIcon="false"/>
+                <!-- 같은 유형이 2건 이상이면 최신 1건만 배지로 보이므로 건수를 병기한다. -->
+                <span data-if="{{(claimEntry.count ?? 0) > 1}}" class="text-xs text-gray-500 dark:text-gray-400">{{'(' + claimEntry.count + ')'}}</span>
+              </div>
+            </div>
           </cell>
         </column>
         <prop name="rowActions">

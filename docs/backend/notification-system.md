@@ -166,6 +166,19 @@ notification_definitions 레코드:
 
 **데이터 추출**: `{hookPrefix}.notification.extract_data` Filter 훅으로 수신자와 데이터를 추출합니다.
 
+### 상태별 알림은 상태마다 고유 훅이 필요하다
+
+`NotificationHookListener` 는 정의의 `hooks` 에 적힌 이름을 **그대로** 구독한다 — 그 훅이 발화하면 그 훅에 묶인 정의가 **전부** 발송된다. 그래서 여러 상태를 하나의 전이 훅(`*.status_changed` 등)에 묶으면, 어떤 상태로 옮겨도 그 훅에 묶인 알림이 한꺼번에 나간다.
+
+| ❌ 금지 | ✅ 올바른 사용 |
+|--------|---------------|
+| 상태 N종의 정의를 공통 전이 훅 하나에 묶기 | 상태마다 고유한 알림 전용 훅(`{도메인}.notify_{상태}` 등)을 두고 매핑 리스너가 전이 훅을 받아 그 하나만 발화 |
+| 매핑 기준을 재조회한 모델의 현재 상태로 삼기 | 발화 측이 넘긴 **전이 시점 목표 상태**(스칼라)로 판정 — 리스너는 큐로 디스패치되고 워커가 모델을 PK 로 재조회하므로, 큐가 밀린 사이 또 전이되면 엉뚱한 알림이 나간다 |
+| 발화 목록과 정의 목록을 각각 손으로 유지 | 한쪽을 정본으로 두고 다른 쪽이 읽게 한다 — 갈라지면 **발화되는데 정의가 없거나(무음) 정의만 있고 아무도 발화하지 않는다(사문)** |
+| 같은 사실을 알리는 도메인 훅과 알림 훅을 둘 다 정의에 묶기 | 알림 소스는 하나로 — 두 훅이 같은 순간에 발화하는 경로가 있으면 같은 고객이 두 통을 받는다 |
+
+발화 측이 이 규칙을 따른 예: 주문 축은 `order.after_status_change` 를 `OrderStatusNotificationListener` 가 받아 `order.after_ship` 등 순수 알림 훅으로 옮기고, 정의는 그 알림 훅에만 묶는다.
+
 ### 큐 워커에서의 사용자/로케일 컨텍스트
 
 알림 발송 리스너는 기본적으로 큐로 디스패치되며, 큐 워커는 별도 프로세스라 `Auth::user()`/`App::getLocale()`이 모두 리셋됩니다. 그러나 G7은 디스패치 시점의 컨텍스트를 자동 복원하므로 다음이 보장됩니다:
@@ -305,6 +318,8 @@ return [
 | inquiry_replied | sirsoft-ecommerce.product_inquiry.after_reply | mail, database |
 
 > `new_order_admin` 의 `order.after_admin_notify` 훅은 결제수단별로 발화 시점이 다르다. `OrderProcessingService` 가 무통장/비-PG/0원 주문은 주문 생성 시점에, 카드(PG) 주문은 결제완료(`completePayment`) 시점에 1회 발화한다. 카드 주문은 생성 시점이 `pending_order`(결제 전)라 그 시점 발송 시 결제 미완료/이탈 주문에 오발송된다. `order_pending_deposit` 는 무통장 한정으로 `EcommerceNotificationDataListener` 가 dbank 외 결제수단을 빈 결과로 게이팅한다.
+>
+> 위 표는 주문·문의 축만 담은 발췌다. 이커머스 정의의 정본은 `module.php::getNotificationDefinitions()` 이며, 여기에 마일리지 소멸 예정 1종과 클레임(교환·반품·환불) 상태별 29종이 더 있다. 클레임 29종은 유형 × 고객 가시 상태의 곱이라 표로 옮기면 곧 낡으므로 옮기지 않는다 — 목록과 훅 이름은 `ClaimStatusNotificationListener::notifiableStatuses()` 를 읽는다.
 
 **발송 리스너**: `EcommerceNotificationListener` (방식 A — 직접 호출)
 
@@ -338,6 +353,8 @@ public function getNotificationDefinitions(): array
             'description' => ['ko' => '...', 'en' => '...'],
             'channels' => ['mail', 'database'],
             'hooks' => ['sirsoft-ecommerce.order.after_confirm'],
+            'audience' => 'customer',          // 'customer' | 'staff' — 아래 표 참조
+            'relations' => ['author'],         // 선택. 「관련 사용자」로 고를 수 있는 관계 키
             'variables' => [['key' => 'order_number', 'description' => '주문번호']],
             'templates' => [
                 [
@@ -351,6 +368,25 @@ public function getNotificationDefinitions(): array
     ];
 }
 ```
+
+#### `audience` — 이 알림이 누구를 향하는가
+
+| 값 | 뜻 | 수신자 규칙이 따라야 하는 형태 |
+| --- | --- | --- |
+| `customer` | 고객이 받는 알림 | `trigger_user` · `related_user` 중심 |
+| `staff` | 운영자가 받는 알림 | `role` 규칙으로 **그 권한의 주인 역할을 전부** 나열 |
+
+DB 컬럼이 늘지 않는다 — `NotificationSyncHelper` 가 저장 필드를 화이트리스트로 고르므로 `audience` 는 **선언 계층에만** 남고, 계약 테스트가 이 값을 읽어 수신자 규칙과의 정합을 검사한다.
+
+**`staff` 로 선언하면 역할을 빠짐없이 적어야 한다.** 권한 하나를 여러 역할이 나눠 갖는 구조라 역할 하나를 빠뜨리면 그 역할의 운영자는 **알림을 한 건도 받지 못하고**, 화면 어디에도 그 사실이 드러나지 않는다. 모듈이 권한 선언에 적어 둔 `roles` 목록을 그대로 옮긴다.
+
+#### `relations` — 「관련 사용자」로 고를 수 있는 관계
+
+리스너가 `context.related_users` 에 실어 주는 키 목록이다. 관리자 화면의 수신자 타입 「관련 사용자」는 **이 선언에서만** 선택지를 만든다.
+
+- 선언이 비면 타입 드롭다운에서 「관련 사용자」 자체가 **표시되지 않는다**. 관계를 주지 않는 알림에서 그 타입을 고르면 수신자가 0명이 되고 로그도 남지 않기 때문이다.
+- 서버는 저장 시 `relation` 값이 이 목록 안에 있는지 검증한다 — 오타가 발송 시점이 아니라 저장 시점에 드러난다.
+- 리스너가 실제로 그 키를 공급하는지는 선언과 별개다. 선언만 하고 공급하지 않으면 같은 「조용한 0명」이 된다.
 
 ### 코어 config 블록
 
@@ -613,6 +649,7 @@ user_id 없는 비회원(주문자 이메일/이름만 보유)도 회원과 동�
 ```
 
 - `trigger_user_id` 가 있으면 User, 없고 `guest_recipient` 가 있으면 GuestNotifiable 을 수신자로 반환합니다.
+- **삭제 회원은 폴백하지 않습니다.** `trigger_user_id` 가 있는데 그 계정이 삭제되어 없으면 `guest_recipient` 가 함께 실려 있어도 그 주소(주문서 연락처 등)로 대신 보내지 않고 0명이 되며, 발송 이력에 `notification.skipped.member_account_missing` 사유로 남습니다. 탈퇴 회원(행은 남고 연락처가 익명화됨)은 그 회원 자신으로 해석되어 알림함(`database`)은 받고 바깥 채널만 건너뜁니다(`withdrawn_recipient`). 두 판정은 `NotificationWithdrawnRecipientPolicy` 한 곳이 소유합니다 — 수신자 해석과 발송 루프가 같은 객체를 씁니다.
 - 중복 제거 키는 네임스페이스 분리: 회원 `user:{id}` / 비회원 `guest:{이메일 해시}` — null-id 게스트가 하나로 뭉개지지 않습니다.
 - `exclude_trigger_user` 는 회원(user_id) 기준이라 게스트 수신자를 깨뜨리지 않습니다.
 
@@ -626,8 +663,13 @@ user_id 없는 비회원(주문자 이메일/이름만 보유)도 회원과 동�
 | `tab_channels` | string[] | 이 채널의 탭이 대표하는 채널 id 목록. 목록 중 하나라도 활성 저장이면 탭을 노출한다(여러 채널을 하나의 탭으로 묶을 때) |
 | `tab_label_key` | string | 탭 라벨용 프론트 lang 키(`$t` 해석). 카드 라벨(`name_key`)과 분리 |
 | `hidden_template_editor` | bool | 알림 템플릿 [편집] 모달에서 코어의 언어탭·제목·본문·클릭 URL·변수 안내·[미리보기]·코어 [저장]을 숨긴다. 그 채널의 본문 규격이 코어 템플릿과 달라 확장이 편집기와 저장을 대신할 때 선언한다. 수신자 규칙·[취소]는 남는다 |
+| `template_editor` | `'rich'\|'plain'\|'none'` | 본문 편집기의 **종류**를 채널이 정한다. `rich` 는 `extension_point` `html_editor` 슬롯(CKEditor 등이 채운다, 없으면 평문으로 폴백) · `plain` 은 평문 입력 · `none` 은 `hidden_template_editor` 와 같다. 코어 기본값은 **mail=`rich` · database=`plain`** 이고 미선언 채널은 `plain` 이다 |
 
-`hidden_template_editor` 를 선언한 확장은 편집 모달의 확장 지점 두 곳에 자기 UI 를 주입한다(3면 공통 이름 — extension_point 파일 1본으로 세 화면에 주입된다).
+**`template_editor` 를 반드시 선언해야 하는 이유** — 본문이 실제로 어떻게 그려지는지는 채널마다 다르다. 사이트내 알림(database)은 사용자 알림센터가 본문을 **평문으로** 그리므로, 편집기만 서식 편집기로 열어 두면 운영자가 넣은 태그가 사용자 화면에 **글자 그대로** 보인다. 관리자 [미리보기]도 이 값을 따르므로, 값을 잘못 선언하면 운영자가 본 것과 사용자가 받는 것이 갈린다.
+
+`hidden_template_editor: true` 는 `template_editor: 'none'` 으로 해석되어 **하위호환이 유지된다** — 기존 확장은 고치지 않아도 된다.
+
+`none`(또는 `hidden_template_editor`)을 선언한 확장은 편집 모달의 확장 지점 두 곳에 자기 UI 를 주입한다(3면 공통 이름 — extension_point 파일 1본으로 세 화면에 주입된다).
 
 | extension_point | 위치 | props |
 | --- | --- | --- |

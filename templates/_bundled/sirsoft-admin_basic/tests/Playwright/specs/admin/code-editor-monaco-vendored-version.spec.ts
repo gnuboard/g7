@@ -19,7 +19,8 @@
  *
  * @scenario asset_class=vendored, outcome=loaded
  * @effects vendored_asset_declared_path_exists_on_disk, runtime_asset_served_same_origin,
- *          vendored_editor_mounts_without_fallback, vendored_asset_version_matches_declaration
+ *          vendored_editor_mounts_without_fallback, vendored_asset_version_matches_declaration,
+ *          vendored_amd_loader_runs_exactly_once
  *
  * 실행: `code-editor-*.spec.ts` 는 `--workers=1` 로 돌린다 — 사유는
  * `code-editor-file-crud.spec.ts` 헤더 참조(같은 시드 화면을 공유해 병렬에서 서로를 밟는다).
@@ -150,5 +151,47 @@ test.describe('@sirsoft-admin_basic 코드 편집기 동봉 Monaco', () => {
     );
 
     expect(relevant, `Monaco 관련 콘솔 오류: ${JSON.stringify(relevant)}`).toEqual([]);
+  });
+
+  /**
+   * AMD 로더는 **한 판에 한 번만** 실행돼야 한다. (S3-D12)
+   *
+   * 편집기를 띄우려면 Monaco 를 `window.monaco` 에 미리 심어야 한다 — `@monaco-editor/loader`
+   * 가 인스턴스를 `editor.main` 의 `m` 에서 꺼내는데 0.56.0 은 `m` 을 내보내지 않기 때문이다.
+   * 그런데 그 심기와 라이브러리 자신의 주입이 겹치면 **로더 스크립트가 두 번 실행**되어
+   * `_amdLoaderGlobal` 재선언 SyntaxError 가 나고, 그 판의 `require` 가 통째로 죽는다.
+   *
+   * 이 축이 없으면 「편집기가 뜬다」만 보고 지나친다 — 로더가 두 번 돌아도 먼저 뜬 편집기는
+   * 살아 있어서, 마운트만 재는 축은 **green 으로 통과한다**(2026-09-16 실측: 스크립트 태그가
+   * 3개까지 늘어난 상태에서도 편집기는 떴다).
+   *
+   * @scenario asset_class=vendored, outcome=loaded
+   *
+   * @effects vendored_amd_loader_runs_exactly_once
+   */
+  test('AMD 로더 스크립트가 한 번만 실행된다 (중복 주입 금지)', async ({ page, layoutEditToken }) => {
+    const fatal: string[] = [];
+
+    page.on('pageerror', (error) => fatal.push(String(error)));
+
+    await openCodeEditor(page, layoutEditToken);
+    await page.locator('#editor_card').getByText(/\.g7\.html$/).first().click();
+
+    await expect(
+      page.locator('#editor_card .monaco-editor').first(),
+      'Monaco 가 마운트되지 않았다',
+    ).toBeVisible({ timeout: 30_000 });
+
+    const loaderTags = await page.locator('script[src*="/vs/loader.js"]').count();
+
+    expect(
+      loaderTags,
+      `AMD 로더 스크립트가 ${loaderTags}개다 — 두 번 실행되면 그 판의 require 가 죽는다`,
+    ).toBe(1);
+
+    expect(
+      fatal.filter((text) => /_amdLoaderGlobal|has already been declared/.test(text)),
+      'AMD 로더가 중복 실행됐다',
+    ).toEqual([]);
   });
 });

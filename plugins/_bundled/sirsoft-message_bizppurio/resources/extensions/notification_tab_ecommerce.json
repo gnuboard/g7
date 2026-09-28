@@ -12,7 +12,7 @@
             "auth_required": true,
             "fallback": {
                 "data": {
-                    "templates": []
+                    "templates": {}
                 }
             },
             "comment": "행 라이프사이클 표시용 요약 맵(notification_type 키). auto_fetch:false — 설정 페이지 전 탭 자동 호출 방지, 비즈뿌리오 탭 진입 시 init_actions 로 조회."
@@ -94,7 +94,7 @@
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "flex-center gap-2"
+                                        "className": "flex items-center gap-2"
                                     },
                                     "children": [
                                         {
@@ -142,7 +142,7 @@
                             "name": "Div",
                             "if": "{{(availableChannels?.data?.channels ?? []).find(c => c.id === (query.channel))?.is_test_mode === true}}",
                             "props": {
-                                "className": "flex-center gap-2 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700"
+                                "className": "flex items-center gap-2 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700"
                             },
                             "children": [
                                 {

@@ -1,103 +1,99 @@
 {
-    "comment": "구매자 주문 상세의 결제 정보 패널에 토스 영수증 링크를 덧붙인다. 영수증 주소는 PG 가 발급하므로 코어가 갖고 있지 않다",
-    "target_layout": "mypage/orders/show",
-    "injections": [
+    "comment": "구매자 주문 상세의 결제 정보 패널에 토스 영수증 링크를 덧붙인다. 영수증 주소는 PG 가 발급하므로 코어가 갖고 있지 않다. target_layout(mypage/orders/show) 대신 공용 확장 슬롯을 겨냥한다 — 이 결제 정보 카드(partials/mypage/orders/_payment)는 주문 상세 말고도 클레임 신청서 상세가 그대로 재사용한다. 레이아웃 이름을 겨냥하면 그 한 화면에서만 뜨고 나머지 화면은 카드는 나오는데 이 블록만 빠진 채 열린다(오류·경고 없음). 슬롯은 partial 을 따라간다. 2026-09-01 확정.",
+    "extension_point": "mypage_order_payment_provider_slot",
+    "mode": "append",
+    "priority": 100,
+    "components": [
         {
-            "target_id": "order_payment_info_panel",
-            "position": "append_child",
-            "components": [
+            "type": "basic",
+            "name": "Div",
+            "if": "{{order.data.payment?.pg_provider === 'tosspayments' && !!order.data.payment?.pg_receipt_url}}",
+            "props": {
+                "className": "pt-4 mt-2 border-t border-gray-200 dark:border-gray-700 space-y-3"
+            },
+            "children": [
                 {
                     "type": "basic",
                     "name": "Div",
-                    "if": "{{order.data.payment?.pg_provider === 'tosspayments' && !!order.data.payment?.pg_receipt_url}}",
+                    "if": "{{!!order.data.payment?.is_escrow}}",
                     "props": {
-                        "className": "pt-4 mt-2 border-t border-gray-200 dark:border-gray-700 space-y-3"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Div",
-                            "if": "{{!!order.data.payment?.is_escrow}}",
-                            "props": {
-                                "className": "flex-between"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "props": {
-                                        "className": "text-label-subtle"
-                                    },
-                                    "text": "$t:sirsoft-tosspayments.user.payment_type_label"
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "props": {
-                                        "className": "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300"
-                                    },
-                                    "text": "$t:sirsoft-tosspayments.user.escrow_yes"
-                                }
-                            ]
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Div",
-                            "props": {
-                                "className": "flex-between"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "props": {
-                                        "className": "text-label-subtle"
-                                    },
-                                    "text": "$t:sirsoft-tosspayments.user.receipt_label"
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "A",
-                                    "props": {
-                                        "href": "{{order.data.payment.pg_receipt_url}}",
-                                        "target": "_blank",
-                                        "rel": "noopener noreferrer",
-                                        "className": "text-sm text-blue-600 dark:text-blue-400 hover:underline"
-                                    },
-                                    "text": "$t:sirsoft-tosspayments.user.receipt_view"
-                                }
-                            ]
-                        }
-                    ]
-                },
-                {
-                    "type": "basic",
-                    "name": "Div",
-                    "if": "{{order.data.payment?.pg_provider === 'tosspayments' && !!order.data.cash_receipt?.receipt_url}}",
-                    "props": {
-                        "className": "pt-4 mt-2 border-t border-gray-200 dark:border-gray-700 flex-between"
+                        "className": "flex-between"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-label-subtle"
+                                "className": "text-sm text-gray-500 dark:text-gray-400"
                             },
-                            "text": "$t:sirsoft-tosspayments.user.cash_receipt_label"
+                            "text": "$t:sirsoft-tosspayments.user.payment_type_label"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300"
+                            },
+                            "text": "$t:sirsoft-tosspayments.user.escrow_yes"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex-between"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "text-sm text-gray-500 dark:text-gray-400"
+                            },
+                            "text": "$t:sirsoft-tosspayments.user.receipt_label"
                         },
                         {
                             "type": "basic",
                             "name": "A",
                             "props": {
-                                "href": "{{order.data.cash_receipt.receipt_url}}",
+                                "href": "{{order.data.payment.pg_receipt_url}}",
                                 "target": "_blank",
                                 "rel": "noopener noreferrer",
                                 "className": "text-sm text-blue-600 dark:text-blue-400 hover:underline"
                             },
-                            "text": "$t:sirsoft-tosspayments.user.cash_receipt_view"
+                            "text": "$t:sirsoft-tosspayments.user.receipt_view"
                         }
                     ]
+                }
+            ]
+        },
+        {
+            "type": "basic",
+            "name": "Div",
+            "if": "{{order.data.payment?.pg_provider === 'tosspayments' && !!order.data.cash_receipt?.receipt_url}}",
+            "props": {
+                "className": "pt-4 mt-2 border-t border-gray-200 dark:border-gray-700 flex-between"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Span",
+                    "props": {
+                        "className": "text-sm text-gray-500 dark:text-gray-400"
+                    },
+                    "text": "$t:sirsoft-tosspayments.user.cash_receipt_label"
+                },
+                {
+                    "type": "basic",
+                    "name": "A",
+                    "props": {
+                        "href": "{{order.data.cash_receipt.receipt_url}}",
+                        "target": "_blank",
+                        "rel": "noopener noreferrer",
+                        "className": "text-sm text-blue-600 dark:text-blue-400 hover:underline"
+                    },
+                    "text": "$t:sirsoft-tosspayments.user.cash_receipt_view"
                 }
             ]
         }

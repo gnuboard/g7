@@ -53,7 +53,14 @@
             "addresses": "회원 배송지 목록",
             "inquiries": "상품문의 목록",
             "privacyTargets": "보유기간 처리 대상 주문 목록",
-            "privacyManualRuns": "개인정보 조치 직권 실행 상태"
+            "privacyManualRuns": "개인정보 조치 직권 실행 상태",
+            "claim_detail": "취소/반품/교환 상세",
+            "claim_logs": "취소/반품/교환 활동 로그",
+            "claim_reasons": "취소/반품/교환 사유",
+            "claim_settings": "배송정책 클레임 설정",
+            "claims": "취소/반품/교환 목록",
+            "orderClaims": "주문 클레임 내역",
+            "claimRequestContext": "직권 접수 문맥"
         }
     },
     "common": {
@@ -284,24 +291,28 @@
                 "recipient": "수령인",
                 "address": "주소"
             },
-            "filters": {
-                "search_label": "검색 대상",
-                "keyword_label": "검색어",
-                "keyword_placeholder": "검색어 입력",
-                "date_label": "등록일",
-                "search": "검색",
-                "reset": "초기화",
-                "is_default_label": "기본 배송지",
-                "is_default_all": "전체",
+            "search": {
+                "placeholder": "수령인·주소로 검색",
+                "column_select": "컬럼 선택"
+            },
+            "filter": {
+                "member": "회원",
+                "member_select": "회원 선택",
+                "member_selected_count": "{count}명 선택됨",
+                "member_search_placeholder": "이름·이메일로 검색",
+                "member_search_initial": "이름이나 이메일을 입력하세요",
+                "created_at": "등록일",
+                "is_default": "기본 배송지",
                 "is_default_only": "기본만",
                 "is_default_except": "기본 제외",
-                "member_filter_notice": "특정 회원의 배송지만 표시 중",
-                "member_filter_clear": "회원 필터 해제"
+                "search": "검색",
+                "reset": "초기화"
             },
             "columns": {
                 "created_at": "등록일",
                 "member": "회원",
                 "recipient": "수령인",
+                "contact": "연락처",
                 "address": "주소"
             },
             "badges": {
@@ -311,10 +322,10 @@
             },
             "actions": {
                 "delete": "삭제",
-                "view_member": "회원 정보"
+                "view_member": "회원 정보",
+                "search_member": "이 회원으로 검색"
             },
             "bulk": {
-                "selected_count": "{{count}}개 선택됨",
                 "delete": "선택 삭제"
             },
             "sort": {
@@ -323,17 +334,18 @@
             },
             "table": {
                 "total_count": "총 {{count}}건",
+                "selected_count": "{{count}}개 선택됨",
                 "empty": "배송지가 없습니다."
             },
             "modal": {
                 "delete": {
                     "title": "이 배송지를 삭제할까요?",
-                    "message": "회원의 배송지 목록에서 사라집니다. 이미 접수된 주문의 배송지에는 영향이 없습니다."
+                    "message": "{{member}} 회원의 배송지(수령인 {{recipient}})를 삭제합니다.",
+                    "warning": "회원의 배송지 목록에서 사라집니다. 이미 접수된 주문의 배송지에는 영향이 없습니다."
                 },
                 "bulk_delete": {
                     "title": "선택한 배송지를 삭제할까요?",
-                    "message": "선택한 {{count}}개의 배송지를 삭제하시겠습니까?",
-                    "deleting": "삭제 중..."
+                    "message": "선택한 {{count}}개의 배송지를 삭제합니다."
                 }
             }
         },
@@ -425,7 +437,14 @@
             "view_wishlists": "찜 목록",
             "view_carts": "장바구니",
             "view_addresses": "배송지",
-            "view_inquiries": "상품문의"
+            "view_inquiries": "상품문의",
+            "saved_addresses": "저장된 배송지",
+            "address_empty": "등록한 배송지가 없습니다.",
+            "address_default": "기본",
+            "address_more": "외 {{count}}건은 배송지 관리에서 봅니다."
+        },
+        "claim": {
+            "$partial": "partial/ko/admin/claim.json"
         }
     },
     "user": {
@@ -447,6 +466,12 @@
         "expiring_soon": "소멸 예정 {{amount}} P",
         "view_history": "마일리지 내역",
         "disabled_notice": "마일리지 기능이 비활성화되어 있습니다."
+    },
+    "user_address_card": {
+        "title": "기본 배송지",
+        "manage": "배송지 관리",
+        "default_badge": "기본",
+        "empty_notice": "등록한 배송지가 없습니다. 배송지를 등록하면 주문서에 자동으로 채워집니다."
     },
     "product": {
         "$partial": "partial/ko/product.json"

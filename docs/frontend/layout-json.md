@@ -40,8 +40,9 @@
 2. [필수 필드](#필수-필드)
 3. [레이아웃 권한 (permissions)](#레이아웃-권한-permissions)
 4. [컴포넌트 정의](#컴포넌트-정의)
-5. [격리된 상태 (isolatedState)](#격리된-상태-isolatedstate)
-6. [텍스트 렌더링](#텍스트-렌더링)
+5. [레이아웃 최상위 initLocal](#레이아웃-최상위-initlocal)
+6. [격리된 상태 (isolatedState)](#격리된-상태-isolatedstate)
+7. [텍스트 렌더링](#텍스트-렌더링)
 
 ---
 
@@ -528,7 +529,7 @@ post-cache filtering — 기존 캐시 구조에 영향 없음
       "pattern": "/api/modules/sirsoft-ecommerce/*",
       "headers": {
         "X-Cart-Key": "{{_global.cartKey}}",
-        "X-User-Locale": "{{$locale}}"
+        "X-User-Locale": "{{$locale ?? 'ko'}}"
       }
     }
   ]
@@ -736,6 +737,56 @@ Laravel의 `FormRequest::validated()` 메서드는 `rules()`에 정의된 필드
 새 소비자를 만들 때는 재귀 제거를 새로 짜지 않고 `LayoutService::stripDeveloperComments`(public) 를 부른다 — 각자 구현하면 한쪽만 키를 늘렸을 때 조용히 갈린다.
 
 제거 지점을 **병합 함수 안에만** 두면 그 뒤에 얹히는 것이 새어 나간다. 확장 주입 조각(`resources/extensions/`)이 실제로 그렇게 빠져나갔다 — 주석 제거는 병합 시점에 일어나는데 `applyExtensions` 는 그 뒤에 얹히므로 조각의 주석은 제거를 지나쳤고, 같은 응답 안에서 본문에는 주석이 없고 주입 조각에만 있는 상태로 서빙되었다. 회귀 잠금: `tests/Feature/Api/Public/{LayoutServingTest,LayoutPreviewControllerTest}.php`.
+
+---
+
+## 레이아웃 최상위 initLocal
+
+레이아웃 최상위 `initLocal`(구 `state`, engine-v1.11.0+ 별칭)은 `_local` 의 **정적 초기값**을 세운다.
+데이터 소스의 `initLocal`(응답을 `_local` 로 옮기는 옵션)과는 다른 것이다.
+
+<!-- pair:skip initLocal 설명용 발췌 — 소스는 templates/_bundled/sirsoft-basic/layouts/shop/guest_claim_show.g7.html -->
+```json
+{
+  "layout_name": "shop/guest_claim_show",
+  "initLocal": {
+    "isGuest": true,
+    "withdrawRefreshDataSourceId": "claim"
+  }
+}
+```
+
+### 값은 그대로 복사된다 — 표현식은 해석되지 않는다
+
+엔진은 값을 JSON 깊은 복사로 옮긴다. 그래서 `{{...}}` 를 쓰면 **그 문자열 자체**가 `_local` 에 들어간다.
+
+| ❌ 금지 | ✅ 올바른 사용 |
+| --- | --- |
+| `"initLocal": { "apiBase": "/api/orders/{{_global.orderNumber}}/claims" }` | 표현식이 필요한 값은 `init_actions` 의 `setState` 로 세운다 |
+
+어긋나도 예외가 나지 않는다 — 주소에 `{{_global.orderNumber}}` 가 그대로 실려 요청이 404 가 되거나,
+화면이 그 문자열을 그대로 출력한다. 정적 리터럴(불리언·숫자·고정 문자열·고정 배열)만 여기 둔다.
+
+### 이미 값이 있는 키는 덮지 않는다
+
+`_local[key]` 가 `undefined` 일 때만 채운다. 앞 화면이 같은 키를 남겨 두었다면 그 값이 유지되므로,
+화면마다 초기값이 달라야 하는 키는 `init_actions` 에서 명시적으로 세운다.
+
+### 실행 순서
+
+```text
+blocking 데이터 소스 조회
+  → 레이아웃 initLocal/initGlobal/initIsolated
+    → 데이터 소스의 initLocal/initGlobal/initIsolated
+      → init_actions (부모 → 자식 순)
+```
+
+`blocking` 데이터 소스는 이 사슬의 **맨 앞**에서 조회된다. 그래서 `init_actions` 나 `initLocal` 이
+세우는 값을 blocking 데이터 소스의 주소·헤더에서 읽을 수 없다 — 그 자리에는 아직 아무것도 없다.
+그 값이 필요한 데이터 소스는 `progressive` 로 두고 `blur_until_loaded` 로 로딩 중을 가린다.
+
+`extends` 로 상속하면 부모의 `init_actions` 가 자식보다 먼저 실행되므로, 부모가 세운 `_global` 값은
+자식의 `init_actions` 에서 읽을 수 있다.
 
 ---
 

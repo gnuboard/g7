@@ -44,24 +44,14 @@
                             "if": "{{!_local.isAddingCarrier}}",
                             "actions": [
                                 {
-                                    "comment": "택배사 추가 시작. 빈 임시 폼을 세우고 이전 오류를 함께 지운다.",
+                                    "comment": "신규 행의 name 은 활성 언어팩($locales) 전체에 대한 빈 문자열 맵으로 시드한다. [추가] 확정 게이트가 `name[현재 로케일]` 을 요구하므로, ko/en 을 리터럴로 열거하면 그 밖의 로케일 운영자는 그 언어의 입력칸도 언어 추가 버튼(MultilingualInput 은 activeLocales 를 value 의 키에서 뽑고 버튼을 현재 로케일 필드에만 붙인다)도 없어 폼을 영영 확정할 수 없다 — 그동안 페이지 [저장]은 그 폼을 확정하라고 막는다.",
                                     "type": "click",
                                     "handler": "setState",
                                     "params": {
                                         "target": "local",
                                         "isAddingCarrier": true,
-                                        "carrierFormErrors": null,
-                                        "carrierForm": {
-                                            "code": "",
-                                            "name": {
-                                                "ko": "",
-                                                "en": ""
-                                            },
-                                            "type": "domestic",
-                                            "tracking_url": "",
-                                            "is_active": true,
-                                            "sort_order": 0
-                                        }
+                                        "carrierForm": "{{ { code: '', name: Object.fromEntries(($locales ?? []).map(l => [l, ''])), type: 'domestic', tracking_url: '', is_active: true, sort_order: 0 } }}",
+                                        "carrierFormErrors": null
                                     }
                                 }
                             ],
@@ -325,7 +315,7 @@
                                     "handler": "conditions",
                                     "conditions": [
                                         {
-                                            "if": "{{(_local.carrierForm?.code ?? '').trim() && (_local.carrierForm?.name?.ko ?? '').trim()}}",
+                                            "if": "{{(_local.carrierForm?.code ?? '').trim() && (_local.carrierForm?.name?.[($locale ?? 'ko')] ?? '').trim()}}",
                                             "then": {
                                                 "handler": "setState",
                                                 "params": {
@@ -345,7 +335,7 @@
                                                     "target": "local",
                                                     "carrierFormErrors": {
                                                         "code": "{{!(_local.carrierForm?.code ?? '').trim() ? true : null}}",
-                                                        "name_ko": "{{!(_local.carrierForm?.name?.ko ?? '').trim() ? true : null}}"
+                                                        "name_ko": "{{!(_local.carrierForm?.name?.[($locale ?? 'ko')] ?? '').trim() ? true : null}}"
                                                     }
                                                 }
                                             }
@@ -587,7 +577,7 @@
                                                     "value": "{{$carrier.name ?? {}}}",
                                                     "layout": "compact",
                                                     "placeholder": "$t:sirsoft-ecommerce.admin.settings.shipping.carriers.form.name_ko_placeholder",
-                                                    "error": "{{_local.errors?.['shipping.carriers.' + $carrier._idx + '.name.ko']?.[0] ?? _local.errors?.['shipping.carriers.' + $carrier._idx + '.name']?.[0] ?? ''}}",
+                                                    "error": "{{_local.errors?.['shipping.carriers.' + $carrier._idx + '.name.' + ($locale ?? 'ko')]?.[0] ?? _local.errors?.['shipping.carriers.' + $carrier._idx + '.name']?.[0] ?? ''}}",
                                                     "disabled": "{{_computed.isReadOnly}}"
                                                 }
                                             }
@@ -729,7 +719,7 @@
                                                 ],
                                                 "props": {
                                                     "type": "button",
-                                                    "className": "p-1.5 text-gray-400 hover:text-red-600 dark:text-red-400 dark:text-gray-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                                    "className": "p-1.5 text-gray-400 hover:text-red-600 dark:text-gray-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
                                                     "title": "$t:common.delete",
                                                     "disabled": "{{_computed.isReadOnly}}"
                                                 },

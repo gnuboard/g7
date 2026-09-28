@@ -19,20 +19,21 @@
             <set-state target="global" directIssueSearchKeyword="{{$event.target.value}}"/>
             <api-call if="{{($event.target.value ?? '').length > 0}}" auth_mode="required" target="/api/admin/users/search" method="GET">
               <success>
-                <set-state target="global" directIssueSearchResults="{{(response.data ?? []).map(u => ({ uuid: u.uuid, name: u.name, email: u.email }))}}"/>
+                <!-- 결과를 만든 키워드는 **응답이 실어 온 값**(`meta.keyword`)을 쓴다 — `$event.target.value` 로 찍으면 그것은 **응답이 도착한 순간의 입력칸**이라, 가장 큰 옛 응답(한 글자가 부른 전체 회원)이 가장 늦게 와서 현재 키워드의 것으로 둔갑한다. 아래 가드가 그대로 통과해 엉뚱한 목록이 그려졌다(2026-09-22 #599 3차 실측 T2-D1 — `MEAS599T-S2` 를 친 화면에 전체 회원 83행). 서버가 자기 키워드를 답하므로 화면은 그것과 지금 입력값을 견주기만 한다. -->
+                <set-state target="global" directIssueSearchResults="{{(response.data ?? []).map(u => ({ uuid: u.uuid, name: u.name, email: u.email }))}}" directIssueSearchResultsKeyword="{{response?.meta?.keyword ?? ''}}"/>
               </success>
               <fail>
                 <toast type="error" message="{{error.message ?? '$t:sirsoft-ecommerce.admin.promotion_coupon.modal.direct_issue.search_failed'}}"/>
               </fail>
               <query keyword="{{$event.target.value}}"/>
             </api-call>
-            <set-state if="{{($event.target.value ?? '').length === 0}}" target="global" :directIssueSearchResults="[]"/>
+            <set-state if="{{($event.target.value ?? '').length === 0}}" target="global" :directIssueSearchResults="[]" :directIssueSearchResultsKeyword="null"/>
           </sequence>
         </on>
       </input>
     </div>
-    <!-- 검색 결과 목록 -->
-    <div data-if="{{(_global.directIssueSearchResults ?? []).length > 0}}" class="border border-gray-200 dark:border-gray-700 rounded-md max-h-40 overflow-y-auto mb-4 divide-y divide-gray-100 dark:divide-gray-700">
+    <!-- 검색 결과 목록 — 지금 입력값이 만든 결과일 때만 그린다 (늦게 온 옛 응답은 잠시 감출 뿐 잘못된 행을 보여주지 않는다). 입력값은 trim 해 견준다 — 서버가 trim 한 검색어를 `meta.keyword` 로 돌려주므로 앞뒤 공백이 있는 입력은 그대로 견주면 영영 일치하지 않는다. -->
+    <div data-if="{{(_global.directIssueSearchResults ?? []).length > 0 &amp;&amp; (_global.directIssueSearchResultsKeyword ?? null) === (_global.directIssueSearchKeyword ?? '').trim()}}" class="border border-gray-200 dark:border-gray-700 rounded-md max-h-40 overflow-y-auto mb-4 divide-y divide-gray-100 dark:divide-gray-700">
       <div data-each="member, memberIdx in {{_global.directIssueSearchResults ?? []}}" class="flex items-center justify-between px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-700">
         <div class="flex flex-col">
           <span class="text-sm font-medium text-gray-900 dark:text-white">{{member.name}}</span>

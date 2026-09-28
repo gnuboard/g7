@@ -7,7 +7,11 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Models\Order;
+use Modules\Sirsoft\Ecommerce\Models\OrderCancelOption;
+use Modules\Sirsoft\Ecommerce\Models\OrderExchangeOption;
 use Modules\Sirsoft\Ecommerce\Models\OrderOption;
+use Modules\Sirsoft\Ecommerce\Models\OrderRefundOption;
+use Modules\Sirsoft\Ecommerce\Models\OrderReturnOption;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderOptionRepositoryInterface;
 
 /**
@@ -17,6 +21,9 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderOptionRepositoryInterf
  */
 class OrderOptionRepository implements OrderOptionRepositoryInterface
 {
+    /**
+     * @param  OrderOption  $model  주문 옵션 모델
+     */
     public function __construct(
         protected OrderOption $model
     ) {}
@@ -136,6 +143,27 @@ class OrderOptionRepository implements OrderOptionRepositoryInterface
     {
         return OrderOption::where('parent_option_id', $fromParentId)
             ->update(['parent_option_id' => $toParentId]);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function transferClaimOptionReferences(int $fromOrderOptionId, int $toOrderOptionId): int
+    {
+        $moved = 0;
+
+        foreach ([
+            OrderRefundOption::class,
+            OrderCancelOption::class,
+            OrderReturnOption::class,
+            OrderExchangeOption::class,
+        ] as $model) {
+            $moved += $model::query()
+                ->where('order_option_id', $fromOrderOptionId)
+                ->update(['order_option_id' => $toOrderOptionId]);
+        }
+
+        return $moved;
     }
 
     /**

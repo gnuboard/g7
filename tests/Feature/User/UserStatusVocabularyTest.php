@@ -115,8 +115,10 @@ class UserStatusVocabularyTest extends TestCase
         foreach ($layouts as $path => $markup) {
             $absent = array_values(array_filter(
                 $variants,
+                // class-map 저작 문법(`<variant when="success">…</variant>`)도 손으로 적은 매핑이다.
                 static fn (string $variant): bool => ! str_contains($markup, $variant.':')
-                    && ! str_contains($markup, "'".$variant."'"),
+                    && ! str_contains($markup, "'".$variant."'")
+                    && ! str_contains($markup, 'when="'.$variant.'"'),
             ));
 
             if ($absent !== []) {
@@ -240,6 +242,11 @@ class UserStatusVocabularyTest extends TestCase
      * `order_status_variant` 처럼 접두사가 붙은 것은 다른 도메인 값이므로 제외한다 —
      * 앞 문자가 `_` 인 경우를 부정 후방탐색으로 걸러낸다.
      *
+     * 컴포넌트에 변형 값을 그대로 넘기는 자리(`<badge variant="{{…status_variant…}}">` ·
+     * `<status-badge status="{{…status_variant…}}">`)도 뺀다 — 색 매핑을 컴포넌트가 소유해 화면이 손으로 적은
+     * 목록이 없다(컴포넌트 쪽 상태 합집합은 {@see test_template_component_status_union_covers_every_user_status} 가 본다).
+     * 클레임·주문 화면이 도메인 상태 변형을 이 형태로 넘긴다(develop-7.1.0 16차 병합에서 합류).
+     *
      * @return array<string, string> 절대경로 => 원문
      */
     private function badgeLayouts(): array
@@ -249,7 +256,9 @@ class UserStatusVocabularyTest extends TestCase
         foreach (LayoutCorpus::scan('.g7.html') as $path) {
             $markup = (string) file_get_contents($path);
 
-            if (preg_match('/(?<!_)status_variant/', $markup) === 1) {
+            $handwritten = (string) preg_replace('/\b(?:variant|status)="\{\{[^"]*?(?<!_)status_variant[^"]*?\}\}"/', '', $markup);
+
+            if (preg_match('/(?<!_)status_variant/', $handwritten) === 1) {
                 $found[$path] = $markup;
             }
         }

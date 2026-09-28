@@ -86,7 +86,7 @@
                   <div data-ref="board_recipients_badge_{{defIdx}}" data-if="{{((def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))?.recipients ?? []).length > 0}}" class="flex-center flex-wrap gap-1.5 mt-2">
                     <span class="text-tertiary font-medium">$t:admin.settings.notification_definitions.recipients_label</span>
                     <span data-each="rcpt in {{(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))?.recipients ?? []}}" class="inline-flex items-center gap-1 text-xs px-2 py-0.5 bg-purple-50 dark:bg-purple-900/30 border border-purple-200 dark:border-purple-700 text-purple-700 dark:text-purple-300 rounded-full">
-                      <span>{{rcpt.type === 'trigger_user' ? '$t:admin.settings.notification_definitions.recipients.types.trigger_user' : rcpt.type === 'related_user' ? '$t:admin.settings.notification_definitions.recipients.types.related_user' + (rcpt.relation ? ' (' + rcpt.relation + ')' : '') : rcpt.type === 'role' ? '$t:admin.settings.notification_definitions.recipients.types.role' + ': ' + (rcpt.display_name ?? rcpt.value ?? '') : rcpt.type === 'specific_users' ? '$t:admin.settings.notification_definitions.recipients.types.specific_users' + ': ' + ((rcpt.display_names ?? []).join(', ') || '') : rcpt.type}}</span>
+                      <span>{{rcpt.type === 'trigger_user' ? '$t:admin.settings.notification_definitions.recipients.types.trigger_user' : rcpt.type === 'related_user' ? '$t:admin.settings.notification_definitions.recipients.types.related_user' + (rcpt.relation ? ' (' + rcpt.relation + ')' : '') : rcpt.type === 'role' ? '$t:admin.settings.notification_definitions.recipients.types.role' + ': ' + ((rcpt.display_names ?? []).join(', ') || rcpt.display_name || '') : rcpt.type === 'specific_users' ? '$t:admin.settings.notification_definitions.recipients.types.specific_users' + ': ' + ((rcpt.display_names ?? []).join(', ') || '') : rcpt.type}}</span>
                       <span data-if="{{rcpt.exclude_trigger_user}}" class="text-purple-500 dark:text-purple-400">$t:admin.settings.notification_definitions.recipients.badge.exclude_self</span>
                     </span>
                   </div>
@@ -148,7 +148,9 @@
               <!-- 지금 채널의 문안 하나를 켜고 끈다 — 위 채널 토글과 달리 저장 버튼을 거치지 않고 바로 서버에 간다. 이 토글 자체가 그 채널에 문안이 있을 때만 뜬다 -->
               <div data-if="{{(_local.expandedNotifications ?? {})[def.id]}}" class="mt-3 pt-3">
                 <span class="text-tertiary font-medium mb-2 block">$t:sirsoft-board.admin.settings.notification_definitions.body_preview</span>
-                <html-content content="{{(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))?.body?.[$locale] ?? ''}}" :isHtml="true" class="prose dark:prose-invert prose-sm max-w-none bg-gray-50 dark:bg-gray-900/50 rounded-lg p-3 max-h-48 overflow-y-auto dark:text-white"/>
+                <html-content content="{{(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))?.body?.[$locale] ?? ''}}" isHtml="{{((availableChannels?.data?.channels ?? []).find(c => c.id === (query.channel ?? 'mail'))?.template_editor ?? 'plain') === 'rich'}}" class="prose dark:prose-invert prose-sm max-w-none bg-gray-50 dark:bg-gray-900/50 rounded-lg p-3 max-h-48 overflow-y-auto dark:text-white">
+                  <prop name="comment">"미리보기의 HTML 해석 여부는 **그 채널의 편집기 종류**를 따른다. 사이트내 알림은 알림센터가 평문으로 그리는데 여기서만 HTML 로 해석하면, 관리자가 본 문구와 사용자가 받는 문구가 다르다 — 태그가 글자 그대로 보이는 쪽은 사용자다."</prop>
+                </html-content>
               </div>
             </div>
           </div>

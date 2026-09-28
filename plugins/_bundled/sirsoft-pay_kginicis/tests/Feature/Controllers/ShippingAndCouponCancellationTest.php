@@ -13,6 +13,7 @@ use Modules\Sirsoft\Ecommerce\Enums\CouponIssueRecordStatus;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentStatusEnum;
+use Modules\Sirsoft\Ecommerce\Enums\RefundStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\SequenceType;
 use Modules\Sirsoft\Ecommerce\Models\Coupon;
 use Modules\Sirsoft\Ecommerce\Models\CouponIssue;
@@ -359,7 +360,7 @@ class ShippingAndCouponCancellationTest extends PluginTestCase
             ->postJson("/api/modules/sirsoft-ecommerce/admin/orders/{$order->order_number}/cancel", [
                 'type' => 'full',
                 'reason' => 'changed_mind',
-                'cancel_pg' => true,
+                'auto_advance_refund' => true,
             ]);
 
         $response->assertOk()->assertJsonPath('success', true);
@@ -382,9 +383,9 @@ class ShippingAndCouponCancellationTest extends PluginTestCase
             ->with(
                 self::TID,          // tid
                 'Card',             // payMethod (from payment_meta)
-                $this->anything(),  // cancelPrice (전액취소 시 null, 부분취소 시 int — listener 가 결정)
+                null,               // cancelPrice — 전액취소는 금액을 싣지 않는다(부분취소 코드로 나가면 안 된다)
                 $this->anything(),  // cancelMsg
-                $this->anything(),  // totalAmount
+                null,               // totalAmount — 전액취소에는 잔액을 싣지 않는다
             )
             ->willReturn(self::CANCEL_SUCCESS);
         $this->app->instance(KgInicisApiService::class, $mock);
@@ -396,7 +397,7 @@ class ShippingAndCouponCancellationTest extends PluginTestCase
             ->postJson("/api/modules/sirsoft-ecommerce/admin/orders/{$order->order_number}/cancel", [
                 'type' => 'full',
                 'reason' => 'changed_mind',
-                'cancel_pg' => true,
+                'auto_advance_refund' => true,
             ])->assertOk()->assertJsonPath('success', true);
     }
 
@@ -426,9 +427,9 @@ class ShippingAndCouponCancellationTest extends PluginTestCase
 
         $this->actingAs($this->adminUser)
             ->postJson("/api/modules/sirsoft-ecommerce/admin/orders/{$order->order_number}/cancel", [
-                'type'      => 'full',
-                'reason'    => 'changed_mind',
-                'cancel_pg' => true,
+                'type' => 'full',
+                'reason' => 'changed_mind',
+                'auto_advance_refund' => true,
             ])->assertOk()->assertJsonPath('success', true);
     }
 
@@ -443,7 +444,7 @@ class ShippingAndCouponCancellationTest extends PluginTestCase
             ->postJson("/api/modules/sirsoft-ecommerce/admin/orders/{$order->order_number}/cancel", [
                 'type' => 'full',
                 'reason' => 'changed_mind',
-                'cancel_pg' => true,
+                'auto_advance_refund' => true,
             ]);
 
         $response->assertOk()->assertJsonPath('success', true);
@@ -482,7 +483,7 @@ class ShippingAndCouponCancellationTest extends PluginTestCase
                 'type' => 'partial',
                 'items' => [['order_option_id' => $options[0]->id, 'cancel_quantity' => 1]],
                 'reason' => 'changed_mind',
-                'cancel_pg' => true,
+                'auto_advance_refund' => true,
             ]);
 
         $response->assertOk()->assertJsonPath('success', true);
@@ -497,7 +498,16 @@ class ShippingAndCouponCancellationTest extends PluginTestCase
         $this->assertEquals(23000, (float) $refund->refund_amount, '상품(20,000) + 배송비 차액(3,000) = 23,000원 환불');
     }
 
-    public function test_partial_cancel_without_pg_never_calls_kginicis_api(): void
+    /**
+     * **접수만 한 취소**는 PG API 를 부르지 않는다. (#599 후속 P2·D3)
+     *
+     * 예전의 `cancel_pg=false` 자리다. 그 플래그는 없앴다 — 끈 채로 카드 취소를 하면 PG 를
+     * 부르지 않고도 환불이 `완료`로 찍혀, **고객 카드는 그대로인데 장부만 환불완료**가 됐다.
+     * 새 모델에서 관리자 [주문취소]는 환불신청서를 접수할 뿐이고, 집행은 `auto_advance_refund`
+     * 를 켰을 때(또는 뒤이은 [환불하기])만 일어난다. 그러므로 접수만 한 이 요청에서는 PG 왕복도
+     * 없고 주문도 아직 취소되지 않는다 — 돈이 돌아가지 않았으므로 취소도 성립하지 않는다.
+     */
+    public function test_request_only_cancel_never_calls_kginicis_api(): void
     {
         $this->expectKgInicisCancelNever();
 
@@ -511,7 +521,7 @@ class ShippingAndCouponCancellationTest extends PluginTestCase
                 'type' => 'partial',
                 'items' => [['order_option_id' => $options[0]->id, 'cancel_quantity' => 1]],
                 'reason' => 'changed_mind',
-                'cancel_pg' => false,
+                'auto_advance_refund' => false,
             ]);
 
         $response->assertOk()->assertJsonPath('success', true);
@@ -520,6 +530,18 @@ class ShippingAndCouponCancellationTest extends PluginTestCase
         $this->assertNotNull($refund);
         $this->assertGreaterThan(0, (float) $refund->refund_amount);
         $this->assertLessThanOrEqual($originalPaid, (float) $refund->refund_amount);
+        $this->assertSame(
+            RefundStatusEnum::REQUESTED,
+            $refund->refund_status,
+            '접수만 했으므로 환불신청서는 신청 상태에 서 있어야 한다',
+        );
+
+        $order->refresh();
+        $this->assertEquals(
+            OrderStatusEnum::PAYMENT_COMPLETE,
+            $order->order_status,
+            '집행 전에는 주문이 취소되지 않는다 — 취소는 환불이 실제로 나간 순간 성립한다 (D3)',
+        );
     }
 
     // ====================================================
@@ -539,7 +561,7 @@ class ShippingAndCouponCancellationTest extends PluginTestCase
             ->postJson("/api/modules/sirsoft-ecommerce/admin/orders/{$order->order_number}/cancel", [
                 'type' => 'full',
                 'reason' => 'changed_mind',
-                'cancel_pg' => true,
+                'auto_advance_refund' => true,
             ]);
 
         $response->assertOk()->assertJsonPath('success', true);
@@ -578,7 +600,7 @@ class ShippingAndCouponCancellationTest extends PluginTestCase
             ->postJson("/api/modules/sirsoft-ecommerce/admin/orders/{$order->order_number}/cancel", [
                 'type' => 'full',
                 'reason' => 'changed_mind',
-                'cancel_pg' => true,
+                'auto_advance_refund' => true,
             ])->assertOk()->assertJsonPath('success', true);
     }
 
@@ -602,7 +624,7 @@ class ShippingAndCouponCancellationTest extends PluginTestCase
                 'type' => 'partial',
                 'items' => [['order_option_id' => $options[0]->id, 'cancel_quantity' => 1]],
                 'reason' => 'changed_mind',
-                'cancel_pg' => true,
+                'auto_advance_refund' => true,
             ]);
 
         $response->assertOk()->assertJsonPath('success', true);
@@ -625,7 +647,7 @@ class ShippingAndCouponCancellationTest extends PluginTestCase
                 'type' => 'partial',
                 'items' => [['order_option_id' => $options[0]->id, 'cancel_quantity' => 1]],
                 'reason' => 'changed_mind',
-                'cancel_pg' => true,
+                'auto_advance_refund' => true,
             ]);
 
         $response->assertStatus(422)->assertJsonPath('success', false);
@@ -646,7 +668,7 @@ class ShippingAndCouponCancellationTest extends PluginTestCase
             ->postJson("/api/modules/sirsoft-ecommerce/admin/orders/{$order->order_number}/cancel", [
                 'type' => 'full',
                 'reason' => 'changed_mind',
-                'cancel_pg' => true,
+                'auto_advance_refund' => true,
             ]);
 
         $response->assertStatus(422)->assertJsonPath('success', false);
@@ -659,6 +681,15 @@ class ShippingAndCouponCancellationTest extends PluginTestCase
     // 6. non-kginicis PG 주문에 대한 무간섭 검증
     // ====================================================
 
+    /**
+     * 다른 PG 로 결제된 주문이면 이 플러그인의 리스너는 지나친다.
+     *
+     * 필터 체인은 구독자 전원을 부르므로, 자기 PG 가 아닌 결제에까지 API 를 쏘면 남의 거래를
+     * 취소하려 든다. 예전에는 `cancel_pg=false` 로 **아무도 부르지 않게** 해 두고 이 사실을
+     * 확인했지만, 그 플래그가 사라진 지금은 **다른 응답자를 세워** 확인한다 — 체인이 실제로
+     * 돌고, 이 플러그인만 손을 떼는 것이 요지이기 때문이다(아무도 응답하지 않으면 코어는 PG
+     * 거절로 보고 전체를 롤백한다).
+     */
     public function test_listener_skips_non_kginicis_payment(): void
     {
         $this->expectKgInicisCancelNever();
@@ -669,11 +700,20 @@ class ShippingAndCouponCancellationTest extends PluginTestCase
 
         $payment->update(['pg_provider' => 'other_pg']);
 
+        // 그 PG 를 담당하는 리스너 역할 — 이 플러그인 다음 우선순위에 선다.
+        HookManager::addFilter(
+            'sirsoft-ecommerce.payment.refund',
+            static fn (array $result, Order $order, OrderPayment $payment): array => $payment->pg_provider === 'other_pg'
+                ? ['success' => true, 'error_code' => null, 'error_message' => null, 'transaction_id' => 'TID_OTHER_PG']
+                : $result,
+            20,
+        );
+
         $response = $this->actingAs($this->adminUser)
             ->postJson("/api/modules/sirsoft-ecommerce/admin/orders/{$order->order_number}/cancel", [
                 'type' => 'full',
                 'reason' => 'changed_mind',
-                'cancel_pg' => false,
+                'auto_advance_refund' => true,
             ]);
 
         $response->assertOk()->assertJsonPath('success', true);

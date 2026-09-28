@@ -12,7 +12,7 @@
 
 `core.privacy.notice_sections` 필터는 `(sections, locale)`를 받습니다. 각 항목은 `title`, `body` 문자열이며 수신자 언어로 작성합니다. 플러그인은 이 코어 계약의 소비자로서 섹션을 취합하고 HTML 이스케이프 후 메일과 사이트 알림 본문에 넣습니다. 섹션에 개인 식별정보를 넣지 마세요. 번들 확장 가운데 이커머스가 「주문 정보」 섹션(주문 기록의 법정 보존기간과, 보유기간 처리를 켰다면 그 뒤의 익명화·삭제 방식)을 기여합니다 — 이커머스를 켜 두면 통지문 마지막에 그 섹션이 실립니다. 회원 완전 삭제 시 증적 행은 유지하고 `user_id`만 익명화합니다. 정책 버전 발행·재동의는 이 기능과 독립입니다.
 
-통지문 자체는 알림 정의 `annual_privacy_notice` 의 채널별 템플릿입니다. 코어 관리자의 「알림 정의」 화면은 `extension_identifier=core` 로 코어 정의만 받으므로, 확장이 들인 정의는 그 확장의 설정 화면에서 편집합니다 — 이 플러그인은 설정 화면 「알림 템플릿」 카드가 그 자리입니다. 발송 채널을 고르고(저장 버튼으로 반영), 채널별 템플릿을 켜고 끄며, 제목·본문·수신자를 고치고 치환 결과를 미리 볼 수 있습니다. 「기본값 복원」은 `core.notification.filter_default_definitions` 로 플러그인이 제공하는 원본을 되돌립니다.
+통지문 자체는 알림 정의 `annual_privacy_notice` 의 채널별 템플릿입니다. 코어 관리자의 「알림 정의」 화면은 `extension_identifier=core` 로 코어 정의만 받으므로, 확장이 들인 정의는 그 확장의 설정 화면에서 편집합니다 — 이 플러그인은 설정 화면 「알림 템플릿」 카드가 그 자리입니다. 발송 채널을 고르고(저장 버튼으로 반영), 채널별 템플릿을 켜고 끄며, 제목·본문·수신자를 고치고 치환 결과를 미리 볼 수 있습니다. 「기본값 복원」은 `core.notification.filter_default_definitions` 로 플러그인이 제공하는 원본을 되돌립니다. 정의는 `audience` 를 `customer` 로 선언합니다 — 수신자가 통지 대상 회원 본인(`trigger_user`)이라서이고, 역할(`role`) 수신자를 두지 않는다는 뜻입니다(코어 알림 정의 계약: 모든 정의가 `audience` 를 선언하고 수신자 규칙과 맞아야 합니다).
 
 카드의 대상 행(`annual_notice_target_row` — 이름 · 이번 주기 대상 · 대상 보기 · 결과 줄)에 있는 **「지금 실행」**은 코어 관리자 직권 실행입니다. 플러그인은 `GdprAnnualNoticeListener` 가
 `core.privacy.manual_run_targets` 필터로 `Privacy\AnnualNoticeManualRunner`(키 `sirsoft-gdpr:annual_notice`)를

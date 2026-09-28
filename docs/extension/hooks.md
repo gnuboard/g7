@@ -285,6 +285,9 @@ sirsoft-page.attachment.filter_upload_file              # 페이지 첨부
 sirsoft-ecommerce.product-image.filter_upload_file      # 상품 이미지
 sirsoft-ecommerce.category-image.filter_upload_file     # 카테고리 이미지
 sirsoft-ecommerce.review-image.filter_upload_file       # 리뷰 이미지 (공개 #96)
+sirsoft-ecommerce.claim-image.before_upload             # 클레임 첨부 (교환·반품·환불 증빙)
+sirsoft-ecommerce.claim-image.filter_upload_file        # 클레임 첨부
+sirsoft-ecommerce.claim-image.after_upload              # 클레임 첨부
 sirsoft-ckeditor5.image.before_upload                   # 에디터 이미지
 sirsoft-ckeditor5.image.filter_upload_file              # 에디터 이미지
 sirsoft-ckeditor5.image.after_upload                    # 에디터 이미지
@@ -1116,6 +1119,59 @@ class ProductService
     }
 }
 ```
+
+### After 훅은 상태를 확정한 뒤 발화한다
+
+`after_*` 훅의 소비자(알림·활동 로그)는 넘겨받은 모델의 **현재 상태를 읽는다**. 그래서 상태 전이와 훅 발화의 순서가 계약이다 — 훅을 먼저 발화하면 정상 경로에서도 소비자가 보는 값이 전이 **전** 값이라, '완료' 를 통지하면서 본문에는 '대기' 라고 적는 알림이 나간다. 예외도 오류도 남지 않고 문구만 어긋난다.
+
+| ❌ 금지 | ✅ 올바른 사용 |
+|--------|---------------|
+| `doAction(...)` 뒤에 상태 전이 | 전이 → `doAction(...)` |
+| 전이 전 인스턴스를 훅 인자로 전달 | 전이가 돌려준 인스턴스(또는 `refresh()` 한 모델)를 전달 |
+| 전이가 거절됐는데 훅은 그대로 발화 | 전이 실패 시 훅도 발화하지 않는다 — 훅 이름이 약속하는 사실이 성립하지 않았다 |
+| 문서가 "옮겨지고 … 훅이 발행됩니다" 로 약속하는데 구현은 반대 순서 | 문서의 순서 서술과 구현을 일치시킨다(어느 쪽을 정본으로 삼을지 먼저 정한다) |
+
+전이 결과를 되받지 않으면 순서만 바꾸고 효과가 없다 — 서비스의 `transition()` 이 새 인스턴스를 돌려주는 구조에서는 지역 변수가 낡은 채로 남는다.
+
+```php
+// ✅ 전이 → (성공한 경우에만) 훅. 훅 인자는 전이 결과 인스턴스.
+if ($this->statusOf($claim) === 'payment_pending') {
+    try {
+        $claim = $this->transition($claim, 'paid');
+    } catch (DomainException $e) {
+        Log::info('전이 거절 — 상태 유지', ['reason' => $e->getMessageKey()]);
+
+        return $payment;   // 훅도 발화하지 않는다
+    }
+}
+
+HookManager::doAction('...payment_completed', $claim, $payment);
+```
+
+---
+
+### 수신자별 알림 값 — `{prefix}.notification.personalize_data`
+
+코어가 알림 한 건을 만들 때 데이터는 **수신자를 알기 전에 한 벌만** 만들어진다. 그래서 같은 알림을 관리자와 구매자가 함께 받으면 링크도 한 벌이고, 관리자가 자기 화면 대신 마이페이지로 가게 된다.
+
+코어는 수신자 루프 **안에서** 아래 필터를 발행한다(`NotificationHookListener::personalize()`). 구독자가 없으면 값이 그대로이므로 비용은 0이다.
+
+```php
+// 발행: 수신자 한 사람마다 1회
+HookManager::applyFilters("{$prefix}.notification.personalize_data", $data, $notifiable, $definition->type, $context, $args);
+```
+
+| 인자 | 무엇인가 |
+|------|----------|
+| `$data` | 이 수신자에게 나갈 치환 값 배열 (반환값이 그대로 쓰인다) |
+| `$notifiable` | 이번 수신자 — `User` 또는 게스트(`GuestNotifiable`) |
+| `$type` | 알림 정의의 유형 문자열(`$definition->type`) — 정의 모델이 아니다. 구독자는 이 값으로 자기 알림인지 가른다 |
+| `$context` | 발행 측이 `extract_data` 에서 실어 둔 **스칼라** 컨텍스트 |
+| `$args` | 원래 훅 인자 |
+
+**규약 — `personalize` 는 `$context` 의 스칼라만 읽는다.** `$args` 의 모델을 다시 읽으면 안 된다. 알림은 큐를 타고 나중에 실행되므로 그 시점의 모델은 **"지금" 상태**다. 과거 사건을 알리는 알림에 현재 상태가 실리고, 오류도 로그도 남지 않는다. 필요한 값은 발행 시점에 `$context` 에 스칼라로 실어 둔다.
+
+**링크 승격은 역할 이름이 아니라 권한으로 가른다.** "이 사람에게 관리자 주소를 줘도 되는가" 는 그 사람이 실제로 그 화면을 열 수 있는지(`NotificationRecipientCapability::can()`)로 판정한다. 역할 이름을 리스너에 박으면 상점이 새 역할을 만들 때마다 리스너를 고쳐야 하고, 권한 없는 사람에게 관리자 주소가 간다.
 
 ---
 

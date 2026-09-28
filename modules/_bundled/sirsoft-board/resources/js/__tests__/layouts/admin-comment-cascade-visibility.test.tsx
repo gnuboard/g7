@@ -18,7 +18,8 @@
  *
  * @scenario comment_trigger=cascade
  * @scenario comment_trigger=user
- * @effects cascade_comment_content_visible
+ * @effects cascade_comment_content_visible,
+ *   cascade_comment_flag_exposed
  */
 
 import { describe, it, expect } from 'vitest';

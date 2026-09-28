@@ -90035,7 +90035,7 @@ HTTP/1.1 200
                                 "type": "order_confirmed",
                                 "channel": "email",
                                 "recipient": "김영희",
-                                "subject": "주문 확인 (주문번호: 20260621-0001)",
+                                "subject": "주문 확인 (주문번호: 20260621-1043226571)",
                                 "status": "sent",
                                 "time": "1 hour ago",
                                 "timestamp": "2026-06-21T15:00:00+09:00"
@@ -186215,7 +186215,7 @@ HTTP/1.1 200
                                 "type": "order_confirmed",
                                 "channel": "email",
                                 "recipient": "김영희",
-                                "subject": "주문 확인 (주문번호: 20260621-0001)",
+                                "subject": "주문 확인 (주문번호: 20260621-1043226571)",
                                 "status": "sent",
                                 "time": "1 hour ago",
                                 "timestamp": "2026-06-21T15:00:00+09:00"

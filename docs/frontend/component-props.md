@@ -372,8 +372,6 @@ Input 컴포넌트는 한글 등 IME 조합 입력을 올바르게 처리합니�
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary' | 'danger' | 'success' | 'outline' | 'ghost';
   size?: 'sm' | 'md' | 'lg';
-  loading?: boolean;
-  icon?: string;
 }
 ```
 
@@ -386,7 +384,8 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
 | `className` | `string` | ❌ | - | CSS 클래스 |
 | `variant` | `string` | ❌ | `"primary"` | 버튼 스타일 |
 | `size` | `string` | ❌ | `"md"` | 버튼 크기 |
-| `loading` | `boolean` | ❌ | `false` | 로딩 상태 |
+
+기본 Button은 `loading` 속성으로 스피너를 자동 표시하지 않습니다. 비동기 버튼은 기존 레이아웃처럼 처리 상태를 `disabled`에 연결하고, 자식 `Icon(name: "spinner")`을 같은 상태로 조건부 표시합니다. 성공·실패 모두 처리 상태를 해제해야 합니다. 부분 조회 탭처럼 포커스를 유지해야 하는 컨트롤은 `aria-disabled`와 액션 실행 조건을 함께 사용합니다.
 
 ### 레이아웃 JSON 사용 예시
 

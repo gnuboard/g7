@@ -34,7 +34,7 @@
                     "type": "basic",
                     "name": "P",
                     "props": {
-                        "className": "text-body"
+                        "className": "text-sm text-gray-700 dark:text-gray-300"
                     },
                     "text": "$t:sirsoft-board.admin.ecommerce_settings.inquiry.description"
                 },
@@ -43,7 +43,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "row-stack"
+                        "className": "flex flex-col gap-2"
                     },
                     "children": [
                         {
@@ -55,7 +55,7 @@
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "form-label"
+                                        "className": "block text-sm font-medium text-gray-900 mb-1 dark:text-white"
                                     },
                                     "text": "$t:sirsoft-board.admin.ecommerce_settings.inquiry.board_label"
                                 },
@@ -79,7 +79,7 @@
                             "name": "Span",
                             "if": "{{_local.errors?.['inquiry.board_slug']}}",
                             "props": {
-                                "className": "form-error"
+                                "className": "block text-xs text-red-500 mt-1 dark:text-red-400"
                             },
                             "text": "{{_local.errors?.['inquiry.board_slug']?.[0] ?? ''}}"
                         }
@@ -98,7 +98,7 @@
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "text-tertiary"
+                                "className": "text-xs text-gray-500 dark:text-gray-400"
                             },
                             "text": "$t:sirsoft-board.admin.ecommerce_settings.inquiry.hint_secret"
                         },
@@ -107,7 +107,7 @@
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "text-tertiary"
+                                "className": "text-xs text-gray-500 dark:text-gray-400"
                             },
                             "text": "$t:sirsoft-board.admin.ecommerce_settings.inquiry.hint_category"
                         },
@@ -132,7 +132,7 @@
                                             "type": "basic",
                                             "name": "P",
                                             "props": {
-                                                "className": "flex-start gap-1.5 text-tertiary"
+                                                "className": "flex items-start gap-1.5 text-xs text-gray-500 dark:text-gray-400"
                                             },
                                             "children": [
                                                 {
@@ -197,7 +197,7 @@
                                             "type": "basic",
                                             "name": "P",
                                             "props": {
-                                                "className": "flex-start gap-1.5 text-tertiary"
+                                                "className": "flex items-start gap-1.5 text-xs text-gray-500 dark:text-gray-400"
                                             },
                                             "children": [
                                                 {

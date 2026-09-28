@@ -20,7 +20,9 @@ use Tests\TestCase;
 /**
  * CoreActivityLogListener 전체 훅 핸들러 단위 테스트
  *
- * 66개 전체 훅 (스냅샷 5개 + 로깅 61개) 커버리지 검증
+ * 구독 훅 70개(docs/backend/activity-log-hooks.md 「코어 훅」 표의 행 수)의 구독 계약과
+ * 핸들러별 기록 형태를 검증한다.
+ * 시나리오 SSoT: tests/scenarios/core-activity-log-listener.yaml
  */
 class CoreActivityLogListenerTest extends TestCase
 {
@@ -32,6 +34,8 @@ class CoreActivityLogListenerTest extends TestCase
 
     /**
      * 관리자 경로 요청을 심고, 리스너 인스턴스와 activity 로그 채널 목을 준비합니다.
+     *
+     * 관리자 경로(`/api/admin/users`)라 `resolveLogType()` 이 Admin 을 돌려준다. 사용자 경로 테스트는 요청을 따로 바꾼다.
      *
      * @return void 없음
      */
@@ -53,6 +57,8 @@ class CoreActivityLogListenerTest extends TestCase
 
     /**
      * Mockery 기대 횟수를 단언 수에 반영한 뒤 목 컨테이너를 닫습니다.
+     *
+     * `shouldReceive()->once()` 만으로 검증하는 테스트가 risky(단언 0건)로 표시되지 않게 한다.
      *
      * @return void 없음
      */
@@ -147,12 +153,15 @@ class CoreActivityLogListenerTest extends TestCase
      *
      * @return void 없음
      */
+    // @scenario case=subscription_contract
+    // @effects subscribed_hook_count_matches_the_hook_table
     public function test_get_subscribed_hooks_returns_all_hooks(): void
     {
         $hooks = CoreActivityLogListener::getSubscribedHooks();
 
-        // 81개 로깅 훅 (mail_template 2개 제거됨, IDV/auth 후속 추가 분 포함,
-        // develop 머지 후 +2, 관리자 계정 잠금 해제(core.auth.account_unlocked) +1).
+        // 81개 로깅 훅 (mail_template 2개 제거됨, IDV/auth 후속 추가 분 포함, develop 머지 후 +2, 관리자 계정
+        // 잠금 해제(core.auth.account_unlocked) +1, 회원 알림 일괄 삭제 등). docs/backend/activity-log-hooks.md
+        // 「코어 훅」 표가 SSoT 이나 develop-7.1.0 16차 병합 시점 표는 70행이다 — 아래 11훅이 아직 표에 없다.
         // 65 에서 멈춰 있던 동안 방문자 통계(core.analytics.* 9)·개인정보 보유기간(core.privacy.* 2)·
         // 회원 알림함·커스텀 자산·설정 등이 더해졌다 — 2026-09-26 실측 81(접두어별: auth 9 · analytics 9 ·
         // user 7 · menu 6 · schedule 6 · modules 6 · templates 6 · role 5 · plugins 5 · layout 5 · 그 외 17).
@@ -166,6 +175,8 @@ class CoreActivityLogListenerTest extends TestCase
      *
      * @return void 없음
      */
+    // @scenario case=subscription_contract
+    // @effects default_handle_is_a_no_op
     public function test_handle_does_nothing(): void
     {
         // handle() 메서드는 기본 핸들러로 아무 작업도 하지 않아야 한다
@@ -186,6 +197,8 @@ class CoreActivityLogListenerTest extends TestCase
      *
      * @return void 없음
      */
+    // @scenario case=user_handlers
+    // @effects user_crud_view_and_search_are_logged
     public function test_handle_user_after_create_logs_activity(): void
     {
         $user = $this->createUserMock(1, 'uuid-abc', 'new@test.com', 'New User');
@@ -214,6 +227,8 @@ class CoreActivityLogListenerTest extends TestCase
      *
      * @return void 없음
      */
+    // @scenario case=user_handlers
+    // @effects user_crud_view_and_search_are_logged
     public function test_handle_user_after_update_logs_activity_with_changes(): void
     {
         $user = $this->createUserMock(1, 'uuid-abc');
@@ -242,6 +257,8 @@ class CoreActivityLogListenerTest extends TestCase
      *
      * @return void 없음
      */
+    // @scenario case=user_handlers
+    // @effects update_handlers_accept_a_snapshot_argument
     public function test_handle_user_after_update_accepts_snapshot_argument(): void
     {
         $user = $this->createUserMock(1, 'uuid-abc');
@@ -266,6 +283,8 @@ class CoreActivityLogListenerTest extends TestCase
      *
      * @return void 없음
      */
+    // @scenario case=user_handlers
+    // @effects user_crud_view_and_search_are_logged
     public function test_handle_user_after_delete_logs_activity(): void
     {
         // id 없는 경우 — ActivityLog::where() 호출 스킵, 로깅만 검증
@@ -293,6 +312,8 @@ class CoreActivityLogListenerTest extends TestCase
      *
      * @return void 없음
      */
+    // @scenario case=missing_inputs
+    // @effects missing_identifiers_fall_back_to_empty_strings
     public function test_handle_user_after_delete_handles_missing_uuid(): void
     {
         // uuid 없는 경우 — 빈 문자열 fallback 검증
@@ -317,6 +338,8 @@ class CoreActivityLogListenerTest extends TestCase
      *
      * @return void 없음
      */
+    // @scenario case=user_handlers
+    // @effects user_crud_view_and_search_are_logged
     public function test_handle_user_after_withdraw_logs_activity(): void
     {
         $user = $this->createUserMock(1, 'uuid-wd');
@@ -335,6 +358,8 @@ class CoreActivityLogListenerTest extends TestCase
      *
      * @return void 없음
      */
+    // @scenario case=user_handlers
+    // @effects user_crud_view_and_search_are_logged
     public function test_handle_user_after_show_logs_activity(): void
     {
         $user = $this->createUserMock(1, 'uuid-show');
@@ -361,6 +386,8 @@ class CoreActivityLogListenerTest extends TestCase
      *
      * @return void 없음
      */
+    // @scenario case=user_handlers
+    // @effects user_crud_view_and_search_are_logged
     public function test_handle_user_after_list_logs_activity(): void
     {
         $this->logChannel->shouldReceive('info')
@@ -384,6 +411,8 @@ class CoreActivityLogListenerTest extends TestCase
      *
      * @return void 없음
      */
+    // @scenario case=user_handlers
+    // @effects user_crud_view_and_search_are_logged
     public function test_handle_user_after_search_logs_activity(): void
     {
         $this->logChannel->shouldReceive('info')
@@ -408,6 +437,8 @@ class CoreActivityLogListenerTest extends TestCase
      *
      * @return void 없음
      */
+    // @scenario case=user_handlers
+    // @effects user_bulk_update_logs_one_entry_per_existing_user
     public function test_handle_user_after_bulk_update_logs_per_item(): void
     {
         $users = collect([
@@ -448,6 +479,8 @@ class CoreActivityLogListenerTest extends TestCase
      *
      * @return void 없음
      */
+    // @scenario case=user_handlers
+    // @effects user_bulk_update_logs_one_entry_per_existing_user
     public function test_handle_user_after_bulk_update_skips_nonexistent_uuids(): void
     {
         $user = User::factory()->create();
@@ -475,6 +508,8 @@ class CoreActivityLogListenerTest extends TestCase
      *
      * @return void 없음
      */
+    // @scenario case=auth_handlers
+    // @effects auth_events_are_logged_with_log_type_by_route
     public function test_handle_auth_after_login_logs_activity(): void
     {
         $user = $this->createUserMock(1);
@@ -501,6 +536,8 @@ class CoreActivityLogListenerTest extends TestCase
      *
      * @return void 없음
      */
+    // @scenario case=auth_handlers
+    // @effects auth_events_are_logged_with_log_type_by_route
     public function test_handle_auth_logout_logs_activity(): void
     {
         $user = $this->createUserMock(2);
@@ -527,6 +564,8 @@ class CoreActivityLogListenerTest extends TestCase
      *
      * @return void 없음
      */
+    // @scenario case=auth_handlers
+    // @effects auth_events_are_logged_with_log_type_by_route
     public function test_handle_auth_register_logs_activity_with_user_type(): void
     {
         // auth 경로는 사용자 화면이므로 User 타입으로 자동 결정
@@ -555,6 +594,8 @@ class CoreActivityLogListenerTest extends TestCase
      *
      * @return void 없음
      */
+    // @scenario case=auth_handlers
+    // @effects auth_events_are_logged_with_log_type_by_route
     public function test_handle_auth_forgot_password_logs_activity(): void
     {
         $this->app->instance('request', Request::create('/api/auth/forgot-password'));
@@ -582,6 +623,8 @@ class CoreActivityLogListenerTest extends TestCase
      *
      * @return void 없음
      */
+    // @scenario case=auth_handlers
+    // @effects auth_events_are_logged_with_log_type_by_route
     public function test_handle_auth_reset_password_logs_activity(): void
     {
         $this->app->instance('request', Request::create('/api/auth/reset-password'));
@@ -609,6 +652,8 @@ class CoreActivityLogListenerTest extends TestCase
      *
      * @return void 없음
      */
+    // @scenario case=auth_handlers
+    // @effects auth_events_are_logged_with_log_type_by_route
     public function test_handle_auth_record_consents_logs_activity(): void
     {
         $this->app->instance('request', Request::create('/api/auth/record-consents'));
@@ -641,6 +686,8 @@ class CoreActivityLogListenerTest extends TestCase
      *
      * @return void 없음
      */
+    // @scenario case=role_handlers
+    // @effects role_changes_are_logged_with_permission_diff
     public function test_handle_role_after_create_logs_activity(): void
     {
         $role = $this->createModelMock(10, ['name' => 'Editor']);
@@ -668,6 +715,8 @@ class CoreActivityLogListenerTest extends TestCase
      *
      * @return void 없음
      */
+    // @scenario case=role_handlers
+    // @effects role_changes_are_logged_with_permission_diff
     public function test_handle_role_after_update_logs_activity_with_changes(): void
     {
         $role = $this->createModelMock(10, ['name' => 'SuperEditor']);
@@ -695,6 +744,8 @@ class CoreActivityLogListenerTest extends TestCase
      *
      * @return void 없음
      */
+    // @scenario case=role_handlers
+    // @effects update_handlers_accept_a_snapshot_argument
     public function test_handle_role_after_update_accepts_snapshot_argument(): void
     {
         $role = $this->createModelMock(10, ['name' => 'Editor']);
@@ -719,6 +770,8 @@ class CoreActivityLogListenerTest extends TestCase
      *
      * @return void 없음
      */
+    // @scenario case=role_handlers
+    // @effects role_changes_are_logged_with_permission_diff
     public function test_handle_role_after_delete_logs_activity(): void
     {
         $this->logChannel->shouldReceive('info')
@@ -743,6 +796,8 @@ class CoreActivityLogListenerTest extends TestCase
      *
      * @return void 없음
      */
+    // @scenario case=role_handlers
+    // @effects role_changes_are_logged_with_permission_diff
     public function test_handle_role_after_sync_permissions_logs_activity(): void
     {
         $role = $this->createModelMock(10);
@@ -773,6 +828,8 @@ class CoreActivityLogListenerTest extends TestCase
      *
      * @return void 없음
      */
+    // @scenario case=role_handlers
+    // @effects role_changes_are_logged_with_permission_diff
     public function test_handle_role_after_toggle_status_logs_activity(): void
     {
         $role = $this->createModelMock(10);
@@ -795,6 +852,8 @@ class CoreActivityLogListenerTest extends TestCase
      *
      * @return void 없음
      */
+    // @scenario case=menu_handlers
+    // @effects menu_changes_are_logged_with_role_diff
     public function test_handle_menu_after_create_logs_activity(): void
     {
         $menu = $this->createModelMock(5, ['title' => 'Settings']);
@@ -822,6 +881,8 @@ class CoreActivityLogListenerTest extends TestCase
      *
      * @return void 없음
      */
+    // @scenario case=menu_handlers
+    // @effects menu_changes_are_logged_with_role_diff
     public function test_handle_menu_after_update_logs_activity_with_changes(): void
     {
         $menu = $this->createModelMock(5, ['title' => 'Updated Settings']);
@@ -849,6 +910,8 @@ class CoreActivityLogListenerTest extends TestCase
      *
      * @return void 없음
      */
+    // @scenario case=menu_handlers
+    // @effects update_handlers_accept_a_snapshot_argument
     public function test_handle_menu_after_update_accepts_snapshot_argument(): void
     {
         $menu = $this->createModelMock(5, ['title' => 'Settings']);
@@ -873,6 +936,8 @@ class CoreActivityLogListenerTest extends TestCase
      *
      * @return void 없음
      */
+    // @scenario case=menu_handlers
+    // @effects menu_changes_are_logged_with_role_diff
     public function test_handle_menu_after_delete_logs_activity(): void
     {
         $this->logChannel->shouldReceive('info')
@@ -897,6 +962,8 @@ class CoreActivityLogListenerTest extends TestCase
      *
      * @return void 없음
      */
+    // @scenario case=menu_handlers
+    // @effects menu_changes_are_logged_with_role_diff
     public function test_handle_menu_after_update_order_logs_activity(): void
     {
         $this->logChannel->shouldReceive('info')
@@ -919,6 +986,8 @@ class CoreActivityLogListenerTest extends TestCase
      *
      * @return void 없음
      */
+    // @scenario case=menu_handlers
+    // @effects menu_changes_are_logged_with_role_diff
     public function test_handle_menu_after_toggle_status_logs_activity(): void
     {
         $menu = $this->createModelMock(5);
@@ -937,6 +1006,8 @@ class CoreActivityLogListenerTest extends TestCase
      *
      * @return void 없음
      */
+    // @scenario case=menu_handlers
+    // @effects menu_changes_are_logged_with_role_diff
     public function test_handle_menu_after_sync_roles_logs_activity(): void
     {
         $menu = $this->createModelMock(5);
@@ -971,6 +1042,8 @@ class CoreActivityLogListenerTest extends TestCase
      *
      * @return void 없음
      */
+    // @scenario case=settings_handlers
+    // @effects settings_save_and_set_are_logged_with_keys
     public function test_handle_settings_after_save_logs_activity(): void
     {
         $this->logChannel->shouldReceive('info')
@@ -995,6 +1068,8 @@ class CoreActivityLogListenerTest extends TestCase
      *
      * @return void 없음
      */
+    // @scenario case=settings_handlers
+    // @effects settings_save_and_set_are_logged_with_keys
     public function test_handle_settings_after_set_logs_activity(): void
     {
         $this->logChannel->shouldReceive('info')
@@ -1022,6 +1097,8 @@ class CoreActivityLogListenerTest extends TestCase
      *
      * @return void 없음
      */
+    // @scenario case=schedule_handlers
+    // @effects schedule_changes_and_runs_are_logged
     public function test_handle_schedule_after_create_logs_activity(): void
     {
         $schedule = $this->createModelMock(7);
@@ -1048,6 +1125,8 @@ class CoreActivityLogListenerTest extends TestCase
      *
      * @return void 없음
      */
+    // @scenario case=schedule_handlers
+    // @effects schedule_changes_and_runs_are_logged
     public function test_handle_schedule_after_update_logs_activity_with_changes(): void
     {
         $schedule = $this->createModelMock(7);
@@ -1075,6 +1154,8 @@ class CoreActivityLogListenerTest extends TestCase
      *
      * @return void 없음
      */
+    // @scenario case=schedule_handlers
+    // @effects update_handlers_accept_a_snapshot_argument
     public function test_handle_schedule_after_update_accepts_snapshot_argument(): void
     {
         $schedule = $this->createModelMock(7);
@@ -1099,6 +1180,8 @@ class CoreActivityLogListenerTest extends TestCase
      *
      * @return void 없음
      */
+    // @scenario case=schedule_handlers
+    // @effects schedule_changes_and_runs_are_logged
     public function test_handle_schedule_after_delete_logs_activity(): void
     {
         $this->logChannel->shouldReceive('info')
@@ -1123,6 +1206,8 @@ class CoreActivityLogListenerTest extends TestCase
      *
      * @return void 없음
      */
+    // @scenario case=schedule_handlers
+    // @effects schedule_changes_and_runs_are_logged
     public function test_handle_schedule_after_run_logs_activity(): void
     {
         $schedule = $this->createModelMock(7);
@@ -1150,6 +1235,8 @@ class CoreActivityLogListenerTest extends TestCase
      *
      * @return void 없음
      */
+    // @scenario case=schedule_handlers
+    // @effects schedule_bulk_actions_log_one_entry_per_item
     public function test_handle_schedule_after_bulk_update_logs_per_item(): void
     {
         $schedules = collect([
@@ -1190,6 +1277,8 @@ class CoreActivityLogListenerTest extends TestCase
      *
      * @return void 없음
      */
+    // @scenario case=schedule_handlers
+    // @effects schedule_bulk_actions_log_one_entry_per_item
     public function test_handle_schedule_after_bulk_update_skips_nonexistent_ids(): void
     {
         $schedule = Schedule::create(['name' => 'Schedule X', 'command' => 'test:x', 'expression' => '* * * * *']);
@@ -1207,12 +1296,16 @@ class CoreActivityLogListenerTest extends TestCase
     /**
      * 스케줄 일괄 삭제가 id 마다 한 건씩 대상 유형·id 를 담아 기록되는지 확인합니다.
      *
+     * 삭제 뒤에는 모델이 없으므로 loggable 모델 대신 타입·ID 를 싣는다.
+     *
      * @scenario request_area=admin
      *
      * @effects bulk_delete_logs_one_entry_per_id
      *
      * @return void 없음
      */
+    // @scenario case=schedule_handlers
+    // @effects schedule_bulk_actions_log_one_entry_per_item
     public function test_handle_schedule_after_bulk_delete_logs_per_item(): void
     {
         $ids = [4, 5];
@@ -1252,6 +1345,8 @@ class CoreActivityLogListenerTest extends TestCase
      *
      * @return void 없음
      */
+    // @scenario case=attachment_handlers
+    // @effects attachment_upload_delete_and_bulk_delete_are_logged
     public function test_handle_attachment_after_upload_logs_activity(): void
     {
         $attachment = $this->createModelMock(20);
@@ -1270,6 +1365,8 @@ class CoreActivityLogListenerTest extends TestCase
      *
      * @return void 없음
      */
+    // @scenario case=attachment_handlers
+    // @effects attachment_upload_delete_and_bulk_delete_are_logged
     public function test_handle_attachment_after_delete_logs_activity(): void
     {
         $attachment = $this->createModelMock(20);
@@ -1294,6 +1391,8 @@ class CoreActivityLogListenerTest extends TestCase
      *
      * @return void 없음
      */
+    // @scenario case=attachment_handlers
+    // @effects attachment_upload_delete_and_bulk_delete_are_logged
     public function test_handle_attachment_after_bulk_delete_creates_per_item_logs(): void
     {
         $ids = [10, 20, 30];
@@ -1346,6 +1445,8 @@ class CoreActivityLogListenerTest extends TestCase
      * @param  string  $expectedDescriptionKey  기대하는 설명 다국어 키
      * @return void 없음
      */
+    // @scenario case=module_handlers
+    // @effects module_lifecycle_is_logged
     public function test_module_lifecycle_hooks_log_activity(
         string $method,
         string $expectedAction,
@@ -1398,6 +1499,8 @@ class CoreActivityLogListenerTest extends TestCase
      *
      * @return void 없음
      */
+    // @scenario case=module_handlers
+    // @effects module_lifecycle_is_logged
     public function test_handle_module_after_install_includes_version_in_properties(): void
     {
         $this->logChannel->shouldReceive('info')
@@ -1420,6 +1523,8 @@ class CoreActivityLogListenerTest extends TestCase
      *
      * @return void 없음
      */
+    // @scenario case=module_handlers
+    // @effects module_lifecycle_is_logged
     public function test_handle_module_after_uninstall_logs_activity(): void
     {
         $this->logChannel->shouldReceive('info')
@@ -1445,6 +1550,8 @@ class CoreActivityLogListenerTest extends TestCase
      *
      * @return void 없음
      */
+    // @scenario case=module_handlers
+    // @effects module_lifecycle_is_logged
     public function test_handle_module_after_update_logs_activity(): void
     {
         $this->logChannel->shouldReceive('info')
@@ -1470,6 +1577,8 @@ class CoreActivityLogListenerTest extends TestCase
      *
      * @return void 없음
      */
+    // @scenario case=module_handlers
+    // @effects module_lifecycle_is_logged
     public function test_handle_module_after_refresh_layouts_logs_activity(): void
     {
         $this->logChannel->shouldReceive('info')
@@ -1502,6 +1611,8 @@ class CoreActivityLogListenerTest extends TestCase
      * @param  string  $expectedDescriptionKey  기대하는 설명 다국어 키
      * @return void 없음
      */
+    // @scenario case=plugin_handlers
+    // @effects plugin_lifecycle_is_logged
     public function test_plugin_lifecycle_hooks_log_activity(
         string $method,
         string $expectedAction,
@@ -1554,6 +1665,8 @@ class CoreActivityLogListenerTest extends TestCase
      *
      * @return void 없음
      */
+    // @scenario case=plugin_handlers
+    // @effects plugin_lifecycle_is_logged
     public function test_handle_plugin_after_install_includes_version_in_properties(): void
     {
         $this->logChannel->shouldReceive('info')
@@ -1576,6 +1689,8 @@ class CoreActivityLogListenerTest extends TestCase
      *
      * @return void 없음
      */
+    // @scenario case=plugin_handlers
+    // @effects plugin_lifecycle_is_logged
     public function test_handle_plugin_after_uninstall_logs_activity(): void
     {
         $this->logChannel->shouldReceive('info')
@@ -1601,6 +1716,8 @@ class CoreActivityLogListenerTest extends TestCase
      *
      * @return void 없음
      */
+    // @scenario case=plugin_handlers
+    // @effects plugin_lifecycle_is_logged
     public function test_handle_plugin_after_update_logs_activity(): void
     {
         $this->logChannel->shouldReceive('info')
@@ -1630,6 +1747,8 @@ class CoreActivityLogListenerTest extends TestCase
      *
      * @return void 없음
      */
+    // @scenario case=template_handlers
+    // @effects template_lifecycle_is_logged
     public function test_handle_template_after_install_logs_activity(): void
     {
         $this->logChannel->shouldReceive('info')
@@ -1655,6 +1774,8 @@ class CoreActivityLogListenerTest extends TestCase
      *
      * @return void 없음
      */
+    // @scenario case=template_handlers
+    // @effects template_lifecycle_is_logged
     public function test_handle_template_after_activate_logs_activity(): void
     {
         $this->logChannel->shouldReceive('info')
@@ -1678,6 +1799,8 @@ class CoreActivityLogListenerTest extends TestCase
      *
      * @return void 없음
      */
+    // @scenario case=missing_inputs
+    // @effects missing_identifiers_fall_back_to_empty_strings
     public function test_handle_template_after_activate_handles_missing_identifier(): void
     {
         $this->logChannel->shouldReceive('info')
@@ -1699,6 +1822,8 @@ class CoreActivityLogListenerTest extends TestCase
      *
      * @return void 없음
      */
+    // @scenario case=template_handlers
+    // @effects template_lifecycle_is_logged
     public function test_handle_template_after_deactivate_logs_activity(): void
     {
         $this->logChannel->shouldReceive('info')
@@ -1722,6 +1847,8 @@ class CoreActivityLogListenerTest extends TestCase
      *
      * @return void 없음
      */
+    // @scenario case=template_handlers
+    // @effects template_lifecycle_is_logged
     public function test_handle_template_after_uninstall_logs_activity(): void
     {
         $this->logChannel->shouldReceive('info')
@@ -1747,6 +1874,8 @@ class CoreActivityLogListenerTest extends TestCase
      *
      * @return void 없음
      */
+    // @scenario case=template_handlers
+    // @effects template_lifecycle_is_logged
     public function test_handle_template_after_version_update_logs_activity(): void
     {
         $this->logChannel->shouldReceive('info')
@@ -1772,6 +1901,8 @@ class CoreActivityLogListenerTest extends TestCase
      *
      * @return void 없음
      */
+    // @scenario case=template_handlers
+    // @effects template_lifecycle_is_logged
     public function test_handle_template_after_refresh_layouts_logs_activity(): void
     {
         $this->logChannel->shouldReceive('info')
@@ -1799,6 +1930,8 @@ class CoreActivityLogListenerTest extends TestCase
      *
      * @return void 없음
      */
+    // @scenario case=layout_handlers
+    // @effects layout_update_and_restore_are_logged
     public function test_handle_layout_after_update_logs_activity(): void
     {
         $layout = $this->createModelMock(50);
@@ -1825,6 +1958,8 @@ class CoreActivityLogListenerTest extends TestCase
      *
      * @return void 없음
      */
+    // @scenario case=layout_handlers
+    // @effects layout_update_and_restore_are_logged
     public function test_handle_layout_after_version_restore_logs_activity(): void
     {
         $newVersion = $this->createModelMock(51);
@@ -1855,6 +1990,8 @@ class CoreActivityLogListenerTest extends TestCase
      *
      * @return void 없음
      */
+    // @scenario case=extension_settings_handlers
+    // @effects extension_settings_save_and_reset_are_logged
     public function test_handle_module_settings_after_save_logs_activity(): void
     {
         $this->logChannel->shouldReceive('info')
@@ -1880,6 +2017,8 @@ class CoreActivityLogListenerTest extends TestCase
      *
      * @return void 없음
      */
+    // @scenario case=extension_settings_handlers
+    // @effects extension_settings_save_and_reset_are_logged
     public function test_handle_module_settings_after_reset_logs_activity(): void
     {
         $this->logChannel->shouldReceive('info')
@@ -1907,6 +2046,8 @@ class CoreActivityLogListenerTest extends TestCase
      *
      * @return void 없음
      */
+    // @scenario case=extension_settings_handlers
+    // @effects extension_settings_save_and_reset_are_logged
     public function test_handle_plugin_settings_after_save_logs_activity(): void
     {
         $this->logChannel->shouldReceive('info')
@@ -1932,6 +2073,8 @@ class CoreActivityLogListenerTest extends TestCase
      *
      * @return void 없음
      */
+    // @scenario case=extension_settings_handlers
+    // @effects extension_settings_save_and_reset_are_logged
     public function test_handle_plugin_settings_after_reset_logs_activity(): void
     {
         $this->logChannel->shouldReceive('info')
@@ -1953,12 +2096,16 @@ class CoreActivityLogListenerTest extends TestCase
     /**
      * 활동 로그 기록이 실패해도 예외를 밖으로 던지지 않고 오류 로그로 남기는지 확인합니다.
      *
+     * 로깅 실패가 도메인 동작(여기서는 사용자 조회)을 깨뜨리면 안 된다.
+     *
      * @scenario request_area=admin
      *
      * @effects activity_log_write_failure_is_swallowed_and_reported
      *
      * @return void 없음
      */
+    // @scenario case=logging_failure_is_absorbed
+    // @effects logging_exception_is_absorbed_into_log_error
     public function test_log_activity_catches_exception_and_logs_error(): void
     {
         $user = $this->createUserMock(1, 'uuid-err');
@@ -1992,6 +2139,8 @@ class CoreActivityLogListenerTest extends TestCase
      *
      * @return void 없음
      */
+    // @scenario case=subscription_contract
+    // @effects subscribed_hooks_map_to_existing_handlers
     public function test_all_subscribed_hooks_have_corresponding_methods(): void
     {
         $hooks = CoreActivityLogListener::getSubscribedHooks();
@@ -2009,10 +2158,14 @@ class CoreActivityLogListenerTest extends TestCase
     /**
      * 로깅 훅은 모두 priority 20인지 확인
      *
+     * 스냅샷 캡처 훅(`capture*Snapshot`)은 빼고 센다 — 로깅 훅은 도메인 훅보다 뒤에 선다.
+     *
      * @effects logging_hooks_run_at_priority_20
      *
      * @return void 없음
      */
+    // @scenario case=subscription_contract
+    // @effects all_logging_hooks_registered_at_priority_20
     public function test_logging_hooks_have_priority_20(): void
     {
         $hooks = CoreActivityLogListener::getSubscribedHooks();
@@ -2037,6 +2190,8 @@ class CoreActivityLogListenerTest extends TestCase
     /**
      * 로깅 훅마다 구독 목록에 등록돼 있고 기대한 핸들러 메서드로 연결되는지 확인합니다.
      *
+     * action·log_type·설명 키 값 자체는 핸들러별 개별 테스트가 검증하고, 여기서는 매핑의 정확성만 본다.
+     *
      * @dataProvider allHookActionsProvider
      *
      * @effects hook_to_handler_mapping_matches_catalog
@@ -2048,6 +2203,8 @@ class CoreActivityLogListenerTest extends TestCase
      * @param  string  $expectedDescriptionKey  기대하는 설명 다국어 키
      * @return void 없음
      */
+    // @scenario case=subscription_contract
+    // @effects hook_to_handler_mapping_matches_the_action_table
     public function test_hook_action_mapping_is_correct(string $hookName, string $method, string $expectedAction, ActivityLogType $expectedLogType, string $expectedDescriptionKey): void
     {
         // 이 테스트는 getSubscribedHooks()의 모든 로깅 훅이

@@ -78,20 +78,31 @@ class MileageTransactionListener implements HookListenerInterface
     }
 
     /**
-     * 사용 복원 (취소/환불) — order_cancel_id 멱등, 신규 lot
+     * 사용 복원 (취소/환불) — 취소는 order_cancel_id, 클레임 환불 실행은 order_refund_id 멱등, 신규 lot
      *
      * @param  float  $amount  복원액
      * @param  Order  $order  주문
-     * @param  int|null  $orderCancelId  취소 레코드 ID
+     * @param  int|null  $orderCancelId  취소 레코드 ID (취소 발 복원 멱등 축)
+     * @param  int|null  $orderRefundId  환불 레코드 ID (클레임 환불 실행 멱등 축 — S6b)
      */
-    public function handleRestore(float $amount, Order $order, ?int $orderCancelId = null): void
+    public function handleRestore(float $amount, Order $order, ?int $orderCancelId = null, ?int $orderRefundId = null): void
     {
-        if ($amount <= 0 || $order->user_id === null || $orderCancelId === null) {
+        // 멱등 축(취소 ID 또는 환불 ID)이 하나도 없으면 복원하지 않는다 — 축 없는 복원은
+        // 재시도마다 새 lot 을 발행한다.
+        if ($amount <= 0 || $order->user_id === null || ($orderCancelId === null && $orderRefundId === null)) {
             return;
         }
 
         $currency = $this->mileageService->baseCurrencyForOrder($order);
-        $this->mileageService->restoreForCancel($order->user_id, $order->id, $orderCancelId, $amount, $currency);
+
+        if ($orderCancelId !== null) {
+            $this->mileageService->restoreForCancel($order->user_id, $order->id, $orderCancelId, $amount, $currency);
+
+            return;
+        }
+
+        // 클레임 환불 실행(S6b) — order_refund_id 멱등 축으로 사용 마일리지를 환급한다.
+        $this->mileageService->restoreForRefund($order->user_id, $order->id, $orderRefundId, $amount, $currency);
     }
 
     /**

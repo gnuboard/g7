@@ -26,8 +26,8 @@ class NotificationSyncHelper
      * 기존: user_overrides 에 없는 필드만 업데이트
      *
      * @param  array<string, mixed>  $data  definition 데이터 (type, hook_prefix, extension_type,
-     *                                       extension_identifier, name, description, variables,
-     *                                       channels, hooks, is_active, is_default, templates 포함 가능)
+     *                                      extension_identifier, name, description, variables,
+     *                                      channels, hooks, is_active, is_default, templates 포함 가능)
      * @return NotificationDefinition 동기화된 definition
      */
     public function syncDefinition(array $data): NotificationDefinition
@@ -43,6 +43,10 @@ class NotificationSyncHelper
                 'variables' => $data['variables'] ?? [],
                 'channels' => $data['channels'] ?? ['mail'],
                 'hooks' => $data['hooks'] ?? [],
+                // 「관련 사용자」가 고를 수 있는 relation 키. 선언하지 않으면 화면이 그
+                // 타입 자체를 감춘다 — 지원하지 않는 키를 고르면 수신자가 0명이 되고
+                // 예외도 로그도 남지 않기 때문이다.
+                'relations' => $data['relations'] ?? $this->relationsFromTemplates($data),
                 'is_active' => $data['is_active'] ?? true,
                 'is_default' => $data['is_default'] ?? true,
             ]
@@ -50,11 +54,43 @@ class NotificationSyncHelper
     }
 
     /**
+     * 선언에 `relations` 가 없으면 기본 템플릿이 실제로 쓰는 relation 키에서 유도합니다.
+     *
+     * 선언을 손으로 두 벌 적게 하지 않기 위해서다 — 템플릿이 `related_user`/`post_author`
+     * 를 쓰는데 목록에 `post_author` 를 빠뜨리면, 운영자가 그 규칙을 편집하는 순간
+     * **선언 밖 값**이 되어 저장이 막힌다. 확장이 "기본 템플릿은 안 쓰지만 운영자는 고를 수
+     * 있는" 키를 열고 싶으면 `relations` 를 명시하면 되고, 그때는 이 유도가 쓰이지 않는다.
+     *
+     * @param  array<string, mixed>  $data  정의 선언 (templates 포함)
+     * @return array<int, string> relation 키 목록 (등장 순서, 중복 제거)
+     */
+    private function relationsFromTemplates(array $data): array
+    {
+        $relations = [];
+
+        foreach ($data['templates'] ?? [] as $template) {
+            foreach ($template['recipients'] ?? [] as $rule) {
+                if (($rule['type'] ?? null) !== 'related_user') {
+                    continue;
+                }
+
+                $relation = $rule['relation'] ?? null;
+
+                if (is_string($relation) && $relation !== '' && ! in_array($relation, $relations, true)) {
+                    $relations[] = $relation;
+                }
+            }
+        }
+
+        return $relations;
+    }
+
+    /**
      * 알림 템플릿을 동기화합니다 (user_overrides 보존 upsert).
      *
      * @param  int  $definitionId  연결된 definition id
      * @param  array<string, mixed>  $data  template 데이터 (channel, subject, body,
-     *                                       click_url, recipients, is_active, is_default)
+     *                                      click_url, recipients, is_active, is_default)
      * @return NotificationTemplate 동기화된 template
      */
     public function syncTemplate(int $definitionId, array $data): NotificationTemplate
@@ -88,6 +124,7 @@ class NotificationSyncHelper
         string $extensionIdentifier,
         array $currentTypes,
     ): int {
+        // audit:allow service-direct-data-access reason: 선언형 산출물 동기화 헬퍼다 — 확장이 선언에서 지운 정의를 찾아 지우는 일회성 정리 쿼리이며, 모델의 `booted()` 캐시 무효화가 삭제마다 돌아야 해서 대량 delete 가 아니라 모델 순회를 쓴다. Repository 로 옮기면 "선언에 없는 것" 이라는 조건이 동기화 계층과 저장 계층으로 갈린다
         $query = NotificationDefinition::query()
             ->where('extension_type', $extensionType)
             ->where('extension_identifier', $extensionIdentifier)
@@ -124,6 +161,7 @@ class NotificationSyncHelper
      */
     public function cleanupStaleTemplates(int $definitionId, array $currentChannels): int
     {
+        // audit:allow service-direct-data-access reason: 위 `cleanupStaleDefinitions` 와 같은 축 — 선언에서 사라진 (definition, channel) 조합만 지우는 동기화 정리 쿼리다
         $query = NotificationTemplate::query()
             ->where('definition_id', $definitionId)
             ->whereNotIn('channel', $currentChannels);

@@ -1,0 +1,32 @@
+feature: 주문 마일리지 표시 필드 — 주문 화면이 기대하는 사용·적립·환불 키를 응답이 싣는다
+
+description: |
+  마일리지 시스템(이슈 44) 도입 전에 완성된 주문 화면들이 마일리지 사용·적립·환불 값을 바인딩하고
+  있었지만, 백엔드 응답(Summary DTO · 주문 목록/상세 Resource)이 그 키를 내지 않아 화면에
+  마일리지가 `--` 로 찍히거나 아예 빠졌다. 예외도 로그도 없이 **빈칸으로만** 드러나는 종류다.
+
+  핵심 계약:
+    - 체크아웃 요약(Summary)은 사용액·결제예정액의 포맷 키를 함께 낸다. 미사용 주문도
+      `0원` 으로 폴백한다(빈 키면 화면이 `--` 로 읽는다).
+    - 관리자 주문목록·마이페이지 주문목록·비회원 주문상세 리소스가 사용/적립(비회원 상세는
+      환불까지) 값과 포맷 키를 낸다 — 회원 주문상세(OrderResource)와 패리티.
+    - 사용·환불 마일리지는 결제 금액이라 통화 표기(`원`), 적립은 포인트라 `P` 표기다
+      (단위 통일 결정은 earned-points-unit-consistency.yaml).
+
+# axis 의미: 표시 필드를 내는 응답 표면. 표면마다 싣는 키가 다르므로 표면이 곧 커버리지 단위다.
+axes:
+  surface: [checkout_summary, admin_order_list, user_order_list, guest_order_detail]
+
+effects:
+  - summary_exposes_points_used_and_payment_amount_formatted   # 사용액·결제예정액 포맷 키 노출
+  - summary_points_used_formatted_falls_back_to_zero           # 미사용 주문도 0원으로 노출
+  - admin_order_list_exposes_mileage_used_and_earned           # 관리자 주문목록 사용/적립 + 포맷
+  - user_order_list_exposes_mileage_used_and_earned            # 마이페이지 주문목록 사용/적립 + 포맷
+  - guest_order_detail_exposes_mileage_used_earned_and_refunded  # 비회원 주문상세 사용/적립/환불 + 포맷
+  - earned_points_are_formatted_with_the_point_suffix          # 적립 포맷은 모든 표면에서 P 단위
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Resources/OrderMileageDisplayFieldsTest.php
+
+validation:
+  audit_rule: test-scenario-coverage

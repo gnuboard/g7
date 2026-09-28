@@ -3,12 +3,12 @@
   <!-- 프로바이더 미설정이면 슬롯 전체 미렌더 (M2 — DOM 카운트 0) -->
   <div data-ref="ext_checkout_cash_receipt" data-if="{{!!paymentSettings?.data?.order_settings?.cash_receipt_provider}}" class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-600">
     <responsive on="portable" class="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600"/>
-    <!-- 신청 체크박스 — 해제 시 하위 3필드를 if 로 숨기고 확장 칸을 비운다 -->
+    <!-- 신청 체크박스 — 해제 시 하위 3필드를 if 로 숨기고 확장 칸을 비운다. 표시 게이트는 모듈 스크래치(cashReceiptRequested)와 제출 payload(checkoutExtraPayload.cash_receipt_requested)의 **합의**를 본다: 해제는 스크래치를 false 로 내려 꺼지고, 결제수단 전환은 템플릿이 payload 를 통째로 치환해 꺼진다. 한쪽만 보면 다른 경로에서 화면과 제출 내용이 갈린다 — 전환 후에는 화면이 신청 켜짐인데 payload 는 비어 있었다. -->
     <div class="flex items-center gap-2">
       <input data-ref="ext_checkout_cash_receipt_toggle" type="checkbox" name="cash_receipt_requested" checked="{{!!_local.cashReceiptRequested &amp;&amp; !!_local.checkoutExtraPayload?.cash_receipt_requested}}" class="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500">
         <on type="change">
           <!-- 체크 시 기본값(소득공제 × 휴대폰번호)으로 확장 칸을 시드하고, 해제 시 확장 칸을 비워 주문 payload 에서 제거한다. -->
-          <set-state target="local" cashReceiptRequested="{{$event.target.checked}}" cashReceiptType="{{$event.target.checked ? (_local.cashReceiptType ?? 'income') : null}}" cashReceiptIdentifierType="{{$event.target.checked ? (_local.cashReceiptIdentifierType ?? 'phone') : null}}" cashReceiptIdentifier="{{$event.target.checked ? (_local.cashReceiptIdentifier ?? '') : null}}" checkoutExtraPayload="{{$event.target.checked ? { cash_receipt_requested: true, cash_receipt_type: (_local.cashReceiptType ?? 'income'), cash_receipt_identifier_type: (_local.cashReceiptIdentifierType ?? 'phone'), cash_receipt_identifier: (_local.cashReceiptIdentifier ?? '') } : {}}}"/>
+          <set-state target="local" cashReceiptRequested="{{$event.target.checked}}" cashReceiptType="{{$event.target.checked ? (_local.checkoutExtraPayload?.cash_receipt_type ?? 'income') : null}}" cashReceiptIdentifierType="{{$event.target.checked ? (_local.checkoutExtraPayload?.cash_receipt_identifier_type ?? 'phone') : null}}" cashReceiptIdentifier="{{$event.target.checked ? (_local.checkoutExtraPayload?.cash_receipt_identifier ?? '') : null}}" checkoutExtraPayload="{{$event.target.checked ? { cash_receipt_requested: true, cash_receipt_type: (_local.checkoutExtraPayload?.cash_receipt_type ?? 'income'), cash_receipt_identifier_type: (_local.checkoutExtraPayload?.cash_receipt_identifier_type ?? 'phone'), cash_receipt_identifier: (_local.checkoutExtraPayload?.cash_receipt_identifier ?? '') } : {}}}"/>
         </on>
       </input>
       <label class="text-sm font-medium text-gray-700 dark:text-gray-300">$t:sirsoft-ecommerce.checkout.cash_receipt.request</label>

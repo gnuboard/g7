@@ -1,0 +1,1333 @@
+{
+    "meta": {
+        "is_partial": true,
+        "description": "Claim Detail - 접수 시점 주문금액 비교(전/후) 표 — #599 후속 (정산 카드 · 취소 신청서 카드 공용)"
+    },
+    "comment": "접수 시점 주문금액 비교(전/후) — ClaimResource.calculation_comparison(저장 스냅샷 + 읽을 때 재생성한 다통화 줄). 값은 서버 formatted 직독이며 화면이 포맷·합산하지 않는다. 후열은 전열과 다를 때만 강조색. 교환은 후열이 옵션 치환 재계산 값이고 치환 근거 행이 함께 선다. 구형 신청서(스냅샷 없음)는 안내 한 줄. PC 3열 / 모바일 kv(원값 → 변경값).",
+    "id": "claim_comparison_block",
+    "type": "basic",
+    "name": "Div",
+    "props": {
+        "className": "mb-6",
+        "data-testid": "claim-detail-comparison"
+    },
+    "children": [
+        {
+            "type": "basic",
+            "name": "Span",
+            "props": {
+                "className": "text-sm font-semibold text-gray-900 dark:text-gray-100 block mb-2"
+            },
+            "text": "$t:sirsoft-ecommerce.admin.claim.detail.comparison.title"
+        },
+        {
+            "type": "basic",
+            "name": "P",
+            "if": "{{!claim?.data?.claim?.calculation_comparison?.original}}",
+            "props": {
+                "className": "text-sm text-secondary",
+                "data-testid": "claim-detail-comparison-empty"
+            },
+            "text": "$t:sirsoft-ecommerce.admin.claim.detail.comparison.empty"
+        },
+        {
+            "comment": "주문금액 비교표 (§4-1 1~16행) — 금액은 서버 formatted 직독, 후열은 전열과 다를 때만 강조색. 클라이언트 포맷·합산 금지.",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{!!claim?.data?.claim?.calculation_comparison?.original}}",
+            "props": {
+                "className": "text-xs",
+                "data-testid": "claim-detail-comparison-table"
+            },
+            "children": [
+                {
+                    "comment": "표 머리글 — 열 라벨은 유형별 키(취소 전/후 · 환불 전/후 · 반품 전/후 · 교환 전/후)",
+                    "type": "basic",
+                    "name": "Div",
+                    "responsive": {
+                        "portable": {
+                            "props": {
+                                "className": "hidden"
+                            }
+                        }
+                    },
+                    "props": {
+                        "className": "grid grid-cols-3 gap-x-3 pb-1 mb-1 border-b border-gray-200 dark:border-gray-700"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "text-xs font-medium text-secondary"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.claim.detail.comparison.col_item"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "text-xs font-medium text-secondary text-right"
+                            },
+                            "text": "{{claim?.data?.claim?.claim_type === 'exchange' ? $t('sirsoft-ecommerce.admin.claim.detail.comparison.col_before_exchange') : (claim?.data?.claim?.claim_type === 'return' ? $t('sirsoft-ecommerce.admin.claim.detail.comparison.col_before_return') : (claim?.data?.claim?.claim_type === 'cancel' ? $t('sirsoft-ecommerce.admin.claim.detail.comparison.col_before_cancel') : $t('sirsoft-ecommerce.admin.claim.detail.comparison.col_before_refund')))}}"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "text-xs font-medium text-secondary text-right"
+                            },
+                            "text": "{{claim?.data?.claim?.claim_type === 'exchange' ? $t('sirsoft-ecommerce.admin.claim.detail.comparison.col_after_exchange') : (claim?.data?.claim?.claim_type === 'return' ? $t('sirsoft-ecommerce.admin.claim.detail.comparison.col_after_return') : (claim?.data?.claim?.claim_type === 'cancel' ? $t('sirsoft-ecommerce.admin.claim.detail.comparison.col_after_cancel') : $t('sirsoft-ecommerce.admin.claim.detail.comparison.col_after_refund')))}}"
+                        }
+                    ]
+                },
+                {
+                    "comment": "row_item_count — item_count",
+                    "type": "basic",
+                    "name": "Div",
+                    "responsive": {
+                        "portable": {
+                            "props": {
+                                "className": "flex flex-wrap items-baseline justify-between gap-x-2 py-1",
+                                "data-row": "item_count"
+                            }
+                        }
+                    },
+                    "props": {
+                        "className": "grid grid-cols-3 gap-x-3 gap-y-1 py-0.5",
+                        "data-row": "item_count"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "text-sm text-secondary break-keep"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.claim.detail.comparison.row_item_count"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "text-right"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-sm text-gray-900 dark:text-gray-100"
+                                    },
+                                    "text": "{{(claim?.data?.claim?.calculation_comparison?.original?.item_count ?? 0)}}$t:sirsoft-ecommerce.admin.claim.detail.comparison.unit_count"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "responsive": {
+                                "portable": {
+                                    "props": {
+                                        "className": "text-xs text-gray-400 dark:text-gray-500"
+                                    }
+                                }
+                            },
+                            "props": {
+                                "className": "hidden"
+                            },
+                            "text": "→"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "text-right"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "{{(claim?.data?.claim?.calculation_comparison?.original?.item_count ?? 0) !== (claim?.data?.claim?.calculation_comparison?.recalculated?.item_count ?? 0) ? 'text-sm text-red-600 dark:text-red-400 font-semibold' : 'text-sm text-gray-900 dark:text-gray-100'}}"
+                                    },
+                                    "text": "{{(claim?.data?.claim?.calculation_comparison?.recalculated?.item_count ?? 0)}}$t:sirsoft-ecommerce.admin.claim.detail.comparison.unit_count"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "comment": "row_list_price — total_list_price_amount",
+                    "type": "basic",
+                    "name": "Div",
+                    "responsive": {
+                        "portable": {
+                            "props": {
+                                "className": "flex flex-wrap items-baseline justify-between gap-x-2 py-1",
+                                "data-row": "total_list_price_amount"
+                            }
+                        }
+                    },
+                    "props": {
+                        "className": "grid grid-cols-3 gap-x-3 gap-y-1 py-0.5",
+                        "data-row": "total_list_price_amount"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "text-sm text-secondary break-keep"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.claim.detail.comparison.row_list_price"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "text-right"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-sm text-gray-900 dark:text-gray-100"
+                                    },
+                                    "text": "{{claim?.data?.claim?.calculation_comparison?.original?.formatted?.total_list_price_amount ?? ''}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{!!claim?.data?.claim?.calculation_comparison?.mc_original?.mc_total_list_price_amount_formatted}}",
+                                    "props": {
+                                        "className": "mt-0.5"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "iteration": {
+                                                "source": "{{Object.entries(claim?.data?.claim?.calculation_comparison?.mc_original?.mc_total_list_price_amount_formatted ?? {}).filter(([code]) => code !== (claim?.data?.claim?.calculation_comparison?.original?.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}",
+                                                "item_var": "mc"
+                                            },
+                                            "props": {
+                                                "className": "text-xs text-gray-400 dark:text-gray-500 block"
+                                            },
+                                            "text": "{{mc[1]}}"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "responsive": {
+                                "portable": {
+                                    "props": {
+                                        "className": "text-xs text-gray-400 dark:text-gray-500"
+                                    }
+                                }
+                            },
+                            "props": {
+                                "className": "hidden"
+                            },
+                            "text": "→"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "text-right"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "{{(claim?.data?.claim?.calculation_comparison?.original?.total_list_price_amount ?? 0) !== (claim?.data?.claim?.calculation_comparison?.recalculated?.total_list_price_amount ?? 0) ? 'text-sm text-red-600 dark:text-red-400 font-semibold' : 'text-sm text-gray-900 dark:text-gray-100'}}"
+                                    },
+                                    "text": "{{claim?.data?.claim?.calculation_comparison?.recalculated?.formatted?.total_list_price_amount ?? ''}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{!!claim?.data?.claim?.calculation_comparison?.mc_recalculated?.mc_total_list_price_amount_formatted}}",
+                                    "props": {
+                                        "className": "mt-0.5"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "iteration": {
+                                                "source": "{{Object.entries(claim?.data?.claim?.calculation_comparison?.mc_recalculated?.mc_total_list_price_amount_formatted ?? {}).filter(([code]) => code !== (claim?.data?.claim?.calculation_comparison?.original?.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}",
+                                                "item_var": "mc"
+                                            },
+                                            "props": {
+                                                "className": "text-xs text-gray-400 dark:text-gray-500 block"
+                                            },
+                                            "text": "{{mc[1]}}"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "comment": "row_subtotal — subtotal_amount",
+                    "type": "basic",
+                    "name": "Div",
+                    "responsive": {
+                        "portable": {
+                            "props": {
+                                "className": "flex flex-wrap items-baseline justify-between gap-x-2 py-1",
+                                "data-row": "subtotal_amount"
+                            }
+                        }
+                    },
+                    "props": {
+                        "className": "grid grid-cols-3 gap-x-3 gap-y-1 py-0.5",
+                        "data-row": "subtotal_amount"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "text-sm text-secondary break-keep"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.claim.detail.comparison.row_subtotal"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "text-right"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-sm text-gray-900 dark:text-gray-100"
+                                    },
+                                    "text": "{{claim?.data?.claim?.calculation_comparison?.original?.formatted?.subtotal_amount ?? ''}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{!!claim?.data?.claim?.calculation_comparison?.mc_original?.mc_subtotal_amount_formatted}}",
+                                    "props": {
+                                        "className": "mt-0.5"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "iteration": {
+                                                "source": "{{Object.entries(claim?.data?.claim?.calculation_comparison?.mc_original?.mc_subtotal_amount_formatted ?? {}).filter(([code]) => code !== (claim?.data?.claim?.calculation_comparison?.original?.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}",
+                                                "item_var": "mc"
+                                            },
+                                            "props": {
+                                                "className": "text-xs text-gray-400 dark:text-gray-500 block"
+                                            },
+                                            "text": "{{mc[1]}}"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "responsive": {
+                                "portable": {
+                                    "props": {
+                                        "className": "text-xs text-gray-400 dark:text-gray-500"
+                                    }
+                                }
+                            },
+                            "props": {
+                                "className": "hidden"
+                            },
+                            "text": "→"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "text-right"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "{{(claim?.data?.claim?.calculation_comparison?.original?.subtotal_amount ?? 0) !== (claim?.data?.claim?.calculation_comparison?.recalculated?.subtotal_amount ?? 0) ? 'text-sm text-red-600 dark:text-red-400 font-semibold' : 'text-sm text-gray-900 dark:text-gray-100'}}"
+                                    },
+                                    "text": "{{claim?.data?.claim?.calculation_comparison?.recalculated?.formatted?.subtotal_amount ?? ''}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{!!claim?.data?.claim?.calculation_comparison?.mc_recalculated?.mc_subtotal_amount_formatted}}",
+                                    "props": {
+                                        "className": "mt-0.5"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "iteration": {
+                                                "source": "{{Object.entries(claim?.data?.claim?.calculation_comparison?.mc_recalculated?.mc_subtotal_amount_formatted ?? {}).filter(([code]) => code !== (claim?.data?.claim?.calculation_comparison?.original?.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}",
+                                                "item_var": "mc"
+                                            },
+                                            "props": {
+                                                "className": "text-xs text-gray-400 dark:text-gray-500 block"
+                                            },
+                                            "text": "{{mc[1]}}"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "comment": "row_product_coupon — total_product_coupon_discount_amount",
+                    "type": "basic",
+                    "name": "Div",
+                    "responsive": {
+                        "portable": {
+                            "props": {
+                                "className": "flex flex-wrap items-baseline justify-between gap-x-2 py-1",
+                                "data-row": "total_product_coupon_discount_amount"
+                            }
+                        }
+                    },
+                    "props": {
+                        "className": "grid grid-cols-3 gap-x-3 gap-y-1 py-0.5",
+                        "data-row": "total_product_coupon_discount_amount"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "text-sm text-secondary break-keep"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.claim.detail.comparison.row_product_coupon"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "text-right"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-sm text-gray-900 dark:text-gray-100"
+                                    },
+                                    "text": "{{(claim?.data?.claim?.calculation_comparison?.original?.total_product_coupon_discount_amount ?? 0) > 0 ? '-' : ''}}{{claim?.data?.claim?.calculation_comparison?.original?.formatted?.total_product_coupon_discount_amount ?? ''}}"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "responsive": {
+                                "portable": {
+                                    "props": {
+                                        "className": "text-xs text-gray-400 dark:text-gray-500"
+                                    }
+                                }
+                            },
+                            "props": {
+                                "className": "hidden"
+                            },
+                            "text": "→"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "text-right"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "{{(claim?.data?.claim?.calculation_comparison?.original?.total_product_coupon_discount_amount ?? 0) !== (claim?.data?.claim?.calculation_comparison?.recalculated?.total_product_coupon_discount_amount ?? 0) ? 'text-sm text-red-600 dark:text-red-400 font-semibold' : 'text-sm text-gray-900 dark:text-gray-100'}}"
+                                    },
+                                    "text": "{{(claim?.data?.claim?.calculation_comparison?.recalculated?.total_product_coupon_discount_amount ?? 0) > 0 ? '-' : ''}}{{claim?.data?.claim?.calculation_comparison?.recalculated?.formatted?.total_product_coupon_discount_amount ?? ''}}"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "comment": "row_order_coupon — total_order_coupon_discount_amount",
+                    "type": "basic",
+                    "name": "Div",
+                    "responsive": {
+                        "portable": {
+                            "props": {
+                                "className": "flex flex-wrap items-baseline justify-between gap-x-2 py-1",
+                                "data-row": "total_order_coupon_discount_amount"
+                            }
+                        }
+                    },
+                    "props": {
+                        "className": "grid grid-cols-3 gap-x-3 gap-y-1 py-0.5",
+                        "data-row": "total_order_coupon_discount_amount"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "text-sm text-secondary break-keep"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.claim.detail.comparison.row_order_coupon"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "text-right"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-sm text-gray-900 dark:text-gray-100"
+                                    },
+                                    "text": "{{(claim?.data?.claim?.calculation_comparison?.original?.total_order_coupon_discount_amount ?? 0) > 0 ? '-' : ''}}{{claim?.data?.claim?.calculation_comparison?.original?.formatted?.total_order_coupon_discount_amount ?? ''}}"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "responsive": {
+                                "portable": {
+                                    "props": {
+                                        "className": "text-xs text-gray-400 dark:text-gray-500"
+                                    }
+                                }
+                            },
+                            "props": {
+                                "className": "hidden"
+                            },
+                            "text": "→"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "text-right"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "{{(claim?.data?.claim?.calculation_comparison?.original?.total_order_coupon_discount_amount ?? 0) !== (claim?.data?.claim?.calculation_comparison?.recalculated?.total_order_coupon_discount_amount ?? 0) ? 'text-sm text-red-600 dark:text-red-400 font-semibold' : 'text-sm text-gray-900 dark:text-gray-100'}}"
+                                    },
+                                    "text": "{{(claim?.data?.claim?.calculation_comparison?.recalculated?.total_order_coupon_discount_amount ?? 0) > 0 ? '-' : ''}}{{claim?.data?.claim?.calculation_comparison?.recalculated?.formatted?.total_order_coupon_discount_amount ?? ''}}"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "comment": "row_code_discount — total_code_discount_amount",
+                    "type": "basic",
+                    "name": "Div",
+                    "responsive": {
+                        "portable": {
+                            "props": {
+                                "className": "flex flex-wrap items-baseline justify-between gap-x-2 py-1",
+                                "data-row": "total_code_discount_amount"
+                            }
+                        }
+                    },
+                    "props": {
+                        "className": "grid grid-cols-3 gap-x-3 gap-y-1 py-0.5",
+                        "data-row": "total_code_discount_amount"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "text-sm text-secondary break-keep"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.claim.detail.comparison.row_code_discount"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "text-right"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-sm text-gray-900 dark:text-gray-100"
+                                    },
+                                    "text": "{{(claim?.data?.claim?.calculation_comparison?.original?.total_code_discount_amount ?? 0) > 0 ? '-' : ''}}{{claim?.data?.claim?.calculation_comparison?.original?.formatted?.total_code_discount_amount ?? ''}}"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "responsive": {
+                                "portable": {
+                                    "props": {
+                                        "className": "text-xs text-gray-400 dark:text-gray-500"
+                                    }
+                                }
+                            },
+                            "props": {
+                                "className": "hidden"
+                            },
+                            "text": "→"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "text-right"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "{{(claim?.data?.claim?.calculation_comparison?.original?.total_code_discount_amount ?? 0) !== (claim?.data?.claim?.calculation_comparison?.recalculated?.total_code_discount_amount ?? 0) ? 'text-sm text-red-600 dark:text-red-400 font-semibold' : 'text-sm text-gray-900 dark:text-gray-100'}}"
+                                    },
+                                    "text": "{{(claim?.data?.claim?.calculation_comparison?.recalculated?.total_code_discount_amount ?? 0) > 0 ? '-' : ''}}{{claim?.data?.claim?.calculation_comparison?.recalculated?.formatted?.total_code_discount_amount ?? ''}}"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "comment": "row_shipping_coupon — shipping_discount_amount",
+                    "type": "basic",
+                    "name": "Div",
+                    "responsive": {
+                        "portable": {
+                            "props": {
+                                "className": "flex flex-wrap items-baseline justify-between gap-x-2 py-1",
+                                "data-row": "shipping_discount_amount"
+                            }
+                        }
+                    },
+                    "props": {
+                        "className": "grid grid-cols-3 gap-x-3 gap-y-1 py-0.5",
+                        "data-row": "shipping_discount_amount"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "text-sm text-secondary break-keep"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.claim.detail.comparison.row_shipping_coupon"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "text-right"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-sm text-gray-900 dark:text-gray-100"
+                                    },
+                                    "text": "{{(claim?.data?.claim?.calculation_comparison?.original?.shipping_discount_amount ?? 0) > 0 ? '-' : ''}}{{claim?.data?.claim?.calculation_comparison?.original?.formatted?.shipping_discount_amount ?? ''}}"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "responsive": {
+                                "portable": {
+                                    "props": {
+                                        "className": "text-xs text-gray-400 dark:text-gray-500"
+                                    }
+                                }
+                            },
+                            "props": {
+                                "className": "hidden"
+                            },
+                            "text": "→"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "text-right"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "{{(claim?.data?.claim?.calculation_comparison?.original?.shipping_discount_amount ?? 0) !== (claim?.data?.claim?.calculation_comparison?.recalculated?.shipping_discount_amount ?? 0) ? 'text-sm text-red-600 dark:text-red-400 font-semibold' : 'text-sm text-gray-900 dark:text-gray-100'}}"
+                                    },
+                                    "text": "{{(claim?.data?.claim?.calculation_comparison?.recalculated?.shipping_discount_amount ?? 0) > 0 ? '-' : ''}}{{claim?.data?.claim?.calculation_comparison?.recalculated?.formatted?.shipping_discount_amount ?? ''}}"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "comment": "row_base_shipping — base_shipping_amount",
+                    "type": "basic",
+                    "name": "Div",
+                    "responsive": {
+                        "portable": {
+                            "props": {
+                                "className": "flex flex-wrap items-baseline justify-between gap-x-2 py-1",
+                                "data-row": "base_shipping_amount"
+                            }
+                        }
+                    },
+                    "props": {
+                        "className": "grid grid-cols-3 gap-x-3 gap-y-1 py-0.5",
+                        "data-row": "base_shipping_amount"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "text-sm text-secondary break-keep"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.claim.detail.comparison.row_base_shipping"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "text-right"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-sm text-gray-900 dark:text-gray-100"
+                                    },
+                                    "text": "{{claim?.data?.claim?.calculation_comparison?.original?.formatted?.base_shipping_amount ?? ''}}"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "responsive": {
+                                "portable": {
+                                    "props": {
+                                        "className": "text-xs text-gray-400 dark:text-gray-500"
+                                    }
+                                }
+                            },
+                            "props": {
+                                "className": "hidden"
+                            },
+                            "text": "→"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "text-right"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "{{(claim?.data?.claim?.calculation_comparison?.original?.base_shipping_amount ?? 0) !== (claim?.data?.claim?.calculation_comparison?.recalculated?.base_shipping_amount ?? 0) ? 'text-sm text-red-600 dark:text-red-400 font-semibold' : 'text-sm text-gray-900 dark:text-gray-100'}}"
+                                    },
+                                    "text": "{{claim?.data?.claim?.calculation_comparison?.recalculated?.formatted?.base_shipping_amount ?? ''}}"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "comment": "row_extra_shipping — extra_shipping_amount",
+                    "type": "basic",
+                    "name": "Div",
+                    "responsive": {
+                        "portable": {
+                            "props": {
+                                "className": "flex flex-wrap items-baseline justify-between gap-x-2 py-1",
+                                "data-row": "extra_shipping_amount"
+                            }
+                        }
+                    },
+                    "props": {
+                        "className": "grid grid-cols-3 gap-x-3 gap-y-1 py-0.5",
+                        "data-row": "extra_shipping_amount"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "text-sm text-secondary break-keep"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.claim.detail.comparison.row_extra_shipping"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "text-right"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-sm text-gray-900 dark:text-gray-100"
+                                    },
+                                    "text": "{{claim?.data?.claim?.calculation_comparison?.original?.formatted?.extra_shipping_amount ?? ''}}"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "responsive": {
+                                "portable": {
+                                    "props": {
+                                        "className": "text-xs text-gray-400 dark:text-gray-500"
+                                    }
+                                }
+                            },
+                            "props": {
+                                "className": "hidden"
+                            },
+                            "text": "→"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "text-right"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "{{(claim?.data?.claim?.calculation_comparison?.original?.extra_shipping_amount ?? 0) !== (claim?.data?.claim?.calculation_comparison?.recalculated?.extra_shipping_amount ?? 0) ? 'text-sm text-red-600 dark:text-red-400 font-semibold' : 'text-sm text-gray-900 dark:text-gray-100'}}"
+                                    },
+                                    "text": "{{claim?.data?.claim?.calculation_comparison?.recalculated?.formatted?.extra_shipping_amount ?? ''}}"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "comment": "row_points_used — total_points_used_amount",
+                    "type": "basic",
+                    "name": "Div",
+                    "responsive": {
+                        "portable": {
+                            "props": {
+                                "className": "flex flex-wrap items-baseline justify-between gap-x-2 py-1",
+                                "data-row": "total_points_used_amount"
+                            }
+                        }
+                    },
+                    "props": {
+                        "className": "grid grid-cols-3 gap-x-3 gap-y-1 py-0.5",
+                        "data-row": "total_points_used_amount"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "text-sm text-secondary break-keep"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.claim.detail.comparison.row_points_used"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "text-right"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-sm text-gray-900 dark:text-gray-100"
+                                    },
+                                    "text": "{{(claim?.data?.claim?.calculation_comparison?.original?.total_points_used_amount ?? 0) > 0 ? '-' : ''}}{{claim?.data?.claim?.calculation_comparison?.original?.formatted?.total_points_used_amount ?? ''}}"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "responsive": {
+                                "portable": {
+                                    "props": {
+                                        "className": "text-xs text-gray-400 dark:text-gray-500"
+                                    }
+                                }
+                            },
+                            "props": {
+                                "className": "hidden"
+                            },
+                            "text": "→"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "text-right"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "{{(claim?.data?.claim?.calculation_comparison?.original?.total_points_used_amount ?? 0) !== (claim?.data?.claim?.calculation_comparison?.recalculated?.total_points_used_amount ?? 0) ? 'text-sm text-red-600 dark:text-red-400 font-semibold' : 'text-sm text-gray-900 dark:text-gray-100'}}"
+                                    },
+                                    "text": "{{(claim?.data?.claim?.calculation_comparison?.recalculated?.total_points_used_amount ?? 0) > 0 ? '-' : ''}}{{claim?.data?.claim?.calculation_comparison?.recalculated?.formatted?.total_points_used_amount ?? ''}}"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "comment": "row_taxable — total_tax_amount",
+                    "type": "basic",
+                    "name": "Div",
+                    "responsive": {
+                        "portable": {
+                            "props": {
+                                "className": "flex flex-wrap items-baseline justify-between gap-x-2 py-1",
+                                "data-row": "total_tax_amount"
+                            }
+                        }
+                    },
+                    "props": {
+                        "className": "grid grid-cols-3 gap-x-3 gap-y-1 py-0.5",
+                        "data-row": "total_tax_amount"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "text-sm text-secondary break-keep"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.claim.detail.comparison.row_taxable"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "text-right"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-sm text-gray-900 dark:text-gray-100"
+                                    },
+                                    "text": "{{claim?.data?.claim?.calculation_comparison?.original?.formatted?.total_tax_amount ?? ''}}"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "responsive": {
+                                "portable": {
+                                    "props": {
+                                        "className": "text-xs text-gray-400 dark:text-gray-500"
+                                    }
+                                }
+                            },
+                            "props": {
+                                "className": "hidden"
+                            },
+                            "text": "→"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "text-right"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "{{(claim?.data?.claim?.calculation_comparison?.original?.total_tax_amount ?? 0) !== (claim?.data?.claim?.calculation_comparison?.recalculated?.total_tax_amount ?? 0) ? 'text-sm text-red-600 dark:text-red-400 font-semibold' : 'text-sm text-gray-900 dark:text-gray-100'}}"
+                                    },
+                                    "text": "{{claim?.data?.claim?.calculation_comparison?.recalculated?.formatted?.total_tax_amount ?? ''}}"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "comment": "row_vat — total_vat_amount",
+                    "type": "basic",
+                    "name": "Div",
+                    "responsive": {
+                        "portable": {
+                            "props": {
+                                "className": "flex flex-wrap items-baseline justify-between gap-x-2 py-1",
+                                "data-row": "total_vat_amount"
+                            }
+                        }
+                    },
+                    "props": {
+                        "className": "grid grid-cols-3 gap-x-3 gap-y-1 py-0.5",
+                        "data-row": "total_vat_amount"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "text-sm text-secondary break-keep"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.claim.detail.comparison.row_vat"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "text-right"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-sm text-gray-900 dark:text-gray-100"
+                                    },
+                                    "text": "{{claim?.data?.claim?.calculation_comparison?.original?.formatted?.total_vat_amount ?? ''}}"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "responsive": {
+                                "portable": {
+                                    "props": {
+                                        "className": "text-xs text-gray-400 dark:text-gray-500"
+                                    }
+                                }
+                            },
+                            "props": {
+                                "className": "hidden"
+                            },
+                            "text": "→"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "text-right"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "{{(claim?.data?.claim?.calculation_comparison?.original?.total_vat_amount ?? 0) !== (claim?.data?.claim?.calculation_comparison?.recalculated?.total_vat_amount ?? 0) ? 'text-sm text-red-600 dark:text-red-400 font-semibold' : 'text-sm text-gray-900 dark:text-gray-100'}}"
+                                    },
+                                    "text": "{{claim?.data?.claim?.calculation_comparison?.recalculated?.formatted?.total_vat_amount ?? ''}}"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "comment": "row_total_paid — total_paid_amount",
+                    "type": "basic",
+                    "name": "Div",
+                    "responsive": {
+                        "portable": {
+                            "props": {
+                                "className": "flex flex-wrap items-baseline justify-between gap-x-2 py-1",
+                                "data-row": "total_paid_amount"
+                            }
+                        }
+                    },
+                    "props": {
+                        "className": "grid grid-cols-3 gap-x-3 gap-y-1 py-0.5",
+                        "data-row": "total_paid_amount"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "text-sm text-secondary break-keep font-semibold"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.claim.detail.comparison.row_total_paid"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "text-right"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-sm text-gray-900 dark:text-gray-100 font-semibold"
+                                    },
+                                    "text": "{{claim?.data?.claim?.calculation_comparison?.original?.formatted?.total_paid_amount ?? ''}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{!!claim?.data?.claim?.calculation_comparison?.mc_original?.mc_total_paid_amount_formatted}}",
+                                    "props": {
+                                        "className": "mt-0.5"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "iteration": {
+                                                "source": "{{Object.entries(claim?.data?.claim?.calculation_comparison?.mc_original?.mc_total_paid_amount_formatted ?? {}).filter(([code]) => code !== (claim?.data?.claim?.calculation_comparison?.original?.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}",
+                                                "item_var": "mc"
+                                            },
+                                            "props": {
+                                                "className": "text-xs text-gray-400 dark:text-gray-500 block"
+                                            },
+                                            "text": "{{mc[1]}}"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "responsive": {
+                                "portable": {
+                                    "props": {
+                                        "className": "text-xs text-gray-400 dark:text-gray-500"
+                                    }
+                                }
+                            },
+                            "props": {
+                                "className": "hidden"
+                            },
+                            "text": "→"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "text-right"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "{{(claim?.data?.claim?.calculation_comparison?.original?.total_paid_amount ?? 0) !== (claim?.data?.claim?.calculation_comparison?.recalculated?.total_paid_amount ?? 0) ? 'text-sm text-red-600 dark:text-red-400 font-semibold' : 'text-sm text-gray-900 dark:text-gray-100 font-semibold'}}"
+                                    },
+                                    "text": "{{claim?.data?.claim?.calculation_comparison?.recalculated?.formatted?.total_paid_amount ?? ''}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{!!claim?.data?.claim?.calculation_comparison?.mc_recalculated?.mc_total_paid_amount_formatted}}",
+                                    "props": {
+                                        "className": "mt-0.5"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "iteration": {
+                                                "source": "{{Object.entries(claim?.data?.claim?.calculation_comparison?.mc_recalculated?.mc_total_paid_amount_formatted ?? {}).filter(([code]) => code !== (claim?.data?.claim?.calculation_comparison?.original?.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}",
+                                                "item_var": "mc"
+                                            },
+                                            "props": {
+                                                "className": "text-xs text-gray-400 dark:text-gray-500 block"
+                                            },
+                                            "text": "{{mc[1]}}"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "comment": "row_earned_points — total_earned_points_amount. 표기는 서버가 스냅샷 양쪽에 채워 준 `total_earned_points_amount_formatted` 를 먼저 읽고, 그 필드가 없는 옛 응답만 종전 표기(toLocaleString + 'P')로 떨어진다.",
+                    "type": "basic",
+                    "name": "Div",
+                    "responsive": {
+                        "portable": {
+                            "props": {
+                                "className": "flex flex-wrap items-baseline justify-between gap-x-2 py-1",
+                                "data-row": "total_earned_points_amount"
+                            }
+                        }
+                    },
+                    "props": {
+                        "className": "grid grid-cols-3 gap-x-3 gap-y-1 py-0.5",
+                        "data-row": "total_earned_points_amount"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "text-sm text-secondary break-keep"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.claim.detail.comparison.row_earned_points"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "text-right"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-sm text-gray-900 dark:text-gray-100"
+                                    },
+                                    "text": "{{claim?.data?.claim?.calculation_comparison?.original?.total_earned_points_amount_formatted ?? ((claim?.data?.claim?.calculation_comparison?.original?.total_earned_points_amount ?? 0).toLocaleString() + 'P')}}"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "responsive": {
+                                "portable": {
+                                    "props": {
+                                        "className": "text-xs text-gray-400 dark:text-gray-500"
+                                    }
+                                }
+                            },
+                            "props": {
+                                "className": "hidden"
+                            },
+                            "text": "→"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "text-right"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "{{(claim?.data?.claim?.calculation_comparison?.original?.total_earned_points_amount ?? 0) !== (claim?.data?.claim?.calculation_comparison?.recalculated?.total_earned_points_amount ?? 0) ? 'text-sm text-red-600 dark:text-red-400 font-semibold' : 'text-sm text-gray-900 dark:text-gray-100'}}"
+                                    },
+                                    "text": "{{claim?.data?.claim?.calculation_comparison?.recalculated?.total_earned_points_amount_formatted ?? ((claim?.data?.claim?.calculation_comparison?.recalculated?.total_earned_points_amount ?? 0).toLocaleString() + 'P')}}"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "comment": "row_substituted — 교환만. 치환 근거 행(상품별 old→new). 서버 substituted_items 를 그대로 옮긴다.",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{claim?.data?.claim?.claim_type === 'exchange' && (claim?.data?.claim?.calculation_comparison?.substituted_items ?? []).length > 0}}",
+                    "props": {
+                        "className": "pt-1 mt-1 border-t border-dashed border-gray-200 dark:border-gray-700",
+                        "data-row": "substituted"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "text-sm text-secondary break-keep block mb-0.5"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.claim.detail.comparison.row_substituted"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "iteration": {
+                                "source": "{{claim?.data?.claim?.calculation_comparison?.substituted_items ?? []}}",
+                                "item_var": "row"
+                            },
+                            "props": {
+                                "className": "flex flex-wrap items-baseline justify-between gap-x-2",
+                                "data-substituted-item": "{{row.order_option_id}}"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-sm text-gray-900 dark:text-gray-100 min-w-0 break-keep"
+                                    },
+                                    "text": "{{row.option_label ?? ''}} × {{row.quantity ?? 0}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-sm text-gray-900 dark:text-gray-100 whitespace-nowrap"
+                                    },
+                                    "text": "{{row.unit_price_formatted ?? ''}} → {{row.new_unit_price_formatted ?? ''}}"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

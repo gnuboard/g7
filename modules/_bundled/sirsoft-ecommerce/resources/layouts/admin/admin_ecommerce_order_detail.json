@@ -1,5 +1,5 @@
 {
-    "comment": "주문 상세 (운영자) — 주문정보·결제정보·활동로그 세 구획을 한 페이지에 이어 붙이고 탭은 스크롤\n  위치를 따라간다. 배송지 수정·상태 일괄변경·취소/환불·안내 발송이 모두 여기서 일어나므로,\n  화면 상태(_local)는 `<init>` 한 곳에서 전 필드를 미리 깔아 두고 시작한다.",
+    "comment": "주문 상세 (운영자) — 주문정보·결제정보·활동로그 세 구획을 한 페이지에 이어 붙이고 탭은 스크롤\n  위치를 따라간다. 배송지 수정·상태 일괄변경·취소/환불·안내 발송이 모두 여기서 일어나므로,\n  화면 상태(_local)는 `<init>` 한 곳에서 전 필드를 미리 깔아 두고 시작한다.\n  운영자가 누른 유형 서브탭. 비어 있으면 computed claimHistoryActiveType 이 접수 건이 있는 첫 유형을 고른다 — 여기에 'exchange' 를 박으면 그 판정이 영영 돌지 않는다.\n  탭 배열과 섹션 존재는 같은 조건으로 함께 분기한다 (D17-①). '클레임 내역' 은 접수 건이 없어도 섹션이 남으므로(빈 유형 안내가 그 자리다) 탭도 상시 존재하고, 뱃지 숫자만 응답을 따라간다.\n  유형 서브탭 4종 (D20). 뱃지 숫자는 서버가 준 counts 를 그대로 읽는다 — 화면이 claims 배열을 다시 세면 상한이 걸린 응답에서 두 값이 갈린다.\n  지금 보는 유형 서브탭. 운영자가 누른 값(_local.claimHistoryType)이 있으면 그것, 없으면 접수 건이 있는 첫 유형 — 순서는 교환 → 반품 → 취소 → 환불이고 넷 다 비었으면 교환이다. 종전에는 늘 교환으로 시작해 취소만 있는 주문에서 '접수된 건이 없습니다' 가 먼저 보였다. 판정은 뱃지와 같은 counts 를 읽는다 — claims 배열을 세면 상한이 걸린 응답에서 뱃지와 갈린다. computed 는 다른 computed 를 읽지 못하므로 아래 claimHistoryRows 가 같은 식을 되풀이한다 — 순서를 바꾸면 두 곳을 함께 바꾼다.\n  서브탭 필터는 화면이 claim_type 으로 거른다 (S6c 판정 ⑤ — 서버는 전 유형 평면 배열 하나를 신청 역순으로 내려준다). 별도 데이터소스를 만들지 않으므로 서브탭 전환에 재조회가 없다. 기준 유형은 claimHistoryActiveType 과 같은 식이다(computed 간 참조 불가).",
     "version": "1.0.0",
     "layout_name": "admin_ecommerce_order_detail",
     "extends": "_admin_base",
@@ -89,6 +89,68 @@
             "comment": "활동로그 구획 전용. 쪽수·정렬을 _local 에서 읽으므로 그 값이 바뀔 때마다 서버에서 다시 받아 온다(클라이언트 정렬이 아니다)"
         },
         {
+            "id": "orderClaims",
+            "label_key": "$t:sirsoft-ecommerce.editor.data_source.orderClaims",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-ecommerce/admin/orders/{{route.orderNumber}}/claims",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "fallback": {
+                "data": {
+                    "counts": {},
+                    "claims": [],
+                    "unavailable": true
+                }
+            },
+            "errorHandling": {
+                "403": {
+                    "comment": "클레임 열람 권한이 없는 주문 담당자에게는 정상적인 응답이다 — 상위(레이아웃) errorHandling 으로 전파되면 주문 화면 전체가 오류 페이지가 된다.",
+                    "handler": "suppress"
+                },
+                "default": {
+                    "comment": "500·네트워크 실패도 같다 — 클레임 내역 한 섹션의 실패가 주문 화면 전체를 막지 않게 끊고, fallback 의 unavailable 로 섹션이 '못 불러왔다' 를 말한다.",
+                    "handler": "suppress"
+                }
+            },
+            "comment": "주문 스코프 클레임 내역 (D20 — 유형 서브탭 뱃지용 counts + 신청서가 상품 배열을 품는 그룹 구조). 이 게이트(claims.read)는 화면 라우트 권한(orders.read)보다 좁다 — 클레임 권한이 없는 운영자에게는 403 이므로 suppress 로 전파를 끊고 fallback 의 unavailable 로 '못 불러왔다' 를 섹션이 말한다. 화면 전체를 오류 페이지로 떨어뜨리거나 '접수된 건 없음' 으로 뭉뚱그리지 않는다. transition_overlay 에는 넣지 않는다 — 한 섹션이 주문 화면 전체의 진입을 막아서는 안 된다."
+        },
+        {
+            "id": "claimRequestContext",
+            "label_key": "$t:sirsoft-ecommerce.editor.data_source.claimRequestContext",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-ecommerce/admin/orders/{{route.orderNumber}}/claims/request-context",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "fallback": {
+                "data": {
+                    "gates": {},
+                    "reasons": {},
+                    "charge_methods": [],
+                    "unavailable": true
+                }
+            },
+            "errorHandling": {
+                "403": {
+                    "comment": "실패의 종류를 남긴다 — 403(접수 권한 없음)과 그 밖(500·네트워크)을 선택 바 안내가 가른다. 전부 「권한 없음」 으로 알리면 권한이 있는 운영자가 엉뚱하게 권한을 요청하러 간다. 이 핸들러가 실패를 받아 끊으므로 주문 화면 전체 오류로 번지지 않는다.",
+                    "handler": "setState",
+                    "params": {
+                        "target": "local",
+                        "claimRequestContextError": "forbidden"
+                    }
+                },
+                "default": {
+                    "handler": "setState",
+                    "params": {
+                        "target": "local",
+                        "claimRequestContextError": "failed"
+                    }
+                }
+            },
+            "comment": "관리자 직권 접수 문맥 (§3-11) — 선택 바 [교환 접수]·[반품 접수]·[취소·환불 접수] 가 켜지는 물리 게이트(D5) 상태 목록과 접수 창의 사유·청구 방식 선택지. 게이트(claims.create)가 화면 라우트(orders.read)보다 좁아 권한이 없는 운영자에게는 403 이다 — suppress 로 끊고 fallback 의 빈 게이트로 세 버튼이 꺼진 채 선다. 게이트 computed(`claimRequestGate*`)는 고른 상품이 **모두** 그 유형의 상태 목록에 있어야 참이다 — 화면이 목록을 적으면 서버 판정과 갈린다."
+        },
+        {
             "id": "refundReasons",
             "label_key": "$t:sirsoft-ecommerce.editor.data_source.refundReasons",
             "type": "api",
@@ -109,7 +171,18 @@
         "batchCarrierId": "",
         "batchTrackingNumber": "",
         "activeOrderTab": "order_info",
+        "claimHistoryType": "",
         "expandedCashReceiptHistory": []
+    },
+    "computed": {
+        "claimHistoryTotal": "{{Number(orderClaims?.data?.counts?.exchange ?? 0) + Number(orderClaims?.data?.counts?.return ?? 0) + Number(orderClaims?.data?.counts?.cancel ?? 0) + Number(orderClaims?.data?.counts?.refund ?? 0)}}",
+        "orderDetailTabs": "{{[{ id: 'order_info', label: $t('sirsoft-ecommerce.admin.order.detail.tabs.order_info') }, { id: 'payment_info', label: $t('sirsoft-ecommerce.admin.order.detail.tabs.payment_info') }, { id: 'claim_history', label: $t('sirsoft-ecommerce.admin.order.detail.tabs.claim_history') + ((_computed.claimHistoryTotal ?? 0) > 0 ? ' (' + _computed.claimHistoryTotal + ')' : '') }, { id: 'activity_log', label: $t('sirsoft-ecommerce.admin.order.detail.tabs.activity_log') }]}}",
+        "claimHistoryTypes": "{{['exchange', 'return', 'cancel', 'refund'].map(t => ({ value: t, label: $t('sirsoft-ecommerce.admin.order.detail.claim_history.subtabs.' + t), count: orderClaims?.data?.counts?.[t] ?? 0 }))}}",
+        "claimHistoryActiveType": "{{_local.claimHistoryType || (['exchange', 'return', 'cancel', 'refund'].find(t => (orderClaims?.data?.counts?.[t] ?? 0) > 0) ?? 'exchange')}}",
+        "claimHistoryRows": "{{(orderClaims?.data?.claims ?? []).filter(c => c.claim_type === (_local.claimHistoryType || (['exchange', 'return', 'cancel', 'refund'].find(t => (orderClaims?.data?.counts?.[t] ?? 0) > 0) ?? 'exchange')))}}",
+        "claimRequestGateExchange": "{{(_local.selectedProducts ?? []).length > 0 && (_local.selectedProducts ?? []).every(id => (claimRequestContext?.data?.gates?.exchange ?? []).includes((order?.data?.options ?? []).find(o => o.id === id)?.option_status))}}",
+        "claimRequestGateReturn": "{{(_local.selectedProducts ?? []).length > 0 && (_local.selectedProducts ?? []).every(id => (claimRequestContext?.data?.gates?.return ?? []).includes((order?.data?.options ?? []).find(o => o.id === id)?.option_status))}}",
+        "claimRequestGateRefund": "{{(_local.selectedProducts ?? []).length > 0 && (_local.selectedProducts ?? []).every(id => (claimRequestContext?.data?.gates?.refund ?? []).includes((order?.data?.options ?? []).find(o => o.id === id)?.option_status))}}"
     },
     "permissions": [
         "sirsoft-ecommerce.orders.read"
@@ -127,6 +200,7 @@
             "params": {
                 "target": "local",
                 "activeOrderTab": "order_info",
+                "claimHistoryType": "",
                 "selectedProducts": [],
                 "selectAll": false,
                 "batchOrderStatus": "",
@@ -148,7 +222,6 @@
                 "cancelItems": [],
                 "cancelReason": "",
                 "cancelReasonDetail": "",
-                "cancelPg": true,
                 "refundEstimate": null,
                 "refundLoading": false,
                 "isCancelling": false,
@@ -329,39 +402,19 @@
                                 ]
                             },
                             {
+                                "partial": "partials/admin_ecommerce_order_detail/_partial_order_progress.json"
+                            },
+                            {
+                                "comment": "탭 클릭·스크롤 추적은 컴포넌트가 제 상태로 맡는다 — `onChange` 는 TabNavigationScroll 에 없는 이벤트라 걸어도 돌지 않고, `onTabChange` 를 걸면 내부 활성 탭 갱신이 꺼져(`activeTabId` 는 초기값 전용) 누른 탭 표시가 따라오지 않는다.",
                                 "id": "tab_navigation",
                                 "type": "composite",
                                 "name": "TabNavigationScroll",
-                                "actions": [
-                                    {
-                                        "comment": "탭 표시만 옮긴다 — 세 구획은 이미 한 페이지에 다 실려 있고 스크롤 스파이가 반대 방향(스크롤 → 탭)을 맡는다",
-                                        "type": "change",
-                                        "handler": "setState",
-                                        "params": {
-                                            "target": "local",
-                                            "activeOrderTab": "{{$event.value}}"
-                                        }
-                                    }
-                                ],
                                 "props": {
                                     "activeTabId": "{{_local.activeOrderTab ?? 'order_info'}}",
                                     "enableScrollSpy": true,
                                     "scrollSpyOffset": 120,
                                     "sectionIdPrefix": "section_",
-                                    "tabs": [
-                                        {
-                                            "id": "order_info",
-                                            "label": "$t:sirsoft-ecommerce.admin.order.detail.tabs.order_info"
-                                        },
-                                        {
-                                            "id": "payment_info",
-                                            "label": "$t:sirsoft-ecommerce.admin.order.detail.tabs.payment_info"
-                                        },
-                                        {
-                                            "id": "activity_log",
-                                            "label": "$t:sirsoft-ecommerce.admin.order.detail.tabs.activity_log"
-                                        }
-                                    ]
+                                    "tabs": "{{_computed.orderDetailTabs ?? []}}"
                                 }
                             }
                         ]
@@ -379,6 +432,9 @@
                             },
                             {
                                 "partial": "partials/admin_ecommerce_order_detail/_partial_payment_info.json"
+                            },
+                            {
+                                "partial": "partials/admin_ecommerce_order_detail/_partial_claim_history.json"
                             },
                             {
                                 "partial": "partials/admin_ecommerce_order_detail/_partial_activity_log.json"
@@ -405,6 +461,10 @@
         {
             "comment": "취소/환불 — 취소할 옵션과 수량을 고르면 환불 예상액을 서버에서 다시 계산해 보여 준다",
             "partial": "partials/admin_ecommerce_order_detail/_modal_cancel_order.json"
+        },
+        {
+            "comment": "관리자 직권 접수 창 (교환·반품 — §3-11). 취소·환불 접수는 위 취소 모달을 그대로 쓴다(같은 서비스로 위임).",
+            "partial": "partials/admin_ecommerce_order_detail/_modal_admin_claim_request.json"
         },
         {
             "comment": "현금영수증 발급 — 무통장·가상계좌 결제 건에 대해 운영자가 대신 발급한다",

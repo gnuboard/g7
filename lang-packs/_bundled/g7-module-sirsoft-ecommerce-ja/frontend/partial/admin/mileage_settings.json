@@ -15,11 +15,7 @@
     "earn_trigger_delivered": "配送完了",
     "earn_delay_prefix": "後",
     "earn_delay_suffix": "日経過時に積立",
-    "earn_trigger_hint": "デフォルト=購入確定 / 配送完了から選択可能",
-    "deduction_timing": "ポイント差引のタイミング",
-    "deduction_timing_payment_complete": "決済完了時",
-    "deduction_timing_order_placed": "注文受付時",
-    "deduction_timing_hint": "デフォルト=決済完了時に差引。クレジットカードなどの決済が完了した後にポイントを差引きます(決済未完了·失敗注文での先立て差引防止)。全額ポイント決済は常に注文時点で差引かれます。"
+    "earn_trigger_hint": "デフォルト=購入確定 / 配送完了から選択可能"
   },
   "currency": {
     "title": "通貨別使用単位",

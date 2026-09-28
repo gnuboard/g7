@@ -1182,6 +1182,9 @@
     "user_notification_ws": "Notifications (Live)",
     "wishlist": "Wishlist",
     "scrap": "Scrap",
-    "visitor_summary": "Visitor summary"
+    "visitor_summary": "Visitor summary",
+    "claimable": "Claimable items",
+    "claims": "Claim requests",
+    "claim": "Claim request"
   }
 }

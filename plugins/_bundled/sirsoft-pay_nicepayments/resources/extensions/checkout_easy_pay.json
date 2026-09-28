@@ -39,12 +39,12 @@
                             "responsive": {
                                 "portable": {
                                     "props": {
-                                        "className": "text-body font-medium mb-2"
+                                        "className": "text-sm text-gray-700 dark:text-gray-300 font-medium mb-2"
                                     }
                                 }
                             },
                             "props": {
-                                "className": "text-body font-medium mb-3"
+                                "className": "text-sm text-gray-700 dark:text-gray-300 font-medium mb-3"
                             },
                             "text": "$t:sirsoft-pay_nicepayments.easy_pay.section_title"
                         },
@@ -52,7 +52,7 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "nicepay-easy-pay-btns flex flex-wrap gap-2"
+                                "className": "flex flex-wrap gap-2"
                             },
                             "children": [
                                 {

@@ -1,5 +1,5 @@
 {
-    "comment": "상품 목록 — 검색 필터 영역. 주문 목록의 같은 영역과 구조가 같다(슬롯 등록 + 편집모드 +\n  프리셋), 다만 필터 항목이 상품 도메인이다.\n  \n  ⓐ 필터 행은 전부 화면 밖 등록 영역(`slot_registration_area`)에 한 번만 정의하고, 각 행의\n     `data-slot` 이 \"기본 필터\" 와 \"상세 필터\" 중 어디로 갈지를 그때그때 정한다 — 보이고 숨겨도\n     행이 사라졌다 다시 만들어지지 않으므로 입력값이 유지된다.\n  ⓑ 어떤 필터를 기본에 둘지는 운영자별 취향이라 브라우저(localStorage,\n     `g7_product_filter_visible_filters`)에 남긴다 — 주문 목록과 **다른 키**를 쓴다.\n  ⓒ 입력 중인 값은 `_local.filter` 에 모이지만 **검색은 URL 로 나간다**(재진입·뒤로가기·주소\n     공유에서 같은 목록이 서야 한다).\n  \n  숫자 범위 필터가 둘인데 타입이 갈린다 — 가격은 `type=\"number\"`, 재고는 `type=\"text\"` 다.",
+    "comment": "상품 목록 — 검색 필터 영역. 주문 목록의 같은 영역과 구조가 같다(슬롯 등록 + 편집모드 +\n  프리셋), 다만 필터 항목이 상품 도메인이다.\n  \n  ⓐ 필터 행은 전부 화면 밖 등록 영역(`slot_registration_area`)에 한 번만 정의하고, 각 행의\n     `data-slot` 이 \"기본 필터\" 와 \"상세 필터\" 중 어디로 갈지를 그때그때 정한다 — 보이고 숨겨도\n     행이 사라졌다 다시 만들어지지 않으므로 입력값이 유지된다.\n  ⓑ 어떤 필터를 기본에 둘지는 운영자별 취향이라 브라우저(localStorage)에 남긴다. 저장은 셸의\n     필터 표시 선택기가 자기 `id`(`admin_ecommerce_product_filters`)와 로그인 사용자로 만든 키에\n     스스로 한다 — 주문 목록과 `id` 가 달라 키가 겹치지 않고, 편집모드 체크박스는 상태만 바꾼다.\n  ⓒ 입력 중인 값은 `_local.filter` 에 모이지만 **검색은 URL 로 나간다**(재진입·뒤로가기·주소\n     공유에서 같은 목록이 서야 한다).\n  \n  숫자 범위 필터가 둘인데 타입이 갈린다 — 가격은 `type=\"number\"`, 재고는 `type=\"text\"` 다.",
     "meta": {
         "is_partial": true,
         "description": "Product Index - Filter Section with Slot System"
@@ -43,25 +43,13 @@
                             "name": "Input",
                             "actions": [
                                 {
-                                    "comment": "분류 필터 노출 스위치. 분류는 4단계라 자리를 많이 먹어, 안 쓰는 몰은 접어 두는 일이 많다. 어떤 필터를 기본에 둘지는 운영자별 취향이라 서버가 아니라 브라우저에 남긴다 — 상태 변경과 저장이 나란히 있어야 새로고침 후에도 같은 필터가 선다.",
+                                    "comment": "분류 필터 노출 스위치. 분류는 4단계라 자리를 많이 먹어, 안 쓰는 몰은 접어 두는 일이 많다. 어떤 필터를 기본에 둘지는 운영자별 취향이라 서버가 아니라 브라우저에 남긴다 — 여기서는 상태만 바꾸고, 저장은 셸의 필터 표시 선택기가 바뀐 값을 받아 브라우저에 남긴다.",
                                     "type": "change",
-                                    "handler": "sequence",
-                                    "actions": [
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "_local",
-                                                "visibleFilters": "{{(_local.visibleFilters || []).includes('category') ? (_local.visibleFilters || []).filter(f => f !== 'category') : [...(_local.visibleFilters || []), 'category']}}"
-                                            }
-                                        },
-                                        {
-                                            "handler": "saveToLocalStorage",
-                                            "params": {
-                                                "key": "g7_product_filter_visible_filters",
-                                                "value": "{{(_local.visibleFilters || []).includes('category') ? (_local.visibleFilters || []).filter(f => f !== 'category') : [...(_local.visibleFilters || []), 'category']}}"
-                                            }
-                                        }
-                                    ]
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "_local",
+                                        "visibleFilters": "{{(_local.visibleFilters || []).includes('category') ? (_local.visibleFilters || []).filter(f => f !== 'category') : [...(_local.visibleFilters || []), 'category']}}"
+                                    }
                                 }
                             ],
                             "props": {
@@ -266,25 +254,13 @@
                             "name": "Input",
                             "actions": [
                                 {
-                                    "comment": "일자 필터 노출 스위치. 어느 날짜(등록·수정)를 기준으로 볼지까지 이 행 안에서 고른다. 어떤 필터를 기본에 둘지는 운영자별 취향이라 서버가 아니라 브라우저에 남긴다 — 상태 변경과 저장이 나란히 있어야 새로고침 후에도 같은 필터가 선다.",
+                                    "comment": "일자 필터 노출 스위치. 어느 날짜(등록·수정)를 기준으로 볼지까지 이 행 안에서 고른다. 어떤 필터를 기본에 둘지는 운영자별 취향이라 서버가 아니라 브라우저에 남긴다 — 여기서는 상태만 바꾸고, 저장은 셸의 필터 표시 선택기가 바뀐 값을 받아 브라우저에 남긴다.",
                                     "type": "change",
-                                    "handler": "sequence",
-                                    "actions": [
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "_local",
-                                                "visibleFilters": "{{(_local.visibleFilters || []).includes('date') ? (_local.visibleFilters || []).filter(f => f !== 'date') : [...(_local.visibleFilters || []), 'date']}}"
-                                            }
-                                        },
-                                        {
-                                            "handler": "saveToLocalStorage",
-                                            "params": {
-                                                "key": "g7_product_filter_visible_filters",
-                                                "value": "{{(_local.visibleFilters || []).includes('date') ? (_local.visibleFilters || []).filter(f => f !== 'date') : [...(_local.visibleFilters || []), 'date']}}"
-                                            }
-                                        }
-                                    ]
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "_local",
+                                        "visibleFilters": "{{(_local.visibleFilters || []).includes('date') ? (_local.visibleFilters || []).filter(f => f !== 'date') : [...(_local.visibleFilters || []), 'date']}}"
+                                    }
                                 }
                             ],
                             "props": {
@@ -629,25 +605,13 @@
                             "name": "Input",
                             "actions": [
                                 {
-                                    "comment": "판매상태 필터 노출 스위치. 네 상태를 겹쳐 고를 수 있어 배열로 담긴다. 어떤 필터를 기본에 둘지는 운영자별 취향이라 서버가 아니라 브라우저에 남긴다 — 상태 변경과 저장이 나란히 있어야 새로고침 후에도 같은 필터가 선다.",
+                                    "comment": "판매상태 필터 노출 스위치. 네 상태를 겹쳐 고를 수 있어 배열로 담긴다. 어떤 필터를 기본에 둘지는 운영자별 취향이라 서버가 아니라 브라우저에 남긴다 — 여기서는 상태만 바꾸고, 저장은 셸의 필터 표시 선택기가 바뀐 값을 받아 브라우저에 남긴다.",
                                     "type": "change",
-                                    "handler": "sequence",
-                                    "actions": [
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "_local",
-                                                "visibleFilters": "{{(_local.visibleFilters || []).includes('salesStatus') ? (_local.visibleFilters || []).filter(f => f !== 'salesStatus') : [...(_local.visibleFilters || []), 'salesStatus']}}"
-                                            }
-                                        },
-                                        {
-                                            "handler": "saveToLocalStorage",
-                                            "params": {
-                                                "key": "g7_product_filter_visible_filters",
-                                                "value": "{{(_local.visibleFilters || []).includes('salesStatus') ? (_local.visibleFilters || []).filter(f => f !== 'salesStatus') : [...(_local.visibleFilters || []), 'salesStatus']}}"
-                                            }
-                                        }
-                                    ]
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "_local",
+                                        "visibleFilters": "{{(_local.visibleFilters || []).includes('salesStatus') ? (_local.visibleFilters || []).filter(f => f !== 'salesStatus') : [...(_local.visibleFilters || []), 'salesStatus']}}"
+                                    }
                                 }
                             ],
                             "props": {
@@ -860,25 +824,13 @@
                             "name": "Input",
                             "actions": [
                                 {
-                                    "comment": "전시상태 필터 노출 스위치. 판매상태와 달리 하나만 고르는 값이다. 어떤 필터를 기본에 둘지는 운영자별 취향이라 서버가 아니라 브라우저에 남긴다 — 상태 변경과 저장이 나란히 있어야 새로고침 후에도 같은 필터가 선다.",
+                                    "comment": "전시상태 필터 노출 스위치. 판매상태와 달리 하나만 고르는 값이다. 어떤 필터를 기본에 둘지는 운영자별 취향이라 서버가 아니라 브라우저에 남긴다 — 여기서는 상태만 바꾸고, 저장은 셸의 필터 표시 선택기가 바뀐 값을 받아 브라우저에 남긴다.",
                                     "type": "change",
-                                    "handler": "sequence",
-                                    "actions": [
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "_local",
-                                                "visibleFilters": "{{(_local.visibleFilters || []).includes('displayStatus') ? (_local.visibleFilters || []).filter(f => f !== 'displayStatus') : [...(_local.visibleFilters || []), 'displayStatus']}}"
-                                            }
-                                        },
-                                        {
-                                            "handler": "saveToLocalStorage",
-                                            "params": {
-                                                "key": "g7_product_filter_visible_filters",
-                                                "value": "{{(_local.visibleFilters || []).includes('displayStatus') ? (_local.visibleFilters || []).filter(f => f !== 'displayStatus') : [...(_local.visibleFilters || []), 'displayStatus']}}"
-                                            }
-                                        }
-                                    ]
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "_local",
+                                        "visibleFilters": "{{(_local.visibleFilters || []).includes('displayStatus') ? (_local.visibleFilters || []).filter(f => f !== 'displayStatus') : [...(_local.visibleFilters || []), 'displayStatus']}}"
+                                    }
                                 }
                             ],
                             "props": {
@@ -1026,25 +978,13 @@
                             "name": "Input",
                             "actions": [
                                 {
-                                    "comment": "브랜드 필터 노출 스위치. 브랜드를 안 쓰는 몰에서는 늘 비어 있는 행이다. 어떤 필터를 기본에 둘지는 운영자별 취향이라 서버가 아니라 브라우저에 남긴다 — 상태 변경과 저장이 나란히 있어야 새로고침 후에도 같은 필터가 선다.",
+                                    "comment": "브랜드 필터 노출 스위치. 브랜드를 안 쓰는 몰에서는 늘 비어 있는 행이다. 어떤 필터를 기본에 둘지는 운영자별 취향이라 서버가 아니라 브라우저에 남긴다 — 여기서는 상태만 바꾸고, 저장은 셸의 필터 표시 선택기가 바뀐 값을 받아 브라우저에 남긴다.",
                                     "type": "change",
-                                    "handler": "sequence",
-                                    "actions": [
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "_local",
-                                                "visibleFilters": "{{(_local.visibleFilters || []).includes('brand') ? (_local.visibleFilters || []).filter(f => f !== 'brand') : [...(_local.visibleFilters || []), 'brand']}}"
-                                            }
-                                        },
-                                        {
-                                            "handler": "saveToLocalStorage",
-                                            "params": {
-                                                "key": "g7_product_filter_visible_filters",
-                                                "value": "{{(_local.visibleFilters || []).includes('brand') ? (_local.visibleFilters || []).filter(f => f !== 'brand') : [...(_local.visibleFilters || []), 'brand']}}"
-                                            }
-                                        }
-                                    ]
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "_local",
+                                        "visibleFilters": "{{(_local.visibleFilters || []).includes('brand') ? (_local.visibleFilters || []).filter(f => f !== 'brand') : [...(_local.visibleFilters || []), 'brand']}}"
+                                    }
                                 }
                             ],
                             "props": {
@@ -1143,25 +1083,13 @@
                             "name": "Input",
                             "actions": [
                                 {
-                                    "comment": "과세구분 필터 노출 스위치. 면세 상품을 따로 쓰는 몰에서만 의미가 있다. 어떤 필터를 기본에 둘지는 운영자별 취향이라 서버가 아니라 브라우저에 남긴다 — 상태 변경과 저장이 나란히 있어야 새로고침 후에도 같은 필터가 선다.",
+                                    "comment": "과세구분 필터 노출 스위치. 면세 상품을 따로 쓰는 몰에서만 의미가 있다. 어떤 필터를 기본에 둘지는 운영자별 취향이라 서버가 아니라 브라우저에 남긴다 — 여기서는 상태만 바꾸고, 저장은 셸의 필터 표시 선택기가 바뀐 값을 받아 브라우저에 남긴다.",
                                     "type": "change",
-                                    "handler": "sequence",
-                                    "actions": [
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "_local",
-                                                "visibleFilters": "{{(_local.visibleFilters || []).includes('taxStatus') ? (_local.visibleFilters || []).filter(f => f !== 'taxStatus') : [...(_local.visibleFilters || []), 'taxStatus']}}"
-                                            }
-                                        },
-                                        {
-                                            "handler": "saveToLocalStorage",
-                                            "params": {
-                                                "key": "g7_product_filter_visible_filters",
-                                                "value": "{{(_local.visibleFilters || []).includes('taxStatus') ? (_local.visibleFilters || []).filter(f => f !== 'taxStatus') : [...(_local.visibleFilters || []), 'taxStatus']}}"
-                                            }
-                                        }
-                                    ]
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "_local",
+                                        "visibleFilters": "{{(_local.visibleFilters || []).includes('taxStatus') ? (_local.visibleFilters || []).filter(f => f !== 'taxStatus') : [...(_local.visibleFilters || []), 'taxStatus']}}"
+                                    }
                                 }
                             ],
                             "props": {
@@ -1309,25 +1237,13 @@
                             "name": "Input",
                             "actions": [
                                 {
-                                    "comment": "가격 필터 노출 스위치. 정가·판매가 중 무엇을 기준으로 볼지까지 이 행에서 고른다. 어떤 필터를 기본에 둘지는 운영자별 취향이라 서버가 아니라 브라우저에 남긴다 — 상태 변경과 저장이 나란히 있어야 새로고침 후에도 같은 필터가 선다.",
+                                    "comment": "가격 필터 노출 스위치. 정가·판매가 중 무엇을 기준으로 볼지까지 이 행에서 고른다. 어떤 필터를 기본에 둘지는 운영자별 취향이라 서버가 아니라 브라우저에 남긴다 — 여기서는 상태만 바꾸고, 저장은 셸의 필터 표시 선택기가 바뀐 값을 받아 브라우저에 남긴다.",
                                     "type": "change",
-                                    "handler": "sequence",
-                                    "actions": [
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "_local",
-                                                "visibleFilters": "{{(_local.visibleFilters || []).includes('price') ? (_local.visibleFilters || []).filter(f => f !== 'price') : [...(_local.visibleFilters || []), 'price']}}"
-                                            }
-                                        },
-                                        {
-                                            "handler": "saveToLocalStorage",
-                                            "params": {
-                                                "key": "g7_product_filter_visible_filters",
-                                                "value": "{{(_local.visibleFilters || []).includes('price') ? (_local.visibleFilters || []).filter(f => f !== 'price') : [...(_local.visibleFilters || []), 'price']}}"
-                                            }
-                                        }
-                                    ]
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "_local",
+                                        "visibleFilters": "{{(_local.visibleFilters || []).includes('price') ? (_local.visibleFilters || []).filter(f => f !== 'price') : [...(_local.visibleFilters || []), 'price']}}"
+                                    }
                                 }
                             ],
                             "props": {
@@ -1465,25 +1381,13 @@
                             "name": "Input",
                             "actions": [
                                 {
-                                    "comment": "재고 필터 노출 스위치. 재고는 옵션 단위라 여기 범위는 상품 기준 합계에 걸린다. 어떤 필터를 기본에 둘지는 운영자별 취향이라 서버가 아니라 브라우저에 남긴다 — 상태 변경과 저장이 나란히 있어야 새로고침 후에도 같은 필터가 선다.",
+                                    "comment": "재고 필터 노출 스위치. 재고는 옵션 단위라 여기 범위는 상품 기준 합계에 걸린다. 어떤 필터를 기본에 둘지는 운영자별 취향이라 서버가 아니라 브라우저에 남긴다 — 여기서는 상태만 바꾸고, 저장은 셸의 필터 표시 선택기가 바뀐 값을 받아 브라우저에 남긴다.",
                                     "type": "change",
-                                    "handler": "sequence",
-                                    "actions": [
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "_local",
-                                                "visibleFilters": "{{(_local.visibleFilters || []).includes('stock') ? (_local.visibleFilters || []).filter(f => f !== 'stock') : [...(_local.visibleFilters || []), 'stock']}}"
-                                            }
-                                        },
-                                        {
-                                            "handler": "saveToLocalStorage",
-                                            "params": {
-                                                "key": "g7_product_filter_visible_filters",
-                                                "value": "{{(_local.visibleFilters || []).includes('stock') ? (_local.visibleFilters || []).filter(f => f !== 'stock') : [...(_local.visibleFilters || []), 'stock']}}"
-                                            }
-                                        }
-                                    ]
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "_local",
+                                        "visibleFilters": "{{(_local.visibleFilters || []).includes('stock') ? (_local.visibleFilters || []).filter(f => f !== 'stock') : [...(_local.visibleFilters || []), 'stock']}}"
+                                    }
                                 }
                             ],
                             "props": {
@@ -1586,25 +1490,13 @@
                             "name": "Input",
                             "actions": [
                                 {
-                                    "comment": "배송정책 필터 노출 스위치. 정책을 여러 개 쓰는 몰에서 정책별로 상품을 훑을 때 쓴다. 어떤 필터를 기본에 둘지는 운영자별 취향이라 서버가 아니라 브라우저에 남긴다 — 상태 변경과 저장이 나란히 있어야 새로고침 후에도 같은 필터가 선다.",
+                                    "comment": "배송정책 필터 노출 스위치. 정책을 여러 개 쓰는 몰에서 정책별로 상품을 훑을 때 쓴다. 어떤 필터를 기본에 둘지는 운영자별 취향이라 서버가 아니라 브라우저에 남긴다 — 여기서는 상태만 바꾸고, 저장은 셸의 필터 표시 선택기가 바뀐 값을 받아 브라우저에 남긴다.",
                                     "type": "change",
-                                    "handler": "sequence",
-                                    "actions": [
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "_local",
-                                                "visibleFilters": "{{(_local.visibleFilters || []).includes('shippingPolicy') ? (_local.visibleFilters || []).filter(f => f !== 'shippingPolicy') : [...(_local.visibleFilters || []), 'shippingPolicy']}}"
-                                            }
-                                        },
-                                        {
-                                            "handler": "saveToLocalStorage",
-                                            "params": {
-                                                "key": "g7_product_filter_visible_filters",
-                                                "value": "{{(_local.visibleFilters || []).includes('shippingPolicy') ? (_local.visibleFilters || []).filter(f => f !== 'shippingPolicy') : [...(_local.visibleFilters || []), 'shippingPolicy']}}"
-                                            }
-                                        }
-                                    ]
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "_local",
+                                        "visibleFilters": "{{(_local.visibleFilters || []).includes('shippingPolicy') ? (_local.visibleFilters || []).filter(f => f !== 'shippingPolicy') : [...(_local.visibleFilters || []), 'shippingPolicy']}}"
+                                    }
                                 }
                             ],
                             "props": {

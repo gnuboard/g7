@@ -34,6 +34,8 @@ use Psr\Log\LoggerInterface;
  * - Attachment upload/delete 로그
  * - Report create/update_status/bulk_update_status/delete/restore_content/blind_content/delete_content 로그
  * - 예외 발생 시 graceful 처리
+ *
+ * @effects aborted_activity_log_recorded
  */
 class BoardActivityLogListenerTest extends ModuleTestCase
 {

@@ -46,6 +46,7 @@ effects:
   - total_sales_displays_sum_of_7_days
   - net_sales_sums_only_sales_eligible_statuses
   - net_sales_deducts_cancelled_quantity
+  - today_returns_badge_counts_returned_options
   - net_sales_attributed_by_order_ordered_at
   - sales_change_rate_emerald_when_positive
   - sales_change_rate_rose_when_negative
@@ -59,6 +60,21 @@ effects:
   - quick_menu_buttons_hidden_when_module_inactive
   - commerce_section_hidden_when_module_inactive
   - non_admin_blocked_from_dashboard
+  # ── 집계 서비스 계약 (Unit — 화면 effects 가 읽는 값을 만드는 쪽) ──────────
+  # 오늘 집계 행이 아직 없으면 배지는 전부 0 이다 — null 이 새어 나가면 화면이 빈칸을 그린다.
+  - overview_buckets_are_zero_when_todays_aggregate_row_is_missing
+  # 증감률은 직전 같은 길이 구간과 비교해 산출한다 (7일 ↔ 그 앞 7일).
+  - sales_change_rate_compares_against_the_previous_window_of_the_same_length
+  # 비교할 직전 구간이 비면 0% 가 아니라 null 이다 — 화면의 대시(–) 표기가 이 값에 선다.
+  - sales_change_rate_is_null_when_the_previous_window_has_no_rows
+  # 상태 버킷은 취소 옵션(cancelled)을 cancellations 한 칸으로 모은다.
+  - status_buckets_merge_cancelled_options_into_one_cancellations_count
+  # 최근 N일만 upsert 한다 — 그 밖의 과거 행은 손대지 않는다.
+  - aggregate_recent_days_upserts_only_the_window_and_preserves_older_rows
+  # 같은 구간을 다시 돌려도 행이 늘지 않는다 (스케줄러 재실행 안전).
+  - aggregate_recent_days_is_idempotent_on_rerun
+  # 미답변 문의 카드 재료 — 건수·항목과 함께 게시판 이동용 slug 를 서버가 낸다.
+  - pending_inquiries_payload_carries_the_board_slug_for_navigation
 
 test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Admin/DashboardApiTest.php

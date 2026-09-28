@@ -131,6 +131,76 @@ class EcommerceSettingsSetSettingPipelineTest extends ModuleTestCase
     // ──────────────────────────────────────────────
 
     /**
+     * 기존 주문 설정과 클레임 복사본이 다를 때 실제 취소 정책을 공유합니다.
+     *
+     * @effects cancel_policy_reads_canonical_order_setting
+     */
+    public function test_cancel_policy_reads_the_order_setting_for_both_paths(): void
+    {
+        $this->seedFile('order_settings', ['cancellable_statuses' => ['payment_complete']]);
+        $this->seedFile('claim', ['instant_cancel_statuses' => ['preparing'], 'max_images' => 2]);
+
+        $this->assertSame(['payment_complete'], $this->service->getSetting('claim.instant_cancel_statuses'));
+        $this->assertSame(['payment_complete'], $this->service->getSettings('claim')['instant_cancel_statuses']);
+        $this->assertSame(2, $this->service->getSetting('claim.max_images'));
+        // 조회로 저장 파일을 덮어쓰지 않는다.
+        $this->assertSame(['preparing'], $this->savedFile('claim')['instant_cancel_statuses']);
+    }
+
+    /**
+     * 양쪽 설정 키를 단건 저장해도 기존 카테고리의 다른 설정은 보존됩니다.
+     *
+     * @effects unrelated_claim_write_does_not_restore_stale_policy
+     */
+    public function test_cancel_policy_is_not_reverted_by_unrelated_claim_setting(): void
+    {
+        $this->seedFile('order_settings', ['cancellable_statuses' => ['payment_complete']]);
+        $this->seedFile('claim', ['instant_cancel_statuses' => ['preparing'], 'max_images' => 2]);
+        $this->service->setSetting('claim.max_images', 7);
+        $this->assertSame(['payment_complete'], $this->service->getSetting('order_settings.cancellable_statuses'));
+        $this->assertSame(['payment_complete'], $this->savedFile('order_settings')['cancellable_statuses']);
+        $this->assertSame(7, $this->service->getSetting('claim.max_images'));
+    }
+
+    /**
+     * 별칭 저장 시 다른 카테고리 필드를 보존합니다.
+     *
+     * @effects cancel_alias_write_preserves_siblings_and_empty_array
+     */
+    public function test_cancel_policy_alias_writes_preserve_other_settings(): void
+    {
+        $this->seedFile('order_settings', ['cancellable_statuses' => ['payment_complete'], 'auto_cancel_days' => 9]);
+        $this->seedFile('claim', ['instant_cancel_statuses' => ['preparing'], 'max_images' => 2]);
+
+        $this->assertTrue($this->service->setSetting('claim.instant_cancel_statuses', ['shipping_ready']));
+        $this->assertSame(['shipping_ready'], $this->service->getSetting('order_settings.cancellable_statuses'));
+        $this->assertSame(9, $this->service->getSetting('order_settings.auto_cancel_days'));
+        $this->assertSame(2, $this->service->getSetting('claim.max_images'));
+
+        $this->assertTrue($this->service->setSetting('order_settings.cancellable_statuses', []));
+        $this->assertSame([], $this->service->getSetting('claim.instant_cancel_statuses'));
+        $this->assertSame([], $this->savedFile('claim')['instant_cancel_statuses']);
+    }
+
+    /**
+     * 주문 탭·클레임 탭의 카테고리 저장과 충돌하는 API 입력의 우선순위를 검증합니다.
+     *
+     * @effects cancel_bulk_write_prefers_canonical_order_setting
+     */
+    public function test_cancel_policy_bulk_save_uses_one_source(): void
+    {
+        $this->assertTrue($this->service->saveSettings(['claim' => ['instant_cancel_statuses' => ['preparing']]]));
+        $this->assertSame(['preparing'], $this->service->getSetting('order_settings.cancellable_statuses'));
+
+        $this->assertTrue($this->service->saveSettings([
+            'order_settings' => ['cancellable_statuses' => ['payment_complete']],
+            'claim' => ['instant_cancel_statuses' => ['preparing']],
+        ]));
+        $this->assertSame(['payment_complete'], $this->service->getSetting('claim.instant_cancel_statuses'));
+        $this->assertSame(['payment_complete'], $this->savedFile('claim')['instant_cancel_statuses']);
+    }
+
+    /**
      * 단건 저장은 조회 시점 보강분을 영속화하지 않고 타 카테고리 파일도 건드리지 않는다.
      *
      * @scenario pipeline_stage=stored_file_basis

@@ -40,7 +40,7 @@
         </on>
       </select>
     </div>
-    <data-grid data="{{couponIssues?.data?.data || []}}" loading="{{couponIssues?.$loading}}" emptyMessage="$t:sirsoft-ecommerce.admin.promotion_coupon.modal.issue_history.empty">
+    <data-grid data="{{couponIssues?.data?.data || []}}" emptyMessage="$t:sirsoft-ecommerce.admin.promotion_coupon.modal.issue_history.empty">
       <column field="issued_at" header="$t:sirsoft-ecommerce.admin.promotion_coupon.modal.issue_history.columns.issued_at" width="180px"/>
       <column field="user_info" header="$t:sirsoft-ecommerce.admin.promotion_coupon.modal.issue_history.columns.user" width="200px">
         <cell>

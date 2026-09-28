@@ -9,8 +9,10 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
+use Modules\Sirsoft\Ecommerce\Enums\ExchangeStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundStatusEnum;
+use Modules\Sirsoft\Ecommerce\Enums\ReturnStatusEnum;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Services\OrderPrivacyRetentionService;
 use Throwable;
@@ -24,11 +26,15 @@ use Throwable;
  *
  * ## 「종결」의 정의
  *
- * 주문 상태가 **구매확정** 또는 **취소**이고, **진행 중인 환불이 없는** 주문입니다. 종결 시각은
- * 그 상태에 도달한 시각(`confirmed_at` · `cancelled_at`)과 **완료된 환불의 완료 시각** 중 가장 늦은
- * 것입니다. 「환불완료」는 주문 상태가 아니라 환불 레코드의 상태라서(부수의무 #41) 환불 테이블을
- * 함께 봅니다 — 주문 상태 두 갈래만 보면 전체취소 뒤 무통장 환불이 아직 송금 전(승인 대기)인
+ * 주문 상태가 **구매확정** 또는 **취소**이고, **진행 중인 환불·교환·반품이 없는** 주문입니다. 종결
+ * 시각은 그 상태에 도달한 시각(`confirmed_at` · `cancelled_at`)과 **완료된 환불·교환·반품의 완료 시각**
+ * 중 가장 늦은 것입니다. 「환불완료」는 주문 상태가 아니라 환불 레코드의 상태라서(부수의무 #41) 환불
+ * 테이블을 함께 봅니다 — 주문 상태 두 갈래만 보면 전체취소 뒤 무통장 환불이 아직 송금 전(승인 대기)인
  * 주문까지 파기되어, 환불 계좌 정보가 사라진 채 송금할 수 없게 됩니다.
+ *
+ * 교환·반품(#599)도 주문 상태를 바꾸지 않고 주문 곁에서 진행되므로 같은 이유로 봅니다 — 구매확정 뒤에도
+ * 신청·직권 접수가 가능해, 처리 중인 신청서의 환불 계좌·재배송지를 지우면 회수·재발송·환불을 끝낼 수
+ * 없습니다. 거절·철회로 끝난 신청서(환불 포함)는 진행 중이 아니고 종결 시각도 늦추지 않습니다.
  *
  * 종결 시각 컬럼이 비어 있는 레거시 주문(`cancelled_at` 도입 전 취소분 등)은 마지막 수정 시각으로
  * 대신합니다. 그 값은 실제 종결 시각보다 늦거나 같으므로 **더 오래 보존하는 쪽**으로만 틀립니다.
@@ -121,7 +127,7 @@ class OrderRetentionHandler implements PrivacyRetentionHandlerInterface
      * {@inheritDoc}
      *
      * 행: 주문번호 · 주문자(주문자명, 익명화 뒤에는 `***`) · 주문 상태 · 종결일. 종결일은 상태의
-     * 종결 시각(구매확정·취소)과 완료 환불 시각 중 늦은 쪽이다 — 대상 판정과 같은 기준.
+     * 종결 시각(구매확정·취소)과 완료된 환불·교환·반품의 완료 시각 중 가장 늦은 것이다 — 대상 판정과 같은 기준.
      * 휴지통 주문은 대상에 들지만 관리자 주문 상세가 열리지 않으므로 상세 링크를 두지 않는다.
      */
     public function targets(int $page, int $perPage): LengthAwarePaginator
@@ -130,6 +136,8 @@ class OrderRetentionHandler implements PrivacyRetentionHandlerInterface
             ->select(['id', 'order_number', 'order_status', 'confirmed_at', 'cancelled_at', 'updated_at', 'deleted_at'])
             ->with(['addresses' => fn ($q) => $q->select(['id', 'order_id', 'orderer_name', 'address_type'])])
             ->withMax(['refunds as last_refunded_at' => fn ($q) => $q->where('refund_status', RefundStatusEnum::COMPLETED->value)], 'refunded_at')
+            ->withMax(['exchanges as last_exchange_completed_at' => fn ($q) => $q->where('exchange_status', ExchangeStatusEnum::COMPLETED->value)], 'completed_at')
+            ->withMax(['returns as last_return_completed_at' => fn ($q) => $q->where('return_status', ReturnStatusEnum::COMPLETED->value)], 'completed_at')
             ->orderByRaw('COALESCE(confirmed_at, cancelled_at, updated_at)')
             ->orderBy('id')
             ->paginate($perPage, ['*'], 'page', $page)
@@ -138,10 +146,13 @@ class OrderRetentionHandler implements PrivacyRetentionHandlerInterface
                     ? $order->order_status
                     : OrderStatusEnum::tryFrom((string) $order->order_status);
                 $closedAt = $order->confirmed_at ?? $order->cancelled_at ?? $order->updated_at;
-                $refundedAt = $order->last_refunded_at ? Carbon::parse($order->last_refunded_at) : null;
 
-                if ($refundedAt !== null && ($closedAt === null || $refundedAt->greaterThan($closedAt))) {
-                    $closedAt = $refundedAt;
+                foreach (['last_refunded_at', 'last_exchange_completed_at', 'last_return_completed_at'] as $column) {
+                    $completedAt = $order->{$column} ? Carbon::parse($order->{$column}) : null;
+
+                    if ($completedAt !== null && ($closedAt === null || $completedAt->greaterThan($closedAt))) {
+                        $closedAt = $completedAt;
+                    }
                 }
 
                 return new PrivacyRetentionTarget(
@@ -285,13 +296,30 @@ class OrderRetentionHandler implements PrivacyRetentionHandlerInterface
                 });
             })
             // 진행 중인 환불이 있으면 종결이 아니다 — 송금 전 환불 계좌 정보를 지우면 환불할 수 없다.
+            // 끝난 상태는 enum 이 정한다(완료·거절·철회) — 철회된 환불신청서를 진행 중으로 읽으면 그 주문은
+            // 영영 대상이 되지 못한다(#599 가 철회를 들였다).
             ->whereDoesntHave('refunds', function (Builder $refund) {
-                $refund->whereNotIn('refund_status', [RefundStatusEnum::COMPLETED->value, RefundStatusEnum::REJECTED->value]);
+                $refund->whereNotIn('refund_status', self::values(RefundStatusEnum::finalStatuses()));
             })
             // 환불이 기준일 뒤에 완료됐으면 종결 시각이 그만큼 늦다.
             ->whereDoesntHave('refunds', function (Builder $refund) use ($cutoff) {
                 $refund->where('refund_status', RefundStatusEnum::COMPLETED->value)
                     ->where('refunded_at', '>', $cutoff);
+            })
+            // 교환·반품(#599)도 같다 — 진행 중이면 종결이 아니고, 기준일 뒤에 완료됐으면 종결이 그만큼 늦다.
+            ->whereDoesntHave('exchanges', function (Builder $exchange) {
+                $exchange->whereNotIn('exchange_status', self::values(ExchangeStatusEnum::finalStatuses()));
+            })
+            ->whereDoesntHave('exchanges', function (Builder $exchange) use ($cutoff) {
+                $exchange->where('exchange_status', ExchangeStatusEnum::COMPLETED->value)
+                    ->where('completed_at', '>', $cutoff);
+            })
+            ->whereDoesntHave('returns', function (Builder $return) {
+                $return->whereNotIn('return_status', self::values(ReturnStatusEnum::finalStatuses()));
+            })
+            ->whereDoesntHave('returns', function (Builder $return) use ($cutoff) {
+                $return->where('return_status', ReturnStatusEnum::COMPLETED->value)
+                    ->where('completed_at', '>', $cutoff);
             });
 
         if ($this->mode() === self::MODE_ANONYMIZE) {
@@ -303,6 +331,17 @@ class OrderRetentionHandler implements PrivacyRetentionHandlerInterface
         }
 
         return $query;
+    }
+
+    /**
+     * enum 목록을 값 목록으로 바꿉니다.
+     *
+     * @param  array<int, \BackedEnum>  $cases  enum 목록
+     * @return array<int, string> 값 목록
+     */
+    private static function values(array $cases): array
+    {
+        return array_map(fn (\BackedEnum $case) => (string) $case->value, $cases);
     }
 
     /**

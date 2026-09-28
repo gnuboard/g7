@@ -28,7 +28,7 @@
                             "responsive": {
                                 "portable": {
                                     "props": {
-                                        "className": "row-stack mb-4 pb-3 border-b border-gray-200 dark:border-gray-700"
+                                        "className": "flex flex-col gap-1 mb-4 pb-3 border-b border-gray-200 dark:border-gray-700"
                                     }
                                 }
                             },
@@ -40,7 +40,7 @@
                                     "type": "basic",
                                     "name": "H3",
                                     "props": {
-                                        "className": "section-heading-md"
+                                        "className": "text-base font-semibold text-gray-900 dark:text-white"
                                     },
                                     "text": "$t:sirsoft-marketing.marketing_consent_title"
                                 },
@@ -73,7 +73,7 @@
                                             "name": "Label",
                                             "if": "{{user.data?.marketing_consent_enabled === true}}",
                                             "props": {
-                                                "className": "flex-start gap-3"
+                                                "className": "flex items-start gap-3"
                                             },
                                             "children": [
                                                 {
@@ -96,14 +96,14 @@
                                                             "type": "basic",
                                                             "name": "Div",
                                                             "props": {
-                                                                "className": "flex-center gap-2 flex-wrap"
+                                                                "className": "flex items-center gap-2 flex-wrap"
                                                             },
                                                             "children": [
                                                                 {
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "props": {
-                                                                        "className": "text-heading"
+                                                                        "className": "text-sm font-medium text-gray-900 dark:text-white"
                                                                     },
                                                                     "text": "$t:sirsoft-marketing.marketing_consent"
                                                                 },
@@ -121,7 +121,7 @@
                                                                     "name": "Span",
                                                                     "if": "{{!user.data?.marketing_consent_at}}",
                                                                     "props": {
-                                                                        "className": "text-tertiary inline-flex items-center px-1.5 py-0.5 rounded font-medium bg-gray-100 dark:bg-gray-700"
+                                                                        "className": "text-xs text-gray-500 dark:text-gray-400 inline-flex items-center px-1.5 py-0.5 rounded font-medium bg-gray-100 dark:bg-gray-700"
                                                                     },
                                                                     "text": "$t:sirsoft-marketing.not_agreed"
                                                                 }
@@ -131,7 +131,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "block text-tertiary"
+                                                                "className": "block text-xs text-gray-500 dark:text-gray-400"
                                                             },
                                                             "text": "$t:sirsoft-marketing.marketing_consent_desc"
                                                         }
@@ -148,7 +148,7 @@
                                                 "item_var": "channel"
                                             },
                                             "props": {
-                                                "className": "flex-start gap-3 ml-8"
+                                                "className": "flex items-start gap-3 ml-8"
                                             },
                                             "children": [
                                                 {
@@ -171,14 +171,14 @@
                                                             "type": "basic",
                                                             "name": "Div",
                                                             "props": {
-                                                                "className": "flex-center gap-2 flex-wrap"
+                                                                "className": "flex items-center gap-2 flex-wrap"
                                                             },
                                                             "children": [
                                                                 {
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "props": {
-                                                                        "className": "text-heading"
+                                                                        "className": "text-sm font-medium text-gray-900 dark:text-white"
                                                                     },
                                                                     "text": "{{channel.label}}"
                                                                 },
@@ -196,7 +196,7 @@
                                                                     "name": "Span",
                                                                     "if": "{{!user.data?.[channel.key + '_at']}}",
                                                                     "props": {
-                                                                        "className": "text-tertiary inline-flex items-center px-1.5 py-0.5 rounded font-medium bg-gray-100 dark:bg-gray-700"
+                                                                        "className": "text-xs text-gray-500 dark:text-gray-400 inline-flex items-center px-1.5 py-0.5 rounded font-medium bg-gray-100 dark:bg-gray-700"
                                                                     },
                                                                     "text": "$t:sirsoft-marketing.not_agreed"
                                                                 }
@@ -220,7 +220,7 @@
                                             "name": "Label",
                                             "if": "{{user.data?.third_party_consent_enabled === true}}",
                                             "props": {
-                                                "className": "flex-start gap-3"
+                                                "className": "flex items-start gap-3"
                                             },
                                             "children": [
                                                 {
@@ -243,14 +243,14 @@
                                                             "type": "basic",
                                                             "name": "Div",
                                                             "props": {
-                                                                "className": "flex-center gap-2 flex-wrap"
+                                                                "className": "flex items-center gap-2 flex-wrap"
                                                             },
                                                             "children": [
                                                                 {
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "props": {
-                                                                        "className": "text-heading"
+                                                                        "className": "text-sm font-medium text-gray-900 dark:text-white"
                                                                     },
                                                                     "text": "$t:sirsoft-marketing.third_party_consent"
                                                                 },
@@ -268,7 +268,7 @@
                                                                     "name": "Span",
                                                                     "if": "{{!user.data?.third_party_consent_at}}",
                                                                     "props": {
-                                                                        "className": "text-tertiary inline-flex items-center px-1.5 py-0.5 rounded font-medium bg-gray-100 dark:bg-gray-700"
+                                                                        "className": "text-xs text-gray-500 dark:text-gray-400 inline-flex items-center px-1.5 py-0.5 rounded font-medium bg-gray-100 dark:bg-gray-700"
                                                                     },
                                                                     "text": "$t:sirsoft-marketing.not_agreed"
                                                                 }
@@ -278,7 +278,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "block text-tertiary"
+                                                                "className": "block text-xs text-gray-500 dark:text-gray-400"
                                                             },
                                                             "text": "$t:sirsoft-marketing.third_party_consent_desc"
                                                         }
@@ -298,7 +298,7 @@
                                                     "type": "basic",
                                                     "name": "Label",
                                                     "props": {
-                                                        "className": "flex-start gap-3"
+                                                        "className": "flex items-start gap-3"
                                                     },
                                                     "children": [
                                                         {
@@ -321,14 +321,14 @@
                                                                     "type": "basic",
                                                                     "name": "Div",
                                                                     "props": {
-                                                                        "className": "flex-center gap-2 flex-wrap"
+                                                                        "className": "flex items-center gap-2 flex-wrap"
                                                                     },
                                                                     "children": [
                                                                         {
                                                                             "type": "basic",
                                                                             "name": "Span",
                                                                             "props": {
-                                                                                "className": "text-heading"
+                                                                                "className": "text-sm font-medium text-gray-900 dark:text-white"
                                                                             },
                                                                             "text": "$t:sirsoft-marketing.info_disclosure"
                                                                         },
@@ -346,7 +346,7 @@
                                                                             "name": "Span",
                                                                             "if": "{{!user.data?.info_disclosure_at}}",
                                                                             "props": {
-                                                                                "className": "text-tertiary inline-flex items-center px-1.5 py-0.5 rounded font-medium bg-gray-100 dark:bg-gray-700"
+                                                                                "className": "text-xs text-gray-500 dark:text-gray-400 inline-flex items-center px-1.5 py-0.5 rounded font-medium bg-gray-100 dark:bg-gray-700"
                                                                             },
                                                                             "text": "$t:sirsoft-marketing.not_agreed"
                                                                         }
@@ -356,7 +356,7 @@
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "props": {
-                                                                        "className": "block text-tertiary"
+                                                                        "className": "block text-xs text-gray-500 dark:text-gray-400"
                                                                     },
                                                                     "text": "$t:sirsoft-marketing.info_disclosure_desc"
                                                                 }
@@ -368,7 +368,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-hint block ml-8"
+                                                        "className": "text-xs text-gray-400 dark:text-gray-500 block ml-8"
                                                     },
                                                     "text": "$t:sirsoft-marketing.info_disclosure_warning"
                                                 }

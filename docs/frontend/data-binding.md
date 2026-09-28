@@ -508,6 +508,11 @@ DataBindingEngine은 `{{}}` 내부에서 다양한 표현식을 지원합니다.
 }
 ```
 
+현재 로케일은 컨텍스트 변수 `$locale` 이 든다. `_global.locale` 은 어디서도 세워지지 않으므로
+그 자리에 쓰면 언제나 `undefined` 로 평가되어 조용히 fallback(대개 한국어)으로 고정된다.
+다국어 객체 하나를 그대로 표시하는 것이 목적이라면 `$localized(product.name)` 이 정본이다
+([$localized() 헬퍼](data-binding-i18n.md#localized-헬퍼-함수-v140)).
+
 **중첩 설정 접근**:
 
 ```html

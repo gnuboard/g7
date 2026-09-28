@@ -96,3 +96,39 @@
 비회원(`/shop/guest/orders/{N}`) 두 주소를 함께 매칭해야 한다. 한쪽을 빼면 그 화면에서는
 조회가 시작조차 되지 않는다.
 <!-- @intent END -->
+
+마이페이지 주문 상세의 영수증 조각(`resources/extensions/user_mypage_order_receipt.g7.html`)도 결제사 주소를 글자
+그대로 적지 않는다 — 적으면 레이아웃 편집기의 저장 게이트(외부 URL 금지)가 이 조각을 거절한다. 조각은 마운트 때
+영수증 조회 API 를 불러 공통 응답 형식의 `data.payment_receipt_url`(첫 출시부터 링크가 열어 온 `type=2` 주소)을 로컬 상태
+(`_npMpPaymentReceiptUrl`)에 담고 그 값으로 「결제 영수증」 링크를 그린다. 회원은 토큰(`auth_mode=optional`),
+비회원은 `X-Guest-Order-Token` 헤더를 실어 같은 API 를 부른다. 주소를 받지 못하면 링크를 그리지 않는다.
+주문번호는 주소가 아니라 불러온 주문(`order.data.order_number`)에서 읽는다 — 이 결제 정보 카드(결제 영수증 링크·현금영수증 조회 버튼)는 주소에 주문번호가 없는
+교환·반품·환불 신청서 상세(회원·비회원)에서도 같은 조각으로 쓰인다.
+
+같은 조회 응답의 `data.receipt_url`(매출전표, `type=0` — 주문 완료 화면 버튼과 같은 전표)은 `_npMpSalesSlipUrl` 에 담아
+「매출전표 보기」 링크로 그린다. 가상계좌 입금 안내도 이 조각만 그리고, 입금 기한은 쇼핑몰이 서식을 입힌
+`vbank_due_at_formatted` 를 그대로 쓴다. 주입 스크립트(`mypageOrderShowInjector`)는 결제 방법 행에 간편결제 이름을
+덧붙이는 일만 한다 — 종전에는 스크립트도 같은 입금 안내·영수증 행을 한국어 고정 글자로 한 번 더 그려 두 번 나왔다
+(PO 결정 2026-09-28 「레이아웃 조각만 남김」).
+
+### 결제 정보 카드는 id 로만 찾는다
+
+주문 상세·신청서 상세에 영수증 버튼·입금 안내를 붙이는 주입 스크립트는 결제 정보 카드를 템플릿이 약속한 `id="order_payment_info_panel"` 로만
+찾는다. 화면 제목 글자(「결제 정보」 등)로 찾지 않는다 — 제목은 언어마다 다르다. id 가 없는 템플릿에서는 붙이지 않는다
+(약속 원문: 이커머스 `docs/extension-points.md` 「PG 플러그인이 결제 정보 카드에 붙일 때의 약속」).
+
+간편결제 이름을 결제 방법 행에 덧붙일 때도 행을 id 로만 찾는다 — 사용자 주문 상세·주문 완료는 `order_payment_method_row`, 관리자 주문 상세는
+`payment_method_block_{결제 순번}`. 행 이름 글자(「결제 방법」「결제수단」)로 찾지 않는다(PO 결정 2026-09-28).
+
+### 관리자 결제수단 설정의 브랜드 표시는 결제수단 id 표식으로만 찾는다
+
+관리자 쇼핑몰 설정의 결제수단 목록에서 브랜드 배지를 붙일 항목은 이커머스 관리자 화면이 항목마다 단
+`data-payment-method`(결제수단 id)로만 찾는다. 이름 글자(한국어·영어 이름표)와 클래스 모양으로 찾지 않는다 — 관리자 언어·화면 폭마다
+다르다(PO 결정 2026-09-28). 약속 원문: 이커머스 `docs/extension-points.md` 「PG 플러그인이 관리자 결제수단 설정 항목을 볼 때의 약속」.
+
+### 스크립트·조각이 그리는 글자는 번역 키로 낸다
+
+주문 완료 화면 영수증 버튼(`user.receipt_view`·`user.loading`)과 결제 실패 알림(`payment.error.sdk_load_failed`·`request_failed`)은
+`translateNicepay(key, 대체 문구, 값)`(`resources/js/translate.ts`)로 낸다. 영수증 조각의 간편결제 이름은
+`$t('sirsoft-pay_nicepayments.user.easy_pay_names.' + PayMethod)` 로 푼다 — 조각 안에 한국어 이름표를 두지 않는다.
+플러그인은 ko·en 을 갖고 일본어는 언어팩이 채운다.

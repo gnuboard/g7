@@ -4,18 +4,24 @@
 
 ## 레이아웃
 
+클레임의 비동기 저장 버튼은 로컬 pending 상태에 따라 `Icon` 스피너와 `disabled`를 함께 표시한다. 핸들러에서도 중복 실행을 막고 `finally`에서 상태를 해제한다. 완료 요약 재계산 중에는 `claimCompletePreviewLoading`으로 확정을 막으며 최신 계산 요청만 대기 상태를 해제한다.
+
+완료 요약의 선택 변경은 debounce 예약 시점부터 이전 응답을 무효화한다. 다음 요청이 아직 전송되지 않았더라도 이전 성공/실패 응답이 최신 선택이나 실행 잠금을 바꾸면 안 된다. 반응형 버튼 라벨은 내부 `Span.responsive`에 둔다. Button 자체의 `responsive.text`는 `children`보다 우선하므로 함께 둔 스피너를 가린다. 회귀 검증은 예약 사이 응답 경합과 desktop/portable의 대기 표시·기존 라벨을 포함한다.
+
 <!-- @generated:layouts START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-레이아웃 212개 (루트: `resources/layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
+레이아웃 246개 (루트: `resources/layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
 
 | 그룹 | 개수 |
 |---|---|
-| `admin` | 212개 |
+| `admin` | 246개 |
 
 | 레이아웃 | 그룹 | 종류 | extends |
 |---|---|---|---|
 | `admin_ecommerce_brand_index` | `admin` | 화면 | `_admin_base` |
 | `admin_ecommerce_cart_index` | `admin` | 화면 | `_admin_base` |
 | `admin_ecommerce_category_index` | `admin` | 화면 | `_admin_base` |
+| `admin_ecommerce_claim_detail` | `admin` | 화면 | `_admin_base` |
+| `admin_ecommerce_claim_list` | `admin` | 화면 | `_admin_base` |
 | `admin_ecommerce_deposit_index` | `admin` | 화면 | `_admin_base` |
 | `admin_ecommerce_excel_download_index` | `admin` | 화면 | `_admin_base` |
 | `admin_ecommerce_inquiry_index` | `admin` | 화면 | `_admin_base` |
@@ -54,6 +60,27 @@
 | `_panel_detail` | `admin` | partial | - |
 | `_panel_form` | `admin` | partial | - |
 | `_panel_view` | `admin` | partial | - |
+| `_modal_claim_exchange_mode_confirm` | `admin` | partial | - |
+| `_modal_claim_images_clear` | `admin` | partial | - |
+| `_modal_claim_item_quantity_confirm` | `admin` | partial | - |
+| `_modal_claim_refund_execute` | `admin` | partial | - |
+| `_modal_claim_request_edit` | `admin` | partial | - |
+| `_modal_claim_withdraw_on_behalf` | `admin` | partial | - |
+| `_partial_claim_activity_log` | `admin` | partial | - |
+| `_partial_claim_comparison` | `admin` | partial | - |
+| `_partial_claim_items` | `admin` | partial | - |
+| `_partial_claim_payment` | `admin` | partial | - |
+| `_partial_claim_reason` | `admin` | partial | - |
+| `_partial_claim_shipping` | `admin` | partial | - |
+| `_modal_bulk_confirm` | `admin` | partial | - |
+| `_modal_claim_complete` | `admin` | partial | - |
+| `_modal_preset_delete_confirm` | `admin` | partial | - |
+| `_modal_preset_edit` | `admin` | partial | - |
+| `_modal_preset_manage` | `admin` | partial | - |
+| `_modal_preset_save` | `admin` | partial | - |
+| `_partial_bulk_action_section` | `admin` | partial | - |
+| `_partial_claim_datagrid` | `admin` | partial | - |
+| `_partial_filter_section` | `admin` | partial | - |
 | `_modal_bulk_match` | `admin` | partial | - |
 | `_modal_manual_match` | `admin` | partial | - |
 | `_modal_process_history` | `admin` | partial | - |
@@ -70,6 +97,7 @@
 | `_modal_extend_expiry` | `admin` | partial | - |
 | `_modal_manual_transaction` | `admin` | partial | - |
 | `_transactions_table` | `admin` | partial | - |
+| `_modal_admin_claim_request` | `admin` | partial | - |
 | `_modal_batch_change_confirm` | `admin` | partial | - |
 | `_modal_cancel_order` | `admin` | partial | - |
 | `_modal_confirm_deposit` | `admin` | partial | - |
@@ -80,10 +108,8 @@
 | `_partial_activity_log` | `admin` | partial | - |
 | `_partial_claim_history` | `admin` | partial | - |
 | `_partial_order_info` | `admin` | partial | - |
+| `_partial_order_progress` | `admin` | partial | - |
 | `_partial_payment_info` | `admin` | partial | - |
-| `_tab_claim_exchange` | `admin` | partial | - |
-| `_tab_claim_refund` | `admin` | partial | - |
-| `_tab_claim_return` | `admin` | partial | - |
 | `_modal_excel_download` | `admin` | partial | - |
 | `_modal_preset_manage` | `admin` | partial | - |
 | `_modal_preset_save` | `admin` | partial | - |
@@ -173,9 +199,12 @@
 | `_bank_accounts_cards` | `admin` | partial | - |
 | `_bank_accounts_table` | `admin` | partial | - |
 | `_bank_management_modal` | `admin` | partial | - |
+| `_claim_policy_section` | `admin` | partial | - |
 | `_currency_exchange_cards` | `admin` | partial | - |
 | `_currency_exchange_table` | `admin` | partial | - |
 | `_disable_international_shipping_modal` | `admin` | partial | - |
+| `_exchange_reason_cards` | `admin` | partial | - |
+| `_exchange_reason_section` | `admin` | partial | - |
 | `_modal_clear_seo_cache` | `admin` | partial | - |
 | `_modal_identity_policy_delete` | `admin` | partial | - |
 | `_modal_identity_policy_form` | `admin` | partial | - |
@@ -189,6 +218,8 @@
 | `_payment_methods_list` | `admin` | partial | - |
 | `_refund_reason_cards` | `admin` | partial | - |
 | `_refund_reason_section` | `admin` | partial | - |
+| `_return_reason_cards` | `admin` | partial | - |
+| `_return_reason_section` | `admin` | partial | - |
 | `_shipping_carrier_cards` | `admin` | partial | - |
 | `_shipping_carrier_section` | `admin` | partial | - |
 | `_shipping_country_cards` | `admin` | partial | - |
@@ -214,6 +245,8 @@
 | `_modal_extra_fee_template` | `admin` | partial | - |
 | `_partial_basic_info` | `admin` | partial | - |
 | `_partial_charge_settings` | `admin` | partial | - |
+| `_partial_claim_addresses` | `admin` | partial | - |
+| `_partial_claim_country_fee` | `admin` | partial | - |
 | `_partial_country_basic_fields` | `admin` | partial | - |
 | `_partial_country_tabs` | `admin` | partial | - |
 | `_partial_extra_fee` | `admin` | partial | - |
@@ -225,6 +258,11 @@
 | `_partial_bulk_actions` | `admin` | partial | - |
 | `_partial_datagrid` | `admin` | partial | - |
 | `_partial_filter` | `admin` | partial | - |
+| `_modal_bulk_delete_confirm` | `admin` | partial | - |
+| `_modal_delete_confirm` | `admin` | partial | - |
+| `_modal_error` | `admin` | partial | - |
+| `_partial_address_datagrid` | `admin` | partial | - |
+| `_partial_filter_section` | `admin` | partial | - |
 <!-- @generated:layouts END -->
 
 <!-- @intent START -->
@@ -246,12 +284,36 @@
 레이아웃 JSON 만 고쳤다면 빌드는 필요 없고 `php artisan module:update sirsoft-ecommerce --force`
 로 활성 디렉토리에 반영합니다. 다만 **새로 쓴 Tailwind 클래스가 빌드된 CSS 에 없으면** 그
 스타일만 조용히 빠지므로, 기존 레이아웃에 쓰이지 않던 클래스를 도입할 때는 확인이 필요합니다.
+이 모듈은 자체 Tailwind 빌드가 없고 관리자 템플릿(`sirsoft-admin_basic`)의 `templates/_bundled/sirsoft-admin_basic/dist/css/components.css`
+에 의존하며, 그 safelist 는 템플릿 자신의 레이아웃만 스캔합니다. 임의값(`min-w-[9rem]`)만이 아니라
+정수 단계 유틸리티도 빠져 있을 수 있습니다 — 예컨대 폭은 `w-36`·`w-40`·`w-48`·`w-52`·`w-56`·`w-64`
+는 있지만 `w-44` 는 없습니다(2026-09-13, 상태 변경 Select 가 `w-44` 를 써서 글자폭으로 수축했던
+사례). 쓰기 전에 `grep -c ".w-44{" templates/_bundled/sirsoft-admin_basic/dist/css/components.css`
+처럼 컴파일 여부를 확인하고, 없으면 있는 단계로 바꾸거나 템플릿 safelist 절차를 밟습니다.
+
+클레임 화면은 관리자 목록·상세(`admin_ecommerce_claim_list` · `admin_ecommerce_claim_detail`)와
+주문상세의 '클레임 내역' 섹션, 환경설정 '클레임' 탭, 배송정책의 회수지·클레임 배송비 항목입니다.
+상세는 주문상세와 같은 셸(`TabNavigationScroll` + `section_*`)이며, 완료 처리 모달
+(`_modal_claim_complete`)은 목록·상세·완료 버튼 세 진입점이 파일 하나를 공유합니다 — 모달이
+보여 주는 요약은 서버 `completion-preview` 응답이 단일 출처이고 화면은 표시만 합니다.
+
+환경설정 알림 탭의 템플릿 편집 창(`_modal_notification_template_edit`)은 코어 창의 사본입니다(게시판·수출입은행
+플러그인과 함께 네 벌). 수신자 규칙 종류를 바꾸면 새 종류의 빈 규칙으로 갈아 끼우고, 관련 사용자면 정의가 선언한
+첫 관계를 채웁니다 — 앞 종류의 값을 남기면 회원 UUID 가 역할로 저장돼 수신자가 0명이 됩니다. 규칙을 바꾸면 네 벌을
+함께 바꿉니다(코어 `sirsoft-admin_basic` AGENTS.md 「알림 템플릿 편집 창 사본」).
 <!-- @intent END -->
+
+
+### 레이아웃 주석과 클레임 모달의 입력 전달
+
+새 이벤트 블록(`<on>`)·모달 참조(`<modal src>`)를 만들면 같은 변경에서 설명 주석을 단다 — 이벤트 블록은 `<on>` 앞이 아니라 **첫 액션 앞**에 쓴다(`<on>` 앞 주석은 컴파일 에러). 주석 주입(S21)이 완료로 선언된 뒤라 빈 자리가 생기면 `CommentAnchorStageLedgerTest` 가 red 가 된다. 주석은 산출 JSON 의 `comment` 키로만 들어가고 공개 서빙에서 제거되므로 화면 동작은 바뀌지 않는다.
+
+관리자 클레임 상세의 창(진행 방식 전환·대리 철회·신청 내용 수정·환불 실행)은 입력값을 `_global` 에 모은다 — 모달은 부모 `_local` 을 읽지 못하므로, 여는 핸들러가 대상 신청서를 `_global` 문맥에 두고 실행 핸들러가 거기서 읽는다.
 
 ## 액션 핸들러
 
 <!-- @generated:handlers START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-핸들러 160개 (정의: `resources/js/handlers/index.ts`).
+핸들러 219개 (정의: `resources/js/handlers/index.ts`).
 
 | 핸들러 | 레이아웃에서 부르는 이름 |
 |---|---|
@@ -351,7 +413,6 @@
 | `buildConfirmData` | `sirsoft-ecommerce.buildConfirmData` |
 | `buildOrderColumns` | `sirsoft-ecommerce.buildOrderColumns` |
 | `toggleArrayValue` | `sirsoft-ecommerce.toggleArrayValue` |
-| `toggleVisibleFilter` | `sirsoft-ecommerce.toggleVisibleFilter` |
 | `syncOrderSelection` | `sirsoft-ecommerce.syncOrderSelection` |
 | `handleOrderRowAction` | `sirsoft-ecommerce.handleOrderRowAction` |
 | `processOrderBulkAction` | `sirsoft-ecommerce.processOrderBulkAction` |
@@ -361,6 +422,41 @@
 | `saveVisibleColumns` | `sirsoft-ecommerce.saveVisibleColumns` |
 | `loadVisibleColumns` | `sirsoft-ecommerce.loadVisibleColumns` |
 | `loadVisibleFilters` | `sirsoft-ecommerce.loadVisibleFilters` |
+| `buildClaimBulkConfirmData` | `sirsoft-ecommerce.buildClaimBulkConfirmData` |
+| `executeClaimBulkAction` | `sirsoft-ecommerce.executeClaimBulkAction` |
+| `openClaimCompleteModal` | `sirsoft-ecommerce.openClaimCompleteModal` |
+| `toggleClaimCompleteStock` | `sirsoft-ecommerce.toggleClaimCompleteStock` |
+| `toggleClaimCompleteStockAll` | `sirsoft-ecommerce.toggleClaimCompleteStockAll` |
+| `setClaimCompleteRefundRequest` | `sirsoft-ecommerce.setClaimCompleteRefundRequest` |
+| `executeClaimCompletion` | `sirsoft-ecommerce.executeClaimCompletion` |
+| `clearClaimCompleteTimers` | `sirsoft-ecommerce.clearClaimCompleteTimers` |
+| `openClaimDetailComplete` | `sirsoft-ecommerce.openClaimDetailComplete` |
+| `syncClaimItemSelection` | `sirsoft-ecommerce.syncClaimItemSelection` |
+| `openClaimItemQuantityConfirm` | `sirsoft-ecommerce.openClaimItemQuantityConfirm` |
+| `updateClaimItemQuantity` | `sirsoft-ecommerce.updateClaimItemQuantity` |
+| `updateClaimBulkTracking` | `sirsoft-ecommerce.updateClaimBulkTracking` |
+| `executeClaimItemBulkStatus` | `sirsoft-ecommerce.executeClaimItemBulkStatus` |
+| `executeClaimStatusTransition` | `sirsoft-ecommerce.executeClaimStatusTransition` |
+| `storeClaimRefundRequest` | `sirsoft-ecommerce.storeClaimRefundRequest` |
+| `refreshClaimAttachments` | `sirsoft-ecommerce.refreshClaimAttachments` |
+| `clearClaimImages` | `sirsoft-ecommerce.clearClaimImages` |
+| `selectClaimItemBulkStatus` | `sirsoft-ecommerce.selectClaimItemBulkStatus` |
+| `selectClaimItemTrackingDirection` | `sirsoft-ecommerce.selectClaimItemTrackingDirection` |
+| `openClaimItemTrackingOnly` | `sirsoft-ecommerce.openClaimItemTrackingOnly` |
+| `deliverClaimTracking` | `sirsoft-ecommerce.deliverClaimTracking` |
+| `openClaimExchangeModeConfirm` | `sirsoft-ecommerce.openClaimExchangeModeConfirm` |
+| `setClaimExchangeMode` | `sirsoft-ecommerce.setClaimExchangeMode` |
+| `openClaimWithdrawOnBehalf` | `sirsoft-ecommerce.openClaimWithdrawOnBehalf` |
+| `withdrawClaimOnBehalf` | `sirsoft-ecommerce.withdrawClaimOnBehalf` |
+| `openClaimRequestEdit` | `sirsoft-ecommerce.openClaimRequestEdit` |
+| `updateClaimRequestOnBehalf` | `sirsoft-ecommerce.updateClaimRequestOnBehalf` |
+| `restoreClaimStock` | `sirsoft-ecommerce.restoreClaimStock` |
+| `toggleClaimCompleteUnreturned` | `sirsoft-ecommerce.toggleClaimCompleteUnreturned` |
+| `setClaimCompleteUnreturnedReason` | `sirsoft-ecommerce.setClaimCompleteUnreturnedReason` |
+| `saveClaimAdminMemo` | `sirsoft-ecommerce.saveClaimAdminMemo` |
+| `saveClaimAmounts` | `sirsoft-ecommerce.saveClaimAmounts` |
+| `openClaimRefundExecute` | `sirsoft-ecommerce.openClaimRefundExecute` |
+| `executeClaimRefund` | `sirsoft-ecommerce.executeClaimRefund` |
 | `handleProductRowAction` | `sirsoft-ecommerce.handleProductRowAction` |
 | `initOrderDetailForm` | `sirsoft-ecommerce.initOrderDetailForm` |
 | `toggleProductSelection` | `sirsoft-ecommerce.toggleProductSelection` |
@@ -398,19 +494,44 @@
 | `changeRefundPriority` | `sirsoft-ecommerce.changeRefundPriority` |
 | `executeCancelOrder` | `sirsoft-ecommerce.executeCancelOrder` |
 | `clearCancelOrderTimers` | `sirsoft-ecommerce.clearCancelOrderTimers` |
+| `clearAdminClaimRequestTimers` | `sirsoft-ecommerce.clearAdminClaimRequestTimers` |
+| `openAdminClaimRequest` | `sirsoft-ecommerce.openAdminClaimRequest` |
+| `setAdminClaimRequestField` | `sirsoft-ecommerce.setAdminClaimRequestField` |
+| `setAdminClaimRequestRow` | `sirsoft-ecommerce.setAdminClaimRequestRow` |
+| `submitAdminClaimRequest` | `sirsoft-ecommerce.submitAdminClaimRequest` |
 | `toggleItemSelection` | `sirsoft-ecommerce.toggleItemSelection` |
 | `toggleSelectAllItems` | `sirsoft-ecommerce.toggleSelectAllItems` |
-| `initUserCancelItems` | `sirsoft-ecommerce.initUserCancelItems` |
-| `toggleUserCancelItem` | `sirsoft-ecommerce.toggleUserCancelItem` |
-| `toggleUserCancelSelectAll` | `sirsoft-ecommerce.toggleUserCancelSelectAll` |
-| `updateUserCancelQuantity` | `sirsoft-ecommerce.updateUserCancelQuantity` |
-| `estimateUserRefund` | `sirsoft-ecommerce.estimateUserRefund` |
-| `changeUserRefundPriority` | `sirsoft-ecommerce.changeUserRefundPriority` |
-| `executeUserCancelOrder` | `sirsoft-ecommerce.executeUserCancelOrder` |
-| `clearUserCancelOrderTimers` | `sirsoft-ecommerce.clearUserCancelOrderTimers` |
 | `confirmOrderOption` | `sirsoft-ecommerce.confirmOrderOption` |
 | `changeShippingAddress` | `sirsoft-ecommerce.changeShippingAddress` |
 | `submitReview` | `sirsoft-ecommerce.submitReview` |
+| `initClaimApply` | `sirsoft-ecommerce.initClaimApply` |
+| `toggleClaimItem` | `sirsoft-ecommerce.toggleClaimItem` |
+| `toggleClaimSelectAll` | `sirsoft-ecommerce.toggleClaimSelectAll` |
+| `updateClaimQuantity` | `sirsoft-ecommerce.updateClaimQuantity` |
+| `setClaimReason` | `sirsoft-ecommerce.setClaimReason` |
+| `setClaimChargeMethod` | `sirsoft-ecommerce.setClaimChargeMethod` |
+| `setClaimPaymentMethod` | `sirsoft-ecommerce.setClaimPaymentMethod` |
+| `startClaimRedeliveryEdit` | `sirsoft-ecommerce.startClaimRedeliveryEdit` |
+| `applyClaimRedelivery` | `sirsoft-ecommerce.applyClaimRedelivery` |
+| `resetClaimRedelivery` | `sirsoft-ecommerce.resetClaimRedelivery` |
+| `openClaimChangeProduct` | `sirsoft-ecommerce.openClaimChangeProduct` |
+| `setClaimChangeProductMode` | `sirsoft-ecommerce.setClaimChangeProductMode` |
+| `applyClaimChangeProduct` | `sirsoft-ecommerce.applyClaimChangeProduct` |
+| `estimateClaim` | `sirsoft-ecommerce.estimateClaim` |
+| `submitClaim` | `sirsoft-ecommerce.submitClaim` |
+| `clearClaimApplyTimers` | `sirsoft-ecommerce.clearClaimApplyTimers` |
+| `changeClaimRefundPriority` | `sirsoft-ecommerce.changeClaimRefundPriority` |
+| `setClaimRefundAccountField` | `sirsoft-ecommerce.setClaimRefundAccountField` |
+| `toggleClaimComparison` | `sirsoft-ecommerce.toggleClaimComparison` |
+| `claimApplyOrderMissing` | `sirsoft-ecommerce.claimApplyOrderMissing` |
+| `initClaimEdit` | `sirsoft-ecommerce.initClaimEdit` |
+| `saveClaimEdit` | `sirsoft-ecommerce.saveClaimEdit` |
+| `setClaimImageFiles` | `sirsoft-ecommerce.setClaimImageFiles` |
+| `removeClaimImage` | `sirsoft-ecommerce.removeClaimImage` |
+| `openClaimWithdraw` | `sirsoft-ecommerce.openClaimWithdraw` |
+| `closeClaimWithdraw` | `sirsoft-ecommerce.closeClaimWithdraw` |
+| `withdrawClaim` | `sirsoft-ecommerce.withdrawClaim` |
+| `payClaimOutstanding` | `sirsoft-ecommerce.payClaimOutstanding` |
 | `initCategoryFromUrl` | `sirsoft-ecommerce.initCategoryFromUrl` |
 | `initBrandFromUrl` | `sirsoft-ecommerce.initBrandFromUrl` |
 | `initCommonInfoFromUrl` | `sirsoft-ecommerce.initCommonInfoFromUrl` |
@@ -418,11 +539,25 @@
 <!-- @generated:handlers END -->
 
 <!-- @intent START -->
-핸들러 160개는 레이아웃 JSON 에서 `sirsoft-ecommerce.{이름}` 으로 부릅니다. 관리자 화면 전용이
-아니라 **템플릿의 방문자 화면도 이 핸들러를 씁니다** — `initUserCancelItems` ·
-`toggleUserCancelItem` · `estimateUserRefund` · `submitReview` · `changeShippingAddress` ·
-`confirmOrderOption` 처럼 `User`/`user` 가 붙은 것들이 그 무리입니다. 그래서 이 핸들러들의
-이름·시그니처는 템플릿과의 계약이며, 바꾸면 템플릿 화면이 조용히 무반응이 됩니다.
+핸들러 201개는 레이아웃 JSON 에서 `sirsoft-ecommerce.{이름}` 으로 부릅니다. 관리자 화면 전용이
+아니라 **템플릿의 방문자 화면도 이 핸들러를 씁니다** — `toggleItemSelection` ·
+`toggleSelectAllItems` · `initClaimApply` · `estimateClaim` · `submitClaim` · `submitReview` ·
+`changeShippingAddress` · `confirmOrderOption` 처럼 마이페이지·비회원 화면이 부르는 것들이 그
+무리입니다(옛 주문 취소 모달 핸들러 8종 — `initUserCancelItems` · `estimateUserRefund` 등 — 은
+1.3.0 에서 모달과 함께 삭제됐고, 상품 선택 2종은 `orderItemSelectionHandlers.ts` 로 옮겨 그대로
+제공합니다). 그래서 이 핸들러들의 이름·시그니처는 템플릿과의 계약이며, 바꾸면 템플릿 화면이
+조용히 무반응이 됩니다.
+
+상품 선택 2종은 `claimableOptions`(레이아웃이 넘기는 `claimable.data.options`)를 받아, 행 체크박스
+잠금과 **같은 술어**(취소되지 않음 + 열린 클레임 유형 1개 이상)로 고릅니다 — 넘기지 않으면 데이터소스
+store 를, 그것도 없으면 취소 여부만 봅니다. 구매자 신청서 핸들러(`claimApplyHandlers.ts`)의 안내 문구는
+모듈 키 `sirsoft-ecommerce.user.claim_apply.*` 로 찾고, 번역이 없어 키가 그대로 돌아오면 폴백 문구로
+떨어집니다(템플릿 키에 기대지 않습니다).
+환불 계좌 세 칸은 `setClaimRefundAccountField` 를 거칩니다 — 등록 계좌 프리필이 가린 모양(`masked: true`)이면
+서버가 세 칸 모두 가린 모양 그대로일 때만 원문으로 되돌리므로, 한 칸을 고치는 순간 나머지 가린 칸을 비우고
+별표가 섞인 계좌는 제출하지 않습니다. 첨부·철회·추가결제 핸들러(`claimImageHandlers.ts` · `claimListHandlers.ts`)도
+같은 규칙으로 `sirsoft-ecommerce.user.claim.*` 를 `claimText()` 로 찾습니다 — `G7Core.t` 는 번역이
+없으면 키 문자열을 돌려주므로 `t(...) ?? 폴백` 은 폴백까지 가지 않습니다.
 
 역할별로 네 무리입니다:
 
@@ -432,6 +567,29 @@
 | 통화 | `calculateCurrencyPrices` · `initPreferredCurrency` | 표시 통화 전환과 통화별 가격 재계산 |
 | 취소·환불 | `updateCancelQuantity` · `estimateRefundAmount` · `changeRefundPriority` | 옵션 단위 취소 수량 조정과 예상 환불액 조회 (관리자·구매자 두 벌) |
 | 배송정책·주소 | `testShippingApi` · `updateExtraFeeField` · `changeShippingAddress` | 외부 배송비 API 시험 호출과 주소 변경 |
+| 클레임 | `claimHandlers.ts` · `claimListHandlers.ts` · `claimApplyHandlers.ts` · `claimImageHandlers.ts` 의 핸들러 | 관리자 일괄 전이·완료 모달, **신청서 단위 전이**(`executeClaimStatusTransition`), 환불신청서 수동 접수(`storeClaimRefundRequest`), 운영자 대리 첨부(업로드는 `composite/FileUploader` 가 직접 하고 핸들러는 `refreshClaimAttachments` · `clearClaimImages` 로 목록만 되읽는다), 구매자 신청서 작성(교환 상품 선택·실시간 요약)·첨부 업로드 — 템플릿 화면도 이 핸들러를 쓴다 |
+
+취소·환불 축에서 유의할 계약 둘이 있습니다(#599 후속).
+
+- **접수 후 이동 주소는 서버가 정합니다.** `submitClaim` 은 응답에 실린 신청서의 `claim_type`
+  으로 `successPath` 의 `type` 을 덮어씁니다(`resolveClaimSuccessPath`). 화면이 주문 전체 기준
+  값으로 추측하면 분기가 섞인 주문에서 **접수한 탭과 이동한 탭이 갈립니다** — 접수는 됐는데
+  간 탭에는 아무것도 없는 화면이 그것이었습니다.
+- **관리자 취소 모달은 `auto_advance_refund` 를 보냅니다**(기본 꺼짐). 종전의 `cancelPg` 는
+  없앴습니다 — 끈 채로 카드 취소를 하면 PG 를 부르지 않고도 환불이 완료로 찍혀 고객 카드는
+  그대로인데 장부만 환불완료가 됐습니다. 이 선택은 모달을 열 때와 성공한 뒤 **꺼진 값으로 되돌립니다** — 남기면 같은
+  화면의 다음 취소가 의식하지 못한 자동 환불이 됩니다. `executeCancelOrder` 는 셸이 넘긴
+  `canViewClaims`(orderClaims 가 403 으로 unavailable 이면 false)로 방금 만든 신청서 상세로 갈지
+  정합니다 — 클레임 권한이 없는 운영자를 보내면 403 화면에 떨어집니다.
+- **관리자 첨부 일괄 정리(`clearClaimImages`)는 확인 모달에서만 부릅니다.** 사유 카드 버튼은
+  `_global.claimImagesClearContext` 에 대상 식별 축과 장수를 담아 `modal_claim_images_clear` 를 열
+  뿐이고, 모달의 확인 버튼이 핸들러를 부릅니다(고객 증빙까지 되돌릴 수 없게 지워진다).
+- **수정 화면의 첨부는 `add_image_ids` 로 되돌려 보내지 않습니다.** `add_image_ids` 가 받는
+  것은 **아직 신청서에 귀속되지 않은**(주문에 임시로 묶인) 첨부뿐입니다. 수정 화면은 이미
+  귀속된 첨부로 목록을 채워 열리므로(`buildClaimEditImages()` 가 `attached: true` 를 세웁니다),
+  `uploadPendingClaimFiles()` 는 그 표식이 선 것을 빼고 돌려줍니다. 빼지 않으면 서버가 귀속분을
+  "이 주문의 미귀속 첨부" 로 찾다가 실패해 저장 전체가 422 로 떨어지고, 첨부가 한 장이라도 있는
+  신청서는 **사유조차 고칠 수 없게** 됩니다. 귀속분의 삭제는 `remove_image_ids` 가 맡습니다.
 
 핸들러 TS 를 고치면 **빌드가 필요합니다** — `php artisan module:build` 후
 `module:update --force`. 커밋되는 `dist/` 는 배포 산출물이므로 `--production` 으로 굽고

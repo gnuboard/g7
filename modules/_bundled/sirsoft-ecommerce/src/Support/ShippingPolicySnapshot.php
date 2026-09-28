@@ -95,6 +95,37 @@ class ShippingPolicySnapshot
     }
 
     /**
+     * 주문이 실제로 배송된 배송지(국가/우편번호)를 해석합니다.
+     *
+     * SSoT 는 주문 생성 시점에 보존된 `address` 메타다. 주문 주소 행은 사후 변경·삭제될 수
+     * 있으므로 스냅샷이 우선하며, 스냅샷에 배송지가 없는 과거 주문만 폴백을 쓴다.
+     *
+     * 이 판정은 취소 시점 스냅샷(`OrderCancellationService::buildShippingSnapshot`)과
+     * 클레임 배송비의 도서산간 재판정(`ClaimShippingFeeService`)이 함께 쓴다 — 두 벌로 두면
+     * 한쪽만 고쳐질 때 같은 주문의 도서산간 판정이 경로에 따라 갈린다.
+     *
+     * @param  array|null  $snapshot  원본 스냅샷 (신형 · 구형 모두 허용)
+     * @param  callable|null  $fallback  스냅샷에 배송지가 없을 때만 호출되는 폴백 (=> array{country_code, zipcode})
+     * @return array{country_code: string, zipcode: string|null} 배송지 메타
+     */
+    public static function deliveryAddress(?array $snapshot, ?callable $fallback = null): array
+    {
+        $address = self::address($snapshot);
+
+        if (empty($address['country_code']) && $fallback !== null) {
+            $address = $fallback() ?: [];
+        }
+
+        $zipcode = $address['zipcode'] ?? null;
+        $countryCode = $address['country_code'] ?? null;
+
+        return [
+            'country_code' => strtoupper((string) ($countryCode ?: 'KR')),
+            'zipcode' => ($zipcode !== null && $zipcode !== '') ? (string) $zipcode : null,
+        ];
+    }
+
+    /**
      * 스냅샷에서 항목 목록만 추출합니다.
      *
      * @param  array|null  $snapshot  원본 스냅샷 (신형 · 구형 모두 허용)

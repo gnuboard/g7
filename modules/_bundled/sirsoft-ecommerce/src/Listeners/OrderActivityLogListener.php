@@ -6,6 +6,7 @@ use App\ActivityLog\ChangeDetector;
 use App\ActivityLog\Traits\ResolvesActivityLogType;
 use App\Contracts\Extension\HookListenerInterface;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
+use Modules\Sirsoft\Ecommerce\Listeners\Concerns\BuildsEnumFieldChange;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderAddress;
 use Modules\Sirsoft\Ecommerce\Models\OrderOption;
@@ -23,6 +24,7 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderRepositoryInterface;
  */
 class OrderActivityLogListener implements HookListenerInterface
 {
+    use BuildsEnumFieldChange;
     use ResolvesActivityLogType;
 
     /**
@@ -54,7 +56,17 @@ class OrderActivityLogListener implements HookListenerInterface
 
             // ─── OrderOptionService ───
             'sirsoft-ecommerce.order_option.after_status_change' => ['method' => 'handleOrderOptionAfterStatusChange', 'priority' => 20],
+            // 상품 상태에 맞춰 부모 주문 상태가 자동으로 따라 바뀐 전이 — 운영자가 고른 것이
+            // 아니라 파생된 결과이므로 별도 줄로 남긴다.
+            'sirsoft-ecommerce.order.after_status_sync' => ['method' => 'handleOrderStatusSync', 'priority' => 20],
             'sirsoft-ecommerce.order_option.after_bulk_status_change' => ['method' => 'handleOrderOptionAfterBulkStatusChange', 'priority' => 20],
+            // 주문 상태 동기화가 끌고 간 상품 전이 — 관계 빌더 raw update 라
+            // `order_option.after_status_change` 를 지나지 않는다(A1~A5).
+            'sirsoft-ecommerce.order_option.after_sync_status' => ['method' => 'handleOrderOptionAfterSyncStatus', 'priority' => 20],
+            // 송장 기록·정정 — 전이를 동반하지 않는 정정은 어떤 전이 훅도 지나지 않는다(F11).
+            'sirsoft-ecommerce.order_shipping.tracking_updated' => ['method' => 'handleOrderShippingTrackingUpdated', 'priority' => 20],
+            // 취소가 세금계산서에 반응하지 않는다는 사실을 이력으로 드러낸다(P15).
+            'sirsoft-ecommerce.order.tax_invoice_stale_after_cancel' => ['method' => 'handleTaxInvoiceStaleAfterCancel', 'priority' => 20],
 
             // ─── OrderCancellationService ───
             'sirsoft-ecommerce.order.after_cancel' => ['method' => 'handleOrderAfterCancel', 'priority' => 20],
@@ -79,6 +91,7 @@ class OrderActivityLogListener implements HookListenerInterface
      * 훅 이벤트 처리 (기본 핸들러)
      *
      * @param  mixed  ...$args  훅에서 전달된 인수들
+     * @return void
      */
     public function handle(...$args): void
     {
@@ -94,6 +107,7 @@ class OrderActivityLogListener implements HookListenerInterface
      *
      * @param  Order  $order  수정된 주문
      * @param  array|null  $snapshot  수정 전 스냅샷 (Service에서 전달)
+     * @return void
      */
     public function handleOrderAfterUpdate(Order $order, ?array $snapshot = null): void
     {
@@ -112,6 +126,7 @@ class OrderActivityLogListener implements HookListenerInterface
      * 주문 삭제 후 로그 기록
      *
      * @param  Order  $order  삭제된 주문
+     * @return void
      */
     public function handleOrderAfterDelete(Order $order): void
     {
@@ -133,6 +148,7 @@ class OrderActivityLogListener implements HookListenerInterface
      * @param  array  $ids  대상 주문 ID 목록
      * @param  int  $updatedCount  수정된 수
      * @param  array  $snapshots  수정 전 스냅샷 (Service에서 전달, id => snapshot)
+     * @return void
      */
     public function handleOrderAfterBulkUpdate(array $ids, int $updatedCount, array $snapshots = []): void
     {
@@ -163,6 +179,7 @@ class OrderActivityLogListener implements HookListenerInterface
      * @param  array  $ids  대상 주문 ID 목록
      * @param  int  $updatedCount  변경된 수
      * @param  array  $snapshots  변경 전 스냅샷 (Service에서 전달, id => snapshot)
+     * @return void
      */
     public function handleOrderAfterBulkStatusUpdate(array $ids, int $updatedCount, array $snapshots = []): void
     {
@@ -193,6 +210,7 @@ class OrderActivityLogListener implements HookListenerInterface
      * @param  array  $ids  대상 주문 ID 목록
      * @param  int  $updatedCount  변경된 수
      * @param  array  $snapshots  변경 전 스냅샷 (Service에서 전달, id => snapshot)
+     * @return void
      */
     public function handleOrderAfterBulkShippingUpdate(array $ids, int $updatedCount, array $snapshots = []): void
     {
@@ -226,6 +244,7 @@ class OrderActivityLogListener implements HookListenerInterface
      * @param  Order  $order  수정된 주문
      * @param  OrderAddress|null  $address  수정된 배송지
      * @param  array|null  $snapshot  수정 전 배송지 스냅샷
+     * @return void
      */
     public function handleOrderAfterUpdateShippingAddress(Order $order, ?OrderAddress $address = null, ?array $snapshot = null): void
     {
@@ -244,6 +263,7 @@ class OrderActivityLogListener implements HookListenerInterface
      * 주문 이메일 발송 후 로그 기록
      *
      * @param  array  $data  이메일 발송 데이터
+     * @return void
      */
     public function handleOrderAfterSendEmail(array $data): void
     {
@@ -264,6 +284,7 @@ class OrderActivityLogListener implements HookListenerInterface
      * 평문 비밀번호는 로그에 기록하지 않고 주문번호만 남깁니다.
      *
      * @param  Order  $order  재설정된 주문
+     * @return void
      */
     public function handleOrderAfterResetGuestPassword(Order $order): void
     {
@@ -285,12 +306,24 @@ class OrderActivityLogListener implements HookListenerInterface
     /**
      * 주문 옵션 상태 변경 후 로그 기록
      *
+     * 전/후는 서비스가 변경 전에 떠 둔 스냅샷으로 만든다 — 스냅샷 없이 "변경 후" 만 적으면
+     * 활동 로그 화면에 전/후 표가 서지 않아 무엇에서 무엇으로 바뀌었는지 읽을 수 없다.
+     * 분할 전이면 새 상태를 가진 쪽은 분할 레코드이므로 그쪽과 대조한다.
+     *
      * @param  OrderOption  $original  원본 주문 옵션
      * @param  OrderStatusEnum  $newStatus  변경된 상태
      * @param  OrderOption|null  $split  분할된 주문 옵션
+     * @param  array|null  $snapshot  변경 전 스냅샷 (Service 에서 전달, 없으면 전/후 미기록)
+     * @return void
      */
-    public function handleOrderOptionAfterStatusChange(OrderOption $original, OrderStatusEnum $newStatus, ?OrderOption $split): void
-    {
+    public function handleOrderOptionAfterStatusChange(
+        OrderOption $original,
+        OrderStatusEnum $newStatus,
+        ?OrderOption $split,
+        ?array $snapshot = null,
+    ): void {
+        $changes = $snapshot !== null ? ChangeDetector::detect($split ?? $original, $snapshot) : null;
+
         $this->logActivity('order_option.status_change', [
 
             'loggable' => $original,
@@ -299,8 +332,55 @@ class OrderActivityLogListener implements HookListenerInterface
                 'order_number' => $original->order?->order_number ?? '',
             ],
             'properties' => [
+                'previous_status' => $snapshot['option_status'] ?? null,
                 'new_status' => $newStatus->value,
                 'split' => $split,
+            ],
+            'changes' => $changes,
+        ]);
+    }
+
+    /**
+     * 상품 상태에 맞춰 부모 주문 상태가 자동으로 따라 바뀐 전이를 기록합니다.
+     *
+     * 상품 단건·일괄 상태 변경, 구매확정으로 모든 상품이 같은 단계에 모이면 주문 상태가
+     * 파생 전이한다. 운영자가 고른 전이가 아니라 이력이 없으면 "주문 상태가 왜 바뀌었는가"
+     * 를 되짚을 통로가 상품 줄뿐이다 — 상품 줄과 주문 줄이 함께 남아야 원인과 결과가 읽힌다.
+     *
+     * @param  Order  $order  전이된 주문
+     * @param  string|null  $previousStatus  전이 전 주문 상태 값
+     * @param  string|null  $newStatus  전이 시점에 캡처한 목표 상태 값
+     * @return void
+     */
+    public function handleOrderStatusSync(Order $order, ?string $previousStatus = null, ?string $newStatus = null): void
+    {
+        // 목표 상태는 전이 시점 캡처값이 기준이다 — 큐 지연 중 다시 바뀐 "지금" 값을 적으면
+        // 실제로 일어난 전이와 어긋난다.
+        $new = $newStatus ?? ($order->order_status instanceof OrderStatusEnum ? $order->order_status->value : $order->order_status);
+
+        if ($previousStatus === $new) {
+            return;
+        }
+
+        $this->logActivity('order.status_sync', [
+            'loggable' => $order,
+            'description_key' => 'sirsoft-ecommerce::activity_log.description.order_status_sync',
+            'description_params' => [
+                'order_number' => $order->order_number ?? '',
+            ],
+            'properties' => [
+                'previous_status' => $previousStatus,
+                'new_status' => $new,
+                'trigger' => 'option_status',
+            ],
+            'changes' => [
+                $this->enumFieldChange(
+                    'order_status',
+                    'sirsoft-ecommerce::activity_log.fields.order_status',
+                    OrderStatusEnum::class,
+                    $previousStatus,
+                    $new,
+                ),
             ],
         ]);
     }
@@ -316,6 +396,7 @@ class OrderActivityLogListener implements HookListenerInterface
      * @param  array  $results  변경 결과 목록
      * @param  OrderStatusEnum  $newStatus  변경된 상태
      * @param  array  $snapshots  변경 전 스냅샷 (Service에서 전달, order_option_id => snapshot)
+     * @return void
      */
     public function handleOrderOptionAfterBulkStatusChange(array $results, OrderStatusEnum $newStatus, array $snapshots = []): void
     {
@@ -377,12 +458,171 @@ class OrderActivityLogListener implements HookListenerInterface
     }
 
     /**
+     * 주문 상태 동기화가 끌고 간 주문상품 전이를 기록합니다. (#599 후속 §7-1 A1~A5)
+     *
+     * 결제완료·0원 주문 확정·결제실패·관리자 주문 수정·일괄 상태변경은 주문상품 상태를
+     * 관계 빌더의 raw update 로 한 번에 옮긴다 — `OrderOptionService` 의 분할·훅 경로를
+     * 지나지 않으므로 **어떤 줄도 남지 않았다**. 주문 헤더 줄만 보고는 어느 상품이 함께
+     * 움직였는지 알 수 없어, 부분 배송·부분 취소로 상태가 섞인 주문에서 특히 문제가 된다.
+     *
+     * 상품 수가 많을 수 있으므로 주문당 **한 줄**로 묶고 상품별 전/후는 코어 일괄 형식
+     * (`{모델ID: [항목…]}`)의 `changes` 에 싣는다 — 화면이 상품마다 표를 그린다.
+     *
+     * @param  array<int, array{order_option_id: int, order_id: int, previous: string, new: string}>  $changes  상품별 전이 내역
+     * @param  string  $newStatus  목표 상태 값
+     * @param  string  $source  전이를 일으킨 경로 (`order_status_sync` | `bulk_update`)
+     * @return void
+     */
+    public function handleOrderOptionAfterSyncStatus(array $changes, string $newStatus, string $source = ''): void
+    {
+        if ($changes === []) {
+            return;
+        }
+
+        $byOrder = [];
+
+        foreach ($changes as $change) {
+            $byOrder[(int) ($change['order_id'] ?? 0)][] = $change;
+        }
+
+        // 주문은 한 번에 읽는다 — 일괄 상태변경은 주문 수십 건을 한 번에 옮기므로 주문마다 조회하면
+        // 그 수만큼 쿼리가 늘어난다(N+1).
+        $orders = $this->orderRepository->findByIdsKeyed(array_keys($byOrder));
+
+        foreach ($byOrder as $orderId => $rows) {
+            $order = $orders->get($orderId);
+
+            if (! $order) {
+                continue;
+            }
+
+            $bulkChanges = [];
+
+            foreach ($rows as $row) {
+                $bulkChanges[(int) $row['order_option_id']] = [
+                    $this->enumFieldChange(
+                        'option_status',
+                        'sirsoft-ecommerce::activity_log.fields.option_status',
+                        OrderStatusEnum::class,
+                        $row['previous'] ?? null,
+                        $row['new'] ?? null,
+                    ),
+                ];
+            }
+
+            $this->logActivity('order_option.sync_status', [
+                'loggable' => $order,
+                'description_key' => 'sirsoft-ecommerce::activity_log.description.order_option_sync_status',
+                'description_params' => [
+                    'order_number' => (string) $order->order_number,
+                    'count' => (string) count($rows),
+                ],
+                'properties' => [
+                    'order_id' => $orderId,
+                    'new_status' => $newStatus,
+                    'source' => $source,
+                    'options' => $rows,
+                ],
+                'changes' => $bulkChanges,
+            ]);
+        }
+    }
+
+    /**
+     * 취소 뒤에도 남아 있는 발급 완료 세금계산서를 기록합니다. (#599 후속 P15)
+     *
+     * 세금계산서는 취소·부분취소에 반응하지 않는다 — 국세청 연동 자동 취소·재발행은 이번
+     * 범위 밖이다(§12-A). 그 누락을 **드러내는** 것이 이 줄의 역할이다: 아무 표시도 없으면
+     * 운영자는 계산서가 이미 정리된 줄 알고 넘어가고, 어긋남은 신고 시점에야 드러난다.
+     *
+     * @param  Order  $order  취소가 반영된 주문
+     * @param  array<int, array{id: int, invoice_number: string|null, total_amount: float}>  $invoices  발급 완료 계산서
+     * @return void
+     */
+    public function handleTaxInvoiceStaleAfterCancel(Order $order, array $invoices = []): void
+    {
+        if ($invoices === []) {
+            return;
+        }
+
+        $this->logActivity('order.tax_invoice_stale', [
+            'loggable' => $order,
+            'description_key' => 'sirsoft-ecommerce::activity_log.description.order_tax_invoice_stale',
+            'description_params' => [
+                'order_number' => (string) $order->order_number,
+                'count' => (string) count($invoices),
+            ],
+            'properties' => [
+                'order_id' => $order->id,
+                'invoices' => $invoices,
+                'total_cancelled_amount' => (float) $order->total_cancelled_amount,
+            ],
+        ]);
+    }
+
+    /**
+     * 운송장 기록·정정을 기록합니다. (#599 후속 F11)
+     *
+     * 예전에는 상태 전이를 동반할 때만 훅이 발화해, **이미 배송중인 건의 송장 정정**은 어떤
+     * 줄도 남기지 않았다. 고객이 "운송장이 바뀌었다" 고 물어도 언제 누가 무엇으로 고쳤는지
+     * 되짚을 근거가 없었다. 전이와 층이 다른 사실이라 전이 줄에 얹지 않고 따로 남긴다.
+     *
+     * @param  OrderOption  $option  대상 주문상품
+     * @param  array{carrier_id: int|string|null, tracking_number: string|null}  $before  변경 전
+     * @param  array{carrier_id: int|string|null, tracking_number: string|null}  $after  변경 후
+     * @return void
+     */
+    public function handleOrderShippingTrackingUpdated(OrderOption $option, array $before = [], array $after = []): void
+    {
+        $changes = [];
+
+        foreach (['carrier_id' => 'text', 'tracking_number' => 'text'] as $field => $type) {
+            $old = $before[$field] ?? null;
+            $new = $after[$field] ?? null;
+
+            if ((string) $old === (string) $new) {
+                continue;
+            }
+
+            $changes[] = [
+                'field' => $field,
+                'label_key' => 'sirsoft-ecommerce::activity_log.fields.'.$field,
+                'old' => $old !== null ? (string) $old : null,
+                'new' => $new !== null ? (string) $new : null,
+                'type' => $type,
+            ];
+        }
+
+        // 값이 그대로면 남기지 않는다 — 같은 값을 다시 저장한 회차까지 이력에 쌓으면
+        // 정말 바뀐 회차를 찾기 어려워진다.
+        if ($changes === []) {
+            return;
+        }
+
+        $this->logActivity('order_shipping.tracking_update', [
+            'loggable' => $option,
+            'description_key' => 'sirsoft-ecommerce::activity_log.description.order_shipping_tracking_update',
+            'description_params' => ['option_id' => (string) $option->id],
+            'properties' => [
+                'order_id' => $option->order_id,
+                'option_id' => $option->id,
+            ],
+            'changes' => $changes,
+        ]);
+    }
+
+    /**
      * 주문 옵션 구매확인 후 로그 기록
+     *
+     * `changes` 를 싣는 이유: 활동 로그 화면은 여기에 실린 항목만 "변경 전 → 변경 후" 표로
+     * 그린다(§7-1 D). 줄만 남기면 이 사건으로 무엇이 바뀌었는지를 로그에서 읽을 수 없다.
      *
      * @param  Order  $order  주문
      * @param  OrderOption  $option  확인된 주문 옵션
+     * @param  array|null  $snapshot  확정 전 옵션 스냅샷
+     * @return void
      */
-    public function handleOrderOptionAfterConfirm(Order $order, OrderOption $option): void
+    public function handleOrderOptionAfterConfirm(Order $order, OrderOption $option, ?array $snapshot = null): void
     {
         $this->logActivity('order_option.confirm', [
             'loggable' => $option,
@@ -393,6 +633,7 @@ class OrderActivityLogListener implements HookListenerInterface
                 'option_id' => $option->id,
                 'order_number' => $order->order_number,
             ],
+            'changes' => ChangeDetector::detect($option, $snapshot),
         ]);
     }
 
@@ -403,10 +644,16 @@ class OrderActivityLogListener implements HookListenerInterface
     /**
      * 주문 전체 취소 후 로그 기록
      *
+     *
+     * `changes` 를 싣는 이유: 활동 로그 화면은 여기에 실린 항목만 "변경 전 → 변경 후" 표로
+     * 그린다(§7-1 D). 줄만 남기면 이 사건으로 무엇이 바뀌었는지를 로그에서 읽을 수 없다.
+     *
      * @param  Order  $order  취소된 주문 (fresh)
      * @param  array|null  $cancelSnapshot  취소 스냅샷 (Service에서 전달: cancel_type, cancel_items)
+     * @param  array|null  $orderSnapshot  취소 전 주문 속성 스냅샷
+     * @return void
      */
-    public function handleOrderAfterCancel(Order $order, ?array $cancelSnapshot = null): void
+    public function handleOrderAfterCancel(Order $order, ?array $cancelSnapshot = null, ?array $orderSnapshot = null): void
     {
         $this->logActivity('order.cancel', [
 
@@ -417,6 +664,7 @@ class OrderActivityLogListener implements HookListenerInterface
                 'cancel_type' => $cancelSnapshot['cancel_type'] ?? null,
                 'cancel_items' => $cancelSnapshot['cancel_items'] ?? [],
             ],
+            'changes' => ChangeDetector::detect($order, $orderSnapshot),
         ]);
     }
 
@@ -427,8 +675,10 @@ class OrderActivityLogListener implements HookListenerInterface
      *
      * @param  Order  $order  부분 취소된 주문 (fresh)
      * @param  array|null  $cancelSnapshot  취소 스냅샷 (Service에서 전달: cancel_type, cancel_items)
+     * @param  array|null  $orderSnapshot  변경 전 주문 속성 스냅샷 (활동로그의 전/후 표가 읽는다)
+     * @return void
      */
-    public function handleOrderAfterPartialCancel(Order $order, ?array $cancelSnapshot = null): void
+    public function handleOrderAfterPartialCancel(Order $order, ?array $cancelSnapshot = null, ?array $orderSnapshot = null): void
     {
         // Order 레벨 로그 (합산액 변경 기록)
         $this->logActivity('order.partial_cancel', [
@@ -439,6 +689,7 @@ class OrderActivityLogListener implements HookListenerInterface
                 'cancel_type' => $cancelSnapshot['cancel_type'] ?? null,
                 'cancel_items' => $cancelSnapshot['cancel_items'] ?? [],
             ],
+            'changes' => ChangeDetector::detect($order, $orderSnapshot),
         ]);
 
         // 취소된 각 OrderOption에 대한 per-item 로그
@@ -473,6 +724,7 @@ class OrderActivityLogListener implements HookListenerInterface
      *
      * @param  Order  $order  관련 주문
      * @param  array  $restoredCouponIssueIds  복원된 쿠폰 발급 ID 목록
+     * @return void
      */
     public function handleCouponRestore(Order $order, array $restoredCouponIssueIds): void
     {
@@ -492,6 +744,7 @@ class OrderActivityLogListener implements HookListenerInterface
      *
      * @param  float  $amount  복원 금액
      * @param  Order  $order  관련 주문
+     * @return void
      */
     public function handleMileageRestore(float $amount, Order $order): void
     {
@@ -514,6 +767,7 @@ class OrderActivityLogListener implements HookListenerInterface
      * 주문 생성 후 로그 기록
      *
      * @param  Order  $order  생성된 주문
+     * @return void
      */
     public function handleOrderAfterCreate(Order $order): void
     {
@@ -531,14 +785,21 @@ class OrderActivityLogListener implements HookListenerInterface
     /**
      * 결제 완료 후 로그 기록
      *
+     *
+     * `changes` 를 싣는 이유: 활동 로그 화면은 여기에 실린 항목만 "변경 전 → 변경 후" 표로
+     * 그린다(§7-1 D). 줄만 남기면 이 사건으로 무엇이 바뀌었는지를 로그에서 읽을 수 없다.
+     *
      * @param  Order  $order  결제 완료된 주문
+     * @param  array|null  $snapshot  결제완료 전 주문 속성 스냅샷
+     * @return void
      */
-    public function handleOrderAfterPaymentComplete(Order $order): void
+    public function handleOrderAfterPaymentComplete(Order $order, ?array $snapshot = null): void
     {
         $this->logActivity('order.payment_complete', [
             'loggable' => $order,
             'description_key' => 'sirsoft-ecommerce::activity_log.description.order_payment_complete',
             'description_params' => ['order_number' => $order->order_number],
+            'changes' => ChangeDetector::detect($order, $snapshot),
         ]);
     }
 
@@ -548,8 +809,10 @@ class OrderActivityLogListener implements HookListenerInterface
      * @param  Order  $order  결제 실패 주문
      * @param  string  $errorCode  에러 코드
      * @param  string  $errorMessage  에러 메시지
+     * @param  array|null  $snapshot  실패 처리 전 주문 속성 스냅샷
+     * @return void
      */
-    public function handleOrderAfterPaymentFailed(Order $order, string $errorCode, string $errorMessage): void
+    public function handleOrderAfterPaymentFailed(Order $order, string $errorCode, string $errorMessage, ?array $snapshot = null): void
     {
         $this->logActivity('order.payment_failed', [
             'loggable' => $order,
@@ -559,6 +822,7 @@ class OrderActivityLogListener implements HookListenerInterface
                 'error_code' => $errorCode,
                 'error_message' => $errorMessage,
             ],
+            'changes' => ChangeDetector::detect($order, $snapshot),
         ]);
     }
 
@@ -567,6 +831,7 @@ class OrderActivityLogListener implements HookListenerInterface
      *
      * @param  array  $appliedCouponIds  적용된 쿠폰 ID 목록
      * @param  Order  $order  관련 주문
+     * @return void
      */
     public function handleCouponUse(array $appliedCouponIds, Order $order): void
     {
@@ -585,6 +850,7 @@ class OrderActivityLogListener implements HookListenerInterface
      *
      * @param  float  $usedPoints  사용된 마일리지
      * @param  Order  $order  관련 주문
+     * @return void
      */
     public function handleMileageUse(float $usedPoints, Order $order): void
     {
@@ -603,6 +869,7 @@ class OrderActivityLogListener implements HookListenerInterface
      *
      * @param  float  $earnedPoints  적립된 마일리지
      * @param  Order  $order  관련 주문
+     * @return void
      */
     public function handleMileageEarn(float $earnedPoints, Order $order): void
     {

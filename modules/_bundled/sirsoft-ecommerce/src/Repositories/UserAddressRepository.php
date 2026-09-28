@@ -151,6 +151,13 @@ class UserAddressRepository implements UserAddressRepositoryInterface
             $query->where("{$table}.user_id", (int) $filters['user_id']);
         }
 
+        // 회원 다중 한정 — 키가 있으면 빈 배열도 조건이다(고른 uuid 가 전부 사라진 회원인 경우).
+        // array_key_exists 로 보는 이유가 그것이다: empty() 로 보면 그 경우가 «필터 없음» 으로
+        // 삼켜져 전 회원의 배송지가 뜬다.
+        if (array_key_exists('user_ids', $filters) && is_array($filters['user_ids'])) {
+            $query->whereIn("{$table}.user_id", array_map('intval', $filters['user_ids']));
+        }
+
         if (! empty($filters['country_code'])) {
             $query->where("{$table}.country_code", $filters['country_code']);
         }
@@ -194,6 +201,17 @@ class UserAddressRepository implements UserAddressRepositoryInterface
         $table = $this->model->getTable();
 
         match ($field) {
+            // 기본 갈래 — 받는 사람·주소·회원을 한 번에 훑는다. 운영자가 손에 든 단서가 무엇인지
+            // (이름인지 주소인지) 모르는 채로 검색창에 넣는 일이 대부분이다.
+            'all' => $query->where(fn (Builder $w) => $w
+                ->where("{$table}.recipient_name", 'like', $needle)
+                ->orWhere("{$table}.recipient_phone", 'like', $needle)
+                ->orWhere("{$table}.address", 'like', $needle)
+                ->orWhere("{$table}.address_line_1", 'like', $needle)
+                ->orWhere("{$table}.city", 'like', $needle)
+                ->orWhereHas('user', fn (Builder $u) => $u->where(
+                    fn (Builder $uw) => $uw->where('name', 'like', $needle)->orWhere('email', 'like', $needle)
+                ))),
             'member_id' => $query->whereHas('user', fn (Builder $u) => $u->where('uuid', trim($keyword))),
             'email' => $query->whereHas('user', fn (Builder $u) => $u->where('email', 'like', $needle)),
             'recipient' => $query->where(fn (Builder $w) => $w

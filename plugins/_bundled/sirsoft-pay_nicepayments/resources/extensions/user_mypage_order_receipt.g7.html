@@ -1,64 +1,78 @@
-<!-- 내 주문 상세에 나이스페이먼츠 매출전표 보기를 덧붙이는 조각 -->
-<extension target-layout="mypage/orders/show">
-  <inject target-id="order_payment_info_panel" position="append_child">
-    <!-- 가상계좌 입금 안내 — 결제수단 vbank + 나이스페이먼츠 결제 건. shop/order_complete 페이지와 동일한 정보를 표시해 사용자가 마이페이지에서도 입금 정보 확인 가능. -->
+<!-- 내 주문 상세에 나이스페이먼츠 매출전표 보기를 덧붙이는 조각. target_layout(mypage/orders/show) 대신 공용 확장 슬롯을 겨냥한다 — 이 결제 정보 카드(partials/mypage/orders/_payment)는 주문 상세 말고도 클레임 신청서 상세가 그대로 재사용한다. 레이아웃 이름을 겨냥하면 그 한 화면에서만 뜨고 나머지 화면은 카드는 나오는데 이 블록만 빠진 채 열린다(오류·경고 없음). 슬롯은 partial 을 따라간다. 2026-09-01 확정. -->
+<extension extension-point="mypage_order_payment_provider_slot" mode="append" priority="100">
+    <!-- 가상계좌 입금 안내 — 결제수단 vbank + 나이스페이먼츠 결제 건. shop/order_complete 페이지와 동일한 정보를 표시해 사용자가 마이페이지에서도 입금 정보 확인 가능. 이 안내는 이 조각만 그린다(주입 스크립트가 같은 안내를 한 번 더 그리던 중복을 없앴다, #599). 입금 기한은 쇼핑몰이 사용자 언어·시간대로 서식을 입힌 값을 그대로 쓴다. -->
     <div data-if="{{order.data.payment?.pg_provider === 'nicepayments' &amp;&amp; order.data.payment?.payment_method === 'vbank' &amp;&amp; order.data.payment?.vbank_number}}" class="pt-4 mt-2 border-t border-gray-200 dark:border-gray-700">
       <div class="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg p-4">
-        <h3 class="text-sm font-semibold text-info-soft mb-3">$t:sirsoft-pay_nicepayments.user.vbank_deposit_info</h3>
+        <h3 class="text-sm font-semibold text-xs text-blue-700 dark:text-blue-300 mb-3">$t:sirsoft-pay_nicepayments.user.vbank_deposit_info</h3>
         <div class="space-y-2">
           <div class="flex justify-between text-sm">
-            <span class="text-secondary">$t:sirsoft-pay_nicepayments.user.vbank_bank</span>
-            <span class="text-primary font-medium">{{order.data.payment?.vbank_name}}</span>
+            <span class="text-gray-600 dark:text-gray-400">$t:sirsoft-pay_nicepayments.user.vbank_bank</span>
+            <span class="text-gray-900 dark:text-white font-medium">{{order.data.payment?.vbank_name}}</span>
           </div>
           <div class="flex justify-between text-sm">
-            <span class="text-secondary">$t:sirsoft-pay_nicepayments.user.vbank_account</span>
-            <span class="text-primary font-medium font-mono">{{order.data.payment?.vbank_number}}</span>
+            <span class="text-gray-600 dark:text-gray-400">$t:sirsoft-pay_nicepayments.user.vbank_account</span>
+            <span class="text-gray-900 dark:text-white font-medium font-mono">{{order.data.payment?.vbank_number}}</span>
           </div>
           <div class="flex justify-between text-sm">
-            <span class="text-secondary">$t:sirsoft-pay_nicepayments.user.vbank_holder</span>
-            <span class="text-primary font-medium">{{order.data.payment?.vbank_holder}}</span>
+            <span class="text-gray-600 dark:text-gray-400">$t:sirsoft-pay_nicepayments.user.vbank_holder</span>
+            <span class="text-gray-900 dark:text-white font-medium">{{order.data.payment?.vbank_holder}}</span>
           </div>
           <div class="flex justify-between text-sm">
-            <span class="text-secondary">$t:sirsoft-pay_nicepayments.user.vbank_amount</span>
+            <span class="text-gray-600 dark:text-gray-400">$t:sirsoft-pay_nicepayments.user.vbank_amount</span>
             <span class="font-bold text-blue-600 dark:text-blue-400">{{order.data.total_amount_formatted}}</span>
           </div>
-          <div data-if="{{order.data.payment?.vbank_due_at}}" class="flex justify-between text-sm pt-2 border-t border-blue-200 dark:border-blue-700 mt-2">
-            <span class="text-secondary">$t:sirsoft-pay_nicepayments.user.vbank_due</span>
-            <span class="font-medium text-red-600 dark:text-red-400">{{order.data.payment?.vbank_due_at}}</span>
+          <div data-if="{{order.data.payment?.vbank_due_at_formatted}}" class="flex justify-between text-sm pt-2 border-t border-blue-200 dark:border-blue-700 mt-2">
+            <span class="text-gray-600 dark:text-gray-400">$t:sirsoft-pay_nicepayments.user.vbank_due</span>
+            <span class="font-medium text-red-600 dark:text-red-400">{{order.data.payment?.vbank_due_at_formatted}}</span>
           </div>
         </div>
-        <p data-if="{{!order.data.payment?.paid_at}}" class="text-info-soft mt-3">$t:sirsoft-pay_nicepayments.user.vbank_notice</p>
+        <p data-if="{{!order.data.payment?.paid_at}}" class="text-xs text-blue-700 dark:text-blue-300 mt-3">$t:sirsoft-pay_nicepayments.user.vbank_notice</p>
       </div>
     </div>
     <div data-if="{{order.data.payment?.pg_provider === 'nicepayments' &amp;&amp; (order.data.total_vat_amount > 0 || order.data.total_tax_free_amount > 0)}}" class="pt-4 mt-2 border-t border-gray-200 dark:border-gray-700 space-y-1.5">
       <p class="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">$t:sirsoft-pay_nicepayments.user.tax_breakdown_title</p>
       <div class="flex-between text-sm">
         <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-pay_nicepayments.user.supply_amount</span>
-        <span class="text-primary font-medium">{{order.data.total_taxable_supply_amount_formatted}}</span>
+        <span class="text-gray-900 dark:text-white font-medium">{{order.data.total_taxable_supply_amount_formatted}}</span>
       </div>
       <div class="flex-between text-sm">
         <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-pay_nicepayments.user.vat_amount</span>
-        <span class="text-primary font-medium">{{order.data.total_vat_amount_formatted}}</span>
+        <span class="text-gray-900 dark:text-white font-medium">{{order.data.total_vat_amount_formatted}}</span>
       </div>
       <div data-if="{{order.data.total_tax_free_amount > 0}}" class="flex-between text-sm">
         <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-pay_nicepayments.user.tax_free_amount</span>
-        <span class="text-primary font-medium">{{order.data.total_tax_free_amount_formatted}}</span>
+        <span class="text-gray-900 dark:text-white font-medium">{{order.data.total_tax_free_amount_formatted}}</span>
       </div>
     </div>
     <div data-if="{{order.data.payment?.pg_provider === 'nicepayments' &amp;&amp; order.data.payment?.transaction_id &amp;&amp; order.data.payment?.paid_at}}" class="pt-4 mt-2 border-t border-gray-200 dark:border-gray-700">
       <!-- 간편결제 서비스명 표시 -->
       <div data-if="{{(['NAVERPAY','KAKAOPAY','SAMSUNGPAY','APPLEPAY','PAYCO','SKPAY','SSGPAY','LPAY']).includes(order.data.payment?.payment_meta?.PayMethod)}}" class="flex-between mb-2">
-        <span class="text-label-subtle">$t:sirsoft-pay_nicepayments.user.easy_pay_label</span>
-        <span class="text-heading">{{({'NAVERPAY':'네이버페이','KAKAOPAY':'카카오페이','SAMSUNGPAY':'삼성페이','APPLEPAY':'애플페이','PAYCO':'PAYCO','SKPAY':'11pay','SSGPAY':'SSG페이','LPAY':'L.pay'})[order.data.payment?.payment_meta?.PayMethod] ?? order.data.payment?.payment_meta?.PayMethod}}</span>
+        <span class="text-sm text-gray-500 dark:text-gray-400">$t:sirsoft-pay_nicepayments.user.easy_pay_label</span>
+        <span class="text-sm font-medium text-gray-900 dark:text-white">{{$t('sirsoft-pay_nicepayments.user.easy_pay_names.' + order.data.payment?.payment_meta?.PayMethod)}}</span>
       </div>
-      <!-- 영수증 링크 행 -->
+      <!-- 영수증 링크 행 — 결제 영수증 주소는 플러그인 API(payment_receipt_url)가 내려준다. 레이아웃에 결제사 외부 주소를 적으면 편집기 저장 게이트(외부 URL 금지)가 거절한다. 회원은 토큰, 비회원은 조회 토큰 헤더로 같은 API 를 부른다 -->
       <div class="flex-between">
-        <span class="text-label-subtle">$t:sirsoft-pay_nicepayments.user.receipt_label</span>
-        <div class="flex-center gap-3">
+        <on event="mount">
+          <api-call :auth_required="true" auth_mode="optional" target="/api/plugins/sirsoft-pay_nicepayments/user/orders/{{order.data.order_number}}/receipt" method="GET">
+            <field name="headers">
+              <field name="X-Guest-Order-Token" value="{{_global.guestOrderToken ?? ''}}"/>
+            </field>
+            <success>
+              <set-state target="local" _npMpPaymentReceiptUrl="{{response.data.payment_receipt_url}}" _npMpSalesSlipUrl="{{response.data.receipt_url}}"/>
+            </success>
+          </api-call>
+        </on>
+        <span class="text-sm text-gray-500 dark:text-gray-400">$t:sirsoft-pay_nicepayments.user.receipt_label</span>
+        <div class="flex items-center gap-3">
           <!-- 결제 영수증 -->
-          <a href="https://npg.nicepay.co.kr/issue/IssueLoader.do?type=2&amp;TID={{order.data.payment?.transaction_id}}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:underline">
+          <a data-if="{{_local._npMpPaymentReceiptUrl}}" href="{{_local._npMpPaymentReceiptUrl}}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:underline">
             <icon name="file-text" class="text-sm"/>
             <span>$t:sirsoft-pay_nicepayments.user.view_receipt</span>
+          </a>
+          <!-- 매출전표(type=0) — 주문 완료 화면 버튼과 같은 전표. 주소는 같은 조회 API 가 receipt_url 로 준다(결제 영수증 type=2 와 다른 값). -->
+          <a data-if="{{_local._npMpSalesSlipUrl}}" href="{{_local._npMpSalesSlipUrl}}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:underline">
+            <icon name="file-text" class="text-sm"/>
+            <span>$t:sirsoft-pay_nicepayments.user.view_sales_slip</span>
           </a>
           <!-- 현금영수증 조회 버튼 -->
           <button data-if="{{order.data.payment?.cash_receipt_type &amp;&amp; !_local._npMpReceiptLoaded}}" type="button" class="inline-flex items-center gap-1 text-sm text-green-600 dark:text-green-400 hover:underline disabled:opacity-50">
@@ -66,9 +80,12 @@
               <!-- 매출전표 보기 — 전표를 받아 팝업으로 띄운다 -->
               <sequence>
                 <set-state target="local" :_npMpReceiptLoading="true"/>
-                <api-call :auth_required="true" target="/api/plugins/sirsoft-pay_nicepayments/user/orders/{{route.order_number}}/receipt" method="GET">
+                <api-call :auth_required="true" auth_mode="optional" target="/api/plugins/sirsoft-pay_nicepayments/user/orders/{{order.data.order_number}}/receipt" method="GET">
+                  <field name="headers">
+                    <field name="X-Guest-Order-Token" value="{{_global.guestOrderToken ?? ''}}"/>
+                  </field>
                   <success>
-                    <set-state target="local" :_npMpReceiptLoading="false" :_npMpReceiptLoaded="true" _npMpCashReceiptUrl="{{response.cash_receipt_url}}"/>
+                    <set-state target="local" :_npMpReceiptLoading="false" :_npMpReceiptLoaded="true" _npMpCashReceiptUrl="{{response.data.cash_receipt_url}}"/>
                   </success>
                   <fail>
                     <set-state target="local" :_npMpReceiptLoading="false"/>
@@ -87,5 +104,4 @@
         </div>
       </div>
     </div>
-  </inject>
 </extension>

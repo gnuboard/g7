@@ -32,6 +32,25 @@
 
 - engine-v1.72.0 의 「같은 요청의 마지막 성공값 유지」(`DataSourceManager.lastSuccessful`)가 실패 상태를 가리지 않았다. 보관 값은 클래스 전역이고 키에 사용자가 없어, 같은 브라우저의 다른 탭에서 권한이 적은 계정으로 로그인하면 관리자 탭의 요청이 403 으로 막혀도 이전 계정이 보던 대시보드(리뷰·문의·비밀글 제목·신고)가 그대로 남았다(브라우저 실측).
 - 실패 상태가 401·403 이면 마지막 값을 지키지 않고 그 보관 값을 지운 뒤 `fallback` 으로 그린다. 서버 오류·네트워크 실패 때의 유지(실시간 화면이 「지금 0명」을 띄우지 않게 한 목적)는 그대로다.
+## [engine-v1.72.1] - 2026-09-27
+
+> 2026-09-13 작성 당시 `engine-v1.66.2` 로 적었으나, develop-7.1.0 병합(1.67~1.71)과 번호가 뒤집혀 최상위 다음 패치(`engine-v1.71.1`)로 다시 매겼고, develop-7.1.0 16차 병합(2026-09-27)에서 그 번호를 먼저 쓴 `engine-v1.71.1`(2026-09-21, 편집기 반복 항목 scope)·`engine-v1.72.0`(2026-09-26, 방문자 통계 트래커)과 다시 겹쳐 최상위 다음 패치로 한 번 더 옮겼다. 과거 이력 문서의 `engine-v1.66.2` 와 2026-09-13~27 사이 이 브랜치 문서의 `engine-v1.71.1`(SPA 이동 `_local` 잔존 수정)은 이 절을 가리킨다.
+
+### Fixed
+
+#### SPA 이동 시 보존된 base 루트의 stale 저장소 A 가 새 페이지 첫 렌더에 병합되어 `_local` 이 이전 페이지 값으로 굳던 문제
+- `_fromBase` 컴포넌트의 `localDynamicState`(저장소 A) 초기화를 `useEffect` 에서 **렌더 단계**로 앞당김 — React 의 "이전 렌더 정보 저장" 패턴(`appliedLayoutKey` useState + 렌더 중 조건부 setState). 새 페이지의 자식은 stale A 가 병합된 컨텍스트를 한 번도 받지 않는다 (DynamicRenderer.tsx)
+- 배경: engine-v1.24.8 의 useEffect 초기화는 새 페이지의 첫 렌더와 자식 useEffect **뒤**에 실행됐다. 첫 렌더는 `_localInit` 이 없는 목록 화면에서 `deepMergeState(dataContext._local, dynamicState)` 로 stale A 를 새 `_local` 위에 덮었고, ColumnSelector·FilterVisibilitySelector 의 마운트 동기화 콜백이 그 오염값을 `setState(target:"_local")` 로 되썼다. engine-v1.50.0 부터 COMPONENT 경로 setState 가 `_global._local`(저장소 B)을 동기화하므로 되쓴 값이 B 에 영구 고정됐다 — 주문 목록 → 쿠폰 목록 이동 시 `visibleColumns` 가 주문 컬럼으로 남아 표에 체크박스·작업 열만 남는다(7.0.11 시크릿 창에서 재현 확인). 브라우저에 목록 컬럼 저장값(`g7_columns_*`)이 있으면 표는 정상이라 증상만 가려지고 `_local` 유출은 그대로였다
+- 버려지는 첫 패스도 `dynamicState` 를 빈 값으로 파생시켜 stale A 를 한 번도 평가하지 않는다 — 렌더 사이클 캐시(표현식 문자열 키)에 stale 평가가 남는 경로를 원천 차단
+- 발동 조건(`_fromBase` && layoutKey 변경)은 종전과 같다. 성능: `reactRoot.render` 호출 수 동일(14=14), 종전의 초기화 전용 커밋(루트급 `_fromBase` 5개 리렌더)이 사라지고 대신 상태 소유 루트 1개만 자식 콜백으로 리렌더된다. navigate → 목록 표시 중앙값 787 ms → 588 ms(저장값 있는 동일 조건, 5회)
+- 회귀 잠금: `__tests__/DynamicRenderer.fromBaseLayoutKeyReset.test.tsx`(실물 렌더, useEffect 방식으로 되돌리면 red) · `tests/Playwright/specs/admin/spa-list-navigation-local-isolation.spec.ts` · 트러블슈팅 state-closure 사례 4 · 엔진 수정 회귀 절차 신설
+
+#### 진단 규칙 `spa-local-leak` 추가 (devtools)
+- `DiagnosticEngine` 에 목록 → 목록 SPA 이동 뒤 `_local` 에 이전 화면 키가 남는 증상을 짚는 규칙을 추가했다. 이동 뒤 마운트 콜백 흔적만으로는 발화하지 않고, 현재 레이아웃이 알지 못하는 `_local` 키가 실제로 남았을 때만 발화한다 — 컬럼 선택기가 있는 목록은 정상 진입에서도 같은 콜백을 내기 때문이다. 해결 안내는 g7-state 로 현재 레이아웃 state 에 없는 키를 찾는 절차다 (DiagnosticEngine.ts)
+
+### Notes
+- 발생 시점: 엔진 번들 이분 탐색으로 2026-06-21 번들(f7eb1615f)까지 정상, 2026-06-23 번들(3a2e76e46)부터 재현 — 창 안의 엔진 변경은 `0c3c32d4c`(engine-v1.50.0 COMPONENT 경로 `_global._local` 동기화)뿐이다. 2026-09-01 `addMissingLeafKeys` 보충(engine-v1.63.3)이 유출 범위를 바뀐 키에서 저장소 A 의 전체 키로 넓혔다. 확장(레이아웃·핸들러·컴포넌트) 변경과는 무관하다
+
 
 ## [engine-v1.72.0] - 2026-09-26
 

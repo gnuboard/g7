@@ -40,7 +40,9 @@ _등록하는 액션 핸들러가 없습니다._
 
 체크박스를 다룰 때 주의할 점이 하나 있습니다 — 저장값이 `null` 일 수 있는 체크박스는
 `name` 자동바인딩만으로 묶으면 값이 `null` 로 고착됩니다. 조각에서 동의 체크박스를 손볼 때는
-`autoBinding: false` + `checked` 표현식 + `change` 액션 형태를 유지합니다.
+`autoBinding: false` + `checked` 표현식 + `change` 액션 형태를 유지합니다. 회원가입 조각
+(`user-marketing-register`)도 같은 형태입니다 — `checked` 는 가입 폼 상태(`_local.registerForm`)에서
+`!!` 로 읽으므로, 전체 동의가 채널 동의를 함께 켜면 채널 체크박스 표시도 따라옵니다.
 
 핸들러를 처음 추가한다면 전역 진입점(`window.__SirsoftMarketing.initPlugin()`)과 빌드 산출물
 (`dist/`)이 함께 필요합니다.

@@ -9,6 +9,7 @@ use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Models\OrderOption;
 use Modules\Sirsoft\Ecommerce\Models\ShippingCarrier;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderOptionRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Services\ClaimQuantityGuard;
 
 /**
  * 주문 옵션 일괄 상태 변경 요청
@@ -43,7 +44,9 @@ class BulkChangeOrderOptionStatusRequest extends FormRequest
                 Rule::exists(OrderOption::class, 'id')->where('order_id', $orderId),
             ],
             'items.*.quantity' => ['required', 'integer', 'min:1'],
-            'status' => ['required', 'string', Rule::in(OrderStatusEnum::values())],
+            // 클레임 코스 상태(교환진행중/반품진행중/교환완료/반품완료)는 교환·반품 서비스가
+            // 신청서와 짝을 맞춰 기록하는 값이라 주문 화면에서 직접 지정할 수 없다.
+            'status' => ['required', 'string', Rule::in(OrderStatusEnum::adminAssignableValues())],
             'carrier_id' => ['nullable', 'integer', Rule::exists(ShippingCarrier::class, 'id')],
             'tracking_number' => ['nullable', 'string', 'max:50'],
         ];
@@ -62,6 +65,7 @@ class BulkChangeOrderOptionStatusRequest extends FormRequest
             // 대상 옵션 스냅샷을 1회 배치 조회 (수량·전이 검증 공용, N+1 회피).
             // Repository 인터페이스 경유 — Model 직접 호출(audit formrequest-direct-data-access) 금지.
             $repo = app(OrderOptionRepositoryInterface::class);
+            $guard = app(ClaimQuantityGuard::class);
             $optionIds = collect($items)->pluck('option_id')->filter()->all();
             $snapshots = $repo->getSnapshotsByIds($optionIds); // id 키 스냅샷 (option_status / quantity 포함)
 
@@ -83,6 +87,21 @@ class BulkChangeOrderOptionStatusRequest extends FormRequest
                         "items.{$index}.quantity",
                         __('sirsoft-ecommerce::validation.quantity_exceeds_available')
                     );
+                }
+
+                // 클레임 코스 상태 차단 (D15 후단) — 진행 중인 교환·반품의 상품은 상태 변경 대상이
+                // 아니다. 전이 게이트는 반려·철회 복귀를 위해 코스 → 판매 상태를 허용하므로 그 게이트
+                // 만으로는 걸러지지 않는다. 판정은 ClaimQuantityGuard 단일 출처를 읽는다.
+                $course = $guard->resolveClaimCourseStatus($snap['option_status'] ?? null);
+                if ($course !== null) {
+                    $validator->errors()->add(
+                        "items.{$index}.status",
+                        __('sirsoft-ecommerce::exceptions.claim_option_in_course_status_change', [
+                            'status' => $course->label(),
+                        ])
+                    );
+
+                    continue;
                 }
 
                 // 상태 전이 검증 (역방향/비연속 역행 차단, all-or-nothing)

@@ -187,6 +187,7 @@
 | `sirsoft-board.comment.after_update` | action (미선언) | `BoardActivityLogListener` | `handleCommentAfterUpdate` | 20 |
 | `sirsoft-board.notification.channels` | filter | `BoardNotificationChannelListener` | `filterChannels` | 10 |
 | `sirsoft-board.notification.extract_data` | filter | `BoardNotificationDataListener` | `extractData` | 20 |
+| `sirsoft-board.notification.personalize_data` | filter | `BoardNotificationDataListener` | `personalizeBoardData` | 20 |
 | `sirsoft-board.post.after_blind` | action (미선언) | `BoardActivityLogListener` | `handlePostAfterBlind` | 20 |
 | `sirsoft-board.post.after_create` | action (미선언) | `BoardActivityLogListener` | `handlePostAfterCreate` | 20 |
 | `sirsoft-board.post.after_create` | action (미선언) | `BoardPostsCountSyncListener` | `syncPostsCount` | 10 |
@@ -249,7 +250,7 @@ Post/Comment CRUD 를 그대로 재사용하되 저장 로직만 이커머스가
 | `BoardActivityLogListener` | 33개 | 명시 등록 | ✅ | `src/Listeners/BoardActivityLogListener.php` |
 | `BoardCommentsCountSyncListener` | 3개 | 명시 등록 | ✅ | `src/Listeners/BoardCommentsCountSyncListener.php` |
 | `BoardNotificationChannelListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/BoardNotificationChannelListener.php` |
-| `BoardNotificationDataListener` | 2개 | 명시 등록 | ✅ | `src/Listeners/BoardNotificationDataListener.php` |
+| `BoardNotificationDataListener` | 3개 | 명시 등록 | ✅ | `src/Listeners/BoardNotificationDataListener.php` |
 | `BoardPostsCountSyncListener` | 3개 | 명시 등록 | ✅ | `src/Listeners/BoardPostsCountSyncListener.php` |
 | `Ckeditor5ReferenceSourcesListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/Ckeditor5ReferenceSourcesListener.php` |
 | `CommentReplySyncListener` | 3개 | 명시 등록 | ✅ | `src/Listeners/CommentReplySyncListener.php` |
@@ -359,6 +360,14 @@ _등록하는 브로드캐스트 채널이 없습니다._
 은 끌 수 없습니다. `post_action`과 `report_action`이 정확히 같은 훅 6개를 구독하는 것은
 중복이 아니라 **관점의 차이**입니다 — 관리자가 직접 블라인드했는지, 신고 처리 결과로
 블라인드됐는지에 따라 원 작성자에게 보이는 문구(원인 설명)가 갈라져야 하기 때문입니다.
+
+관리자 대상 알림의 수신자(`related_users.board_managers`)는 그 게시판의 manager 역할
+(`sirsoft-board.{slug}.manager`) 사용자이고, 아무도 없으면 최고관리자 1명으로 폴백합니다.
+알림 데이터 리스너(`BoardNotificationDataListener`)는 이 조회를 모델 관계로 하지 않고
+Repository 로만 합니다 — 역할 사용자는 `RoleRepositoryInterface::getUsersByIdentifier()`,
+폴백은 `UserRepositoryInterface::findSuperAdmin()`, 신고 접수 알림의 "케이스당 1회" 판정과
+최근 신고 로그는 `ReportRepositoryInterface::countLogsByReportSince()`·`findLatestLogByReport()`
+입니다.
 <!-- @intent END -->
 
 ## 활동 로그 훅

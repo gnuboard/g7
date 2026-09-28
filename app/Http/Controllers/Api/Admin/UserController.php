@@ -31,6 +31,11 @@ use Illuminate\Validation\ValidationException;
  */
 class UserController extends AdminBaseController
 {
+    /**
+     * 회원 도메인 서비스를 주입받습니다.
+     *
+     * @param  UserService  $userService  회원 조회·생성·수정·검색을 담당하는 서비스
+     */
     public function __construct(
         private UserService $userService
     ) {
@@ -258,9 +263,22 @@ class UserController extends AdminBaseController
                 $users = $this->userService->searchByKeyword($validated['keyword']);
             }
 
+            // **이 목록을 만든 키워드를 함께 싣는다** (T2-D1 · #599 3차 실측).
+            //
+            // 회원 자동완성은 글자마다 요청을 내고 응답의 도착 순서는 보장되지 않는다. 화면이
+            // 「지금 입력값」으로 도착한 목록에 도장을 찍으면, 가장 큰 옛 응답(한 글자가 부른
+            // 전체 회원)이 가장 늦게 와서 현재 키워드의 것으로 둔갑한다 — 2026-09-22 실측에서
+            // `MEAS599T-S2` 를 친 화면에 전체 회원 83행이 떴다. 화면이 요청 시점의 값을 되읽을
+            // 방법은 없으므로(`<success>` 안의 `$event.target.value` 는 응답 도착 순간의 DOM 을
+            // 읽는다), 응답이 스스로 자기 키워드를 말하게 한다.
+            //
+            // uuid·id 로 한 건을 집은 조회는 키워드가 없어 `null` 이다 — 빈 문자열로 내려보내면
+            // 「검색어가 비었을 때」와 구분되지 않는다.
             return $this->successWithResource(
                 'user.search_success',
-                UserResource::collection($users)
+                UserResource::collection($users)->additional([
+                    'meta' => ['keyword' => $validated['keyword'] ?? null],
+                ])
             );
         } catch (Exception $e) {
             return $this->error('user.search_failed', 500, $e->getMessage());

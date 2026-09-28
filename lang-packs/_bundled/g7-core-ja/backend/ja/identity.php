@@ -25,6 +25,7 @@ return [
         'target_mismatch' => '認証された対象とリクエストされた対象が一致しません。',
         'purpose_not_supported' => '選択されたプロバイダーはこの目的をサポートしていません。',
         'provider_unavailable' => '本人認証プロバイダーを使用できません。',
+        'challenge_dispatch_failed' => '認証コードを送信できませんでした。しばらくしてからもう一度お試しいただくか、別の認証手段をご利用ください。',
         'generic' => '本人認証に失敗しました。',
         'missing_scope_or_target' => 'ポリシー照会には scope と target の両方が必要です。',
         'admin_policy_has_no_default' => '管理者が直接作成したポリシーには宣言デフォルト値がありません。',

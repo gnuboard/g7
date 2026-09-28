@@ -30,7 +30,7 @@
 
 | 문서 | 제목 | 핵심 내용 |
 |------|------|----------|
-| [activity-log-hooks.md](activity-log-hooks.md) | 활동 로그 훅 레퍼런스 (Activity Log Hooks Reference) | 코어 66훅 + 확장 132훅 = 총 198훅 (확장별 목록은 그 확장이 소유) |
+| [activity-log-hooks.md](activity-log-hooks.md) | 활동 로그 훅 레퍼런스 (Activity Log Hooks Reference) | 코어 70훅 + 확장 167훅 = 총 237훅 (확장별 목록은 그 확장이 소유) |
 | [activity-log.md](activity-log.md) | 활동 로그 시스템 (Activity Log System) | Monolog 기반: Service 훅 → Listener → Log::channel... |
 | [admin-settings-access.md](admin-settings-access.md) | Admin 환경설정 값 접근 (`g7_core_settings` vs `config()`) | 동기화 SSoT: storage/app/settings/*.json → Setting... |
 | [analytics.md](analytics.md) | 방문자 통계 | 세 경로(브라우저 비콘·서버 폴백·내부 검색 훅)가 하나의 적재 파이프라인으로 모인다 |

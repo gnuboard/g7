@@ -25,6 +25,14 @@ export interface SearchableDropdownProps {
     initialText?: string;
     /** 트리거 버튼 텍스트 */
     triggerLabel?: string;
+    /**
+     * 다중 선택에서 둘 이상 골랐을 때의 트리거 문구. `{count}` 가 고른 수로 치환된다.
+     *
+     * 기본값이 영어인 것은 이 컴포넌트가 코어 번역을 읽지 않기 때문이다 — 화면(레이아웃)이
+     * `$t:` 로 넘긴다. 넘기지 않으면 한국어 관리자 화면에 「2 selected」 가 그대로 뜬다
+     * (2026-09-21 브라우저 실측: 회원 배송지 목록의 회원 필터).
+     */
+    selectedCountLabel?: string;
     /** 트리거 버튼 아이콘 */
     triggerIcon?: React.ReactNode;
     /** 비활성화 */

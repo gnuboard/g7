@@ -48,7 +48,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-primary font-medium"
+                                                "className": "text-gray-900 dark:text-white font-medium"
                                             },
                                             "text": "{{orderData?.data?.payment?.vbank_name}}"
                                         }
@@ -73,7 +73,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-primary font-medium font-mono tracking-wide"
+                                                "className": "text-gray-900 dark:text-white font-medium font-mono tracking-wide"
                                             },
                                             "text": "{{orderData?.data?.payment?.vbank_number}}"
                                         }
@@ -98,7 +98,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-primary font-medium"
+                                                "className": "text-gray-900 dark:text-white font-medium"
                                             },
                                             "text": "{{orderData?.data?.payment?.vbank_holder}}"
                                         }
@@ -123,7 +123,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-primary font-medium"
+                                                "className": "text-gray-900 dark:text-white font-medium"
                                             },
                                             "text": "{{orderData?.data?.payment?.due_date_formatted}}"
                                         }
@@ -160,7 +160,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-secondary text-sm"
+                                        "className": "text-gray-600 dark:text-gray-400 text-sm"
                                     },
                                     "text": "$t:sirsoft-pay_nhnkcp.user.receipt_label"
                                 },
@@ -168,7 +168,7 @@
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "flex-center gap-3"
+                                        "className": "flex items-center gap-3"
                                     },
                                     "children": [
                                         {
@@ -201,8 +201,8 @@
                                                                     "target": "local",
                                                                     "_kcpOcReceiptLoading": false,
                                                                     "_kcpOcReceiptLoaded": true,
-                                                                    "_kcpOcReceiptUrl": "{{response.receipt_url}}",
-                                                                    "_kcpOcCashReceiptUrl": "{{response.cash_receipt_url}}"
+                                                                    "_kcpOcReceiptUrl": "{{response.data.receipt_url}}",
+                                                                    "_kcpOcCashReceiptUrl": "{{response.data.cash_receipt_url}}"
                                                                 }
                                                             },
                                                             "onError": {

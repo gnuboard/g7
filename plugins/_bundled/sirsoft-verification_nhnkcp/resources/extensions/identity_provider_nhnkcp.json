@@ -18,7 +18,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "flex-center flex-col text-center space-y-2 pt-2"
+                        "className": "flex items-center flex-col text-center space-y-2 pt-2"
                     },
                     "children": [
                         {
@@ -44,7 +44,7 @@
                             "name": "H3",
                             "if": "{{_global.identityChallenge?.purpose === 'nhnkcp.adult_verification'}}",
                             "props": {
-                                "className": "section-heading-md"
+                                "className": "text-base font-semibold text-gray-900 dark:text-white"
                             },
                             "text": "$t:sirsoft-verification_nhnkcp.modal.adult_title"
                         },
@@ -54,7 +54,7 @@
                             "name": "H3",
                             "if": "{{_global.identityChallenge?.purpose !== 'nhnkcp.adult_verification'}}",
                             "props": {
-                                "className": "section-heading-md"
+                                "className": "text-base font-semibold text-gray-900 dark:text-white"
                             },
                             "text": "$t:sirsoft-verification_nhnkcp.modal.title"
                         },
@@ -64,7 +64,7 @@
                             "name": "P",
                             "if": "{{_global.identityChallenge?.purpose === 'nhnkcp.adult_verification'}}",
                             "props": {
-                                "className": "text-label"
+                                "className": "text-sm text-gray-600 dark:text-gray-400"
                             },
                             "text": "$t:sirsoft-verification_nhnkcp.modal.adult_description"
                         },
@@ -76,12 +76,12 @@
                             "responsive": {
                                 "portable": {
                                     "props": {
-                                        "className": "text-label hidden"
+                                        "className": "text-sm text-gray-600 dark:text-gray-400 hidden"
                                     }
                                 }
                             },
                             "props": {
-                                "className": "text-label"
+                                "className": "text-sm text-gray-600 dark:text-gray-400"
                             },
                             "text": "$t:sirsoft-verification_nhnkcp.modal.description"
                         },
@@ -92,12 +92,12 @@
                             "responsive": {
                                 "portable": {
                                     "props": {
-                                        "className": "text-label"
+                                        "className": "text-sm text-gray-600 dark:text-gray-400"
                                     }
                                 }
                             },
                             "props": {
-                                "className": "text-label hidden"
+                                "className": "text-sm text-gray-600 dark:text-gray-400 hidden"
                             },
                             "text": "$t:sirsoft-verification_nhnkcp.modal.mobile_description"
                         }
@@ -157,7 +157,7 @@
             "name": "Div",
             "if": "{{_global.identityChallenge?.provider_id === 'nhnkcp' && (_global.identityChallenge?.providerInProgress)}}",
             "props": {
-                "className": "flex-center flex-col text-center space-y-4 py-6",
+                "className": "flex items-center flex-col text-center space-y-4 py-6",
                 "role": "status",
                 "aria-live": "polite"
             },
@@ -174,7 +174,7 @@
                     "type": "basic",
                     "name": "P",
                     "props": {
-                        "className": "text-heading"
+                        "className": "text-sm font-medium text-gray-900 dark:text-white"
                     },
                     "text": "$t:sirsoft-verification_nhnkcp.modal.in_progress.title"
                 },

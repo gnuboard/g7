@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Collection;
+use Modules\Sirsoft\Ecommerce\Enums\ClaimTypeEnum;
 
 /**
  * 배송정책 모델
@@ -75,6 +76,31 @@ class ShippingPolicy extends Model
     public function countrySettings(): HasMany
     {
         return $this->hasMany(ShippingPolicyCountrySetting::class);
+    }
+
+    /**
+     * 클레임 회수지 관계
+     *
+     * 배송정책 × 클레임 유형(교환/반품)마다 한 건씩 등록된다.
+     *
+     * @return HasMany 클레임 회수지 모델과의 관계
+     */
+    public function claimAddresses(): HasMany
+    {
+        return $this->hasMany(ShippingPolicyClaimAddress::class, 'shipping_policy_id');
+    }
+
+    /**
+     * 특정 클레임 유형의 회수지를 반환합니다.
+     *
+     * @param  string|ClaimTypeEnum  $claimType  클레임 유형
+     * @return ShippingPolicyClaimAddress|null 회수지 (미등록이면 null)
+     */
+    public function getClaimAddress(string|ClaimTypeEnum $claimType): ?ShippingPolicyClaimAddress
+    {
+        $value = $claimType instanceof ClaimTypeEnum ? $claimType->value : $claimType;
+
+        return $this->claimAddresses->firstWhere('claim_type', ClaimTypeEnum::from($value));
     }
 
     /**

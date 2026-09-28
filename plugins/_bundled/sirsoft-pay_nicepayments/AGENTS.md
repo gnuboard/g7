@@ -71,7 +71,7 @@ API 와 동기화하는 역할만 합니다. 등록은 훅 기반입니다
 처리. 결제 요청 시점에 주문의 `total_tax_amount`/`total_vat_amount`/`total_tax_free_amount`
 가 모두 0이 아니면 과세 필드를 폼에 포함합니다(§4 "과세 처리").
 
-**결제 취소(환불)**: 관리자가 주문 취소(`cancel_pg=true`) → 코어가
+**결제 취소(환불)**: 관리자가 주문 취소 → 코어가 **환불신청서**를 만들고(자동 전이를 켜면 승인·환불완료까지 한 번에) 환불이 집행될 때
 `sirsoft-ecommerce.payment.refund` 필터 발화 → `PaymentRefundListener`(우선순위 10)가 먼저
 나이스페이먼츠 취소 API 호출(전액취소 `isPartial=0`/부분취소 `isPartial=1`) →
 `CancelActivityLogListener`(우선순위 20)가 결과를 활동 로그에 별도 기록. 가상계좌 입금
@@ -89,8 +89,8 @@ API 와 동기화하는 역할만 합니다. 등록은 훅 기반입니다
 | 확장점 | 수 | 상세 |
 |---|---|---|
 | 발행 훅 | 5개 | [발행 훅](docs/extension-points.md#발행-훅) |
-| 구독 훅 | 9개 | [구독 훅](docs/extension-points.md#구독-훅) |
-| 훅 리스너 | 8개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
+| 구독 훅 | 13개 | [구독 훅](docs/extension-points.md#구독-훅) |
+| 훅 리스너 | 10개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
 | 레이아웃 확장 | 5개 | [레이아웃 확장](docs/extension-points.md#레이아웃-확장) |
 | 미들웨어 | 1개 | [미들웨어](docs/extension-points.md#미들웨어) |
 | 브로드캐스트 채널 | 0개 | [브로드캐스트 채널](docs/extension-points.md#브로드캐스트-채널) |
@@ -133,6 +133,8 @@ API 와 동기화하는 역할만 합니다. 등록은 훅 기반입니다
 | 콜백이 넘겨준 `NextAppURL`/`NetCancelURL` 의 도메인을 원문 host 로 대조 (`str_ends_with` 등) | `OutboundUrlValidator::normalizeHost()` 로 정규화한 뒤 대조 (사본 금지 — 코어가 SSoT) | UTS#46 정규화에서 전각 문자가 ASCII 구분자로 바뀐다. `evil.example／.nicepay.co.kr`(U+FF0F)은 접미사 검사를 통과하지만 실제 연결 host 는 `evil.example` 이 되어, 인증 토큰과 MID 가 실린 POST 가 외부로 나간다 |
 | 그 URL 에 userinfo(`user@host`)가 있어도 통과 | userinfo 존재만으로 거부 | `@` 앞부분이 신뢰 도메인처럼 보이게 위장할 수 있다 |
 | 레이아웃·TSX 에서 Lucide·Heroicons 식 아이콘 이름(`x-circle`·`refresh-cw`·`more-horizontal`·`alert-circle`·`chevrons-left`·`arrow-down-tray` 등) | Font Awesome 6.4.0 이름(`circle-xmark`·`arrows-rotate`·`ellipsis`·`circle-exclamation`·`angles-left`·`download`) | 관리자 템플릿 `Icon` 은 이름을 `fa-{이름}` 로만 바꾼다 — FA 에 없는 이름은 오류 없이 **빈칸**으로 그려진다. 가드: `tests/Unit/Extension/FontIconNameTest.php` |
+| 주문목록 「결제수단」 칸을 통째로 교체해 배지를 달기 | `columns._patch`(by: field) → `cellChildren._patch`(by: id) → `children._append` 로 자기 배지만 더한다 | 통째 교체는 함께 설치된 다른 결제 플러그인의 배지를 지운다 — priority 가 가장 높은 하나만 남는다. 호스트가 래퍼(`payment_method_cell`)와 라벨(`payment_method_label`)을 소유하므로 그 `id` 를 앵커로 쓴다(#599) |
+| 화면 확장의 표현식에서 **다른 결제 플러그인이 선언한 데이터소스**를 참조 | 자기 `data_sources[]` 에 선언한 것만 읽는다 | 그 플러그인이 없는 사이트에서 미정의 참조가 되고, 표현식은 오류 없이 조용히 undefined 를 내므로 판정이 어긋나도 드러나지 않는다 |
 <!-- @intent END -->
 
 ## 7. 테스트 실행
@@ -140,10 +142,10 @@ API 와 동기화하는 역할만 합니다. 등록은 훅 기반입니다
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 23개 | `plugins/_bundled/sirsoft-pay_nicepayments/tests` |
-| Vitest | 9개 | `vitest.config.ts` |
+| PHPUnit | 28개 | `plugins/_bundled/sirsoft-pay_nicepayments/tests` |
+| Vitest | 17개 | `vitest.config.ts` |
 | Playwright | 0개 | — |
-| 시나리오 매니페스트 | 1개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 12개 | `tests/scenarios` |
 
 기저 TestCase: `tests/PluginTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 
@@ -174,3 +176,27 @@ cd plugins/_bundled/sirsoft-pay_nicepayments && powershell -Command "npm run tes
 | [docs/api/](docs/api/README.md) | API 레퍼런스 (엔드포인트별 파라미터·응답 필드) | ✅ |
 | [CHANGELOG.md](CHANGELOG.md) | 변경 이력 | ✅ |
 <!-- @generated:docs-index END -->
+
+## 확장 조각의 CSS 클래스 규약
+
+resources/extensions/ 아래 의 조각은 **다른 패키지의 화면 안에서** 그려진다. 그래서 여기 쓰는
+클래스는 그 화면을 소유한 **템플릿의 CSS 에 실재해야** 한다.
+
+두 가지를 지킨다.
+
+1. **템플릿의 의미 클래스를 쓰지 않는다.** `flex-start` · `text-heading` · `section-heading-md`
+   같은 이름의 규칙은 `templates/_bundled/sirsoft-admin_basic/src/styles/main.css` 의 `@layer components` 에만
+   있다. 사용자 템플릿(`sirsoft-basic`)에는 그 규칙이 없어 `display:flex` 같은 기본 배치까지
+   통째로 사라진다. 평범한 Tailwind 유틸로 쓴다(`flex items-start`).
+   슬롯 확장(`extension-point=`)은 한 조각이 관리자·사용자 양쪽에 들어가므로, 어느 한쪽의
+   어휘를 쓰면 **반드시** 다른 쪽이 깨진다.
+
+2. **새 유틸은 safelist 에 실린다.** 두 템플릿 모두 Tailwind 가 레이아웃을 스캔하지 않는다 —
+   `sirsoft-admin_basic` 은 `templates/_bundled/sirsoft-admin_basic/scripts/extract-safelist.cjs` 가(확장 조각 포함) 자동 생성하고,
+   `sirsoft-basic` 은 `templates/_bundled/sirsoft-basic/src/styles/safelist.txt` 를 손으로 단다. 새 클래스를 쓴 뒤에는
+   `php artisan template:build <템플릿>` 로 CSS 를 다시 만든다.
+
+이 규약을 어겨도 **빌드는 성공하고 경고도 없으며 테스트도 전부 초록이다** — 사람이 브라우저를
+열어야만 드러난다(2026-09-21, 마이페이지 「내 정보 수정」의 확장 카드에서 체크박스가 설명 위로
+떨어져 있었다). 그래서 확장 조각이 쓰는 클래스가 대상 템플릿의 CSS 에 실제로 만들어졌는지를
+정적 검사가 대조한다.

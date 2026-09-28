@@ -5,7 +5,7 @@
   <meta title="주문서 작성" description="주문서 작성 페이지 - 상품 확인, 주문자/배송지 정보, 결제 방법 선택 (PC/모바일 반응형)"/>
   <!-- 장바구니에서 선택된 상품 또는 바로구매 상품 정보 + 저장된 promotions 데이터 복원. country_code 쿼리로 배송국가를 전달해 해당 국가 배송비로 미리보기 계산한다(init_actions 시드 _local.checkout.country_code 우선, 미설정 시 동일 fallback 체인). 우편번호는 도서산간/주별 세부 차등에만 관여하며 국가 결정과 무관. -->
   <data-source id="checkoutData" label_key="$t:editor.data_source.checkoutData" type="api" endpoint="/api/modules/sirsoft-ecommerce/checkout" method="GET" :auto_fetch="true" auth_mode="optional" loading_strategy="progressive">
-    <params country_code="{{_local.checkout?.country_code ?? _global.preferredShippingCountry ?? _global.modules?.['sirsoft-ecommerce']?.shipping?.default_country ?? 'KR'}}"/>
+    <params country_code="{{_local.checkout?.country_code ?? _global.preferredShippingCountry ?? _global.modules?.['sirsoft-ecommerce']?.shipping?.default_country ?? 'KR'}}" zipcode="{{_local.checkout?.zipcode ?? ''}}"/>
     <init-local>
       <field name="_merge" value="deep"/>
       <field name="checkout">
@@ -44,6 +44,45 @@
   </data-source>
   <!-- 사용자 저장 배송지 목록 (회원 전용). 비회원/토큰만료 시 401 코어 DEFAULT 핸들러가 navigate({{auth.loginPath}}) 를 발동해 'Failed to execute action: navigate' 가 보고됨 — suppress 로 조용히 무시 -->
   <data-source id="userAddresses" label_key="$t:editor.data_source.userAddresses" type="api" endpoint="/api/modules/sirsoft-ecommerce/user/addresses" method="GET" :auto_fetch="true" auth_mode="required">
+    <success>
+      <!-- 기본 배송지로 배송지 칸을 채워 연다(2026-09-21 요구사항) — 주문할 때마다 같은 주소를 다시
+           고르게 두지 않는다. 목록은 기본 배송지가 맨 앞이라 첫 줄을 집는다.
+           칩을 누른 경로와 **같은 모양**으로 옮겨 담는다(저장 형식 UserAddress → 주문서 형식):
+           해외 주소는 도시·주·우편번호가 `intl_*` 로 갈리므로 한 칸씩 옮겨야 한다.
+           마지막에 주문서를 다시 받는 것은 배송비 때문이다 — 우편번호·국가가 정해졌으니 그 값으로
+           계산된 금액이어야 주문 확정 때의 재계산과 미리보기가 갈라지지 않는다. refetch 는 «현재»
+           로컬 상태를 읽으므로 setState 가 같은 sequence 앞에 있어야 한다.
+           채움은 **화면 진입마다 한 번**이다 — 배송지 관리 창이 주소를 추가·수정하고 목록을 다시 받을 때마다
+           이 onSuccess 가 다시 돈다. 그때 또 채우면 구매자가 고른 배송지를 기본 배송지로 덮어 다른 주소로
+           배송될 수 있다. onSuccess 컨텍스트에는 _local 이 없어 표현식으로 판정할 수 없으므로 핸들러
+           (markLocalOnce)가 현재 로컬 상태로 첫 회만 참을 돌려준다(플래그는 아래 initLocal 이 진입마다 거짓으로 세운다). -->
+      <sequence if="{{(response.data.data.addresses?.data ?? []).length > 0}}">
+        <action handler="sirsoft-basic.markLocalOnce" key="checkoutDefaultAddressPrefilled"/>
+        <conditions>
+          <when if="{{$prev === true}}">
+            <set-state target="local" selectedAddressId="{{(response.data.data.addresses.data)[0].id}}" selectedAddressObj="{{(response.data.data.addresses.data)[0]}}"/>
+            <set-state target="local">
+              <field name="shipping">
+                <field name="recipient_name" value="{{(response.data.data.addresses.data)[0].recipient_name}}"/>
+                <field name="recipient_phone" value="{{(response.data.data.addresses.data)[0].recipient_phone}}"/>
+                <field name="country_code" value="{{(response.data.data.addresses.data)[0].country_code ?? 'KR'}}"/>
+                <field name="zipcode" value="{{(response.data.data.addresses.data)[0].zipcode ?? ''}}"/>
+                <field name="address" value="{{(response.data.data.addresses.data)[0].address ?? ''}}"/>
+                <field name="address_detail" value="{{(response.data.data.addresses.data)[0].address_detail ?? ''}}"/>
+                <field name="region" value="{{(response.data.data.addresses.data)[0].region ?? ''}}"/>
+                <field name="address_line_1" value="{{(response.data.data.addresses.data)[0].address_line_1 ?? ''}}"/>
+                <field name="address_line_2" value="{{(response.data.data.addresses.data)[0].address_line_2 ?? ''}}"/>
+                <field name="intl_city" value="{{(response.data.data.addresses.data)[0].city ?? ''}}"/>
+                <field name="intl_state" value="{{(response.data.data.addresses.data)[0].state ?? ''}}"/>
+                <field name="intl_postal_code" value="{{(response.data.data.addresses.data)[0].postal_code ?? ''}}"/>
+              </field>
+            </set-state>
+            <set-state target="local" checkout.zipcode="{{(response.data.data.addresses.data)[0].zipcode ?? ''}}" checkout.country_code="{{(response.data.data.addresses.data)[0].country_code ?? 'KR'}}"/>
+            <refetch-data-source dataSourceId="checkoutData"/>
+          </when>
+        </conditions>
+      </sequence>
+    </success>
     <fallback>
       <field name="data">
         <field name="addresses">
@@ -82,8 +121,10 @@
     <field name="selectedDbank" :value="null"/>
     <field name="addressModalMode" value="list"/>
     <field name="selectedAddressId" :value="null"/>
+    <field name="checkoutDefaultAddressPrefilled" :value="false"/>
     <field name="selectedAddressObj" :value="null"/>
     <field name="saveShippingAddress" :value="false"/>
+    <field name="updateSelectedAddress" :value="true"/>
     <field name="editingAddress" :value="null"/>
     <field name="unavailableModal">
       <field name="visible" :value="false"/>
@@ -93,6 +134,7 @@
   </init-local>
   <computed name="comment">orderer 기본값 - _local.orderer가 없으면 _global.currentUser에서 가져옴 (새로고침 시 타이밍 문제 해결) / 서버로 보낼 코어 결제수단(selectedCorePaymentMethod) — 플러그인이 더한 결제수단(toss_* 등)은 코어 PaymentMethodEnum 이 거부하므로, 고른 결제수단의 core_payment_method(모듈이 병합 때 보존한다)로 옮겨 보낸다. 선언이 없는 것(dbank·KG 등)은 원래 id 를 그대로 쓴다.</computed>
   <computed name="ordererDefaults">{{ { name: _local.orderer?.name || _global.currentUser?.name || '', phone: _local.orderer?.phone || _global.currentUser?.phone || '', email: _local.orderer?.email || _global.currentUser?.email || '' } }}</computed>
+  <computed name="shippingAddressDirty">{{!!_local.selectedAddressId &amp;&amp; [['recipient_name', 'recipient_name'], ['recipient_phone', 'recipient_phone'], ['zipcode', 'zipcode'], ['address', 'address'], ['address_detail', 'address_detail'], ['address_line_1', 'address_line_1'], ['address_line_2', 'address_line_2'], ['intl_city', 'city'], ['intl_state', 'state'], ['intl_postal_code', 'postal_code']].some(pair => ((_local.shipping ?? {})[pair[0]] ?? '') !== ((_local.selectedAddressObj ?? {})[pair[1]] ?? ''))}}</computed>
   <computed name="selectedPaymentMethod">{{_local.paymentMethod ?? (paymentSettings.data?.order_settings?.payment_methods ?? []).find(m => m.is_active)?.id ?? 'dbank'}}</computed>
   <computed name="selectedCorePaymentMethod">{{(paymentSettings.data?.order_settings?.payment_methods ?? []).find(m => m.id === (_local.paymentMethod ?? (paymentSettings.data?.order_settings?.payment_methods ?? []).find(a => a.is_active)?.id ?? 'dbank'))?.core_payment_method ?? _local.paymentMethod ?? (paymentSettings.data?.order_settings?.payment_methods ?? []).find(a => a.is_active)?.id ?? 'dbank'}}</computed>
   <permissions/>

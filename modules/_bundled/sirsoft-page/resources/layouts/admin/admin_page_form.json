@@ -31,6 +31,19 @@
                 "data": null
             },
             "comment": "수정 모드에서만 기존 값을 받아 폼 초기값으로 넣는다(initLocal=form). 화면에 다시 들어올 때마다 새로 받으므로(refetchOnMount) 다른 창에서 바뀐 내용을 덮어쓰지 않는다"
+        },
+        {
+            "id": "attachmentSettings",
+            "label_key": "$t:sirsoft-page.editor.data_source.attachmentSettings",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-page/admin/attachments/settings",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "fallback": {
+                "data": null
+            },
+            "comment": "첨부 상한·허용 형식. 신규 작성 화면에는 읽을 상세가 없어 이 조회가 유일한 출처다 — 화면이 리터럴로 적으면 운영자가 설정을 바꿔도 화면만 옛 값으로 남고, 서버가 거절할 때까지 아무 안내가 없다."
         }
     ],
     "computed": {
@@ -709,6 +722,7 @@
                                 ]
                             },
                             {
+                                "comment": "한도는 서버 공개 설정(publicLimits)을 그대로 따른다. 개수 상한이 없으면(max_count=null, 제한 없음)\n             maxFiles 를 비워(undefined) 컴포넌트 기본값을 쓰게 한다 — `?? 5` 로 받으면 \"제한 없음\" 이 5개 상한이 된다.\n             허용 형식이 비면(accept='') 빈 accept 가 파일 선택창에서 모든 형식을 열므로 기본 목록으로 떨어뜨린다(`||`).",
                                 "id": "file_uploader",
                                 "type": "composite",
                                 "name": "FileUploader",
@@ -752,9 +766,9 @@
                                 ],
                                 "props": {
                                     "collection": "page_attachments",
-                                    "maxFiles": 5,
-                                    "maxSize": 10,
-                                    "accept": ".jpg,.jpeg,.png,.gif,.webp,.pdf,.zip",
+                                    "maxFiles": "{{attachmentSettings?.data?.max_count ?? undefined}}",
+                                    "maxSize": "{{attachmentSettings?.data?.max_size_mb ?? 10}}",
+                                    "accept": "{{attachmentSettings?.data?.accept || '.jpg,.jpeg,.png,.gif,.webp,.pdf,.zip'}}",
                                     "initialFiles": "{{_local.form?.attachments ?? []}}",
                                     "autoUpload": false,
                                     "uploadTriggerEvent": "upload:page_attachments",

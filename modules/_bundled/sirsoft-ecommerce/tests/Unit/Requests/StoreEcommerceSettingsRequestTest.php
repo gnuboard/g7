@@ -1299,4 +1299,147 @@ class StoreEcommerceSettingsRequestTest extends ModuleTestCase
         $this->assertArrayHasKey('mileage', $settings, 'validatedSettings 에 mileage 카테고리가 포함되어야 합니다');
         $this->assertArrayNotHasKey('_tab', $settings, '_tab 은 제외되어야 합니다');
     }
+
+    // ========================================================================
+    // shipping.carriers / shipping.types 활성 플래그 — 키 부재 거절
+    // ========================================================================
+
+    /**
+     * 배송사·배송유형 행의 `is_active` 는 키 부재도 거절한다.
+     *
+     * 동기화가 `?? true` 라 키가 빠지면 운영자가 내려 둔 항목이 켜진 채 되살아난다 — 클레임 사유
+     * 카탈로그와 같은 강도(`required_with`)로 맞춘다 (S10 10차 확정).
+     */
+    public function test_carrier_and_type_is_active_key_is_required_when_rows_are_sent(): void
+    {
+        $validator = $this->validate([
+            '_tab' => 'shipping',
+            'shipping' => [
+                'carriers' => [
+                    ['code' => 'cj', 'name' => ['ko' => 'CJ대한통운'], 'type' => 'domestic'],
+                ],
+                'types' => [
+                    ['code' => 'parcel', 'name' => ['ko' => '택배'], 'category' => 'domestic'],
+                ],
+            ],
+        ]);
+
+        $this->assertTrue($validator->errors()->has('shipping.carriers.0.is_active'), 'carriers 행에 is_active 가 없으면 422 여야 합니다');
+        $this->assertTrue($validator->errors()->has('shipping.types.0.is_active'), 'types 행에 is_active 가 없으면 422 여야 합니다');
+    }
+
+    public function test_carrier_and_type_rows_with_unknown_id_are_rejected(): void
+    {
+        // `id` 는 이름의 현재 로케일 필수 면제(기존 행) 판정 근거다. 실재하지 않는 id 를 통과시키면
+        // 면제만 받고 sync 는 신규 create 로 흘러 이름 없는 행이 생긴다 — 클레임 사유와 같은 강도.
+        $validator = $this->validate([
+            '_tab' => 'shipping',
+            'shipping' => [
+                'carriers' => [
+                    ['id' => 999999, 'code' => 'ghost', 'name' => ['en' => 'Ghost'], 'type' => 'domestic', 'is_active' => true],
+                ],
+                'types' => [
+                    ['id' => 999999, 'code' => 'ghost', 'name' => ['en' => 'Ghost'], 'category' => 'domestic', 'is_active' => true],
+                ],
+            ],
+        ]);
+
+        $this->assertTrue($validator->errors()->has('shipping.carriers.0.id'), '실재하지 않는 배송사 id 는 422 여야 합니다');
+        $this->assertTrue($validator->errors()->has('shipping.types.0.id'), '실재하지 않는 배송유형 id 는 422 여야 합니다');
+    }
+
+    /**
+     * 완료 처리 기본값의 하위 키 목록이 defaults.json 과 같은 집합인지 검증합니다.
+     *
+     * `required_array_keys:` 와 하위 boolean 규칙은 키를 문자열로 열거한다. 세 번째 완료
+     * 기본값이 `defaults.json` 에 생겨도 그 열거를 함께 고치지 않으면, 그 키는 규칙이 없어
+     * `validated()` 에서 조용히 탈락하고 소비 쪽 `?? true` 를 만난다 — 운영자가 끈 값이
+     * 켜진 채로 실행된다. 열거를 손으로 맞추는 대신 정본에서 파생해 대조한다.
+     */
+    public function test_complete_defaults_rule_keys_match_defaults_json(): void
+    {
+        $defaults = json_decode(
+            (string) file_get_contents(__DIR__.'/../../../config/settings/defaults.json'),
+            true
+        );
+        $expected = array_keys($defaults['defaults']['claim']['complete_defaults'] ?? []);
+
+        $this->assertNotEmpty($expected, 'defaults.json 의 claim.complete_defaults 를 읽지 못했습니다');
+
+        $rules = (new StoreEcommerceSettingsRequest)->rules();
+
+        // ① required_array_keys 열거가 정본과 같은 집합인가
+        $parent = $rules['claim.complete_defaults'] ?? [];
+        $declared = [];
+        foreach ($parent as $rule) {
+            if (is_string($rule) && str_starts_with($rule, 'required_array_keys:')) {
+                $declared = explode(',', substr($rule, strlen('required_array_keys:')));
+            }
+        }
+        sort($declared);
+        $sortedExpected = $expected;
+        sort($sortedExpected);
+        $this->assertSame(
+            $sortedExpected,
+            $declared,
+            'required_array_keys 의 열거가 defaults.json 의 완료 기본값 키 집합과 다릅니다'
+        );
+
+        // ② 하위 키마다 boolean 규칙이 있는가 — 규칙 배열의 **존재**만 보면 `nullable|string`
+        //    으로 바꿔도 초록이다. 이 케이스가 약속한 것은 타입 게이트이므로 boolean 을 본다.
+        foreach ($expected as $key) {
+            $this->assertArrayHasKey(
+                "claim.complete_defaults.{$key}",
+                $rules,
+                "완료 기본값 {$key} 에 검증 규칙이 없습니다 — validated() 에서 탈락해 소비 쪽 기본값으로 되살아납니다"
+            );
+
+            $this->assertContains(
+                'boolean',
+                (array) $rules["claim.complete_defaults.{$key}"],
+                "완료 기본값 {$key} 의 규칙에 boolean 이 없습니다 — 문자열 'false' 가 참으로 저장됩니다"
+            );
+        }
+    }
+
+    /**
+     * `claim` 스칼라 축 **전부**가 서버 검증 규칙을 갖는지 검증합니다.
+     *
+     * 위 케이스가 닫은 것은 `complete_defaults` 의 **하위 키**뿐이고, 그 부모인 스칼라 축은
+     * 규칙이 손열거인 채 남아 있었다. 그래서 `defaults.json` 에 축이 하나 늘면 화면 통로
+     * 검사(`adminEcommerceSettingsClaim.test.ts`)는 한 번 붉어지지만, 개발자가 화면 통로를
+     * 붙이는 순간 초록으로 돌아오고 **서버 규칙 부재는 아무도 보지 않는다**. 그때 그 축은
+     * `validated()` 에서 탈락하는데 설정 저장이 카테고리 파일 통째 교체라, 운영자가 값을
+     * 넣어도 저장할 때마다 지워져 기본값으로 되살아난다 — 응답은 200 이고 로그도 없다.
+     *
+     * 되돌리면(규칙 한 줄 삭제) 붉어진다.
+     */
+    public function test_every_claim_scalar_axis_in_defaults_json_has_a_validation_rule(): void
+    {
+        $defaults = json_decode(
+            (string) file_get_contents(__DIR__.'/../../../config/settings/defaults.json'),
+            true
+        );
+        $claim = $defaults['defaults']['claim'] ?? [];
+
+        $this->assertNotEmpty($claim, 'defaults.json 의 defaults.claim 을 읽지 못했습니다');
+
+        $rules = (new StoreEcommerceSettingsRequest)->rules();
+
+        // 사유 카탈로그 3종은 DB 관리 대상이라 defaults.json 에 없다 — 여기 있는 것은 전부
+        // 운영자가 설정 탭에서 편집하는 축이므로 예외 없이 규칙을 가져야 한다.
+        $missing = [];
+        foreach (array_keys($claim) as $axis) {
+            if (! array_key_exists("claim.{$axis}", $rules)) {
+                $missing[] = $axis;
+            }
+        }
+
+        $this->assertSame(
+            [],
+            $missing,
+            'defaults.json 의 claim 축인데 검증 규칙이 없습니다: '.implode(', ', $missing)
+                .' — validated() 에서 탈락해 저장할 때마다 지워집니다'
+        );
+    }
 }

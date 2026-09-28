@@ -13,7 +13,7 @@
 | 스타일 시스템 | `tailwind` |
 | 다크 모드 전략 | `ancestor-class` |
 
-> 분할 13블록 · 팔레트 45 · 스타일 컨트롤 175 · 편집 역량 51 · 중첩 컨테이너 14 · 프리뷰 샘플 63 · 엔드포인트 샘플 1 · 페이지 상태 44 · 액션 레시피 20
+> 분할 13블록 · 팔레트 45 · 스타일 컨트롤 175 · 편집 역량 51 · 중첩 컨테이너 14 · 프리뷰 샘플 66 · 엔드포인트 샘플 1 · 페이지 상태 44 · 액션 레시피 20
 <!-- @generated:editor-spec-summary END -->
 
 <!-- @intent START -->
@@ -36,7 +36,7 @@
 | `componentCapabilities` | 컴포넌트별 편집 역량(어떤 속성을 편집기가 다루는가) | 51 | `editor-spec/componentCapabilities.json` |
 | `nesting.draggable` | 캔버스에서 끌어 옮길 수 있는 컴포넌트 | 45 | `editor-spec/nesting.json` |
 | `nesting.containers` | 자식을 담을 수 있는 컴포넌트와 그 허용 규칙 | 14 | `editor-spec/nesting.json` |
-| `sampleData.byDataSourceId` | 레이아웃 `data_sources` ID 로 붙는 프리뷰 응답 | 63 | `editor-spec/sampleData.json` |
+| `sampleData.byDataSourceId` | 레이아웃 `data_sources` ID 로 붙는 프리뷰 응답 | 66 | `editor-spec/sampleData.json` |
 | `sampleData.byEndpointPattern` | 엔드포인트 패턴으로 붙는 프리뷰 응답 | 1 | `editor-spec/sampleData.json` |
 | `sampleGlobal` | `_global.*` 프리뷰 baseline 시드 | 7 | `editor-spec/sampleGlobal.json` |
 | `states.groups` | 상태 변종을 적용할 범위(라우트·베이스 레이아웃) | 44 | `editor-spec/states.json` |
@@ -85,7 +85,7 @@
 <!-- @generated:editor-spec-samples START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 자리 | 역할 | 개수 | ID |
 |---|---|---|---|
-| `sampleData.byDataSourceId` | 레이아웃 `data_sources` ID 로 붙는 프리뷰 응답 | 63 | `scrap` · `user` · `userNotifications` · `searchResults` · `profile` · `userProfile` · `addresses` · `userAddresses` · `boardList` · `boards` · `home_boards` · `cart` … 외 51개 |
+| `sampleData.byDataSourceId` | 레이아웃 `data_sources` ID 로 붙는 프리뷰 응답 | 66 | `scrap` · `user` · `userNotifications` · `searchResults` · `profile` · `userProfile` · `addresses` · `userAddresses` · `boardList` · `boards` · `home_boards` · `cart` … 외 54개 |
 | `sampleData.byEndpointPattern` | 엔드포인트 패턴으로 붙는 프리뷰 응답 | 1 | `/api/modules/sirsoft-page/pages/*` |
 | `states.groups` | 상태 변종을 적용할 범위(라우트·베이스 레이아웃) | 44 | `/login` · `/search` · `/mypage/notifications` · `/mypage/profile/edit` · `/forgot-password` · `/reset-password` · `/identity/challenge` · `/mypage/change-password` · `/mypage/wishlist` · `/mypage/addresses` · `/users/:userId` · `/users/:userId/posts` … 외 32개 |
 
@@ -93,10 +93,12 @@ _이 확장 레이아웃의 `data_source` 는 전부 프리뷰 샘플이 붙습�
 <!-- @generated:editor-spec-samples END -->
 
 <!-- @intent START -->
-`byDataSourceId` 59종이 사용자 화면 전반을 덮고, `byEndpointPattern` 1종이
+`byDataSourceId` 62종이 사용자 화면 전반을 덮고, `byEndpointPattern` 1종이
 `sirsoft-page` 의 공개 페이지를 덮습니다. 다른 확장 소유 경로를 이 템플릿이 덮는 것은
 그 화면을 **렌더하는 쪽이 템플릿**이기 때문입니다 — 페이지 모듈은 데이터를 주고, 그리는
 것은 템플릿입니다.
+
+클레임 3종(`claims` · `claim` · `claimable`)은 화면이 먼저 서고 표본이 늦게 붙은 자리입니다 — 그동안 편집기 캔버스에서 취소·반품·교환 화면만 빈 껍데기로 그려졌고, 실제 화면은 정상이라 오류도 경고도 남지 않았습니다. 새 화면을 세울 때 표본을 같은 작업에서 함께 넣어야 하는 이유입니다.
 
 `states.groups` 17종은 로그인·검색·마이페이지처럼 로그인 여부와 데이터 유무로 화면이
 갈리는 자리입니다. 사용자 화면은 "비어 있는 상태" 가 관리자 화면보다 흔하므로, 새 화면을

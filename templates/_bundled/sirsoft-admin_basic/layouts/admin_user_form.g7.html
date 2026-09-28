@@ -108,6 +108,10 @@
     <wait-for>user</wait-for>
     <wait-for>roles</wait-for>
   </transition-overlay>
+  <init>
+    <!-- 생성 모드: 회원 수정 화면에서 SPA 로 넘어오면 같은 레이아웃(admin_user_form)이라 엔진이 `_local` 을 비우지 않아 직전 회원의 form(이메일·이름 등)이 등록 폼에 남는다. form=null 로 지운다(깊은 병합이 객체 대신 null 로 덮어써 완전 삭제). 이 레이아웃은 `state.form` 기본값이 없으므로 다시 쓸 기본값도 없다. -->
+    <set-state if="{{!route?.id}}" target="local" :form="null" :hasChanges="false"/>
+  </init>
   <slot name="content">
     <div data-ref="user_form_content" data-key="form" class="admin-page-content-responsive">
       <page-header data-ref="page_header" title="{{route?.id ? '$t:admin.users.form.page_title_edit' : '$t:admin.users.form.page_title_create'}}" description="{{route?.id ? '$t:admin.users.form.page_description_edit|name=' + (user?.data?.name ?? '') + '|email=' + (user?.data?.email ?? '') : '$t:admin.users.form.page_description_create'}}"/>
@@ -119,6 +123,8 @@
             <item id="location_info" label="$t:admin.users.detail.tabs.location_info"/>
             <item id="profile_memo" label="$t:admin.users.detail.tabs.profile_memo"/>
             <item id="activity_info" label="$t:admin.users.detail.tabs.activity_info" if="{{route?.id}}"/>
+            <item id="consent_info" label="$t:admin.users.detail.tabs.consent_info" if="{{route?.id}}"/>
+            <item id="notifications_info" label="$t:admin.users.detail.tabs.notifications_info" if="{{route?.id}}"/>
           </prop>
           <on type="change">
             <!-- 탭 전환은 화면만 바꾼다 — 입력값은 `_local.form` 에 그대로 남으므로 탭을 옮겨 다녀도
@@ -156,15 +162,10 @@
               <label class="text-label-subtle block font-medium mb-1">UUID</label>
               <div class="text-primary text-sm font-mono bg-gray-50 dark:bg-gray-700 px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600">{{user?.data?.uuid ?? '-'}}</div>
             </div>
+            <!-- 이메일은 **연락처** 칸에 있다 — 상세가 그 자리에 두고, 두 화면이 어긋나면
+                 상세에서 본 값을 수정 화면에서 다시 찾아야 한다. 수정 모드에서는 계정 식별자라
+                 잠긴다(종전과 같다). -->
             <div class="grid-2col-responsive">
-              <div data-ref="field_email_top">
-                <label class="form-label">
-                  <span>$t:admin.users.form.fields.email</span>
-                  <span class="text-red-500 ml-1">*</span>
-                </label>
-                <input type="email" name="email" placeholder="$t:admin.users.form.fields.email" disabled="{{!!route?.id}}" class=""/>
-                <span data-if="{{_local.errors?.email}}" class="text-red-500 text-xs mt-1">{{_local.errors?.email?.[0] ?? ''}}</span>
-              </div>
               <div data-ref="field_name">
                 <label class="form-label">
                   <span>$t:admin.users.form.fields.name</span>
@@ -173,26 +174,9 @@
                 <input type="text" name="name" placeholder="$t:admin.users.form.fields.name" class=""/>
                 <span data-if="{{_local.errors?.name}}" class="text-red-500 text-xs mt-1">{{_local.errors?.name?.[0] ?? ''}}</span>
               </div>
-            </div>
-            <div data-ref="field_nickname">
-              <label class="form-label">$t:admin.users.form.fields.nickname</label>
-              <input type="text" name="nickname" placeholder="$t:admin.users.form.fields.nickname" class=""/>
-            </div>
-            <div class="grid-2col-responsive">
-              <div data-ref="field_password">
-                <label class="form-label">
-                  <span>$t:admin.users.form.fields.password</span>
-                  <span data-if="{{!route?.id}}" class="text-red-500 ml-1">*</span>
-                </label>
-                <input type="password" name="password" placeholder="{{route?.id ? '$t:admin.users.form.fields.password_hint' : '$t:admin.users.form.fields.password'}}" class=""/>
-                <span data-if="{{_local.errors?.password}}" class="text-red-500 text-xs mt-1">{{_local.errors?.password?.[0] ?? ''}}</span>
-              </div>
-              <div data-ref="field_password_confirmation">
-                <label class="form-label">
-                  <span>$t:admin.users.form.fields.password_confirmation</span>
-                  <span data-if="{{!route?.id}}" class="text-red-500 ml-1">*</span>
-                </label>
-                <input type="password" name="password_confirmation" placeholder="$t:admin.users.form.fields.password_confirmation" class=""/>
+              <div data-ref="field_nickname">
+                <label class="form-label">$t:admin.users.form.fields.nickname</label>
+                <input type="text" name="nickname" placeholder="$t:admin.users.form.fields.nickname" class=""/>
               </div>
             </div>
             <div data-ref="field_roles">
@@ -223,11 +207,52 @@
                 </on>
               </select>
             </div>
+            <!-- 이메일 인증 여부 — 읽기 전용이다. 이 값은 회원이 받은 메일의 링크를 눌러야 서는
+                 것이라 운영자가 「인증됨」 으로 바꿔 줄 성질이 아니다. 그래도 상세와 같은 자리에
+                 세워, 상세에서 「미인증」 을 본 운영자가 수정 화면에서 그 칸을 찾아 헤매지 않게 한다. -->
+            <div data-ref="field_email_verified">
+              <label class="form-label">$t:admin.users.detail.email_verification</label>
+              <div class="flex-center gap-1">
+                <icon data-if="{{user?.data?.email_verified_at}}" name="check-circle" class="text-base text-green-500"/>
+                <span class="text-primary text-sm">{{user?.data?.email_verified_at ? '$t:admin.users.form.fields.email_verified' : '$t:admin.users.detail.not_verified'}}</span>
+              </div>
+            </div>
+            <div class="grid-2col-responsive" data-ref="field_password_group">
+              <div data-ref="field_password">
+                <label class="form-label">
+                  <span>$t:admin.users.form.fields.password</span>
+                  <span data-if="{{!route?.id}}" class="text-red-500 ml-1">*</span>
+                </label>
+                <input type="password" name="password" placeholder="{{route?.id ? '$t:admin.users.form.fields.password_hint' : '$t:admin.users.form.fields.password'}}" class=""/>
+                <span data-if="{{_local.errors?.password}}" class="text-red-500 text-xs mt-1">{{_local.errors?.password?.[0] ?? ''}}</span>
+              </div>
+              <div data-ref="field_password_confirmation">
+                <label class="form-label">
+                  <span>$t:admin.users.form.fields.password_confirmation</span>
+                  <span data-if="{{!route?.id}}" class="text-red-500 ml-1">*</span>
+                </label>
+                <input type="password" name="password_confirmation" placeholder="$t:admin.users.form.fields.password_confirmation" class=""/>
+              </div>
+            </div>
           </div>
         </div>
         <div data-ref="section_contact_info" id="contact_info" class="admin-card">
           <h3 class="card-title">$t:admin.users.form.sections.contact_info</h3>
           <div class="row-stack">
+            <div class="grid-2col-responsive">
+              <div data-ref="field_email">
+                <label class="form-label">
+                  <span>$t:admin.users.form.fields.email</span>
+                  <span class="text-red-500 ml-1">*</span>
+                </label>
+                <input type="email" name="email" placeholder="$t:admin.users.form.fields.email" disabled="{{!!route?.id}}" class=""/>
+                <span data-if="{{_local.errors?.email}}" class="text-red-500 text-xs mt-1">{{_local.errors?.email?.[0] ?? ''}}</span>
+              </div>
+              <div data-ref="field_homepage">
+                <label class="form-label">$t:admin.users.form.fields.homepage</label>
+                <input type="url" name="homepage" placeholder="https://" class=""/>
+              </div>
+            </div>
             <div class="grid-2col-responsive">
               <div data-ref="field_mobile">
                 <label class="form-label">$t:admin.users.form.fields.mobile</label>
@@ -238,15 +263,31 @@
                 <input type="tel" name="phone" placeholder="$t:admin.users.form.fields.phone" class=""/>
               </div>
             </div>
-            <div data-ref="field_homepage">
-              <label class="form-label">$t:admin.users.form.fields.homepage</label>
-              <input type="url" name="homepage" placeholder="https://" class=""/>
-            </div>
           </div>
         </div>
         <div data-ref="section_location_info" id="location_info" class="admin-card">
           <h3 class="card-title">$t:admin.users.form.sections.location_info</h3>
           <div class="row-stack">
+            <div data-ref="field_country" :data-if="false">
+              <label class="form-label">$t:admin.users.form.fields.country</label>
+              <searchable-dropdown options="{{_defines?.countryList?.map(c => ({ value: c.code, label: c.name })) ?? []}}" value="{{_local.form?.country ?? ''}}" triggerLabel="$t:admin.users.form.fields.country_select" searchPlaceholder="$t:admin.users.form.fields.country_search" noResultsText="$t:common.no_results" class="w-full">
+                <on type="change" event="onChange">
+                  <!-- 국가 선택. 이 칸은 지금 꺼져 있다(감싼 블록의 `:data-if="false"`) — 배선은
+                       살려 둔 채 노출만 막아 둔 자리라, 되살릴 때 여기를 다시 짤 필요는 없다. -->
+                  <set-state target="local" form.country="{{$args[0]}}"/>
+                </on>
+              </searchable-dropdown>
+            </div>
+            <div class="grid-2col-responsive">
+              <div data-ref="field_language">
+                <label class="form-label">$t:admin.users.form.fields.language</label>
+                <select name="language" class="w-full" defaultValue="{{$locale}}" options="{{($locales ?? []).map(l => ({ value: l, label: _global.appConfig?.localeNames?.[l] ?? l }))}}"/>
+              </div>
+              <div data-ref="field_timezone">
+                <label class="form-label">$t:admin.users.form.fields.timezone</label>
+                <select name="timezone" class="w-full" defaultValue="Asia/Seoul" options="{{_global.appConfig?.supportedTimezones ?? []}}" :searchable="true" searchPlaceholder="{{$t('common.search')}}"/>
+              </div>
+            </div>
             <div data-ref="field_address" class="space-y-2">
               <label class="form-label">$t:admin.users.form.fields.address</label>
               <!-- 우편번호 + 주소 검색 버튼 -->
@@ -270,26 +311,6 @@
               <!-- 상세 주소 -->
               <input type="text" name="address_detail" placeholder="$t:admin.users.form.fields.address_detail" class=""/>
             </div>
-            <div data-ref="field_country" :data-if="false">
-              <label class="form-label">$t:admin.users.form.fields.country</label>
-              <searchable-dropdown options="{{_defines?.countryList?.map(c => ({ value: c.code, label: c.name })) ?? []}}" value="{{_local.form?.country ?? ''}}" triggerLabel="$t:admin.users.form.fields.country_select" searchPlaceholder="$t:admin.users.form.fields.country_search" noResultsText="$t:common.no_results" class="w-full">
-                <on type="change" event="onChange">
-                  <!-- 국가 선택. 이 칸은 지금 꺼져 있다(감싼 블록의 `:data-if="false"`) — 배선은
-                       살려 둔 채 노출만 막아 둔 자리라, 되살릴 때 여기를 다시 짤 필요는 없다. -->
-                  <set-state target="local" form.country="{{$args[0]}}"/>
-                </on>
-              </searchable-dropdown>
-            </div>
-            <div class="grid-2col-responsive">
-              <div data-ref="field_language">
-                <label class="form-label">$t:admin.users.form.fields.language</label>
-                <select name="language" class="w-full" defaultValue="{{$locale}}" options="{{($locales ?? []).map(l => ({ value: l, label: _global.appConfig?.localeNames?.[l] ?? l }))}}"/>
-              </div>
-              <div data-ref="field_timezone">
-                <label class="form-label">$t:admin.users.form.fields.timezone</label>
-                <select name="timezone" class="w-full" defaultValue="Asia/Seoul" options="{{_global.appConfig?.supportedTimezones ?? []}}" :searchable="true" searchPlaceholder="{{$t('common.search')}}"/>
-              </div>
-            </div>
           </div>
         </div>
         <div data-ref="section_profile_memo" id="profile_memo" class="admin-card">
@@ -312,7 +333,13 @@
         <div data-ref="section_activity_info" data-if="{{route?.id}}" id="activity_info" class="admin-card">
           <h3 class="card-title">$t:admin.users.form.sections.activity_info</h3>
           <div class="row-stack">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <!-- 일곱 항목 모두 **시스템이 적는 기록**이라 잠근 채로 둔다. 종전에는 가입일·마지막
+                 로그인·IP 셋만 있어, 상세에서 본 잠금 상태·탈퇴일시·차단일시가 수정 화면에서
+                 사라졌다(요구사항 2026-09-21). 휴면 전환일도 상세에 있는 기록이라 같은 이유로
+                 함께 세운다. 잠금은 상세 헤더의 「잠금 해제」 버튼이 푼다.
+                 3열 고정은 규약(§6-0)대로 `md:` 대신 responsive 로 가른다. -->
+            <div class="grid grid-cols-3 gap-4">
+              <responsive on="portable" class="grid grid-cols-1 gap-4"/>
               <div data-ref="field_created_at">
                 <label class="form-label">$t:admin.users.form.fields.created_at</label>
                 <input type="text" value="{{user?.data?.created_at ?? ''}}" :disabled="true" class="text-gray-500 dark:text-gray-400"/>
@@ -321,10 +348,78 @@
                 <label class="form-label">$t:admin.users.form.fields.last_login_at</label>
                 <input type="text" value="{{user?.data?.last_login_at ?? ''}}" :disabled="true" class="text-gray-500 dark:text-gray-400"/>
               </div>
+              <div data-ref="field_lock_status">
+                <label class="form-label">$t:admin.users.form.fields.lock_status</label>
+                <div data-if="{{user?.data?.locked_permanently === true}}" class="text-error-soft text-sm py-2">$t:admin.users.detail.locked_permanently_value</div>
+                <div data-if="{{user?.data?.locked_permanently !== true &amp;&amp; user?.data?.is_locked === true}}" class="text-error-soft text-sm py-2">$t:admin.users.detail.locked_until_value|until={{user?.data?.locked_until ?? ''}}</div>
+                <div data-if="{{user?.data?.is_locked !== true}}" class="text-primary text-sm py-2">$t:admin.users.detail.not_locked_value</div>
+              </div>
               <div data-ref="field_ip_address">
                 <label class="form-label">$t:admin.users.form.fields.ip_address</label>
                 <input type="text" value="{{user?.data?.ip_address ?? ''}}" :disabled="true" class="text-gray-500 dark:text-gray-400"/>
               </div>
+              <div data-ref="field_withdrawn_at">
+                <label class="form-label">$t:admin.users.detail.withdrawn_at</label>
+                <input type="text" value="{{user?.data?.withdrawn_at ?? ''}}" :disabled="true" class="text-gray-500 dark:text-gray-400"/>
+              </div>
+              <div data-ref="field_blocked_at">
+                <label class="form-label">$t:admin.users.detail.blocked_at</label>
+                <input type="text" value="{{user?.data?.blocked_at ?? ''}}" :disabled="true" class="text-gray-500 dark:text-gray-400"/>
+              </div>
+              <div data-ref="field_dormant_at">
+                <label class="form-label">$t:admin.users.detail.dormant_at</label>
+                <input type="text" value="{{user?.data?.dormant_at ?? ''}}" :disabled="true" class="text-gray-500 dark:text-gray-400"/>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- 동의정보 — 회원이 언제 동의했는가는 기록이지 설정이 아니라 잠긴 채로 세운다.
+             동의를 되돌리는 일은 회원 본인의 화면(마이페이지)이나 GDPR 플러그인이 맡는다.
+
+             **고칠 수 없는 값인데도 이 구획과 아래 알림함 구획을 수정 화면에 세우는 이유**는,
+             상세에서 본 것을 수정 화면에서 찾지 못하면 「고칠 수 있는데 칸이 없는 것」 인지
+             「원래 고칠 수 없는 것」 인지 화면이 말해 주지 않기 때문이다(요구사항 2026-09-21 —
+             상세에 나오는 것은 수정 화면에도 같은 자리·같은 양식으로 선다). 등록 모드에는
+             회원이 아직 없어 둘 다 빈 값이라 `route?.id` 로 닫는다. -->
+        <div data-ref="section_consent_info" data-if="{{route?.id}}" id="consent_info" class="admin-card">
+          <h3 class="card-title">$t:admin.users.detail.consent_history</h3>
+          <div class="row-stack">
+            <div class="grid-2col-responsive">
+              <div data-ref="field_terms_consent">
+                <label class="form-label">$t:admin.users.detail.consent_type.terms</label>
+                <input type="text" value="{{user?.data?.terms_consent?.agreed_at ?? ''}}" :disabled="true" class="text-gray-500 dark:text-gray-400"/>
+              </div>
+              <div data-ref="field_privacy_consent">
+                <label class="form-label">$t:admin.users.detail.consent_type.privacy</label>
+                <input type="text" value="{{user?.data?.privacy_consent?.agreed_at ?? ''}}" :disabled="true" class="text-gray-500 dark:text-gray-400"/>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- 알림함 요약 — 건수는 읽기 전용이고, 실제 수신함은 전용 목록이 소유한다(상세와 같다). -->
+        <div data-ref="section_notifications_info" data-if="{{route?.id}}" id="notifications_info" class="admin-card">
+          <h3 class="card-title">$t:admin.users.detail.tabs.notifications_info</h3>
+          <div class="row-stack">
+            <div class="grid-2col-responsive">
+              <div data-ref="field_notifications_total">
+                <label class="form-label">$t:admin.users.detail.notifications.total</label>
+                <input type="text" value="{{user?.data?.notifications_summary?.total ?? 0}}" :disabled="true" class="text-gray-500 dark:text-gray-400"/>
+              </div>
+              <div data-ref="field_notifications_unread">
+                <label class="form-label">$t:admin.users.detail.notifications.unread</label>
+                <input type="text" value="{{user?.data?.notifications_summary?.unread ?? 0}}" :disabled="true" class="text-gray-500 dark:text-gray-400"/>
+              </div>
+            </div>
+            <div data-ref="notifications_inbox_link">
+              <button type="button" class="btn btn-secondary">
+                <on type="click">
+                  <!-- 이 회원의 알림 발송 이력으로 이동한다 — 회원 UUID 로 목록을 거른다 -->
+                  <navigate path="/admin/member-notifications">
+                    <query user_uuid="{{user?.data?.uuid}}"/>
+                  </navigate>
+                </on>
+                <span>$t:admin.users.detail.notifications.view_inbox</span>
+              </button>
             </div>
           </div>
         </div>

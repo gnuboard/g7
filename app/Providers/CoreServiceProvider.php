@@ -126,6 +126,7 @@ use App\Services\Analytics\GoalRegistry as AnalyticsGoalRegistry;
 use App\Services\AttachmentService;
 use App\Services\DriverRegistryService;
 use App\Services\LayoutExtensionService;
+use App\Services\NotificationRecipientCapability;
 use App\Services\TemplateLayoutAttachmentService;
 use App\Services\TemplateService;
 use App\Services\UniqueIdService;
@@ -353,6 +354,11 @@ class CoreServiceProvider extends ServiceProvider
 
         // 확장 선언 미들웨어 self-gate 인덱스 (요청 내 인덱스 1회 빌드 → singleton)
         $this->app->singleton(ExtensionMiddlewareRegistryInterface::class, ExtensionMiddlewareRegistry::class);
+
+        // 알림 수신자 권한 판정 (수신자 수만큼 같은 권한을 재조회하지 않도록 요청·잡 수명 메모 → scoped).
+        // singleton 이면 큐 워커가 재시작될 때까지 메모가 남아, 권한을 뺏긴 사람도 관리자 링크를 계속
+        // 받는다. scoped 는 요청과 큐 잡이 끝날 때마다 비워진다(#599 validate).
+        $this->app->scoped(NotificationRecipientCapability::class);
     }
 
     /**

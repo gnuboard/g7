@@ -187,7 +187,7 @@
   <data-source id="dispatchResults" label_key="$t:sirsoft-message_bizppurio.editor.data_source.dispatch_results" type="api" endpoint="/api/plugins/sirsoft-message_bizppurio/admin/dispatch-results/recent" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive">
     <fallback>
       <field name="data">
-        <field name="results" :value="[]"/>
+        <field name="results" :value="{}"/>
       </field>
     </fallback>
   </data-source>

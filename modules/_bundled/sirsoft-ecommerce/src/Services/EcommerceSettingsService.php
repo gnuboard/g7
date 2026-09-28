@@ -106,6 +106,10 @@ class EcommerceSettingsService implements ModuleSettingsInterface
             $categoryData = $value;
         } else {
             $categoryData = $this->loadCategorySettings($category);
+            if ($category === 'claim' && $parts[0] !== 'instant_cancel_statuses') {
+                // 다른 클레임 값을 고칠 때 저장본에 남은 옛 별칭이 취소 정책을 되돌리지 않게 한다.
+                $categoryData['instant_cancel_statuses'] = $this->getSetting('order_settings.cancellable_statuses', []);
+            }
             Arr::set($categoryData, implode('.', $parts), $value);
         }
 
@@ -140,6 +144,11 @@ class EcommerceSettingsService implements ModuleSettingsInterface
 
         // 저장된 데이터를 defaults 스키마에 맞게 정규화 (하위호환성)
         $settings = $this->normalizeSettingsData($settings, $defaultValues);
+
+        // 취소 가능 상태는 기존 주문 설정이 단일 출처다. 클레임 도입 시 복사한 값이
+        // 독립적으로 남으면 주문 abilities/취소 검증과 클레임 신청 자격이 서로 갈린다.
+        // 기존 클레임 키는 API 호환 별칭으로만 제공한다 (빈 배열도 운영자의 설정이다).
+        $settings['claim']['instant_cancel_statuses'] = $settings['order_settings']['cancellable_statuses'] ?? [];
 
         // language_currency.currencies 는 정수키 리스트라 array_merge 가 통째 교체 →
         // defaults 에 있고 저장본에 없는 통화는 code 기준으로 보충(환율은 저장본 우선 보존).
@@ -295,6 +304,24 @@ class EcommerceSettingsService implements ModuleSettingsInterface
      */
     public function saveSettings(array $settings): bool
     {
+        // 두 관리 화면과 기존 API 클라이언트의 쓰기를 같은 설정으로 모은다.
+        // 전체 API 페이로드에 두 키가 있으면 정본인 주문 설정이 우선이다.
+        $claimStatuses = $settings['claim']['instant_cancel_statuses'] ?? null;
+        $orderStatuses = $settings['order_settings']['cancellable_statuses'] ?? null;
+        if (is_array($orderStatuses) || is_array($claimStatuses)) {
+            $statuses = is_array($orderStatuses) ? $orderStatuses : $claimStatuses;
+            $settings['order_settings'] = array_replace(
+                $this->loadCategorySettings('order_settings'),
+                $settings['order_settings'] ?? [],
+                ['cancellable_statuses' => $statuses],
+            );
+            $settings['claim'] = array_replace(
+                $this->loadCategorySettings('claim'),
+                $settings['claim'] ?? [],
+                ['instant_cancel_statuses' => $statuses],
+            );
+        }
+
         $success = true;
         $defaults = $this->getDefaults();
         $defaultValues = $defaults['defaults'] ?? [];
@@ -800,6 +827,7 @@ class EcommerceSettingsService implements ModuleSettingsInterface
                     'needs_pg' => $method['needs_pg'] ?? $this->builtinNeedsPg($id),
                     'pg_locked' => $method['pg_locked'] ?? false,
                     'refund_method' => $method['refund_method'] ?? $this->builtinRefundMethod($id),
+                    'auto_approve_refund' => $method['auto_approve_refund'] ?? $this->builtinAutoApproveRefund($id),
                     'is_active' => $method['is_active'] ?? true,
                     'min_order_amount' => $method['min_order_amount'] ?? 0,
                     'stock_deduction_timing' => $method['stock_deduction_timing'] ?? 'payment_complete',
@@ -819,6 +847,35 @@ class EcommerceSettingsService implements ModuleSettingsInterface
     private function builtinNeedsPg(string $id): bool
     {
         return PaymentMethodEnum::tryFrom($id)?->needsPgProvider() ?? true;
+    }
+
+    /**
+     * builtin 결제수단이 **사람의 개입 없이** 환불을 집행할 수 있는지 파생합니다. (P16·P17)
+     *
+     * 자동 승인은 "운영자가 아무것도 하지 않아도 돈이 실제로 돌아가는" 수단에만 허용한다.
+     * `card` 는 PG API 가 그 트랜잭션에서 취소하고, `point` 는 같은 트랜잭션의 마일리지 환급이
+     * 곧 환불이며, `free` 는 돌려줄 돈이 없다. 나머지 builtin(`vbank`·`dbank`·`bank`·`phone`·
+     * `deposit`)은 사람이 계좌로 송금해야 끝난다 — 자동 승인하면 신청서만 `완료` 로 앞서 나가고
+     * 고객에게는 "환불 완료" 알림이 가는데 돈은 아직 나가지 않은 상태가 된다.
+     *
+     * `vbank` 가 여기 드는 것이 비직관적일 수 있으나, PG 가 가상계좌 환불을 집행하려면 고객의
+     * 환불계좌를 받아 넘겨야 하고 그 입력·확인이 사람의 단계다.
+     *
+     * 확장 결제수단(간편결제 등)은 enum case 가 없으므로 플러그인이 카탈로그 항목에
+     * `auto_approve_refund` 를 직접 선언한다. 미선언 확장 수단의 기본값은 false 다 —
+     * 오판의 비용이 비대칭이다(자동으로 잘못 완료하면 이중 환불, 멈추면 운영자가 한 번 더 누른다).
+     *
+     * @param  string  $id  결제수단 ID
+     * @return bool 환불 자동 승인 가능 여부
+     */
+    private function builtinAutoApproveRefund(string $id): bool
+    {
+        return match (PaymentMethodEnum::tryFrom($id)) {
+            PaymentMethodEnum::CARD,
+            PaymentMethodEnum::POINT,
+            PaymentMethodEnum::FREE => true,
+            default => false,
+        };
     }
 
     /**
@@ -1017,6 +1074,33 @@ class EcommerceSettingsService implements ModuleSettingsInterface
     }
 
     /**
+     * 은행 목록을 반환합니다 — 운영자가 비워 두었으면 모듈 기본 목록으로 떨어집니다.
+     *
+     * 무통장 입금 계좌와 환불 계좌가 이 목록을 함께 쓴다. 환불 계좌는 계좌로 돈이 돌아가는 주문에서
+     * **필수**다(#599 T2-D5) — 그런데 운영자가 목록을 비우면 필수 칸에 고를 은행이 0개가 되어
+     * 구매자는 환불 신청을 영영 할 수 없다(2026-09-23 재실측: 개발 상점의 목록이 빈 배열이라
+     * [주문 취소하기] 가 계좌를 적어도 풀리지 않았다). 운영자가 한 곳이라도 등록하면 그 목록을
+     * 그대로 쓰고, 비었을 때만 `config/settings/defaults.json` 의 기본 목록을 쓴다.
+     *
+     * @return array<int, array{code: string, name: mixed}> 코드가 있는 은행만 담은 목록
+     */
+    public function getBankList(): array
+    {
+        $valid = fn ($banks) => array_values(array_filter(
+            is_array($banks) ? $banks : [],
+            fn ($bank) => is_array($bank) && filled($bank['code'] ?? null),
+        ));
+
+        $configured = $valid($this->getSetting('order_settings.banks'));
+
+        if ($configured !== []) {
+            return $configured;
+        }
+
+        return $valid(Arr::get($this->getDefaults(), 'defaults.order_settings.banks', []));
+    }
+
+    /**
      * 은행코드로 은행명을 조회합니다.
      *
      * 환경설정의 은행 목록(order_settings.banks)에서 현재 로케일의 표시명을 찾습니다.
@@ -1027,8 +1111,7 @@ class EcommerceSettingsService implements ModuleSettingsInterface
      */
     public function resolveBankName(string $bankCode): string
     {
-        $banks = $this->getSetting('order_settings.banks');
-        $bank = collect(is_array($banks) ? $banks : [])->firstWhere('code', $bankCode);
+        $bank = collect($this->getBankList())->firstWhere('code', $bankCode);
 
         if (! $bank) {
             return $bankCode;
@@ -1193,6 +1276,7 @@ class EcommerceSettingsService implements ModuleSettingsInterface
             $needsPg = (bool) ($definition['defaults']['needs_pg'] ?? $this->builtinNeedsPg($id));
             $pgLocked = (bool) ($definition['defaults']['pg_locked'] ?? false);
             $refundMethod = $definition['defaults']['refund_method'] ?? $this->builtinRefundMethod($id);
+            $autoApproveRefund = (bool) ($definition['defaults']['auto_approve_refund'] ?? $this->builtinAutoApproveRefund($id));
 
             // PG 고정 수단(간편결제 등)은 특정 PG 에 종속되므로 관리자가 다른 PG 로 바꿀 수 없다.
             // saved 에 남은 과거 값(예: null)이 있어도 정의의 PG 를 강제한다.
@@ -1200,6 +1284,25 @@ class EcommerceSettingsService implements ModuleSettingsInterface
                 'needs_pg' => $needsPg,
                 'pg_locked' => $pgLocked,
                 'refund_method' => $refundMethod,
+                // 사람의 개입 없이 환불을 집행할 수 있는 수단인지 — 정의가 SSoT (P16·P17).
+                // 클레임 정책 탭의 '환불 자동 승인 결제수단' 목록이 이 선언으로 배지를 띄우고,
+                // 새로 설치된 PG 플러그인의 즉시 환불 수단이 목록에 자동 합류하는 근거가 된다.
+                'auto_approve_refund' => $autoApproveRefund,
+                // 고객이 결제창에서 고를 수 있는 수단인지 — 정의가 SSoT 다(P8·P10).
+                //
+                // 마일리지·예치금·무료는 코어에 **결제 실행 경로가 없다**. 켜 두면 고객 주문서에는
+                // 뜨는데 주문 생성이 422 로 거절되거나(`CreateOrderRequest`), 통과해도 결제를
+                // 완료할 방법이 없어 `pending_order` 에 영구 정박한다. 화면이 이 값을 읽어 토글을
+                // 잠가야 운영자가 "켰는데 왜 안 되지" 를 겪지 않는다.
+                //
+                // 인스턴스 메서드가 아니라 순수 규칙을 쓴다 — 카탈로그는 바로 이 병합이 만드는
+                // 설정을 읽으므로, 여기서 리졸버를 부르면 무한 재귀가 된다.
+                'customer_selectable' => PaymentMethodResolver::customerSelectableByDeclaration(
+                    $id,
+                    isset($definition['defaults']['customer_selectable'])
+                        ? (bool) $definition['defaults']['customer_selectable']
+                        : null,
+                ),
             ];
 
             // iOS 전용 노출 플래그(애플페이 등) — 정의가 SSoT. 관리자가 편집하는 값이 아니며,

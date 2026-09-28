@@ -5,6 +5,7 @@ namespace Modules\Sirsoft\Ecommerce\Listeners;
 use App\Contracts\Extension\HookListenerInterface;
 use App\Extension\ModuleManager;
 use App\Models\User;
+use App\Services\NotificationRecipientCapability;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\ProductInquiry;
@@ -22,6 +23,14 @@ use Modules\Sirsoft\Ecommerce\Support\ShopPathResolver;
  */
 class EcommerceNotificationDataListener implements HookListenerInterface
 {
+    /**
+     * 주문 링크를 관리자 주소로 올려도 되는지 가르는 권한.
+     *
+     * 역할 이름이 아니라 권한으로 판정한다 — 상점이 새 역할을 만들 때마다 리스너를
+     * 고쳐야 하는 일이 없고, 그 화면을 못 여는 사람에게 관리자 주소를 주지 않는다.
+     */
+    private const ADMIN_ORDER_PERMISSION = 'sirsoft-ecommerce.orders.read';
+
     /**
      * @param  OrderCancelRepositoryInterface  $orderCancelRepository  주문 취소 이력 조회 (취소 사유 추출)
      * @param  CurrencyConversionService  $currencyConversionService  알림 금액의 결제 통화 환산
@@ -71,6 +80,11 @@ class EcommerceNotificationDataListener implements HookListenerInterface
                 'priority' => 20,
                 'type' => 'filter',
             ],
+            'sirsoft-ecommerce.notification.personalize_data' => [
+                'method' => 'personalizeOrderData',
+                'priority' => 20,
+                'type' => 'filter',
+            ],
             'core.notification.filter_default_definitions' => [
                 'method' => 'contributeDefaultDefinitions',
                 'priority' => 20,
@@ -83,6 +97,7 @@ class EcommerceNotificationDataListener implements HookListenerInterface
      * 훅 이벤트를 처리합니다.
      *
      * @param  mixed  ...$args  훅에서 전달된 인수들
+     * @return void
      */
     public function handle(...$args): void {}
 
@@ -146,6 +161,7 @@ class EcommerceNotificationDataListener implements HookListenerInterface
      * 주문 확인(결제 완료) 알림 데이터를 추출합니다.
      *
      * @param  array  $args  훅 인수 [$order]
+     * @return array 추출 결과
      */
     private function extractOrderConfirmed(array $args): array
     {
@@ -170,6 +186,7 @@ class EcommerceNotificationDataListener implements HookListenerInterface
      * 입금 금액은 마일리지/예치금 차감 후 실제 입금액(total_due_amount)을 사용한다.
      *
      * @param  array  $args  훅 인수 [$order]
+     * @return array 추출 결과
      */
     private function extractOrderPendingDeposit(array $args): array
     {
@@ -210,6 +227,7 @@ class EcommerceNotificationDataListener implements HookListenerInterface
      * 배송 시작 알림 데이터를 추출합니다.
      *
      * @param  array  $args  훅 인수 [$order]
+     * @return array 추출 결과
      */
     private function extractOrderShipped(array $args): array
     {
@@ -238,6 +256,7 @@ class EcommerceNotificationDataListener implements HookListenerInterface
      * 최신 배송 레코드의 택배사/송장번호를 포함한다.
      *
      * @param  array  $args  훅 인수 [$order]
+     * @return array 추출 결과
      */
     private function extractOrderDelivered(array $args): array
     {
@@ -263,6 +282,7 @@ class EcommerceNotificationDataListener implements HookListenerInterface
      * 구매 확정 알림 데이터를 추출합니다.
      *
      * @param  array  $args  훅 인수 [$order]
+     * @return array 추출 결과
      */
     private function extractOrderCompleted(array $args): array
     {
@@ -283,6 +303,7 @@ class EcommerceNotificationDataListener implements HookListenerInterface
      * 주문 취소 알림 데이터를 추출합니다.
      *
      * @param  array  $args  훅 인수 [$order, $cancelSnapshot?]
+     * @return array 추출 결과
      */
     private function extractOrderCancelled(array $args): array
     {
@@ -312,6 +333,7 @@ class EcommerceNotificationDataListener implements HookListenerInterface
      * 신규 주문 관리자 알림 데이터를 추출합니다.
      *
      * @param  array  $args  훅 인수 [$order]
+     * @return array 추출 결과
      */
     private function extractNewOrderAdmin(array $args): array
     {
@@ -336,13 +358,13 @@ class EcommerceNotificationDataListener implements HookListenerInterface
                     $order,
                     (float) $order->total_paid_amount > 0 ? (float) $order->total_paid_amount : (float) $order->total_amount
                 ),
-                'order_url' => "{$baseUrl}/admin/ecommerce/orders/{$order->order_number}",
+                // 기본값은 **가장 안전한 쪽**(구매자 주소)이다. 운영자에게 보낼 관리자 주소는
+                // 수신자가 정해진 뒤 personalize 가 올린다 — 운영자가 이 알림의 수신자를
+                // 「주문자」로 바꿔도 고객에게 관리자 주소가 가지 않게 한다.
+                'order_url' => $this->customerOrderUrl($order),
                 'site_url' => $baseUrl,
             ],
-            'context' => [
-                'trigger_user_id' => $order->user_id,
-                'trigger_user' => $order->user,
-            ],
+            'context' => $this->buildOrderContext($order),
         ];
     }
 
@@ -350,6 +372,7 @@ class EcommerceNotificationDataListener implements HookListenerInterface
      * 상품 문의 접수 관리자 알림 데이터를 추출합니다.
      *
      * @param  array  $args  훅 인수 [$inquiry]
+     * @return array 추출 결과
      */
     private function extractInquiryReceived(array $args): array
     {
@@ -388,6 +411,7 @@ class EcommerceNotificationDataListener implements HookListenerInterface
      * 문의 답변 완료 알림 데이터를 추출합니다.
      *
      * @param  array  $args  훅 인수 [$inquiry]
+     * @return array 추출 결과
      */
     private function extractInquiryReplied(array $args): array
     {
@@ -435,7 +459,7 @@ class EcommerceNotificationDataListener implements HookListenerInterface
      * 경로는 비회원 주문 조회 라우트(templates/sirsoft-basic/routes.json) 및
      * OrderController::showByOrderNumber 의 비회원 redirect_to 와 동일하게 유지한다.
      */
-    private const GUEST_ORDER_LOOKUP_SUFFIX = 'guest/orders';
+    public const GUEST_ORDER_LOOKUP_SUFFIX = 'guest/orders';
 
     /**
      * 주문 알림 데이터 배열을 구성합니다.
@@ -446,18 +470,16 @@ class EcommerceNotificationDataListener implements HookListenerInterface
      *
      * @param  Order  $order  주문 모델
      * @param  array  $extra  추가 변수
+     * @return array 추출 결과
      */
     private function buildOrderData(Order $order, array $extra = []): array
     {
         $baseUrl = config('app.url');
 
-        if ($order->isGuestOrder()) {
-            $name = $order->getOrdererName() ?? '';
-            $orderUrl = "{$baseUrl}".ShopPathResolver::path(self::GUEST_ORDER_LOOKUP_SUFFIX);
-        } else {
-            $name = $order->user?->name ?? '';
-            $orderUrl = "{$baseUrl}/mypage/orders/{$order->order_number}";
-        }
+        $name = $order->isGuestOrder()
+            ? ($order->getOrdererName() ?? '')
+            : ($order->user?->name ?? '');
+        $orderUrl = $this->customerOrderUrl($order);
 
         // 표시 금액 = 결제완료액(있으면) 또는 주문 총액(base 통화)을 결제 통화로 환산한 포맷.
         $baseAmount = (float) $order->total_paid_amount > 0
@@ -484,6 +506,64 @@ class EcommerceNotificationDataListener implements HookListenerInterface
             'shipping_country_name' => $shippingCountryName,
             'shipping_address' => $shippingFullAddress,
         ], $extra);
+    }
+
+    /**
+     * 구매자가 볼 주문 화면 주소를 반환합니다.
+     *
+     * 비회원은 조회 토큰이 없는 브라우저로 들어오므로 상세가 아니라 주문 조회 화면이다.
+     *
+     * @param  Order  $order  주문 모델
+     * @return string 절대 URL
+     */
+    private function customerOrderUrl(Order $order): string
+    {
+        $baseUrl = (string) config('app.url');
+
+        return $order->isGuestOrder()
+            ? $baseUrl.ShopPathResolver::path(self::GUEST_ORDER_LOOKUP_SUFFIX)
+            : "{$baseUrl}/mypage/orders/{$order->order_number}";
+    }
+
+    /**
+     * 수신자가 운영자면 주문 링크를 관리자 화면 주소로 올립니다.
+     *
+     * 판정 기준은 역할 이름이 아니라 **그 사람이 주문 화면을 열 수 있는가**(권한)다 —
+     * 상점이 새 역할을 만들 때마다 리스너를 고칠 일이 없고, 그 화면을 못 여는 사람에게
+     * 관리자 주소를 주지 않는다.
+     *
+     * > 큐 재로드 시점 오염을 막기 위해 `$context` 의 스칼라만 읽는다.
+     *
+     * @param  array  $data  앞선 필터까지의 알림 데이터
+     * @param  object  $notifiable  수신자 (User 또는 GuestNotifiable)
+     * @param  string  $type  알림 정의 유형
+     * @param  array  $context  extract_data 가 실은 컨텍스트
+     * @param  array  $args  원래 훅 인자 (읽지 않는다)
+     * @return array 수신자별로 치환된 알림 데이터
+     */
+    public function personalizeOrderData(
+        array $data,
+        object $notifiable,
+        string $type,
+        array $context,
+        array $args = [],
+    ): array {
+        if (! array_key_exists('order_url', $data)) {
+            return $data;
+        }
+
+        $orderNumber = (string) ($context['order_number'] ?? '');
+        if ($orderNumber === '') {
+            return $data;
+        }
+
+        if (! app(NotificationRecipientCapability::class)->can($notifiable, self::ADMIN_ORDER_PERMISSION)) {
+            return $data;
+        }
+
+        $data['order_url'] = (string) config('app.url')."/admin/ecommerce/orders/{$orderNumber}";
+
+        return $data;
     }
 
     /**
@@ -516,12 +596,16 @@ class EcommerceNotificationDataListener implements HookListenerInterface
      * (사이트내 알림 등 비회원 미허용 채널은 코어 채널 게이트가 자동 차단)
      *
      * @param  Order  $order  주문 모델
+     * @return array 추출 결과
      */
     private function buildOrderContext(Order $order): array
     {
         $context = [
             'trigger_user_id' => $order->user_id,
             'trigger_user' => $order->user,
+            // personalize 가 읽는 **스칼라**다 — 큐에서 모델을 다시 읽으면 과거 사건의
+            // 알림에 "지금" 상태가 실린다.
+            'order_number' => $order->order_number,
         ];
 
         if ($order->isGuestOrder()) {
@@ -547,6 +631,7 @@ class EcommerceNotificationDataListener implements HookListenerInterface
      * 소멸 예정 마일리지 알림 데이터를 추출합니다.
      *
      * @param  array  $args  훅 인수 [$user, $amount, $currency, $expiresDate, $balance]
+     * @return array 추출 결과
      */
     private function extractMileageExpiringSoon(array $args): array
     {
@@ -581,6 +666,11 @@ class EcommerceNotificationDataListener implements HookListenerInterface
         ];
     }
 
+    /**
+     * 빈 추출 결과를 반환합니다 (이 리스너 소관이 아니거나 발송 조건 미충족).
+     *
+     * @return array 빈 추출 결과
+     */
     private function emptyResult(): array
     {
         return ['notifiable' => null, 'notifiables' => null, 'data' => [], 'context' => []];

@@ -204,6 +204,7 @@ return [
         'fetch_success' => 'Order information retrieved successfully.',
         'fetch_failed' => 'Failed to retrieve order information.',
         'cancelled' => 'Order has been cancelled.',
+        'cancel_refund_requested' => 'A refund request has been filed. The order will be cancelled once the refund is completed.',
         'cancel_failed' => 'Failed to cancel order.',
         'estimate_refund_success' => 'Refund estimate retrieved successfully.',
         'estimate_refund_failed' => 'Failed to calculate refund estimate.',
@@ -211,9 +212,11 @@ return [
         'guest_password_reset_failed' => 'Failed to reset guest lookup password.',
         'guest_password_reset_not_guest' => 'Only guest orders can have their lookup password reset.',
         'deposit_confirmed' => 'Deposit confirmed and the order has been marked as paid.',
+        'deposit_recorded' => 'The deposit has been recorded. The order remains awaiting payment.',
         'deposit_confirm_failed' => 'Failed to confirm the deposit.',
         'deposit_amount_mismatch' => 'The deposit amount does not match the amount due.',
         'deposit_not_dbank' => 'Only bank transfer (manual deposit) orders can be confirmed.',
+        'deposit_order_cancelled' => 'Cancelled orders cannot be confirmed for deposit.',
         'deposit_not_pending' => 'Only unpaid orders can have their deposit confirmed.',
         'payment_name_summary' => ':name and :count more',
         'deposit' => [
@@ -373,6 +376,8 @@ return [
         'not_earning' => 'Only earning transactions can be edited.',
         'expiry_not_editable' => 'Expiry cannot be changed for already-expired or fully-used earnings.',
         'expiry_before_earned' => 'Expiry cannot be earlier than the earned date.',
+        // Earned mileage label — points, not currency (`:points` is already thousands-separated).
+        'points_format' => ':pointsP',
     ],
 
     // Temporary Order Messages
@@ -463,7 +468,67 @@ return [
         'updated' => 'Claim reason has been updated.',
         'deleted' => 'Claim reason has been deleted.',
         'toggled' => 'Claim reason status has been changed.',
-        'delete_failed_in_use' => 'Cannot delete a reason in use by order cancellations. We recommend deactivating it instead.',
+        'delete_failed_in_use' => 'Cannot delete a reason that is already in use. We recommend deactivating it instead.',
+    ],
+
+    // Claim Common Messages
+    'claims' => [
+        // Which axis bound the cancellable amount (D19) — shown as the basis on the admin screen.
+        'cancellable_binding' => [
+            'domain_refundable' => 'The refundable amount is the binding limit.',
+            'payment_capacity' => 'The remaining payment method capacity is the binding limit.',
+        ],
+        // Display label for the per-method remaining capacity (D19). Mileage has no payment row —
+        // it is an order-column ledger, so it is absent from the payment method vocabulary.
+        'cancellable_method' => [
+            'payment' => 'Payment method',
+            'mileage' => 'Mileage',
+        ],
+        'payment_order_name' => ':type additional charge (:number)',
+        'claimable_retrieved' => 'Claimable items retrieved.',
+        'preview_success' => 'Claim estimate calculated.',
+        'requested' => 'Your request has been submitted.',
+        'cancelled_instantly' => 'The order has been cancelled.',
+        'list_retrieved' => 'Claim history retrieved.',
+        'retrieved' => 'Claim retrieved.',
+        'updated' => 'The request has been updated.',
+        'rejected' => 'The request has been rejected.',
+        'withdrawn' => 'The request has been withdrawn.',
+        'image_uploaded' => 'Image attached.',
+        'image_deleted' => 'Attached image deleted.',
+        'payment_started' => 'Payment started.',
+        'payment_completed' => 'Payment completed.',
+        'settings_retrieved' => 'Claim settings retrieved.',
+        'operation_failed' => 'An error occurred while processing the claim.',
+        // Admin claim API
+        'status_updated' => 'The claim status has been updated.',
+        'payment_requested' => 'An additional charge has been requested. The claim will be approved after the payment is completed.',
+        'bulk_status_processed' => 'The bulk status change has been processed.',
+        'option_status_processed' => 'The item status change has been processed.',
+        'tracking_saved' => 'Tracking information saved.',
+        'tracking_delivered' => 'The items of the tracking number were marked as arrived.',
+        'notifications' => [
+            'advance_exchange_notice' => 'This is an advance exchange — please send the original items back by :date.',
+            'request_origin_admin' => 'The seller filed this request on your behalf.',
+            'withdraw_origin_admin' => 'The seller withdrew this request at your request.',
+        ],
+        'tracking_deliver_not_ready' => 'These items cannot be marked as arrived in their current status.',
+        'exchange_mode_updated' => 'The exchange mode was changed.',
+        'admin_requested' => 'The request was filed on behalf of the customer.',
+        'admin_requested_approval_skipped' => 'The request was filed but could not be approved. Check the reason on the claim.',
+        'stock_restored' => 'Stock was restored.',
+        'withdrawn_on_behalf' => 'The request was withdrawn as the customer asked.',
+        'request_updated_by_admin' => 'The request details were updated.',
+        'charge_repriced_after_partial_rejection' => 'Some items were rejected or withdrawn, so the difference in the charge is refunded.',
+        'charge_free' => 'Free (no shipping fee)',
+        'images_cleared' => 'All attached images have been deleted.',
+        'amounts_updated' => 'The amounts have been updated.',
+        'cancellable_retrieved' => 'The cancellable amount has been calculated.',
+        'refund_executed' => 'The refund has been executed.',
+        'refund_execute_failed' => 'Failed to execute the refund.',
+        'completion_preview_retrieved' => 'The completion summary has been calculated.',
+        'refund_request_created' => 'The refund request has been created.',
+        'logs_retrieved' => 'Activity logs retrieved successfully.',
     ],
 
     // Shipping Policy Messages
@@ -481,6 +546,8 @@ return [
         'bulk_toggled' => ':count shipping policies status have been changed.',
         'set_default_success' => 'Default shipping policy has been set.',
         'api_test_done' => 'Calculation API test call completed.',
+        'claim_settings_retrieved' => 'Claim shipping settings retrieved successfully.',
+        'claim_settings_updated' => 'Claim shipping settings have been saved.',
         'fee_summary' => [
             'free' => 'Free Shipping',
             'fixed' => 'Shipping: :fee',
@@ -717,8 +784,6 @@ return [
                     'cancel' => [
                         'title' => 'Cancel Order',
                         'description' => 'Cancel the order for selected products. Please review the estimated refund amount before proceeding.',
-                        'cancel_pg' => 'Cancel PG payment as well',
-                        'cancel_pg_hint' => 'If unchecked, only the order status will be changed without PG cancellation.',
                         'reason' => 'Cancel Reason',
                         'reason_placeholder' => 'Select a cancel reason',
                         'reason_detail' => 'Detailed Reason',

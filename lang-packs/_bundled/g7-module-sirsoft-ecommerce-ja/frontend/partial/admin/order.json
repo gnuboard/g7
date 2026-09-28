@@ -10,6 +10,7 @@
   },
   "detail": {
     "title": "注文詳細",
+    "progress_title": "進行段階",
     "description": "注文詳細情報を確認します",
     "placeholder": "注文詳細がここに表示されます",
     "order_number": "注文番号",
@@ -114,7 +115,8 @@
       },
       "earn_status": {
         "earned": "積立完了",
-        "pending": "積立予定"
+        "pending": "積立予定",
+        "cancelled": "積立なし"
       },
       "cancel_reason": {
         "title": "キャンセル理由",
@@ -149,96 +151,33 @@
     },
     "claim_history": {
       "title": "クレーム履歴",
-      "tabs": {
-        "refund": "返金履歴",
-        "return": "返品履歴",
-        "exchange": "交換履歴"
-      },
-      "view_refund_management": "返金管理で表示",
-      "view_return_management": "返品管理で表示",
-      "view_exchange_management": "交換管理で表示",
-      "empty": {
-        "refund": "返金履歴がありません",
-        "return": "返品履歴がありません",
-        "exchange": "交換履歴がありません"
-      },
-      "sort": {
-        "label": "並べ替え",
-        "request_date_desc": "申請日時 最新順"
-      },
-      "per_page": "ページあたり",
-      "items_count": "{{count}}個",
       "columns": {
-        "request_date": "申請日時",
-        "refund_number": "返金番号",
-        "return_number": "返品番号",
-        "exchange_number": "交換番号",
-        "product_info": "商品情報",
-        "amount_info": "金額情報",
         "quantity": "数量",
-        "refund_method": "返金方法",
-        "refund_status": "返金ステータス",
-        "return_status": "返品ステータス",
-        "exchange_status": "交換ステータス",
-        "refund_reason": "返金理由",
-        "return_reason": "返品理由",
-        "exchange_reason": "交換理由"
+        "claim_number": "申請番号",
+        "product": "商品",
+        "amount": "金額",
+        "status": "ステータス"
       },
-      "amount": {
-        "actual_price": "実価格",
-        "expected_refund": "返金予定額",
-        "actual_refund": "実返金額",
-        "return_request": "返品申請",
-        "original_order": "元注文",
-        "order_quantity": "注文",
-        "difference": "差額"
+      "readonly_badge": "閲覧専用",
+      "subtabs": {
+        "exchange": "交換",
+        "return": "返品",
+        "cancel": "キャンセル",
+        "refund": "返金"
       },
-      "method": {
-        "direct_refund": "直接返金",
-        "deposit": "預かり金"
+      "unavailable": "クレーム履歴を読み込めませんでした。",
+      "reject_reason": "却下理由",
+      "shipping_fee": "往復送料",
+      "total_charge": "合計請求額",
+      "original_product": "元の商品",
+      "exchange_product": "交換商品",
+      "amount_type": {
+        "charge": "追加請求",
+        "refund": "返金",
+        "none": "-"
       },
-      "status": {
-        "refund_rejected": "返金却下",
-        "refund_hold": "返金保留",
-        "refund_approved": "返金承認",
-        "refund_completed": "返金完了",
-        "return_requested": "返品受付",
-        "return_pickup_in_progress": "返品回収中",
-        "return_pickup_completed": "返品回収到着",
-        "return_completed": "返品完了",
-        "exchange_requested": "交換受付",
-        "exchange_shipping": "交換配送",
-        "exchange_completed": "交換完了"
-      },
-      "delivery": {
-        "carrier": "配送業者",
-        "tracking_number": "送り状番号",
-        "pickup_carrier": "回収配送業者",
-        "pickup_tracking": "回収送り状番号",
-        "shipping_carrier": "発送配送業者",
-        "shipping_tracking": "発送送り状番号",
-        "pickup_fee": "回収配送料",
-        "round_trip_fee": "往復配送料"
-      },
-      "reason": {
-        "customer_fault": "顧客責任",
-        "seller_fault": "販売者責任",
-        "simple_change": "単純変心",
-        "wrong_color": "色が異なる",
-        "defect": "初期不良",
-        "defective_product": "商品不良",
-        "color_change": "色変更",
-        "size_exchange": "サイズ交換"
-      },
-      "product": {
-        "original_product": "元商品",
-        "exchange_product": "交換商品",
-        "same_product": "同一商品交換",
-        "same_product_exchange": "同一商品交換",
-        "size": "サイズ",
-        "color": "色",
-        "capacity": "容量"
-      }
+      "empty": "受け付けた件がありません。",
+      "pending_refund_badge": "返金未受け取り"
     },
     "payment_info": {
       "title": "決済情報",
@@ -279,7 +218,8 @@
       "refund_status": "返金ステータス",
       "refund_points_amount": "マイレージ返金",
       "payment_currency": "決済通貨: {{currency}}",
-      "charged_in_payment_currency": "決済通貨 {{currency}} {{amount}} 請求"
+      "charged_in_payment_currency": "決済通貨 {{currency}} {{amount}} 請求",
+      "claim_additional_paid": "クレーム追加決済合計"
     },
     "activity_log": {
       "title": "アクティビティログ",
@@ -357,7 +297,7 @@
       },
       "cancel": {
         "title": "注文キャンセル",
-        "description": "選択した商品の注文をキャンセルします。",
+        "description": "キャンセルしてもすぐに返金されるわけではありません。返金申請書が作成され、承認・返金完了を経て注文キャンセルが確定します。",
         "validation_error_title": "入力値を確認してください",
         "pg_error_title": "PG返金失敗",
         "pg_error_description": "PG返金処理に失敗しました。エラーの内容を確認してから再試行するか、PG管理者画面から直接返金処理を行ってください。",
@@ -365,8 +305,9 @@
         "unit_price_col": "単価",
         "cancel_quantity_col": "キャンセル数量",
         "status_col": "現在のステータス",
-        "cancel_pg": "PG決済も一緒にキャンセルします",
-        "cancel_pg_description": "チェックを外すと、注文ステータスのみが変更され、PG返金は別途行う必要があります。",
+        "auto_advance_refund_label": "返金まで一度に処理",
+        "auto_advance_refund_hint": "チェックすると返金申請書を作成したあと、承認・返金完了まで自動的に進めます。口座へ送金が必要な返金手段は承認で止まり、運営者が送金後に[返金する]で完了します。",
+        "auto_advance_refund_blocked_hint": "この注文の決済手段は人が送金しないと返金が完了しないため、チェックしても返金申請の状態で止まります。承認したうえで[返金する]で送金を完了してください。",
         "cancel_reason_type_label": "キャンセル理由",
         "reason_placeholder": "キャンセル理由を選択してください",
         "reason": {
@@ -419,13 +360,18 @@
         "close_btn": "閉じる",
         "estimate_failed": "返金予想金額の計算に失敗しました。",
         "cancel_success": "注文がキャンセルされました。",
+        "refund_request_created": "返金申請書が受け付けられました。承認・返金完了を経て注文キャンセルが確定します。",
+        "refund_request_created_no_claim_access": "返金申請書 {{number}} が受け付けられました。クレーム権限のある運営者が承認・返金完了を処理すると注文キャンセルが確定します。",
+        "refund_request_auto_stopped": "返金申請書を承認まで処理しました。自動返金できない決済手段のため、申請書で返金完了を処理すると注文キャンセルが確定します。",
         "cancel_failed": "注文のキャンセルに失敗しました。",
         "refund_bank_label": "返金口座",
         "refund_bank_select": "銀行を選択",
         "refund_bank_account_placeholder": "口座番号 (ハイフンなしで入力)",
         "refund_bank_holder_placeholder": "口座名義人",
         "refund_bank_required_hint": "入金が完了した仮想口座注文は返金口座が必要です。",
-        "refund_bank_partial_notice": "3つのうちいずれかを入力した場合は、残りも入力する必要があります。"
+        "refund_bank_empty_hint": "返金口座に選べる銀行が登録されていません。環境設定 > 注文設定の[銀行管理]で先に登録してください。",
+        "refund_bank_partial_notice": "3つのうちいずれかを入力した場合は、残りも入力する必要があります。",
+        "partial_unsupported": "この注文の決済手段は**全額キャンセルのみ**可能です。一部の商品・数量だけをキャンセルすると決済代行会社が拒否します。"
       },
       "reset_guest_password": {
         "title": "非会員閲覧パスワード再設定",
@@ -453,6 +399,7 @@
         "cancel": "キャンセル",
         "confirm": "入金確認",
         "confirm_success": "入金が確認され、決済完了処理されました。",
+        "confirm_failed": "入金確認に失敗しました。",
         "mark_order_complete": "注文を決済完了として処理",
         "mark_order_complete_hint": "チェックすると入金記録とともに注文ステータスを決済完了に変更します(ポイント積立·在庫減少·通知送信含む)。チェックしないと入金内訳のみ記録します。"
       }
@@ -488,6 +435,9 @@
       "cancel_failed": "現金領収書の発行キャンセルに失敗しました。",
       "reissue_failed": "再発行失敗",
       "reissue_success": "現金領収書が再発行されました。"
+    },
+    "tax_invoice": {
+      "needs_review": "この注文にはキャンセルが発生していますが、発行済みの税金計算書がそのまま残っています。税金計算書の取消・修正発行は自動処理されないため、国税庁ホームタックスで直接処理してください。"
     }
   },
   "preset": {
@@ -644,6 +594,20 @@
       "all": "すべて",
       "member": "会員",
       "guest": "非会員"
+    },
+    "claim": {
+      "block_title": "クレーム基準",
+      "block_hint": "この注文に受け付けられたクレームのタイプ·ステータスで注文を絞ります。タイプ別ステータスを指定しない場合、タイプに関わらず絞ります。ただし帰責を指定するとキャンセルは除外されます — キャンセルには帰責情報がありません。",
+      "presence": "クレーム",
+      "presence_none": "クレームなし",
+      "presence_any": "クレームあり",
+      "presence_active": "進行中のみ",
+      "exchange": "交換",
+      "return": "返品",
+      "refund": "返金",
+      "cancel": "キャンセル",
+      "fault": "帰責",
+      "requested_at": "クレーム申請日"
     }
   },
   "action": {
@@ -798,7 +762,8 @@
     "confirm_tracking_label": "運送状番号: ",
     "confirm_cancel": "キャンセル",
     "confirm_apply": "変更を適用",
-    "confirm_no_changes": "変更する項目がありません。"
+    "confirm_no_changes": "変更する項目がありません。",
+    "error": "一括処理に失敗しました。"
   },
   "column": {
     "no": "番号",
@@ -818,7 +783,8 @@
     "first_order": "初回購入",
     "action": "作業",
     "mileage_used_short": "マイレージ -{{amount}}",
-    "points_earned_short": "ポイント +{{amount}}"
+    "points_earned_short": "ポイント +{{amount}}",
+    "claim": "クレーム"
   },
   "device": {
     "mobile": "モバイル",
@@ -857,5 +823,41 @@
       "reshipping_completed": "交換配送完了",
       "completed": "交換完了"
     }
+  },
+  "claim_request": {
+    "button_exchange": "交換受け取り",
+    "button_return": "返品受け取り",
+    "button_cancel_refund": "キャンセル·返金受け取り",
+    "gate_hint": "選択した商品の状態では受け取ることができません — 交換·返品は配送中·配送完了·購入確定のみ、キャンセル·返金はまだ送られていない商品のみ受け取ります。",
+    "no_permission": "交換·返品·キャンセル受け取り権限がありません。",
+    "title_exchange": "交換受け取り（顧客の代わりに）",
+    "title_return": "返品受け取り（顧客の代わりに）",
+    "description": "顧客の代わりに受け取ります。申請期間·申請可能ステータス設定は適用されません。",
+    "same_option": "同じオプションで交換",
+    "sold_out": "品切れ",
+    "reason": "理由",
+    "reason_placeholder": "理由を選択",
+    "seller_fault": "販売者責任",
+    "reason_detail_placeholder": "詳細な理由（相談内容など）",
+    "charge_method": "請求方法",
+    "charge_method_auto": "自動（請求額がある場合に選択）",
+    "redelivery_address": "再発送先",
+    "recipient_name": "受け取り人",
+    "phone": "連絡先",
+    "zipcode": "郵便番号",
+    "address1": "住所",
+    "address2": "詳細な住所",
+    "shipping_fee": "配送料",
+    "total_charge": "請求額 {{amount}}",
+    "refund_estimate": "返金予定 {{amount}}",
+    "preview_needs_reason": "理由を選択すると配送料と請求額が計算されます。",
+    "approve": "受け取りと共に承認",
+    "customer_notice": "顧客に「販売者がお客様の代わりに受け取りました」通知が届き、顧客はこの申請を取り下げ·修正することができません。",
+    "submit": "受け取り",
+    "success": "顧客の代わりに受け取りました。",
+    "error": "受け取ることができませんでした。",
+    "reason_required": "理由を選択してください。",
+    "preview_error": "請求額を計算できませんでした。",
+    "context_load_failed": "受付可否を読み込めませんでした。ページを再読み込みしてください。"
   }
 }

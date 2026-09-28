@@ -2100,6 +2100,15 @@ class OrderProcessingServiceTest extends ModuleTestCase
         $this->app->instance(EcommerceSettingsService::class, $settingsMock);
     }
 
+    /**
+     * 카드(PG) 주문은 생성 시점(pending_order)에 관리자 신규주문 알림을 발화하지 않는다.
+     *
+     * @scenario payment_kind=pg, moment=order_created
+     *
+     * @effects pg_order_defers_admin_notify_to_payment_complete
+     *
+     * @return void 반환값 없음
+     */
     public function test_card_order_does_not_fire_admin_notify_at_creation(): void
     {
         $user = User::factory()->create();
@@ -2121,6 +2130,15 @@ class OrderProcessingServiceTest extends ModuleTestCase
         $this->assertSame(0, $getCount());
     }
 
+    /**
+     * 무통장(비-PG) 주문은 입금 전이라도 생성 시점에 관리자 신규주문 알림을 발화한다.
+     *
+     * @scenario payment_kind=non_pg, moment=order_created
+     *
+     * @effects non_pg_order_sends_admin_notify_at_creation
+     *
+     * @return void 반환값 없음
+     */
     public function test_dbank_order_fires_admin_notify_at_creation(): void
     {
         $user = User::factory()->create();
@@ -2141,6 +2159,15 @@ class OrderProcessingServiceTest extends ModuleTestCase
         $this->assertSame(1, $getCount());
     }
 
+    /**
+     * 카드(PG) 주문은 결제완료 시점에 관리자 신규주문 알림을 한 번 발화한다.
+     *
+     * @scenario payment_kind=pg, moment=payment_completed
+     *
+     * @effects pg_order_sends_admin_notify_once_on_completion
+     *
+     * @return void 반환값 없음
+     */
     public function test_card_order_fires_admin_notify_on_payment_complete(): void
     {
         // 일관된 카드 주문 fixture(total_due=53000) — completePayment 금액 재검증 통과
@@ -2152,6 +2179,37 @@ class OrderProcessingServiceTest extends ModuleTestCase
         $this->service->completePayment($order, ['transaction_id' => 'TX-TEST'], (int) $order->total_due_amount);
 
         $this->assertSame(1, $getCount());
+    }
+
+    /**
+     * 무통장 주문은 입금확인(결제완료) 시점에 관리자 신규주문 알림을 **다시** 발화하지 않는다.
+     *
+     * 무통장 주문은 생성 시점에 이미 발화했다(위 케이스). 관리자가 입금확인을 누르면
+     * `completePayment` 로 들어오는데, 여기서 또 발화하면 운영자 알림함에 같은
+     * 「새로운 주문이 접수되었습니다」가 한 주문으로 두 번 선다 — 어느 쪽이 새 주문인지
+     * 구분할 수 없다. 결제완료 사실은 `order_confirmed_admin` 이 따로 알린다.
+     * 실측(2026-09-21 · 주문 20260921-1316400577): 접수 13:16 71행 + 입금확인 13:31 71행.
+     *
+     * @scenario payment_kind=non_pg, moment=payment_completed
+     *
+     * @effects non_pg_order_does_not_resend_admin_notify
+     *
+     * @return void 반환값 없음
+     */
+    public function test_dbank_order_does_not_fire_admin_notify_again_on_deposit_confirm(): void
+    {
+        $order = $this->createOrderWithPayment();
+        $order->payment->update([
+            'payment_method' => PaymentMethodEnum::DBANK,
+            'pg_provider' => 'manual',
+        ]);
+        $order->load('payment');
+
+        $getCount = $this->countAdminNotify();
+
+        $this->service->completePayment($order, [], (int) $order->total_due_amount);
+
+        $this->assertSame(0, $getCount());
     }
 
     // ──────────────────────────────────────────────

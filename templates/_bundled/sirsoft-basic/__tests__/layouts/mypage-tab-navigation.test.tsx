@@ -23,9 +23,10 @@ const hidden: string = nav.props.hiddenTabIds;
 describe('마이페이지 탭 — 기능 OFF 탭 숨김 (#524 WP-C3)', () => {
     // @scenario surface=mypage_tabs
     // @effects mypage_tabs_declare_all_nine
-    it('탭 아홉 개가 모두 선언되어 있다', () => {
+    it('탭 열 개가 모두 선언되어 있다', () => {
+        // #524 스크랩(scrap)과 #599 클레임 신청내역(claims)이 병합에서 합류해 아홉이 열이 됐다.
         expect(tabs.map((t: any) => t.id)).toEqual([
-            'profile', 'board', 'scrap', 'orders', 'mileage', 'wishlist', 'addresses', 'notifications', 'inquiries',
+            'profile', 'board', 'scrap', 'orders', 'claims', 'mileage', 'wishlist', 'addresses', 'notifications', 'inquiries',
         ]);
     });
 

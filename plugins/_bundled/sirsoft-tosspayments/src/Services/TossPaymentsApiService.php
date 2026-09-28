@@ -178,9 +178,14 @@ class TossPaymentsApiService
                 'error_message' => $error['message'] ?? '',
             ]);
 
+            // 코드를 로그에만 남기고 예외에서 빼면 소비자는 「무엇이 잘못됐는지」를 되찾을 수
+            // 없다. 클레임 승인 리스너가 그래서 모든 거절을 `PG_API_ERROR` 하나로 접었고,
+            // 결제행·구매자 배너가 한도 초과와 세션 만료를 구분하지 못했다 (#599 3차 실측 F-5).
             throw new TossPaymentsApiException(
                 $error['message'] ?? 'TossPayments API error',
-                $response->status()
+                $response->status(),
+                isset($error['code']) ? (string) $error['code'] : null,
+                is_array($error) ? $error : null,
             );
         }
 

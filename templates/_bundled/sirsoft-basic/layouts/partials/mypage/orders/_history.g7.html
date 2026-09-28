@@ -46,6 +46,17 @@
           {{order.data.delivered_at ?? ''}}
         </span>
       </div>
+      <!-- 구매확정일시 (구매확정된 경우만) -->
+      <div data-if="{{order.data.confirmed_at_formatted}}" class="flex items-center justify-between">
+        <span class="text-gray-500 dark:text-gray-400">
+          <responsive on="portable" class="text-gray-500 dark:text-gray-400 text-sm"/>
+          $t:mypage.order_detail.confirmed_at
+        </span>
+        <span class="text-gray-900 dark:text-white">
+          <responsive on="portable" class="text-gray-900 dark:text-white text-sm"/>
+          {{order.data.confirmed_at_formatted ?? ''}}
+        </span>
+      </div>
       <!-- 취소일시 (취소된 경우만) -->
       <div data-if="{{order.data.cancelled_at_formatted}}" class="flex items-center justify-between">
         <span class="text-gray-500 dark:text-gray-400">

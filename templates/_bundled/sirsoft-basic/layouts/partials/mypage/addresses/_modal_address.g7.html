@@ -23,7 +23,7 @@
       <!-- 배송국가 (D10 — 해외배송 활성 시에만 표시. _global.editingAddress.country_code 저장. 선택에 따라 국내/해외 주소 입력 분기. 체크아웃 배송지 관리 모달과 동형.) -->
       <div data-if="{{_global.modules?.['sirsoft-ecommerce']?.shipping?.international_shipping_enabled === true}}">
         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">$t:shop.checkout.shipping_country</label>
-        <select name="country_code" value="{{_global.editingAddress?.country_code ?? _global.preferredShippingCountry ?? 'KR'}}" options="{{(_global.modules?.['sirsoft-ecommerce']?.shipping?.available_countries ?? []).filter(c => c.is_active).map(c => ({ value: c.code, label: (c.name?.[$locale] ?? c.name?.ko ?? c.code) }))}}" class="w-full">
+        <select name="country_code" value="{{_global.editingAddress?.country_code ?? _global.preferredShippingCountry ?? 'KR'}}" options="{{(_global.modules?.['sirsoft-ecommerce']?.shipping?.available_countries ?? []).filter(c => c.is_active).map(c => ({ value: c.code, label: ($localized(c.name) || c.code) }))}}" class="w-full">
           <on type="change">
             <!-- 배송 국가 — 이 값이 아래 주소 칸을 국내형/해외형으로 갈라 놓는다. 주문서와 달리 여기서는
                  배송비를 다시 계산하지 않는다(저장만 하는 자리라 계산할 주문이 없다) -->
@@ -67,21 +67,15 @@
           <!-- 우편번호 + 검색 버튼 -->
           <div class="flex gap-2">
             <input type="text" name="zipcode" placeholder="$t:shop.checkout.zipcode_placeholder" class="{{_local.addressErrors?.zipcode ? 'w-28 px-3 py-2 border-2 border-red-500 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-sm' : 'w-28 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-sm'}}" :readOnly="true"/>
+            <!-- 콜백은 callbacks 에 둔다 — props 는 평가되어 전달되고 주입 컴포넌트는 extensionPointCallbacks 를 읽는다 -->
             <extension-point name="address_search_slot" data-ref="modal_address_search_slot">
               <prop name="readOnlyFields">
                 <item>zipcode</item>
                 <item>address</item>
               </prop>
-              <prop name="onAddressSelect">
-                <field name="handler" value="setState"/>
-                <field name="params">
-                  <field name="target" value="global"/>
-                  <field name="editingAddress.zipcode" value="{{$event.zipcode}}"/>
-                  <field name="editingAddress.address" value="{{$event.address}}"/>
-                  <field name="editingAddress.region" value="{{$event.region}}"/>
-                  <field name="editingAddress.city" value="{{$event.city}}"/>
-                </field>
-              </prop>
+              <callback name="onAddressSelect">
+                <set-state target="global" editingAddress.zipcode="{{$event.zipcode}}" editingAddress.address="{{$event.address}}" editingAddress.region="{{$event.region}}" editingAddress.city="{{$event.city}}"/>
+              </callback>
             </extension-point>
           </div>
           <!-- 기본 주소 -->
@@ -113,6 +107,7 @@
       </div>
       <!-- 기본 배송지로 설정 체크박스 -->
       <div class="flex items-center gap-2 pt-2">
+        <!-- 이 폼을 여는 모든 경로가 is_default 를 boolean 으로 시드한다 — 신규는 false 리터럴, 수정은 (bool) 캐스팅된 응답값(2026-09-01 진입 경로 전수 실측). 그래서 자동바인딩이 boolean 아닌 값을 볼 자리가 없다. 정적 검사는 이 시드까지 보지 못해 경고를 남긴다(면제 표식 미지원 룰). -->
         <checkbox id="address_is_default" name="is_default" class="w-4 h-4 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600 rounded focus:ring-gray-900 dark:focus:ring-white"/>
         <label for="address_is_default" class="text-sm text-gray-700 dark:text-gray-300 cursor-pointer">$t:mypage.addresses.form.set_default</label>
       </div>

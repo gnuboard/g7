@@ -131,7 +131,7 @@
                             "props": {
                                 "name": "country_code",
                                 "value": "{{_global.editingAddress?.country_code ?? _global.preferredShippingCountry ?? 'KR'}}",
-                                "options": "{{(_global.modules?.['sirsoft-ecommerce']?.shipping?.available_countries ?? []).filter(c => c.is_active).map(c => ({ value: c.code, label: (c.name?.[$locale] ?? c.name?.ko ?? c.code) }))}}",
+                                "options": "{{(_global.modules?.['sirsoft-ecommerce']?.shipping?.available_countries ?? []).filter(c => c.is_active).map(c => ({ value: c.code, label: ($localized(c.name) || c.code) }))}}",
                                 "className": "w-full"
                             }
                         }
@@ -331,6 +331,7 @@
                                             }
                                         },
                                         {
+                                            "comment": "콜백은 callbacks 에 둔다 — props 는 평가되어 전달되고 주입 컴포넌트는 extensionPointCallbacks 를 읽는다",
                                             "id": "modal_address_search_slot",
                                             "type": "extension_point",
                                             "name": "address_search_slot",
@@ -338,7 +339,9 @@
                                                 "readOnlyFields": [
                                                     "zipcode",
                                                     "address"
-                                                ],
+                                                ]
+                                            },
+                                            "callbacks": {
                                                 "onAddressSelect": {
                                                     "handler": "setState",
                                                     "params": {
@@ -524,6 +527,7 @@
                     },
                     "children": [
                         {
+                            "comment": "이 폼을 여는 모든 경로가 is_default 를 boolean 으로 시드한다 — 신규는 false 리터럴, 수정은 (bool) 캐스팅된 응답값(2026-09-01 진입 경로 전수 실측). 그래서 자동바인딩이 boolean 아닌 값을 볼 자리가 없다. 정적 검사는 이 시드까지 보지 못해 경고를 남긴다(면제 표식 미지원 룰).",
                             "type": "basic",
                             "name": "Checkbox",
                             "props": {

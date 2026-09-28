@@ -18,7 +18,7 @@
                 "index_var": "tIdx"
             },
             "props": {
-                "className": "excel-card"
+                "className": "excel-card mb-3"
             },
             "children": [
                 {
@@ -134,6 +134,7 @@
                                                 "value": "{{type.name ?? {}}}",
                                                 "layout": "compact",
                                                 "placeholder": "$t:sirsoft-ecommerce.admin.settings.shipping.types.form.name_ko_placeholder",
+                                                "error": "{{_local.errors?.['shipping.types.' + type._idx + '.name.' + ($locale ?? 'ko')]?.[0] ?? _local.errors?.['shipping.types.' + type._idx + '.name']?.[0] ?? ''}}",
                                                 "disabled": "{{_computed.isReadOnly}}"
                                             }
                                         }

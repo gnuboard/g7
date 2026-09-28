@@ -28,6 +28,9 @@
             "type": "basic",
             "name": "Div",
             "if": "{{presets.data && presets.data.length > 0}}",
+            "props": {
+                "className": "stack-tight"
+            },
             "children": [
                 {
                     "id": "preset_item_dynamic_{{presetIdx}}",

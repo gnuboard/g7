@@ -61,6 +61,9 @@ effects:
   - dbank_account_info_summarizes_bank_account                       # getAccountInfo dbank 분기 (계좌 요약 표시)
   - manual_deposit_records_payment_only_without_order_transition     # markOrderComplete=false: 입금(payment)만 기록, 주문 상태 전이 없음
   - manual_deposit_reconciles_payment_only_for_already_completed_order # order_status=결제완료/payment=미입금 불일치: payment 만 정합화(부수효과 미재실행)
+  - manual_deposit_reconciles_order_totals_when_payment_already_paid # S2-D4: payment=PAID/주문 결제금액 0 불일치를 결제완료 일괄 전이가 정합화
+  # 2026-09-17 실측 주문 1496: 결제대기 → 상품준비중처럼 결제완료를 건너뛰는 일괄 전이도 같은 정합화를 탄다
+  - manual_deposit_reconciles_order_totals_when_bulk_status_skips_payment_complete
   - manual_deposit_rejects_when_payment_already_paid                 # payment 가 이미 PAID 면 입금확인 거부(422) / 서비스는 멱등
   - zero_amount_order_syncs_option_status_on_create
   - admin_status_update_syncs_option_status_excluding_cancelled

@@ -78,6 +78,34 @@ class OrderShippingRepository implements OrderShippingRepositoryInterface
     /**
      * {@inheritDoc}
      */
+    public function findFirstByOrderOptionId(int $orderOptionId): ?OrderShipping
+    {
+        return $this->model
+            ->where('order_option_id', $orderOptionId)
+            ->orderBy('id')
+            ->first();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function replicateForOrderOption(OrderShipping $source, int $orderOptionId, array $overrides = []): OrderShipping
+    {
+        $copy = $source->replicate(['shipped_at', 'estimated_arrival_at', 'delivered_at', 'confirmed_at']);
+        $copy->order_option_id = $orderOptionId;
+
+        foreach ($overrides as $column => $value) {
+            $copy->{$column} = $value;
+        }
+
+        $copy->save();
+
+        return $copy;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     public function updateTrackingByOrderOptionId(int $orderOptionId, array $tracking): ?OrderShipping
     {
         $payload = array_filter(
@@ -88,7 +116,8 @@ class OrderShippingRepository implements OrderShippingRepositoryInterface
             static fn ($value) => $value !== null && $value !== ''
         );
 
-        if ($payload === []) {
+        // 송장도 상태도 없으면 쓸 것이 없다. 송장 없이 상태만 옮기는 호출(직접 건넨 교환품의 배송완료)은 받는다.
+        if ($payload === [] && ! isset($tracking['shipping_status'])) {
             return null;
         }
 
@@ -100,6 +129,19 @@ class OrderShippingRepository implements OrderShippingRepositoryInterface
         // 생성하지 않고 갱신을 건너뛴다(상태 전이 자체는 막지 않음).
         if ($shipping === null) {
             return null;
+        }
+
+        // 배송 진행 상태·시각은 호출자(상태 전이)가 함께 넘긴다. 송장만 정정하는 호출에는
+        // 들어 있지 않으므로 그때는 상태가 보존된다.
+        if (isset($tracking['shipping_status'])) {
+            $payload['shipping_status'] = $tracking['shipping_status'];
+        }
+
+        // 발생 시각은 최초 1회만 남긴다 — 같은 단계를 다시 지나도 원래 시각을 덮지 않는다.
+        foreach (['shipped_at', 'delivered_at'] as $timestamp) {
+            if (isset($tracking[$timestamp]) && $shipping->{$timestamp} === null) {
+                $payload[$timestamp] = $tracking[$timestamp];
+            }
         }
 
         $shipping->fill($payload)->save();

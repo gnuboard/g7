@@ -13,9 +13,11 @@ use Modules\Sirsoft\Ecommerce\DTO\MileageAdminDeductDto;
 use Modules\Sirsoft\Ecommerce\DTO\MileageAdminEarnDto;
 use Modules\Sirsoft\Ecommerce\Enums\MileageTransactionTypeEnum;
 use Modules\Sirsoft\Ecommerce\Exceptions\MileageValidationException;
+use Modules\Sirsoft\Ecommerce\Models\ClaimPayment;
 use Modules\Sirsoft\Ecommerce\Models\MileageTransaction;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderOption;
+use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ClaimPaymentRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\MileageBalanceRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\MileageTransactionRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Support\MileageRounding;
@@ -34,11 +36,13 @@ class UserMileageService
      * @param  MileageTransactionRepositoryInterface  $ledger  원장 Repository
      * @param  MileageBalanceRepositoryInterface  $cache  잔액 캐시 Repository
      * @param  EcommerceSettingsService  $settings  환경설정 서비스
+     * @param  ClaimPaymentRepositoryInterface  $claimPaymentRepository  클레임 추가결제 Repository (차감·환급 멱등 잠금 축)
      */
     public function __construct(
         private MileageTransactionRepositoryInterface $ledger,
         private MileageBalanceRepositoryInterface $cache,
         private EcommerceSettingsService $settings,
+        private ClaimPaymentRepositoryInterface $claimPaymentRepository,
     ) {}
 
     /**
@@ -499,6 +503,64 @@ class UserMileageService
     }
 
     /**
+     * 클레임 환불 실행 시 사용 마일리지를 환급합니다. (order_refund_id 멱등, 신규 lot)
+     *
+     * 취소 발 복원(`restoreForCancel`)과 같은 정책(신규 lot, 복원 시점 + expiry_days)이며
+     * 멱등 축만 다르다 — 클레임 환불(교환·반품·직접 환불신청)은 OrderCancel 이 없어
+     * 환불 레코드(`order_refund_id`)가 멱등 기준이다. 같은 환불의 실행이 재시도되어도
+     * 환급 lot 은 한 번만 발행된다.
+     *
+     * @param  int  $userId  사용자 ID
+     * @param  int  $orderId  주문 ID
+     * @param  int  $orderRefundId  주문 환불 ID (멱등 기준)
+     * @param  float  $amount  환급액
+     * @param  string  $currency  통화 코드
+     * @return MileageTransaction|null 환급 거래 (이미 환급됐거나 0원이면 null)
+     */
+    public function restoreForRefund(int $userId, int $orderId, int $orderRefundId, float $amount, string $currency): ?MileageTransaction
+    {
+        if ($this->ledger->existsRestoreForRefund($orderRefundId)) {
+            return null;
+        }
+
+        if ($amount <= 0) {
+            return null;
+        }
+
+        $expiresAt = $this->resolveEarnExpiry();
+
+        $tx = $this->ledger->createTransaction([
+            'user_id' => $userId,
+            'currency' => $currency,
+            // 환불 발 환급이므로 '환불 복원' 이다 — 취소 발과 같은 타입을 쓰면 원장 라벨이
+            // "주문취소 복원" 으로 나가 실제 사유와 어긋난다. 멱등 판정(existsRestoreForRefund)은
+            // 두 타입을 모두 받으므로 축은 그대로다.
+            'type' => MileageTransactionTypeEnum::REFUND_RESTORE->value,
+            'amount' => $amount,
+            'remaining_amount' => $amount,
+            'balance_after' => $this->ledger->getBalanceByCurrency($userId, $currency) + $amount,
+            'order_id' => $orderId,
+            'order_refund_id' => $orderRefundId,
+            'expires_at' => $expiresAt,
+            'description' => __('sirsoft-ecommerce::activity_log.description.mileage_restore', ['amount' => ecommerce_format_price($amount, $currency)]),
+        ]);
+
+        // 원 사용 거래에 동일 order_refund_id 역주입 — 환급 ↔ 원 사용 거래 연결 (취소 축과 대칭)
+        $this->ledger->linkUsageToRefund($orderId, $orderRefundId);
+
+        $this->cache->recalculateForUser($userId, $currency);
+
+        $this->logActivity('mileage.restore', [
+            'loggable' => $tx,
+            'description_key' => 'sirsoft-ecommerce::activity_log.description.mileage_restore',
+            'description_params' => ['amount' => ecommerce_format_price((int) $amount, $currency)],
+            'properties' => ['order_id' => $orderId, 'order_refund_id' => $orderRefundId, 'currency' => $currency],
+        ]);
+
+        return $tx;
+    }
+
+    /**
      * 결제 실패/결제창 닫기로 인한 주문 취소 시 사용 마일리지를 복원합니다.
      *
      * 정식 주문취소(OrderCancel 레코드 + 환불 정산)와 달리, 결제 완료 전 주문이
@@ -546,69 +608,43 @@ class UserMileageService
     }
 
     /**
-     * 적립 회수 (취소 전이 시 기적립건 회수 — §2 부족 회수 정책)
+     * 적립 회수 — **이미 적립이 끝난 건은 회수하지 않는다.** (운영 결정 2026-09-23)
+     *
+     * 원장에 확정된 적립은 되돌리지 않는다. 운영자가 반품·교환·취소를 늦게 처리해 적립이 먼저
+     * 나갔다면 그것은 운영의 책임이고, 뒤늦게 회수하면 **회원이 이미 쓰거나 소멸시킨 적립을
+     * 살아 있는 다른 적립에서 대신 빼 오게 된다.**
+     *
+     * 왜 그렇게 되는가 — 회수액 기준이 lot 의 `amount`(원 적립액)인데, 그 lot 의 `remaining_amount`
+     * 는 사용·만료로 이미 줄어 있을 수 있다. 모자란 만큼은 `recoverPoints()` 가 **다른 lot 에서
+     * FIFO 로** 가져갔고, 전액을 가져가면 `shortfall` 이 0 이라 `metadata` 에 흔적조차 남지 않았다.
+     * (2026-09-22 #599 3차 실측 L-1 · T2-D13: 만료로 잔여 0 이 된 1,260원 적립을 회수하자
+     *  관리자 지급 lot 이 34,000 → 32,740 으로 깎였다. 회원은 같은 1,260원을 소멸과 회수로 두 번 잃었다.)
+     *
+     * 부분 반품에서 과다 회수되던 것도 함께 사라진다 — 주문옵션이 분할돼도 적립 lot 은 분할 전
+     * 금액을 그대로 들고 있었고(`applyDeltaToExistingEarnLot()` 이 증액 전용이라 줄지 않는다),
+     * 회수가 그 값을 기준으로 돌아 수량 2 반품에 3개분이 빠졌다. 회수 자체를 하지 않으므로 무관해진다.
+     *
+     * 적립 **전**이면 lot 이 없어 아래 존재 확인에서 그대로 `null` 을 돌려주므로 별도 분기가 없다.
+     * 적립 예정분이 나가지 않게 막는 것은 이 메서드가 아니라 **주문옵션의 상태**가 한다 —
+     * 적립 대상 조회(`getEarnableOptions()`)가 `option_status` 를 보므로, 반품완료(`returned`)·
+     * 교환완료(`exchanged`)·취소(`cancelled`)로 바뀐 옵션은 스케줄러 대상에서 자동으로 빠진다.
+     *
+     * 호출부(주문옵션 취소 전이 · 교환 완료 · 반품 완료) 3곳은 그대로 두었다 — 정책이 바뀌면
+     * 이 한 곳만 되돌리면 되고, 호출 흐름을 지우면 되살릴 때 세 곳을 다시 찾아야 한다.
      *
      * @param  Order  $order  주문
      * @param  OrderOption  $option  주문옵션
-     * @return MileageTransaction|null 회수 거래 (회수 대상 없으면 null)
+     * @return MileageTransaction|null 항상 null (회수하지 않는다)
      */
     public function cancelEarnForOption(Order $order, OrderOption $option): ?MileageTransaction
     {
-        if ($order->user_id === null) {
-            return null;
-        }
-
-        // 해당 옵션 적립건 존재 확인 (실제 회수 대상은 트랜잭션 안에서 잠금과 함께 되읽는다)
-        if ($this->ledger->findEarnLotForOption($option->id) === null) {
-            return null;
-        }
-
-        $currency = $this->baseCurrencyForOrder($order);
-
-        return DB::transaction(function () use ($order, $option, $currency) {
-            // 회수액은 잠근 행의 커밋된 금액 기준이어야 한다 — 트랜잭션 밖에서 읽은 값을 쓰면
-            // 그 사이 반영된 적립 증액분이 회수에서 누락된다.
-            $earnLot = $this->ledger->findEarnLotForOptionForUpdate($option->id);
-
-            if ($earnLot === null) {
-                return null;
-            }
-
-            $toRecover = (float) $earnLot->amount;
-
-            $shortfall = $this->recoverPoints($order->user_id, $currency, $toRecover, $earnLot);
-
-            $tx = $this->ledger->createTransaction([
-                'user_id' => $order->user_id,
-                'currency' => $currency,
-                'type' => MileageTransactionTypeEnum::EARN_CANCEL->value,
-                'amount' => -($toRecover - $shortfall),
-                'remaining_amount' => 0,
-                'balance_after' => $this->ledger->getBalanceByCurrency($order->user_id, $currency),
-                'order_id' => $order->id,
-                'order_option_id' => $option->id,
-                'source_transaction_id' => $earnLot->id,
-                'metadata' => $shortfall > 0 ? ['shortfall' => $shortfall] : null,
-                'description' => __('sirsoft-ecommerce::activity_log.description.mileage_earn_cancel', ['amount' => ecommerce_format_price($toRecover, $currency)]),
-            ]);
-
-            $this->cache->recalculateForUser($order->user_id, $currency);
-            $this->cache->recalculatePending($order->user_id, $currency);
-
-            $this->logActivity('mileage.earn_cancel', [
-                'loggable' => $tx,
-                'description_key' => 'sirsoft-ecommerce::activity_log.description.mileage_earn_cancel',
-                'description_params' => ['amount' => ecommerce_format_price((int) $toRecover, $currency)],
-                'properties' => [
-                    'order_id' => $order->id,
-                    'order_option_id' => $option->id,
-                    'currency' => $currency,
-                    'shortfall' => $shortfall,
-                ],
-            ]);
-
-            return $tx;
-        });
+        // 적립이 끝났든(lot 존재) 아직이든(lot 없음) 결과는 같다 — 아무것도 하지 않는다.
+        // 시그니처와 호출부 3곳은 유지한다: 정책이 바뀌면 이 본문만 되돌리면 된다.
+        //
+        // `EARN_CANCEL` 거래 유형과 그 언어팩(`activity_log.description.mileage_earn_cancel`)은
+        // 남겨 둔다 — 이 결정 전에 쌓인 회수 기록을 마이페이지·관리자 내역이 계속 보여 줘야 한다
+        // (운영 결정 2026-09-23: 「앞으로만 막고 지나간 건은 둔다」).
+        return null;
     }
 
     /**
@@ -845,6 +881,7 @@ class UserMileageService
      * 거래/캐시 행은 이후 cascade 또는 명시 삭제로 함께 사라집니다.
      *
      * @param  int  $userId  탈퇴 사용자 ID
+     * @return void 반환값 없음
      */
     public function recordWithdrawalExpiry(int $userId): void
     {
@@ -879,6 +916,7 @@ class UserMileageService
      * (탈퇴는 soft 상태 변경이라 cascadeOnDelete 가 발화하지 않으므로 명시 삭제 필수).
      *
      * @param  int  $userId  탈퇴/삭제 회원 ID
+     * @return void 반환값 없음
      */
     public function purgeForUser(int $userId): void
     {
@@ -1015,45 +1053,10 @@ class UserMileageService
         });
     }
 
-    /**
-     * 적립 회수 시 lot 잔여를 우선 차감 → 타 lot FIFO → 부족분 반환 (§2 정책)
-     *
-     * @param  int  $userId  사용자 ID
-     * @param  string  $currency  통화 코드
-     * @param  float  $amount  회수액
-     * @param  MileageTransaction  $earnLot  대상 적립건
-     * @return float 회수하지 못한 부족액
-     */
-    private function recoverPoints(int $userId, string $currency, float $amount, MileageTransaction $earnLot): float
-    {
-        $remaining = $amount;
-
-        // 1) 해당 earn lot 잔여 우선 차감
-        $fromSelf = min((float) $earnLot->remaining_amount, $remaining);
-        if ($fromSelf > 0) {
-            $this->ledger->decrementRemaining($earnLot, $fromSelf);
-            $remaining -= $fromSelf;
-        }
-
-        // 2) 타 lot FIFO 차감
-        if ($remaining > 0) {
-            $lots = $this->ledger->getActiveLotsForUpdate($userId, $currency);
-            foreach ($lots as $lot) {
-                if ($remaining <= 0) {
-                    break;
-                }
-                if ($lot->id === $earnLot->id) {
-                    continue;
-                }
-                $take = min((float) $lot->remaining_amount, $remaining);
-                $this->ledger->decrementRemaining($lot, $take);
-                $remaining -= $take;
-            }
-        }
-
-        // 3) 부족분 반환 (음수 잔액 구조적 불가)
-        return max(0, $remaining);
-    }
+    // 적립 회수 계산(`recoverPoints()`)은 제거했다 — `cancelEarnForOption()` 이 유일한 호출부였고
+    // 그 메서드가 더 이상 회수하지 않는다(운영 결정 2026-09-23). 되살릴 일이 생기면 git 이력에서
+    // 꺼낸다. 남겨 두면 「자기 lot 잔여 → 타 lot FIFO」 라는 잠식 규칙이 호출부 없이 살아 있어,
+    // 다음에 회수를 되살리는 사람이 같은 결함을 그대로 다시 켜게 된다.
 
     /**
      * 적립 만료일을 설정값 기준으로 계산합니다.
@@ -1209,5 +1212,117 @@ class UserMileageService
         $snapshot = $order->currency_snapshot ?? [];
 
         return $snapshot['base_currency'] ?? $this->defaultCurrency();
+    }
+
+    /**
+     * 클레임 추가결제를 마일리지로 결제합니다. (FIFO 차감, claim_payment_id 멱등 축)
+     *
+     * 주문 시 사용(`ORDER_USE`)과 같은 거래 유형을 쓰되 `claim_payment_id` 로 결제 건에 묶는다 —
+     * 마일리지 내역 화면의 분류·배지가 기존 8종 어휘를 그대로 읽으므로 새 유형을 늘리지 않는다.
+     *
+     * 멱등은 **이 메서드가 스스로 지킨다**(#599 validate P2 #10). 결제 건 행을 잠근 트랜잭션
+     * 안에서 같은 결제 건의 사용 거래가 있는지 다시 보고, 있으면 그 거래를 돌려준다. 호출부
+     * (`ClaimPaymentService::payWithMileage()`)도 잠그지만, 그 계약에만 기대면 잠그지 않는 새
+     * 호출부 하나가 같은 결제 건으로 두 번 차감한다.
+     *
+     * @param  int  $userId  사용자 ID
+     * @param  int  $amount  차감액
+     * @param  string  $currency  통화 코드
+     * @param  ClaimPayment  $payment  클레임 추가결제 건
+     * @return MileageTransaction 생성된(또는 이미 있던) 사용 거래 (음수)
+     *
+     * @throws MileageValidationException 잔액 부족 시
+     */
+    public function deductForClaimPayment(int $userId, int $amount, string $currency, ClaimPayment $payment): MileageTransaction
+    {
+        return DB::transaction(function () use ($userId, $amount, $currency, $payment) {
+            $this->claimPaymentRepository->findForUpdate((int) $payment->id);
+
+            $existing = $this->ledger->findUsageForClaimPayment((int) $payment->id);
+
+            if ($existing !== null) {
+                return $existing;
+            }
+
+            return $this->consumeFifo(
+                $userId,
+                $amount,
+                $currency,
+                MileageTransactionTypeEnum::ORDER_USE,
+                ['order_id' => $payment->order_id, 'claim_payment_id' => $payment->id],
+                null,
+                null,
+            );
+        });
+    }
+
+    /**
+     * 클레임 추가결제의 마일리지를 환급합니다. (철회·반려 전액 환급 / 재발송지 수정 차액 부분 환급)
+     *
+     * 환급 누적이 결제액을 넘지 않도록 같은 결제 건의 기환급액(`sumRestoredForClaimPayment`)을
+     * 상한으로 삼는다 — 전액 환급을 두 번 부르면 두 번째는 0 이 되어 아무 일도 하지 않는다(멱등).
+     * 환급 lot 은 원본 만료를 승계하지 않고 신규 발행한다(취소 복원과 같은 정책).
+     *
+     * 「기환급액 확인 → 환급 거래 생성」은 **결제 건 행을 잠근 트랜잭션 안**에서 한다
+     * (#599 validate P2 #10). 잠금 없이 두 요청(철회와 차액 정산 등)이 같은 기환급액을 읽으면
+     * 둘 다 상한 안이라고 판단해 각자 lot 을 발행한다 — 낸 마일리지보다 더 돌려준다.
+     *
+     * @param  int  $userId  사용자 ID
+     * @param  float  $amount  환급액
+     * @param  string  $currency  통화 코드
+     * @param  ClaimPayment  $payment  클레임 추가결제 건
+     * @return MileageTransaction|null 환급 거래 (환급할 몫이 없으면 null)
+     */
+    public function restoreForClaimPayment(int $userId, float $amount, string $currency, ClaimPayment $payment): ?MileageTransaction
+    {
+        return DB::transaction(fn () => $this->restoreForClaimPaymentLocked($userId, $amount, $currency, $payment));
+    }
+
+    /**
+     * 결제 건 행을 잠근 채 클레임 추가결제 마일리지를 환급합니다. (`restoreForClaimPayment()` 본체)
+     *
+     * @param  int  $userId  사용자 ID
+     * @param  float  $amount  환급액
+     * @param  string  $currency  통화 코드
+     * @param  ClaimPayment  $payment  클레임 추가결제 건
+     * @return MileageTransaction|null 환급 거래 (환급할 몫이 없으면 null)
+     */
+    private function restoreForClaimPaymentLocked(int $userId, float $amount, string $currency, ClaimPayment $payment): ?MileageTransaction
+    {
+        // 상한의 근거(`points_amount`)도 잠근 행에서 읽는다 — 호출부가 들고 온 모델은 낡았을 수 있다.
+        $locked = $this->claimPaymentRepository->findForUpdate((int) $payment->id) ?? $payment;
+
+        $alreadyRestored = $this->ledger->sumRestoredForClaimPayment((int) $payment->id);
+        $restorable = min($amount, max(0.0, (float) $locked->points_amount - $alreadyRestored));
+
+        if ($restorable <= 0) {
+            return null;
+        }
+
+        $expiresAt = $this->resolveEarnExpiry();
+
+        $tx = $this->ledger->createTransaction([
+            'user_id' => $userId,
+            'currency' => $currency,
+            'type' => MileageTransactionTypeEnum::REFUND_RESTORE->value,
+            'amount' => $restorable,
+            'remaining_amount' => $restorable,
+            'balance_after' => $this->ledger->getBalanceByCurrency($userId, $currency) + $restorable,
+            'order_id' => $payment->order_id,
+            'claim_payment_id' => $payment->id,
+            'expires_at' => $expiresAt,
+            'description' => __('sirsoft-ecommerce::activity_log.description.mileage_restore', ['amount' => ecommerce_format_price($restorable, $currency)]),
+        ]);
+
+        $this->cache->recalculateForUser($userId, $currency);
+
+        $this->logActivity('mileage.restore', [
+            'loggable' => $tx,
+            'description_key' => 'sirsoft-ecommerce::activity_log.description.mileage_restore',
+            'description_params' => ['amount' => ecommerce_format_price((int) $restorable, $currency)],
+            'properties' => ['order_id' => $payment->order_id, 'claim_payment_id' => $payment->id, 'currency' => $currency],
+        ]);
+
+        return $tx;
     }
 }

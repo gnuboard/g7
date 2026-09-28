@@ -109,6 +109,8 @@ admin/`)이 이 템플릿의 베이스(`_admin_base`)를 extends 하고 이 템�
 - [ ] AdminSidebar 의 `MenuItem`/`AdminSidebarProps` 인터페이스 확장 시 이 문서의 §docs/components.md "AdminSidebar 상세" 동기화
 - [ ] 레이아웃·컴포넌트·`data_source` 를 건드렸다면 [`docs/editor-spec.md`](docs/editor-spec.md) 의 동반 의무 표를 따라 `editor-spec/` 블록을 함께 갱신 — 컴포넌트는 팔레트·역량·중첩 **넷 다** 손대야 편집기에서 온전히 동작하고, 하나만 빠지면 절반만 동작한다. 반영은 `php artisan template:update sirsoft-admin_basic --force` (편집기는 활성 디렉토리만 읽는다)
 - [ ] 로그인 화면의 2단계 인증 단계를 고쳤다면 1단계·2단계 `if` 의 상보성과 `login`/`loginTwoFactor` 의 상호배타 `if` 를 함께 확인 — 한쪽이 빠지면 인증번호 단계에서 Enter 가 새 challenge 를 발급한다
+- [ ] 수정 라우트와 등록 라우트가 한 레이아웃을 공유하는 폼(`admin_role_form`·`admin_user_form`)은 생성 조건 `init_actions` 에서 `form: null` 로 직전 레코드를 비우고 `state.form` 기본값을 다시 쓴다 — 엔진은 `layout_name` 이 바뀔 때만 `_local` 을 비우므로 수정 → 등록 SPA 이동에서 직전 값이 등록 폼에 남는다. 새 폼 레이아웃을 같은 구조로 만들면 같은 액션을 둔다(트러블슈팅 state-global 사례 7)
+- [ ] `_admin_base` 자식 레이아웃에 progressive 데이터소스를 추가하면 `transition_overlay.wait_for` 에도 같은 ID 를 넣는다 — 레이아웃 테스트(`admin-base-transition-overlay`)가 누락을 잡는다
 
 ## 6. 금지 패턴
 
@@ -122,8 +124,48 @@ admin/`)이 이 템플릿의 베이스(`_admin_base`)를 extends 하고 이 템�
 | `onSuccess`·시퀀스 안에서 방금 저장한 상태(`_global.*`/`_local.*`)를 형제 액션의 `if`·값으로 재독 | 그 자리에서는 `{{response.*}}` 만 읽는다 | 그 시점 컨텍스트는 아직 갱신 전이라 stale 값으로 조용히 분기한다 |
 | 레이아웃·TSX 에서 Lucide·Heroicons 식 아이콘 이름(`x-circle`·`refresh-cw`·`more-horizontal`·`alert-circle`·`chevrons-left`·`arrow-down-tray` 등) | Font Awesome 6.4.0 이름(`circle-xmark`·`arrows-rotate`·`ellipsis`·`circle-exclamation`·`angles-left`·`download`) | 관리자 템플릿 `Icon` 은 이름을 `fa-{이름}` 로만 바꾼다 — FA 에 없는 이름은 오류 없이 **빈칸**으로 그려진다. 가드: `tests/Unit/Extension/FontIconNameTest.php` |
 | 원·칸을 그리는 스타일 자산(`danger-confirm-icon` 등, 글자 크기 없음)을 `<icon>` 요소에 직접 부여 | 자산은 감싸는 요소에, 아이콘은 그 안에(`<div class="danger-confirm-icon"><icon …/></div>`) | Font Awesome 의 `display` 가 자산의 가운데 정렬을 이기고 글리프는 상속 글자 크기에 머문다 — 원 위쪽에 작게 붙는다. 가드: `tests/Unit/Extension/FontIconSizingTest.php` |
+| `CodeEditor` 에서 심기(prime)보다 먼저 `<Editor>` 를 렌더하거나 `loader.init()` 호출 | 심기가 끝난 뒤에 렌더·init 한다(`primed` 게이트) | `<Editor>` 는 렌더되자마자 자기 effect 에서 `init()` 을 부른다. 먼저 불리면 라이브러리가 **자기 AMD 로더 스크립트를 따로 주입**해 `_amdLoaderGlobal` 이 두 번 선언되고 그 판의 `require` 가 통째로 죽는다 (S3-D12) |
+| `CodeEditor` 의 중복 심기 가드를 모듈 수준 변수로 선언 | `window.__g7MonacoPriming` 에 둔다 | 이 번들은 화면마다 따로 평가될 수 있어 모듈 변수로는 같은 판에서 두 번 도는 것을 못 막는다 (실측: 로더 스크립트 태그가 3개까지 늘었다) |
 | 컴포넌트·핸들러가 `fetch` 로 직접 요청하며 대상 출처를 보지 않고 토큰(Bearer·XSRF)을 싣거나, prop 으로 받은 주소로 곧장 `location.href` 이동 | `src/support/sameOriginRequest.ts` 의 `isSameOriginRequest(url)` 이 true 일 때만 토큰을 싣고 이동한다 | 주소가 레이아웃 prop·응답 본문이면 레이아웃 편집 권한만으로 관리자 토큰을 외부로 보내거나 `javascript:` 를 실행시킬 수 있다(KVE-2026-2350) |
 <!-- @intent END -->
+
+### Monaco 편집기 확보 계약 (S3-D12)
+
+동봉한 Monaco 는 **0.56.0** 이고, `@monaco-editor/loader@1.6.x` 와 **호환되지 않는다.**
+로더는 인스턴스를 `editor.main` 의 `m` 속성에서 꺼내는데 0.56.0 은 `m` 을 내보내지 않는다
+(`e.m=` 출현 0회). 그러면 로더가 `undefined` 로 resolve 하고, React 래퍼가
+
+```js
+m.then(h => (a.current = h) && I(!1))   // h 가 falsy 면 && 단락 → 로딩 해제 안 됨
+```
+
+**할당한 뒤 그 값의 참을 검사**하므로 「편집기를 불러오는 중...」에서 영영 멈춘다.
+
+**이 실패는 조용하다** — AMD 요청은 전부 200 이고 `window.monaco.editor.create` 도 정상
+함수로 존재하며 콘솔 오류도 0건이다. 자산·권한·경로를 아무리 재도 드러나지 않는다.
+관측 가능한 유일한 값은 **`monaco.editor.getModels().length === 0`** 이다.
+
+그래서 `CodeEditor.tsx` 는 **로더보다 먼저** 동봉본을 받아 `window.monaco` 에 심는다 —
+로더의 `init()` 에는 「`window.monaco.editor` 가 이미 있으면 그것을 쓴다」는 경로가 있어,
+그 경로를 타면 `m` 을 읽지 않는다. `m` 을 뒤늦게 채우는 것으로는 고쳐지지 **않는다**
+(`wrapperPromise` 는 1회만 resolve 된다).
+
+Monaco 를 올릴 때는 `templates/_bundled/sirsoft-admin_basic/tests/Playwright/specs/admin/code-editor-monaco-vendored-version.spec.ts`
+세 축(자산 200 · 마운트 · **로더 1회 실행**)을 함께 확인한다. 마운트만 재면 로더가 두 번
+돌아도 green 이다 — 먼저 뜬 편집기가 살아 있기 때문이다.
+
+심기에는 3초 제한 시간이 있다(자산이 영영 오지 않을 때 화면이 굳지 않게). 제한 시간이 지났는데
+심기가 넣은 로더(`script[data-g7-monaco-loader]`)가 아직 `window.monaco` 를 채우지 못했으면
+`loader.init()` 을 **부르지 않고** 평문 폴백으로 넘긴다 — 라이브러리 `init()` 은 `window.monaco.editor`
+가 없으면 자기 `loader.js` 를 또 넣기 때문이다. [다시 시도]는 그 사이 심기가 끝났으면 정상 경로를 탄다.
+
+### 알림 템플릿 편집 창 사본 (코어·게시판·이커머스·환율 플러그인)
+
+`_modal_notification_template_form` 은 게시판(`sirsoft-board`)·이커머스(`sirsoft-ecommerce`)·환율 플러그인
+(`sirsoft-koreaexim`)이 같은 코어 저장 API 로 쓰는 사본을 갖는다. 수신자 규칙 종류를 바꾸면 **새 종류의 빈
+규칙**으로 갈아 끼우고(앞 종류의 `value`·`display_names`·`relation` 은 버린다 — 남기면 회원 UUID 가 역할로
+저장돼 수신자 0명), 관련 사용자면 정의가 선언한 첫 `relation` 을 채운다(서버가 선언 안의 값만 받는다).
+「행위자 제외」는 역할↔특정 회원 사이에서만 이어 간다. 이 규칙을 바꾸면 네 벌을 함께 바꾼다.
 
 ## 7. 테스트 실행
 
@@ -131,9 +173,9 @@ admin/`)이 이 템플릿의 베이스(`_admin_base`)를 extends 하고 이 템�
 | 종류 | 개수 | 위치 |
 |---|---|---|
 | PHPUnit | 0개 | — |
-| Vitest | 252개 | `vitest.config.ts` |
-| Playwright | 17개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 12개 | `tests/scenarios` |
+| Vitest | 260개 | `vitest.config.ts` |
+| Playwright | 18개 | `tests/Playwright` |
+| 시나리오 매니페스트 | 16개 | `tests/scenarios` |
 
 ```bash
 # Vitest (확장 디렉토리에서) (PowerShell)

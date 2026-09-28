@@ -2,7 +2,11 @@
 <layout name="admin_board_post_form" version="1.0.0" extends="_admin_base">
   <meta title="{{form_meta?.data?.board?.name}} {{route?.id ? '$t:sirsoft-board.admin.posts.form.edit_title' : (query?.parent_id ? '$t:sirsoft-board.admin.posts.reply.title' : '$t:sirsoft-board.admin.posts.form.create_title')}}" description="{{form_meta?.data?.board?.name}}$t:sirsoft-board.admin.posts.page_description_with_board"/>
   <!-- 폼에 채울 값 — `initLocal` 로 `_local.form` 을 만든다. 세 갈래(신규·수정·답글)를 엔드포인트가 아니라 query 로 갈라 한 자리에서 받는다. 422 만 토스트로 흘리는 이유는 그것이 「화면은 뜨는데 값이 어긋난」 경우라서다(403·404 는 화면 자체를 못 세운다) -->
-  <data-source id="form_data" label_key="$t:sirsoft-board.editor.data_source.form_data" type="api" endpoint="/api/modules/sirsoft-board/admin/board/{{route.slug}}/posts/form-data{{route?.id ? '?post_id=' + route.id : (query?.parent_id ? '?parent_id=' + query.parent_id : '')}}" method="GET" :auto_fetch="true" :auth_required="true" :cache="false" :refetchOnMount="true" initLocal="form" loading_strategy="blocking">
+  <data-source id="form_data" label_key="$t:sirsoft-board.editor.data_source.form_data" type="api" endpoint="/api/modules/sirsoft-board/admin/board/{{route.slug}}/posts/form-data{{route?.id ? '?post_id=' + route.id : (query?.parent_id ? '?parent_id=' + query.parent_id : '')}}" method="GET" :auto_fetch="true" :auth_required="true" :cache="false" :refetchOnMount="true" loading_strategy="blocking">
+    <init-local>
+      <field name="_merge" value="replace"/>
+      <field name="form" value="{{data}}"/>
+    </init-local>
     <error-handling>
       <on-code code="404">
         <show-error-page target="content"/>
@@ -43,6 +47,8 @@
     <wait-for>form_meta</wait-for>
   </transition-overlay>
   <init>
+    <!-- 생성·답글 모드: 게시글 수정 화면에서 SPA 로 넘어오면 같은 레이아웃이라 엔진이 `_local` 을 비우지 않아 직전 글의 form(id 등)이 남는다. form=null 로 먼저 지운다(객체 대신 null 로 덮어써 완전 삭제). form_data 의 initLocal(_merge: replace)이 이 뒤에 병합돼 서버가 준 새 글 폼만 남는다 — 문자열 initLocal 은 엔진이 기존 form 과 깊은 병합해 두므로 replace 가 함께 필요하다. -->
+    <set-state if="{{!route?.id}}" target="local" :form="null" :hasChanges="false" :errors="null"/>
     <!-- tempKey 생성 (신규/수정 모두 - 취소 시 안전을 위해) -->
     <set-state target="global">
       <field name="_local">

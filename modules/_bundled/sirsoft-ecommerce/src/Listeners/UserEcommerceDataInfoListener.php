@@ -18,8 +18,11 @@ use Modules\Sirsoft\Ecommerce\Services\UserAddressService;
  * core.user.filter_resource_data 필터 훅을 구독해, 찜·장바구니·배송지·상품문의 건수를
  * **관리자 응답에만** 병합합니다.
  *
- * 프로필(/api/me)에는 싣지 않는다 — 네 건의 COUNT 를 부팅 경로마다 돌리게 되고,
+ * 프로필(/api/me)에는 «건수» 를 싣지 않는다 — 네 건의 COUNT 를 부팅 경로마다 돌리게 되고,
  * 사용자 화면은 각 탭이 자기 목록 API 로 같은 값을 더 정확하게 낸다.
+ * 다만 기본 배송지 한 줄(`ecommerce_default_address`)은 프로필에도 싣는다 — 내 정보 화면이
+ * 「어디로 받는가」를 말하지 못하면 주소를 확인하려고 배송지 관리로 나가야 한다(2026-09-21 검수 지적).
+ * 인덱스 단일 행 조회 한 건이라 건수 집계와 부하의 성격이 다르다.
  *
  * 회원 목록(toListArray)에는 이 훅이 발화하지 않으므로 N+1·목록 풀스캔이 구조적으로 없습니다.
  */
@@ -75,7 +78,7 @@ class UserEcommerceDataInfoListener implements HookListenerInterface
     public function injectEcommerceData(array $data, User $user): array
     {
         if (! $this->isAdminRequest()) {
-            return $data;
+            return $this->injectDefaultAddress($data, $user);
         }
 
         try {
@@ -85,6 +88,9 @@ class UserEcommerceDataInfoListener implements HookListenerInterface
                 'address_count' => $this->addressService->countByUserForAdmin($user->id),
                 'inquiry_count' => $this->inquiryService->countByUserForAdmin($user->id),
                 'inquiry_pending_count' => $this->inquiryService->countPendingByUserForAdmin($user->id),
+                // 건수만으로는 「어디로 보내는 주소인가」 를 알 수 없어 회원 상세에서 배송지 관리
+                // 화면으로 한 번 더 나가야 했다. 전체 목록은 그 화면이 내고, 여기는 앞 몇 건만 든다.
+                'addresses' => $this->addressService->summarizeForUserInfo($user->id),
             ];
         } catch (QueryException $e) {
             // 테이블이 아직 없거나(설치 직후) 집계가 실패해도 회원 상세 화면 자체는 떠야 한다.
@@ -94,7 +100,35 @@ class UserEcommerceDataInfoListener implements HookListenerInterface
                 'address_count' => 0,
                 'inquiry_count' => 0,
                 'inquiry_pending_count' => 0,
+                'addresses' => [],
             ];
+        }
+
+        return $data;
+    }
+
+    /**
+     * 프로필 응답에 기본 배송지 한 줄을 병합합니다.
+     *
+     * 관리자 요청이 아닌 모든 응답이 이 자리를 지난다 — 부팅 경로인 인증 사용자 응답
+     * (`/api/auth/user`, `toAuthArray`)과 내 프로필 응답(`/api/me`, `toProfileArray`) 둘 다다.
+     * 부팅마다 도므로 `(user_id, is_default)` 인덱스 단일 행 조회 한 건으로 끝낸다. 관리자 상세는
+     * 목록(`ecommerce_data.addresses`)을 따로 싣고 이 키는 싣지 않는다.
+     *
+     * 기본 배송지가 없으면 키 값은 null 이다(테이블이 아직 없을 때도 null) — 화면은 null 을
+     * 「아직 등록하지 않음」으로 그린다.
+     *
+     * @param  array<string, mixed>  $data  코어가 직렬화한 회원 응답 데이터
+     * @param  User  $user  회원 모델
+     * @return array<string, mixed> 기본 배송지가 병합된 데이터
+     */
+    private function injectDefaultAddress(array $data, User $user): array
+    {
+        try {
+            $data['ecommerce_default_address'] = $this->addressService->defaultSummaryForUserInfo($user->id);
+        } catch (QueryException $e) {
+            // 설치 직후 테이블이 없더라도 내 정보 화면은 떠야 한다.
+            $data['ecommerce_default_address'] = null;
         }
 
         return $data;

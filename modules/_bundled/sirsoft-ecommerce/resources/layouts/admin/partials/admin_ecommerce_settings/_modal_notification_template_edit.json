@@ -2,7 +2,7 @@
     "comment": "쇼핑몰 설정 — 알림 템플릿 편집 창. **누구에게 · 무엇을 · 어느 언어로** 보낼지를 한 창에서 정한다.\n  \n  수신자는 종류가 여럿이라(주문자·역할·특정 회원 …) 배열로 다루고, 종류에 따라 값 칸이\n  달라진다 — 역할이면 역할 검색, 회원이면 회원 다중 선택이다. 둘 다 목록이 클 수 있어\n  미리 받아 두지 않고 입력할 때마다 API 를 친다(300ms 로 묶는다).\n  \n  제목·본문은 언어별이고, 언어 탭은 `$locales` 에서 만들어지므로 **설치된 언어 수만큼** 늘어난다.\n  값을 담을 때 `Object.assign({}, …)` 로 새 객체를 만드는 이유는 언어 묶음을 제자리에서 고치면\n  변경이 감지되지 않기 때문이다.\n  \n  폼이 전부 `_global.ecommerce_notification_template_form_modal` 아래 있는 것은 창이 별도\n  컨텍스트라 목록의 `_local` 을 보지 못하기 때문이다.",
     "meta": {
         "is_partial": true,
-        "description": "이커머스 알림 템플릿 편집 모달 — _global.ecommerce_ecommerce_notification_template_form_modal 단일 진실 패턴. list 가 매 진입마다 객체 통째 set, 모달 표시/입력 모두 _global 참조 (사례 13 회피 + modals 섹션 isolated 스코프 회피). 미리보기 데이터도 같은 namespace 의 preview 키에 저장."
+        "description": "e2e:allow 타입 라벨 바인딩 1곳만 변경 — 랭팩 키 조회($t:…types.{{def.type}})를 서버가 내려주는 로케일 객체($localized(def.name))로 바꿨다(S2-D14). 정의 47종 중 37종이 원문 키로 노출되던 것을 0 으로 만든 표시 전용 수정이며 판정 로직이 없다. Vitest 4건이 랭팩을 비운 채 렌더를 덮고(notificationDefinitionTypeLabels.test.tsx · 변이 red 확인), 2026-09-16 브라우저로 ko·ja 전건 확인했다(이력 §8-AA-1). 이커머스 알림 템플릿 편집 모달 — _global.ecommerce_ecommerce_notification_template_form_modal 단일 진실 패턴. list 가 매 진입마다 객체 통째 set, 모달 표시/입력 모두 _global 참조 (사례 13 회피 + modals 섹션 isolated 스코프 회피). 미리보기 데이터도 같은 namespace 의 preview 키에 저장."
     },
     "id": "modal_ecommerce_notification_template_edit",
     "type": "composite",
@@ -116,7 +116,7 @@
                                     "props": {
                                         "className": "text-primary text-sm font-semibold"
                                     },
-                                    "text": "$t:sirsoft-ecommerce.admin.settings.notification_definitions.types.{{_global.ecommerce_notification_template_form_modal?.definition?.type ?? ''}}"
+                                    "text": "{{$localized(_global.ecommerce_notification_template_form_modal?.definition?.name) || (_global.ecommerce_notification_template_form_modal?.definition?.type ?? '')}}"
                                 },
                                 {
                                     "type": "basic",
@@ -171,6 +171,9 @@
                                 {
                                     "type": "basic",
                                     "name": "Div",
+                                    "props": {
+                                        "className": "stack-tight"
+                                    },
                                     "children": [
                                         {
                                             "type": "basic",
@@ -247,40 +250,24 @@
                                                                     "text": "$t:admin.settings.notification_definitions.recipients.type_label"
                                                                 },
                                                                 {
+                                                                    "comment": "선언된 relation 이 없는 정의에서 「관련 사용자」를 고르면 수신자가 **0명**이 되고 로그도 남지 않는다 — 그 정의가 지원하는 relation 키를 서버가 실어 줄 때만 이 선택지를 세운다 (E4).",
                                                                     "type": "basic",
                                                                     "name": "Select",
                                                                     "actions": [
                                                                         {
-                                                                            "comment": "수신자 종류. 종류를 바꾸면 아래 값 칸이 통째로 달라지므로 이전 값은 의미를 잃는다.",
+                                                                            "comment": "규칙 종류 전환 — 이 줄을 **새 종류의 빈 규칙**으로 갈아 끼운다. 앞 종류의 값(`value`·`display_names`)과\n                           관계(`relation`)는 새 종류에서 뜻을 잃는다: 회원 UUID 가 역할 칸에 남으면 그대로 역할 식별자로 저장돼\n                           수신자가 0명이 되고 예외도 로그도 남지 않는다. 「행위자 제외」는 역할·특정 회원에서만 뜻이 있어\n                           그 두 종류 사이에서만 이어 간다(발생시킨 본인 규칙에 남으면 그 본인이 빠져 역시 0명이 된다).\n                           관련 사용자는 서버가 relation 을 필수로 받으므로 그 정의가 선언한 첫 관계를 채워 둔다.",
                                                                             "type": "change",
                                                                             "handler": "setState",
                                                                             "params": {
                                                                                 "target": "global",
-                                                                                "ecommerce_notification_template_form_modal.recipients": "{{(_global.ecommerce_notification_template_form_modal?.recipients ?? []).map((r, i) => i === rcptIdx ? {...r, type: $event.target.value} : r)}}"
+                                                                                "ecommerce_notification_template_form_modal.recipients": "{{(_global.ecommerce_notification_template_form_modal?.recipients ?? []).map((r, i) => i === rcptIdx ? { type: $event.target.value, ...((($event.target.value === 'role') || ($event.target.value === 'specific_users')) && ((r.type === 'role') || (r.type === 'specific_users')) && r.exclude_trigger_user ? { exclude_trigger_user: true } : {}), ...(($event.target.value === 'related_user') ? { relation: (_global.ecommerce_notification_template_form_modal?.definition?.relations ?? [])[0] ?? '' } : {}) } : r)}}"
                                                                             }
                                                                         }
                                                                     ],
                                                                     "props": {
                                                                         "value": "{{rcpt.type ?? ''}}",
                                                                         "className": "w-full text-sm",
-                                                                        "options": [
-                                                                            {
-                                                                                "value": "trigger_user",
-                                                                                "label": "$t:admin.settings.notification_definitions.recipients.types.trigger_user"
-                                                                            },
-                                                                            {
-                                                                                "value": "related_user",
-                                                                                "label": "$t:admin.settings.notification_definitions.recipients.types.related_user"
-                                                                            },
-                                                                            {
-                                                                                "value": "role",
-                                                                                "label": "$t:admin.settings.notification_definitions.recipients.types.role"
-                                                                            },
-                                                                            {
-                                                                                "value": "specific_users",
-                                                                                "label": "$t:admin.settings.notification_definitions.recipients.types.specific_users"
-                                                                            }
-                                                                        ]
+                                                                        "options": "{{[{ value: 'trigger_user', label: '$t:admin.settings.notification_definitions.recipients.types.trigger_user' }, ...(((_global.ecommerce_notification_template_form_modal?.definition?.relations ?? []).length > 0) ? [{ value: 'related_user', label: '$t:admin.settings.notification_definitions.recipients.types.related_user' }] : []), { value: 'role', label: '$t:admin.settings.notification_definitions.recipients.types.role' }, { value: 'specific_users', label: '$t:admin.settings.notification_definitions.recipients.types.specific_users' }]}}"
                                                                     }
                                                                 }
                                                             ]
@@ -303,12 +290,34 @@
                                                                             "text": "$t:admin.settings.notification_definitions.recipients.relation_label"
                                                                         },
                                                                         {
+                                                                            "comment": "예전에는 읽기 전용 막대였다 — 「관련 사용자」를 골라도 관계를 지정할 방법이 없어 수신자가 0명이 됐다. 선택지는 그 정의가 선언한 relation 키다(리스너가 `context.related_users` 에 실제로 넣어 주는 키).",
                                                                             "type": "basic",
-                                                                            "name": "Span",
+                                                                            "name": "Select",
+                                                                            "actions": [
+                                                                                {
+                                                                                    "type": "change",
+                                                                                    "handler": "setState",
+                                                                                    "params": {
+                                                                                        "target": "global",
+                                                                                        "ecommerce_notification_template_form_modal.recipients": "{{(_global.ecommerce_notification_template_form_modal?.recipients ?? []).map((r, i) => i === rcptIdx ? {...r, relation: $event.target.value} : r)}}"
+                                                                                    }
+                                                                                }
+                                                                            ],
                                                                             "props": {
-                                                                                "className": "text-label-subtle block w-full px-3 py-1.5 bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-md"
+                                                                                "value": "{{rcpt.relation ?? ''}}",
+                                                                                "className": "w-full text-sm",
+                                                                                "options": "{{[{ value: '', label: '$t:admin.settings.notification_definitions.recipients.relation_placeholder', disabled: true }, ...(_global.ecommerce_notification_template_form_modal?.definition?.relations ?? []).map(r => ({ value: r, label: r }))]}}"
+                                                                            }
+                                                                        },
+                                                                        {
+                                                                            "comment": "저장된 관계가 이 정의의 선언 밖이면(정의가 관계를 바꿨거나 옛 규칙) 서버가 저장을 422 로 거절한다 — 선택칸은 빈칸으로만 보여 이유를 알 수 없으므로 여기서 밝힌다.",
+                                                                            "type": "basic",
+                                                                            "name": "P",
+                                                                            "if": "{{((rcpt.relation ?? '') !== '') && !(_global.ecommerce_notification_template_form_modal?.definition?.relations ?? []).includes(rcpt.relation)}}",
+                                                                            "props": {
+                                                                                "className": "text-warning-soft mt-1"
                                                                             },
-                                                                            "text": "{{rcpt.relation ?? ''}}"
+                                                                            "text": "$t:admin.settings.notification_definitions.recipients.relation_undeclared|relation={{rcpt.relation}}"
                                                                         }
                                                                     ]
                                                                 }
@@ -332,6 +341,7 @@
                                                                             "text": "$t:admin.settings.notification_definitions.recipients.role_label"
                                                                         },
                                                                         {
+                                                                            "comment": "역할은 여러 개를 고를 수 있다 (E3). 서버가 `value` 를 언제나 배열로 실어 주므로(문자열로 저장된 기존 규칙도 읽을 때 배열이 된다) 화면은 사용자 칸과 같은 모양을 쓴다 — 화면에서 문자열/배열을 가르면 그 판정이 두 벌이 되고, 한쪽만 고쳐졌을 때 값이 조용히 덮인다. 선택값이 비어 있을 때 `.map` 을 그냥 돌리지 않고 길이를 먼저 본다 — 실측(§9 T-D2)에서 빈 선택값이 라벨이 배열인 유령 항목 하나를 만들었고, 운영자가 검색어 첫 글자를 치는 순간 드롭다운이 통째로 사라졌다. 라벨을 문자열로 좁히는 것은 그 두 번째 방어선이다.",
                                                                             "type": "composite",
                                                                             "name": "SearchableDropdown",
                                                                             "actions": [
@@ -365,7 +375,7 @@
                                                                                     }
                                                                                 },
                                                                                 {
-                                                                                    "comment": "역할 선택. 배열의 그 줄만 다시 만들어 값을 넣는다(반복 항목은 제자리에서 못 고친다).",
+                                                                                    "comment": "고른 역할(배열)을 이 규칙 줄에 담는다 — 역할도 여러 개를 고를 수 있어 회원 칸과 값 모양이 같다.",
                                                                                     "event": "onChange",
                                                                                     "handler": "setState",
                                                                                     "params": {
@@ -375,12 +385,14 @@
                                                                                 }
                                                                             ],
                                                                             "props": {
-                                                                                "value": "{{rcpt.value ?? ''}}",
-                                                                                "options": "{{[...(_global.ecommerce_notification_template_form_modal?.roleSearchResults ?? []).filter(o => String(o.value) !== String(rcpt.value)), ...(rcpt.value ? [{ value: rcpt.value, label: rcpt.display_name ?? rcpt.value, description: rcpt.value }] : [])]}}",
+                                                                                "multiple": true,
+                                                                                "value": "{{rcpt.value ?? []}}",
+                                                                                "options": "{{[...((rcpt.value ?? []).length > 0 ? (rcpt.value ?? []).map((rid, i) => ({ value: rid, label: String((rcpt.display_names ?? [])[i] ?? rid), description: String(rid) })) : []), ...(_global.ecommerce_notification_template_form_modal?.roleSearchResults ?? []).filter(o => !(rcpt.value ?? []).map(String).includes(String(o.value)))]}}",
                                                                                 "searchPlaceholder": "$t:admin.settings.notification_definitions.recipients.role_search_placeholder",
-                                                                                "noResultsText": "$t:admin.settings.notification_definitions.recipients.users_no_options",
+                                                                                "noResultsText": "$t:admin.settings.notification_definitions.recipients.role_no_options",
                                                                                 "initialText": "$t:admin.settings.notification_definitions.recipients.role_search_placeholder",
                                                                                 "triggerLabel": "$t:admin.settings.notification_definitions.recipients.role_label",
+                                                                                "selectedCountLabel": "$t:admin.settings.notification_definitions.recipients.roles_selected_count",
                                                                                 "className": "w-full"
                                                                             }
                                                                         }
@@ -451,11 +463,12 @@
                                                                             "props": {
                                                                                 "multiple": true,
                                                                                 "value": "{{rcpt.value ?? []}}",
-                                                                                "options": "{{[...(rcpt.value ?? []).map((uid, i) => ({ value: uid, label: (rcpt.display_names ?? [])[i] ?? uid })), ...(_global.ecommerce_notification_template_form_modal?.userSearchResults ?? []).filter(o => !(rcpt.value ?? []).map(String).includes(String(o.value)))]}}",
+                                                                                "options": "{{[...((rcpt.value ?? []).length > 0 ? (rcpt.value ?? []).map((uid, i) => ({ value: uid, label: String((rcpt.display_names ?? [])[i] ?? uid) })) : []), ...(_global.ecommerce_notification_template_form_modal?.userSearchResults ?? []).filter(o => !(rcpt.value ?? []).map(String).includes(String(o.value)))]}}",
                                                                                 "searchPlaceholder": "$t:admin.settings.notification_definitions.recipients.users_placeholder",
                                                                                 "noResultsText": "$t:admin.settings.notification_definitions.recipients.users_no_options",
                                                                                 "initialText": "$t:admin.settings.notification_definitions.recipients.users_placeholder",
                                                                                 "triggerLabel": "$t:admin.settings.notification_definitions.recipients.users_label",
+                                                                                "selectedCountLabel": "$t:admin.settings.notification_definitions.recipients.users_selected_count",
                                                                                 "className": "w-full"
                                                                             }
                                                                         }
@@ -528,7 +541,7 @@
                             ]
                         },
                         {
-                            "comment": "알림 템플릿 편집 모달 본문 확장 슬롯(범용). 채널을 소유한 확장이 그 채널 전용 편집 UI(예: 외부 발송 채널의 템플릿 작성·발송 설정)를 이 자리에 주입한다. 채널 메타 hidden_template_editor=true 인 채널은 아래 코어 제목/본문 입력이 숨겨지고 이 슬롯이 본문 편집을 대신한다. 특정 확장을 알지 못하며, 미주입 시 빈 자리로 남는다.",
+                            "comment": "알림 템플릿 편집 모달 본문 확장 슬롯(범용). 채널을 소유한 확장이 그 채널 전용 편집 UI(예: 외부 발송 채널의 템플릿 작성·발송 설정)를 이 자리에 주입한다. 채널 메타 template_editor='none'(종전 hidden_template_editor=true 와 같은 뜻) 인 채널은 아래 코어 제목/본문 입력이 숨겨지고 이 슬롯이 본문 편집을 대신한다. 특정 확장을 알지 못하며, 미주입 시 빈 자리로 남는다.",
                             "id": "ecommerce_template_form_sections_ext",
                             "type": "extension_point",
                             "name": "notification_template_form_sections",
@@ -546,7 +559,7 @@
                             "id": "ecommerce_template_lang_tabs",
                             "type": "basic",
                             "name": "Div",
-                            "if": "{{!((availableChannels?.data?.channels ?? []).find(c => c.id === _global.ecommerce_notification_template_form_modal?.template?.channel)?.hidden_template_editor === true)}}",
+                            "if": "{{!((availableChannels?.data?.channels ?? []).find(c => c.id === _global.ecommerce_notification_template_form_modal?.template?.channel)?.template_editor === 'none')}}",
                             "props": {
                                 "className": "flex border-b border-gray-200 dark:border-gray-700"
                             },
@@ -581,7 +594,7 @@
                             "id": "ecommerce_template_subject_input",
                             "type": "basic",
                             "name": "Div",
-                            "if": "{{!((availableChannels?.data?.channels ?? []).find(c => c.id === _global.ecommerce_notification_template_form_modal?.template?.channel)?.hidden_template_editor === true)}}",
+                            "if": "{{!((availableChannels?.data?.channels ?? []).find(c => c.id === _global.ecommerce_notification_template_form_modal?.template?.channel)?.template_editor === 'none')}}",
                             "children": [
                                 {
                                     "type": "basic",
@@ -637,7 +650,7 @@
                             "id": "ecommerce_template_body_input",
                             "type": "basic",
                             "name": "Div",
-                            "if": "{{!((availableChannels?.data?.channels ?? []).find(c => c.id === _global.ecommerce_notification_template_form_modal?.template?.channel)?.hidden_template_editor === true)}}",
+                            "if": "{{!((availableChannels?.data?.channels ?? []).find(c => c.id === _global.ecommerce_notification_template_form_modal?.template?.channel)?.template_editor === 'none')}}",
                             "children": [
                                 {
                                     "type": "basic",
@@ -666,25 +679,72 @@
                                             ]
                                         },
                                         {
-                                            "type": "composite",
-                                            "name": "HtmlEditor",
-                                            "actions": [
+                                            "comment": "본문 편집기는 **채널이 정한다** (E2). 메일 본문은 HTML 로 나가고 사이트내 알림은 평문으로 그려지므로, 한 편집기로 두 채널을 다루면 관리자 미리보기와 사용자 화면이 서로 다른 문자열을 보여 준다. 리치는 확장 슬롯이라 CKEditor 가 없으면 기존 입력으로 폴백한다 — 슬롯을 직접 `composite/HtmlEditor` 로 부르면 CKEditor 가 영영 붙지 않는다.",
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "children": [
                                                 {
-                                                    "comment": "본문(현재 언어). 위지윅이라 값이 HTML 문자열로 들어온다.",
-                                                    "type": "change",
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "global",
-                                                        "ecommerce_notification_template_form_modal.template.body": "{{Object.assign({}, _global.ecommerce_notification_template_form_modal?.template?.body, {[_global.ecommerce_notification_template_form_modal?.editLang ?? $locale]: $event.target.value})}}"
+                                                    "comment": "언어 탭을 바꾸면 id 가 바뀌어 편집기가 다시 선다 — 쓰기 경로에 활성 언어가 박혀 있어, 같은 인스턴스를 유지하면 언어를 바꾼 뒤 입력이 **이전 언어** 로 저장된다.",
+                                                    "id": "template_body_rich_{{_global.ecommerce_notification_template_form_modal?.editLang ?? $locale}}",
+                                                    "type": "extension_point",
+                                                    "name": "html_editor",
+                                                    "if": "{{(availableChannels?.data?.channels ?? []).find(c => c.id === _global.ecommerce_notification_template_form_modal?.template?.channel)?.template_editor === 'rich'}}",
+                                                    "props": {
+                                                        "content": "{{_global.ecommerce_notification_template_form_modal?.template?.body?.[_global.ecommerce_notification_template_form_modal?.editLang ?? $locale] ?? ''}}",
+                                                        "multilingual": false,
+                                                        "trackChanges": false,
+                                                        "writeScope": "global",
+                                                        "writePath": "ecommerce_notification_template_form_modal.template.body.{{_global.ecommerce_notification_template_form_modal?.editLang ?? $locale}}",
+                                                        "name": "notification_template_body"
+                                                    },
+                                                    "default": [
+                                                        {
+                                                            "type": "composite",
+                                                            "name": "HtmlEditor",
+                                                            "actions": [
+                                                                {
+                                                                    "comment": "본문(현재 언어). 위지윅이라 값이 HTML 문자열로 들어온다.",
+                                                                    "type": "change",
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "global",
+                                                                        "ecommerce_notification_template_form_modal.template.body": "{{Object.assign({}, _global.ecommerce_notification_template_form_modal?.template?.body, {[_global.ecommerce_notification_template_form_modal?.editLang ?? $locale]: $event.target.value})}}"
+                                                                    }
+                                                                }
+                                                            ],
+                                                            "props": {
+                                                                "content": "{{_global.ecommerce_notification_template_form_modal?.template?.body?.[_global.ecommerce_notification_template_form_modal?.editLang ?? $locale] ?? ''}}",
+                                                                "isHtml": true,
+                                                                "showHtmlModeToggle": false,
+                                                                "className": "min-h-[200px]"
+                                                            }
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "comment": "리치 편집기를 쓰지 않는 채널(사이트내 알림 등)의 본문 칸. 알림센터가 본문을 태그 해석 없이 글자 그대로 그리므로, 서식 없는 입력으로 받아야 관리자가 쓴 글과 고객이 받는 알림이 같아진다.",
+                                                    "id": "template_body_plain",
+                                                    "type": "composite",
+                                                    "name": "HtmlEditor",
+                                                    "if": "{{(availableChannels?.data?.channels ?? []).find(c => c.id === _global.ecommerce_notification_template_form_modal?.template?.channel)?.template_editor !== 'rich'}}",
+                                                    "actions": [
+                                                        {
+                                                            "type": "change",
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "ecommerce_notification_template_form_modal.template.body": "{{Object.assign({}, _global.ecommerce_notification_template_form_modal?.template?.body, {[_global.ecommerce_notification_template_form_modal?.editLang ?? $locale]: $event.target.value})}}"
+                                                            }
+                                                        }
+                                                    ],
+                                                    "props": {
+                                                        "content": "{{_global.ecommerce_notification_template_form_modal?.template?.body?.[_global.ecommerce_notification_template_form_modal?.editLang ?? $locale] ?? ''}}",
+                                                        "isHtml": false,
+                                                        "showHtmlModeToggle": false,
+                                                        "className": "min-h-[200px]"
                                                     }
                                                 }
-                                            ],
-                                            "props": {
-                                                "content": "{{_global.ecommerce_notification_template_form_modal?.template?.body?.[_global.ecommerce_notification_template_form_modal?.editLang ?? $locale] ?? ''}}",
-                                                "isHtml": true,
-                                                "showHtmlModeToggle": false,
-                                                "className": "min-h-[200px]"
-                                            }
+                                            ]
                                         }
                                     ]
                                 }
@@ -694,7 +754,7 @@
                             "id": "ecommerce_template_click_url_input",
                             "type": "basic",
                             "name": "Div",
-                            "if": "{{(_global.ecommerce_notification_template_form_modal?.template?.channel === 'database') && !((availableChannels?.data?.channels ?? []).find(c => c.id === _global.ecommerce_notification_template_form_modal?.template?.channel)?.hidden_template_editor === true)}}",
+                            "if": "{{(_global.ecommerce_notification_template_form_modal?.template?.channel === 'database') && !((availableChannels?.data?.channels ?? []).find(c => c.id === _global.ecommerce_notification_template_form_modal?.template?.channel)?.template_editor === 'none')}}",
                             "children": [
                                 {
                                     "type": "basic",
@@ -745,7 +805,7 @@
                             "id": "ecommerce_template_variables_info",
                             "type": "basic",
                             "name": "Div",
-                            "if": "{{((_global.ecommerce_notification_template_form_modal?.definition?.variables ?? []).length > 0) && !((availableChannels?.data?.channels ?? []).find(c => c.id === _global.ecommerce_notification_template_form_modal?.template?.channel)?.hidden_template_editor === true)}}",
+                            "if": "{{((_global.ecommerce_notification_template_form_modal?.definition?.variables ?? []).length > 0) && !((availableChannels?.data?.channels ?? []).find(c => c.id === _global.ecommerce_notification_template_form_modal?.template?.channel)?.template_editor === 'none')}}",
                             "props": {
                                 "className": "bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-md p-4"
                             },
@@ -826,10 +886,10 @@
                             "name": "Div",
                             "children": [
                                 {
-                                    "comment": "닫기. 저장 중에는 잠긴다 — 요청이 도는 도중에 창이 사라지면 성공·실패 안내가 갈 곳을 잃는다",
+                                    "comment": "미리보기 — 편집 중인 제목·본문을 서버에 보내 변수를 채운 모습을 받아 미리보기 창에 띄운다. 저장 중에는 잠긴다 — 요청이 도는 도중 창이 바뀌면 성공·실패 안내가 갈 곳을 잃는다",
                                     "type": "basic",
                                     "name": "Button",
-                                    "if": "{{!((availableChannels?.data?.channels ?? []).find(c => c.id === _global.ecommerce_notification_template_form_modal?.template?.channel)?.hidden_template_editor === true)}}",
+                                    "if": "{{!((availableChannels?.data?.channels ?? []).find(c => c.id === _global.ecommerce_notification_template_form_modal?.template?.channel)?.template_editor === 'none')}}",
                                     "actions": [
                                         {
                                             "type": "click",
@@ -901,7 +961,7 @@
                                     "text": "$t:common.cancel"
                                 },
                                 {
-                                    "comment": "편집 모달 푸터 확장 슬롯(범용). hidden_template_editor 채널에서는 코어 [저장]/[미리보기]가 숨겨지므로, 그 채널을 소유한 확장이 자기 저장 버튼(코어 수신자 규칙 저장 포함)을 여기에 주입한다. [취소]는 코어가 유지한다.",
+                                    "comment": "편집 모달 푸터 확장 슬롯(범용). template_editor='none' 채널에서는 코어 [저장]/[미리보기]가 숨겨지므로, 그 채널을 소유한 확장이 자기 저장 버튼(코어 수신자 규칙 저장 포함)을 여기에 주입한다. [취소]는 코어가 유지한다.",
                                     "id": "ecommerce_template_form_footer_ext",
                                     "type": "extension_point",
                                     "name": "notification_template_form_footer_actions",
@@ -918,7 +978,7 @@
                                 {
                                     "type": "basic",
                                     "name": "Button",
-                                    "if": "{{!((availableChannels?.data?.channels ?? []).find(c => c.id === _global.ecommerce_notification_template_form_modal?.template?.channel)?.hidden_template_editor === true)}}",
+                                    "if": "{{!((availableChannels?.data?.channels ?? []).find(c => c.id === _global.ecommerce_notification_template_form_modal?.template?.channel)?.template_editor === 'none')}}",
                                     "actions": [
                                         {
                                             "comment": "저장. 성공하면 알림 목록을 다시 부른다 — 목록이 제목·사용 여부를 그대로 보여 주므로 갱신하지 않으면 방금 고친 값이 낡은 채로 남는다.",

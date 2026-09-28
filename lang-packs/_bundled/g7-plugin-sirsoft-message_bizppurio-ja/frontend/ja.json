@@ -169,7 +169,6 @@
       "emphasize_title": "強調表記タイトル",
       "emphasize_subtitle": "強調表記サブタイトル",
       "image": "画像",
-      "image_hint": "jpg/png · 500KB以下 · 横500px以上 · 横:縦 2:1 (アップロードするとURLが自動入力されます)",
       "image_uploading": "画像をアップロード中...",
       "image_upload_failed": "画像のアップロードに失敗しました。",
       "content": "本文",
@@ -204,10 +203,11 @@
       "btn_save": "保存",
       "btn_save_request": "保存して審査申請",
       "request_comment": "審査担当者への伝達事項",
-      "request_comment_placeholder": "例: #{name}=山田太郎, #{order_number}=20260823-0001",
+      "request_comment_placeholder": "例: #{name}=山田太郎, #{order_number}=20260823-1043226571",
       "request_comment_hint": "審査申請時にカカオの審査担当者へ一緒に送られます（任意・500文字以内）。カカオの審査ガイドは本文の変数ごとに例示値を求めるため、変数ごとの例を書いておくと差し戻しを減らせます。保存はされず、申請時にのみ送信されます。",
       "saved_toast": "通知テンプレートを保存しました。",
-      "requested_toast": "審査を申請しました。承認されるとアラートトーク送信が開始されます。"
+      "requested_toast": "審査を申請しました。承認されるとアラートトーク送信が開始されます。",
+      "image_hint": "jpg/png · {{max}} KB 以下 · 幅 {{width}} px 以上 · 幅:高さ 2:1 (アップロードすると URL が自動入力されます)"
     },
     "sms": {
       "modal_title": "SMS本文 — {name}",

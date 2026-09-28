@@ -83,6 +83,28 @@ interface InitEditorParams {
      * 핸들러가 필드명을 알아보는 대신 선언으로 받는다.
      */
     trackChanges?: boolean | string;
+    /**
+     * 편집 결과를 어느 상태 저장소에 쓸지. 기본 `local`.
+     *
+     * 이 편집기는 원래 `_local.form.{name}` 한 자리에만 썼다. 그래서 상태를 `_global` 에
+     * 두는 화면(알림 템플릿 편집 모달)에 슬롯만 갈아끼우면 **타이핑은 되는데 저장 payload 가
+     * 빈다** — 오류도 경고도 없다. 기존 5곳(게시판·상품·페이지)의 동작을 바꾸지 않기 위해
+     * 기본값은 종전 그대로다.
+     */
+    writeScope?: 'local' | 'global' | string;
+    /**
+     * 쓰기 경로(점 표기). 기본 `form.{name}`.
+     *
+     * 다국어 편집기는 여기에 `.{locale}` 이 덧붙는다 — 단일 편집기는 경로를 그대로 쓴다
+     * (모달이 활성 언어까지 포함한 경로를 넘긴다).
+     */
+    writePath?: string;
+}
+
+/** 편집 결과를 쓸 상태 위치 */
+interface EditorWriteTarget {
+    scope: 'local' | 'global';
+    path: string;
 }
 
 /** 툴바 프리셋 */
@@ -1115,6 +1137,7 @@ function createMultilingualTabs(
  * @param value 편집기가 내놓은 HTML
  * @param isMultilingual 다국어 편집기 여부 (`form.{name}.{locale}` vs `form.{name}`)
  * @param tracksChanges 이 입력을 폼 변경(`_local.hasChanges`)으로 칠지 여부. 기본 `true`
+ * @param target 쓰기 위치. 기본(null)은 종전대로 `_local.form.{name}`
  * @return void
  */
 export function syncToForm(
@@ -1122,7 +1145,8 @@ export function syncToForm(
     locale: string,
     value: string,
     isMultilingual: boolean,
-    tracksChanges: boolean = true
+    tracksChanges: boolean = true,
+    target: EditorWriteTarget | null = null
 ): void {
     // setData() 호출 중 change:data 재진입 방지
     if (isSyncSuppressed()) return;
@@ -1152,14 +1176,26 @@ export function syncToForm(
         G7Core.state.setLocal({ hasChanges: true });
     }
 
+    // 쓰기 대상이 `_global` 이면 그 저장소에 경로 그대로 쓴다. `form.{name}_mode` 는
+    // `_local.form` 계약의 일부라 함께 보내지 않는다 — 남의 저장소에 그 키를 남기면
+    // 저장 payload 에 정체 모를 필드가 섞인다.
+    if (target && target.scope === 'global') {
+        const path = isMultilingual ? `${target.path}.${locale}` : target.path;
+
+        (window as any).G7Core?.state?.set?.({ [path]: value });
+
+        return;
+    }
+
+    const basePath = target?.path ?? `form.${name}`;
     const updates: Record<string, any> = {
         [`form.${name}_mode`]: 'html',
     };
 
     if (isMultilingual) {
-        updates[`form.${name}.${locale}`] = value;
+        updates[`${basePath}.${locale}`] = value;
     } else {
-        updates[`form.${name}`] = value;
+        updates[basePath] = value;
     }
 
     // G7 표준 debounce + render: false + selfManaged: true (engine-v1.43.0+)
@@ -1332,6 +1368,38 @@ export async function initEditorHandler(
     // 미평가 표현식(`{{...}}`)이 그대로 들어와도 truthy 문자열이라 기본값 쪽으로 떨어진다.
     const tracksChanges = !(params.trackChanges === false || params.trackChanges === 'false');
 
+    // 쓰기 타깃. 선언이 없으면 종전 그대로 `_local.form.{name}` 이다 — 미평가 표현식
+    // (`{{...}}`)이 그대로 들어오는 경우도 있어 알 수 없는 값은 기본 쪽으로 떨어뜨린다.
+    const writeScope = params.writeScope === 'global' ? 'global' : 'local';
+    const writePath = typeof params.writePath === 'string' && params.writePath.trim() !== ''
+        && !params.writePath.includes('{{')
+        ? params.writePath.trim()
+        : null;
+    const writeTarget: EditorWriteTarget | null = writePath === null
+        ? null
+        : { scope: writeScope, path: writePath };
+
+    /**
+     * 쓰기 타깃에서 현재 값을 읽습니다. (편집 대상 교체 감지용)
+     *
+     * @param locale 이 편집기가 맡은 로케일
+     * @param isMultilingual 다국어 편집기 여부
+     * @return 문자열 값, 읽을 수 없으면 undefined
+     */
+    const readFromTarget = (locale: string, isMultilingual: boolean): string | undefined => {
+        if (!writeTarget) return undefined;
+
+        const G7Core = (window as any).G7Core;
+        const root = writeTarget.scope === 'global'
+            ? G7Core?.state?.get?.()
+            : G7Core?.state?.getLocal?.();
+
+        const path = isMultilingual ? `${writeTarget.path}.${locale}` : writeTarget.path;
+        const value = path.split('.').reduce((acc: any, key: string) => acc?.[key], root);
+
+        return typeof value === 'string' ? value : undefined;
+    };
+
     // content 파싱: 다국어 시 객체, 단일 시 문자열
     // extensionPointProps를 통해 전달되는 경우 표현식이 평가되지 않고 raw 문자열로 전달될 수 있음
     // 이 경우 G7Core.state.getLocal().form[name] 폴백 사용
@@ -1414,6 +1482,7 @@ export async function initEditorHandler(
                     name,
                     locale,
                     multilingual: true,
+                    readExternal: writeTarget ? () => readFromTarget(locale, true) : undefined,
                 });
                 registerExternalSync(containerId, externalSync);
 
@@ -1422,7 +1491,7 @@ export async function initEditorHandler(
                     if (!externalSync.shouldEmit()) return;
                     const html = (editor as any).getData();
                     externalSync.noteEmitted(html);
-                    syncToForm(name, locale, html, true, tracksChanges);
+                    syncToForm(name, locale, html, true, tracksChanges, writeTarget);
                     updateCheckIconsRef.current();
                 });
 
@@ -1521,6 +1590,7 @@ export async function initEditorHandler(
                 name,
                 locale: singleLocale,
                 multilingual: false,
+                readExternal: writeTarget ? () => readFromTarget(singleLocale, false) : undefined,
             });
             registerExternalSync(containerId, externalSync);
 
@@ -1529,7 +1599,7 @@ export async function initEditorHandler(
                 if (!externalSync.shouldEmit()) return;
                 const html = (editor as any).getData();
                 externalSync.noteEmitted(html);
-                syncToForm(name, singleLocale, html, false, tracksChanges);
+                syncToForm(name, singleLocale, html, false, tracksChanges, writeTarget);
             });
 
             isInitializing = false;

@@ -14,6 +14,11 @@ const logger = ((window as any).G7Core?.createLogger?.('Comp:Select')) ?? {
     error: (...args: unknown[]) => console.error('[Comp:Select]', ...args),
 };
 
+/** 드롭다운 패널 폭 상한(px). 트리거가 이보다 넓으면 트리거 폭이 상한이 된다. */
+const DROPDOWN_MAX_WIDTH = 320;
+/** 패널 오른쪽 끝과 뷰포트 사이 최소 여유(px) */
+const DROPDOWN_VIEWPORT_MARGIN = 8;
+
 export interface SelectOption {
   value: string | number;
   label: string;
@@ -79,7 +84,7 @@ export const Select: React.FC<SelectProps> = ({
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [dropdownPos, setDropdownPos] = useState<{ top?: number; bottom?: number; left: number; width: number } | null>(null);
+  const [dropdownPos, setDropdownPos] = useState<{ top?: number; bottom?: number; left: number; minWidth: number; maxWidth: number } | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -144,6 +149,12 @@ export const Select: React.FC<SelectProps> = ({
   /**
    * 드롭다운 위치 계산 (버튼 기준 fixed positioning)
    * Modal 등 overflow:hidden 컨테이너 내부에서도 정상 표시
+   *
+   * 패널 폭은 트리거 폭을 **하한**으로 두고 내용(max-content)만큼 넓어진다. 종전에는 트리거 폭에
+   * 고정해서, 트리거가 글자폭으로 수축한 경우(호출처 폭 클래스가 빌드 CSS 에 없을 때 등) 옵션
+   * 라벨이 두 줄로 꺾여 "상태 / 선택"·"교환결제대 / 기" 처럼 읽혔다. 상한은 max(트리거 폭,
+   * DROPDOWN_MAX_WIDTH) 과 뷰포트 오른쪽 여유 중 작은 값 — 긴 라벨(상품명 등)은 종전처럼 상한
+   * 안에서 줄바꿈되고, 화면 오른쪽 밖으로 삐져나가지 않는다.
    */
   const updateDropdownPos = useCallback(() => {
     if (!buttonRef.current) return;
@@ -152,17 +163,21 @@ export const Select: React.FC<SelectProps> = ({
     const dropdownMaxH = 280; // max-h-60(240px) + search(~40px)
     // 아래 공간 부족 시 위로 열기
     const openUpward = spaceBelow < dropdownMaxH && rect.top > spaceBelow;
+    const viewportRoom = window.innerWidth - rect.left - DROPDOWN_VIEWPORT_MARGIN;
+    const maxWidth = Math.max(rect.width, Math.min(Math.max(rect.width, DROPDOWN_MAX_WIDTH), viewportRoom));
     if (openUpward) {
       setDropdownPos({
         bottom: window.innerHeight - rect.top + 4,
         left: rect.left,
-        width: rect.width,
+        minWidth: rect.width,
+        maxWidth,
       });
     } else {
       setDropdownPos({
         top: rect.bottom + 4,
         left: rect.left,
-        width: rect.width,
+        minWidth: rect.width,
+        maxWidth,
       });
     }
   }, []);
@@ -314,7 +329,14 @@ export const Select: React.FC<SelectProps> = ({
         <Div
           ref={dropdownRef}
           className="fixed z-[9999] bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-600 overflow-hidden"
-          style={{ top: dropdownPos.top, bottom: dropdownPos.bottom, left: dropdownPos.left, width: dropdownPos.width }}
+          style={{
+            top: dropdownPos.top,
+            bottom: dropdownPos.bottom,
+            left: dropdownPos.left,
+            width: 'max-content',
+            minWidth: dropdownPos.minWidth,
+            maxWidth: dropdownPos.maxWidth,
+          }}
           role="listbox"
         >
           {searchable && (
@@ -331,7 +353,7 @@ export const Select: React.FC<SelectProps> = ({
               />
             </Div>
           )}
-          <Div className="py-2 max-h-60 overflow-auto">
+          <Div className="py-2 max-h-60 overflow-auto" style={{ scrollbarGutter: 'stable' }}>
             {visibleOptions && visibleOptions.length === 0 && (
               <Div className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400 text-center">
                 {searchTerm ? 'No results' : ''}

@@ -2,7 +2,6 @@
 
 namespace Modules\Sirsoft\Ecommerce\Http\Controllers\Admin;
 
-use App\Contracts\Repositories\UserRepositoryInterface;
 use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use Illuminate\Http\JsonResponse;
@@ -14,19 +13,18 @@ use Modules\Sirsoft\Ecommerce\Services\UserAddressService;
 /**
  * 관리자 회원 배송지 관리 컨트롤러
  *
- * 전 회원의 배송지를 조회하고 개별·일괄 삭제합니다.
- * 회원 소유 데이터라 회원 상세에서 `user_uuid` 를 달고 넘어오는 경로가 있다 —
- * 없는 uuid 는 빈 결과로 답한다(필터를 무시하고 전체를 보여주면 남의 데이터가 뜬다).
+ * 전 회원의 배송지를 조회하고 개별·일괄 삭제합니다. 회원 한정 필터(`user_uuid` / `user_uuids[]`)의
+ * 해석과 "없는 uuid 는 빈 결과" 규칙은 서비스(`UserAddressService::paginateForAdminWithMembers()`)가
+ * 소유한다 — 이 컨트롤러는 응답만 조립한다. 목록 응답에 한정 회원의 이름을 함께 돌려주는 것은
+ * (`filters.members`) 화면이 uuid 만으로는 칩에 이름을 세울 수 없기 때문이다.
  */
 class AdminUserAddressController extends AdminBaseController
 {
     /**
      * @param  UserAddressService  $addressService  도메인 서비스
-     * @param  UserRepositoryInterface  $userRepository  코어 사용자 리포지토리 (UUID 변환용)
      */
     public function __construct(
         private UserAddressService $addressService,
-        private UserRepositoryInterface $userRepository,
     ) {
         parent::__construct();
     }
@@ -40,15 +38,26 @@ class AdminUserAddressController extends AdminBaseController
     public function index(AdminUserAddressListRequest $request): JsonResponse
     {
         $filters = $request->validated();
-        $filters['user_id'] = $this->resolveUserId($filters);
-        $perPage = (int) ($filters['per_page'] ?? 20);
 
-        $rows = $this->addressService->paginateForAdmin($filters, $perPage);
+        $result = $this->addressService->paginateForAdminWithMembers($filters, (int) ($filters['per_page'] ?? 20));
+
+        $payload = (new AdminUserAddressCollection($result['rows']))->toArray($request);
+        // 적용된 회원 한정을 이름까지 붙여 되돌린다 — 화면의 칩이 이 값으로 선다.
+        $payload['filters'] = [
+            'members' => $result['members']
+                ->map(fn ($user) => [
+                    'uuid' => (string) $user->uuid,
+                    'name' => (string) $user->name,
+                    'email' => (string) $user->email,
+                ])
+                ->values()
+                ->all(),
+        ];
 
         return ResponseHelper::moduleSuccess(
             'sirsoft-ecommerce',
             'messages.user_address.admin_list_retrieved',
-            (new AdminUserAddressCollection($rows))->toArray($request)
+            $payload
         );
     }
 
@@ -87,27 +96,5 @@ class AdminUserAddressController extends AdminBaseController
             // 「:count개를 삭제했습니다」 가 그대로 뜬다(2026-09-15 브라우저 실측).
             ['count' => $count]
         );
-    }
-
-    /**
-     * 회원 필터를 user_id 로 해석합니다.
-     *
-     * user_uuid 가 왔는데 그런 회원이 없으면 -1 을 돌려 빈 결과를 만든다 — 필터를 무시하고
-     * 전체를 보여주면 "이 회원의 데이터" 를 요청한 화면에 남의 데이터가 뜬다.
-     *
-     * @param  array<string, mixed>  $filters  검증된 필터
-     * @return int|null 회원 ID (필터 없으면 null)
-     */
-    private function resolveUserId(array $filters): ?int
-    {
-        if (! empty($filters['user_id'])) {
-            return (int) $filters['user_id'];
-        }
-
-        if (empty($filters['user_uuid'])) {
-            return null;
-        }
-
-        return (int) ($this->userRepository->findByUuid((string) $filters['user_uuid'])?->id ?? -1);
     }
 }

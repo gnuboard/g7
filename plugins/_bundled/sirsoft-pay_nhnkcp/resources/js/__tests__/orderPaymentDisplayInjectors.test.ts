@@ -10,7 +10,7 @@ describe('NHN KCP order payment display injectors', () => {
     it('마이페이지 주문 상세의 결제 방법 행을 간편결제 표시로 바꾼다', () => {
         const container = document.createElement('div');
         container.innerHTML = `
-            <div class="flex items-center justify-between">
+            <div id="order_payment_method_row" class="flex items-center justify-between">
                 <span class="text-gray-500">결제 방법</span>
                 <span class="text-gray-900">신용카드</span>
             </div>
@@ -25,7 +25,7 @@ describe('NHN KCP order payment display injectors', () => {
         const root = document.createElement('div');
         root.innerHTML = `
             <span class="inline-flex rounded-full font-medium">신용카드</span>
-            <div>
+            <div id="payment_method_block_0">
                 <span class="text-xs block">결제수단</span>
                 <span class="text-sm font-semibold block">신용카드</span>
                 <span class="text-xs text-gray-500">(일시불)</span>

@@ -16,6 +16,8 @@ use Illuminate\Contracts\Debug\ExceptionHandler;
 use Illuminate\Foundation\Exceptions\Handler;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\RefreshDatabaseState;
+use Illuminate\Routing\CompiledRouteCollection;
+use Illuminate\Routing\RouteCollection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Route;
@@ -441,7 +443,36 @@ abstract class ModuleTestCase extends TestCase
                 ->name('api.modules.sirsoft-ecommerce.')
                 ->middleware('api')
                 ->group($apiRoutesFile);
+
+            $this->rebuildRouteNameLookups();
         }
+    }
+
+    /**
+     * 라우트 캐시 위에서 등록한 라우트의 이름 조회를 복구합니다.
+     *
+     * 개발 DB 에 라우트 캐시(`bootstrap/cache/routes-v7.php`)가 있으면 테스트 앱의 라우트
+     * 컬렉션이 `CompiledRouteCollection` 이 되는데, 그 위에 fluent `->name()` 으로 등록한
+     * 라우트는 add 시점에 이름이 비어 있고 `refreshNameLookups()` 가 no-op 이라 **매칭은
+     * 되지만 `route()`/서명 URL 생성에서 "Route not defined"** 가 된다. 전체를 일반
+     * `RouteCollection` 으로 옮겨 이름 조회를 재구축한다 — 캐시가 없으면 아무것도 하지 않는다.
+     */
+    protected function rebuildRouteNameLookups(): void
+    {
+        $collection = Route::getRoutes();
+
+        if (! $collection instanceof CompiledRouteCollection) {
+            return;
+        }
+
+        $fresh = new RouteCollection;
+
+        foreach ($collection->getRoutes() as $route) {
+            $fresh->add($route);
+        }
+
+        $fresh->refreshNameLookups();
+        Route::setRoutes($fresh);
     }
 
     /**

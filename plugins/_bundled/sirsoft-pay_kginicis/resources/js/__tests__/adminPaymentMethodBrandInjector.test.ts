@@ -5,9 +5,17 @@ import {
     syncRenderedAdminPaymentMethodBrands,
 } from '../adminPaymentMethodBrandInjector';
 
+// 이커머스 관리자 화면은 항목마다 결제수단 id 표식(data-payment-method)을 단다 — 스크립트는 이것으로만 항목을 찾는다(#599).
+const METHOD_OF: Record<string, string> = {
+    'naverpay': 'kginicis_naverpay',
+    'kakaopay': 'kginicis_kakaopay',
+    'nhn-naverpay': 'nhnkcp_naverpay',
+    'card': 'card',
+};
+
 function desktopItem(testId: string, title: string, description: string): string {
     return `
-        <div class="flex-center border rounded-lg p-3 gap-4" data-test-item="${testId}">
+        <div class="flex-center border rounded-lg p-3 gap-4" data-test-item="${testId}" data-payment-method="${METHOD_OF[testId] ?? testId}">
             <div data-drag-handle="true"><svg data-drag-icon="true"></svg></div>
             <svg data-original-icon="true"></svg>
             <div class="flex-1 min-w-0">
@@ -26,7 +34,7 @@ function desktopItem(testId: string, title: string, description: string): string
 
 function mobileItem(testId: string, title: string): string {
     return `
-        <div class="excel-card" data-test-item="${testId}">
+        <div class="excel-card" data-test-item="${testId}" data-payment-method="${METHOD_OF[testId] ?? testId}">
             <div class="excel-card-header">
                 <div class="flex-center gap-3 flex-1 min-w-0">
                     <div data-drag-handle="true"><svg data-drag-icon="true"></svg></div>

@@ -40,7 +40,7 @@ export interface FileListProps {
   /** 최대 파일 수 */
   maxFiles: number;
   /** 최대 파일 크기 (MB) */
-  maxSize: number;
+  maxSize?: number;
   /** 허용 확장자 */
   accept?: string;
   /** 파일 삭제 핸들러 */
@@ -144,7 +144,7 @@ export const FileList: React.FC<FileListProps> = ({
       {/* 하단 정보 */}
       <Div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700 flex justify-between items-center text-xs text-gray-500 dark:text-gray-400">
         <Span>{t('attachment.attached_count', { count: totalCount, max: maxFiles })}</Span>
-        <Span>{t('attachment.max_size', { size: maxSize })}{accept && ` (${accept})`}</Span>
+        <Span>{maxSize != null ? t('attachment.max_size', { size: maxSize }) : ''}{accept && ` (${accept})`}</Span>
       </Div>
     </Div>
   );

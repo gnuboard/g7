@@ -35,8 +35,10 @@ class BulkUpdateOrdersRequest extends FormRequest
         return [
             'ids' => ['required', 'array', 'min:1'],
             'ids.*' => ['integer', Rule::exists(Order::class, 'id')],
+            // 주문대기는 PG 결제창 진입 전 임시 상태라 일괄 지정 대상이 아니고,
+            // 클레임 코스 상태는 교환·반품 서비스 전담이라 adminAssignableValues 에서 이미 빠져 있다.
             'order_status' => ['nullable', 'string', Rule::in(
-                collect(OrderStatusEnum::values())->reject(fn ($v) => $v === OrderStatusEnum::PENDING_ORDER->value)->values()->all()
+                collect(OrderStatusEnum::adminAssignableValues())->reject(fn ($v) => $v === OrderStatusEnum::PENDING_ORDER->value)->values()->all()
             )],
             'carrier_id' => ['nullable', 'integer', Rule::exists(ShippingCarrier::class, 'id')],
             'tracking_number' => ['nullable', 'string', 'max:50'],

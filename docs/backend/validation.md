@@ -40,6 +40,7 @@
 - [계층 리소스 순환 참조](#계층-리소스-순환-참조)
 - [배열 항목의 상위 스코프](#배열-항목의-상위-스코프)
 - [관대한 기존 동작을 규칙으로 승격하지 않는다](#관대한-기존-동작을-규칙으로-승격하지-않는다)
+- [운영자가 지울 수 있는 어휘의 필터 게이트](#운영자가-지울-수-있는-어휘의-필터-게이트)
 - [Custom Rule 개발 체크리스트](#custom-rule-개발-체크리스트)
 
 ---
@@ -563,6 +564,28 @@ $validator->after(function (Validator $validator) {
 ```
 
 이 방식은 `formrequest-store-update-conditional-symmetry` 룰의 토큰 비교로는 "누락"으로 보이므로, 해당 필드에 `// audit:allow formrequest-store-update-conditional-symmetry reason: ...` 로 판정 위치를 남긴다.
+
+### 규칙 계산·사후 검증에서 입력을 읽을 때 — 형식을 믿지 않는다
+
+`rules()` 는 검증보다 **먼저** 돌고(입력으로 규칙을 고르는 `ClaimTypeEnum::tryFrom($this->input('type'))` 같은
+코드), `withValidator()` 의 `after` 콜백은 규칙 오류가 난 요청에서도 **실행된다**. 두 자리에서 입력을
+형 변환하거나 문자열 함수에 넘기면(`(string)`·`trim()`) 규칙이 막으려던 형식(문자열 칸에 목록)에서 PHP
+오류가 나 422 대신 500 이 된다. 문자열이 아니면 형 변환하지 않고 건너뛰거나 빈 값으로 읽는다 — 그 칸의
+형식 오류는 규칙이 422 로 돌려준다.
+
+```php
+// ❌ DON'T: status 에 배열이 오면 Array to string conversion → 500
+if (! $this->requiresTransitionTracking((string) $this->input('status'))) {
+    return;
+}
+
+// ✅ DO: 문자열이 아니면 건너뛴다
+$status = $this->input('status');
+
+if (! is_string($status) || ! $this->requiresTransitionTracking($status)) {
+    return;
+}
+```
 
 ### `exclude_if` vs `exclude_unless` — 조건 필드가 nullable 일 때
 
@@ -1210,6 +1233,74 @@ select 처럼 사용자가 URL 을 손으로 만들 일이 없는 면. 판정 �
 
 ---
 
+## 운영자가 지울 수 있는 어휘의 필터 게이트
+
+목록 필터의 허용 어휘가 Enum 이 아니라 **운영자 설정**에서 나오는 축이 있다 — 통화, 결제수단, 사유 카탈로그처럼 운영자가 추가하고 **내릴 수 있는** 것들이다.
+
+Enum 은 닫힌 어휘라 코드가 바뀌지 않는 한 값이 사라지지 않는다. 설정 어휘는 다르다. **값으로 기록된 행은 남는데 어휘에서는 사라진다.** 거래 시점 통화처럼 스냅샷으로 동결된 값이면 더더욱 남는다.
+
+그래서 게이트가 현재 설정만 보고 판정하면 두 가지가 동시에 깨진다.
+
+1. 그 값으로 기록된 행이 **어떤 필터 조합으로도 도달 불가**가 된다
+2. 그 값이 실린 북마크·뒤로가기·수기 URL 이 **목록 전체를 422** 로 만든다 — 화면에는 직전 목록이 그대로 남아 있어 필터가 걸린 것처럼 보인다
+
+### 2단 판정
+
+어휘 판정을 `설정 → 실제 기록값` 두 단계로 둔다.
+
+```php
+'currency_code' => ['nullable', 'string', Rule::in($this->allowedCurrencies())],
+
+/**
+ * 통화 필터의 허용 어휘.
+ *
+ * 1단 — 설정 어휘: 등록 통화 ∪ 내린 기본 제공 통화(tombstone)
+ * 2단 — 그 밖의 코드는 실제 기록이 있을 때만 통과
+ */
+protected function allowedCurrencies(): array
+{
+    $configured = [...$this->registeredCurrencies(), ...$this->removedDefaultCurrencies()];
+
+    $requested = (string) $this->query('currency_code');
+
+    // 설정 어휘 안이면 여기서 끝난다 — 정상 조합에는 추가 쿼리가 없다.
+    if ($requested === '' || in_array($requested, $configured, true)) {
+        return $configured;
+    }
+
+    return $this->currencyRecorded($requested) ? [...$configured, $requested] : $configured;
+}
+```
+
+### 규칙
+
+| ❌ 금지 | ✅ 올바른 사용 |
+|--------|---------------|
+| `Rule::in(현재 설정 어휘)` 단독 | 위의 2단 판정 |
+| 기록 조회를 **저장소 필터와 다른 컬럼**에서 수행 | 저장소가 그 필터로 거르는 **같은 컬럼**을 본다. 유형마다 컬럼이 다르면 유형별로 (예: 교환·반품은 자기 `currency_code`, 환불·취소는 주문의 `currency`) |
+| 어휘 검사를 없애고 전부 통과시키기 | 어디에도 쓰인 적 없는 값은 **여전히 거부**한다 — 오타가 "결과 없음" 으로 위장하면 운영자는 필터가 걸린 줄 안다 |
+| FormRequest 클로저에서 모델 직접 조회 | Repository Interface 에 `hasRecorded*()` 를 두고 규칙은 `Rule::in` **선언형**을 유지한다. 클로저로 바꾸면 메시지 키(`.in`)가 사라져 안내가 다국어로 나가지 않는다 |
+| 같은 화면의 어휘 축마다 다른 강도 | 형제 축은 같은 2단 규칙. 한쪽만 길이 검사(`string\|max:50`)면 그 축의 오타는 조용히 0건이 된다 |
+| tombstone(내린 기본 제공 목록)만 믿기 | 운영자가 **직접 추가한 뒤 삭제한** 값은 tombstone 이 남지 않는다 — 마지막 근거는 언제나 실제 기록값이다 |
+
+### 어휘가 사라지는 경로는 하나가 아니다
+
+같은 결함이 provenance 만 달리해 여러 번 재발한다. 최소 세 경로를 함께 본다.
+
+| 경로 | 흔적 |
+|---|---|
+| 기본 제공 항목을 내림 | tombstone 이 남는다 (`removed_default_*`) |
+| 운영자가 추가한 항목을 삭제 | **아무 흔적도 남지 않는다** |
+| 항목을 비활성화(삭제 아님) | 설정에는 있지만 활성 목록에서 빠진다 |
+
+세 번째는 사유 카탈로그처럼 비활성 개념이 있는 축에서 나타난다. 비활성 사유로 기록된 신청서를 조회할 수 있어야 하는지는 그 화면의 정책 문제이므로, 어휘에 넣기 전에 카탈로그 화면의 결정과 함께 판정한다.
+
+### 성능
+
+정상 조합에는 추가 쿼리가 **없다** — 설정 어휘 안이면 1단에서 끝난다. 2단 조회는 설정 어휘를 벗어난 값에서만 실행되고, 그 경로는 인증된 관리자만 도달한다. 조회 컬럼에 인덱스가 없으면 미존재 값에서 풀스캔이 되므로, 그 축이 자주 쓰인다면 인덱스를 함께 검토한다.
+
+이 결함은 예외도 로그도 남기지 않는다. 목록이 통째로 거부되고 화면에는 직전 목록이 남는 것이 유일한 증상이다.
+
 ## 보안 게이트 대칭성 (KVE-2026-1914/1915/1919)
 
 같은 리소스를 다루는 두 엔드포인트가 서로 다른 검증 강도를 가지면, **약한 쪽이 우회로**가
@@ -1282,6 +1373,21 @@ seo.bot_user_agents.0 필드는 100자를 초과하면 안 됩니다.        ❌
 **자동 검사는 이 경로를 재지 못한다** — 감사 룰과 PHPUnit 은 FormRequest 의 **정적 리터럴**만
 읽으므로 훅이 런타임에 얹는 키는 잔량 집계에도 잡히지 않는다. 그래서 이 절이 규율이고,
 확장 리뷰에서 눈으로 대조한다.
+
+### 트레이트로 규칙을 나눠 쓸 때
+
+여러 요청이 트레이트에서 규칙을 받으면(`adminClaimRules()` 같은 메서드) 그 키도 요청 파일에 글자로
+적히지 않아 감사 룰이 보지 못한다. 요청 파일의 키에만 라벨을 달고 끝내면 트레이트 키의 오류 문구에
+원시 키가 그대로 나간다(`refund bank.holder 필드는 50자를 초과하면 안 됩니다`).
+
+- 규칙을 주는 트레이트가 **라벨도 같은 자리에서 준다** — `adminClaimRules()` · `adminClaimMessages()`
+  옆에 `adminClaimAttributes()` 를 두고, 요청의 `attributes()` 는 자기 키 배열에 `+ $this->adminClaimAttributes()`
+  로 합친다(요청 고유 키가 앞서므로 같은 키를 요청이 다시 정할 수 있다).
+- 감사 룰 대신 **요청을 실제로 만들어** `rules()` 가 돌려준 키 전부를 `attributes()` 와 대조하는 테스트로
+  막는다 — 예: 이커머스 `ClaimRequestAttributeLabelsTest::test_trait_provided_rule_keys_have_labels`.
+- 확장 lang 의 라벨 키에는 **점을 넣지 않는다** — `__()` 는 점을 중첩 경로로 읽으므로
+  `'claim.max_images' => …` 같은 평면 키를 찾지 못하고 키 문자열을 그대로 돌려준다(예외·경고 없음).
+  밑줄 키로 된 전용 그룹(`validation.request_attributes` 등)에 둔다. 점은 요청 쪽 규칙 키에만 쓴다.
 
 ### 라벨이 필요 없는 경우
 

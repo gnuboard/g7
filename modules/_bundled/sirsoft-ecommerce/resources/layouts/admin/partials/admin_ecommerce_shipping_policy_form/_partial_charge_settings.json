@@ -981,7 +981,7 @@
                                                     ],
                                                     "props": {
                                                         "type": "text",
-                                                        "className": "input input-sm font-mono",
+                                                        "className": "input text-sm font-mono",
                                                         "value": "{{_computed.activeCountrySetting?.api_config?.field_map?.[mapOption.value] ?? ''}}",
                                                         "placeholder": "{{mapOption.value}}",
                                                         "disabled": "{{_computed.isReadOnly}}"
@@ -998,6 +998,17 @@
                                         "className": "text-tertiary"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.api_request_fields_hint"
+                                },
+                                {
+                                    "comment": "오류 키가 항목 색인까지 붙어(`...api_request_fields.2`) 고정 키 조회로는 잡히지 않는다. 이 자리가 비어 있으면 후보 밖 값이 남은 정책은 저장이 422 로 막힌 채 화면에 아무 안내도 뜨지 않는다(S17 B4).",
+                                    "id": "field_api_request_fields_error",
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{Object.keys(_local.errors ?? {}).filter(k => k.indexOf('country_settings.' + (_local.activeCountryTab ?? 0) + '.api_request_fields') === 0).length > 0}}",
+                                    "props": {
+                                        "className": "form-error-xs"
+                                    },
+                                    "text": "{{Object.keys(_local.errors ?? {}).filter(k => k.indexOf('country_settings.' + (_local.activeCountryTab ?? 0) + '.api_request_fields') === 0).map(k => ((_local.errors ?? {})[k] ?? [])[0]).filter(m => !!m)[0] ?? ''}}"
                                 }
                             ]
                         },

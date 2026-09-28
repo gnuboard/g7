@@ -1,0 +1,34 @@
+feature: 한 주문상태는 어느 화면에서도 같은 이름으로 불린다
+
+description: |
+  주문상태 라벨은 세 경로로 화면에 닿는다.
+
+    `enums.order_status.*`                     → 서버가 만드는 진행단계 스텝퍼·통계(관리자·회원·비회원 공통)
+    `admin.order.status.*`                     → 관리자 주문상세 일괄변경 확인 모달 「변경 상태」 · 주문상품 표 주문상태 열
+    `admin.order.filter.order_status_options.*` → 관리자 일괄변경 Select · 목록 상태 필터
+
+  같은 상태값이 경로마다 다른 문자열을 들면 운영자는 그것을 **다른 상태로 읽는다**.
+  실제로 `shipping_ready` 가 그랬다 — Select 와 스텝퍼는 `배송준비완료`, 확인 모달과 상품 표는
+  `배송준비중` 이었다. 운영자가 목록에서 한 이름을 고르면 확인창이 다른 이름으로 바꾸겠다고 묻고,
+  적용 뒤 표에는 또 다른 이름이 선다. en 은 두 키가 모두 "Ready to Ship" 로 같아 ko 에서만 갈렸다.
+
+  정본은 `배송준비중` 이다(운영 결정 2026-09-15). 더 널리 쓰이던 `배송준비완료` 쪽을 전면 교체해
+  세 경로를 한 문자열로 모았다.
+
+  계약: 세 경로에 공통으로 존재하는 주문상태는 로케일마다 **세 경로가 같은 문자열**이어야 한다.
+  일관성만 잠그면 잘못된 쪽으로 맞춰도 통과하므로, `shipping_ready` 의 정본 문자열과
+  백엔드 enum 라벨(스텝퍼가 쓰는 값)을 따로 잠근다.
+
+axes:
+  label_path:
+    - enums_order_status
+    - admin_order_status
+    - admin_order_filter_options
+
+effects:
+  - order_status_label_identical_across_paths
+  - shipping_ready_uses_canonical_korean_label
+  - backend_enum_label_matches_canonical
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Lang/OrderStatusLabelConsistencyTest.php

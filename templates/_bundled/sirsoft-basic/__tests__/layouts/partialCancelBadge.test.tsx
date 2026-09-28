@@ -74,7 +74,10 @@ describe('_list.json — 일부취소 보조 배지 구조', () => {
     expect(parent?.props?.className).toContain('items-end');
 
     // 같은 묶음 안에 상태 배지(order.status_label)도 형제로 있어야 한다.
-    const hasStatusBadge = parent!.children!.some((c) => c.text === '{{order.status_label}}');
+    // 상태 배지는 아이콘 + 라벨 두 자식으로 그린다(라벨 Span 이 자식) — 텍스트가 직속이든 자식이든 같은 배지다.
+    const hasStatusBadge = parent!.children!.some(
+      (c) => c.text === '{{order.status_label}}' || (c.children ?? []).some((g) => g.text === '{{order.status_label}}'),
+    );
     expect(hasStatusBadge).toBe(true);
   });
 

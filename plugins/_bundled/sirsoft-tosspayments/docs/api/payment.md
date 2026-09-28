@@ -47,7 +47,7 @@ Accept: application/json
 
 ```http
 HTTP/1.1 302 Found
-Location: /shop/checkout?error=PAY_PROCESS_CANCELED&orderId=20260711-000001
+Location: /shop/checkout?error=PAY_PROCESS_CANCELED&orderId=20260711-1418336207
 ```
 
 **에러 응답**
@@ -66,8 +66,10 @@ JSON 을 반환하지 않는다. 실패 사유를 로그로 기록한 뒤, 실�
 
 ```http
 HTTP/1.1 302 Found
-Location: /shop/checkout?error=PAY_PROCESS_CANCELED&orderId=20260711-000001
+Location: /shop/checkout?error=PAY_PROCESS_CANCELED&orderId=20260711-1418336207
 ```
+
+주문번호 자리(`orderId`)에 클레임 추가결제 결제번호(`CP` 채번)가 실려 오면 주문이 아니라 클레임 결제 건으로 처리한다 — 체크아웃이 아니라 신청서 상세(`?claim_payment=failed&error={코드}` + `claim_number`)로 되돌리며, 사용자가 결제창을 스스로 닫은 중단(`PAY_PROCESS_CANCELED`)은 실패가 아니므로 `?claim_payment=cancelled` 로 조용히 복귀한다. 그 결제번호의 클레임 결제 건을 찾지 못하면 종전대로 실패 URL 로 되돌린다.
 
 주의사항:
 
@@ -101,7 +103,7 @@ Accept: application/json
 Content-Type: application/json
 
 {
-    "orderId": "20260711-000001",
+    "orderId": "20260711-1418336207",
     "amount": 10000,
     "buyer_email": "buyer@example.com",
     "buyer_phone": "01012345678",
@@ -187,7 +189,7 @@ Accept: application/json
 
 ```http
 HTTP/1.1 302 Found
-Location: /shop/orders/20260711-000001/complete
+Location: /shop/orders/20260711-1418336207/complete
 ```
 
 **에러 응답**
@@ -220,6 +222,8 @@ JSON 을 반환하지 않고 브라우저를 **302 리다이렉트**한다. 에�
    - **`WAITING_FOR_DEPOSIT`(가상계좌)** — 아직 입금 전이므로 결제완료 처리하지 않고 계좌 정보만 저장한다. 실제 결제완료는 입금통보 웹훅(`/webhook/deposit`)이 담당한다. 웹훅 secret 은 **이 Confirm 응답에만** 내려오므로 `payment_meta.toss_secret` 에 저장해 웹훅 대조에 사용한다.
    - **그 외(카드·계좌이체·휴대폰·간편결제)** — 즉시 결제완료(`completePayment`) 처리하고 카드 승인번호·영수증 URL 등을 기록한다.
 4. SPA 주문완료 페이지로 리다이렉트한다.
+
+주문번호 자리(`orderId`)에 클레임 추가결제 결제번호(`CP` 채번)가 실려 오면 위 주문 조회·Confirm 분기를 타지 않고 클레임 결제 건으로 처리한다 — 승인은 쇼핑몰 모듈의 `claim_payment.approve` 필터로 위임되고, 완료 후 주문완료 페이지가 아니라 신청서 상세(`?claim_payment=success|failed` + `claim_number`)로 리다이렉트한다. 콜백 `amount` 는 **Confirm 을 부르기 전에** 결제 건의 현재 청구액(`resolvePaymentCharge()`)과 대조하며, 다르면(결제창을 연 사이 청구액이 바뀐 경우) Confirm 없이 `error=AMOUNT_MISMATCH` 로 되돌린다 — 청구 기준을 세울 수 없을 때도 같다. 토스가 승인을 거절하면 응답의 `code`(예: `REJECT_CARD_COMPANY`)가 결제 건 `pg_error_code` 와 `error=` 로 그대로 실리고, 응답을 받지 못한 통신 실패만 `PG_API_ERROR` 다. 승인이 확정된 뒤 모듈이 거절하면 토스 결제취소로 보상하며, 그 결제번호의 클레임 결제 건을 찾지 못하면 `error=claim_payment_not_found` 로 실패 URL 에 되돌린다.
 
 주의사항:
 

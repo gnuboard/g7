@@ -1092,6 +1092,7 @@ class Module extends AbstractModule
         return [
             'type' => 'new_comment',
             'hook_prefix' => 'sirsoft-board',
+            'audience' => 'customer',
             'name' => ['ko' => '새 댓글 알림', 'en' => 'New Comment Notification'],
             'description' => ['ko' => '게시글에 새 댓글이 작성되면 게시글 작성자에게 발송', 'en' => 'Sent to post author when a new comment is posted'],
             'channels' => ['mail', 'database'],
@@ -1146,6 +1147,7 @@ class Module extends AbstractModule
         return [
             'type' => 'reply_comment',
             'hook_prefix' => 'sirsoft-board',
+            'audience' => 'customer',
             'name' => ['ko' => '대댓글 알림', 'en' => 'Reply Comment Notification'],
             'description' => ['ko' => '댓글에 대댓글이 작성되면 댓글 작성자에게 발송', 'en' => 'Sent to comment author when a reply is posted'],
             'channels' => ['mail', 'database'],
@@ -1200,6 +1202,7 @@ class Module extends AbstractModule
         return [
             'type' => 'post_reply',
             'hook_prefix' => 'sirsoft-board',
+            'audience' => 'customer',
             'name' => ['ko' => '답변글 알림', 'en' => 'Post Reply Notification'],
             'description' => ['ko' => '게시글에 답변글이 작성되면 원글 작성자에게 발송', 'en' => 'Sent to original post author when a reply post is created'],
             'channels' => ['mail', 'database'],
@@ -1250,6 +1253,7 @@ class Module extends AbstractModule
         return [
             'type' => 'post_action',
             'hook_prefix' => 'sirsoft-board',
+            'audience' => 'customer',
             'name' => ['ko' => '게시글/댓글 처리 알림', 'en' => 'Content Action Notification'],
             'description' => ['ko' => '게시글/댓글 블라인드/삭제/복원 시 작성자에게 발송', 'en' => 'Sent to author on blind/delete/restore actions'],
             'channels' => ['mail', 'database'],
@@ -1267,7 +1271,7 @@ class Module extends AbstractModule
             'templates' => [
                 [
                     'channel' => 'mail',
-                    'recipients' => [['type' => 'related_user', 'relation' => 'post_author']],
+                    'recipients' => [['type' => 'related_user', 'relation' => 'post_author', 'exclude_trigger_user' => true]],
                     'subject' => [
                         'ko' => '[{board_name}] \'{post_title}\' {target_type}이(가) {action_type} 처리되었습니다',
                         'en' => '[{board_name}] Your {target_type} "{post_title}" has been {action_type}',
@@ -1287,7 +1291,7 @@ class Module extends AbstractModule
                 ],
                 [
                     'channel' => 'database',
-                    'recipients' => [['type' => 'related_user', 'relation' => 'post_author']],
+                    'recipients' => [['type' => 'related_user', 'relation' => 'post_author', 'exclude_trigger_user' => true]],
                     'subject' => ['ko' => '{target_type}이(가) 처리되었습니다', 'en' => 'Your {target_type} has been actioned'],
                     'body' => ['ko' => '\'{board_name}\'의 \'{post_title}\' {target_type}이(가) {action_type} 처리되었습니다.', 'en' => 'Your {target_type} \'{post_title}\' in \'{board_name}\' has been {action_type}.'],
                     'click_url' => '{post_url}',
@@ -1304,6 +1308,7 @@ class Module extends AbstractModule
         return [
             'type' => 'new_post_admin',
             'hook_prefix' => 'sirsoft-board',
+            'audience' => 'staff',
             'name' => ['ko' => '새 게시글 관리자 알림', 'en' => 'New Post Admin Notification'],
             'description' => ['ko' => '새 게시글 작성 시 관리자에게 발송', 'en' => 'Sent to admin when a new post is created'],
             'channels' => ['mail', 'database'],
@@ -1357,6 +1362,7 @@ class Module extends AbstractModule
         return [
             'type' => 'report_received_admin',
             'hook_prefix' => 'sirsoft-board',
+            'audience' => 'staff',
             'name' => ['ko' => '신고 접수 관리자 알림', 'en' => 'Report Received Admin Notification'],
             'description' => ['ko' => '신고 접수 시 관리자에게 발송', 'en' => 'Sent to admin when a report is received'],
             'channels' => ['mail', 'database'],
@@ -1374,7 +1380,12 @@ class Module extends AbstractModule
             'templates' => [
                 [
                     'channel' => 'mail',
-                    'recipients' => [['type' => 'permission', 'value' => 'sirsoft-board.reports.manage', 'exclude_trigger_user' => true]],
+                    'recipients' => [
+                        // 그 게시판의 관리자 — 게시판마다 역할이 동적으로 생겨 이름을 열거할 수 없다.
+                        ['type' => 'related_user', 'relation' => 'board_managers', 'exclude_trigger_user' => true],
+                        // 신고 처리 대기열을 소유하는 사이트 운영자.
+                        ['type' => 'role', 'value' => 'admin', 'exclude_trigger_user' => true],
+                    ],
                     'subject' => [
                         'ko' => '[{board_name}] "{post_title}"에 대한 신고가 접수되었습니다',
                         'en' => '[{board_name}] A new report has been received for "{post_title}"',
@@ -1394,7 +1405,12 @@ class Module extends AbstractModule
                 ],
                 [
                     'channel' => 'database',
-                    'recipients' => [['type' => 'permission', 'value' => 'sirsoft-board.reports.manage', 'exclude_trigger_user' => true]],
+                    'recipients' => [
+                        // 그 게시판의 관리자 — 게시판마다 역할이 동적으로 생겨 이름을 열거할 수 없다.
+                        ['type' => 'related_user', 'relation' => 'board_managers', 'exclude_trigger_user' => true],
+                        // 신고 처리 대기열을 소유하는 사이트 운영자.
+                        ['type' => 'role', 'value' => 'admin', 'exclude_trigger_user' => true],
+                    ],
                     'subject' => ['ko' => '신고가 접수되었습니다', 'en' => 'New report received'],
                     'body' => ['ko' => '\'{board_name}\'의 {target_type} \'{post_title}\'에 대한 신고({reason_type})가 접수되었습니다.', 'en' => 'A report ({reason_type}) on {target_type} \'{post_title}\' in \'{board_name}\' has been received.'],
                     'click_url' => '{report_url}',
@@ -1411,6 +1427,7 @@ class Module extends AbstractModule
         return [
             'type' => 'report_action',
             'hook_prefix' => 'sirsoft-board',
+            'audience' => 'customer',
             'name' => ['ko' => '신고 처리 결과 알림', 'en' => 'Report Action Notification'],
             'description' => ['ko' => '신고 처리 완료 시 게시글 작성자에게 발송', 'en' => 'Sent to post author when a report action is taken'],
             'channels' => ['mail', 'database'],
@@ -1428,7 +1445,7 @@ class Module extends AbstractModule
             'templates' => [
                 [
                     'channel' => 'mail',
-                    'recipients' => [['type' => 'related_user', 'relation' => 'post_author']],
+                    'recipients' => [['type' => 'related_user', 'relation' => 'post_author', 'exclude_trigger_user' => true]],
                     'subject' => [
                         'ko' => '[{board_name}] \'{post_title}\' {target_type}이(가) {action_type} 처리되었습니다',
                         'en' => '[{board_name}] Your {target_type} "{post_title}" has been {action_type}',
@@ -1448,7 +1465,7 @@ class Module extends AbstractModule
                 ],
                 [
                     'channel' => 'database',
-                    'recipients' => [['type' => 'related_user', 'relation' => 'post_author']],
+                    'recipients' => [['type' => 'related_user', 'relation' => 'post_author', 'exclude_trigger_user' => true]],
                     'subject' => ['ko' => '신고 처리 결과 안내', 'en' => 'Report action result'],
                     'body' => ['ko' => '\'{board_name}\'의 \'{post_title}\' {target_type}이(가) {action_type} 처리되었습니다.', 'en' => 'Your {target_type} \'{post_title}\' in \'{board_name}\' has been {action_type}.'],
                     'click_url' => '{post_url}',

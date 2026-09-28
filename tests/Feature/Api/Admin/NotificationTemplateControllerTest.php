@@ -25,6 +25,11 @@ class NotificationTemplateControllerTest extends TestCase
 
     private NotificationTemplate $template;
 
+    /**
+     * 설정 조회·수정 권한 관리자와 토큰, 환영 알림 정의와 메일 템플릿 한 건을 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -51,7 +56,13 @@ class NotificationTemplateControllerTest extends TestCase
     }
 
     /**
-     * 템플릿 수정 성공
+     * 템플릿 제목·본문 수정이 저장됩니다.
+     *
+     * @scenario layer=request_validation
+     *
+     * @effects notification_template_update_saves_subject_and_body
+     *
+     * @return void 반환값 없음
      */
     public function test_update_template(): void
     {
@@ -68,8 +79,200 @@ class NotificationTemplateControllerTest extends TestCase
     }
 
     /**
-     * 템플릿 편집 시 Template.is_default + Definition.is_default 모두 false로 전환
-     * (리셋 버튼 노출 근거)
+     * 역할 수신자는 **여러 개**를 저장할 수 있습니다 (E3).
+     *
+     * 서버가 배열을 받지 못하면 화면이 배열을 보낸 순간 422 이거나, 통과하더라도 해석에서
+     * TypeError 가 나고 그것을 try/catch 가 삼켜 **수신자 0명**이 된다.
+     *
+     * @scenario editing_axis=role_recipients, layer=request_validation
+     *
+     * @effects notification_template_accepts_multiple_roles
+     *
+     * @return void 반환값 없음
+     */
+    public function test_update_template_accepts_multiple_role_identifiers(): void
+    {
+        Role::create(['name' => ['ko' => '운영자'], 'identifier' => 'manager', 'is_admin' => true]);
+
+        $response = $this->authRequest()->putJson("/api/admin/notification-templates/{$this->template->id}", [
+            'body' => ['ko' => '본문', 'en' => 'Body'],
+            'recipients' => [
+                ['type' => 'role', 'value' => ['super_admin', 'manager']],
+            ],
+        ]);
+
+        $response->assertStatus(200);
+        $this->assertSame(['super_admin', 'manager'], $this->template->fresh()->recipients[0]['value']);
+    }
+
+    /**
+     * 기존 저장값(문자열)은 그대로 저장됩니다 — 마이그레이션 없이 읽기에서 수용하는 계약입니다.
+     *
+     * @scenario editing_axis=role_recipients, layer=request_validation
+     *
+     * @effects notification_template_still_accepts_a_scalar_role
+     *
+     * @return void 반환값 없음
+     */
+    public function test_update_template_still_accepts_a_scalar_role_identifier(): void
+    {
+        $response = $this->authRequest()->putJson("/api/admin/notification-templates/{$this->template->id}", [
+            'body' => ['ko' => '본문', 'en' => 'Body'],
+            'recipients' => [
+                ['type' => 'role', 'value' => 'super_admin'],
+            ],
+        ]);
+
+        $response->assertStatus(200);
+        $this->assertSame('super_admin', $this->template->fresh()->recipients[0]['value']);
+    }
+
+    /**
+     * 역할 값에 문자열이 아닌 것이 섞이면 422 입니다 — 저장되면 발송 시점에 0명으로만 드러납니다.
+     *
+     * @scenario editing_axis=role_recipients, layer=request_validation
+     *
+     * @effects notification_template_rejects_a_malformed_role_value
+     *
+     * @return void 반환값 없음
+     */
+    public function test_update_template_rejects_a_malformed_role_value(): void
+    {
+        $this->authRequest()->putJson("/api/admin/notification-templates/{$this->template->id}", [
+            'body' => ['ko' => '본문', 'en' => 'Body'],
+            'recipients' => [
+                ['type' => 'role', 'value' => [['identifier' => 'super_admin']]],
+            ],
+        ])->assertStatus(422);
+    }
+
+    /**
+     * 응답의 역할 값은 **언제나 배열**이고 표시 이름이 그 순서대로 붙습니다.
+     *
+     * 순서가 어긋나면 화면이 인덱스로 짝지을 때 다른 역할 이름이 붙는다.
+     *
+     * @scenario editing_axis=role_recipients, layer=resource_payload
+     *
+     * @effects notification_template_resource_normalizes_role_values
+     *
+     * @return void 반환값 없음
+     */
+    public function test_template_resource_normalizes_role_values(): void
+    {
+        Role::create(['name' => ['ko' => '운영자'], 'identifier' => 'manager', 'is_admin' => true]);
+        $this->template->update(['recipients' => [['type' => 'role', 'value' => 'super_admin']]]);
+
+        $response = $this->authRequest()
+            ->getJson("/api/admin/notification-definitions/{$this->definition->id}")
+            ->assertStatus(200);
+
+        $recipients = $response->json('data.templates.0.recipients');
+
+        $this->assertSame(['super_admin'], $recipients[0]['value']);
+        $this->assertSame(['최고관리자'], $recipients[0]['display_names']);
+    }
+
+    /**
+     * 「관련 사용자」의 관계 키는 **그 정의가 선언한 목록 안**이어야 합니다.
+     *
+     * 선언 밖의 키를 저장하면 발송 시점에 수신자가 0명이 되고 예외도 로그도 남지 않는다.
+     *
+     * @scenario editing_axis=related_user_relation, layer=request_validation
+     *
+     * @effects notification_template_accepts_a_declared_relation
+     *
+     * @return void 반환값 없음
+     */
+    public function test_update_template_accepts_a_declared_relation(): void
+    {
+        $this->definition->update(['relations' => ['post_author', 'board_managers']]);
+
+        $response = $this->authRequest()->putJson("/api/admin/notification-templates/{$this->template->id}", [
+            'body' => ['ko' => '본문', 'en' => 'Body'],
+            'recipients' => [
+                ['type' => 'related_user', 'relation' => 'post_author'],
+            ],
+        ]);
+
+        $response->assertStatus(200);
+        $this->assertSame('post_author', $this->template->fresh()->recipients[0]['relation']);
+    }
+
+    /**
+     * 정의가 선언하지 않은 관계 키(`author`)를 고르면 422 로 거부합니다.
+     *
+     * 선언 목록 밖의 키는 발송 시점에 조용한 0명이 되므로 저장 단계에서 막는다.
+     *
+     * @scenario editing_axis=related_user_relation, layer=request_validation
+     *
+     * @effects notification_template_rejects_an_undeclared_relation
+     *
+     * @return void 반환값 없음
+     */
+    public function test_update_template_rejects_an_undeclared_relation(): void
+    {
+        $this->definition->update(['relations' => ['post_author']]);
+
+        $this->authRequest()->putJson("/api/admin/notification-templates/{$this->template->id}", [
+            'body' => ['ko' => '본문', 'en' => 'Body'],
+            'recipients' => [
+                ['type' => 'related_user', 'relation' => 'author'],
+            ],
+        ])->assertStatus(422);
+    }
+
+    /**
+     * 선언이 비면(`relations=[]`) 어떤 관계도 통과하지 않습니다 — 화면도 그 타입 자체를 감춥니다.
+     *
+     * 선언 자체가 없는 `NULL`(업그레이드 직후 재동기화 전)은 막지 않으므로 빈 선언 `[]` 을 명시한다.
+     *
+     * @scenario editing_axis=related_user_relation, layer=request_validation
+     *
+     * @effects notification_template_rejects_any_relation_without_declarations
+     *
+     * @return void 반환값 없음
+     */
+    public function test_update_template_rejects_any_relation_without_declarations(): void
+    {
+        $this->definition->update(['relations' => []]);
+
+        $this->authRequest()->putJson("/api/admin/notification-templates/{$this->template->id}", [
+            'body' => ['ko' => '본문', 'en' => 'Body'],
+            'recipients' => [
+                ['type' => 'related_user', 'relation' => 'post_author'],
+            ],
+        ])->assertStatus(422);
+    }
+
+    /**
+     * 정의 응답이 관계 선언을 실어야 화면이 「관련 사용자」 선택지를 세울지 판단할 수 있습니다.
+     *
+     * @scenario editing_axis=related_user_relation, layer=resource_payload
+     *
+     * @effects notification_definition_resource_carries_relations
+     *
+     * @return void 반환값 없음
+     */
+    public function test_definition_resource_carries_relations(): void
+    {
+        $this->definition->update(['relations' => ['post_author']]);
+
+        $this->authRequest()
+            ->getJson("/api/admin/notification-definitions/{$this->definition->id}")
+            ->assertStatus(200)
+            ->assertJsonPath('data.relations', ['post_author']);
+    }
+
+    /**
+     * 템플릿을 편집하면 Template.is_default 와 Definition.is_default 가 모두 false 로 전환됩니다.
+     *
+     * 리셋 버튼 노출 근거다.
+     *
+     * @scenario layer=request_validation
+     *
+     * @effects notification_template_edit_marks_both_as_customized
+     *
+     * @return void 반환값 없음
      */
     public function test_update_template_marks_template_and_definition_as_customized(): void
     {
@@ -89,7 +292,13 @@ class NotificationTemplateControllerTest extends TestCase
     }
 
     /**
-     * 활성/비활성 토글
+     * 활성/비활성 토글이 템플릿 활성 상태를 뒤집습니다.
+     *
+     * @scenario layer=request_validation
+     *
+     * @effects notification_template_toggle_active
+     *
+     * @return void 반환값 없음
      */
     public function test_toggle_active(): void
     {
@@ -100,7 +309,13 @@ class NotificationTemplateControllerTest extends TestCase
     }
 
     /**
-     * 기본값 복원
+     * 사용자 수정본 템플릿을 기본값으로 복원합니다.
+     *
+     * @scenario layer=request_validation
+     *
+     * @effects notification_template_reset_restores_defaults
+     *
+     * @return void 반환값 없음
      */
     public function test_reset_template(): void
     {
@@ -115,7 +330,13 @@ class NotificationTemplateControllerTest extends TestCase
     }
 
     /**
-     * 미리보기 성공 — definition_id로 변수 조회 후 치환
+     * 미리보기는 definition_id 로 변수 설명을 조회해 제목·본문의 변수를 치환합니다.
+     *
+     * @scenario layer=resource_payload
+     *
+     * @effects notification_template_preview_renders_variables
+     *
+     * @return void 반환값 없음
      */
     public function test_preview_template(): void
     {
@@ -142,7 +363,13 @@ class NotificationTemplateControllerTest extends TestCase
     }
 
     /**
-     * 미리보기 — definition_id 누락 시 422 검증 실패
+     * 미리보기에 definition_id 가 없으면 422 검증 실패입니다.
+     *
+     * @scenario layer=request_validation
+     *
+     * @effects notification_template_preview_requires_a_definition
+     *
+     * @return void 반환값 없음
      */
     public function test_preview_requires_definition_id(): void
     {
@@ -155,7 +382,13 @@ class NotificationTemplateControllerTest extends TestCase
     }
 
     /**
-     * 권한 없는 사용자 — 403
+     * 설정 조회 권한만 있는 사용자의 템플릿 수정은 403 입니다.
+     *
+     * @scenario layer=request_validation
+     *
+     * @effects notification_template_update_requires_settings_permission
+     *
+     * @return void 반환값 없음
      */
     public function test_update_requires_settings_update_permission(): void
     {
@@ -170,7 +403,7 @@ class NotificationTemplateControllerTest extends TestCase
         $token = $user->createToken('test')->plainTextToken;
 
         $response = $this->withHeaders([
-            'Authorization' => 'Bearer ' . $token,
+            'Authorization' => 'Bearer '.$token,
             'Accept' => 'application/json',
         ])->putJson("/api/admin/notification-templates/{$this->template->id}", [
             'subject' => ['ko' => '변경 시도'],
@@ -182,22 +415,22 @@ class NotificationTemplateControllerTest extends TestCase
     }
 
     /**
-     * 인증된 요청 헬퍼.
+     * 관리자 토큰을 실은 인증 요청을 만드는 헬퍼입니다.
      *
-     * @return static
+     * @return static Authorization·Accept 헤더가 붙은 테스트 인스턴스
      */
     private function authRequest(): static
     {
         return $this->withHeaders([
-            'Authorization' => 'Bearer ' . $this->token,
+            'Authorization' => 'Bearer '.$this->token,
             'Accept' => 'application/json',
         ]);
     }
 
     /**
-     * 관리자 생성 헬퍼.
+     * 설정 조회·수정 권한을 가진 최고관리자 역할 사용자를 만드는 헬퍼입니다.
      *
-     * @return User
+     * @return User 생성된 관리자
      */
     private function createAdminWithPermissions(): User
     {

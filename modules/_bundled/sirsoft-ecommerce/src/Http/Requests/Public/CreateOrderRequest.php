@@ -78,6 +78,30 @@ class CreateOrderRequest extends FormRequest
                         $fail(__('sirsoft-ecommerce::validation.order.payment_method_unavailable'));
                     }
                 },
+                // 고객이 직접 고를 수 없는 수단 차단 (P10 — `point`/`deposit`/`free`).
+                //
+                // 코어에는 이 수단들의 **결제 실행 경로가 없다**. 실결제액이 0보다 큰 주문에
+                // 고르면 주문은 `PENDING_ORDER` 에 영구 정박한다 — 결제도 취소도 되지 않는
+                // 주문이 남고, 어떤 화면에도 그 이유가 뜨지 않는다. 화이트리스트
+                // (`allValidIds`)는 조이지 않는다: 과거 주문 목록 필터가 같은 목록을 쓰므로
+                // 조이면 예전 수단으로 결제한 주문을 조회할 수 없다.
+                //
+                // `free` 만 예외다 — **결제할 것이 없는 0원 주문**은 시스템이 이 수단을 고르고
+                // 그 경로는 정상 동작한다. 그래서 금액이 0 인 요청에서만 통과시킨다.
+                function (string $attribute, mixed $value, callable $fail) {
+                    if (! is_string($value) || app(PaymentMethodResolver::class)->isCustomerSelectable($value)) {
+                        return;
+                    }
+
+                    $isFreeZeroAmountOrder = $value === PaymentMethodEnum::FREE->value
+                        && (float) $this->input('expected_total_amount', 0) <= 0.0;
+
+                    if ($isFreeZeroAmountOrder) {
+                        return;
+                    }
+
+                    $fail(__('sirsoft-ecommerce::validation.order.payment_method_not_selectable'));
+                },
             ],
             'expected_total_amount' => 'required|numeric|min:0',
 
@@ -95,6 +119,9 @@ class CreateOrderRequest extends FormRequest
 
             // 배송지 저장
             'save_shipping_address' => 'nullable|boolean',
+            // 주문서에서 고른 배송지를 «그 자리에서 고쳤을 때» 그 행을 갱신한다. 소유권은
+            // 컨트롤러가 확인한다 — 여기서는 형식만 본다(남의 행 ID 를 실어도 갱신되지 않는다).
+            'save_shipping_address_id' => 'nullable|integer|min:1',
 
             // 현금영수증 신청 (무통장입금 전용 — 신청 시에만 하위 3키 필수)
             'cash_receipt_requested' => 'nullable|boolean',
@@ -141,6 +168,7 @@ class CreateOrderRequest extends FormRequest
      * 따라서 "전부 비었거나 전부 채워졌거나" 둘 중 하나만 허용합니다.
      *
      * @param  Validator  $validator  검증기
+     * @return void 반환값 없음
      */
     public function withValidator(Validator $validator): void
     {
@@ -266,6 +294,18 @@ class CreateOrderRequest extends FormRequest
             'guest_lookup_password.min' => __('sirsoft-ecommerce::validation.order.guest_lookup_password_min'),
             'guest_lookup_password.confirmed' => __('sirsoft-ecommerce::validation.order.guest_lookup_password_confirmed'),
             'guest_lookup_password_confirmation.required' => __('sirsoft-ecommerce::validation.order.guest_lookup_password_confirmation_required'),
+        ];
+    }
+
+    /**
+     * 검증 오류 문구에 쓰는 필드 표시명
+     *
+     * @return array<string, string> 필드 키 → 표시명
+     */
+    public function attributes(): array
+    {
+        return [
+            'save_shipping_address_id' => __('sirsoft-ecommerce::validation.request_attributes.save_shipping_address'),
         ];
     }
 

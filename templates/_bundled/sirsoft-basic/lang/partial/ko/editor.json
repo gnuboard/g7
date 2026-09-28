@@ -1182,6 +1182,9 @@
     "user_notification_ws": "알림 (실시간)",
     "wishlist": "위시리스트",
     "scrap": "스크랩",
-    "visitor_summary": "방문자 요약"
+    "visitor_summary": "방문자 요약",
+    "claimable": "클레임 신청 가능 상품",
+    "claims": "클레임 신청내역",
+    "claim": "클레임 신청서"
   }
 }

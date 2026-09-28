@@ -11,12 +11,16 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Log;
+use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentStatusEnum;
 use Modules\Sirsoft\Ecommerce\Exceptions\PaymentAmountMismatchException;
 use Modules\Sirsoft\Ecommerce\Helpers\DeviceDetector;
+use Modules\Sirsoft\Ecommerce\Models\ClaimPayment;
 use Modules\Sirsoft\Ecommerce\Models\Order;
+use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ClaimPaymentRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Services\OrderProcessingService;
+use Plugins\Sirsoft\PayKginicis\Concerns\HandlesClaimPaymentCallbacks;
 use Plugins\Sirsoft\PayKginicis\Concerns\IssuesReceiptCookie;
 use Plugins\Sirsoft\PayKginicis\Concerns\PreventsReplayCallback;
 use Plugins\Sirsoft\PayKginicis\Concerns\ResolvesEasyPaySelection;
@@ -38,6 +42,7 @@ use Plugins\Sirsoft\PayKginicis\Support\ShopRedirectUrl;
  */
 class PaymentCallbackController
 {
+    use HandlesClaimPaymentCallbacks;
     use IssuesReceiptCookie;
     use PreventsReplayCallback;
     use ResolvesEasyPaySelection;
@@ -124,10 +129,17 @@ class PaymentCallbackController
         'P_FN_NM',
     ];
 
+    /**
+     * @param  OrderProcessingService  $orderService  주문 결제 처리 서비스
+     * @param  PluginSettingsService  $pluginSettingsService  플러그인 설정 조회 서비스
+     * @param  KgInicisApiService  $apiService  KG 이니시스 API 서비스
+     * @param  ClaimPaymentRepositoryInterface  $claimPaymentRepository  클레임 결제 Repository
+     */
     public function __construct(
         private readonly OrderProcessingService $orderService,
         private readonly PluginSettingsService $pluginSettingsService,
         private readonly KgInicisApiService $apiService,
+        private readonly ClaimPaymentRepositoryInterface $claimPaymentRepository,
     ) {}
 
     /**
@@ -146,8 +158,8 @@ class PaymentCallbackController
         // 주문번호: 구버전 MOID, 신버전 orderNumber 모두 지원
         $moid = $validated['MOID'] ?? $validated['orderNumber'] ?? null;
 
-        // 결제금액: 콜백에 없을 수 있음 → 서버 승인 후 PG 응답에서 가져옴
-        $totPrice = isset($validated['TotPrice']) ? (int) $validated['TotPrice'] : null;
+        // 콜백의 결제금액(TotPrice)은 브라우저를 거친 값이라 쓰지 않는다 — 승인액은 서버 승인 응답의
+        // TotPrice 가 권위다(아래 승인 뒤 대조).
 
         Log::info('KG Inicis: callback received', [
             'moid' => $moid,
@@ -182,6 +194,15 @@ class PaymentCallbackController
                 'is_user_cancel' => $isUserCancel,
             ]);
 
+            // 클레임 추가결제(CP 채번)는 체크아웃이 아니라 신청서 상세로 돌려보낸다.
+            if (ClaimPayment::isClaimPaymentNumber($moid)) {
+                $claimRedirect = $this->redirectClaimWindowFailure($moid, $isUserCancel ? null : $resultCode);
+
+                if ($claimRedirect !== null) {
+                    return $claimRedirect;
+                }
+            }
+
             if ($isUserCancel) {
                 // 에러 query 미부착 → 체크아웃 페이지가 toast/error 분기를 타지 않음
                 return redirect($this->resolveFailUrl());
@@ -189,7 +210,9 @@ class PaymentCallbackController
 
             return redirect($this->resolveFailUrl([
                 'error' => $resultCode,
-                'message' => $resultMsg,
+                // 결제 건을 못 찾은 CP 콜백이 여기까지 떨어질 수 있다. PG 원문은 상점 MID·내부 상태를
+                // 담고 이 경로는 비인증 브라우저 리다이렉트이므로, CP 번호일 때는 코드만 싣는다.
+                'message' => ClaimPayment::isClaimPaymentNumber($moid) ? null : $resultMsg,
                 'orderId' => $moid,
             ]));
         }
@@ -228,6 +251,26 @@ class PaymentCallbackController
         $netCancelUrl = $this->apiService->resolveIdcNetCancelUrl($idcName);
         $tid = '';
         $callbackLock = null;
+
+        // 클레임 추가결제(CP 채번)는 주문이 아니다 — 주문 분기를 태우면 order_not_found 로 끝난다.
+        // 승인은 모듈 위임(필터 발화 → 이 플러그인의 승인 리스너)이고, 승인 금액 불일치는 KG
+        // 승인이 확정된 뒤의 거절이므로 망취소로 보상한다.
+        if (ClaimPayment::isClaimPaymentNumber($moid)) {
+            $payment = $this->findClaimPayment($moid);
+
+            if (! $payment) {
+                Log::error('KG Inicis: claim payment not found', ['moid' => $moid]);
+
+                return redirect($this->resolveFailUrl(['error' => 'claim_payment_not_found', 'orderId' => $moid]));
+            }
+
+            // 주문 경로와 같은 직렬화 락을 건다 — 같은 콜백이 겹쳐 들어오는 것을 PG 의 중복
+            // 승인 거절에만 맡기면 방어 층이 주문 경로와 달라진다. 키는 결제번호(CP)다.
+            // 락 대기 초과는 500 이 아니라 신청서 상세 복귀로 끝난다(`approveClaimPaymentSerialized`).
+            // 승인 뒤 거절의 보상은 보상 클로저 대신 모듈의 `claim_payment.void_approval` 필터(이
+            // 플러그인 승인 리스너의 `voidApproval()`)가 맡는다 — API 승인 경로와 같은 한 구현이다.
+            return $this->approveClaimPaymentSerialized('authCallback', $payment, $validated);
+        }
 
         try {
             $order = $this->orderService->findByOrderNumber($moid);
@@ -285,10 +328,12 @@ class PaymentCallbackController
                 return redirect($this->resolveSuccessUrl($moid));
             }
 
-            // TotPrice 가 콜백에 없으면 PG 승인 응답의 TotPrice 사용
-            if ($totPrice === null) {
-                $totPrice = (int) ($pgResponse['TotPrice'] ?? $pgResponse['totPrice'] ?? 0);
-            }
+            // 승인액은 **PG 승인 응답**의 TotPrice 만 쓴다. 콜백 TotPrice 를 먼저 쓰면 결제창 금액을 바꾼
+            // 요청이 청구액을 적어 보내는 것만으로 대조를 통과한다(대조가 항등식이 된다). 응답에 금액이
+            // 없으면 0 이 되어 아래 대조에서 망취소 + 실패로 끝난다 (#599 validate P2, 클레임 경로와 같은 규칙).
+            $totPrice = is_numeric($pgResponse['TotPrice'] ?? $pgResponse['totPrice'] ?? null)
+                ? (int) ($pgResponse['TotPrice'] ?? $pgResponse['totPrice'])
+                : 0;
 
             $expectedAmount = $this->resolveExpectedPaymentPriceOrNull($order, 'auth_callback', [
                 'tid' => $tid,
@@ -569,7 +614,9 @@ class PaymentCallbackController
      * KG 이니시스 PC 노티는 별도 서명 필드를 제공하지 않으므로, IP 화이트리스트에 더해
      * 결제행에 저장된 발급 시점 TID/MID/계좌/금액을 대조해 위조 통보 표면을 줄인다.
      *
-     * @param  array{tid:string,mid:string,amount:int,account:string,source:string}  $notify
+     * @param  Order  $order  대상 주문
+     * @param  array{tid:string,mid:string,amount:int,account:string,source:string}  $notify  입금통보 값
+     * @return bool 이 주문의 가상계좌 결제 건이면 true
      */
     private function validateVbankNotifyContext(Order $order, array $notify): bool
     {
@@ -579,6 +626,22 @@ class PaymentCallbackController
 
         if (! $payment) {
             Log::warning('KG Inicis: vbank notify rejected - payment missing', [
+                'source' => $source,
+                'moid' => $order->order_number,
+                'tid' => $notify['tid'],
+            ]);
+
+            return false;
+        }
+
+        // 취소된 주문의 입금통보는 받지 않는다 (코어 P4 와 같은 가드).
+        //
+        // 고객이 취소한 뒤에 입금해도 PG 통보는 도착한다. 통과시키면 `CANCELLED` 주문이
+        // 결제완료로 되살아나 재고·마일리지가 재차감된다. 아래 결제상태 가드만으로는
+        // 부족하다 — 미입금 취소가 결제행을 `waiting_deposit` 그대로 두던 시절의 행이
+        // 그 가드를 통과하기 때문이다. 입금된 돈은 환불 절차로 돌려주어야 하는 별개 사건이다.
+        if ($this->enumValue($order->order_status) === OrderStatusEnum::CANCELLED->value) {
+            Log::warning('KG Inicis: vbank notify rejected - order is cancelled', [
                 'source' => $source,
                 'moid' => $order->order_number,
                 'tid' => $notify['tid'],
@@ -676,6 +739,12 @@ class PaymentCallbackController
         return true;
     }
 
+    /**
+     * 모바일 입금통보 메시지에서 가상계좌 번호를 꺼냅니다. (`|` 구분 첫 칸)
+     *
+     * @param  string  $message  PG 결과 메시지
+     * @return string 가상계좌 번호
+     */
     private function extractMobileVbankAccount(string $message): string
     {
         $parts = explode('|', $message);
@@ -683,6 +752,12 @@ class PaymentCallbackController
         return trim((string) ($parts[0] ?? ''));
     }
 
+    /**
+     * 열거형이면 그 값을, 아니면 문자열로 바꿔 돌려줍니다.
+     *
+     * @param  mixed  $value  열거형 또는 스칼라 값
+     * @return string 문자열 값
+     */
     private function enumValue(mixed $value): string
     {
         if ($value instanceof \BackedEnum) {
@@ -692,6 +767,12 @@ class PaymentCallbackController
         return (string) $value;
     }
 
+    /**
+     * 결제 성공 리다이렉트 URL 을 만듭니다.
+     *
+     * @param  string  $orderId  주문번호
+     * @return string 절대 URL
+     */
     private function resolveSuccessUrl(string $orderId): string
     {
         $settings = $this->pluginSettingsService->get(self::PLUGIN_IDENTIFIER) ?? [];
@@ -700,6 +781,12 @@ class PaymentCallbackController
         return $this->absolutize(ShopRedirectUrl::resolve($urlTemplate, ['{orderId}' => $orderId]));
     }
 
+    /**
+     * 결제 실패 리다이렉트 URL 을 만듭니다.
+     *
+     * @param  array  $queryParams  리다이렉트에 붙일 쿼리 파라미터
+     * @return string 절대 URL
+     */
     private function resolveFailUrl(array $queryParams = []): string
     {
         $settings = $this->pluginSettingsService->get(self::PLUGIN_IDENTIFIER) ?? [];
@@ -722,6 +809,9 @@ class PaymentCallbackController
      * 으로 Host 헤더를 localhost 로 바꿔서 PHP 에 전달하는 경우, Laravel 의
      * redirect('/path') 가 http://localhost/path 를 생성해버린다. config('app.url')
      * (.env 의 APP_URL)을 명시적 base 로 사용하여 도메인을 보존한다.
+     *
+     * @param  string  $url  리다이렉트 URL (상대 또는 절대)
+     * @return string 절대 URL
      */
     private function absolutize(string $url): string
     {
@@ -740,6 +830,12 @@ class PaymentCallbackController
      *
      * KG 이니시스 authCallback 에서 payMethod=VBank 로 판별된 경우 호출.
      * 실제 결제 완료(completePayment)는 입금 통보(vbankNotify) 시점에 처리.
+     *
+     * @param  Order  $order  대상 주문
+     * @param  array  $pgResponse  PG 승인 응답
+     * @param  string  $tid  PG 거래번호
+     * @param  Request  $request  HTTP 요청
+     * @return void 반환값 없음
      */
     private function handleVbankIssued(Order $order, array $pgResponse, string $tid, Request $request): void
     {

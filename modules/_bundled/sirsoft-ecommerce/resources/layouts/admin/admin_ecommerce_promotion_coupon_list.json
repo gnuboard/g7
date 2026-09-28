@@ -139,6 +139,7 @@
         "directIssueSelectedUsers": [],
         "directIssueSearchKeyword": "",
         "directIssueSearchResults": [],
+        "directIssueSearchResultsKeyword": null,
         "directIssueSubmitting": false,
         "cancelIssueTarget": null,
         "cancelIssueSubmitting": false

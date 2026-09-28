@@ -73,7 +73,7 @@ class PaymentRefundListener implements HookListenerInterface
         }
 
         try {
-            $lock = Cache::lock('nhnkcp:refund:' . $payment->id, 30);
+            $lock = Cache::lock('nhnkcp:refund:'.$payment->id, 30);
             if (! $lock->get()) {
                 return [
                     'success' => false,
@@ -99,7 +99,20 @@ class PaymentRefundListener implements HookListenerInterface
                 $previousCancelled = max(0, $cumulativeCancelled - $cancelAmt);
                 $totalAmt = max($cancelAmt, $paidAmount - $previousCancelled);
                 $isPartial = $previousCancelled > 0 || $cancelAmt < $paidAmount;
-                $response = $apiService->cancelPayment($tno, $ordrIdxx, $cancelAmt, $cancelMsg, $isPartial, $totalAmt);
+                $response = $apiService->cancelPayment(
+                    $tno,
+                    $ordrIdxx,
+                    $cancelAmt,
+                    $cancelMsg,
+                    $isPartial,
+                    $totalAmt,
+                    // 가상계좌 환불계좌 — 없으면 KCP 가 vbank 취소를 거절한다(P5).
+                    $payment->isVirtualAccount() ? [
+                        'bank_code' => $payment->refund_bank_code,
+                        'account_number' => $payment->refund_bank_account,
+                        'holder' => $payment->refund_bank_holder,
+                    ] : null,
+                );
 
                 Log::info('KCP: refund success', [
                     'order_id' => $order->id,

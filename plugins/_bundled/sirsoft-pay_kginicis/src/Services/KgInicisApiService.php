@@ -680,6 +680,7 @@ class KgInicisApiService
         $clientIp = request()->ip() ?? '127.0.0.1';
 
         $detail = ['tid' => $tid];
+
         $detailJson = str_replace('\\/', '/', json_encode($detail, JSON_UNESCAPED_UNICODE));
         $hashData = hash('sha512', $this->inapiKey.$mid.$type.$timestamp.$detailJson);
 
@@ -714,6 +715,7 @@ class KgInicisApiService
      * @param  int|null  $cancelPrice  취소 금액 (null이면 전액 취소)
      * @param  string  $msg  취소 사유
      * @param  int|null  $totalAmount  원결제 금액 (부분취소 시 confirmPrice 계산용)
+     * @param  array|null  $refundAccount  가상계좌 환불계좌 {bank_code, account_number, holder}
      * @return array PG 응답 데이터
      *
      * @throws \Exception API 호출 실패 시
@@ -724,6 +726,7 @@ class KgInicisApiService
         ?int $cancelPrice = null,
         string $msg = '관리자 취소',
         ?int $totalAmount = null,
+        ?array $refundAccount = null,
     ): array {
         $type = $cancelPrice === null ? 'refund' : 'partialRefund';
         $timestamp = date('YmdHis');
@@ -741,6 +744,21 @@ class KgInicisApiService
             $detail['currency'] = 'WON';
             $detail['tax'] = '0';
             $detail['taxfree'] = '0';
+        }
+
+        // 입금완료된 가상계좌는 **환불받을 계좌**가 없으면 PG 가 취소를 거절한다(P5).
+        // 이 세 값을 전달하지 않으면 입금완료 vbank 주문이 코어에서도 관리자 화면에서도
+        // **취소 자체가 불가능**하다 — 운영자는 PG 콘솔에서 손으로 처리해야 하고 그 환불은
+        // 우리 장부에 남지 않는다.
+        //
+        // 반드시 취소 payload 에 실어야 한다. 거래조회(inquiry)에 붙이면 조회는 멀쩡히 돌고
+        // 취소만 조용히 거절되어, 운영자에게는 원인 없는 실패로만 보인다.
+        if ($refundAccount !== null
+            && filled($refundAccount['account_number'] ?? null)
+            && filled($refundAccount['bank_code'] ?? null)) {
+            $detail['refundAcctNum'] = (string) $refundAccount['account_number'];
+            $detail['refundBankCode'] = (string) $refundAccount['bank_code'];
+            $detail['refundAcctName'] = (string) ($refundAccount['holder'] ?? '');
         }
 
         $detailJson = str_replace('\\/', '/', json_encode($detail, JSON_UNESCAPED_UNICODE));

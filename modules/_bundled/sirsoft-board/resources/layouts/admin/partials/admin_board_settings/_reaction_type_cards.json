@@ -18,7 +18,7 @@
             },
             "props": {
                 "data-testid": "reaction-type-row-m-{{row.code}}",
-                "className": "excel-card"
+                "className": "excel-card mb-3"
             },
             "children": [
                 {

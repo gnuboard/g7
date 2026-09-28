@@ -13,6 +13,8 @@ class MileageEnumsTest extends ModuleTestCase
 {
     /**
      * 거래 유형 값이 올바른지 확인합니다.
+     *
+     * @effects transaction_type_values_and_case_count_are_stable_with_a_label_for_each
      */
     public function test_transaction_type_has_correct_values(): void
     {
@@ -28,6 +30,8 @@ class MileageEnumsTest extends ModuleTestCase
 
     /**
      * isEarning / isDeducting 분류가 올바른지 확인합니다.
+     *
+     * @effects earning_and_deducting_classification_is_total_and_mutually_exclusive
      */
     public function test_earning_and_deducting_classification(): void
     {
@@ -49,6 +53,8 @@ class MileageEnumsTest extends ModuleTestCase
 
     /**
      * 관리자 배지 그룹이 5색으로 매핑되는지 확인합니다.
+     *
+     * @effects admin_badge_group_distinguishes_eight_types_in_five_color_groups
      */
     public function test_admin_badge_group_maps_to_five_color_groups(): void
     {
@@ -63,18 +69,27 @@ class MileageEnumsTest extends ModuleTestCase
     }
 
     /**
-     * 사용자 표시 4분류가 복원/수동/회수를 adjust 로 통합하는지 확인합니다.
+     * 사용자 표시 4분류가 잔액 증가 유형을 전부 earn 에 세우는지 확인합니다.
+     *
+     * 요약 카드의 '누적 적립' 은 isEarning() 으로 세는데 목록 필터가 같은 행을 '조정' 으로
+     * 접으면 한 화면이 같은 거래를 두 갈래로 분류한다. 세부 사유는 description 이 말한다.
+     *
+     * @scenario case=balance_increase_listed_as_earn
+     *
+     * @effects balance_increasing_types_listed_under_earn
      */
-    public function test_user_display_category_collapses_into_four_groups(): void
+    public function test_user_display_category_puts_every_balance_increase_in_earn(): void
     {
         $this->assertSame('earn', MileageTransactionTypeEnum::PURCHASE_EARN->userDisplayCategory());
+        $this->assertSame('earn', MileageTransactionTypeEnum::ADMIN_EARN->userDisplayCategory());
+        $this->assertSame('earn', MileageTransactionTypeEnum::REFUND_RESTORE->userDisplayCategory());
+        $this->assertSame('earn', MileageTransactionTypeEnum::ORDER_CANCEL_RESTORE->userDisplayCategory());
+
         $this->assertSame('use', MileageTransactionTypeEnum::ORDER_USE->userDisplayCategory());
         $this->assertSame('expire', MileageTransactionTypeEnum::EXPIRED->userDisplayCategory());
 
-        $this->assertSame('adjust', MileageTransactionTypeEnum::ADMIN_EARN->userDisplayCategory());
+        // 사용·소멸이 아닌 차감만 '조정' 에 남는다
         $this->assertSame('adjust', MileageTransactionTypeEnum::ADMIN_DEDUCT->userDisplayCategory());
-        $this->assertSame('adjust', MileageTransactionTypeEnum::REFUND_RESTORE->userDisplayCategory());
-        $this->assertSame('adjust', MileageTransactionTypeEnum::ORDER_CANCEL_RESTORE->userDisplayCategory());
         $this->assertSame('adjust', MileageTransactionTypeEnum::EARN_CANCEL->userDisplayCategory());
 
         // 4분류만 존재
@@ -87,7 +102,29 @@ class MileageEnumsTest extends ModuleTestCase
     }
 
     /**
+     * 목록 분류와 요약 집계 기준이 어긋나지 않는지 확인합니다. (회귀 잠금)
+     *
+     * @scenario case=category_agrees_with_is_earning
+     *
+     * @effects display_category_agrees_with_is_earning
+     */
+    public function test_user_display_category_agrees_with_is_earning(): void
+    {
+        foreach (MileageTransactionTypeEnum::cases() as $case) {
+            if ($case->isEarning()) {
+                $this->assertSame(
+                    'earn',
+                    $case->userDisplayCategory(),
+                    "{$case->value} 는 잔액이 늘어나는 거래인데 목록에서 '적립' 에 서지 않는다"
+                );
+            }
+        }
+    }
+
+    /**
      * 적립 시점 enum 기본값 및 컬럼 매핑을 확인합니다.
+     *
+     * @effects earn_trigger_maps_each_case_to_its_timestamp_column
      */
     public function test_earn_trigger_default_and_timestamp_column(): void
     {

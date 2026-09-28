@@ -5,7 +5,7 @@
 <partial description="Product Index - Preset Management Modal">
   <modal data-ref="modal_preset_manage" title="$t:sirsoft-ecommerce.admin.product.modal.preset_manage.title" description="$t:sirsoft-ecommerce.admin.product.modal.preset_manage.description" size="md">
     <div data-ref="preset_empty_message" data-if="{{!presets.data || presets.data.length === 0}}" class="text-center py-8 text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.product.modal.preset_manage.empty</div>
-    <div data-ref="preset_list" data-if="{{presets.data &amp;&amp; presets.data.length > 0}}">
+    <div data-ref="preset_list" data-if="{{presets.data &amp;&amp; presets.data.length > 0}}" class="stack-tight">
       <div data-ref="preset_item_dynamic_{{presetIdx}}" data-each="presetItem, presetIdx in presets.data" class="flex-between p-3 border border-gray-200 dark:border-gray-700 rounded-lg">
         <span class="text-heading">{{presetItem.name}}</span>
         <div class="flex-center gap-2">

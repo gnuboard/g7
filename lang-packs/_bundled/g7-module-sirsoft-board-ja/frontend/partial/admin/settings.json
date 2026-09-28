@@ -484,7 +484,6 @@
       "code": "コード",
       "name": "名前",
       "name_placeholder": "例：推薦",
-      "icon_hint": "アイコン画像は追加後、リストの各行からアップロードしてください（PNG/JPG/GIF/WEBP、1MB以下）",
       "confirm": "追加"
     },
     "columns": {
@@ -508,7 +507,6 @@
       "name_required": "デフォルト言語の名前を入力してください"
     },
     "confirm_delete": "このリアクションタイプを削除しますか？保存を押して初めて反映されます。",
-    "delete_blocked": "リアクションがあるため、無効化のみ可能です",
     "messages": {
       "icon_upload_failed": "アイコンのアップロードに失敗しました",
       "icon_delete_failed": "アイコンの削除に失敗しました"

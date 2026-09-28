@@ -1,4 +1,5 @@
 import { buildOrderRequestHeaders } from './guestOrderToken';
+import { translateNicepay as t } from './translate';
 
 const PLUGIN_ID = 'sirsoft-pay_nicepayments';
 const FLAG = '__nicepayOcReceiptInjectorInstalled';
@@ -47,35 +48,34 @@ async function fetchReceiptInfo(orderNumber: string): Promise<ReceiptInfo | null
             credentials: 'same-origin',
         });
         if (!res.ok) return null;
-        return (await res.json()) as ReceiptInfo;
+        // 응답은 공통 형식({ success, message, data }) — 영수증 정보는 data 에 있다.
+        const body = (await res.json()) as { data?: ReceiptInfo | null };
+        return body?.data ?? null;
     } catch {
         return null;
     }
 }
 
-function patchPaymentMethodDisplay(displayLabel: string | null | undefined): boolean {
+export function patchPaymentMethodDisplay(displayLabel: string | null | undefined): boolean {
     if (!displayLabel) return false;
 
-    const rows = Array.from(document.querySelectorAll<HTMLElement>('div'));
-    for (const row of rows) {
-        const spans = Array.from(row.children).filter(
-            (child): child is HTMLElement => child instanceof HTMLElement && child.tagName === 'SPAN',
-        );
-        if (spans.length < 2) continue;
+    // 결제 방법 행은 템플릿이 약속한 id(order_payment_method_row)로만 찾는다. 행 이름 글자(「결제 방법」 등)는 언어마다
+    // 달라 찾는 기준이 될 수 없다 — id 가 없는 템플릿에서는 건드리지 않는다(약속: sirsoft-ecommerce docs/extension-points.md).
+    const row = document.getElementById('order_payment_method_row');
+    if (!row) return false;
 
-        const label = spans[0].textContent?.trim();
-        if (label !== '결제 방법' && label !== '결제수단' && label !== '결제 방식') continue;
+    const spans = Array.from(row.children).filter(
+        (child): child is HTMLElement => child instanceof HTMLElement && child.tagName === 'SPAN',
+    );
+    if (spans.length < 2) return false;
 
-        const value = spans[spans.length - 1];
-        if (value.textContent?.trim() !== displayLabel) {
-            value.textContent = displayLabel;
-            value.dataset.nicepayPaymentMethodPatched = 'true';
-        }
-        row.dataset.nicepayPaymentMethodRow = 'true';
-        return true;
+    const value = spans[spans.length - 1];
+    if (value.textContent?.trim() !== displayLabel) {
+        value.textContent = displayLabel;
+        value.dataset.nicepayPaymentMethodPatched = 'true';
     }
-
-    return false;
+    row.dataset.nicepayPaymentMethodRow = 'true';
+    return true;
 }
 
 async function injectOnOrderComplete(orderNumber: string): Promise<void> {
@@ -101,14 +101,14 @@ async function injectOnOrderComplete(orderNumber: string): Promise<void> {
     receiptBtn.className = blueBtn.className
         .replace(/bg-blue-\d+/g, 'bg-green-600')
         .replace(/hover:bg-blue-\d+/g, 'hover:bg-green-700');
-    receiptBtn.textContent = '영수증 조회';
+    receiptBtn.textContent = t('user.receipt_view', '영수증 조회');
 
     receiptBtn.addEventListener('click', async () => {
         receiptBtn.disabled = true;
-        receiptBtn.textContent = '로딩 중...';
+        receiptBtn.textContent = t('user.loading', '로딩 중...');
         const data = await fetchReceiptInfo(orderNumber);
         receiptBtn.disabled = false;
-        receiptBtn.textContent = '영수증 조회';
+        receiptBtn.textContent = t('user.receipt_view', '영수증 조회');
         const url = data?.receipt_url ?? null;
         if (url) {
             window.open(url, 'nicepay_receipt', 'width=800,height=600,scrollbars=yes,resizable=yes');
@@ -130,7 +130,7 @@ function tryInject(): void {
 
 export function installOrderCompleteReceiptInjector(): void {
     if (typeof window === 'undefined') return;
-    const w = window as Record<string, unknown>;
+    const w = window as unknown as Record<string, unknown>;
     if (w[FLAG]) return;
     w[FLAG] = true;
 

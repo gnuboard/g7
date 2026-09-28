@@ -132,6 +132,12 @@ NOT NULL 을 채우려고 넣던 자리표시값 `'0.0.0.0'` 을 NULL 로 되돌
 응답의 `ip_address` 는 **nullable 문자열**이고, 관리자 화면(`_post_card_content`·`_comment`·
 `_reply_card_content`)은 이미 `data-if` 로 빈 값을 숨깁니다. `down()` 은 NULL 행을
 `'0.0.0.0'` 으로 채운 뒤 NOT NULL 로 되돌립니다(파기된 IP 는 되살릴 수 없으므로 「모름」 값).
+
+인덱스만 더하는 마이그레이션 2건(`add_recent_across_boards_index_to_board_posts` ·
+`add_trigger_type_to_board_attachments_table` 의 인덱스 단계)은 `Schema::hasIndex()` 가드 뒤에서 실행됩니다.
+MySQL 은 DDL 을 롤백하지 않으므로 한 파일이 컬럼 → 인덱스 순으로 진행하다 인덱스 단계에서 죽으면 컬럼만 남고,
+재실행 시 컬럼 가드는 통과하지만 인덱스가 `Duplicate key name` 으로 다시 죽어 그 설치본은 재실행으로 복구되지
+않습니다. 새 DDL 단계를 더할 때는 컬럼뿐 아니라 인덱스·외래키 단계에도 각각 가드를 겁니다.
 <!-- @intent END -->
 
 ## Enum

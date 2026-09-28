@@ -81,9 +81,20 @@
 본문의 `secret`을 대조(`webhook_secret_verify` 설정이 꺼져 있지 않은 한 강제) → 일치하면
 결제 완료 처리, 불일치하면 경고 로그만 남기고 처리하지 않습니다.
 
-**결제 취소(환불)**: 관리자가 주문 취소(`cancel_pg=true`) → 코어가
+**결제 취소(환불)**: 관리자가 주문 취소 → 코어가 **환불신청서**를 만들고(자동 전이를 켜면 승인·환불완료까지 한 번에) 환불이 집행될 때
 `sirsoft-ecommerce.payment.refund` 필터 발화 → `PaymentRefundListener`가 토스 취소 API 호출
 → `before_cancel`/`after_cancel` 훅 발화.
+
+부분취소의 **면세분(`taxFreeAmount`)** 은 주문의 면세·과세 합계로 안분하되,
+「**승인 면세액 − 이미 소진한 면세분**」 으로 계산한 잔여 예산을 상한으로 갖습니다.
+주문의 `total_tax_free_amount` / `total_tax_amount` 는 환불이 완료될 때마다 **잔여로 줄어들기**
+때문에, 비율만으로 보내면 회차별 안분분의 합이 승인분을 넘어 토스가
+「취소 할 수 없는 금액 입니다.」로 거부합니다.
+
+예산의 근거는 `payment_meta.pg_raw_response` 다 — `taxFreeAmount`(승인 시 등록된 **불변의 상한**)과
+`cancels[].taxFreeAmount`(이미 소진분). 이 스냅샷은 종전에 승인 시점에만 기록됐으므로,
+취소가 성공할 때마다 응답의 `cancels[]` 로 **장부를 갱신**합니다(승인 금액·승인 면세액은 보존).
+장부는 PG 가 실제로 기록한 값이므로 「우리가 보낸 값」이 아니라 「받아들여진 값」이 쌓입니다.
 
 **설정 저장 검증**: 관리자가 플러그인 설정을 저장 → `core.plugin_settings.before_save`
 (동기 훅, `sync: true`) → `ValidateTossSettingsListener`가 `vbank_valid_hours`(1~2160시간)와
@@ -97,8 +108,8 @@
 | 확장점 | 수 | 상세 |
 |---|---|---|
 | 발행 훅 | 4개 | [발행 훅](docs/extension-points.md#발행-훅) |
-| 구독 훅 | 9개 | [구독 훅](docs/extension-points.md#구독-훅) |
-| 훅 리스너 | 6개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
+| 구독 훅 | 12개 | [구독 훅](docs/extension-points.md#구독-훅) |
+| 훅 리스너 | 8개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
 | 레이아웃 확장 | 3개 | [레이아웃 확장](docs/extension-points.md#레이아웃-확장) |
 | 미들웨어 | 0개 | [미들웨어](docs/extension-points.md#미들웨어) |
 | 브로드캐스트 채널 | 0개 | [브로드캐스트 채널](docs/extension-points.md#브로드캐스트-채널) |
@@ -151,10 +162,10 @@
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 13개 | `plugins/_bundled/sirsoft-tosspayments/tests` |
-| Vitest | 6개 | `vitest.config.ts` |
+| PHPUnit | 18개 | `plugins/_bundled/sirsoft-tosspayments/tests` |
+| Vitest | 7개 | `vitest.config.ts` |
 | Playwright | 0개 | — |
-| 시나리오 매니페스트 | 4개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 8개 | `tests/scenarios` |
 
 기저 TestCase: `tests/PluginTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 
@@ -185,3 +196,27 @@ cd plugins/_bundled/sirsoft-tosspayments && powershell -Command "npm run test:ru
 | [docs/api/](docs/api/README.md) | API 레퍼런스 (엔드포인트별 파라미터·응답 필드) | ✅ |
 | [CHANGELOG.md](CHANGELOG.md) | 변경 이력 | ✅ |
 <!-- @generated:docs-index END -->
+
+## 확장 조각의 CSS 클래스 규약
+
+resources/extensions/ 아래 의 조각은 **다른 패키지의 화면 안에서** 그려진다. 그래서 여기 쓰는
+클래스는 그 화면을 소유한 **템플릿의 CSS 에 실재해야** 한다.
+
+두 가지를 지킨다.
+
+1. **템플릿의 의미 클래스를 쓰지 않는다.** `flex-start` · `text-heading` · `section-heading-md`
+   같은 이름의 규칙은 `templates/_bundled/sirsoft-admin_basic/src/styles/main.css` 의 `@layer components` 에만
+   있다. 사용자 템플릿(`sirsoft-basic`)에는 그 규칙이 없어 `display:flex` 같은 기본 배치까지
+   통째로 사라진다. 평범한 Tailwind 유틸로 쓴다(`flex items-start`).
+   슬롯 확장(`extension-point=`)은 한 조각이 관리자·사용자 양쪽에 들어가므로, 어느 한쪽의
+   어휘를 쓰면 **반드시** 다른 쪽이 깨진다.
+
+2. **새 유틸은 safelist 에 실린다.** 두 템플릿 모두 Tailwind 가 레이아웃을 스캔하지 않는다 —
+   `sirsoft-admin_basic` 은 `templates/_bundled/sirsoft-admin_basic/scripts/extract-safelist.cjs` 가(확장 조각 포함) 자동 생성하고,
+   `sirsoft-basic` 은 `templates/_bundled/sirsoft-basic/src/styles/safelist.txt` 를 손으로 단다. 새 클래스를 쓴 뒤에는
+   `php artisan template:build <템플릿>` 로 CSS 를 다시 만든다.
+
+이 규약을 어겨도 **빌드는 성공하고 경고도 없으며 테스트도 전부 초록이다** — 사람이 브라우저를
+열어야만 드러난다(2026-09-21, 마이페이지 「내 정보 수정」의 확장 카드에서 체크박스가 설명 위로
+떨어져 있었다). 그래서 확장 조각이 쓰는 클래스가 대상 템플릿의 CSS 에 실제로 만들어졌는지를
+정적 검사가 대조한다.

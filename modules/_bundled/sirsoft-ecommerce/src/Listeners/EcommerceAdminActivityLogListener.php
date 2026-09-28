@@ -9,6 +9,7 @@ use App\Models\User;
 use Illuminate\Database\Eloquent\Collection;
 use Modules\Sirsoft\Ecommerce\Models\Brand;
 use Modules\Sirsoft\Ecommerce\Models\Cart;
+use Modules\Sirsoft\Ecommerce\Models\ClaimReason;
 use Modules\Sirsoft\Ecommerce\Models\ExtraFeeTemplate;
 use Modules\Sirsoft\Ecommerce\Models\ProductCommonInfo;
 use Modules\Sirsoft\Ecommerce\Models\ProductImage;
@@ -129,6 +130,13 @@ class EcommerceAdminActivityLogListener implements HookListenerInterface
 
             // ─── Settings ───
             'sirsoft-ecommerce.settings.after_save' => ['method' => 'handleSettingsAfterSave', 'priority' => 20],
+
+            // 클레임 사유 카탈로그 — 상세 REST 경로와 설정 탭 저장(syncReasons) 양쪽이 같은 훅을 쏜다.
+            // 카탈로그 변경이 「설정 저장」 한 줄 뒤에 숨으면 사라진 사유를 되짚을 수 없다(#599 S0-D2).
+            'sirsoft-ecommerce.claim_reason.after_create' => ['method' => 'handleClaimReasonAfterCreate', 'priority' => 20],
+            'sirsoft-ecommerce.claim_reason.after_update' => ['method' => 'handleClaimReasonAfterUpdate', 'priority' => 20],
+            'sirsoft-ecommerce.claim_reason.after_delete' => ['method' => 'handleClaimReasonAfterDelete', 'priority' => 20],
+            'sirsoft-ecommerce.claim_reason.after_toggle_status' => ['method' => 'handleClaimReasonAfterToggleStatus', 'priority' => 20],
         ];
     }
 
@@ -509,6 +517,112 @@ class EcommerceAdminActivityLogListener implements HookListenerInterface
             'description_key' => 'sirsoft-ecommerce::activity_log.description.ecommerce_settings_update',
             'description_params' => ['categories' => implode(', ', $categories)],
         ]);
+    }
+
+    // ═══════════════════════════════════════════
+    // ClaimReason 핸들러 (사유 카탈로그)
+    // ═══════════════════════════════════════════
+
+    /**
+     * 클레임 사유 생성 후 로그 기록
+     *
+     * @param  ClaimReason  $reason  생성된 사유
+     * @param  array  $data  요청 데이터
+     * @return void 반환값 없음
+     */
+    public function handleClaimReasonAfterCreate(ClaimReason $reason, array $data = []): void
+    {
+        $this->logActivity('claim_reason.create', [
+            'loggable' => $reason,
+            'description_key' => 'sirsoft-ecommerce::activity_log.description.claim_reason_create',
+            'description_params' => $this->claimReasonParams($reason),
+            'properties' => $this->claimReasonProperties($reason),
+        ]);
+    }
+
+    /**
+     * 클레임 사유 수정 후 로그 기록
+     *
+     * @param  ClaimReason  $reason  수정된 사유
+     * @param  array  $data  요청 데이터
+     * @return void 반환값 없음
+     */
+    public function handleClaimReasonAfterUpdate(ClaimReason $reason, array $data = []): void
+    {
+        $this->logActivity('claim_reason.update', [
+            'loggable' => $reason,
+            'description_key' => 'sirsoft-ecommerce::activity_log.description.claim_reason_update',
+            'description_params' => $this->claimReasonParams($reason),
+            'properties' => $this->claimReasonProperties($reason),
+        ]);
+    }
+
+    /**
+     * 클레임 사유 삭제 후 로그 기록
+     *
+     * 훅의 첫 인자는 종전대로 id 이고, 둘째 인자로 삭제 직전 모델이 함께 온다(코드·유형을 남기려면
+     * 필요하다 — id 만으로는 무엇이 지워졌는지 되짚을 수 없다).
+     *
+     * @param  int  $reasonId  삭제된 사유 ID
+     * @param  ClaimReason|null  $reason  삭제 직전의 사유
+     * @return void 반환값 없음
+     */
+    public function handleClaimReasonAfterDelete(int $reasonId, ?ClaimReason $reason = null): void
+    {
+        $this->logActivity('claim_reason.delete', [
+            'description_key' => 'sirsoft-ecommerce::activity_log.description.claim_reason_delete',
+            'description_params' => $reason ? $this->claimReasonParams($reason) : ['reason_type' => '-', 'reason_code' => '#'.$reasonId],
+            'properties' => $reason ? $this->claimReasonProperties($reason) : ['reason_id' => $reasonId],
+        ]);
+    }
+
+    /**
+     * 클레임 사유 활성 전환 후 로그 기록
+     *
+     * @param  ClaimReason  $reason  전환된 사유
+     * @return void 반환값 없음
+     */
+    public function handleClaimReasonAfterToggleStatus(ClaimReason $reason): void
+    {
+        $this->logActivity('claim_reason.toggle_status', [
+            'loggable' => $reason,
+            'description_key' => 'sirsoft-ecommerce::activity_log.description.claim_reason_toggle_status',
+            'description_params' => $this->claimReasonParams($reason),
+            'properties' => $this->claimReasonProperties($reason),
+        ]);
+    }
+
+    /**
+     * 사유 로그의 설명 파라미터
+     *
+     * @param  ClaimReason  $reason  대상 사유
+     * @return array{reason_type: string, reason_code: string} 설명 파라미터
+     */
+    protected function claimReasonParams(ClaimReason $reason): array
+    {
+        $type = $reason->type instanceof \BackedEnum ? $reason->type->value : (string) $reason->type;
+
+        return ['reason_type' => $type, 'reason_code' => (string) $reason->code];
+    }
+
+    /**
+     * 사유 로그의 속성 — 무엇이 지워졌는지 되짚을 최소 단위(id·유형·코드·이름·활성)
+     *
+     * @param  ClaimReason  $reason  대상 사유
+     * @return array<string, mixed> 속성
+     */
+    protected function claimReasonProperties(ClaimReason $reason): array
+    {
+        $type = $reason->type instanceof \BackedEnum ? $reason->type->value : (string) $reason->type;
+
+        return [
+            'reason_id' => $reason->id,
+            'type' => $type,
+            'code' => $reason->code,
+            'name' => $reason->name,
+            'is_active' => (bool) $reason->is_active,
+            'is_user_selectable' => (bool) $reason->is_user_selectable,
+        ];
     }
 
     // ═══════════════════════════════════════════

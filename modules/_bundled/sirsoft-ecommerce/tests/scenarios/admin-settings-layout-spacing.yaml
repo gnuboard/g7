@@ -1,0 +1,32 @@
+feature: 쇼핑몰 환경설정 화면의 여백·정렬·목록 높이 (#599 검수 지적)
+
+description: |
+  환경설정 화면에서 요소끼리 맞붙어 보이던 결함 네 가지와, 늘어나는 목록의 높이 상한을 잠근다.
+  넷 모두 구조 검사(JSON 의 클래스 문자열)로는 드러나지 않는다 — 클래스는 제자리에 있는데
+  CSS 레이어·우선순위 때문에 화면에서만 무너지므로, 실제 렌더된 좌표와 계산된 스타일로 본다.
+
+  ① 카드 묶음을 `row-stack` 으로 감싸면 그 자식 규칙(py-2·첫 pt-0·끝 pb-0)이 같은 components
+     레이어의 `admin-card` p-4 를 덮는다. 마지막 카드는 하단 여백이 0 이 되어 문구가 테두리에 붙는다.
+  ② `card-header` 는 justify 없는 가로 flex 라 안의 `flex-between` 이 폭을 채우지 못하면
+     오른쪽 끝에 있어야 할 버튼이 제목 바로 옆에 붙는다.
+  ③ 반복 박스(결제수단 행)에 부모 gap 도 카드 margin 도 없으면 테두리끼리 맞붙는다. 결제수단은
+     플러그인이 붙을 때마다 늘어나므로 목록 높이를 묶고 안에서 스크롤해야 아래 카드가 밀려나지 않는다.
+  ④ 세로로 쌓인 입력칸(우편번호 줄·기본주소·상세주소)에 줄 간격이 없으면 입력칸 테두리가 붙는다.
+
+axis_notes:
+  screen: |
+    결함이 난 환경설정 탭. 탭마다 원인이 달라(① row-stack 오용 ② card-header 폭 ③ 반복 박스 간격
+    ④ 입력 줄 간격) 한 탭의 통과가 다른 탭을 보증하지 않는다.
+
+axes:
+  screen: [claim_tab, order_settings_tab, basic_info_tab]
+
+effects:
+  - settings_policy_cards_keep_card_padding          # 정책 카드 5장 모두 상하 16px, 마지막 문구가 테두리에서 떨어진다
+  - settings_reason_add_button_aligned_right         # [사유 추가] 버튼이 카드 오른쪽 끝에 붙고 제목과 떨어진다
+  - settings_payment_method_rows_are_spaced          # 결제수단 행 사이 간격 ≥ 8px
+  - settings_payment_method_list_scrolls_within_bound  # 목록 높이 상한 500px + 세로 스크롤
+  - settings_business_address_rows_are_spaced        # 주소 입력 줄 사이 간격 ≥ 8px
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/admin/admin-settings-layout-spacing.spec.ts

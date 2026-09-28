@@ -4,8 +4,10 @@
 
 ## 레이아웃 목록
 
+회원·비회원 주문상세의 클레임 신청 버튼은 상품 목록 바로 아래에서 환불 빨강·반품 주황·교환 파랑으로 표시한다. 공통 클레임 목록의 탭·페이지는 로컬 상태와 `replaceUrl`을 갱신한 뒤 `claims` 데이터소스만 동기 재조회하여 스크롤을 유지한다. 탭 대기 중에는 스피너와 `aria-disabled`·액션 가드를 함께 사용해 포커스와 중복 클릭 방지를 유지한다. 다른 비동기 신청·저장 버튼은 기존 `Icon` 스피너와 `disabled` 패턴을 따른다.
+
 <!-- @generated:layouts START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-레이아웃 174개 (루트: `layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
+레이아웃 193개 (루트: `layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
 
 | 그룹 | 개수 |
 |---|---|
@@ -13,11 +15,11 @@
 | `auth` | 5개 |
 | `board` | 5개 |
 | `errors` | 6개 |
-| `mypage` | 12개 |
+| `mypage` | 15개 |
 | `page` | 1개 |
-| `partials` | 131개 |
+| `partials` | 145개 |
 | `search` | 1개 |
-| `shop` | 9개 |
+| `shop` | 11개 |
 | `users` | 2개 |
 
 | 레이아웃 | 그룹 | 종류 | extends |
@@ -43,6 +45,9 @@
 | `addresses` | `mypage` | 화면 | `_user_base` |
 | `board` | `mypage` | 화면 | `_user_base` |
 | `change-password` | `mypage` | 화면 | `_user_base` |
+| `claims` | `mypage` | 화면 | `_user_base` |
+| `apply` | `mypage` | 화면 | `_user_base` |
+| `show` | `mypage` | 화면 | `_user_base` |
 | `inquiries` | `mypage` | 화면 | `_user_base` |
 | `mileage` | `mypage` | 화면 | `_user_base` |
 | `notifications` | `mypage` | 화면 | `_user_base` |
@@ -112,13 +117,27 @@
 | `_my_posts` | `partials` | partial | - |
 | `_my_reactions` | `partials` | partial | - |
 | `_my_reports` | `partials` | partial | - |
+| `_apply_comparison` | `partials` | partial | - |
+| `_apply_items` | `partials` | partial | - |
+| `_apply_reason` | `partials` | partial | - |
+| `_apply_redelivery` | `partials` | partial | - |
+| `_apply_refund_account` | `partials` | partial | - |
+| `_apply_summary` | `partials` | partial | - |
+| `_detail_claim_info` | `partials` | partial | - |
+| `_detail_items` | `partials` | partial | - |
+| `_detail_progress` | `partials` | partial | - |
+| `_detail_reason` | `partials` | partial | - |
+| `_detail_shipping` | `partials` | partial | - |
+| `_list` | `partials` | partial | - |
+| `_modal_change_product` | `partials` | partial | - |
+| `_modal_image_viewer` | `partials` | partial | - |
+| `_modal_withdraw` | `partials` | partial | - |
 | `_list` | `partials` | partial | - |
 | `_list` | `partials` | partial | - |
 | `_list` | `partials` | partial | - |
 | `_history` | `partials` | partial | - |
 | `_items` | `partials` | partial | - |
 | `_list` | `partials` | partial | - |
-| `_modal_cancel` | `partials` | partial | - |
 | `_modal_change_address` | `partials` | partial | - |
 | `_modal_confirm_purchase` | `partials` | partial | - |
 | `_modal_write_review` | `partials` | partial | - |
@@ -188,6 +207,8 @@
 | `cart` | `shop` | 화면 | `_user_base` |
 | `category` | `shop` | 화면 | `_user_base` |
 | `checkout` | `shop` | 화면 | `_user_base` |
+| `guest_claim_apply` | `shop` | 화면 | `_user_base` |
+| `guest_claim_show` | `shop` | 화면 | `_user_base` |
 | `guest_order_form` | `shop` | 화면 | `_user_base` |
 | `guest_order_show` | `shop` | 화면 | `_user_base` |
 | `index` | `shop` | 화면 | `_user_base` |
@@ -221,6 +242,25 @@
 키의 존재 자체가 조건입니다 — `false` 를 늘 보내는 형태로 바꾸면 매 로그인마다 안내가 뜹니다.
 1단계(2FA 없는 사이트)와 2단계 완료 경로 **둘 다**에 같은 토스트를 둡니다. 한쪽만 두면 사이트의 2FA
 설정에 따라 해제 사실이 보이기도 하고 안 보이기도 합니다.
+
+`mypage/claims*` 와 `shop/guest_claim_*` 는 한 클러스터입니다 — 목록·상세·작성/수정 셸이
+`partials/mypage/claims/` 의 같은 조각을 공유하고, 비회원 셸은 데이터소스 endpoint 와 헤더만
+다릅니다. 서브탭·페이지·필터는 `navigate + mergeQuery` URL 왕복이며, 모달 id 는 `modal_claim_*`
+접두사로 고정돼 다른 화면의 모달과 겹치지 않습니다. 신청서 요약 카드(`_apply_summary.json`)는
+`_apply_comparison.json`(주문금액 비교 전/후 · 환불 요약 · 환불 불가 안내)을 안에 싣습니다 —
+옛 주문 취소 모달(`_modal_cancel.json`)의 비교표를 세 유형 신청서로 옮긴 것이며, 그 모달은
+1.2.0 에서 삭제됐습니다(취소는 [취소·환불 신청] 이 받습니다).
+신청서 상세의 **추가결제 수단은 서버가 준 선택지(`available_payment_methods`)만 그립니다** —
+둘 이상이면 라디오를 세우고 서버가 확정해 둔 수단(`pending_payment.payment_method`)을 기본
+선택으로 두며, 하나뿐이면 라벨만 표시합니다. 고른 값은 `payClaimOutstanding` 의 `paymentMethod`
+로 실려 나갑니다. 화면이 스스로 목록을 만들지 않는 이유는 **고를 수 있는데 누르면 막히는 칸**을
+만들지 않기 위해서입니다 — 서버는 같은 목록으로 결제를 재판정합니다(화면 옵션 ⊆ 게이트 ⊆ 서비스).
+접수 때 확정한 수단이 뒤에 낼 수 없게 되는 경우가 둘 있어 이 자리가 필요합니다: 마일리지 잔액
+부족, 운영자가 그 수단을 카탈로그에서 내림. 고를 자리가 없으면 출구가 신청서 철회뿐입니다.
+빈 값도 **모양**이 계약입니다. 이름표로 값을 꺼내는 자리(`_local.currentSelection?.[그룹명]` 처럼)는 비어도 map(`{}`)이고,
+순서가 있는 목록은 빈 배열(`[]`)입니다. 마크업에서는 `:value="{}"` 와 `:value="[]"` 로 갈리며,
+화면이 읽기만 할 때는 둘 다 똑같이 비어 보이지만 그 값이 서버로 실리거나 레이아웃을 `.json`
+원문으로 설치하면 서버가 대상을 찾지 못해 오류도 로그도 없이 적용되지 않습니다. 이 템플릿에서는 상품 상세(`shop/show`)의 `currentSelection`·`additionalOptions`·`reviewOptionFilters` 가 그 자리입니다 — 반면 `selectedOptionItems` 는 고른 순서가 있는 목록이라 빈 배열입니다.
 <!-- @intent END -->
 
 ## 라우트 매핑
@@ -248,6 +288,9 @@
 | `/{{_global.modules?.['sirsoft-ecommerce']?.basic_info?.no_route ? '' : (_global.modules?.['sirsoft-ecommerce']?.basic_info?.route_path ?? 'shop')}}/orders/:id/complete` | `shop/order_complete` | - |
 | `/{{_global.modules?.['sirsoft-ecommerce']?.basic_info?.no_route ? '' : (_global.modules?.['sirsoft-ecommerce']?.basic_info?.route_path ?? 'shop')}}/guest/orders` | `shop/guest_order_form` | - |
 | `/{{_global.modules?.['sirsoft-ecommerce']?.basic_info?.no_route ? '' : (_global.modules?.['sirsoft-ecommerce']?.basic_info?.route_path ?? 'shop')}}/guest/orders/:order_number` | `shop/guest_order_show` | - |
+| `/{{_global.modules?.['sirsoft-ecommerce']?.basic_info?.no_route ? '' : (_global.modules?.['sirsoft-ecommerce']?.basic_info?.route_path ?? 'shop')}}/guest/orders/:order_number/claims/apply/:type` | `shop/guest_claim_apply` | - |
+| `/{{_global.modules?.['sirsoft-ecommerce']?.basic_info?.no_route ? '' : (_global.modules?.['sirsoft-ecommerce']?.basic_info?.route_path ?? 'shop')}}/guest/claims/:claim_number/edit` | `shop/guest_claim_apply` | - |
+| `/{{_global.modules?.['sirsoft-ecommerce']?.basic_info?.no_route ? '' : (_global.modules?.['sirsoft-ecommerce']?.basic_info?.route_path ?? 'shop')}}/guest/claims/:claim_number` | `shop/guest_claim_show` | - |
 | `/{{_global.modules?.['sirsoft-ecommerce']?.basic_info?.no_route ? '' : (_global.modules?.['sirsoft-ecommerce']?.basic_info?.route_path ?? 'shop')}}/reorder/:id` | `shop/reorder` | - |
 | `/mypage` | `-` | - |
 | `/mypage/profile` | `mypage/profile` | - |
@@ -255,6 +298,10 @@
 | `/mypage/change-password` | `mypage/change-password` | - |
 | `/mypage/orders` | `mypage/orders` | - |
 | `/mypage/orders/:order_number` | `mypage/orders/show` | - |
+| `/mypage/orders/:order_number/claims/apply/:type` | `mypage/claims/apply` | - |
+| `/mypage/claims` | `mypage/claims` | - |
+| `/mypage/claims/:claim_number/edit` | `mypage/claims/apply` | - |
+| `/mypage/claims/:claim_number` | `mypage/claims/show` | - |
 | `/mypage/mileage` | `mypage/mileage` | - |
 | `/mypage/wishlist` | `mypage/wishlist` | - |
 | `/mypage/addresses` | `mypage/addresses` | - |
@@ -315,6 +362,21 @@
 필드 계약)을 바꾸면 오버라이드만 옛 계약을 붙들고 있게 되고, 증상은 "주소 검색 버튼이
 무반응" 으로만 나타납니다. 해당 플러그인을 업그레이드한 뒤에는 이 오버라이드를 함께 확인합니다.
 <!-- @intent END -->
+
+### 결제 정보 카드의 id 는 PG 플러그인과의 약속
+
+`partials/mypage/orders/_payment` 의 `id="order_payment_info_panel"` 은 지우거나 바꾸지 않는다. PG 플러그인(KG이니시스·NHN KCP·
+나이스페이먼츠)이 영수증 버튼·가상계좌 입금 안내를 붙일 카드를 이 id 로만 찾는다 — 화면 제목 글자는 언어마다 달라 기준이 되지 않는다.
+id 가 사라지면 오류 없이 그 안내들만 빠진다. 같은 조각의 결제 방법 행 `id="order_payment_method_row"` 도 같은 약속이다 — PG 플러그인이
+간편결제 이름(예: 카카오페이)을 이 행의 값(마지막 `span`)에 덧붙인다. 주문 완료 화면에 결제 방법 행을 두는 템플릿은 같은 id 를 단다.
+약속 원문: 이커머스 `docs/extension-points.md` 「PG 플러그인이 결제 정보 카드에 붙일 때의 약속」.
+
+### 주문서 결제수단 칸의 id·버튼 표식도 PG 플러그인과의 약속
+
+`partials/shop/_checkout_payment` 의 칸 `id="checkout_payment_method_section"` 과 버튼의 `data-payment-method="{{method.id}}"` 는
+지우거나 바꾸지 않는다. KG이니시스 엔화 결제수단 제한이 이미 그려진 버튼을 숨길 때 이것으로만 찾는다 — 사라지면 오류 없이
+화면 보정만 빠진다(응답을 거르는 앞단 제한은 그대로 동작). 약속 원문: 이커머스 `docs/extension-points.md`
+「PG 플러그인이 주문서 결제수단 칸을 볼 때의 약속」.
 
 ## 이관 원문 상세
 
@@ -488,6 +550,8 @@ _user_base.g7.html (베이스 레이아웃)
 │   ├── order_complete.g7.html (주문 완료)
 │   ├── guest_order_form.g7.html (비회원 주문 조회 폼)
 │   ├── guest_order_show.g7.html (비회원 주문 상세)
+│   ├── guest_claim_apply.g7.html (비회원 클레임 신청서)
+│   ├── guest_claim_show.g7.html (비회원 클레임 상세)
 │   └── reorder.g7.html (재주문)
 │
 ├── 마이페이지 (mypage/)
@@ -513,8 +577,28 @@ _user_base.g7.html (베이스 레이아웃)
 │   │       ├── _shipping.g7.html (배송 정보)
 │   │       ├── _payment.g7.html (결제 정보)
 │   │       ├── _history.g7.html (주문 이력)
-│   │       ├── _modal_cancel.g7.html (주문 취소)
 │   │       └── _modal_change_address.g7.html (배송지 변경)
+│   ├── claims.g7.html (클레임 신청내역)
+│   │   └── partials/mypage/claims/
+│   │       ├── _list.g7.html (신청내역 목록)
+│   │       └── _modal_withdraw.g7.html (철회 확인)
+│   ├── claims/apply.g7.html (클레임 신청서 작성·수정)
+│   │   └── partials/mypage/claims/
+│   │       ├── _apply_items.g7.html (신청 상품)
+│   │       ├── _apply_reason.g7.html (사유)
+│   │       ├── _apply_redelivery.g7.html (재배송지)
+│   │       ├── _apply_refund_account.g7.html (환불 계좌)
+│   │       ├── _apply_comparison.g7.html (주문금액 비교)
+│   │       ├── _apply_summary.g7.html (신청 요약)
+│   │       └── _modal_change_product.g7.html (교환 상품 변경)
+│   ├── claims/show.g7.html (클레임 상세)
+│   │   └── partials/mypage/claims/
+│   │       ├── _detail_progress.g7.html (진행 상태)
+│   │       ├── _detail_claim_info.g7.html (신청 정보)
+│   │       ├── _detail_items.g7.html (신청 상품)
+│   │       ├── _detail_reason.g7.html (사유)
+│   │       ├── _detail_shipping.g7.html (배송)
+│   │       └── _modal_image_viewer.g7.html (첨부 이미지 보기)
 │   ├── board.g7.html (내 게시글/댓글)
 │   │   └── partials/mypage/board/
 │   │       ├── _list.g7.html (탭 목록)
@@ -1047,3 +1131,7 @@ _user_base.g7.html
 - [sirsoft-admin_basic 레이아웃](../../sirsoft-admin_basic/docs/layouts.md)
 - [레이아웃 JSON 스키마](../../../../docs/frontend/layout-json.md)
 - [레이아웃 상속](../../../../docs/frontend/layout-json-inheritance.md)
+
+## 레이아웃 주석
+
+새 이벤트 블록(`<on>`)·모달 참조(`<modal src>`)를 만들면 같은 변경에서 설명 주석을 단다 — 이벤트 블록은 `<on>` 앞이 아니라 **첫 액션 앞**에 쓴다(`<on>` 앞 주석은 컴파일 에러). 주석 주입(S21)이 완료로 선언된 뒤라 빈 자리가 생기면 `CommentAnchorStageLedgerTest` 가 red 가 된다. 주석은 산출 JSON 의 `comment` 키로만 들어가고 공개 서빙에서 제거되므로 화면 동작은 바뀌지 않는다.

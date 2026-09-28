@@ -342,6 +342,33 @@
 항목이 없으면 URL을 직접 입력해야만 닿는 화면이 됩니다).
 <!-- @intent END -->
 
+## 알림 템플릿 편집 모달 — 채널이 정하는 편집기와 수신자 규칙
+
+<!-- @intent START -->
+`_modal_notification_template_form.json` 은 세 갈래로 분기합니다. 분기의 근거는 전부
+**서버가 준 값**이며, 화면은 판정을 복제하지 않습니다 — 복제하면 같은 모달의 3벌(코어·게시판·
+이커머스) 중 한쪽만 고쳐졌을 때 그 화면만 다르게 동작합니다.
+
+| 축 | 읽는 값 | 분기 |
+|---|---|---|
+| 본문 편집기 | 채널 메타 `template_editor` | `rich` = 확장점 `html_editor`(CKEditor, 없으면 기존 입력 폴백) · `plain` = 평문 입력 · `none` = 기본 편집기를 통째로 감춤(확장이 폼 슬롯에서 대신한다) |
+| 미리보기 HTML 해석 | 같은 값 | `rich` 일 때만 HTML 로 그립니다. 사이트내 알림은 알림센터가 평문으로 그리므로, 여기서만 HTML 로 해석하면 관리자가 본 문구와 사용자가 받는 문구가 다릅니다 |
+| 「관련 사용자」 선택지 | 정의의 `relations` | 선언이 비면 타입 드롭다운에서 그 항목 자체를 감춥니다 — 지원하지 않는 관계를 고르면 수신자가 **0명**이 되고 예외도 로그도 남지 않습니다 |
+| 역할 선택 | `recipients[].value` (서버가 언제나 배열로 정규화) | 다중 선택. 표시 이름은 `display_names` 가 **저장 순서 그대로** 나릅니다 |
+
+`rich` 편집기는 상태를 `_global` 네임스페이스에 두므로 확장점 props 로 `writeScope: "global"`
+과 활성 언어까지 포함한 `writePath` 를 넘깁니다. 노드 `id` 에 활성 언어를 넣어 언어 탭을 바꿀
+때 편집기가 다시 서게 합니다 — 같은 인스턴스를 유지하면 언어를 바꾼 뒤의 입력이 **이전 언어**
+로 저장됩니다.
+
+종전 채널 메타 `hidden_template_editor: true` 는 서버가 `template_editor: 'none'` 으로
+정규화하므로 화면은 한 값만 읽습니다.
+
+수신자 카드 목록은 `stack-tight`(세로 gap)로 감쌉니다. 카드는 유틸리티 `p-3` 을 가져 `row-stack` 의 자식 패딩
+규칙보다 우선하므로, `row-stack` 으로 감싸면 구분선만 생기고 카드 사이 간격은 0 이 되어 테두리가 맞붙습니다.
+이 모달은 게시판·이커머스·수출입은행 플러그인에도 사본이 있어 간격도 네 벌을 함께 맞춥니다.
+<!-- @intent END -->
+
 ## 확장 오버라이드
 
 <!-- @generated:template-overrides START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
@@ -828,3 +855,7 @@ _admin_base.g7.html
 - [레이아웃 JSON 스키마](../../../../docs/frontend/layout-json.md)
 - [레이아웃 상속](../../../../docs/frontend/layout-json-inheritance.md)
 - [sirsoft-basic 레이아웃](../../sirsoft-basic/docs/layouts.md)
+
+## 레이아웃 주석
+
+새 이벤트 블록(`<on>`)·모달 참조(`<modal src>`)를 만들면 같은 변경에서 설명 주석을 단다 — 이벤트 블록은 `<on>` 앞이 아니라 **첫 액션 앞**에 쓴다(`<on>` 앞 주석은 컴파일 에러). 주석 주입(S21)이 완료로 선언된 뒤라 빈 자리가 생기면 `CommentAnchorStageLedgerTest` 가 red 가 된다. 주석은 산출 JSON 의 `comment` 키로만 들어가고 공개 서빙에서 제거되므로 화면 동작은 바뀌지 않는다.

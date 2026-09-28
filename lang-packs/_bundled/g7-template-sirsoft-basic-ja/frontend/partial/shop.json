@@ -473,6 +473,7 @@
     "save_address": "配送先保存",
     "new_address_label": "新規配送先",
     "save_shipping_address_checkbox": "入力した配送先を保存します",
+    "update_selected_address_checkbox": "変更した内容で保存済みの配送先を更新します",
     "vbank_payment": "仮想口座",
     "vbank_payment_desc": "仮想口座発行後入金",
     "vbank_info": "注文完了後に仮想口座が発行されます。",
@@ -563,7 +564,7 @@
     "modal_title": "クーポンダウンロード",
     "loading": "クーポンを読み込み中...",
     "empty": "ダウンロード可能なクーポンがありません。",
-    "currency_unit": "円",
+    "currency_unit": "ウォン",
     "off": "割引",
     "min_order_amount": "最小注文金額",
     "valid_until": "有効期限：",
@@ -616,5 +617,14 @@
   "guest_order_show": {
     "page_title": "非会員注文詳細",
     "back_to_lookup": "注文照会に戻る"
+  },
+  "guest_claim_show": {
+    "page_title": "非会員申請内容詳細",
+    "page_description": "非会員注文の交換·返品·キャンセル·返金申請内容を確認します。"
+  },
+  "guest_claim_apply": {
+    "page_title": "非会員クレーム申請",
+    "page_description": "非会員注文の交換·返品·キャンセル·返金を申請します。",
+    "edit_page_title": "非会員申請内容編集"
   }
 }

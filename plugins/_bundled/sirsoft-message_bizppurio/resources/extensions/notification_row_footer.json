@@ -16,7 +16,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "flex-center flex-wrap gap-2"
+                        "className": "flex items-center flex-wrap gap-2"
                     },
                     "children": [
                         {
@@ -92,7 +92,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "flex-center flex-wrap gap-2"
+                        "className": "flex items-center flex-wrap gap-2"
                     },
                     "children": [
                         {
@@ -117,7 +117,7 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "flex-center gap-1 flex-shrink-0"
+                                "className": "flex items-center gap-1 flex-shrink-0"
                             },
                             "children": [
                                 {
@@ -145,7 +145,7 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "flex-center gap-1 flex-shrink-0"
+                                "className": "flex items-center gap-1 flex-shrink-0"
                             },
                             "children": [
                                 {

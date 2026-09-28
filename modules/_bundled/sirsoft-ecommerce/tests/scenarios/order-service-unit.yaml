@@ -1,0 +1,53 @@
+feature: order_service_unit
+
+description: |
+  주문 서비스(OrderService)의 조회·수정·삭제·일괄 변경 계약을 리포지토리 목으로 고정하는
+  Unit 테스트의 시나리오 소유 매니페스트.
+
+  핵심 동작:
+    - 조회는 필터·per_page(기본 20)를 리포지토리에 넘기고, 상세는 관계를 함께 적재하며,
+      없는 주문은 null 이다.
+    - 주문 상태가 바뀌면 주문상품옵션 상태를 같은 값으로 일괄 동기화한다. 상태 미변경 수정과
+      취소 상태 수정(옵션 라이프사이클은 취소 서비스 소유)은 동기화하지 않는다.
+    - 배송지 수정은 국가에 맞는 컬럼(KR ↔ intl)만 채우고 반대편 컬럼을 비운다.
+    - 주문 삭제는 세금계산서·배송·주소·결제·주문옵션 관계를 먼저 지운다.
+    - 일괄 변경은 서비스 진입부에서 스코프를 재적용하고, 상태 변경이면 옵션도 함께 바꾼다.
+    - 본인인증 결제 승인·입금확인 훅의 경로 분기(비-DBANK → approve, DBANK → confirm_deposit,
+      일괄은 배치당 approve 1회)도 이 파일이 검증한다. 해당 효과의 기능 정의는
+      order-idv-trigger.yaml 에 있으나 그 매니페스트는 이 파일을 소유하지 않으므로 여기에도
+      선언한다. 상태 전이 알림 훅 효과는 order-status-notification.yaml 이 선언한다.
+
+axes:
+  area:
+    - read
+    - status_sync
+    - address
+    - delete
+    - bulk
+
+effects:
+  - order_list_passes_filters_and_per_page
+  - order_list_defaults_per_page_to_20
+  - order_detail_loads_with_relations
+  - order_detail_returns_null_when_missing
+  - order_statistics_passthrough
+  - order_update_returns_updated_order
+  - status_change_syncs_option_status
+  - intl_address_update_clears_kr_columns
+  - kr_address_update_clears_intl_columns
+  - status_unchanged_update_skips_option_sync
+  - cancelled_update_skips_option_sync
+  - order_delete_removes_all_relations
+  - bulk_status_update_syncs_options_and_counts
+  - bulk_shipping_update_delegates_carrier_and_tracking
+  - order_lookup_by_order_number
+  - admin_update_pg_fires_approve
+  - admin_update_dbank_fires_confirm_deposit
+  - dbank_update_does_not_fire_approve
+  - bulk_update_fires_approve_once
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/OrderServiceTest.php
+
+validation:
+  audit_rule: test-scenario-coverage

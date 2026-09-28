@@ -79,6 +79,9 @@
                             "id": "mobile_card_list",
                             "type": "basic",
                             "name": "Div",
+                            "props": {
+                                "className": "stack-tight"
+                            },
                             "children": [
                                 {
                                     "id": "mobile_card_1",

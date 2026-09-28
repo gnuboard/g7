@@ -104,7 +104,7 @@
 | 확장점 | 수 | 상세 |
 |---|---|---|
 | 발행 훅 | 102개 | [발행 훅](docs/extension-points.md#발행-훅) |
-| 구독 훅 | 85개 | [구독 훅](docs/extension-points.md#구독-훅) |
+| 구독 훅 | 86개 | [구독 훅](docs/extension-points.md#구독-훅) |
 | 훅 리스너 | 19개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
 | 레이아웃 확장 | 7개 | [레이아웃 확장](docs/extension-points.md#레이아웃-확장) |
 | 미들웨어 | 0개 | [미들웨어](docs/extension-points.md#미들웨어) |
@@ -140,6 +140,7 @@ CRUD 흐름 자체를 **자기 도메인으로 대체**하는 가장 무거운 �
 - [ ] 레이아웃·컴포넌트·`data_source` 를 건드렸다면 [`docs/editor-spec.md`](docs/editor-spec.md) 의 동반 의무 표를 따라 `editor-spec.json` 을 함께 갱신 — 샘플이 없는 `data_source` 는 편집기 캔버스에서만 빈 화면이 되고 실제 화면은 정상이라 오류도 경고도 남지 않는다. 반영은 `php artisan module:update sirsoft-board --force`
 - [ ] 개인정보 보유기간 핸들러(`src/Privacy/`)를 고칠 때는 건수(`preview()`)·대상 명단(`targets()`)·실행(`process()`)이 **같은 조건식**을 쓰는지, 명단 권한(`targetPermissions()` = 설정 읽기 + 게시판 관리 읽기)과 식별 최소 열(본문·첨부 제외)을 지키는지 확인 — 계약 전체는 [코어 개인정보 보유기간 처리 가이드](../../../docs/backend/privacy-retention.md)
 - [ ] 새 `.g7.html` 을 만들었다면 저작 트랙 종료 게이트(`LayoutMarkup` PHPUnit 스위트)의 코퍼스 목록에 등재하고, 파일 헤더·데이터소스·모달·액션 블록 주석(S21, `docs/frontend/layout-markup.md` §10.5)을 채운다 — 굽기·왕복이 초록이어도 이 스위트만 미등재·미주석을 잡는다(2026-09-26 develop-7.1.0 1차 병합 판독: 게시판 개인정보 조치 창이 미등재·미주석으로 들어왔다).
+- [ ] 수정 라우트와 등록 라우트가 한 레이아웃을 공유하는 폼(`admin_board_form`·`admin_board_post_form`)은 생성 조건 `init_actions` 에서 `form: null` 로 직전 레코드를 비우고, 생성 모드에서도 폼을 채우는 데이터소스(`boards` form-data·`form_data`)의 `initLocal` 은 `{"_merge":"replace","form":"{{data}}"}` 맵으로 둔다 — 문자열형 `initLocal` 은 엔진이 기존 form 과 깊은 병합해 직전 글의 id·게시판 다국어 이름이 등록 폼에 남는다(트러블슈팅 state-global 사례 7)
 
 ## 6. 금지 패턴
 
@@ -147,6 +148,7 @@ CRUD 흐름 자체를 **자기 도메인으로 대체**하는 가장 무거운 �
 | 금지 | 올바른 사용 | 이유 |
 |---|---|---|
 | 비밀글 상세만 `SecretContentGate` 로 막고 댓글 목록·첨부 다운로드는 그대로 노출 | 댓글 목록은 부모 글 비밀 여부 확인 후 빈 배열, 첨부 서빙은 403 — 두 경로 모두 게이트 재적용 | 상세 API 하나만 막으면 같은 정보가 형제 엔드포인트로 새어나간다 (KVE-2026-1914) |
+| 첨부 접근 URL 을 저장소 직접 URL(CDN)로 발급 | 게이트를 통과하는 다운로드 서빙 URL(`download_url`)을 돌려준다 | 직접 URL 은 비밀글·삭제글 확인이 걸린 서빙 경로를 통째로 우회한다 — 응답에서 감춰도 그 주소를 아는 쪽은 계속 열 수 있어 회수되지 않는다 |
 | 게시글/댓글 삭제·복원 시 `posts_count`/`comments_count` 를 Service 에서 `increment()`/`decrement()` | 훅(`after_create`/`after_delete`/`after_restore`) 리스너의 count 동기화에 맡긴다 | 직접 증감은 훅 기반 동기화와 이중 집계되어 카운트가 어긋난다 |
 | 게시판별 동적 권한/역할을 board 삭제와 별도 시점에 정리 | `BoardService` 삭제 흐름 안에서 즉시 정리(또는 stale cleanup 이 `getDynamicPermissionIdentifiers()` 로 정확히 판정하게 유지) | 정리가 늦으면 존재하지 않는 게시판의 권한이 역할에 남아 관리 화면에 유령 항목이 뜬다 |
 | 새 콘텐츠 타입을 board 코드에 `if ($type === 'inquiry')` 로 직접 분기 | `EcommerceInquiryHookListener` 처럼 필터 훅으로 CRUD 를 위임 | board 코드가 알지 못하는 도메인이 늘어날수록 분기가 무한 증식한다 |
@@ -160,10 +162,10 @@ CRUD 흐름 자체를 **자기 도메인으로 대체**하는 가장 무거운 �
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 192개 | `modules/_bundled/sirsoft-board/tests` |
-| Vitest | 49개 | `vitest.config.ts` |
+| PHPUnit | 195개 | `modules/_bundled/sirsoft-board/tests` |
+| Vitest | 51개 | `vitest.config.ts` |
 | Playwright | 33개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 63개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 70개 | `tests/scenarios` |
 
 기저 TestCase: `tests/ModuleTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 
@@ -197,3 +199,27 @@ cd modules/_bundled/sirsoft-board && npm run test:e2e -- specs/<대상>.spec.ts
 | [docs/api/](docs/api/README.md) | API 레퍼런스 (엔드포인트별 파라미터·응답 필드) | ✅ |
 | [CHANGELOG.md](CHANGELOG.md) | 변경 이력 | ✅ |
 <!-- @generated:docs-index END -->
+
+## 확장 조각의 CSS 클래스 규약
+
+resources/extensions/ 아래 의 조각은 **다른 패키지의 화면 안에서** 그려진다. 그래서 여기 쓰는
+클래스는 그 화면을 소유한 **템플릿의 CSS 에 실재해야** 한다.
+
+두 가지를 지킨다.
+
+1. **템플릿의 의미 클래스를 쓰지 않는다.** `flex-start` · `text-heading` · `section-heading-md`
+   같은 이름의 규칙은 `templates/_bundled/sirsoft-admin_basic/src/styles/main.css` 의 `@layer components` 에만
+   있다. 사용자 템플릿(`sirsoft-basic`)에는 그 규칙이 없어 `display:flex` 같은 기본 배치까지
+   통째로 사라진다. 평범한 Tailwind 유틸로 쓴다(`flex items-start`).
+   슬롯 확장(`extension-point=`)은 한 조각이 관리자·사용자 양쪽에 들어가므로, 어느 한쪽의
+   어휘를 쓰면 **반드시** 다른 쪽이 깨진다.
+
+2. **새 유틸은 safelist 에 실린다.** 두 템플릿 모두 Tailwind 가 레이아웃을 스캔하지 않는다 —
+   `sirsoft-admin_basic` 은 `templates/_bundled/sirsoft-admin_basic/scripts/extract-safelist.cjs` 가(확장 조각 포함) 자동 생성하고,
+   `sirsoft-basic` 은 `templates/_bundled/sirsoft-basic/src/styles/safelist.txt` 를 손으로 단다. 새 클래스를 쓴 뒤에는
+   `php artisan template:build <템플릿>` 로 CSS 를 다시 만든다.
+
+이 규약을 어겨도 **빌드는 성공하고 경고도 없으며 테스트도 전부 초록이다** — 사람이 브라우저를
+열어야만 드러난다(2026-09-21, 마이페이지 「내 정보 수정」의 확장 카드에서 체크박스가 설명 위로
+떨어져 있었다). 그래서 확장 조각이 쓰는 클래스가 대상 템플릿의 CSS 에 실제로 만들어졌는지를
+정적 검사가 대조한다.

@@ -5,7 +5,7 @@
   쌓인 반응 행과 게시판 설정이 함께 가리키므로 만든 뒤에는 바꿀 수 없다. -->
 <partial description="반응 유형 관리 - Mobile 카드 뷰">
   <div data-ref="reaction_type_cards_container">
-    <div data-testid="reaction-type-row-m-{{row.code}}" data-each="row, rIdx in (_local.form?.basic_defaults?.reaction_types ?? []).map((r, i) => ({...r, _idx: i}))" class="excel-card">
+    <div data-testid="reaction-type-row-m-{{row.code}}" data-each="row, rIdx in (_local.form?.basic_defaults?.reaction_types ?? []).map((r, i) => ({...r, _idx: i}))" class="excel-card mb-3">
       <div class="excel-card-header">
         <div class="flex-center gap-2 min-w-0">
           <img data-testid="reaction-type-icon-m-{{row.code}}" data-if="{{!!row.icon_url}}" src="{{row.icon_url}}" alt="" class="w-5 h-5 object-contain shrink-0"/>

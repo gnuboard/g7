@@ -40,11 +40,12 @@
 | sort | query | string | 아니오 | `created_at_desc`(기본), `created_at_asc` | 정렬 |
 | search_field | query | string | 아니오 | `member`, `member_id`, `email`, `recipient`, `address` | 검색 대상 |
 | search_keyword | query | string | 아니오 | max 255 | 검색어 |
-| user_uuid | query | string(uuid) | 아니오 | uuid | 회원 한정. 없는 uuid 면 빈 결과 |
+| user_uuid | query | string(uuid) | 아니오 | uuid | 회원 한정(단건, 레거시 링크 호환). 없는 uuid 면 빈 결과 |
+| user_uuids | query | array\|string | 아니오 | uuid 최대 50개 | 회원 한정(다중). `user_uuids[]=…` 반복 또는 쉼표로 이어 붙인 문자열. 고른 uuid 가 전부 없는 회원이어도 빈 결과 — 필터가 풀려 전 회원이 노출되지 않습니다. 이 값이 있으면 `user_uuid` 는 무시합니다(둘을 함께 걸면 교집합이 빕니다) |
 | start_date / end_date | query | date | 아니오 | `Y-m-d` | 생성일 범위 |
 | is_default | query | boolean | 아니오 | `0`, `1` | 기본 배송지만/아닌 것만 |
 
-**응답 필드** (`data.data[]` + `data.abilities` + `data.pagination`)
+**응답 필드** (`data.data[]` + `data.abilities` + `data.pagination` + `data.filters`)
 
 | 필드 | 타입 | 용도 |
 | --- | --- | --- |
@@ -57,6 +58,7 @@
 | address_summary | string | 주소 요약 (우편번호 + 주소 + 상세) |
 | is_default | boolean | 기본 배송지 여부 |
 | abilities.can_manage | boolean | 삭제 권한 — 화면의 체크 칸·일괄 버튼이 이 값으로 열립니다 |
+| filters.members[] | array | **적용된 회원 한정을 이름까지 해석한 목록**(`uuid`·`name`·`email`). 한정이 없으면 빈 배열입니다. 화면의 회원 필터가 이 값으로 이름표를 세웁니다 — 코어 회원 검색(`/api/admin/users/search`)은 uuid 를 한 건씩만 받아, 한정이 세 명이면 왕복이 세 번 나기 때문입니다 |
 
 ---
 

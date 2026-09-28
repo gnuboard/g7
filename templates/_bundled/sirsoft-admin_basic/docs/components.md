@@ -16,6 +16,17 @@
 | `shared` | 1개 |
 <!-- @generated:components END -->
 
+## 상태 의미 토큰 (`status-*`)
+
+`Icon` 은 Font Awesome 글리프 이름 외에 **아이콘 라이브러리 중립 토큰**을 받는다. 서버(예:
+쇼핑몰 모듈의 클레임·주문 상태 Enum)는 특정 아이콘 글꼴을 알지 않고 `status-request` · `status-pickup`
+같은 의미 토큰만 내보내며, 그 토큰을 이 템플릿의 글리프로 바꾸는 표는
+`templates/_bundled/sirsoft-admin_basic/src/components/basic/IconTypes.ts` 의 `iconNameMap` 한 곳이다. 어휘(21종 — 클레임 15 + 주문 전용 6)와 각 토큰의 뜻은
+쇼핑몰 모듈 API 문서(`modules/_bundled/sirsoft-ecommerce/docs/api/admin-claims.md` "아이콘 의미 토큰 어휘")가 소유한다.
+
+표에 없는 토큰은 `fa-status-…` 로 떨어져 오류 없이 빈 네모가 그려진다 — 어휘가 늘면 이 표에
+먼저 더한다. 다른 아이콘 세트를 쓰는 템플릿은 같은 토큰을 자기 글리프로 해석하면 된다.
+
 <!-- @intent START -->
 세 분류(basic/composite/layout)는 "얼마나 많이 조합됐는가"로 나뉩니다 — basic 은 HTML 태그를
 그대로 래핑(`Div`→`<div>`)한 최소 단위, composite 는 basic 을 여러 개 조합해 UI 패턴을 캡슐화한
@@ -31,6 +42,19 @@ Flex/Container)를 정의합니다. 레이아웃 JSON 작성자는 이 구분을
 · [component-props-composite.md](../../../../docs/frontend/component-props-composite.md) 를
 따라갑니다 — 이 문서는 "이 템플릿에서만" 유효한 계약(필수 컴포넌트·AdminSidebar·SlotContainer)
 만 다룹니다.
+
+이 템플릿에서만 유효한 계약 셋을 덧붙입니다. `StatusBadge` 의 상태 어휘(`StatusType`)는 도메인
+Enum 의 `variant()` 가 실제로 내려보내는 값(`danger` · `primary` · `secondary` · `dark` 포함)을
+전부 담아야 합니다 — 유니언에 없는 값은 스타일 조회가 `undefined` 가 되어 배경·글자색·테두리가
+통째로 사라지고, 레이아웃 JSON 은 TS 타입 검사 밖이라 컴파일에도 걸리지 않습니다.
+`ColumnSelector` 의 `onColumnVisibilityChange` 는 두 번째 인자로 발화 출처
+(`{ source: 'user' | 'init' | 'dynamic' }` — 사람이 고른 것 · 저장값 복원 · 새 컬럼 자동 포함)를
+넘기므로, 저장 여부를 출처로 가려야 하는 화면은 그 인자를 읽습니다.
+`SearchableDropdown` 의 다중 선택 트리거 문구는 `selectedCountLabel` 로 넘깁니다 — 화면이 주지
+않으면 `{count} selected` 라는 영어가 그대로 섭니다. 컴포넌트는 언어 파일을 읽지 않으므로(레이아웃
+JSON 의 `$t:` 로만 번역이 들어옵니다) 이 칸을 비운 화면은 한국어·일본어 운영자에게 영어 문구를
+보입니다. 실제로 회원 배송지 목록의 회원 다중선택이 「2 selected」 로 서 있던 것을 브라우저
+실측에서 발견해 이 prop 을 신설했습니다(2026-09-21). `{count}` 자리에 고른 개수가 들어갑니다.
 <!-- @intent END -->
 
 ## 필수 컴포넌트 (모듈 호환성)
@@ -360,7 +384,7 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다. 모든 Basic �
 | 컴포넌트 | 설명 | 주요 Props | 바인딩 |
 |----------|------|-----------|--------|
 | `Input` | 텍스트 입력 | label, error | checkable |
-| `Select` | 선택 박스 | label, error | - |
+| `Select` | 선택 박스. `options` 를 주면 커스텀 드롭다운으로 그리며 펼침 목록은 트리거 폭을 하한으로 항목이 한 줄에 들어갈 만큼 넓어지고(상한 320px·화면 오른쪽 여유), 스크롤바 자리를 미리 확보한다 | label, error, options, searchable | - |
 | `Option` | Select 내부 옵션 | value | - |
 | `Optgroup` | Select 옵션 그룹화 | label | - |
 | `Textarea` | 텍스트 영역 | label, error | - |

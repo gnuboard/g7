@@ -24,7 +24,7 @@
           <field name="inactive" :value="0"/>
           <field name="error" :value="0"/>
         </field>
-        <field name="abilities" :value="[]"/>
+        <field name="abilities" :value="{}"/>
       </field>
     </fallback>
   </data-source>
@@ -211,7 +211,7 @@
     <fallback>
       <field name="data">
         <field name="data" :value="[]"/>
-        <field name="meta" :value="[]"/>
+        <field name="meta" :value="{}"/>
       </field>
     </fallback>
   </data-source>
@@ -236,7 +236,7 @@
   <!-- 사이트맵 생성 진행률. 생성은 오래 걸려 응답을 기다릴 수 없으므로 웹소켓으로 진행 상황을 받아 위 상태 소스에 흘려 넣는다 -->
   <data-source id="sitemap_progress_ws" label_key="$t:editor.data_source.sitemap_progress_ws" type="websocket" channel="core.admin.seo.sitemap" event="sitemap.progress.updated" channel_type="private" target_source="sitemap_status"/>
   <init-local>
-    <field name="driverTestResults" :value="[]"/>
+    <field name="driverTestResults" :value="{}"/>
     <field name="editingDefinition" :value="null"/>
     <field name="editingTemplate" :value="null"/>
     <field name="editLang" value="ko"/>

@@ -4,8 +4,10 @@ namespace App\Extension\Traits;
 
 use App\Exceptions\LayoutIncludeException;
 use App\Support\LayoutMarkup\CompileError;
+use App\Support\LayoutMarkup\EmptyMap;
 use App\Support\LayoutMarkup\LayoutMarkupCompiler;
 use App\Support\LayoutMarkup\MarkupCompileContextResolver;
+use App\Support\LayoutMarkup\NodeCompiler;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
 
@@ -88,7 +90,7 @@ trait ValidatesLayoutFiles
             } else {
                 // JSON 파싱 검증
                 $jsonContent = File::get($layoutFile);
-                $layoutData = json_decode($jsonContent, true);
+                $layoutData = $this->decodeLayoutJson($jsonContent);
 
                 if (json_last_error() !== JSON_ERROR_NONE) {
                     $errors[] = $this->formatLayoutValidationError($sourceType, 'json_error', [
@@ -748,6 +750,57 @@ trait ValidatesLayoutFiles
     }
 
     /**
+     * 레이아웃 `.json` 을 파싱하되 **빈 map(`{}`)의 모양을 지킵니다**.
+     *
+     * `json_decode($s, true)` 는 `{}` 와 `[]` 를 모두 빈 PHP 배열로 만든다. 설치본은 이 배열을
+     * `content`(cast `array`)에 담아 다시 인코딩하므로, 파일에 `{}` 로 적힌 자리가 DB 에서
+     * `[]` 로 바뀐다. 프론트는 둘을 구분하므로(속성 접근 대상 vs 순서 목록) 그 값이
+     * `params.query`·`params.body`·`initLocal` 에 실리면 서버 검증이 대상을 찾지 못해 422 나
+     * 침묵 미적용이 된다 — 화면도 안 깨지고 로그도 안 남는 형태로 틀린다({@see EmptyMap}).
+     *
+     * 마크업 경로는 {@see NodeCompiler} 가 같은 일을 이미 한다.
+     * 두 경로가 같은 계약을 지어야 `.g7.html` 로 굽든 `.json` 을 그대로 설치하든 산출이 같다.
+     *
+     * "어느 키가 map 인가" 의 목록은 두지 않는다 — 목록은 문법이 늘 때 낡아 같은 결함이 다시
+     * 새는 자리가 된다({@see EmptyMap} 독블록의 설계 결정). 대신 **원문의 모양**을 근거로 삼는다.
+     *
+     * @param  string  $json  파일 원문
+     * @return mixed 디코드 결과 (빈 map 자리는 {@see EmptyMap} 표식)
+     */
+    private function decodeLayoutJson(string $json): mixed
+    {
+        return $this->restoreEmptyMaps(json_decode($json, true), json_decode($json));
+    }
+
+    /**
+     * 연관 배열 디코드가 잃은 빈 map 을 **객체 디코드 결과를 기준으로** 되살립니다.
+     *
+     * @param  mixed  $value  연관 배열로 디코드한 값
+     * @param  mixed  $shaped  같은 원문을 객체로 디코드한 값 (빈 map 이 stdClass 로 남는다)
+     * @return mixed 빈 map 자리가 표식으로 바뀐 값
+     */
+    private function restoreEmptyMaps(mixed $value, mixed $shaped): mixed
+    {
+        if (is_array($value) && $value === [] && $shaped instanceof \stdClass) {
+            return EmptyMap::instance();
+        }
+
+        if (! is_array($value)) {
+            return $value;
+        }
+
+        foreach ($value as $key => $item) {
+            $child = is_array($shaped)
+                ? ($shaped[$key] ?? null)
+                : ($shaped instanceof \stdClass ? ($shaped->{(string) $key} ?? null) : null);
+
+            $value[$key] = $this->restoreEmptyMaps($item, $child);
+        }
+
+        return $value;
+    }
+
+    /**
      * 조각 `.json` 을 파싱합니다.
      *
      * @param  string  $absolutePath  조각 `.json` 절대 경로
@@ -758,7 +811,7 @@ trait ValidatesLayoutFiles
      */
     private function decodePartialJsonFile(string $absolutePath, string $partialPath): array
     {
-        $data = json_decode((string) file_get_contents($absolutePath), true);
+        $data = $this->decodeLayoutJson((string) file_get_contents($absolutePath));
 
         if (json_last_error() !== JSON_ERROR_NONE || ! is_array($data)) {
             throw new LayoutIncludeException(
