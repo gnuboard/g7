@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Plugins\Sirsoft\PayNicepayments\Controllers;
 
-// audit:allow api-doc-coverage 요청 파라미터·응답 구조 무변경 — 테이블명 리터럴을 모델 파생으로 정리한 내부 리팩토링 (#571)
-
+use App\Helpers\ResponseHelper;
+use App\Http\Controllers\Api\Base\PublicBaseController;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -15,7 +15,7 @@ use Modules\Sirsoft\Ecommerce\Services\GuestOrderAuthService;
 use Plugins\Sirsoft\PayNicepayments\Concerns\IssuesReceiptCookie;
 use Plugins\Sirsoft\PayNicepayments\Concerns\ResolvesEasyPayDisplay;
 
-class UserReceiptController
+class UserReceiptController extends PublicBaseController
 {
     use IssuesReceiptCookie;
     use ResolvesEasyPayDisplay;
@@ -27,7 +27,9 @@ class UserReceiptController
      */
     public function __construct(
         private readonly GuestOrderAuthService $guestOrderAuthService,
-    ) {}
+    ) {
+        parent::__construct();
+    }
 
     /**
      * 사용자 마이페이지 영수증 정보 조회
@@ -63,7 +65,7 @@ class UserReceiptController
                         $sub->select('id')->from((new Order)->getTable())->where('order_number', $orderNumber);
                     });
             } else {
-                return response()->json(['error' => 'Not found'], 404);
+                return ResponseHelper::notFound();
             }
         }
 
@@ -78,7 +80,7 @@ class UserReceiptController
             ->first();
 
         if (! $payment) {
-            return response()->json(['error' => 'Not found'], 404);
+            return ResponseHelper::notFound();
         }
 
         $receiptUrl = $payment->receipt_url;
@@ -105,7 +107,7 @@ class UserReceiptController
             ? self::RECEIPT_BASE_URL.'?type=2&TID='.rawurlencode($payment->transaction_id)
             : null;
 
-        return response()->json([
+        return ResponseHelper::success('common.success', [
             'receipt_url' => $receiptUrl,
             'payment_receipt_url' => $paymentReceiptUrl,
             'cash_receipt_url' => $cashReceiptUrl,

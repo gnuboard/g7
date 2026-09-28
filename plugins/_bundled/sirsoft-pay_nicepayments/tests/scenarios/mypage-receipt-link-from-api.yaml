@@ -24,6 +24,7 @@ effects:
   - link_hidden_without_url
   - no_external_url_literal_in_fragment
   - order_number_from_loaded_order
+  - response_uses_common_envelope
 
 test_files:
   - plugins/_bundled/sirsoft-pay_nicepayments/resources/js/__tests__/layouts/mypageReceiptLinkFromApi.test.ts

@@ -153,7 +153,7 @@
                                     "handler": "setState",
                                     "params": {
                                         "target": "local",
-                                        "_kgReceiptUrl": "{{response.receipt_url}}"
+                                        "_kgReceiptUrl": "{{response.data.receipt_url}}"
                                     }
                                 }
                             }

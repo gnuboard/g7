@@ -21,7 +21,7 @@ describe('fetchKginicisReceiptInfo — 영수증 조회 헤더 분기', () => {
 
         const fetchMock = vi.fn().mockResolvedValue({
             ok: true,
-            json: async () => ({ receipt_type: 'inicis_receipt', receipt_url: 'https://example.test/receipt' }),
+            json: async () => ({ success: true, data: { receipt_type: 'inicis_receipt', receipt_url: 'https://example.test/receipt' } }),
         } as Response);
         globalThis.fetch = fetchMock;
 
@@ -43,7 +43,7 @@ describe('fetchKginicisReceiptInfo — 영수증 조회 헤더 분기', () => {
 
         const fetchMock = vi.fn().mockResolvedValue({
             ok: true,
-            json: async () => ({ receipt_type: 'inicis_receipt' }),
+            json: async () => ({ success: true, data: { receipt_type: 'inicis_receipt' } }),
         } as Response);
         globalThis.fetch = fetchMock;
 
@@ -82,7 +82,7 @@ describe('fetchKginicisReceiptInfo — 영수증 조회 헤더 분기', () => {
             .mockResolvedValueOnce({
                 ok: true,
                 status: 200,
-                json: async () => ({ receipt_type: 'inicis_receipt', receipt_url: 'https://example.test/receipt' }),
+                json: async () => ({ success: true, data: { receipt_type: 'inicis_receipt', receipt_url: 'https://example.test/receipt' } }),
             } as Response);
         globalThis.fetch = fetchMock;
 
@@ -100,7 +100,7 @@ describe('fetchKginicisReceiptInfo — 영수증 조회 헤더 분기', () => {
         const fetchMock = vi.fn().mockResolvedValue({
             ok: true,
             status: 200,
-            json: async () => ({ receipt_type: 'inicis_receipt', receipt_url: 'https://example.test/cookie-receipt' }),
+            json: async () => ({ success: true, data: { receipt_type: 'inicis_receipt', receipt_url: 'https://example.test/cookie-receipt' } }),
         } as Response);
         globalThis.fetch = fetchMock;
 

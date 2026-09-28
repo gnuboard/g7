@@ -326,7 +326,7 @@
                                     "handler": "setState",
                                     "params": {
                                         "target": "local",
-                                        "_npMpPaymentReceiptUrl": "{{response.payment_receipt_url}}"
+                                        "_npMpPaymentReceiptUrl": "{{response.data.payment_receipt_url}}"
                                     }
                                 }
                             }
@@ -413,7 +413,7 @@
                                                             "target": "local",
                                                             "_npMpReceiptLoading": false,
                                                             "_npMpReceiptLoaded": true,
-                                                            "_npMpCashReceiptUrl": "{{response.cash_receipt_url}}"
+                                                            "_npMpCashReceiptUrl": "{{response.data.cash_receipt_url}}"
                                                         }
                                                     },
                                                     "onError": {

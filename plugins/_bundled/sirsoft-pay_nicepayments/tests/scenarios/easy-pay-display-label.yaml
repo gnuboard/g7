@@ -1,0 +1,15 @@
+feature: 나이스페이먼츠 간편결제 표시 이름 — 관리자 주문 목록·거래 상태·사용자 영수증 조회
+
+description: |
+  간편결제(네이버페이·카카오페이 등)로 결제한 주문은 결제수단을 「간편결제 이름 (기본 결제수단)」으로 보여 준다.
+  관리자 주문 목록의 표시 맵, 관리자 거래 상태 조회, 사용자 영수증 조회(공통 응답 형식의 data) 세 곳이 같은 표시 이름을 준다.
+
+axes:
+  surface: [admin_order_list_map, admin_transaction_status, user_receipt]
+
+effects:
+  - easy_pay_display_label_returned
+  - response_uses_common_envelope
+
+test_files:
+  - plugins/_bundled/sirsoft-pay_nicepayments/tests/Feature/Controllers/EasyPayDisplayControllerTest.php

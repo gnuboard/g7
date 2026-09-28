@@ -85,12 +85,12 @@ describe('order payment display injectors', () => {
         const fetchMock = vi.fn().mockResolvedValue({
             ok: true,
             status: 200,
-            json: async () => ({
+            json: async () => ({ success: true, data: {
                 receipt_type: 'inicis_receipt',
                 receipt_url: 'https://iniweb.inicis.com/receipt',
                 receipt_view_label: '영수증 조회',
                 payment_method_display_label: '네이버페이 (신용카드)',
-            }),
+            } }),
         } as Response);
         globalThis.fetch = fetchMock;
 
@@ -166,13 +166,13 @@ describe('order payment display injectors', () => {
         const fetchMock = vi.fn().mockResolvedValue({
             ok: true,
             status: 200,
-            json: async () => ({
+            json: async () => ({ success: true, data: {
                 receipt_type: 'inicis_receipt',
                 receipt_url: 'https://iniweb.inicis.com/receipt',
                 receipt_label: '영수증',
                 receipt_view_label: '영수증 조회',
                 payment_method_display_label: '신용카드',
-            }),
+            } }),
         } as Response);
         globalThis.fetch = fetchMock;
 
@@ -225,13 +225,13 @@ describe('order payment display injectors', () => {
         const fetchMock = vi.fn().mockResolvedValue({
             ok: true,
             status: 200,
-            json: async () => ({
+            json: async () => ({ success: true, data: {
                 receipt_type: 'inicis_receipt',
                 receipt_url: 'https://iniweb.inicis.com/receipt',
                 receipt_label: 'Receipt',
                 receipt_view_label: 'View Receipt',
                 payment_method_display_label: 'Naver Pay (Credit Card)',
-            }),
+            } }),
         } as Response);
         globalThis.fetch = fetchMock;
 

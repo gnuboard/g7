@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Plugins\Sirsoft\PayKginicis\Controllers;
 
-// audit:allow api-doc-coverage 요청 파라미터·응답 구조 무변경 — 테이블명 리터럴을 모델 파생으로 정리한 내부 리팩토링 (#571)
-
+use App\Helpers\ResponseHelper;
+use App\Http\Controllers\Api\Base\PublicBaseController;
 use App\Services\PluginSettingsService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -17,20 +17,26 @@ use Modules\Sirsoft\Ecommerce\Services\GuestOrderAuthService;
 use Plugins\Sirsoft\PayKginicis\Concerns\IssuesReceiptCookie;
 use Plugins\Sirsoft\PayKginicis\Concerns\ResolvesEasyPaySelection;
 
-class UserReceiptController
+class UserReceiptController extends PublicBaseController
 {
     use IssuesReceiptCookie;
     use ResolvesEasyPaySelection;
 
     private const PLUGIN_IDENTIFIER = 'sirsoft-pay_kginicis';
 
-    // 출처: C:\xampp824\www\gnu5\shop\orderinquiryview.php (mCmReceipt_head.jsp)
+    // 출처: 그누보드5 쇼핑몰 주문 조회 화면(shop/orderinquiryview.php)이 여는 영수증 주소(mCmReceipt_head.jsp)
     private const RECEIPT_BASE_URL = 'https://iniweb.inicis.com/DefaultWebApp/mall/cr/cm/mCmReceipt_head.jsp';
 
+    /**
+     * @param  PluginSettingsService  $pluginSettingsService  플러그인 설정 서비스(테스트 모드 판정)
+     * @param  GuestOrderAuthService  $guestOrderAuthService  비회원 조회 토큰 검증 서비스
+     */
     public function __construct(
         private readonly PluginSettingsService $pluginSettingsService,
         private readonly GuestOrderAuthService $guestOrderAuthService,
-    ) {}
+    ) {
+        parent::__construct();
+    }
 
     /**
      * show
@@ -39,9 +45,11 @@ class UserReceiptController
      * 회원 우선 분기 — Auth::check() 일 때는 본인 회원 주문만, 비로그인일 때는
      * X-Guest-Order-Token 으로 비회원 주문 매칭. 실패 사유는 모두 404 로 통일.
      *
-     * @param  Request  $request
-     * @param  string  $orderNumber
-     * @return JsonResponse
+     * 응답은 공통 형식(`ResponseHelper`)이며 영수증 정보는 `data` 에 담는다. 대상이 없으면 404(`ResponseHelper::notFound`).
+     *
+     * @param  Request  $request  회원 또는 비회원 영수증 요청
+     * @param  string  $orderNumber  주문번호
+     * @return JsonResponse 영수증 정보(data) 또는 404
      */
     // audit:allow controller-base-request-injection reason: 본문 입력을 읽지 않음 — user()/비회원 영수증 쿠키만 참조 (검증 대상 필드 없음)
     public function show(Request $request, string $orderNumber): JsonResponse
@@ -68,7 +76,7 @@ class UserReceiptController
                         $sub->select('id')->from((new Order)->getTable())->where('order_number', $orderNumber);
                     });
                 } else {
-                    return response()->json(['error' => 'Not found'], 404);
+                    return ResponseHelper::notFound();
                 }
             } else {
                 $query->whereNull('o.user_id')->where('o.id', $order->id);
@@ -95,7 +103,7 @@ class UserReceiptController
             ->first();
 
         if (! $payment || ! $payment->transaction_id) {
-            return response()->json(['error' => 'Not found'], 404);
+            return ResponseHelper::notFound();
         }
 
         $settings = $this->pluginSettingsService->get(self::PLUGIN_IDENTIFIER) ?? [];
@@ -112,7 +120,7 @@ class UserReceiptController
             $cbtPaymentMethodLabel = $this->cbtPayMethodLabel($cbtPayMethod);
             $receiptLabels = $this->cbtReceiptLabels($cbtPayMethod, (string) ($payment->payment_status ?? ''));
 
-            return response()->json([
+            return ResponseHelper::success('common.success', [
                 'receipt_type' => 'cbt_confirmation',
                 'receipt_url' => null,
                 'receipt_label' => $receiptLabels['label'],
@@ -136,7 +144,7 @@ class UserReceiptController
             'noMethod' => '1',
         ]);
 
-        return response()->json([
+        return ResponseHelper::success('common.success', [
             'receipt_type' => 'inicis_receipt',
             'receipt_url' => $receiptUrl,
             'receipt_label' => '영수증',
@@ -153,6 +161,13 @@ class UserReceiptController
         ]);
     }
 
+    /**
+     * CBT(일본 결제) 거래인지 판정합니다 — 결제 메타의 CBT 표지가 있거나 엔화 결제면 CBT 로 본다.
+     *
+     * @param  object  $payment  결제·주문 조회 행
+     * @param  array  $paymentMeta  결제 메타
+     * @return bool CBT 거래 여부
+     */
     private function isCbtPayment(object $payment, array $paymentMeta): bool
     {
         if (($paymentMeta['is_cbt'] ?? false) === true) {
@@ -167,6 +182,13 @@ class UserReceiptController
             && str_starts_with((string) $payment->transaction_id, 'INIJPG');
     }
 
+    /**
+     * CBT 결제확인서(또는 편의점 입금정보)에 표시할 항목 목록을 만듭니다 — 값이 빈 항목은 뺀다.
+     *
+     * @param  object  $payment  결제·주문 조회 행
+     * @param  array  $paymentMeta  결제 메타
+     * @return array<int, array{label: string, value: string}> 표시 항목
+     */
     private function buildCbtReceiptFields(object $payment, array $paymentMeta): array
     {
         $approveResponse = is_array($paymentMeta['pg_approve_response'] ?? null)
@@ -213,6 +235,13 @@ class UserReceiptController
         ));
     }
 
+    /**
+     * CBT 결제수단 코드를 정규화합니다.
+     *
+     * @param  array  $paymentMeta  결제 메타
+     * @param  array  $raw  PG 원 응답(비어 있으면 결제 메타에서 읽는다)
+     * @return string 결제수단 코드
+     */
     private function resolveCbtPayMethod(array $paymentMeta, array $raw = []): string
     {
         $payMethod = strtoupper((string) ($paymentMeta['pay_method'] ?? $raw['paymethod'] ?? 'CBT'));
@@ -224,6 +253,12 @@ class UserReceiptController
         };
     }
 
+    /**
+     * CBT 결제수단 코드의 표시 이름을 반환합니다.
+     *
+     * @param  string  $payMethod  결제수단 코드
+     * @return string 표시 이름
+     */
     private function cbtPayMethodLabel(string $payMethod): string
     {
         return match ($payMethod) {
@@ -235,6 +270,13 @@ class UserReceiptController
         };
     }
 
+    /**
+     * CBT 확인서의 라벨·제목·안내 문구를 결제수단과 결제 상태로 고릅니다(편의점 입금 대기면 입금정보).
+     *
+     * @param  string  $payMethod  결제수단 코드
+     * @param  string  $paymentStatus  결제 상태
+     * @return array{label: string, view_label: string, title: string, notice: string} 문구
+     */
     private function cbtReceiptLabels(string $payMethod, string $paymentStatus): array
     {
         if ($payMethod === 'CVS' && $paymentStatus === 'waiting_deposit') {
@@ -254,6 +296,12 @@ class UserReceiptController
         ];
     }
 
+    /**
+     * 결제 상태의 표시 이름을 반환합니다.
+     *
+     * @param  string  $paymentStatus  결제 상태
+     * @return string 표시 이름
+     */
     private function cbtPaymentStatusLabel(string $paymentStatus): string
     {
         return match ($paymentStatus) {
@@ -265,6 +313,14 @@ class UserReceiptController
         };
     }
 
+    /**
+     * CBT 확인서에 표시할 결제 금액을 PG 원 응답·결제 메타·결제 행 순으로 찾습니다.
+     *
+     * @param  object  $payment  결제·주문 조회 행
+     * @param  array  $paymentMeta  결제 메타
+     * @param  array  $raw  PG 원 응답
+     * @return mixed 금액(없으면 null)
+     */
     private function resolveCbtAmount(object $payment, array $paymentMeta, array $raw): mixed
     {
         foreach ([
@@ -282,6 +338,13 @@ class UserReceiptController
         return $payment->paid_amount_local ?? null;
     }
 
+    /**
+     * 금액을 천 단위 구분과 통화 코드로 표기합니다.
+     *
+     * @param  mixed  $amount  금액
+     * @param  string  $currency  통화 코드
+     * @return string 표기(금액이 없으면 빈 문자열)
+     */
     private function formatCbtAmount(mixed $amount, string $currency): string
     {
         if ($amount === null || $amount === '') {
@@ -291,6 +354,13 @@ class UserReceiptController
         return number_format((float) $amount).' '.$currency;
     }
 
+    /**
+     * PG 의 날짜(YYYYMMDD)·시각(HHMMSS) 값을 표시용 일시로 바꿉니다.
+     *
+     * @param  mixed  $date  날짜
+     * @param  mixed  $time  시각
+     * @return string 일시(값이 없으면 빈 문자열)
+     */
     private function formatCbtDateTime(mixed $date, mixed $time): string
     {
         $date = preg_replace('/\D+/', '', (string) $date);
@@ -311,6 +381,12 @@ class UserReceiptController
         );
     }
 
+    /**
+     * 붙여 쓴 일시(YYYYMMDDHHMMSS)를 표시용 일시로 바꿉니다.
+     *
+     * @param  string  $value  붙여 쓴 일시
+     * @return string 일시(형식이 맞지 않으면 빈 문자열)
+     */
     private function formatCbtCompactDateTime(string $value): string
     {
         $value = preg_replace('/\D+/', '', $value);
@@ -322,6 +398,12 @@ class UserReceiptController
         return $this->formatCbtDateTime(substr($value, 0, 8), substr($value, 8, 6));
     }
 
+    /**
+     * 할부 개월 수를 표기합니다(0 이하는 일시불).
+     *
+     * @param  mixed  $value  할부 개월 수
+     * @return string 표기(값이 없으면 빈 문자열)
+     */
     private function formatInstallmentMonths(mixed $value): string
     {
         if ($value === null || $value === '') {
@@ -333,6 +415,12 @@ class UserReceiptController
         return $months <= 0 ? '일시불' : $months.'개월';
     }
 
+    /**
+     * 결제 메타(JSON 문자열 또는 배열)를 배열로 풉니다.
+     *
+     * @param  mixed  $paymentMeta  결제 메타
+     * @return array 결제 메타(풀 수 없으면 빈 배열)
+     */
     private function decodePaymentMeta(mixed $paymentMeta): array
     {
         if (is_array($paymentMeta)) {
@@ -348,6 +436,12 @@ class UserReceiptController
         return is_array($decoded) ? $decoded : [];
     }
 
+    /**
+     * 결제수단 코드의 표시 이름을 반환합니다.
+     *
+     * @param  string  $paymentMethod  결제수단 코드
+     * @return string 표시 이름
+     */
     private function paymentMethodLabel(string $paymentMethod): string
     {
         return match (strtolower($paymentMethod)) {
@@ -363,6 +457,12 @@ class UserReceiptController
         };
     }
 
+    /**
+     * 간편결제(내장 PG) 제공자 코드의 표시 이름을 반환합니다.
+     *
+     * @param  ?string  $provider  제공자 코드
+     * @return string|null 표시 이름(없으면 null)
+     */
     private function embeddedPgProviderLabel(?string $provider): ?string
     {
         if ($provider === null || $provider === '') {
@@ -383,6 +483,13 @@ class UserReceiptController
         };
     }
 
+    /**
+     * 결제수단 표시 이름에 간편결제 이름을 덧붙입니다(예: 네이버페이 (신용카드)).
+     *
+     * @param  string  $baseLabel  결제수단 표시 이름
+     * @param  ?string  $embeddedLabel  간편결제 표시 이름
+     * @return string 표시 이름
+     */
     private function paymentMethodDisplayLabel(string $baseLabel, ?string $embeddedLabel): string
     {
         if ($embeddedLabel === null || $embeddedLabel === '') {

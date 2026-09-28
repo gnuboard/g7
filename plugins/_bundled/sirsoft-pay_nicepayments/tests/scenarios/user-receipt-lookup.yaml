@@ -16,6 +16,7 @@ effects:
   - receipt_urls_returned
   - payment_receipt_link_url_returned
   - lookup_denied_as_not_found
+  - response_uses_common_envelope
 
 test_files:
   - plugins/_bundled/sirsoft-pay_nicepayments/tests/Feature/Controllers/UserReceiptControllerTest.php

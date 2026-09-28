@@ -47,7 +47,9 @@ async function fetchReceiptInfo(orderNumber: string): Promise<ReceiptInfo | null
             credentials: 'same-origin',
         });
         if (!res.ok) return null;
-        return (await res.json()) as ReceiptInfo;
+        // 응답은 공통 형식({ success, message, data }) — 영수증 정보는 data 에 있다.
+        const body = (await res.json()) as { data?: ReceiptInfo | null };
+        return body?.data ?? null;
     } catch {
         return null;
     }

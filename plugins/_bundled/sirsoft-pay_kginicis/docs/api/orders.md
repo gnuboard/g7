@@ -1145,7 +1145,7 @@ Authorization: Bearer {YOUR_TOKEN}   (optional.sanctum: 비회원은 헤더 생�
 
 **응답 필드** (`data` 내부)
 
-_이 엔드포인트는 `ResponseHelper` 봉투를 쓰지 않고 **응답 본문 최상위(root)에 필드를 직접** 반환한다 (`data` 래핑 없음). 결제 종류에 따라 두 형태로 나뉜다: CBT(일본결제)면 `receipt_type=cbt_confirmation`, 일반 국내결제면 `receipt_type=inicis_receipt`._
+_응답은 공통 형식(`ResponseHelper`: `{ success, message, data }`)이며 아래 필드는 모두 `data` 안에 있다. 결제 종류에 따라 두 형태로 나뉜다: CBT(일본결제)면 `receipt_type=cbt_confirmation`, 일반 국내결제면 `receipt_type=inicis_receipt`. 대상이 없으면 404 `{ "success": false, "message": "…" }`._
 
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
@@ -1173,58 +1173,62 @@ HTTP/1.1 200
 
 ```json
 {
-    "receipt_type": "cbt_confirmation",
-    "receipt_url": null,
-    "receipt_label": "결제확인",
-    "receipt_view_label": "결제확인서 보기",
-    "receipt_title": "KG 이니시스 CBT 결제확인서",
-    "receipt_notice": "일본 CBT 결제는 한국 KG 이니시스 매출전표 조회와 별도로 결제 승인 정보를 표시합니다.",
-    "receipt_fields": [
-        {
-            "label": "주문번호",
-            "value": "APIDOC-KGINICIS-000001"
-        },
-        {
-            "label": "결제수단",
-            "value": "일본 편의점결제"
-        },
-        {
-            "label": "거래번호",
-            "value": "INIJPGCARDapidocsmpl0000000001"
-        },
-        {
-            "label": "결제금액",
-            "value": "5,000 KRW"
-        },
-        {
-            "label": "입금 상태",
-            "value": "입금완료"
-        },
-        {
-            "label": "편의점 코드",
-            "value": "seven_eleven"
-        },
-        {
-            "label": "편의점 확인번호",
-            "value": "1234567890"
-        },
-        {
-            "label": "편의점 접수번호",
-            "value": "0987654321"
-        },
-        {
-            "label": "입금 마감일시",
-            "value": "2026-07-10 23:59:59"
-        }
-    ],
-    "is_test_mode": true,
-    "payment_method_label": "일본 편의점결제",
-    "payment_method_display_label": "일본 편의점결제",
-    "cbt_pay_method": "CVS",
-    "payment_status": "paid",
-    "selected_payment_method": null,
-    "embedded_pg_provider": null,
-    "embedded_pg_provider_label": null
+    "success": true,
+    "message": "성공적으로 처리되었습니다.",
+    "data": {
+        "receipt_type": "cbt_confirmation",
+        "receipt_url": null,
+        "receipt_label": "결제확인",
+        "receipt_view_label": "결제확인서 보기",
+        "receipt_title": "KG 이니시스 CBT 결제확인서",
+        "receipt_notice": "일본 CBT 결제는 한국 KG 이니시스 매출전표 조회와 별도로 결제 승인 정보를 표시합니다.",
+        "receipt_fields": [
+            {
+                "label": "주문번호",
+                "value": "APIDOC-KGINICIS-000001"
+            },
+            {
+                "label": "결제수단",
+                "value": "일본 편의점결제"
+            },
+            {
+                "label": "거래번호",
+                "value": "INIJPGCARDapidocsmpl0000000001"
+            },
+            {
+                "label": "결제금액",
+                "value": "5,000 KRW"
+            },
+            {
+                "label": "입금 상태",
+                "value": "입금완료"
+            },
+            {
+                "label": "편의점 코드",
+                "value": "seven_eleven"
+            },
+            {
+                "label": "편의점 확인번호",
+                "value": "1234567890"
+            },
+            {
+                "label": "편의점 접수번호",
+                "value": "0987654321"
+            },
+            {
+                "label": "입금 마감일시",
+                "value": "2026-07-10 23:59:59"
+            }
+        ],
+        "is_test_mode": true,
+        "payment_method_label": "일본 편의점결제",
+        "payment_method_display_label": "일본 편의점결제",
+        "cbt_pay_method": "CVS",
+        "payment_status": "paid",
+        "selected_payment_method": null,
+        "embedded_pg_provider": null,
+        "embedded_pg_provider_label": null
+    }
 }
 ```
 

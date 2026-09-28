@@ -44,7 +44,7 @@ function mountPaymentPanel(): void {
 async function installAt(path: string) {
     history.replaceState({}, '', path);
     const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-        new Response(JSON.stringify({ receipt_url: 'https://receipt.example/1' }), {
+        new Response(JSON.stringify({ success: true, data: { receipt_url: 'https://receipt.example/1' } }), {
             status: 200,
             headers: { 'Content-Type': 'application/json' },
         }),
@@ -127,5 +127,22 @@ describe('NicePayments mypage order show injector — 경로 매칭', () => {
         const urls = fetchSpy.mock.calls.map(([url]) => String(url));
         expect(urls.some(u => u.includes('CL-2026-0001'))).toBe(false);
         expect(urls).toContain(RECEIPT_URL);
+    });
+    it('영수증 조회 버튼은 공통 응답 형식의 data.receipt_url 을 새 창으로 연다', async () => {
+        localStorage.setItem('auth_token', 'member-token');
+        const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
+
+        await installAt('/mypage/orders/ORD-1');
+        // 설치 때 이미 본문을 읽은 응답 객체는 다시 읽을 수 없으므로, 클릭 요청에는 새 응답을 준다.
+        vi.spyOn(globalThis, 'fetch').mockImplementation(async () => new Response(
+            JSON.stringify({ success: true, data: { receipt_url: 'https://receipt.example/1' } }),
+            { status: 200, headers: { 'Content-Type': 'application/json' } },
+        ));
+        const button = document.querySelector('#' + ROW_ID + ' button') as HTMLButtonElement;
+        expect(button).not.toBeNull();
+        button.click();
+        await vi.advanceTimersByTimeAsync(0);
+
+        expect(openSpy).toHaveBeenCalledWith('https://receipt.example/1', 'nicepay_receipt', expect.any(String));
     });
 });

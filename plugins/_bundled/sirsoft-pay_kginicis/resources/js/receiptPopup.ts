@@ -44,7 +44,9 @@ async function requestKginicisReceiptInfo(
             credentials: 'same-origin',
         });
         if (!res.ok) return { status: res.status, data: null };
-        return { status: res.status, data: (await res.json()) as KginicisReceiptInfo };
+        // 응답은 공통 형식({ success, message, data }) — 영수증 정보는 data 에 있다.
+        const body = (await res.json()) as { data?: KginicisReceiptInfo | null };
+        return { status: res.status, data: body?.data ?? null };
     } catch {
         return { status: 0, data: null };
     }

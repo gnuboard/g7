@@ -28,7 +28,7 @@
               <field name="X-Guest-Order-Token" value="{{_global.guestOrderToken ?? ''}}"/>
             </field>
             <success>
-              <set-state target="local" _kgReceiptUrl="{{response.receipt_url}}"/>
+              <set-state target="local" _kgReceiptUrl="{{response.data.receipt_url}}"/>
             </success>
           </api-call>
         </on>

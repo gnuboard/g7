@@ -24,7 +24,7 @@
                 <set-state target="local" :_npOcReceiptLoading="true"/>
                 <api-call :auth_required="true" target="/api/plugins/sirsoft-pay_nicepayments/user/orders/{{route.id}}/receipt" method="GET">
                   <success>
-                    <set-state target="local" :_npOcReceiptLoading="false" :_npOcReceiptLoaded="true" _npOcCashReceiptUrl="{{response.cash_receipt_url}}"/>
+                    <set-state target="local" :_npOcReceiptLoading="false" :_npOcReceiptLoaded="true" _npOcCashReceiptUrl="{{response.data.cash_receipt_url}}"/>
                   </success>
                   <fail>
                     <set-state target="local" :_npOcReceiptLoading="false"/>

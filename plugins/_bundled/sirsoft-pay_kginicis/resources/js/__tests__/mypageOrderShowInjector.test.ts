@@ -84,13 +84,13 @@ describe('mypageOrderShowInjector — 회원 주문 상세 (URL 세그먼트 = �
                 return Promise.resolve({
                     ok: true,
                     status: 200,
-                    json: async () => ({
+                    json: async () => ({ success: true, data: {
                         receipt_type: 'inicis_receipt',
                         receipt_url: 'https://iniweb.inicis.com/receipt',
                         receipt_label: '영수증',
                         receipt_view_label: '영수증 조회',
                         payment_method_display_label: '신용카드',
-                    }),
+                    } }),
                 } as Response);
             }
             // 주문 ID(498) 등 잘못된 식별자로 호출하면 실서버처럼 404
@@ -181,13 +181,13 @@ describe('mypageOrderShowInjector — 주입 앵커 (#order_payment_info_panel)'
         vi.fn().mockResolvedValue({
             ok: true,
             status: 200,
-            json: async () => ({
+            json: async () => ({ success: true, data: {
                 receipt_type: 'inicis_receipt',
                 receipt_url: 'https://iniweb.inicis.com/receipt',
                 receipt_label: '영수증',
                 receipt_view_label: '영수증 조회',
                 payment_method_display_label: '신용카드',
-            }),
+            } }),
         } as Response);
 
     beforeEach(() => {

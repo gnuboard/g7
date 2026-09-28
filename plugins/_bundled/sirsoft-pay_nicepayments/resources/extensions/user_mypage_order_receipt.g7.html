@@ -58,7 +58,7 @@
               <field name="X-Guest-Order-Token" value="{{_global.guestOrderToken ?? ''}}"/>
             </field>
             <success>
-              <set-state target="local" _npMpPaymentReceiptUrl="{{response.payment_receipt_url}}"/>
+              <set-state target="local" _npMpPaymentReceiptUrl="{{response.data.payment_receipt_url}}"/>
             </success>
           </api-call>
         </on>
@@ -80,7 +80,7 @@
                     <field name="X-Guest-Order-Token" value="{{_global.guestOrderToken ?? ''}}"/>
                   </field>
                   <success>
-                    <set-state target="local" :_npMpReceiptLoading="false" :_npMpReceiptLoaded="true" _npMpCashReceiptUrl="{{response.cash_receipt_url}}"/>
+                    <set-state target="local" :_npMpReceiptLoading="false" :_npMpReceiptLoaded="true" _npMpCashReceiptUrl="{{response.data.cash_receipt_url}}"/>
                   </success>
                   <fail>
                     <set-state target="local" :_npMpReceiptLoading="false"/>

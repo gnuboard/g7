@@ -105,13 +105,13 @@ describe('마이페이지 KG이니시스 영수증 링크', () => {
 
   /**
    * @scenario viewer=member, receipt=issued
-   * @effects receipt_link_uses_api_url
+   * @effects receipt_link_uses_api_url, response_uses_common_envelope
    */
   it('회원: 토큰을 실어(선택 인증) 조회 API 를 부르고 받은 주소로 링크를 그린다', () => {
     const call = mountCall();
     expect(call.auth_required).toBe(true);
     expect(call.auth_mode).toBe('optional');
-    expect((call.onSuccess as Node).params).toMatchObject({ target: 'local', [LOCAL_KEY]: '{{response.receipt_url}}' });
+    expect((call.onSuccess as Node).params).toMatchObject({ target: 'local', [LOCAL_KEY]: '{{response.data.receipt_url}}' });
 
     expect(renderLink(RECEIPT_URL)).toEqual({ href: RECEIPT_URL, visible: true });
   });

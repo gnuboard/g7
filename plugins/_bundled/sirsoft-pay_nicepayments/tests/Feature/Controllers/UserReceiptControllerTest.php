@@ -67,7 +67,7 @@ class UserReceiptControllerTest extends PluginTestCase
      *
      * @scenario viewer=guest_header_token
      *
-     * @effects receipt_urls_returned, payment_receipt_link_url_returned
+     * @effects receipt_urls_returned, payment_receipt_link_url_returned, response_uses_common_envelope
      *
      * @return void 반환값 없음
      */
@@ -81,11 +81,11 @@ class UserReceiptControllerTest extends PluginTestCase
         $response = $this->withHeader('X-Guest-Order-Token', $this->issueGuestToken($order))
             ->getJson("/api/plugins/sirsoft-pay_nicepayments/user/orders/{$order->order_number}/receipt")
             ->assertOk()
-            ->assertJsonPath('receipt_url', 'https://npg.nicepay.co.kr/issue/IssueLoader.do?type=0&TID=NICE_TID_GUEST_002')
+            ->assertJsonPath('data.receipt_url', 'https://npg.nicepay.co.kr/issue/IssueLoader.do?type=0&TID=NICE_TID_GUEST_002')
             // 마이페이지 「결제 영수증」 링크 주소 — 레이아웃이 외부 주소를 적지 않고 이 값을 받아 쓴다(첫 출시부터의 type=2 유지)
-            ->assertJsonPath('payment_receipt_url', 'https://npg.nicepay.co.kr/issue/IssueLoader.do?type=2&TID=NICE_TID_GUEST_002');
+            ->assertJsonPath('data.payment_receipt_url', 'https://npg.nicepay.co.kr/issue/IssueLoader.do?type=2&TID=NICE_TID_GUEST_002');
 
-        $this->assertContains($response->json('payment_method_label'), ['신용카드', 'Credit Card']);
+        $this->assertContains($response->json('data.payment_method_label'), ['신용카드', 'Credit Card']);
     }
 
     /**
@@ -106,7 +106,7 @@ class UserReceiptControllerTest extends PluginTestCase
             ->withCredentials()
             ->getJson("/api/plugins/sirsoft-pay_nicepayments/user/orders/{$order->order_number}/receipt")
             ->assertOk()
-            ->assertJsonPath('receipt_url', 'https://npg.nicepay.co.kr/issue/IssueLoader.do?type=0&TID=NICE_TID_GUEST_003');
+            ->assertJsonPath('data.receipt_url', 'https://npg.nicepay.co.kr/issue/IssueLoader.do?type=0&TID=NICE_TID_GUEST_003');
     }
 
     /**
