@@ -123,6 +123,7 @@
         "receipt_label": "Receipt",
         "view_receipt": "View Receipt",
         "view_cash_receipt": "View Cash Receipt",
+        "view_sales_slip": "View Sales Slip",
         "easy_pay_label": "Easy Pay",
         "test_mode_badge": "TEST",
         "tax_breakdown_title": "Tax Breakdown",

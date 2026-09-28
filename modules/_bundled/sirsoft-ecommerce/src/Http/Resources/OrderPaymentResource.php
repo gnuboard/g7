@@ -92,10 +92,9 @@ class OrderPaymentResource extends BaseApiResource
             'vbank_name' => $this->vbank_name,
             'vbank_number' => $this->vbank_number,
             'vbank_holder' => $this->vbank_holder,
-            // vbank_due_at 은 PG 플러그인(nicepayments) JS injector 가 new Date() 로
-            // 파싱·재포맷하는 머신 ISO8601 값이므로 raw 유지. 화면 표시는 vbank_due_at_formatted 사용
-            // (kginicis 는 vbank_due_at_formatted 를 그대로 쓴다).
-            'vbank_due_at' => $this->vbank_due_at?->toIso8601String(), // audit:allow datetime-display-user-timezone reason: machine ISO8601 parsed by PG plugin JS injectors, display uses *_formatted sibling
+            // vbank_due_at 은 기계가 읽는 ISO8601 원시 값이다(API 소비자용). 화면은 템플릿·PG 플러그인 모두
+            // vbank_due_at_formatted 를 그대로 쓰고 원시 값에 다시 서식을 입히지 않는다(docs/api/orders.md).
+            'vbank_due_at' => $this->vbank_due_at?->toIso8601String(), // audit:allow datetime-display-user-timezone reason: machine ISO8601 for API consumers, every screen displays the *_formatted sibling
             'vbank_due_at_formatted' => $this->formatDateTimeStringForUser($this->vbank_due_at),
 
             // 에스크로 여부 — 결제 시점 스냅샷. 부분취소 차단(PaymentRefundListener)의 기준이자

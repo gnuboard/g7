@@ -135,7 +135,8 @@
     "vbank_holder": "口座名義人",
     "vbank_amount": "入金金額",
     "vbank_due": "入金期限",
-    "vbank_notice": "入金期限内に入金が完了しない場合、注文は自動キャンセルされます。"
+    "vbank_notice": "入金期限内に入金が完了しない場合、注文は自動キャンセルされます。",
+    "view_sales_slip": "売上伝票を表示"
   },
   "messages": {
     "refund": {

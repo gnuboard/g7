@@ -1,6 +1,6 @@
 <!-- 내 주문 상세에 나이스페이먼츠 매출전표 보기를 덧붙이는 조각. target_layout(mypage/orders/show) 대신 공용 확장 슬롯을 겨냥한다 — 이 결제 정보 카드(partials/mypage/orders/_payment)는 주문 상세 말고도 클레임 신청서 상세가 그대로 재사용한다. 레이아웃 이름을 겨냥하면 그 한 화면에서만 뜨고 나머지 화면은 카드는 나오는데 이 블록만 빠진 채 열린다(오류·경고 없음). 슬롯은 partial 을 따라간다. 2026-09-01 확정. -->
 <extension extension-point="mypage_order_payment_provider_slot" mode="append" priority="100">
-    <!-- 가상계좌 입금 안내 — 결제수단 vbank + 나이스페이먼츠 결제 건. shop/order_complete 페이지와 동일한 정보를 표시해 사용자가 마이페이지에서도 입금 정보 확인 가능. -->
+    <!-- 가상계좌 입금 안내 — 결제수단 vbank + 나이스페이먼츠 결제 건. shop/order_complete 페이지와 동일한 정보를 표시해 사용자가 마이페이지에서도 입금 정보 확인 가능. 이 안내는 이 조각만 그린다(주입 스크립트가 같은 안내를 한 번 더 그리던 중복을 없앴다, #599). 입금 기한은 쇼핑몰이 사용자 언어·시간대로 서식을 입힌 값을 그대로 쓴다. -->
     <div data-if="{{order.data.payment?.pg_provider === 'nicepayments' &amp;&amp; order.data.payment?.payment_method === 'vbank' &amp;&amp; order.data.payment?.vbank_number}}" class="pt-4 mt-2 border-t border-gray-200 dark:border-gray-700">
       <div class="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg p-4">
         <h3 class="text-sm font-semibold text-xs text-blue-700 dark:text-blue-300 mb-3">$t:sirsoft-pay_nicepayments.user.vbank_deposit_info</h3>
@@ -21,9 +21,9 @@
             <span class="text-gray-600 dark:text-gray-400">$t:sirsoft-pay_nicepayments.user.vbank_amount</span>
             <span class="font-bold text-blue-600 dark:text-blue-400">{{order.data.total_amount_formatted}}</span>
           </div>
-          <div data-if="{{order.data.payment?.vbank_due_at}}" class="flex justify-between text-sm pt-2 border-t border-blue-200 dark:border-blue-700 mt-2">
+          <div data-if="{{order.data.payment?.vbank_due_at_formatted}}" class="flex justify-between text-sm pt-2 border-t border-blue-200 dark:border-blue-700 mt-2">
             <span class="text-gray-600 dark:text-gray-400">$t:sirsoft-pay_nicepayments.user.vbank_due</span>
-            <span class="font-medium text-red-600 dark:text-red-400">{{order.data.payment?.vbank_due_at}}</span>
+            <span class="font-medium text-red-600 dark:text-red-400">{{order.data.payment?.vbank_due_at_formatted}}</span>
           </div>
         </div>
         <p data-if="{{!order.data.payment?.paid_at}}" class="text-xs text-blue-700 dark:text-blue-300 mt-3">$t:sirsoft-pay_nicepayments.user.vbank_notice</p>
@@ -58,7 +58,7 @@
               <field name="X-Guest-Order-Token" value="{{_global.guestOrderToken ?? ''}}"/>
             </field>
             <success>
-              <set-state target="local" _npMpPaymentReceiptUrl="{{response.data.payment_receipt_url}}"/>
+              <set-state target="local" _npMpPaymentReceiptUrl="{{response.data.payment_receipt_url}}" _npMpSalesSlipUrl="{{response.data.receipt_url}}"/>
             </success>
           </api-call>
         </on>
@@ -68,6 +68,11 @@
           <a data-if="{{_local._npMpPaymentReceiptUrl}}" href="{{_local._npMpPaymentReceiptUrl}}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:underline">
             <icon name="file-text" class="text-sm"/>
             <span>$t:sirsoft-pay_nicepayments.user.view_receipt</span>
+          </a>
+          <!-- 매출전표(type=0) — 주문 완료 화면 버튼과 같은 전표. 주소는 같은 조회 API 가 receipt_url 로 준다(결제 영수증 type=2 와 다른 값). -->
+          <a data-if="{{_local._npMpSalesSlipUrl}}" href="{{_local._npMpSalesSlipUrl}}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:underline">
+            <icon name="file-text" class="text-sm"/>
+            <span>$t:sirsoft-pay_nicepayments.user.view_sales_slip</span>
           </a>
           <!-- 현금영수증 조회 버튼 -->
           <button data-if="{{order.data.payment?.cash_receipt_type &amp;&amp; !_local._npMpReceiptLoaded}}" type="button" class="inline-flex items-center gap-1 text-sm text-green-600 dark:text-green-400 hover:underline disabled:opacity-50">

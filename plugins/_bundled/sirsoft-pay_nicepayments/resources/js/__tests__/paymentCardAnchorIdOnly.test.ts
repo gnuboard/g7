@@ -27,7 +27,7 @@ beforeEach(() => {
         }),
     };
     vi.spyOn(globalThis, 'fetch').mockImplementation(async () => new Response(
-        JSON.stringify({ success: true, data: { receipt_url: 'https://receipt.example/1' } }),
+        JSON.stringify({ success: true, data: { payment_method_display_label: '카카오페이 (신용카드)' } }),
         { status: 200, headers: { 'Content-Type': 'application/json' } },
     ));
     history.replaceState({}, '', '/mypage/orders/ORD-1');
@@ -46,27 +46,27 @@ describe('나이스페이먼츠 — 결제 정보 카드 찾기', () => {
      * @scenario plugin=nicepayments
      * @effects card_found_by_id_only
      */
-    it('id 가 없으면 「결제 정보」 제목이 있어도 붙이지 않는다', async () => {
-        document.body.innerHTML = '<div><div><h3>결제 정보</h3></div><div class="space-y-3"></div></div>';
+    it('id 가 없으면 「결제 정보」 제목이 있어도 건드리지 않는다', async () => {
+        document.body.innerHTML = '<div><div><h3>결제 정보</h3></div><div class="space-y-3">'
+            + '<div id="order_payment_method_row"><span>결제 방법</span><span>신용카드</span></div></div></div>';
 
         installMypageOrderShowInjector();
         await vi.advanceTimersByTimeAsync(2500);
 
-        expect(document.getElementById('nicepay-mp-receipt-row')).toBeNull();
+        expect(document.getElementById('order_payment_method_row')!.textContent).toBe('결제 방법신용카드');
     });
 
     /**
      * @scenario plugin=nicepayments
      * @effects card_found_by_id_only
      */
-    it('id 가 있으면 그 카드 안에 붙인다', async () => {
-        document.body.innerHTML = '<div id="order_payment_info_panel"><div class="space-y-3"></div></div>';
+    it('id 가 있으면 그 카드 안의 결제 방법 행에 간편결제 이름을 붙인다', async () => {
+        document.body.innerHTML = '<div id="order_payment_info_panel"><div class="space-y-3">'
+            + '<div id="order_payment_method_row"><span>결제 방법</span><span>신용카드</span></div></div></div>';
 
         installMypageOrderShowInjector();
         await vi.advanceTimersByTimeAsync(2500);
 
-        const row = document.getElementById('nicepay-mp-receipt-row');
-        expect(row).not.toBeNull();
-        expect(document.getElementById('order_payment_info_panel')!.contains(row!)).toBe(true);
+        expect(document.getElementById('order_payment_method_row')!.textContent).toBe('결제 방법카카오페이 (신용카드)');
     });
 });

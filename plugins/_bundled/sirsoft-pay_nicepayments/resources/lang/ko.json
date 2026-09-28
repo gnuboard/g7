@@ -123,6 +123,7 @@
         "receipt_label": "영수증",
         "view_receipt": "영수증 보기",
         "view_cash_receipt": "현금영수증 조회",
+        "view_sales_slip": "매출전표 보기",
         "easy_pay_label": "간편결제 서비스",
         "test_mode_badge": "테스트 결제",
         "tax_breakdown_title": "세금 상세",
