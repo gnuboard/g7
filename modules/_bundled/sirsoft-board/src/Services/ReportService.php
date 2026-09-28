@@ -1089,7 +1089,7 @@ class ReportService
             'author_name' => $snapshot['author_name'] ?? '',
             'author_id' => $report->author_id,
             'author_uuid' => $authorUuid,
-            'author_email' => $authorEmail,
+            'author_email' => $authorEmail, // audit:allow resource-member-email-ungated 관리자 신고 상세 내부 전달 — ReportDetailResource 가 게이트
             'created_at' => $createdAt,
             'deleted_at' => $deletedAt,
             'post' => $postData,
@@ -1147,7 +1147,7 @@ class ReportService
             'author_name' => $authorName,
             'author_id' => $authorId,
             'author_uuid' => $authorUuid,
-            'author_email' => $authorEmail,
+            'author_email' => $authorEmail, // audit:allow resource-member-email-ungated 관리자 신고 상세 내부 전달 — ReportDetailResource 가 게이트
             'created_at' => $target->created_at ?? null,
             'deleted_at' => $target->deleted_at ?? null,
             'post' => $postData,
@@ -1220,7 +1220,7 @@ class ReportService
                 'id' => $postAuthorId,
                 'uuid' => $postAuthorUuid,
                 'name' => $postAuthorName,
-                'email' => $postAuthorEmail,
+                'email' => $postAuthorEmail, // audit:allow resource-member-email-ungated 관리자 신고 상세 내부 전달 — ReportDetailResource 가 게이트
             ],
         ];
     }
@@ -1559,7 +1559,7 @@ class ReportService
     }
 
     /**
-     * 신고를 취소합니다 (접수 상태만 — PO 결정 R10).
+     * 신고를 취소합니다 (접수 상태만).
      *
      * 내 신고 로그만 지운다. 그 케이스에 다른 신고자가 남아 있으면 케이스는 유지하고
      * 최근 신고 시각·처리 이력만 갱신하며, 내가 마지막 신고자였으면 케이스를

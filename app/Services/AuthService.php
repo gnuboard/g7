@@ -408,7 +408,7 @@ class AuthService
         }
 
         HookManager::doAction('core.auth.two_factor_requested', $user, [
-            'email' => $email,
+            'email' => $email, // audit:allow resource-member-email-ungated 훅 페이로드(응답 아님)
             'challenge_id' => $challenge->id,
             'ip_address' => request()->ip(),
         ]);
@@ -583,7 +583,7 @@ class AuthService
 
         // Hook 발생 (로그인 완료)
         HookManager::doAction('core.auth.after_login', $user, [
-            'email' => $email,
+            'email' => $email, // audit:allow resource-member-email-ungated 훅 페이로드(응답 아님)
             'login_time' => now(),
             'ip_address' => request()->ip(),
             'user_agent' => request()->userAgent(),
@@ -707,7 +707,7 @@ class AuthService
         $userData = [
             'name' => $data['name'],
             'nickname' => $data['nickname'] ?? null,
-            'email' => $data['email'],
+            'email' => $data['email'], // audit:allow resource-member-email-ungated 가입 저장 데이터(응답 아님)
             'password' => Hash::make($data['password']),
             'mobile' => $data['mobile'] ?? null,
             'phone' => $data['phone'] ?? null,
@@ -892,7 +892,7 @@ class AuthService
             : '/reset-password';
         $resetUrl = config('app.url').$resetPath.'?'.http_build_query([
             'token' => $token,
-            'email' => $user->email,
+            'email' => $user->email, // audit:allow resource-member-email-ungated 재설정 메일 URL 쿼리(응답 아님)
         ]);
 
         // Hook 발생 (비밀번호 재설정 요청) — 알림 발송은 NotificationHookListener가 처리
@@ -1000,6 +1000,12 @@ class AuthService
             ]);
         }
 
+        // 재설정 메일을 받아 링크를 연 것 자체가 본인 확인이므로 로그인 잠금도 함께 푼다.
+        // 잠금은 이메일만 알면 남이 걸 수 있어, 이 경로가 없으면 피해자는 차단 시간이 끝나기를
+        // 기다리거나(공격자가 다시 걸면 끝이 없다) 관리자 해제를 받아야 한다 — 관리자가 한 명뿐인
+        // 사이트에서 그 관리자가 잠기면 복구 수단이 없다. 무기한 잠금도 같은 이유로 푼다.
+        $wasLocked = $this->userRepository->isLocked($user);
+
         // 비밀번호를 바꾼 뒤 토큰 삭제가 실패하면 그 재설정 토큰이 계속 유효한 채로
         // 남아 재사용된다(보안). 두 단계를 하나로 묶는다.
         DB::transaction(function () use ($user, $password, $record) {
@@ -1011,9 +1017,19 @@ class AuthService
                 'password' => Hash::make($password),
             ]);
 
+            // 로그인 실패 횟수·잠금 초기화
+            $this->userRepository->resetLoginAttempts($user);
+
             // 사용된 토큰 삭제
             $record->delete();
         });
+
+        if ($wasLocked) {
+            HookManager::doAction('core.auth.account_unlocked', $user->fresh(), [
+                'ip_address' => request()->ip(),
+                'reason' => 'password_reset',
+            ]);
+        }
 
         // Hook 발생 (비밀번호 변경 완료) — 알림 발송은 NotificationHookListener가 처리
         HookManager::doAction('core.auth.after_password_changed', $user);

@@ -559,7 +559,7 @@ _단건 응답: `data` 객체의 필드._
 | promotions_applied_snapshot | object | `{"coupon_issue_ids":[7330],"item_coupons":[],"discount_co…` | 적용된 프로모션 스냅샷 (재계산용) |
 | shipping_policy_applied_snapshot | object | `{"items": [], "address": {}}` | 적용된 배송정책 스냅샷 (재계산용). `items` 는 옵션별 적용 정책 목록(각 항목: `product_option_id`, `policy`), `address` 는 주문 시점 배송지 메타(`country_code`, `zipcode`). 항목이 없어도 `items` 는 빈 배열이다 |
 | shipping_policy_applied_snapshot (비회원 응답) | object | `{"items": [{"product_option_id": 481, "policy": {"policy_name": "국내 무료배송", "standalone_shipping_amount": 0, "standalone_shipping_amount_formatted": "무료배송"}}]}` | 비로그인(비회원 조회 토큰) 응답은 **표시용 필드만** 내보낸다 — `policy_name` · `standalone_shipping_amount(_formatted)`. 정책 id·계산 근거와 배송지 메타(`address`)는 제외된다. 비회원 주문 상세 화면이 회원과 같은 partial 로 상품별 정책명·개별 배송비를 그리므로 필드 자체를 빼면 그 줄만 오류 없이 사라진다 |
-| admin_memo | null | `null` | 관리자 메모 (내부 관리용) |
+| admin_memo | string\|null | `null` | 관리자 메모 (내부 관리용 — 관리자 응답에서만 값이 실리고 고객·회원 응답은 `null`) |
 | customer_memo | null | `null` | 고객 메모 (주문 시 고객이 남긴 메모) |
 | created_at | string | `2026-07-30T14:36:22+00:00` | 생성 일시 |
 | updated_at | string | `2026-07-30T14:36:22+00:00` | 최종 수정 일시 |
@@ -2303,7 +2303,7 @@ _단건 응답: `data` 객체의 필드._
 | cancels | array | `[]` | 취소 이력 목록 (OrderCancelResource 배열 — 취소 사유·상세·취소일시, 최근순) |
 | promotions_applied_snapshot | null | `null` | 적용된 프로모션 스냅샷 (재계산용) |
 | shipping_policy_applied_snapshot | object | `{"items": [], "address": {}}` | 적용된 배송정책 스냅샷 (재계산용). `items` 는 옵션별 적용 정책 목록(각 항목: `product_option_id`, `policy`), `address` 는 주문 시점 배송지 메타(`country_code`, `zipcode`). 항목이 없어도 `items` 는 빈 배열이다 |
-| admin_memo | null | `null` | 관리자 메모 (내부 관리용) |
+| admin_memo | null | `null` | 관리자 메모 — 고객 응답에서는 항상 `null` (키는 호환용으로 유지, 값은 관리자 주문 API 에서만 제공) |
 | customer_memo | null | `null` | 고객 메모 (주문 시 고객이 남긴 메모) |
 | created_at | string | `2026-07-08T01:44:49+00:00` | 생성 일시 |
 | updated_at | string | `2026-07-08T01:44:49+00:00` | 최종 수정 일시 |
@@ -3134,7 +3134,7 @@ _단건 응답: `data` 객체의 필드._
 | cancels | array | `[]` | 취소 이력 목록 (OrderCancelResource 배열 — 취소 사유·상세·취소일시, 최근순) |
 | promotions_applied_snapshot | null | `null` | 적용된 프로모션 스냅샷 (재계산용) |
 | shipping_policy_applied_snapshot | object | `{"items": [], "address": {}}` | 적용된 배송정책 스냅샷 (재계산용). `items` 는 옵션별 적용 정책 목록(각 항목: `product_option_id`, `policy`), `address` 는 주문 시점 배송지 메타(`country_code`, `zipcode`). 항목이 없어도 `items` 는 빈 배열이다 |
-| admin_memo | null | `null` | 관리자 메모 (내부 관리용) |
+| admin_memo | null | `null` | 관리자 메모 — 고객 응답에서는 항상 `null` (키는 호환용으로 유지, 값은 관리자 주문 API 에서만 제공) |
 | customer_memo | null | `null` | 고객 메모 (주문 시 고객이 남긴 메모) |
 | created_at | string | `2026-07-08T01:44:49+00:00` | 생성 일시 |
 | updated_at | string | `2026-07-08T01:44:49+00:00` | 최종 수정 일시 |

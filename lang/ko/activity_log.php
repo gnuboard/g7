@@ -169,8 +169,9 @@ return [
         'auth_record_consents' => '이용약관 동의 기록',
         'auth_login_failed' => '로그인 실패 (:email)',
         'auth_account_locked' => '계정 잠금 (:attempts회 실패, :minutes분 차단)',
-        'auth_account_locked_permanently' => '계정 영구 잠금 (:attempts회 실패, 관리자 해제 필요)',
+        'auth_account_locked_permanently' => '계정 영구 잠금 (:attempts회 실패, 관리자 해제 또는 비밀번호 재설정 필요)',
         'auth_account_unlocked' => '계정 잠금 해제 (:email)',
+        'auth_account_unlocked_by_password_reset' => '비밀번호 재설정으로 계정 잠금 해제 (:email)',
 
         // 보안 — IP 접근 제한
         'security_ip_blocked' => 'IP 접근 차단 (:ip → :path)',

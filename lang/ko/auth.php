@@ -42,8 +42,8 @@ return [
     'account_withdrawn' => '탈퇴한 계정입니다.',
     'account_pending_verification' => '본인인증이 완료되지 않은 계정입니다. 이메일 인증을 완료해주세요.',
     'account_dormant' => '장기 미접속으로 휴면 상태인 계정입니다. 본인확인 후 이용하실 수 있습니다.',
-    'account_locked' => '로그인 시도 횟수 초과로 계정이 잠겼습니다. :minutes분 후 다시 시도해주세요.',
-    'account_locked_permanently' => '로그인 시도 횟수 초과로 계정이 잠겼습니다. 관리자에게 문의해주세요.',
+    'account_locked' => '로그인 시도 횟수 초과로 계정이 잠겼습니다. :minutes분 후 다시 시도하거나, 비밀번호를 재설정하면 바로 풀립니다.',
+    'account_locked_permanently' => '로그인 시도 횟수 초과로 계정이 잠겼습니다. 비밀번호를 재설정하거나 관리자에게 문의해주세요.',
     'too_many_attempts' => '요청이 너무 잦습니다. :seconds초 후에 다시 시도해주세요.',
     'account_unlocked' => '계정 잠금이 해제되었습니다.',
 

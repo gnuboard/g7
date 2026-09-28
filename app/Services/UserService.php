@@ -690,7 +690,9 @@ class UserService
                 'action' => $log->action,
                 'action_label' => $log->action_label,
                 'description' => $log->localized_description,
-                'ip_address' => $log->ip_address,
+                // 접속 IP 는 관리자 응답에만 싣는다(UserResource 의 withAdminInfo 와 같은 기준).
+                // 이 목록은 본인 전용이지만 응답 필드를 관리자 전용 값의 통로로 두지 않는다 — 키는 호환을 위해 유지.
+                'ip_address' => null,
                 'created_at' => $log->created_at?->toIso8601String(),
             ]);
     }

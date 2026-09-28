@@ -69,14 +69,14 @@ _목록 응답: `data.data[]` 배열 항목의 필드 + `data.pagination`._
 | order_option_id | null | `null` | order option 식별자 (연관 리소스 참조) |
 | order_cancel_id | null | `null` | order cancel 식별자 (연관 리소스 참조) |
 | source_transaction_id | integer | `802` | source transaction 식별자 (연관 리소스 참조) |
-| granted_by | integer | `1209` | 부여 주체 식별자 (NULL=시스템 자동, user ID=관리자 수동 부여) |
+| granted_by | integer | `1209` | 부여 주체 식별자 (NULL=시스템 자동, user ID=관리자 수동 부여) — 관리자 응답에서만 값이 실리고 회원 마일리지 내역에서는 `null`(`granted_by_name`·`granted_by_uuid` 도 같다) |
 | granted_by_name | string | `최고관리자` | 부여 관리자 이름 (grantedByUser 관계 eager load 시에만 노출) |
 | granted_by_uuid | string | `a26219fc-94a0-4f63-9404-04c2a6ac99e4` | 부여 관리자 UUID (grantedByUser 관계 eager load 시에만 노출) |
 | user_name | string | `최고관리자` | 거래 대상 회원 이름 (user 관계 eager load 시에만 노출) |
 | user_uuid | string | `a26219fc-94a0-4f63-9404-04c2a6ac99e4` | 거래 대상 회원 UUID (user 관계 eager load 시에만 노출) |
 | order_number | null | `null` | 연관 주문번호 (order 관계 eager load 시에만 노출) |
 | description | string | `관리자 마일리지 차감 (300원)` | 설명 (다국어 필드는 로케일별 값 객체) |
-| memo | string | `D-30 재실측` | 관리자 메모 (수동 지급/차감·적립건 편집 시 입력) |
+| memo | string | `D-30 재실측` | 관리자 메모 (수동 지급/차감·적립건 편집 시 입력) — 관리자 응답에서만 값이 실리고 회원 마일리지 내역에서는 `null` |
 | expires_at | string | `2027-07-31T12:56:55+00:00` | expires 일시 |
 | expires_at_formatted | string | `2027-07-31 21:56:55` | `expires_at` 값의 표시용 포맷 문자열 (통화/용량/일시 등 로케일·단위 포맷) |
 | expires_at_date | string | `2027-07-31` | `expires_at` 의 사이트 타임존 기준 날짜 부분 (시각 제외) |

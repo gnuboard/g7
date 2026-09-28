@@ -167,8 +167,9 @@ return [
         'auth_record_consents' => 'Consent recorded',
         'auth_login_failed' => 'Login failed (:email)',
         'auth_account_locked' => 'Account locked (:attempts attempts, :minutes min lockout)',
-        'auth_account_locked_permanently' => 'Account locked permanently (:attempts attempts, administrator unlock required)',
+        'auth_account_locked_permanently' => 'Account locked permanently (:attempts attempts, administrator unlock or password reset required)',
         'auth_account_unlocked' => 'Account unlocked (:email)',
+        'auth_account_unlocked_by_password_reset' => 'Account unlocked by password reset (:email)',
 
         // Security — IP access restriction
         'security_ip_blocked' => 'IP access blocked (:ip → :path)',

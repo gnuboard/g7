@@ -226,8 +226,9 @@ class OrderResource extends BaseApiResource
                 $this->shipping_policy_applied_snapshot
             ),
 
-            // 메모
-            'admin_memo' => $this->admin_memo,
+            // 메모 — 관리자 메모는 관리자 응답에만 싣는다. 고객 주문 상세도 이 Resource 를 쓰므로
+            // 게이트가 없으면 고객이 자기 주문에 달린 관리자 내부 메모를 받는다(필드는 유지, 값만 null).
+            'admin_memo' => $this->canExposeAdminNote($request) ? $this->admin_memo : null,
             'customer_memo' => $this->customer_memo,
 
             // 시스템 — raw ISO 메타 (프론트가 자체 타임존 처리)
