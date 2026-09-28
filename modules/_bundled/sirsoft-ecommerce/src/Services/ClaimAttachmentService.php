@@ -4,6 +4,7 @@ namespace Modules\Sirsoft\Ecommerce\Services;
 
 use App\Contracts\Extension\StorageInterface;
 use App\Extension\HookManager;
+use App\Helpers\InlineMediaPolicy;
 use App\Helpers\PermissionHelper;
 use App\Support\ImageResizer;
 use Illuminate\Database\Eloquent\Collection;
@@ -590,6 +591,10 @@ class ClaimAttachmentService
 
             return null;
         }
+
+        // 인라인 표시는 래스터 이미지만, 그 외는 다운로드로 — 모든 응답에 nosniff (KVE-2026-2366).
+        // 업로드가 래스터만 받더라도 서빙 계층은 저장된 MIME 과 무관하게 같은 판정을 거친다(다른 이미지 서빙 지점과 동일).
+        InlineMediaPolicy::harden($response, $image->mime_type, $image->original_name);
 
         return $response;
     }

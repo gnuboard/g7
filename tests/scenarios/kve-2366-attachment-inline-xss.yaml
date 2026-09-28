@@ -11,7 +11,7 @@ description: |
       (이름이 그 형식이고 허용 목록에 있을 때만). 0바이트 파일은 빈 파일 안내로 거부한다.
     - 서빙: 인라인 표시는 래스터 이미지(InlineMediaPolicy)만. 그 외(SVG 포함)는
       Content-Disposition: attachment + CSP sandbox. 모든 응답에 nosniff.
-      코어 첨부·게시판·페이지·이커머스 이미지·에디터(ckeditor5) 이미지·템플릿 레이아웃 첨부 서빙이
+      코어 첨부·게시판·페이지·이커머스 이미지(클레임 신청서 첨부 포함)·에디터(ckeditor5) 이미지·템플릿 레이아웃 첨부 서빙이
       같은 정책을 공유한다.
 
   업로드 축은 코어 첨부만 대상이다 — 게시판(`mimes:`)·페이지(`mimetypes:`)·이커머스(`image`)는
@@ -51,6 +51,7 @@ test_files:
   - modules/_bundled/sirsoft-board/tests/Feature/User/AttachmentInlineServingPolicyTest.php
   - modules/_bundled/sirsoft-page/tests/Unit/Models/PageAttachmentInlineImageTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/ImageServingInlinePolicyTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/ClaimAttachmentInlinePolicyTest.php
   - plugins/_bundled/sirsoft-ckeditor5/tests/Unit/ImageServeInlinePolicyTest.php
 
 rules_layer_coverage:
