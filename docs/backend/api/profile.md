@@ -319,7 +319,7 @@ _단건 응답: `data` 객체에 `activities` 배열이 담긴다 (페이지네�
 | activities[].action | string | `profile.update` | 활동 액션 키 (점 표기, 예: `profile.show`, `profile.update`, `auth.login`) |
 | activities[].action_label | string | `프로필 수정` | 액션의 다국어 라벨 (`activity_log.action.*` 번역, 확장 액션은 확장 lang 우선) |
 | activities[].description | string | `프로필 정보를 수정했습니다.` | 활동 설명 (현재 로케일 기준 렌더 결과, `description_key` 미설정 시 빈 문자열) |
-| activities[].ip_address | string\|null | `127.0.0.1` | 활동을 수행한 클라이언트 IP |
+| activities[].ip_address | null | `null` | 항상 `null` — 접속 IP 는 관리자 활동 로그 조회에서만 제공 (응답 구조 호환용 키) |
 | activities[].created_at | string\|null | `2026-07-06T19:15:16+09:00` | 활동 발생 일시 (ISO 8601) |
 
 **응답 예시**
@@ -335,7 +335,7 @@ _단건 응답: `data` 객체에 `activities` 배열이 담긴다 (페이지네�
                 "action": "profile.update",
                 "action_label": "프로필 수정",
                 "description": "프로필 정보를 수정했습니다.",
-                "ip_address": "127.0.0.1",
+                "ip_address": null,
                 "created_at": "2026-07-06T19:15:16+09:00"
             }
         ]
@@ -353,7 +353,7 @@ _단건 응답: `data` 객체에 `activities` 배열이 담긴다 (페이지네�
 
 **설명**
 
-현재 사용자의 최근 활동 로그를 조회한다(`permission:core.profile.read` 필요). `data.activities` 에 최대 50건의 로그가 최신순으로 담기며, 각 항목은 `id`·`action`·`action_label`·`description`(로케일 반영)·`ip_address`·`created_at`(ISO 8601) 필드를 가진다. 실측 예시가 비어 있는 것은 문서 생성 시 샘플 사용자가 권한을 갖지 못해 403 이 반환되었기 때문이다.
+현재 사용자의 최근 활동 로그를 조회한다(`permission:core.profile.read` 필요). `data.activities` 에 최대 50건의 로그가 최신순으로 담기며, 각 항목은 `id`·`action`·`action_label`·`description`(로케일 반영)·`ip_address`·`created_at`(ISO 8601) 필드를 가진다. `ip_address` 는 항상 `null` 이다 — 접속 IP 는 관리자 전용 값이라 관리자 활동 로그 API(`/api/admin/activity-logs`)에서만 제공한다. 실측 예시가 비어 있는 것은 문서 생성 시 샘플 사용자가 권한을 갖지 못해 403 이 반환되었기 때문이다.
 
 
 ### POST /api/user/profile/update-language

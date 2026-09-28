@@ -507,17 +507,21 @@ class CoreActivityLogListener implements HookListenerInterface
     }
 
     /**
-     * 계정 잠금 해제 로그 기록 (관리자 수동 해제)
+     * 계정 잠금 해제 로그 기록 (관리자 수동 해제 / 비밀번호 재설정)
      *
      * @param  User  $user  잠금이 해제된 사용자
-     * @param  array  $context  IP 등 부가 정보
+     * @param  array  $context  IP·해제 사유(`reason` = password_reset 이면 본인 재설정) 등 부가 정보
      * @return void
      */
     public function handleAuthAccountUnlocked(User $user, array $context = []): void
     {
+        $byPasswordReset = ($context['reason'] ?? null) === 'password_reset';
+
         $this->logActivity('auth.account_unlocked', [
             'loggable' => $user,
-            'description_key' => 'activity_log.description.auth_account_unlocked',
+            'description_key' => $byPasswordReset
+                ? 'activity_log.description.auth_account_unlocked_by_password_reset'
+                : 'activity_log.description.auth_account_unlocked',
             'description_params' => ['email' => $user->email],
             'ip_address' => $context['ip_address'] ?? null,
         ]);

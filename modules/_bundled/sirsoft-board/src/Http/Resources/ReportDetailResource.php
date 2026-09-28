@@ -220,7 +220,9 @@ class ReportDetailResource extends BaseApiResource
         return [
             'uuid' => $reportable['author_uuid'] ?? null,
             'name' => $reportable['author_name'] ?? $snapshotName ?: __('sirsoft-board::messages.common.guest'),
-            'email' => $reportable['author_email'] ?? null,
+            'email' => $this->canExposeMemberEmail(null, $authorId !== null ? (int) $authorId : null)
+                ? ($reportable['author_email'] ?? null)
+                : null,
             'is_guest' => $authorId === null,
         ];
     }

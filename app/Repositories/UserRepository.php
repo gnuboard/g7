@@ -313,12 +313,22 @@ class UserRepository implements UserRepositoryInterface
     /**
      * 사용자의 연속 로그인 실패 카운터를 1 증가시킵니다.
      *
+     * 직전 실패가 `$windowMinutes` 보다 오래됐으면 1 부터 다시 센다. 이 기간이 없으면 며칠에 걸친
+     * 드문 오타가 쌓여 계정이 잠긴다 — 보안 환경설정의 "최대 로그인 시도 횟수" 는 짧은 시간 안의
+     * 연속 실패를 뜻한다.
+     *
      * @param  User  $user  대상 사용자
+     * @param  int|null  $windowMinutes  실패를 연속으로 인정하는 기간(분). null·0 이하는 무기한
      * @return int 증가 후 카운트
      */
-    public function incrementFailedAttempts(User $user): int
+    public function incrementFailedAttempts(User $user, ?int $windowMinutes = null): int
     {
-        $next = (int) ($user->failed_login_attempts ?? 0) + 1;
+        $stale = $windowMinutes !== null
+            && $windowMinutes > 0
+            && $user->last_failed_login_at !== null
+            && $user->last_failed_login_at->lt(now()->subMinutes($windowMinutes));
+
+        $next = ($stale ? 0 : (int) ($user->failed_login_attempts ?? 0)) + 1;
 
         $user->forceFill([
             'failed_login_attempts' => $next,

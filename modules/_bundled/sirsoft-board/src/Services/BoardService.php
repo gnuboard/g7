@@ -319,8 +319,10 @@ class BoardService
 
         // 캐시는 안전집합(비밀글 제외 + 발행 + 활성 게시판)으로만 채우고, 게시판별
         // 열람 권한은 응답 시점에 호출자 기준으로 적용한다(캐시 오염 회피).
+        // 키의 v2 는 작성자 이메일을 담던 이전 캐시를 업데이트 직후부터 다시 읽지 않기 위한 것이다 —
+        // 모듈 업데이트는 이 캐시를 비우지 않으므로 키를 그대로 두면 TTL 동안 옛 값이 응답된다.
         $posts = $this->cache->remember(
-            "popular_posts_{$period}_{$limit}",
+            "popular_posts_v2_{$period}_{$limit}",
             fn () => $this->getPopularPosts($period, $limit),
             $ttl,
             tags: ['board-posts']
@@ -560,6 +562,7 @@ class BoardService
      *
      * @param  int  $id  게시판 ID
      * @param  bool  $forceDelete  사용되지 않음 (하드 딜리트만 지원)
+     * @return void 반환값 없음
      */
     public function deleteBoard(int $id, bool $forceDelete = false): void
     {
@@ -788,6 +791,7 @@ class BoardService
      * 게시판별 관리자/스텝 역할을 삭제합니다.
      *
      * @param  Board  $board  대상 게시판
+     * @return void 반환값 없음
      */
     private function deleteBoardRoles(Board $board): void
     {
@@ -813,6 +817,7 @@ class BoardService
      * 게시판명 변경 시 연관 역할(관리자/스텝)의 이름을 동기화합니다.
      *
      * @param  Board  $board  수정된 게시판
+     * @return void 반환값 없음
      */
     private function syncBoardRoleNames(Board $board): void
     {
@@ -855,6 +860,7 @@ class BoardService
      *
      * @param  Board  $board  대상 게시판
      * @param  array  $data  요청 데이터 (board_manager_ids, board_step_ids 포함)
+     * @return void 반환값 없음
      */
     private function syncBoardRoleUsers(Board $board, array $data): void
     {
@@ -889,6 +895,7 @@ class BoardService
      *
      * @param  string  $slug  게시판 슬러그
      * @param  int|null  $id  게시판 ID
+     * @return void 반환값 없음
      */
     private function clearBoardCaches(string $slug, ?int $id = null): void
     {
@@ -913,6 +920,8 @@ class BoardService
 
     /**
      * 전체 게시판 캐시를 무효화합니다 (외부 호출용).
+     *
+     * @return void 반환값 없음
      */
     public function clearAllBoardCaches(): void
     {
@@ -1137,6 +1146,7 @@ class BoardService
      *
      * @param  Board  $board  대상 게시판
      * @param  bool  $shouldBeInMenu  메뉴에 표시해야 하는지 여부
+     * @return void 반환값 없음
      */
     private function syncAdminMenu(Board $board, bool $shouldBeInMenu): void
     {
@@ -1156,6 +1166,7 @@ class BoardService
      * 메뉴 단계의 실패가 게시판 작업 전체를 실패시키지 않도록 방어적으로 처리합니다.
      *
      * @param  Board  $board  대상 게시판
+     * @return void 반환값 없음
      */
     private function tryAddToAdminMenu(Board $board): void
     {
@@ -1402,6 +1413,7 @@ class BoardService
      * 해당 게시판의 최종·임시 첨부 파일을 한 번에 삭제합니다.
      *
      * @param  string  $slug  게시판 슬러그
+     * @return void 반환값 없음
      */
     private function deleteAttachmentFiles(string $slug): void
     {

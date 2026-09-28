@@ -95,6 +95,7 @@
 - 회원 알림함 관리 기능의 일본어 번역을 추가했습니다. 관리자가 회원에게 나간 알림을 목록으로 보고 지울 때 뜨는 안내 문구(`member_notification.*` 7건)와, 좌측 메뉴 「회원 알림함」, 권한 3종(`core.member-notifications`·`.read`·`.delete`)이 일본어 로케일에서 자연스럽게 표시됩니다.
 - 저장소 경로 거부 안내 문구의 일본어 번역을 추가했습니다(`exceptions.storage.unsafe_path`·`destructive_on_root`·`local_safe_option_package`) — 허용되지 않는 저장 경로나 저장소 최상위 폴더 삭제 요청이 거부될 때, 저장소 디스크 설정에 필요한 패키지가 없을 때의 안내입니다. 없으면 일본어 로케일에서 이 안내가 한국어로 나옵니다.
 - 첨부파일 업로드에서 파일 내용이 허용 형식과 다를 때의 거부 문구(`attachment.validation.file_mimetype_invalid`)와 빈 파일(0바이트) 거부 문구(`attachment.validation.file_empty`) 일본어 번역을 추가했습니다. 없으면 일본어 로케일에서 이름만 이미지로 바꾼 파일이나 빈 파일을 올렸을 때 안내가 번역되지 않은 채 나옵니다. (KVE-2026-2366)
+- 비밀번호 재설정으로 계정 잠금이 풀렸을 때의 활동 로그 문구(`activity_log.description.auth_account_unlocked_by_password_reset`)를 추가했습니다. 생성기가 아니라 직접 적었습니다(번역 API 키 부재) — 키로 재생성하면 덮어써도 됩니다.
 
 ### Changed
 
@@ -104,6 +105,7 @@
   (`analytics.alerts.ledger_limit_message`)·조치 링크(`ledger_limit_action`, 「保持設定を開く」)와 재집계
   건너뜀 안내(`analytics.archive.skipped_beyond_retention`)가 「保存」(저장)으로 옮겨져, 관리자 화면의
   「保持期間」과 다른 말로 보였습니다.
+- 계정 잠김 안내(`auth.account_locked`·`auth.account_locked_permanently`)와 무기한 잠금 활동 로그 문구(`activity_log.description.auth_account_locked_permanently`)가 비밀번호 재설정으로도 풀 수 있음을 알리도록 고쳤습니다 — 코어가 재설정 완료 시 잠금을 풀도록 바뀌었습니다. 직접 적었습니다(번역 API 키 부재).
 
 - 알림이 아무에게도 가지 않아 발송 이력에 「건너뜀」으로 남을 때 표시되는 사유 문구의 일본어 번역을 추가했습니다 — 수신자를 찾지 못한 경우와 비회원 이메일이 비어 있는 경우가 일본어 로케일에서 각각 구분되어 표시됩니다.
 - 알림 템플릿의 역할 수신자 값이 잘못된 형태로 저장되려 할 때 표시되는 안내 문구의 일본어 번역을 추가했습니다.

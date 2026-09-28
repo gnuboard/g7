@@ -81,6 +81,7 @@
 
 - 수집 진단의 대기 작업 안내(`analytics.diagnostics.fields.worker_hint`) 일본어 문구를 고쳤습니다 —
   방문 수집이 작업 처리기 없이도 기록되도록 바뀌어, 이 안내는 이제 집계·익명화가 밀렸다는 뜻입니다.
+- 관리자 로그인 화면의 무기한 잠김 안내(`auth.login.locked_permanent`)가 비밀번호 재설정으로도 풀 수 있음을 알리도록 고쳤습니다. 직접 적었습니다(번역 API 키 부재).
 
 ### Removed
 

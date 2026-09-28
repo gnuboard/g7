@@ -143,11 +143,14 @@ interface UserRepositoryInterface
      * 사용자의 연속 로그인 실패 카운터를 1 증가시킵니다.
      *
      * `last_failed_login_at` 도 현재 시각으로 갱신하며 새 카운트를 반환합니다.
+     * `$windowMinutes` 가 양수이고 직전 실패가 그보다 오래됐으면 카운터를 1 부터 다시 센다 —
+     * "차단 시간 안의 연속 실패" 만 잠금으로 이어지게 한다. null·0 이하는 기간 제한 없이 누적한다.
      *
      * @param  User  $user  대상 사용자
+     * @param  int|null  $windowMinutes  실패를 연속으로 인정하는 기간(분). null·0 이하는 무기한
      * @return int 증가 후 카운트
      */
-    public function incrementFailedAttempts(User $user): int;
+    public function incrementFailedAttempts(User $user, ?int $windowMinutes = null): int;
 
     /**
      * 사용자의 계정을 지정된 분만큼 잠급니다.

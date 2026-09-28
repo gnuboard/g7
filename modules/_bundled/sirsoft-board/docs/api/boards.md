@@ -1728,7 +1728,7 @@ Authorization: Bearer {YOUR_TOKEN}   (optional.sanctum: 비회원은 헤더 생�
 | board_name | string | `갤러리` | 이 게시글이 속한 게시판의 이름 (현재 로케일로 해석된 표시명) |
 | title | string | `일반 게시글 (이미지 있음)` | 제목 |
 | excerpt | string | `이미지가 첨부된 일반 게시글입니다. 정상적으로 표시됩니다.` | 본문 요약 발췌 (HTML 태그 제거 후 앞 100자) |
-| author | object | `{"id":1,"name":"관리자","email":"heuristing@gmail.com","is_g…` | 작성자 사용자 객체 (uuid/name — author 관계 파생) |
+| author | object | `{"id":1,"name":"관리자","email":null,"is_guest":false,…}` | 작성자 사용자 객체 (id/name/avatar/status — `email` 은 키만 두고 항상 `null`) |
 | view_count | integer | `258` | view 개수 (집계) |
 | comment_count | integer | `2` | comment 개수 (집계) |
 | created_at | string | `2026-07-07 09:34:50` | 생성 일시 |
@@ -1754,7 +1754,7 @@ HTTP/1.1 200
             "author": {
                 "id": 6,
                 "name": "API 문서 샘플 사용자",
-                "email": "apidoc-sample-user@example.com",
+                "email": null,
                 "is_guest": false,
                 "avatar": null,
                 "status": "active",
@@ -1775,7 +1775,7 @@ _에러 없음 (공개 조회 — 컨트롤러가 캐시된 조회 결과를 그
 
 <!-- @generated:end -->
 
-**설명** 조회수가 많은 인기 게시글 목록을 반환합니다. 홈/사이드바 위젯용 경량 조회로, `period`(today·week·month·year, 기본 week; `all` 은 하위 호환으로 year 로 매핑)로 기간을, `limit`(기본 20, 최대 50)으로 개수를 조절합니다. 결과는 캐시에서 제공됩니다.
+**설명** 조회수가 많은 인기 게시글 목록을 반환합니다. 홈/사이드바 위젯용 경량 조회로, `period`(today·week·month·year, 기본 week; `all` 은 하위 호환으로 year 로 매핑)로 기간을, `limit`(기본 20, 최대 50)으로 개수를 조절합니다. 결과는 캐시에서 제공됩니다. 이 캐시는 호출자 권한과 무관하게 채워져 모든 요청이 같은 값을 받으므로 작성자 이메일은 관리자·본인 여부와 관계없이 담지 않습니다(`author.email` 은 항상 `null`).
 
 
 ### GET /api/modules/sirsoft-board/boards/popular-boards
