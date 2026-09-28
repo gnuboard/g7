@@ -20,6 +20,11 @@ class MaliciousJsonTest extends TestCase
 {
     private string $testTemplateId = 'test-template';
 
+    /**
+     * 테스트용 템플릿 components.json 을 만듭니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -38,6 +43,11 @@ class MaliciousJsonTest extends TestCase
         ]));
     }
 
+    /**
+     * 테스트용 템플릿 디렉터리를 지웁니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         // 테스트 파일 정리
@@ -79,6 +89,10 @@ class MaliciousJsonTest extends TestCase
 
     /**
      * XSS 공격 시도 테스트 - javascript: URI 차단
+     *
+     * @effects executable_scheme_prop_rejected
+     *
+     * @return void 반환값 없음
      */
     public function test_blocks_xss_attack_in_props(): void
     {
@@ -105,6 +119,10 @@ class MaliciousJsonTest extends TestCase
 
     /**
      * XSS 공격 시도 테스트 - HTML 태그는 허용 (React가 이스케이프)
+     *
+     * @effects html_text_prop_allowed
+     *
+     * @return void 반환값 없음
      */
     public function test_allows_html_tags_in_props(): void
     {
@@ -130,6 +148,10 @@ class MaliciousJsonTest extends TestCase
 
     /**
      * SQL Injection 공격 시도 테스트
+     *
+     * @effects sql_like_param_left_to_orm_binding
+     *
+     * @return void 반환값 없음
      */
     public function test_blocks_sql_injection_in_data_binding(): void
     {
@@ -165,6 +187,10 @@ class MaliciousJsonTest extends TestCase
 
     /**
      * 경로 트래버설 공격 시도 테스트
+     *
+     * @effects relative_path_prop_allowed
+     *
+     * @return void 반환값 없음
      */
     public function test_blocks_path_traversal_attack(): void
     {
@@ -191,6 +217,10 @@ class MaliciousJsonTest extends TestCase
 
     /**
      * 외부 리소스 로딩 시도 테스트
+     *
+     * @effects external_url_prop_rejected
+     *
+     * @return void 반환값 없음
      */
     public function test_blocks_external_resource_loading(): void
     {
@@ -216,6 +246,10 @@ class MaliciousJsonTest extends TestCase
 
     /**
      * 허용되지 않은 API 엔드포인트 호출 시도 테스트
+     *
+     * @effects unregistered_endpoint_rejected
+     *
+     * @return void 반환값 없음
      */
     public function test_blocks_unauthorized_api_endpoint(): void
     {
@@ -247,6 +281,10 @@ class MaliciousJsonTest extends TestCase
 
     /**
      * 존재하지 않는 컴포넌트 참조 시도 테스트
+     *
+     * @effects unknown_component_rejected
+     *
+     * @return void 반환값 없음
      */
     public function test_blocks_nonexistent_component(): void
     {
@@ -270,6 +308,10 @@ class MaliciousJsonTest extends TestCase
 
     /**
      * 깊은 중첩 구조로 DoS 시도 테스트
+     *
+     * @effects nesting_depth_over_limit_rejected
+     *
+     * @return void 반환값 없음
      */
     public function test_blocks_deep_nesting_dos_attack(): void
     {
@@ -306,6 +348,10 @@ class MaliciousJsonTest extends TestCase
 
     /**
      * data URI 스킴 차단 테스트
+     *
+     * @effects data_uri_prop_rejected
+     *
+     * @return void 반환값 없음
      */
     public function test_blocks_data_uri_scheme(): void
     {
@@ -331,6 +377,10 @@ class MaliciousJsonTest extends TestCase
 
     /**
      * 복합 공격 패턴 테스트
+     *
+     * @effects combined_attack_rejected
+     *
+     * @return void 반환값 없음
      */
     public function test_blocks_combined_attack_patterns(): void
     {
@@ -375,6 +425,10 @@ class MaliciousJsonTest extends TestCase
 
     /**
      * 정상적인 레이아웃 JSON은 통과하는지 테스트
+     *
+     * @effects valid_layout_passes_all_rules
+     *
+     * @return void 반환값 없음
      */
     public function test_allows_valid_layout(): void
     {
@@ -418,6 +472,10 @@ class MaliciousJsonTest extends TestCase
 
     /**
      * javascript: URI 스킴 차단 테스트
+     *
+     * @effects executable_scheme_prop_rejected
+     *
+     * @return void 반환값 없음
      */
     public function test_blocks_javascript_uri_scheme(): void
     {
@@ -443,13 +501,19 @@ class MaliciousJsonTest extends TestCase
 
     /**
      * 허용된 API 엔드포인트 테스트
+     *
+     * @effects registered_endpoint_allowed
+     *
+     * @return void 반환값 없음
      */
     public function test_allows_whitelisted_endpoints(): void
     {
+        // 허용 판정은 라우트 표에 등록된 네임스페이스와 확장 프리픽스다(WhitelistedEndpoint).
+        // 종전의 `/api/public/posts` 는 등록 라우트가 0건인 유령 네임스페이스라 차단 목록으로 옮겼다.
         $validEndpoints = [
             '/api/admin/users',
             '/api/auth/profile',
-            '/api/public/posts',
+            '/api/modules/sirsoft-board/boards',
         ];
 
         foreach ($validEndpoints as $endpoint) {
@@ -484,11 +548,16 @@ class MaliciousJsonTest extends TestCase
 
     /**
      * 차단되어야 하는 API 엔드포인트 테스트
+     *
+     * @effects unregistered_endpoint_rejected
+     *
+     * @return void 반환값 없음
      */
     public function test_blocks_non_whitelisted_endpoints(): void
     {
         $invalidEndpoints = [
             '/api/internal/secrets',
+            '/api/public/posts',
             '/admin/dashboard',
             'https://evil.com/api',
             '/api/v2/users',

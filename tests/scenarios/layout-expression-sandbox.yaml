@@ -95,6 +95,26 @@ sub_flows:
       - plain_string_value_is_inspected_not_skipped
       - same_origin_plain_string_allowed
       - rule_attached_to_every_layout_content_form_request
+  - id: malicious_layout_json_gate
+    description: |
+      저장 규칙 넷(구조·엔드포인트 허용·외부 URL·컴포넌트 존재)을 한 번에 건 공격형 레이아웃 묶음.
+      실행 스킴·외부 URL·data URI·등록되지 않은 API 네임스페이스·없는 컴포넌트·최대 깊이 초과는
+      거부하고, 텍스트로만 그려지는 HTML 문자열·ORM 이 바인딩하는 파라미터 문자열·상대 경로는
+      저장 단계에서 막지 않는다. 엔드포인트 허용은 라우트 표에 등록된 네임스페이스와 확장
+      프리픽스로 판정한다 — 등록 라우트가 없는 `/api/public/*` 는 거부 쪽이다.
+    effects:
+      - executable_scheme_prop_rejected
+      - html_text_prop_allowed
+      - sql_like_param_left_to_orm_binding
+      - relative_path_prop_allowed
+      - external_url_prop_rejected
+      - data_uri_prop_rejected
+      - unregistered_endpoint_rejected
+      - registered_endpoint_allowed
+      - unknown_component_rejected
+      - nesting_depth_over_limit_rejected
+      - combined_attack_rejected
+      - valid_layout_passes_all_rules
 
 test_files:
   # 배포 번들 종단 (축·효과 마커 보유)
@@ -116,3 +136,5 @@ test_files:
   - tests/Feature/Rules/SafeLayoutExpressionsTest.php
   # sub_flow external_url_storage_gate 를 떠받친다.
   - tests/Feature/Rules/NoExternalUrlsTest.php
+  # sub_flow malicious_layout_json_gate 를 떠받친다.
+  - tests/Feature/Security/MaliciousJsonTest.php
