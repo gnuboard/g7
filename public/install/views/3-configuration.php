@@ -32,6 +32,7 @@ $dbReadHash = getDatabaseFieldHash($formData, 'db_read');
     <?php } ?>
 
     <form method="POST" id="config-form" class="installer-form">
+        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(installer_csrf_token()) ?>">
         <!-- 데이터베이스 설정 (Write DB) -->
         <div class="requirement-card">
             <div class="requirement-card-header">

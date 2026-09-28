@@ -4,15 +4,6 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
-## [작업 중]
-
-### Added
-
-- 코어에 새로 생긴 두 안내의 일본어 문구를 채웠습니다 — 본인확인 코드 발송 실패
-  (`identity.errors.challenge_dispatch_failed`) · 탈퇴 회원 외부 채널 발송 제외
-  (`notification.skipped.withdrawn_recipient`). 없으면 ja 화면에 원문 키가 그대로 보입니다.
-- 「삭제된 회원이라 발송하지 않음」 발송 이력 사유(`notification.skipped.member_account_missing`)의 일본어 문구를 채웠습니다.
-
 ## [1.1.0] - 2026-09-14
 
 ### Added
@@ -96,6 +87,10 @@
 - 저장소 경로 거부 안내 문구의 일본어 번역을 추가했습니다(`exceptions.storage.unsafe_path`·`destructive_on_root`·`local_safe_option_package`) — 허용되지 않는 저장 경로나 저장소 최상위 폴더 삭제 요청이 거부될 때, 저장소 디스크 설정에 필요한 패키지가 없을 때의 안내입니다. 없으면 일본어 로케일에서 이 안내가 한국어로 나옵니다.
 - 첨부파일 업로드에서 파일 내용이 허용 형식과 다를 때의 거부 문구(`attachment.validation.file_mimetype_invalid`)와 빈 파일(0바이트) 거부 문구(`attachment.validation.file_empty`) 일본어 번역을 추가했습니다. 없으면 일본어 로케일에서 이름만 이미지로 바꾼 파일이나 빈 파일을 올렸을 때 안내가 번역되지 않은 채 나옵니다. (KVE-2026-2366)
 - 비밀번호 재설정으로 계정 잠금이 풀렸을 때의 활동 로그 문구(`activity_log.description.auth_account_unlocked_by_password_reset`)를 추가했습니다. 생성기가 아니라 직접 적었습니다(번역 API 키 부재) — 키로 재생성하면 덮어써도 됩니다.
+- 코어에 새로 생긴 두 안내의 일본어 문구를 채웠습니다 — 본인확인 코드 발송 실패
+  (`identity.errors.challenge_dispatch_failed`) · 탈퇴 회원 외부 채널 발송 제외
+  (`notification.skipped.withdrawn_recipient`). 없으면 ja 화면에 원문 키가 그대로 보입니다.
+- 「삭제된 회원이라 발송하지 않음」 발송 이력 사유(`notification.skipped.member_account_missing`)의 일본어 문구를 채웠습니다.
 
 ### Changed
 

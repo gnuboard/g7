@@ -24,6 +24,11 @@ class InstallerStateSecretsTest extends TestCase
 {
     private string $skipReason = '';
 
+    /**
+     * 임시 BASE_PATH 를 확인하고 state·runtime 헬퍼를 로드한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -57,6 +62,11 @@ class InstallerStateSecretsTest extends TestCase
         require_once dirname(__DIR__, 3).'/public/install/includes/installer-runtime.php';
     }
 
+    /**
+     * 이번 테스트가 만든 runtime.php 만 지운다 (skip 이면 아무것도 하지 않는다).
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         if ($this->skipReason === '' && defined('INSTALLER_RUNTIME_PATH') && is_file(INSTALLER_RUNTIME_PATH)) {
@@ -70,6 +80,13 @@ class InstallerStateSecretsTest extends TestCase
     // sanitizeConfigForState
     // -----------------------------------------------------------------
 
+    /**
+     * state 저장용 정제가 비밀 4종을 모두 제거하고 비밀 아닌 값은 보존한다.
+     *
+     * @effects step3_post_writes_state_config_without_db_write_password, step3_post_writes_state_config_without_db_read_password, step3_post_writes_state_config_without_admin_password, step3_post_writes_state_config_without_admin_password_confirm
+     *
+     * @return void 반환값 없음
+     */
     public function test_sanitize_config_for_state_removes_all_four_secrets(): void
     {
         $config = [
@@ -100,6 +117,13 @@ class InstallerStateSecretsTest extends TestCase
         $this->assertSame('read-host', $safe['db_read_host']);
     }
 
+    /**
+     * 비밀 키 목록이 정확히 4종(DB write/read·관리자 비밀번호·확인)이다.
+     *
+     * @effects step3_post_writes_state_config_without_db_write_password, step3_post_writes_state_config_without_db_read_password, step3_post_writes_state_config_without_admin_password, step3_post_writes_state_config_without_admin_password_confirm
+     *
+     * @return void 반환값 없음
+     */
     public function test_installer_secret_config_keys_covers_four_secrets(): void
     {
         $keys = installerSecretConfigKeys();
@@ -112,6 +136,10 @@ class InstallerStateSecretsTest extends TestCase
 
     /**
      * 이슈 #63 기존 동작 보존 — use_read_db=false 이면 read 접속 필드 잔존값 제거.
+     *
+     * @effects sanitize_config_for_state_drops_read_connection_fields_when_use_read_db_false
+     *
+     * @return void 반환값 없음
      */
     public function test_sanitize_config_for_state_drops_read_fields_when_use_read_db_false(): void
     {
@@ -139,6 +167,13 @@ class InstallerStateSecretsTest extends TestCase
     // redactInstallationStateSecrets
     // -----------------------------------------------------------------
 
+    /**
+     * 이미 기록된 state 에서 비밀 4종만 제거한다.
+     *
+     * @effects reset_state_redacts_secrets_in_preserved_config, abort_installation_redacts_secrets_in_preserved_config
+     *
+     * @return void 반환값 없음
+     */
     public function test_redact_installation_state_secrets_strips_config_secrets(): void
     {
         $state = [
@@ -166,6 +201,13 @@ class InstallerStateSecretsTest extends TestCase
         $this->assertSame(['db_migrate', 'db_seed'], $redacted['completed_tasks']);
     }
 
+    /**
+     * config 가 없는 state 는 그대로 둔다.
+     *
+     * @effects reset_state_redacts_secrets_in_preserved_config
+     *
+     * @return void 반환값 없음
+     */
     public function test_redact_installation_state_secrets_is_noop_without_config(): void
     {
         $state = ['installation_status' => 'running', 'completed_tasks' => []];
@@ -176,6 +218,10 @@ class InstallerStateSecretsTest extends TestCase
     /**
      * redact 는 use_read_db 정리를 수행하지 않는다 — 이미 기록된 state 의 접속
      * 정보(비밀 아님)를 지우면 롤백/cleanup 이 깨진다. 비밀 4종만 제거.
+     *
+     * @effects sanitize_config_for_state_preserves_non_secret_fields_like_app_name_and_db_host
+     *
+     * @return void 반환값 없음
      */
     public function test_redact_preserves_non_secret_db_fields(): void
     {
@@ -197,6 +243,13 @@ class InstallerStateSecretsTest extends TestCase
     // buildInstallerRuntimeFromState — 결손 폴백
     // -----------------------------------------------------------------
 
+    /**
+     * 호출부가 준 관리자 비밀번호가 runtime 에 실린다.
+     *
+     * @effects build_runtime_adds_admin_section_only_when_caller_supplies_password
+     *
+     * @return void 반환값 없음
+     */
     public function test_build_runtime_carries_admin_password_when_provided_by_caller(): void
     {
         // 호출자(install-process.php) 가 세션 비밀번호를 넣는 정상 경로는 admin 섹션을
@@ -215,6 +268,13 @@ class InstallerStateSecretsTest extends TestCase
         $this->assertSame('kept-admin-pw', $built['admin']['password'] ?? null);
     }
 
+    /**
+     * state 에 DB 비밀번호가 없으면 기존 runtime 값을 보존한다.
+     *
+     * @effects build_runtime_preserves_existing_db_write_password_when_state_config_lacks_it
+     *
+     * @return void 반환값 없음
+     */
     public function test_build_runtime_preserves_existing_db_password_when_state_config_lacks_it(): void
     {
         writeInstallerRuntime([
@@ -240,6 +300,13 @@ class InstallerStateSecretsTest extends TestCase
         $this->assertSame('existing-write-pw', $built['db']['write']['password']);
     }
 
+    /**
+     * read 비밀번호는 write 값이 아니라 기존 runtime 의 read 값으로 폴백한다.
+     *
+     * @effects build_runtime_read_password_falls_back_to_existing_runtime_before_write_password
+     *
+     * @return void 반환값 없음
+     */
     public function test_build_runtime_read_password_falls_back_to_existing_runtime_not_write_password(): void
     {
         writeInstallerRuntime([
@@ -265,6 +332,13 @@ class InstallerStateSecretsTest extends TestCase
         $this->assertSame('write-pw', $built['db']['write']['password']);
     }
 
+    /**
+     * state 에 비밀번호가 있으면 그 값을 우선한다.
+     *
+     * @effects build_runtime_prefers_caller_supplied_password_over_existing_runtime_value
+     *
+     * @return void 반환값 없음
+     */
     public function test_build_runtime_keeps_state_config_password_when_present(): void
     {
         // 세션이 살아있는 정상 경로 — state 가 아닌 호출자가 넘긴 config 에 비밀번호가
@@ -286,6 +360,13 @@ class InstallerStateSecretsTest extends TestCase
     // hydrateDbSecretsFromRuntime
     // -----------------------------------------------------------------
 
+    /**
+     * 비어 있는 DB 비밀번호를 runtime 값으로 채운다.
+     *
+     * @effects hydrate_db_secrets_fills_empty_write_password_from_runtime, hydrate_db_secrets_fills_empty_read_password_from_runtime
+     *
+     * @return void 반환값 없음
+     */
     public function test_hydrate_db_secrets_from_runtime_fills_empty_passwords(): void
     {
         writeInstallerRuntime([
@@ -307,6 +388,13 @@ class InstallerStateSecretsTest extends TestCase
         $this->assertSame('localhost', $hydrated['db_write_host']);
     }
 
+    /**
+     * 이미 있는 DB 비밀번호는 덮어쓰지 않는다.
+     *
+     * @effects hydrate_db_secrets_does_not_override_password_already_present_in_config
+     *
+     * @return void 반환값 없음
+     */
     public function test_hydrate_db_secrets_does_not_override_existing_password(): void
     {
         writeInstallerRuntime(['db' => ['write' => ['password' => 'rt-pw']]]);
@@ -316,9 +404,19 @@ class InstallerStateSecretsTest extends TestCase
         $this->assertSame('session-pw', $hydrated['db_write_password']);
     }
 
+    /**
+     * runtime 이 없으면 config 를 그대로 돌려준다.
+     *
+     * @effects hydrate_db_secrets_returns_config_unchanged_when_runtime_absent
+     *
+     * @return void 반환값 없음
+     */
     public function test_hydrate_db_secrets_returns_config_unchanged_when_runtime_absent(): void
     {
-        @unlink(INSTALLER_RUNTIME_PATH);
+        // 부재 파일 unlink 는 PHPUnit 11 이 경고로 집계한다 — 있을 때만 지운다
+        if (is_file(INSTALLER_RUNTIME_PATH)) {
+            unlink(INSTALLER_RUNTIME_PATH);
+        }
 
         $config = ['db_write_host' => 'localhost'];
 

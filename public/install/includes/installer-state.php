@@ -80,12 +80,125 @@ function getInstallationState(): array
 }
 
 /**
+ * 설치 소유권 필드 목록.
+ *
+ * generation 이 더 높은 쪽이 이긴다 — 설치 워커·heartbeat 처럼 generation 을 올리지 않는
+ * 쓰기가 옛 사본을 저장해도 소유자 교체·설치 계획 서명이 되돌아가지 않게 한다.
+ *
+ * @return array<int, string> 소유권 필드 키
+ */
+function installerOwnershipStateKeys(): array
+{
+    return ['owner_hash', 'recovery_hash', 'generation', 'drop_confirm', 'install_plan_sig', 'existing_db_action'];
+}
+
+/**
+ * 디스크의 state.json 을 그대로 읽는다 (없거나 손상이면 null).
+ *
+ * @return array<string, mixed>|null 디스크 state
+ */
+function installerReadStateFile(): ?array
+{
+    clearstatcache(true, STATE_PATH);
+
+    if (! is_file(STATE_PATH)) {
+        return null;
+    }
+
+    $decoded = json_decode((string) @file_get_contents(STATE_PATH), true);
+
+    return is_array($decoded) ? $decoded : null;
+}
+
+/**
+ * state.json 쓰기를 프로세스 간 직렬화한다.
+ *
+ * 락 파일을 열 수 없으면(스토리지 부재 등) 락 없이 실행한다 — 쓰기 자체가 실패하며 기존 로그가 남는다.
+ *
+ * @param  callable(): bool  $callback  락 안에서 실행할 쓰기
+ * @return bool 콜백 결과
+ */
+function installerWithStateLock(callable $callback): bool
+{
+    $handle = @fopen(STATE_PATH.'.lock', 'c');
+    if ($handle === false) {
+        return $callback();
+    }
+
+    try {
+        flock($handle, LOCK_EX);
+
+        return $callback();
+    } finally {
+        flock($handle, LOCK_UN);
+        fclose($handle);
+    }
+}
+
+/**
  * 설치 상태 저장
+ *
+ * 디스크 generation 이 메모리 사본보다 높으면 소유권 필드는 디스크 값을 유지한다.
  *
  * @param  array  $state  저장할 상태 배열
  * @return bool 저장 성공 여부
  */
 function saveInstallationState(array $state): bool
+{
+    return installerWithStateLock(static function () use ($state): bool {
+        $disk = installerReadStateFile();
+
+        if ($disk !== null && (int) ($disk['generation'] ?? 0) > (int) ($state['generation'] ?? 0)) {
+            foreach (installerOwnershipStateKeys() as $key) {
+                if (array_key_exists($key, $disk)) {
+                    $state[$key] = $disk[$key];
+                } else {
+                    unset($state[$key]);
+                }
+            }
+        }
+
+        return installerWriteStateFile($state);
+    });
+}
+
+/**
+ * 설치 상태를 compare-and-swap 으로 저장한다.
+ *
+ * 디스크 generation 이 기대값과 같을 때만 generation+1 로 저장한다. 다르면 그 사이 다른
+ * 상태변경 요청이 먼저 커밋한 것이므로 false (호출부는 409 로 응답).
+ *
+ * @param  array  $state  저장할 상태 배열
+ * @param  int  $expectedGeneration  읽을 때의 generation
+ * @return bool 저장 성공 여부 (충돌·쓰기 실패 시 false)
+ */
+function saveInstallationStateCas(array $state, int $expectedGeneration): bool
+{
+    return installerWithStateLock(static function () use ($state, $expectedGeneration): bool {
+        $disk = installerReadStateFile();
+        $diskGeneration = $disk === null ? 0 : (int) ($disk['generation'] ?? 0);
+
+        if ($diskGeneration !== $expectedGeneration) {
+            $msg = "[installer-state] CAS 충돌: expected={$expectedGeneration}, disk={$diskGeneration}";
+            error_log($msg);
+            addLog($msg);
+
+            return false;
+        }
+
+        $state['generation'] = $expectedGeneration + 1;
+
+        return installerWriteStateFile($state);
+    });
+}
+
+/**
+ * state.json 을 원자적으로 기록한다 (락·병합은 호출부 책임).
+ *
+ * @param  array  $state  저장할 상태 배열
+ * @return bool 저장 성공 여부
+ */
+function installerWriteStateFile(array $state): bool
 {
     // storage 디렉토리 존재 여부 확인 (생성하지 않음)
     $storageDir = BASE_PATH.'/storage';

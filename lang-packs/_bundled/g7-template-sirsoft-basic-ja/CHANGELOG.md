@@ -4,39 +4,6 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
-## [작업 중]
-
-### Added
-
-- 구매자 클레임 화면의 **상품별 운송장·선교환 반송 안내·판매자 접수 안내**의 일본어 번역을 추가했습니다
-  (`build-language-pack-ja.cjs` 증분 생성).
-- 환불 신청서에서 **환불받을 계좌를 채우라고 안내하는 문구**의 일본어 번역을 추가했습니다
-  (`claim.apply.refund_account_required_to_submit`). 계좌로 환불되는 주문에서 세 칸이 비면
-  [환불 신청하기]가 잠기는데, 종전에는 그 이유를 알리는 자리가 일본어 로케일에 없었습니다.
-- 사진 첨부 일부 실패를 **몇 장 중 몇 장**으로 알리는 문구(`claim.image.upload_partial_failed`)와,
-  교환 옵션에서 **지금 교환받을 수 없는 조합**을 골랐을 때의 안내(`claim.change_product.unavailable`)의
-  일본어 번역을 추가했습니다(`build-language-pack.cjs --locale=ja` 생성).
-- 승인된 신청서의 수정 주소로 들어왔을 때의 안내(`claim.edit.not_editable`) 일본어 번역을 추가했습니다.
-- 사진 첨부의 용량·형식 거절 안내(`attachment.file_too_large` · `attachment.file_type_not_allowed` ·
-  `attachment.upload_failed` · `attachment.upload_response_invalid`)와 주문 목록 추가옵션 요약 「他N件」
-  (`mypage.orders.additional_options_more`)의 일본어 번역을 추가했습니다. 종전에는 일본어 화면에도 한국어 문구가 떴습니다.
-- 환불 계좌 칸이 가린 등록 계좌로 채워졌을 때의 안내(`claim.apply.refund_account_masked_hint`) 일본어 번역을 추가했습니다.
-
-### Changed
-
-- 신청서 상세의 「전체 회수 완료」·「전체 재발송 완료」(`claim.detail.collection_completed_at`·`redelivered_at`)를 원본의
-  뜻 변경(상품별 도착과 구분되는 전체 완료 시각)에 맞춰 다시 번역했습니다.
-- 클레임 신청서 결제 버튼 문구(`claim.apply.submit_with_payment`)가 금액을 문구 안에서 받습니다(「{{amount}}を決済する」).
-  금액을 문구 밖에 이어 붙이던 동안에는 어순이 언어마다 틀렸습니다.
-
-### Removed
-
-- 신청서 상세 배송 카드의 「송장」 라벨(`claim.detail.tracking`) 번역을 지웠습니다. 배송 카드가 운송장별 묶음으로 바뀌어 쓰이지 않습니다.
-
-### Fixed
-
-- 쿠폰 다운로드 창의 금액 단위가 원화인데 **엔화(円)로 표시되던 것**을 「ウォン」으로 바로잡았습니다.
-
 ## [1.1.4] - 2026-09-16
 
 ### Added
@@ -67,6 +34,19 @@
 - 신청 내역 상세의 미수납 추가결제 결제 버튼과 결제 수단·진행·성공·실패 안내 문구 일본어 번역 추가.
 - 마이페이지 화면 편집기의 신청 내역 목록·상세 데이터 소스와 상세 화면 영역 라벨 일본어 번역 추가.
 - 주문서에서 고른 배송지를 그 자리에서 고쳤을 때 뜨는 「저장된 배송지 갱신」 체크박스 문구의 일본어 번역을 추가했습니다.
+- 구매자 클레임 화면의 **상품별 운송장·선교환 반송 안내·판매자 접수 안내**의 일본어 번역을 추가했습니다
+  (`build-language-pack-ja.cjs` 증분 생성).
+- 환불 신청서에서 **환불받을 계좌를 채우라고 안내하는 문구**의 일본어 번역을 추가했습니다
+  (`claim.apply.refund_account_required_to_submit`). 계좌로 환불되는 주문에서 세 칸이 비면
+  [환불 신청하기]가 잠기는데, 종전에는 그 이유를 알리는 자리가 일본어 로케일에 없었습니다.
+- 사진 첨부 일부 실패를 **몇 장 중 몇 장**으로 알리는 문구(`claim.image.upload_partial_failed`)와,
+  교환 옵션에서 **지금 교환받을 수 없는 조합**을 골랐을 때의 안내(`claim.change_product.unavailable`)의
+  일본어 번역을 추가했습니다(`build-language-pack.cjs --locale=ja` 생성).
+- 승인된 신청서의 수정 주소로 들어왔을 때의 안내(`claim.edit.not_editable`) 일본어 번역을 추가했습니다.
+- 사진 첨부의 용량·형식 거절 안내(`attachment.file_too_large` · `attachment.file_type_not_allowed` ·
+  `attachment.upload_failed` · `attachment.upload_response_invalid`)와 주문 목록 추가옵션 요약 「他N件」
+  (`mypage.orders.additional_options_more`)의 일본어 번역을 추가했습니다. 종전에는 일본어 화면에도 한국어 문구가 떴습니다.
+- 환불 계좌 칸이 가린 등록 계좌로 채워졌을 때의 안내(`claim.apply.refund_account_masked_hint`) 일본어 번역을 추가했습니다.
 
 ### Removed
 
@@ -75,6 +55,7 @@
   편집기 속성·컴포넌트 라벨(`editor.control.pr_*`·`editor.component.post_reactions`·
   `editor.data_prop.reactions`), 팔레트 항목(`layout_editor.palette.post_reactions`).
   실제 반응 기능의 문구는 게시판 모듈 언어팩이 제공하므로 화면에 보이는 것은 달라지지 않습니다.
+- 신청서 상세 배송 카드의 「송장」 라벨(`claim.detail.tracking`) 번역을 지웠습니다. 배송 카드가 운송장별 묶음으로 바뀌어 쓰이지 않습니다.
 
 ### Changed
 
@@ -82,12 +63,18 @@
 
 - 휴면이 풀린 로그인에 뜨는 안내 문구의 일본어 낱말을 「休眠」으로 맞췄습니다(`auth.dormancy_restored`). 「休止状態が解除されました」였는데, 그 회원이 받은 휴면 전환 안내 메일은 「休眠」이라 같은 사건이 다른 일처럼 읽혔습니다.
 - 로그인 화면의 무기한 잠김 안내(`locked_permanent`)가 비밀번호 재설정으로도 풀 수 있음을 알리도록 고쳤습니다. 직접 적었습니다(번역 API 키 부재).
+- 신청서 상세의 「전체 회수 완료」·「전체 재발송 완료」(`claim.detail.collection_completed_at`·`redelivered_at`)를 원본의
+  뜻 변경(상품별 도착과 구분되는 전체 완료 시각)에 맞춰 다시 번역했습니다.
+- 클레임 신청서 결제 버튼 문구(`claim.apply.submit_with_payment`)가 금액을 문구 안에서 받습니다(「{{amount}}を決済する」).
+  금액을 문구 밖에 이어 붙이던 동안에는 어순이 언어마다 틀렸습니다.
 
 ### Fixed
+
 - 마이페이지 「마일리지」 탭 이름의 일본어 번역 오기를 고쳤습니다 — マイルドセージ 로 적혀 있어 일본어 로케일에서 뜻이 통하지 않는 말이 탭에 표시됐습니다. マイレージ 로 되돌립니다.
 
 - 구매확정 창의 경고 문구가 **사실과 반대**였던 것을 고쳤습니다 — 종전에는 「購入確定後はキャンセル・交換・返金ができません」이라 교환·반품까지 막힌다고 읽혔지만, 구매확정 후에도 **교환·반품은 그대로 신청할 수 있습니다**. 일본어 사용자가 정당한 교환·반품을 단념하던 문제입니다(#599). 한국어·영어는 앞서 고쳤고 이번에 일본어가 뒤따랐습니다.
 - 주문 이력의 **구매확정일시·배송완료일시** 라벨이 일본어 화면에서 내부 이름으로 보이던 것을 고쳤습니다(`購入確定日時` · `配送完了日時`) — 일본어 사용자에게는 `mypage.order_detail.confirmed_at` 같은 글자가 날짜 옆에 그대로 떴습니다(#599).
+- 쿠폰 다운로드 창의 금액 단위가 원화인데 **엔화(円)로 표시되던 것**을 「ウォン」으로 바로잡았습니다.
 
 ## [1.1.3] - 2026-09-09
 
