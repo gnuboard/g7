@@ -5,6 +5,7 @@ namespace Modules\Sirsoft\Ecommerce\Services;
 use App\Contracts\Extension\StorageInterface;
 use App\Exceptions\UnsafeStoragePathException;
 use App\Extension\HookManager;
+use App\Helpers\InlineMediaPolicy;
 use App\Support\ImageResizer;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\UploadedFile;
@@ -389,6 +390,9 @@ class ProductImageService
 
             return null;
         }
+
+        // 인라인 표시는 래스터 이미지만, 그 외(SVG 등)는 다운로드로 — 모든 응답에 nosniff (KVE-2026-2366)
+        InlineMediaPolicy::harden($response, $image->mime_type, $image->original_filename);
 
         return $response;
     }

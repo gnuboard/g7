@@ -259,4 +259,3 @@ describe('확장 선언 경고', () => {
     expect(stringify(alert)).toContain('analytics_diagnostics?.data?.declaration_warnings');
   });
 });
-

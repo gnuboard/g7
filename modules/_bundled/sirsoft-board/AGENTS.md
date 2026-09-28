@@ -104,7 +104,7 @@
 | 확장점 | 수 | 상세 |
 |---|---|---|
 | 발행 훅 | 102개 | [발행 훅](docs/extension-points.md#발행-훅) |
-| 구독 훅 | 84개 | [구독 훅](docs/extension-points.md#구독-훅) |
+| 구독 훅 | 86개 | [구독 훅](docs/extension-points.md#구독-훅) |
 | 훅 리스너 | 19개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
 | 레이아웃 확장 | 7개 | [레이아웃 확장](docs/extension-points.md#레이아웃-확장) |
 | 미들웨어 | 0개 | [미들웨어](docs/extension-points.md#미들웨어) |
@@ -162,10 +162,10 @@ CRUD 흐름 자체를 **자기 도메인으로 대체**하는 가장 무거운 �
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 193개 | `modules/_bundled/sirsoft-board/tests` |
+| PHPUnit | 195개 | `modules/_bundled/sirsoft-board/tests` |
 | Vitest | 51개 | `vitest.config.ts` |
 | Playwright | 33개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 67개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 68개 | `tests/scenarios` |
 
 기저 TestCase: `tests/ModuleTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

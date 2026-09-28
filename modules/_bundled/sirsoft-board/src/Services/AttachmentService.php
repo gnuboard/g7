@@ -4,6 +4,7 @@ namespace Modules\Sirsoft\Board\Services;
 
 use App\Contracts\Extension\StorageInterface;
 use App\Extension\HookManager;
+use App\Helpers\InlineMediaPolicy;
 use App\Helpers\PermissionHelper;
 use App\Support\ImageResizer;
 use Illuminate\Database\Eloquent\Collection;
@@ -846,7 +847,7 @@ class AttachmentService
         // RFC 5987에 따라 UTF-8 파일명 인코딩
         $encodedFilename = rawurlencode($attachment->original_filename);
 
-        return $this->storage->response(
+        $response = $this->storage->response(
             'attachments',
             $attachment->path,
             $attachment->original_filename,
@@ -855,6 +856,13 @@ class AttachmentService
                 'Content-Disposition' => "attachment; filename=\"{$attachment->original_filename}\"; filename*=UTF-8''{$encodedFilename}",
             ]
         );
+
+        // nosniff — 다운로드 응답도 브라우저가 내용을 추측해 렌더하지 않도록 (KVE-2026-2366)
+        if ($response) {
+            InlineMediaPolicy::harden($response, $attachment->mime_type, $attachment->original_filename);
+        }
+
+        return $response;
     }
 
     /**
@@ -904,7 +912,7 @@ class AttachmentService
         // 비밀글 첨부파일은 열람 권한자만 접근
         $this->assertSecretPostAttachmentAccess($slug, $attachment);
 
-        return $this->storage->response(
+        $response = $this->storage->response(
             'attachments',
             $attachment->path,
             $attachment->original_filename,
@@ -913,6 +921,13 @@ class AttachmentService
                 'Content-Disposition' => 'inline',
             ]
         );
+
+        // 인라인은 래스터 이미지만 — is_image 가 이미 거르지만 서빙 응답에도 nosniff 를 건다 (KVE-2026-2366)
+        if ($response) {
+            InlineMediaPolicy::harden($response, $attachment->mime_type, $attachment->original_filename);
+        }
+
+        return $response;
     }
 
     /**

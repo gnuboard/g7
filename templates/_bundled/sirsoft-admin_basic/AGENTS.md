@@ -126,6 +126,7 @@ admin/`)이 이 템플릿의 베이스(`_admin_base`)를 extends 하고 이 템�
 | 원·칸을 그리는 스타일 자산(`danger-confirm-icon` 등, 글자 크기 없음)을 `<icon>` 요소에 직접 부여 | 자산은 감싸는 요소에, 아이콘은 그 안에(`<div class="danger-confirm-icon"><icon …/></div>`) | Font Awesome 의 `display` 가 자산의 가운데 정렬을 이기고 글리프는 상속 글자 크기에 머문다 — 원 위쪽에 작게 붙는다. 가드: `tests/Unit/Extension/FontIconSizingTest.php` |
 | `CodeEditor` 에서 심기(prime)보다 먼저 `<Editor>` 를 렌더하거나 `loader.init()` 호출 | 심기가 끝난 뒤에 렌더·init 한다(`primed` 게이트) | `<Editor>` 는 렌더되자마자 자기 effect 에서 `init()` 을 부른다. 먼저 불리면 라이브러리가 **자기 AMD 로더 스크립트를 따로 주입**해 `_amdLoaderGlobal` 이 두 번 선언되고 그 판의 `require` 가 통째로 죽는다 (S3-D12) |
 | `CodeEditor` 의 중복 심기 가드를 모듈 수준 변수로 선언 | `window.__g7MonacoPriming` 에 둔다 | 이 번들은 화면마다 따로 평가될 수 있어 모듈 변수로는 같은 판에서 두 번 도는 것을 못 막는다 (실측: 로더 스크립트 태그가 3개까지 늘었다) |
+| 컴포넌트·핸들러가 `fetch` 로 직접 요청하며 대상 출처를 보지 않고 토큰(Bearer·XSRF)을 싣거나, prop 으로 받은 주소로 곧장 `location.href` 이동 | `src/support/sameOriginRequest.ts` 의 `isSameOriginRequest(url)` 이 true 일 때만 토큰을 싣고 이동한다 | 주소가 레이아웃 prop·응답 본문이면 레이아웃 편집 권한만으로 관리자 토큰을 외부로 보내거나 `javascript:` 를 실행시킬 수 있다(KVE-2026-2350) |
 <!-- @intent END -->
 
 ### Monaco 편집기 확보 계약 (S3-D12)
@@ -172,9 +173,9 @@ Monaco 를 올릴 때는 `templates/_bundled/sirsoft-admin_basic/tests/Playwrigh
 | 종류 | 개수 | 위치 |
 |---|---|---|
 | PHPUnit | 0개 | — |
-| Vitest | 256개 | `vitest.config.ts` |
+| Vitest | 260개 | `vitest.config.ts` |
 | Playwright | 18개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 15개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 16개 | `tests/scenarios` |
 
 ```bash
 # Vitest (확장 디렉토리에서) (PowerShell)

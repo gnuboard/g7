@@ -528,10 +528,10 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다. 모든 Basic �
 | `AdminFooter` | 관리자 푸터 | copyright, version, quickLinks |
 | `PageHeader` | 페이지 헤더 (제목, 브레드크럼, 액션) | title, subtitle, breadcrumbItems, tabs, onTabChange, ... |
 | `LoginForm` | 로그인 폼 (이메일/비밀번호 검증) | submitButtonText, emailPlaceholder, passwordPlaceholder, forgotPasswordText, forgotPasswordUrl, ... |
-| `UserProfile` | 사용자 프로필 드롭다운 | user, profileText, logoutText, onProfileClick, onLogoutClick |
+| `UserProfile` | 사용자 프로필 드롭다운 (`logoutEndpoint` 는 동일 출처일 때만 토큰을 싣고, `redirectPath` 가 동일 출처가 아니면 `/admin/login` 으로 이동) | user, profileText, logoutText, onProfileClick, onLogoutClick, logoutEndpoint, redirectPath |
 | `NotificationCenter` | 알림 센터 | notifications, titleText, emptyText, onNotificationClick |
 | `ThemeToggle` | 테마 모드 전환 (다크/라이트/자동) | onThemeChange, autoText, lightText, darkText |
-| `LanguageSelector` | 언어 선택 드롭다운 | availableLocales, languageText, apiEndpoint, onLanguageChange, inline |
+| `LanguageSelector` | 언어 선택 드롭다운 (`apiEndpoint` 가 동일 출처일 때만 토큰을 싣는다) | availableLocales, languageText, apiEndpoint, onLanguageChange, inline |
 | `PageTransitionIndicator` | 페이지 전환 로딩 표시 | style |
 
 #### 레이아웃 편집

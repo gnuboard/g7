@@ -1035,6 +1035,45 @@ describe('DataSourceManager', () => {
     });
 
     /**
+     * @scenario resolution_path=auth_api_client
+     * @effects auth_failure_does_not_keep_last_successful_value
+     */
+    it.each([401, 403])('[case:cache-21] 권한 오류(%i)면 마지막 값을 지키지 않고 fallback 으로 비운다', async (status) => {
+      // 같은 브라우저의 다른 탭에서 권한이 적은 계정으로 로그인하면, 관리자 탭의 요청은 403 으로 막히는데
+      // 마지막 값이 남아 이전 계정이 보던 대시보드(리뷰·문의·비밀글 제목)가 그대로 보였다(#695 병합 전수 검사 실측).
+      const mockApiClient = getApiClient();
+      const sources: DataSource[] = [
+        {
+          id: 'dashboard_activities',
+          type: 'api',
+          endpoint: '/api/admin/dashboard/activities',
+          method: 'GET',
+          auto_fetch: true,
+          auth_required: true,
+          fallback: { data: [] },
+        },
+      ];
+
+      (mockApiClient.get as any).mockResolvedValueOnce({ data: ['관리자만 보는 활동'] });
+      const first = await manager.fetchDataSources(sources, {});
+      expect(first['dashboard_activities']).toEqual({ data: ['관리자만 보는 활동'] });
+
+      mockResolverResolve.mockReturnValue({ handler: null, source: 'default' });
+      (mockApiClient.get as any).mockRejectedValueOnce(
+        Object.assign(new Error('Forbidden'), { response: { status, data: {} } }),
+      );
+      const second = await manager.fetchDataSources(sources, {});
+      expect(second['dashboard_activities'], '권한 오류 뒤에는 이전 응답을 보이지 않는다').toEqual({ data: [] });
+
+      // 그 뒤 서버 오류가 나도 지워진 이전 응답이 되살아나지 않는다
+      (mockApiClient.get as any).mockRejectedValueOnce(
+        Object.assign(new Error('Server Error'), { response: { status: 500, data: {} } }),
+      );
+      const third = await manager.fetchDataSources(sources, {});
+      expect(third['dashboard_activities']).toEqual({ data: [] });
+    });
+
+    /**
      * @effects error_without_fallback_or_handler_leaves_result_empty
      */
     it('fallback과 errorHandling 모두 없으면 기본 에러 처리가 되어야 함', async () => {

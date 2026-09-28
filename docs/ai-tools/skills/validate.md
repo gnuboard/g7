@@ -17,12 +17,16 @@
 
 | 변경 파일 | 영역 |
 | --- | --- |
-| `app/**`·`{modules,plugins}/**/src/**` 의 Services·Http/Requests·Repositories·Http/Controllers·Http/Resources·DTO·Exceptions·Providers `*.php` | backend |
-| `**/Listeners/**`, 훅을 발행·등록하는 Service·Provider | hook |
+| `app/**/*.php` 전체(Services·Http·Repositories·DTO·Exceptions·Providers·Rules·Seo·Console·Middleware·Models·Enums·Events·Support·Listeners 포함), `{modules,plugins}/**/src/**/*.php` | backend |
+| `**/Listeners/**`, 훅을 발행·등록하는 Service·Provider | hook (Listener 는 backend 도 함께 켠다 — listener 룰 6종은 `--tag backend` 에만 걸려 있다) |
 | `**/database/migrations/**`, `**/upgrades/Upgrade_*.php`, `**/seeders/**` | migration |
 | `lang/**`, `**/lang/**`, `lang-packs/**` | i18n |
-| `**/layouts/**/*.{json,g7.html}`, `**/extensions/**/*.{json,g7.html}`, `**/*.tsx`, 핸들러·`resources/js/core/template-engine/**` | frontend (`.g7.html` = 소스 SSoT, `.json` = 런타임 계약 — 동일 취급) |
+| `**/layouts/**/*.{json,g7.html}`, `**/extensions/**/*.{json,g7.html}`, `**/*.tsx`, 핸들러·`resources/js/core/**` | frontend (`.g7.html` = 소스 SSoT, `.json` = 런타임 계약 — 동일 취급) |
+| `resources/js/core/template-engine/**`, `resources/js/core/{TemplateApp,template-engine}.ts`, `resources/js/core/{auth,identity,support}/**` | engine (frontend 에 더해 `/engine-regression` 5단계 기록 · 엔진 CHANGELOG · SEO 렌더러 짝) |
+| `module.json`·`plugin.json`·`template.json`·`config/app.php` | version-sync (보조 스크립트) |
 | 사용자가 브랜치·이슈 전체를 지시 · 위 표가 2개 이상 영역을 켠 경우 | branch (전 영역) |
+
+engine·plan·harness·version-sync 는 인자 없는 호출에서도 켜진다 — 처리 방법은 branch.md(아래 「branch」 절) 「분류」 표. 단일 영역으로 판정됐다는 이유로 엔진 CHANGELOG·버전 동기를 건너뛰지 않는다.
 
 한 파일이 여러 영역에 속할 수 있다 — 겹치면 모두 켠다. 어느 영역에도 걸리지 않는 변경도 미분류 사유를 적고 audit 와 파일 유형 규정 대조는 수행한다.
 
@@ -30,6 +34,7 @@
 
 판정 원칙(의미 검토 1차 · 정적 분석 보조 · 미커버 영역 명시 · 설계 정합성 축 D1~D9 · 최소 범위)은 validation-principle.md, 부수의무는 good-faith-principle.md 를 따른다.
 
+0. **규정 문서 읽기** — 선택된 영역마다 `references/<area>.md` 상단 「규정」 목록의 문서를 이 단계에서 전부 Read 한다. 목록은 참고 링크가 아니라 읽을 목록이다 — 스킬에 적힌 점검 항목은 하한이고, 규정 문서가 SSoT 다.
 1. **대상 통독** — 선택된 영역의 변경 파일을 전부 직접 Read 하고 의미·신규 패턴(헬퍼·시그니처·응답 구조·훅 키)·유사 호출처·외부 영향·미등록 룰 영역을 메모한다. 이 메모가 1차 판정 근거다. 대상이 `.md` 계획서면 코드 블록 검증은 plan-code-blocks.md.
 2. **audit (보조)** — 범위에 맞는 형태로 한 번 돌린다. 결과는 의미 검토를 반증·보강하는 신호이고 단독 결론 근거가 아니다.
 
@@ -37,7 +42,14 @@
    ```
 
    severity 를 `error` 로 한정하지 않는다 — frontend warn(`darkmode-class-pair` 등) 회귀 신호가 묵음 처리된다(warn). 초록은 "그 룰이 그 파일을 실제로 판정했다"를 뜻하지 않는다(초록). audit 가 덮는 범위는 하한이지 상한이 아니다(하한).
-3. **영역별 의미 검토** — 영역이 여럿이면 backend → migration → hook → i18n → frontend 순서로 순차 적용한다(병렬 금지 — 결과 의존). 점검 항목·규정 문서·예시는 `references/<area>.md` 에 있다. 규정 문서가 SSoT 이고 그 ❌/✅ 예시가 검증 패턴이다 — 파일 유형별 규정 목록은 [AGENTS.md](../../../AGENTS.md#파일-유형별-규정-확인).
+3. **영역별 의미 검토** — 영역이 여럿이면 backend → migration → hook → i18n → frontend 순서로 순차 적용한다(병렬 금지 — 결과 의존). 점검 항목·규정 문서·예시는 `references/<area>.md` 에 있다. 파일 유형별 규정 목록은 [AGENTS.md](../../../AGENTS.md#파일-유형별-규정-확인). 0단계에서 읽은 규정 문서에서 검증 패턴을 직접 추출한다 — 규정이 바뀌면 검증도 따라 바뀌어야 하므로 references 표로 규정을 대신하지 않는다.
+
+   | 규정 문서에서 | 검증 유형 | 판정 |
+   | --- | --- | --- |
+   | `❌`·「잘못된」 코드 블록 | 금지 패턴 — `grep -rn "<패턴>" <대상>` 으로 검사 | 발견 시 error + 규정 절 안내 |
+   | `✅`·「올바른」 코드 블록 | 필수 패턴 — 그 맥락에서 쓰여야 하는데 없는지 | 누락 시 warn + 올바른 예시 안내 |
+   | `⚠️ 절대 금지`·`CRITICAL` 강조 규칙 | 필수 검증 항목 | 누락 없이 전부 판정 |
+   | `TL;DR` 핵심 포인트 | 우선 검증 항목 | 가장 먼저 판정 |
 4. **테스트** — 건드린 코드에 한해 `--filter` 로 좁혀 돌린다. 전체 스위트는 돌리지 않는다(범위).
 
    ```bash
@@ -52,11 +64,14 @@
    | --- | --- | --- | --- | --- | --- |
    | 1 | backend | 통과/위반/해당 없음 | N/M | 스크립트가 못 본 항목 | … |
 
-   표에 이어 D1~D9 판정표, 영역별 부수의무 결과, 이번 변경이 도입한 위반과 변경 파일 밖의 기존 위반을 분리해 적는다. 변경 파일 안의 위반은 선행 부채라도 이 세션에서 고친다(동시 수정).
+   표에 이어 audit 룰별 위반 건수(`룰 id: error N / warn M`), D1~D9 판정표, 영역별 부수의무 결과, 이번 변경이 도입한 위반과 변경 파일 밖의 기존 위반을 분리해 적는다. 변경 파일 안의 위반은 선행 부채라도 이 세션에서 고친다(동시 수정).
+
+   마지막 줄은 **최종 판정 3단** 중 하나와 사유다 — `✅ 커밋/PR 가능`(error 0, 의미 검토 위반 0, 테스트 green) · `⚠️ 조건부`(warn·실측 대기·사용자 결정 대기 항목이 남음 — 조건을 나열) · `❌ 차단`(error 또는 의미 검토 위반 잔존). 판정 없이 표만 내고 끝내지 않는다.
 
 ## 완료 조건
 
-- 선택된 영역 전부에서 1~5 단계를 수행했고, 각 영역의 대상 파일을 통독했다.
+- 선택된 영역 전부에서 0~5 단계를 수행했고, 각 영역의 규정 문서와 대상 파일을 통독했다.
+- 보고 마지막 줄에 최종 판정 3단과 룰별 건수가 있다.
 - audit 를 범위에 맞게 돌려 error 와 warn 을 모두 봤고, 스크립트가 판정하지 못한 영역을 보고에 별도로 적었다.
 - 위반마다 file:line 과 규정 출처가 있고, 수정했거나 사용자 결정으로 이월했다.
 - D1~D9 판정표와 부수의무 점검 결과를 첨부했다. 등록 룰 위반 0 만으로 통과를 선언하지 않는다.
@@ -78,13 +93,31 @@
 
 ## backend
 
-`validate backend` 의 2단계에서 쓴다. 대상: `app/Services/**`, `app/Http/{Requests,Controllers,Resources,Middleware}/**`, `app/Repositories/**`, `app/{도메인}/DTO/**`·`{modules,plugins}/**/src/DTO/**`, `app/Exceptions/**`, `app/Providers/**`, `app/Console/Commands/**`, 그리고 확장의 같은 계층(`{modules,plugins}/_bundled/**/src/**`). 계획서 안 PHP 코드 블록은 plan-code-blocks.md.
+`validate backend` 의 0·3단계에서 쓴다. 대상: `app/**/*.php` 전체(Services·Http·Repositories·DTO·Exceptions·Providers·Rules·Seo·Console·Middleware·Models·Enums·Events·Support·Listeners)와 확장의 `{modules,plugins}/**/src/**/*.php`. 계획서 안 PHP 코드 블록은 plan-code-blocks.md.
 
-규정: service-repository.md · controllers.md · routing.md · validation.md · api-resources.md · dto.md · enum.md · exceptions.md · middleware.md · response-helper.md · service-provider.md · notification-system.md · broadcasting.md · core-config.md · console-confirm.md · permissions.md(Policy 사용 금지) · storage-driver.md · 요약 backend-misc.md.
+규정: service-repository.md · controllers.md · routing.md · validation.md · api-resources.md · dto.md · enum.md · exceptions.md · middleware.md · response-helper.md · service-provider.md · notification-system.md · broadcasting.md · core-config.md · console-confirm.md · permissions.md(Policy 사용 금지) · storage-driver.md · 요약 backend-misc.md. · SEO seo-system.md · Listener hooks.md.
+
+파일 경로별로 우선 적용할 규정:
+
+| 경로 | 우선 규정 |
+| --- | --- |
+| `Services/**`·`Repositories/**` | service-repository.md |
+| `Http/Requests/**`·`Rules/**` | validation.md |
+| `Http/Controllers/**` | controllers.md · routing.md |
+| `Http/Resources/**` | api-resources.md |
+| `**/DTO/**` | dto.md |
+| `Http/Middleware/**` | middleware.md |
+| `Providers/**` | service-provider.md |
+| `Exceptions/**` | exceptions.md |
+| `Console/Commands/**` | console-confirm.md |
+| `Enums/**` | enum.md |
+| `Seo/**` | seo-system.md |
+| `**/Listeners/**` | hooks.md + backend-misc.md「Listener 데이터 접근」 |
+| `Events/**`·브로드캐스트 | broadcasting.md |
 
 ### 자동 검출 룰 (`--tag backend`)
 
-`phpdoc-method-contract`(구 phpdoc-public-method — 가시성 무관 + void 포함 PHPDoc, 이름별 @param/@return) · `formrequest-authorize-true` · `repository-interface-injection` · `service-direct-data-access`(Service 의 DB facade·Eloquent 직접 호출) · `service-validator-make` · `service-direct-throw-base-exception` · `response-helper-arg-order` · `no-storage-disk-direct` · `no-cache-facade-direct` · `hook-broadcast-direct` · `i18n-throw-hardcoded-korean` · `manifest-version-cross-sync`.
+`phpdoc-method-contract`(구 phpdoc-public-method — 가시성 무관 + void 포함 PHPDoc, 이름별 @param/@return) · `formrequest-authorize-true` · `repository-interface-injection` · `service-direct-data-access`(Service 의 DB facade·Eloquent 직접 호출) · `service-validator-make` · `service-direct-throw-base-exception` · `response-helper-arg-order` · `no-storage-disk-direct` · `no-cache-facade-direct` · `hook-broadcast-direct` · `i18n-throw-hardcoded-korean` · `manifest-version-cross-sync` · Listener 계열(`listener-must-implement-hooklistenerinterface` · `listener-direct-db-facade` · `listener-savequietly-direct` · `listener-formrequest-bypass` · `listener-not-from-controller-service` · `activity-log-listener-i18n-coverage` · `filter-hook-type-marker`) — Listener 가 hook 영역으로만 분류돼도 `--tag backend` 를 함께 돌려야 이 룰들이 실행된다. 전체 목록은 `audit-branch.cjs --list-rules`.
 
 훅 실행 순서 의도 · abilityMap 정확성 · DTO 패턴 선택 · 예외 계약은 룰이 보지 못한다 — 아래 항목으로 직접 판정한다.
 
@@ -171,8 +204,6 @@ dto.md 는 두 패턴을 정의한다 — 한 패턴을 강제하지 않는다. 
 
 ### PHPDoc
 
-룰이 잡는 것은 존재 여부뿐이다. protected/private·void·프레임워크 override 를 빠뜨리지 않고, 태그의 설명과 실제 반환·예외 계약을 직접 대조한다. `@param`·`@return` 에 설명이 없으면 Pint 가 태그를 지운다(param · return) — Pint 실행 이후에도 태그가 남는지 확인한다. 정렬 작업이 `@return` 을 지우지 않았는지도 본다(정렬). 예외를 던지면 `@throws` 를 적는다.
-
 ### 부수의무 (backend)
 
 로직·데이터만 바꾸고 그것을 넣고 보여 주는 UI·다국어·검증·테스트·문서가 빠지지 않았는가. 같은 작업 단위가 프론트·마이그레이션·언어 파일까지 걸쳤는데 backend 만 보고 통과를 단정하지 않았는가. 테스트 변경은 매니페스트 변경 여부와 무관하게 소유 시나리오와 각 신규 테스트의 매핑을 확인한다. 검증 도구의 실행 실패·빈 결과·룰 미적용을 통과로 기록하지 않는다.
@@ -200,11 +231,10 @@ dto.md 는 두 패턴을 정의한다 — 한 패턴을 강제하지 않는다. 
 
 ### 분류
 
-SKILL.md 의 자동 선택 표에 더해 브랜치 검증에서만 활성화되는 카테고리:
+SKILL.md 자동 선택 표의 카테고리 처리 방법이다. engine·plan·harness·version-sync 는 브랜치 검증 전용이 아니다 — 인자 없는 `validate` 가 단일 영역으로 판정돼도 해당 파일이 있으면 켠다.
 
 | 파일 | 카테고리 | 처리 |
 | --- | --- | --- |
-| `resources/js/core/template-engine/**` | engine | frontend 에 더해 엔진 CHANGELOG 와 회귀 프로토콜(엔진 회귀) |
 | `module.json`·`plugin.json`·`template.json`·`config/app.php` | version-sync | 아래 보조 스크립트 |
 
 활성 카테고리가 없는 변경도 미분류 사유를 적고 공통 audit 와 파일 유형 규정 대조를 수행한다. 어느 영역에도 해당하지 않는다는 이유로 검증을 끝내지 않는다.
@@ -219,7 +249,7 @@ SKILL.md 의 자동 선택 표에 더해 브랜치 검증에서만 활성화되�
 | --- | --- |
 
 5. **테스트** — 변경 클래스별 `php artisan test --filter=<클래스명>`, 프론트 `powershell -Command "npm run test:run -- <영역>"`. 통과는 완료의 필요조건이고, 의미 검토·필수 산출물·적용 범위의 미완료도 함께 판정한다. 실패는 「작성 → red → 수정 → green」으로 닫는다.
-6. **통합 보고** — SKILL.md 4단계 표에 카테고리 행(backend/frontend/migration/i18n/hook/plan/보조 스크립트/테스트)을 채우고, 각 영역의 미커버 영역과 부수의무 결과를 종합한다. 이번 브랜치가 도입한 위반과 변경 파일 밖의 기존 위반을 분리해 사용자가 회귀 차단과 별도 이슈를 결정하게 한다 — 단, 변경 파일 안의 위반은 선행이라도 이 세션에서 고친다.
+6. **통합 보고** — SKILL.md 5단계 표에 카테고리 행(backend/frontend/migration/i18n/hook/engine/plan/harness/보조 스크립트/테스트)을 채우고 audit 룰별 위반 건수를 붙이고, 각 영역의 미커버 영역과 부수의무 결과를 종합한다. 이번 브랜치가 도입한 위반과 변경 파일 밖의 기존 위반을 분리해 사용자가 회귀 차단과 별도 이슈를 결정하게 한다 — 단, 변경 파일 안의 위반은 선행이라도 이 세션에서 고친다. 마지막 줄은 최종 판정 3단(`✅ 커밋/PR 가능` · `⚠️ 조건부` · `❌ 차단`)과 사유·후속 조치다.
 
 ### 부수의무 (branch)
 
@@ -229,7 +259,7 @@ SKILL.md 의 자동 선택 표에 더해 브랜치 검증에서만 활성화되�
 
 ## frontend
 
-`validate frontend` 의 2단계에서 쓴다. 대상: `resources/layouts/**/*.{json,g7.html}`, `templates/**/layouts/**/*.{json,g7.html}`, `{modules,plugins}/**/resources/layouts/**/*.{json,g7.html}`, `(templates|modules|plugins)/**/extensions/**/*.{json,g7.html}`(확장 주입 fragment), `templates/**/src/components/**/*.tsx`, 커스텀 핸들러, `resources/js/core/template-engine/**`. 작성 SSoT 는 `.g7.html`, 짝 `.json` 은 그 굽기(`layout:decompile` = `.g7.html` → `.json`) 산출인 런타임·편집기 계약이라 동일 취급한다 — `.g7.html` 을 볼 때는 layout-markup.md(태그·속성 3분할·구조 태그·액션 top-level)가 1차 기준이고 `layout-json.md` 는 산출 JSON 키 계약이다. 마크업이 규정 위반인지 애매하면 `php artisan layout:decompile {path}` 로 짝 `.json` 을 구운 뒤 같은 규정으로 본다(역방향 `layout:compile` 은 `.json` → `.g7.html`). 계획서 안 JSON·TSX 코드 블록은 plan-code-blocks.md.
+`validate frontend` 의 0·3단계에서 쓴다. 대상: `resources/layouts/**/*.{json,g7.html}`, `templates/**/layouts/**/*.{json,g7.html}`, `{modules,plugins}/**/resources/layouts/**/*.{json,g7.html}`, `(templates|modules|plugins)/**/extensions/**/*.{json,g7.html}`(확장 주입 fragment), `templates/**/src/components/**/*.tsx`, 커스텀 핸들러, 엔진 범위(`resources/js/core/template-engine/**` · `resources/js/core/{TemplateApp,template-engine}.ts` · `resources/js/core/{auth,identity,support}/**`). 작성 SSoT 는 `.g7.html`, 짝 `.json` 은 그 굽기(`layout:decompile` = `.g7.html` → `.json`) 산출인 런타임·편집기 계약이라 동일 취급한다 — `.g7.html` 을 볼 때는 layout-markup.md(태그·속성 3분할·구조 태그·액션 top-level)가 1차 기준이고 `layout-json.md` 는 산출 JSON 키 계약이다. 마크업이 규정 위반인지 애매하면 `php artisan layout:decompile {path}` 로 짝 `.json` 을 구운 뒤 같은 규정으로 본다(역방향 `layout:compile` 은 `.json` → `.g7.html`). 계획서 안 JSON·TSX 코드 블록은 plan-code-blocks.md.
 
 규정: layout-json.md · layout-json-features.md · layout-json-components.md · layout-json-inheritance.md · data-binding.md · data-binding-i18n.md · data-sources.md · actions.md · actions-handlers.md · state-management.md · components.md(인덱스: types/patterns/advanced) · component-props-composite.md · dark-mode.md · responsive-layout.md · modal-usage.md · layout-json-features-error.md · security.md · editors.md.
 
@@ -284,7 +314,6 @@ A 에만 있는 키와 그 B 소비자를 함께 본다(A 전용 키). 관련 �
 | DevTools 추적 | `resources/js/core/template-engine/devtools/G7DevToolsCore.ts` |
 | WYSIWYG 편집 | `resources/js/core/template-engine/wysiwyg/components/PropertyPanel/*.tsx` — 위젯 규칙은 editor-widgets.md |
 | 규정 문서 | `docs/frontend/*.md` 에 새 기능 문서화 |
-| 엔진 CHANGELOG·회귀 | 엔진 편집은 회귀 프로토콜을 먼저 돌린다(프로토콜) · 엔진 회귀는 테스트가 아니라 코드부터 본다(코드 우선) |
 
 ### 런타임 확인
 
@@ -318,11 +347,13 @@ happy path 만 다루고 다크모드·반응형·빈/로딩/에러 상태·다�
 
 ## hook
 
-`validate hook` 의 2단계에서 쓴다. 대상: `**/Listeners/**/*.php`, 훅을 발행하는 `**/Services/**`, 훅을 등록하는 `**/Providers/**`, `{modules,plugins}/_bundled/**/src/{Services,Listeners}/**`. 계획서 안 훅 코드 블록은 plan-code-blocks.md.
+`validate hook` 의 0·3단계에서 쓴다. 대상: `**/Listeners/**/*.php`, 훅을 발행하는 `**/Services/**`, 훅을 등록하는 `**/Providers/**`, `{modules,plugins}/_bundled/**/src/{Services,Listeners}/**`. 계획서 안 훅 코드 블록은 plan-code-blocks.md.
 
-규정: hooks.md(훅 타입·네이밍·리스너·큐 자동 실행·정적 캐시) · service-repository.md · plugin-development.md(격리 원칙) · Listener 데이터 접근은 backend-misc.md.
+규정: hooks.md(훅 타입·네이밍·리스너·큐 자동 실행·정적 캐시) · service-repository.md · plugin-development.md(격리 원칙) · Listener 데이터 접근은 backend-misc.md · 채널 네이밍은 broadcasting.md.
 
 ### 자동 검출 룰
+
+룰이 보지 못하는 것 — 훅 실행 순서 의도, 채널 프리픽스 컨벤션, 리스너 등록 경로 — 은 아래 표로 직접 판정한다.
 
 ### 의미 검토 항목
 
@@ -330,7 +361,9 @@ happy path 만 다루고 다크모드·반응형·빈/로딩/에러 상태·다�
 | --- | --- |
 | 네이밍 | `[vendor-module].[entity].[action]_[timing]`. `product.create`(vendor-module 누락)·`beforeCreateProduct`(형식 위반)는 오류 |
 | 실행 순서 (Service) | before → applyFilters → 실제 동작 → after. 훅 없이 바로 실행하거나 순서가 뒤집히면 오류 |
-| Listener | `HookListenerInterface` 구현 · `getHooks()` 각 항목에 `hook`·`method`·`priority` · Filter 훅은 `'type' => 'filter'` 명시 · Filter 메서드는 값을 반환(`void` 금지) |
+| Listener | `HookListenerInterface` 구현 · `public static function getSubscribedHooks(): array` 가 `'훅.이름' => ['method' => …, 'priority' => …]` 맵을 반환(인터페이스 원본 `app/Contracts/Extension/HookListenerInterface.php`) · Filter 훅은 `'type' => 'filter'` 명시 · Filter 메서드는 값을 반환(`void` 금지) · `handle(...$args): void` 구현 |
+| 리스너 등록 경로 | 코어 `app/Listeners/**` 는 `CoreServiceProvider` 가 재귀 스캔해 자동 등록한다. 모듈·플러그인 리스너는 자동 발견되지 않는다 — `module.php`/`plugin.php` 의 `getHookListeners()` 배열에 클래스가 올라 있는지 확인한다(빠지면 훅이 조용히 안 돈다). 규정: hooks.md · 모듈 등록 |
+| 채널 프리픽스 | `HookManager::broadcast()` 채널과 `getChannels()` 키가 소스별 접두사를 따르는가 — 코어 `core.*` · 모듈 `module.{identifier}.*` · 플러그인 `plugin.{identifier}.*`. 다른 소스의 접두사를 쓰면 채널명 충돌·인증 우회가 생긴다 |
 | 비동기 기본값 | Action 훅은 기본 큐 실행이고 래핑 주체는 `HookListenerRegistrar` 다(기본 비동기). 캐시 재생성 같은 인프라 부수효과를 즉시 반영해야 하면 sync 지정(sync) |
 | 정적 캐시 | 확장 update 직후 그 확장의 신규 훅은 hooks.php 캐시에서 빠진다 — 재생성 여부 확인(캐시 누락) |
 | 페이로드 | 새 훅 키·페이로드 구조·구독자 영향을 통독 메모에 적는다. 공개 훅 키/페이로드를 바꿨으면 의존 확장의 버전 제약 상향을 사용자에게 확인(의존 상향) |
@@ -349,13 +382,15 @@ HookManager::doAction('sirsoft-ecommerce.product.after_create', $result);
 // 구독 — Filter 는 type 과 반환값
 class ProductCacheListener implements HookListenerInterface
 {
-    public function getHooks(): array
+    public static function getSubscribedHooks(): array
     {
         return [
-            ['hook' => 'sirsoft-ecommerce.product.after_create', 'method' => 'clearProductCache', 'priority' => 10],
-            ['hook' => 'sirsoft-ecommerce.product.filter_list_data', 'method' => 'addCategoryInfo', 'priority' => 10, 'type' => 'filter'],
+            'sirsoft-ecommerce.product.after_create' => ['method' => 'clearProductCache', 'priority' => 10],
+            'sirsoft-ecommerce.product.filter_list_data' => ['method' => 'addCategoryInfo', 'priority' => 10, 'type' => 'filter'],
         ];
     }
+
+    public function handle(...$args): void {}
 
     public function addCategoryInfo(array $data): array
     {
@@ -370,15 +405,27 @@ class ProductCacheListener implements HookListenerInterface
 
 ### 보고 항목
 
-훅 네이밍 · 실행 순서 · Listener 인터페이스 · Filter type 필드 · Filter 반환값 · 격리/_bundled — 각각 통과/위반과 file:line.
+훅 네이밍 · 실행 순서 · Listener 인터페이스 · Filter type 필드 · Filter 반환값 · 리스너 등록 경로 · 채널 프리픽스 · 격리/_bundled · `--tag backend` 룰별 건수 — 각각 통과/위반과 file:line.
 
 ---
 
 ## i18n
 
-`validate i18n` 의 2단계에서 쓴다. 대상: `lang/{ko,en}/*.php`, `**/lang/**`, `**/resources/lang/**/*.json`, `templates/**/lang/*.json`, `lang-packs/_bundled/g7-*-{locale}/**`, 그리고 문자열을 표시하는 PHP·TSX·레이아웃 소스(`.g7.html`)와 런타임 계약(`.json`)(`{resources,templates/_bundled/*,modules/_bundled/*/resources,plugins/_bundled/*/resources}/{layouts,extensions}/**`). `.g7.html` 은 소스 SSoT 라 `$t:` 소비처로 `.json` 과 동일 취급한다. 계획서 안 코드 블록은 plan-code-blocks.md. 키 추출은 `/i18n extract`, 언어팩 동기화는 `/i18n sync`.
+`validate i18n` 의 0·3단계에서 쓴다. 대상: `lang/{ko,en}/*.php`, `**/lang/**`, `**/resources/lang/**/*.json`, `templates/**/lang/*.json`, `lang-packs/_bundled/g7-*-{locale}/**`, 그리고 문자열을 표시하는 PHP·TSX·레이아웃 소스(`.g7.html`)와 런타임 계약(`.json`)(`{resources,templates/_bundled/*,modules/_bundled/*/resources,plugins/_bundled/*/resources}/{layouts,extensions}/**`). `.g7.html` 은 소스 SSoT 라 `$t:` 소비처로 `.json` 과 동일 취급한다. 계획서 안 코드 블록은 plan-code-blocks.md. 키 추출은 `/i18n extract`, 언어팩 동기화는 `/i18n sync`.
 
 규정: database-guide.md 다국어 · validation.md · exceptions.md · module-i18n.md · data-binding-i18n.md · components-patterns.md(`G7Core.t`) · language-packs.md.
+
+파일 유형별로 우선 적용할 규정:
+
+| 파일 유형 | 우선 규정 |
+| --- | --- |
+| `lang/**/*.php`, 확장 `lang/{ko,en}/*.php` | database-guide.md 「다국어 (Backend)」 |
+| `**/resources/lang/**/*.json`(모듈·플러그인) | module-i18n.md |
+| `templates/**/lang/*.json`, 레이아웃 `$t:` | data-binding-i18n.md |
+| `app/Http/Requests/**` | validation.md(`messages()` 키) |
+| `app/Exceptions/**` | exceptions.md |
+| `**/*.tsx` | components-patterns.md(`G7Core.t`) |
+| `lang-packs/_bundled/**` | language-packs.md |
 
 ### 자동 검출 룰
 
@@ -415,7 +462,7 @@ ko 키만 추가하고 en·ja·번들 팩을 빠뜨리지 않았는가. 새 문�
 
 ## migration
 
-`validate migration` 의 2단계에서 쓴다. 대상: `database/migrations/**`, `{modules,plugins}/**/database/migrations/**`, `**/upgrades/Upgrade_*.php`, `**/seeders/**`. 계획서 안 마이그레이션 코드 블록은 plan-code-blocks.md. 설계 단계는 `/plan-migration`.
+`validate migration` 의 0·3단계에서 쓴다. 대상: `database/migrations/**`, `{modules,plugins}/**/database/migrations/**`, `**/upgrades/Upgrade_*.php`, `**/seeders/**`. 계획서 안 마이그레이션 코드 블록은 plan-code-blocks.md. 설계 단계는 `/plan-migration`.
 
 규정: database-guide.md(마이그레이션·comment 와 FK 순서·멱등성·down()·외래 키 삭제 정책·시더·로케일) · upgrade-step-guide.md · extension-update-system.md · DB 규칙 요약 backend-misc.md.
 

@@ -13,7 +13,7 @@ import { TranslationEngine } from './TranslationEngine';
 import { hasPipes, splitPipes, executePipeChain } from './PipeRegistry';
 import { classifyExpression, extractSingleBinding, isComplexExpression, LITERALS, scanBindings } from './BindingShape';
 import { RAW_PREFIX, wrapRaw, wrapRawDeep } from './rawMarkers';
-import { evaluateSafeExpression } from './SafeExpressionEvaluator';
+import { evaluateSafeExpression, isUnsafeHostValue, isExpressionSafeFunction } from './SafeExpressionEvaluator';
 import type { G7DevToolsInterface } from './G7CoreGlobals';
 
 const logger = createLogger('DataBindingEngine');
@@ -812,6 +812,18 @@ export class DataBindingEngine {
 
       // 다음 값으로 이동
       current = current[segment];
+
+      // 타입 경계 (KVE-2026-2350) — 호출 없는 경로 바인딩도 `….defaultView.localStorage.auth_token`
+      // 처럼 호스트 객체를 거쳐 값을 읽을 수 있다. 평가기(SafeExpressionEvaluator)와 같은 판정으로
+      // 호스트 capability 객체·허용목록 밖 네이티브 함수에 닿으면 기본값으로 끊는다.
+      if (
+        isUnsafeHostValue(current) ||
+        (typeof current === 'function' && !isExpressionSafeFunction(current))
+      ) {
+        logger.warn(`resolvePath: 호스트 객체 경로는 해석하지 않습니다 — ${path}`);
+        return options.defaultValue;
+      }
+
       // 디버깅 로그
       if (path === '_global.toasts') {
         logger.log(`[DataBindingEngine] segment: ${segment}, current:`, current);
@@ -1357,6 +1369,13 @@ export class DataBindingEngine {
 
           // 다음 레벨로 이동
           current = current[key];
+
+          // 타입 경계 (KVE-2026-2350) — 평가기는 $get 의 최종 반환값만 검사하므로, 경로 도중의 호스트
+          // 객체(`…ownerDocument.defaultView.localStorage`)를 건너 문자열(토큰)을 꺼내지 못하게 여기서 끊는다.
+          // resolvePath 와 같은 판정이다.
+          if (isUnsafeHostValue(current) || (typeof current === 'function' && !isExpressionSafeFunction(current))) {
+            return fallback;
+          }
         }
 
         // 최종 값이 null/undefined이면 폴백 반환

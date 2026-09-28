@@ -10,15 +10,15 @@
 | 훅 이름 | 유형 | 설명 | 발행 위치 |
 |---|---|---|---|
 | `core.module_settings.after_save` | action | — | `src/Http/Controllers/Admin/BoardSettingsController.php:158` |
-| `sirsoft-board.attachment.after_delete` | action | — | `src/Services/AttachmentService.php:505` |
-| `sirsoft-board.attachment.after_download` | action | — | `src/Services/AttachmentService.php:844` |
-| `sirsoft-board.attachment.after_link` | action | — | `src/Services/AttachmentService.php:225` 외 1곳 |
-| `sirsoft-board.attachment.after_reorder` | action | — | `src/Services/AttachmentService.php:693` |
-| `sirsoft-board.attachment.after_upload` | action | — | `src/Services/AttachmentService.php:200` |
-| `sirsoft-board.attachment.before_delete` | action | — | `src/Services/AttachmentService.php:484` |
-| `sirsoft-board.attachment.before_reorder` | action | — | `src/Services/AttachmentService.php:688` |
-| `sirsoft-board.attachment.before_upload` | action | — | `src/Services/AttachmentService.php:125` |
-| `sirsoft-board.attachment.filter_upload_file` | filter | — | `src/Services/AttachmentService.php:128` |
+| `sirsoft-board.attachment.after_delete` | action | — | `src/Services/AttachmentService.php:506` |
+| `sirsoft-board.attachment.after_download` | action | — | `src/Services/AttachmentService.php:845` |
+| `sirsoft-board.attachment.after_link` | action | — | `src/Services/AttachmentService.php:226` 외 1곳 |
+| `sirsoft-board.attachment.after_reorder` | action | — | `src/Services/AttachmentService.php:694` |
+| `sirsoft-board.attachment.after_upload` | action | — | `src/Services/AttachmentService.php:201` |
+| `sirsoft-board.attachment.before_delete` | action | — | `src/Services/AttachmentService.php:485` |
+| `sirsoft-board.attachment.before_reorder` | action | — | `src/Services/AttachmentService.php:689` |
+| `sirsoft-board.attachment.before_upload` | action | — | `src/Services/AttachmentService.php:126` |
+| `sirsoft-board.attachment.filter_upload_file` | filter | — | `src/Services/AttachmentService.php:129` |
 | `sirsoft-board.attachment.reorder_validation_rules` | filter | — | `src/Http/Requests/ReorderAttachmentsRequest.php:35` |
 | `sirsoft-board.attachment.upload_validation_rules` | filter | — | `src/Http/Requests/UploadAttachmentRequest.php:79` |
 | `sirsoft-board.author_ip.after_prune` | action | — | `src/Privacy/BoardIpRetentionHandler.php:135` |
@@ -163,9 +163,11 @@
 | `sirsoft-board.board.after_add_to_menu` | action (미선언) | `BoardActivityLogListener` | `handleBoardAfterAddToMenu` | 20 |
 | `sirsoft-board.board.after_create` | action (미선언) | `BoardActivityLogListener` | `handleBoardAfterCreate` | 20 |
 | `sirsoft-board.board.after_delete` | action (미선언) | `BoardActivityLogListener` | `handleBoardAfterDelete` | 20 |
+| `sirsoft-board.board.after_delete` | action (미선언) | `SeoBoardCacheListener` | `onBoardDelete` | 20 |
 | `sirsoft-board.board.after_remove_from_menu` | action (미선언) | `BoardActivityLogListener` | `handleBoardAfterRemoveFromMenu` | 20 |
 | `sirsoft-board.board.after_update` | action (미선언) | `BoardActivityLogListener` | `handleBoardAfterUpdate` | 20 |
 | `sirsoft-board.board.after_update` | action (미선언) | `SeoBoardCacheListener` | `onBoardUpdate` | 20 |
+| `sirsoft-board.board.posts.before_force_delete` | action (미선언) | `SeoBoardCacheListener` | `onBoardPostsForceDelete` | 20 |
 | `sirsoft-board.board_type.after_create` | action (미선언) | `BoardActivityLogListener` | `handleBoardTypeAfterCreate` | 20 |
 | `sirsoft-board.board_type.after_delete` | action (미선언) | `BoardActivityLogListener` | `handleBoardTypeAfterDelete` | 20 |
 | `sirsoft-board.board_type.after_update` | action (미선언) | `BoardActivityLogListener` | `handleBoardTypeAfterUpdate` | 20 |
@@ -231,6 +233,12 @@
 board 글 본문(HTML 에디터)에 삽입된 이미지가 삭제 시 함께 정리되도록 참조 소스 목록에 게시글을
 등록하는 자리입니다. `sirsoft-ecommerce.inquiry.*` 8개는 이커머스 "상품 문의"가 board 의
 Post/Comment CRUD 를 그대로 재사용하되 저장 로직만 이커머스가 대신 처리하는 위임 지점입니다.
+`SeoBoardCacheListener` 가 `board.after_update`·`board.after_delete`·`board.posts.before_force_delete`
+를 구독하는 것은 사이트맵 색인이 게시판(부모)과 게시글(자식)의 생명주기를 함께 따르게 하기
+위해서입니다 — 게시판을 비활성화·삭제하면 게시글 URL 도 빠지고, 다시 활성화하면 공개 글만
+1,000건 묶음(`SitemapIndexer::indexResources`)으로 재색인합니다. 글마다 색인하면 공개 글이 수만 건인
+게시판에서 큐 작업 시간 제한을 넘겨 앞쪽 글만 색인된 채 실패합니다. 삭제 훅 둘은 삭제 트랜잭션과
+원자적이도록 동기(sync) 실행입니다.
 <!-- @intent END -->
 
 ## 훅 리스너
@@ -252,7 +260,7 @@ Post/Comment CRUD 를 그대로 재사용하되 저장 로직만 이커머스가
 | `PostReplySyncListener` | 3개 | 명시 등록 | ✅ | `src/Listeners/PostReplySyncListener.php` |
 | `PrivacyRetentionHandlerListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/PrivacyRetentionHandlerListener.php` |
 | `SearchPostsListener` | 3개 | 명시 등록 | ✅ | `src/Listeners/SearchPostsListener.php` |
-| `SeoBoardCacheListener` | 4개 | 명시 등록 | ✅ | `src/Listeners/SeoBoardCacheListener.php` |
+| `SeoBoardCacheListener` | 6개 | 명시 등록 | ✅ | `src/Listeners/SeoBoardCacheListener.php` |
 | `SeoBoardSettingsCacheListener` | 2개 | 명시 등록 | ✅ | `src/Listeners/SeoBoardSettingsCacheListener.php` |
 | `UserNotificationSettingsListener` | 7개 | 명시 등록 | ✅ | `src/Listeners/UserNotificationSettingsListener.php` |
 | `UserReactionInfoListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/UserReactionInfoListener.php` |

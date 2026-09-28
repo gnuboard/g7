@@ -4,6 +4,7 @@ namespace Modules\Sirsoft\Board\Http\Resources;
 
 use App\Enums\PermissionType;
 use App\Enums\UserStatus;
+use App\Helpers\InlineMediaPolicy;
 use App\Http\Resources\BaseApiResource;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -212,7 +213,7 @@ class PostResource extends BaseApiResource
             'has_attachment' => ((int) ($this->attachments_count ?? 0)) > 0,
             // 목록의 반응 표시는 «몇 명이 눌렀나» 한 숫자면 된다 — 유형별로 나눠 보여 줄 자리가
             // 없다. 캐시 컬럼(board_posts.reaction_counts)의 합이라 목록에서 COUNT 를 돌리지 않는다.
-            // 반응을 끈 게시판에서는 키 자체를 싣지 않는다(PO 결정 2026-09-16) — 캐시 컬럼을
+            // 반응을 끈 게시판에서는 키 자체를 싣지 않는다 — 캐시 컬럼을
             // 통째로 더하던 기존 식은 비활성 유형의 잔여 카운트까지 합산해 상세(0)와 어긋났다.
             ...$this->getReactionTotalForList(),
 
@@ -314,7 +315,7 @@ class PostResource extends BaseApiResource
     {
         $attachments = is_array($this->attachments) ? collect($this->attachments) : $this->attachments;
         $firstImage = $attachments
-            ?->filter(fn ($attachment) => str_starts_with($attachment?->mime_type ?? '', 'image/'))
+            ?->filter(fn ($attachment) => InlineMediaPolicy::isInlineImage($attachment?->mime_type))
             ?->first();
 
         return $firstImage?->preview_url ?? null;
@@ -542,7 +543,7 @@ class PostResource extends BaseApiResource
      * 목록용 반응 합계를 스프레드 가능한 형태로 반환합니다.
      *
      * 반응을 끈 게시판에서는 **빈 배열**을 반환해 `reaction_total` 키 자체가 응답에
-     * 실리지 않게 한다(PO 결정 2026-09-16 — 0 으로 두지 않고 키를 제거). 켜져 있으면
+     * 실리지 않게 한다(0 으로 두지 않고 키를 제거). 켜져 있으면
      * 게시판이 켠 활성 유형의 카운트만 더한다 — 유형을 비활성으로 돌린 뒤에도 캐시
      * 컬럼에는 옛 카운트가 남아 있어, 통째로 더하면 상세(활성 유형만 집계)와 어긋난다.
      *
@@ -582,7 +583,7 @@ class PostResource extends BaseApiResource
     private function getReactionCountsForResponse(): \stdClass
     {
         // 반응을 끈 게시판은 카운트를 통째로 비운다 — board 관계 로드 여부만 보던
-        // 기존 판정은 «기능은 껐는데 개수는 그대로 나가는» 누출이었다(PO 지시 2026-09-16).
+        // 기존 판정은 «기능은 껐는데 개수는 그대로 나가는» 누출이었다.
         if (! $this->relationLoaded('board') || ! BoardResource::reactionsEnabled($this->board)) {
             return new \stdClass;
         }

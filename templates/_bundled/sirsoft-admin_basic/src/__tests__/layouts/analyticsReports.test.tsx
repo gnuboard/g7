@@ -783,4 +783,3 @@ describe('검색어 탭 안내', () => {
     expect(shown(undefined), '기본 탭(유형)에서는 숨는다').toBe(false);
   });
 });
-

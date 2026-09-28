@@ -2,6 +2,7 @@
 
 namespace Modules\Sirsoft\Page\Models;
 
+use App\Helpers\InlineMediaPolicy;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -15,6 +16,8 @@ class PageAttachment extends Model
 
     /**
      * 팩토리 클래스를 반환합니다.
+     *
+     * @return PageAttachmentFactory
      */
     protected static function newFactory(): PageAttachmentFactory
     {
@@ -30,6 +33,8 @@ class PageAttachment extends Model
 
     /**
      * 모델 부트
+     *
+     * @return void
      */
     protected static function boot(): void
     {
@@ -113,13 +118,15 @@ class PageAttachment extends Model
     }
 
     /**
-     * 이미지 파일 여부를 확인합니다.
+     * 인라인 표시 가능한 이미지 파일 여부를 확인합니다.
      *
-     * @return bool 이미지 여부
+     * 스크립트를 품을 수 있는 SVG 는 이미지가 아닌 파일로 취급한다 (InlineMediaPolicy — KVE-2026-2366).
+     *
+     * @return bool 래스터 이미지 여부
      */
     public function isImage(): bool
     {
-        return str_starts_with($this->mime_type, 'image/');
+        return InlineMediaPolicy::isInlineImage($this->mime_type);
     }
 
     /**

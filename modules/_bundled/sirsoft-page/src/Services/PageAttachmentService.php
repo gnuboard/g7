@@ -4,6 +4,7 @@ namespace Modules\Sirsoft\Page\Services;
 
 use App\Contracts\Extension\StorageInterface;
 use App\Extension\HookManager;
+use App\Helpers\InlineMediaPolicy;
 use App\Helpers\PermissionHelper;
 use App\Support\ImageResizer;
 use Illuminate\Database\Eloquent\Collection;
@@ -514,7 +515,7 @@ class PageAttachmentService
 
         $encodedFilename = rawurlencode($attachment->original_filename);
 
-        return $this->storage->response(
+        $response = $this->storage->response(
             'attachments',
             $attachment->path,
             $attachment->original_filename,
@@ -523,6 +524,13 @@ class PageAttachmentService
                 'Content-Disposition' => "attachment; filename=\"{$attachment->original_filename}\"; filename*=UTF-8''{$encodedFilename}",
             ]
         );
+
+        // nosniff — 다운로드 응답도 브라우저가 내용을 추측해 렌더하지 않도록 (KVE-2026-2366)
+        if ($response) {
+            InlineMediaPolicy::harden($response, $attachment->mime_type, $attachment->original_filename);
+        }
+
+        return $response;
     }
 
     /**
@@ -541,7 +549,7 @@ class PageAttachmentService
             return null;
         }
 
-        return $this->storage->response(
+        $response = $this->storage->response(
             'attachments',
             $attachment->path,
             $attachment->original_filename,
@@ -550,6 +558,13 @@ class PageAttachmentService
                 'Content-Disposition' => 'inline',
             ]
         );
+
+        // 인라인은 래스터 이미지만 — isImage() 가 이미 거르지만 서빙 응답에도 nosniff 를 건다 (KVE-2026-2366)
+        if ($response) {
+            InlineMediaPolicy::harden($response, $attachment->mime_type, $attachment->original_filename);
+        }
+
+        return $response;
     }
 
     /**

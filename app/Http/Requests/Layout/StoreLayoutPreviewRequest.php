@@ -7,6 +7,7 @@ use App\Contracts\Repositories\TemplateRepositoryInterface;
 use App\Enums\LayoutSourceType;
 use App\Extension\HookManager;
 use App\Http\Requests\Layout\Concerns\CompilesMarkupContent;
+use App\Rules\LayoutContentGate;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
@@ -64,7 +65,10 @@ class StoreLayoutPreviewRequest extends FormRequest
         $rules = [
             // 본문 형식 — `json`(기본) | `markup`(`.g7.html` 문자열, 검증 전 컴파일)
             'format' => ['nullable', 'string', 'in:json,markup'],
-            'content' => ['required', 'array'],
+            // 미리보기도 content 를 저장해 미리보기 URL 로 렌더하므로 저장 경로와 같은 보안 게이트를 거친다.
+            // 빠지면 두 규칙 없이 저장되는 우회로가 된다(KVE-2026-2350). 마크업은 prepareForValidation 에서
+            // 이미 배열로 컴파일돼 있으므로 컴파일 산출물이 그대로 검사된다.
+            'content' => ['required', 'array', ...LayoutContentGate::rules()],
         ];
 
         // 모듈/플러그인이 validation rules 를 동적으로 추가할 수 있도록 훅 제공 (확장 미리보기 요청과 같은 규약)

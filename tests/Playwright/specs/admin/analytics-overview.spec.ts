@@ -171,4 +171,3 @@ test.describe('방문자 통계 — 빈 화면과 방문자 상세 (#682 S4 라�
     expect(text, '실행 주체 코드가 그대로 보이지 않는다').not.toMatch(/\b(scheduled|manual)\b/);
   });
 });
-

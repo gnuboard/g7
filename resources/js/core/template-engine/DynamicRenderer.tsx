@@ -41,8 +41,15 @@ import { useResponsive } from './ResponsiveContext';
 import { createLogger } from '../utils/Logger';
 import { shallowObjectEqual } from '../hooks/useControllableState';
 import type { G7DevToolsInterface } from './G7CoreGlobals';
+import { isDangerousScheme, isScriptScheme } from '../support/navPolicy';
 
 const logger = createLogger('DynamicRenderer');
+
+/** 링크 대상 prop — 실행 스킴이면 `#` 로 무해화 (링크 모양은 유지) */
+const HREF_URL_PROPS = new Set(['href', 'xlinkHref', 'xlink:href']);
+
+/** 폼 제출·미디어 대상 prop — 실행 스킴이면 속성 자체를 제거 */
+const NAV_URL_PROPS = new Set(['formAction', 'formaction', 'action', 'poster']);
 
 /**
  * G7Core.devTools 인터페이스 가져오기
@@ -2489,6 +2496,28 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
       // React에서 style prop은 객체여야 하므로, CSS 문자열을 자동 변환
       if (typeof props.style === 'string') {
         props.style = parseCSSStringToStyleObject(props.style);
+      }
+
+      // 2.6. URL 속성의 실행 스킴 무해화 (KVE-2026-2348)
+      // 바인딩 결과가 `javascript:` 등이면 클릭 한 번으로 현재 origin 에서 코드가 돈다
+      // (`<a href="{{_local.redirect_url}}">` ← query). origin 은 제한하지 않는다 —
+      // 정상 외부 링크·mailto·tel 은 그대로 둔다. @since engine-v1.73.0
+      for (const key of Object.keys(props)) {
+        const value = props[key];
+        if (typeof value !== 'string') {
+          continue;
+        }
+        if (HREF_URL_PROPS.has(key) && isDangerousScheme(value)) {
+          logger.warn(`실행 스킴 URL 을 무해화합니다 (컴포넌트: ${effectiveComponentDef.id}, prop: ${key})`);
+          props[key] = '#';
+        } else if (NAV_URL_PROPS.has(key) && isDangerousScheme(value)) {
+          logger.warn(`실행 스킴 URL 을 제거합니다 (컴포넌트: ${effectiveComponentDef.id}, prop: ${key})`);
+          props[key] = undefined;
+        } else if (key === 'src' && isScriptScheme(value)) {
+          // src 의 data: 는 이미지 인라인에 정당하게 쓰이므로 스크립트 스킴만 막는다
+          logger.warn(`실행 스킴 src 를 제거합니다 (컴포넌트: ${effectiveComponentDef.id})`);
+          props[key] = undefined;
+        }
       }
 
       // 3. 액션 바인딩 (공유 유틸리티 함수 사용)

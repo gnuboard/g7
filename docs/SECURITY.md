@@ -237,6 +237,18 @@ G7은 레이아웃 JSON 보안을 위해 **10개의 Custom Validation Rule**을 
 `responsive` 와 최상위 `init_actions`/`modals`/`named_actions`/`errorHandling` 내 모든 문자열 값을 재귀적으로 스캔.
 `style` 은 스캔 대상이 아닙니다 — 배경 이미지(`backgroundImage`)가 절대 URL 이어도 통과하는 이유입니다.
 
+**실행 스킴은 트리 전체**: `javascript:`·`vbscript:`·`data:`·`file:` 은 위 범위와 별개로 레이아웃 JSON **모든 키**
+(최상위 `slots`·`children`·`computed`·`state`·`data_sources` 포함)에서 차단합니다. 값이 나중에 어느 자리로 흘러가도
+곧 스크립트 실행이라 정당한 용례가 없기 때문입니다. `{{ ... }}` 표현식 안의 문자열 리터럴(`{{ ok ? '/x' : 'javascript:…' }}`)도
+검사 대상이며, 스킴 비교는 브라우저와 같이 선행 제어문자·tab·개행을 제거한 뒤 합니다(`java\tscript:` 도 차단).
+반면 `http(s)://` 외부 주소는 위 sink 범위에서만 막습니다 — 데이터 계층·안내 문구의 정상 외부 링크(문서 링크·입력 예시)를
+깨지 않기 위해서입니다. 단 **액션의 이동·요청 대상**(`target`·`params.path`·`params.url`)은 액션이 트리 어디에 있든
+(최상위 `slots`·확장 `injections`·`itemTemplate` 포함) 실행되는 sink 이므로 위치와 무관하게 외부 주소·`//host` 를 차단합니다.
+표현식으로 조립한 대상은 정적 검사로 다 잡을 수 없으므로, 인증 토큰 유출은 엔진이 막습니다 — `apiCall` 은
+`Authorization`·`X-XSRF-TOKEN` 을 동일 출처 대상에만 싣습니다(데이터 소스의 ApiClient 와 같은 원칙).
+교차 출처 응답의 428(본인인증 요구)·401(토큰 갱신)은 따르지 않으며, 번들 템플릿이 직접 요청하는 컴포넌트·본인인증 시작도
+`G7Core.api.isSameOriginUrl` 로 동일 출처 대상에만 토큰을 싣습니다.
+
 ### 5. ValidParentLayout
 
 **파일**: `app/Rules/ValidParentLayout.php`
@@ -334,7 +346,7 @@ G7은 레이아웃 CRUD 작업별로 **7개 FormRequest**를 운용합니다. �
 | **UpdateLayoutContentRequest** | 콘텐츠만 수정 | ✅ | | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | **StoreLayoutInheritanceRequest** | 상속 레이아웃 생성 | | | | | ✅ | ✅ | ✅ | |
 | **UpdateLayoutInheritanceRequest** | 상속 레이아웃 수정 | | | | | ✅ | ✅ | ✅ | |
-| **StoreLayoutPreviewRequest** | 미리보기 | | | | | | | | |
+| **StoreLayoutPreviewRequest** | 미리보기 | | | | ✅ | | | | |
 | **GetLayoutRequest** | 레이아웃 조회 | | | | | | | | |
 
 **범례**: VLS=ValidLayoutStructure, CE=ComponentExists, WE=WhitelistedEndpoint, NEU=NoExternalUrls, VPL=ValidParentLayout, VSS=ValidSlotStructure, VDM=ValidDataSourceMerge, VPS=ValidPermissionStructure
@@ -345,6 +357,11 @@ G7은 레이아웃 CRUD 작업별로 **7개 FormRequest**를 운용합니다. �
 - **StoreLayoutRequest / UpdateLayoutRequest**: 기본 4개 Rule (구조, 컴포넌트, 엔드포인트, URL)
 - **UpdateLayoutContentRequest**: 가장 엄격 — 상속 관련 4개 Rule 추가 (총 8개)
 - **StoreLayoutInheritanceRequest / UpdateLayoutInheritanceRequest**: 상속 전용 3개 Rule
+- **미리보기·마크업 변환도 저장과 같은 보안 게이트**: 미리보기는 content 를 저장해 미리보기 주소로 렌더하므로
+  `NoExternalUrls`·`SafeLayoutExpressions` 를 저장 경로와 똑같이 거칩니다(확장 조각 미리보기 포함). 코드 편집기의
+  마크업 변환(`markup-compile`)은 저장하지 않지만 그 결과가 미리보기·저장에 그대로 쓰이므로 컴파일 산출물에 같은
+  두 규칙을 적용해 422 로 알립니다. 한 경로만 빠져도 그 경로가 우회로가 됩니다.
+- 강화 이전에 저장된 레이아웃은 `php artisan layout:audit-expressions` 로 다시 훑어 위반 위치를 확인합니다(보고 전용).
 - **StoreLayoutPreviewRequest**: 최소 검증 (`content: required, array`)
 - **GetLayoutRequest**: 조회 전용 (보안 Rule 없음)
 

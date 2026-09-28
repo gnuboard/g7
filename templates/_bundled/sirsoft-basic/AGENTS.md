@@ -171,9 +171,11 @@ API 까지만 소유하고, 그 API 를 소비해 실제로 그리는 것은 이
 | 클레임 공유 partial 에서 `_global.currentUser` 참조 | 인증 차이는 셸(데이터소스 endpoint·헤더)이 흡수하고, partial 은 `claim`·`claims`·`claimable`·`estimate` 컨텍스트만 읽는다 | 회원·비회원이 같은 조각을 쓰므로 한쪽에서만 값이 비어 조용히 깨진다 |
 | 신청서 요약 금액을 화면에서 계산 | 서버 `POST claims/preview` 응답(`estimate`)을 표시만 | 배송비·차액·청구 방식 규칙은 서버가 소유한다 — 화면 계산은 접수 시 서버 값과 어긋난다 |
 | `onSuccess`·시퀀스 안에서 방금 저장한 상태(`_global.*`/`_local.*`)를 형제 액션의 `if`·값으로 재독 | 그 자리에서는 `{{response.*}}` 만 읽는다 | 그 시점 컨텍스트는 아직 갱신 전이라 stale 값으로 조용히 분기한다 |
+| 컴포넌트·핸들러가 `fetch` 로 직접 요청하며 대상 출처를 보지 않고 토큰(Bearer·XSRF)을 싣기 | `src/support/sameOriginRequest.ts` 의 `isSameOriginRequest(url)` 이 true 일 때만 토큰을 싣는다 | 주소가 레이아웃 prop·응답 본문이면 레이아웃 편집 권한만으로 회원 토큰을 외부로 보낼 수 있다(KVE-2026-2350) |
 | 첨부 임시 키(`tempKey`)를 `'temp_' + Date.now() + …` 같은 임의 문자열로 만들기 | `{{$uuid()}}` 로 발급 | 게시판·페이지·이커머스 모듈은 UUID 형식의 임시 키만 받는다 — 그 밖의 값은 422 로 거부되어 첨부 업로드와 글 저장이 실패한다 (임시 키가 저장 경로에 들어가 경로 조작에 쓰였던 결함의 재발 방지) |
 | 사용자 화면에서 변환표(`IconTypes.ts` 의 `iconNameMap`)에 없는 Lucide 식 이름(`log-out`·`alert-circle`·`loader-2` 등) | Font Awesome 6.4.0 이름(`right-from-bracket`·`circle-exclamation`·`spinner`) 또는 변환표에 있는 별칭 | 변환표에 없는 이름은 `fa-{이름}` 로 그대로 붙어 **빈칸**으로 그려진다. 관리자 화면에 들어가는 조각은 변환표가 없다. 가드: `tests/Unit/Extension/FontIconNameTest.php` |
 | `extension_point` 의 콜백 액션을 `props` 에 선언 | 형제 키 `callbacks` 에 둔다 (`"callbacks": { "onAddressSelect": { … } }`) | 엔진은 `props` 를 **평가해** `extensionPointProps` 로, `callbacks` 를 **그대로** `extensionPointCallbacks` 로 넘기는데 주입된 컴포넌트가 읽는 자리는 후자다. `props` 에 두면 액션이 도달하지 않고, 도달해도 `{{$event.*}}` 가 `$event` 이전에 평가돼 빈 값으로 굳는다 — 확장점 버튼은 정상으로 보이고 자기 일까지 하는데 고른 값만 폼에 안 돌아와, 그 필드가 필수면 저장에 영영 도달하지 못한다 |
+| 색 배경 유틸(`bg-blue-500` 등)을 `dark:` 짝 없이 쓰기 | 한 단계 밝은 짝을 함께 둔다(`bg-blue-600 dark:bg-blue-500`, `bg-blue-500 dark:bg-blue-400`) | 다크 모드에서 밝은 화면 색이 그대로 떠 배지·아바타 원만 튄다. 가드: audit `darkmode-class-pair` |
 <!-- @intent END -->
 
 ## 7. 테스트 실행
@@ -182,9 +184,9 @@ API 까지만 소유하고, 그 API 를 소비해 실제로 그리는 것은 이
 | 종류 | 개수 | 위치 |
 |---|---|---|
 | PHPUnit | 0개 | — |
-| Vitest | 187개 | `vitest.config.ts` |
+| Vitest | 190개 | `vitest.config.ts` |
 | Playwright | 9개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 13개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 14개 | `tests/scenarios` |
 
 ```bash
 # Vitest (확장 디렉토리에서) (PowerShell)

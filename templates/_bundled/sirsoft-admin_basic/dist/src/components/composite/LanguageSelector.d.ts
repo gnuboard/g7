@@ -8,7 +8,7 @@ export interface LanguageSelectorProps {
     availableLocales?: string[];
     /** 언어 설정 텍스트 */
     languageText?: string;
-    /** 언어 변경 API 엔드포인트 */
+    /** 언어 변경 API 엔드포인트. 동일 출처일 때만 토큰을 싣는다 */
     apiEndpoint?: string;
     /** 언어 변경 후 콜백 */
     onLanguageChange?: (locale: string) => void;

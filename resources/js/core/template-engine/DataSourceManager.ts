@@ -1070,19 +1070,27 @@ export class DataSourceManager {
   /**
    * 요청이 실패했을 때 화면에 남길 데이터를 고릅니다.
    *
+   * 권한 오류(401·403)는 마지막 값을 지키지 않고 지운다 — 보관 값은 계정을 가리지 않으므로, 같은
+   * 브라우저의 다른 탭에서 권한이 적은 계정으로 로그인하면 이전 계정이 보던 응답이 그대로 남았다
+   * (engine-v1.73.0). 서버 오류·네트워크 실패 때의 유지는 그대로다.
+   *
    * @param source 데이터 소스
    * @param routeParams 라우트 파라미터
    * @param queryParams 쿼리 파라미터
+   * @param status 실패 응답의 HTTP 상태 코드
    * @returns 남길 데이터(`{ data }`), 남길 것이 없으면 null
    */
   private dataAfterFailure(
     source: DataSource,
     routeParams?: Record<string, any>,
     queryParams?: Record<string, any>,
+    status?: number,
   ): { data: any } | null {
     const key = this.lastDataKey(source, routeParams, queryParams);
 
-    if (DataSourceManager.lastSuccessful.has(key)) {
+    if (status === 401 || status === 403) {
+      DataSourceManager.lastSuccessful.delete(key);
+    } else if (DataSourceManager.lastSuccessful.has(key)) {
       return { data: DataSourceManager.lastSuccessful.get(key) };
     }
 
@@ -1201,8 +1209,8 @@ export class DataSourceManager {
             }
           }
 
-          // 마지막으로 성공한 값이 있으면 그 값을 지키고, 없으면 fallback 으로 첫 그림을 그린다.
-          const kept = this.dataAfterFailure(source, routeParams, queryParams);
+          // 마지막으로 성공한 값이 있으면 그 값을 지키고(권한 오류면 지움), 없으면 fallback 으로 첫 그림을 그린다.
+          const kept = this.dataAfterFailure(source, routeParams, queryParams, errorCode);
           if (kept !== null) {
             results[source.id] = kept.data;
             this.dataCache.set(source.id, { data: kept.data, timestamp: Date.now() });
@@ -1395,8 +1403,8 @@ export class DataSourceManager {
             }
           }
 
-          // 마지막으로 성공한 값이 있으면 그 값을 지키고, 없으면 fallback 으로 첫 그림을 그린다.
-          const kept = this.dataAfterFailure(source, routeParams, queryParams);
+          // 마지막으로 성공한 값이 있으면 그 값을 지키고(권한 오류면 지움), 없으면 fallback 으로 첫 그림을 그린다.
+          const kept = this.dataAfterFailure(source, routeParams, queryParams, errorCode);
           if (kept !== null) {
             this.dataCache.set(source.id, { data: kept.data, timestamp: Date.now() });
             logger.log(`Keeping last data for ${source.id}`);
@@ -1540,8 +1548,8 @@ export class DataSourceManager {
             }
           }
 
-          // 마지막으로 성공한 값이 있으면 그 값을 지키고, 없으면 fallback 으로 첫 그림을 그린다.
-          const kept = this.dataAfterFailure(source, routeParams, queryParams);
+          // 마지막으로 성공한 값이 있으면 그 값을 지키고(권한 오류면 지움), 없으면 fallback 으로 첫 그림을 그린다.
+          const kept = this.dataAfterFailure(source, routeParams, queryParams, errorCode);
           if (kept !== null) {
             this.dataCache.set(source.id, { data: kept.data, timestamp: Date.now() });
             logger.log(`Keeping last data for ${source.id}`);

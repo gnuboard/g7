@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Config;
 use Mockery;
 use Modules\Sirsoft\Board\Enums\PostStatus;
 use Modules\Sirsoft\Board\Listeners\SeoBoardCacheListener;
+use Modules\Sirsoft\Board\Models\Board;
 use Modules\Sirsoft\Board\Tests\ModuleTestCase;
 
 /**
@@ -24,6 +25,11 @@ class BoardSitemapIndexTest extends ModuleTestCase
 {
     private SeoBoardCacheListener $listener;
 
+    /**
+     * 리스너 테스트 환경(캐시 spy·잡 fake·활성 게시판 픽스처)을 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -33,9 +39,26 @@ class BoardSitemapIndexTest extends ModuleTestCase
         $this->app->instance(SeoCacheRegenerator::class, Mockery::spy(SeoCacheRegenerator::class));
         Bus::fake([GenerateSitemapJob::class]);
 
+        // 게시글 색인은 부모 게시판이 존재하고 활성일 때만 성립한다 (KVE-2026-2133) — 활성 게시판 픽스처
+        Board::updateOrCreate(
+            ['slug' => 'notice'],
+            [
+                'name' => ['ko' => '공지사항', 'en' => 'Notice'],
+                'is_active' => true,
+                'use_file_upload' => true,
+                'secret_mode' => 'enabled',
+                'blocked_keywords' => [],
+            ]
+        );
+
         $this->listener = new SeoBoardCacheListener;
     }
 
+    /**
+     * Mockery 기대값을 정리합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         Mockery::close();
@@ -44,6 +67,12 @@ class BoardSitemapIndexTest extends ModuleTestCase
 
     /**
      * 게시(Published)·비밀글 아님 게시글 생성 시 색인(append)된다.
+     *
+     * @scenario lifecycle=post_hook
+     *
+     * @effects public_post_is_indexed
+     *
+     * @return void 반환값 없음
      */
     public function test_published_public_post_is_indexed(): void
     {
@@ -59,6 +88,12 @@ class BoardSitemapIndexTest extends ModuleTestCase
 
     /**
      * 비밀글은 색인되지 않는다(전시 상태여도).
+     *
+     * @scenario lifecycle=post_hook
+     *
+     * @effects secret_post_is_not_indexed
+     *
+     * @return void 반환값 없음
      */
     public function test_secret_post_is_not_indexed(): void
     {
@@ -71,6 +106,12 @@ class BoardSitemapIndexTest extends ModuleTestCase
 
     /**
      * 블라인드 처리(수정)되면 색인이 제거된다.
+     *
+     * @scenario lifecycle=post_hook
+     *
+     * @effects blinded_post_is_deindexed
+     *
+     * @return void 반환값 없음
      */
     public function test_blinded_post_update_removes_index(): void
     {
@@ -90,6 +131,12 @@ class BoardSitemapIndexTest extends ModuleTestCase
 
     /**
      * 게시글 삭제 시 색인이 제거된다.
+     *
+     * @scenario lifecycle=post_hook
+     *
+     * @effects deleted_post_is_deindexed
+     *
+     * @return void 반환값 없음
      */
     public function test_post_delete_removes_index(): void
     {
@@ -106,6 +153,12 @@ class BoardSitemapIndexTest extends ModuleTestCase
 
     /**
      * 활성/비활성 게시판 수정이 색인을 토글한다.
+     *
+     * @scenario lifecycle=deactivate
+     *
+     * @effects board_row_follows_active_state
+     *
+     * @return void 반환값 없음
      */
     public function test_board_visibility_toggles_index(): void
     {
@@ -122,6 +175,12 @@ class BoardSitemapIndexTest extends ModuleTestCase
      * 'SEO 제공 페이지(게시글 상세)' 토글이 OFF 면 공개 게시글이어도 색인이 제거된다.
      *
      * 리스너의 공개상태 판정은 게시 상태·비밀글 여부 AND 토글을 함께 본다(기여자 getUrlsLazy 와 일치).
+     *
+     * @scenario lifecycle=post_hook
+     *
+     * @effects post_detail_toggle_off_deindexes
+     *
+     * @return void 반환값 없음
      */
     public function test_post_detail_toggle_off_removes_index_even_when_public(): void
     {
