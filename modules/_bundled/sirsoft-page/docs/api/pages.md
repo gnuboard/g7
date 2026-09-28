@@ -1204,7 +1204,7 @@ Authorization: Bearer {YOUR_TOKEN}   (optional.sanctum: 비회원은 헤더 생�
 
 **응답 필드** (`data` 내부)
 
-_이 엔드포인트는 JSON 봉투를 반환하지 않습니다. 성공 시 이미지 바이트를 인라인으로 내려주는 스트리밍 응답(`StreamedResponse`, `Content-Disposition: inline`)이며, 실패 시에만 JSON 오류 봉투를 반환합니다._
+_이 엔드포인트는 JSON 봉투를 반환하지 않습니다. 성공 시 이미지 바이트를 인라인으로 내려주는 스트리밍 응답(`StreamedResponse`, `Content-Disposition: inline`, `X-Content-Type-Options: nosniff`)이며, 인라인 미리보기는 래스터 이미지(JPEG·PNG·GIF·WebP 등)만 대상입니다(SVG 는 이미지로 취급하지 않음 — KVE-2026-2366). 실패 시에만 JSON 오류 봉투를 반환합니다._
 
 **응답 예시**
 
@@ -1212,6 +1212,7 @@ _이 엔드포인트는 JSON 봉투를 반환하지 않습니다. 성공 시 이
 HTTP/1.1 200
 Content-Type: image/jpeg
 Content-Disposition: inline
+X-Content-Type-Options: nosniff
 
 (이미지 바이너리 스트림)
 ```

@@ -92,8 +92,16 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-// 공개 API 라우트 (인증 불필요, 속도 제한 없음)
-Route::group([], function () {
+// 공개 API 라우트 (인증 불필요)
+// 속도 제한은 서버가 요청마다 계산·캐시하는 데이터 응답(템플릿 라우트·설정·다국어·컴포넌트·편집기 스펙,
+// 레이아웃)에만 건다 — 미인증 요청 폭주가 서버 캐시·연산을 소진시키는 경로다 (KVE-2026-2336).
+// JS/CSS 번들·정적 자산·아이콘·첨부 파일은 제한하지 않는다: 캐시를 늘리지 않는 파일 서빙이고,
+// 프록시 뒤에서 전 방문자가 IP 하나로 보일 때 여기가 막히면 화면 전체가 뜨지 않는다.
+// 접두사(public_ext)는 필수 — 접두사 없는 throttle 은 비로그인 키를 다른 접두사 없는 라우트와 공유한다.
+// 회귀 가드: tests/Feature/Api/Public/PublicTemplateCacheAmplificationTest.php
+$publicDataThrottle = 'throttle:'.config('auth.throttle.public').',public_ext';
+
+Route::group([], function () use ($publicDataThrottle) {
     // 방문자 통계 수집 비콘 — 브라우저가 페이지 이동·내려받기·외부 링크를 알려 온다.
     // optional.sanctum 을 두는 이유: 토큰이 있으면 회원·관리자 방문으로 가르고, 없으면
     // 비회원으로 센다. 응답은 언제나 204 이므로 스로틀에 걸려도 화면에 영향이 없다.
@@ -108,19 +116,23 @@ Route::group([], function () {
         ->name('api.public.analytics.summary');
 
     // 템플릿 라우트 정보 조회
-    Route::prefix('templates')->group(function () {
+    Route::prefix('templates')->group(function () use ($publicDataThrottle) {
         // 아래 dual* 매크로는 확장자 형태와 확장자 없는 형태를 동시에 등록한다.
         // 정적 최적화 블록(location ~* \.(js|css|json)$)이 있는 서버에서 동적 응답이
         // nginx 에 가로채이지 않도록 하기 위함. 상세: App\Support\Routing\DualExtensionRoute
         Route::dualSuffix('{identifier}/routes', 'json', [PublicTemplateController::class, 'getRoutes'])
+            ->middleware($publicDataThrottle)
             ->name('api.public.templates.routes');
 
         // 템플릿 설정 파일 서빙 (error_config 등)
         Route::dualSuffix('{identifier}/config', 'json', [PublicTemplateController::class, 'serveConfig'])
+            ->middleware($publicDataThrottle)
             ->name('api.public.templates.config');
 
         // 레이아웃 편집기 스펙 조회
-        Route::get('{identifier}/editor-spec', [PublicTemplateController::class, 'serveEditorSpec'])->name('api.public.templates.editor_spec');
+        Route::get('{identifier}/editor-spec', [PublicTemplateController::class, 'serveEditorSpec'])
+            ->middleware($publicDataThrottle)
+            ->name('api.public.templates.editor_spec');
 
         // 템플릿 정적 파일 서빙 (확장자 없는 형태는 ?file= 로 경로 수신)
         Route::dualAsset('assets/{identifier}', [PublicTemplateController::class, 'serveAsset'])
@@ -128,11 +140,13 @@ Route::group([], function () {
 
         // 컴포넌트 정의 파일 서빙
         Route::dualSuffix('{identifier}/components', 'json', [PublicTemplateController::class, 'serveComponents'])
+            ->middleware($publicDataThrottle)
             ->name('api.public.templates.components');
 
         // 다국어 파일 서빙
         Route::dualSuffix('{identifier}/lang/{locale}', 'json', [PublicTemplateController::class, 'serveLanguage'])
             ->where('locale', '[a-z]{2}(-[A-Z]{2})?')
+            ->middleware($publicDataThrottle)
             ->name('api.public.templates.language');
 
         // 레이아웃 첨부 이미지 파일 서빙 — 발행된 배경 이미지는
@@ -146,7 +160,7 @@ Route::group([], function () {
 
     // 레이아웃 서빙 API (Optional Sanctum 인증 - 토큰 있으면 인증, 없으면 guest)
     Route::prefix('layouts')
-        ->middleware('optional.sanctum')
+        ->middleware(['optional.sanctum', $publicDataThrottle])
         ->group(function () {
             // 레이아웃 미리보기 서빙 (토큰 기반, 인증 불필요)
             // 주의: 일반 레이아웃 서빙보다 먼저 정의 (preview가 templateIdentifier로 매칭되는 것 방지)
@@ -162,7 +176,7 @@ Route::group([], function () {
         });
 
     // 모듈 에셋 서빙 API
-    Route::prefix('modules')->group(function () {
+    Route::prefix('modules')->group(function () use ($publicDataThrottle) {
         // 활성 모듈 프론트엔드 IIFE/CSS 병합 번들 (개별 assets 라우트보다 위에 명시 등록)
         // 접미사가 js/css 를 구분하므로 제거 불가 — 세그먼트로 내린다 (bundle/js, bundle/css).
         Route::dualSuffixSegment('bundle', 'js', [PublicModuleController::class, 'serveBundleJs'])
@@ -175,15 +189,17 @@ Route::group([], function () {
 
         // 레이아웃 편집기 스펙 조회
         Route::get('{identifier}/editor-spec', [PublicModuleController::class, 'serveEditorSpec'])
+            ->middleware($publicDataThrottle)
             ->name('api.public.modules.editor_spec');
 
         // 컴포넌트 정의 파일 서빙 (module:build 산출물)
         Route::dualSuffix('{identifier}/components', 'json', [PublicModuleController::class, 'serveComponents'])
+            ->middleware($publicDataThrottle)
             ->name('api.public.modules.components');
     });
 
     // 플러그인 에셋 서빙 API
-    Route::prefix('plugins')->group(function () {
+    Route::prefix('plugins')->group(function () use ($publicDataThrottle) {
         // 활성 플러그인 프론트엔드 IIFE/CSS 병합 번들 (개별 assets 라우트보다 위에 명시 등록)
         Route::dualSuffixSegment('bundle', 'js', [PublicPluginController::class, 'serveBundleJs'])
             ->name('api.public.plugins.bundle.js');
@@ -195,10 +211,12 @@ Route::group([], function () {
 
         // 레이아웃 편집기 스펙 조회
         Route::get('{identifier}/editor-spec', [PublicPluginController::class, 'serveEditorSpec'])
+            ->middleware($publicDataThrottle)
             ->name('api.public.plugins.editor_spec');
 
         // 컴포넌트 정의 파일 서빙 (plugin:build 산출물)
         Route::dualSuffix('{identifier}/components', 'json', [PublicPluginController::class, 'serveComponents'])
+            ->middleware($publicDataThrottle)
             ->name('api.public.plugins.components');
     });
 

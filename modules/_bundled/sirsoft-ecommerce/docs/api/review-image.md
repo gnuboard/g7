@@ -47,7 +47,8 @@ _이 엔드포인트는 JSON 봉투(`data`)를 반환하지 않습니다. 성공
 | --- | --- | --- |
 | Content-Type | `image/jpeg` | 업로드 시 저장된 이미지의 MIME 타입 (`product_review_images.mime_type`) |
 | Cache-Control | `public, max-age=31536000` | 공개 이미지 장기 캐싱 (1년) |
-| Content-Disposition | `attachment; filename="review.jpg"` | 업로드 시의 원본 파일명 (`original_filename`) |
+| Content-Disposition | `inline; filename=review.jpg` | 원본 파일명(`original_filename`). 래스터 이미지(JPEG·PNG·GIF·WebP 등)만 `inline`, 그 밖(SVG 포함)은 `attachment` + CSP sandbox. 모든 응답에 `X-Content-Type-Options: nosniff` (KVE-2026-2366) |
+| X-Content-Type-Options | `nosniff` | 브라우저가 내용을 추측해 다른 형식으로 렌더하지 않게 한다 |
 
 **응답 예시**
 
@@ -55,7 +56,8 @@ _이 엔드포인트는 JSON 봉투(`data`)를 반환하지 않습니다. 성공
 HTTP/1.1 200 OK
 Content-Type: image/jpeg
 Cache-Control: public, max-age=31536000
-Content-Disposition: attachment; filename="review.jpg"
+Content-Disposition: inline; filename=review.jpg
+X-Content-Type-Options: nosniff
 
 <이미지 바이너리 스트림>
 ```

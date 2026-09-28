@@ -85,6 +85,7 @@
 - 확장 공통 권한 2건(`core.extensions`·`core.extensions.custom_assets.manage`)의 일본어 번역을 추가했습니다 — 모듈·플러그인·템플릿에 운영자 CSS·JS·폰트·이미지를 추가하는 권한으로, 일본어 로케일의 역할 수정 화면에서 한국어로 남아 있었습니다.
 - 회원 알림함 관리 기능의 일본어 번역을 추가했습니다. 관리자가 회원에게 나간 알림을 목록으로 보고 지울 때 뜨는 안내 문구(`member_notification.*` 7건)와, 좌측 메뉴 「회원 알림함」, 권한 3종(`core.member-notifications`·`.read`·`.delete`)이 일본어 로케일에서 자연스럽게 표시됩니다.
 - 저장소 경로 거부 안내 문구의 일본어 번역을 추가했습니다(`exceptions.storage.unsafe_path`·`destructive_on_root`·`local_safe_option_package`) — 허용되지 않는 저장 경로나 저장소 최상위 폴더 삭제 요청이 거부될 때, 저장소 디스크 설정에 필요한 패키지가 없을 때의 안내입니다. 없으면 일본어 로케일에서 이 안내가 한국어로 나옵니다.
+- 첨부파일 업로드에서 파일 내용이 허용 형식과 다를 때의 거부 문구(`attachment.validation.file_mimetype_invalid`)와 빈 파일(0바이트) 거부 문구(`attachment.validation.file_empty`) 일본어 번역을 추가했습니다. 없으면 일본어 로케일에서 이름만 이미지로 바꾼 파일이나 빈 파일을 올렸을 때 안내가 번역되지 않은 채 나옵니다. (KVE-2026-2366)
 
 ### Changed
 

@@ -97600,6 +97600,7 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
+| 429 | Too Many Requests | 공개 lane 속도 제한 초과 — 비로그인은 IP, 로그인은 사용자 단위로 분당 `auth.throttle.public`(기본 600회, `.env` `THROTTLE_PUBLIC`) · 접두사 `public_ext`. `Retry-After` 헤더 동봉 (KVE-2026-2336) |
 
 <!-- @generated:end -->
 
@@ -97668,6 +97669,7 @@ HTTP/1.1 200
 | 403 | Forbidden | 요구 권한(`core.templates.read`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 429 | Too Many Requests | 공개 lane 속도 제한 초과 — 비로그인은 IP, 로그인은 사용자 단위로 분당 `auth.throttle.public`(기본 600회, `.env` `THROTTLE_PUBLIC`) · 접두사 `public_ext`. `Retry-After` 헤더 동봉 (KVE-2026-2336) |
 
 <!-- @generated:end -->
 
@@ -97886,6 +97888,7 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
+| 429 | Too Many Requests | 공개 lane 속도 제한 초과 — 비로그인은 IP, 로그인은 사용자 단위로 분당 `auth.throttle.public`(기본 600회, `.env` `THROTTLE_PUBLIC`) · 접두사 `public_ext`. `Retry-After` 헤더 동봉 (KVE-2026-2336) |
 
 <!-- @generated:end -->
 
@@ -97952,6 +97955,7 @@ HTTP/1.1 200
 | 403 | Forbidden | 요구 권한(`core.templates.read`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 429 | Too Many Requests | 공개 lane 속도 제한 초과 — 비로그인은 IP, 로그인은 사용자 단위로 분당 `auth.throttle.public`(기본 600회, `.env` `THROTTLE_PUBLIC`) · 접두사 `public_ext`. `Retry-After` 헤더 동봉 (KVE-2026-2336) |
 
 <!-- @generated:end -->
 
@@ -98016,6 +98020,7 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
+| 429 | Too Many Requests | 공개 lane 속도 제한 초과 — 비로그인은 IP, 로그인은 사용자 단위로 분당 `auth.throttle.public`(기본 600회, `.env` `THROTTLE_PUBLIC`) · 접두사 `public_ext`. `Retry-After` 헤더 동봉 (KVE-2026-2336) |
 
 <!-- @generated:end -->
 
@@ -189822,6 +189827,7 @@ HTTP/1.1 200
 | 403 | Forbidden | 요구 권한(`core.templates.read`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 429 | Too Many Requests | 공개 lane 속도 제한 초과 — 비로그인은 IP, 로그인은 사용자 단위로 분당 `auth.throttle.public`(기본 600회, `.env` `THROTTLE_PUBLIC`) · 접두사 `public_ext`. `Retry-After` 헤더 동봉 (KVE-2026-2336) |
 
 <!-- @generated:end -->
 
@@ -189877,10 +189883,11 @@ _이 엔드포인트는 `success`/`message`/`data` 봉투를 사용하지 않습
 | --- | --- | --- |
 | 404 | Not Found | 템플릿이 없거나, 그 템플릿이 해당 로케일을 지원하지 않거나, 언어 파일이 없는 경우 |
 | 500 | Server Error | 언어 파일 JSON 파싱 실패 (`유효하지 않은 JSON 형식입니다.`) 또는 알 수 없는 오류 |
+| 429 | Too Many Requests | 공개 lane 속도 제한 초과 — 비로그인은 IP, 로그인은 사용자 단위로 분당 `auth.throttle.public`(기본 600회, `.env` `THROTTLE_PUBLIC`) · 접두사 `public_ext`. `Retry-After` 헤더 동봉 (KVE-2026-2336) |
 
 <!-- @generated:end -->
 
-**설명** 활성 템플릿의 다국어 파일(lang/{locale}.json)을 활성화된 모듈의 다국어 데이터와 병합해 서빙하는 공개 엔드포인트입니다(TemplateService::getLanguageDataWithModules). 지원하지 않는 로케일/파일 부재 시 404입니다. 조건부 캐시가 적용됩니다 — 응답에 ETag 가 부착되며 `If-None-Match` 일치 시 본문 없는 `304` 를 반환하고, Cache-Control 은 프로덕션 `public, max-age=3600` / 그 외 환경 `no-cache` 로 분기합니다. 정적 게시본(`/build/ext/{v}/…`)이 있으면 프론트는 그 정적 파일을 우선 수신하며, 본 API 는 미게시/부분게시/GC 직후의 **폴백 경로**입니다. 인증이 필요 없습니다.
+**설명** 활성 템플릿의 다국어 파일(lang/{locale}.json)을 활성화된 모듈의 다국어 데이터와 병합해 서빙하는 공개 엔드포인트입니다(TemplateService::getLanguageDataWithModules). 지원하지 않는 로케일/파일 부재 시 404입니다. 조건부 캐시가 적용됩니다 — 응답에 ETag 가 부착되며 `If-None-Match` 일치 시 본문 없는 `304` 를 반환하고, Cache-Control 은 프로덕션 `public, max-age=3600` / 그 외 환경 `no-cache` 로 분기합니다. 정적 게시본(`/build/ext/{v}/…`)이 있으면 프론트는 그 정적 파일을 우선 수신하며, 본 API 는 미게시/부분게시/GC 직후의 **폴백 경로**입니다. 인증이 필요 없습니다. 서버 캐시 키는 `v` 쿼리와 무관하게 **서버 현재 확장 캐시 버전**으로만 만들며(임의 `v` 값으로 캐시 엔트리를 늘릴 수 없음 — KVE-2026-2336), `v` 는 위 HTTP 캐시 정책 판단에만 쓰입니다.
 
 
 ### GET /api/templates/{identifier}/layout-attachments/{attachment}/file
@@ -189906,7 +189913,7 @@ Accept: application/json
 
 **응답 필드** (`data` 내부)
 
-_이 엔드포인트는 JSON 봉투를 반환하지 않습니다. 본문은 첨부 파일의 원본 바이트이며, 첨부의 MIME 타입(`Content-Type`), `ETag`, 캐싱 헤더(레이아웃 캐시 TTL — 기본 24시간)와 함께 인라인 스트림됩니다. 실패 시에만 JSON 에러 봉투를 반환합니다._
+_이 엔드포인트는 JSON 봉투를 반환하지 않습니다. 본문은 첨부 파일의 원본 바이트이며, 첨부의 MIME 타입(`Content-Type`), `ETag`, 캐싱 헤더(레이아웃 캐시 TTL — 기본 24시간)와 함께 스트림됩니다. 래스터 이미지(JPEG·PNG·GIF·WebP 등)만 인라인이고 그 밖(SVG 포함)은 `Content-Disposition: attachment` + CSP sandbox 이며, 모든 응답에 `X-Content-Type-Options: nosniff` 가 붙습니다(KVE-2026-2366). 실패 시에만 JSON 에러 봉투를 반환합니다._
 
 **응답 예시**
 
@@ -189927,7 +189934,7 @@ ETag: "9f2c1a4e8b7d3c5f"
 
 <!-- @generated:end -->
 
-**설명** 레이아웃 첨부 이미지 파일을 서빙하는 공개 엔드포인트입니다. 발행된 배경 이미지가 일반 방문자에게도 로드되어야 하므로 인증 없이 노출하며, 비공개 attachments 디스크의 파일을 캐싱 헤더와 함께 인라인 스트림합니다. 첨부가 경로의 템플릿 소속이 아니거나 파일이 없으면 404입니다. 인증이 필요 없습니다.
+**설명** 레이아웃 첨부 이미지 파일을 서빙하는 공개 엔드포인트입니다. 발행된 배경 이미지가 일반 방문자에게도 로드되어야 하므로 인증 없이 노출하며, 비공개 attachments 디스크의 파일을 캐싱 헤더와 함께 스트림합니다(래스터 이미지만 인라인, 그 밖은 다운로드 + nosniff). 첨부가 경로의 템플릿 소속이 아니거나 파일이 없으면 404입니다. 인증이 필요 없습니다.
 
 
 ### GET /api/templates/{identifier}/routes
@@ -190043,6 +190050,7 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
+| 429 | Too Many Requests | 공개 lane 속도 제한 초과 — 비로그인은 IP, 로그인은 사용자 단위로 분당 `auth.throttle.public`(기본 600회, `.env` `THROTTLE_PUBLIC`) · 접두사 `public_ext`. `Retry-After` 헤더 동봉 (KVE-2026-2336) |
 
 <!-- @generated:end -->
 
@@ -190111,9 +190119,10 @@ HTTP/1.1 200
 | 403 | Forbidden | 요구 권한(`core.templates.read`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 429 | Too Many Requests | 공개 lane 속도 제한 초과 — 비로그인은 IP, 로그인은 사용자 단위로 분당 `auth.throttle.public`(기본 600회, `.env` `THROTTLE_PUBLIC`) · 접두사 `public_ext`. `Retry-After` 헤더 동봉 (KVE-2026-2336) |
 
 <!-- @generated:end -->
 
-**설명** 템플릿의 라우트 정의(routes.json)를 활성화된 모듈의 라우트와 병합해 서빙하는 공개 엔드포인트입니다(TemplateService::getRoutesDataWithModules). 프론트엔드 라우팅 부팅에 사용합니다. 캐시 헤더는 **`v` 쿼리를 명시한 요청에만** 적용됩니다 — 버전 키드 URL 은 확장 변경 시 URL 자체가 바뀌므로 ETag + `If-None-Match` 304 + Cache-Control(프로덕션 `public, max-age=3600` / 그 외 `no-cache`)이 안전하고, 무버전 요청(핸드셰이크 폴백)은 종전대로 캐시 헤더 없이 신선 응답합니다. 단 라우트 병합이 열화 상태(확장 업데이트 진행 중 등)면 `v` 명시 요청이어도 공개 캐시 헤더를 부여하지 않습니다 — 열화 응답이 브라우저/CDN 에 1시간 박제되는 것을 막습니다(서버측 캐시 회피와 동일 규율). 정적 게시본(`/build/ext/{v}/…`)이 있으면 프론트는 그 정적 파일을 우선 수신하며, 본 API 는 미게시/부분게시/GC 직후의 **폴백 경로**입니다. 인증이 필요 없습니다.
+**설명** 템플릿의 라우트 정의(routes.json)를 활성화된 모듈의 라우트와 병합해 서빙하는 공개 엔드포인트입니다(TemplateService::getRoutesDataWithModules). 프론트엔드 라우팅 부팅에 사용합니다. 캐시 헤더는 **`v` 쿼리를 명시한 요청에만** 적용됩니다 — 버전 키드 URL 은 확장 변경 시 URL 자체가 바뀌므로 ETag + `If-None-Match` 304 + Cache-Control(프로덕션 `public, max-age=3600` / 그 외 `no-cache`)이 안전하고, 무버전 요청(핸드셰이크 폴백)은 종전대로 캐시 헤더 없이 신선 응답합니다. 단 라우트 병합이 열화 상태(확장 업데이트 진행 중 등)면 `v` 명시 요청이어도 공개 캐시 헤더를 부여하지 않습니다 — 열화 응답이 브라우저/CDN 에 1시간 박제되는 것을 막습니다(서버측 캐시 회피와 동일 규율). 정적 게시본(`/build/ext/{v}/…`)이 있으면 프론트는 그 정적 파일을 우선 수신하며, 본 API 는 미게시/부분게시/GC 직후의 **폴백 경로**입니다. 인증이 필요 없습니다. 서버 캐시 키는 `v` 쿼리와 무관하게 **서버 현재 확장 캐시 버전**으로만 만들며(임의 `v` 값으로 캐시 엔트리를 늘릴 수 없음 — KVE-2026-2336), `v` 는 위 HTTP 캐시 정책 판단에만 쓰입니다. 존재하지 않는 템플릿 등 오류 결과는 서버 캐시에 남기지 않습니다.
 
 

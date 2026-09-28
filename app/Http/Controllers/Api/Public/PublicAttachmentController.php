@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\Public;
 
+use App\Helpers\InlineMediaPolicy;
 use App\Http\Controllers\Api\Base\PublicBaseController;
 use App\Http\Requests\Public\Attachment\DownloadAttachmentRequest;
 use App\Services\AttachmentService;
@@ -33,8 +34,8 @@ class PublicAttachmentController extends PublicBaseController
     /**
      * 첨부파일 다운로드
      *
-     * 이미지 파일은 캐싱 헤더와 함께 인라인 표시하고,
-     * 그 외 파일은 다운로드 방식으로 제공합니다.
+     * 래스터 이미지(jpeg/png/gif/webp 등)는 캐싱 헤더와 함께 인라인 표시하고,
+     * 그 외 파일(SVG 포함)은 다운로드 방식으로 제공합니다. 모든 응답에 nosniff 를 붙입니다.
      *
      * @param  DownloadAttachmentRequest  $request  다운로드 요청
      * @param  string  $hash  첨부파일 해시 (12자)
@@ -58,24 +59,27 @@ class PublicAttachmentController extends PublicBaseController
                 return $this->forbidden('attachment.access_denied');
             }
 
-            // 이미지 파일은 캐싱 헤더와 함께 응답 (환경설정 레이아웃 캐시 TTL 사용, 기본 24시간)
+            // 래스터 이미지는 캐싱 헤더와 함께 인라인 응답 (환경설정 레이아웃 캐시 TTL 사용, 기본 24시간)
             // 행 disk 를 따르는 스토리지 스트림 — 로컬 경로 전제 fileResponse 는 S3 행에서 성립하지 않는다 (#99)
-            if (str_starts_with($fileInfo['mime_type'], 'image/')) {
-                return $this->streamedFileResponse(
+            // `image/` 접두사로 판정하면 image/svg+xml 이 인라인으로 열려 앱 오리진에서 스크립트가 돈다 (KVE-2026-2366).
+            if (InlineMediaPolicy::isInlineImage($fileInfo['mime_type'])) {
+                $response = $this->streamedFileResponse(
                     $fileInfo['response'],
                     $fileInfo['etag_source'],
                     (int) g7_core_settings('cache.layout_ttl', 86400)
                 );
+
+                return InlineMediaPolicy::harden($response, $fileInfo['mime_type']);
             }
 
-            // 이미지가 아닌 파일은 기존 다운로드 방식 유지
+            // 래스터 이미지가 아닌 파일(SVG 포함)은 다운로드 방식
             $response = $this->attachmentService->download($hash, $user);
 
             if (! $response) {
                 return $this->forbidden('attachment.access_denied');
             }
 
-            return $response;
+            return InlineMediaPolicy::harden($response, $fileInfo['mime_type'], $fileInfo['filename'] ?? null);
         } catch (AuthorizationException) {
             return $this->forbidden('attachment.access_denied');
         }

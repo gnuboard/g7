@@ -2,6 +2,7 @@
 
 namespace Modules\Sirsoft\Board\Http\Controllers\User;
 
+use App\Helpers\InlineMediaPolicy;
 use App\Http\Controllers\Api\Base\PublicBaseController;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -109,7 +110,8 @@ class AttachmentController extends PublicBaseController
 
             // 이미지가 아닌 경우
             if (! $attachment->is_image) {
-                return $this->badRequest(__('sirsoft-board::messages.attachment.not_image'));
+                // 존재하지 않는 badRequest() 를 부르던 자리 — Error 로 500 이 나던 것을 400 으로 바로잡는다
+                return $this->error(__('sirsoft-board::messages.attachment.not_image'), 400);
             }
 
             // 파일 정보 조회 (유효 서명은 콘텐츠 상태 게이트 통과 자격의 위임)
@@ -124,11 +126,14 @@ class AttachmentController extends PublicBaseController
             }
 
             // 캐싱 헤더와 함께 응답 (환경설정 레이아웃 캐시 TTL 사용, 기본 24시간)
-            return $this->fileResponse(
+            $response = $this->fileResponse(
                 $fileInfo['path'],
                 $fileInfo['mime_type'],
                 (int) g7_core_settings('cache.layout_ttl', 86400)
             );
+
+            // 인라인 표시는 래스터 이미지만 — SVG 는 is_image 에서 이미 걸러지고, 응답에는 nosniff (KVE-2026-2366)
+            return InlineMediaPolicy::harden($response, $fileInfo['mime_type']);
         } catch (AccessDeniedHttpException $e) {
             // 삭제글 첨부 등 권한 차단은 403 으로 응답
             return $this->error('auth.scope_denied', 403);

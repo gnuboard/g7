@@ -44,7 +44,8 @@ _이 엔드포인트는 JSON 봉투(`data`)를 반환하지 않습니다. 성공
 | 응답 헤더 | 값 | 용도/설명 |
 | --- | --- | --- |
 | Content-Type | `image/jpeg` (레코드의 `mime_type` 값 그대로 — `image/png` \| `image/webp` \| `image/gif` 등) | 저장된 이미지의 MIME 타입 |
-| Content-Disposition | `attachment; filename="product-main.jpg"` (레코드의 `original_filename`) | 업로드 당시의 원본 파일명 |
+| Content-Disposition | `inline; filename=product-main.jpg` (레코드의 `original_filename`) | 래스터 이미지(JPEG·PNG·GIF·WebP 등)만 `inline`, 그 밖(SVG 포함)은 `attachment` + CSP sandbox. 모든 응답에 `X-Content-Type-Options: nosniff` (KVE-2026-2366) |
+| X-Content-Type-Options | `nosniff` | 브라우저가 내용을 추측해 다른 형식으로 렌더하지 않게 한다 |
 | Cache-Control | `public, max-age=31536000` | 브라우저/CDN 1년 캐싱 (해시 기반 URL이므로 내용 변경 시 URL 자체가 바뀜) |
 
 **응답 예시**
@@ -54,7 +55,8 @@ _이 엔드포인트는 JSON 봉투(`data`)를 반환하지 않습니다. 성공
 ```http
 HTTP/1.1 200 OK
 Content-Type: image/jpeg
-Content-Disposition: attachment; filename="product-main.jpg"
+Content-Disposition: inline; filename=product-main.jpg
+X-Content-Type-Options: nosniff
 Cache-Control: public, max-age=31536000
 
 <binary image data>

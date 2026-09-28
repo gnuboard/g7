@@ -719,7 +719,7 @@ sitemap/_tmp/              생성 중 임시 디렉토리 (커밋 시 정리)
 
 - **테이블**: `resource_type`/`resource_id`/`loc`/`loc_hash`(=`sha256(loc)`)/`lastmod`/`changefreq`/`priority`/`contributor`/`is_visible`. unique 는 `(resource_type, resource_id, loc_hash)` — `loc string(2048)` utf8mb4 는 InnoDB 키 길이(3072 byte)를 초과하므로 ascii 64 해시로 identity 를 유지합니다(상세: docs/database-guide.md).
 - **Repository**: `SitemapUrlRepositoryInterface`(`upsertForResource`=delete-후-insert 멱등 / `removeForResource` / `streamVisible`(lazyById) / `countVisible` / `replaceAllForContributor`). `SeoServiceProvider` 가 singleton 바인딩.
-- **인덱서**: `SitemapIndexer::indexResource($type,$model,$entries)` / `deindexResource($type,$model)` — 리스너가 직접 모델/DB 를 만지지 않고 이 서비스를 경유합니다(`service-direct-data-access` 규율). 제3자 확장은 filter 훅 `sitemap.index.collect_for_resource` 로 리소스→entries 를 가공/추가할 수 있습니다(docs/extension/hooks.md).
+- **인덱서**: `SitemapIndexer::indexResource($type,$model,$entries)` / `deindexResource($type,$model)` — 리스너가 직접 모델/DB 를 만지지 않고 이 서비스를 경유합니다(`service-direct-data-access` 규율). 제3자 확장은 filter 훅 `sitemap.index.collect_for_resource` 로 리소스→entries 를 가공/추가할 수 있습니다(docs/extension/hooks.md). 부모 리소스가 비공개·삭제·재공개되어 자식 수만 건을 한꺼번에 바꿀 때는 `deindexResources($type, $ids)` / `indexResources($type, $contributor, [$id => $entries])` 를 씁니다 — 리소스마다 부르면 큐 작업 시간 제한(기본 60초)을 넘길 수 있습니다(게시글 27,000건 실측: 건별 255초 / 묶음 7초). 묶음 색인도 filter 훅은 리소스마다 호출하고, 저장만 1,000건 단위 삭제·삽입으로 처리합니다.
 - **리스너**: 모듈 SEO 리스너가 `after_create/update/delete` 에서 공개상태를 판정해 index/deindex 하고 `GenerateSitemapJob::dispatch()`(유니크 락 디바운스)를 겁니다. 리소스 단위 증분에서 자식 파일 URL 수가 임계 미만으로 줄어드는 것(5000→4999)은 감안하며, 균등 재분배(리밸런싱)는 full 재생성 때만 합니다.
 
 ## 재생성 모드 (SitemapGenerationMode)
