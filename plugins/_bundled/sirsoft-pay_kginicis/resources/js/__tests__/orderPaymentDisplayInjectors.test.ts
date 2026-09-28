@@ -180,6 +180,7 @@ describe('order payment display injectors', () => {
         await vi.advanceTimersByTimeAsync(2100);
 
         const receiptRow = document.getElementById('kginicis-mp-receipt-row');
+        expect(document.getElementById('order_payment_info_panel')!.contains(receiptRow!)).toBe(true);
         expect(receiptRow?.textContent?.replace(/\s+/g, '')).toContain('영수증영수증조회');
         expect(fetchMock).toHaveBeenCalledWith(
             '/api/plugins/sirsoft-pay_kginicis/user/orders/ORD-GUEST-RECEIPT/receipt',
@@ -189,7 +190,8 @@ describe('order payment display injectors', () => {
         delete (window as any).G7Core;
     });
 
-    it('영어 비회원 주문 상세의 Payment Information 영역에도 영수증 행을 붙인다', async () => {
+    // 결제 정보 카드는 제목 글자가 아니라 템플릿이 약속한 id 로 찾는다 — 영어 화면도 같은 id 를 가진 카드에 붙는다.
+    it('영어 비회원 주문 상세에서도 결제 정보 카드(id)에 영수증 행을 붙인다', async () => {
         vi.useFakeTimers();
         history.pushState(null, '', '/shop/guest/orders');
         (window as any).G7Core = {
@@ -209,7 +211,7 @@ describe('order payment display injectors', () => {
             }),
         };
         document.body.innerHTML = `
-            <section>
+            <section id="order_payment_info_panel">
                 <div>
                     <h3>Payment Information</h3>
                 </div>

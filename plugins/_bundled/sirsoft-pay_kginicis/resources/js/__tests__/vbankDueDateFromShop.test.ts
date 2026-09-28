@@ -71,6 +71,40 @@ describe('KG이니시스 입금 기한 — 쇼핑몰 서식 값 사용', () => {
     });
 
     /**
+     * 결제 정보 카드는 id 로만 찾는다 — 「결제 정보」 제목만 있는 화면에는 입금 안내를 붙이지 않는다.
+     *
+     * @scenario surface=card_without_id
+     * @effects card_found_by_id_only
+     */
+    it('결제 정보 카드 id 가 없으면 제목이 있어도 입금 안내를 붙이지 않는다', async () => {
+        history.pushState(null, '', '/mypage/orders/20260928-0000000952');
+        (window as any).G7Core = {
+            getState: () => ({
+                currentDataContext: {
+                    order: {
+                        data: {
+                            order_number: '20260928-0000000952',
+                            payment: {
+                                pg_provider: 'kginicis',
+                                payment_status: 'waiting_deposit',
+                                payment_method: 'vbank',
+                                vbank_number: '12345678901234',
+                                vbank_due_at_formatted: '2026-09-30 10:59 AM',
+                            },
+                        },
+                    },
+                },
+            }),
+        };
+        document.body.innerHTML = '<div><div><h3>결제 정보</h3></div><div class="space-y-2"></div></div>';
+
+        installVbankInfoInjector();
+        await vi.advanceTimersByTimeAsync(3000);
+
+        expect(document.getElementById('kginicis-mp-vbank-info')).toBeNull();
+    });
+
+    /**
      * 주문 완료 화면의 날짜 글자를 덮어쓰지 않는다 — 화면이 그린 값이 그대로 남는다.
      *
      * @scenario surface=order_complete_page

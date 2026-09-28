@@ -61,24 +61,13 @@ function getOrderFromState(routeSegment: string | null): OrderData | null {
     }
 }
 
+// 결제 정보 카드는 템플릿이 약속한 id(order_payment_info_panel)로만 찾는다. 화면 제목 글자는 언어마다 달라
+// 찾는 기준이 될 수 없다 — id 가 없는 템플릿에서는 조용히 붙이지 않는다(약속: sirsoft-ecommerce docs/extension-points.md).
 function findPaymentContainer(): Element | null {
     const panel = document.getElementById('order_payment_info_panel');
-    if (panel) {
-        return Array.from(panel.children).find(el => el.className?.includes('space-y')) ?? panel;
-    }
+    if (!panel) return null;
 
-    const h3 = Array.from(document.querySelectorAll<HTMLElement>('h3')).find(
-        el => {
-            const text = el.textContent?.trim() ?? '';
-            return text.includes('결제 정보') || /^Payment Information$/i.test(text);
-        },
-    );
-    if (!h3) return null;
-
-    const panelDiv = h3.parentElement?.parentElement;
-    if (!panelDiv) return null;
-
-    return Array.from(panelDiv.children).find(el => el.className?.includes('space-y')) ?? panelDiv;
+    return Array.from(panel.children).find(el => el.className?.includes('space-y')) ?? panel;
 }
 
 export function patchMypagePaymentMethodDisplay(container: Element, displayLabel: string | null | undefined): boolean {

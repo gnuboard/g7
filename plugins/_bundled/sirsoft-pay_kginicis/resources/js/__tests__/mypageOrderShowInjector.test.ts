@@ -160,9 +160,9 @@ describe('mypageOrderShowInjector — 회원 주문 상세 (URL 세그먼트 = �
  * 주문상세에 그 id 가 없던 시절엔 이 경로가 항상 null 이라 주입이 조용히 no-op 이 되었고,
  * 그 사실이 아무 테스트에도 걸리지 않았다 (기존 테스트는 늘 패널을 만들어 두고 시작했다).
  *
- * 그래서 여기서는 (a) 패널이 있으면 그 안에 주입되는가 (b) 패널이 없어도 '결제 정보' 헤딩
- * 폴백으로 주입되는가 — 두 경로를 모두 잠근다. 한쪽만 잠그면 앵커가 사라져도 폴백이
- * 가려주어 회귀를 놓친다.
+ * 그래서 여기서는 (a) 패널이 있으면 그 안에 주입되는가 (b) 패널 id 가 없으면 화면 제목에 「결제 정보」가
+ * 있어도 붙이지 않는가 — 두 경로를 모두 잠근다. 종전에는 (b) 에서 한국어 제목으로 카드를 찾았는데, 제목 글자는
+ * 언어마다 달라 찾는 기준이 될 수 없다(PO 결정 2026-09-28 「id 로만 찾음」). 카드 위치는 템플릿이 약속한 id 뿐이다.
  */
 describe('mypageOrderShowInjector — 주입 앵커 (#order_payment_info_panel)', () => {
     let originalFetch: typeof globalThis.fetch;
@@ -223,7 +223,7 @@ describe('mypageOrderShowInjector — 주입 앵커 (#order_payment_info_panel)'
         expect(panel?.contains(row!), '영수증 행이 결제 정보 패널 밖에 붙었다').toBe(true);
     });
 
-    it('패널 id 가 없어도 "결제 정보" 헤딩 폴백으로 주입된다', async () => {
+    it('패널 id 가 없으면 「결제 정보」 제목이 있어도 붙이지 않는다', async () => {
         history.pushState(null, '', `/mypage/orders/${ORDER.id}`);
         setOrderState(ORDER);
 
@@ -247,8 +247,8 @@ describe('mypageOrderShowInjector — 주입 앵커 (#order_payment_info_panel)'
         expect(document.getElementById('order_payment_info_panel')).toBeNull();
         expect(
             document.getElementById('kginicis-mp-receipt-row'),
-            '앵커 부재 시 폴백 주입이 동작하지 않았다',
-        ).not.toBeNull();
+            '패널 id 가 없는데 화면 제목 글자로 카드를 찾아 붙였다',
+        ).toBeNull();
     });
 
     it('주입 지점이 아예 없으면 조용히 아무것도 하지 않는다 (예외 없음)', async () => {

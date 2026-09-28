@@ -363,6 +363,12 @@
 무반응" 으로만 나타납니다. 해당 플러그인을 업그레이드한 뒤에는 이 오버라이드를 함께 확인합니다.
 <!-- @intent END -->
 
+### 결제 정보 카드의 id 는 PG 플러그인과의 약속
+
+`partials/mypage/orders/_payment` 의 `id="order_payment_info_panel"` 은 지우거나 바꾸지 않는다. PG 플러그인(KG이니시스·NHN KCP·
+나이스페이먼츠)이 영수증 버튼·가상계좌 입금 안내를 붙일 카드를 이 id 로만 찾는다 — 화면 제목 글자는 언어마다 달라 기준이 되지 않는다.
+id 가 사라지면 오류 없이 그 안내들만 빠진다. 약속 원문: 이커머스 `docs/extension-points.md` 「PG 플러그인이 결제 정보 카드에 붙일 때의 약속」.
+
 ## 이관 원문 상세
 
 > 아래는 코어 `docs/frontend/templates/sirsoft-basic/layouts.md` 에 있던 원문을 이 문서로 옮긴 것입니다(#601). 이관 시점 그대로

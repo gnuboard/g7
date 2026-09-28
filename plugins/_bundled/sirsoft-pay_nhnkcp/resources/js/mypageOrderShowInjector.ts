@@ -180,24 +180,13 @@ function buildMockDepositBlock(info: MockDepositInfo): HTMLElement {
     return wrap;
 }
 
+// 결제 정보 카드는 템플릿이 약속한 id(order_payment_info_panel)로만 찾는다. 화면 제목 글자는 언어마다 달라
+// 찾는 기준이 될 수 없다 — id 가 없는 템플릿에서는 조용히 붙이지 않는다(약속: sirsoft-ecommerce docs/extension-points.md).
 function findPaymentRowsContainer(): Element | null {
     const panel = document.getElementById('order_payment_info_panel');
-    if (panel) {
-        const spaceY = Array.from(panel.children).find(el => el.className?.includes('space-y'));
-        return spaceY ?? panel;
-    }
+    if (!panel) return null;
 
-    // "결제 정보" 헤딩 탐색
-    const h3 = Array.from(document.querySelectorAll<HTMLElement>('h3')).find(
-        el => el.textContent?.includes('결제 정보'),
-    );
-    if (!h3) return null;
-
-    const panelDiv = h3.parentElement?.parentElement;
-    if (!panelDiv) return null;
-
-    const spaceY = Array.from(panelDiv.children).find(el => el.className?.includes('space-y'));
-    return spaceY ?? panelDiv;
+    return Array.from(panel.children).find(el => el.className?.includes('space-y')) ?? panel;
 }
 
 // 라벨 + 값 행 생성 헬퍼
