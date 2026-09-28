@@ -15,17 +15,18 @@ use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
 use Modules\Sirsoft\Ecommerce\Services\GuestOrderAuthService;
 use Plugins\Sirsoft\PayKginicis\Concerns\IssuesReceiptCookie;
-use Plugins\Sirsoft\PayKginicis\Concerns\ResolvesEasyPaySelection;
 
 class UserReceiptController extends PublicBaseController
 {
     use IssuesReceiptCookie;
-    use ResolvesEasyPaySelection;
 
     private const PLUGIN_IDENTIFIER = 'sirsoft-pay_kginicis';
 
     // 출처: 그누보드5 쇼핑몰 주문 조회 화면(shop/orderinquiryview.php)이 여는 영수증 주소(mCmReceipt_head.jsp)
     private const RECEIPT_BASE_URL = 'https://iniweb.inicis.com/DefaultWebApp/mall/cr/cm/mCmReceipt_head.jsp';
+
+    // 표시 이름 번역이 있는 간편결제 제공자 코드(messages.receipt.easy_pay_providers)
+    private const EASY_PAY_PROVIDERS = ['samsungpay', 'naverpay', 'lpay', 'kakaopay', 'payco', 'tosspay', 'ssgpay'];
 
     /**
      * @param  PluginSettingsService  $pluginSettingsService  플러그인 설정 서비스(테스트 모드 판정)
@@ -111,8 +112,11 @@ class UserReceiptController extends PublicBaseController
         $paymentMeta = $this->decodePaymentMeta($payment->payment_meta ?? null);
         $embeddedPgProvider = $payment->embedded_pg_provider
             ?: ($paymentMeta['embedded_pg_provider'] ?? null);
-        $embeddedPgProviderLabel = $paymentMeta['embedded_pg_provider_label']
-            ?? $this->embeddedPgProviderLabel(is_string($embeddedPgProvider) ? $embeddedPgProvider : null);
+        // 간편결제 이름은 제공자 코드로 번역한다 — 결제 메타에 저장된 이름은 결제 시점의 한국어라 다른 언어 화면에 맞지 않는다.
+        $embeddedPgProviderLabel = $this->embeddedPgProviderLabel(
+            is_string($embeddedPgProvider) ? $embeddedPgProvider : null,
+            $paymentMeta['embedded_pg_provider_label'] ?? null,
+        );
         $basePaymentMethodLabel = $this->paymentMethodLabel((string) ($payment->payment_method ?? ''));
 
         if ($this->isCbtPayment($payment, $paymentMeta)) {
@@ -147,8 +151,8 @@ class UserReceiptController extends PublicBaseController
         return ResponseHelper::success('common.success', [
             'receipt_type' => 'inicis_receipt',
             'receipt_url' => $receiptUrl,
-            'receipt_label' => '영수증',
-            'receipt_view_label' => '영수증 조회',
+            'receipt_label' => __('sirsoft-pay_kginicis::messages.receipt.label'),
+            'receipt_view_label' => __('sirsoft-pay_kginicis::messages.receipt.view_label'),
             'is_test_mode' => $isTestMode,
             'payment_method_label' => $basePaymentMethodLabel,
             'payment_method_display_label' => $this->paymentMethodDisplayLabel(
@@ -187,7 +191,7 @@ class UserReceiptController extends PublicBaseController
      *
      * @param  object  $payment  결제·주문 조회 행
      * @param  array  $paymentMeta  결제 메타
-     * @return array<int, array{label: string, value: string}> 표시 항목
+     * @return array<int, array{key: string, label: string, value: string}> 표시 항목(key 는 화면 스크립트가 찾는 고정 이름, label 은 요청 언어의 이름)
      */
     private function buildCbtReceiptFields(object $payment, array $paymentMeta): array
     {
@@ -202,31 +206,31 @@ class UserReceiptController extends PublicBaseController
         $currency = strtoupper((string) ($payment->currency ?? $paymentMeta['currency'] ?? 'JPY'));
         $paymentStatus = (string) ($payment->payment_status ?? '');
         $isWaitingDeposit = $payMethod === 'CVS' && $paymentStatus === 'waiting_deposit';
-        $amountLabel = $isWaitingDeposit ? '입금예정금액' : '결제금액';
+        $amountLabel = __('sirsoft-pay_kginicis::messages.receipt.fields.'.($isWaitingDeposit ? 'due_amount' : 'amount'));
 
         $fields = [
-            ['label' => '주문번호', 'value' => (string) ($payment->order_number ?? '')],
-            ['label' => '결제수단', 'value' => $this->cbtPayMethodLabel($payMethod)],
-            ['label' => '거래번호', 'value' => (string) $payment->transaction_id],
-            ['label' => $amountLabel, 'value' => $this->formatCbtAmount($this->resolveCbtAmount($payment, $paymentMeta, $raw), $currency)],
-            ['label' => '입금 상태', 'value' => $this->cbtPaymentStatusLabel($paymentStatus)],
-            ['label' => '승인일시', 'value' => $this->formatCbtDateTime($raw['applDate'] ?? $raw['applDt'] ?? null, $raw['applTime'] ?? $raw['applTm'] ?? null)],
+            ['key' => 'order_number', 'label' => __('sirsoft-pay_kginicis::messages.receipt.fields.order_number'), 'value' => (string) ($payment->order_number ?? '')],
+            ['key' => 'pay_method', 'label' => __('sirsoft-pay_kginicis::messages.receipt.fields.pay_method'), 'value' => $this->cbtPayMethodLabel($payMethod)],
+            ['key' => 'transaction_id', 'label' => __('sirsoft-pay_kginicis::messages.receipt.fields.transaction_id'), 'value' => (string) $payment->transaction_id],
+            ['key' => 'amount', 'label' => $amountLabel, 'value' => $this->formatCbtAmount($this->resolveCbtAmount($payment, $paymentMeta, $raw), $currency)],
+            ['key' => 'deposit_status', 'label' => __('sirsoft-pay_kginicis::messages.receipt.fields.deposit_status'), 'value' => $this->cbtPaymentStatusLabel($paymentStatus)],
+            ['key' => 'approved_at', 'label' => __('sirsoft-pay_kginicis::messages.receipt.fields.approved_at'), 'value' => $this->formatCbtDateTime($raw['applDate'] ?? $raw['applDt'] ?? null, $raw['applTime'] ?? $raw['applTm'] ?? null)],
         ];
 
         if ($payMethod === 'CARD') {
-            $fields[] = ['label' => '카드 승인번호', 'value' => (string) ($raw['approve'] ?? $payment->card_approval_number ?? '')];
-            $fields[] = ['label' => '할부개월', 'value' => $this->formatInstallmentMonths($raw['installMonth'] ?? $payment->card_installment_months ?? null)];
+            $fields[] = ['key' => 'card_approval_number', 'label' => __('sirsoft-pay_kginicis::messages.receipt.fields.card_approval_number'), 'value' => (string) ($raw['approve'] ?? $payment->card_approval_number ?? '')];
+            $fields[] = ['key' => 'installment_months', 'label' => __('sirsoft-pay_kginicis::messages.receipt.fields.installment_months'), 'value' => $this->formatInstallmentMonths($raw['installMonth'] ?? $payment->card_installment_months ?? null)];
         }
 
         if ($payMethod === 'PAYPAY') {
-            $fields[] = ['label' => '승인번호', 'value' => (string) ($raw['approve'] ?? '')];
+            $fields[] = ['key' => 'approval_number', 'label' => __('sirsoft-pay_kginicis::messages.receipt.fields.approval_number'), 'value' => (string) ($raw['approve'] ?? '')];
         }
 
         if ($payMethod === 'CVS') {
-            $fields[] = ['label' => '편의점 코드', 'value' => (string) ($raw['convenience'] ?? $paymentMeta['cvs_convenience'] ?? '')];
-            $fields[] = ['label' => '편의점 확인번호', 'value' => (string) ($raw['confNo'] ?? $paymentMeta['cvs_conf_no'] ?? $payment->vbank_number ?? '')];
-            $fields[] = ['label' => '편의점 접수번호', 'value' => (string) ($raw['receiptNo'] ?? $paymentMeta['cvs_receipt_no'] ?? '')];
-            $fields[] = ['label' => '입금 마감일시', 'value' => $this->formatCbtCompactDateTime((string) ($raw['paymentTerm'] ?? $paymentMeta['cvs_payment_term'] ?? ''))];
+            $fields[] = ['key' => 'cvs_code', 'label' => __('sirsoft-pay_kginicis::messages.receipt.fields.cvs_code'), 'value' => (string) ($raw['convenience'] ?? $paymentMeta['cvs_convenience'] ?? '')];
+            $fields[] = ['key' => 'cvs_confirmation_no', 'label' => __('sirsoft-pay_kginicis::messages.receipt.fields.cvs_confirmation_no'), 'value' => (string) ($raw['confNo'] ?? $paymentMeta['cvs_conf_no'] ?? $payment->vbank_number ?? '')];
+            $fields[] = ['key' => 'cvs_receipt_no', 'label' => __('sirsoft-pay_kginicis::messages.receipt.fields.cvs_receipt_no'), 'value' => (string) ($raw['receiptNo'] ?? $paymentMeta['cvs_receipt_no'] ?? '')];
+            $fields[] = ['key' => 'cvs_payment_term', 'label' => __('sirsoft-pay_kginicis::messages.receipt.fields.cvs_payment_term'), 'value' => $this->formatCbtCompactDateTime((string) ($raw['paymentTerm'] ?? $paymentMeta['cvs_payment_term'] ?? ''))];
         }
 
         return array_values(array_filter(
@@ -262,11 +266,11 @@ class UserReceiptController extends PublicBaseController
     private function cbtPayMethodLabel(string $payMethod): string
     {
         return match ($payMethod) {
-            'CARD' => '신용카드 (일본 CBT)',
-            'CVS' => '일본 편의점결제',
+            'CARD' => __('sirsoft-pay_kginicis::messages.receipt.cbt_pay_methods.card'),
+            'CVS' => __('sirsoft-pay_kginicis::messages.receipt.cbt_pay_methods.cvs'),
             'PAYPAY' => 'PayPay',
             'LINEPAY' => 'LINE Pay',
-            default => $payMethod !== '' ? $payMethod : '일본 CBT 결제',
+            default => $payMethod !== '' ? $payMethod : __('sirsoft-pay_kginicis::messages.receipt.cbt_pay_methods.default'),
         };
     }
 
@@ -281,18 +285,18 @@ class UserReceiptController extends PublicBaseController
     {
         if ($payMethod === 'CVS' && $paymentStatus === 'waiting_deposit') {
             return [
-                'label' => '입금정보',
-                'view_label' => '편의점 입금정보 보기',
-                'title' => 'KG 이니시스 CBT 편의점 입금정보',
-                'notice' => '일본 편의점결제는 입금 마감일시 전까지 편의점에서 확인번호로 결제를 완료해야 합니다.',
+                'label' => __('sirsoft-pay_kginicis::messages.receipt.cbt_cvs.label'),
+                'view_label' => __('sirsoft-pay_kginicis::messages.receipt.cbt_cvs.view_label'),
+                'title' => __('sirsoft-pay_kginicis::messages.receipt.cbt_cvs.title'),
+                'notice' => __('sirsoft-pay_kginicis::messages.receipt.cbt_cvs.notice'),
             ];
         }
 
         return [
-            'label' => '결제확인',
-            'view_label' => '결제확인서 보기',
-            'title' => 'KG 이니시스 CBT 결제확인서',
-            'notice' => '일본 CBT 결제는 한국 KG 이니시스 매출전표 조회와 별도로 결제 승인 정보를 표시합니다.',
+            'label' => __('sirsoft-pay_kginicis::messages.receipt.cbt.label'),
+            'view_label' => __('sirsoft-pay_kginicis::messages.receipt.cbt.view_label'),
+            'title' => __('sirsoft-pay_kginicis::messages.receipt.cbt.title'),
+            'notice' => __('sirsoft-pay_kginicis::messages.receipt.cbt.notice'),
         ];
     }
 
@@ -305,10 +309,7 @@ class UserReceiptController extends PublicBaseController
     private function cbtPaymentStatusLabel(string $paymentStatus): string
     {
         return match ($paymentStatus) {
-            'waiting_deposit' => '입금대기',
-            'paid' => '입금완료',
-            'cancelled' => '취소',
-            'failed' => '실패',
+            'waiting_deposit', 'paid', 'cancelled', 'failed' => __('sirsoft-pay_kginicis::messages.receipt.statuses.'.$paymentStatus),
             default => $paymentStatus,
         };
     }
@@ -412,7 +413,9 @@ class UserReceiptController extends PublicBaseController
 
         $months = (int) $value;
 
-        return $months <= 0 ? '일시불' : $months.'개월';
+        return $months <= 0
+            ? __('sirsoft-pay_kginicis::messages.receipt.installment.lump_sum')
+            : __('sirsoft-pay_kginicis::messages.receipt.installment.months', ['months' => $months]);
     }
 
     /**
@@ -445,42 +448,36 @@ class UserReceiptController extends PublicBaseController
     private function paymentMethodLabel(string $paymentMethod): string
     {
         return match (strtolower($paymentMethod)) {
-            'card' => '신용카드',
-            'vbank' => '가상계좌',
-            'bank' => '계좌이체',
-            'dbank' => '무통장입금',
-            'phone', 'mobile' => '휴대폰결제',
-            'point' => '포인트결제',
-            'deposit' => '예치금결제',
-            'free' => '무료',
+            'card', 'vbank', 'bank', 'dbank', 'phone', 'point', 'deposit', 'free' => __('sirsoft-pay_kginicis::messages.receipt.payment_methods.'.strtolower($paymentMethod)),
+            'mobile' => __('sirsoft-pay_kginicis::messages.receipt.payment_methods.phone'),
             default => $paymentMethod !== '' ? $paymentMethod : '-',
         };
     }
 
     /**
-     * 간편결제(내장 PG) 제공자 코드의 표시 이름을 반환합니다.
+     * 간편결제(내장 PG) 제공자 코드의 표시 이름을 요청 언어로 반환합니다.
+     *
+     * 아는 제공자는 번역 이름을, 모르는 제공자는 결제 메타에 저장된 이름(없으면 코드)을 쓴다.
      *
      * @param  ?string  $provider  제공자 코드
-     * @return string|null 표시 이름(없으면 null)
+     * @param  mixed  $storedLabel  결제 메타에 저장된 표시 이름(결제 시점 한국어)
+     * @return string|null 표시 이름(제공자가 없으면 저장된 이름, 둘 다 없으면 null)
      */
-    private function embeddedPgProviderLabel(?string $provider): ?string
+    private function embeddedPgProviderLabel(?string $provider, mixed $storedLabel = null): ?string
     {
+        $storedLabel = is_string($storedLabel) && $storedLabel !== '' ? $storedLabel : null;
+
         if ($provider === null || $provider === '') {
-            return null;
+            return $storedLabel;
         }
 
-        foreach ($this->kginicisEasyPayMethodMap() as $context) {
-            if (($context['provider'] ?? null) === $provider) {
-                return $context['label'];
-            }
+        $code = strtolower($provider) === 'toss' ? 'tosspay' : strtolower($provider);
+
+        if (in_array($code, self::EASY_PAY_PROVIDERS, true)) {
+            return __('sirsoft-pay_kginicis::messages.receipt.easy_pay_providers.'.$code);
         }
 
-        return match (strtolower($provider)) {
-            'payco' => '페이코',
-            'tosspay', 'toss' => '토스페이',
-            'ssgpay' => 'SSG페이',
-            default => $provider,
-        };
+        return $storedLabel ?? $provider;
     }
 
     /**

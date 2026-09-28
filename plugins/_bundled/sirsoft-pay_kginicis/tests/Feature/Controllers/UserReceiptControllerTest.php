@@ -18,7 +18,7 @@ use Plugins\Sirsoft\PayKginicis\Tests\PluginTestCase;
 class UserReceiptControllerTest extends PluginTestCase
 {
     /**
-     * 영수증 쿠키를 암호화 대상에서 뺍니다.
+     * 영수증 쿠키를 암호화 대상에서 빼고 요청 언어를 한국어로 고정합니다.
      *
      * @return void 반환값 없음
      */
@@ -29,6 +29,9 @@ class UserReceiptControllerTest extends PluginTestCase
         // 영수증 cookie 가 EncryptCookies 미들웨어에서 폐기되지 않도록 명시 등록.
         // production 에서는 PayKginicisServiceProvider::boot 가 동일하게 등록.
         EncryptCookies::except(['kginicis_receipt_token']);
+
+        // 응답의 표시 이름은 요청 언어를 따른다 — 이 클래스는 한국어 이름을 검증한다(다른 언어는 UserReceiptLabelLocaleTest).
+        $this->withHeaders(['Accept-Language' => 'ko']);
     }
 
     /**

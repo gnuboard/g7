@@ -69,7 +69,22 @@
     "tax_breakdown_title": "税金詳細",
     "supply_amount": "供給価額",
     "vat_amount": "付加価値税",
-    "tax_free_amount": "非課税金額"
+    "tax_free_amount": "非課税金額",
+    "receipt_print": "印刷",
+    "cbt_confirmation_title": "KGイニシス CBT 決済確認書",
+    "vbank_title": "仮想口座入金案内",
+    "vbank_bank": "銀行",
+    "vbank_bank_code": "銀行コード",
+    "vbank_account_number": "口座番号",
+    "vbank_holder": "預金者",
+    "vbank_due": "入金期限",
+    "cvs_title": "日本コンビニ入金案内",
+    "cvs_status": "ステータス",
+    "cvs_due_amount": "入金予定金額",
+    "cvs_code": "コンビニコード",
+    "cvs_confirmation_no": "コンビニ確認番号",
+    "cvs_receipt_no": "コンビニ受付番号",
+    "cvs_payment_term": "入金締切日時"
   },
   "admin": {
     "test_mode_badge": "テスト決済",

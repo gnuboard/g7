@@ -1145,7 +1145,7 @@ Authorization: Bearer {YOUR_TOKEN}   (optional.sanctum: 비회원은 헤더 생�
 
 **응답 필드** (`data` 내부)
 
-_응답은 공통 형식(`ResponseHelper`: `{ success, message, data }`)이며 아래 필드는 모두 `data` 안에 있다. 결제 종류에 따라 두 형태로 나뉜다: CBT(일본결제)면 `receipt_type=cbt_confirmation`, 일반 국내결제면 `receipt_type=inicis_receipt`. 대상이 없으면 404 `{ "success": false, "message": "…" }`._
+_응답은 공통 형식(`ResponseHelper`: `{ success, message, data }`)이며 아래 필드는 모두 `data` 안에 있다. 결제 종류에 따라 두 형태로 나뉜다: CBT(일본결제)면 `receipt_type=cbt_confirmation`, 일반 국내결제면 `receipt_type=inicis_receipt`. 대상이 없으면 404 `{ "success": false, "message": "…" }`. 라벨·제목·안내·항목 이름·상태·결제수단·간편결제 이름은 **요청 언어**(`Accept-Language`)로 번역된다 — 아래 예시값은 한국어 요청 기준이다._
 
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
@@ -1155,7 +1155,7 @@ _응답은 공통 형식(`ResponseHelper`: `{ success, message, data }`)이며 �
 | receipt_view_label | string | `결제확인서 보기` | 영수증 열람 링크 라벨. 일반 결제는 `영수증 조회`, CBT 는 `결제확인서 보기`(CVS 입금대기 시 `편의점 입금정보 보기`). |
 | receipt_title | string | `KG 이니시스 CBT 결제확인서` | CBT 전용 — 결제확인서 제목. CVS 입금대기 시 `KG 이니시스 CBT 편의점 입금정보`. 일반 결제 응답에는 없음. |
 | receipt_notice | string | `일본 CBT 결제는 한국 KG 이니시스 매출전표 조회와 별도로 결제 승인 정보를 표시합니다.` | CBT 전용 — 안내 문구. CVS 입금대기 시 편의점 입금 마감 안내 문구. 일반 결제 응답에는 없음. |
-| receipt_fields | array | `[{"label":"주문번호","value":"APIDOC-KGINICIS-000001"}]` | CBT 전용 — 결제확인서 표시 항목 목록(`{label, value}`). 값이 빈 항목은 제외된다. 공통 항목: 주문번호·결제수단·거래번호·결제금액(CVS 입금대기 시 `입금예정금액`)·입금 상태·승인일시. 결제수단별 추가: CARD → 카드 승인번호·할부개월, PAYPAY → 승인번호, CVS → 편의점 코드·편의점 확인번호·편의점 접수번호·입금 마감일시. 일반 결제 응답에는 없음. |
+| receipt_fields | array | `[{"key":"order_number","label":"주문번호","value":"APIDOC-KGINICIS-000001"}]` | CBT 전용 — 결제확인서 표시 항목 목록(`{key, label, value}`). `key` 는 언어와 무관한 고정 이름이라 항목을 찾을 때는 `key` 를 쓴다(`label` 은 요청 언어로 바뀐다). 값이 빈 항목은 제외된다. 공통 항목: `order_number`(주문번호)·`pay_method`(결제수단)·`transaction_id`(거래번호)·`amount`(결제금액, CVS 입금대기 시 이름이 `입금예정금액`)·`deposit_status`(입금 상태)·`approved_at`(승인일시). 결제수단별 추가: CARD → `card_approval_number`·`installment_months`, PAYPAY → `approval_number`, CVS → `cvs_code`·`cvs_confirmation_no`·`cvs_receipt_no`·`cvs_payment_term`. 일반 결제 응답에는 없음. |
 | is_test_mode | boolean | `true` | 플러그인 설정(`is_test_mode`) 기준 테스트 모드 여부. |
 | payment_method_label | string | `일본 편의점결제` | 결제수단 라벨. CBT 는 `신용카드 (일본 CBT)`/`일본 편의점결제`/`PayPay`/`LINE Pay`, 일반 결제는 `신용카드`·`가상계좌`·`계좌이체`·`무통장입금`·`휴대폰결제` 등. |
 | payment_method_display_label | string | `일본 편의점결제` | 화면 표시용 결제수단 라벨. 간편결제면 `{간편결제사} ({기본 결제수단})` 형태로 조합된다. |
@@ -1163,7 +1163,7 @@ _응답은 공통 형식(`ResponseHelper`: `{ success, message, data }`)이며 �
 | payment_status | string | `paid` | CBT 전용 — 결제 상태값(PaymentStatusEnum: `waiting_deposit`·`paid`·`cancelled`·`failed` 등). 일반 결제 응답에는 없음. |
 | selected_payment_method | string \| null | `null` | 결제 시 사용자가 선택한 결제수단 식별값(`payment_meta.selected_payment_method`). 없으면 `null`. |
 | embedded_pg_provider | string \| null | `null` | 간편결제 등 결제창에 내장된 실제 PG 제공사 식별값(예: `payco`, `tosspay`). 일반 결제면 `null`. |
-| embedded_pg_provider_label | string \| null | `null` | `embedded_pg_provider` 의 사람이 읽는 라벨(예: `페이코`, `토스페이`). 없으면 `null`. |
+| embedded_pg_provider_label | string \| null | `null` | `embedded_pg_provider` 의 사람이 읽는 라벨(예: `페이코`, `토스페이`). 아는 제공자는 제공자 코드로 번역하고, 모르는 제공자는 결제 때 저장된 이름(없으면 코드)을 쓴다. 없으면 `null`. |
 
 **응답 예시**
 
@@ -1184,38 +1184,47 @@ HTTP/1.1 200
         "receipt_notice": "일본 CBT 결제는 한국 KG 이니시스 매출전표 조회와 별도로 결제 승인 정보를 표시합니다.",
         "receipt_fields": [
             {
+                "key": "order_number",
                 "label": "주문번호",
                 "value": "APIDOC-KGINICIS-000001"
             },
             {
+                "key": "pay_method",
                 "label": "결제수단",
                 "value": "일본 편의점결제"
             },
             {
+                "key": "transaction_id",
                 "label": "거래번호",
                 "value": "INIJPGCARDapidocsmpl0000000001"
             },
             {
+                "key": "amount",
                 "label": "결제금액",
                 "value": "5,000 KRW"
             },
             {
+                "key": "deposit_status",
                 "label": "입금 상태",
                 "value": "입금완료"
             },
             {
+                "key": "cvs_code",
                 "label": "편의점 코드",
                 "value": "seven_eleven"
             },
             {
+                "key": "cvs_confirmation_no",
                 "label": "편의점 확인번호",
                 "value": "1234567890"
             },
             {
+                "key": "cvs_receipt_no",
                 "label": "편의점 접수번호",
                 "value": "0987654321"
             },
             {
+                "key": "cvs_payment_term",
                 "label": "입금 마감일시",
                 "value": "2026-07-10 23:59:59"
             }

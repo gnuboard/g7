@@ -69,7 +69,22 @@
         "tax_breakdown_title": "세금 상세",
         "supply_amount": "공급가액",
         "vat_amount": "부가세",
-        "tax_free_amount": "면세금액"
+        "tax_free_amount": "면세금액",
+        "receipt_print": "인쇄",
+        "cbt_confirmation_title": "KG 이니시스 CBT 결제확인서",
+        "vbank_title": "가상계좌 입금 안내",
+        "vbank_bank": "은행",
+        "vbank_bank_code": "은행코드",
+        "vbank_account_number": "계좌번호",
+        "vbank_holder": "예금주",
+        "vbank_due": "입금 기한",
+        "cvs_title": "일본 편의점 입금 안내",
+        "cvs_status": "상태",
+        "cvs_due_amount": "입금예정금액",
+        "cvs_code": "편의점 코드",
+        "cvs_confirmation_no": "편의점 확인번호",
+        "cvs_receipt_no": "편의점 접수번호",
+        "cvs_payment_term": "입금 마감일시"
     },
     "admin": {
         "test_mode_badge": "테스트 결제",

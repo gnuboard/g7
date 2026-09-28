@@ -33,6 +33,15 @@
 주문번호는 주소가 아니라 불러온 주문(`order.data.order_number`)에서 읽는다 — 이 결제 정보 카드(영수증 링크·에스크로 구매확정 링크)는 주소에 주문번호가 없는
 교환·반품·환불 신청서 상세(회원·비회원)에서도 같은 조각으로 쓰인다.
 
+### 영수증 글자는 요청 언어로 오고, 스크립트는 항목을 키로 찾는다
+
+영수증 조회 응답의 버튼 이름·확인서 제목·안내·항목 이름·결제수단 이름은 서버가 요청 언어로 번역해 보낸다.
+그래서 확인서 항목(`receipt_fields`)을 이름(`label`)으로 찾으면 영어·일본어 화면에서 못 찾는다 — 일본 편의점
+입금 안내 패널(`resources/js/vbankInfoInjector.ts`)은 항목의 고정 키(`key`: `deposit_status`·`amount`·`cvs_code` 등)로
+값을 찾고, 편의점 결제 여부도 결제수단 이름이 아니라 응답의 결제수단 코드(`cbt_pay_method`)로 가린다. 패널 제목·행 이름,
+확인서 팝업의 인쇄 버튼, 서버가 이름을 주지 않았을 때의 버튼 이름은 `resources/lang` 의 `user.*` 키로 그린다
+(`receiptPopup.ts` 의 `translateKginicis`).
+
 ## 액션 핸들러
 
 <!-- @generated:handlers START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->

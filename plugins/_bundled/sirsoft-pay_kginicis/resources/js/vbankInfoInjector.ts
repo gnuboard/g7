@@ -1,4 +1,4 @@
-import { fetchKginicisReceiptInfo, KginicisReceiptInfo } from './receiptPopup';
+import { fetchKginicisReceiptInfo, KginicisReceiptInfo, translateKginicis as t } from './receiptPopup';
 
 const PLUGIN_ID = 'sirsoft-pay_kginicis';
 const FLAG = '__kginicisVbankInfoInjectorInstalled';
@@ -182,30 +182,32 @@ function buildVbankSection(payment: Payment, dueDateStr: string): HTMLElement {
 
     const title = document.createElement('p');
     title.className = 'text-sm font-semibold text-gray-700 dark:text-gray-300';
-    title.textContent = '가상계좌 입금 안내';
+    title.textContent = t('user.vbank_title', '가상계좌 입금 안내');
     section.appendChild(title);
 
-    if (payment.vbank_name) section.appendChild(buildInfoRow('은행', payment.vbank_name));
+    if (payment.vbank_name) section.appendChild(buildInfoRow(t('user.vbank_bank', '은행'), payment.vbank_name));
     if (isCurrentUserAdmin()) {
         const bankCode = resolveBankCode(payment);
-        if (bankCode) section.appendChild(buildInfoRow('은행코드', bankCode));
+        if (bankCode) section.appendChild(buildInfoRow(t('user.vbank_bank_code', '은행코드'), bankCode));
     }
-    if (payment.vbank_number) section.appendChild(buildInfoRow('계좌번호', payment.vbank_number));
-    if (payment.vbank_holder) section.appendChild(buildInfoRow('예금주', payment.vbank_holder));
-    if (dueDateStr) section.appendChild(buildInfoRow('입금 기한', dueDateStr, true));
+    if (payment.vbank_number) section.appendChild(buildInfoRow(t('user.vbank_account_number', '계좌번호'), payment.vbank_number));
+    if (payment.vbank_holder) section.appendChild(buildInfoRow(t('user.vbank_holder', '예금주'), payment.vbank_holder));
+    if (dueDateStr) section.appendChild(buildInfoRow(t('user.vbank_due', '입금 기한'), dueDateStr, true));
 
     return section;
 }
 
-function receiptField(receiptInfo: KginicisReceiptInfo | null, label: string): string {
-    return receiptInfo?.receipt_fields?.find(field => field.label === label)?.value ?? '';
+/**
+ * 영수증 조회 응답의 확인서 항목 값을 고정 키로 찾습니다 — 항목 이름(label)은 요청 언어로 번역되므로 쓰지 않는다.
+ */
+function receiptField(receiptInfo: KginicisReceiptInfo | null, key: string): string {
+    return receiptInfo?.receipt_fields?.find(field => field.key === key)?.value ?? '';
 }
 
 function isCbtCvsPayment(payment: Payment, receiptInfo: KginicisReceiptInfo | null): boolean {
     if (receiptInfo?.receipt_type !== 'cbt_confirmation') return false;
 
-    const methodLabel = receiptField(receiptInfo, '결제수단');
-    if (methodLabel.includes('편의점')) return true;
+    if (String(receiptInfo.cbt_pay_method ?? '').toUpperCase() === 'CVS') return true;
 
     const tid = String(payment.transaction_id ?? '');
     return String(payment.currency ?? '').toUpperCase() === 'JPY'
@@ -219,22 +221,22 @@ function buildCbtCvsSection(payment: Payment, receiptInfo: KginicisReceiptInfo |
 
     const title = document.createElement('p');
     title.className = 'text-sm font-semibold text-gray-700 dark:text-gray-300';
-    title.textContent = '일본 편의점 입금 안내';
+    title.textContent = t('user.cvs_title', '일본 편의점 입금 안내');
     section.appendChild(title);
 
-    const status = receiptField(receiptInfo, '입금 상태');
-    const amount = receiptField(receiptInfo, '입금예정금액') || receiptField(receiptInfo, '결제금액');
-    const convenienceCode = receiptField(receiptInfo, '편의점 코드');
-    const confirmationNo = receiptField(receiptInfo, '편의점 확인번호') || String(payment.vbank_number ?? '');
-    const receiptNo = receiptField(receiptInfo, '편의점 접수번호');
-    const paymentTerm = receiptField(receiptInfo, '입금 마감일시') || dueDateStr;
+    const status = receiptField(receiptInfo, 'deposit_status');
+    const amount = receiptField(receiptInfo, 'amount');
+    const convenienceCode = receiptField(receiptInfo, 'cvs_code');
+    const confirmationNo = receiptField(receiptInfo, 'cvs_confirmation_no') || String(payment.vbank_number ?? '');
+    const receiptNo = receiptField(receiptInfo, 'cvs_receipt_no');
+    const paymentTerm = receiptField(receiptInfo, 'cvs_payment_term') || dueDateStr;
 
-    if (status) section.appendChild(buildInfoRow('상태', status));
-    if (amount) section.appendChild(buildInfoRow('입금예정금액', amount, true));
-    if (convenienceCode) section.appendChild(buildInfoRow('편의점 코드', convenienceCode));
-    if (confirmationNo) section.appendChild(buildInfoRow('편의점 확인번호', confirmationNo));
-    if (receiptNo) section.appendChild(buildInfoRow('편의점 접수번호', receiptNo));
-    if (paymentTerm) section.appendChild(buildInfoRow('입금 마감일시', paymentTerm, true));
+    if (status) section.appendChild(buildInfoRow(t('user.cvs_status', '상태'), status));
+    if (amount) section.appendChild(buildInfoRow(t('user.cvs_due_amount', '입금예정금액'), amount, true));
+    if (convenienceCode) section.appendChild(buildInfoRow(t('user.cvs_code', '편의점 코드'), convenienceCode));
+    if (confirmationNo) section.appendChild(buildInfoRow(t('user.cvs_confirmation_no', '편의점 확인번호'), confirmationNo));
+    if (receiptNo) section.appendChild(buildInfoRow(t('user.cvs_receipt_no', '편의점 접수번호'), receiptNo));
+    if (paymentTerm) section.appendChild(buildInfoRow(t('user.cvs_payment_term', '입금 마감일시'), paymentTerm, true));
 
     return section;
 }

@@ -2,6 +2,8 @@
 const PLUGIN_ID = 'sirsoft-pay_kginicis';
 
 export interface KginicisReceiptField {
+    /** 항목의 고정 이름 — 화면 스크립트는 번역되는 label 대신 이 값으로 항목을 찾는다 */
+    key?: string;
     label: string;
     value: string;
 }
@@ -15,6 +17,27 @@ export interface KginicisReceiptInfo {
     receipt_notice?: string | null;
     receipt_fields?: KginicisReceiptField[];
     payment_method_display_label?: string | null;
+    cbt_pay_method?: string | null;
+}
+
+/**
+ * 플러그인 번역 문구를 얻습니다.
+ *
+ * @param key 번역 키 (플러그인 네임스페이스 이하)
+ * @param fallback 번역 엔진이 없을 때 쓸 문구
+ * @returns 번역된 문구
+ */
+export function translateKginicis(key: string, fallback: string): string {
+    const translate = (window as any)?.G7Core?.t;
+
+    if (typeof translate !== 'function') {
+        return fallback;
+    }
+
+    const full = `${PLUGIN_ID}.${key}`;
+    const result = translate(full);
+
+    return typeof result === 'string' && result !== full ? result : fallback;
 }
 
 function getAuthToken(): string | null {
@@ -104,11 +127,11 @@ export function canOpenKginicisReceipt(
 }
 
 export function receiptButtonLabel(info: KginicisReceiptInfo | null | undefined): string {
-    return info?.receipt_view_label || '영수증 조회';
+    return info?.receipt_view_label || translateKginicis('user.receipt_view', '영수증 조회');
 }
 
 export function receiptRowLabel(info: KginicisReceiptInfo | null | undefined): string {
-    return info?.receipt_label || '영수증';
+    return info?.receipt_label || translateKginicis('user.receipt_label', '영수증');
 }
 
 export function openKginicisReceipt(info: KginicisReceiptInfo): void {
@@ -126,7 +149,9 @@ function openCbtConfirmation(info: KginicisReceiptInfo): void {
     const popup = window.open('', 'kginicis_receipt', 'width=800,height=700,scrollbars=yes,resizable=yes');
     if (!popup) return;
 
-    const title = info.receipt_title || 'KG 이니시스 CBT 결제확인서';
+    const title = info.receipt_title || translateKginicis('user.cbt_confirmation_title', 'KG 이니시스 CBT 결제확인서');
+    const printLabel = translateKginicis('user.receipt_print', '인쇄');
+    const lang = document.documentElement.lang || 'ko';
     const notice = info.receipt_notice || '';
     const rows = (info.receipt_fields ?? [])
         .map(field => `
@@ -139,7 +164,7 @@ function openCbtConfirmation(info: KginicisReceiptInfo): void {
 
     popup.document.open();
     popup.document.write(`<!doctype html>
-<html lang="ko">
+<html lang="${escapeHtml(lang)}">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -219,7 +244,7 @@ function openCbtConfirmation(info: KginicisReceiptInfo): void {
         <h1>${escapeHtml(title)}</h1>
         ${notice ? `<p class="notice">${escapeHtml(notice)}</p>` : ''}
         <dl>${rows}</dl>
-        <div class="actions"><button type="button" onclick="window.print()">인쇄</button></div>
+        <div class="actions"><button type="button" onclick="window.print()">${escapeHtml(printLabel)}</button></div>
     </main>
 </body>
 </html>`);
