@@ -85,6 +85,7 @@
               <item id="search_member" label="$t:sirsoft-ecommerce.admin.user_addresses.actions.search_member" iconName="magnifying-glass"/>
             </prop>
             <on event="onItemClick">
+              <!-- 배송지 행의 작업 메뉴 — 고른 항목(회원 보기 등)에 따라 분기한다 -->
               <switch>
                 <case when="view_member">
                   <open-window path="/admin/users/{{row.member?.uuid}}"/>
@@ -147,6 +148,7 @@
         <set-state target="_local" selectedItems="{{$args[0]}}"/>
       </on>
       <on event="onRowAction">
+        <!-- 목록 행 작업 버튼 — 작업 종류에 따라 분기한다(작업 메뉴와 같은 동작) -->
         <switch>
           <case when="view_member">
             <open-window path="/admin/users/{{$args[1]?.member?.uuid}}"/>

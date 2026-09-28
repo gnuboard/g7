@@ -238,6 +238,7 @@
                             "name": "FileUploader",
                             "actions": [
                                 {
+                                    "comment": "고른 증빙 사진을 신청서 로컬 상태에 담는다 — 장수·용량 상한을 넘는 파일은 핸들러가 걸러 안내하고, 업로드는 신청 제출 때 함께 한다(자동 업로드 끔)",
                                     "type": "change",
                                     "handler": "sirsoft-ecommerce.setClaimImageFiles",
                                     "params": {

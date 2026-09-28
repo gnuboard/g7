@@ -17,6 +17,7 @@
         <item id="refund" label="$t:sirsoft-ecommerce.admin.settings.claim.reason_tabs.refund"/>
       </prop>
       <on type="change" event="onTabChange">
+        <!-- 클레임 설정의 하위 탭을 옮길 때의 정리 — 아래 첫 줄 주석이 이유를 적는다 -->
         <sequence>
           <!-- 하위 탭을 옮기면 열어 둔 사유 추가 폼을 정리한다. 페이지 [저장] 가드는 이 플래그를 하위 탭과 무관하게 읽으므로, 남겨 두면 화면에 보이지도 않는 폼을 확정하라는 안내로 저장이 막힌다 — 상위 탭 전환이 같은 이유로 같은 범위(플래그 + 입력 버퍼 + 그 폼의 오류)를 비우는 것과 같다. -->
           <set-state target="local" :isAddingExchangeReason="false" :exchangeReasonForm="null" :exchangeReasonFormErrors="null" :isAddingReturnReason="false" :returnReasonForm="null" :returnReasonFormErrors="null" :isAddingRefundReason="false" :refundReasonForm="null" :refundReasonFormErrors="null" claimReasonTab="{{$args[0]}}"/>

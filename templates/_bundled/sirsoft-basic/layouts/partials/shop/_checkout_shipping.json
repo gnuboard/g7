@@ -1278,6 +1278,7 @@
                     "name": "Checkbox",
                     "actions": [
                         {
+                            "comment": "고른 배송지를 이번 주문 입력값으로 갱신할지 — 기본은 갱신",
                             "type": "change",
                             "handler": "setState",
                             "params": {

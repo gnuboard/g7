@@ -413,6 +413,7 @@
             <div data-ref="notifications_inbox_link">
               <button type="button" class="btn btn-secondary">
                 <on type="click">
+                  <!-- 이 회원의 알림 발송 이력으로 이동한다 — 회원 UUID 로 목록을 거른다 -->
                   <navigate path="/admin/member-notifications">
                     <query user_uuid="{{user?.data?.uuid}}"/>
                   </navigate>

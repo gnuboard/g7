@@ -595,6 +595,7 @@
                                     "name": "Select",
                                     "actions": [
                                         {
+                                            "comment": "상품별 송장 입력의 택배사 선택을 이 화면 로컬 상태에 둔다 — [송장만 저장] 이 함께 읽는다",
                                             "type": "change",
                                             "handler": "setState",
                                             "params": {
@@ -616,6 +617,7 @@
                                     "name": "Input",
                                     "actions": [
                                         {
+                                            "comment": "상품별 송장번호 입력값을 로컬 상태에 둔다 — 택배사와 한 쌍으로 저장된다",
                                             "type": "change",
                                             "handler": "setState",
                                             "params": {
@@ -1245,6 +1247,7 @@
                                     "if": "{{(claim?.data?.claim?.items ?? []).some(i => i.is_stock_restorable === true)}}",
                                     "actions": [
                                         {
+                                            "comment": "재고 복원이 가능한 상품만 골라 재고를 되돌린다 — 실패 안내는 핸들러가 띄우므로 기본 오류 정책은 막는다",
                                             "type": "click",
                                             "handler": "sirsoft-ecommerce.restoreClaimStock",
                                             "params": {

@@ -514,12 +514,14 @@
               <option value="customer">$t:sirsoft-ecommerce.admin.claim.filter.request_source_option.customer</option>
             </options>
             <on type="change">
+              <!-- 신청 주체(고객·운영자) 필터 값을 로컬 필터에 둔다 — [검색] 을 눌러야 적용된다 -->
               <set-state target="_local" filter.requestSource="{{$event.target.value}}"/>
             </on>
           </select>
           <label data-ref="f_640_collection_overdue" data-if="{{(query.type || 'exchange') === 'exchange'}}" class="flex-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
             <checkbox :autoBinding="false" class="w-4 h-4 rounded border-gray-300 dark:border-gray-600" checked="{{_local.filter.collectionOverdue === '1'}}">
               <on type="change">
+                <!-- 회수 기한 초과 필터 — 체크하면 '1', 해제하면 빈 값(쿼리에서 빠진다) -->
                 <set-state target="_local" filter.collectionOverdue="{{$event.target.checked ? '1' : ''}}"/>
               </on>
             </checkbox>
@@ -528,6 +530,7 @@
           <label data-ref="f_650_pending_refund" data-if="{{['exchange', 'return'].includes(query.type || 'exchange')}}" class="flex-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
             <checkbox :autoBinding="false" class="w-4 h-4 rounded border-gray-300 dark:border-gray-600" checked="{{_local.filter.pendingRefund === '1'}}">
               <on type="change">
+                <!-- 미처리 환불 필터 — 체크하면 '1', 해제하면 빈 값(쿼리에서 빠진다) -->
                 <set-state target="_local" filter.pendingRefund="{{$event.target.checked ? '1' : ''}}"/>
               </on>
             </checkbox>

@@ -191,6 +191,9 @@ effects:
   # "어느 파일이 어느 단락에 속하고 몇 자리가 남았는가" 다. 착수기의 계량이 스크래치패드에만
   # 있어 다음 단락이 재현할 수 없었고, 계획서 표가 실측보다 9% 높았다.
   - stage_rules_partition_the_corpus_with_no_gap
+  # 2026-09-28 #599 — S21 완료 선언 뒤 이 브랜치의 클레임·배송지·주문서 작업이 새로 만든 자리 53(19파일)이 잔여로
+  # 남아 이 단언이 16·17차 병합 게이트에서 red 였다. 53자리를 채워 잔여 0 으로 되돌렸다 — 산출 JSON 은 comment 키
+  # 말고 바뀐 것이 0 이다(19파일 대조). 완료 단락에 새 자리를 만드는 작업은 같은 변경에서 주석을 단다.
   - completed_injection_stages_keep_zero_remaining_anchor
   - finished_stages_must_be_declared_in_the_completed_ledger
   - no_pending_stage_exceeds_the_approved_batch_ceiling

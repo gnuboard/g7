@@ -565,6 +565,7 @@
                                                             "name": "Button",
                                                             "actions": [
                                                                 {
+                                                                    "comment": "재발송 묶음을 배송완료로 바꾼다 — 묶음의 택배사·송장을 함께 넘기고, 실패 안내는 핸들러가 띄운다",
                                                                     "type": "click",
                                                                     "handler": "sirsoft-ecommerce.deliverClaimTracking",
                                                                     "params": {

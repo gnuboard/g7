@@ -322,6 +322,7 @@
       <responsive on="portable" class="flex items-center gap-2 mt-3"/>
       <checkbox id="update_selected_address" name="update_selected_address" checked="{{_local.updateSelectedAddress ?? true}}">
         <on type="change">
+          <!-- 고른 배송지를 이번 주문 입력값으로 갱신할지 — 기본은 갱신 -->
           <set-state target="local" updateSelectedAddress="{{$event.target.checked}}"/>
         </on>
       </checkbox>

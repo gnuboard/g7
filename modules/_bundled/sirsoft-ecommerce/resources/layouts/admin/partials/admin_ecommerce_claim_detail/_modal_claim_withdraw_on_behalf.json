@@ -34,6 +34,7 @@
                     "name": "Textarea",
                     "actions": [
                         {
+                            "comment": "대리 철회 사유 입력값을 _global 에 둔다 — 철회 핸들러가 _global 에서 읽는다",
                             "type": "change",
                             "handler": "setState",
                             "params": {
@@ -80,6 +81,7 @@
                             "name": "Button",
                             "actions": [
                                 {
+                                    "comment": "고객 요청으로 신청서를 대리 철회한다 — 실패 안내는 핸들러가 띄우므로 기본 오류 정책은 막는다",
                                     "type": "click",
                                     "handler": "sirsoft-ecommerce.withdrawClaimOnBehalf",
                                     "params": {

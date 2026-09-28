@@ -338,6 +338,7 @@
                                     "name": "Checkbox",
                                     "actions": [
                                         {
+                                            "comment": "회수되지 않은 상품을 미회수로 표시할지 켜고 끈다 — 켠 상품만 사유 입력칸이 열린다",
                                             "type": "change",
                                             "handler": "sirsoft-ecommerce.toggleClaimCompleteUnreturned",
                                             "params": {
@@ -366,6 +367,7 @@
                                     "if": "{{Object.keys(_global.claimCompleteUnreturned ?? {}).includes(String(unretItem.id))}}",
                                     "actions": [
                                         {
+                                            "comment": "미회수 사유를 상품별로 적어 둔다 — 완료 처리 때 함께 보낸다",
                                             "type": "change",
                                             "handler": "sirsoft-ecommerce.setClaimCompleteUnreturnedReason",
                                             "params": {

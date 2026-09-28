@@ -147,11 +147,13 @@
           </select>
           <select data-ref="ci_007_carrier" name="itemCarrierId" class="w-36 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg" value="{{_local.itemCarrierId ?? ''}}" options="{{[{ value: '', label: $t('sirsoft-ecommerce.admin.claim.detail.shipping.carrier_placeholder') }].concat(claim?.data?.carriers ?? [])}}">
             <on type="change">
+              <!-- 상품별 송장 입력의 택배사 선택을 이 화면 로컬 상태에 둔다 — [송장만 저장] 이 함께 읽는다 -->
               <set-state target="_local" itemCarrierId="{{$event.target.value}}"/>
             </on>
           </select>
           <input data-ref="ci_008_tracking_number" type="text" name="itemTrackingNumber" :maxLength="50" class="w-48 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg" placeholder="$t:sirsoft-ecommerce.admin.claim.detail.shipping.tracking_placeholder" value="{{_local.itemTrackingNumber ?? ''}}">
             <on type="change">
+              <!-- 상품별 송장번호 입력값을 로컬 상태에 둔다 — 택배사와 한 쌍으로 저장된다 -->
               <set-state target="_local" itemTrackingNumber="{{$event.target.value}}"/>
             </on>
           </input>
@@ -290,6 +292,7 @@
           </button>
           <button data-ref="cmpl_007_restore_stock_button" data-if="{{(claim?.data?.claim?.items ?? []).some(i => i.is_stock_restorable === true)}}" type="button" class="btn btn-outline" disabled="{{claim?.data?.abilities?.can_update_status !== true || _local.isRestoringStock === true}}">
             <on type="click">
+              <!-- 재고 복원이 가능한 상품만 골라 재고를 되돌린다 — 실패 안내는 핸들러가 띄우므로 기본 오류 정책은 막는다 -->
               <action handler="sirsoft-ecommerce.restoreClaimStock" pathSegment="{{claim?.data?.claim_path_segment ?? ''}}" claimId="{{claim?.data?.claim?.id ?? null}}" itemIds="{{(claim?.data?.claim?.items ?? []).filter(i => i.is_stock_restorable === true).map(i => i.id)}}">
                 <fail>
                   <suppress/>

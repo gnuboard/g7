@@ -5,6 +5,7 @@
       <p data-ref="cwo_001_description" class="text-label">$t:sirsoft-ecommerce.admin.claim.detail.withdraw_on_behalf.description</p>
       <textarea data-ref="cwo_002_reason" name="withdrawReason" :rows="3" :maxLength="2000" class="w-full px-3 py-2 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg" placeholder="$t:sirsoft-ecommerce.admin.claim.detail.withdraw_on_behalf.reason_placeholder" value="{{_global.claimWithdrawReason ?? ''}}">
         <on type="change">
+          <!-- 대리 철회 사유 입력값을 _global 에 둔다 — 철회 핸들러가 _global 에서 읽는다 -->
           <set-state target="global" claimWithdrawReason="{{$event.target.value}}"/>
         </on>
       </textarea>
@@ -17,6 +18,7 @@
         </button>
         <button data-ref="cwo_004_confirm" type="button" class="px-4 py-2 bg-red-600 dark:bg-red-500 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isWithdrawingClaim === true || (_global.claimWithdrawReason ?? '').trim() === ''}}">
           <on type="click">
+            <!-- 고객 요청으로 신청서를 대리 철회한다 — 실패 안내는 핸들러가 띄우므로 기본 오류 정책은 막는다 -->
             <action handler="sirsoft-ecommerce.withdrawClaimOnBehalf" pathSegment="{{_global.claimWithdrawContext?.pathSegment ?? ''}}" claimId="{{_global.claimWithdrawContext?.claimId ?? null}}" reason="{{_global.claimWithdrawReason ?? ''}}">
               <fail>
                 <suppress/>

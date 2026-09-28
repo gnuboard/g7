@@ -63,6 +63,7 @@
                                     "if": "{{_global.adminClaimRequest?.type === 'exchange'}}",
                                     "actions": [
                                         {
+                                            "comment": "교환 신청 행의 교환 옵션을 고른다 — 행 단위 값은 전용 핸들러가 행 배열 안에서 고친다",
                                             "type": "change",
                                             "handler": "sirsoft-ecommerce.setAdminClaimRequestRow",
                                             "params": {
@@ -89,6 +90,7 @@
                                             "name": "Input",
                                             "actions": [
                                                 {
+                                                    "comment": "신청 수량을 행에 반영한다 — 핸들러가 1 ~ 신청 가능 수량 범위로 맞춘다",
                                                     "type": "change",
                                                     "handler": "sirsoft-ecommerce.setAdminClaimRequestRow",
                                                     "params": {
@@ -151,6 +153,7 @@
                                     "name": "Select",
                                     "actions": [
                                         {
+                                            "comment": "직권 신청 사유 코드",
                                             "type": "change",
                                             "handler": "sirsoft-ecommerce.setAdminClaimRequestField",
                                             "params": {
@@ -185,6 +188,7 @@
                                     "name": "Select",
                                     "actions": [
                                         {
+                                            "comment": "반품·교환 배송비를 누가 부담하는지(과금 방식) — 무료를 고르면 배송비 입력칸이 잠긴다",
                                             "type": "change",
                                             "handler": "sirsoft-ecommerce.setAdminClaimRequestField",
                                             "params": {
@@ -209,6 +213,7 @@
                     "name": "Textarea",
                     "actions": [
                         {
+                            "comment": "직권 신청 사유 상세",
                             "type": "change",
                             "handler": "sirsoft-ecommerce.setAdminClaimRequestField",
                             "params": {
@@ -255,6 +260,7 @@
                             "name": "Input",
                             "actions": [
                                 {
+                                    "comment": "교환 재발송지 — 받는 사람",
                                     "type": "change",
                                     "handler": "sirsoft-ecommerce.setAdminClaimRequestField",
                                     "params": {
@@ -275,6 +281,7 @@
                             "name": "Input",
                             "actions": [
                                 {
+                                    "comment": "교환 재발송지 — 연락처",
                                     "type": "change",
                                     "handler": "sirsoft-ecommerce.setAdminClaimRequestField",
                                     "params": {
@@ -295,6 +302,7 @@
                             "name": "Input",
                             "actions": [
                                 {
+                                    "comment": "교환 재발송지 — 우편번호",
                                     "type": "change",
                                     "handler": "sirsoft-ecommerce.setAdminClaimRequestField",
                                     "params": {
@@ -315,6 +323,7 @@
                             "name": "Input",
                             "actions": [
                                 {
+                                    "comment": "교환 재발송지 — 기본 주소",
                                     "type": "change",
                                     "handler": "sirsoft-ecommerce.setAdminClaimRequestField",
                                     "params": {
@@ -335,6 +344,7 @@
                             "name": "Input",
                             "actions": [
                                 {
+                                    "comment": "교환 재발송지 — 상세 주소",
                                     "type": "change",
                                     "handler": "sirsoft-ecommerce.setAdminClaimRequestField",
                                     "params": {
@@ -386,6 +396,7 @@
                                     "name": "Select",
                                     "actions": [
                                         {
+                                            "comment": "환불 계좌 — 은행",
                                             "type": "change",
                                             "handler": "sirsoft-ecommerce.setAdminClaimRequestField",
                                             "params": {
@@ -405,6 +416,7 @@
                                     "name": "Input",
                                     "actions": [
                                         {
+                                            "comment": "환불 계좌 — 계좌번호",
                                             "type": "change",
                                             "handler": "sirsoft-ecommerce.setAdminClaimRequestField",
                                             "params": {
@@ -425,6 +437,7 @@
                                     "name": "Input",
                                     "actions": [
                                         {
+                                            "comment": "환불 계좌 — 예금주",
                                             "type": "change",
                                             "handler": "sirsoft-ecommerce.setAdminClaimRequestField",
                                             "params": {
@@ -496,6 +509,7 @@
                                             "name": "Input",
                                             "actions": [
                                                 {
+                                                    "comment": "환불 우선순위: 결제수단(PG)으로 먼저 돌려준다 — 적립금을 쓰지 않은 주문에서는 고를 수 없다",
                                                     "type": "change",
                                                     "handler": "sirsoft-ecommerce.setAdminClaimRequestField",
                                                     "params": {
@@ -535,6 +549,7 @@
                                             "name": "Input",
                                             "actions": [
                                                 {
+                                                    "comment": "환불 우선순위: 적립금으로 먼저 돌려준다 — 적립금을 쓰지 않은 주문에서는 고를 수 없다",
                                                     "type": "change",
                                                     "handler": "sirsoft-ecommerce.setAdminClaimRequestField",
                                                     "params": {
@@ -596,6 +611,7 @@
                                     "name": "Input",
                                     "actions": [
                                         {
+                                            "comment": "운영자가 정한 반품·교환 배송비(원) — 과금 방식이 무료면 잠긴다",
                                             "type": "change",
                                             "handler": "sirsoft-ecommerce.setAdminClaimRequestField",
                                             "params": {
@@ -682,6 +698,7 @@
                             "name": "Checkbox",
                             "actions": [
                                 {
+                                    "comment": "접수와 동시에 승인까지 할지 — 기본은 승인",
                                     "type": "change",
                                     "handler": "sirsoft-ecommerce.setAdminClaimRequestField",
                                     "params": {
@@ -749,6 +766,7 @@
                             "name": "Button",
                             "actions": [
                                 {
+                                    "comment": "직권 신청서를 제출한다 — 입력값은 창을 여는 핸들러가 채운 _global.adminClaimRequest 에서 모은다",
                                     "type": "click",
                                     "handler": "sirsoft-ecommerce.submitAdminClaimRequest",
                                     "onError": {

@@ -31,11 +31,13 @@
             <span class="text-sm text-gray-900 dark:text-gray-100 flex-1 min-w-[8rem] truncate">{{[trackRow.claim_number, trackRow.requester_name].filter(Boolean).join(' · ')}}</span>
             <select name="bulkTrackingCarrier" class="w-32 px-2 py-1 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg" value="{{trackRow.carrier_id ?? ''}}" options="{{[{ value: '', label: $t('sirsoft-ecommerce.admin.claim.detail.shipping.carrier_placeholder'), disabled: true }].concat(_global.claimBulkConfirmData?.carriers ?? [])}}">
               <on type="change">
+                <!-- 일괄 처리 확인 창에서 신청서별 택배사를 고치면 그 행의 송장 정보에 바로 반영한다 -->
                 <action handler="sirsoft-ecommerce.updateClaimBulkTracking" claimId="{{trackRow.id}}" field="carrier_id" value="{{$event.target.value}}"/>
               </on>
             </select>
             <input type="text" name="bulkTrackingNumber" :maxLength="50" class="w-40 px-2 py-1 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg" placeholder="$t:sirsoft-ecommerce.admin.claim.detail.shipping.tracking_placeholder" value="{{trackRow.tracking_number ?? ''}}">
               <on type="change">
+                <!-- 신청서별 송장번호 입력을 그 행의 송장 정보에 바로 반영한다 -->
                 <action handler="sirsoft-ecommerce.updateClaimBulkTracking" claimId="{{trackRow.id}}" field="tracking_number" value="{{$event.target.value}}"/>
               </on>
             </input>

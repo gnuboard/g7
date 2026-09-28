@@ -68,6 +68,7 @@
                             "name": "Button",
                             "actions": [
                                 {
+                                    "comment": "확인하면 교환 진행 방식을 실제로 바꾼다 — 대상·방식은 창을 연 핸들러가 _global 문맥에 둔 값이다",
                                     "type": "click",
                                     "handler": "sirsoft-ecommerce.setClaimExchangeMode",
                                     "params": {

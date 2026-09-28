@@ -2090,6 +2090,7 @@
                                     "if": "{{(query.type || 'exchange') !== 'cancel'}}",
                                     "actions": [
                                         {
+                                            "comment": "신청 주체(고객·운영자) 필터 값을 로컬 필터에 둔다 — [검색] 을 눌러야 적용된다",
                                             "type": "change",
                                             "handler": "setState",
                                             "params": {
@@ -2132,6 +2133,7 @@
                                             "name": "Checkbox",
                                             "actions": [
                                                 {
+                                                    "comment": "회수 기한 초과 필터 — 체크하면 '1', 해제하면 빈 값(쿼리에서 빠진다)",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {
@@ -2167,6 +2169,7 @@
                                             "name": "Checkbox",
                                             "actions": [
                                                 {
+                                                    "comment": "미처리 환불 필터 — 체크하면 '1', 해제하면 빈 값(쿼리에서 빠진다)",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {

@@ -18,6 +18,7 @@
         <label data-if="{{(claimable?.data?.options ?? []).some(o => (o.claimable_types ?? []).length > 0)}}" class="flex items-center gap-1.5 ml-2 cursor-pointer select-none">
           <input type="checkbox" checked="{{_local.selectAllItems}}" class="w-4 h-4 text-red-600 border-gray-300 dark:border-gray-600 rounded focus:ring-red-500">
             <on type="change">
+              <!-- 신청할 수 있는 상품 전체 선택을 켜고 끈다 — 신청할 수 없는 상품은 핸들러가 건너뛴다 -->
               <action handler="sirsoft-ecommerce.toggleSelectAllItems" claimableOptions="{{claimable?.data?.options ?? null}}"/>
             </on>
           </input>

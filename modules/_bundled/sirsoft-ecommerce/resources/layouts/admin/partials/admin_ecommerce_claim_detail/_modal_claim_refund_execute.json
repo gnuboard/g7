@@ -285,6 +285,7 @@
                             "name": "Input",
                             "actions": [
                                 {
+                                    "comment": "환불 계좌번호 입력값을 _global 에 둔다 — 모달은 부모 _local 을 읽지 못해 실행 핸들러가 _global 에서 모은다",
                                     "type": "change",
                                     "handler": "setState",
                                     "params": {
@@ -306,6 +307,7 @@
                             "name": "Input",
                             "actions": [
                                 {
+                                    "comment": "예금주 입력값을 _global 에 둔다 — 계좌번호와 같은 이유",
                                     "type": "change",
                                     "handler": "setState",
                                     "params": {
@@ -335,6 +337,7 @@
                                     "name": "Input",
                                     "actions": [
                                         {
+                                            "comment": "계좌 없이 완료하는 직권 동의 체크 상태 — 켜야만 계좌 없는 완료가 허용된다",
                                             "type": "change",
                                             "handler": "setState",
                                             "params": {

@@ -18,6 +18,7 @@
             "name": "TabNavigation",
             "actions": [
                 {
+                    "comment": "클레임 설정의 하위 탭을 옮길 때의 정리 — 아래 첫 줄 주석이 이유를 적는다",
                     "type": "change",
                     "event": "onTabChange",
                     "handler": "sequence",

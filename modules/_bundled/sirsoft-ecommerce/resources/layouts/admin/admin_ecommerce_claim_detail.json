@@ -462,6 +462,7 @@
                                         "name": "Button",
                                         "actions": [
                                             {
+                                                "comment": "미처리 환불이 남은 신청서에서 환불 요청서를 새로 만든다 — 실패 안내는 핸들러가 띄우므로 기본 오류 정책은 막는다",
                                                 "type": "click",
                                                 "handler": "sirsoft-ecommerce.storeClaimRefundRequest",
                                                 "params": {
@@ -527,6 +528,7 @@
                                         "if": "{{claim?.data?.claim?.is_advance_exchange !== true}}",
                                         "actions": [
                                             {
+                                                "comment": "선교환으로 바꾸기 전에 확인 창을 연다 — 회수 기한(일)을 함께 넘겨 창이 안내 문구에 쓴다",
                                                 "type": "click",
                                                 "handler": "sirsoft-ecommerce.openClaimExchangeModeConfirm",
                                                 "params": {
@@ -550,6 +552,7 @@
                                         "if": "{{claim?.data?.claim?.is_advance_exchange === true}}",
                                         "actions": [
                                             {
+                                                "comment": "일반 교환으로 되돌리기 전에 확인 창을 연다 — 선교환과 같은 창을 mode 만 바꿔 쓴다",
                                                 "type": "click",
                                                 "handler": "sirsoft-ecommerce.openClaimExchangeModeConfirm",
                                                 "params": {
@@ -642,9 +645,11 @@
             "partial": "partials/admin_ecommerce_claim_detail/_modal_claim_exchange_mode_confirm.json"
         },
         {
+            "comment": "고객 요청 대리 철회 확인 창 — 여는 핸들러가 철회 사유 입력칸과 대상 신청서를 _global 로 넘긴다",
             "partial": "partials/admin_ecommerce_claim_detail/_modal_claim_withdraw_on_behalf.json"
         },
         {
+            "comment": "신청 내용(사유·상세) 대리 수정 창 — 여는 핸들러가 현재 값과 대상 신청서를 _global 로 넘긴다",
             "partial": "partials/admin_ecommerce_claim_detail/_modal_claim_request_edit.json"
         }
     ]

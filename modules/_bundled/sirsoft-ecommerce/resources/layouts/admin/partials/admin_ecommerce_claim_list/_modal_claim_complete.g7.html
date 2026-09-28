@@ -59,12 +59,14 @@
         <div data-each="unretItem, unretIdx in {{(_global.claimCompletePreview?.claims ?? []).flatMap(c => c.unreturned_eligible_items ?? [])}}" class="flex-center flex-wrap gap-3">
           <checkbox :autoBinding="false" class="w-4 h-4 rounded border-gray-300 dark:border-gray-600" checked="{{Object.keys(_global.claimCompleteUnreturned ?? {}).includes(String(unretItem.id))}}">
             <on type="change">
+              <!-- 회수되지 않은 상품을 미회수로 표시할지 켜고 끈다 — 켠 상품만 사유 입력칸이 열린다 -->
               <action handler="sirsoft-ecommerce.toggleClaimCompleteUnreturned" itemId="{{unretItem.id}}" checked="{{$event.target.checked}}"/>
             </on>
           </checkbox>
           <span class="text-sm text-gray-900 dark:text-gray-100">{{unretItem.label}}</span>
           <input data-if="{{Object.keys(_global.claimCompleteUnreturned ?? {}).includes(String(unretItem.id))}}" type="text" :maxLength="2000" class="flex-1 min-w-[200px] px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg" placeholder="$t:sirsoft-ecommerce.admin.claim.complete.unreturned_reason_placeholder" value="{{(_global.claimCompleteUnreturned ?? {})[String(unretItem.id)] ?? ''}}">
             <on type="change">
+              <!-- 미회수 사유를 상품별로 적어 둔다 — 완료 처리 때 함께 보낸다 -->
               <action handler="sirsoft-ecommerce.setClaimCompleteUnreturnedReason" itemId="{{unretItem.id}}" reason="{{$event.target.value}}"/>
             </on>
           </input>

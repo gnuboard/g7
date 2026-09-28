@@ -1116,3 +1116,7 @@ _user_base.g7.html
 - [sirsoft-admin_basic 레이아웃](../../sirsoft-admin_basic/docs/layouts.md)
 - [레이아웃 JSON 스키마](../../../../docs/frontend/layout-json.md)
 - [레이아웃 상속](../../../../docs/frontend/layout-json-inheritance.md)
+
+## 레이아웃 주석
+
+새 이벤트 블록(`<on>`)·모달 참조(`<modal src>`)를 만들면 같은 변경에서 설명 주석을 단다 — 이벤트 블록은 `<on>` 앞이 아니라 **첫 액션 앞**에 쓴다(`<on>` 앞 주석은 컴파일 에러). 주석 주입(S21)이 완료로 선언된 뒤라 빈 자리가 생기면 `CommentAnchorStageLedgerTest` 가 red 가 된다. 주석은 산출 JSON 의 `comment` 키로만 들어가고 공개 서빙에서 제거되므로 화면 동작은 바뀌지 않는다.

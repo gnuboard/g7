@@ -638,6 +638,7 @@
                                     "name": "Input",
                                     "actions": [
                                         {
+                                            "comment": "선교환 회수 기한(일)을 숫자로 저장하고 페이지 [저장] 을 켠다",
                                             "type": "change",
                                             "handler": "setState",
                                             "params": {

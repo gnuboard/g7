@@ -34,6 +34,7 @@
                     "name": "Select",
                     "actions": [
                         {
+                            "comment": "고른 신청 사유를 _global 에 둔다 — 저장 핸들러가 _global 에서 읽는다(모달은 부모 _local 을 읽지 못한다)",
                             "type": "change",
                             "handler": "setState",
                             "params": {
@@ -55,6 +56,7 @@
                     "name": "Textarea",
                     "actions": [
                         {
+                            "comment": "사유 상세 입력값을 _global 에 둔다 — 사유와 같은 이유",
                             "type": "change",
                             "handler": "setState",
                             "params": {
@@ -110,6 +112,7 @@
                             "name": "Button",
                             "actions": [
                                 {
+                                    "comment": "고객을 대신해 신청 사유를 저장한다 — 실패 안내는 핸들러가 띄우므로 기본 오류 정책은 막는다",
                                     "type": "click",
                                     "handler": "sirsoft-ecommerce.updateClaimRequestOnBehalf",
                                     "params": {

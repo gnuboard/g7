@@ -195,6 +195,7 @@
                                             "name": "Select",
                                             "actions": [
                                                 {
+                                                    "comment": "일괄 처리 확인 창에서 신청서별 택배사를 고치면 그 행의 송장 정보에 바로 반영한다",
                                                     "type": "change",
                                                     "handler": "sirsoft-ecommerce.updateClaimBulkTracking",
                                                     "params": {
@@ -216,6 +217,7 @@
                                             "name": "Input",
                                             "actions": [
                                                 {
+                                                    "comment": "신청서별 송장번호 입력을 그 행의 송장 정보에 바로 반영한다",
                                                     "type": "change",
                                                     "handler": "sirsoft-ecommerce.updateClaimBulkTracking",
                                                     "params": {

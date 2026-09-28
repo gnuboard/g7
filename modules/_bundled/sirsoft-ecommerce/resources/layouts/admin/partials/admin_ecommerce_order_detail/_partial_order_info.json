@@ -214,6 +214,7 @@
                                             "name": "Button",
                                             "actions": [
                                                 {
+                                                    "comment": "고른 주문상품으로 운영자 직권 교환 신청 창을 연다 — 배송지·옵션을 창 문맥으로 넘긴다",
                                                     "type": "click",
                                                     "handler": "sirsoft-ecommerce.openAdminClaimRequest",
                                                     "params": {
@@ -240,6 +241,7 @@
                                             "name": "Button",
                                             "actions": [
                                                 {
+                                                    "comment": "고른 주문상품으로 운영자 직권 반품 신청 창을 연다 — 교환과 같은 창을 type 만 바꿔 쓴다",
                                                     "type": "click",
                                                     "handler": "sirsoft-ecommerce.openAdminClaimRequest",
                                                     "params": {

@@ -92,6 +92,7 @@
                 <span data-if="{{group.can_deliver !== true &amp;&amp; !!group.blocked_reason}}" class="text-xs text-gray-500 dark:text-gray-400">{{group.blocked_reason}}</span>
                 <button data-ref="cs_015b_redelivery_deliver_{{groupIdx}}" type="button" class="btn btn-outline btn-sm" disabled="{{claim?.data?.abilities?.can_update_status !== true || group.can_deliver !== true || _local.isDeliveringTracking === true}}">
                   <on type="click">
+                    <!-- 재발송 묶음을 배송완료로 바꾼다 — 묶음의 택배사·송장을 함께 넘기고, 실패 안내는 핸들러가 띄운다 -->
                     <action handler="sirsoft-ecommerce.deliverClaimTracking" pathSegment="{{claim?.data?.claim_path_segment ?? ''}}" claimId="{{claim?.data?.claim?.id ?? null}}" direction="redelivery" carrierId="{{group.carrier_id}}" trackingNumber="{{group.tracking_number}}">
                       <fail>
                         <suppress/>

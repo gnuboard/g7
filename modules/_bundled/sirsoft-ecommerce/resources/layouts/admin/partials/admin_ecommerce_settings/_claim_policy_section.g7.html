@@ -123,6 +123,7 @@
           <span class="text-body w-48 shrink-0">$t:sirsoft-ecommerce.admin.settings.claim.policy.advance_exchange.due_days_label</span>
           <input type="number" min="{{_local?.form?._meta?.limits?.advance_exchange_collection_due_days_min ?? 1}}" max="{{_local?.form?._meta?.limits?.advance_exchange_collection_due_days_max ?? 90}}" step="1" class="input w-20" disabled="{{_computed.isReadOnly || _local.form?.claim?.advance_exchange_enabled !== true}}" value="{{_local.form?.claim?.advance_exchange_collection_due_days ?? 14}}">
             <on type="change">
+              <!-- 선교환 회수 기한(일)을 숫자로 저장하고 페이지 [저장] 을 켠다 -->
               <set-state target="local" form.claim.advance_exchange_collection_due_days="{{Number($event.target.value)}}" :hasChanges="true"/>
             </on>
           </input>
