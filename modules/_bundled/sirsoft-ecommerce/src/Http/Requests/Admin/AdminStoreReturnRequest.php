@@ -48,6 +48,16 @@ class AdminStoreReturnRequest extends FormRequest
     }
 
     /**
+     * 검증 오류 문구에 쓰는 필드 표시명
+     *
+     * @return array<string, string> 필드 키 → 표시명
+     */
+    public function attributes(): array
+    {
+        return $this->adminClaimAttributes();
+    }
+
+    /**
      * 추가 검증 로직 — 접수 상품의 주문 소속 · 환불 계좌 완결성
      *
      * @param  Validator  $validator  검증기

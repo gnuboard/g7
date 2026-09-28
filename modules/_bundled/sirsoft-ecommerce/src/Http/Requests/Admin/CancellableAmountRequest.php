@@ -94,6 +94,21 @@ class CancellableAmountRequest extends FormRequest
     }
 
     /**
+     * 검증 오류 문구에 쓰는 필드 표시명
+     *
+     * @return array<string, string> 필드 키 → 표시명
+     */
+    public function attributes(): array
+    {
+        return [
+            'refund_id' => __('sirsoft-ecommerce::validation.request_attributes.refund_id'),
+            'items' => __('sirsoft-ecommerce::validation.request_attributes.items'),
+            'items.*.order_option_id' => __('sirsoft-ecommerce::validation.request_attributes.order_option'),
+            'items.*.cancel_quantity' => __('sirsoft-ecommerce::validation.request_attributes.cancel_quantity'),
+        ];
+    }
+
+    /**
      * 라우트의 대상 주문 ID 를 반환합니다. (모델 바인딩·원시 값 모두 수용)
      *
      * @return int 주문 ID

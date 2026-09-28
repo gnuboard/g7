@@ -548,6 +548,37 @@ class StoreEcommerceSettingsRequest extends FormRequest
             'privacy_retention.enabled' => __('sirsoft-ecommerce::validation.privacy_retention_attributes.enabled'),
             'privacy_retention.retention_years' => __('sirsoft-ecommerce::validation.privacy_retention_attributes.retention_years'),
             'privacy_retention.mode' => __('sirsoft-ecommerce::validation.privacy_retention_attributes.mode'),
+            // 클레임 정책 (이슈 #599) — 환경설정 화면 라벨과 같은 문구로 키별 명시
+            'order_settings.cancellable_statuses' => __('sirsoft-ecommerce::validation.claim_settings_attributes.cancellable_statuses'),
+            'order_settings.cancellable_statuses.*' => __('sirsoft-ecommerce::validation.claim_settings_attributes.cancellable_statuses'),
+            'claim.exchange_requestable_statuses' => __('sirsoft-ecommerce::validation.claim_settings_attributes.exchange_requestable_statuses'),
+            'claim.exchange_requestable_statuses.*' => __('sirsoft-ecommerce::validation.claim_settings_attributes.exchange_requestable_statuses'),
+            'claim.return_requestable_statuses' => __('sirsoft-ecommerce::validation.claim_settings_attributes.return_requestable_statuses'),
+            'claim.return_requestable_statuses.*' => __('sirsoft-ecommerce::validation.claim_settings_attributes.return_requestable_statuses'),
+            'claim.instant_cancel_statuses' => __('sirsoft-ecommerce::validation.claim_settings_attributes.instant_cancel_statuses'),
+            'claim.instant_cancel_statuses.*' => __('sirsoft-ecommerce::validation.claim_settings_attributes.instant_cancel_statuses'),
+            'claim.refund_request_statuses' => __('sirsoft-ecommerce::validation.claim_settings_attributes.refund_request_statuses'),
+            'claim.refund_request_statuses.*' => __('sirsoft-ecommerce::validation.claim_settings_attributes.refund_request_statuses'),
+            'claim.allowed_charge_methods' => __('sirsoft-ecommerce::validation.claim_settings_attributes.allowed_charge_methods'),
+            'claim.allowed_charge_methods.*' => __('sirsoft-ecommerce::validation.claim_settings_attributes.allowed_charge_methods'),
+            'claim.charge_payment_methods' => __('sirsoft-ecommerce::validation.claim_settings_attributes.charge_payment_methods'),
+            'claim.charge_payment_methods.*' => __('sirsoft-ecommerce::validation.claim_settings_attributes.charge_payment_methods'),
+            'claim.auto_approve_zero_charge' => __('sirsoft-ecommerce::validation.claim_settings_attributes.auto_approve_zero_charge'),
+            'claim.auto_approve_after_payment' => __('sirsoft-ecommerce::validation.claim_settings_attributes.auto_approve_after_payment'),
+            'claim.auto_approve_refund_request' => __('sirsoft-ecommerce::validation.claim_settings_attributes.auto_approve_refund_request'),
+            'claim.auto_approve_refund_statuses' => __('sirsoft-ecommerce::validation.claim_settings_attributes.auto_approve_refund_statuses'),
+            'claim.auto_approve_refund_statuses.*' => __('sirsoft-ecommerce::validation.claim_settings_attributes.auto_approve_refund_statuses'),
+            'claim.auto_approve_refund_payment_methods' => __('sirsoft-ecommerce::validation.claim_settings_attributes.auto_approve_refund_payment_methods'),
+            'claim.auto_approve_refund_payment_methods.*' => __('sirsoft-ecommerce::validation.claim_settings_attributes.auto_approve_refund_payment_methods'),
+            'claim.auto_approve_refund_payment_methods_decided' => __('sirsoft-ecommerce::validation.claim_settings_attributes.auto_approve_refund_payment_methods_decided'),
+            'claim.max_images' => __('sirsoft-ecommerce::validation.claim_settings_attributes.max_images'),
+            'claim.image_max_size_kb' => __('sirsoft-ecommerce::validation.claim_settings_attributes.image_max_size_kb'),
+            'claim.request_period_days' => __('sirsoft-ecommerce::validation.claim_settings_attributes.request_period_days'),
+            'claim.advance_exchange_enabled' => __('sirsoft-ecommerce::validation.claim_settings_attributes.advance_exchange_enabled'),
+            'claim.advance_exchange_collection_due_days' => __('sirsoft-ecommerce::validation.claim_settings_attributes.advance_exchange_collection_due_days'),
+            'claim.complete_defaults' => __('sirsoft-ecommerce::validation.claim_settings_attributes.complete_defaults'),
+            'claim.complete_defaults.create_refund_request' => __('sirsoft-ecommerce::validation.claim_settings_attributes.complete_defaults_create_refund_request'),
+            'claim.complete_defaults.restore_stock' => __('sirsoft-ecommerce::validation.claim_settings_attributes.complete_defaults_restore_stock'),
         ]);
     }
 
@@ -808,7 +839,7 @@ class StoreEcommerceSettingsRequest extends FormRequest
 
         $codes = [];
         foreach ($currencies as $index => $currency) {
-            if (! isset($currency['code'])) {
+            if (! isset($currency['code']) || ! is_string($currency['code'])) {
                 continue;
             }
 
@@ -992,7 +1023,7 @@ class StoreEcommerceSettingsRequest extends FormRequest
 
         $codes = [];
         foreach ($countries as $index => $country) {
-            if (! isset($country['code'])) {
+            if (! isset($country['code']) || ! is_string($country['code'])) {
                 continue;
             }
 
@@ -1061,12 +1092,13 @@ class StoreEcommerceSettingsRequest extends FormRequest
         $defaultCountry = $this->input('shipping.default_country');
         $countries = $this->input('shipping.available_countries', []);
 
-        if (empty($defaultCountry) || empty($countries) || ! is_array($countries)) {
+        // 사후 검증은 규칙이 실패해도 돈다 — 문자열이 아닌 값은 규칙이 이미 422 로 막았다.
+        if (empty($defaultCountry) || ! is_string($defaultCountry) || empty($countries) || ! is_array($countries)) {
             return;
         }
 
         $codes = array_map(
-            fn ($c) => strtoupper(trim($c['code'] ?? '')),
+            fn ($c) => is_array($c) && is_string($c['code'] ?? null) ? strtoupper(trim($c['code'])) : '',
             $countries
         );
 
@@ -1137,8 +1169,11 @@ class StoreEcommerceSettingsRequest extends FormRequest
                 : app(ShippingTypeRepositoryInterface::class);
             $current = $repository->findById((int) $id)?->code;
 
-            // 손대지 않은 기존 코드만 면제한다 — 바꾼 값은 아래 형식 규칙을 받는다.
-            if ($current !== null && (string) $current === (string) $this->input($attribute)) {
+            // 손대지 않은 기존 코드만 면제한다 — 바꾼 값은 아래 형식 규칙을 받는다. 규칙 계산 중이라 검증 전
+            // 값이므로 문자열이 아니면 형 변환하지 않는다(형식 오류는 `string` 규칙이 422 로 돌려준다).
+            $submitted = $this->input($attribute);
+
+            if ($current !== null && is_string($submitted) && (string) $current === $submitted) {
                 return $base;
             }
         }
@@ -1162,7 +1197,8 @@ class StoreEcommerceSettingsRequest extends FormRequest
 
         $codes = [];
         foreach ($carriers as $index => $carrier) {
-            if (! isset($carrier['code'])) {
+            // 사후 검증은 규칙이 실패해도 돈다 — 문자열이 아닌 코드는 `string` 규칙이 이미 422 로 막았다.
+            if (! isset($carrier['code']) || ! is_string($carrier['code'])) {
                 continue;
             }
 
@@ -1234,7 +1270,7 @@ class StoreEcommerceSettingsRequest extends FormRequest
 
         $codes = [];
         foreach ($types as $index => $type) {
-            if (! isset($type['code'])) {
+            if (! isset($type['code']) || ! is_string($type['code'])) {
                 continue;
             }
 
@@ -1465,7 +1501,7 @@ class StoreEcommerceSettingsRequest extends FormRequest
 
         $codes = [];
         foreach ($reasons as $index => $reason) {
-            if (! isset($reason['code'])) {
+            if (! isset($reason['code']) || ! is_string($reason['code'])) {
                 continue;
             }
 
@@ -1579,12 +1615,13 @@ class StoreEcommerceSettingsRequest extends FormRequest
         $incoming = [];
         $presentIds = [];
         foreach ($rows as $index => $row) {
-            if (! is_array($row) || ! isset($row['code'])) {
+            // 사후 검증은 규칙이 실패해도 돈다 — 문자열이 아닌 코드는 `string` 규칙이 이미 422 로 막았다.
+            if (! is_array($row) || ! isset($row['code']) || ! is_string($row['code'])) {
                 continue;
             }
 
             $id = ! empty($row['id']) ? (int) $row['id'] : null;
-            $incoming[] = ['index' => $index, 'id' => $id, 'code' => strtolower(trim((string) $row['code']))];
+            $incoming[] = ['index' => $index, 'id' => $id, 'code' => strtolower(trim($row['code']))];
             if ($id !== null) {
                 $presentIds[$id] = true;
             }

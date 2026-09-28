@@ -620,8 +620,8 @@ HTTP/1.1 200
 | review_settings.max_image_size_mb | body | integer | 아니오 | min 1, max 50 | 리뷰 이미지 파일 1개의 최대 용량(MB) |
 | privacy_retention | body | array | 아니오 | — | 종결 주문 개인정보 보유기간 섹션(이슈 #636). 「개인정보 보유기간」 탭 저장이 `_tab: privacy_retention` 과 함께 보낸다. 코어 보유기간 커맨드(`privacy:process-retention`)가 핸들러 `sirsoft-ecommerce.order` 를 통해 이 값을 읽어 매일 실행한다 |
 | privacy_retention.enabled | body | boolean | 아니오 | — | 보유기간 처리 사용 여부. **기본 false** — 되돌릴 수 없는 처리라 운영자가 직접 켜야 하며, 핸들러가 실행 시점에 false 폴백으로 다시 읽는다 |
-| privacy_retention.retention_years | body | integer | 아니오 | min 5, max 20 | 주문 종결(구매확정·취소, 진행 중 환불 없음) 후 보유기간(년, 기본 5). 하한 5년은 전자상거래법 §6 보존기간이라 서버가 강제하고, 판독부도 5년 바닥값을 둔다. 한계값은 `config('sirsoft-ecommerce.limits')` |
-| privacy_retention.mode | body | string | 아니오 | `anonymize`, `delete` | 처리 방식(기본 `anonymize`). `anonymize` 는 주문자·수령인 이름·연락처·주소(NOT NULL 칸은 `***`, nullable 칸은 NULL)·구매자·입금·환불 계좌 명의·IP·관리자 메모를 지우고 주문번호·금액·상태는 남긴다. `delete` 는 주문과 결제·배송·취소·환불·현금영수증·세금계산서·옵션·주소를 명시 삭제하고 그 주문의 상품 리뷰를 이미지째 지우며, 쿠폰 발급·마일리지 거래는 주문 연결만 끊는다 |
+| privacy_retention.retention_years | body | integer | 아니오 | min 5, max 20 | 주문 종결(구매확정·취소, 진행 중 환불·교환·반품 없음) 후 보유기간(년, 기본 5). 하한 5년은 전자상거래법 §6 보존기간이라 서버가 강제하고, 판독부도 5년 바닥값을 둔다. 한계값은 `config('sirsoft-ecommerce.limits')` |
+| privacy_retention.mode | body | string | 아니오 | `anonymize`, `delete` | 처리 방식(기본 `anonymize`). `anonymize` 는 주문자·수령인 이름·연락처·주소(NOT NULL 칸은 `***`, nullable 칸은 NULL)·구매자·입금·환불 계좌 명의·IP·관리자 메모와 교환·반품·환불 신청서의 환불 계좌·상세 사유·관리자 메모·교환 재배송지를 지우고 주문번호·금액·상태는 남긴다. `delete` 는 주문과 결제·배송·취소·환불·현금영수증·세금계산서·옵션·주소와 교환·반품·클레임 결제·클레임 첨부(파일 포함)를 명시 삭제하고 그 주문의 상품 리뷰를 이미지째 지우며, 쿠폰 발급·마일리지 거래는 주문·클레임 결제·환불 연결만 끊는다 |
 | mileage | body | array | 아니오 | — | 마일리지 설정 섹션 (사용 여부·기본 적립률·적립 트리거·통화별 규칙·소멸/소멸 알림) |
 | mileage.enabled | body | boolean | 아니오 | — | 마일리지 적립·사용 기능 사용 여부 (`mileage` 전달 시 필수) |
 | mileage.default_earn_rate | body | number | 아니오 | min 0, max 100 | 기본 적립률(%). 상품 등록 시 기본값으로 사용되며, `enabled: true` 인 경우 0 초과여야 함 |

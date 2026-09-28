@@ -81,6 +81,7 @@ effects:
   # ⑥ 일괄 — 부분 성공이 정상 결과다
   - bulk_status_reports_partial_success_with_skip_reasons
   - bulk_status_requires_the_update_permission
+  - bulk_status_rejects_malformed_status_as_validation_error
   - option_bulk_transitions_items_and_syncs_the_header
   - option_bulk_completed_completes_the_selected_items
   - option_bulk_rejects_items_of_another_claim_with_422

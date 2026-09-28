@@ -65,6 +65,27 @@ class AdminStoreExchangeRequest extends FormRequest
     }
 
     /**
+     * 검증 오류 문구에 쓰는 필드 표시명
+     *
+     * @return array<string, string> 필드 키 → 표시명
+     */
+    public function attributes(): array
+    {
+        return [
+            'items.*.new_product_option_id' => __('sirsoft-ecommerce::validation.request_attributes.new_product_option'),
+            'items.*.custom_options' => __('sirsoft-ecommerce::validation.request_attributes.custom_options'),
+            'redelivery_address' => __('sirsoft-ecommerce::validation.request_attributes.redelivery_address'),
+            'redelivery_address.recipient_name' => __('sirsoft-ecommerce::validation.request_attributes.redelivery_recipient_name'),
+            'redelivery_address.phone' => __('sirsoft-ecommerce::validation.request_attributes.redelivery_phone'),
+            'redelivery_address.zipcode' => __('sirsoft-ecommerce::validation.request_attributes.redelivery_zipcode'),
+            'redelivery_address.address1' => __('sirsoft-ecommerce::validation.request_attributes.redelivery_address1'),
+            'redelivery_address.address2' => __('sirsoft-ecommerce::validation.request_attributes.redelivery_address2'),
+            'redelivery_address.country_code' => __('sirsoft-ecommerce::validation.request_attributes.redelivery_country_code'),
+            'redelivery_address.changed_by_user' => __('sirsoft-ecommerce::validation.request_attributes.redelivery_changed_by_user'),
+        ] + $this->adminClaimAttributes();
+    }
+
+    /**
      * 추가 검증 로직 — 접수 상품의 주문 소속 · 환불 계좌 완결성
      *
      * @param  Validator  $validator  검증기

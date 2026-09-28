@@ -80,6 +80,33 @@ trait ValidatesAdminClaimRequest
     }
 
     /**
+     * 직권 접수 공용 규칙의 필드 표시명을 반환합니다.
+     *
+     * 이 규칙 키들은 요청 파일에 글자로 적히지 않아 라벨 검사(audit)가 보지 못한다 — 트레이트를 쓰는
+     * 요청은 `attributes()` 에서 이 목록을 합친다.
+     *
+     * @return array<string, string> 필드 키 → 표시명
+     */
+    protected function adminClaimAttributes(): array
+    {
+        return [
+            'items' => __('sirsoft-ecommerce::validation.request_attributes.items'),
+            'items.*.order_option_id' => __('sirsoft-ecommerce::validation.request_attributes.order_option'),
+            'items.*.quantity' => __('sirsoft-ecommerce::validation.request_attributes.quantity'),
+            'reason_code' => __('sirsoft-ecommerce::validation.request_attributes.reason_code'),
+            'reason_detail' => __('sirsoft-ecommerce::validation.request_attributes.reason_detail'),
+            'charge_method' => __('sirsoft-ecommerce::validation.request_attributes.charge_method'),
+            'claim_shipping_fee' => __('sirsoft-ecommerce::validation.request_attributes.claim_shipping_fee'),
+            'refund_priority' => __('sirsoft-ecommerce::validation.request_attributes.refund_priority'),
+            'refund_bank' => __('sirsoft-ecommerce::validation.request_attributes.refund_bank'),
+            'refund_bank.bank_code' => __('sirsoft-ecommerce::validation.request_attributes.refund_bank_code'),
+            'refund_bank.account_number' => __('sirsoft-ecommerce::validation.request_attributes.refund_bank_account'),
+            'refund_bank.holder' => __('sirsoft-ecommerce::validation.request_attributes.refund_bank_holder'),
+            'approve' => __('sirsoft-ecommerce::validation.request_attributes.approve_on_receipt'),
+        ];
+    }
+
+    /**
      * 접수 상품이 모두 라우트의 주문에 속하는지 검증합니다.
      *
      * @param  Validator  $validator  검증기

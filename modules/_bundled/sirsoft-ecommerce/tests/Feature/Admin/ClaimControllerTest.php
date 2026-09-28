@@ -1172,6 +1172,32 @@ class ClaimControllerTest extends ModuleTestCase
         ])->assertForbidden();
     }
 
+    /**
+     * 형식이 틀린 목표 상태(배열)는 서버 오류가 아니라 입력 오류(422)로 돌아간다.
+     *
+     * 규칙이 실패해도 사후 검증(송장 필요 여부)은 돈다 — 목표 상태를 문자열로 바꾸던 사후 검증이 배열에서
+     * 500 으로 멈췄다(16차 병합 후속 브라우저 실측, 트러블슈팅 `[case:backend-46]`). 오류 문구는 필드 키 대신
+     * 칸 이름을 싣는다.
+     *
+     * @effects bulk_status_rejects_malformed_status_as_validation_error
+     *
+     * @return void 반환값 없음
+     */
+    public function test_bulk_status_rejects_malformed_status_as_validation_error(): void
+    {
+        $response = $this->actingAs($this->admin)->postJson($this->base().'/claims/bulk-status', [
+            'type' => 'return',
+            'ids' => [1],
+            'status' => ['approved'],
+        ]);
+
+        $response->assertStatus(422)->assertJsonValidationErrors(['status']);
+        $this->assertStringContainsString(
+            __('sirsoft-ecommerce::validation.request_attributes.claim_status'),
+            $response->json('errors.status.0')
+        );
+    }
+
     // ================================================================
     // 상품 단위 일괄 전이 (D25)
     // ================================================================

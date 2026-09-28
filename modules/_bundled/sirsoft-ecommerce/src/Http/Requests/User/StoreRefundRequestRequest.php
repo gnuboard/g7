@@ -93,6 +93,29 @@ class StoreRefundRequestRequest extends FormRequest
     }
 
     /**
+     * 검증 오류 문구에 쓰는 필드 표시명
+     *
+     * @return array<string, string> 필드 키 → 표시명
+     */
+    public function attributes(): array
+    {
+        return [
+            'items' => __('sirsoft-ecommerce::validation.request_attributes.items'),
+            'items.*.order_option_id' => __('sirsoft-ecommerce::validation.request_attributes.order_option'),
+            'items.*.quantity' => __('sirsoft-ecommerce::validation.request_attributes.quantity'),
+            'reason_code' => __('sirsoft-ecommerce::validation.request_attributes.reason_code'),
+            'reason_detail' => __('sirsoft-ecommerce::validation.request_attributes.reason_detail'),
+            'refund_priority' => __('sirsoft-ecommerce::validation.request_attributes.refund_priority'),
+            'refund_bank' => __('sirsoft-ecommerce::validation.request_attributes.refund_bank'),
+            'refund_bank.bank_code' => __('sirsoft-ecommerce::validation.request_attributes.refund_bank_code'),
+            'refund_bank.account_number' => __('sirsoft-ecommerce::validation.request_attributes.refund_bank_account'),
+            'refund_bank.holder' => __('sirsoft-ecommerce::validation.request_attributes.refund_bank_holder'),
+            'image_ids' => __('sirsoft-ecommerce::validation.request_attributes.image_ids'),
+            'image_ids.*' => __('sirsoft-ecommerce::validation.request_attributes.image_id'),
+        ];
+    }
+
+    /**
      * 추가 검증 로직 — 주문 존재·소유권 확인 후 신청 상품의 주문 소속 검사
      *
      * 소유권 404 가 상품 소속 422 보다 먼저 나야 하므로 순서를 바꾸지 않는다.

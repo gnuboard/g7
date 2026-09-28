@@ -725,7 +725,7 @@
     "notice_title": "Legal notice — read first",
     "notice_desc": "Under the Act on the Consumer Protection in Electronic Commerce, records of contracts, withdrawals, payments and supply of goods must be kept for 5 years, so the retention period cannot be shorter than 5 years. Announce the retention period and erasure method in your privacy policy before turning this on.",
     "title": "Closed order personal information retention",
-    "description": "Automatically processes, every day, the orderer and recipient information of orders closed by purchase confirmation or cancellation (with no refund in progress) once the retention period has passed. Orders in delivery or not yet confirmed are never processed.",
+    "description": "Automatically processes, every day, the orderer and recipient information of orders closed by purchase confirmation or cancellation (with no refund, exchange or return in progress) once the retention period has passed. Orders in delivery or not yet confirmed are never processed.",
     "enabled": "Automatic retention processing",
     "enabled_hint": "When on, the core privacy retention job (runs daily) processes orders with the method below. Processed data cannot be restored.",
     "target_count": "{{count}} targets",
@@ -737,8 +737,8 @@
       "anonymize": "Anonymize (keep the order, mask personal information)",
       "delete": "Delete (delete the whole order)"
     },
-    "anonymize_notice": "Order number, amounts and product records remain, and the orderer and recipient name, contact number and address are masked. Processed orders can no longer be found through guest order lookup or the admin order search by name or contact number, but can still be opened by order number.",
-    "delete_warning": "Deletion cannot be undone. The order is deleted together with its payment, shipping, cancellation and refund records, and product reviews written for it disappear with their images, which changes product ratings. Receipt and transaction lookups on the payment provider screens no longer open for that order number, and coupon issues and mileage history remain but lose their link to the order.",
+    "anonymize_notice": "Order number, amounts and product records remain, and the orderer and recipient name, contact number and address are masked. Refund account holders and numbers, reason details and admin memos on exchange, return and refund requests, and exchange redelivery addresses are masked as well. Processed orders can no longer be found through guest order lookup or the admin order search by name or contact number, but can still be opened by order number.",
+    "delete_warning": "Deletion cannot be undone. The order is deleted together with its payment, shipping, cancellation, refund, exchange and return records, including attached photos, and product reviews written for it disappear with their images, which changes product ratings. Receipt and transaction lookups on the payment provider screens no longer open for that order number, and coupon issues and mileage history remain but lose their link to the order.",
     "preview_hint": "Target counts are based on the saved settings. If you changed a value, save first and check again.",
     "targets": {
       "view": "View target orders",

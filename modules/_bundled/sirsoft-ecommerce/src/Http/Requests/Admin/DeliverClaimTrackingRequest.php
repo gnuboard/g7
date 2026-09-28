@@ -58,6 +58,20 @@ class DeliverClaimTrackingRequest extends FormRequest
     }
 
     /**
+     * 검증 오류 문구에 쓰는 필드 표시명
+     *
+     * @return array<string, string> 필드 키 → 표시명
+     */
+    public function attributes(): array
+    {
+        return [
+            'direction' => __('sirsoft-ecommerce::validation.request_attributes.tracking_direction'),
+            'carrier_id' => __('sirsoft-ecommerce::validation.request_attributes.carrier'),
+            'tracking_number' => __('sirsoft-ecommerce::validation.request_attributes.tracking_number'),
+        ];
+    }
+
+    /**
      * 송장 방향을 반환합니다.
      *
      * @return ClaimTrackingDirectionEnum 방향

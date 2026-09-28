@@ -77,7 +77,10 @@ class BulkClaimStatusRequest extends FormRequest
     public function withValidator(Validator $validator): void
     {
         $validator->after(function (Validator $validator): void {
-            if (! $this->requiresTransitionTracking((string) $this->input('status'))) {
+            // 규칙이 실패해도 사후 검증은 돈다 — 문자열이 아닌 상태는 규칙 오류(422)로 이미 돌아가므로 여기서 멈춘다.
+            $status = $this->input('status');
+
+            if (! is_string($status) || ! $this->requiresTransitionTracking($status)) {
                 return;
             }
 
@@ -131,13 +134,38 @@ class BulkClaimStatusRequest extends FormRequest
     }
 
     /**
+     * 검증 오류 문구에 쓰는 필드 표시명
+     *
+     * @return array<string, string> 필드 키 → 표시명
+     */
+    public function attributes(): array
+    {
+        return [
+            'type' => __('sirsoft-ecommerce::validation.request_attributes.claim_type'),
+            'ids' => __('sirsoft-ecommerce::validation.request_attributes.claim_ids'),
+            'ids.*' => __('sirsoft-ecommerce::validation.request_attributes.claim_id'),
+            'status' => __('sirsoft-ecommerce::validation.request_attributes.claim_status'),
+            'reject_reason' => __('sirsoft-ecommerce::validation.request_attributes.reject_reason'),
+            'admin_memo' => __('sirsoft-ecommerce::validation.request_attributes.admin_memo'),
+            'trackings' => __('sirsoft-ecommerce::validation.request_attributes.trackings'),
+            'trackings.*' => __('sirsoft-ecommerce::validation.request_attributes.tracking'),
+            'trackings.*.id' => __('sirsoft-ecommerce::validation.request_attributes.claim_id'),
+            'trackings.*.carrier_id' => __('sirsoft-ecommerce::validation.request_attributes.carrier'),
+            'trackings.*.tracking_number' => __('sirsoft-ecommerce::validation.request_attributes.tracking_number'),
+        ] + $this->completionAttributes();
+    }
+
+    /**
      * 요청 본문의 클레임 유형에 허용되는 관리자 지정 상태 어휘를 반환합니다.
      *
      * @return array<int, string> 허용 상태 값
      */
     protected function assignableStatuses(): array
     {
-        return match (ClaimTypeEnum::tryFrom((string) $this->input('type'))) {
+        // 규칙 계산 중에 읽으므로 검증 전 값이다 — 문자열이 아니면 형 변환하지 않는다(형식 오류는 규칙이 422 로 돌려준다).
+        $type = $this->input('type');
+
+        return match (is_string($type) ? ClaimTypeEnum::tryFrom($type) : null) {
             ClaimTypeEnum::EXCHANGE => ExchangeStatusEnum::adminAssignableValues(),
             ClaimTypeEnum::RETURN => ReturnStatusEnum::adminAssignableValues(),
             ClaimTypeEnum::REFUND => RefundStatusEnum::adminAssignableValues(),

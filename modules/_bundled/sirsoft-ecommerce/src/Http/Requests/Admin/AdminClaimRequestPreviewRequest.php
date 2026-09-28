@@ -59,6 +59,23 @@ class AdminClaimRequestPreviewRequest extends FormRequest
     }
 
     /**
+     * 검증 오류 문구에 쓰는 필드 표시명
+     *
+     * @return array<string, string> 필드 키 → 표시명
+     */
+    public function attributes(): array
+    {
+        return [
+            'type' => __('sirsoft-ecommerce::validation.request_attributes.claim_type'),
+            'items.*.new_product_option_id' => __('sirsoft-ecommerce::validation.request_attributes.new_product_option'),
+            'items.*.custom_options' => __('sirsoft-ecommerce::validation.request_attributes.custom_options'),
+            'redelivery_address' => __('sirsoft-ecommerce::validation.request_attributes.redelivery_address'),
+            'full_cancel' => __('sirsoft-ecommerce::validation.request_attributes.full_cancel'),
+            'auto_advance' => __('sirsoft-ecommerce::validation.request_attributes.auto_advance'),
+        ] + $this->adminClaimAttributes();
+    }
+
+    /**
      * 추가 검증 로직 — 접수 상품의 주문 소속
      *
      * @param  Validator  $validator  검증기
@@ -76,7 +93,9 @@ class AdminClaimRequestPreviewRequest extends FormRequest
      */
     public function claimType(): ClaimTypeEnum
     {
-        $type = ClaimTypeEnum::tryFrom((string) $this->input('type'));
+        // 규칙 계산 중에 읽으므로 검증 전 값이다 — 문자열이 아니면 형 변환하지 않는다(형식 오류는 규칙이 422 로 돌려준다).
+        $input = $this->input('type');
+        $type = is_string($input) ? ClaimTypeEnum::tryFrom($input) : null;
 
         return in_array($type, [ClaimTypeEnum::EXCHANGE, ClaimTypeEnum::RETURN, ClaimTypeEnum::REFUND], true)
             ? $type

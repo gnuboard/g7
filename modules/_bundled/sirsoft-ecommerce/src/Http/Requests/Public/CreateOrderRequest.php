@@ -168,7 +168,6 @@ class CreateOrderRequest extends FormRequest
      * 따라서 "전부 비었거나 전부 채워졌거나" 둘 중 하나만 허용합니다.
      *
      * @param  Validator  $validator  검증기
-     *
      * @return void 반환값 없음
      */
     public function withValidator(Validator $validator): void
@@ -295,6 +294,18 @@ class CreateOrderRequest extends FormRequest
             'guest_lookup_password.min' => __('sirsoft-ecommerce::validation.order.guest_lookup_password_min'),
             'guest_lookup_password.confirmed' => __('sirsoft-ecommerce::validation.order.guest_lookup_password_confirmed'),
             'guest_lookup_password_confirmation.required' => __('sirsoft-ecommerce::validation.order.guest_lookup_password_confirmation_required'),
+        ];
+    }
+
+    /**
+     * 검증 오류 문구에 쓰는 필드 표시명
+     *
+     * @return array<string, string> 필드 키 → 표시명
+     */
+    public function attributes(): array
+    {
+        return [
+            'save_shipping_address_id' => __('sirsoft-ecommerce::validation.request_attributes.save_shipping_address'),
         ];
     }
 

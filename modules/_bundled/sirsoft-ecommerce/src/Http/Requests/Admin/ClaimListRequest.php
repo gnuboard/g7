@@ -47,7 +47,7 @@ class ClaimListRequest extends FormRequest
      */
     public function rules(): array
     {
-        $type = ClaimTypeEnum::tryFrom((string) $this->input('type')) ?? ClaimTypeEnum::EXCHANGE;
+        $type = ClaimTypeEnum::tryFrom($this->stringInput('type')) ?? ClaimTypeEnum::EXCHANGE;
 
         return [
             'type' => ['nullable', 'string', Rule::in(ClaimTypeEnum::values())],
@@ -139,6 +139,38 @@ class ClaimListRequest extends FormRequest
     }
 
     /**
+     * 검증 오류 문구에 쓰는 필드 표시명
+     *
+     * @return array<string, string> 필드 키 → 표시명
+     */
+    public function attributes(): array
+    {
+        return [
+            'type' => __('sirsoft-ecommerce::validation.request_attributes.claim_type'),
+            'statuses' => __('sirsoft-ecommerce::validation.request_attributes.statuses'),
+            'statuses.*' => __('sirsoft-ecommerce::validation.request_attributes.status_item'),
+            'from' => __('sirsoft-ecommerce::validation.request_attributes.date_from'),
+            'to' => __('sirsoft-ecommerce::validation.request_attributes.date_to'),
+            'search_field' => __('sirsoft-ecommerce::validation.request_attributes.search_field'),
+            'search_keyword' => __('sirsoft-ecommerce::validation.request_attributes.search_keyword'),
+            'fault_types' => __('sirsoft-ecommerce::validation.request_attributes.fault_types'),
+            'fault_types.*' => __('sirsoft-ecommerce::validation.request_attributes.fault_type'),
+            'charge_methods' => __('sirsoft-ecommerce::validation.request_attributes.charge_methods'),
+            'charge_methods.*' => __('sirsoft-ecommerce::validation.request_attributes.charge_method'),
+            'reason_code' => __('sirsoft-ecommerce::validation.request_attributes.reason_code'),
+            'requester_type' => __('sirsoft-ecommerce::validation.request_attributes.requester_type'),
+            'request_source' => __('sirsoft-ecommerce::validation.request_attributes.request_source'),
+            'collection_overdue' => __('sirsoft-ecommerce::validation.request_attributes.collection_overdue'),
+            'pending_refund' => __('sirsoft-ecommerce::validation.request_attributes.pending_refund'),
+            'min_amount' => __('sirsoft-ecommerce::validation.request_attributes.min_amount'),
+            'max_amount' => __('sirsoft-ecommerce::validation.request_attributes.max_amount'),
+            'currency_code' => __('sirsoft-ecommerce::validation.request_attributes.currency_code'),
+            'charge_payment_methods' => __('sirsoft-ecommerce::validation.request_attributes.charge_payment_methods'),
+            'charge_payment_methods.*' => __('sirsoft-ecommerce::validation.request_attributes.charge_payment_method'),
+        ];
+    }
+
+    /**
      * 통화 코드 검증 규칙을 반환합니다. (설정 어휘 → 실제 기록값 순서)
      *
      * 코드를 열거하지 않는다 — 상점이 통화를 추가·삭제하면 화면 선택지와 게이트가 함께
@@ -164,7 +196,7 @@ class ClaimListRequest extends FormRequest
     private function currencyRules(ClaimTypeEnum $type): array
     {
         $rules = ['nullable', 'string', 'max:10'];
-        $code = (string) $this->input('currency_code', '');
+        $code = $this->stringInput('currency_code');
 
         if ($code === '') {
             return $rules;
@@ -270,12 +302,28 @@ class ClaimListRequest extends FormRequest
      */
     private function allowedStatuses(): array
     {
-        return match (ClaimTypeEnum::tryFrom((string) $this->input('type'))) {
+        return match (ClaimTypeEnum::tryFrom($this->stringInput('type'))) {
             ClaimTypeEnum::RETURN => ReturnStatusEnum::values(),
             ClaimTypeEnum::REFUND => RefundStatusEnum::values(),
             ClaimTypeEnum::CANCEL => CancelStatusEnum::values(),
             default => ExchangeStatusEnum::values(),
         };
+    }
+
+    /**
+     * 규칙 계산에 쓸 문자열 입력을 읽습니다. (문자열이 아니면 빈 문자열)
+     *
+     * 규칙 계산은 검증보다 먼저 돌므로 값의 형식이 보장되지 않는다. 목록 등이 오면 형 변환하지 않고 빈
+     * 값으로 읽는다 — 그 칸의 형식 오류는 규칙이 422 로 돌려준다(`(string)` 변환은 500 을 낸다).
+     *
+     * @param  string  $key  입력 키
+     * @return string 문자열 입력 (아니면 빈 문자열)
+     */
+    private function stringInput(string $key): string
+    {
+        $value = $this->input($key);
+
+        return is_string($value) ? $value : '';
     }
 
     /**

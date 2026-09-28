@@ -57,6 +57,26 @@ class UpdateClaimRequestOnBehalfRequest extends FormRequest
     }
 
     /**
+     * 검증 오류 문구에 쓰는 필드 표시명
+     *
+     * @return array<string, string> 필드 키 → 표시명
+     */
+    public function attributes(): array
+    {
+        return [
+            'reason_code' => __('sirsoft-ecommerce::validation.request_attributes.reason_code'),
+            'reason_detail' => __('sirsoft-ecommerce::validation.request_attributes.reason_detail'),
+            'redelivery_address' => __('sirsoft-ecommerce::validation.request_attributes.redelivery_address'),
+            'redelivery_address.recipient_name' => __('sirsoft-ecommerce::validation.request_attributes.redelivery_recipient_name'),
+            'redelivery_address.phone' => __('sirsoft-ecommerce::validation.request_attributes.redelivery_phone'),
+            'redelivery_address.zipcode' => __('sirsoft-ecommerce::validation.request_attributes.redelivery_zipcode'),
+            'redelivery_address.address1' => __('sirsoft-ecommerce::validation.request_attributes.redelivery_address1'),
+            'redelivery_address.address2' => __('sirsoft-ecommerce::validation.request_attributes.redelivery_address2'),
+            'redelivery_address.country_code' => __('sirsoft-ecommerce::validation.request_attributes.redelivery_country_code'),
+        ];
+    }
+
+    /**
      * 서비스에 넘길 수정 페이로드를 반환합니다. (보낸 키만)
      *
      * @return array<string, mixed> 수정 페이로드

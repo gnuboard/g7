@@ -52,9 +52,22 @@ class ClaimPaymentApproveRequest extends FormRequest
     }
 
     /**
+     * 검증 오류 문구에 쓰는 필드 표시명
+     *
+     * @return array<string, string> 필드 키 → 표시명
+     */
+    public function attributes(): array
+    {
+        return [
+            'callback' => __('sirsoft-ecommerce::validation.request_attributes.payment_callback'),
+        ];
+    }
+
+    /**
      * 검증 실패 시 응답 커스터마이징
      *
      * @param  Validator  $validator  검증기
+     * @return void 반환값 없음
      *
      * @throws ValidationException
      */

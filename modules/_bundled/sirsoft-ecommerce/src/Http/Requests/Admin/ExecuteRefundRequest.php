@@ -79,6 +79,25 @@ class ExecuteRefundRequest extends FormRequest
     }
 
     /**
+     * 검증 오류 문구에 쓰는 필드 표시명
+     *
+     * @return array<string, string> 필드 키 → 표시명
+     */
+    public function attributes(): array
+    {
+        return [
+            'refund_amount' => __('sirsoft-ecommerce::validation.request_attributes.refund_amount'),
+            'refund_points_amount' => __('sirsoft-ecommerce::validation.request_attributes.refund_points_amount'),
+            'refund_method' => __('sirsoft-ecommerce::validation.request_attributes.refund_method'),
+            'refund_bank' => __('sirsoft-ecommerce::validation.request_attributes.refund_bank'),
+            'refund_bank.bank_code' => __('sirsoft-ecommerce::validation.request_attributes.refund_bank_code'),
+            'refund_bank.account_number' => __('sirsoft-ecommerce::validation.request_attributes.refund_bank_account'),
+            'refund_bank.holder' => __('sirsoft-ecommerce::validation.request_attributes.refund_bank_holder'),
+            'force_without_refund_bank' => __('sirsoft-ecommerce::validation.request_attributes.force_without_refund_bank'),
+        ];
+    }
+
+    /**
      * 환불수단이 그 주문에서 쓸 수 있는 수단인지 대조합니다. (금액 수정과 같은 강도)
      *
      * 게이트는 **[금액 수정](`UpdateClaimAmountsRequest` → `refundMethodOptions()`)과 같은 선택지**다 —

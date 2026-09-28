@@ -436,6 +436,40 @@ class ClaimAttachmentService
     }
 
     /**
+     * 모아 둔 첨부의 저장 파일만 지웁니다. (행·훅·활동 로그 없음)
+     *
+     * 개인정보 보유기간 삭제 전용이다 — 첨부 행은 주문과 함께 보유기간 저장소가 한 트랜잭션에서 지우고,
+     * 파일은 커밋 뒤 이 메서드가 지운다. {@see delete()} 를 쓰지 않는 이유: 삭제 훅이 활동 로그에 원본
+     * 파일명을 새로 남겨, 파기하려던 개인정보 사본이 하나 더 생긴다. 건별 실패는 나머지를 막지 않고
+     * 첨부 ID 만 남긴다.
+     *
+     * @param  Collection<int, ClaimImage>  $images  삭제 전에 모아 둔 첨부 목록
+     * @return int 지운 파일 수
+     */
+    public function deleteStoredFiles(Collection $images): int
+    {
+        $count = 0;
+
+        foreach ($images as $image) {
+            try {
+                $rowStorage = $this->storageForRow($image->disk);
+
+                if ($rowStorage->exists('images', $image->path)) {
+                    $rowStorage->delete('images', $image->path);
+                    $count++;
+                }
+            } catch (Throwable $e) {
+                Log::warning('[claim.image] 보유기간 삭제 — 첨부 파일 삭제 실패', [
+                    'claim_image_id' => $image->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        return $count;
+    }
+
+    /**
      * 모아 둔 첨부 목록을 파일까지 삭제합니다.
      *
      * @param  Collection<int, ClaimImage>  $images  첨부 목록

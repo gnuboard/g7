@@ -51,6 +51,11 @@
 
 ### Fixed
 
+- 환경설정 「개인정보 보유기간」 탭의 대상 설명·익명화 안내·삭제 경고 일본어 번역을 원본에 맞춰 고쳤습니다 — 보유기간
+  처리가 교환·반품 기록(환불 계좌·교환 배송지·첨부 사진)을 함께 처리합니다.
+- 클레임 요청 입력 항목 라벨(`validation.request_attributes`·`validation.claim_settings_attributes`)의 일본어 번역을
+  추가했습니다 — 입력 오류 문구가 영문 필드 키 대신 칸 이름을 싣습니다. 환경설정 클레임 정책 칸 이름은 원본을 따라
+  `validation.attributes` 의 점 표기 키 14개에서 `validation.claim_settings_attributes` 로 옮겼습니다.
 - 관리자 화면에서 원문 키가 그대로 보이던 문구의 일본어 번역을 추가했습니다 — 입금 확인 실패(`confirm_deposit.confirm_failed`)·
   주문 일괄 처리 실패(`order.bulk.error`)·클레임 활동 로그 ID 라벨·취소 신청서 상품 상태 변경 안내·첨부 전체 삭제 확인 창·
   환불 실행 창의 은행 선택·주문취소 뒤 안내 2건(클레임 권한 없음 / 자동 처리가 승인에서 멈춤).

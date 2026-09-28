@@ -73,6 +73,19 @@ trait ValidatesClaimTransitionTracking
     }
 
     /**
+     * 단건 송장 필드 표시명을 반환합니다.
+     *
+     * @return array<string, string> 필드 키 → 표시명
+     */
+    protected function transitionTrackingAttributes(): array
+    {
+        return [
+            'carrier_id' => __('sirsoft-ecommerce::validation.request_attributes.carrier'),
+            'tracking_number' => __('sirsoft-ecommerce::validation.request_attributes.tracking_number'),
+        ];
+    }
+
+    /**
      * 송장이 필요한 목표 상태인지 반환합니다.
      *
      * @param  string  $status  목표 상태 값

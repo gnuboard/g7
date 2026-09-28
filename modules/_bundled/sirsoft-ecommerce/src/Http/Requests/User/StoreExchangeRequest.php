@@ -132,6 +132,41 @@ class StoreExchangeRequest extends FormRequest
     }
 
     /**
+     * 검증 오류 문구에 쓰는 필드 표시명
+     *
+     * @return array<string, string> 필드 키 → 표시명
+     */
+    public function attributes(): array
+    {
+        return [
+            'items' => __('sirsoft-ecommerce::validation.request_attributes.items'),
+            'items.*.order_option_id' => __('sirsoft-ecommerce::validation.request_attributes.order_option'),
+            'items.*.quantity' => __('sirsoft-ecommerce::validation.request_attributes.quantity'),
+            'items.*.new_product_option_id' => __('sirsoft-ecommerce::validation.request_attributes.new_product_option'),
+            'items.*.custom_options' => __('sirsoft-ecommerce::validation.request_attributes.custom_options'),
+            'reason_code' => __('sirsoft-ecommerce::validation.request_attributes.reason_code'),
+            'reason_detail' => __('sirsoft-ecommerce::validation.request_attributes.reason_detail'),
+            'charge_method' => __('sirsoft-ecommerce::validation.request_attributes.charge_method'),
+            'payment_method' => __('sirsoft-ecommerce::validation.request_attributes.payment_method'),
+            'refund_priority' => __('sirsoft-ecommerce::validation.request_attributes.refund_priority'),
+            'refund_bank' => __('sirsoft-ecommerce::validation.request_attributes.refund_bank'),
+            'refund_bank.bank_code' => __('sirsoft-ecommerce::validation.request_attributes.refund_bank_code'),
+            'refund_bank.account_number' => __('sirsoft-ecommerce::validation.request_attributes.refund_bank_account'),
+            'refund_bank.holder' => __('sirsoft-ecommerce::validation.request_attributes.refund_bank_holder'),
+            'image_ids' => __('sirsoft-ecommerce::validation.request_attributes.image_ids'),
+            'image_ids.*' => __('sirsoft-ecommerce::validation.request_attributes.image_id'),
+            'redelivery_address' => __('sirsoft-ecommerce::validation.request_attributes.redelivery_address'),
+            'redelivery_address.recipient_name' => __('sirsoft-ecommerce::validation.request_attributes.redelivery_recipient_name'),
+            'redelivery_address.phone' => __('sirsoft-ecommerce::validation.request_attributes.redelivery_phone'),
+            'redelivery_address.zipcode' => __('sirsoft-ecommerce::validation.request_attributes.redelivery_zipcode'),
+            'redelivery_address.address1' => __('sirsoft-ecommerce::validation.request_attributes.redelivery_address1'),
+            'redelivery_address.address2' => __('sirsoft-ecommerce::validation.request_attributes.redelivery_address2'),
+            'redelivery_address.country_code' => __('sirsoft-ecommerce::validation.request_attributes.redelivery_country_code'),
+            'redelivery_address.changed_by_user' => __('sirsoft-ecommerce::validation.request_attributes.redelivery_changed_by_user'),
+        ];
+    }
+
+    /**
      * 추가 검증 로직 — 주문 존재·소유권
      *
      * @param  Validator  $validator  검증기

@@ -94,6 +94,20 @@ class ClaimListRequest extends FormRequest
     }
 
     /**
+     * 검증 오류 문구에 쓰는 필드 표시명
+     *
+     * @return array<string, string> 필드 키 → 표시명
+     */
+    public function attributes(): array
+    {
+        return [
+            'type' => __('sirsoft-ecommerce::validation.request_attributes.claim_type'),
+            'from' => __('sirsoft-ecommerce::validation.request_attributes.date_from'),
+            'to' => __('sirsoft-ecommerce::validation.request_attributes.date_to'),
+        ];
+    }
+
+    /**
      * 조회 유형에 허용되는 상태 어휘를 반환합니다.
      *
      * 어휘의 단일 출처는 유형별 Enum 이다 — 목록 필터·라벨·실제 기록이 같은 집합을 쓰도록 여기서
@@ -104,7 +118,10 @@ class ClaimListRequest extends FormRequest
      */
     private function allowedStatuses(): array
     {
-        return match (ClaimTypeEnum::tryFrom((string) $this->input('type'))) {
+        // 규칙 계산 중에 읽으므로 검증 전 값이다 — 문자열이 아니면 형 변환하지 않는다(형식 오류는 규칙이 422 로 돌려준다).
+        $type = $this->input('type');
+
+        return match (is_string($type) ? ClaimTypeEnum::tryFrom($type) : null) {
             ClaimTypeEnum::RETURN => ReturnStatusEnum::values(),
             ClaimTypeEnum::REFUND => RefundStatusEnum::values(),
             ClaimTypeEnum::CANCEL => CancelStatusEnum::values(),

@@ -65,6 +65,18 @@ class UploadClaimImageRequest extends FormRequest
     }
 
     /**
+     * 검증 오류 문구에 쓰는 필드 표시명
+     *
+     * @return array<string, string> 필드 키 → 표시명
+     */
+    public function attributes(): array
+    {
+        return [
+            'image' => __('sirsoft-ecommerce::validation.request_attributes.image'),
+        ];
+    }
+
+    /**
      * 추가 검증 로직 — 주문 존재·소유권
      *
      * @param  Validator  $validator  검증기

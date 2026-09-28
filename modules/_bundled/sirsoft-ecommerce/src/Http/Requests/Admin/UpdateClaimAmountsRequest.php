@@ -85,6 +85,23 @@ class UpdateClaimAmountsRequest extends FormRequest
     }
 
     /**
+     * 검증 오류 문구에 쓰는 필드 표시명
+     *
+     * @return array<string, string> 필드 키 → 표시명
+     */
+    public function attributes(): array
+    {
+        return [
+            'refund_amount' => __('sirsoft-ecommerce::validation.request_attributes.refund_amount'),
+            'refund_points_amount' => __('sirsoft-ecommerce::validation.request_attributes.refund_points_amount'),
+            'refund_method' => __('sirsoft-ecommerce::validation.request_attributes.refund_method'),
+            'claim_shipping_fee' => __('sirsoft-ecommerce::validation.request_attributes.claim_shipping_fee'),
+            'charge_method' => __('sirsoft-ecommerce::validation.request_attributes.charge_method'),
+            'admin_memo' => __('sirsoft-ecommerce::validation.request_attributes.admin_memo'),
+        ];
+    }
+
+    /**
      * 라우트 세그먼트의 클레임 유형을 반환합니다.
      *
      * @return ClaimTypeEnum|null 클레임 유형

@@ -222,4 +222,28 @@ class OrderListRequest extends FormRequest
         // 훅을 통한 validation messages 확장
         return HookManager::applyFilters('sirsoft-ecommerce.order.list_validation_messages', $messages, $this);
     }
+
+    /**
+     * 검증 오류 문구에 쓰는 필드 표시명
+     *
+     * @return array<string, string> 필드 키 → 표시명
+     */
+    public function attributes(): array
+    {
+        return [
+            'claim_presence' => __('sirsoft-ecommerce::validation.request_attributes.claim_presence'),
+            'claim_exchange_statuses' => __('sirsoft-ecommerce::validation.request_attributes.claim_exchange_statuses'),
+            'claim_exchange_statuses.*' => __('sirsoft-ecommerce::validation.request_attributes.claim_exchange_status'),
+            'claim_return_statuses' => __('sirsoft-ecommerce::validation.request_attributes.claim_return_statuses'),
+            'claim_return_statuses.*' => __('sirsoft-ecommerce::validation.request_attributes.claim_return_status'),
+            'claim_refund_statuses' => __('sirsoft-ecommerce::validation.request_attributes.claim_refund_statuses'),
+            'claim_refund_statuses.*' => __('sirsoft-ecommerce::validation.request_attributes.claim_refund_status'),
+            'claim_cancel_types' => __('sirsoft-ecommerce::validation.request_attributes.claim_cancel_types'),
+            'claim_cancel_types.*' => __('sirsoft-ecommerce::validation.request_attributes.claim_cancel_type'),
+            'claim_fault_types' => __('sirsoft-ecommerce::validation.request_attributes.fault_types'),
+            'claim_fault_types.*' => __('sirsoft-ecommerce::validation.request_attributes.fault_type'),
+            'claim_requested_from' => __('sirsoft-ecommerce::validation.request_attributes.claim_requested_from'),
+            'claim_requested_to' => __('sirsoft-ecommerce::validation.request_attributes.claim_requested_to'),
+        ];
+    }
 }

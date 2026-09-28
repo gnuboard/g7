@@ -51,6 +51,26 @@ trait ResolvesClaimCompletionOptions
     }
 
     /**
+     * `completion` 페이로드의 필드 표시명을 반환합니다.
+     *
+     * 전용 메시지가 없는 규칙이 실패해도 필드 키 대신 칸 이름이 실리도록, 트레이트를 쓰는 요청은
+     * `attributes()` 에서 이 목록을 합친다.
+     *
+     * @return array<string, string> 필드 키 → 표시명
+     */
+    protected function completionAttributes(): array
+    {
+        return [
+            'completion' => __('sirsoft-ecommerce::validation.request_attributes.completion'),
+            'completion.restore_stock_by_item' => __('sirsoft-ecommerce::validation.request_attributes.restore_stock_by_item'),
+            'completion.restore_stock_by_item.*' => __('sirsoft-ecommerce::validation.request_attributes.restore_stock_item'),
+            'completion.create_refund_request' => __('sirsoft-ecommerce::validation.request_attributes.create_refund_request'),
+            'completion.unreturned' => __('sirsoft-ecommerce::validation.request_attributes.unreturned_reasons'),
+            'completion.unreturned.*' => __('sirsoft-ecommerce::validation.request_attributes.unreturned_reasons'),
+        ];
+    }
+
+    /**
      * 완료 처리 옵션을 반환합니다. (완료 전이가 아니면 null)
      *
      * @return ClaimCompletionOptions|null 완료 처리 옵션

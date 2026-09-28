@@ -37,6 +37,18 @@ class ClaimLogsRequest extends FormRequest
     }
 
     /**
+     * 검증 오류 문구에 쓰는 필드 표시명
+     *
+     * @return array<string, string> 필드 키 → 표시명
+     */
+    public function attributes(): array
+    {
+        return [
+            'sort_order' => __('sirsoft-ecommerce::validation.request_attributes.sort_order'),
+        ];
+    }
+
+    /**
      * 활동 로그 조회 필터(페이지 크기·정렬)를 반환합니다.
      *
      * @return array{per_page: int, sort_order: string} 조회 필터

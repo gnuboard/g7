@@ -565,6 +565,28 @@ $validator->after(function (Validator $validator) {
 
 이 방식은 `formrequest-store-update-conditional-symmetry` 룰의 토큰 비교로는 "누락"으로 보이므로, 해당 필드에 `// audit:allow formrequest-store-update-conditional-symmetry reason: ...` 로 판정 위치를 남긴다.
 
+### 규칙 계산·사후 검증에서 입력을 읽을 때 — 형식을 믿지 않는다
+
+`rules()` 는 검증보다 **먼저** 돌고(입력으로 규칙을 고르는 `ClaimTypeEnum::tryFrom($this->input('type'))` 같은
+코드), `withValidator()` 의 `after` 콜백은 규칙 오류가 난 요청에서도 **실행된다**. 두 자리에서 입력을
+형 변환하거나 문자열 함수에 넘기면(`(string)`·`trim()`) 규칙이 막으려던 형식(문자열 칸에 목록)에서 PHP
+오류가 나 422 대신 500 이 된다. 문자열이 아니면 형 변환하지 않고 건너뛰거나 빈 값으로 읽는다 — 그 칸의
+형식 오류는 규칙이 422 로 돌려준다.
+
+```php
+// ❌ DON'T: status 에 배열이 오면 Array to string conversion → 500
+if (! $this->requiresTransitionTracking((string) $this->input('status'))) {
+    return;
+}
+
+// ✅ DO: 문자열이 아니면 건너뛴다
+$status = $this->input('status');
+
+if (! is_string($status) || ! $this->requiresTransitionTracking($status)) {
+    return;
+}
+```
+
 ### `exclude_if` vs `exclude_unless` — 조건 필드가 nullable 일 때
 
 `exclude_if:other,false` 의 값 비교는 strict 다. 조건 필드가 `nullable|boolean` 이라 `null` 이 올 수 있으면 `null !== false` 라 매칭되지 않아 배제가 일어나지 않는다. "true 가 아니면 제외" 를 뜻하는 `exclude_unless:other,true` 는 `null`/`false`/미전송을 모두 포괄한다.
@@ -1351,6 +1373,21 @@ seo.bot_user_agents.0 필드는 100자를 초과하면 안 됩니다.        ❌
 **자동 검사는 이 경로를 재지 못한다** — 감사 룰과 PHPUnit 은 FormRequest 의 **정적 리터럴**만
 읽으므로 훅이 런타임에 얹는 키는 잔량 집계에도 잡히지 않는다. 그래서 이 절이 규율이고,
 확장 리뷰에서 눈으로 대조한다.
+
+### 트레이트로 규칙을 나눠 쓸 때
+
+여러 요청이 트레이트에서 규칙을 받으면(`adminClaimRules()` 같은 메서드) 그 키도 요청 파일에 글자로
+적히지 않아 감사 룰이 보지 못한다. 요청 파일의 키에만 라벨을 달고 끝내면 트레이트 키의 오류 문구에
+원시 키가 그대로 나간다(`refund bank.holder 필드는 50자를 초과하면 안 됩니다`).
+
+- 규칙을 주는 트레이트가 **라벨도 같은 자리에서 준다** — `adminClaimRules()` · `adminClaimMessages()`
+  옆에 `adminClaimAttributes()` 를 두고, 요청의 `attributes()` 는 자기 키 배열에 `+ $this->adminClaimAttributes()`
+  로 합친다(요청 고유 키가 앞서므로 같은 키를 요청이 다시 정할 수 있다).
+- 감사 룰 대신 **요청을 실제로 만들어** `rules()` 가 돌려준 키 전부를 `attributes()` 와 대조하는 테스트로
+  막는다 — 예: 이커머스 `ClaimRequestAttributeLabelsTest::test_trait_provided_rule_keys_have_labels`.
+- 확장 lang 의 라벨 키에는 **점을 넣지 않는다** — `__()` 는 점을 중첩 경로로 읽으므로
+  `'claim.max_images' => …` 같은 평면 키를 찾지 못하고 키 문자열을 그대로 돌려준다(예외·경고 없음).
+  밑줄 키로 된 전용 그룹(`validation.request_attributes` 등)에 둔다. 점은 요청 쪽 규칙 키에만 쓴다.
 
 ### 라벨이 필요 없는 경우
 

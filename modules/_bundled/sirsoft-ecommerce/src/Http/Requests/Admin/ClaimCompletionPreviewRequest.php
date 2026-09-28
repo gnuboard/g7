@@ -110,7 +110,10 @@ class ClaimCompletionPreviewRequest extends FormRequest
 
         $claimIds = array_values($claimIds);
 
-        $this->allowedItemIds = ClaimTypeEnum::tryFrom((string) $this->input('claim_type')) === ClaimTypeEnum::EXCHANGE
+        // 검증 중에 읽는 값이다 — 문자열이 아니면 형 변환하지 않는다(형식 오류는 규칙이 422 로 돌려준다).
+        $claimType = $this->input('claim_type');
+
+        $this->allowedItemIds = (is_string($claimType) ? ClaimTypeEnum::tryFrom($claimType) : null) === ClaimTypeEnum::EXCHANGE
             ? app(OrderExchangeOptionRepositoryInterface::class)->listOptionIdsByExchangeIds($claimIds)
             : app(OrderReturnOptionRepositoryInterface::class)->listOptionIdsByReturnIds($claimIds);
 
@@ -144,6 +147,27 @@ class ClaimCompletionPreviewRequest extends FormRequest
             'claims.*.unreturned_item_ids.array' => __('sirsoft-ecommerce::validation.claims.items.array'),
             'claims.*.unreturned_item_ids.max' => __('sirsoft-ecommerce::validation.claims.items.max'),
             'claims.*.unreturned_item_ids.*.integer' => __('sirsoft-ecommerce::validation.claims.items.id_integer'),
+        ];
+    }
+
+    /**
+     * 검증 오류 문구에 쓰는 필드 표시명
+     *
+     * @return array<string, string> 필드 키 → 표시명
+     */
+    public function attributes(): array
+    {
+        return [
+            'claim_type' => __('sirsoft-ecommerce::validation.request_attributes.claim_type'),
+            'create_refund_request' => __('sirsoft-ecommerce::validation.request_attributes.create_refund_request'),
+            'claims' => __('sirsoft-ecommerce::validation.request_attributes.claims'),
+            'claims.*.id' => __('sirsoft-ecommerce::validation.request_attributes.claim_id'),
+            'claims.*.item_ids' => __('sirsoft-ecommerce::validation.request_attributes.completion_item_ids'),
+            'claims.*.item_ids.*' => __('sirsoft-ecommerce::validation.request_attributes.completion_item_id'),
+            'claims.*.restore_stock_by_item' => __('sirsoft-ecommerce::validation.request_attributes.restore_stock_by_item'),
+            'claims.*.restore_stock_by_item.*' => __('sirsoft-ecommerce::validation.request_attributes.restore_stock_item'),
+            'claims.*.unreturned_item_ids' => __('sirsoft-ecommerce::validation.request_attributes.unreturned_item_ids'),
+            'claims.*.unreturned_item_ids.*' => __('sirsoft-ecommerce::validation.request_attributes.unreturned_item_id'),
         ];
     }
 

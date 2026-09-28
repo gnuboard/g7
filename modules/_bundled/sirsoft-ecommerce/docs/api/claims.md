@@ -85,6 +85,15 @@
 `message` 는 두 층 모두 사용자에게 그대로 보여도 되는 문장이다. 필드 정보는 `errors` 에만 있으므로,
 `errors` 가 없다고 해서 실패를 삼키면 안 된다(도메인 거절이 조용히 사라진다).
 
+요청 형태 검증 문구는 필드를 **키가 아니라 화면의 칸 이름**으로 가리킨다 — 예: `redelivery_address.recipient_name`
+이 50자를 넘으면 「받는 분 필드는 50자를 초과하면 안 됩니다」다(`errors` 의 키는 그대로 필드 키). 클레임 요청마다
+`attributes()` 가 규칙 키(목록 항목은 `items.*.quantity` 같은 와일드카드)에 라벨을 주고, 문구는 언어 파일
+`validation.request_attributes` 에 있다. 주문 목록의 클레임 필터·배송정책의 반품·교환 배송비·주문서의 배송지 저장
+요청도 같은 그룹을 쓰고, 환경설정 클레임 정책은 설정 화면 라벨과 같은 문구(`validation.claim_settings_attributes`)를 쓴다.
+관리자 직권 접수(미리보기·교환·반품)와 상태 변경(단건·일괄·상품 단위)은 규칙 일부를 트레이트에서 받는다 — 그 키의 라벨은
+트레이트의 `adminClaimAttributes()`·`completionAttributes()`·`transitionTrackingAttributes()` 가 주고 요청의
+`attributes()` 가 합친다.
+
 404 와 500 도 같은 봉투(`success`/`message`)를 쓰며 `errors` 는 없다. 500 의 `message` 는 항상 고정
 문구이고 예외 원문·PG 원문은 담기지 않는다(원문은 서버 로그에만 남는다).
 

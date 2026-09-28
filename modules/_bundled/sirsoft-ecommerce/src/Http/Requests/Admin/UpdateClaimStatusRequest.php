@@ -66,6 +66,20 @@ class UpdateClaimStatusRequest extends FormRequest
     }
 
     /**
+     * 검증 오류 문구에 쓰는 필드 표시명
+     *
+     * @return array<string, string> 필드 키 → 표시명
+     */
+    public function attributes(): array
+    {
+        return [
+            'status' => __('sirsoft-ecommerce::validation.request_attributes.claim_status'),
+            'reject_reason' => __('sirsoft-ecommerce::validation.request_attributes.reject_reason'),
+            'admin_memo' => __('sirsoft-ecommerce::validation.request_attributes.admin_memo'),
+        ] + $this->transitionTrackingAttributes() + $this->completionAttributes();
+    }
+
+    /**
      * 라우트 세그먼트의 클레임 유형에 허용되는 관리자 지정 상태 어휘를 반환합니다.
      *
      * @return array<int, string> 허용 상태 값

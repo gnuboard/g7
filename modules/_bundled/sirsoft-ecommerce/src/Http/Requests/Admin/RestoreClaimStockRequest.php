@@ -49,6 +49,19 @@ class RestoreClaimStockRequest extends FormRequest
     }
 
     /**
+     * 검증 오류 문구에 쓰는 필드 표시명
+     *
+     * @return array<string, string> 필드 키 → 표시명
+     */
+    public function attributes(): array
+    {
+        return [
+            'items' => __('sirsoft-ecommerce::validation.request_attributes.claim_item'),
+            'items.*' => __('sirsoft-ecommerce::validation.request_attributes.claim_item'),
+        ];
+    }
+
+    /**
      * 복구할 상품 행 ID 목록을 반환합니다. (빈 배열 = 복구 가능한 행 전부)
      *
      * @return array<int, int> 상품 행 ID

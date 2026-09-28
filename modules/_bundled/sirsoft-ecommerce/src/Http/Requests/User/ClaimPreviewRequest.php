@@ -91,9 +91,34 @@ class ClaimPreviewRequest extends FormRequest
     }
 
     /**
+     * 검증 오류 문구에 쓰는 필드 표시명
+     *
+     * @return array<string, string> 필드 키 → 표시명
+     */
+    public function attributes(): array
+    {
+        return [
+            'type' => __('sirsoft-ecommerce::validation.request_attributes.claim_type'),
+            'items' => __('sirsoft-ecommerce::validation.request_attributes.items'),
+            'items.*.order_option_id' => __('sirsoft-ecommerce::validation.request_attributes.order_option'),
+            'items.*.quantity' => __('sirsoft-ecommerce::validation.request_attributes.quantity'),
+            'items.*.new_product_option_id' => __('sirsoft-ecommerce::validation.request_attributes.new_product_option'),
+            'items.*.custom_options' => __('sirsoft-ecommerce::validation.request_attributes.custom_options'),
+            'reason_code' => __('sirsoft-ecommerce::validation.request_attributes.reason_code'),
+            'charge_method' => __('sirsoft-ecommerce::validation.request_attributes.charge_method'),
+            'refund_priority' => __('sirsoft-ecommerce::validation.request_attributes.refund_priority'),
+            'redelivery_address' => __('sirsoft-ecommerce::validation.request_attributes.redelivery_address'),
+            'redelivery_address.zipcode' => __('sirsoft-ecommerce::validation.request_attributes.redelivery_zipcode'),
+            'redelivery_address.country_code' => __('sirsoft-ecommerce::validation.request_attributes.redelivery_country_code'),
+            'claim_number' => __('sirsoft-ecommerce::validation.request_attributes.claim_number'),
+        ];
+    }
+
+    /**
      * 추가 검증 로직 — 주문 존재·소유권
      *
      * @param  Validator  $validator  검증기
+     * @return void 반환값 없음
      */
     protected function withValidator(Validator $validator): void
     {
@@ -106,6 +131,7 @@ class ClaimPreviewRequest extends FormRequest
      * 검증 실패 시 응답 커스터마이징
      *
      * @param  Validator  $validator  검증기
+     * @return void 반환값 없음
      *
      * @throws ValidationException
      */

@@ -138,6 +138,23 @@ class BulkClaimOptionStatusRequest extends FormRequest
     }
 
     /**
+     * 검증 오류 문구에 쓰는 필드 표시명
+     *
+     * @return array<string, string> 필드 키 → 표시명
+     */
+    public function attributes(): array
+    {
+        return [
+            'items' => __('sirsoft-ecommerce::validation.request_attributes.items'),
+            'items.*' => __('sirsoft-ecommerce::validation.request_attributes.claim_item'),
+            'items.*.id' => __('sirsoft-ecommerce::validation.request_attributes.claim_item'),
+            'items.*.quantity' => __('sirsoft-ecommerce::validation.request_attributes.quantity'),
+            'status' => __('sirsoft-ecommerce::validation.request_attributes.claim_status'),
+            'reject_reason' => __('sirsoft-ecommerce::validation.request_attributes.reject_reason'),
+        ] + $this->transitionTrackingAttributes() + $this->completionAttributes();
+    }
+
+    /**
      * 전이 지시를 반환합니다. (`[{id, quantity}]` — 수량 미지정은 null)
      *
      * @return array<int, array{id: int, quantity: int|null}> 전이 지시

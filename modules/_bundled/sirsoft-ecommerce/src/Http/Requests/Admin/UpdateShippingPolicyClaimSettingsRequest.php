@@ -92,4 +92,21 @@ class UpdateShippingPolicyClaimSettingsRequest extends FormRequest
 
         return $messages;
     }
+
+    /**
+     * 검증 오류 문구에 쓰는 필드 표시명
+     *
+     * @return array<string, string> 필드 키 → 표시명
+     */
+    public function attributes(): array
+    {
+        return [
+            'addresses' => __('sirsoft-ecommerce::validation.request_attributes.claim_addresses'),
+            'country_settings' => __('sirsoft-ecommerce::validation.request_attributes.country_settings'),
+            'country_settings.*.country_code' => __('sirsoft-ecommerce::validation.request_attributes.country_code'),
+            'country_settings.*.claim_fee_mode' => __('sirsoft-ecommerce::validation.request_attributes.claim_fee_mode'),
+            'country_settings.*.return_fixed_fee' => __('sirsoft-ecommerce::validation.request_attributes.return_fixed_fee'),
+            'country_settings.*.exchange_fixed_fee' => __('sirsoft-ecommerce::validation.request_attributes.exchange_fixed_fee'),
+        ];
+    }
 }

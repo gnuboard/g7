@@ -169,6 +169,20 @@ class StoreShippingPolicyRequest extends FormRequest
     }
 
     /**
+     * 검증 오류 문구에 쓰는 필드 표시명
+     *
+     * @return array<string, string> 필드 키 → 표시명
+     */
+    public function attributes(): array
+    {
+        return [
+            'country_settings.*.claim_fee_mode' => __('sirsoft-ecommerce::validation.request_attributes.claim_fee_mode'),
+            'country_settings.*.return_fixed_fee' => __('sirsoft-ecommerce::validation.request_attributes.return_fixed_fee'),
+            'country_settings.*.exchange_fixed_fee' => __('sirsoft-ecommerce::validation.request_attributes.exchange_fixed_fee'),
+        ];
+    }
+
+    /**
      * 단일 필드 rules 로 표현 불가한 cross-field 검증을 추가합니다.
      *
      * - 구간별 배송비 tiers 의 연속성 (시작=0, 마지막=무제한)
@@ -176,6 +190,7 @@ class StoreShippingPolicyRequest extends FormRequest
      * - shipping_method=custom 일 때 custom_shipping_name 다국어 필수
      *
      * @param  Validator  $validator  Laravel validator 인스턴스
+     * @return void 반환값 없음
      */
     public function withValidator(Validator $validator): void
     {
@@ -200,6 +215,7 @@ class StoreShippingPolicyRequest extends FormRequest
      * - 조건부 무료: free_threshold
      *
      * @param  Validator  $validator  Laravel validator 인스턴스
+     * @return void 반환값 없음
      */
     private function validatePolicyRequiredSettings(Validator $validator): void
     {
@@ -258,6 +274,7 @@ class StoreShippingPolicyRequest extends FormRequest
      * 그 외 형식은 어떤 우편번호에도 매칭되지 않아 추가배송비가 조용히 누락됩니다.
      *
      * @param  Validator  $validator  Laravel validator 인스턴스
+     * @return void 반환값 없음
      */
     private function validateExtraFeeZipcodeFormat(Validator $validator): void
     {
@@ -306,6 +323,7 @@ class StoreShippingPolicyRequest extends FormRequest
      * endpoint 저장을 차단하여 silent base_fee 폴백을 방지합니다.
      *
      * @param  Validator  $validator  Laravel validator 인스턴스
+     * @return void 반환값 없음
      */
     private function validateApiEndpointRequired(Validator $validator): void
     {
@@ -333,6 +351,7 @@ class StoreShippingPolicyRequest extends FormRequest
      * - custom_header 인증 시 헤더명 필수
      *
      * @param  Validator  $validator  Laravel validator 인스턴스
+     * @return void 반환값 없음
      */
     private function validateApiConfig(Validator $validator): void
     {
@@ -373,6 +392,9 @@ class StoreShippingPolicyRequest extends FormRequest
      *   - 이산형(수량): 다음 min === 현재 max + 1
      *   - 연속형(금액/무게/부피): 다음 min === 현재 max (부동소수 오차 허용)
      * - 배송비는 0 이상이어야 합니다.
+     *
+     * @param  Validator  $validator  Laravel validator 인스턴스
+     * @return void 반환값 없음
      */
     private function validateRangeTiersContinuity(Validator $validator): void
     {
@@ -490,6 +512,9 @@ class StoreShippingPolicyRequest extends FormRequest
      * 무료배송이 아닌 정책에서 배송비 0원을 금지합니다.
      *
      * 구간별 배송비(RANGE_*) 정책은 tiers에서 배송비를 관리하므로 예외입니다.
+     *
+     * @param  Validator  $validator  Laravel validator 인스턴스
+     * @return void 반환값 없음
      */
     private function validateNonFreeBaseFee(Validator $validator): void
     {
@@ -520,6 +545,7 @@ class StoreShippingPolicyRequest extends FormRequest
      * custom 배송방법 선택 시 custom_shipping_name 필수 검증
      *
      * @param  Validator  $validator  Validator 인스턴스
+     * @return void 반환값 없음
      */
     private function validateCustomShippingName(Validator $validator): void
     {
@@ -553,6 +579,8 @@ class StoreShippingPolicyRequest extends FormRequest
      *
      * country_settings 배열을 순회하며 charge_policy에 따라 불필요한 필드를 정리합니다.
      * KR이 아닌 국가는 도서산간 설정을 강제 비활성화합니다.
+     *
+     * @return void 반환값 없음
      */
     protected function prepareForValidation(): void
     {
