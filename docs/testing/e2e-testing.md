@@ -117,8 +117,9 @@ Playwright 의 기본 UA 에는 `HeadlessChrome` 이 들어 있고, `SeoMiddlewa
 번들 로드·상태 바인딩)은 한 번도 실행되지 않은 채 단언이 통과한다. 실측(2026-08-26)에서
 사용자 홈을 재던 spec 들이 전부 이 경로였다.
 
-봇 화면을 의도적으로 검증하는 spec 은 UA 가 아니라 `?_escaped_fragment_=` 로 그 경로를 유발하므로,
-UA 를 실제 브라우저 값으로 고정해도 그 검증은 그대로 동작한다.
+봇 화면을 의도적으로 검증하는 spec 은 요청마다 검색엔진 UA(`Googlebot` 등)를 헤더로 지정해 그 경로를
+유발하므로, 설정의 UA 를 실제 브라우저 값으로 고정해도 그 검증은 그대로 동작한다. `?_escaped_fragment_=`
+쿼리는 더 이상 봇 신호가 아니다 — 그 쿼리만 붙이면 SPA 를 받는다.
 
 측정으로 확인하려면 `typeof window.G7Core` 가 `'object'` 인지 본다 — `'undefined'` 면 SPA 가 아니라
 봇 화면을 재고 있는 것이다.

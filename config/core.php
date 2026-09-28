@@ -164,6 +164,24 @@ return [
 
         // IP 당 분당 통계 기록 수 (통계 테이블이 새 증식 축이 되지 않도록)
         'stats_records_per_minute' => (int) env('G7_SEO_STATS_RECORDS_PER_MINUTE', 300),
+
+        // 사이트 전체에서 동시에 진행하는 미스 렌더 수 (초과 → SPA + X-SEO-Cache: BYPASS).
+        // IP 당 예산은 요청이 끝나야 차감이 보이므로 동시에 몰아친 요청을 막지 못한다.
+        // 렌더 1건은 자기 워커 + 순차 내부 API 호출 1건으로 워커 2개를 잡으므로, PHP 워커 수
+        // (php-fpm pm.max_children / Apache MaxRequestWorkers)의 절반보다 작게 둔다. 0 = 제한 없음.
+        'max_concurrent_renders' => (int) env('G7_SEO_MAX_CONCURRENT_RENDERS', 4),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | SEO 데이터소스 호출
+    |--------------------------------------------------------------------------
+    | 봇 화면은 레이아웃의 데이터소스를 사이트 자신의 API 로 호출해 채웁니다. 호출 하나가
+    | 느리면 그동안 워커 두 개가 묶이므로 짧게 끊고 해당 데이터소스는 fallback 을 씁니다.
+    */
+    'seo_datasource' => [
+        // 데이터소스 호출 1건의 제한 시간 (초)
+        'timeout' => (int) env('G7_SEO_DATASOURCE_TIMEOUT', 2),
     ],
 
     /*
