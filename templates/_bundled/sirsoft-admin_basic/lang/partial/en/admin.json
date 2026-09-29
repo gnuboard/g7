@@ -3149,7 +3149,13 @@
       "unit_downgraded": "Hourly aggregates are outside their retention window, so the series is shown per day.",
       "load_failed": "Could not load the statistics. Please try again in a moment.",
       "load_failed_retry": "Try again",
-      "site_timezone": "Times on this screen follow the site timezone ({timezone}), which differs from your computer."
+      "site_timezone": "Times on this screen follow the site timezone ({timezone}), which differs from your computer.",
+      "scheduler_missing": "The scheduler (cron) has not run for over 2 hours. Archiving on view keeps the numbers current, but finalizing yesterday, pruning old data and weekly report mails have stopped.",
+      "scheduler_missing_link": "Open diagnostics",
+      "archive_stale": "Archiving has been stalled for {{hours}} hours (last {{at}}). Check the scheduler (cron) or archive now.",
+      "archive_never": "Visits have piled up but nothing has been archived yet. Check the scheduler (cron) or archive now.",
+      "on_view_too_many": "Today has more than {{max}} visits, so archiving on view was skipped. Numbers are as of {{at}} — register the scheduler (cron).",
+      "archive_now": "Archive now"
     },
     "overview": {
       "title": "Analytics overview",
@@ -3167,14 +3173,18 @@
       "quality": {
         "bounce_rate": "Bounce rate",
         "avg_time": "Avg. time on site",
-        "pages_per_visit": "Pages per visit"
+        "pages_per_visit": "Pages per visit",
+        "new_returning": "New / returning"
       },
       "top": {
         "pages": "Top pages",
         "referrers": "Top referrers",
         "countries": "Top countries"
       },
-      "visitors_daily_sum_note": "Visitors is the sum of daily unique visitors — the visitor key rotates daily, so unique visitors across days cannot be counted."
+      "visitors_daily_sum_note": "Visitors is the sum of daily unique visitors — the visitor key rotates daily, so unique visitors across days cannot be counted.",
+      "new_visitors": "New",
+      "returning_visitors": "Returning",
+      "new_returning_unavailable": "New and returning visitors cannot be told apart in anonymous mode"
     },
     "pages": {
       "title": "Pages",
@@ -3183,7 +3193,9 @@
         "popular": "Popular",
         "entry": "Entry pages",
         "exit": "Exit pages",
-        "titles": "Page titles"
+        "titles": "Page titles",
+        "durations": "Visit duration",
+        "depths": "Pages per visit"
       }
     },
     "referrers": {
@@ -3194,14 +3206,16 @@
         "types": "Types",
         "sites": "Sites",
         "keywords": "Keywords",
-        "campaigns": "Campaigns"
+        "campaigns": "Campaigns",
+        "mediums": "Campaign mediums"
       },
       "type_share_title": "Referrer type share",
       "urls_title": "Referrer URLs for {{host}}",
       "urls_back": "Back to referring sites",
       "urls_column": "Referrer URL",
       "urls_hint": "The actual URLs visitors came from on this domain. Visits recorded while referrer URL anonymization was on kept only the domain, so they collapse into a single row.",
-      "urls_empty_description": "No visits from this domain in the selected period."
+      "urls_empty_description": "No visits from this domain in the selected period.",
+      "mediums_empty": "No visits carried utm_medium."
     },
     "environment": {
       "title": "Environment",
@@ -3251,7 +3265,9 @@
         "downloads": "Downloads",
         "outlinks": "Outbound links",
         "goals": "Goals",
-        "dimensions": "Extension breakdowns"
+        "dimensions": "Extension breakdowns",
+        "search_tabs": "Search tabs",
+        "events": "Events"
       },
       "no_result": "No results",
       "revenue": "Revenue",
@@ -3264,7 +3280,8 @@
       "dimensions_none_description": "None of the active extensions provides a breakdown. When an extension declares one, you can choose it here.",
       "dimension_pii_suffix": "personal data — no stats table",
       "dimension_pii_title": "Personal-data breakdowns are not turned into stats tables",
-      "dimension_pii_description": "The extension marked the values of this breakdown as personal data. To keep them out of the permanent daily stats, no table is built; the values stay only in visit records and are removed when the retention period ends or on a data subject deletion request."
+      "dimension_pii_description": "The extension marked the values of this breakdown as personal data. To keep them out of the permanent daily stats, no table is built; the values stay only in visit records and are removed when the retention period ends or on a data subject deletion request.",
+      "events_empty": "No events yet. Names that extensions send with G7Core.analytics.trackEvent() appear here."
     },
     "realtime": {
       "title": "Realtime",
@@ -3427,7 +3444,9 @@
         "on": "on",
         "off": "off",
         "cloud_ranges": "Cloud ranges",
-        "trusted_proxy_warning": "warning"
+        "trusted_proxy_warning": "warning",
+        "scheduler_last_run": "Scheduler last ran {{at}}",
+        "scheduler_missing": "Scheduler not running"
       },
       "progress_source": {
         "ws": "Progress: live",
@@ -3475,7 +3494,8 @@
       },
       "run_triggers": {
         "scheduled": "Automatic (scheduled)",
-        "manual": "Manual"
+        "manual": "Manual",
+        "on_view": "On view"
       },
       "queue_connections": {
         "sync": "Immediate (no queue)",
@@ -3685,7 +3705,16 @@
           "rows": "Rows",
           "size": "Size"
         },
-        "purge_all": "Delete all analytics data"
+        "purge_all": "Delete all analytics data",
+        "archive_section": "Archiving",
+        "archive_on_view_enabled": "Archive on view",
+        "archive_on_view_enabled_hint": "Re-archive stats older than a minute when a screen is opened or refreshed. Busy sites should register the scheduler (cron).",
+        "archive_on_view_max_visits": "Daily visit limit",
+        "archive_on_view_max_visits_hint": "When today has more visits than this, screens do not archive on view.",
+        "duration_bucket_bounds": "Visit duration bucket bounds (seconds)",
+        "duration_bucket_bounds_hint": "Comma-separated bounds in seconds (default 10,30,60,180,600,1800). Changes apply to later archives; recompute past periods with range re-archiving in diagnostics.",
+        "pages_bucket_bounds": "Pages per visit bucket bounds",
+        "pages_bucket_bounds_hint": "Comma-separated page counts (default 1,2,3,4,5,7,10,14,20). Changes apply to later archives; recompute past periods with range re-archiving in diagnostics."
       },
       "reports": {
         "weekly": "Weekly report mail",
@@ -3749,6 +3778,20 @@
       "detail": "Details",
       "collection_off": "Collection off",
       "trend": "Visitors, last 7 days"
+    },
+    "freshness": {
+      "scheduled": "Last archived {{time}} · archived automatically at 5 past every hour",
+      "on_view": "Last archived {{time}} · re-archived at most once a minute when you open or refresh a screen",
+      "plain_time": "Last archived {{time}}",
+      "plain_date": "Last archived {{month}}/{{day}} {{time}}"
+    },
+    "row_trend": {
+      "open": "Show the trend of this item",
+      "title": "Trend of {{label}}",
+      "period": "{{from}} – {{to}}",
+      "unit_downgraded": "Per-item stats are daily, so this shows days instead of hours.",
+      "empty": "No records in this period.",
+      "error": "Could not load the trend. Try opening it again shortly."
     }
   },
   "modal_label": {
@@ -3878,7 +3921,8 @@
       "retro_anonymize_modal": "Retroactive anonymization confirm",
       "purge_all_modal": "Delete all analytics data confirm",
       "reaggregate_modal": "Re-aggregate range",
-      "subject_delete_modal": "Delete data subject records confirm"
+      "subject_delete_modal": "Delete data subject records confirm",
+      "row_trend_modal": "Item trend"
     }
   }
 }

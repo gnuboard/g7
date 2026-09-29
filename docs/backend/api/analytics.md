@@ -64,7 +64,7 @@
 | prev | integer | 선택 | 0~86400 | 직전 페이지 체류 시간(초). 저장 시 1800초로 자른다 |
 | init | boolean | 선택 | — | 이 방문의 첫 비콘인지 여부. 서버 폴백과의 병합 판정에 쓴다 |
 | target | string | 선택 | URL 형식, 최대 1024자 | 내려받기·외부 링크의 대상 주소 |
-| name | string | 선택 | 최대 255자 | 내려받은 파일명 등 표시 이름 |
+| name | string | 선택 | 최대 255자 | 내려받은 파일명 등 표시 이름. 이벤트(`t=event`)는 이 이름을 사전의 `event` 종류로 저장해 「이벤트」 리포트가 센다(하루 500종 상한) — 이름이 없는 이벤트는 예전처럼 방문 주소를 담고 이벤트 리포트에서 빠진다 |
 | goal | string | 선택 | 최대 100자 | 목표 키 (확장이 등록한 전환) |
 | attrs | object | 선택 | — | 목표 속성 (금액·통화·라벨) |
 | dims | object | 선택 | 최대 20개, 값 255자 | 확장이 넣은 분류 기준(dimension)별 값 |
@@ -131,11 +131,40 @@ Set-Cookie: g7_vid=3f2a...; Path=/; Max-Age=34128000; HttpOnly; SameSite=Lax
 집계·익명화 같은 **배치는 큐 드라이버를 따릅니다**(구간 재집계·소급 익명화·확장 제거 시의
 정리). 큐 드라이버가 `sync` 면 요청 안에서 즉시 돕니다.
 
+## 집계 신선도 — 화면 열 때 집계와 `data.freshness`
+
+집계 표를 읽는 조회 여섯 개(개요·추이·패턴·봇·리포트·한 항목 추이)는 **권한 확인 뒤, 컨트롤러 앞에서**
+오래된 집계를 다시 계산합니다(미들웨어 `analytics.archive_on_view`). 마지막 매시 집계가 1분 넘게 지났으면
+오늘치를 그 자리에서 다시 계산하고, 스케줄러가 멈춘 동안 확정되지 않은 날(보존기간 안, 최근 날부터 최대 7일)도
+확정합니다. 여러 관리자가 동시에 열어도 1분에 한 번만 돌고(잠금), 오늘 방문이 설정 상한
+(`archive_on_view_max_visits`, 기본 50,000)을 넘으면 요청 안에서는 돌리지 않습니다. 어떤 실패도 응답을 깨지
+않습니다 — 숫자는 기존 집계로 나갑니다. 실행은 실행 이력에 `trigger=on_view` 로 남고 활동 로그는 남기지
+않습니다(분당 1건이 쌓이므로). 원장을 직접 읽는 실시간·방문자·유입 주소·공개 방문자 카운터는 집계를 일으키지
+않습니다.
+
+성공 JSON 응답의 `data.freshness` 에 아래 블록이 실립니다(CSV·오류 응답에는 없음).
+
+| 필드 | 타입 | 용도/설명 |
+| --- | --- | --- |
+| last_run_at | string\|null | 마지막으로 성공한 매시·일 집계 중 늦게 끝난 시각 (사이트 표준시 `Y-m-d H:i:s`). 한 번도 없으면 `null` |
+| last_run_trigger | string\|null | 그 실행의 주체 — `scheduled`·`manual`·`on_view` |
+| is_today | boolean | `last_run_at` 이 사이트 표준시로 오늘인지 (화면이 시각만 보일지 날짜까지 보일지 고른다) |
+| lag_minutes | integer\|null | 마지막 집계 뒤 흐른 분 |
+| stale | boolean | 120분 넘게 멈췄는지. 한 번도 집계하지 않았는데 방문이 쌓여 있어도 `true` |
+| scheduler.alive | boolean\|null | 스케줄러 생존 — 예약 매시 실행(`trigger=scheduled`, 성공·실패 무관)이 120분 안에 시작했으면 `true`. 없으면 판정 근거(원장 첫 방문·첫 집계 실행 중 이른 시각)가 120분 넘게 쌓였을 때 `false`, 아직 이르거나 근거가 없으면 `null`(설치 직후 오경보 방지) |
+| scheduler.last_run_at | string\|null | 마지막 예약 매시 실행 시작 시각 |
+| on_view.enabled | boolean | 설정 `archive_on_view_enabled` |
+| on_view.status | string\|null | 이번 요청의 결과 — `ran`(돌림)·`fresh`(1분 안에 끝난 집계가 있음)·`throttled`(1분 안에 다른 요청이 돌림)·`locked`(같은 날을 다른 실행이 계산 중)·`too_many_visits`(오늘 방문이 상한 초과)·`disabled`·`failed` |
+| on_view.today_visits | integer\|null | 이번 요청이 센 오늘 방문 수 (세지 않았으면 `null`) |
+| on_view.max_visits | integer | 오늘 방문 상한 |
+
+---
+
 ### GET /api/admin/analytics/overview
 <!-- @generated:start:api.admin.analytics.overview -->
 - **라우트명**: `api.admin.analytics.overview`
 - **컨트롤러**: `App\Http\Controllers\Api\Admin\Analytics\OverviewController@index`
-- **인증/권한**: `auth:sanctum` + `permission:admin,core.analytics.read`
+- **인증/권한**: `auth:sanctum` + `permission:admin,core.analytics.read` → `analytics.archive_on_view`
 
 **요청 파라미터**
 
@@ -159,7 +188,7 @@ Set-Cookie: g7_vid=3f2a...; Path=/; Max-Age=34128000; HttpOnly; SameSite=Lax
 | kpi.change_pct | float\|null | 어제 대비 증감률. 어제가 0 이면 `null` (「무한 % 증가」로 적으면 오해를 부른다) |
 | series.unit | string | 실제로 쓰인 시계열 단위 |
 | series.unit_downgraded | boolean | 시간 단위를 요청했으나 그 집계의 보존기간 밖이라 일 단위로 낮춘 경우 `true` |
-| series.points[] | array | `{ts, visits, visitors, pageviews, bounces, bounce_rate, avg_time, pages_per_visit}`. 기록이 없는 칸도 0 으로 채워 한 칸씩 나간다 — 건너뛰면 차트가 앞뒤 칸을 곧장 이어 그려 추이가 거짓이 된다. 지금 시간·오늘 뒤의 칸은 만들지 않는다. 기간 전체에 기록이 하나도 없으면 빈 배열이다 (화면이 「선택 기간에 기록이 없습니다」를 띄운다) |
+| series.points[] | array | `{ts, visits, visitors, pageviews, bounces, bounce_rate, avg_time, pages_per_visit, new_visitors, returning_visitors}`. 신규·재방문은 쿠키를 쓰는 모드에서만 센다 — 칸의 행이 모두 익명 모드면 `null`(모름), 하나라도 값이 있으면 값이 있는 행만 더한다. 기록이 없는 칸도 0 으로 채워 한 칸씩 나간다 — 건너뛰면 차트가 앞뒤 칸을 곧장 이어 그려 추이가 거짓이 된다. 지금 시간·오늘 뒤의 칸은 만들지 않는다. 기간 전체에 기록이 하나도 없으면 빈 배열이다 (화면이 「선택 기간에 기록이 없습니다」를 띄운다) |
 | top.pages / top.referrers / top.countries | array | 상위 목록 (설정 `top_n_overview` 건) |
 | realtime.count / realtime.visitors[] | integer / array | 현재 접속자 수와 최근 목록. 이 경로에서는 주소를 담지 않는다 |
 | meta.mode | string | 개인정보 수집 모드 (full, consent, anonymous) |
@@ -167,6 +196,7 @@ Set-Cookie: g7_vid=3f2a...; Path=/; Max-Age=34128000; HttpOnly; SameSite=Lax
 | meta.collection_enabled | boolean | 수집 마스터 스위치. 꺼져 있으면 화면 상단에 안내를 띄운다 |
 | meta.geoip_enabled | boolean | 지역 조회 사용 여부 (꺼져 있으면 지역 화면이 안내만 보인다) |
 | meta.queue_backlogged / meta.queue_pending_jobs | boolean / integer | 큐 적체. 워커가 멈추면 비콘은 204 를 받고도 원장에 닿지 않는다 |
+| freshness | object | [집계 신선도](#집계-신선도--화면-열-때-집계와-datafreshness) |
 
 > 화면 첫 장이 한 번에 받아 가는 응답입니다 — 이걸 여섯 번 나눠 부르면 첫 화면에서 요청이 여섯 번 나갑니다.
 <!-- @generated:end:api.admin.analytics.overview -->
@@ -177,7 +207,7 @@ Set-Cookie: g7_vid=3f2a...; Path=/; Max-Age=34128000; HttpOnly; SameSite=Lax
 <!-- @generated:start:api.admin.analytics.series -->
 - **라우트명**: `api.admin.analytics.series`
 - **컨트롤러**: `App\Http\Controllers\Api\Admin\Analytics\ReportController@series`
-- **인증/권한**: `auth:sanctum` + `permission:admin,core.analytics.read`
+- **인증/권한**: `auth:sanctum` + `permission:admin,core.analytics.read` → `analytics.archive_on_view`
 
 **요청 파라미터**
 
@@ -197,10 +227,12 @@ Set-Cookie: g7_vid=3f2a...; Path=/; Max-Age=34128000; HttpOnly; SameSite=Lax
 | --- | --- | --- |
 | unit | string | 실제 단위 (auto 는 구간 ≤2일 hour, ≤92일 day, ≤730일 week, 그 밖 month) |
 | unit_downgraded | boolean | 시간 집계 보존기간 밖을 시간 단위로 요청해 일 단위로 낮춘 경우 `true` |
-| points[] | array | `{ts, visits, visitors, pageviews, bounces, bounce_rate, avg_time, pages_per_visit}`. 기록이 없는 칸도 0 으로 채워 한 칸씩 나간다 — 건너뛰면 차트가 앞뒤 칸을 곧장 이어 그려 추이가 거짓이 된다. 지금 시간·오늘 뒤의 칸은 만들지 않는다. 기간 전체에 기록이 하나도 없으면 빈 배열이다 (화면이 「선택 기간에 기록이 없습니다」를 띄운다) |
+| points[] | array | `{ts, visits, visitors, pageviews, bounces, bounce_rate, avg_time, pages_per_visit, new_visitors, returning_visitors}` (신규·재방문의 `null` 규칙은 개요와 같다). 기록이 없는 칸도 0 으로 채워 한 칸씩 나간다 — 건너뛰면 차트가 앞뒤 칸을 곧장 이어 그려 추이가 거짓이 된다. 지금 시간·오늘 뒤의 칸은 만들지 않는다. 기간 전체에 기록이 하나도 없으면 빈 배열이다 (화면이 「선택 기간에 기록이 없습니다」를 띄운다) |
+| freshness | object | [집계 신선도](#집계-신선도--화면-열-때-집계와-datafreshness) |
 
 **CSV 내려받기** — `?format=csv` 는 `ts, visits, visitors, pageviews, bounce_rate,
-avg_time_seconds, pages_per_visit` 일곱 열입니다. 화면의 그래프를 운영자가 스프레드시트에서
+avg_time_seconds, pages_per_visit, new_visitors, returning_visitors` 아홉 열입니다(신규·재방문을 알 수 없는
+칸은 빈 칸). 화면의 그래프를 운영자가 스프레드시트에서
 자기 방식대로 다시 그릴 수 있어야 하기 때문입니다. BOM·CRLF 규약은 목록 내려받기와 같고
 파일명은 `analytics-series-{from}_{to}.csv` 입니다.
 <!-- @generated:end:api.admin.analytics.series -->
@@ -211,7 +243,7 @@ avg_time_seconds, pages_per_visit` 일곱 열입니다. 화면의 그래프를 �
 <!-- @generated:start:api.admin.analytics.reports.show -->
 - **라우트명**: `api.admin.analytics.reports.show`
 - **컨트롤러**: `App\Http\Controllers\Api\Admin\Analytics\ReportController@show`
-- **인증/권한**: `auth:sanctum` + `permission:admin,core.analytics.read`
+- **인증/권한**: `auth:sanctum` + `permission:admin,core.analytics.read` → `analytics.archive_on_view`
 
 **요청 파라미터**
 
@@ -222,7 +254,7 @@ avg_time_seconds, pages_per_visit` 일곱 열입니다. 화면의 그래프를 �
 | to | query | date | 아니오 | Y-m-d, `from` 이후 | 조회 종료일. `from` 만 주면 그 하루 |
 | unit | query | string | 아니오 | auto, hour, day, week, month, year | 시계열 단위. 기본 `auto` (구간 길이로 고름) |
 | exclude[] | query | array | 아니오 | admin, member | 합산에서 뺄 방문자 유형. 화면의 「관리자 제외」·「회원 제외」 토글. **봇 리포트(`bot_name`·`bot_pages`)에는 적용되지 않습니다** — 봇 행에는 뺄 사람 유형이 없어, 적용하면 목록이 통째로 비어 버립니다 |
-| report | path | string | 예 | 리포트 이름 또는 별칭 | 무엇의 상위 목록인지. 리포트 이름(`page_url`·`referrer_name`·`browser`·`country`·`city`·`site_search`·`download`·`outlink`·`bot_name` 등) 또는 별칭(`entry_pages`·`exit_pages`·`bot_pages`·`goals`). 확장 분류 기준은 `ext:{확장 식별자}:{키}` — 지금 등록된 것이거나 집계 행이 남아 있는 것만 받는다([등록 목록](#get-apiadminanalyticsregistered)) |
+| report | path | string | 예 | 리포트 이름 또는 별칭 | 무엇의 상위 목록인지. 리포트 이름(`page_url`·`referrer_name`·`browser`·`country`·`city`·`site_search`·`download`·`outlink`·`bot_name`·`campaign_medium`·`search_tab`·`event_name`·`visit_duration`·`visit_pages` 등) 또는 별칭(`entry_pages`·`exit_pages`·`bot_pages`·`goals`). 확장 분류 기준은 `ext:{확장 식별자}:{키}` — 지금 등록된 것이거나 집계 행이 남아 있는 것만 받는다([등록 목록](#get-apiadminanalyticsregistered)) |
 | page | query | integer | 아니오 | min 1 | 쪽 번호 |
 | per_page | query | integer | 아니오 | min 1, max 100 | 쪽당 건수. 기본값은 설정의 「상세 화면 상위 목록 건수」(`top_n_detail`, 기본 25) |
 | sort | query | string | 아니오 | visits, hits, entries, exits | 정렬 기준. 기본 `visits` |
@@ -244,6 +276,16 @@ avg_time_seconds, pages_per_visit` 일곱 열입니다. 화면의 그래프를 �
 | data[].pages_per_visit | float | 방문당 조회 수 |
 | data[].extra | object | 리포트별 부가 값을 기간 내내 키마다 더한 값. 내부 검색어의 `no_result`(결과 없음 건수)처럼 리포트가 스스로 싣는 값이며, 부가 값이 없는 리포트는 빈 객체 `{}` 다 — 화면이 언제나 같은 모양을 읽도록 키 자체는 늘 있다 |
 | pagination.has_more | boolean | 다음 쪽이 있는지 |
+| freshness | object | [집계 신선도](#집계-신선도--화면-열-때-집계와-datafreshness) |
+
+**새 리포트 다섯** — `campaign_medium`(utm_medium, 매체만 붙은 주소도 센다) · `search_tab`(사이트 검색을 한 탭,
+`all`·`posts`·`products`·`pages` 는 번역하고 그 밖은 원값, 하루 50종 상한) · `event_name`(확장이
+`G7Core.analytics.trackEvent()` 로 보낸 이벤트 이름, 하루 500종 상한) · `visit_duration`(체류시간 구간) ·
+`visit_pages`(본 페이지 수 구간, 페이지를 한 번이라도 본 방문만). **구간 두 리포트는 `sort`·`page`·`per_page` 를
+무시하고** 구간이 작은 것부터 전부 돌려줍니다(`has_more=false`). 저장 라벨은 경계를 담은 문자열(체류 `0-10`·`10-30`·
+`1800+` = (하한, 상한], 첫 구간만 [0, 상한] / 페이지 `1`·`6-7`·`21+`)이고 `label_display` 가 「1분 ~ 3분」·
+「6~7페이지」처럼 풉니다. 경계는 설정 `duration_bucket_bounds`·`pages_bucket_bounds` 로 바꾸며 바꾼 뒤 집계부터
+적용됩니다.
 
 **CSV 내려받기** — `?format=csv` 는 `text/csv; charset=UTF-8` 스트림입니다.
 공통 아홉 열(`label, label_display, visits, hits, entries, exits, bounce_rate, avg_time_seconds,
@@ -267,6 +309,39 @@ pages_per_visit`) 뒤에 **그 리포트의 부가 열**이 붙습니다. 내부
 것만 받습니다 — 확장을 끄거나 데이터를 남기고 지워도 쌓인 집계는 원값 라벨로 읽히고, 등록도
 집계도 없는 이름은 404 입니다.
 <!-- @generated:end:api.admin.analytics.reports.show -->
+
+---
+
+### GET /api/admin/analytics/reports/{report}/series
+<!-- @generated:start:api.admin.analytics.reports.series -->
+- **라우트명**: `api.admin.analytics.reports.series`
+- **컨트롤러**: `App\Http\Controllers\Api\Admin\Analytics\ReportController@rowSeries`
+- **인증/권한**: `auth:sanctum` + `permission:admin,core.analytics.read` → `analytics.archive_on_view`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| report | path | string | 예 | 리포트 이름 또는 별칭 | [상위 목록](#get-apiadminanalyticsreportsreport)과 같은 이름 규약 |
+| label | query | string | 예 | 최대 512자 | 목록 행의 **저장 라벨**(`data[].label`) — 화면용 `label_display` 가 아니다 |
+| preset · from · to | query | — | 아니오 | 기간 규약 | 목록과 같다 |
+| unit | query | string | 아니오 | auto, hour, day, week, month, year | 기본 `auto` — 92일까지 `day`, 그 뒤 `week`(기간 상한이 366일이라 월은 생기지 않는다). `hour` 는 차원 집계가 일 단위뿐이라 `day` 로 낮춘다 |
+| exclude[] | query | array | 아니오 | admin, member | 목록과 같다 — 봇 리포트는 목록처럼 제외 토글을 적용하지 않고 봇 유형 행만 읽는다(통계 화면에서 켠 토글이 봇 화면으로 따라와도 추이가 비지 않게) |
+
+**응답 필드** (`data` 내부)
+
+| 필드 | 타입 | 용도/설명 |
+| --- | --- | --- |
+| report · label | string | 요청 그대로 |
+| label_display | string | 목록과 같은 풀이(주소는 호스트를 떼고 풀기, 국가 이름, 구간 문장) — 창 제목에 쓴다 |
+| from · to | string | 실제 조회 기간 |
+| unit | string | 실제 단위 |
+| unit_downgraded | boolean | `hour` 를 요청해 `day` 로 낮췄으면 `true` |
+| points[] | array | `{ts, visits, hits, bounces, total_time_seconds, bounce_rate, avg_time}` — 유형 행을 날짜로 묶어 더한 값. 기록이 없는 칸은 0 으로 채우고, 기간 전체에 기록이 없으면 빈 배열 |
+| freshness | object | [집계 신선도](#집계-신선도--화면-열-때-집계와-datafreshness) |
+
+없는 리포트 이름은 **404**, `label` 이 없으면 **422** 입니다.
+<!-- @generated:end:api.admin.analytics.reports.series -->
 
 ---
 
@@ -366,6 +441,7 @@ CSV 는 제공하지 않습니다(내려받기는 사이트 목록 리포트가 
 | hour[] | array | 시간대 스물네 칸 `{hour, days, visits, visitors, pageviews}` |
 | hourly_available_from | string | 시간대 패턴을 볼 수 있는 가장 이른 날 |
 | from · to | string | 실제 조회 기간 |
+| freshness | object | [집계 신선도](#집계-신선도--화면-열-때-집계와-datafreshness) |
 
 > 값은 합이 아니라 **평균**입니다. 기간에 월요일이 다섯 번, 화요일이 네 번 들어 있으면
 > 합계만으로는 월요일이 더 붐비는 것처럼 보이기 때문입니다. `days` 가 그 나눈 횟수입니다.
@@ -406,6 +482,7 @@ CSV 는 제공하지 않습니다(내려받기는 사이트 목록 리포트가 
 | data[] | array | 봇 이름별 방문·조회 수 (`reports/bot_name` 과 같은 행 모양) |
 | pagination | object | 쪽 정보 |
 | totals | object | 기간 전체 합계 — `hits`(봇 요청 수)·`labels`(봇 종류 수). `data[]` 는 쪽으로 잘려 있어 그 행을 더하면 이 쪽의 합일 뿐이므로, 「봇 요청」·「봇 종류」 같은 기간 숫자는 이 값을 읽는다. 쪽·검색어와 무관하다 |
+| freshness | object | [집계 신선도](#집계-신선도--화면-열-때-집계와-datafreshness) — 봇 화면 요청 하나는 집계를 한 번만 일으킨다 |
 | recent_hits[] | array | 최근 봇 요청 50건 — `bot_name`·`url`·`ip`·`cache_status`·`occurred_at`. 집계는 「어느 봇이 얼마나」까지만 답하므로, 어떤 주소를 언제 긁어 갔는지를 함께 보여 운영자가 차단 여부를 판단할 수 있게 한다 |
 
 `format=csv` 로 받을 때는 집계 표만 나갑니다 — 내려받기는 원장 목록을 싣지 않습니다.
@@ -469,6 +546,8 @@ _없음._
 | queue.connection / pending_jobs / failed_jobs | mixed | 큐 상태. `countable` 이 `false` 면 데이터베이스 큐가 아니라 여기서 셀 수 없다는 뜻이고, 0 을 「비어 있다」로 읽으면 안 된다 |
 | queue.backlogged / worker_hint | boolean | 적체 판정. 수집은 큐를 타지 않으므로 여기 쌓이는 것은 **집계·익명화 배치**다 — 워커가 멈추면 방문은 계속 쌓이는데 집계 숫자만 그 시점에 멈춘다 |
 | archive.last_hour_run / last_day_run / lag_hours / running_run_id | mixed | 집계가 밀렸는지. 밀리면 화면 숫자가 그 시점에 멈춘 채 그럴듯하게 남는다 |
+| archive.scheduler | object | `{alive, last_run_at}` — [집계 신선도](#집계-신선도--화면-열-때-집계와-datafreshness)의 스케줄러 판정과 같다. 화면 열 때 집계가 숫자를 맞춰도 어제 확정·정리·메일 보고서는 스케줄러만 돌린다 |
+| archive.on_view_enabled | boolean | 화면 열 때 집계 켜짐 여부 |
 | storage | object | 표별 행 수·크기와 경고 한계 초과 여부 |
 | geoip.enabled / db_present | boolean | 지역 조회 사용 여부와 데이터베이스 존재 |
 | trusted_proxy | object | 프록시 신뢰 설정. 설정하지 않으면 프록시 뒤 전 방문자가 주소 하나로 뭉친다 |
@@ -528,7 +607,7 @@ _없음._
 
 | 필드 | 타입 | 용도/설명 |
 | --- | --- | --- |
-| run_type / trigger / status | string | 무엇을, 누가 시켜서(`scheduled` 예약·`manual` 수동), 어떻게 끝났는지 — 코드다. 화면은 템플릿 언어 파일로 이름을 붙인다 |
+| run_type / trigger / status | string | 무엇을, 누가 시켜서(`scheduled` 예약 — 스케줄러 등록 실행만 `--scheduled` 로 이렇게 적힌다 · `manual` 수동 — CLI 를 손으로 돌린 것 포함 · `on_view` 관리자가 통계 화면을 열 때), 어떻게 끝났는지 — 코드다. 화면은 템플릿 언어 파일로 이름을 붙인다 |
 | period_start / period_end | string\|null | 대상 기간 |
 | processed_visits / processed_actions / chunks | integer | 처리량 |
 | progress_percent | integer | 진행률. 화면이 이 값을 2초마다 물어본다 |
@@ -588,7 +667,12 @@ _없음._
 
 전체 설정 키는 [../analytics.md](../analytics.md) 「설정」 절의 표와 같고, PUT 은 **보낸 키만** 바꿉니다 (설정 화면이 탭 하나만 저장할 수 있도록).
 
-주요 범위: `retention_days` 7~3650 · `hourly_retention_days` 7~3650 · `visit_timeout_minutes` 5~120 · `max_actions_per_visit` 50~10000 · `ip_mask_octets` 0~3 · `archive_chunk_size` 500~50000 · `realtime_poll_seconds` 10~300 · `realtime_window_minutes` 1~60 · `top_n_*` 3~100 · `visitor_cookie_days` 1~730.
+주요 범위: `retention_days` 7~3650 · `hourly_retention_days` 7~3650 · `visit_timeout_minutes` 5~120 · `max_actions_per_visit` 50~10000 · `ip_mask_octets` 0~3 · `archive_chunk_size` 500~50000 · `realtime_poll_seconds` 10~300 · `realtime_window_minutes` 1~60 · `top_n_*` 3~100 · `visitor_cookie_days` 1~730 · `archive_on_view_max_visits` 1000~1000000.
+
+집계 네 키: `archive_on_view_enabled`(boolean, 기본 `true`) · `archive_on_view_max_visits`(기본 50000) ·
+`duration_bucket_bounds`(체류 경계 초, 쉼표 문자열, 기본 `10,30,60,180,600,1800`, 1~86400) ·
+`pages_bucket_bounds`(페이지 수 경계, 기본 `1,2,3,4,5,7,10,14,20`, 1~1000). 경계는 숫자와 쉼표만(공백 없음),
+최대 15개, **작은 것부터 겹치지 않게** 적어야 저장된다(`validation.analytics.bucket_bounds`).
 
 
 **응답 필드** (`data` 내부)
@@ -894,6 +978,7 @@ _없음._
 | `core.analytics.visit_limit_exceeded` | action | 한 방문의 액션 상한 초과를 알린다 |
 | `core.analytics.period_validation_rules` | filter | 기간 조회 파라미터에 확장 필드를 더한다 |
 | `core.analytics.report_validation_rules` | filter | 상위 목록 조회 파라미터를 확장한다 |
+| `core.analytics.row_series_validation_rules` | filter | 한 항목 추이 조회 파라미터를 확장한다 (인자 `($rules, FormRequest $request)`) |
 | `core.analytics.settings_validation_rules` | filter | 설정 저장 규칙을 확장한다 |
 | `core.analytics.subject_validation_rules` | filter | 정보주체 조회 조건을 확장한다 |
 | `core.analytics.{visitor_index·visitor_show·realtime·referrer_urls·diagnostics·collect_failures·archive_run·archive_runs·anonymize·purge·subject_delete·opt_out}_validation_rules` | filter | 같은 이름 관리자 요청의 검증 규칙을 확장한다 (인자 `($rules, FormRequest $request)`) |
@@ -916,7 +1001,7 @@ _없음._
 | `core.analytics.subject_exported` / `subject_deleted` | action | 정보주체 내보내기·삭제 |
 | `core.analytics.settings_updated` / `privacy_mode_changed` | action | 설정·모드 변경 |
 | `core.analytics.opt_out_changed` | action | 수집 제외 전환 |
-| `core.analytics.archive_requested` | action | 수동 집계 요청 |
+| `core.analytics.archive_requested` | action | 수동 집계 요청 (관리자 버튼만 — 화면 열 때 집계는 발화하지 않는다) |
 | `core.analytics.weekly_report_ready` / `monthly_report_ready` | action | 정기 리포트 발송 (기간마다 훅을 갈라 둔다 — 한 훅에 두 정의를 걸면 주간·월간이 함께 나간다) |
 | `core.analytics.notification.extract_data` | filter | 알림 본문의 `{visits}` 같은 자리를 값으로 채운다 |
 

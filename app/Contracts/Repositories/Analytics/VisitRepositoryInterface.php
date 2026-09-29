@@ -111,6 +111,29 @@ interface VisitRepositoryInterface
     public function countOnDate(string $date): int;
 
     /**
+     * 방문은 있는데 일 집계가 확정되지 않은 날을 최근 날부터 찾습니다.
+     *
+     * 스케줄러가 멈춘 동안 지나간 날은 「어제 확정」이 돌지 않아 숫자가 미확정으로 남는다.
+     * 밀린 날을 골라 확정하는 따라잡기의 후보 목록이다.
+     *
+     * @param  string  $floor  이 날짜 **이후**만 본다 (Y-m-d, 제외 — 보존기간 경계)
+     * @param  string  $today  이 날짜 **이전**만 본다 (Y-m-d, 제외 — 오늘은 확정하지 않는다)
+     * @param  int  $limit  최대 일수
+     * @return array<string, int> 날짜(Y-m-d) => 그날 방문 수, 최근 날부터
+     */
+    public function unfinalizedDatesWithVisits(string $floor, string $today, int $limit): array;
+
+    /**
+     * 원장에서 가장 먼저 기록된 방문의 시작 시각을 돌려줍니다.
+     *
+     * 스케줄러 생존 판정의 근거 시각이다 — 설치 직후 첫 예약 실행 전에 「스케줄러가 없다」고
+     * 오판하지 않도록, 기록이 쌓이기 시작한 뒤 충분한 시간이 지났는지를 본다.
+     *
+     * @return Carbon|null 첫 방문 시작 시각 (UTC, 원장이 비었으면 null)
+     */
+    public function firstTrackedAt(): ?Carbon;
+
+    /**
      * 그 날짜의 방문을 ID 순서로 나눠 읽습니다.
      *
      * 건너뛰기(OFFSET)가 아니라 마지막 ID 기준으로 나눕니다 — 읽는 도중 행이

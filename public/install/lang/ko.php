@@ -146,6 +146,8 @@ return [
     'env_hardening_hint_option_strict' => '명령줄 사용자 = 웹 서버 사용자 (단일 사용자 환경)',
     'env_hardening_hint_option_group' => '명령줄 사용자 ≠ 웹 서버 사용자 (자체 구축 서버 등 — 그룹 읽기 허용 절충안)',
     'env_hardening_hint_note' => '명령 실행 전 환경을 확인하세요. 잘못된 권한 적용 시 웹 서버가 .env 를 읽지 못해 사이트가 응답하지 않을 수 있습니다.',
+    'cron_hint_title' => '예약 작업(cron) 등록',
+    'cron_hint_body' => '매분 아래 명령을 실행하도록 cron 에 등록하세요. 등록하지 않으면 방문자 통계는 관리자가 화면을 열 때 집계되지만, 주문 자동취소·오래된 데이터 정리·메일 보고서 같은 예약 작업은 동작하지 않습니다.',
 
     // Step 5: 완료
     'installation_info' => '설치 정보',

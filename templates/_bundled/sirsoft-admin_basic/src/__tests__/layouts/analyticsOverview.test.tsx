@@ -331,14 +331,44 @@ describe('KPI·실시간 줄·상단 경고 조각', () => {
   });
 
   // @scenario screen=overview, state=unit_downgraded, viewport=1440, locale=ko
-  // @effects trend_chart_has_three_series
-  it('추이 차트는 방문자·방문·페이지뷰 세 계열의 LineChart 다', () => {
+  // @effects trend_chart_keeps_base_series
+  it('추이 차트는 LineChart 이고 기본 세 계열(방문자·방문·페이지뷰)을 유지한다 — 신규·재방문 두 선은 아래 케이스가 잰다', () => {
     const chart = nodesNamed(layout, 'LineChart')[0];
     expect(chart).toBeDefined();
     expect(chart.props.datasets).toContain('admin.analytics.common.visitors');
     expect(chart.props.datasets).toContain('admin.analytics.common.visits');
     expect(chart.props.datasets).toContain('admin.analytics.common.pageviews');
     expect(chart.props.showLegend).toBe(true);
+  });
+
+  // @scenario screen=overview, state=normal, viewport=1440, locale=ko
+  // @effects trend_chart_adds_new_and_returning
+  it('추이 차트에 신규·재방문 두 선이 더해지고(범례로 켜고 끔), 품질 줄에 신규·재방문 카드가 있다', () => {
+    const chart = nodesNamed(layout, 'LineChart')[0];
+    const datasets = String(chart.props.datasets);
+    expect(datasets.match(/\{label: /g) ?? [], '계열 수').toHaveLength(5);
+    expect(datasets).toContain("{label: $t('admin.analytics.overview.new_visitors'), data: (analytics_overview?.data?.series?.points ?? []).map(p => p.new_visitors ?? 0), color: '#10B981'}");
+    // 익명 칸(null)은 선에서 0 으로 그린다 — 카드는 「구분할 수 없음」으로 따로 말한다.
+    expect(datasets).toContain("{label: $t('admin.analytics.overview.returning_visitors'), data: (analytics_overview?.data?.series?.points ?? []).map(p => p.returning_visitors ?? 0), color: '#F43F5E'}");
+
+    const card = nodeById(layout, 'quality_new_returning');
+    expect(card, '신규·재방문 카드').toBeTruthy();
+    expect(stringify(card)).toContain('admin.analytics.overview.quality.new_returning');
+    expect(stringify(card)).toContain('admin.analytics.overview.new_returning_unavailable');
+    expect(stringify(card)).toContain('p.new_visitors != null || p.returning_visitors != null');
+  });
+
+  // @scenario screen=overview, state=normal, viewport=1440, locale=ko
+  // @effects quality_cards_share_one_shape
+  it('신규·재방문 카드는 옆 세 카드(StatCard)와 같은 틀 — 카드·아이콘·큰 수치·라벨 클래스가 같다', () => {
+    // 비율 막대를 넣으려고 StatCard 대신 직접 만든 카드라, 틀을 따로 두면 줄 안에서 높이·여백·그림자가 어긋난다.
+    const card = nodeById(layout, 'quality_new_returning');
+    const classes = collectObjects(card).map((o) => String(o.props?.className ?? ''));
+    expect(String(card?.props?.className ?? '').split(/\s+/), '카드 틀').toContain('stat-card');
+    for (const cls of ['stats-icon', 'stats-value-lg', 'stats-label']) {
+      expect(classes.some((c) => c.split(/\s+/).includes(cls)), cls).toBe(true);
+    }
+    expect(String(card?.props?.className ?? '')).not.toContain('admin-card');
   });
 
   // @scenario screen=overview, state=normal, viewport=1440, locale=ko

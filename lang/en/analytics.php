@@ -150,6 +150,32 @@ return [
         'goal' => 'Goal',
         'bot_name' => 'Bot name',
         'bot_page' => 'Page crawled by bot',
+        'campaign_medium' => 'Campaign medium',
+        'search_tab' => 'Search tab',
+        'event_name' => 'Event',
+        'visit_duration' => 'Visit duration',
+        'visit_pages' => 'Pages per visit',
+    ],
+
+    // Visit duration / pages-per-visit bucket labels
+    'bucket' => [
+        'duration_range' => ':from – :to',
+        'duration_over' => 'over :from',
+        'seconds' => ':ns',
+        'minutes' => ':nm',
+        'minutes_seconds' => ':mm :ss',
+        'hours' => ':nh',
+        'pages_one' => ':n page(s)',
+        'pages_range' => ':from–:to pages',
+        'pages_over' => ':from+ pages',
+    ],
+
+    // Site search tabs
+    'search_tab' => [
+        'all' => 'All',
+        'posts' => 'Posts',
+        'products' => 'Products',
+        'pages' => 'Pages',
     ],
 
     // Archiving
@@ -265,6 +291,10 @@ return [
         'ledger_warning_actions' => 'action warning row count',
         'ledger_warning_visits' => 'visit warning row count',
         'archive_chunk_size' => 'archive chunk size (visits)',
+        'archive_on_view_enabled' => 'archive on view',
+        'archive_on_view_max_visits' => 'archive on view — daily visit limit',
+        'duration_bucket_bounds' => 'visit duration bucket bounds (seconds)',
+        'pages_bucket_bounds' => 'pages per visit bucket bounds',
         'realtime_poll_seconds' => 'realtime polling (seconds)',
         'realtime_window_minutes' => 'current visitors window (minutes)',
         'top_n_overview' => 'overview list size',
@@ -281,6 +311,7 @@ return [
         'format' => 'export format',
         'q' => 'search term',
         'sort' => 'sort order',
+        'label' => 'item',
         'type' => 'visitor type',
         'minutes' => 'window (minutes)',
         'reason' => 'failure reason',

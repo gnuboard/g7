@@ -8,7 +8,7 @@
   <meta title="$t:admin.analytics.referrers.title"/>
   <!-- 탭 → 리포트 이름. 공통 표와 유형 탭의 도넛이 읽는다. 사이트 탭에서 한 도메인의 주소 목록을 보는 동안에는 표 자리를
        아래 소스가 대신하지만, 이 소스는 조건 없이 사이트 집계를 계속 받는다. -->
-  <data-source id="analytics_report" label_key="$t:editor.data_source.analytics_report" type="api" endpoint="/api/admin/analytics/reports/{{({types: 'referrer_type', sites: 'referrer_name', keywords: 'referrer_keyword', campaigns: 'campaign'})[query.tab || 'types'] || 'referrer_type'}}" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive">
+  <data-source id="analytics_report" label_key="$t:editor.data_source.analytics_report" type="api" endpoint="/api/admin/analytics/reports/{{({types: 'referrer_type', sites: 'referrer_name', keywords: 'referrer_keyword', campaigns: 'campaign', mediums: 'campaign_medium'})[query.tab || 'types'] || 'referrer_type'}}" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive">
     <params preset="{{query.from ? undefined : (query.preset || '7d')}}" from="{{query.from}}" to="{{query.to}}" exclude[]="{{(query.exclude || '').split(',').filter(Boolean)}}" page="{{query.page || 1}}" per_page="{{query.per_page}}" sort="{{query.sort}}" q="{{query.q}}"/>
     <fallback>
       <field name="data">
@@ -64,17 +64,42 @@
       </on-code>
     </error-handling>
   </data-source>
+  <!-- 한 항목 추이 창의 소스 — 자동으로 받지 않는다. 행 끝 추이 아이콘이 `_global.analyticsRowTrend` 를 정한 뒤 이 소스를
+       다시 받게 하고 창을 연다. 기간·제외는 지금 주소 그대로 싣는다. -->
+  <data-source id="analytics_row_trend" label_key="$t:editor.data_source.analytics_row_trend" type="api" endpoint="/api/admin/analytics/reports/{{_global.analyticsRowTrend?.report ?? ''}}/series" method="GET" :auto_fetch="false" :auth_required="true">
+    <params label="{{_global.analyticsRowTrend?.label ?? ''}}" preset="{{query.from ? undefined : (query.preset || '7d')}}" from="{{query.from}}" to="{{query.to}}" exclude[]="{{(query.exclude || '').split(',').filter(Boolean)}}"/>
+    <fallback>
+      <field name="data">
+        <field name="unit" value="day"/>
+        <field name="unit_downgraded" :value="false"/>
+        <field name="points" :value="[]"/>
+      </field>
+    </fallback>
+    <error-handling>
+      <on-code code="403">
+        <suppress/>
+      </on-code>
+      <on-code code="404">
+        <suppress/>
+      </on-code>
+      <on-code code="422">
+        <suppress/>
+      </on-code>
+    </error-handling>
+  </data-source>
   <init-local>
     <field name="periodPath" value="/admin/analytics/referrers"/>
     <field name="periodSource" value="analytics_report"/>
     <field name="showUnit" :value="false"/>
     <field name="labelDrilldownKey" value=""/>
   </init-local>
-  <computed name="reportName">{{({types: 'referrer_type', sites: 'referrer_name', keywords: 'referrer_keyword', campaigns: 'campaign'})[query.tab || 'types'] || 'referrer_type'}}</computed>
+  <computed name="reportEmptyHint">{{(query.tab || 'types') === 'mediums' ? $t('admin.analytics.referrers.mediums_empty') : null}}</computed>
+  <computed name="reportName">{{({types: 'referrer_type', sites: 'referrer_name', keywords: 'referrer_keyword', campaigns: 'campaign', mediums: 'campaign_medium'})[query.tab || 'types'] || 'referrer_type'}}</computed>
   <computed name="csvUrl">{{((query.tab || 'types') === 'sites' &amp;&amp; !!query.host) ? '' : '/api/admin/analytics/reports/' + _computed.reportName + '?format=csv' + (query.from ? '&amp;from=' + query.from + '&amp;to=' + (query.to || query.from) : '&amp;preset=' + (query.preset || '7d')) + (query.exclude || '').split(',').filter(Boolean).map(e => '&amp;exclude[]=' + e).join('') + (query.q ? '&amp;q=' + encodeURIComponent(query.q) : '') + (query.sort ? '&amp;sort=' + query.sort : '')}}</computed>
   <computed name="csvFilename">{{'analytics-' + _computed.reportName + '-' + (_computed.periodFrom || '') + '_' + (_computed.periodTo || '') + '.csv'}}</computed>
   <computed name="periodFrom">{{query.from || analytics_report?.data?.from || _local.periodComputed?.from || ''}}</computed>
   <computed name="periodTo">{{query.to || query.from || analytics_report?.data?.to || _local.periodComputed?.to || ''}}</computed>
+  <computed name="archiveFreshness">{{analytics_report?.data?.freshness ?? null}}</computed>
   <permissions>
     <permission>core.analytics.read</permission>
   </permissions>
@@ -110,6 +135,7 @@
           <item id="sites" label="$t:admin.analytics.referrers.tabs.sites"/>
           <item id="keywords" label="$t:admin.analytics.referrers.tabs.keywords"/>
           <item id="campaigns" label="$t:admin.analytics.referrers.tabs.campaigns"/>
+          <item id="mediums" label="$t:admin.analytics.referrers.tabs.mediums"/>
         </prop>
         <on type="change" event="onTabChange">
           <!-- 탭 전환 — 라벨 링크 여부를 새 탭에 맞춘 뒤 이동한다. 사이트 탭에서 열어 둔 도메인(`host`)은 새 탭에 의미가 없어 지운다. -->
@@ -195,4 +221,6 @@
       </extension-point>
     </div>
   </slot>
+  <!-- 한 항목 추이 창. -->
+  <modal src="partials/admin_analytics/_modal_row_trend.g7.html"/>
 </layout>

@@ -671,6 +671,27 @@
                                                 }
                                             },
                                             {
+                                                "comment": "스케줄러가 매시 집계를 최근에 돌렸는가 — 화면 열 때 집계가 숫자를 맞춰도 어제 확정·정리·메일 보고서는 스케줄러만 돌린다.\n                 판정 근거가 없으면(설치 직후) 배지를 띄우지 않는다.",
+                                                "id": "scheduler_last_run",
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "props": {
+                                                    "className": "text-label-subtle"
+                                                },
+                                                "text": "$t:admin.analytics.diagnostics.fields.scheduler_last_run|at={{analytics_diagnostics?.data?.archive?.scheduler?.last_run_at | datetime | default('-')}}"
+                                            },
+                                            {
+                                                "id": "scheduler_missing_badge",
+                                                "type": "composite",
+                                                "name": "Badge",
+                                                "if": "{{analytics_diagnostics?.data?.archive?.scheduler?.alive === false}}",
+                                                "props": {
+                                                    "color": "yellow",
+                                                    "text": "$t:admin.analytics.diagnostics.fields.scheduler_missing",
+                                                    "size": "sm"
+                                                }
+                                            },
+                                            {
                                                 "type": "composite",
                                                 "name": "Badge",
                                                 "if": "{{!!_computed.runningRunId}}",

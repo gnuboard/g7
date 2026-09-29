@@ -3155,7 +3155,8 @@
       "retro_anonymize_modal": "遡及匿名化確認",
       "purge_all_modal": "すべての統計データ削除確認",
       "reaggregate_modal": "期間再集計",
-      "subject_delete_modal": "情報主体記録削除確認"
+      "subject_delete_modal": "情報主体記録削除確認",
+      "row_trend_modal": "項目の推移"
     }
   },
   "member_notification": {
@@ -3279,7 +3280,13 @@
       "unit_downgraded": "時間単位の集計の保持期間外のため、日単位で表示されます。",
       "load_failed": "統計を読み込めませんでした。しばらく経ってからもう一度お試しください。",
       "load_failed_retry": "再試行",
-      "site_timezone": "この画面の時刻はサイト標準時（{timezone}）基準です — お使いの端末の時間帯とは異なります。"
+      "site_timezone": "この画面の時刻はサイト標準時（{timezone}）基準です — お使いの端末の時間帯とは異なります。",
+      "scheduler_missing": "スケジューラ(cron)が2時間以上実行されていません。画面を開いたときの集計で数値は更新されますが、昨日の確定・古いデータの整理・週次レポートメールは停止しています。",
+      "scheduler_missing_link": "収集診断を開く",
+      "archive_stale": "集計が{{hours}}時間停止しています(最終 {{at}})。スケジューラ(cron)を確認するか、今すぐ集計してください。",
+      "archive_never": "訪問は記録されていますが、まだ一度も集計されていません。スケジューラ(cron)を確認するか、今すぐ集計してください。",
+      "on_view_too_many": "本日の訪問が{{max}}件を超えたため、画面を開いたときの集計を行いませんでした。数値は{{at}}時点です — スケジューラ(cron)を登録してください。",
+      "archive_now": "今すぐ集計"
     },
     "overview": {
       "title": "訪問者統計概要",
@@ -3297,14 +3304,18 @@
       "quality": {
         "bounce_rate": "離脱率",
         "avg_time": "平均滞在時間",
-        "pages_per_visit": "訪問あたりのページ"
+        "pages_per_visit": "訪問あたりのページ",
+        "new_returning": "新規・再訪問"
       },
       "top": {
         "pages": "人気ページ",
         "referrers": "流入経路",
         "countries": "国"
       },
-      "visitors_daily_sum_note": "訪問者(ユニーク)は日別ユニーク訪問者の合計です — 訪問者キーが日ごとに変わるため、複数日にまたがるユニーク訪問者は数えられません。"
+      "visitors_daily_sum_note": "訪問者(ユニーク)は日別ユニーク訪問者の合計です — 訪問者キーが日ごとに変わるため、複数日にまたがるユニーク訪問者は数えられません。",
+      "new_visitors": "新規",
+      "returning_visitors": "再訪問",
+      "new_returning_unavailable": "匿名モードでは新規・再訪問を区別できません"
     },
     "pages": {
       "title": "ページ",
@@ -3313,7 +3324,9 @@
         "popular": "人気ページ",
         "entry": "進入ページ",
         "exit": "離脱ページ",
-        "titles": "ページタイトル"
+        "titles": "ページタイトル",
+        "durations": "滞在時間の区間",
+        "depths": "閲覧ページ数の区間"
       }
     },
     "referrers": {
@@ -3324,14 +3337,16 @@
         "types": "流入タイプ",
         "sites": "流入元サイト",
         "keywords": "検索キーワード",
-        "campaigns": "キャンペーン"
+        "campaigns": "キャンペーン",
+        "mediums": "キャンペーンメディア"
       },
       "type_share_title": "流入タイプ比率",
       "urls_title": "{{host}} の流入アドレス",
       "urls_back": "流入サイト一覧へ",
       "urls_column": "流入アドレス",
       "urls_hint": "このドメインから入ってきた実際のアドレスです。流入URL匿名化を有効にした期間の訪問は保存時点でドメインまでのみ残り、1行のみ表示されます。",
-      "urls_empty_description": "選択した期間にこのドメインから入ってきた記録がありません。"
+      "urls_empty_description": "選択した期間にこのドメインから入ってきた記録がありません。",
+      "mediums_empty": "utm_medium が付いた訪問はありません。"
     },
     "environment": {
       "title": "環境",
@@ -3381,7 +3396,9 @@
         "downloads": "ダウンロード",
         "outlinks": "外部リンク",
         "goals": "コンバージョン",
-        "dimensions": "拡張機能別の分類"
+        "dimensions": "拡張機能別の分類",
+        "search_tabs": "検索タブ",
+        "events": "イベント"
       },
       "no_result": "結果なし",
       "revenue": "売上",
@@ -3394,7 +3411,8 @@
       "dimensions_none_description": "有効な拡張機能のうち、分類基準を提供しているものがありません。拡張機能が分類基準を宣言すると、ここで選択できます。",
       "dimension_pii_suffix": "個人情報 — 統計表なし",
       "dimension_pii_title": "個人情報の分類基準は統計表にしません",
-      "dimension_pii_description": "拡張機能がこの基準の値を個人情報として指定しました。値が日別統計に永久に残らないよう表は作成せず、値は訪問記録にのみ残り、保存期間の経過時またはデータ主体の削除要求時に一緒に削除されます。"
+      "dimension_pii_description": "拡張機能がこの基準の値を個人情報として指定しました。値が日別統計に永久に残らないよう表は作成せず、値は訪問記録にのみ残り、保存期間の経過時またはデータ主体の削除要求時に一緒に削除されます。",
+      "events_empty": "イベントはありません。拡張機能が G7Core.analytics.trackEvent() で送った名前がここに記録されます。"
     },
     "realtime": {
       "title": "リアルタイム",
@@ -3557,7 +3575,9 @@
         "on": "オン",
         "off": "オフ",
         "cloud_ranges": "クラウド帯域ブロック",
-        "trusted_proxy_warning": "警告"
+        "trusted_proxy_warning": "警告",
+        "scheduler_last_run": "スケジューラ最終実行 {{at}}",
+        "scheduler_missing": "スケジューラ未稼働"
       },
       "progress_source": {
         "ws": "進行率: リアルタイム",
@@ -3605,7 +3625,8 @@
       },
       "run_triggers": {
         "scheduled": "自動(スケジュール)",
-        "manual": "手動"
+        "manual": "手動",
+        "on_view": "画面を開いたとき"
       },
       "queue_connections": {
         "sync": "即時実行(キューなし)",
@@ -3815,7 +3836,16 @@
           "rows": "行",
           "size": "サイズ"
         },
-        "purge_all": "すべての統計データを削除"
+        "purge_all": "すべての統計データを削除",
+        "archive_section": "集計",
+        "archive_on_view_enabled": "画面を開いたときの集計",
+        "archive_on_view_enabled_hint": "画面を開くか再読み込みしたときに、1分以上経過した集計を再計算します。訪問の多いサイトではスケジューラ(cron)の登録を推奨します。",
+        "archive_on_view_max_visits": "本日の訪問上限",
+        "archive_on_view_max_visits_hint": "本日の訪問がこの件数を超えると、画面を開いたときに集計しません。",
+        "duration_bucket_bounds": "滞在時間の区間境界(秒)",
+        "duration_bucket_bounds_hint": "秒単位の境界をカンマ区切りで入力します(既定 10,30,60,180,600,1800)。変更はその後の集計から適用され、過去の期間は収集診断の期間再集計で再計算します。",
+        "pages_bucket_bounds": "閲覧ページ数の区間境界",
+        "pages_bucket_bounds_hint": "ページ数の境界をカンマ区切りで入力します(既定 1,2,3,4,5,7,10,14,20)。変更はその後の集計から適用され、過去の期間は収集診断の期間再集計で再計算します。"
       },
       "reports": {
         "weekly": "週間レポートメール",
@@ -3879,6 +3909,20 @@
       "detail": "詳細",
       "collection_off": "収集オフ",
       "trend": "直近7日間の訪問者"
+    },
+    "freshness": {
+      "scheduled": "最終集計 {{time}} · 毎時5分に自動集計",
+      "on_view": "最終集計 {{time}} · 画面を開くか再読み込みすると1分間隔で再集計",
+      "plain_time": "最終集計 {{time}}",
+      "plain_date": "最終集計 {{month}}月{{day}}日 {{time}}"
+    },
+    "row_trend": {
+      "open": "この項目の推移を見る",
+      "title": "{{label}} の推移",
+      "period": "{{from}} ~ {{to}}",
+      "unit_downgraded": "項目別の集計は日単位のため、時間単位ではなく日単位で表示します。",
+      "empty": "この期間の記録はありません。",
+      "error": "推移を読み込めませんでした。しばらく経ってからもう一度開いてください。"
     }
   }
 }

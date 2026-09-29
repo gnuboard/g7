@@ -48,6 +48,24 @@ interface ArchiveRunRepositoryInterface
     public function findLastSuccessful(string $runType): ?AnalyticsArchiveRun;
 
     /**
+     * 종류·실행 주체별 마지막 실행을 성공·실패와 무관하게 조회합니다.
+     *
+     * 스케줄러 생존 판정의 근거다 — 예약 실행이 실패로 끝났어도 스케줄러 자체는 돌고 있다.
+     *
+     * @param  string  $runType  실행 종류
+     * @param  string  $trigger  실행 주체 (scheduled, manual, on_view)
+     * @return AnalyticsArchiveRun|null 마지막 실행 (없으면 null)
+     */
+    public function findLastStartedByTrigger(string $runType, string $trigger): ?AnalyticsArchiveRun;
+
+    /**
+     * 가장 먼저 시작한 실행의 시작 시각을 돌려줍니다.
+     *
+     * @return Carbon|null 첫 실행 시작 시각 (UTC, 이력이 없으면 null)
+     */
+    public function firstStartedAt(): ?Carbon;
+
+    /**
      * 실행 이력을 페이지네이션하여 조회합니다.
      *
      * @param  array<string, mixed>  $filters  필터 조건 (run_type, status)

@@ -25,7 +25,7 @@
         </input>
       </div>
       <div class="flex-center gap-2">
-        <select data-ref="report_sort" name="analytics_report_sort" class="w-32" value="{{query.sort || 'visits'}}" aria-label="$t:admin.analytics.common.sort_label">
+        <select data-ref="report_sort" data-if="{{!['visit_duration', 'visit_pages'].includes(_computed.reportName)}}" name="analytics_report_sort" class="w-32" value="{{query.sort || 'visits'}}" aria-label="$t:admin.analytics.common.sort_label">
           <options>
             <option value="visits">$t:admin.analytics.common.visits</option>
             <option value="hits">$t:admin.analytics.common.hits</option>
@@ -38,9 +38,10 @@
             </navigate>
           </on>
         </select>
-        <!-- 한 쪽 행 수의 기본은 설정 「상세 TOP N」이다 — 화면은 주소에 `per_page` 가 없으면 보내지 않고 서버가
+        <!-- 구간 리포트(체류시간·본 페이지 수)는 서버가 구간 순서로 전부 돌려주므로 정렬·쪽 크기 선택을 감춘다.
+          한 쪽 행 수의 기본은 설정 「상세 TOP N」이다 — 화면은 주소에 `per_page` 가 없으면 보내지 않고 서버가
           설정값으로 채운다. 그래서 선택란은 응답이 알려 준 쪽 크기를 보이고, 그 값이 고정 선택지에 없으면 더한다. -->
-        <select data-ref="report_per_page" name="analytics_report_per_page" class="w-20" value="{{String(query.per_page || analytics_report?.data?.pagination?.per_page || 25)}}" options="{{((n, base) => (base.includes(n) ? base : base.concat([n]).sort((a, b) => a - b)).map((v) => Object.fromEntries([['value', String(v)], ['label', String(v)]])))(Number(query.per_page || analytics_report?.data?.pagination?.per_page) || 25, [10, 25, 50, 100]) ?? []}}" aria-label="$t:admin.analytics.common.per_page">
+        <select data-ref="report_per_page" data-if="{{!['visit_duration', 'visit_pages'].includes(_computed.reportName)}}" name="analytics_report_per_page" class="w-20" value="{{String(query.per_page || analytics_report?.data?.pagination?.per_page || 25)}}" options="{{((n, base) => (base.includes(n) ? base : base.concat([n]).sort((a, b) => a - b)).map((v) => Object.fromEntries([['value', String(v)], ['label', String(v)]])))(Number(query.per_page || analytics_report?.data?.pagination?.per_page) || 25, [10, 25, 50, 100]) ?? []}}" aria-label="$t:admin.analytics.common.per_page">
           <on type="change">
             <navigate path="{{_local.periodPath}}" :mergeQuery="true" :replace="true">
               <query per_page="{{$event.target.value}}" :page="1"/>
@@ -67,7 +68,7 @@
         값을 싣는 차원(검색어의 결과 없음·전환 금액·확장)에만 둔다. 화면은 `_computed.reportName` 을 채운다.
         0건이면 표(빈 문구·쪽 번호 「1」)를 숨기고 아래 빈 화면 안내 하나만 남긴다 — 둘 다 그리면 「선택 기간에 기록이
         없습니다」가 두 번 보였다(#682 S4 라운드 8). 불러오는 동안은 표 뼈대를 그대로 둔다. -->
-      <data-grid data-ref="analytics_report_grid" data-if="{{analytics_report?.loading || (analytics_report?.data?.data ?? []).length &gt; 0}}" visibleColumns="{{(function(r) { const name = String(r ?? ''); const ext = name.startsWith('ext:'); const action = ext || ['site_search', 'download', 'outlink', 'goal'].includes(name); const extra = ext || ['site_search', 'goal'].includes(name); return ['label_display', 'visits', 'hits'].concat(action ? [] : ['bounce_rate', 'avg_time', 'pages_per_visit'], extra ? ['extra'] : []); })(_computed.reportName)}}" data="{{analytics_report?.data?.data ?? []}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{+(query.page || 1)}}" :serverTotalPages="null" serverHasMorePages="{{analytics_report?.data?.pagination?.has_more ?? false}}" pageSize="{{+(query.per_page || 25)}}" :alwaysShowPagination="true" idField="label" :selectable="false" :sortable="false" emptyMessage="$t:admin.analytics.common.empty_title">
+      <data-grid data-ref="analytics_report_grid" data-if="{{analytics_report?.loading || (analytics_report?.data?.data ?? []).length &gt; 0}}" visibleColumns="{{(function(r) { const name = String(r ?? ''); const ext = name.startsWith('ext:'); const action = ext || ['site_search', 'download', 'outlink', 'goal', 'search_tab', 'event_name'].includes(name); const extra = ext || ['site_search', 'goal'].includes(name); return ['label_display', 'visits', 'hits'].concat(action ? [] : ['bounce_rate', 'avg_time', 'pages_per_visit'], extra ? ['extra'] : [], ['trend']); })(_computed.reportName)}}" data="{{analytics_report?.data?.data ?? []}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{+(query.page || 1)}}" :serverTotalPages="null" serverHasMorePages="{{analytics_report?.data?.pagination?.has_more ?? false}}" pageSize="{{+(query.per_page || 25)}}" :alwaysShowPagination="true" idField="label" :selectable="false" :sortable="false" emptyMessage="$t:admin.analytics.common.empty_title">
         <on type="action" event="onPageChange">
           <!-- 쪽 이동 — 주소를 갈아 끼워 다시 받는다. 돌아온 목록이 곧 화면이다. -->
           <navigate path="{{_local.periodPath}}" :mergeQuery="true" :replace="true">
@@ -123,9 +124,32 @@
             <span data-if="{{row.extra?.no_result === undefined &amp;&amp; row.extra?.revenue_cents === undefined}}" class="text-gray-400 dark:text-gray-500">-</span>
           </cell>
         </column>
+        <column field="trend" header="" width="56px" align="center">
+          <cell>
+            <!-- 행 끝 추이 아이콘 — 목록은 기간 합계만 말하므로 「이 항목이 언제부터 늘었나」는 줄마다 추이를 그려야 보인다.
+              누르면 그 행의 저장 라벨(`row.label`)과 지금 리포트 이름을 전역에 담고 추이 창을 연다 — 창의 데이터소스가 그 값에
+              매여 따라 받는다. 라벨 칸의 기존 클릭(유입 사이트 → 유입 주소 펼침)과 따로 논다. -->
+            <button data-ref="row_trend_button" type="button" class="btn-icon" aria-label="$t:admin.analytics.row_trend.open" title="$t:admin.analytics.row_trend.open">
+              <on type="click">
+                <sequence>
+                  <set-state target="global">
+                    <field name="analyticsRowTrend">
+                      <field name="report" value="{{_computed.reportName}}"/>
+                      <field name="label" value="{{row.label ?? ''}}"/>
+                      <field name="label_display" value="{{row.label_display ?? row.label ?? ''}}"/>
+                    </field>
+                  </set-state>
+                  <refetch-data-source dataSourceId="analytics_row_trend"/>
+                  <open-modal target="analytics_row_trend_modal"/>
+                </sequence>
+              </on>
+              <icon name="chart-line" size="sm"/>
+            </button>
+          </cell>
+        </column>
       </data-grid>
     </div>
-    <empty-state data-ref="report_empty" data-if="{{!analytics_report?.loading &amp;&amp; (analytics_report?.data?.data ?? []).length === 0}}" iconName="folder-open" title="$t:admin.analytics.common.empty_title" description="$t:admin.analytics.common.empty_description" class="py-10"/>
+    <empty-state data-ref="report_empty" data-if="{{!analytics_report?.loading &amp;&amp; (analytics_report?.data?.data ?? []).length === 0}}" iconName="folder-open" title="$t:admin.analytics.common.empty_title" description="{{_computed.reportEmptyHint ?? $t('admin.analytics.common.empty_description')}}" class="py-10"/>
     <!-- 빈 표에서 「수집 상태는 진단에서」를 읽고도 그 자리에서 갈 수 없으면 안내가 반쪽이다
          (계획서 §4.11 리포트 와이어프레임의 `[진단]`). 이 조각을 쓰는 화면은 전부 조회 권한이라
          목적지가 막다른 길이 되지 않는다 — 그래도 최고 관리자·권한 보유자만 그려 규약을 지킨다. -->

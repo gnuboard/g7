@@ -76,6 +76,7 @@
                             "id": "report_sort",
                             "type": "basic",
                             "name": "Select",
+                            "if": "{{!['visit_duration', 'visit_pages'].includes(_computed.reportName)}}",
                             "actions": [
                                 {
                                     "comment": "정렬 바꾸기 — 기본값(방문)은 주소에서 지워 짧게 두고, 조회로 바꿀 때만 `sort` 를 싣는다. 순서가 바뀌면 앞서 보던\n                 쪽 번호는 의미가 없어 1쪽으로 돌린다.",
@@ -110,10 +111,11 @@
                             }
                         },
                         {
-                            "comment": "한 쪽 행 수의 기본은 설정 「상세 TOP N」이다 — 화면은 주소에 `per_page` 가 없으면 보내지 않고 서버가\n          설정값으로 채운다. 그래서 선택란은 응답이 알려 준 쪽 크기를 보이고, 그 값이 고정 선택지에 없으면 더한다.",
+                            "comment": "구간 리포트(체류시간·본 페이지 수)는 서버가 구간 순서로 전부 돌려주므로 정렬·쪽 크기 선택을 감춘다.\n          한 쪽 행 수의 기본은 설정 「상세 TOP N」이다 — 화면은 주소에 `per_page` 가 없으면 보내지 않고 서버가\n          설정값으로 채운다. 그래서 선택란은 응답이 알려 준 쪽 크기를 보이고, 그 값이 고정 선택지에 없으면 더한다.",
                             "id": "report_per_page",
                             "type": "basic",
                             "name": "Select",
+                            "if": "{{!['visit_duration', 'visit_pages'].includes(_computed.reportName)}}",
                             "actions": [
                                 {
                                     "type": "change",
@@ -218,7 +220,7 @@
                         }
                     ],
                     "props": {
-                        "visibleColumns": "{{(function(r) { const name = String(r ?? ''); const ext = name.startsWith('ext:'); const action = ext || ['site_search', 'download', 'outlink', 'goal'].includes(name); const extra = ext || ['site_search', 'goal'].includes(name); return ['label_display', 'visits', 'hits'].concat(action ? [] : ['bounce_rate', 'avg_time', 'pages_per_visit'], extra ? ['extra'] : []); })(_computed.reportName)}}",
+                        "visibleColumns": "{{(function(r) { const name = String(r ?? ''); const ext = name.startsWith('ext:'); const action = ext || ['site_search', 'download', 'outlink', 'goal', 'search_tab', 'event_name'].includes(name); const extra = ext || ['site_search', 'goal'].includes(name); return ['label_display', 'visits', 'hits'].concat(action ? [] : ['bounce_rate', 'avg_time', 'pages_per_visit'], extra ? ['extra'] : [], ['trend']); })(_computed.reportName)}}",
                         "data": "{{analytics_report?.data?.data ?? []}}",
                         "pagination": true,
                         "serverSidePagination": true,
@@ -391,6 +393,65 @@
                                         "text": "-"
                                     }
                                 ]
+                            },
+                            {
+                                "field": "trend",
+                                "header": "",
+                                "width": "56px",
+                                "align": "center",
+                                "cellChildren": [
+                                    {
+                                        "comment": "행 끝 추이 아이콘 — 목록은 기간 합계만 말하므로 「이 항목이 언제부터 늘었나」는 줄마다 추이를 그려야 보인다.\n              누르면 그 행의 저장 라벨(`row.label`)과 지금 리포트 이름을 전역에 담고 추이 창을 연다 — 창의 데이터소스가 그 값에\n              매여 따라 받는다. 라벨 칸의 기존 클릭(유입 사이트 → 유입 주소 펼침)과 따로 논다.",
+                                        "id": "row_trend_button",
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "actions": [
+                                            {
+                                                "type": "click",
+                                                "handler": "sequence",
+                                                "actions": [
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "global",
+                                                            "analyticsRowTrend": {
+                                                                "report": "{{_computed.reportName}}",
+                                                                "label": "{{row.label ?? ''}}",
+                                                                "label_display": "{{row.label_display ?? row.label ?? ''}}"
+                                                            }
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "refetchDataSource",
+                                                        "params": {
+                                                            "dataSourceId": "analytics_row_trend"
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "openModal",
+                                                        "target": "analytics_row_trend_modal"
+                                                    }
+                                                ]
+                                            }
+                                        ],
+                                        "props": {
+                                            "type": "button",
+                                            "className": "btn-icon",
+                                            "aria-label": "$t:admin.analytics.row_trend.open",
+                                            "title": "$t:admin.analytics.row_trend.open"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Icon",
+                                                "props": {
+                                                    "name": "chart-line",
+                                                    "size": "sm"
+                                                }
+                                            }
+                                        ]
+                                    }
+                                ]
                             }
                         ]
                     }
@@ -405,7 +466,7 @@
             "props": {
                 "iconName": "folder-open",
                 "title": "$t:admin.analytics.common.empty_title",
-                "description": "$t:admin.analytics.common.empty_description",
+                "description": "{{_computed.reportEmptyHint ?? $t('admin.analytics.common.empty_description')}}",
                 "className": "py-10"
             }
         },

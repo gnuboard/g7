@@ -42,6 +42,28 @@ exclusions:
   - { format: csv, endpoint: referrer_urls, reason: "도메인 아래를 펼쳐 보는 목록이다 — 내려받기는 사이트 목록(reports)이 맡는다" }
 
 effects:
+  # 화면 열 때 집계 미들웨어 · 신선도 블록
+  - aggregate_routes_run_on_view_and_carry_freshness
+  - ledger_routes_do_not_run_on_view
+  - forbidden_request_does_not_run_on_view
+  - csv_responses_are_left_untouched
+  - bots_request_runs_on_view_once
+  - on_view_disabled_does_nothing
+  - diagnostics_report_scheduler_and_on_view_state
+  # 한 항목 추이
+  - row_series_sums_label_per_day
+  - row_series_unit_follows_range_length
+  - row_series_downgrades_hour_to_day
+  - row_series_rejects_unknown_report_and_missing_label
+  - row_series_reads_bot_rows_for_bot_dimensions
+  - row_series_bot_dimension_ignores_exclude
+  - row_series_supports_extension_dimensions
+  - row_series_is_empty_without_rows
+  # 신규·재방문 · 새 리포트 · 설정
+  - series_points_carry_new_and_returning_visitors
+  - bucket_reports_are_ordered_by_bound_and_humanized
+  - search_tab_labels_are_translated
+  - bucket_bounds_must_be_ascending
   - every_analytics_route_has_an_api_doc_section
   - stored_codes_are_shown_as_human_labels
   - public_analytics_routes_are_throttled
@@ -203,6 +225,8 @@ effects:
   - visitor_csv_filename_carries_the_period
 
 test_files:
+  - tests/Feature/Analytics/Api/ArchiveOnViewMiddlewareTest.php
+  - tests/Feature/Analytics/Api/RowSeriesControllerTest.php
   - tests/Feature/Analytics/Api/ApiSurfaceContractTest.php
   - tests/Feature/Analytics/Api/OverviewControllerTest.php
   - tests/Feature/Analytics/Api/ReportControllerTest.php

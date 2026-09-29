@@ -35,6 +35,11 @@ abstract class AnalyticsApiTestCase extends TestCase
         parent::setUp();
 
         config(['app.timezone' => 'UTC', 'g7_settings.core.general.timezone' => 'UTC']);
+
+        // 화면 열 때 집계는 요청마다 오늘치를 원장에서 다시 계산한다 — 집계 행을 직접 심어 목록·추이를
+        // 검산하는 테스트에서는 그 행이 빈 원장으로 덮여 사라진다. 기본은 끄고, 그 동작을 보는 테스트
+        // (ArchiveOnViewMiddlewareTest)만 켠다.
+        config(['g7_settings.core.analytics.archive_on_view_enabled' => false]);
     }
 
     /**

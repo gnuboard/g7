@@ -6,6 +6,7 @@ use App\Analytics\AnalyticsClock;
 use App\Enums\Analytics\ArchiveRunStatus;
 use App\Enums\Analytics\ArchiveRunType;
 use App\Models\Analytics\AnalyticsArchiveRun;
+use App\Services\Analytics\ArchiveCatchUpService;
 use App\Services\Analytics\ArchiveService;
 use App\Services\Analytics\StaleRunService;
 use Illuminate\Console\Command;
@@ -19,6 +20,10 @@ use Illuminate\Support\Carbon;
  *
  * 집계가 실패해도 종료 코드로만 알리고 예외를 밖으로 던지지 않습니다. 스케줄러가
  * 멈추면 그날 이후 모든 통계가 함께 멈추기 때문입니다.
+ *
+ * 스케줄러 등록(`routes/console.php`)에만 `--scheduled` 를 붙인다. 통계 화면은 「예약 실행이 최근에
+ * 돌았는가」로 스케줄러 생존을 판정하는데, 운영자가 손으로 돌린 실행까지 예약으로 적히면 cron 이
+ * 없는데도 살아 있는 것으로 보인다.
  *
  * @example php artisan analytics:archive --period=hour
  * @example php artisan analytics:archive --period=day
@@ -36,7 +41,8 @@ class ArchiveCommand extends Command
                             {--from= : 재집계 시작일 (Y-m-d)}
                             {--to= : 재집계 종료일 (Y-m-d)}
                             {--force : 이미 확정된 날도 다시 집계}
-                            {--dry-run : 집계 표를 바꾸지 않고 대상만 확인}';
+                            {--dry-run : 집계 표를 바꾸지 않고 대상만 확인}
+                            {--scheduled : 스케줄러 등록 실행으로 기록 (없으면 수동 실행으로 기록)}';
 
     /**
      * 커맨드 설명
@@ -50,9 +56,10 @@ class ArchiveCommand extends Command
      *
      * @param  ArchiveService  $service  집계 서비스
      * @param  StaleRunService  $staleRuns  멈춘 실행 정리 서비스
+     * @param  ArchiveCatchUpService  $catchUp  밀린 날 따라잡기
      * @return int 종료 코드
      */
-    public function handle(ArchiveService $service, StaleRunService $staleRuns): int
+    public function handle(ArchiveService $service, StaleRunService $staleRuns, ArchiveCatchUpService $catchUp): int
     {
         $from = $this->option('from');
         $to = $this->option('to');
@@ -82,7 +89,17 @@ class ArchiveCommand extends Command
 
         return $period === 'hour'
             ? $this->handleHour($service, $dryRun)
-            : $this->handleDay($service, $dryRun);
+            : $this->handleDay($service, $catchUp, $dryRun);
+    }
+
+    /**
+     * 이 실행을 이력에 무엇으로 남길지 정합니다.
+     *
+     * @return string 실행 주체 (scheduled, manual)
+     */
+    private function trigger(): string
+    {
+        return $this->option('scheduled') ? 'scheduled' : 'manual';
     }
 
     /**
@@ -97,7 +114,7 @@ class ArchiveCommand extends Command
         $today = AnalyticsClock::today();
 
         $run = $service->archiveHour([
-            'trigger' => 'scheduled',
+            'trigger' => $this->trigger(),
             'dry_run' => $dryRun,
         ]);
 
@@ -105,24 +122,42 @@ class ArchiveCommand extends Command
     }
 
     /**
-     * 어제치를 확정 집계합니다.
+     * 어제치를 확정 집계하고, 스케줄러가 멈춘 동안 밀린 날도 확정합니다.
      *
      * @param  ArchiveService  $service  집계 서비스
+     * @param  ArchiveCatchUpService  $catchUp  밀린 날 따라잡기
      * @param  bool  $dryRun  마른 실행 여부
      * @return int 종료 코드
      */
-    private function handleDay(ArchiveService $service, bool $dryRun): int
+    private function handleDay(ArchiveService $service, ArchiveCatchUpService $catchUp, bool $dryRun): int
     {
         $yesterday = Carbon::parse(AnalyticsClock::today())->subDay()->toDateString();
 
         $run = $service->archiveDay($yesterday, [
             'run_type' => ArchiveRunType::Day->value,
-            'trigger' => 'scheduled',
+            'trigger' => $this->trigger(),
             'is_final' => true,
             'dry_run' => $dryRun,
         ]);
 
-        return $this->report($run, $yesterday, $dryRun);
+        $exitCode = $this->report($run, $yesterday, $dryRun);
+
+        if ($dryRun) {
+            return $exitCode;
+        }
+
+        // 어제 말고도 확정되지 않은 날(스케줄러가 멈췄던 날)이 보존기간 안에 있으면 최근 날부터 확정한다.
+        $dates = array_keys($catchUp->candidates(ArchiveCatchUpService::MAX_DAYS));
+
+        foreach ($catchUp->finalize($dates, $this->trigger()) as $caughtUp) {
+            $date = AnalyticsClock::dateOf($caughtUp->period_start ?? AnalyticsClock::now());
+
+            if ($this->report($caughtUp, $date, false) === self::FAILURE) {
+                $exitCode = self::FAILURE;
+            }
+        }
+
+        return $exitCode;
     }
 
     /**

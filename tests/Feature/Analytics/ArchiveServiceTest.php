@@ -318,6 +318,7 @@ class ArchiveServiceTest extends TestCase
             'referrer_keyword' => '그누보드',
             'campaign_name' => 'spring',
             'campaign_source' => 'newsletter',
+            'campaign_medium' => 'email',
             'browser_name' => 'Chrome',
             'browser_version' => '128',
             'os_name' => 'Windows',
@@ -336,6 +337,7 @@ class ArchiveServiceTest extends TestCase
             [ActionType::SiteSearch, 'search', '그누보드'],
             [ActionType::Download, 'download', 'report.pdf'],
             [ActionType::Outlink, 'outlink', 'https://other.test/'],
+            [ActionType::Event, 'event', 'coupon_click'],
         ] as [$type, $nameType, $name]) {
             AnalyticsAction::factory()->create([
                 'visit_id' => $visit->id,
@@ -344,6 +346,7 @@ class ArchiveServiceTest extends TestCase
                 'action_name_id' => $this->actionName($nameType, $name)->id,
                 'occurred_at' => $at,
                 'search_result_count' => $type === ActionType::SiteSearch ? 3 : null,
+                'search_tab' => $type === ActionType::SiteSearch ? 'posts' : null,
             ]);
         }
 
@@ -1306,5 +1309,210 @@ class ArchiveServiceTest extends TestCase
     private function statusOf(AnalyticsArchiveRun $run): string
     {
         return $run->status instanceof ArchiveRunStatus ? $run->status->value : (string) $run->status;
+    }
+
+    /**
+     * 차원 하나의 라벨별 방문 수를 읽습니다.
+     *
+     * @param  string  $date  일자 (Y-m-d)
+     * @param  string  $dimension  차원 이름
+     * @return array<string, int> 라벨 => 방문 수 (라벨 순)
+     */
+    private function labelVisits(string $date, string $dimension): array
+    {
+        return AnalyticsDimensionStat::query()
+            ->where('date', $date)
+            ->where('dimension', $dimension)
+            ->orderBy('label')
+            ->get()
+            ->mapWithKeys(fn ($row): array => [(string) $row->label => (int) $row->visits])
+            ->all();
+    }
+
+    /**
+     * 새 차원 5종이 규칙대로 쌓이는지 확인합니다 — 매체만 있는 방문, 검색 탭, 체류·페이지 수 구간.
+     *
+     * @return void 없음
+     *
+     * @scenario period=day, data=single_type, trigger=manual
+     *
+     * @effects new_report_dimensions_get_rows
+     */
+    public function test_new_dimensions_follow_their_rules(): void
+    {
+        $date = '2026-09-15';
+
+        // 체류 5초·1페이지(매체 표식), 체류 45초·7페이지, 체류 2000초·0페이지(내려받기만 한 방문)
+        $short = $this->visit($date, ['total_time_seconds' => 5, 'campaign_medium' => 'qa_email']);
+        $this->visit($date, ['total_time_seconds' => 45, 'pageviews_count' => 7]);
+        $this->visit($date, ['total_time_seconds' => 2000, 'pageviews_count' => 0]);
+
+        AnalyticsAction::factory()->create([
+            'visit_id' => $short->id,
+            'visitor_key' => $short->visitor_key,
+            'action_type' => ActionType::SiteSearch,
+            'action_name_id' => $this->actionName('search', 'qa')->id,
+            'search_tab' => 'products',
+            'search_result_count' => 0,
+            'occurred_at' => Carbon::parse($date.' 01:30:00', 'UTC'),
+        ]);
+
+        $this->service->archiveDay($date);
+
+        $this->assertSame(['qa_email' => 1], $this->labelVisits($date, StatsDimension::CampaignMedium->value));
+        $this->assertSame(['products' => 1], $this->labelVisits($date, StatsDimension::SearchTab->value));
+        // 체류: 5초 → [0,10], 45초 → (30,60], 2000초 → 1800 초과 (경계 10초·1800초 자체는 BucketLabelerTest 가 잠근다)
+        $this->assertSame(['0-10' => 1, '1800+' => 1, '30-60' => 1], $this->labelVisits($date, StatsDimension::VisitDuration->value));
+        // 페이지 수: 0페이지 방문은 빠지고 7페이지는 6~7 구간
+        $this->assertSame(['1' => 1, '6-7' => 1], $this->labelVisits($date, StatsDimension::VisitPages->value));
+        // 검색어 행은 탭 행과 따로 그대로 남는다
+        $this->assertSame(['qa' => 1], $this->labelVisits($date, StatsDimension::SiteSearch->value));
+    }
+
+    /**
+     * 설정에서 바꾼 구간 경계가 그 뒤 집계에 적용되는지 확인합니다.
+     *
+     * @return void 없음
+     *
+     * @scenario period=day, data=single_type, trigger=manual
+     *
+     * @effects bucket_bounds_setting_changes_labels
+     */
+    public function test_bucket_bounds_setting_changes_labels(): void
+    {
+        config([
+            'g7_settings.core.analytics.duration_bucket_bounds' => '5,20',
+            'g7_settings.core.analytics.pages_bucket_bounds' => '2',
+        ]);
+
+        $date = '2026-09-16';
+        $this->visit($date, ['total_time_seconds' => 3]);
+        $this->visit($date, ['total_time_seconds' => 12, 'pageviews_count' => 2]);
+        $this->visit($date, ['total_time_seconds' => 99, 'pageviews_count' => 9]);
+
+        $this->service->archiveDay($date);
+
+        $this->assertSame(['0-5', '20+', '5-20'], array_keys($this->labelVisits($date, StatsDimension::VisitDuration->value)));
+        $this->assertSame(['1-2', '3+'], array_keys($this->labelVisits($date, StatsDimension::VisitPages->value)));
+    }
+
+    /**
+     * 이름 없이 주소를 가리키는 옛 이벤트 행은 이벤트 리포트에 들어가지 않는지 확인합니다.
+     *
+     * @return void 없음
+     *
+     * @scenario period=day, data=single_type, trigger=manual
+     *
+     * @effects legacy_url_event_rows_are_excluded
+     */
+    public function test_event_rows_pointing_at_urls_are_excluded(): void
+    {
+        $date = '2026-09-17';
+        $visit = $this->visit($date);
+
+        foreach ([['url', 'example.test/legacy'], ['event', 'signup_click']] as [$type, $name]) {
+            AnalyticsAction::factory()->create([
+                'visit_id' => $visit->id,
+                'visitor_key' => $visit->visitor_key,
+                'action_type' => ActionType::Event,
+                'action_name_id' => $this->actionName($type, $name)->id,
+                'occurred_at' => Carbon::parse($date.' 01:20:00', 'UTC'),
+            ]);
+        }
+
+        $this->service->archiveDay($date);
+
+        $this->assertSame(['signup_click' => 1], $this->labelVisits($date, StatsDimension::EventName->value));
+    }
+
+    /**
+     * 검색 탭은 하루 라벨 수 상한(50)을 넘으면 상위만 남는지 확인합니다 — 공개 수집 API 로 들어오는 자유 문자열.
+     *
+     * @return void 없음
+     *
+     * @scenario period=day, data=single_type, trigger=manual
+     *
+     * @effects free_text_dimensions_are_capped
+     */
+    public function test_search_tab_labels_are_capped_per_day(): void
+    {
+        $date = '2026-09-18';
+        $visit = $this->visit($date);
+        $name = $this->actionName('search', 'q');
+
+        for ($i = 0; $i < 60; $i++) {
+            AnalyticsAction::factory()->create([
+                'visit_id' => $visit->id,
+                'visitor_key' => $visit->visitor_key,
+                'action_type' => ActionType::SiteSearch,
+                'action_name_id' => $name->id,
+                'search_tab' => 'tab_'.$i,
+                'occurred_at' => Carbon::parse($date.' 01:20:00', 'UTC'),
+            ]);
+        }
+
+        $this->service->archiveDay($date);
+
+        $this->assertCount(50, $this->labelVisits($date, StatsDimension::SearchTab->value));
+    }
+
+    /**
+     * 이벤트 이름은 하루 라벨 수 상한(500)을 넘으면 방문 수 상위만 남는지 확인합니다 — 공개 수집 API 로 이름을
+     * 바꿔 가며 보내도 집계 행이 끝없이 늘지 않게.
+     *
+     * @return void 없음
+     *
+     * @scenario period=day, data=single_type, trigger=manual
+     *
+     * @effects free_text_dimensions_are_capped
+     */
+    public function test_event_name_labels_are_capped_per_day(): void
+    {
+        $date = '2026-09-20';
+        $visit = $this->visit($date);
+        $at = Carbon::parse($date.' 01:20:00', 'UTC');
+        $rows = [];
+
+        for ($i = 0; $i < 505; $i++) {
+            $rows[] = [
+                'visit_id' => $visit->id,
+                'visitor_key' => $visit->visitor_key,
+                'action_type' => ActionType::Event->value,
+                'action_name_id' => $this->actionName('event', 'evt_'.$i)->id,
+                'occurred_at' => $at,
+            ];
+        }
+
+        AnalyticsAction::query()->insert($rows);
+
+        $this->service->archiveDay($date);
+
+        $this->assertCount(500, $this->labelVisits($date, StatsDimension::EventName->value));
+    }
+
+    /**
+     * 잠금을 못 잡았을 때 `record_skipped=false` 면 건너뜀 행을 남기지 않고 null 을 돌려주는지 확인합니다.
+     *
+     * @return void 없음
+     *
+     * @scenario period=day, data=single_type, trigger=manual
+     *
+     * @effects on_view_lock_miss_leaves_no_skipped_row
+     */
+    public function test_lock_miss_without_record_skipped_leaves_no_row(): void
+    {
+        $date = '2026-09-19';
+        $lock = Cache::lock('analytics:archive:day:'.$date, 60);
+        $this->assertTrue($lock->get());
+
+        try {
+            $this->assertNull($this->service->archiveDay($date, ['record_skipped' => false]));
+            $this->assertSame(0, AnalyticsArchiveRun::query()->count());
+
+            // 기본값은 예전처럼 건너뜀을 남긴다.
+            $this->assertSame(ArchiveRunStatus::Skipped->value, $this->statusOf($this->service->archiveDay($date)));
+        } finally {
+            $lock->release();
+        }
     }
 }

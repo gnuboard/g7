@@ -10,6 +10,7 @@
  *   php tests/Playwright/fixtures/analytics-seed.php privacy-visitor          IP 가 남은 방문자 1명 — 출력 `SEED_VISITOR_KEY=…`
  *   php tests/Playwright/fixtures/analytics-seed.php cleanup-privacy-visitor  위 방문자 삭제
  *   php tests/Playwright/fixtures/analytics-seed.php cleanup-month            month·live 시드 삭제
+ *   php tests/Playwright/fixtures/analytics-seed.php cleanup-onview           화면 열 때 집계 E2E 의 표식 방문(해상도 1113x1113) 삭제
  *
  * 시드 행은 방문자 키 접두(`seed682`·`live682`·`e2e682`)로 구분한다 — 실제 방문 기록과 섞이지 않고
  * 이 도구만 지운다. IP 는 문서용 대역(RFC 5737)만 쓴다. 집계는 하지 않는다 — 시드 뒤
@@ -439,6 +440,14 @@ switch ($mode) {
         $deleted = seed_delete(SEED_PREFIXES);
         $deleted['bot_hits'] = AnalyticsBotHit::query()->where('user_agent', 'like', '%seed682%')->delete();
         echo json_encode(['mode' => $mode, 'deleted' => $deleted], JSON_UNESCAPED_UNICODE).PHP_EOL;
+        break;
+
+    case 'cleanup-onview':
+        // 화면 열 때 집계 E2E 가 비콘으로 남긴 표식 방문(해상도 1113x1113)을 지운다 — 뒤이어 오늘치를 다시 집계한다.
+        $ids = AnalyticsVisit::query()->where('screen_resolution', '1113x1113')->pluck('id');
+        $actions = AnalyticsAction::query()->whereIn('visit_id', $ids)->delete();
+        $visits = AnalyticsVisit::query()->whereIn('id', $ids)->delete();
+        echo json_encode(['mode' => $mode, 'deleted' => ['visits' => $visits, 'actions' => $actions]], JSON_UNESCAPED_UNICODE).PHP_EOL;
         break;
 
     default:

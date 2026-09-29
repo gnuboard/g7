@@ -1243,6 +1243,7 @@ return [
         'subject_required' => 'Specify at least one of IP address, member id or visitor key.',
         'confirm_required' => 'This cannot be undone — tick the confirmation box to proceed.',
         'anonymize_target_required' => 'Specify either a mask octet count or hashing.',
+        'bucket_bounds' => 'Bucket bounds must be comma-separated integers between :min and :max, in increasing order without duplicates.',
     ],
 
     'attributes' => [

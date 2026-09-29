@@ -40,6 +40,33 @@ exclusions:
   - { period: range, trigger: scheduled, reason: "기간 재집계는 운영자가 화면·커맨드로 부르는 길이다" }
 
 effects:
+  # 화면 열 때 집계 · 밀린 날 따라잡기 · 스케줄러 판정 (방문자 통계 신선도 작업)
+  - on_view_disabled_does_nothing
+  - on_view_runs_once_per_minute
+  - recent_archive_is_not_repeated
+  - on_view_skips_when_today_visits_exceed_limit
+  - on_view_too_many_status_persists_across_requests
+  - on_view_lock_miss_leaves_no_skipped_row
+  - missed_days_are_finalized_by_catch_up
+  - catch_up_respects_visit_budget
+  - stale_running_rows_are_closed
+  - on_view_failure_never_breaks_response
+  - on_view_leaves_no_activity_log
+  - cli_without_scheduled_flag_is_recorded_as_manual
+  - scheduler_alive_is_judged_by_scheduled_runs_within_120_minutes
+  - manual_runs_do_not_count_as_scheduler
+  - fresh_install_does_not_warn
+  - freshness_block_reports_last_run_and_staleness
+  - freshness_is_today_uses_site_timezone
+  # 새 리포트 차원 다섯
+  - new_report_dimensions_get_rows
+  - bucket_bounds_setting_changes_labels
+  - legacy_url_event_rows_are_excluded
+  - free_text_dimensions_are_capped
+  - duration_bucket_boundaries
+  - pages_bucket_boundaries
+  - bucket_labels_parse_back
+  - broken_bounds_fall_back_to_default
   - every_stats_dimension_gets_rows_from_its_source
   # 일 집계
   - daily_rows_are_written_per_visitor_type
@@ -97,6 +124,9 @@ effects:
   - two_timezones_bucket_the_same_utc_action_differently
 
 test_files:
+  - tests/Feature/Analytics/ArchiveOnViewServiceTest.php
+  - tests/Feature/Analytics/ArchiveFreshnessServiceTest.php
+  - tests/Unit/Analytics/BucketLabelerTest.php
   - tests/Feature/Analytics/ArchiveServiceTest.php
   - tests/Feature/Analytics/ArchiveRangeJobTest.php
   - tests/Feature/Analytics/ArchiveTimezoneTest.php

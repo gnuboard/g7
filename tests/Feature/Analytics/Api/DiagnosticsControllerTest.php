@@ -114,6 +114,34 @@ class DiagnosticsControllerTest extends AnalyticsApiTestCase
     }
 
     /**
+     * 진단 카드가 스케줄러 판정과 화면 열 때 집계 켜짐 여부를 받는지 확인합니다.
+     *
+     * @return void 없음
+     *
+     * @scenario endpoint=diagnostics, role=read
+     *
+     * @effects diagnostics_report_scheduler_and_on_view_state
+     */
+    public function test_archive_reports_scheduler_and_on_view_state(): void
+    {
+        // 예약 실행이 3시간 전이 마지막 — 스케줄러가 멈췄다.
+        AnalyticsArchiveRun::factory()->create([
+            'run_type' => ArchiveRunType::Hour->value,
+            'trigger' => 'scheduled',
+            'status' => ArchiveRunStatus::Success->value,
+            'started_at' => now('UTC')->subHours(3),
+            'finished_at' => now('UTC')->subHours(3),
+        ]);
+
+        $response = $this->actingAs($this->readAdmin())->getJson('/api/admin/analytics/diagnostics')->assertOk();
+
+        $this->assertFalse($response->json('data.archive.scheduler.alive'));
+        $this->assertNotNull($response->json('data.archive.scheduler.last_run_at'));
+        // 바탕 클래스가 테스트용으로 끈 값이 그대로 실린다.
+        $this->assertFalse($response->json('data.archive.on_view_enabled'));
+    }
+
+    /**
      * 적재 실패 목록이 사유로 걸러지는지 확인합니다.
      *
      * @return void 없음

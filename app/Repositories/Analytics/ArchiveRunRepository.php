@@ -71,6 +71,38 @@ class ArchiveRunRepository implements ArchiveRunRepositoryInterface
     }
 
     /**
+     * 종류·실행 주체별 마지막 실행을 성공·실패와 무관하게 조회합니다.
+     *
+     * `(run_type, trigger, started_at)` 인덱스로 끝난다 — 화면 열 때 집계로 실행 이력이 분당
+     * 1건씩 늘어도 이 조회가 표를 훑지 않는다.
+     *
+     * @param  string  $runType  실행 종류
+     * @param  string  $trigger  실행 주체 (scheduled, manual, on_view)
+     * @return AnalyticsArchiveRun|null 마지막 실행 (없으면 null)
+     */
+    public function findLastStartedByTrigger(string $runType, string $trigger): ?AnalyticsArchiveRun
+    {
+        return AnalyticsArchiveRun::query()
+            ->where('run_type', $runType)
+            ->where('trigger', $trigger)
+            ->orderByDesc('started_at')
+            ->orderByDesc('id')
+            ->first();
+    }
+
+    /**
+     * 가장 먼저 시작한 실행의 시작 시각을 돌려줍니다.
+     *
+     * @return Carbon|null 첫 실행 시작 시각 (UTC, 이력이 없으면 null)
+     */
+    public function firstStartedAt(): ?Carbon
+    {
+        $value = AnalyticsArchiveRun::query()->orderBy('id')->value('started_at');
+
+        return $value !== null ? Carbon::parse($value) : null;
+    }
+
+    /**
      * 실행 이력을 페이지네이션하여 조회합니다.
      *
      * @param  array<string, mixed>  $filters  필터 조건 (run_type, status)

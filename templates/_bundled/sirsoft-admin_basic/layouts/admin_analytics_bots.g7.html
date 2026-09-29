@@ -60,6 +60,29 @@
       </on-code>
     </error-handling>
   </data-source>
+  <!-- 한 항목 추이 창의 소스 — 자동으로 받지 않는다. 행 끝 추이 아이콘이 `_global.analyticsRowTrend` 를 정한 뒤 이 소스를
+       다시 받게 하고 창을 연다. 기간·제외는 지금 주소 그대로 싣는다. -->
+  <data-source id="analytics_row_trend" label_key="$t:editor.data_source.analytics_row_trend" type="api" endpoint="/api/admin/analytics/reports/{{_global.analyticsRowTrend?.report ?? ''}}/series" method="GET" :auto_fetch="false" :auth_required="true">
+    <params label="{{_global.analyticsRowTrend?.label ?? ''}}" preset="{{query.from ? undefined : (query.preset || '7d')}}" from="{{query.from}}" to="{{query.to}}" exclude[]="{{(query.exclude || '').split(',').filter(Boolean)}}"/>
+    <fallback>
+      <field name="data">
+        <field name="unit" value="day"/>
+        <field name="unit_downgraded" :value="false"/>
+        <field name="points" :value="[]"/>
+      </field>
+    </fallback>
+    <error-handling>
+      <on-code code="403">
+        <suppress/>
+      </on-code>
+      <on-code code="404">
+        <suppress/>
+      </on-code>
+      <on-code code="422">
+        <suppress/>
+      </on-code>
+    </error-handling>
+  </data-source>
   <init-local>
     <field name="periodPath" value="/admin/analytics/bots"/>
     <field name="periodSource" value="analytics_bots"/>
@@ -70,6 +93,8 @@
   <computed name="csvFilename">{{'analytics-' + ((query.tab || 'bots') === 'pages' ? 'bot_pages' : 'bot_name') + '-' + (_computed.periodFrom || '') + '_' + (_computed.periodTo || '') + '.csv'}}</computed>
   <computed name="periodFrom">{{query.from || ((query.tab || 'bots') === 'pages' ? analytics_report?.data?.from : analytics_bots?.data?.from) || _local.periodComputed?.from || ''}}</computed>
   <computed name="periodTo">{{query.to || query.from || ((query.tab || 'bots') === 'pages' ? analytics_report?.data?.to : analytics_bots?.data?.to) || _local.periodComputed?.to || ''}}</computed>
+  <computed name="reportName">{{(query.tab || 'bots') === 'pages' ? 'bot_pages' : 'bot_name'}}</computed>
+  <computed name="archiveFreshness">{{((query.tab || 'bots') === 'pages' ? analytics_report?.data?.freshness : analytics_bots?.data?.freshness) ?? null}}</computed>
   <permissions>
     <permission>core.analytics.read</permission>
   </permissions>
@@ -154,6 +179,27 @@
                   <span class="text-body">{{(row.hits ?? 0) | number}}</span>
                 </cell>
               </column>
+              <column field="trend" header="" width="56px" align="center">
+                <cell>
+                  <!-- 행 끝 추이 — 공통 표와 같은 동작(봇 이름 리포트). -->
+                  <button data-ref="bot_row_trend_button" type="button" class="btn-icon" aria-label="$t:admin.analytics.row_trend.open" title="$t:admin.analytics.row_trend.open">
+                    <on type="click">
+                      <sequence>
+                        <set-state target="global">
+                          <field name="analyticsRowTrend">
+                            <field name="report" value="bot_name"/>
+                            <field name="label" value="{{row.label ?? ''}}"/>
+                            <field name="label_display" value="{{row.label_display ?? row.label ?? ''}}"/>
+                          </field>
+                        </set-state>
+                        <refetch-data-source dataSourceId="analytics_row_trend"/>
+                        <open-modal target="analytics_row_trend_modal"/>
+                      </sequence>
+                    </on>
+                    <icon name="chart-line" size="sm"/>
+                  </button>
+                </cell>
+              </column>
             </data-grid>
           </div>
           <empty-state data-if="{{!analytics_bots?.loading &amp;&amp; (analytics_bots?.data?.data ?? []).length === 0}}" iconName="robot" title="$t:admin.analytics.common.empty_title" description="$t:admin.analytics.common.empty_description" class="py-8"/>
@@ -198,4 +244,6 @@
       </extension-point>
     </div>
   </slot>
+  <!-- 한 항목 추이 창. -->
+  <modal src="partials/admin_analytics/_modal_row_trend.g7.html"/>
 </layout>

@@ -219,6 +219,10 @@
             <span class="text-label-subtle">$t:admin.analytics.diagnostics.fields.last_hour_run|at={{analytics_diagnostics?.data?.archive?.last_hour_run | datetime | default('-')}}</span>
             <span class="text-label-subtle">$t:admin.analytics.diagnostics.fields.last_day_run|at={{analytics_diagnostics?.data?.archive?.last_day_run | datetime | default('-')}}</span>
             <badge data-if="{{(analytics_diagnostics?.data?.archive?.lag_hours ?? 0) > 2}}" color="yellow" text="$t:admin.analytics.diagnostics.fields.lag_hours|hours={{analytics_diagnostics?.data?.archive?.lag_hours ?? 0}}" size="sm"/>
+            <!-- 스케줄러가 매시 집계를 최근에 돌렸는가 — 화면 열 때 집계가 숫자를 맞춰도 어제 확정·정리·메일 보고서는 스케줄러만 돌린다.
+                 판정 근거가 없으면(설치 직후) 배지를 띄우지 않는다. -->
+            <span data-ref="scheduler_last_run" class="text-label-subtle">$t:admin.analytics.diagnostics.fields.scheduler_last_run|at={{analytics_diagnostics?.data?.archive?.scheduler?.last_run_at | datetime | default('-')}}</span>
+            <badge data-ref="scheduler_missing_badge" data-if="{{analytics_diagnostics?.data?.archive?.scheduler?.alive === false}}" color="yellow" text="$t:admin.analytics.diagnostics.fields.scheduler_missing" size="sm"/>
             <badge data-if="{{!!_computed.runningRunId}}" color="blue" text="$t:admin.analytics.diagnostics.fields.running|id={{analytics_diagnostics.data.archive.running_run_id}}" size="sm"/>
             <badge color="{{analytics_diagnostics?.data?.broadcasting?.configured ? 'green' : 'gray'}}" text="{{analytics_diagnostics?.data?.broadcasting?.configured ? $t('admin.analytics.diagnostics.progress_source.ws') : $t('admin.analytics.diagnostics.progress_source.polling')}}" size="sm"/>
             <!-- 집계 실행은 이 카드 안에서 한다 — 「집계가 6시간 밀렸다」를 읽은 자리에서 바로 돌릴 수

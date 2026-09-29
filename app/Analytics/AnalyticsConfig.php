@@ -22,6 +22,12 @@ readonly class AnalyticsConfig
     /** 익명 폴백 사유 — 동의 관리 플러그인이 동의 전 방문자 쿠키를 막는다 */
     public const ANONYMOUS_REASON_CONSENT_PLUGIN_BLOCKS_COOKIES = 'consent_plugin_blocks_cookies';
 
+    /** 체류시간 구간 경계 기본값 (초) */
+    public const DEFAULT_DURATION_BUCKET_BOUNDS = '10,30,60,180,600,1800';
+
+    /** 본 페이지 수 구간 경계 기본값 */
+    public const DEFAULT_PAGES_BUCKET_BOUNDS = '1,2,3,4,5,7,10,14,20';
+
     /**
      * 설정 값 객체를 생성합니다.
      *
@@ -65,6 +71,10 @@ readonly class AnalyticsConfig
      * @param  bool  $reportMonthlyEnabled  월간 리포트 발송 여부
      * @param  bool  $publicSummaryEnabled  공개 요약 API·위젯 사용 여부
      * @param  int  $visitorCookieDays  방문자 쿠키 보관일
+     * @param  bool  $archiveOnViewEnabled  화면을 열 때 오래된 집계를 다시 계산할지 여부
+     * @param  int  $archiveOnViewMaxVisits  화면 열 때 집계를 건너뛸 오늘 방문 건수 상한
+     * @param  array<int, int>  $durationBucketBounds  체류시간 구간 경계 (초, 순증가)
+     * @param  array<int, int>  $pagesBucketBounds  본 페이지 수 구간 경계 (순증가)
      */
     public function __construct(
         public bool $enabled,
@@ -107,6 +117,10 @@ readonly class AnalyticsConfig
         public bool $reportMonthlyEnabled,
         public bool $publicSummaryEnabled,
         public int $visitorCookieDays,
+        public bool $archiveOnViewEnabled = true,
+        public int $archiveOnViewMaxVisits = 50000,
+        public array $durationBucketBounds = [10, 30, 60, 180, 600, 1800],
+        public array $pagesBucketBounds = [1, 2, 3, 4, 5, 7, 10, 14, 20],
     ) {}
 
     /**
@@ -167,7 +181,45 @@ readonly class AnalyticsConfig
             reportMonthlyEnabled: (bool) $get('report_monthly_enabled', false),
             publicSummaryEnabled: (bool) $get('public_summary_enabled', true),
             visitorCookieDays: (int) $get('visitor_cookie_days', 395),
+            archiveOnViewEnabled: (bool) $get('archive_on_view_enabled', true),
+            archiveOnViewMaxVisits: max(1, (int) $get('archive_on_view_max_visits', 50000)),
+            durationBucketBounds: self::parseBounds($get('duration_bucket_bounds', self::DEFAULT_DURATION_BUCKET_BOUNDS), self::DEFAULT_DURATION_BUCKET_BOUNDS),
+            pagesBucketBounds: self::parseBounds($get('pages_bucket_bounds', self::DEFAULT_PAGES_BUCKET_BOUNDS), self::DEFAULT_PAGES_BUCKET_BOUNDS),
         );
+    }
+
+    /**
+     * 쉼표로 구분한 구간 경계를 정수 목록으로 풉니다.
+     *
+     * 저장 시점 규칙(`AscendingBounds`)이 순증가를 보장하지만, 설정 파일을 손으로 고쳤거나 옛 값이
+     * 남아 순서가 깨졌으면 기본값으로 돌아간다 — 거꾸로 된 경계로 집계하면 어떤 방문은 구간을 못 찾는다.
+     *
+     * @param  mixed  $value  저장된 값 (문자열 또는 배열)
+     * @param  string  $default  기본 경계 문자열
+     * @return array<int, int> 순증가 경계 목록
+     */
+    public static function parseBounds(mixed $value, string $default): array
+    {
+        $parts = is_array($value) ? $value : explode(',', (string) $value);
+        $bounds = [];
+
+        foreach ($parts as $part) {
+            $part = trim((string) $part);
+
+            if ($part === '' || ! ctype_digit($part)) {
+                return $default === '' ? [] : self::parseBounds($default, '');
+            }
+
+            $bound = (int) $part;
+
+            if ($bound < 1 || ($bounds !== [] && $bound <= end($bounds))) {
+                return $default === '' ? [] : self::parseBounds($default, '');
+            }
+
+            $bounds[] = $bound;
+        }
+
+        return $bounds;
     }
 
     /**

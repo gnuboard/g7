@@ -3149,7 +3149,13 @@
       "unit_downgraded": "시간 단위 집계의 보존 기간 밖이라 일 단위로 보여 줍니다.",
       "load_failed": "통계를 불러오지 못했습니다. 잠시 뒤 다시 시도하세요.",
       "load_failed_retry": "다시 시도",
-      "site_timezone": "이 화면의 시각은 사이트 표준시({timezone}) 기준입니다 — 내 컴퓨터 시간대와 다릅니다."
+      "site_timezone": "이 화면의 시각은 사이트 표준시({timezone}) 기준입니다 — 내 컴퓨터 시간대와 다릅니다.",
+      "scheduler_missing": "스케줄러(cron)가 2시간 넘게 돌지 않았습니다. 화면을 열 때 집계로 숫자는 맞춰지지만, 어제 확정·오래된 데이터 정리·주간 보고서 메일은 멈춥니다.",
+      "scheduler_missing_link": "수집 진단 열기",
+      "archive_stale": "집계가 {{hours}}시간째 멈췄습니다(마지막 {{at}}). 스케줄러(cron)를 확인하거나 지금 집계하세요.",
+      "archive_never": "방문은 쌓였는데 아직 한 번도 집계하지 않았습니다. 스케줄러(cron)를 확인하거나 지금 집계하세요.",
+      "on_view_too_many": "오늘 방문이 {{max}}건을 넘어 화면을 열 때 집계하지 않았습니다. 숫자는 {{at}} 기준입니다 — 스케줄러(cron)를 등록하세요.",
+      "archive_now": "지금 집계"
     },
     "overview": {
       "title": "방문자 통계 개요",
@@ -3167,14 +3173,18 @@
       "quality": {
         "bounce_rate": "이탈률",
         "avg_time": "평균 체류",
-        "pages_per_visit": "방문당 페이지"
+        "pages_per_visit": "방문당 페이지",
+        "new_returning": "신규·재방문"
       },
       "top": {
         "pages": "인기 페이지",
         "referrers": "유입 경로",
         "countries": "국가"
       },
-      "visitors_daily_sum_note": "방문자(순)는 일별 순방문자 합계입니다 — 방문자 키가 날마다 바뀌어 여러 날에 걸친 순방문자는 셀 수 없습니다."
+      "visitors_daily_sum_note": "방문자(순)는 일별 순방문자 합계입니다 — 방문자 키가 날마다 바뀌어 여러 날에 걸친 순방문자는 셀 수 없습니다.",
+      "new_visitors": "신규",
+      "returning_visitors": "재방문",
+      "new_returning_unavailable": "익명 모드에서는 신규·재방문을 구분할 수 없습니다"
     },
     "pages": {
       "title": "페이지",
@@ -3183,7 +3193,9 @@
         "popular": "인기 페이지",
         "entry": "진입 페이지",
         "exit": "이탈 페이지",
-        "titles": "페이지 제목"
+        "titles": "페이지 제목",
+        "durations": "체류시간 구간",
+        "depths": "본 페이지 수 구간"
       }
     },
     "referrers": {
@@ -3194,14 +3206,16 @@
         "types": "유입 유형",
         "sites": "유입 사이트",
         "keywords": "검색어",
-        "campaigns": "캠페인"
+        "campaigns": "캠페인",
+        "mediums": "캠페인 매체"
       },
       "type_share_title": "유입 유형 비율",
       "urls_title": "{{host}} 의 유입 주소",
       "urls_back": "유입 사이트 목록으로",
       "urls_column": "유입 주소",
       "urls_hint": "이 도메인에서 들어온 실제 주소입니다. 유입 URL 익명화를 켠 기간의 방문은 저장 시점에 도메인까지만 남아 한 줄로만 보입니다.",
-      "urls_empty_description": "선택한 기간에 이 도메인에서 들어온 기록이 없습니다."
+      "urls_empty_description": "선택한 기간에 이 도메인에서 들어온 기록이 없습니다.",
+      "mediums_empty": "utm_medium 이 붙은 방문이 없습니다."
     },
     "environment": {
       "title": "환경",
@@ -3251,7 +3265,9 @@
         "downloads": "다운로드",
         "outlinks": "외부 링크",
         "goals": "전환",
-        "dimensions": "확장별 분류"
+        "dimensions": "확장별 분류",
+        "search_tabs": "검색 탭",
+        "events": "이벤트"
       },
       "no_result": "결과 없음",
       "revenue": "매출",
@@ -3264,7 +3280,8 @@
       "dimensions_none_description": "켜진 확장 중 분류 기준을 알려 준 것이 없습니다. 확장이 분류 기준을 선언하면 여기서 고를 수 있습니다.",
       "dimension_pii_suffix": "개인정보 — 통계 표 없음",
       "dimension_pii_title": "개인정보 분류 기준은 통계 표로 만들지 않습니다",
-      "dimension_pii_description": "확장이 이 기준의 값을 개인정보로 표시했습니다. 값이 날짜별 통계에 영구히 남지 않도록 표를 만들지 않으며, 값은 방문 기록에만 남아 보존 기간이 지나거나 정보주체 삭제 요청 때 함께 지워집니다."
+      "dimension_pii_description": "확장이 이 기준의 값을 개인정보로 표시했습니다. 값이 날짜별 통계에 영구히 남지 않도록 표를 만들지 않으며, 값은 방문 기록에만 남아 보존 기간이 지나거나 정보주체 삭제 요청 때 함께 지워집니다.",
+      "events_empty": "이벤트가 없습니다. 확장이 G7Core.analytics.trackEvent() 로 보낸 이름이 여기 쌓입니다."
     },
     "realtime": {
       "title": "실시간",
@@ -3427,7 +3444,9 @@
         "on": "켬",
         "off": "끔",
         "cloud_ranges": "클라우드 대역 차단",
-        "trusted_proxy_warning": "경고"
+        "trusted_proxy_warning": "경고",
+        "scheduler_last_run": "스케줄러 마지막 실행 {{at}}",
+        "scheduler_missing": "스케줄러 미가동"
       },
       "progress_source": {
         "ws": "진행률: 실시간",
@@ -3475,7 +3494,8 @@
       },
       "run_triggers": {
         "scheduled": "자동(예약)",
-        "manual": "수동"
+        "manual": "수동",
+        "on_view": "화면 열 때"
       },
       "queue_connections": {
         "sync": "즉시 실행(큐 없음)",
@@ -3685,7 +3705,16 @@
           "rows": "행",
           "size": "크기"
         },
-        "purge_all": "모든 통계 데이터 삭제"
+        "purge_all": "모든 통계 데이터 삭제",
+        "archive_section": "집계",
+        "archive_on_view_enabled": "화면 열 때 집계",
+        "archive_on_view_enabled_hint": "화면을 열거나 새로고침할 때 1분 이상 지난 집계를 다시 계산합니다. 방문이 많은 사이트는 스케줄러(cron) 등록을 권장합니다.",
+        "archive_on_view_max_visits": "오늘 방문 상한",
+        "archive_on_view_max_visits_hint": "오늘 방문이 이 건수를 넘으면 화면을 열 때 집계하지 않습니다.",
+        "duration_bucket_bounds": "체류시간 구간 경계(초)",
+        "duration_bucket_bounds_hint": "초 단위 경계를 쉼표로 (기본 10,30,60,180,600,1800). 바꾸면 그 뒤 집계부터 적용되고, 지난 기간은 수집 진단의 구간 재집계로 다시 계산합니다.",
+        "pages_bucket_bounds": "본 페이지 수 구간 경계",
+        "pages_bucket_bounds_hint": "페이지 수 경계를 쉼표로 (기본 1,2,3,4,5,7,10,14,20). 바꾸면 그 뒤 집계부터 적용되고, 지난 기간은 수집 진단의 구간 재집계로 다시 계산합니다."
       },
       "reports": {
         "weekly": "주간 리포트 메일",
@@ -3749,6 +3778,20 @@
       "detail": "자세히",
       "collection_off": "수집 꺼짐",
       "trend": "최근 7일 방문자"
+    },
+    "freshness": {
+      "scheduled": "마지막 집계 {{time}} · 매시 5분 자동 집계",
+      "on_view": "마지막 집계 {{time}} · 화면을 열거나 새로고침하면 1분 간격으로 다시 집계",
+      "plain_time": "마지막 집계 {{time}}",
+      "plain_date": "마지막 집계 {{month}}월 {{day}}일 {{time}}"
+    },
+    "row_trend": {
+      "open": "이 항목의 추이 보기",
+      "title": "{{label}} 추이",
+      "period": "{{from}} ~ {{to}}",
+      "unit_downgraded": "항목별 집계는 하루 단위라 시간 단위 대신 일 단위로 보여 줍니다.",
+      "empty": "이 기간에 기록이 없습니다.",
+      "error": "추이를 불러오지 못했습니다. 잠시 후 다시 열어 보세요."
     }
   },
   "modal_label": {
@@ -3878,7 +3921,8 @@
       "retro_anonymize_modal": "소급 익명화 확인",
       "purge_all_modal": "모든 통계 데이터 삭제 확인",
       "reaggregate_modal": "구간 재집계",
-      "subject_delete_modal": "정보주체 기록 삭제 확인"
+      "subject_delete_modal": "정보주체 기록 삭제 확인",
+      "row_trend_modal": "항목 추이"
     }
   }
 }

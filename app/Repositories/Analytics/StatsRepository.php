@@ -225,6 +225,30 @@ class StatsRepository implements StatsRepositoryInterface
     }
 
     /**
+     * 차원 라벨 하나의 날짜별 합계를 조회합니다.
+     *
+     * @param  string  $dimension  차원 이름
+     * @param  string  $labelHash  라벨 묶음 키 (`md5(label)`)
+     * @param  string  $from  시작일 (Y-m-d)
+     * @param  string  $to  종료일 (Y-m-d)
+     * @param  array<int, string>  $visitorTypes  포함할 방문자 유형
+     * @return Collection<int, object> 날짜별 합계 행
+     */
+    public function dimensionSeries(string $dimension, string $labelHash, string $from, string $to, array $visitorTypes = []): Collection
+    {
+        return AnalyticsDimensionStat::query()
+            ->selectRaw('date, SUM(visits) as visits, SUM(hits) as hits, SUM(bounces) as bounces, '
+                .'SUM(total_time_seconds) as total_time_seconds, SUM(entries) as entries, SUM(exits) as exits')
+            ->where('dimension', $dimension)
+            ->where('label_hash', $labelHash)
+            ->whereBetween('date', [$from, $to])
+            ->when($visitorTypes !== [], fn (Builder $q) => $q->whereIn('visitor_type', $visitorTypes))
+            ->groupBy('date')
+            ->orderBy('date')
+            ->get();
+    }
+
+    /**
      * 일 집계에서 방문자 수가 가장 많았던 날을 찾습니다.
      *
      * @param  array<int, string>  $visitorTypes  포함할 방문자 유형

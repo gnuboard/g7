@@ -44,6 +44,10 @@ class VisitServiceTest extends TestCase
     {
         parent::setUp();
 
+        // 개발 PC 설정 파일의 개인정보 모드(consent 등)를 따르면 쿠키 발급 단정이 흔들린다 — 기본값으로 고정하고,
+        // 다른 모드를 보는 테스트는 그 안에서 바꾼다.
+        config(['g7_settings.core.analytics.privacy_mode' => 'full']);
+
         // 목표는 등록부에 선언된 것만 기록된다 — 이커머스 주문 완료 목표를 선언한 가짜 확장을 켠다.
         $this->activateSampleAnalyticsExtensions();
         $this->service = app(VisitService::class);
@@ -529,6 +533,10 @@ class VisitServiceTest extends TestCase
             $received[] = $payload;
         });
 
+        // 아래의 「제외된 요청」은 추적 거부(DNT) 존중에 기댄다 — 개발 PC 가 관리자 화면에서 저장한 설정
+        // (storage/app/settings/analytics.json)이 부팅 때 스며들어 존중을 끈 채면 제외되지 않으므로 고정한다.
+        config(['g7_settings.core.analytics.respect_dnt' => true]);
+
         $result = $this->service->track($this->request());
 
         $this->assertCount(1, $received);
@@ -888,6 +896,36 @@ class VisitServiceTest extends TestCase
             (string) AnalyticsActionName::findOrFail($action->action_name_id)->name,
             '보내온 표시 이름이 사전에 담긴다'
         );
+    }
+
+    /**
+     * 이름을 실은 이벤트는 이름을 `event` 종류 사전에 담고, 이름 없는 이벤트는 예전처럼 주소를 담는지 확인합니다.
+     *
+     * 이벤트 리포트는 `event` 종류 사전 행만 센다 — 이름을 버리면 「어떤 이벤트가 몇 번」을 셀 수 없다.
+     *
+     * @return void 없음
+     *
+     * @scenario source=beacon, visit_state=new, visitor=guest
+     *
+     * @effects event_name_is_stored_in_the_event_dictionary
+     */
+    public function test_event_name_is_stored_as_event_type(): void
+    {
+        $this->service->track($this->request(['type' => 'event', 'name' => 'coupon_click']));
+        $this->service->track($this->request(['type' => 'event']));
+
+        $names = AnalyticsAction::where('action_type', 'event')
+            ->orderBy('id')
+            ->get()
+            ->map(fn ($action): array => [
+                AnalyticsActionName::findOrFail($action->action_name_id)->type,
+                (string) AnalyticsActionName::findOrFail($action->action_name_id)->name,
+            ])
+            ->all();
+
+        $this->assertSame('event', $names[0][0]);
+        $this->assertSame('coupon_click', $names[0][1]);
+        $this->assertSame('url', $names[1][0], '이름 없는 이벤트는 주소(url 종류)를 가리킨다');
     }
 
     /**

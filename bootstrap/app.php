@@ -7,6 +7,7 @@ use App\Exceptions\IdentityVerificationRequiredException;
 use App\Exceptions\PermissionEscalationException;
 use App\Helpers\ResponseHelper;
 use App\Http\Middleware\AdminMiddleware;
+use App\Http\Middleware\Analytics\EnsureArchiveFresh;
 use App\Http\Middleware\Analytics\TrackBotHit;
 use App\Http\Middleware\Analytics\TrackServerVisit;
 use App\Http\Middleware\CheckTemplateDependencies;
@@ -201,6 +202,8 @@ $app = Application::configure(basePath: dirname(__DIR__))
             // 서버 폴백은 SEO 뒤(봇으로 판정된 요청을 사람 방문으로 세지 않는다).
             'analytics.bots' => TrackBotHit::class,
             'analytics.fallback' => TrackServerVisit::class,
+            // 집계 조회 라우트 앞에서 오래된 집계를 다시 계산하고 응답에 신선도를 싣는다(권한 미들웨어 뒤).
+            'analytics.archive_on_view' => EnsureArchiveFresh::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

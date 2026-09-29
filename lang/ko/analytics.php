@@ -150,6 +150,32 @@ return [
         'goal' => '목표',
         'bot_name' => '봇 이름',
         'bot_page' => '봇이 가져간 페이지',
+        'campaign_medium' => '캠페인 매체',
+        'search_tab' => '검색 탭',
+        'event_name' => '이벤트',
+        'visit_duration' => '체류시간 구간',
+        'visit_pages' => '본 페이지 수 구간',
+    ],
+
+    // 체류시간·본 페이지 수 구간 라벨
+    'bucket' => [
+        'duration_range' => ':from ~ :to',
+        'duration_over' => ':from 초과',
+        'seconds' => ':n초',
+        'minutes' => ':n분',
+        'minutes_seconds' => ':m분 :s초',
+        'hours' => ':n시간',
+        'pages_one' => ':n페이지',
+        'pages_range' => ':from~:to페이지',
+        'pages_over' => ':from페이지 이상',
+    ],
+
+    // 사이트 검색 탭
+    'search_tab' => [
+        'all' => '전체',
+        'posts' => '게시글',
+        'products' => '상품',
+        'pages' => '페이지',
     ],
 
     // 집계 배치
@@ -265,6 +291,10 @@ return [
         'ledger_warning_actions' => '액션 경고 행수',
         'ledger_warning_visits' => '방문 경고 행수',
         'archive_chunk_size' => '집계 청크(방문)',
+        'archive_on_view_enabled' => '화면 열 때 집계',
+        'archive_on_view_max_visits' => '화면 열 때 집계 — 오늘 방문 상한',
+        'duration_bucket_bounds' => '체류시간 구간 경계(초)',
+        'pages_bucket_bounds' => '본 페이지 수 구간 경계',
         'realtime_poll_seconds' => '실시간 폴링(초)',
         'realtime_window_minutes' => '현재 접속자 창(분)',
         'top_n_overview' => '개요 목록 개수',
@@ -281,6 +311,7 @@ return [
         'format' => '내보내기 형식',
         'q' => '검색어',
         'sort' => '정렬 기준',
+        'label' => '항목',
         'type' => '방문자 유형',
         'minutes' => '조회 창(분)',
         'reason' => '실패 사유',

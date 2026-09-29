@@ -53,6 +53,7 @@
   <computed name="periodStart">{{_computed.periodFrom || ''}}</computed>
   <computed name="periodFrom">{{query.from || analytics_patterns?.data?.from || _local.periodComputed?.from || ''}}</computed>
   <computed name="periodTo">{{query.to || query.from || analytics_patterns?.data?.to || _local.periodComputed?.to || ''}}</computed>
+  <computed name="archiveFreshness">{{analytics_patterns?.data?.freshness ?? null}}</computed>
   <permissions>
     <permission>core.analytics.read</permission>
   </permissions>

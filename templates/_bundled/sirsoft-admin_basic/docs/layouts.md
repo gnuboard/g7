@@ -5,14 +5,14 @@
 ## 레이아웃 목록
 
 <!-- @generated:layouts START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-레이아웃 179개 (루트: `layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
+레이아웃 180개 (루트: `layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
 
 | 그룹 | 개수 |
 |---|---|
 | `(root)` | 41개 |
 | `auth` | 1개 |
 | `errors` | 6개 |
-| `partials` | 131개 |
+| `partials` | 132개 |
 
 | 레이아웃 | 그룹 | 종류 | extends |
 |---|---|---|---|
@@ -72,6 +72,7 @@
 | `_modal_purge_all` | `partials` | partial | - |
 | `_modal_reaggregate` | `partials` | partial | - |
 | `_modal_retro_anonymize` | `partials` | partial | - |
+| `_modal_row_trend` | `partials` | partial | - |
 | `_modal_subject_delete` | `partials` | partial | - |
 | `_partial_kpi_row` | `partials` | partial | - |
 | `_partial_notification_definitions` | `partials` | partial | - |

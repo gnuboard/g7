@@ -134,7 +134,8 @@
         "csvUrl": "{{'/api/admin/analytics/series?format=csv' + (query.from ? '&from=' + query.from + '&to=' + (query.to || query.from) : '&preset=' + (query.preset || '7d')) + (query.unit ? '&unit=' + query.unit : '') + (query.exclude || '').split(',').filter(Boolean).map(e => '&exclude[]=' + e).join('')}}",
         "csvFilename": "{{'analytics-series-' + (_computed.periodFrom || '') + '_' + (_computed.periodTo || '') + '.csv'}}",
         "periodFrom": "{{query.from || analytics_overview?.data?.meta?.from || _local.periodComputed?.from || ''}}",
-        "periodTo": "{{query.to || query.from || analytics_overview?.data?.meta?.to || _local.periodComputed?.to || ''}}"
+        "periodTo": "{{query.to || query.from || analytics_overview?.data?.meta?.to || _local.periodComputed?.to || ''}}",
+        "archiveFreshness": "{{analytics_overview?.data?.freshness ?? null}}"
     },
     "permissions": [
         "core.analytics.read"
@@ -399,7 +400,7 @@
                                         "if": "{{(analytics_overview?.data?.series?.points ?? []).length > 0}}",
                                         "props": {
                                             "labels": "{{(analytics_overview?.data?.series?.points ?? []).map(p => String(p.ts ?? '').replace('T', ' ').slice(5, 16))}}",
-                                            "datasets": "{{[{label: $t('admin.analytics.common.visitors'), data: (analytics_overview?.data?.series?.points ?? []).map(p => p.visitors ?? 0), color: '#7C3AED', fill: true}, {label: $t('admin.analytics.common.visits'), data: (analytics_overview?.data?.series?.points ?? []).map(p => p.visits ?? 0), color: '#0EA5E9'}, {label: $t('admin.analytics.common.pageviews'), data: (analytics_overview?.data?.series?.points ?? []).map(p => p.pageviews ?? 0), color: '#F59E0B'}]}}",
+                                            "datasets": "{{[{label: $t('admin.analytics.common.visitors'), data: (analytics_overview?.data?.series?.points ?? []).map(p => p.visitors ?? 0), color: '#7C3AED', fill: true}, {label: $t('admin.analytics.common.visits'), data: (analytics_overview?.data?.series?.points ?? []).map(p => p.visits ?? 0), color: '#0EA5E9'}, {label: $t('admin.analytics.common.pageviews'), data: (analytics_overview?.data?.series?.points ?? []).map(p => p.pageviews ?? 0), color: '#F59E0B'}, {label: $t('admin.analytics.overview.new_visitors'), data: (analytics_overview?.data?.series?.points ?? []).map(p => p.new_visitors ?? 0), color: '#10B981'}, {label: $t('admin.analytics.overview.returning_visitors'), data: (analytics_overview?.data?.series?.points ?? []).map(p => p.returning_visitors ?? 0), color: '#F43F5E'}]}}",
                                             "height": "100%",
                                             "showLegend": true,
                                             "showYGrid": true,
@@ -442,7 +443,7 @@
                             "data_sources": "analytics_overview"
                         },
                         "props": {
-                            "className": "grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4"
+                            "className": "grid grid-cols-2 lg:grid-cols-4 auto-rows-fr gap-4 mb-4"
                         },
                         "children": [
                             {
@@ -474,6 +475,95 @@
                                     "label": "$t:admin.analytics.overview.quality.pages_per_visit",
                                     "iconName": "file-lines"
                                 }
+                            },
+                            {
+                                "comment": "신규·재방문 — 선택 기간 점의 합. 익명 모드처럼 쿠키가 없어 가를 수 없는 칸은 서버가 null 로 주고, 기간 전체가\n          null 이면 숫자 대신 「—」와 「구분할 수 없습니다」를 보인다(0 으로 적으면 「신규 0명」이라는 거짓이 된다).\n          비율 막대를 넣으려고 StatCard 대신 직접 만들지만, 틀(카드·아이콘·큰 수치·라벨)은 옆 세 카드와 같은 클래스를 써서\n          한 줄 안에서 높이·여백·그림자가 어긋나지 않게 한다. 큰 수치는 「신규 · 재방문」 순서의 두 숫자, 막대는 신규 비율.",
+                                "id": "quality_new_returning",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "stat-card"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "flex-between mb-md"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "stats-icon stats-icon-blue"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Icon",
+                                                        "props": {
+                                                            "name": "users",
+                                                            "className": "icon-lg"
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "H3",
+                                        "props": {
+                                            "className": "stats-value-lg"
+                                        },
+                                        "text": "{{(analytics_overview?.data?.series?.points ?? []).some(p => p.new_visitors != null || p.returning_visitors != null) ? Number((analytics_overview?.data?.series?.points ?? []).reduce((s, p) => s + (p.new_visitors ?? 0), 0)).toLocaleString() + ' · ' + Number((analytics_overview?.data?.series?.points ?? []).reduce((s, p) => s + (p.returning_visitors ?? 0), 0)).toLocaleString() : '—'}}"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "P",
+                                        "props": {
+                                            "className": "stats-label"
+                                        },
+                                        "text": "$t:admin.analytics.overview.quality.new_returning"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "if": "{{(analytics_overview?.data?.series?.points ?? []).some(p => p.new_visitors != null || p.returning_visitors != null)}}",
+                                        "props": {
+                                            "className": "stats-sublabel"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "h-2 w-full rounded bg-rose-200 dark:bg-rose-900 overflow-hidden"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "props": {
+                                                            "className": "h-2 bg-emerald-500 dark:bg-emerald-400",
+                                                            "style": "{{'width: ' + (function(pts) { const n = pts.reduce((s, p) => s + (p.new_visitors ?? 0), 0); const r = pts.reduce((s, p) => s + (p.returning_visitors ?? 0), 0); return n + r > 0 ? Math.round(n / (n + r) * 100) : 0; })(analytics_overview?.data?.series?.points ?? []) + '%'}}"
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "P",
+                                        "if": "{{!(analytics_overview?.data?.series?.points ?? []).some(p => p.new_visitors != null || p.returning_visitors != null)}}",
+                                        "props": {
+                                            "className": "stats-sublabel text-hint text-xs"
+                                        },
+                                        "text": "$t:admin.analytics.overview.new_returning_unavailable"
+                                    }
+                                ]
                             }
                         ]
                     },

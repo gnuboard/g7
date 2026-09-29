@@ -1054,14 +1054,16 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
     */
     Route::prefix('analytics')->group(function () {
         // 조회 (read)
+        // 집계 표를 읽는 조회는 권한 확인 뒤 오래된 집계를 다시 계산하고 응답에 신선도를 싣는다
+        // (`analytics.archive_on_view`). 원장을 직접 읽는 실시간·방문자·유입 주소에는 붙이지 않는다.
         Route::get('overview', [AdminAnalyticsOverviewController::class, 'index'])
-            ->middleware('permission:admin,core.analytics.read')->name('api.admin.analytics.overview');
+            ->middleware(['permission:admin,core.analytics.read', 'analytics.archive_on_view'])->name('api.admin.analytics.overview');
         Route::get('series', [AdminAnalyticsReportController::class, 'series'])
-            ->middleware('permission:admin,core.analytics.read')->name('api.admin.analytics.series');
+            ->middleware(['permission:admin,core.analytics.read', 'analytics.archive_on_view'])->name('api.admin.analytics.series');
         Route::get('patterns', [AdminAnalyticsReportController::class, 'patterns'])
-            ->middleware('permission:admin,core.analytics.read')->name('api.admin.analytics.patterns');
+            ->middleware(['permission:admin,core.analytics.read', 'analytics.archive_on_view'])->name('api.admin.analytics.patterns');
         Route::get('bots', [AdminAnalyticsReportController::class, 'bots'])
-            ->middleware('permission:admin,core.analytics.read')->name('api.admin.analytics.bots');
+            ->middleware(['permission:admin,core.analytics.read', 'analytics.archive_on_view'])->name('api.admin.analytics.bots');
         Route::get('realtime', [AdminAnalyticsRealtimeController::class, 'index'])
             ->middleware('permission:admin,core.analytics.read')->name('api.admin.analytics.realtime');
         Route::get('diagnostics', [AdminAnalyticsDiagnosticsController::class, 'index'])
@@ -1115,7 +1117,10 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
         // 리포트는 차원 이름을 경로로 받는다 — 고정 경로들보다 뒤에 등록해야 가로채지 않는다.
         Route::get('registered', [AdminAnalyticsReportController::class, 'registered'])
             ->middleware('permission:admin,core.analytics.read')->name('api.admin.analytics.registered');
+        // 한 항목의 날짜별 추이 — `reports/{report}` 보다 앞에 둔다.
+        Route::get('reports/{report}/series', [AdminAnalyticsReportController::class, 'rowSeries'])
+            ->middleware(['permission:admin,core.analytics.read', 'analytics.archive_on_view'])->name('api.admin.analytics.reports.series');
         Route::get('reports/{report}', [AdminAnalyticsReportController::class, 'show'])
-            ->middleware('permission:admin,core.analytics.read')->name('api.admin.analytics.reports.show');
+            ->middleware(['permission:admin,core.analytics.read', 'analytics.archive_on_view'])->name('api.admin.analytics.reports.show');
     });
 });

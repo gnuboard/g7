@@ -4,11 +4,13 @@ namespace App\Http\Controllers\Api\Admin\Analytics;
 
 use App\Analytics\AnalyticsConfig;
 use App\Enums\Analytics\StatsDimension;
+use App\Enums\Analytics\VisitorType;
 use App\Extension\HookManager;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use App\Http\Requests\Admin\Analytics\PeriodRequest;
 use App\Http\Requests\Admin\Analytics\ReferrerUrlsRequest;
 use App\Http\Requests\Admin\Analytics\ReportRequest;
+use App\Http\Requests\Admin\Analytics\RowSeriesRequest;
 use App\Services\Analytics\CsvExporter;
 use App\Services\Analytics\PatternService;
 use App\Services\Analytics\ReportService;
@@ -229,15 +231,59 @@ class ReportController extends AdminBaseController
                     $point['bounce_rate'] ?? 0,
                     $point['avg_time'] ?? 0,
                     $point['pages_per_visit'] ?? 0,
+                    // 익명 모드 칸은 신규·재방문을 알 수 없다 — 0 이 아니라 빈 칸으로 낸다.
+                    $point['new_visitors'] ?? '',
+                    $point['returning_visitors'] ?? '',
                 ];
             }
         };
 
         return $this->csv->stream(
             sprintf('analytics-series-%s_%s.csv', $from, $to),
-            ['ts', 'visits', 'visitors', 'pageviews', 'bounce_rate', 'avg_time_seconds', 'pages_per_visit'],
+            ['ts', 'visits', 'visitors', 'pageviews', 'bounce_rate', 'avg_time_seconds', 'pages_per_visit', 'new_visitors', 'returning_visitors'],
             $rows(),
         );
+    }
+
+    /**
+     * 리포트 한 항목의 날짜별 추이를 조회합니다.
+     *
+     * 목록은 기간 합계만 보여 준다 — 「이 페이지가 언제부터 늘었나」는 줄마다 추이를 그려야 보인다.
+     * 차원 집계를 라벨 하나로 좁혀 날짜별로 더한다.
+     *
+     * @param  RowSeriesRequest  $request  한 항목 추이 요청
+     * @param  string  $report  리포트 이름
+     * @return JsonResponse 추이 응답
+     */
+    public function rowSeries(RowSeriesRequest $request, string $report): JsonResponse
+    {
+        if (! $this->reports->isValidReport($report)) {
+            return $this->error('validation.analytics.report_unknown', 404);
+        }
+
+        [$from, $to] = $request->resolvedRange();
+        $dimension = $this->reports->dimensionFor($report);
+        $label = (string) $request->input('label');
+
+        $options = ['unit' => $request->input('unit', 'auto')];
+
+        // 봇 차원은 봇 유형 행에만 있다 — 목록(show)과 같은 규약으로 제외 토글을 적용하지 않는다.
+        // 통계 화면에서 켠 토글이 기간 쿼리와 함께 봇 화면으로 따라와도 추이가 비면 안 된다.
+        if ($this->isBotDimension($report)) {
+            $options['visitor_types'] = [VisitorType::Bot->value];
+        } else {
+            $options['visitor_types'] = $request->visitorTypes();
+        }
+
+        $series = $this->series->dimensionSeries($dimension, $label, $from, $to, $options);
+
+        return $this->success('analytics.series.fetch_success', array_merge([
+            'report' => $report,
+            'label' => $label,
+            'label_display' => $this->reports->displayLabelFor($report, $label),
+            'from' => $from,
+            'to' => $to,
+        ], $series));
     }
 
     /**
