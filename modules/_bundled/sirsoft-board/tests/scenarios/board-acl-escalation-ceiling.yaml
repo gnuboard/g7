@@ -51,6 +51,7 @@ axes:
     - e2e_board_manager_self_assign_blocked
     - e2e_board_super_admin_allowed
     - e2e_default_permissions_self_grant_blocked
+    - e2e_bulk_apply_rejection_keeps_modal
 
 effects:
   # 차단 축
@@ -85,3 +86,4 @@ effects:
   - e2e_delegate_self_assign_rejected_and_unchanged
   - e2e_super_admin_acl_grant_applies
   - e2e_delegate_default_permissions_grant_rejected_and_unchanged
+  - e2e_bulk_apply_rejection_shows_reason_and_keeps_targets

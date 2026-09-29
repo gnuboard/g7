@@ -1777,22 +1777,30 @@ describe('_bulk_apply_modal.json - 일괄 적용 확인 모달', () => {
         const rollbackToast = rollbackActions.find((a: any) => a.handler === 'toast');
         expect(rollbackToast.params.type).toBe('error');
 
-        // bulk-apply onError(네트워크/예외): setState(isBulkApplying=false) → setState(snapshot=null) → toast(error)
-        expect(bulkApiCall.onError).toHaveLength(3);
+        // bulk-apply onError(권한 부여 상한 403·네트워크/예외): setState(isBulkApplying=false) → toast(서버 사유)
+        // 실패해도 창이 떠 있으므로 스냅숏을 지우지 않는다 — 지우면 창이 「적용할 항목 0 · 전체 게시판」을
+        // 보여 방금 시도한 대상(선택한 게시판)과 다른 내용을 안내한다.
+        expect(bulkApiCall.onError).toHaveLength(2);
         expect(asArray(bulkApiCall?.onError)[0].handler).toBe('setState');
         expect(asArray(bulkApiCall?.onError)[0].params.isBulkApplying).toBe(false);
-        expect(asArray(bulkApiCall?.onError)[1].handler).toBe('setState');
-        expect(asArray(bulkApiCall?.onError)[1].params.bulkApplySnapshot).toBeNull();
-        expect(asArray(bulkApiCall?.onError)[2].handler).toBe('toast');
-        expect(asArray(bulkApiCall?.onError)[2].params.type).toBe('error');
+        expect(asArray(bulkApiCall?.onError)[1].handler).toBe('toast');
+        expect(asArray(bulkApiCall?.onError)[1].params.type).toBe('error');
+        expect(asArray(bulkApiCall?.onError)[1].params.message).toContain('error.message');
 
-        // 저장 실패: setState(isBulkApplying=false, bulkApplySaveError=true) → setState(snapshot=null)
+        // 저장 실패(기본 권한 상한 403 등): setState(isBulkApplying=false, bulkApplySaveError=true) → toast(서버 사유)
+        // 창의 안내 박스는 「저장 실패로 중단」만 말하므로 거부 사유는 토스트로 알린다.
         expect(saveApiCall.onError).toHaveLength(2);
         expect(asArray(saveApiCall?.onError)[0].handler).toBe('setState');
         expect(asArray(saveApiCall?.onError)[0].params.isBulkApplying).toBe(false);
         expect(asArray(saveApiCall?.onError)[0].params.bulkApplySaveError).toBe(true);
-        expect(asArray(saveApiCall?.onError)[1].handler).toBe('setState');
-        expect(asArray(saveApiCall?.onError)[1].params.bulkApplySnapshot).toBeNull();
+        expect(asArray(saveApiCall?.onError)[1].handler).toBe('toast');
+        expect(asArray(saveApiCall?.onError)[1].params.type).toBe('error');
+        expect(asArray(saveApiCall?.onError)[1].params.message).toContain('error.message');
+
+        // 두 실패 분기 모두 창이 떠 있는 동안 스냅숏을 비우지 않는다
+        for (const action of [...asArray(bulkApiCall?.onError), ...asArray(saveApiCall?.onError)]) {
+            expect(Object.prototype.hasOwnProperty.call(action.params ?? {}, 'bulkApplySnapshot')).toBe(false);
+        }
     });
 
     /**

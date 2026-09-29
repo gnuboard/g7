@@ -93,6 +93,9 @@
 그 위에 얹는 역할만 판정하며, 바뀌지 않은 키·명단(관리자 폼의 평소 저장)은 검사하지 않습니다.
 위반은 `PermissionEscalationException` → 403 이고, 게시판 생성·수정은 트랜잭션이라 같은 요청의
 다른 변경(이름·앞선 키의 매핑·새 게시판 행)도 함께 되돌아갑니다.
+환경설정의 일괄 적용 확인 창은 저장·적용이 실패(상한 403 포함)해도 창을 닫지 않고 방금 시도한
+항목·게시판을 그대로 보여 주며, 거부 사유는 서버 메시지 토스트로 알립니다 — 실패 분기에서
+`_global.bulkApplySnapshot` 을 비우면 창이 「0개 · 전체 게시판」을 안내하게 됩니다.
 
 **게시글 작성 → 비밀글 게이팅**: `User\PostController` → `StorePostRequest`
 (`sirsoft-board.post.store_validation_rules` 필터로 게시판별 커스텀 규칙 추가) →

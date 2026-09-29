@@ -1,11 +1,12 @@
 /**
  * E2E: 게시판 권한(ACL)·담당자 지정의 권한 부여 상한 (KVE-2026-2367 + 담당자 경로)
  *
- * @scenario case=e2e_board_acl_self_grant_blocked, case=e2e_board_manager_self_assign_blocked, case=e2e_board_super_admin_allowed, case=e2e_default_permissions_self_grant_blocked
+ * @scenario case=e2e_board_acl_self_grant_blocked, case=e2e_board_manager_self_assign_blocked, case=e2e_board_super_admin_allowed, case=e2e_default_permissions_self_grant_blocked, case=e2e_bulk_apply_rejection_keeps_modal
  * @effects e2e_delegate_acl_grant_rejected_and_unchanged,
  *          e2e_delegate_self_assign_rejected_and_unchanged,
  *          e2e_super_admin_acl_grant_applies,
- *          e2e_delegate_default_permissions_grant_rejected_and_unchanged
+ *          e2e_delegate_default_permissions_grant_rejected_and_unchanged,
+ *          e2e_bulk_apply_rejection_shows_reason_and_keeps_targets
  *
  * 게시판 수정·생성 권한만 가진 위임 계정으로 실제 서버에 요청해, 게시판 관리(admin.manage)·비밀글
  * 열람 권한에 역할을 더 붙이는 저장, 자기를 담당자로 넣는 저장, 자기를 관리자로 넣는 게시판 생성이
@@ -13,7 +14,7 @@
  * 200 으로 저장돼 위임 계정이 타인 글을 블라인드할 수 있었다. 권한을 바꾸지 않는 평소 저장과
  * 전체 권한 관리자의 같은 저장은 그대로 된다. 만든 게시판은 끝나면 지운다.
  */
-import { test, expect } from '../../fixtures/board-auth';
+import { test, expect, authenticatePage } from '../../fixtures/board-auth';
 import { issueToken, issueScopedToken } from '../../../../../../../tests/Playwright/fixtures/auth';
 import type { APIRequestContext } from '@playwright/test';
 
@@ -59,6 +60,10 @@ function roles(detail: any, key: string): string[] {
 }
 
 test.describe('게시판 권한·담당자 저장의 권한 부여 상한', () => {
+  // 한 게시판과 전역 설정(게시판 기본 권한)을 테스트들이 나눠 쓰므로 순서대로 돈다 — 병렬로 돌면
+  // 한 테스트가 기본 권한에 넣은 역할을 다른 테스트가 「변경 없음」으로 읽어 결과가 흔들린다.
+  test.describe.configure({ mode: 'serial' });
+
   const slug = `e2e-kve2367-${Date.now()}`;
   let superToken = '';
   let superUuid = '';
@@ -155,11 +160,16 @@ test.describe('게시판 권한·담당자 저장의 권한 부여 상한', () =
     const delegate = issueScopedToken('sirsoft-board.settings.read', 'sirsoft-board.settings.update');
     const before = await call(request, superToken, 'GET', '/api/modules/sirsoft-board/admin/settings');
     expect(before.status).toBe(200);
-    const defaults = before.body?.data?.basic_defaults?.default_board_permissions ?? {};
+    const basic = before.body?.data?.basic_defaults ?? {};
+    const defaults = basic.default_board_permissions ?? {};
+    // 이미 들어 있는 역할을 고르면 「변경 없음」 저장이 돼 검사가 헛돈다
+    const extra = ['manager', 'user', 'guest'].find((r) => !(defaults['admin.manage'] ?? []).includes(r));
 
+    // 카테고리 전체를 보낸다 — 일부만 보내면 저장이 통과했을 때 빠진 boolean 이 false 로 채워진다
     const put = await call(request, delegate, 'PUT', '/api/modules/sirsoft-board/admin/settings', {
       basic_defaults: {
-        default_board_permissions: { ...defaults, 'admin.manage': [...(defaults['admin.manage'] ?? []), 'manager'] },
+        ...basic,
+        default_board_permissions: { ...defaults, 'admin.manage': [...(defaults['admin.manage'] ?? []), extra] },
       },
     });
     expect(put.status).toBe(403);
@@ -167,6 +177,62 @@ test.describe('게시판 권한·담당자 저장의 권한 부여 상한', () =
 
     const after = await call(request, superToken, 'GET', '/api/modules/sirsoft-board/admin/settings');
     expect(after.body?.data?.basic_defaults?.default_board_permissions).toEqual(defaults);
+  });
+
+  // @scenario case=e2e_bulk_apply_rejection_keeps_modal
+  // @effects e2e_bulk_apply_rejection_shows_reason_and_keeps_targets
+  test('환경설정 일괄 적용이 상한에 걸리면 사유 토스트가 뜨고 확인 창은 시도한 항목·게시판을 그대로 보여 준다', async ({ page, request }) => {
+    test.setTimeout(120_000);
+    const delegate = issueScopedToken('sirsoft-board.settings.read', 'sirsoft-board.settings.update', 'sirsoft-board.boards.read');
+    const settingsUrl = '/api/modules/sirsoft-board/admin/settings';
+    const before = await call(request, superToken, 'GET', settingsUrl);
+    const basic = before.body?.data?.basic_defaults;
+    const boardName = (await call(request, superToken, 'GET', `${BOARDS}/${boardId}`)).body?.data?.name;
+    const boardLabel = typeof boardName === 'string' ? boardName : boardName?.ko;
+
+    // 전제 — 위임 계정이 이 게시판에서 갖지 않은 역할을 최고관리자가 기본 권한에 넣어 둔다.
+    // 카테고리 전체를 다시 보내야 빠진 boolean 이 false 로 채워지지 않는다.
+    const current = basic.default_board_permissions['admin.manage'] ?? [];
+    const extra = ['manager', 'user', 'guest'].find((r) => !current.includes(r));
+    const seeded = await call(request, superToken, 'PUT', settingsUrl, {
+      basic_defaults: {
+        ...basic,
+        default_board_permissions: { ...basic.default_board_permissions, 'admin.manage': [...current, extra] },
+      },
+    });
+    expect(seeded.status).toBe(200);
+
+    try {
+      await authenticatePage(page, delegate);
+      await page.goto('/admin/boards/settings?tab=basic_defaults');
+      await page.getByRole('checkbox', { name: /^게시판 관리 \(관리자\)/ }).check({ timeout: 60_000 });
+      // 권한을 좁힌 계정이라 메뉴·알림 같은 공용 데이터 소스가 403 토스트를 띄운다 — 화면을 가리지 않게 닫는다
+      for (const close of await page.getByRole('button', { name: '알림 닫기' }).all()) {
+        await close.click().catch(() => {});
+      }
+      await page.getByRole('radio').last().click();
+      await page.getByRole('combobox').last().click();
+      await page.getByRole('option', { name: boardLabel }).click();
+      await page.keyboard.press('Escape');
+      await page.getByRole('button', { name: '일괄 적용', exact: true }).click();
+
+      const modal = page.getByRole('dialog', { name: '일괄 적용 확인' });
+      await expect(modal).toBeVisible();
+      const bulk = page.waitForResponse((r) => r.url().includes('/admin/settings/bulk-apply'));
+      await modal.getByRole('button', { name: '저장 및 적용' }).click();
+      expect((await bulk).status()).toBe(403);
+
+      await expect(page.getByRole('alert').filter({ hasText: CEILING_MESSAGE }).first()).toBeVisible();
+      // 실패 뒤에도 창은 방금 시도한 항목·게시판을 보여 준다(수정 전에는 「0개 · 전체 게시판」으로 바뀌었다)
+      await expect(modal).toContainText('게시판 관리 (관리자)');
+      await expect(modal).toContainText(boardLabel);
+
+      const after = await call(request, superToken, 'GET', `${BOARDS}/${boardId}`);
+      expect(roles(after.body, 'admin_manage')).not.toContain(extra);
+    } finally {
+      const restored = await call(request, superToken, 'PUT', settingsUrl, { basic_defaults: basic });
+      expect(restored.status).toBe(200);
+    }
   });
 
   // @scenario case=e2e_board_super_admin_allowed
