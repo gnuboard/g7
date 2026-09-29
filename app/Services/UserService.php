@@ -555,12 +555,15 @@ class UserService
     /**
      * ID로 사용자 상세 정보를 조회합니다.
      *
+     * 현재 사용자의 `core.users.read` 조회 범위 밖의 회원은 없는 것으로 돌려준다
+     * (scopeVisibleUser 참고).
+     *
      * @param  int  $id  사용자 ID
      * @return User|null 사용자 모델 또는 null
      */
     public function getUserById(int $id): ?User
     {
-        $user = $this->userRepository->findById($id);
+        $user = $this->scopeVisibleUser($this->userRepository->findById($id));
 
         if ($user) {
             HookManager::doAction('core.user.after_show', $user);
@@ -572,15 +575,38 @@ class UserService
     /**
      * UUID로 사용자를 조회합니다.
      *
+     * 현재 사용자의 `core.users.read` 조회 범위 밖의 회원은 없는 것으로 돌려준다
+     * (scopeVisibleUser 참고).
+     *
      * @param  string  $uuid  사용자 UUID
      * @return User|null 사용자 모델 또는 null
      */
     public function getUserByUuid(string $uuid): ?User
     {
-        $user = $this->userRepository->findByUuid($uuid);
+        $user = $this->scopeVisibleUser($this->userRepository->findByUuid($uuid));
 
         if ($user) {
             HookManager::doAction('core.user.after_show', $user);
+        }
+
+        return $user;
+    }
+
+    /**
+     * 현재 사용자의 회원 조회 범위 밖이면 null 로 바꿉니다.
+     *
+     * 한 건 조회는 목록처럼 쿼리에 스코프 조건을 걸 수 없어 찾은 뒤에 판정한다. 회원 검색의
+     * uuid·id 경로가 이 판정 없이 찾은 회원을 그대로 돌려줘, 본인만 볼 수 있는 위임 관리자가
+     * 다른 회원의 uuid 하나로 그 회원의 개인정보를 받던 전례가 있다(KVE-2026-2368).
+     * 「권한 없음」 대신 「없음」 으로 답해 범위 밖 회원의 존재 여부도 흘리지 않는다.
+     *
+     * @param  User|null  $user  조회된 회원
+     * @return User|null 범위 안이면 그 회원, 아니면 null
+     */
+    private function scopeVisibleUser(?User $user): ?User
+    {
+        if ($user === null || ! PermissionHelper::checkScopeAccess($user, 'core.users.read')) {
+            return null;
         }
 
         return $user;

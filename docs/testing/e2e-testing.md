@@ -357,6 +357,18 @@ await expect(page.locator('input[name="..."]')).toBeDisabled();   // 통과
 권한 밖 탭·라우트로 이동하면 403 에러 페이지로 전환되므로, 왕복 시나리오는 그 권한으로 접근
 가능한 대상만 경유해야 한다.
 
+#### 조회 범위(scope)를 검증할 때는 `식별자:self` · `식별자:role`
+
+권한은 기본적으로 전체 범위로 부여된다. 「본인만」·「같은 역할만」으로 제한된 위임 관리자 세션이
+필요하면 식별자 뒤에 범위를 붙인다 — 커맨드가 그 범위(`role_permissions.scope_type`)로 부여한다.
+범위를 거는 보조 경로(최근 목록·통계·대시보드 카드 등)가 주 경로와 같은 범위를 따르는지 잠글 때 쓴다.
+`self`·`role` 외의 값은 커맨드가 거부한다.
+
+```typescript
+// 회원 조회를 본인 범위로만 가진 계정 — 회원 목록·최근 가입·통계가 모두 본인 1명이어야 한다
+const token = issueScopedToken('core.users.read:self', 'core.dashboard.read');
+```
+
 ### 5.2 확장 fixture — 권한 + 시드 분리
 
 ```typescript

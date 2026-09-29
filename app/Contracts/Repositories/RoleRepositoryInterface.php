@@ -40,6 +40,14 @@ interface RoleRepositoryInterface
     public function findByIdentifier(string $identifier): ?Role;
 
     /**
+     * 식별자 목록에 해당하는 역할들을 조회합니다 (없는 식별자는 건너뜁니다).
+     *
+     * @param  array<int, string>  $identifiers  역할 식별자 목록
+     * @return Collection<int, Role> 역할 컬렉션
+     */
+    public function getByIdentifiers(array $identifiers): Collection;
+
+    /**
      * 식별자로 역할에 소속된 사용자들을 조회합니다.
      *
      * @param  string  $identifier  역할 식별자

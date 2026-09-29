@@ -44,13 +44,23 @@ class NotificationLogRepository implements NotificationLogRepositoryInterface
     /**
      * 최근 발송된 알림 로그를 발송 시각 최신순으로 조회합니다 (대시보드 최근 알림).
      *
+     * 발송 이력 목록과 같은 권한으로 열리므로 같은 스코프를 건다 — 목록에만 걸고 이 경로에
+     * 빠뜨려, 본인 것만 볼 수 있는 위임 관리자가 다른 회원의 비밀번호 재설정 안내까지 받던
+     * 전례가 있다(KVE-2026-2374).
+     *
      * @param  int  $limit  조회 건수
+     * @param  User|null  $scopeUser  스코프 적용 대상 사용자 (null이면 스코프 미적용)
      * @return Collection<int, NotificationLog> 최근 알림 로그 컬렉션
      */
-    public function getRecent(int $limit): Collection
+    public function getRecent(int $limit, ?User $scopeUser = null): Collection
     {
-        return NotificationLog::with(['recipientUser'])
-            ->orderByDesc('sent_at')
+        $query = NotificationLog::with(['recipientUser']);
+
+        if ($scopeUser) {
+            $this->applyNotificationLogScope($query, $scopeUser);
+        }
+
+        return $query->orderByDesc('sent_at')
             ->orderByDesc('id')
             ->limit($limit)
             ->get();
@@ -209,7 +219,17 @@ class NotificationLogRepository implements NotificationLogRepositoryInterface
     /**
      * notification-logs 전용 스코프를 적용합니다.
      *
-     * self 스코프: 본인이 발송했거나 수신한 알림 이력만 조회
+     * 소유 컬럼이 발신자·수신자 둘이라 권한 메타의 단일 owner_key 로는 표현할 수 없고, 그래서
+     * 라우트 미들웨어의 스코프 검사도 받지 못한다 — 이 쿼리 스코프가 이 권한의 유일한 정본이다
+     * (ScopedPermissionEnforcement::QUERY_SCOPED_PERMISSIONS).
+     *
+     * - self 스코프: 본인이 발송했거나 수신한 알림 이력만 조회
+     * - role 스코프: 본인과 역할을 공유하는 회원이 발송했거나 수신한 알림 이력만 조회
+     *   (PermissionHelper::applyPermissionScope 의 role 판정과 같은 기준)
+     *
+     * @param  Builder  $query  알림 로그 쿼리
+     * @param  User  $user  스코프 기준 사용자
+     * @return void 반환값 없음
      */
     private function applyNotificationLogScope(Builder $query, User $user): void
     {
@@ -224,6 +244,21 @@ class NotificationLogRepository implements NotificationLogRepositoryInterface
                 $q->where('sender_user_id', $user->id)
                     ->orWhere('recipient_user_id', $user->id);
             });
+
+            return;
         }
+
+        // role — 이 분기가 없으면 role 스코프 부여가 전체 접근으로 흘러간다.
+        $myRoleIds = $user->roles()->pluck('roles.id');
+        $roleMembers = function ($sub) use ($myRoleIds) {
+            $sub->select('user_id')
+                ->from('user_roles')
+                ->whereIn('role_id', $myRoleIds);
+        };
+
+        $query->where(function (Builder $q) use ($roleMembers) {
+            $q->whereIn('sender_user_id', $roleMembers)
+                ->orWhereIn('recipient_user_id', $roleMembers);
+        });
     }
 }

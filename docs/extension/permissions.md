@@ -643,6 +643,47 @@ PermissionHelper::applyPermissionScope($query, 'core.users.read');
 // ... 기존 필터/정렬/페이지네이션
 ```
 
+**같은 권한으로 열리는 조회 경로는 전부 같은 스코프를 건다.** 목록에만 걸고 최근 항목·통계·검색
+(한 건 조회 포함)·대시보드 카드 같은 보조 경로에 빠뜨리면, 본인 것만 보도록 제한된 역할이 그
+경로로 전체 데이터를 받는다. 한 저장소 안에서는 스코프를 건 기본 쿼리를 만드는 메서드 하나를 두고
+모든 조회 메서드가 그것에서 출발하게 하면 경로마다 다시 거는 누락을 막을 수 있다. 쿼리 조건을 걸
+수 없는 한 건 조회(uuid·id 로 집는 검색 등)는 찾은 뒤 `checkScopeAccess()` 로 판정하고, 범위 밖이면
+「없음」으로 답한다. 사용자와 무관하게 캐시하는 사이트 전체 집계만 스코프를 끄고 센다 — 스코프를
+건 숫자가 공용 캐시에 앉으면 다른 방문자에게 그 사람 기준 숫자가 나간다.
+
+### 쿼리 스코프가 정본인 권한
+
+소유 컬럼이 둘 이상이라 단일 `owner_key` 로 표현할 수 없는 권한(예: 발신자·수신자가 모두 당사자인
+`core.notification-logs.read`)은 `resource_route_key`/`owner_key` 를 두지 않고, 그 권한으로 열리는
+**모든** 조회 경로의 Repository 가 직접 self·role 조건을 건다. 이런 권한은 라우트 미들웨어의 상세
+스코프 검사를 받지 못하므로 쿼리 스코프가 유일한 강제 수단이다.
+
+확장이 이런 권한을 추가하면 `core.permission.query_scoped_permissions` 필터 훅으로 식별자를 등록한다.
+권한 시드와 코어 업데이트는 스코프(self·role)가 붙었는데 `resource_route_key`+`owner_key` 도 없고 이
+목록에도 없는 역할-권한 부여를 찾아 경고로 남긴다 — 그런 부여는 설정 화면에 「본인만」으로 보여도
+실제로는 아무것도 좁히지 않는다.
+
+```php
+// 확장의 훅 리스너 — 쿼리 스코프가 정본인 권한 등록
+public static function getSubscribedHooks(): array
+{
+    return [
+        'core.permission.query_scoped_permissions' => [
+            'method' => 'registerQueryScopedPermissions',
+            'priority' => 10,
+            'type' => 'filter',
+        ],
+    ];
+}
+
+public function registerQueryScopedPermissions(array $identifiers): array
+{
+    $identifiers[] = 'vendor-module.messages.read'; // 발신자·수신자 두 소유 컬럼
+
+    return $identifiers;
+}
+```
+
 ### 소유자 식별 전체 매핑
 
 | Permission prefix | resource_route_key | owner_key | 비고 |
@@ -658,7 +699,7 @@ PermissionHelper::applyPermissionScope($query, 'core.users.read');
 | sirsoft-ecommerce.orders.* | order | user_id | |
 | sirsoft-page.pages.* | page | created_by | |
 
-> resource_route_key/owner_key가 null → scope_type UI 미표시, 설정해도 무시
+> resource_route_key/owner_key가 null → scope_type UI 미표시, 설정해도 무시 (단, 위 「쿼리 스코프가 정본인 권한」 은 Repository 가 스코프를 건다)
 
 ### getPermissions() 포맷 (모듈)
 

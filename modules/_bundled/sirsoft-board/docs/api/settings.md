@@ -783,6 +783,7 @@ HTTP/1.1 200
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-board.settings.update`)이 없는 경우 |
+| 403 | Forbidden | 권한 부여 상한 위반 (`본인이 보유하지 않았거나 더 넓은 범위의 권한은 부여할 수 없습니다.`) — `report_permissions` 로 역할이 바뀌는 신고 관리 권한(`sirsoft-board.reports.view`·`reports.manage`)을 요청자가 전체 범위로 갖지 않았거나, `basic_defaults.default_board_permissions` 에서 역할이 바뀌는 권한 키를 요청자가 기존 모든 게시판에서 전체 범위로 갖지 않은 경우(게시판이 하나도 없으면 최고관리자만 변경 가능). 설정 파일을 쓰기 전에 거부하므로 다른 설정도 저장되지 않는다 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
@@ -896,6 +897,7 @@ _단건 응답: `data` 객체의 필드. 성공(전체 적용 완료) 시와 중
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-board.settings.update`)이 없는 경우 |
+| 403 | Forbidden | 권한 부여 상한 위반 (`본인이 보유하지 않았거나 더 넓은 범위의 권한은 부여할 수 없습니다.`) — 적용할 기본 권한이 대상 게시판의 역할 매핑을 바꾸는데 요청자가 그 게시판 권한을 전체 범위로 갖지 않은 경우. 전체 변경이 되돌려지며 `rolled_back` 200 응답이 아니라 403 으로 끝난다 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지). `fields` 누락/빈 배열, 허용되지 않은 필드명, `apply_all=false` 인데 `board_ids` 미지정, 존재하지 않는 `board_ids` 항목 등 |
 | 500 | Internal Server Error | 일괄 적용 처리 중 롤백 예외 외의 오류가 발생한 경우 (`messages.settings.bulk_apply_failed`) |
 

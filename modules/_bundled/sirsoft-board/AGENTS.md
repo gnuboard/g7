@@ -82,6 +82,18 @@
 `getDynamicRoleIdentifiers()` / `getDynamicMenuSlugs()` 가 `boards` 테이블을 다시 조회해
 전수를 재구성합니다 — 게시판 삭제·정리(clean-up) 시 "stale 판정"의 기준이 이 세 메서드입니다.
 
+**게시판 권한·담당자 저장 → 권한 부여 상한**: 게시판 권한에 역할을 붙이거나 떼는 것
+(`BoardPermissionService::assignRolesToPermission()` — 게시판 생성·수정·환경설정 일괄 적용이 모두
+이 한 곳을 지난다)과 게시판 관리자·스텝 명단을 바꾸는 것(`BoardService::syncBoardRoleUsers()`),
+신고 관리 권한의 역할 재할당(`syncModulePermissionRoles()`), 환경설정의 게시판 기본 권한 저장
+(`assertDefaultBoardPermissionsChangeAllowed()` — 바뀌는 키를 기존 모든 게시판에서 가진 액터만)은 모두 **권한을 주는 조작**이라 코어
+`PermissionEscalationGuard` 의 상한을 받습니다 — 액터가 그 권한을 전체 범위로 가졌을 때만 역할을
+바꿀 수 있고, 명단은 그 역할이 담은 권한을 모두 가진 액터(슈퍼관리자·그 게시판의 기존 관리자)만
+바꿉니다(KVE-2026-2367). 게시판을 새로 만들 때 설정 기본값이 정한 역할(기본 ACL)은 검사하지 않고
+그 위에 얹는 역할만 판정하며, 바뀌지 않은 키·명단(관리자 폼의 평소 저장)은 검사하지 않습니다.
+위반은 `PermissionEscalationException` → 403 이고, 게시판 생성·수정은 트랜잭션이라 같은 요청의
+다른 변경(이름·앞선 키의 매핑·새 게시판 행)도 함께 되돌아갑니다.
+
 **게시글 작성 → 비밀글 게이팅**: `User\PostController` → `StorePostRequest`
 (`sirsoft-board.post.store_validation_rules` 필터로 게시판별 커스텀 규칙 추가) →
 `PostService::createPost()` (`before_create`→`filter_create_data`→`after_create` 훅 순서,
@@ -154,6 +166,7 @@ CRUD 흐름 자체를 **자기 도메인으로 대체**하는 가장 무거운 �
 | 새 콘텐츠 타입을 board 코드에 `if ($type === 'inquiry')` 로 직접 분기 | `EcommerceInquiryHookListener` 처럼 필터 훅으로 CRUD 를 위임 | board 코드가 알지 못하는 도메인이 늘어날수록 분기가 무한 증식한다 |
 | 레이아웃 표현식에서 누산기에 멤버 대입 (`grouped[k] = []` · `.push()`) 하거나 rest 구조분해 (`const { a, ...rest } = obj`) 사용 | `map` / `filter` / `reduce(Object.assign)` / `Object.fromEntries` 로 누산 없이 구성 | 표현식 평가기가 그 구문을 거부해 **식 전체가 평가되지 않는다.** `iteration.source` 면 배열이 아니게 되어 그 목록이 통째로 렌더되지 않고, `apiCall` body 면 원문 문자열이 그대로 전송된다 — 둘 다 오류도 경고도 남지 않는다 (일괄 적용 확인 창에서 실제 발생) |
 | 일괄 적용 대상 설정 키를 `sectionMap` 에만 추가 | 같은 키의 `bulk_apply.field_labels` 라벨을 ko/en(+번들 ja)에 함께 추가 | 라벨이 없으면 확인 창에 원시 다국어 키가 그대로 노출된다 |
+| 게시판 권한(role_permissions)이나 게시판 관리자·스텝 명단을 바꾸는 새 경로를 `BoardPermissionService::assignRolesToPermission()`·`syncBoardRoleUsers()` 를 거치지 않고 직접 `attach`/`sync` | 기존 두 지점을 재사용하거나, 새 지점에서 `PermissionEscalationGuard`(권한은 `assertGrantWithinActorCeiling`, 역할 배정은 `assertRoleAssignmentWithinActorCeiling`)를 쓰기 전에 호출 | 한 경로만 상한을 걸면 나머지가 자기부여 우회로가 된다 — 권한 저장만 막았을 때 담당자 지정·일괄 적용이 같은 결과를 냈다 (KVE-2026-2367) |
 | 요청의 `temp_key` 를 형식 검증 없이 임시 경로(`{slug}/temp/{temp_key}`)에 넣거나, 조회된 임시 첨부가 없는데도 그 디렉토리를 `deleteDirectory` | `ValidatesTempKey`(UUID 만) + 현재 사용자가 올린 임시 첨부가 있을 때만 이동·정리 | `../../..` 같은 키가 정리 경로를 모듈 저장소 루트로 끌어올려 전 모듈 파일이 지워진다 (KVE-2026-2349 — 응답은 201 이라 드러나지 않았다) |
 <!-- @intent END -->
 
@@ -162,10 +175,10 @@ CRUD 흐름 자체를 **자기 도메인으로 대체**하는 가장 무거운 �
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 195개 | `modules/_bundled/sirsoft-board/tests` |
+| PHPUnit | 197개 | `modules/_bundled/sirsoft-board/tests` |
 | Vitest | 51개 | `vitest.config.ts` |
-| Playwright | 33개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 70개 | `tests/scenarios` |
+| Playwright | 34개 | `tests/Playwright` |
+| 시나리오 매니페스트 | 72개 | `tests/scenarios` |
 
 기저 TestCase: `tests/ModuleTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

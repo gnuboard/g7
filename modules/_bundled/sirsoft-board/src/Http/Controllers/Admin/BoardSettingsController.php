@@ -2,6 +2,7 @@
 
 namespace Modules\Sirsoft\Board\Http\Controllers\Admin;
 
+use App\Exceptions\PermissionEscalationException;
 use App\Extension\HookManager;
 use App\Helpers\PermissionHelper;
 use App\Helpers\ResponseHelper;
@@ -126,6 +127,20 @@ class BoardSettingsController extends AdminBaseController
         try {
             $settings = $request->validatedSettings();
 
+            // 신고 관리 권한의 역할 변경이 상한 밖이면 설정 파일을 쓰기 전에 거부한다 — 설정을 먼저
+            // 저장하고 권한 동기화에서 거부하면 요청의 절반만 반영된다.
+            if ($request->has('report_permissions')) {
+                $this->settingsService->assertReportPermissionRolesChangeAllowed($request->input('report_permissions'));
+            }
+
+            // 게시판 기본 권한도 같은 이유로 설정 파일을 쓰기 전에 판정한다 — 기본 권한은 앞으로 만들
+            // 게시판에 그대로 붙으므로, 자기 역할을 넣어 두면 새 게시판의 관리 권한을 얻는다.
+            if (is_array($settings['basic_defaults'] ?? null) && array_key_exists('default_board_permissions', $settings['basic_defaults'])) {
+                $this->settingsService->assertDefaultBoardPermissionsChangeAllowed(
+                    (array) ($settings['basic_defaults']['default_board_permissions'] ?? [])
+                );
+            }
+
             // 반응 유형 행은 설정 JSON 에 저장하지 않는다 — basic_defaults 규칙이
             // ['sometimes','array'] 라 미지 하위 키를 버리지 않으므로, 떼어내지 않으면
             // basic_defaults.json 과 config 미러에 행 배열이 그대로 새어 들어간다.
@@ -173,6 +188,8 @@ class BoardSettingsController extends AdminBaseController
                     400
                 );
             }
+        } catch (PermissionEscalationException $e) {
+            return $this->error('exceptions.cannot_grant_unheld_permission', 403);
         } catch (ReactionTypeInUseException $e) {
             // 예외가 들고 다니는 다국어 키를 그대로 넘긴다 (번역문을 키로 해석하면 실패한다).
             return $this->error(
@@ -248,6 +265,9 @@ class BoardSettingsController extends AdminBaseController
                     'total' => $e->total,
                 ]
             );
+        } catch (PermissionEscalationException $e) {
+            // 보유하지 않은 게시판 권한을 기본값 덮어쓰기로 여러 게시판에 붙이려 한 요청 — 전체 롤백됨
+            return $this->error('exceptions.cannot_grant_unheld_permission', 403);
         } catch (Exception $e) {
             return ResponseHelper::moduleError(
                 'sirsoft-board',

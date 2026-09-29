@@ -370,6 +370,11 @@ return [
                 'order' => 7,
                 'type' => 'admin',
                 'permissions' => [
+                    // resource_route_key·owner_key 를 두지 않는다 — 소유 컬럼이 발신자·수신자 둘이라
+                    // 단일 owner_key 로 표현할 수 없다. 이 권한의 self·role 스코프는 라우트 미들웨어가
+                    // 아니라 저장소 쿼리 스코프(NotificationLogRepository::applyNotificationLogScope)가
+                    // 정본이며, 이 권한으로 열리는 조회 경로(목록·대시보드 최근 알림)는 전부 그 스코프를
+                    // 거쳐야 한다(ScopedPermissionEnforcement::QUERY_SCOPED_PERMISSIONS).
                     ['identifier' => 'core.notification-logs.read', 'type' => 'admin', 'name' => ['ko' => '발송 이력 조회', 'en' => 'View Notification Logs'], 'description' => ['ko' => '알림 발송 이력을 조회할 수 있습니다.', 'en' => 'Can view notification logs.'], 'order' => 1],
                     ['identifier' => 'core.notification-logs.delete', 'type' => 'admin', 'name' => ['ko' => '발송 이력 삭제', 'en' => 'Delete Notification Logs'], 'description' => ['ko' => '알림 발송 이력을 삭제할 수 있습니다.', 'en' => 'Can delete notification logs.'], 'order' => 2],
                 ],

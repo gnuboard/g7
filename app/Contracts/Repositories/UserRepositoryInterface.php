@@ -68,9 +68,13 @@ interface UserRepositoryInterface
     /**
      * 사용자 관련 통계 정보를 조회합니다.
      *
+     * 기본은 현재 사용자의 `core.users.read` 조회 스코프 안에서 셉니다. 사용자와 무관하게
+     * 캐시하는 사이트 전체 집계만 `false` 로 스코프를 끕니다.
+     *
+     * @param  bool  $applyPermissionScope  현재 사용자의 조회 스코프 적용 여부
      * @return array 사용자 통계 데이터 배열
      */
-    public function getStatistics(): array;
+    public function getStatistics(bool $applyPermissionScope = true): array;
 
     /**
      * 키워드로 사용자를 검색합니다. (이름, 닉네임, 이메일)
