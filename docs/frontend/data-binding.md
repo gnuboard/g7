@@ -277,6 +277,10 @@ DataBindingEngine은 `{{}}` 내부에서 다양한 표현식을 지원합니다.
 - `if`: 조건부 렌더링
 - `actions[].payload.*`: 액션 payload
 
+### 식 해석 결과 재사용 (engine-v1.74.0+)
+
+같은 식 문자열은 전처리·구문 해석 결과를 재사용합니다. **값은 캐시하지 않으므로** 식은 매번 현재 데이터로 다시 평가되고, 데이터가 바뀌면 결과도 바로 바뀝니다. 해석에 실패한 식은 매번 같은 오류 메시지로 실패합니다. 확인용으로 재사용을 끄는 방법은 [G7Core.engineFlags](g7core-api-advanced.md#엔진-안전-스위치-g7coreengineflags) 를 참고하세요.
+
 ### `if` 표현식의 `{{}}` 위치 (CRITICAL, engine-v1.47.1 명문화)
 
 `if` 값은 `ConditionEvaluator.evaluateStringCondition` 이 평가한다. 평가 분기는 다음과 같다:

@@ -24,7 +24,7 @@
 
 import type { ComputedRecipeSpec, ConditionParamSpec } from './specTypes';
 import { dataBindingEngine, type BindingContext } from '../../DataBindingEngine';
-import { hasPipes } from '../../PipeRegistry';
+import { evaluateComputedEntry } from '../../helpers/ComputedEvaluator';
 
 // ── 친화 보기(프리셋) — spec 주도 build/match ─────────────────────────
 
@@ -597,16 +597,12 @@ export function evaluateComputedPreview(
   if (typeof exprValue !== 'string' || exprValue.trim() === '') {
     return { ok: false, reason: 'empty' };
   }
-  const inner = stripOuterBraces(exprValue);
   try {
-    // 파이프 표현식은 evaluatePipeExpression 으로 평가한다 — 런타임(DynamicRenderer /
-    // ActionDispatcher)의 computed 재계산과 같은 규칙이라야 편집기 미리보기가
-    // 실제 화면과 같은 값을 보여준다. @since engine-v1.54.10
-    const value = hasPipes(inner)
-      ? dataBindingEngine.evaluatePipeExpression(inner, sampleContext ?? {}, { skipCache: true })
-      : dataBindingEngine.evaluateExpression(inner, sampleContext ?? {}, {
-        skipCache: true,
-      });
+    // 런타임(DynamicRenderer / ActionDispatcher / TemplateApp)의 computed 계산과 같은 공용 평가기로
+    // 평가한다 — 파이프 선분기·단일 바인딩 판정이 실제 화면과 같아야 미리보기가 같은 값을 보여준다.
+    // `{{ }}` 없이 입력한 식도 식으로 평가한다(편집기 계약): wrapBraces 로 감싸서 넘긴다.
+    // @since engine-v1.54.10 파이프 선분기, engine-v1.74.0 공용 평가기
+    const value = evaluateComputedEntry(wrapBraces(exprValue), sampleContext ?? {}, dataBindingEngine);
     return { ok: true, value, type: classifyType(value) };
   } catch (e) {
     // 미리보기 평가 실패는 정상 경로(샘플 컨텍스트에 그 데이터가 없을 수 있음) —

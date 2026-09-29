@@ -29,6 +29,8 @@ import { TranslationEngine, TranslationContext } from './TranslationEngine';
 import { ActionDispatcher, ActionDefinition } from './ActionDispatcher';
 import { resolveIterationSource, evaluateIfCondition, evaluateRenderCondition, bindComponentActions, resolveClassMap } from './helpers/RenderHelpers';
 import { hasPipes } from './PipeRegistry';
+import { evaluateComputedDefinitions, isInheritableDefinitions } from './helpers/ComputedEvaluator';
+import { getEngineFlags } from './EngineFlags';
 import {
   extractSingleBinding as canonicalExtractSingleBinding,
   isComplexExpression as canonicalIsComplexExpression,
@@ -64,6 +66,63 @@ function getDevTools(): G7DevToolsInterface | undefined {
   } catch {
     return undefined;
   }
+}
+
+/**
+ * G7 DevTools 추적이 켜져 있는가 — 추적 전용 객체·문자열을 만들지 판단한다.
+ *
+ * @since engine-v1.74.0
+ */
+function isDevToolsTracking(): boolean {
+  return getDevTools()?.isEnabled?.() === true;
+}
+
+/**
+ * computed 스코프 토큰 키.
+ *
+ * `_computed` 를 계산한 렌더러가 extendedDataContext 에 심는다. 심볼 키라 `Object.keys`·
+ * `JSON.stringify`·바인딩·DevTools 덤프에 나타나지 않고, 객체 스프레드로는 자식에게 전달된다.
+ *
+ * @since engine-v1.74.0
+ */
+const COMPUTED_SCOPE = Symbol.for('g7.computedScope');
+
+/** 계산한 렌더러가 남기는 입력 지문 — 자식은 자기 입력과 같을 때만 부모 값을 물려받는다 */
+interface ComputedScopeToken {
+  definitions: Record<string, unknown>;
+  isolatedState: unknown;
+  forcedLocalFields: unknown;
+  owner: string | undefined;
+}
+
+/**
+ * 그림자 검증용 깊은 비교.
+ *
+ * 원시값은 Object.is, 함수는 양쪽이 함수면 같다고 본다(식이 만든 클로저는 평가마다 새로 생긴다),
+ * 배열·plain object 는 재귀(방문 집합으로 순환 방어), 클래스 인스턴스는 참조 비교.
+ */
+function isSameComputedValue(a: unknown, b: unknown, seen: Set<unknown> = new Set()): boolean {
+  if (Object.is(a, b)) return true;
+  if (typeof a === 'function' && typeof b === 'function') return true;
+  if (a === null || b === null || typeof a !== 'object' || typeof b !== 'object') return false;
+  const plain = (v: object) => Array.isArray(v) || Object.getPrototypeOf(v) === Object.prototype || Object.getPrototypeOf(v) === null;
+  if (!plain(a) || !plain(b) || Array.isArray(a) !== Array.isArray(b)) return false;
+  if (seen.has(a)) return true;
+  seen.add(a);
+  const ka = Object.keys(a as object);
+  const kb = Object.keys(b as object);
+  if (ka.length !== kb.length) return false;
+  return ka.every((k) => isSameComputedValue((a as any)[k], (b as any)[k], seen));
+}
+
+/** 정의 키 중 물려받은 값과 계산한 값이 다른 키 목록 */
+function diffComputedKeys(inherited: Record<string, any>, computed: Record<string, any>, definitions: Record<string, unknown>): string[] {
+  return Object.keys(definitions).filter((key) => !isSameComputedValue(inherited?.[key], computed?.[key]));
+}
+
+/** 정의 키 전부가 같은가 */
+function isSameComputed(inherited: Record<string, any>, computed: Record<string, any>, definitions: Record<string, unknown>): boolean {
+  return diffComputedKeys(inherited, computed, definitions).length === 0;
 }
 
 /**
@@ -951,6 +1010,11 @@ export interface DynamicRendererProps {
   parentComponentContext?: {
     state: Record<string, any>;
     setState: (updates: Record<string, any>) => void;
+    /**
+     * 부모의 extendedDataContext (engine-v1.19.1). renderChildren 경로에서는 자식 dataContext 와
+     * 같은 객체다 — computed 스코프 물려받기 조건 (a) 가 이 동일성을 본다(engine-v1.74.0).
+     */
+    parentDataContext?: Record<string, any>;
   };
 
   /**
@@ -1785,84 +1849,107 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
       // _computedDefinitions가 있으면 최신 _local로 _computed 재계산
       const computedDefinitions = (dataContext as any)._computedDefinitions;
       if (computedDefinitions && Object.keys(computedDefinitions).length > 0) {
-        const bindingEngine = new DataBindingEngine();
+        // ── computed 스코프 물려받기 (engine-v1.74.0) ────────────────────────────────
+        // 자식의 computed 입력은 부모와 같다: renderChildren 경로에서 자식 dataContext 는 부모의
+        // extendedDataContext 그 자체이고(parentComponentContext.parentDataContext 와 같은 객체),
+        // 자식 dynamicState 는 parentComponentContext.state = { ...부모 extendedDataContext._local } 이라
+        // deepMergeState(부모 _local, 그 사본) 은 부모 _local 과 같은 값이다(둘은 부모의 같은 useMemo
+        // 세대에서 만들어진다 — componentContext 의 state·parentDataContext 규칙을 바꾸면 이 전제가 깨진다).
+        // 입력이 같으면 결과도 같으므로 부모 값을 그대로 쓴다. 아래 조건이 하나라도 거짓·불명이면 종전대로
+        // 직접 계산한다: (a) 부모가 넘긴 컨텍스트 그대로 (b) 같은 정의 (c) 같은 격리 상태 (d) 같은 forced 필드
+        // (e) 미적용 _localInit 없음 (f) 편집 모드 아님 (g) 부모 값 존재 (h) 뒤쪽 키 참조 없는 정의(D12).
+        const engineFlags = getEngineFlags();
+        const isolatedState = isolatedContext?.state;
+        const parentScope = (dataContext as any)[COMPUTED_SCOPE] as ComputedScopeToken | undefined;
+        const inheritedComputed = (dataContext as any)._computed;
+        const canInherit = engineFlags.computedScopeInheritance
+          && !!parentComponentContext
+          && parentComponentContext.parentDataContext === dataContext
+          && !!parentScope
+          && parentScope.definitions === computedDefinitions
+          && parentScope.isolatedState === isolatedState
+          && parentScope.forcedLocalFields === forcedLocalFields
+          && !hasUnappliedInit
+          && !isEditMode
+          && inheritedComputed !== null
+          && typeof inheritedComputed === 'object'
+          && isInheritableDefinitions(computedDefinitions);
+
+        if (canInherit && !engineFlags.verifyComputedInheritance) {
+          // 같은 참조를 물려받는다. 부모 토큰은 스프레드(result = { ...dataContext })로 이미 실려 있다.
+          result._computed = inheritedComputed;
+        } else {
         // 재계산용 컨텍스트 (최신 _local, _isolated 포함)
         const computedContext = {
           ...result,
           ...(isolatedContext ? { _isolated: isolatedContext.state } : {}),
         };
-        const newComputed: Record<string, any> = {};
+        const previousComputed: Record<string, any> = (dataContext as any)._computed ?? {};
 
         // DevTools: 성능 최적화 - 활성화 여부를 루프 밖에서 한 번만 확인
         const devToolsForComputed = getDevTools();
         const isDevToolsEnabled = devToolsForComputed?.isEnabled() ?? false;
 
-        for (const [key, expression] of Object.entries(computedDefinitions)) {
-          // DevTools: 성능 최적화 - 활성화된 경우에만 시간 측정
-          const computeStartTime = isDevToolsEnabled ? Date.now() : 0;
-          const previousValue = isDevToolsEnabled ? (dataContext as any)._computed?.[key] : undefined;
-          let computedError: string | undefined;
-
-          try {
-            if (typeof expression === 'string') {
-              if (expression.startsWith('{{') && expression.endsWith('}}')) {
-                // {{...}} 형태의 표현식 평가
-                const innerExpression = (expression as string).slice(2, -2).trim();
-                // 파이프 표현식은 evaluatePipeExpression 으로 평가한다 — evaluateExpression 은
-                // `|` 를 JS 비트 OR 로 보므로 인자 있는 파이프는 예외로 아래 catch 에 걸려
-                // computed 가 이전 값에 고정된다(값이 바뀌지 않는 조용한 실패).
-                // @since engine-v1.54.10
-                const result = hasPipes(innerExpression)
-                  ? bindingEngine.evaluatePipeExpression(innerExpression, computedContext, { skipCache: true })
-                  : bindingEngine.evaluateExpression(innerExpression, computedContext, { skipCache: true });
-                newComputed[key] = result;
-              } else {
-                // 순수 문자열은 그대로 사용
-                newComputed[key] = expression;
-              }
-            } else if (expression && typeof expression === 'object' && '$switch' in expression) {
-              // $switch 형태 처리
-              const result = bindingEngine.resolveSwitch(expression as any, computedContext, { skipCache: true });
-              newComputed[key] = result;
-            }
-          } catch (error) {
-            logger.warn(`Failed to recalculate computed value: ${key}`, error);
-            // 에러 시 기존 값 유지
-            newComputed[key] = (dataContext as any)._computed?.[key];
-            computedError = error instanceof Error ? error.message : String(error);
-          }
-
+        // 평가 규칙(정의 순서 참조·trim·파이프·$switch·리터럴)은 공용 평가기가 정한다 — 렌더·액션·
+        // 라우트 진입·편집기가 같은 구현을 쓴다. 인스턴스마다 새 엔진을 만들지 않고 공유 엔진을 쓴다
+        // (evaluateExpression 에는 값 캐시가 없고, 파이프·$switch 는 skipCache 로 평가된다).
+        // @since engine-v1.74.0
+        const computedNow = evaluateComputedDefinitions(computedDefinitions, computedContext, bindingEngine, {
+          previous: previousComputed,
+          onError: 'keep-previous',
+          failureLog: (key, error) => logger.warn(`Failed to recalculate computed value: ${key}`, error),
           // DevTools: Computed 추적 - 값이 변경되었거나 에러가 발생한 경우에만 추적
-          if (isDevToolsEnabled && (computedError || previousValue !== newComputed[key])) {
-            const computeEndTime = Date.now();
-            const duration = computeEndTime - computeStartTime;
-
-            devToolsForComputed.trackComputedProperty?.(
-              key,
-              typeof expression === 'string' ? expression : JSON.stringify(expression),
-              [{ type: '_local', path: '_local', value: result._local }],
-              newComputed[key],
-              duration,
-              effectiveComponentDef.id,
-              computedError
-            );
-
-            // 값이 변경되었으면 재계산 추적
-            if (previousValue !== newComputed[key]) {
-              devToolsForComputed.trackComputedRecalc?.(
+          track: isDevToolsEnabled && devToolsForComputed
+            ? (key, expression, value, computedError, duration) => {
+              const previousValue = previousComputed[key];
+              if (!computedError && previousValue === value) return;
+              devToolsForComputed.trackComputedProperty?.(
                 key,
-                'dependency-change',
-                previousValue,
-                newComputed[key],
-                duration,
-                { type: '_local', path: '_local' },
-                effectiveComponentDef.id
+                typeof expression === 'string' ? expression : JSON.stringify(expression),
+                [{ type: '_local', path: '_local', value: result._local }],
+                value,
+                duration ?? 0,
+                effectiveComponentDef.id,
+                computedError
               );
+              // 값이 변경되었으면 재계산 추적
+              if (previousValue !== value) {
+                devToolsForComputed.trackComputedRecalc?.(
+                  key,
+                  'dependency-change',
+                  previousValue,
+                  value,
+                  duration ?? 0,
+                  { type: '_local', path: '_local' },
+                  effectiveComponentDef.id
+                );
+              }
             }
-          }
-        }
+            : undefined,
+        });
 
-        result._computed = newComputed;
+        if (canInherit && isSameComputed(inheritedComputed, computedNow, computedDefinitions)) {
+          // 그림자 검증(개발·실측 전용)에서 물려받을 값과 같으면 물려받은 참조·토큰을 그대로 쓴다.
+          result._computed = inheritedComputed;
+        } else {
+          if (canInherit) {
+            // 그림자 검증 불일치 — 물려받기 경계 조건 누락의 신호다. 계산한 값을 쓰고 새 토큰을 발행한다
+            // (조상 토큰을 넘기면 자손이 다른 값을 물려받는다).
+            console.error('[computed-scope-mismatch]', {
+              componentId: effectiveComponentDef.id,
+              keys: diffComputedKeys(inheritedComputed, computedNow, computedDefinitions),
+            });
+          }
+          result._computed = computedNow;
+          // 계산한 렌더러는 항상 새 토큰을 심는다 — 스프레드로 따라온 조상 토큰을 덮는다.
+          (result as any)[COMPUTED_SCOPE] = {
+            definitions: computedDefinitions,
+            isolatedState,
+            forcedLocalFields,
+            owner: effectiveComponentDef.id,
+          } satisfies ComputedScopeToken;
+        }
+        }
       }
 
       // isolatedContext가 있으면 _isolated 네임스페이스 추가
@@ -1924,6 +2011,20 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
         if (result.$locale === undefined && translationContext?.locale) {
           result.$locale = translationContext.locale;
         }
+      }
+
+      // computed 스코프 토큰 전달 규칙 (engine-v1.74.0): computed 블록은 위 키들이 result 에 써지기 전에
+      // 돈다. 그래서 $parent·extensionPointProps·extensionPointCallbacks 가 여기서 새로 달라지면 이 렌더러의
+      // computed 는 그 키 없이 계산된 값이다 — 토큰을 버려 직계 자식이 그 키를 포함한 컨텍스트로 다시 계산하게
+      // 한다. (_isolated 는 computedContext 에 이미 있고 조건 (c)가, $templateId·$locale 은 편집 모드 전용이라
+      // 조건 (f)가 막는다.) computed 블록 뒤에 새 컨텍스트 키를 추가하면 이 규칙과
+      // __tests__/DynamicRenderer.computedLateKeys.test.ts 를 함께 갱신한다.
+      if (
+        result.$parent !== dataContext.$parent
+        || result.extensionPointProps !== dataContext.extensionPointProps
+        || result.extensionPointCallbacks !== dataContext.extensionPointCallbacks
+      ) {
+        (result as any)[COMPUTED_SCOPE] = undefined;
       }
 
       return result;
@@ -2106,11 +2207,11 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
         const expr = slotExpr.slice(2, -2).trim();
         try {
           // DevTools 추적을 위한 컴포넌트 컨텍스트 정보
-          const slotTrackingInfo = {
+          const slotTrackingInfo = isDevToolsTracking() ? {
             componentId: effectiveComponentDef.id,
             componentName: effectiveComponentDef.name,
             propName: 'slot',
-          };
+          } : undefined;
           // 파이프 표현식은 evaluatePipeExpression 으로 평가한다 — evaluateExpression 은
           // `|` 를 JS 비트 OR 로 보므로 결과가 문자열이 아니게 되고, 아래 `typeof result === 'string'`
           // 가드에 걸려 슬롯 미등록으로 조용히 흡수된다(컴포넌트가 화면에서 사라짐).
@@ -2118,7 +2219,9 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
           const result = hasPipes(expr)
             ? bindingEngine.evaluatePipeExpression(expr, extendedDataContext, undefined, slotTrackingInfo)
             : bindingEngine.evaluateExpression(expr, extendedDataContext, slotTrackingInfo);
-          logger.log(`[Slot] 표현식 평가: "${expr}" => "${result}" (컴포넌트: ${effectiveComponentDef.id})`);
+          if (logger.isDebugEnabled?.() || isDevToolsTracking()) {
+            logger.log(`[Slot] 표현식 평가: "${expr}" => "${result}" (컴포넌트: ${effectiveComponentDef.id})`);
+          }
           return typeof result === 'string' ? result : null;
         } catch (error) {
           logger.warn(
@@ -2130,7 +2233,9 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
       }
 
       // 정적 슬롯 ID
-      logger.log(`[Slot] 정적 슬롯 ID: "${slotExpr}" (컴포넌트: ${effectiveComponentDef.id})`);
+      if (logger.isDebugEnabled?.() || isDevToolsTracking()) {
+        logger.log(`[Slot] 정적 슬롯 ID: "${slotExpr}" (컴포넌트: ${effectiveComponentDef.id})`);
+      }
       return slotExpr;
     }, [effectiveComponentDef.slot, effectiveComponentDef.id, extendedDataContext, bindingEngine]);
 
@@ -2402,6 +2507,10 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
       };
 
       // 1. 데이터 바인딩
+      // DevTools 추적 정보 객체는 추적이 켜져 있을 때만 만든다(꺼져 있으면 undefined — 수신 측은 선택 인자).
+      // @since engine-v1.74.0
+      const devToolsTracking = isDevToolsTracking();
+
       for (const [key, value] of Object.entries(props)) {
         // 특정 키는 바인딩 처리 건너뛰기
         if (skipBindingKeys.includes(key)) {
@@ -2421,11 +2530,11 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
 
             // 복잡한 표현식(삼항 연산자, 논리 연산자 등)인 경우 evaluateExpression 사용
             // DevTools 추적을 위한 컴포넌트 컨텍스트 정보
-            const trackingInfo = {
+            const trackingInfo = devToolsTracking ? {
               componentId: effectiveComponentDef.id,
               componentName: effectiveComponentDef.name,
               propName: key,
-            };
+            } : undefined;
 
             let resolvedValue;
             if (hasPipes(effectivePath)) {
@@ -2466,11 +2575,11 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
             props[key] = isRawBinding && resolvedValue != null ? wrapRawDeep(resolvedValue) : resolvedValue;
           } else {
             // 문자열 보간 (예: "Hello {{name}}")
-            const trackingInfo = {
+            const trackingInfo = devToolsTracking ? {
               componentId: effectiveComponentDef.id,
               componentName: effectiveComponentDef.name,
               propName: key,
-            };
+            } : undefined;
             props[key] = bindingEngine.resolveBindings(value, extendedDataContext, bindingOptions, trackingInfo);
           }
         } else if (Array.isArray(value)) {
@@ -2776,12 +2885,12 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
           // 1단계: 데이터 바인딩 처리 (props 처리와 동일한 로직)
           // skipCache: true - 반복 렌더링에서 같은 경로가 다른 값을 가져야 함
           // DevTools 추적을 위한 컴포넌트 컨텍스트 정보
-          const textTrackingInfo = {
+          const textTrackingInfo = isDevToolsTracking() ? {
             componentId: effectiveComponentDef.id,
             componentName: effectiveComponentDef.name,
             propName: 'text',
             skipCache: true,
-          };
+          } : undefined;
           const singleBindingPath = extractSingleBinding(text);
 
           if (singleBindingPath !== null) {

@@ -111,10 +111,36 @@ function collectCallSites(): CallSite[] {
 describe('파이프 분기 누락 검출 — evaluateExpression 호출 지점 전수 스캔', () => {
   const sites = collectCallSites();
 
+  /**
+
+   * @scenario layer=structure
+
+   * @effects pipe_branch_scan_covers_computed_evaluator
+
+   */
   it('스캔 모집단이 비어 있지 않다 (스캐너 자체 회귀 방지)', () => {
     expect(sites.length).toBeGreaterThan(5);
   });
 
+  /**
+
+   * @scenario layer=structure
+
+   * @effects pipe_branch_scan_covers_computed_evaluator
+
+   */
+  it('computed 공용 평가기가 스캔 모집단에 들어 있다 (호출식이 스캔 규칙을 벗어나 조용히 빠지는 것 방지)', () => {
+    // computed 를 계산하는 모든 경로(렌더·액션·라우트 진입·편집기)가 이 파일로 모였다 — engine-v1.74.0
+    expect(sites.some((s) => s.relative === 'template-engine/helpers/ComputedEvaluator.ts')).toBe(true);
+  });
+
+  /**
+
+   * @scenario layer=structure
+
+   * @effects pipe_branch_scan_covers_computed_evaluator
+
+   */
   it('모든 표현식 평가 지점이 파이프 분기를 갖거나 사유와 함께 면제되어 있다', () => {
     const violations = sites
       .filter((s) => !s.guarded)
@@ -127,6 +153,13 @@ describe('파이프 분기 누락 검출 — evaluateExpression 호출 지점 �
     expect(violations).toEqual([]);
   });
 
+  /**
+
+   * @scenario layer=structure
+
+   * @effects pipe_branch_scan_covers_computed_evaluator
+
+   */
   it('면제 목록의 각 항목이 실제 코드에 존재한다 (좀비 면제 방지)', () => {
     const stale = EXEMPT.filter(
       (e) => !sites.some((s) => s.relative === e.file && s.text.includes(e.marker))

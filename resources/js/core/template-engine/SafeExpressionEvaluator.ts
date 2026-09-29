@@ -1477,7 +1477,7 @@ class Parser {
             this.pos += 1;
             const quasis = t.quasis || [''];
             const exprSources = t.exprs || [];
-            const expressions = exprSources.map((src) => parseToAst(src));
+            const expressions = exprSources.map((src) => parseToAstCached(src));
             return { type: 'Template', quasis, expressions };
         }
 
@@ -1642,6 +1642,106 @@ function parseToAst(expression: string): Node {
     }
 
     return ast;
+}
+
+/* ------------------------------------------------------------------ *
+ * AST 캐시 — @since engine-v1.74.0
+ *
+ * AST 는 입력 문자열만으로 정해지므로 식 문자열 키로 기억한다. 값은 담지 않는다(해석은 매번).
+ * 파싱 실패도 기억하되 적중할 때마다 같은 메시지로 새 Error 를 던진다 — 금지 구문 차단 메시지를
+ * 단언하는 보안 회귀선과 "평가 실패 시 원문 보존" 흐름이 캐시 유무와 무관하게 같게 동작한다.
+ * AST 는 재귀 동결한다. 인터프리터(evalNode 등)의 쓰기 대상은 스코프 변수·새로 만든 결과
+ * 컨테이너뿐이고 노드는 읽기만 한다 — 누가 노드를 변형하면 즉시 TypeError 로 드러난다.
+ * ------------------------------------------------------------------ */
+
+/** 보관 상한. 초과 시 가장 먼저 들어온 항목부터 제거한다(삽입 순서 Map). */
+export const AST_CACHE_LIMIT = 5000;
+
+type AstCacheEntry = Node | { readonly astError: string };
+
+const astCache = new Map<string, AstCacheEntry>();
+let astCacheHits = 0;
+let astCacheMisses = 0;
+/**
+ * 안전 스위치 값. 이 파일은 다른 프로젝트 파일을 import 하지 않으므로(파일 머리 주석) EngineFlags 를
+ * 직접 읽지 않고, EngineFlags 가 값이 바뀔 때마다 `setAstCacheEnabled` 로 밀어 넣는다.
+ */
+let astCacheEnabled = true;
+
+/**
+ * AST 캐시 사용 여부를 바꾼다(EngineFlags 전용). 끄면 매번 파싱하는 수정 전 경로가 된다.
+ * 캐시는 값을 담지 않으므로 켜고 끌 때 비울 필요가 없다.
+ *
+ * @param enabled 사용 여부
+ * @return void
+ */
+export function setAstCacheEnabled(enabled: boolean): void {
+    astCacheEnabled = enabled;
+}
+
+function deepFreezeAst<T>(value: T): T {
+    if (value === null || typeof value !== 'object' || Object.isFrozen(value)) return value;
+    Object.freeze(value);
+    for (const child of Object.values(value as Record<string, unknown>)) deepFreezeAst(child);
+    return value;
+}
+
+function rememberAst(expression: string, entry: AstCacheEntry): void {
+    if (astCache.size >= AST_CACHE_LIMIT) {
+        const oldest = astCache.keys().next().value;
+        if (oldest !== undefined) astCache.delete(oldest);
+    }
+    astCache.set(expression, entry);
+}
+
+/**
+ * `parseToAst` 의 캐시 판. 스위치(EngineFlags `astCache`)가 꺼져 있으면 매번 파싱한다(수정 전 경로).
+ *
+ * @param expression 파싱할 표현식 소스
+ * @return 동결된 AST 루트 노드
+ * @throws {Error} 파싱 오류 또는 금지 구문 발견 시(적중 시에도 같은 메시지)
+ */
+export function parseToAstCached(expression: string): Node {
+    if (!astCacheEnabled) return parseToAst(expression);
+
+    const cached = astCache.get(expression);
+    if (cached !== undefined) {
+        astCacheHits++;
+        if ('astError' in cached) throw new Error(cached.astError);
+        return cached;
+    }
+    astCacheMisses++;
+    let ast: Node;
+    try {
+        ast = parseToAst(expression);
+    } catch (e) {
+        // 파서·토크나이저가 던지는 일반 Error 만 기억한다. 스택 초과(RangeError) 등은 호출 깊이에
+        // 따라 달라질 수 있어 결정적이지 않으므로 기억하지 않는다.
+        if (e instanceof Error && e.constructor === Error) rememberAst(expression, Object.freeze({ astError: e.message }));
+        throw e;
+    }
+    rememberAst(expression, deepFreezeAst(ast));
+    return ast;
+}
+
+/**
+ * AST 캐시 통계(진단용).
+ *
+ * @return 적중·미스 횟수와 현재 크기
+ */
+export function getAstCacheStats(): { hits: number; misses: number; size: number } {
+    return { hits: astCacheHits, misses: astCacheMisses, size: astCache.size };
+}
+
+/**
+ * 테스트 간 상태 누수를 막기 위해 AST 캐시와 통계를 비운다.
+ *
+ * @return void
+ */
+export function __resetAstCacheForTests(): void {
+    astCache.clear();
+    astCacheHits = 0;
+    astCacheMisses = 0;
 }
 
 /* ------------------------------------------------------------------ *
@@ -2164,7 +2264,7 @@ export function evaluateSafeExpression(expression: string, context: Record<strin
         throw new Error('Expression must be a string');
     }
 
-    const ast = parseToAst(expression);
+    const ast = parseToAstCached(expression);
     const rootScope: Scope = { vars: context || {}, parent: null };
     // 최종 결과도 타입 경계를 한 번 더 거친다 (바인딩 결과로 호스트 객체가 prop 에 실리지 않게)
     return assertSafeValue(evalNode(ast, rootScope));

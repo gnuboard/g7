@@ -57,6 +57,7 @@ import {
 import { triggerModalParentUpdate } from './ParentContextProvider';
 import { IdentityGuardInterceptor, IDENTITY_REDIRECT_STASH_KEY } from '../identity/IdentityGuardInterceptor';
 import { loadScriptWithRetry, loadStylesheetWithRetry } from './networkResilience';
+import { getEngineFlags, setEngineFlags } from './EngineFlags';
 import {
   templateAsset,
   templateAssetDir,
@@ -3163,6 +3164,16 @@ function initSlotAPI(G7Core: any, deps: G7CoreDependencies): void {
   G7Core.getTranslationEngine = () => {
     return deps.getTranslationEngine?.() ?? deps.getState().translationEngine;
   };
+
+  /**
+   * 엔진 안전 스위치 — 표현식 컴파일 캐시·AST 캐시·computed 스코프 물려받기를 기능별로 끈다.
+   *
+   * 개발자 콘솔·확장 스크립트 전용이다(서버 설정·관리자 화면 없음):
+   * `G7Core.engineFlags.set({ computedScopeInheritance: false })`. 끄면 수정 전 계산 경로가 된다.
+   *
+   * @since engine-v1.74.0
+   */
+  G7Core.engineFlags = { get: getEngineFlags, set: setEngineFlags };
 
   /**
    * ActionDispatcher를 가져옵니다.
