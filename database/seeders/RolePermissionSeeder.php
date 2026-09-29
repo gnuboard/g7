@@ -10,8 +10,10 @@ use App\Http\Middleware\PermissionMiddleware;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
+use App\Support\ScopedPermissionEnforcement;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class RolePermissionSeeder extends Seeder
 {
@@ -39,7 +41,27 @@ class RolePermissionSeeder extends Seeder
         // guest role 캐시 무효화 — 시드 직후 권한 변경 즉시 반영 (운영: 코어 업데이트/확장 install 후 정합, 테스트: RefreshDatabase 트랜잭션 stale id 회귀 방지)
         PermissionMiddleware::clearGuestRoleCache();
 
+        $this->warnUnenforcedScopedGrants();
+
         $this->command->info('기본 권한과 역할이 성공적으로 생성되었습니다.');
+    }
+
+    /**
+     * 스코프가 붙었지만 어디서도 강제되지 않는 역할-권한 부여를 경고합니다.
+     *
+     * 라우트 스코프 메타도 저장소 쿼리 스코프도 없는 권한에 self·role 을 걸면 실제로는 전체
+     * 접근이다(ScopedPermissionEnforcement 참고). 시드를 막지는 않고 드러내기만 한다 — 운영자가
+     * 역할 편집으로 만든 부여일 수 있어, 시드가 실패하면 설치·재시드 자체가 멈춘다.
+     *
+     * @return void 반환값 없음
+     */
+    private function warnUnenforcedScopedGrants(): void
+    {
+        foreach (app(ScopedPermissionEnforcement::class)->findUnenforcedScopedGrants() as $grant) {
+            $message = "스코프가 강제되지 않는 권한 부여: 역할 '{$grant['role']}' · 권한 '{$grant['permission']}' · 스코프 '{$grant['scope_type']}'";
+            $this->command->warn($message);
+            Log::warning($message, $grant);
+        }
     }
 
     /**

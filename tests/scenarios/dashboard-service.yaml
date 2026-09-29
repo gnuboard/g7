@@ -1,0 +1,61 @@
+feature: 관리자 대시보드 서비스 (통계·시스템 자원·최근 활동·시스템 알림·최근 알림)
+
+description: |
+  관리자 대시보드 카드가 읽는 DashboardService 의 단위 동작을 잠근다. 의존성은 모두 mock 이며,
+  카드별 집계·표시 변환·측정 실패 격리와, 최근 알림이 현재 사용자를 스코프 기준으로 저장소에
+  넘기는 계약(KVE-2026-2374)을 다룬다. 경로별 스코프의 실제 효과는
+  manager-scope-and-ceiling-bypass.yaml 의 Feature 테스트가 검증한다.
+
+test_files:
+  - tests/Unit/Services/DashboardServiceTest.php
+
+axes:
+  case:
+    - get_stats_returns_correct_structure
+    - get_stats_returns_template_counts
+    - get_stats_returns_language_pack_counts
+    - get_stats_calculates_change_percent_correctly_when_increased
+    - get_stats_shows_up_trend_when_new_users_exist
+    - get_stats_handles_zero_new_users
+    - get_stats_returns_module_counts
+    - get_stats_returns_plugin_counts
+    - get_system_resources_returns_correct_structure
+    - get_system_resources_returns_valid_cpu_data
+    - get_system_resources_returns_valid_memory_data
+    - get_system_resources_returns_valid_disk_data
+    - get_system_resources_isolates_failing_cpu_probe
+    - get_system_resources_isolates_failing_memory_probe
+    - get_system_resources_isolates_failing_disk_probe
+    - get_system_resources_all_probes_fail_returns_fallback_structure
+    - get_recent_activities_returns_array
+    - get_recent_activities_formats_user_registration
+    - get_system_alerts_returns_array
+    - get_system_alerts_items_have_required_fields
+    - get_system_alerts_returns_valid_types
+    - get_system_alerts_returns_empty_when_no_listeners
+    - get_recent_notification_logs_maps_display_fields
+
+effects:
+  - get_stats_returns_correct_structure
+  - get_stats_returns_template_counts
+  - get_stats_returns_language_pack_counts
+  - get_stats_calculates_change_percent_correctly_when_increased
+  - get_stats_shows_up_trend_when_new_users_exist
+  - get_stats_handles_zero_new_users
+  - get_stats_returns_module_counts
+  - get_stats_returns_plugin_counts
+  - get_system_resources_returns_correct_structure
+  - get_system_resources_returns_valid_cpu_data
+  - get_system_resources_returns_valid_memory_data
+  - get_system_resources_returns_valid_disk_data
+  - get_system_resources_isolates_failing_cpu_probe
+  - get_system_resources_isolates_failing_memory_probe
+  - get_system_resources_isolates_failing_disk_probe
+  - get_system_resources_all_probes_fail_returns_fallback_structure
+  - get_recent_activities_returns_array
+  - get_recent_activities_formats_user_registration
+  - get_system_alerts_returns_array
+  - get_system_alerts_items_have_required_fields
+  - get_system_alerts_returns_valid_types
+  - get_system_alerts_returns_empty_when_no_listeners
+  - get_recent_notification_logs_maps_display_fields

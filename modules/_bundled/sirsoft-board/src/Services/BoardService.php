@@ -8,6 +8,7 @@ use App\Contracts\Repositories\MenuRepositoryInterface;
 use App\Contracts\Repositories\RoleRepositoryInterface;
 use App\Contracts\Repositories\UserRepositoryInterface;
 use App\Enums\ExtensionOwnerType;
+use App\Exceptions\PermissionEscalationException;
 use App\Extension\HookManager;
 use App\Extension\Traits\ClearsTemplateCaches;
 use App\Helpers\PermissionHelper;
@@ -17,6 +18,7 @@ use App\Models\User;
 use App\Repositories\Concerns\ResolvesSortSpec;
 use App\Services\MenuService;
 use App\Services\RoleService;
+use App\Support\PermissionEscalationGuard;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -272,7 +274,9 @@ class BoardService
             $boardStats = $this->getActiveBoardStats();
 
             return [
-                'users' => $this->userRepository->getStatistics()['total_users'],
+                // 사용자와 무관한 공용 캐시라 조회 스코프를 끄고 센다 — 스코프를 건 숫자가 캐시에
+                // 앉으면 다른 방문자에게 처음 채운 사람 기준 회원 수가 나간다.
+                'users' => $this->userRepository->getStatistics(applyPermissionScope: false)['total_users'],
                 'boards' => $boardStats['boards'],
                 'posts' => $boardStats['posts'],
                 'comments' => $boardStats['comments'],
@@ -404,6 +408,48 @@ class BoardService
         $addToMenu = (bool) ($data['add_to_menu'] ?? false);
         unset($data['permissions'], $data['board_manager_ids'], $data['board_step_ids'], $data['add_to_menu']);
 
+        // 게시판·역할·권한·담당자 지정을 한 트랜잭션으로 묶는다 — 권한 설정이나 담당자 지정이 권한
+        // 상한에 걸려 거부되면 그 앞에서 만든 게시판·역할·권한까지 함께 되돌려야 반쪽 게시판이
+        // 남지 않는다.
+        $board = DB::transaction(function () use ($data, $permissions, $boardManagerIds, $boardStepIds) {
+            return $this->createBoardWithRolesAndPermissions($data, $permissions, $boardManagerIds, $boardStepIds);
+        });
+
+        // After 훅 - 후처리, 알림, 캐시 등
+        HookManager::doAction('sirsoft-board.board.after_create', $board, $data);
+
+        // 관리자 메뉴 추가 토글 (선택). 메뉴는 부수 기능이므로 실패해도 게시판 생성은 롤백하지 않음.
+        if ($addToMenu) {
+            $this->tryAddToAdminMenu($board);
+        }
+
+        // 캐시 클리어
+        $this->clearBoardCaches($board->slug, $board->id);
+
+        // 게시판 생성 성공 로그 (info 레벨)
+        Log::info('Board created successfully', [
+            'board_id' => $board->id,
+            'slug' => $board->slug,
+            'type' => $board->type,
+            'user_id' => Auth::id(),
+        ]);
+
+        return $board;
+    }
+
+    /**
+     * 게시판 행과 게시판별 역할·권한을 만들고 담당자를 지정합니다 (createBoard 트랜잭션 본문).
+     *
+     * @param  array  $data  게시판 행 데이터 (permissions·담당자 필드 분리 후)
+     * @param  array  $permissions  요청 권한 설정
+     * @param  array|null  $boardManagerIds  게시판 관리자 UUID 목록 (null 이면 미지정)
+     * @param  array|null  $boardStepIds  게시판 스텝 UUID 목록 (null 이면 미지정)
+     * @return Board 생성된 게시판
+     *
+     * @throws PermissionEscalationException 권한 설정·담당자 지정이 액터의 권한 부여 상한을 넘을 때
+     */
+    private function createBoardWithRolesAndPermissions(array $data, array $permissions, ?array $boardManagerIds, ?array $boardStepIds): Board
+    {
         // 게시판 생성
         $board = $this->boardRepository->create($data);
 
@@ -455,25 +501,6 @@ class BoardService
         }
         $this->syncBoardRoleUsers($board, $syncData);
 
-        // After 훅 - 후처리, 알림, 캐시 등
-        HookManager::doAction('sirsoft-board.board.after_create', $board, $data);
-
-        // 관리자 메뉴 추가 토글 (선택). 메뉴는 부수 기능이므로 실패해도 게시판 생성은 롤백하지 않음.
-        if ($addToMenu) {
-            $this->tryAddToAdminMenu($board);
-        }
-
-        // 캐시 클리어
-        $this->clearBoardCaches($board->slug, $board->id);
-
-        // 게시판 생성 성공 로그 (info 레벨)
-        Log::info('Board created successfully', [
-            'board_id' => $board->id,
-            'slug' => $board->slug,
-            'type' => $board->type,
-            'user_id' => Auth::id(),
-        ]);
-
         return $board;
     }
 
@@ -515,31 +542,41 @@ class BoardService
             ];
         }
 
-        // 게시판 수정
-        $updatedBoard = $this->boardRepository->update($id, $data);
+        // 게시판 행·권한 매핑·역할명·담당자를 한 트랜잭션으로 묶는다 — 권한 설정이나 담당자 지정이
+        // 권한 상한에 걸리면 같은 요청의 다른 변경(이름·설정)까지 되돌려 부분 저장을 남기지 않는다.
+        $updatedBoard = DB::transaction(function () use ($id, $data) {
+            // 게시판 수정
+            $updatedBoard = $this->boardRepository->update($id, $data);
 
-        // 권한 업데이트 (permissions 테이블은 유지, role_permissions만 동기화)
-        if (isset($data['permissions']) && is_array($data['permissions'])) {
-            try {
-                $this->permissionService->updateBoardPermissions($updatedBoard, $data['permissions']);
-                HookManager::doAction('sirsoft-board.permissions.after_update', $updatedBoard);
-            } catch (\Exception $e) {
-                Log::error('게시판 권한 업데이트 실패', [
-                    'board_id' => $updatedBoard->id,
-                    'slug' => $updatedBoard->slug,
-                    'error' => $e->getMessage(),
-                ]);
-                // 권한 업데이트 실패 시에도 게시판 수정은 완료된 상태
+            // 권한 업데이트 (permissions 테이블은 유지, role_permissions만 동기화)
+            if (isset($data['permissions']) && is_array($data['permissions'])) {
+                try {
+                    $this->permissionService->updateBoardPermissions($updatedBoard, $data['permissions']);
+                    HookManager::doAction('sirsoft-board.permissions.after_update', $updatedBoard);
+                } catch (PermissionEscalationException $e) {
+                    // 상한 위반은 삼키지 않는다 — 삼키면 거부된 요청이 200 으로 끝나고 이름 등 다른
+                    // 변경은 저장된다.
+                    throw $e;
+                } catch (\Exception $e) {
+                    Log::error('게시판 권한 업데이트 실패', [
+                        'board_id' => $updatedBoard->id,
+                        'slug' => $updatedBoard->slug,
+                        'error' => $e->getMessage(),
+                    ]);
+                    // 권한 업데이트 실패 시에도 게시판 수정은 완료된 상태
+                }
             }
-        }
 
-        // 게시판 이름 변경 시 연관 역할명 동기화
-        if (isset($data['name'])) {
-            $this->syncBoardRoleNames($updatedBoard);
-        }
+            // 게시판 이름 변경 시 연관 역할명 동기화
+            if (isset($data['name'])) {
+                $this->syncBoardRoleNames($updatedBoard);
+            }
 
-        // 게시판 관리자/스텝 사용자 역할 동기화
-        $this->syncBoardRoleUsers($updatedBoard, $data);
+            // 게시판 관리자/스텝 사용자 역할 동기화
+            $this->syncBoardRoleUsers($updatedBoard, $data);
+
+            return $updatedBoard;
+        });
 
         // After 훅 - 후처리, 알림, 캐시 등
         HookManager::doAction('sirsoft-board.board.after_update', $updatedBoard, $data, $snapshot);
@@ -858,9 +895,18 @@ class BoardService
     /**
      * 게시판 관리자/스텝 역할에 사용자를 동기화합니다.
      *
+     * 게시판 관리자·스텝 역할에 회원을 넣고 빼는 것은 그 역할이 가진 게시판 권한(admin.manage·
+     * 비밀글 열람 등)을 통째로 주고 빼는 것이라, 회원 역할 배정과 같은 상한을 받는다 — 그 권한을
+     * 가진 액터(슈퍼관리자·그 게시판의 기존 관리자)만 담당자를 바꿀 수 있다. 이 검사가 없어 게시판
+     * 수정 권한만 가진 위임 관리자가 자기를 담당자로 넣어 그 게시판의 관리 권한을 얻던 경로가
+     * 게시판 권한 저장(KVE-2026-2367)의 두 번째 우회로였다. 명단이 바뀌지 않으면 검사하지 않는다
+     * — 게시판 수정 화면은 저장할 때마다 현재 명단을 그대로 다시 보낸다.
+     *
      * @param  Board  $board  대상 게시판
      * @param  array  $data  요청 데이터 (board_manager_ids, board_step_ids 포함)
      * @return void 반환값 없음
+     *
+     * @throws PermissionEscalationException 명단 변경이 액터의 권한 부여 상한을 넘을 때
      */
     private function syncBoardRoleUsers(Board $board, array $data): void
     {
@@ -886,6 +932,22 @@ class BoardService
 
             $userUuids = $data[$dataKey] ?? [];
             $userIds = $this->userRepository->getIdsByUuids($userUuids);
+
+            $currentIds = $role->users()->pluck('users.id')->map(fn ($id) => (int) $id)->all();
+            $targetIds = array_map('intval', $userIds);
+            if (array_diff($targetIds, $currentIds) === [] && array_diff($currentIds, $targetIds) === []) {
+                continue;
+            }
+
+            // 같은 요청에서 방금 만든 게시판 권한이 액터에게 붙었을 수 있다(게시판 생성 시 기본 ACL) —
+            // 요청 시작 때 읽어 둔 권한이 아니라 지금 저장된 권한으로 판정한다.
+            $actor = Auth::user();
+            if ($actor instanceof User) {
+                $actor->flushPermissionCaches();
+                $actor->unsetRelation('roles');
+            }
+            app(PermissionEscalationGuard::class)->assertRoleAssignmentWithinActorCeiling([$role->id]);
+
             $role->users()->sync($userIds);
         }
     }
@@ -1340,7 +1402,9 @@ class BoardService
                                 $this->convertPermissionsFormat($selectedPermissions, $board->slug),
                                 array_keys($selectedPermissions)
                             );
-                        } catch (BulkApplyAbortedException $e) {
+                        } catch (BulkApplyAbortedException|PermissionEscalationException $e) {
+                            // 상한 위반은 「일괄 적용 중단」 으로 감싸지 않는다 — 감싸면 거부가 200 응답의
+                            // 롤백 안내로 바뀌어 권한 거부로 보이지 않는다. 트랜잭션은 그대로 되돌린다.
                             throw $e;
                         } catch (\Throwable $e) {
                             throw BulkApplyAbortedException::forBoard($board, $index, $total, $e);

@@ -508,17 +508,11 @@
                                                     ],
                                                     "onError": [
                                                         {
+                                                            "comment": "실패(권한 부여 상한 403 등) — 창이 떠 있으므로 스냅숏은 두어 방금 시도한 항목·게시판을 그대로 보여 준다(지우면 「0개 · 전체 게시판」으로 바뀐다). 사유는 서버 메시지 토스트로",
                                                             "handler": "setState",
                                                             "params": {
                                                                 "target": "$parent._local",
                                                                 "isBulkApplying": false
-                                                            }
-                                                        },
-                                                        {
-                                                            "handler": "setState",
-                                                            "params": {
-                                                                "target": "global",
-                                                                "bulkApplySnapshot": null
                                                             }
                                                         },
                                                         {
@@ -533,6 +527,7 @@
                                             ],
                                             "onError": [
                                                 {
+                                                    "comment": "저장 실패(기본 권한 상한 403 등) — 창의 안내 박스는 「저장 실패로 중단」만 말하므로 거부 사유를 토스트로 함께 알린다. 스냅숏은 두어 시도한 내용을 그대로 보여 준다",
                                                     "handler": "setState",
                                                     "params": {
                                                         "target": "$parent._local",
@@ -541,10 +536,10 @@
                                                     }
                                                 },
                                                 {
-                                                    "handler": "setState",
+                                                    "handler": "toast",
                                                     "params": {
-                                                        "target": "global",
-                                                        "bulkApplySnapshot": null
+                                                        "type": "error",
+                                                        "message": "{{error.message ?? '$t:sirsoft-board.admin.settings.bulk_apply_modal.save_error'}}"
                                                     }
                                                 }
                                             ]

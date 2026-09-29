@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Enums\ExtensionOwnerType;
+use App\Enums\ScopeType;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
@@ -37,7 +38,7 @@ use Illuminate\Support\Facades\Config;
 class PlaywrightIssueToken extends Command
 {
     protected $signature = 'playwright:issue-token
-        {--permissions=* : 부여할 권한 식별자 (예: core.templates.layouts.edit). 다중 지정 가능}
+        {--permissions=* : 부여할 권한 식별자 (예: core.templates.layouts.edit). 다중 지정 가능. 뒤에 :self·:role 을 붙이면 그 범위로 부여 (예: core.users.read:self)}
         {--no-admin-role : admin 역할을 부여하지 않고 지정한 권한만 가진 계정을 만든다 (권한 분기 검증용)}
         {--gc-hours=6 : 이 시간(시)보다 오래된 playwright 테스트 유저/역할을 발급 전 정리. 0 이면 정리 안 함}';
 
@@ -46,6 +47,11 @@ class PlaywrightIssueToken extends Command
     /** 테스트 전용 역할 식별자 접두사 */
     private const TEST_ROLE_PREFIX = 'playwright_test_';
 
+    /**
+     * 3중 가드를 통과하면 요청한 권한(과 범위)을 가진 테스트 계정을 만들고 토큰을 출력합니다.
+     *
+     * @return int 종료 코드
+     */
     public function handle(): int
     {
         // ① CLI 한정 — production 웹 요청에서 절대 도달 불가
@@ -139,6 +145,29 @@ class PlaywrightIssueToken extends Command
     }
 
     /**
+     * `--permissions` 값 하나를 식별자와 범위로 나눕니다.
+     *
+     * @param  string  $spec  `식별자` 또는 `식별자:self` · `식별자:role`
+     * @return array{0: string, 1: string|null} [권한 식별자, 범위(null = 전체)]
+     *
+     * @throws \InvalidArgumentException 범위가 self·role 이 아닐 때
+     */
+    private function parsePermissionSpec(string $spec): array
+    {
+        if (! str_contains($spec, ':')) {
+            return [$spec, null];
+        }
+
+        [$identifier, $scope] = explode(':', $spec, 2);
+
+        if (ScopeType::tryFrom($scope) === null) {
+            throw new \InvalidArgumentException("알 수 없는 권한 범위 '{$scope}' — self 또는 role 만 쓸 수 있습니다: {$spec}");
+        }
+
+        return [$identifier, $scope];
+    }
+
+    /**
      * 권한 식별자 배열로 관리자 유저를 생성하고 권한을 부여한다.
      *
      * 절차:
@@ -158,10 +187,17 @@ class PlaywrightIssueToken extends Command
      */
     private function makeAdminUser(array $permissions, bool $withAdminRole = true): User
     {
+        // 「식별자:범위」 — 범위 스코프(self·role)로 부여된 위임 관리자 세션을 만든다.
+        // 범위 없이 부여하면 전체 접근이라 스코프 우회(보조 경로가 범위를 무시하는 결함)를
+        // E2E 로 재현·잠글 수 없다. 잘못된 범위는 아무것도 만들기 전에 거부한다 — 유저를 먼저
+        // 만들면 테스트 역할이 붙지 않은 계정이 남아 GC 가 회수하지 못한다.
+        $specs = array_map(fn (string $spec): array => $this->parsePermissionSpec($spec), $permissions);
+
         $user = User::factory()->create();
 
         $permissionIds = [];
-        foreach ($permissions as $identifier) {
+        foreach ($specs as [$identifier, $scope]) {
+
             // Role/Permission 의 name·description 은 모델에서 array 로 캐스팅된다.
             // 여기서 json_encode 한 문자열을 넣으면 Eloquent 가 한 번 더 인코딩해
             // 이중 인코딩된 값이 저장되고, 관리자 화면(역할 선택 등)에 JSON 원문이
@@ -176,7 +212,7 @@ class PlaywrightIssueToken extends Command
                     'type' => 'admin',
                 ]
             );
-            $permissionIds[] = $permission->id;
+            $permissionIds[$permission->id] = ['scope_type' => $scope];
         }
 
         $testRole = Role::create([

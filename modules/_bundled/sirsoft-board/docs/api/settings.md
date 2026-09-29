@@ -783,11 +783,14 @@ HTTP/1.1 200
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-board.settings.update`)이 없는 경우 |
+| 403 | Forbidden | 권한 부여 상한 위반 (`본인이 보유하지 않았거나 더 넓은 범위의 권한은 부여할 수 없습니다.`) — `report_permissions` 로 역할이 바뀌는 신고 관리 권한(`sirsoft-board.reports.view`·`reports.manage`)을 요청자가 전체 범위로 갖지 않았거나, `basic_defaults.default_board_permissions` 에서 역할이 바뀌는 권한 키를 요청자가 기존 모든 게시판에서 전체 범위로 갖지 않은 경우(게시판이 하나도 없으면 최고관리자만 변경 가능). 설정 파일을 쓰기 전에 거부하므로 다른 설정도 저장되지 않는다 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
 
 **설명** 게시판 모듈의 환경설정을 저장합니다. `auth:sanctum` 인증과 `sirsoft-board.settings.update` 권한이 필요합니다. `_tab`으로 지정한 탭 단위로 검증된 설정을 저장하며, `report_permissions`가 포함된 경우 신고 권한 역할도 함께 동기화합니다. 저장 성공 시 갱신된 전체 설정과 신고 권한 역할을 반환합니다.
+
+카테고리 안에서 **보내지 않은 boolean 키는 `false` 로 저장**됩니다 — 관리자 화면이 탭의 폼 전체를 보내는 것을 전제로, 꺼진 스위치를 빠진 키로 받아도 끄기 위해서입니다. API 로 일부 값만 바꿀 때도 `GET` 으로 받은 해당 카테고리 전체에 바꿀 키만 덮어 보냅니다. `basic_defaults` 에 `default_board_permissions` 만 담아 보내면 `use_comment`·`use_reply` 같은 기본값 스위치가 모두 꺼집니다.
 
 저장이 성공하면 코어 모듈 설정 저장 훅(`core.module_settings.after_save`)이 `('sirsoft-board', 저장한 카테고리 배열, true)` 페이로드로 발화합니다. 이 훅을 구독하는 리스너가 게시판 SEO 미리 생성 캐시를 무효화하고 설정 변경을 활동 로그에 남기므로, 확장도 같은 훅으로 저장 완료 시점에 개입할 수 있습니다. 검증 실패(422)나 저장 실패 시에는 발화하지 않습니다.
 
@@ -896,6 +899,7 @@ _단건 응답: `data` 객체의 필드. 성공(전체 적용 완료) 시와 중
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-board.settings.update`)이 없는 경우 |
+| 403 | Forbidden | 권한 부여 상한 위반 (`본인이 보유하지 않았거나 더 넓은 범위의 권한은 부여할 수 없습니다.`) — 적용할 기본 권한이 대상 게시판의 역할 매핑을 바꾸는데 요청자가 그 게시판 권한을 전체 범위로 갖지 않은 경우. 전체 변경이 되돌려지며 `rolled_back` 200 응답이 아니라 403 으로 끝난다 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지). `fields` 누락/빈 배열, 허용되지 않은 필드명, `apply_all=false` 인데 `board_ids` 미지정, 존재하지 않는 `board_ids` 항목 등 |
 | 500 | Internal Server Error | 일괄 적용 처리 중 롤백 예외 외의 오류가 발생한 경우 (`messages.settings.bulk_apply_failed`) |
 

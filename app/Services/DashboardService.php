@@ -13,6 +13,8 @@ use App\Extension\HookManager;
 use App\Helpers\TimezoneHelper;
 use App\Models\ActivityLog;
 use App\Models\NotificationLog;
+use App\Models\User;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
@@ -23,6 +25,16 @@ use Illuminate\Support\Str;
  */
 class DashboardService
 {
+    /**
+     * @param  UserRepositoryInterface  $userRepository  회원 저장소
+     * @param  ActivityLogRepositoryInterface  $activityLogRepository  활동 로그 저장소
+     * @param  ModuleManagerInterface  $moduleManager  모듈 관리자
+     * @param  PluginManagerInterface  $pluginManager  플러그인 관리자
+     * @param  NotificationLogRepositoryInterface  $notificationLogRepository  알림 발송 이력 저장소
+     * @param  TemplateManagerInterface  $templateManager  템플릿 관리자
+     * @param  LanguagePackRepositoryInterface  $languagePackRepository  언어팩 저장소
+     * @param  LanguagePackService  $languagePackService  언어팩 서비스
+     */
     public function __construct(
         private UserRepositoryInterface $userRepository,
         private ActivityLogRepositoryInterface $activityLogRepository,
@@ -575,14 +587,16 @@ class DashboardService
      * 최근 발송된 알림 이력을 조회합니다.
      *
      * notification_logs 테이블에서 발송 시각 최신순으로 조회하여
-     * 대시보드 "최근 알림" 카드 표시 형식으로 변환합니다.
+     * 대시보드 "최근 알림" 카드 표시 형식으로 변환합니다. 현재 사용자의 발송 이력 조회 범위
+     * (self·role 스코프)를 그대로 따른다 — 최근 활동 카드가 스코프를 거는 것과 같은 기준이다.
      *
      * @param  int  $limit  조회할 알림 수
      * @return array 최근 알림 배열
      */
     public function getRecentNotificationLogs(int $limit = 5): array
     {
-        $logs = $this->notificationLogRepository->getRecent($limit);
+        $viewer = Auth::user();
+        $logs = $this->notificationLogRepository->getRecent($limit, $viewer instanceof User ? $viewer : null);
 
         return $logs->map(function (NotificationLog $log) {
             return [

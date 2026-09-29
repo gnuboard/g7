@@ -2,6 +2,7 @@
 
 namespace Modules\Sirsoft\Board\Http\Controllers\Admin;
 
+use App\Exceptions\PermissionEscalationException;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\JsonResponse;
@@ -159,6 +160,9 @@ class BoardController extends AdminBaseController
                 new BoardResource($board),
                 201
             );
+        } catch (PermissionEscalationException $e) {
+            // 보유하지 않은 게시판 권한을 역할에 붙이거나 그 권한을 가진 담당자를 지정하려 한 요청
+            return $this->error('exceptions.cannot_grant_unheld_permission', 403);
         } catch (ValidationException $e) {
             return $this->validationError($e->errors(), 'sirsoft-board::messages.boards.validation_failed');
         } catch (\Exception $e) {
@@ -186,6 +190,9 @@ class BoardController extends AdminBaseController
             return $this->notFound('sirsoft-board::messages.boards.error_404');
         } catch (AccessDeniedHttpException $e) {
             return $this->error('auth.scope_denied', 403);
+        } catch (PermissionEscalationException $e) {
+            // 보유하지 않은 게시판 권한을 역할에 붙이거나 그 권한을 가진 담당자를 지정하려 한 요청
+            return $this->error('exceptions.cannot_grant_unheld_permission', 403);
         } catch (ValidationException $e) {
             return $this->validationError($e->errors(), 'sirsoft-board::messages.boards.validation_failed');
         } catch (\Exception $e) {

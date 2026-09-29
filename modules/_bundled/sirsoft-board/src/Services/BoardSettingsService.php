@@ -4,6 +4,7 @@ namespace Modules\Sirsoft\Board\Services;
 
 use App\Contracts\Extension\ModuleSettingsInterface;
 use App\Contracts\Repositories\NotificationDefinitionRepositoryInterface;
+use App\Exceptions\PermissionEscalationException;
 use App\Services\NotificationDefinitionService;
 use App\Support\ExtensionStoragePath;
 use App\Traits\NormalizesSettingsData;
@@ -242,6 +243,7 @@ class BoardSettingsService implements ModuleSettingsInterface
      * NotificationHookListener가 훅을 구독하지 않도록 합니다.
      *
      * @param  array  $reportPolicy  신고 정책 설정
+     * @return void 반환값 없음
      */
     private function syncNotificationDefinitionStatus(array $reportPolicy): void
     {
@@ -333,13 +335,58 @@ class BoardSettingsService implements ModuleSettingsInterface
      * 신고 관리 권한에 역할을 재할당합니다.
      *
      * @param  array  $reportPermissions  { view_roles: [...], manage_roles: [...] }
+     * @return void 반환값 없음
+     *
+     * @throws PermissionEscalationException 바뀌는 권한을 액터가 전체 범위로 갖지 않았을 때
      */
     public function syncReportPermissionRoles(array $reportPermissions): void
     {
-        $this->permissionService->syncModulePermissionRoles([
+        $this->permissionService->syncModulePermissionRoles($this->reportPermissionRoleMap($reportPermissions));
+    }
+
+    /**
+     * 신고 관리 권한의 역할 변경이 액터의 권한 부여 상한 안인지 쓰기 전에 확인합니다.
+     *
+     * @param  array  $reportPermissions  { view_roles: [...], manage_roles: [...] }
+     * @return void 반환값 없음
+     *
+     * @throws PermissionEscalationException 바뀌는 권한을 액터가 전체 범위로 갖지 않았을 때
+     */
+    public function assertReportPermissionRolesChangeAllowed(array $reportPermissions): void
+    {
+        $this->permissionService->assertModulePermissionRolesChangeAllowed($this->reportPermissionRoleMap($reportPermissions));
+    }
+
+    /**
+     * 게시판 기본 권한 변경이 액터의 권한 부여 상한 안인지 쓰기 전에 확인합니다.
+     *
+     * @param  array  $newDefaults  저장하려는 기본 권한 (권한 키 => 역할 식별자 목록)
+     * @return void 반환값 없음
+     *
+     * @throws PermissionEscalationException 바뀌는 키를 액터가 모든 게시판에서 전체 범위로 갖지 않았을 때
+     */
+    public function assertDefaultBoardPermissionsChangeAllowed(array $newDefaults): void
+    {
+        $current = $this->getSettings('basic_defaults')['default_board_permissions'] ?? [];
+
+        $this->permissionService->assertDefaultBoardPermissionsChangeAllowed(
+            $newDefaults,
+            is_array($current) ? $current : []
+        );
+    }
+
+    /**
+     * 신고 관리 권한 요청값을 권한 identifier => 역할 목록 맵으로 바꿉니다.
+     *
+     * @param  array  $reportPermissions  { view_roles: [...], manage_roles: [...] }
+     * @return array<string, array<int, string>> 권한 identifier => 역할 identifier 배열
+     */
+    private function reportPermissionRoleMap(array $reportPermissions): array
+    {
+        return [
             'sirsoft-board.reports.view' => $reportPermissions['view_roles'] ?? [],
             'sirsoft-board.reports.manage' => $reportPermissions['manage_roles'] ?? [],
-        ]);
+        ];
     }
 
     /**
@@ -357,6 +404,8 @@ class BoardSettingsService implements ModuleSettingsInterface
 
     /**
      * 캐시 초기화
+     *
+     * @return void 반환값 없음
      */
     public function clearCache(): void
     {

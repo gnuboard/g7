@@ -107,10 +107,7 @@ class UserRepository implements UserRepositoryInterface
      */
     public function getPaginatedUsers(array $filters = []): LengthAwarePaginator
     {
-        $query = User::query();
-
-        // 권한 스코프 필터링
-        PermissionHelper::applyPermissionScope($query, 'core.users.read');
+        $query = $this->scopedUserQuery();
 
         // 검색 조건 적용
         $this->applyFilters($query, $filters);
@@ -131,6 +128,25 @@ class UserRepository implements UserRepositoryInterface
             // 회원 수가 커져도 목록 첫 화면 비용이 총 건수 COUNT 에 끌려가지 않도록 상한을 건다.
             resultCap: PaginationLimits::resultCap('admin.users'),
         );
+    }
+
+    /**
+     * 현재 사용자의 `core.users.read` 스코프를 건 회원 조회 쿼리를 만듭니다.
+     *
+     * 관리자 회원 목록·검색·최근 가입·통계는 모두 같은 권한 하나로 열리므로 스코프도 한
+     * 자리에서 건다. 경로마다 따로 걸면 한 경로의 누락이 그대로 우회로가 된다 — 목록만
+     * 스코프를 걸고 최근 가입·통계에는 걸지 않아, 본인만 보는 위임 관리자가 전체 회원의
+     * 개인정보를 받던 전례가 있다(KVE-2026-2368). 슈퍼관리자·전체 스코프는 조건이 붙지 않는다.
+     *
+     * @return Builder 스코프가 적용된 회원 쿼리
+     */
+    private function scopedUserQuery(): Builder
+    {
+        $query = User::query();
+
+        PermissionHelper::applyPermissionScope($query, 'core.users.read');
+
+        return $query;
     }
 
     /**
@@ -184,16 +200,27 @@ class UserRepository implements UserRepositoryInterface
     /**
      * 사용자 관련 통계 정보를 조회합니다.
      *
+     * 기본은 현재 사용자의 `core.users.read` 스코프 안에서 센다 — 본인만 볼 수 있는 위임
+     * 관리자에게 전체 회원 수가 나가면 목록이 숨긴 것을 숫자로 흘린다(KVE-2026-2368 형제).
+     * 사용자와 무관하게 캐시하는 사이트 전체 집계만 `$applyPermissionScope = false` 로 부른다
+     * — 스코프를 건 결과가 공용 캐시에 앉으면 다른 방문자에게 그 사람 기준 숫자가 나간다.
+     *
+     * @param  bool  $applyPermissionScope  현재 사용자의 조회 스코프 적용 여부
      * @return array 사용자 통계 데이터 배열
      */
-    public function getStatistics(): array
+    public function getStatistics(bool $applyPermissionScope = true): array
     {
+        $base = fn (): Builder => $applyPermissionScope ? $this->scopedUserQuery() : User::query();
+
+        $today = $base();
+        $this->applyDayFilter($today, 'created_at', today());
+
         return [
-            'total_users' => User::count(),
-            'users_this_week' => User::where('created_at', '>=', now()->subWeek())->count(),
-            'users_this_month' => User::where('created_at', '>=', now()->subMonth())->count(),
-            'users_today' => User::whereDate('created_at', today())->count(),
-            'active_users_this_week' => User::where('last_login_at', '>=', now()->subWeek())->count(),
+            'total_users' => $base()->count(),
+            'users_this_week' => $base()->where('created_at', '>=', now()->subWeek())->count(),
+            'users_this_month' => $base()->where('created_at', '>=', now()->subMonth())->count(),
+            'users_today' => $today->count(),
+            'active_users_this_week' => $base()->where('last_login_at', '>=', now()->subWeek())->count(),
         ];
     }
 
@@ -205,16 +232,13 @@ class UserRepository implements UserRepositoryInterface
      */
     public function searchByKeyword(string $keyword): Collection
     {
-        $query = User::where(function ($q) use ($keyword) {
-            $q->where('name', 'like', "%{$keyword}%")
-                ->orWhere('nickname', 'like', "%{$keyword}%")
-                ->orWhere('email', 'like', "%{$keyword}%");
-        });
-
-        // 권한 스코프 필터링
-        PermissionHelper::applyPermissionScope($query, 'core.users.read');
-
-        return $query->get();
+        return $this->scopedUserQuery()
+            ->where(function ($q) use ($keyword) {
+                $q->where('name', 'like', "%{$keyword}%")
+                    ->orWhere('nickname', 'like', "%{$keyword}%")
+                    ->orWhere('email', 'like', "%{$keyword}%");
+            })
+            ->get();
     }
 
     /**
@@ -225,17 +249,18 @@ class UserRepository implements UserRepositoryInterface
      */
     public function getRecentUsers(int $limit = 10): Collection
     {
-        return User::orderBy('created_at', 'desc')->limit($limit)->get();
+        return $this->scopedUserQuery()->orderBy('created_at', 'desc')->limit($limit)->get();
     }
 
     /**
-     * 언어별 사용자 수를 조회합니다.
+     * 언어별 사용자 수를 조회합니다 (현재 사용자의 조회 스코프 안에서).
      *
      * @return array 언어별 사용자 수 배열
      */
     public function getUsersByLanguage(): array
     {
-        return User::selectRaw('language, count(*) as count')
+        return $this->scopedUserQuery()
+            ->selectRaw('language, count(*) as count')
             ->groupBy('language')
             ->pluck('count', 'language')
             ->toArray();
