@@ -102,7 +102,7 @@ return [
             // 전체 삭제(analytics:purge)·소급 익명화(analytics:anonymize)·확장 통계 정리
             // (analytics:purge-extension)는 되돌릴 수 없어
             // 예약 대상에서 뺀다 — 무인 실행으로 지워질 값이 아니다.
-            'analytics:archive' => ['options' => ['period', 'from', 'to', 'force', 'dry-run']],
+            'analytics:archive' => ['options' => ['period', 'from', 'to', 'force', 'dry-run', 'scheduled']],
             'analytics:prune' => ['options' => ['days', 'dry-run']],
             'analytics:check-volume' => ['options' => []],
             'analytics:report' => ['options' => ['period']],

@@ -91,6 +91,9 @@
   (`identity.errors.challenge_dispatch_failed`) · 탈퇴 회원 외부 채널 발송 제외
   (`notification.skipped.withdrawn_recipient`). 없으면 ja 화면에 원문 키가 그대로 보입니다.
 - 「삭제된 회원이라 발송하지 않음」 발송 이력 사유(`notification.skipped.member_account_missing`)의 일본어 문구를 채웠습니다.
+- 방문자 통계 새 리포트 이름(캠페인 매체·검색 탭·이벤트·체류시간 구간·본 페이지 수 구간)과 구간 라벨(「0秒 ~ 10秒」·
+  「21ページ以上」 등)·검색 탭 이름, 설정 항목명 4개와 구간 경계 오류 문구(`validation.analytics.bucket_bounds`),
+  추이 요청의 「項目」 항목명의 일본어 문구를 채웠습니다.
 
 ### Changed
 

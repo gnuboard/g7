@@ -872,6 +872,9 @@ class VisitService
             ActionType::Download->value => 'download',
             ActionType::Outlink->value => 'outlink',
             ActionType::SiteSearch->value => 'search',
+            // 이름을 실은 이벤트는 이름을 사전에 담는다 — 이벤트 리포트가 그 이름으로 센다. 이름이 없으면
+            // 예전처럼 방문 주소(url 종류)를 담고, 그 행은 이벤트 리포트에서 빠진다.
+            ActionType::Event->value => $request->name !== null && $request->name !== '' ? 'event' : 'url',
             default => 'url',
         };
     }
@@ -890,6 +893,7 @@ class VisitService
             // 그것이 사전 이름이다 — 주소를 담으면 타임라인과 리포트가 파일이 아니라 주소를 센다.
             ActionType::Download->value, ActionType::Outlink->value => $request->name ?? $request->target ?? $normalizedUrl,
             ActionType::SiteSearch->value => $request->searchQuery ?? '',
+            ActionType::Event->value => $request->name !== null && $request->name !== '' ? $request->name : $normalizedUrl,
             default => $normalizedUrl,
         };
 

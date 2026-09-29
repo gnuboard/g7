@@ -36,10 +36,10 @@ coverage_strategy: pairwise
 
 axes:
   screen: [overview, pages, referrers, environment, regions, patterns, actions, realtime, visitors, visitor_detail, bots, diagnostics, privacy_requests, settings, dashboard_widget, home_widget, component]
-  state: [loading, normal, empty, forbidden, collection_off, consent_fallback, geoip_off, anonymous, unit_downgraded, queue_backlog, ws_polling, load_failed, running, locked]
+  state: [loading, normal, empty, forbidden, collection_off, consent_fallback, geoip_off, anonymous, unit_downgraded, queue_backlog, ws_polling, load_failed, running, locked, stale, too_many_visits]
   viewport: [1440, 390]
   locale: [ko, en, ja]
-  e2e: [collect, overview, settings_privacy, permissions, home_counter]
+  e2e: [collect, overview, settings_privacy, permissions, home_counter, archive_on_view]
 
 exclusions:
   - { screen: home_widget, state: forbidden, reason: "공개 요약은 인증을 요구하지 않는다 — 권한 상태가 성립하지 않는다" }
@@ -47,6 +47,24 @@ exclusions:
   - { state: geoip_off, screen: settings, reason: "GeoIP 꺼짐은 지역·봇 설정 힌트로만 드러난다 — 화면 상태가 아니다" }
 
 effects:
+  # 집계 신선도 — 기간 줄 「마지막 집계」·상단 신선도 경고·「지금 집계」
+  - freshness_line_follows_scheduler_and_on_view
+  - freshness_line_hidden_without_archive
+  - freshness_line_wraps_on_mobile
+  - scheduler_missing_alert_conditions
+  - archive_stale_alert_conditions
+  - too_many_visits_alert_conditions
+  - archive_now_button_needs_update_permission
+  - on_view_archives_before_the_report_answers
+  - archive_stale_warning_offers_archive_now
+  - diagnostics_shows_scheduler_state
+  - run_trigger_on_view_is_labelled
+  # 새 리포트 · 한 항목 추이 · 신규/재방문
+  - trend_chart_adds_new_and_returning
+  - row_trend_icon_opens_the_modal
+  - row_trend_source_follows_the_selected_row
+  - row_trend_modal_shows_empty_and_error
+  - row_trend_failure_is_not_shown_as_data
   - keyword_tab_explains_https_empty_keywords
   - realtime_window_choices_fit_the_server_range
   - declaration_warnings_are_shown_on_the_diagnostics_screen
@@ -58,7 +76,8 @@ effects:
   - period_bar_navigates_with_merge_query_and_page_reset
   - csv_button_downloads_with_token
   - overview_renders_four_kpi_cards
-  - trend_chart_has_three_series
+  - trend_chart_keeps_base_series
+  - quality_cards_share_one_shape
   - overview_failure_shows_an_error_card_not_an_empty_period
   - period_dates_show_the_preset_range_and_fit_the_card
   - period_over_the_limit_is_explained_inline
@@ -217,12 +236,14 @@ effects:
   - every_analytics_source_handles_403
   - permission_guards_read_only_fields_the_auth_response_sends
   - settings_keys_match_server_defaults
-  # PO 실측 후속 4 — 필터 영역마다 초기화(모집단 = 통계 레이아웃의 입력이 쓰는 질의 키, 카드 단위)
+  # 실측 후속 4 — 필터 영역마다 초기화(모집단 = 통계 레이아웃의 입력이 쓰는 질의 키, 카드 단위)
   - every_filter_area_has_a_reset_that_clears_its_keys
   - filter_reset_is_locked_when_nothing_to_clear
   - purge_confirm_warning_icon_is_centered_at_its_size
 
 test_files:
+  - tests/Playwright/specs/admin/analytics-archive-on-view.spec.ts
+  - templates/_bundled/sirsoft-admin_basic/src/__tests__/layouts/analyticsFreshness.test.tsx
   - templates/_bundled/sirsoft-admin_basic/src/__tests__/layouts/analyticsStateBranches.test.ts
   - templates/_bundled/sirsoft-admin_basic/src/__tests__/layouts/analyticsScreenPermissions.test.ts
   - templates/_bundled/sirsoft-admin_basic/src/__tests__/layouts/analyticsPatterns.test.tsx

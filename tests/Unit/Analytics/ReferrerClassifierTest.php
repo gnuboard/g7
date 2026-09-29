@@ -17,6 +17,35 @@ use Tests\TestCase;
 class ReferrerClassifierTest extends TestCase
 {
     /**
+     * utm_medium 만 붙은 주소는 유입 종류를 바꾸지 않고 매체만 남긴다.
+     *
+     * @scenario referrer=absent|search|website, campaign=medium_only
+     *
+     * @effects utm_medium_alone_is_recorded
+     *
+     * @return void 없음
+     */
+    public function test_utm_medium_alone_keeps_the_type_but_records_the_medium(): void
+    {
+        // 매체만 있으면 어느 캠페인인지 모른다 — 유입 종류는 그대로 두고 매체만 남긴다.
+        $direct = ReferrerClassifier::classify(null, ['utm_medium' => 'qa_email']);
+        $this->assertSame(ReferrerType::Direct, $direct['type']);
+        $this->assertSame('qa_email', $direct['campaign_medium']);
+        $this->assertNull($direct['campaign_name']);
+
+        $search = ReferrerClassifier::classify('https://www.google.com/search?q=g7', ['utm_medium' => 'cpc']);
+        $this->assertSame(ReferrerType::Search, $search['type']);
+        $this->assertSame('cpc', $search['campaign_medium']);
+
+        $site = ReferrerClassifier::classify('https://example.org/post', ['utm_medium' => 'banner']);
+        $this->assertSame(ReferrerType::Website, $site['type']);
+        $this->assertSame('banner', $site['campaign_medium']);
+
+        // 매체가 없으면 예전처럼 비어 있다.
+        $this->assertNull(ReferrerClassifier::classify('https://example.org/post')['campaign_medium']);
+    }
+
+    /**
      * 유입 정보가 없으면 직접 유입이다.
      *
      * @scenario referrer=absent|empty

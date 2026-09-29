@@ -2493,6 +2493,208 @@
                                         ]
                                     },
                                     {
+                                        "comment": "집계 — 화면을 열 때 집계(스케줄러 없이도 1분 이내 최신 숫자)와 그 안전장치(오늘 방문 상한), 체류시간·본 페이지 수\n            구간 리포트의 경계. 경계는 숫자와 쉼표만 받고 작은 것부터 겹치지 않아야 저장된다 — 틀리면 서버가 422 로 그 칸에\n            오류를 돌려준다. 바꾼 경계는 그 뒤 집계부터 적용된다.",
+                                        "id": "archive_card",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "admin-card space-y-4"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "H3",
+                                                "props": {
+                                                    "className": "section-heading"
+                                                },
+                                                "text": "$t:admin.analytics.settings.retention.archive_section"
+                                            },
+                                            {
+                                                "id": "field_archive_on_view_enabled",
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "flex-between gap-3"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "props": {
+                                                                    "className": "form-label-block"
+                                                                },
+                                                                "text": "$t:admin.analytics.settings.retention.archive_on_view_enabled"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "props": {
+                                                                    "className": "form-hint"
+                                                                },
+                                                                "text": "$t:admin.analytics.settings.retention.archive_on_view_enabled_hint"
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "type": "composite",
+                                                        "name": "Toggle",
+                                                        "props": {
+                                                            "name": "settings.archive_on_view_enabled",
+                                                            "size": "md",
+                                                            "disabled": "{{_computed.isReadOnly}}"
+                                                        }
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "grid grid-cols-1 md:grid-cols-2 gap-4"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "id": "field_archive_on_view_max_visits",
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Label",
+                                                                "props": {
+                                                                    "className": "form-label"
+                                                                },
+                                                                "text": "$t:admin.analytics.settings.retention.archive_on_view_max_visits"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Input",
+                                                                "props": {
+                                                                    "type": "number",
+                                                                    "name": "settings.archive_on_view_max_visits",
+                                                                    "min": "1000",
+                                                                    "max": "1000000",
+                                                                    "className": "input w-full {{_local.errors?.archive_on_view_max_visits ? 'input-error' : ''}}",
+                                                                    "disabled": "{{_computed.isReadOnly}}"
+                                                                }
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "if": "{{_local.errors?.archive_on_view_max_visits}}",
+                                                                "props": {
+                                                                    "className": "form-error"
+                                                                },
+                                                                "text": "{{_local.errors?.archive_on_view_max_visits?.[0] ?? ''}}"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "if": "{{!_local.errors?.archive_on_view_max_visits}}",
+                                                                "props": {
+                                                                    "className": "form-hint"
+                                                                },
+                                                                "text": "$t:admin.analytics.settings.retention.archive_on_view_max_visits_hint"
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "id": "field_duration_bucket_bounds",
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Label",
+                                                                "props": {
+                                                                    "className": "form-label"
+                                                                },
+                                                                "text": "$t:admin.analytics.settings.retention.duration_bucket_bounds"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Input",
+                                                                "props": {
+                                                                    "type": "text",
+                                                                    "name": "settings.duration_bucket_bounds",
+                                                                    "placeholder": "10,30,60,180,600,1800",
+                                                                    "className": "input w-full {{_local.errors?.duration_bucket_bounds ? 'input-error' : ''}}",
+                                                                    "disabled": "{{_computed.isReadOnly}}"
+                                                                }
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "if": "{{_local.errors?.duration_bucket_bounds}}",
+                                                                "props": {
+                                                                    "className": "form-error"
+                                                                },
+                                                                "text": "{{_local.errors?.duration_bucket_bounds?.[0] ?? ''}}"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "if": "{{!_local.errors?.duration_bucket_bounds}}",
+                                                                "props": {
+                                                                    "className": "form-hint"
+                                                                },
+                                                                "text": "$t:admin.analytics.settings.retention.duration_bucket_bounds_hint"
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "id": "field_pages_bucket_bounds",
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Label",
+                                                                "props": {
+                                                                    "className": "form-label"
+                                                                },
+                                                                "text": "$t:admin.analytics.settings.retention.pages_bucket_bounds"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Input",
+                                                                "props": {
+                                                                    "type": "text",
+                                                                    "name": "settings.pages_bucket_bounds",
+                                                                    "placeholder": "1,2,3,4,5,7,10,14,20",
+                                                                    "className": "input w-full {{_local.errors?.pages_bucket_bounds ? 'input-error' : ''}}",
+                                                                    "disabled": "{{_computed.isReadOnly}}"
+                                                                }
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "if": "{{_local.errors?.pages_bucket_bounds}}",
+                                                                "props": {
+                                                                    "className": "form-error"
+                                                                },
+                                                                "text": "{{_local.errors?.pages_bucket_bounds?.[0] ?? ''}}"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "if": "{{!_local.errors?.pages_bucket_bounds}}",
+                                                                "props": {
+                                                                    "className": "form-hint"
+                                                                },
+                                                                "text": "$t:admin.analytics.settings.retention.pages_bucket_bounds_hint"
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    },
+                                    {
                                         "id": "storage_card",
                                         "type": "basic",
                                         "name": "Div",
@@ -2840,7 +3042,7 @@
                                                 "auth_required": true,
                                                 "params": {
                                                     "method": "PUT",
-                                                    "body": "{{(function() { const groups = { collection: ['enabled', 'visit_timeout_minutes', 'max_actions_per_visit', 'excluded_url_patterns', 'site_search_enabled', 'track_downloads', 'track_outlinks', 'download_extensions', 'public_summary_enabled'], privacy: ['privacy_mode', 'respect_dnt', 'ip_mask_octets', 'geo_before_mask', 'anonymize_referrer', 'pseudonymize_user_id', 'visitor_cookie_days'], bots: ['bot_detector_enabled', 'bot_tracking_enabled', 'block_headless', 'exclude_prefetch', 'excluded_ips', 'ip_allowlist', 'excluded_user_agents', 'block_cloud_ip_ranges', 'country_filter_mode', 'country_filter_codes'], retention: ['retention_days', 'hourly_retention_days', 'bot_hits_retention_days', 'failure_log_retention_days', 'ledger_warning_actions', 'ledger_warning_visits', 'archive_chunk_size', 'realtime_poll_seconds', 'realtime_window_minutes', 'top_n_overview', 'top_n_dashboard', 'top_n_detail'], reports: ['report_weekly_enabled', 'report_monthly_enabled'] }; const tab = query.tab || 'collection'; const s = _local.form?.settings || {}; const base = analytics_settings?.data?.settings || {}; const all = groups.collection.concat(groups.privacy, groups.bots, groups.retention, groups.reports); const changed = all.filter(k => s[k] !== undefined && JSON.stringify(s[k] ?? null) !== JSON.stringify(base[k] ?? null)); const keys = changed.length > 0 ? changed : (groups[tab] || []).filter(k => s[k] !== undefined); return Object.fromEntries(keys.map(k => [k, s[k]])); })()}}"
+                                                    "body": "{{(function() { const groups = { collection: ['enabled', 'visit_timeout_minutes', 'max_actions_per_visit', 'excluded_url_patterns', 'site_search_enabled', 'track_downloads', 'track_outlinks', 'download_extensions', 'public_summary_enabled'], privacy: ['privacy_mode', 'respect_dnt', 'ip_mask_octets', 'geo_before_mask', 'anonymize_referrer', 'pseudonymize_user_id', 'visitor_cookie_days'], bots: ['bot_detector_enabled', 'bot_tracking_enabled', 'block_headless', 'exclude_prefetch', 'excluded_ips', 'ip_allowlist', 'excluded_user_agents', 'block_cloud_ip_ranges', 'country_filter_mode', 'country_filter_codes'], retention: ['retention_days', 'hourly_retention_days', 'bot_hits_retention_days', 'failure_log_retention_days', 'ledger_warning_actions', 'ledger_warning_visits', 'archive_chunk_size', 'archive_on_view_enabled', 'archive_on_view_max_visits', 'duration_bucket_bounds', 'pages_bucket_bounds', 'realtime_poll_seconds', 'realtime_window_minutes', 'top_n_overview', 'top_n_dashboard', 'top_n_detail'], reports: ['report_weekly_enabled', 'report_monthly_enabled'] }; const tab = query.tab || 'collection'; const s = _local.form?.settings || {}; const base = analytics_settings?.data?.settings || {}; const all = groups.collection.concat(groups.privacy, groups.bots, groups.retention, groups.reports); const changed = all.filter(k => s[k] !== undefined && JSON.stringify(s[k] ?? null) !== JSON.stringify(base[k] ?? null)); const keys = changed.length > 0 ? changed : (groups[tab] || []).filter(k => s[k] !== undefined); return Object.fromEntries(keys.map(k => [k, s[k]])); })()}}"
                                                 },
                                                 "onSuccess": [
                                                     {

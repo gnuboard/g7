@@ -317,4 +317,42 @@ class SettingsControllerTest extends AnalyticsApiTestCase
         // 00:30 UTC = 09:30 KST.
         $this->assertSame('2026-09-22 09:30:00', $updatedAt, '오프셋이 붙으면 브라우저가 다시 옮긴다');
     }
+
+    /**
+     * 구간 경계는 순증가·중복 없음·범위 안이어야 저장되는지 확인합니다.
+     *
+     * @return void 없음
+     *
+     * @scenario endpoint=settings, role=update, input=bucket_bounds
+     *
+     * @effects bucket_bounds_must_be_ascending
+     */
+    public function test_bucket_bounds_must_be_ascending_unique_and_in_range(): void
+    {
+        $admin = $this->updateAdmin();
+
+        foreach (['30,10', '10,10', '0,5', '10, 30', 'a,b', '1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16', '90000'] as $bad) {
+            $this->actingAs($admin)
+                ->putJson('/api/admin/analytics/settings', ['duration_bucket_bounds' => $bad])
+                ->assertStatus(422)
+                ->assertJsonValidationErrors('duration_bucket_bounds');
+        }
+
+        $this->actingAs($admin)
+            ->putJson('/api/admin/analytics/settings', ['pages_bucket_bounds' => '5,3'])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('pages_bucket_bounds');
+
+        $this->actingAs($admin)
+            ->putJson('/api/admin/analytics/settings', [
+                'duration_bucket_bounds' => '5,20',
+                'pages_bucket_bounds' => '2,5',
+                'archive_on_view_enabled' => false,
+                'archive_on_view_max_visits' => 2000,
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.settings.duration_bucket_bounds', '5,20')
+            ->assertJsonPath('data.settings.archive_on_view_enabled', false)
+            ->assertJsonPath('data.settings.archive_on_view_max_visits', 2000);
+    }
 }

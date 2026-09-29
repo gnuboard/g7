@@ -5,6 +5,7 @@ namespace App\Http\Requests\Admin\Analytics\Concerns;
 use App\Enums\Analytics\CountryFilterMode;
 use App\Enums\Analytics\PrivacyMode;
 use App\Enums\Analytics\ReferrerAnonymization;
+use App\Rules\Analytics\AscendingBounds;
 use Illuminate\Validation\Rule;
 
 /**
@@ -106,6 +107,12 @@ trait HasAnalyticsSettingsRules
             $key('ledger_warning_actions') => ['sometimes', 'integer', 'min:1000'],
             $key('ledger_warning_visits') => ['sometimes', 'integer', 'min:1000'],
             $key('archive_chunk_size') => ['sometimes', 'integer', 'min:500', 'max:50000'],
+
+            // 집계 — 화면을 열 때 집계(1분 간격)와 그 안전장치, 구간 리포트 경계
+            $key('archive_on_view_enabled') => ['sometimes', 'boolean'],
+            $key('archive_on_view_max_visits') => ['sometimes', 'integer', 'min:1000', 'max:1000000'],
+            $key('duration_bucket_bounds') => ['sometimes', 'string', 'max:200', 'regex:/^\d+(,\d+){0,14}$/', new AscendingBounds(1, 86400)],
+            $key('pages_bucket_bounds') => ['sometimes', 'string', 'max:200', 'regex:/^\d+(,\d+){0,14}$/', new AscendingBounds(1, 1000)],
 
             // 화면 동작
             $key('realtime_poll_seconds') => ['sometimes', 'integer', 'min:10', 'max:300'],

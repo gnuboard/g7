@@ -113,6 +113,43 @@ test.describe('방문자 통계 — 빈 화면과 방문자 상세 (#682 S4 라�
     await expect(page.locator('#report_empty_diagnostics_link')).toHaveClass(/(^|\s)btn(\s|$)/);
   });
 
+  // @scenario screen=overview, state=normal, viewport=1440, locale=ko, e2e=overview
+  // @effects quality_cards_share_one_shape
+  test('개요 품질 줄의 네 카드(이탈률·평균 체류·방문당 페이지·신규/재방문)는 높이와 윗선이 같다', async ({ page }) => {
+    // 신규·재방문 카드는 비율 막대 때문에 StatCard 대신 직접 만든 카드다 — 틀이 다르면 줄 안에서 혼자 낮고 모양이 달랐다.
+    await authenticatePage(page, issueToken('core.analytics.read'));
+    const ids = ['quality_bounce', 'quality_time', 'quality_pages', 'quality_new_returning'];
+    // 두 모양을 다 잰다 — 숫자·비율 막대(쿠키로 가른 칸이 있을 때)와 「구분할 수 없습니다」(전부 익명일 때).
+    // 숫자 쪽은 응답 점에 신규·재방문 값을 실어 만든다(개발 DB 의 수집 모드와 무관하게).
+    let shape: 'numbers' | 'unavailable' = 'numbers';
+    await page.route('**/api/admin/analytics/overview**', async (route) => {
+      const response = await route.fetch();
+      const json = await response.json();
+      for (const p of json?.data?.series?.points ?? []) {
+        p.new_visitors = shape === 'numbers' ? 12345 : null;
+        p.returning_visitors = shape === 'numbers' ? 6789 : null;
+      }
+      await route.fulfill({ response, json });
+    });
+    for (const [width, s] of [[1440, 'numbers'], [375, 'numbers'], [1440, 'unavailable'], [375, 'unavailable']] as const) {
+      shape = s;
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto('/admin/analytics?preset=7d');
+      await expect(page.locator('#quality_new_returning')).toContainText(s === 'numbers' ? '· ' : '구분할 수 없습니다', { timeout: 30_000 });
+      const boxes = await Promise.all(ids.map(async (id) => (await page.locator(`#${id}`).boundingBox())!));
+      const heights = boxes.map((b) => Math.round(b.height));
+      expect(Math.max(...heights) - Math.min(...heights), `${width}px ${s} 높이 ${heights.join('/')}`).toBeLessThanOrEqual(1);
+      // 1440 은 한 줄 네 칸, 375 는 두 칸씩 두 줄 — 같은 줄 카드끼리 윗선이 같다.
+      const rows = width >= 1024 ? [[0, 1, 2, 3]] : [[0, 1], [2, 3]];
+      for (const row of rows) {
+        const tops = row.map((i) => Math.round(boxes[i].y));
+        expect(Math.max(...tops) - Math.min(...tops), `${width}px ${s} 윗선 ${tops.join('/')}`).toBeLessThanOrEqual(1);
+      }
+    }
+    // 화면이 뒤이어 다시 받는 개요 요청이 닫힌 페이지에서 가로채지지 않게 푼다.
+    await page.unrouteAll({ behavior: 'ignoreErrors' });
+  });
+
   // @scenario screen=visitor_detail, state=normal, viewport=1440, locale=ko, e2e=overview
   // @effects visitor_detail_screen_shows_visit_details
   test('방문자 상세는 방문을 펼치면 해상도 등 부수정보를 보인다', async ({ page }) => {
@@ -157,7 +194,7 @@ test.describe('방문자 통계 — 빈 화면과 방문자 상세 (#682 S4 라�
 
   // @scenario screen=diagnostics, state=normal, viewport=1440, locale=ko, e2e=overview
   // @effects stored_codes_are_shown_as_human_labels
-  test('수집 진단의 집계 실행 이력은 실행 주체를 코드(scheduled·manual)가 아니라 사람 말로 보인다', async ({ page }) => {
+  test('수집 진단의 집계 실행 이력은 실행 주체를 코드(scheduled·manual·on_view)가 아니라 사람 말로 보인다', async ({ page }) => {
     await authenticatePage(page, issueToken('core.analytics.read'));
     const runs = page.waitForResponse((r) => r.url().includes('/api/admin/analytics/archive-runs'), { timeout: 30_000 });
     await page.goto('/admin/analytics/diagnostics');
@@ -166,8 +203,8 @@ test.describe('방문자 통계 — 빈 화면과 방문자 상세 (#682 S4 라�
 
     const grid = page.locator('#archive_runs_grid');
     // 첫 그림은 불러오기 전의 빈 줄이다 — 행이 채워질 때까지 기다린다.
-    await expect(grid.locator('tbody'), '실행 주체가 사람 말로 보인다').toContainText(/자동\(예약\)|수동/, { timeout: 30_000 });
+    await expect(grid.locator('tbody'), '실행 주체가 사람 말로 보인다').toContainText(/자동\(예약\)|수동|화면 열 때/, { timeout: 30_000 });
     const text = await grid.locator('tbody').innerText();
-    expect(text, '실행 주체 코드가 그대로 보이지 않는다').not.toMatch(/\b(scheduled|manual)\b/);
+    expect(text, '실행 주체 코드가 그대로 보이지 않는다').not.toMatch(/\b(scheduled|manual|on_view)\b/);
   });
 });

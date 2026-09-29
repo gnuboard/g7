@@ -3,6 +3,7 @@
 namespace App\Services\Analytics;
 
 use App\Analytics\AnalyticsClock;
+use App\Analytics\BucketLabeler;
 use App\Analytics\GeoLabelTranslator;
 use App\Analytics\UrlNormalizer;
 use App\Contracts\Analytics\DimensionRegistryInterface;
@@ -37,6 +38,21 @@ class ReportService
         'bot_pages' => StatsDimension::BotPage->value,
         'goals' => StatsDimension::Goal->value,
     ];
+
+    /**
+     * 구간 리포트 — 방문 수 순이 아니라 구간 순서로 전부 보인다(분포를 읽는 표).
+     */
+    private const BUCKET_DIMENSIONS = [
+        StatsDimension::VisitDuration->value,
+        StatsDimension::VisitPages->value,
+    ];
+
+    /**
+     * 구간 리포트가 한 번에 읽는 최대 라벨 수
+     *
+     * 경계는 최대 15개(구간 16개)지만 운영자가 경계를 바꾸면 옛 라벨이 한 기간에 섞인다.
+     */
+    private const BUCKET_ROW_LIMIT = 200;
 
     /**
      * 봇 화면이 함께 보여 주는 최근 요청 건수
@@ -222,6 +238,11 @@ class ReportService
     {
         $dimension = $this->dimensionFor($report);
         $types = $options['visitor_types'] ?? $this->defaultTypes($dimension);
+
+        if (in_array($dimension, self::BUCKET_DIMENSIONS, true)) {
+            return $this->bucketReport($dimension, $from, $to, $types, $options);
+        }
+
         $page = max(1, (int) ($options['page'] ?? 1));
         $perPage = max(1, min(100, (int) ($options['per_page'] ?? 25)));
 
@@ -259,6 +280,60 @@ class ReportService
             'page' => $page,
             'per_page' => $perPage,
             'has_more' => $hasMore,
+        ];
+    }
+
+    /**
+     * 리포트 라벨 하나를 화면용 문자열로 바꿉니다.
+     *
+     * 한 항목 추이 창의 제목에 쓴다 — 목록과 같은 풀이(국가 이름·풀어 쓴 주소·구간 문장)를 거친다.
+     *
+     * @param  string  $report  리포트 이름
+     * @param  string  $label  저장 라벨
+     * @return string 화면용 문자열
+     */
+    public function displayLabelFor(string $report, string $label): string
+    {
+        $dimension = $this->dimensionFor($report);
+
+        return $this->displayLabel($label, $dimension, [
+            'extension_labels' => $this->extensionDimensions
+                ->findByStatsDimension($dimension)
+                ?->resolveLabels([$label]) ?? [],
+        ]);
+    }
+
+    /**
+     * 구간 리포트를 만듭니다.
+     *
+     * 정렬·쪽 나누기를 받지 않는다 — 「방문의 몇 %가 10초 안에 떠나는가」를 읽으려면 구간이 작은
+     * 것부터 빠짐없이 이어져야 한다. 한 번에 전부 돌려주고 다음 쪽은 없다.
+     *
+     * @param  string  $dimension  구간 차원 이름
+     * @param  string  $from  시작일 (Y-m-d)
+     * @param  string  $to  종료일 (Y-m-d)
+     * @param  array<int, string>  $types  포함할 방문자 유형
+     * @param  array<string, mixed>  $options  조회 옵션 (search, locale)
+     * @return array{rows: array<int, array<string, mixed>>, page: int, per_page: int, has_more: bool} 구간 목록
+     */
+    private function bucketReport(string $dimension, string $from, string $to, array $types, array $options): array
+    {
+        $rows = $this->stats->dimension($dimension, $from, $to, [
+            'visitor_types' => $types,
+            'limit' => self::BUCKET_ROW_LIMIT,
+            'offset' => 0,
+            'sort' => 'visits',
+            'search' => $this->searchTerms($options['search'] ?? null, $dimension),
+        ])->sort(function ($a, $b): int {
+            return [BucketLabeler::lowerBound((string) $a->label), (string) $a->label]
+                <=> [BucketLabeler::lowerBound((string) $b->label), (string) $b->label];
+        })->values();
+
+        return [
+            'rows' => $rows->map(fn ($row): array => $this->presentRow($row, $dimension, $options))->all(),
+            'page' => 1,
+            'per_page' => max(1, $rows->count()),
+            'has_more' => false,
         ];
     }
 
@@ -314,7 +389,81 @@ class ReportService
             StatsDimension::BotPage->value => UrlNormalizer::forDisplay($label),
             // 목표 키(`core.user_registered`)는 선언한 이름으로 — 확장이 사라졌으면 키 그대로.
             StatsDimension::Goal->value => $this->goals->find($label)?->localizedLabel($locale) ?? $label,
+            StatsDimension::VisitDuration->value => $this->durationBucketLabel($label, $locale),
+            StatsDimension::VisitPages->value => $this->pagesBucketLabel($label, $locale),
+            // 알려진 탭(전체·게시글·상품·페이지)만 풀고, 확장이 더한 탭은 원값 그대로.
+            StatsDimension::SearchTab->value => __('analytics.search_tab.'.$label, [], $locale) !== 'analytics.search_tab.'.$label
+                ? __('analytics.search_tab.'.$label, [], $locale)
+                : $label,
             default => $options['extension_labels'][$label] ?? $label,
+        };
+    }
+
+    /**
+     * 체류시간 구간 라벨(`60-180`, `1800+`)을 사람이 읽을 문장으로 바꿉니다.
+     *
+     * @param  string  $label  저장 라벨
+     * @param  string  $locale  로케일
+     * @return string 화면용 문자열 (해석할 수 없으면 원값)
+     */
+    private function durationBucketLabel(string $label, string $locale): string
+    {
+        $range = BucketLabeler::parse($label);
+
+        if ($range === null) {
+            return $label;
+        }
+
+        [$lower, $upper] = $range;
+
+        if ($upper === null) {
+            return __('analytics.bucket.duration_over', ['from' => $this->secondsText($lower, $locale)], $locale);
+        }
+
+        return __('analytics.bucket.duration_range', [
+            'from' => $this->secondsText($lower, $locale),
+            'to' => $this->secondsText($upper, $locale),
+        ], $locale);
+    }
+
+    /**
+     * 본 페이지 수 구간 라벨(`1`, `6-7`, `21+`)을 사람이 읽을 문장으로 바꿉니다.
+     *
+     * @param  string  $label  저장 라벨
+     * @param  string  $locale  로케일
+     * @return string 화면용 문자열 (해석할 수 없으면 원값)
+     */
+    private function pagesBucketLabel(string $label, string $locale): string
+    {
+        $range = BucketLabeler::parse($label);
+
+        if ($range === null) {
+            return $label;
+        }
+
+        [$lower, $upper] = $range;
+
+        return match (true) {
+            $upper === null => __('analytics.bucket.pages_over', ['from' => $lower], $locale),
+            $lower === $upper => __('analytics.bucket.pages_one', ['n' => $lower], $locale),
+            default => __('analytics.bucket.pages_range', ['from' => $lower, 'to' => $upper], $locale),
+        };
+    }
+
+    /**
+     * 초를 가장 큰 단위로 읽는 문자열로 바꿉니다 (`45초`, `3분`, `1분 30초`, `1시간`).
+     *
+     * @param  int  $seconds  초
+     * @param  string  $locale  로케일
+     * @return string 화면용 문자열
+     */
+    private function secondsText(int $seconds, string $locale): string
+    {
+        return match (true) {
+            $seconds < 60 => __('analytics.bucket.seconds', ['n' => $seconds], $locale),
+            $seconds % 3600 === 0 => __('analytics.bucket.hours', ['n' => intdiv($seconds, 3600)], $locale),
+            $seconds % 60 === 0 => __('analytics.bucket.minutes', ['n' => intdiv($seconds, 60)], $locale),
+            default => __('analytics.bucket.minutes_seconds', ['m' => intdiv($seconds, 60), 's' => $seconds % 60], $locale),
         };
     }
 

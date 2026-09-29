@@ -588,6 +588,39 @@
               </div>
             </div>
           </div>
+          <!-- 집계 — 화면을 열 때 집계(스케줄러 없이도 1분 이내 최신 숫자)와 그 안전장치(오늘 방문 상한), 체류시간·본 페이지 수
+            구간 리포트의 경계. 경계는 숫자와 쉼표만 받고 작은 것부터 겹치지 않아야 저장된다 — 틀리면 서버가 422 로 그 칸에
+            오류를 돌려준다. 바꾼 경계는 그 뒤 집계부터 적용된다. -->
+          <div data-ref="archive_card" class="admin-card space-y-4">
+            <h3 class="section-heading">$t:admin.analytics.settings.retention.archive_section</h3>
+            <div data-ref="field_archive_on_view_enabled" class="flex-between gap-3">
+              <div>
+                <span class="form-label-block">$t:admin.analytics.settings.retention.archive_on_view_enabled</span>
+                <span class="form-hint">$t:admin.analytics.settings.retention.archive_on_view_enabled_hint</span>
+              </div>
+              <toggle name="settings.archive_on_view_enabled" size="md" disabled="{{_computed.isReadOnly}}"/>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div data-ref="field_archive_on_view_max_visits">
+                <label class="form-label">$t:admin.analytics.settings.retention.archive_on_view_max_visits</label>
+                <input type="number" name="settings.archive_on_view_max_visits" min="1000" max="1000000" class="input w-full {{_local.errors?.archive_on_view_max_visits ? 'input-error' : ''}}" disabled="{{_computed.isReadOnly}}"/>
+                <span data-if="{{_local.errors?.archive_on_view_max_visits}}" class="form-error">{{_local.errors?.archive_on_view_max_visits?.[0] ?? ''}}</span>
+                <span data-if="{{!_local.errors?.archive_on_view_max_visits}}" class="form-hint">$t:admin.analytics.settings.retention.archive_on_view_max_visits_hint</span>
+              </div>
+              <div data-ref="field_duration_bucket_bounds">
+                <label class="form-label">$t:admin.analytics.settings.retention.duration_bucket_bounds</label>
+                <input type="text" name="settings.duration_bucket_bounds" placeholder="10,30,60,180,600,1800" class="input w-full {{_local.errors?.duration_bucket_bounds ? 'input-error' : ''}}" disabled="{{_computed.isReadOnly}}"/>
+                <span data-if="{{_local.errors?.duration_bucket_bounds}}" class="form-error">{{_local.errors?.duration_bucket_bounds?.[0] ?? ''}}</span>
+                <span data-if="{{!_local.errors?.duration_bucket_bounds}}" class="form-hint">$t:admin.analytics.settings.retention.duration_bucket_bounds_hint</span>
+              </div>
+              <div data-ref="field_pages_bucket_bounds">
+                <label class="form-label">$t:admin.analytics.settings.retention.pages_bucket_bounds</label>
+                <input type="text" name="settings.pages_bucket_bounds" placeholder="1,2,3,4,5,7,10,14,20" class="input w-full {{_local.errors?.pages_bucket_bounds ? 'input-error' : ''}}" disabled="{{_computed.isReadOnly}}"/>
+                <span data-if="{{_local.errors?.pages_bucket_bounds}}" class="form-error">{{_local.errors?.pages_bucket_bounds?.[0] ?? ''}}</span>
+                <span data-if="{{!_local.errors?.pages_bucket_bounds}}" class="form-hint">$t:admin.analytics.settings.retention.pages_bucket_bounds_hint</span>
+              </div>
+            </div>
+          </div>
           <div data-ref="storage_card" class="admin-card">
             <div class="flex-between flex-wrap gap-3 mb-3">
               <h3 class="section-heading">$t:admin.analytics.settings.retention.storage_title</h3>
@@ -662,7 +695,7 @@
                  서버가 정규화한 값으로 폼을 되맞춘다. -->
             <sequence>
               <set-state target="local" :isSaving="true" :errors="null"/>
-              <api-call :auth_required="true" target="/api/admin/analytics/settings" method="PUT" body="{{(function() { const groups = { collection: ['enabled', 'visit_timeout_minutes', 'max_actions_per_visit', 'excluded_url_patterns', 'site_search_enabled', 'track_downloads', 'track_outlinks', 'download_extensions', 'public_summary_enabled'], privacy: ['privacy_mode', 'respect_dnt', 'ip_mask_octets', 'geo_before_mask', 'anonymize_referrer', 'pseudonymize_user_id', 'visitor_cookie_days'], bots: ['bot_detector_enabled', 'bot_tracking_enabled', 'block_headless', 'exclude_prefetch', 'excluded_ips', 'ip_allowlist', 'excluded_user_agents', 'block_cloud_ip_ranges', 'country_filter_mode', 'country_filter_codes'], retention: ['retention_days', 'hourly_retention_days', 'bot_hits_retention_days', 'failure_log_retention_days', 'ledger_warning_actions', 'ledger_warning_visits', 'archive_chunk_size', 'realtime_poll_seconds', 'realtime_window_minutes', 'top_n_overview', 'top_n_dashboard', 'top_n_detail'], reports: ['report_weekly_enabled', 'report_monthly_enabled'] }; const tab = query.tab || 'collection'; const s = _local.form?.settings || {}; const base = analytics_settings?.data?.settings || {}; const all = groups.collection.concat(groups.privacy, groups.bots, groups.retention, groups.reports); const changed = all.filter(k => s[k] !== undefined &amp;&amp; JSON.stringify(s[k] ?? null) !== JSON.stringify(base[k] ?? null)); const keys = changed.length > 0 ? changed : (groups[tab] || []).filter(k => s[k] !== undefined); return Object.fromEntries(keys.map(k => [k, s[k]])); })()}}">
+              <api-call :auth_required="true" target="/api/admin/analytics/settings" method="PUT" body="{{(function() { const groups = { collection: ['enabled', 'visit_timeout_minutes', 'max_actions_per_visit', 'excluded_url_patterns', 'site_search_enabled', 'track_downloads', 'track_outlinks', 'download_extensions', 'public_summary_enabled'], privacy: ['privacy_mode', 'respect_dnt', 'ip_mask_octets', 'geo_before_mask', 'anonymize_referrer', 'pseudonymize_user_id', 'visitor_cookie_days'], bots: ['bot_detector_enabled', 'bot_tracking_enabled', 'block_headless', 'exclude_prefetch', 'excluded_ips', 'ip_allowlist', 'excluded_user_agents', 'block_cloud_ip_ranges', 'country_filter_mode', 'country_filter_codes'], retention: ['retention_days', 'hourly_retention_days', 'bot_hits_retention_days', 'failure_log_retention_days', 'ledger_warning_actions', 'ledger_warning_visits', 'archive_chunk_size', 'archive_on_view_enabled', 'archive_on_view_max_visits', 'duration_bucket_bounds', 'pages_bucket_bounds', 'realtime_poll_seconds', 'realtime_window_minutes', 'top_n_overview', 'top_n_dashboard', 'top_n_detail'], reports: ['report_weekly_enabled', 'report_monthly_enabled'] }; const tab = query.tab || 'collection'; const s = _local.form?.settings || {}; const base = analytics_settings?.data?.settings || {}; const all = groups.collection.concat(groups.privacy, groups.bots, groups.retention, groups.reports); const changed = all.filter(k => s[k] !== undefined &amp;&amp; JSON.stringify(s[k] ?? null) !== JSON.stringify(base[k] ?? null)); const keys = changed.length > 0 ? changed : (groups[tab] || []).filter(k => s[k] !== undefined); return Object.fromEntries(keys.map(k => [k, s[k]])); })()}}">
                 <success>
                   <set-state target="local" :isSaving="false" :hasChanges="false"/>
                   <set-state target="global" analyticsRetro="{{{ visits: (response?.data?.meta?.ledger_rows?.visits ?? 0), actions: (response?.data?.meta?.ledger_rows?.actions ?? 0), maskOctets: Number(_local.form?.settings?.ip_mask_octets ?? 0), hash: (_local.form?.settings?.privacy_mode === 'anonymous') }}}" :analyticsRetroConfirm="false"/>

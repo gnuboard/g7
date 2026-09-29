@@ -83,6 +83,9 @@ exclusions:
   - { mode: consent, visitor: bot, reason: "동의 판정 전에 봇이 먼저 걸러진다 — 순서가 계약이다" }
 
 effects:
+  # 이벤트 이름 저장 · 매체만 붙은 주소
+  - event_name_is_stored_in_the_event_dictionary
+  - utm_medium_alone_is_recorded
   - first_request_creates_visit_and_action
   - second_request_within_window_joins_same_visit
   - request_after_timeout_starts_new_visit

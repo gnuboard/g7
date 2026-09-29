@@ -92,7 +92,7 @@ class ArchiveCommandTest extends TestCase
         $today = AnalyticsClock::today();
         $this->visitOn($today);
 
-        $this->artisan('analytics:archive', ['--period' => 'hour'])->assertSuccessful();
+        $this->artisan('analytics:archive', ['--period' => 'hour', '--scheduled' => true])->assertSuccessful();
 
         $row = AnalyticsStatsDaily::query()->where('date', $today)->first();
         $this->assertNotNull($row);
@@ -101,6 +101,64 @@ class ArchiveCommandTest extends TestCase
         $run = AnalyticsArchiveRun::query()->latest('id')->first();
         $this->assertSame(ArchiveRunType::Hour->value, $this->valueOf($run->run_type));
         $this->assertSame('scheduled', $run->trigger);
+    }
+
+    /**
+     * `--scheduled` 없이 돌린 실행은 수동으로 기록되는지 확인합니다 — 손으로 돌린 실행이 스케줄러
+     * 생존 판정을 속이지 않게.
+     *
+     * @return void 없음
+     *
+     * @scenario period=hour, trigger=manual, final=false, data=all_types
+     *
+     * @effects cli_without_scheduled_flag_is_recorded_as_manual
+     */
+    public function test_run_without_scheduled_flag_is_recorded_as_manual(): void
+    {
+        $this->visitOn(AnalyticsClock::today());
+
+        $this->artisan('analytics:archive', ['--period' => 'hour'])->assertSuccessful();
+        $this->artisan('analytics:archive', ['--period' => 'day'])->assertSuccessful();
+
+        $this->assertSame(
+            ['manual'],
+            AnalyticsArchiveRun::query()->pluck('trigger')->unique()->values()->all(),
+        );
+    }
+
+    /**
+     * 매일 실행이 어제 말고도 확정되지 않은 날(보존기간 안)을 따라잡아 확정하는지 확인합니다.
+     *
+     * @return void 없음
+     *
+     * @scenario period=day, trigger=scheduled, final=true, data=all_types
+     *
+     * @effects missed_days_are_finalized_by_catch_up
+     */
+    public function test_day_period_catches_up_missed_days(): void
+    {
+        $today = Carbon::parse(AnalyticsClock::today());
+        $missed = [
+            $today->copy()->subDays(3)->toDateString(),
+            $today->copy()->subDays(4)->toDateString(),
+        ];
+
+        foreach ($missed as $date) {
+            $this->visitOn($date);
+        }
+
+        // 보존기간(기본 90일) 밖의 날은 원장이 일부 지워졌을 수 있어 건드리지 않는다.
+        $beyond = $today->copy()->subDays(120)->toDateString();
+        $this->visitOn($beyond);
+
+        $this->artisan('analytics:archive', ['--period' => 'day', '--scheduled' => true])->assertSuccessful();
+
+        foreach ($missed as $date) {
+            $this->assertTrue((bool) AnalyticsStatsDaily::query()->where('date', $date)->value('is_final'), $date.' 이 확정되지 않았다');
+        }
+
+        $this->assertFalse(AnalyticsStatsDaily::query()->where('date', $beyond)->exists());
+        $this->assertSame(['scheduled'], AnalyticsArchiveRun::query()->pluck('trigger')->unique()->values()->all());
     }
 
     /**

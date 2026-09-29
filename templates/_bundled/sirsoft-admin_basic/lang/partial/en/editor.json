@@ -1757,6 +1757,7 @@
     "dashboard_analytics": "Dashboard analytics",
     "privacyPreview": "Privacy processing target counts",
     "privacyManualRuns": "Privacy action manual run status",
-    "privacyTargets": "Privacy action target list"
+    "privacyTargets": "Privacy action target list",
+    "analytics_row_trend": "Analytics item trend"
   }
 }

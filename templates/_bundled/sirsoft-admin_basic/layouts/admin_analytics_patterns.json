@@ -77,7 +77,8 @@
         "csvUrl": "{{''}}",
         "periodStart": "{{_computed.periodFrom || ''}}",
         "periodFrom": "{{query.from || analytics_patterns?.data?.from || _local.periodComputed?.from || ''}}",
-        "periodTo": "{{query.to || query.from || analytics_patterns?.data?.to || _local.periodComputed?.to || ''}}"
+        "periodTo": "{{query.to || query.from || analytics_patterns?.data?.to || _local.periodComputed?.to || ''}}",
+        "archiveFreshness": "{{analytics_patterns?.data?.freshness ?? null}}"
     },
     "permissions": [
         "core.analytics.read"

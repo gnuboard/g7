@@ -21,11 +21,11 @@ import { scanBindings } from '@core/template-engine/BindingShape';
  */
 const PERIOD_KEYS = ['preset', 'from', 'to', 'unit', 'exclude', 'per_page'];
 const SPEC: Record<string, { defaultTab: string; reports: string[]; periodSource: string; periodKeys: string[]; csvReport: string; screenKeys?: Record<string, string> }> = {
-  'admin_analytics_pages.json': { defaultTab: 'popular', reports: ['page_url', 'entry_pages', 'exit_pages', 'page_title'], periodSource: 'analytics_report', periodKeys: PERIOD_KEYS, csvReport: 'page_url' },
-  'admin_analytics_referrers.json': { defaultTab: 'types', reports: ['referrer_type', 'referrer_name', 'referrer_keyword', 'campaign'], periodSource: 'analytics_report', periodKeys: PERIOD_KEYS, csvReport: 'referrer_type', screenKeys: { host: '{{undefined}}' } },
+  'admin_analytics_pages.json': { defaultTab: 'popular', reports: ['page_url', 'entry_pages', 'exit_pages', 'page_title', 'visit_duration', 'visit_pages'], periodSource: 'analytics_report', periodKeys: PERIOD_KEYS, csvReport: 'page_url' },
+  'admin_analytics_referrers.json': { defaultTab: 'types', reports: ['referrer_type', 'referrer_name', 'referrer_keyword', 'campaign', 'campaign_medium'], periodSource: 'analytics_report', periodKeys: PERIOD_KEYS, csvReport: 'referrer_type', screenKeys: { host: '{{undefined}}' } },
   'admin_analytics_environment.json': { defaultTab: 'browsers', reports: ['browser', 'os', 'device_type', 'resolution', 'browser_language', 'locale'], periodSource: 'analytics_report', periodKeys: PERIOD_KEYS, csvReport: 'browser' },
   'admin_analytics_regions.json': { defaultTab: 'countries', reports: ['country', 'region', 'city'], periodSource: 'analytics_report', periodKeys: PERIOD_KEYS, csvReport: 'country' },
-  'admin_analytics_actions.json': { defaultTab: 'search', reports: ['site_search', 'download', 'outlink', 'goal'], periodSource: 'analytics_report', periodKeys: PERIOD_KEYS, csvReport: 'site_search', screenKeys: { dimension: '{{query.dimension}}' } },
+  'admin_analytics_actions.json': { defaultTab: 'search', reports: ['site_search', 'download', 'outlink', 'goal', 'search_tab', 'event_name'], periodSource: 'analytics_report', periodKeys: PERIOD_KEYS, csvReport: 'site_search', screenKeys: { dimension: '{{query.dimension}}' } },
   // 봇 화면은 단위 칸·제외 토글을 두지 않는다(`showUnit`·`showExclude` false) — 그 두 키를 서브탭 전환에 싣지 않는다.
   'admin_analytics_bots.json': { defaultTab: 'bots', reports: ['bot_pages'], periodSource: 'analytics_bots', periodKeys: ['preset', 'from', 'to', 'per_page'], csvReport: 'bot_name' },
 };
@@ -477,13 +477,13 @@ describe('공통 표 조각', () => {
 
   // @scenario screen=actions, state=normal, viewport=1440, locale=ko
   // @effects report_grid_shows_seven_columns_with_extras
-  it('열은 라벨·방문·조회·이탈률·체류·방문당 페이지·부가 일곱 개이고 정렬은 방문·조회 둘이다', () => {
+  it('열은 라벨·방문·조회·이탈률·체류·방문당 페이지·부가·추이 여덟 개이고 정렬은 방문·조회 둘이다', () => {
     // 진입·이탈 수는 진입·이탈 탭에서는 방문과 늘 같고 다른 탭에서는 늘 0 이다 — 열로 두면 인기 페이지마다
     // 「진입 0·이탈 0」이라는 거짓이 보이고, 그 열로 정렬하면 순서가 무의미해진다(브라우저 실측 §8 M3-T3).
     // CSV 는 부록 D 공통 열 규약대로 두 값을 그대로 싣는다.
     const dg = nodesNamed(grid, 'DataGrid')[0];
     const fields = (dg.props.columns ?? []).map((c: any) => c.field);
-    expect(fields).toEqual(['label_display', 'visits', 'hits', 'bounce_rate', 'avg_time', 'pages_per_visit', 'extra']);
+    expect(fields).toEqual(['label_display', 'visits', 'hits', 'bounce_rate', 'avg_time', 'pages_per_visit', 'extra', 'trend']);
     const sortOptions = (nodeById(grid, 'report_sort')?.props?.options ?? []).map((o: any) => o.value);
     expect(sortOptions).toEqual(['visits', 'hits']);
     expect(stringify(dg)).toContain('row.extra?.no_result');
@@ -504,12 +504,115 @@ describe('리포트 표 — 차원별로 뜻 있는 열만', () => {
     const [expr] = scanBindings(String(dg.props.visibleColumns ?? '')).map((b) => b.expr);
     const visible = (reportName: string) => evaluateSafeExpression(expr, { _computed: { reportName } });
 
-    expect(visible('page_url')).toEqual(['label_display', 'visits', 'hits', 'bounce_rate', 'avg_time', 'pages_per_visit']);
-    expect(visible('browser')).toEqual(['label_display', 'visits', 'hits', 'bounce_rate', 'avg_time', 'pages_per_visit']);
-    expect(visible('site_search')).toEqual(['label_display', 'visits', 'hits', 'extra']);
-    expect(visible('download')).toEqual(['label_display', 'visits', 'hits']);
-    expect(visible('goal')).toEqual(['label_display', 'visits', 'hits', 'extra']);
-    expect(visible('ext:sirsoft-board:views')).toEqual(['label_display', 'visits', 'hits', 'extra']);
+    // 행 끝 추이 아이콘(`trend`)은 모든 리포트의 마지막 열이다.
+    expect(visible('page_url')).toEqual(['label_display', 'visits', 'hits', 'bounce_rate', 'avg_time', 'pages_per_visit', 'trend']);
+    expect(visible('browser')).toEqual(['label_display', 'visits', 'hits', 'bounce_rate', 'avg_time', 'pages_per_visit', 'trend']);
+    expect(visible('site_search')).toEqual(['label_display', 'visits', 'hits', 'extra', 'trend']);
+    expect(visible('download')).toEqual(['label_display', 'visits', 'hits', 'trend']);
+    expect(visible('goal')).toEqual(['label_display', 'visits', 'hits', 'extra', 'trend']);
+    expect(visible('ext:sirsoft-board:views')).toEqual(['label_display', 'visits', 'hits', 'extra', 'trend']);
+    // 검색 탭·이벤트도 행동을 센다 — 이탈률·체류·방문당 페이지를 숨긴다. 구간·매체 리포트는 방문 차원이라 보인다.
+    expect(visible('search_tab')).toEqual(['label_display', 'visits', 'hits', 'trend']);
+    expect(visible('event_name')).toEqual(['label_display', 'visits', 'hits', 'trend']);
+    expect(visible('visit_duration')).toEqual(['label_display', 'visits', 'hits', 'bounce_rate', 'avg_time', 'pages_per_visit', 'trend']);
+    expect(visible('campaign_medium')).toEqual(['label_display', 'visits', 'hits', 'bounce_rate', 'avg_time', 'pages_per_visit', 'trend']);
+  });
+});
+
+describe('리포트 표 — 한 항목 추이', () => {
+  // @scenario screen=pages, state=normal, viewport=1440, locale=ko
+  // @effects row_trend_icon_opens_the_modal
+  it('행 끝 추이 아이콘이 리포트 이름·저장 라벨을 전역에 담고 추이 창을 연다', () => {
+    const button = nodeById(grid, 'row_trend_button');
+    expect(button, '추이 아이콘').toBeTruthy();
+    expect(button?.props?.['aria-label']).toBe('$t:admin.analytics.row_trend.open');
+    const s = stringify(button);
+    expect(s).toContain('analyticsRowTrend');
+    expect(s).toContain('{{_computed.reportName}}');
+    expect(s).toContain("{{row.label ?? ''}}");
+    const open = actionsWithHandler(button, 'openModal')[0];
+    expect(open?.target ?? open?.params?.target ?? open?.params?.id).toBe('analytics_row_trend_modal');
+    // 소스는 자동으로 받지 않는다 — 엔진에는 「상태가 바뀌면 따라 받기」가 없으므로(`depends_on` 은 편집기 전용 표기)
+    // 아이콘이 상태를 정한 뒤 직접 다시 받게 해야 창에 차트가 뜬다(브라우저 실측: 창만 열리고 요청 0건이던 결함).
+    const refetch = actionsWithHandler(button, 'refetchDataSource').map((a) => a.params?.dataSourceId ?? a.dataSourceId);
+    expect(refetch).toContain('analytics_row_trend');
+    const order = collectObjects(button).filter((o) => ['setState', 'refetchDataSource', 'openModal'].includes(o.handler)).map((o) => o.handler);
+    expect(order.indexOf('setState')).toBeLessThan(order.indexOf('refetchDataSource'));
+  });
+
+  for (const file of Object.keys(SPEC)) {
+    // @scenario screen=pages, state=normal, viewport=1440, locale=ko
+    // @effects row_trend_source_follows_the_selected_row
+    it(`${file}: 추이 창 소스가 고른 행을 따라 받고 창이 등록돼 있다`, () => {
+      const layout = loadLayout(file);
+      const ds = dataSource(layout, 'analytics_row_trend');
+      expect(ds, '추이 소스').toBeTruthy();
+      expect(ds?.endpoint).toBe("/api/admin/analytics/reports/{{_global.analyticsRowTrend?.report ?? ''}}/series");
+      expect(ds?.auto_fetch).toBe(false);
+      expect(ds?.params?.label).toBe("{{_global.analyticsRowTrend?.label ?? ''}}");
+      expect(ds?.params?.preset).toBe("{{query.from ? undefined : (query.preset || '7d')}}");
+      // 첫 그림에서 평가되는 `if` 로 소스를 거르면 나중에 상태가 정해져도 소스가 없어 받을 수 없다.
+      expect(ds?.if).toBeUndefined();
+      expect(stringify(layout.modals ?? layout)).toContain('_modal_row_trend.json');
+    });
+  }
+
+  // 탭 → 리포트 이름 맵은 소스 엔드포인트와 `reportName`(추이 창·CSV 가 쓰는 이름) 두 곳에 중복돼 있다.
+  // 한쪽만 고치면 목록은 A 리포트인데 추이 창·CSV 는 B 리포트를 받는다 — 탭마다 두 식을 평가해 대조한다.
+  // 모집단은 각 화면의 TabNavigation 탭 목록(레이아웃 파생)이고, 엔드포인트가 고정 경로인 화면(봇)은 대상이 아니다.
+  // @scenario screen=pages, state=normal, viewport=1440, locale=ko
+  // @effects tab_maps_to_report_name
+  it('탭마다 엔드포인트가 고르는 리포트와 reportName 이 같다', () => {
+    const inner = (v: unknown) => String(v ?? '').replace(/^\{\{|\}\}$/g, '');
+    let compared = 0;
+    for (const file of Object.keys(SPEC)) {
+      const layout = loadLayout(file);
+      const source = dataSource(layout, 'analytics_report');
+      const endpoint = String(source?.endpoint ?? '');
+      if (!endpoint.includes('{{')) continue;
+      const prefix = endpoint.slice(0, endpoint.indexOf('{{'));
+      const tabs = (nodesNamed(layout, 'TabNavigation')[0]?.props?.tabs ?? []).map((t: any) => t.id);
+      expect(tabs.length, `${file} 탭`).toBeGreaterThan(0);
+      for (const tab of tabs) {
+        // 행동 화면의 확장 차원 탭은 차원을 고른 뒤에만 소스가 켜진다 — 고른 상태로 잰다.
+        const ctx = { query: { tab, dimension: 'sirsoft-board:board' } };
+        if (source?.if && !evaluateSafeExpression(inner(source.if), ctx)) continue;
+        const fromEndpoint = evaluateSafeExpression(inner(endpoint.slice(prefix.length)), ctx);
+        const fromComputed = evaluateSafeExpression(inner(layout.computed?.reportName), ctx);
+        expect(fromComputed, `${file} tab=${tab}`).toBe(fromEndpoint);
+        compared++;
+      }
+    }
+    expect(compared, '대조한 탭 수').toBeGreaterThanOrEqual(20);
+  });
+
+  // @scenario screen=pages, state=empty, viewport=1440, locale=ko
+  // @effects row_trend_modal_shows_empty_and_error
+  it('추이 창은 두 선(방문·조회)·빈 상태·오류·단위 낮춤 안내를 갖는다', () => {
+    const modal = loadLayout('partials/admin_analytics/_modal_row_trend.json');
+    const chart = nodeById(modal, 'row_trend_chart');
+    expect(chart?.props?.showLegend).toBe(true);
+    expect(chart?.props?.datasets).toContain('admin.analytics.common.visits');
+    expect(chart?.props?.datasets).toContain('admin.analytics.common.hits');
+    expect(nodeById(modal, 'row_trend_empty')?.if).toContain('length === 0');
+    expect(nodeById(modal, 'row_trend_downgraded')?.if).toContain('unit_downgraded');
+  });
+
+  // @scenario screen=pages, state=error, viewport=1440, locale=ko
+  // @effects row_trend_failure_is_not_shown_as_data
+  it('추이 창은 고른 행의 응답일 때만 차트·빈 상태를 그리고, 아니면 오류 카드를 띄운다', () => {
+    // 엔진은 실패한 요청에 `.error` 를 싣지 않는다 — 마지막 성공 값(키가 원시 정의라 다른 행의 것)이나
+    // fallback 을 성공처럼 돌려준다. 그래서 `.error` 로 가르면 오류 카드는 뜨지 않고, 실패가 「기록 없음」이나
+    // 앞서 연 다른 행의 차트로 보인다. 응답의 report·label 이 고른 행과 같은지로 가른다(fallback 엔 둘 다 없다).
+    const modal = loadLayout('partials/admin_analytics/_modal_row_trend.json');
+    const match = "analytics_row_trend?.data?.label === _global.analyticsRowTrend?.label && analytics_row_trend?.data?.report === _global.analyticsRowTrend?.report";
+    for (const id of ['row_trend_chart', 'row_trend_empty', 'row_trend_period']) {
+      expect(nodeById(modal, id)?.if, id).toContain(match);
+    }
+    const errorIf = nodeById(modal, 'row_trend_error')?.if ?? '';
+    expect(errorIf).toContain(`!(${match})`);
+    expect(errorIf).not.toContain('?.error');
+    expect(nodeById(modal, 'row_trend_empty')?.if).not.toContain('?.error');
   });
 });
 

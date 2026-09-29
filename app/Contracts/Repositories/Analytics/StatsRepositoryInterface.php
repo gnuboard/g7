@@ -102,6 +102,20 @@ interface StatsRepositoryInterface
     public function dimensionExtra(string $dimension, string $from, string $to, array $labelHashes, array $visitorTypes = []): array;
 
     /**
+     * 차원 라벨 하나의 날짜별 합계를 조회합니다.
+     *
+     * 리포트 목록 한 줄의 추이를 그리는 재료다. 방문자 유형 행을 날짜로 묶어 더한다.
+     *
+     * @param  string  $dimension  차원 이름
+     * @param  string  $labelHash  라벨 묶음 키 (`md5(label)`)
+     * @param  string  $from  시작일 (Y-m-d)
+     * @param  string  $to  종료일 (Y-m-d)
+     * @param  array<int, string>  $visitorTypes  포함할 방문자 유형
+     * @return Collection<int, object> 날짜별 합계 행 (date, visits, hits, bounces, total_time_seconds, entries, exits)
+     */
+    public function dimensionSeries(string $dimension, string $labelHash, string $from, string $to, array $visitorTypes = []): Collection;
+
+    /**
      * 일 집계에서 방문자 수가 가장 많았던 날을 찾습니다.
      *
      * @param  array<int, string>  $visitorTypes  포함할 방문자 유형

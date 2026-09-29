@@ -14759,8 +14759,29 @@
         }
       }
     },
+    "analytics_row_trend": {
+      "data": {
+        "report": "page_url",
+        "label": "example.com/board/notice",
+        "label_display": "/board/notice",
+        "from": "2026-09-22",
+        "to": "2026-09-28",
+        "unit": "day",
+        "unit_downgraded": false,
+        "points": [
+          {"ts": "2026-09-22", "visits": 12, "hits": 15, "bounces": 3, "total_time_seconds": 480, "bounce_rate": 25.0, "avg_time": 40},
+          {"ts": "2026-09-23", "visits": 15, "hits": 19, "bounces": 4, "total_time_seconds": 600, "bounce_rate": 26.7, "avg_time": 40},
+          {"ts": "2026-09-24", "visits": 9, "hits": 11, "bounces": 2, "total_time_seconds": 360, "bounce_rate": 22.2, "avg_time": 40},
+          {"ts": "2026-09-25", "visits": 18, "hits": 24, "bounces": 5, "total_time_seconds": 720, "bounce_rate": 27.8, "avg_time": 40},
+          {"ts": "2026-09-26", "visits": 21, "hits": 27, "bounces": 6, "total_time_seconds": 840, "bounce_rate": 28.6, "avg_time": 40},
+          {"ts": "2026-09-27", "visits": 17, "hits": 22, "bounces": 4, "total_time_seconds": 680, "bounce_rate": 23.5, "avg_time": 40},
+          {"ts": "2026-09-28", "visits": 14, "hits": 18, "bounces": 3, "total_time_seconds": 560, "bounce_rate": 21.4, "avg_time": 40}
+        ]
+      }
+    },
     "analytics_overview": {
       "data": {
+        "freshness": {"last_run_at": "2026-09-28 22:07:41", "last_run_trigger": "on_view", "is_today": true, "lag_minutes": 3, "stale": false, "scheduler": {"alive": false, "last_run_at": null}, "on_view": {"enabled": true, "status": "ran", "today_visits": 12, "max_visits": 50000}},
         "kpi": {
           "today": 1284,
           "yesterday": 1146,
@@ -14783,7 +14804,9 @@
               "bounces": 40,
               "bounce_rate": 38.5,
               "avg_time": 92,
-              "pages_per_visit": 2.7
+              "pages_per_visit": 2.7,
+              "new_visitors": 61,
+              "returning_visitors": 31
             },
             {
               "ts": "2026-09-11",
@@ -14793,7 +14816,9 @@
               "bounces": 41,
               "bounce_rate": 38.5,
               "avg_time": 92,
-              "pages_per_visit": 2.7
+              "pages_per_visit": 2.7,
+              "new_visitors": 62,
+              "returning_visitors": 32
             },
             {
               "ts": "2026-09-12",
@@ -14803,7 +14828,9 @@
               "bounces": 42,
               "bounce_rate": 38.5,
               "avg_time": 92,
-              "pages_per_visit": 2.7
+              "pages_per_visit": 2.7,
+              "new_visitors": 63,
+              "returning_visitors": 33
             },
             {
               "ts": "2026-09-13",
@@ -14813,7 +14840,9 @@
               "bounces": 43,
               "bounce_rate": 38.5,
               "avg_time": 92,
-              "pages_per_visit": 2.7
+              "pages_per_visit": 2.7,
+              "new_visitors": 64,
+              "returning_visitors": 34
             },
             {
               "ts": "2026-09-14",
@@ -14823,7 +14852,9 @@
               "bounces": 44,
               "bounce_rate": 38.5,
               "avg_time": 92,
-              "pages_per_visit": 2.7
+              "pages_per_visit": 2.7,
+              "new_visitors": 65,
+              "returning_visitors": 35
             },
             {
               "ts": "2026-09-15",
@@ -14833,7 +14864,9 @@
               "bounces": 45,
               "bounce_rate": 38.5,
               "avg_time": 92,
-              "pages_per_visit": 2.7
+              "pages_per_visit": 2.7,
+              "new_visitors": 66,
+              "returning_visitors": 36
             },
             {
               "ts": "2026-09-16",
@@ -14843,7 +14876,9 @@
               "bounces": 46,
               "bounce_rate": 38.5,
               "avg_time": 92,
-              "pages_per_visit": 2.7
+              "pages_per_visit": 2.7,
+              "new_visitors": 67,
+              "returning_visitors": 37
             }
           ]
         },
@@ -15038,6 +15073,7 @@
     },
     "analytics_report": {
       "data": {
+        "freshness": {"last_run_at": "2026-09-28 22:07:41", "last_run_trigger": "on_view", "is_today": true, "lag_minutes": 3, "stale": false, "scheduler": {"alive": false, "last_run_at": null}, "on_view": {"enabled": true, "status": "ran", "today_visits": 12, "max_visits": 50000}},
         "report": "page_url",
         "data": [
           {
@@ -15084,6 +15120,7 @@
     },
     "analytics_patterns": {
       "data": {
+        "freshness": {"last_run_at": "2026-09-28 22:07:41", "last_run_trigger": "on_view", "is_today": true, "lag_minutes": 3, "stale": false, "scheduler": {"alive": false, "last_run_at": null}, "on_view": {"enabled": true, "status": "ran", "today_visits": 12, "max_visits": 50000}},
         "weekday": [
           {
             "dow": 0,
@@ -15408,6 +15445,7 @@
     },
     "analytics_bots": {
       "data": {
+        "freshness": {"last_run_at": "2026-09-28 22:07:41", "last_run_trigger": "on_view", "is_today": true, "lag_minutes": 3, "stale": false, "scheduler": {"alive": false, "last_run_at": null}, "on_view": {"enabled": true, "status": "ran", "today_visits": 12, "max_visits": 50000}},
         "data": [
           {
             "label": "Googlebot",
@@ -15476,7 +15514,9 @@
           "last_hour_run": "2026-09-18T10:05:00+09:00",
           "last_day_run": "2026-09-18T00:10:00+09:00",
           "lag_hours": 0,
-          "running_run_id": null
+          "running_run_id": null,
+          "scheduler": {"alive": false, "last_run_at": "2026-09-28 17:05:00"},
+          "on_view_enabled": true
         },
         "storage": {
           "tables": [
@@ -15620,6 +15660,10 @@
           "ledger_warning_actions": 2000000,
           "ledger_warning_visits": 500000,
           "archive_chunk_size": 5000,
+          "archive_on_view_enabled": true,
+          "archive_on_view_max_visits": 50000,
+          "duration_bucket_bounds": "10,30,60,180,600,1800",
+          "pages_bucket_bounds": "1,2,3,4,5,7,10,14,20",
           "realtime_poll_seconds": 30,
           "realtime_window_minutes": 5,
           "top_n_overview": 5,

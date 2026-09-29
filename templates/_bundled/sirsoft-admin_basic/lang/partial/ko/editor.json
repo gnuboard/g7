@@ -1757,6 +1757,7 @@
     "dashboard_analytics": "대시보드 방문자 통계",
     "privacyPreview": "개인정보 처리 대상 건수",
     "privacyManualRuns": "개인정보 조치 직권 실행 상태",
-    "privacyTargets": "개인정보 조치 대상 목록"
+    "privacyTargets": "개인정보 조치 대상 목록",
+    "analytics_row_trend": "방문자 통계 한 항목 추이"
   }
 }

@@ -88,12 +88,12 @@ Schedule::command('analytics:prune')->dailyAt('05:10')->onOneServer();
 | 매일 00:15 — 어제치를 확정한다. 하루가 끝난 뒤 한 번만 한다.
 | withoutOverlapping 의 분은 mutex 자동 만료 시간이다 — 비정상 종료가 무한 락이 되지 않게 한다.
 */
-Schedule::command('analytics:archive --period=hour')
+Schedule::command('analytics:archive --period=hour --scheduled')
     ->hourlyAt(5)
     ->onOneServer()
     ->withoutOverlapping(55);
 
-Schedule::command('analytics:archive --period=day')
+Schedule::command('analytics:archive --period=day --scheduled')
     ->dailyAt('00:15')
     ->onOneServer()
     ->withoutOverlapping(120);

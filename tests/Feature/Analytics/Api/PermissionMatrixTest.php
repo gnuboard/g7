@@ -32,6 +32,7 @@ class PermissionMatrixTest extends AnalyticsApiTestCase
             ['get', '/api/admin/analytics/archive-runs'],
             ['get', '/api/admin/analytics/data'],
             ['get', '/api/admin/analytics/reports/page_url'],
+            ['get', '/api/admin/analytics/reports/page_url/series?label=example.test/'],
         ];
     }
 

@@ -74,6 +74,41 @@
                 }
             },
             "comment": "GeoIP 사용 여부·수집 상태. 지역 화면은 이 값으로 안내를 가른다.\n       fallback 은 GeoIP 를 「켜짐」으로 둔다 — 진단 요청이 실패해 사실을 모를 때 「꺼짐」 경고를 띄우면\n       켜 둔 사이트에 거짓 안내가 된다(모르면 알리지 않는다). 설정 화면이 같은 필드를 「꺼짐」으로 두는 것은\n       거기서는 그 값이 국가 필터 입력을 잠그는 쪽이라서다(모르면 집행할 수 없는 필터를 받지 않는다)."
+        },
+        {
+            "id": "analytics_row_trend",
+            "label_key": "$t:editor.data_source.analytics_row_trend",
+            "type": "api",
+            "endpoint": "/api/admin/analytics/reports/{{_global.analyticsRowTrend?.report ?? ''}}/series",
+            "method": "GET",
+            "auto_fetch": false,
+            "auth_required": true,
+            "params": {
+                "label": "{{_global.analyticsRowTrend?.label ?? ''}}",
+                "preset": "{{query.from ? undefined : (query.preset || '7d')}}",
+                "from": "{{query.from}}",
+                "to": "{{query.to}}",
+                "exclude[]": "{{(query.exclude || '').split(',').filter(Boolean)}}"
+            },
+            "fallback": {
+                "data": {
+                    "unit": "day",
+                    "unit_downgraded": false,
+                    "points": []
+                }
+            },
+            "errorHandling": {
+                "403": {
+                    "handler": "suppress"
+                },
+                "404": {
+                    "handler": "suppress"
+                },
+                "422": {
+                    "handler": "suppress"
+                }
+            },
+            "comment": "한 항목 추이 창의 소스 — 자동으로 받지 않는다. 행 끝 추이 아이콘이 `_global.analyticsRowTrend` 를 정한 뒤 이 소스를\n       다시 받게 하고 창을 연다. 기간·제외는 지금 주소 그대로 싣는다."
         }
     ],
     "initLocal": {
@@ -86,7 +121,8 @@
         "csvUrl": "{{'/api/admin/analytics/reports/' + _computed.reportName + '?format=csv' + (query.from ? '&from=' + query.from + '&to=' + (query.to || query.from) : '&preset=' + (query.preset || '7d')) + (query.exclude || '').split(',').filter(Boolean).map(e => '&exclude[]=' + e).join('') + (query.q ? '&q=' + encodeURIComponent(query.q) : '') + (query.sort ? '&sort=' + query.sort : '')}}",
         "csvFilename": "{{'analytics-' + _computed.reportName + '-' + (_computed.periodFrom || '') + '_' + (_computed.periodTo || '') + '.csv'}}",
         "periodFrom": "{{query.from || analytics_report?.data?.from || _local.periodComputed?.from || ''}}",
-        "periodTo": "{{query.to || query.from || analytics_report?.data?.to || _local.periodComputed?.to || ''}}"
+        "periodTo": "{{query.to || query.from || analytics_report?.data?.to || _local.periodComputed?.to || ''}}",
+        "archiveFreshness": "{{analytics_report?.data?.freshness ?? null}}"
     },
     "permissions": [
         "core.analytics.read"
@@ -276,5 +312,11 @@
                 ]
             }
         ]
-    }
+    },
+    "modals": [
+        {
+            "comment": "한 항목 추이 창.",
+            "partial": "partials/admin_analytics/_modal_row_trend.json"
+        }
+    ]
 }

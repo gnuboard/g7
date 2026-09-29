@@ -259,3 +259,27 @@ describe('확장 선언 경고', () => {
     expect(stringify(alert)).toContain('analytics_diagnostics?.data?.declaration_warnings');
   });
 });
+
+describe('집계 카드 — 스케줄러 판정·화면 열 때 집계', () => {
+  // @scenario screen=diagnostics, state=stale, viewport=1440, locale=ko
+  // @effects diagnostics_shows_scheduler_state
+  it('스케줄러 마지막 실행 시각을 늘 보이고, 미가동 배지는 판정이 false 일 때만(모름 null 은 띄우지 않음) 뜬다', () => {
+    expect(stringify(nodeById(layout, 'scheduler_last_run'))).toContain('analytics_diagnostics?.data?.archive?.scheduler?.last_run_at');
+    const badge = nodeById(layout, 'scheduler_missing_badge');
+    const [expr] = scanBindings(String(badge?.if ?? '')).map((b) => b.expr);
+    const show = (alive: unknown) => Boolean(evaluateSafeExpression(expr, { analytics_diagnostics: { data: { archive: { scheduler: { alive } } } } }));
+    expect(show(false)).toBe(true);
+    expect(show(null)).toBe(false);
+    expect(show(true)).toBe(false);
+  });
+
+  // @scenario screen=diagnostics, state=normal, viewport=1440, locale=ko
+  // @effects run_trigger_on_view_is_labelled
+  it('실행 이력의 실행 주체 `on_view` 는 「화면 열 때」로 읽힌다(3로케일 모두 키가 있다)', () => {
+    for (const locale of ['ko', 'en']) {
+      const lang = JSON.parse(fs.readFileSync(path.join(TEMPLATE_DIR, 'lang', 'partial', locale, 'admin.json'), 'utf8'));
+      expect(lang.analytics.diagnostics.run_triggers.on_view, locale).toBeTruthy();
+    }
+    expect(stringify(layout)).toContain("$t('admin.analytics.diagnostics.run_triggers.' + row.trigger)");
+  });
+});

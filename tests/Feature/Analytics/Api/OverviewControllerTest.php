@@ -355,10 +355,42 @@ class OverviewControllerTest extends AnalyticsApiTestCase
 
         $this->assertStringStartsWith(CsvExporter::BOM, $body, 'BOM 이 없으면 엑셀에서 한글이 전부 깨진다');
         $this->assertStringContainsString(
-            "ts,visits,visitors,pageviews,bounce_rate,avg_time_seconds,pages_per_visit\r\n",
+            "ts,visits,visitors,pageviews,bounce_rate,avg_time_seconds,pages_per_visit,new_visitors,returning_visitors\r\n",
             $body,
         );
         // 헤더만 나가고 값이 비면 내려받은 파일이 화면과 다르다.
         $this->assertMatchesRegularExpression("/{$date},7,5,19,/u", $body);
+    }
+
+    /**
+     * 추이 점에 신규·재방문이 실리고, 칸의 행이 모두 익명(null)이면 null 로 남는지 확인합니다.
+     *
+     * @return void 없음
+     *
+     * @scenario endpoint=overview, role=read, period=valid
+     *
+     * @effects series_points_carry_new_and_returning_visitors
+     */
+    public function test_series_points_carry_new_and_returning_visitors(): void
+    {
+        $today = Carbon::parse(AnalyticsClock::today());
+        $mixed = $today->copy()->subDays(2)->toDateString();
+        $anonymous = $today->copy()->subDays(3)->toDateString();
+
+        // 같은 날 두 유형 — 하나는 쿠키 모드(값 있음), 하나는 익명(null). 값이 있는 행만 더한다.
+        $this->daily($mixed, ['visitor_type' => 'guest', 'new_visitors' => 6, 'returning_visitors' => 2]);
+        $this->daily($mixed, ['visitor_type' => 'member', 'new_visitors' => null, 'returning_visitors' => null]);
+        $this->daily($anonymous, ['new_visitors' => null, 'returning_visitors' => null]);
+
+        $response = $this->actingAs($this->readAdmin())
+            ->getJson('/api/admin/analytics/overview?preset=7d')
+            ->assertOk();
+
+        $points = collect($response->json('data.series.points'))->keyBy('ts');
+
+        $this->assertSame(6, $points[$mixed]['new_visitors']);
+        $this->assertSame(2, $points[$mixed]['returning_visitors']);
+        $this->assertNull($points[$anonymous]['new_visitors'], '익명 모드 칸은 모름(null)이다 — 0 이 아니다');
+        $this->assertNull($points[$today->copy()->subDays(1)->toDateString()]['returning_visitors'], '기록 없는 칸도 null');
     }
 }

@@ -1235,6 +1235,7 @@ return [
         'subject_required' => 'IP·회원 번호·방문자 키 중 하나는 지정해야 합니다.',
         'confirm_required' => '되돌릴 수 없는 작업입니다 — 확인란을 선택해야 진행합니다.',
         'anonymize_target_required' => '가릴 옥텟 수 또는 해시 처리 중 하나는 지정해야 합니다.',
+        'bucket_bounds' => '구간 경계는 :min~:max 사이의 정수를 작은 것부터 겹치지 않게 쉼표로 적어야 합니다.',
     ],
 
     // 검증 속성명 (validation.attributes)

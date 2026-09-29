@@ -51,6 +51,7 @@ class DiagnosticsService
      * @param  StaleRunService  $staleRuns  멈춘 실행 판정 서비스
      * @param  GoalRegistryInterface  $goals  목표 등록부 (선언 경고 노출용)
      * @param  DimensionRegistryInterface  $dimensions  차원 등록부 (선언 경고 노출용)
+     * @param  ArchiveFreshnessService  $freshness  스케줄러 생존 판정
      */
     public function __construct(
         private readonly VisitRepositoryInterface $visits,
@@ -65,6 +66,7 @@ class DiagnosticsService
         private readonly StaleRunService $staleRuns,
         private readonly GoalRegistryInterface $goals,
         private readonly DimensionRegistryInterface $dimensions,
+        private readonly ArchiveFreshnessService $freshness,
     ) {}
 
     /**
@@ -228,6 +230,10 @@ class DiagnosticsService
                 ? (int) floor($reference->diffInHours(AnalyticsClock::now()))
                 : null,
             'running_run_id' => $running?->id,
+            // 스케줄러가 매시 집계를 최근에 돌렸는가 — 화면 열 때 집계가 숫자를 맞춰도 어제 확정·정리·
+            // 메일 보고서는 스케줄러만 돌린다.
+            'scheduler' => $this->freshness->schedulerStatus(),
+            'on_view_enabled' => AnalyticsConfig::fromSettings()->archiveOnViewEnabled,
         ];
     }
 

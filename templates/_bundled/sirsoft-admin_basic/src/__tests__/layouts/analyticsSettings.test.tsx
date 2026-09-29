@@ -29,7 +29,7 @@ const TAB_KEYS: Record<string, string[]> = {
   collection: ['enabled', 'visit_timeout_minutes', 'max_actions_per_visit', 'excluded_url_patterns', 'site_search_enabled', 'track_downloads', 'track_outlinks', 'download_extensions', 'public_summary_enabled'],
   privacy: ['privacy_mode', 'respect_dnt', 'ip_mask_octets', 'geo_before_mask', 'anonymize_referrer', 'pseudonymize_user_id', 'visitor_cookie_days'],
   bots: ['bot_detector_enabled', 'bot_tracking_enabled', 'block_headless', 'exclude_prefetch', 'excluded_ips', 'ip_allowlist', 'excluded_user_agents', 'block_cloud_ip_ranges', 'country_filter_mode', 'country_filter_codes'],
-  retention: ['retention_days', 'hourly_retention_days', 'bot_hits_retention_days', 'failure_log_retention_days', 'ledger_warning_actions', 'ledger_warning_visits', 'archive_chunk_size', 'realtime_poll_seconds', 'realtime_window_minutes', 'top_n_overview', 'top_n_dashboard', 'top_n_detail'],
+  retention: ['retention_days', 'hourly_retention_days', 'bot_hits_retention_days', 'failure_log_retention_days', 'ledger_warning_actions', 'ledger_warning_visits', 'archive_chunk_size', 'archive_on_view_enabled', 'archive_on_view_max_visits', 'duration_bucket_bounds', 'pages_bucket_bounds', 'realtime_poll_seconds', 'realtime_window_minutes', 'top_n_overview', 'top_n_dashboard', 'top_n_detail'],
   reports: ['report_weekly_enabled', 'report_monthly_enabled'],
 };
 

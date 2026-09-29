@@ -61,6 +61,28 @@ class AnalyticsSettingsCastTest extends TestCase
     }
 
     /**
+     * 화면 열 때 집계 두 키는 선언한 형으로, 구간 경계는 문자열 그대로 저장되는지 확인합니다.
+     *
+     * @return void 없음
+     *
+     * @scenario endpoint=settings, role=update
+     *
+     * @effects settings_store_declared_types_not_form_strings
+     */
+    public function test_archive_keys_are_cast_and_bounds_stay_strings(): void
+    {
+        $validated = $this->resolve(UpdateAnalyticsSettingsRequest::class, [
+            'archive_on_view_enabled' => '0',
+            'archive_on_view_max_visits' => '2000',
+            'duration_bucket_bounds' => '5,20',
+        ])->validated();
+
+        $this->assertFalse($validated['archive_on_view_enabled']);
+        $this->assertSame(2000, $validated['archive_on_view_max_visits']);
+        $this->assertSame('5,20', $validated['duration_bucket_bounds']);
+    }
+
+    /**
      * 키 하나만 뽑아도 같은 형이고, 없는 키는 기본값이 나오는지 확인합니다.
      *
      * @return void 없음

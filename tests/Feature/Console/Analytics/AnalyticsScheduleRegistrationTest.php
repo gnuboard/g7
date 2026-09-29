@@ -30,8 +30,9 @@ class AnalyticsScheduleRegistrationTest extends TestCase
     {
         return [
             'analytics:prune' => '10 5 * * *',
-            'analytics:archive --period=hour' => '5 * * * *',
-            'analytics:archive --period=day' => '15 0 * * *',
+            // 스케줄러 등록 실행만 `--scheduled` 를 단다 — 통계 화면은 이 표식으로 스케줄러 생존을 판정한다.
+            'analytics:archive --period=hour --scheduled' => '5 * * * *',
+            'analytics:archive --period=day --scheduled' => '15 0 * * *',
             'analytics:check-volume' => '5 5 * * *',
             'analytics:report --period=weekly' => '0 8 * * 1',
             'analytics:report --period=monthly' => '0 8 1 * *',
@@ -121,6 +122,7 @@ class AnalyticsScheduleRegistrationTest extends TestCase
 
         // 옵션까지 허용돼야 예약 화면이 그 옵션으로 등록할 수 있다.
         $this->assertContains('period', $allowlist['analytics:archive']['options'] ?? []);
+        $this->assertContains('scheduled', $allowlist['analytics:archive']['options'] ?? []);
         $this->assertContains('period', $allowlist['analytics:report']['options'] ?? []);
         $this->assertContains('days', $allowlist['analytics:prune']['options'] ?? []);
     }

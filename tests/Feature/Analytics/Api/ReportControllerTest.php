@@ -59,7 +59,7 @@ class ReportControllerTest extends AnalyticsApiTestCase
 
         // 개수를 함께 잠근다 — enum 에서 차원이 빠져도 순회만 하면 계속 green 이라
         // 계획서가 못박은 25차원이 회귀 가드가 되지 못한다.
-        $this->assertCount(25, StatsDimension::values(), '차원이 늘거나 줄면 이 숫자와 화면 목록을 함께 고친다');
+        $this->assertCount(30, StatsDimension::values(), '차원이 늘거나 줄면 이 숫자와 화면 목록을 함께 고친다');
 
         foreach (StatsDimension::values() as $dimension) {
             $this->actingAs($admin)
@@ -744,5 +744,59 @@ class ReportControllerTest extends AnalyticsApiTestCase
         $this->assertSame('example.test/many-exits', $first('hits'));
 
         $this->actingAs($admin)->getJson('/api/admin/analytics/reports/page_url?preset=today&sort=bounce_rate')->assertStatus(422);
+    }
+
+    /**
+     * 구간 리포트는 방문 수가 아니라 구간 순서로, 쪽 나누기 없이 전부 오고 라벨이 사람 말로 풀리는지 확인합니다.
+     *
+     * @return void 없음
+     *
+     * @scenario endpoint=reports, role=read, dimension=bucket
+     *
+     * @effects bucket_reports_are_ordered_by_bound_and_humanized
+     */
+    public function test_bucket_reports_are_ordered_by_bound_and_humanized(): void
+    {
+        $this->dimensionRow('visit_duration', '1800+', ['visits' => 1]);
+        $this->dimensionRow('visit_duration', '60-180', ['visits' => 9]);
+        $this->dimensionRow('visit_duration', '0-10', ['visits' => 3]);
+        $this->dimensionRow('visit_duration', '10-30', ['visits' => 5]);
+        $this->dimensionRow('visit_pages', '21+', ['visits' => 1]);
+        $this->dimensionRow('visit_pages', '6-7', ['visits' => 4]);
+        $this->dimensionRow('visit_pages', '1', ['visits' => 8]);
+
+        $admin = $this->readAdmin();
+
+        $duration = $this->actingAs($admin)
+            ->getJson('/api/admin/analytics/reports/visit_duration?preset=today&per_page=2&sort=hits')
+            ->assertOk();
+
+        $this->assertSame(['0-10', '10-30', '60-180', '1800+'], array_column($duration->json('data.data'), 'label'));
+        $this->assertSame(['0초 ~ 10초', '10초 ~ 30초', '1분 ~ 3분', '30분 초과'], array_column($duration->json('data.data'), 'label_display'));
+        $this->assertFalse($duration->json('data.pagination.has_more'), '구간 표는 한 번에 전부 온다');
+
+        $pages = $this->actingAs($admin)->getJson('/api/admin/analytics/reports/visit_pages?preset=today')->assertOk();
+        $this->assertSame(['1페이지', '6~7페이지', '21페이지 이상'], array_column($pages->json('data.data'), 'label_display'));
+    }
+
+    /**
+     * 검색 탭은 알려진 탭만 번역하고 확장이 더한 탭은 원값으로 보이는지 확인합니다.
+     *
+     * @return void 없음
+     *
+     * @scenario endpoint=reports, role=read, dimension=search_tab
+     *
+     * @effects search_tab_labels_are_translated
+     */
+    public function test_search_tab_labels_are_translated(): void
+    {
+        $this->dimensionRow('search_tab', 'posts', ['visits' => 3]);
+        $this->dimensionRow('search_tab', 'recipes', ['visits' => 1]);
+
+        $response = $this->actingAs($this->readAdmin())
+            ->getJson('/api/admin/analytics/reports/search_tab?preset=today')
+            ->assertOk();
+
+        $this->assertSame(['게시글', 'recipes'], array_column($response->json('data.data'), 'label_display'));
     }
 }

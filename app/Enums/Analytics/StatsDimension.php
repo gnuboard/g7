@@ -136,6 +136,31 @@ enum StatsDimension: string
     case BotPage = 'bot_page';
 
     /**
+     * 캠페인 매체 (utm_medium)
+     */
+    case CampaignMedium = 'campaign_medium';
+
+    /**
+     * 사이트 검색 탭 (전체·게시글·상품·페이지 등)
+     */
+    case SearchTab = 'search_tab';
+
+    /**
+     * 이벤트 이름 (확장이 `G7Core.analytics.trackEvent()` 로 보낸 이름)
+     */
+    case EventName = 'event_name';
+
+    /**
+     * 체류시간 구간
+     */
+    case VisitDuration = 'visit_duration';
+
+    /**
+     * 본 페이지 수 구간
+     */
+    case VisitPages = 'visit_pages';
+
+    /**
      * 모든 값을 문자열 배열로 반환합니다.
      *
      * @return array<string> 값 목록

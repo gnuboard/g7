@@ -2,6 +2,7 @@
 
 namespace App\Services\Analytics;
 
+use App\Analytics\ActionNameHasher;
 use App\Analytics\AnalyticsClock;
 use App\Analytics\AnalyticsConfig;
 use App\Contracts\Repositories\Analytics\StatsRepositoryInterface;
@@ -80,6 +81,112 @@ class SeriesService
     }
 
     /**
+     * 차원 라벨 하나의 추이를 만듭니다.
+     *
+     * 차원 집계는 일 단위뿐이라 시간 단위를 달라고 하면 일 단위로 낮추고 그 사실을 함께 보낸다.
+     * 자동 단위는 92일까지 일, 그 뒤는 주다(기간 상한이 366일이라 월은 생기지 않는다).
+     *
+     * @param  string  $dimension  차원 이름
+     * @param  string  $label  저장 라벨
+     * @param  string  $from  시작일 (Y-m-d)
+     * @param  string  $to  종료일 (Y-m-d)
+     * @param  array<string, mixed>  $options  조회 옵션 (unit, visitor_types)
+     * @return array{unit: string, unit_downgraded: bool, points: array<int, array<string, mixed>>} 시계열
+     */
+    public function dimensionSeries(string $dimension, string $label, string $from, string $to, array $options = []): array
+    {
+        $types = $options['visitor_types'] ?? $this->humanTypes();
+        $requested = (string) ($options['unit'] ?? 'auto');
+        $downgraded = false;
+
+        if ($requested === 'hour') {
+            $unit = 'day';
+            $downgraded = true;
+        } elseif ($requested === 'auto' || $requested === '') {
+            $days = (int) Carbon::parse($from)->diffInDays(Carbon::parse($to)) + 1;
+            $unit = $days <= self::AUTO_DAY_MAX_DAYS ? 'day' : 'week';
+        } else {
+            $unit = $requested;
+        }
+
+        $rows = $this->stats->dimensionSeries($dimension, ActionNameHasher::labelHash($label), $from, $to, $types);
+
+        return [
+            'unit' => $unit,
+            'unit_downgraded' => $downgraded,
+            'points' => $this->dimensionPoints($rows, $from, $to, $unit),
+        ];
+    }
+
+    /**
+     * 차원 합계 행을 칸별로 묶어 점 목록을 만듭니다.
+     *
+     * 기록이 없는 칸은 0 으로 채우고, 기간 전체에 기록이 없으면 빈 목록을 돌려준다(추이 시계열과 같은 규약).
+     *
+     * @param  Collection<int, object>  $rows  날짜별 합계 행
+     * @param  string  $from  시작일 (Y-m-d)
+     * @param  string  $to  종료일 (Y-m-d)
+     * @param  string  $unit  단위 (day, week, month, year)
+     * @return array<int, array<string, mixed>> 점 목록
+     */
+    private function dimensionPoints(Collection $rows, string $from, string $to, string $unit): array
+    {
+        if ($rows->isEmpty()) {
+            return [];
+        }
+
+        $bucketOf = $this->bucketOf($unit);
+        $empty = static fn (string $key): array => [
+            'ts' => $key,
+            'visits' => 0,
+            'hits' => 0,
+            'bounces' => 0,
+            'total_time_seconds' => 0,
+        ];
+
+        $points = [];
+
+        foreach ($this->dayKeys($from, $to, $bucketOf) as $key) {
+            $points[$key] = $empty($key);
+        }
+
+        foreach ($rows as $row) {
+            $key = $bucketOf(Carbon::parse($row->date));
+            $points[$key] ??= $empty($key);
+            $points[$key]['visits'] += (int) $row->visits;
+            $points[$key]['hits'] += (int) $row->hits;
+            $points[$key]['bounces'] += (int) $row->bounces;
+            $points[$key]['total_time_seconds'] += (int) $row->total_time_seconds;
+        }
+
+        ksort($points);
+
+        return array_values(array_map(static function (array $point): array {
+            $visits = $point['visits'];
+            $point['bounce_rate'] = $visits > 0 ? round($point['bounces'] / $visits * 100, 1) : 0.0;
+            $point['avg_time'] = $visits > 0 ? (int) round($point['total_time_seconds'] / $visits) : 0;
+
+            return $point;
+        }, $points));
+    }
+
+    /**
+     * 단위에 맞는 칸 키 함수를 만듭니다.
+     *
+     * @param  string  $unit  단위 (day, week, month, year)
+     * @return callable(Carbon): string 날짜에서 칸 키를 만드는 함수
+     */
+    private function bucketOf(string $unit): callable
+    {
+        return fn (Carbon $date): string => match ($unit) {
+            'week' => $date->copy()->startOfWeek()->toDateString(),
+            'month' => $date->format('Y-m-01'),
+            'year' => $date->format('Y-01-01'),
+            default => $date->toDateString(),
+        };
+    }
+
+    /**
      * 시간 집계를 언제부터 볼 수 있는지 돌려줍니다.
      *
      * @param  AnalyticsConfig  $config  설정
@@ -154,12 +261,7 @@ class SeriesService
     {
         $rows = $this->stats->daily($from, $to, $types);
 
-        $bucketOf = fn (Carbon $date): string => match ($unit) {
-            'week' => $date->copy()->startOfWeek()->toDateString(),
-            'month' => $date->format('Y-m-01'),
-            'year' => $date->format('Y-01-01'),
-            default => $date->toDateString(),
-        };
+        $bucketOf = $this->bucketOf($unit);
 
         return $this->aggregate(
             $rows,
@@ -261,6 +363,14 @@ class SeriesService
             $points[$key]['pageviews'] += (int) $row->pageviews;
             $points[$key]['bounces'] += (int) $row->bounces;
             $points[$key]['total_time_seconds'] += (int) $row->total_time_seconds;
+
+            // 신규·재방문은 쿠키를 쓰는 모드에서만 센다 — 익명 모드 행은 null 이다. 칸의 행이 모두 null 이면
+            // 칸도 null(모름)로 두고, 하나라도 값이 있으면 값이 있는 행만 더한다.
+            foreach (['new_visitors', 'returning_visitors'] as $field) {
+                if ($row->{$field} !== null) {
+                    $points[$key][$field] = ($points[$key][$field] ?? 0) + (int) $row->{$field};
+                }
+            }
         }
 
         ksort($points);
@@ -291,6 +401,8 @@ class SeriesService
             'pageviews' => 0,
             'bounces' => 0,
             'total_time_seconds' => 0,
+            'new_visitors' => null,
+            'returning_visitors' => null,
         ];
     }
 

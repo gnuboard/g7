@@ -89,4 +89,18 @@ class AnalyticsArchiveRunFactory extends Factory
             'triggered_by' => $userId,
         ]);
     }
+
+    /**
+     * 관리자가 통계 화면을 열 때 돈 집계 상태
+     *
+     * @return static 팩토리 인스턴스
+     */
+    public function onView(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'run_type' => ArchiveRunType::Hour,
+            'trigger' => 'on_view',
+            'triggered_by' => null,
+        ]);
+    }
 }

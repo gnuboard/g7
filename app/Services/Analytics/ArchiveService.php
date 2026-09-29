@@ -4,6 +4,7 @@ namespace App\Services\Analytics;
 
 use App\Analytics\AnalyticsClock;
 use App\Analytics\AnalyticsConfig;
+use App\Analytics\BucketLabeler;
 use App\Analytics\DTO\DimensionDefinition;
 use App\Analytics\NotificationCooldown;
 use App\Contracts\Analytics\DimensionRegistryInterface;
@@ -85,6 +86,19 @@ class ArchiveService
     private const BOT_CHUNK_SIZE = 1000;
 
     /**
+     * 코어 차원 중 하루 라벨 수에 상한을 두는 것
+     *
+     * 이벤트 이름과 검색 탭은 공개 수집 API 로 들어오는 자유 문자열이다 — 누구나 이름을 바꿔 가며
+     * 보내면 하루치 집계 행이 끝없이 늘어난다. 방문 수가 많은 라벨부터 이 수만큼만 남긴다.
+     *
+     * @var array<string, int>
+     */
+    private const CORE_DIMENSION_CAPS = [
+        'event_name' => 500,
+        'search_tab' => 50,
+    ];
+
+    /**
      * 집계기를 생성합니다.
      *
      * @param  StatsRepositoryInterface  $stats  집계 저장소
@@ -113,8 +127,8 @@ class ArchiveService
      * 하루치를 집계합니다.
      *
      * @param  string  $date  집계 일자 (Y-m-d, 사이트 표준시 기준)
-     * @param  array<string, mixed>  $options  실행 옵션 (run_type, trigger, is_final, triggered_by, run_id, dry_run)
-     * @return AnalyticsArchiveRun|null 실행 이력 (마른 실행이면 null)
+     * @param  array<string, mixed>  $options  실행 옵션 (run_type, trigger, is_final, triggered_by, run_id, dry_run, record_skipped)
+     * @return AnalyticsArchiveRun|null 실행 이력 (마른 실행이거나, `record_skipped=false` 인데 잠금을 못 잡았으면 null)
      */
     public function archiveDay(string $date, array $options = []): ?AnalyticsArchiveRun
     {
@@ -132,6 +146,12 @@ class ArchiveService
         $lock = Cache::lock('analytics:archive:'.$runType.':'.$date, self::LOCK_SECONDS);
 
         if (! $lock->get()) {
+            // 화면 열 때 집계는 여러 관리자가 동시에 열면 잠금을 못 잡는 것이 정상이다 — 그때마다
+            // 건너뜀 행을 남기면 실행 이력이 요청 수만큼 불어난다. 앞선 요청이 같은 날을 계산하고 있다.
+            if (($options['record_skipped'] ?? true) === false) {
+                return null;
+            }
+
             return $this->recordSkipped($runType, $date, $options, __('analytics.archive.skipped_locked'));
         }
 
@@ -395,6 +415,7 @@ class ArchiveService
             $run,
             $totalVisits,
             $extensionDimensions,
+            $config,
         ) {
             $visitIds = $visits->pluck('id')->all();
             $actions = $this->actions->groupedForVisits($visitIds);
@@ -426,6 +447,7 @@ class ArchiveService
                     $daily,
                     $hourly,
                     $conversions->get($visit->id, collect()),
+                    $config,
                 );
 
                 $this->accumulateExtensionDimensions($visit, $visitActions, $extensionDimensions, $daily);
@@ -457,10 +479,13 @@ class ArchiveService
         return [
             'daily' => $daily,
             'hourly' => $hourly,
-            'dimension_caps' => array_combine(
-                array_map(fn ($definition) => $definition->statsDimension(), $extensionDimensions),
-                array_map(fn ($definition) => $definition->maxCardinality, $extensionDimensions),
-            ) ?: [],
+            'dimension_caps' => array_merge(
+                array_combine(
+                    array_map(fn ($definition) => $definition->statsDimension(), $extensionDimensions),
+                    array_map(fn ($definition) => $definition->maxCardinality, $extensionDimensions),
+                ) ?: [],
+                self::CORE_DIMENSION_CAPS,
+            ),
             'pii_dimensions' => $piiDimensions,
             'processed_visits' => $processedVisits,
             'processed_actions' => $processedActions,
@@ -531,6 +556,7 @@ class ArchiveService
      * @param  DailyAccumulator  $daily  일 누적기
      * @param  HourlyAccumulator  $hourly  시간 누적기
      * @param  Collection<int, AnalyticsConversion>|null  $conversions  방문의 전환 목록
+     * @param  AnalyticsConfig|null  $config  설정 (구간 경계 — 없으면 기본 경계)
      * @return void 없음
      */
     private function accumulateVisit(
@@ -540,6 +566,7 @@ class ArchiveService
         DailyAccumulator $daily,
         HourlyAccumulator $hourly,
         ?Collection $conversions = null,
+        ?AnalyticsConfig $config = null,
     ): void {
         $visitorType = $visit->visitor_type instanceof VisitorType
             ? $visit->visitor_type->value
@@ -567,7 +594,7 @@ class ArchiveService
             );
         }
 
-        $this->accumulateVisitDimensions($visit, $nameMap, $visitorType, $visitorKey, $daily);
+        $this->accumulateVisitDimensions($visit, $nameMap, $visitorType, $visitorKey, $daily, $config);
 
         foreach ($actions as $action) {
             $this->accumulateAction($action, $visit, $nameMap, $visitorType, $visitorKey, $daily, $hourly);
@@ -693,6 +720,7 @@ class ArchiveService
      * @param  string  $visitorType  방문자 유형
      * @param  string  $visitorKey  방문자 키
      * @param  DailyAccumulator  $daily  일 누적기
+     * @param  AnalyticsConfig|null  $config  설정 (구간 경계 — 없으면 기본 경계)
      * @return void 없음
      */
     private function accumulateVisitDimensions(
@@ -701,6 +729,7 @@ class ArchiveService
         string $visitorType,
         string $visitorKey,
         DailyAccumulator $daily,
+        ?AnalyticsConfig $config = null,
     ): void {
         $visitKey = (string) $visit->id;
         $bounce = $visit->is_bounce ? 1 : 0;
@@ -740,6 +769,7 @@ class ArchiveService
             StatsDimension::ReferrerKeyword->value => $visit->referrer_keyword,
             StatsDimension::Campaign->value => $visit->campaign_name,
             StatsDimension::CampaignSource->value => $visit->campaign_source,
+            StatsDimension::CampaignMedium->value => $visit->campaign_medium,
             StatsDimension::Browser->value => $visit->browser_name,
             StatsDimension::BrowserVersion->value => $this->joinLabel($visit->browser_name, $visit->browser_version),
             StatsDimension::Os->value => $visit->os_name,
@@ -750,6 +780,19 @@ class ArchiveService
             StatsDimension::Country->value => $visit->country_code,
             StatsDimension::Region->value => $this->joinLabel($visit->country_code, $visit->region_code, '/'),
             StatsDimension::City->value => $this->joinLabel($visit->country_code, $visit->city, '/'),
+            // 체류는 모든 방문을 센다. 경계는 설정에서 바꿀 수 있고 바꾼 뒤 집계부터 새 라벨로 쌓인다.
+            StatsDimension::VisitDuration->value => BucketLabeler::duration(
+                $time,
+                $config?->durationBucketBounds ?? AnalyticsConfig::parseBounds(AnalyticsConfig::DEFAULT_DURATION_BUCKET_BOUNDS, ''),
+            ),
+            // 본 페이지 수는 페이지를 한 번이라도 본 방문만 센다 — 내려받기만 한 방문(0페이지)이 「1페이지」
+            // 구간을 부풀리지 않게.
+            StatsDimension::VisitPages->value => $pageviews >= 1
+                ? BucketLabeler::pages(
+                    $pageviews,
+                    $config?->pagesBucketBounds ?? AnalyticsConfig::parseBounds(AnalyticsConfig::DEFAULT_PAGES_BUCKET_BOUNDS, ''),
+                )
+                : null,
         ];
 
         foreach ($simple as $dimension => $label) {
@@ -813,6 +856,11 @@ class ArchiveService
             ActionType::Download->value => StatsDimension::Download->value,
             ActionType::Outlink->value => StatsDimension::Outlink->value,
             ActionType::SiteSearch->value => StatsDimension::SiteSearch->value,
+            // 이벤트는 이름을 사전의 `event` 종류로 저장한 행만 센다. 이름을 저장하기 전의 옛 이벤트 행은
+            // 주소(`url` 종류)를 가리켜, 세면 이벤트 목록에 주소가 섞인다.
+            ActionType::Event->value => ($nameMap[$action->action_name_id]->type ?? null) === 'event'
+                ? StatsDimension::EventName->value
+                : null,
             // 목표 차원은 액션이 아니라 전환 원장이 채운다 — 액션 이름은 목표가 일어난
             // 주소라서, 그것으로 행을 만들면 목표별이 아니라 주소별로 갈린다.
             default => null,
@@ -841,6 +889,14 @@ class ArchiveService
         }
 
         $daily->addDimension($dimension, $label, $visitorType, $metrics);
+
+        // 검색은 어느 탭(전체·게시글·상품…)에서 했는지도 따로 센다 — 검색어 행은 그대로 둔다.
+        if ($dimension === StatsDimension::SiteSearch->value && is_string($action->search_tab) && $action->search_tab !== '') {
+            $daily->addDimension(StatsDimension::SearchTab->value, $action->search_tab, $visitorType, [
+                'visit_key' => $visitKey,
+                'hits' => 1,
+            ]);
+        }
 
         if ($isPageview) {
             $titleLabel = $this->nameLabel($nameMap, $action->page_title_id);

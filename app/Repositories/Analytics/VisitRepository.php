@@ -4,6 +4,7 @@ namespace App\Repositories\Analytics;
 
 use App\Analytics\VisitorRecognizer;
 use App\Contracts\Repositories\Analytics\VisitRepositoryInterface;
+use App\Models\Analytics\AnalyticsStatsDaily;
 use App\Models\Analytics\AnalyticsVisit;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
@@ -237,6 +238,54 @@ class VisitRepository implements VisitRepositoryInterface
     public function countOnDate(string $date): int
     {
         return AnalyticsVisit::query()->where('visit_date', $date)->count();
+    }
+
+    /**
+     * 방문은 있는데 일 집계가 확정되지 않은 날을 최근 날부터 찾습니다.
+     *
+     * @param  string  $floor  이 날짜 이후만 본다 (Y-m-d, 제외)
+     * @param  string  $today  이 날짜 이전만 본다 (Y-m-d, 제외)
+     * @param  int  $limit  최대 일수
+     * @return array<string, int> 날짜(Y-m-d) => 그날 방문 수, 최근 날부터
+     */
+    public function unfinalizedDatesWithVisits(string $floor, string $today, int $limit): array
+    {
+        if ($limit < 1) {
+            return [];
+        }
+
+        return AnalyticsVisit::query()
+            ->selectRaw('visit_date, COUNT(*) as visits')
+            ->where('visit_date', '>', $floor)
+            ->where('visit_date', '<', $today)
+            ->whereNotIn('visit_date', AnalyticsStatsDaily::query()
+                ->select('date')
+                ->where('date', '>', $floor)
+                ->where('date', '<', $today)
+                ->where('is_final', true))
+            ->groupBy('visit_date')
+            ->orderByDesc('visit_date')
+            ->limit($limit)
+            ->get()
+            ->mapWithKeys(fn ($row): array => [
+                Carbon::parse($row->visit_date)->toDateString() => (int) $row->visits,
+            ])
+            ->all();
+    }
+
+    /**
+     * 원장에서 가장 먼저 기록된 방문의 시작 시각을 돌려줍니다.
+     *
+     * 기본키 순서의 첫 행을 읽는다 — `MIN(first_action_at)` 은 인덱스가 없어 원장 전체를 훑는다.
+     * 방문은 시작 순서대로 쌓이므로 첫 행이 가장 이른 방문이다.
+     *
+     * @return Carbon|null 첫 방문 시작 시각 (UTC, 원장이 비었으면 null)
+     */
+    public function firstTrackedAt(): ?Carbon
+    {
+        $value = AnalyticsVisit::query()->orderBy('id')->value('first_action_at');
+
+        return $value !== null ? Carbon::parse($value) : null;
     }
 
     /**

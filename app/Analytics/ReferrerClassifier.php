@@ -48,13 +48,17 @@ class ReferrerClassifier
 
         $host = self::hostOf($referrer);
 
+        // 매체(utm_medium)만 붙은 주소는 캠페인으로 보지 않는다 — 이름·출처가 없으면 어느 캠페인인지
+        // 말할 수 없다. 다만 운영자가 붙인 매체 값은 유입 종류와 따로 남겨 「캠페인 매체」 리포트가 센다.
+        $medium = $campaign['medium'];
+
         if ($host === null) {
-            return self::emptyResult(ReferrerType::Direct);
+            return self::emptyResult(ReferrerType::Direct, $medium);
         }
 
         // 사이트 안에서의 이동은 유입이 아니다.
         if ($host === UrlNormalizer::siteHost()) {
-            return self::emptyResult(ReferrerType::Direct);
+            return self::emptyResult(ReferrerType::Direct, $medium);
         }
 
         $engine = self::searchEngineFor($host);
@@ -67,7 +71,7 @@ class ReferrerClassifier
                 'keyword' => self::keywordFrom($referrer, $engine['params']),
                 'campaign_name' => null,
                 'campaign_source' => null,
-                'campaign_medium' => null,
+                'campaign_medium' => $medium,
             ];
         }
 
@@ -78,7 +82,7 @@ class ReferrerClassifier
             'keyword' => null,
             'campaign_name' => null,
             'campaign_source' => null,
-            'campaign_medium' => null,
+            'campaign_medium' => $medium,
         ];
     }
 
@@ -86,10 +90,11 @@ class ReferrerClassifier
      * 빈 분류 결과를 만듭니다.
      *
      * @param  ReferrerType  $type  유입 종류
-     * @return array{type: ReferrerType, name: null, url: null, keyword: null, campaign_name: null, campaign_source: null, campaign_medium: null}
-     *                                                                                                                                            분류 결과
+     * @param  string|null  $medium  캠페인 매체 (utm_medium 만 붙은 경우)
+     * @return array{type: ReferrerType, name: null, url: null, keyword: null, campaign_name: null, campaign_source: null, campaign_medium: string|null}
+     *                                                                                                                                                   분류 결과
      */
-    private static function emptyResult(ReferrerType $type): array
+    private static function emptyResult(ReferrerType $type, ?string $medium = null): array
     {
         return [
             'type' => $type,
@@ -98,7 +103,7 @@ class ReferrerClassifier
             'keyword' => null,
             'campaign_name' => null,
             'campaign_source' => null,
-            'campaign_medium' => null,
+            'campaign_medium' => $medium,
         ];
     }
 
