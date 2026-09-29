@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Enums\LanguagePackScope;
+use App\Exceptions\ExtensionOperationInProgressException;
 use App\Exceptions\PluginOperationException;
 use App\Extension\Vendor\VendorMode;
 use App\Helpers\PermissionHelper;
@@ -43,6 +44,13 @@ class PluginController extends AdminBaseController
     use OrchestratesCascadeInstall;
     use RebuildsSearchIndexOnDemand;
 
+    /**
+     * 플러그인 관리 API 컨트롤러를 생성합니다.
+     *
+     * @param  PluginService  $pluginService  플러그인 서비스
+     * @param  TemplateService  $templateService  템플릿 서비스
+     * @param  LicenseService  $licenseService  라이선스 서비스
+     */
     public function __construct(
         private PluginService $pluginService,
         private TemplateService $templateService,
@@ -210,7 +218,7 @@ class PluginController extends AdminBaseController
             $firstError = collect($e->errors())->flatten()->first()
                 ?? __('plugins.install_failed');
 
-            return $this->validationError($e->errors(), $firstError);
+            return $this->validationError($e->errors(), 'common.failure_reason', ['reason' => $firstError]);
         } catch (\Exception $e) {
             return $this->error('plugins.installation_failed', 500, $e->getMessage(), [
                 'error' => $e->getMessage(),
@@ -416,12 +424,12 @@ class PluginController extends AdminBaseController
                 ]);
             }
         } catch (ValidationException $e) {
-            return $this->error(
-                'plugins.uninstall_validation_failed',
-                422,
-                $e->errors(),
-                ['error' => $e->getMessage()]
-            );
+            // Service 가 이미 「…제거에 실패했습니다: 사유」로 감싸 두었으므로 첫 사유를 그대로 쓴다 — 같은 문구로 한 번 더
+            // 감싸면 「…실패했습니다: …실패했습니다: …」가 된다(#138 실측 ① 후속, performUpdate 와 같은 처리)
+            $firstError = collect($e->errors())->flatten()->first()
+                ?? __('plugins.uninstall_validation_failed', ['plugin' => '', 'error' => '']);
+
+            return $this->validationError($e->errors(), 'common.failure_reason', ['reason' => $firstError]);
         } catch (\Exception $e) {
             return $this->error(
                 'plugins.uninstall_error',
@@ -573,6 +581,9 @@ class PluginController extends AdminBaseController
 
             $pluginInfo = $result['plugin_info'] ?? null;
 
+            // 업데이트할 것이 없었으면(success=false) 「업데이트되었습니다」가 아니라 「업데이트할 내용이 없습니다」로 답한다(#138 실측 ④)
+            $messageKey = ($result['success'] ?? true) === false ? 'plugins.no_update_available' : 'plugins.update_success';
+
             // 성공 메시지는 ":plugin"/":version" 치환자를 쓰므로 값을 함께 넘긴다
             $messageParams = [
                 'plugin' => $pluginName,
@@ -581,7 +592,7 @@ class PluginController extends AdminBaseController
 
             if ($pluginInfo) {
                 return $this->successWithResource(
-                    'plugins.update_success',
+                    $messageKey,
                     (new PluginResource($pluginInfo))->additional(['search_index' => $searchIndex]),
                     200,
                     $messageParams
@@ -589,18 +600,21 @@ class PluginController extends AdminBaseController
             }
 
             return $this->success(
-                'plugins.update_success',
+                $messageKey,
                 $result + ['search_index' => $searchIndex],
                 200,
                 $messageParams
             );
+        } catch (ExtensionOperationInProgressException $e) {
+            // 같은 확장의 업데이트가 진행 중 — 두 번째 요청(버튼 더블클릭 등)을 409 로 거절한다(#138 실측 ②)
+            return $this->error($e->getMessageKey(), 409, null, $e->getMessageParams());
         } catch (ValidationException $e) {
             // Service/Manager에서 이미 번역된 메시지를 errors에 포함하므로
             // 첫 번째 에러를 top-level message로 직접 사용 (이중 래핑 방지)
             $firstError = collect($e->errors())->flatten()->first()
                 ?? __('plugins.errors.update_failed', ['plugin' => $pluginName, 'error' => '']);
 
-            return $this->validationError($e->errors(), $firstError);
+            return $this->validationError($e->errors(), 'common.failure_reason', ['reason' => $firstError]);
         } catch (\Exception $e) {
             return $this->error('plugins.errors.update_failed', 500, $e->getMessage(), [
                 'plugin' => $pluginName,

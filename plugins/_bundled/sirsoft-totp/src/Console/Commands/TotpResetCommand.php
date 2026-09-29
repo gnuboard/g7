@@ -51,7 +51,8 @@ class TotpResetCommand extends Command
             return self::FAILURE;
         }
 
-        if (! $enrollmentService->reset($user)) {
+        // 관리자 화면과 같은 감사 기록을 남긴다 — 셸에는 요청 사용자·IP 가 없다
+        if (! $enrollmentService->adminReset($user, null, null)) {
             $this->warn("이 회원에게는 등록된 인증 앱이 없습니다: {$email}");
 
             return self::SUCCESS;

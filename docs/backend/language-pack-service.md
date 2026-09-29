@@ -170,6 +170,11 @@ HookManager::doAction('core.language_packs.after_activate', $pack);
 | (plugin 동일 패턴) | `core.plugins.after_install` / `after_update` / `after_uninstall` |
 | 템플릿 | `core.templates.after_install` / **`after_version_update`** / `after_uninstall` — `after_update` 는 템플릿 **레코드 수정** 훅이라 버전 업데이트에 반응하지 않는다 |
 
+> 가상 등록은 레코드를 바로 `installed`/`active` 로 만들며 `core.language_packs.installed`·`activated` 훅을 **발화하지 않는다**(설계 결정 2026-09-29).
+> 이 두 훅의 구독자는 DB 번역 동기화·시더 재실행뿐인데, 확장 설치 과정에서 그 확장의 시더가 이미 돌므로 발화하면
+> 로케일마다 같은 작업을 되풀이한다. 동봉 언어팩의 설치를 알아야 하는 확장은 확장 생명주기 훅(`core.{modules,plugins,templates}.after_install`)을 구독한다.
+> 반대로 확장 비활성화 때의 연쇄 비활성화(`deactivateForExtension`)와 재활성화 모달은 `LanguagePackService` 를 거치므로 훅이 발화한다.
+
 > 이 후크들은 Manager 가 발화하므로 어드민 UI 뿐 아니라 Artisan 커맨드(`module:install`·`template:update` 등)로 설치·업데이트해도
 > 동기화된다. 언어팩 버전은 후크가 넘기는 확장 정보의 `version` 을 쓴다(없으면 `1.0.0`).
 

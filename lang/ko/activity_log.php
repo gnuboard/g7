@@ -97,6 +97,19 @@ return [
         'manual_run_finished' => '개인정보 조치 직권 실행 종료',
 
         // 이커머스/게시판 공용
+
+        // 방문자 통계 운영 행위 (analytics.*) — 설명 문구(activity_log.analytics.*)와 별개로 목록의 「동작」 칸 라벨
+        'analytics' => [
+            'settings_updated' => '통계 설정 변경',
+            'privacy_mode_changed' => '통계 개인정보 모드 변경',
+            'data_purged' => '통계 데이터 전체 삭제',
+            'anonymized' => '통계 소급 익명화',
+            'subject_exported' => '정보주체 방문 기록 내보내기',
+            'subject_deleted' => '정보주체 방문 기록 삭제',
+            'opt_out_changed' => '통계 수집 제외 변경',
+            'archive_requested' => '통계 수동 집계',
+            'extension_purged' => '확장 통계 데이터 정리',
+        ],
     ],
 
     // 설명 템플릿 (description_key로 사용)

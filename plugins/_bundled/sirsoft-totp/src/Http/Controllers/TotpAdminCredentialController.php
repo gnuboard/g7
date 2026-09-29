@@ -2,7 +2,6 @@
 
 namespace Plugins\Sirsoft\Totp\Http\Controllers;
 
-use App\Extension\HookManager;
 use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use App\Models\User;
@@ -16,7 +15,8 @@ use Plugins\Sirsoft\Totp\Services\TotpEnrollmentService;
  *
  * 단말과 백업 코드를 모두 잃은 회원의 유일한 구제 경로다. 코드를 요구하지 않는 강제
  * 해제이므로 전용 권한(`sirsoft-totp.credentials.delete`)을 라우트에서 강제하고, 실행
- * 사실은 `sirsoft-totp.credential.admin_reset` 훅으로 알린다 — 그 훅을 구독하는
+ * 사실은 `TotpEnrollmentService::adminReset()` 이 `sirsoft-totp.credential.admin_reset` 훅으로
+ * 알린다(서버 셸의 `totp:reset` 도 같은 메서드를 거친다) — 그 훅을 구독하는
  * `TotpAdminResetActivityLogListener` 가 활동 로그에 남긴다. 누가 누구의 2단계 인증을
  * 풀었는지 추적할 수 없으면 이 경로 자체가 권한 상승 수단이 된다.
  *
@@ -48,14 +48,7 @@ class TotpAdminCredentialController extends AdminBaseController
     {
         $target = $user;
 
-        $removed = $this->enrollmentService->reset($target);
-
-        if ($removed) {
-            HookManager::doAction('sirsoft-totp.credential.admin_reset', $target, [
-                'actor_id' => $this->getCurrentUser()?->id,
-                'ip_address' => request()->ip(),
-            ]);
-        }
+        $removed = $this->enrollmentService->adminReset($target, $this->getCurrentUser()?->id, request()->ip());
 
         return ResponseHelper::success('sirsoft-totp::messages.enrollment.admin_reset', [
             'user_id' => $target->id,

@@ -1,0 +1,24 @@
+feature: 공개 훅 계약 — 서드파티 확장이 모르고 깨지지 않게 하는 장치
+
+description: |
+  공개 훅의 이름·인자 위치는 서드파티 확장이 코드에 박아 쓰는 계약이다(설계 결정 2026-09-29, #138 후속).
+    - 발화 목록(app/Extension/HookContract/data/catalog.php)을 스캐너가 소스에서 만들고(hooks:catalog), 테스트가 최신성을 잰다.
+    - 이름을 조립하는 동적 발화처는 data/dynamic.php 의 패턴으로 관리하고, 목록 밖 새 동적 발화처는 red.
+    - 옛 목록 대비 훅 삭제·인자 개수 감소가 deprecated 목록에 없으면 목록 생성기가 거부한다.
+    - 등록 시점 가드가 사용 중단·발화처 없는 훅 구독을 경고한다(코어·번들 이름공간만, 하루 1회).
+    - 액션 옛 이름 병행 발화 HookManager::doActionWithLegacyName — 옛 이름은 구독자가 있을 때만.
+    - 코어·번들 리스너는 사용 중단·발화처 없는 훅을 구독하지 않는다.
+
+axes:
+  case: [catalog_snapshot, dynamic_sites, listener_subscriptions, breaking_change_guard, subscription_guard, legacy_action_alias]
+
+effects:
+  - catalog_matches_source
+  - every_dynamic_site_has_patterns
+  - bundled_listeners_subscribe_only_published_hooks
+  - removal_or_arg_loss_without_deprecation_is_rejected
+  - deprecated_or_unpublished_subscription_is_warned
+  - legacy_action_name_fires_only_with_subscribers
+
+test_files:
+  - tests/Feature/Extension/HookContractTest.php

@@ -18,12 +18,14 @@ use App\Enums\ExtensionOwnerType;
 use App\Enums\ExtensionStatus;
 use App\Enums\LayoutSourceType;
 use App\Enums\PermissionType;
+use App\Exceptions\ExtensionOperationInProgressException;
 use App\Extension\Concerns\ResolvesExtensionIcons;
 use App\Extension\Concerns\ResolvesExtensionSharedRecords;
 use App\Extension\Helpers\DependencyEnricher;
 use App\Extension\Helpers\ExtensionBackupHelper;
 use App\Extension\Helpers\ExtensionInstallRollbackHelper;
 use App\Extension\Helpers\ExtensionMenuSyncHelper;
+use App\Extension\Helpers\ExtensionOperationLock;
 use App\Extension\Helpers\ExtensionPendingHelper;
 use App\Extension\Helpers\ExtensionRoleSyncHelper;
 use App\Extension\Helpers\ExtensionStatusGuard;
@@ -358,6 +360,9 @@ class ModuleManager implements ModuleManagerInterface
         bool $force = false,
         ?string &$failureReason = null,
     ): bool {
+        // 직전 훅 — CLI·어드민 UI 공통으로 한 번 발화한다(예전에는 Service 에서만 발화해 CLI 가 빠졌다, #138 후속)
+        HookManager::doAction('core.modules.before_install', $moduleName);
+
         $failureReason = null;
 
         // identifier 형식 검증 (내부 호출 방어)
@@ -610,6 +615,9 @@ class ModuleManager implements ModuleManagerInterface
      */
     public function activateModule(string $moduleName, bool $force = false): array
     {
+        // 직전 훅 — CLI·어드민 UI 공통으로 한 번 발화한다(예전에는 Service 에서만 발화해 CLI 가 빠졌다, #138 후속)
+        HookManager::doAction('core.modules.before_activate', $moduleName, $force);
+
         $module = $this->getModule($moduleName);
         if (! $module) {
             return [
@@ -813,6 +821,9 @@ class ModuleManager implements ModuleManagerInterface
         string $reason = DeactivationReason::Manual->value,
         ?string $incompatibleRequiredVersion = null,
     ): array {
+        // 직전 훅 — CLI·어드민 UI 공통으로 한 번 발화한다(예전에는 Service 에서만 발화해 CLI 가 빠졌다, #138 후속)
+        HookManager::doAction('core.modules.before_deactivate', $moduleName, $force);
+
         $module = $this->getModule($moduleName);
         if (! $module) {
             return [
@@ -992,6 +1003,9 @@ class ModuleManager implements ModuleManagerInterface
         ?string &$failureReason = null,
         ?array &$preservedBackups = null,
     ): bool {
+        // 직전 훅 — CLI·어드민 UI 공통으로 한 번 발화한다(예전에는 Service 에서만 발화해 CLI 가 빠졌다, #138 후속)
+        HookManager::doAction('core.modules.before_uninstall', $moduleName, $deleteData);
+
         $failureReason = null;
         $preservedBackups = [];
 
@@ -1007,6 +1021,16 @@ class ModuleManager implements ModuleManagerInterface
         $module = $this->getModule($moduleName);
         if (! $module) {
             throw new \Exception(__('modules.not_found', ['module' => $moduleName]));
+        }
+
+        // 켜진 확장이 의존하면 제거하지 않는다 — 비활성화는 경고 뒤 강제로 진행할 수 있지만 제거는 되돌릴 수 없고,
+        // 남은 의존 확장이 필요한 모듈 없이 켜진 채로 남는다(#138 실측 ①).
+        $activeDependents = $this->activeDependentIdentifiers($moduleName);
+        if ($activeDependents !== []) {
+            throw new \Exception(__('modules.errors.uninstall_blocked_by_dependents', [
+                'module' => $moduleName,
+                'extensions' => implode(', ', $activeDependents),
+            ]));
         }
 
         // after_uninstall 훅에 실을 정보는 파괴 단계(DB 행 삭제·디렉토리 삭제) 이전에 캡처한다.
@@ -4476,6 +4500,7 @@ class ModuleManager implements ModuleManagerInterface
      * @return array{success: bool, from_version: string|null, to_version: string|null, message: string}
      *
      * @throws \RuntimeException 업데이트 실패 시
+     * @throws ExtensionOperationInProgressException 같은 확장의 업데이트가 이미 진행 중일 때 (409)
      */
     public function updateModule(
         string $identifier,
@@ -4487,6 +4512,14 @@ class ModuleManager implements ModuleManagerInterface
         ?string $sourceOverride = null,
         ?string $zipPath = null,
     ): array {
+        // 같은 모듈의 업데이트는 한 번에 하나만 — 상태 가드(status=updating)가 서기 전 구간에 들어온 두 번째 요청이
+        // 함께 통과해 업데이트가 두 번 수행됐다(#138 실측 ② 버튼 더블클릭). 직전 훅보다 먼저 잠그고, 이 지역 변수가
+        // 메서드를 빠져나갈 때(정상 반환·예외 모두) 잠금이 풀린다.
+        $operationLock = ExtensionOperationLock::acquire('module', $identifier);
+
+        // 직전 훅 — CLI·어드민 UI 공통으로 한 번 발화한다(예전에는 Service 에서만 발화해 CLI 가 빠졌다, #138 후속)
+        HookManager::doAction('core.modules.before_update', $identifier);
+
         $record = $this->moduleRepository->findByIdentifier($identifier);
         if (! $record) {
             throw new \RuntimeException(__('modules.not_found', ['module' => $identifier]));
@@ -4982,5 +5015,20 @@ class ModuleManager implements ModuleManagerInterface
         }
 
         return VendorMode::tryFrom((string) $stored);
+    }
+
+    /**
+     * 이 모듈에 의존하는 켜진 확장(템플릿·모듈·플러그인) 식별자 목록을 반환합니다.
+     *
+     * @param  string  $identifier  모듈 식별자
+     * @return array<int, string> 의존 확장 식별자 목록 (없으면 빈 배열)
+     */
+    private function activeDependentIdentifiers(string $identifier): array
+    {
+        return array_values(array_unique(array_merge(
+            $this->templateRepository->findActiveByModuleDependency($identifier)->pluck('identifier')->all(),
+            $this->moduleRepository->findActiveByModuleDependency($identifier)->pluck('identifier')->all(),
+            $this->pluginRepository->findActiveByModuleDependency($identifier)->pluck('identifier')->all(),
+        )));
     }
 }

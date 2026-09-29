@@ -68,6 +68,10 @@ effects:
   - update_shipping_address_domain_exception_returns_422_with_cannot_modify_address
   - update_shipping_address_infrastructure_exception_returns_500_not_422
   - update_shipping_address_500_response_excludes_exception_message
+  # generic catch 전수 계약(GenericCatchStatusCodeContractTest)이 함께 잠그는 효과 — 비회원 액션·판정기 모집단
+  - guest_confirm_option_has_no_domain_exception_so_generic_catch_returns_500
+  - guest_action_5xx_responses_exclude_exception_message
+  - generic_catch_contract_scanner_covers_core_and_bundled_extensions
   # 국내/해외 주소 조합 정합성 (부수 발견 F3)
   - shipping_address_country_code_is_the_axis_for_domestic_vs_intl_validation
   - shipping_address_intl_combination_without_country_code_returns_422_validation_errors

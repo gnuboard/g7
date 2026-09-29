@@ -62,9 +62,9 @@ Service → doAction('hook.name') → ActivityLogListener → Log::channel('acti
 |---------|----------------|-------------|---------|----------|
 | `core.auth.after_login` | `handleAuthAfterLogin` | `auth.login` | User | User |
 | `core.auth.logout` | `handleAuthLogout` | `auth.logout` | User | User |
-| `core.auth.register` | `handleAuthRegister` | `auth.register` | User | User |
-| `core.auth.forgot_password` | `handleAuthForgotPassword` | `auth.forgot_password` | User | - |
-| `core.auth.reset_password` | `handleAuthResetPassword` | `auth.reset_password` | User | - |
+| `core.auth.after_register` | `handleAuthRegister` | `auth.register` | User | User |
+| `core.auth.after_reset_password_request` (sync — 인자에 재설정 토큰) | `handleAuthForgotPassword` | `auth.forgot_password` | User | - |
+| `core.auth.after_password_changed` | `handleAuthResetPassword` | `auth.reset_password` | User | - (행위자: 로그인 사용자, 없으면 본인) |
 | `core.auth.record_consents` | `handleAuthRecordConsents` | `auth.record_consents` | User | User |
 | `core.auth.login_failed` | `handleAuthLoginFailed` | `auth.login_failed` | User | - |
 | `core.auth.account_locked` | `handleAuthAccountLocked` | `auth.account_locked` | User | User |

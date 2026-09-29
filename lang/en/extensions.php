@@ -11,6 +11,7 @@ return [
         'core_version_mismatch' => ':extension (:type) requires Gnuboard7 core version :required or higher. (Current: :installed)',
         'version_check_failed' => 'Version check failed.',
         'operation_in_progress' => 'Cannot process the request because ":name" has an operation in progress (:status).',
+        'update_already_running' => 'An update of ":name" is already running. Check again after it finishes.',
         'zip_missing_manifest' => 'Manifest :file not found inside ZIP: :zip',
         'zip_invalid_manifest' => 'Manifest :file inside ZIP is not valid JSON.',
         'zip_identifier_mismatch' => 'ZIP manifest identifier does not match target extension. (expected: :expected, actual: :actual)',

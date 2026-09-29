@@ -9,6 +9,7 @@ use App\Contracts\Repositories\LayoutVersionRepositoryInterface;
 use App\Contracts\Repositories\TemplateRepositoryInterface;
 use App\Enums\DeactivationReason;
 use App\Enums\ExtensionStatus;
+use App\Exceptions\ExtensionOperationInProgressException;
 use App\Exceptions\TemplateNotFoundException;
 use App\Exceptions\TemplateOperationException;
 use App\Extension\Helpers\ChangelogParser;
@@ -106,7 +107,11 @@ class TemplateService
      */
     public function getPaginatedTemplates(array $filters, int $perPage = 12, int $page = 1): array
     {
+        // before_list/after_list 는 전체 목록(getAllTemplates)에서 유형 문자열을 싣는데, 여기서는 필터 배열을
+        // 실어 발화처마다 모양이 달랐다. 서드파티 호환을 위해 기존 발화는 그대로 두고(이 자리의 발화는
+        // deprecated), 모양을 이름에 드러낸 *_list_paginated 를 나란히 발화한다(#138 후속).
         HookManager::doAction('core.templates.before_list', $filters);
+        HookManager::doAction('core.templates.before_list_paginated', $filters);
 
         // 템플릿 매니저 초기화
         $this->templateManager->loadTemplates();
@@ -160,6 +165,7 @@ class TemplateService
         ];
 
         HookManager::doAction('core.templates.after_list', $result, $filters);
+        HookManager::doAction('core.templates.after_list_paginated', $result, $filters);
 
         return $result;
     }
@@ -421,7 +427,7 @@ class TemplateService
      */
     public function installTemplate(string $identifier, bool $force = false): ?array
     {
-        HookManager::doAction('core.templates.before_install', $identifier);
+        // 직전 훅은 Manager 가 발화한다 — CLI·어드민 UI 공통 단일 발화(#138 후속, Service 중복 발화 제거)
 
         try {
             $result = $this->templateManager->installTemplate($identifier, null, $force);
@@ -461,7 +467,7 @@ class TemplateService
     ): ?array {
         $preservedBackups = [];
 
-        HookManager::doAction('core.templates.before_uninstall', $identifier, $deleteData);
+        // 직전 훅은 Manager 가 발화한다 — CLI·어드민 UI 공통 단일 발화(#138 후속, Service 중복 발화 제거)
 
         try {
             // 제거 전 템플릿 정보 보존
@@ -480,7 +486,7 @@ class TemplateService
             return null;
         } catch (\Exception $e) {
             throw ValidationException::withMessages([
-                'identifier' => [__('templates.errors.uninstallation_failed').': '.$e->getMessage()],
+                'identifier' => [__('templates.errors.uninstallation_failed', ['error' => $e->getMessage()])],
             ]);
         }
     }
@@ -522,7 +528,7 @@ class TemplateService
             ]);
         }
 
-        HookManager::doAction('core.templates.before_deactivate', $template->identifier);
+        // 직전 훅은 Manager 가 발화한다 — CLI·어드민 UI 공통 단일 발화(#138 후속, Service 중복 발화 제거)
 
         try {
             // 위치 인자로 넘긴다 — 이 의존성은 인터페이스 타입이고 테스트가 그 인터페이스를
@@ -575,12 +581,10 @@ class TemplateService
             ]);
         }
 
-        HookManager::doAction('core.templates.before_activate', $template->identifier);
+        // 직전 훅은 Manager 가 발화한다 — CLI·어드민 UI 공통 단일 발화(#138 후속, Service 중복 발화 제거)
 
         try {
-            // 필터 훅 - 활성화 데이터 변형
-            $data = ['status' => ExtensionStatus::Active->value];
-            $data = HookManager::applyFilters('core.templates.filter_activate_data', $data, $template);
+            // 활성화 데이터 필터는 Manager 가 직전 훅 뒤에 발화한다 — CLI·어드민 UI 공통(#138 후속, before → filter 순서 복원)
 
             // TemplateManager에 활성화 로직 위임 (force 파라미터 전달)
             $result = $this->templateManager->activateTemplate($template->identifier, $force);
@@ -2333,7 +2337,7 @@ class TemplateService
      */
     public function performVersionUpdate(string $templateName, string $layoutStrategy = 'overwrite', bool $force = false): array
     {
-        HookManager::doAction('core.templates.before_version_update', $templateName);
+        // 직전 훅은 Manager 가 발화한다 — CLI·어드민 UI 공통 단일 발화(#138 후속, Service 중복 발화 제거)
 
         try {
             $this->templateManager->loadTemplates();
@@ -2347,6 +2351,9 @@ class TemplateService
             return array_merge($result, [
                 'template_info' => $templateInfo,
             ]);
+        } catch (ExtensionOperationInProgressException $e) {
+            // 같은 확장의 업데이트가 진행 중 — 「업데이트 실패」(422)로 감싸면 화면이 두 번째 요청을 실패로 보여 준다(#138 실측 ②)
+            throw $e;
         } catch (\Exception $e) {
             // Manager의 RuntimeException은 이미 번역된 메시지를 포함하므로
             // getPrevious()로 원본 에러를 추출하여 이중 래핑 방지

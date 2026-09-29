@@ -8,6 +8,7 @@ use App\Extension\ModuleManager;
 use App\Extension\PluginManager;
 use App\Extension\TemplateManager;
 use App\Extension\Vendor\VendorMode;
+use App\Models\Module;
 use App\Services\ModuleService;
 use App\Services\PluginService;
 use App\Services\TemplateService;
@@ -80,11 +81,46 @@ class ExtensionLifecycleHookContractTest extends TestCase
     ];
 
     /**
+     * 완료 훅 → 짝이 되는 직전 훅. 직전 훅도 Manager 가 발화해 CLI·어드민 UI 공통으로 1회여야 한다
+     * (예전에는 Service 에서만 발화해 CLI 로 설치하면 직전 훅 구독자가 불리지 않았다 — #138 후속 10번).
+     */
+    private const BEFORE_OF = [
+        'core.modules.after_install' => 'core.modules.before_install',
+        'core.modules.after_activate' => 'core.modules.before_activate',
+        'core.modules.after_update' => 'core.modules.before_update',
+        'core.modules.after_uninstall' => 'core.modules.before_uninstall',
+        'core.plugins.after_install' => 'core.plugins.before_install',
+        'core.plugins.after_activate' => 'core.plugins.before_activate',
+        'core.plugins.after_update' => 'core.plugins.before_update',
+        'core.plugins.after_uninstall' => 'core.plugins.before_uninstall',
+        'core.templates.after_install' => 'core.templates.before_install',
+        'core.templates.after_activate' => 'core.templates.before_activate',
+        'core.templates.after_version_update' => 'core.templates.before_version_update',
+        'core.templates.after_uninstall' => 'core.templates.before_uninstall',
+    ];
+
+    /**
+     * 비활성화 직전 훅 — 완료 훅 단언이 없는 사건이라 따로 스파이한다.
+     */
+    private const BEFORE_DEACTIVATE_HOOKS = [
+        'core.modules.before_deactivate',
+        'core.plugins.before_deactivate',
+        'core.templates.before_deactivate',
+    ];
+
+    /**
      * 발화 기록 — 훅 이름 → 발화마다의 인자 배열 목록.
      *
      * @var array<string, array<int, array<int, mixed>>>
      */
     private array $fired = [];
+
+    /**
+     * 발화 순서 기록 — 직전 훅과 필터 훅의 순서를 판정할 때 쓴다.
+     *
+     * @var array<int, string>
+     */
+    private array $sequence = [];
 
     private Filesystem $originalFilesystem;
 
@@ -126,11 +162,20 @@ class ExtensionLifecycleHookContractTest extends TestCase
         // 실제 리스너(큐 재시작·활동 로그·언어팩)를 떼고 스파이만 단다 — 발화 자체만 관찰한다.
         HookManager::resetAll();
         $this->fired = [];
-        foreach ([...self::CANONICAL_HOOKS, ...self::LEGACY_HOOKS] as $hook) {
+        foreach ([...self::CANONICAL_HOOKS, ...self::LEGACY_HOOKS, ...array_values(self::BEFORE_OF), ...self::BEFORE_DEACTIVATE_HOOKS] as $hook) {
             HookManager::addAction($hook, function (...$args) use ($hook) {
                 $this->fired[$hook][] = $args;
+                $this->sequence[] = $hook;
             }, 1);
         }
+
+        // 템플릿 활성화 데이터 필터 — 직전 훅 뒤에, CLI·어드민 UI 공통으로 한 번 돈다
+        HookManager::addFilter('core.templates.filter_activate_data', function ($data, ...$rest) {
+            $this->fired['core.templates.filter_activate_data'][] = [$data, ...$rest];
+            $this->sequence[] = 'core.templates.filter_activate_data';
+
+            return $data;
+        }, 1);
     }
 
     /**
@@ -160,6 +205,7 @@ class ExtensionLifecycleHookContractTest extends TestCase
      * 실패 경로(없는 식별자)에서는 정규 훅이 하나도 발화하지 않는다.
      *
      * @effects no_lifecycle_hook_fires_on_failure_path
+     *
      * @return void 반환값 없음
      */
     public function test_hooks_do_not_fire_on_failure_path(): void
@@ -185,7 +231,9 @@ class ExtensionLifecycleHookContractTest extends TestCase
             }
         }
 
-        $this->assertSame([], $this->fired, '실패 경로에서 생명주기 훅이 발화했다');
+        // 직전 훅은 "시도" 시점에 발화한다(예전 Service 와 같다) — 여기서는 완료 훅·구훅만 본다.
+        $completed = array_intersect_key($this->fired, array_flip([...self::CANONICAL_HOOKS, ...self::LEGACY_HOOKS]));
+        $this->assertSame([], $completed, '실패 경로에서 생명주기 완료 훅이 발화했다');
     }
 
     // ========================================================================
@@ -206,7 +254,9 @@ class ExtensionLifecycleHookContractTest extends TestCase
      * 모듈 4사건 — CLI(Manager 직접) 경로와 어드민 UI(Service) 경로 모두 1회씩.
      *
      * @scenario extension_type=module, lifecycle_event=install, entry_point=cli_manager
+     *
      * @effects canonical_hook_fires_once_from_cli_manager_path, canonical_hook_fires_once_from_admin_service_path_without_duplicate, canonical_hook_arguments_match_listener_signature, update_noop_early_return_fires_canonical_hook_but_not_legacy, legacy_hook_still_fires_with_identifier_only, uninstall_info_captured_before_destructive_steps
+     *
      * @return void 반환값 없음
      */
     public function test_z_module_lifecycle_fires_canonical_hooks_from_both_entry_points(): void
@@ -243,6 +293,7 @@ class ExtensionLifecycleHookContractTest extends TestCase
 
         $this->resetFired();
         $this->assertTrue($manager->deactivateModule($id)['success']);
+        $this->assertBeforeFiredOnce('core.modules.before_deactivate', $id);
         $this->assertTrue($manager->uninstallModule($id, true));
         $args = $this->assertFiredOnce('core.modules.after_uninstall', ['string', 'array', 'bool'], $id);
         $this->assertSame($id, $args[1]['identifier'] ?? null, '제거 전 캡처한 정보여야 한다');
@@ -265,6 +316,7 @@ class ExtensionLifecycleHookContractTest extends TestCase
 
         $this->resetFired();
         $service->deactivateModule($id);
+        $this->assertBeforeFiredOnce('core.modules.before_deactivate', $id);
         $this->assertTrue($service->uninstallModule($id, false));
         $args = $this->assertFiredOnce('core.modules.after_uninstall', ['string', 'array', 'bool'], $id);
         $this->assertFalse($args[2]);
@@ -284,7 +336,9 @@ class ExtensionLifecycleHookContractTest extends TestCase
      * 플러그인 4사건 — P4 만 인자 순서가 (id, deleteData, result) 다.
      *
      * @scenario extension_type=plugin, lifecycle_event=install, entry_point=cli_manager
+     *
      * @effects canonical_hook_fires_once_from_cli_manager_path, canonical_hook_fires_once_from_admin_service_path_without_duplicate, canonical_hook_arguments_match_listener_signature, update_noop_early_return_fires_canonical_hook_but_not_legacy, legacy_hook_still_fires_with_identifier_only, plugin_uninstall_arguments_keep_id_deletedata_result_order
+     *
      * @return void 반환값 없음
      */
     public function test_z_plugin_lifecycle_fires_canonical_hooks_from_both_entry_points(): void
@@ -324,6 +378,7 @@ class ExtensionLifecycleHookContractTest extends TestCase
 
         $this->resetFired();
         $manager->deactivatePlugin($id);
+        $this->assertBeforeFiredOnce('core.plugins.before_deactivate', $id);
         $this->assertTrue($manager->uninstallPlugin($id, true));
         $args = $this->assertFiredOnce('core.plugins.after_uninstall', ['string', 'bool', 'bool'], $id);
         $this->assertTrue($args[1], '2번째 인자는 deleteData');
@@ -346,6 +401,7 @@ class ExtensionLifecycleHookContractTest extends TestCase
 
         $this->resetFired();
         $service->deactivatePlugin($id);
+        $this->assertBeforeFiredOnce('core.plugins.before_deactivate', $id);
         $this->assertTrue($service->uninstallPlugin($id, false));
         $args = $this->assertFiredOnce('core.plugins.after_uninstall', ['string', 'bool', 'bool'], $id);
         $this->assertFalse($args[1]);
@@ -370,7 +426,9 @@ class ExtensionLifecycleHookContractTest extends TestCase
      * 템플릿 4사건 — T2(after_activate)만 식별자 없이 정보 배열 1개를 넘긴다.
      *
      * @scenario extension_type=template, lifecycle_event=install, entry_point=cli_manager
-     * @effects canonical_hook_fires_once_from_cli_manager_path, canonical_hook_fires_once_from_admin_service_path_without_duplicate, canonical_hook_arguments_match_listener_signature, update_noop_early_return_fires_canonical_hook_but_not_legacy, legacy_hook_still_fires_with_identifier_only, uninstall_info_captured_before_destructive_steps, template_activate_passes_info_array_only, template_uninstall_delete_data_forwarded_from_service
+     *
+     * @effects canonical_hook_fires_once_from_cli_manager_path, canonical_hook_fires_once_from_admin_service_path_without_duplicate, canonical_hook_arguments_match_listener_signature, update_noop_early_return_fires_canonical_hook_but_not_legacy, legacy_hook_still_fires_with_identifier_only, uninstall_info_captured_before_destructive_steps, template_activate_passes_info_array_only, template_uninstall_delete_data_forwarded_from_service, template_activate_filter_runs_once_after_before_hook
+     *
      * @return void 반환값 없음
      */
     public function test_z_template_lifecycle_fires_canonical_hooks_from_both_entry_points(): void
@@ -386,9 +444,11 @@ class ExtensionLifecycleHookContractTest extends TestCase
         $this->assertFiredOnce('core.templates.after_install', ['string', 'array'], $id);
         $this->assertLegacyFiredOnce('core.templates.installed', $id);
 
+        $this->resetFired();
         $this->assertTrue($manager->activateTemplate($id)['success']);
         $args = $this->assertFiredOnce('core.templates.after_activate', ['array']);
         $this->assertSame($id, $args[0]['identifier'] ?? null);
+        $this->assertActivateFilterRanOnceAfterBeforeHook($id);
         $this->assertLegacyFiredOnce('core.templates.activated', $id);
 
         $noop = $manager->updateTemplate($id);
@@ -414,8 +474,17 @@ class ExtensionLifecycleHookContractTest extends TestCase
         $service->installTemplate($id);
         $this->assertFiredOnce('core.templates.after_install', ['string', 'array'], $id);
 
+        $this->resetFired();
         $this->assertTrue($service->activateTemplate($id)['success']);
         $this->assertFiredOnce('core.templates.after_activate', ['array']);
+        $this->assertActivateFilterRanOnceAfterBeforeHook($id);
+
+        // 비활성화 직전 훅도 어드민 UI 경로에서 1회 — 확인 뒤 다시 켜 이후 단계를 잇는다
+        $this->resetFired();
+        $this->assertNotNull($service->deactivateTemplate($id));
+        $this->assertBeforeFiredOnce('core.templates.before_deactivate', $id);
+        $this->assertTrue($manager->activateTemplate($id)['success']);
+        $this->resetFired();
 
         $service->performVersionUpdate($id);
         $this->assertFiredOnce('core.templates.after_version_update', ['string', 'array', 'array'], $id);
@@ -429,6 +498,50 @@ class ExtensionLifecycleHookContractTest extends TestCase
         $this->assertNotNull($service->uninstallTemplate($id, true));
         $args = $this->assertFiredOnce('core.templates.after_uninstall', ['string', 'array', 'bool'], $id);
         $this->assertTrue($args[2]);
+    }
+
+    /**
+     * 켜진 확장이 의존하는 모듈은 제거되지 않는다 — 강제 비활성화 뒤라도 제거는 거부한다.
+     *
+     * 실측(#138 ①): 의존 플러그인이 켜진 채로 모듈을 강제로 끈 뒤 제거하면 막히지 않아, 플러그인이 필요한 모듈
+     * 없이 켜진 채로 남았다. 비활성화는 경고 뒤 강제 진행이 가능하지만, 제거는 되돌릴 수 없으므로 막는다.
+     *
+     * @scenario extension_type=module, lifecycle_event=uninstall, entry_point=cli_manager
+     *
+     * @effects uninstall_blocked_while_active_dependents_exist
+     *
+     * @return void 반환값 없음
+     */
+    public function test_z_module_uninstall_is_blocked_while_a_dependent_plugin_is_active(): void
+    {
+        $modules = app(ModuleManager::class);
+        $plugins = app(PluginManager::class);
+        $modules->loadModules();
+        $plugins->loadPlugins();
+
+        $this->assertTrue($modules->installModule(self::MODULE));
+        $this->assertTrue($modules->activateModule(self::MODULE)['success']);
+        $this->assertTrue($plugins->installPlugin(self::PLUGIN));
+        $this->assertTrue($plugins->activatePlugin(self::PLUGIN)['success']);
+
+        // 의존 플러그인이 켜진 채 모듈을 강제로 끈다 (화면의 「그래도 비활성화」)
+        $this->assertTrue($modules->deactivateModule(self::MODULE, true)['success']);
+
+        $blocked = false;
+        try {
+            $blocked = ! $modules->uninstallModule(self::MODULE, true);
+        } catch (\Throwable $e) {
+            $blocked = true;
+            $this->assertStringContainsString(self::PLUGIN, $e->getMessage(), '어떤 확장 때문에 막혔는지 알려야 한다');
+        }
+
+        $this->assertTrue($blocked, '켜진 의존 플러그인이 있는데 모듈이 제거됐다');
+        $this->assertNotNull(Module::where('identifier', self::MODULE)->first(), '모듈 레코드가 남아 있어야 한다');
+
+        // 정리 — 의존 플러그인을 먼저 치우면 제거된다
+        $plugins->deactivatePlugin(self::PLUGIN);
+        $this->assertTrue($plugins->uninstallPlugin(self::PLUGIN, true));
+        $this->assertTrue($modules->uninstallModule(self::MODULE, true));
     }
 
     // ========================================================================
@@ -464,7 +577,28 @@ class ExtensionLifecycleHookContractTest extends TestCase
             $this->assertSame($identifier, $args[0], "{$hook} 첫 인자는 식별자");
         }
 
+        if (isset(self::BEFORE_OF[$hook])) {
+            $this->assertBeforeFiredOnce(self::BEFORE_OF[$hook], $identifier);
+        }
+
         return $args;
+    }
+
+    /**
+     * 직전 훅이 정확히 1회, 식별자를 첫 인자로 발화했는지 단언합니다.
+     *
+     * @param  string  $hook  직전 훅 이름
+     * @param  string|null  $identifier  첫 인자로 기대하는 식별자 (없으면 검사 생략)
+     * @return void 반환값 없음
+     */
+    private function assertBeforeFiredOnce(string $hook, ?string $identifier): void
+    {
+        $calls = $this->fired[$hook] ?? [];
+        $this->assertCount(1, $calls, "{$hook} 발화 횟수가 1이 아니다 (".count($calls).'회) — 직전 훅도 CLI·어드민 UI 공통 1회');
+
+        if ($identifier !== null) {
+            $this->assertSame($identifier, $calls[0][0] ?? null, "{$hook} 첫 인자는 식별자");
+        }
     }
 
     /**
@@ -487,6 +621,26 @@ class ExtensionLifecycleHookContractTest extends TestCase
     private function resetFired(): void
     {
         $this->fired = [];
+        $this->sequence = [];
+    }
+
+    /**
+     * 템플릿 활성화 필터가 한 번, 직전 훅 뒤에 돌았는지 확인합니다.
+     *
+     * @param  string  $identifier  템플릿 식별자
+     * @return void 반환값 없음
+     */
+    private function assertActivateFilterRanOnceAfterBeforeHook(string $identifier): void
+    {
+        $this->assertCount(1, $this->fired['core.templates.filter_activate_data'] ?? [], '활성화 데이터 필터가 정확히 한 번 돌아야 한다');
+        [$data, $template] = $this->fired['core.templates.filter_activate_data'][0] + [null, null];
+        $this->assertIsArray($data);
+        $this->assertSame($identifier, $template->identifier ?? null, '필터 둘째 인자는 템플릿 행이다');
+
+        $before = array_search('core.templates.before_activate', $this->sequence, true);
+        $filter = array_search('core.templates.filter_activate_data', $this->sequence, true);
+        $this->assertNotFalse($before, '활성화 직전 훅이 돌지 않았다');
+        $this->assertLessThan($filter, $before, '활성화 데이터 필터가 직전 훅보다 먼저 돌았다(before → filter 순서 위반)');
     }
 
     /**

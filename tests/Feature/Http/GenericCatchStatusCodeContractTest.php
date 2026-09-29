@@ -101,7 +101,7 @@ class GenericCatchStatusCodeContractTest extends TestCase
     /**
      * 루트 아래 PHP 파일을 저장소 상대 경로로 수집합니다.
      *
-     * @return array<int, array{path: string, rel: string}>
+     * @return array<int, array{path: string, rel: string}> 절대경로와 저장소 상대경로 목록
      */
     private function collectFiles(): array
     {
@@ -127,7 +127,7 @@ class GenericCatchStatusCodeContractTest extends TestCase
     /**
      * generic catch 블록의 응답 상태코드를 추출합니다.
      *
-     * @return array<int, array{file: string, method: string, line: int, status: int}>
+     * @return array<int, array{file: string, method: string, line: int, status: int}> 파일·메서드·줄별 응답 상태코드 목록
      */
     private function collectGenericCatchStatuses(): array
     {
@@ -190,6 +190,12 @@ class GenericCatchStatusCodeContractTest extends TestCase
      * 판정기가 실제로 코어와 확장 양쪽을 보고 있는지 먼저 확인한다.
      *
      * 모집단이 비거나 한쪽으로 쏠리면 이후 단언은 초록이어도 아무것도 증명하지 못한다.
+     *
+     * @scenario actor=member, change_mode=manual, address_region=domestic, e2e_browser=chromium
+     *
+     * @effects generic_catch_contract_scanner_covers_core_and_bundled_extensions
+     *
+     * @return void 반환값 없음
      */
     public function test_scanner_population_covers_core_and_bundled_extensions(): void
     {
@@ -231,6 +237,8 @@ class GenericCatchStatusCodeContractTest extends TestCase
      * @scenario actor=member, change_mode=manual, address_region=domestic, e2e_browser=chromium
      *
      * @effects update_shipping_address_infrastructure_exception_returns_500_not_422, guest_confirm_option_has_no_domain_exception_so_generic_catch_returns_500
+     *
+     * @return void 반환값 없음
      */
     public function test_generic_catch_blocks_never_return_4xx(): void
     {
@@ -324,6 +332,8 @@ class GenericCatchStatusCodeContractTest extends TestCase
      * @scenario actor=member, change_mode=manual, address_region=domestic, e2e_browser=chromium
      *
      * @effects update_shipping_address_500_response_excludes_exception_message, guest_action_5xx_responses_exclude_exception_message
+     *
+     * @return void 반환값 없음
      */
     public function test_exception_message_is_not_passed_as_response_message_key(): void
     {

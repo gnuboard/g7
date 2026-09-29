@@ -6,7 +6,7 @@
 
 ```text
 1. 유형: 플러그인 (sirsoft-daum_postcode) — 주소 입력 자리(`address_search_slot`)에 Daum 우편번호 검색을 붙인다. 백엔드 0(라우트·모델·테이블 없음), 조각 1 + 핸들러 2 가 전부
-2. 확장 방식: 발행 훅 2개 — 필드에 쓰기 전 가공은 `filter_address_data`, 확정 후 후속 동작은 `address.selected`
+2. 확장 방식: 서버 훅 없음 — 어느 칸에 쓸지는 `targetFields`(설정 `target_fields`), 기본 기록 대신 할 동작은 `callbackAction` 레이아웃 액션
 3. 건드리면 안 되는 것: 외부 호스트 선언에서 사유(`trusted_script_hosts_reason`) 누락, SDK 실패 시 직접 입력 폴백 제거, 확보 확인 전에 필드를 읽기 전용으로 잠그기
 4. 작업 위치: `plugins/_bundled/sirsoft-daum_postcode` — 활성 디렉토리 직접 수정 금지
 5. 반영: `php artisan plugin:update sirsoft-daum_postcode --force`
@@ -71,9 +71,9 @@ Daum SDK 를 로드 → 컨테이너 `onMount` 에서 `sirsoft-daum_postcode.set
 하므로 확보를 기다리지 않습니다.
 
 **검색 → 필드 채움**: 사용자가 버튼을 누름 → `openPostcode` 핸들러가 설정
-(`display_mode`: 레이어/팝업, 팝업 크기, 테마 색상)대로 검색 창을 엶 → 주소를 고르면
-`filter_address_data` 필터로 데이터를 가공할 기회를 준 뒤 지정된 필드들에 값을 쓰고
-`address.selected` 액션을 발행합니다.
+(`display_mode`: 레이어/팝업, 팝업 크기, 테마 색상)대로 검색 창을 엶 → 주소를 고르면, 조각이
+`callbackAction` 레이아웃 액션을 넘겼으면 그 액션만 실행하고(주소 값은 액션이 받아 직접 씀), 넘기지
+않았으면 `targetFields`(없으면 플러그인 설정 `target_fields`)가 가리키는 필드들에 값을 씁니다.
 
 **SDK 확보 실패**: `postcodeSdk.ts` 가 스크립트 로드에 `onerror` 를 걸어 실패를 감지하고,
 `G7Core.assets.notifyFailure` 로 사용자에게 사실과 재시도 통로를 제시합니다. 필드는 편집
@@ -86,7 +86,7 @@ Daum SDK 를 로드 → 컨테이너 `onMount` 에서 `sirsoft-daum_postcode.set
 <!-- @generated:extension-points-summary START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 확장점 | 수 | 상세 |
 |---|---|---|
-| 발행 훅 | 2개 | [발행 훅](docs/extension-points.md#발행-훅) |
+| 발행 훅 | 0개 | [발행 훅](docs/extension-points.md#발행-훅) |
 | 구독 훅 | 0개 | [구독 훅](docs/extension-points.md#구독-훅) |
 | 훅 리스너 | 0개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
 | 레이아웃 확장 | 1개 | [레이아웃 확장](docs/extension-points.md#레이아웃-확장) |
@@ -97,17 +97,16 @@ Daum SDK 를 로드 → 컨테이너 `onMount` 에서 `sirsoft-daum_postcode.set
 <!-- @generated:extension-points-summary END -->
 
 <!-- @intent START -->
-발행 훅 2종은 **선택된 주소를 가로채는** 자리입니다.
+서버 훅은 **없습니다.** 주소 선택은 브라우저에서 일어나는 흐름이고 프론트엔드 엔진에는 확장이 끼어드는
+훅 체계가 없습니다. 종전에 선언했던 `address.selected`·`filter_address_data` 는 발화처가 한 번도 없어
+7.1.0 에서 선언에서 뺐습니다(코어 `docs/extension/hooks.md` 「공개 훅 호환 원칙」).
 
-| 훅 | 언제 쓰는가 |
+선택된 주소에 끼어드는 자리는 `openPostcode` 핸들러의 두 매개변수입니다.
+
+| 자리 | 언제 쓰는가 |
 |---|---|
-| `filter_address_data` | 주소 데이터를 필드에 쓰기 **전**에 가공. 도로명/지번 중 어느 것을 기본으로 쓸지, 건물명을 상세주소에 미리 넣을지 등 |
-| `address.selected` | 주소가 확정된 **후**. 배송비 재계산·배송 가능 지역 판정 같은 후속 동작 |
-
-두 훅 모두 `getHooks()` 에 파라미터까지 선언되어 있습니다 —
-`zonecode`(우편번호) · `address`(기본) · `roadAddress`(도로명) · `jibunAddress`(지번) ·
-`buildingName`(건물명). 발행 위치가 "선언(호출 위치 미확인)" 인 것은 실제 발행이 **프론트
-핸들러**에서 이루어져 PHP 소스 스캔에 잡히지 않기 때문입니다.
+| `targetFields` (없으면 설정 `target_fields`) | 우편번호·주소·시도·시군구를 **어느 칸에** 쓸지. 사이트·화면마다 다르므로 코드에 고정하지 않는다 |
+| `callbackAction` | 주소가 확정되면 기본 필드 기록 **대신** 실행할 레이아웃 액션(주소 값을 받아 직접 씀). 배송비 재계산·배송 가능 지역 판정처럼 기록과 후속 동작을 함께 해야 할 때 |
 
 레이아웃 조각 하나(`ecommerce-address-search.g7.html`)가 이 플러그인의 UI 전부입니다. 파일
 이름에 `ecommerce` 가 붙어 있지만 **확장점 이름(`address_search_slot`)으로 매칭**되므로,
@@ -139,8 +138,8 @@ Daum SDK 를 로드 → 컨테이너 `onMount` 에서 `sirsoft-daum_postcode.set
 | SDK 확보 실패 시 검색 버튼만 죽이고 끝내기 | 사용자 통지 + 재시도 + **필드를 편집 가능하게 남겨 직접 입력 폴백** | 검색이 막힌 환경에서 주소를 아예 넣을 수 없게 되면 그 화면 전체(주문·배송지 등록)가 불능이 된다 |
 | 스크립트 로드에 `onerror` 를 걸지 않거나 실패를 `resolve()` 로 삼키기 | 실패를 명시적으로 감지해 폴백으로 분기 | 삼키면 "버튼을 눌러도 아무 일이 없다" 가 되고 콘솔 외에는 흔적이 없다 |
 | SDK 확보를 확인하지 않고 필드를 먼저 읽기 전용으로 만들기 | 확보 확인 후에만 읽기 전용 적용 (해제는 확인 없이) | 읽기 전용 + 검색 불가 = 입력 불가. 순서가 뒤집히면 실패 환경에서 필드가 잠긴 채 남는다 |
-| 선택된 주소를 이 플러그인이 직접 저장 | 필드에 쓰고 `address.selected` 발행까지 | 저장 위치·형식은 화면을 소유한 확장이 정한다. 여기서 저장하면 그 확장마다 분기가 늘어난다 |
-| 도로명/지번 중 하나를 코드에 고정 | `filter_address_data` 로 소비처가 고르게 | 사이트마다 표기 정책이 다르다 |
+| 선택된 주소를 이 플러그인이 직접 저장 | 필드에 쓰기(또는 `callbackAction` 에 넘기기)까지 | 저장 위치·형식은 화면을 소유한 확장이 정한다. 여기서 저장하면 그 확장마다 분기가 늘어난다 |
+| 쓸 칸을 코드에 고정 | `targetFields`·설정 `target_fields` 로 소비처가 고르게 | 사이트·화면마다 필드 구성이 다르다 |
 | 자산 URL 을 문자열로 조립 | `G7Core.asset.plugin` | 확장자를 정적 location 이 가로채는 서버에서 조립한 URL 만 404 가 된다 |
 <!-- @intent END -->
 

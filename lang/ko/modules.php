@@ -137,7 +137,7 @@ return [
     'move_failed' => '모듈 ":module" 이동에 실패했습니다: :error',
 
     // 모듈 서비스 오류 메시지
-    'deactivate_warning' => '이 모듈에 의존하는 활성 템플릿이 있습니다.',
+    'deactivate_warning' => '이 모듈에 의존하는 활성화된 확장이 있습니다.',
     'installation_failed' => '모듈 설치에 실패했습니다: :error',
     'activation_failed' => '모듈 활성화에 실패했습니다: :error',
     'deactivation_failed' => '모듈 비활성화에 실패했습니다: :error',
@@ -161,6 +161,7 @@ return [
 
     // 오류 메시지
     'errors' => [
+        'uninstall_blocked_by_dependents' => '이 모듈에 의존하는 확장이 켜져 있어 제거할 수 없습니다. 먼저 끄거나 제거하세요: :extensions',
         'force_update_no_source' => ':module 을(를) 강제 업데이트할 소스를 찾을 수 없습니다. 번들 및 GitHub URL이 모두 없습니다.',
         'downgrade_blocked' => '다운그레이드가 차단되었습니다 (:from → :to). 의도적 다운그레이드는 --force 옵션을 사용하세요.',
         'zip_open_failed' => 'ZIP 파일을 열 수 없습니다: :error',

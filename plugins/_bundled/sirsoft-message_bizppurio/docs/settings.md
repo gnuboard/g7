@@ -23,7 +23,7 @@
 `is_test_mode` 의 기본값이 `true` 인 것이 이 플러그인의 안전장치입니다. 설치 직후에는 실제
 발송이 일어나지 않고, 운영자가 명시적으로 끄는 순간부터 **발송과 비용이 발생**합니다. 그
 전환 시점에만 필수값 검증이 걸리는 것도 같은 이유입니다 —
-`ValidateBizppurioSettingsListener` 가 `core.plugin_settings.update_rules` 로 운영 모드일
+`ValidateBizppurioSettingsListener` 가 `core.plugin_settings.update_validation_rules` 로 운영 모드일
 때만 아이디·비밀번호·API 키·발신번호를 요구합니다. 검수 모드에서는 비어 있어도 저장되어야
 합니다.
 

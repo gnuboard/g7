@@ -146,6 +146,7 @@ effects:
   - settings_schema_exposes_only_public_keys
   - permissions_menus_and_definitions_are_seeded
   - activity_log_records_analytics_hooks_as_admin
+  - analytics_action_labels_are_translated  # 목록 동작 칸이 원문 키(analytics.xxx)로 새지 않는다 (#138 실측 ⑧)
   - activity_log_survives_queued_listener_dispatch
   - activity_log_descriptions_fill_every_placeholder
   - migrations_roll_back_and_forward_idempotently

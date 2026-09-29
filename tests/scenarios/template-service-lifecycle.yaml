@@ -22,7 +22,7 @@ effects:
   - deactivate_template_throws_exception_on_failure
   - activates_template_with_hook_system
   - delegates_file_copy_to_manager
-  - applies_filter_hook_before_manager_call
+  - filter_activate_data_left_to_manager_not_applied_by_service
   - throws_exception_on_manager_failure
   - throws_exception_when_template_not_found
 

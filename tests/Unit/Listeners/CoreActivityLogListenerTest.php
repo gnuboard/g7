@@ -2239,9 +2239,9 @@ class CoreActivityLogListenerTest extends TestCase
             // Auth
             ['core.auth.after_login', 'handleAuthAfterLogin', 'auth.login', ActivityLogType::Admin, 'activity_log.description.auth_login'],
             ['core.auth.logout', 'handleAuthLogout', 'auth.logout', ActivityLogType::Admin, 'activity_log.description.auth_logout'],
-            ['core.auth.register', 'handleAuthRegister', 'auth.register', ActivityLogType::User, 'activity_log.description.auth_register'],
-            ['core.auth.forgot_password', 'handleAuthForgotPassword', 'auth.forgot_password', ActivityLogType::User, 'activity_log.description.auth_forgot_password'],
-            ['core.auth.reset_password', 'handleAuthResetPassword', 'auth.reset_password', ActivityLogType::User, 'activity_log.description.auth_reset_password'],
+            ['core.auth.after_register', 'handleAuthRegister', 'auth.register', ActivityLogType::User, 'activity_log.description.auth_register'],
+            ['core.auth.after_reset_password_request', 'handleAuthForgotPassword', 'auth.forgot_password', ActivityLogType::User, 'activity_log.description.auth_forgot_password'],
+            ['core.auth.after_password_changed', 'handleAuthResetPassword', 'auth.reset_password', ActivityLogType::User, 'activity_log.description.auth_reset_password'],
             ['core.auth.record_consents', 'handleAuthRecordConsents', 'auth.record_consents', ActivityLogType::User, 'activity_log.description.auth_record_consents'],
 
             // Role

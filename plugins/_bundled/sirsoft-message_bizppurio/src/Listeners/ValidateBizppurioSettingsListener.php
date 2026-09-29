@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Lang;
  *
  * 코어 UpdatePluginSettingsRequest 의 정적 스키마는 `required`/타입 규칙만 표현할 수 있어
  * "검수 모드가 꺼진(운영) 상태일 때만 발송 자격증명 필수" 같은 조건부 검증을 담을 수 없다. 본
- * listener 가 `core.plugin_settings.update_rules` filter 로 운영 진입 시 발송에 필요한
+ * listener 가 `core.plugin_settings.update_validation_rules` filter 로 운영 진입 시 발송에 필요한
  * 자격증명에 required 규칙을 동적 부여한다.
  *
  * 필수 대상은 "운영 환경에서 최소 문자 발송이 성립하는 조건"과 일치시킨다:
@@ -44,7 +44,7 @@ class ValidateBizppurioSettingsListener implements HookListenerInterface
     public static function getSubscribedHooks(): array
     {
         return [
-            'core.plugin_settings.update_rules' => [
+            'core.plugin_settings.update_validation_rules' => [
                 'method' => 'addLiveModeRules',
                 'priority' => 10,
                 'type' => 'filter',
@@ -58,6 +58,7 @@ class ValidateBizppurioSettingsListener implements HookListenerInterface
      * 이 메서드는 미사용. HookListenerInterface 추상 메서드 충족 목적으로만 정의한다.
      *
      * @param  mixed  ...$args  사용 안 함
+     * @return void 반환값 없음
      */
     public function handle(...$args): void
     {
@@ -78,7 +79,7 @@ class ValidateBizppurioSettingsListener implements HookListenerInterface
         }
 
         // 검수 모드(is_test_mode)가 명시적으로 false(운영) 일 때만 자격증명을 강제한다.
-        // 본 필터 훅(core.plugin_settings.update_rules)은 코어 UpdatePluginSettingsRequest 가
+        // 본 필터 훅(core.plugin_settings.update_validation_rules)은 코어 UpdatePluginSettingsRequest 가
         // "현재 요청의 is_test_mode 에 따른 조건부 검증 규칙"을 만들도록 발행하는 확장점이므로,
         // 현재 입력 값 참조가 본질적으로 필요하다 (FormRequest 우회가 아님 — 코어 검증기 자체의 입력).
         $isTestMode = filter_var(
@@ -119,6 +120,8 @@ class ValidateBizppurioSettingsListener implements HookListenerInterface
      * 코어 UpdatePluginSettingsRequest 의 검증 에러 메시지에서 항목 이름이 영문 키(`bizppurio id`)로
      * 노출되지 않도록, 전역 validation.attributes 에 표시 이름을 런타임 병합한다. 코어 검증기를
      * 수정하지 않고 Laravel 의 attribute 해석 메커니즘만 활용한다.
+     *
+     * @return void 반환값 없음
      */
     private function registerLiveCredentialAttributeLabels(): void
     {

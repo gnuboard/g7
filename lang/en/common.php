@@ -21,6 +21,8 @@ return [
     // System labels
     'system' => 'System',
     'system_cli' => 'System (CLI)',
+    // Key for echoing an already-translated failure reason from a lower layer (pass the reason as a replacement)
+    'failure_reason' => ':reason',
     'yes' => 'Yes',
     'no' => 'No',
     'unknown' => 'Unknown',

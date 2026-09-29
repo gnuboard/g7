@@ -162,7 +162,7 @@
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 18개 | `plugins/_bundled/sirsoft-tosspayments/tests` |
+| PHPUnit | 19개 | `plugins/_bundled/sirsoft-tosspayments/tests` |
 | Vitest | 7개 | `vitest.config.ts` |
 | Playwright | 0개 | — |
 | 시나리오 매니페스트 | 8개 | `tests/scenarios` |

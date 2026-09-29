@@ -13,6 +13,7 @@ return [
     'processing' => '処理中...',
     'system' => 'システム',
     'system_cli' => 'システム(CLI)',
+    'failure_reason' => ':reason',
     'yes' => 'はい',
     'no' => 'いいえ',
     'unknown' => '不明',

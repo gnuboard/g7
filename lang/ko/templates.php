@@ -261,6 +261,7 @@ return [
             'versions_deleted' => '버전 히스토리 :count개 삭제됨',
             'custom_preserved' => '운영자 파일(:directory)을 :archive 에 보관했습니다.',
             'aborted' => '삭제가 취소되었습니다.',
+            'delete_data_notice' => '⚠️  --delete-data: 「데이터도 삭제」를 선택한 것으로 제거합니다(활동 로그와 제거를 구독하는 확장에 전달됩니다).',
         ],
         'list' => [
             'no_templates' => '등록된 템플릿이 없습니다.',

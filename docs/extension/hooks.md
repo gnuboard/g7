@@ -12,6 +12,7 @@
 3. 네이밍: [vendor-module].[entity].[action]_[timing]
 4. 우선순위: 1-5(높음), 10(기본), 15+(낮음)
 5. Service 패턴: before_* → filter_* → 로직 → after_*
+6. 공개 훅의 이름·인자 모양은 마이너에서 바꾸지 않는다 — 새 훅 추가 + 옛 훅 deprecated, 제거는 메이저
 ```
 
 ---
@@ -796,6 +797,7 @@ HookManager::addAction('hook.context.restore', function (array $context) {
 - Closure 등 직렬화 불가능한 인자는 null로 대체되므로, 훅 인자로 Closure를 전달하지 마세요.
 - 큐 드라이버가 `database`/`redis`일 때 큐 워커가 미실행이면 작업이 적체됩니다.
 - 사용자 컨텍스트는 자동 복원되지만, `request()->session()` 등 세션 의존 정보는 복원되지 않습니다 (큐 컨텍스트는 단발 실행).
+- 훅 인자에 비밀번호·토큰 같은 비밀값 원문을 싣지 마세요. 큐 구독자가 하나라도 있으면 인자 사본이 작업 대기 표(`jobs`, 처리에 실패하면 `failed_jobs`)에 남습니다. 요청 데이터를 통째로 넘기는 훅은 `Arr::except($data, ['password', 'password_confirmation'])` 처럼 비밀값을 빼고 넘깁니다(`core.auth.after_register`·`core.auth.record_consents`·`core.user.after_create`·`core.user.after_update` 가 이렇게 합니다). 비밀값이 꼭 필요한 구독자는 `'sync' => true` 로 받고, 그 훅의 인자 표에 비밀값이 있다고 적습니다(`core.auth.after_reset_password_request` 의 재설정 토큰).
 
 ---
 
@@ -1176,9 +1178,30 @@ HookManager::doAction('...payment_completed', $claim, $payment);
 
 - `core.templates.after_update` 는 템플릿 **레코드 수정**(`TemplateService::updateTemplate()`) 훅이다. 템플릿 버전 업데이트를 구독하려면 `after_version_update` 를 쓴다.
 - `$info` 는 확장 정보 배열이며 정보를 구할 수 없으면 빈 배열이다(템플릿 활성화는 `['identifier' => ...]`). 리스너는 `$info['version'] ?? null` 처럼 키 부재를 전제로 읽는다.
-- `before_*` 훅(`before_install`·`before_update` 등)은 지금도 Service(어드민 UI)에서만 발화한다.
+- 직전 훅도 Manager 가 CLI·어드민 UI 공통으로 한 번 발화한다(7.1.0~). 인자는 종전 Service 발화와 같다 — 모듈 `before_install(id)`·`before_activate(id, force)`·`before_deactivate(id, force)`·`before_update(id)`·`before_uninstall(id, deleteData)`, 플러그인 `before_install|activate|deactivate|update(id)`·`before_uninstall(id, deleteData)`, 템플릿 `before_install|activate|deactivate|version_update(id)`·`before_uninstall(id, deleteData)`.
+- 직전 훅은 "시도" 시점에 발화하므로 없는 식별자처럼 실패할 호출에서도 발화한다. 직전 훅 리스너가 예외를 던지면 그 작업이 멈춘다 — 이제 CLI 설치·업데이트에도 똑같이 적용된다.
 
-**구훅 (deprecated)** — `core.{modules,plugins,templates}.installed` · `activated` · `updated` 9개는 식별자 1개만 넘기는 이전 이름이다. 구독자(코어 SEO·설정 캐시 리스너, 번들 결제 플러그인, 사외 확장)가 있어 성공 시 계속 발화하지만 다음 메이저에서 제거할 예정이다. 새 구독은 위 정규 훅을 쓴다. 구훅은 "업데이트할 것 없음" 에서는 발화하지 않는다.
+**구훅 (deprecated)** — `core.{modules,plugins,templates}.installed` · `activated` · `updated` 9개는 식별자 1개만 넘기는 이전 이름이다. 코어·번들 확장은 모두 정규 훅으로 옮겼고, 사외 확장 호환을 위해 성공 시 계속 발화하지만 다음 메이저에서 제거할 예정이다. 새 구독은 위 정규 훅을 쓴다(구훅을 구독하면 등록 시 경고가 남는다 — 아래 「공개 훅 호환 원칙」). 구훅은 "업데이트할 것 없음" 에서는 발화하지 않는다.
+
+### 공개 훅 호환 원칙
+
+공개 훅(코어·번들 확장이 발화하는 훅)의 **이름과 인자 위치는 서드파티 확장이 코드에 박아 쓰는 계약**이다. 바꾸면 업데이트한 사이트에서 서드파티 리스너가 조용히 멈추거나 오류를 낸다.
+
+- 마이너 버전에서는 공개 훅의 이름을 바꾸거나 지우지 않고, 인자를 빼거나 순서를 바꾸지 않는다. 뒤에 선택 인자를 더하는 것만 허용된다.
+- 바꿔야 하면 **새 이름의 훅을 더하고 옛 훅은 지금 모양 그대로 계속 발화**한다. 옛 훅은 `app/Extension/HookContract/data/deprecated.php` 에 대체 이름과 함께 적는다. 제거는 메이저 버전에서만 한다.
+- 같은 훅이 발화처마다 다른 모양으로 나가고 있으면 기존 훅을 "정리" 하지 않는다 — 모양을 이름에 드러낸 새 훅(예: `core.templates.after_list_paginated`, `core.menu.after_update_order_flat`)을 나란히 발화한다.
+- 문서·선언에는 있는데 발화처가 없는 훅은 문서에서 지우기보다 **발화를 만든다**(그 문서를 보고 구독한 확장이 있다). 발화가 불가능하면(예: 브라우저에서 일어나는 흐름) 선언·문서에서 빼고 deprecated 목록에 `replacement: null` 로 적는다.
+- 이름을 옮길 때 액션은 `HookManager::doActionWithLegacyName($new, $old, ...$args)`, 필터는 `applyFiltersWithLegacyName()` 을 쓴다. 옛 이름은 구독자가 있을 때만 발화하고 개명 경고를 한 번 남긴다. **공개 배포본에서 한 번도 발화된 적 없는 옛 이름은 되살리지 않는다**(한 번도 돈 적 없는 코드가 갑자기 돈다).
+
+**장치**
+
+| 장치 | 위치 | 하는 일 |
+|------|------|---------|
+| 발화 목록 | `app/Extension/HookContract/data/catalog.php` (`php artisan hooks:catalog` 로 생성) | 코어·번들 확장의 발화 훅 이름·유형·인자 개수. 훅을 더하거나 바꾸면 재생성해 변화를 리뷰에 드러낸다 |
+| 계약 위반 거부 | `hooks:catalog` | 옛 목록에서 사라진 훅·인자 개수가 줄어든 훅이 deprecated 목록에 없으면 쓰기를 거부한다(메이저의 의도된 제거만 `--allow-break`) |
+| 동적 발화처 목록 | `data/dynamic.php` | 이름을 조립하는 발화처(`"{$prefix}.notification.channels"` 등)의 이름 패턴. 새 동적 발화처가 목록 밖에 생기면 테스트가 실패한다 |
+| 구독 시 경고 | `HookContractGuard` (등록기가 호출) | 사용 중단된 훅, 또는 코어·번들 확장 이름공간인데 발화처가 없는 훅을 구독하면 `Log::warning` (리스너×훅 단위 하루 1회) |
+| 계약 테스트 | `tests/Feature/Extension/HookContractTest.php` | 목록 최신성 · 동적 발화처 매핑 · 코어·번들 리스너가 deprecated·미발화 훅을 구독하지 않음 · 위반 거부 · 가드 · 액션 옛 이름 병행 발화 |
 
 ---
 
@@ -1681,6 +1704,7 @@ public function download(int $id, ?User $user): ?Attachment
 
 ## 관련 문서
 
+- [공개 훅 목록](hook-catalog.md) - 코어·번들 확장이 발화하는 훅 전부 (자동 생성)
 - [모듈 개발 기초](module-basics.md) - 모듈에서 훅 리스너 등록
 - [Service-Repository 패턴](../backend/service-repository.md) - Service에서 훅 실행 패턴
 - [활동 로그 시스템](../backend/activity-log.md) - 활동 로그 Listener 작성 패턴, Per-Item Bulk 로깅 규칙

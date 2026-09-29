@@ -126,7 +126,7 @@ return [
     'pending_not_found' => 'インストール待機リストでモジュール ":module"が見つかりません。',
     'already_exists' => 'モジュール ":module"は既に存在します。',
     'move_failed' => 'モジュール ":module"の移動に失敗しました: :error',
-    'deactivate_warning' => 'このモジュールに依存するアクティブなテンプレートがあります。',
+    'deactivate_warning' => 'このモジュールに依存する有効化された拡張があります。',
     'installation_failed' => 'モジュールのインストールに失敗しました: :error',
     'activation_failed' => 'モジュールの有効化に失敗しました: :error',
     'deactivation_failed' => 'モジュールの無効化に失敗しました: :error',
@@ -142,6 +142,7 @@ return [
     'activate_warning' => 'モジュール有効化に必要な依存関係が満たされていません。',
     'deactivate_warning_extended' => 'このモジュールに依存する有効化された拡張 (テンプレート、モジュール、プラグイン) があります。',
     'errors' => [
+        'uninstall_blocked_by_dependents' => 'このモジュールに依存する拡張が有効なため削除できません。先に無効化または削除してください: :extensions',
         'force_update_no_source' => ':module を強制アップデートするソースが見つかりません。バンドルと GitHub URL の両方がありません。',
         'downgrade_blocked' => 'ダウングレードがブロックされました (:from → :to)。意図的なダウングレードは --force オプションを使用してください。',
         'zip_open_failed' => 'ZIP ファイルを開くことができません: :error',

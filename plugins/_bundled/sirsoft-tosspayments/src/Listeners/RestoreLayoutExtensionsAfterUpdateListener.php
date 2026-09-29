@@ -31,7 +31,9 @@ class RestoreLayoutExtensionsAfterUpdateListener implements HookListenerInterfac
     public static function getSubscribedHooks(): array
     {
         return [
-            'core.plugins.updated' => [
+            // 정규 완료 훅 — 옛 core.plugins.updated 는 deprecated(#138 후속). 업데이트할 것이 없을 때도
+            // 발화하므로(success=false) 그때는 건너뛴다.
+            'core.plugins.after_update' => [
                 'method' => 'restoreCurrentExtensionsAfterUpdate',
                 'type' => 'action',
                 'priority' => 20,
@@ -53,11 +55,12 @@ class RestoreLayoutExtensionsAfterUpdateListener implements HookListenerInterfac
      * 업데이트된 플러그인이 자신이면 오버레이 확장을 재등록합니다.
      *
      * @param  string  $identifier  업데이트된 플러그인 식별자
+     * @param  array<string, mixed>  $result  업데이트 결과 (success=false 면 바뀐 것이 없다)
      * @return void
      */
-    public function restoreCurrentExtensionsAfterUpdate(string $identifier): void
+    public function restoreCurrentExtensionsAfterUpdate(string $identifier, array $result = []): void
     {
-        if ($identifier !== self::PLUGIN_IDENTIFIER) {
+        if ($identifier !== self::PLUGIN_IDENTIFIER || ($result['success'] ?? true) === false) {
             return;
         }
 

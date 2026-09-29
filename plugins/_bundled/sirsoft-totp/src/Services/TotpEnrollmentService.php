@@ -2,6 +2,7 @@
 
 namespace Plugins\Sirsoft\Totp\Services;
 
+use App\Extension\HookManager;
 use App\Models\User;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Hash;
@@ -184,6 +185,32 @@ class TotpEnrollmentService
     public function reset(User $user): bool
     {
         return $this->credentials->deleteByUserId((int) $user->id) > 0;
+    }
+
+    /**
+     * 관리자 강제 해제 — 초기화하고, 실제로 풀린 경우 감사 훅을 발화합니다.
+     *
+     * 관리자 화면과 서버 셸(`totp:reset`)이 같은 이 메서드를 부른다. 예전에는 컨트롤러가 훅을
+     * 발화해 셸로 풀면 감사 기록이 남지 않았다(#138 후속). 셸에는 요청 사용자·IP 가 없으므로
+     * 호출부가 null 을 넘기고, 진입점(CLI)은 활동 로그가 따로 표시한다.
+     *
+     * @param  User  $user  대상 사용자
+     * @param  int|null  $actorId  해제한 관리자 ID (셸이면 null)
+     * @param  string|null  $ipAddress  요청 IP (셸이면 null)
+     * @return bool 삭제한 자격증명이 있었으면 true
+     */
+    public function adminReset(User $user, ?int $actorId, ?string $ipAddress): bool
+    {
+        $removed = $this->reset($user);
+
+        if ($removed) {
+            HookManager::doAction('sirsoft-totp.credential.admin_reset', $user, [
+                'actor_id' => $actorId,
+                'ip_address' => $ipAddress,
+            ]);
+        }
+
+        return $removed;
     }
 
     /**

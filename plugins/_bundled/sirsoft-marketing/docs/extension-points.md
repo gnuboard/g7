@@ -5,11 +5,11 @@
 ## 발행 훅
 
 <!-- @generated:hooks-published START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-발행 훅 4종 / 호출 지점 2곳. 훅 이름이 상수·변수로 조립된 호출이 1곳 있어 호출 위치가 표에 다 실리지 않을 수 있습니다.
+발행 훅 4종 / 호출 지점 3곳. 훅 이름이 상수·변수로 조립된 호출이 1곳 있어 호출 위치가 표에 다 실리지 않을 수 있습니다.
 
 | 훅 이름 | 유형 | 설명 | 발행 위치 |
 |---|---|---|---|
-| `sirsoft-marketing.filter_consent_data` | filter | 마케팅 동의 데이터를 필터링하는 훅 | 선언 (호출 위치 미확인) |
+| `sirsoft-marketing.filter_consent_data` | filter | 동의 항목을 일괄 저장하기 전에 동의 데이터를 가공하는 필터 훅 | `src/Services/MarketingConsentService.php:284` |
 | `sirsoft-marketing.user.consent_changed` | action | 사용자 마케팅 동의 변경 시 실행되는 액션 훅 | `src/Services/MarketingConsentService.php:266` |
 | `sirsoft-marketing.user.subscribed` | action | 사용자 마케팅 동의 필드가 동의(granted)로 변경될 때 실행되는 액션 훅 | 선언 (호출 위치 미확인) |
 | `sirsoft-marketing.user.unsubscribed` | action | 사용자 마케팅 동의 필드가 철회(revoked)로 변경될 때 실행되는 액션 훅 | 선언 (호출 위치 미확인) |
@@ -39,7 +39,7 @@
 <!-- @generated:hooks-subscribed START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 훅 이름 | 유형 | 리스너 | 메서드 | 우선순위 |
 |---|---|---|---|---|
-| `core.auth.register` | action (미선언) | `MarketingConsentListener` | `afterRegister` | 10 |
+| `core.auth.after_register` | action (미선언) | `MarketingConsentListener` | `afterRegister` | 10 |
 | `core.auth.register_validation_rules` | filter | `MarketingConsentListener` | `addRegisterValidationRules` | 10 |
 | `core.plugin_settings.filter_save_data` | filter | `MarketingConsentListener` | `normalizeChannelsSaveData` | 10 |
 | `core.user.after_create` | action (미선언) | `MarketingConsentListener` | `afterCreate` | 10 |

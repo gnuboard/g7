@@ -11,10 +11,12 @@ use App\Contracts\Repositories\TemplateRepositoryInterface;
 use App\Enums\DeactivationReason;
 use App\Enums\ExtensionStatus;
 use App\Enums\LayoutSourceType;
+use App\Exceptions\ExtensionOperationInProgressException;
 use App\Extension\Cache\CoreCacheDriver;
 use App\Extension\Concerns\ResolvesExtensionIcons;
 use App\Extension\Helpers\ExtensionBackupHelper;
 use App\Extension\Helpers\ExtensionInstallRollbackHelper;
+use App\Extension\Helpers\ExtensionOperationLock;
 use App\Extension\Helpers\ExtensionPendingHelper;
 use App\Extension\Helpers\ExtensionStatusGuard;
 use App\Extension\Helpers\GithubHelper;
@@ -445,6 +447,9 @@ class TemplateManager implements TemplateManagerInterface
      */
     public function installTemplate(string $templateName, ?\Closure $onProgress = null, bool $force = false): bool
     {
+        // 직전 훅 — CLI·어드민 UI 공통으로 한 번 발화한다(예전에는 Service 에서만 발화해 CLI 가 빠졌다, #138 후속)
+        HookManager::doAction('core.templates.before_install', $templateName);
+
         // identifier 형식 검증 (내부 호출 방어)
         ExtensionManager::validateIdentifierFormat($templateName);
 
@@ -577,6 +582,9 @@ class TemplateManager implements TemplateManagerInterface
      */
     public function activateTemplate(string $templateName, bool $force = false): array
     {
+        // 직전 훅 — CLI·어드민 UI 공통으로 한 번 발화한다(예전에는 Service 에서만 발화해 CLI 가 빠졌다, #138 후속)
+        HookManager::doAction('core.templates.before_activate', $templateName);
+
         $template = $this->getTemplate($templateName);
         if (! $template) {
             throw new \Exception(__('templates.errors.not_found', ['template' => $templateName]));
@@ -586,6 +594,10 @@ class TemplateManager implements TemplateManagerInterface
         if (! $templateRecord) {
             throw new \Exception(__('templates.errors.not_installed', ['template' => $templateName]));
         }
+
+        // 필터 훅 — 직전 훅 뒤에 돈다(before → filter 순서). 직전 훅과 함께 Manager 로 옮겨 CLI·어드민 UI 공통으로
+        // 한 번 발화한다(#138 후속 — 설계 결정). 결과 값은 종전처럼 쓰지 않는다(활성화 상태는 아래에서 정한다).
+        HookManager::applyFilters('core.templates.filter_activate_data', ['status' => ExtensionStatus::Active->value], $templateRecord);
 
         // 이미 활성화된 템플릿인지 확인
         if ($templateRecord->status === ExtensionStatus::Active->value) {
@@ -744,6 +756,9 @@ class TemplateManager implements TemplateManagerInterface
         ?string $incompatibleRequiredVersion = null,
         ?string &$failureReason = null,
     ): bool {
+        // 직전 훅 — CLI·어드민 UI 공통으로 한 번 발화한다(예전에는 Service 에서만 발화해 CLI 가 빠졌다, #138 후속)
+        HookManager::doAction('core.templates.before_deactivate', $templateName);
+
         $failureReason = null;
 
         $template = $this->getTemplate($templateName);
@@ -798,7 +813,7 @@ class TemplateManager implements TemplateManagerInterface
      *                                                                                        삭제 전에 보관한 운영자 소유 디렉토리(`custom/`)의 사본 경로가 담기는 out 파라미터.
      *                                                                                        운영자에게 "지웠지만 사본은 여기 있다" 를 알리기 위한 것이므로 호출부가 노출해야 한다.
      * @param  bool  $deleteData  운영자가 "데이터도 삭제" 를 골랐는지 — 제거 동작은 바꾸지 않고
-     *                             after_uninstall 훅 인자로만 전달한다(활동 로그 기록용)
+     *                            after_uninstall 훅 인자로만 전달한다(활동 로그 기록용)
      * @return bool 제거 성공 여부
      *
      * @throws \Exception 템플릿을 찾을 수 없을 때
@@ -809,6 +824,9 @@ class TemplateManager implements TemplateManagerInterface
         ?array &$preservedBackups = null,
         bool $deleteData = false,
     ): bool {
+        // 직전 훅 — CLI·어드민 UI 공통으로 한 번 발화한다(예전에는 Service 에서만 발화해 CLI 가 빠졌다, #138 후속)
+        HookManager::doAction('core.templates.before_uninstall', $templateName, $deleteData);
+
         $preservedBackups = [];
 
         // after_uninstall 훅에 실을 정보는 파괴 단계(DB 행 삭제·디렉토리 삭제) 이전에 캡처한다.
@@ -3065,9 +3083,18 @@ class TemplateManager implements TemplateManagerInterface
      * @return array{success: bool, from_version: string|null, to_version: string|null, message: string}
      *
      * @throws \RuntimeException 업데이트 실패 시
+     * @throws ExtensionOperationInProgressException 같은 확장의 업데이트가 이미 진행 중일 때 (409)
      */
     public function updateTemplate(string $identifier, bool $force = false, ?\Closure $onProgress = null, string $layoutStrategy = 'overwrite', ?string $sourceOverride = null, ?string $zipPath = null): array
     {
+        // 같은 템플릿의 업데이트는 한 번에 하나만 — 상태 가드(status=updating)가 서기 전 구간에 들어온 두 번째 요청이
+        // 함께 통과해 업데이트가 두 번 수행됐다(#138 실측 ② 버튼 더블클릭). 직전 훅보다 먼저 잠그고, 이 지역 변수가
+        // 메서드를 빠져나갈 때(정상 반환·예외 모두) 잠금이 풀린다.
+        $operationLock = ExtensionOperationLock::acquire('template', $identifier);
+
+        // 직전 훅 — CLI·어드민 UI 공통으로 한 번 발화한다(예전에는 Service 에서만 발화해 CLI 가 빠졌다, #138 후속)
+        HookManager::doAction('core.templates.before_version_update', $identifier);
+
         $record = $this->templateRepository->findByIdentifier($identifier);
         if (! $record) {
             throw new \RuntimeException(__('templates.not_installed', ['template' => $identifier]));

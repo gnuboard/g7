@@ -228,6 +228,13 @@ class ActivityLog extends Model
             return $origin;
         }
 
+        // 출처 자동 주입(extension_origin) 이전에 쌓인 행은 properties 가 비어 있다 — 설명 키가
+        // 확장 lang 네임스페이스(`sirsoft-ecommerce::...`)면 그것이 출처다(#138 실측 ⑧).
+        $descriptionKey = (string) ($this->description_key ?? '');
+        if (str_contains($descriptionKey, '::')) {
+            return strstr($descriptionKey, '::', true) ?: null;
+        }
+
         return null;
     }
 
@@ -283,7 +290,7 @@ class ActivityLog extends Model
     /**
      * 관리자 활동 로그만 필터링하는 스코프
      *
-     * @param Builder $query 쿼리 빌더
+     * @param  Builder  $query  쿼리 빌더
      * @return Builder 필터링된 쿼리 빌더
      */
     public function scopeAdmin(Builder $query): Builder
@@ -294,7 +301,7 @@ class ActivityLog extends Model
     /**
      * 사용자 활동 로그만 필터링하는 스코프
      *
-     * @param Builder $query 쿼리 빌더
+     * @param  Builder  $query  쿼리 빌더
      * @return Builder 필터링된 쿼리 빌더
      */
     public function scopeUserLog(Builder $query): Builder
@@ -305,7 +312,7 @@ class ActivityLog extends Model
     /**
      * 시스템 활동 로그만 필터링하는 스코프
      *
-     * @param Builder $query 쿼리 빌더
+     * @param  Builder  $query  쿼리 빌더
      * @return Builder 필터링된 쿼리 빌더
      */
     public function scopeSystem(Builder $query): Builder
@@ -316,8 +323,8 @@ class ActivityLog extends Model
     /**
      * 특정 모델에 대한 로그만 필터링하는 스코프
      *
-     * @param Builder $query 쿼리 빌더
-     * @param Model $model 대상 모델
+     * @param  Builder  $query  쿼리 빌더
+     * @param  Model  $model  대상 모델
      * @return Builder 필터링된 쿼리 빌더
      */
     public function scopeForModel(Builder $query, Model $model): Builder
@@ -330,8 +337,8 @@ class ActivityLog extends Model
     /**
      * 특정 액션에 대한 로그만 필터링하는 스코프
      *
-     * @param Builder $query 쿼리 빌더
-     * @param string $action 액션 유형
+     * @param  Builder  $query  쿼리 빌더
+     * @param  string  $action  액션 유형
      * @return Builder 필터링된 쿼리 빌더
      */
     public function scopeAction(Builder $query, string $action): Builder
@@ -342,8 +349,8 @@ class ActivityLog extends Model
     /**
      * 특정 사용자의 로그만 필터링하는 스코프
      *
-     * @param Builder $query 쿼리 빌더
-     * @param int $userId 사용자 ID
+     * @param  Builder  $query  쿼리 빌더
+     * @param  int  $userId  사용자 ID
      * @return Builder 필터링된 쿼리 빌더
      */
     public function scopeByUser(Builder $query, int $userId): Builder
@@ -354,7 +361,7 @@ class ActivityLog extends Model
     /**
      * 최신순으로 정렬하는 스코프
      *
-     * @param Builder $query 쿼리 빌더
+     * @param  Builder  $query  쿼리 빌더
      * @return Builder 정렬된 쿼리 빌더
      */
     public function scopeLatest(Builder $query): Builder

@@ -87,6 +87,7 @@ return [
 
     // 오류 메시지
     'errors' => [
+        'uninstall_blocked_by_dependents' => '이 플러그인에 의존하는 확장이 켜져 있어 제거할 수 없습니다. 먼저 끄거나 제거하세요: :extensions',
         'force_update_no_source' => ':plugin 을(를) 강제 업데이트할 소스를 찾을 수 없습니다. 번들 및 GitHub URL이 모두 없습니다.',
         'downgrade_blocked' => '다운그레이드가 차단되었습니다 (:from → :to). 의도적 다운그레이드는 --force 옵션을 사용하세요.',
         'invalid_permission_structure' => '플러그인 ":identifier"의 권한 구조가 올바르지 않습니다: :reason',

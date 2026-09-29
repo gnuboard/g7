@@ -49,7 +49,7 @@ HookManager::addAction(
 | `core.notification_log.after_log_failed` | action (미선언) | `LinkNotificationLogListener` | `linkLog` | 15 |
 | `core.notification_log.after_log_sent` | action (미선언) | `LinkNotificationLogListener` | `linkLog` | 15 |
 | `core.plugin_settings.after_save` | action | `InvalidateTokenOnSettingsSaveListener` | `invalidateToken` | 10 |
-| `core.plugin_settings.update_rules` | filter | `ValidateBizppurioSettingsListener` | `addLiveModeRules` | 10 |
+| `core.plugin_settings.update_validation_rules` | filter | `ValidateBizppurioSettingsListener` | `addLiveModeRules` | 10 |
 | `sirsoft-ecommerce.notification.extract_data` | filter | `GuestPhoneExtractListener` | `injectGuestPhone` | 20 |
 | `sirsoft-message_bizppurio.notification.extract_data` | filter | `BalanceLowNotificationDataListener` | `injectBalanceLowData` | 10 |
 <!-- @generated:hooks-subscribed END -->
@@ -62,7 +62,7 @@ HookManager::addAction(
 |---|---|
 | `core.notification_log.after_log_sent` · `after_log_failed` | 코어 알림 로그와 이 플러그인의 발송 기록을 연결 — 관리자 "알림 발송 이력" 에 문자·알림톡 결과가 함께 보이는 이유 |
 | `core.plugin_settings.after_save` | 설정을 저장하면 비즈뿌리오 인증 토큰을 무효화 — 계정 정보를 바꿨는데 옛 토큰으로 계속 발송하는 것을 막습니다 |
-| `core.plugin_settings.update_rules` | **운영 모드로 전환할 때만** 필수값(아이디·비밀번호·API 키·발신번호) 검증을 추가. 검수 모드에서는 비어 있어도 저장되어야 합니다 |
+| `core.plugin_settings.update_validation_rules` | **운영 모드로 전환할 때만** 필수값(아이디·비밀번호·API 키·발신번호) 검증을 추가. 검수 모드에서는 비어 있어도 저장되어야 합니다 |
 | `sirsoft-ecommerce.notification.extract_data` | 비회원 주문 알림에 주문 시 입력한 연락처를 주입 |
 | `sirsoft-message_bizppurio.notification.extract_data` | 잔액부족 관리자 알림의 본문 변수 채우기 (자기 훅) |
 

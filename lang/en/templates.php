@@ -261,6 +261,7 @@ return [
             'versions_deleted' => ':count version(s) deleted',
             'custom_preserved' => 'Operator files (:directory) were archived to :archive.',
             'aborted' => 'Uninstall aborted.',
+            'delete_data_notice' => '⚠️  --delete-data: Uninstalls as if "Also delete data" was chosen (passed to the activity log and to extensions that subscribe to uninstall).',
         ],
         'list' => [
             'no_templates' => 'No templates found.',

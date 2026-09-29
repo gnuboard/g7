@@ -95,6 +95,19 @@ return [
         'manual_run_finished' => 'Privacy action manual run finished',
 
         // Ecommerce/Board common
+
+        // Analytics operations (analytics.*) — label for the list "Action" column, separate from the description text
+        'analytics' => [
+            'settings_updated' => 'Analytics settings updated',
+            'privacy_mode_changed' => 'Analytics privacy mode changed',
+            'data_purged' => 'All analytics data purged',
+            'anonymized' => 'Analytics anonymized retroactively',
+            'subject_exported' => 'Data subject visits exported',
+            'subject_deleted' => 'Data subject visits deleted',
+            'opt_out_changed' => 'Analytics opt-out changed',
+            'archive_requested' => 'Analytics archived manually',
+            'extension_purged' => 'Extension analytics cleaned up',
+        ],
     ],
 
     // Description templates (used as description_key)

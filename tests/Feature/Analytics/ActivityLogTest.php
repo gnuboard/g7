@@ -185,4 +185,29 @@ class ActivityLogTest extends TestCase
             }
         }
     }
+
+    /**
+     * 활동 로그 목록의 「동작」 칸이 통계 훅 전부에서 번역된 라벨로 보인다 — 원문 키(analytics.xxx)로 새지 않는다.
+     *
+     * 설명 문구(activity_log.analytics.*)만 있고 동작 라벨(activity_log.action.analytics.*)이 없어, 목록의
+     * 동작 칸에 `analytics.extension_purged` 같은 원문 키가 그대로 보였다(#138 실측 ⑧).
+     *
+     * @scenario visitor=admin
+     *
+     * @effects analytics_action_labels_are_translated
+     *
+     * @return void 없음
+     */
+    public function test_every_analytics_action_has_a_translated_label(): void
+    {
+        foreach ($this->subscribedActions() as $action) {
+            $log = new ActivityLog(['action' => 'analytics.'.$action]);
+
+            foreach (['ko', 'en'] as $locale) {
+                app()->setLocale($locale);
+
+                $this->assertNotSame('analytics.'.$action, $log->action_label, "analytics.{$action} ({$locale}) 동작 라벨이 원문 키로 보인다");
+            }
+        }
+    }
 }

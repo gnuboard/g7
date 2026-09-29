@@ -22,6 +22,8 @@ class DashboardStatsListener implements HookListenerInterface
     {
         return [
             'core.user.after_create' => ['method' => 'handleStatsUpdate', 'priority' => 10],
+            // 셀프 가입은 core.user.after_create 가 아니라 이 훅으로 발화한다 — 관리자가 만든 회원만 반영되던 것을 바로잡았다(#138 후속)
+            'core.auth.after_register' => ['method' => 'handleStatsUpdate', 'priority' => 10],
             'core.user.after_update' => ['method' => 'handleStatsUpdate', 'priority' => 10],
             'core.user.after_delete' => ['method' => 'handleStatsUpdate', 'priority' => 10],
             // 복수형(core.plugins.*)이 실제 발화 이름이다 — 종전 단수형은 발화처가 없었다(#138).

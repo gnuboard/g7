@@ -68,7 +68,7 @@
 빠지면 그 이음매만 조용히 끊기고 나머지는 정상 동작하므로, 리스너를 지우거나 이름을 바꿀 때는
 그 이음매가 무엇이었는지 먼저 확인합니다.
 
-`ValidateBizppurioSettingsListener` 만 성격이 다릅니다 — `core.plugin_settings.update_rules`
+`ValidateBizppurioSettingsListener` 만 성격이 다릅니다 — `core.plugin_settings.update_validation_rules`
 필터로 **운영 모드로 전환할 때만** 필수값(아이디·비밀번호·API 키·발신번호) 검증을 추가합니다.
 검수 모드에서는 그 값들이 비어 있어도 저장되어야 하기 때문입니다.
 <!-- @intent END -->

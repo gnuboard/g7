@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Contracts\Extension\ModuleManagerInterface;
 use App\Contracts\Repositories\ModuleRepositoryInterface;
 use App\Enums\ExtensionStatus;
+use App\Exceptions\ExtensionOperationInProgressException;
 use App\Exceptions\ModuleOperationException;
 use App\Extension\Helpers\ChangelogParser;
 use App\Extension\Helpers\EditorSpecAssembler;
@@ -192,7 +193,7 @@ class ModuleService
         string $layoutStrategy = 'overwrite',
         bool $force = false,
     ): array {
-        HookManager::doAction('core.modules.before_update', $moduleName);
+        // 직전 훅은 Manager 가 발화한다 — CLI·어드민 UI 공통 단일 발화(#138 후속, Service 중복 발화 제거)
 
         try {
             $this->moduleManager->loadModules();
@@ -212,6 +213,9 @@ class ModuleService
             return array_merge($result, [
                 'module_info' => $moduleInfo,
             ]);
+        } catch (ExtensionOperationInProgressException $e) {
+            // 같은 확장의 업데이트가 진행 중 — 「업데이트 실패」(422)로 감싸면 화면이 두 번째 요청을 실패로 보여 준다(#138 실측 ②)
+            throw $e;
         } catch (\Exception $e) {
             // Manager의 RuntimeException은 이미 번역된 메시지를 포함하므로
             // getPrevious()로 원본 에러를 추출하여 이중 래핑 방지
@@ -263,7 +267,7 @@ class ModuleService
     ): ?array {
         $failureReason = null;
 
-        HookManager::doAction('core.modules.before_install', $moduleName);
+        // 직전 훅은 Manager 가 발화한다 — CLI·어드민 UI 공통 단일 발화(#138 후속, Service 중복 발화 제거)
 
         try {
             $this->moduleManager->loadModules();
@@ -298,7 +302,7 @@ class ModuleService
      */
     public function activateModule(string $moduleName, bool $force = false): array
     {
-        HookManager::doAction('core.modules.before_activate', $moduleName, $force);
+        // 직전 훅은 Manager 가 발화한다 — CLI·어드민 UI 공통 단일 발화(#138 후속, Service 중복 발화 제거)
 
         try {
             $this->moduleManager->loadModules();
@@ -342,7 +346,7 @@ class ModuleService
      */
     public function deactivateModule(string $moduleName, bool $force = false): array
     {
-        HookManager::doAction('core.modules.before_deactivate', $moduleName, $force);
+        // 직전 훅은 Manager 가 발화한다 — CLI·어드민 UI 공통 단일 발화(#138 후속, Service 중복 발화 제거)
 
         try {
             $this->moduleManager->loadModules();
@@ -391,7 +395,7 @@ class ModuleService
         $failureReason = null;
         $preservedBackups = [];
 
-        HookManager::doAction('core.modules.before_uninstall', $moduleName, $deleteData);
+        // 직전 훅은 Manager 가 발화한다 — CLI·어드민 UI 공통 단일 발화(#138 후속, Service 중복 발화 제거)
 
         try {
             $this->moduleManager->loadModules();

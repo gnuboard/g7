@@ -18,6 +18,7 @@ use App\Support\UserGradeGuard;
 use Exception;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -67,8 +68,9 @@ class UserService
     public function createUser(array $data): User
     {
         try {
-            // 원본 데이터 보관 (after_create 훅에서 사용)
-            $originalData = $data;
+            // 원본 데이터 보관 (after_create 훅에서 사용) — 비밀번호 원문은 뺀다: 큐 구독자마다 작업 표에 사본이 남고
+            // 읽는 구독자가 없다(#138 후속 — 설계 결정, 회원가입 훅과 같은 방식)
+            $originalData = Arr::except($data, ['password', 'password_confirmation']);
 
             // Before 훅: 데이터 검증/전처리
             HookManager::doAction('core.user.before_create', $data);
@@ -166,8 +168,8 @@ class UserService
         UserGradeGuard::assertActorMayModify($user);
 
         try {
-            // 원본 데이터 보관 (after_update 훅에서 사용)
-            $originalData = $data;
+            // 원본 데이터 보관 (after_update 훅에서 사용) — 비밀번호 원문은 뺀다(after_create 와 같은 이유)
+            $originalData = Arr::except($data, ['password', 'password_confirmation']);
 
             // Before 훅: 데이터 검증/전처리
             HookManager::doAction('core.user.before_update', $user, $data);

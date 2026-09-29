@@ -102,12 +102,32 @@ class ReactionNotAllowedException extends Exception
     }
 
     /**
+     * 응답 메시지 키를 반환합니다 — 응답에는 번역문이 아니라 키를 넘긴다(docs/backend/exceptions.md).
+     *
+     * @return string 거절 사유별 다국어 키
+     */
+    public function getMessageKey(): string
+    {
+        return 'sirsoft-board::messages.reaction.'.$this->reason;
+    }
+
+    /**
+     * 응답 메시지 치환 파라미터를 반환합니다.
+     *
+     * @return array<string, mixed> 치환 파라미터 (없음)
+     */
+    public function getMessageParams(): array
+    {
+        return [];
+    }
+
+    /**
      * 컨트롤러 catch 와 동일한 422 응답으로 렌더링합니다.
      *
      * @return JsonResponse 반응 불가 응답
      */
     public function render(): JsonResponse
     {
-        return ResponseHelper::error($this->getMessage(), 422, ['code' => 'reaction_not_allowed']);
+        return ResponseHelper::error($this->getMessageKey(), 422, ['code' => 'reaction_not_allowed']);
     }
 }

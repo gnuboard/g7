@@ -33,7 +33,9 @@ effects:
   - plugin_uninstall_arguments_keep_id_deletedata_result_order
   - template_activate_passes_info_array_only
   - template_uninstall_delete_data_forwarded_from_service
+  - template_activate_filter_runs_once_after_before_hook
   - no_lifecycle_hook_fires_on_failure_path
+  - uninstall_blocked_while_active_dependents_exist
   # 소비자
   - queue_restart_listener_subscribes_code_intake_events_sync
   - queue_restart_runs_on_install_or_activate

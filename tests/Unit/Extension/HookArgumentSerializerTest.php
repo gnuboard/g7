@@ -4,7 +4,9 @@ namespace Tests\Unit\Extension;
 
 use App\Extension\HookArgumentSerializer;
 use App\Models\User;
+use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Tests\TestCase;
 
@@ -19,6 +21,12 @@ class HookArgumentSerializerTest extends TestCase
 
     /**
      * 스칼라 값이 그대로 직렬화/역직렬화되는지 검증합니다.
+     *
+     * @scenario value=scalar
+     *
+     * @effects hook_argument_round_trips_through_queue
+     *
+     * @return void 반환값 없음
      */
     public function test_scalar_values_pass_through(): void
     {
@@ -31,6 +39,12 @@ class HookArgumentSerializerTest extends TestCase
 
     /**
      * 배열이 재귀적으로 직렬화/역직렬화되는지 검증합니다.
+     *
+     * @scenario value=array
+     *
+     * @effects hook_argument_round_trips_through_queue
+     *
+     * @return void 반환값 없음
      */
     public function test_nested_arrays_are_serialized_recursively(): void
     {
@@ -43,6 +57,12 @@ class HookArgumentSerializerTest extends TestCase
 
     /**
      * Eloquent Model이 클래스명 + PK로 직렬화되고 DB에서 복원되는지 검증합니다.
+     *
+     * @scenario value=model
+     *
+     * @effects hook_argument_round_trips_through_queue
+     *
+     * @return void 반환값 없음
      */
     public function test_eloquent_model_serialization(): void
     {
@@ -63,6 +83,12 @@ class HookArgumentSerializerTest extends TestCase
 
     /**
      * Collection이 직렬화/역직렬화되는지 검증합니다.
+     *
+     * @scenario value=collection
+     *
+     * @effects hook_argument_round_trips_through_queue
+     *
+     * @return void 반환값 없음
      */
     public function test_collection_serialization(): void
     {
@@ -78,10 +104,18 @@ class HookArgumentSerializerTest extends TestCase
 
     /**
      * Closure 등 직렬화 불가 객체가 null로 대체되는지 검증합니다.
+     *
+     * @scenario value=closure
+     *
+     * @effects unserializable_argument_becomes_null_with_warning
+     *
+     * @return void 반환값 없음
      */
     public function test_non_serializable_objects_become_null(): void
     {
-        $closure = function () { return 'test'; };
+        $closure = function () {
+            return 'test';
+        };
         $serialized = HookArgumentSerializer::serialize([$closure]);
 
         $this->assertNull($serialized[0]);
@@ -89,6 +123,12 @@ class HookArgumentSerializerTest extends TestCase
 
     /**
      * 혼합 인자 배열이 올바르게 처리되는지 검증합니다.
+     *
+     * @scenario value=array
+     *
+     * @effects hook_argument_round_trips_through_queue
+     *
+     * @return void 반환값 없음
      */
     public function test_mixed_arguments(): void
     {
@@ -112,6 +152,12 @@ class HookArgumentSerializerTest extends TestCase
      * 큐 디스패치된 hook listener 가 enum 인자를 받을 때 deserialize 가 null 로 떨어져
      * TypeError 발생 (예: OrderActivityLogListener::handleOrderOptionAfterStatusChange 의
      * OrderStatusEnum 인자). HookArgumentSerializer 가 BackedEnum 을 처리하지 않는 사각지대.
+     *
+     * @scenario value=enum
+     *
+     * @effects hook_argument_round_trips_through_queue
+     *
+     * @return void 반환값 없음
      */
     public function test_backed_string_enum_serialization(): void
     {
@@ -131,6 +177,12 @@ class HookArgumentSerializerTest extends TestCase
 
     /**
      * Backed Enum (int) 이 직렬화/역직렬화되는지 검증합니다.
+     *
+     * @scenario value=enum
+     *
+     * @effects hook_argument_round_trips_through_queue
+     *
+     * @return void 반환값 없음
      */
     public function test_backed_int_enum_serialization(): void
     {
@@ -144,6 +196,12 @@ class HookArgumentSerializerTest extends TestCase
 
     /**
      * Pure (Unit) Enum 이 직렬화/역직렬화되는지 검증합니다.
+     *
+     * @scenario value=enum
+     *
+     * @effects hook_argument_round_trips_through_queue
+     *
+     * @return void 반환값 없음
      */
     public function test_unit_enum_serialization(): void
     {
@@ -162,6 +220,12 @@ class HookArgumentSerializerTest extends TestCase
      * Order/Product 등 hard-delete 후 after_delete 훅이 큐 워커에서 dispatch 될 때
      * find($id) 가 null 반환 → listener TypeError. SoftDeletes 처리(40d98e2a7) 의 사각지대.
      * 직렬화 시 attributes 도 함께 저장하고, find() 가 null 이면 attributes 로 모델 재생성.
+     *
+     * @scenario value=model
+     *
+     * @effects hard_deleted_model_restored_from_attributes
+     *
+     * @return void 반환값 없음
      */
     public function test_hard_deleted_model_restores_via_attributes_snapshot(): void
     {
@@ -192,6 +256,12 @@ class HookArgumentSerializerTest extends TestCase
 
     /**
      * 혼합 인자 배열에 enum 이 포함되어 정상 통과하는지 검증.
+     *
+     * @scenario value=enum
+     *
+     * @effects hook_argument_round_trips_through_queue
+     *
+     * @return void 반환값 없음
      */
     public function test_mixed_arguments_including_enum(): void
     {
@@ -205,6 +275,36 @@ class HookArgumentSerializerTest extends TestCase
         $this->assertInstanceOf(User::class, $deserialized[0]);
         $this->assertSame(HookSerializerStringBackedEnumFixture::ACTIVE, $deserialized[1]);
         $this->assertSame('note', $deserialized[2]);
+    }
+
+    /**
+     * 날짜 값(Carbon·CarbonImmutable·DateTime)이 큐를 거쳐도 같은 시각·시간대·클래스로 돌아온다.
+     *
+     * 예전에는 직렬화 불가 객체로 취급돼 null 로 바뀌고 경고 로그가 남았다 — 가입 훅의 registration_time,
+     * 약관 동의 시각 등이 큐 리스너에서 비어 보였다(#138 후속 전수 점검 11번 ②).
+     *
+     * @scenario value=datetime
+     *
+     * @effects date_argument_round_trips_with_class_and_timezone
+     *
+     * @return void 반환값 없음
+     */
+    public function test_date_values_round_trip_through_queue(): void
+    {
+        $carbon = Carbon::parse('2026-09-29 13:45:10.123456', 'Asia/Seoul');
+        $immutable = CarbonImmutable::parse('2026-01-02 03:04:05', 'UTC');
+        $native = new \DateTimeImmutable('2025-12-31 23:59:59', new \DateTimeZone('Asia/Tokyo'));
+
+        $restored = HookArgumentSerializer::deserialize(
+            json_decode(json_encode(HookArgumentSerializer::serialize([$carbon, ['at' => $immutable], $native])), true)
+        );
+
+        $this->assertInstanceOf(Carbon::class, $restored[0]);
+        $this->assertSame($carbon->format('Y-m-d H:i:s.u P'), $restored[0]->format('Y-m-d H:i:s.u P'));
+        $this->assertInstanceOf(CarbonImmutable::class, $restored[1]['at']);
+        $this->assertTrue($immutable->equalTo($restored[1]['at']));
+        $this->assertInstanceOf(\DateTimeImmutable::class, $restored[2]);
+        $this->assertSame($native->format(DATE_ATOM), $restored[2]->format(DATE_ATOM));
     }
 }
 

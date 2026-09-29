@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Enums\LanguagePackScope;
+use App\Exceptions\ExtensionOperationInProgressException;
 use App\Exceptions\ModuleOperationException;
 use App\Extension\Vendor\VendorMode;
 use App\Http\Controllers\Api\Base\AdminBaseController;
@@ -42,6 +43,13 @@ class ModuleController extends AdminBaseController
     use OrchestratesCascadeInstall;
     use RebuildsSearchIndexOnDemand;
 
+    /**
+     * 모듈 관리 API 컨트롤러를 생성합니다.
+     *
+     * @param  ModuleService  $moduleService  모듈 서비스
+     * @param  TemplateService  $templateService  템플릿 서비스
+     * @param  LicenseService  $licenseService  라이선스 서비스
+     */
     public function __construct(
         private ModuleService $moduleService,
         private TemplateService $templateService,
@@ -221,7 +229,7 @@ class ModuleController extends AdminBaseController
             $firstError = collect($e->errors())->flatten()->first()
                 ?? __('module.install_failed');
 
-            return $this->validationError($e->errors(), $firstError);
+            return $this->validationError($e->errors(), 'common.failure_reason', ['reason' => $firstError]);
         } catch (\Exception $e) {
             return $this->error('modules.installation_failed', 500, $e->getMessage(), [
                 'error' => $e->getMessage(),
@@ -409,7 +417,12 @@ class ModuleController extends AdminBaseController
                 ]);
             }
         } catch (ValidationException $e) {
-            return $this->error('module.uninstall_failed', 422, $e->errors(), ['error' => $e->getMessage()]);
+            // Service 가 이미 「…제거에 실패했습니다: 사유」로 감싸 두었으므로 첫 사유를 그대로 쓴다 — 같은 문구로 한 번 더
+            // 감싸면 「…실패했습니다: …실패했습니다: …」가 된다(#138 실측 ① 후속, performUpdate 와 같은 처리)
+            $firstError = collect($e->errors())->flatten()->first()
+                ?? __('module.uninstall_failed', ['module' => '', 'error' => '']);
+
+            return $this->validationError($e->errors(), 'common.failure_reason', ['reason' => $firstError]);
         } catch (\Exception $e) {
             return $this->error('module.uninstall_failed', 500, $e->getMessage(), ['error' => $e->getMessage()]);
         }
@@ -563,6 +576,9 @@ class ModuleController extends AdminBaseController
 
             $moduleInfo = $result['module_info'] ?? null;
 
+            // 업데이트할 것이 없었으면(success=false) 「업데이트되었습니다」가 아니라 「업데이트할 내용이 없습니다」로 답한다(#138 실측 ④)
+            $messageKey = ($result['success'] ?? true) === false ? 'modules.no_update_available' : 'modules.update_success';
+
             // 메시지 치환 파라미터를 반드시 전달한다 — 누락 시 ":module"/":version"
             // 플레이스홀더가 그대로 사용자에게 노출된다.
             $messageParams = [
@@ -572,7 +588,7 @@ class ModuleController extends AdminBaseController
 
             if ($moduleInfo) {
                 return $this->successWithResource(
-                    'modules.update_success',
+                    $messageKey,
                     (new ModuleResource($moduleInfo))->additional(['search_index' => $searchIndex]),
                     200,
                     $messageParams
@@ -580,18 +596,21 @@ class ModuleController extends AdminBaseController
             }
 
             return $this->success(
-                'modules.update_success',
+                $messageKey,
                 $result + ['search_index' => $searchIndex],
                 200,
                 $messageParams
             );
+        } catch (ExtensionOperationInProgressException $e) {
+            // 같은 확장의 업데이트가 진행 중 — 두 번째 요청(버튼 더블클릭 등)을 409 로 거절한다(#138 실측 ②)
+            return $this->error($e->getMessageKey(), 409, null, $e->getMessageParams());
         } catch (ValidationException $e) {
             // Service/Manager에서 이미 번역된 메시지를 errors에 포함하므로
             // 첫 번째 에러를 top-level message로 직접 사용 (이중 래핑 방지)
             $firstError = collect($e->errors())->flatten()->first()
                 ?? __('modules.errors.update_failed', ['module' => $moduleName, 'error' => '']);
 
-            return $this->validationError($e->errors(), $firstError);
+            return $this->validationError($e->errors(), 'common.failure_reason', ['reason' => $firstError]);
         } catch (\Exception $e) {
             return $this->error('modules.errors.update_failed', 500, $e->getMessage(), [
                 'module' => $moduleName,

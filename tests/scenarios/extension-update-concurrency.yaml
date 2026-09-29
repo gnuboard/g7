@@ -1,0 +1,22 @@
+feature: 확장 업데이트 동시 실행 거절과 「업데이트할 것 없음」 응답 문구
+
+description: |
+  #138 실측 ②·④. 업데이트 확인 버튼을 두 번 누르면 두 요청이 상태 가드(status=updating)를 세우기 전 구간을
+  함께 지나 업데이트가 두 번 수행됐다. Manager 진입점(CLI·관리자 공통)에서 같은 확장의 업데이트를 원자적
+  잠금으로 하나만 수행하고, 두 번째 요청은 직전 훅도 발화하지 않고 거절한다. API 는 409 로 답하고, 관리자
+  화면은 409 를 실패가 아닌 안내로 보인다(버튼은 풀어 둔다 — CLI 가 업데이트 중이면 창을 닫을 수 있어야 한다).
+  업데이트할 것이 없으면 응답 문구가 「업데이트할 내용이 없습니다」이고, 화면 성공 토스트는 서버 문구를 띄운다.
+
+axes:
+  case: [lock_held_manager, lock_released_after_failure, lock_held_api, no_update_api, modal_409_and_message]
+
+effects:
+  - concurrent_update_rejected_before_any_step
+  - update_lock_released_after_operation
+  - concurrent_update_api_responds_409
+  - no_update_response_message_says_nothing_to_update
+  - update_modal_treats_409_as_notice_and_shows_server_message
+
+test_files:
+  - tests/Feature/Extension/ExtensionUpdateConcurrencyTest.php
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-extension-update-concurrency.test.tsx

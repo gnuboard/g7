@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Enums\LanguagePackScope;
+use App\Exceptions\ExtensionOperationInProgressException;
 use App\Exceptions\TemplateOperationException;
 use App\Helpers\PermissionHelper;
 use App\Http\Controllers\Api\Base\AdminBaseController;
@@ -39,6 +40,12 @@ class TemplateController extends AdminBaseController
     use InjectsExtensionLanguagePacks;
     use OrchestratesCascadeInstall;
 
+    /**
+     * 템플릿 관리 API 컨트롤러를 생성합니다.
+     *
+     * @param  TemplateService  $templateService  템플릿 서비스
+     * @param  LicenseService  $licenseService  라이선스 서비스
+     */
     public function __construct(
         private TemplateService $templateService,
         private LicenseService $licenseService
@@ -180,7 +187,7 @@ class TemplateController extends AdminBaseController
             $firstError = collect($e->errors())->flatten()->first()
                 ?? __('templates.install_failed');
 
-            return $this->validationError($e->errors(), $firstError);
+            return $this->validationError($e->errors(), 'common.failure_reason', ['reason' => $firstError]);
         } catch (\Exception $e) {
             return $this->error('templates.errors.installation_failed', 500, $e->getMessage(), [
                 'error' => $e->getMessage(),
@@ -300,7 +307,12 @@ class TemplateController extends AdminBaseController
                 ]);
             }
         } catch (ValidationException $e) {
-            return $this->error('templates.uninstall_failed', 422, $e->errors(), ['error' => $e->getMessage()]);
+            // Service 가 이미 「템플릿 제거에 실패했습니다: 사유」로 감싸 두었으므로 첫 사유를 그대로 쓴다 — 같은 문구로 한 번 더
+            // 감싸면 「…실패했습니다: …실패했습니다: …」가 된다(#138 실측 ① 후속, 모듈·플러그인과 같은 처리)
+            $firstError = collect($e->errors())->flatten()->first()
+                ?? __('templates.uninstall_failed', ['error' => '']);
+
+            return $this->validationError($e->errors(), 'common.failure_reason', ['reason' => $firstError]);
         } catch (\Exception $e) {
             return $this->error('templates.uninstall_failed', 500, $e->getMessage(), ['error' => $e->getMessage()]);
         }
@@ -492,6 +504,9 @@ class TemplateController extends AdminBaseController
 
             $templateInfo = $result['template_info'] ?? null;
 
+            // 업데이트할 것이 없었으면(success=false) 「업데이트되었습니다」가 아니라 「업데이트할 내용이 없습니다」로 답한다(#138 실측 ④)
+            $messageKey = ($result['success'] ?? true) === false ? 'templates.no_update_available' : 'templates.update_success';
+
             // 메시지 치환 파라미터를 반드시 전달한다 — 누락 시 ":template"/":version"
             // 플레이스홀더가 그대로 사용자에게 노출된다.
             $messageParams = [
@@ -501,21 +516,24 @@ class TemplateController extends AdminBaseController
 
             if ($templateInfo) {
                 return $this->successWithResource(
-                    'templates.update_success',
+                    $messageKey,
                     new TemplateResource($templateInfo),
                     200,
                     $messageParams
                 );
             }
 
-            return $this->success('templates.update_success', $result, 200, $messageParams);
+            return $this->success($messageKey, $result, 200, $messageParams);
+        } catch (ExtensionOperationInProgressException $e) {
+            // 같은 확장의 업데이트가 진행 중 — 두 번째 요청(버튼 더블클릭 등)을 409 로 거절한다(#138 실측 ②)
+            return $this->error($e->getMessageKey(), 409, null, $e->getMessageParams());
         } catch (ValidationException $e) {
             // Service/Manager에서 이미 번역된 메시지를 errors에 포함하므로
             // 첫 번째 에러를 top-level message로 직접 사용 (이중 래핑 방지)
             $firstError = collect($e->errors())->flatten()->first()
                 ?? __('templates.errors.update_failed', ['template' => $templateName, 'error' => '']);
 
-            return $this->validationError($e->errors(), $firstError);
+            return $this->validationError($e->errors(), 'common.failure_reason', ['reason' => $firstError]);
         } catch (\Exception $e) {
             return $this->error('templates.errors.update_failed', 500, $e->getMessage(), [
                 'template' => $templateName,

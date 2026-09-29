@@ -14,6 +14,11 @@ use App\Models\Menu;
  */
 class MenuUserOverridesListener implements HookListenerInterface
 {
+    /**
+     * 메뉴 사용자 수정 기록 리스너를 생성합니다.
+     *
+     * @param  MenuRepositoryInterface  $menuRepository  메뉴 저장소
+     */
     public function __construct(
         private MenuRepositoryInterface $menuRepository,
     ) {}
@@ -28,6 +33,8 @@ class MenuUserOverridesListener implements HookListenerInterface
         return [
             'core.menu.before_update' => ['method' => 'handleBeforeUpdate', 'priority' => 10],
             'core.menu.after_update_order' => ['method' => 'handleAfterUpdateOrder', 'priority' => 10],
+            // 평탄 경로(updateMenuOrder)는 대량 update 라 모델 이벤트가 돌지 않는다 — ID 목록 훅으로 order 를 기록한다
+            'core.menu.after_update_order_flat' => ['method' => 'handleAfterUpdateOrderFlat', 'priority' => 10],
             'core.menu.after_sync_roles' => ['method' => 'handleAfterSyncRoles', 'priority' => 10],
         ];
     }
@@ -36,6 +43,7 @@ class MenuUserOverridesListener implements HookListenerInterface
      * 훅 이벤트 처리 (기본 핸들러)
      *
      * @param  mixed  ...$args  훅에서 전달된 인수들
+     * @return void 반환값 없음
      */
     public function handle(...$args): void {}
 
@@ -44,6 +52,7 @@ class MenuUserOverridesListener implements HookListenerInterface
      *
      * @param  Menu  $menu  업데이트 대상 메뉴
      * @param  array  $data  업데이트 데이터
+     * @return void 반환값 없음
      */
     public function handleBeforeUpdate(Menu $menu, array $data): void
     {
@@ -61,6 +70,7 @@ class MenuUserOverridesListener implements HookListenerInterface
      * $orderData 구조: ['parent_menus' => [['id' => N, 'order' => N], ...], 'child_menus' => [parentId => [['id' => N, 'order' => N], ...], ...]]
      *
      * @param  array  $orderData  계층 구조 순서 데이터 배열
+     * @return void 반환값 없음
      */
     public function handleAfterUpdateOrder(array $orderData): void
     {
@@ -86,7 +96,28 @@ class MenuUserOverridesListener implements HookListenerInterface
             }
         }
 
-        // 수집된 메뉴에 "order" 기록
+        $this->recordOrderOverride($menuIds);
+    }
+
+    /**
+     * 평탄한 메뉴 순서 변경 후: 순서가 바뀐 메뉴의 user_overrides 에 "order" 기록
+     *
+     * @param  array<int, int|string>  $menuIds  새 순서대로 나열한 메뉴 ID 목록
+     * @return void
+     */
+    public function handleAfterUpdateOrderFlat(array $menuIds): void
+    {
+        $this->recordOrderOverride($menuIds);
+    }
+
+    /**
+     * 메뉴들의 user_overrides 에 "order" 를 기록합니다 (이미 있으면 건너뜀).
+     *
+     * @param  array<int, int|string>  $menuIds  메뉴 ID 목록
+     * @return void
+     */
+    private function recordOrderOverride(array $menuIds): void
+    {
         foreach ($menuIds as $menuId) {
             $menu = $this->menuRepository->findById($menuId);
             if (! $menu) {
@@ -110,6 +141,7 @@ class MenuUserOverridesListener implements HookListenerInterface
      * @param  Menu  $menu  역할이 동기화된 메뉴
      * @param  array  $previousRoleIdentifiers  동기화 전 역할 식별자 배열
      * @param  array  $currentRoleIdentifiers  동기화 후 역할 식별자 배열
+     * @return void 반환값 없음
      */
     public function handleAfterSyncRoles(Menu $menu, array $previousRoleIdentifiers, array $currentRoleIdentifiers): void
     {

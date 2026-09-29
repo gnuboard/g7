@@ -73,7 +73,7 @@ class PostScrapController extends AuthBaseController
         } catch (PostNotFoundException $e) {
             return $this->notFound('sirsoft-board::messages.scrap.post_not_found');
         } catch (Exception $e) {
-            return $this->error('sirsoft-board::messages.scrap.toggle_failed');
+            return $this->error('sirsoft-board::messages.scrap.toggle_failed', 500);
         }
     }
 
@@ -99,7 +99,7 @@ class PostScrapController extends AuthBaseController
                 new PostScrapCollection($scraps)
             );
         } catch (Exception $e) {
-            return $this->error('sirsoft-board::messages.scrap.retrieve_failed');
+            return $this->error('sirsoft-board::messages.scrap.retrieve_failed', 500);
         }
     }
 
@@ -122,7 +122,7 @@ class PostScrapController extends AuthBaseController
 
             return $this->success('sirsoft-board::messages.scrap.removed');
         } catch (Exception $e) {
-            return $this->error('sirsoft-board::messages.scrap.delete_failed');
+            return $this->error('sirsoft-board::messages.scrap.delete_failed', 500);
         }
     }
 
@@ -150,7 +150,7 @@ class PostScrapController extends AuthBaseController
                 ['count' => $count]
             );
         } catch (Exception $e) {
-            return $this->error('sirsoft-board::messages.scrap.delete_failed');
+            return $this->error('sirsoft-board::messages.scrap.delete_failed', 500);
         }
     }
 }

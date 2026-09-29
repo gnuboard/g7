@@ -23,6 +23,7 @@ use App\Extension\HookManager;
 use App\Extension\IdentityVerification\IdentityVerificationManager;
 use App\Models\User;
 use Carbon\Carbon;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -749,7 +750,8 @@ class AuthService
             'verification_token' => $data['verification_token'] ?? null,
             // 모듈이 동적 추가한 가입 필드(예: 결제 통화)를 리스너가 읽을 수 있도록 검증된 가입 데이터 전달.
             // request() 직접 접근을 피하기 위해 Service 가 도메인 객체로 넘긴다(Listener 규율).
-            'registration_data' => $data,
+            // 비밀번호 원문은 뺀다 — 큐 구독자마다 작업 표에 사본이 남고, 읽는 구독자가 없다(#138 후속 — 설계 결정).
+            'registration_data' => Arr::except($data, ['password', 'password_confirmation']),
         ]);
 
         return [
@@ -1065,8 +1067,9 @@ class AuthService
         }
 
         // 플러그인 확장 동의 처리 (마케팅 등 추가 동의)
-        // HookArgumentSerializer 는 Carbon 을 직렬화하지 못해 Queue 실행 시 null 로 대체되므로
-        // 미리 ISO8601 문자열로 변환해 listener 시그니처(string)와 일치시킵니다.
-        HookManager::doAction('core.auth.record_consents', $user, $data, $agreedAt->toIso8601String(), $ip);
+        // 동의 시각은 ISO8601 문자열로 넘긴다 — 구독자 시그니처(string)가 이 모양을 계약으로 받는다(큐 직렬화는
+        // 날짜 객체도 되살리지만, 이 훅은 공개 계약이라 문자열 모양을 유지한다).
+        // 가입 데이터의 비밀번호 원문은 넘기지 않는다 — 큐 구독자(활동 로그)의 작업 표에 사본이 남는다(#138 후속 — 설계 결정)
+        HookManager::doAction('core.auth.record_consents', $user, Arr::except($data, ['password', 'password_confirmation']), $agreedAt->toIso8601String(), $ip);
     }
 }
