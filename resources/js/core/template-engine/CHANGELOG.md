@@ -5,6 +5,36 @@
 >
 > 형식: [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)
 
+## [engine-v1.74.0] - 2026-09-29
+
+> 레이아웃 `computed` 가 렌더되는 컴포넌트 수만큼, 재렌더마다 전량 재평가되던 성능 문제를 고친 버전이다.
+> computed 간 참조(정의 순서)와 스코프 단위 계산은 이 버전에서 처음 구현된다 — engine-v1.17.5 「computed 의존성 추적 기반 캐시 무효화」·engine-v1.17.7 「computed 순환 의존성 감지」 항목은 대응 코드가 없던 기재다.
+
+### Added
+
+- computed 의 정의 순서 참조 — 앞에 정의된 computed 를 뒤 computed 가 `_computed.X`·`$computed.X` 로 읽으면 같은 계산의 최신 값을 본다. 렌더·액션 sequence·라우트 진입·편집기 미리보기가 같은 규칙이다 (ComputedEvaluator.ts)
+- 안전 스위치 `G7Core.engineFlags.get()`·`set({...})` — 표현식 컴파일 캐시(`expressionCompileCache`)·AST 캐시(`astCache`)·computed 스코프 공유(`computedScopeInheritance`)를 기능별로 끈다. 기본값은 모두 켜짐, 그림자 검증(`verifyComputedInheritance`)은 꺼짐. 브라우저 쪽(개발자 콘솔·확장 스크립트)에서만 바꾼다 (EngineFlags.ts)
+
+### Changed
+
+- computed 가 상태 스코프 단위로 1회 계산되고, 같은 스코프의 자식 컴포넌트는 부모가 계산한 값을 공유한다. iteration 항목·모달·격리 상태 영역·`$parent`·extension point 주입 컴포넌트·`_localInit` 미적용 첫 렌더·편집기 캔버스는 각자 계산한다. 뒤에 정의된 키·자기 자신·대상을 특정할 수 없는 `_computed[…]` 를 읽는 정의가 있는 레이아웃은 종전처럼 모든 컴포넌트가 계산한다(디버그 모드 경고 1회) (DynamicRenderer.tsx)
+- computed 정의 문자열의 앞뒤 공백을 무시하고 `{{ … }}` 이면 식으로 평가한다(종전 렌더·진입 경로는 공백이 있으면 원문 문자열). 단일 바인딩 판정은 `extractSingleBinding` 정본을 쓴다 (ComputedEvaluator.ts)
+- 라우트 진입 시점 computed 계산이 렌더 경로와 같은 평가기를 쓴다 — 파이프·`$t`·`$localized`·`$computed` 가 진입 시점에도 동작, 옵셔널 체이닝 전처리로 nullish 객체 접근이 경고 대신 조용히 undefined, `'$t:key'` 가 원문 대신 번역문, 금지 전역은 예외 대신 undefined(차단은 동일), 실패 로그가 `Failed to evaluate expression "…"` 로 감싸짐, `$switch` 가 `$cases` 없이 `$default` 만 있어도 평가 (TemplateApp.ts)
+- DevTools `g7-computed` 의 컴포넌트별 기록은 computed 를 직접 계산한 렌더러에서만 남는다 (DynamicRenderer.tsx)
+
+### Fixed
+
+- 액션 sequence 의 setState·커스텀 핸들러 직후 `$switch` computed 와 `{{ }}` 없는 리터럴 computed(마이페이지 `currentTab` 등)의 키가 사라져 다음 액션에서 undefined 가 되던 문제. 뒤에 정의된 키를 읽으면 undefined 대신 직전 값을 본다 (ActionDispatcher.ts)
+- 라우트 진입 시점에 파이프가 있는 computed 가 비트 OR 로 거부되어 undefined 로 시작하던 문제 (TemplateApp.ts)
+
+#### 성능
+
+- 표현식 평가의 전처리(옵셔널 체이닝·`$t:` 토큰 정규식 7회)·변수 추출 결과를 식 문자열 단위로 기억한다(상한 5,000). 값은 담지 않는다 — 컨텍스트 조립·`$t`·로케일은 매번 수행 (ExpressionCompileCache.ts)
+- 안전 평가기의 토큰화·파싱 결과(AST, 동결)와 파싱 실패 메시지를 식 문자열 단위로 기억한다(상한 5,000). 적중해도 금지 구문은 같은 메시지로 차단된다 (SafeExpressionEvaluator.ts)
+- computed 계산이 렌더러마다 새 엔진을 만들지 않고 공유 엔진을 쓴다. 제보 규모 합성 화면(computed 36·컴포넌트 453)에서 키 입력 1회당 평가가 16,310회에서 스코프 수 × computed 수로 준다 (DynamicRenderer.tsx) (#140 @lyg-kaban 님께서 제보해주셨습니다.)
+- 번역 파라미터 치환 정규식을 키별로 재사용한다(상한 500, 키 이스케이프 없음은 종전 그대로) (TranslationEngine.ts)
+- G7 DevTools 가 꺼져 있으면 prop·text·slot 평가의 추적 정보 객체와 slot 로그 문자열을 만들지 않는다 (DynamicRenderer.tsx)
+
 ## [engine-v1.73.0] - 2026-09-27
 
 ### Security

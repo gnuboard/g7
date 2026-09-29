@@ -14,7 +14,8 @@
 5. [컴포넌트 렌더링 헬퍼](#컴포넌트-렌더링-헬퍼)
 6. [인증 및 API](#인증-및-api)
 7. [반응형 및 전환 상태](#반응형-및-전환-상태)
-8. [타입 정의](#타입-정의)
+8. [엔진 안전 스위치 (G7Core.engineFlags)](#엔진-안전-스위치-g7coreengineflags)
+9. [타입 정의](#타입-정의)
 
 ---
 
@@ -874,6 +875,28 @@ const [formData, setFormData] = G7Core.useControllableState<FormData>(
 
 ---
 
+## 엔진 안전 스위치 (G7Core.engineFlags)
+
+engine-v1.74.0 에서 들어간 표현식 성능 개선을 브라우저에서 끄고 켜는 스위치입니다. 화면이 개선 전과 다르게 보이는지 확인할 때만 쓰고, 평소에는 건드리지 않습니다. 서버 설정·관리자 화면은 없으며, 값은 그 브라우저 탭에만 적용되고 새로고침하면 기본값으로 돌아갑니다.
+
+| 키 | 기본값 | 끄면 |
+|----|--------|------|
+| `expressionCompileCache` | `true` | 표현식 전처리 결과를 재사용하지 않고 매번 다시 처리 |
+| `astCache` | `true` | 표현식 구문 해석 결과를 재사용하지 않고 매번 다시 해석 |
+| `computedScopeInheritance` | `true` | computed 를 같은 상태 범위에서 나눠 쓰지 않고 컴포넌트마다 계산(개선 전 동작) |
+| `verifyComputedInheritance` | `false` | (켜면) 나눠 쓴 값과 직접 계산한 값을 비교해 다르면 콘솔에 `[computed-scope-mismatch]` 를 남김 — 진단용 |
+
+```javascript
+G7Core.engineFlags.get();                                   // 현재 값 (읽기 전용 객체)
+G7Core.engineFlags.set({ computedScopeInheritance: false }); // 알려진 키의 boolean 값만 반영
+```
+
+- 캐시는 식의 해석 결과만 담고 값은 담지 않으므로, 스위치를 바꿔도 따로 비울 것이 없습니다.
+- 바꾼 값은 다음 화면 갱신(입력·상태 변경·이동)부터 적용됩니다. 이미 그려진 화면을 곧바로 다시 계산하지는 않습니다.
+- 페이지가 뜨기 전에 값을 정하려면 엔진이 읽기 전에 `window.G7Config.engineFlags` 에 같은 모양의 객체를 넣어 둡니다(테스트·확장 스크립트용). 엔진이 처음 값을 읽을 때 한 번만 합쳐집니다.
+
+---
+
 ## 타입 정의
 
 ### 전역 타입 선언
@@ -1032,6 +1055,10 @@ declare global {
       api: ApiClientType;
       ResponsiveManager: ResponsiveManagerType;
       TransitionManager: TransitionManagerType;
+      engineFlags: {
+        get: () => Readonly<{ expressionCompileCache: boolean; astCache: boolean; computedScopeInheritance: boolean; verifyComputedInheritance: boolean }>;
+        set: (patch: Partial<{ expressionCompileCache: boolean; astCache: boolean; computedScopeInheritance: boolean; verifyComputedInheritance: boolean }>) => void;
+      };
     };
   }
 }

@@ -86,7 +86,7 @@
 | 금지 | 올바른 사용 |
 |------|------------|
 | `Icon className="w-4 h-4"` | `className="text-base"` (아래 등가표) 또는 `size` prop |
-| `Select valueKey/labelKey` | computed로 `{ value, label }` 변환 |
+| `Select valueKey/labelKey` | `{ value, label }` 로 변환 — 두 곳 이상에서 쓰면 computed, 한 곳뿐이면 `options` 식에서 바로 `.map()` |
 | Form 내 `Button` type 없음 | `type="button"` 명시 (submit 방지) |
 | `options={{options}}` | `options={{options ?? []}}` (fallback) |
 | boolean 필드를 `RadioGroup`/`Select` 의 `name` 자동바인딩만으로 폼에 묶기 | `autoBinding: false` + `value: "{{String(_local.form?.필드 ?? 기본값)}}"` + `change` 액션 `"{{$event.target.value === 'true'}}"` 캐스팅. 자동바인딩 value 경로는 `e.target.value` 문자열을 그대로 저장해 서버 `boolean` 규칙에서 422 가 된다 (표시만 보면 정상이라 저장 시점에야 드러남) |

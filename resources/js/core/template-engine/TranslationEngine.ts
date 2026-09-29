@@ -23,6 +23,60 @@ import { hasPipes } from './PipeRegistry';
 
 const logger = createLogger('TranslationEngine');
 
+/**
+ * replaceParams 파라미터 키별 정규식 쌍(`{{key}}`, `{key}`) 캐시 — 종전에는 파라미터마다 매 호출 새로 만들었다.
+ *
+ * - 키를 정규식 이스케이프하지 않는 현행 동작을 그대로 둔다(`a.b` 의 `.` 은 임의 문자).
+ * - `new RegExp` 가 던지는 키(`(x` 등)는 캐시에 넣지 않아 호출마다 현행과 같은 예외가 난다.
+ * - `String.prototype.replace` 는 g 정규식의 lastIndex 를 시작 시 0 으로 맞추므로 재사용해도 안전하다.
+ *   캐시한 정규식을 test/exec 로 쓰면 lastIndex 가 남으니 replace 전용으로만 쓴다.
+ *
+ * @since engine-v1.74.0
+ */
+export const REPLACE_PARAMS_REGEX_CACHE_LIMIT = 500;
+
+/** separateTrailingText 의 trailing 판정 — non-global match 전용이라 상수로 공유해도 상태가 남지 않는다 */
+const TRAILING_TEXT_PATTERN = /(\s+[^\p{L}\w=|&\s][^\p{L}\w=]*\s*)$/u;
+const replaceParamRegexCache = new Map<string, readonly [RegExp, RegExp]>();
+let replaceParamRegexHits = 0;
+let replaceParamRegexMisses = 0;
+
+function getReplaceParamPatterns(key: string): readonly [RegExp, RegExp] {
+  const cached = replaceParamRegexCache.get(key);
+  if (cached) {
+    replaceParamRegexHits++;
+    return cached;
+  }
+  replaceParamRegexMisses++;
+  const pair = [new RegExp(`\\{\\{${key}\\}\\}`, 'g'), new RegExp(`\\{${key}\\}`, 'g')] as const;
+  if (replaceParamRegexCache.size >= REPLACE_PARAMS_REGEX_CACHE_LIMIT) {
+    const oldest = replaceParamRegexCache.keys().next().value;
+    if (oldest !== undefined) replaceParamRegexCache.delete(oldest);
+  }
+  replaceParamRegexCache.set(key, pair);
+  return pair;
+}
+
+/**
+ * replaceParams 정규식 캐시 통계(진단용).
+ *
+ * @return 적중·미스 횟수와 현재 크기
+ */
+export function getReplaceParamsRegexCacheStats(): { hits: number; misses: number; size: number } {
+  return { hits: replaceParamRegexHits, misses: replaceParamRegexMisses, size: replaceParamRegexCache.size };
+}
+
+/**
+ * 테스트 간 상태 누수를 막기 위해 캐시와 통계를 비운다.
+ *
+ * @return void
+ */
+export function __resetReplaceParamsRegexCacheForTests(): void {
+  replaceParamRegexCache.clear();
+  replaceParamRegexHits = 0;
+  replaceParamRegexMisses = 0;
+}
+
 // ============================================================================
 // 타입 정의
 // ============================================================================
@@ -595,7 +649,7 @@ export class TranslationEngine {
 
     // 간단한 휴리스틱: 마지막에 공백 + 특수문자(/, \, 등)로 끝나면 trailing
     // \p{L}을 사용하여 유니코드 문자(한글 등)도 단어 문자로 인식
-    const trailingMatch = paramsStr.match(/(\s+[^\p{L}\w=|&\s][^\p{L}\w=]*\s*)$/u);
+    const trailingMatch = paramsStr.match(TRAILING_TEXT_PATTERN);
     if (trailingMatch) {
       return {
         cleanedParams: paramsStr.slice(0, -trailingMatch[1].length),
@@ -649,12 +703,12 @@ export class TranslationEngine {
     let result = text;
 
     for (const [key, value] of Object.entries(params)) {
+      const [doublePattern, singlePattern] = getReplaceParamPatterns(key);
+
       // {{key}} 형식 (이중 중괄호) 먼저 치환
-      const doublePattern = new RegExp(`\\{\\{${key}\\}\\}`, 'g');
       result = result.replace(doublePattern, String(value));
 
       // {key} 형식 (단일 중괄호) 치환
-      const singlePattern = new RegExp(`\\{${key}\\}`, 'g');
       result = result.replace(singlePattern, String(value));
     }
 

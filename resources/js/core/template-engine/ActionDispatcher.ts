@@ -20,6 +20,7 @@ import { DataBindingEngine } from './DataBindingEngine';
 import { extractSingleBinding } from './BindingShape';
 import { hasPipes } from './PipeRegistry';
 import { resolveExpressionString } from './helpers/RenderHelpers';
+import { evaluateComputedDefinitions } from './helpers/ComputedEvaluator';
 import { TranslationEngine, TranslationContext } from './TranslationEngine';
 import { AuthManager, AuthType } from '../auth/AuthManager';
 import { getApiClient } from '../api/ApiClient';
@@ -5668,6 +5669,42 @@ export class ActionDispatcher {
     this.intervals.clear();
   }
 
+  /**
+   * sequence 안에서 상태가 바뀐 뒤 `_computed` 를 다시 계산한다.
+   *
+   * 렌더 경로와 같은 공용 평가기를 쓴다 — 결과를 직전 `_computed` 에서 시작하므로 `$switch`·
+   * `{{}}` 없는 리터럴 computed 의 키가 사라지지 않고, 뒤에 정의된 키를 읽으면 직전 값을 본다.
+   * 실패한 키는 직전 값을 유지한다(종전과 같이 경고는 새로 만들지 않는다).
+   *
+   * @param context 액션 컨텍스트(`data._computedDefinitions` 를 읽는다)
+   * @param currentState sequence 가 누적한 최신 `_local`
+   * @param isolatedState sequence 가 누적한 최신 `_isolated`
+   * @param currentComputed 직전 `_computed`
+   * @returns 재계산한 `_computed` (정의가 없으면 `currentComputed` 그대로)
+   * @since engine-v1.74.0
+   */
+  private recalculateSequenceComputed(
+    context: ActionContext,
+    currentState: Record<string, any>,
+    isolatedState: Record<string, any>,
+    currentComputed: Record<string, any>
+  ): Record<string, any> {
+    const computedDefinitions = context.data?._computedDefinitions;
+    if (!computedDefinitions || Object.keys(computedDefinitions).length === 0) {
+      return currentComputed;
+    }
+    return evaluateComputedDefinitions(
+      computedDefinitions,
+      { ...context.data, _local: currentState, _isolated: isolatedState },
+      this.bindingEngine,
+      {
+        previous: currentComputed,
+        onError: 'keep-previous',
+        failureLog: (key, error) => logger.log(`[handleSequence] computed 재계산 실패(직전 값 유지): ${key}`, error),
+      }
+    );
+  }
+
   private async handleSequence(
     action: ActionDefinition,
     context: ActionContext
@@ -5801,45 +5838,9 @@ export class ActionDispatcher {
           }
 
           // _computed 재계산: _local 변경 시 _computed도 업데이트해야 다음 액션에서 최신 값 참조 가능
-          const computedDefinitions = context.data?._computedDefinitions;
-          if (computedDefinitions && Object.keys(computedDefinitions).length > 0) {
-            const newComputed: Record<string, any> = {};
-            const computedContext = {
-              ...context.data,
-              _local: currentState,
-              _computed: newComputed,
-              $computed: newComputed,
-              _isolated: isolatedState,
-            };
-            for (const [key, expression] of Object.entries(computedDefinitions)) {
-              if (typeof expression === 'string') {
-                const trimmed = expression.trim();
-                if (trimmed.startsWith('{{') && trimmed.endsWith('}}')) {
-                  try {
-                    const innerExpr = trimmed.slice(2, -2).trim();
-                    // 파이프 표현식은 evaluatePipeExpression 으로 평가한다 — 렌더 경로의
-                    // computed 재계산(DynamicRenderer)과 같은 규칙이다. 한쪽만 고치면
-                    // 같은 computed 가 렌더 직후와 액션 직후에 다른 값이 된다.
-                    // @since engine-v1.54.10
-                    newComputed[key] = hasPipes(innerExpr)
-                      ? this.bindingEngine.evaluatePipeExpression(
-                        innerExpr,
-                        computedContext,
-                        { skipCache: true }
-                      )
-                      : this.bindingEngine.evaluateExpression(
-                        innerExpr,
-                        computedContext,
-                        { skipCache: true }
-                      );
-                  } catch (e) {
-                    // 평가 실패 시 기존 값 유지
-                    newComputed[key] = currentComputed[key];
-                  }
-                }
-              }
-            }
-            currentComputed = newComputed;
+          const recalculated = this.recalculateSequenceComputed(context, currentState, isolatedState, currentComputed);
+          if (recalculated !== currentComputed) {
+            currentComputed = recalculated;
             logger.log('[handleSequence] _computed recalculated after setState:', currentComputed);
           }
         }
@@ -5861,43 +5862,9 @@ export class ActionDispatcher {
             logger.log('[handleSequence] currentState synchronized from __g7SequenceLocalSync after custom handler:', currentAction.handler);
 
             // _computed 재계산: 상태가 변경되었으므로 _computed도 업데이트
-            const computedDefinitions = context.data?._computedDefinitions;
-            if (computedDefinitions && Object.keys(computedDefinitions).length > 0) {
-              const newComputed: Record<string, any> = {};
-              const computedContext = {
-                ...context.data,
-                _local: currentState,
-                _computed: newComputed,
-                $computed: newComputed,
-                _isolated: isolatedState,
-              };
-              for (const [key, expression] of Object.entries(computedDefinitions)) {
-                if (typeof expression === 'string') {
-                  const trimmed = expression.trim();
-                  if (trimmed.startsWith('{{') && trimmed.endsWith('}}')) {
-                    try {
-                      const innerExpr = trimmed.slice(2, -2).trim();
-                      // 파이프 표현식은 evaluatePipeExpression 으로 평가한다 — 위 setState
-                      // 직후 재계산 블록과 같은 규칙이다. @since engine-v1.54.10
-                      newComputed[key] = hasPipes(innerExpr)
-                        ? this.bindingEngine.evaluatePipeExpression(
-                          innerExpr,
-                          computedContext,
-                          { skipCache: true }
-                        )
-                        : this.bindingEngine.evaluateExpression(
-                          innerExpr,
-                          computedContext,
-                          { skipCache: true }
-                        );
-                    } catch (e) {
-                      // 평가 실패 시 기존 값 유지
-                      newComputed[key] = currentComputed[key];
-                    }
-                  }
-                }
-              }
-              currentComputed = newComputed;
+            const recalculated = this.recalculateSequenceComputed(context, currentState, isolatedState, currentComputed);
+            if (recalculated !== currentComputed) {
+              currentComputed = recalculated;
               logger.log('[handleSequence] _computed recalculated after custom handler:', currentComputed);
             }
           }

@@ -12,6 +12,7 @@ import { LayoutLoader, LayoutLoaderError } from './template-engine/LayoutLoader'
 import type { InitActionDefinition, LayoutScript, ComputedSwitchDefinition } from './template-engine/LayoutLoader';
 import { DataBindingEngine } from './template-engine/DataBindingEngine';
 import { evaluateSafeExpression } from './template-engine/SafeExpressionEvaluator';
+import { evaluateComputedDefinitions } from './template-engine/helpers/ComputedEvaluator';
 import { extractSingleBinding } from './template-engine/BindingShape';
 import { hasPipes } from './template-engine/PipeRegistry';
 import { evaluateRenderCondition } from './template-engine/helpers/RenderHelpers';
@@ -4292,50 +4293,14 @@ export class TemplateApp {
         computed: Record<string, string | ComputedSwitchDefinition>,
         dataContext: Record<string, any>
     ): Record<string, any> {
-        const result: Record<string, any> = {};
-        const bindingEngine = new DataBindingEngine();
-
-        for (const [key, expression] of Object.entries(computed)) {
-            try {
-                let value: any;
-
-                // $switch 형태의 computed 정의 처리
-                if (this.isComputedSwitchDefinition(expression)) {
-                    value = bindingEngine.resolveSwitch(expression, dataContext, { skipCache: true });
-                } else if (typeof expression === 'string') {
-                    // 문자열 표현식 처리
-                    if (expression.startsWith('{{') && expression.endsWith('}}')) {
-                        // {{...}} 형태의 표현식 평가
-                        const innerExpression = expression.slice(2, -2).trim();
-                        value = this.evaluateComputedExpression(innerExpression, dataContext);
-                    } else {
-                        // 순수 문자열은 그대로 사용
-                        value = expression;
-                    }
-                }
-
-                result[key] = value;
-                logger.log(`Computed ${key}:`, value);
-            } catch (error) {
-                logger.warn(`Failed to calculate computed value: ${key}`, error);
-                result[key] = undefined;
-            }
-        }
-
-        return result;
-    }
-
-    /**
-     * $switch 형태의 computed 정의인지 확인
-     */
-    private isComputedSwitchDefinition(obj: any): obj is ComputedSwitchDefinition {
-        return (
-            obj !== null &&
-            typeof obj === 'object' &&
-            !Array.isArray(obj) &&
-            '$switch' in obj &&
-            '$cases' in obj
-        );
+        // 렌더·액션 경로와 같은 공용 평가기를 쓴다 — 파이프·$t·$localized·정의 순서 참조가 진입 시점에도
+        // 동작하고, $switch 는 $cases 없이도($default) 평가한다. 실패 키는 undefined(종전 정책 유지).
+        // @since engine-v1.74.0
+        return evaluateComputedDefinitions(computed, dataContext, new DataBindingEngine(), {
+            previous: dataContext._computed ?? {},
+            onError: 'undefined',
+            failureLog: (key, error) => logger.warn(`Failed to calculate computed value: ${key}`, error),
+        });
     }
 
     /**
@@ -4343,6 +4308,10 @@ export class TemplateApp {
      *
      * JavaScript 표현식을 안전하게 평가합니다.
      * dataContext의 값들을 컨텍스트로 사용합니다.
+     *
+     * engine-v1.74.0 부터 computed 계산은 공용 평가기(`calculateComputed` → `evaluateComputedDefinitions`)
+     * 를 거친다. 이 메서드는 샌드박스 탈출 보안 회귀선(`TemplateApp.safeComputed.test.ts`)이 직접
+     * 호출하므로 남겨 둔다.
      *
      * @param expression 평가할 표현식
      * @param context 평가 컨텍스트

@@ -117,20 +117,23 @@ Partial 경로는 다음 순서로 해석된다 — 다른 레이아웃의 parti
 
 **올바른 computed 정의 방법**:
 
+computed 는 부모 레이아웃에 정의하고 partial 에서는 참조만 합니다. 두 곳 이상에서 쓰는 파생값만 computed 로 두고, 한 곳에서만 쓰는 식은 그 자리에 바로 적습니다.
+
 ```html
 <!-- ✅ admin_product_list.json (부모 레이아웃) - computed 정의 -->
 <layout name="admin_product_list" version="1.0.0">
-  <computed name="filterPriceType">{{_local.filter.priceType ?? query.price_type ?? 'selling_price'}}</computed>
-  <computed name="filterDateType">{{_local.filter.dateType ?? query.date_type ?? 'created_at'}}</computed>
+  <computed name="selectedCount">{{(_local.selectedIds ?? []).length}}</computed>
+  <computed name="hasSelection">{{$computed.selectedCount > 0}}</computed>
   <slot name="content">
-    <include src="partials/_filter_section.g7.html"/>
+    <include src="partials/_bulk_toolbar.g7.html"/>
   </slot>
 </layout>
 
-<!-- ✅ _filter_section.json (partial 파일) - $computed 참조만 가능 -->
+<!-- ✅ _bulk_toolbar.json (partial 파일) - $computed 참조만 가능 -->
 <partial>
   <div>
-    <span>가격 유형: {{$computed.filterPriceType}}</span>
+    <span data-if="{{$computed.hasSelection}}">{{$computed.selectedCount}}개 선택됨</span>
+    <button disabled="{{!$computed.hasSelection}}">$t:common.delete</button>
   </div>
 </partial>
 ```
@@ -142,17 +145,17 @@ Partial 경로는 다음 순서로 해석된다 — 다른 레이아웃의 parti
 {
   "layout_name": "admin_product_list",
   "computed": {
-    "filterPriceType": "{{_local.filter.priceType ?? query.price_type ?? 'selling_price'}}",
-    "filterDateType": "{{_local.filter.dateType ?? query.date_type ?? 'created_at'}}"
+    "selectedCount": "{{(_local.selectedIds ?? []).length}}",
+    "hasSelection": "{{$computed.selectedCount > 0}}"
   },
   "slots": {
     "content": [
-      { "partial": "partials/_filter_section.json" }
+      { "partial": "partials/_bulk_toolbar.json" }
     ]
   }
 }
 
-// ✅ _filter_section.json (partial 파일) - $computed 참조만 가능
+// ✅ _bulk_toolbar.json (partial 파일) - $computed 참조만 가능
 {
   "meta": { "is_partial": true },
   "type": "basic",
@@ -161,11 +164,20 @@ Partial 경로는 다음 순서로 해석된다 — 다른 레이아웃의 parti
     {
       "type": "basic",
       "name": "Span",
-      "text": "가격 유형: {{$computed.filterPriceType}}"
+      "if": "{{$computed.hasSelection}}",
+      "text": "{{$computed.selectedCount}}개 선택됨"
+    },
+    {
+      "type": "basic",
+      "name": "Button",
+      "props": { "disabled": "{{!$computed.hasSelection}}" },
+      "text": "$t:common.delete"
     }
   ]
 }
 ```
+
+`hasSelection` 은 앞에 정의한 `selectedCount` 를 참조합니다. computed 는 정의 순서대로 계산되므로 참조되는 키를 위에 둡니다(engine-v1.74.0+, [computed 평가 모델](layout-json-features-styling.md#평가-모델-engine-v1740)).
 
 **잘못된 예시 (partial에서 computed 정의)**:
 
@@ -174,14 +186,14 @@ Partial 경로는 다음 순서로 해석된다 — 다른 레이아웃의 parti
 {
   "meta": { "is_partial": true },
   "computed": {
-    "filterPriceType": "..."  // 이 computed는 병합되지 않음!
+    "selectedCount": "..."  // 이 computed는 병합되지 않음!
   },
   "type": "basic",
   "name": "Div"
 }
 ```
 
-위 partial의 `computed`는 **부모 레이아웃과 병합되지 않습니다**. `$computed.filterPriceType`은 `undefined`로 평가됩니다.
+위 partial의 `computed`는 **부모 레이아웃과 병합되지 않습니다**. `$computed.selectedCount`는 `undefined`로 평가됩니다.
 
 ---
 

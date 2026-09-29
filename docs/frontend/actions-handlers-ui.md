@@ -921,6 +921,8 @@ sequence 내에서 `setState` 실행 후 다음 스텝은 **갱신된 상태**�
 3. → 다음 스텝에서 {{_computed.totalPrice}} 참조 시 최신값 반영
 ```
 
+sequence 안의 재계산도 화면 렌더와 같은 규칙을 따릅니다(engine-v1.74.0+): 정의 순서대로 계산해 앞의 computed 를 뒤의 computed 가 최신값으로 읽고, `$switch`·파이프·리터럴 computed 도 재계산 뒤 키가 사라지지 않습니다. 계산에 실패한 키는 직전 값을 유지합니다.
+
 #### $prev와 $results 상세
 
 | 변수 | 타입 | 설명 |
