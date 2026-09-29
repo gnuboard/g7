@@ -31,6 +31,11 @@ class TemplateServiceTest extends TestCase
 
     private PluginManagerInterface $pluginManager;
 
+    /**
+     * 테스트 픽스처를 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -61,6 +66,11 @@ class TemplateServiceTest extends TestCase
         );
     }
 
+    /**
+     * 테스트 픽스처를 정리합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         Mockery::close();
@@ -68,7 +78,15 @@ class TemplateServiceTest extends TestCase
     }
 
     /**
-     * 템플릿 활성화 시 훅 시스템이 올바른 순서로 실행되는지 검증
+     * 템플릿 활성화 시 Service 가 before_activate 만 발화하는지 검증
+     *
+     * after_activate 는 TemplateManager 가 발화한다(#138 — CLI·어드민 UI 공통 단일 발화).
+     * 여기서는 Manager 를 mock 했으므로 Service 가 after_activate 를 중복 발화하지 않는 것까지 잠근다.
+     * Manager 쪽 발화는 ExtensionLifecycleHookContractTest 가 실제 설치로 검증한다.
+     *
+     * @scenario operation=activate
+     * @effects activates_template_with_hook_system
+     * @return void 반환값 없음
      */
     public function test_activates_template_with_hook_system(): void
     {
@@ -126,20 +144,15 @@ class TemplateServiceTest extends TestCase
         $result = $this->templateService->activateTemplate($template->id);
 
         // Assert
-        // 훅이 최소 2개 이상 호출되어야 함 (Laravel 이벤트 시스템 때문에 중복 가능)
-        $this->assertGreaterThanOrEqual(2, count($hookCalls));
-
         // before_activate가 호출되었는지 확인
         $beforeActivateCalls = array_filter($hookCalls, fn ($call) => $call['hook'] === 'before_activate');
         $this->assertNotEmpty($beforeActivateCalls);
         $firstBeforeActivate = array_values($beforeActivateCalls)[0];
         $this->assertEquals($template->identifier, $firstBeforeActivate['identifier']);
 
-        // after_activate가 호출되었는지 확인
+        // after_activate 는 Manager(여기서는 mock)의 몫 — Service 는 발화하지 않는다
         $afterActivateCalls = array_filter($hookCalls, fn ($call) => $call['hook'] === 'after_activate');
-        $this->assertNotEmpty($afterActivateCalls);
-        $firstAfterActivate = array_values($afterActivateCalls)[0];
-        $this->assertEquals($template->id, $firstAfterActivate['template_id']);
+        $this->assertEmpty($afterActivateCalls, 'Service 가 after_activate 를 중복 발화하면 활동 로그가 두 줄 남는다');
 
         // activateTemplate은 ['success' => true, 'template_info' => $templateInfo] 반환
         $this->assertIsArray($result);
@@ -149,6 +162,10 @@ class TemplateServiceTest extends TestCase
 
     /**
      * Manager의 activateTemplate() 메서드가 정확히 한 번 호출되는지 확인
+     *
+     * @scenario operation=activate
+     * @effects delegates_file_copy_to_manager
+     * @return void 반환값 없음
      */
     public function test_delegates_file_copy_to_manager(): void
     {
@@ -199,6 +216,10 @@ class TemplateServiceTest extends TestCase
 
     /**
      * filter_activate_data 훅이 Manager 호출 전에 적용되는지 검증
+     *
+     * @scenario operation=activate
+     * @effects applies_filter_hook_before_manager_call
+     * @return void 반환값 없음
      */
     public function test_applies_filter_hook_before_manager_call(): void
     {
@@ -257,6 +278,10 @@ class TemplateServiceTest extends TestCase
 
     /**
      * Manager에서 예외 발생 시 Service가 적절히 처리하는지 테스트
+     *
+     * @scenario operation=activate
+     * @effects throws_exception_on_manager_failure
+     * @return void 반환값 없음
      */
     public function test_throws_exception_on_manager_failure(): void
     {
@@ -291,6 +316,10 @@ class TemplateServiceTest extends TestCase
 
     /**
      * 존재하지 않는 템플릿 활성화 시 예외 발생 검증
+     *
+     * @scenario operation=activate
+     * @effects throws_exception_when_template_not_found
+     * @return void 반환값 없음
      */
     public function test_throws_exception_when_template_not_found(): void
     {

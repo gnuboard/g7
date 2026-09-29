@@ -20,6 +20,7 @@ return [
 
     // System labels
     'system' => 'System',
+    'system_cli' => 'System (CLI)',
     'yes' => 'Yes',
     'no' => 'No',
     'unknown' => 'Unknown',

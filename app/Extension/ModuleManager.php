@@ -580,9 +580,9 @@ class ModuleManager implements ModuleManagerInterface
             ExtensionMiddlewareRegistry::flush();
 
             // 훅 발행: 모듈 설치 완료
+            // @deprecated 'core.modules.installed' — identifier 1개만 전달하는 구훅. 정규 훅은 아래
+            //   after_install 이다. 구독자(SEO 캐시 등·사외 확장)가 있어 다음 메이저까지 유지한다.
             HookManager::doAction('core.modules.installed', $moduleName);
-
-            return true;
         } catch (\Throwable $e) {
             ExtensionInstallRollbackHelper::removeIfCreatedByThisInstall(
                 $rollbackActivePath,
@@ -594,6 +594,11 @@ class ModuleManager implements ModuleManagerInterface
             throw $e;
         }
 
+        // 정규 훅 — Service 경유 여부와 무관하게 CLI 에서도 리스너(큐 재시작·활동 로그·언어팩)가
+        // 돈다(#138). 설치 롤백 try 밖에서 발화해, 리스너 예외가 방금 끝난 설치를 되돌리지 않게 한다.
+        HookManager::doAction('core.modules.after_install', $moduleName, $this->getModuleInfo($moduleName) ?? []);
+
+        return true;
     }
 
     /**
@@ -744,7 +749,11 @@ class ModuleManager implements ModuleManagerInterface
 
         // 훅 발행: 모듈 활성화 완료
         if ($result) {
+            // @deprecated 'core.modules.activated' — identifier 1개만 전달하는 구훅. 정규 훅은 after_activate.
             HookManager::doAction('core.modules.activated', $moduleName);
+
+            // 정규 훅 — CLI·어드민 UI 공통 단일 발화(#138)
+            HookManager::doAction('core.modules.after_activate', $moduleName, $this->getModuleInfo($moduleName) ?? []);
         }
 
         if (! $result) {
@@ -1000,6 +1009,9 @@ class ModuleManager implements ModuleManagerInterface
             throw new \Exception(__('modules.not_found', ['module' => $moduleName]));
         }
 
+        // after_uninstall 훅에 실을 정보는 파괴 단계(DB 행 삭제·디렉토리 삭제) 이전에 캡처한다.
+        $moduleInfo = $this->getModuleInfo($moduleName) ?? [];
+
         // Phase 1: 데이터 삭제 옵션이 true인 경우 동적 데이터 정리 및 마이그레이션 롤백 (DDL - 트랜잭션 외부)
         // MySQL에서 DROP TABLE 등 DDL 문은 암시적 커밋을 유발하므로 트랜잭션 외부에서 실행
         $onProgress?->__invoke('data_cleanup', '데이터 정리 중...');
@@ -1122,13 +1134,18 @@ class ModuleManager implements ModuleManagerInterface
                 // 메모리에서 모듈 제거
                 unset($this->modules[$module->getIdentifier()]);
             }
-
-            return $result;
-
         } catch (\Exception $e) {
             DB::rollBack();
             throw $e;
         }
+
+        // 정규 훅 — CLI·어드민 UI 공통 단일 발화(#138). 커밋·파일 삭제가 끝난 뒤 try 밖에서 발화해
+        // 리스너 예외가 이미 커밋된 제거를 롤백 경로로 보내지 않게 한다.
+        if ($result) {
+            HookManager::doAction('core.modules.after_uninstall', $moduleName, $moduleInfo, $deleteData);
+        }
+
+        return $result;
     }
 
     /**
@@ -4525,12 +4542,18 @@ class ModuleManager implements ModuleManagerInterface
             $toVersion = ($updateInfo['update_source'] === 'github' ? $updateInfo['latest_version'] : null)
                 ?? $updateInfo['current_version'];
         } elseif (! $updateInfo['update_available'] && ! $force) {
-            return [
+            $result = [
                 'success' => false,
                 'from_version' => $fromVersion,
                 'to_version' => $fromVersion,
                 'message' => __('modules.no_update_available'),
             ];
+
+            // "업데이트할 것 없음" 도 정규 훅을 발화한다 — 어드민 UI 는 종전부터 이 결과를 활동 로그에
+            // 남겨 왔다(Service 발화 시절 동작 보존). 구훅(updated)은 발화하지 않는다.
+            HookManager::doAction('core.modules.after_update', $identifier, $result, $this->getModuleInfo($identifier) ?? []);
+
+            return $result;
         } elseif ($force && ! $updateInfo['update_available']) {
             $updateSource = $this->resolveForceUpdateSource($identifier);
 
@@ -4762,6 +4785,7 @@ class ModuleManager implements ModuleManagerInterface
             $this->extensionManager->regenerateHookCache();
 
             // 훅 발행: 모듈 업데이트 완료 (Artisan 직접 호출 시에도 리스너 트리거)
+            // @deprecated 'core.modules.updated' — identifier 1개만 전달하는 구훅. 정규 훅은 after_update.
             HookManager::doAction('core.modules.updated', $identifier);
 
             Log::info('모듈 업데이트 완료', [
@@ -4771,7 +4795,7 @@ class ModuleManager implements ModuleManagerInterface
                 'source' => $updateSource,
             ]);
 
-            return [
+            $result = [
                 'success' => true,
                 'from_version' => $fromVersion,
                 'to_version' => $toVersion,
@@ -4780,7 +4804,6 @@ class ModuleManager implements ModuleManagerInterface
                     'version' => $toVersion,
                 ]),
             ];
-
         } catch (\Throwable $e) {
             // 실패 시: 백업 복원 + 상태 복원
             Log::error('모듈 업데이트 실패', [
@@ -4823,6 +4846,12 @@ class ModuleManager implements ModuleManagerInterface
                 $e
             );
         }
+
+        // 정규 훅 — CLI·어드민 UI 공통 단일 발화(#138). 업데이트 롤백(백업 복원) try 밖에서 발화해,
+        // 리스너 예외가 이미 끝난 업데이트를 되돌리는 경로로 들어가지 않게 한다.
+        HookManager::doAction('core.modules.after_update', $identifier, $result, $this->getModuleInfo($identifier) ?? []);
+
+        return $result;
     }
 
     /**

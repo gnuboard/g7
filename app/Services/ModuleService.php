@@ -206,7 +206,8 @@ class ModuleService
 
             $moduleInfo = $this->moduleManager->getModuleInfo($moduleName);
 
-            HookManager::doAction('core.modules.after_update', $moduleName, $result, $moduleInfo);
+            // after_update 훅은 ModuleManager 가 정규 시그니처로 이미 발화 — CLI·어드민 UI 공통 단일 발화(#138)
+            // (Service 중복 발화 제거 — listener 2회 실행으로 인한 activity log 중복 차단)
 
             return array_merge($result, [
                 'module_info' => $moduleInfo,
@@ -272,7 +273,8 @@ class ModuleService
                 // 설치 후 모듈 정보 반환
                 $moduleInfo = $this->moduleManager->getModuleInfo($moduleName);
 
-                HookManager::doAction('core.modules.after_install', $moduleName, $moduleInfo);
+                // after_install 훅은 ModuleManager 가 정규 시그니처로 이미 발화 — CLI·어드민 UI 공통 단일 발화(#138)
+                // (Service 중복 발화 제거 — listener 2회 실행으로 인한 activity log 중복 차단)
 
                 return $moduleInfo;
             }
@@ -310,7 +312,8 @@ class ModuleService
             if ($result['success']) {
                 $moduleInfo = $this->moduleManager->getModuleInfo($moduleName);
 
-                HookManager::doAction('core.modules.after_activate', $moduleName, $moduleInfo);
+                // after_activate 훅은 ModuleManager 가 정규 시그니처로 이미 발화 — CLI·어드민 UI 공통 단일 발화(#138)
+                // (Service 중복 발화 제거 — listener 2회 실행으로 인한 activity log 중복 차단)
 
                 return [
                     'success' => true,
@@ -391,9 +394,7 @@ class ModuleService
         HookManager::doAction('core.modules.before_uninstall', $moduleName, $deleteData);
 
         try {
-            // 제거 전 모듈 정보 보존
             $this->moduleManager->loadModules();
-            $moduleInfo = $this->moduleManager->getModuleInfo($moduleName);
 
             $result = $this->moduleManager->uninstallModule(
                 $moduleName,
@@ -404,12 +405,14 @@ class ModuleService
             );
 
             if ($result) {
+                // 방어용 — Manager 가 이미 deleteByIdentifier() 로 행을 지웠으므로 통상 no-op 이다.
                 $module = $this->moduleRepository->findByName($moduleName);
                 if ($module) {
                     $this->moduleRepository->delete($module);
                 }
 
-                HookManager::doAction('core.modules.after_uninstall', $moduleName, $moduleInfo, $deleteData);
+                // after_uninstall 훅은 ModuleManager 가 정규 시그니처로 이미 발화 — CLI·어드민 UI 공통 단일 발화(#138)
+                // (Service 중복 발화 제거 — listener 2회 실행으로 인한 activity log 중복 차단)
             }
 
             return $result;

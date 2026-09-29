@@ -914,7 +914,7 @@ private function registerCoreHookListeners(): void
 |------|-----------|
 | 확장 install / activate / deactivate / uninstall / update | `ExtensionManager::updateComposerAutoload()` 가 오토로드 캐시와 나란히 재생성 (자동) |
 | 코어 업데이트 (`core:update`) | `clearAllCaches()` → `extension:update-autoload` 가 오토로드 + 훅 캐시 함께 재생성 (자동). 코어 리스너 추가/변경/삭제 반영 |
-| 코어 리스너 코드 배포 | `php artisan hooks:cache` (배포 파이프라인 — `route:cache` 동형) |
+| 코어 리스너 코드 배포 | `php artisan hooks:cache` (배포 파이프라인 — `route:cache` 동형). 구독 옵션(`sync` 등)만 바뀐 배포도 해당한다 — 캐시는 파일 부재·손상에만 폴백하므로 굽지 않으면 이전 구독이 조용히 계속 쓰인다 |
 
 ```bash
 php artisan hooks:cache   # 정적 훅 매핑 캐시 생성 (bootstrap/cache/hooks.php)
@@ -1147,6 +1147,38 @@ if ($this->statusOf($claim) === 'payment_pending') {
 
 HookManager::doAction('...payment_completed', $claim, $payment);
 ```
+
+### 완료 훅은 모든 진입점이 거치는 계층에서 한 번 발화한다
+
+같은 작업을 여러 진입점(어드민 UI·Artisan 커맨드·스케줄러·큐 작업)이 수행하면, 완료 훅은 **그 진입점들이 모두 거치는 가장 안쪽 계층**에서 발화한다. 바깥 계층(Service·Controller)에서만 발화하면 그 계층을 거치지 않는 진입점에서 구독 리스너가 조용히 누락된다 — 확장 생명주기 훅이 Service 에서만 발화해, CLI 로 확장을 업데이트하면 큐 워커 재시작·활동 로그·언어팩 동기화가 모두 빠졌던 것이 그 사례다(공개 이슈 #138). 같은 사건을 두 계층에서 발화하면 리스너가 두 번 돌아 활동 로그가 두 줄 남으므로, 안쪽으로 옮길 때는 바깥 발화를 **같은 변경에서** 제거한다.
+
+### 확장 생명주기 훅 계약
+
+모듈·플러그인·템플릿의 설치·활성화·업데이트·제거 완료 훅은 Manager(`ModuleManager`·`PluginManager`·`TemplateManager`)가 발화한다. 어드민 UI(Service 경유)와 Artisan 커맨드(Manager 직접) 모두에서 **정확히 한 번** 발화한다.
+
+| 사건 | 훅 | 인자 | 비고 |
+|------|-----|------|------|
+| 모듈 설치 | `core.modules.after_install` | `(string $identifier, array $info)` | |
+| 모듈 활성화 | `core.modules.after_activate` | `(string $identifier, array $info)` | |
+| 모듈 비활성화 | `core.modules.after_deactivate` | `(string $identifier)` | |
+| 모듈 업데이트 | `core.modules.after_update` | `(string $identifier, array $result, array $info)` | 업데이트할 것이 없을 때도 `result.success = false` 로 발화 |
+| 모듈 제거 | `core.modules.after_uninstall` | `(string $identifier, array $info, bool $deleteData)` | `$info` 는 제거 전 캡처 |
+| 플러그인 설치 | `core.plugins.after_install` | `(string $identifier, array $info)` | |
+| 플러그인 활성화 | `core.plugins.after_activate` | `(string $identifier, array $info)` | |
+| 플러그인 비활성화 | `core.plugins.after_deactivate` | `(string $identifier)` | |
+| 플러그인 업데이트 | `core.plugins.after_update` | `(string $identifier, array $result, array $info)` | 업데이트할 것이 없을 때도 발화 |
+| 플러그인 제거 | `core.plugins.after_uninstall` | `(string $identifier, bool $deleteData, bool $result)` | **인자 순서가 다르다.** 실패(`$result = false`)에도 발화 |
+| 템플릿 설치 | `core.templates.after_install` | `(string $identifier, array $info)` | DB 트랜잭션 밖에서 발화 |
+| 템플릿 활성화 | `core.templates.after_activate` | `(array $info)` | **식별자 없이** 정보 배열 1개(`$info['identifier']`) |
+| 템플릿 비활성화 | `core.templates.after_deactivate` | `(string $identifier)` | |
+| 템플릿 버전 업데이트 | `core.templates.after_version_update` | `(string $identifier, array $result, array $info)` | 업데이트할 것이 없을 때도 발화 |
+| 템플릿 제거 | `core.templates.after_uninstall` | `(string $identifier, array $info, bool $deleteData)` | `$info` 는 제거 전 캡처 |
+
+- `core.templates.after_update` 는 템플릿 **레코드 수정**(`TemplateService::updateTemplate()`) 훅이다. 템플릿 버전 업데이트를 구독하려면 `after_version_update` 를 쓴다.
+- `$info` 는 확장 정보 배열이며 정보를 구할 수 없으면 빈 배열이다(템플릿 활성화는 `['identifier' => ...]`). 리스너는 `$info['version'] ?? null` 처럼 키 부재를 전제로 읽는다.
+- `before_*` 훅(`before_install`·`before_update` 등)은 지금도 Service(어드민 UI)에서만 발화한다.
+
+**구훅 (deprecated)** — `core.{modules,plugins,templates}.installed` · `activated` · `updated` 9개는 식별자 1개만 넘기는 이전 이름이다. 구독자(코어 SEO·설정 캐시 리스너, 번들 결제 플러그인, 사외 확장)가 있어 성공 시 계속 발화하지만 다음 메이저에서 제거할 예정이다. 새 구독은 위 정규 훅을 쓴다. 구훅은 "업데이트할 것 없음" 에서는 발화하지 않는다.
 
 ---
 

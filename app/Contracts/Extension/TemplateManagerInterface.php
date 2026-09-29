@@ -8,6 +8,8 @@ interface TemplateManagerInterface
 {
     /**
      * 모든 템플릿을 로드하고 초기화합니다. (항상 재스캔)
+     *
+     * @return void 반환값 없음
      */
     public function loadTemplates(): void;
 
@@ -16,6 +18,8 @@ interface TemplateManagerInterface
      *
      * "맵이 채워져 있기만 하면 되는" 소비자용 진입점. 재스캔이 필요한 경우
      * (설치/삭제/업데이트 직후)에만 `loadTemplates()` 를 직접 호출합니다.
+     *
+     * @return void 반환값 없음
      */
     public function ensureLoaded(): void;
 
@@ -65,11 +69,18 @@ interface TemplateManagerInterface
      *
      * @param  string  $identifier  제거할 템플릿 식별자
      * @param  \Closure|null  $onProgress  진행 콜백 (?string $step, string $message)
+     * @param  array<int, array{directory: string, archive: string}>|null  $preservedBackups  삭제 전에 보관한 운영자 소유 디렉토리 사본 경로 (out)
+     * @param  bool  $deleteData  운영자가 "데이터도 삭제" 를 골랐는지 — after_uninstall 훅 인자로 전달
      * @return bool 제거 성공 여부
      *
      * @throws \Exception 템플릿을 찾을 수 없을 때
      */
-    public function uninstallTemplate(string $identifier, ?\Closure $onProgress = null): bool;
+    public function uninstallTemplate(
+        string $identifier,
+        ?\Closure $onProgress = null,
+        ?array &$preservedBackups = null,
+        bool $deleteData = false,
+    ): bool;
 
     /**
      * 지정된 템플릿을 활성화합니다.
@@ -86,12 +97,14 @@ interface TemplateManagerInterface
      * @param  string  $identifier  비활성화할 템플릿 식별자
      * @param  string  $reason  비활성화 사유 (DeactivationReason enum value: manual|incompatible_core)
      * @param  string|null  $incompatibleRequiredVersion  incompatible_core 사유 시 요구된 코어 버전 제약
+     * @param  string|null  $failureReason  실패 시 사유가 담기는 out 파라미터 (성공 시 null)
      * @return bool 비활성화 성공 여부
      */
     public function deactivateTemplate(
         string $identifier,
         string $reason = DeactivationReason::Manual->value,
         ?string $incompatibleRequiredVersion = null,
+        ?string &$failureReason = null,
     ): bool;
 
     /**

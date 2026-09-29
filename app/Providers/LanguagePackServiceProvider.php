@@ -40,6 +40,8 @@ class LanguagePackServiceProvider extends ServiceProvider
 {
     /**
      * 컨테이너 바인딩을 등록합니다.
+     *
+     * @return void 반환값 없음
      */
     public function register(): void
     {
@@ -80,6 +82,8 @@ class LanguagePackServiceProvider extends ServiceProvider
      * 부팅 시 활성 언어팩의 번역 경로를 Translator 에 등록합니다.
      *
      * DB 가 준비되지 않았거나(설치 전) language_packs 테이블이 없으면 조용히 건너뜁니다.
+     *
+     * @return void 반환값 없음
      */
     public function boot(): void
     {
@@ -109,6 +113,8 @@ class LanguagePackServiceProvider extends ServiceProvider
      * HookManager 필터에 LanguagePackSeedInjector 의 메서드를 등록합니다.
      *
      * 시더가 applyFilters() 를 호출하면 활성 코어 언어팩의 seed/*.json 으로 다국어 키가 보강됩니다.
+     *
+     * @return void 반환값 없음
      */
     private function registerSeedFilters(): void
     {
@@ -158,6 +164,7 @@ class LanguagePackServiceProvider extends ServiceProvider
      * 우선순위로 자동 감지합니다. 후보 미발견 시 'code' 를 기본값으로 사용합니다.
      *
      * @param  LanguagePackSeedInjector  $injector  주입기
+     * @return void 반환값 없음
      */
     public function registerExtensionSeedFilters(LanguagePackSeedInjector $injector): void
     {
@@ -264,6 +271,8 @@ class LanguagePackServiceProvider extends ServiceProvider
      *
      * G7 표준 훅 메커니즘(HookManager::doAction → addAction) 으로 일원화 — 별도 Event 클래스 사용 안 함.
      * 훅 명명은 모듈/플러그인/템플릿 (`core.{type}.activated/deactivated/installed/updated/uninstalled`) 와 동일.
+     *
+     * @return void 반환값 없음
      */
     private function registerEventListeners(): void
     {
@@ -296,6 +305,8 @@ class LanguagePackServiceProvider extends ServiceProvider
      *
      * 모듈 설치 후 모듈의 lang 디렉토리를 스캔하여 `bundled_with_extension` 가상 레코드를
      * `language_packs` 테이블에 자동 등록합니다 (계획서).
+     *
+     * @return void 반환값 없음
      */
     private function registerBundledRegistrarHooks(): void
     {
@@ -334,11 +345,11 @@ class LanguagePackServiceProvider extends ServiceProvider
         HookManager::addAction('core.templates.after_install', function ($identifier, $info = null) use ($syncFor) {
             $syncFor('template', (string) $identifier, is_array($info) ? $info : null, 'templates');
         });
-        HookManager::addAction('core.templates.after_update', function ($templateOrId, $data = null) use ($syncFor) {
-            $identifier = is_object($templateOrId) ? ($templateOrId->identifier ?? '') : (string) $templateOrId;
-            if ($identifier !== '') {
-                $syncFor('template', $identifier, is_array($data) ? $data : null, 'templates');
-            }
+        // 템플릿 버전 업데이트는 after_version_update 다. after_update 는 템플릿 **레코드 수정**
+        // 훅이라 버전 업데이트에 반응하지 않았고, 넘어오는 $data 에 version 키가 없어
+        // 언어팩 버전이 늘 '1.0.0' 으로 폴백됐다(#138).
+        HookManager::addAction('core.templates.after_version_update', function ($identifier, $result = null, $info = null) use ($syncFor) {
+            $syncFor('template', (string) $identifier, is_array($info) ? $info : null, 'templates');
         });
         HookManager::addAction('core.templates.after_uninstall', function ($identifier) use ($registrar) {
             $registrar->cleanupForExtension('template', (string) $identifier);
@@ -412,6 +423,8 @@ class LanguagePackServiceProvider extends ServiceProvider
      * Illuminate\Translation\TranslationServiceProvider 가 'translator' 와
      * 'translation.loader' 를 등록하는 시점 이후에 본 메서드가 호출되어야 하므로,
      * 부트스트랩 순서상 본 ServiceProvider 는 TranslationServiceProvider 다음에 등록됩니다.
+     *
+     * @return void 반환값 없음
      */
     private function registerTranslatorOverride(): void
     {
@@ -430,6 +443,7 @@ class LanguagePackServiceProvider extends ServiceProvider
      * 활성 언어팩 1건을 Translator 에 등록합니다.
      *
      * @param  LanguagePack  $pack  활성 언어팩
+     * @return void 반환값 없음
      */
     private function registerActivePack(LanguagePack $pack): void
     {
@@ -478,6 +492,7 @@ class LanguagePackServiceProvider extends ServiceProvider
      * config('app.supported_locales') / locale_names / translatable_locales 를 갱신합니다.
      *
      * @param  LanguagePackRegistry  $registry  레지스트리
+     * @return void 반환값 없음
      */
     private function refreshSupportedLocales(LanguagePackRegistry $registry): void
     {
@@ -539,6 +554,8 @@ class LanguagePackServiceProvider extends ServiceProvider
 
     /**
      * Laravel 기본 TranslationServiceProvider 클래스 참조 (참고용).
+     *
+     * @return string TranslationServiceProvider FQCN
      */
     public static function dependsOn(): string
     {

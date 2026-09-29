@@ -12,6 +12,7 @@ return [
     'deleting' => '削除中...',
     'processing' => '処理中...',
     'system' => 'システム',
+    'system_cli' => 'システム(CLI)',
     'yes' => 'はい',
     'no' => 'いいえ',
     'unknown' => '不明',

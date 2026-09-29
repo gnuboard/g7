@@ -409,18 +409,19 @@
                 "width": "150px",
                 "cellChildren": [
                     {
+                        "comment": "회원이 없는 로그(시스템·CLI)도 API 는 user 객체를 준다({uuid: null, name: \"시스템(CLI)\" 등}).\n          그래서 user 유무가 아니라 uuid 유무로 가른다 — user 유무로 가르면 시스템 로그에도 회원 메뉴가\n          그려지고 「회원 정보 보기」가 /admin/users/undefined 로 이동한다.",
                         "type": "basic",
                         "name": "Span",
-                        "if": "{{!row.user}}",
+                        "if": "{{!row.user?.uuid}}",
                         "props": {
                             "className": "text-gray-500 dark:text-gray-400"
                         },
-                        "text": "-"
+                        "text": "{{row.actor_name ?? row.user?.name ?? '-'}}"
                     },
                     {
                         "type": "composite",
                         "name": "ActionMenu",
-                        "if": "{{!!row.user}}",
+                        "if": "{{!!row.user?.uuid}}",
                         "actions": [
                             {
                                 "comment": "행위자 이름을 눌렀을 때의 두 갈래. 회원 상세는 **새 창**으로 띄워 보던 목록을\n              잃지 않게 하고, 「이 사람으로 검색」은 조건 칸에도 그 회원을 앉힌 뒤 주소를 바꿔\n              곧바로 조회한다 — 조건만 바꾸면 검색 버튼을 한 번 더 눌러야 한다.",
@@ -469,7 +470,7 @@
                                     "id": "view_member",
                                     "label": "$t:admin.activity_log.action.view_member",
                                     "iconName": "user",
-                                    "if": "{{!!row.user}}"
+                                    "if": "{{!!row.user?.uuid}}"
                                 },
                                 {
                                     "id": "search_by_actor",

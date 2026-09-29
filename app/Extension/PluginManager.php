@@ -560,9 +560,9 @@ class PluginManager implements PluginManagerInterface
             ExtensionMiddlewareRegistry::flush();
 
             // 훅 발행: 플러그인 설치 완료
+            // @deprecated 'core.plugins.installed' — identifier 1개만 전달하는 구훅. 정규 훅은 아래
+            //   after_install 이다. 구독자(SEO 캐시 등·사외 확장)가 있어 다음 메이저까지 유지한다.
             HookManager::doAction('core.plugins.installed', $pluginName);
-
-            return true;
         } catch (\Throwable $e) {
             ExtensionInstallRollbackHelper::removeIfCreatedByThisInstall(
                 $activePath,
@@ -573,6 +573,12 @@ class PluginManager implements PluginManagerInterface
 
             throw $e;
         }
+
+        // 정규 훅 — Service 경유 여부와 무관하게 CLI 에서도 리스너(큐 재시작·활동 로그·언어팩)가
+        // 돈다(#138). 설치 롤백 try 밖에서 발화해, 리스너 예외가 방금 끝난 설치를 되돌리지 않게 한다.
+        HookManager::doAction('core.plugins.after_install', $pluginName, $this->getPluginInfo($pluginName) ?? []);
+
+        return true;
 
     }
 
@@ -727,7 +733,11 @@ class PluginManager implements PluginManagerInterface
 
         // 훅 발행: 플러그인 활성화 완료
         if ($result) {
+            // @deprecated 'core.plugins.activated' — identifier 1개만 전달하는 구훅. 정규 훅은 after_activate.
             HookManager::doAction('core.plugins.activated', $pluginName);
+
+            // 정규 훅 — CLI·어드민 UI 공통 단일 발화(#138)
+            HookManager::doAction('core.plugins.after_activate', $pluginName, $this->getPluginInfo($pluginName) ?? []);
         }
 
         if (! $result) {
@@ -1148,13 +1158,17 @@ class PluginManager implements PluginManagerInterface
                 // 메모리에서 플러그인 제거
                 unset($this->plugins[$plugin->getIdentifier()]);
             }
-
-            return $result;
-
         } catch (\Exception $e) {
             DB::rollBack();
             throw $e;
         }
+
+        // 정규 훅 — CLI·어드민 UI 공통 단일 발화(#138). 성공 분기 **밖**에서 발화한다: 구독자가
+        // 3번째 인자 $result 로 실패도 기록한다(활동 로그). 인자 순서 (id, deleteData, result)는
+        // 모듈·템플릿과 다르지만 기존 구독 계약이라 유지한다.
+        HookManager::doAction('core.plugins.after_uninstall', $pluginName, $deleteData, $result);
+
+        return $result;
     }
 
     /**
@@ -4455,12 +4469,18 @@ class PluginManager implements PluginManagerInterface
             $toVersion = ($updateInfo['update_source'] === 'github' ? $updateInfo['latest_version'] : null)
                 ?? $updateInfo['current_version'];
         } elseif (! $updateInfo['update_available'] && ! $force) {
-            return [
+            $result = [
                 'success' => false,
                 'from_version' => $fromVersion,
                 'to_version' => $fromVersion,
                 'message' => __('plugins.no_update_available'),
             ];
+
+            // "업데이트할 것 없음" 도 정규 훅을 발화한다 — 어드민 UI 는 종전부터 이 결과를 활동 로그에
+            // 남겨 왔다(Service 발화 시절 동작 보존). 구훅(updated)은 발화하지 않는다.
+            HookManager::doAction('core.plugins.after_update', $identifier, $result, $this->getPluginInfo($identifier) ?? []);
+
+            return $result;
         } elseif ($force && ! $updateInfo['update_available']) {
             $updateSource = $this->resolveForceUpdateSource($identifier);
 
@@ -4695,6 +4715,8 @@ class PluginManager implements PluginManagerInterface
             $this->extensionManager->regenerateHookCache();
 
             // 훅 발행: 플러그인 업데이트 완료 (Artisan 직접 호출 시에도 리스너 트리거)
+            // @deprecated 'core.plugins.updated' — identifier 1개만 전달하는 구훅. 정규 훅은 after_update.
+            //   번들 결제 플러그인(RestoreLayoutExtensionsAfterUpdateListener)·사외 확장이 구독한다.
             HookManager::doAction('core.plugins.updated', $identifier);
 
             Log::info('플러그인 업데이트 완료', [
@@ -4704,7 +4726,7 @@ class PluginManager implements PluginManagerInterface
                 'source' => $updateSource,
             ]);
 
-            return [
+            $result = [
                 'success' => true,
                 'from_version' => $fromVersion,
                 'to_version' => $toVersion,
@@ -4713,7 +4735,6 @@ class PluginManager implements PluginManagerInterface
                     'version' => $toVersion,
                 ]),
             ];
-
         } catch (\Throwable $e) {
             // 실패 시: 백업 복원 + 상태 복원
             Log::error('플러그인 업데이트 실패', [
@@ -4756,6 +4777,12 @@ class PluginManager implements PluginManagerInterface
                 $e
             );
         }
+
+        // 정규 훅 — CLI·어드민 UI 공통 단일 발화(#138). 업데이트 롤백(백업 복원) try 밖에서 발화해,
+        // 리스너 예외가 이미 끝난 업데이트를 되돌리는 경로로 들어가지 않게 한다.
+        HookManager::doAction('core.plugins.after_update', $identifier, $result, $this->getPluginInfo($identifier) ?? []);
+
+        return $result;
     }
 
     /**

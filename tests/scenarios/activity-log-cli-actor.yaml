@@ -1,0 +1,29 @@
+feature: 활동 로그 "시스템(CLI)" 행위자 표기
+
+description: |
+  확장 생명주기 훅이 CLI 에서도 발화하게 되면서(#138) Artisan 커맨드·스케줄러가 남기는 활동 로그가 생긴다.
+  회원이 없는 로그를 관리자 화면에서 "시스템(CLI)" 로 구분하고, 시스템 로그에 회원 메뉴가 그려져
+  /admin/users/undefined 로 이동하던 기존 결함을 함께 고친다.
+
+  핵심 동작:
+    - 진입점(cli/http)은 HookContextCapture 가 디스패치 시점에 캡처하고 큐 워커가 복원한다
+      (워커는 콘솔 프로세스라 runningInConsole() 만으로 판정하면 웹 작업까지 CLI 로 오판).
+    - ActivityLogProcessor 는 CLI 진입점 로그에만 properties.via = 'cli' 를 남긴다(명시값 보존).
+    - ActivityLog::actor_name 은 회원이 없고 via 가 cli/console 이면 "시스템(CLI)".
+    - ActivityLogResource 의 user 폴백은 uuid 를 null 로 명시하고, 화면은 uuid 유무로 회원 메뉴를 가른다.
+
+axes:
+  entry_point: [cli, http]
+  execution: [sync, queued_worker]
+
+effects:
+  - origin_captured_at_dispatch_and_restored_in_worker
+  - restored_origin_does_not_leak_to_next_job
+  - restored_user_does_not_leak_to_next_job
+  - cli_log_marked_via_cli
+  - http_log_properties_untouched
+  - system_log_actor_shows_origin_label
+  - system_log_actor_has_no_member_menu
+
+test_files:
+  - tests/Unit/ActivityLog/ActivityLogCliOriginTest.php

@@ -167,7 +167,11 @@ HookManager::doAction('core.language_packs.after_activate', $pack);
 |---|---|
 | `core.modules.after_install` / `after_update` | `syncFromExtension('module', identifier, vendor, version, langDir)` |
 | `core.modules.after_uninstall` | `cleanupForExtension('module', identifier)` — 가상 레코드 삭제 + 외부 벤더 레코드는 `error` 상태 전환 |
-| (plugin/template 동일 패턴) | 9개 후크 리스너 등록 |
+| (plugin 동일 패턴) | `core.plugins.after_install` / `after_update` / `after_uninstall` |
+| 템플릿 | `core.templates.after_install` / **`after_version_update`** / `after_uninstall` — `after_update` 는 템플릿 **레코드 수정** 훅이라 버전 업데이트에 반응하지 않는다 |
+
+> 이 후크들은 Manager 가 발화하므로 어드민 UI 뿐 아니라 Artisan 커맨드(`module:install`·`template:update` 등)로 설치·업데이트해도
+> 동기화된다. 언어팩 버전은 후크가 넘기는 확장 정보의 `version` 을 쓴다(없으면 `1.0.0`).
 
 ## 캐시 무효화
 

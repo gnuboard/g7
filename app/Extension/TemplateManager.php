@@ -474,7 +474,7 @@ class TemplateManager implements TemplateManagerInterface
         $onProgress?->__invoke('validate', '검증 중...');
 
         try {
-            return DB::transaction(function () use ($templateName, $onProgress) {
+            DB::transaction(function () use ($templateName, $onProgress) {
                 $template = $this->getTemplate($templateName);
                 if (! $template) {
                     throw new \Exception(__('templates.errors.not_found', ['template' => $templateName]));
@@ -543,9 +543,9 @@ class TemplateManager implements TemplateManagerInterface
                 $this->incrementExtensionCacheVersion();
 
                 // 훅 발행: 템플릿 설치 완료
+                // @deprecated 'core.templates.installed' — identifier 1개만 전달하는 구훅. 정규 훅은
+                //   트랜잭션 밖의 after_install 이다. 구독자가 있어 다음 메이저까지 유지(위치도 그대로).
                 HookManager::doAction('core.templates.installed', $templateName);
-
-                return true;
             });
         } catch (\Throwable $e) {
             ExtensionInstallRollbackHelper::removeIfCreatedByThisInstall(
@@ -557,6 +557,13 @@ class TemplateManager implements TemplateManagerInterface
 
             throw $e;
         }
+
+        // 정규 훅 — CLI·어드민 UI 공통 단일 발화(#138). **DB 트랜잭션 밖**에서 발화한다: 언어팩 동기화
+        // 구독은 동기 실행이라, 트랜잭션 안이면 커밋 실패 시 언어팩 레코드만 롤백되고 파일 I/O 는 남는다.
+        // 설치 롤백 try 밖이기도 해서, 리스너 예외가 방금 끝난 설치를 되돌리지 않는다.
+        HookManager::doAction('core.templates.after_install', $templateName, $this->getTemplateInfo($templateName) ?? []);
+
+        return true;
     }
 
     /**
@@ -690,7 +697,13 @@ class TemplateManager implements TemplateManagerInterface
         });
 
         // 훅 발행: 템플릿 활성화 완료
+        // @deprecated 'core.templates.activated' — identifier 1개만 전달하는 구훅. 정규 훅은 after_activate.
         HookManager::doAction('core.templates.activated', $templateName);
+
+        // 정규 훅 — CLI·어드민 UI 공통 단일 발화(#138). 템플릿만 계약이 다르다: 식별자 없이
+        // 정보 배열 1개를 넘긴다(구독자 handleTemplateAfterActivate(array)). 정보가 없어도
+        // 활동 로그에 템플릿 이름이 남도록 빈 배열 대신 identifier 를 담아 넘긴다.
+        HookManager::doAction('core.templates.after_activate', $this->getTemplateInfo($templateName) ?? ['identifier' => $templateName]);
 
         return ['success' => true];
     }
@@ -784,6 +797,8 @@ class TemplateManager implements TemplateManagerInterface
      * @param  array<int, array{directory: string, archive: string}>|null  $preservedBackups
      *                                                                                        삭제 전에 보관한 운영자 소유 디렉토리(`custom/`)의 사본 경로가 담기는 out 파라미터.
      *                                                                                        운영자에게 "지웠지만 사본은 여기 있다" 를 알리기 위한 것이므로 호출부가 노출해야 한다.
+     * @param  bool  $deleteData  운영자가 "데이터도 삭제" 를 골랐는지 — 제거 동작은 바꾸지 않고
+     *                             after_uninstall 훅 인자로만 전달한다(활동 로그 기록용)
      * @return bool 제거 성공 여부
      *
      * @throws \Exception 템플릿을 찾을 수 없을 때
@@ -792,8 +807,12 @@ class TemplateManager implements TemplateManagerInterface
         string $templateName,
         ?\Closure $onProgress = null,
         ?array &$preservedBackups = null,
+        bool $deleteData = false,
     ): bool {
         $preservedBackups = [];
+
+        // after_uninstall 훅에 실을 정보는 파괴 단계(DB 행 삭제·디렉토리 삭제) 이전에 캡처한다.
+        $templateInfo = $this->getTemplateInfo($templateName) ?? [];
 
         // 1. 캐시 삭제
         $onProgress?->__invoke('cache', '캐시 삭제 중...');
@@ -847,6 +866,9 @@ class TemplateManager implements TemplateManagerInterface
 
             // 메모리에서 템플릿 제거
             unset($this->templates[$templateName]);
+
+            // 정규 훅 — CLI·어드민 UI 공통 단일 발화(#138)
+            HookManager::doAction('core.templates.after_uninstall', $templateName, $templateInfo, $deleteData);
         }
 
         return $result;
@@ -3096,12 +3118,18 @@ class TemplateManager implements TemplateManagerInterface
             $toVersion = ($updateInfo['update_source'] === 'github' ? $updateInfo['latest_version'] : null)
                 ?? $updateInfo['current_version'];
         } elseif (! $updateInfo['update_available'] && ! $force) {
-            return [
+            $result = [
                 'success' => false,
                 'from_version' => $fromVersion,
                 'to_version' => $fromVersion,
                 'message' => __('templates.no_update_available'),
             ];
+
+            // "업데이트할 것 없음" 도 정규 훅을 발화한다 — 어드민 UI 는 종전부터 이 결과를 활동 로그에
+            // 남겨 왔다(Service 발화 시절 동작 보존). 구훅(updated)은 발화하지 않는다.
+            HookManager::doAction('core.templates.after_version_update', $identifier, $result, $this->getTemplateInfo($identifier) ?? []);
+
+            return $result;
         } elseif ($force && ! $updateInfo['update_available']) {
             $updateSource = $this->resolveForceUpdateSource($identifier);
 
@@ -3273,6 +3301,7 @@ class TemplateManager implements TemplateManagerInterface
             self::invalidateTemplateStatusCache();
 
             // 훅 발행: 템플릿 업데이트 완료 (Artisan 직접 호출 시에도 리스너 트리거)
+            // @deprecated 'core.templates.updated' — identifier 1개만 전달하는 구훅. 정규 훅은 after_version_update.
             HookManager::doAction('core.templates.updated', $identifier);
 
             Log::info('템플릿 업데이트 완료', [
@@ -3283,7 +3312,7 @@ class TemplateManager implements TemplateManagerInterface
                 'layout_strategy' => $layoutStrategy,
             ]);
 
-            return [
+            $result = [
                 'success' => true,
                 'from_version' => $fromVersion,
                 'to_version' => $toVersion,
@@ -3337,6 +3366,13 @@ class TemplateManager implements TemplateManagerInterface
                 $e
             );
         }
+
+        // 정규 훅 — CLI·어드민 UI 공통 단일 발화(#138). 업데이트 롤백(백업 복원) try 밖에서 발화해,
+        // 리스너 예외가 이미 끝난 업데이트를 되돌리는 경로로 들어가지 않게 한다.
+        // 이름이 after_version_update 인 이유: after_update 는 템플릿 레코드 수정 훅이다(동명이인 유지).
+        HookManager::doAction('core.templates.after_version_update', $identifier, $result, $this->getTemplateInfo($identifier) ?? []);
+
+        return $result;
     }
 
     /**

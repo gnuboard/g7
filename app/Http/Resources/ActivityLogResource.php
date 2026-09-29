@@ -41,7 +41,11 @@ class ActivityLogResource extends BaseApiResource
                 'name' => $this->user->name,
                 'email' => $this->canExposeMemberEmail($request, $this->user->id) ? $this->user->email : null,
             ] : [
-                'name' => __('common.system'),
+                // 행위자 회원이 없는 로그(시스템·CLI·탈퇴 회원). uuid 를 null 로 명시해 화면이
+                // 회원 메뉴(회원 정보 보기·이 사람으로 검색)를 그리지 않게 한다 — 종전에는 uuid
+                // 키가 없어 /admin/users/undefined 로 이동했다.
+                'uuid' => null,
+                'name' => $this->actor_name,
             ],
             'ip_address' => $this->ip_address,
             'created_at' => $this->formatDateTimeStringForUser($this->created_at),

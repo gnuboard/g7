@@ -145,7 +145,8 @@ class PluginService
                 // 설치 후 플러그인 정보 반환
                 $pluginInfo = $this->pluginManager->getPluginInfo($pluginName);
 
-                HookManager::doAction('core.plugins.after_install', $pluginName, $pluginInfo);
+                // after_install 훅은 PluginManager 가 정규 시그니처로 이미 발화 — CLI·어드민 UI 공통 단일 발화(#138)
+                // (Service 중복 발화 제거 — listener 2회 실행으로 인한 activity log 중복 차단)
 
                 return $pluginInfo;
             }
@@ -185,7 +186,8 @@ class PluginService
             if ($result['success']) {
                 $pluginInfo = $this->pluginManager->getPluginInfo($pluginName);
 
-                HookManager::doAction('core.plugins.after_activate', $pluginName, $pluginInfo);
+                // after_activate 훅은 PluginManager 가 정규 시그니처로 이미 발화 — CLI·어드민 UI 공통 단일 발화(#138)
+                // (Service 중복 발화 제거 — listener 2회 실행으로 인한 activity log 중복 차단)
 
                 return [
                     'success' => true,
@@ -278,7 +280,8 @@ class PluginService
                 $preservedBackups
             );
 
-            HookManager::doAction('core.plugins.after_uninstall', $pluginName, $deleteData, $result);
+            // after_uninstall 훅은 PluginManager 가 정규 시그니처로 이미 발화 — CLI·어드민 UI 공통 단일 발화(#138)
+            // (Service 중복 발화 제거 — listener 2회 실행으로 인한 activity log 중복 차단)
 
             return $result;
         } catch (\Exception $e) {
@@ -545,7 +548,8 @@ class PluginService
 
             $pluginInfo = $this->pluginManager->getPluginInfo($pluginName);
 
-            HookManager::doAction('core.plugins.after_update', $pluginName, $result, $pluginInfo);
+            // after_update 훅은 PluginManager 가 정규 시그니처로 이미 발화 — CLI·어드민 UI 공통 단일 발화(#138)
+            // (Service 중복 발화 제거 — listener 2회 실행으로 인한 activity log 중복 차단)
 
             return array_merge($result, [
                 'plugin_info' => $pluginInfo,

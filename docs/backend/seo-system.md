@@ -657,9 +657,13 @@ if (app()->bound(\App\Seo\SitemapGenerator::class)) {
 
 | 훅 | 무효화 대상 | 사유 |
 |----|-----------|------|
-| `core.modules.after_install/activate/update` | 전체 SEO 캐시 + sitemap | 레이아웃 등록/변경 |
-| `core.plugins.after_install/activate/update` | 전체 SEO 캐시 + sitemap | layout_extensions 변경 |
-| `core.templates.after_install/activate/version_update` | 전체 SEO 캐시 + sitemap + SEO config 병합 캐시 | seo-config.json/컴포넌트 맵 변경 |
+| `core.modules.installed/activated/updated` | 전체 SEO 캐시 + sitemap | 레이아웃 등록/변경 |
+| `core.plugins.installed/activated/updated` | 전체 SEO 캐시 + sitemap | layout_extensions 변경 |
+| `core.templates.installed/activated/updated` | 전체 SEO 캐시 + sitemap + SEO config 병합 캐시 | seo-config.json/컴포넌트 맵 변경 |
+
+> 구독 훅은 식별자 1개를 넘기는 구훅(`installed`·`activated`·`updated`, `SeoExtensionCacheListener`)이다 — Manager 가
+> 발화해 어드민 UI·CLI 양쪽에서 동작한다. 구훅은 deprecated 이므로 이 리스너를 손볼 때는 정규 훅
+> (`after_install`·`after_activate`·`after_update`/`after_version_update`)으로 옮기는 것을 검토한다([hooks.md](../extension/hooks.md)).
 
 > 확장 라이프사이클은 드문 이벤트이므로 전체 캐시 클리어(`clearAll()`)로 안전하게 처리합니다.
 

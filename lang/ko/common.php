@@ -20,6 +20,7 @@ return [
 
     // 시스템 라벨
     'system' => '시스템',
+    'system_cli' => '시스템(CLI)',
     'yes' => '예',
     'no' => '아니오',
     'unknown' => '알 수 없음',

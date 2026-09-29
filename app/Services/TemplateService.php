@@ -429,7 +429,8 @@ class TemplateService
             if ($result) {
                 $templateInfo = $this->templateManager->getTemplateInfo($identifier);
 
-                HookManager::doAction('core.templates.after_install', $identifier, $templateInfo);
+                // after_install 훅은 TemplateManager 가 정규 시그니처로 이미 발화 — CLI·어드민 UI 공통 단일 발화(#138)
+                // (Service 중복 발화 제거 — listener 2회 실행으로 인한 activity log 중복 차단)
 
                 return $templateInfo;
             }
@@ -466,10 +467,12 @@ class TemplateService
             // 제거 전 템플릿 정보 보존
             $templateInfo = $this->templateManager->getTemplateInfo($identifier);
 
-            $result = $this->templateManager->uninstallTemplate($identifier, null, $preservedBackups);
+            // $deleteData 를 Manager 로 넘겨야 훅 인자(활동 로그)에 운영자 선택이 실린다.
+            $result = $this->templateManager->uninstallTemplate($identifier, null, $preservedBackups, $deleteData);
 
             if ($result) {
-                HookManager::doAction('core.templates.after_uninstall', $identifier, $templateInfo, $deleteData);
+                // after_uninstall 훅은 TemplateManager 가 정규 시그니처로 이미 발화 — CLI·어드민 UI 공통 단일 발화(#138)
+                // (Service 중복 발화 제거 — listener 2회 실행으로 인한 activity log 중복 차단)
 
                 return $templateInfo;
             }
@@ -591,7 +594,8 @@ class TemplateService
             $this->templateManager->loadTemplates();
             $templateInfo = $this->templateManager->getTemplateInfo($template->identifier);
 
-            HookManager::doAction('core.templates.after_activate', $templateInfo);
+            // after_activate 훅은 TemplateManager 가 정규 시그니처로 이미 발화 — CLI·어드민 UI 공통 단일 발화(#138)
+            // (Service 중복 발화 제거 — listener 2회 실행으로 인한 activity log 중복 차단)
 
             return [
                 'success' => true,
@@ -2337,7 +2341,8 @@ class TemplateService
 
             $templateInfo = $this->templateManager->getTemplateInfo($templateName);
 
-            HookManager::doAction('core.templates.after_version_update', $templateName, $result, $templateInfo);
+            // after_version_update 훅은 TemplateManager 가 정규 시그니처로 이미 발화 — CLI·어드민 UI 공통 단일 발화(#138)
+            // (Service 중복 발화 제거 — listener 2회 실행으로 인한 activity log 중복 차단)
 
             return array_merge($result, [
                 'template_info' => $templateInfo,

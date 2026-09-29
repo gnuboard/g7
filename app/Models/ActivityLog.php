@@ -72,6 +72,8 @@ class ActivityLog extends Model
 
     /**
      * 모델 생성 시 created_at 자동 설정
+     *
+     * @return void 반환값 없음
      */
     protected static function boot(): void
     {
@@ -232,11 +234,31 @@ class ActivityLog extends Model
     /**
      * 행위자 이름을 반환합니다.
      *
-     * @return string
+     * 회원이 없는 로그는 "시스템" 이다. 그중 CLI(Artisan 커맨드·스케줄러)에서 남은 로그는
+     * properties.via 로 구분해 "시스템(CLI)" 로 표기한다. 'console' 은 via 를 먼저 도입한
+     * 커맨드(security:ip-restriction)의 표기라 같은 뜻으로 받는다.
+     *
+     * @return string 회원 이름, 또는 시스템 / 시스템(CLI) 라벨
      */
     public function getActorNameAttribute(): string
     {
-        return $this->user?->name ?? __('common.system');
+        if ($this->user) {
+            return (string) $this->user->name;
+        }
+
+        return $this->isCliOrigin() ? __('common.system_cli') : __('common.system');
+    }
+
+    /**
+     * CLI 진입점에서 남은 로그인지 판정합니다.
+     *
+     * @return bool properties.via 가 cli/console 이면 true
+     */
+    public function isCliOrigin(): bool
+    {
+        $via = is_array($this->properties) ? ($this->properties['via'] ?? null) : null;
+
+        return in_array($via, ['cli', 'console'], true);
     }
 
     /**
