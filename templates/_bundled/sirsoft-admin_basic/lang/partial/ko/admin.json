@@ -156,7 +156,10 @@
       "all": "전체",
       "name": "이름",
       "email": "이메일",
-      "nickname": "닉네임"
+      "nickname": "닉네임",
+      "contact": "휴대폰/전화",
+      "identifier": "회원번호/고유ID",
+      "admin_memo": "관리자 메모"
     },
     "columns": {
       "id": "ID",
@@ -167,11 +170,18 @@
       "language": "언어",
       "status": "상태",
       "created_at": "가입일",
-      "last_login_at": "마지막 로그인"
+      "last_login_at": "마지막 로그인",
+      "nickname": "닉네임",
+      "email_verified_at": "이메일 인증일",
+      "identity_verified_at": "본인인증일"
     },
     "status": {
       "active": "활성",
-      "inactive": "비활성"
+      "inactive": "비활성",
+      "blocked": "차단",
+      "withdrawn": "탈퇴",
+      "pending_verification": "가입대기",
+      "dormant": "휴면"
     },
     "actions": {
       "view": "상세보기",
@@ -192,7 +202,9 @@
       "created_at_desc": "가입일시 최근순",
       "created_at_asc": "가입일시 오래된순",
       "last_login_at_desc": "마지막로그인 최근순",
-      "last_login_at_asc": "마지막로그인 오래된순"
+      "last_login_at_asc": "마지막로그인 오래된순",
+      "name_asc": "이름 오름차순",
+      "name_desc": "이름 내림차순"
     },
     "modals": {
       "delete_title": "사용자 삭제",
@@ -365,6 +377,55 @@
         "unread": "안 읽음",
         "view_inbox": "알림함 보기"
       }
+    },
+    "filter": {
+      "status": "계정 상태",
+      "role": "권한 그룹",
+      "created_at": "가입일",
+      "last_login": "최근 로그인",
+      "admin_scope": "관리자 여부",
+      "lock_state": "계정 잠금",
+      "dormant_at": "휴면 전환일",
+      "status_changed": "상태 변경일",
+      "language": "언어",
+      "country": "국가",
+      "email_verified": "이메일 인증",
+      "identity_verified": "본인인증",
+      "detail_search": "상세검색",
+      "detail_title": "상세 검색 조건",
+      "role_placeholder": "권한 그룹 검색 — 비우면 전체",
+      "role_no_options": "일치하는 권한 그룹이 없습니다",
+      "never_logged_in": "로그인 이력 없음",
+      "country_select": "국가 선택",
+      "country_search": "국가 검색",
+      "admin_scope_options": {
+        "admin": "관리자만",
+        "member": "일반회원만"
+      },
+      "lock_state_options": {
+        "locked": "잠김",
+        "unlocked": "정상"
+      },
+      "status_changed_options": {
+        "withdrawn": "탈퇴일",
+        "blocked": "차단일"
+      },
+      "verified_options": {
+        "verified": "완료",
+        "unverified": "미완료"
+      },
+      "date_quick": {
+        "today": "오늘",
+        "week": "1주일",
+        "month": "1개월",
+        "3months": "3개월",
+        "6months": "6개월",
+        "1year": "1년"
+      }
+    },
+    "action": {
+      "reset": "초기화",
+      "edit_search": "검색편집"
     }
   },
   "language_packs": {

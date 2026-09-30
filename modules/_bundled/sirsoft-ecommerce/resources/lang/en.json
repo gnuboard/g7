@@ -148,6 +148,17 @@
             "saved": "Member shipping country updated.",
             "save_failed": "Failed to update member shipping country."
         },
+        "user_filter": {
+            "title": "Shop conditions",
+            "mileage": "Mileage balance",
+            "mileage_min": "Min",
+            "mileage_max": "Max",
+            "shipping_country": "Shipping country",
+            "shipping_country_all": "Any country",
+            "has_address": "Shipping address",
+            "has_address_yes": "Registered",
+            "has_address_no": "None"
+        },
         "product_notice_template": {
             "$partial": "partial/en/admin/product_notice_template.json"
         },

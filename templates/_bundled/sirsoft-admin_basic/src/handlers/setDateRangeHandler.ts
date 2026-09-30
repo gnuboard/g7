@@ -3,7 +3,8 @@
  *
  * 날짜 필터의 빠른 선택 버튼(오늘, 일주일, 1개월, 3개월, 6개월, 1년)을 처리합니다.
  * 선택된 프리셋에 따라 시작일과 종료일을 자동으로 계산하여 반환합니다.
- * 시/분/초까지 포함한 datetime-local 형식(YYYY-MM-DDTHH:mm:ss)으로 반환합니다.
+ * 기본은 시/분/초까지 포함한 datetime-local 형식(YYYY-MM-DDTHH:mm:ss)이고, `format: 'date'` 를 주면
+ * `<input type="date">` 가 받는 YYYY-MM-DD 로 돌려준다 — datetime 값은 날짜 칸이 받지 못해 빈칸으로 보인다.
  * 상태 업데이트는 레이아웃 JSON에서 sequence + setState로 처리합니다.
  */
 
@@ -12,9 +13,16 @@
  */
 type DatePreset = 'today' | 'week' | 'month' | '3months' | '6months' | '1year';
 
+/**
+ * 반환 형식 — `datetime`(기본, YYYY-MM-DDTHH:mm:ss) 또는 `date`(YYYY-MM-DD)
+ */
+type DateRangeFormat = 'date' | 'datetime';
+
 interface SetDateRangeParams {
     /** 날짜 프리셋 타입 */
     preset: DatePreset;
+    /** 반환 형식 (기본 datetime — 기존 호출처 무영향) */
+    format?: DateRangeFormat;
 }
 
 interface SetDateRangeResult {
@@ -40,17 +48,29 @@ function formatDateTimeLocal(date: Date): string {
 }
 
 /**
+ * 날짜를 YYYY-MM-DD 형식으로 포맷합니다.
+ *
+ * @param date Date 객체
+ * @returns YYYY-MM-DD 형식의 문자열
+ */
+function formatDateOnly(date: Date): string {
+    return formatDateTimeLocal(date).slice(0, 10);
+}
+
+/**
  * 프리셋에 따른 날짜 범위를 계산합니다.
  *
  * @param preset 날짜 프리셋
+ * @param format 반환 형식
  * @returns 시작일(00:00:00)과 종료일(23:59:59)
  */
-function calculateDateRange(preset: DatePreset): { startDate: string; endDate: string } {
+function calculateDateRange(preset: DatePreset, format: DateRangeFormat = 'datetime'): { startDate: string; endDate: string } {
     const now = new Date();
+    const formatter = format === 'date' ? formatDateOnly : formatDateTimeLocal;
 
     // 종료일: 오늘 23:59:59
     const end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
-    const endDate = formatDateTimeLocal(end);
+    const endDate = formatter(end);
 
     // 시작일 계산
     const start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
@@ -81,7 +101,7 @@ function calculateDateRange(preset: DatePreset): { startDate: string; endDate: s
             break;
     }
 
-    const startDate = formatDateTimeLocal(start);
+    const startDate = formatter(start);
 
     return { startDate, endDate };
 }
@@ -102,6 +122,7 @@ function calculateDateRange(preset: DatePreset): { startDate: string; endDate: s
  *       "handler": "sirsoft-admin_basic.setDateRange",
  *       "params": { "preset": "today" }
  *     },
+ *     // 날짜 칸(<input type="date">)에 담을 때는 "params": { "preset": "today", "format": "date" }
  *     {
  *       "handler": "setState",
  *       "params": {
@@ -121,9 +142,9 @@ function calculateDateRange(preset: DatePreset): { startDate: string; endDate: s
 export function setDateRangeHandler(
     action: { params?: SetDateRangeParams }
 ): SetDateRangeResult {
-    const { preset } = action.params || { preset: 'today' as DatePreset };
+    const { preset, format = 'datetime' } = action.params || { preset: 'today' as DatePreset };
 
-    const { startDate, endDate } = calculateDateRange(preset);
+    const { startDate, endDate } = calculateDateRange(preset, format === 'date' ? 'date' : 'datetime');
 
     return {
         startDate,

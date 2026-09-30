@@ -34,6 +34,8 @@ class UserResource extends BaseApiResource
                 ? __('user.language.'.$this->getValue('language'))
                 : null,
             'country' => $this->getValue('country'),
+            // 상세·수정 폼·마이페이지가 국가를 이름으로 보인다 — 코드만 실으면 「US」 가 그대로 보인다 (#705).
+            'country_name' => $this->getValue('country') ? $this->getCountryName($this->getValue('country')) : null,
             'status' => $this->getValue('status'),
             'status_label' => $this->getStatusLabel(),
             'status_variant' => $this->getStatusVariant(),
@@ -328,6 +330,10 @@ class UserResource extends BaseApiResource
             'email_verified_at' => $this->getValue('email_verified_at')
                 ? $this->formatDateTimeStringForUser($this->getValue('email_verified_at'))
                 : null,
+            // 목록 열 선택기의 「본인인증」 열 — 인증 여부 필터와 짝으로 보는 값이다 (#705).
+            'identity_verified_at' => $this->getValue('identity_verified_at')
+                ? $this->formatDateTimeStringForUser($this->getValue('identity_verified_at'))
+                : null,
             'last_login_at' => $this->getValue('last_login_at')
                 ? $this->formatDateTimeStringForUser($this->getValue('last_login_at'))
                 : null,
@@ -360,6 +366,7 @@ class UserResource extends BaseApiResource
             'language' => $this->getValue('language'),
             'timezone' => $this->getValue('timezone'),
             'country' => $this->getValue('country'),
+            'country_name' => $this->getValue('country') ? $this->getCountryName($this->getValue('country')) : null,
             'status' => $status,
             'status_label' => $userStatus?->label(),
             'status_variant' => $userStatus?->variant(),

@@ -3,12 +3,16 @@
 namespace App\Repositories;
 
 use App\Contracts\Repositories\UserRepositoryInterface;
+use App\Enums\PermissionType;
+use App\Enums\UserStatus;
 use App\Helpers\PermissionHelper;
+use App\Models\Permission;
 use App\Models\User;
 use App\Repositories\Concerns\FiltersByDateRange;
 use App\Repositories\Concerns\HasMultipleSearchFilters;
 use App\Repositories\Concerns\PaginatesWithDeferredJoin;
 use App\Repositories\Concerns\ResolvesSortSpec;
+use App\Search\KeywordSearch;
 use App\Support\Query\PaginationLimits;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
@@ -24,14 +28,34 @@ class UserRepository implements UserRepositoryInterface
     use ResolvesSortSpec;
 
     /**
-     * 검색 가능한 필드 목록
+     * 검색어 대상 필드 (UserListRequest::SEARCHABLE_FIELDS 와 같은 집합)
+     *
+     * `contact`·`identifier` 는 실제 컬럼이 아니라 묶음이다 — {@see applySearchField()} 가 푼다.
      */
-    private const SEARCHABLE_FIELDS = ['name', 'email'];
+    private const SEARCHABLE_FIELDS = ['name', 'nickname', 'email', 'contact', 'identifier', 'admin_memo'];
 
     /**
-     * 허용 정렬 컬럼 (UserListRequest 와 동일 집합)
+     * 검색 대상 「전체」가 LIKE 로 훑는 컬럼
+     *
+     * 관리자 메모는 TEXT 라 전체 검색에 넣으면 모든 검색이 긴 본문을 훑는다 — 메모는 대상을 골라서만
+     * 찾는다. 회원번호·고유ID 는 LIKE 가 아니라 정확 일치로 함께 본다.
      */
-    private const SORTABLE_COLUMNS = ['created_at', 'name', 'email', 'last_login_at'];
+    private const KEYWORD_ALL_COLUMNS = ['name', 'nickname', 'email', 'mobile', 'phone'];
+
+    /**
+     * 연산자(eq·starts_with·ends_with)를 그대로 받는 텍스트 컬럼
+     */
+    private const OPERATOR_TEXT_COLUMNS = ['name', 'nickname', 'email'];
+
+    /**
+     * 허용 정렬 컬럼 (UserListRequest 의 sort_by 허용 목록과 동일 집합 — SortWhitelistGateParityTest 가 대조)
+     */
+    private const SORTABLE_COLUMNS = ['created_at', 'name', 'email', 'last_login_at', 'status', 'language', 'country'];
+
+    /**
+     * UUID 형식 (고유ID 정확 일치 판정)
+     */
+    private const UUID_PATTERN = '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i';
 
     /**
      * 이메일로 사용자를 찾습니다.
@@ -103,14 +127,15 @@ class UserRepository implements UserRepositoryInterface
      * 필터링 및 페이지네이션이 적용된 사용자 목록을 조회합니다.
      *
      * @param  array  $filters  필터 조건 배열
+     * @param  array<int, callable(Builder, array): void>  $extensions  확장이 더한 쿼리 조건 클로저 목록
      * @return LengthAwarePaginator 페이지네이션된 사용자 목록
      */
-    public function getPaginatedUsers(array $filters = []): LengthAwarePaginator
+    public function getPaginatedUsers(array $filters = [], array $extensions = []): LengthAwarePaginator
     {
         $query = $this->scopedUserQuery();
 
         // 검색 조건 적용
-        $this->applyFilters($query, $filters);
+        $this->applyFilters($query, $filters, $extensions);
 
         // 정렬 적용 (허용 컬럼 화이트리스트로 해석)
         $sort = $this->resolveSortSpec($filters, self::SORTABLE_COLUMNS, 'created_at');
@@ -152,19 +177,353 @@ class UserRepository implements UserRepositoryInterface
     /**
      * 쿼리에 필터 조건을 적용합니다.
      *
+     * 확장 클로저는 코어 조건을 다 건 **뒤에** 적용한다 — 확장이 코어 조건을 풀 수 없고
+     * 더 좁히기만 하게 하려는 것이다. 훅은 Service 가 발화하고 여기에는 결과 클로저만 온다
+     * (저장소 계층에 HookManager 를 들이지 않는 관례).
+     *
      * @param  Builder  $query  Eloquent 쿼리 빌더
      * @param  array  $filters  적용할 필터 조건 배열
+     * @param  array<int, callable(Builder, array): void>  $extensions  확장 쿼리 조건 클로저 목록
      * @return void 없음
      */
-    private function applyFilters(Builder $query, array $filters): void
+    private function applyFilters(Builder $query, array $filters, array $extensions = []): void
     {
         // 다중 검색 조건 적용
         if (! empty($filters['filters']) && is_array($filters['filters'])) {
-            $this->applyMultipleSearchFilters($query, $filters['filters'], self::SEARCHABLE_FIELDS);
+            $this->applyKeywordSearch($query, $filters['filters']);
         }
 
         // 날짜 필터
         $this->applyDateFilters($query, $filters);
+
+        $this->applyStatusFilter($query, $filters);
+        $this->applyRoleFilter($query, $filters);
+        $this->applyAdminScopeFilter($query, $filters);
+        $this->applyLockStateFilter($query, $filters);
+        $this->applyActivityDateFilters($query, $filters);
+        $this->applyProfileFilters($query, $filters);
+        $this->applyVerificationFilters($query, $filters);
+
+        foreach ($extensions as $extension) {
+            if (is_callable($extension)) {
+                $extension($query, $filters);
+            }
+        }
+    }
+
+    /**
+     * 검색어 조건(`filters[*]`)을 적용합니다. 조건끼리는 AND 로 묶는다.
+     *
+     * @param  Builder  $query  Eloquent 쿼리 빌더
+     * @param  array  $searchFilters  [['field' => ..., 'value' => ..., 'operator' => ...], ...]
+     * @return void 없음
+     */
+    private function applyKeywordSearch(Builder $query, array $searchFilters): void
+    {
+        $query->where(function (Builder $outer) use ($searchFilters) {
+            foreach ($searchFilters as $filter) {
+                $field = $filter['field'] ?? null;
+                $value = trim((string) ($filter['value'] ?? ''));
+
+                if (! is_string($field) || $value === '') {
+                    continue;
+                }
+
+                if ($field !== 'all' && ! in_array($field, self::SEARCHABLE_FIELDS, true)) {
+                    continue;
+                }
+
+                $operator = (string) ($filter['operator'] ?? 'like');
+                $outer->where(fn (Builder $q) => $this->applySearchField($q, $field, $value, $operator));
+            }
+        });
+    }
+
+    /**
+     * 검색 대상 하나를 실제 컬럼 조건으로 풉니다.
+     *
+     * LIKE 검색어의 `%`·`_` 는 글자 그대로 찾도록 이스케이프한다 — 그대로 두면 `%` 한 글자가
+     * 전체 회원과 일치한다.
+     *
+     * @param  Builder  $query  조건을 붙일 빌더
+     * @param  string  $field  검색 대상(all·name·nickname·email·contact·identifier·admin_memo)
+     * @param  string  $value  검색어
+     * @param  string  $operator  like·eq·starts_with·ends_with (텍스트 3칸에만 적용)
+     * @return void 없음
+     */
+    private function applySearchField(Builder $query, string $field, string $value, string $operator): void
+    {
+        $contains = '%'.KeywordSearch::escapeLikeWildcards($value).'%';
+
+        match ($field) {
+            'all' => $query->where(function (Builder $w) use ($value, $contains) {
+                foreach (self::KEYWORD_ALL_COLUMNS as $column) {
+                    $w->orWhere($column, 'like', $contains);
+                }
+                $this->orWhereIdentifier($w, $value);
+            }),
+            'contact' => $query->where(fn (Builder $w) => $w->where('mobile', 'like', $contains)->orWhere('phone', 'like', $contains)),
+            'identifier' => $this->whereIdentifier($query, $value),
+            // TEXT 칸이라 정확 일치·접두 검색이 의미가 없다 — 연산자와 무관하게 포함 검색만 한다.
+            'admin_memo' => $query->where('admin_memo', 'like', $contains),
+            // 이름·닉네임·이메일은 연산자를 받는다. LIKE 계열은 검색어를 이스케이프한다.
+            default => $this->whereTextColumn($query, $field, $value, $operator),
+        };
+    }
+
+    /**
+     * 이름·닉네임·이메일 칸에 연산자별 조건을 붙입니다.
+     *
+     * 공용 `applySearchFilter()` 는 `! $value` 로 빈 값을 걸러 검색어 「0」 을 버리므로 여기서 직접 푼다.
+     *
+     * @param  Builder  $query  조건을 붙일 빌더
+     * @param  string  $field  name·nickname·email
+     * @param  string  $value  검색어(빈 문자열이 아님)
+     * @param  string  $operator  like·eq·starts_with·ends_with
+     * @return void 없음
+     */
+    private function whereTextColumn(Builder $query, string $field, string $value, string $operator): void
+    {
+        if (! in_array($field, self::OPERATOR_TEXT_COLUMNS, true)) {
+            return;
+        }
+
+        $escaped = KeywordSearch::escapeLikeWildcards($value);
+
+        match ($operator) {
+            'eq' => $query->where($field, '=', $value),
+            'starts_with' => $query->where($field, 'like', $escaped.'%'),
+            'ends_with' => $query->where($field, 'like', '%'.$escaped),
+            default => $query->where($field, 'like', '%'.$escaped.'%'),
+        };
+    }
+
+    /**
+     * 회원번호(숫자) 또는 고유ID(UUID) 정확 일치 조건을 붙입니다. 둘 다 아니면 결과가 없다.
+     *
+     * @param  Builder  $query  조건을 붙일 빌더
+     * @param  string  $value  검색어
+     * @return void 없음
+     */
+    private function whereIdentifier(Builder $query, string $value): void
+    {
+        if (ctype_digit($value)) {
+            $query->where('id', (int) $value);
+        } elseif (preg_match(self::UUID_PATTERN, $value)) {
+            $query->where('uuid', strtolower($value));
+        } else {
+            $query->whereRaw('1 = 0');
+        }
+    }
+
+    /**
+     * 「전체」 검색에 회원번호·고유ID 정확 일치를 OR 로 더합니다(형식이 맞을 때만).
+     *
+     * @param  Builder  $query  OR 그룹 빌더
+     * @param  string  $value  검색어
+     * @return void 없음
+     */
+    private function orWhereIdentifier(Builder $query, string $value): void
+    {
+        if (ctype_digit($value)) {
+            $query->orWhere('id', (int) $value);
+        } elseif (preg_match(self::UUID_PATTERN, $value)) {
+            $query->orWhere('uuid', strtolower($value));
+        }
+    }
+
+    /**
+     * 계정 상태 다중선택 필터를 적용합니다.
+     *
+     * @param  Builder  $query  Eloquent 쿼리 빌더
+     * @param  array  $filters  필터 조건 배열
+     * @return void 없음
+     */
+    private function applyStatusFilter(Builder $query, array $filters): void
+    {
+        $statuses = $this->normalizeList($filters['status'] ?? null);
+
+        // 여섯 상태를 전부 고르면 조건이 없는 것과 같다 — IN 목록을 붙이지 않는다.
+        if ($statuses === [] || array_diff(UserStatus::values(), $statuses) === []) {
+            return;
+        }
+
+        $query->whereIn('status', $statuses);
+    }
+
+    /**
+     * 권한 그룹(역할) 다중선택 필터를 적용합니다. 고른 역할 중 하나라도 가진 회원이 남는다.
+     *
+     * `whereHas` 는 행마다 상관 서브쿼리를 돌리므로 `id IN (user_roles 서브쿼리)` 로 푼다.
+     *
+     * @param  Builder  $query  Eloquent 쿼리 빌더
+     * @param  array  $filters  필터 조건 배열
+     * @return void 없음
+     */
+    private function applyRoleFilter(Builder $query, array $filters): void
+    {
+        $roleIds = array_map('intval', $this->normalizeList($filters['role_ids'] ?? null));
+
+        if ($roleIds === []) {
+            return;
+        }
+
+        // audit:allow repository-raw-hardcoded-table reason: user_roles 는 모델이 없는 피벗 테이블이다(User::roles 가 같은 이름을 쓴다).
+        $query->whereIn('id', function ($sub) use ($roleIds) {
+            $sub->select('user_id')->from('user_roles')->whereIn('role_id', $roleIds);
+        });
+    }
+
+    /**
+     * 관리자 여부 필터를 적용합니다.
+     *
+     * 관리자 = 슈퍼관리자이거나 admin 타입 권한을 가진 역할에 속한 회원. `User::isAdmin()` 은
+     * 행마다 권한 트리를 훑으므로 목록 쿼리에 쓰지 않고, 그 역할 집합을 서브쿼리 하나로 푼다.
+     *
+     * @param  Builder  $query  Eloquent 쿼리 빌더
+     * @param  array  $filters  필터 조건 배열
+     * @return void 없음
+     */
+    private function applyAdminScopeFilter(Builder $query, array $filters): void
+    {
+        $scope = $filters['admin_scope'] ?? null;
+
+        if (! in_array($scope, ['admin', 'member'], true)) {
+            return;
+        }
+
+        $permissions = (new Permission)->getTable();
+
+        // audit:allow repository-raw-hardcoded-table reason: user_roles·role_permissions 는 모델이 없는 피벗 테이블이다(User::roles·Role::permissions 가 같은 이름을 쓴다).
+        $adminUserIds = function ($sub) use ($permissions) {
+            $sub->select('user_roles.user_id')
+                ->from('user_roles')
+                ->join('role_permissions', 'role_permissions.role_id', '=', 'user_roles.role_id')
+                ->join($permissions, $permissions.'.id', '=', 'role_permissions.permission_id')
+                ->where($permissions.'.type', PermissionType::Admin->value);
+        };
+
+        if ($scope === 'admin') {
+            $query->where(fn (Builder $q) => $q->where('is_super', true)->orWhereIn('id', $adminUserIds));
+        } else {
+            $query->where('is_super', false)->whereNotIn('id', $adminUserIds);
+        }
+    }
+
+    /**
+     * 계정 잠금 상태 필터를 적용합니다 — {@see isLocked()} 와 같은 판정을 쿼리로 옮긴 것이다.
+     *
+     * @param  Builder  $query  Eloquent 쿼리 빌더
+     * @param  array  $filters  필터 조건 배열
+     * @return void 없음
+     */
+    private function applyLockStateFilter(Builder $query, array $filters): void
+    {
+        $state = $filters['lock_state'] ?? null;
+        $now = now();
+
+        if ($state === 'locked') {
+            $query->where(fn (Builder $q) => $q->where('locked_permanently', true)->orWhere('locked_until', '>', $now));
+        } elseif ($state === 'unlocked') {
+            $query->where('locked_permanently', false)
+                ->where(fn (Builder $q) => $q->whereNull('locked_until')->orWhere('locked_until', '<=', $now));
+        }
+    }
+
+    /**
+     * 최근 로그인·휴면 전환일·상태 변경일(탈퇴/차단) 기간 필터를 적용합니다.
+     *
+     * 「로그인 이력 없음」을 켜면 최근 로그인 기간은 무시한다 — 둘은 동시에 참일 수 없다.
+     *
+     * @param  Builder  $query  Eloquent 쿼리 빌더
+     * @param  array  $filters  필터 조건 배열
+     * @return void 없음
+     */
+    private function applyActivityDateFilters(Builder $query, array $filters): void
+    {
+        if (filter_var($filters['never_logged_in'] ?? false, FILTER_VALIDATE_BOOLEAN)) {
+            $query->whereNull('last_login_at');
+        } else {
+            $this->applyDateRangeFilter($query, 'last_login_at', $filters['last_login_start'] ?? null, $filters['last_login_end'] ?? null);
+        }
+
+        $this->applyDateRangeFilter($query, 'dormant_at', $filters['dormant_start'] ?? null, $filters['dormant_end'] ?? null);
+
+        $changedColumn = match ($filters['status_changed_type'] ?? null) {
+            'withdrawn' => 'withdrawn_at',
+            'blocked' => 'blocked_at',
+            default => null,
+        };
+
+        if ($changedColumn === null) {
+            return;
+        }
+
+        $start = $filters['status_changed_start'] ?? null;
+        $end = $filters['status_changed_end'] ?? null;
+
+        // 날짜 없이 종류만 고르면 「그 일이 있었던 회원」을 뜻한다.
+        if (empty($start) && empty($end)) {
+            $query->whereNotNull($changedColumn);
+        } else {
+            $this->applyDateRangeFilter($query, $changedColumn, $start, $end);
+        }
+    }
+
+    /**
+     * 언어·국가 필터를 적용합니다.
+     *
+     * @param  Builder  $query  Eloquent 쿼리 빌더
+     * @param  array  $filters  필터 조건 배열
+     * @return void 없음
+     */
+    private function applyProfileFilters(Builder $query, array $filters): void
+    {
+        if (isset($filters['language']) && $filters['language'] !== '') {
+            $query->where('language', $filters['language']);
+        }
+
+        if (isset($filters['country']) && $filters['country'] !== '') {
+            $query->where('country', strtoupper($filters['country']));
+        }
+    }
+
+    /**
+     * 이메일 인증·본인인증 완료 여부 필터를 적용합니다(인증 시각 칸의 존재로 판정).
+     *
+     * @param  Builder  $query  Eloquent 쿼리 빌더
+     * @param  array  $filters  필터 조건 배열
+     * @return void 없음
+     */
+    private function applyVerificationFilters(Builder $query, array $filters): void
+    {
+        foreach (['email_verified' => 'email_verified_at', 'identity_verified' => 'identity_verified_at'] as $key => $column) {
+            match ($filters[$key] ?? null) {
+                'verified' => $query->whereNotNull($column),
+                'unverified' => $query->whereNull($column),
+                default => null,
+            };
+        }
+    }
+
+    /**
+     * 다중선택 값을 빈 원소 없는 문자열 배열로 정규화합니다.
+     *
+     * @param  mixed  $value  배열·단일 값·null
+     * @return array<int, string> 정규화된 목록
+     */
+    private function normalizeList(mixed $value): array
+    {
+        if ($value === null || $value === '') {
+            return [];
+        }
+
+        $list = is_array($value) ? $value : [$value];
+
+        return array_values(array_unique(array_filter(
+            array_map(static fn ($v) => is_scalar($v) ? (string) $v : '', $list),
+            static fn (string $v) => $v !== ''
+        )));
     }
 
     /**

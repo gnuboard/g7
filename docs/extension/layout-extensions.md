@@ -578,6 +578,37 @@ v1.17.0 이전: modals 내부의 extension_point는 처리되지 않았음
 | `prepend` | default **앞에** 추가 | `[NEW] [default...]` |
 | `replace` | default **완전 교체** | `[NEW]` (default 제거) |
 
+### 예시: 관리자 회원 목록 필터에 행 추가
+
+관리자 템플릿의 회원 목록은 상세검색 아래에 `admin_user_list_filters` 확장점을 연다. 이 자리에 붙은 행은
+「검색편집」의 기본/상세 이동 대상이 아니고(코어가 모르는 키라 `visibleFilters` 순서에 넣을 수 없다),
+상세검색을 펼쳤을 때만 보인다.
+
+```html
+<extension extension-point="admin_user_list_filters" mode="append" priority="200">
+  <div data-ref="ext_vendor_point_filter_row" class="flex flex-col gap-2 md:flex-row md:items-center">
+    <permissions>
+      <permission>vendor-module.points.read</permission>
+    </permissions>
+    <span class="block mb-2 w-32 text-sm text-gray-600 dark:text-gray-400 md:mb-0 shrink-0">$t:vendor-module.admin.user_filter.points</span>
+    <input type="number" name="vendorPointMin" class="input w-32" value="{{((_local.userFilterExtraQuery || []).find(e => e.startsWith('vendor-module.point_min=')) || '').slice('vendor-module.point_min='.length)}}">
+      <on type="change">
+        <!-- 값은 URL 에 직접 싣지 않는다 — 코어 핸들러가 확장 값 배열을 갱신하고, 코어 검색 버튼이 ext_filters[] 로 보낸다. -->
+        <sequence>
+          <action handler="setUserFilterExt" key="vendor-module.point_min" value="{{$event.target.value}}" current="{{_local.userFilterExtraQuery || []}}"/>
+          <set-state target="_local" userFilterExtraQuery="{{$prev}}"/>
+        </sequence>
+      </on>
+    </input>
+  </div>
+</extension>
+```
+
+- 행은 평범한 유틸 클래스로 편다. 관리자 템플릿의 필터 행 클래스(`filter-row`·`filter-label`)는 그 템플릿 CSS 에만 있어, 다른 관리자 템플릿에 주입되면 행 배치가 무너진다.
+- 표시값은 같은 배열(`_local.userFilterExtraQuery`)에서 되읽는다 — 새로고침·뒤로가기에서 URL 의 `ext_filters[]` 로 복원된다.
+- 코어의 필터 초기화는 이 배열을 비운다.
+- 서버 쪽 검증·조건은 [훅 문서의 관리자 회원 목록 확장 필터 훅](hooks.md#관리자-회원-목록-확장-필터-훅) 을 본다.
+
 ### 확장 병합 칸 (주입 폼의 값을 템플릿 API 요청에 실어 보내기)
 
 슬롯에 주입한 폼이 입력값을 서버로 보내려면, 그 값이 **템플릿이 소유한 apiCall 의 `params.body`** 에 도달해야 한다. 그런데 확장에는 body 에 키를 추가할 수단이 없다.

@@ -645,7 +645,6 @@
                                     "comment": "국가",
                                     "type": "basic",
                                     "name": "Div",
-                                    "if": false,
                                     "props": {
                                         "className": "flex justify-between items-center"
                                     },

@@ -790,7 +790,6 @@
                                                                 "id": "field_country",
                                                                 "type": "basic",
                                                                 "name": "Div",
-                                                                "if": false,
                                                                 "children": [
                                                                     {
                                                                         "type": "basic",

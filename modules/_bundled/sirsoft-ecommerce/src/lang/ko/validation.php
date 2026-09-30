@@ -1388,6 +1388,12 @@ return [
 
     // 필드명 한국어 변환 (Laravel 표준)
     'attributes' => [
+        // 관리자 회원 목록 확장 필터 (#705)
+        'user_filter_mileage_min' => '마일리지 잔액 최소',
+        'user_filter_mileage_max' => '마일리지 잔액 최대',
+        'user_filter_shipping_country' => '배송지 국가',
+        'user_filter_has_address' => '배송지 등록 여부',
+
         // 공개 자산 스토리지
         'basic_info.public_asset_disk' => '공개 자산 디스크',
 

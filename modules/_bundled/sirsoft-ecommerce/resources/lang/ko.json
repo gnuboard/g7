@@ -148,6 +148,17 @@
             "saved": "회원 배송국가가 변경되었습니다.",
             "save_failed": "회원 배송국가 변경에 실패했습니다."
         },
+        "user_filter": {
+            "title": "쇼핑몰 조건",
+            "mileage": "마일리지 잔액",
+            "mileage_min": "최소",
+            "mileage_max": "최대",
+            "shipping_country": "배송지 국가",
+            "shipping_country_all": "국가 무관",
+            "has_address": "배송지 등록",
+            "has_address_yes": "있음",
+            "has_address_no": "없음"
+        },
         "product_notice_template": {
             "$partial": "partial/ko/admin/product_notice_template.json"
         },

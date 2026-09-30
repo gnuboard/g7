@@ -21,6 +21,10 @@ import {
   updateMultilingualTagValueHandler,
 } from './multilingualTagHandler';
 import { setDateRangeHandler } from './setDateRangeHandler';
+// 목록 필터 배치 복원 — FilterVisibilitySelector 가 저장한 키를 코어 템플릿이 직접 읽는다 (#705)
+import { loadVisibleFiltersHandler } from './loadVisibleFiltersHandler';
+// 회원 목록 확장 필터 값 채널(ext_filters[]) 조립 (#705)
+import { setUserFilterExtHandler } from './setUserFilterExtHandler';
 // 방문자 통계 기간 프리셋 — 날짜 문자열(YYYY-MM-DD)을 돌려준다 (setDateRange 는 datetime 이라 통계 API 가 422)
 import { setAnalyticsPeriodHandler } from './setAnalyticsPeriodHandler';
 import { toggleSidebarHandler, initSidebarHandler } from './sidebarHandler';
@@ -57,8 +61,12 @@ export const handlerMap = {
   saveMultilingualTag: saveMultilingualTagHandler,
   cancelMultilingualTag: cancelMultilingualTagHandler,
   updateMultilingualTagValue: updateMultilingualTagValueHandler,
-  // 날짜 범위 프리셋 핸들러
+  // 날짜 범위 프리셋 핸들러 (format: 'date' 면 YYYY-MM-DD)
   setDateRange: setDateRangeHandler,
+  // 목록 필터 기본/상세 배치 복원 (#705)
+  loadVisibleFilters: loadVisibleFiltersHandler,
+  // 회원 목록 확장 필터 값 조립 (#705)
+  setUserFilterExt: setUserFilterExtHandler,
   // 방문자 통계 기간 프리셋 (#682) — 통계 화면 기간 바 8버튼이 부른다
   setAnalyticsPeriod: setAnalyticsPeriodHandler,
   // 데스크톱 사이드바 접기 핸들러

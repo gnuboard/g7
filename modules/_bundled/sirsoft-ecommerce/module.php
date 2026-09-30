@@ -50,6 +50,8 @@ use Modules\Sirsoft\Ecommerce\Listeners\SyncOptionGroupsListener;
 use Modules\Sirsoft\Ecommerce\Listeners\SyncProductFromOptionListener;
 use Modules\Sirsoft\Ecommerce\Listeners\UserCurrencyInfoListener;
 use Modules\Sirsoft\Ecommerce\Listeners\UserEcommerceDataInfoListener;
+use Modules\Sirsoft\Ecommerce\Listeners\UserListAddressFilterListener;
+use Modules\Sirsoft\Ecommerce\Listeners\UserListMileageFilterListener;
 use Modules\Sirsoft\Ecommerce\Listeners\UserMileageCleanupListener;
 use Modules\Sirsoft\Ecommerce\Listeners\UserMileageInfoListener;
 use Modules\Sirsoft\Ecommerce\Listeners\UserShippingCountryInfoListener;
@@ -3619,6 +3621,9 @@ class Module extends AbstractModule
             PurgeCashReceiptIdentifierListener::class,
             Ckeditor5ReferenceSourcesListener::class,
             PrivacyRetentionListener::class,
+            // 코어 회원관리 목록의 확장 필터 예제 2종 — 마일리지 잔액·배송지 (#705)
+            UserListMileageFilterListener::class,
+            UserListAddressFilterListener::class,
         ];
     }
 

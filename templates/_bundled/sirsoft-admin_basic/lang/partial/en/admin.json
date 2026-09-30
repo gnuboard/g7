@@ -156,7 +156,10 @@
       "all": "All",
       "name": "Name",
       "email": "Email",
-      "nickname": "Nickname"
+      "nickname": "Nickname",
+      "contact": "Mobile/Phone",
+      "identifier": "Member No./UUID",
+      "admin_memo": "Admin memo"
     },
     "columns": {
       "id": "ID",
@@ -167,11 +170,18 @@
       "language": "Language",
       "status": "Status",
       "created_at": "Created At",
-      "last_login_at": "Last Login"
+      "last_login_at": "Last Login",
+      "nickname": "Nickname",
+      "email_verified_at": "Email verified",
+      "identity_verified_at": "Identity verified"
     },
     "status": {
       "active": "Active",
-      "inactive": "Inactive"
+      "inactive": "Inactive",
+      "blocked": "Blocked",
+      "withdrawn": "Withdrawn",
+      "pending_verification": "Pending verification",
+      "dormant": "Dormant"
     },
     "actions": {
       "view": "View",
@@ -192,7 +202,9 @@
       "created_at_desc": "Recently Joined",
       "created_at_asc": "Oldest Joined",
       "last_login_at_desc": "Recent Login",
-      "last_login_at_asc": "Oldest Login"
+      "last_login_at_asc": "Oldest Login",
+      "name_asc": "Name A→Z",
+      "name_desc": "Name Z→A"
     },
     "modals": {
       "delete_title": "Delete User",
@@ -365,6 +377,55 @@
         "unread": "Unread",
         "view_inbox": "View inbox"
       }
+    },
+    "filter": {
+      "status": "Account status",
+      "role": "Role",
+      "created_at": "Joined",
+      "last_login": "Last login",
+      "admin_scope": "Administrator",
+      "lock_state": "Account lock",
+      "dormant_at": "Dormant since",
+      "status_changed": "Status changed",
+      "language": "Language",
+      "country": "Country",
+      "email_verified": "Email verification",
+      "identity_verified": "Identity verification",
+      "detail_search": "Advanced search",
+      "detail_title": "Advanced search conditions",
+      "role_placeholder": "Search roles — leave empty for all",
+      "role_no_options": "No matching roles",
+      "never_logged_in": "Never logged in",
+      "country_select": "Select country",
+      "country_search": "Search country",
+      "admin_scope_options": {
+        "admin": "Administrators only",
+        "member": "Members only"
+      },
+      "lock_state_options": {
+        "locked": "Locked",
+        "unlocked": "Not locked"
+      },
+      "status_changed_options": {
+        "withdrawn": "Withdrawn on",
+        "blocked": "Blocked on"
+      },
+      "verified_options": {
+        "verified": "Verified",
+        "unverified": "Not verified"
+      },
+      "date_quick": {
+        "today": "Today",
+        "week": "1 week",
+        "month": "1 month",
+        "3months": "3 months",
+        "6months": "6 months",
+        "1year": "1 year"
+      }
+    },
+    "action": {
+      "reset": "Reset",
+      "edit_search": "Edit filters"
     }
   },
   "language_packs": {

@@ -102,6 +102,17 @@
       "saved": "会員の配送国が変更されました。",
       "save_failed": "会員の配送国の変更に失敗しました。"
     },
+    "user_filter": {
+      "title": "ショップ条件",
+      "mileage": "マイレージ残高",
+      "mileage_min": "最小",
+      "mileage_max": "最大",
+      "shipping_country": "配送先の国",
+      "shipping_country_all": "国を問わない",
+      "has_address": "配送先の登録",
+      "has_address_yes": "あり",
+      "has_address_no": "なし"
+    },
     "wishlists": {
       "title": "お気に入り管理",
       "description": "全会員が保存したお気に入りを確認し、整理します。",

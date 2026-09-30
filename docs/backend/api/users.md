@@ -29,14 +29,31 @@
 | --- | --- | --- | --- | --- | --- |
 | page | query | integer | 아니오 | min 1 | 조회할 페이지 번호 (1부터 시작) |
 | per_page | query | integer | 아니오 | min 1, max 100 | 페이지당 항목 수 |
-| filters | query | array | 아니오 | max 10 | 추가 필터 조건 맵 (필드별 조건) |
-| start_date | query | date | 아니오 | — | 조회 기간 시작일 (이 날짜 이후 데이터) |
-| end_date | query | date | 아니오 | — | 조회 기간 종료일 (이 날짜 이전 데이터) |
+| filters | query | array | 아니오 | max 10 | 검색어 조건 목록 — `filters[N][field]`(`all`·`name`·`nickname`·`email`·`contact`·`identifier`·`admin_memo`) / `filters[N][value]`(max 255) / `filters[N][operator]`(`like`·`eq`·`starts_with`·`ends_with`) |
+| status[] | query | array | 아니오 | `active`, `inactive`, `blocked`, `withdrawn`, `pending_verification`, `dormant` | 계정 상태 (여럿이면 OR, 여섯 전부는 조건 없음) |
+| role_ids[] | query | array\<integer\> | 아니오 | 존재하는 역할 id | 권한 그룹 — 고른 역할 중 하나라도 가진 회원 |
+| admin_scope | query | string | 아니오 | `all`, `admin`, `member` | 관리자 여부 (admin = 슈퍼관리자 또는 관리자 권한이 든 역할 보유) |
+| lock_state | query | string | 아니오 | `all`, `locked`, `unlocked` | 계정 잠금 (locked = 영구 잠금 또는 해제 시각이 미래) |
+| start_date | query | date | 아니오 | — | 가입일 시작 (그날 0시부터) |
+| end_date | query | date | 아니오 | ≥ start_date | 가입일 종료 (그날 끝까지 포함) |
 | date_filter | query | string | 아니오 | `all`, `week`, `month`, `custom` | 가입 기간 프리셋 (all: 전체, week: 최근 1주, month: 최근 1개월, custom: start_date/end_date 로 직접 지정) |
-| sort_by | query | string | 아니오 | `created_at`, `name`, `email`, `last_login_at` | 정렬 기준 필드명 |
+| last_login_start | query | date | 아니오 | — | 최근 로그인 시작 |
+| last_login_end | query | date | 아니오 | ≥ last_login_start | 최근 로그인 종료 |
+| never_logged_in | query | boolean | 아니오 | `true`, `false`, `1`, `0` | 로그인 이력이 없는 회원만 (참이면 최근 로그인 기간은 무시) |
+| dormant_start | query | date | 아니오 | — | 휴면 전환일 시작 |
+| dormant_end | query | date | 아니오 | ≥ dormant_start | 휴면 전환일 종료 |
+| status_changed_type | query | string | 아니오 | `withdrawn`, `blocked` | 상태 변경 종류 (탈퇴일/차단일). 날짜 없이 주면 그 일이 있었던 회원 전부 |
+| status_changed_start | query | date | 아니오 | — | 상태 변경일 시작 (status_changed_type 과 함께) |
+| status_changed_end | query | date | 아니오 | ≥ status_changed_start | 상태 변경일 종료 |
+| language | query | string | 아니오 | 지원 로케일 | 회원 표시 언어 |
+| country | query | string | 아니오 | 영문 2자리 | 국가 코드 (대소문자 무관) |
+| email_verified | query | string | 아니오 | `all`, `verified`, `unverified` | 이메일 인증 여부 |
+| identity_verified | query | string | 아니오 | `all`, `verified`, `unverified` | 본인인증 완료 여부 |
+| ext_filters[] | query | array\<string\> | 아니오 | max 20, 원소 `{확장id}.{키}={값}` | 모듈·플러그인이 더한 필터 값 채널 — 서버가 `ext.{확장id}.{키}` 로 펴고 확장이 규칙·조건을 건다 |
+| sort_by | query | string | 아니오 | `created_at`, `name`, `email`, `last_login_at`, `status`, `language`, `country` | 정렬 기준 필드명 |
 | sort_order | query | string | 아니오 | `asc`, `desc` | 정렬 방향 (asc 오름차순 / desc 내림차순) |
 
-> 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.user.list_validation_rules`).
+> 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 — 검증 규칙 `core.user.list_validation_rules`, 항목명 `core.user.list_validation_attributes`, 파라미터 정규화 `core.user.filter_list_params`, 쿼리 조건 `core.user.list_query_extensions`. 값은 `ext_filters[]` 로 받는다.
 
 **요청 예시**
 
@@ -69,6 +86,7 @@ _목록 응답: `data.data[]` 배열 항목의 필드 + `data.pagination`._
 | mobile | null | `null` | 휴대폰 번호 |
 | roles | array | `[{"id":1,"identifier":"admin","name":"관리자"},{"id":892,"id…` | 사용자에게 부여된 역할 목록 (원소: id/identifier/name — 역할 관계 파생) |
 | email_verified_at | string | `2026-08-04 16:57:08` | email verified 일시 |
+| identity_verified_at | null | `null` | 최종 본인인증 성공 일시 (열 선택기의 「본인인증일」) |
 | last_login_at | null | `null` | last login 일시 |
 | created_at | string | `2026-08-04` | 생성 일시 |
 | is_owner | boolean | `false` | 현재 인증 사용자가 이 리소스의 소유자인지 여부 (BaseApiResource 표준 메타) |
@@ -204,7 +222,7 @@ HTTP/1.1 200
 
 **설명**
 
-관리자 사용자 관리 화면(`admin_user_list.g7.html`)의 목록을 제공합니다. `filters` 로 이름/이메일 다중 검색(operator: like, eq, starts_with, ends_with), `date_filter`(all/week/month/custom)와 `start_date`/`end_date` 로 가입 기간 필터, `sort_by`/`sort_order` 로 정렬한다. 응답은 `data.data[]`(항목별 순번 `number` + 요약 필드)와 `data.pagination`(페이지 정보)에 더해 `data.statistics`(통계)와 `data.abilities`(컬렉션 레벨 권한)를 함께 반환한다. 기본값은 `per_page=15`, `page=1`, `sort_by=created_at`, `sort_order=desc`, `date_filter=all` 이다.
+관리자 사용자 관리 화면(`admin_user_list.g7.html`)의 목록을 제공합니다. `filters` 로 검색어 다중 검색(대상 7종, operator: like, eq, starts_with, ends_with — `contact` 는 휴대폰·전화 OR, `identifier` 는 숫자면 회원번호·UUID 면 고유ID 정확 일치, `admin_memo` 는 연산자와 무관하게 포함 검색, 「전체」는 이름·닉네임·이메일·휴대폰·전화 + 회원번호/고유ID 정확 일치이며 관리자 메모는 제외; LIKE 검색어의 `%`·`_` 는 글자 그대로 찾는다), 필터 12축(위 표), `date_filter`(all/week/month/custom)와 `start_date`/`end_date` 로 가입 기간 필터, `sort_by`/`sort_order` 로 정렬한다. 필터끼리는 AND, 다중선택 값끼리는 OR 이다. 날짜 경계는 시작일 0시 ~ 종료일 하루 끝까지다. 확장 필터(`ext_filters[]`)는 코어 조건을 다 건 뒤에 적용되어 결과를 더 좁히기만 한다. 응답은 `data.data[]`(항목별 순번 `number` + 요약 필드)와 `data.pagination`(페이지 정보)에 더해 `data.statistics`(통계)와 `data.abilities`(컬렉션 레벨 권한)를 함께 반환한다. 기본값은 `per_page=15`, `page=1`, `sort_by=created_at`, `sort_order=desc`, `date_filter=all` 이다.
 
 
 ### POST /api/admin/users
@@ -1095,6 +1113,7 @@ _단건 응답: `data` 객체의 필드._
 | language | string | `ko` | 사용자 언어 설정 (ko: 한국어, en: 영어) |
 | language_label | string | `한국어` | 언어 코드의 현지화 라벨 (user.language.{code} 번역) |
 | country | null | `null` | 국가 코드 (ISO 3166-1 alpha-2) |
+| country_name | string | `대한민국` | 국가 코드의 현지화 국가명 (country 값에서 파생, 없으면 null) |
 | status | string | `active` | 계정 상태 (active: 활성, inactive: 비활성, blocked: 차단, withdrawn: 탈퇴, dormant: 휴면) |
 | status_label | string | `활성` | 상태의 사람이 읽는 라벨 (상태 Enum label() 산물) |
 | status_variant | string | `success` | 상태 표시 색상/스타일 변형 키 (상태 Enum variant() 산물 — UI 배지용) |

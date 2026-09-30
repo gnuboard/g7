@@ -1,0 +1,29 @@
+feature: 목록 정렬 조작의 표시·요청·페이지 정합 (#492 브라우저 실측 회귀)
+
+description: |
+  "헤더에 표시된 정렬 기준" 과 "서버에 실제로 나간 정렬 기준" 이 어긋나는 결함, 정렬을 바꿔도
+  뒤쪽 페이지에 머무는 결함, 화면이 제공하는 정렬 옵션이 422 로 실패하는 결함을 화면 레벨에서 잠근다.
+  회원·알림 발송 이력·쿠폰·주문·메뉴 목록을 대상으로 한다.
+
+  목록 데이터소스는 progressive 라 표가 데이터보다 먼저 빈 상태 행으로 그려진다 — 진입 대기는
+  실제 데이터 행이 뜰 때까지 기다린다(#705 에서 회원 목록이 부가 데이터소스를 함께 부르며 드러남).
+
+test_files:
+  - tests/Playwright/specs/pagination/list-sort-and-page-reset.spec.ts
+
+axes:
+  case:
+    - list_sort_display_matches_request
+    - user_header_sort
+    - notification_sort_select
+    - coupon_header_no_client_sort
+    - coupon_sort_select_valid_period
+    - coupon_back_keeps_filter_controls
+    - order_sort_shipped_at
+    - menu_api_sort_only
+
+effects:
+  - sort_change_resets_page
+  - header_sort_targets_clicked_column
+  - screen_sort_options_all_succeed
+  - list_filter_controls_restored_on_back

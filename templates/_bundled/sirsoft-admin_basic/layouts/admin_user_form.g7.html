@@ -268,12 +268,12 @@
         <div data-ref="section_location_info" id="location_info" class="admin-card">
           <h3 class="card-title">$t:admin.users.form.sections.location_info</h3>
           <div class="row-stack">
-            <div data-ref="field_country" :data-if="false">
+            <div data-ref="field_country">
               <label class="form-label">$t:admin.users.form.fields.country</label>
               <searchable-dropdown options="{{_defines?.countryList?.map(c => ({ value: c.code, label: c.name })) ?? []}}" value="{{_local.form?.country ?? ''}}" triggerLabel="$t:admin.users.form.fields.country_select" searchPlaceholder="$t:admin.users.form.fields.country_search" noResultsText="$t:common.no_results" class="w-full">
                 <on type="change" event="onChange">
-                  <!-- 국가 선택. 이 칸은 지금 꺼져 있다(감싼 블록의 `:data-if="false"`) — 배선은
-                       살려 둔 채 노출만 막아 둔 자리라, 되살릴 때 여기를 다시 짤 필요는 없다. -->
+                  <!-- 국가 선택. 2026-03-31 에 노출을 막았다가 #705 에서 되살렸다 — 회원 목록의 국가 필터가
+                       이 값을 찾으므로 선택지는 목록 화면의 `countryList` 와 같아야 한다. -->
                   <set-state target="local" form.country="{{$args[0]}}"/>
                 </on>
               </searchable-dropdown>

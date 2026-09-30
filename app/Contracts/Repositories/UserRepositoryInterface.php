@@ -4,6 +4,7 @@ namespace App\Contracts\Repositories;
 
 use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Carbon;
 
@@ -61,9 +62,10 @@ interface UserRepositoryInterface
      * 필터링 및 페이지네이션이 적용된 사용자 목록을 조회합니다.
      *
      * @param  array  $filters  필터 조건 배열
+     * @param  array<int, callable(Builder, array): void>  $extensions  확장이 더한 쿼리 조건 클로저 목록
      * @return LengthAwarePaginator 페이지네이션된 사용자 목록
      */
-    public function getPaginatedUsers(array $filters = []): LengthAwarePaginator;
+    public function getPaginatedUsers(array $filters = [], array $extensions = []): LengthAwarePaginator;
 
     /**
      * 사용자 관련 통계 정보를 조회합니다.
