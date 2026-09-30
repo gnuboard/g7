@@ -234,6 +234,10 @@
 `ActionMenu`(설치/활성화/비활성화/삭제/업데이트) + `ExtensionBadge`. 설치·삭제·업데이트마다
 전용 확인 모달(`_modal_install`/`_modal_uninstall`/`_modal_update` 등)을 개별 파일로 분리 —
 한 모달에 여러 동작을 조건 분기로 몰아넣지 않습니다(모달마다 문구·부작용이 다릅니다).
+업데이트 모달의 성공 토스트는 서버 응답 문구(`response.message`)를 띄웁니다 — 업데이트할 것이 없었으면
+「업데이트할 내용이 없습니다」가 옵니다. 실패 분기는 409(같은 확장의 업데이트가 이미 진행 중 — 버튼 연속 클릭,
+Artisan 커맨드와 동시 실행)를 오류 상자 없이 안내 토스트로 보여 주고 진행 표시를 풉니다. 커맨드가 업데이트하는
+동안 409 를 받고도 진행 표시를 켜 두면 취소 버튼까지 잠겨 창을 닫을 수 없기 때문입니다.
 
 **에러 화면**(`errors/*.json`): `extends` 없는 독립 레이아웃. `Div`(중앙 정렬) 안에
 `Icon`+`H1`(코드)+`P`(메시지)+`Button`(홈 이동). 독립 레이아웃이므로 `Toast`/`Modal` 같은
@@ -850,6 +854,8 @@ _admin_base.g7.html
 ### 관련 문서
 
 활동 로그 목록은 `admin_activity_log_list.g7.html`, 본인인증 이력 목록은 `admin_identity_logs.g7.html`에서 필터와 상세 조회를 제공하며, 조각 `partials/admin_identity_logs/_partial_datagrid.g7.html`·`_partial_filter.g7.html`·`_modal_log_detail.g7.html`·`_modal_purge_confirm.g7.html`(기간 일괄 삭제 확인) 네 벌로 나뉩니다.
+
+활동 로그 목록의 행위자 칸(`partials/admin_activity_log_list/_partial_datagrid.g7.html`)은 `row.user.uuid` 유무로 회원 메뉴(회원 정보 보기·이 사람으로 검색)를 가릅니다. 회원이 없는 로그(시스템·CLI)도 API 가 `user` 객체(`uuid: null`, `name`: "시스템" / "시스템(CLI)")를 주므로, `user` 유무로 가르면 시스템 로그에 회원 메뉴가 그려집니다.
 
 - [sirsoft-admin_basic 컴포넌트](components.md)
 - [sirsoft-admin_basic 핸들러](handlers.md)

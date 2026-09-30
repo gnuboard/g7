@@ -73,7 +73,7 @@
 <!-- @intent START -->
 **회원가입 시 동의 수집**: 템플릿의 가입 폼이 `user-marketing-register.g7.html` 조각을 그 자리에
 받아 동의 체크박스를 그림 → 제출 → 코어 가입 흐름에서 `core.auth.register_validation_rules`
-필터가 동의 항목의 검증 규칙을 더함 → 가입 완료 후 `core.auth.register` 액션에서
+필터가 동의 항목의 검증 규칙을 더함 → 가입 완료 후 `core.auth.after_register` 액션에서(동의 값은 훅 인자 `registration_data` 에서 읽음)
 `MarketingConsentListener::afterRegister()` 가 동의 값을 `user_marketing_consents` 에 기록하고
 이력을 남깁니다. **코어 가입 코드는 이 플러그인을 알지 못합니다.**
 
@@ -168,7 +168,7 @@
 | PHPUnit | 6개 | `plugins/_bundled/sirsoft-marketing/tests` |
 | Vitest | 3개 | `vitest.config.ts` |
 | Playwright | 0개 | — |
-| 시나리오 매니페스트 | 1개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 3개 | `tests/scenarios` |
 
 기저 TestCase: `tests/PluginTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

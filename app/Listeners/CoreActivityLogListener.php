@@ -19,6 +19,7 @@ use App\Models\PrivacyManualRun;
 use App\Models\Schedule;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Auth;
 
 /**
  * 코어 서비스 훅 구독 리스너
@@ -65,9 +66,12 @@ class CoreActivityLogListener implements HookListenerInterface
             // ─── Auth ───
             'core.auth.after_login' => ['method' => 'handleAuthAfterLogin', 'priority' => 20],
             'core.auth.logout' => ['method' => 'handleAuthLogout', 'priority' => 20],
-            'core.auth.register' => ['method' => 'handleAuthRegister', 'priority' => 20],
-            'core.auth.forgot_password' => ['method' => 'handleAuthForgotPassword', 'priority' => 20],
-            'core.auth.reset_password' => ['method' => 'handleAuthResetPassword', 'priority' => 20],
+            // AuthService 가 실제로 발화하는 이름. 옛 이름(core.auth.register·forgot_password·reset_password)으로
+            // 구독해 세 사건의 로그가 한 번도 남지 않았다(#138 후속).
+            'core.auth.after_register' => ['method' => 'handleAuthRegister', 'priority' => 20],
+            // 두 번째 인자에 재설정 토큰이 든 URL 이 실린다 — 큐로 보내면 토큰이 작업 테이블에 한 부 더 저장되므로 동기 실행
+            'core.auth.after_reset_password_request' => ['method' => 'handleAuthForgotPassword', 'priority' => 20, 'sync' => true],
+            'core.auth.after_password_changed' => ['method' => 'handleAuthResetPassword', 'priority' => 20],
             'core.auth.record_consents' => ['method' => 'handleAuthRecordConsents', 'priority' => 20],
             'core.auth.login_failed' => ['method' => 'handleAuthLoginFailed', 'priority' => 20],
             'core.auth.account_locked' => ['method' => 'handleAuthAccountLocked', 'priority' => 20],
@@ -410,7 +414,10 @@ class CoreActivityLogListener implements HookListenerInterface
     /**
      * 비밀번호 재설정 로그 기록
      *
-     * @param  User  $user  재설정한 사용자
+     * 재설정 링크(비로그인)로 바꾸면 행위자는 회원 본인이고, 관리자가 회원 정보 수정에서 바꾸면
+     * 그 관리자다 — 관리자가 한 일을 회원이 한 것으로 적지 않는다.
+     *
+     * @param  User  $user  비밀번호가 바뀐 사용자
      * @return void
      */
     public function handleAuthResetPassword(User $user): void
@@ -418,7 +425,7 @@ class CoreActivityLogListener implements HookListenerInterface
         $this->logActivity('auth.reset_password', [
             'loggable' => $user,
             'description_key' => 'activity_log.description.auth_reset_password',
-            'user_id' => $user->id,
+            'user_id' => Auth::id() ?? $user->id,
         ]);
     }
 

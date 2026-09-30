@@ -1,0 +1,18 @@
+feature: 확장 생명주기와 SEO 캐시 정리
+
+description: |
+  SEO 캐시 정리는 설치·켜기·업데이트의 옛(deprecated) 훅에만 걸려 있고 큐 실행이라, 확장을 끄거나 지워도
+  검색 봇이 캐시에 남은 그 확장의 페이지를 계속 받았다(SeoMiddleware 는 캐시 적중 시 활성 여부를 보지 않음)
+  — #138 후속 전수 점검 7번. 정규 생명주기 훅 15개를 동기 실행으로 구독한다.
+
+axes:
+  lifecycle: [deactivate_uninstall_install_update, subscription_contract]
+
+effects:
+  - seo_cache_cleared_on_extension_lifecycle
+  - seo_cache_listener_is_sync
+  - seo_cache_failure_does_not_break_lifecycle
+
+test_files:
+  - tests/Feature/Seo/SeoExtensionLifecycleCacheTest.php
+  - tests/Unit/Seo/Listeners/SeoExtensionCacheListenerTest.php

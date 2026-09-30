@@ -40,9 +40,9 @@ UI 는 다른 화면에 끼워 넣는 조각 하나와 관리자 설정 화면 �
             │   설정(display_mode / popup_* / theme_color) 적용
             │   실패 → notifyPostcodeSdkFailure (통지 + 재시도)
             ▼
-        주소 선택 → filter_address_data (가공) → 필드 기록 → address.selected (통지)
+        주소 선택 → callbackAction 있으면 그 액션 실행, 없으면 targetFields 로 필드 기록
 
-[백엔드]  plugin.php 만 존재 — 설정 스키마 · 훅 선언 · 기본값
+[백엔드]  plugin.php 만 존재 — 설정 스키마 · 기본값 (서버 훅 없음)
 ```
 
 `postcodeSdk.ts` 가 이 플러그인의 **위험 관리 전부**를 담습니다 — 로드·재로드·준비 판정·실패

@@ -1,0 +1,15 @@
+feature: 확장 켜기·끄기 뒤 설정 캐시 재생성
+
+description: |
+  확장을 켜거나 끄면 config 캐시를 다시 굽는다(ExtensionConfigCacheListener). 인프라 부수효과라 동기 실행이다.
+  옛 구훅(core.*.activated)을 구독하던 것을 정규 훅(after_activate)으로 옮겼다 — 구훅은 deprecated(#138 후속).
+
+axes:
+  case: [subscription_contract, sync_contract]
+
+effects:
+  - config_cache_listener_subscribes_toggle_hooks
+  - config_cache_rebuild_runs_synchronously
+
+test_files:
+  - tests/Unit/Listeners/ExtensionConfigCacheListenerTest.php

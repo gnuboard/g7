@@ -206,7 +206,7 @@ php artisan hooks:cache                           # bootstrap/cache/hooks.php �
 php artisan hooks:clear                           # 캐시 삭제 (삭제 후 스캔 폴백 — 항상 안전)
 ```
 
-> 훅 캐시는 확장 install/update 및 코어 업데이트(`clearAllCaches` → `extension:update-autoload`) 시 자동 재생성됩니다. 코어 리스너 코드 배포 시에만 `hooks:cache` 수동 실행. 상세: [extension/hooks.md "정적 훅 매핑 캐시"](extension/hooks.md).
+> 훅 캐시는 확장 install/update 및 코어 업데이트(`clearAllCaches` → `extension:update-autoload`) 시 자동 재생성됩니다. 코어 리스너 코드 배포 시(구독 훅·`sync` 옵션만 바뀐 경우 포함)에는 `hooks:cache` 수동 실행 — stale 캐시는 오류 없이 이전 구독으로 동작합니다. 상세: [extension/hooks.md "정적 훅 매핑 캐시"](extension/hooks.md).
 
 ### 부트스트랩 리소스 정적 게시
 

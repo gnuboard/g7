@@ -7,6 +7,8 @@ use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\Test;
 use Plugins\Sirsoft\Totp\Listeners\TotpAdminResetActivityLogListener;
+use Plugins\Sirsoft\Totp\Models\TotpCredential;
+use Plugins\Sirsoft\Totp\Plugin;
 use Plugins\Sirsoft\Totp\Tests\PluginTestCase;
 
 /**
@@ -142,7 +144,94 @@ class TotpAdminResetActivityLogTest extends PluginTestCase
     {
         $this->assertContains(
             TotpAdminResetActivityLogListener::class,
-            (new \Plugins\Sirsoft\Totp\Plugin)->getHookListeners(),
+            (new Plugin)->getHookListeners(),
         );
+    }
+
+    /**
+     * 서버 셸의 `totp:reset` 강제 해제도 같은 감사 로그를 남기는지 확인합니다.
+     *
+     * 훅을 컨트롤러에서만 발화해 CLI 로 풀면 아무 기록도 남지 않았다(#138 후속 전수 점검 6번).
+     * CLI 는 요청 사용자·IP 가 없으므로 행위자·IP 는 비어 있고, 진입점이 CLI 로 표시된다.
+     *
+     * @effects cli_forced_reset_is_written_to_the_activity_log
+     *
+     * @return void 반환값 없음
+     */
+    #[Test]
+    public function the_cli_reset_command_is_written_to_the_activity_log(): void
+    {
+        $this->subscribeListener();
+
+        $target = User::factory()->create(['email' => 'totp-cli-reset@test.com']);
+        TotpCredential::create([
+            'user_id' => $target->id,
+            'secret' => 'JBSWY3DPEHPK3PXP',
+            'confirmed_at' => now(),
+        ]);
+
+        $this->artisan('totp:reset', ['email' => $target->email])->assertExitCode(0);
+
+        $log = DB::table('activity_logs')->where('action', 'credential.admin_reset')->latest('id')->first();
+
+        $this->assertNotNull($log, 'CLI 강제 해제가 활동 로그를 남기지 않았다');
+        $this->assertSame($target->id, (int) $log->loggable_id);
+
+        $properties = json_decode((string) $log->properties, true);
+        $this->assertNull($properties['actor_id'] ?? null);
+    }
+
+    /**
+     * 관리자 화면(DELETE)의 강제 해제가 행위자와 IP 를 담아 기록되는지 확인합니다.
+     *
+     * 훅 발화를 컨트롤러에서 Service 로 옮겼으므로 화면 경로가 그대로 기록되는지 다시 잰다.
+     *
+     * @effects admin_forced_reset_log_carries_actor_and_ip
+     *
+     * @return void 반환값 없음
+     */
+    #[Test]
+    public function the_admin_screen_reset_is_written_with_the_actor(): void
+    {
+        $this->subscribeListener();
+
+        $operator = $this->createCredentialOperatorUser();
+        $target = User::factory()->create();
+        TotpCredential::create([
+            'user_id' => $target->id,
+            'secret' => 'JBSWY3DPEHPK3PXP',
+            'confirmed_at' => now(),
+        ]);
+
+        $this->actingAs($operator)
+            ->deleteJson('/api/plugins/sirsoft-totp/admin/credentials/'.$target->uuid)
+            ->assertOk()
+            ->assertJsonPath('data.removed', true);
+
+        $log = DB::table('activity_logs')->where('action', 'credential.admin_reset')->latest('id')->first();
+
+        $this->assertNotNull($log);
+        $properties = json_decode((string) $log->properties, true);
+        $this->assertSame($operator->id, $properties['actor_id'] ?? null);
+        $this->assertNotNull($properties['ip_address'] ?? null);
+    }
+
+    /**
+     * 등록된 인증 앱이 없어 해제할 것이 없으면 기록하지 않는지 확인합니다.
+     *
+     * @effects admin_reset_hook_with_a_non_user_payload_logs_nothing
+     *
+     * @return void 반환값 없음
+     */
+    #[Test]
+    public function the_cli_reset_without_a_credential_writes_nothing(): void
+    {
+        $this->subscribeListener();
+
+        $target = User::factory()->create(['email' => 'totp-cli-none@test.com']);
+
+        $this->artisan('totp:reset', ['email' => $target->email])->assertExitCode(0);
+
+        $this->assertDatabaseMissing('activity_logs', ['action' => 'credential.admin_reset']);
     }
 }

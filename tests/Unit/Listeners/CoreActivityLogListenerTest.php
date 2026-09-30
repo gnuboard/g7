@@ -14,6 +14,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Mockery;
 use Mockery\MockInterface;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Psr\Log\LoggerInterface;
 use Tests\TestCase;
 
@@ -1434,8 +1435,6 @@ class CoreActivityLogListenerTest extends TestCase
     /**
      * 모듈 설치·활성화·비활성화 훅이 관리자 유형으로 모듈 식별자와 함께 기록되는지 확인합니다.
      *
-     * @dataProvider moduleInstallActivateDeactivateProvider
-     *
      * @scenario request_area=admin
      *
      * @effects extension_lifecycle_hooks_log_identifier
@@ -1447,6 +1446,7 @@ class CoreActivityLogListenerTest extends TestCase
      */
     // @scenario case=module_handlers
     // @effects module_lifecycle_is_logged
+    #[DataProvider('moduleInstallActivateDeactivateProvider')]
     public function test_module_lifecycle_hooks_log_activity(
         string $method,
         string $expectedAction,
@@ -1600,8 +1600,6 @@ class CoreActivityLogListenerTest extends TestCase
     /**
      * 플러그인 설치·활성화·비활성화 훅이 관리자 유형으로 플러그인 식별자와 함께 기록되는지 확인합니다.
      *
-     * @dataProvider pluginInstallActivateDeactivateProvider
-     *
      * @scenario request_area=admin
      *
      * @effects extension_lifecycle_hooks_log_identifier
@@ -1613,6 +1611,7 @@ class CoreActivityLogListenerTest extends TestCase
      */
     // @scenario case=plugin_handlers
     // @effects plugin_lifecycle_is_logged
+    #[DataProvider('pluginInstallActivateDeactivateProvider')]
     public function test_plugin_lifecycle_hooks_log_activity(
         string $method,
         string $expectedAction,
@@ -2192,8 +2191,6 @@ class CoreActivityLogListenerTest extends TestCase
      *
      * action·log_type·설명 키 값 자체는 핸들러별 개별 테스트가 검증하고, 여기서는 매핑의 정확성만 본다.
      *
-     * @dataProvider allHookActionsProvider
-     *
      * @effects hook_to_handler_mapping_matches_catalog
      *
      * @param  string  $hookName  훅 이름
@@ -2205,6 +2202,7 @@ class CoreActivityLogListenerTest extends TestCase
      */
     // @scenario case=subscription_contract
     // @effects hook_to_handler_mapping_matches_the_action_table
+    #[DataProvider('allHookActionsProvider')]
     public function test_hook_action_mapping_is_correct(string $hookName, string $method, string $expectedAction, ActivityLogType $expectedLogType, string $expectedDescriptionKey): void
     {
         // 이 테스트는 getSubscribedHooks()의 모든 로깅 훅이
@@ -2241,9 +2239,9 @@ class CoreActivityLogListenerTest extends TestCase
             // Auth
             ['core.auth.after_login', 'handleAuthAfterLogin', 'auth.login', ActivityLogType::Admin, 'activity_log.description.auth_login'],
             ['core.auth.logout', 'handleAuthLogout', 'auth.logout', ActivityLogType::Admin, 'activity_log.description.auth_logout'],
-            ['core.auth.register', 'handleAuthRegister', 'auth.register', ActivityLogType::User, 'activity_log.description.auth_register'],
-            ['core.auth.forgot_password', 'handleAuthForgotPassword', 'auth.forgot_password', ActivityLogType::User, 'activity_log.description.auth_forgot_password'],
-            ['core.auth.reset_password', 'handleAuthResetPassword', 'auth.reset_password', ActivityLogType::User, 'activity_log.description.auth_reset_password'],
+            ['core.auth.after_register', 'handleAuthRegister', 'auth.register', ActivityLogType::User, 'activity_log.description.auth_register'],
+            ['core.auth.after_reset_password_request', 'handleAuthForgotPassword', 'auth.forgot_password', ActivityLogType::User, 'activity_log.description.auth_forgot_password'],
+            ['core.auth.after_password_changed', 'handleAuthResetPassword', 'auth.reset_password', ActivityLogType::User, 'activity_log.description.auth_reset_password'],
             ['core.auth.record_consents', 'handleAuthRecordConsents', 'auth.record_consents', ActivityLogType::User, 'activity_log.description.auth_record_consents'],
 
             // Role

@@ -66,6 +66,7 @@ return [
     'deactivate_warning' => 'このプラグインに依存する有効化された拡張があります。',
     'deactivate_warning_extended' => 'このプラグインに依存する有効化された拡張(テンプレート、モジュール、プラグイン)があります。',
     'errors' => [
+        'uninstall_blocked_by_dependents' => 'このプラグインに依存する拡張が有効なため削除できません。先に無効化または削除してください: :extensions',
         'force_update_no_source' => ':plugin を強制アップデートするソースが見つかりません。バンドルと GitHub URL の両方がありません。',
         'downgrade_blocked' => 'ダウングレードがブロックされました (:from → :to)。意図的なダウングレードは --force オプションを使用してください。',
         'invalid_permission_structure' => 'プラグイン ":identifier" の権限構造が正しくありません: :reason',

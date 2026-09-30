@@ -32,6 +32,7 @@ axes:
     - update_super_admin_allowed
     - create_extra_grant_blocked
     - create_extra_grant_by_default_acl_holder_allowed
+    - create_without_default_settings_board_roles_allowed
     - bulk_apply_self_grant_blocked
     - bulk_apply_super_admin_allowed
     - report_permission_self_grant_blocked
@@ -72,6 +73,7 @@ effects:
   - unchanged_acl_resubmission_allowed
   - holder_can_grant_held_board_permission
   - default_acl_holder_can_add_roles_on_create
+  - board_own_roles_attach_without_default_settings
   - unchanged_member_resubmission_allowed
   - existing_board_manager_can_assign_members
   - default_acl_holder_can_name_manager_on_create

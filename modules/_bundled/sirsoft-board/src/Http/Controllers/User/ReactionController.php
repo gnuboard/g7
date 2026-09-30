@@ -74,7 +74,7 @@ class ReactionController extends AuthBaseController
         } catch (PostNotFoundException $e) {
             return $this->notFound('sirsoft-board::messages.post.not_found');
         } catch (ReactionNotAllowedException $e) {
-            return $this->error($e->getMessage(), 422, ['code' => 'reaction_not_allowed']);
+            return $this->error($e->getMessageKey(), 422, ['code' => 'reaction_not_allowed']);
         } catch (\Exception $e) {
             return $this->error('sirsoft-board::messages.reaction.failed', 500, $e->getMessage());
         }
@@ -84,7 +84,7 @@ class ReactionController extends AuthBaseController
      * 댓글에 반응합니다 (등록/전환/해제 통합).
      *
      * 게시글 반응과 같은 규약이며, 게시판이 use_reaction 과 use_comment_reaction 을
-     * 모두 켰을 때만 허용됩니다 (PO 결정 R9).
+     * 모두 켰을 때만 허용됩니다 (설계 결정 R9).
      * ReactPostRequest 는 reaction_type_id 만 검증하므로 그대로 재사용합니다.
      *
      * @param  ReactPostRequest  $request  반응 요청 (reaction_type_id 검증)
@@ -124,7 +124,7 @@ class ReactionController extends AuthBaseController
         } catch (PostNotFoundException $e) {
             return $this->notFound('sirsoft-board::messages.post.not_found');
         } catch (ReactionNotAllowedException $e) {
-            return $this->error($e->getMessage(), 422, ['code' => 'reaction_not_allowed']);
+            return $this->error($e->getMessageKey(), 422, ['code' => 'reaction_not_allowed']);
         } catch (\Exception $e) {
             return $this->error('sirsoft-board::messages.reaction.failed', 500, $e->getMessage());
         }
@@ -166,7 +166,7 @@ class ReactionController extends AuthBaseController
     /**
      * 본인 반응 1건을 해제합니다 (마이페이지).
      *
-     * 반응이 꺼진 게시판이라도 해제는 허용한다 (PO 결정 R11).
+     * 반응이 꺼진 게시판이라도 해제는 허용한다 (설계 결정 R11).
      *
      * @param  int  $id  반응 ID
      * @return JsonResponse 해제 결과

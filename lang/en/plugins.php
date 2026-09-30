@@ -87,6 +87,7 @@ return [
 
     // Error messages
     'errors' => [
+        'uninstall_blocked_by_dependents' => 'This plugin cannot be uninstalled while extensions that depend on it are active. Deactivate or uninstall them first: :extensions',
         'force_update_no_source' => 'Cannot force update :plugin. Neither bundle nor GitHub URL is available.',
         'downgrade_blocked' => 'Downgrade blocked (:from → :to). Use --force to allow intentional downgrades.',
         'invalid_permission_structure' => 'Invalid permission structure for plugin ":identifier": :reason',

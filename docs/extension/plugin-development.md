@@ -612,16 +612,15 @@ public function getHooks(): array
 {
     return [
         [
-            'name' => 'sirsoft-daum_postcode.address.selected',
+            'name' => 'gnuboard7-hello_plugin.log.written',
             'type' => 'action',
             'description' => [
-                'ko' => '주소 선택 완료 시 실행되는 액션 훅',
-                'en' => 'Action hook executed when address selection is complete',
+                'ko' => 'Hello 플러그인이 로그 파일에 기록을 남긴 직후 실행되는 액션 훅',
+                'en' => 'Action hook executed right after Hello Plugin writes a log entry',
             ],
             'parameters' => [
-                'zonecode' => 'string - 우편번호',
-                'address' => 'string - 기본 주소',
-                'roadAddress' => 'string - 도로명 주소',
+                'message' => 'string - 기록된 메시지',
+                'context' => 'array - 기록 시점의 부가 컨텍스트',
             ],
         ],
     ];

@@ -1,0 +1,29 @@
+feature: 마케팅 동의 리스너 — 코어 회원·가입 훅 배선
+
+description: |
+  마케팅 플러그인은 코어 회원 생성·수정·삭제와 가입 흐름의 훅을 구독해 동의 항목을 검증 규칙에 더하고,
+  동의 값을 저장하고, 회원 API 응답에 병합한다.
+
+  핵심 동작:
+    - 가입 완료는 코어가 발화하는 core.auth.after_register 로 받는다. 옛 이름 core.auth.register 를
+      구독해 가입 시 동의가 한 번도 저장되지 않던 결함을 고쳤다(#138 후속 전수 점검 1번).
+    - 가입 동의 값은 요청이 아니라 훅 인자 registration_data(검증된 가입 데이터)에서 읽는다 — 이 액션은
+      큐 워커에서 돌 수 있고 워커의 request() 는 비어 있다.
+    - 필터 훅 구독에는 type=filter, 액션 훅 구독에는 type 키가 없다.
+
+axes:
+  case: [subscription_contract, validation_rules, update_filter, after_create, after_update, after_register, before_delete, resource_filter]
+
+effects:
+  - subscribes_published_hook_names
+  - filter_hooks_declare_filter_type
+  - action_hooks_have_no_filter_type
+  - agree_fields_added_to_rules
+  - marketing_fields_stripped_from_update_data
+  - consent_saved_from_hook_args
+  - register_consent_saved_without_request
+  - consent_deleted_before_user_delete
+  - consent_merged_into_user_resource
+
+test_files:
+  - plugins/_bundled/sirsoft-marketing/tests/Unit/Listeners/MarketingConsentListenerTest.php

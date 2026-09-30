@@ -398,6 +398,40 @@ class HookManager implements HookManagerInterface
     }
 
     /**
+     * 표준 이름과 구 이름을 함께 발행하는 Action 실행
+     *
+     * 이미 공개된 액션 훅의 이름을 옮겨야 할 때 쓴다(공개 훅 이름은 마이너 버전에서 바꾸지 않는다 —
+     * 새 이름을 더하고 옛 이름을 함께 발화하며, 제거는 메이저 버전에서). 표준 이름을 먼저 발화하고,
+     * 구 이름에 구독자가 있을 때만 같은 인자로 한 번 더 발화하며 개명 경고를 한 번 남긴다.
+     *
+     * 공개 배포본에서 한 번도 발화된 적 없는 옛 이름은 이 헬퍼로 되살리지 않는다 — 한 번도 돈 적 없는
+     * 서드파티 코드가 갑자기 돌게 된다(data/deprecated.php 의 published=false).
+     *
+     * @param  string  $hookName  표준 훅 이름
+     * @param  string  $legacyHookName  구 훅 이름 (하위호환용)
+     * @param  mixed  ...$args  훅 인자
+     * @return void
+     */
+    public static function doActionWithLegacyName(string $hookName, string $legacyHookName, ...$args): void
+    {
+        static::doAction($hookName, ...$args);
+
+        if (empty(self::$hooks[$legacyHookName])) {
+            return;
+        }
+
+        if (! isset(self::$legacyHookNoticeShown[$legacyHookName])) {
+            self::$legacyHookNoticeShown[$legacyHookName] = true;
+            Log::warning('구 훅 이름 사용 중 — 표준 이름으로 옮겨 주세요', [
+                'legacy' => $legacyHookName,
+                'standard' => $hookName,
+            ]);
+        }
+
+        static::doAction($legacyHookName, ...$args);
+    }
+
+    /**
      * 표준 이름과 구 이름을 함께 발행하는 Filter 실행
      *
      * 이름이 표준(`core.{대상}.{동작}_validation_rules`)과 어긋난 채 이미 공개된 훅을 표준 이름으로

@@ -5,30 +5,19 @@
 ## 발행 훅
 
 <!-- @generated:hooks-published START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-발행 훅 2종 / 호출 지점 0곳.
-
-| 훅 이름 | 유형 | 설명 | 발행 위치 |
-|---|---|---|---|
-| `sirsoft-daum_postcode.address.selected` | action | 주소 선택 완료 시 실행되는 액션 훅 | 선언 (호출 위치 미확인) |
-| `sirsoft-daum_postcode.filter_address_data` | filter | 선택된 주소 데이터를 필터링하는 훅 | 선언 (호출 위치 미확인) |
+_이 확장은 훅을 발행하지 않습니다._
 <!-- @generated:hooks-published END -->
 
 <!-- @intent START -->
-2종이며 **선택된 주소를 가로채는 전/후 한 쌍**입니다.
+서버 훅은 없습니다. 종전에 선언했던 `address.selected`·`filter_address_data` 는 발화처가 한 번도 없어
+(프론트엔드 엔진에 확장 훅 체계가 없다) 7.1.0 에서 선언에서 뺐습니다.
 
-| 훅 | 시점 | 파라미터 |
+선택된 주소에 끼어드는 자리는 `openPostcode` 핸들러 매개변수입니다.
+
+| 자리 | 시점 | 내용 |
 |---|---|---|
-| `filter_address_data` | 필드에 쓰기 **전** | `data`(주소 배열) → 가공된 배열 반환 |
-| `address.selected` | 확정 **후** | `zonecode` · `address` · `roadAddress` · `jibunAddress` · `buildingName` |
-
-앞의 것은 "무엇을 어느 칸에 넣을 것인가" 를 사이트가 정하는 자리입니다 — 도로명과 지번 중
-어느 것을 기본 주소로 쓸지, 건물명을 상세주소 칸에 미리 채울지는 사이트마다 다르므로 코드에
-고정하지 않습니다. 뒤의 것은 "주소가 정해졌으니 이제 무엇을 할 것인가" 로, 배송비 재계산이나
-배송 가능 지역 판정을 붙이는 자리입니다.
-
-발행 위치가 "선언(호출 위치 미확인)" 인 것은 실제 발행이 **프론트 핸들러**에서 이루어져 PHP
-소스 스캔에 잡히지 않기 때문입니다. `getHooks()` 에 파라미터까지 선언되어 있으므로 계약은
-그 선언이 SSoT 입니다.
+| `targetFields` (없으면 설정 `target_fields`) | 확정 시 (`callbackAction` 이 없을 때) | 우편번호(`zipcode`)·주소(`address`, 도로명 우선)·시도(`region`)·시군구(`city`)를 쓸 폼 경로 |
+| `callbackAction` | 확정 시 — 기본 필드 기록 **대신** | 주소 값을 받아 실행할 레이아웃 액션(필드 기록도 이 액션이 맡음) — 배송비 재계산·배송 가능 지역 판정 등 |
 
 구독 훅은 없습니다 — 이 플러그인은 다른 확장의 흐름에 개입하지 않습니다.
 <!-- @intent END -->

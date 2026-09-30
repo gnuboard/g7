@@ -68,7 +68,7 @@ class PostScrapController extends AdminBaseController
                 (new AdminPostScrapCollection($scraps))->withPermissions()
             );
         } catch (Exception $e) {
-            return $this->error('sirsoft-board::messages.scrap.admin.retrieve_failed');
+            return $this->error('sirsoft-board::messages.scrap.admin.retrieve_failed', 500);
         }
     }
 
@@ -87,7 +87,7 @@ class PostScrapController extends AdminBaseController
 
             return $this->success('sirsoft-board::messages.scrap.admin.removed');
         } catch (Exception $e) {
-            return $this->error('sirsoft-board::messages.scrap.delete_failed');
+            return $this->error('sirsoft-board::messages.scrap.delete_failed', 500);
         }
     }
 
@@ -110,7 +110,7 @@ class PostScrapController extends AdminBaseController
                 ['count' => $count]
             );
         } catch (Exception $e) {
-            return $this->error('sirsoft-board::messages.scrap.admin.bulk_delete_failed');
+            return $this->error('sirsoft-board::messages.scrap.admin.bulk_delete_failed', 500);
         }
     }
 

@@ -32,6 +32,7 @@ G7은 **동적 로딩** 기반의 확장 시스템을 제공합니다:
 | 문서 | 설명 |
 |------|------|
 | [hooks.md](hooks.md) | Action/Filter Hook, 리스너 구현, 우선순위 |
+| [hook-catalog.md](hook-catalog.md) | 공개 훅 목록 — 코어·번들 확장이 발화하는 훅 이름·유형·인자 개수 (자동 생성, `hooks:catalog`) |
 | [analytics-extension-points.md](analytics-extension-points.md) | 방문자 통계에 전환·커스텀 차원 선언, 판정·개인정보·출력 훅 |
 
 ### 모듈 개발

@@ -18,6 +18,14 @@ use Illuminate\Validation\ValidationException;
 
 class MenuService
 {
+    /**
+     * 메뉴 서비스를 생성합니다.
+     *
+     * @param  MenuRepositoryInterface  $menuRepository  메뉴 저장소
+     * @param  RoleRepositoryInterface  $roleRepository  역할 저장소
+     * @param  ModuleService  $moduleService  모듈 서비스
+     * @param  PluginService  $pluginService  플러그인 서비스
+     */
     public function __construct(
         private MenuRepositoryInterface $menuRepository,
         private RoleRepositoryInterface $roleRepository,
@@ -223,8 +231,11 @@ class MenuService
 
         $result = $this->menuRepository->updateOrder($menuOrders);
 
-        // 훅: 메뉴 순서 변경 후
+        // 훅: 메뉴 순서 변경 후 — after_update_order 는 계층 경로(updateMenuOrderWithHierarchy)에서 계층 배열을
+        // 싣는데 여기서는 ID 목록을 실어 모양이 달랐다. 서드파티 호환을 위해 기존 발화는 그대로 두고(이 자리의
+        // 발화는 deprecated), ID 목록 모양을 이름에 드러낸 after_update_order_flat 을 나란히 발화한다(#138 후속).
         HookManager::doAction('core.menu.after_update_order', $menuOrders);
+        HookManager::doAction('core.menu.after_update_order_flat', array_values($menuOrders));
 
         return $result;
     }
@@ -260,6 +271,7 @@ class MenuService
      * 배열이라 일부만 반영하면 나머지와 어긋난 계층이 저장된다.
      *
      * @param  array  $orderData  순서 데이터 (parent_menus / child_menus / moved_items)
+     * @return void 반환값 없음
      *
      * @throws AuthorizationException 스코프 밖 메뉴가 하나라도 포함된 경우
      */
@@ -294,6 +306,7 @@ class MenuService
      * 판정부다. 한쪽만 검사하면 형제 경로가 우회로가 되므로 판정을 한 곳에 둔다.
      *
      * @param  array<int>  $ids  검사 대상 메뉴 ID 목록
+     * @return void 반환값 없음
      *
      * @throws AuthorizationException 스코프 밖 메뉴가 하나라도 포함된 경우
      */
@@ -417,6 +430,7 @@ class MenuService
      *
      * @param  Menu  $menu  메뉴 모델
      * @param  array  $roleIds  역할 ID 배열
+     * @return void 반환값 없음
      */
     private function syncMenuRoles(Menu $menu, array $roleIds): void
     {

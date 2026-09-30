@@ -893,6 +893,7 @@ effects:
   - restore_listener_subscribes_to_plugin_updated_as_sync_action
   - plugin_declares_the_layout_extension_restore_listener
   - restore_listener_ignores_other_plugins_updates
+  - restore_listener_skips_when_update_had_nothing_to_apply
   # 소스 정형 — 직렬화기의 inline 규칙을 「텍스트 앞뒤 공백이 의미를 가질 때」로 좁혔다.
   # 종전에는 글자가 있으면 서브트리 전체를 한 줄로 찍어 액션을 실은 버튼 하나가 1,800자를 넘었다.
   # 무손실 근거는 `normalizeText` 가 텍스트 앞뒤의 개행+공백만 걷어낸다는 것이고, 코퍼스 실측으로
@@ -1095,6 +1096,7 @@ test_files:
   - plugins/_bundled/sirsoft-pay_nhnkcp/tests/Unit/Listeners/RestoreLayoutExtensionsAfterUpdateListenerTest.php
   - plugins/_bundled/sirsoft-pay_nicepayments/tests/Unit/Listeners/EnsureAdminOrderLayoutExtensionsListenerTest.php
   - plugins/_bundled/sirsoft-pay_nicepayments/tests/Unit/Listeners/RestoreLayoutExtensionsAfterUpdateListenerTest.php
+  - plugins/_bundled/sirsoft-tosspayments/tests/Unit/Listeners/RestoreLayoutExtensionsAfterUpdateListenerTest.php
   # 39차 — 마킹 모집단을 저장소 전량으로 반전하자 드러난 미등재 3건.
   # 셋 다 이 트랙의 축을 단언하면서 `@scenario`/`@effects` 를 달아 놓았는데 어느 매니페스트에도
   # 없어, 커버리지 집계에 한 번도 들어간 적이 없었다(게이트 필터도 함께 넓혔다).

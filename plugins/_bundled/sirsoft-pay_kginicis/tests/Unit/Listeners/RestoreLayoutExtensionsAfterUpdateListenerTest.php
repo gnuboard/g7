@@ -21,6 +21,8 @@ class RestoreLayoutExtensionsAfterUpdateListenerTest extends PluginTestCase
      * @scenario compile_unit=install,source_health=valid
      *
      * @effects restore_listener_subscribes_to_plugin_updated_as_sync_action
+     *
+     * @return void 반환값 없음
      */
     public function test_subscribes_to_plugin_updated_as_sync_action(): void
     {
@@ -28,13 +30,13 @@ class RestoreLayoutExtensionsAfterUpdateListenerTest extends PluginTestCase
 
         $this->assertSame(
             'action',
-            $hooks['core.plugins.updated']['type'] ?? null
+            $hooks['core.plugins.after_update']['type'] ?? null
         );
         $this->assertSame(
             'restoreCurrentExtensionsAfterUpdate',
-            $hooks['core.plugins.updated']['method'] ?? null
+            $hooks['core.plugins.after_update']['method'] ?? null
         );
-        $this->assertTrue($hooks['core.plugins.updated']['sync'] ?? false);
+        $this->assertTrue($hooks['core.plugins.after_update']['sync'] ?? false);
     }
 
     /**
@@ -43,6 +45,8 @@ class RestoreLayoutExtensionsAfterUpdateListenerTest extends PluginTestCase
      * @scenario compile_unit=install,source_health=valid
      *
      * @effects plugin_declares_the_layout_extension_restore_listener
+     *
+     * @return void 반환값 없음
      */
     public function test_plugin_registers_layout_extension_restore_listener(): void
     {
@@ -58,6 +62,8 @@ class RestoreLayoutExtensionsAfterUpdateListenerTest extends PluginTestCase
      * @scenario compile_unit=install,source_health=valid
      *
      * @effects overlay_extensions_are_restored_after_plugin_update
+     *
+     * @return void 반환값 없음
      */
     public function test_restores_soft_deleted_current_extension_for_prefixed_module_layout(): void
     {
@@ -135,6 +141,8 @@ class RestoreLayoutExtensionsAfterUpdateListenerTest extends PluginTestCase
      * @scenario compile_unit=install,source_health=valid
      *
      * @effects restored_overlay_uses_the_file_derived_fragment_key
+     *
+     * @return void 반환값 없음
      */
     public function test_restore_creates_row_with_file_derived_fragment_key(): void
     {
@@ -175,6 +183,8 @@ class RestoreLayoutExtensionsAfterUpdateListenerTest extends PluginTestCase
      * @scenario compile_unit=install,source_health=valid
      *
      * @effects restore_listener_ignores_other_plugins_updates
+     *
+     * @return void 반환값 없음
      */
     public function test_ignores_other_plugins(): void
     {
@@ -197,6 +207,40 @@ class RestoreLayoutExtensionsAfterUpdateListenerTest extends PluginTestCase
 
         (new RestoreLayoutExtensionsAfterUpdateListener)
             ->restoreCurrentExtensionsAfterUpdate('sirsoft-pay_nhnkcp');
+
+        $this->assertTrue(LayoutExtension::withTrashed()->findOrFail($extension->id)->trashed());
+    }
+
+    /**
+     * 업데이트할 것이 없던 호출(success=false)에는 복원하지 않는다 — 정규 완료 훅은 그때도 발화한다.
+     *
+     * @scenario compile_unit=install,source_health=valid
+     *
+     * @effects restore_listener_skips_when_update_had_nothing_to_apply
+     *
+     * @return void 반환값 없음
+     */
+    public function test_skips_when_update_had_nothing_to_apply(): void
+    {
+        $template = Template::factory()->create(['type' => 'admin']);
+
+        TemplateLayout::factory()->create([
+            'template_id' => $template->id,
+            'name' => 'sirsoft-ecommerce.admin_ecommerce_order_list',
+            'source_type' => LayoutSourceType::Module,
+            'source_identifier' => 'sirsoft-ecommerce',
+            'content' => ['layout_name' => 'admin_ecommerce_order_list'],
+        ]);
+
+        $extension = LayoutExtension::factory()
+            ->overlay()
+            ->fromPlugin('sirsoft-pay_kginicis')
+            ->targeting('admin_ecommerce_order_list')
+            ->create(['template_id' => $template->id]);
+        $extension->delete();
+
+        (new RestoreLayoutExtensionsAfterUpdateListener)
+            ->restoreCurrentExtensionsAfterUpdate('sirsoft-pay_kginicis', ['success' => false]);
 
         $this->assertTrue(LayoutExtension::withTrashed()->findOrFail($extension->id)->trashed());
     }

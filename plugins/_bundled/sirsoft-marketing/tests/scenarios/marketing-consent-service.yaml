@@ -1,0 +1,22 @@
+feature: 마케팅 동의 서비스 — 저장·이력·채널·필터
+
+description: |
+  회원의 마케팅 동의 항목을 항목별 행으로 저장하고 이력을 남긴다. 전체 동의(marketing_consent)와 채널 동의는
+  서로 맞춰진다. 일괄 저장 전에 sirsoft-marketing.filter_consent_data 필터로 다른 확장이 데이터를 가공할 수 있다
+  (선언만 있고 발화처가 없던 것을 채웠다, #138 후속). 채널 목록·라벨은 플러그인 설정과 언어팩을 따른다.
+
+axes:
+  case: [read, update_one, update_bulk, history, delete, channels]
+
+effects:
+  - consent_records_read_per_user
+  - consent_state_saved_with_history
+  - master_and_channel_consents_stay_consistent
+  - bulk_consent_data_passes_filter_hook
+  - consent_history_listed_newest_first
+  - consent_data_deleted_with_user
+  - channel_list_follows_settings
+  - channel_labels_resolve_by_locale
+
+test_files:
+  - plugins/_bundled/sirsoft-marketing/tests/Unit/Services/MarketingConsentServiceTest.php

@@ -850,10 +850,11 @@
                                             }
                                         },
                                         {
+                                            "comment": "서버 문구를 그대로 띄운다 — 업데이트할 것이 없었으면 「업데이트할 내용이 없습니다」가 온다",
                                             "handler": "toast",
                                             "params": {
                                                 "type": "success",
-                                                "message": "$t:admin.modules.update_success"
+                                                "message": "{{response?.message ?? '$t:admin.modules.update_success'}}"
                                             }
                                         },
                                         {
@@ -868,7 +869,25 @@
                                     ],
                                     "onError": [
                                         {
+                                            "comment": "409 = 같은 모듈의 업데이트가 이미 진행 중(더블클릭·CLI 동시 실행). 실패가 아니므로 오류 상자를 띄우지 않고\n                     안내만 한다. 버튼은 풀어 둔다 — CLI 가 돌리는 중이면 이 창의 요청은 끝나지 않으므로 잠가 두면 창을 닫을 수 없다.",
                                             "handler": "setState",
+                                            "if": "{{error.status === 409}}",
+                                            "params": {
+                                                "target": "global",
+                                                "isModuleUpdating": false
+                                            }
+                                        },
+                                        {
+                                            "handler": "toast",
+                                            "if": "{{error.status === 409}}",
+                                            "params": {
+                                                "type": "info",
+                                                "message": "{{error.message}}"
+                                            }
+                                        },
+                                        {
+                                            "handler": "setState",
+                                            "if": "{{error.status !== 409}}",
                                             "params": {
                                                 "target": "global",
                                                 "isModuleUpdating": false,
@@ -877,6 +896,7 @@
                                         },
                                         {
                                             "handler": "toast",
+                                            "if": "{{error.status !== 409}}",
                                             "params": {
                                                 "type": "error",
                                                 "message": "{{error.message}}"

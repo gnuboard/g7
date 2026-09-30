@@ -76,10 +76,13 @@
     </column>
     <column field="actor" header="$t:admin.activity_log.table.column.actor" width="150px">
       <cell>
-        <span data-if="{{!row.user}}" class="text-gray-500 dark:text-gray-400">-</span>
-        <action-menu data-if="{{!!row.user}}" position="right">
+        <!-- 회원이 없는 로그(시스템·CLI)도 API 는 user 객체를 준다({uuid: null, name: "시스템(CLI)" 등}).
+          그래서 user 유무가 아니라 uuid 유무로 가른다 — user 유무로 가르면 시스템 로그에도 회원 메뉴가
+          그려지고 「회원 정보 보기」가 /admin/users/undefined 로 이동한다. -->
+        <span data-if="{{!row.user?.uuid}}" class="text-gray-500 dark:text-gray-400">{{row.actor_name ?? row.user?.name ?? '-'}}</span>
+        <action-menu data-if="{{!!row.user?.uuid}}" position="right">
           <prop name="items">
-            <item id="view_member" label="$t:admin.activity_log.action.view_member" iconName="user" if="{{!!row.user}}"/>
+            <item id="view_member" label="$t:admin.activity_log.action.view_member" iconName="user" if="{{!!row.user?.uuid}}"/>
             <item id="search_by_actor" label="$t:admin.activity_log.action.search_by_actor" iconName="search"/>
           </prop>
           <on event="onItemClick">

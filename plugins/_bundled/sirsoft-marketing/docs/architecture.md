@@ -32,7 +32,7 @@
 [주입]  레이아웃 조각 5개 (가입 폼 / 회원 상세 / 회원 수정 / 마이페이지 보기·수정)
             │
 [진입]  코어 회원·가입 흐름
-            │  core.auth.register(+validation_rules)
+            │  core.auth.after_register(+register_validation_rules)
             │  core.user.{after_create, after_update, before_delete}
             │  core.user.{create,update,update_profile}_validation_rules
             │  core.user.{filter_update_data, filter_resource_data}

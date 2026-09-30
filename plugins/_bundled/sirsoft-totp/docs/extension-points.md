@@ -9,7 +9,7 @@
 
 | 훅 이름 | 유형 | 설명 | 발행 위치 |
 |---|---|---|---|
-| `sirsoft-totp.credential.admin_reset` | action | — | `src/Http/Controllers/TotpAdminCredentialController.php:54` |
+| `sirsoft-totp.credential.admin_reset` | action | — | `src/Services/TotpEnrollmentService.php:207` |
 <!-- @generated:hooks-published END -->
 
 <!-- @intent START -->
@@ -132,7 +132,7 @@ database-guide 규정입니다. 자격증명 파기 경로를 새로 만든다�
 
 관리자 인증 앱 등록 화면은 코어 「플러그인 관리 → 설정」 자동 경로
 (`/admin/plugins/sirsoft-totp/settings`)로 진입합니다 — 이 화면은 플러그인 환경설정이지
-별도 메뉴로 세울 사항이 아니라는 PO 확정(2026-09-18)에 따라 전용 메뉴를 두지 않습니다.
+별도 메뉴로 세울 사항이 아니라는 설계 확정(2026-09-18)에 따라 전용 메뉴를 두지 않습니다.
 레이아웃 파일명이 `resources/layouts/admin/plugin_settings.g7.html` 이면 코어
 `AbstractPlugin::getSettingsLayout()` 이 그대로 해석하므로 `routes.json` 도 필요 없습니다
 (형제 13종이 모두 이 규약을 씁니다). 관리자 템플릿의 기존 레이아웃을 고치지 않으므로,

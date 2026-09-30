@@ -45,7 +45,7 @@
 | 핸들러 | 하는 일 |
 |---|---|
 | `setFieldReadOnly` | 지정된 주소 필드를 읽기 전용으로 전환. **SDK 확보를 먼저 확인**하고 확보하지 못했으면 편집 가능한 채로 둡니다. 해제(`readOnly: false`)는 확인 없이 즉시 수행 |
-| `openPostcode` | 설정대로 검색 창을 열고, 선택 결과를 `filter_address_data` → 필드 기록 → `address.selected` 순으로 처리. 실패 시 통지 + 재시도 |
+| `openPostcode` | 설정대로 검색 창을 열고, 선택 결과를 `callbackAction` 이 있으면 그 액션에 넘기고, 없으면 `targetFields`(없으면 설정 `target_fields`) 필드에 기록. 실패 시 통지 + 재시도 |
 
 두 핸들러 모두 SDK 접근을 `postcodeSdk.ts` 한 모듈로 모읍니다 — 로드·재로드·준비 판정·실패
 통지·통지 해제가 거기 있습니다. 새 핸들러를 추가할 때도 SDK 접근은 반드시 이 모듈을 거쳐야

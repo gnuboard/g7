@@ -5,9 +5,9 @@ namespace Plugins\Sirsoft\Marketing\Services;
 use App\Extension\HookManager;
 use App\Services\PluginSettingsService;
 use Illuminate\Support\Collection;
-use Plugins\Sirsoft\Marketing\Repositories\Contracts\MarketingConsentRepositoryInterface;
 use Plugins\Sirsoft\Marketing\Models\MarketingConsent;
 use Plugins\Sirsoft\Marketing\Models\MarketingConsentHistory;
+use Plugins\Sirsoft\Marketing\Repositories\Contracts\MarketingConsentRepositoryInterface;
 
 /**
  * 마케팅 동의 서비스 클래스
@@ -25,8 +25,8 @@ class MarketingConsentService
     /**
      * MarketingConsentService 생성자
      *
-     * @param MarketingConsentRepositoryInterface $repository 마케팅 동의 Repository
-     * @param PluginSettingsService $pluginSettings 플러그인 설정 서비스
+     * @param  MarketingConsentRepositoryInterface  $repository  마케팅 동의 Repository
+     * @param  PluginSettingsService  $pluginSettings  플러그인 설정 서비스
      */
     public function __construct(
         private MarketingConsentRepositoryInterface $repository,
@@ -114,12 +114,12 @@ class MarketingConsentService
 
         return [
             [
-                'key'       => 'email_subscription',
+                'key' => 'email_subscription',
                 'label_key' => $emailLabelKey,
                 // label 은 plugin_settings 저장 시 fallback (lang pack 미설치 환경 보호)
-                'label'     => $this->buildFallbackLabelMap($emailLabelKey),
+                'label' => $this->buildFallbackLabelMap($emailLabelKey),
                 'page_slug' => '',
-                'enabled'   => true,
+                'enabled' => true,
                 'is_system' => true,
             ],
         ];
@@ -181,7 +181,7 @@ class MarketingConsentService
     /**
      * 사용자 ID로 모든 동의 레코드를 조회합니다.
      *
-     * @param int $userId 사용자 ID
+     * @param  int  $userId  사용자 ID
      * @return Collection<int, MarketingConsent>
      */
     public function getAllByUserId(int $userId): Collection
@@ -192,7 +192,7 @@ class MarketingConsentService
     /**
      * 특정 채널 키에 동의(is_consented=true)한 사용자 수를 반환합니다.
      *
-     * @param string $channelKey 채널 키
+     * @param  string  $channelKey  채널 키
      * @return int
      */
     public function countConsentedByKey(string $channelKey): int
@@ -206,10 +206,10 @@ class MarketingConsentService
      * marketing_consent 철회 시 모든 채널을 자동 철회합니다.
      * 채널 동의 시 marketing_consent를 자동 활성화합니다.
      *
-     * @param int $userId 사용자 ID
-     * @param string $consentKey 동의 항목 키
-     * @param bool $value 동의 여부
-     * @param string $source 변경 경로 (register/profile/admin)
+     * @param  int  $userId  사용자 ID
+     * @param  string  $consentKey  동의 항목 키
+     * @param  bool  $value  동의 여부
+     * @param  string  $source  변경 경로 (register/profile/admin)
      * @return void
      */
     public function updateConsent(int $userId, string $consentKey, bool $value, string $source): void
@@ -273,13 +273,16 @@ class MarketingConsentService
     /**
      * 여러 동의 항목을 일괄 업데이트합니다.
      *
-     * @param int $userId 사용자 ID
-     * @param array<string, bool> $data 동의 데이터 [key => bool]
-     * @param string $source 변경 경로
+     * @param  int  $userId  사용자 ID
+     * @param  array<string, bool>  $data  동의 데이터 [key => bool]
+     * @param  string  $source  변경 경로
      * @return void
      */
     public function updateConsents(int $userId, array $data, string $source): void
     {
+        // 다른 확장이 저장 전 동의 데이터를 가공할 기회 — 선언만 있고 발화처가 없던 것을 채웠다(#138 후속)
+        $data = HookManager::applyFilters('sirsoft-marketing.filter_consent_data', $data, $userId, $source);
+
         // marketing_consent(master)를 먼저 처리하여 채널 처리 시 자동 활성화 중복 방지
         if (array_key_exists(MarketingConsent::MASTER_KEY, $data)) {
             $this->updateConsent($userId, MarketingConsent::MASTER_KEY, (bool) $data[MarketingConsent::MASTER_KEY], $source);
@@ -296,7 +299,7 @@ class MarketingConsentService
     /**
      * 사용자의 동의 이력을 조회합니다.
      *
-     * @param int $userId 사용자 ID
+     * @param  int  $userId  사용자 ID
      * @return Collection<int, MarketingConsentHistory>
      */
     public function getHistories(int $userId): Collection
@@ -309,7 +312,7 @@ class MarketingConsentService
      *
      * DB CASCADE에 의존하지 않고 명시적으로 삭제합니다.
      *
-     * @param int $userId 사용자 ID
+     * @param  int  $userId  사용자 ID
      * @return void
      */
     public function deleteByUserId(int $userId): void
@@ -321,20 +324,20 @@ class MarketingConsentService
     /**
      * 동의 이력을 기록합니다.
      *
-     * @param int $userId 사용자 ID
-     * @param string $channelKey 동의 항목 키
-     * @param string $action 변경 유형 (granted/revoked)
-     * @param string $source 변경 경로
+     * @param  int  $userId  사용자 ID
+     * @param  string  $channelKey  동의 항목 키
+     * @param  string  $action  변경 유형 (granted/revoked)
+     * @param  string  $source  변경 경로
      * @return void
      */
     private function recordHistory(int $userId, string $channelKey, string $action, string $source): void
     {
         $this->repository->createHistory([
-            'user_id'     => $userId,
+            'user_id' => $userId,
             'channel_key' => $channelKey,
-            'action'      => $action,
-            'source'      => $source,
-            'ip_address'  => request()->ip(),
+            'action' => $action,
+            'source' => $source,
+            'ip_address' => request()->ip(),
         ]);
     }
 }

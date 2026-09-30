@@ -687,6 +687,7 @@ Body: { "layout_strategy": "keep" }
 > `--force` (install): 이미 설치된 확장이라도 `_bundled`/`_pending` 원본으로 활성 디렉토리를 덮어쓰고 재설치 — 불완전 활성 디렉토리(manifest 누락 등) 복구 시 사용
 > 코어 업데이트 (`core:update`) 완료 후에는 `_bundled` 에 새 버전이 있는 확장을 감지하여 일괄 업데이트 인터랙티브 프롬프트가 자동으로 표시됨
 > 활성 디렉토리 로드 시 manifest(`module.json`·`plugin.json`·`template.json`) 가 없으면 경고 로그 + 복구 힌트(`install {id} --force`) 가 출력됨
+> **CLI·어드민 UI 동일 훅**: 설치·활성화·업데이트·제거 커맨드는 어드민 UI 와 같은 완료 훅(`after_install`·`after_activate`·`after_update`/`after_version_update`·`after_uninstall`)을 한 번 발화한다 — 발화 주체가 Service 가 아니라 Manager 라서, 커맨드가 Manager 를 직접 불러도 큐 워커 재시작·활동 로그·언어팩 동기화가 똑같이 돈다(§12 훅 표)
 
 ---
 
@@ -718,20 +719,24 @@ Body: { "layout_strategy": "keep" }
 
 ### 훅 (Hook)
 
-| 훅 이름 | 시점 |
-|---------|------|
-| `core.modules.before_check_updates` | 모듈 업데이트 확인 전 |
-| `core.modules.after_check_updates` | 모듈 업데이트 확인 후 |
-| `core.modules.before_update` | 모듈 업데이트 실행 전 |
-| `core.modules.after_update` | 모듈 업데이트 실행 후 |
-| `core.plugins.before_check_updates` | 플러그인 업데이트 확인 전 |
-| `core.plugins.after_check_updates` | 플러그인 업데이트 확인 후 |
-| `core.plugins.before_update` | 플러그인 업데이트 실행 전 |
-| `core.plugins.after_update` | 플러그인 업데이트 실행 후 |
-| `core.templates.before_check_updates` | 템플릿 업데이트 확인 전 |
-| `core.templates.after_check_updates` | 템플릿 업데이트 확인 후 |
-| `core.templates.before_version_update` | 템플릿 업데이트 실행 전 |
-| `core.templates.after_version_update` | 템플릿 업데이트 실행 후 |
+| 훅 이름 | 시점 | 진입점 |
+|---------|------|--------|
+| `core.modules.before_check_updates` | 모듈 업데이트 확인 전 | 어드민 UI |
+| `core.modules.after_check_updates` | 모듈 업데이트 확인 후 | 어드민 UI |
+| `core.modules.before_update` | 모듈 업데이트 실행 전 | 어드민 UI |
+| `core.modules.after_update` | 모듈 업데이트 실행 후 (업데이트할 것이 없을 때도 `result.success=false` 로 발화) | CLI·어드민 UI |
+| `core.plugins.before_check_updates` | 플러그인 업데이트 확인 전 | 어드민 UI |
+| `core.plugins.after_check_updates` | 플러그인 업데이트 확인 후 | 어드민 UI |
+| `core.plugins.before_update` | 플러그인 업데이트 실행 전 | 어드민 UI |
+| `core.plugins.after_update` | 플러그인 업데이트 실행 후 (업데이트할 것이 없을 때도 발화) | CLI·어드민 UI |
+| `core.templates.before_check_updates` | 템플릿 업데이트 확인 전 | 어드민 UI |
+| `core.templates.after_check_updates` | 템플릿 업데이트 확인 후 | 어드민 UI |
+| `core.templates.before_version_update` | 템플릿 업데이트 실행 전 | 어드민 UI |
+| `core.templates.after_version_update` | 템플릿 업데이트 실행 후 (업데이트할 것이 없을 때도 발화) | CLI·어드민 UI |
+
+> 완료 훅(`after_update`·`after_version_update`)은 Manager 가 발화하므로 `module:update`·`plugin:update`·`template:update`
+> 커맨드와 코어 업그레이드의 번들 일괄 업데이트에서도 발화한다. 구훅 `core.{modules,plugins,templates}.updated`
+> (식별자 1개)도 성공 시 계속 발화하지만 deprecated 다 — 새 구독은 완료 훅을 쓴다([hooks.md](hooks.md)).
 
 ---
 
@@ -921,11 +926,15 @@ class Upgrade_1_3_0 implements UpgradeStepInterface
 
 > 파일: `app/Listeners/ExtensionUpdateQueueListener.php`
 
-확장 업데이트 성공 시 `Artisan::call('queue:restart')` 자동 실행. 코드 변경 후 큐 워커가 이전 코드로 실행되는 문제를 방지합니다.
+모듈·플러그인에 **코드가 새로 들어오는 사건**(설치·활성화·업데이트 성공) 뒤 `Artisan::call('queue:restart')` 를 자동 실행합니다. 상주 큐 워커가 이전 코드(클래스·바인딩·리스너)로 계속 실행되는 문제를 방지합니다.
 
-- 구독 훅: `core.modules.after_update`, `core.plugins.after_update` (priority 100)
+- 구독 훅: `core.modules.after_install`·`after_activate`·`after_update`, `core.plugins.after_install`·`after_activate`·`after_update` (priority 100)
+- **동기 실행(`'sync' => true`)**: 큐로 보내면 "큐 워커를 재시작하는 작업을 그 큐 워커가 실행" 하게 되고, CLI 커맨드는 실행 후 곧바로 종료되어 쌓인 작업을 처리할 주체가 없다
+- 진입점: 완료 훅을 Manager 가 발화하므로 어드민 UI 와 `module:update` 등 CLI 커맨드 양쪽에서 동작한다
+- 대상 밖: 템플릿(PHP 코드 없음), 제거·비활성화 — 상주 워커는 사라진 확장의 클래스를 메모리에 들고 있을 수 있으나 새로 실행되는 코드는 없다
+- `after_update` 는 "업데이트할 것 없음" 에서도 발화하므로 `result.success` 가 true 일 때만 재시작한다
 - 실패 시: warning 로그만 기록 (예외 전파 안 함)
-- 자동 등록: `CoreServiceProvider::registerCoreHookListeners()` 스캔
+- 자동 등록: `CoreServiceProvider::registerCoreHookListeners()` 스캔. **배포 시 `php artisan hooks:cache` 로 훅 캐시를 다시 굽는다** — 캐시(`bootstrap/cache/hooks.php`)는 파일 부재·손상에만 폴백하므로, 굽지 않으면 이전 구독(`sync` 없음)이 그대로 쓰인다
 
 ### 확장 스케줄 등록
 

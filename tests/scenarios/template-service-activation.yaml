@@ -1,0 +1,20 @@
+feature: 템플릿 활성화·비활성화 (Service → Manager)
+
+description: |
+  어드민 UI 의 템플릿 켜기·끄기. 같은 유형(admin/user)의 활성 템플릿은 하나라 새로 켜면 기존 것이 꺼지고,
+  다른 유형은 영향을 받지 않는다. 생명주기 직전·완료 훅은 TemplateManager 가 발화한다(#138 후속 — CLI·어드민 UI
+  공통 단일 발화). 여기서는 실제 Manager 로 before → after 순서를 잰다.
+
+axes:
+  operation: [activate, deactivate]
+
+effects:
+  - same_type_active_template_is_replaced
+  - template_activated_in_database
+  - lifecycle_hooks_fire_before_then_after
+  - other_type_template_untouched
+  - unknown_template_rejected
+  - template_deactivated_in_database
+
+test_files:
+  - tests/Feature/Services/TemplateServiceActivationTest.php

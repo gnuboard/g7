@@ -78,6 +78,19 @@ return [
         'dormant_withdrawn' => '休眠アカウント退会処理',
         'manual_run_queued' => '個人情報措置職権実行受付',
         'manual_run_finished' => '個人情報措置職権実行終了',
+
+        // 訪問者統計の運用操作 (analytics.*)
+        'analytics' => [
+            'settings_updated' => '統計設定の変更',
+            'privacy_mode_changed' => '統計プライバシーモード変更',
+            'data_purged' => '統計データ全体削除',
+            'anonymized' => '統計遡及匿名化',
+            'subject_exported' => '情報主体訪問記録エクスポート',
+            'subject_deleted' => '情報主体訪問記録削除',
+            'opt_out_changed' => '統計収集除外変更',
+            'archive_requested' => '統計手動集計',
+            'extension_purged' => '拡張統計データ整理',
+        ],
     ],
     'description' => [
         'user_index' => 'ユーザーリスト閲覧',

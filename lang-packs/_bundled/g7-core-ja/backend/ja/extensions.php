@@ -10,6 +10,7 @@ return [
         'core_version_mismatch' => ':extension (:type)はグヌボード7コアバージョン :required 以上が必要です。(現在: :installed)',
         'version_check_failed' => 'バージョン検証に失敗しました。',
         'operation_in_progress' => '":name"に対して進行中の処理(:status)があるため、リクエストを処理できません。',
+        'update_already_running' => '":name"のアップデートはすでに進行中です。終了後にもう一度確認してください。',
         'zip_missing_manifest' => 'ZIP内から :file マニフェストが見つかりません: :zip',
         'zip_invalid_manifest' => 'ZIP内の :file マニフェストをJSONとして解析できません。',
         'zip_identifier_mismatch' => 'ZIPマニフェストの識別子が対象拡張と一致しません。(期待値: :expected、実際: :actual)',

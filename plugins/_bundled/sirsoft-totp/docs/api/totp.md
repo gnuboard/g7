@@ -531,6 +531,8 @@ Authorization: Bearer {token}
 2단계 인증을 언제 풀었는지 추적할 수 없으면 이 경로 자체가 권한 상승 수단이 되므로, 감사
 기록이 필요한 사이트는 이 훅을 잡는다. 지울 것이 없었던 호출(`removed: false`)에는 훅이
 발행되지 않는다 — 존재하지 않는 사건이 기록에 쌓이지 않게 하기 위해서다.
+서버 셸의 `php artisan totp:reset {email}` 도 같은 훅을 발행한다(`TotpEnrollmentService::adminReset()`) —
+셸에는 요청 사용자·IP 가 없어 `actor_id`·`ip_address` 가 `null` 이고, 활동 로그 행위자는 「시스템(CLI)」로 보인다.
 
 해제된 회원은 다음 로그인부터 인증 앱 코드를 요구받지 않는다. 플러그인 설정
 `allow_mail_fallback` 이 켜져 있으면 이메일로 인증번호를 받고, 꺼져 있으면 코어가

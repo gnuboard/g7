@@ -137,7 +137,7 @@ return [
     'move_failed' => 'Failed to move module ":module": :error',
 
     // Module service error messages
-    'deactivate_warning' => 'There are active templates that depend on this module.',
+    'deactivate_warning' => 'There are active extensions that depend on this module.',
     'installation_failed' => 'Module installation failed: :error',
     'activation_failed' => 'Module activation failed: :error',
     'deactivation_failed' => 'Module deactivation failed: :error',
@@ -161,6 +161,7 @@ return [
 
     // Error messages
     'errors' => [
+        'uninstall_blocked_by_dependents' => 'This module cannot be uninstalled while extensions that depend on it are active. Deactivate or uninstall them first: :extensions',
         'force_update_no_source' => 'Cannot force update :module. Neither bundle nor GitHub URL is available.',
         'downgrade_blocked' => 'Downgrade blocked (:from → :to). Use --force to allow intentional downgrades.',
         'zip_open_failed' => 'Failed to open ZIP file: :error',

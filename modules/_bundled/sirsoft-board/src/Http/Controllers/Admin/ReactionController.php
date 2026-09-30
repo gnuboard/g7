@@ -70,7 +70,7 @@ class ReactionController extends AdminBaseController
                 (new AdminReactionCollection($reactions))->withPermissions()
             );
         } catch (Exception $e) {
-            return $this->error('sirsoft-board::messages.reaction.admin.retrieve_failed');
+            return $this->error('sirsoft-board::messages.reaction.admin.retrieve_failed', 500);
         }
     }
 
@@ -89,7 +89,7 @@ class ReactionController extends AdminBaseController
 
             return $this->success('sirsoft-board::messages.reaction.admin.removed');
         } catch (Exception $e) {
-            return $this->error('sirsoft-board::messages.reaction.delete_failed');
+            return $this->error('sirsoft-board::messages.reaction.delete_failed', 500);
         }
     }
 
@@ -112,7 +112,7 @@ class ReactionController extends AdminBaseController
                 ['count' => $count]
             );
         } catch (Exception $e) {
-            return $this->error('sirsoft-board::messages.reaction.admin.bulk_delete_failed');
+            return $this->error('sirsoft-board::messages.reaction.admin.bulk_delete_failed', 500);
         }
     }
 

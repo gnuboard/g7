@@ -62,9 +62,9 @@ Service → doAction('hook.name') → ActivityLogListener → Log::channel('acti
 |---------|----------------|-------------|---------|----------|
 | `core.auth.after_login` | `handleAuthAfterLogin` | `auth.login` | User | User |
 | `core.auth.logout` | `handleAuthLogout` | `auth.logout` | User | User |
-| `core.auth.register` | `handleAuthRegister` | `auth.register` | User | User |
-| `core.auth.forgot_password` | `handleAuthForgotPassword` | `auth.forgot_password` | User | - |
-| `core.auth.reset_password` | `handleAuthResetPassword` | `auth.reset_password` | User | - |
+| `core.auth.after_register` | `handleAuthRegister` | `auth.register` | User | User |
+| `core.auth.after_reset_password_request` (sync — 인자에 재설정 토큰) | `handleAuthForgotPassword` | `auth.forgot_password` | User | - |
+| `core.auth.after_password_changed` | `handleAuthResetPassword` | `auth.reset_password` | User | - (행위자: 로그인 사용자, 없으면 본인) |
 | `core.auth.record_consents` | `handleAuthRecordConsents` | `auth.record_consents` | User | User |
 | `core.auth.login_failed` | `handleAuthLoginFailed` | `auth.login_failed` | User | - |
 | `core.auth.account_locked` | `handleAuthAccountLocked` | `auth.account_locked` | User | User |
@@ -135,36 +135,40 @@ Service → doAction('hook.name') → ActivityLogListener → Log::channel('acti
 | `core.attachment.after_delete` | `handleAttachmentAfterDelete` | `attachment.delete` | Admin | Attachment |
 | `core.attachment.after_bulk_delete` | `handleAttachmentAfterBulkDelete` | `attachment.bulk_delete` | Admin | - |
 
+> **확장 생명주기 훅의 LogType**: 설치·활성화·비활성화·업데이트·제거 훅은 Manager 가 발화하므로 어드민 UI 와
+> Artisan 커맨드(`module:install` 등) 양쪽에서 기록된다. 어드민 UI 는 `Admin`, CLI 는 요청 경로가 없어 `System` 으로
+> 기록되고 `properties.via = 'cli'` 가 붙어 관리자 화면 행위자 칸에 "시스템(CLI)" 로 보인다.
+
 ### Module (6훅)
 
 | 훅 이름 | Listener 메서드 | Action (DB) | LogType | Loggable |
 |---------|----------------|-------------|---------|----------|
-| `core.modules.after_install` | `handleModuleAfterInstall` | `module.install` | Admin | - |
-| `core.modules.after_activate` | `handleModuleAfterActivate` | `module.activate` | Admin | - |
-| `core.modules.after_deactivate` | `handleModuleAfterDeactivate` | `module.deactivate` | Admin | - |
-| `core.modules.after_uninstall` | `handleModuleAfterUninstall` | `module.uninstall` | Admin | - |
-| `core.modules.after_update` | `handleModuleAfterUpdate` | `module.update` | Admin | - |
+| `core.modules.after_install` | `handleModuleAfterInstall` | `module.install` | Admin / System(CLI) | - |
+| `core.modules.after_activate` | `handleModuleAfterActivate` | `module.activate` | Admin / System(CLI) | - |
+| `core.modules.after_deactivate` | `handleModuleAfterDeactivate` | `module.deactivate` | Admin / System(CLI) | - |
+| `core.modules.after_uninstall` | `handleModuleAfterUninstall` | `module.uninstall` | Admin / System(CLI) | - |
+| `core.modules.after_update` | `handleModuleAfterUpdate` | `module.update` | Admin / System(CLI) | - |
 | `core.modules.after_refresh_layouts` | `handleModuleAfterRefreshLayouts` | `module.refresh_layouts` | Admin | - |
 
 ### Plugin (5훅)
 
 | 훅 이름 | Listener 메서드 | Action (DB) | LogType | Loggable |
 |---------|----------------|-------------|---------|----------|
-| `core.plugins.after_install` | `handlePluginAfterInstall` | `plugin.install` | Admin | - |
-| `core.plugins.after_activate` | `handlePluginAfterActivate` | `plugin.activate` | Admin | - |
-| `core.plugins.after_deactivate` | `handlePluginAfterDeactivate` | `plugin.deactivate` | Admin | - |
-| `core.plugins.after_uninstall` | `handlePluginAfterUninstall` | `plugin.uninstall` | Admin | - |
-| `core.plugins.after_update` | `handlePluginAfterUpdate` | `plugin.update` | Admin | - |
+| `core.plugins.after_install` | `handlePluginAfterInstall` | `plugin.install` | Admin / System(CLI) | - |
+| `core.plugins.after_activate` | `handlePluginAfterActivate` | `plugin.activate` | Admin / System(CLI) | - |
+| `core.plugins.after_deactivate` | `handlePluginAfterDeactivate` | `plugin.deactivate` | Admin / System(CLI) | - |
+| `core.plugins.after_uninstall` | `handlePluginAfterUninstall` | `plugin.uninstall` | Admin / System(CLI) | - |
+| `core.plugins.after_update` | `handlePluginAfterUpdate` | `plugin.update` | Admin / System(CLI) | - |
 
 ### Template (6훅)
 
 | 훅 이름 | Listener 메서드 | Action (DB) | LogType | Loggable |
 |---------|----------------|-------------|---------|----------|
-| `core.templates.after_install` | `handleTemplateAfterInstall` | `template.install` | Admin | - |
-| `core.templates.after_activate` | `handleTemplateAfterActivate` | `template.activate` | Admin | - |
-| `core.templates.after_deactivate` | `handleTemplateAfterDeactivate` | `template.deactivate` | Admin | - |
-| `core.templates.after_uninstall` | `handleTemplateAfterUninstall` | `template.uninstall` | Admin | - |
-| `core.templates.after_version_update` | `handleTemplateAfterVersionUpdate` | `template.version_update` | Admin | - |
+| `core.templates.after_install` | `handleTemplateAfterInstall` | `template.install` | Admin / System(CLI) | - |
+| `core.templates.after_activate` | `handleTemplateAfterActivate` | `template.activate` | Admin / System(CLI) | - |
+| `core.templates.after_deactivate` | `handleTemplateAfterDeactivate` | `template.deactivate` | Admin / System(CLI) | - |
+| `core.templates.after_uninstall` | `handleTemplateAfterUninstall` | `template.uninstall` | Admin / System(CLI) | - |
+| `core.templates.after_version_update` | `handleTemplateAfterVersionUpdate` | `template.version_update` | Admin / System(CLI) | - |
 | `core.templates.after_refresh_layouts` | `handleTemplateAfterRefreshLayouts` | `template.refresh_layouts` | Admin | - |
 
 ### Extension 공통 (1훅)

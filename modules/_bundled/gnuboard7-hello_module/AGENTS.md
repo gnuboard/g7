@@ -93,7 +93,7 @@ Listener · Layout · Test · 다국어(백엔드 PHP + 프론트 JSON)가 각 1
 <!-- @generated:extension-points-summary START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 확장점 | 수 | 상세 |
 |---|---|---|
-| 발행 훅 | 1개 | [발행 훅](docs/extension-points.md#발행-훅) |
+| 발행 훅 | 2개 | [발행 훅](docs/extension-points.md#발행-훅) |
 | 구독 훅 | 1개 | [구독 훅](docs/extension-points.md#구독-훅) |
 | 훅 리스너 | 1개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
 | 레이아웃 확장 | 0개 | [레이아웃 확장](docs/extension-points.md#레이아웃-확장) |
@@ -158,7 +158,7 @@ Listener · Layout · Test · 다국어(백엔드 PHP + 프론트 JSON)가 각 1
 | PHPUnit | 3개 | `modules/_bundled/gnuboard7-hello_module/tests` |
 | Vitest | 0개 | — |
 | Playwright | 0개 | — |
-| 시나리오 매니페스트 | 0개 | — |
+| 시나리오 매니페스트 | 1개 | `tests/scenarios` |
 
 기저 TestCase: `tests/ModuleTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

@@ -657,9 +657,14 @@ if (app()->bound(\App\Seo\SitemapGenerator::class)) {
 
 | 훅 | 무효화 대상 | 사유 |
 |----|-----------|------|
-| `core.modules.after_install/activate/update` | 전체 SEO 캐시 + sitemap | 레이아웃 등록/변경 |
-| `core.plugins.after_install/activate/update` | 전체 SEO 캐시 + sitemap | layout_extensions 변경 |
-| `core.templates.after_install/activate/version_update` | 전체 SEO 캐시 + sitemap + SEO config 병합 캐시 | seo-config.json/컴포넌트 맵 변경 |
+| `core.modules.after_{install,activate,deactivate,update,uninstall}` | 전체 SEO 캐시 + sitemap | 레이아웃 등록/변경·제거 |
+| `core.plugins.after_{install,activate,deactivate,update,uninstall}` | 전체 SEO 캐시 + sitemap | layout_extensions 변경·제거 |
+| `core.templates.after_{install,activate,deactivate,version_update,uninstall}` | 전체 SEO 캐시 + sitemap + SEO config 병합 캐시 | seo-config.json/컴포넌트 맵 변경 |
+
+> 구독은 정규 생명주기 훅 15개이고(`SeoExtensionCacheListener`), Manager 가 어드민 UI·CLI 공통으로 한 번 발화한다.
+> **비활성화·제거도 구독한다** — `SeoMiddleware` 는 캐시 적중 시 확장 활성 여부를 보지 않으므로, 끈 확장의 페이지가
+> 캐시에 남으면 검색 봇에게 계속 나간다. 모든 구독은 `sync` 다 — 캐시 정리는 즉시 반영돼야 하고, 큐로 가면 워커가
+> 없는 사이트에서 영영 비워지지 않는다([hooks.md](../extension/hooks.md)).
 
 > 확장 라이프사이클은 드문 이벤트이므로 전체 캐시 클리어(`clearAll()`)로 안전하게 처리합니다.
 
@@ -865,7 +870,7 @@ SEO 엔진은 컴포넌트 지식을 갖지 않습니다. 모든 컴포넌트→
 ### 캐싱
 
 - 병합 결과는 24시간 TTL로 캐시 (`seo:config:merged:{templateIdentifier}`)
-- 확장 설치/활성화/업데이트 시 `SeoExtensionCacheListener`가 자동 무효화
+- 확장 설치/활성화/비활성화/업데이트/제거 시 `SeoExtensionCacheListener`가 자동 무효화
 
 ### 모듈/플러그인 seo-config.json 예시
 

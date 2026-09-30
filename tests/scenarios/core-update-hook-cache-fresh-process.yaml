@@ -1,0 +1,19 @@
+feature: 코어 업데이트 끝의 훅 캐시 새 프로세스 재생성
+
+description: |
+  코어 업데이트는 이전 코드로 부팅한 프로세스에서 끝까지 돈다. 시작 때 훅 캐시가 없던 사이트는 흐름 중간 재생성이
+  이전 리스너 구독으로 구워질 수 있어, 모든 파일이 안착하고 config·라우트 캐시를 되살린 뒤 새 프로세스로
+  hooks:cache 를 한 번 더 실행한다(#138 후속 — 설계 결정). 번들 확장 일괄 업데이트가 이 (이전 코드) 프로세스에서
+  훅 캐시를 다시 구우므로 일괄 업데이트 뒤에도, 핸드오프로 멈춘 업데이트는 정상 종료 경로를 지나지 않으므로
+  핸드오프 종료에서도 새 프로세스로 굽는다. 실패해도 업데이트는 되돌리지 않고 수동 명령을 안내한다.
+
+axes:
+  case: [fresh_process_runner, core_update_flow, core_update_late_paths]
+
+effects:
+  - artisan_runs_in_fresh_process_with_exit_code
+  - core_update_rebuilds_hook_cache_in_fresh_process_after_route_cache
+  - hook_cache_rebuilt_after_bundled_updates_and_on_handoff
+
+test_files:
+  - tests/Feature/Console/CoreUpdateHookCacheFreshProcessTest.php

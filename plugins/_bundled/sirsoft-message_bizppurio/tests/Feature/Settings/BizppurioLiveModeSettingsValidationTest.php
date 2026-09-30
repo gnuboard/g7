@@ -32,6 +32,11 @@ class BizppurioLiveModeSettingsValidationTest extends PluginTestCase
 
     private string $token;
 
+    /**
+     * 플러그인 인스턴스를 등록하고 검증 규칙 필터 훅을 리스너 선언대로 붙인 뒤 관리자를 만듭니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -46,13 +51,12 @@ class BizppurioLiveModeSettingsValidationTest extends PluginTestCase
         $plugins[self::IDENTIFIER] = new Plugin;
         $prop->setValue($manager, $plugins);
 
-        // 검증 규칙 필터 훅 등록 (실제 훅 체인 재현 — mock 없음).
+        // 검증 규칙 필터 훅 등록 (실제 훅 체인 재현 — mock 없음). 이름을 손으로 적지 않고 리스너 선언에서
+        // 가져온다 — 그래야 선언한 구독 이름이 틀리면 red 가 된다.
         $listener = new ValidateBizppurioSettingsListener;
-        HookManager::addFilter(
-            'core.plugin_settings.update_rules',
-            [$listener, 'addLiveModeRules'],
-            10
-        );
+        foreach (ValidateBizppurioSettingsListener::getSubscribedHooks() as $hook => $meta) {
+            HookManager::addFilter($hook, [$listener, $meta['method']], $meta['priority'] ?? 10);
+        }
 
         $this->admin = $this->createAdminUser();
         $this->token = $this->admin->createToken('test-token')->plainTextToken;
@@ -60,6 +64,8 @@ class BizppurioLiveModeSettingsValidationTest extends PluginTestCase
 
     /**
      * core.plugins.update 권한을 가진 admin 사용자 생성.
+     *
+     * @return User 생성된 관리자
      */
     private function createAdminUser(): User
     {
@@ -91,8 +97,8 @@ class BizppurioLiveModeSettingsValidationTest extends PluginTestCase
     /**
      * 인증 헤더가 적용된 PUT 요청 헬퍼.
      *
-     * @param  array<string, mixed>  $body
-     * @return TestResponse
+     * @param  array<string, mixed>  $body  저장할 설정 값
+     * @return TestResponse 설정 저장 응답
      */
     private function putSettings(array $body)
     {
@@ -103,9 +109,13 @@ class BizppurioLiveModeSettingsValidationTest extends PluginTestCase
     }
 
     /**
+     * 운영 모드에서 자격증명이 비어 있으면 아이디·비밀번호·발신번호 오류로 422 를 돌려준다.
+     *
      * @scenario test_mode=off,credentials=empty
      *
-     * @effects live_mode_with_empty_credentials_returns_422_with_bizppurio_id_password_sender_number_errors
+     * @effects test_mode_off_empty_credentials_return_422_for_bizppurio_id_password_sender_number
+     *
+     * @return void 반환값 없음
      */
     public function test_live_mode_with_empty_credentials_is_rejected(): void
     {
@@ -121,9 +131,13 @@ class BizppurioLiveModeSettingsValidationTest extends PluginTestCase
     }
 
     /**
+     * 운영 모드에서도 API 키와 발신프로필 키는 필수가 아니다.
+     *
      * @scenario test_mode=off,credentials=empty
      *
-     * @effects api_key_and_sender_key_are_not_required_in_live_mode
+     * @effects test_mode_off_does_not_require_api_key_or_sender_key
+     *
+     * @return void 반환값 없음
      */
     public function test_live_mode_does_not_require_api_key_or_sender_key(): void
     {
@@ -141,9 +155,13 @@ class BizppurioLiveModeSettingsValidationTest extends PluginTestCase
     }
 
     /**
+     * 검증 오류 문구가 영문 키가 아니라 한국어 필드 이름을 쓴다.
+     *
      * @scenario test_mode=off,credentials=empty,locale=ko
      *
-     * @effects validation_error_messages_use_korean_field_labels_not_english_keys
+     * @effects validation_error_messages_use_localized_field_labels
+     *
+     * @return void 반환값 없음
      */
     public function test_validation_error_messages_use_korean_field_labels(): void
     {
@@ -164,9 +182,13 @@ class BizppurioLiveModeSettingsValidationTest extends PluginTestCase
     }
 
     /**
+     * 운영 모드에서 자격증명을 모두 채우면 저장된다.
+     *
      * @scenario test_mode=off,credentials=filled,locale=ko
      *
-     * @effects live_mode_with_filled_credentials_returns_200
+     * @effects test_mode_off_filled_credentials_return_200
+     *
+     * @return void 반환값 없음
      */
     public function test_live_mode_with_filled_credentials_is_accepted(): void
     {
@@ -181,9 +203,13 @@ class BizppurioLiveModeSettingsValidationTest extends PluginTestCase
     }
 
     /**
+     * 검수 모드에서는 자격증명이 비어 있어도 저장된다.
+     *
      * @scenario test_mode=on,credentials=empty,locale=ko
      *
-     * @effects dev_mode_with_empty_credentials_returns_200
+     * @effects test_mode_on_empty_credentials_return_200
+     *
+     * @return void 반환값 없음
      */
     public function test_dev_mode_with_empty_credentials_is_accepted(): void
     {
@@ -198,9 +224,13 @@ class BizppurioLiveModeSettingsValidationTest extends PluginTestCase
     }
 
     /**
+     * 비밀번호는 설정 파일에 평문으로 남지 않고 읽을 때 원문으로 복호화된다.
+     *
      * @scenario test_mode=off,credentials=filled
      *
      * @effects password_is_not_stored_as_plaintext_in_settings_file, password_decrypts_back_to_original_via_settings_service_get
+     *
+     * @return void 반환값 없음
      */
     public function test_password_is_stored_encrypted(): void
     {
@@ -225,5 +255,25 @@ class BizppurioLiveModeSettingsValidationTest extends PluginTestCase
         // 복호화 왕복은 원문과 일치해야 한다.
         $value = app(PluginSettingsService::class)->get(self::IDENTIFIER, 'password');
         $this->assertSame('super-secret', $value);
+    }
+
+    /**
+     * 표준 이름(core.plugin_settings.update_validation_rules)을 구독한다.
+     *
+     * 옛 이름(core.plugin_settings.update_rules)은 코어가 호환용으로만 함께 발행하며, 구독자가 있으면
+     * 개명 경고 로그를 남긴다 — 번들 플러그인이 그 경고를 매번 내던 것을 바로잡았다(#138 후속 11번 ③).
+     *
+     * @scenario test_mode=off, credential_state=filled
+     *
+     * @effects listener_subscribes_standard_validation_rules_hook
+     *
+     * @return void 반환값 없음
+     */
+    public function test_listener_subscribes_standard_hook_name(): void
+    {
+        $hooks = ValidateBizppurioSettingsListener::getSubscribedHooks();
+
+        $this->assertArrayHasKey('core.plugin_settings.update_validation_rules', $hooks);
+        $this->assertArrayNotHasKey('core.plugin_settings.update_rules', $hooks);
     }
 }
