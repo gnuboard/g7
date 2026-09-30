@@ -132,11 +132,12 @@ class ExtensionPendingHelper
      * @param  string  $targetPath  대상 경로 (예: modules/sirsoft-board)
      * @param  \Closure|null  $onProgress  진행 콜백 (?string $step, string $message)
      *
-     * @throws \RuntimeException 소스가 존재하지 않을 때
-     *
      * @see ExtensionPendingHelperTest File Facade Spy 패턴으로 복사 실패 테스트
      * @see ProtectsExtensionDirectories 확장 활성 디렉토리 보호 trait
+     *
      * @return void 반환값 없음
+     *
+     * @throws \RuntimeException 소스가 존재하지 않을 때
      */
     public static function copyToActive(string $sourcePath, string $targetPath, ?\Closure $onProgress = null): void
     {
@@ -259,6 +260,7 @@ class ExtensionPendingHelper
      * PSR-4 autoload 가 신규 파일(beta.1 에 없던 Seeder/Model)을 file_exists 로
      * 탐색할 때 false 반환 → "Class not found" fatal 로 업그레이드 스텝이 실패.
      * clearstatcache(true) 로 전체 stat 캐시를 비워 신규 파일이 즉시 보이도록 한다.
+     *
      * @return void 반환값 없음
      */
     private static function refreshRuntimeCaches(): void
@@ -387,9 +389,9 @@ class ExtensionPendingHelper
      * @param  string  $source  새 버전 콘텐츠 디렉토리
      * @param  string  $dest  활성 디렉토리
      * @param  \Closure|null  $onProgress  진행 콜백
+     * @return void 반환값 없음
      *
      * @throws \RuntimeException 새 버전 파일을 심지 못했을 때
-     * @return void 반환값 없음
      */
     private static function syncDirectoryContents(string $source, string $dest, ?\Closure $onProgress = null): void
     {

@@ -19,6 +19,7 @@ use Illuminate\Support\Facades\Log;
  *
  * 이 Trait를 사용하는 클래스는 반드시 다음 속성을 제공해야 합니다:
  * - $layoutExtensionService: LayoutExtensionService 인스턴스
+ * - layoutSynchronizer(): {@see SynchronizesLayoutRows} 를 함께 쓰고 생성자로 `$layoutRowSynchronizer` 를 받는다
  *
  * @property LayoutExtensionService $layoutExtensionService
  */

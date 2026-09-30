@@ -5,9 +5,11 @@ namespace Tests\Feature\LayoutMarkup;
 use App\Contracts\Extension\ModuleInterface;
 use App\Enums\ExtensionStatus;
 use App\Enums\LayoutSourceType;
+use App\Extension\Layout\LayoutRowSynchronizer;
 use App\Extension\ModuleManager;
 use App\Extension\PluginManager;
 use App\Extension\Traits\RefreshesLayoutExtensions;
+use App\Extension\Traits\SynchronizesLayoutRows;
 use App\Models\LayoutExtension;
 use App\Models\Template;
 use App\Models\TemplateLayout;
@@ -45,6 +47,11 @@ class FragmentRegistrationPolicyTest extends TestCase
 
     private Template $user;
 
+    /**
+     * 임시 조각 디렉토리와 관리자·사용자 템플릿, 각 템플릿의 호스트 레이아웃을 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -60,6 +67,11 @@ class FragmentRegistrationPolicyTest extends TestCase
         TemplateLayout::factory()->create(['template_id' => $this->user->id, 'name' => 'auth/register']);
     }
 
+    /**
+     * 임시 조각 디렉토리를 지웁니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         File::deleteDirectory($this->tmp);
@@ -73,6 +85,8 @@ class FragmentRegistrationPolicyTest extends TestCase
      * @scenario compile_unit=install,source_health=valid
      *
      * @effects fragment_is_registered_only_where_its_host_exists
+     *
+     * @return void 반환값 없음
      */
     public function test_fragment_is_registered_only_to_templates_that_have_its_host(): void
     {
@@ -99,6 +113,8 @@ class FragmentRegistrationPolicyTest extends TestCase
      * @scenario compile_unit=install,source_health=valid
      *
      * @effects two_fragments_for_the_same_target_keep_two_rows
+     *
+     * @return void 반환값 없음
      */
     public function test_two_fragments_for_the_same_target_keep_two_rows(): void
     {
@@ -122,6 +138,8 @@ class FragmentRegistrationPolicyTest extends TestCase
      * @scenario compile_unit=install,source_health=invalid
      *
      * @effects fragment_is_compiled_with_the_target_templates_registry
+     *
+     * @return void 반환값 없음
      */
     public function test_user_fragment_using_admin_only_component_fails_user_template_compile(): void
     {
@@ -143,6 +161,8 @@ class FragmentRegistrationPolicyTest extends TestCase
      * @scenario compile_unit=install,source_health=valid
      *
      * @effects late_host_is_filled_by_reregistration_and_orphans_are_removed
+     *
+     * @return void 반환값 없음
      */
     public function test_late_host_is_filled_on_reregistration_and_orphan_rows_are_removed(): void
     {
@@ -166,12 +186,30 @@ class FragmentRegistrationPolicyTest extends TestCase
         File::delete($this->tmp.'/module/admin-user-mileage-tab.g7.html');
         $this->writeOverlay('admin-user-note-tab', 'admin_user_detail', 'user_detail');
 
-        $harness = new class($service)
+        // 갱신 경로는 행 쓰기를 동기화기에 맡긴다(#727) — 관리자와 같이 생성자로 받는다.
+        $harness = new class($service, app(LayoutRowSynchronizer::class))
         {
             use RefreshesLayoutExtensions;
+            use SynchronizesLayoutRows;
 
-            public function __construct(protected LayoutExtensionService $layoutExtensionService) {}
+            /**
+             * 관리자와 같은 배선으로 확장 서비스와 행 동기화기를 받습니다.
+             *
+             * @param  LayoutExtensionService  $layoutExtensionService  레이아웃 확장 서비스
+             * @param  LayoutRowSynchronizer  $layoutRowSynchronizer  레이아웃·확장 조각 행 동기화기
+             */
+            public function __construct(
+                protected LayoutExtensionService $layoutExtensionService,
+                protected LayoutRowSynchronizer $layoutRowSynchronizer,
+            ) {}
 
+            /**
+             * 모듈의 레이아웃 확장을 갱신 경로로 다시 동기화합니다.
+             *
+             * @param  ModuleInterface  $module  대상 모듈
+             * @param  IlluminateSupportCollection  $templates  관리자 템플릿 컬렉션
+             * @return array{refreshed: int, created: int, updated: int, deleted: int, skipped: int} 갱신 통계
+             */
             public function refresh(ModuleInterface $module, $templates): array
             {
                 return $this->refreshExtensionLayoutExtensions($module, $templates, LayoutSourceType::Module);
@@ -210,6 +248,7 @@ class FragmentRegistrationPolicyTest extends TestCase
      * @param  string  $key  조각 식별자 (파일 기본 이름)
      * @param  string  $target  대상 레이아웃
      * @param  string  $targetId  주입 대상 노드 id
+     * @return void 반환값 없음
      */
     private function writeOverlay(string $key, string $target, string $targetId): void
     {
@@ -219,6 +258,8 @@ class FragmentRegistrationPolicyTest extends TestCase
 
     /**
      * 활성 모듈 매니저를 임시 fragment 디렉토리로 바인딩합니다.
+     *
+     * @return void 반환값 없음
      */
     private function bindActiveModule(): void
     {
@@ -233,6 +274,8 @@ class FragmentRegistrationPolicyTest extends TestCase
 
     /**
      * 임시 디렉토리를 fragment 경로로 갖는 모듈 목을 만듭니다.
+     *
+     * @return ModuleInterface 모듈 목
      */
     private function module(): ModuleInterface
     {
