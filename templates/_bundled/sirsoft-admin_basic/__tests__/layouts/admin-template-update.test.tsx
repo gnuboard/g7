@@ -185,7 +185,9 @@ const translations = {
         layout_strategy_overwrite: '모든 레이아웃 덮어쓰기',
         layout_strategy_overwrite_desc: '새 버전의 레이아웃으로 모두 교체합니다.',
         layout_strategy_keep: '수정된 레이아웃 유지',
-        layout_strategy_keep_desc: '수정하지 않은 레이아웃만 업데이트합니다.',
+        layout_strategy_keep_desc: '고친 부분은 유지하고, 손대지 않은 부분은 새 버전으로 바꿉니다. 같은 곳을 양쪽이 고쳤으면 고친 내용을 남깁니다.',
+        modified_layouts_list_title: '수정한 레이아웃 ({{count}}개)',
+        modified_layouts_keep_notice: '위 레이아웃에서 고친 부분은 유지되고, 고치지 않은 부분에는 새 버전 변경이 들어갑니다. 결과는 업데이트 완료 알림과 활동 로그에서 확인할 수 있습니다.',
       },
     },
   },
@@ -1174,5 +1176,159 @@ describe('템플릿 업데이트 - 업데이트 모달', () => {
       expect(state._global.hasModifiedLayouts).toBe(false);
       expect(state._global.modifiedLayoutsCount).toBe(0);
     });
+  });
+});
+
+// ==============================
+// 레이아웃 업데이트 전략 (실제 부분 레이아웃 렌더) — #727
+// ==============================
+
+describe('템플릿 업데이트 - 레이아웃 전략 선택 (실제 부분 레이아웃)', () => {
+  let testUtils: ReturnType<typeof createLayoutTest>;
+  let registry: ComponentRegistry;
+  let modalPartial: any;
+  let adminKo: any;
+  let adminEn: any;
+
+  const StrategyLabel: React.FC<{ className?: string; children?: React.ReactNode }> = ({ className, children }) => (
+    <label className={className}>{children}</label>
+  );
+  const StrategyInput: React.FC<{ type?: string; name?: string; value?: string; checked?: boolean; className?: string }> = ({ type, name, value, checked, className }) => (
+    <input type={type} name={name} value={value} checked={checked} className={className} readOnly />
+  );
+  // 레이아웃 테스트 유틸은 openModal 스택을 Modal 의 isOpen 에 잇지 않으므로, 이 describe 는 본문을 늘 그리는 Modal 로
+  // 실제 부분 레이아웃의 전략 영역을 렌더해 본다.
+  const StrategyModal: React.FC<{ id?: string; children?: React.ReactNode }> = ({ id, children }) => (
+    <div data-testid={`modal-${id}`} role="dialog">{children}</div>
+  );
+  const StrategyImg: React.FC<{ src?: string; alt?: string; className?: string }> = ({ src, alt, className }) => (
+    <img src={src} alt={alt} className={className} />
+  );
+
+  /**
+   * 부분 레이아웃 트리에서 조건에 맞는 노드를 모두 모은다.
+   */
+  function collect(node: any, match: (n: any) => boolean, found: any[] = []): any[] {
+    if (Array.isArray(node)) {
+      node.forEach((child) => collect(child, match, found));
+      return found;
+    }
+    if (node && typeof node === 'object') {
+      if (match(node)) found.push(node);
+      Object.values(node).forEach((value) => {
+        if (value && typeof value === 'object') collect(value, match, found);
+      });
+    }
+    return found;
+  }
+
+  /**
+   * 실제 업데이트 모달을 띄운 레이아웃을 만든다.
+   */
+  function buildLayout(strategy: 'overwrite' | 'keep', modified: Array<{ name: string; updated_at: string }>) {
+    return {
+      version: '1.0.0',
+      layout_name: 'template_update_strategy_test',
+      initGlobal: {
+        selectedTemplate: {
+          identifier: 'sirsoft-sample',
+          name: '샘플',
+          version: '1.0.0',
+          latest_version: '1.1.0',
+          update_source: 'bundled',
+        },
+        isTemplateUpdating: false,
+        templateLayoutStrategy: strategy,
+        hasModifiedTemplateLayouts: modified.length > 0,
+        modifiedTemplateLayoutsCount: modified.length,
+        modifiedTemplateLayouts: modified,
+      },
+      modals: [modalPartial],
+      components: [{ id: 'main-content', type: 'basic', name: 'Div', children: [] }],
+    };
+  }
+
+  beforeEach(async () => {
+    const fs = await import('fs');
+    const path = await import('path');
+    const read = (relative: string) => JSON.parse(fs.readFileSync(path.resolve(__dirname, relative), 'utf-8'));
+    modalPartial = read('../../layouts/partials/admin_template_list/_modal_update.json');
+    adminKo = read('../../lang/partial/ko/admin.json');
+    adminEn = read('../../lang/partial/en/admin.json');
+
+    registry = setupTestRegistry();
+    Object.assign((registry as any).registry, {
+      Label: { component: StrategyLabel, metadata: { name: 'Label', type: 'basic' } },
+      Input: { component: StrategyInput, metadata: { name: 'Input', type: 'basic' } },
+      Img: { component: StrategyImg, metadata: { name: 'Img', type: 'basic' } },
+      Modal: { component: StrategyModal, metadata: { name: 'Modal', type: 'composite' } },
+    });
+  });
+
+  afterEach(() => {
+    if (testUtils) testUtils.cleanup();
+  });
+
+  // @scenario kind=template, area=layout_strategy
+  // @effects layout_strategy_choice_is_offered
+  it('덮어쓰기·유지 두 선택지가 같은 라디오 그룹으로 있고 기본값은 덮어쓰기다', () => {
+    const radios = collect(modalPartial, (n) => n.name === 'Input' && n.props?.name === 'layout_strategy');
+
+    expect(radios.map((r) => r.props.value)).toEqual(['overwrite', 'keep']);
+    expect(radios[0].props.checked).toBe("{{(_global.templateLayoutStrategy ?? 'overwrite') === 'overwrite'}}");
+    expect(radios[1].props.checked).toBe("{{(_global.templateLayoutStrategy ?? 'overwrite') === 'keep'}}");
+  });
+
+  // @scenario kind=template, area=layout_strategy
+  // @effects layout_strategy_choice_is_offered
+  it('업데이트 요청 본문에 고른 전략이 실린다', () => {
+    const calls = collect(modalPartial, (n) => n.handler === 'apiCall' && String(n.target ?? '').endsWith('/update'));
+
+    expect(calls).toHaveLength(1);
+    expect(calls[0].params.body.layout_strategy).toBe("{{_global.templateLayoutStrategy ?? 'overwrite'}}");
+  });
+
+  // @scenario kind=template, area=layout_strategy
+  // @effects layout_strategy_keep_notice_explains_merge
+  it('유지를 고르면 수정한 레이아웃 목록과 병합 안내가 보인다', async () => {
+    testUtils = createLayoutTest(buildLayout('keep', [{ name: 'sample_list', updated_at: '2026-09-30 10:00' }]), {
+      translations: { admin: adminKo, common: { cancel: '취소' } },
+      locale: 'ko',
+      componentRegistry: registry,
+      includeModals: true,
+    });
+    await testUtils.render();
+
+    expect(await screen.findByText('sample_list')).toBeTruthy();
+    expect(screen.getByText(adminKo.templates.modals.modified_layouts_keep_notice)).toBeTruthy();
+    expect(screen.getByText(adminKo.templates.modals.layout_strategy_keep_desc)).toBeTruthy();
+  });
+
+  // @scenario kind=template, area=layout_strategy
+  // @effects layout_strategy_keep_notice_explains_merge
+  it('덮어쓰기를 고르면 수정한 레이아웃 목록이 숨는다', async () => {
+    testUtils = createLayoutTest(buildLayout('overwrite', [{ name: 'sample_list', updated_at: '2026-09-30 10:00' }]), {
+      translations: { admin: adminKo, common: { cancel: '취소' } },
+      locale: 'ko',
+      componentRegistry: registry,
+      includeModals: true,
+    });
+    await testUtils.render();
+
+    expect(await screen.findByText(adminKo.templates.modals.layout_strategy_keep_desc)).toBeTruthy();
+    expect(screen.queryByText('sample_list')).toBeNull();
+    expect(screen.queryByText(adminKo.templates.modals.modified_layouts_keep_notice)).toBeNull();
+  });
+
+  // @scenario kind=template, area=layout_strategy
+  // @effects layout_strategy_keep_notice_explains_merge
+  it('유지 안내 문구가 "통째로 유지" 가 아니라 부분 병합을 설명한다 (ko·en)', () => {
+    const ko = adminKo.templates.modals;
+    const en = adminEn.templates.modals;
+
+    expect(ko.layout_strategy_keep_desc).toContain('손대지 않은 부분은 새 버전');
+    expect(ko.modified_layouts_keep_notice).toContain('고치지 않은 부분에는 새 버전');
+    expect(en.layout_strategy_keep_desc).toContain('untouched parts to the new version');
+    expect(en.modified_layouts_keep_notice).toContain('did not change receive the new version');
   });
 });

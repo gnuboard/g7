@@ -1646,7 +1646,7 @@ _단건 응답: `data` 객체의 필드._
 
 <!-- @generated:end -->
 
-**설명** 특정 모듈에서 사용자가 수정한 레이아웃이 있는지 확인합니다. `core.modules.read` 권한이 필요합니다. 업데이트 실행 전 이 정보를 조회하여 레이아웃 전략(overwrite: 새 버전으로 교체, keep: 사용자 수정본 유지) 선택을 안내하는 데 사용됩니다.
+**설명** 특정 모듈에서 사용자가 수정한 레이아웃이 있는지 확인합니다. `core.modules.read` 권한이 필요합니다. 업데이트 실행 전 이 정보를 조회하여 레이아웃 전략(overwrite: 새 버전으로 교체, keep: 운영자 수정본에 새 버전 3자 병합) 선택을 안내하는 데 사용됩니다. 목록에는 그 확장의 확장 조각 수정본도 포함되며(`kind: "extension"`, 레이아웃은 `kind: "layout"`), 「수정됨」 판정은 원본과의 정규화 비교(키 순서·빈 map 차이 무시)입니다.
 
 
 ### GET /api/admin/modules/{moduleName}/install-preview
@@ -1860,7 +1860,7 @@ _단건 응답: `data` 객체의 필드._
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
 | moduleName | path | string | 예 | — | 대상 module의 이름 (식별자) |
-| layout_strategy | body | string | 아니오 | `overwrite`, `keep` | 업데이트 시 레이아웃 처리 전략 (overwrite: 새 버전으로 교체, keep: 사용자 수정본 유지) |
+| layout_strategy | body | string | 아니오 | `overwrite`, `keep` | 업데이트 시 레이아웃 처리 전략 (overwrite: 새 버전으로 교체, keep: 운영자 수정본에 새 버전 3자 병합) |
 | vendor_mode | body | string | 아니오 | `auto`, `composer`, `bundled` | 벤더 설치 모드 (auto/composer/bundled) |
 | force | body | boolean | 아니오 | — | 강제 실행 여부 (안전 확인/선행 검사 우회) |
 | rebuild_search_index | body | boolean | 아니오 | — | 업데이트 후 색인이 누락된 검색 인덱스를 재생성할지 여부 (기본 false). 재생성 중에는 대상 인덱스가 잠기거나 재색인되므로 운영 중인 사이트에서는 접속이 적은 시간에 별도로 수행하는 것을 권장 |
@@ -1959,7 +1959,7 @@ _단건 응답: `data` 는 업데이트된 모듈의 `ModuleResource` 객체 (�
 
 <!-- @generated:end -->
 
-**설명** 특정 모듈을 최신 버전으로 업데이트합니다. `core.modules.install` 권한이 필요합니다. `layout_strategy` 로 레이아웃 처리 방식을(overwrite: 새 버전으로 교체, keep: 사용자 수정본 유지) 지정하며, `vendor_mode` 로 Composer 의존성 처리 방식을 선택합니다. 버전 제약·호환성 문제로 막힐 경우 `force: true` 로 강제 진행할 수 있습니다. `keep` 을 지정하면 사용자가 수정한 레이아웃(원본 해시와 현재 내용이 다른 레이아웃)은 갱신 대상에서 제외되어 현재 내용이 그대로 유지되고, 나머지 레이아웃만 파일 기준으로 갱신됩니다. 성공 응답 메시지에는 대상 식별자와 적용된 버전이 채워집니다. `rebuild_search_index: true` 를 함께 보내면 업데이트 후 색인이 누락된 검색 인덱스를 재생성합니다 — 인덱스 잠금·재색인 비용이 있어 기본은 수행하지 않으며, 보내지 않아도 응답의 `search_index` 에 현재 누락 여부가 담깁니다. 업데이트할 것이 없으면(현재 버전이 최신) 200 으로 응답하되 메시지는 `modules.no_update_available`(「업데이트할 내용이 없습니다」)입니다. 같은 모듈의 업데이트는 한 번에 하나만 수행되며, 진행 중에 들어온 요청(버튼 연속 클릭 등)은 아무 단계도 거치지 않고 409 로 거절됩니다.
+**설명** 특정 모듈을 최신 버전으로 업데이트합니다. `core.modules.install` 권한이 필요합니다. `layout_strategy` 로 레이아웃 처리 방식을(overwrite: 새 버전으로 교체, keep: 운영자 수정본에 새 버전 3자 병합) 지정하며, `vendor_mode` 로 Composer 의존성 처리 방식을 선택합니다. 버전 제약·호환성 문제로 막힐 경우 `force: true` 로 강제 진행할 수 있습니다. `keep` 을 지정하면 운영자가 수정한 레이아웃·확장 조각에 새 버전을 3자 병합합니다 — 고친 부분(조각·최상위 키·data_sources 항목 단위)은 운영자 것, 손대지 않은 부분은 새 버전이고, 같은 곳을 양쪽이 고쳤으면 운영자 것을 남깁니다. 운영자가 고치지 않은 레이아웃은 파일 기준으로 갱신됩니다. 보고할 행이 있으면 성공 메시지 뒤에 「레이아웃: 새 버전 변경 N곳 자동 반영, 운영자 수정과 겹친 M곳은 운영자 것 유지.」 요약이 붙고, 응답 `data.layout_sync` 에 `{strategy, applied_count, conflict_count, kept_no_base_count, kept_removed_count, kept_deleted_by_operator_count, kept_name_collision_count, kept_invalid_count, modified_count, entries[{kind, template, name, verdict, applied, conflicts}]}` 가 실립니다(규칙: docs/extension/extension-update-system.md §10). 성공 응답 메시지에는 대상 식별자와 적용된 버전이 채워집니다. `rebuild_search_index: true` 를 함께 보내면 업데이트 후 색인이 누락된 검색 인덱스를 재생성합니다 — 인덱스 잠금·재색인 비용이 있어 기본은 수행하지 않으며, 보내지 않아도 응답의 `search_index` 에 현재 누락 여부가 담깁니다. 업데이트할 것이 없으면(현재 버전이 최신) 200 으로 응답하되 메시지는 `modules.no_update_available`(「업데이트할 내용이 없습니다」)입니다. 같은 모듈의 업데이트는 한 번에 하나만 수행되며, 진행 중에 들어온 요청(버튼 연속 클릭 등)은 아무 단계도 거치지 않고 409 로 거절됩니다.
 
 
 ### GET /api/modules/assets/{identifier}

@@ -222,8 +222,8 @@ return [
             'backup_restored' => 'バックアップから前のバージョンが復元されました。',
             'force_mode' => '強制アップデートモード: バージョン比較をスキップして再インストールします。',
             'layout_strategy' => 'レイアウト戦略: :strategy',
-            'modified_extensions_warning' => '管理者が編集したレイアウト拡張 :count件が上書きされます。',
-            'modified_extension_item' => '  - :target (ソース: :source)',
+            'modified_layouts_warning' => '管理者が修正したレイアウト・拡張フラグメント :count 個が上書きされます:',
+            'modified_layout_item' => '  - :name (修正日: :date)',
         ],
     ],
     'composer_install' => [

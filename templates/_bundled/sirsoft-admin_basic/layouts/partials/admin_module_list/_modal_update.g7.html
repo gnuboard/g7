@@ -120,7 +120,7 @@
           <label class="flex-start gap-2 p-2 rounded cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700">
             <input type="radio" name="module_layout_strategy" value="keep" checked="{{(_global.moduleLayoutStrategy ?? 'overwrite') === 'keep'}}" class="radio mt-0.5">
               <on type="change">
-                <!-- 남기기 — 고친 레이아웃을 그대로 둔다(새 판본의 화면 변경이 반영되지 않는다). -->
+                <!-- 남기기 — 고친 부분은 두고 손대지 않은 조각·설정만 새 판본으로 바꾼다(겹치면 고친 쪽 유지). -->
                 <set-state target="global" moduleLayoutStrategy="keep"/>
               </on>
             </input>

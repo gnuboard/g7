@@ -4,6 +4,7 @@ namespace App\Extension;
 
 use App\Contracts\Extension\CacheInterface;
 use App\Contracts\Extension\TemplateManagerInterface;
+use App\Contracts\Repositories\LayoutExtensionRepositoryInterface;
 use App\Contracts\Repositories\LayoutRepositoryInterface;
 use App\Contracts\Repositories\ModuleRepositoryInterface;
 use App\Contracts\Repositories\PluginRepositoryInterface;
@@ -11,6 +12,7 @@ use App\Contracts\Repositories\TemplateRepositoryInterface;
 use App\Enums\DeactivationReason;
 use App\Enums\ExtensionStatus;
 use App\Enums\LayoutSourceType;
+use App\Enums\LayoutSyncMode;
 use App\Exceptions\ExtensionOperationInProgressException;
 use App\Extension\Cache\CoreCacheDriver;
 use App\Extension\Concerns\ResolvesExtensionIcons;
@@ -20,11 +22,15 @@ use App\Extension\Helpers\ExtensionOperationLock;
 use App\Extension\Helpers\ExtensionPendingHelper;
 use App\Extension\Helpers\ExtensionStatusGuard;
 use App\Extension\Helpers\GithubHelper;
+use App\Extension\Layout\DTO\LayoutSyncEntry;
+use App\Extension\Layout\LayoutRowSynchronizer;
+use App\Extension\Layout\LayoutSyncReport;
 use App\Providers\CoreServiceProvider;
 use App\Services\LayoutExtensionService;
 use App\Services\LayoutService;
 use App\Services\TemplateService;
 use Composer\Semver\Semver;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
@@ -44,6 +50,7 @@ class TemplateManager implements TemplateManagerInterface
     use Traits\ComputesLayoutContentHash;
     use Traits\InspectsUninstallData;
     use Traits\InvalidatesLayoutCache;
+    use Traits\SynchronizesLayoutRows;
     use Traits\ValidatesLayoutFiles;
 
     /**
@@ -102,6 +109,8 @@ class TemplateManager implements TemplateManagerInterface
      * @param  ModuleRepositoryInterface  $moduleRepository  모듈 행 조회·저장
      * @param  PluginRepositoryInterface  $pluginRepository  플러그인 행 조회·저장
      * @param  LayoutExtensionService  $layoutExtensionService  확장 조각 등록·해제 (설치·제거에 동반)
+     * @param  LayoutRowSynchronizer  $layoutRowSynchronizer  레이아웃·확장 조각 행 동기화기 (3자 병합·기준 보관)
+     * @param  LayoutExtensionRepositoryInterface  $layoutExtensionRepository  확장 조각 행 조회 (수정한 레이아웃 목록)
      */
     public function __construct(
         protected ExtensionManager $extensionManager,
@@ -109,7 +118,9 @@ class TemplateManager implements TemplateManagerInterface
         protected LayoutRepositoryInterface $layoutRepository,
         protected ModuleRepositoryInterface $moduleRepository,
         protected PluginRepositoryInterface $pluginRepository,
-        protected LayoutExtensionService $layoutExtensionService
+        protected LayoutExtensionService $layoutExtensionService,
+        protected LayoutRowSynchronizer $layoutRowSynchronizer,
+        protected LayoutExtensionRepositoryInterface $layoutExtensionRepository
     ) {
         $this->templatesPath = base_path('templates');
         $this->pendingTemplatesPath = $this->templatesPath.DIRECTORY_SEPARATOR.'_pending';
@@ -139,7 +150,7 @@ class TemplateManager implements TemplateManagerInterface
      * 리셋하고 디렉토리를 통째로 재스캔하므로, 그것을 무조건 호출하면 공유 인스턴스의
      * 상태를 매번 갈아엎으면서 풀스캔 비용까지 반복된다.
      *
-     * @return void
+     * @return void 반환값 없음
      */
     public function ensureLoaded(): void
     {
@@ -156,7 +167,7 @@ class TemplateManager implements TemplateManagerInterface
      * 항상 재스캔한다 — 설치/삭제/업데이트 직후 갱신을 보장하는 계약이다.
      * 단순히 "채워져 있으면 됨" 인 호출자는 `ensureLoaded()` 를 쓴다.
      *
-     * @return void
+     * @return void 반환값 없음
      */
     public function loadTemplates(): void
     {
@@ -251,7 +262,7 @@ class TemplateManager implements TemplateManagerInterface
      * 클래스 로드 없이 template.json 메타데이터만 읽어 저장합니다.
      * 이미 활성 디렉토리에 로드된 템플릿은 제외합니다.
      *
-     * @return void
+     * @return void 반환값 없음
      */
     protected function loadPendingTemplates(): void
     {
@@ -273,7 +284,7 @@ class TemplateManager implements TemplateManagerInterface
      * 클래스 로드 없이 template.json 메타데이터만 읽어 저장합니다.
      * 이미 활성 디렉토리 또는 _pending에 로드된 템플릿은 제외합니다.
      *
-     * @return void
+     * @return void 반환값 없음
      */
     protected function loadBundledTemplates(): void
     {
@@ -470,13 +481,13 @@ class TemplateManager implements TemplateManagerInterface
 
         // 1. _pending/_bundled에서 활성 디렉토리로 복사 (활성 디렉토리에 없는 경우)
         // force=true 시 활성 디렉토리가 있어도 원본으로 덮어씀 (불완전 설치 복구)
-        $onProgress?->__invoke('copy', '파일 복사 중...');
+        $onProgress?->__invoke('copy', __('extensions.progress.copy_files'));
         if ($force || ! isset($this->templates[$templateName])) {
             $this->copyToActiveFromSource($templateName, $onProgress, $force);
         }
 
         // 2. 검증
-        $onProgress?->__invoke('validate', '검증 중...');
+        $onProgress?->__invoke('validate', __('extensions.progress.validate'));
 
         try {
             DB::transaction(function () use ($templateName, $onProgress) {
@@ -507,7 +518,7 @@ class TemplateManager implements TemplateManagerInterface
                 $description = $manifest['description'] ?? $description;
 
                 // 3. DB 등록
-                $onProgress?->__invoke('db', 'DB 등록 중...');
+                $onProgress?->__invoke('db', __('extensions.progress.db_register'));
 
                 // 템플릿 레코드 생성 또는 업데이트
                 $templateRecord = $this->templateRepository->updateOrCreate(
@@ -527,7 +538,7 @@ class TemplateManager implements TemplateManagerInterface
                 );
 
                 // 4. 레이아웃 등록
-                $onProgress?->__invoke('layout', '레이아웃 등록 중...');
+                $onProgress?->__invoke('layout', __('extensions.progress.layout_register'));
 
                 // 레이아웃 JSON 파일 일괄 등록
                 $this->registerLayouts($templateName, $templateRecord->id);
@@ -684,12 +695,20 @@ class TemplateManager implements TemplateManagerInterface
                 'updated_at' => now(),
             ]);
 
-            // 활성 모듈/플러그인의 레이아웃 확장을 새 템플릿에 등록
+            // 템플릿 자기 레이아웃을 keep 규칙으로 갱신한다(D11) — 꺼 둔 채 업데이트한 템플릿은 켤 때 새 판이 들어와야
+            // 하고(종전엔 옛 화면에 고착), 운영자가 고친 부분은 남아야 한다. 파일이 원본과 같으면 아무것도 바꾸지 않는다.
+            try {
+                $this->refreshTemplateLayouts($templateName, true);
+            } catch (\Throwable $e) {
+                Log::error('템플릿 활성화 중 레이아웃 갱신 실패', ['template' => $templateName, 'error' => $e->getMessage()]);
+            }
+
+            // 활성 모듈/플러그인의 레이아웃 확장을 새 템플릿에 등록 (keep — 운영자가 고친 조각은 보존)
             $this->layoutExtensionService->registerAllActiveExtensionsToTemplate($templateRecord->id);
 
             // 활성 모듈/플러그인의 레이아웃을 새 템플릿에 등록
             // registerModuleLayouts/registerPluginLayouts는 모든 활성 템플릿을 조회하므로
-            // 새로 활성화된 템플릿에도 자동으로 레이아웃이 등록됨 (updateOrCreate로 기존 중복 안전)
+            // 새로 활성화된 템플릿에도 자동으로 레이아웃이 등록됨 (keep 규칙 — 템플릿을 바꿨다 돌아와도 운영자 수정 보존, D3)
             app(ModuleManager::class)->registerLayoutsForAllActiveModules();
             app(PluginManager::class)->registerLayoutsForAllActivePlugins();
 
@@ -724,7 +743,7 @@ class TemplateManager implements TemplateManagerInterface
      * 지정된 타입의 모든 템플릿을 비활성화합니다.
      *
      * @param  string  $type  템플릿 타입 ('admin' 또는 'user')
-     * @return void
+     * @return void 반환값 없음
      */
     protected function deactivateTemplatesByType(string $type): void
     {
@@ -833,7 +852,7 @@ class TemplateManager implements TemplateManagerInterface
         $templateInfo = $this->getTemplateInfo($templateName) ?? [];
 
         // 1. 캐시 삭제
-        $onProgress?->__invoke('cache', '캐시 삭제 중...');
+        $onProgress?->__invoke('cache', __('extensions.progress.cache_delete'));
 
         $result = DB::transaction(function () use ($templateName, $onProgress) {
             $template = $this->getTemplate($templateName);
@@ -845,7 +864,7 @@ class TemplateManager implements TemplateManagerInterface
             $this->clearTemplateCache($templateName);
 
             // 2. DB 삭제
-            $onProgress?->__invoke('db', 'DB 삭제 중...');
+            $onProgress?->__invoke('db', __('extensions.progress.db_delete'));
 
             // 레이아웃 삭제 (트랜잭션 내)
             $templateRecord = $this->templateRepository->findByIdentifier($templateName);
@@ -874,7 +893,7 @@ class TemplateManager implements TemplateManagerInterface
 
         if ($result) {
             // 3. 파일 삭제
-            $onProgress?->__invoke('files', '파일 삭제 중...');
+            $onProgress?->__invoke('files', __('extensions.progress.delete_files'));
 
             // 활성 템플릿 디렉토리 전체 삭제 (_pending/_bundled에 원본 보존되므로 재설치 가능)
             $preservedBackups = ExtensionPendingHelper::deleteExtensionDirectory(
@@ -1387,7 +1406,7 @@ class TemplateManager implements TemplateManagerInterface
      * 템플릿은 코어 버전 범위만 선언한다.
      *
      * @param  array<string, mixed>  $template  템플릿 메타데이터 (`template.json`)
-     * @return void
+     * @return void 반환값 없음
      *
      * @throws \Exception 코어 버전이 선언 범위를 벗어날 때
      */
@@ -1597,7 +1616,7 @@ class TemplateManager implements TemplateManagerInterface
      *
      * @param  string  $templateName  템플릿명 (identifier)
      * @param  int  $templateId  템플릿 DB ID
-     * @return void
+     * @return void 반환값 없음
      */
     protected function registerLayouts(string $templateName, int $templateId): void
     {
@@ -1628,23 +1647,30 @@ class TemplateManager implements TemplateManagerInterface
             return;
         }
 
+        $synchronizer = $this->layoutSynchronizer();
+
         foreach ($validatedLayouts as $validatedLayout) {
             try {
                 $layoutFile = $validatedLayout['file'];
-                $layoutData = $validatedLayout['data'];
                 $layoutName = $validatedLayout['layout_name'];
 
-                // DB에 레이아웃 등록 (updateOrCreate로 멱등성 보장)
-                $this->layoutRepository->updateOrCreate(
+                // 오버라이드는 전용 등록(registerLayoutOverrides)이 맡는다.
+                if ($this->isOverrideLayoutFile($layoutFile)) {
+                    continue;
+                }
+
+                // DB에 레이아웃 등록 — 원본 본문(병합 기준)까지 남긴다. 재설치로 행이 남아 있으면 운영자 수정은 보존한다.
+                $synchronizer->syncLayout(
                     [
                         'template_id' => $templateId,
+                        'template' => $templateName,
                         'name' => $layoutName,
+                        'source_type' => LayoutSourceType::Template,
+                        'source_identifier' => null,
                     ],
-                    [
-                        'content' => $layoutData,
-                        'original_content_hash' => $this->computeContentHash($layoutData),
-                        'original_content_size' => $this->computeContentSize($layoutData),
-                    ]
+                    $validatedLayout['data'],
+                    $validatedLayout['original'],
+                    LayoutSyncMode::Keep
                 );
 
                 Log::info(__('templates.info.layout_registered'), [
@@ -1666,7 +1692,7 @@ class TemplateManager implements TemplateManagerInterface
      * 특정 템플릿의 모든 레이아웃을 삭제합니다.
      *
      * @param  int  $templateId  템플릿 DB ID
-     * @return void
+     * @return void 반환값 없음
      */
     protected function unregisterLayouts(int $templateId): void
     {
@@ -1688,19 +1714,25 @@ class TemplateManager implements TemplateManagerInterface
      * 레이아웃 해석 시 모듈 기본 레이아웃보다 높은 우선순위를 가집니다.
      * 파일에 없는 기존 오버라이드 레코드(고아)는 자동으로 정리됩니다.
      *
+     * 원본 해시·원본 본문을 남겨 운영자 수정 여부를 판정할 수 있게 하고, keep 이면 병합한다(W6 — 종전엔 해시 없이
+     * 덮어써 keep 이 무효였고 「수정한 레이아웃」 목록에도 뜨지 않았다).
+     *
      * @param  string  $templateName  템플릿명 (identifier)
      * @param  int  $templateId  템플릿 DB ID
-     * @return void
+     * @param  LayoutSyncMode  $mode  동기화 모드 (설치·활성화는 Keep, 갱신은 그 갱신의 모드)
+     * @param  array<string, array<string, mixed>>  $backupOriginals  업데이트 백업을 컴파일한 이전 판 원본 (이름 => 원본)
+     * @param  LayoutSyncReport|null  $report  결과를 모을 보고
+     * @return void 반환값 없음
      */
-    protected function registerLayoutOverrides(string $templateName, int $templateId): void
+    protected function registerLayoutOverrides(string $templateName, int $templateId, LayoutSyncMode $mode = LayoutSyncMode::Keep, array $backupOriginals = [], ?LayoutSyncReport $report = null): void
     {
         $overridesPath = base_path("templates/{$templateName}/layouts/overrides");
 
         if (! File::exists($overridesPath)) {
             Log::info(__('templates.info.no_overrides_directory'), ['template' => $templateName]);
 
-            // overrides 디렉토리 없음 → 기존 override 레이아웃 모두 삭제
-            $this->cleanupOrphanOverrideLayouts($templateId, $templateName, []);
+            // overrides 디렉토리 없음 → 기존 override 레이아웃 모두 정리 (keep 이면 운영자 수정본은 남긴다)
+            $this->cleanupOrphanOverrideLayouts($templateId, $templateName, [], $mode, $report);
 
             return;
         }
@@ -1711,8 +1743,8 @@ class TemplateManager implements TemplateManagerInterface
         if (empty($moduleDirectories)) {
             Log::info(__('templates.info.no_override_modules'), ['template' => $templateName]);
 
-            // 모듈 디렉토리 없음 → 기존 override 레이아웃 모두 삭제
-            $this->cleanupOrphanOverrideLayouts($templateId, $templateName, []);
+            // 모듈 디렉토리 없음 → 기존 override 레이아웃 모두 정리 (keep 이면 운영자 수정본은 남긴다)
+            $this->cleanupOrphanOverrideLayouts($templateId, $templateName, [], $mode, $report);
 
             return;
         }
@@ -1751,24 +1783,28 @@ class TemplateManager implements TemplateManagerInterface
                     $layoutData = $validatedLayout['data'];
                     $layoutName = $validatedLayout['layout_name'];
 
-                    // content 필드 구성
+                    // content 필드 구성 — 원본도 같은 규칙으로 잘라야 병합 기준과 본문의 키 집합이 맞는다.
                     $content = $this->extractLayoutContent($layoutData);
+                    $original = $this->extractLayoutContent($validatedLayout['original']);
+                    $backupOriginal = isset($backupOriginals[$layoutName]) ? $this->extractLayoutContent($backupOriginals[$layoutName]) : null;
 
-                    // DB에 오버라이드 레이아웃 등록
-                    $this->layoutRepository->updateOrCreate(
+                    // DB에 오버라이드 레이아웃 등록 (동기화기 경유 — 원본 해시·원본 본문 기록, keep 이면 병합).
+                    // extends 컬럼은 본문이 아니라 파일 선언에서 온다(오버라이드 본문에는 extends 키가 없다).
+                    $entry = $this->layoutSynchronizer()->syncLayout(
                         [
                             'template_id' => $templateId,
+                            'template' => $templateName,
                             'name' => $layoutName,
-                        ],
-                        [
-                            'content' => $content,
-                            'extends' => $layoutData['extends'] ?? null,
                             'source_type' => LayoutSourceType::Template,
                             'source_identifier' => $templateName,
-                            'created_by' => Auth::id(),
-                            'updated_by' => Auth::id(),
-                        ]
+                            'extends' => $layoutData['extends'] ?? null,
+                        ],
+                        $content,
+                        $original,
+                        $mode,
+                        $backupOriginal
                     );
+                    $report?->add($entry);
 
                     $registeredCount++;
                     $registeredLayoutNames[] = $layoutName;
@@ -1791,8 +1827,8 @@ class TemplateManager implements TemplateManagerInterface
             }
         }
 
-        // 파일에 없는 고아 override 레이아웃 정리
-        $this->cleanupOrphanOverrideLayouts($templateId, $templateName, $registeredLayoutNames);
+        // 파일에 없는 고아 override 레이아웃 정리 (keep 이면 운영자 수정본은 남긴다)
+        $this->cleanupOrphanOverrideLayouts($templateId, $templateName, $registeredLayoutNames, $mode, $report);
 
         if ($registeredCount > 0) {
             // 오버라이드 레이아웃 캐시 무효화
@@ -1815,9 +1851,11 @@ class TemplateManager implements TemplateManagerInterface
      * @param  int  $templateId  템플릿 DB ID
      * @param  string  $templateName  템플릿명 (identifier)
      * @param  array  $registeredLayoutNames  현재 파일에서 등록된 레이아웃 이름 목록
-     * @return void
+     * @param  LayoutSyncMode  $mode  동기화 모드 — keep 이면 운영자가 고친 오버라이드는 남긴다(D4)
+     * @param  LayoutSyncReport|null  $report  결과를 모을 보고
+     * @return void 반환값 없음
      */
-    protected function cleanupOrphanOverrideLayouts(int $templateId, string $templateName, array $registeredLayoutNames): void
+    protected function cleanupOrphanOverrideLayouts(int $templateId, string $templateName, array $registeredLayoutNames, LayoutSyncMode $mode = LayoutSyncMode::Overwrite, ?LayoutSyncReport $report = null): void
     {
         try {
             $existingOverrides = $this->layoutRepository->getOverridesByTemplateId($templateId);
@@ -1835,11 +1873,25 @@ class TemplateManager implements TemplateManagerInterface
                 }
 
                 if (! in_array($override->name, $registeredLayoutNames)) {
+                    // 파일에서 온 적이 없는 행(원본 본문·원본 해시가 둘 다 없다)은 오버라이드가 아니라 운영자가 편집기
+                    // 「새 레이아웃」 으로 만든 화면이다 — `source_identifier` 가 템플릿 식별자라 모양만 같을 뿐이므로
+                    // 고아 정리 대상이 아니다(지우면 템플릿을 켜기만 해도 운영자 화면이 영구 삭제된다).
+                    if (! $this->layoutSynchronizer()->hasFileOrigin($override)) {
+                        continue;
+                    }
+
+                    // 새 버전에서 빠졌지만 운영자 수정본이면 남긴다 (D4 — 템플릿 자기 레이아웃과 같은 규칙)
+                    if ($mode === LayoutSyncMode::Keep && $this->layoutSynchronizer()->isOperatorModified($override)) {
+                        $report?->add(new LayoutSyncEntry('layout', $templateName, $override->name, 'kept_removed'));
+
+                        continue;
+                    }
+
                     // 캐시 삭제 (레코드 삭제 전에 수행) — 키 조립은 트레이트 단일 지점에 위임
                     // (.with_source_meta 변종 포함, 수작업 키 목록의 규약 드리프트 방지)
                     $this->forgetLayoutCacheKeys($override, $templateName);
 
-                    $override->forceDelete();
+                    $this->layoutRepository->forceDelete($override);
                     $deletedCount++;
 
                     Log::info('고아 오버라이드 레이아웃 삭제', [
@@ -1872,7 +1924,7 @@ class TemplateManager implements TemplateManagerInterface
      * 캐시를 무효화하여 다음 요청 시 새로운 데이터가 로드되도록 합니다.
      *
      * @param  int  $templateId  템플릿 DB ID
-     * @return void
+     * @return void 반환값 없음
      */
     protected function invalidateOverrideLayoutCaches(int $templateId): void
     {
@@ -2014,7 +2066,7 @@ class TemplateManager implements TemplateManagerInterface
      * 템플릿의 주요 레이아웃을 미리 캐싱합니다 (캐시 워밍).
      *
      * @param  string  $templateIdentifier  템플릿 식별자
-     * @return void
+     * @return void 반환값 없음
      */
     protected function warmTemplateCache(string $templateIdentifier): void
     {
@@ -2171,16 +2223,18 @@ class TemplateManager implements TemplateManagerInterface
     /**
      * 템플릿의 레이아웃을 파일에서 다시 읽어 DB에 갱신합니다.
      *
-     * 활성화된 템플릿의 레이아웃 파일을 다시 스캔하여
-     * DB에 저장된 레이아웃을 최신 파일 내용으로 갱신합니다.
+     * 모든 행 쓰기는 {@see LayoutRowSynchronizer} 를 지난다. keep(`$preserveModified`)이면 운영자가 고친 화면은
+     * 조각 단위로 병합하고(고친 조각은 운영자 판, 손대지 않은 조각은 새 판), 운영자가 지운·만든·이름 바꾼 화면은
+     * 되살리거나 덮거나 지우지 않는다. overwrite 면 새 판으로 덮는다(수동 「레이아웃 갱신」).
      *
      * @param  string  $identifier  템플릿 식별자
-     * @param  bool  $preserveModified  운영자가 관리자 UI 에서 수정한 레이아웃은 덮어쓰지 않을지 여부 (true 면 user_overrides 보존)
-     * @return array{success: bool, layouts_refreshed: int} 갱신 결과 및 갱신된 레이아웃 개수
+     * @param  bool  $preserveModified  운영자가 고친 화면을 보존(병합)할지 여부 (keep)
+     * @param  string|null  $backupPath  업데이트 백업 디렉토리 — 원본 본문이 없는 행의 비교 기준을 만든다
+     * @return array{success: bool, layouts_refreshed: int, created: int, updated: int, deleted: int, unchanged: int, skipped: int, extensions_refreshed: int, layout_sync: array<string, mixed>} 갱신 결과
      *
      * @throws \Exception 템플릿을 찾을 수 없거나 레이아웃 갱신 실패 시
      */
-    public function refreshTemplateLayouts(string $identifier, bool $preserveModified = false): array
+    public function refreshTemplateLayouts(string $identifier, bool $preserveModified = false, ?string $backupPath = null): array
     {
         // 템플릿 DB 조회
         $template = $this->templateRepository->findByIdentifier($identifier);
@@ -2194,12 +2248,14 @@ class TemplateManager implements TemplateManagerInterface
             throw new \Exception(__('templates.errors.template_not_active', ['identifier' => $identifier]));
         }
 
+        $mode = LayoutSyncMode::fromPreserve($preserveModified);
+        $report = new LayoutSyncReport($mode);
         $layoutsPath = base_path("templates/{$identifier}/layouts");
 
         if (! File::exists($layoutsPath)) {
             Log::info(__('templates.info.no_layouts_directory'), ['template' => $identifier]);
 
-            return ['success' => true, 'layouts_refreshed' => 0, 'created' => 0, 'updated' => 0, 'deleted' => 0, 'unchanged' => 0];
+            return ['success' => true, 'layouts_refreshed' => 0, 'created' => 0, 'updated' => 0, 'deleted' => 0, 'unchanged' => 0, 'skipped' => 0, 'extensions_refreshed' => 0, 'layout_sync' => $report->toArray()];
         }
 
         // 레이아웃 검증
@@ -2214,75 +2270,34 @@ class TemplateManager implements TemplateManagerInterface
             throw $e;
         }
 
-        // 파일에서 가져온 레이아웃 이름 목록
-        $fileLayoutNames = collect($validatedLayouts)->pluck('layout_name')->toArray();
+        // 오버라이드는 전용 등록이 맡는다 — 자기 레이아웃 동기화에서 뺀다.
+        $validatedLayouts = array_values(array_filter($validatedLayouts, fn ($layout) => ! $this->isOverrideLayoutFile($layout['file'])));
+        $fileLayoutNames = array_column($validatedLayouts, 'layout_name');
 
-        // DB에 있는 템플릿 기본 레이아웃 조회 (source_type = template, source_identifier = null)
-        $existingLayouts = $this->layoutRepository->getByTemplateIdWithFilter(
-            $template->id,
-            'template',
-            null
-        )->keyBy('name');
-
+        $synchronizer = $this->layoutSynchronizer();
+        $backupOriginals = $synchronizer->compileBackupOriginals($backupPath, 'templates', $identifier);
         $stats = ['created' => 0, 'updated' => 0, 'deleted' => 0, 'unchanged' => 0, 'skipped' => 0];
 
         // 파일 기반 레이아웃 동기화
         foreach ($validatedLayouts as $validatedLayout) {
+            $layoutName = $validatedLayout['layout_name'];
+
             try {
-                $layoutName = $validatedLayout['layout_name'];
-                $layoutData = $validatedLayout['data'];
-                $existingLayout = $existingLayouts->get($layoutName);
-
-                if ($existingLayout) {
-                    // 기존 레이아웃이 있는 경우 - 내용 비교 후 업데이트
-                    $existingContent = is_string($existingLayout->content)
-                        ? json_decode($existingLayout->content, true)
-                        : $existingLayout->content;
-
-                    if ($existingContent !== $layoutData) {
-                        // 사용자 수정 감지: preserveModified 시 original_content_hash와 현재 content hash 비교
-                        if ($preserveModified) {
-                            $currentHash = $this->computeContentHash($existingContent);
-                            $originalHash = $existingLayout->original_content_hash;
-
-                            // hash가 다르면 사용자가 수정한 것 → 보존
-                            if ($originalHash && $currentHash !== $originalHash) {
-                                $stats['skipped']++;
-                                Log::info("템플릿 레이아웃 보존 (사용자 수정): {$layoutName}", ['template' => $identifier]);
-
-                                continue;
-                            }
-                        }
-
-                        // 업데이트 + 새 원본 hash/size 저장
-                        $this->layoutRepository->updateOrCreate(
-                            ['template_id' => $template->id, 'name' => $layoutName],
-                            [
-                                'content' => $layoutData,
-                                'original_content_hash' => $this->computeContentHash($layoutData),
-                                'original_content_size' => $this->computeContentSize($layoutData),
-                            ]
-                        );
-                        $stats['updated']++;
-                        Log::info("템플릿 레이아웃 업데이트: {$layoutName}", ['template' => $identifier]);
-                    } else {
-                        // 내용이 같으면 그대로
-                        $stats['unchanged']++;
-                    }
-                } else {
-                    // DB에 없으면 새로 생성
-                    $this->layoutRepository->updateOrCreate(
-                        ['template_id' => $template->id, 'name' => $layoutName],
-                        [
-                            'content' => $layoutData,
-                            'source_type' => 'template',
-                            'original_content_hash' => $this->computeContentHash($layoutData),
-                            'original_content_size' => $this->computeContentSize($layoutData),
-                        ]
-                    );
-                    $stats['created']++;
-                    Log::info("템플릿 레이아웃 생성: {$layoutName}", ['template' => $identifier]);
-                }
+                $entry = $synchronizer->syncLayout(
+                    [
+                        'template_id' => $template->id,
+                        'template' => $identifier,
+                        'name' => $layoutName,
+                        'source_type' => LayoutSourceType::Template,
+                        'source_identifier' => null,
+                    ],
+                    $validatedLayout['data'],
+                    $validatedLayout['original'],
+                    $mode,
+                    $backupOriginals[$layoutName] ?? null
+                );
+                $this->tallyLayoutSync($stats, $entry);
+                $report->add($entry);
             } catch (\Exception $e) {
                 Log::error(__('templates.errors.layout_registration_failed'), [
                     'file' => $validatedLayout['file'],
@@ -2291,35 +2306,27 @@ class TemplateManager implements TemplateManagerInterface
             }
         }
 
-        // DB에만 있고 파일에 없는 레이아웃 삭제
-        foreach ($existingLayouts as $layoutName => $layout) {
-            if (! in_array($layoutName, $fileLayoutNames)) {
-                // preserveModified: 사용자가 수정한 레이아웃은 삭제하지 않음
-                if ($preserveModified && $layout->original_content_hash) {
-                    $currentContent = is_string($layout->content)
-                        ? json_decode($layout->content, true)
-                        : $layout->content;
-                    $currentHash = $this->computeContentHash($currentContent);
+        // DB에만 있고 파일에 없는 레이아웃 — 이전 판 파일 목록에 있던 이름만 삭제 후보(운영자가 만든·이름 바꾼 화면은 남긴다).
+        $previousNames = $backupOriginals !== []
+            ? array_values(array_filter(array_keys($backupOriginals), fn ($name) => ! str_contains((string) $name, '.')))
+            : null;
+        $existingLayouts = $this->layoutRepository->getByTemplateIdWithFilter($template->id, 'template', null);
 
-                    if ($currentHash !== $layout->original_content_hash) {
-                        $stats['skipped']++;
-                        Log::info("템플릿 레이아웃 보존 (삭제 대상, 사용자 수정): {$layoutName}", ['template' => $identifier]);
-
-                        continue;
-                    }
-                }
-
-                $layout->forceDelete();
-                $stats['deleted']++;
-                Log::info("템플릿 레이아웃 삭제: {$layoutName}", ['template' => $identifier]);
+        foreach ($existingLayouts as $layout) {
+            if (in_array($layout->name, $fileLayoutNames, true)) {
+                continue;
             }
+
+            $entry = $synchronizer->removeMissingLayout($layout, $identifier, $mode, $synchronizer->isRemovalCandidate($layout, $previousNames));
+            $this->tallyLayoutSync($stats, $entry);
+            $report->add($entry);
         }
 
         // 오버라이드 레이아웃 재등록
-        $this->registerLayoutOverrides($identifier, $template->id);
+        $this->registerLayoutOverrides($identifier, $template->id, $mode, $backupOriginals, $report);
 
         // Extension 오버라이드 재등록 (레이아웃 확장)
-        $extensionStats = $this->registerExtensionOverrides($identifier, $template->id);
+        $extensionStats = $this->registerExtensionOverrides($identifier, $template->id, $mode, $report);
 
         // 캐시 무효화
         $this->clearTemplateCache($identifier);
@@ -2351,6 +2358,7 @@ class TemplateManager implements TemplateManagerInterface
             'unchanged' => $stats['unchanged'],
             'skipped' => $stats['skipped'],
             'extensions_refreshed' => $extensionStats['registered'] ?? 0,
+            'layout_sync' => $report->toArray(),
         ];
     }
 
@@ -2362,9 +2370,11 @@ class TemplateManager implements TemplateManagerInterface
      *
      * @param  string  $templateIdentifier  템플릿 식별자
      * @param  int  $templateId  템플릿 DB ID
+     * @param  LayoutSyncMode  $mode  동기화 모드 (설치는 Keep, 갱신은 그 갱신의 모드)
+     * @param  LayoutSyncReport|null  $report  결과를 모을 보고
      * @return array{registered: int, created: int, updated: int} 등록 통계
      */
-    protected function registerExtensionOverrides(string $templateIdentifier, int $templateId): array
+    protected function registerExtensionOverrides(string $templateIdentifier, int $templateId, LayoutSyncMode $mode = LayoutSyncMode::Keep, ?LayoutSyncReport $report = null): array
     {
         $stats = ['registered' => 0, 'created' => 0, 'updated' => 0];
         $extensionsPath = base_path("templates/{$templateIdentifier}/extensions");
@@ -2405,7 +2415,9 @@ class TemplateManager implements TemplateManagerInterface
                         $templateIdentifier,
                         $moduleIdentifier,  // override_target = 오버라이드 대상 모듈
                         $templateId,
-                        $definition['key']
+                        $definition['key'],
+                        $mode,
+                        $report
                     );
 
                     $stats['registered']++;
@@ -2444,7 +2456,7 @@ class TemplateManager implements TemplateManagerInterface
      * 템플릿 삭제 시 오버라이드를 제거합니다.
      *
      * @param  string  $templateIdentifier  템플릿 식별자
-     * @return void
+     * @return void 반환값 없음
      */
     protected function unregisterExtensionOverrides(string $templateIdentifier): void
     {
@@ -2682,7 +2694,7 @@ class TemplateManager implements TemplateManagerInterface
      * @param  string  $templateName  템플릿 식별자
      * @param  \Closure|null  $onProgress  진행 콜백 (?string $step, string $message)
      * @param  bool  $force
-     * @return void
+     * @return void 반환값 없음
      *
      * @throws \RuntimeException 소스를 찾을 수 없을 때
      */
@@ -2721,7 +2733,7 @@ class TemplateManager implements TemplateManagerInterface
      * 활성 디렉토리의 template.json을 다시 읽어 메모리에 로드합니다.
      *
      * @param  string  $templateName  템플릿 식별자
-     * @return void
+     * @return void 반환값 없음
      */
     protected function reloadTemplate(string $templateName): void
     {
@@ -3024,44 +3036,15 @@ class TemplateManager implements TemplateManagerInterface
 
         // 템플릿 자신이 소유한 레이아웃만 센다 — getByTemplateId() 는 같은 template_id 에
         // 등록된 모듈/플러그인 소유 레이아웃까지 반환해서, 남의 확장 수정본이 템플릿
-        // 업데이트 모달에 자기 것으로 집계된다. 실제 갱신 범위(refreshTemplateLayouts)는
-        // source_type='template' + source_identifier=null 뿐이므로 표시와 동작이 어긋난다.
-        $allLayouts = $this->layoutRepository->getByTemplateIdWithFilter(
-            $record->id,
-            'template',
-            null
+        // 업데이트 모달에 자기 것으로 집계된다. 그래서 source_type='template' 만 남긴다.
+        // 오버라이드 레이아웃(source_identifier = 템플릿)도 이 템플릿 소유라 함께 센다(W6) — keep 갱신이 병합하는 범위와 같다.
+        $ownLayouts = $this->layoutRepository->getByTemplateIdWithFilter($record->id, 'template', null)
+            ->concat($this->layoutRepository->getByTemplateIdWithFilter($record->id, 'template', $identifier));
+
+        return $this->buildModifiedLayoutsReport(
+            $ownLayouts,
+            $this->layoutExtensionRepository->getBySource(LayoutSourceType::Template, $identifier)
         );
-        $modifiedLayouts = $allLayouts->filter(function ($layout) {
-            if (! $layout->original_content_hash) {
-                return false; // hash 없으면 (레거시 데이터) 미수정 취급
-            }
-
-            $currentContent = is_string($layout->content)
-                ? json_decode($layout->content, true)
-                : $layout->content;
-            $currentHash = $this->computeContentHash($currentContent);
-
-            return $currentHash !== $layout->original_content_hash;
-        });
-
-        return [
-            'has_modified_layouts' => $modifiedLayouts->isNotEmpty(),
-            'modified_count' => $modifiedLayouts->count(),
-            'modified_layouts' => $modifiedLayouts->map(function ($layout) {
-                $currentContent = is_string($layout->content)
-                    ? json_decode($layout->content, true)
-                    : $layout->content;
-                $currentSize = $this->computeContentSize($currentContent);
-                $originalSize = $layout->original_content_size ?? $currentSize;
-
-                return [
-                    'id' => $layout->id,
-                    'name' => $layout->name,
-                    'updated_at' => $layout->updated_at?->format('Y-m-d H:i:s'),
-                    'size_diff' => $currentSize - $originalSize,
-                ];
-            })->values()->toArray(),
-        ];
     }
 
     /**
@@ -3187,21 +3170,24 @@ class TemplateManager implements TemplateManagerInterface
         }
 
         $backupPath = null;
+        $layoutSync = null;
+        $recordedColumns = [];
+        $filesRestored = false;
 
         try {
             // 1. 백업 생성
-            $onProgress?->__invoke('backup', '백업 생성 중...');
+            $onProgress?->__invoke('backup', __('extensions.progress.backup'));
             $backupPath = ExtensionBackupHelper::createBackup('templates', $identifier, $onProgress);
 
             // 2. 상태 → updating
-            $onProgress?->__invoke('status', '상태 변경 중...');
+            $onProgress?->__invoke('status', __('extensions.progress.status_change'));
             $this->templateRepository->updateByIdentifier($identifier, [
                 'status' => ExtensionStatus::Updating->value,
                 'updated_at' => now(),
             ]);
 
             // 3. 스테이징 (소스에 따라 분기) — 템플릿은 composer install 불필요
-            $onProgress?->__invoke('staging', '스테이징 중...');
+            $onProgress?->__invoke('staging', __('extensions.progress.staging'));
             $stagingPath = null;
 
             try {
@@ -3229,7 +3215,7 @@ class TemplateManager implements TemplateManagerInterface
                 }
 
                 // 4. 원자적 적용 (스테이징 → 활성 디렉토리)
-                $onProgress?->__invoke('files', '파일 교체 중...');
+                $onProgress?->__invoke('files', __('extensions.progress.replace_files'));
                 if ($stagingPath) {
                     $targetPath = $this->templatesPath.DIRECTORY_SEPARATOR.$identifier;
                     ExtensionPendingHelper::copyToActive($stagingPath, $targetPath, $onProgress);
@@ -3246,7 +3232,7 @@ class TemplateManager implements TemplateManagerInterface
             }
 
             // 템플릿 재로드 (새 파일로)
-            $onProgress?->__invoke('reload', '재로드 중...');
+            $onProgress?->__invoke('reload', __('extensions.progress.reload'));
             $this->reloadTemplate($identifier);
             $template = $this->getTemplate($identifier);
 
@@ -3254,7 +3240,7 @@ class TemplateManager implements TemplateManagerInterface
             $this->validateSeoConfig($identifier);
 
             // 5. 트랜잭션: DB 정보 갱신
-            $onProgress?->__invoke('db', 'DB 갱신 중...');
+            $onProgress?->__invoke('db', __('extensions.progress.db_update'));
             DB::beginTransaction();
             try {
                 $name = $template ? $this->convertToMultilingual($template['name']) : $record->name;
@@ -3270,7 +3256,7 @@ class TemplateManager implements TemplateManagerInterface
                     $description = $manifest['description'] ?? $description;
                 }
 
-                $this->templateRepository->updateByIdentifier($identifier, [
+                $recorded = [
                     'version' => $toVersion,
                     'latest_version' => $toVersion,
                     'name' => $name,
@@ -3282,16 +3268,19 @@ class TemplateManager implements TemplateManagerInterface
                     'metadata' => $template['metadata'] ?? $record->metadata,
                     'updated_by' => Auth::id(),
                     'updated_at' => now(),
-                ]);
+                ];
+                $this->templateRepository->updateByIdentifier($identifier, $recorded);
 
                 DB::commit();
+                // 실패 경로가 되돌릴 칸 — 이 배열 하나가 기록·복원의 SSoT 다(갱신 시각은 복원이 새로 찍는다).
+                $recordedColumns = array_keys(Arr::except($recorded, ['updated_at']));
             } catch (\Throwable $e) {
                 DB::rollBack();
                 throw $e;
             }
 
             // 6. 상태 복원 (refreshTemplateLayouts()가 active 상태를 요구하므로 먼저 복원)
-            $onProgress?->__invoke('restore_status', '상태 복원 중...');
+            $onProgress?->__invoke('restore_status', __('extensions.progress.restore_status'));
             $this->templateRepository->updateByIdentifier($identifier, [
                 'status' => $previousStatus,
                 'updated_at' => now(),
@@ -3299,15 +3288,21 @@ class TemplateManager implements TemplateManagerInterface
 
             // 7. 레이아웃 갱신 (이전 상태가 active이고 overwrite 전략이면)
             // refreshTemplateLayouts()는 캐시 초기화 + 캐시 버전 증가를 포함
-            $onProgress?->__invoke('layout', '레이아웃 갱신 중...');
+            $onProgress?->__invoke('layout', __('extensions.progress.layout_update'));
             if ($previousStatus === ExtensionStatus::Active->value) {
                 $preserveModified = ($layoutStrategy === 'keep');
-                $this->refreshTemplateLayouts($identifier, $preserveModified);
+                $layoutSync = $this->refreshTemplateLayouts($identifier, $preserveModified, $backupPath)['layout_sync'] ?? null;
+            } elseif ($backupPath !== null) {
+                // 꺼 둔 채 업데이트(D11) — 켤 때(activateTemplate) 병합할 수 있게 이전 판 원본을 미리 저장한다.
+                $this->layoutSynchronizer()->stashBaseForInactiveUpdate($backupPath, 'templates', $identifier);
             }
 
             // 8. 백업 삭제 + 캐시 삭제
-            $onProgress?->__invoke('cleanup', '정리 중...');
+            $onProgress?->__invoke('cleanup', __('extensions.progress.cleanup'));
             ExtensionBackupHelper::deleteBackup($backupPath);
+            // 백업을 지운 뒤의 실패(완료 훅·캐시 재생성)는 파일을 되돌릴 수 없다 — 파일이 새 버전이므로 DB 버전 칸도 두어야
+            // 둘이 맞는다. catch 가 지워진 백업으로 복원을 시도하지 않게 비운다.
+            $backupPath = null;
 
             // 고정 키(config/components_manifest) + 현재 버전 routes/language 키 능동 삭제.
             // 비활성 업데이트·레이아웃 무변경 업데이트 경로는 버전 bump 가 없어 이 호출이
@@ -3343,6 +3338,8 @@ class TemplateManager implements TemplateManagerInterface
                 'success' => true,
                 'from_version' => $fromVersion,
                 'to_version' => $toVersion,
+                'layout_strategy' => $layoutStrategy,
+                'layout_sync' => $layoutSync,
                 'message' => __('templates.update_success', [
                     'template' => $identifier,
                     'version' => $toVersion,
@@ -3358,6 +3355,7 @@ class TemplateManager implements TemplateManagerInterface
             if ($backupPath) {
                 try {
                     ExtensionBackupHelper::restoreFromBackup('templates', $identifier, $backupPath);
+                    $filesRestored = true;
                     ExtensionBackupHelper::deleteBackup($backupPath);
 
                     $this->reloadTemplate($identifier);
@@ -3369,10 +3367,15 @@ class TemplateManager implements TemplateManagerInterface
                 }
             }
 
-            // 상태 복원
+            // 상태 복원 — 새 버전 기록이 이미 저장된 뒤 실패했고 파일을 백업으로 되돌렸으면 버전 칸도 업데이트 전 값으로
+            // 되돌린다. 파일은 옛 버전인데 DB 만 새 버전이면 관리자 화면이 설치되지 않은 버전을 보여 주고, "업데이트 없음" 으로
+            // 판정돼 같은 업데이트를 다시 시도할 수도 없다. 파일을 되돌리지 못했으면(백업 삭제 뒤 실패·복원 실패) 새 버전
+            // 파일에 맞춰 버전 칸을 그대로 둔다 — 반대 방향 불일치를 만들지 않는다. 업그레이드 스텝은 멱등이 규정이라
+            // (upgrade-step-guide 원칙 4) 다시 시도할 때 처음부터 돌아도 안전하다.
             $this->templateRepository->updateByIdentifier($identifier, [
                 'status' => $previousStatus,
                 'updated_at' => now(),
+                ...($filesRestored && $recordedColumns !== [] ? Arr::only($record->getRawOriginal(), $recordedColumns) : []),
             ]);
 
             // 실패 경로도 bump 한다 — 백업 복원이 실패했거나 부분 반영된 디스크가 남을 수

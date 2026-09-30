@@ -5,6 +5,8 @@ namespace App\Extension\Traits;
 use App\Contracts\Extension\ModuleInterface;
 use App\Contracts\Extension\PluginInterface;
 use App\Enums\LayoutSourceType;
+use App\Enums\LayoutSyncMode;
+use App\Extension\Layout\LayoutSyncReport;
 use App\Services\LayoutExtensionService;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
@@ -17,6 +19,7 @@ use Illuminate\Support\Facades\Log;
  *
  * 이 Trait를 사용하는 클래스는 반드시 다음 속성을 제공해야 합니다:
  * - $layoutExtensionService: LayoutExtensionService 인스턴스
+ * - layoutSynchronizer(): {@see SynchronizesLayoutRows} 를 함께 쓰고 생성자로 `$layoutRowSynchronizer` 를 받는다
  *
  * @property LayoutExtensionService $layoutExtensionService
  */
@@ -30,14 +33,18 @@ trait RefreshesLayoutExtensions
      * @param  ModuleInterface|PluginInterface  $extension  모듈 또는 플러그인 인스턴스
      * @param  Collection  $adminTemplates  admin 템플릿 컬렉션
      * @param  LayoutSourceType  $sourceType  소스 타입 (Module 또는 Plugin)
-     * @param  bool  $preserveModified  관리자가 편집한 확장을 보존할지 여부 (--layout-strategy=keep)
+     * @param  bool  $preserveModified  관리자가 편집한 확장을 보존(병합)할지 여부 (--layout-strategy=keep)
+     * @param  string|null  $backupPath  업데이트 백업 디렉토리 — 원본 본문이 없는 조각 행의 비교 기준을 만든다
+     * @param  LayoutSyncReport|null  $report  결과를 모을 보고
      * @return array{refreshed: int, created: int, updated: int, deleted: int, skipped: int} 갱신 통계
      */
     protected function refreshExtensionLayoutExtensions(
         ModuleInterface|PluginInterface $extension,
         Collection $adminTemplates,
         LayoutSourceType $sourceType,
-        bool $preserveModified = false
+        bool $preserveModified = false,
+        ?string $backupPath = null,
+        ?LayoutSyncReport $report = null
     ): array {
         $identifier = $extension->getIdentifier();
         $extensionType = $sourceType === LayoutSourceType::Module ? 'module' : 'plugin';
@@ -57,7 +64,10 @@ trait RefreshesLayoutExtensions
         // 각 템플릿에 대해 확장 동기화 — 정의 로드를 템플릿 루프 안에서 한다. 태그→컴포넌트 표가 템플릿마다
         // 다르므로 조각은 붙을 템플릿의 표로 컴파일해야 한다 (C10). 색인은 조각 식별자(`fragment_key`) 기준이다 —
         // 종전 대상(target) 색인은 같은 대상에 조각이 둘이면 하나를 잃었다 (C13).
+        $synchronizer = $this->layoutSynchronizer();
+
         foreach ($adminTemplates as $template) {
+            $backupFragments = $synchronizer->compileBackupFragments($backupPath, $identifier, (string) $template->identifier);
             $definitions = $this->loadFragmentDefinitions(
                 $extensionsPath,
                 $jsonFiles,
@@ -99,7 +109,9 @@ trait RefreshesLayoutExtensions
                         $identifier,
                         $template->id,
                         $preserveModified,
-                        $fragmentKey
+                        $fragmentKey,
+                        $backupFragments[$fragmentKey] ?? null,
+                        $report
                     );
 
                     if ($result === 'created') {
@@ -125,7 +137,9 @@ trait RefreshesLayoutExtensions
                 $sourceType,
                 $identifier,
                 $template->id,
-                $liveKeys
+                $liveKeys,
+                LayoutSyncMode::fromPreserve($preserveModified),
+                $report
             );
         }
 

@@ -151,11 +151,13 @@ interface TemplateManagerInterface
      * 템플릿의 레이아웃을 파일에서 다시 읽어 DB에 갱신합니다.
      *
      * @param  string  $identifier  템플릿 식별자
-     * @return array{success: bool, layouts_refreshed: int} 갱신 결과 및 갱신된 레이아웃 개수
+     * @param  bool  $preserveModified  true(keep) 시 운영자가 고친 화면은 조각 단위로 병합(고친 부분 유지)
+     * @param  string|null  $backupPath  업데이트 백업 디렉토리 — 원본 본문이 없는 행의 비교 기준
+     * @return array{success: bool, layouts_refreshed: int, layout_sync?: array<string, mixed>} 갱신 결과 (layout_sync = 운영자 관련 행 보고)
      *
      * @throws \Exception 템플릿을 찾을 수 없거나 레이아웃 갱신 실패 시
      */
-    public function refreshTemplateLayouts(string $identifier): array;
+    public function refreshTemplateLayouts(string $identifier, bool $preserveModified = false, ?string $backupPath = null): array;
 
     /**
      * 템플릿의 의존성 충족 상태를 확인합니다.

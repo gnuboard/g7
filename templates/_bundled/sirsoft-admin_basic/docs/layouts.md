@@ -239,6 +239,15 @@
 「업데이트할 내용이 없습니다」가 옵니다. 실패 분기는 409(같은 확장의 업데이트가 이미 진행 중 — 버튼 연속 클릭,
 Artisan 커맨드와 동시 실행)를 오류 상자 없이 안내 토스트로 보여 주고 진행 표시를 풉니다. 커맨드가 업데이트하는
 동안 409 를 받고도 진행 표시를 켜 두면 취소 버튼까지 잠겨 창을 닫을 수 없기 때문입니다.
+업데이트 모달의 「레이아웃 전략」 라디오는 `layout_strategy` 를 요청 본문에 싣습니다. 「수정 유지(keep)」 는 운영자가
+고친 레이아웃·확장 조각을 통째로 두는 것이 아니라 고친 부분은 유지하고 손대지 않은 부분에 새 버전을 병합하므로, 설명·
+목록 제목·안내 문구(`layout_strategy_keep_desc`·`modified_layouts_list_title`·`modified_layouts_keep_notice`)도 그 뜻으로
+씁니다. 목록은 유지를 골랐고 수정본이 있을 때만 보이며, 병합 결과 요약은 서버가 성공 문구 뒤에 붙여 보내므로 모달 마크업이
+따로 그리지 않습니다(규칙: 코어 `docs/extension/extension-update-system.md` §10).
+
+**본인인증 메시지 템플릿 편집 모달**(`_modal_identity_message_template_form`): 저장 요청 본문은 `subject`·`body` 뿐입니다.
+켜짐 여부(`is_active`)는 목록의 토글로만 바꿉니다 — 본문에 `is_active: true` 를 실으면 꺼 둔 템플릿이 저장할 때마다
+다시 켜집니다.
 
 **에러 화면**(`errors/*.json`): `extends` 없는 독립 레이아웃. `Div`(중앙 정렬) 안에
 `Icon`+`H1`(코드)+`P`(메시지)+`Button`(홈 이동). 독립 레이아웃이므로 `Toast`/`Modal` 같은

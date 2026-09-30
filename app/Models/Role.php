@@ -28,7 +28,7 @@ class Role extends Model
      *
      * @var array<int, string>
      */
-    protected array $trackableFields = ['name', 'description'];
+    protected array $trackableFields = ['name', 'description', 'is_active'];
 
     /**
      * 다국어 JSON 컬럼 — sub-key dot-path 단위로 user_overrides 보존.
@@ -79,6 +79,8 @@ class Role extends Model
 
     /**
      * 속성 캐스팅
+     *
+     * @return array<string, string> 속성명 → 캐스트 타입 맵
      */
     protected function casts(): array
     {
@@ -93,6 +95,8 @@ class Role extends Model
 
     /**
      * 역할에 속한 사용자들과의 관계를 정의합니다.
+     *
+     * @return BelongsToMany user_roles 피벗(assigned_at, assigned_by 포함) 기반 사용자 관계
      */
     public function users(): BelongsToMany
     {
@@ -103,6 +107,8 @@ class Role extends Model
 
     /**
      * 역할이 가진 권한들과의 관계를 정의합니다.
+     *
+     * @return BelongsToMany role_permissions 피벗(granted_at, granted_by, scope_type 포함) 기반 권한 관계
      */
     public function permissions(): BelongsToMany
     {
@@ -127,6 +133,7 @@ class Role extends Model
      * 역할의 메뉴 권한들과의 관계를 정의합니다.
      *
      * @deprecated role_menus 피벗 테이블 사용. menus() 메서드를 사용하세요.
+     *
      * @return HasMany
      */
     public function menuPermissions(): HasMany
@@ -138,6 +145,7 @@ class Role extends Model
      * 특정 권한을 가지고 있는지 확인합니다.
      *
      * @param  string  $permission  권한 식별자
+     * @return bool 해당 권한 보유 여부
      */
     public function hasPermission(string $permission): bool
     {
@@ -149,6 +157,7 @@ class Role extends Model
      *
      * @param  array  $permissions  권한 식별자 배열
      * @param  bool  $requireAll  모든 권한이 필요한지 여부 (true: AND, false: OR)
+     * @return bool 조건(AND/OR)에 따른 권한 보유 여부
      */
     public function hasPermissions(array $permissions, bool $requireAll = true): bool
     {
@@ -162,6 +171,7 @@ class Role extends Model
      *
      * @param  int  $menuId  메뉴 ID
      * @param  string  $permissionType  권한 유형 (read, write, delete)
+     * @return bool menu_permissions 에 허용(is_allowed) 권한이 있으면 true
      */
     public function hasMenuPermission(int $menuId, string $permissionType = 'read'): bool
     {
@@ -174,6 +184,9 @@ class Role extends Model
 
     /**
      * 지정된 로케일의 역할 이름 반환
+     *
+     * @param  string|null  $locale  로케일 (null 이면 현재 앱 로케일)
+     * @return string 역할 이름 (로케일 → fallback 로케일 → 첫 번째 값 순으로 선택)
      */
     public function getLocalizedName(?string $locale = null): string
     {
@@ -191,6 +204,9 @@ class Role extends Model
 
     /**
      * 지정된 로케일의 역할 설명 반환
+     *
+     * @param  string|null  $locale  로케일 (null 이면 현재 앱 로케일)
+     * @return string 역할 설명 (로케일 → fallback 로케일 → 첫 번째 값 순으로 선택)
      */
     public function getLocalizedDescription(?string $locale = null): string
     {
@@ -208,6 +224,8 @@ class Role extends Model
 
     /**
      * 현재 로케일의 역할 이름 반환
+     *
+     * @return Attribute 현재 로케일 역할 이름을 반환하는 접근자
      */
     protected function localizedName(): Attribute
     {
@@ -218,6 +236,8 @@ class Role extends Model
 
     /**
      * 현재 로케일의 역할 설명 반환
+     *
+     * @return Attribute 현재 로케일 역할 설명을 반환하는 접근자
      */
     protected function localizedDescription(): Attribute
     {

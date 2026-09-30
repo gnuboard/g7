@@ -596,13 +596,15 @@ GET /api/admin/templates/{templateName}/check-modified-layouts
 
 | 전략 | 동작 |
 |------|------|
-| `apply_new` | 새 버전의 레이아웃으로 덮어쓰기 (관리자 수정 사항 유실) |
-| `keep_current` | 기존 레이아웃 유지 (새 버전 레이아웃 미적용) |
+| `overwrite` (기본) | 새 버전의 레이아웃으로 덮어쓰기 (관리자 수정 사항 유실) |
+| `keep` | 고친 부분은 유지하고 손대지 않은 부분(조각·최상위 키·data_sources 항목)에는 새 버전을 병합. 같은 곳을 양쪽이 고쳤으면 운영자 것 유지 |
 
 ```text
 POST /api/admin/templates/{templateName}/update
-Body: { "layout_strategy": "apply_new" }
+Body: { "layout_strategy": "keep" }
 ```
+
+템플릿을 켜거나 사용자 템플릿을 바꿀 때도 같은 병합을 쓰므로 편집기로 고친 화면이 원본으로 돌아가지 않는다. 원본으로 되돌리려면 편집기의 「레이아웃 갱신」을 쓴다.
 
 > 상세: [extension-update-system.md](./extension-update-system.md)
 

@@ -428,8 +428,7 @@
                                                         "method": "PATCH",
                                                         "body": {
                                                             "subject": "{{_global.identity_message_template_form_modal?.template?.subject}}",
-                                                            "body": "{{_global.identity_message_template_form_modal?.template?.body}}",
-                                                            "is_active": true
+                                                            "body": "{{_global.identity_message_template_form_modal?.template?.body}}"
                                                         }
                                                     },
                                                     "onSuccess": [

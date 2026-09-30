@@ -622,7 +622,7 @@ class Upgrade_2_0_0 implements UpgradeStepInterface
 
 ## 10. 레이아웃 충돌 전략 (3종 공통)
 
-템플릿/모듈/플러그인 업데이트 시 관리자가 UI 에서 수정한 레이아웃이 있으면 충돌이 발생합니다. 3종 모두 동일한 전략과 API 구조를 공유합니다.
+템플릿/모듈/플러그인 업데이트 시 관리자가 UI 에서 수정한 레이아웃·확장 조각이 있으면 새 버전과 겹칠 수 있습니다. 3종 모두 동일한 전략과 API 구조를 공유합니다.
 
 ### 사전 확인 API
 
@@ -638,17 +638,20 @@ GET /api/admin/plugins/{pluginName}/check-modified-layouts
     "has_modified_layouts": true,
     "modified_count": 2,
     "modified_layouts": [
-        { "id": 1, "name": "sirsoft-board.admin_post_list", "updated_at": "2026-04-19 10:00:00", "size_diff": 128 }
+        { "id": 1, "kind": "layout", "name": "sirsoft-board.admin_post_list", "updated_at": "2026-04-19 10:00:00", "size_diff": 128 },
+        { "id": 7, "kind": "extension", "name": "확장 조각 admin_user_detail (board_tab)", "updated_at": "2026-04-19 10:05:00", "size_diff": 40 }
     ]
 }
 ```
+
+`kind` — `layout`(레이아웃·템플릿 오버라이드) 또는 `extension`(그 확장의 확장 조각). 프론트 목록은 `name`·`updated_at` 만 쓴다.
 
 ### 충돌 해결 전략
 
 | 전략 | 동작 |
 |------|------|
 | `overwrite` (기본값) | 새 버전의 레이아웃으로 덮어쓰기 (관리자 수정 사항 유실) |
-| `keep` | 원본 해시 기준으로 사용자가 수정한 레이아웃만 보존, 미수정 레이아웃은 덮어쓰기 |
+| `keep` | 운영자가 고친 레이아웃·확장 조각에 새 버전을 **3자 병합** — 고친 부분은 운영자 것, 손대지 않은 부분은 새 버전. 운영자가 고치지 않은 레이아웃은 새 버전으로 교체 |
 
 업데이트 API에 `layout_strategy` 파라미터로 전달:
 
@@ -657,11 +660,72 @@ POST /api/admin/{modules|plugins|templates}/{identifier}/update
 Body: { "layout_strategy": "keep" }
 ```
 
+### keep — 조각 단위 3자 병합
+
+`keep` 은 레이아웃을 통째로 두지 않는다. 세 판을 비교한다:
+
+| 판 | 출처 |
+|----|------|
+| 기준(base) | 설치·지난 업데이트 때 파일을 컴파일한 원본 — `template_layouts.original_content` / `template_layout_extensions.original_content` |
+| 운영자(ours) | 지금 DB `content` (편집기로 고친 판) |
+| 새 버전(theirs) | 새 파일을 컴파일한 판 |
+
+**병합 단위** — ① partial 파일(컴파일 때 `original_content` 에만 `__partial_origin` 표식을 남긴다 — 레이아웃 루트 기준 경로, 확장자 제외) ② 최상위 키(`meta`·`slots` 등, 단위는 `key:<이름>`) ③ `data_sources` 항목 id(`item:data_sources/<id>`, id 없는 항목은 목록 전체를 한 단위로).
+
+| 기준 대비 운영자 | 기준 대비 새 버전 | 결과 |
+|---|---|---|
+| 같음 | 바뀜 | 새 버전 반영 (`applied`) |
+| 바뀜 | 같음 | 운영자 것 유지 |
+| 바뀜 | 바뀜(서로 다름) | **충돌** — 운영자 것 유지 (`conflicts[].reason = both_changed`) |
+| 같음 | 삭제 | 삭제 |
+| 바뀜 | 삭제 | 충돌 — 운영자 것 유지 (`removed_in_new_version`) |
+| 운영자가 삭제 | 바뀜 | 충돌 — 삭제 유지 (`removed_by_operator`) |
+| 없음 | 추가 | 추가 (부모를 운영자 것으로 유지했으면 `added_but_parent_kept` 로 보고) |
+
+- 운영자가 조각을 옮겼어도 같은 내용의 조각을 찾아 그 자리에 새 판을 붙인다(투영). 같은 조각을 여러 번 쓰는 레이아웃에서 개수가 바뀌었고 그중 하나를 고쳤으면 `instance_count_changed` 충돌.
+- 운영자가 고친 자식을 품은 부모를 새 버전이 통째로 바꿨으면 자식이 사라지지 않게 부모도 운영자 것으로 둔다(`child_kept_parent_changed`).
+- `comment`·`version`·`layout_name` 은 새 버전을 따르되 반영 수에 세지 않는다.
+- 비교는 표기 차이(키 순서, 빈 map, 편집기 왕복 정규화)를 수정으로 보지 않는다. 목록 순서는 의미로 본다.
+
+**행 단위 결과(`verdict`)**
+
+| verdict | 뜻 |
+|---|---|
+| `merged` | 새 버전 변경 일부 반영 |
+| `conflict` | 겹친 곳이 있어 그곳은 운영자 것 유지 (나머지는 반영) |
+| `kept` | 운영자 것 유지 (새 버전 변경 없음) |
+| `kept_no_base` | 기준을 못 찾음 — 통째 유지 (아래 「기준 찾기」) |
+| `kept_removed` | 새 버전에서 빠진 화면이지만 운영자 수정본이라 남김 (모듈·플러그인도 삭제하지 않는다) |
+| `kept_invalid` | 병합 결과가 레이아웃 검증을 통과하지 못해 운영자 것 통째 유지 |
+| `kept_deleted_by_operator` | 운영자가 지운 화면 — 되살리지 않음 |
+| `kept_name_collision` | 운영자가 만든 같은 이름 화면이 있어 새 버전 화면을 넣지 않음 |
+
+운영자가 고치지 않은 레이아웃은 `updated`/`unchanged`/`created`/`deleted` 로 처리되고 보고에 나오지 않는다.
+
+**기준 찾기** — ① `original_content`(해시가 `original_content_hash` 와 맞을 때) ② 업데이트 직전 백업 디렉토리의 옛 파일을 컴파일해 해시가 맞으면 사용 ③ 현재 활성 파일(해시가 맞을 때) ④ 모두 실패하면 `kept_no_base`. 7.1.0 이전에 설치돼 `original_content` 가 비어 있는 행은 ②로 기준을 찾고, 한 번 병합되면 그 뒤로는 ①이 채워진다. 템플릿 오버라이드(`layouts/overrides/**`) 행은 7.1.0 이전에 원본 해시조차 없이 등록돼 운영자가 만든 화면(`kept_name_collision`)처럼 보이므로, 7.1.0 업그레이드 스텝이 활성 디렉토리의 오버라이드 파일로 원본 본문·해시를 채운다(파일과 이름이 맞는 행만 — 편집기에서 만든 화면은 그대로).
+
+**충돌 뒤 기준 이동** — 충돌이 난 행도 `original_content` 를 새 버전 원본으로 옮긴다. 겹친 새 버전 변경은 **한 번만 알린다** — 그 변경을 받으려면 그 화면만 「레이아웃 갱신」(덮어쓰기)하거나 편집기 버전 이력에서 고른다.
+
+**lock_version·버전 이력** — 병합으로 `content` 가 바뀌면 `lock_version` 을 +1 한다(편집기에 옛 판을 열어 둔 운영자의 저장은 409). 버전 이력에는 병합 직전 판(기준선)과 병합 판 두 행을 남기고, 병합 행의 `changes_summary.source = extension_update`.
+
+### 활성화·템플릿 전환도 운영자 수정을 보존한다
+
+모듈·플러그인·템플릿을 **켜거나**, 사용자 템플릿을 바꾸거나, 다른 확장을 켜서 확장 조각이 다시 등록될 때도 같은 `keep` 병합을 쓴다 — 편집기로 고친 화면이 원본으로 돌아가지 않는다. 원본으로 되돌리려면 편집기 파일 목록의 「레이아웃 갱신」(덮어쓰기)을 쓴다. 꺼 둔 템플릿을 업데이트하면 레이아웃 행은 그대로 두고 새 버전 원본만 기준으로 저장해 두었다가 켤 때 병합한다.
+
+### 결과 확인 위치
+
+| 표면 | 내용 |
+|---|---|
+| 업데이트 응답 `message` (업데이트 창 토스트) | 기존 성공 문구 + `레이아웃: 새 버전 변경 N곳 자동 반영, 운영자 수정과 겹친 M곳은 운영자 것 유지.` (+ 기준 없음·건너뜀 수) — 보고할 행이 있을 때만 |
+| 업데이트 응답 `data.layout_sync` | `{strategy, applied_count, conflict_count, kept_no_base_count, kept_removed_count, kept_deleted_by_operator_count, kept_name_collision_count, kept_invalid_count, modified_count, entries[]}` · `entries[] = {kind: layout\|extension, template, name, verdict, applied[], conflicts[{unit, reason}]}` |
+| CLI `{type}:update --layout-strategy=keep` | 「레이아웃 처리 결과 (수정 유지)」 표(화면·종류·결과·자동 반영·겹침) + 요약 한 줄. `core:update` 일괄 업데이트는 확장마다 요약 한 줄 |
+| 활동 로그 (`module.update`·`plugin.update`·`template.version_update`) | `properties.layout_strategy`·`properties.layout_sync`(카운트) · 행을 펼치면 변경 내역 표에 운영자 관련 화면마다 「운영자 수정본 → 결과」 한 줄 · 겹친 단위는 `properties.layout_sync_conflicts`(최대 50) |
+
 ### 수정 감지 원리
 
-- 확장 설치/업데이트 시 `template_layouts.original_content_hash` / `original_content_size` 컬럼에 파일 원본 SHA-256 해시 저장
-- `hasModifiedLayouts()` 는 현재 DB content 의 해시를 다시 계산하여 원본과 비교
-- 해시가 다르면 사용자가 관리자 UI 에서 수정했다고 판단 → `keep` 전략에서 보존
+- 확장 설치/업데이트 시 `original_content`(컴파일 원본, 조각 표식 포함) 와 `original_content_hash` / `original_content_size` 를 저장한다. `original_content` 는 모델 `$hidden` 이라 API 응답에 실리지 않는다.
+- 「수정됨」 판정(`LayoutRowSynchronizer::isOperatorModified()`)은 원본이 있으면 **정규화 비교**(키 순서·빈 map·편집기 왕복 차이 무시), 없으면 해시 비교
+- 사전 확인 API(`check-modified-layouts`)의 목록에는 그 확장의 **확장 조각 수정본**(`kind: "extension"`, 이름 `확장 조각 {대상} ({조각 키})`)과 템플릿 오버라이드 행도 포함된다
 - 공용 Trait `App\Extension\Traits\ComputesLayoutContentHash` (normalize → JSON encode → SHA-256)
 
 ---
@@ -681,7 +745,7 @@ Body: { "layout_strategy": "keep" }
 | `template:update [identifier] [--force] [--layout-strategy=overwrite]` | 템플릿 업데이트 실행 |
 
 > 단일 `check-updates`는 `checkXxxUpdate()` 호출 후 커맨드에서 DB 갱신 (`updateByIdentifier()`)
-> `--layout-strategy`: 3종 공통. `overwrite` (기본) 또는 `keep` (사용자 수정 보존). 섹션 10 참조
+> `--layout-strategy`: 3종 공통. `overwrite` (기본) 또는 `keep` (운영자 수정본에 새 버전 3자 병합 + 결과 표 출력). 섹션 10 참조
 > `--vendor-mode`: 모듈/플러그인 전용. `auto|composer|bundled` — Vendor 설치 방식 선택 (템플릿 미지원)
 > `--force` (update): 버전 비교를 건너뛰고 강제 재설치 (파일 손상, 수동 수정 복원 시 사용)
 > `--force` (install): 이미 설치된 확장이라도 `_bundled`/`_pending` 원본으로 활성 디렉토리를 덮어쓰고 재설치 — 불완전 활성 디렉토리(manifest 누락 등) 복구 시 사용
@@ -815,9 +879,10 @@ Body: { "layout_strategy": "keep" }
 | ------ | ------- | --------- |
 | `RoleUserOverridesListener` | `core.role.before_update` | 변경된 필드명 (name, description) |
 | `RoleUserOverridesListener` | `core.role.after_sync_permissions` | 변경된 개별 권한 식별자 |
-| `MenuUserOverridesListener` | `core.menu.before_update` | 변경된 필드명 (name, icon, order, url) |
-| `MenuUserOverridesListener` | `core.menu.after_update_order` | 순서 변경된 메뉴에 "order" |
+| `MenuUserOverridesListener` | `core.menu.before_update` | 변경된 필드명 (name, icon, order, url, is_active, parent_id) |
 | `MenuUserOverridesListener` | `core.menu.after_sync_roles` | 변경된 개별 역할 식별자 |
+
+> 메뉴 순서 변경(드래그 저장 — 계층·평탄 두 경로)은 리스너가 아니라 `UserOverridesAwareBuilder` 가 기록한다. 두 경로 모두 `Menu::where()->update()` 라 **실제로 순서가 바뀐 메뉴에만** `order` 가 표식된다(#727 — 종전 `core.menu.after_update_order` 구독은 payload 의 모든 메뉴를 표식해 새 버전의 순서 변경이 영영 안 들어왔다).
 
 ### HasUserOverrides Trait — 표준 추상 (7.0.0-beta.2 신규)
 

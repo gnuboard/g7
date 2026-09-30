@@ -65,6 +65,10 @@ effects:
   - notification_template_preview_renders_variables
   - notification_template_preview_requires_a_definition
   - notification_template_update_requires_settings_permission
+  # 값을 바꾸지 않은 저장은 「수정됨」 이 아니다 (#727 W12)
+  - notification_template_unchanged_save_keeps_default
+  - notification_template_real_change_marks_locale_and_clears_default
+  - notification_template_recipient_display_names_not_persisted
   # 채널 활성 판정 (회귀 보호)
   - core_channel_enabled_when_flag_true
   - core_channel_disabled_when_flag_false

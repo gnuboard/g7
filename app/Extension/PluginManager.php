@@ -6,6 +6,7 @@ use App\Contracts\Extension\HookListenerInterface;
 use App\Contracts\Extension\PluginInterface;
 use App\Contracts\Extension\PluginManagerInterface;
 use App\Contracts\Extension\UpgradeStepInterface;
+use App\Contracts\Repositories\LayoutExtensionRepositoryInterface;
 use App\Contracts\Repositories\LayoutRepositoryInterface;
 use App\Contracts\Repositories\ModuleRepositoryInterface;
 use App\Contracts\Repositories\PermissionRepositoryInterface;
@@ -16,6 +17,7 @@ use App\Enums\DeactivationReason;
 use App\Enums\ExtensionOwnerType;
 use App\Enums\ExtensionStatus;
 use App\Enums\LayoutSourceType;
+use App\Enums\LayoutSyncMode;
 use App\Enums\PermissionType;
 use App\Exceptions\ExtensionOperationInProgressException;
 use App\Extension\Concerns\ResolvesExtensionIcons;
@@ -34,6 +36,9 @@ use App\Extension\Helpers\GithubHelper;
 use App\Extension\Helpers\IdentityMessageSyncHelper;
 use App\Extension\Helpers\IdentityPolicySyncHelper;
 use App\Extension\Helpers\NotificationSyncHelper;
+use App\Extension\Layout\DTO\LayoutSyncEntry;
+use App\Extension\Layout\LayoutRowSynchronizer;
+use App\Extension\Layout\LayoutSyncReport;
 use App\Extension\Testing\ExtensionTestAllowlist;
 use App\Extension\Traits\CollectsFragmentSources;
 use App\Extension\Vendor\Exceptions\VendorInstallException;
@@ -51,6 +56,7 @@ use App\Services\LayoutExtensionService;
 use App\Support\AssetUrl;
 use App\Support\ExtensionStoragePath;
 use App\Support\RouteCacheHelper;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Auth;
@@ -71,6 +77,7 @@ class PluginManager implements PluginManagerInterface
     use Traits\InspectsUninstallData;
     use Traits\InvalidatesLayoutCache;
     use Traits\RefreshesLayoutExtensions;
+    use Traits\SynchronizesLayoutRows;
     use Traits\ValidatesLayoutFiles;
     use Traits\ValidatesSeoVariables;
     use Traits\ValidatesTranslationPath;
@@ -121,6 +128,8 @@ class PluginManager implements PluginManagerInterface
      * @param  ModuleRepositoryInterface  $moduleRepository  모듈 행 조회·저장
      * @param  LayoutRepositoryInterface  $layoutRepository  레이아웃 행 조회·저장
      * @param  LayoutExtensionService  $layoutExtensionService  확장 조각 등록·해제 (설치·제거에 동반)
+     * @param  LayoutRowSynchronizer  $layoutRowSynchronizer  레이아웃·확장 조각 행 동기화기 (3자 병합·기준 보관)
+     * @param  LayoutExtensionRepositoryInterface  $layoutExtensionRepository  확장 조각 행 조회 (수정한 레이아웃 목록)
      * @param  ExtensionRoleSyncHelper  $roleSyncHelper  선언된 역할·권한을 DB 에 반영
      */
     public function __construct(
@@ -132,6 +141,8 @@ class PluginManager implements PluginManagerInterface
         protected ModuleRepositoryInterface $moduleRepository,
         protected LayoutRepositoryInterface $layoutRepository,
         protected LayoutExtensionService $layoutExtensionService,
+        protected LayoutRowSynchronizer $layoutRowSynchronizer,
+        protected LayoutExtensionRepositoryInterface $layoutExtensionRepository,
         protected ?ExtensionRoleSyncHelper $roleSyncHelper = null
     ) {
         $this->pluginsPath = base_path('plugins');
@@ -156,7 +167,7 @@ class PluginManager implements PluginManagerInterface
     /**
      * 모든 플러그인을 로드하고 초기화합니다.
      *
-     * @return void
+     * @return void 반환값 없음
      */
     public function loadPlugins(): void
     {
@@ -230,7 +241,7 @@ class PluginManager implements PluginManagerInterface
      * 클래스 로드 없이 plugin.json 메타데이터만 읽어 저장합니다.
      * 이미 활성 디렉토리에 로드된 플러그인은 제외합니다.
      *
-     * @return void
+     * @return void 반환값 없음
      */
     protected function loadPendingPlugins(): void
     {
@@ -252,7 +263,7 @@ class PluginManager implements PluginManagerInterface
      * 클래스 로드 없이 plugin.json 메타데이터만 읽어 저장합니다.
      * 이미 활성 디렉토리 또는 _pending에 로드된 플러그인은 제외합니다.
      *
-     * @return void
+     * @return void 반환값 없음
      */
     protected function loadBundledPlugins(): void
     {
@@ -370,7 +381,7 @@ class PluginManager implements PluginManagerInterface
             if (! app()->environment('testing')) {
                 $pendingPath = ExtensionPendingHelper::getPendingPath($this->pluginsPath, $pluginName);
                 if ($this->extensionManager->hasComposerDependenciesAt($pendingPath)) {
-                    $onProgress?->__invoke('composer', '_pending에서 Vendor 의존성 설치 중...');
+                    $onProgress?->__invoke('composer', __('extensions.progress.pending_vendor_install'));
                     try {
                         $vendorResult = $this->installVendorViaResolver(
                             $pluginName,
@@ -399,7 +410,7 @@ class PluginManager implements PluginManagerInterface
         // 남지 않은 채 디스크만 점유한다. 이번 호출이 만든 것이면 되돌린다.
         $rollbackDirExisted = File::isDirectory($activePath);
 
-        $onProgress?->__invoke('copy', '파일 복사 중...');
+        $onProgress?->__invoke('copy', __('extensions.progress.copy_files'));
         $this->copyFromPendingOrBundled($pluginName, $onProgress, $force);
 
         // 설치 시점에는 autoload-extensions.php 가 아직 갱신되지 않았다. plugin.php 의
@@ -439,7 +450,7 @@ class PluginManager implements PluginManagerInterface
             $this->validateSeoVariables($plugin, 'plugin');
 
             // 플러그인 설치 실행
-            $onProgress?->__invoke('validate', '검증 중...');
+            $onProgress?->__invoke('validate', __('extensions.progress.validate'));
             $plugin->clearLifecycleFailureReason();
             $result = $plugin->install();
 
@@ -453,11 +464,11 @@ class PluginManager implements PluginManagerInterface
 
             // Phase 1: 마이그레이션 실행 (DDL - 트랜잭션 외부)
             // MySQL에서 CREATE TABLE 등 DDL 문은 암시적 커밋을 유발하므로 트랜잭션 외부에서 실행
-            $onProgress?->__invoke('migration', '마이그레이션 실행 중...');
+            $onProgress?->__invoke('migration', __('extensions.progress.migration'));
             $this->runMigrations($plugin);
 
             // Phase 2: 데이터 작업 (DML - 트랜잭션 내부)
-            $onProgress?->__invoke('db', 'DB 등록 중...');
+            $onProgress?->__invoke('db', __('extensions.progress.db_register'));
             try {
                 DB::beginTransaction();
 
@@ -530,17 +541,17 @@ class PluginManager implements PluginManagerInterface
 
             // Phase 3: 시더 실행 (트랜잭션 외부)
             // 시더 내부에서 별도 트랜잭션을 사용할 수 있으므로 외부에서 실행
-            $onProgress?->__invoke('seed', '시더 실행 중...');
+            $onProgress?->__invoke('seed', __('extensions.progress.seed'));
             $this->runPluginSeeders($plugin);
 
             // Phase 4: 기본 설정 파일 생성
-            $onProgress?->__invoke('settings', '설정 초기화 중...');
+            $onProgress?->__invoke('settings', __('extensions.progress.settings_init'));
             $this->initializePluginSettings($plugin);
 
             // Phase 4.5: Composer 의존성 설치 (외부 패키지가 있는 경우에만)
             // _pending에서 이미 설치한 경우 스킵 (vendor/가 활성 디렉토리에 복사됨)
             if (! $composerDoneInPending) {
-                $onProgress?->__invoke('composer', 'Composer 의존성 설치 중...');
+                $onProgress?->__invoke('composer', __('extensions.progress.composer_install'));
                 if (! app()->environment('testing')
                     && $this->extensionManager->hasComposerDependencies('plugins', $pluginName)) {
                     $composerResult = $this->extensionManager->runComposerInstall('plugins', $pluginName);
@@ -551,7 +562,7 @@ class PluginManager implements PluginManagerInterface
             }
 
             // Phase 5: 오토로드 병합 실행 (트랜잭션 외부)
-            $onProgress?->__invoke('autoload', '오토로드 갱신 중...');
+            $onProgress?->__invoke('autoload', __('extensions.progress.autoload'));
             $this->extensionManager->updateComposerAutoload();
 
             // Phase 6: 플러그인 상태 캐시 무효화
@@ -768,7 +779,7 @@ class PluginManager implements PluginManagerInterface
      * 플러그인 재활성화 시 이전에 soft delete된 레이아웃을 복원합니다.
      *
      * @param  string  $pluginIdentifier  플러그인 식별자
-     * @return void
+     * @return void 반환값 없음
      */
     protected function restorePluginLayouts(string $pluginIdentifier): void
     {
@@ -1059,14 +1070,14 @@ class PluginManager implements PluginManagerInterface
 
         // Phase 1: 데이터 삭제 옵션이 true인 경우 동적 데이터 정리 및 마이그레이션 롤백 (DDL - 트랜잭션 외부)
         // MySQL에서 DROP TABLE 등 DDL 문은 암시적 커밋을 유발하므로 트랜잭션 외부에서 실행
-        $onProgress?->__invoke('data_cleanup', '데이터 정리 중...');
+        $onProgress?->__invoke('data_cleanup', __('extensions.progress.data_cleanup'));
         if ($deleteData) {
             // 동적 데이터 정리 (마이그레이션 롤백 전에 실행해야 메타 테이블 조회 가능)
             $this->cleanupDynamicPluginData($plugin);
             $this->rollbackMigrations($plugin);
         }
 
-        $onProgress?->__invoke('db', 'DB 삭제 중...');
+        $onProgress?->__invoke('db', __('extensions.progress.db_delete'));
         try {
             DB::beginTransaction();
 
@@ -1152,11 +1163,11 @@ class PluginManager implements PluginManagerInterface
                 }
 
                 // 오토로드 병합 실행
-                $onProgress?->__invoke('autoload', '오토로드 갱신 중...');
+                $onProgress?->__invoke('autoload', __('extensions.progress.autoload'));
                 $this->extensionManager->updateComposerAutoload();
 
                 // 플러그인 다국어 데이터가 변경되므로 템플릿 언어 캐시 삭제
-                $onProgress?->__invoke('cache', '캐시 삭제 중...');
+                $onProgress?->__invoke('cache', __('extensions.progress.cache_delete'));
                 $this->clearAllTemplateLanguageCaches();
 
                 // 플러그인 routes 데이터가 변경되므로 템플릿 routes 캐시 삭제
@@ -1173,7 +1184,7 @@ class PluginManager implements PluginManagerInterface
                 ExtensionMiddlewareRegistry::flush();
 
                 // 활성 플러그인 디렉토리 전체 삭제 (_pending/_bundled에 원본 보존되므로 재설치 가능)
-                $onProgress?->__invoke('files', '파일 삭제 중...');
+                $onProgress?->__invoke('files', __('extensions.progress.delete_files'));
                 $preservedBackups = ExtensionPendingHelper::deleteExtensionDirectory(
                     $this->pluginsPath,
                     $plugin->getIdentifier()
@@ -1717,7 +1728,7 @@ class PluginManager implements PluginManagerInterface
      * 보면 같은 식별자를 가진 다른 종류의 확장을 충족으로 오판한다.
      *
      * @param  PluginInterface  $plugin  검사 대상 플러그인
-     * @return void
+     * @return void 반환값 없음
      *
      * @throws \Exception 충족되지 않은 의존성이 하나라도 있을 때
      */
@@ -1799,7 +1810,7 @@ class PluginManager implements PluginManagerInterface
      * 플러그인의 마이그레이션 파일들을 실행합니다.
      *
      * @param  PluginInterface  $plugin  마이그레이션을 실행할 플러그인 인스턴스
-     * @return void
+     * @return void 반환값 없음
      */
     protected function runMigrations(PluginInterface $plugin): void
     {
@@ -1827,7 +1838,7 @@ class PluginManager implements PluginManagerInterface
      * 삭제 실패 시에도 언인스톨 프로세스는 계속 진행됩니다.
      *
      * @param  PluginInterface  $plugin  플러그인 인스턴스
-     * @return void
+     * @return void 반환값 없음
      */
     protected function cleanupDynamicPluginData(PluginInterface $plugin): void
     {
@@ -1879,7 +1890,7 @@ class PluginManager implements PluginManagerInterface
      * FK 제약 조건으로 인한 DROP TABLE 실패를 방지하기 위해 롤백 전후로 FK 체크를 비활성화/활성화합니다.
      *
      * @param  PluginInterface  $plugin  롤백할 플러그인 인스턴스
-     * @return void
+     * @return void 반환값 없음
      */
     protected function rollbackMigrations(PluginInterface $plugin): void
     {
@@ -1935,7 +1946,7 @@ class PluginManager implements PluginManagerInterface
      *
      * @param  string  $filePath  마이그레이션 파일 경로
      * @param  string  $pluginIdentifier  플러그인 식별자 (로깅용)
-     * @return void
+     * @return void 반환값 없음
      */
     protected function rollbackSingleMigration(string $filePath, string $pluginIdentifier): void
     {
@@ -2002,7 +2013,7 @@ class PluginManager implements PluginManagerInterface
      * 역할을 안전하게 동기화합니다.
      *
      * @param  PluginInterface  $plugin  역할을 생성할 플러그인 인스턴스
-     * @return void
+     * @return void 반환값 없음
      */
     protected function createPluginRoles(PluginInterface $plugin): void
     {
@@ -2036,7 +2047,7 @@ class PluginManager implements PluginManagerInterface
      * 권한을 안전하게 동기화하고, stale 권한을 정리합니다.
      *
      * @param  PluginInterface  $plugin  권한을 생성할 플러그인 인스턴스
-     * @return void
+     * @return void 반환값 없음
      */
     protected function createPluginPermissions(PluginInterface $plugin): void
     {
@@ -2170,7 +2181,7 @@ class PluginManager implements PluginManagerInterface
      * 제거된 역할 할당만 해제하고, 사용자 수동 추가 할당은 보존합니다.
      *
      * @param  PluginInterface  $plugin  권한을 할당할 플러그인 인스턴스
-     * @return void
+     * @return void 반환값 없음
      */
     protected function assignPermissionsToRoles(PluginInterface $plugin): void
     {
@@ -2217,7 +2228,7 @@ class PluginManager implements PluginManagerInterface
      * (user_overrides) 도 보존됩니다.
      *
      * @param  PluginInterface  $plugin  메뉴를 동기화할 플러그인 인스턴스
-     * @return void
+     * @return void 반환값 없음
      */
     protected function createPluginMenus(PluginInterface $plugin): void
     {
@@ -2257,7 +2268,7 @@ class PluginManager implements PluginManagerInterface
      * user_overrides 보존 및 `users.role_id` 참조 역할 삭제 차단은 helper 가 담당.
      *
      * @param  PluginInterface  $plugin
-     * @return void
+     * @return void 반환값 없음
      */
     protected function cleanupStalePluginEntries(PluginInterface $plugin): void
     {
@@ -2329,7 +2340,7 @@ class PluginManager implements PluginManagerInterface
      * 무해 (멱등).
      *
      * @param  PluginInterface  $plugin  대상 플러그인 인스턴스
-     * @return void
+     * @return void 반환값 없음
      */
     public function syncDeclarativeArtifacts(PluginInterface $plugin): void
     {
@@ -2423,7 +2434,7 @@ class PluginManager implements PluginManagerInterface
      * 는 `user_overrides` JSON 으로 보존됩니다.
      *
      * @param  PluginInterface  $plugin  IDV 정책을 동기화할 플러그인 인스턴스
-     * @return void
+     * @return void 반환값 없음
      */
     protected function syncPluginIdentityPolicies(PluginInterface $plugin): void
     {
@@ -2470,7 +2481,7 @@ class PluginManager implements PluginManagerInterface
      * 현재 선언에 없는 기존 정의는 `cleanupStaleDefinitions()` 로 제거합니다.
      *
      * @param  PluginInterface  $plugin  IDV 메시지를 동기화할 플러그인 인스턴스
-     * @return void
+     * @return void 반환값 없음
      */
     protected function syncPluginIdentityMessages(PluginInterface $plugin): void
     {
@@ -2537,7 +2548,7 @@ class PluginManager implements PluginManagerInterface
      * 운영자 user_overrides 보존은 helper 내부 trait 가 처리.
      *
      * @param  PluginInterface  $plugin  알림 정의를 동기화할 플러그인 인스턴스
-     * @return void
+     * @return void 반환값 없음
      */
     protected function syncPluginNotificationDefinitions(PluginInterface $plugin): void
     {
@@ -2653,7 +2664,7 @@ class PluginManager implements PluginManagerInterface
      * 빈 배열이면 database/seeders/ 디렉토리의 모든 시더를 자동 검색하여 실행합니다. (역호환)
      *
      * @param  PluginInterface  $plugin  시더를 실행할 플러그인 인스턴스
-     * @return void
+     * @return void 반환값 없음
      */
     protected function runPluginSeeders(PluginInterface $plugin): void
     {
@@ -2741,7 +2752,7 @@ class PluginManager implements PluginManagerInterface
      * storage/app/plugins/{identifier}/settings/setting.json에 저장합니다.
      *
      * @param  PluginInterface  $plugin  설정을 초기화할 플러그인 인스턴스
-     * @return void
+     * @return void 반환값 없음
      */
     protected function initializePluginSettings(PluginInterface $plugin): void
     {
@@ -2826,7 +2837,7 @@ class PluginManager implements PluginManagerInterface
      * 플러그인 제거 시 deleteData 옵션이 true인 경우 호출됩니다.
      *
      * @param  PluginInterface  $plugin  설정을 삭제할 플러그인 인스턴스
-     * @return void
+     * @return void 반환값 없음
      */
     protected function deletePluginSettingsDirectory(PluginInterface $plugin): void
     {
@@ -2849,7 +2860,7 @@ class PluginManager implements PluginManagerInterface
      * 플러그인 비활성화/삭제 시 해당 플러그인의 격리된 캐시를 정리합니다.
      *
      * @param  PluginInterface  $plugin  플러그인 인스턴스
-     * @return void
+     * @return void 반환값 없음
      */
     protected function flushPluginCache(PluginInterface $plugin): void
     {
@@ -2991,7 +3002,7 @@ class PluginManager implements PluginManagerInterface
      * 플러그인 제거 시 관련 권한을 삭제합니다.
      *
      * @param  PluginInterface  $plugin  플러그인 인스턴스
-     * @return void
+     * @return void 반환값 없음
      */
     protected function removePluginPermissions(PluginInterface $plugin): void
     {
@@ -3019,7 +3030,7 @@ class PluginManager implements PluginManagerInterface
      * - role에 부여된 permission이 하나도 없어야 삭제
      *
      * @param  PluginInterface  $plugin  플러그인 인스턴스
-     * @return void
+     * @return void 반환값 없음
      */
     protected function removePluginRoles(PluginInterface $plugin): void
     {
@@ -3051,7 +3062,7 @@ class PluginManager implements PluginManagerInterface
      * 플러그인의 config 파일을 Laravel config 시스템에 로드합니다.
      *
      * @param  PluginInterface  $plugin  플러그인 인스턴스
-     * @return void
+     * @return void 반환값 없음
      */
     protected function loadPluginConfig(PluginInterface $plugin): void
     {
@@ -3090,7 +3101,7 @@ class PluginManager implements PluginManagerInterface
      * 훅 발화 시 바인딩을 찾지 못해 컨테이너 해석이 실패한다.
      *
      * @param  PluginInterface  $plugin  대상 플러그인
-     * @return void
+     * @return void 반환값 없음
      */
     protected function registerPluginHookListeners(PluginInterface $plugin): void
     {
@@ -3186,7 +3197,7 @@ class PluginManager implements PluginManagerInterface
      * Broadcast::channel()로 자동 등록합니다.
      *
      * @param  PluginInterface  $plugin  플러그인 인스턴스
-     * @return void
+     * @return void 반환값 없음
      */
     protected function registerPluginChannels(PluginInterface $plugin): void
     {
@@ -3372,9 +3383,11 @@ class PluginManager implements PluginManagerInterface
                     continue;
                 }
 
-                // 해당 타입 템플릿에 레이아웃 등록
+                // 해당 타입 템플릿에 레이아웃 등록 — 활성화·템플릿 전환은 keep 규칙(D3): 운영자 수정은 보존하고,
+                // 파일이 원본과 같으면(버전 변경 없음) 그 원본을 기준으로 삼아 운영자 판을 그대로 둔다.
                 foreach ($targetTemplates as $template) {
-                    $this->registerLayoutToTemplate($template, $layoutName, $layoutData, $identifier);
+                    $entry = $this->registerLayoutToTemplate($template, $layoutName, $layoutData, $identifier, $validatedLayout['original']);
+                    $this->warnActivationConflict($entry, $identifier);
                     $registeredCount++;
                 }
 
@@ -3441,36 +3454,32 @@ class PluginManager implements PluginManagerInterface
     }
 
     /**
-     * 레이아웃을 특정 템플릿에 등록합니다.
+     * 레이아웃을 특정 템플릿에 등록합니다 — 행 쓰기는 {@see LayoutRowSynchronizer} 를 지납니다.
      *
      * @param  Template  $template  템플릿 모델
      * @param  string  $layoutName  레이아웃 이름
-     * @param  array  $layoutData  레이아웃 데이터
+     * @param  array  $layoutData  레이아웃 데이터 (서비스용)
      * @param  string  $pluginIdentifier  플러그인 식별자
-     * @return void
+     * @param  array|null  $layoutOriginal  조각 출처 표식이 있는 원본 (없으면 $layoutData)
+     * @param  LayoutSyncMode  $mode  동기화 모드 (활성화는 Keep)
+     * @param  array|null  $backupOriginal  업데이트 백업을 컴파일한 이전 판 원본
+     * @return LayoutSyncEntry 결과
      */
-    protected function registerLayoutToTemplate(Template $template, string $layoutName, array $layoutData, string $pluginIdentifier): void
+    protected function registerLayoutToTemplate(Template $template, string $layoutName, array $layoutData, string $pluginIdentifier, ?array $layoutOriginal = null, LayoutSyncMode $mode = LayoutSyncMode::Keep, ?array $backupOriginal = null): LayoutSyncEntry
     {
-        // content 필드 구성 (TemplateManager와 동일하게 layoutData 전체 저장)
-        $content = $layoutData;
-
-        // DB에 레이아웃 등록 (updateOrCreate로 중복 방지)
-        // original_content_hash/size: 파일 원본 기준. keep 전략에서 사용자 수정 감지에 사용.
-        $this->layoutRepository->updateOrCreate(
+        return $this->layoutSynchronizer()->syncLayout(
             [
                 'template_id' => $template->id,
+                'template' => (string) $template->identifier,
                 'name' => $layoutName,
-            ],
-            [
-                'content' => $content,
-                'extends' => $layoutData['extends'] ?? null,
                 'source_type' => LayoutSourceType::Plugin,
                 'source_identifier' => $pluginIdentifier,
-                'original_content_hash' => $this->computeContentHash($content),
-                'original_content_size' => $this->computeContentSize($content),
-                'created_by' => Auth::id(),
-                'updated_by' => Auth::id(),
-            ]
+                'track_extends' => true,
+            ],
+            $layoutData,
+            $layoutOriginal ?? $layoutData,
+            $mode,
+            $backupOriginal
         );
     }
 
@@ -3478,7 +3487,7 @@ class PluginManager implements PluginManagerInterface
      * 플러그인 레이아웃 관련 캐시를 무효화합니다.
      *
      * @param  string  $pluginIdentifier  플러그인 식별자
-     * @return void
+     * @return void 반환값 없음
      */
     protected function invalidateLayoutCache(string $pluginIdentifier): void
     {
@@ -3502,9 +3511,12 @@ class PluginManager implements PluginManagerInterface
      * 보지 않았고, 그래서 활성화 경로만 규약 밖에 남아 있었다.
      *
      * @param  PluginInterface  $plugin  플러그인 인스턴스
-     * @return void
+     * @param  bool  $preserveModified  관리자 수정 보존(병합) 여부 — 활성화는 keep, 업데이트는 그 업데이트의 전략
+     * @param  string|null  $backupPath  업데이트 백업 디렉토리 (원본 본문이 없는 조각 행의 비교 기준)
+     * @param  LayoutSyncReport|null  $report  결과를 모을 보고
+     * @return void 반환값 없음
      */
-    protected function registerLayoutExtensions(PluginInterface $plugin): void
+    protected function registerLayoutExtensions(PluginInterface $plugin, bool $preserveModified = true, ?string $backupPath = null, ?LayoutSyncReport $report = null): void
     {
         $extensionFiles = $plugin->getLayoutExtensions();
         $identifier = $plugin->getIdentifier();
@@ -3523,6 +3535,7 @@ class PluginManager implements PluginManagerInterface
         // 무조건 등록해 사용자 템플릿에 관리자 대상 조각(죽은 행)이 쌓였고, 사용자 조각도 관리자 표로 검사됐다.
         // 호스트가 나중에 설치되는 순서 의존은 호출부가 `registerAllActiveExtensionsToTemplate` 재호출로 메운다.
         foreach ($allTemplates as $template) {
+            $backupFragments = $this->layoutSynchronizer()->compileBackupFragments($backupPath, $identifier, (string) $template->identifier);
             $definitions = $this->loadFragmentDefinitions(
                 $plugin->getExtensionsPath(),
                 $extensionFiles,
@@ -3548,8 +3561,10 @@ class PluginManager implements PluginManagerInterface
                         LayoutSourceType::Plugin,
                         $identifier,
                         $template->id,
-                        false,
-                        $definition['key']
+                        $preserveModified,
+                        $definition['key'],
+                        $backupFragments[$definition['key']] ?? null,
+                        $report
                     );
 
                     Log::info("플러그인 레이아웃 확장 등록 완료: {$extensionFile}", [
@@ -3574,7 +3589,7 @@ class PluginManager implements PluginManagerInterface
      * 겨냥한 다른 확장의 조각이 빠진 채 남는다. 그래서 확장 활성화·업데이트는 자기 등록을 마친 직후 이 메서드로
      * 전 템플릿을 한 번 더 훑는다 — 등록은 `updateOrCreate` 라 여러 번 불러도 같은 결과다.
      *
-     * @return void
+     * @return void 반환값 없음
      */
     protected function reregisterActiveExtensionsToAllTemplates(): void
     {
@@ -3596,7 +3611,7 @@ class PluginManager implements PluginManagerInterface
      * 플러그인 재활성화 시 soft delete된 확장을 복원합니다.
      *
      * @param  PluginInterface  $plugin  플러그인 인스턴스
-     * @return void
+     * @return void 반환값 없음
      */
     protected function restoreLayoutExtensions(PluginInterface $plugin): void
     {
@@ -3627,7 +3642,7 @@ class PluginManager implements PluginManagerInterface
      * 플러그인 비활성화 시 해당 플러그인의 확장을 soft delete합니다.
      *
      * @param  PluginInterface  $plugin  플러그인 인스턴스
-     * @return void
+     * @return void 반환값 없음
      */
     protected function unregisterLayoutExtensions(PluginInterface $plugin): void
     {
@@ -3658,7 +3673,7 @@ class PluginManager implements PluginManagerInterface
      * 플러그인 삭제(uninstall) 시 호출됩니다.
      *
      * @param  PluginInterface  $plugin  플러그인 인스턴스
-     * @return void
+     * @return void 반환값 없음
      */
     protected function deleteLayoutExtensions(PluginInterface $plugin): void
     {
@@ -3684,13 +3699,20 @@ class PluginManager implements PluginManagerInterface
     /**
      * 플러그인의 레이아웃을 파일에서 다시 읽어 DB에 갱신합니다.
      *
+     * 활성화된 플러그인의 레이아웃 파일을 다시 스캔해 admin/user 디렉토리 위치에 맞는 템플릿에 동기화한다. 모든 행 쓰기는
+     * {@see LayoutRowSynchronizer} 를 지난다 — keep 이면 운영자가 고친 화면은 조각 단위로 병합하고, 새 버전에서 빠진
+     * 화면(layouts 디렉토리째 빠진 경우 포함)이라도 운영자 수정본이면 남긴다(D4). 삭제 후보는 이전 판 파일 목록에 있던
+     * 이름뿐이다(W15). overwrite 면 새 판으로 덮는다(수동 「레이아웃 갱신」).
+     *
      * @param  string  $pluginName  플러그인명
-     * @param  bool  $preserveModified  true 시 사용자가 UI에서 수정한 레이아웃은 덮어쓰지 않음
-     * @return array{success: bool, layouts_refreshed: int, created: int, updated: int, deleted: int, unchanged: int} 갱신 결과 및 갱신된 레이아웃 개수
+     * @param  bool  $preserveModified  운영자가 고친 화면을 보존(병합)할지 여부 (keep)
+     * @param  string|null  $backupPath  업데이트 백업 디렉토리 — 원본 본문이 없는 행의 비교 기준을 만든다
+     * @param  LayoutSyncReport|null  $report  결과를 모을 보고 (업데이트 경로가 조각 사전 재등록 결과와 합칠 때)
+     * @return array{success: bool, layouts_refreshed: int, created: int, updated: int, deleted: int, unchanged: int, skipped: int, extensions_refreshed?: int, layout_sync: array<string, mixed>} 갱신 결과
      *
      * @throws \Exception 플러그인을 찾을 수 없거나 레이아웃 갱신 실패 시
      */
-    public function refreshPluginLayouts(string $pluginName, bool $preserveModified = false): array
+    public function refreshPluginLayouts(string $pluginName, bool $preserveModified = false, ?string $backupPath = null, ?LayoutSyncReport $report = null): array
     {
         $plugin = $this->getPlugin($pluginName);
 
@@ -3706,6 +3728,8 @@ class PluginManager implements PluginManagerInterface
 
         $identifier = $plugin->getIdentifier();
         $layoutsPath = base_path("plugins/{$pluginName}/resources/layouts");
+        $mode = LayoutSyncMode::fromPreserve($preserveModified);
+        $report ??= new LayoutSyncReport($mode);
 
         // 활성화된 admin/user 타입 템플릿 조회
         $adminTemplates = $this->templateRepository->getActiveByType('admin');
@@ -3714,40 +3738,19 @@ class PluginManager implements PluginManagerInterface
         if ($adminTemplates->isEmpty() && $userTemplates->isEmpty()) {
             Log::warning("활성화된 admin/user 템플릿이 없어 플러그인 레이아웃을 갱신할 수 없습니다: {$pluginName}");
 
-            return ['success' => true, 'layouts_refreshed' => 0, 'created' => 0, 'updated' => 0, 'deleted' => 0, 'unchanged' => 0];
+            return ['success' => true, 'layouts_refreshed' => 0, 'created' => 0, 'updated' => 0, 'deleted' => 0, 'unchanged' => 0, 'skipped' => 0, 'layout_sync' => $report->toArray()];
         }
 
-        $stats = ['created' => 0, 'updated' => 0, 'deleted' => 0, 'unchanged' => 0];
+        $stats = ['created' => 0, 'updated' => 0, 'deleted' => 0, 'unchanged' => 0, 'skipped' => 0];
+        $synchronizer = $this->layoutSynchronizer();
+        $backupOriginals = $synchronizer->compileBackupOriginals($backupPath, 'plugins', $identifier);
+        $previousNames = $backupOriginals !== [] ? array_keys($backupOriginals) : null;
 
-        // 레이아웃 파일이 없는 경우 - admin/user 모두 삭제 처리
-        if (! File::exists($layoutsPath)) {
-            foreach (['admin' => $adminTemplates, 'user' => $userTemplates] as $type => $templates) {
-                foreach ($templates as $template) {
-                    $existingLayouts = $this->layoutRepository->getByTemplateIdWithFilter(
-                        $template->id,
-                        'plugin',
-                        $identifier
-                    );
-                    foreach ($existingLayouts as $layout) {
-                        $layout->forceDelete();
-                        $stats['deleted']++;
-                    }
-                }
-            }
-
-            if ($stats['deleted'] > 0) {
-                $this->invalidateLayoutCache($identifier);
-                $this->incrementExtensionCacheVersion();
-                $this->clearAllTemplateRoutesCaches();
-                $this->clearAllTemplateLanguageCaches();
-                Log::info("플러그인 레이아웃 삭제 완료 (파일 없음): {$pluginName}", ['deleted' => $stats['deleted']]);
-            }
-
-            return ['success' => true, 'layouts_refreshed' => 0, ...$stats];
-        }
-
-        // 레이아웃 검증 (등록 전 모든 레이아웃 파일 유효성 검사)
-        $validatedLayouts = $this->validateLayoutFiles($layoutsPath, $identifier, 'plugin', true);
+        // 레이아웃 검증 (등록 전 모든 레이아웃 파일 유효성 검사). 디렉토리째 사라진 새 버전이면 빈 목록 —
+        // 모든 행이 "새 버전에서 빠진 행" 규칙을 탄다(L17, 종전엔 수정본까지 전부 영구 삭제).
+        $validatedLayouts = File::exists($layoutsPath)
+            ? $this->validateLayoutFiles($layoutsPath, $identifier, 'plugin', true)
+            : [];
 
         // 레이아웃을 타입별로 그룹화
         $layoutsByType = ['admin' => [], 'user' => []];
@@ -3766,59 +3769,16 @@ class PluginManager implements PluginManagerInterface
             }
 
             $typeLayouts = $layoutsByType[$type];
-
-            // 해당 타입의 파일 레이아웃 이름 목록
-            $typeLayoutNames = collect($typeLayouts)->map(function ($layout) use ($identifier) {
-                return $identifier.'.'.$layout['layout_name'];
-            })->toArray();
+            $typeLayoutNames = array_map(fn ($layout) => $identifier.'.'.$layout['layout_name'], $typeLayouts);
 
             foreach ($templates as $template) {
-                // DB에 있는 해당 플러그인의 레이아웃 조회
-                $existingLayouts = $this->layoutRepository->getByTemplateIdWithFilter(
-                    $template->id,
-                    'plugin',
-                    $identifier
-                )->keyBy('name');
-
-                // 파일 기반 레이아웃 동기화
                 foreach ($typeLayouts as $validatedLayout) {
+                    $layoutName = $identifier.'.'.$validatedLayout['layout_name'];
+
                     try {
-                        $baseLayoutName = $validatedLayout['layout_name'];
-                        $layoutData = $validatedLayout['data'];
-                        $layoutName = $identifier.'.'.$baseLayoutName;
-
-                        $existingLayout = $existingLayouts->get($layoutName);
-
-                        if ($existingLayout) {
-                            // 기존 레이아웃이 있는 경우 - 내용 비교 후 업데이트
-                            $existingContent = is_string($existingLayout->content)
-                                ? json_decode($existingLayout->content, true)
-                                : $existingLayout->content;
-
-                            if ($existingContent !== $layoutData) {
-                                // 사용자 수정 감지: preserveModified 시 original_content_hash 와 현재 hash 비교
-                                if ($preserveModified) {
-                                    $currentHash = $this->computeContentHash($existingContent);
-                                    $originalHash = $existingLayout->original_content_hash;
-
-                                    if ($originalHash && $currentHash !== $originalHash) {
-                                        $stats['skipped'] = ($stats['skipped'] ?? 0) + 1;
-                                        Log::info("플러그인 레이아웃 보존 (사용자 수정): {$layoutName}", ['plugin' => $identifier]);
-
-                                        continue;
-                                    }
-                                }
-
-                                $this->registerLayoutToTemplate($template, $layoutName, $layoutData, $identifier);
-                                $stats['updated']++;
-                            } else {
-                                $stats['unchanged']++;
-                            }
-                        } else {
-                            // DB에 없으면 새로 생성
-                            $this->registerLayoutToTemplate($template, $layoutName, $layoutData, $identifier);
-                            $stats['created']++;
-                        }
+                        $entry = $this->registerLayoutToTemplate($template, $layoutName, $validatedLayout['data'], $identifier, $validatedLayout['original'], $mode, $backupOriginals[$layoutName] ?? null);
+                        $this->tallyLayoutSync($stats, $entry);
+                        $report->add($entry);
                     } catch (\Exception $e) {
                         Log::error("플러그인 레이아웃 동기화 실패: {$validatedLayout['file']}", [
                             'plugin' => $identifier,
@@ -3827,14 +3787,22 @@ class PluginManager implements PluginManagerInterface
                     }
                 }
 
-                // DB에만 있고 파일에 없는 레이아웃 삭제
-                // 해당 타입의 레이아웃만 비교하여 삭제
-                foreach ($existingLayouts as $layoutName => $layout) {
-                    if (! in_array($layoutName, $typeLayoutNames)) {
-                        $layout->forceDelete();
-                        $stats['deleted']++;
-                        Log::info("플러그인 레이아웃 삭제: {$layoutName}", ['plugin' => $identifier]);
+                // DB에만 있고 파일에 없는 레이아웃 — 이전 판 파일 목록에 있던 이름만 삭제 후보, 운영자 수정본은 keep 에서 남긴다.
+                $existingLayouts = $this->layoutRepository->getByTemplateIdWithFilter($template->id, 'plugin', $identifier);
+
+                foreach ($existingLayouts as $layout) {
+                    if (in_array($layout->name, $typeLayoutNames, true)) {
+                        continue;
                     }
+
+                    $entry = $synchronizer->removeMissingLayout(
+                        $layout,
+                        (string) $template->identifier,
+                        $mode,
+                        $synchronizer->isRemovalCandidate($layout, $previousNames, $identifier.'.')
+                    );
+                    $this->tallyLayoutSync($stats, $entry);
+                    $report->add($entry);
                 }
             }
         }
@@ -3850,12 +3818,13 @@ class PluginManager implements PluginManagerInterface
             'updated' => $stats['updated'],
             'deleted' => $stats['deleted'],
             'unchanged' => $stats['unchanged'],
+            'skipped' => $stats['skipped'],
         ]);
 
         // 레이아웃 확장(extension)은 모든 활성 템플릿에 적용될 수 있으므로
         // admin 템플릿뿐만 아니라 모든 활성 템플릿에 대해 갱신
         $allActiveTemplates = $this->templateRepository->getActive();
-        $extensionStats = $this->refreshLayoutExtensions($plugin, $allActiveTemplates, $preserveModified);
+        $extensionStats = $this->refreshLayoutExtensions($plugin, $allActiveTemplates, $preserveModified, $backupPath, $report);
 
         // 레이아웃 또는 레이아웃 확장이 실제로 변경된 경우에만 캐시 버전 증가
         $extensionChanged = ($extensionStats['created'] ?? 0) > 0 || ($extensionStats['updated'] ?? 0) > 0;
@@ -3874,7 +3843,9 @@ class PluginManager implements PluginManagerInterface
             'updated' => $stats['updated'],
             'deleted' => $stats['deleted'],
             'unchanged' => $stats['unchanged'],
+            'skipped' => $stats['skipped'] + ($extensionStats['skipped'] ?? 0),
             'extensions_refreshed' => $extensionStats['refreshed'] ?? 0,
+            'layout_sync' => $report->toArray(),
         ];
     }
 
@@ -3883,12 +3854,14 @@ class PluginManager implements PluginManagerInterface
      *
      * @param  PluginInterface  $plugin  플러그인 인스턴스
      * @param  Collection  $adminTemplates  admin 템플릿 컬렉션
-     * @param  bool  $preserveModified  관리자가 편집한 확장을 보존할지 여부 (--layout-strategy=keep)
+     * @param  bool  $preserveModified  관리자가 편집한 확장을 보존(병합)할지 여부 (--layout-strategy=keep)
+     * @param  string|null  $backupPath  업데이트 백업 디렉토리
+     * @param  LayoutSyncReport|null  $report  결과를 모을 보고
      * @return array{refreshed: int, created: int, updated: int, deleted: int, skipped: int} 갱신 통계
      */
-    protected function refreshLayoutExtensions(PluginInterface $plugin, $adminTemplates, bool $preserveModified = false): array
+    protected function refreshLayoutExtensions(PluginInterface $plugin, $adminTemplates, bool $preserveModified = false, ?string $backupPath = null, ?LayoutSyncReport $report = null): array
     {
-        return $this->refreshExtensionLayoutExtensions($plugin, $adminTemplates, LayoutSourceType::Plugin, $preserveModified);
+        return $this->refreshExtensionLayoutExtensions($plugin, $adminTemplates, LayoutSourceType::Plugin, $preserveModified, $backupPath, $report);
     }
 
     /**
@@ -3900,7 +3873,7 @@ class PluginManager implements PluginManagerInterface
      * @param  string  $pluginName  플러그인명 (identifier)
      * @param  \Closure|null  $onProgress  진행 콜백 (?string $step, string $message)
      * @param  bool  $force
-     * @return void
+     * @return void 반환값 없음
      */
     protected function copyFromPendingOrBundled(string $pluginName, ?\Closure $onProgress = null, bool $force = false): void
     {
@@ -3935,7 +3908,7 @@ class PluginManager implements PluginManagerInterface
      * 업데이트 후 새 파일에서 플러그인을 다시 로드합니다.
      *
      * @param  string  $pluginName  플러그인명
-     * @return void
+     * @return void 반환값 없음
      */
     protected function reloadPlugin(string $pluginName): void
     {
@@ -4290,7 +4263,7 @@ class PluginManager implements PluginManagerInterface
      * @param  string  $toVersion  목표 버전 (이 버전 이하)
      * @param  bool  $force  true 시 fromVersion == toVersion이면 해당 버전 스텝도 포함
      * @param  \Closure|null  $onStep  각 step 실행 직전에 호출되는 콜백 (인자: 버전 문자열)
-     * @return void
+     * @return void 반환값 없음
      *
      * @throws \Exception 스텝 실행 실패 시
      */
@@ -4374,42 +4347,11 @@ class PluginManager implements PluginManagerInterface
      */
     public function hasModifiedLayouts(string $identifier): array
     {
-        $layouts = $this->layoutRepository->getBySourceIdentifier(
-            $identifier,
-            LayoutSourceType::Plugin,
+        // 레이아웃 + 이 플러그인의 확장 조각 수정본을 한 목록으로 (§5.9 — 종전 API 목록에는 조각이 없었다)
+        return $this->buildModifiedLayoutsReport(
+            $this->layoutRepository->getBySourceIdentifier($identifier, LayoutSourceType::Plugin),
+            $this->layoutExtensionRepository->getBySource(LayoutSourceType::Plugin, $identifier)
         );
-
-        $modifiedLayouts = $layouts->filter(function ($layout) {
-            if (! $layout->original_content_hash) {
-                return false;
-            }
-
-            $currentContent = is_string($layout->content)
-                ? json_decode($layout->content, true)
-                : $layout->content;
-            $currentHash = $this->computeContentHash($currentContent);
-
-            return $currentHash !== $layout->original_content_hash;
-        });
-
-        return [
-            'has_modified_layouts' => $modifiedLayouts->isNotEmpty(),
-            'modified_count' => $modifiedLayouts->count(),
-            'modified_layouts' => $modifiedLayouts->map(function ($layout) {
-                $currentContent = is_string($layout->content)
-                    ? json_decode($layout->content, true)
-                    : $layout->content;
-                $currentSize = $this->computeContentSize($currentContent);
-                $originalSize = $layout->original_content_size ?? $currentSize;
-
-                return [
-                    'id' => $layout->id,
-                    'name' => $layout->name,
-                    'updated_at' => $layout->updated_at?->format('Y-m-d H:i:s'),
-                    'size_diff' => $currentSize - $originalSize,
-                ];
-            })->values()->toArray(),
-        ];
     }
 
     /**
@@ -4544,21 +4486,24 @@ class PluginManager implements PluginManagerInterface
         }
 
         $backupPath = null;
+        $layoutSync = null;
+        $recordedColumns = [];
+        $filesRestored = false;
 
         try {
             // 1. 백업 생성
-            $onProgress?->__invoke('backup', '백업 생성 중...');
+            $onProgress?->__invoke('backup', __('extensions.progress.backup'));
             $backupPath = ExtensionBackupHelper::createBackup('plugins', $identifier, $onProgress);
 
             // 2. 상태 → updating
-            $onProgress?->__invoke('status', '상태 변경 중...');
+            $onProgress?->__invoke('status', __('extensions.progress.status_change'));
             $this->pluginRepository->updateByIdentifier($identifier, [
                 'status' => ExtensionStatus::Updating->value,
                 'updated_at' => now(),
             ]);
 
             // 3. 스테이징 (소스에 따라 분기)
-            $onProgress?->__invoke('staging', '스테이징 중...');
+            $onProgress?->__invoke('staging', __('extensions.progress.staging'));
             $stagingPath = null;
 
             try {
@@ -4596,12 +4541,12 @@ class PluginManager implements PluginManagerInterface
                         && $previousMode !== VendorMode::Bundled
                         && $this->extensionManager->isComposerUnchanged($stagingPath, $activePath)
                     ) {
-                        $onProgress?->__invoke('composer', 'Composer 의존성 변경 없음 — 스킵');
+                        $onProgress?->__invoke('composer', __('extensions.progress.composer_unchanged'));
                         Log::info('플러그인 업데이트: composer 변경 없음, 스킵', ['plugin' => $identifier]);
                         ExtensionPendingHelper::copyVendorFromActive($activePath, $stagingPath, $onProgress);
                         $resolvedVendorMode = $previousMode ?? VendorMode::Auto;
                     } else {
-                        $onProgress?->__invoke('composer', 'Vendor 설치 중...');
+                        $onProgress?->__invoke('composer', __('extensions.progress.vendor_install'));
                         $vendorResult = $this->installVendorViaResolver(
                             $identifier,
                             $stagingPath,
@@ -4615,7 +4560,7 @@ class PluginManager implements PluginManagerInterface
                 }
 
                 // 4. 원자적 적용 (스테이징 → 활성 디렉토리)
-                $onProgress?->__invoke('files', '파일 교체 중...');
+                $onProgress?->__invoke('files', __('extensions.progress.replace_files'));
                 if ($stagingPath) {
                     $targetPath = $this->pluginsPath.DIRECTORY_SEPARATOR.$identifier;
                     ExtensionPendingHelper::copyToActive($stagingPath, $targetPath, $onProgress);
@@ -4632,12 +4577,12 @@ class PluginManager implements PluginManagerInterface
             }
 
             // 플러그인 재로드 (새 파일로)
-            $onProgress?->__invoke('reload', '재로드 중...');
+            $onProgress?->__invoke('reload', __('extensions.progress.reload'));
             $this->reloadPlugin($identifier);
             $plugin = $this->getPlugin($identifier);
 
             // 4. 마이그레이션 실행
-            $onProgress?->__invoke('migration', '마이그레이션 실행 중...');
+            $onProgress?->__invoke('migration', __('extensions.progress.migration'));
             if ($plugin) {
                 $this->runMigrations($plugin);
             }
@@ -4648,11 +4593,11 @@ class PluginManager implements PluginManagerInterface
             // 플러그인 클래스를 참조할 수 있으므로, 새 파일에 대한 PSR-4 매핑이 현재 프로세스
             // ClassLoader 에 등록되어 있어야 한다. updateComposerAutoload() 가 파일 재기록 +
             // 런타임 ClassLoader 재등록을 동시에 수행한다.
-            $onProgress?->__invoke('autoload', '오토로드 갱신 중...');
+            $onProgress?->__invoke('autoload', __('extensions.progress.autoload'));
             $this->extensionManager->updateComposerAutoload();
 
             // 6. 트랜잭션: DB 정보 갱신
-            $onProgress?->__invoke('db', 'DB 갱신 중...');
+            $onProgress?->__invoke('db', __('extensions.progress.db_update'));
             DB::beginTransaction();
             try {
                 $name = $plugin ? $this->convertToMultilingual($plugin->getName()) : $record->name;
@@ -4668,7 +4613,7 @@ class PluginManager implements PluginManagerInterface
                     $description = $manifest['description'] ?? $description;
                 }
 
-                $this->pluginRepository->updateByIdentifier($identifier, [
+                $recorded = [
                     'version' => $toVersion,
                     'latest_version' => $toVersion,
                     'name' => $name,
@@ -4681,7 +4626,8 @@ class PluginManager implements PluginManagerInterface
                     'vendor_mode' => $resolvedVendorMode->value,
                     'updated_by' => Auth::id(),
                     'updated_at' => now(),
-                ]);
+                ];
+                $this->pluginRepository->updateByIdentifier($identifier, $recorded);
 
                 // Role/Permission 동기화 (있으면 업데이트) + 완전 동기화 (stale cleanup)
                 // 선언형 산출물 (역할/권한/IDV/알림) 일괄 동기화 + stale cleanup
@@ -4690,19 +4636,21 @@ class PluginManager implements PluginManagerInterface
                 }
 
                 DB::commit();
+                // 실패 경로가 되돌릴 칸 — 이 배열 하나가 기록·복원의 SSoT 다(갱신 시각은 복원이 새로 찍는다).
+                $recordedColumns = array_keys(Arr::except($recorded, ['updated_at']));
             } catch (\Throwable $e) {
                 DB::rollBack();
                 throw $e;
             }
 
             // 7. 업그레이드 스텝 실행
-            $onProgress?->__invoke('upgrade', '업그레이드 스텝 실행 중...');
+            $onProgress?->__invoke('upgrade', __('extensions.progress.upgrade_steps'));
             if ($plugin) {
                 $this->runUpgradeSteps($plugin, $fromVersion, $toVersion, $force, $onUpgradeStep);
             }
 
             // 8. 상태 복원 (refreshPluginLayouts()가 active 상태를 요구하므로 먼저 복원)
-            $onProgress?->__invoke('restore_status', '상태 복원 중...');
+            $onProgress?->__invoke('restore_status', __('extensions.progress.restore_status'));
             $this->pluginRepository->updateByIdentifier($identifier, [
                 'status' => $previousStatus,
                 'updated_at' => now(),
@@ -4717,7 +4665,7 @@ class PluginManager implements PluginManagerInterface
 
             // 9. 레이아웃 갱신 (이전 상태가 active였으면)
             // refreshPluginLayouts()는 캐시 무효화 + 캐시 버전 증가를 포함
-            $onProgress?->__invoke('layout', '레이아웃 갱신 중...');
+            $onProgress?->__invoke('layout', __('extensions.progress.layout_update'));
             if ($previousStatus === ExtensionStatus::Active->value && $plugin) {
                 $preserveModified = ($layoutStrategy === 'keep');
                 // registerPluginLayouts() 를 여기서 호출하지 않는다 — 그 메서드는 전략을
@@ -4725,14 +4673,24 @@ class PluginManager implements PluginManagerInterface
                 // 덮어써서, 뒤따르는 refreshPluginLayouts($preserveModified) 가 비교할
                 // "사용자 수정본" 을 이미 지워버린다(= keep 전략이 항상 무효화).
                 // 신규 레이아웃 생성은 refreshPluginLayouts 의 created 분기가 담당한다.
-                $this->registerLayoutExtensions($plugin);
+                // 조각 사전 재등록도 이 업데이트의 전략·백업을 쓴다 — 종전엔 false 고정이라 원본 해시까지 파일로
+                // 덮어써 뒤따르는 keep 비교가 늘 "미수정" 이었다(L2). 두 경로가 같은 행을 지나도 보고는 처음 결과를 남긴다.
+                $layoutReport = new LayoutSyncReport(LayoutSyncMode::fromPreserve($preserveModified));
+                $this->registerLayoutExtensions($plugin, $preserveModified, $backupPath, $layoutReport);
                 $this->reregisterActiveExtensionsToAllTemplates();
-                $this->refreshPluginLayouts($identifier, $preserveModified);
+                $layoutSync = $this->refreshPluginLayouts($identifier, $preserveModified, $backupPath, $layoutReport)['layout_sync'] ?? null;
+            } elseif ($backupPath !== null) {
+                // 꺼 둔 채 업데이트(D11) — 레이아웃은 켤 때 갱신되므로, 백업을 지우기 전에 이전 판 원본을 미리 저장해
+                // 켤 때 운영자 수정은 두고 새 판을 병합할 수 있게 한다.
+                $this->layoutSynchronizer()->stashBaseForInactiveUpdate($backupPath, 'plugins', $identifier);
             }
 
             // 10. 백업 삭제 + 캐시 삭제
-            $onProgress?->__invoke('cleanup', '정리 중...');
+            $onProgress?->__invoke('cleanup', __('extensions.progress.cleanup'));
             ExtensionBackupHelper::deleteBackup($backupPath);
+            // 백업을 지운 뒤의 실패(완료 훅·캐시 재생성)는 파일을 되돌릴 수 없다 — 파일이 새 버전이므로 DB 버전 칸도 두어야
+            // 둘이 맞는다. catch 가 지워진 백업으로 복원을 시도하지 않게 비운다.
+            $backupPath = null;
 
             // 캐시 무효화
             $this->clearAllTemplateLanguageCaches();
@@ -4763,6 +4721,8 @@ class PluginManager implements PluginManagerInterface
                 'success' => true,
                 'from_version' => $fromVersion,
                 'to_version' => $toVersion,
+                'layout_strategy' => $layoutStrategy,
+                'layout_sync' => $layoutSync,
                 'message' => __('plugins.update_success', [
                     'plugin' => $identifier,
                     'version' => $toVersion,
@@ -4778,6 +4738,7 @@ class PluginManager implements PluginManagerInterface
             if ($backupPath) {
                 try {
                     ExtensionBackupHelper::restoreFromBackup('plugins', $identifier, $backupPath, $onProgress);
+                    $filesRestored = true;
                     ExtensionBackupHelper::deleteBackup($backupPath);
 
                     // 플러그인 재로드 (복원된 파일로)
@@ -4790,10 +4751,15 @@ class PluginManager implements PluginManagerInterface
                 }
             }
 
-            // 상태 복원
+            // 상태 복원 — 새 버전 기록이 이미 저장된 뒤 실패했고 파일을 백업으로 되돌렸으면 버전 칸도 업데이트 전 값으로
+            // 되돌린다. 파일은 옛 버전인데 DB 만 새 버전이면 관리자 화면이 설치되지 않은 버전을 보여 주고, "업데이트 없음" 으로
+            // 판정돼 같은 업데이트를 다시 시도할 수도 없다. 파일을 되돌리지 못했으면(백업 삭제 뒤 실패·복원 실패) 새 버전
+            // 파일에 맞춰 버전 칸을 그대로 둔다 — 반대 방향 불일치를 만들지 않는다. 업그레이드 스텝은 멱등이 규정이라
+            // (upgrade-step-guide 원칙 4) 다시 시도할 때 처음부터 돌아도 안전하다.
             $this->pluginRepository->updateByIdentifier($identifier, [
                 'status' => $previousStatus,
                 'updated_at' => now(),
+                ...($filesRestored && $recordedColumns !== [] ? Arr::only($record->getRawOriginal(), $recordedColumns) : []),
             ]);
 
             // 상태 캐시 무효화 (성공 경로와 동일) — updating 창에서 누군가 활성 목록을 읽었다면
@@ -4905,7 +4871,7 @@ class PluginManager implements PluginManagerInterface
         );
 
         $composerExecutor = function (VendorInstallContext $ctx) use ($onProgress): VendorInstallResult {
-            $onProgress?->__invoke('composer', 'Composer install 실행 중...');
+            $onProgress?->__invoke('composer', __('extensions.progress.composer_install_running'));
             $success = $this->extensionManager->runComposerInstallAt($ctx->sourceDir, true);
 
             if (! $success) {

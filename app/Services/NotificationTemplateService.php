@@ -19,6 +19,8 @@ class NotificationTemplateService
 
     /**
      * 캐시 TTL (초) — g7_core_settings('cache.notification_ttl') 추종.
+     *
+     * @return int 캐시 TTL (초, 기본 3600)
      */
     protected function getCacheTtl(): int
     {
@@ -29,6 +31,7 @@ class NotificationTemplateService
      * @param  NotificationTemplateRepositoryInterface  $templateRepository
      * @param  NotificationDefinitionRepositoryInterface  $definitionRepository
      * @param  CacheInterface  $cache
+     * @param  LanguagePackSeedInjector  $seedInjector  기본 정의에 활성 언어팩(코어·확장) seed 로케일을 병합하는 인젝터
      */
     public function __construct(
         private readonly NotificationTemplateRepositoryInterface $templateRepository,
@@ -89,15 +92,19 @@ class NotificationTemplateService
             $data['updated_by'] = $userId;
         }
 
-        // 사용자가 편집한 템플릿은 더 이상 기본 상태가 아님
-        $data['is_default'] = false;
-
         $updated = $this->templateRepository->update($template, $data);
+
+        // 실제로 고친 칸이 있을 때만 「기본」 을 푼다 — 저장만 해도 기본이 풀리면 「기본값 복원」 버튼이 뜨고
+        // 새 버전 문구 교정도 막힌다(#727 D5-⑤). 수정 여부는 모델이 기록한 user_overrides 로 판정한다.
+        $customized = ! empty($updated->user_overrides);
+        if ((bool) $updated->is_default === $customized) {
+            $updated = $this->templateRepository->update($updated, ['is_default' => ! $customized]);
+        }
 
         $definition = $updated->definition;
         if ($definition) {
-            // 소속 정의도 "커스터마이징됨" 상태로 전환 (리셋 버튼 노출 근거)
-            if ($definition->is_default) {
+            // 소속 정의도 템플릿 중 하나라도 고쳤으면 "커스터마이징됨" (리셋 버튼 노출 근거)
+            if ($customized && $definition->is_default) {
                 $this->definitionRepository->update($definition, ['is_default' => false]);
             }
 
@@ -291,7 +298,7 @@ class NotificationTemplateService
      *
      * @param  string  $type
      * @param  string  $channel
-     * @return void
+     * @return void 반환값 없음
      */
     public function invalidateCache(string $type, string $channel): void
     {

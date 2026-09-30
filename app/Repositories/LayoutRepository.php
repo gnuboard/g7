@@ -102,7 +102,7 @@ class LayoutRepository implements LayoutRepositoryInterface
      *
      * @param  int  $templateId  템플릿 ID
      * @param  callable(TemplateLayout): (bool|null)  $callback  행마다 호출 (false 면 중단)
-     * @return void
+     * @return void 반환값 없음
      */
     public function eachWithContent(int $templateId, callable $callback): void
     {
@@ -195,6 +195,14 @@ class LayoutRepository implements LayoutRepositoryInterface
     public function softDelete(TemplateLayout $layout): void
     {
         $layout->delete();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function forceDelete(TemplateLayout $layout): void
+    {
+        $layout->forceDelete();
     }
 
     /**

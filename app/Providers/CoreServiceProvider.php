@@ -70,6 +70,7 @@ use App\Extension\HookListenerRegistrar;
 use App\Extension\HookManager;
 use App\Extension\IdentityVerification\IdentityVerificationManager;
 use App\Extension\IdentityVerification\Providers\MailIdentityProvider;
+use App\Extension\Layout\LayoutRowSynchronizer;
 use App\Extension\ModuleManager;
 use App\Extension\PluginManager;
 use App\Extension\Storage\CoreStorageDriver;
@@ -152,7 +153,7 @@ class CoreServiceProvider extends ServiceProvider
     /**
      * 코어 서비스들을 등록합니다.
      *
-     * @return void
+     * @return void 반환값 없음
      */
     public function register(): void
     {
@@ -171,7 +172,7 @@ class CoreServiceProvider extends ServiceProvider
      * 축이 늘어날 때 `g7:bench` 커맨드를 고치지 않고 여기에 실행기만 추가하면 되도록
      * 태그로 묶어 주입합니다. 실행기는 CLI 계측 시점에만 해석되므로 웹 요청 비용은 없습니다.
      *
-     * @return void
+     * @return void 반환값 없음
      */
     private function registerBenchmarkAxes(): void
     {
@@ -193,7 +194,7 @@ class CoreServiceProvider extends ServiceProvider
      * index.php 또는 artisan에서 이미 등록된 경우 스킵합니다.
      * 진입점에서 등록되지 않은 경우(예: queue worker)에만 실행됩니다.
      *
-     * @return void
+     * @return void 반환값 없음
      */
     private function registerExtensionAutoload(): void
     {
@@ -257,7 +258,7 @@ class CoreServiceProvider extends ServiceProvider
     /**
      * Repository 인터페이스 바인딩을 등록합니다.
      *
-     * @return void
+     * @return void 반환값 없음
      */
     private function registerRepositoryBindings(): void
     {
@@ -364,7 +365,7 @@ class CoreServiceProvider extends ServiceProvider
     /**
      * 확장 매니저들을 등록합니다.
      *
-     * @return void
+     * @return void 반환값 없음
      */
     private function registerExtensionManagers(): void
     {
@@ -387,7 +388,9 @@ class CoreServiceProvider extends ServiceProvider
                 $app->make(TemplateRepositoryInterface::class),
                 $app->make(PluginRepositoryInterface::class),
                 $app->make(LayoutRepositoryInterface::class),
-                $app->make(LayoutExtensionService::class)
+                $app->make(LayoutExtensionService::class),
+                $app->make(LayoutRowSynchronizer::class),
+                $app->make(LayoutExtensionRepositoryInterface::class)
             );
         });
 
@@ -401,7 +404,9 @@ class CoreServiceProvider extends ServiceProvider
                 $app->make(TemplateRepositoryInterface::class),
                 $app->make(ModuleRepositoryInterface::class),
                 $app->make(LayoutRepositoryInterface::class),
-                $app->make(LayoutExtensionService::class)
+                $app->make(LayoutExtensionService::class),
+                $app->make(LayoutRowSynchronizer::class),
+                $app->make(LayoutExtensionRepositoryInterface::class)
             );
         });
 
@@ -413,7 +418,9 @@ class CoreServiceProvider extends ServiceProvider
                 $app->make(LayoutRepositoryInterface::class),
                 $app->make(ModuleRepositoryInterface::class),
                 $app->make(PluginRepositoryInterface::class),
-                $app->make(LayoutExtensionService::class)
+                $app->make(LayoutExtensionService::class),
+                $app->make(LayoutRowSynchronizer::class),
+                $app->make(LayoutExtensionRepositoryInterface::class)
             );
         });
 
@@ -432,7 +439,7 @@ class CoreServiceProvider extends ServiceProvider
     /**
      * 코어 서비스들을 부트스트랩합니다.
      *
-     * @return void
+     * @return void 반환값 없음
      */
     public function boot(): void
     {
@@ -511,7 +518,7 @@ class CoreServiceProvider extends ServiceProvider
      *
      * @param  ModuleManager  $moduleManager  활성 모듈 관리자
      * @param  PluginManager  $pluginManager  활성 플러그인 관리자
-     * @return void
+     * @return void 반환값 없음
      */
     private function collectDeclaredIdentityPurposes(ModuleManager $moduleManager, PluginManager $pluginManager): void
     {
@@ -586,7 +593,7 @@ class CoreServiceProvider extends ServiceProvider
      *
      * @param  ModuleManager|PluginManager  $manager  확장 매니저
      * @param  string  $type  확장 타입 (modules, plugins)
-     * @return void
+     * @return void 반환값 없음
      */
     protected function validateAndDeactivateIncompatibleExtensions($manager, string $type): void
     {
@@ -663,7 +670,7 @@ class CoreServiceProvider extends ServiceProvider
      * `ExtensionCompatibilityAlertListener` 가 대시보드 알림으로 표시합니다.
      *
      * @param  string  $type  확장 타입 (modules|plugins|templates)
-     * @return void
+     * @return void 반환값 없음
      */
     protected function detectRecoveredExtensions(string $type): void
     {
@@ -729,7 +736,7 @@ class CoreServiceProvider extends ServiceProvider
      * 자동으로 비활성화하고 로그를 기록합니다.
      *
      * @param  TemplateManager  $templateManager  템플릿 매니저
-     * @return void
+     * @return void 반환값 없음
      */
     protected function validateAndDeactivateIncompatibleTemplates(TemplateManager $templateManager): void
     {
@@ -796,7 +803,7 @@ class CoreServiceProvider extends ServiceProvider
      *
      * @param  string  $type  확장 타입 (modules, plugins, templates)
      * @param  array  $deactivated  비활성화된 확장 목록
-     * @return void
+     * @return void 반환값 없음
      */
     protected function storeDeactivatedExtensionsAlert(string $type, array $deactivated): void
     {
@@ -817,7 +824,7 @@ class CoreServiceProvider extends ServiceProvider
      * getAllSettings()를 호출하여 g7_settings.modules.{identifier}에 저장합니다.
      *
      * @param  ModuleManager  $moduleManager  모듈 매니저
-     * @return void
+     * @return void 반환값 없음
      */
     protected function loadModuleSettingsToConfig(ModuleManager $moduleManager): void
     {
@@ -832,7 +839,7 @@ class CoreServiceProvider extends ServiceProvider
      * g7_settings.plugins.{identifier}에 저장합니다.
      *
      * @param  PluginManager  $pluginManager  플러그인 매니저
-     * @return void
+     * @return void 반환값 없음
      */
     protected function loadPluginSettingsToConfig(PluginManager $pluginManager): void
     {
@@ -851,7 +858,7 @@ class CoreServiceProvider extends ServiceProvider
      * SettingsServiceProvider::register()에서 코어 드라이버 Config은 이미 적용된 상태이므로,
      * 여기서는 플러그인 드라이버만 처리합니다.
      *
-     * @return void
+     * @return void 반환값 없음
      */
     protected function applyExtensionDriverConfigs(): void
     {
@@ -914,7 +921,7 @@ class CoreServiceProvider extends ServiceProvider
      *
      * 캐시(bootstrap/cache/hooks.php)가 있으면 스캔 없이 등록하고, 없으면 디렉터리를 훑는다.
      *
-     * @return void
+     * @return void 반환값 없음
      */
     private function registerCoreHookListeners(): void
     {
@@ -1001,7 +1008,7 @@ class CoreServiceProvider extends ServiceProvider
      * 단일 코어 리스너를 HookManager에 등록합니다.
      *
      * @param  string  $listenerClass  리스너 클래스명
-     * @return void
+     * @return void 반환값 없음
      */
     private function registerCoreHookListener(string $listenerClass): void
     {
@@ -1026,7 +1033,7 @@ class CoreServiceProvider extends ServiceProvider
      *
      * DB 접근이 필요하므로 boot() 후반부(DB 유효성 검증 후)에서 호출됩니다.
      *
-     * @return void
+     * @return void 반환값 없음
      */
     private function registerDeferredDynamicHooks(): void
     {
@@ -1051,7 +1058,7 @@ class CoreServiceProvider extends ServiceProvider
      * core.routes.filter_merged 필터를 통해 프리뷰 등 코어 시스템 라우트를
      * 모든 템플릿의 routes.json 응답에 자동 주입합니다.
      *
-     * @return void
+     * @return void 반환값 없음
      */
     private function registerSystemRouteFilters(): void
     {

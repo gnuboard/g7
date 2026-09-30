@@ -52,6 +52,8 @@ effects:
   - schedule_run_logged_against_schedule
   - attachment_upload_and_delete_logged
   - layout_update_and_restore_logged_with_path
+  # 확장 업데이트 기록에 레이아웃 처리 요약과 운영자 관련 행별 변경 내역 (#727 D2)
+  - extension_update_records_layout_sync
   # 확장 수명주기·확장 설정
   - extension_lifecycle_hooks_log_identifier
   - extension_install_records_version

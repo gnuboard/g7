@@ -568,7 +568,7 @@
                                             "name": "Input",
                                             "actions": [
                                                 {
-                                                    "comment": "남기기 — 편집기로 고친 템플릿 레이아웃을 그대로 둔다(새 판본의 화면 변경은 안 들어온다).",
+                                                    "comment": "남기기 — 고친 부분은 두고 손대지 않은 조각·설정만 새 판본으로 바꾼다(겹치면 고친 쪽 유지).",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {

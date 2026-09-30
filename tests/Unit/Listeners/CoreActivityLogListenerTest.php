@@ -3,6 +3,7 @@
 namespace Tests\Unit\Listeners;
 
 use App\Enums\ActivityLogType;
+use App\Http\Resources\ActivityLogResource;
 use App\Listeners\CoreActivityLogListener;
 use App\Models\ActivityLog;
 use App\Models\Attachment;
@@ -2311,5 +2312,216 @@ class CoreActivityLogListenerTest extends TestCase
             ['core.plugin_settings.after_save', 'handlePluginSettingsAfterSave', 'plugin_settings.save', ActivityLogType::Admin, 'activity_log.description.plugin_settings_save'],
             ['core.plugin_settings.after_reset', 'handlePluginSettingsAfterReset', 'plugin_settings.reset', ActivityLogType::Admin, 'activity_log.description.plugin_settings_reset'],
         ];
+    }
+
+    /**
+     * 모듈 업데이트 기록에 레이아웃 처리 요약(카운트)과 운영자 관련 행마다 변경 내역 한 줄이 담기는지 확인합니다 (#727 D2).
+     *
+     * @scenario request_area=admin
+     *
+     * @effects extension_update_records_layout_sync
+     *
+     * @return void 없음
+     */
+    // @scenario case=module_handlers
+    // @effects module_lifecycle_is_logged
+    public function test_handle_module_after_update_logs_layout_sync(): void
+    {
+        $this->logChannel->shouldReceive('info')
+            ->once()
+            ->withArgs(function (string $action, array $context) {
+                return $action === 'module.update'
+                    && $context['properties']['layout_strategy'] === 'keep'
+                    && $context['properties']['layout_sync']['applied_count'] === 2
+                    && $context['properties']['layout_sync']['modified_count'] === 1
+                    && ! isset($context['properties']['layout_sync']['entries'])
+                    && $context['properties']['layout_sync_conflicts'][0]['reason'] === 'both_changed'
+                    && count($context['changes']) === 1
+                    && $context['changes'][0]['field'] === 'sirsoft-admin_basic · sirsoft-ecommerce.admin_list'
+                    && $context['changes'][0]['type'] === 'enum'
+                    && $context['changes'][0]['new'] === 'merged'
+                    && $context['changes'][0]['new_label_key'] === 'extensions.layout_sync.verdict.merged'
+                    && $context['changes'][0]['old_label_key'] === 'activity_log.layout_sync.operator_modified';
+            });
+
+        $this->listener->handleModuleAfterUpdate('sirsoft-ecommerce', [
+            'success' => true,
+            'layout_strategy' => 'keep',
+            'layout_sync' => [
+                'strategy' => 'keep', 'applied_count' => 2, 'conflict_count' => 1, 'kept_no_base_count' => 0,
+                'kept_removed_count' => 0, 'kept_deleted_by_operator_count' => 0, 'kept_name_collision_count' => 0,
+                'kept_invalid_count' => 0, 'modified_count' => 1,
+                'entries' => [[
+                    'kind' => 'layout', 'template' => 'sirsoft-admin_basic', 'name' => 'sirsoft-ecommerce.admin_list',
+                    'verdict' => 'merged', 'applied' => [['unit' => 'a', 'kind' => 'partial'], ['unit' => 'b', 'kind' => 'key']],
+                    'conflicts' => [['unit' => 'c', 'reason' => 'both_changed']],
+                ]],
+            ],
+        ], ['version' => '1.1.0']);
+    }
+
+    /**
+     * 레이아웃 보고가 없는 업데이트(종전 결과 모양)는 변경 내역을 싣지 않는다.
+     *
+     * @scenario request_area=admin
+     *
+     * @effects extension_update_records_result
+     *
+     * @return void 없음
+     */
+    // @scenario case=module_handlers
+    // @effects module_lifecycle_is_logged
+    public function test_handle_plugin_after_update_without_layout_sync_has_no_changes(): void
+    {
+        $this->logChannel->shouldReceive('info')
+            ->once()
+            ->withArgs(fn (string $action, array $context) => $action === 'plugin.update' && ! array_key_exists('changes', $context) && ! array_key_exists('layout_sync', $context['properties']));
+
+        $this->listener->handlePluginAfterUpdate('sirsoft-gdpr', ['success' => true], ['version' => '1.0.1']);
+    }
+
+    /**
+     * 레이아웃 처리 보고 한 건 (레이아웃 병합 + 확장 조각 기준 없음).
+     *
+     * @param  string  $template  템플릿 식별자
+     * @param  string  $layout  레이아웃 이름
+     * @return array<string, mixed> 업데이트 결과
+     */
+    private function layoutSyncResult(string $template, string $layout): array
+    {
+        return [
+            'success' => true,
+            'layout_strategy' => 'keep',
+            'layout_sync' => [
+                'strategy' => 'keep', 'applied_count' => 1, 'conflict_count' => 1, 'kept_no_base_count' => 1,
+                'kept_removed_count' => 0, 'kept_deleted_by_operator_count' => 0, 'kept_name_collision_count' => 0,
+                'kept_invalid_count' => 0, 'modified_count' => 2,
+                'entries' => [
+                    [
+                        'kind' => 'layout', 'template' => $template, 'name' => $layout, 'verdict' => 'merged',
+                        'applied' => [['unit' => 'a', 'kind' => 'partial']], 'conflicts' => [['unit' => 'b', 'reason' => 'both_changed']],
+                    ],
+                    [
+                        'kind' => 'extension', 'template' => $template, 'name' => 'admin_user_detail:probe_a', 'verdict' => 'kept_no_base',
+                        'applied' => [], 'conflicts' => [],
+                    ],
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * 템플릿 버전 업데이트 기록에도 레이아웃 처리 요약(카운트)·겹친 조각·운영자 관련 행마다 변경 내역 한 줄이 담긴다 (#727 D2).
+     *
+     * @scenario request_area=admin
+     *
+     * @effects extension_update_records_layout_sync
+     *
+     * @return void 없음
+     */
+    // @scenario case=template_handlers
+    // @effects template_lifecycle_is_logged
+    public function test_handle_template_after_version_update_logs_layout_sync(): void
+    {
+        $this->logChannel->shouldReceive('info')
+            ->once()
+            ->withArgs(function (string $action, array $context) {
+                return $action === 'template.version_update'
+                    && $context['properties']['identifier'] === 'sirsoft-admin_basic'
+                    && $context['properties']['layout_strategy'] === 'keep'
+                    && $context['properties']['layout_sync']['kept_no_base_count'] === 1
+                    && $context['properties']['layout_sync']['modified_count'] === 2
+                    && ! isset($context['properties']['layout_sync']['entries'])
+                    && $context['properties']['layout_sync_conflicts'] === [['layout' => 'sirsoft-admin_basic · admin_dashboard', 'unit' => 'b', 'reason' => 'both_changed']]
+                    && count($context['changes']) === 2
+                    && $context['changes'][0]['field'] === 'sirsoft-admin_basic · admin_dashboard'
+                    && $context['changes'][1]['new'] === 'kept_no_base'
+                    && $context['changes'][1]['new_label_key'] === 'extensions.layout_sync.verdict.kept_no_base';
+            });
+
+        $this->listener->handleTemplateAfterVersionUpdate('sirsoft-admin_basic', $this->layoutSyncResult('sirsoft-admin_basic', 'admin_dashboard'), ['version' => '1.2.0']);
+    }
+
+    /**
+     * 플러그인 업데이트 기록도 레이아웃 처리 보고가 있으면 카운트·변경 내역을 싣는다 (#727 D2 — 모듈과 같은 모양).
+     *
+     * @scenario request_area=admin
+     *
+     * @effects extension_update_records_layout_sync
+     *
+     * @return void 없음
+     */
+    // @scenario case=plugin_handlers
+    // @effects plugin_lifecycle_is_logged
+    public function test_handle_plugin_after_update_logs_layout_sync(): void
+    {
+        $this->logChannel->shouldReceive('info')
+            ->once()
+            ->withArgs(function (string $action, array $context) {
+                return $action === 'plugin.update'
+                    && $context['properties']['identifier'] === 'sirsoft-tosspayments'
+                    && $context['properties']['layout_sync']['applied_count'] === 1
+                    && $context['properties']['layout_sync']['conflict_count'] === 1
+                    && count($context['changes']) === 2
+                    && $context['changes'][0]['field'] === 'sirsoft-admin_basic · sirsoft-tosspayments.admin_settings'
+                    && $context['changes'][0]['old'] === 'operator_modified'
+                    && $context['changes'][0]['new_label_key'] === 'extensions.layout_sync.verdict.merged';
+            });
+
+        $this->listener->handlePluginAfterUpdate('sirsoft-tosspayments', $this->layoutSyncResult('sirsoft-admin_basic', 'sirsoft-tosspayments.admin_settings'), ['version' => '1.0.1']);
+    }
+
+    /**
+     * 업데이트 기록의 변경 내역 행은 활동 로그 화면(리소스)에서 번역 라벨로 보인다 — 이전 = 「운영자 수정본」, 이후 = 판정별 문구.
+     * 모든 판정 키가 ko·en 에 있어야 목록을 펼쳤을 때 키 문자열이 그대로 새지 않는다.
+     *
+     * @scenario request_area=admin
+     *
+     * @effects extension_update_records_layout_sync
+     *
+     * @return void 없음
+     */
+    // @scenario case=module_handlers
+    // @effects module_lifecycle_is_logged
+    public function test_layout_sync_change_rows_render_translated_labels(): void
+    {
+        $captured = null;
+        $this->logChannel->shouldReceive('info')
+            ->once()
+            ->withArgs(function (string $action, array $context) use (&$captured) {
+                $captured = $context['changes'] ?? null;
+
+                return $action === 'module.update';
+            });
+
+        $verdicts = ['merged', 'conflict', 'kept', 'kept_no_base', 'kept_removed', 'kept_invalid', 'kept_deleted_by_operator', 'kept_name_collision'];
+        $result = $this->layoutSyncResult('sirsoft-admin_basic', 'sirsoft-board.admin_board_index');
+        $result['layout_sync']['entries'] = array_map(fn (string $verdict) => [
+            'kind' => 'layout', 'template' => 'sirsoft-admin_basic', 'name' => 'sirsoft-board.'.$verdict, 'verdict' => $verdict, 'applied' => [], 'conflicts' => [],
+        ], $verdicts);
+
+        $this->listener->handleModuleAfterUpdate('sirsoft-board', $result, ['version' => '1.1.0']);
+        $this->assertIsArray($captured);
+
+        $translate = new \ReflectionMethod(ActivityLogResource::class, 'translateChangeGroup');
+        $translate->setAccessible(true);
+        $resource = new ActivityLogResource(new ActivityLog);
+
+        foreach (['ko', 'en'] as $locale) {
+            app()->setLocale($locale);
+            $rows = $translate->invoke($resource, $captured);
+
+            foreach ($rows as $i => $row) {
+                $verdict = $verdicts[$i];
+                $this->assertSame('sirsoft-admin_basic · sirsoft-board.'.$verdict, $row['label'], '항목 칸은 `{템플릿} · {화면}`');
+                $this->assertSame(__('activity_log.layout_sync.operator_modified'), $row['old_label']);
+                $this->assertNotSame('activity_log.layout_sync.operator_modified', $row['old_label'], "{$locale}: 이전 라벨 번역 누락");
+                $this->assertSame(__('extensions.layout_sync.verdict.'.$verdict), $row['new_label']);
+                $this->assertNotSame('extensions.layout_sync.verdict.'.$verdict, $row['new_label'], "{$locale}: {$verdict} 판정 라벨 번역 누락");
+            }
+        }
+
+        app()->setLocale('ko');
+        $this->assertSame('운영자 수정본', __('activity_log.layout_sync.operator_modified'));
     }
 }

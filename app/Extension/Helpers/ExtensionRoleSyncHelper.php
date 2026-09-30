@@ -2,6 +2,7 @@
 
 namespace App\Extension\Helpers;
 
+use App\Contracts\Extension\UpgradeStepInterface;
 use App\Contracts\Repositories\PermissionRepositoryInterface;
 use App\Contracts\Repositories\RoleRepositoryInterface;
 use App\Enums\ExtensionOwnerType;
@@ -68,24 +69,16 @@ class ExtensionRoleSyncHelper
             );
         }
 
-        // 기존 역할 업데이트: user_overrides에 없는 필드만 갱신
-        $userOverrides = $existing->user_overrides ?? [];
-
-        $updateData = [
+        // 기존 역할 업데이트 — 판정은 모델 공통 규칙(HasUserOverrides::planUpgrade)이 한다. 운영자 수정 기록은
+        // 다국어 dot-path(`name.ko`)라 종전의 `in_array('name', …)` 정확 일치 판정은 늘 "미수정" 이었다 —
+        // 역할 이름·설명 수정이 업데이트마다 되돌아간 원인(#727 D5-①). is_active 도 여기서 함께 보존된다(W10).
+        $updateData = array_merge([
             'extension_type' => $extensionType,
             'extension_identifier' => $extensionIdentifier,
-        ];
-
-        if (! in_array('name', $userOverrides, true)) {
-            $updateData['name'] = $newName;
-        }
-
-        if (! in_array('description', $userOverrides, true)) {
-            $updateData['description'] = $newDescription;
-        }
-
-        // 기타 속성 병합
-        $updateData = array_merge($updateData, $otherAttributes);
+        ], $existing->planUpgrade(array_merge([
+            'name' => $newName,
+            'description' => $newDescription,
+        ], $otherAttributes)));
 
         // user_overrides 자동 마킹 비활성화 — 시스템 sync 컨텍스트는 사용자 변경이 아님.
         // ExtensionMenuSyncHelper 와 동일 패턴 (HasUserOverrides::bootHasUserOverrides 의
@@ -151,7 +144,7 @@ class ExtensionRoleSyncHelper
      * @param  array  $currentIdentifiers  현재 유효한 권한 식별자 목록
      * @return int 삭제된 권한 수
      *
-     * @see \App\Contracts\Extension\UpgradeStepInterface
+     * @see UpgradeStepInterface
      */
     public function cleanupStalePermissions(
         ExtensionOwnerType $extensionType,
@@ -264,6 +257,7 @@ class ExtensionRoleSyncHelper
      *
      * @param  array  $permissionRoleMap  권한→역할 맵 (예: ['board.read' => [['role' => 'admin', 'scope_type' => null], ...]])
      * @param  array  $allExtensionPermIdentifiers  이 확장의 모든 권한 식별자 목록
+     * @return void 반환값 없음
      */
     public function syncAllRoleAssignments(
         array $permissionRoleMap,
@@ -333,6 +327,7 @@ class ExtensionRoleSyncHelper
      * @param  Role  $role  대상 역할
      * @param  array  $definedPermEntries  이 확장이 이 역할에 정의한 권한 목록 [['identifier' => ..., 'scope_type' => ...], ...]
      * @param  array  $allExtensionPermIdentifiers  이 확장의 모든 권한 식별자 목록
+     * @return void 반환값 없음
      */
     private function syncRolePermissions(
         Role $role,

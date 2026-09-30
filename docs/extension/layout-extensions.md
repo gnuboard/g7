@@ -38,7 +38,7 @@ Layout Extension 시스템은 모듈/플러그인이 코어 또는 다른 확장
 그룹(출처별 하위그룹)이 표시되며, 확장 항목을 선택하면 확장 편집 모드로 진입해 확장 조각
 (extension_point=`content.components`, overlay=각 injection 의 `components`)을 일반 레이아웃과
 동등하게 시각 편집한다. 저장은 해당 확장 행(layout-extensions API)으로 적재되어 버전 관리·수정
-감지·`--layout-strategy=keep` 보존이 동작한다.
+감지·`--layout-strategy=keep` 병합(고친 부분 유지 + 새 버전 반영)이 동작한다.
 
 `inject_props` 주입은 편집할 컴포넌트 트리가 없으므로, 그 호스트 노드를 라우트/공통 레이아웃
 편집 중 선택해 **속성 모달의 "확장이 주입한 속성" 섹션**(출처 배지)에서 편집한다 — 편집 결과는
@@ -1049,14 +1049,15 @@ Overlay 확장에서 `computed`, `state`, `modals` 섹션을 정의하면 호스
 
 ### 사용자 수정 감지 (`original_content_hash`)
 
-`template_layout_extensions` 의 `original_content_hash` / `original_content_size` 컬럼은 모듈/플러그인이 등록한 원본 확장 콘텐츠의 정규화 해시를 보존한다. 관리자가 확장을 편집해도 이 원본 해시는 변경되지 않는다 — 현재 `content` 해시와 원본 해시를 비교하여 "사용자가 수정한 확장"을 판별한다.
+`template_layout_extensions` 의 `original_content`(원본 본문 — `keep` 병합의 기준, API 응답에서 숨김) / `original_content_hash` / `original_content_size` 컬럼은 모듈/플러그인이 등록한 원본 확장 콘텐츠의 정규화 해시를 보존한다. 관리자가 확장을 편집해도 이 원본 해시는 변경되지 않는다 — 현재 `content` 해시와 원본 해시를 비교하여 "사용자가 수정한 확장"을 판별한다.
 
 ### 모듈/플러그인 업데이트 시 충돌 전략
 
 `module:update` / `plugin:update` 의 `--layout-strategy` 옵션이 확장에도 적용된다 (일반 레이아웃과 동일한 수준):
 
 - `overwrite` (기본): 파일 내용으로 확장 `content` 를 무조건 덮어쓴다. 관리자가 편집한 확장이 있으면 업데이트 전 경고를 출력한다.
-- `keep`: 관리자가 편집한 확장(`original_content_hash` 불일치)은 `content`/`priority` 갱신을 건너뛰고 `is_active` 만 갱신한다. 사용자 수정분이 보존된다.
+- `keep`: 관리자가 편집한 확장 조각에도 일반 레이아웃과 같은 3자 병합을 쓴다 — 기준은 `original_content`(등록 당시 원본), 고친 부분은 운영자 것, 손대지 않은 부분은 새 버전, 겹치면 운영자 것 유지. 결과는 업데이트 보고의 `kind: extension` 행으로 남는다(규칙: [extension-update-system.md §10](extension-update-system.md#10-레이아웃-충돌-전략-3종-공통)).
+- 다른 모듈·플러그인을 켜거나 끄면 확장 조각이 다시 등록되는데, 이때도 `keep` 병합을 써서 **관리자가 고친 조각이 원본으로 돌아가지 않는다**.
 
 ### 미리보기
 

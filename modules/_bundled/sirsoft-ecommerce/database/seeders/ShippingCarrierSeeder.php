@@ -156,10 +156,11 @@ class ShippingCarrierSeeder extends Seeder implements TranslatableSeederInterfac
         foreach ($this->resolveTranslatedDefaults() as $carrier) {
             $existing = ShippingCarrier::where('code', $carrier['code'])->exists();
 
+            // 시더가 새로 만드는 행은 created_by 를 명시적으로 비운다(stale 정리 범위가 `created_by IS NULL` 이다).
             $helper->sync(
                 ShippingCarrier::class,
                 ['code' => $carrier['code']],
-                $carrier,
+                $existing ? $carrier : $carrier + ['created_by' => null],
             );
             $codes[] = $carrier['code'];
 
@@ -191,9 +192,10 @@ class ShippingCarrierSeeder extends Seeder implements TranslatableSeederInterfac
             ->pluck('code')
             ->all();
 
+        // 정리 대상은 시더가 만든 행(created_by IS NULL)뿐이다 — 운영자가 만든 미사용 택배사는 남긴다(#727 W7).
         $deleted = $helper->cleanupStale(
             ShippingCarrier::class,
-            [],
+            ['created_by' => null],
             'code',
             [...$codes, ...$inUseCodes],
         );

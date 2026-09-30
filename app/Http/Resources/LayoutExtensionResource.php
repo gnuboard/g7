@@ -4,7 +4,9 @@
 
 namespace App\Http\Resources;
 
+use App\Extension\Layout\LayoutRowSynchronizer;
 use App\Extension\Traits\ComputesLayoutContentHash;
+use App\Models\LayoutExtension;
 use Illuminate\Http\Request;
 
 /**
@@ -163,13 +165,18 @@ class LayoutExtensionResource extends BaseApiResource
     /**
      * 관리자 수정 여부를 판단합니다.
      *
-     * 현재 content 해시가 original_content_hash 와 다르면 수정된 것으로 간주합니다.
+     * 모델이면 동기화기의 단일 판정({@see LayoutRowSynchronizer::isOperatorModified()} — 원본 본문이 있으면 정규화
+     * 비교)을 쓰고, 배열 자원이면 종전대로 해시를 비교합니다.
      *
      * @param  array  $content  현재 확장 content
      * @return bool 수정 여부
      */
     private function resolveIsModified(array $content): bool
     {
+        if ($this->resource instanceof LayoutExtension) {
+            return app(LayoutRowSynchronizer::class)->isOperatorModified($this->resource);
+        }
+
         $originalHash = $this->getValue('original_content_hash');
 
         if (! $originalHash || empty($content)) {

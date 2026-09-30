@@ -229,7 +229,7 @@ php artisan module:update [identifier] [--force] [--source=auto|bundled|github] 
 **옵션**:
 - `--force`: 버전 비교 없이 강제 업데이트 (파일 손상, 수동 수정 복원 시 사용)
 - `--source`: 업데이트 소스 강제 (`auto` 기본 = GitHub > `_bundled` 우선순위, `bundled` = `_bundled` 단독, `github` = GitHub 단독)
-- `--layout-strategy`: 사용자 수정 레이아웃 처리 (`overwrite` = 전체 덮어쓰기, `keep` = 수정분 보존)
+- `--layout-strategy`: 운영자 수정 레이아웃·확장 조각 처리 (`overwrite` = 전체 덮어쓰기, `keep` = 고친 부분은 유지하고 손대지 않은 부분에 새 버전을 병합 — 결과 표 출력)
 - `--vendor-mode`: vendor 설치 방식 (`auto` 기본, `composer`, `bundled`)
 
 **수행 작업**:
@@ -237,6 +237,21 @@ php artisan module:update [identifier] [--force] [--source=auto|bundled|github] 
 - 확인 프롬프트 → 업데이트 실행
 - 상태 가드 확인 → 백업 → status: Updating → 파일 교체 → 마이그레이션 → 업그레이드 스텝 → 복원
 - 실패 시 백업 복원 안내
+
+**`keep` 결과 표** — 운영자가 고친 화면이 있으면 업데이트 뒤 표와 요약 한 줄이 출력된다(보고할 화면이 없으면 출력 없음):
+
+```text
+레이아웃 처리 결과 (수정 유지)
++------------------------------------------+----------+----------------------------+-----------+------+
+| 화면                                     | 종류     | 결과                       | 자동 반영 | 겹침 |
++------------------------------------------+----------+----------------------------+-----------+------+
+| sirsoft-admin_basic · admin_module_list  | 레이아웃 | 새 버전 변경 일부 반영     | 1         | 0    |
+| sirsoft-admin_basic · admin_user_detail:board_tab | 확장 조각 | 겹쳐서 운영자 것 유지 | 0         | 1    |
++------------------------------------------+----------+----------------------------+-----------+------+
+레이아웃: 새 버전 변경 1곳 자동 반영, 운영자 수정과 겹친 1곳은 운영자 것 유지.
+```
+
+`overwrite` 는 업데이트 전에 덮어쓸 운영자 수정 화면(레이아웃·확장 조각) 목록을 경고로 보여 준다. 병합 규칙: [extension-update-system.md §10](extension-update-system.md#10-레이아웃-충돌-전략-3종-공통)
 
 **예시**:
 ```bash

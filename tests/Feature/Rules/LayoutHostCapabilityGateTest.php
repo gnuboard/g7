@@ -3,6 +3,7 @@
 namespace Tests\Feature\Rules;
 
 use App\Extension\HookManager;
+use App\Extension\Traits\ValidatesLayoutFiles;
 use App\Rules\NoExternalUrls;
 use App\Rules\SafeLayoutExpressions;
 use App\Support\TrustedScriptHosts;
@@ -328,6 +329,73 @@ class LayoutHostCapabilityGateTest extends TestCase
             }
         }
 
+        $this->assertSame([], $violations);
+    }
+
+    /**
+     * 조각(partial)을 펼친 번들 화면 전수가 두 규칙을 통과하는지 검증합니다 — 편집기가 저장하는 모양 그대로다 (#727).
+     *
+     * 위 전수 검사는 파일을 한 장씩 읽어, 조각 파일은 `components` 밖의 컴포넌트 노드라 sink 검사를 받지 않았다.
+     * 그래서 `_modal_manual_install` 입력창 안내 문구(https://github.com/…)처럼 조각 안에 든 값이 설치된 화면
+     * (조각이 펼쳐진 content)에서만 걸려, 관리자 화면 5개(모듈·플러그인·템플릿·언어팩 목록, 환경설정)를 편집기로
+     * 열어 그대로 저장해도 422 가 났다.
+     *
+     * 트러블슈팅 `[case:backend-49]` 의 회귀 그물이다.
+     *
+     * @effects bundled_screens_with_partials_resolved_pass_storage_gate
+     *
+     * @return void 반환값 없음
+     */
+    public function test_bundled_screens_with_partials_resolved_pass_storage_gate(): void
+    {
+        HookManager::addFilter(
+            TrustedScriptHosts::FILTER_HOOK,
+            fn (array $hosts) => array_merge($hosts, ['t1.daumcdn.net']),
+            priority: 1
+        );
+
+        $loader = new class
+        {
+            use ValidatesLayoutFiles;
+
+            /**
+             * 설치 경로와 같은 방식으로 조각을 펼친 화면 목록을 돌려줍니다.
+             *
+             * @param  string  $layoutsPath  레이아웃 디렉토리
+             * @param  string  $identifier  확장 식별자
+             * @param  string  $sourceType  확장 종류 (template|module|plugin)
+             * @return array<int, array<string, mixed>> 검증된 화면 목록
+             */
+            public function load(string $layoutsPath, string $identifier, string $sourceType): array
+            {
+                return $this->validateLayoutFiles($layoutsPath, $identifier, $sourceType, true);
+            }
+        };
+
+        $sources = [];
+        foreach (glob(base_path('templates/_bundled/*/layouts'), GLOB_ONLYDIR) as $dir) {
+            $sources[] = [$dir, basename(dirname($dir)), 'template'];
+        }
+        foreach (['modules' => 'module', 'plugins' => 'plugin'] as $root => $type) {
+            foreach (glob(base_path("{$root}/_bundled/*/resources/layouts"), GLOB_ONLYDIR) as $dir) {
+                $sources[] = [$dir, basename(dirname($dir, 2)), $type];
+            }
+        }
+
+        $screens = 0;
+        $violations = [];
+        foreach ($sources as [$dir, $identifier, $type]) {
+            foreach ($loader->load($dir, $identifier, $type) as $layout) {
+                $screens++;
+                foreach ([new SafeLayoutExpressions, new NoExternalUrls] as $rule) {
+                    foreach ($this->failures($rule, $layout['data']) as $message) {
+                        $violations[] = "{$identifier}/{$layout['layout_name']} [".class_basename($rule).'] '.$message;
+                    }
+                }
+            }
+        }
+
+        $this->assertGreaterThan(170, $screens, '번들 화면 수집 실패');
         $this->assertSame([], $violations);
     }
 

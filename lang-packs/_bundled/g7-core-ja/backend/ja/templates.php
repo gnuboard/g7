@@ -282,7 +282,7 @@ return [
             'latest_version' => '最新バージョン: :version',
             'update_source' => 'アップデートソース: :source',
             'layout_strategy' => 'レイアウト戦略: :strategy',
-            'modified_layouts_warning' => '変更されたレイアウト:count個が上書きされます:',
+            'modified_layouts_warning' => '管理者が修正したレイアウト・拡張フラグメント :count 個が上書きされます:',
             'modified_layout_item' => '  - :name（変更日: :date）',
             'confirm_question' => 'アップデートを実行しますか?',
             'aborted' => 'アップデートがキャンセルされました。',

@@ -454,4 +454,69 @@ class NotificationTemplateControllerTest extends TestCase
 
         return $user;
     }
+
+    /**
+     * GET 으로 받은 템플릿을 그대로 PUT 하면(저장만) 수정 표식·「기본」 해제가 일어나지 않는다 (#727 D5-⑤).
+     *
+     * @effects notification_template_unchanged_save_keeps_default
+     *
+     * @return void 반환값 없음
+     */
+    public function test_saving_unchanged_template_keeps_default_state(): void
+    {
+        $this->template->update(['is_default' => true, 'body' => ['ko' => "<p>안녕하세요</p>\n", 'en' => '<p>Hello</p>']]);
+        $this->definition->update(['is_default' => true]);
+
+        $response = $this->authRequest()->putJson("/api/admin/notification-templates/{$this->template->id}", [
+            'subject' => ['ko' => '환영합니다 ', 'en' => 'Welcome'],
+            'body' => ['ko' => '<p>안녕하세요</p>', 'en' => '<p>Hello</p>'],
+            'recipients' => null,
+            'is_active' => true,
+        ]);
+
+        $response->assertStatus(200);
+        $fresh = $this->template->fresh();
+        $this->assertEmpty($fresh->user_overrides ?? [], '저장만 했는데 수정 표식이 생겼다');
+        $this->assertTrue((bool) $fresh->is_default);
+        $this->assertTrue((bool) $this->definition->fresh()->is_default);
+    }
+
+    /**
+     * 본문 한 글자를 바꾸면 그 로케일만 표식되고 「기본」 이 풀린다.
+     *
+     * @effects notification_template_real_change_marks_locale_and_clears_default
+     *
+     * @return void 반환값 없음
+     */
+    public function test_real_body_change_marks_locale_and_clears_default(): void
+    {
+        $this->template->update(['is_default' => true]);
+
+        $this->authRequest()->putJson("/api/admin/notification-templates/{$this->template->id}", [
+            'subject' => ['ko' => '환영합니다', 'en' => 'Welcome'],
+            'body' => ['ko' => '<p>안녕하세요!</p>', 'en' => '<p>Hello</p>'],
+        ])->assertStatus(200);
+
+        $fresh = $this->template->fresh();
+        $this->assertSame(['body.ko'], $fresh->user_overrides);
+        $this->assertFalse((bool) $fresh->is_default);
+    }
+
+    /**
+     * 응답 표시용 display_names 가 폼을 거쳐 되돌아와도 DB 에 저장하지 않는다.
+     *
+     * @effects notification_template_recipient_display_names_not_persisted
+     *
+     * @return void 반환값 없음
+     */
+    public function test_recipients_display_names_are_not_persisted(): void
+    {
+        $this->authRequest()->putJson("/api/admin/notification-templates/{$this->template->id}", [
+            'subject' => ['ko' => '환영합니다', 'en' => 'Welcome'],
+            'body' => ['ko' => '<p>안녕하세요</p>', 'en' => '<p>Hello</p>'],
+            'recipients' => [['type' => 'trigger_user', 'value' => null, 'display_names' => ['홍길동']]],
+        ])->assertStatus(200);
+
+        $this->assertStringNotContainsString('display_names', json_encode($this->template->fresh()->recipients));
+    }
 }
