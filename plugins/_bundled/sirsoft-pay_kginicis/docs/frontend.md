@@ -25,7 +25,7 @@
 
 ### 영수증 링크는 API 주소로 그린다
 
-주문 상세 결제 정보 카드의 영수증 링크 조각(`resources/extensions/user_order_show.g7.html`)은 결제사 주소를
+주문 상세 결제 정보 카드의 영수증 링크 조각(`plugins/_bundled/sirsoft-pay_kginicis/resources/extensions/user_order_show.g7.html`)은 결제사 주소를
 글자 그대로 적지 않는다. 적으면 레이아웃 편집기의 저장 게이트(외부 URL 금지)가 이 조각을 거절한다. 조각은 마운트 때
 `GET /api/plugins/sirsoft-pay_kginicis/user/orders/{orderNumber}/receipt` 를 불러 공통 응답 형식의 `data.receipt_url` 을 로컬 상태
 (`_kgReceiptUrl`)에 담고 그 값으로 링크를 그린다. 회원·비회원 주문 상세가 같은 조각을 쓰므로 회원은 토큰
@@ -37,7 +37,7 @@
 
 영수증 조회 응답의 버튼 이름·확인서 제목·안내·항목 이름·결제수단 이름은 서버가 요청 언어로 번역해 보낸다.
 그래서 확인서 항목(`receipt_fields`)을 이름(`label`)으로 찾으면 영어·일본어 화면에서 못 찾는다 — 일본 편의점
-입금 안내 패널(`resources/js/vbankInfoInjector.ts`)은 항목의 고정 키(`key`: `deposit_status`·`amount`·`cvs_code` 등)로
+입금 안내 패널(`plugins/_bundled/sirsoft-pay_kginicis/resources/js/vbankInfoInjector.ts`)은 항목의 고정 키(`key`: `deposit_status`·`amount`·`cvs_code` 등)로
 값을 찾고, 편의점 결제 여부도 결제수단 이름이 아니라 응답의 결제수단 코드(`cbt_pay_method`)로 가린다. 패널 제목·행 이름,
 확인서 팝업의 인쇄 버튼, 서버가 이름을 주지 않았을 때의 버튼 이름은 `resources/lang` 의 `user.*` 키로 그린다
 (`receiptPopup.ts` 의 `translateKginicis`).
@@ -108,22 +108,22 @@ KG 이니시스가 제공하는 `INIStdPay.js`/모바일 결제창 스크립트�
 `checkoutJpyPaymentMethodRestrictor` 는 두 겹이다 — 결제 설정 응답에서 허용 밖 결제수단을 거르는 앞단(결제수단 id 기준)과,
 이미 그려진 버튼을 숨기는 화면 보정. 화면 보정은 템플릿이 단 칸 `id="checkout_payment_method_section"` 과 버튼의
 `data-payment-method`(결제수단 id)로만 대상을 찾는다. 종전에는 칸 제목 글자와 버튼 이름 글자(한국어·영어·일본어 이름표)로
-찾아 번역이 다르면 빠졌다(PO 결정 2026-09-28). 표식이 없는 버튼은 건드리지 않는다.
+찾아 번역이 다르면 빠졌다. 표식이 없는 버튼은 건드리지 않는다.
 
 ### 결제 정보 카드는 id 로만 찾는다
 
 주문 상세·신청서 상세에 영수증 버튼·입금 안내를 붙이는 주입 스크립트는 결제 정보 카드를 템플릿이 약속한 `id="order_payment_info_panel"` 로만
 찾는다. 화면 제목 글자(「결제 정보」 등)로 찾지 않는다 — 제목은 언어마다 다르다. id 가 없는 템플릿에서는 붙이지 않는다
-(약속 원문: 이커머스 `docs/extension-points.md` 「PG 플러그인이 결제 정보 카드에 붙일 때의 약속」).
+(약속 원문: 이커머스 `modules/_bundled/sirsoft-ecommerce/docs/extension-points.md` 「PG 플러그인이 결제 정보 카드에 붙일 때의 약속」).
 
 간편결제 이름을 결제 방법 행에 덧붙일 때도 행을 id 로만 찾는다 — 사용자 주문 상세·주문 완료는 `order_payment_method_row`, 관리자 주문 상세는
-`payment_method_block_{결제 순번}`. 행 이름 글자(「결제 방법」「결제수단」)로 찾지 않는다(PO 결정 2026-09-28).
+`payment_method_block_{결제 순번}`. 행 이름 글자(「결제 방법」「결제수단」)로 찾지 않는다.
 
 ### 관리자 결제수단 설정의 브랜드 표시는 결제수단 id 표식으로만 찾는다
 
 관리자 쇼핑몰 설정의 결제수단 목록에서 브랜드 배지를 붙일 항목은 이커머스 관리자 화면이 항목마다 단
 `data-payment-method`(결제수단 id)로만 찾는다. 이름 글자(한국어·영어 이름표)와 클래스 모양으로 찾지 않는다 — 관리자 언어·화면 폭마다
-다르다(PO 결정 2026-09-28). 약속 원문: 이커머스 `docs/extension-points.md` 「PG 플러그인이 관리자 결제수단 설정 항목을 볼 때의 약속」.
+다르다. 약속 원문: 이커머스 `modules/_bundled/sirsoft-ecommerce/docs/extension-points.md` 「PG 플러그인이 관리자 결제수단 설정 항목을 볼 때의 약속」.
 
 ### 스크립트가 그리는 글자는 번역 키로 낸다
 

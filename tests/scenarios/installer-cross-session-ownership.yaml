@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage reason: 인스톨러 상태변경 게이트는 엔드포인트별 서브프로세스 단위 테스트가 effect 단위로 검증한다(installer-entry-guard·installer-security-hardening 매니페스트와 같은 형태). 세션×엔드포인트 교차는 공격자 409 데이터셋(save-extensions/reset/abort)과 install-process·finalize·worker·Step 3·reclaim 개별 테스트로 덮고, 실제 2세션 교차는 manual_verification 의 브라우저 A/B 매트릭스로 확인한다.
+# audit:allow test-scenario-coverage[cross_product] reason: 인스톨러 상태변경 게이트는 엔드포인트별 서브프로세스 단위 테스트가 effect 단위로 검증한다(installer-entry-guard·installer-security-hardening 매니페스트와 같은 형태). 세션×엔드포인트 교차는 공격자 409 데이터셋(save-extensions/reset/abort)과 install-process·finalize·worker·Step 3·reclaim 개별 테스트로 덮고, 실제 2세션 교차는 manual_verification 의 브라우저 A/B 매트릭스로 확인한다.
 
 feature: 웹 인스톨러 설치 소유권 — 교차 세션 상태 혼합 차단
 

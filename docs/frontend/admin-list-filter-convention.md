@@ -162,7 +162,7 @@ A 등급 화면에서 처음 펼쳐 둘 기본 필터(`defaultFilters`)는 **거
 | `loadVisibleFilters` | 관리자 템플릿 핸들러 | 검색편집 배치 되읽기 (모듈이 꺼져도 코어 화면이 깨지지 않게 코어 템플릿 소유) |
 | `setDateRange` `format` 인자 | 관리자 템플릿 핸들러 | `date`(YYYY-MM-DD) / `datetime`(기본) |
 | `setUserFilterExt` | 관리자 템플릿 핸들러 | 확장 필터 값 배열 조립 |
-| 회원관리 필터 조각 | 관리자 템플릿 `layouts/partials/admin_user_list/_partial_filter_section.g7.html` | 코어 화면용 참조 구현 |
+| 회원관리 필터 조각 | 관리자 템플릿 `templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_user_list/_partial_filter_section.g7.html` | 코어 화면용 참조 구현 |
 
 ## 하지 말 것
 

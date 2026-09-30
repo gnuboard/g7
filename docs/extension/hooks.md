@@ -1225,7 +1225,7 @@ HookManager::doAction('...payment_completed', $claim, $payment);
 |------|------|---------|
 | 발화 목록 | `app/Extension/HookContract/data/catalog.php` (`php artisan hooks:catalog` 로 생성) | 코어·번들 확장의 발화 훅 이름·유형·인자 개수. 훅을 더하거나 바꾸면 재생성해 변화를 리뷰에 드러낸다 |
 | 계약 위반 거부 | `hooks:catalog` | 옛 목록에서 사라진 훅·인자 개수가 줄어든 훅이 deprecated 목록에 없으면 쓰기를 거부한다(메이저의 의도된 제거만 `--allow-break`) |
-| 동적 발화처 목록 | `data/dynamic.php` | 이름을 조립하는 발화처(`"{$prefix}.notification.channels"` 등)의 이름 패턴. 새 동적 발화처가 목록 밖에 생기면 테스트가 실패한다 |
+| 동적 발화처 목록 | `app/Extension/HookContract/data/dynamic.php` | 이름을 조립하는 발화처(`"{$prefix}.notification.channels"` 등)의 이름 패턴. 새 동적 발화처가 목록 밖에 생기면 테스트가 실패한다 |
 | 구독 시 경고 | `HookContractGuard` (등록기가 호출) | 사용 중단된 훅, 또는 코어·번들 확장 이름공간인데 발화처가 없는 훅을 구독하면 `Log::warning` (리스너×훅 단위 하루 1회) |
 | 계약 테스트 | `tests/Feature/Extension/HookContractTest.php` | 목록 최신성 · 동적 발화처 매핑 · 코어·번들 리스너가 deprecated·미발화 훅을 구독하지 않음 · 위반 거부 · 가드 · 액션 옛 이름 병행 발화 |
 

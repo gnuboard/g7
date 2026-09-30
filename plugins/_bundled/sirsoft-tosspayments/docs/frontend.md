@@ -91,4 +91,4 @@
 
 관리자 쇼핑몰 설정의 결제수단 목록에서 브랜드 배지를 붙일 항목은 이커머스 관리자 화면이 항목마다 단
 `data-payment-method`(결제수단 id)로만 찾는다. 이름 글자(한국어·영어 이름표)와 클래스 모양으로 찾지 않는다 — 관리자 언어·화면 폭마다
-다르다(PO 결정 2026-09-28). 약속 원문: 이커머스 `docs/extension-points.md` 「PG 플러그인이 관리자 결제수단 설정 항목을 볼 때의 약속」.
+다르다. 약속 원문: 이커머스 `modules/_bundled/sirsoft-ecommerce/docs/extension-points.md` 「PG 플러그인이 관리자 결제수단 설정 항목을 볼 때의 약속」.

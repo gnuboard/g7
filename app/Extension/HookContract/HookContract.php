@@ -5,9 +5,9 @@ namespace App\Extension\HookContract;
 /**
  * 공개 훅 계약 목록 접근자.
  *
- * - `data/catalog.php`   : 스캐너가 만든 발화 목록 (`php artisan hooks:catalog` 로 재생성, 손으로 고치지 않는다)
- * - `data/dynamic.php`   : 이름을 조립하는 동적 발화처의 이름 패턴 (손으로 관리)
- * - `data/deprecated.php`: 사용 중단된 훅과 대체 이름 (손으로 관리)
+ * - `app/Extension/HookContract/data/catalog.php`   : 스캐너가 만든 발화 목록 (`php artisan hooks:catalog` 로 재생성, 손으로 고치지 않는다)
+ * - `app/Extension/HookContract/data/dynamic.php`   : 이름을 조립하는 동적 발화처의 이름 패턴 (손으로 관리)
+ * - `app/Extension/HookContract/data/deprecated.php`: 사용 중단된 훅과 대체 이름 (손으로 관리)
  *
  * 등록 시점 가드와 스냅샷 테스트가 이 목록을 기준으로 판정한다. 파일은 프로세스당 한 번만 읽는다.
  */

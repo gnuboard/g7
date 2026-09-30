@@ -24,7 +24,7 @@
 
 ### 매출전표 보기 요청의 주문번호와 자격 증명
 
-주문 상세 결제 정보 카드의 [매출전표 보기](`resources/extensions/user_order_show.g7.html`)는 주문번호를 주소가 아니라
+주문 상세 결제 정보 카드의 [매출전표 보기](`plugins/_bundled/sirsoft-pay_nhnkcp/resources/extensions/user_order_show.g7.html`)는 주문번호를 주소가 아니라
 불러온 주문(`order.data.order_number`)에서 읽는다 — 이 카드는 주소에 주문번호가 없는 교환·반품·환불 신청서 상세(회원·비회원)에서도
 같은 조각으로 쓰인다. 회원·비회원 주문 상세가 같은 조각을 쓰므로 회원은 토큰(`auth_mode=optional`), 비회원은
 `X-Guest-Order-Token` 헤더를 실어 같은 API 를 부른다(전역 헤더는 이 플러그인 주소에 조회 토큰을 붙이지 않는다).
@@ -121,16 +121,16 @@ KCP 가 제공하는 `payplus_web.jsp` SDK 는 이 목록에 없습니다 — `r
 
 주문 상세·신청서 상세에 영수증 버튼·입금 안내를 붙이는 주입 스크립트는 결제 정보 카드를 템플릿이 약속한 `id="order_payment_info_panel"` 로만
 찾는다. 화면 제목 글자(「결제 정보」 등)로 찾지 않는다 — 제목은 언어마다 다르다. id 가 없는 템플릿에서는 붙이지 않는다
-(약속 원문: 이커머스 `docs/extension-points.md` 「PG 플러그인이 결제 정보 카드에 붙일 때의 약속」).
+(약속 원문: 이커머스 `modules/_bundled/sirsoft-ecommerce/docs/extension-points.md` 「PG 플러그인이 결제 정보 카드에 붙일 때의 약속」).
 
 간편결제 이름을 결제 방법 행에 덧붙일 때도 행을 id 로만 찾는다 — 사용자 주문 상세·주문 완료는 `order_payment_method_row`, 관리자 주문 상세는
-`payment_method_block_{결제 순번}`. 행 이름 글자(「결제 방법」「결제수단」)로 찾지 않는다(PO 결정 2026-09-28).
+`payment_method_block_{결제 순번}`. 행 이름 글자(「결제 방법」「결제수단」)로 찾지 않는다.
 
 ### 관리자 결제수단 설정의 브랜드 표시는 결제수단 id 표식으로만 찾는다
 
 관리자 쇼핑몰 설정의 결제수단 목록에서 브랜드 배지·애플페이 iOS 전용 안내를 붙일 항목은 이커머스 관리자 화면이 항목마다 단
 `data-payment-method`(결제수단 id)로만 찾는다. 이름 글자(한국어·영어 이름표)와 클래스 모양으로 찾지 않는다 — 관리자 언어·화면 폭마다
-다르다(PO 결정 2026-09-28). 약속 원문: 이커머스 `docs/extension-points.md` 「PG 플러그인이 관리자 결제수단 설정 항목을 볼 때의 약속」.
+다르다. 약속 원문: 이커머스 `modules/_bundled/sirsoft-ecommerce/docs/extension-points.md` 「PG 플러그인이 관리자 결제수단 설정 항목을 볼 때의 약속」.
 
 ### 스크립트가 그리는 글자는 번역 키로 낸다
 

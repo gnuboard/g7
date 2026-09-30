@@ -859,7 +859,7 @@ _admin_base.g7.html
 
 활동 로그 목록은 `admin_activity_log_list.g7.html`, 본인인증 이력 목록은 `admin_identity_logs.g7.html`에서 필터와 상세 조회를 제공하며, 조각 `partials/admin_identity_logs/_partial_datagrid.g7.html`·`_partial_filter.g7.html`·`_modal_log_detail.g7.html`·`_modal_purge_confirm.g7.html`(기간 일괄 삭제 확인) 네 벌로 나뉩니다.
 
-활동 로그 목록의 행위자 칸(`partials/admin_activity_log_list/_partial_datagrid.g7.html`)은 `row.user.uuid` 유무로 회원 메뉴(회원 정보 보기·이 사람으로 검색)를 가릅니다. 회원이 없는 로그(시스템·CLI)도 API 가 `user` 객체(`uuid: null`, `name`: "시스템" / "시스템(CLI)")를 주므로, `user` 유무로 가르면 시스템 로그에 회원 메뉴가 그려집니다.
+활동 로그 목록의 행위자 칸(`templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_activity_log_list/_partial_datagrid.g7.html`)은 `row.user.uuid` 유무로 회원 메뉴(회원 정보 보기·이 사람으로 검색)를 가릅니다. 회원이 없는 로그(시스템·CLI)도 API 가 `user` 객체(`uuid: null`, `name`: "시스템" / "시스템(CLI)")를 주므로, `user` 유무로 가르면 시스템 로그에 회원 메뉴가 그려집니다.
 
 - [sirsoft-admin_basic 컴포넌트](components.md)
 - [sirsoft-admin_basic 핸들러](handlers.md)
