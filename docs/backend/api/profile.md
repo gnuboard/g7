@@ -50,6 +50,7 @@ _단건 응답: `data` 객체의 필드 (`UserResource::toProfileArray()` 산물
 | language | string | `ko` | 사용자 언어 설정 (`config('app.supported_locales')` 값 — 기본 `ko`, `en`) |
 | timezone | string\|null | `Asia/Seoul` | 사용자 시간대 식별자 |
 | country | string\|null | `KR` | 국가 코드 (ISO 3166-1 alpha-2) |
+| country_name | string | `대한민국` | 국가 코드의 현지화 국가명 (country 값에서 파생, 없으면 null) |
 | status | string | `active` | 계정 상태 (`active`, `inactive`, `blocked`, `withdrawn`, `pending_verification`, `dormant`) |
 | status_label | string\|null | `활성` | 상태의 다국어 라벨 (`UserStatus::label()` 산물) |
 | status_variant | string\|null | `success` | 상태 배지 색상 키 (`success`/`secondary`/`danger`/`warning`/`info`) |

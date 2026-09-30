@@ -1262,6 +1262,12 @@ return [
     ],
     'public_asset_disk_invalid' => '有効な公開アセットディスクを選択してください。',
     'attributes' => [
+        // 管理者会員一覧の拡張フィルター (#705)
+        'user_filter_mileage_min' => 'マイレージ残高(最小)',
+        'user_filter_mileage_max' => 'マイレージ残高(最大)',
+        'user_filter_shipping_country' => '配送先の国',
+        'user_filter_has_address' => '配送先の登録有無',
+
         'basic_info.public_asset_disk' => '公開アセットディスク',
         'basic_info' => '基本情報',
         'basic_info.shop_name' => 'ショップ名',

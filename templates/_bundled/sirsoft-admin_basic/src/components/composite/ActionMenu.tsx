@@ -98,7 +98,14 @@ export const ActionMenu: React.FC<ActionMenuProps> = ({
     const menuWidth = 224; // w-56 = 14rem = 224px
 
     let left = position === 'right' ? rect.right - menuWidth : rect.left;
-    const top = rect.bottom + 8; // mt-2 = 8px
+    let top = rect.bottom + 8; // mt-2 = 8px
+
+    // 화면 아래 경계 체크 — 메뉴는 fixed 라 스크롤로 닿을 수 없고 스크롤하면 닫힌다.
+    // 아래로 열어 잘리고 위에는 들어가면 버튼 위로 연다.
+    const menuHeight = menuRef.current?.getBoundingClientRect().height ?? 0;
+    if (top + menuHeight > window.innerHeight - 8 && rect.top - 8 - menuHeight >= 8) {
+      top = rect.top - 8 - menuHeight;
+    }
 
     // 화면 왼쪽 경계 체크
     if (left < 8) {

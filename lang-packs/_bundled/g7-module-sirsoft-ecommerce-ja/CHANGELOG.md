@@ -8,6 +8,7 @@
 
 ### Added
 
+- 관리자 회원 목록의 쇼핑몰 조건 필터(마일리지 잔액·배송지) 문구와 그 검증 항목명을 일본어로 번역했습니다(`admin.user_filter.*`·`validation.attributes.user_filter_*`). 생성기가 아니라 직접 적었습니다(번역 API 키 부재).
 - 상품코드에 영문·숫자·하이픈·밑줄만 쓸 수 있다는 검증 문구(`validation.product.product_code.regex`)의 일본어 번역을 추가했습니다.
 - 쇼핑몰 환경설정 「개인정보 보유기간」 탭의 「지금 실행」 버튼과 직권 실행 확인 창·진행 상태 줄 문구(`admin/settings.privacy_retention.manual_run.*`)와 편집기 데이터 소스 이름의 일본어 번역을 추가했습니다. 대상 줄 이름(`privacy_retention.targets.row_label`)도 함께 번역했습니다.
 - 쇼핑몰 환경설정 「개인정보 보유기간」 탭의 「대상 주문 보기」 버튼과 대상 주문 명단 창 문구(`admin/settings.privacy_retention.targets.*`), 명단 열 이름(주문번호·주문자·상태·종결일, `messages.privacy_retention.target_columns.*`), 레이아웃 편집기의 데이터 소스 이름(`editor.data_source.privacyTargets`)의 일본어 번역을 추가했습니다.

@@ -8,7 +8,7 @@
 
 ## 목차
 
-- [코어](#코어) (580)
+- [코어](#코어) (583)
 - [gnuboard7-hello_module](#gnuboard7-hello_module) (2)
 - [gnuboard7-hello_plugin](#gnuboard7-hello_plugin) (1)
 - [sirsoft-board](#sirsoft-board) (101)
@@ -596,8 +596,11 @@
 | `core.user.create_validation_rules` | filter | 2 |  |
 | `core.user.delete_validation_rules` | filter | 2 |  |
 | `core.user.filter_create_data` | filter | 1 |  |
+| `core.user.filter_list_params` | filter | 1 |  |
 | `core.user.filter_resource_data` | filter | 2 |  |
 | `core.user.filter_update_data` | filter | 2 |  |
+| `core.user.list_query_extensions` | filter | 2 |  |
+| `core.user.list_validation_attributes` | filter | 2 |  |
 | `core.user.list_validation_rules` | filter | 2 |  |
 | `core.user.search_validation_rules` | filter | 2 |  |
 | `core.user.update_language_validation_rules` | filter | 2 |  |

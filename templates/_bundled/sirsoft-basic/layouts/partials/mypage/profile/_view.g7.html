@@ -158,7 +158,7 @@
         <h3 class="text-base font-semibold text-gray-900 dark:text-white mb-4 pb-3 border-b border-gray-200 dark:border-gray-700">$t:mypage.profile.location_info</h3>
         <div class="space-y-3">
           <!-- 국가 -->
-          <div :data-if="false" class="flex justify-between items-center">
+          <div class="flex justify-between items-center">
             <span class="text-sm text-gray-600 dark:text-gray-400">$t:mypage.profile.country</span>
             <span class="text-sm text-gray-900 dark:text-white">{{user.data?.country_name ?? user.data?.country ?? '-'}}</span>
           </div>

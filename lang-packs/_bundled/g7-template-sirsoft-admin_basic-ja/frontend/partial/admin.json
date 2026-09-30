@@ -156,7 +156,10 @@
       "all": "すべて",
       "name": "名前",
       "email": "メール",
-      "nickname": "ニックネーム"
+      "nickname": "ニックネーム",
+      "contact": "携帯/電話",
+      "identifier": "会員番号/固有ID",
+      "admin_memo": "管理者メモ"
     },
     "columns": {
       "id": "ID",
@@ -167,11 +170,18 @@
       "language": "言語",
       "status": "状態",
       "created_at": "登録日",
-      "last_login_at": "最後のログイン"
+      "last_login_at": "最後のログイン",
+      "nickname": "ニックネーム",
+      "email_verified_at": "メール認証日",
+      "identity_verified_at": "本人認証日"
     },
     "status": {
       "active": "有効",
-      "inactive": "無効"
+      "inactive": "無効",
+      "blocked": "ブロック",
+      "withdrawn": "退会",
+      "pending_verification": "登録待機中",
+      "dormant": "休眠"
     },
     "actions": {
       "view": "詳細を表示",
@@ -191,7 +201,9 @@
       "created_at_desc": "登録日時 最新順",
       "created_at_asc": "登録日時 古い順",
       "last_login_at_desc": "最後のログイン 最新順",
-      "last_login_at_asc": "最後のログイン 古い順"
+      "last_login_at_asc": "最後のログイン 古い順",
+      "name_asc": "名前 昇順",
+      "name_desc": "名前 降順"
     },
     "modals": {
       "delete_title": "ユーザーの削除",
@@ -365,7 +377,56 @@
       },
       "dormant_at": "休眠転換日"
     },
-    "bulk_status_change": "ステータス変更"
+    "bulk_status_change": "ステータス変更",
+    "filter": {
+      "status": "アカウント状態",
+      "role": "権限グループ",
+      "created_at": "登録日",
+      "last_login": "最終ログイン",
+      "admin_scope": "管理者区分",
+      "lock_state": "アカウントロック",
+      "dormant_at": "休眠移行日",
+      "status_changed": "状態変更日",
+      "language": "言語",
+      "country": "国",
+      "email_verified": "メール認証",
+      "identity_verified": "本人認証",
+      "detail_search": "詳細検索",
+      "detail_title": "詳細検索条件",
+      "role_placeholder": "権限グループを検索 — 空欄ですべて",
+      "role_no_options": "一致する権限グループがありません",
+      "never_logged_in": "ログイン履歴なし",
+      "country_select": "国を選択",
+      "country_search": "国を検索",
+      "admin_scope_options": {
+        "admin": "管理者のみ",
+        "member": "一般会員のみ"
+      },
+      "lock_state_options": {
+        "locked": "ロック中",
+        "unlocked": "正常"
+      },
+      "status_changed_options": {
+        "withdrawn": "退会日",
+        "blocked": "ブロック日"
+      },
+      "verified_options": {
+        "verified": "完了",
+        "unverified": "未完了"
+      },
+      "date_quick": {
+        "today": "今日",
+        "week": "1週間",
+        "month": "1ヶ月",
+        "3months": "3ヶ月",
+        "6months": "6ヶ月",
+        "1year": "1年"
+      }
+    },
+    "action": {
+      "reset": "リセット",
+      "edit_search": "検索編集"
+    }
   },
   "language_packs": {
     "page_title": "言語パック管理",

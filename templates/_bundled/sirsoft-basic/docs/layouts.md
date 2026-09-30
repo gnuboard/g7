@@ -369,13 +369,13 @@
 나이스페이먼츠)이 영수증 버튼·가상계좌 입금 안내를 붙일 카드를 이 id 로만 찾는다 — 화면 제목 글자는 언어마다 달라 기준이 되지 않는다.
 id 가 사라지면 오류 없이 그 안내들만 빠진다. 같은 조각의 결제 방법 행 `id="order_payment_method_row"` 도 같은 약속이다 — PG 플러그인이
 간편결제 이름(예: 카카오페이)을 이 행의 값(마지막 `span`)에 덧붙인다. 주문 완료 화면에 결제 방법 행을 두는 템플릿은 같은 id 를 단다.
-약속 원문: 이커머스 `docs/extension-points.md` 「PG 플러그인이 결제 정보 카드에 붙일 때의 약속」.
+약속 원문: `modules/_bundled/sirsoft-ecommerce/docs/extension-points.md` 「PG 플러그인이 결제 정보 카드에 붙일 때의 약속」.
 
 ### 주문서 결제수단 칸의 id·버튼 표식도 PG 플러그인과의 약속
 
 `partials/shop/_checkout_payment` 의 칸 `id="checkout_payment_method_section"` 과 버튼의 `data-payment-method="{{method.id}}"` 는
 지우거나 바꾸지 않는다. KG이니시스 엔화 결제수단 제한이 이미 그려진 버튼을 숨길 때 이것으로만 찾는다 — 사라지면 오류 없이
-화면 보정만 빠진다(응답을 거르는 앞단 제한은 그대로 동작). 약속 원문: 이커머스 `docs/extension-points.md`
+화면 보정만 빠진다(응답을 거르는 앞단 제한은 그대로 동작). 약속 원문: `modules/_bundled/sirsoft-ecommerce/docs/extension-points.md`
 「PG 플러그인이 주문서 결제수단 칸을 볼 때의 약속」.
 
 ## 이관 원문 상세
@@ -560,8 +560,8 @@ _user_base.g7.html (베이스 레이아웃)
 │   ├── profile.g7.html (프로필 보기)
 │   ├── profile-edit.g7.html (프로필 수정)
 │   │   └── partials/mypage/profile/
-│   │       ├── _view.g7.html (프로필 보기 섹션)
-│   │       ├── _edit.g7.html (프로필 수정 섹션)
+│   │       ├── _view.g7.html (프로필 보기 섹션 — 국가는 응답의 country_name 으로 이름 표시)
+│   │       ├── _edit.g7.html (프로필 수정 섹션 — 국가 선택은 profile-edit 의 countryList define)
 │   │       ├── _password_verify_section.g7.html (비밀번호 확인)
 │   │       └── _modal_withdraw.g7.html (회원 탈퇴)
 │   ├── orders.g7.html (주문 내역)

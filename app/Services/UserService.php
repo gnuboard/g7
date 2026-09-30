@@ -45,12 +45,23 @@ class UserService
     /**
      * 필터링된 사용자 목록을 페이지네이션으로 조회합니다.
      *
+     * 확장이 회원 목록 필터를 더하는 두 훅을 여기서 발화한다(저장소 계층에는 훅을 들이지 않는다).
+     * - `core.user.filter_list_params` — 파라미터 정규화·기본값
+     * - `core.user.list_query_extensions` — `fn(Builder $q, array $filters)` 클로저 목록. 저장소가
+     *   코어 조건을 다 건 뒤 차례로 적용한다. 확장 값은 `$filters['ext'][확장id][키]` 에 있다.
+     *
      * @param  array  $filters  필터 조건 배열
      * @return LengthAwarePaginator 페이지네이션된 사용자 목록
      */
     public function getPaginatedUsers(array $filters = []): LengthAwarePaginator
     {
-        $result = $this->userRepository->getPaginatedUsers($filters);
+        $filters = HookManager::applyFilters('core.user.filter_list_params', $filters);
+        $extensions = HookManager::applyFilters('core.user.list_query_extensions', [], $filters);
+
+        $result = $this->userRepository->getPaginatedUsers(
+            $filters,
+            is_array($extensions) ? array_values(array_filter($extensions, 'is_callable')) : []
+        );
 
         HookManager::doAction('core.user.after_list', $result->total());
 

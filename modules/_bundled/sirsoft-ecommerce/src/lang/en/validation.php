@@ -1388,6 +1388,12 @@ return [
 
     // Field name translations (Laravel standard)
     'attributes' => [
+        // Admin user list extension filters (#705)
+        'user_filter_mileage_min' => 'minimum mileage balance',
+        'user_filter_mileage_max' => 'maximum mileage balance',
+        'user_filter_shipping_country' => 'shipping address country',
+        'user_filter_has_address' => 'shipping address registered',
+
         // Public asset storage
         'basic_info.public_asset_disk' => 'Public asset disk',
 

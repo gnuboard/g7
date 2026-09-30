@@ -923,6 +923,10 @@ class LayoutMarkupRoundTripCorpusTest extends LayoutMarkupTestCase
         'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_order_detail/_modal_admin_claim_request.g7.html',
         'templates/_bundled/sirsoft-basic/layouts/shop/guest_claim_apply.g7.html',
         'templates/_bundled/sirsoft-basic/layouts/shop/guest_claim_show.g7.html',
+        // ── #705 회원관리 목록 필터 개편이 새로 저작한 조각 1건 + 이커머스 확장 필터 예제 2건.
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_user_list/_partial_filter_section.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/extensions/admin-user-list-filter-mileage.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/extensions/admin-user-list-filter-address.g7.html',
     ];
 
     /**

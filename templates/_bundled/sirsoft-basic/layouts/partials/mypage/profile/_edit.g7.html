@@ -231,7 +231,7 @@
           <h3 class="text-base font-semibold text-gray-900 dark:text-white mb-4 pb-3 border-b border-gray-200 dark:border-gray-700">$t:mypage.profile.location_info</h3>
           <div class="space-y-4">
             <!-- 국가 -->
-            <div :data-if="false" class="space-y-1">
+            <div class="space-y-1">
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">$t:mypage.profile.country</label>
               <select name="country" value="{{user.data?.country ?? ''}}" class="w-full" options="{{[{ label: $t('mypage.profile.country_placeholder'), value: '' }].concat((_defines?.countryList ?? []).map(c => ({ value: c.code, label: $t('countries.' + c.code) })))}}"/>
               <p data-if="{{_local.profileErrors?.country}}" class="text-sm text-red-600 dark:text-red-400">{{_local.profileErrors?.country?.[0] ?? ''}}</p>

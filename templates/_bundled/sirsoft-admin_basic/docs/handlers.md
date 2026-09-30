@@ -5,7 +5,7 @@
 ## 템플릿 전용 핸들러
 
 <!-- @generated:handlers START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-핸들러 20개 (정의: `src/handlers/index.ts`).
+핸들러 22개 (정의: `src/handlers/index.ts`).
 
 | 핸들러 | 레이아웃에서 부르는 이름 |
 |---|---|
@@ -23,6 +23,8 @@
 | `cancelMultilingualTag` | (템플릿 전용 — 네임스페이스 없음) |
 | `updateMultilingualTagValue` | (템플릿 전용 — 네임스페이스 없음) |
 | `setDateRange` | (템플릿 전용 — 네임스페이스 없음) |
+| `loadVisibleFilters` | (템플릿 전용 — 네임스페이스 없음) |
+| `setUserFilterExt` | (템플릿 전용 — 네임스페이스 없음) |
 | `setAnalyticsPeriod` | (템플릿 전용 — 네임스페이스 없음) |
 | `toggleSidebar` | (템플릿 전용 — 네임스페이스 없음) |
 | `initSidebar` | (템플릿 전용 — 네임스페이스 없음) |
@@ -126,6 +128,10 @@ params 없이 그 화면의 `init_actions` 에서 호출합니다.
 `YYYY-MM-DDTHH:mm:ss` 형식으로 계산해 **반환**합니다(자체적으로 상태를 갱신하지 않음) — 레이아웃
 JSON 이 `sequence` + `setState` 로 반환값(`$prev.startDate` 등)을 원하는 필드에 반영합니다.
 
+`format="date"` 를 주면 `YYYY-MM-DD` 로 돌려줍니다 — `<input type="date">` 칸은 시각이 붙은 값을 받지
+못해 빈칸이 되므로, 날짜 칸에 담을 때는 반드시 이 인자를 씁니다(회원관리 목록 필터). 인자를 생략하면
+종전대로 날짜·시각 형식이라 기존 호출처(활동 로그 필터 등)는 그대로입니다.
+
 ```html
 <on type="click">
   <action handler="setDateRange" preset="today"/>
@@ -140,6 +146,35 @@ JSON 이 `sequence` + `setState` 로 반환값(`$prev.startDate` 등)을 원하�
   { "handler": "setDateRange", "params": { "preset": "today" } },
   { "handler": "setState", "params": { "target": "local", "filter.dateFrom": "{{$prev.startDate}}", "filter.dateTo": "{{$prev.endDate}}" } }
 ] }
+```
+
+### loadVisibleFilters
+
+목록 필터의 기본/상세 배치(「검색편집」 결과)를 되읽어 **반환**합니다. 저장은 `FilterVisibilitySelector`
+컴포넌트가 스스로 하고(키 `g7_filters_{id}_{사용자uuid}`), 이 핸들러는 같은 키 규칙으로 읽기만 합니다.
+저장값이 배열이면서 비어 있지 않을 때만 채택하고, 아니면 `defaultFilters` 를 돌려줍니다. 이커머스
+모듈의 `sirsoft-ecommerce.loadVisibleFilters` 와 계약이 같지만, 코어 화면이 모듈 핸들러를 부르면 모듈이
+꺼졌을 때 화면이 깨지므로 코어 템플릿이 자기 핸들러를 둡니다.
+
+```html
+<action handler="loadVisibleFilters" id="admin_user_filters">
+  <field name="defaultFilters"><item>status</item><item>role</item><item>createdAt</item></field>
+  <field name="resultTo"><field name="target" value="_local"/><field name="key" value="visibleFilters"/></field>
+</action>
+```
+
+### setUserFilterExt
+
+회원관리 목록의 확장 필터 값 채널(`ext_filters[]`)에 들어갈 배열을 조립해 **반환**합니다. 원소 형식은
+`{확장id}.{키}={값}` — 같은 키는 교체하고 빈 값·`null`·`false` 는 그 키를 지운 **새 배열**을 돌려주므로,
+결과를 `$prev` 로 받아 `_local.userFilterExtraQuery` 에 담습니다. 키가 형식(`[a-z0-9_-]+\.[a-z0-9_.-]+`)에
+맞지 않으면 기존 배열을 그대로 돌려줍니다. 값의 `&` 는 걷고 255자로 자릅니다(서버 검증과 같은 경계).
+
+```html
+<sequence>
+  <action handler="setUserFilterExt" key="sirsoft-ecommerce.mileage_min" value="{{$event.target.value}}" current="{{_local.userFilterExtraQuery || []}}"/>
+  <set-state target="_local" userFilterExtraQuery="{{$prev}}"/>
+</sequence>
 ```
 
 ### setAnalyticsPeriod

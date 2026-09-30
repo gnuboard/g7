@@ -158,6 +158,32 @@ HookManager::addFilter('core.privacy.manual_run_targets', function (array $runne
 "오늘 전환된다" 는 메일을 받은 다음 날 전환되는 식의 불일치가 생깁니다. 계산 기준은 **집행
 쿼리와 같은 시점**(통지 시각 + `privacy.dormant_notice_days`)입니다.
 
+### 관리자 회원 목록 확장 필터 훅
+
+관리자 회원 목록(`GET /api/admin/users`)에 모듈·플러그인이 자기 필터를 더하는 경로다. 값은 화면이
+`ext_filters[]` 배열 한 칸으로 보내고(원소 `{확장id}.{키}={값}`), `UserListRequest` 가 검증 전에
+`ext.{확장id}.{키}` 중첩 배열로 편다. 코어 조건을 다 건 **뒤에** 확장 조건이 붙으므로 확장은 결과를
+좁히기만 할 수 있다.
+
+| 훅 | 타입 | 인자 | 용도 |
+| --- | --- | --- | --- |
+| `core.user.list_validation_rules` | filter | `(array $rules, UserListRequest $request)` | `ext.{확장id}.{키}` 규칙을 더한다. 다른 키와의 비교 규칙(`gte:` 등)은 대상 값이 있을 때만 건다 — 비교 대상이 없으면 실패한다 |
+| `core.user.list_validation_attributes` | filter | `(array $attributes, UserListRequest $request)` | 같은 키의 오류 문구 항목명. 없으면 422 문구에 내부 키가 그대로 나온다 |
+| `core.user.filter_list_params` | filter | `(array $filters)` | 검증된 조건의 정규화·기본값 |
+| `core.user.list_query_extensions` | filter | `(array $closures, array $filters)` | `fn(Builder $query, array $filters)` 클로저를 더한다. 확장 값은 `$filters['ext'][확장id][키]` |
+
+규칙:
+
+- 쿼리 클로저는 **저장소 서브쿼리**(`whereIn('id', …)`)로 조건을 건다. 행마다 판정하는 방식(`whereHas` 의 상관
+  서브쿼리, 모델 메서드 호출)은 목록 비용을 회원 수에 비례시킨다.
+- 그 데이터를 볼 권한이 없는 운영자에게는 조건을 **적용하지 않는다**(화면 행도 같은 권한의 노드 `<permissions>`
+  로 숨긴다). 조건을 적용하면 결과 건수로 값을 추정할 수 있다.
+- 목록 응답 행에 확장 값을 싣는 `core.user.filter_resource_data` 는 쓰지 않는다 — 행마다 발화해 N+1 이 된다.
+  목록에 값을 보여야 하면 자기 데이터소스로 현재 페이지 id 를 배치 조회한다.
+
+예제: 이커머스 `UserListMileageFilterListener`(마일리지 잔액 범위)·`UserListAddressFilterListener`(배송지 국가·등록 여부).
+화면 쪽 규약은 [관리자 목록 필터 컨벤션](../frontend/admin-list-filter-convention.md) 을 본다.
+
 ### 알림 추출의 선택 채널
 
 `{hookPrefix}.notification.extract_data` 반환의 `context.channels`에 채널 ID 배열을 지정하면
@@ -1199,7 +1225,7 @@ HookManager::doAction('...payment_completed', $claim, $payment);
 |------|------|---------|
 | 발화 목록 | `app/Extension/HookContract/data/catalog.php` (`php artisan hooks:catalog` 로 생성) | 코어·번들 확장의 발화 훅 이름·유형·인자 개수. 훅을 더하거나 바꾸면 재생성해 변화를 리뷰에 드러낸다 |
 | 계약 위반 거부 | `hooks:catalog` | 옛 목록에서 사라진 훅·인자 개수가 줄어든 훅이 deprecated 목록에 없으면 쓰기를 거부한다(메이저의 의도된 제거만 `--allow-break`) |
-| 동적 발화처 목록 | `data/dynamic.php` | 이름을 조립하는 발화처(`"{$prefix}.notification.channels"` 등)의 이름 패턴. 새 동적 발화처가 목록 밖에 생기면 테스트가 실패한다 |
+| 동적 발화처 목록 | `app/Extension/HookContract/data/dynamic.php` | 이름을 조립하는 발화처(`"{$prefix}.notification.channels"` 등)의 이름 패턴. 새 동적 발화처가 목록 밖에 생기면 테스트가 실패한다 |
 | 구독 시 경고 | `HookContractGuard` (등록기가 호출) | 사용 중단된 훅, 또는 코어·번들 확장 이름공간인데 발화처가 없는 훅을 구독하면 `Log::warning` (리스너×훅 단위 하루 1회) |
 | 계약 테스트 | `tests/Feature/Extension/HookContractTest.php` | 목록 최신성 · 동적 발화처 매핑 · 코어·번들 리스너가 deprecated·미발화 훅을 구독하지 않음 · 위반 거부 · 가드 · 액션 옛 이름 병행 발화 |
 

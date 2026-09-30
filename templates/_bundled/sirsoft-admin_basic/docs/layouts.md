@@ -5,14 +5,14 @@
 ## 레이아웃 목록
 
 <!-- @generated:layouts START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-레이아웃 180개 (루트: `layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
+레이아웃 181개 (루트: `layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
 
 | 그룹 | 개수 |
 |---|---|
 | `(root)` | 41개 |
 | `auth` | 1개 |
 | `errors` | 6개 |
-| `partials` | 132개 |
+| `partials` | 133개 |
 
 | 레이아웃 | 그룹 | 종류 | extends |
 |---|---|---|---|
@@ -192,6 +192,7 @@
 | `_modal_update` | `partials` | partial | - |
 | `_tab_admin` | `partials` | partial | - |
 | `_tab_user` | `partials` | partial | - |
+| `_partial_filter_section` | `partials` | partial | - |
 | `_content_section` | `partials` | partial | - |
 | `_header_section` | `partials` | partial | - |
 | `_info_card` | `partials` | partial | - |
@@ -456,13 +457,16 @@ _admin_base.g7.html (베이스 레이아웃)
 │       ├── _modal_reaggregate.g7.html (구간 재집계)
 │       ├── _modal_purge_all.g7.html (전체 삭제)
 │       ├── _modal_retro_anonymize.g7.html (소급 익명화)
+│       ├── _modal_row_trend.g7.html (리포트 행의 기간 추이)
 │       └── _modal_subject_delete.g7.html (정보주체 삭제)
 │       └── 대시보드 카드는 partials/admin_dashboard/_analytics_widget.g7.html
 │
 ├── 사용자 관리
 │   ├── admin_user_list.g7.html (목록)
 │   ├── admin_user_form.g7.html (생성/수정)
-│   └── admin_user_detail.g7.html (상세)
+│   ├── admin_user_detail.g7.html (상세)
+│   └── partials/admin_user_list/
+│       └── _partial_filter_section.g7.html (필터 카드 — 기본/상세 슬롯·검색편집·빠른 기간·확장 필터 자리)
 │
 ├── 역할 관리
 │   ├── admin_role_list.g7.html (목록)
@@ -855,7 +859,7 @@ _admin_base.g7.html
 
 활동 로그 목록은 `admin_activity_log_list.g7.html`, 본인인증 이력 목록은 `admin_identity_logs.g7.html`에서 필터와 상세 조회를 제공하며, 조각 `partials/admin_identity_logs/_partial_datagrid.g7.html`·`_partial_filter.g7.html`·`_modal_log_detail.g7.html`·`_modal_purge_confirm.g7.html`(기간 일괄 삭제 확인) 네 벌로 나뉩니다.
 
-활동 로그 목록의 행위자 칸(`partials/admin_activity_log_list/_partial_datagrid.g7.html`)은 `row.user.uuid` 유무로 회원 메뉴(회원 정보 보기·이 사람으로 검색)를 가릅니다. 회원이 없는 로그(시스템·CLI)도 API 가 `user` 객체(`uuid: null`, `name`: "시스템" / "시스템(CLI)")를 주므로, `user` 유무로 가르면 시스템 로그에 회원 메뉴가 그려집니다.
+활동 로그 목록의 행위자 칸(`templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_activity_log_list/_partial_datagrid.g7.html`)은 `row.user.uuid` 유무로 회원 메뉴(회원 정보 보기·이 사람으로 검색)를 가릅니다. 회원이 없는 로그(시스템·CLI)도 API 가 `user` 객체(`uuid: null`, `name`: "시스템" / "시스템(CLI)")를 주므로, `user` 유무로 가르면 시스템 로그에 회원 메뉴가 그려집니다.
 
 - [sirsoft-admin_basic 컴포넌트](components.md)
 - [sirsoft-admin_basic 핸들러](handlers.md)

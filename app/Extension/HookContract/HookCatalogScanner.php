@@ -6,13 +6,13 @@ namespace App\Extension\HookContract;
  * 코어·번들 확장 소스에서 공개 훅 발화처를 모아 훅 계약 목록을 만드는 스캐너.
  *
  * 공개 훅의 이름과 인자 개수는 서드파티 확장이 코드에 박아 쓰는 계약이다(설계 결정 2026-09-29).
- * 이 스캐너가 만든 목록(`data/catalog.php`)을 기준으로
+ * 이 스캐너가 만든 목록(`app/Extension/HookContract/data/catalog.php`)을 기준으로
  *  - 스냅샷 테스트가 이름 삭제·인자 개수 변경을 잡고,
  *  - 등록 시점 가드가 발화처 없는 훅 구독을 경고한다.
  *
  * PHP 토크나이저로 `HookManager::doAction|applyFilters|applyFiltersWithLegacyName|doActionWithLegacyName`
  * 과 래퍼 `ExtensionFilter::apply` 호출을 읽는다. 첫 인자가 문자열 리터럴이 아닌 발화처(이름 조립)는
- * 풀지 않고 "동적 발화처" 로 보고한다 — 그 이름들은 `data/dynamic.php` 에 손으로 적고, 목록에 없는
+ * 풀지 않고 "동적 발화처" 로 보고한다 — 그 이름들은 `app/Extension/HookContract/data/dynamic.php` 에 손으로 적고, 목록에 없는
  * 새 동적 발화처는 스냅샷 테스트가 실패시킨다(목록이 조용히 불완전해지지 않게).
  */
 class HookCatalogScanner

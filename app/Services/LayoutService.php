@@ -26,6 +26,13 @@ class LayoutService
 
     /**
      * LayoutRepository, LayoutVersionRepository, TemplateRepository, LayoutResolverService 및 LayoutExtensionService 주입
+     *
+     * @param  LayoutRepositoryInterface  $layoutRepository  레이아웃 저장소
+     * @param  LayoutVersionRepositoryInterface  $versionRepository  레이아웃 버전 저장소
+     * @param  TemplateRepositoryInterface  $templateRepository  템플릿 저장소
+     * @param  LayoutResolverService  $layoutResolverService  레이아웃 해석 서비스
+     * @param  LayoutExtensionService  $layoutExtensionService  레이아웃 확장 서비스
+     * @param  CacheInterface  $cache  캐시 드라이버
      */
     public function __construct(
         private LayoutRepositoryInterface $layoutRepository,
@@ -38,6 +45,8 @@ class LayoutService
 
     /**
      * 최대 레이아웃 중첩 깊이를 반환합니다.
+     *
+     * @return int 최대 레이아웃 중첩 깊이
      */
     private function getMaxDepth(): int
     {
@@ -48,6 +57,8 @@ class LayoutService
      * 병합된 레이아웃 캐시 TTL을 반환합니다.
      *
      * g7_core_settings('cache.layout_ttl') 우선, 없으면 config('template.layout.cache_ttl').
+     *
+     * @return int 병합 레이아웃 캐시 TTL(초)
      */
     private function getCacheTtl(): int
     {
@@ -341,6 +352,11 @@ class LayoutService
     /**
      * data_sources 병합 - ID 중복 체크 후 부모와 자식 모두 포함
      *
+     *
+     * @param  array  $parentDataSources  부모 레이아웃의 데이터소스 목록
+     * @param  array  $childDataSources  자식 레이아웃의 데이터소스 목록
+     * @return array 병합된 데이터소스 목록
+     *
      * @throws \Exception ID 중복 시
      */
     private function mergeDataSources(array $parentDataSources, array $childDataSources): array
@@ -368,6 +384,10 @@ class LayoutService
      * @param  array|null  $sourceMeta  ['kind' => 'base', 'layout' => '부모 레이아웃명'] 또는 null (편집 모드 전용)
      *
      * @since engine-v1.50.0 `$sourceMeta` 옵션 추가
+     *
+     * @param  array  $parentComponents  부모 레이아웃의 컴포넌트 트리
+     * @param  array  $childSlots  자식 레이아웃이 채우는 슬롯 정의
+     * @return array 슬롯이 채워진 컴포넌트 트리
      */
     private function mergeComponents(array $parentComponents, array $childSlots, ?array $sourceMeta = null): array
     {
@@ -775,6 +795,9 @@ class LayoutService
      *
      * 주의: slot 속성은 replaceSlots에서 사용된 것만 제거되므로
      * 여기서는 사용되지 않은 slot을 유지합니다 (다음 상속에서 사용될 수 있음)
+     *
+     * @param  array  $layout  레이아웃 데이터
+     * @return array 서빙에 불필요한 필드를 걷어낸 레이아웃
      */
     private function removeUnnecessaryFields(array $layout): array
     {
@@ -879,10 +902,16 @@ class LayoutService
     /**
      * 레이아웃을 로드하고 상속 구조를 병합합니다. (내부 메서드, 캐싱 없음)
      *
-     * @throws CircularReferenceException 순환 참조 감지 시
-     * @throws \Exception 최대 깊이 초과 시
      *
      * @since engine-v1.50.0 `$withSourceMeta` 옵션 추가
+     *
+     * @param  int  $templateId  템플릿 ID
+     * @param  string  $layoutName  레이아웃 이름
+     * @param  bool  $withSourceMeta  편집기용 출처 메타 포함 여부
+     * @return array 상속을 모두 병합한 레이아웃
+     *
+     * @throws CircularReferenceException 순환 참조 감지 시
+     * @throws \Exception 최대 깊이 초과 시
      */
     private function loadAndMergeLayoutInternal(int $templateId, string $layoutName, bool $withSourceMeta = false): array
     {
@@ -1012,6 +1041,10 @@ class LayoutService
      * 모듈 레이아웃 이름 패턴인 경우 LayoutResolverService를 통해
      * 오버라이드 여부를 확인하고 적절한 레이아웃을 반환합니다.
      * 일반 레이아웃은 기존 방식대로 처리합니다.
+     *
+     * @param  int  $templateId  템플릿 ID
+     * @param  string  $layoutName  레이아웃 이름
+     * @return ?TemplateLayout 찾은 레이아웃 (없으면 null)
      */
     private function resolveLayout(int $templateId, string $layoutName): ?TemplateLayout
     {
@@ -1043,6 +1076,9 @@ class LayoutService
      * 모듈 레이아웃 이름은 vendor-module.path 또는 vendor-module_path 형식입니다.
      * 예: sirsoft-ecommerce.admin_products_index (DOT 포맷)
      *     sirsoft-ecommerce_admin_products_index (UNDERSCORE 포맷, 하위 호환)
+     *
+     * @param  string  $layoutName  레이아웃 이름
+     * @return bool 모듈 레이아웃 이름 형식이면 true
      */
     private function isModuleLayoutName(string $layoutName): bool
     {
@@ -1062,6 +1098,11 @@ class LayoutService
      * 일반 응답 캐시와 분리합니다.
      *
      * @since engine-v1.50.0 `$withSourceMeta` 옵션 추가
+     *
+     * @param  int  $templateId  템플릿 ID
+     * @param  string  $layoutName  레이아웃 이름
+     * @param  bool  $withSourceMeta  편집기용 출처 메타 포함 여부
+     * @return string 병합 레이아웃 캐시 키
      */
     private function getMergedLayoutCacheKey(int $templateId, string $layoutName, bool $withSourceMeta = false): string
     {
@@ -1087,6 +1128,7 @@ class LayoutService
      *
      * @param  int  $templateId  대상 템플릿 ID
      * @param  string  $layoutName  대상 레이아웃 이름
+     * @return void 반환값 없음
      */
     public function clearLayoutCache(int $templateId, string $layoutName): void
     {
@@ -1125,6 +1167,7 @@ class LayoutService
      *
      * @param  int  $templateId  템플릿 ID
      * @param  string  $layoutName  레이아웃 이름
+     * @return void 반환값 없음
      */
     private function clearPublicServingCache(int $templateId, string $layoutName): void
     {
@@ -1152,6 +1195,7 @@ class LayoutService
      *
      * @param  int  $templateId  대상 템플릿 ID
      * @param  string  $layoutName  변경된 부모 레이아웃 이름
+     * @return void 반환값 없음
      */
     public function clearDependentLayoutsCache(int $templateId, string $layoutName): void
     {
@@ -1201,6 +1245,8 @@ class LayoutService
 
     /**
      * 캐시 통계 초기화
+     *
+     * @return void 반환값 없음
      */
     public function resetCacheStats(): void
     {
@@ -1636,6 +1682,9 @@ class LayoutService
 
     /**
      * 컴포넌트 배열을 재귀적으로 sanitize합니다.
+     *
+     * @param  array  $components  컴포넌트 목록
+     * @return array XSS 위험 값을 걸러 낸 컴포넌트 목록
      */
     private function sanitizeComponents(array $components): array
     {
@@ -1720,6 +1769,9 @@ class LayoutService
 
     /**
      * 문자열에서 위험한 패턴을 제거합니다.
+     *
+     * @param  string  $value  정리할 문자열
+     * @return string 정리된 문자열
      */
     private function sanitizeString(string $value): string
     {
@@ -1746,6 +1798,9 @@ class LayoutService
 
     /**
      * data_sources 배열을 sanitize합니다.
+     *
+     * @param  array  $dataSources  데이터소스 목록
+     * @return array 정리된 데이터소스 목록
      */
     private function sanitizeDataSources(array $dataSources): array
     {
@@ -1765,6 +1820,9 @@ class LayoutService
 
     /**
      * URL을 sanitize합니다. (안전한 프로토콜만 허용)
+     *
+     * @param  string  $url  정리할 URL
+     * @return string 허용된 형식으로 정리된 URL
      */
     private function sanitizeUrl(string $url): string
     {
@@ -1897,31 +1955,42 @@ class LayoutService
      */
     private function filterDefines(array $defines, ?User $user): array
     {
+        // 레이아웃의 defines 는 `이름 => 값` 맵이다(화면이 `_defines.이름` 으로 읽는다). 목록으로 다시
+        // 쌓으면 이름이 사라져 `_defines.countryList` 같은 참조가 전부 undefined 가 된다(#705 회귀).
+        // 목록형(이름 없는 컴포넌트 정의 묶음)으로 들어온 경우만 종전처럼 재색인한다.
+        $isList = array_is_list($defines);
         $filtered = [];
 
-        foreach ($defines as $define) {
-            // define 자체에 permissions가 있으면 전체 제거 여부 판단
-            $permissions = $define['permissions'] ?? [];
+        foreach ($defines as $name => $define) {
+            // 컴포넌트 정의(연관 배열)만 권한 필터 대상이다 — 데이터 목록·스칼라 맵 값은 그대로 둔다.
+            if (is_array($define) && ! array_is_list($define)) {
+                // define 자체에 permissions가 있으면 전체 제거 여부 판단
+                $permissions = $define['permissions'] ?? [];
 
-            if (! empty($permissions)) {
-                if (! PermissionHelper::checkWithLogic($permissions, $user)) {
-                    continue;
+                if (! empty($permissions) && is_array($permissions)) {
+                    if (! PermissionHelper::checkWithLogic($permissions, $user)) {
+                        continue;
+                    }
+
+                    unset($define['permissions']);
                 }
 
-                unset($define['permissions']);
+                // define 내부 컴포넌트 필터링
+                if (! empty($define['components']) && is_array($define['components'])) {
+                    $define['components'] = $this->filterComponentTree($define['components'], $user);
+                }
+
+                // define 내부 children 필터링
+                if (! empty($define['children']) && is_array($define['children'])) {
+                    $define['children'] = $this->filterComponentTree($define['children'], $user);
+                }
             }
 
-            // define 내부 컴포넌트 필터링
-            if (! empty($define['components'])) {
-                $define['components'] = $this->filterComponentTree($define['components'], $user);
+            if ($isList) {
+                $filtered[] = $define;
+            } else {
+                $filtered[$name] = $define;
             }
-
-            // define 내부 children 필터링
-            if (! empty($define['children'])) {
-                $define['children'] = $this->filterComponentTree($define['children'], $user);
-            }
-
-            $filtered[] = $define;
         }
 
         return $filtered;
