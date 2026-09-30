@@ -36,7 +36,7 @@
   <computed name="commentRootMap">{{(post?.data?.comments ?? []).reduce((map, c) => ({...map, [c.id]: c.depth === 0 ? c.id : (map[c.parent_id] ?? c.parent_id)}), {})}}</computed>
   <permissions/>
   <slot name="content">
-    <container class="py-8 max-w-4xl mx-auto">
+    <container data-type="layout" class="py-8 max-w-4xl mx-auto">
       <include src="partials/board/show/_type_renderer.g7.html"/>
     </container>
   </slot>

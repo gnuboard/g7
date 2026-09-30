@@ -2,7 +2,8 @@
     "comment": "연간 통지 대상 회원 창 (#636) — 연간 통지 카드의 대상 건수 옆 버튼이 연다.\n  명단은 발송 판정과 같은 조건(활성 · 가입 1년 경과 · 설정 채널 중 최근 1년 미발송)이라 여기 보이는 회원이\n  다음 정기 실행이 통지할 회원이다(한 번에 보내는 수는 발송 상한으로 잘린다). 행 형태는 코어 개인정보\n  조치 대상 목록과 같다. 무한 스크롤은 도서산간 추가배송비 템플릿 창과 같은 방식이다.",
     "meta": {
         "is_partial": true,
-        "description": "GDPR 설정 연간 통지 카드 - 통지 대상 회원 목록 모달"
+        "description": "GDPR 설정 연간 통지 카드 - 통지 대상 회원 목록 모달",
+        "editor_label": "$t:sirsoft-gdpr.annual_notice.targets.editor_label"
     },
     "id": "privacy_targets_modal",
     "type": "composite",

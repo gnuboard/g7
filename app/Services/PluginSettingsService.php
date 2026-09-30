@@ -473,10 +473,12 @@ class PluginSettingsService
 
         if (preg_match('/\.g7\.html$/i', $path) === 1) {
             try {
-                $resolver = new MarkupCompileContextResolver;
-                $registry = $resolver->registryFor($path);
-
-                return (new LayoutMarkupCompiler($registry))->compile($content, $path, $resolver->contextFor($path))->json;
+                // 템플릿과 무관하게 컴파일한다(설치 경로와 같은 규칙).
+                return (new LayoutMarkupCompiler)->compile(
+                    $content,
+                    $path,
+                    (new MarkupCompileContextResolver)->installContextFor($path),
+                )->json;
             } catch (\Throwable $error) {
                 Log::error('플러그인 설정 레이아웃 마크업 컴파일 실패', [
                     'path' => $path,

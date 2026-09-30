@@ -6,7 +6,6 @@ namespace Plugins\Sirsoft\PayNhnkcp\Tests\Unit\Listeners;
 
 use App\Extension\Helpers\LayoutFragmentSourceHelper;
 use Plugins\Sirsoft\PayNhnkcp\Listeners\EnsureAdminOrderDetailPaymentQueryLayoutListener;
-use Plugins\Sirsoft\PayNhnkcp\Listeners\EnsureAdminOrderListTestBadgeLayoutListener;
 use Plugins\Sirsoft\PayNhnkcp\Tests\PluginTestCase;
 use Tests\Support\CompilesFragmentMarkup;
 use Tests\Unit\Support\LayoutMarkup\GateMembershipGuardTest;
@@ -23,36 +22,15 @@ class EnsureAdminOrderLayoutExtensionsListenerTest extends PluginTestCase
 {
     use CompilesFragmentMarkup;
 
-    public function test_list_listener_ensures_test_mode_data_source_and_badge(): void
-    {
-        $listener = new EnsureAdminOrderListTestBadgeLayoutListener;
-
-        $result = $listener->ensureTestBadgeLayout($this->makeOrderListLayout(), 1);
-        $json = json_encode($result, JSON_UNESCAPED_SLASHES);
-
-        $this->assertSame(1, $this->countDataSources($result, 'nhnkcp_test_map'));
-        $this->assertSame(1, $this->countDataSources($result, 'nhnkcp_easy_pay_display_map'));
-        $this->assertSame(1, $this->countString($result, 'nhnkcp_test_map.data?.[row.order_number] === true'));
-        $this->assertSame(1, $this->countString($result, 'nhnkcp_easy_pay_display_map.data?.[row.order_number]?.payment_method_display_label ?? row.payment?.payment_method_label'));
-        $this->assertIsString($json);
-        $this->assertStringContainsString('/api/plugins/sirsoft-pay_nhnkcp/admin/orders/test-mode-map', $json);
-        $this->assertStringContainsString('/api/plugins/sirsoft-pay_nhnkcp/admin/orders/easy-pay-display-map', $json);
-        $this->assertStringContainsString('sirsoft-pay_nhnkcp.admin.test_mode_badge', $json);
-    }
-
-    public function test_list_listener_is_idempotent(): void
-    {
-        $listener = new EnsureAdminOrderListTestBadgeLayoutListener;
-
-        $once = $listener->ensureTestBadgeLayout($this->makeOrderListLayout(), 1);
-        $twice = $listener->ensureTestBadgeLayout($once, 1);
-
-        $this->assertSame(1, $this->countDataSources($twice, 'nhnkcp_test_map'));
-        $this->assertSame(1, $this->countDataSources($twice, 'nhnkcp_easy_pay_display_map'));
-        $this->assertSame(1, $this->countString($twice, 'nhnkcp_test_map.data?.[row.order_number] === true'));
-        $this->assertSame(1, $this->countString($twice, 'nhnkcp_easy_pay_display_map.data?.[row.order_number]?.payment_method_display_label ?? row.payment?.payment_method_label'));
-    }
-
+    /**
+     * 주문 상세 리스너가 테스트 결제 안내와 결제 조회 패널·데이터 소스를 한 번씩 채우는지 검증한다.
+     *
+     * @scenario compile_unit=install,source_health=valid
+     *
+     * @effects extension_badge_injection_is_idempotent_and_scoped
+     *
+     * @return void 없음
+     */
     public function test_detail_listener_ensures_test_notice_and_payment_panels(): void
     {
         $listener = new EnsureAdminOrderDetailPaymentQueryLayoutListener;
@@ -83,6 +61,15 @@ class EnsureAdminOrderLayoutExtensionsListenerTest extends PluginTestCase
         $this->assertStringContainsString('sirsoft-pay_nhnkcp.admin.result_refund_status', $json);
     }
 
+    /**
+     * 탭 본문 영역 id 가 바뀐 레이아웃에서는 상세 래퍼 바로 아래에 패널을 붙이는지 검증한다.
+     *
+     * @scenario compile_unit=install,source_health=valid
+     *
+     * @effects extension_badge_injection_is_idempotent_and_scoped
+     *
+     * @return void 없음
+     */
     public function test_detail_listener_uses_wrapper_when_tab_content_area_is_renamed(): void
     {
         $listener = new EnsureAdminOrderDetailPaymentQueryLayoutListener;
@@ -94,6 +81,15 @@ class EnsureAdminOrderLayoutExtensionsListenerTest extends PluginTestCase
         $this->assertSame(1, $this->countDirectChildId($wrapper, 'kcp_info_panel'));
     }
 
+    /**
+     * 같은 레이아웃에 두 번 적용해도 데이터 소스·안내·패널이 중복되지 않는지 검증한다.
+     *
+     * @scenario compile_unit=install,source_health=valid
+     *
+     * @effects extension_badge_injection_is_idempotent_and_scoped
+     *
+     * @return void 없음
+     */
     public function test_detail_listener_is_idempotent(): void
     {
         $listener = new EnsureAdminOrderDetailPaymentQueryLayoutListener;
@@ -107,9 +103,17 @@ class EnsureAdminOrderLayoutExtensionsListenerTest extends PluginTestCase
         $this->assertSame(1, $this->countNodeId($twice, 'kcp_escrow_delivery_panel'));
     }
 
+    /**
+     * 대상이 아닌 레이아웃은 한 글자도 바꾸지 않는지 검증한다.
+     *
+     * @scenario compile_unit=install,source_health=valid
+     *
+     * @effects extension_badge_injection_is_idempotent_and_scoped
+     *
+     * @return void 없음
+     */
     public function test_leaves_other_layouts_unchanged(): void
     {
-        $listListener = new EnsureAdminOrderListTestBadgeLayoutListener;
         $detailListener = new EnsureAdminOrderDetailPaymentQueryLayoutListener;
         $layout = [
             'layout_name' => 'shop/checkout',
@@ -117,47 +121,14 @@ class EnsureAdminOrderLayoutExtensionsListenerTest extends PluginTestCase
             'components' => [],
         ];
 
-        $this->assertSame($layout, $listListener->ensureTestBadgeLayout($layout, 1));
         $this->assertSame($layout, $detailListener->ensurePaymentQueryLayout($layout, 1));
     }
 
     /**
-     * @return array<string, mixed>
-     */
-    private function makeOrderListLayout(): array
-    {
-        return [
-            'layout_name' => 'admin_ecommerce_order_list',
-            'data_sources' => [],
-            'components' => [
-                [
-                    'id' => 'order_datagrid',
-                    'type' => 'composite',
-                    'name' => 'DataGrid',
-                    'props' => [
-                        'columns' => [
-                            ['field' => 'order_number', 'cellChildren' => []],
-                            [
-                                'field' => 'payment_method',
-                                'cellChildren' => [
-                                    [
-                                        'type' => 'basic',
-                                        'name' => 'Div',
-                                        'children' => [
-                                            ['type' => 'basic', 'name' => 'Span', 'text' => '{{row.payment?.payment_method_label}}'],
-                                        ],
-                                    ],
-                                ],
-                            ],
-                        ],
-                    ],
-                ],
-            ],
-        ];
-    }
-
-    /**
-     * @return array<string, mixed>
+     * 주문 상세 레이아웃 표본을 만듭니다.
+     *
+     * @param  bool  $includeTabContentArea  탭 본문 영역(`tab_content_area`)을 포함할지
+     * @return array<string, mixed> 레이아웃 JSON
      */
     private function makeOrderDetailLayout(bool $includeTabContentArea = true): array
     {
@@ -193,7 +164,11 @@ class EnsureAdminOrderLayoutExtensionsListenerTest extends PluginTestCase
     }
 
     /**
-     * @param  array<string, mixed>  $layout
+     * 레이아웃에서 지정 id 의 데이터 소스 개수를 셉니다.
+     *
+     * @param  array<string, mixed>  $layout  레이아웃 JSON
+     * @param  string  $id  데이터 소스 id
+     * @return int 개수
      */
     private function countDataSources(array $layout, string $id): int
     {
@@ -204,29 +179,11 @@ class EnsureAdminOrderLayoutExtensionsListenerTest extends PluginTestCase
     }
 
     /**
-     * @param  array<string|int, mixed>  $node
-     */
-    private function countString(array $node, string $needle): int
-    {
-        $count = 0;
-
-        foreach ($node as $value) {
-            if (is_array($value)) {
-                $count += $this->countString($value, $needle);
-
-                continue;
-            }
-
-            if (is_string($value) && str_contains($value, $needle)) {
-                $count++;
-            }
-        }
-
-        return $count;
-    }
-
-    /**
-     * @param  array<string|int, mixed>  $node
+     * 트리에서 지정 id 값이 나타나는 횟수를 셉니다.
+     *
+     * @param  array<string|int, mixed>  $node  탐색할 노드
+     * @param  string  $id  찾을 id
+     * @return int 횟수
      */
     private function countNodeId(array $node, string $id): int
     {
@@ -248,8 +205,11 @@ class EnsureAdminOrderLayoutExtensionsListenerTest extends PluginTestCase
     }
 
     /**
-     * @param  array<string, mixed>  $node
-     * @return array<string, mixed>|null
+     * 트리에서 지정 id 의 노드를 찾습니다.
+     *
+     * @param  array<string, mixed>  $node  탐색할 노드
+     * @param  string  $id  찾을 id
+     * @return array<string, mixed>|null 찾은 노드 (없으면 null)
      */
     private function findNodeById(array $node, string $id): ?array
     {
@@ -273,7 +233,11 @@ class EnsureAdminOrderLayoutExtensionsListenerTest extends PluginTestCase
     }
 
     /**
-     * @param  array<string, mixed>  $node
+     * 노드의 직계 자식 중 지정 id 의 개수를 셉니다.
+     *
+     * @param  array<string, mixed>  $node  부모 노드
+     * @param  string  $id  찾을 id
+     * @return int 개수
      */
     private function countDirectChildId(array $node, string $id): int
     {
@@ -297,6 +261,8 @@ class EnsureAdminOrderLayoutExtensionsListenerTest extends PluginTestCase
      * @scenario compile_unit=install,source_health=valid
      *
      * @effects consumed_extension_definition_comes_from_the_authoring_source
+     *
+     * @return void 없음
      */
     public function test_consumed_extension_definition_comes_from_the_authoring_source(): void
     {

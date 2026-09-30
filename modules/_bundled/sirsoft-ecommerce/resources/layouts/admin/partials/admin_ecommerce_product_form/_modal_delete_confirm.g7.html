@@ -1,7 +1,7 @@
 <!-- 상품 폼 — 삭제 확인. 폼이 열기 전에 서버에 물어 둔 삭제 가능 여부(`_global.deleteProduct`)로
   두 얼굴을 갖는다 — 지울 수 있으면 무엇을 지우는지 보여 주고, 못 지우면 그 사유를 보여 준다. -->
 <partial description="Product Form - Delete Confirmation Modal">
-  <modal data-ref="modal_delete_confirm" title="$t:sirsoft-ecommerce.admin.product.modal.delete.title" size="sm">
+  <modal data-type="composite" data-ref="modal_delete_confirm" title="$t:sirsoft-ecommerce.admin.product.modal.delete.title" size="sm">
     <!-- 삭제 가능 분기 — 목록 모달과 동일하게 can-delete 선행 결과로 분기 -->
     <div data-if="{{_global.deleteProduct?.canDelete}}">
       <div class="text-center">
@@ -34,7 +34,7 @@
     </div>
     <!-- 삭제 불가 분기 — 주문 이력 등으로 삭제 불가 시 사유 노출 -->
     <div data-if="{{_global.deleteProduct?.canDelete === false}}">
-      <alert type="error" title="$t:sirsoft-ecommerce.admin.product.modal.delete.cannot_delete_title" message="{{_global.deleteProduct?.reason}}"/>
+      <alert data-type="composite" type="error" title="$t:sirsoft-ecommerce.admin.product.modal.delete.cannot_delete_title" message="{{_global.deleteProduct?.reason}}"/>
     </div>
     <div class="modal-footer-buttons">
       <button type="button" class="px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isProductDeleting}}">
@@ -43,7 +43,7 @@
         </on>
         <span>$t:sirsoft-ecommerce.common.cancel</span>
       </button>
-      <button type="button" class="flex-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{!_global.deleteProduct?.canDelete || _global.isProductDeleting}}">
+      <button type="button" class="flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-500 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{!_global.deleteProduct?.canDelete || _global.isProductDeleting}}">
         <on type="click">
           <!-- 삭제 — 성공하면 목록으로 나간다(지워진 상품의 수정 화면에 남아 있을 수 없다). 진행 표시를 전역에 두는 것은 창과 그 뒤 폼이 같은 값을 봐야 하기 때문이다 -->
           <sequence>

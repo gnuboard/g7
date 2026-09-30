@@ -25,6 +25,7 @@
   "applied": "Applied currencies",
   "date_from": "From date",
   "date_to": "To date",
+  "date_range_invalid": "The end date is earlier than the start date. Select the period again.",
   "all": "All",
   "edit_template": "Edit template",
   "reset": "Restore defaults",

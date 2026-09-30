@@ -67,9 +67,9 @@
 | `sirsoft-ecommerce.cart.before_delete_all` | action | — | `src/Services/CartService.php:801` |
 | `sirsoft-ecommerce.cart.before_delete_multiple` | action | — | `src/Services/CartService.php:529` |
 | `sirsoft-ecommerce.cart.before_list` | action | — | `src/Services/CartService.php:75` |
-| `sirsoft-ecommerce.cart.before_merge` | action | — | `src/Services/CartService.php:560` |
-| `sirsoft-ecommerce.cart.before_reorder` | action | — | `src/Services/CartService.php:711` |
-| `sirsoft-ecommerce.cart.before_update_quantity` | action | — | `src/Services/CartService.php:382` |
+| `sirsoft-ecommerce.cart.before_merge` | action | — | `src/Services/CartService.php:561` |
+| `sirsoft-ecommerce.cart.before_reorder` | action | — | `src/Services/CartService.php:712` |
+| `sirsoft-ecommerce.cart.before_update_quantity` | action | — | `src/Services/CartService.php:383` |
 | `sirsoft-ecommerce.cart.bulk_add_validation_rules` | filter | — | `src/Http/Requests/Public/BulkAddToCartRequest.php:51` |
 | `sirsoft-ecommerce.cart.change_option_validation_rules` | filter | — | `src/Http/Requests/Public/ChangeCartOptionRequest.php:46` |
 | `sirsoft-ecommerce.cart.delete_items_validation_rules` | filter | — | `src/Http/Requests/Public/DeleteCartItemsRequest.php:35` |
@@ -254,15 +254,17 @@
 | `sirsoft-ecommerce.extra_fee_template.filter_list_params` | filter | — | `src/Services/ExtraFeeTemplateService.php:33` |
 | `sirsoft-ecommerce.extra_fee_template.filter_update_data` | filter | — | `src/Services/ExtraFeeTemplateService.php:122` |
 | `sirsoft-ecommerce.inquiry.count_replies` | filter | — | `src/Listeners/ProductInquiryBoardListener.php:120` 외 1곳 |
-| `sirsoft-ecommerce.inquiry.create` | filter | — | `src/Services/ProductInquiryService.php:278` 외 1곳 |
-| `sirsoft-ecommerce.inquiry.delete` | filter | — | `src/Services/ProductInquiryService.php:478` 외 2곳 |
-| `sirsoft-ecommerce.inquiry.delete_reply` | filter | — | `src/Services/ProductInquiryService.php:560` |
-| `sirsoft-ecommerce.inquiry.get_by_ids` | filter | — | `src/Services/ProductInquiryService.php:200` 외 1곳 |
-| `sirsoft-ecommerce.inquiry.get_settings` | filter | — | `src/Listeners/ProductInquiryBoardListener.php:270` 외 2곳 |
+| `sirsoft-ecommerce.inquiry.create` | filter | — | `src/Services/ProductInquiryService.php:279` 외 1곳 |
+| `sirsoft-ecommerce.inquiry.delete` | filter | — | `src/Services/ProductInquiryService.php:479` 외 2곳 |
+| `sirsoft-ecommerce.inquiry.delete_reply` | filter | — | `src/Services/ProductInquiryService.php:561` |
+| `sirsoft-ecommerce.inquiry.get_by_ids` | filter | — | `src/Services/ProductInquiryService.php:201` 외 1곳 |
+| `sirsoft-ecommerce.inquiry.get_settings` | filter | — | `src/Listeners/ProductInquiryBoardListener.php:279` 외 3곳 |
+| `sirsoft-ecommerce.inquiry.purge_sample_posts` | filter | — | `database/seeders/Sample/ProductInquirySeeder.php:183` |
+| `sirsoft-ecommerce.inquiry.seed_sample_post` | filter | — | `database/seeders/Sample/ProductInquirySeeder.php:232` |
 | `sirsoft-ecommerce.inquiry.store_validation_messages` | filter | — | `src/Http/Requests/Public/StoreInquiryRequest.php:60` |
 | `sirsoft-ecommerce.inquiry.store_validation_rules` | filter | — | `src/Http/Requests/Public/StoreInquiryRequest.php:44` |
-| `sirsoft-ecommerce.inquiry.update` | filter | — | `src/Services/ProductInquiryService.php:436` |
-| `sirsoft-ecommerce.inquiry.update_reply` | filter | — | `src/Services/ProductInquiryService.php:519` |
+| `sirsoft-ecommerce.inquiry.update` | filter | — | `src/Services/ProductInquiryService.php:437` |
+| `sirsoft-ecommerce.inquiry.update_reply` | filter | — | `src/Services/ProductInquiryService.php:520` |
 | `sirsoft-ecommerce.inquiry.update_validation_rules` | filter | — | `src/Http/Requests/User/UpdateInquiryRequest.php:40` |
 | `sirsoft-ecommerce.label.after_create` | action | — | `src/Services/ProductLabelService.php:103` |
 | `sirsoft-ecommerce.label.after_delete` | action | — | `src/Services/ProductLabelService.php:212` |
@@ -434,7 +436,7 @@
 | `sirsoft-ecommerce.product.bulk_price_validation_rules` | filter | — | `src/Http/Requests/Admin/BulkUpdatePriceRequest.php:42` |
 | `sirsoft-ecommerce.product.bulk_status_validation_rules` | filter | — | `src/Http/Requests/Admin/BulkUpdateStatusRequest.php:52` |
 | `sirsoft-ecommerce.product.bulk_stock_validation_rules` | filter | — | `src/Http/Requests/Admin/BulkUpdateStockRequest.php:40` |
-| `sirsoft-ecommerce.product.bulk_update_validation_rules` | filter | — | `src/Http/Requests/Admin/BulkUpdateProductsRequest.php:105` |
+| `sirsoft-ecommerce.product.bulk_update_validation_rules` | filter | — | `src/Http/Requests/Admin/BulkUpdateProductsRequest.php:106` |
 | `sirsoft-ecommerce.product.filter_bulk_update_data` | filter | — | `src/Services/ProductService.php:635` |
 | `sirsoft-ecommerce.product.filter_content_thumbnail` | filter | — | `src/Models/Product.php:193` |
 | `sirsoft-ecommerce.product.filter_create_data` | filter | — | `src/Services/ProductService.php:251` |
@@ -454,14 +456,14 @@
 | `sirsoft-ecommerce.product.show_for_copy_validation_rules` | filter | — | `src/Http/Requests/Admin/ProductShowForCopyRequest.php:58` |
 | `sirsoft-ecommerce.product.store_validation_rules` | filter | — | `src/Http/Requests/Admin/StoreProductRequest.php:192` |
 | `sirsoft-ecommerce.product.update_validation_rules` | filter | — | `src/Http/Requests/Admin/UpdateProductRequest.php:67` |
-| `sirsoft-ecommerce.product_inquiry.after_bulk_delete` | action | — | `src/Services/ProductInquiryService.php:827` |
-| `sirsoft-ecommerce.product_inquiry.after_create` | action | — | `src/Services/ProductInquiryService.php:314` |
-| `sirsoft-ecommerce.product_inquiry.after_reply` | action | — | `src/Services/ProductInquiryService.php:767` |
-| `sirsoft-ecommerce.product_inquiry.before_bulk_delete` | action | — | `src/Services/ProductInquiryService.php:815` |
-| `sirsoft-ecommerce.product_option.after_bulk_price_update` | action | — | `src/Services/ProductOptionService.php:101` |
-| `sirsoft-ecommerce.product_option.after_bulk_stock_update` | action | — | `src/Services/ProductOptionService.php:147` 외 1곳 |
-| `sirsoft-ecommerce.product_option.before_bulk_price_update` | action | — | `src/Services/ProductOptionService.php:91` |
-| `sirsoft-ecommerce.product_option.before_bulk_stock_update` | action | — | `src/Services/ProductOptionService.php:138` |
+| `sirsoft-ecommerce.product_inquiry.after_bulk_delete` | action | — | `src/Services/ProductInquiryService.php:828` |
+| `sirsoft-ecommerce.product_inquiry.after_create` | action | — | `src/Services/ProductInquiryService.php:315` |
+| `sirsoft-ecommerce.product_inquiry.after_reply` | action | — | `src/Services/ProductInquiryService.php:768` |
+| `sirsoft-ecommerce.product_inquiry.before_bulk_delete` | action | — | `src/Services/ProductInquiryService.php:816` |
+| `sirsoft-ecommerce.product_option.after_bulk_price_update` | action | — | `src/Services/ProductOptionService.php:107` |
+| `sirsoft-ecommerce.product_option.after_bulk_stock_update` | action | — | `src/Services/ProductOptionService.php:153` 외 1곳 |
+| `sirsoft-ecommerce.product_option.before_bulk_price_update` | action | — | `src/Services/ProductOptionService.php:97` |
+| `sirsoft-ecommerce.product_option.before_bulk_stock_update` | action | — | `src/Services/ProductOptionService.php:144` |
 | `sirsoft-ecommerce.product_option.bulk_price_validation_rules` | filter | — | `src/Http/Requests/Admin/BulkUpdateOptionPriceRequest.php:49` |
 | `sirsoft-ecommerce.product_option.bulk_stock_validation_rules` | filter | — | `src/Http/Requests/Admin/BulkUpdateOptionStockRequest.php:46` |
 | `sirsoft-ecommerce.review-image.after_delete` | action | — | `src/Services/ProductReviewImageService.php:142` |
@@ -770,6 +772,34 @@ FormRequest 쪽 `{동작}_validation_rules`(filter). `brand.*` 19종을 한 번 
 없으므로 모델은 메모리 값으로만 읽습니다. `order.before_delete` 는 발행하지 않습니다 — 관리자 요청을
 전제한 사전 검사를 무인 배치에 걸지 않습니다(게시판 보유기간 삭제와 같은 판단). 익명화 방식은 주문마다
 `sirsoft-ecommerce.order.after_anonymize`(주문 ID)를 익명화와 같은 트랜잭션 안에서 발행합니다.
+
+**관리자 주문 목록 결제수단 칸**은 결제 플러그인에게 두 접합면을 엽니다. 이 모듈은 PG 를 모르므로
+컬럼을 넘겨주지 않습니다 — 플러그인이 컬럼 배열을 `inject_props` 로 덮으면 이 모듈의 컬럼 개선이
+그 사본에 묻혀 사라지고, 여러 플러그인이 덮으면 우선순위가 가장 높은 하나만 남습니다.
+
+| 접합면 | 종류 | 쓰임 |
+|---|---|---|
+| `admin_order_list_payment_method_badges` | 레이아웃 확장점 (셀 템플릿 안) | 라벨 아래 덧붙이는 표시(테스트 결제 배지). 주입 컴포넌트는 `row` 를 읽고 자기 주문에만 보이게 조건을 건다 |
+| `sirsoft-ecommerce.order.filter_payment_method_display_label` | filter (`?string $label, OrderPayment $payment`) | 간편결제 원 수단처럼 PG 만 아는 결제수단 이름. 주문 목록 응답 `payment.payment_method_display_label` 이 되고, 화면은 없으면 `payment_method_label` 을 쓴다 |
+
+필터 구독자는 자기 결제(`pg_provider`)가 아니거나 앞선 구독자가 이미 채운 값이면 받은 값을 그대로
+돌려줘야 합니다 — 한 목록에 여러 PG 의 주문이 섞입니다.
+
+**상품 문의 게시판 위임(`inquiry.*`)** 은 이 모듈이 정의하고 게시판 모듈이 답하는 계약입니다. 두 모듈은
+서로를 의존성으로 선언하지 않으므로 이 모듈은 게시판의 번역 키·모델·클래스 이름을 쓰지 않습니다 —
+필요한 값은 훅 반환값으로 받습니다(글 ID·글 모델 타입 `inquirable_type`·게시판 설정·비밀글 열람 판정
+`can_view_secret`). 비밀 문의의 제목 자리 문구도 자기 문구(`inquiries.secret_post_title`)를 씁니다.
+운영 경로 8개 외에 샘플 시더 전용 2개가 있습니다 — 시더가 게시판 글을 직접 만들지 않도록 게시판이 답합니다.
+
+| 샘플 시더 훅 | 인자 | 기대 반환 |
+|---|---|---|
+| `inquiry.seed_sample_post` | `(null, string $slug, array $question, ?array $reply)` — question: title·content·user_id·author_name·password(평문)·is_secret·created_at / reply: content·user_id·created_at | `['post_id' => int, 'inquirable_type' => string]` (`inquiry.create` 와 같은 모양) |
+| `inquiry.purge_sample_posts` | `(0, string $slug, array<string, int[]> $inquirables)` — 피벗에 기록된 타입별 글 ID 묶음 | 영구 삭제한 글 수 |
+
+**비회원 주문 알림의 수신 전화번호**: 주문 알림 6종(`order_confirmed`·`order_pending_deposit`·`order_shipped`·
+`order_delivered`·`order_completed`·`order_cancelled`)은 비회원 주문이면 주문자 연락처를 extract_data 의
+data 에 코어 표준 키(`GenericNotification::RECIPIENT_PHONE_KEY`)로 싣습니다. 문자·알림톡 채널은 이 모듈의
+주문 모델을 읽지 않고 그 키만 읽습니다. 연락처가 없거나 회원 주문이면 키를 넣지 않습니다.
 <!-- @intent END -->
 
 ## 구독 훅
@@ -793,18 +823,22 @@ FormRequest 쪽 `{동작}_validation_rules`(filter). `brand.*` 19종을 한 번 
 | `core.search.results` | filter | `SearchProductsListener` | `searchProducts` | 20 |
 | `core.user.after_create` | action (미선언) | `AssignDefaultCurrencyOnRegisterListener` | `handleAdminCreate` | 20 |
 | `core.user.after_create` | action (미선언) | `AssignDefaultShippingCountryOnRegisterListener` | `handleAdminCreate` | 20 |
+| `core.user.after_update` | action (미선언) | `UserPreferenceCoreSaveListener` | `persistPreferences` | 20 |
 | `core.user.before_delete` | action (미선언) | `UserMileageCleanupListener` | `handleUserRemoval` | 10 |
 | `core.user.before_withdraw` | action (미선언) | `UserMileageCleanupListener` | `handleUserRemoval` | 10 |
 | `core.user.filter_resource_data` | filter | `UserCurrencyInfoListener` | `injectPreferredCurrency` | 25 |
 | `core.user.filter_resource_data` | filter | `UserEcommerceDataInfoListener` | `injectEcommerceData` | 21 |
 | `core.user.filter_resource_data` | filter | `UserMileageInfoListener` | `injectMileageTotal` | 20 |
 | `core.user.filter_resource_data` | filter | `UserShippingCountryInfoListener` | `injectPreferredShippingCountry` | 26 |
+| `core.user.filter_update_data` | filter | `UserPreferenceCoreSaveListener` | `stripPreferenceFields` | 20 |
 | `core.user.list_query_extensions` | filter | `UserListAddressFilterListener` | `addQueryExtension` | 21 |
 | `core.user.list_query_extensions` | filter | `UserListMileageFilterListener` | `addQueryExtension` | 20 |
 | `core.user.list_validation_attributes` | filter | `UserListAddressFilterListener` | `addValidationAttributes` | 21 |
 | `core.user.list_validation_attributes` | filter | `UserListMileageFilterListener` | `addValidationAttributes` | 20 |
 | `core.user.list_validation_rules` | filter | `UserListAddressFilterListener` | `addValidationRules` | 21 |
 | `core.user.list_validation_rules` | filter | `UserListMileageFilterListener` | `addValidationRules` | 20 |
+| `core.user.update_profile_validation_rules` | filter | `UserPreferenceCoreSaveListener` | `addProfileUpdateRules` | 20 |
+| `core.user.update_validation_rules` | filter | `UserPreferenceCoreSaveListener` | `addAdminUpdateRules` | 20 |
 | `sirsoft-board.board.posts.before_force_delete` | action (미선언) | `ProductInquiryBoardListener` | `handleBoardPostsForceDeleting` | 20 |
 | `sirsoft-board.post.after_delete` | action (미선언) | `ProductInquiryBoardListener` | `handlePostDeleted` | 20 |
 | `sirsoft-board.post.after_restore` | action (미선언) | `ProductInquiryBoardListener` | `handlePostRestored` | 20 |
@@ -985,6 +1019,7 @@ FormRequest 쪽 `{동작}_validation_rules`(filter). `brand.*` 19종을 한 번 
 | `sirsoft-ecommerce.user_coupon.after_download` | action (미선언) | `EcommerceUserActivityLogListener` | `handleUserCouponAfterDownload` | 20 |
 | `sirsoft-ecommerce.wishlist.after_bulk_delete` | action (미선언) | `EcommerceAdminActivityLogListener` | `handleWishlistAfterBulkDelete` | 20 |
 | `sirsoft-ecommerce.wishlist.after_toggle` | action (미선언) | `EcommerceUserActivityLogListener` | `handleWishlistAfterToggle` | 20 |
+| `sirsoft-gdpr.necessary_storage.filter_provided_keys` | filter | `ProvideNecessaryStorageKeysListener` | `provide` | 10 |
 <!-- @generated:hooks-subscribed END -->
 
 <!-- @intent START -->
@@ -997,7 +1032,7 @@ FormRequest 쪽 `{동작}_validation_rules`(filter). `brand.*` 19종을 한 번 
 | 상대 | 수 | 무엇을 위해 |
 |---|---|---|
 | `core.*` | 19 | 로그인 시 비회원 장바구니 병합 · 회원가입 시 기본 통화/배송국가 배정과 그 검증 규칙 주입 · 활동 로그 설명 변수 해석 · 앱 설정에 기기 유형 주입 · 회원 탈퇴 시 마일리지 정리 |
-| `sirsoft-board.*` | 3 | 문의 글이 삭제·복원·일괄 삭제될 때 상품↔글 피벗 정리 (`'sync' => true` — 큐 워커가 없는 환경에서도 누락되지 않도록) |
+| `sirsoft-board.*` | 3 | 문의 글이 삭제·복원·일괄 삭제될 때 상품↔글 피벗 정리 (`'sync' => true` — 큐 워커가 없는 환경에서도 누락되지 않도록). 일괄 삭제(`board.posts.before_force_delete`)는 게시판이 셋째 인자로 싣는 글 모델 타입으로 피벗을 가립니다 — 타입이 없으면(이전 판 게시판) 지우지 않습니다 |
 | `sirsoft-ckeditor5.*` | 1 | 편집기가 참조할 수 있는 이커머스 리소스 목록 제공 |
 
 `sirsoft-board` · `sirsoft-ckeditor5` 는 **manifest 의존에 없습니다.** 훅 구독은 상대가 없으면
@@ -1056,6 +1091,7 @@ FormRequest 쪽 `{동작}_validation_rules`(filter). `brand.*` 19종을 한 번 
 | `PrivacyRetentionListener` | 2개 | 명시 등록 | ✅ | `src/Listeners/PrivacyRetentionListener.php` |
 | `ProductActivityLogListener` | 7개 | 명시 등록 | ✅ | `src/Listeners/ProductActivityLogListener.php` |
 | `ProductInquiryBoardListener` | 5개 | 명시 등록 | ✅ | `src/Listeners/ProductInquiryBoardListener.php` |
+| `ProvideNecessaryStorageKeysListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/ProvideNecessaryStorageKeysListener.php` |
 | `PurgeCashReceiptIdentifierListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/PurgeCashReceiptIdentifierListener.php` |
 | `ResolvesClaimIdentity` | 0개 | 자동 발견 | ❌ | `src/Listeners/Concerns/ResolvesClaimIdentity.php` |
 | `SearchProductsListener` | 3개 | 명시 등록 | ✅ | `src/Listeners/SearchProductsListener.php` |
@@ -1072,6 +1108,7 @@ FormRequest 쪽 `{동작}_validation_rules`(filter). `brand.*` 19종을 한 번 
 | `UserListMileageFilterListener` | 3개 | 명시 등록 | ✅ | `src/Listeners/UserListMileageFilterListener.php` |
 | `UserMileageCleanupListener` | 2개 | 명시 등록 | ✅ | `src/Listeners/UserMileageCleanupListener.php` |
 | `UserMileageInfoListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/UserMileageInfoListener.php` |
+| `UserPreferenceCoreSaveListener` | 4개 | 명시 등록 | ✅ | `src/Listeners/UserPreferenceCoreSaveListener.php` |
 | `UserShippingCountryInfoListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/UserShippingCountryInfoListener.php` |
 <!-- @generated:listeners END -->
 

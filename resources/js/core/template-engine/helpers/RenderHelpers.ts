@@ -579,6 +579,50 @@ function applyResponsiveOverrides(componentDef: ComponentDefinition): ComponentD
 }
 
 /**
+ * 확장점(extension_point) 호스트 `<div>` 의 className·DOM 속성을 정합니다.
+ *
+ * 확장점의 props 는 통째로 **주입된 자식의** 페이로드다 — 백엔드가 `LayoutExtensionService` 에서
+ * 이 props 를 주입 컴포넌트의 `extensionPointProps` 로 복사하고 자식은 `{{extensionPointProps.xxx}}`
+ * 로 읽는다. 호스트는 단순 래퍼라 페이로드를 실을 이유가 없으므로 **허용 목록**(`data-*`·`aria-*`·
+ * role·title·lang·dir·hidden·tabIndex·style)만 남긴다(engine-v1.68.1 규칙). `layout`·`columns`·`gap`
+ * 은 컨테이너 클래스로 접는다.
+ *
+ * `DynamicRenderer` 의 확장점과 반복 컨텍스트(`renderItemChildren`)의 확장점이 같은 규칙을 쓰도록
+ * 한 곳에 둔다.
+ *
+ * @param props 확장점 노드의 props (없으면 빈 호스트)
+ * @returns `className`(없으면 undefined)과 호스트에 실을 DOM 속성
+ *
+ * @since engine-v1.73.0
+ */
+export function buildExtensionPointHostProps(
+  props: Record<string, any> | undefined
+): { className: string | undefined; attrs: Record<string, any> } {
+  const { layout, columns, gap, className, ...restProps } = props || {};
+
+  const attrs: Record<string, any> = {};
+  for (const [key, value] of Object.entries(restProps)) {
+    const isDomAttribute =
+      key.startsWith('data-')
+      || key.startsWith('aria-')
+      || ['role', 'title', 'lang', 'dir', 'hidden', 'tabIndex', 'style'].includes(key);
+
+    if (isDomAttribute) {
+      attrs[key] = value;
+    }
+  }
+
+  let containerClass = className || '';
+  if (layout === 'grid' && columns) {
+    containerClass = `${containerClass} grid grid-cols-${columns} gap-${gap || 4}`.trim();
+  } else if (layout === 'flex') {
+    containerClass = `${containerClass} flex flex-col gap-${gap || 4}`.trim();
+  }
+
+  return { className: containerClass || undefined, attrs };
+}
+
+/**
  * 반복 아이템의 자식 컴포넌트를 렌더링합니다.
  *
  * DataGrid의 cellChildren, ul의 li 등 반복 컨텍스트에서
@@ -1039,6 +1083,25 @@ export function renderItemChildren(
 
     if (!shouldRender) {
       return [];
+    }
+
+    // 확장점 — 백엔드가 주입한 children 을 이 행 컨텍스트로 그리는 컨테이너다(이름은 컴포넌트가 아니라
+    // 확장점 이름). DynamicRenderer 의 확장점과 같은 호스트 규칙을 쓴다. 이 분기가 없으면 셀 안의
+    // 확장점이 「컴포넌트를 찾을 수 없습니다」 로 통째로 버려진다(#703 B2 결제수단 배지).
+    // @since engine-v1.73.0
+    if ((childDef as { type?: string }).type === 'extension_point') {
+      const host = buildExtensionPointHostProps(resolveProps(childDef.props, effectiveContext));
+      const injected = childDef.children && childDef.children.length > 0
+        ? renderItemChildren(childDef.children as ComponentDefinition[], effectiveContext, componentMap, key, options)
+        : null;
+
+      return [
+        React.createElement(
+          'div',
+          { key, id: resolvedId, className: host.className, ...stripRawDeep(host.attrs) },
+          injected
+        ),
+      ];
     }
 
     // 컴포넌트 조회

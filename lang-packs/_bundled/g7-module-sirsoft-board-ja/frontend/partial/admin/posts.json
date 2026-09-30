@@ -145,7 +145,8 @@
       "report_target": "通報対象: ",
       "comment_by_author": "{{author}}さんのコメント"
     },
-    "reaction_total": "反応 {{count}}"
+    "reaction_total": "反応 {{count}}",
+    "download_failed": "添付ファイルをダウンロードできませんでした。"
   },
   "form": {
     "description": "投稿を作成または編集します",

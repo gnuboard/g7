@@ -17,7 +17,7 @@
           </on>
           $t:sirsoft-board.admin.dashboard.today_badges.new_comments|count={{board_overview?.data?.today_comments ?? 0}}
         </span>
-        <extension-badge data-ref="community_section_badge" class="ml-auto" type="module" identifier="sirsoft-board" installedModules="{{_global.installedModules}}"/>
+        <extension-badge data-type="composite" data-ref="community_section_badge" class="ml-auto" type="module" identifier="sirsoft-board" installedModules="{{_global.installedModules}}"/>
       </div>
       <div data-ref="post_graph_card" class="bg-slate-100 dark:bg-slate-800 p-4 md:p-6 rounded-xl md:rounded-2xl md:col-span-2 h-full flex flex-col">
         <blur-until-loaded>
@@ -53,7 +53,7 @@
             </div>
           </div>
         </div>
-        <bar-chart data-ref="post_graph_chart" labels="{{(board_post_graph?.data?.days ?? []).map(d => (d.date ?? '').slice(5).replace('-', '/'))}}" datasets="{{[{label: $t('sirsoft-board.admin.dashboard.community.posts'), data: (board_post_graph?.data?.days ?? []).map(d => d.post_count ?? 0), backgroundColor: '#7C3AED'}, {label: $t('sirsoft-board.admin.dashboard.community.comments'), data: (board_post_graph?.data?.days ?? []).map(d => d.comment_count ?? 0), backgroundColor: '#DDD6FE'}]}}" :height="180" :showYGrid="true" :showYAxis="true"/>
+        <bar-chart data-type="composite" data-ref="post_graph_chart" labels="{{(board_post_graph?.data?.days ?? []).map(d => (d.date ?? '').slice(5).replace('-', '/'))}}" datasets="{{[{label: $t('sirsoft-board.admin.dashboard.community.posts'), data: (board_post_graph?.data?.days ?? []).map(d => d.post_count ?? 0), backgroundColor: '#7C3AED'}, {label: $t('sirsoft-board.admin.dashboard.community.comments'), data: (board_post_graph?.data?.days ?? []).map(d => d.comment_count ?? 0), backgroundColor: '#DDD6FE'}]}}" :height="180" :showYGrid="true" :showYAxis="true"/>
         <p data-ref="post_graph_updated_at_caption" data-if="{{!!board_post_graph?.data?.updated_at_display}}" class="text-xs text-slate-400 dark:text-slate-500 mt-2 text-right">$t:sirsoft-board.admin.dashboard.community.updated_at|time={{board_post_graph?.data?.updated_at_display ?? ''}}</p>
       </div>
       <div data-ref="latest_posts_card" class="bg-slate-100 dark:bg-slate-800 p-4 md:p-6 rounded-xl md:rounded-2xl h-full flex flex-col">

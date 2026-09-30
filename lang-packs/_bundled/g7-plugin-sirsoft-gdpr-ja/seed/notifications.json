@@ -7,7 +7,7 @@
     "templates": {
       "mail": {
         "subject": "[{app_name}] 個人情報利用内訳のお知らせ",
-        "body": "<h1>{recipient_name}様、個人情報利用内訳をお知らせします。</h1><p>{introduction}</p><h2>収集項目</h2><p>{collection_summary}</p><h2>利用目的</h2><p>{purpose}</p><h2>保有期間</h2><p>{retention}</p>{notice_sections}<p><a href=\"{privacy_policy_url}\">プライバシーポリシー</a></p>"
+        "body": "<h1>{recipient_name}様、個人情報利用内訳をお知らせします。</h1><p>{introduction}</p><h2>収集項目</h2><p>{collection_summary}</p><h2>利用目的</h2><p>{purpose}</p><h2>保有期間</h2><p>{retention}</p>{notice_sections}{privacy_policy_link}"
       },
       "database": {
         "subject": "個人情報利用内訳のお知らせ",

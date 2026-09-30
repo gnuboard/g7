@@ -19,22 +19,35 @@ use App\Enums\LayoutMarkupLintCode;
  *     편집기 정책이라 Table→Thead 같은 오검출을 부른다는 계획서 경고를 반영).
  *  ④ **responsive breakpoint 혼용** — 한 문서에 portable 프리셋과 mobile/tablet 프리셋 병용.
  *  ⑤ **독립 레이아웃의 글로벌 호스트 누락** — extends 없는 레이아웃이 toast·openModal 을 발화하나
- *     Toast·Modal 호스트를 마운트하지 않음(AGENTS.md 의 silent-failure 회귀 규정).
+ *     그 전역 상태(`_global.toasts`·`modals`/`_global.modalStack`)를 받는 자리가 없음(AGENTS.md 의
+ *     silent-failure 회귀 규정). 컴포넌트 이름이 아니라 엔진 계약으로 판정한다.
  *  ⑥ **switch top-level `value`** — 엔진이 `params.value` 만 읽는다(D42 G8).
  *  ⑦ **액션 `params` 오배치 키** — `condition`·`trigger`·`id` 가 정본이 아닌 자리에 실림(S23 축 A).
- *  ⑧ **hoist 3종 템플릿 미지원** — 대상 템플릿 Modal 이 `footer`·`titlePrefix`·`titleSuffix` 를
- *     선언하지 않았는데 마크업이 그 자리를 씀(S23 축 B).
+ *  ⑧ **hoist 3종 템플릿 미지원** — 대상 템플릿의 그 컴포넌트가 `footer`·`titlePrefix`·`titleSuffix` 를
+ *     선언하지 않았는데 마크업이 그 자리를 씀(S23 축 B — 부모 이름 무관).
+ *  ⑨ **종류 불일치** — `data-type` 이 대상 템플릿 선언과 다름.
+ *  ⑩ **설치되지 않은 확장 컴포넌트** — `식별자.이름` 이 설치된 어느 확장에도 없음(막지 않는다).
  *
  * lint 은 산출 JSON 을 대상으로 하므로 소스 좌표를 특정하기 어렵다 — 경고는 문서 전체(라인 0)로
  * 낸다. 지어낸 좌표로 작성자를 엉뚱한 자리로 보내지 않는다.
  */
 final class LayoutLinter
 {
-    /** toast·모달을 화면에 띄우려면 마운트돼야 하는 호스트 컴포넌트 name */
-    private const GLOBAL_HOST_COMPONENTS = ['Toast', 'ModalRoot', 'Modal'];
-
-    /** 독립 레이아웃에서 호스트를 요구하는 글로벌 상태 기반 핸들러 */
-    private const GLOBAL_HOST_HANDLERS = ['toast', 'openModal', 'showAlert'];
+    /**
+     * 독립 레이아웃에서 호스트를 요구하는 핸들러 → 그 핸들러가 쓰는 `_global` 상태 키.
+     *
+     * 호스트를 **컴포넌트 이름**(`Toast`·`Modal`)으로 찾지 않는다 — 그 이름은 번들 템플릿의 것이라 다른
+     * 템플릿의 호스트를 놓치고, 이름만 같은 노드를 호스트로 오인한다(2026-09-28 결정: 템플릿 무관).
+     * 대신 엔진 계약을 본다: `toast` 는 `_global.toasts` 에 쌓고(ActionDispatcher::handleToast) 그 값을 받는
+     * 노드가 화면에 그린다. `openModal` 은 `_global.modalStack` 에 올리고, 엔진이 `modals` 섹션을 그 스택으로
+     * 연다(template-engine.ts). `showAlert` 는 브라우저 `alert()` 라 호스트가 필요 없어 대상이 아니다.
+     *
+     * @var array<string, array<int, string>>
+     */
+    private const GLOBAL_HOST_STATE = [
+        'toast' => ['toasts'],
+        'openModal' => ['modalStack', 'activeModal'],
+    ];
 
     /**
      * ⑦ 축 A — 액션 `params` 에 오면 안 되는 **닫힌 3키** → 그 키를 정당하게 소비하는 코어 핸들러.
@@ -62,9 +75,9 @@ final class LayoutLinter
      * 레지스트리는 **필수**다 — 기본값을 두면 그것을 안 넘긴 호출부에서 축 ⑧ 이 조용히 꺼지고,
      * 그 침묵은 "위반 0" 과 구분되지 않는다. 컴파일러가 이미 레지스트리를 들고 있으므로 넘기면 된다.
      *
-     * @param  ComponentRegistry  $registry  대상 템플릿(+활성 확장) 컴포넌트 레지스트리
+     * @param  ComponentRegistry|null  $registry  검사용 템플릿 컴포넌트 레지스트리 (없으면 템플릿 기준 lint 생략)
      */
-    public function __construct(private readonly ComponentRegistry $registry)
+    public function __construct(private readonly ?ComponentRegistry $registry = null)
     {
         $this->handlers = new ActionHandlerManifest;
     }
@@ -89,8 +102,53 @@ final class LayoutLinter
         $this->lintSwitchValuePlacement($json, $path, $warnings);
         $this->lintMisplacedActionParams($json, $path, $warnings);
         $this->lintUnsupportedHoistProps($json, $path, $warnings);
+        $this->lintComponentTypeMismatch($json, $path, $warnings);
+        $this->lintMissingExtensionComponents($json, $path, $warnings);
 
         return $warnings;
+    }
+
+    /**
+     * ⑨ 작성한 컴포넌트 종류가 검사 대상 템플릿의 선언과 다른 자리를 경고합니다.
+     *
+     * 검사용 레지스트리가 있을 때만 돈다 — 산출은 템플릿과 무관하므로 설치 경로에는 레지스트리가 없다.
+     * 같은 컴포넌트·같은 종류 조합은 한 번만 낸다(좌표 없는 경고라 반복해도 고칠 자리가 늘지 않는다).
+     *
+     * @param  array<string, mixed>  $json  산출 JSON
+     * @param  string|null  $path  소스 파일 경로
+     * @param  array<int, LintWarning>  $warnings  경고 목록 (참조)
+     * @return void
+     */
+    private function lintComponentTypeMismatch(array $json, ?string $path, array &$warnings): void
+    {
+        if ($this->registry === null) {
+            return;
+        }
+
+        $seen = [];
+
+        foreach ($this->collectNodes($json) as $node) {
+            $name = $node['name'] ?? null;
+            $type = $node['type'] ?? null;
+
+            if (! is_string($name) || ! in_array($type, NodeCompiler::COMPONENT_TYPES, true)) {
+                continue;
+            }
+
+            $definition = $this->registry->findByName($name);
+
+            if ($definition === null || $definition->type === $type || isset($seen[$name.'|'.$type])) {
+                continue;
+            }
+
+            $seen[$name.'|'.$type] = true;
+            $warnings[] = new LintWarning(LayoutMarkupLintCode::ComponentTypeMismatch, 0, 0, [
+                'component' => $name,
+                'written' => $type,
+                'declared' => $definition->type,
+                'template' => $this->registry->templateId,
+            ], $path);
+        }
     }
 
     /**
@@ -152,14 +210,15 @@ final class LayoutLinter
     }
 
     /**
-     * ⑧ 대상 템플릿 Modal 이 선언하지 않은 hoist prop 을 쓴 곳을 경고합니다 (S23 축 B).
+     * ⑧ 대상 템플릿의 컴포넌트가 선언하지 않은 hoist prop 을 쓴 곳을 경고합니다 (S23 축 B).
      *
-     * 판정 집합은 {@see EmbeddingCompiler::MODAL_TAGS} 에서 도출한다 — hoist 를 하나 더하는 날
-     * 이 검사가 자동으로 따라오게 하기 위해서다. 부모도 같은 곳의 {@see EmbeddingCompiler::MODAL_PARENT}
-     * 를 쓴다: 이 3키의 소스 경로는 Modal 자식뿐이므로 그 밖의 노드까지 넓히면 매니페스트 부분
-     * 선언(75~77%) 위에서 오탐이 나기 시작한다(D19).
+     * hoist 는 부모 이름과 무관하므로(2026-09-28 결정) 판정도 이름(`Modal`)이 아니라 **그 노드
+     * 컴포넌트의 선언**으로 한다 — 어느 컴포넌트든 `footer`·`titlePrefix`·`titleSuffix` 를 선언하지 않았는데
+     * 그 자리를 쓰면 작성한 내용이 렌더되지 않고 사라진다. 키 집합은
+     * {@see EmbeddingCompiler::DECLARATION_CHECKED_PROPS} 로 닫혀 있다: 나머지 hoist 키는 선언 없이 렌더하는
+     * 조합이 실측 수백 건이라(D19) 선언 대조가 오탐이다.
      *
-     * 레지스트리에 없는 이름은 건너뛴다 — 미등록 컴포넌트는 강검증(`LayoutValidator`)이 이미 세운다.
+     * 레지스트리에 없는 이름은 건너뛴다 — 미등록 컴포넌트는 강검증(`LayoutValidator`)·⑩ 이 맡는다.
      *
      * @param  array<string, mixed>  $json  산출 JSON
      * @param  string|null  $path  소스 파일 경로
@@ -168,38 +227,77 @@ final class LayoutLinter
      */
     private function lintUnsupportedHoistProps(array $json, ?string $path, array &$warnings): void
     {
-        $definition = $this->registry->findByName(EmbeddingCompiler::MODAL_PARENT);
-
-        if ($definition === null) {
+        if ($this->registry === null) {
             return;
         }
 
         $seen = [];
 
         foreach ($this->collectNodes($json) as $node) {
-            if (($node['name'] ?? null) !== EmbeddingCompiler::MODAL_PARENT) {
-                continue;
-            }
-
+            $name = $node['name'] ?? null;
             $props = $node['props'] ?? null;
 
-            if (! is_array($props)) {
+            if (! is_string($name) || ! is_array($props) || ! in_array($node['type'] ?? null, NodeCompiler::COMPONENT_TYPES, true)) {
                 continue;
             }
 
-            foreach (EmbeddingCompiler::MODAL_TAGS as $tag => $prop) {
-                if (! array_key_exists($prop, $props) || $definition->propType($prop) !== null || isset($seen[$prop])) {
+            // 대상 템플릿이 모르는 이름은 판정하지 않는다 — 그 자리는 존재 검사(강검증·⑩)가 맡는다.
+            $definition = $this->registry->findByName($name);
+
+            if ($definition === null) {
+                continue;
+            }
+
+            foreach (EmbeddingCompiler::DECLARATION_CHECKED_PROPS as $prop) {
+                if (! array_key_exists($prop, $props) || $definition->propType($prop) !== null || isset($seen[$name.'.'.$prop])) {
                     continue;
                 }
 
-                $seen[$prop] = true;
+                $seen[$name.'.'.$prop] = true;
                 $warnings[] = new LintWarning(LayoutMarkupLintCode::HoistPropNotSupportedByTemplate, 0, 0, [
-                    'tag' => $tag,
+                    'tag' => (string) EmbeddingCompiler::tagForProp($prop, $name),
                     'prop' => $prop,
-                    'component' => EmbeddingCompiler::MODAL_PARENT,
+                    'component' => $name,
                     'template' => $this->registry->templateId,
                 ], $path);
             }
+        }
+    }
+
+    /**
+     * ⑩ 설치된 어느 확장에도 없는 확장 컴포넌트(`식별자.이름`)를 경고합니다.
+     *
+     * 확장 컴포넌트는 확장이 지워지거나(편집 중 삭제·비활성화 포함) 이름을 잘못 적으면 목록에 없다. 템플릿
+     * 컴포넌트 오타와 달리 **막지 않는다** — 확장은 나중에 다시 설치될 수 있고, 편집 중인 레이아웃을 그
+     * 확장 하나 때문에 저장하지 못하게 하면 안 된다(2026-09-28 결정). 렌더러는 없는 컴포넌트를 그리지
+     * 않으므로 작성자에게 그 사실만 알린다. 검사용 레지스트리가 있을 때만 돈다.
+     *
+     * @param  array<string, mixed>  $json  산출 JSON
+     * @param  string|null  $path  소스 파일 경로
+     * @param  array<int, LintWarning>  $warnings  경고 목록 (참조)
+     * @return void
+     */
+    private function lintMissingExtensionComponents(array $json, ?string $path, array &$warnings): void
+    {
+        if ($this->registry === null) {
+            return;
+        }
+
+        $seen = [];
+
+        foreach ($this->collectNodes($json) as $node) {
+            $name = $node['name'];
+
+            if (! str_contains($name, '.') || ! in_array($node['type'], NodeCompiler::COMPONENT_TYPES, true)
+                || isset($seen[$name]) || $this->registry->findByName($name) !== null) {
+                continue;
+            }
+
+            $seen[$name] = true;
+            $warnings[] = new LintWarning(LayoutMarkupLintCode::ExtensionComponentNotInstalled, 0, 0, [
+                'name' => $name,
+                'extension' => strstr($name, '.', true),
+            ], $path);
         }
     }
 
@@ -345,6 +443,13 @@ final class LayoutLinter
                     continue;
                 }
 
+                // 확장 컴포넌트(`식별자.이름`)도 같은 이유로 거른다 — 템플릿 nesting.json 은 어떤 확장이 설치될지
+                // 모르므로 그 이름을 accepts 에 적을 수 없다. 거르지 않으면 편집기에서 확장 컴포넌트를 쓸 때마다
+                // `Div 는 자식으로 gnuboard7-hello_module.MemoCard 를 …` 같은 거짓 경고가 붙는다.
+                if (is_string($childName) && str_contains($childName, '.')) {
+                    continue;
+                }
+
                 if (is_string($childName) && ! in_array($childName, $accepts, true)) {
                     $key = $parentName.'>'.$childName;
 
@@ -399,30 +504,50 @@ final class LayoutLinter
             return;
         }
 
-        $firesGlobal = false;
-        foreach ($this->collectHandlers($json) as $handler) {
-            if (in_array($handler, self::GLOBAL_HOST_HANDLERS, true)) {
-                $firesGlobal = true;
-                break;
+        $fired = array_values(array_intersect(array_keys(self::GLOBAL_HOST_STATE), $this->collectHandlers($json)));
+
+        foreach ($fired as $handler) {
+            // 모달은 `modals` 섹션이 있으면 엔진이 스택으로 연다.
+            if ($handler === 'openModal' && isset($json['modals']) && $json['modals'] !== []) {
+                continue;
             }
-        }
 
-        if (! $firesGlobal) {
-            return;
-        }
+            if ($this->bindsGlobalState($json, self::GLOBAL_HOST_STATE[$handler])) {
+                continue;
+            }
 
-        // 호스트 컴포넌트가 트리에 있거나 modals 섹션이 있으면 화면에 뜬다.
-        if (isset($json['modals']) && $json['modals'] !== []) {
-            return;
+            $warnings[] = new LintWarning(LayoutMarkupLintCode::StandaloneMissingGlobalHost, 0, 0, [
+                'handler' => $handler,
+                'state' => '_global.'.self::GLOBAL_HOST_STATE[$handler][0],
+            ], $path);
         }
+    }
 
+    /**
+     * 어떤 노드가 props·조건에서 주어진 `_global` 상태 키를 읽는지 판정합니다 (호스트 마운트 여부).
+     *
+     * 액션은 보지 않는다 — 상태를 **쓰는** 자리(토스트 비우기 등)는 화면에 그리는 호스트가 아니다.
+     *
+     * @param  array<string, mixed>  $json  산출 JSON
+     * @param  array<int, string>  $keys  `_global` 아래 상태 키
+     * @return bool 읽는 노드가 있으면 true
+     */
+    private function bindsGlobalState(array $json, array $keys): bool
+    {
         foreach ($this->collectNodes($json) as $node) {
-            if (in_array($node['name'] ?? null, self::GLOBAL_HOST_COMPONENTS, true)) {
-                return;
+            $bound = (string) json_encode(
+                [$node['props'] ?? null, $node['if'] ?? null],
+                JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES,
+            );
+
+            foreach ($keys as $key) {
+                if (str_contains($bound, '_global.'.$key)) {
+                    return true;
+                }
             }
         }
 
-        $warnings[] = new LintWarning(LayoutMarkupLintCode::StandaloneMissingGlobalHost, 0, 0, [], $path);
+        return false;
     }
 
     // ---------------------------------------------------------------------

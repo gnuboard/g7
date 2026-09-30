@@ -4,7 +4,7 @@
   그래서 어느 한쪽이 비어 보이는 것은 그 종류가 없다는 뜻이지 못 받아 온 것이 아니다.
   변경 이력만 다른 값에서 온다 — 목록이 미리 받아 전역에 담아 둔 것을 읽는다. -->
 <partial description="플러그인 상세 정보 모달" editor_label="$t:admin.modal_label.admin_plugin_list.plugin_detail_modal">
-  <modal data-ref="plugin_detail_modal" title="$t:admin.plugins.modals.detail_title" size="medium">
+  <modal data-type="composite" data-ref="plugin_detail_modal" title="$t:admin.plugins.modals.detail_title" size="medium">
     <!-- 목록 응답에는 의존·권한·훅 같은 속살이 실리지 않아 창을 열 때 그 하나만 따로 받는다. 받은 값은 목록이 골라 둔 자리에 덮어써서, 아래 화면 전체가 같은 값을 읽게 한다. -->
     <data-source id="pluginDetail" label_key="$t:editor.data_source.pluginDetail" type="api" endpoint="/api/admin/plugins/{{_global.selectedPlugin.identifier}}" :auth_required="true" initGlobal="selectedPlugin"/>
     <div class="flex flex-col max-h-[70vh]">

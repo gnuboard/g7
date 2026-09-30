@@ -998,7 +998,7 @@
                                 },
                                 "children": [
                                     {
-                                        "id": "gdpr_status_row",
+                                        "id": "consent_source_row",
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
@@ -1018,7 +1018,7 @@
                                                 "name": "Badge",
                                                 "props": {
                                                     "color": "{{!_computed.canReadAnalytics ? 'gray' : (analytics_status?.data?.collection?.consent_source && analytics_status?.data?.collection?.consent_source !== 'none' ? 'green' : 'gray')}}",
-                                                    "text": "{{!_computed.canReadAnalytics ? $t('admin.analytics.settings.privacy.consent_source_unknown') : (analytics_status?.data?.collection?.consent_source && analytics_status?.data?.collection?.consent_source !== 'none' ? (['gdpr', 'filter'].includes(analytics_status.data.collection.consent_source) ? $t('admin.analytics.settings.privacy.consent_sources.' + analytics_status.data.collection.consent_source) : analytics_status.data.collection.consent_source) : $t('admin.analytics.settings.privacy.consent_source_none'))}}",
+                                                    "text": "{{!_computed.canReadAnalytics ? $t('admin.analytics.settings.privacy.consent_source_unknown') : (analytics_status?.data?.collection?.consent_source && analytics_status?.data?.collection?.consent_source !== 'none' ? (['provider', 'filter'].includes(analytics_status.data.collection.consent_source) ? $t('admin.analytics.settings.privacy.consent_sources.' + analytics_status.data.collection.consent_source) : analytics_status.data.collection.consent_source) : $t('admin.analytics.settings.privacy.consent_source_none'))}}",
                                                     "size": "sm"
                                                 }
                                             }
@@ -1242,7 +1242,7 @@
                                         ]
                                     },
                                     {
-                                        "comment": "이 화면의 권한은 update 다. 조회 권한이 없으면 analytics_status 가 403 이고 fallback 의\n            consent_source 가 \"none\" 으로 남는다 — 그 값으로 이 경고를 띄우면 GDPR 연동이 멀쩡한\n            사이트에도 「익명 모드로 동작 중」이 거짓으로 뜬다(#682 S3 라운드 5). 그래서\n            consentFallback 은 조회 권한이 있을 때만 판정한다 — 모르는 것을 고장으로 말하지 않는다.\n\n            그 위에서 두 조건을 OR 로 본다(§4.10). ① 서버가 폴백 사유를 실었으면 — 저장된 모드가\n            무엇이든 지금 익명으로 모이는 중이다. 「전체 수집」으로 저장한 사이트에 동의 플러그인이\n            켜져 있으면 서버는 `consent_plugin_blocks_cookies` 를 **full 모드에서만** 만들므로, 라디오\n            선택을 AND 로 함께 요구하던 종전 식은 이 화면에서만 도달 불가였다 — 다른 12면과 진단은\n            사유 한 필드만 보고 안내하는데 정작 그 설정을 고치는 화면이 침묵했다(#682 S3 라운드 12).\n            ② 아직 저장하지 않은 라디오가 `consent` 인데 동의 출처가 없으면 — 저장하면 익명으로\n            떨어질 것을 미리 알린다.",
+                                        "comment": "이 화면의 권한은 update 다. 조회 권한이 없으면 analytics_status 가 403 이고 fallback 의\n            consent_source 가 \"none\" 으로 남는다 — 그 값으로 이 경고를 띄우면 동의 연동이 멀쩡한\n            사이트에도 「익명 모드로 동작 중」이 거짓으로 뜬다(#682 S3 라운드 5). 그래서\n            consentFallback 은 조회 권한이 있을 때만 판정한다 — 모르는 것을 고장으로 말하지 않는다.\n\n            그 위에서 두 조건을 OR 로 본다(§4.10). ① 서버가 폴백 사유를 실었으면 — 저장된 모드가\n            무엇이든 지금 익명으로 모이는 중이다. 「전체 수집」으로 저장한 사이트에 동의 플러그인이\n            켜져 있으면 서버는 `consent_plugin_blocks_cookies` 를 **full 모드에서만** 만들므로, 라디오\n            선택을 AND 로 함께 요구하던 종전 식은 이 화면에서만 도달 불가였다 — 다른 12면과 진단은\n            사유 한 필드만 보고 안내하는데 정작 그 설정을 고치는 화면이 침묵했다(#682 S3 라운드 12).\n            ② 아직 저장하지 않은 라디오가 `consent` 인데 동의 출처가 없으면 — 저장하면 익명으로\n            떨어질 것을 미리 알린다.",
                                         "id": "consent_warning",
                                         "type": "basic",
                                         "name": "Div",

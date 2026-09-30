@@ -2,7 +2,7 @@
 <extension target-layout="shop/checkout">
   <modal>
     <!-- 결제 실패 안내 창 — PG 가 준 사유가 있으면 함께 보여 준다 -->
-    <modal data-ref="kginicis_payment_error_modal" title="$t:sirsoft-pay_kginicis.payment_error.title" size="sm" :showCloseButton="true">
+    <modal data-type="composite" data-ref="kginicis_payment_error_modal" title="$t:sirsoft-pay_kginicis.payment_error.title" size="sm" :showCloseButton="true">
       <div class="text-center py-4">
         <icon name="exclamation-circle" class="text-red-500 text-4xl mb-4"/>
         <p class="text-gray-700 dark:text-gray-300">$t:sirsoft-pay_kginicis.payment_error.message</p>

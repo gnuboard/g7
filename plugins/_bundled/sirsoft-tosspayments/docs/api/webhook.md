@@ -94,7 +94,7 @@ OK
 
 주의사항:
 
-- 토스는 notify IP 목록·요청 서명을 제공하지 않는다. 공식 위조 방지 수단은 **secret 대조뿐**이므로 `webhook_secret_verify` 를 끄지 않는 것을 권장한다.
+- 토스는 notify IP 목록·요청 서명을 제공하지 않는다. 공식 위조 방지 수단은 **secret 대조뿐**이므로 `webhook_secret_verify` 를 끄지 않는 것을 권장한다. 끄면 주문번호만 아는 사람도 입금 없이 주문을 결제완료로 만들 수 있고, 끈 상태에서 생긴 보안 사고는 운영자 책임이다(스위치는 운영자 선택으로 남겨 둔다 — 2026-09-29 결정).
 - 토스는 CSRF 토큰을 보내지 않으므로 이 라우트는 `ValidateCsrfToken` 이 면제되어 있다.
 - 미응답 시 토스가 최대 7회 재전송한다. 부수 작업(알림·재고·적립금 등)은 `completePayment` 내부 훅 리스너에 위임하고 컨트롤러는 빠르게 응답한다.
 
@@ -177,3 +177,55 @@ OK
 - 토스는 CSRF 토큰을 보내지 않으므로 이 라우트는 `ValidateCsrfToken` 이 면제되어 있다.
 
 
+### GET /api/plugins/sirsoft-tosspayments/admin/webhook-url
+<!-- @generated:start:api.plugins.sirsoft-tosspayments.admin.webhook.url -->
+- **라우트명**: `api.plugins.sirsoft-tosspayments.admin.webhook.url`
+- **컨트롤러**: 라우트 클로저 (`src/routes/api.php`)
+- **인증/권한**: `auth:sanctum`, `permission:admin,sirsoft-ecommerce.settings.read`
+
+**요청 파라미터**
+
+없음
+
+**요청 예시**
+
+```http
+GET /api/plugins/sirsoft-tosspayments/admin/webhook-url HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+```
+
+**응답 필드** (`data` 내부)
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| url | string | `https://example.com/plugins/sirsoft-tosspayments/webhook/deposit` | 가상계좌 입금통보 웹훅 수신 전체 URL (사이트 주소 포함) |
+
+**응답 예시**
+
+```json
+{
+    "success": true,
+    "data": {
+        "url": "https://example.com/plugins/sirsoft-tosspayments/webhook/deposit"
+    }
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 관리자가 아니거나 `sirsoft-ecommerce.settings.read` 권한이 없는 경우 |
+
+<!-- @generated:end -->
+
+**설명**
+
+관리자 설정 화면이 가상계좌 입금통보 웹훅 주소를 보여 주고 「복사」하는 데 쓰는 조회다. 운영자는 이 값을 토스 개발자센터 > 웹훅 메뉴에 DEPOSIT_CALLBACK 이벤트로 그대로 붙여 넣는다.
+
+- 주소는 서버가 `url()` 로 만든다 — 요청을 받은 사이트 주소(scheme·host)가 붙은 전체 URL 이라 운영자가 도메인을 손으로 덧붙일 필요가 없다. 다른 결제사 플러그인(KG이니시스·나이스페이먼츠)의 입금통보 URL 조회와 같은 방식이다.
+- 설정 화면은 응답이 오기 전·권한 부족으로 조회가 실패한 경우 경로(`/plugins/sirsoft-tosspayments/webhook/deposit`)로 폴백해 표시한다.
+- 관리자 화면을 사내 주소·프록시 뒤 주소로 열면 그 주소가 붙는다. 토스 서버가 도달할 수 있는 공개 도메인으로 접속해 복사한다.

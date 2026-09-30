@@ -531,8 +531,7 @@
                                                                                 ],
                                                                                 "props": {
                                                                                     "checked": "{{channel.enabled}}",
-                                                                                    "size": "sm",
-                                                                                    "autoBinding": false
+                                                                                    "size": "sm"
                                                                                 }
                                                                             }
                                                                         ]
@@ -996,22 +995,43 @@
                                                 },
                                                 "onError": [
                                                     {
+                                                        "comment": "채널 저장 실패 — 검증 오류는 위 오류 목록에 그대로 보인다. 동의가 쌓인 채널을 지우려 한 경우에만(서버가 그 키를 blocked_channel_keys 로 돌려준다) 비활성 전환 창을 연다. 되살릴 원본은 이 화면의 저장본에서 골라 전역에 실어 둔다(창은 별도 컨텍스트라 이 화면의 _local 을 읽지 못한다)",
                                                         "handler": "setState",
                                                         "params": {
                                                             "target": "local",
-                                                            "isSaving": false
+                                                            "isSaving": false,
+                                                            "errors": "{{Object.fromEntries(Object.entries(error.errors ?? {}).filter(([field]) => field !== 'blocked_channel_keys'))}}"
                                                         }
                                                     },
                                                     {
-                                                        "handler": "setState",
-                                                        "params": {
-                                                            "target": "global",
-                                                            "deletingChannelKey": "{{error.errors?.channels?.[0] ?? ''}}"
-                                                        }
-                                                    },
-                                                    {
-                                                        "handler": "openModal",
-                                                        "target": "channel_deactivate_modal"
+                                                        "handler": "conditions",
+                                                        "conditions": [
+                                                            {
+                                                                "if": "{{(error.errors?.blocked_channel_keys ?? []).length > 0}}",
+                                                                "then": [
+                                                                    {
+                                                                        "handler": "setState",
+                                                                        "params": {
+                                                                            "target": "global",
+                                                                            "channelDeactivation": "{{{ keys: error.errors.blocked_channel_keys, saved: typeof _local.form?.channels === 'string' ? JSON.parse(_local.form.channels) : (_local.form?.channels ?? []) }}}"
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "handler": "openModal",
+                                                                        "target": "channel_deactivate_modal"
+                                                                    }
+                                                                ]
+                                                            },
+                                                            {
+                                                                "then": {
+                                                                    "handler": "toast",
+                                                                    "params": {
+                                                                        "type": "error",
+                                                                        "message": "{{error.message ?? '$t:admin.plugins.settings.save_error'}}"
+                                                                    }
+                                                                }
+                                                            }
+                                                        ]
                                                     }
                                                 ]
                                             }
@@ -1149,6 +1169,25 @@
                                         "className": "form-hint"
                                     },
                                     "text": "$t:sirsoft-marketing.settings.channel_modal.key_hint"
+                                },
+                                {
+                                    "comment": "키 형식·중복 안내 — 서버 규칙(영문 소문자·숫자·밑줄, 목록 안에서 유일)과 같다. 확정 버튼도 같은 조건으로 잠긴다",
+                                    "type": "basic",
+                                    "name": "P",
+                                    "if": "{{!_global.editingChannel?._editing && (_global.editingChannel?.key ?? '') !== '' && !(_global.editingChannel?.key ?? '').split('').every((c) => 'abcdefghijklmnopqrstuvwxyz0123456789_'.includes(c))}}",
+                                    "props": {
+                                        "className": "text-error-soft mt-1"
+                                    },
+                                    "text": "$t:sirsoft-marketing.settings.channel_modal.key_invalid"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "if": "{{!_global.editingChannel?._editing && (_global.editingChannel?.key ?? '') !== '' && (_global.channels ?? []).some((ch) => ch.key === _global.editingChannel?.key)}}",
+                                    "props": {
+                                        "className": "text-error-soft mt-1"
+                                    },
+                                    "text": "$t:sirsoft-marketing.settings.channel_modal.key_duplicate"
                                 }
                             ]
                         },
@@ -1184,6 +1223,16 @@
                                         "name": "channel_label",
                                         "placeholder": "$t:sirsoft-marketing.settings.channel_modal.label_placeholder"
                                     }
+                                },
+                                {
+                                    "comment": "이름 필수 안내 — 서버는 요청 언어(지금 화면 언어)의 이름을 필수로 본다",
+                                    "type": "basic",
+                                    "name": "P",
+                                    "if": "{{String(_global.editingChannel?.label?.[$locale] ?? '').trim() === ''}}",
+                                    "props": {
+                                        "className": "text-error-soft mt-1"
+                                    },
+                                    "text": "$t:sirsoft-marketing.settings.channel_modal.label_required"
                                 }
                             ]
                         },
@@ -1261,11 +1310,12 @@
                             ]
                         },
                         {
+                            "id": "channel_edit_confirm",
                             "type": "basic",
                             "name": "Button",
                             "actions": [
                                 {
-                                    "comment": "편집 확정 — 새 채널이면 목록에 붙이고 수정이면 그 자리를 바꾼 뒤, 부모 화면의 변경 표시를 세우고 창을 닫는다",
+                                    "comment": "편집 확정 —새 채널이면 목록에 붙이고 수정이면 그 자리를 바꾼 뒤, 부모 화면의 변경 표시를 세우고 창을 닫는다",
                                     "type": "click",
                                     "handler": "sequence",
                                     "actions": [
@@ -1291,6 +1341,7 @@
                             ],
                             "props": {
                                 "type": "button",
+                                "disabled": "{{!(_global.editingChannel?.key ?? '').split('').every((c) => 'abcdefghijklmnopqrstuvwxyz0123456789_'.includes(c)) || (_global.editingChannel?.key ?? '') === '' || String(_global.editingChannel?.label?.[$locale] ?? '').trim() === '' || (!_global.editingChannel?._editing && (_global.channels ?? []).some((ch) => ch.key === _global.editingChannel?.key))}}",
                                 "className": "btn btn-primary"
                             },
                             "children": [
@@ -1336,6 +1387,27 @@
                         },
                         {
                             "type": "basic",
+                            "name": "Ul",
+                            "props": {
+                                "className": "list-disc list-inside space-y-1"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Li",
+                                    "iteration": {
+                                        "source": "(_global.channelDeactivation?.saved ?? []).filter((ch) => (_global.channelDeactivation?.keys ?? []).includes(ch.key))",
+                                        "item_var": "blockedChannel"
+                                    },
+                                    "props": {
+                                        "className": "text-heading"
+                                    },
+                                    "text": "{{blockedChannel.label?.[$locale] ?? blockedChannel.label?.ko ?? blockedChannel.label?.en ?? blockedChannel.key}} ({{blockedChannel.key}})"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
                             "name": "Div",
                             "props": {
                                 "className": "flex justify-end gap-2 mt-4"
@@ -1367,7 +1439,7 @@
                                     "name": "Button",
                                     "actions": [
                                         {
-                                            "comment": "비활성 채널 되살리기 — 저장된 채널 목록에서 빠진 것을 다시 붙인다",
+                                            "comment": "비활성 채널 되살리기 — 서버가 막은 키의 채널을 저장본에서 꺼내 꺼진 채로 원래 자리에 되돌린다(저장본 순서를 따르고, 새로 더한 채널은 뒤에 둔다). 반영은 저장을 다시 눌러야 한다",
                                             "type": "click",
                                             "handler": "sequence",
                                             "actions": [
@@ -1375,11 +1447,27 @@
                                                     "handler": "setState",
                                                     "params": {
                                                         "target": "global",
-                                                        "channels": "{{[...(_global.channels ?? []), ...((typeof _local.form?.channels === 'string' ? JSON.parse(_local.form.channels) : (_local.form?.channels ?? [])).filter((ch) => ch.key === _global.deletingChannelKey).map((ch) => ({ ...ch, enabled: false })))]}}"
+                                                        "channels": "{{[...(_global.channelDeactivation?.saved ?? []).filter((ch) => (_global.channels ?? []).some((c) => c.key === ch.key) || (_global.channelDeactivation?.keys ?? []).includes(ch.key)).map((ch) => (_global.channels ?? []).find((c) => c.key === ch.key) ?? { ...ch, enabled: false }), ...(_global.channels ?? []).filter((c) => !(_global.channelDeactivation?.saved ?? []).some((ch) => ch.key === c.key))]}}",
+                                                        "channelDeactivation": null
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "$parent._local",
+                                                        "hasChanges": true,
+                                                        "errors": null
                                                     }
                                                 },
                                                 {
                                                     "handler": "closeModal"
+                                                },
+                                                {
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "type": "info",
+                                                        "message": "$t:sirsoft-marketing.settings.channel_deactivate_modal.restored"
+                                                    }
                                                 }
                                             ]
                                         }

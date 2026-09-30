@@ -49,7 +49,7 @@
             <set-state target="local" boardSearchField="{{$event.target.value}}"/>
           </on>
         </select>
-        <search-bar name="search" placeholder="$t:board.search_placeholder" value="{{query.search || ''}}" :showButton="false" class="w-full sm:w-64">
+        <search-bar data-type="composite" name="search" placeholder="$t:board.search_placeholder" value="{{query.search || ''}}" :showButton="false" class="w-full sm:w-64">
           <on type="submit">
             <!-- 글 검색 — 다른 조건(분류·삭제글 보기)은 그대로 두고 검색어와 검색 대상만 갈아 끼운다. 결과가 줄어들면 보던 페이지 번호가 뜻을 잃으므로 반드시 1페이지로 되돌린다. -->
             <navigate path="/board/{{route.slug}}" :mergeQuery="true">
@@ -60,7 +60,7 @@
       </div>
     </div>
     <!-- 카드형 게시글 목록 -->
-    <grid :cols="1" :gap="4" class="grid-cols-1">
+    <grid data-type="layout" :cols="1" :gap="4" class="grid-cols-1">
       <responsive on="tablet" :cols="2" :gap="4" class="grid-cols-2"/>
       <responsive on="desktop" :cols="3" :gap="4" class="grid-cols-3"/>
       <!-- 카드 클릭 시 현재 목록 상태(category/search/page/del/filters)를 상세 URL 에 부착 (45-1 목록 복귀) -->
@@ -117,7 +117,7 @@
             <span data-if="{{post?.deleted_at}}" class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300 flex-shrink-0">$t:board.post.deleted_badge</span>
           </div>
           <!-- 본문 요약 (비밀글 미열람/블라인드/삭제됨 제외) -->
-          <html-content data-if="{{post?.content_preview &amp;&amp; !(post?.is_secret &amp;&amp; !post?.abilities?.can_view)}}" content="{{post?.content_preview ?? ''}}" :isHtml="false" class="text-sm mt-1.5 line-clamp-2 overflow-hidden !whitespace-normal {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-400 dark:text-gray-600' : 'text-gray-500 dark:text-gray-400'}}"/>
+          <html-content data-type="composite" data-if="{{post?.content_preview &amp;&amp; !(post?.is_secret &amp;&amp; !post?.abilities?.can_view)}}" content="{{post?.content_preview ?? ''}}" :isHtml="false" class="text-sm mt-1.5 line-clamp-2 overflow-hidden !whitespace-normal {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-400 dark:text-gray-600' : 'text-gray-500 dark:text-gray-400'}}"/>
         </div>
         <!-- 구분선 -->
         <div class="border-t border-gray-200 dark:border-gray-700"/>
@@ -125,8 +125,8 @@
         <div class="px-5 py-3 bg-gray-50 dark:bg-gray-900/30">
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-2 min-w-0">
-              <avatar author="{{post?.author}}" size="xs" class="{{(post?.status === 'blinded' || post?.deleted_at) ? 'opacity-40' : ''}}"/>
-              <user-info author="{{post?.author}}" :showDropdown="true" :stopPropagation="true" class="text-xs font-medium {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-400 dark:text-gray-500' : 'text-gray-700 dark:text-gray-300'}}"/>
+              <avatar data-type="composite" author="{{post?.author}}" size="xs" class="{{(post?.status === 'blinded' || post?.deleted_at) ? 'opacity-40' : ''}}"/>
+              <user-info data-type="composite" author="{{post?.author}}" :showDropdown="true" :stopPropagation="true" class="text-xs font-medium {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-400 dark:text-gray-500' : 'text-gray-700 dark:text-gray-300'}}"/>
               <span class="text-xs text-gray-300 dark:text-gray-600">·</span>
               <span class="text-xs {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-400 dark:text-gray-500' : 'text-gray-500 dark:text-gray-400'}}" title="{{post?.created_at ?? ''}}">{{post?.created_at_formatted ?? ''}}</span>
             </div>
@@ -149,7 +149,7 @@
     <!-- 빈 상태 안내 (빈 페이지 / 게시글 없음 / 검색 결과 없음) -->
     <include src="../../index/_empty_states.g7.html"/>
     <!-- 페이지네이션 -->
-    <pagination currentPage="{{posts?.data?.pagination?.current_page ?? 1}}" totalPages="{{posts?.data?.pagination?.last_page ?? null}}" hasMorePages="{{posts?.data?.pagination?.has_more_pages ?? false}}" class="mt-6 justify-center">
+    <pagination data-type="composite" currentPage="{{posts?.data?.pagination?.current_page ?? 1}}" totalPages="{{posts?.data?.pagination?.last_page ?? null}}" hasMorePages="{{posts?.data?.pagination?.has_more_pages ?? false}}" class="mt-6 justify-center">
       <on event="onPageChange">
         <navigate path="/board/{{route?.slug}}" :mergeQuery="true">
           <query page="{{$args[0]}}" category="{{query.category}}" filters[0][field]="{{query['filters[0][field]']}}" filters[0][value]="{{query['filters[0][value]']}}" filters[0][operator]="{{query['filters[0][operator]']}}"/>

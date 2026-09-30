@@ -375,6 +375,12 @@ class TemplateServiceActivationTest extends TestCase
             'type' => 'admin',
             'status' => 'active',
         ]);
+        // 유형의 마지막 활성 템플릿은 끌 수 없다(#703) — 같은 유형의 다른 활성 템플릿을 남긴다
+        Template::factory()->create([
+            'identifier' => 'test-deactivateidentifier-peer',
+            'type' => 'admin',
+            'status' => 'active',
+        ]);
 
         $this->createTemplateDistDirectory($template->identifier);
 
@@ -405,6 +411,12 @@ class TemplateServiceActivationTest extends TestCase
         // Arrange
         $template = Template::factory()->create([
             'identifier' => 'test-deactivateid',
+            'type' => 'admin',
+            'status' => 'active',
+        ]);
+        // 유형의 마지막 활성 템플릿은 끌 수 없다(#703) — 같은 유형의 다른 활성 템플릿을 남긴다
+        Template::factory()->create([
+            'identifier' => 'test-deactivateid-peer',
             'type' => 'admin',
             'status' => 'active',
         ]);

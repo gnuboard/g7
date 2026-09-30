@@ -1200,6 +1200,15 @@ class SettingsService
             $savedSettings = $this->configRepository->getCategory('mail');
             $mailSettings = array_merge($savedSettings, $overrideSettings);
 
+            // `.env` 로 잠긴 키는 저장값·요청값이 아니라 `.env` 유효값으로 보낸다 — 잠긴 민감 키는
+            // 화면에 값이 실리지 않아 요청이 빈 칸으로 오고, 저장값은 적용되지 않는 옛 값이다.
+            // 아래에서 config 를 덮기 **전에** 읽어야 런타임 유효값(=`.env`)을 얻는다.
+            foreach (array_keys(EnvPriority::lockedKeys()) as $storageKey) {
+                if (str_starts_with($storageKey, 'mail.')) {
+                    $mailSettings[substr($storageKey, 5)] = EnvPriority::effectiveValue($storageKey);
+                }
+            }
+
             // 메일 설정 임시 적용 (드라이버별)
             $mailer = $mailSettings['mailer'] ?? 'smtp';
             config(['mail.default' => $mailer]);

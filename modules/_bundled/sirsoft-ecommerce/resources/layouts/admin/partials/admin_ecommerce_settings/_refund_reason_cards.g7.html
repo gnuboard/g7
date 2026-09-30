@@ -15,7 +15,7 @@
           </div>
         </div>
         <div class="flex-center gap-2 shrink-0">
-          <toggle checked="{{reason.is_active ?? false}}" size="sm" disabled="{{_computed.isReadOnly}}">
+          <toggle data-type="composite" checked="{{reason.is_active ?? false}}" size="sm" disabled="{{_computed.isReadOnly}}">
             <on type="change">
               <!-- 사용 여부. 끄면 고객 화면의 선택지에서 빠지고, 이미 그 사유로 접수된 건에는 영향이 없다. -->
               <set-state target="local" form.claim.refund_reasons="{{(_local.form?.claim?.refund_reasons ?? []).map((r, i) => i === reason._idx ? {...r, is_active: !(r.is_active)} : r)}}" :hasChanges="true"/>
@@ -27,7 +27,7 @@
         <div class="excel-card-row">
           <span class="excel-card-label">$t:sirsoft-ecommerce.admin.settings.claim.refund_reasons.columns.name</span>
           <div class="excel-card-value flex-1">
-            <multilingual-input value="{{reason.name ?? {}}}" layout="compact" placeholder="$t:sirsoft-ecommerce.admin.settings.claim.refund_reasons.form.name_ko_placeholder" error="{{_local.errors?.['claim.refund_reasons.' + reason._idx + '.name.' + ($locale ?? 'ko')]?.[0] ?? _local.errors?.['claim.refund_reasons.' + reason._idx + '.name']?.[0] ?? ''}}" disabled="{{_computed.isReadOnly}}">
+            <multilingual-input data-type="composite" value="{{reason.name ?? {}}}" layout="compact" placeholder="$t:sirsoft-ecommerce.admin.settings.claim.refund_reasons.form.name_ko_placeholder" error="{{_local.errors?.['claim.refund_reasons.' + reason._idx + '.name.' + ($locale ?? 'ko')]?.[0] ?? _local.errors?.['claim.refund_reasons.' + reason._idx + '.name']?.[0] ?? ''}}" disabled="{{_computed.isReadOnly}}">
               <on type="change">
                 <!-- 사유 문구. 고객에게 그대로 보이므로 언어별로 넣는다. -->
                 <set-state target="local" form.claim.refund_reasons="{{(_local.form?.claim?.refund_reasons ?? []).map((r, i) => i === reason._idx ? {...r, name: $event.target.value} : r)}}" :hasChanges="true"/>

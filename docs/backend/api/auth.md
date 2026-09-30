@@ -218,6 +218,7 @@ _단건 응답: `data` 객체의 필드._
 | updated_at | string | `2026-08-04 19:00:10` | 최종 수정 일시 |
 | is_owner | boolean | `true` | 현재 인증 사용자가 이 리소스의 소유자인지 여부 (BaseApiResource 표준 메타) |
 | abilities | object | `{"can_read":true,"can_create":true,"can_update":true,"can…` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 (can_update, can_delete 등 — 권한 맵 기반) |
+| is_super | boolean | `true` | 본인의 최고관리자 여부 (User::isSuperAdmin() — 로그인 사용자 본인 응답에만 싣고 회원 목록 응답에는 없음) |
 
 **응답 예시**
 
@@ -235,7 +236,7 @@ HTTP/1.1 200
         "nickname": "최고관리자",
         "email": "heuristing@gmail.com",
         "avatar": null,
-        "...": "(24개 키 생략, 총 29개)"
+        "...": "(25개 키 생략, 총 30개)"
     }
 }
 ```
@@ -251,6 +252,8 @@ HTTP/1.1 200
 **설명**
 
 관리자 레이아웃 전역 부트스트랩 엔드포인트. `_admin_base.g7.html` 의 `data_source`(`current_user`)가 모든 관리자 페이지 진입 시 자동 호출해, 헤더/권한 게이트/is_admin 분기의 기준 사용자 정보를 채운다. 응답에는 `roles.permissions` 가 eager load 되어 `permissions` 배열이 함께 내려온다.
+
+**본인 최고관리자 여부**: 회원 목록 등 다른 `UserResource` 응답과 달리 이 응답만 `is_super` 를 싣는다(`UserResource::toAdminAuthArray`). 관리자 목록 화면의 최고관리자 전용 제어(모듈·플러그인·템플릿 「숨김 항목 포함」)가 `current_user.data.is_super` 로 읽는다 — 이 값이 없으면 제어가 누구에게도 나타나지 않는다(#703).
 
 **인증 계약**: `auth:sanctum` 필요 — Bearer 토큰이 없거나 만료되면 `401` 을 반환한다(프론트 `data_source` 의 `auth_required: true` 에 대응). 이 계약이 프론트 소비의 SSoT 이므로 미들웨어 체인 변경 시 반드시 프론트 `auth_required`/`auth_mode` 와 함께 검토한다(이슈 #64).
 

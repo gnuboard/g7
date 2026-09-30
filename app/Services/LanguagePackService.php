@@ -10,6 +10,7 @@ use App\Exceptions\LanguagePackOperationException;
 use App\Exceptions\LanguagePackSlotConflictException;
 use App\Extension\Helpers\ExtensionBackupHelper;
 use App\Extension\Helpers\GithubHelper;
+use App\Extension\Helpers\InstalledExtensionLookup;
 use App\Extension\Helpers\ZipInstallHelper;
 use App\Extension\HookManager;
 use App\Extension\Traits\ClearsTemplateCaches;
@@ -328,15 +329,19 @@ class LanguagePackService
     }
 
     /**
-     * 코어/번들 확장의 `lang/{ko,en}/` 디렉토리를 자동 스캔하여 가상 보호 LanguagePack
+     * 코어와 설치된 확장의 `lang/{ko,en}/` 디렉토리를 스캔하여 가상 보호 LanguagePack
      * 인스턴스 컬렉션을 반환합니다 (요구사항 #1, #2).
      *
      * 스캔 대상 — **런타임이 실제로 로드하는 경로**와 같아야 한다. 어긋나면 관리자 화면이
      * "내장 번역" 으로 보여주는 것과 화면에 나오는 문구의 출처가 달라진다.
      *  - 코어: lang/{ko,en}/
-     *  - 번들 모듈: modules/_bundled/{id}/src/lang/{ko,en}/ (TranslationServiceProvider 기준)
-     *  - 번들 플러그인: plugins/_bundled/{id}/lang/{ko,en}/
-     *  - 번들 템플릿: templates/_bundled/{id}/lang/{ko,en}.json
+     *  - 설치된 모듈: modules/{id}/src/lang/{ko,en}/ (TranslationServiceProvider 기준)
+     *  - 설치된 플러그인: plugins/{id}/lang/{ko,en}/
+     *  - 설치된 템플릿: templates/{id}/lang/{ko,en}.json 또는 lang/partial/{ko,en}/
+     *
+     * 「설치된 확장」 은 확장 테이블에 active·inactive 행이 있는 확장이다(InstalledExtensionLookup).
+     * 설치 소스(번들·마켓·업로드)와 무관하게 모두 나오고, 설치하지 않은 번들 확장은 나오지 않는다 —
+     * 동봉 원본은 설치 전 보관본이라 런타임이 읽지 않는다.
      *
      * 발견된 각 슬롯에 대해 Repository::buildVirtualBuiltInPack() 으로 가상 행 합성.
      * 모든 가상 행은 status=active, is_protected=true, source_type=built_in.
@@ -347,6 +352,13 @@ class LanguagePackService
     public function getVirtualBuiltInPacks(array $filters = []): Collection
     {
         $packs = collect();
+
+        // 설치된 확장 식별자는 로케일마다 다시 조회하지 않는다.
+        $installed = [
+            LanguagePackScope::Module->value => InstalledExtensionLookup::identifiers('module'),
+            LanguagePackScope::Plugin->value => InstalledExtensionLookup::identifiers('plugin'),
+            LanguagePackScope::Template->value => InstalledExtensionLookup::identifiers('template'),
+        ];
 
         foreach (LanguagePackBaseLocales::all() as $locale) {
             // 코어
@@ -364,65 +376,68 @@ class LanguagePackService
                 }
             }
 
-            // 번들 모듈 (런타임 등록 경로 = src/lang)
-            $packs = $packs->concat($this->scanBundledExtensionLang(
-                bundledRoot: 'modules/_bundled',
+            // 설치된 모듈 (런타임 등록 경로 = src/lang)
+            $packs = $packs->concat($this->scanInstalledExtensionLang(
+                installRoot: 'modules',
+                identifiers: $installed[LanguagePackScope::Module->value],
                 scope: LanguagePackScope::Module->value,
                 langSubpath: 'src/lang/'.$locale,
                 locale: $locale,
                 filters: $filters,
             ));
 
-            // 번들 플러그인
-            $packs = $packs->concat($this->scanBundledExtensionLang(
-                bundledRoot: 'plugins/_bundled',
+            // 설치된 플러그인
+            $packs = $packs->concat($this->scanInstalledExtensionLang(
+                installRoot: 'plugins',
+                identifiers: $installed[LanguagePackScope::Plugin->value],
                 scope: LanguagePackScope::Plugin->value,
                 langSubpath: 'lang/'.$locale,
                 locale: $locale,
                 filters: $filters,
             ));
 
-            // 번들 템플릿 (lang/{locale}.json 또는 lang/partial/{locale}/)
-            $packs = $packs->concat($this->scanBundledTemplateLang($locale, $filters));
+            // 설치된 템플릿 (lang/{locale}.json 또는 lang/partial/{locale}/)
+            $packs = $packs->concat($this->scanInstalledTemplateLang(
+                $installed[LanguagePackScope::Template->value],
+                $locale,
+                $filters,
+            ));
         }
 
         return $packs->values();
     }
 
     /**
-     * 번들 확장 디렉토리(modules/_bundled, plugins/_bundled) 의 lang/{locale}/ 자원을 스캔합니다.
+     * 설치된 확장(모듈·플러그인)의 설치본 lang/{locale}/ 자원을 스캔합니다.
      *
-     * @param  string  $bundledRoot  base_path 기준 상대 경로 (예: 'modules/_bundled')
+     * 설치 기록은 있는데 설치본 디렉토리나 lang 디렉토리가 없으면 그 확장은 건너뛴다 —
+     * 런타임도 그 자리에서 번역을 읽지 못하므로 "내장 번역" 으로 보여줄 것이 없다.
+     *
+     * @param  string  $installRoot  base_path 기준 설치 루트 (예: 'modules')
+     * @param  array<int, string>  $identifiers  설치된 확장 식별자 목록
      * @param  string  $scope  스코프 enum 값
-     * @param  string  $langSubpath  확장 디렉토리 하위의 lang 경로 (예: 'resources/lang/ko')
+     * @param  string  $langSubpath  확장 디렉토리 하위의 lang 경로 (예: 'src/lang/ko')
      * @param  string  $locale  로케일
      * @param  array<string, mixed>  $filters  필터
-     * @return Collection<int, LanguagePack>
+     * @return Collection<int, LanguagePack> 설치본 lang 이 있는 확장의 가상 보호 행
      */
-    private function scanBundledExtensionLang(
-        string $bundledRoot,
+    private function scanInstalledExtensionLang(
+        string $installRoot,
+        array $identifiers,
         string $scope,
         string $langSubpath,
         string $locale,
         array $filters,
     ): Collection {
-        $absRoot = base_path($bundledRoot);
-        if (! File::isDirectory($absRoot)) {
-            return collect();
-        }
-
         $packs = collect();
-        foreach (File::directories($absRoot) as $extDir) {
-            $extId = basename($extDir);
+        foreach ($identifiers as $extId) {
+            $extDir = base_path($installRoot.DIRECTORY_SEPARATOR.$extId);
             $langDir = $extDir.DIRECTORY_SEPARATOR.str_replace('/', DIRECTORY_SEPARATOR, $langSubpath);
             if (! File::isDirectory($langDir)) {
                 continue;
             }
 
-            $manifestPath = $extDir.DIRECTORY_SEPARATOR.$this->guessManifestFilename($scope);
-            $manifest = is_file($manifestPath) ? json_decode((string) @file_get_contents($manifestPath), true) : null;
-            $vendor = is_array($manifest) ? (string) ($manifest['vendor'] ?? explode('-', $extId)[0] ?? 'g7') : 'g7';
-            $version = is_array($manifest) ? (string) ($manifest['version'] ?? '0.0.0') : '0.0.0';
+            [$vendor, $version] = $this->readBuiltInManifestMeta($extDir, $scope, $extId);
 
             $pack = $this->repository->buildVirtualBuiltInPack(
                 scope: $scope,
@@ -430,7 +445,7 @@ class LanguagePackService
                 locale: $locale,
                 vendor: $vendor,
                 version: $version,
-                langPathRelative: $bundledRoot.'/'.$extId.'/'.$langSubpath,
+                langPathRelative: $installRoot.'/'.$extId.'/'.$langSubpath,
             );
             if ($this->matchesBuiltInFilters($pack, $filters)) {
                 $packs->push($pack);
@@ -441,32 +456,25 @@ class LanguagePackService
     }
 
     /**
-     * 번들 템플릿의 lang/{locale}.json 또는 lang/partial/{locale}/ 자원을 스캔합니다.
+     * 설치된 템플릿의 설치본 lang/{locale}.json 또는 lang/partial/{locale}/ 자원을 스캔합니다.
      *
+     * @param  array<int, string>  $identifiers  설치된 템플릿 식별자 목록
      * @param  string  $locale  로케일
      * @param  array<string, mixed>  $filters  필터
-     * @return Collection<int, LanguagePack>
+     * @return Collection<int, LanguagePack> 설치본 lang 이 있는 템플릿의 가상 보호 행
      */
-    private function scanBundledTemplateLang(string $locale, array $filters): Collection
+    private function scanInstalledTemplateLang(array $identifiers, string $locale, array $filters): Collection
     {
-        $absRoot = base_path('templates/_bundled');
-        if (! File::isDirectory($absRoot)) {
-            return collect();
-        }
-
         $packs = collect();
-        foreach (File::directories($absRoot) as $tplDir) {
-            $tplId = basename($tplDir);
+        foreach ($identifiers as $tplId) {
+            $tplDir = base_path('templates'.DIRECTORY_SEPARATOR.$tplId);
             $hasJson = is_file($tplDir.DIRECTORY_SEPARATOR.'lang'.DIRECTORY_SEPARATOR.$locale.'.json');
             $hasPartial = File::isDirectory($tplDir.DIRECTORY_SEPARATOR.'lang'.DIRECTORY_SEPARATOR.'partial'.DIRECTORY_SEPARATOR.$locale);
             if (! $hasJson && ! $hasPartial) {
                 continue;
             }
 
-            $manifestPath = $tplDir.DIRECTORY_SEPARATOR.'template.json';
-            $manifest = is_file($manifestPath) ? json_decode((string) @file_get_contents($manifestPath), true) : null;
-            $vendor = is_array($manifest) ? (string) ($manifest['vendor'] ?? explode('-', $tplId)[0] ?? 'g7') : 'g7';
-            $version = is_array($manifest) ? (string) ($manifest['version'] ?? '0.0.0') : '0.0.0';
+            [$vendor, $version] = $this->readBuiltInManifestMeta($tplDir, LanguagePackScope::Template->value, $tplId);
 
             $pack = $this->repository->buildVirtualBuiltInPack(
                 scope: LanguagePackScope::Template->value,
@@ -474,7 +482,7 @@ class LanguagePackService
                 locale: $locale,
                 vendor: $vendor,
                 version: $version,
-                langPathRelative: 'templates/_bundled/'.$tplId.'/lang',
+                langPathRelative: 'templates/'.$tplId.'/lang',
             );
             if ($this->matchesBuiltInFilters($pack, $filters)) {
                 $packs->push($pack);
@@ -482,6 +490,29 @@ class LanguagePackService
         }
 
         return $packs;
+    }
+
+    /**
+     * 설치본 매니페스트에서 가상 보호 행의 vendor·version 을 읽습니다.
+     *
+     * @param  string  $extDir  확장 설치본 절대 경로
+     * @param  string  $scope  스코프 enum 값 (매니페스트 파일명 결정)
+     * @param  string  $extId  확장 식별자 (매니페스트에 vendor 가 없을 때 접두사로 대신한다)
+     * @return array{0: string, 1: string} [vendor, version] — 매니페스트가 없으면 ['g7', '0.0.0']
+     */
+    private function readBuiltInManifestMeta(string $extDir, string $scope, string $extId): array
+    {
+        $manifestPath = $extDir.DIRECTORY_SEPARATOR.$this->guessManifestFilename($scope);
+        $manifest = is_file($manifestPath) ? json_decode((string) @file_get_contents($manifestPath), true) : null;
+
+        if (! is_array($manifest)) {
+            return ['g7', '0.0.0'];
+        }
+
+        return [
+            (string) ($manifest['vendor'] ?? explode('-', $extId)[0] ?? 'g7'),
+            (string) ($manifest['version'] ?? '0.0.0'),
+        ];
     }
 
     /**

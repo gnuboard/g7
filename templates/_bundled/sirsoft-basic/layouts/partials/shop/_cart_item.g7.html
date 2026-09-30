@@ -60,7 +60,7 @@
         </div>
       </div>
       <div class="flex items-center gap-2 mt-2">
-        <quantity-selector value="{{item.quantity}}" :min="1" max="{{item.product_option?.stock_quantity ?? 999}}" size="sm">
+        <quantity-selector data-type="composite" value="{{item.quantity}}" :min="1" max="{{item.product_option?.stock_quantity ?? 999}}" size="sm">
           <on type="change" event="onChange">
             <!-- 수량을 바꾸면 응답이 장바구니 전체(금액 계산 포함)를 다시 실어 오므로 데이터소스를 통째로
                  갈아끼운다 — 따로 refetch 를 걸지 않는 이유다. 선택 목록을 함께 보내야 서버가 같은 기준으로 계산한다 -->

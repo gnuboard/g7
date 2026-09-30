@@ -93,7 +93,7 @@
 | `database/migrations/` | 마이그레이션 | 한국어 comment + `down()` 필수, 기설치본은 업그레이드 스텝으로 백필 |
 | `database/seeders/` | 시더 | composer autoload 등록 + `extension:update-autoload` |
 | `upgrades/` | 업그레이드 스텝 | DB·설정 구조 변경 시 작성 (모듈/플러그인 전용) |
-| `resources/layouts/` | 레이아웃 소스 `.g7.html` (짝 `.json` 은 굽기 산출) | `php artisan module:update sirsoft-ecommerce --force` (빌드 불필요) |
+| `resources/layouts/` | 레이아웃 소스 `.g7.html` (짝 `.json` 은 굽기 산출. 컴포넌트 종류는 `data-type`, 컴파일은 템플릿과 무관) | `php artisan module:update sirsoft-ecommerce --force` (빌드 불필요) |
 | `resources/routes/` | 라우트 → 레이아웃 매핑 (분할) | `php artisan module:update sirsoft-ecommerce --force` |
 | `resources/js/` | 프론트 엔트리·핸들러 | `php artisan module:build` → `php artisan module:update sirsoft-ecommerce --force` |
 | `resources/extensions/` | 다른 확장 레이아웃에 주입하는 조각 | `php artisan module:update sirsoft-ecommerce --force` |
@@ -165,6 +165,34 @@ FormRequest → `CheckoutDataService`(주문서에 필요한 배송지·쿠폰·
 `CancellableAmountCalculator` 가 저장 시점과 실행 직전 두 번 같은 식으로 상한을 재계산한 뒤
 `RefundExecutionService::execute()` 가 PG 환불·마일리지 환급·현금영수증 동기화·누적 컬럼 갱신을
 한 자리에서 수행합니다(취소 경로와 공용).
+
+**주문 생성 검증의 국내/해외 갈래**: `Public\CreateOrderRequest` 는 배송지를 국내 폼(`zipcode` ·
+`address` · `address_detail`)과 해외 폼(`address_line_1` · `intl_*`) 중 하나로 받습니다. 상세주소
+(`shipping.address_detail`)는 국내 폼에만 있으므로 기본 주소와 같은 짝인
+`required_without:shipping.address_line_1` 로 판정합니다 — 해외 폼은 주소 1·2행으로 대신하고 배송국가를
+바꾸면 이 값이 비워지는데, 무조건 `required` 였을 때는 해외 배송지 주문이 「상세 주소를 입력해주세요.」로
+결제에서 막혔습니다. 국내 필드를 새로 더할 때도 같은 짝을 따릅니다.
+
+**비회원 주문의 리뷰 플래그**: 리뷰는 회원만 씁니다(리뷰 저장 API 는 로그인 필요, 비회원 주문 상세에는
+리뷰 작성 창이 없음). 그래서 `OrderOptionResource::calculateCanWriteReview()` 는 비회원 주문의 품목이면
+guest 역할의 권한과 무관하게 `can_write_review=false` 를 냅니다 — 비회원 주문 응답
+(`GuestOrderResource`)이 품목 리소스에 `forGuestOrder()` 를 걸고, 주문 관계가 로드돼 있으면
+`order.user_id === null` 로도 판정합니다. 이 판정이 빠지면 비회원 주문 상세에 눌러도 반응 없는
+「리뷰 작성」 버튼이 보입니다.
+
+**상품 옵션 판매가 일괄 변경**: `BulkUpdateProductsRequest` 의
+`option_bulk_changes.price_adjustment.method` 는 `set` · `add` · `subtract` · `percent` 네 가지입니다
+(`subtract` 는 판매가 일괄 변경 창의 「인하 + 금액」 — 허용값에 없어 422 로 저장되지 않던 것을 더했습니다).
+옵션 판매가는 「상품 판매가 + 조정액(`price_adjustment`)」이므로 `ProductOptionService::applyPriceAdjustment()`
+는 옵션을 상품과 함께 읽고(`findByIdWithProduct`) 조정액 하한을 `-상품 판매가` 로 둡니다 — 인하·음수 가산·
+비율 변경 결과 옵션 판매가가 0 아래로 내려가지 않습니다.
+
+**마일리지 유효기간 일괄 연장**: `POST …/admin/mileage-transactions/extend-expiry` 의 `user_id` 는
+선택입니다. 생략하면 `UserMileageService::extendLotExpiry(null, …)` 가 고른 적립건이 여러 회원에 걸쳐
+있어도 전부 연장하고, 잔액 캐시 재계산과 활동 로그(`mileage.extend_expiry`)는 **회원별로** 남깁니다.
+지정하면 그 회원의 적립건만 연장합니다(`MileageTransactionRepositoryInterface::getRemainingLotsByIds(?int $userId, …)`).
+관리자 마일리지 내역 화면은 적립건만 보내고 회원을 지정하지 않습니다 — 고른 것 중 첫 건의 회원을 뽑아
+보내던 때는 나머지 회원의 적립건이 조용히 빠졌습니다.
 <!-- @intent END -->
 
 ## 4. 확장점
@@ -256,6 +284,8 @@ CRUD 를 바꾸고 싶으면 이 4종 중 하나를 잡으면 되고, 이 모듈
 | 주문번호·상품코드를 `max(id)+1` 이나 타임스탬프 조합으로 직접 생성 | `SequenceService::generateCode()` | 채번은 DB UNIQUE 제약과 함께 원자적으로 수행된다 — 직접 생성은 동시 주문에서 중복을 만든다 |
 | 취소·환불을 주문 단위로 처리 | 옵션 단위(`OrderCancelOption`/`OrderRefundOption`) | 부분 취소가 이 도메인의 기본이며, 주문 단위로 처리하면 남은 옵션의 안분 금액이 계산되지 않는다 |
 | 요청의 `temp_key` · `image_temp_key` 를 형식 검증 없이 `products/temp/{키}` 경로에 넣거나, 임시 이미지가 없는데도 그 디렉토리를 `deleteDirectory` | `ValidatesTempKey`(UUID 만) + 조회된 임시 이미지가 있을 때만 이동·정리 | 순회 키가 정리 경로를 모듈 저장소 루트로 끌어올린다 (게시판 KVE-2026-2349 와 같은 패턴) |
+| 임시 이미지를 본경로로 옮긴 뒤 임시 디렉토리 정리(`deleteDirectory('images', 'products/temp/{키}')`)의 예외를 그대로 던지게 두기 | `ProductImageService::linkTempImages()` 처럼 disk 별 정리 전체를 `try/catch` 로 감싸 경고 로그(`상품 임시 이미지 디렉토리 정리 실패`)를 남기고 연결 수는 그대로 반환 | 정리는 부수 작업이다. 막 옮긴 대용량 파일을 운영체제가 잠시 붙잡고 있으면 디렉토리 순회가 lstat 오류를 던져 상품 저장 전체가 500 으로 되돌아가고 파일·DB 경로가 어긋난다(#703 게시판 실측과 같은 구조). 정리에 실패해 남는 것은 빈 임시 디렉토리뿐이다 |
+| 관리자 화면에서 코어 회원 검색(`GET /api/admin/users/search`)을 검색어 조건 없이, 또는 길이(`length > 0`)만 보고 부르기 | `if="{{String($args[0] ?? '').trim() !== ''}}"`(`onSearch` 인자) 또는 `if="{{String($event.target.value ?? '').trim() !== ''}}"`(입력 이벤트)로 비거나 공백뿐이면 부르지 않는다. 입력칸 아래에 결과 목록을 직접 그리는 창(마일리지 수동 지급/차감·쿠폰 직접 발급)은 목록 표시·비우기도 같은 `trim()` 조건을 쓴다 | 회원 검색은 빈 검색어를 422 로 거절한다(공백은 서버 요청 정리에서 지워져 빈 값이 된다). 조건이 없던 알림 템플릿 「특정 회원」 수신자·주문 목록 주문자 필터·쿠폰 목록 만든 사람 필터는 검색칸을 지울 때마다, 길이만 보던 마일리지 수동 지급/차감 창·쿠폰 직접 발급 창은 공백만 적으면 거절되어 결과가 비거나 오류 안내가 떴다(#703) |
 | 레이아웃·TSX 에서 Lucide·Heroicons 식 아이콘 이름(`x-circle`·`refresh-cw`·`more-horizontal`·`alert-circle`·`chevrons-left`·`arrow-down-tray` 등) | Font Awesome 6.4.0 이름(`circle-xmark`·`arrows-rotate`·`ellipsis`·`circle-exclamation`·`angles-left`·`download`) | 관리자 템플릿 `Icon` 은 이름을 `fa-{이름}` 로만 바꾼다 — FA 에 없는 이름은 오류 없이 **빈칸**으로 그려진다. 가드: `tests/Unit/Extension/FontIconNameTest.php` |
 | `OrderCancel` 을 `recordCancellation()` 밖에서 만들기 | 그 메서드 한 지점 | 만드는 지점이 둘이면 합계 재계산·누적 컬럼 갱신이 경로마다 갈리고, 같은 취소가 경로에 따라 다른 장부를 남긴다 |
 | 최종 상태를 바로 INSERT 해 전이 단계를 건너뛰기 | `transition()` 으로 실제로 거치기 | 활동 로그가 한 줄만 남아 운영자가 승인 경위를 되짚을 수 없다. 한 트랜잭션 안이어도 단계를 밟는다 |

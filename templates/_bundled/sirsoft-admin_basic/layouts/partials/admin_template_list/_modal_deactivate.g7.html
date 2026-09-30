@@ -2,7 +2,7 @@
   템플릿은 결과가 서로 달라(켜기=교체 / 끄기=해제) 창을 둘로 갈라 두었다.
   취소는 활성 창과 같이 카드 목록을 다시 마운트해 스위치 모양만 되돌린다. -->
 <partial description="템플릿 비활성화 확인 모달" editor_label="$t:admin.modal_label.admin_template_list.template_deactivate_modal">
-  <modal data-ref="template_deactivate_modal" title="$t:admin.templates.modals.deactivate_title" size="sm">
+  <modal data-type="composite" data-ref="template_deactivate_modal" title="$t:admin.templates.modals.deactivate_title" size="sm">
     <div class="py-2">
       <p class="text-gray-700 dark:text-gray-300">$t:admin.templates.modals.deactivate_confirm|name={{_global.selectedTemplate.name}}</p>
     </div>

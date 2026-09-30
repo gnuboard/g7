@@ -1680,7 +1680,8 @@
     "privacyPreview": "個人情報処理対象件数",
     "privacyTargets": "個人情報対策対象リスト",
     "privacyManualRuns": "個人情報措置職権実行ステータス",
-    "analytics_row_trend": "訪問者統計の項目推移"
+    "analytics_row_trend": "訪問者統計の項目推移",
+    "identityMessagePolicyScopes": "メッセージが定義された本人認証ポリシー"
   },
   "array_group": {
     "chart_labels": "項目ラベル",

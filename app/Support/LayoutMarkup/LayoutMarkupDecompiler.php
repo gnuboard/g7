@@ -30,9 +30,11 @@ final class LayoutMarkupDecompiler
     private readonly DocumentCompiler $compiler;
 
     /**
-     * @param  ComponentRegistry  $registry  대상 템플릿(+확장) 레지스트리 — 노드 태그 해석
+     * 태그는 이름의 표기 규칙으로, 종류는 `data-type` 으로 적는다 — 템플릿과 무관하다.
+     *
+     * @param  ComponentRegistry|null  $registry  검사용 템플릿 컴포넌트 레지스트리 (산출에는 쓰지 않는다)
      */
-    public function __construct(ComponentRegistry $registry)
+    public function __construct(?ComponentRegistry $registry = null)
     {
         $this->nodes = new NodeMarkupDecompiler($registry);
         $this->actions = new ActionMarkupDecompiler;

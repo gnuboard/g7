@@ -1,7 +1,7 @@
 <partial description="서버 페이지네이션과 통화별 상세 실행 이력" _e2e_allow="e2e:allow 단일 행 소스를 태그 경계로 접고 S21 주석만 더함 — 굽기 JSON 은 comment 키 외 동일(2026-09-17)">
 <!-- 실행 이력 그리드 — 데이터소스 koreaeximRuns 를 서버 페이지네이션으로 그리고, 행을 펼치면 그 실행의 통화별 상세를 따로 받아 보여준다 -->
 <div class="admin-card overflow-x-auto">
-  <data-grid data-ref="koreaexim_runs" data="{{koreaeximRuns?.data?.data ?? []}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{koreaeximRuns?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{koreaeximRuns?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{koreaeximRuns?.data?.pagination?.has_more_pages ?? false}}" :pageSize="20" :alwaysShowPagination="true" idField="id" :selectable="false" :expandable="true" emptyMessage="$t:sirsoft-koreaexim.empty">
+  <data-grid data-type="composite" data-ref="koreaexim_runs" data="{{(query.date_from &amp;&amp; query.date_to &amp;&amp; query.date_to &lt; query.date_from) ? [] : (koreaeximRuns?.data?.data ?? [])}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{koreaeximRuns?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{koreaeximRuns?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{koreaeximRuns?.data?.pagination?.has_more_pages ?? false}}" :pageSize="20" :alwaysShowPagination="true" idField="id" :selectable="false" :expandable="true" emptyMessage="$t:sirsoft-koreaexim.empty">
     <column field="search_date" header="$t:sirsoft-koreaexim.date"/>
     <column field="trigger_label" header="$t:sirsoft-koreaexim.trigger"/>
     <column field="status_label" header="$t:sirsoft-koreaexim.result">

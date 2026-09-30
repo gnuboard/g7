@@ -564,7 +564,7 @@
                                                 "accept": ".jpg,.jpeg,.png,.gif,.webp",
                                                 "initialFiles": "{{_local.form?.images ?? []}}",
                                                 "autoUpload": true,
-                                                "compact": true,
+                                                "size": "sm",
                                                 "confirmBeforeRemove": true,
                                                 "confirmRemoveTitle": "$t:sirsoft-ecommerce.admin.category.form.confirm_remove_image_title",
                                                 "confirmRemoveMessage": "$t:sirsoft-ecommerce.admin.category.form.confirm_remove_image_message",

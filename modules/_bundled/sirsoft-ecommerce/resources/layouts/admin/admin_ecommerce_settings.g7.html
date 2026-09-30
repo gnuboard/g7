@@ -166,13 +166,13 @@
   </init>
   <slot name="content">
     <div data-ref="settings_content" data-key="form" data-track-changes class="admin-page-content-responsive">
-      <page-header data-ref="page_header" title="$t:sirsoft-ecommerce.admin.settings.title" description="$t:sirsoft-ecommerce.admin.settings.description"/>
+      <page-header data-type="composite" data-ref="page_header" title="$t:sirsoft-ecommerce.admin.settings.title" description="$t:sirsoft-ecommerce.admin.settings.description"/>
       <div data-ref="read_only_banner" data-if="{{_computed.isReadOnly}}" class="alert-warning">
         <icon name="fas fa-lock" class="text-yellow-600 dark:text-yellow-400"/>
         <span class="text-warning-soft">$t:sirsoft-ecommerce.common.read_only_notice</span>
       </div>
       <!-- className 은 sticky-tab-nav-responsive 를 쓴다 — 이 화면의 콘텐츠 래퍼가 admin-page-content-responsive(p-4 sm:p-6 lg:p-8) 라 뷰포트마다 좌우 패딩이 다르기 때문. 고정 24px 를 가정하는 sticky-tab-nav(-mx-6 px-6)를 쓰면 폰(p-4=16px)에서 좌우로 8px 씩 과다 bleed 되어 콘텐츠 영역을 넘친다. -->
-      <tab-navigation data-ref="tab_navigation" activeTabId="{{_global.activeEcommerceSettingsTab || query.tab || 'basic_info'}}" variant="default" class="sticky-tab-nav-responsive">
+      <tab-navigation data-type="composite" data-ref="tab_navigation" activeTabId="{{_global.activeEcommerceSettingsTab || query.tab || 'basic_info'}}" variant="default" class="sticky-tab-nav-responsive">
         <prop name="tabs">
           <item id="basic_info" label="$t:sirsoft-ecommerce.admin.settings.tabs.basic_info"/>
           <item id="language_currency" label="$t:sirsoft-ecommerce.admin.settings.tabs.language_currency"/>
@@ -235,15 +235,21 @@
             <!-- 저장 — 보낼 몸통을 현재 탭 몫으로 좁힌다. 전 탭을 한꺼번에 보내면 보고 있지도 않은 탭의
               값까지 덮어쓰기 때문이고, 서버도 `_tab` 으로 검증 범위를 가른다(문의 설정은 여러 탭에
               걸쳐 있어 함께 실린다). 통화 추가가 확정되지 않은 상태면 저장을 막고 안내만 띄운다 —
-              그대로 보내면 입력 중이던 통화가 소리 없이 사라진다. -->
+              그대로 보내면 입력 중이던 통화가 소리 없이 사라진다.
+              통화 탭은 환율 제공자가 관리하는 기존 통화의 환율을 빼고 보낸다 — 그 칸은 잠겨 있어
+              운영자가 바꿀 수 없고, 화면을 연 사이 제공자가 환율을 갱신했으면 받아 둔 값이 저장값과
+              달라 저장 전체가 「관리 환율 변경」 오류로 막힌다. 빠진 값은 서버가 저장값으로 채운다.
+              키를 빼는 데 구조분해 매개변수를 쓰지 않는다 — 식 평가기가 읽지 못해 본문 전체가 식 원문
+              문자열로 나가 모든 탭 저장이 아무것도 저장하지 못했다(#703 실측). -->
             <sequence>
               <toast if="{{_local.isAddingMileageCurrency === true || _local.isAddingCurrency === true}}" type="error" message="$t:sirsoft-ecommerce.admin.settings.save_pending_currency"/>
               <!-- 통화 2축과 같은 가드를 사유 3종·배송사·배송유형·배송가능국가의 추가 폼에도 둔다 — 폼을 연 채 저장하면 그 버퍼(*Form)는 form.* 로 옮겨지지 않은 채 조용히 버려지고 성공 토스트가 뜬다. 가드가 열거식이라 새 인라인 폼이 생기면 여기에도 더해야 한다. 문구는 지금 열려 있는 폼만 지목한다 — 종전엔 세 가지를 고정으로 나열해, 배송가능국가 폼만 연 운영자가 열려 있지도 않은 폼을 확정하라는 안내를 받았다($t 는 치환 인자를 받지 않으므로 :forms 자리를 여기서 채운다). -->
               <toast if="{{_local.isAddingExchangeReason === true || _local.isAddingReturnReason === true || _local.isAddingRefundReason === true || _local.isAddingCarrier === true || _local.isAddingShippingType === true || _local.isAddingCountry === true}}" type="error" message="{{$t('sirsoft-ecommerce.admin.settings.save_pending_form').replace(':forms', [[_local.isAddingExchangeReason, 'exchange_reason'], [_local.isAddingReturnReason, 'return_reason'], [_local.isAddingRefundReason, 'refund_reason'], [_local.isAddingCarrier, 'carrier'], [_local.isAddingShippingType, 'shipping_type'], [_local.isAddingCountry, 'country']].filter(pair => pair[0] === true).map(pair => $t('sirsoft-ecommerce.admin.settings.save_pending_form_targets.' + pair[1])).join(', '))}}"/>
               <set-state if="{{!(_local.isAddingMileageCurrency === true || _local.isAddingCurrency === true || _local.isAddingExchangeReason === true || _local.isAddingReturnReason === true || _local.isAddingRefundReason === true || _local.isAddingCarrier === true || _local.isAddingShippingType === true || _local.isAddingCountry === true)}}" target="local" :isSaving="true" :errors="null"/>
-              <api-call if="{{!(_local.isAddingMileageCurrency === true || _local.isAddingCurrency === true || _local.isAddingExchangeReason === true || _local.isAddingReturnReason === true || _local.isAddingRefundReason === true || _local.isAddingCarrier === true || _local.isAddingShippingType === true || _local.isAddingCountry === true)}}" :auth_required="true" target="/api/modules/sirsoft-ecommerce/admin/settings" method="PUT" body="{{(function() { const tab = _global.activeEcommerceSettingsTab || query.tab || 'basic_info'; const form = _local.form ?? {}; if (tab === 'notification_definitions') { return { _tab: 'notifications', notifications: { channels: form.notifications?.channels || [] } }; } if (tab === 'mileage') { return { _tab: 'mileage', mileage: form.mileage ?? {} }; } return { _tab: tab, [tab]: form[tab] ?? {}, inquiry: form.inquiry ?? {} }; })()}}">
+              <api-call if="{{!(_local.isAddingMileageCurrency === true || _local.isAddingCurrency === true || _local.isAddingExchangeReason === true || _local.isAddingReturnReason === true || _local.isAddingRefundReason === true || _local.isAddingCarrier === true || _local.isAddingShippingType === true || _local.isAddingCountry === true)}}" :auth_required="true" target="/api/modules/sirsoft-ecommerce/admin/settings" method="PUT" body="{{(function() { const tab = _global.activeEcommerceSettingsTab || query.tab || 'basic_info'; const form = _local.form ?? {}; if (tab === 'notification_definitions') { return { _tab: 'notifications', notifications: { channels: form.notifications?.channels || [] } }; } if (tab === 'mileage') { return { _tab: 'mileage', mileage: form.mileage ?? {} }; } if (tab === 'language_currency') { const managed = _computed.managedRateCodes ?? []; const savedCodes = (settings?.data?.language_currency?.currencies ?? []).map(c => c?.code); const lc = form.language_currency ?? {}; const currencies = Array.isArray(lc.currencies) ? lc.currencies.map(c => (c && managed.includes(c.code) && savedCodes.includes(c.code)) ? Object.keys(c).filter(k => k !== 'exchange_rate').reduce((o, k) => ({ ...o, [k]: c[k] }), {}) : c) : lc.currencies; return { _tab: tab, language_currency: { ...lc, currencies }, inquiry: form.inquiry ?? {} }; } return { _tab: tab, [tab]: form[tab] ?? {}, inquiry: form.inquiry ?? {} }; })()}}">
                 <success>
-                  <set-state target="local" :isSaving="false" :hasChanges="false" :isAddingCurrency="false" :form.newCurrency="null" :isAddingMileageCurrency="false" :form.newMileageCurrency="null"/>
+                  <!-- 쓸 수 없게 된 공개 자산 디스크 안내는 저장 응답값으로 덮는다 — 설정 재조회는 폼에 없는 키를 지우지 않아, 새 디스크를 골라 저장해도 옛 안내가 남았다. 다른 탭을 저장하면 응답이 여전히 옛 이름을 실어 안내가 유지된다 -->
+                  <set-state target="local" :isSaving="false" :hasChanges="false" :isAddingCurrency="false" :form.newCurrency="null" :isAddingMileageCurrency="false" :form.newMileageCurrency="null" form.basic_info.public_asset_disk_unavailable="{{response.data?.basic_info?.public_asset_disk_unavailable ?? null}}"/>
                   <refetch-data-source dataSourceId="settings" :sync="true"/>
                   <refetch-data-source if="{{(_global.activeEcommerceSettingsTab || query.tab) === 'privacy_retention'}}" dataSourceId="ecommercePrivacyRetentionPreview"/>
                   <toast type="success" message="$t:sirsoft-ecommerce.admin.settings.save_success"/>

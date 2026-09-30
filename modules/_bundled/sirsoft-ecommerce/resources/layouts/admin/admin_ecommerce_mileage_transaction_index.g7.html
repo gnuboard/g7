@@ -116,13 +116,12 @@
         <span class="text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap">$t:sirsoft-ecommerce.admin.mileage_transactions.bulk.selected|count={{(_local.selectedItems ?? []).length}}</span>
         <button data-ref="bulk_extend_button" type="button" disabled="{{transactions?.data?.abilities?.can_manage !== true || (_local.selectedItems ?? []).length === 0}}" class="px-4 py-2 text-sm bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
           <on type="click">
-            <!-- 선택한 적립 건들의 만료일 연장 창을 연다. 연장은 회원 단위로 처리되므로 고른 것 중 첫 건에서 회원 식별자를 따로 뽑아 넘긴다 -->
+            <!-- 선택한 적립 건들의 만료일 연장 창을 연다. 적립건만 넘기고 회원은 지정하지 않는다 — 여러 회원의 적립건을 함께 골라도 서버가 전부 연장한다(첫 건의 회원만 보내면 나머지 회원 적립건이 조용히 빠졌다) -->
             <sequence>
               <set-state target="global">
                 <field name="mileageExtend">
                   <field name="days" :value="30"/>
                   <field name="lotIds" value="{{_local.selectedItems ?? []}}"/>
-                  <field name="userId" value="{{((transactions?.data?.data ?? []).find(t => (_local.selectedItems ?? []).includes(t.id)) ?? {}).user_uuid}}"/>
                 </field>
               </set-state>
               <open-modal target="modal_extend_expiry"/>

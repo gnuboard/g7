@@ -24,6 +24,7 @@ use Modules\Sirsoft\Ecommerce\Models\ClaimPayment;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ClaimPaymentRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Services\GuestOrderAuthService;
 use Modules\Sirsoft\Ecommerce\Services\OrderProcessingService;
 use Modules\Sirsoft\Ecommerce\Support\ClaimPaymentRedirect;
 use Plugins\Sirsoft\PayNicepayments\Concerns\HandlesClaimPaymentCallbacks;
@@ -33,6 +34,7 @@ use Plugins\Sirsoft\PayNicepayments\Concerns\RecordsPaymentWindowClosure;
 use Plugins\Sirsoft\PayNicepayments\Concerns\ResolvesEasyPayDisplay;
 use Plugins\Sirsoft\PayNicepayments\Concerns\SanitizesPgResponse;
 use Plugins\Sirsoft\PayNicepayments\Concerns\SerializesPaymentCallbacks;
+use Plugins\Sirsoft\PayNicepayments\Concerns\VerifiesOrderOwnership;
 use Plugins\Sirsoft\PayNicepayments\Http\Requests\AuthCallbackRequest;
 use Plugins\Sirsoft\PayNicepayments\Http\Requests\SignDataRequest;
 use Plugins\Sirsoft\PayNicepayments\Http\Requests\VbankNotifyRequest;
@@ -56,6 +58,7 @@ class PaymentCallbackController
     use ResolvesEasyPayDisplay;
     use SanitizesPgResponse;
     use SerializesPaymentCallbacks;
+    use VerifiesOrderOwnership;
 
     private const PLUGIN_IDENTIFIER = 'sirsoft-pay_nicepayments';
 
@@ -141,6 +144,7 @@ class PaymentCallbackController
      * @param  NicePaymentsApiService  $apiService  나이스페이먼츠 API 서비스
      * @param  CacheInterface  $cache  콜백 재전송 감지용 캐시
      * @param  ClaimPaymentRepositoryInterface  $claimPaymentRepository  클레임 결제 Repository
+     * @param  GuestOrderAuthService  $guestOrderAuthService  비회원 조회 토큰 검증 서비스
      */
     public function __construct(
         private readonly OrderProcessingService $orderService,
@@ -148,6 +152,7 @@ class PaymentCallbackController
         private readonly NicePaymentsApiService $apiService,
         private readonly CacheInterface $cache,
         private readonly ClaimPaymentRepositoryInterface $claimPaymentRepository,
+        private readonly GuestOrderAuthService $guestOrderAuthService,
     ) {}
 
     /**
@@ -327,9 +332,11 @@ class PaymentCallbackController
                     'result_msg' => $pgResponse['ResultMsg'] ?? '',
                 ]);
 
-                $failureMessage = $pgResponse['ResultMsg'] ?? '';
-                $failedOrder = $this->orderService->failPayment($order, $resultCode, $failureMessage);
-                $this->markNicePaymentFailed($failedOrder, $resultCode, $failureMessage);
+                // 주문 상태는 바꾸지 않는다 (KVE-2026-2434). 이 콜백은 비인증 브라우저 POST 이고,
+                // 서명(AuthToken+MID+Amt)이 주문번호(Moid)를 묶지 않아 자기 결제창에서 얻은 인증값에
+                // 남의 주문번호를 붙여 보낼 수 있다. 승인 실패를 근거로 실패 처리하면 타인의 결제대기
+                // 주문이 취소된다. 정당한 결제 실패·창 닫힘은 소유자를 확인하는 close-report 가 기록하고,
+                // 남은 결제대기 주문은 같은 주문번호로 재결제하거나 만료 정리 잡이 정리한다.
 
                 // authorize 실패 — NextAppURL 호출이 거부됐어도 PG 측에 잔존 승인이 있을
                 // 수 있어 net cancel 호출. NicePay 가 미승인 상태이면 net cancel API 가
@@ -340,6 +347,23 @@ class PaymentCallbackController
                     'error' => 'authorize_failed',
                     'orderId' => $moid,
                 ]));
+            }
+
+            // 승인 응답이 돌려준 주문번호·금액이 이 콜백의 주문과 같아야 반영한다 (KVE-2026-2434).
+            // 서명이 주문번호를 묶지 않으므로, 다른 주문의 인증값으로 받은 승인을 이 주문에 붙이지 못하게
+            // PG 가 확인해 준 값과 대조한다. 어긋나면 그 승인을 망취소하고 주문은 건드리지 않는다.
+            if (! $this->authorizeResponseMatchesOrder($pgResponse, $moid, $amt)) {
+                Log::warning('NicePayments: authorize response does not match callback order; net cancelling', [
+                    'moid' => $moid,
+                    'pg_moid' => $pgResponse['Moid'] ?? null,
+                    'amt' => $amt,
+                    'pg_amt' => $pgResponse['Amt'] ?? null,
+                    'ip' => $request->ip(),
+                ]);
+
+                $this->apiService->sendNetCancel($netCancelUrl, $txTid, $authToken, $amt);
+
+                return redirect($this->resolveFailUrl(['error' => 'authorize_failed', 'orderId' => $moid]));
             }
 
             // 5단계: 결제 수단별 처리
@@ -419,12 +443,9 @@ class PaymentCallbackController
                 'actual' => $e->getActualAmount(),
             ]);
 
+            // 승인은 망취소하고 주문 상태는 바꾸지 않는다 — 금액 불일치도 브라우저가 고른 주문번호로
+            // 만들어낼 수 있어 실패 처리 근거가 되지 못한다 (KVE-2026-2434).
             $this->apiService->sendNetCancel($netCancelUrl, $txTid, $authToken, $amt);
-
-            if (isset($order)) {
-                $failedOrder = $this->orderService->failPayment($order, 'AMOUNT_MISMATCH', $e->getMessage());
-                $this->markNicePaymentFailed($failedOrder, 'AMOUNT_MISMATCH', $e->getMessage());
-            }
 
             return redirect($this->resolveFailUrl(['error' => 'amount_mismatch', 'orderId' => $moid]));
 
@@ -434,13 +455,8 @@ class PaymentCallbackController
                 'error' => $e->getMessage(),
             ]);
 
+            // 승인은 망취소하고 주문 상태는 바꾸지 않는다 (KVE-2026-2434 — 위 금액 불일치와 같은 이유).
             $this->apiService->sendNetCancel($netCancelUrl, $txTid, $authToken, $amt);
-
-            if (isset($order)) {
-                $failureMessage = $this->invalidPaymentCurrencyFailureMessage($e);
-                $failedOrder = $this->orderService->failPayment($order, 'INVALID_PAYMENT_CURRENCY', $failureMessage);
-                $this->markNicePaymentFailed($failedOrder, 'INVALID_PAYMENT_CURRENCY', $failureMessage);
-            }
 
             return redirect($this->resolveFailUrl([
                 'error' => 'invalid_payment_currency',
@@ -461,25 +477,42 @@ class PaymentCallbackController
                 return redirect($this->resolveSuccessUrl($moid));
             }
 
+            // 승인은 망취소하고 주문 상태는 바꾸지 않는다. 승인 예외는 NextAppURL 을 나이스페이 밖으로
+            // 바꾸는 것만으로 누구나 일으킬 수 있어, 실패 처리 근거가 되지 못한다 (KVE-2026-2434).
             $this->apiService->sendNetCancel($netCancelUrl, $txTid, $authToken, $amt);
-
-            if (isset($order)) {
-                try {
-                    $failedOrder = $this->orderService->failPayment($order, 'AUTHORIZE_EXCEPTION', $e->getMessage());
-                    $this->markNicePaymentFailed($failedOrder, 'AUTHORIZE_EXCEPTION', $e->getMessage());
-                } catch (\Throwable $recordingError) {
-                    Log::warning('NicePayments: failed to record authorize exception as payment failure', [
-                        'moid' => $moid,
-                        'error' => $recordingError->getMessage(),
-                    ]);
-                }
-            }
 
             return redirect($this->resolveFailUrl([
                 'error' => 'authorize_failed',
                 'orderId' => $moid,
             ]));
         }
+    }
+
+    /**
+     * 승인 응답이 돌려준 주문번호·금액이 콜백의 주문번호·금액과 같은지 확인합니다.
+     *
+     * 나이스페이 승인 응답은 주문번호(Moid)와 금액(Amt)을 돌려준다. 콜백 서명은 주문번호를 묶지 않으므로
+     * 이 대조가 "승인된 결제가 바로 이 주문의 것"임을 보장하는 근거다. 응답에 값이 없으면(구버전 응답 등)
+     * 그 항목은 대조하지 않는다 — 금액은 completePayment 가 주문 청구액과 다시 대조한다.
+     *
+     * @param  array<string, mixed>  $pgResponse  승인 API 응답
+     * @param  string  $moid  콜백 주문번호
+     * @param  int  $amt  콜백 금액 (서명에 묶인 값)
+     * @return bool 일치하면 true
+     */
+    private function authorizeResponseMatchesOrder(array $pgResponse, string $moid, int $amt): bool
+    {
+        $pgMoid = $pgResponse['Moid'] ?? null;
+        if ($pgMoid !== null && $pgMoid !== '' && ! hash_equals((string) $pgMoid, $moid)) {
+            return false;
+        }
+
+        $pgAmt = $pgResponse['Amt'] ?? null;
+        if ($pgAmt !== null && $pgAmt !== '' && (int) $pgAmt !== $amt) {
+            return false;
+        }
+
+        return true;
     }
 
     /**
@@ -775,6 +808,18 @@ class PaymentCallbackController
         }
 
         if (! $order->order_status->isBeforePayment() || $payment->payment_status !== PaymentStatusEnum::READY) {
+            // 실패 주문을 결제대기로 되살리는 것은 주문 상태 변경이다 — 주문 소유자(회원 본인 로그인 /
+            // 비회원 조회 토큰)만 할 수 있다 (KVE-2026-2434). 위의 주문자 연락처 대조는 제3자도 통과할 수
+            // 있어 서명 발급(상태 불변)에만 쓰고, 상태를 바꾸는 복구의 근거로 삼지 않는다.
+            if (! $this->requestOwnsOrder($request, $order, $this->guestOrderAuthService)) {
+                Log::warning('NicePayments: SignData retry restore rejected — order ownership not verified', [
+                    'moid' => $moid,
+                    'ip' => $request->ip(),
+                ]);
+
+                return response()->json(['error' => __('sirsoft-pay_nicepayments::messages.errors.invalid_request')], 403);
+            }
+
             if (! $this->restoreRetryableNicepayOrder($order, $payment)) {
                 Log::warning('NicePayments: SignData rejected for non-payable order', [
                     'moid' => $moid,
@@ -1140,7 +1185,8 @@ class PaymentCallbackController
 
         return $order->order_status === OrderStatusEnum::CANCELLED
             && $payment->pg_provider === 'nicepayments'
-            && $payment->payment_status === PaymentStatusEnum::FAILED
+            // 결제창 닫힘은 결제 취소(CANCELLED)로, 이전 판에서 기록된 닫힘은 결제 실패(FAILED)로 남아 있다.
+            && in_array($payment->payment_status, [PaymentStatusEnum::FAILED, PaymentStatusEnum::CANCELLED], true)
             && ($paymentMeta['failure_source'] ?? null) === 'nicepayments'
             && $failureCode !== 'AMOUNT_MISMATCH'
             && blank($payment->transaction_id)

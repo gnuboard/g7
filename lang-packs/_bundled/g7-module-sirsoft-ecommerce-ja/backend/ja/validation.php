@@ -18,6 +18,7 @@ return [
         'value_present' => '設定値は必須です。',
         'key_unknown' => '保存できない設定キーです: :key',
         'key_server_managed' => 'この設定はサーバーが記録する値のため、直接保存できません。',
+        'empty_payload' => '保存する設定内容がありません。画面を再読み込みしてから、もう一度保存してください。',
     ],
     'shipping_carrier' => [
         'code_required' => '配送業者コードは必須です。',
@@ -1666,6 +1667,7 @@ return [
                 'is_default' => [
                     'boolean' => '既定の口座であるかどうかは真偽値である必要があります。',
                 ],
+                'dbank_requires_active_account' => '銀行振込を使用するには、使用中の入金口座(口座番号入力済み)が1つ以上必要です。',
             ],
             'auto_cancel_expired' => [
                 'boolean' => '未決済の自動キャンセルの可否は真偽値である必要があります。',
@@ -1843,10 +1845,12 @@ return [
         'user_currency' => [
             'required' => '決済通貨を選択してください。',
             'invalid' => '登録された通貨のみ選択できます。',
+            'forbidden' => '会員の決済通貨を変更する権限がありません。',
         ],
         'user_shipping_country' => [
             'required' => '配送先国を選択してください。',
             'invalid' => '配送可能な国のみ選択できます。',
+            'forbidden' => '会員の配送国を変更する権限がありません。',
         ],
     ],
     'claims' => [

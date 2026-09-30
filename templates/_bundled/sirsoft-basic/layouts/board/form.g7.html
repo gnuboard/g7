@@ -41,7 +41,7 @@
   <slot name="content">
     <!-- 비회원 수정 시 비밀번호 확인 모달 -->
     <include src="partials/board/form/_password_verify_modal.g7.html"/>
-    <container data-key="form" data-track-changes :data-blur-until-loaded="true" class="py-8 max-w-4xl mx-auto">
+    <container data-type="layout" data-key="form" data-track-changes :data-blur-until-loaded="true" class="py-8 max-w-4xl mx-auto">
       <include src="partials/board/form/_type_renderer.g7.html"/>
     </container>
   </slot>

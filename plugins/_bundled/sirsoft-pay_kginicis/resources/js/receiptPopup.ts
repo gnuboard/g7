@@ -1,4 +1,6 @@
 // e2e:allow PG 영수증 조회/팝업 — 외부 PG(이니시스) 결제 데이터 의존으로 브라우저 E2E 재현 불가, Vitest 회귀(__tests__/receiptPopup.test.ts)로 검증
+import { requestOncePerOrderScreen } from './orderScreenPolling';
+
 const PLUGIN_ID = 'sirsoft-pay_kginicis';
 
 export interface KginicisReceiptField {
@@ -113,6 +115,20 @@ export async function fetchKginicisReceiptInfoDetailed(
 
 export async function fetchKginicisReceiptInfo(orderNumber: string): Promise<KginicisReceiptInfo | null> {
     return (await fetchKginicisReceiptInfoDetailed(orderNumber)).info;
+}
+
+/**
+ * 주문 화면 인젝터용 영수증 조회 — 한 화면 진입당 한 번만 보내고 결과(실패 포함)를 재사용한다.
+ * 영수증 행과 가상계좌 안내가 같은 주소를 부르므로 둘이 한 결과를 나눠 쓴다.
+ * 버튼 클릭 같은 사용자 동작은 이 함수를 쓰지 않고 매번 새로 조회한다.
+ */
+export function fetchKginicisReceiptInfoForOrderScreen(
+    orderNumber: string,
+): Promise<KginicisReceiptFetchResult> {
+    return requestOncePerOrderScreen(
+        `kginicis-receipt:${orderNumber}`,
+        () => fetchKginicisReceiptInfoDetailed(orderNumber),
+    );
 }
 
 export function canOpenKginicisReceipt(

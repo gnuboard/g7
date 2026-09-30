@@ -9,7 +9,7 @@
   ⑶ 제공자·범위 종류·채널은 고를 수 없다 — 메일 고정이고, 읽기 전용 칸으로 보여만 준다.
      변수 목록도 화면에 박아 둔 안내이고, 서버에 보내는 변수 정의는 아래 저장 본문에 따로 있다. -->
 <partial description="IDV 메시지 정의 신규 추가 모달 — 알림 템플릿 모달 패리티 (언어 탭 + 고정 footer + 검증 에러 영역)" editor_label="$t:admin.modal_label.admin_settings.modal_identity_message_definition_add">
-  <modal data-ref="modal_identity_message_definition_add" size="xl" title="$t:admin.settings.identity.messages.add_modal.title" :closeOnOverlayClick="false">
+  <modal data-type="composite" data-ref="modal_identity_message_definition_add" size="xl" title="$t:admin.settings.identity.messages.add_modal.title" :closeOnOverlayClick="false">
     <div data-ref="identity_message_add_container" data-blur-until-loaded="{{_global.identity_message_definition_add_modal?.isSaving}}" class="flex flex-col max-h-[calc(90vh-140px)] -my-4">
       <div class="flex-1 overflow-y-auto space-y-5 pr-1">
         <div data-ref="identity_message_add_errors" data-if="{{_global.identity_message_definition_add_modal?.errors}}" class="rounded-md border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 px-4 py-3">
@@ -33,14 +33,16 @@
             <span>$t:admin.settings.identity.messages.add_modal.policy_key</span>
             <span class="text-required">*</span>
           </label>
-          <select data-if="{{(adminIdentityPolicies?.data?.data ?? []).length > 0}}" value="{{_global.identity_message_definition_add_modal?.form?.scope_value ?? ''}}" class="text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800" placeholder="$t:admin.settings.identity.messages.add_modal.policy_key_placeholder" options="{{(adminIdentityPolicies?.data?.data ?? []).map(p => ({ value: p.key, label: p.key }))}}">
+          <select data-if="{{(adminIdentityPolicies?.data?.data ?? []).filter(p =&gt; !(identityMessagePolicyScopes?.data?.data ?? []).some(d =&gt; d.scope_value === p.key)).length &gt; 0}}" value="{{_global.identity_message_definition_add_modal?.form?.scope_value ?? ''}}" class="text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800" placeholder="$t:admin.settings.identity.messages.add_modal.policy_key_placeholder" options="{{(adminIdentityPolicies?.data?.data ?? []).filter(p =&gt; !(identityMessagePolicyScopes?.data?.data ?? []).some(d =&gt; d.scope_value === p.key)).map(p =&gt; ({ value: p.key, label: p.key }))}}">
             <on type="change">
-              <!-- 어느 정책에 붙일 메시지인지 고른다. 선택지는 **관리자 정책 목록**에서 오고,
-                   그 목록이 비면 이 선택기 대신 안내 문구가 뜬다(정책부터 만들어야 한다). -->
+              <!-- 어느 정책에 붙일 메시지인지 고른다. 선택지는 **관리자 정책 목록**에서 오되, 이미 메시지
+                   정의가 있는 정책은 뺀다 — 서버는 같은 정책에 두 번째 정의를 중복으로 거절한다(422).
+                   고를 정책이 없으면 이 선택기 대신 안내 문구가 뜬다. -->
               <set-state target="global" identity_message_definition_add_modal.form.scope_value="{{$event.target.value}}"/>
             </on>
           </select>
           <p data-if="{{(adminIdentityPolicies?.data?.data ?? []).length === 0}}" class="text-warning-soft px-3 py-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-md">$t:admin.settings.identity.messages.add_modal.policy_empty</p>
+          <p data-if="{{(adminIdentityPolicies?.data?.data ?? []).length &gt; 0 &amp;&amp; (adminIdentityPolicies?.data?.data ?? []).filter(p =&gt; !(identityMessagePolicyScopes?.data?.data ?? []).some(d =&gt; d.scope_value === p.key)).length === 0}}" class="text-warning-soft px-3 py-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-md">$t:admin.settings.identity.messages.add_modal.policy_all_defined</p>
         </div>
         <div data-ref="identity_message_add_variables" class="rounded-md bg-gray-100 dark:bg-gray-700 p-3">
           <h4 class="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">$t:admin.settings.identity.messages.add_modal.variables_title</h4>
@@ -93,7 +95,7 @@
               <span>$t:admin.settings.identity.messages.add_modal.body</span>
               <span class="text-required">*</span>
             </label>
-            <html-editor content="{{_global.identity_message_definition_add_modal?.form?.body?.[_global.identity_message_definition_add_modal?.editLang ?? $locale] ?? ''}}" :isHtml="true" :showHtmlModeToggle="false" class="min-h-[200px]">
+            <html-editor data-type="composite" content="{{_global.identity_message_definition_add_modal?.form?.body?.[_global.identity_message_definition_add_modal?.editLang ?? $locale] ?? ''}}" :isHtml="true" :showHtmlModeToggle="false" class="min-h-[200px]">
               <on type="change">
                 <!-- 메일 본문(언어별). 위 두 칸과 같은 방식이고, 여기만 편집기라 `input` 이 아니라
                      `change` 로 받는다. 위 안내에 적힌 `{code}` 같은 변수를 그대로 쓸 수 있다. -->
@@ -110,7 +112,9 @@
           </on>
           $t:common.cancel
         </button>
-        <button type="button" class="flex-center gap-2 text-sm px-4 py-2 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.identity_message_definition_add_modal?.isSaving ?? false}}">
+        <!-- 저장은 고를 수 있는 정책을 골랐을 때만 열린다 — 정책이 비었거나(운영자 정책 0건)
+             이미 정의가 있는 정책이 남아 있으면 서버가 422 로 거절한다. -->
+        <button data-ref="identity_message_add_save_button" type="button" class="flex-center gap-2 text-sm px-4 py-2 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{(_global.identity_message_definition_add_modal?.isSaving ?? false) || !(adminIdentityPolicies?.data?.data ?? []).filter(p =&gt; !(identityMessagePolicyScopes?.data?.data ?? []).some(d =&gt; d.scope_value === p.key)).some(p =&gt; p.key === (_global.identity_message_definition_add_modal?.form?.scope_value ?? ''))}}">
           <on type="click">
             <!-- 저장. 화면에 없는 값(범위 종류·채널·변수 정의)은 **여기서 붙여 보낸다** — 고를 수 없는
                  것들이라 폼에 두지 않았다. 언어별 객체는 그대로 실려 나간다.
@@ -121,6 +125,7 @@
               <api-call :auth_required="true" target="/api/admin/identity/messages/definitions" method="POST">
                 <success>
                   <refetch-data-source dataSourceId="identityMessages"/>
+                  <refetch-data-source dataSourceId="identityMessagePolicyScopes"/>
                   <toast message="$t:admin.settings.identity.messages.add_modal.save_success" type="success"/>
                   <close-modal target="modal_identity_message_definition_add"/>
                   <set-state target="global" :identity_message_definition_add_modal="null"/>

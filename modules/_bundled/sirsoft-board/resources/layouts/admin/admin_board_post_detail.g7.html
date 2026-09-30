@@ -23,7 +23,7 @@
   <slot name="content">
     <div data-ref="post_detail_wrapper" :data-blur-until-loaded="true" class="admin-page-content-fluid">
       <responsive on="portable" class="admin-page-content-fluid-compact"/>
-      <page-header data-ref="page_header" title="{{post?.data?.board?.name}} $t:sirsoft-board.admin.posts.detail.title" description="{{post?.data?.board?.name}}$t:sirsoft-board.admin.posts.page_description_with_board">
+      <page-header data-type="composite" data-ref="page_header" title="{{post?.data?.board?.name}} $t:sirsoft-board.admin.posts.detail.title" description="{{post?.data?.board?.name}}$t:sirsoft-board.admin.posts.page_description_with_board">
         <a data-ref="view_user_page_link" href="/board/{{route.slug}}/{{route?.id}}" target="_blank" rel="noopener noreferrer" title="$t:sirsoft-board.admin.posts.actions.view_user_page" class="flex-center gap-2 px-3 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors no-underline">
           <icon name="external-link" size="sm"/>
           <span>$t:sirsoft-board.admin.posts.actions.view_user_page</span>
@@ -72,7 +72,7 @@
   </slot>
   <modal>
     <!-- 삭제 확인 — 글·답글·댓글 셋을 겸한다. 제목·문구·경고는 대상 종류로 갈리고, 댓글은 지운 뒤 이 화면에 머물지만 글은 목록으로 답글은 원글로 빠져나간다(지운 자리에 남을 수 없으므로) -->
-    <modal data-ref="delete_modal" title="{{_global.modal_data?.type === 'comment' ? $t('sirsoft-board.admin.posts.detail.delete_modal.title_comment') : _global.modal_data?.type === 'reply' ? $t('sirsoft-board.admin.posts.detail.delete_modal.title_reply') : $t('sirsoft-board.admin.posts.detail.delete_modal.title_post')}}" size="sm">
+    <modal data-type="composite" data-ref="delete_modal" title="{{_global.modal_data?.type === 'comment' ? $t('sirsoft-board.admin.posts.detail.delete_modal.title_comment') : _global.modal_data?.type === 'reply' ? $t('sirsoft-board.admin.posts.detail.delete_modal.title_reply') : $t('sirsoft-board.admin.posts.detail.delete_modal.title_post')}}" size="sm">
       <meta description="Universal Delete Modal (Post/Reply/Comment)" editor_label="$t:sirsoft-board.admin.posts.modals.delete_editor_label"/>
       <div class="py-2">
         <p class="text-gray-700 dark:text-gray-300 mb-4">{{_global.modal_data?.type === 'comment' ? '$t:sirsoft-board.admin.posts.detail.delete_modal.confirm_comment' : _global.modal_data?.type === 'reply' ? '$t:sirsoft-board.admin.posts.detail.delete_modal.confirm_reply' : '$t:sirsoft-board.admin.posts.detail.delete_modal.confirm_post'}}</p>
@@ -85,7 +85,7 @@
           </on>
           <span>$t:sirsoft-board.common.cancel</span>
         </button>
-        <button class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.deleteModalLoading}}">
+        <button class="px-4 py-2 bg-red-600 dark:bg-red-500 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.deleteModalLoading}}">
           <on type="click">
             <!-- 삭제 실행 — 엔드포인트가 댓글이냐 글이냐로 갈린다. 지운 뒤 갈 곳도 갈린다: 댓글은 이 화면을 다시 읽고, 글·답글은 각각 목록·원글로 빠져나간다 -->
             <sequence>
@@ -115,7 +115,7 @@
   </modal>
   <modal>
     <!-- 신고 접수 — 관리자가 대신 신고를 올리는 자리라, 이 동작이 사용자 신고와 같은 파이프라인을 탄다는 것을 상단 경고로 먼저 알린다. 사유 종류는 그 게시판이 정의한 목록에서만 고른다 -->
-    <modal data-ref="report_modal" title="{{_global.modal_data?.type === 'comment' ? '$t:sirsoft-board.admin.posts.detail.report_modal.title_comment' : '$t:sirsoft-board.admin.posts.detail.report_modal.title'}}" size="medium">
+    <modal data-type="composite" data-ref="report_modal" title="{{_global.modal_data?.type === 'comment' ? '$t:sirsoft-board.admin.posts.detail.report_modal.title_comment' : '$t:sirsoft-board.admin.posts.detail.report_modal.title'}}" size="medium">
       <meta description="Universal Report Modal (Post/Comment)" editor_label="$t:sirsoft-board.admin.posts.modals.report_editor_label"/>
       <div class="py-2">
         <div class="alert-warning">
@@ -155,7 +155,7 @@
           </on>
           <span>$t:common.cancel</span>
         </button>
-        <button class="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.reportSubmitting}}">
+        <button class="px-4 py-2 bg-yellow-600 dark:bg-yellow-500 text-white rounded-lg hover:bg-yellow-700 dark:hover:bg-yellow-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.reportSubmitting}}">
           <on type="click">
             <!-- 제출 — 검증을 서버에 맡기지 않고 여기서 두 단계로 거른다(사유 종류 → 상세 사유). 네 액션이 모두 같은 `if` 식을 다시 적는 이유는 액션 배열에 조기 반환이 없어서다: 앞 토스트가 떠도 뒤 액션은 그대로 이어지므로 저마다 자기 조건을 들고 있어야 한다 -->
             <sequence>
@@ -186,7 +186,7 @@
   </modal>
   <modal>
     <!-- 블라인드 처리 — 지우는 것이 아니라 가리는 것이라 사유는 선택 입력이다. 대상(글·댓글)은 삭제 모달과 달리 `_global.blind_modal_data` 라는 자기 키를 쓴다 — 삭제 모달과 열린 채로 겹칠 수 있어 같은 키를 나눠 쓰면 대상이 섞인다 -->
-    <modal data-ref="blind_modal" title="{{_global.blind_modal_data?.type === 'comment' ? '$t:sirsoft-board.admin.posts.modals.blind_comment_title' : '$t:sirsoft-board.admin.posts.modals.blind_title'}}" size="medium">
+    <modal data-type="composite" data-ref="blind_modal" title="{{_global.blind_modal_data?.type === 'comment' ? '$t:sirsoft-board.admin.posts.modals.blind_comment_title' : '$t:sirsoft-board.admin.posts.modals.blind_title'}}" size="medium">
       <meta description="Blind Modal (Post/Comment)" editor_label="$t:sirsoft-board.admin.posts.modals.blind_editor_label"/>
       <div class="py-2">
         <p class="text-gray-700 dark:text-gray-300 mb-4">{{_global.blind_modal_data?.type === 'comment' ? '$t:sirsoft-board.admin.posts.modals.blind_comment_confirm' : '$t:sirsoft-board.admin.posts.modals.blind_confirm'}}</p>
@@ -208,7 +208,7 @@
           </on>
           <span>$t:common.cancel</span>
         </button>
-        <button class="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.blindModalLoading}}">
+        <button class="px-4 py-2 bg-yellow-600 dark:bg-yellow-500 text-white rounded-lg hover:bg-yellow-700 dark:hover:bg-yellow-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.blindModalLoading}}">
           <on type="click">
             <!-- 블라인드 실행 — 글은 남고 표시만 가려지므로 삭제와 달리 화면을 떠나지 않고 이 자리에서 다시 읽는다(가려진 상태가 그 자리에 그대로 보여야 한다) -->
             <sequence>
@@ -235,7 +235,7 @@
   </modal>
   <modal>
     <!-- 블라인드 해제 — 되돌리는 동작이라 사유 입력이 없고 확인 한 줄로 끝난다. 대상 키(`_global.restore_modal_data`)를 따로 두는 이유는 블라인드 모달과 같다 -->
-    <modal data-ref="restore_modal" title="{{_global.restore_modal_data?.type === 'comment' ? '$t:sirsoft-board.admin.posts.modals.restore_comment_title' : '$t:sirsoft-board.admin.posts.modals.restore_title'}}" size="sm">
+    <modal data-type="composite" data-ref="restore_modal" title="{{_global.restore_modal_data?.type === 'comment' ? '$t:sirsoft-board.admin.posts.modals.restore_comment_title' : '$t:sirsoft-board.admin.posts.modals.restore_title'}}" size="sm">
       <meta description="Restore Modal (Post/Comment)" editor_label="$t:sirsoft-board.admin.posts.modals.restore_editor_label"/>
       <div class="py-2">
         <p class="text-gray-700 dark:text-gray-300 mb-4">{{_global.restore_modal_data?.type === 'comment' ? '$t:sirsoft-board.admin.posts.modals.restore_comment_confirm' : '$t:sirsoft-board.admin.posts.modals.restore_confirm'}}</p>
@@ -247,7 +247,7 @@
           </on>
           <span>$t:common.cancel</span>
         </button>
-        <button class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.restoreModalLoading}}">
+        <button class="px-4 py-2 bg-green-600 dark:bg-green-500 text-white rounded-lg hover:bg-green-700 dark:hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.restoreModalLoading}}">
           <on type="click">
             <!-- 해제 실행 — 블라인드와 대칭이고 보내는 본문이 없다(사유가 필요한 쪽은 가리는 동작뿐이다) -->
             <sequence>

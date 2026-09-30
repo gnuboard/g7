@@ -26,17 +26,20 @@ _`getSettingsSchema()` 선언이 없습니다._
 상수를 읽으면 하위 계층이 HTTP 계층에 기대는 역전이 되고, 두 계층이 따로 해석하면 화면이
 안내한 상한과 서버가 거절하는 상한이 갈립니다.
 
-파일 형태가 다른 확장과 다릅니다 — 이커머스·게시판은 `{_meta, defaults, frontend_schema}` 3단
-구조지만 여기는 **평평한 값 트리**입니다. 관리자 화면이 없어 `frontend_schema` 가 필요 없고,
-그래서 `_meta` 도 두지 않았습니다. 읽기는 `g7_module_settings('sirsoft-page', 'attachment.…')`
-로 하고, `PageSettingsService` 가 설정이 아직 동기화되지 않은 환경을 위해 파일 직접 읽기를
-폴백으로 갖습니다.
+파일 형태는 이커머스·게시판과 같은 `{_meta, defaults, frontend_schema}` 3단 구조입니다. 관리자
+설정 화면은 없지만 **관리자 페이지 폼의 첨부 업로더**가 서버 검증과 같은 개수·용량·형식을 쓰도록
+`frontend_schema` 로 `attachment.*` 세 값을 프론트엔드 전역(`_global.modules['sirsoft-page']`)에
+노출합니다 — 업로더에 리터럴을 박으면 설정을 바꿨을 때 화면이 서버가 허용하는 파일을 먼저
+거절하거나, 서버가 거절할 파일을 받아 저장 단계에서야 실패합니다. 서버 설정은 MIME 목록이고
+업로더는 확장자로 거르므로 폼이 MIME → 확장자로 옮겨 씁니다. 읽기는
+`g7_module_settings('sirsoft-page', 'attachment.…')` 로 하고, `PageSettingsService` 가 설정이 아직
+동기화되지 않은 환경을 위해 파일 직접 읽기를 폴백으로 갖습니다(평평한 값 트리 형식도 계속 읽습니다).
 
 **서비스에서 상한을 리터럴로 재클램프하지 않습니다.** 계산은 서비스가, 상한 검증은
 FormRequest 가 단일 책임으로 갖습니다 — 이중 클램프가 생기면 설정을 올려도 반영되지 않습니다.
 
-설정 화면을 나중에 추가한다면 `_meta.categories` 와 `frontend_schema` 를 더하는 방식이며, 그때
-값의 위치(`attachment.*`)는 바꾸지 않아야 기존 설치의 값이 유지됩니다.
+설정 화면을 나중에 추가하더라도 값의 위치(`attachment.*`)는 바꾸지 않아야 기존 설치의 값이
+유지됩니다.
 <!-- @intent END -->
 
 ## 권한

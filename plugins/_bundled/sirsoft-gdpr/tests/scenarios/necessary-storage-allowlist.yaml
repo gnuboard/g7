@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage[cross_product,effects] reason: 판정 축(스코프 3 × 표기 2 × 잠금 2 × 설정상태 3)과 저장 축(요청 5)은 서로 독립이라 곱집합의 대부분이 성립하지 않는 조합이다 — 예컨대 "잠금 항목을 와일드카드로 적은 요청"은 입력 자체가 존재하지 않는다. 등록된 PHPUnit 45 + Vitest 178 + Playwright 3 = 226 케이스가 각 축의 경계값(스코프 넘나듦·와일드카드 앞부분 경계·설정 비었을 때 잠금 생존·설정 미도달 폴백·형식/스코프 위반·키 미전송)과 후속 효과 체인을 전부 덮는다.
+# audit:allow test-scenario-coverage[cross_product,effects] reason: 판정 축(스코프 3 × 표기 2 × 잠금 2 × 설정상태 3)과 저장 축(요청 5)은 서로 독립이라 곱집합의 대부분이 성립하지 않는 조합이다 — 예컨대 "잠금 항목을 와일드카드로 적은 요청"은 입력 자체가 존재하지 않는다. 등록된 PHPUnit 60 + Vitest 190 + Playwright 3 = 253 케이스가 각 축의 경계값(스코프 넘나듦·와일드카드 앞부분 경계·설정 비었을 때 잠금 생존·설정 미도달 폴백·형식/스코프 위반·키 미전송)과 후속 효과 체인을 전부 덮는다.
 
 feature: 필수 저장 항목 허용목록의 운영자 설정 이관
 
@@ -53,6 +53,16 @@ effects:
   - upgrade_leaves_allowlist_untouched_when_pattern_present
   - upgrade_appends_analytics_opt_out_cookie_when_absent
   - upgrade_leaves_allowlist_untouched_when_opt_out_cookie_present
+  - upgrade_removes_extension_owned_keys_seeded_by_1_0_4
+  - upgrade_preserves_operator_items_when_removing_extension_keys
+  - shipped_catalog_contains_no_extension_owned_keys
+
+  # 확장 제공 계약 (GDPR 소유 필터 훅 — 확장이 자기 키를 제공)
+  - provided_keys_collected_from_filter_hook
+  - provided_keys_merged_into_necessary_judgement
+  - provided_keys_reject_invalid_items
+  - provided_keys_exposed_in_inline_payload
+  - provided_keys_merged_into_inline_allowlist
 
   # 클라이언트 소비 (storageInterceptor)
   - storage_allows_item_listed_in_settings
@@ -114,6 +124,7 @@ effects:
   - layout_extracts_value_from_event_target_value
   - layout_error_key_prefix_matches_scope
   - layout_locked_chips_read_response_not_form_state
+  - layout_provided_chips_read_response_not_form_state
   - layout_card_not_gated_behind_banner_toggle
   - layout_i18n_keys_exist_in_ko_and_en
 
@@ -131,19 +142,23 @@ test_files:
   - plugins/_bundled/sirsoft-gdpr/tests/Unit/Upgrades/SeedNecessaryStorageAllowlistTest.php
   - plugins/_bundled/sirsoft-gdpr/tests/Unit/Upgrades/AppendViewModeToNecessaryAllowlistTest.php
   - plugins/_bundled/sirsoft-gdpr/tests/Unit/Upgrades/AppendAnalyticsOptOutToNecessaryAllowlistTest.php
+  - plugins/_bundled/sirsoft-gdpr/tests/Unit/Upgrades/RemoveExtensionOwnedKeysFromNecessaryAllowlistTest.php
+  - plugins/_bundled/sirsoft-gdpr/tests/Unit/Support/ProvidedNecessaryStorageTest.php
 
   # Vitest (프론트엔드)
   - plugins/_bundled/sirsoft-gdpr/resources/js/__tests__/storageInterceptor.test.ts
   - plugins/_bundled/sirsoft-gdpr/resources/js/__tests__/cookieInterceptor.test.ts
   - plugins/_bundled/sirsoft-gdpr/resources/js/__tests__/functionalCleaner.test.ts
   - plugins/_bundled/sirsoft-gdpr/resources/js/__tests__/necessaryAllowlistCoverage.test.ts
+  - plugins/_bundled/sirsoft-gdpr/resources/js/__tests__/inlineAllowlist.test.ts
   - plugins/_bundled/sirsoft-gdpr/resources/js/__tests__/layouts/admin_plugin_settings.test.tsx
 
   # Playwright (브라우저 종단)
   - plugins/_bundled/sirsoft-gdpr/tests/Playwright/specs/admin/necessary-allowlist-settings.spec.ts
 
 limitations:
-  - "새 확장의 저장 키를 찾는 일은 운영자 몫이다 — 플러그인은 저장 키를 관측·수집하지 않는다 (관측하면 그 자체가 추적이 된다)."
+  - "확장 소유 키는 그 확장이 계약 훅(`sirsoft-gdpr.necessary_storage.filter_provided_keys`)으로 제공한다. 제공하지 않는 확장의 키를 찾는 일은 운영자 몫이다 — 플러그인은 저장 키를 관측·수집하지 않는다 (관측하면 그 자체가 추적이 된다)."
+  - "확장 제공 키는 요청마다 활성 확장의 리스너에서 모은다. 제공 확장만 먼저 끄거나 이 플러그인만 1.1.0 으로 올리고 제공 확장을 올리지 않으면, 1.1.0 스텝이 걷어낸 키가 그 사이 허용되지 않는다 — 번들 확장은 함께 갱신된다."
   - "`*` 는 항목 끝에만 쓸 수 있다. 앞이나 중간의 `*` 는 저장 시점에 거부된다 — 접두사가 비면 전체 개방이 되어 게이트가 무력화되기 때문이다."
   - "인라인 페이로드가 도달하지 못하면 잠금 집합만으로 서고, 그 창에서는 운영자가 등재한 항목이 파기된다. 그 상태는 로그를 남기지 않으므로 E2E 의 인라인 페이로드 축이 유일한 관문이다."
   - "세션 쿠키 이름은 서버 설정(`session.cookie`)이 정하는 런타임 값이라 클라이언트 폴백에 담을 수 없다. 인라인이 실패한 극단 상황에서는 세션 쿠키의 httpOnly 기본값이 방어한다."

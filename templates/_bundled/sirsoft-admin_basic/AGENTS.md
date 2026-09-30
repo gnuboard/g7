@@ -40,7 +40,7 @@ admin/`)이 이 템플릿의 베이스(`_admin_base`)를 extends 하고 이 템�
 |---|---|---|
 | `template.json` | manifest (버전 SSoT) | version 변경 시 package.json·package-lock.json 동기화 |
 | `routes.json` | 라우트 → 레이아웃 매핑 | `php artisan template:update sirsoft-admin_basic --force` |
-| `layouts/` | 레이아웃 소스 `.g7.html` (짝 `.json` 은 굽기 산출) | `php artisan template:update sirsoft-admin_basic --force` (빌드 불필요) |
+| `layouts/` | 레이아웃 소스 `.g7.html` (짝 `.json` 은 굽기 산출. 컴포넌트 종류는 `data-type`, 컴파일은 템플릿과 무관) | `php artisan template:update sirsoft-admin_basic --force` (빌드 불필요) |
 | `src/components/` | React 컴포넌트 | `php artisan template:build` → `php artisan template:update sirsoft-admin_basic --force` |
 | `src/handlers/` | 템플릿 전용 액션 핸들러 | `php artisan template:build` → `php artisan template:update sirsoft-admin_basic --force` |
 | `dist/` | 커밋되는 빌드 산출물 | `--production` 으로 재빌드 (sourceMappingURL 잔존 금지) |

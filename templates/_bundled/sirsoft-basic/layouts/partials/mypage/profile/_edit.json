@@ -357,53 +357,20 @@
                             },
                             "onSuccess": [
                                 {
-                                    "comment": "결제 통화 통합 저장 (D9 — 이커머스 설치 시에만. 회원정보 저장 성공 후 같은 흐름에서 통화도 영속 저장). 게이트=폼에 통화 필드가 있을 때만.",
-                                    "handler": "apiCall",
-                                    "target": "/api/modules/sirsoft-ecommerce/user/currency",
+                                    "comment": "결제 통화·배송국가는 위 회원정보 저장 요청에 함께 실려 이커머스가 코어 훅으로 저장했다. 여기서는\n                 화면 전역 선호값만 맞춘다 — 헤더 셀렉터·가격 표시가 새로고침 없이 바뀐 값을 따르게 하기 위해서다.\n                 이커머스가 없으면 폼에 두 칸이 없어 아무것도 하지 않는다.",
+                                    "handler": "setState",
                                     "if": "{{_local?.profileEditForm?.ecommerce_preferred_currency}}",
-                                    "auth_required": true,
                                     "params": {
-                                        "method": "PUT",
-                                        "body": "{{ { currency: _local.profileEditForm.ecommerce_preferred_currency } }}"
-                                    },
-                                    "onSuccess": {
-                                        "handler": "setState",
-                                        "params": {
-                                            "target": "global",
-                                            "preferredCurrency": "{{_local.profileEditForm.ecommerce_preferred_currency}}"
-                                        }
-                                    },
-                                    "onError": {
-                                        "handler": "toast",
-                                        "params": {
-                                            "type": "error",
-                                            "message": "{{error.message}}"
-                                        }
+                                        "target": "global",
+                                        "preferredCurrency": "{{_local.profileEditForm.ecommerce_preferred_currency}}"
                                     }
                                 },
                                 {
-                                    "comment": "배송국가 통합 저장 (MP08 후속 — 이커머스 설치 + 폼에 배송국가 필드가 있을 때만). 회원정보 저장 성공 후 같은 흐름에서 배송국가도 영속 저장.",
-                                    "handler": "apiCall",
-                                    "target": "/api/modules/sirsoft-ecommerce/user/shipping-country",
+                                    "handler": "setState",
                                     "if": "{{_local?.profileEditForm?.ecommerce_preferred_shipping_country}}",
-                                    "auth_required": true,
                                     "params": {
-                                        "method": "PUT",
-                                        "body": "{{ { shipping_country: _local.profileEditForm.ecommerce_preferred_shipping_country } }}"
-                                    },
-                                    "onSuccess": {
-                                        "handler": "setState",
-                                        "params": {
-                                            "target": "global",
-                                            "preferredShippingCountry": "{{_local.profileEditForm.ecommerce_preferred_shipping_country}}"
-                                        }
-                                    },
-                                    "onError": {
-                                        "handler": "toast",
-                                        "params": {
-                                            "type": "error",
-                                            "message": "{{error.message}}"
-                                        }
+                                        "target": "global",
+                                        "preferredShippingCountry": "{{_local.profileEditForm.ecommerce_preferred_shipping_country}}"
                                     }
                                 },
                                 {
@@ -1660,7 +1627,7 @@
                     ]
                 },
                 {
-                    "comment": "결제 통화 카드 (A3·A5·D9 — 이커머스 설치 시에만. 폼 필드로 통합 저장. 게이트=이커머스 모듈 설치(_global.modules) — 코어 노출값이라 user 리소스 병합 타이밍과 무관하게 안정적)",
+                    "comment": "결제 통화 카드 (A3·A5·D9 — 이커머스 설치 시에만). name 바인딩으로 profileEditForm 에 실려 회원정보 저장(PUT /api/me) 한 번에 함께 저장되고, 잘못된 값이면 그 요청의 검증 오류가 이 칸 아래에 뜬다. 게이트=이커머스 모듈 설치(_global.modules) — 코어 노출값이라 user 리소스 병합 타이밍과 무관하게 안정적",
                     "type": "basic",
                     "name": "Div",
                     "if": "{{_global.modules?.['sirsoft-ecommerce'] !== undefined}}",
@@ -1718,11 +1685,20 @@
                                 "options": "{{(_global.modules?.['sirsoft-ecommerce']?.language_currency?.currencies ?? []).filter(c => c.is_default || (c.exchange_rate ?? 0) > 0).map(c => ({ value: c.code, label: c.code + ' (' + (c.symbol ?? c.code) + ')' }))}}",
                                 "className": "w-full sm:w-64"
                             }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "if": "{{_local.profileErrors?.ecommerce_preferred_currency}}",
+                            "props": {
+                                "className": "mt-2 text-sm text-red-600 dark:text-red-400"
+                            },
+                            "text": "{{_local.profileErrors?.ecommerce_preferred_currency?.[0] ?? ''}}"
                         }
                     ]
                 },
                 {
-                    "comment": "배송국가 설정 카드 (MP08 후속 — 이커머스 설치 + 해외배송 활성 시에만). name 바인딩으로 profileEditForm 에 자동 포함, 회원정보 [저장] 시 onSuccess 체인이 PUT.",
+                    "comment": "배송국가 설정 카드 (MP08 후속 — 이커머스 설치 + 해외배송 활성 시에만). name 바인딩으로 profileEditForm 에 실려 회원정보 저장 요청에 함께 간다 — 별도 저장 호출이 없다.",
                     "type": "basic",
                     "name": "Div",
                     "if": "{{_global.modules?.['sirsoft-ecommerce']?.shipping?.international_shipping_enabled === true}}",
@@ -1780,6 +1756,15 @@
                                 "options": "{{(_global.modules?.['sirsoft-ecommerce']?.shipping?.available_countries ?? []).filter(c => c.is_active).map(c => ({ value: c.code, label: ($localized(c.name) || c.code) }))}}",
                                 "className": "w-full sm:w-64"
                             }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "if": "{{_local.profileErrors?.ecommerce_preferred_shipping_country}}",
+                            "props": {
+                                "className": "mt-2 text-sm text-red-600 dark:text-red-400"
+                            },
+                            "text": "{{_local.profileErrors?.ecommerce_preferred_shipping_country?.[0] ?? ''}}"
                         }
                     ]
                 },

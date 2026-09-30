@@ -5,7 +5,7 @@
   템플릿에서 나오므로 새로 받지 않으면 옛 화면이 남는다(사용자 템플릿은 이 화면과 무관하다).
   필요한 확장이 갖춰지지 않아 409 가 오면 실패로 보지 않고 강제 활성 창으로 넘긴다. -->
 <partial description="템플릿 활성화 확인 모달" editor_label="$t:admin.modal_label.admin_template_list.template_activate_modal">
-  <modal data-ref="template_activate_modal" title="$t:admin.templates.modals.activate_title" size="sm">
+  <modal data-type="composite" data-ref="template_activate_modal" title="$t:admin.templates.modals.activate_title" size="sm">
     <div class="py-2">
       <p class="text-gray-700 dark:text-gray-300">$t:admin.templates.modals.activate_confirm|name={{_global.selectedTemplate.name}}</p>
       <p class="mt-2 text-label-subtle">$t:admin.templates.modals.activate_description</p>
@@ -35,8 +35,13 @@
                 <toast type="success" message="$t:admin.templates.activate_success"/>
                 <refetch-data-source dataSourceId="templates"/>
                 <reload-extensions/>
+                <!-- 템플릿과 함께 꺼졌던 언어팩이 있으면 되살릴지 묻는다(서버는 목록을 건넨 뒤 지운다).
+                     관리자 템플릿은 새 화면을 그리려고 페이지를 새로 고치는데, 창을 띄운 경우에는 새로 고침을
+                     창이 닫힐 때로 미룬다(`reactivateLanguagePacksRefreshAfter`) — 곧바로 고치면 창이 사라진다. -->
+                <set-state target="global" reactivateLanguagePacksData="{{(response.data?.pending_language_packs ?? [])}}" reactivateLanguagePacksRefreshAfter="{{_global.selectedTemplate?.type === 'admin'}}"/>
+                <open-modal if="{{(response.data?.pending_language_packs ?? []).length &gt; 0 &amp;&amp; (current_user?.data?.permissions ?? []).some(p =&gt; (p?.identifier ?? p) === 'core.language_packs.manage')}}" target="template_reactivate_language_packs_modal"/>
                 <conditions>
-                  <when if="{{_global.selectedTemplate.type === 'admin'}}">
+                  <when if="{{_global.selectedTemplate.type === 'admin' &amp;&amp; !((response.data?.pending_language_packs ?? []).length &gt; 0 &amp;&amp; (current_user?.data?.permissions ?? []).some(p =&gt; (p?.identifier ?? p) === 'core.language_packs.manage'))}}">
                     <refresh :delayMs="800"/>
                   </when>
                 </conditions>

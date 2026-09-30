@@ -210,7 +210,7 @@ class Plugin extends AbstractPlugin
             Listeners\CancelActivityLogListener::class,
             Listeners\RegisterEasyPayMethodsListener::class,
             Listeners\AdjustEcommercePaymentMethodsLayoutListener::class,
-            Listeners\EnsureAdminOrderListTestBadgeLayoutListener::class,
+            Listeners\ProvidePaymentMethodDisplayLabelListener::class,
             Listeners\EnsureAdminOrderDetailPaymentQueryLayoutListener::class,
             Listeners\RestoreLayoutExtensionsAfterUpdateListener::class,
         ];

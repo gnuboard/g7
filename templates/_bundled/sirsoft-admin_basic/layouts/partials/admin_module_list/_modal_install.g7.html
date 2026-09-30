@@ -10,7 +10,7 @@
 
   vendor 설치 방식(자동/컴포저/번들)은 이 창에서만 고른다. -->
 <partial description="모듈 설치 확인 모달 — install-preview API 응답 기반 cascade(의존 확장 + 동반 언어팩) 체크리스트 포함" editor_label="$t:admin.modal_label.admin_module_list.module_install_modal">
-  <modal data-ref="module_install_modal" title="$t:admin.modules.modals.install_title" size="medium">
+  <modal data-type="composite" data-ref="module_install_modal" title="$t:admin.modules.modals.install_title" size="medium">
     <!-- 설치 미리보기 — 함께 깔릴 의존 확장·언어팩과 각각의 기본 선택 여부를 서버가 정해 준다.
          응답을 전역 `installPreview` 에 올려 아래 체크리스트와 요청 본문이 함께 읽는다. -->
     <data-source id="moduleInstallPreview" label_key="$t:editor.data_source.moduleInstallPreview" type="api" endpoint="/api/admin/modules/{{_global.selectedModule.identifier}}/install-preview" :auth_required="true" initGlobal="installPreview"/>

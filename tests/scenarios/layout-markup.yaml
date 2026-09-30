@@ -272,7 +272,11 @@ effects:
   # 먼저 세었고(none 29 · append 6 · optional 3 · replace 3 · required 1) 그 계수가 가설을 기각했다.
   # --- S2 노드 컴파일
   - tag_resolves_to_component_name_and_type
+  # 2026-09-28 결정 — 컴파일은 템플릿과 무관(JSON 과 동일): 이름은 표기 규칙, 종류는 data-type.
+  # 컴파일은 템플릿에 없는 태그를 거부하지 않는다. 레지스트리의 오타 후보 제시 능력(검사용)은 남는다.
   - unknown_tag_is_rejected_with_registry_suggestion
+  - compile_output_does_not_depend_on_any_template
+  - invalid_component_type_is_rejected
   # `<include>`(조각 참조) 는 S7 에서 구현되어 이월 목록이 비었다 — 노드 자리 이월 효과는 은퇴.
   # 같은 이름의 컴포넌트가 있는 태그(modal/option/card)는 이월이 아니라 컴포넌트로 해석된다(S2 관측).
   - include_compiles_to_a_partial_reference_node
@@ -333,9 +337,9 @@ effects:
   # --- S2.5 ① 제공 (프리픽스 태그)
   - extension_component_gets_prefixed_tag_and_namespaced_name
   - template_component_tag_unchanged_by_extension_merge
-  - underscored_extension_id_normalizes_to_hyphenated_tag_prefix
-  - colliding_normalized_extension_ids_are_rejected
-  - undeclared_tag_conflict_across_sources_is_rejected
+  - extension_component_tag_keeps_identifier_verbatim
+  - extension_ids_differing_by_underscore_stay_distinct
+  - extension_tag_cannot_collide_with_template_tag
   - suggestion_covers_extension_component_tags
   # --- S2.5 ② 오버라이드 (템플릿 전용 권한)
   - template_override_replaces_extension_component_in_place
@@ -368,6 +372,8 @@ effects:
   - document_root_selects_layout_partial_extension_or_override
   - empty_or_multiple_or_unknown_document_root_is_rejected
   - partial_root_must_be_a_single_node
+  - partial_root_meta_must_live_on_partial_envelope
+  - partial_envelope_attributes_become_meta
   # --- S4 최상위 섹션 (사전 A·B)
   - top_level_sections_emit_as_json_keys
   - document_json_key_order_is_deterministic
@@ -396,10 +402,16 @@ effects:
   # 출하 JSON 345/25,551 이 어긋나 있었고 어긋난 쪽이 편집 표식 소실(Toggle·Badge) 또는
   # dynamicState DOM 누출(Input 이 방어코드로 막고 있던 것)을 낳고 있었다.
   - registry_type_matches_component_directory
-  - node_type_is_derived_from_registry_not_source
-  - decompile_ignores_stale_source_type
+  # D47 개정(2026-09-28 결정): 종류는 레지스트리 파생이 아니라 작성자가 data-type 으로 정한다.
+  - node_type_comes_from_data_type_not_template
+  - written_type_mismatch_is_linted_against_the_target_template
+  - decompile_preserves_source_type_as_data_type
   - card_is_a_hoist_only_under_a_grid_parent
   - embedding_tag_outside_its_parent_is_rejected
+  # C2(2026-09-28 결정): hoist 태그는 부모 컴포넌트 이름과 무관하다. 이름이 겹치는 옛 표기(`<card>`·`<footer>`)만
+  # 종전 부모 아래에서 hoist 이고, 부모 무관 표기는 `<prop-card>`·`<prop-footer>` 다.
+  - hoist_tags_compile_regardless_of_parent_name
+  - legacy_card_and_footer_keep_their_meaning_under_legacy_parents
   - embedding_tag_requires_its_named_attribute
   - item_template_holds_exactly_one_node
   - duplicate_hoist_key_is_rejected
@@ -412,12 +424,20 @@ effects:
   - external_url_and_dangerous_scheme_pass_migration_validation
   - authoring_api_still_rejects_dangerous_scheme
   - component_name_not_in_registry_is_rejected
+  # C3(2026-09-28 결정): 목록에 없는 확장 컴포넌트는 경고일 뿐 저장을 막지 않는다 — 점 없는 템플릿 오타만 오류.
+  - missing_extension_component_is_not_a_strong_validation_error
   - fragment_structure_violation_is_rejected
   - wait_for_pointing_at_never_resolving_source_is_rejected
   - wait_for_pointing_at_missing_id_is_ignored
   - script_src_outside_allowlist_is_rejected
   - allowlisted_protocol_relative_script_src_passes
   - same_origin_script_src_is_not_treated_as_external
+  # A11(2026-09-28 결정): 허용 호스트 = 확장·템플릿 선언 집계 ∪ 문서 소유(·오버라이드 대상) 확장 선언
+  # ∪ 운영자 설정. 코어 설정 기본값은 비었고, 설치 경로는 JSON 설치처럼 호스트를 대조하지 않는다.
+  - core_config_ships_no_extension_script_host
+  - operator_configured_script_host_is_allowed
+  - install_context_does_not_check_script_host
+  - owner_and_override_target_manifest_hosts_are_declared
   # --- S6 정적 lint (경고 — 컴파일 중단 없음, 오검출 회피 포함)
   - unregistered_handler_is_warned
   - core_template_extension_handlers_are_not_warned
@@ -432,6 +452,8 @@ effects:
   - standalone_layout_firing_toast_without_host_is_warned
   - standalone_layout_with_toast_host_is_not_warned
   - extends_layout_delegates_host_to_base
+  # 호스트는 컴포넌트 이름이 아니라 엔진 계약(`_global.toasts`·`modals`/`_global.modalStack`)으로 판정한다(템플릿 무관).
+  - global_host_is_judged_by_engine_state_not_component_name
   # --- S23 축 A: 액션 params 오배치 키 (`condition`·`trigger`·`id`).
   #     무접두 속성이 검사 없이 `params.*` 로 통과하는 사각(78차 프로브 f3·f4a·f4d)을 닫는다.
   #     음성 축 둘이 이 판정의 **축소 경계**를 지킨다 — 키를 통째로 금지하면 `startInterval`·
@@ -444,7 +466,14 @@ effects:
   #     코퍼스 발화가 0 건이라 **합성 표본이 유일한 생사 판정**이므로 양성·음성을 함께 둔다.
   - unsupported_hoist_prop_is_warned
   - declared_hoist_prop_is_not_warned
-  - hoist_judgment_is_scoped_to_the_hoist_parent
+  # hoist 가 부모 이름과 무관해진 뒤 판정도 그 노드 컴포넌트의 선언으로 한다(C2).
+  - hoist_judgment_follows_declaration_not_parent_name
+  # --- C3: 편집기 검사 목록 = 편집 대상 템플릿 + 설치된 확장 전부(활성·비활성) + 그 템플릿의 확장 컴포넌트 오버라이드.
+  - missing_extension_component_is_warned
+  - installed_extension_component_is_not_warned
+  - editor_registry_includes_every_installed_extension_component
+  - missing_extension_component_is_warned_in_editor_but_template_typo_is_rejected
+  - missing_extension_component_warning_points_at_source_tag
   # --- S6 파사드 종단 + lint 코드 다국어
   - valid_source_compiles_to_json_with_no_warnings
   - strong_validation_violation_stops_compilation
@@ -594,7 +623,10 @@ effects:
   - partial_layout_name_round_trips
   - responsive_override_carries_structural_keys
   - sortable_wrapper_element_round_trips
-  - columns_embedding_is_gated_by_owner_component
+  # C2(2026-09-28 결정): hoist 는 부모 이름과 무관 — 역변환도 종전 부모는 옛 표기 그대로, 그 밖은 부모 무관 표기.
+  - columns_embedding_is_independent_of_owner_name
+  - decompile_emits_parent_independent_hoist_tags_for_other_parents
+  - decompile_keeps_legacy_tags_for_legacy_parents
   - dead_keys_are_dropped_not_escaped
   - modals_object_map_normalized_to_list
   # --- S11 W2(㉓): 단일-자식 sequence 왕복 비대칭 + overlay 기여 판정
@@ -702,6 +734,18 @@ effects:
   # ㊻ — fragment 등록 세 갈래 중 템플릿 오버라이드만 `glob('*.json')` 로 소스를 무시하던
   # 사각. 공용 trait `CollectsFragmentSources` 로 통일하며 심은 실패 테스트 4건이다.
   - template_override_markup_only_is_registered
+  - template_override_refresh_removes_backfilled_stale_row   # 템플릿 오버라이드 재등록이 소스에 없는 옛 행(백필 키 등)을 정리 — 주소 검색 버튼 이중 주입 (#703 실측)
+  - template_override_refresh_keeps_rows_of_failing_sources   # 소스는 있으나 컴파일 실패한 조각의 행은 보존 (정리 기준 = 소스 존재)
+  # #703 — 조각 식별자 백필·편집기 파일 조작이 7.0.11 업그레이드 설치에서 드러낸 등록 결함군
+  - backfilled_fragment_row_is_rekeyed_not_duplicated   # 활성화·재등록·템플릿 활성화가 백필된 옛 키 행을 파일 키로 잇는다(모호하면 정리) — 조각 이중 주입 차단
+  - edited_backfilled_row_keeps_its_edits_when_rekeyed   # 운영자가 고친 옛 키 행은 수정본을 지닌 채 이어진다(keep 전략이 본다)
+  - reregistration_preserves_other_extensions_edits   # 한 확장의 활성화·업데이트가 부르는 전 확장 재등록은 다른 확장 수정본을 덮지 않는다
+  - reactivation_does_not_revive_cleaned_fragment_rows   # 재활성화 복원은 소스 키 행만 되살린다
+  - unedited_rows_with_empty_maps_are_not_judged_modified   # 빈 map `{}`/`[]` 차이로 손대지 않은 행이 "사용자 수정" 이 되지 않는다(기존 해시 포함)
+  - edited_rows_are_still_judged_modified   # 실제 편집은 여전히 수정본
+  - editor_created_layout_survives_template_refresh   # 편집기 「새 파일」 레이아웃이 고아 오버라이드 정리로 영구 삭제되지 않는다
+  - deleted_bundled_layout_is_recreated_on_refresh   # 편집기에서 지운 번들 레이아웃이 갱신에서 되살아난다(중복 키 실패 없음)
+  - override_rows_for_two_targets_coexist   # 오버라이드 대상이 다른 같은 조각 두 행이 공존하고, 모듈 행 고유성은 유지된다
   - template_override_markup_wins_over_json_sibling
   - template_override_json_only_still_registered
   - template_override_markup_compiles_to_extension_json
@@ -827,6 +871,9 @@ effects:
   - extension_without_component_sources_yields_an_empty_manifest
   # S20 문서 게이트 2종의 축 — 문서 예시를 프로덕션 컴파일러/Rule 로 판정한다
   - doc_markup_examples_compile_with_production_compiler
+  # 문서 예시 게이트 자체 시험 — 없는 문법은 red, 펜스 본문의 ❌ 로 스스로 면제하지 못한다(2026-09-28 매핑 보완).
+  - doc_example_gate_rejects_nonexistent_syntax
+  - fence_body_cannot_self_exempt_as_negative_example
   - doc_layout_endpoints_pass_production_whitelist_rule
   # 39차 — fixture 생성 커맨드가 소스 SSoT 에서 굽는다 (문서 루트만 `.json` 전용이던 자리)
   - fixture_command_prefers_the_authoring_source
@@ -849,15 +896,9 @@ effects:
   - bake_boundary_predicate_detects_both_violation_forms
   # S18.5 — 미착수 대장이 비면서 `assertNotEmpty` 하한이 관측을 잃은 자리를 합성 항목으로 옮긴 축.
   - pending_gate_ledger_predicate_is_self_tested_when_the_ledger_is_empty
-  # S18.5 예고된 red ⓓ — `layout:add-permissions` 의 `.json` in-place 기록을 소스 편집으로 전환.
-  # 굽기 이후 `.json` 은 기계 산출이라 거기 기록하면 다음 굽기에 소실된다(32차 부채 등재 사유).
-  - authored_permissions_block_compiles_to_the_permissions_key
-  - authored_empty_permissions_block_compiles_to_an_empty_array
-  - authored_permissions_block_is_replaced_without_touching_the_rest
-  # 같은 문법이 문서 층과 노드 층(D36) 두 곳에서 쓰이므로 문자열 매칭이면 조건 렌더 권한을 덮어쓴다.
-  - node_level_permissions_are_not_mistaken_for_document_permissions
-  - authored_permissions_edit_normalizes_line_endings_to_lf
-  - add_permissions_command_edits_the_authoring_source_not_the_json_twin
+  # (S18.5 예고된 red ⓓ 의 `layout:add-permissions` 소스 전환 효과 6건은 2026-09-28 커맨드 삭제로 함께 걷었다 —
+  #  권한은 각 레이아웃 소스의 `<permissions>` 에 이미 들어 있고, 코어가 확장 레이아웃→권한 표를 들고 있을 이유가 없다.
+  #  `<permissions>` 컴파일 자체는 DocumentCompilerTest 가 덮는다.)
   # S18.5 예고된 red ⓑ — 굽기가 실물 짝을 전건 수렴시키면 divergence 하한이 관측을 잃는다.
   # 31차 독블록이 그 상태를 예견하고 "합성 표본으로 관측력을 옮기라" 는 처방까지 적어 둔 자리다.
   - fragment_value_oracle_detects_a_json_win_on_a_divergent_pair
@@ -885,6 +926,9 @@ effects:
   # 없었다. 두 경로가 갈리면 어느 쪽으로 설치했느냐에 따라 산출이 달라진다(실측 92파일 153자리).
   - empty_map_survives_the_json_install_path
   - extension_badge_injection_is_idempotent_and_scoped
+  # B2(2026-09-28): 결제 플러그인 업데이트 뒤 복원 리스너가 overlay 뿐 아니라 주문 목록 결제수단 칸 확장점 조각도 되살린다
+  # (소유 매니페스트는 admin-order-list-payment-method-badges.yaml — 같은 테스트 파일을 이 게이트 매니페스트도 소유하므로 등재).
+  - extension_point_fragment_is_restored_after_plugin_update
   - overlay_extensions_are_restored_after_plugin_update
   # #476 C13 — 업데이트 복원이 조각 파일 이름을 식별자로 넘긴다. 설치 경로와 키가 갈리면 같은 대상에
   # 행이 둘 생기고, 그 뒤로는 키 없는 등록이 어느 행인지 가리지 못해 조용히 멈춘다.
@@ -950,6 +994,8 @@ effects:
   - resolver_builds_registry_and_context_from_template_identifier
   # 설치본 점검 커맨드 (layout:check-installed)
   - installed_rows_that_round_trip_pass_with_exit_zero
+  # D3(2026-09-28 결정): 기본 점검 대상은 설치된 템플릿 전부 — 번들 여부로 고르지 않는다.
+  - default_target_is_every_installed_template_not_only_bundled
   - row_rejected_by_production_compile_fails_the_gate
   - round_trip_mismatch_fails_the_gate
   - inapplicable_registration_fails_the_gate
@@ -957,7 +1003,8 @@ effects:
   # 조각 등록 정책 (fragment_key · 적용 필터 · 고아 정리)
   - fragment_is_registered_only_where_its_host_exists
   - two_fragments_for_the_same_target_keep_two_rows
-  - fragment_is_compiled_with_the_target_templates_registry
+  # 2026-09-28 결정: 조각 컴파일은 붙을 템플릿과 무관(C10 의 템플릿별 컴파일 폐기)
+  - fragment_compile_does_not_depend_on_the_target_template
   - late_host_is_filled_by_reregistration_and_orphans_are_removed
   # layout:compile 자기 점검 (쓰기 전에 프로덕션 컴파일로 되돌려 본다)
   - compile_command_writes_markup_that_passes_production_compile
@@ -1011,6 +1058,7 @@ test_files:
   - tests/Unit/Support/LayoutMarkup/NodeCompilerTest.php
   - tests/Unit/Support/LayoutMarkup/ActionCompilerTest.php
   - tests/Unit/Support/LayoutMarkup/DocumentCompilerTest.php
+  - tests/Unit/Support/LayoutMarkup/PartialRootMetaTest.php
   - tests/Unit/Support/LayoutMarkup/StructuredValueGrammarTest.php
   - tests/Unit/Support/LayoutMarkup/EmbeddingCompilerTest.php
   - tests/Unit/Support/LayoutMarkup/LayoutValidatorTest.php
@@ -1046,6 +1094,12 @@ test_files:
   - tests/Unit/Support/LayoutMarkup/LayoutCorpusTest.php
   # ㊻ — 템플릿 확장 오버라이드의 `.g7.html` 소스 무시 사각 (CollectsFragmentSources 통일)
   - tests/Feature/LayoutMarkup/TemplateOverrideMarkupInstallTest.php
+  - tests/Feature/LayoutMarkup/TemplateOverrideStaleRowCleanupTest.php
+  # #703 — 조각 행 수렴·해시 정규화·편집기 레이아웃 보존·오버라이드 대상 고유 키
+  - tests/Feature/LayoutMarkup/FragmentRowConvergenceTest.php
+  - tests/Feature/LayoutMarkup/LayoutContentHashEmptyMapTest.php
+  - tests/Feature/LayoutMarkup/TemplateLayoutRefreshPreservationTest.php
+  - tests/Feature/LayoutMarkup/LayoutExtensionOverrideTargetKeyTest.php
   # 50차 — 빈 map 이 빈 배열로 굳는 결함. PHP 배열은 list/map 을 구분하지 않아 `{}` 가 산출에서
   # `[]` 이 되고, 그 값이 `params.body`/`params.query` 로 서버에 실려 가면 검증이 대상을 못 찾는다
   # (422 또는 침묵 미적용). 판정을 **직렬화 산출 바이트**와 **비-assoc 디코드**로 하는 것이 요점 —
@@ -1090,7 +1144,6 @@ test_files:
   - plugins/_bundled/sirsoft-pay_kginicis/tests/Unit/Listeners/EnsureAdminOrderDetailPaymentQueryLayoutListenerTest.php
   - plugins/_bundled/sirsoft-pay_kginicis/tests/Unit/Listeners/EnsureAdminOrderDetailTestModeLayoutListenerTest.php
   # 31차 — 게이트 상주 모집단을 phpunit.xml 도출로 반전하자 드러난 미등재분(자매 4파일과 같은 축)
-  - plugins/_bundled/sirsoft-pay_kginicis/tests/Unit/Listeners/EnsureAdminOrderListTestBadgeLayoutListenerTest.php
   - plugins/_bundled/sirsoft-pay_kginicis/tests/Unit/Listeners/RestoreLayoutExtensionsAfterUpdateListenerTest.php
   - plugins/_bundled/sirsoft-pay_nhnkcp/tests/Unit/Listeners/EnsureAdminOrderLayoutExtensionsListenerTest.php
   - plugins/_bundled/sirsoft-pay_nhnkcp/tests/Unit/Listeners/RestoreLayoutExtensionsAfterUpdateListenerTest.php
@@ -1109,8 +1162,6 @@ test_files:
   - tests/Feature/LayoutMarkup/LayoutFixtureCommandSourceTest.php
   # S18.5 축 A — `layout:decompile --sync`/`--check` 굽기 계약 + 설치·서빙 경로 미호출(D38) 여집합
   - tests/Feature/LayoutMarkup/LayoutDecompileSyncTest.php
-  # S18.5 예고된 red ⓓ — `layout:add-permissions` 소스 전환 (`.json` in-place 기록 폐기)
-  - tests/Feature/LayoutMarkup/MarkupPermissionsAuthoringTest.php
   # S18.5 축 B — 설치 소스 × 확장 동작 매트릭스 (sub_flows.layout_source_matrix)
   - tests/Feature/LayoutMarkup/LayoutSourceMatrixTest.php
   # S18.5 축 C — 마크업 부채 정리분을 코퍼스 전수 단언으로 잠근다(audit 이 다시 사각이 돼도 살아 있다)

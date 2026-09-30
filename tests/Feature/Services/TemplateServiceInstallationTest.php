@@ -440,6 +440,7 @@ class TemplateServiceInstallationTest extends TestCase
             'version' => '1.0.0',
             'status' => ExtensionStatus::Active->value,
         ]);
+        $this->createPeerActiveAdminTemplate();
 
         $templateInfo = [
             'identifier' => $identifier,
@@ -498,6 +499,7 @@ class TemplateServiceInstallationTest extends TestCase
             'version' => '1.0.0',
             'status' => ExtensionStatus::Active->value,
         ]);
+        $this->createPeerActiveAdminTemplate();
 
         $this->templateManager
             ->shouldReceive('deactivateTemplate')
@@ -508,5 +510,24 @@ class TemplateServiceInstallationTest extends TestCase
         // Act & Assert
         $this->expectException(ValidationException::class);
         $this->templateService->deactivateTemplate($identifier);
+    }
+
+    /**
+     * 같은 유형(admin)의 다른 활성 템플릿을 만듭니다.
+     *
+     * 유형의 마지막 활성 템플릿은 끌 수 없으므로(#703) 비활성화 경로를 보는 테스트는 이 짝을 남긴다.
+     *
+     * @return Template 짝 활성 템플릿
+     */
+    private function createPeerActiveAdminTemplate(): Template
+    {
+        return Template::create([
+            'identifier' => 'test-template-peer',
+            'vendor' => 'test-vendor',
+            'name' => 'Peer Template',
+            'type' => 'admin',
+            'version' => '1.0.0',
+            'status' => ExtensionStatus::Active->value,
+        ]);
     }
 }

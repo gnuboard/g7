@@ -2,11 +2,14 @@
 
 namespace Plugins\Sirsoft\Gdpr\Tests\Unit\Listeners;
 
+use App\Extension\HookManager;
 use App\Models\User;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Http\Request;
+use Mockery\MockInterface;
 use Plugins\Sirsoft\Gdpr\Concerns\IssuesGuestSessionCookie;
 use Plugins\Sirsoft\Gdpr\Listeners\GdprAnalyticsConsentListener;
+use Plugins\Sirsoft\Gdpr\Services\GdprConsentService;
 use Plugins\Sirsoft\Gdpr\Tests\PluginTestCase;
 
 /**
@@ -15,6 +18,16 @@ use Plugins\Sirsoft\Gdpr\Tests\PluginTestCase;
  * 게스트 동의는 서명된 `gdpr_session` 쿠키의 UUID 로 저장된다. 코어가 라라벨 세션 ID 로 물으면
  * 배너에서 동의한 게스트도 「동의 없음」이 되어 동의 연동 모드에서 게스트가 한 명도 세어지지
  * 않는다(브라우저 실측 이슈 #682 §8 M1-T9). 이 리스너가 그 UUID 를 코어에 알려 준다.
+ *
+ * 코어는 이 플러그인을 모른다 — 코어 필터(`core.analytics.visitor_has_consent` ·
+ * `core.analytics.tracking_permission`)에 이 리스너가 답하고, 철회는 코어 액션으로 옮긴다.
+ *
+ * @scenario answer=visitor_has_consent, visitor=guest
+ *
+ * @effects provider_answers_consent_session_id_with_the_verified_guest_uuid,
+ *   provider_answers_core_consent_filter_with_analytics_consent,
+ *   provider_permits_tracking_only_with_both_categories,
+ *   provider_relays_revocation_to_the_core_action
  */
 class GdprAnalyticsConsentListenerTest extends PluginTestCase
 {
@@ -59,9 +72,9 @@ class GdprAnalyticsConsentListenerTest extends PluginTestCase
     /**
      * 게스트 요청은 검증된 `gdpr_session` UUID 로 동의를 묻게 한다.
      *
-     * @scenario mode=consent, gdpr=active_consented
+     * @scenario answer=consent_session_id, visitor=guest
      *
-     * @effects consent_lookup_uses_the_consent_providers_guest_session_id
+     * @effects provider_answers_consent_session_id_with_the_verified_guest_uuid
      *
      * @return void 없음
      */
@@ -78,9 +91,9 @@ class GdprAnalyticsConsentListenerTest extends PluginTestCase
     /**
      * 위조·형식 오류 쿠키는 믿지 않고 코어가 준 기본값을 그대로 돌려준다.
      *
-     * @scenario mode=consent, gdpr=active_declined
+     * @scenario answer=consent_session_id, visitor=guest
      *
-     * @effects consent_lookup_uses_the_consent_providers_guest_session_id
+     * @effects provider_answers_consent_session_id_with_the_verified_guest_uuid
      *
      * @return void 없음
      */
@@ -95,9 +108,9 @@ class GdprAnalyticsConsentListenerTest extends PluginTestCase
     /**
      * 회원은 회원 번호로 동의를 찾으므로 게스트 식별자를 싣지 않는다.
      *
-     * @scenario mode=consent, gdpr=active_consented
+     * @scenario answer=consent_session_id, visitor=member
      *
-     * @effects consent_lookup_uses_the_consent_providers_guest_session_id
+     * @effects provider_answers_consent_session_id_with_the_verified_guest_uuid
      *
      * @return void 없음
      */
@@ -112,9 +125,9 @@ class GdprAnalyticsConsentListenerTest extends PluginTestCase
     /**
      * 필터로 구독하고 요청 문맥에서 동기로 돈다(큐로 넘기면 요청이 없다).
      *
-     * @scenario mode=consent, gdpr=active_consented
+     * @scenario answer=consent_session_id, visitor=guest
      *
-     * @effects consent_lookup_uses_the_consent_providers_guest_session_id
+     * @effects provider_answers_consent_session_id_with_the_verified_guest_uuid
      *
      * @return void 없음
      */
@@ -135,7 +148,7 @@ class GdprAnalyticsConsentListenerTest extends PluginTestCase
      * null 이 되고, 동의한 게스트의 새로고침이 「미동의」로 제외됐다(#682 S3 라운드 13 브라우저 실측 —
      * 진단 「동의 없음」 13건이 전부 동의자의 새로고침).
      *
-     * @scenario mode=consent, gdpr=active_consented
+     * @scenario answer=consent_session_id, visitor=guest
      *
      * @effects guest_consent_cookie_survives_web_cookie_encryption
      *
@@ -159,5 +172,134 @@ class GdprAnalyticsConsentListenerTest extends PluginTestCase
             app(GdprAnalyticsConsentListener::class)->resolveConsentSessionId('laravel-session-id', $seen),
             '서명값이 암호화 미들웨어를 지나도 그대로여야 동의를 찾는다',
         );
+    }
+
+    /**
+     * 쿠키 동의 조회 결과를 흉내 냅니다.
+     *
+     * @param  array<string, bool>  $consents  항목 → 동의 여부
+     * @return void 없음
+     */
+    private function consentsAre(array $consents): void
+    {
+        $this->mock(GdprConsentService::class, function (MockInterface $mock) use ($consents): void {
+            $mock->shouldReceive('getCurrentCookieConsents')->andReturn($consents);
+        });
+    }
+
+    /**
+     * 동의 모드의 코어 동의 필터에 분석 쿠키 동의 여부로 답한다.
+     *
+     * @scenario answer=visitor_has_consent, visitor=guest
+     *
+     * @effects provider_answers_core_consent_filter_with_analytics_consent
+     *
+     * @return void 없음
+     */
+    public function test_answers_visitor_has_consent_with_the_analytics_category(): void
+    {
+        $listener = app(GdprAnalyticsConsentListener::class);
+
+        $this->consentsAre(['analytics' => true, 'functional' => false]);
+        $this->assertTrue(app(GdprAnalyticsConsentListener::class)->answerVisitorHasConsent(null, null, 'guest-uuid'));
+
+        $this->consentsAre(['analytics' => false, 'functional' => true]);
+        $this->assertFalse(app(GdprAnalyticsConsentListener::class)->answerVisitorHasConsent(null, null, 'guest-uuid'));
+
+        // 앞선 구독자가 이미 답했으면 덮어쓰지 않는다.
+        $this->assertTrue($listener->answerVisitorHasConsent(true, null, 'guest-uuid'));
+    }
+
+    /**
+     * 회원도 같은 필터에 회원 번호로 답한다.
+     *
+     * @scenario answer=visitor_has_consent, visitor=member
+     *
+     * @effects provider_answers_core_consent_filter_with_analytics_consent
+     *
+     * @return void 없음
+     */
+    public function test_answers_visitor_has_consent_for_members(): void
+    {
+        $this->mock(GdprConsentService::class, function (MockInterface $mock): void {
+            $mock->shouldReceive('getCurrentCookieConsents')->with(42, null)->andReturn(['analytics' => true]);
+        });
+
+        $this->assertTrue(app(GdprAnalyticsConsentListener::class)->answerVisitorHasConsent(null, 42, null));
+    }
+
+    /**
+     * 식별자 추적 허용은 분석·기능 둘 다 동의했을 때만이다 — 기능 동의가 없으면 이 플러그인이 방문자 쿠키를 지운다.
+     *
+     * @scenario answer=tracking_permission, visitor=guest
+     *
+     * @effects provider_permits_tracking_only_with_both_categories
+     *
+     * @return void 없음
+     */
+    public function test_tracking_permission_requires_both_categories(): void
+    {
+        $cases = [
+            'analytics+functional' => [['analytics' => true, 'functional' => true], true],
+            'analytics only' => [['analytics' => true, 'functional' => false], false],
+            'functional only' => [['analytics' => false, 'functional' => true], false],
+            'none' => [[], false],
+        ];
+
+        foreach ($cases as $label => [$consents, $expected]) {
+            $this->consentsAre($consents);
+            $this->assertSame($expected, app(GdprAnalyticsConsentListener::class)->answerTrackingPermission(null, null, 'guest-uuid'), $label);
+        }
+    }
+
+    /**
+     * 회원도 같은 규칙으로 추적 허용을 답하고, 조회가 실패하면 허용하지 않는다.
+     *
+     * @scenario answer=tracking_permission, visitor=member
+     *
+     * @effects provider_permits_tracking_only_with_both_categories
+     *
+     * @return void 없음
+     */
+    public function test_tracking_permission_for_members_and_lookup_failure(): void
+    {
+        $this->consentsAre(['analytics' => true, 'functional' => true]);
+        $this->assertTrue(app(GdprAnalyticsConsentListener::class)->answerTrackingPermission(null, 42, null));
+
+        $this->mock(GdprConsentService::class, function (MockInterface $mock): void {
+            $mock->shouldReceive('getCurrentCookieConsents')->andThrow(new \RuntimeException('db down'));
+        });
+        $this->assertFalse(app(GdprAnalyticsConsentListener::class)->answerTrackingPermission(null, 42, null));
+    }
+
+    /**
+     * 이 플러그인의 철회 알림을 코어 액션으로 옮긴다 — 코어는 이 플러그인의 훅 이름을 모른다.
+     *
+     * @scenario answer=revoked_relay, visitor=guest
+     *
+     * @effects provider_relays_revocation_to_the_core_action
+     *
+     * @return void 없음
+     */
+    public function test_relays_revocation_to_the_core_action(): void
+    {
+        $fired = 0;
+        $callback = function () use (&$fired): void {
+            $fired++;
+        };
+        HookManager::addAction('core.analytics.consent_revoked', $callback);
+
+        try {
+            app(GdprAnalyticsConsentListener::class)->relayConsentRevoked();
+        } finally {
+            HookManager::removeAction('core.analytics.consent_revoked', $callback);
+        }
+
+        $this->assertSame(1, $fired);
+
+        $hooks = GdprAnalyticsConsentListener::getSubscribedHooks();
+        $this->assertSame('relayConsentRevoked', $hooks['sirsoft-gdpr.consent.revoked']['method']);
+        $this->assertSame('filter', $hooks['core.analytics.visitor_has_consent']['type']);
+        $this->assertSame('filter', $hooks['core.analytics.tracking_permission']['type']);
     }
 }

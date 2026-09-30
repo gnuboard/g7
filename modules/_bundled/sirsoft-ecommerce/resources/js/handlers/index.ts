@@ -321,6 +321,14 @@ import {
     updateExtraFeeFieldHandler,
 } from './shippingPolicyFormHandlers';
 
+// 파일 내려받기·다국어 태그 편집 창 (관리자 템플릿 핸들러에 기대지 않도록 모듈이 소유)
+import { downloadFileHandler } from './downloadFile';
+import {
+    updateMultilingualTagValueHandler,
+    cancelMultilingualTagHandler,
+    saveMultilingualTagHandler,
+} from './multilingualTagHandlers';
+
 // URL 상태 복원 핸들러
 import { initCategoryFromUrlHandler } from './initCategoryFromUrl';
 import { initBrandFromUrlHandler } from './initBrandFromUrl';
@@ -396,6 +404,11 @@ export const handlerMap = {
     updateAdditionalOptionValue: updateAdditionalOptionValueHandler,
     removeAdditionalOptionValue: removeAdditionalOptionValueHandler,
 
+    // ===== 다국어 태그 편집 창 (상품 옵션값) =====
+    updateMultilingualTagValue: updateMultilingualTagValueHandler,
+    cancelMultilingualTag: cancelMultilingualTagHandler,
+    saveMultilingualTag: saveMultilingualTagHandler,
+
     // ===== 이미지 관련 =====
     uploadImages: uploadImagesHandler,
     setThumbnail: setThumbnailHandler,
@@ -469,6 +482,7 @@ export const handlerMap = {
     buildOrderBulkConfirmData: buildOrderBulkConfirmDataHandler,
     executeOrderBulkAction: executeOrderBulkActionHandler,
     downloadOrderExcel: downloadOrderExcelHandler,
+    downloadFile: downloadFileHandler,
     saveVisibleColumns: saveVisibleColumnsHandler,
     loadVisibleColumns: loadVisibleColumnsHandler,
     loadVisibleFilters: loadVisibleFiltersHandler,

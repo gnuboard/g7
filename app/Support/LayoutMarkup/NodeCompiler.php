@@ -150,9 +150,10 @@ final class NodeCompiler
      *
      * 임베딩 태그(`<column>`·`<responsive>` 등)는 S5 에서 구현되어 여기 없다 — 자식 hoist 전용이라
      * 컴포넌트 자리(루트·잘못된 부모)에 오면 EmbeddingCompiler 가 부모 문맥 오류로 잡는다.
-     * `<modal>`·`<option>`·`<card>` 는 레지스트리에 같은 이름의 컴포넌트가 있어 태그 해석이 **먼저**
-     * 성공하므로, 같은 태그가 컴포넌트냐 임베딩이냐를 **위치로** 가른다 — `<card>` 는 그리드 부모
-     * 아래에서만 cardColumns hoist 이고 그 밖에서는 Card 컴포넌트다(child 루프의 embedding 분기).
+     * `<modal>`·`<option>`·`<card>`·`<footer>` 는 같은 이름의 컴포넌트가 있어, 같은 태그가 컴포넌트냐
+     * 임베딩이냐를 **위치로** 가른다 — 옛 표기 `<card>`·`<footer>` 는 종전 부모(그리드·Modal) 아래에서만
+     * hoist 이고 그 밖에서는 컴포넌트다. 부모와 무관한 hoist 는 `<prop-card>`·`<prop-footer>` 로 쓴다
+     * (child 루프의 embedding 분기, EmbeddingCompiler::LEGACY_TAGS).
      *
      * 액션 태그(`<on>`·`<switch>` 등)는 S3 에서 구현되어 여기 없다 — 이벤트 컨텍스트 전용이므로
      * 노드 자리에 오면 ACTION_ONLY_TAGS 가 별도 에러로 잡는다. 문서 최상위 섹션(`<data-source>`
@@ -271,10 +272,25 @@ final class NodeCompiler
     /** 구조값 컴파일러 — `<prop>` 안의 `<field>`/`<item>` 트리 (D42) */
     private readonly StructuredValueCompiler $values;
 
+    /** 컴포넌트 종류 예약 속성 — 생략하면 basic (JSON 의 `type` 키와 1:1) */
+    public const TYPE_ATTRIBUTE = 'data-type';
+
+    /** `data-type` 이 받는 값 */
+    public const COMPONENT_TYPES = ['basic', 'composite', 'layout'];
+
+    /** `data-type` 생략 시 종류 */
+    public const DEFAULT_COMPONENT_TYPE = 'basic';
+
     /**
-     * @param  ComponentRegistry  $registry  대상 템플릿의 컴포넌트 레지스트리
+     * 노드 컴파일러를 만듭니다.
+     *
+     * 산출물은 템플릿과 무관하다 — 태그 → 이름은 표기 규칙(`ComponentRegistry::fromTag`), 종류는
+     * `data-type` 속성으로 정한다(JSON 시절 작성자가 `name`·`type` 을 직접 적던 것과 같다). 레지스트리는
+     * 산출에 쓰지 않고, 편집기·개발 커맨드가 특정 템플릿 기준 검사를 원할 때만 받는다.
+     *
+     * @param  ComponentRegistry|null  $registry  검사용 템플릿 컴포넌트 레지스트리 (없으면 검사 생략)
      */
-    public function __construct(private readonly ComponentRegistry $registry)
+    public function __construct(private readonly ?ComponentRegistry $registry = null)
     {
         $this->actions = new ActionCompiler;
         $this->embedding = new EmbeddingCompiler($this);
@@ -734,13 +750,6 @@ final class NodeCompiler
             ]);
         }
 
-        $definition = $this->registry->resolveTag($element->name);
-
-        if ($definition !== null) {
-            return $definition;
-        }
-
-        // 오타 제안보다 먼저 본다 — G7 어휘를 오타로 취급해 엉뚱한 컴포넌트를 짚지 않도록.
         if (isset(self::DEFERRED_TAGS[$element->name])) {
             throw $this->error($element, LayoutMarkupErrorCode::TagNotYetSupported, $path, [
                 'tag' => $element->name,
@@ -748,17 +757,55 @@ final class NodeCompiler
             ]);
         }
 
-        $suggestion = $this->registry->suggestTag($element->name);
+        // 이름은 표기 규칙으로, 종류는 `data-type` 으로 정한다 — 어떤 템플릿의 컴포넌트 목록도 보지 않는다.
+        // 컴포넌트가 실제로 있는지는 JSON 과 같이 런타임(활성 템플릿)이 판정한다. 검사용 레지스트리가
+        // 주어지면 그 템플릿에 없는 이름을 강검증(`LayoutValidator`)이 세운다(편집기·개발 커맨드).
+        $name = ComponentRegistry::fromTag($element->name);
+        $known = $this->registry?->findByName($name);
 
-        throw $suggestion === null
-            ? $this->error($element, LayoutMarkupErrorCode::UnknownTag, $path, [
-                'tag' => $element->name,
-                'template' => $this->registry->templateId,
-            ])
-            : $this->error($element, LayoutMarkupErrorCode::UnknownTagWithSuggestion, $path, [
-                'tag' => $element->name,
-                'suggestion' => $suggestion,
+        return new ComponentDefinition(
+            name: $name,
+            tag: $element->name,
+            type: $this->componentType($element, $path),
+            propTypes: $known !== null ? $known->propTypes : [],
+            skipBindingKeys: $known !== null ? $known->skipBindingKeys : ComponentRegistry::DEFAULT_SKIP_BINDING_KEYS,
+        );
+    }
+
+    /**
+     * 요소의 `data-type` 속성으로 컴포넌트 종류를 정합니다 (생략하면 basic).
+     *
+     * @param  MarkupElement  $element  요소
+     * @param  string|null  $path  소스 파일 경로
+     * @return string 컴포넌트 종류 (basic·composite·layout)
+     *
+     * @throws CompileError 허용되지 않은 값이거나 바인딩·타입 속성으로 적은 경우
+     */
+    private function componentType(MarkupElement $element, ?string $path): string
+    {
+        if ($element->hasAttribute(':'.self::TYPE_ATTRIBUTE)) {
+            throw $this->attributeError($element->attribute(':'.self::TYPE_ATTRIBUTE), LayoutMarkupErrorCode::InvalidComponentType, $path, [
+                'value' => (string) $element->attribute(':'.self::TYPE_ATTRIBUTE)->value,
+                'allowed' => implode(', ', self::COMPONENT_TYPES),
             ]);
+        }
+
+        $attribute = $element->attribute(self::TYPE_ATTRIBUTE);
+
+        if ($attribute === null) {
+            return self::DEFAULT_COMPONENT_TYPE;
+        }
+
+        $value = (string) $attribute->value;
+
+        if (! in_array($value, self::COMPONENT_TYPES, true)) {
+            throw $this->attributeError($attribute, LayoutMarkupErrorCode::InvalidComponentType, $path, [
+                'value' => $value,
+                'allowed' => implode(', ', self::COMPONENT_TYPES),
+            ]);
+        }
+
+        return $value;
     }
 
     /**
@@ -781,6 +828,11 @@ final class NodeCompiler
         ?string $path,
     ): void {
         $name = $attribute->name;
+
+        // 컴포넌트 종류는 노드 `type` 키다 — 컴포넌트 해석(`componentType`)이 이미 소비했다.
+        if ($name === self::TYPE_ATTRIBUTE) {
+            return;
+        }
 
         if (str_starts_with($name, ':')) {
             $bare = substr($name, 1);

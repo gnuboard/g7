@@ -3,10 +3,10 @@
 <partial description="상품 상세정보 탭 (HTML 콘텐츠, 상품정보제공고시, 공통정보)">
   <div data-if="{{(_local.activeTab ?? 'info') === 'info'}}" class="py-6 space-y-8">
     <!-- === 상세 설명 HTML (펼치기/접기) === -->
-    <expandable-content :maxHeight="500" expandText="$t:shop.product.expand_detail" collapseText="$t:shop.product.collapse_detail">
+    <expandable-content data-type="composite" :maxHeight="500" expandText="$t:shop.product.expand_detail" collapseText="$t:shop.product.collapse_detail">
       <extension-point name="html_content" data-ref="product_description_html" content="{{product.data?.description_localized ?? ''}}" isHtml="{{(product.data?.description_mode ?? 'text') === 'html'}}" class="prose dark:prose-invert max-w-none">
         <default>
-          <html-content content="{{product.data?.description_localized ?? ''}}" isHtml="{{(product.data?.description_mode ?? 'text') === 'html'}}" class="prose dark:prose-invert max-w-none"/>
+          <html-content data-type="composite" content="{{product.data?.description_localized ?? ''}}" isHtml="{{(product.data?.description_mode ?? 'text') === 'html'}}" class="prose dark:prose-invert max-w-none"/>
         </default>
       </extension-point>
     </expandable-content>
@@ -31,7 +31,7 @@
       <!-- 공통정보 - HTML 모드 -->
       <extension-point name="html_content" data-ref="product_common_info_html" data-if="{{product.data?.common_info?.content_mode === 'html'}}" content="{{product.data?.common_info?.content ?? ''}}" :isHtml="true" class="prose prose-sm dark:prose-invert max-w-none">
         <default>
-          <html-content content="{{product.data?.common_info?.content ?? ''}}" :isHtml="true" class="prose prose-sm dark:prose-invert max-w-none"/>
+          <html-content data-type="composite" content="{{product.data?.common_info?.content ?? ''}}" :isHtml="true" class="prose prose-sm dark:prose-invert max-w-none"/>
         </default>
       </extension-point>
       <!-- 공통정보 - Text 모드 (줄바꿈 유지) -->

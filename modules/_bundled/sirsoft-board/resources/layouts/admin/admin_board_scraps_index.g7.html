@@ -45,7 +45,7 @@
   <slot name="content">
     <div data-ref="board_scraps_content" class="admin-page-content-fluid">
       <responsive on="portable" class="admin-page-content-fluid-compact"/>
-      <page-header data-ref="page_header" title="$t:sirsoft-board.admin.scraps.page_title" description="$t:sirsoft-board.admin.scraps.page_description">
+      <page-header data-type="composite" data-ref="page_header" title="$t:sirsoft-board.admin.scraps.page_title" description="$t:sirsoft-board.admin.scraps.page_description">
         <button data-ref="refresh_button" type="button" class="btn-icon" aria-label="$t:sirsoft-board.admin.scraps.refresh">
           <on type="click">
             <!-- 새로고침은 보고 있던 목록을 그대로 다시 부르는 것이다 — 페이지/검색/필터를 유지한다 -->
@@ -92,7 +92,7 @@
       <div data-ref="table_header_bar" class="flex-between flex-wrap gap-3 mb-4">
         <span class="text-label">$t:sirsoft-board.admin.scraps.total_count|count={{scraps?.data?.pagination?.total ?? 0}}</span>
       </div>
-      <data-grid data-ref="scraps_data_grid" :data-blur-until-loaded="true" data="{{scraps?.data?.data}}" :sortable="true" sortField="created_at" sortDirection="{{query.sort_order || 'desc'}}" :pagination="true" :alwaysShowPagination="true" :pageSize="20" :serverSidePagination="true" serverCurrentPage="{{scraps?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{scraps?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{scraps?.data?.pagination?.has_more_pages ?? false}}" selectable="{{scraps?.data?.abilities?.can_manage === true}}" selectionScope="page" selectedIds="{{_global.selectedIds || []}}" idField="id" :showColumnSelector="false" :responsiveBreakpoint="768" :showFirstLast="true" emptyMessage="$t:sirsoft-board.admin.scraps.table_empty" actionsColumnHeader="$t:common.actions" selectedCountText="">
+      <data-grid data-type="composite" data-ref="scraps_data_grid" :data-blur-until-loaded="true" data="{{scraps?.data?.data}}" :sortable="true" sortField="created_at" sortDirection="{{query.sort_order || 'desc'}}" :pagination="true" :alwaysShowPagination="true" :pageSize="20" :serverSidePagination="true" serverCurrentPage="{{scraps?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{scraps?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{scraps?.data?.pagination?.has_more_pages ?? false}}" selectable="{{scraps?.data?.abilities?.can_manage === true}}" selectionScope="page" selectedIds="{{_global.selectedIds || []}}" idField="id" :showColumnSelector="false" :responsiveBreakpoint="768" :showFirstLast="true" emptyMessage="$t:sirsoft-board.admin.scraps.table_empty" actionsColumnHeader="$t:common.actions" selectedCountText="">
         <column field="created_at" header="$t:sirsoft-board.admin.scraps.columns.scrapped_at" :sortable="true">
           <cell>
             <!-- 스크랩 시각도 반응 관리와 같은 규약으로 초까지 밝힌다 — 「2시간 전」 상대 표기는 정리 대상을
@@ -104,7 +104,7 @@
           <cell>
             <div class="flex flex-col">
               <div class="flex-center gap-2">
-                <action-menu data-if="{{!!row.member?.uuid}}" position="right">
+                <action-menu data-type="composite" data-if="{{!!row.member?.uuid}}" position="right">
                   <prop name="items">
                     <item id="view_member" label="$t:sirsoft-board.admin.scraps.cell.view_member" iconName="user"/>
                     <item id="search_member" label="$t:sirsoft-board.admin.scraps.cell.search_member" iconName="magnifying-glass"/>
@@ -126,7 +126,7 @@
                   <span class="text-heading cursor-pointer hover:underline">{{row.member?.name}}</span>
                 </action-menu>
                 <span data-if="{{!row.member?.uuid}}" class="text-heading">{{row.member?.name}}</span>
-                <badge data-if="{{row.member?.is_withdrawn}}" color="gray" size="sm">$t:sirsoft-board.admin.scraps.badges.withdrawn</badge>
+                <badge data-type="composite" data-if="{{row.member?.is_withdrawn}}" color="gray" size="sm">$t:sirsoft-board.admin.scraps.badges.withdrawn</badge>
               </div>
               <span data-if="{{row.member?.email}}" class="text-tertiary">({{row.member?.email}})</span>
             </div>
@@ -136,8 +136,8 @@
           <cell>
             <div class="flex-center gap-2 flex-wrap">
               <span data-if="{{!!row.board}}" class="text-sm">{{row.board?.name}}</span>
-              <badge data-if="{{!row.board}}" color="gray" size="sm">$t:sirsoft-board.admin.scraps.badges.board_deleted</badge>
-              <badge data-if="{{row.board &amp;&amp; (!row.board.use_scrap || !row.board.is_active)}}" color="yellow" size="sm">$t:sirsoft-board.admin.scraps.badges.scrap_off</badge>
+              <badge data-type="composite" data-if="{{!row.board}}" color="gray" size="sm">$t:sirsoft-board.admin.scraps.badges.board_deleted</badge>
+              <badge data-type="composite" data-if="{{row.board &amp;&amp; (!row.board.use_scrap || !row.board.is_active)}}" color="yellow" size="sm">$t:sirsoft-board.admin.scraps.badges.scrap_off</badge>
             </div>
           </cell>
         </column>
@@ -152,7 +152,7 @@
                 {{row.post_title}}
               </span>
               <span data-if="{{row.is_deleted || !row.board}}" class="font-medium truncate line-through text-gray-400 dark:text-gray-500">{{row.post_title}}</span>
-              <badge data-if="{{row.is_deleted}}" color="red" size="sm">$t:sirsoft-board.admin.scraps.badges.deleted_post</badge>
+              <badge data-type="composite" data-if="{{row.is_deleted}}" color="red" size="sm">$t:sirsoft-board.admin.scraps.badges.deleted_post</badge>
             </div>
           </cell>
         </column>
@@ -220,7 +220,7 @@
   </slot>
   <modal>
     <!-- 단건 삭제 확인 — 지우는 것은 「그 회원이 담아 둔 표시」이지 글이 아니다. 그 사실을 본문이 분명히 말한다 -->
-    <modal data-ref="delete_modal" title="$t:sirsoft-board.admin.scraps.modals.delete_title" size="sm">
+    <modal data-type="composite" data-ref="delete_modal" title="$t:sirsoft-board.admin.scraps.modals.delete_title" size="sm">
       <meta editor_label="$t:sirsoft-board.admin.scraps.modals.delete_editor_label"/>
       <div class="py-2">
         <p class="text-body">$t:sirsoft-board.admin.scraps.modals.delete_confirm</p>
@@ -265,7 +265,7 @@
   </modal>
   <modal>
     <!-- 선택 삭제 확인 — 건수를 본문에 싣고, 회원 쪽 목록에서 사라진다는 것을 알린다 -->
-    <modal data-ref="bulk_delete_modal" data-testid="admin-scrap-bulk-delete-modal" title="$t:sirsoft-board.admin.scraps.modals.bulk_delete_title" size="sm">
+    <modal data-type="composite" data-ref="bulk_delete_modal" data-testid="admin-scrap-bulk-delete-modal" title="$t:sirsoft-board.admin.scraps.modals.bulk_delete_title" size="sm">
       <meta editor_label="$t:sirsoft-board.admin.scraps.modals.bulk_delete_editor_label"/>
       <div class="py-2">
         <p class="text-body">$t:sirsoft-board.admin.scraps.modals.bulk_delete_confirm|count={{(_global.selectedIds || []).length}}</p>
@@ -309,7 +309,7 @@
   </modal>
   <modal>
     <!-- 삭제 실패를 알리는 창 — 서버 문구를 그대로 싣고, 없으면 공통 문구로 떨어진다 -->
-    <modal data-ref="error_modal" title="$t:common.error" size="sm">
+    <modal data-type="composite" data-ref="error_modal" title="$t:common.error" size="sm">
       <div class="py-2">
         <p class="text-gray-700 dark:text-gray-300">{{_global.errorMessage || $t:common.error_occurred}}</p>
       </div>

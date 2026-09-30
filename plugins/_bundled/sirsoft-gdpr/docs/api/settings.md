@@ -42,7 +42,7 @@ _단건 응답: `data` 객체의 필드._
 
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
-| settings | object | `{"privacy_policy_slug":"privacy","legal_entity_name":"","…` | GDPR 플러그인의 관리자 설정 전체 객체. 정책 메타데이터(slug/법인명/저장 위치), 배너 설정, 쿠키 카테고리 카탈로그, 차단 도메인을 담으며 `cookie_categories` 등 JSON 필드는 디코드되어 객체/배열로 노출됩니다 |
+| settings | object | `{"privacy_policy_url":"/page/privacy","legal_entity_name":"","…` | GDPR 플러그인의 관리자 설정 전체 객체. 정책 메타데이터(처리방침 주소/법인명/저장 위치), 배너 설정, 쿠키 카테고리 카탈로그, 차단 도메인을 담으며 `cookie_categories` 등 JSON 필드는 디코드되어 객체/배열로 노출됩니다 |
 
 **응답 예시**
 
@@ -56,7 +56,7 @@ HTTP/1.1 200
     "message": "성공적으로 처리되었습니다.",
     "data": {
         "settings": {
-            "privacy_policy_slug": "privacy",
+            "privacy_policy_url": "/page/privacy",
             "legal_entity_name": "",
             "data_storage_location": "",
             "banner_enabled": true,
@@ -145,6 +145,7 @@ HTTP/1.1 200
 | --- | --- | --- | --- |
 | settings.necessary_storage_allowlist | object | `{"localStorage":["g7_locale","g7_filters_*"],"sessionStorage":[],"cookie":["laravel_maintenance"]}` | 기능 쿠키 미동의 상태에서도 저장이 허용되는 항목(운영자 편집 대상). 저장소 구분(`localStorage`/`sessionStorage`/`cookie`)별 문자열 배열이며, 끝의 `*` 는 앞부분 매칭입니다 |
 | settings.necessary_storage_locked | object | `{"localStorage":["auth_token"],"sessionStorage":[],"cookie":["XSRF-TOKEN","laravel_session","gdpr_session"]}` | 지울 수 없는 잠금 항목. 설정이 아니라 코드가 정하므로 저장 요청에 담아 보내도 반영되지 않으며, 판정에는 언제나 운영자 목록과 합쳐 적용됩니다. 세션 쿠키 이름은 `session.cookie` 설정에서 런타임 해석됩니다 |
+| settings.necessary_storage_provided | object | `{"localStorage":["g7_cart_key"],"sessionStorage":["g7:sirsoft-pay_nhnkcp:pendingClose"],"cookie":[]}` | 활성 확장이 필터 훅 `sirsoft-gdpr.necessary_storage.filter_provided_keys` 로 제공한 필수 저장 항목. 요청마다 모은 계산값이라 저장 요청에 담아 보내도 반영되지 않으며, 판정에는 운영자 목록·잠금 항목과 합쳐 적용됩니다. 확장을 비활성화하면 다음 조회부터 빠집니다 (예시 값은 설치된 확장에 따라 다릅니다) |
 | default_blocked_domains_preview | object | `{"functional":["*.crisp.chat"],"analytics":["google-analytics.com"],"marketing":[]}` | 출하 기본 차단 도메인 카탈로그. 관리자 화면 TagInput 의 자동완성 추천 출처입니다 |
 | default_necessary_allowlist_preview | object | `{"localStorage":["g7_locale","g7_color_scheme"],"sessionStorage":[],"cookie":["laravel_maintenance"]}` | 출하 기본 허용목록 카탈로그. 위와 같이 추천 출처이며 잠금 항목은 담기지 않습니다 |
 
@@ -161,7 +162,7 @@ HTTP/1.1 200
 
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
-| privacy_policy_slug | body | string | 아니오 | max 100 | 개인정보 처리방침 페이지 slug(소문자·숫자·하이픈만). 비면 처리방침 링크가 비활성화되며 배너/마이페이지의 방침 링크 대상이 됩니다 |
+| privacy_policy_url | body | string | 아니오 | max 2048, `/` 로 시작하는 사이트 경로 또는 `https://` 주소 | 개인정보처리방침 주소. 운영자가 직접 입력하며 배너 정책 링크와 연간 통지 링크의 대상이 됩니다. 다른 스킴(`javascript:` 등)·`http://`·프로토콜 상대 주소(`//host`)·백슬래시·공백이 든 값은 422 로 거부합니다. 비우면 처리방침 링크를 숨깁니다. 1.0.x 의 `privacy_policy_slug` 는 더 이상 받지 않습니다(보내도 저장되지 않음) |
 | legal_entity_name | body | string | 아니오 | max 200 | 법인명 / 운영 주체. 쿠키 배너와 마이페이지에 표시되는 사이트 운영 주체 이름입니다 (예: `(주)회사명`) |
 | data_storage_location | body | string | 아니오 | max 200 | 데이터 저장 위치 표기(GDPR Art.13(1)(f)/PIPA 국가 단위 안내용). IP/CIDR·클라우드 리전 코드 등 보안 민감 식별자는 검증에서 차단됩니다 |
 | banner_enabled | body | boolean | 아니오 | — | 쿠키 배너와 자동 차단 엔진의 통합 활성 토글. `true`일 때만 배너 노출과 도메인 기반 차단이 동작합니다 |
@@ -179,7 +180,7 @@ Authorization: Bearer {YOUR_TOKEN}
 Content-Type: application/json
 
 {
-    "privacy_policy_slug": "example-key",
+    "privacy_policy_url": "/page/privacy",
     "legal_entity_name": "예시 이름",
     "data_storage_location": "예시값",
     "banner_enabled": true,
@@ -197,8 +198,8 @@ _단건 응답: `data` 객체의 필드._
 
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
-| settings | object | `{"privacy_policy_slug":"privacy","banner_enabled":true,…}` | 저장 직후 다시 로드한 GDPR 플러그인 설정 전체 객체(GET 응답의 `settings` 와 동일 형태). 저장 결과를 관리자 폼에 되반영하는 데 사용합니다. `cookie_categories` 는 DB 에 JSON 문자열로 저장되지만 응답에서는 디코드되어 배열로 노출됩니다 |
-| settings.privacy_policy_slug | string | `privacy` | 저장된 개인정보 처리방침 페이지 slug |
+| settings | object | `{"privacy_policy_url":"/page/privacy","banner_enabled":true,…}` | 저장 직후 다시 로드한 GDPR 플러그인 설정 전체 객체(GET 응답의 `settings` 와 동일 형태). 저장 결과를 관리자 폼에 되반영하는 데 사용합니다. `cookie_categories` 는 DB 에 JSON 문자열로 저장되지만 응답에서는 디코드되어 배열로 노출됩니다 |
+| settings.privacy_policy_url | string | `/page/privacy` | 저장된 개인정보처리방침 주소(사이트 경로 또는 https 주소, 비었으면 빈 값) |
 | settings.legal_entity_name | string | `(주)회사명` | 저장된 법인명 / 운영 주체 |
 | settings.data_storage_location | string | `대한민국` | 저장된 데이터 저장 위치 표기(국가 단위) |
 | settings.banner_enabled | boolean | `true` | 저장된 쿠키 배너·자동 차단 통합 활성 토글 |
@@ -218,7 +219,7 @@ HTTP/1.1 200
     "message": "설정이 저장되었습니다.",
     "data": {
         "settings": {
-            "privacy_policy_slug": "privacy",
+            "privacy_policy_url": "/page/privacy",
             "legal_entity_name": "(주)회사명",
             "data_storage_location": "대한민국",
             "banner_enabled": true,
@@ -283,7 +284,7 @@ HTTP/1.1 200
 
 검증 실패 시 에러 키는 `necessary_storage_allowlist.{구분}.{인덱스}` 형태이고, 알 수 없는 구분은 `necessary_storage_allowlist.{구분}` 으로 보고됩니다.
 
-`necessary_storage_locked` 는 요청에 담아도 저장되지 않습니다 — 잠금 항목은 코드가 정하며 API 로 지울 수 없습니다.
+`necessary_storage_locked` 는 요청에 담아도 저장되지 않습니다 — 잠금 항목은 코드가 정하며 API 로 지울 수 없습니다. `necessary_storage_provided` 도 같습니다 — 확장이 제공하는 계산값입니다.
 
 
 ### GET /api/plugins/sirsoft-gdpr/settings
@@ -311,8 +312,8 @@ _단건 응답: `data` 객체의 필드._
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
 | cookie_policy_version | string | `10` | 현재 발행된 최신 정책 버전 문자열(`gdpr_policy_versions` 테이블이 SSoT, 최신 row의 version 정수). 게스트/회원 동의 시점 비교 및 배너 재노출 판정에 사용됩니다 |
-| privacy_policy_slug | string | `privacy` | 개인정보 처리방침 페이지 slug. 설정이 비어 있으면 null로 반환됩니다 |
-| privacy_policy_available | boolean | `true` | 처리방침 slug가 설정되어 링크 노출이 가능한지 여부. slug가 비면 `false`입니다 |
+| privacy_policy_url | string | `/page/privacy` | 운영자가 설정한 개인정보처리방침 주소(`/` 로 시작하는 사이트 경로 또는 `https://` 주소). 배너가 이 값을 그대로 링크로 씁니다. 비었거나 허용 형식이 아닌 저장값이면 null 입니다 |
+| privacy_policy_available | boolean | `true` | 처리방침 링크를 노출할 수 있는지 여부 — `privacy_policy_url` 이 있으면 `true`. 처리방침 페이지가 실제로 열리는지는 확인하지 않습니다 |
 | legal_entity_name | string | `` | 개인정보 처리 법인/사업자명. 미설정 시 빈 문자열입니다 |
 | data_storage_location | string | `` | 데이터 저장 위치 표기 문자열(국가 단위 안내). 미설정 시 빈 문자열입니다 |
 | banner_enabled | boolean | `true` | 쿠키 배너와 자동 차단의 통합 활성 여부. `true`일 때만 게스트에게 배너가 노출되고 도메인 차단 엔진이 동작합니다 |
@@ -333,7 +334,7 @@ HTTP/1.1 200
     "message": "성공적으로 처리되었습니다.",
     "data": {
         "cookie_policy_version": "1",
-        "privacy_policy_slug": "privacy",
+        "privacy_policy_url": "/page/privacy",
         "privacy_policy_available": true,
         "legal_entity_name": "",
         "data_storage_location": "",
@@ -472,6 +473,8 @@ _에러 없음 (공개 조회 — 요청 파라미터가 없고 컨트롤러/서
 `PUT /api/plugins/sirsoft-gdpr/admin/settings`는 `annual_notice` 객체를 추가로 받습니다.
 `enabled`(boolean), `channels`(mail/database 중 1~2개, 중복 불가), `batch_size`(1~1,000 정수)는
 객체를 보낼 때 모두 필요합니다. `introduction`은 지원 로케일별 최대 2,000자 문자열 객체입니다.
+지금 지원하지 않는 로케일 키(예: 언어팩을 끈 뒤 남은 `ja`)도 거절하지 않고 그대로 보존합니다 — 언어팩을 다시 켜면
+그 머리말이 돌아오며, 길이 상한(2,000자)은 모든 키에 적용됩니다.
 `GET` 응답은 `data.settings.annual_notice`와 `data.annual_notice_limits.{min,max}`를 포함합니다.
 
 예: `{"annual_notice":{"enabled":false,"channels":["database"],"batch_size":500,"introduction":{"ko":"개인정보 이용내역 안내"}}}`.

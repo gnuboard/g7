@@ -11,6 +11,7 @@ use App\Http\View\Composers\Traits\CollectsActiveExtensionMeta;
 use App\Http\View\Composers\Traits\CollectsCustomAssets;
 use App\Http\View\Composers\Traits\CollectsExtensionAssets;
 use App\Http\View\Composers\Traits\CollectsTemplateExternals;
+use App\Services\Analytics\PrivacyService;
 use App\Services\ModuleSettingsService;
 use App\Services\PluginSettingsService;
 use App\Services\SettingsService;
@@ -55,6 +56,7 @@ class UserTemplateComposer
      * 뷰에 데이터 바인딩
      *
      * @param  View  $view  뷰 인스턴스
+     * @return void 반환값 없음
      */
     public function compose(View $view): void
     {
@@ -69,6 +71,16 @@ class UserTemplateComposer
             $frontendSettings = $this->settingsService->getFrontendSettings();
         } catch (\Exception $e) {
             $frontendSettings = [];
+        }
+
+        // 동의 연동 모드 트래커가 「동의를 확인할 곳이 있는가」를 알아야 한다. 코어는 어느 확장이
+        // 답하는지 모르고, 코어 동의 필터에 답하는 구독자가 있는지만 계산해 싣는다(설정이 아니라 계산값).
+        if (isset($frontendSettings['analytics']) && is_array($frontendSettings['analytics'])) {
+            try {
+                $frontendSettings['analytics']['consent_provider'] = app(PrivacyService::class)->consentSource() !== PrivacyService::SOURCE_NONE;
+            } catch (\Throwable $e) {
+                $frontendSettings['analytics']['consent_provider'] = false;
+            }
         }
 
         // 활성화된 플러그인 설정 조회

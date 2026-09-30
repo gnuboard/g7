@@ -2,7 +2,7 @@
   담아 준 문자열 하나이고, 이 창은 그것을 원문 그대로 흘려보낸다(줄바꿈·들여쓰기 유지).
   모듈·플러그인·템플릿 화면이 각자 같은 이름의 사본을 두고 있다. -->
 <partial description="확장 라이선스 전문 모달" editor_label="$t:admin.modal_label.admin_module_list.extension_license_modal">
-  <modal data-ref="extension_license_modal" title="$t:admin.license.license_text" size="large">
+  <modal data-type="composite" data-ref="extension_license_modal" title="$t:admin.license.license_text" size="large">
     <div class="flex flex-col max-h-[70vh]">
       <div class="flex-1 overflow-y-auto min-h-0 px-1">
         <pre class="whitespace-pre-wrap text-body font-mono leading-relaxed">{{_global.extensionLicenseContent ?? ''}}</pre>

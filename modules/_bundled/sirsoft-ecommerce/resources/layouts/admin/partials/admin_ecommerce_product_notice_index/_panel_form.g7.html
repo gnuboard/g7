@@ -69,7 +69,7 @@
             <span>$t:sirsoft-ecommerce.admin.product_notice_template.form.name</span>
             <span class="text-required">*</span>
           </label>
-          <multilingual-input data-ref="form_name_input" name="name" placeholder="$t:sirsoft-ecommerce.admin.product_notice_template.form.name_placeholder" layout="tabs" disabled="{{_global.panelMode === 'edit' &amp;&amp; _global.selectedTemplate?.abilities?.can_update !== true}}" error="{{_local.errors?.name?.[0] ?? _local.errors?.['name.ko']?.[0] ?? ''}}"/>
+          <multilingual-input data-type="composite" data-ref="form_name_input" name="name" placeholder="$t:sirsoft-ecommerce.admin.product_notice_template.form.name_placeholder" layout="tabs" disabled="{{_global.panelMode === 'edit' &amp;&amp; _global.selectedTemplate?.abilities?.can_update !== true}}" error="{{_local.errors?.name?.[0] ?? _local.errors?.['name.ko']?.[0] ?? ''}}"/>
         </div>
       </div>
       <div class="border-t border-gray-200 dark:border-gray-700 pt-6"/>
@@ -92,8 +92,8 @@
               $t:sirsoft-ecommerce.admin.product_notice_template.form.fill_detail_ref
             </button>
           </div>
-          <multilingual-tab-panel data-ref="fields_tab_panel" variant="underline" class="">
-            <dynamic-field-list data-ref="fields_editor" name="fields" items="{{_local.form.fields ?? []}}" addLabel="$t:sirsoft-ecommerce.admin.product_notice_template.form.add_field" :enableDrag="true" disabled="{{_global.panelMode === 'edit' &amp;&amp; _global.selectedTemplate?.abilities?.can_update !== true}}" :minItems="1" emptyMessage="$t:sirsoft-ecommerce.admin.product_notice_template.form.empty_fields" errors="{{_local.errors}}">
+          <multilingual-tab-panel data-type="composite" data-ref="fields_tab_panel" variant="underline" class="">
+            <dynamic-field-list data-type="composite" data-ref="fields_editor" name="fields" items="{{_local.form.fields ?? []}}" addLabel="$t:sirsoft-ecommerce.admin.product_notice_template.form.add_field" :enableDrag="true" disabled="{{_global.panelMode === 'edit' &amp;&amp; _global.selectedTemplate?.abilities?.can_update !== true}}" :minItems="1" emptyMessage="$t:sirsoft-ecommerce.admin.product_notice_template.form.empty_fields" errors="{{_local.errors}}">
               <prop name="columns">
                 <item key="name" type="multilingual" label="$t:sirsoft-ecommerce.admin.product_notice_template.fields.name" placeholder="$t:sirsoft-ecommerce.admin.product_notice_template.form.field_name_placeholder"/>
                 <item key="content" type="multilingual" label="$t:sirsoft-ecommerce.admin.product_notice_template.fields.content" placeholder="$t:sirsoft-ecommerce.admin.product_notice_template.form.field_content_placeholder"/>
@@ -111,7 +111,7 @@
       <div data-ref="form_status_section">
         <div>
           <h4 data-ref="form_status_title" class="text-table-header">$t:sirsoft-ecommerce.admin.product_notice_template.form.status_title</h4>
-          <toggle data-ref="form_toggle" label="$t:sirsoft-ecommerce.admin.product_notice_template.form.is_active" name="is_active" disabled="{{_global.panelMode === 'edit' &amp;&amp; _global.selectedTemplate?.abilities?.can_update !== true}}"/>
+          <toggle data-type="composite" data-ref="form_toggle" label="$t:sirsoft-ecommerce.admin.product_notice_template.form.is_active" name="is_active" disabled="{{_global.panelMode === 'edit' &amp;&amp; _global.selectedTemplate?.abilities?.can_update !== true}}"/>
         </div>
       </div>
     </form>

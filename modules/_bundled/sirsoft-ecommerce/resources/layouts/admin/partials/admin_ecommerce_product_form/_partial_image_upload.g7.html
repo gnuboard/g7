@@ -15,7 +15,7 @@
     </div>
     <div data-ref="images_body" class="row-stack {{_local.ui.imagesExpanded === false ? 'hidden' : ''}}">
       <div data-ref="images_uploader_wrapper" class="{{_local.errors?.images ? 'border border-red-500 dark:border-red-500 rounded-lg p-1' : ''}}">
-        <file-uploader data-ref="images_uploader" collection="main" :maxFiles="20" maxSize="{{_global.settings?.upload?.max_file_size ?? 10}}" accept=".jpg,.jpeg,.png,.gif,.webp" initialFiles="{{product?.data?.images ?? copy_source?.data?.images ?? []}}" :autoUpload="false" uploadTriggerEvent="upload:product_images" :confirmBeforeRemove="true" :enablePrimarySelection="true" primaryFileId="{{_local.form.thumbnail_hash}}" uploadParams="{{product?.data?.id ? {} : { temp_key: _local.ui.imageTempKey }}}" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
+        <file-uploader data-type="composite" data-ref="images_uploader" collection="main" :maxFiles="20" maxSize="{{_global.settings?.upload?.max_file_size ?? 10}}" accept=".jpg,.jpeg,.png,.gif,.webp" initialFiles="{{product?.data?.images ?? copy_source?.data?.images ?? []}}" :autoUpload="false" uploadTriggerEvent="upload:product_images" :confirmBeforeRemove="true" :enablePrimarySelection="true" primaryFileId="{{_local.form.thumbnail_hash}}" uploadParams="{{product?.data?.id ? {} : { temp_key: _local.ui.imageTempKey }}}" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
           <prop name="imageCompression">
             <field name="maxSizeMB" :value="1"/>
             <field name="maxWidthOrHeight" value="{{_global.settings?.upload?.image_max_width ?? 1200}}"/>

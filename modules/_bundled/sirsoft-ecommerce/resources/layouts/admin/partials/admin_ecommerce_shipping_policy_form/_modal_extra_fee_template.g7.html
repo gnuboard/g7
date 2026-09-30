@@ -9,7 +9,7 @@
   동시에 열리지 않도록 한쪽을 켤 때 다른 쪽을 끈다.
   목록은 무한 스크롤이라 검색·저장·삭제 뒤에는 스크롤 상태를 처음으로 되돌린 뒤 다시 부른다. -->
 <partial description="배송정책 폼 - 도서산간 추가배송비 템플릿 CRUD 모달">
-  <modal data-ref="extra_fee_template" title="$t:sirsoft-ecommerce.admin.shipping_policy.modal_extra_fee.title" width="900px" class="max-w-[calc(100vw-2rem)]">
+  <modal data-type="composite" data-ref="extra_fee_template" title="$t:sirsoft-ecommerce.admin.shipping_policy.modal_extra_fee.title" width="900px" class="max-w-[calc(100vw-2rem)]">
     <div data-ref="modal_content">
       <div data-ref="search_section" class="flex gap-2">
         <input type="text" value="{{$parent._local.templateSearch ?? ''}}" placeholder="$t:sirsoft-ecommerce.admin.shipping_policy.modal_extra_fee.search_placeholder" class="input flex-1">
@@ -252,7 +252,7 @@
                 <td class="text-center">
                   <span data-if="{{$parent._local.editingTemplate !== template.id &amp;&amp; template.is_active}}" class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">$t:sirsoft-ecommerce.admin.shipping_policy.modal_extra_fee.active</span>
                   <span data-if="{{$parent._local.editingTemplate !== template.id &amp;&amp; !template.is_active}}" class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">$t:sirsoft-ecommerce.admin.shipping_policy.modal_extra_fee.inactive</span>
-                  <toggle data-if="{{$parent._local.editingTemplate === template.id}}" value="{{$parent._local.templateForm.is_active ?? true}}" name="is_active" disabled="{{$parent._computed.isReadOnly}}">
+                  <toggle data-type="composite" data-if="{{$parent._local.editingTemplate === template.id}}" value="{{$parent._local.templateForm.is_active ?? true}}" name="is_active" disabled="{{$parent._computed.isReadOnly}}">
                     <on type="change">
                       <!-- 편집 중인 줄의 사용 여부 — 스위치 값을 읽지 않고 현재 값을 뒤집는다(기본은 켬). 이 값이 꺼지면 [전체 적용]에서 빠진다. -->
                       <set-state target="$parent._local" templateForm.is_active="{{!($parent._local.templateForm.is_active ?? true)}}"/>
@@ -332,7 +332,7 @@
               </tr>
             </tbody>
           </table>
-          <loading-spinner data-ref="loading_indicator" data-if="{{_global.infiniteScroll.isLoadingMore}}" size="sm" text="$t:sirsoft-ecommerce.common.loading" color="text-blue-600 dark:text-blue-400" class="py-3"/>
+          <loading-spinner data-type="composite" data-ref="loading_indicator" data-if="{{_global.infiniteScroll.isLoadingMore}}" size="sm" text="$t:sirsoft-ecommerce.common.loading" color="text-blue-600 dark:text-blue-400" class="py-3"/>
         </div>
       </div>
       <div data-ref="empty_state" data-if="{{(extra_fee_templates?.data?.data ?? []).length === 0 &amp;&amp; $parent._local.isAddingTemplate !== true}}" class="flex flex-col items-center gap-3 text-center text-gray-400 dark:text-gray-500">

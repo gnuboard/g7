@@ -13,19 +13,19 @@
             <span>$t:sirsoft-ecommerce.admin.shipping_policy.form.name</span>
             <span class="text-required">*</span>
           </label>
-          <multilingual-input name="name" placeholder="$t:sirsoft-ecommerce.admin.shipping_policy.form.name_placeholder" :maxLength="200" :required="true" layout="tabs" disabled="{{_computed.isReadOnly}}"/>
+          <multilingual-input data-type="composite" name="name" placeholder="$t:sirsoft-ecommerce.admin.shipping_policy.form.name_placeholder" :maxLength="200" :required="true" layout="tabs" disabled="{{_computed.isReadOnly}}"/>
           <span data-if="{{_local.errors?.name}}" class="form-error-xs">{{_local.errors?.name?.[0] ?? ''}}</span>
         </div>
       </div>
       <div data-ref="field_row_status" class="grid-2col-responsive">
         <div data-ref="field_is_active">
           <div>
-            <toggle label="$t:sirsoft-ecommerce.admin.shipping_policy.form.is_active" name="is_active" disabled="{{_computed.isReadOnly}}"/>
+            <toggle data-type="composite" label="$t:sirsoft-ecommerce.admin.shipping_policy.form.is_active" name="is_active" disabled="{{_computed.isReadOnly}}"/>
           </div>
         </div>
         <div data-ref="field_is_default">
           <div>
-            <toggle label="$t:sirsoft-ecommerce.admin.shipping_policy.form.is_default" name="is_default" disabled="{{_computed.isReadOnly}}"/>
+            <toggle data-type="composite" label="$t:sirsoft-ecommerce.admin.shipping_policy.form.is_default" name="is_default" disabled="{{_computed.isReadOnly}}"/>
           </div>
         </div>
       </div>

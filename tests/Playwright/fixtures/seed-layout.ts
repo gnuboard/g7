@@ -24,14 +24,14 @@ import { fileURLToPath } from 'node:url';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 /**
- * 시드 화면의 라우트 경로 (URL 인코딩 전 원문).
+ * 시드 화면의 라우트 경로 (URL 인코딩 전 원문) — 템플릿 종류별.
  *
- * `PlaywrightSeedLayout::DEFAULT_TARGETS` 와 동일해야 한다 — 한쪽만 바꾸면 시드는 설치되는데
- * spec 이 그 경로를 못 찾아 라우트 트리 매칭이 실패한다.
+ * `PlaywrightSeedLayout::ROUTE_BY_TYPE` 와 동일해야 한다 — 한쪽만 바꾸면 시드는 설치되는데
+ * spec 이 그 경로를 못 찾아 라우트 트리 매칭이 실패한다. 커맨드는 활성 템플릿(종류별 하나)에 깐다.
  */
 export const SANDBOX_ROUTE = {
-  'sirsoft-basic': '/e2e-sandbox',
-  'sirsoft-admin_basic': '*/admin/e2e-sandbox',
+  user: '/e2e-sandbox',
+  admin: '*/admin/e2e-sandbox',
 } as const;
 
 /**
@@ -58,13 +58,11 @@ export const SANDBOX_I18N_NODE_ID = 'e2e_sandbox_i18n';
  *
  * spec 의 `gotoEditor(page, route)` 가 `?route=${route}` 로 조립하므로 인코딩된 값을 넘긴다.
  *
- * @param template 편집 대상 템플릿 identifier (기본값: 사용자 템플릿)
+ * @param type 편집 대상 템플릿 종류 (기본값: 사용자 템플릿)
  * @returns URL 인코딩된 시드 라우트 경로
  */
-export function sandboxRouteParam(
-  template: keyof typeof SANDBOX_ROUTE = 'sirsoft-basic',
-): string {
-  return encodeURIComponent(SANDBOX_ROUTE[template]);
+export function sandboxRouteParam(type: keyof typeof SANDBOX_ROUTE = 'user'): string {
+  return encodeURIComponent(SANDBOX_ROUTE[type]);
 }
 
 /**

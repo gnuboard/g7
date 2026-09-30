@@ -28,6 +28,7 @@
     "view_count": "Views {{count}}",
     "reaction_total": "Reactions {{count}}",
     "attachments": "Attachments ({{count}})",
+    "download_failed": "Failed to download the attachment.",
     "prev": "Previous",
     "next": "Next",
     "comments_title": "Comments ({{count}})",

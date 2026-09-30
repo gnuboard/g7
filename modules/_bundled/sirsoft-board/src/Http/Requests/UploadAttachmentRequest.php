@@ -54,13 +54,13 @@ class UploadAttachmentRequest extends FormRequest
             ];
         }
 
-        // 게시판 설정을 기반으로 한 검증 규칙
-        $maxSizeMB = $board->max_file_size ?? 10;
-        $maxSizeKB = $maxSizeMB * 1024;
-
         // 게시판 값이 비어 있으면(null 또는 []) 모듈 기본값으로 폴백한다.
         // 빈 배열을 그대로 쓰면 'mimes:' 빈 규칙이 되어 전 파일이 거부된다.
         $defaults = g7_module_settings('sirsoft-board', 'basic_defaults', []);
+
+        // 게시판 설정을 기반으로 한 검증 규칙 — 용량도 게시글 저장 검증(StorePostRequest)과 같은 폴백 체인을 쓴다
+        $maxSizeMB = $this->resolveMaxFileSizeMB($board->max_file_size, $defaults);
+        $maxSizeKB = $maxSizeMB * 1024;
         $allowedExtensions = $this->resolveAllowedExtensions(
             $board->allowed_extensions,
             $defaults['allowed_extensions'] ?? null
@@ -89,7 +89,10 @@ class UploadAttachmentRequest extends FormRequest
         $slug = $this->route('slug');
         $board = app(BoardRepositoryInterface::class)->findBySlug((string) $slug);
 
-        $maxSizeMB = $board?->max_file_size ?? 10;
+        $maxSizeMB = $this->resolveMaxFileSizeMB(
+            $board?->max_file_size,
+            g7_module_settings('sirsoft-board', 'basic_defaults', [])
+        );
 
         return [
             'file.required' => __('sirsoft-board::validation.attachment.file_required'),
@@ -99,6 +102,21 @@ class UploadAttachmentRequest extends FormRequest
             'post_id.required' => __('sirsoft-board::validation.attachment.post_id_required'),
             'post_id.integer' => __('sirsoft-board::validation.attachment.post_id_invalid'),
         ];
+    }
+
+    /**
+     * 업로드 용량 상한(MB)을 결정합니다.
+     *
+     * 게시판 값이 비어 있으면(null — 기본값 따름) 게시판 환경설정 기본값, 그것도 없으면 10MB.
+     * 게시글 저장 검증(StorePostRequest)과 같은 체인이라 두 단계의 상한이 갈리지 않는다.
+     *
+     * @param  mixed  $boardValue  게시판의 max_file_size (MB, null 허용)
+     * @param  mixed  $defaults  게시판 환경설정 basic_defaults
+     * @return int 용량 상한 (MB)
+     */
+    private function resolveMaxFileSizeMB(mixed $boardValue, mixed $defaults): int
+    {
+        return (int) ($boardValue ?? (is_array($defaults) ? ($defaults['max_file_size'] ?? null) : null) ?? 10);
     }
 
     /**

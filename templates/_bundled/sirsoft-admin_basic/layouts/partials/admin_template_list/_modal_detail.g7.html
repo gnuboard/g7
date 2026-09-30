@@ -3,7 +3,7 @@
   (목록 응답에는 무거운 항목이 빠져 있다). 모듈 상세 창과 같은 형태다.
   라이선스 줄을 누르면 전문을 따로 받아 별도 창으로 띄운다. -->
 <partial description="템플릿 상세 정보 모달" editor_label="$t:admin.modal_label.admin_template_list.template_detail_modal">
-  <modal data-ref="template_detail_modal" title="$t:admin.templates.modals.detail_title" size="medium">
+  <modal data-type="composite" data-ref="template_detail_modal" title="$t:admin.templates.modals.detail_title" size="medium">
     <!-- 상세 재조회 — 응답을 **같은 전역(`selectedTemplate`)에 덮어쓴다**. 목록이 담아 준 얕은 값 위에
          전체 정보를 얹는 것이라, 창은 목록 값으로 먼저 그려지고 곧 채워진다. -->
     <data-source id="templateDetail" label_key="$t:editor.data_source.templateDetail" type="api" endpoint="/api/admin/templates/{{_global.selectedTemplate.identifier}}" :auth_required="true" initGlobal="selectedTemplate"/>

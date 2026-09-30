@@ -100,13 +100,13 @@ php artisan plugin:update sirsoft-gdpr --force
 | 키 | 의미 | 기본값 |
 |---|---|---|
 | `annual_notice` | 개인정보 연간 통지 | `{"enabled":false,"channels":["mail","database"],"batch_size":500,"introduction":[]}` |
-| `privacy_policy_slug` | 개인정보처리방침 페이지 슬러그 | `privacy` |
+| `privacy_policy_url` | 개인정보처리방침 주소 | - |
 | `legal_entity_name` | 운영 주체명 | - |
 | `data_storage_location` | 데이터 저장 위치 | - |
 | `banner_enabled` | 쿠키 배너 노출 | `true` |
 | `banner_position` | 배너 위치 | `bottom_bar` |
 | `blocked_domains` | 추적 도메인 차단 목록 | `{"functional":["*.crisp.chat","client.crisp.chat","*.intercom.io","widget.intercom.io","*.tawk.to","embed.tawk.to","cdn.weglot.com","*.weglot.com","*.usercentrics.eu"],"analytics":["google-analytics.com","*.google-analytics.com","googletagmanager.com","*.googletagmanager.com","ssl.google-analytics.com","*.hotjar.com","static.hotjar.com","*.mixpanel.com","cdn.mxpnl.com","*.amplitude.com","cdn.amplitude.com","*.segment.io","*.segment.com","wcs.naver.net","wcs.naver.com","*.beusable.net"],"marketing":["facebook.net","connect.facebook.net","facebook.com","*.facebook.com","doubleclick.net","*.doubleclick.net","googleadservices.com","googlesyndication.com","ads.google.com","*.criteo.com","static.criteo.net","*.adnxs.com","*.taboola.com","cdn.taboola.com","*.outbrain.com","*.kakao.com","analytics.ad.daum.net","platform.twitter.com","*.twitter.com","platform.linkedin.com","*.linkedin.com"]}` |
-| `necessary_storage_allowlist` | 필수 저장 항목 허용목록 | `{"localStorage":["g7_locale","g7_color_scheme","g7_cache_version","g7_asset_url_mode*","g7_cart_key","g7-devtools-panel","g7_guest_order_token","g7_guest_order_number","g7_guest_order_expires_at","g7_devtools_*","g7_filters_*","g7_columns_*","g7_order_*","g7_admin_sidebar_collapsed","g7_filter_visibility_*","g7_dismissed_warnings","g7_view_mode_*","g7le.*","__sirsoftKginicisMobilePaymentReturnPending","g7.identity.redirectStash","sirsoft-verification_nhnkcp.formStash"],"sessionStorage":["g7:sirsoft-pay_kginicis:pendingClose","g7:sirsoft-pay_nhnkcp:pendingClose","g7:sirsoft-tosspayments:pendingClose","g7.identity.redirectStash","sirsoft-verification_nhnkcp.formStash","__sirsoftKginicisMobilePaymentReturnPending","g7le.*","g7_devtools_*","g7_filters_*","g7_columns_*","g7_order_*","g7_filter_visibility_*"],"cookie":["laravel_maintenance","g7_analytics_optout"]}` |
+| `necessary_storage_allowlist` | 필수 저장 항목 허용목록 | `{"localStorage":["g7_locale","g7_color_scheme","g7_cache_version","g7_asset_url_mode*","g7-devtools-panel","g7_devtools_*","g7_filters_*","g7_columns_*","g7_order_*","g7_admin_sidebar_collapsed","g7_filter_visibility_*","g7_dismissed_warnings","g7_view_mode_*","g7le.*","g7.identity.redirectStash"],"sessionStorage":["g7.identity.redirectStash","g7le.*","g7_devtools_*","g7_filters_*","g7_columns_*","g7_order_*","g7_filter_visibility_*"],"cookie":["laravel_maintenance","g7_analytics_optout"]}` |
 | `cookie_categories` | 쿠키 카테고리 정의 | `[]` |
 
 개발자용 상세(타입·검증·저장 위치)는 [설정 스키마](docs/settings.md#설정-스키마) 를 보세요.
@@ -129,10 +129,11 @@ Google Analytics, Facebook Pixel, Kakao Pixel 등)가 시드되어 있고 운영
 같은 단일 라벨과 한글 도메인(xn-- 변환)은 지원하지 않습니다.
 
 `필수 저장 항목`(`necessary_storage_allowlist`)은 **기능 쿠키에 동의하지 않은 방문자에게도
-저장이 허용되는 항목** 목록입니다. 이 목록 밖의 항목은 방문할 때마다 지워지므로, 새로 설치한
-확장의 설정이 "저장했는데 새로고침하면 사라진다"면 그 확장이 쓰는 항목 이름을 여기에
-추가하면 됩니다 — 이 플러그인을 고칠 필요가 없습니다. 항목 이름은 그 확장의 문서나 브라우저
-개발자 도구(Application → Storage)에서 확인할 수 있습니다.
+저장이 허용되는 항목** 목록입니다. 이 목록 밖의 항목은 방문할 때마다 지워집니다. 확장이 쓰는
+필수 항목은 대부분 그 확장이 스스로 제공해 같은 카드의 「확장 제공 항목 (자동)」에 표시되고, 확장을
+끄면 함께 빠집니다. 그래도 새로 설치한 확장의 설정이 "저장했는데 새로고침하면 사라진다"면 그 확장이
+쓰는 항목 이름을 여기에 추가하면 됩니다 — 이 플러그인을 고칠 필요가 없습니다. 항목 이름은 그 확장의
+문서나 브라우저 개발자 도구(Application → Storage)에서 확인할 수 있습니다.
 
 목록은 저장소 구분(브라우저 저장소 / 세션 저장소 / 쿠키) 셋으로 나뉘고, 이름 끝에 `*` 를
 붙이면 앞부분이 같은 항목을 모두 포함합니다(`g7_filters_*` → `g7_filters_orders_1`). `*` 는
@@ -187,8 +188,11 @@ Google Analytics, Facebook Pixel, Kakao Pixel 등)가 시드되어 있고 운영
 <!-- @generated:integrations END -->
 
 <!-- @intent START -->
-`sirsoft-page` 는 소프트 의존(런타임 체크)입니다 — 미설치 시 쿠키 배너의 "자세히" 정책 링크만
-자동으로 숨겨지고 나머지 기능은 정상 동작합니다. `sirsoft-basic` 템플릿은 배너가 주입되는
+개인정보처리방침은 운영자가 관리자 설정 「개인정보처리방침 주소」에 직접 적습니다(`/` 로 시작하는
+사이트 경로 또는 `https://` 주소). 이 플러그인은 처리방침을 어느 확장이 게시하는지 가정하지 않으므로
+페이지 모듈에 의존하지 않습니다 — 주소를 비워 두면 쿠키 배너의 정책 링크만 숨겨집니다. 1.0.x 에서
+페이지 슬러그로 적어 두었던 값은 1.1.0 업그레이드가 같은 경로(`/page/{슬러그}`)로 옮깁니다.
+`sirsoft-basic` 템플릿은 배너가 주입되는
 지점(`_user_base.g7.html` 의 공용 확장 지점)을 제공해야 하므로, 다른 사용자 템플릿을 쓰려면
 그 템플릿에도 같은 주입 지점이 있어야 배너가 정상 노출됩니다.
 <!-- @intent END -->
@@ -215,7 +219,8 @@ Google Analytics, Facebook Pixel, Kakao Pixel 등)가 시드되어 있고 운영
 | 증상 | 원인 | 조치 |
 |---|---|---|
 | 쿠키 배너 설정을 저장했는데도 배너가 안 뜸 | "쿠키 배너 노출" 마스터 토글이 꺼져 있음 | 관리자 설정에서 토글을 켠다 — 개별 항목 저장만으로는 배너가 켜지지 않는다 |
-| 정책 페이지 링크가 배너에 안 보임 | `privacy_policy_slug` 미설정 또는 `sirsoft-page` 미설치 | 슬러그를 입력하거나, 링크 없이 운영할지 결정한다(자동 숨김은 정상 동작) |
+| 정책 페이지 링크가 배너에 안 보임 | 「개인정보처리방침 주소」(`privacy_policy_url`) 가 비어 있음 | 처리방침을 게시한 주소(`/` 로 시작하는 사이트 경로 또는 `https://` 주소)를 입력하거나, 링크 없이 운영할지 결정한다(자동 숨김은 정상 동작) |
+| 정책 링크를 누르면 페이지를 찾을 수 없음 | 입력한 주소에 처리방침이 게시돼 있지 않음 — 이 플러그인은 주소가 실제로 열리는지 확인하지 않는다 | 주소를 브라우저에서 직접 열어 확인하고 고친다 |
 | 배너에서 동의했는데 마이페이지에 이력이 안 보임 | 게스트 상태에서 동의 후 회원가입한 경우 — 게스트→회원 자동 승계를 제공하지 않음 | 의도된 동작이다(§소개 참고). 회원가입 시 별도 동의를 다시 받는다 |
 | 자체 호스팅 스크립트가 동의 전에도 로드됨 | `data-gdpr-category` 속성 누락 | 스크립트/iframe 태그에 카테고리 속성을 추가한다 |
 <!-- @intent END -->

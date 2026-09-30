@@ -1124,6 +1124,7 @@ return [
         'reply_delete_failed' => '回答の削除に失敗しました。',
         'reply_not_found' => '回答が見つかりません。',
         'operation_failed_reason' => ':reason',
+        'secret_post_title' => '非公開投稿',
     ],
     'address' => [
         'created' => '配送先が追加されました。',

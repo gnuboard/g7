@@ -751,12 +751,19 @@
                                         "name": "Div",
                                         "actions": [
                                             {
-                                                "comment": "첨부 내려받기 — 원본 파일명을 함께 넘겨 저장될 이름을 서버 경로가 아니라 업로드 당시 이름으로 맞춘다",
+                                                "comment": "첨부 내려받기 — 원본 파일명을 넘겨 업로드 당시 이름으로 저장한다. 어느 관리자 템플릿으로 그려지든 같아야 하므로 템플릿이 아니라 이 모듈의 핸들러를 쓴다",
                                                 "type": "click",
-                                                "handler": "downloadAttachment",
+                                                "handler": "sirsoft-page.downloadAttachment",
                                                 "params": {
                                                     "url": "{{attachment_item?.download_url}}",
                                                     "filename": "{{attachment_item?.original_filename}}"
+                                                },
+                                                "onError": {
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "type": "error",
+                                                        "message": "$t:sirsoft-page.admin.page.errors.download_failed"
+                                                    }
                                                 }
                                             }
                                         ],

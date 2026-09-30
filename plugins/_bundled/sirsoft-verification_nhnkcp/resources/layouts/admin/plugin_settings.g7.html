@@ -8,7 +8,7 @@
   </permissions>
   <slot name="content">
     <div data-ref="plugin_settings_content" data-key="form" data-track-changes class="admin-page-content-responsive">
-      <page-header data-ref="page_header" title="$t:sirsoft-verification_nhnkcp.settings.title" description="$t:sirsoft-verification_nhnkcp.settings.description" backPath="/admin/plugins" backLabel="$t:admin.plugins.back_to_list"/>
+      <page-header data-type="composite" data-ref="page_header" title="$t:sirsoft-verification_nhnkcp.settings.title" description="$t:sirsoft-verification_nhnkcp.settings.description" backPath="/admin/plugins" backLabel="$t:admin.plugins.back_to_list"/>
       <div data-ref="info_panel" class="alert-info">
         <div class="flex gap-3">
           <icon name="circle-info" class="text-xl text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5"/>
@@ -36,7 +36,7 @@
               <label class="form-label">$t:sirsoft-verification_nhnkcp.settings.test_mode</label>
               <p class="form-hint">$t:sirsoft-verification_nhnkcp.settings.test_mode_hint</p>
             </div>
-            <toggle name="is_test_mode"/>
+            <toggle data-type="composite" name="is_test_mode"/>
           </div>
         </div>
       </div>
@@ -136,7 +136,7 @@
               <p class="text-hint mt-1 italic">$t:sirsoft-verification_nhnkcp.settings.fields.duplicate_block_enabled.note</p>
             </div>
             <div class="flex-center lg:col-span-4 justify-end">
-              <toggle name="duplicate_block_enabled"/>
+              <toggle data-type="composite" name="duplicate_block_enabled"/>
             </div>
           </div>
         </div>

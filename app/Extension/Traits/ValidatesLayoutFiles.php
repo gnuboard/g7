@@ -46,9 +46,10 @@ trait ValidatesLayoutFiles
     /**
      * 마크업 컴파일 문맥 강제 지정 — `['template' => 대상 템플릿|null, 'extension' => 소유 식별자|null]`.
      *
-     * 컴파일 문맥(태그→컴포넌트 표·소유 확장)은 파일 경로에서 뽑는데, 업데이트 백업 경로
-     * (`storage/app/extension_backups/{type}/{id}_{Ymd_His}/…`)에서는 `{id}_{타임스탬프}` 가 뽑혀 표를 찾지
-     * 못한다. 백업을 다시 컴파일해 비교 기준을 만드는 읽기({@see BackupLayoutReader})만 채운다.
+     * 컴파일 문맥의 소유 확장은 파일 경로에서 뽑는데, 업데이트 백업 경로
+     * (`storage/app/extension_backups/{type}/{id}_{Ymd_His}/…`)에서는 `{id}_{타임스탬프}` 가 뽑힌다. 백업을 다시
+     * 컴파일해 비교 기준을 만드는 읽기({@see BackupLayoutReader})만 채운다. 컴파일은 템플릿과 무관하므로 `template` 은
+     * 산출에 쓰지 않는다(호출 계약 호환으로 받는다).
      *
      * @var array{template: string|null, extension: string|null}|null
      */
@@ -520,18 +521,13 @@ trait ValidatesLayoutFiles
      */
     protected function compileMarkupLayoutFile(string $markupFile): array
     {
-        $resolver = new MarkupCompileContextResolver;
-        $templateOverride = $this->compileContextOverride['template'] ?? null;
-        $registry = $resolver->registryFor($markupFile, $templateOverride);
-
-        if ($registry === null) {
-            throw new \RuntimeException(__('exceptions.layout_markup.registry_not_found'));
-        }
-
-        $result = (new LayoutMarkupCompiler($registry))->compile(
+        // 템플릿과 무관하게 컴파일한다 — JSON 설치가 어떤 템플릿도 보지 않았던 것과 같다. 태그 이름과
+        // `data-type` 만으로 산출이 정해지므로 활성 템플릿이 무엇이든(없어도) 같은 결과가 등록된다.
+        // 업데이트 백업처럼 경로로 소유 확장을 알 수 없는 읽기는 강제 지정 식별자를 쓴다({@see $compileContextOverride}).
+        $result = (new LayoutMarkupCompiler)->compile(
             File::get($markupFile),
             $markupFile,
-            $resolver->contextFor($markupFile, $templateOverride, $this->compileContextOverride['extension'] ?? null),
+            (new MarkupCompileContextResolver)->installContextFor($markupFile, $this->compileContextOverride['extension'] ?? null),
         );
 
         return $result->json;

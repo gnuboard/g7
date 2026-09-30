@@ -112,5 +112,6 @@
   "notification_channels": "送信手段",
   "save_channels": "送信手段を保存",
   "cancel": "キャンセル",
-  "channel_template_missing": "この手段のテンプレートがないため送信されません"
+  "channel_template_missing": "この手段のテンプレートがないため送信されません",
+  "date_range_invalid": "終了日が開始日より前のため照会できません。期間を選択し直してください。"
 }

@@ -165,7 +165,6 @@ class ResourceFieldDescriber
         //       ExtensionBundleService 에셋 매니페스트)
         'g7_version' => '요구하는 코어 최소 버전 (manifest requires.g7_version)',
         'required_version' => '요구되는 최소 버전',
-        'manifest_source' => 'manifest 를 읽어온 출처 경로 (활성/_bundled 구분)',
         'manifest_present' => 'manifest 파일 존재 여부',
         'license' => '라이선스 식별자 (manifest license)',
         'release_date' => '배포일',

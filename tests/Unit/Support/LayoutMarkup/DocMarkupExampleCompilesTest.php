@@ -2,6 +2,7 @@
 
 namespace Tests\Unit\Support\LayoutMarkup;
 
+use App\Support\LayoutMarkup\CompileContext;
 use App\Support\LayoutMarkup\ComponentRegistry;
 use App\Support\LayoutMarkup\LayoutMarkupCompiler;
 use Tests\Support\ScansDocRoots;
@@ -108,6 +109,21 @@ class DocMarkupExampleCompilesTest extends LayoutMarkupTestCase
      */
     private array $compilers = [];
 
+    /**
+     * 문서 예시가 쓸 수 있는 외부 스크립트 호스트 — 번들 확장·템플릿이 매니페스트로 선언한 호스트 전부.
+     *
+     * 코어 설정은 확장 호스트를 담지 않는다(A11, 2026-09-28). 문서는 번들 확장(예: 우편번호 플러그인)의
+     * 사용 예를 보여 주므로, 그 확장이 선언한 호스트가 허용된 상태로 컴파일한다 — 테스트 DB 의 활성 상태와 무관하게.
+     *
+     * @var array<int, string>
+     */
+    private array $declaredHosts = [];
+
+    /**
+     * 테스트 준비 — 필요한 서비스와 임시 자원을 만듭니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -117,6 +133,14 @@ class DocMarkupExampleCompilesTest extends LayoutMarkupTestCase
                 ComponentRegistry::fromFile($manifest),
             );
         }
+
+        foreach (glob(base_path('{modules,plugins,templates}/_bundled/*/{module,plugin,template}.json'), GLOB_BRACE) as $manifest) {
+            $declared = json_decode((string) file_get_contents($manifest), true)['trusted_script_hosts'] ?? [];
+            if (is_array($declared)) {
+                $this->declaredHosts = array_merge($this->declaredHosts, array_filter($declared, 'is_string'));
+            }
+        }
+        $this->declaredHosts = array_values(array_unique($this->declaredHosts));
     }
 
     /**
@@ -125,6 +149,8 @@ class DocMarkupExampleCompilesTest extends LayoutMarkupTestCase
      * @scenario compile_unit=install,source_health=valid
      *
      * @effects doc_markup_examples_compile_with_production_compiler
+     *
+     * @return void 반환값 없음
      */
     public function test_문서_마크업_예시가_전건_컴파일된다(): void
     {
@@ -191,6 +217,12 @@ class DocMarkupExampleCompilesTest extends LayoutMarkupTestCase
 
     /**
      * 판정식 자기시험 — 존재하지 않는 문법을 실으면 이 게이트가 red 가 됩니다.
+     *
+     * @scenario compile_unit=install,source_health=invalid
+     *
+     * @effects doc_example_gate_rejects_nonexistent_syntax
+     *
+     * @return void 반환값 없음
      */
     public function test_자기시험_없는_문법은_실패로_잡힌다(): void
     {
@@ -212,6 +244,12 @@ class DocMarkupExampleCompilesTest extends LayoutMarkupTestCase
      *
      * 이 명제가 깨지면 마크업 예시가 마크업 안에 `❌` 한 글자를 넣는 것만으로 컴파일 게이트를
      * 빠져나간다(자기충족 술어). 실물로 한 자리가 그 상태였다.
+     *
+     * @scenario compile_unit=install,source_health=invalid
+     *
+     * @effects fence_body_cannot_self_exempt_as_negative_example
+     *
+     * @return void 반환값 없음
      */
     public function test_펜스_본문은_스스로를_부정예시로_면제하지_못한다(): void
     {
@@ -246,7 +284,7 @@ class DocMarkupExampleCompilesTest extends LayoutMarkupTestCase
         foreach ($this->wrapperOrder($body) as $wrapper) {
             foreach ($this->compilers as $template => $compiler) {
                 try {
-                    $compiler->compile($this->wrap($wrapper, $body));
+                    $compiler->compile($this->wrap($wrapper, $body), null, new CompileContext(declaredScriptHosts: $this->declaredHosts));
 
                     return null;
                 } catch (Throwable $e) {
@@ -441,7 +479,7 @@ class DocMarkupExampleCompilesTest extends LayoutMarkupTestCase
      * 마크다운에서 마크업 코드 펜스를 뽑습니다.
      *
      * @param  string  $text  문서 전문
-     * @return array<int, array{startLine: int, body: string}>
+     * @return array<int, 반환값
      */
     private function markupFences(string $text): array
     {

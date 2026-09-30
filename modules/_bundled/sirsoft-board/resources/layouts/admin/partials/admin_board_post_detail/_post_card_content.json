@@ -111,7 +111,7 @@
                                             "name": "Span",
                                             "if": "{{post?.data?.is_new}}",
                                             "props": {
-                                                "className": "inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-red-500 text-white"
+                                                "className": "inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-red-500 dark:bg-red-500 text-white"
                                             },
                                             "text": "N"
                                         },
@@ -622,12 +622,19 @@
                             "name": "Div",
                             "actions": [
                                 {
-                                    "comment": "첨부 내려받기 — 링크로 열지 않고 전용 핸들러에 맡긴다. 원래 파일명을 함께 넘겨야 저장될 때 서버가 붙인 이름이 아니라 올린 이름으로 떨어진다",
+                                    "comment": "첨부 내려받기 — 링크로 열지 않고 이 모듈의 전용 핸들러에 맡긴다(로그인 토큰을 실어야 한다). 원래 파일명을 함께 넘겨야 저장될 때 서버가 붙인 이름이 아니라 올린 이름으로 떨어진다. 어느 관리자 템플릿으로 그려지든 같아야 하므로 템플릿이 아니라 이 모듈의 핸들러를 쓴다",
                                     "type": "click",
-                                    "handler": "downloadAttachment",
+                                    "handler": "sirsoft-board.downloadAttachment",
                                     "params": {
                                         "url": "{{attachment?.download_url}}",
                                         "filename": "{{attachment?.original_filename}}"
+                                    },
+                                    "onError": {
+                                        "handler": "toast",
+                                        "params": {
+                                            "type": "error",
+                                            "message": "$t:sirsoft-board.admin.posts.detail.download_failed"
+                                        }
                                     }
                                 }
                             ],

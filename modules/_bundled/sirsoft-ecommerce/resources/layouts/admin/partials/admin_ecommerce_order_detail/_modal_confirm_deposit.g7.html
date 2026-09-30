@@ -7,7 +7,7 @@
   바깥 클릭과 ESC 로 닫히지 않게 막아 두었다 — 금액을 다루는 창이라 실수로 사라지면 안 된다.
   누르는 순간의 처리는 전부 모듈 핸들러 몫이다(이 창에는 API 호출이 없다). -->
 <partial description="Order Detail - Confirm Bank Deposit Modal (무통장 입금확인)">
-  <modal data-ref="modal_confirm_deposit" title="$t:sirsoft-ecommerce.admin.order.detail.modal.confirm_deposit.title" size="md" :closeOnOverlayClick="false" :closeOnEscape="false">
+  <modal data-type="composite" data-ref="modal_confirm_deposit" title="$t:sirsoft-ecommerce.admin.order.detail.modal.confirm_deposit.title" size="md" :closeOnOverlayClick="false" :closeOnEscape="false">
     <div class="space-y-4">
       <p class="text-label-subtle">$t:sirsoft-ecommerce.admin.order.detail.modal.confirm_deposit.description</p>
       <!-- 결제예정금액 요약 (참고용) -->

@@ -32,7 +32,7 @@
             <span class="text-heading">$t:admin.settings.seo.generator_enabled</span>
             <p class="text-label-subtle">$t:admin.settings.seo.generator_enabled_desc</p>
           </div>
-          <toggle name="seo.generator_enabled" size="md"/>
+          <toggle data-type="composite" name="seo.generator_enabled" size="md"/>
         </div>
         <div data-ref="field_generator_content" class="{{_local.form?.seo?.generator_enabled ? '' : 'opacity-50'}}">
           <label class="form-label">$t:admin.settings.seo.generator_content</label>
@@ -64,7 +64,7 @@
         <div>
           <label class="form-label">$t:admin.settings.seo.og_image_default</label>
           <p class="text-tertiary mb-2">$t:admin.settings.seo.og_image_default_desc</p>
-          <file-uploader data-ref="og_image_default_uploader" collection="og_image_default" disabled="{{_computed.isReadOnly}}" :maxFiles="1" maxSize="{{_global.settings?.upload?.max_file_size ?? _global.uploadSettings?.max_file_size ?? 10}}" accept="{{_global.settings?.upload?.allowed_extensions_formatted ?? _global.uploadSettings?.allowed_extensions_formatted ?? '.jpg,.jpeg,.png,.gif,.svg,.webp'}}" initialFiles="{{settings?.data?.seo?.og_image_default ?? []}}" :autoUpload="false" uploadTriggerEvent="upload:og_image_default" :confirmBeforeRemove="true">
+          <file-uploader data-type="composite" data-ref="og_image_default_uploader" collection="og_image_default" disabled="{{_computed.isReadOnly}}" :maxFiles="1" maxSize="{{_global.settings?.upload?.max_file_size ?? _global.uploadSettings?.max_file_size ?? 10}}" accept="{{_global.settings?.upload?.allowed_extensions_formatted ?? _global.uploadSettings?.allowed_extensions_formatted ?? '.jpg,.jpeg,.png,.gif,.svg,.webp'}}" initialFiles="{{settings?.data?.seo?.og_image_default ?? []}}" :autoUpload="false" uploadTriggerEvent="upload:og_image_default" :confirmBeforeRemove="true">
             <prop name="imageCompression">
               <field name="maxSizeMB" :value="1"/>
               <field name="maxWidthOrHeight" value="{{_global.settings?.upload?.image_max_width ?? _global.uploadSettings?.image_max_width ?? 1200}}"/>
@@ -130,18 +130,18 @@
             <span class="text-heading">$t:admin.settings.seo.bot_detection_enabled</span>
             <p class="text-label-subtle">$t:admin.settings.seo.bot_detection_enabled_desc</p>
           </div>
-          <toggle name="seo.bot_detection_enabled" size="md"/>
+          <toggle data-type="composite" name="seo.bot_detection_enabled" size="md"/>
         </div>
         <div data-ref="toggle_bot_detection_library_enabled" class="flex-between {{_local.form?.seo?.bot_detection_enabled ? '' : 'opacity-50'}}">
           <div>
             <span class="text-heading">$t:admin.settings.seo.bot_detection_library_enabled</span>
             <p class="text-label-subtle">$t:admin.settings.seo.bot_detection_library_enabled_desc</p>
           </div>
-          <toggle name="seo.bot_detection_library_enabled" size="md" disabled="{{!_local.form?.seo?.bot_detection_enabled}}"/>
+          <toggle data-type="composite" name="seo.bot_detection_library_enabled" size="md" disabled="{{!_local.form?.seo?.bot_detection_enabled}}"/>
         </div>
         <div data-ref="field_bot_user_agents" class="{{_local.form?.seo?.bot_detection_enabled ? '' : 'opacity-50 pointer-events-none'}}">
           <label class="form-label">$t:admin.settings.seo.bot_user_agents</label>
-          <tag-input name="seo.bot_user_agents" :creatable="true" placeholder="$t:admin.settings.seo.bot_user_agents_placeholder" class="w-full" defaultVariant="blue" disabled="{{!_local.form?.seo?.bot_detection_enabled}}"/>
+          <tag-input data-type="composite" name="seo.bot_user_agents" :creatable="true" placeholder="$t:admin.settings.seo.bot_user_agents_placeholder" class="w-full" defaultVariant="blue" disabled="{{!_local.form?.seo?.bot_detection_enabled}}"/>
           <p class="form-hint">$t:admin.settings.seo.bot_user_agents_hint</p>
         </div>
       </div>
@@ -155,7 +155,7 @@
             <span class="text-heading">$t:admin.settings.seo.cache_enabled</span>
             <p class="text-label-subtle">$t:admin.settings.seo.cache_enabled_desc</p>
           </div>
-          <toggle name="seo.cache_enabled" size="md"/>
+          <toggle data-type="composite" name="seo.cache_enabled" size="md"/>
         </div>
         <div data-ref="field_seo_cache_ttl">
           <label class="form-label">$t:admin.settings.seo.cache_ttl</label>
@@ -173,7 +173,7 @@
             <span class="text-heading">$t:admin.settings.seo.sitemap_enabled</span>
             <p class="text-label-subtle">$t:admin.settings.seo.sitemap_enabled_desc</p>
           </div>
-          <toggle name="seo.sitemap_enabled" size="md"/>
+          <toggle data-type="composite" name="seo.sitemap_enabled" size="md"/>
         </div>
         <div data-ref="field_sitemap_schedule">
           <label class="form-label">$t:admin.settings.seo.sitemap_schedule</label>
@@ -205,29 +205,26 @@
             <span class="text-heading">$t:admin.settings.seo.sitemap_gzip</span>
             <p class="text-label-subtle">$t:admin.settings.seo.sitemap_gzip_desc</p>
           </div>
-          <toggle name="seo.sitemap_gzip" size="md"/>
+          <toggle data-type="composite" name="seo.sitemap_gzip" size="md"/>
         </div>
         <div data-ref="field_sitemap_hreflang_enabled" class="flex-between">
           <div>
             <span class="text-heading">$t:admin.settings.seo.sitemap_hreflang_enabled</span>
             <p class="text-label-subtle">$t:admin.settings.seo.sitemap_hreflang_enabled_desc</p>
           </div>
-          <toggle name="seo.sitemap_hreflang_enabled" size="md"/>
+          <toggle data-type="composite" name="seo.sitemap_hreflang_enabled" size="md"/>
         </div>
         <div data-ref="sitemap_progress_block" data-if="{{['queued','running','writing','completed','failed'].includes(sitemap_status?.data?.progress?.status ?? '')}}" class="space-y-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 p-3">
           <div class="flex items-center gap-2">
             <span class="text-heading">$t:admin.settings.seo.sitemap_progress</span>
             <span class="px-2 py-0.5 rounded text-xs font-medium">
-              <prop name="classMap">
-                <field name="key" value="{{sitemap_status?.data?.progress?.status ?? ''}}"/>
-                <field name="variants">
-                  <field name="queued" value="bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-200"/>
-                  <field name="running" value="bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200"/>
-                  <field name="writing" value="bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200"/>
-                  <field name="completed" value="bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-200"/>
-                  <field name="failed" value="bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-200"/>
-                </field>
-              </prop>
+              <class-map key="{{sitemap_status?.data?.progress?.status ?? ''}}">
+                <variant when="queued">bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-200</variant>
+                <variant when="running">bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200</variant>
+                <variant when="writing">bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200</variant>
+                <variant when="completed">bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-200</variant>
+                <variant when="failed">bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-200</variant>
+              </class-map>
               {{(sitemap_status?.data?.progress?.status === 'queued' &amp;&amp; $t('admin.settings.seo.sitemap_status_queued')) || (sitemap_status?.data?.progress?.status === 'running' &amp;&amp; $t('admin.settings.seo.sitemap_status_running')) || (sitemap_status?.data?.progress?.status === 'writing' &amp;&amp; $t('admin.settings.seo.sitemap_status_writing')) || (sitemap_status?.data?.progress?.status === 'completed' &amp;&amp; $t('admin.settings.seo.sitemap_status_completed')) || (sitemap_status?.data?.progress?.status === 'failed' &amp;&amp; $t('admin.settings.seo.sitemap_status_failed')) || ''}}
             </span>
           </div>

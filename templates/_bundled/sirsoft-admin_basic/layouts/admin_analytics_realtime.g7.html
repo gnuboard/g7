@@ -114,8 +114,8 @@
             </select>
           </div>
           <div class="flex-1"/>
-          <badge data-ref="transport_badge_ws" data-if="{{analytics_status?.data?.broadcasting?.configured === true}}" color="green" text="$t:admin.analytics.realtime.badge_ws" size="sm"/>
-          <badge data-ref="transport_badge_polling" data-if="{{analytics_status?.data?.broadcasting?.configured !== true}}" color="gray" text="$t:admin.analytics.realtime.badge_polling|seconds={{_global.settings?.analytics?.realtime_poll_seconds ?? 30}}" size="sm"/>
+          <badge data-type="composite" data-ref="transport_badge_ws" data-if="{{analytics_status?.data?.broadcasting?.configured === true}}" color="green" text="$t:admin.analytics.realtime.badge_ws" size="sm"/>
+          <badge data-type="composite" data-ref="transport_badge_polling" data-if="{{analytics_status?.data?.broadcasting?.configured !== true}}" color="gray" text="$t:admin.analytics.realtime.badge_polling|seconds={{_global.settings?.analytics?.realtime_poll_seconds ?? 30}}" size="sm"/>
         </div>
       </div>
       <div data-ref="realtime_grid" class="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -135,7 +135,7 @@
         <div data-ref="realtime_visitors_card" class="admin-card lg:col-span-2">
           <h2 class="section-heading mb-3">$t:admin.analytics.realtime.visitors_title</h2>
           <div class="overflow-x-auto">
-            <data-grid data-ref="realtime_visitors_grid" data="{{analytics_realtime?.data?.visitors ?? []}}" :pagination="false" idField="visitor_key" :selectable="false" :sortable="false" emptyMessage="$t:admin.analytics.realtime.empty">
+            <data-grid data-type="composite" data-ref="realtime_visitors_grid" data="{{analytics_realtime?.data?.visitors ?? []}}" :pagination="false" idField="visitor_key" :selectable="false" :sortable="false" emptyMessage="$t:admin.analytics.realtime.empty">
               <column field="last_action_at" header="$t:admin.analytics.realtime.columns.time" width="150px">
                 <cell>
                   <span class="text-label">{{row.last_action_at | datetime | default('-')}}</span>
@@ -158,7 +158,7 @@
               </column>
               <column field="visitor_type" header="$t:admin.analytics.realtime.columns.type" width="90px">
                 <cell>
-                  <badge color="{{row.visitor_type === 'admin' ? 'red' : (row.visitor_type === 'member' ? 'blue' : (row.visitor_type === 'bot' ? 'gray' : 'green'))}}" text="{{$t('admin.analytics.visitors.types.' + (row.visitor_type ?? 'guest'))}}" size="sm"/>
+                  <badge data-type="composite" color="{{row.visitor_type === 'admin' ? 'red' : (row.visitor_type === 'member' ? 'blue' : (row.visitor_type === 'bot' ? 'gray' : 'green'))}}" text="{{$t('admin.analytics.visitors.types.' + (row.visitor_type ?? 'guest'))}}" size="sm"/>
                 </cell>
               </column>
               <column field="visitor_key" header="$t:admin.analytics.realtime.columns.visitor" width="200px">

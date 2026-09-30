@@ -1,0 +1,36 @@
+feature: 회원 수정 요청에 실린 확장 소유 필드의 코어 계약
+
+description: |
+  회원 수정 화면은 코어 회원 저장 API 하나만 호출하고, 확장은 코어 훅으로 자기 필드를 검증·저장한다
+  (결정 2026-09-28 — 이커머스 결제 통화·배송국가가 첫 소비자).
+    · 구독 확장이 없으면 확장 키는 검증된 데이터(validated)에 들어오지 않아 무시되고 코어 저장은 그대로다.
+    · 구독 확장이 있으면 검증 규칙 필터로 키가 들어오고, core.user.filter_update_data 에서 걷어낸 키는
+      users 쓰기에 섞이지 않으며, core.user.after_update 의 원본 데이터로는 그대로 전달된다.
+    · 관리자 수정(core.user.update_validation_rules)과 본인 프로필 수정
+      (core.user.update_profile_validation_rules) 두 경로가 같은 계약을 따른다.
+    · 관리자 회원 폼은 저장 요청을 한 번만 보내고, 그 본문(_local.form)에 주입 칸 값이 실린다.
+
+# axis 의미:
+#   entry_point     — 코어 회원 저장 진입점
+#   extension_state — 확장 필드를 구독하는 확장의 유무
+axes:
+  entry_point: [admin_update, profile_update]
+  extension_state: [absent, subscribed]
+
+effects:
+  - unknown_extension_keys_ignored_without_subscriber  # 구독 확장 없으면 확장 키 무시
+  - core_save_unaffected                               # 코어 필드 저장은 그대로 성공
+  - stripped_key_not_passed_to_core_write              # filter_update_data 로 걷어낸 키는 코어 쓰기에 없음
+  - after_update_receives_extension_value              # after_update 원본 데이터로 확장 값 전달
+  - extension_rule_error_on_field_key                  # 확장 규칙 위반은 필드 이름 키로 422
+  - form_calls_only_core_save_api                      # 관리자 회원 폼 저장은 코어 저장 요청 한 번
+  - form_field_rides_core_save_body                    # 저장 본문에 주입 칸 값이 실림
+
+test_files:
+  - tests/Feature/User/UserUpdateExtensionFieldContractTest.php
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-user-form-single-save.test.tsx
+
+notes: |
+  E2E: 코어 계약(검증 필터·데이터 분리·after_update 전달)은 HTTP 요청 단위 PHPUnit 으로, 폼의 단일 저장
+  요청은 실제 레이아웃 노드를 렌더하는 Vitest 로 검증한다. 확장 필드 실사용 화면의 브라우저 실측은
+  sirsoft-ecommerce 의 user-preference-core-save 시나리오 검수 단계에서 함께 수행한다.

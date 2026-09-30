@@ -74,7 +74,8 @@
       "description": "Configure the storage disk for this module's fully public assets such as product, category, and review images.",
       "disk": "Public Asset Disk",
       "follow_core": "Follow core setting",
-      "help": "Select to use a different disk for this module only. Leave empty to follow the public asset storage setting in core system settings."
+      "help": "Select to use a different disk for this module only. Leave empty to follow the public asset storage setting in core system settings.",
+      "unavailable": "The saved disk ({disk}) is no longer available, so images are being streamed. Select another disk and save to change it."
     },
     "inquiry_settings": {
       "title": "1:1 Inquiry Board Settings",
@@ -747,7 +748,8 @@
       "total": "{{count}} in total",
       "empty": "There are no targets.",
       "loading": "Loading...",
-      "close": "Close"
+      "close": "Close",
+      "editor_label": "Shop retention target orders"
     },
     "manual_run": {
       "run": "Run now",
@@ -775,7 +777,8 @@
       "executing": "Queuing...",
       "queued_toast": "The run has been queued. The result will appear when it finishes.",
       "queue_failed": "Could not queue the run.",
-      "preview_failed": "Could not load the target count."
+      "preview_failed": "Could not load the target count.",
+      "editor_label": "Shop retention manual run"
     }
   }
 }

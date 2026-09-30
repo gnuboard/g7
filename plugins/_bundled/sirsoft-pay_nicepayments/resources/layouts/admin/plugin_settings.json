@@ -627,7 +627,7 @@
                                                         "handler": "sequence",
                                                         "actions": [
                                                             {
-                                                                "handler": "copyToClipboard",
+                                                                "handler": "sirsoft-pay_nicepayments.copyToClipboard",
                                                                 "params": {
                                                                     "text": "{{_local.vbankInfo?.url ?? '/plugins/sirsoft-pay_nicepayments/payment/vbank-notify'}}"
                                                                 }

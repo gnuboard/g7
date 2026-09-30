@@ -28,6 +28,7 @@ return [
         'value_present' => 'The settings value is required.',
         'key_unknown' => 'The settings key cannot be saved: :key',
         'key_server_managed' => 'This setting is recorded by the server and cannot be saved directly.',
+        'empty_payload' => 'There are no settings to save. Refresh the page and save again.',
     ],
 
     // Shipping carrier validation messages
@@ -1658,10 +1659,12 @@ return [
         'user_currency' => [
             'required' => 'Please select a payment currency.',
             'invalid' => 'Only registered currencies can be selected.',
+            'forbidden' => 'You do not have permission to change the payment currency of this member.',
         ],
         'user_shipping_country' => [
             'required' => 'Please select a shipping country.',
             'invalid' => 'Only shippable countries can be selected.',
+            'forbidden' => 'You do not have permission to change the shipping country of this member.',
         ],
         'language_currency' => [
             'base_locked_after_data' => 'The base currency cannot be changed once one or more products or orders have been registered.',
@@ -1828,6 +1831,7 @@ return [
             ],
             'bank_accounts' => [
                 'at_least_one_active_default' => 'At least one bank account must be both active and set as default.',
+                'dbank_requires_active_account' => 'To use bank transfer, at least one active bank account with an account number is required.',
                 'bank_code' => [
                     'required_with' => 'Bank is required.',
                     'string' => 'Bank code must be a string.',

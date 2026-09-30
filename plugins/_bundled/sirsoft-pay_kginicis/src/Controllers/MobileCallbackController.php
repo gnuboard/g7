@@ -14,6 +14,7 @@ use Modules\Sirsoft\Ecommerce\Models\ClaimPayment;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ClaimPaymentRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Services\OrderProcessingService;
+use Plugins\Sirsoft\PayKginicis\Concerns\BindsApprovalToOrder;
 use Plugins\Sirsoft\PayKginicis\Concerns\HandlesClaimPaymentCallbacks;
 use Plugins\Sirsoft\PayKginicis\Concerns\IssuesReceiptCookie;
 use Plugins\Sirsoft\PayKginicis\Concerns\PreventsReplayCallback;
@@ -36,6 +37,7 @@ use Plugins\Sirsoft\PayKginicis\Support\ShopRedirectUrl;
  */
 class MobileCallbackController
 {
+    use BindsApprovalToOrder;
     use HandlesClaimPaymentCallbacks;
     use IssuesReceiptCookie;
     use PreventsReplayCallback;
@@ -100,10 +102,10 @@ class MobileCallbackController
     ) {}
 
     /**
-     * handle
+     * 모바일 결제 인증 콜백을 받아 서버 승인 후 결과 화면으로 보냅니다.
      *
-     * @param  MobileCallbackRequest  $request
-     * @return RedirectResponse
+     * @param  MobileCallbackRequest  $request  요청
+     * @return RedirectResponse 리다이렉트 응답
      */
     public function handle(MobileCallbackRequest $request): RedirectResponse
     {
@@ -260,9 +262,44 @@ class MobileCallbackController
             $totPrice = (int) ($result['P_AMT'] ?? 0);
             $payType = (string) ($result['P_TYPE'] ?? '');
 
+            // 승인 결과가 돌려준 주문번호가 콜백 주문번호와 같아야 반영한다 (KVE-2026-2434 전수조사).
+            // 콜백의 주문번호는 쿼리 orderId 에서 오고 P_TID 는 주문번호를 묶지 않으므로, 자기 승인에
+            // 남의 주문번호를 붙여 보낼 수 있다. 어긋나면 승인을 취소하고 주문은 건드리지 않는다.
+            $pgOrderNumber = $result['P_OID'] ?? null;
+            if (! $this->approvalOrderNumberMatches(is_scalar($pgOrderNumber) ? (string) $pgOrderNumber : null, (string) $moid)) {
+                Log::warning('KG Inicis mobile: approve result does not match callback order; cancelling', [
+                    'P_OID' => $moid,
+                    'pg_oid' => $pgOrderNumber,
+                    'P_TID' => $tid,
+                ]);
+
+                $this->autoCancelIfApproved((string) $tid, $moid, $totPrice, 'order_mismatch');
+
+                return redirect($this->resolveFailUrl(['error' => 'approve_failed', 'orderId' => $moid]));
+            }
+
             // 가상계좌: completePayment 없이 발급 정보만 저장 (입금 통보 시점에 completePayment)
             if (strcasecmp($payType, 'VBank') === 0) {
-                $this->handleVbankIssued($order, $result, $tid);
+                // 결제대기 주문에만 발급을 기록한다 — 이미 결제됐거나 다른 가상계좌가 붙은 결제 레코드를
+                // 덮어쓰면 환불 대상 거래번호가 오염된다. 같은 발급의 중복 콜백은 성공으로만 처리한다.
+                $issueDecision = $this->vbankIssueDecision($order, $totPrice > 0 ? $totPrice : null, (string) $tid);
+                if ($issueDecision === 'reject') {
+                    Log::warning('KG Inicis mobile: vbank issue rejected for non-payable order; cancelling', [
+                        'P_OID' => $moid,
+                        'P_TID' => $tid,
+                        'order_status' => $order->order_status->value,
+                    ]);
+
+                    $this->autoCancelIfApproved((string) $tid, $moid, $totPrice, 'vbank_not_payable');
+
+                    return redirect($this->resolveFailUrl(['error' => 'order_not_payable', 'orderId' => $moid]));
+                }
+
+                if ($issueDecision === 'issue') {
+                    $this->handleVbankIssued($order, $result, $tid);
+                } else {
+                    $this->logReplayDetected((string) $tid, $moid, 'mobile authCallback (vbank issue)');
+                }
                 $this->queueReceiptCookie($moid);
 
                 return redirect($this->resolveSuccessUrl($moid));

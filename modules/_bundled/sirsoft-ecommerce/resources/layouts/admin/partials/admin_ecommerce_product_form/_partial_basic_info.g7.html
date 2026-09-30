@@ -258,7 +258,7 @@
             <span class="text-primary text-sm font-semibold">$t:sirsoft-ecommerce.admin.product.fields.name</span>
             <span class="text-sm text-red-500 dark:text-red-400">*</span>
           </div>
-          <multilingual-input name="name" layout="tabs" placeholder="$t:sirsoft-ecommerce.admin.product.placeholders.name" :maxLength="200" :required="true" error="{{_local.errors?.name?.[0] ?? _local.errors?.['name.ko']?.[0] ?? ''}}" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}"/>
+          <multilingual-input data-type="composite" name="name" layout="tabs" placeholder="$t:sirsoft-ecommerce.admin.product.placeholders.name" :maxLength="200" :required="true" error="{{_local.errors?.name?.[0] ?? _local.errors?.['name.ko']?.[0] ?? ''}}" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}"/>
         </div>
       </div>
     </div>

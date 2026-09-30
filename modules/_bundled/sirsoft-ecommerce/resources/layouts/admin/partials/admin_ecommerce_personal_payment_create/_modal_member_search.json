@@ -34,7 +34,7 @@
                     "name": "Input",
                     "props": {
                         "type": "text",
-                        "className": "input input-search",
+                        "className": "input",
                         "placeholder": "$t:sirsoft-ecommerce.admin.personal_payment_create.modal.member_search.search_placeholder"
                     }
                 }

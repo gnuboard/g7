@@ -8,7 +8,7 @@
   숫자 칸(유예 시간·우선순위)은 `Number()` 로 감싸 담는다 — 입력칸이 주는 값은 문자열이고,
   그대로 보내면 서버 검증이 형을 문제 삼는다. -->
 <partial description="이커머스 환경설정 > 본인인증 정책 탭 내 정책 추가/편집 모달. _global.identity_policy_form_modal 단일 진실 패턴 — list 가 매 진입마다 객체 통째 set, 모달 표시/입력 모두 _global 참조 (사례 13 회피 + modals 섹션 isolated 스코프 회피)" editor_label="$t:sirsoft-ecommerce.admin.settings.identity.policy_form_editor_label">
-  <modal data-ref="identity_policy_form_modal" title="{{_global.identity_policy_form_modal?.isNew ? '$t:admin.identity.policies.create_title' : '$t:admin.identity.policies.edit_title'}}" size="lg" :closeOnOverlayClick="false">
+  <modal data-type="composite" data-ref="identity_policy_form_modal" title="{{_global.identity_policy_form_modal?.isNew ? '$t:admin.identity.policies.create_title' : '$t:admin.identity.policies.edit_title'}}" size="lg" :closeOnOverlayClick="false">
     <div class="flex flex-col max-h-[calc(90vh-140px)] -my-4">
       <div data-ref="policy_form_body" class="flex-1 overflow-y-auto space-y-4 px-4 py-4 pr-2">
         <div data-if="{{_global.identity_policy_form_modal?.errors}}" class="alert-danger">
@@ -135,7 +135,7 @@
           </div>
           <div class="flex items-end justify-between gap-2 pb-2">
             <span class="form-label">$t:admin.identity.policies.form.enabled</span>
-            <toggle checked="{{Boolean(_global.identity_policy_form_modal?.form?.enabled)}}" size="md">
+            <toggle data-type="composite" checked="{{Boolean(_global.identity_policy_form_modal?.form?.enabled)}}" size="md">
               <on type="change">
                 <!-- 사용 여부. 끄면 정책이 남아 있되 적용되지 않는다(지우는 것과 다르다). -->
                 <set-state target="global" identity_policy_form_modal.form.enabled="{{!_global.identity_policy_form_modal?.form?.enabled}}"/>
@@ -167,7 +167,7 @@
           </on>
           <span>$t:common.cancel</span>
         </button>
-        <button type="button" disabled="{{_global.identity_policy_form_modal?.isSaving}}" class="flex-center gap-2 px-4 py-2 text-sm font-medium bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg">
+        <button type="button" disabled="{{_global.identity_policy_form_modal?.isSaving}}" class="flex-center gap-2 px-4 py-2 text-sm font-medium bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg">
           <on type="click">
             <!-- 저장. 만들기와 고치기가 같은 버튼을 쓰고 `isNew` 가 주소와 메서드를 가른다. 시작할 때 이전 오류를 함께 지우고, 성공하면 폼 자리를 통째로 비운 뒤 정책 목록을 다시 부른다. -->
             <sequence>

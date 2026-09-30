@@ -96,7 +96,7 @@
           </select>
         </div>
         <div class="flex justify-end">
-          <button disabled="{{_local._ked_registering}}" class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-purple-600 hover:bg-purple-700 text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+          <button disabled="{{_local._ked_registering || String(_local._ked_deli_numb ?? '').trim() === '' || String(_local._ked_deli_corp ?? '').trim() === ''}}" class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-purple-600 hover:bg-purple-700 text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
             <on type="click">
               <!-- 에스크로 배송 등록 — 위에서 입력한 송장번호·택배사 코드를 보내고, 끝나면 등록 상태를 다시 받는다 -->
               <sequence>
@@ -108,7 +108,7 @@
                     <refetch-data-source dataSourceId="kcp_escrow_delivery"/>
                   </success>
                   <fail>
-                    <set-state target="local" :_ked_registering="false" _ked_error="{{response?.errors?.deli_numb?.[0] ?? response?.errors?.deli_corp?.[0] ?? response?.errors?.message?.[0] ?? '$t:sirsoft-pay_nhnkcp.admin.escrow_delivery_error'}}"/>
+                    <set-state target="local" :_ked_registering="false" _ked_error="{{error.errors?.deli_numb?.[0] ?? error.errors?.deli_corp?.[0] ?? Object.values(error.errors ?? {}).flat()[0] ?? '$t:sirsoft-pay_nhnkcp.admin.escrow_delivery_error'}}"/>
                   </fail>
                   <body deli_numb="{{_local._ked_deli_numb ?? ''}}" deli_corp="{{_local._ked_deli_corp ?? ''}}"/>
                 </api-call>

@@ -106,7 +106,7 @@
                         "initialFiles": "{{form_meta?.data?.attachments ?? []}}",
                         "autoUpload": false,
                         "uploadTriggerEvent": "upload:board_attachments",
-                        "compact": true,
+                        "size": "sm",
                         "confirmBeforeRemove": true,
                         "confirmRemoveTitle": "$t:sirsoft-board.admin.posts.form.confirm_remove_attachment_title",
                         "confirmRemoveMessage": "$t:sirsoft-board.admin.posts.form.confirm_remove_attachment_message",

@@ -27,9 +27,9 @@
         </on>
       </div>
     </div>
-    <container data-if="{{!_global?.currentUser?.uuid}}" class="py-12">
+    <container data-type="layout" data-if="{{!_global?.currentUser?.uuid}}" class="py-12">
       <responsive on="portable" class="py-6"/>
-      <flex justify="center" align="start">
+      <flex data-type="layout" justify="center" align="start">
         <div class="w-full max-w-md p-8 bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700">
           <responsive on="portable" class="w-full max-w-md p-6 bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700"/>
           <!-- 클레임 추가결제 결과 안내 — 결제창에서 돌아온 직후에만 선다. 서버(ClaimPaymentRedirect)가 성공·실패·사용자 중단 셋을 `?claim_payment=` 로 구분해 실어 보낸다. 비회원 복귀 주소가 신청서 상세가 아니라 이 조회 화면인 이유는 결제창에서 돌아온 브라우저에 조회 토큰이 남아 있다고 보장할 수 없기 때문이다(알림 링크가 같은 이유로 이미 이 화면을 가리킨다). 이 자리가 없으면 구매자는 돈이 나갔는지 알 방법이 없고 실패도 사유 없이 지나간다. -->

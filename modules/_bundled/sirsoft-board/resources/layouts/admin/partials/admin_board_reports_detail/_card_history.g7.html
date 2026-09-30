@@ -3,7 +3,7 @@
   <div data-ref="card_history" class="admin-card">
     <h2 data-ref="history_title" class="card-title">$t:sirsoft-board.admin.reports.detail.histories_title</h2>
     <div>
-      <data-grid data-ref="history_data_grid" data-if="{{report_detail?.data?.histories &amp;&amp; report_detail?.data?.histories.length > 0}}" class="histories-compact-grid" data="{{report_detail?.data?.histories ?? []}}" :sortable="false" :pagination="false" :selectable="false" :showColumnSelector="false" :responsiveBreakpoint="768" emptyMessage="$t:sirsoft-board.admin.reports.detail.no_histories">
+      <data-grid data-type="composite" data-ref="history_data_grid" data-if="{{report_detail?.data?.histories &amp;&amp; report_detail?.data?.histories.length > 0}}" class="histories-compact-grid" data="{{report_detail?.data?.histories ?? []}}" :sortable="false" :pagination="false" :selectable="false" :showColumnSelector="false" :responsiveBreakpoint="768" emptyMessage="$t:sirsoft-board.admin.reports.detail.no_histories">
         <column field="created_at" header="$t:sirsoft-board.admin.reports.detail.table.date" :sortable="false" :required="true">
           <cell>
             <span class="text-tertiary">{{row.created_at}}</span>

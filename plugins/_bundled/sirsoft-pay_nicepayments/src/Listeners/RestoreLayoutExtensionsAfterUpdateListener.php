@@ -17,7 +17,9 @@ class RestoreLayoutExtensionsAfterUpdateListener implements HookListenerInterfac
     private const PLUGIN_IDENTIFIER = 'sirsoft-pay_nicepayments';
 
     /**
-     * @return array<string, array<string, mixed>>
+     * 구독할 훅 매핑을 반환합니다.
+     *
+     * @return array<string, array<string, mixed>> 훅 구독 설정
      */
     public static function getSubscribedHooks(): array
     {
@@ -42,7 +44,10 @@ class RestoreLayoutExtensionsAfterUpdateListener implements HookListenerInterfac
     public function handle(...$args): void {}
 
     /**
-     * 플러그인 업데이트 직후 이 플러그인이 소유한 overlay 확장을 다시 등록합니다.
+     * 플러그인 업데이트 직후 이 플러그인이 소유한 레이아웃 확장 조각(overlay·확장점)을 다시 등록합니다.
+     *
+     * 확장점 조각은 그 확장점을 가진 레이아웃이 있는 템플릿에만 등록한다(관리자 주문 목록의 결제수단 표시
+     * 자리처럼 호스트 레이아웃이 확장점을 열어 둔 경우). overlay 는 대상 레이아웃이 있는 템플릿에 등록한다.
      *
      * @param  string  $identifier  업데이트된 확장 식별자 (자기 것이 아니면 아무것도 하지 않는다)
      * @param  array<string, mixed>  $result  업데이트 결과 (success=false 면 바뀐 것이 없다)
@@ -56,14 +61,24 @@ class RestoreLayoutExtensionsAfterUpdateListener implements HookListenerInterfac
 
         $service = app(LayoutExtensionService::class);
 
-        foreach ($this->currentOverlayExtensions() as $fragment) {
+        foreach ($this->currentExtensionFragments() as $fragment) {
             $extensionData = $fragment['data'];
             $targetLayout = $extensionData['target_layout'] ?? null;
-            if (! is_string($targetLayout) || $targetLayout === '') {
+            $extensionPoint = $extensionData['extension_point'] ?? null;
+
+            if (is_string($targetLayout) && $targetLayout !== '') {
+                $targetName = $targetLayout;
+                $extensionType = LayoutExtensionType::Overlay;
+                $templateIds = $this->templateIdsForLogicalLayout($targetLayout);
+            } elseif (is_string($extensionPoint) && $extensionPoint !== '') {
+                $targetName = $extensionPoint;
+                $extensionType = LayoutExtensionType::ExtensionPoint;
+                $templateIds = $this->templateIdsWithExtensionPoint($extensionPoint);
+            } else {
                 continue;
             }
 
-            foreach ($this->templateIdsForLogicalLayout($targetLayout) as $templateId) {
+            foreach ($templateIds as $templateId) {
                 $result = $service->registerExtension(
                     $extensionData,
                     LayoutSourceType::Plugin,
@@ -74,14 +89,14 @@ class RestoreLayoutExtensionsAfterUpdateListener implements HookListenerInterfac
                 );
 
                 if ($result !== null) {
-                    $service->invalidateExtensionCache($templateId, $targetLayout, LayoutExtensionType::Overlay);
+                    $service->invalidateExtensionCache($templateId, $targetName, $extensionType);
                 }
             }
         }
     }
 
     /**
-     * 현재 플러그인이 소유한 overlay 확장 정의를 읽습니다.
+     * 현재 플러그인이 소유한 레이아웃 확장 조각(overlay·확장점) 정의를 읽습니다.
      *
      * 수집·짝 판별·읽기는 코어가 맡는다 ({@see LayoutFragmentSourceHelper::readDirectoryKeyed()}) —
      * 여기서 `glob('*.json')` 하면 소스(`.g7.html`)이 통째로 보이지 않아, 소스만 고친 확장점은
@@ -90,19 +105,43 @@ class RestoreLayoutExtensionsAfterUpdateListener implements HookListenerInterfac
      * 조각 식별자(`fragment_key`)까지 함께 받는다. 같은 대상에 조각이 둘이면 키 없는 등록은 어느
      * 행인지 가릴 수 없어 아무것도 하지 않으므로, 파일에서 바로 얻은 키를 그대로 넘긴다.
      *
-     * @return array<int, array{path: string, data: array<string, mixed>, key: string}>
+     * @return array<int, array{path: string, data: array<string, mixed>, key: string}> 조각 정의 목록
      */
-    private function currentOverlayExtensions(): array
+    private function currentExtensionFragments(): array
     {
         return array_values(array_filter(
             LayoutFragmentSourceHelper::readDirectoryKeyed(dirname(__DIR__, 2).'/resources/extensions'),
             static fn (array $fragment): bool => isset($fragment['data']['target_layout'])
+                || isset($fragment['data']['extension_point'])
         ));
     }
 
     /**
-     * @param  string  $layoutName
-     * @return array<int, int>
+     * 지정 확장점을 가진 레이아웃이 있는 템플릿 ID 목록을 반환합니다.
+     *
+     * @param  string  $extensionPoint  확장점 이름
+     * @return array<int, int> 템플릿 ID 목록
+     */
+    private function templateIdsWithExtensionPoint(string $extensionPoint): array
+    {
+        $templateRepository = app(TemplateRepositoryInterface::class);
+        $layoutRepository = app(LayoutRepositoryInterface::class);
+        $templateIds = [];
+
+        foreach ($templateRepository->getAll() as $template) {
+            if ($layoutRepository->hasExtensionPoint((int) $template->id, $extensionPoint)) {
+                $templateIds[] = (int) $template->id;
+            }
+        }
+
+        return $templateIds;
+    }
+
+    /**
+     * 논리 레이아웃 이름을 가진 레이아웃이 있는 템플릿 ID 목록을 반환합니다.
+     *
+     * @param  string  $layoutName  조각이 겨냥한 논리 레이아웃 이름 (확장 접두사 없음)
+     * @return array<int, int> 템플릿 ID 목록
      */
     private function templateIdsForLogicalLayout(string $layoutName): array
     {

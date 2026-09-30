@@ -12,10 +12,11 @@
           <span>$t:sirsoft-board.admin.form.permissions.managers_title</span>
         </label>
         <p data-ref="permissions_managers_description" class="text-tertiary mb-3">$t:sirsoft-board.admin.form.permissions.managers_description</p>
-        <tag-input data-ref="permissions_managers_taginput" value="{{_local.form?.board_manager_ids ?? []}}" options="{{ [...(_local.form?.board_managers ?? []), ...(_local.managerSearchResults ?? [])].filter((u, i, a) => a.findIndex(x => x.uuid === u.uuid) === i).map(u => ({ value: u.uuid, label: u.name + ' (' + u.email + ')' })) }}" placeholder="$t:sirsoft-board.admin.form.permissions.search_placeholder" noOptionsMessage="$t:sirsoft-board.admin.form.permissions.no_search_results" class="w-full" defaultVariant="blue" :isSearchable="true" disabled="{{_computed.isReadOnly}}">
+        <tag-input data-type="composite" data-ref="permissions_managers_taginput" value="{{_local.form?.board_manager_ids ?? []}}" options="{{ [...(_local.form?.board_managers ?? []), ...(_local.managerSearchResults ?? [])].filter((u, i, a) => a.findIndex(x => x.uuid === u.uuid) === i).map(u => ({ value: u.uuid, label: u.name + ' (' + u.email + ')' })) }}" placeholder="$t:sirsoft-board.admin.form.permissions.search_placeholder" noOptionsMessage="$t:sirsoft-board.admin.form.permissions.no_search_results" class="w-full" defaultVariant="blue" :isSearchable="true" disabled="{{_computed.isReadOnly}}">
           <on event="onInputChange">
-            <!-- 운영자 후보 찾기 — 타이핑마다 부르면 요청이 쏟아지므로 300ms 쉬었다 보낸다. 결과는 지역 상태에 따로 담아, 이미 고른 사람과 합쳐 선택지를 만든다(합치지 않으면 검색 결과가 바뀔 때 고른 사람의 이름표가 사라진다) -->
-            <api-call :debounce="300" :auth_required="true" target="/api/admin/users" method="GET">
+            <!-- 운영자 후보 찾기 — 타이핑마다 부르면 요청이 쏟아지므로 300ms 쉬었다 보낸다. 결과는 지역 상태에 따로 담아, 이미 고른 사람과 합쳐 선택지를 만든다(합치지 않으면 검색 결과가 바뀔 때 고른 사람의 이름표가 사라진다).
+              검색칸을 지우거나 공백만 적으면 부르지 않는다 — 회원 목록 API 는 빈 필터 값을 지우고 전체 회원을 돌려주므로, 다른 회원 검색 칸과 같이 검색어 없는 조회는 보내지 않는다 -->
+            <api-call :debounce="300" :auth_required="true" if="{{String($event.target.value ?? '').trim() !== ''}}" target="/api/admin/users" method="GET">
               <success>
                 <set-state managerSearchResults="{{result.data?.data ?? []}}"/>
               </success>
@@ -42,10 +43,10 @@
           <span>$t:sirsoft-board.admin.form.permissions.steps_title</span>
         </label>
         <p data-ref="permissions_steps_description" class="text-tertiary mb-3">$t:sirsoft-board.admin.form.permissions.steps_description</p>
-        <tag-input data-ref="permissions_steps_taginput" value="{{_local.form?.board_step_ids ?? []}}" options="{{ [...(_local.form?.board_steps ?? []), ...(_local.stepSearchResults ?? [])].filter((u, i, a) => a.findIndex(x => x.uuid === u.uuid) === i).map(u => ({ value: u.uuid, label: u.name + ' (' + u.email + ')' })) }}" placeholder="$t:sirsoft-board.admin.form.permissions.search_placeholder" noOptionsMessage="$t:sirsoft-board.admin.form.permissions.no_search_results" class="w-full" defaultVariant="green" :isSearchable="true" disabled="{{_computed.isReadOnly}}">
+        <tag-input data-type="composite" data-ref="permissions_steps_taginput" value="{{_local.form?.board_step_ids ?? []}}" options="{{ [...(_local.form?.board_steps ?? []), ...(_local.stepSearchResults ?? [])].filter((u, i, a) => a.findIndex(x => x.uuid === u.uuid) === i).map(u => ({ value: u.uuid, label: u.name + ' (' + u.email + ')' })) }}" placeholder="$t:sirsoft-board.admin.form.permissions.search_placeholder" noOptionsMessage="$t:sirsoft-board.admin.form.permissions.no_search_results" class="w-full" defaultVariant="green" :isSearchable="true" disabled="{{_computed.isReadOnly}}">
           <on event="onInputChange">
-            <!-- 단계 승인자 후보 찾기 — 운영자 칸과 같은 짜임이지만 결과를 담는 자리가 다르다(`stepSearchResults`). 두 칸이 한 상태를 나눠 쓰면 한쪽 검색이 다른 쪽 선택지를 갈아치운다 -->
-            <api-call :debounce="300" :auth_required="true" target="/api/admin/users" method="GET">
+            <!-- 단계 승인자 후보 찾기 — 운영자 칸과 같은 짜임이지만 결과를 담는 자리가 다르다(`stepSearchResults`). 두 칸이 한 상태를 나눠 쓰면 한쪽 검색이 다른 쪽 선택지를 갈아치운다. 빈 검색어 차단도 운영자 칸과 같다 -->
+            <api-call :debounce="300" :auth_required="true" if="{{String($event.target.value ?? '').trim() !== ''}}" target="/api/admin/users" method="GET">
               <success>
                 <set-state stepSearchResults="{{result.data?.data ?? []}}"/>
               </success>
@@ -90,7 +91,7 @@
           </div>
         </div>
         <div data-ref="permissions_section_admin" data-if="{{ !!route?.slug }}" class="mb-4">
-          <accordion :defaultOpen="true" class="border border-gray-200 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800">
+          <accordion data-type="composite" :defaultOpen="true" class="border border-gray-200 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800">
             <div slot="trigger" class="flex-center gap-2 w-full px-2 py-1">
               <icon name="shield" size="lg" class="text-purple-500 dark:text-purple-400"/>
               <h4 class="text-primary font-medium">$t:sirsoft-board.admin.form.permissions.admin_permissions_title</h4>
@@ -105,7 +106,7 @@
                       <span class="text-heading">$t:sirsoft-board.board.permissions.{{perm?.name}}</span>
                       <p class="text-tertiary mt-0.5">$t:sirsoft-board.board.permissions.{{perm?.name}}_desc</p>
                     </div>
-                    <tag-input name="permissions.{{perm?._key}}.roles" value="{{ _local.form?.permissions?.[perm?._key]?.roles ?? [] }}" options="{{ (roles?.data?.data ?? []).map(r => ({ value: r?.identifier, label: r?.name })) }}" placeholder="$t:sirsoft-board.admin.form.permissions.select_roles" class="w-full" defaultVariant="purple" disabled="{{_computed.isReadOnly}}">
+                    <tag-input data-type="composite" name="permissions.{{perm?._key}}.roles" value="{{ _local.form?.permissions?.[perm?._key]?.roles ?? [] }}" options="{{ (roles?.data?.data ?? []).map(r => ({ value: r?.identifier, label: r?.name })) }}" placeholder="$t:sirsoft-board.admin.form.permissions.select_roles" class="w-full" defaultVariant="purple" disabled="{{_computed.isReadOnly}}">
                       <on type="change">
                         <!-- 관리자용 권한 한 줄의 역할을 바꾼다 — `permissions` 전체를 갈아 끼우되 건드린 키만 새 값으로 덮는다(중첩 객체를 통째로 다시 지어야 변경이 감지된다). 편집 화면에서만 「변경 있음」을 켠다. 신규 화면에서는 이 묶음이 아예 렌더되지 않으므로 종전 값을 그대로 둔다. 편집 판정은 `route?.slug` 로 한다 — 이 화면의 path param 은 그것뿐이다(`/admin/boards/create` 와 `/admin/boards/:slug/edit`) -->
                         <set-state target="local" hasChanges="{{ route?.slug ? true : _local.hasChanges }}">
@@ -123,7 +124,7 @@
           </accordion>
         </div>
         <div data-ref="permissions_section_user" data-if="{{ !!route?.slug }}" class="mt-4">
-          <accordion :defaultOpen="true" class="border border-gray-200 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800">
+          <accordion data-type="composite" :defaultOpen="true" class="border border-gray-200 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800">
             <div slot="trigger" class="flex-center gap-2 w-full px-2 py-1">
               <icon name="users" size="lg" class="text-blue-500 dark:text-blue-400"/>
               <h4 class="text-primary font-medium">$t:sirsoft-board.admin.form.permissions.user_permissions_title</h4>
@@ -138,7 +139,7 @@
                       <span class="text-heading">$t:sirsoft-board.board.permissions.{{perm?.name}}</span>
                       <p class="text-tertiary mt-0.5">$t:sirsoft-board.board.permissions.{{perm?.name}}_desc</p>
                     </div>
-                    <tag-input name="permissions.{{perm?._key}}.roles" value="{{ _local.form?.permissions?.[perm?._key]?.roles ?? [] }}" options="{{ (roles?.data?.data ?? []).map(r => ({ value: r?.identifier, label: r?.name })) }}" placeholder="$t:sirsoft-board.admin.form.permissions.select_roles" class="w-full" defaultVariant="blue" disabled="{{_computed.isReadOnly}}">
+                    <tag-input data-type="composite" name="permissions.{{perm?._key}}.roles" value="{{ _local.form?.permissions?.[perm?._key]?.roles ?? [] }}" options="{{ (roles?.data?.data ?? []).map(r => ({ value: r?.identifier, label: r?.name })) }}" placeholder="$t:sirsoft-board.admin.form.permissions.select_roles" class="w-full" defaultVariant="blue" disabled="{{_computed.isReadOnly}}">
                       <on type="change">
                         <!-- 사용자용 권한 한 줄의 역할을 바꾼다 — 위 관리자용과 같은 갱신 규칙이고, 편집 판정도 같은 `route?.slug` 를 본다 -->
                         <set-state target="local" hasChanges="{{ route?.slug ? true : _local.hasChanges }}">

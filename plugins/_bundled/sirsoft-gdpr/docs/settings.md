@@ -8,13 +8,13 @@
 | 키 | 타입 | 기본값 | 설명 |
 |---|---|---|---|
 | `annual_notice` | `array` | `{"enabled":false,"channels":["mail","database"],"batch_size":500,"introduction":[]}` | 개인정보 연간 통지 |
-| `privacy_policy_slug` | `string` | `privacy` | 개인정보처리방침 페이지 슬러그 |
+| `privacy_policy_url` | `string` | - | 개인정보처리방침 주소 |
 | `legal_entity_name` | `string` | - | 운영 주체명 |
 | `data_storage_location` | `string` | - | 데이터 저장 위치 |
 | `banner_enabled` | `boolean` | `true` | 쿠키 배너 노출 |
 | `banner_position` | `string` | `bottom_bar` | 배너 위치 |
 | `blocked_domains` | `json` | `{"functional":["*.crisp.chat","client.crisp.chat","*.intercom.io","widget.intercom.io","*.tawk.to","embed.tawk.to","cdn.weglot.com","*.weglot.com","*.usercentrics.eu"],"analytics":["google-analytics.com","*.google-analytics.com","googletagmanager.com","*.googletagmanager.com","ssl.google-analytics.com","*.hotjar.com","static.hotjar.com","*.mixpanel.com","cdn.mxpnl.com","*.amplitude.com","cdn.amplitude.com","*.segment.io","*.segment.com","wcs.naver.net","wcs.naver.com","*.beusable.net"],"marketing":["facebook.net","connect.facebook.net","facebook.com","*.facebook.com","doubleclick.net","*.doubleclick.net","googleadservices.com","googlesyndication.com","ads.google.com","*.criteo.com","static.criteo.net","*.adnxs.com","*.taboola.com","cdn.taboola.com","*.outbrain.com","*.kakao.com","analytics.ad.daum.net","platform.twitter.com","*.twitter.com","platform.linkedin.com","*.linkedin.com"]}` | 추적 도메인 차단 목록 |
-| `necessary_storage_allowlist` | `array` | `{"localStorage":["g7_locale","g7_color_scheme","g7_cache_version","g7_asset_url_mode*","g7_cart_key","g7-devtools-panel","g7_guest_order_token","g7_guest_order_number","g7_guest_order_expires_at","g7_devtools_*","g7_filters_*","g7_columns_*","g7_order_*","g7_admin_sidebar_collapsed","g7_filter_visibility_*","g7_dismissed_warnings","g7_view_mode_*","g7le.*","__sirsoftKginicisMobilePaymentReturnPending","g7.identity.redirectStash","sirsoft-verification_nhnkcp.formStash"],"sessionStorage":["g7:sirsoft-pay_kginicis:pendingClose","g7:sirsoft-pay_nhnkcp:pendingClose","g7:sirsoft-tosspayments:pendingClose","g7.identity.redirectStash","sirsoft-verification_nhnkcp.formStash","__sirsoftKginicisMobilePaymentReturnPending","g7le.*","g7_devtools_*","g7_filters_*","g7_columns_*","g7_order_*","g7_filter_visibility_*"],"cookie":["laravel_maintenance","g7_analytics_optout"]}` | 필수 저장 항목 허용목록 |
+| `necessary_storage_allowlist` | `array` | `{"localStorage":["g7_locale","g7_color_scheme","g7_cache_version","g7_asset_url_mode*","g7-devtools-panel","g7_devtools_*","g7_filters_*","g7_columns_*","g7_order_*","g7_admin_sidebar_collapsed","g7_filter_visibility_*","g7_dismissed_warnings","g7_view_mode_*","g7le.*","g7.identity.redirectStash"],"sessionStorage":["g7.identity.redirectStash","g7le.*","g7_devtools_*","g7_filters_*","g7_columns_*","g7_order_*","g7_filter_visibility_*"],"cookie":["laravel_maintenance","g7_analytics_optout"]}` | 필수 저장 항목 허용목록 |
 | `cookie_categories` | `json` | `[]` | 쿠키 카테고리 정의 |
 
 기본값 파일: `config/settings/defaults.json` · 설정 화면 레이아웃: `resources/layouts/admin/plugin_settings.g7.html`
@@ -43,6 +43,12 @@
 아닙니다.** 스키마에 없으므로 저장 요청에 담아도 반영되지 않고, 코드가 판정 시점에 운영자
 목록과 합쳐 적용합니다. 없으면 사이트가 서지 못하는 항목이라 지울 수 있으면 안 되기 때문이며,
 세션 쿠키 이름은 `session.cookie` 설정에서 런타임 해석됩니다.
+
+`necessary_storage_provided` 도 **설정이 아닙니다.** 활성 확장이 필터 훅
+`sirsoft-gdpr.necessary_storage.filter_provided_keys` 로 제공한 키를 요청마다 모은 계산값이며,
+화면에는 「확장 제공 항목 (자동)」으로 읽기 전용 표시됩니다. 확장 소유 키를 운영자 목록에 넣지 않는
+이유는, 넣으면 그 확장을 지워도 키가 허용된 채 남기 때문입니다(1.0.4 가 목록에 넣었던 확장 키는 1.1.0
+업그레이드가 걷어냅니다).
 <!-- @intent END -->
 
 ## 권한
@@ -107,9 +113,14 @@
 <!-- @generated:dependencies END -->
 
 <!-- @intent START -->
-formal `dependencies` 선언이 둘 다 "없음"인데도 README 는 `sirsoft-page`(소프트, 런타임 체크)와
-`sirsoft-basic`(레이아웃 확장 주입 지점)을 명시합니다 — 둘 다 manifest 의존성 제약으로
-선언할 만큼 강한 결합이 아니기 때문입니다. `sirsoft-page` 미설치는 기능 저하(링크 숨김)로
-그치고, `sirsoft-basic` 미사용은 다른 템플릿이 같은 주입 지점을 제공하면 해소됩니다 — 둘 다
-"없으면 설치가 막히는" 수준의 의존이 아니라 manifest 의존성 목록에 넣지 않습니다.
+formal `dependencies` 선언이 둘 다 "없음"인데도 README 는 `sirsoft-basic`(레이아웃 확장 주입 지점)을
+명시합니다 — manifest 의존성 제약으로 선언할 만큼 강한 결합이 아니기 때문입니다. `sirsoft-basic`
+미사용은 다른 템플릿이 같은 주입 지점을 제공하면 해소됩니다.
+
+1.0.x 는 처리방침 링크를 페이지 모듈의 주소 규칙(`/page/{slug}`)으로 조합해 선언하지 않은 의존이
+있었습니다. 1.1.0 부터 운영자가 처리방침 주소(`privacy_policy_url`)를 직접 적으므로 페이지 모듈과의
+결합이 없습니다. 허용 형식은 `/` 로 시작하는 사이트 경로와 `https://` 주소 둘뿐이며(판정은
+`src/Support/PrivacyPolicyUrl.php` 단일 출처 — 저장 검증·공개 응답·연간 통지 링크·정책 버전 비교가
+함께 쓴다), 비어 있으면 배너의 정책 링크를 숨깁니다. 처리방침 페이지가 실제로 열리는지는 확인하지
+않습니다.
 <!-- @intent END -->

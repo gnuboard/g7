@@ -111,7 +111,7 @@ _목록 응답: `data.data[]` 배열 항목의 필드 + `data.pagination`._
 | first_option | object | `{"product_name":"겨울 패딩 점퍼 #16","product_option_name":"카키\…` | 대표 표시용 첫 번째 주문 옵션 요약 (상품명·옵션명·수량·썸네일·추가옵션 요약) |
 | options_count | integer | `1` | options 개수 (집계) |
 | address | object | `{"orderer_name":"연정훈","recipient_name":"소정훈","recipient_c…` | 배송지 요약 (주문자명·수령인명·배송국가 코드/현지화명) |
-| payment | object | `{"payment_method":"dbank","payment_method_label":"무통장입금"}` | 결제 요약 (결제수단 값·현지화 라벨) |
+| payment | object | `{"payment_method":"dbank","payment_method_label":"무통장입금","payment_method_display_label":null}` | 결제 요약 (결제수단 값·현지화 라벨). `payment_method_display_label` 은 결제 플러그인이 필터 훅 `sirsoft-ecommerce.order.filter_payment_method_display_label` 로 채우는 표시 라벨(간편결제 원 수단 등) — 채우는 플러그인이 없으면 `null` |
 | shipping | object | `{"shipping_type":null,"shipping_type_label":null,"shippin…` | 배송 요약 (배송유형·배송방법 라벨·택배사명·송장번호, 첫 번째 배송 기준) |
 | claim_summary | array | `[{"type":"return","type_label":"반품","count":2,"latest_cla…` | 유형별 최신 상태 배지 배열 (D22). 항상 직렬화된다 — 접수 건이 있는 유형만 항목으로 실리므로 클레임이 없는 주문은 빈 배열이다. 항목: `{type, type_label, count, latest_claim_number, status, status_label, status_variant}` — 환불 축은 취소 발 신청서를 제외 |
 | is_owner | boolean | `false` | 현재 인증 사용자가 이 리소스의 소유자인지 여부 (BaseApiResource 표준 메타) |
@@ -2139,6 +2139,8 @@ _단건 응답: `data` 객체의 필드 (HTTP 201). 회원은 `order` 에 `Order
 | pg_provider | string | `sirsoft-tosspayments` | PG 플러그인 식별자 (`requires_pg_payment=true` 일 때만 포함) |
 | pg_payment_handler | string | `sirsoft-tosspayments.requestPayment` | 프론트가 dispatch 할 결제 진입 핸들러 풀네임 (provider 가 선언한 경우에만 포함) |
 | pg_payment_data | object | `{"order_number":"…","amount":184000,"currency":"KRW", …}` | PG SDK 결제창 호출 파라미터 (`requires_pg_payment=true` 일 때만 포함 — 아래 표 참조) |
+| guest_order_token | string | `1759999999\|6f1c…` | **비회원 주문에만** 포함되는 비회원 조회 토큰(30분 유효, `X-Guest-Order-Token` 헤더 값). 결제창 닫힘 보고(PG 플러그인 close-report)·재결제 준비가 이 토큰으로 주문 소유자를 확인한다. 회원 주문에는 포함되지 않는다 |
+| guest_order_token_expires_at | string | `2026-09-28T15:30:00+09:00` | `guest_order_token` 의 만료시각 (ISO 8601, 비회원 주문에만 포함) |
 
 `pg_payment_data` 하위 필드 (프로바이더 비의존 공통):
 
@@ -2214,7 +2216,7 @@ HTTP/1.1 201
 
 <!-- @generated:end -->
 
-**설명** 주문서 작성을 마치고 실제 주문을 생성(결제하기)하는 회원/비회원 공용 엔드포인트입니다. PG 플러그인의 fetch 인터셉터가 이 한 경로만 매칭하므로 회원/비회원이 동일 URL로 진입하고, `Public\OrderController@store`가 `Auth::id()`로 분기합니다(회원은 `OrderResource`, 비회원은 민감 필드를 가린 `GuestOrderResource`). `optional.sanctum` + `sirsoft-ecommerce.user-orders.create` 권한이 필요하며, `expected_total_amount`로 금액 위변조를 검증하고 비회원은 `guest_lookup_password`로 이후 조회 비밀번호를 설정합니다. 회원이 `save_shipping_address`를 켜면 배송지가 자동 저장(PG 결제는 결제완료 시점) 됩니다. `save_shipping_address_id` 를 함께 실으면 새로 만드는 대신 그 주소록 행을 갱신합니다.
+**설명** 주문서 작성을 마치고 실제 주문을 생성(결제하기)하는 회원/비회원 공용 엔드포인트입니다. PG 플러그인의 fetch 인터셉터가 이 한 경로만 매칭하므로 회원/비회원이 동일 URL로 진입하고, `Public\OrderController@store`가 `Auth::id()`로 분기합니다(회원은 `OrderResource`, 비회원은 민감 필드를 가린 `GuestOrderResource`). `optional.sanctum` + `sirsoft-ecommerce.user-orders.create` 권한이 필요하며, `expected_total_amount`로 금액 위변조를 검증하고 비회원은 `guest_lookup_password`로 이후 조회 비밀번호를 설정합니다. 회원이 `save_shipping_address`를 켜면 배송지가 자동 저장(PG 결제는 결제완료 시점) 됩니다. 비회원 주문이면 응답에 그 주문의 조회 토큰(`guest_order_token`, 30분)을 함께 내려줍니다 — 주문을 실제로 만든 브라우저만 받는 값이라, 결제창 닫힘 보고처럼 결제 도중 주문 상태를 바꾸는 요청의 소유 증명으로 쓰입니다. 주문자 이메일·전화번호는 제3자도 알 수 있어 소유 증명이 되지 못합니다 (KVE-2026-2434). 토큰 발급이 실패해도 주문 생성은 성공하며, 그 경우 닫힘 보고는 거부되고 결제대기 주문은 만료 정리 잡이 정리합니다. `save_shipping_address_id` 를 함께 실으면 새로 만드는 대신 그 주소록 행을 갱신합니다.
 
 주문 확정 시점에는 재고·구매대상제한·배송국가·쿠폰 유효성과 함께 **마일리지 사용 정책**도 현재 설정 기준으로 재검증합니다. 임시 주문을 만든 뒤 관리자가 한도를 강화했거나 임시 주문이 조작된 경우 `422`(`errors.code = mileage_usage_not_allowed`)로 차단되며 주문은 생성되지 않습니다. 반대로 정상 생성된 주문에는 그 시점의 사용 정책이 `mileage_policy_snapshot` 으로 고정되어, 이후 설정이 바뀌어도 해당 주문의 판정 근거를 재현할 수 있습니다(통화·프로모션·배송정책 스냅샷과 동일 취지).
 

@@ -172,7 +172,7 @@ test.describe('방문자 통계 설정 — 개인정보 모드·검증', () => {
           mode: 'full',
           effective_mode: 'anonymous',
           anonymous_fallback_reason: 'consent_plugin_blocks_cookies',
-          consent_source: 'gdpr',
+          consent_source: 'provider',
         };
         await route.fulfill({ response: upstream, json: body });
       },

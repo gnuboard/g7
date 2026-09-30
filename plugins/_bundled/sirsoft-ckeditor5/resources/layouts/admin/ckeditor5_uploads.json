@@ -515,6 +515,10 @@
                         "id": "ckeditor5_uploads_datagrid",
                         "type": "composite",
                         "name": "DataGrid",
+                        "blur_until_loaded": {
+                            "enabled": true,
+                            "data_sources": "ckeditor5Uploads"
+                        },
                         "actions": [
                             {
                                 "comment": "페이지 이동은 걸려 있던 검색·필터를 그대로 이고 간다(mergeQuery). 표 몸통만 전환 오버레이로 덮어 헤더·필터가 깜빡이지 않는다",
@@ -593,8 +597,7 @@
                             "selectable": true,
                             "selectionScope": "page",
                             "selectedIds": "{{_global.selectedIds_ckeditor5_uploads || []}}",
-                            "loading": "{{ckeditor5Uploads?.loading}}",
-                            "emptyText": "$t:sirsoft-ckeditor5.admin.uploads.empty",
+                            "emptyMessage": "$t:sirsoft-ckeditor5.admin.uploads.empty",
                             "actionsColumnHeader": "$t:common.actions",
                             "rowActions": [
                                 {

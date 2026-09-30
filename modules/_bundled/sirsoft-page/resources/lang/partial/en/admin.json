@@ -71,7 +71,8 @@
     "errors": {
       "delete_failed": "Failed to delete page.",
       "restore_failed": "Failed to restore version.",
-      "publish_change_failed": "Failed to change publish status."
+      "publish_change_failed": "Failed to change publish status.",
+      "download_failed": "Failed to download the attachment."
     },
     "form": {
       "page_title_create": "Create Page",

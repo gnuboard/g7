@@ -30,4 +30,18 @@ class IndexRateRunRequest extends FormRequest
             'date_from' => ['nullable', 'date_format:Y-m-d'], 'date_to' => ['nullable', 'date_format:Y-m-d', ...($this->filled('date_from') ? ['after_or_equal:date_from'] : [])],
             'page' => ['nullable', 'integer', 'min:1'], 'per_page' => ['nullable', 'integer', 'between:1,100']];
     }
+
+    /**
+     * 검증 오류 문구에 쓸 필드 이름을 반환합니다.
+     *
+     * 지정하지 않으면 「date to 필드는 date from 이후…」처럼 파라미터 원문이 문구에 드러난다.
+     *
+     * @return array<string, string> 필드 이름
+     */
+    public function attributes(): array
+    {
+        return collect(['status', 'trigger', 'date_from', 'date_to', 'page', 'per_page'])
+            ->mapWithKeys(fn (string $field) => [$field => __('sirsoft-koreaexim::validation.attributes.'.$field)])
+            ->all();
+    }
 }

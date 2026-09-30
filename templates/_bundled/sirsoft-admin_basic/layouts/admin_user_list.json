@@ -582,7 +582,7 @@
                                         "name": "Dropdown",
                                         "actions": [
                                             {
-                                                "comment": "모바일 일괄 처리 — 고른 항목에 따라 데스크톱 버튼 4개와 **같은 확인 창**을 연다.\n                   여기서 바로 처리하지 않는 이유는 되돌릴 수 없는 상태 변경이기 때문이다.",
+                                                "comment": "모바일 일괄 처리 — 고른 항목에 따라 데스크톱 버튼 4개와 **같은 확인 창**을 연다.\n                   여기서 바로 처리하지 않는 이유는 되돌릴 수 없는 상태 변경이기 때문이다.\n                   고른 회원이 없으면 항목이 잠긴다 — 서버는 빈 대상(`ids=[]`)을 422 로 거절한다.",
                                                 "type": "action",
                                                 "event": "onItemClick",
                                                 "handler": "switch",
@@ -613,19 +613,23 @@
                                             "items": [
                                                 {
                                                     "value": "activate",
-                                                    "label": "$t:admin.users.bulk_activate"
+                                                    "label": "$t:admin.users.bulk_activate",
+                                                    "disabled": "{{!(_global.selectedIds_admin_users?.length > 0)}}"
                                                 },
                                                 {
                                                     "value": "deactivate",
-                                                    "label": "$t:admin.users.bulk_deactivate"
+                                                    "label": "$t:admin.users.bulk_deactivate",
+                                                    "disabled": "{{!(_global.selectedIds_admin_users?.length > 0)}}"
                                                 },
                                                 {
                                                     "value": "block",
-                                                    "label": "$t:admin.users.bulk_block"
+                                                    "label": "$t:admin.users.bulk_block",
+                                                    "disabled": "{{!(_global.selectedIds_admin_users?.length > 0)}}"
                                                 },
                                                 {
                                                     "value": "withdraw",
-                                                    "label": "$t:admin.users.bulk_withdraw"
+                                                    "label": "$t:admin.users.bulk_withdraw",
+                                                    "disabled": "{{!(_global.selectedIds_admin_users?.length > 0)}}"
                                                 }
                                             ]
                                         }
@@ -892,7 +896,7 @@
                         "blur_until_loaded": true,
                         "actions": [
                             {
-                                "comment": "선택한 행의 id 를 전역에 둔다 — 일괄 처리 버튼과 확인 창이 모두 이 값을 읽으므로\n               표 바깥(툴바·모달)에서 보여야 한다.",
+                                "comment": "선택한 행의 id 를 전역에 둔다 — 일괄 처리 버튼과 확인 창이 모두 이 값을 읽으므로\n               표 바깥(툴바·모달)에서 보여야 한다. 로그인한 본인의 행은 표가 고르지 못하게 막는다\n               (`nonSelectableIds`) — 본인이 섞인 일괄 요청은 서버가 통째로 422 로 거절한다.",
                                 "type": "change",
                                 "event": "onSelectionChange",
                                 "handler": "setState",
@@ -996,6 +1000,7 @@
                             "serverHasMorePages": "{{users?.data?.pagination?.has_more_pages ?? false}}",
                             "selectable": "{{users?.data?.abilities?.can_update === true}}",
                             "selectionScope": "page",
+                            "nonSelectableIds": "{{current_user?.data?.uuid ? [current_user.data.uuid] : []}}",
                             "selectedIds": "{{_global.selectedIds_admin_users || []}}",
                             "idField": "uuid",
                             "showColumnSelector": false,
@@ -1255,6 +1260,7 @@
                             ]
                         },
                         {
+                            "id": "bulk_activate_submit_button",
                             "type": "basic",
                             "name": "Button",
                             "actions": [
@@ -1302,10 +1308,11 @@
                                                     }
                                                 },
                                                 {
+                                                    "comment": "서버는 슈퍼 관리자·관리 범위 밖 회원을 조용히 빼고 200 으로 끝낸다 — 그 수가 failed_count 로 오므로 읽지 않으면 일부만 바뀌었는데 전원 성공으로 안내된다.",
                                                     "handler": "toast",
                                                     "params": {
-                                                        "type": "success",
-                                                        "message": "$t:admin.users.modals.bulk_activate_success"
+                                                        "type": "{{(response.data?.failed_count ?? 0) === 0 ? 'success' : ((response.data?.updated_count ?? 0) === 0 ? 'error' : 'warning')}}",
+                                                        "message": "{{(response.data?.failed_count ?? 0) === 0 ? '$t:admin.users.modals.bulk_activate_success' : ((response.data?.updated_count ?? 0) === 0 ? '$t:admin.users.modals.bulk_status_all_failed|reason=' + (response.data?.failed_reasons ?? []).join(' / ') : '$t:admin.users.modals.bulk_status_partial|updated=' + (response.data?.updated_count ?? 0) + '|failed=' + (response.data?.failed_count ?? 0) + '|reason=' + (response.data?.failed_reasons ?? []).join(' / '))}}"
                                                     }
                                                 }
                                             ],
@@ -1328,7 +1335,7 @@
                                 }
                             ],
                             "props": {
-                                "disabled": "{{_global.isProcessing}}",
+                                "disabled": "{{_global.isProcessing || !(_global.selectedIds_admin_users?.length > 0)}}",
                                 "className": "flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
                             },
                             "children": [
@@ -1412,6 +1419,7 @@
                             ]
                         },
                         {
+                            "id": "bulk_deactivate_submit_button",
                             "type": "basic",
                             "name": "Button",
                             "actions": [
@@ -1459,10 +1467,11 @@
                                                     }
                                                 },
                                                 {
+                                                    "comment": "서버는 슈퍼 관리자·관리 범위 밖 회원을 조용히 빼고 200 으로 끝낸다 — 그 수가 failed_count 로 오므로 읽지 않으면 일부만 바뀌었는데 전원 성공으로 안내된다.",
                                                     "handler": "toast",
                                                     "params": {
-                                                        "type": "success",
-                                                        "message": "$t:admin.users.modals.bulk_deactivate_success"
+                                                        "type": "{{(response.data?.failed_count ?? 0) === 0 ? 'success' : ((response.data?.updated_count ?? 0) === 0 ? 'error' : 'warning')}}",
+                                                        "message": "{{(response.data?.failed_count ?? 0) === 0 ? '$t:admin.users.modals.bulk_deactivate_success' : ((response.data?.updated_count ?? 0) === 0 ? '$t:admin.users.modals.bulk_status_all_failed|reason=' + (response.data?.failed_reasons ?? []).join(' / ') : '$t:admin.users.modals.bulk_status_partial|updated=' + (response.data?.updated_count ?? 0) + '|failed=' + (response.data?.failed_count ?? 0) + '|reason=' + (response.data?.failed_reasons ?? []).join(' / '))}}"
                                                     }
                                                 }
                                             ],
@@ -1485,7 +1494,7 @@
                                 }
                             ],
                             "props": {
-                                "disabled": "{{_global.isProcessing}}",
+                                "disabled": "{{_global.isProcessing || !(_global.selectedIds_admin_users?.length > 0)}}",
                                 "className": "flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
                             },
                             "children": [
@@ -1781,6 +1790,7 @@
                             ]
                         },
                         {
+                            "id": "bulk_block_submit_button",
                             "type": "basic",
                             "name": "Button",
                             "actions": [
@@ -1828,10 +1838,11 @@
                                                     }
                                                 },
                                                 {
+                                                    "comment": "서버는 슈퍼 관리자·관리 범위 밖 회원을 조용히 빼고 200 으로 끝낸다 — 그 수가 failed_count 로 오므로 읽지 않으면 일부만 바뀌었는데 전원 성공으로 안내된다.",
                                                     "handler": "toast",
                                                     "params": {
-                                                        "type": "success",
-                                                        "message": "$t:admin.users.modals.bulk_block_success"
+                                                        "type": "{{(response.data?.failed_count ?? 0) === 0 ? 'success' : ((response.data?.updated_count ?? 0) === 0 ? 'error' : 'warning')}}",
+                                                        "message": "{{(response.data?.failed_count ?? 0) === 0 ? '$t:admin.users.modals.bulk_block_success' : ((response.data?.updated_count ?? 0) === 0 ? '$t:admin.users.modals.bulk_status_all_failed|reason=' + (response.data?.failed_reasons ?? []).join(' / ') : '$t:admin.users.modals.bulk_status_partial|updated=' + (response.data?.updated_count ?? 0) + '|failed=' + (response.data?.failed_count ?? 0) + '|reason=' + (response.data?.failed_reasons ?? []).join(' / '))}}"
                                                     }
                                                 }
                                             ],
@@ -1854,7 +1865,7 @@
                                 }
                             ],
                             "props": {
-                                "disabled": "{{_global.isProcessing}}",
+                                "disabled": "{{_global.isProcessing || !(_global.selectedIds_admin_users?.length > 0)}}",
                                 "className": "flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed"
                             },
                             "children": [
@@ -1938,6 +1949,7 @@
                             ]
                         },
                         {
+                            "id": "bulk_withdraw_submit_button",
                             "type": "basic",
                             "name": "Button",
                             "actions": [
@@ -2012,7 +2024,7 @@
                                 }
                             ],
                             "props": {
-                                "disabled": "{{_global.isProcessing}}",
+                                "disabled": "{{_global.isProcessing || !(_global.selectedIds_admin_users?.length > 0)}}",
                                 "className": "flex-center gap-2 px-4 py-2 bg-yellow-600 dark:bg-yellow-700 text-white rounded-lg hover:bg-yellow-700 dark:hover:bg-yellow-800 disabled:opacity-50 disabled:cursor-not-allowed"
                             },
                             "children": [

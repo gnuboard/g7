@@ -28,6 +28,7 @@ return [
         'value_present' => '설정 값은 필수입니다.',
         'key_unknown' => '저장할 수 없는 설정 키입니다: :key',
         'key_server_managed' => '이 설정은 서버가 기록하는 값이라 직접 저장할 수 없습니다.',
+        'empty_payload' => '저장할 설정 내용이 없습니다. 화면을 새로고침한 뒤 다시 저장해 주세요.',
     ],
 
     // 배송사 검증 메시지
@@ -1658,10 +1659,12 @@ return [
         'user_currency' => [
             'required' => '결제 통화를 선택해 주세요.',
             'invalid' => '등록된 통화만 선택할 수 있습니다.',
+            'forbidden' => '회원 결제 통화를 변경할 권한이 없습니다.',
         ],
         'user_shipping_country' => [
             'required' => '배송국가를 선택해 주세요.',
             'invalid' => '배송 가능한 국가만 선택할 수 있습니다.',
+            'forbidden' => '회원 배송국가를 변경할 권한이 없습니다.',
         ],
         'language_currency' => [
             'base_locked_after_data' => '상품 또는 주문이 1건 이상 등록된 후에는 기본 통화를 변경할 수 없습니다.',
@@ -1828,6 +1831,7 @@ return [
             ],
             'bank_accounts' => [
                 'at_least_one_active_default' => '무통장 계좌 중 하나 이상은 기본 선택 및 사용 선택되어 있어야 합니다.',
+                'dbank_requires_active_account' => '무통장입금을 사용하려면 사용 중인 입금 계좌(계좌번호 입력)가 하나 이상 있어야 합니다.',
                 'bank_code' => [
                     'required_with' => '은행은 필수 항목입니다.',
                     'string' => '은행코드는 문자열이어야 합니다.',

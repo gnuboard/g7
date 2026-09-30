@@ -105,13 +105,13 @@
         <blur-until-loaded sources="analytics_patterns"/>
         <div data-ref="weekday_card" class="admin-card">
           <h2 class="section-heading mb-3">$t:admin.analytics.patterns.weekday_title</h2>
-          <bar-chart data-ref="weekday_chart" data-if="{{(analytics_patterns?.data?.weekday ?? []).length > 0}}" labels="{{(analytics_patterns?.data?.weekday ?? []).map(d => $t('admin.analytics.patterns.weekdays.' + (d.dow ?? 0)))}}" datasets="{{[{label: $t('admin.analytics.common.' + (query.metric || 'visits')), data: (analytics_patterns?.data?.weekday ?? []).map(d => d[query.metric || 'visits'] ?? 0), backgroundColor: '#7C3AED'}]}}" :height="240" :showYGrid="true" :showYAxis="true"/>
-          <empty-state data-if="{{!analytics_patterns?.loading &amp;&amp; (analytics_patterns?.data?.weekday ?? []).length === 0}}" iconName="calendar-week" title="$t:admin.analytics.common.empty_title" class="py-8"/>
+          <bar-chart data-type="composite" data-ref="weekday_chart" data-if="{{(analytics_patterns?.data?.weekday ?? []).length > 0}}" labels="{{(analytics_patterns?.data?.weekday ?? []).map(d => $t('admin.analytics.patterns.weekdays.' + (d.dow ?? 0)))}}" datasets="{{[{label: $t('admin.analytics.common.' + (query.metric || 'visits')), data: (analytics_patterns?.data?.weekday ?? []).map(d => d[query.metric || 'visits'] ?? 0), backgroundColor: '#7C3AED'}]}}" :height="240" :showYGrid="true" :showYAxis="true"/>
+          <empty-state data-type="composite" data-if="{{!analytics_patterns?.loading &amp;&amp; (analytics_patterns?.data?.weekday ?? []).length === 0}}" iconName="calendar-week" title="$t:admin.analytics.common.empty_title" class="py-8"/>
         </div>
         <div data-ref="hour_card" class="admin-card">
           <h2 class="section-heading mb-3">$t:admin.analytics.patterns.hour_title</h2>
-          <bar-chart data-ref="hour_chart" data-if="{{(analytics_patterns?.data?.hour ?? []).length > 0}}" labels="{{(analytics_patterns?.data?.hour ?? []).map(h => String(h.hour ?? 0).padStart(2, '0'))}}" datasets="{{[{label: $t('admin.analytics.common.' + (query.metric || 'visits')), data: (analytics_patterns?.data?.hour ?? []).map(h => h[query.metric || 'visits'] ?? 0), backgroundColor: '#0EA5E9'}]}}" :height="240" :showYGrid="true" :showYAxis="true"/>
-          <empty-state data-if="{{!analytics_patterns?.loading &amp;&amp; (analytics_patterns?.data?.hour ?? []).length === 0}}" iconName="clock" title="$t:admin.analytics.common.empty_title" class="py-8"/>
+          <bar-chart data-type="composite" data-ref="hour_chart" data-if="{{(analytics_patterns?.data?.hour ?? []).length > 0}}" labels="{{(analytics_patterns?.data?.hour ?? []).map(h => String(h.hour ?? 0).padStart(2, '0'))}}" datasets="{{[{label: $t('admin.analytics.common.' + (query.metric || 'visits')), data: (analytics_patterns?.data?.hour ?? []).map(h => h[query.metric || 'visits'] ?? 0), backgroundColor: '#0EA5E9'}]}}" :height="240" :showYGrid="true" :showYAxis="true"/>
+          <empty-state data-type="composite" data-if="{{!analytics_patterns?.loading &amp;&amp; (analytics_patterns?.data?.hour ?? []).length === 0}}" iconName="clock" title="$t:admin.analytics.common.empty_title" class="py-8"/>
         </div>
       </div>
       <p class="text-label-subtle mt-3">$t:admin.analytics.patterns.average_note</p>

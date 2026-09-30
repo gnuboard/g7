@@ -6,6 +6,7 @@ use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Modules\Sirsoft\Ecommerce\Models\UserAddress;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
+use PHPUnit\Framework\Attributes\Group;
 
 /**
  * 관리자 회원 배송지 관리 API Feature 테스트 (이슈 #524 §4.1)
@@ -25,11 +26,10 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  * @scenario surface=admin_user_address_list,actor=admin
  *
  * @effects admin_user_address_requires_read_permission, admin_user_address_bulk_delete_writes_activity_log
- *
- * @group ecommerce
- * @group admin
- * @group address
  */
+#[Group('ecommerce')]
+#[Group('admin')]
+#[Group('address')]
 class AdminUserAddressControllerTest extends ModuleTestCase
 {
     private string $apiBase = '/api/modules/sirsoft-ecommerce/admin/user-addresses';

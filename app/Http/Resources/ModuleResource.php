@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Extension\CoreVersionChecker;
 use App\Helpers\TimezoneHelper;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -41,6 +42,12 @@ class ModuleResource extends BaseApiResource
             'deactivated_reason' => $this->getDeactivatedReasonValue(),
             'deactivated_at' => $this->getValue('deactivated_at'),
             'incompatible_required_version' => $this->getValue('incompatible_required_version'),
+            // 현재 매니페스트의 코어 요구 버전(g7_version) 충족 여부 — 설치·활성 가드
+            // (CoreVersionChecker::validateExtension)와 같은 판정이다. 화면은 이 값으로 설치 버튼과
+            // 켜기 스위치를 잠근다(안 잠그면 누른 뒤 422 core_version_mismatch 로 끝난다).
+            'core_compatible' => CoreVersionChecker::isCompatible(
+                is_string($this->getValue('requires_core')) ? $this->getValue('requires_core') : null
+            ),
             ...$this->resourceMeta($request),
         ];
     }

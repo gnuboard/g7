@@ -395,10 +395,10 @@
         </input>
         <span class="filter-label w-28">$t:sirsoft-ecommerce.admin.promotion_coupon.filter.creator</span>
         <div class="flex-center gap-2 flex-1">
-          <searchable-dropdown options="{{_local.creatorSearchResults ?? []}}" value="{{_local.filter.createdBy || ''}}" triggerLabel="$t:sirsoft-ecommerce.admin.promotion_coupon.filter.creator_select" searchPlaceholder="$t:sirsoft-ecommerce.admin.promotion_coupon.filter.creator_search_placeholder" noResultsText="$t:common.no_results" initialText="$t:sirsoft-ecommerce.admin.promotion_coupon.filter.creator_search_initial" class="w-64">
+          <searchable-dropdown data-type="composite" options="{{_local.creatorSearchResults ?? []}}" value="{{_local.filter.createdBy || ''}}" triggerLabel="$t:sirsoft-ecommerce.admin.promotion_coupon.filter.creator_select" searchPlaceholder="$t:sirsoft-ecommerce.admin.promotion_coupon.filter.creator_search_placeholder" noResultsText="$t:common.no_results" initialText="$t:sirsoft-ecommerce.admin.promotion_coupon.filter.creator_search_initial" class="w-64">
             <on event="onSearch">
-              <!-- 만든 사람 검색. 관리자 수가 많을 수 있어 미리 받아 두지 않고 입력할 때마다 코어 회원 검색 API 를 친다(300ms 로 묶는다). 실패하면 이전 결과를 비운다 — 남기면 방금 친 검색어와 맞지 않는 목록이 붙어 있게 된다. -->
-              <api-call :debounce="300" :auth_required="true" target="/api/admin/users/search" method="GET">
+              <!-- 만든 사람 검색. 관리자 수가 많을 수 있어 미리 받아 두지 않고 입력할 때마다 코어 회원 검색 API 를 친다(300ms 로 묶는다). 실패하면 이전 결과를 비운다 — 남기면 방금 친 검색어와 맞지 않는 목록이 붙어 있게 된다. 검색칸을 지우거나 공백만 적으면 부르지 않는다 — 회원 검색은 빈 검색어를 422 로 거절한다. -->
+              <api-call :debounce="300" :auth_required="true" if="{{String($args[0] ?? '').trim() !== ''}}" target="/api/admin/users/search" method="GET">
                 <success>
                   <set-state target="local" creatorSearchResults="{{(response.data ?? []).map(u => ({ value: u.uuid, label: u.name, description: u.email }))}}"/>
                 </success>
@@ -452,7 +452,7 @@
       </div>
       <div data-ref="search_row_line2" class="flex-center gap-2 ml-auto">
         <responsive on="portable" class="grid grid-cols-2 gap-2 w-full"/>
-        <column-selector data-ref="column_selector" id="admin_coupon_list_columns" visibleColumns="{{_local.visibleColumns}}" triggerLabel="$t:sirsoft-ecommerce.admin.promotion_coupon.search.column_select" menuTitle="$t:common.column_selector_title" menuDescription="$t:common.column_selector_description" position="right">
+        <column-selector data-type="composite" data-ref="column_selector" id="admin_coupon_list_columns" visibleColumns="{{_local.visibleColumns}}" triggerLabel="$t:sirsoft-ecommerce.admin.promotion_coupon.search.column_select" menuTitle="$t:common.column_selector_title" menuDescription="$t:common.column_selector_description" position="right">
           <responsive on="portable" class="w-full" triggerClassName="w-full justify-center" labelClassName="inline"/>
           <prop name="columns">
             <item field="target_type_label" header="$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.target_type"/>
@@ -496,8 +496,8 @@
         </button>
       </div>
     </div>
-    <slot-container data-ref="basic_filters_section" slotId="basic_filters" class="filter-grid"/>
-    <slot-container data-ref="detail_filters_section" data-if="{{_local.showDetailFilter}}" slotId="detail_filters" class="filter-grid mt-4 pt-4"/>
+    <slot-container data-type="composite" data-ref="basic_filters_section" slotId="basic_filters" class="filter-grid"/>
+    <slot-container data-type="composite" data-ref="detail_filters_section" data-if="{{_local.showDetailFilter}}" slotId="detail_filters" class="filter-grid mt-4 pt-4"/>
     <div data-ref="filter_actions" class="flex-center border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
       <responsive on="portable" class="row-stack border-t border-gray-200 dark:border-gray-700 pt-4 mt-4"/>
       <div data-ref="filter_actions_row1" class="contents">

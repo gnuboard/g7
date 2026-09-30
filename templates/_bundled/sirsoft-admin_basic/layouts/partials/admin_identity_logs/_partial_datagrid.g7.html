@@ -3,7 +3,7 @@
   줄을 펼치면 목록에 못 싣는 것들이 나온다(대상 해시 전문, 인증을 건 자리, 제공자가 남긴
   부가 정보). 부가 정보 두 덩이는 정해진 모양이 없어 원문 그대로 펼쳐 보여 준다. -->
 <partial description="Identity Logs DataGrid">
-  <data-grid data-ref="identity_log_datagrid" data="{{identityLogs?.data?.data}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{identityLogs?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{identityLogs?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{identityLogs?.data?.pagination?.has_more_pages ?? false}}" pageSize="{{+(query.per_page || 20)}}" :alwaysShowPagination="true" idField="id" :selectable="false" loading="{{identityLogs?.loading}}" :expandable="true">
+  <data-grid data-type="composite" data-ref="identity_log_datagrid" data="{{identityLogs?.data?.data}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{identityLogs?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{identityLogs?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{identityLogs?.data?.pagination?.has_more_pages ?? false}}" pageSize="{{+(query.per_page || 20)}}" :alwaysShowPagination="true" idField="id" :selectable="false" loading="{{identityLogs?.loading}}" :expandable="true">
     <expand>
       <div class="p-4 bg-gray-50 dark:bg-gray-900 space-y-3">
         <div class="grid-2col-responsive">
@@ -49,7 +49,7 @@
     </column>
     <column field="provider_id" header="$t:admin.identity.logs.col.provider_id" width="140px">
       <cell>
-        <badge color="indigo" text="{{(identityProviders?.data ?? []).find(p => p.id === row.provider_id)?.label ?? row.provider_id ?? '-'}}"/>
+        <badge data-type="composite" color="indigo" text="{{(identityProviders?.data ?? []).find(p => p.id === row.provider_id)?.label ?? row.provider_id ?? '-'}}"/>
       </cell>
     </column>
     <column field="purpose" header="$t:admin.identity.logs.col.purpose" width="140px">
@@ -59,7 +59,7 @@
     </column>
     <column field="channel" header="$t:admin.identity.logs.col.channel" width="100px">
       <cell>
-        <badge color="blue" text="{{row.channel ? (((identityProviders?.data ?? []).reduce((acc, p) => Object.assign(acc, p.channel_labels || {}), {}))[row.channel] ?? row.channel) : '-'}}"/>
+        <badge data-type="composite" color="blue" text="{{row.channel ? (((identityProviders?.data ?? []).reduce((acc, p) => Object.assign(acc, p.channel_labels || {}), {}))[row.channel] ?? row.channel) : '-'}}"/>
       </cell>
     </column>
     <column field="status" header="$t:admin.identity.logs.col.status" :sortable="false" width="120px">

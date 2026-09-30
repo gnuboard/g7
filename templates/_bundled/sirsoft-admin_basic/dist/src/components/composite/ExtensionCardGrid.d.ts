@@ -83,6 +83,11 @@ export interface ExtensionCardGridProps {
     onPrimaryAction?: (row: any) => void;
     onSecondaryAction?: (row: any) => void;
     onAction?: (actionId: string | number, row: any) => void;
+    /**
+     * 스위치 재동기 신호 — 값이 바뀌면 카드마다 누른 채 기다리던 스위치 값을 버리고 서버 값을 따른다.
+     * 서버가 토글을 거절해 원래 값이 그대로 돌아오는 경로(실패·의존 충돌 창 취소)에서 화면이 올려 준다.
+     */
+    resyncKey?: string | number;
     loading?: boolean;
     skeletonCount?: number;
     className?: string;

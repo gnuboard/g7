@@ -14,47 +14,39 @@ use Modules\Sirsoft\Ecommerce\Models\Order;
 use Plugins\Sirsoft\PayNicepayments\Services\NicePaymentsApiService;
 use Plugins\Sirsoft\PayNicepayments\Tests\PluginTestCase;
 
+/**
+ * 간편결제 표시 라벨 응답 테스트
+ *
+ * 나이스페이 간편결제(네이버페이·카카오페이·PAYCO 등) 주문의 결제수단 이름이 관리자 거래 조회와
+ * 사용자 영수증 응답에 「간편결제 이름 (기본 결제수단)」 형태로 실리는지 확인한다. 관리자 주문 목록용
+ * 표시 맵 경로는 1.1.0 에서 제거됐다 — 주문 목록은 이커머스 응답의 표시 이름을 쓴다.
+ */
 class EasyPayDisplayControllerTest extends PluginTestCase
 {
     /**
-     * 관리자 주문 목록용 간편결제 표시 맵이 주문별 표시 이름을 준다.
+     * 제거한 관리자 주문 목록용 간편결제 표시 맵 경로는 더 이상 응답하지 않는다.
      *
-     * @scenario surface=admin_order_list_map
+     * @scenario surface=admin_order_list
      *
-     * @effects easy_pay_display_label_returned
+     * @effects removed_easy_pay_display_map_route_is_not_served
      *
      * @return void 반환값 없음
      */
-    public function test_admin_order_list_easy_pay_display_map_returns_display_labels(): void
+    public function test_admin_order_list_easy_pay_display_map_route_is_removed(): void
     {
-        app()->setLocale('ko');
-
         $admin = $this->createAdminUser(['sirsoft-ecommerce.orders.read']);
-        $order = $this->createPaidEasyPayOrder('nicepay_payco', 'payco', [
-            'ko' => 'PAYCO (페이코)',
-            'en' => 'PAYCO',
-        ]);
 
-        $response = $this->actingAs($admin)
-            ->getJson('/api/plugins/sirsoft-pay_nicepayments/admin/orders/easy-pay-display-map');
-
-        $response->assertOk();
-
-        $display = $response->json("data.{$order->order_number}");
-        $this->assertSame('payco', $display['embedded_pg_provider'] ?? null);
-        $this->assertContains($display['embedded_pg_provider_label'] ?? null, ['PAYCO (페이코)', 'PAYCO']);
-        $this->assertSame(
-            ($display['embedded_pg_provider_label'] ?? '').' ('.($display['payment_method_label'] ?? '').')',
-            $display['payment_method_display_label'] ?? null,
-        );
+        $this->actingAs($admin)
+            ->getJson('/api/plugins/sirsoft-pay_nicepayments/admin/orders/easy-pay-display-map')
+            ->assertNotFound();
     }
 
     /**
-     * 관리자 거래 상태 조회에 간편결제 표시 이름이 실린다.
+     * 관리자 거래 조회 응답은 간편결제 이름과 기본 결제수단을 합친 표시 이름을 싣는다.
      *
      * @scenario surface=admin_transaction_status
      *
-     * @effects easy_pay_display_label_returned
+     * @effects transaction_status_includes_easy_pay_display_label
      *
      * @return void 반환값 없음
      */
@@ -95,11 +87,11 @@ class EasyPayDisplayControllerTest extends PluginTestCase
     }
 
     /**
-     * 사용자 영수증 조회 응답(data)에 간편결제 표시 이름이 실린다.
+     * 사용자 영수증 응답은 간편결제 이름과 기본 결제수단을 합친 표시 이름을 싣는다.
      *
      * @scenario surface=user_receipt
      *
-     * @effects easy_pay_display_label_returned, response_uses_common_envelope
+     * @effects user_receipt_includes_easy_pay_display_label, response_uses_common_envelope
      *
      * @return void 반환값 없음
      */
@@ -129,13 +121,13 @@ class EasyPayDisplayControllerTest extends PluginTestCase
     }
 
     /**
-     * 간편결제로 결제를 마친 나이스페이먼츠 주문을 만듭니다.
+     * 나이스페이 간편결제로 결제 완료된 주문을 만듭니다.
      *
-     * @param  string  $method  결제수단 코드
-     * @param  string  $provider  간편결제 제공자 코드
-     * @param  array{ko: string, en: string}  $label  간편결제 표시 이름
-     * @param  User|null  $user  주문 회원(없으면 새로 만든다)
-     * @return Order 결제를 마친 주문
+     * @param  string  $method  간편결제 결제수단 식별자 (예: nicepay_payco)
+     * @param  string  $provider  간편결제 제공자 식별자 (예: payco)
+     * @param  array{ko: string, en: string}  $label  간편결제 표시 이름 (로케일별)
+     * @param  User|null  $user  주문 회원 (없으면 새로 만든다)
+     * @return Order 생성한 주문
      */
     private function createPaidEasyPayOrder(
         string $method,

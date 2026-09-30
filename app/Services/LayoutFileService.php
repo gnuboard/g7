@@ -28,7 +28,7 @@ use Illuminate\Support\Collection;
  * ## "파일" 은 파일이 아니다
  *
  * `template_layouts` 의 **DB 행**이다. `name` 이 `partials/admin_user_list/_modal_form` 같은
- * 경로 모양 문자열일 뿐 디스크에 폴더는 없다(PO 결정 D-2 — 가상 폴더). 그래서 "폴더를 만든다"
+ * 경로 모양 문자열일 뿐 디스크에 폴더는 없다(결정 D-2 — 가상 폴더). 그래서 "폴더를 만든다"
  * 는 서버 연산이 없고, 폴더는 파일이 저장되는 순간 이름의 `/` 로 확정된다.
  *
  * ## 검색이 마크업을 보는 이유
@@ -122,6 +122,10 @@ class LayoutFileService
                 'extends' => $content['extends'] ?? null,
                 'source_type' => LayoutSourceType::Template,
                 'source_identifier' => $templateIdentifier,
+                // 원본 해시는 "파일에서 등록된 행" 의 표식이다 — 되살린 행이 지워진 오버라이드였다면 그 표식을 지워야
+                // 템플릿 갱신의 고아 오버라이드 정리가 운영자가 만든 이 레이아웃을 지우지 않는다 (#703).
+                'original_content_hash' => null,
+                'original_content_size' => null,
                 'updated_by' => $userId,
                 'lock_version' => (int) ($trashed->lock_version ?? 0) + 1,
             ]);

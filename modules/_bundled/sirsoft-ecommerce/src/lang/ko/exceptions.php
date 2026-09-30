@@ -45,6 +45,7 @@ return [
     'cart_empty' => '장바구니가 비어있습니다.',
     'temp_order_not_found' => '임시 주문 정보를 찾을 수 없습니다.',
     'option_not_found' => '상품 옵션을 찾을 수 없습니다.',
+    'no_purchasable_option' => '지금은 구매할 수 있는 옵션이 없는 상품입니다.',
     'additional_option_invalid' => '선택한 추가옵션이 유효하지 않습니다.',
     'additional_option_required' => '필수 추가옵션(:name)을 선택해주세요.',
     'additional_option_custom_text_required' => '추가옵션(:name)의 직접입력 내용을 입력해주세요.',

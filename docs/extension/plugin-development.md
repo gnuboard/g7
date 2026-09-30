@@ -1042,53 +1042,117 @@ public function getPermissions(): array
 
 ## 플러그인 원칙
 
-### 플러그인 격리 원칙
+### 확장 간 협력 원칙
+
+플러그인이 다른 모듈·플러그인과 함께 동작해야 할 때는 [코어와 확장의 책임 경계](README.md#코어와-확장의-책임-경계)를 따릅니다. 확장끼리는 **훅**으로 협력하고, 다른 확장을 **이름으로** 참조한다면 그 확장을 매니페스트 `dependencies` 에 선언합니다.
 
 ```text
-필수: 플러그인은 모듈에만 의존 (플러그인 간 직접 의존 금지)
-✅ 필수: 다른 플러그인과는 API로만 상호작용
+✅ 협력은 훅으로 — 코어가 소유한 계약 훅, 또는 상대 확장이 소유하고 문서화한 훅 키를 구독·호출
+✅ 다른 확장을 이름으로 참조(식별자·네임스페이스·API 경로·번역 키)하면 dependencies 에 선언
+❌ 선언하지 않은 확장의 클래스 import · API 경로 호출 · 번역 키 사용
 ```
 
-### 5대 원칙
+훅 키가 확장 사이의 계약입니다. 상대 확장이 설치되지 않았거나 다른 확장으로 대체된 사이트에서도 훅은 발화하지 않을 뿐 깨지지 않습니다. 반면 선언 없이 상대의 클래스·API 경로를 직접 쓰면 그 사이트에서 플러그인이 조용히 다르게 동작합니다.
+
+### 원칙
 
 #### 1. 격리성 (Isolation)
 
-플러그인 간 직접 의존 금지
+다른 확장의 내부 구현(클래스·테이블·API 경로)에 기대지 않습니다. 상대가 내보내는 훅을 구독합니다.
 
 ```php
-// ❌ DON'T: 다른 플러그인 직접 참조
-use Plugins\Other\Analytics\Service\AnalyticsService;
+// ❌ DON'T: 선언하지 않은 다른 확장의 클래스·API 경로를 직접 사용
+use Plugins\Vendor\SampleReport\Services\ReportService;
 
-// ✅ DO: API를 통한 통신
-$response = Http::get('/api/plugins/sirsoft-marketing/analytics/data');
+$response = Http::get('/api/plugins/vendor-sample_report/reports');
+
+// ✅ DO: 상대 확장이 문서화한 훅을 구독한다
+class ReportSyncListener implements HookListenerInterface
+{
+    /**
+     * 구독할 훅 목록을 반환합니다.
+     *
+     * @return array<string, array<string, mixed>> 훅 키 → 구독 옵션
+     */
+    public static function getSubscribedHooks(): array
+    {
+        return [
+            // 상대 확장(vendor-sample_report)이 소유·문서화한 Action 훅
+            'vendor-sample_report.report.after_generate' => [
+                'method' => 'handleReportGenerated',
+                'priority' => 10,
+            ],
+        ];
+    }
+
+    /**
+     * 리포트가 생성되면 이 플러그인의 요약을 갱신합니다.
+     *
+     * @param  mixed  ...$args  훅이 넘긴 인자 (상대 확장 문서의 페이로드 규격)
+     * @return void
+     */
+    public function handleReportGenerated(...$args): void
+    {
+        // 이 플러그인 자신의 서비스로 처리
+    }
+}
 ```
 
 #### 2. 의존성 (Dependency)
 
-모듈에만 의존 가능
+다른 확장을 이름으로 참조한다면(식별자·네임스페이스·API 경로·번역 키) 그 확장을 `plugin.json` 의 `dependencies` 에 선언합니다. 모듈과 플러그인 모두 선언할 수 있고, 선언한 확장이 활성화되어 있지 않으면 설치가 막힙니다.
 
-```php
-public function getDependencies(): array
+```json
 {
-    return [
-        // ✅ 모듈 의존성만 허용
-        'sirsoft-ecommerce' => '>=1.0.0',
-
-        // ❌ 다른 플러그인 의존성 금지
-        // 'other-payment' => '>=1.0.0',
-    ];
+    "dependencies": {
+        "modules": {
+            "vendor-sample_shop": ">=1.0.0"
+        },
+        "plugins": {
+            "vendor-sample_report": ">=2.0.0"
+        }
+    }
 }
 ```
 
-#### 3. API 통신 (API Communication)
+선언하지 않고 협력만 하려면 이름 대신 훅 키만 씁니다 — 상대가 없는 사이트에서는 구독한 훅이 발화하지 않을 뿐입니다.
 
-다른 플러그인과는 API로만 상호작용
+#### 3. 훅 계약 (Hook Contract)
+
+다른 확장의 데이터를 바꾸거나 결과에 값을 보태야 하면 상대가 연 **필터 훅**에 답합니다. 반대로 다른 확장이 내 플러그인에 끼어들 자리가 필요하면 내가 훅을 열고 키·인자·반환값을 문서로 공개합니다. 코어가 소유한 계약 훅(`core.*`)은 어느 확장이든 선언 없이 구독할 수 있습니다.
 
 ```php
-// 플러그인 간 통신은 HTTP API 사용
-$response = Http::withToken($token)
-    ->get('/api/plugins/sirsoft-marketing/report');
+// 상대 확장이 연 필터 훅에 값을 보탠다 (Filter 훅은 'type' => 'filter' 필수)
+public static function getSubscribedHooks(): array
+{
+    return [
+        'vendor-sample_shop.order.filter_summary_rows' => [
+            'method' => 'addSummaryRow',
+            'priority' => 10,
+            'type' => 'filter',
+        ],
+    ];
+}
+
+/**
+ * 주문 요약에 이 플러그인의 행을 더합니다.
+ *
+ * @param  array<int, array<string, mixed>>  $rows  현재 요약 행
+ * @return array<int, array<string, mixed>> 행을 더한 요약
+ */
+public function addSummaryRow(array $rows): array
+{
+    $rows[] = ['label' => __('vendor-sample_plugin::summary.label'), 'value' => 0];
+
+    return $rows;
+}
+
+// 내 플러그인이 다른 확장에 협력 지점을 연다 — 키·인자·반환값을 문서에 공개한다
+$rows = HookManager::applyFilters('vendor-sample_plugin.export.filter_rows', $rows, $context);
+HookManager::doAction('vendor-sample_plugin.export.after_complete', $export);
 ```
+
+훅 키 명명·Action/Filter 구분·리스너 등록은 [hooks.md](hooks.md) 를 참조하세요.
 
 #### 4. Lazy Loading
 

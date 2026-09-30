@@ -8,7 +8,7 @@
   창은 같은 이름의 깃발을 `$parent._local` 에 두고 실제로 오가며 쓴다 — 배선할 때 어느 쪽 규약을
   따를지부터 정해야 한다. -->
 <partial description="Order Detail - Send SMS Modal">
-  <modal data-ref="modal_send_sms" title="$t:sirsoft-ecommerce.admin.order.detail.modal.send_sms.title" size="md">
+  <modal data-type="composite" data-ref="modal_send_sms" title="$t:sirsoft-ecommerce.admin.order.detail.modal.send_sms.title" size="md">
     <div>
       <p class="text-label-subtle">$t:sirsoft-ecommerce.admin.order.detail.modal.send_sms.description</p>
       <div>
@@ -36,7 +36,7 @@
         </on>
         <span>$t:sirsoft-ecommerce.admin.order.detail.modal.send_sms.cancel</span>
       </button>
-      <button type="button" class="flex-center gap-2 px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isSending}}">
+      <button type="button" class="flex-center gap-2 px-4 py-2 text-sm bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isSending}}">
         <icon data-if="{{_global.isSending}}" name="spinner" class="spinner-sm"/>
         <span>{{_global.isSending ? '$t:common.sending' : '$t:sirsoft-ecommerce.admin.order.detail.modal.send_sms.send'}}</span>
       </button>

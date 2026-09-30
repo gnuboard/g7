@@ -22,7 +22,7 @@
         </a>
       </div>
       <div data-ref="use_default_shipping_toggle" class="flex-center gap-3">
-        <toggle name="use_default_shipping" checked="{{_local.ui.useDefaultShippingPolicy ?? true}}" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
+        <toggle data-type="composite" name="use_default_shipping" checked="{{_local.ui.useDefaultShippingPolicy ?? true}}" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
           <on type="change">
             <!-- 기본 정책 쓰기 전환 — 켜면 기본 정책 id 를 폼에 다시 심어야 하므로 화면 상태만 바꾸지 않고 핸들러에 맡긴다 -->
             <action handler="sirsoft-ecommerce.toggleDefaultShippingPolicy" checked="{{$event.target.checked}}"/>

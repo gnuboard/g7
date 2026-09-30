@@ -233,7 +233,7 @@
                                                             "type": "text",
                                                             "placeholder": "$t:sirsoft-board.admin.reports.search_placeholder",
                                                             "value": "{{_local.searchQuery || ''}}",
-                                                            "className": "flex-1 min-w-0"
+                                                            "className": "input flex-1 min-w-[120px]"
                                                         }
                                                     }
                                                 ]
@@ -270,7 +270,7 @@
                                                             "menuTitle": "$t:common.column_selector_title",
                                                             "menuDescription": "$t:common.column_selector_description",
                                                             "position": "right",
-                                                            "iconOnly": true,
+                                                            "labelClassName": "sr-only",
                                                             "columns": [
                                                                 {
                                                                     "field": "created_at",
@@ -425,7 +425,7 @@
                                             "type": "text",
                                             "placeholder": "$t:sirsoft-board.admin.reports.search_placeholder",
                                             "value": "{{_local.searchQuery || ''}}",
-                                            "className": "flex-1 min-w-0"
+                                            "className": "input flex-1 min-w-[200px]"
                                         }
                                     },
                                     {
@@ -1342,6 +1342,7 @@
                                         "text": "$t:sirsoft-board.admin.reports.selected_count|count={{(_global.selectedIds || []).length}}"
                                     },
                                     {
+                                        "comment": "좁은 화면 일괄 처리 메뉴 — 항목은 데스크톱 일괄 버튼 4개와 같은 조건으로 잠근다: 관리 권한이 없거나 고른 신고가 없으면 누를 수 없다(선택 없이 누르면 서버가 ids 필수로 거절한다)",
                                         "id": "mobile_bulk_action_dropdown",
                                         "type": "composite",
                                         "name": "Dropdown",
@@ -1553,19 +1554,23 @@
                                             "items": [
                                                 {
                                                     "value": "review",
-                                                    "label": "$t:sirsoft-board.admin.reports.actions.review"
+                                                    "label": "$t:sirsoft-board.admin.reports.actions.review",
+                                                    "disabled": "{{reports?.data?.abilities?.can_manage !== true || !_global.selectedIds || _global.selectedIds.length === 0}}"
                                                 },
                                                 {
                                                     "value": "rejected",
-                                                    "label": "$t:sirsoft-board.admin.reports.actions.reject"
+                                                    "label": "$t:sirsoft-board.admin.reports.actions.reject",
+                                                    "disabled": "{{reports?.data?.abilities?.can_manage !== true || !_global.selectedIds || _global.selectedIds.length === 0}}"
                                                 },
                                                 {
                                                     "value": "suspended",
-                                                    "label": "$t:sirsoft-board.admin.reports.actions.suspend"
+                                                    "label": "$t:sirsoft-board.admin.reports.actions.suspend",
+                                                    "disabled": "{{reports?.data?.abilities?.can_manage !== true || !_global.selectedIds || _global.selectedIds.length === 0}}"
                                                 },
                                                 {
                                                     "value": "deleted",
-                                                    "label": "$t:sirsoft-board.admin.reports.actions.delete"
+                                                    "label": "$t:sirsoft-board.admin.reports.actions.delete",
+                                                    "disabled": "{{reports?.data?.abilities?.can_manage !== true || !_global.selectedIds || _global.selectedIds.length === 0}}"
                                                 }
                                             ]
                                         }

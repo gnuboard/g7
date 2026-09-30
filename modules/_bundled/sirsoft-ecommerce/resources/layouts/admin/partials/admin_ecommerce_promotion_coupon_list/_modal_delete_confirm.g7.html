@@ -2,7 +2,7 @@
   지울 대상은 목록이 `_global.deleteTarget` 에 담아 둔 것을 읽고, 이름을 함께 넘겨받는
   이유는 확인 문장에 넣어야 하는데 이 창이 쿠폰 목록을 따로 조회하지 않기 때문이다. -->
 <partial description="Coupon - Delete Confirm Modal">
-  <modal data-ref="modal_delete_confirm" title="$t:sirsoft-ecommerce.admin.promotion_coupon.modal.delete.title" size="sm">
+  <modal data-type="composite" data-ref="modal_delete_confirm" title="$t:sirsoft-ecommerce.admin.promotion_coupon.modal.delete.title" size="sm">
     <div>
       <div>
         <p class="text-primary text-base">$t:sirsoft-ecommerce.admin.promotion_coupon.modal.delete.message|name={{_global.deleteTarget?.name}}</p>

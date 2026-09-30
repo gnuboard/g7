@@ -240,7 +240,7 @@
           </select>
         </div>
       </div>
-      <data-grid data-ref="carts_datagrid" :data-blur-until-loaded="true" data="{{carts?.data?.data}}" :pagination="true" :alwaysShowPagination="true" :pageSize="20" :serverSidePagination="true" serverCurrentPage="{{carts?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{carts?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{carts?.data?.pagination?.has_more_pages ?? false}}" selectable="{{carts?.data?.abilities?.can_manage === true}}" selectionScope="page" selectedIds="{{_global.selectedItems_carts || []}}" idField="id" :responsiveBreakpoint="768" :showFirstLast="true" emptyMessage="$t:sirsoft-ecommerce.admin.carts.table.empty" actionsColumnHeader="$t:common.actions" selectedCountText="">
+      <data-grid data-type="composite" data-ref="carts_datagrid" :data-blur-until-loaded="true" data="{{carts?.data?.data}}" :pagination="true" :alwaysShowPagination="true" :pageSize="20" :serverSidePagination="true" serverCurrentPage="{{carts?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{carts?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{carts?.data?.pagination?.has_more_pages ?? false}}" selectable="{{carts?.data?.abilities?.can_manage === true}}" selectionScope="page" selectedIds="{{_global.selectedItems_carts || []}}" idField="id" :responsiveBreakpoint="768" :showFirstLast="true" emptyMessage="$t:sirsoft-ecommerce.admin.carts.table.empty" actionsColumnHeader="$t:common.actions" selectedCountText="">
         <column field="created_at" header="$t:sirsoft-ecommerce.admin.carts.columns.created_at">
           <cell>
             <span class="text-sm text-gray-900 dark:text-white">{{row.created_at}}</span>
@@ -258,7 +258,7 @@
                   {{row.member?.name}}
                 </span>
                 <span data-if="{{!row.member}}" class="text-gray-400 dark:text-gray-500">$t:sirsoft-ecommerce.admin.carts.badges.guest</span>
-                <badge data-if="{{row.member?.is_withdrawn}}" color="gray" size="sm">$t:sirsoft-ecommerce.admin.carts.badges.withdrawn</badge>
+                <badge data-type="composite" data-if="{{row.member?.is_withdrawn}}" color="gray" size="sm">$t:sirsoft-ecommerce.admin.carts.badges.withdrawn</badge>
               </div>
               <span data-if="{{row.member?.email}}" class="text-xs text-gray-500 dark:text-gray-400">{{row.member?.email}}</span>
             </div>
@@ -269,8 +269,8 @@
             <div class="flex flex-col">
               <span class="font-medium text-gray-900 dark:text-white">{{row.product?.name ?? '-'}}</span>
               <div class="flex items-center gap-1 flex-wrap">
-                <badge data-if="{{row.product?.display_status === 'hidden'}}" color="gray" size="sm">{{row.product?.display_status_label}}</badge>
-                <badge data-if="{{row.product?.sales_status &amp;&amp; row.product?.sales_status !== 'on_sale'}}" color="yellow" size="sm">{{row.product?.sales_status_label}}</badge>
+                <badge data-type="composite" data-if="{{row.product?.display_status === 'hidden'}}" color="gray" size="sm">{{row.product?.display_status_label}}</badge>
+                <badge data-type="composite" data-if="{{row.product?.sales_status &amp;&amp; row.product?.sales_status !== 'on_sale'}}" color="yellow" size="sm">{{row.product?.sales_status_label}}</badge>
               </div>
             </div>
           </cell>
@@ -322,7 +322,7 @@
   </slot>
   <modal>
     <!-- 단건 삭제 확인 — 지우는 것은 회원이 담아 둔 기록이다. 그 사실을 본문이 분명히 말한다 -->
-    <modal data-ref="modal_carts_delete" title="$t:sirsoft-ecommerce.admin.carts.modal.delete.title" size="sm">
+    <modal data-type="composite" data-ref="modal_carts_delete" title="$t:sirsoft-ecommerce.admin.carts.modal.delete.title" size="sm">
       <meta editor_label="$t:sirsoft-ecommerce.admin.carts.modal.delete.title"/>
       <div class="py-2">
         <p class="text-sm text-gray-700 dark:text-gray-300">$t:sirsoft-ecommerce.admin.carts.modal.delete.message</p>
@@ -362,7 +362,7 @@
   </modal>
   <modal>
     <!-- 선택 삭제 확인 — 건수를 본문에 싣는다 -->
-    <modal data-ref="modal_carts_bulk_delete" data-testid="admin-carts-bulk-delete-modal" title="$t:sirsoft-ecommerce.admin.carts.modal.bulk_delete.title" size="sm">
+    <modal data-type="composite" data-ref="modal_carts_bulk_delete" data-testid="admin-carts-bulk-delete-modal" title="$t:sirsoft-ecommerce.admin.carts.modal.bulk_delete.title" size="sm">
       <meta editor_label="$t:sirsoft-ecommerce.admin.carts.modal.bulk_delete.title"/>
       <div class="py-2">
         <p class="text-sm text-gray-700 dark:text-gray-300">$t:sirsoft-ecommerce.admin.carts.modal.bulk_delete.message|count={{(_global.selectedItems_carts ?? []).length}}</p>
@@ -403,7 +403,7 @@
   </modal>
   <modal>
     <!-- 삭제 실패 — 서버 문구를 그대로 싣는다. 여러 건을 다루는 자리라 사유를 스쳐 지나가게 두지 않는다 -->
-    <modal data-ref="modal_carts_error" title="$t:common.error" size="sm">
+    <modal data-type="composite" data-ref="modal_carts_error" title="$t:common.error" size="sm">
       <div class="py-2">
         <p class="text-sm text-gray-700 dark:text-gray-300">{{_global.errorMessage || $t:common.error_occurred}}</p>
       </div>

@@ -50,7 +50,9 @@ class CreateOrderRequest extends FormRequest
             // 국내 배송 주소 (국내인 경우 필수)
             'shipping.zipcode' => 'required_without:shipping.intl_postal_code|nullable|string|max:10',
             'shipping.address' => 'required_without:shipping.address_line_1|nullable|string|max:255',
-            'shipping.address_detail' => 'required|string|max:255',
+            // 상세주소는 국내 폼에만 있다 — 해외 폼은 주소 1·2행으로 대신하고 배송국가를 바꾸면 이 값이 비워지므로
+            // 기본 주소(address)와 같은 짝(해외 주소 1행이 없을 때만 필수)으로 판정한다.
+            'shipping.address_detail' => 'required_without:shipping.address_line_1|nullable|string|max:255',
             'shipping.address_type_code' => 'nullable|string|in:R,J',
 
             // 해외 배송 주소 (해외인 경우 필수)
@@ -265,7 +267,7 @@ class CreateOrderRequest extends FormRequest
             'shipping.recipient_tel.required_without' => __('sirsoft-ecommerce::validation.order.recipient_tel_required_without'),
             'shipping.zipcode.required_without' => __('sirsoft-ecommerce::validation.order.zipcode_required'),
             'shipping.address.required_without' => __('sirsoft-ecommerce::validation.order.address_required'),
-            'shipping.address_detail.required' => __('sirsoft-ecommerce::validation.order.address_detail_required'),
+            'shipping.address_detail.required_without' => __('sirsoft-ecommerce::validation.order.address_detail_required'),
             'shipping.address_line_1.required_without' => __('sirsoft-ecommerce::validation.order.address_line_1_required'),
             'shipping.intl_city.required_with' => __('sirsoft-ecommerce::validation.order.intl_city_required'),
             'shipping.intl_postal_code.required_with' => __('sirsoft-ecommerce::validation.order.intl_postal_code_required'),

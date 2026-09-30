@@ -129,7 +129,7 @@
         </div>
         <div class="overflow-x-auto">
           <blur-until-loaded sources="analytics_visitors"/>
-          <data-grid data-ref="analytics_visitors_grid" data="{{analytics_visitors?.data?.data ?? []}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{+(query.page || 1)}}" :serverTotalPages="null" serverHasMorePages="{{analytics_visitors?.data?.pagination?.has_more ?? false}}" pageSize="{{+(query.per_page || 25)}}" :alwaysShowPagination="true" idField="visitor_key" :selectable="false" :sortable="false" emptyMessage="$t:admin.analytics.common.empty_title" actionsColumnHeader="$t:common.actions">
+          <data-grid data-type="composite" data-ref="analytics_visitors_grid" data="{{analytics_visitors?.data?.data ?? []}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{+(query.page || 1)}}" :serverTotalPages="null" serverHasMorePages="{{analytics_visitors?.data?.pagination?.has_more ?? false}}" pageSize="{{+(query.per_page || 25)}}" :alwaysShowPagination="true" idField="visitor_key" :selectable="false" :sortable="false" emptyMessage="$t:admin.analytics.common.empty_title" actionsColumnHeader="$t:common.actions">
             <on type="action" event="onPageChange">
               <!-- 쪽 이동 — `page` 만 바꾼다. 총 쪽 수를 모르는 목록이라 다음 쪽 버튼은 응답의 `has_more` 가 가른다. -->
               <navigate path="/admin/analytics/visitors" :mergeQuery="true" :replace="true" transition_overlay_target="analytics_visitors_grid__body">
@@ -167,7 +167,7 @@
                 <!-- 「회원 정보 보기」의 목적지(/admin/users/{uuid})는 core.users.read 를 요구한다.
                   가드 없이 그리면 개인정보 권한만 가진 담당자가 눌러 「권한 없음」 새 창을 받는다 —
                   막다른 안내다(#682 S3 라운드 5). 나머지 안내 버튼 네 자리는 목적지 권한을 먼저 본다. -->
-                <action-menu data-if="{{!!row.user}}" position="right">
+                <action-menu data-type="composite" data-if="{{!!row.user}}" position="right">
                   <prop name="items">
                     <item id="view_member" label="$t:admin.analytics.visitors.action.view_member" iconName="user" if="{{_computed.canReadUsers}}"/>
                     <item id="search_by_member" label="$t:admin.analytics.visitors.action.search_by_member" iconName="search"/>
@@ -201,7 +201,7 @@
             </column>
             <column field="visitor_type" header="$t:admin.analytics.visitors.columns.type" width="90px">
               <cell>
-                <badge color="{{row.visitor_type === 'admin' ? 'red' : (row.visitor_type === 'member' ? 'blue' : (row.visitor_type === 'bot' ? 'gray' : 'green'))}}" text="{{$t('admin.analytics.visitors.types.' + (row.visitor_type ?? 'guest'))}}" size="sm"/>
+                <badge data-type="composite" color="{{row.visitor_type === 'admin' ? 'red' : (row.visitor_type === 'member' ? 'blue' : (row.visitor_type === 'bot' ? 'gray' : 'green'))}}" text="{{$t('admin.analytics.visitors.types.' + (row.visitor_type ?? 'guest'))}}" size="sm"/>
               </cell>
             </column>
             <column field="visits" header="$t:admin.analytics.visitors.columns.visits" width="80px" align="right">

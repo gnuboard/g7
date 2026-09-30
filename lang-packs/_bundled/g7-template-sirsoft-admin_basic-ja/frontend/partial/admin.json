@@ -229,7 +229,9 @@
       "withdraw_confirm_effect_linked": "この会員の規約同意履歴·プロフィール画像が削除され、マイレージ·本人認証記録など連携データが整理されます。",
       "withdraw_confirm_submit": "退会処理",
       "bulk_withdraw_partial": "{updated}名を退会処理しました。{failed}名は処理できませんでした — {reason}",
-      "bulk_withdraw_all_failed": "退会処理できませんでした — {reason}"
+      "bulk_withdraw_all_failed": "退会処理できませんでした — {reason}",
+      "bulk_status_partial": "{updated}名のステータスを変更しました。{failed}名は変更できませんでした — {reason}",
+      "bulk_status_all_failed": "ステータスを変更できませんでした — {reason}"
     },
     "form": {
       "page_title_create": "ユーザー登録",
@@ -278,7 +280,8 @@
         "ip_address": "IP",
         "country_select": "国を選択",
         "country_search": "国を検索...",
-        "lock_status": "アカウントロック状態"
+        "lock_status": "アカウントロック状態",
+        "role_default_hint": "役割を選択しない場合、基本の役割(一般ユーザー)で登録されます。"
       },
       "verification": {
         "method": "本人確認方法",
@@ -811,7 +814,11 @@
       "modified_layouts_check_failed": "編集の確認ができませんでした。ネットワークの状態を確認してからもう一度試すか、安全に「編集を保持」を選択してください。",
       "preserved_title": "管理者ファイルコピー保存",
       "preserved_desc": "削除前に custom/ ディレクトリのコピーを以下のパスに保存しました。拡張を再度インストール後、custom/ に移動することでそのまま再利用できます。",
-      "uninstall_done_title": "モジュール削除完了"
+      "uninstall_done_title": "モジュール削除完了",
+      "reactivate_language_packs_title": "言語パックを再有効化",
+      "reactivate_language_packs_message": "このモジュールを無効にした際に一緒に無効になった言語パックです。再度有効にしますか?",
+      "reactivate_language_packs_success": "言語パックを再度有効にしました。",
+      "reactivate_language_packs_failed": "言語パックを再度有効にできませんでした。"
     },
     "tabs": {
       "file_upload": "ファイル アップロード",
@@ -1020,7 +1027,11 @@
       "modified_layouts_check_failed": "編集の確認ができませんでした。ネットワークの状態を確認してからもう一度試すか、安全に「編集を保持」を選択してください。",
       "preserved_title": "管理者ファイルコピー保存",
       "preserved_desc": "削除前に custom/ ディレクトリのコピーを以下のパスに保存しました。拡張を再度インストール後、custom/ に移動することでそのまま再利用できます。",
-      "uninstall_done_title": "プラグイン削除完了"
+      "uninstall_done_title": "プラグイン削除完了",
+      "reactivate_language_packs_title": "言語パックを再有効化",
+      "reactivate_language_packs_message": "このプラグインを無効にした際に一緒に無効になった言語パックです。再度有効にしますか?",
+      "reactivate_language_packs_success": "言語パックを再度有効にしました。",
+      "reactivate_language_packs_failed": "言語パックを再度有効にできませんでした。"
     },
     "tabs": {
       "file_upload": "ファイルアップロード",
@@ -1190,7 +1201,8 @@
       "system_role_delete": "システムロールは削除できません。",
       "delete_failed": "ロール削除に失敗しました。"
     },
-    "refresh": "更新"
+    "refresh": "更新",
+    "protected_roles_hint": "コア・拡張が作成した役割(バッジ表示)は削除できず、編集・使用可否の変更はスーパー管理者のみ可能です。"
   },
   "schedules": {
     "page_title": "スケジュール管理",
@@ -1707,7 +1719,8 @@
           "body": "本文",
           "variables_title": "使用可能な変数",
           "save_success": "メッセージ定義が追加されました。",
-          "save_failed": "メッセージ定義の追加に失敗しました。"
+          "save_failed": "メッセージ定義の追加に失敗しました。",
+          "policy_all_defined": "すべての運営者ポリシーに既にメッセージ定義があります。既存定義のテンプレートを編集するか、ポリシーを新たに登録してください。"
         },
         "delete_modal": {
           "title": "メッセージ定義削除",
@@ -2229,7 +2242,8 @@
           "convert": "休眠転換",
           "withdraw_notice": "休眠アカウント退会予定通知",
           "withdraw": "休眠アカウント退会処理"
-        }
+        },
+        "editor_label": "個人情報措置の対象リスト"
       },
       "manual_run": {
         "section_desc": "スケジューラーを待たずに管理者が今すぐ一度実行します。自動実行がオフになっていても、保存された設定値で処理されます。",
@@ -2260,7 +2274,8 @@
         "executing": "受け付け中...",
         "queued_toast": "実行をキューに受け付けました。処理が終わったらカードに結果が表示されます。",
         "queue_failed": "実行を受け付けることができませんでした。",
-        "preview_failed": "対象件数を読み込むことができませんでした。"
+        "preview_failed": "対象件数を読み込むことができませんでした。",
+        "editor_label": "個人情報措置の職権実行"
       }
     }
   },
@@ -2476,7 +2491,11 @@
       "modified_layouts_check_failed": "編集の確認ができませんでした。ネットワークの状態を確認してからもう一度試すか、安全に「編集を保持」を選択してください。",
       "preserved_title": "管理者ファイルコピー保存",
       "preserved_desc": "削除前に custom/ ディレクトリのコピーを以下のパスに保存しました。拡張を再度インストール後、custom/ に移動することでそのまま再利用できます。",
-      "uninstall_done_title": "テンプレート削除完了"
+      "uninstall_done_title": "テンプレート削除完了",
+      "reactivate_language_packs_title": "言語パックを再有効化",
+      "reactivate_language_packs_message": "このテンプレートを無効にした際に一緒に無効になった言語パックです。再度有効にしますか?",
+      "reactivate_language_packs_success": "言語パックを再度有効にしました。",
+      "reactivate_language_packs_failed": "言語パックを再度有効にできませんでした。"
     },
     "tabs_install": {
       "file_upload": "ファイルアップロード",
@@ -3752,6 +3771,8 @@
       "export_button": "JSONエクスポート",
       "delete_button": "削除",
       "no_results": "条件に該当する記録がありません",
+      "prompt_title": "検索する人を指定してください",
+      "prompt_description": "IPアドレス、会員番号、訪問者キーのいずれかを選んで値を入力し、「検索」を押すと、その人の訪問記録がここに表示されます。期間は入力しなくてもかまいません。",
       "columns": {
         "visit_at": "訪問時刻",
         "visitor_key": "訪問者キー",
@@ -3805,8 +3826,8 @@
         "consent_source_label": "同意ソース",
         "consent_source_none": "なし",
         "consent_sources": {
-          "gdpr": "同意管理プラグイン(GDPR)",
-          "filter": "拡張が接続した同意判定"
+          "filter": "拡張が接続した同意判定",
+          "provider": "訪問者ごとにトラッキングの許可を決める拡張機能"
         },
         "mode_label": "プライバシーレベル",
         "modes": {

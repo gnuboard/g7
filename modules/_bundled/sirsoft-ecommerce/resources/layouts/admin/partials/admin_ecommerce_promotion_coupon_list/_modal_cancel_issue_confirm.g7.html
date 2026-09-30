@@ -5,7 +5,7 @@
   성공 후 목록을 **둘 다** 다시 부른다 — 발급내역(그 줄이 사라진다)과 쿠폰 목록(발급 수가
   줄어든다). 한쪽만 부르면 뒤에 있는 창의 숫자가 낡은 채로 남는다. -->
 <partial description="Coupon - Cancel Issue Confirm Modal (발급취소 확인)">
-  <modal data-ref="modal_cancel_issue_confirm" title="$t:sirsoft-ecommerce.admin.promotion_coupon.modal.cancel_issue.title" width="420px">
+  <modal data-type="composite" data-ref="modal_cancel_issue_confirm" title="$t:sirsoft-ecommerce.admin.promotion_coupon.modal.cancel_issue.title" width="420px">
     <div>
       <p class="text-primary text-base">$t:sirsoft-ecommerce.admin.promotion_coupon.modal.cancel_issue.message|name={{_global.cancelIssueTarget?.user_name}}</p>
       <p class="text-sm text-red-600 dark:text-red-400 font-medium mt-2">$t:sirsoft-ecommerce.admin.promotion_coupon.modal.cancel_issue.warning</p>

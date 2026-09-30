@@ -4,7 +4,7 @@
         "_e2e_allow": "e2e:allow meta.is_partial 플래그만 추가 — 렌더링/동작 변화 없는 레이아웃 개수 집계 정정",
         "editor_label": "$t:sirsoft-gdpr.settings.policy_version.snapshot_modal.editor_label"
     },
-    "comment": "정책 버전 snapshot 모달 — admin 권한자가 v배지/이력 표 행 클릭 시 노출. 부모 layout 의 gdprPolicyVersionSnapshot data_source 가 _global.viewingPolicyVersion 정수를 endpoint path 에 보간하여 그 시점 settings snapshot (cookie_categories / privacy_policy_slug / blocked_domains) 을 표시. DPO 가 회원 분쟁 시 입증 자료로 활용 (GDPR Art.7(1)). Partial 파일에 data_sources 정의 금지 규정 — 부모 layout 에서 정의하고 본 partial 은 컴포넌트만 참조.",
+    "comment": "정책 버전 snapshot 모달 — admin 권한자가 v배지/이력 표 행 클릭 시 노출. 부모 layout 의 gdprPolicyVersionSnapshot data_source 가 _global.viewingPolicyVersion 정수를 endpoint path 에 보간하여 그 시점 settings snapshot (cookie_categories / 개인정보처리방침 주소 / blocked_domains) 을 표시. DPO 가 회원 분쟁 시 입증 자료로 활용 (GDPR Art.7(1)). Partial 파일에 data_sources 정의 금지 규정 — 부모 layout 에서 정의하고 본 partial 은 컴포넌트만 참조.",
     "id": "policy_version_snapshot_modal",
     "type": "composite",
     "name": "Modal",
@@ -142,7 +142,7 @@
                     ]
                 },
                 {
-                    "comment": "정책 본문 슬러그 섹션 — 가장 위로 (정보 위계: 큰 것 → 작은 것). 슬러그가 있으면 평문 + 새 탭 열기 링크 Button, 없으면 안내문.",
+                    "comment": "개인정보처리방침 주소 섹션 — 가장 위로 (정보 위계: 큰 것 → 작은 것). 백엔드가 푼 privacy_policy.url 을 쓴다: 1.1.0 이후 스냅샷은 운영자가 적은 주소, 그 이전 스냅샷은 옛 슬러그를 그 시절 링크 경로(/page/{slug})로 푼 값이며 이때 legacy_slug 가 함께 온다. 주소가 있으면 평문 + 새 탭 열기 링크, 옛 형식이면 안내 한 줄, 없으면 안내문.",
                     "type": "basic",
                     "name": "Div",
                     "props": {
@@ -160,7 +160,7 @@
                         {
                             "type": "basic",
                             "name": "Div",
-                            "if": "{{gdprPolicyVersionSnapshot?.data?.data?.snapshot?.privacy_policy_slug}}",
+                            "if": "{{gdprPolicyVersionSnapshot?.data?.data?.privacy_policy?.url}}",
                             "props": {
                                 "className": "flex-center gap-2 flex-wrap"
                             },
@@ -171,15 +171,15 @@
                                     "props": {
                                         "className": "px-3 py-2 text-xs font-mono text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded flex-1 min-w-0 break-all"
                                     },
-                                    "text": "{{gdprPolicyVersionSnapshot?.data?.data?.snapshot?.privacy_policy_slug ?? '-'}}"
+                                    "text": "{{gdprPolicyVersionSnapshot?.data?.data?.privacy_policy?.url ?? '-'}}"
                                 },
                                 {
-                                    "comment": "본문 페이지 새 탭 열기 — 페이지 모듈(sirsoft-page) URL 패턴 /page/{slug} 로 조합 (예: 'privacy-policy' → '/page/privacy-policy'). 쿠키 배너의 '변경된 정책 본문 보기' 링크(cookie_banner.json)와 동일한 조합 방식. 운영자가 검증한 슬러그라 사용자 입력 검증 불요.",
+                                    "comment": "본문 페이지 새 탭 열기 — 서버가 허용 형식(/ 로 시작하는 사이트 경로 또는 https 주소)으로 푼 주소만 내보내므로 그대로 href 로 쓴다. 화면에서 경로를 조합하지 않는다.",
                                     "id": "policy_version_snapshot_open_policy_page_link",
                                     "type": "basic",
                                     "name": "A",
                                     "props": {
-                                        "href": "/page/{{gdprPolicyVersionSnapshot?.data?.data?.snapshot?.privacy_policy_slug ?? ''}}",
+                                        "href": "{{gdprPolicyVersionSnapshot?.data?.data?.privacy_policy?.url ?? ''}}",
                                         "target": "_blank",
                                         "rel": "noopener",
                                         "className": "text-info-soft inline-flex items-center gap-1 px-3 py-2 font-medium bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors flex-shrink-0"
@@ -195,13 +195,23 @@
                             ]
                         },
                         {
+                            "comment": "옛 형식 안내 — 1.0.x 가 발행한 스냅샷은 주소가 아니라 페이지 슬러그를 기록했다. 입증 자료의 원문이 슬러그임을 밝힌다.",
+                            "type": "basic",
+                            "name": "P",
+                            "if": "{{gdprPolicyVersionSnapshot?.data?.data?.privacy_policy?.legacy_slug}}",
+                            "props": {
+                                "className": "text-tertiary text-xs"
+                            },
+                            "text": "$t:sirsoft-gdpr.settings.policy_version.snapshot_modal.legacy_slug_note|slug={{gdprPolicyVersionSnapshot?.data?.data?.privacy_policy?.legacy_slug ?? ''}}"
+                        },
+                        {
                             "type": "basic",
                             "name": "Div",
-                            "if": "{{!gdprPolicyVersionSnapshot?.data?.data?.snapshot?.privacy_policy_slug}}",
+                            "if": "{{!gdprPolicyVersionSnapshot?.data?.data?.privacy_policy?.url}}",
                             "props": {
                                 "className": "text-tertiary italic px-3 py-2 border border-dashed border-gray-200 dark:border-gray-700 rounded"
                             },
-                            "text": "$t:sirsoft-gdpr.settings.policy_version.snapshot_modal.no_policy_slug"
+                            "text": "$t:sirsoft-gdpr.settings.policy_version.snapshot_modal.no_policy_url"
                         }
                     ]
                 },

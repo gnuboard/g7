@@ -5,6 +5,7 @@ namespace Modules\Sirsoft\Ecommerce\Listeners;
 use App\Contracts\Extension\HookListenerInterface;
 use App\Extension\ModuleManager;
 use App\Models\User;
+use App\Notifications\GenericNotification;
 use App\Services\NotificationRecipientCapability;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
 use Modules\Sirsoft\Ecommerce\Models\Order;
@@ -134,7 +135,7 @@ class EcommerceNotificationDataListener implements HookListenerInterface
      * @param  array  $default  기본 extract_data 구조
      * @param  string  $type  알림 정의 유형
      * @param  array  $args  훅에서 전달된 원본 인수
-     * @return array{notifiable: null, notifiables: null, data: array, context: array}
+     * @return array{notifiable: null, notifiables: null, data: array, context: array} extract_data 결과 (notifiable·notifiables·data·context)
      */
     public function extractData(array $default, string $type, array $args): array
     {
@@ -492,7 +493,7 @@ class EcommerceNotificationDataListener implements HookListenerInterface
         $shippingCountryName = $this->localizeCountryName($shippingCountryCode);
         $shippingFullAddress = $shipping ? $shipping->getFullAddress() : '';
 
-        return array_merge([
+        $data = [
             'name' => $name,
             'app_name' => config('app.name'),
             'order_number' => $order->order_number,
@@ -505,7 +506,16 @@ class EcommerceNotificationDataListener implements HookListenerInterface
             'shipping_country_code' => $shippingCountryCode,
             'shipping_country_name' => $shippingCountryName,
             'shipping_address' => $shippingFullAddress,
-        ], $extra);
+        ];
+
+        // 비회원 주문은 수신자 객체에 전화번호가 없다 — 주문자 연락처를 코어 표준 수신 전화번호
+        // 키로 싣는다. 문자·알림톡 채널은 이커머스를 모른 채 이 키만 읽는다(회원은 회원 휴대폰).
+        $ordererPhone = $order->isGuestOrder() ? trim((string) ($shipping?->orderer_phone ?? '')) : '';
+        if ($ordererPhone !== '') {
+            $data[GenericNotification::RECIPIENT_PHONE_KEY] = $ordererPhone;
+        }
+
+        return array_merge($data, $extra);
     }
 
     /**
@@ -624,9 +634,6 @@ class EcommerceNotificationDataListener implements HookListenerInterface
         return $context;
     }
 
-    /**
-     * 빈 결과를 반환합니다.
-     */
     /**
      * 소멸 예정 마일리지 알림 데이터를 추출합니다.
      *

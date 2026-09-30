@@ -4,7 +4,7 @@
   시작 ⑵ 언어팩은 딸린 확장이 선택돼 있어야 켤 수 있음 ⑶ 요청 본문도 같은 규칙으로 다시 걸러 담음.
   모듈 창과 달리 vendor 설치 방식을 고르는 자리는 없다(템플릿은 composer 의존을 두지 않는다). -->
 <partial description="템플릿 설치 확인 모달 — install-preview API 응답 기반 cascade(의존 확장 + 동반 언어팩) 체크리스트 포함" editor_label="$t:admin.modal_label.admin_template_list.template_install_modal">
-  <modal data-ref="template_install_modal" title="$t:admin.templates.modals.install_title" size="medium">
+  <modal data-type="composite" data-ref="template_install_modal" title="$t:admin.templates.modals.install_title" size="medium">
     <!-- 설치 미리보기 — 함께 깔릴 의존 확장·언어팩과 각각의 기본 선택 여부를 서버가 정해 준다.
          응답을 전역 `installPreview` 에 올려 체크리스트와 요청 본문이 함께 읽는다. -->
     <data-source id="templateInstallPreview" label_key="$t:editor.data_source.templateInstallPreview" type="api" endpoint="/api/admin/templates/{{_global.selectedTemplate.identifier}}/install-preview" :auth_required="true" initGlobal="installPreview"/>

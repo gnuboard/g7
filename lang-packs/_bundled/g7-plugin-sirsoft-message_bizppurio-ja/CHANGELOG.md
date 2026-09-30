@@ -6,6 +6,10 @@
 
 ## [1.0.1] - 2026-09-04
 
+### Added
+
+- 레이아웃 편집기에 쓰이는 알림톡 템플릿·SMS 본문·반려 사유 창 이름(`template.form.editor_label`·`template.sms.editor_label`·`template.rejection.editor_label`)의 일본어 번역을 추가했습니다.
+
 ### Changed
 
 - 잔액 부족 알림 메일 본문의 일본어 번역을 갱신했습니다. 한국어 원본에 설정 화면 주소 안내가 추가되어, 일본어 메일에도 충전·설정하러 갈 곳이 함께 적힙니다.

@@ -261,6 +261,7 @@
         "manual_input": "Manual Input",
         "apply_change": "Apply",
         "shipping_address_changed": "Shipping address has been changed.",
+        "select_saved_address_required": "Please select a shipping address to apply.",
         "confirm_change_address": "Are you sure you want to change the shipping address?",
         "charged_in_payment_currency": "Charged {{amount}} in {{currency}}",
         "claim_additional_paid": "Claim additional payment",

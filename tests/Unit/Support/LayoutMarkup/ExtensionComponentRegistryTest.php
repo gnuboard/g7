@@ -35,9 +35,13 @@ class ExtensionComponentRegistryTest extends LayoutMarkupTestCase
     // ---------------------------------------------------------------------
 
     /**
+     * 주인 종류는 선언한 필드(templateId·identifier)로 정해진다.
+     *
      * @scenario compile_unit=registry,source_health=valid
      *
      * @effects manifest_owner_kind_resolved_from_declaring_field
+     *
+     * @return void 반환값 없음
      */
     public function test_owner_kind_is_resolved_from_the_declaring_field(): void
     {
@@ -46,9 +50,13 @@ class ExtensionComponentRegistryTest extends LayoutMarkupTestCase
     }
 
     /**
+     * 주인(템플릿·확장)을 선언하지 않은 매니페스트는 거부된다.
+     *
      * @scenario compile_unit=registry,source_health=invalid
      *
      * @effects manifest_without_owner_is_rejected
+     *
+     * @return void 반환값 없음
      */
     public function test_manifest_without_an_owner_is_rejected(): void
     {
@@ -67,6 +75,8 @@ class ExtensionComponentRegistryTest extends LayoutMarkupTestCase
      * @scenario compile_unit=registry,source_health=invalid
      *
      * @effects manifest_with_two_owners_is_rejected
+     *
+     * @return void 반환값 없음
      */
     public function test_manifest_declaring_both_owners_is_rejected(): void
     {
@@ -85,15 +95,21 @@ class ExtensionComponentRegistryTest extends LayoutMarkupTestCase
     // ---------------------------------------------------------------------
 
     /**
+     * 확장 컴포넌트는 `식별자.케밥` 태그로 쓰고 이름은 `식별자.이름` 이 된다.
+     *
      * @scenario compile_unit=registry,source_health=valid
      *
      * @effects extension_component_gets_prefixed_tag_and_namespaced_name
+     *
+     * @return void 반환값 없음
      */
     public function test_extension_component_is_authored_with_a_prefixed_tag(): void
     {
         $registry = ComponentRegistry::fromManifests($this->templateManifest(), [$this->extensionManifest()]);
 
-        $card = $registry->resolveTag('sirsoft-ecommerce-product-card');
+        // `식별자.케밥` — 점 앞은 확장 식별자 그대로라 목록 없이도 JSON 의 `식별자.이름` 으로 되돌린다.
+        $card = $registry->resolveTag('sirsoft-ecommerce.product-card');
+        $this->assertSame('sirsoft-ecommerce.ProductCard', ComponentRegistry::fromTag('sirsoft-ecommerce.product-card'));
 
         $this->assertNotNull($card);
         // 노드 name = 런타임 레지스트리 키. 핸들러의 `{identifier}.{name}` 관례와 같다.
@@ -109,6 +125,8 @@ class ExtensionComponentRegistryTest extends LayoutMarkupTestCase
      * @scenario compile_unit=registry,source_health=valid
      *
      * @effects template_component_tag_unchanged_by_extension_merge
+     *
+     * @return void 반환값 없음
      */
     public function test_template_components_keep_their_bare_tags(): void
     {
@@ -123,15 +141,17 @@ class ExtensionComponentRegistryTest extends LayoutMarkupTestCase
     }
 
     /**
-     * 번들 확장 14개 중 7개가 `gnuboard7-hello_module`·`sirsoft-pay_kginicis` 처럼 언더스코어를
-     * 품는다. 마크업 태그명은 소문자와 하이픈만 허용하므로(S1 InvalidTagName) 프리픽스는 `_` 를
-     * `-` 로 접어야 작성 자체가 가능하다.
+     * 번들 확장 14개 중 7개가 `gnuboard7-hello_module`·`sirsoft-pay_kginicis` 처럼 밑줄을 품는다.
+     * 태그는 식별자를 **그대로** 싣는다(`식별자.케밥`) — 종전처럼 `_` 를 `-` 로 접으면 경계와 원문이
+     * 사라져 목록 없이는 이름을 되돌릴 수 없었다(2026-09-28 결정: 컴파일은 목록과 무관).
      *
      * @scenario compile_unit=registry,source_health=valid
      *
-     * @effects underscored_extension_id_normalizes_to_hyphenated_tag_prefix
+     * @effects extension_component_tag_keeps_identifier_verbatim
+     *
+     * @return void 반환값 없음
      */
-    public function test_underscored_extension_id_is_normalized_for_the_tag(): void
+    public function test_underscored_extension_id_is_kept_verbatim_in_the_tag(): void
     {
         $manifest = ComponentManifest::fromArray([
             'version' => '0.1.0',
@@ -145,11 +165,12 @@ class ExtensionComponentRegistryTest extends LayoutMarkupTestCase
 
         $registry = ComponentRegistry::fromManifests($this->templateManifest(), [$manifest]);
 
-        $card = $registry->resolveTag('gnuboard7-hello-module-memo-card');
+        $card = $registry->resolveTag('gnuboard7-hello_module.memo-card');
 
         $this->assertNotNull($card);
-        // 태그만 정규화된다 — 노드 name 은 실제 식별자를 그대로 쓴다(런타임 조회 키이므로).
         $this->assertSame('gnuboard7-hello_module.MemoCard', $card->name);
+        $this->assertSame('gnuboard7-hello_module.MemoCard', ComponentRegistry::fromTag('gnuboard7-hello_module.memo-card'));
+        $this->assertNull($registry->resolveTag('gnuboard7-hello-module-memo-card'));
     }
 
     /**
@@ -157,28 +178,33 @@ class ExtensionComponentRegistryTest extends LayoutMarkupTestCase
      *
      * @scenario compile_unit=registry,source_health=invalid
      *
-     * @effects colliding_normalized_extension_ids_are_rejected
+     * @effects extension_ids_differing_by_underscore_stay_distinct
+     *
+     * @return void 반환값 없음
      */
-    public function test_extension_ids_collapsing_to_the_same_prefix_are_rejected(): void
+    public function test_extension_ids_differing_only_by_underscore_stay_distinct(): void
     {
-        $error = $this->registryError($this->templateManifest(), [
+        // 식별자를 그대로 싣으므로 밑줄·하이픈만 다른 두 확장도 태그가 갈린다 — 접어서 생기던 충돌이 없다.
+        $registry = ComponentRegistry::fromManifests($this->templateManifest(), [
             $this->extensionManifest('vendor-pay_x', ['Form']),
             $this->extensionManifest('vendor-pay-x', ['Sheet']),
         ]);
 
-        $this->assertSame(LayoutMarkupErrorCode::ExtensionIdTagCollision, $error->getErrorCode());
-        $this->assertStringContainsString('vendor-pay-x', $error->getDetail());
+        $this->assertSame('vendor-pay_x.Form', $registry->resolveTag('vendor-pay_x.form')?->name);
+        $this->assertSame('vendor-pay-x.Sheet', $registry->resolveTag('vendor-pay-x.sheet')?->name);
     }
 
     /**
-     * 프리픽스가 충돌을 구조적으로 막지만, 템플릿이 확장 프리픽스와 겹치는 이름을 쓰면 같은
-     * 태그가 만들어진다. 런타임은 나중 등록이 조용히 이기므로(:456) 작성 시점에 거부한다.
+     * 확장 태그는 점을 품으므로 템플릿 컴포넌트 태그와 구조적으로 겹치지 않는다 — 종전에는 템플릿이
+     * 확장 프리픽스와 같은 이름(`SirsoftEcommerceProductCard`)을 쓰면 같은 태그가 만들어졌다.
      *
-     * @scenario compile_unit=registry,source_health=invalid
+     * @scenario compile_unit=registry,source_health=valid
      *
-     * @effects undeclared_tag_conflict_across_sources_is_rejected
+     * @effects extension_tag_cannot_collide_with_template_tag
+     *
+     * @return void 반환값 없음
      */
-    public function test_template_name_colliding_with_an_extension_tag_is_rejected(): void
+    public function test_template_name_resembling_an_extension_tag_stays_distinct(): void
     {
         $template = ComponentManifest::fromArray([
             'version' => '1.0.0',
@@ -191,10 +217,10 @@ class ExtensionComponentRegistryTest extends LayoutMarkupTestCase
             ],
         ], 'template.json');
 
-        $error = $this->registryError($template, [$this->extensionManifest()]);
+        $registry = ComponentRegistry::fromManifests($template, [$this->extensionManifest()]);
 
-        $this->assertSame(LayoutMarkupErrorCode::AmbiguousComponentTag, $error->getErrorCode());
-        $this->assertStringContainsString('sirsoft-ecommerce-product-card', $error->getDetail());
+        $this->assertSame('SirsoftEcommerceProductCard', $registry->resolveTag('sirsoft-ecommerce-product-card')?->name);
+        $this->assertSame('sirsoft-ecommerce.ProductCard', $registry->resolveTag('sirsoft-ecommerce.product-card')?->name);
     }
 
     // ---------------------------------------------------------------------
@@ -208,6 +234,8 @@ class ExtensionComponentRegistryTest extends LayoutMarkupTestCase
      * @scenario compile_unit=registry,source_health=valid
      *
      * @effects template_override_replaces_extension_component_in_place
+     *
+     * @return void 반환값 없음
      */
     public function test_template_override_replaces_the_original_at_the_same_coordinate(): void
     {
@@ -221,7 +249,7 @@ class ExtensionComponentRegistryTest extends LayoutMarkupTestCase
             [$this->extensionManifest()]
         );
 
-        $card = $registry->resolveTag('sirsoft-ecommerce-product-card');
+        $card = $registry->resolveTag('sirsoft-ecommerce.product-card');
 
         $this->assertNotNull($card);
         $this->assertSame('sirsoft-ecommerce.ProductCard', $card->name);
@@ -236,6 +264,8 @@ class ExtensionComponentRegistryTest extends LayoutMarkupTestCase
      * @scenario compile_unit=registry,source_health=valid
      *
      * @effects incompatible_override_falls_back_to_original
+     *
+     * @return void 반환값 없음
      */
     public function test_override_with_an_incompatible_constraint_falls_back_to_the_original(): void
     {
@@ -249,7 +279,7 @@ class ExtensionComponentRegistryTest extends LayoutMarkupTestCase
             [$this->extensionManifest()]
         );
 
-        $card = $registry->resolveTag('sirsoft-ecommerce-product-card');
+        $card = $registry->resolveTag('sirsoft-ecommerce.product-card');
 
         $this->assertNotNull($card);
         $this->assertSame('composite', $card->type, '비호환 오버라이드가 적용되어 원본이 밀려났습니다.');
@@ -262,6 +292,8 @@ class ExtensionComponentRegistryTest extends LayoutMarkupTestCase
      * @scenario compile_unit=registry,source_health=valid
      *
      * @effects override_for_absent_extension_is_inert
+     *
+     * @return void 반환값 없음
      */
     public function test_override_targeting_an_absent_extension_is_ignored(): void
     {
@@ -284,6 +316,8 @@ class ExtensionComponentRegistryTest extends LayoutMarkupTestCase
      * @scenario compile_unit=registry,source_health=invalid
      *
      * @effects override_naming_unknown_component_of_active_extension_is_rejected
+     *
+     * @return void 반환값 없음
      */
     public function test_override_naming_a_component_the_target_does_not_have_is_rejected(): void
     {
@@ -308,6 +342,8 @@ class ExtensionComponentRegistryTest extends LayoutMarkupTestCase
      * @scenario compile_unit=registry,source_health=invalid
      *
      * @effects extension_declaring_overrides_is_rejected
+     *
+     * @return void 반환값 없음
      */
     public function test_extension_cannot_declare_overrides(): void
     {
@@ -322,9 +358,13 @@ class ExtensionComponentRegistryTest extends LayoutMarkupTestCase
     }
 
     /**
+     * 같은 컴포넌트를 두 번 오버라이드하면 거부된다.
+     *
      * @scenario compile_unit=registry,source_health=invalid
      *
      * @effects duplicate_override_of_same_component_is_rejected
+     *
+     * @return void 반환값 없음
      */
     public function test_overriding_the_same_component_twice_is_rejected(): void
     {
@@ -352,6 +392,8 @@ class ExtensionComponentRegistryTest extends LayoutMarkupTestCase
      * @scenario compile_unit=registry,source_health=valid
      *
      * @effects for_variant_does_not_change_tag_resolution
+     *
+     * @return void 반환값 없음
      */
     public function test_for_variants_do_not_change_tag_resolution(): void
     {
@@ -369,7 +411,7 @@ class ExtensionComponentRegistryTest extends LayoutMarkupTestCase
         $this->assertSame(['sirsoft-basic' => ['ProductCard']], $manifest->forVariants);
 
         $registry = ComponentRegistry::fromManifests($this->templateManifest(), [$manifest]);
-        $card = $registry->resolveTag('sirsoft-ecommerce-product-card');
+        $card = $registry->resolveTag('sirsoft-ecommerce.product-card');
 
         $this->assertNotNull($card);
         $this->assertSame('sirsoft-ecommerce.ProductCard', $card->name);
@@ -381,6 +423,8 @@ class ExtensionComponentRegistryTest extends LayoutMarkupTestCase
      * @scenario compile_unit=registry,source_health=invalid
      *
      * @effects for_variant_without_an_original_is_rejected
+     *
+     * @return void 반환값 없음
      */
     public function test_for_variant_naming_a_component_the_extension_lacks_is_rejected(): void
     {
@@ -401,6 +445,8 @@ class ExtensionComponentRegistryTest extends LayoutMarkupTestCase
      * @scenario compile_unit=registry,source_health=invalid
      *
      * @effects template_declaring_for_variants_is_rejected
+     *
+     * @return void 반환값 없음
      */
     public function test_template_cannot_declare_for_variants(): void
     {
@@ -419,17 +465,21 @@ class ExtensionComponentRegistryTest extends LayoutMarkupTestCase
     // ---------------------------------------------------------------------
 
     /**
+     * 확장 컴포넌트 태그 오타도 가까운 후보를 제안한다.
+     *
      * @scenario compile_unit=registry,source_health=invalid
      *
      * @effects suggestion_covers_extension_component_tags
+     *
+     * @return void 반환값 없음
      */
     public function test_typo_in_an_extension_tag_is_suggested(): void
     {
         $registry = ComponentRegistry::fromManifests($this->templateManifest(), [$this->extensionManifest()]);
 
         $this->assertSame(
-            'sirsoft-ecommerce-product-card',
-            $registry->suggestTag('sirsoft-ecommerce-produkt-card')
+            'sirsoft-ecommerce.product-card',
+            $registry->suggestTag('sirsoft-ecommerce.produkt-card')
         );
     }
 
@@ -438,15 +488,19 @@ class ExtensionComponentRegistryTest extends LayoutMarkupTestCase
     // ---------------------------------------------------------------------
 
     /**
-     * 세 개념 모두 **마크업 표면이 같다**는 것이 이 fixture 들의 요점이다. 확장이 원본을 내든,
-     * 템플릿이 대체하든, 확장이 그 템플릿 전용 판본을 내든 작성자가 쓰는 태그와 방출되는 노드
-     * `name` 은 하나다. 갈리는 것은 엔트리 메타(type)와 구현체뿐이다 — 그래서 오버라이드가
-     * 붙거나 떨어져도 레이아웃을 고칠 일이 없다.
+     * 세 개념 모두 **마크업 표면과 산출이 같다**는 것이 이 fixture 들의 요점이다. 확장이 원본을 내든,
+     * 템플릿이 대체하든, 확장이 그 템플릿 전용 판본을 내든 작성자가 쓰는 태그와 방출되는 노드는 하나다 —
+     * 컴파일은 목록과 무관하게 태그 표기·`data-type` 만으로 산출을 정한다(2026-09-28 결정). 대체·판본은
+     * 런타임이 고르는 구현체의 문제이고, 그래서 오버라이드가 붙거나 떨어져도 레이아웃을 고칠 일이 없다.
      *
      * @scenario compile_unit=node,source_health=valid
      *
      * @effects extension_component_authoring_is_identical_across_three_concepts,
      *          node_json_key_order_is_deterministic
+     *
+     * @param  string  $fixture  픽스처 이름
+     * @param  string  $variant  레지스트리 변형
+     * @return void 반환값 없음
      */
     #[DataProvider('extensionFixtureProvider')]
     public function test_fixture_pair_compiles_to_expected_json(string $fixture, string $variant): void
@@ -467,10 +521,15 @@ class ExtensionComponentRegistryTest extends LayoutMarkupTestCase
             json_encode($expected, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
             json_encode($node, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)
         );
+
+        // 목록 없이 컴파일해도 같다 — 산출은 어떤 템플릿·확장 목록에도 기대지 않는다.
+        $this->assertSame($node, (new NodeCompiler)->compile($roots[0]));
     }
 
     /**
-     * @return array<string, array{0: string, 1: string}>
+     * 확장 컴포넌트 세 개념(제공·오버라이드·전용 판본) 픽스처 목록.
+     *
+     * @return array<string, 반환값
      */
     public static function extensionFixtureProvider(): array
     {

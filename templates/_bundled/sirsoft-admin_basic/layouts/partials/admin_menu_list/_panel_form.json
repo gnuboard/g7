@@ -933,7 +933,7 @@
                                                             "props": {
                                                                 "name": "calendar",
                                                                 "size": "sm",
-                                                                "className": "text-gray-400"
+                                                                "className": "text-gray-400 dark:text-gray-500"
                                                             }
                                                         },
                                                         {
@@ -973,7 +973,7 @@
                                                             "props": {
                                                                 "name": "clock",
                                                                 "size": "sm",
-                                                                "className": "text-gray-400"
+                                                                "className": "text-gray-400 dark:text-gray-500"
                                                             }
                                                         },
                                                         {

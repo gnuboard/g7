@@ -722,7 +722,7 @@
                                                                 "params": {
                                                                     "target": "local",
                                                                     "_ked_registering": false,
-                                                                    "_ked_error": "{{response?.errors?.deli_numb?.[0] ?? response?.errors?.deli_corp?.[0] ?? response?.errors?.message?.[0] ?? '$t:sirsoft-pay_nhnkcp.admin.escrow_delivery_error'}}"
+                                                                    "_ked_error": "{{error.errors?.deli_numb?.[0] ?? error.errors?.deli_corp?.[0] ?? Object.values(error.errors ?? {}).flat()[0] ?? '$t:sirsoft-pay_nhnkcp.admin.escrow_delivery_error'}}"
                                                                 }
                                                             }
                                                         }
@@ -730,7 +730,7 @@
                                                 }
                                             ],
                                             "props": {
-                                                "disabled": "{{_local._ked_registering}}",
+                                                "disabled": "{{_local._ked_registering || String(_local._ked_deli_numb ?? '').trim() === '' || String(_local._ked_deli_corp ?? '').trim() === ''}}",
                                                 "className": "flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-purple-600 hover:bg-purple-700 text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                             },
                                             "children": [

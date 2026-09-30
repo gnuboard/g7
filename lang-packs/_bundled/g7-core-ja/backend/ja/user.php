@@ -168,4 +168,5 @@ return [
         'sort_order' => '並び順',
     ],
     'withdraw_failed_unknown' => '不明なエラーにより退会処理に失敗しました。',
+    'bulk_status_out_of_scope' => '管理範囲外の会員は変更できません。',
 ];

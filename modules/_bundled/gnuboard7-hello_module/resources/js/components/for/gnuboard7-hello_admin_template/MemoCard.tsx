@@ -12,7 +12,7 @@ import type { MemoCardProps } from '../../composite/MemoCard';
  * 레이아웃도 고치지 않는다:
  *
  * ```html
- * <gnuboard7-hello-module-memo-card title="{{memo.title}}"/>
+ * <gnuboard7-hello_module.memo-card data-type="composite" title="{{memo.title}}"/>
  * ```
  *
  * 판본 **선택은 코어가 한다**. 이 파일은 `components/for/{템플릿식별자}/` 에 있다는 사실만으로

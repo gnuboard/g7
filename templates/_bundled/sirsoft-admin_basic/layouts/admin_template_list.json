@@ -22,7 +22,7 @@
                 "page": "{{query.page}}",
                 "per_page": "{{query.per_page || 12}}",
                 "search": "{{query.search}}",
-                "include_hidden": "{{_local.showHidden ? 1 : 0}}"
+                "include_hidden": "{{query.include_hidden === '1' ? 1 : 0}}"
             },
             "fallback": {
                 "data": {
@@ -59,8 +59,7 @@
         }
     ],
     "initLocal": {
-        "searchQuery": "",
-        "showHidden": false
+        "searchQuery": ""
     },
     "permissions": [
         "core.templates.read"
@@ -539,10 +538,11 @@
                         ]
                     },
                     {
+                        "comment": "최고관리자 전용 — 관리자 로그인 응답(current_user)의 is_super 를 읽는다. 없는 이름(currentUser)을 읽어 최고관리자에게도 안 보이던 문제(#703 실측).",
                         "id": "include_hidden_toggle_wrapper",
                         "type": "basic",
                         "name": "Div",
-                        "if": "{{currentUser?.is_super === true}}",
+                        "if": "{{current_user?.data?.is_super === true}}",
                         "props": {
                             "className": "flex justify-end mb-3"
                         },
@@ -560,23 +560,22 @@
                                         "name": "Input",
                                         "actions": [
                                             {
+                                                "comment": "숨김 포함 여부는 다른 필터처럼 주소에 싣는다 — 화면 상태(_local)에 두면 페이지를 넘길 때 풀려, 체크는 켜진 채 숨김을 뺀 목록을 받았다(#703 실측). 주소를 바꾸면 목록을 다시 받으므로 따로 재조회하지 않는다",
                                                 "type": "change",
-                                                "handler": "setState",
+                                                "handler": "navigate",
                                                 "params": {
-                                                    "showHidden": "{{!_local.showHidden}}"
-                                                }
-                                            },
-                                            {
-                                                "type": "change",
-                                                "handler": "refetchDataSource",
-                                                "params": {
-                                                    "dataSourceId": "templates"
+                                                    "path": "/admin/templates/{{route.type}}",
+                                                    "mergeQuery": true,
+                                                    "query": {
+                                                        "include_hidden": "{{$event.target.checked ? '1' : undefined}}",
+                                                        "page": 1
+                                                    }
                                                 }
                                             }
                                         ],
                                         "props": {
                                             "type": "checkbox",
-                                            "checked": "{{_local.showHidden === true}}",
+                                            "checked": "{{query.include_hidden === '1'}}",
                                             "className": "w-4 h-4 rounded text-blue-600 dark:text-blue-400 dark:focus:ring-blue-400"
                                         }
                                     },
@@ -712,6 +711,10 @@
         {
             "comment": "업데이트 창. 변경 이력과 함께, 고친 레이아웃이 있으면 덮어쓸지 남길지 묻는다.",
             "partial": "partials/admin_template_list/_modal_update.json"
+        },
+        {
+            "comment": "언어팩 되살리기 창 — 템플릿을 다시 켰을 때 함께 꺼졌던 언어팩이 있으면 활성 성공 갈래가 연다.",
+            "partial": "partials/admin_template_list/_modal_reactivate_language_packs.json"
         },
         {
             "comment": "라이선스 고지 창 — 상세 창에서 이어 연다.",

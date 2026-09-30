@@ -25,8 +25,8 @@
 </field>
 </fallback>
 </data-source>
-<!-- 이력 탭에서만 실행 이력을 받는다 — 페이지·결과·계기·기간을 전부 쿼리에서 읽으므로 필터 변경은 navigate 로만 한다 -->
-<data-source id="koreaeximRuns" if="{{query.tab === 'history'}}" label_key="$t:sirsoft-koreaexim.history_tab" type="api" endpoint="/api/plugins/sirsoft-koreaexim/admin/runs" method="GET" :auto_fetch="true" :auth_required="true">
+<!-- 이력 탭에서만 실행 이력을 받는다 — 페이지·결과·계기·기간을 전부 쿼리에서 읽으므로 필터 변경은 navigate 로만 한다. 종료일이 시작일보다 앞선 기간은 서버가 422 로 거절하므로 조회하지 않는다(필터 아래 안내가 이유를 적는다) -->
+<data-source id="koreaeximRuns" if="{{query.tab === 'history' &amp;&amp; !(query.date_from &amp;&amp; query.date_to &amp;&amp; query.date_to &lt; query.date_from)}}" label_key="$t:sirsoft-koreaexim.history_tab" type="api" endpoint="/api/plugins/sirsoft-koreaexim/admin/runs" method="GET" :auto_fetch="true" :auth_required="true">
 <params page="{{query.page ?? 1}}" :per_page="20" status="{{query.status}}" trigger="{{query.trigger}}" date_from="{{query.date_from}}" date_to="{{query.date_to}}"/>
 <fallback>
 <field name="data">
@@ -74,7 +74,7 @@
 </permissions>
 <slot name="content">
 <div data-ref="koreaexim_settings_content" data-key="form" data-track-changes class="admin-page-content-responsive">
-<page-header data-ref="page_header" title="$t:sirsoft-koreaexim.title" description="$t:sirsoft-koreaexim.description">
+<page-header data-type="composite" data-ref="page_header" title="$t:sirsoft-koreaexim.title" description="$t:sirsoft-koreaexim.description">
 <button data-ref="koreaexim_back" type="button" class="btn btn-secondary whitespace-nowrap" aria-label="$t:admin.plugins.back_to_list">
 <on type="click">
 <navigate path="/admin/plugins"/>
@@ -83,7 +83,7 @@
 <span>$t:common.back</span>
 </button>
 </page-header>
-<tab-navigation data-ref="koreaexim_tab_navigation" activeTabId="{{_computed.activeTab}}" variant="default" class="sticky-tab-nav-responsive">
+<tab-navigation data-type="composite" data-ref="koreaexim_tab_navigation" activeTabId="{{_computed.activeTab}}" variant="default" class="sticky-tab-nav-responsive">
 <prop name="tabs">
 <item id="settings" label="$t:sirsoft-koreaexim.settings_tab"/>
 <item id="history" label="$t:sirsoft-koreaexim.history_tab"/>

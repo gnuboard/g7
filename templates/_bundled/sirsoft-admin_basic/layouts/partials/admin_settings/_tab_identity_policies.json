@@ -333,7 +333,7 @@
                                 "autoBinding": false,
                                 "value": "{{_local.identityPolicySearch ?? query.search ?? ''}}",
                                 "placeholder": "$t:admin.identity.policies.search_placeholder",
-                                "className": "input flex-1 min-w-[200px]"
+                                "className": "input md:flex-1 md:min-w-[200px]"
                             }
                         },
                         {

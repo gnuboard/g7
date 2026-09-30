@@ -531,7 +531,24 @@ class PostRepository implements PostRepositoryInterface
             $query = Post::query()
                 ->whereIn('parent_id', $parentIds)
                 ->when($board, fn ($q) => $q->where('board_id', $board->id))
-                ->with('user');
+                // 답글 카드도 첨부 목록을 그린다 — 관계가 없으면 PostResource 가 attachments 를 null 로
+                // 내려 「첨부파일 (n)」을 펼쳐도 빈 칸이 된다(ReplyAttachmentSerializationTest).
+                // 부모 글의 첨부 적재와 같은 규칙: 같은 게시판, 관리 권한자는 cascade 삭제분까지.
+                ->with([
+                    'user',
+                    'attachments' => function ($query) use ($board, $withTrashed) {
+                        if ($board) {
+                            $query->where('board_id', $board->id);
+                        }
+                        if ($withTrashed) {
+                            $query->withTrashed()
+                                ->where(function ($q) {
+                                    $q->whereNull('deleted_at')
+                                        ->orWhere('trigger_type', TriggerType::Cascade->value);
+                                });
+                        }
+                    },
+                ]);
 
             if ($withTrashed) {
                 $query->withTrashed();
@@ -1678,6 +1695,35 @@ class PostRepository implements PostRepositoryInterface
     public function forceDeleteByBoardId(int $boardId): int
     {
         return Post::where('board_id', $boardId)->forceDelete();
+    }
+
+    /**
+     * ID 목록의 게시글을 영구 삭제합니다 (소프트 삭제된 글 포함).
+     *
+     * @param  array<int, int>  $ids  게시글 ID 목록
+     * @return int 삭제된 게시글 수
+     */
+    public function forceDeleteByIds(array $ids): int
+    {
+        if ($ids === []) {
+            return 0;
+        }
+
+        return (int) Post::withTrashed()->whereIn('id', $ids)->forceDelete();
+    }
+
+    /**
+     * 게시판의 답변 글(parent_id 가 있는 글)을 영구 삭제합니다 (소프트 삭제된 글 포함).
+     *
+     * @param  int  $boardId  게시판 ID
+     * @return int 삭제된 게시글 수
+     */
+    public function forceDeleteRepliesByBoardId(int $boardId): int
+    {
+        return (int) Post::withTrashed()
+            ->where('board_id', $boardId)
+            ->whereNotNull('parent_id')
+            ->forceDelete();
     }
 
     /**

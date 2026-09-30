@@ -139,7 +139,7 @@
   <data-source id="gdprPublicSettings" label_key="$t:sirsoft-gdpr.editor.data_source.gdprPublicSettings" type="api" endpoint="/api/plugins/sirsoft-gdpr/settings" method="GET" :auto_fetch="true" :auth_required="false" loading_strategy="progressive"/>
   <modal>
     <!-- 동의 철회 확인 창 — 철회 대상은 모달이 부모 _local 을 볼 수 없어 전역에 옮겨 담아 넘긴다 -->
-    <modal data-ref="revoke_confirm_modal" title="$t:sirsoft-gdpr.mypage.privacy.revoke_confirm_title" width="min(420px, 95vw)" :closeOnBackdropClick="true">
+    <modal data-type="composite" data-ref="revoke_confirm_modal" title="$t:sirsoft-gdpr.mypage.privacy.revoke_confirm_title" width="min(420px, 95vw)" :closeOnBackdropClick="true">
       <div class="space-y-4">
         <p class="text-sm text-gray-700 dark:text-gray-300">$t:sirsoft-gdpr.mypage.privacy.revoke_confirm_message</p>
         <!-- 철회 대상 표시 — 라벨 + 카테고리 친화 설명. raw key (cookie_functional 등) 는 사용자에게 무의미하여 노출하지 않음. 모달은 별도 컨텍스트라 _global 사용 필수 (부모 _local 미해석) -->
@@ -186,7 +186,7 @@
   </modal>
   <modal>
     <!-- 동의 확인 모달 (이슈 #430 버튼 재설계) — 거부/미설정 항목의 '동의' 버튼 클릭 시. 즉시 grant 대신 한 번 더 확인. 대상은 _global.grantTarget* (모달 컨텍스트 분리). -->
-    <modal data-ref="grant_confirm_modal" title="$t:sirsoft-gdpr.mypage.privacy.grant_confirm_title" width="min(420px, 95vw)" :closeOnBackdropClick="true">
+    <modal data-type="composite" data-ref="grant_confirm_modal" title="$t:sirsoft-gdpr.mypage.privacy.grant_confirm_title" width="min(420px, 95vw)" :closeOnBackdropClick="true">
       <div class="space-y-4">
         <p class="text-sm text-gray-700 dark:text-gray-300">$t:sirsoft-gdpr.mypage.privacy.grant_confirm_message</p>
         <div class="rounded-lg bg-gray-50 dark:bg-gray-700 px-3 py-2 text-sm text-gray-700 dark:text-gray-200">

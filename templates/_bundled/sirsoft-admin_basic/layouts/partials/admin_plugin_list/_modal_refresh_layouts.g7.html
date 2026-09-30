@@ -2,7 +2,7 @@
   덮어쓰기 때문이다 — 그 화면을 편집기로 손봐 뒀다면 그 손질이 사라진다.
   플러그인 판본은 그대로이고 화면 정의만 다시 읽으므로, 설치나 갱신과는 다른 조작이다. -->
 <partial description="플러그인 레이아웃 갱신 확인 모달" editor_label="$t:admin.modal_label.admin_plugin_list.plugin_refresh_layouts_modal">
-  <modal data-ref="plugin_refresh_layouts_modal" title="$t:admin.plugins.modals.refresh_layouts_title" size="sm">
+  <modal data-type="composite" data-ref="plugin_refresh_layouts_modal" title="$t:admin.plugins.modals.refresh_layouts_title" size="sm">
     <div class="py-2">
       <div class="alert-warning">
         <icon name="exclamation-triangle" class="text-xl text-amber-600 dark:text-amber-400 flex-shrink-0"/>
@@ -18,7 +18,7 @@
         </on>
         <span>$t:common.cancel</span>
       </button>
-      <button class="flex-center gap-2 px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isPluginRefreshingLayouts}}">
+      <button class="flex-center gap-2 px-4 py-2 bg-amber-600 dark:bg-amber-500 text-white rounded-lg hover:bg-amber-700 dark:hover:bg-amber-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isPluginRefreshingLayouts}}">
         <on type="click">
           <!-- 끝나면 고른 플러그인을 비운다 — 이 값이 목록과 다른 창들이 함께 쓰는 자리라, 닫은 뒤에도 남겨 두면 다음에 연 창이 엉뚱한 플러그인을 가리킨다. -->
           <sequence>

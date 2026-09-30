@@ -741,7 +741,7 @@
                     "text": "$t:shop.shippability.blocks_order"
                 },
                 {
-                    "comment": "결제 버튼",
+                    "comment": "결제 버튼 — 배송지 필수값·처리 중·배송 불가 상품 외에, 고를 결제수단이 하나도 없을 때도 잠근다(무통장입금만 켜져 있고\n           입금 계좌가 없으면 서버가 무통장입금을 내려주지 않는다 — 그대로 누르면 「입금 은행 선택」 422 로만 끝났다, #703)",
                     "type": "basic",
                     "name": "Button",
                     "responsive": {
@@ -790,9 +790,20 @@
                                                     "handler": "sequence",
                                                     "actions": [
                                                         {
-                                                            "comment": "비회원 조회 토큰을 결제창을 열기 **전에** 발급한다. 결제창을 닫으면 그 즉시 취소 이력 기록(orders/{n}/cancel-payment)이 호출되는데, 그 엔드포인트는 회원/비회원 공유라 서버가 소유권을 대조한다 — 토큰이 없으면 정당한 비회원의 취소 기록이 404 로 거부되고 화면에는 아무 신호도 남지 않는다. 종전에는 non-PG 분기에서만 발급했다.",
+                                                            "comment": "비회원 조회 토큰을 결제창을 열기 **전에** 확보한다. 결제창을 닫으면 그 즉시 취소 이력 기록(orders/{n}/cancel-payment)과 PG 플러그인의 닫힘 보고(close-report)가 호출되는데, 둘 다 서버가 이 토큰으로 소유자를 확인한다 — 토큰이 없으면 정당한 비회원의 보고가 거부되고 화면에는 아무 신호도 남지 않는다.\n                           1순위: 주문 생성 응답이 내려준 토큰(guest_order_token)을 그대로 저장한다 — 주문을 만든 이 브라우저만 받는 값이라 소유 증명이 된다.\n                           2순위: 응답에 토큰이 없으면(토큰을 내려주지 않는 이전 이커머스 모듈) 종전처럼 전화번호+조회 비밀번호로 verify 해 발급받는다.",
                                                             "handler": "conditions",
                                                             "conditions": [
+                                                                {
+                                                                    "if": "{{!_global.currentUser?.uuid && response.data.guest_order_token}}",
+                                                                    "then": {
+                                                                        "handler": "saveGuestOrderToken",
+                                                                        "params": {
+                                                                            "token": "{{response.data.guest_order_token}}",
+                                                                            "orderNumber": "{{response.data.order.order_number}}",
+                                                                            "expiresAt": "{{response.data.guest_order_token_expires_at}}"
+                                                                        }
+                                                                    }
+                                                                },
                                                                 {
                                                                     "if": "{{!_global.currentUser?.uuid}}",
                                                                     "then": {
@@ -912,7 +923,7 @@
                     "props": {
                         "type": "button",
                         "className": "w-full py-4 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-bold text-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
-                        "disabled": "{{((_local.shipping?.country_code ?? 'KR') === 'KR' ? !_local.shipping?.zipcode : !_local.shipping?.intl_postal_code) || !_local.shipping?.recipient_name || !_local.shipping?.recipient_phone || _local.isSubmittingOrder || checkoutData.data.has_unshippable_items === true}}"
+                        "disabled": "{{((_local.shipping?.country_code ?? _local.checkout?.country_code ?? 'KR') === 'KR' ? !_local.shipping?.zipcode : !_local.shipping?.intl_postal_code) || !_local.shipping?.recipient_name || !_local.shipping?.recipient_phone || _local.isSubmittingOrder || checkoutData.data.has_unshippable_items === true || !(paymentSettings.data?.order_settings?.payment_methods ?? []).some(m => m.is_active && (!m.requires_ios || _global.appConfig?.isIos))}}"
                     },
                     "text": "{{checkoutData.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? _global.defaultCurrency]?.final_amount_formatted ?? checkoutData.data.calculation?.summary?.final_amount_formatted ?? '-'}} $t:shop.checkout.pay_button"
                 },

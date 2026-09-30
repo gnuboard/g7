@@ -19,7 +19,7 @@
               <span class="text-hint block">{{ch.source_label ?? ch.source}}</span>
             </div>
           </div>
-          <toggle checked="{{(_local.form?.notifications?.channels ?? []).find(c => c.id === ch.id)?.is_active ?? false}}" disabled="{{_computed.isNotificationReadOnly}}">
+          <toggle data-type="composite" checked="{{(_local.form?.notifications?.channels ?? []).find(c => c.id === ch.id)?.is_active ?? false}}" disabled="{{_computed.isNotificationReadOnly}}">
             <on type="change">
               <!-- 전체 사용 여부. 폼에 담기는 값이라 이 줄만은 화면 저장 시점에 반영된다. -->
               <set-state target="local" form.notifications.channels="{{(_local.form?.notifications?.channels ?? []).some(c => c.id === ch.id) ? (_local.form?.notifications?.channels ?? []).map(c => c.id === ch.id ? {...c, is_active: !c.is_active} : c) : [...(_local.form?.notifications?.channels ?? []), {id: ch.id, is_active: true, sort_order: (_local.form?.notifications?.channels ?? []).length + 1}]}}" :hasChanges="true"/>
@@ -103,7 +103,7 @@
                   <extension-point name="notification_definition_row_footer" definition="{{def}}" activeChannel="{{query.channel ?? 'mail'}}"/>
                 </div>
                 <div class="flex-center gap-3 flex-shrink-0">
-                  <toggle data-if="{{(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))}}" checked="{{(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))?.is_active ?? false}}" disabled="{{_computed.isNotificationReadOnly}}">
+                  <toggle data-type="composite" data-if="{{(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))}}" checked="{{(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))?.is_active ?? false}}" disabled="{{_computed.isNotificationReadOnly}}">
                     <on type="change">
                       <!-- 개별 사용 여부. 폼에 담지 않고 바로 서버로 나간다. -->
                       <api-call :auth_required="true" target="{{'/api/admin/notification-templates/' + (def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))?.id + '/toggle-active'}}" method="PATCH">
@@ -151,7 +151,7 @@
               <div data-if="{{(_local.expandedNotifications ?? {})[def.id]}}" class="mt-3 pt-3">
                 <span class="text-tertiary font-medium mb-2 block">$t:sirsoft-ecommerce.admin.settings.notification_definitions.body_preview</span>
                 <!-- 미리보기의 HTML 해석 여부는 **그 채널의 편집기 종류**를 따른다. 사이트내 알림은 알림센터가 평문으로 그리는데 여기서만 HTML 로 해석하면, 관리자가 본 문구와 사용자가 받는 문구가 다르다 — 태그가 글자 그대로 보이는 쪽은 사용자다. -->
-                <html-content content="{{(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))?.body?.[$locale] ?? ''}}" isHtml="{{((availableChannels?.data?.channels ?? []).find(c => c.id === (query.channel ?? 'mail'))?.template_editor ?? 'plain') === 'rich'}}" class="prose dark:prose-invert prose-sm max-w-none bg-gray-50 dark:bg-gray-900/50 rounded-lg p-3 max-h-48 overflow-y-auto"/>
+                <html-content data-type="composite" content="{{(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))?.body?.[$locale] ?? ''}}" isHtml="{{((availableChannels?.data?.channels ?? []).find(c => c.id === (query.channel ?? 'mail'))?.template_editor ?? 'plain') === 'rich'}}" class="prose dark:prose-invert prose-sm max-w-none bg-gray-50 dark:bg-gray-900/50 rounded-lg p-3 max-h-48 overflow-y-auto"/>
               </div>
             </div>
           </div>
@@ -164,7 +164,7 @@
         </div>
       </div>
       <div data-ref="ecommerce_notif_pagination" class="flex justify-center mt-4">
-        <pagination currentPage="{{ecommerceNotificationDefinitions?.data?.pagination?.current_page || 1}}" totalPages="{{ecommerceNotificationDefinitions?.data?.pagination?.last_page ?? null}}" hasMorePages="{{ecommerceNotificationDefinitions?.data?.pagination?.has_more_pages ?? false}}">
+        <pagination data-type="composite" currentPage="{{ecommerceNotificationDefinitions?.data?.pagination?.current_page || 1}}" totalPages="{{ecommerceNotificationDefinitions?.data?.pagination?.last_page ?? null}}" hasMorePages="{{ecommerceNotificationDefinitions?.data?.pagination?.has_more_pages ?? false}}">
           <on type="action" event="onPageChange">
             <!-- 쪽 이동. `tab` 을 함께 실어야 새로고침 후 같은 탭이 선다. -->
             <navigate path="/admin/ecommerce/settings" :replace="true" :mergeQuery="true">

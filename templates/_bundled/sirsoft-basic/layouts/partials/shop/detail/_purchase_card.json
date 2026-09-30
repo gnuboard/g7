@@ -551,6 +551,35 @@
                     ]
                 },
                 {
+                    "comment": "=== 구매할 수 있는 옵션이 없는 상품 안내 — 판매 중인 옵션이 하나도 없으면(옵션 행 없음·전부 판매 중지)\n           아래 두 버튼이 잠기므로 그 이유를 먼저 보여 준다. 서버도 같은 상품의 담기·바로 구매를 422 로 거절한다 ===",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{(Array.isArray(product.data?.options) && product.data.options.length === 0)}}",
+                    "props": {
+                        "data-testid": "no-purchasable-option",
+                        "className": "flex items-start gap-2 px-3 py-2.5 mb-3 rounded-lg border bg-gray-50 border-gray-200 dark:bg-gray-700/50 dark:border-gray-600"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "info-circle",
+                                "size": "sm",
+                                "className": "text-gray-500 dark:text-gray-400 mt-0.5 shrink-0"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "text-sm text-gray-700 dark:text-gray-300"
+                            },
+                            "text": "$t:shop.product.no_purchasable_option"
+                        }
+                    ]
+                },
+                {
                     "comment": "=== 바로구매 + 장바구니 버튼 (PC 2단, 모바일 1단) ===",
                     "type": "basic",
                     "name": "Div",
@@ -559,7 +588,7 @@
                     },
                     "children": [
                         {
-                            "comment": "바로구매 버튼 — 옵션 상품은 선택한 옵션 라인 수량의 **합계**로 구매 한도를 판정한다. 라인별 max 만으로는 여러 라인을 합쳐 한도를 넘길 수 있다. 옵션 없는 상품은 QuantitySelector 의 min/max 가 이미 막으므로 조건을 걸지 않는다.",
+                            "comment": "바로구매 버튼 — 판매 중인 옵션이 하나도 없는 상품은 잠근다(서버가 422 로 거절하는 상품). 옵션 상품은 선택한 옵션 라인 수량의 **합계**로 구매 한도를 판정한다. 라인별 max 만으로는 여러 라인을 합쳐 한도를 넘길 수 있다. 옵션 없는 상품은 QuantitySelector 의 min/max 가 이미 막으므로 조건을 걸지 않는다.",
                             "type": "basic",
                             "name": "Button",
                             "actions": [
@@ -686,7 +715,7 @@
                             "props": {
                                 "data-testid": "buy-now",
                                 "className": "w-full py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
-                                "disabled": "{{_local.isOrdering || product.data?.is_shippable_to_selected_country === false || ((product.data?.option_groups ?? []).length > 0 && ((_local.selectedOptionItems ?? []).reduce((s, i) => s + i.quantity, 0) < (product.data?.min_purchase_qty ?? 1) || (product.data?.max_purchase_qty > 0 && (_local.selectedOptionItems ?? []).reduce((s, i) => s + i.quantity, 0) > product.data.max_purchase_qty)))}}"
+                                "disabled": "{{_local.isOrdering || (Array.isArray(product.data?.options) && product.data.options.length === 0) || product.data?.is_shippable_to_selected_country === false || ((product.data?.option_groups ?? []).length > 0 && ((_local.selectedOptionItems ?? []).reduce((s, i) => s + i.quantity, 0) < (product.data?.min_purchase_qty ?? 1) || (product.data?.max_purchase_qty > 0 && (_local.selectedOptionItems ?? []).reduce((s, i) => s + i.quantity, 0) > product.data.max_purchase_qty)))}}"
                             },
                             "children": [
                                 {
@@ -723,7 +752,7 @@
                             ]
                         },
                         {
-                            "comment": "장바구니 버튼 — 구매 한도 판정은 바로구매 버튼과 동일. 옵션 상품만 합계로 본다.",
+                            "comment": "장바구니 버튼 — 구매할 수 있는 옵션이 없는 상품 잠금과 구매 한도 판정은 바로구매 버튼과 동일. 옵션 상품만 합계로 본다.",
                             "type": "basic",
                             "name": "Button",
                             "actions": [
@@ -846,7 +875,7 @@
                             "props": {
                                 "data-testid": "add-to-cart",
                                 "className": "w-full py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
-                                "disabled": "{{_local.isAddingToCart || _local.isOrdering || product.data?.is_shippable_to_selected_country === false || ((product.data?.option_groups ?? []).length > 0 && ((_local.selectedOptionItems ?? []).reduce((s, i) => s + i.quantity, 0) < (product.data?.min_purchase_qty ?? 1) || (product.data?.max_purchase_qty > 0 && (_local.selectedOptionItems ?? []).reduce((s, i) => s + i.quantity, 0) > product.data.max_purchase_qty)))}}"
+                                "disabled": "{{_local.isAddingToCart || _local.isOrdering || (Array.isArray(product.data?.options) && product.data.options.length === 0) || product.data?.is_shippable_to_selected_country === false || ((product.data?.option_groups ?? []).length > 0 && ((_local.selectedOptionItems ?? []).reduce((s, i) => s + i.quantity, 0) < (product.data?.min_purchase_qty ?? 1) || (product.data?.max_purchase_qty > 0 && (_local.selectedOptionItems ?? []).reduce((s, i) => s + i.quantity, 0) > product.data.max_purchase_qty)))}}"
                             },
                             "children": [
                                 {

@@ -1,7 +1,7 @@
 <!-- 회원 탈퇴 확인 창 — 되돌릴 수 없는 동작이라 «알고 있다» 체크를 받아야 버튼이 열린다.
      성공하면 세션까지 끊어야 하므로 토스트 뒤에 로그아웃이 이어진다. -->
 <partial description="회원탈퇴 확인 모달" editor_label="$t:user.modal_label.mypage_profile.withdrawModal">
-  <modal data-ref="withdrawModal" title="$t:mypage.withdraw.modal_title" size="sm" :closeOnBackdropClick="false">
+  <modal data-type="composite" data-ref="withdrawModal" title="$t:mypage.withdraw.modal_title" size="sm" :closeOnBackdropClick="false">
     <div class="text-center py-4">
       <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
         <icon name="triangle-exclamation" size="2x" class="text-red-600 dark:text-red-400"/>
@@ -42,7 +42,7 @@
           </on>
           $t:common.cancel
         </button>
-        <button class="inline-flex items-center justify-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{!_local.form?.confirmWithdraw || _local.isWithdrawing}}">
+        <button class="inline-flex items-center justify-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-500 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{!_local.form?.confirmWithdraw || _local.isWithdrawing}}">
           <on type="click">
             <!-- 탈퇴 실행 — 먼저 버튼을 잠그고, 성공하면 알린 뒤 로그아웃까지 이어 간다 -->
             <sequence>

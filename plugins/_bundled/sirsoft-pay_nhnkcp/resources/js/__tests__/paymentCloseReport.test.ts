@@ -26,16 +26,13 @@ describe('paymentCloseReport', () => {
             closeReportUrl: '/plugins/sirsoft-pay_nhnkcp/payment/close-report',
             oid: 'ORD-KCP-CLOSE-001',
             price: 10000,
-            buyer_email: 'buyer@example.com',
-            buyer_phone: '01012345678',
             payment_method: 'card',
         }, 'kcp-window-closed');
 
+        // 주문자 연락처는 소유 증명이 아니므로 보내지 않는다 (KVE-2026-2434).
         expect(apiPost).toHaveBeenCalledWith('/plugins/sirsoft-pay_nhnkcp/payment/close-report', {
             oid: 'ORD-KCP-CLOSE-001',
             price: 10000,
-            buyer_email: 'buyer@example.com',
-            buyer_phone: '01012345678',
             payment_method: 'card',
             reason: 'kcp-window-closed',
         });
@@ -66,16 +63,12 @@ describe('paymentCloseReport', () => {
             closeReportUrl: '/plugins/sirsoft-pay_nhnkcp/payment/close-report',
             oid: 'ORD-KCP-RETRY-001',
             price: 20000,
-            buyer_email: 'buyer@example.com',
-            buyer_phone: '01012345678',
             payment_method: 'nhnkcp_kakaopay',
         });
 
         expect(apiPost).toHaveBeenCalledWith('/plugins/sirsoft-pay_nhnkcp/payment/retry', {
             oid: 'ORD-KCP-RETRY-001',
             price: 20000,
-            buyer_email: 'buyer@example.com',
-            buyer_phone: '01012345678',
             payment_method: 'nhnkcp_kakaopay',
         });
     });
@@ -107,8 +100,6 @@ describe('결제 실패 화면 복귀 보고', () => {
         closeReportUrl: '/plugins/sirsoft-pay_nhnkcp/payment/close-report',
         oid: 'ORD-KCP-RETURN-001',
         price: 10000,
-        buyer_email: 'buyer@example.com',
-        buyer_phone: '01012345678',
     };
 
     /**
@@ -131,7 +122,7 @@ describe('결제 실패 화면 복귀 보고', () => {
         window.sessionStorage.clear();
     });
 
-    it('실패 화면으로 돌아오면 저장해 둔 구매자 정보로 보고한다', async () => {
+    it('실패 화면으로 돌아오면 저장해 둔 주문 정보로 보고한다', async () => {
         const apiPost = vi.fn().mockResolvedValue({ success: true });
         windowRecord().G7Core = { api: { post: apiPost } };
 
@@ -206,5 +197,115 @@ describe('결제 실패 화면 복귀 보고', () => {
 
         expect(apiPost).not.toHaveBeenCalled();
         expect(window.sessionStorage.getItem('g7:sirsoft-pay_nhnkcp:pendingClose')).not.toBeNull();
+    });
+});
+
+/**
+ * 소유자 증명 헤더 (KVE-2026-2434)
+ *
+ * close-report·retry 는 주문 상태를 바꾸므로 서버가 주문 소유자만 받아 준다. 회원은 G7Core.api 가
+ * Bearer 를 싣고, 비회원은 체크아웃이 저장해 둔 조회 토큰(X-Guest-Order-Token)을 실어야 한다.
+ */
+describe('소유자 증명 헤더', () => {
+    const CONTEXT = {
+        closeReportUrl: '/plugins/sirsoft-pay_nhnkcp/payment/close-report',
+        oid: 'ORD-KCP-OWNER-001',
+        price: 10000,
+        payment_method: 'card',
+    };
+
+    beforeEach(() => {
+        window.sessionStorage.clear();
+        window.localStorage.clear();
+    });
+
+    afterEach(() => {
+        delete windowRecord().G7Core;
+        vi.restoreAllMocks();
+        window.sessionStorage.clear();
+        window.localStorage.clear();
+    });
+
+    it('비회원이면 저장된 조회 토큰을 X-Guest-Order-Token 으로 싣는다', async () => {
+        const apiPost = vi.fn().mockResolvedValue({ success: true });
+        windowRecord().G7Core = { api: { post: apiPost } };
+        window.sessionStorage.setItem('g7_guest_order_token', '1999999999|guest-token');
+
+        await reportPaymentWindowClosed(CONTEXT, 'kcp-window-closed');
+
+        expect(apiPost).toHaveBeenCalledWith(
+            '/plugins/sirsoft-pay_nhnkcp/payment/close-report',
+            expect.objectContaining({ oid: 'ORD-KCP-OWNER-001' }),
+            { headers: { 'X-Guest-Order-Token': '1999999999|guest-token' } },
+        );
+    });
+
+    it('sessionStorage 가 비어 있으면 _global.guestOrderToken 폴백을 싣는다', async () => {
+        const apiPost = vi.fn().mockResolvedValue({ success: true });
+        windowRecord().G7Core = {
+            api: { post: apiPost },
+            state: { get: (key: string) => (key === '_global' ? { guestOrderToken: 'global-token' } : undefined) },
+        };
+
+        await reportPaymentWindowClosed(CONTEXT, 'kcp-window-closed');
+
+        expect(apiPost.mock.calls[0][2]).toEqual({ headers: { 'X-Guest-Order-Token': 'global-token' } });
+    });
+
+    it('회원이면 비회원 토큰을 싣지 않는다 — Bearer 는 G7Core.api 몫이다', async () => {
+        const apiPost = vi.fn().mockResolvedValue({ success: true });
+        windowRecord().G7Core = { api: { post: apiPost } };
+        window.localStorage.setItem('auth_token', 'member-token');
+        window.sessionStorage.setItem('g7_guest_order_token', '1999999999|guest-token');
+
+        await reportPaymentWindowClosed(CONTEXT, 'kcp-window-closed');
+
+        expect(apiPost).toHaveBeenCalledTimes(1);
+        expect(apiPost.mock.calls[0]).toHaveLength(2);
+    });
+
+    it('토큰이 없으면 헤더 없이 보내고 예외를 흘리지 않는다 (서버 거부 시 만료 잡이 정리)', async () => {
+        const apiPost = vi.fn().mockRejectedValue(new Error('403'));
+        windowRecord().G7Core = { api: { post: apiPost } };
+        const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+
+        await expect(reportPaymentWindowClosed(CONTEXT, 'kcp-window-closed')).resolves.toBeUndefined();
+
+        expect(apiPost.mock.calls[0]).toHaveLength(2);
+        expect(warn).toHaveBeenCalled();
+    });
+
+    it('재시도 준비 요청에도 비회원 조회 토큰을 싣는다', async () => {
+        const apiPost = vi.fn().mockResolvedValue({ success: true });
+        windowRecord().G7Core = { api: { post: apiPost } };
+        window.sessionStorage.setItem('g7_guest_order_token', '1999999999|guest-token');
+
+        await preparePaymentRetry(CONTEXT);
+
+        expect(apiPost).toHaveBeenCalledWith(
+            '/plugins/sirsoft-pay_nhnkcp/payment/retry',
+            expect.any(Object),
+            { headers: { 'X-Guest-Order-Token': '1999999999|guest-token' } },
+        );
+    });
+
+    it('G7Core.api 가 없으면 같은 출처 fetch 에 조회 토큰을 싣는다', async () => {
+        const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response('{}'));
+        window.sessionStorage.setItem('g7_guest_order_token', '1999999999|guest-token');
+
+        await reportPaymentWindowClosed(CONTEXT, 'kcp-window-closed');
+
+        const init = fetchSpy.mock.calls[0][1] as RequestInit;
+        expect((init.headers as Record<string, string>)['X-Guest-Order-Token']).toBe('1999999999|guest-token');
+    });
+
+    it('G7Core.api 가 없고 보고 주소가 다른 출처면 조회 토큰을 싣지 않는다', async () => {
+        const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response('{}'));
+        window.sessionStorage.setItem('g7_guest_order_token', '1999999999|guest-token');
+
+        await reportPaymentWindowClosed({ ...CONTEXT, closeReportUrl: 'https://evil.example/payment/close-report' });
+
+        const init = fetchSpy.mock.calls[0][1] as RequestInit;
+        expect((init.headers as Record<string, string>)['X-Guest-Order-Token']).toBeUndefined();
     });
 });

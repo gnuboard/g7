@@ -86,7 +86,7 @@
             </navigate>
           </on>
         </select>
-        <input type="text" name="filter.search" value="{{query.search ?? ''}}" placeholder="$t:admin.identity.policies.search_placeholder" class="input flex-1 min-w-[200px]">
+        <input type="text" name="filter.search" value="{{query.search ?? ''}}" placeholder="$t:admin.identity.policies.search_placeholder" class="input md:flex-1 md:min-w-[200px]">
           <on type="keypress" key="Enter">
             <!-- 검색어 Enter. 필터와 같이 query 로 나가고 쪽을 1로 되돌린다. -->
             <navigate path="/admin/ecommerce/settings" :replace="true" :mergeQuery="true" transition_overlay_target="policy_table_card">
@@ -148,7 +148,7 @@
                 <td class="px-3 py-2 text-gray-700 dark:text-gray-300 text-right">{{policy.grace_minutes ?? 0}}</td>
                 <td class="px-3 py-2 text-gray-700 dark:text-gray-300 text-right tabular-nums">{{policy.priority ?? 100}}</td>
                 <td class="px-3 py-2">
-                  <toggle checked="{{Boolean(policy.enabled)}}" size="sm" disabled="{{policy.abilities?.can_update !== true}}">
+                  <toggle data-type="composite" checked="{{Boolean(policy.enabled)}}" size="sm" disabled="{{policy.abilities?.can_update !== true}}">
                     <on type="change">
                       <!-- 넓은 화면 표 — 사용 여부. 폼에 담지 않고 바로 서버로 나간다. 성공 알림과 목록 다시 부르기를 `<parallel>` 로 함께 하는 이유는 둘이 서로를 기다릴 필요가 없어서다. -->
                       <api-call :auth_required="true" target="/api/admin/identity/policies/{{policy.id}}" method="PUT">
@@ -244,7 +244,7 @@
                 <span>$t:admin.identity.policies.col.priority</span>
                 <span class="ml-1 font-medium text-gray-700 dark:text-gray-300 tabular-nums">{{policy.priority ?? 100}}</span>
               </div>
-              <toggle checked="{{Boolean(policy.enabled)}}" size="sm" disabled="{{policy.abilities?.can_update !== true}}">
+              <toggle data-type="composite" checked="{{Boolean(policy.enabled)}}" size="sm" disabled="{{policy.abilities?.can_update !== true}}">
                 <on type="change">
                   <!-- 좁은 화면 카드 — 사용 여부. 위 표 판본과 같은 호출이다. -->
                   <api-call :auth_required="true" target="/api/admin/identity/policies/{{policy.id}}" method="PUT">

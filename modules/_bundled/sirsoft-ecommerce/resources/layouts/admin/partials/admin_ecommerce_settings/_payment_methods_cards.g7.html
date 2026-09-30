@@ -24,7 +24,7 @@
             <span data-if="{{$method._orphaned_pg}}" data-testid="orphaned-pg-badge-{{$method.id}}" class="inline-flex items-center whitespace-nowrap shrink-0 px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400">$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.orphaned_pg_badge</span>
           </div>
           <div class="flex-center gap-2">
-            <toggle data-if="{{!$method._orphaned}}" value="{{$method.is_active}}" disabled="{{_computed.isReadOnly || (!$method.pg_locked &amp;&amp; $method.needs_pg &amp;&amp; !$method.pg_provider &amp;&amp; !_local.form?.order_settings?.default_pg_provider)}}">
+            <toggle data-type="composite" data-if="{{!$method._orphaned}}" value="{{$method.is_active}}" disabled="{{_computed.isReadOnly || (!$method.pg_locked &amp;&amp; $method.needs_pg &amp;&amp; !$method.pg_provider &amp;&amp; !_local.form?.order_settings?.default_pg_provider)}}">
               <on type="change">
                 <!-- 사용 여부. 끄면 쇼핑몰 결제창에서 사라지고 설정은 남는다 — 이미 그 수단으로 결제된 주문에는 영향이 없다. -->
                 <set-state target="local" form.order_settings.payment_methods="{{(_local.form?.order_settings?.payment_methods ?? []).map((m, i) => i === $methodIndex ? {...m, is_active: !m.is_active} : m)}}" :hasChanges="true"/>

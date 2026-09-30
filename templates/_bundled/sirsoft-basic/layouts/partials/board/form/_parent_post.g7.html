@@ -21,7 +21,7 @@
     <div data-if="{{form_meta?.data?.parent_post?.content}}" class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded p-3">
       <extension-point name="html_content" content="{{form_meta?.data?.parent_post?.content ?? ''}}" isHtml="{{(form_meta?.data?.parent_post?.content_mode ?? 'text') === 'html'}}" class="{{_local.parentPostExpanded ? '' : 'line-clamp-3'}} text-sm text-gray-600 dark:text-gray-300 mb-2">
         <default>
-          <html-content content="{{form_meta?.data?.parent_post?.content ?? ''}}" isHtml="{{(form_meta?.data?.parent_post?.content_mode ?? 'text') === 'html'}}" class="{{_local.parentPostExpanded ? '' : 'line-clamp-3'}} text-sm text-gray-600 dark:text-gray-300 mb-2"/>
+          <html-content data-type="composite" content="{{form_meta?.data?.parent_post?.content ?? ''}}" isHtml="{{(form_meta?.data?.parent_post?.content_mode ?? 'text') === 'html'}}" class="{{_local.parentPostExpanded ? '' : 'line-clamp-3'}} text-sm text-gray-600 dark:text-gray-300 mb-2"/>
         </default>
       </extension-point>
       <button data-if="{{(form_meta?.data?.parent_post?.content?.length ?? 0) > 150}}" type="button" class="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium transition-colors flex items-center gap-1">

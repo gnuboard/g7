@@ -28,6 +28,8 @@ class PaymentCallbackControllerTest extends PluginTestCase
      * `Log::spy()` 단독 사용 시 `Log::channel('activity')` 가 null 을 반환하고,
      * 결제 완료 훅이 태우는 활동 로그가 null 에 `info()` 를 호출해 \Error 로 죽는다.
      * (`ResolvesActivityLogType::logActivity` 의 catch 는 \Exception 만 잡아 통과시킴)
+     *
+     * @return void 반환값 없음
      */
     private function spyApplicationLogKeepingActivityChannel(): void
     {
@@ -37,6 +39,16 @@ class PaymentCallbackControllerTest extends PluginTestCase
         Log::shouldReceive('channel')->with('activity')->andReturn($activityChannel);
     }
 
+    /**
+     * PG 서버 승인 응답을 흉내 낸 배열을 만듭니다.
+     *
+     * @param  string  $tid  거래번호
+     * @param  string  $moid  주문번호
+     * @param  int  $amount  금액
+     * @param  string  $resultCode  PG 결과 코드
+     * @param  array  $overrides  기본값 대신 쓸 항목
+     * @return array 구성한 배열
+     */
     private function makeAuthorizeResponse(string $tid, string $moid, int $amount, string $resultCode = '0000', array $overrides = []): array
     {
         return array_merge([
@@ -57,6 +69,12 @@ class PaymentCallbackControllerTest extends PluginTestCase
         ], $overrides);
     }
 
+    /**
+     * 결제대기 주문과 결제 레코드를 만듭니다.
+     *
+     * @param  int  $totalAmount  주문 총액
+     * @return Order 생성한 주문
+     */
     private function createTestOrder(int $totalAmount = 50000): Order
     {
         $user = User::factory()->create();
@@ -98,6 +116,12 @@ class PaymentCallbackControllerTest extends PluginTestCase
         return $order;
     }
 
+    /**
+     * 플러그인 설정 서비스를 테스트 설정으로 대체합니다.
+     *
+     * @param  array  $overrides  기본값 대신 쓸 항목
+     * @return void 반환값 없음
+     */
     private function mockPluginSettings(array $overrides = []): void
     {
         $defaults = [
@@ -121,6 +145,14 @@ class PaymentCallbackControllerTest extends PluginTestCase
         $this->app->instance(PluginSettingsService::class, $settingsMock);
     }
 
+    /**
+     * 브라우저가 보내는 결제 인증 콜백 파라미터를 만듭니다.
+     *
+     * @param  string  $moid  주문번호
+     * @param  int  $totPrice  결제 금액
+     * @param  array  $overrides  기본값 대신 쓸 항목
+     * @return array 구성한 배열
+     */
     private function makeCallbackParams(string $moid, int $totPrice, array $overrides = []): array
     {
         return array_merge([
@@ -139,6 +171,13 @@ class PaymentCallbackControllerTest extends PluginTestCase
 
     // ===== 성공 콜백 테스트 =====
 
+    /**
+     * 정상 승인은 주문을 결제완료로 만들고 완료 화면으로 보낸다.
+     *
+     * @effects auth_callback_redirects_to_complete_page_on_valid_payment
+     *
+     * @return void 반환값 없음
+     */
     public function test_auth_callback_redirects_to_complete_page_on_valid_payment(): void
     {
         $order = $this->createTestOrder(50000);
@@ -175,6 +214,13 @@ class PaymentCallbackControllerTest extends PluginTestCase
         $this->assertArrayNotHasKey('buyerTel', $meta['pg_raw_response']);
     }
 
+    /**
+     * 고른 간편결제 수단을 결제 메타에 남긴다.
+     *
+     * @effects auth_callback_stores_selected_easy_pay_context
+     *
+     * @return void 반환값 없음
+     */
     public function test_auth_callback_stores_selected_easy_pay_context(): void
     {
         $order = $this->createTestOrder(50000);
@@ -208,6 +254,13 @@ class PaymentCallbackControllerTest extends PluginTestCase
         $this->assertSame('네이버페이', $meta['embedded_pg_provider_label'] ?? null);
     }
 
+    /**
+     * 사용자 취소 코드는 오류 정보 없이 체크아웃으로 조용히 돌려보낸다.
+     *
+     * @effects auth_callback_user_cancel_2001_redirects_without_error_query
+     *
+     * @return void 반환값 없음
+     */
     public function test_auth_callback_user_cancel_2001_redirects_without_error_query(): void
     {
         // 사용자가 결제창을 X 또는 '취소' 버튼으로 종료한 경우 — 에러 토스트 노출 X.
@@ -227,6 +280,13 @@ class PaymentCallbackControllerTest extends PluginTestCase
         $this->assertStringNotContainsString('message=', $location, 'user cancel must not append message query');
     }
 
+    /**
+     * 취소 문구가 담긴 결과는 사용자 취소로 보고 오류 정보 없이 돌려보낸다.
+     *
+     * @effects auth_callback_user_cancel_message_keyword_redirects_without_error_query
+     *
+     * @return void 반환값 없음
+     */
     public function test_auth_callback_user_cancel_message_keyword_redirects_without_error_query(): void
     {
         // resultCode 가 표준 cancel 코드가 아니지만 resultMsg 에 '취소' 키워드가
@@ -244,6 +304,13 @@ class PaymentCallbackControllerTest extends PluginTestCase
         $this->assertStringNotContainsString('error=', $response->headers->get('Location'));
     }
 
+    /**
+     * 사용자 취소가 아닌 실제 실패는 오류 정보를 실어 실패 화면으로 보낸다.
+     *
+     * @effects auth_callback_real_failure_still_redirects_with_error_query
+     *
+     * @return void 반환값 없음
+     */
     public function test_auth_callback_real_failure_still_redirects_with_error_query(): void
     {
         // 사용자 취소가 아닌 실제 결제 실패는 기존대로 error query 포함하여
@@ -261,6 +328,13 @@ class PaymentCallbackControllerTest extends PluginTestCase
         $this->assertStringContainsString('error=9999', $response->headers->get('Location'));
     }
 
+    /**
+     * 존재하지 않는 주문번호의 콜백은 실패 화면으로 보낸다.
+     *
+     * @effects auth_callback_redirects_to_fail_on_order_not_found
+     *
+     * @return void 반환값 없음
+     */
     public function test_auth_callback_redirects_to_fail_on_order_not_found(): void
     {
         $this->mockPluginSettings();
@@ -280,6 +354,13 @@ class PaymentCallbackControllerTest extends PluginTestCase
         $this->assertStringContainsString('error=order_not_found', $response->headers->get('Location'));
     }
 
+    /**
+     * PG 승인 결과가 성공이 아니면 주문 상태를 바꾸지 않고 실패 화면으로 보낸다.
+     *
+     * @effects auth_callback_redirects_to_fail_on_pg_result_code_not_0000
+     *
+     * @return void 반환값 없음
+     */
     public function test_auth_callback_redirects_to_fail_on_pg_result_code_not_0000(): void
     {
         $order = $this->createTestOrder(50000);
@@ -313,6 +394,10 @@ class PaymentCallbackControllerTest extends PluginTestCase
      *
      * 공격자는 로그인하지 않고 피해자의 주문번호(moid)와 위조 authToken 만으로 이 엔드포인트를
      * 친다. 서버 승인은 당연히 실패하는데, 그 실패를 주문 실패로 오인 처리하면 남의 주문이 취소된다.
+     *
+     * @effects forged_unauthenticated_callback_cannot_cancel_another_users_order
+     *
+     * @return void 반환값 없음
      */
     public function test_forged_unauthenticated_callback_cannot_cancel_another_users_order(): void
     {
@@ -343,6 +428,13 @@ class PaymentCallbackControllerTest extends PluginTestCase
         $this->assertArrayNotHasKey('payment_failure_code', $victimOrder->order_meta ?? []);
     }
 
+    /**
+     * 승인 API 가 HTTP 오류면 망취소하고 실패 화면으로 보낸다.
+     *
+     * @effects auth_callback_sends_net_cancel_and_redirects_to_fail_on_authorize_http_error
+     *
+     * @return void 반환값 없음
+     */
     public function test_auth_callback_sends_net_cancel_and_redirects_to_fail_on_authorize_http_error(): void
     {
         $order = $this->createTestOrder(50000);
@@ -361,6 +453,13 @@ class PaymentCallbackControllerTest extends PluginTestCase
         $this->assertStringContainsString('error=authorize_failed', $response->headers->get('Location'));
     }
 
+    /**
+     * 예외 전에 이미 결제완료가 기록됐으면 망취소하지 않고 완료 화면으로 보낸다.
+     *
+     * @effects auth_callback_skips_net_cancel_when_local_payment_was_already_completed_before_exception
+     *
+     * @return void 반환값 없음
+     */
     public function test_auth_callback_skips_net_cancel_when_local_payment_was_already_completed_before_exception(): void
     {
         $order = $this->createTestOrder(50000);
@@ -420,6 +519,13 @@ class PaymentCallbackControllerTest extends PluginTestCase
         $this->assertSame($tid, $payment->transaction_id);
     }
 
+    /**
+     * 필수 파라미터가 빠진 콜백은 실패 화면으로 보낸다.
+     *
+     * @effects auth_callback_redirects_to_fail_on_missing_params
+     *
+     * @return void 반환값 없음
+     */
     public function test_auth_callback_redirects_to_fail_on_missing_params(): void
     {
         $this->mockPluginSettings();
@@ -432,6 +538,13 @@ class PaymentCallbackControllerTest extends PluginTestCase
         $this->assertStringContainsString('error=invalid_params', $response->headers->get('Location'));
     }
 
+    /**
+     * 운영자가 지정한 성공 주소로 이동한다.
+     *
+     * @effects auth_callback_redirects_to_custom_success_url
+     *
+     * @return void 반환값 없음
+     */
     public function test_auth_callback_redirects_to_custom_success_url(): void
     {
         $order = $this->createTestOrder(50000);
@@ -452,6 +565,13 @@ class PaymentCallbackControllerTest extends PluginTestCase
         $response->assertRedirect("/custom/payment/{$order->order_number}/done");
     }
 
+    /**
+     * 모바일 브라우저에서 들어온 콜백은 결제 기기를 모바일로 기록한다.
+     *
+     * @effects auth_callback_detects_mobile_device
+     *
+     * @return void 반환값 없음
+     */
     public function test_auth_callback_detects_mobile_device(): void
     {
         $order = $this->createTestOrder(50000);
@@ -481,6 +601,13 @@ class PaymentCallbackControllerTest extends PluginTestCase
 
     // ===== 가상계좌 입금 통보 테스트 =====
 
+    /**
+     * 정상 입금통보는 주문을 결제완료로 만들고 정상 응답한다.
+     *
+     * @effects vbank_notify_returns_ok_on_successful_deposit
+     *
+     * @return void 반환값 없음
+     */
     public function test_vbank_notify_returns_ok_on_successful_deposit(): void
     {
         $order = $this->createTestOrder(30000);
@@ -510,6 +637,13 @@ class PaymentCallbackControllerTest extends PluginTestCase
         $this->assertArrayNotHasKey('nm_input', $meta['pg_raw_response']);
     }
 
+    /**
+     * 발급 기록이 없거나 계좌 정보가 다른 입금통보는 거부한다.
+     *
+     * @effects vbank_notify_rejects_unissued_or_mismatched_account_context
+     *
+     * @return void 반환값 없음
+     */
     public function test_vbank_notify_rejects_unissued_or_mismatched_account_context(): void
     {
         $order = $this->createTestOrder(30000);
@@ -531,6 +665,13 @@ class PaymentCallbackControllerTest extends PluginTestCase
         $this->assertEquals(PaymentStatusEnum::WAITING_DEPOSIT, $order->payment->fresh()->payment_status);
     }
 
+    /**
+     * 가상계좌 입금통보는 입금자명을 애플리케이션 로그에 남기지 않는다.
+     *
+     * @effects vbank_notify_does_not_write_depositor_name_to_application_log
+     *
+     * @return void 반환값 없음
+     */
     public function test_vbank_notify_does_not_write_depositor_name_to_application_log(): void
     {
         $order = $this->createTestOrder(30000);
@@ -555,6 +696,13 @@ class PaymentCallbackControllerTest extends PluginTestCase
             ->once();
     }
 
+    /**
+     * 모바일 승인 응답은 개인정보를 뺀 허용 필드만 저장한다.
+     *
+     * @effects mobile_callback_stores_sanitized_pg_response_only
+     *
+     * @return void 반환값 없음
+     */
     public function test_mobile_callback_stores_sanitized_pg_response_only(): void
     {
         $order = $this->createTestOrder(50000);
@@ -615,6 +763,13 @@ class PaymentCallbackControllerTest extends PluginTestCase
         $this->assertArrayNotHasKey('P_MOBILE', $meta['pg_raw_response']);
     }
 
+    /**
+     * 예외 전에 이미 결제완료가 기록됐으면 모바일 자동취소를 건너뛴다.
+     *
+     * @effects mobile_callback_skips_auto_cancel_when_local_payment_was_already_completed_before_exception
+     *
+     * @return void 반환값 없음
+     */
     public function test_mobile_callback_skips_auto_cancel_when_local_payment_was_already_completed_before_exception(): void
     {
         $order = $this->createTestOrder(50000);
@@ -686,6 +841,13 @@ class PaymentCallbackControllerTest extends PluginTestCase
         $this->assertSame($tid, $payment->transaction_id);
     }
 
+    /**
+     * 발급 기록이 없거나 계좌 정보가 다른 모바일 입금통보는 거부한다.
+     *
+     * @effects mobile_vbank_notify_rejects_unissued_or_mismatched_account_context
+     *
+     * @return void 반환값 없음
+     */
     public function test_mobile_vbank_notify_rejects_unissued_or_mismatched_account_context(): void
     {
         $order = $this->createTestOrder(30000);
@@ -714,6 +876,13 @@ class PaymentCallbackControllerTest extends PluginTestCase
         $this->assertEquals(PaymentStatusEnum::WAITING_DEPOSIT, $order->payment->fresh()->payment_status);
     }
 
+    /**
+     * 모바일 가상계좌 입금통보는 입금자명을 애플리케이션 로그에 남기지 않는다.
+     *
+     * @effects mobile_vbank_notify_does_not_write_depositor_name_to_application_log
+     *
+     * @return void 반환값 없음
+     */
     public function test_mobile_vbank_notify_does_not_write_depositor_name_to_application_log(): void
     {
         $order = $this->createTestOrder(30000);
@@ -747,6 +916,10 @@ class PaymentCallbackControllerTest extends PluginTestCase
 
     /**
      * 동일 TID 가 두 번 통보되어도 중복 결제 처리하지 않고 OK 반환 (replay 방어).
+     *
+     * @effects vbank_notify_is_idempotent_on_duplicate_tid
+     *
+     * @return void 반환값 없음
      */
     public function test_vbank_notify_is_idempotent_on_duplicate_tid(): void
     {
@@ -767,6 +940,13 @@ class PaymentCallbackControllerTest extends PluginTestCase
         $this->assertEquals('OK', $response->getContent(), '재처리 요청도 OK 반환 (replay 방어)');
     }
 
+    /**
+     * 존재하지 않는 주문의 입금통보에는 실패를 응답한다.
+     *
+     * @effects vbank_notify_returns_fail_on_order_not_found
+     *
+     * @return void 반환값 없음
+     */
     public function test_vbank_notify_returns_fail_on_order_not_found(): void
     {
         $this->mockPluginSettings();
@@ -788,6 +968,204 @@ class PaymentCallbackControllerTest extends PluginTestCase
      * @param  array  $overrides  필드 override
      * @return array 입금통보 페이로드
      */
+    // ===== 승인-주문 결속 (KVE-2026-2434 전수조사) =====
+
+    /**
+     * 싼 주문의 승인 토큰에 비싼 주문번호와 그 금액을 붙여 보내도 비싼 주문은 결제완료되지 않는다.
+     *
+     * 종전에는 콜백의 MOID·TotPrice(브라우저 값)만 보고 승인 응답의 주문번호·금액을 대조하지 않아,
+     * 1,000원 승인으로 50,000원 주문이 결제완료됐다. 승인은 망취소한다.
+     *
+     * @effects auth_callback_rejects_approval_issued_for_another_order
+     *
+     * @return void 반환값 없음
+     */
+    public function test_auth_callback_rejects_approval_issued_for_another_order(): void
+    {
+        $victim = $this->createTestOrder(50000);
+        $this->mockPluginSettings();
+
+        Http::fake([
+            'fcstdpay.inicis.com/api/payAuth' => Http::response(
+                $this->makeAuthorizeResponse('TID_CHEAP_'.uniqid(), 'ORD-ATTACKER-CHEAP', 1000),
+                200
+            ),
+            '*' => Http::response(['resultCode' => '0000'], 200),
+        ]);
+
+        $response = $this->post('/plugins/sirsoft-pay_kginicis/payment/callback',
+            $this->makeCallbackParams($victim->order_number, 50000));
+
+        $response->assertRedirect();
+        $this->assertStringContainsString('error=authorize_failed', $response->headers->get('Location'));
+
+        $victim->refresh();
+        $this->assertEquals(OrderStatusEnum::PENDING_ORDER, $victim->order_status);
+        $this->assertEquals(PaymentStatusEnum::READY, $victim->payment->payment_status);
+        $this->assertNull($victim->payment->transaction_id);
+        Http::assertSent(fn ($request) => ! str_contains($request->url(), 'payAuth'));
+    }
+
+    /**
+     * 승인 응답에 주문번호가 없어도 금액은 PG 가 승인한 값이 기준이다 — 브라우저 금액으로 부풀려도
+     * 주문은 결제완료되지 않는다.
+     *
+     * @effects auth_callback_uses_pg_approved_amount_not_browser_amount
+     *
+     * @return void 반환값 없음
+     */
+    public function test_auth_callback_uses_pg_approved_amount_not_browser_amount(): void
+    {
+        $order = $this->createTestOrder(50000);
+        $this->mockPluginSettings();
+
+        Http::fake([
+            'fcstdpay.inicis.com/api/payAuth' => Http::response(
+                $this->makeAuthorizeResponse('TID_LOW_'.uniqid(), $order->order_number, 1000, '0000', ['MOID' => null]),
+                200
+            ),
+            '*' => Http::response(['resultCode' => '0000'], 200),
+        ]);
+
+        $this->post('/plugins/sirsoft-pay_kginicis/payment/callback',
+            $this->makeCallbackParams($order->order_number, 50000))->assertRedirect();
+
+        $order->refresh();
+        $this->assertEquals(OrderStatusEnum::PENDING_ORDER, $order->order_status);
+        $this->assertNull($order->payment->transaction_id);
+    }
+
+    /**
+     * 가상계좌 발급 콜백은 이미 결제된 주문의 결제 레코드를 덮어쓰지 않는다.
+     *
+     * 종전에는 주문 상태를 보지 않고 결제 상태·거래번호·계좌를 덮어써, 결제완료 주문의 환불 대상
+     * 거래번호가 남의 가상계좌로 바뀔 수 있었다. 발급은 망취소한다.
+     *
+     * @effects vbank_issue_callback_does_not_overwrite_paid_order
+     *
+     * @return void 반환값 없음
+     */
+    public function test_vbank_issue_callback_does_not_overwrite_paid_order(): void
+    {
+        $order = $this->createTestOrder(50000);
+        $order->update(['order_status' => OrderStatusEnum::PAYMENT_COMPLETE]);
+        $order->payment()->update([
+            'payment_status' => PaymentStatusEnum::PAID,
+            'transaction_id' => 'TID_ORIGINAL_PAID',
+            'paid_at' => now(),
+        ]);
+        $this->mockPluginSettings();
+
+        Http::fake([
+            'fcstdpay.inicis.com/api/payAuth' => Http::response(
+                $this->makeAuthorizeResponse('TID_ATTACKER_VBANK', $order->order_number, 50000, '0000', [
+                    'payMethod' => 'VBank',
+                    'VACT_Num' => '99990000111',
+                    'vactBankName' => '공격은행',
+                ]),
+                200
+            ),
+            '*' => Http::response(['resultCode' => '0000'], 200),
+        ]);
+
+        $response = $this->post('/plugins/sirsoft-pay_kginicis/payment/callback',
+            $this->makeCallbackParams($order->order_number, 50000));
+
+        $response->assertRedirect();
+        $this->assertStringContainsString('error=order_not_payable', $response->headers->get('Location'));
+
+        $payment = $order->payment->fresh();
+        $this->assertEquals(PaymentStatusEnum::PAID, $payment->payment_status);
+        $this->assertSame('TID_ORIGINAL_PAID', $payment->transaction_id);
+        $this->assertNotSame('99990000111', $payment->vbank_number);
+    }
+
+    /**
+     * 결제대기 주문의 정상 가상계좌 발급은 그대로 기록되고, 같은 발급의 중복 콜백은 성공으로만 처리한다.
+     *
+     * @effects vbank_issue_callback_records_pending_order_and_tolerates_replay
+     *
+     * @return void 반환값 없음
+     */
+    public function test_vbank_issue_callback_records_pending_order_and_tolerates_replay(): void
+    {
+        $order = $this->createTestOrder(50000);
+        $this->mockPluginSettings();
+        $tid = 'TID_VBANK_'.uniqid();
+
+        Http::fake([
+            'fcstdpay.inicis.com/api/payAuth' => Http::response(
+                $this->makeAuthorizeResponse($tid, $order->order_number, 50000, '0000', [
+                    'payMethod' => 'VBank',
+                    'VACT_Num' => '12345678901',
+                    'vactBankName' => '국민은행',
+                ]),
+                200
+            ),
+            '*' => Http::response(['resultCode' => '0000'], 200),
+        ]);
+
+        $params = $this->makeCallbackParams($order->order_number, 50000);
+        $this->post('/plugins/sirsoft-pay_kginicis/payment/callback', $params)
+            ->assertRedirect("/shop/orders/{$order->order_number}/complete");
+        $this->post('/plugins/sirsoft-pay_kginicis/payment/callback', $params)
+            ->assertRedirect("/shop/orders/{$order->order_number}/complete");
+
+        $payment = $order->payment->fresh();
+        $this->assertEquals(PaymentStatusEnum::WAITING_DEPOSIT, $payment->payment_status);
+        $this->assertSame($tid, $payment->transaction_id);
+        $this->assertSame('12345678901', $payment->vbank_number);
+    }
+
+    /**
+     * 모바일 승인 결과의 주문번호가 콜백 주문번호와 다르면 승인을 취소하고 주문을 결제완료로 만들지 않는다.
+     *
+     * @effects mobile_callback_rejects_approval_for_another_order
+     *
+     * @return void 반환값 없음
+     */
+    public function test_mobile_callback_rejects_approval_for_another_order(): void
+    {
+        $victim = $this->createTestOrder(50000);
+        $this->mockPluginSettings();
+        $tid = 'MOBILE_TID_'.uniqid();
+
+        Http::fake([
+            'fcmobile.inicis.com/smart/payReq.ini' => Http::response(http_build_query([
+                'P_STATUS' => '00',
+                'P_RMESG1' => '성공',
+                'P_TID' => $tid,
+                'P_OID' => 'ORD-ATTACKER-OWN',
+                'P_AMT' => '50000',
+                'P_TYPE' => 'CARD',
+            ]), 200),
+            '*' => Http::response(['resultCode' => '00'], 200),
+        ]);
+
+        $response = $this->post('/plugins/sirsoft-pay_kginicis/payment/mobile/callback?'.http_build_query([
+            'orderId' => $victim->order_number,
+        ]), [
+            'P_STATUS' => '00',
+            'P_TID' => $tid,
+            'P_REQ_URL' => 'https://fcmobile.inicis.com/smart/payReq.ini',
+            'P_AMT' => '50000',
+            'idc_name' => 'fc',
+        ]);
+
+        $response->assertRedirect();
+        $this->assertStringContainsString('error=approve_failed', $response->headers->get('Location'));
+
+        $victim->refresh();
+        $this->assertEquals(OrderStatusEnum::PENDING_ORDER, $victim->order_status);
+        $this->assertNull($victim->payment->transaction_id);
+    }
+
+    /**
+     * 가상계좌 입금통보 페이로드를 만듭니다.
+     *
+     * @param  array  $overrides  기본값 대신 쓸 항목
+     * @return array 구성한 배열
+     */
     private function makeVbankNotifyPayload(array $overrides = []): array
     {
         return array_merge([
@@ -804,6 +1182,14 @@ class PaymentCallbackControllerTest extends PluginTestCase
         ], $overrides);
     }
 
+    /**
+     * 결제 레코드를 가상계좌 발급(입금대기) 상태로 만듭니다.
+     *
+     * @param  Order  $order  대상 주문
+     * @param  string  $tid  거래번호
+     * @param  string  $vbankNumber  가상계좌 번호
+     * @return void 반환값 없음
+     */
     private function markVbankIssued(Order $order, string $tid, string $vbankNumber): void
     {
         $order->payment()->update([

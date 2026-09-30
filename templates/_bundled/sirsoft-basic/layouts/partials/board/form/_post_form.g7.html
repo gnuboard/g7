@@ -15,9 +15,9 @@
     </div>
     <!-- 수정 모드일 때 작성자 정보 표시 (Avatar + UserInfo) -->
     <div data-if="{{route.id &amp;&amp; form_data?.data?.author}}" class="flex items-center gap-3 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700">
-      <avatar author="{{form_data?.data?.author}}" size="md"/>
+      <avatar data-type="composite" author="{{form_data?.data?.author}}" size="md"/>
       <div>
-        <user-info userId="{{form_data?.data?.author?.uuid}}" name="{{form_data?.data?.author?.name}}" isGuest="{{!form_data?.data?.author?.uuid}}" :showDropdown="false" :clickable="false" class="text-sm font-medium"/>
+        <user-info data-type="composite" userId="{{form_data?.data?.author?.uuid}}" name="{{form_data?.data?.author?.name}}" isGuest="{{!form_data?.data?.author?.uuid}}" :showDropdown="false" :clickable="false" class="text-sm font-medium"/>
         <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">$t:board.created_at: {{form_data?.data?.created_at}}</p>
       </div>
     </div>
@@ -114,7 +114,7 @@
       <extension-point name="html_editor" data-ref="content_section" content="{{_local.form?.content ?? ''}}" isHtml="{{(_local.form?.content_mode ?? 'text') === 'html'}}" :rows="15" placeholder="$t:board.form.content_placeholder" label="$t:board.form.content" :showHtmlModeToggle="true">
         <prop name="name">"content"</prop>
         <default>
-          <html-editor name="content" content="{{_local.form?.content ?? ''}}" isHtml="{{(_local.form?.content_mode ?? 'text') === 'html'}}" :rows="15" placeholder="$t:board.form.content_placeholder" label="$t:board.form.content" :showHtmlModeToggle="true">
+          <html-editor data-type="composite" name="content" content="{{_local.form?.content ?? ''}}" isHtml="{{(_local.form?.content_mode ?? 'text') === 'html'}}" :rows="15" placeholder="$t:board.form.content_placeholder" label="$t:board.form.content" :showHtmlModeToggle="true">
             <on type="change" event="onIsHtmlChange">
               <!-- 편집기의 HTML/일반텍스트 전환 — 본문 글자는 그대로 두고 «어떻게 읽을지»(content_mode)만 바꾼다. 이 값이 상세 화면에서 본문을 HTML 로 풀지 그대로 보일지를 가른다. -->
               <set-state target="local">
@@ -136,7 +136,7 @@
         <span>$t:board.form.attachments</span>
       </label>
       <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">$t:board.form.attachments_desc|maxFiles={{form_meta?.data?.board?.max_file_count ?? 5}}|maxSize={{form_meta?.data?.board?.max_file_size ?? 10}}</p>
-      <file-uploader collection="post_attachments" maxFiles="{{form_meta?.data?.board?.max_file_count ?? 5}}" maxSize="{{form_meta?.data?.board?.max_file_size ?? 10}}" accept="{{form_meta?.data?.board?.allowed_extensions?.length ? '.' + form_meta?.data?.board?.allowed_extensions?.join(',.') : '.jpg,.jpeg,.png,.gif,.pdf,.zip'}}" initialFiles="{{form_meta?.data?.attachments ?? []}}" :autoUpload="false" uploadTriggerEvent="upload:board_attachments" :confirmBeforeRemove="true" confirmRemoveTitle="$t:board.posts.form.confirm_remove_attachment_title" confirmRemoveMessage="$t:board.posts.form.confirm_remove_attachment_message">
+      <file-uploader data-type="composite" collection="post_attachments" maxFiles="{{form_meta?.data?.board?.max_file_count ?? 5}}" maxSize="{{form_meta?.data?.board?.max_file_size ?? 10}}" accept="{{form_meta?.data?.board?.allowed_extensions?.length ? '.' + form_meta?.data?.board?.allowed_extensions?.join(',.') : '.jpg,.jpeg,.png,.gif,.pdf,.zip'}}" initialFiles="{{form_meta?.data?.attachments ?? []}}" :autoUpload="false" uploadTriggerEvent="upload:board_attachments" :confirmBeforeRemove="true" confirmRemoveTitle="$t:board.posts.form.confirm_remove_attachment_title" confirmRemoveMessage="$t:board.posts.form.confirm_remove_attachment_message">
         <prop name="uploadParams">
           <field name="temp_key" value="{{_local.tempKey}}"/>
         </prop>

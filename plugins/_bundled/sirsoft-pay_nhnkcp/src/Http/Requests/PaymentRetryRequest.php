@@ -26,10 +26,8 @@ class PaymentRetryRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'oid'            => ['required', 'string', 'max:40'],
-            'price'          => ['required', 'integer', 'min:1'],
-            'buyer_email'    => ['nullable', 'string', 'max:255'],
-            'buyer_phone'    => ['nullable', 'string', 'max:30'],
+            'oid' => ['required', 'string', 'max:40'],
+            'price' => ['required', 'integer', 'min:1'],
             'payment_method' => ['nullable', 'string', 'max:50'],
         ];
     }

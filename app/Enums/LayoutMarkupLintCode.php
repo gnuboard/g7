@@ -32,8 +32,11 @@ enum LayoutMarkupLintCode: string
     case ResponsiveBreakpointMix = 'responsive_breakpoint_mix';
 
     /**
-     * 독립 레이아웃(extends 없음)이 toast·openModal 을 발화하면서 호스트 컴포넌트(Toast·Modal)를
-     * 마운트하지 않음 — 핸들러는 success 로 기록되나 화면에 아무것도 나오지 않는 silent failure.
+     * 독립 레이아웃(extends 없음)이 toast·openModal 을 발화하면서 그 전역 상태를 받는 자리를 두지 않음 —
+     * 핸들러는 success 로 기록되나 화면에 아무것도 나오지 않는 silent failure.
+     *
+     * 호스트는 컴포넌트 이름이 아니라 엔진 계약으로 판정한다(2026-09-28 결정: 템플릿 무관) —
+     * toast 는 `_global.toasts` 를 읽는 노드, openModal 은 `modals` 섹션 또는 `_global.modalStack` 을 읽는 노드.
      */
     case StandaloneMissingGlobalHost = 'standalone_missing_global_host';
 
@@ -71,12 +74,33 @@ enum LayoutMarkupLintCode: string
      * 계약 비대칭이고, 그 비대칭 자체는 의도된 것이라 문서에 명문화돼 있다(layout-markup.md §6).
      * 남아 있던 문제는 **그 계약을 문서만 지키고 기계가 강제하지 않았다**는 것이며 이 코드가 그 자리다.
      *
-     * 대상은 hoist 3키로 닫혀 있다 — 소스 경로가 `<footer>`/`<title-prefix>`/`<title-suffix>` 뿐이고
-     * 컴파일러가 부모를 Modal 로 못박는다(EmbeddingCompiler::applyChild). 닫힌 집합이라 D19 의
-     * 「부분 선언」 문제를 타지 않는다: 두 번들 템플릿 182 컴포넌트가 전건 props 표면을 갖고,
-     * 이 3키는 admin 선언 있음 / basic 선언 없음이 **컴포넌트 소스와 일치**함을 실측했다.
+     * 대상은 hoist 3키(EmbeddingCompiler::DECLARATION_CHECKED_PROPS)로 닫혀 있다. hoist 가 부모 이름과
+     * 무관해진 뒤(2026-09-28 결정) 판정도 `Modal` 이름이 아니라 **그 노드 컴포넌트의 선언**으로 한다.
+     * 닫힌 집합이라 D19 의 「부분 선언」 문제를 타지 않는다: 번들 레이아웃 전수 × 번들 두 템플릿에서
+     * 이 3키의 거짓 양성은 0 건이고, 나머지 hoist 키(`expandChildren`·`options` 등)는 선언 없이 렌더하는
+     * 조합이 수백 건이라 대상에서 뺐다.
      */
     case HoistPropNotSupportedByTemplate = 'hoist_prop_not_supported_by_template';
+
+    /**
+     * 작성한 컴포넌트 종류(`data-type`, 생략 시 basic)가 검사 대상 템플릿의 선언과 다름.
+     *
+     * 컴파일 산출은 템플릿과 무관하게 작성자가 적은 종류를 따른다(JSON 의 `type` 과 같다). 종류가
+     * 어긋나면 렌더러가 다른 갈래를 탄다 — composite 를 basic 으로 적으면 편집 표식·상태 주입이 빠지고,
+     * 반대면 상태 값이 DOM 으로 샌다(D47 에서 출하 노드 345개가 실제로 어긋나 있었다). 대상 템플릿이
+     * 분명한 자리(편집기·템플릿 자신의 레이아웃)에서만 낸다.
+     */
+    case ComponentTypeMismatch = 'component_type_mismatch';
+
+    /**
+     * 확장 컴포넌트(`식별자.이름`)가 설치된 어느 확장의 `components.json` 에도 없음.
+     *
+     * 확장이 지워졌거나(편집 도중 삭제·비활성화 포함) 이름을 잘못 적은 경우다. 템플릿 컴포넌트 오타
+     * (`component_not_in_registry`)와 달리 **저장을 막지 않는다** — 확장은 다시 설치될 수 있고, 편집 중인
+     * 레이아웃을 그 확장 하나 때문에 저장하지 못하게 하면 안 된다(2026-09-28 결정). 검사용 레지스트리가
+     * 있는 자리(편집기·템플릿 자신의 레이아웃)에서만 낸다.
+     */
+    case ExtensionComponentNotInstalled = 'extension_component_not_installed';
 
     /**
      * 다국어 경고 본문을 반환합니다.

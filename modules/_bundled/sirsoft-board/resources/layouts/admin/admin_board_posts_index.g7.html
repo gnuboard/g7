@@ -38,7 +38,7 @@
   <slot name="content">
     <div data-ref="board_posts_content" class="admin-page-content-fluid">
       <responsive on="portable" class="admin-page-content-fluid-compact"/>
-      <page-header data-ref="page_header" title="{{posts?.data?.board?.name}} $t:sirsoft-board.admin.posts.page_title" description="{{posts?.data?.board?.name}}$t:sirsoft-board.admin.posts.page_description_with_board">
+      <page-header data-type="composite" data-ref="page_header" title="{{posts?.data?.board?.name}} $t:sirsoft-board.admin.posts.page_title" description="{{posts?.data?.board?.name}}$t:sirsoft-board.admin.posts.page_description_with_board">
         <div data-ref="header_actions" class="flex-center gap-2">
           <a data-ref="view_user_page_link" href="/board/{{route.slug}}" target="_blank" rel="noopener noreferrer" title="$t:sirsoft-board.admin.posts.actions.view_user_page" class="flex-center gap-2 px-3 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors no-underline">
             <icon name="external-link" size="sm"/>
@@ -130,7 +130,7 @@
           </div>
           <div data-ref="status_filter_row" class="flex-center flex-wrap gap-3">
             <span class="text-body font-medium min-w-[80px]">$t:sirsoft-board.admin.posts.filters.status_label</span>
-            <radio-group data-ref="status_filter" name="status_filter" value="{{query.status || ''}}" :inline="true">
+            <radio-group data-type="composite" data-ref="status_filter" name="status_filter" value="{{query.status || ''}}" :inline="true">
               <prop name="options">
                 <item label="$t:sirsoft-board.admin.posts.filters.status_all" value=""/>
                 <item label="$t:sirsoft-board.admin.posts.filters.status_published" value="published"/>
@@ -238,7 +238,7 @@
           </button>
         </div>
       </div>
-      <data-grid selectedCountText="" data-ref="posts_data_grid" :data-blur-until-loaded="true" rowClassName="{{row.row_type === 'notice' ? 'bg-blue-50 dark:bg-blue-900/20' : (row.row_type === 'reply' ? 'bg-gray-50 dark:bg-gray-800/50' : '')}}" data="{{posts?.data?.data}}" :sortable="true" :pagination="true" :alwaysShowPagination="true" :pageSize="15" :serverSidePagination="true" serverCurrentPage="{{posts?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{posts?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{posts?.data?.pagination?.has_more_pages ?? false}}" selectable="{{posts?.data?.abilities?.can_manage === true}}" selectionScope="page" selectedIds="{{_global.selectedIds_board_posts || []}}" idField="id" :responsiveBreakpoint="768" :showFirstLast="true" columnSelectorText="$t:common.column_selector" emptyMessage="$t:common.no_data" requiredText="$t:common.required">
+      <data-grid data-type="composite" selectedCountText="" data-ref="posts_data_grid" :data-blur-until-loaded="true" rowClassName="{{row.row_type === 'notice' ? 'bg-blue-50 dark:bg-blue-900/20' : (row.row_type === 'reply' ? 'bg-gray-50 dark:bg-gray-800/50' : '')}}" data="{{posts?.data?.data}}" :sortable="true" :pagination="true" :alwaysShowPagination="true" :pageSize="15" :serverSidePagination="true" serverCurrentPage="{{posts?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{posts?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{posts?.data?.pagination?.has_more_pages ?? false}}" selectable="{{posts?.data?.abilities?.can_manage === true}}" selectionScope="page" selectedIds="{{_global.selectedIds_board_posts || []}}" idField="id" :responsiveBreakpoint="768" :showFirstLast="true" columnSelectorText="$t:common.column_selector" emptyMessage="$t:common.no_data" requiredText="$t:common.required">
         <column field="number" header="$t:sirsoft-board.admin.posts.columns.number" :sortable="false" :required="true">
           <cell>
             <span data-if="{{row.row_type === 'notice'}}" class="inline-flex items-center px-2.5 py-0.5 rounded text-xs font-bold bg-blue-600 text-white dark:bg-blue-500">{{row.number ?? '-'}}</span>
@@ -334,7 +334,7 @@
   </slot>
   <modal>
     <!-- 글 삭제 확인 — 목록에서 고른 행을 `_global.modal_data` 로 받는다(모달은 별도 컨텍스트라 행 변수를 볼 수 없다) -->
-    <modal data-ref="delete_confirm_modal" title="$t:sirsoft-board.admin.posts.modals.delete_title" size="sm">
+    <modal data-type="composite" data-ref="delete_confirm_modal" title="$t:sirsoft-board.admin.posts.modals.delete_title" size="sm">
       <div class="py-2">
         <p class="text-gray-700 dark:text-gray-300">$t:sirsoft-board.admin.posts.modals.delete_confirm</p>
       </div>
@@ -373,7 +373,7 @@
   <modal>
     <!-- 일괄 처리 확인 — 제목·본문이 `_global.bulkPostAction` 으로 갈린다. 삭제는 사유가 없고(이력에 남길 문장이 없다), 블라인드·복구는 사유 칸을 둔다.
          본인인증 정책이 켜져 있으면 확인 클릭이 428 을 받고 엔진 인터셉터가 인증 모달을 연다 — 여기서는 로딩 표시만 내린다 -->
-    <modal data-ref="bulk_post_action_modal" title="{{_global.bulkPostAction === 'delete' ? '$t:sirsoft-board.admin.posts.bulk.modal.delete_title' : _global.bulkPostAction === 'blind' ? '$t:sirsoft-board.admin.posts.bulk.modal.blind_title' : '$t:sirsoft-board.admin.posts.bulk.modal.restore_title'}}" size="sm">
+    <modal data-type="composite" data-ref="bulk_post_action_modal" title="{{_global.bulkPostAction === 'delete' ? '$t:sirsoft-board.admin.posts.bulk.modal.delete_title' : _global.bulkPostAction === 'blind' ? '$t:sirsoft-board.admin.posts.bulk.modal.blind_title' : '$t:sirsoft-board.admin.posts.bulk.modal.restore_title'}}" size="sm">
       <meta editor_label="$t:sirsoft-board.admin.posts.bulk.modal.delete_title"/>
       <!-- 확인 표식은 본문 래퍼에 건다 — `<modal>` 의 data-testid 는 Modal 컴포넌트가
            ModalProps 외의 prop 을 흘려보내지 않아 DOM 에 닿지 않는다(실측 확인). -->
@@ -465,7 +465,7 @@
   </modal>
   <modal>
     <!-- 일괄 처리 실패를 알리는 창 — 서버 문구를 그대로 싣고, 없으면 공통 문구로 떨어진다 -->
-    <modal data-ref="bulk_post_error_modal" title="$t:common.error" size="sm">
+    <modal data-type="composite" data-ref="bulk_post_error_modal" title="$t:common.error" size="sm">
       <div class="py-2">
         <p class="text-gray-700 dark:text-gray-300">{{_global.errorMessage || $t:common.error_occurred}}</p>
       </div>

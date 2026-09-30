@@ -1,5 +1,7 @@
 <?php
 
+// audit:allow api-doc-coverage reason: 마일리지 알림 활성 채널 계산이 코어 채널 후보 진입점을 거치도록 바꾼 내부 변경 — 요청/응답 계약 불변(api:docgen --check drift 없음)
+
 namespace Modules\Sirsoft\Ecommerce\Http\Controllers\Admin;
 
 use App\Extension\HookManager;
@@ -267,6 +269,33 @@ class EcommerceSettingsController extends AdminBaseController
                 500
             );
         }
+    }
+
+    /**
+     * 설정 응답에 공개 자산 디스크 카탈로그(available_public_asset_disks)를 붙입니다.
+     *
+     * 저장된 basic_info.public_asset_disk 가 카탈로그에 없으면(그 디스크를 등록하던 확장이 꺼진 경우)
+     * 실제 동작인 스트리밍(`none`)으로 바꿔 싣고, 사라진 디스크 이름을
+     * `basic_info.public_asset_disk_unavailable` 로 알립니다. 저장값을 그대로 실으면 화면의 선택 칸이
+     * 어떤 선택지와도 맞지 않은 채 보이고, 기본정보 탭 저장이 다른 항목만 고쳐도 매번 카탈로그 검증(422)에
+     * 막힙니다. 런타임도 이미 고아 디스크를 스트리밍으로 폴백하므로 표시가 동작과 같아집니다.
+     * 안내 키는 저장 요청에서 제외되어 설정에 남지 않습니다(StoreEcommerceSettingsRequest).
+     *
+     * @param  array<string, mixed>  $settings  응답에 실을 설정
+     * @return array<string, mixed> 카탈로그를 붙이고 쓸 수 없게 된 디스크를 정리한 설정
+     */
+    private function withPublicAssetCatalog(array $settings): array
+    {
+        $catalog = app(DriverRegistryService::class)->getAvailableDrivers('public_asset');
+        $settings['available_public_asset_disks'] = $catalog;
+
+        $stored = $settings['basic_info']['public_asset_disk'] ?? '';
+        if (is_string($stored) && $stored !== '' && ! in_array($stored, array_column($catalog, 'id'), true)) {
+            $settings['basic_info']['public_asset_disk'] = 'none';
+            $settings['basic_info']['public_asset_disk_unavailable'] = $stored;
+        }
+
+        return $settings;
     }
 
     /**

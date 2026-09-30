@@ -19,6 +19,17 @@
             "initLocal": "form",
             "refetchOnMount": true,
             "comment": "저장된 플러그인 설정을 폼 초기값으로 싣는다. refetchOnMount 라 저장하고 돌아와도 서버 값이 다시 실린다"
+        },
+        {
+            "id": "webhook_info",
+            "label_key": "$t:sirsoft-tosspayments.editor.data_source.webhook_info",
+            "type": "api",
+            "endpoint": "/api/plugins/sirsoft-tosspayments/admin/webhook-url",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "initLocal": "webhookInfo",
+            "comment": "가상계좌 입금통보 웹훅 URL — 토스 개발자센터에 그대로 붙여 넣는 값이라 사이트 주소까지 붙은 전체 URL 을 서버에서 받아 보여 준다"
         }
     ],
     "permissions": [
@@ -1270,7 +1281,7 @@
                                                         "props": {
                                                             "className": "flex-1 overflow-x-auto font-mono text-sm bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded px-3 py-2 whitespace-nowrap"
                                                         },
-                                                        "text": "/plugins/sirsoft-tosspayments/webhook/deposit"
+                                                        "text": "{{_local.webhookInfo?.url ?? '/plugins/sirsoft-tosspayments/webhook/deposit'}}"
                                                     },
                                                     {
                                                         "id": "webhook_copy_button",
@@ -1288,9 +1299,9 @@
                                                             {
                                                                 "comment": "웹훅 주소는 운영자가 토스 상점관리자에 직접 등록해야 입금통보가 들어온다. 그래서 보여 주기만 하지 않고 복사까지 시켜 준다",
                                                                 "type": "click",
-                                                                "handler": "copyToClipboard",
+                                                                "handler": "sirsoft-tosspayments.copyToClipboard",
                                                                 "params": {
-                                                                    "text": "/plugins/sirsoft-tosspayments/webhook/deposit"
+                                                                    "text": "{{_local.webhookInfo?.url ?? '/plugins/sirsoft-tosspayments/webhook/deposit'}}"
                                                                 },
                                                                 "onSuccess": {
                                                                     "handler": "toast",

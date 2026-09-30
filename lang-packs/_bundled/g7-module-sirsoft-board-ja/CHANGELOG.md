@@ -8,6 +8,9 @@
 
 ### Added
 
+- 관리자 게시글·답변 카드의 첨부파일 내려받기 실패 안내(`admin/posts.detail.download_failed`)의 일본어 번역을 추가했습니다.
+- 상품 문의 연동 실패 문구(문의·답변 수정·삭제 실패, 답변 없음, 게시판 설정 변경으로 글을 찾을 수 없음)와 활동 이력의 비밀글 표기 일본어 번역을 추가했습니다.
+- 레이아웃 편집기에 쓰이는 개인정보 보유기간 대상·직권 실행 창 이름(`privacy_retention.targets.editor_label`·`manual_run.editor_label`)의 일본어 번역을 추가했습니다.
 - 게시판 사용자 권한 「공지 등록」(`posts.write-notice`)의 일본어 번역을 추가했습니다 — 권한 설정 화면의 권한 이름·설명(「お知らせ登録」), 게시판 기본 권한 표와 저장 검증의 항목 이름, 권한 없이 공지로 지정할 때의 거부 메시지(`permission.notice_denied`)입니다.
 - 게시판 환경설정 「개인정보 보유기간」 카드(작성 IP·비회원 글)의 「지금 실행」 버튼과 직권 실행 확인 창·진행 상태 줄 문구(`admin/settings.privacy_retention.manual_run.*`)와 편집기 데이터 소스 이름의 일본어 번역을 추가했습니다. 두 축을 한 줄씩 정리하면서 줄 이름·대상 건수·공용 「対象を表示」(`privacy_retention.targets.row_ip`·`row_guest`·`count`·`view`)를 더하고, 쓰지 않게 된 축별 건수·보기 문구는 뺐습니다.
 - 게시판 환경설정 「개인정보 보유기간」 카드의 대상 건수(작성 IP·비회원 글)와 「대상 보기」 명단 창 문구(`admin/settings.privacy_retention.targets.*`), 명단 열 이름과 글·댓글 구분(`messages.privacy_retention.target_columns.*`·`target_kinds.*`), 레이아웃 편집기의 데이터 소스 이름(`editor.data_source.privacyTargets`)의 일본어 번역을 추가했습니다.

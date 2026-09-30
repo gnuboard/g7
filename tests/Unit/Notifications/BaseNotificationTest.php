@@ -16,6 +16,23 @@ use Tests\TestCase;
  */
 class BaseNotificationTest extends TestCase
 {
+    /**
+     * 설치된 채널 제공 확장이 코어 채널 훅에 답하면 기본 채널 기대가 흔들리므로 비운 채 시작한다.
+     *
+     * @return void 반환값 없음
+     */
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        HookManager::clearFilter('core.notification.channels');
+    }
+
+    /**
+     * Mockery 컨테이너를 정리합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         Mockery::close();
@@ -24,6 +41,10 @@ class BaseNotificationTest extends TestCase
 
     /**
      * BaseNotification이 Notification을 상속하는지 확인
+     *
+     * @effects base_notification_defaults_to_mail_channel
+     *
+     * @return void 반환값 없음
      */
     public function test_extends_laravel_notification(): void
     {
@@ -34,6 +55,10 @@ class BaseNotificationTest extends TestCase
 
     /**
      * via()가 기본적으로 ['mail'] 채널을 반환하는지 확인
+     *
+     * @effects base_notification_defaults_to_mail_channel
+     *
+     * @return void 반환값 없음
      */
     public function test_via_returns_mail_channel_by_default(): void
     {
@@ -47,6 +72,10 @@ class BaseNotificationTest extends TestCase
 
     /**
      * Filter 훅으로 채널을 추가할 수 있는지 확인
+     *
+     * @effects domain_channel_hook_receives_type_and_notifiable
+     *
+     * @return void 반환값 없음
      */
     public function test_hook_can_add_channels(): void
     {
@@ -74,6 +103,10 @@ class BaseNotificationTest extends TestCase
 
     /**
      * 훅에 notification type이 전달되는지 확인
+     *
+     * @effects domain_channel_hook_receives_type_and_notifiable
+     *
+     * @return void 반환값 없음
      */
     public function test_hook_receives_notification_type(): void
     {
@@ -101,6 +134,10 @@ class BaseNotificationTest extends TestCase
 
     /**
      * 훅에 notifiable 객체가 전달되는지 확인
+     *
+     * @effects domain_channel_hook_receives_type_and_notifiable
+     *
+     * @return void 반환값 없음
      */
     public function test_hook_receives_notifiable(): void
     {
@@ -128,6 +165,10 @@ class BaseNotificationTest extends TestCase
 
     /**
      * 훅 이름이 {hookPrefix}.notification.channels 형식인지 확인
+     *
+     * @effects domain_channel_hook_receives_type_and_notifiable
+     *
+     * @return void 반환값 없음
      */
     public function test_hook_name_format(): void
     {
@@ -156,6 +197,10 @@ class BaseNotificationTest extends TestCase
 
     /**
      * 게시판 모듈 훅 접두사 형식 확인
+     *
+     * @effects domain_channel_hook_receives_type_and_notifiable
+     *
+     * @return void 반환값 없음
      */
     public function test_board_module_hook_prefix(): void
     {
@@ -182,11 +227,79 @@ class BaseNotificationTest extends TestCase
     }
 
     /**
+     * 채널 제공 확장은 코어 훅 하나에 답해 어느 도메인의 알림에도 후보를 더한다.
+     *
+     * 문자 같은 채널 플러그인이 도메인 접두사 목록(core.auth·게시판·이커머스 …)을 스스로 적지
+     * 않아도, 코어가 모든 접두사의 채널 결정에서 `core.notification.channels` 를 발화하고
+     * 접두사를 넷째 인자로 넘긴다.
+     *
+     * @scenario recipient_type=member, channel=mail
+     *
+     * @effects core_channel_candidates_hook_answers_every_domain
+     *
+     * @return void 반환값 없음
+     */
+    public function test_core_channel_hook_adds_candidates_for_any_domain_prefix(): void
+    {
+        $receivedPrefixes = [];
+
+        HookManager::addFilter(
+            'core.notification.channels',
+            function (array $channels, string $type, ?object $notifiable, string $hookPrefix) use (&$receivedPrefixes) {
+                $receivedPrefixes[] = $hookPrefix;
+                $channels[] = 'sms';
+
+                return $channels;
+            }
+        );
+
+        $user = new User(['email' => 'test@example.com', 'name' => 'Test User']);
+
+        foreach (['core.auth', 'vendor-anything', 'future.domain'] as $prefix) {
+            $channels = $this->createConcreteNotification($prefix, 'welcome')->via($user);
+            $this->assertSame(['mail', 'sms'], $channels, "{$prefix} 알림에도 코어 훅 후보가 더해져야 합니다.");
+        }
+
+        $this->assertSame(['core.auth', 'vendor-anything', 'future.domain'], $receivedPrefixes);
+
+        HookManager::clearFilter('core.notification.channels');
+    }
+
+    /**
+     * 도메인 훅은 코어 훅 뒤에 돌아, 채널 제공 확장이 더한 후보를 자기 설정으로 좁힐 수 있다.
+     *
+     * @scenario recipient_type=member, channel=mail
+     *
+     * @effects domain_channel_hook_runs_after_core_hook
+     *
+     * @return void 반환값 없음
+     */
+    public function test_domain_channel_hook_runs_after_core_hook(): void
+    {
+        HookManager::addFilter('core.notification.channels', function (array $channels) {
+            $channels[] = 'sms';
+
+            return $channels;
+        });
+        HookManager::addFilter('test.prefix.notification.channels', function (array $channels) {
+            // 도메인 설정에서 sms 를 꺼 둔 상황 — 코어 훅이 더한 후보를 받아 뺀다
+            return array_values(array_diff($channels, ['sms']));
+        });
+
+        $user = new User(['email' => 'test@example.com', 'name' => 'Test User']);
+
+        $this->assertSame(['mail'], $this->createConcreteNotification('test.prefix', 'welcome')->via($user));
+
+        HookManager::clearFilter('core.notification.channels');
+        HookManager::clearFilter('test.prefix.notification.channels');
+    }
+
+    /**
      * 테스트용 구체 알림 클래스를 생성합니다.
      *
      * @param string $hookPrefix 훅 접두사
      * @param string $notificationType 알림 유형
-     * @return BaseNotification
+     * @return BaseNotification 테스트용 구체 알림
      */
     private function createConcreteNotification(
         string $hookPrefix = 'test.prefix',
@@ -194,21 +307,43 @@ class BaseNotificationTest extends TestCase
     ): BaseNotification {
         return new class($hookPrefix, $notificationType) extends BaseNotification
         {
+            /**
+             * 테스트용 훅 접두사와 알림 유형을 받습니다.
+             *
+             * @param  string  $hookPrefix  훅 접두사
+             * @param  string  $notificationType  알림 유형
+             */
             public function __construct(
                 private string $hookPrefix,
                 private string $notificationType
             ) {}
 
+            /**
+             * 테스트용 훅 접두사를 반환합니다.
+             *
+             * @return string 훅 접두사
+             */
             protected function getHookPrefix(): string
             {
                 return $this->hookPrefix;
             }
 
+            /**
+             * 테스트용 알림 유형을 반환합니다.
+             *
+             * @return string 알림 유형
+             */
             protected function getNotificationType(): string
             {
                 return $this->notificationType;
             }
 
+            /**
+             * 테스트용 빈 메일 처리입니다.
+             *
+             * @param  object  $notifiable  알림 수신자
+             * @return void 렌더된 메일 메시지
+             */
             public function toMail(object $notifiable): void
             {
                 // 테스트용 빈 구현

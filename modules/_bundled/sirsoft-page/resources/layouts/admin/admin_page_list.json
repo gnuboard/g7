@@ -268,7 +268,7 @@
                                                                     "type": "text",
                                                                     "placeholder": "$t:sirsoft-page.admin.page.search_placeholder",
                                                                     "value": "{{_local.searchQuery || ''}}",
-                                                                    "className": "flex-1 min-w-0"
+                                                                    "className": "input flex-1 min-w-[120px]"
                                                                 }
                                                             }
                                                         ]
@@ -383,7 +383,7 @@
                                             "type": "text",
                                             "placeholder": "$t:sirsoft-page.admin.page.search_placeholder",
                                             "value": "{{_local.searchQuery || ''}}",
-                                            "className": "flex-1 min-w-0"
+                                            "className": "input flex-1 min-w-[200px]"
                                         }
                                     },
                                     {

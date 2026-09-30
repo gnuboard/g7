@@ -248,7 +248,8 @@
     "filter_rating_3": "⭐⭐⭐ 3点",
     "filter_rating_2": "⭐⭐ 2点",
     "filter_rating_1": "⭐ 1点",
-    "filter_reset": "フィルターをリセット"
+    "filter_reset": "フィルターをリセット",
+    "no_purchasable_option": "現在、購入可能なオプションがない商品です。"
   },
   "cart": {
     "title": "カート",
@@ -495,7 +496,8 @@
     "refund_bank_select": "銀行選択",
     "refund_bank_account_placeholder": "口座番号(ハイフンなしで入力)",
     "refund_bank_holder_placeholder": "預金者",
-    "refund_bank_partial_notice": "3つのいずれかを入力すると、残りも入力する必要があります。"
+    "refund_bank_partial_notice": "3つのいずれかを入力すると、残りも入力する必要があります。",
+    "no_payment_methods": "現在選択できる決済方法がありません。ショップにお問い合わせください。"
   },
   "order_complete": {
     "page_title": "注文完了",

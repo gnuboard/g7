@@ -7,6 +7,7 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Plugins\Sirsoft\Gdpr\Enums\GdprPolicyChangeType;
 use Plugins\Sirsoft\Gdpr\Models\GdprPolicyVersion;
 use Plugins\Sirsoft\Gdpr\Repositories\Contracts\GdprPolicyVersionRepositoryInterface;
+use Plugins\Sirsoft\Gdpr\Support\PrivacyPolicyUrl;
 
 /**
  * GDPR 정책 버전 발행 서비스
@@ -157,7 +158,9 @@ class GdprPolicyVersionService
      * Material (재동의 트리거):
      * - cookie_categories 의 key 추가/삭제/rename
      * - cookie_categories.*.description 변경 (목적/처리 범위 변경)
-     * - privacy_policy_slug 변경 (정책 본문 위치 변경)
+     * - 개인정보처리방침 주소 변경 (정책 본문 위치 변경). 1.0.x 스냅샷의 privacy_policy_slug 는
+     *   그 시절 링크 경로(`/page/{slug}`)로 풀어 비교한다 — 키 이름만 바뀐 같은 주소를 변경으로
+     *   읽으면 업그레이드 뒤 첫 비교에서 전 회원 재동의가 걸린다.
      *
      * Non-material:
      * - 도메인 추가/삭제 (blocked_domains.*)
@@ -185,10 +188,8 @@ class GdprPolicyVersionService
             return GdprPolicyChangeType::Material;
         }
 
-        // privacy_policy_slug 변경 감지
-        $oldSlug = (string) ($oldSnapshot['privacy_policy_slug'] ?? '');
-        $newSlug = (string) ($newSnapshot['privacy_policy_slug'] ?? '');
-        if ($oldSlug !== $newSlug) {
+        // 처리방침 주소 변경 감지 (옛 스냅샷의 슬러그는 같은 규칙으로 풀어 비교)
+        if (PrivacyPolicyUrl::fromSnapshot($oldSnapshot)['url'] !== PrivacyPolicyUrl::fromSnapshot($newSnapshot)['url']) {
             return GdprPolicyChangeType::Material;
         }
 

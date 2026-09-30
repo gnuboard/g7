@@ -74,8 +74,6 @@ describe('paymentCloseMessageListener', () => {
             closeReportUrl: '/plugins/sirsoft-pay_kginicis/payment/close-report',
             oid: 'ORD-CLOSE-001',
             price: 10000,
-            buyer_email: 'buyer@example.com',
-            buyer_phone: '01012345678',
             payment_method: 'card',
         });
         installPaymentCloseMessageListener();
@@ -93,11 +91,10 @@ describe('paymentCloseMessageListener', () => {
 
         expect(apiPost).toHaveBeenCalledWith(
             '/plugins/sirsoft-pay_kginicis/payment/close-report',
+            // 주문자 연락처는 소유 증명이 아니므로 보내지 않는다 (KVE-2026-2434).
             {
                 oid: 'ORD-CLOSE-001',
                 price: 10000,
-                buyer_email: 'buyer@example.com',
-                buyer_phone: '01012345678',
                 payment_method: 'card',
                 reason: 'inicis-close-url',
             },
@@ -231,8 +228,6 @@ describe('결제 실패 화면 복귀 보고', () => {
         closeReportUrl: '/plugins/sirsoft-pay_kginicis/payment/close-report',
         oid: 'ORD-KGI-RETURN-001',
         price: 10000,
-        buyer_email: 'buyer@example.com',
-        buyer_phone: '01012345678',
     };
 
     /**
@@ -257,7 +252,7 @@ describe('결제 실패 화면 복귀 보고', () => {
         clearStandardPaymentCloseReportContext();
     });
 
-    it('실패 화면으로 돌아오면 저장해 둔 구매자 정보로 보고한다', async () => {
+    it('실패 화면으로 돌아오면 저장해 둔 주문 정보로 보고한다', async () => {
         const apiPost = vi.fn().mockResolvedValue({ success: true });
         windowRecord().G7Core = { api: { post: apiPost } };
 
@@ -336,5 +331,90 @@ describe('결제 실패 화면 복귀 보고', () => {
         await reportStandardPaymentFailureOnReturn();
 
         expect(apiPost).not.toHaveBeenCalled();
+    });
+});
+
+/**
+ * 소유자 증명 헤더 (KVE-2026-2434)
+ *
+ * close-report 는 주문을 실패·취소로 바꾸므로 서버가 주문 소유자만 받아 준다. 회원은 G7Core.api 가
+ * Bearer 를 싣고, 비회원은 체크아웃이 저장해 둔 조회 토큰(X-Guest-Order-Token)을 실어야 한다.
+ */
+describe('소유자 증명 헤더', () => {
+    const CONTEXT = {
+        closeReportUrl: '/plugins/sirsoft-pay_kginicis/payment/close-report',
+        oid: 'ORD-KGI-OWNER-001',
+        price: 10000,
+        payment_method: 'card',
+    };
+
+    /**
+     * 결제창 닫힘 메시지를 보내 보고를 발생시킨다.
+     */
+    async function dispatchClose(): Promise<void> {
+        window.dispatchEvent(new MessageEvent('message', {
+            origin: window.location.origin,
+            data: { source: 'sirsoft-pay_kginicis', type: 'payment-window-closed', reason: 'inicis-close-url' },
+        }));
+        await new Promise((resolve) => setTimeout(resolve, 0));
+    }
+
+    beforeEach(() => {
+        window.history.pushState({}, '', '/shop/checkout');
+        window.sessionStorage.clear();
+        window.localStorage.clear();
+        clearStandardPaymentCloseReportContext();
+        vi.spyOn(console, 'info').mockImplementation(() => {});
+        vi.spyOn(console, 'warn').mockImplementation(() => {});
+    });
+
+    afterEach(() => {
+        delete windowRecord().G7Core;
+        delete windowRecord().__sirsoftKginicisPaymentCloseListenerInstalled;
+        window.sessionStorage.clear();
+        window.localStorage.clear();
+        clearStandardPaymentCloseReportContext();
+        vi.restoreAllMocks();
+    });
+
+    it('비회원이면 저장된 조회 토큰을 X-Guest-Order-Token 으로 싣는다', async () => {
+        const apiPost = vi.fn().mockResolvedValue({ success: true });
+        windowRecord().G7Core = { api: { post: apiPost }, state: { setLocal: vi.fn() } };
+        window.sessionStorage.setItem('g7_guest_order_token', '1999999999|guest-token');
+        markStandardPaymentCloseReportContext(CONTEXT);
+        installPaymentCloseMessageListener();
+
+        await dispatchClose();
+
+        expect(apiPost).toHaveBeenCalledWith(
+            '/plugins/sirsoft-pay_kginicis/payment/close-report',
+            expect.objectContaining({ oid: 'ORD-KGI-OWNER-001' }),
+            { headers: { 'X-Guest-Order-Token': '1999999999|guest-token' } },
+        );
+    });
+
+    it('회원이면 비회원 토큰을 싣지 않는다 — Bearer 는 G7Core.api 몫이다', async () => {
+        const apiPost = vi.fn().mockResolvedValue({ success: true });
+        windowRecord().G7Core = { api: { post: apiPost }, state: { setLocal: vi.fn() } };
+        window.localStorage.setItem('auth_token', 'member-token');
+        window.sessionStorage.setItem('g7_guest_order_token', '1999999999|guest-token');
+        markStandardPaymentCloseReportContext(CONTEXT);
+        installPaymentCloseMessageListener();
+
+        await dispatchClose();
+
+        expect(apiPost).toHaveBeenCalledTimes(1);
+        expect(apiPost.mock.calls[0]).toHaveLength(2);
+    });
+
+    it('토큰이 없으면 헤더 없이 보내고 거부돼도 화면 흐름을 깨지 않는다', async () => {
+        const apiPost = vi.fn().mockRejectedValue(new Error('403'));
+        windowRecord().G7Core = { api: { post: apiPost }, state: { setLocal: vi.fn() } };
+        markStandardPaymentCloseReportContext(CONTEXT);
+        installPaymentCloseMessageListener();
+
+        await dispatchClose();
+
+        expect(apiPost.mock.calls[0]).toHaveLength(2);
     });
 });

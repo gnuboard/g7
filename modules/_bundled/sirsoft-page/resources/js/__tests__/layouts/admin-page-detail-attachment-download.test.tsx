@@ -13,14 +13,18 @@
  * 수정: 카드를 Div + actions:[{click → downloadAttachment}] 로 전환(토큰 동반),
  *   아이콘 name 을 유효한 FA 이름 "download" 로 교체.
  *
- * @scenario surface=admin_page_detail
- * @effects download_card_uses_handler_not_anchor
- * @effects download_icon_valid_fa_name
+ * 결함 C: 그 `downloadAttachment` 는 관리자 템플릿(sirsoft-admin_basic)이 등록한 핸들러라, 다른 관리자
+ *   템플릿에서는 카드를 눌러도 아무 일도 일어나지 않았다(레이아웃 검사도 「미등록 핸들러」로 경고).
+ *   이 모듈이 자기 핸들러(`sirsoft-page.downloadAttachment`)를 두고 실패 시 안내를 띄운다.
+ *
+ * 시나리오: page-attachment-serving.yaml(카드·아이콘) · admin-attachment-download-handler.yaml(핸들러 소유)
  */
 
 import { describe, it, expect } from 'vitest';
 
 import adminPageDetail from '../../../layouts/admin/admin_page_detail.json';
+import { handlerMap } from '../../handlers';
+import { downloadAttachmentHandler } from '../../handlers/downloadAttachment';
 
 type Node = Record<string, unknown> & { children?: unknown; actions?: unknown };
 
@@ -47,6 +51,9 @@ function collectNodes(node: unknown, predicate: (n: Node) => boolean): Node[] {
 const HEROICON_NAMES = ['arrow-down-tray', 'arrow-up-tray', 'arrow-down-circle'];
 
 describe('별건 — 관리자 페이지 상세 첨부 다운로드 카드', () => {
+    /**
+     * @effects download_card_uses_downloadAttachment_handler_not_anchor
+     */
     it('첨부 카드는 <A href> 직접 링크가 아니다 (토큰 미동반 401 회귀 차단)', () => {
         const cards = collectNodes(adminPageDetail, (n) => typeof n.id === 'string' && n.id.startsWith('attachment_card'));
         expect(cards.length).toBeGreaterThan(0);
@@ -58,7 +65,12 @@ describe('별건 — 관리자 페이지 상세 첨부 다운로드 카드', () 
         }
     });
 
-    it('첨부 카드는 click 액션으로 downloadAttachment 핸들러를 호출한다', () => {
+    /**
+     * @scenario outcome=success
+     * @effects admin_card_calls_module_owned_download_handler
+     * @effects download_card_uses_downloadAttachment_handler_not_anchor
+     */
+    it('첨부 카드는 click 액션으로 이 모듈이 소유한 downloadAttachment 핸들러를 호출한다', () => {
         const cards = collectNodes(adminPageDetail, (n) => typeof n.id === 'string' && n.id.startsWith('attachment_card'));
         const card = cards[0];
 
@@ -66,13 +78,31 @@ describe('별건 — 관리자 페이지 상세 첨부 다운로드 카드', () 
         const clickAction = actions.find((a) => a.type === 'click');
 
         expect(clickAction).toBeDefined();
-        expect(clickAction?.handler).toBe('downloadAttachment');
+        // 템플릿 핸들러(접두어 없는 downloadAttachment)에 기대지 않는다 — 다른 관리자 템플릿에서 무반응 회귀 차단
+        expect(clickAction?.handler).toBe('sirsoft-page.downloadAttachment');
+        expect(handlerMap.downloadAttachment).toBe(downloadAttachmentHandler);
 
         const params = (clickAction?.params ?? {}) as Record<string, unknown>;
         expect(params.url).toContain('download_url');
         expect(params.filename).toContain('original_filename');
     });
 
+    /**
+     * @scenario outcome=failure
+     * @effects download_failure_shows_error_toast
+     */
+    it('내려받기에 실패하면 오류 안내를 띄운다', () => {
+        const cards = collectNodes(adminPageDetail, (n) => typeof n.id === 'string' && n.id.startsWith('attachment_card'));
+        const clickAction = ((cards[0].actions ?? []) as Array<Record<string, unknown>>).find((a) => a.type === 'click');
+        const onError = clickAction?.onError as Record<string, unknown> | undefined;
+
+        expect(onError?.handler).toBe('toast');
+        expect((onError?.params as Record<string, unknown>).message).toBe('$t:sirsoft-page.admin.page.errors.download_failed');
+    });
+
+    /**
+     * @effects download_icon_uses_valid_fa_name_not_heroicon
+     */
     it('다운로드 아이콘은 유효한 Font Awesome 이름을 쓴다 (arrow-down-tray 미렌더 회귀 차단)', () => {
         const icons = collectNodes(adminPageDetail, (n) => n.name === 'Icon');
         const iconNames = icons

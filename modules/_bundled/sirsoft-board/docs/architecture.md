@@ -67,11 +67,12 @@ Service 를 건드리지 않고 리스너 추가만으로 끝납니다.
 | `database/migrations/` | 마이그레이션 | 한국어 comment + `down()` 필수, 기설치본은 업그레이드 스텝으로 백필 |
 | `database/seeders/` | 시더 | composer autoload 등록 + `extension:update-autoload` |
 | `upgrades/` | 업그레이드 스텝 | DB·설정 구조 변경 시 작성 (모듈/플러그인 전용) |
-| `resources/layouts/` | 레이아웃 소스 `.g7.html` (짝 `.json` 은 굽기 산출) | `php artisan module:update sirsoft-board --force` (빌드 불필요) |
+| `resources/layouts/` | 레이아웃 소스 `.g7.html` (짝 `.json` 은 굽기 산출. 컴포넌트 종류는 `data-type`, 컴파일은 템플릿과 무관) | `php artisan module:update sirsoft-board --force` (빌드 불필요) |
 | `resources/routes/` | 라우트 → 레이아웃 매핑 (분할) | `php artisan module:update sirsoft-board --force` |
 | `resources/js/` | 프론트 엔트리·핸들러 | `php artisan module:build` → `php artisan module:update sirsoft-board --force` |
 | `resources/extensions/` | 다른 확장 레이아웃에 주입하는 조각 | `php artisan module:update sirsoft-board --force` |
 | `editor-spec.json` | 레이아웃 편집기 스펙 | `php artisan module:update sirsoft-board --force` |
+| `dist/` | 커밋되는 빌드 산출물 | `--production` 으로 재빌드 (sourceMappingURL 잔존 금지) |
 | `config/` | 확장 config | 설정 기본값은 settings 스키마와 어긋나지 않게 |
 | `tests/` | 테스트 | 변경 범위만 필터 실행 |
 | `CHANGELOG.md` | 변경 이력 | 버전 상향 시 항목 추가 (미기재 시 버전 상향 불가) |

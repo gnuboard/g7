@@ -29,6 +29,11 @@ class NodeCompilerTest extends LayoutMarkupTestCase
 {
     private NodeCompiler $compiler;
 
+    /**
+     * 테스트 준비 — 필요한 서비스와 임시 자원을 만듭니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -43,11 +48,16 @@ class NodeCompilerTest extends LayoutMarkupTestCase
     // ---------------------------------------------------------------------
 
     /**
+     * 픽스처 마크업이 기대 JSON 으로 정확히 컴파일된다.
+     *
      * @scenario compile_unit=node,source_health=valid
      *
      * @effects tag_resolves_to_component_name_and_type,
      *          attributes_split_into_props_directives_and_type_literals,
      *          node_json_key_order_is_deterministic
+     *
+     * @param  string  $fixture  픽스처 이름
+     * @return void 반환값 없음
      */
     #[DataProvider('fixtureProvider')]
     public function test_fixture_pair_compiles_to_expected_json(string $fixture): void
@@ -62,7 +72,9 @@ class NodeCompilerTest extends LayoutMarkupTestCase
     }
 
     /**
-     * @return array<string, array{0: string}>
+     * 픽스처 쌍(마크업·기대 JSON) 목록.
+     *
+     * @return array<string, 반환값
      */
     public static function fixtureProvider(): array
     {
@@ -79,44 +91,67 @@ class NodeCompilerTest extends LayoutMarkupTestCase
     // ---------------------------------------------------------------------
 
     /**
+     * 태그 → 이름은 표기 규칙, 종류는 `data-type`(생략 시 basic) — 템플릿 컴포넌트 목록을 보지 않는다.
+     *
+     * @scenario compile_unit=node,source_health=valid
+     *
      * @effects tag_resolves_to_component_name_and_type
+     *
+     * @return void 반환값 없음
      */
-    public function test_tag_resolves_type_from_manifest_entry_not_category(): void
+    public function test_tag_resolves_name_by_notation_and_type_by_data_type(): void
     {
-        // RichSelect 는 매니페스트의 layout 배열에 실려 있으나 엔트리는 type=composite 를 선언한다.
-        // 런타임이 등록하는 메타데이터가 엔트리 객체 자체이므로 엔트리 값이 실동작을 정한다.
-        $node = $this->compile('<rich-select data-ref="picker"/>');
+        $node = $this->compile('<rich-select data-type="composite" data-ref="picker"/>');
 
         $this->assertSame('composite', $node['type']);
         $this->assertSame('RichSelect', $node['name']);
+        // `data-type` 은 노드 키로 소비되고 props 로 새지 않는다.
+        $this->assertArrayNotHasKey('data-type', $node['props'] ?? []);
+
+        $this->assertSame(['type' => 'basic', 'name' => 'Div'], array_intersect_key($this->compile('<div/>'), ['type' => 1, 'name' => 1]));
+        $this->assertSame('layout', $this->compile('<container data-type="layout"/>')['type']);
     }
 
     /**
+     * 템플릿에 없는 태그도 표기 규칙으로 컴파일된다 — 컴포넌트가 있는지는 JSON 과 같이 런타임이 판정한다.
+     *
+     * 템플릿마다 결과가 갈리면 설치·템플릿 교체·조각 주입이 템플릿에 묶인다(중대 설계 결함의 원인).
+     *
+     * @scenario compile_unit=node,source_health=valid
+     *
+     * @effects compile_output_does_not_depend_on_any_template
+     *
+     * @return void 반환값 없음
+     */
+    public function test_tag_not_in_any_template_still_compiles_by_notation(): void
+    {
+        $node = $this->compile('<acme-rating-stars data-type="composite" value="3"/>');
+
+        $this->assertSame('AcmeRatingStars', $node['name']);
+        $this->assertSame('composite', $node['type']);
+    }
+
+    /**
+     * `data-type` 은 세 값 중 하나를 문자 그대로 적어야 한다.
+     *
      * @scenario compile_unit=node,source_health=invalid
      *
-     * @effects unknown_tag_is_rejected_with_registry_suggestion
+     * @effects invalid_component_type_is_rejected
+     *
+     * @return void 반환값 없음
      */
-    public function test_unknown_tag_is_rejected_with_suggestion(): void
+    public function test_invalid_component_type_is_rejected(): void
     {
-        $error = $this->compileError('<data-gird/>');
-
-        $this->assertSame(LayoutMarkupErrorCode::UnknownTagWithSuggestion, $error->getErrorCode());
-        $this->assertStringContainsString('data-grid', $error->getDetail());
+        $this->assertSame(LayoutMarkupErrorCode::InvalidComponentType, $this->compileError('<div data-type="widget"/>')->getErrorCode());
+        $this->assertSame(LayoutMarkupErrorCode::InvalidComponentType, $this->compileError('<div :data-type="\'composite\'"/>')->getErrorCode());
     }
 
     /**
-     * @effects unknown_tag_is_rejected_with_registry_suggestion
-     */
-    public function test_unknown_tag_without_close_candidate_names_the_template(): void
-    {
-        $error = $this->compileError('<foreach/>');
-
-        $this->assertSame(LayoutMarkupErrorCode::UnknownTag, $error->getErrorCode());
-        $this->assertStringContainsString('sirsoft-admin_basic', $error->getDetail());
-    }
-
-    /**
+     * 문서 루트 전용 태그가 노드 자리에 오면 거부된다.
+     *
      * @effects root_only_tag_in_node_position_is_rejected
+     *
+     * @return void 반환값 없음
      */
     public function test_root_only_tag_in_node_position_is_rejected(): void
     {
@@ -131,9 +166,13 @@ class NodeCompilerTest extends LayoutMarkupTestCase
     }
 
     /**
+     * `<include>` 는 조각 참조 노드로 컴파일된다.
+     *
      * @scenario compile_unit=node,source_health=valid
      *
      * @effects include_compiles_to_a_partial_reference_node
+     *
+     * @return void 반환값 없음
      */
     public function test_include_compiles_to_a_partial_reference_node(): void
     {
@@ -145,9 +184,15 @@ class NodeCompilerTest extends LayoutMarkupTestCase
     }
 
     /**
+     * 조각 참조는 다른 속성·자식을 받지 않는다.
+     *
      * @scenario compile_unit=node,source_health=invalid
      *
      * @effects include_reference_rejects_extra_attributes_and_children
+     *
+     * @param  string  $source  마크업 소스
+     * @param  LayoutMarkupErrorCode  $code  오류 코드
+     * @return void 반환값 없음
      */
     #[DataProvider('invalidIncludeProvider')]
     public function test_include_reference_rejects_extra_attributes_and_children(string $source, LayoutMarkupErrorCode $code): void
@@ -157,7 +202,9 @@ class NodeCompilerTest extends LayoutMarkupTestCase
     }
 
     /**
-     * @return array<string, array{0: string, 1: LayoutMarkupErrorCode}>
+     * 잘못된 `<include>` 사례 목록.
+     *
+     * @return array<string, 반환값
      */
     public static function invalidIncludeProvider(): array
     {
@@ -169,9 +216,14 @@ class NodeCompilerTest extends LayoutMarkupTestCase
     }
 
     /**
+     * 문서 섹션 태그가 노드 자리에 오면 거부된다.
+     *
      * @scenario compile_unit=node,source_health=invalid
      *
      * @effects document_section_tag_in_node_position_is_rejected
+     *
+     * @param  string  $source  마크업 소스
+     * @return void 반환값 없음
      */
     #[DataProvider('sectionTagProvider')]
     public function test_document_section_tag_in_node_position_is_rejected(string $source): void
@@ -185,7 +237,9 @@ class NodeCompilerTest extends LayoutMarkupTestCase
     }
 
     /**
-     * @return array<string, array{0: string}>
+     * 노드 자리에 온 문서 섹션 태그 목록.
+     *
+     * @return array<string, 반환값
      */
     public static function sectionTagProvider(): array
     {
@@ -197,9 +251,14 @@ class NodeCompilerTest extends LayoutMarkupTestCase
     }
 
     /**
+     * 액션 전용 태그가 노드 자리에 오면 거부된다.
+     *
      * @scenario compile_unit=node,source_health=invalid
      *
      * @effects action_tag_in_node_position_is_rejected
+     *
+     * @param  string  $source  마크업 소스
+     * @return void 반환값 없음
      */
     #[DataProvider('actionTagProvider')]
     public function test_action_tag_in_node_position_is_rejected(string $source): void
@@ -213,7 +272,9 @@ class NodeCompilerTest extends LayoutMarkupTestCase
     }
 
     /**
-     * @return array<string, array{0: string}>
+     * 노드 자리에 온 액션 전용 태그 목록.
+     *
+     * @return array<string, 반환값
      */
     public static function actionTagProvider(): array
     {
@@ -227,7 +288,11 @@ class NodeCompilerTest extends LayoutMarkupTestCase
     }
 
     /**
+     * 컴포넌트 이름과 겹치는 태그는 컴포넌트로 해석된다.
+     *
      * @effects tags_colliding_with_component_names_resolve_to_the_component
+     *
+     * @return void 반환값 없음
      */
     public function test_tags_that_collide_with_component_names_resolve_to_the_component(): void
     {
@@ -240,7 +305,11 @@ class NodeCompilerTest extends LayoutMarkupTestCase
     }
 
     /**
+     * 노드 id 는 data-ref 를 적었을 때만 나온다.
+     *
      * @effects auto_generated_id_is_not_emitted
+     *
+     * @return void 반환값 없음
      */
     public function test_id_is_emitted_only_when_data_ref_is_authored(): void
     {
@@ -259,7 +328,11 @@ class NodeCompilerTest extends LayoutMarkupTestCase
     // ---------------------------------------------------------------------
 
     /**
+     * 이름이 바뀌는 속성은 class·for 둘뿐이다.
+     *
      * @effects attributes_split_into_props_directives_and_type_literals
+     *
+     * @return void 반환값 없음
      */
     public function test_class_and_for_are_the_only_renamed_attributes(): void
     {
@@ -274,9 +347,13 @@ class NodeCompilerTest extends LayoutMarkupTestCase
     }
 
     /**
+     * 별칭 속성과 대상 속성을 함께 쓸 수 없다.
+     *
      * @scenario compile_unit=attribute,source_health=invalid
      *
      * @effects attributes_split_into_props_directives_and_type_literals
+     *
+     * @return void 반환값 없음
      */
     public function test_alias_and_target_attribute_cannot_both_be_authored(): void
     {
@@ -294,9 +371,13 @@ class NodeCompilerTest extends LayoutMarkupTestCase
     }
 
     /**
+     * `<prop>` 태그가 같은 이름의 속성을 덮어쓸 수 없다.
+     *
      * @scenario compile_unit=structural_tag,source_health=invalid
      *
      * @effects attributes_split_into_props_directives_and_type_literals
+     *
+     * @return void 반환값 없음
      */
     public function test_prop_tag_cannot_overwrite_an_attribute(): void
     {
@@ -308,9 +389,15 @@ class NodeCompilerTest extends LayoutMarkupTestCase
     }
 
     /**
+     * 노드 키를 무접두 속성으로 쓰면 거부된다.
+     *
      * @scenario compile_unit=attribute,source_health=invalid
      *
      * @effects node_key_written_as_attribute_is_rejected
+     *
+     * @param  string  $source  마크업 소스
+     * @param  string  $suggestion  제안 표기
+     * @return void 반환값 없음
      */
     #[DataProvider('nodeKeyAttributeProvider')]
     public function test_node_key_written_as_bare_attribute_is_rejected(string $source, string $suggestion): void
@@ -324,7 +411,9 @@ class NodeCompilerTest extends LayoutMarkupTestCase
     }
 
     /**
-     * @return array<string, array{0: string, 1: string}>
+     * 무접두 속성으로 쓴 노드 키 사례 목록.
+     *
+     * @return array<string, 반환값
      */
     public static function nodeKeyAttributeProvider(): array
     {
@@ -343,7 +432,11 @@ class NodeCompilerTest extends LayoutMarkupTestCase
     }
 
     /**
+     * 노드 키와 이름이 같은 실제 prop 은 그대로 통과한다.
+     *
      * @effects attributes_split_into_props_directives_and_type_literals
+     *
+     * @return void 반환값 없음
      */
     public function test_node_key_names_that_are_real_props_still_pass(): void
     {
@@ -356,9 +449,13 @@ class NodeCompilerTest extends LayoutMarkupTestCase
     }
 
     /**
+     * `is` 속성은 거부된다.
+     *
      * @scenario compile_unit=attribute,source_health=invalid
      *
      * @effects unsupported_standard_attribute_is_rejected
+     *
+     * @return void 반환값 없음
      */
     public function test_is_attribute_is_rejected(): void
     {
@@ -371,7 +468,11 @@ class NodeCompilerTest extends LayoutMarkupTestCase
     }
 
     /**
+     * props 는 매니페스트 선언과 대조하지 않고 그대로 통과한다.
+     *
      * @effects props_are_passed_through_without_whitelist_validation
+     *
+     * @return void 반환값 없음
      */
     public function test_props_are_not_validated_against_manifest_declarations(): void
     {
@@ -384,9 +485,13 @@ class NodeCompilerTest extends LayoutMarkupTestCase
     }
 
     /**
+     * 불리언 속성은 있기만 하면 참이다.
+     *
      * @scenario compile_unit=attribute,source_health=valid
      *
      * @effects boolean_attribute_is_present_or_absent_and_literal_false_needs_type_prefix
+     *
+     * @return void 반환값 없음
      */
     public function test_boolean_attribute_is_true_when_present(): void
     {
@@ -398,9 +503,13 @@ class NodeCompilerTest extends LayoutMarkupTestCase
     }
 
     /**
+     * 불리언 속성에 문자열 값을 쓰면 거부된다.
+     *
      * @scenario compile_unit=attribute,source_health=invalid
      *
      * @effects boolean_attribute_is_present_or_absent_and_literal_false_needs_type_prefix
+     *
+     * @return void 반환값 없음
      */
     public function test_boolean_attribute_with_literal_string_is_rejected(): void
     {
@@ -421,7 +530,11 @@ class NodeCompilerTest extends LayoutMarkupTestCase
     }
 
     /**
+     * 타입 리터럴 속성은 JSON 값으로 풀린다.
+     *
      * @effects type_literal_holds_json_typed_values
+     *
+     * @return void 반환값 없음
      */
     public function test_type_literal_decodes_json_values(): void
     {
@@ -434,9 +547,13 @@ class NodeCompilerTest extends LayoutMarkupTestCase
     }
 
     /**
+     * 타입 리터럴에 표현식을 쓰면 일반 속성을 쓰라고 제안하며 거부된다.
+     *
      * @scenario compile_unit=attribute,source_health=invalid
      *
      * @effects type_literal_holds_json_typed_values
+     *
+     * @return void 반환값 없음
      */
     public function test_type_literal_with_expression_is_rejected_with_plain_attribute_suggestion(): void
     {
@@ -452,7 +569,11 @@ class NodeCompilerTest extends LayoutMarkupTestCase
     // ---------------------------------------------------------------------
 
     /**
+     * 타입이 고정된 지시 속성에는 타입 리터럴 접두(:)를 쓸 수 없다.
+     *
      * @effects directive_value_types_are_fixed_per_key
+     *
+     * @return void 반환값 없음
      */
     public function test_fixed_type_directives_reject_type_literal_prefix(): void
     {
@@ -463,7 +584,11 @@ class NodeCompilerTest extends LayoutMarkupTestCase
     }
 
     /**
+     * 정수 지시 속성에 정수가 아닌 값을 쓰면 거부된다.
+     *
      * @effects directive_value_types_are_fixed_per_key
+     *
+     * @return void 반환값 없음
      */
     public function test_integer_directive_rejects_non_integer(): void
     {
@@ -474,7 +599,11 @@ class NodeCompilerTest extends LayoutMarkupTestCase
     }
 
     /**
+     * 값 없는 지시 속성은 거부된다.
+     *
      * @effects directive_value_types_are_fixed_per_key
+     *
+     * @return void 반환값 없음
      */
     public function test_directive_without_value_is_rejected(): void
     {
@@ -485,9 +614,13 @@ class NodeCompilerTest extends LayoutMarkupTestCase
     }
 
     /**
+     * 괄호 없는 조건식은 `{{}}` 로 감싸진다.
+     *
      * @scenario compile_unit=attribute,source_health=valid
      *
      * @effects bare_condition_is_wrapped_and_mixed_interpolation_is_rejected
+     *
+     * @return void 반환값 없음
      */
     public function test_bare_condition_expression_is_wrapped(): void
     {
@@ -497,9 +630,13 @@ class NodeCompilerTest extends LayoutMarkupTestCase
     }
 
     /**
+     * 보간이 섞인 조건식은 거부된다.
+     *
      * @scenario compile_unit=attribute,source_health=invalid
      *
      * @effects bare_condition_is_wrapped_and_mixed_interpolation_is_rejected
+     *
+     * @return void 반환값 없음
      */
     public function test_mixed_interpolation_condition_is_rejected(): void
     {
@@ -509,9 +646,13 @@ class NodeCompilerTest extends LayoutMarkupTestCase
     }
 
     /**
+     * 불리언 조건은 타입 리터럴 표기(:data-if)로 써야 한다.
+     *
      * @scenario compile_unit=attribute,source_health=invalid
      *
      * @effects literal_boolean_condition_has_one_spelling
+     *
+     * @return void 반환값 없음
      */
     public function test_literal_boolean_condition_must_use_the_type_literal_form(): void
     {
@@ -531,7 +672,11 @@ class NodeCompilerTest extends LayoutMarkupTestCase
     }
 
     /**
+     * 반복 표기(data-each)는 원문 그대로 보존된다.
+     *
      * @effects each_dsl_preserves_source_verbatim
+     *
+     * @return void 반환값 없음
      */
     public function test_each_dsl_preserves_source_verbatim(): void
     {
@@ -545,9 +690,13 @@ class NodeCompilerTest extends LayoutMarkupTestCase
     }
 
     /**
+     * 반복 표기 문법이 틀리면 거부된다.
+     *
      * @scenario compile_unit=attribute,source_health=invalid
      *
      * @effects each_dsl_preserves_source_verbatim
+     *
+     * @return void 반환값 없음
      */
     public function test_invalid_each_syntax_is_rejected(): void
     {
@@ -562,9 +711,15 @@ class NodeCompilerTest extends LayoutMarkupTestCase
     // ---------------------------------------------------------------------
 
     /**
+     * 다른 프레임워크 관용 표기는 대안을 제안하며 거부된다.
+     *
      * @scenario compile_unit=attribute,source_health=invalid
      *
      * @effects foreign_framework_idioms_are_rejected_with_g7_equivalent
+     *
+     * @param  string  $source  마크업 소스
+     * @param  string  $suggestion  제안 표기
+     * @return void 반환값 없음
      */
     #[DataProvider('foreignIdiomProvider')]
     public function test_foreign_idiom_is_rejected_with_suggestion(string $source, string $suggestion): void
@@ -576,7 +731,9 @@ class NodeCompilerTest extends LayoutMarkupTestCase
     }
 
     /**
-     * @return array<string, array{0: string, 1: string}>
+     * 다른 프레임워크 관용 표기 사례 목록.
+     *
+     * @return array<string, 반환값
      */
     public static function foreignIdiomProvider(): array
     {
@@ -597,9 +754,13 @@ class NodeCompilerTest extends LayoutMarkupTestCase
     // ---------------------------------------------------------------------
 
     /**
+     * 구조 태그가 제 부모 밖에 오면 거부된다.
+     *
      * @scenario compile_unit=structural_tag,source_health=invalid
      *
      * @effects structural_tag_outside_its_parent_is_rejected
+     *
+     * @return void 반환값 없음
      */
     public function test_structural_tag_outside_its_parent_is_rejected(): void
     {
@@ -615,7 +776,11 @@ class NodeCompilerTest extends LayoutMarkupTestCase
     }
 
     /**
+     * 필수 속성이 빠진 구조 태그는 거부된다.
+     *
      * @effects structural_tag_requires_its_named_attribute
+     *
+     * @return void 반환값 없음
      */
     public function test_structural_tag_missing_required_attribute_is_rejected(): void
     {
@@ -631,7 +796,11 @@ class NodeCompilerTest extends LayoutMarkupTestCase
     }
 
     /**
+     * 같은 노드 키를 두 번 쓰면 거부된다.
+     *
      * @effects duplicate_node_key_is_rejected
+     *
+     * @return void 반환값 없음
      */
     public function test_duplicate_node_key_is_rejected(): void
     {
@@ -641,7 +810,11 @@ class NodeCompilerTest extends LayoutMarkupTestCase
     }
 
     /**
+     * 로딩 흐림 설정은 두 표기로 동시에 쓸 수 없다.
+     *
      * @effects structural_tag_requires_its_named_attribute
+     *
+     * @return void 반환값 없음
      */
     public function test_blur_sources_cannot_be_written_in_both_forms(): void
     {
@@ -656,6 +829,8 @@ class NodeCompilerTest extends LayoutMarkupTestCase
      * 데이터소스 목록은 `<item>` 리스트로 적는다 (D51 G16 — `:sources='["a","b"]'` 속성 JSON 대체).
      *
      * @effects blur_sources_accept_item_list
+     *
+     * @return void 반환값 없음
      */
     public function test_blur_sources_accept_item_list(): void
     {
@@ -671,6 +846,8 @@ class NodeCompilerTest extends LayoutMarkupTestCase
      * `<item>` 리스트와 속성 표기를 함께 쓰면 어느 쪽이 정본인지 알 수 없다.
      *
      * @effects blur_sources_accept_item_list
+     *
+     * @return void 반환값 없음
      */
     public function test_blur_sources_reject_item_list_with_attribute(): void
     {
@@ -680,7 +857,11 @@ class NodeCompilerTest extends LayoutMarkupTestCase
     }
 
     /**
+     * 상태 필드는 값을 명시해야 한다.
+     *
      * @effects state_tree_leaf_type_follows_type_literal_rule
+     *
+     * @return void 반환값 없음
      */
     public function test_state_field_requires_an_explicit_value(): void
     {
@@ -698,9 +879,13 @@ class NodeCompilerTest extends LayoutMarkupTestCase
     }
 
     /**
+     * `<prop>` 본문은 올바른 JSON 이어야 한다.
+     *
      * @scenario compile_unit=structural_tag,source_health=invalid
      *
      * @effects structural_tag_json_body_must_be_valid_json
+     *
+     * @return void 반환값 없음
      */
     public function test_prop_body_must_be_valid_json(): void
     {
@@ -714,9 +899,13 @@ class NodeCompilerTest extends LayoutMarkupTestCase
     // ---------------------------------------------------------------------
 
     /**
+     * 텍스트와 자식 태그는 함께 둘 수 없다.
+     *
      * @scenario compile_unit=node,source_health=invalid
      *
      * @effects text_and_children_cannot_coexist
+     *
+     * @return void 반환값 없음
      */
     public function test_text_and_children_cannot_coexist(): void
     {
@@ -726,9 +915,13 @@ class NodeCompilerTest extends LayoutMarkupTestCase
     }
 
     /**
+     * 구조 태그는 텍스트 옆에 올 수 있다.
+     *
      * @scenario compile_unit=structural_tag,source_health=valid
      *
      * @effects structural_tag_may_sit_next_to_text
+     *
+     * @return void 반환값 없음
      */
     public function test_structural_tag_may_sit_next_to_text(): void
     {
@@ -745,9 +938,13 @@ class NodeCompilerTest extends LayoutMarkupTestCase
     // ---------------------------------------------------------------------
 
     /**
+     * 표현식과 번역 키는 손대지 않고 통과한다.
+     *
      * @scenario compile_unit=node,source_health=valid
      *
      * @effects expressions_and_translation_keys_are_never_pre_evaluated
+     *
+     * @return void 반환값 없음
      */
     public function test_expressions_and_translation_keys_pass_through_untouched(): void
     {
@@ -772,6 +969,8 @@ class NodeCompilerTest extends LayoutMarkupTestCase
      * @scenario compile_unit=node,source_health=valid
      *
      * @effects node_level_permissions_compiles_to_permissions_key
+     *
+     * @return void 반환값 없음
      */
     public function test_node_level_permissions_compiles_to_permissions_key(): void
     {
@@ -786,6 +985,8 @@ class NodeCompilerTest extends LayoutMarkupTestCase
      * @scenario compile_unit=node,source_health=valid
      *
      * @effects input_is_not_void_and_holds_action_children
+     *
+     * @return void 반환값 없음
      */
     public function test_input_is_not_void_and_holds_action_children(): void
     {
@@ -802,6 +1003,8 @@ class NodeCompilerTest extends LayoutMarkupTestCase
      * @scenario compile_unit=node,source_health=valid
      *
      * @effects node_level_meta_compiles_to_meta_key
+     *
+     * @return void 반환값 없음
      */
     public function test_node_level_meta_compiles_to_meta_key(): void
     {

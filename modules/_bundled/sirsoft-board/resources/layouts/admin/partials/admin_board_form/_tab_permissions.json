@@ -73,10 +73,11 @@
                             "name": "TagInput",
                             "actions": [
                                 {
-                                    "comment": "운영자 후보 찾기 — 타이핑마다 부르면 요청이 쏟아지므로 300ms 쉬었다 보낸다. 결과는 지역 상태에 따로 담아, 이미 고른 사람과 합쳐 선택지를 만든다(합치지 않으면 검색 결과가 바뀔 때 고른 사람의 이름표가 사라진다)",
+                                    "comment": "운영자 후보 찾기 — 타이핑마다 부르면 요청이 쏟아지므로 300ms 쉬었다 보낸다. 결과는 지역 상태에 따로 담아, 이미 고른 사람과 합쳐 선택지를 만든다(합치지 않으면 검색 결과가 바뀔 때 고른 사람의 이름표가 사라진다).\n              검색칸을 지우거나 공백만 적으면 부르지 않는다 — 회원 목록 API 는 빈 필터 값을 지우고 전체 회원을 돌려주므로, 다른 회원 검색 칸과 같이 검색어 없는 조회는 보내지 않는다",
                                     "event": "onInputChange",
                                     "handler": "apiCall",
                                     "target": "/api/admin/users",
+                                    "if": "{{String($event.target.value ?? '').trim() !== ''}}",
                                     "auth_required": true,
                                     "params": {
                                         "method": "GET",
@@ -176,10 +177,11 @@
                             "name": "TagInput",
                             "actions": [
                                 {
-                                    "comment": "단계 승인자 후보 찾기 — 운영자 칸과 같은 짜임이지만 결과를 담는 자리가 다르다(`stepSearchResults`). 두 칸이 한 상태를 나눠 쓰면 한쪽 검색이 다른 쪽 선택지를 갈아치운다",
+                                    "comment": "단계 승인자 후보 찾기 — 운영자 칸과 같은 짜임이지만 결과를 담는 자리가 다르다(`stepSearchResults`). 두 칸이 한 상태를 나눠 쓰면 한쪽 검색이 다른 쪽 선택지를 갈아치운다. 빈 검색어 차단도 운영자 칸과 같다",
                                     "event": "onInputChange",
                                     "handler": "apiCall",
                                     "target": "/api/admin/users",
+                                    "if": "{{String($event.target.value ?? '').trim() !== ''}}",
                                     "auth_required": true,
                                     "params": {
                                         "method": "GET",

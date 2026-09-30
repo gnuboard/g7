@@ -26,6 +26,26 @@ class OrderOptionResource extends BaseApiResource
     protected ?int $claimLockedQuantity = null;
 
     /**
+     * 비회원 주문의 품목인지 여부 (비회원 주문 응답이 지정)
+     */
+    private bool $guestOrder = false;
+
+    /**
+     * 비회원 주문의 품목으로 표시합니다.
+     *
+     * 비회원 주문 상세에는 리뷰 작성 창이 없고 리뷰 저장 API 는 로그인을 요구하므로,
+     * guest 역할에 리뷰 작성 권한이 있어도 리뷰 작성 가능으로 내보내지 않는다.
+     *
+     * @return static 체이닝용 자기 자신
+     */
+    public function forGuestOrder(): static
+    {
+        $this->guestOrder = true;
+
+        return $this;
+    }
+
+    /**
      * 리소스를 배열로 변환
      *
      * @param  Request  $request  요청
@@ -283,6 +303,12 @@ class OrderOptionResource extends BaseApiResource
      */
     private function calculateCanWriteReview(): bool
     {
+        // 리뷰는 회원만 쓴다 — 비회원 주문(user_id 없음)의 품목은 권한과 무관하게 false
+        if ($this->guestOrder
+            || ($this->resource->relationLoaded('order') && $this->resource->order !== null && $this->resource->order->user_id === null)) {
+            return false;
+        }
+
         if ($this->option_status !== OrderStatusEnum::CONFIRMED) {
             return false;
         }

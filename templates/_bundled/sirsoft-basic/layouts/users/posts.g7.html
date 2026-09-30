@@ -24,7 +24,7 @@
   <permissions/>
   <slot name="content">
     <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <container class="py-8">
+      <container data-type="layout" class="py-8">
         <responsive on="portable" class="py-4"/>
         <!-- 로딩 상태 -->
         <div data-if="{{userPosts.loading &amp;&amp; !userPosts.data}}" class="flex justify-center items-center py-20">
@@ -113,7 +113,7 @@
           </div>
           <!-- 페이지네이션 (항상 표시) -->
           <div class="flex justify-center mt-6">
-            <pagination currentPage="{{userPosts.data?.current_page ?? 1}}" totalPages="{{userPosts.data?.last_page ?? null}}" hasMorePages="{{userPosts.data?.has_more_pages ?? false}}">
+            <pagination data-type="composite" currentPage="{{userPosts.data?.current_page ?? 1}}" totalPages="{{userPosts.data?.last_page ?? null}}" hasMorePages="{{userPosts.data?.has_more_pages ?? false}}">
               <on event="onPageChange">
                 <!-- 페이지 이동 — 상태가 아니라 URL 질의를 바꾸므로 특정 페이지를 그대로 공유하거나 뒤로가기로 되돌아갈 수 있다. -->
                 <navigate path="/users/{{route.userId}}/posts" :mergeQuery="true">

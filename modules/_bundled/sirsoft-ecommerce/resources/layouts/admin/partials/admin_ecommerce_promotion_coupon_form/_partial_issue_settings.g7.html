@@ -11,10 +11,10 @@
     <h2 class="card-title">$t:sirsoft-ecommerce.admin.promotion_coupon.form.section.issue_settings</h2>
     <div class="space-y-5">
       <!-- 발급수량 -->
-      <form-field data-ref="field_issue_quantity" label="$t:sirsoft-ecommerce.admin.promotion_coupon.form.field.issue_quantity" error="{{_local.errors?.total_quantity?.[0] ?? ''}}">
+      <form-field data-type="composite" data-ref="field_issue_quantity" label="$t:sirsoft-ecommerce.admin.promotion_coupon.form.field.issue_quantity" error="{{_local.errors?.total_quantity?.[0] ?? ''}}">
         <div>
           <div>
-            <radio-group value="{{_local.issue_quantity_type}}" :inline="true">
+            <radio-group data-type="composite" value="{{_local.issue_quantity_type}}" :inline="true">
               <responsive on="mobile" :inline="false"/>
               <prop name="options">
                 <item label="$t:sirsoft-ecommerce.admin.promotion_coupon.form.option.unlimited" value="unlimited"/>
@@ -37,10 +37,10 @@
         </div>
       </form-field>
       <!-- 발급기간 -->
-      <form-field data-ref="field_issue_period" label="$t:sirsoft-ecommerce.admin.promotion_coupon.form.field.issue_period" error="{{_local.errors?.issue_from?.[0] ?? _local.errors?.issue_to?.[0] ?? ''}}">
+      <form-field data-type="composite" data-ref="field_issue_period" label="$t:sirsoft-ecommerce.admin.promotion_coupon.form.field.issue_period" error="{{_local.errors?.issue_from?.[0] ?? _local.errors?.issue_to?.[0] ?? ''}}">
         <div>
           <div>
-            <radio-group value="{{_local.issue_period_type}}" :inline="true">
+            <radio-group data-type="composite" value="{{_local.issue_period_type}}" :inline="true">
               <responsive on="mobile" :inline="false"/>
               <prop name="options">
                 <item label="$t:sirsoft-ecommerce.admin.promotion_coupon.form.option.unlimited" value="unlimited"/>
@@ -69,10 +69,10 @@
         </div>
       </form-field>
       <!-- 재발급 (중복 다운로드) -->
-      <form-field data-ref="field_reissue" label="$t:sirsoft-ecommerce.admin.promotion_coupon.form.field.reissue" error="{{_local.errors?.per_user_limit?.[0] ?? ''}}">
+      <form-field data-type="composite" data-ref="field_reissue" label="$t:sirsoft-ecommerce.admin.promotion_coupon.form.field.reissue" error="{{_local.errors?.per_user_limit?.[0] ?? ''}}">
         <div>
           <div>
-            <radio-group value="{{_local.reissue_type}}" :inline="true">
+            <radio-group data-type="composite" value="{{_local.reissue_type}}" :inline="true">
               <responsive on="mobile" :inline="false"/>
               <prop name="options">
                 <item label="$t:sirsoft-ecommerce.admin.promotion_coupon.form.option.unlimited" value="unlimited"/>

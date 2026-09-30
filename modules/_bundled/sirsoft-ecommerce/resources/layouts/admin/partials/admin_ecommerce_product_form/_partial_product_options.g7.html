@@ -34,7 +34,7 @@
         <div data-ref="option_input_rows">
           <div data-each="optInput, optIdx in {{_local.ui.optionInputs ?? []}}" class="flex-center gap-3">
             <div class="w-48 shrink-0">
-              <multilingual-input name="option_input_name_{{optIdx}}" value="{{optInput.name ?? {}}}" placeholder="$t:sirsoft-ecommerce.admin.product.options.option_name_placeholder" layout="compact" inputType="text" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}" :autoBinding="false">
+              <multilingual-input data-type="composite" name="option_input_name_{{optIdx}}" value="{{optInput.name ?? {}}}" placeholder="$t:sirsoft-ecommerce.admin.product.options.option_name_placeholder" layout="compact" inputType="text" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}" :autoBinding="false">
                 <on type="change">
                   <!-- 옵션 그룹 이름(다국어). 타건마다 조합을 다시 세지 않도록 잠시 모아서 반영한다 -->
                   <action handler="sirsoft-ecommerce.updateOptionInput" :debounce="300" index="{{optIdx}}" field="name" value="{{$event.target.value}}"/>
@@ -42,7 +42,7 @@
               </multilingual-input>
             </div>
             <div class="flex-1">
-              <multilingual-tag-input data-ref="tag_input_option_{{optIdx}}" name="option_values_{{optIdx}}" value="{{optInput.values ?? []}}" placeholder="$t:sirsoft-ecommerce.admin.product.options.option_values_placeholder" class="w-full" :creatable="true" modalId="multilingual_tag_edit_modal" statePath="ui.optionInputs.{{optIdx}}.values" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}" :autoBinding="false">
+              <multilingual-tag-input data-type="composite" data-ref="tag_input_option_{{optIdx}}" name="option_values_{{optIdx}}" value="{{optInput.values ?? []}}" placeholder="$t:sirsoft-ecommerce.admin.product.options.option_values_placeholder" class="w-full" :creatable="true" modalId="multilingual_tag_edit_modal" statePath="ui.optionInputs.{{optIdx}}.values" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}" :autoBinding="false">
                 <prop name="delimiters">
                   <item>,</item>
                 </prop>
@@ -114,7 +114,7 @@
                     </input>
                   </td>
                   <td class="px-3 py-2">
-                    <multilingual-input name="form_option_name_{{optIdx}}" value="{{opt.option_name ?? {}}}" layout="compact" inputType="text" size="sm" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}" :autoBinding="false">
+                    <multilingual-input data-type="composite" name="form_option_name_{{optIdx}}" value="{{opt.option_name ?? {}}}" layout="compact" inputType="text" size="sm" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}" :autoBinding="false">
                       <on type="change">
                         <!-- 옵션명 — 조합해 만든 이름을 손으로 다듬을 수 있다 (넓은 화면 표) -->
                         <action handler="sirsoft-ecommerce.updateFormOptionField" :debounce="300" index="{{optIdx}}" field="option_name" value="{{$event.target.value}}"/>
@@ -209,7 +209,7 @@
                     </div>
                   </td>
                   <td class="px-3 py-2 text-center">
-                    <toggle name="option_active_{{optIdx}}" checked="{{opt.is_active !== false}}" size="sm" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
+                    <toggle data-type="composite" name="option_active_{{optIdx}}" checked="{{opt.is_active !== false}}" size="sm" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
                       <on type="change">
                         <!-- 이 옵션만 판매에서 내린다 — 상품 전체를 내리는 것과 다르다 (넓은 화면 표) -->
                         <action handler="sirsoft-ecommerce.updateFormOptionField" index="{{optIdx}}" field="is_active" value="{{$event.target.checked}}"/>
@@ -252,7 +252,7 @@
                   </on>
                 </input>
                 <span class="text-primary font-medium">{{opt.option_name_localized ?? opt.option_name?.ko ?? ''}}</span>
-                <toggle name="option_active_mobile_{{optIdx}}" checked="{{opt.is_active !== false}}" size="sm" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
+                <toggle data-type="composite" name="option_active_mobile_{{optIdx}}" checked="{{opt.is_active !== false}}" size="sm" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
                   <on type="change">
                     <!-- 이 옵션만 판매에서 내린다 — 상품 전체를 내리는 것과 다르다 (좁은 화면 카드 — 같은 값을 다른 배치로 세운 것이다) -->
                     <action handler="sirsoft-ecommerce.updateFormOptionField" index="{{optIdx}}" field="is_active" value="{{$event.target.checked}}"/>
@@ -395,7 +395,7 @@
                       <label class="form-label">$t:sirsoft-ecommerce.admin.product.options.additional_name_label</label>
                       <span class="text-red-500 dark:text-red-400">*</span>
                     </div>
-                    <multilingual-input name="additional_options_{{addIdx}}_name" value="{{addOpt.name}}" layout="compact" placeholder="$t:sirsoft-ecommerce.admin.product.options.additional_name_placeholder" :maxLength="100" :required="true" error="{{_local.errors?.['additional_options.' + addIdx + '.name']?.[0] ?? _local.errors?.['additional_options.' + addIdx + '.name.ko']?.[0] ?? ''}}" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}" :autoBinding="false">
+                    <multilingual-input data-type="composite" name="additional_options_{{addIdx}}_name" value="{{addOpt.name}}" layout="compact" placeholder="$t:sirsoft-ecommerce.admin.product.options.additional_name_placeholder" :maxLength="100" :required="true" error="{{_local.errors?.['additional_options.' + addIdx + '.name']?.[0] ?? _local.errors?.['additional_options.' + addIdx + '.name.ko']?.[0] ?? ''}}" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}" :autoBinding="false">
                       <on type="change">
                         <!-- 추가옵션 그룹 이름(다국어) — 「각인 문구」 같은 묶음의 이름이다 -->
                         <action handler="sirsoft-ecommerce.updateAdditionalOption" :debounce="300" index="{{addIdx}}" field="name" value="{{$event.target.value}}"/>
@@ -403,7 +403,7 @@
                     </multilingual-input>
                   </div>
                   <div class="flex-center gap-2">
-                    <toggle name="additional_options_{{addIdx}}_required" checked="{{addOpt.is_required === true}}" size="sm" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
+                    <toggle data-type="composite" name="additional_options_{{addIdx}}_required" checked="{{addOpt.is_required === true}}" size="sm" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
                       <on type="change">
                         <!-- 필수 여부 — 켜면 구매자가 이 그룹에서 반드시 하나를 골라야 한다 -->
                         <action handler="sirsoft-ecommerce.updateAdditionalOption" index="{{addIdx}}" field="is_required" value="{{$event.target.checked}}"/>
@@ -428,7 +428,7 @@
                         <label class="form-label text-xs">$t:sirsoft-ecommerce.admin.product.options.additional_value_name_label</label>
                         <span class="text-red-500 dark:text-red-400">*</span>
                       </div>
-                      <multilingual-input name="additional_options_{{addIdx}}_values_{{addValIdx}}_name" value="{{addVal.name}}" layout="compact" placeholder="$t:sirsoft-ecommerce.admin.product.options.additional_value_name_placeholder" :maxLength="100" :required="true" error="{{_local.errors?.['additional_options.' + addIdx + '.values.' + addValIdx + '.name']?.[0] ?? _local.errors?.['additional_options.' + addIdx + '.values.' + addValIdx + '.name.ko']?.[0] ?? ''}}" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}" :autoBinding="false">
+                      <multilingual-input data-type="composite" name="additional_options_{{addIdx}}_values_{{addValIdx}}_name" value="{{addVal.name}}" layout="compact" placeholder="$t:sirsoft-ecommerce.admin.product.options.additional_value_name_placeholder" :maxLength="100" :required="true" error="{{_local.errors?.['additional_options.' + addIdx + '.values.' + addValIdx + '.name']?.[0] ?? _local.errors?.['additional_options.' + addIdx + '.values.' + addValIdx + '.name.ko']?.[0] ?? ''}}" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}" :autoBinding="false">
                         <on type="change">
                           <!-- 선택지 이름(다국어) -->
                           <action handler="sirsoft-ecommerce.updateAdditionalOptionValue" :debounce="300" groupIndex="{{addIdx}}" valueIndex="{{addValIdx}}" field="name" value="{{$event.target.value}}"/>
@@ -465,7 +465,7 @@
                     </div>
                     <!-- 활성 토글. 라벨 없는 컨트롤이라 sm:mt-6 으로 인풋 baseline 에 정렬 -->
                     <div class="flex-center gap-1 sm:mt-6">
-                      <toggle name="additional_options_{{addIdx}}_values_{{addValIdx}}_active" checked="{{addVal.is_active !== false}}" size="sm" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
+                      <toggle data-type="composite" name="additional_options_{{addIdx}}_values_{{addValIdx}}_active" checked="{{addVal.is_active !== false}}" size="sm" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
                         <on type="change">
                           <!-- 이 선택지만 감춘다 -->
                           <action handler="sirsoft-ecommerce.updateAdditionalOptionValue" groupIndex="{{addIdx}}" valueIndex="{{addValIdx}}" field="is_active" value="{{$event.target.checked}}"/>
@@ -475,7 +475,7 @@
                     </div>
                     <!-- 직접입력 허용 토글 — 유저가 이 선택지 선택 시 자유 텍스트 입력 필수. 라벨 없는 컨트롤이라 sm:mt-6 으로 인풋 baseline 에 정렬 -->
                     <div class="flex-center gap-1 sm:mt-6">
-                      <toggle name="additional_options_{{addIdx}}_values_{{addValIdx}}_allow_custom_text" checked="{{addVal.allow_custom_text === true}}" size="sm" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
+                      <toggle data-type="composite" name="additional_options_{{addIdx}}_values_{{addValIdx}}_allow_custom_text" checked="{{addVal.allow_custom_text === true}}" size="sm" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
                         <on type="change">
                           <!-- 직접입력 허용 — 켜면 구매자가 이 선택지를 골랐을 때 글을 함께 적어야 한다(각인·문구 등) -->
                           <action handler="sirsoft-ecommerce.updateAdditionalOptionValue" groupIndex="{{addIdx}}" valueIndex="{{addValIdx}}" field="allow_custom_text" value="{{$event.target.checked}}"/>
@@ -493,7 +493,7 @@
                     </button>
                   </div>
                   <!-- 선택지 추가 (그룹당 max 20) -->
-                  <button data-if="{{(addOpt.values ?? []).length < 20 &amp;&amp; (!route.itemCode || product?.data?.abilities?.can_update === true)}}" type="button" class="btn btn-outline">
+                  <button data-if="{{(addOpt.values ?? []).length < 20 &amp;&amp; (!route.itemCode || product?.data?.abilities?.can_update === true)}}" type="button" class="btn btn-outline btn-sm">
                     <on type="click">
                       <!-- 선택지 더하기(그룹당 최대 20) -->
                       <action handler="sirsoft-ecommerce.addAdditionalOptionValue" groupIndex="{{addIdx}}"/>

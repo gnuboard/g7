@@ -64,7 +64,7 @@
               <span>$t:admin.menus.form.name</span>
               <span class="text-red-500 ml-1">*</span>
             </label>
-            <multilingual-input data-ref="form_name_input" name="name" placeholder="$t:admin.menus.form.name_placeholder" :maxLength="100" :required="true" layout="tabs"/>
+            <multilingual-input data-type="composite" data-ref="form_name_input" name="name" placeholder="$t:admin.menus.form.name_placeholder" :maxLength="100" :required="true" layout="tabs"/>
             <span data-if="{{_global.formErrors?.name}}" class="text-red-500 text-xs">{{_global.formErrors?.name?.[0] ?? ''}}</span>
           </div>
         </div>
@@ -92,7 +92,7 @@
         <div data-ref="form_icon_field">
           <div>
             <label data-ref="form_icon_label" class="form-label">$t:admin.menus.form.icon</label>
-            <icon-select data-ref="form_icon_select" name="icon" placeholder="$t:admin.menus.form.icon_placeholder" searchPlaceholder="$t:admin.menus.form.icon_search_placeholder" noResultsText="$t:admin.menus.form.icon_no_results"/>
+            <icon-select data-type="composite" data-ref="form_icon_select" name="icon" placeholder="$t:admin.menus.form.icon_placeholder" searchPlaceholder="$t:admin.menus.form.icon_search_placeholder" noResultsText="$t:admin.menus.form.icon_no_results"/>
           </div>
         </div>
       </div>
@@ -146,7 +146,7 @@
           <div data-ref="form_roles_field">
             <div>
               <label data-ref="form_roles_label" class="form-label">$t:admin.menus.form.roles</label>
-              <tag-input data-ref="form_roles_input" name="roles" placeholder="$t:admin.menus.form.roles_placeholder" noOptionsMessage="$t:admin.menus.form.roles_no_options" options="{{(roles?.data?.data ?? []).map(r => ({ value: r.id, label: $localized(r.name) }))}}"/>
+              <tag-input data-type="composite" data-ref="form_roles_input" name="roles" placeholder="$t:admin.menus.form.roles_placeholder" noOptionsMessage="$t:admin.menus.form.roles_no_options" options="{{(roles?.data?.data ?? []).map(r => ({ value: r.id, label: $localized(r.name) }))}}"/>
               <span data-ref="form_roles_hint" class="text-tertiary">$t:admin.menus.form.roles_hint</span>
             </div>
           </div>
@@ -155,7 +155,7 @@
       <div data-ref="form_status_section">
         <div>
           <h4 data-ref="form_status_title" class="text-table-header">$t:admin.menus.info.status</h4>
-          <toggle data-ref="form_toggle" label="$t:admin.menus.form.is_active" name="is_active"/>
+          <toggle data-type="composite" data-ref="form_toggle" label="$t:admin.menus.form.is_active" name="is_active"/>
         </div>
       </div>
       <div data-ref="form_meta_section" data-if="{{_global.panelMode === 'edit'}}">
@@ -172,14 +172,14 @@
             <div class="flex-center gap-3">
               <span class="text-gray-500 dark:text-gray-400 w-20">$t:admin.menus.info.created_at</span>
               <div class="flex-center text-primary gap-1.5">
-                <icon name="calendar" size="sm" class="text-gray-400"/>
+                <icon name="calendar" size="sm" class="text-gray-400 dark:text-gray-500"/>
                 <span>{{_global.selectedMenu?.created_at}}</span>
               </div>
             </div>
             <div class="flex-center gap-3">
               <span class="text-gray-500 dark:text-gray-400 w-20">$t:admin.menus.info.updated_at</span>
               <div class="flex-center text-primary gap-1.5">
-                <icon name="clock" size="sm" class="text-gray-400"/>
+                <icon name="clock" size="sm" class="text-gray-400 dark:text-gray-500"/>
                 <span>{{_global.selectedMenu?.updated_at}}</span>
               </div>
             </div>

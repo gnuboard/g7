@@ -2,7 +2,8 @@
     "comment": "소급 익명화 확인 창. 개인정보 설정을 더 엄격한 쪽으로 저장했을 때 서버가 `retro_anonymize_available`\n  을 주면 열린다 — 과거 기록에는 옛 설정대로 모은 값이 남아 있기 때문이다. 되돌릴 수 없으므로\n  체크 없이는 실행 버튼이 잠긴다. 실행은 워커에게 넘어가고(202) 진행률은 진단 화면 이력에서 본다.\n  「건너뛰기」는 아무것도 하지 않는다 — 새 설정은 이미 저장돼 있다.",
     "meta": {
         "is_partial": true,
-        "description": "방문자 통계 — 소급 익명화 확인 창"
+        "description": "방문자 통계 — 소급 익명화 확인 창",
+        "editor_label": "$t:admin.modal_label.analytics.retro_anonymize_modal"
     },
     "id": "analytics_retro_anonymize_modal",
     "type": "composite",

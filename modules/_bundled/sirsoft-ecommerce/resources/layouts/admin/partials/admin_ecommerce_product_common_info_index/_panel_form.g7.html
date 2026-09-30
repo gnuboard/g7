@@ -94,14 +94,14 @@
           <span>$t:sirsoft-ecommerce.admin.common_info.form.name</span>
           <span class="text-required">*</span>
         </label>
-        <multilingual-input name="name" placeholder="$t:sirsoft-ecommerce.admin.common_info.form.name_placeholder" error="{{_local.errors?.name}}" layout="tabs" disabled="{{_global.panelMode === 'edit' &amp;&amp; _global.selectedItem?.abilities?.can_update !== true}}"/>
+        <multilingual-input data-type="composite" name="name" placeholder="$t:sirsoft-ecommerce.admin.common_info.form.name_placeholder" error="{{_local.errors?.name}}" layout="tabs" disabled="{{_global.panelMode === 'edit' &amp;&amp; _global.selectedItem?.abilities?.can_update !== true}}"/>
       </div>
       <div data-ref="content_section" class="border-t border-gray-200 dark:border-gray-700 pt-4">
         <label class="text-label-subtle block font-medium mb-3">$t:sirsoft-ecommerce.admin.common_info.form.content_section</label>
         <extension-point name="html_editor" data-ref="content_editor" data-if="{{_global.panelMode === 'create' || (_local.form.content !== undefined &amp;&amp; !Array.isArray(_local.form.content))}}" :multilingual="true" value="{{_local.form?.content ?? ''}}" placeholder="$t:sirsoft-ecommerce.admin.common_info.form.placeholder_html" :rows="10" disabled="{{_global.panelMode === 'edit' &amp;&amp; _global.selectedItem?.abilities?.can_update !== true}}" :showHtmlModeToggle="true" isHtml="{{(_local.form?.content_mode ?? 'text') === 'html'}}">
           <prop name="name">"content"</prop>
           <default>
-            <html-editor name="content" :multilingual="true" value="{{_local.form?.content ?? ''}}" placeholder="$t:sirsoft-ecommerce.admin.common_info.form.placeholder_html" :rows="10" disabled="{{_global.panelMode === 'edit' &amp;&amp; _global.selectedItem?.abilities?.can_update !== true}}" :showHtmlModeToggle="true" isHtml="{{(_local.form?.content_mode ?? 'text') === 'html'}}">
+            <html-editor data-type="composite" name="content" :multilingual="true" value="{{_local.form?.content ?? ''}}" placeholder="$t:sirsoft-ecommerce.admin.common_info.form.placeholder_html" :rows="10" disabled="{{_global.panelMode === 'edit' &amp;&amp; _global.selectedItem?.abilities?.can_update !== true}}" :showHtmlModeToggle="true" isHtml="{{(_local.form?.content_mode ?? 'text') === 'html'}}">
               <on type="change" event="onChange">
                 <!-- 본문 변경. 내용과 함께 모드를 `html` 로 못 박는다 — 위지윅에서 손대는 순간 서식이 들어갔다고 보는 것이고, 텍스트로 되돌리려면 아래 전환 이벤트를 거쳐야 한다. -->
                 <set-state target="local" form.content="{{$event.target.value}}" form.content_mode="html"/>
@@ -118,7 +118,7 @@
         <label class="text-label-subtle block font-medium mb-3">$t:sirsoft-ecommerce.admin.common_info.form.status_section</label>
         <div class="grid grid-cols-2 gap-6">
           <div data-ref="default_setting_col" class="flex-center gap-3">
-            <toggle checked="{{_local.form.is_default}}" disabled="{{_global.panelMode === 'edit' &amp;&amp; _global.selectedItem?.abilities?.can_update !== true}}">
+            <toggle data-type="composite" checked="{{_local.form.is_default}}" disabled="{{_global.panelMode === 'edit' &amp;&amp; _global.selectedItem?.abilities?.can_update !== true}}">
               <on type="change">
                 <!-- 기본값 스위치 — **켤 때만** 확인 창을 거친다(끄는 것은 잃는 것이 없다). 조건에 이전 값을 함께 보는 것은 이미 켜져 있던 항목에서 창이 다시 뜨지 않게 하기 위해서다. -->
                 <sequence>
@@ -141,7 +141,7 @@
             <span class="text-body">$t:sirsoft-ecommerce.admin.common_info.form.status_default</span>
           </div>
           <div data-ref="active_setting_col" class="flex-center gap-3">
-            <toggle checked="{{_local.form.is_active}}" disabled="{{_global.panelMode === 'edit' &amp;&amp; _global.selectedItem?.abilities?.can_update !== true}}">
+            <toggle data-type="composite" checked="{{_local.form.is_active}}" disabled="{{_global.panelMode === 'edit' &amp;&amp; _global.selectedItem?.abilities?.can_update !== true}}">
               <on type="change">
                 <!-- 노출 스위치 — 기본값 쪽과 달리 확인 창이 없다. 되돌리기 쉬운 값이고 다른 항목에 영향을 주지 않는다. -->
                 <set-state target="local" form.is_active="{{$event.target.checked}}"/>

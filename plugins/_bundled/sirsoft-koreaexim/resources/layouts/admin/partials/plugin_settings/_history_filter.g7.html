@@ -4,7 +4,7 @@
   <div class="grid-2col-responsive">
     <div>
       <label class="form-label">$t:sirsoft-koreaexim.date_from</label>
-      <input aria-label="$t:sirsoft-koreaexim.date_from" type="date" value="{{query.date_from ?? ''}}">
+      <input aria-label="$t:sirsoft-koreaexim.date_from" type="date" value="{{query.date_from ?? ''}}" max="{{query.date_to ?? ''}}">
         <on type="change">
           <!-- 시작일 변경 — 이력 탭을 유지한 채 date_from 만 바꾸고 1페이지로 돌아간다 -->
           <navigate path="/admin/plugins/sirsoft-koreaexim/settings" :mergeQuery="true"><query tab="history" :page="1" date_from="{{$event.target.value}}"/></navigate>
@@ -13,7 +13,7 @@
     </div>
     <div>
       <label class="form-label">$t:sirsoft-koreaexim.date_to</label>
-      <input aria-label="$t:sirsoft-koreaexim.date_to" type="date" value="{{query.date_to ?? ''}}">
+      <input aria-label="$t:sirsoft-koreaexim.date_to" type="date" value="{{query.date_to ?? ''}}" min="{{query.date_from ?? ''}}">
         <on type="change">
           <!-- 종료일 변경 — 이력 탭을 유지한 채 date_to 만 바꾸고 1페이지로 돌아간다 -->
           <navigate path="/admin/plugins/sirsoft-koreaexim/settings" :mergeQuery="true"><query tab="history" :page="1" date_to="{{$event.target.value}}"/></navigate>
@@ -41,5 +41,7 @@
       </select>
     </div>
   </div>
+  <!-- 뒤집힌 기간 안내 — 두 날짜 칸이 서로의 범위를 막아도 직접 입력·공유 주소로 들어올 수 있다. 이 기간이면 데이터소스 koreaeximRuns 가 조회하지 않고 그리드도 비우므로(직전 결과가 남지 않게), 「기록 없음」으로 읽히지 않게 이유를 적는다 -->
+  <p data-if="{{!!query.date_from &amp;&amp; !!query.date_to &amp;&amp; query.date_to &lt; query.date_from}}" role="alert" class="form-error mt-2">$t:sirsoft-koreaexim.date_range_invalid</p>
 </div>
 </partial>

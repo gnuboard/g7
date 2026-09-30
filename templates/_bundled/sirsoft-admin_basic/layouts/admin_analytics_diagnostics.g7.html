@@ -158,7 +158,7 @@
             일 집계) 찍는다. 공통 조각 `_partial_status_alerts` 는 순환 안내 때문에 여기 없으므로
             같은 사실을 배지로 보인다(#682 S3 라운드 7, 설계 결정 「두 화면 모두 배지」).
             보는 사람의 시간대가 사이트와 같으면 군더더기라 띄우지 않는다. -->
-          <badge data-ref="site_timezone_badge" data-if="{{analytics_diagnostics?.data?.timezone_differs === true}}" color="blue" size="sm" text="$t:admin.analytics.common.site_timezone_badge|timezone={{analytics_diagnostics?.data?.timezone ?? ''}}"/>
+          <badge data-type="composite" data-ref="site_timezone_badge" data-if="{{analytics_diagnostics?.data?.timezone_differs === true}}" color="blue" size="sm" text="$t:admin.analytics.common.site_timezone_badge|timezone={{analytics_diagnostics?.data?.timezone ?? ''}}"/>
           <button data-ref="refresh_button" type="button" class="btn-icon" aria-label="$t:admin.analytics.common.refresh">
             <on type="click">
               <!-- 새로고침 — 이 화면이 받는 세 소스(진단·집계 이력·실패 로그)를 한꺼번에 다시 받는다. 하나만 받으면 상태 카드와
@@ -191,9 +191,9 @@
           <div class="flex flex-wrap items-center gap-2">
             <icon name="satellite-dish" class="text-gray-500 dark:text-gray-400"/>
             <span class="text-heading">$t:admin.analytics.diagnostics.cards.collection</span>
-            <badge color="{{analytics_diagnostics?.data?.collection?.enabled ? 'green' : 'red'}}" text="{{analytics_diagnostics?.data?.collection?.enabled ? $t('admin.analytics.diagnostics.fields.enabled_on') : $t('admin.analytics.diagnostics.fields.enabled_off')}}" size="sm"/>
-            <badge color="blue" text="{{$t('admin.analytics.settings.privacy.modes.' + (analytics_diagnostics?.data?.collection?.effective_mode ?? 'full') + '.title')}}" size="sm"/>
-            <badge data-if="{{!!analytics_diagnostics?.data?.collection?.anonymous_fallback_reason}}" color="yellow" text="{{analytics_diagnostics?.data?.collection?.anonymous_fallback_reason === 'consent_plugin_blocks_cookies' ? $t('admin.analytics.diagnostics.fields.anonymous_for_unconsented') : $t('admin.analytics.diagnostics.fields.anonymous_fallback')}}" size="sm"/>
+            <badge data-type="composite" color="{{analytics_diagnostics?.data?.collection?.enabled ? 'green' : 'red'}}" text="{{analytics_diagnostics?.data?.collection?.enabled ? $t('admin.analytics.diagnostics.fields.enabled_on') : $t('admin.analytics.diagnostics.fields.enabled_off')}}" size="sm"/>
+            <badge data-type="composite" color="blue" text="{{$t('admin.analytics.settings.privacy.modes.' + (analytics_diagnostics?.data?.collection?.effective_mode ?? 'full') + '.title')}}" size="sm"/>
+            <badge data-type="composite" data-if="{{!!analytics_diagnostics?.data?.collection?.anonymous_fallback_reason}}" color="yellow" text="{{analytics_diagnostics?.data?.collection?.anonymous_fallback_reason === 'consent_plugin_blocks_cookies' ? $t('admin.analytics.diagnostics.fields.anonymous_for_unconsented') : $t('admin.analytics.diagnostics.fields.anonymous_fallback')}}" size="sm"/>
             <span class="text-label-subtle">$t:admin.analytics.diagnostics.fields.tracked_today|count={{(analytics_diagnostics?.data?.collection?.tracked_today ?? 0) | number}}</span>
             <span class="text-label-subtle">$t:admin.analytics.diagnostics.fields.last_tracked|at={{analytics_diagnostics?.data?.collection?.last_tracked_at | datetime | default('-')}}</span>
             <span data-if="{{!!analytics_diagnostics?.data?.collection?.anonymous_fallback_reason}}" class="text-hint w-full">{{analytics_diagnostics?.data?.collection?.anonymous_fallback_reason === 'consent_plugin_blocks_cookies' ? $t('admin.analytics.alerts.consent_cookie_fallback') : $t('admin.analytics.alerts.consent_fallback')}}</span>
@@ -204,11 +204,11 @@
             <icon name="layer-group" class="text-gray-500 dark:text-gray-400"/>
             <span class="text-heading">$t:admin.analytics.diagnostics.cards.queue</span>
             <!-- 연결 이름(`database` 등)은 .env 설정값이라 알려진 것만 사람 말로 바꾸고, 사이트가 따로 정한 이름은 그대로 보인다. -->
-            <badge color="gray" text="{{['sync', 'database', 'redis', 'sqs', 'beanstalkd'].includes(analytics_diagnostics?.data?.queue?.connection ?? '') ? $t('admin.analytics.diagnostics.queue_connections.' + analytics_diagnostics.data.queue.connection) : (analytics_diagnostics?.data?.queue?.connection ?? '-')}}" size="sm"/>
-            <badge data-if="{{analytics_diagnostics?.data?.queue?.countable === false}}" color="gray" text="$t:admin.analytics.diagnostics.fields.queue_not_countable" size="sm"/>
+            <badge data-type="composite" color="gray" text="{{['sync', 'database', 'redis', 'sqs', 'beanstalkd'].includes(analytics_diagnostics?.data?.queue?.connection ?? '') ? $t('admin.analytics.diagnostics.queue_connections.' + analytics_diagnostics.data.queue.connection) : (analytics_diagnostics?.data?.queue?.connection ?? '-')}}" size="sm"/>
+            <badge data-type="composite" data-if="{{analytics_diagnostics?.data?.queue?.countable === false}}" color="gray" text="$t:admin.analytics.diagnostics.fields.queue_not_countable" size="sm"/>
             <span data-if="{{analytics_diagnostics?.data?.queue?.countable !== false}}" class="text-label-subtle">$t:admin.analytics.diagnostics.fields.pending_jobs|count={{(analytics_diagnostics?.data?.queue?.pending_jobs ?? 0) | number}}</span>
             <span data-if="{{analytics_diagnostics?.data?.queue?.countable !== false}}" class="text-label-subtle">$t:admin.analytics.diagnostics.fields.failed_jobs|count={{(analytics_diagnostics?.data?.queue?.failed_jobs ?? 0) | number}}</span>
-            <badge data-if="{{analytics_diagnostics?.data?.queue?.backlogged === true}}" color="red" text="$t:admin.analytics.diagnostics.fields.backlogged" size="sm"/>
+            <badge data-type="composite" data-if="{{analytics_diagnostics?.data?.queue?.backlogged === true}}" color="red" text="$t:admin.analytics.diagnostics.fields.backlogged" size="sm"/>
             <span data-if="{{analytics_diagnostics?.data?.queue?.worker_hint === true}}" class="text-hint w-full">$t:admin.analytics.diagnostics.fields.worker_hint</span>
           </div>
         </div>
@@ -218,13 +218,13 @@
             <span class="text-heading">$t:admin.analytics.diagnostics.cards.archive</span>
             <span class="text-label-subtle">$t:admin.analytics.diagnostics.fields.last_hour_run|at={{analytics_diagnostics?.data?.archive?.last_hour_run | datetime | default('-')}}</span>
             <span class="text-label-subtle">$t:admin.analytics.diagnostics.fields.last_day_run|at={{analytics_diagnostics?.data?.archive?.last_day_run | datetime | default('-')}}</span>
-            <badge data-if="{{(analytics_diagnostics?.data?.archive?.lag_hours ?? 0) > 2}}" color="yellow" text="$t:admin.analytics.diagnostics.fields.lag_hours|hours={{analytics_diagnostics?.data?.archive?.lag_hours ?? 0}}" size="sm"/>
+            <badge data-type="composite" data-if="{{(analytics_diagnostics?.data?.archive?.lag_hours ?? 0) > 2}}" color="yellow" text="$t:admin.analytics.diagnostics.fields.lag_hours|hours={{analytics_diagnostics?.data?.archive?.lag_hours ?? 0}}" size="sm"/>
             <!-- 스케줄러가 매시 집계를 최근에 돌렸는가 — 화면 열 때 집계가 숫자를 맞춰도 어제 확정·정리·메일 보고서는 스케줄러만 돌린다.
                  판정 근거가 없으면(설치 직후) 배지를 띄우지 않는다. -->
             <span data-ref="scheduler_last_run" class="text-label-subtle">$t:admin.analytics.diagnostics.fields.scheduler_last_run|at={{analytics_diagnostics?.data?.archive?.scheduler?.last_run_at | datetime | default('-')}}</span>
-            <badge data-ref="scheduler_missing_badge" data-if="{{analytics_diagnostics?.data?.archive?.scheduler?.alive === false}}" color="yellow" text="$t:admin.analytics.diagnostics.fields.scheduler_missing" size="sm"/>
-            <badge data-if="{{!!_computed.runningRunId}}" color="blue" text="$t:admin.analytics.diagnostics.fields.running|id={{analytics_diagnostics.data.archive.running_run_id}}" size="sm"/>
-            <badge color="{{analytics_diagnostics?.data?.broadcasting?.configured ? 'green' : 'gray'}}" text="{{analytics_diagnostics?.data?.broadcasting?.configured ? $t('admin.analytics.diagnostics.progress_source.ws') : $t('admin.analytics.diagnostics.progress_source.polling')}}" size="sm"/>
+            <badge data-type="composite" data-ref="scheduler_missing_badge" data-if="{{analytics_diagnostics?.data?.archive?.scheduler?.alive === false}}" color="yellow" text="$t:admin.analytics.diagnostics.fields.scheduler_missing" size="sm"/>
+            <badge data-type="composite" data-if="{{!!_computed.runningRunId}}" color="blue" text="$t:admin.analytics.diagnostics.fields.running|id={{analytics_diagnostics.data.archive.running_run_id}}" size="sm"/>
+            <badge data-type="composite" color="{{analytics_diagnostics?.data?.broadcasting?.configured ? 'green' : 'gray'}}" text="{{analytics_diagnostics?.data?.broadcasting?.configured ? $t('admin.analytics.diagnostics.progress_source.ws') : $t('admin.analytics.diagnostics.progress_source.polling')}}" size="sm"/>
             <!-- 집계 실행은 이 카드 안에서 한다 — 「집계가 6시간 밀렸다」를 읽은 자리에서 바로 돌릴 수
                  있어야 한다(계획서 §4.11 진단 와이어프레임의 `ml-auto` 버튼). 화면 위로 올라가지 않는다. -->
             <div data-ref="card_archive_actions" class="ml-auto flex-center gap-2 flex-wrap">
@@ -309,10 +309,10 @@
             <span class="text-label-subtle">$t:admin.analytics.diagnostics.fields.visits_rows|count={{(analytics_diagnostics?.data?.storage?.exact?.analytics_visits ?? 0) | number}}</span>
             <span class="text-label-subtle">$t:admin.analytics.diagnostics.fields.actions_rows|count={{(analytics_diagnostics?.data?.storage?.exact?.analytics_actions ?? 0) | number}}</span>
             <span class="text-label-subtle">$t:admin.analytics.diagnostics.fields.storage_mb|mb={{Math.round(((analytics_diagnostics?.data?.storage?.tables ?? []).reduce((s, t) => s + ((t.data_bytes ?? 0) + (t.index_bytes ?? 0)), 0)) / 1048576 * 10) / 10}}</span>
-            <badge data-if="{{analytics_diagnostics?.data?.storage?.over_limit === true}}" color="red" text="$t:admin.analytics.diagnostics.fields.over_limit" size="sm"/>
-            <badge color="{{analytics_diagnostics?.data?.geoip?.enabled &amp;&amp; analytics_diagnostics?.data?.geoip?.db_present ? 'green' : 'gray'}}" text="{{'GeoIP ' + (analytics_diagnostics?.data?.geoip?.enabled &amp;&amp; analytics_diagnostics?.data?.geoip?.db_present ? $t('admin.analytics.diagnostics.fields.on') : $t('admin.analytics.diagnostics.fields.off'))}}" size="sm"/>
-            <badge color="{{analytics_diagnostics?.data?.trusted_proxy?.status === 'warning' ? 'red' : (analytics_diagnostics?.data?.trusted_proxy?.trusted_configured ? 'green' : 'gray')}}" text="{{'TrustedProxy ' + (analytics_diagnostics?.data?.trusted_proxy?.status === 'warning' ? $t('admin.analytics.diagnostics.fields.trusted_proxy_warning') : (analytics_diagnostics?.data?.trusted_proxy?.trusted_configured ? $t('admin.analytics.diagnostics.fields.on') : $t('admin.analytics.diagnostics.fields.off')))}}" size="sm"/>
-            <badge color="{{analytics_diagnostics?.data?.cloud_ranges?.enabled ? 'green' : 'gray'}}" text="{{$t('admin.analytics.diagnostics.fields.cloud_ranges') + ' ' + (analytics_diagnostics?.data?.cloud_ranges?.enabled ? $t('admin.analytics.diagnostics.fields.on') : $t('admin.analytics.diagnostics.fields.off'))}}" size="sm"/>
+            <badge data-type="composite" data-if="{{analytics_diagnostics?.data?.storage?.over_limit === true}}" color="red" text="$t:admin.analytics.diagnostics.fields.over_limit" size="sm"/>
+            <badge data-type="composite" color="{{analytics_diagnostics?.data?.geoip?.enabled &amp;&amp; analytics_diagnostics?.data?.geoip?.db_present ? 'green' : 'gray'}}" text="{{'GeoIP ' + (analytics_diagnostics?.data?.geoip?.enabled &amp;&amp; analytics_diagnostics?.data?.geoip?.db_present ? $t('admin.analytics.diagnostics.fields.on') : $t('admin.analytics.diagnostics.fields.off'))}}" size="sm"/>
+            <badge data-type="composite" color="{{analytics_diagnostics?.data?.trusted_proxy?.status === 'warning' ? 'red' : (analytics_diagnostics?.data?.trusted_proxy?.trusted_configured ? 'green' : 'gray')}}" text="{{'TrustedProxy ' + (analytics_diagnostics?.data?.trusted_proxy?.status === 'warning' ? $t('admin.analytics.diagnostics.fields.trusted_proxy_warning') : (analytics_diagnostics?.data?.trusted_proxy?.trusted_configured ? $t('admin.analytics.diagnostics.fields.on') : $t('admin.analytics.diagnostics.fields.off')))}}" size="sm"/>
+            <badge data-type="composite" color="{{analytics_diagnostics?.data?.cloud_ranges?.enabled ? 'green' : 'gray'}}" text="{{$t('admin.analytics.diagnostics.fields.cloud_ranges') + ' ' + (analytics_diagnostics?.data?.cloud_ranges?.enabled ? $t('admin.analytics.diagnostics.fields.on') : $t('admin.analytics.diagnostics.fields.off'))}}" size="sm"/>
           </div>
         </div>
       </div>
@@ -324,7 +324,7 @@
         <!-- 사유가 열두 가지라 배지로 늘어놓으면 줄바꿈에 묻혀 어느 사유가 큰지 읽기 어렵다 — 건수를
              나란히 세우는 표로 둔다(계획서 §4.10·§4.11 이 「표」로 못박은 자리). -->
         <div class="overflow-x-auto">
-          <data-grid data-ref="exclusions_grid" data="{{Object.entries(analytics_diagnostics?.data?.collection?.excluded_today ?? {}).map(e => ({ reason: e[0], count: e[1], label: (analytics_diagnostics?.data?.collection?.excluded_reason_labels ?? [])[e[0]] }))}}" :pagination="false" idField="reason" :selectable="false" :sortable="false" emptyMessage="$t:admin.analytics.diagnostics.exclusions_empty">
+          <data-grid data-type="composite" data-ref="exclusions_grid" data="{{Object.entries(analytics_diagnostics?.data?.collection?.excluded_today ?? {}).map(e => ({ reason: e[0], count: e[1], label: (analytics_diagnostics?.data?.collection?.excluded_reason_labels ?? [])[e[0]] }))}}" :pagination="false" idField="reason" :selectable="false" :sortable="false" emptyMessage="$t:admin.analytics.diagnostics.exclusions_empty">
             <column field="reason" header="$t:admin.analytics.diagnostics.exclusion_columns.reason">
               <cell>
                 <span class="text-body">{{row.label || $t('admin.analytics.diagnostics.exclusion_reasons.' + row.reason)}}</span>
@@ -342,7 +342,7 @@
         <blur-until-loaded sources="analytics_archive_runs"/>
         <h2 class="section-heading mb-3">$t:admin.analytics.diagnostics.runs_title</h2>
         <div class="overflow-x-auto">
-          <data-grid data-ref="archive_runs_grid" data="{{analytics_archive_runs?.data?.data ?? []}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{analytics_archive_runs?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{analytics_archive_runs?.data?.pagination?.last_page ?? null}}" :pageSize="10" :alwaysShowPagination="true" idField="id" :selectable="false" :sortable="false" emptyMessage="$t:admin.analytics.common.empty_title">
+          <data-grid data-type="composite" data-ref="archive_runs_grid" data="{{analytics_archive_runs?.data?.data ?? []}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{analytics_archive_runs?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{analytics_archive_runs?.data?.pagination?.last_page ?? null}}" :pageSize="10" :alwaysShowPagination="true" idField="id" :selectable="false" :sortable="false" emptyMessage="$t:admin.analytics.common.empty_title">
             <on type="action" event="onPageChange">
               <!-- 집계 이력의 쪽 이동 — 이력 전용 키 `runs_page` 를 쓴다. 같은 화면의 실패 로그가 `failures_page` 를 따로 쓰므로
                    한쪽 표를 넘겨도 다른 표의 쪽이 따라 움직이지 않는다. -->
@@ -365,7 +365,7 @@
             </column>
             <column field="status" header="$t:admin.analytics.diagnostics.run_columns.status" width="100px">
               <cell>
-                <badge color="{{row.status === 'success' ? 'green' : (row.status === 'failed' ? 'red' : (row.status === 'running' ? 'blue' : 'gray'))}}" text="{{$t('admin.analytics.diagnostics.run_status.' + (row.status ?? 'running'))}}" size="sm"/>
+                <badge data-type="composite" color="{{row.status === 'success' ? 'green' : (row.status === 'failed' ? 'red' : (row.status === 'running' ? 'blue' : 'gray'))}}" text="{{$t('admin.analytics.diagnostics.run_status.' + (row.status ?? 'running'))}}" size="sm"/>
               </cell>
             </column>
             <column field="progress_percent" header="$t:admin.analytics.diagnostics.run_columns.progress" width="160px">
@@ -436,7 +436,7 @@
           </div>
         </div>
         <div class="overflow-x-auto">
-          <data-grid data-ref="collect_failures_grid" data="{{analytics_collect_failures?.data?.data ?? []}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{analytics_collect_failures?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{analytics_collect_failures?.data?.pagination?.last_page ?? null}}" :pageSize="10" :alwaysShowPagination="true" idField="id" :selectable="false" :sortable="false" emptyMessage="$t:admin.analytics.diagnostics.failures_empty">
+          <data-grid data-type="composite" data-ref="collect_failures_grid" data="{{analytics_collect_failures?.data?.data ?? []}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{analytics_collect_failures?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{analytics_collect_failures?.data?.pagination?.last_page ?? null}}" :pageSize="10" :alwaysShowPagination="true" idField="id" :selectable="false" :sortable="false" emptyMessage="$t:admin.analytics.diagnostics.failures_empty">
             <on type="action" event="onPageChange">
               <!-- 실패 로그의 쪽 이동 — `failures_page` 만 바꾼다. 걸어 둔 사유 필터(`reason`)는 병합으로 그대로 남는다. -->
               <navigate path="/admin/analytics/diagnostics" :mergeQuery="true" :replace="true">
@@ -450,7 +450,7 @@
             </column>
             <column field="reason" header="$t:admin.analytics.diagnostics.failure_columns.reason" width="140px">
               <cell>
-                <badge color="red" text="{{$t('admin.analytics.diagnostics.failure_reasons.' + (row.reason ?? 'db_error'))}}" size="sm"/>
+                <badge data-type="composite" color="red" text="{{$t('admin.analytics.diagnostics.failure_reasons.' + (row.reason ?? 'db_error'))}}" size="sm"/>
               </cell>
             </column>
             <column field="message" header="$t:admin.analytics.diagnostics.failure_columns.message">

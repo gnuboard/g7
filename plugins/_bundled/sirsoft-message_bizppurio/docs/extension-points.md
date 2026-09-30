@@ -46,6 +46,12 @@ HookManager::addAction(
 <!-- @generated:hooks-subscribed START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 훅 이름 | 유형 | 리스너 | 메서드 | 우선순위 |
 |---|---|---|---|---|
+| `core.notification.channel_enabled` | filter | `RegisterNotificationChannelsListener` | `gateChannelEnabled` | 20 |
+| `core.notification.channel_readiness` | filter | `RegisterNotificationChannelsListener` | `checkReadiness` | 20 |
+| `core.notification.channels` | filter | `RegisterNotificationChannelsListener` | `addChannelCandidates` | 20 |
+| `core.notification.filter_available_channels` | filter | `RegisterNotificationChannelsListener` | `addChannels` | 20 |
+| `core.notification.filter_default_definitions` | filter | `SeedChannelTemplatesListener` | `augment` | 50 |
+| `core.notification.filter_seed_definitions` | filter | `SeedChannelTemplatesListener` | `augment` | 50 |
 | `core.notification_log.after_log_failed` | action (미선언) | `LinkNotificationLogListener` | `linkLog` | 15 |
 | `core.notification_log.after_log_sent` | action (미선언) | `LinkNotificationLogListener` | `linkLog` | 15 |
 | `core.plugin_settings.after_save` | action | `InvalidateTokenOnSettingsSaveListener` | `invalidateToken` | 10 |
@@ -55,21 +61,23 @@ HookManager::addAction(
 <!-- @generated:hooks-subscribed END -->
 
 <!-- @intent START -->
-6개가 각각 다른 이음매입니다. 하나가 빠지면 그 이음매만 조용히 끊기고 나머지는 정상
+각 구독이 서로 다른 이음매입니다. 하나가 빠지면 그 이음매만 조용히 끊기고 나머지는 정상
 동작하므로, 리스너를 지우거나 이름을 바꿀 때는 그것이 무엇을 잇고 있었는지 먼저 확인합니다.
+구독은 전부 코어 훅(과 자기 훅)입니다 — 이 플러그인은 어떤 도메인이 알림을 보내는지 모릅니다.
 
 | 훅 | 무엇을 잇는가 |
 |---|---|
 | `core.notification_log.after_log_sent` · `after_log_failed` | 코어 알림 로그와 이 플러그인의 발송 기록을 연결 — 관리자 "알림 발송 이력" 에 문자·알림톡 결과가 함께 보이는 이유 |
 | `core.plugin_settings.after_save` | 설정을 저장하면 비즈뿌리오 인증 토큰을 무효화 — 계정 정보를 바꿨는데 옛 토큰으로 계속 발송하는 것을 막습니다 |
 | `core.plugin_settings.update_validation_rules` | **운영 모드로 전환할 때만** 필수값(아이디·비밀번호·API 키·발신번호) 검증을 추가. 검수 모드에서는 비어 있어도 저장되어야 합니다 |
-| `sirsoft-ecommerce.notification.extract_data` | 비회원 주문 알림에 주문 시 입력한 연락처를 주입 |
+| `core.notification.filter_available_channels` · `channel_readiness` · `channel_enabled` · `channels` | 코어 알림 채널 계약 — 채널 노출·준비 상태·미저장=꺼짐, 그리고 모든 도메인 공통 채널 후보(`core.notification.channels`) |
+| `core.notification.filter_seed_definitions` · `filter_default_definitions` | 알림 설정 화면의 문자·알림톡 템플릿 행 — 코어·모든 모듈·플러그인이 알림 정의를 저장하기 직전 회원 대상 정의에 sms·alimtalk 템플릿을 더하고, [기본값 복원]도 같은 규칙으로 되돌립니다. 도메인별 언어팩 시딩 훅(`seed.{도메인}.notifications.translations`)은 구독하지 않습니다 — 새 모듈의 알림에도 행이 생기는 이유. 이 플러그인을 켜면 코어 시더와 코어의 활성 모듈·플러그인 알림 정의 재동기화를 불러 이미 저장된 정의에도 행을 만듭니다(권한·메뉴 무관, 운영자 수정 보존) |
 | `sirsoft-message_bizppurio.notification.extract_data` | 잔액부족 관리자 알림의 본문 변수 채우기 (자기 훅) |
 
-`sirsoft-ecommerce` 는 **manifest 의존이 아닙니다.** 훅 구독은 상대가 없으면 발화하지 않으므로
-이커머스가 없어도 이 플러그인은 정상 동작하고 비회원 문자 발송만 비어 있습니다. 대신 이커머스가
-그 훅 이름이나 페이로드를 바꾸면 예외 없이 조용히 끊기고, 증상은 "비회원 주문 문자가 안 간다"
-로만 나타납니다.
+**비회원 수신 번호**는 이 플러그인이 채우지 않습니다. 알림을 보내는 도메인이 extract_data 의 data 에
+코어 표준 키 `GenericNotification::RECIPIENT_PHONE_KEY`(`'_recipient_phone'`)로 싣고, 발송 드라이버는
+회원이면 회원 휴대폰, 아니면 이 키를 읽습니다. 그래서 이커머스 같은 도메인 모듈이 없어도 이 플러그인은
+그대로이고, 새 도메인이 비회원 문자를 보내려면 그 도메인이 이 키를 싣기만 하면 됩니다.
 <!-- @intent END -->
 
 ## 훅 리스너
@@ -78,30 +86,27 @@ HookManager::addAction(
 | 리스너 | 구독 훅 | 등록 방식 | HookListenerInterface | 파일 |
 |---|---|---|---|---|
 | `BalanceLowNotificationDataListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/BalanceLowNotificationDataListener.php` |
-| `GuestPhoneExtractListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/GuestPhoneExtractListener.php` |
 | `InvalidateTokenOnSettingsSaveListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/InvalidateTokenOnSettingsSaveListener.php` |
 | `LinkNotificationLogListener` | 2개 | 명시 등록 | ✅ | `src/Listeners/LinkNotificationLogListener.php` |
-| `RegisterNotificationChannelsListener` | 0개 | 명시 등록 | ✅ | `src/Listeners/RegisterNotificationChannelsListener.php` |
-| `SeedChannelTemplatesListener` | 0개 | 명시 등록 | ✅ | `src/Listeners/SeedChannelTemplatesListener.php` |
+| `RegisterNotificationChannelsListener` | 4개 | 명시 등록 | ✅ | `src/Listeners/RegisterNotificationChannelsListener.php` |
+| `SeedChannelTemplatesListener` | 2개 | 명시 등록 | ✅ | `src/Listeners/SeedChannelTemplatesListener.php` |
 | `ValidateBizppurioSettingsListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/ValidateBizppurioSettingsListener.php` |
 <!-- @generated:listeners END -->
 
 <!-- @intent START -->
-7개 전부 `HookListenerInterface` 를 구현하고 `getSubscribedHooks()` 로 자기 구독을 선언합니다.
+6개 전부 `HookListenerInterface` 를 구현하고 `getSubscribedHooks()` 로 자기 구독을 선언합니다.
 
 | 리스너 | 역할 |
 |---|---|
-| `RegisterNotificationChannelsListener` | 코어 알림 시스템에 문자·알림톡 채널 등록 |
+| `RegisterNotificationChannelsListener` | 코어 알림 채널 계약 4종에 답해 문자·알림톡 채널 등록 (도메인 비인지) |
 | `SeedChannelTemplatesListener` | 그 채널의 템플릿 자리 시드 |
 | `LinkNotificationLogListener` | 코어 알림 로그 ↔ 발송 기록 연결 |
 | `InvalidateTokenOnSettingsSaveListener` | 설정 저장 시 인증 토큰 무효화 |
 | `ValidateBizppurioSettingsListener` | 운영 모드 전환 시 필수값 검증 규칙 추가 |
-| `GuestPhoneExtractListener` | 비회원 주문 알림에 연락처 주입 |
 | `BalanceLowNotificationDataListener` | 잔액부족 알림 본문 변수 채우기 |
 
-구독 수가 0인 둘(`RegisterNotificationChannelsListener` · `SeedChannelTemplatesListener`)은
-훅이 아니라 **수명주기 시점**(설치·활성화)에 호출되는 리스너라 정적 훅 수집에 잡히지 않습니다.
-이 둘이 빠지면 채널 자체가 알림 설정 화면에 나타나지 않습니다.
+`SeedChannelTemplatesListener` 는 구독 훅을 반복문으로 조립해 정적 훅 수집에 0개로 잡힙니다.
+`RegisterNotificationChannelsListener` 와 이 리스너가 빠지면 채널 자체가 알림 설정 화면에 나타나지 않습니다.
 
 리스너에서 `Model::query()` · `DB::table()` · `$row->save()` 를 직접 부르지 않습니다 — 데이터
 접근은 Repository 인터페이스 주입으로만 합니다.

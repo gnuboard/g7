@@ -241,7 +241,7 @@
           </select>
         </div>
       </div>
-      <data-grid data-ref="inquiries_datagrid" :data-blur-until-loaded="true" data="{{inquiries?.data?.data}}" :pagination="true" :alwaysShowPagination="true" :pageSize="20" :serverSidePagination="true" serverCurrentPage="{{inquiries?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{inquiries?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{inquiries?.data?.pagination?.has_more_pages ?? false}}" selectable="{{inquiries?.data?.abilities?.can_manage === true}}" selectionScope="page" selectedIds="{{_global.selectedItems_inquiries || []}}" idField="id" :responsiveBreakpoint="768" :showFirstLast="true" emptyMessage="$t:sirsoft-ecommerce.admin.inquiries.table.empty" actionsColumnHeader="$t:common.actions" selectedCountText="">
+      <data-grid data-type="composite" data-ref="inquiries_datagrid" :data-blur-until-loaded="true" data="{{inquiries?.data?.data}}" :pagination="true" :alwaysShowPagination="true" :pageSize="20" :serverSidePagination="true" serverCurrentPage="{{inquiries?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{inquiries?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{inquiries?.data?.pagination?.has_more_pages ?? false}}" selectable="{{inquiries?.data?.abilities?.can_manage === true}}" selectionScope="page" selectedIds="{{_global.selectedItems_inquiries || []}}" idField="id" :responsiveBreakpoint="768" :showFirstLast="true" emptyMessage="$t:sirsoft-ecommerce.admin.inquiries.table.empty" actionsColumnHeader="$t:common.actions" selectedCountText="">
         <column field="created_at" header="$t:sirsoft-ecommerce.admin.inquiries.columns.created_at">
           <cell>
             <span class="text-sm text-gray-900 dark:text-white">{{row.created_at}}</span>
@@ -259,7 +259,7 @@
                   {{row.member?.name}}
                 </span>
                 <span data-if="{{!row.member}}" class="text-gray-400 dark:text-gray-500">$t:sirsoft-ecommerce.admin.inquiries.badges.guest</span>
-                <badge data-if="{{row.member?.is_withdrawn}}" color="gray" size="sm">$t:sirsoft-ecommerce.admin.inquiries.badges.withdrawn</badge>
+                <badge data-type="composite" data-if="{{row.member?.is_withdrawn}}" color="gray" size="sm">$t:sirsoft-ecommerce.admin.inquiries.badges.withdrawn</badge>
               </div>
               <span data-if="{{row.member?.email}}" class="text-xs text-gray-500 dark:text-gray-400">{{row.member?.email}}</span>
             </div>
@@ -270,8 +270,8 @@
             <div class="flex flex-col">
               <span class="font-medium text-gray-900 dark:text-white">{{row.product?.name ?? '-'}}</span>
               <div class="flex items-center gap-1 flex-wrap">
-                <badge data-if="{{row.product?.display_status === 'hidden'}}" color="gray" size="sm">{{row.product?.display_status_label}}</badge>
-                <badge data-if="{{row.product?.sales_status &amp;&amp; row.product?.sales_status !== 'on_sale'}}" color="yellow" size="sm">{{row.product?.sales_status_label}}</badge>
+                <badge data-type="composite" data-if="{{row.product?.display_status === 'hidden'}}" color="gray" size="sm">{{row.product?.display_status_label}}</badge>
+                <badge data-type="composite" data-if="{{row.product?.sales_status &amp;&amp; row.product?.sales_status !== 'on_sale'}}" color="yellow" size="sm">{{row.product?.sales_status_label}}</badge>
               </div>
             </div>
           </cell>
@@ -284,8 +284,8 @@
         </column>
         <column field="is_answered" header="$t:sirsoft-ecommerce.admin.inquiries.columns.status">
           <cell>
-            <badge data-if="{{row.is_answered}}" color="green" size="sm">$t:sirsoft-ecommerce.admin.inquiries.status.answered</badge>
-            <badge data-if="{{!row.is_answered}}" color="yellow" size="sm">$t:sirsoft-ecommerce.admin.inquiries.status.pending</badge>
+            <badge data-type="composite" data-if="{{row.is_answered}}" color="green" size="sm">$t:sirsoft-ecommerce.admin.inquiries.status.answered</badge>
+            <badge data-type="composite" data-if="{{!row.is_answered}}" color="yellow" size="sm">$t:sirsoft-ecommerce.admin.inquiries.status.pending</badge>
           </cell>
         </column>
         <prop name="rowActions">
@@ -333,7 +333,7 @@
   </slot>
   <modal>
     <!-- 단건 삭제 확인 — 지우는 것은 회원이 담아 둔 기록이다. 그 사실을 본문이 분명히 말한다 -->
-    <modal data-ref="modal_inquiries_delete" title="$t:sirsoft-ecommerce.admin.inquiries.modal.delete.title" size="sm">
+    <modal data-type="composite" data-ref="modal_inquiries_delete" title="$t:sirsoft-ecommerce.admin.inquiries.modal.delete.title" size="sm">
       <meta editor_label="$t:sirsoft-ecommerce.admin.inquiries.modal.delete.title"/>
       <div class="py-2">
         <p class="text-sm text-gray-700 dark:text-gray-300">$t:sirsoft-ecommerce.admin.inquiries.modal.delete.message</p>
@@ -376,7 +376,7 @@
       답변 작성 — 답변 API(`POST admin/inquiries/{id}/reply`)는 이미 있었고 이 화면에만 진입점이 없었다.
       문의 게시판이 지정돼 있지 않으면 서버가 422 로 「게시판 미설정」을 돌려주며, 그 문구가 오류 모달에 그대로 뜬다.
     -->
-    <modal data-ref="modal_inquiries_reply" data-testid="admin-inquiries-reply-modal" title="$t:sirsoft-ecommerce.admin.inquiries.modal.reply.title" size="md">
+    <modal data-type="composite" data-ref="modal_inquiries_reply" data-testid="admin-inquiries-reply-modal" title="$t:sirsoft-ecommerce.admin.inquiries.modal.reply.title" size="md">
       <meta editor_label="$t:sirsoft-ecommerce.admin.inquiries.modal.reply.title"/>
       <div class="py-2">
         <!-- 누구의 어떤 문의에 답하는지 — 목록에서 행을 고른 뒤 모달만 보고도 확인되어야 한다 -->
@@ -429,7 +429,7 @@
   </modal>
   <modal>
     <!-- 선택 삭제 확인 — 건수를 본문에 싣는다 -->
-    <modal data-ref="modal_inquiries_bulk_delete" data-testid="admin-inquiries-bulk-delete-modal" title="$t:sirsoft-ecommerce.admin.inquiries.modal.bulk_delete.title" size="sm">
+    <modal data-type="composite" data-ref="modal_inquiries_bulk_delete" data-testid="admin-inquiries-bulk-delete-modal" title="$t:sirsoft-ecommerce.admin.inquiries.modal.bulk_delete.title" size="sm">
       <meta editor_label="$t:sirsoft-ecommerce.admin.inquiries.modal.bulk_delete.title"/>
       <div class="py-2">
         <p class="text-sm text-gray-700 dark:text-gray-300">$t:sirsoft-ecommerce.admin.inquiries.modal.bulk_delete.message|count={{(_global.selectedItems_inquiries ?? []).length}}</p>
@@ -470,7 +470,7 @@
   </modal>
   <modal>
     <!-- 삭제 실패 — 서버 문구를 그대로 싣는다. 여러 건을 다루는 자리라 사유를 스쳐 지나가게 두지 않는다 -->
-    <modal data-ref="modal_inquiries_error" title="$t:common.error" size="sm">
+    <modal data-type="composite" data-ref="modal_inquiries_error" title="$t:common.error" size="sm">
       <div class="py-2">
         <p class="text-sm text-gray-700 dark:text-gray-300">{{_global.errorMessage || $t:common.error_occurred}}</p>
       </div>

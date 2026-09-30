@@ -4,7 +4,7 @@
   0 을 그리면 아무도 오지 않은 것처럼 읽힌다). -->
 <partial description="홈 하단 방문자 카운터 (오늘·어제·최대·전체)">
   <div data-ref="visitor_counter_section" data-if="{{_global.settings?.analytics?.public_summary_enabled === true &amp;&amp; !!visitor_summary?.data &amp;&amp; !visitor_summary?.error}}" class="mt-4">
-    <visitor-counter data-ref="visitor_counter" today="{{visitor_summary?.data?.today ?? 0}}" yesterday="{{visitor_summary?.data?.yesterday ?? 0}}" max="{{visitor_summary?.data?.max ?? 0}}" total="{{visitor_summary?.data?.total ?? 0}}" layout="row">
+    <visitor-counter data-type="composite" data-ref="visitor_counter" today="{{visitor_summary?.data?.today ?? 0}}" yesterday="{{visitor_summary?.data?.yesterday ?? 0}}" max="{{visitor_summary?.data?.max ?? 0}}" total="{{visitor_summary?.data?.total ?? 0}}" layout="row">
       <prop name="labels">
         <field name="title" value="$t:user.visitor_counter.title"/>
         <field name="today" value="$t:user.visitor_counter.today"/>

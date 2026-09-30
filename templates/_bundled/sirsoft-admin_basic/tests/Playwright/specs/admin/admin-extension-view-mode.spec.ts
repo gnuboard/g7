@@ -51,7 +51,7 @@ test.describe('확장 목록 — 보기 전환', () => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await gotoList(page, extensionReadToken, '/admin/plugins', 'plugin_card_grid');
 
-    // 1440px 은 xl 구간이라 4열이다(lg 3 → xl 4).
+    // 1440px 은 그리드 폭이 1072px 라 4열이다(열 수는 중단점이 아니라 컨테이너 폭 ÷ (카드 250 + 간격 16)).
     expect(await columnCount(page, 'plugin_card_grid')).toBe(4);
     // 아직 고른 적이 없으므로 저장소는 비어 있어야 한다(기본값을 미리 쓰지 않는다).
     expect(await page.evaluate((k) => window.localStorage.getItem(k), VIEW_MODE_KEY)).toBeNull();
@@ -101,7 +101,9 @@ test.describe('확장 목록 — 보기 전환', () => {
   test('P4 — 갤러리 열 수가 화면 폭을 따른다', async ({ page, extensionReadToken }) => {
     await gotoList(page, extensionReadToken, '/admin/plugins', 'plugin_card_grid');
 
-    for (const [width, expected] of [[1440, 4], [1100, 3], [834, 2], [390, 1]] as const) {
+    // 열 수는 컨테이너 폭으로 정한다(카드 250 + 간격 16) — 사이드바가 열린 1100px 은 그리드 폭이 732px 라
+    // 3열(782px)에 못 미쳐 2열이 맞다. 3열 표본은 컴포넌트 실측표(1280 → 3)를 따른다(#703 재측정).
+    for (const [width, expected] of [[1440, 4], [1280, 3], [834, 2], [390, 1]] as const) {
       await page.setViewportSize({ width, height: 900 });
       await expect
         .poll(() => columnCount(page, 'plugin_card_grid'), { message: `${width}px 열 수` })
@@ -165,5 +167,107 @@ test.describe('확장 목록 — 보기 전환', () => {
     // 대상 확장(또는 코어)에서 빌려 온 그림일 때만 배지가 붙는다.
     const badges = page.locator('#lp_card_grid span[aria-label]');
     expect(await badges.count()).toBeGreaterThan(0);
+  });
+});
+
+test.describe('확장 목록 — 스위치 재동기와 숨김 항목 (#703)', () => {
+  test.setTimeout(90_000);
+
+  // 서버에는 아무 것도 바꾸지 않는다 — 끄기 요청을 가로채 409(의존 충돌)를 돌려준다.
+  // @scenario screen=modules, view=gallery, install_state=active
+  // @effects toggle_resyncs_to_server_value_on_refetch
+  test('P8 — 의존 충돌 창을 취소하면 스위치가 서버 값(켜짐)으로 돌아온다', async ({ page, extensionReadToken }) => {
+    await page.route('**/api/admin/modules/deactivate', (route) =>
+      route.fulfill({
+        status: 409,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          success: false,
+          message: 'conflict',
+          errors: { dependent_templates: [{ identifier: 'e2e-dependent', name: 'E2E Dependent', type: 'user' }] },
+        }),
+      }),
+    );
+    await gotoList(page, extensionReadToken, '/admin/modules', 'module_card_grid');
+
+    // 켜져 있고 누를 수 있는 첫 스위치
+    const target = page.locator('#module_card_grid [role="switch"][aria-checked="true"]:not([aria-disabled="true"])').first();
+    const label = await target.getAttribute('aria-label');
+    const sw = page.locator(`#module_card_grid [role="switch"][aria-label="${label}"]`);
+
+    await sw.click();
+    // 강제 창이 열리면 스위치는 서버 값으로 돌아와 있어야 한다.
+    const dialog = page.getByRole('dialog');
+    await expect(dialog).toBeVisible({ timeout: 30_000 });
+    await expect(sw).toHaveAttribute('aria-checked', 'true');
+
+    await dialog.getByRole('button', { name: '취소' }).click();
+    await expect(dialog).toBeHidden({ timeout: 10_000 });
+    await expect(sw).toHaveAttribute('aria-checked', 'true');
+  });
+
+  // 최고관리자 여부는 서버 응답(current_user.data.is_super)에서 온다 — 여기서는 응답에 값을 얹어
+  // 화면 배선만 잰다(서버가 값을 주는지는 PHPUnit AuthUserSuperFlagTest 가 잠근다).
+  // @scenario screen=modules, view=gallery
+  // @effects hidden_toggle_refetch_uses_new_value
+  test('P9 — 숨김 항목 포함을 켜면 바로 그 값(include_hidden=1)으로 목록을 다시 받고, 새로고침해도 유지한다', async ({ page, extensionReadToken }) => {
+    await page.route('**/api/admin/auth/user', async (route) => {
+      const response = await route.fetch();
+      const json = await response.json();
+      json.data = { ...(json.data ?? {}), is_super: true };
+      await route.fulfill({ response, json });
+    });
+    await gotoList(page, extensionReadToken, '/admin/modules', 'module_card_grid');
+
+    const checkbox = page.getByRole('checkbox', { name: /숨김/ });
+    await expect(checkbox).toBeVisible({ timeout: 30_000 });
+
+    const request = page.waitForRequest((r) => /\/api\/admin\/modules\?/.test(r.url()));
+    await checkbox.click();
+    expect(new URL((await request).url()).searchParams.get('include_hidden')).toBe('1');
+
+    // 체크 값은 주소에 실린다 — 화면 상태에 두면 페이지를 넘길 때 풀려 2페이지를 숨김 없이 받았다(#703 실측).
+    await expect(page).toHaveURL(/include_hidden=1/);
+    const reload = page.waitForRequest((r) => /\/api\/admin\/modules\?/.test(r.url()));
+    await page.reload();
+    expect(new URL((await reload).url()).searchParams.get('include_hidden')).toBe('1');
+    await expect(page.getByRole('checkbox', { name: /숨김/ })).toBeChecked({ timeout: 30_000 });
+
+    const back = page.waitForRequest((r) => /\/api\/admin\/modules\?/.test(r.url()));
+    await page.getByRole('checkbox', { name: /숨김/ }).click();
+    expect(new URL((await back).url()).searchParams.get('include_hidden')).toBe('0');
+  });
+
+  // 언어팩도 같은 격자·같은 재동기 신호를 쓴다. 꺼진 팩을 켜는 요청을 가로채 409(같은 로케일 자리 충돌)를
+  // 돌려주고 고르는 창을 닫는다 — 환경설정 언어팩 탭은 이 창을 싣지 않아 아무 것도 뜨지 않았다(#703 실측).
+  // @scenario screen=settings_language_packs_tab, view=gallery, install_state=inactive
+  // @effects toggle_resyncs_to_server_value_on_refetch
+  test('P10 — 언어팩 자리 충돌 창을 취소하면 스위치가 서버 값(꺼짐)으로 돌아온다', async ({ page, extensionReadToken }) => {
+    await page.route('**/api/admin/language-packs/*/activate', (route) =>
+      route.fulfill({
+        status: 409,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          success: false,
+          message: 'conflict',
+          errors: { current: { identifier: 'e2e-current', locale: 'ja' }, target: { identifier: 'e2e-target', locale: 'ja' } },
+        }),
+      }),
+    );
+    await gotoList(page, extensionReadToken, '/admin/settings/language-packs', 'lp_card_grid');
+
+    const target = page.locator('#lp_card_grid [role="switch"][aria-checked="false"]:not([aria-disabled="true"])').first();
+    const label = await target.getAttribute('aria-label');
+    const sw = page.locator(`#lp_card_grid [role="switch"][aria-label="${label}"]`).first();
+
+    await sw.click();
+    const dialog = page.getByRole('dialog');
+    await expect(dialog).toBeVisible({ timeout: 30_000 });
+    await expect(dialog).toContainText('e2e-current');
+    await expect(sw).toHaveAttribute('aria-checked', 'false');
+
+    await dialog.getByRole('button', { name: '취소' }).click();
+    await expect(dialog).toBeHidden({ timeout: 10_000 });
+    await expect(sw).toHaveAttribute('aria-checked', 'false');
   });
 });

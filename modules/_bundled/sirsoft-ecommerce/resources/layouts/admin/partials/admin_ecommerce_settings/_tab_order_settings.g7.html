@@ -123,7 +123,7 @@
             <p class="text-sm font-medium text-gray-900 dark:text-gray-100">$t:sirsoft-ecommerce.admin.settings.order_settings.auto_cancel.toggle_description</p>
             <p class="form-hint">$t:sirsoft-ecommerce.admin.settings.order_settings.auto_cancel.toggle_hint</p>
           </div>
-          <toggle name="order_settings.auto_cancel_expired" value="{{_local.form?.order_settings?.auto_cancel_expired}}" disabled="{{_computed.isReadOnly}}"/>
+          <toggle data-type="composite" name="order_settings.auto_cancel_expired" value="{{_local.form?.order_settings?.auto_cancel_expired}}" disabled="{{_computed.isReadOnly}}"/>
         </div>
         <span data-if="{{_local.errors?.['order_settings.auto_cancel_expired']}}" class="form-error-xs">{{_local.errors?.['order_settings.auto_cancel_expired']?.[0] ?? ''}}</span>
         <div data-if="{{_local.form?.order_settings?.auto_cancel_expired}}" class="flex-center gap-2 flex-wrap">
@@ -148,7 +148,7 @@
       <div class="row-stack">
         <div>
           <span class="form-label">$t:sirsoft-ecommerce.admin.settings.order_settings.cancellable_statuses.label</span>
-          <tag-input name="order_settings.cancellable_statuses" placeholder="$t:sirsoft-ecommerce.admin.settings.order_settings.cancellable_statuses.placeholder" value="{{_local.form?.order_settings?.cancellable_statuses ?? ['pending_order', 'pending_payment', 'payment_complete']}}" :isMulti="true" :isClearable="false" :isSearchable="true" disabled="{{_computed.isReadOnly}}">
+          <tag-input data-type="composite" name="order_settings.cancellable_statuses" placeholder="$t:sirsoft-ecommerce.admin.settings.order_settings.cancellable_statuses.placeholder" value="{{_local.form?.order_settings?.cancellable_statuses ?? ['pending_order', 'pending_payment', 'payment_complete']}}" :isMulti="true" :isClearable="false" :isSearchable="true" disabled="{{_computed.isReadOnly}}">
             <prop name="options">
               <item value="pending_order" label="$t:sirsoft-ecommerce.enums.order_status.pending_order"/>
               <item value="pending_payment" label="$t:sirsoft-ecommerce.enums.order_status.pending_payment"/>
@@ -172,7 +172,7 @@
       <div class="row-stack">
         <div>
           <span class="form-label">$t:sirsoft-ecommerce.admin.settings.order_settings.confirmable_statuses.label</span>
-          <tag-input name="order_settings.confirmable_statuses" placeholder="$t:sirsoft-ecommerce.admin.settings.order_settings.confirmable_statuses.placeholder" value="{{_local.form?.order_settings?.confirmable_statuses ?? ['shipping', 'delivered']}}" :isMulti="true" :isClearable="false" :isSearchable="true" disabled="{{_computed.isReadOnly}}">
+          <tag-input data-type="composite" name="order_settings.confirmable_statuses" placeholder="$t:sirsoft-ecommerce.admin.settings.order_settings.confirmable_statuses.placeholder" value="{{_local.form?.order_settings?.confirmable_statuses ?? ['shipping', 'delivered']}}" :isMulti="true" :isClearable="false" :isSearchable="true" disabled="{{_computed.isReadOnly}}">
             <prop name="options">
               <item value="payment_complete" label="$t:sirsoft-ecommerce.enums.order_status.payment_complete"/>
               <item value="shipping_hold" label="$t:sirsoft-ecommerce.enums.order_status.shipping_hold"/>
@@ -205,7 +205,7 @@
           <p class="text-sm font-medium text-gray-900 dark:text-gray-100">$t:sirsoft-ecommerce.admin.settings.order_settings.stock_management.restore_on_cancel_description</p>
           <p class="form-hint">$t:sirsoft-ecommerce.admin.settings.order_settings.stock_management.restore_on_cancel_hint</p>
         </div>
-        <toggle name="order_settings.stock_restore_on_cancel" value="{{_local.form?.order_settings?.stock_restore_on_cancel}}" disabled="{{_computed.isReadOnly}}"/>
+        <toggle data-type="composite" name="order_settings.stock_restore_on_cancel" value="{{_local.form?.order_settings?.stock_restore_on_cancel}}" disabled="{{_computed.isReadOnly}}"/>
       </div>
       <span data-if="{{_local.errors?.['order_settings.stock_restore_on_cancel']}}" class="form-error-xs mt-1">{{_local.errors?.['order_settings.stock_restore_on_cancel']?.[0] ?? ''}}</span>
     </div>

@@ -5,7 +5,7 @@
   정의마다 변수가 다르기 때문이다.
   푸터에 버튼이 넷이다 — 미리보기 · 기본값 복원 · 취소 · 저장. -->
 <partial description="IDV 메시지 템플릿 편집 모달 — 알림 템플릿 모달 패리티 (언어 탭 + 고정 footer + 검증 에러 영역)" editor_label="$t:admin.modal_label.admin_settings.modal_identity_message_template_form">
-  <modal data-ref="modal_identity_message_template_form" size="xl" title="$t:admin.settings.identity.messages.modal.title" :closeOnOverlayClick="false">
+  <modal data-type="composite" data-ref="modal_identity_message_template_form" size="xl" title="$t:admin.settings.identity.messages.modal.title" :closeOnOverlayClick="false">
     <div data-ref="identity_message_form_container" data-blur-until-loaded="{{_global.identity_message_template_form_modal?.isSaving}}" class="flex flex-col max-h-[calc(90vh-140px)] -my-4">
       <div class="flex-1 overflow-y-auto space-y-5 pr-1">
         <div data-ref="identity_message_form_errors" data-if="{{_global.identity_message_template_form_modal?.errors}}" class="rounded-md border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 px-4 py-3">
@@ -48,7 +48,7 @@
         <div data-ref="identity_message_form_body" class="row-stack">
           <div>
             <label class="form-label">$t:admin.settings.identity.messages.modal.body</label>
-            <html-editor content="{{_global.identity_message_template_form_modal?.template?.body?.[_global.identity_message_template_form_modal?.editLang ?? $locale] ?? ''}}" :isHtml="true" :showHtmlModeToggle="false" class="min-h-[200px]">
+            <html-editor data-type="composite" content="{{_global.identity_message_template_form_modal?.template?.body?.[_global.identity_message_template_form_modal?.editLang ?? $locale] ?? ''}}" :isHtml="true" :showHtmlModeToggle="false" class="min-h-[200px]">
               <on type="change">
                 <!-- 본문(언어별) — 제목과 같은 방식이고, 편집기라 `input` 대신 `change` 로 받는다. -->
                 <set-state target="global" identity_message_template_form_modal.template.body="{{Object.assign({}, _global.identity_message_template_form_modal?.template?.body, {[_global.identity_message_template_form_modal?.editLang ?? $locale]: $event.target.value})}}"/>

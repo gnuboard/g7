@@ -118,12 +118,12 @@
                                             ]
                                         },
                                         {
-                                            "comment": "개인정보처리방침 — 동의 결정 컨텍스트 보존 위해 새 탭으로 오픈 (rel=noopener,noreferrer). needs_renewal=true 시 라벨이 '변경된 정책 본문 보기' 로 바뀌고 amber 톤으로 강조됨 (중복 링크 방지 — 사유 박스 내부 별도 링크 미사용).",
+                                            "comment": "개인정보처리방침 — 동의 결정 컨텍스트 보존 위해 새 탭으로 오픈 (rel=noopener,noreferrer). needs_renewal=true 시 라벨이 '변경된 정책 본문 보기' 로 바뀌고 amber 톤으로 강조됨 (중복 링크 방지 — 사유 박스 내부 별도 링크 미사용). 주소는 운영자가 설정에 직접 적은 값을 그대로 쓴다 — 서버가 사이트 경로(/…) 또는 https 주소만 내보내므로 여기서 조합하지 않는다.",
                                             "type": "basic",
                                             "name": "A",
                                             "if": "{{gdprPublicSettings?.data?.privacy_policy_available === true}}",
                                             "props": {
-                                                "href": "/page/{{gdprPublicSettings?.data?.privacy_policy_slug ?? ''}}",
+                                                "href": "{{gdprPublicSettings?.data?.privacy_policy_url ?? ''}}",
                                                 "target": "_blank",
                                                 "rel": "noopener noreferrer",
                                                 "className": "{{gdprMyConsent?.data?.needs_renewal === true ? 'inline-flex items-center gap-1 mt-1 text-xs font-semibold text-amber-700 dark:text-amber-300 underline hover:no-underline' : 'inline-flex items-center gap-1 mt-1 text-xs text-blue-600 dark:text-blue-400 hover:underline'}}"

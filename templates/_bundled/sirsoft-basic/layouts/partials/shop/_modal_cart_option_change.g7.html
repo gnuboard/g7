@@ -1,7 +1,7 @@
 <!-- 장바구니에 담은 뒤 옵션을 바꾸는 창. 실제로는 «고치기» 가 아니라 **다른 옵션 항목으로 갈아 담는
      것**이라, 고른 조합이 이미 장바구니에 있으면 수량이 합쳐진다. -->
 <partial description="장바구니 상품 옵션 변경 모달" editor_label="$t:user.modal_label.shop.cart_option_change_modal">
-  <modal data-ref="cart_option_change_modal" title="$t:shop.cart.option_modal.title" size="md">
+  <modal data-type="composite" data-ref="cart_option_change_modal" title="$t:shop.cart.option_modal.title" size="md">
     <!-- 모달 내용 - 상품 정보 및 수량 변경 -->
     <div class="p-4">
       <!-- 전체 에러 메시지 박스 -->
@@ -113,7 +113,7 @@
       <div class="space-y-2">
         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">$t:shop.cart.option_modal.quantity</label>
         <div class="{{$parent._local.optionErrors?.quantity ? 'ring-2 ring-red-500 rounded-lg' : ''}}">
-          <quantity-selector value="{{$parent._local.selectedQuantity ?? $parent._local.optionModal.targetItem?.quantity ?? 1}}" :min="1" max="{{$parent._local.matchedOption?.stock_quantity ?? $parent._local.optionModal.targetItem?.stock ?? 999}}" size="md">
+          <quantity-selector data-type="composite" value="{{$parent._local.selectedQuantity ?? $parent._local.optionModal.targetItem?.quantity ?? 1}}" :min="1" max="{{$parent._local.matchedOption?.stock_quantity ?? $parent._local.optionModal.targetItem?.stock ?? 999}}" size="md">
             <on event="onChange">
               <!-- 수량을 손대면 지난 검증 오류 표시를 먼저 걷는다 — 고쳤는데도 빨간 테두리가 남는 것을 막는다 -->
               <sequence>

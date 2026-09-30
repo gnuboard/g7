@@ -7,10 +7,11 @@
   행 메뉴(수정·복사·삭제)는 저마다 다르게 움직인다 — 수정은 곧장 이동, 복사·삭제는 대상을 전역에
   담고 확인 창을 연다. -->
 <partial description="Shipping Policy List DataGrid (국가별 설정 요약 표시)">
-  <data-grid data-ref="shipping_policy_datagrid" data="{{shipping_policies?.data?.data || []}}" idField="id" :selectable="true" selectionScope="page" selectedIds="{{_global.bulkSelectedItems || []}}" selectedCountText="" loading="{{shipping_policies?.loading}}" emptyMessage="$t:sirsoft-ecommerce.admin.shipping_policy.empty.title" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{shipping_policies?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{shipping_policies?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{shipping_policies?.data?.pagination?.has_more_pages ?? false}}" pageSize="{{+(query.per_page || 20)}}" :alwaysShowPagination="true" subRowClassName="px-4 py-3 rounded-lg bg-gray-100 dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-300 whitespace-normal shadow-sm">
+  <data-grid data-type="composite" data-ref="shipping_policy_datagrid" data="{{shipping_policies?.data?.data || []}}" idField="id" :selectable="true" selectionScope="page" selectedIds="{{_global.bulkSelectedItems || []}}" selectedCountText="" emptyMessage="$t:sirsoft-ecommerce.admin.shipping_policy.empty.title" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{shipping_policies?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{shipping_policies?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{shipping_policies?.data?.pagination?.has_more_pages ?? false}}" pageSize="{{+(query.per_page || 20)}}" :alwaysShowPagination="true" subRowClassName="px-4 py-3 rounded-lg bg-gray-100 dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-300 whitespace-normal shadow-sm">
+    <blur-until-loaded sources="shipping_policies"/>
     <column field="is_default" header="$t:sirsoft-ecommerce.admin.shipping_policy.table.column.is_default_header" width="70px">
       <cell>
-        <toggle data-ref="is_default_toggle_{{row.id}}" checked="{{row.is_default}}" size="sm" disabled="{{row.is_default || row.abilities?.can_update !== true}}">
+        <toggle data-type="composite" data-ref="is_default_toggle_{{row.id}}" checked="{{row.is_default}}" size="sm" disabled="{{row.is_default || row.abilities?.can_update !== true}}">
           <on type="change">
             <!-- 기본값 스위치 — 곧바로 바꾸지 않고 대상을 전역에 담아 확인 창을 연다. 이미 기본인 행에서는 스위치 자체가 잠겨 있고, 조건(`if`)이 한 번 더 막는다(기본 해제라는 동작은 없다). -->
             <sequence if="{{!row.is_default}}">
@@ -36,7 +37,7 @@
     </column>
     <column field="is_active" header="$t:sirsoft-ecommerce.admin.shipping_policy.table.column.is_active" :sortable="true" width="80px">
       <cell>
-        <toggle checked="{{row.is_active}}" size="sm" disabled="{{row.abilities?.can_update !== true}}">
+        <toggle data-type="composite" checked="{{row.is_active}}" size="sm" disabled="{{row.abilities?.can_update !== true}}">
           <on type="change">
             <!-- 사용 여부 스위치 — 기본값 쪽과 달리 확인 없이 바로 서버로 간다. 스위치는 눌린 즉시 화면에서 넘어가므로 **실패 갈래도 목록을 다시 부른다** — 그러지 않으면 서버는 그대로인데 화면만 바뀐 채 남고, 다음 조작이 그 거짓 상태 위에서 일어난다. -->
             <api-call :auth_required="true" target="/api/modules/sirsoft-ecommerce/admin/shipping-policies/{{row.id}}/toggle-active" method="PATCH">

@@ -17,6 +17,8 @@
 - 같은 확장의 업데이트가 이미 진행 중일 때의 안내(`extensions.errors.update_already_running`)와 `template:uninstall --delete-data` 확인 안내(`templates.commands.uninstall.delete_data_notice`) 일본어 번역을 추가했습니다. 없으면 일본어 로케일에서 이 두 안내만 한국어로 보입니다.
 - 하위 계층이 이미 번역해 둔 실패 사유를 응답 문구로 그대로 쓰는 키(`common.failure_reason`, 값 `:reason`)를 추가했습니다. 확장 설치·업데이트·제거 실패 안내가 이 키를 거칩니다.
 - 관리자 회원 목록 필터의 요청 검증 문구와 항목명 일본어 번역을 추가했습니다 — 계정 상태·권한 그룹·관리자 여부·잠금·최근 로그인·휴면 전환일·상태 변경일·인증 여부·확장 필터 조건이 잘못됐을 때의 안내(`user.validation.list_*`)와 오류 문구에 들어가는 항목명(`user.list_filter_attributes.*`)입니다. 없으면 일본어 관리자 화면에서 필터 오류 문구가 한국어로 나옵니다.
+- 레이아웃 마크업 컴파일 오류·경고 4건의 일본어 번역을 추가했습니다 — 종류 표기(`layout_markup.invalid_component_type`)·조각 루트 meta 위치(`layout_markup.partial_root_meta_not_allowed`)·종류 불일치(`layout_markup_lint.component_type_mismatch`)·설치되지 않은 확장 컴포넌트(`layout_markup_lint.extension_component_not_installed`) 문구입니다.
+- 방문자 동의 상태 조회 응답 문구(`analytics.messages` 동의 확인)와 편집기 설치본 누락 파일 안내(`templates.messages` 파일 없음) 일본어 번역을 추가했습니다.
 - 개인정보 조치 관리자 직권 실행의 코어 문구 일본어 번역을 추가했습니다 — 접수·처리 상태와 결과 안내(`privacy.manual_run.*`), 같은 대상에 작업이 이미 있을 때의 거절 문구(`exceptions.privacy_manual_run_conflict`), 요청 검증 문구와 항목명(`validation.privacy_manual_run.*`·`validation.attributes.skip_waiting`·`targets`·`since`), 접수·완료·실패 활동 로그 문구(`activity_log.*.privacy_manual_run_*`)입니다. 없으면 일본어 관리자 화면에서 직권 실행 결과와 활동 로그가 폴백 문구로 나옵니다. 휴면 단계 이름(`privacy.manual_run.dormant_stages.*`)은 다른 휴면 문구와 같은 「休眠」 표기로 맞췄습니다.
 - 개인정보 조치 대상 명단 창의 코어 문구 일본어 번역을 추가했습니다 — 회원 명단의 열 이름(이름·이메일·탈퇴일·마지막 활동일·휴면 전환일, `privacy.targets.columns.*`), 등록되지 않은 처리 대상이나 알 수 없는 휴면 단계를 요청했을 때의 안내(`privacy.targets.unknown_*`), 명단을 쪽 단위로 불러올 때의 검증 문구(`validation.privacy_targets.*`·`validation.attributes.page`·`validation.attributes.per_page`)입니다. 없으면 일본어 로케일에서 환경설정 > 개인정보의 「대상 보기」 창 열 이름이 한국어로 보입니다. 휴면은 팩 전체와 같은 「休眠」으로 적었습니다.
 - 휴면 계정과 개인정보 보유기간 파기 관련 코어 문구의 일본어 번역을 추가했습니다 — 휴면 전환·해제·자동 탈퇴가 남는 활동 로그 문구와 설명(`activity_log.action.dormant_*`·`activity_log.description.user_dormant_*`), 휴면 계정이 기존 토큰으로 API 를 부를 때 받는 안내(`auth.account_dormant`), 회원 상태 라벨 「휴면」과 「가입대기」(`user.status.dormant`·`pending_verification`), 환경설정 > 개인정보 탭의 검증 문구와 항목명(`validation.settings.privacy_*`·`validation.attributes.privacy_*`), 그리고 파기 핸들러 이름을 담은 `privacy.php`(`privacy.handlers.user_withdrawn`) 입니다. 없으면 일본어 로케일에서 이 문구들이 한국어로 남습니다. 휴면 해제 안내는 코어가 아니라 템플릿 문구(`auth.dormancy_restored`)라 `g7-template-sirsoft-basic-ja` 팩이 담당합니다.
@@ -103,11 +105,13 @@
 - 방문자 통계 새 리포트 이름(캠페인 매체·검색 탭·이벤트·체류시간 구간·본 페이지 수 구간)과 구간 라벨(「0秒 ~ 10秒」·
   「21ページ以上」 등)·검색 탭 이름, 설정 항목명 4개와 구간 경계 오류 문구(`validation.analytics.bucket_bounds`),
   추이 요청의 「項目」 항목명의 일본어 문구를 채웠습니다.
+- 관리 범위 밖의 회원이 섞인 일괄 상태 변경의 제외 사유(`user.bulk_status_out_of_scope`)와, 유형별 마지막 활성 템플릿의 비활성화·삭제 거절 문구(`templates.errors.last_active_deactivate`·`last_active_uninstall`) 일본어 번역을 추가했습니다.
 
 ### Changed
 
 - モジュール・プラグイン・テンプレート更新時の上書き警告文を、レイアウトと拡張フラグメントの両方を指す表現に変更しました。
 
+- 독립 레이아웃 전역 상태 호스트 누락 경고(`layout_markup_lint.standalone_missing_global_host`)와 편집기 빌드 파일 누락 안내(`templates.messages.editor_assets_missing`)를 한국어 원문 변경에 맞춰 다시 번역했습니다.
 - 휴면을 가리키는 일본어 낱말을 「休眠」 하나로 맞췄습니다 — 회원 상태 라벨(`user.status.dormant`), 휴면 전환·해제·자동 탈퇴 활동 로그 문구(`activity_log.action.dormant_*`·`activity_log.description.user_dormant_*`), 환경설정 > 개인정보의 검증 문구와 항목명(`validation.settings.privacy_dormant_*`·`validation.attributes.privacy_dormant_*`)이 「休止」였습니다. 알림 시드와 `auth.account_dormant` 는 이미 「休眠」이라, 일본어 회원이 메일로는 「休眠アカウントに転換されました」를 받고 화면에서는 「休止中」을 보는 상태였습니다. 휴면은 법정 사전 안내가 붙는 흐름이라, 받은 고지와 화면 표시가 같은 낱말이어야 되돌릴 기회(로그인 한 번)를 놓치지 않습니다.
 
 - 방문자 통계의 「보존 기간」 일본어 용어를 「保持期間」으로 통일했습니다 — 기록이 많이 쌓였을 때의 경고
@@ -122,6 +126,7 @@
 
 ### Removed
 
+- 코어 원문에서 사라진 레이아웃 마크업 오류 4건(`unknown_tag`·`unknown_tag_with_suggestion`·`extension_id_tag_collision`·`registry_not_found`)의 번역을 정리했습니다 — 마크업 컴파일이 템플릿과 무관해지며 쓰이지 않습니다.
 - 더 이상 사용하지 않는 검사 문구를 정리했습니다 — 항목명이 바뀌었거나 검사 자체가 없어진 자리입니다.
 - 방문자 통계 「적재 방식」 라벨 2종(`analytics.dispatch_mode.queue`·`.sync`)의 일본어 번역을
   지웠습니다 — 방문 기록이 언제나 요청 안에서 끝나게 바뀌어 설정 항목 자체가 없어졌습니다.

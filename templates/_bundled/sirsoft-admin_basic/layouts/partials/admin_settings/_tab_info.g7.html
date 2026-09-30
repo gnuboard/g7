@@ -33,7 +33,7 @@
             <span class="text-label">$t:admin.settings.info.g7_version</span>
             <div class="flex-center gap-2">
               <span class="text-heading">{{systemInfo?.data?.g7_version ?? '-'}}</span>
-              <status-badge data-if="{{_local.coreUpdateInfo?.update_available}}" status="success" label="{{_local.coreUpdateInfo?.latest_version ?? ''}}"/>
+              <status-badge data-type="composite" data-if="{{_local.coreUpdateInfo?.update_available}}" status="success" label="{{_local.coreUpdateInfo?.latest_version ?? ''}}"/>
               <button type="button" class="px-3 py-1 text-xs font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors disabled:opacity-50" disabled="{{_local.checkingCoreUpdate}}">
                 <on type="click">
                   <!-- 코어 새 버전 확인 — 결과(있음/없음 모두)를 창으로 띄운다.

@@ -37,7 +37,7 @@
   <slot name="content">
     <div data-ref="report_detail_wrapper" class="admin-page-content-fluid">
       <responsive on="portable" class="admin-page-content-fluid-compact"/>
-      <page-header data-ref="page_header" title="$t:sirsoft-board.admin.reports.detail.page_title" description="$t:sirsoft-board.admin.reports.detail.page_description">
+      <page-header data-type="composite" data-ref="page_header" title="$t:sirsoft-board.admin.reports.detail.page_title" description="$t:sirsoft-board.admin.reports.detail.page_description">
         <button data-ref="refresh_button" class="btn-icon">
           <on type="click">
             <!-- 같은 신고로 다시 들어가 본문·신고자 목록을 새로 읽는다 — 신고자 페이지도 함께 1 로 돌아간다 -->
@@ -65,7 +65,7 @@
   </slot>
   <modal>
     <!-- 상태 전환 확인 — 다섯 갈래를 겸한다. 「기각」이면서 대상이 이미 가려져 있으면 그 글이 다시 공개된다는 것을 별도 문구로 먼저 알린다(기각은 되돌리는 동작이라 눈에 안 띄게 노출이 일어날 수 있다) -->
-    <modal data-ref="status_action_modal" title="{{_global.actionType === 'pending' ? '$t:sirsoft-board.admin.reports.modals.status_change_pending_title' : _global.actionType === 'review' ? '$t:sirsoft-board.admin.reports.modals.status_change_review_title' : _global.actionType === 'rejected' ? '$t:sirsoft-board.admin.reports.modals.status_change_rejected_title' : _global.actionType === 'deleted' ? '$t:sirsoft-board.admin.reports.modals.status_change_deleted_title' : '$t:sirsoft-board.admin.reports.modals.status_change_suspended_title'}}" size="medium">
+    <modal data-type="composite" data-ref="status_action_modal" title="{{_global.actionType === 'pending' ? '$t:sirsoft-board.admin.reports.modals.status_change_pending_title' : _global.actionType === 'review' ? '$t:sirsoft-board.admin.reports.modals.status_change_review_title' : _global.actionType === 'rejected' ? '$t:sirsoft-board.admin.reports.modals.status_change_rejected_title' : _global.actionType === 'deleted' ? '$t:sirsoft-board.admin.reports.modals.status_change_deleted_title' : '$t:sirsoft-board.admin.reports.modals.status_change_suspended_title'}}" size="medium">
       <meta editor_label="$t:sirsoft-board.admin.reports.modals.status_action_editor_label"/>
       <div class="py-2">
         <p class="text-gray-700 dark:text-gray-300 mb-4">{{_global.actionType === 'pending' ? '$t:sirsoft-board.admin.reports.modals.status_change_pending_confirm_single' : _global.actionType === 'review' ? '$t:sirsoft-board.admin.reports.modals.status_change_review_confirm_single' : _global.actionType === 'rejected' ? '$t:sirsoft-board.admin.reports.modals.status_change_rejected_confirm_single' : _global.actionType === 'deleted' ? '$t:sirsoft-board.admin.reports.modals.status_change_deleted_confirm_single' : '$t:sirsoft-board.admin.reports.modals.status_change_suspended_confirm_single'}}</p>

@@ -9,22 +9,30 @@ use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\RateLimiter;
 use Modules\Sirsoft\Ecommerce\Models\ClaimPayment;
+use Modules\Sirsoft\Ecommerce\Services\GuestOrderAuthService;
 use Modules\Sirsoft\Ecommerce\Services\OrderProcessingService;
 use Plugins\Sirsoft\PayNhnkcp\Concerns\RecordsPaymentWindowClosure;
 use Plugins\Sirsoft\PayNhnkcp\Concerns\SerializesPaymentCallbacks;
+use Plugins\Sirsoft\PayNhnkcp\Concerns\VerifiesOrderOwnership;
 use Plugins\Sirsoft\PayNhnkcp\Http\Requests\PaymentCloseReportRequest;
 
 class PaymentCloseReportController
 {
     use RecordsPaymentWindowClosure;
     use SerializesPaymentCallbacks;
+    use VerifiesOrderOwnership;
 
     private const FAILURE_CODE = 'USER_CANCEL';
 
     private const FAILURE_MESSAGE = '사용자가 NHN KCP 결제창을 닫았습니다.';
 
+    /**
+     * @param  OrderProcessingService  $orderService  주문 처리 서비스
+     * @param  GuestOrderAuthService  $guestOrderAuthService  비회원 조회 토큰 검증 서비스 (주문 소유자 확인)
+     */
     public function __construct(
         private readonly OrderProcessingService $orderService,
+        private readonly GuestOrderAuthService $guestOrderAuthService,
     ) {}
 
     /**
@@ -90,9 +98,9 @@ class PaymentCloseReportController
                 ]);
             }
 
-            if (! $this->requestMatchesOrderBuyer($request, $order)) {
+            if (! $this->requestOwnsOrder($request, $order, $this->guestOrderAuthService)) {
                 return ResponseHelper::error('common.failed', 403, [
-                    'message' => ['Order buyer verification failed.'],
+                    'message' => ['Order ownership verification failed.'],
                 ]);
             }
 
@@ -135,6 +143,13 @@ class PaymentCloseReportController
         }
     }
 
+    /**
+     * 레이트리밋 키를 생성합니다 (IP + 주문번호 조합).
+     *
+     * @param  PaymentCloseReportRequest  $request  요청
+     * @param  string  $oid  주문번호
+     * @return string 레이트리밋 키
+     */
     private function rateLimitKey(PaymentCloseReportRequest $request, string $oid): string
     {
         return 'sirsoft-pay_nhnkcp:payment-close-report:'.sha1($request->ip().'|'.$oid);

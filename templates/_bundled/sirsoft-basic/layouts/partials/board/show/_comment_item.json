@@ -705,7 +705,7 @@
                                             }
                                         },
                                         {
-                                            "comment": "아이콘 이미지가 없는 유형은 기본 글리프로 떨어져 서로 구분되지 않는다 — 그때만 이름을 병기한다.\n                 이미지가 있으면 좋은 화면을 위해 아이콘만 두고, 이름은 버튼 title 로만 안내한다 (PO 결정 2026-09-16).",
+                                            "comment": "아이콘 이미지가 없는 유형은 기본 글리프로 떨어져 서로 구분되지 않는다 — 그때만 이름을 병기한다.\n                 이미지가 있으면 좋은 화면을 위해 아이콘만 두고, 이름은 버튼 title 로만 안내한다 (결정 2026-09-16).",
                                             "type": "basic",
                                             "name": "Span",
                                             "if": "{{!commentReactionType.icon_url}}",
@@ -870,7 +870,7 @@
                                         }
                                     ],
                                     "props": {
-                                        "className": "px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
+                                        "className": "px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
                                         "disabled": "{{_local.editingCommentSubmitting === true}}"
                                     },
                                     "children": [
@@ -1143,7 +1143,7 @@
                                                         }
                                                     ],
                                                     "props": {
-                                                        "className": "px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                                        "className": "px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
                                                         "disabled": "{{_local.commentSubmitting === true}}"
                                                     },
                                                     "children": [

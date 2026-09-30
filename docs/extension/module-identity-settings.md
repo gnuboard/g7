@@ -338,7 +338,7 @@ provider 가 자체 launcher / 모달 파셜을 추가하는 경우 (PortOne / K
 
 플러그인 extension fragment 는 `plugins/{id}/resources/extensions/identity-provider.g7.html` (소스 SSoT) 로 작성합니다. 아래는 컴파일된 런타임 JSON 계약 기준 예시입니다 (마크업 문법은 [layout-markup.md](../frontend/layout-markup.md) 참조).
 
-`scripts[].src` 의 호스트는 `config/template.php` 의 `layout_markup.script_src_allowlist` 에 등재돼 있어야 합니다 — 미등재 호스트는 컴파일 시점에 `script_src_not_allowed` 로 거부됩니다. 예시의 `sdk.example.com` 은 자리표시자입니다.
+`scripts[].src` 의 외부 호스트는 그 레이아웃을 가진 확장·템플릿이 매니페스트의 `trusted_script_hosts` 로 선언합니다([module-assets.md](module-assets.md) 「`trusted_script_hosts`」). 런타임·저장·점검 커맨드는 활성 확장·템플릿의 선언 집계(개발 커맨드는 문서 소유 확장의 선언, 운영자 설정 `config/template.php` 의 `layout_markup.script_src_allowlist` 도 더함)에 없는 호스트를 거부합니다(`script_src_not_allowed`). 코어 설정 기본값은 비어 있고, 설치 경로의 컴파일은 JSON 설치처럼 호스트를 대조하지 않습니다. 예시의 `sdk.example.com` 은 자리표시자입니다.
 
 ```json
 {

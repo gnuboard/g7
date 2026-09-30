@@ -422,10 +422,11 @@
                                                                             "name": "SearchableDropdown",
                                                                             "actions": [
                                                                                 {
-                                                                                    "comment": "회원 찾기 — 역할 칸과 같은 짜임이지만 결과를 담는 자리가 다르다(`userSearchResults`). 두 칸이 한 자리를 나눠 쓰면 한쪽 검색이 다른 쪽 선택지를 갈아치운다",
+                                                                                    "comment": "회원 찾기 — 역할 칸과 같은 짜임이지만 결과를 담는 자리가 다르다(`userSearchResults`). 두 칸이 한 자리를 나눠 쓰면 한쪽 검색이 다른 쪽 선택지를 갈아치운다.\n                          검색칸을 지우거나 공백만 적으면 부르지 않는다 — 회원 검색은 빈 검색어를 422 로 거절한다(역할 목록은 빈 검색어면 전체를 주므로 조건이 없다)",
                                                                                     "event": "onSearch",
                                                                                     "handler": "apiCall",
                                                                                     "target": "/api/admin/users/search",
+                                                                                    "if": "{{String($args[0] ?? '').trim() !== ''}}",
                                                                                     "auth_required": true,
                                                                                     "params": {
                                                                                         "method": "GET",

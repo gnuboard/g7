@@ -244,7 +244,7 @@
                                 "name": "Button",
                                 "actions": [
                                     {
-                                        "comment": "선택한 적립 건들의 만료일 연장 창을 연다. 연장은 회원 단위로 처리되므로 고른 것 중 첫 건에서 회원 식별자를 따로 뽑아 넘긴다",
+                                        "comment": "선택한 적립 건들의 만료일 연장 창을 연다. 적립건만 넘기고 회원은 지정하지 않는다 — 여러 회원의 적립건을 함께 골라도 서버가 전부 연장한다(첫 건의 회원만 보내면 나머지 회원 적립건이 조용히 빠졌다)",
                                         "type": "click",
                                         "handler": "sequence",
                                         "actions": [
@@ -254,8 +254,7 @@
                                                     "target": "global",
                                                     "mileageExtend": {
                                                         "days": 30,
-                                                        "lotIds": "{{_local.selectedItems ?? []}}",
-                                                        "userId": "{{((transactions?.data?.data ?? []).find(t => (_local.selectedItems ?? []).includes(t.id)) ?? {}).user_uuid}}"
+                                                        "lotIds": "{{_local.selectedItems ?? []}}"
                                                     }
                                                 }
                                             },

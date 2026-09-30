@@ -25,6 +25,11 @@ class LayoutMarkupDecompilerTest extends LayoutMarkupTestCase
 
     private LayoutMarkupDecompiler $decompiler;
 
+    /**
+     * 테스트 준비 — 필요한 서비스와 임시 자원을 만듭니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -34,10 +39,15 @@ class LayoutMarkupDecompilerTest extends LayoutMarkupTestCase
     }
 
     /**
+     * 문서 계층별 픽스처가 역변환·재컴파일 뒤 원본과 같다.
+     *
      * @scenario compile_unit=decompile,source_health=valid
      *
      * @effects decompile_round_trips_document_layers,
      *          round_trip_is_deterministic_after_normalization
+     *
+     * @param  string  $fixture  픽스처 이름
+     * @return void 반환값 없음
      */
     #[DataProvider('documentFixtureProvider')]
     public function test_document_fixture_round_trips(string $fixture): void
@@ -48,7 +58,9 @@ class LayoutMarkupDecompilerTest extends LayoutMarkupTestCase
     }
 
     /**
-     * @return array<int, array<int, string>>
+     * 문서 계층 픽스처 이름 목록.
+     *
+     * @return array<int, array<int, string>> 픽스처 이름 목록
      */
     public static function documentFixtureProvider(): array
     {
@@ -69,6 +81,8 @@ class LayoutMarkupDecompilerTest extends LayoutMarkupTestCase
      * @scenario compile_unit=decompile,source_health=valid
      *
      * @effects state_init_tree_round_trips_with_key_order_and_merge_and_leaf_types
+     *
+     * @return void 반환값 없음
      */
     public function test_state_init_tree_round_trips_with_order_and_merge_and_leaf_types(): void
     {
@@ -100,6 +114,8 @@ class LayoutMarkupDecompilerTest extends LayoutMarkupTestCase
      * @scenario compile_unit=decompile,source_health=valid
      *
      * @effects value_shapes_round_trip_through_their_notations
+     *
+     * @return void 반환값 없음
      */
     public function test_value_shapes_round_trip(): void
     {
@@ -130,6 +146,8 @@ class LayoutMarkupDecompilerTest extends LayoutMarkupTestCase
      * @scenario compile_unit=decompile,source_health=valid
      *
      * @effects escape_hatch_preserves_unrepresentable_node_key
+     *
+     * @return void 반환값 없음
      */
     public function test_escape_hatch_preserves_unrepresentable_node_key(): void
     {
@@ -156,6 +174,8 @@ class LayoutMarkupDecompilerTest extends LayoutMarkupTestCase
      * @scenario compile_unit=decompile,source_health=valid
      *
      * @effects input_with_actions_round_trips_first_class
+     *
+     * @return void 반환값 없음
      */
     public function test_input_with_actions_round_trips_first_class(): void
     {
@@ -193,6 +213,8 @@ class LayoutMarkupDecompilerTest extends LayoutMarkupTestCase
      * @scenario compile_unit=decompile,source_health=valid
      *
      * @effects single_child_sequence_keeps_wrapper_through_round_trip
+     *
+     * @return void 반환값 없음
      */
     public function test_single_child_sequence_keeps_its_wrapper(): void
     {
@@ -226,6 +248,8 @@ class LayoutMarkupDecompilerTest extends LayoutMarkupTestCase
      * @scenario compile_unit=decompile,source_health=valid
      *
      * @effects multi_child_sequence_stays_implicit
+     *
+     * @return void 반환값 없음
      */
     public function test_multi_child_sequence_stays_implicit(): void
     {
@@ -266,6 +290,8 @@ class LayoutMarkupDecompilerTest extends LayoutMarkupTestCase
      * @scenario compile_unit=decompile,source_health=valid
      *
      * @effects single_action_condition_branch_round_trips_as_object
+     *
+     * @return void 반환값 없음
      */
     public function test_single_action_condition_branch_round_trips_as_object(): void
     {
@@ -305,6 +331,8 @@ class LayoutMarkupDecompilerTest extends LayoutMarkupTestCase
      * @scenario compile_unit=decompile,source_health=valid
      *
      * @effects multi_action_condition_branch_keeps_then_array
+     *
+     * @return void 반환값 없음
      */
     public function test_multi_action_condition_branch_keeps_then_array(): void
     {
@@ -344,6 +372,8 @@ class LayoutMarkupDecompilerTest extends LayoutMarkupTestCase
      * @scenario compile_unit=decompile,source_health=valid
      *
      * @effects single_element_then_array_converges_to_object
+     *
+     * @return void 반환값 없음
      */
     public function test_single_element_then_array_converges_to_object(): void
     {
@@ -382,6 +412,8 @@ class LayoutMarkupDecompilerTest extends LayoutMarkupTestCase
      * @scenario compile_unit=decompile,source_health=valid
      *
      * @effects interval_tick_actions_round_trip_as_action_block
+     *
+     * @return void 반환값 없음
      */
     public function test_interval_tick_actions_round_trip_as_action_block(): void
     {
@@ -412,6 +444,8 @@ class LayoutMarkupDecompilerTest extends LayoutMarkupTestCase
      * @scenario compile_unit=decompile,source_health=valid
      *
      * @effects control_handler_params_actions_still_converge_to_top_level
+     *
+     * @return void 반환값 없음
      */
     public function test_control_handler_params_actions_still_converge_to_top_level(): void
     {
@@ -451,6 +485,8 @@ class LayoutMarkupDecompilerTest extends LayoutMarkupTestCase
      * @scenario compile_unit=decompile,source_health=valid
      *
      * @effects data_source_structured_keys_emit_field_tags
+     *
+     * @return void 반환값 없음
      */
     public function test_data_source_structured_keys_emit_field_tags(): void
     {
@@ -483,6 +519,8 @@ class LayoutMarkupDecompilerTest extends LayoutMarkupTestCase
      * @scenario compile_unit=decompile,source_health=valid
      *
      * @effects define_structured_value_emits_item_tags
+     *
+     * @return void 반환값 없음
      */
     public function test_define_structured_value_emits_item_tags(): void
     {
@@ -511,6 +549,8 @@ class LayoutMarkupDecompilerTest extends LayoutMarkupTestCase
      * @scenario compile_unit=decompile,source_health=valid
      *
      * @effects unrepresentable_define_value_stays_json_body
+     *
+     * @return void 반환값 없음
      */
     public function test_unrepresentable_define_value_stays_json_body(): void
     {
@@ -535,6 +575,8 @@ class LayoutMarkupDecompilerTest extends LayoutMarkupTestCase
      * @scenario compile_unit=decompile,source_health=valid
      *
      * @effects structured_value_list_emits_item_tags
+     *
+     * @return void 반환값 없음
      */
     public function test_structured_value_list_emits_item_tags(): void
     {
@@ -577,6 +619,8 @@ class LayoutMarkupDecompilerTest extends LayoutMarkupTestCase
      * @scenario compile_unit=decompile,source_health=valid
      *
      * @effects structured_value_list_emits_item_tags
+     *
+     * @return void 반환값 없음
      */
     public function test_unrepresentable_structured_list_stays_json_body(): void
     {
@@ -605,6 +649,8 @@ class LayoutMarkupDecompilerTest extends LayoutMarkupTestCase
      * @scenario compile_unit=decompile,source_health=valid
      *
      * @effects action_field_map_params_emit_first_class_tags
+     *
+     * @return void 반환값 없음
      */
     public function test_action_body_and_query_emit_field_map_tags(): void
     {
@@ -645,6 +691,8 @@ class LayoutMarkupDecompilerTest extends LayoutMarkupTestCase
      * @scenario compile_unit=decompile,source_health=valid
      *
      * @effects nested_object_field_map_becomes_field_tree
+     *
+     * @return void 반환값 없음
      */
     public function test_nested_object_body_becomes_field_tree(): void
     {
@@ -681,6 +729,8 @@ class LayoutMarkupDecompilerTest extends LayoutMarkupTestCase
      * @scenario compile_unit=decompile,source_health=valid
      *
      * @effects switch_subject_placement_is_expressible_in_both_forms
+     *
+     * @return void 반환값 없음
      */
     public function test_switch_subject_placements_emit_distinct_attributes(): void
     {
@@ -715,6 +765,8 @@ class LayoutMarkupDecompilerTest extends LayoutMarkupTestCase
      * @scenario compile_unit=decompile,source_health=valid
      *
      * @effects injection_props_accept_datagrid_column_tree
+     *
+     * @return void 반환값 없음
      */
     public function test_injection_column_tree_emits_column_tags(): void
     {
@@ -749,6 +801,8 @@ class LayoutMarkupDecompilerTest extends LayoutMarkupTestCase
      * @scenario compile_unit=decompile,source_health=valid
      *
      * @effects unrepresentable_column_list_falls_back_without_breaking_round_trip
+     *
+     * @return void 반환값 없음
      */
     public function test_column_list_without_field_falls_back(): void
     {
@@ -773,6 +827,8 @@ class LayoutMarkupDecompilerTest extends LayoutMarkupTestCase
      * @scenario compile_unit=decompile,source_health=valid
      *
      * @effects switch_value_prop_emits_first_class_tag
+     *
+     * @return void 반환값 없음
      */
     public function test_switch_value_prop_emits_switch_value_tag(): void
     {
@@ -808,6 +864,8 @@ class LayoutMarkupDecompilerTest extends LayoutMarkupTestCase
      * @scenario compile_unit=decompile,source_health=valid
      *
      * @effects node_level_permissions_round_trip_first_class
+     *
+     * @return void 반환값 없음
      */
     public function test_node_level_permissions_round_trip_first_class(): void
     {
@@ -837,6 +895,8 @@ class LayoutMarkupDecompilerTest extends LayoutMarkupTestCase
      * @scenario compile_unit=decompile,source_health=valid
      *
      * @effects node_level_meta_round_trip_first_class
+     *
+     * @return void 반환값 없음
      */
     public function test_node_level_meta_round_trip_first_class(): void
     {
@@ -864,6 +924,8 @@ class LayoutMarkupDecompilerTest extends LayoutMarkupTestCase
      * @scenario compile_unit=decompile,source_health=valid
      *
      * @effects empty_section_containers_are_omitted
+     *
+     * @return void 반환값 없음
      */
     public function test_empty_section_containers_round_trip_without_escape(): void
     {
@@ -887,6 +949,8 @@ class LayoutMarkupDecompilerTest extends LayoutMarkupTestCase
      * @scenario compile_unit=decompile,source_health=valid
      *
      * @effects partial_layout_name_round_trips
+     *
+     * @return void 반환값 없음
      */
     public function test_partial_layout_name_round_trips(): void
     {
@@ -910,6 +974,8 @@ class LayoutMarkupDecompilerTest extends LayoutMarkupTestCase
      * @scenario compile_unit=decompile,source_health=valid
      *
      * @effects responsive_override_carries_structural_keys
+     *
+     * @return void 반환값 없음
      */
     public function test_responsive_override_carries_class_map_and_comment(): void
     {
@@ -932,16 +998,19 @@ class LayoutMarkupDecompilerTest extends LayoutMarkupTestCase
     }
 
     /**
-     * `columns` props 는 **DataGrid 일 때만** `<column>` 임베딩으로 찍는다.
+     * `columns` props 는 소유 컴포넌트 이름과 무관하게 `<column>` 으로 되돌린다 — 표현할 수 없을 때만 `<prop>` 폴백.
      *
-     * 컴파일러가 `<column>` 의 부모를 DataGrid 로 강제하므로(embedding_tag_wrong_parent), 게이트 없이
-     * 찍으면 되컴파일이 죽어 노드 props 가 통째로 탈출한다.
+     * 컴파일러가 `<column>` 을 부모 이름 없이 받으므로(2026-09-28 결정) DataGrid 밖(ColumnSettings 류)도 같은
+     * 태그로 왕복한다. `field` 가 없는 원소처럼 태그가 되돌리지 못하는 값은 종전 `<prop>` 으로 물러서고,
+     * 어느 쪽이든 노드 props 가 통째로 `<json>` 탈출하면 안 된다.
      *
      * @scenario compile_unit=decompile,source_health=valid
      *
-     * @effects columns_embedding_is_gated_by_owner_component
+     * @effects columns_embedding_is_independent_of_owner_name
+     *
+     * @return void 반환값 없음
      */
-    public function test_columns_props_embed_only_under_data_grid(): void
+    public function test_columns_props_embed_under_any_owner(): void
     {
         $columns = [['field' => 'a', 'header' => 'A', 'required' => true]];
 
@@ -949,12 +1018,85 @@ class LayoutMarkupDecompilerTest extends LayoutMarkupTestCase
         $this->assertStringContainsString('<column', $this->decompiler->decompile($grid));
         $this->assertRoundTrips($grid);
 
-        // DataGrid 가 아닌 소유자(ColumnSettings 류)는 `<prop>` 폴백 — 탈출 없이 왕복해야 한다.
         $other = ['layout_name' => 'o', 'components' => [['type' => 'basic', 'name' => 'Div', 'props' => ['columns' => $columns]]]];
         $markup = $this->decompiler->decompile($other);
-        $this->assertStringNotContainsString('<column', $markup);
+        $this->assertStringContainsString('<column field="a"', $markup);
         $this->assertStringNotContainsString('<json', $markup);
         $this->assertRoundTrips($other);
+
+        // 태그가 되돌리지 못하는 값(field 없음)은 `<prop>` 폴백 — 탈출 없이 왕복한다.
+        $bare = ['layout_name' => 'b', 'components' => [['type' => 'basic', 'name' => 'Div', 'props' => ['columns' => [['header' => 'A']]]]]];
+        $markup = $this->decompiler->decompile($bare);
+        $this->assertStringNotContainsString('<column', $markup);
+        $this->assertStringNotContainsString('<json', $markup);
+        $this->assertRoundTrips($bare);
+    }
+
+    /**
+     * 종전 부모가 아닌 컴포넌트의 hoist props 는 부모 무관 표기(`<prop-card>`·`<prop-footer>`·`<options>` 등)로 되돌린다.
+     *
+     * @scenario compile_unit=decompile,source_health=valid
+     *
+     * @effects decompile_emits_parent_independent_hoist_tags_for_other_parents
+     *
+     * @return void 반환값 없음
+     */
+    public function test_other_parents_decompile_to_parent_independent_hoist_tags(): void
+    {
+        $span = ['type' => 'basic', 'name' => 'Span', 'props' => ['text' => '{{row.t}}']];
+        $json = ['layout_name' => 'h', 'components' => [[
+            'type' => 'composite',
+            'name' => 'MyTable',
+            'props' => [
+                'cardColumns' => [['id' => 'c1', 'cellChildren' => [$span]]],
+                'footerCells' => [['field' => 'total', 'text' => '합계']],
+                'expandChildren' => [$span],
+                'titlePrefix' => [$span],
+                'footer' => [['type' => 'basic', 'name' => 'Button', 'text' => '저장']],
+                'options' => [['value' => 'a', 'label' => 'A'], ['value' => 'b', 'label' => 'B', 'disabled' => true]],
+            ],
+        ]]];
+
+        $markup = $this->decompiler->decompile($json);
+
+        foreach (['<prop-card id="c1">', '<footer-cell field="total"', '<expand>', '<title-prefix>', '<prop-footer>', '<options>'] as $tag) {
+            $this->assertStringContainsString($tag, $markup);
+        }
+
+        $this->assertStringNotContainsString('<prop name=', $markup);
+        $this->assertStringNotContainsString('<json', $markup);
+        $this->assertStringNotContainsString('<card ', $markup);
+        $this->assertStringNotContainsString('<footer>', $markup);
+        $this->assertRoundTrips($json);
+    }
+
+    /**
+     * 종전 부모(DataGrid·CardGrid·Modal·Select)의 역변환 산출은 옛 표기 그대로다 — 기존 소스와 한 글자도 다르지 않다.
+     *
+     * @scenario compile_unit=decompile,source_health=valid
+     *
+     * @effects decompile_keeps_legacy_tags_for_legacy_parents
+     *
+     * @return void 반환값 없음
+     */
+    public function test_legacy_parents_keep_legacy_hoist_tags(): void
+    {
+        $span = ['type' => 'basic', 'name' => 'Span'];
+        // 문서 직속 `<modal>` 은 modals 섹션이므로 노드 자리(Div 안)에 둔다.
+        $json = ['layout_name' => 'l', 'components' => [['type' => 'basic', 'name' => 'Div', 'children' => [
+            ['type' => 'composite', 'name' => 'CardGrid', 'props' => ['cardColumns' => [['id' => 'c1', 'cellChildren' => [$span]]]]],
+            ['type' => 'composite', 'name' => 'Modal', 'props' => ['footer' => [$span]]],
+            ['type' => 'basic', 'name' => 'Select', 'props' => ['options' => [['value' => 'a', 'label' => 'A']]]],
+        ]]]];
+
+        $markup = $this->decompiler->decompile($json);
+
+        $this->assertStringContainsString('<card id="c1">', $markup);
+        $this->assertStringContainsString('<footer>', $markup);
+        $this->assertStringContainsString('<options>', $markup);
+        $this->assertStringNotContainsString('<prop-card', $markup);
+        $this->assertStringNotContainsString('<prop-footer', $markup);
+        $this->assertRoundTrips($json);
     }
 
     /**
@@ -963,6 +1105,8 @@ class LayoutMarkupDecompilerTest extends LayoutMarkupTestCase
      * @scenario compile_unit=decompile,source_health=valid
      *
      * @effects sortable_wrapper_element_round_trips
+     *
+     * @return void 반환값 없음
      */
     public function test_sortable_wrapper_element_round_trips(): void
     {
@@ -991,6 +1135,8 @@ class LayoutMarkupDecompilerTest extends LayoutMarkupTestCase
      * @scenario compile_unit=decompile,source_health=valid
      *
      * @effects condition_alias_promoted_to_if
+     *
+     * @return void 반환값 없음
      */
     public function test_wrapped_condition_alias_is_promoted_to_if(): void
     {
@@ -1016,6 +1162,8 @@ class LayoutMarkupDecompilerTest extends LayoutMarkupTestCase
      * @scenario compile_unit=decompile,source_health=defect
      *
      * @effects bare_condition_is_not_promoted
+     *
+     * @return void 반환값 없음
      */
     public function test_bare_condition_is_not_promoted(): void
     {
@@ -1039,6 +1187,8 @@ class LayoutMarkupDecompilerTest extends LayoutMarkupTestCase
      * @scenario compile_unit=decompile,source_health=defect
      *
      * @effects escape_hatch_preserves_unrepresentable_top_level_key
+     *
+     * @return void 반환값 없음
      */
     public function test_escape_hatch_preserves_unrepresentable_top_level_key(): void
     {
@@ -1063,6 +1213,8 @@ class LayoutMarkupDecompilerTest extends LayoutMarkupTestCase
      * @scenario compile_unit=decompile,source_health=defect
      *
      * @effects dead_keys_are_dropped_not_escaped
+     *
+     * @return void 반환값 없음
      */
     public function test_dead_keys_are_dropped_instead_of_escaped(): void
     {
@@ -1092,6 +1244,8 @@ class LayoutMarkupDecompilerTest extends LayoutMarkupTestCase
      * @scenario compile_unit=decompile,source_health=defect
      *
      * @effects modals_object_map_normalized_to_list
+     *
+     * @return void 반환값 없음
      */
     public function test_modals_object_map_is_normalized_to_list(): void
     {
@@ -1123,6 +1277,8 @@ class LayoutMarkupDecompilerTest extends LayoutMarkupTestCase
      * @scenario compile_unit=decompile,source_health=valid
      *
      * @effects state_tree_field_accepts_item_children
+     *
+     * @return void 반환값 없음
      */
     public function test_state_tree_string_list_emits_item_tags(): void
     {
@@ -1161,6 +1317,8 @@ class LayoutMarkupDecompilerTest extends LayoutMarkupTestCase
      * @scenario compile_unit=decompile,source_health=valid
      *
      * @effects state_tree_field_accepts_item_children
+     *
+     * @return void 반환값 없음
      */
     public function test_unrepresentable_state_tree_list_stays_value_literal(): void
     {
@@ -1188,6 +1346,8 @@ class LayoutMarkupDecompilerTest extends LayoutMarkupTestCase
      * @scenario compile_unit=decompile,source_health=valid
      *
      * @effects state_alias_promoted_to_init_local
+     *
+     * @return void 반환값 없음
      */
     public function test_state_alias_is_promoted_to_init_local(): void
     {
@@ -1211,6 +1371,8 @@ class LayoutMarkupDecompilerTest extends LayoutMarkupTestCase
      * @scenario compile_unit=decompile,source_health=defect
      *
      * @effects state_alias_not_promoted_when_init_local_present
+     *
+     * @return void 반환값 없음
      */
     public function test_state_alias_is_not_promoted_when_init_local_present(): void
     {
@@ -1233,6 +1395,8 @@ class LayoutMarkupDecompilerTest extends LayoutMarkupTestCase
      * @scenario compile_unit=decompile,source_health=valid
      *
      * @effects action_branches_and_control_flow_round_trip
+     *
+     * @return void 반환값 없음
      */
     public function test_actions_and_control_flow_round_trip(): void
     {
@@ -1265,6 +1429,8 @@ class LayoutMarkupDecompilerTest extends LayoutMarkupTestCase
      * @scenario compile_unit=decompile,source_health=valid
      *
      * @effects throw_isolation_escapes_only_the_defect_key_not_standard_keys
+     *
+     * @return void 반환값 없음
      */
     public function test_compile_throw_escapes_only_defect_key_not_standard_keys(): void
     {
@@ -1303,6 +1469,9 @@ class LayoutMarkupDecompilerTest extends LayoutMarkupTestCase
      * @scenario compile_unit=decompile,source_health=valid
      *
      * @effects named_action_comment_is_emitted_once_and_survives_production_compile
+     *
+     * @param  array<string, mixed>  $action  주석을 단 이름 있는 액션 JSON
+     * @return void 반환값 없음
      */
     #[DataProvider('commentedNamedActionProvider')]
     public function test_named_action_comment_is_emitted_once_and_round_trips_in_production(array $action): void
@@ -1332,7 +1501,9 @@ class LayoutMarkupDecompilerTest extends LayoutMarkupTestCase
     }
 
     /**
-     * @return array<string, array<int, array<string, mixed>>>
+     * 주석을 단 이름 있는 액션 사례 목록.
+     *
+     * @return array<string, array<int, array<string, mixed>>> 사례 이름 → 액션 JSON
      */
     public static function commentedNamedActionProvider(): array
     {
@@ -1364,6 +1535,8 @@ class LayoutMarkupDecompilerTest extends LayoutMarkupTestCase
      * @scenario compile_unit=decompile,source_health=valid
      *
      * @effects inline_modal_layout_name_round_trips_as_modal_name_attribute
+     *
+     * @return void 반환값 없음
      */
     public function test_inline_modal_layout_name_round_trips_as_name_attribute(): void
     {
@@ -1400,6 +1573,8 @@ class LayoutMarkupDecompilerTest extends LayoutMarkupTestCase
      * @scenario compile_unit=decompile,source_health=valid
      *
      * @effects inline_modal_data_sources_round_trip_as_body_data_source_children
+     *
+     * @return void 반환값 없음
      */
     public function test_inline_modal_data_sources_round_trip_as_data_source_children(): void
     {
@@ -1444,6 +1619,8 @@ class LayoutMarkupDecompilerTest extends LayoutMarkupTestCase
      * @scenario compile_unit=decompile,source_health=valid
      *
      * @effects inlined_node_layout_name_round_trips_as_data_layout_name
+     *
+     * @return void 반환값 없음
      */
     public function test_inlined_node_layout_name_round_trips_as_directive(): void
     {
@@ -1480,6 +1657,7 @@ class LayoutMarkupDecompilerTest extends LayoutMarkupTestCase
      * JSON 레이아웃이 `compile(decompile(json))` 후 (정규화 기준) 동일함을 단언합니다.
      *
      * @param  array<string, mixed>  $json  원본 JSON
+     * @return void 반환값 없음
      */
     private function assertRoundTrips(array $json): void
     {

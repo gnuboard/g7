@@ -2,9 +2,8 @@
   을 주면 열린다 — 과거 기록에는 옛 설정대로 모은 값이 남아 있기 때문이다. 되돌릴 수 없으므로
   체크 없이는 실행 버튼이 잠긴다. 실행은 워커에게 넘어가고(202) 진행률은 진단 화면 이력에서 본다.
   「건너뛰기」는 아무것도 하지 않는다 — 새 설정은 이미 저장돼 있다. -->
-<partial description="방문자 통계 — 소급 익명화 확인 창">
-  <modal data-ref="analytics_retro_anonymize_modal" title="$t:admin.analytics.modals.retro.title" size="md">
-    <meta editor_label="$t:admin.modal_label.analytics.retro_anonymize_modal"/>
+<partial description="방문자 통계 — 소급 익명화 확인 창" editor_label="$t:admin.modal_label.analytics.retro_anonymize_modal">
+  <modal data-type="composite" data-ref="analytics_retro_anonymize_modal" title="$t:admin.analytics.modals.retro.title" size="md">
     <div class="py-2 space-y-3">
       <p class="text-gray-700 dark:text-gray-300">$t:admin.analytics.modals.retro.body|visits={{(_global.analyticsRetro?.visits ?? 0) | number}}|actions={{(_global.analyticsRetro?.actions ?? 0) | number}}</p>
       <p class="text-label-subtle">$t:admin.analytics.modals.retro.hint</p>

@@ -3,7 +3,7 @@
   보는 것은 셋이다: 식별자·판본·범위·언어 / 검사 통과 여부(실패면 사유를 줄줄이) /
   같은 팩이 이미 깔려 있는지(그때는 지금 깔린 판본을 함께 알려 준다). -->
 <partial description="언어팩 manifest 미리보기 드로어 — ZIP 업로드 후 설치 전 manifest/검증 결과 조회 (POST /manifest-preview)" editor_label="$t:admin.modal_label.admin_language_pack_list.language_pack_manifest_preview_drawer">
-  <modal data-ref="language_pack_manifest_preview_drawer" title="$t:admin.language_packs.modal.preview.title" size="large">
+  <modal data-type="composite" data-ref="language_pack_manifest_preview_drawer" title="$t:admin.language_packs.modal.preview.title" size="large">
     <p class="text-label mb-4">$t:admin.language_packs.modal.preview.description</p>
     <file-input accept=".zip" buttonText="$t:common.browse" placeholder="$t:admin.language_packs.install_modal.no_file_selected" class="w-full">
       <on type="change">

@@ -528,6 +528,12 @@ class PostController extends AdminBaseController
             // 게시글 폼에서는 게시판 이름을 로컬라이즈된 문자열로 반환
             $boardData['name'] = $board->getLocalizedName();
 
+            // 최대 파일 크기가 비어 있으면(기본값 따름) 업로드 검증과 같은 게시판 기본값을 내려 준다 —
+            // 업로더 안내·클라이언트 용량 차단이 서버 상한과 어긋나지 않도록
+            $boardData['max_file_size'] = $board->max_file_size
+                ?? g7_module_settings('sirsoft-board', 'basic_defaults.max_file_size')
+                ?? 10;
+
             $metaData = [
                 'board' => $boardData,
             ];

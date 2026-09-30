@@ -47,7 +47,7 @@
         <label data-ref="blocked_keywords_label" class="form-label">
           <span>$t:sirsoft-board.admin.form.fields.blocked_keywords.label</span>
         </label>
-        <tag-input data-ref="blocked_keywords_input" name="blocked_keywords" placeholder="$t:sirsoft-board.admin.form.fields.blocked_keywords.placeholder" :creatable="true" disabled="{{_computed.isReadOnly}}"/>
+        <tag-input data-type="composite" data-ref="blocked_keywords_input" name="blocked_keywords" placeholder="$t:sirsoft-board.admin.form.fields.blocked_keywords.placeholder" :creatable="true" disabled="{{_computed.isReadOnly}}"/>
         <p data-ref="blocked_keywords_description" class="form-hint">$t:sirsoft-board.admin.form.fields.blocked_keywords.description</p>
         <span data-if="{{_local.errors?.blocked_keywords}}" class="form-error-xs mt-1">{{_local.errors?.blocked_keywords?.[0] ?? ''}}</span>
       </div>
@@ -64,7 +64,7 @@
           <label class="text-heading">$t:sirsoft-board.admin.form.fields.use_reply</label>
           <p class="form-hint">$t:sirsoft-board.admin.form.descriptions.use_reply</p>
         </div>
-        <toggle name="use_reply" disabled="{{_computed.isReadOnly}}" class="flex-shrink-0 ml-4"/>
+        <toggle data-type="composite" name="use_reply" disabled="{{_computed.isReadOnly}}" class="flex-shrink-0 ml-4"/>
       </div>
       <div data-ref="max_reply_depth_field" data-if="{{_local.form.use_reply}}" class="">
         <label data-ref="max_reply_depth_label" class="form-label">
@@ -92,7 +92,7 @@
           <label class="text-heading">$t:sirsoft-board.admin.form.fields.use_comment</label>
           <p class="form-hint">$t:sirsoft-board.admin.form.descriptions.use_comment</p>
         </div>
-        <toggle name="use_comment" disabled="{{_computed.isReadOnly}}" class="flex-shrink-0 ml-4"/>
+        <toggle data-type="composite" name="use_comment" disabled="{{_computed.isReadOnly}}" class="flex-shrink-0 ml-4"/>
       </div>
       <div data-ref="post_comment_length_group" data-if="{{_local.form.use_comment}}" class="grid-2col">
         <div data-ref="min_comment_length_field" class="">
@@ -136,7 +136,7 @@
           <label class="text-heading">$t:sirsoft-board.admin.form.fields.use_file_upload.label</label>
           <p class="form-hint">$t:sirsoft-board.admin.form.fields.use_file_upload.description</p>
         </div>
-        <toggle name="use_file_upload" disabled="{{_computed.isReadOnly}}" class="flex-shrink-0 ml-4"/>
+        <toggle data-type="composite" name="use_file_upload" disabled="{{_computed.isReadOnly}}" class="flex-shrink-0 ml-4"/>
       </div>
       <div data-ref="file_settings_group" data-if="{{_local.form.use_file_upload}}" class="grid-2col">
         <div data-ref="max_file_count_field" class="">
@@ -160,7 +160,7 @@
         <label data-ref="allowed_extensions_label" class="form-label">
           <span>$t:sirsoft-board.admin.form.fields.allowed_extensions.label</span>
         </label>
-        <tag-input data-ref="allowed_extensions_input" name="allowed_extensions" placeholder="$t:sirsoft-board.admin.form.fields.allowed_extensions.placeholder" :creatable="true" disabled="{{_computed.isReadOnly}}"/>
+        <tag-input data-type="composite" data-ref="allowed_extensions_input" name="allowed_extensions" placeholder="$t:sirsoft-board.admin.form.fields.allowed_extensions.placeholder" :creatable="true" disabled="{{_computed.isReadOnly}}"/>
         <p data-ref="allowed_extensions_description" class="form-hint">$t:sirsoft-board.admin.form.fields.allowed_extensions.description</p>
       </div>
     </div>

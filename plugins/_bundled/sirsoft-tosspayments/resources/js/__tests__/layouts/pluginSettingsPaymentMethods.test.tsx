@@ -8,6 +8,7 @@
  *
  * @scenario toss_payment_methods_vbank_escrow
  * @effects escrow_operation_notice_shown_when_escrow_enabled
+ * @effects webhook_url_display_and_copy_use_absolute_url
  */
 
 import { describe, it, expect } from 'vitest';
@@ -25,6 +26,9 @@ function collect(node: unknown, pred: (n: Record<string, unknown>) => boolean): 
   walk(node);
   return out;
 }
+
+/** 웹훅 URL 표시·복사 값 — 서버가 내려준 전체 주소, 응답 전에는 경로로 폴백. */
+const WEBHOOK_URL_EXPR = "{{_local.webhookInfo?.url ?? '/plugins/sirsoft-tosspayments/webhook/deposit'}}";
 
 function findById(node: unknown, id: string): Record<string, unknown> | undefined {
   return collect(node, (n) => n.id === id)[0];
@@ -180,11 +184,44 @@ describe('plugin_settings — 가상계좌 섹션', () => {
     expect(toggles).toHaveLength(1);
   });
 
-  it('웹훅 URL 복사 버튼이 copyToClipboard 핸들러를 사용한다', () => {
+  it('웹훅 URL 복사 버튼이 이 플러그인이 소유한 copyToClipboard 핸들러를 사용한다', () => {
+    // 네임스페이스 없는 `copyToClipboard` 는 코어·템플릿 어디에도 없어 버튼이 무반응이었다
     const btn = findById(pluginSettingsLayout, 'webhook_copy_button');
     expect(btn).toBeDefined();
     const actions = btn!.actions as Array<Record<string, unknown>>;
-    expect(actions[0].handler).toBe('copyToClipboard');
+    expect(actions[0].handler).toBe('sirsoft-tosspayments.copyToClipboard');
+    expect((actions[0].params as Record<string, unknown>).text).toBe(WEBHOOK_URL_EXPR);
+  });
+
+  it('웹훅 URL 은 서버가 만든 전체 주소(webhook_info 데이터소스)를 받아 쓴다', () => {
+    // 레이아웃에 경로만 적어 두면 운영자가 사이트 주소를 손으로 붙여야 했다.
+    // 다른 결제사 플러그인처럼 서버가 url() 로 만든 https://… 전체 주소를 내려준다.
+    const dataSources = (pluginSettingsLayout as { data_sources?: Record<string, unknown>[] }).data_sources ?? [];
+    const ds = dataSources.find((d) => d.id === 'webhook_info');
+    expect(ds, 'webhook_info 데이터소스 누락').toBeDefined();
+    expect(ds!.endpoint).toBe('/api/plugins/sirsoft-tosspayments/admin/webhook-url');
+    expect(ds!.method).toBe('GET');
+    expect(ds!.auto_fetch).toBe(true);
+    expect(ds!.auth_required).toBe(true);
+    expect(ds!.initLocal).toBe('webhookInfo');
+  });
+
+  it('웹훅 URL 표시와 복사는 같은 전체 주소 값을 쓴다 (경로 문자열 하드코딩 금지)', () => {
+    const field = findById(pluginSettingsLayout, 'field_webhook_url');
+    expect(field).toBeDefined();
+    // 화면에 보이는 컴포넌트(name 보유)만 — 액션 params.text 는 아래에서 따로 본다.
+    const shown = collect(
+      field,
+      (n) => typeof n.name === 'string' && typeof n.text === 'string' && (n.text as string).includes('webhook/deposit')
+    );
+    expect(shown).toHaveLength(1);
+    expect(shown[0].text).toBe(WEBHOOK_URL_EXPR);
+
+    // 경로만 있는 고정 문자열이 표시·복사 어느 쪽에도 남아 있지 않아야 한다.
+    const btn = findById(pluginSettingsLayout, 'webhook_copy_button');
+    const copied = ((btn!.actions as Array<Record<string, unknown>>)[0].params as Record<string, unknown>).text;
+    expect(copied).toBe(shown[0].text);
+    expect(copied).not.toBe('/plugins/sirsoft-tosspayments/webhook/deposit');
   });
 
   it('웹훅 URL 복사 버튼은 portable 에서 full-width 로 전환된다', () => {

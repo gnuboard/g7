@@ -10,6 +10,13 @@ import type { EditorAttrs } from '../../types';
 /**
  * 알림 아이템 인터페이스
  */
+/**
+ * 닫을 때 읽음 처리로 한 번에 넘기는 id 의 최대 개수.
+ *
+ * 코어 읽음 일괄 API(`POST .../notifications/read-batch`)의 `ids` 상한(NotificationBatchReadRequest `max:100`)과 같다.
+ */
+export const READ_BATCH_MAX_IDS = 100;
+
 export interface NotificationItem {
   id: string | number;
   title: string;
@@ -47,7 +54,7 @@ export interface NotificationCenterProps {
   unreadOnly?: boolean;
   /** 알림 클릭 핸들러 (알림 전체 객체 전달) */
   onNotificationClick?: (notification: NotificationItem) => void;
-  /** 드롭다운 닫힐 때 (뷰포트에 들어온 미읽음 알림 ID 목록) */
+  /** 드롭다운 닫힐 때 (뷰포트에 들어온 미읽음 알림 ID 목록 — READ_BATCH_MAX_IDS 건 단위로 나눠 여러 번 호출될 수 있음) */
   onClose?: (visibleUnreadIds: (string | number)[]) => void;
   /** 추가 로드 요청 */
   onLoadMore?: () => void;
@@ -210,8 +217,10 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
           const n = notifications.find((item) => String(item.id) === String(id));
           return n && !n.read;
         });
-        if (unreadIds.length > 0) {
-          onClose?.(unreadIds);
+        // 읽음 일괄 API 는 한 번에 READ_BATCH_MAX_IDS 건까지만 받는다 — 더보기로 많이 펼친 뒤
+        // 닫으면 그 수를 넘을 수 있어, 넘긴 채 보내면 요청 전체가 422 로 거절된다. 한도 단위로 나눠 보낸다.
+        for (let i = 0; i < unreadIds.length; i += READ_BATCH_MAX_IDS) {
+          onClose?.(unreadIds.slice(i, i + READ_BATCH_MAX_IDS));
         }
       }
       visibleUnreadIdsRef.current.clear();

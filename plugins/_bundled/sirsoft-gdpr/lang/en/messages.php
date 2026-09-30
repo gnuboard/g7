@@ -1,7 +1,7 @@
 <?php
 
 return [
-    'annual_notice' => ['target_columns' => ['name' => 'Name', 'email' => 'Email', 'joined_at' => 'Joined on'], 'attributes' => ['page' => 'page', 'per_page' => 'items per page'], 'collection_summary' => 'Name, email and account information provided during registration and service use', 'purpose' => 'Member identification, service delivery and support', 'retention' => 'Retained until withdrawal, except records subject to statutory retention periods.', 'manual_run_label' => 'Send annual privacy notice', 'queued_count' => ':count recipients queued', 'test_queued' => 'Test queued. Check the log for results.', 'unavailable' => 'Check active member status and delivery channels.', 'status' => ['queued' => 'Queued', 'sent' => 'Sent', 'failed' => 'Failed']],
+    'annual_notice' => ['privacy_policy_link_label' => 'Privacy policy', 'target_columns' => ['name' => 'Name', 'email' => 'Email', 'joined_at' => 'Joined on'], 'attributes' => ['page' => 'page', 'per_page' => 'items per page'], 'collection_summary' => 'Name, email and account information provided during registration and service use', 'purpose' => 'Member identification, service delivery and support', 'retention' => 'Retained until withdrawal, except records subject to statutory retention periods.', 'manual_run_label' => 'Send annual privacy notice', 'queued_count' => ':count recipients queued', 'test_queued' => 'Test queued. Check the log for results.', 'unavailable' => 'Check active member status and delivery channels.', 'status' => ['queued' => 'Queued', 'sent' => 'Sent', 'failed' => 'Failed']],
     'consent' => [
         'granted' => 'Consent has been saved.',
         'granted_again' => 'Consent has been renewed.',
@@ -46,7 +46,7 @@ return [
         'description' => 'Operators control the cookie consent banner and the MyPage privacy card.',
         'section' => [
             'operator' => 'Operator / Privacy Policy',
-            'operator_desc' => 'Register the operator name, data storage location, and privacy policy page slug displayed in the cookie banner and policy page. (GDPR Art.13 transparency obligation)',
+            'operator_desc' => 'Register the operator name, data storage location, and privacy policy address displayed in the cookie banner and policy page. (GDPR Art.13 transparency obligation)',
             'cookie_banner' => 'Cookie Consent Banner',
             'cookie_banner_desc' => 'Configure visibility, position, categories, and policy version of the cookie consent banner — all in one place.',
             'cookie_banner_settings' => 'Banner Display Settings',
@@ -97,10 +97,11 @@ return [
                 'label' => 'Policy Version',
                 'hint' => "Managed automatically by the system — operators do not enter values directly.\n• Adding/removing categories, category semantic changes, privacy policy page changes → new version auto-published + all members re-consent\n• Domain add/remove, label changes, etc. → no publication",
             ],
-            'privacy_policy_slug' => [
-                'label' => 'Privacy Policy Page Slug',
-                'hint' => 'Slug of the privacy policy page registered in the Page plugin. If empty, the policy link in the cookie banner is hidden.',
-                'placeholder' => 'e.g., privacy-policy',
+            'privacy_policy_url' => [
+                'label' => 'Privacy Policy Address',
+                'hint' => 'Enter where your privacy policy is published. For a page on this site, use a path starting with / (e.g., /page/privacy); for another site, use a full address starting with https://. If empty, the policy link in the cookie banner is hidden.',
+                'placeholder' => 'e.g., /page/privacy or https://example.com/privacy',
+                'invalid' => 'The :attribute must be a site path starting with / or an address starting with https://.',
             ],
             'legal_entity_name' => [
                 'label' => 'Legal Entity / Operator Name',
@@ -194,9 +195,9 @@ return [
             ],
             'snapshot_modal' => [
                 'title' => 'Policy version v:version snapshot',
-                'description' => 'Full snapshot of settings at publication time — categories, privacy policy slug, blocked domains. Used by DPO as evidence in consent disputes.',
+                'description' => 'Full snapshot of settings at publication time — categories, privacy policy address, blocked domains. Used by DPO as evidence in consent disputes.',
                 'section_categories' => 'Cookie categories',
-                'section_privacy_policy' => 'Privacy policy slug',
+                'section_privacy_policy' => 'Privacy policy address',
                 'section_blocked_domains' => 'Blocked domain catalog',
                 'category_required_badge' => 'Required',
                 'no_categories' => 'No categories registered.',
@@ -204,7 +205,8 @@ return [
                 'view_button' => 'View v:version snapshot',
                 'close' => 'Close',
                 'open_policy_page' => 'Open policy page',
-                'no_policy_slug' => 'No privacy policy page registered.',
+                'no_policy_url' => 'No privacy policy address registered.',
+                'legacy_slug_note' => 'Recorded in the previous format (page slug ":slug"). Showing the address the link pointed to at the time.',
             ],
             'not_found' => 'Policy version not found.',
         ],

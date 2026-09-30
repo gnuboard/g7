@@ -96,7 +96,7 @@
         <div class="flex items-start justify-between mb-3">
           <!-- 작성자 정보 -->
           <div class="flex items-center gap-2">
-            <avatar name="{{review.user?.name ?? '?'}}" avatar="{{review.user?.avatar ?? null}}" size="sm"/>
+            <avatar data-type="composite" name="{{review.user?.name ?? '?'}}" avatar="{{review.user?.avatar ?? null}}" size="sm"/>
             <div class="flex flex-col">
               <span class="font-medium text-sm text-gray-900 dark:text-white">{{review.user?.name}}</span>
               <span class="text-xs text-gray-500 dark:text-gray-400">{{review.created_at}}</span>
@@ -224,7 +224,7 @@
       <p>$t:shop.product.no_reviews</p>
     </div>
     <!-- 리뷰 페이지네이션 -->
-    <pagination currentPage="{{reviews.data?.reviews?.meta?.current_page ?? 1}}" totalPages="{{reviews.data?.reviews?.meta?.last_page ?? null}}" hasMorePages="{{reviews.data?.reviews?.meta?.has_more_pages ?? false}}" class="mt-6 flex justify-center">
+    <pagination data-type="composite" currentPage="{{reviews.data?.reviews?.meta?.current_page ?? 1}}" totalPages="{{reviews.data?.reviews?.meta?.last_page ?? null}}" hasMorePages="{{reviews.data?.reviews?.meta?.has_more_pages ?? false}}" class="mt-6 flex justify-center">
       <on event="onPageChange">
         <set-state target="local" reviewsPage="{{$args[0]}}"/>
         <refetch-data-source dataSourceId="reviews"/>

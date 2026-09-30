@@ -195,9 +195,10 @@ class AuthController extends AdminBaseController
         // 역할 관계 로드 (권한은 역할을 통해 간접 연결)
         $user->load(['roles.permissions']);
 
-        return $this->successWithResource(
+        // 본인의 최고관리자 여부를 함께 준다 — 목록 화면의 최고관리자 전용 제어가 읽는다(#703).
+        return $this->success(
             'common.success',
-            new UserResource($user)
+            (new UserResource($user))->toAdminAuthArray($request)
         );
     }
 

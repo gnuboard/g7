@@ -6,7 +6,7 @@
   제목·본문도 로케일별 칸이 따로 그려진다(객체 키를 갈아 끼우는 방식이 아니다).
   쓸 수 있는 변수 목록은 템플릿이 실어 온 값에서 그린다. -->
 <partial description="메일 템플릿 편집 모달" editor_label="$t:admin.modal_label.admin_settings.modal_mail_template_form">
-  <modal data-ref="modal_mail_template_form" title="$t:admin.settings.mail_templates.edit_modal.title" size="xl" :closeOnOverlayClick="false">
+  <modal data-type="composite" data-ref="modal_mail_template_form" title="$t:admin.settings.mail_templates.edit_modal.title" size="xl" :closeOnOverlayClick="false">
     <div data-ref="form_container" data-blur-until-loaded="{{$parent._local.isSaving}}" class="flex flex-col max-h-[70vh]">
       <div class="flex-1 overflow-y-auto space-y-5 pr-1">
         <div data-ref="validation_error_banner" data-if="{{$parent._local.templateErrors}}" class="alert-danger">
@@ -69,7 +69,7 @@
             <span>$t:admin.settings.mail_templates.edit_modal.body</span>
             <span class="text-required">*</span>
           </label>
-          <html-editor content="{{$parent._local.editingTemplate?.body?.ko ?? ''}}" :isHtml="true" :showHtmlModeToggle="false" class="{{$parent._local.templateErrors?.['body.ko'] ? 'min-h-[200px] border border-red-500 rounded-md' : 'min-h-[200px]'}}">
+          <html-editor data-type="composite" content="{{$parent._local.editingTemplate?.body?.ko ?? ''}}" :isHtml="true" :showHtmlModeToggle="false" class="{{$parent._local.templateErrors?.['body.ko'] ? 'min-h-[200px] border border-red-500 rounded-md' : 'min-h-[200px]'}}">
             <on type="change">
               <!-- 한국어 본문(필수). 위 변수 안내에 적힌 `{키}` 를 그대로 쓸 수 있다. -->
               <set-state target="$parent._local" editingTemplate.body.ko="{{$event.target.value}}"/>
@@ -79,7 +79,7 @@
         </div>
         <div data-ref="body_en" data-if="{{($parent._local.editLang ?? $locale) === 'en'}}">
           <label class="form-label">$t:admin.settings.mail_templates.edit_modal.body</label>
-          <html-editor content="{{$parent._local.editingTemplate?.body?.en ?? ''}}" :isHtml="true" :showHtmlModeToggle="false" class="{{$parent._local.templateErrors?.['body.en'] ? 'min-h-[200px] border border-red-500 rounded-md' : 'min-h-[200px]'}}">
+          <html-editor data-type="composite" content="{{$parent._local.editingTemplate?.body?.en ?? ''}}" :isHtml="true" :showHtmlModeToggle="false" class="{{$parent._local.templateErrors?.['body.en'] ? 'min-h-[200px] border border-red-500 rounded-md' : 'min-h-[200px]'}}">
             <on type="change">
               <!-- 영어 본문 — 한국어 본문과 짝이다. -->
               <set-state target="$parent._local" editingTemplate.body.en="{{$event.target.value}}"/>
@@ -88,7 +88,7 @@
           <span data-if="{{$parent._local.templateErrors?.['body.en']}}" class="form-error-xs mt-1">{{$parent._local.templateErrors?.['body.en']?.[0] ?? ''}}</span>
         </div>
         <div data-ref="is_active_toggle" class="flex-center gap-3">
-          <toggle name="templateIsActive" checked="{{$parent._local.editingTemplate?.is_active ?? true}}">
+          <toggle data-type="composite" name="templateIsActive" checked="{{$parent._local.editingTemplate?.is_active ?? true}}">
             <on type="change">
               <!-- 이 템플릿으로 실제 발송할지 — 꺼 두면 코드 기본 문구로 나간다.
                    위 입력 칸들과 달리 **체크 상태를 그대로** 담는다(뒤집지 않는다). -->

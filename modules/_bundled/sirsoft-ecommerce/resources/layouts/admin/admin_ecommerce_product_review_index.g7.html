@@ -125,7 +125,7 @@
               </input>
               <icon name="magnifying-glass" size="sm" class="absolute right-3 top-1/2 -translate-y-1/2 icon-muted pointer-events-none"/>
             </div>
-            <column-selector data-ref="column_selector" id="admin_review_list_columns" visibleColumns="{{_local.visibleColumns ?? []}}" triggerLabel="$t:sirsoft-ecommerce.admin.product_review.search.column_select" menuTitle="$t:common.column_selector_title" menuDescription="$t:common.column_selector_description" position="right">
+            <column-selector data-type="composite" data-ref="column_selector" id="admin_review_list_columns" visibleColumns="{{_local.visibleColumns ?? []}}" triggerLabel="$t:sirsoft-ecommerce.admin.product_review.search.column_select" menuTitle="$t:common.column_selector_title" menuDescription="$t:common.column_selector_description" position="right">
               <prop name="columns">
                 <item field="product_name" header="$t:sirsoft-ecommerce.admin.product_review.table.columns.product_name" :required="true"/>
                 <item field="content" header="$t:sirsoft-ecommerce.admin.product_review.table.columns.content"/>
@@ -534,7 +534,8 @@
         </div>
       </div>
       <div data-ref="table_container" class="overflow-hidden mb-4">
-        <data-grid selectedCountText="" data-ref="review_datagrid" data="{{reviews.data?.data ?? []}}" idField="id" :selectable="true" selectionScope="page" selectedIds="{{_local.selectedReviews ?? []}}" :expandable="true" expandedRowIds="{{_local.expandedRows ?? []}}" visibleColumns="{{_local.visibleColumns ?? []}}" emptyMessage="$t:sirsoft-ecommerce.admin.product_review.table.empty" loading="{{reviews.$loading ?? false}}">
+        <data-grid data-type="composite" selectedCountText="" data-ref="review_datagrid" data="{{reviews.data?.data ?? []}}" idField="id" :selectable="true" selectionScope="page" selectedIds="{{_local.selectedReviews ?? []}}" :expandable="true" expandedRowIds="{{_local.expandedRows ?? []}}" visibleColumns="{{_local.visibleColumns ?? []}}" emptyMessage="$t:sirsoft-ecommerce.admin.product_review.table.empty">
+          <blur-until-loaded sources="reviews"/>
           <prop name="expandContext">
             <field name="rowId" value="{{row.id}}"/>
             <field name="rowHasReply" value="{{row.has_reply}}"/>
@@ -595,14 +596,14 @@
           <column field="reply" header="$t:sirsoft-ecommerce.admin.product_review.table.columns.reply" width="90px" :sortable="false">
             <cell>
               <div class="flex justify-center">
-                <badge color="{{row.has_reply_badge_color}}" text="{{row.has_reply_label}}"/>
+                <badge data-type="composite" color="{{row.has_reply_badge_color}}" text="{{row.has_reply_label}}"/>
               </div>
             </cell>
           </column>
           <column field="status" header="$t:sirsoft-ecommerce.admin.product_review.table.columns.status" width="90px" :sortable="false">
             <cell>
               <div class="flex justify-center">
-                <badge color="{{row.status_badge_color}}" text="{{row.status_label}}"/>
+                <badge data-type="composite" color="{{row.status_badge_color}}" text="{{row.status_label}}"/>
               </div>
             </cell>
           </column>
@@ -656,7 +657,7 @@
                       <span class="text-label-subtle text-sm font-medium">$t:sirsoft-ecommerce.admin.product_review.detail.customer_review.title</span>
                       <div class="flex-center gap-2">
                         <span class="text-yellow-400 dark:text-yellow-300">{{['','★','★★','★★★','★★★★','★★★★★'][row.rating] ?? ''}}</span>
-                        <badge color="{{row.status_badge_color}}" text="{{row.status_label}}"/>
+                        <badge data-type="composite" color="{{row.status_badge_color}}" text="{{row.status_label}}"/>
                       </div>
                     </div>
                     <!-- 카드 본문: 리뷰 내용 + 이미지 -->
@@ -771,7 +772,7 @@
                     <!-- 카드 헤더: 판매자 답변 제목 + 답변여부 배지 -->
                     <div class="flex-between px-4 panel-header">
                       <span class="text-body font-medium">$t:sirsoft-ecommerce.admin.product_review.detail.seller_reply.title</span>
-                      <badge color="{{row.has_reply_badge_color}}" text="{{row.has_reply_label}}"/>
+                      <badge data-type="composite" color="{{row.has_reply_badge_color}}" text="{{row.has_reply_label}}"/>
                     </div>
                     <!-- 카드 본문: 답변 내용 (보기 모드) -->
                     <div data-if="{{_local.editingReviewId !== row.id}}" class="px-4 py-3">
@@ -893,7 +894,7 @@
           </on>
         </data-grid>
       </div>
-      <pagination data-if="{{((reviews.data?.meta?.last_page ?? 0) > 1) || (reviews.data?.meta?.has_more_pages === true) || ((reviews.data?.meta?.current_page ?? 1) > 1)}}" currentPage="{{reviews.data?.meta?.current_page ?? 1}}" totalPages="{{reviews.data?.meta?.last_page ?? null}}" hasMorePages="{{reviews.data?.meta?.has_more_pages ?? false}}" class="flex justify-center mt-4">
+      <pagination data-type="composite" data-if="{{((reviews.data?.meta?.last_page ?? 0) > 1) || (reviews.data?.meta?.has_more_pages === true) || ((reviews.data?.meta?.current_page ?? 1) > 1)}}" currentPage="{{reviews.data?.meta?.current_page ?? 1}}" totalPages="{{reviews.data?.meta?.last_page ?? null}}" hasMorePages="{{reviews.data?.meta?.has_more_pages ?? false}}" class="flex justify-center mt-4">
         <on event="onPageChange">
           <!-- 쪽 넘김도 주소로 나간다 — 걸어 둔 조건은 그대로 두고 쪽 번호만 갈아 끼운다 -->
           <navigate path="/admin/ecommerce/reviews" :mergeQuery="true" :replace="true" transition_overlay_target="review_datagrid__body">

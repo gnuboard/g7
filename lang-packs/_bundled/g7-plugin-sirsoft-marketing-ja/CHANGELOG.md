@@ -4,6 +4,12 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.0.1] - 2026-09-29
+
+### Added
+
+- 채널 추가·편집 창의 항목 키 형식·중복·항목명 누락 안내(`settings.channel_modal.key_invalid`·`key_duplicate`·`label_required`)와, 채널 사용 안 함을 되돌렸을 때의 안내(`settings.channel_deactivate_modal.restored`) 일본어 번역을 추가했습니다.
+
 ## [1.0.0] - 2026-07-01
 
 ### Added

@@ -18,7 +18,7 @@
             "auth_mode": "optional",
             "loading_strategy": "progressive",
             "params": {
-                "country_code": "{{_local.checkout?.country_code ?? _global.preferredShippingCountry ?? _global.modules?.['sirsoft-ecommerce']?.shipping?.default_country ?? 'KR'}}",
+                "country_code": "{{_local.checkout?.country_code ?? ((_global.modules?.['sirsoft-ecommerce']?.shipping?.international_shipping_enabled === true && (_global.modules?.['sirsoft-ecommerce']?.shipping?.available_countries ?? []).some(c => c.is_active && c.code === _global.preferredShippingCountry)) ? _global.preferredShippingCountry : 'KR')}}",
                 "zipcode": "{{_local.checkout?.zipcode ?? ''}}"
             },
             "initLocal": {
@@ -225,11 +225,12 @@
     "permissions": [],
     "init_actions": [
         {
-            "comment": "배송국가 시드 — 주문서 진입 시 _local.checkout.country_code 를 _global.preferredShippingCountry(헤더/계정/GeoIP/기본국가 수렴값)로 채운다. 이 값이 checkoutData GET 쿼리(country_code)로 전달되어 배송비가 해당 국가로 계산된다. 유저가 주문서에서 배송국가 Select 를 바꾸면 그 시점 값이 SSoT 로 덮어쓴다(주문서 기준).",
+            "comment": "배송국가 시드 — 주문서 진입 시 배송비 계산용 _local.checkout.country_code 와 배송지 폼·주문 제출용 _local.shipping.country_code 를\n         **같은 값**으로 채운다. 값은 _global.preferredShippingCountry(헤더/계정/GeoIP/기본국가 수렴값)이되, 해외배송이 켜져 있고\n         그 나라가 활성 배송국가일 때만 쓰고 아니면 KR 이다(선택 칸 옵션에 없는 나라가 고른 값처럼 보이지 않도록).\n         둘 중 하나만 시드하면 선택 칸은 「미국」인데 주소 폼은 국내형이고 주문은 KR 로 저장되는 어긋남이 생긴다(#703).\n         checkout.country_code 는 checkoutData GET 쿼리로 전달되어 배송비가 해당 국가로 계산된다. 유저가 주문서에서 배송국가\n         Select 를 바꾸면 그 시점 값이 두 자리 모두를 덮어쓴다(주문서 기준).",
             "handler": "setState",
             "params": {
                 "target": "local",
-                "checkout.country_code": "{{_global.preferredShippingCountry ?? _global.modules?.['sirsoft-ecommerce']?.shipping?.default_country ?? 'KR'}}"
+                "checkout.country_code": "{{(_global.modules?.['sirsoft-ecommerce']?.shipping?.international_shipping_enabled === true && (_global.modules?.['sirsoft-ecommerce']?.shipping?.available_countries ?? []).some(c => c.is_active && c.code === _global.preferredShippingCountry)) ? _global.preferredShippingCountry : 'KR'}}",
+                "shipping.country_code": "{{(_global.modules?.['sirsoft-ecommerce']?.shipping?.international_shipping_enabled === true && (_global.modules?.['sirsoft-ecommerce']?.shipping?.available_countries ?? []).some(c => c.is_active && c.code === _global.preferredShippingCountry)) ? _global.preferredShippingCountry : 'KR'}}"
             }
         },
         {

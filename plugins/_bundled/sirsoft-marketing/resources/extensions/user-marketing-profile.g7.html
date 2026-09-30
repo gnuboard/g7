@@ -75,7 +75,12 @@
         <div class="space-y-3">
           <div data-if="{{_local.profileEditForm?.third_party_consent_enabled === true}}" class="flex items-start gap-3">
             <label class="flex items-start gap-3 flex-1 cursor-pointer">
-              <checkbox name="third_party_consent" checked="{{!!_local.profileEditForm?.third_party_consent}}" :autoBinding="false" class="mt-0.5 text-blue-600 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500"/>
+              <checkbox name="third_party_consent" checked="{{!!_local.profileEditForm?.third_party_consent}}" :autoBinding="false" class="mt-0.5 text-blue-600 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500">
+                <on type="change">
+                  <!-- 제3자 제공 동의 — 저장값이 boolean 이 아닐 수 있어 체크 상태를 명시 바인딩하고, 바뀐 값은 여기서 직접 적는다 -->
+                  <set-state target="local" profileEditForm.third_party_consent="{{$event.target.checked}}"/>
+                </on>
+              </checkbox>
               <div class="flex-1 space-y-1">
                 <span class="block text-sm font-medium text-gray-900 dark:text-white">$t:sirsoft-marketing.third_party_consent</span>
                 <span class="block text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-marketing.third_party_consent_desc</span>
@@ -103,7 +108,12 @@
           <div data-if="{{_local.profileEditForm?.info_disclosure_enabled === true}}" class="space-y-1">
             <div class="flex items-start gap-3">
               <label class="flex items-start gap-3 flex-1 cursor-pointer">
-                <checkbox name="info_disclosure" checked="{{!!_local.profileEditForm?.info_disclosure}}" :autoBinding="false" class="mt-0.5 text-blue-600 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500"/>
+                <checkbox name="info_disclosure" checked="{{!!_local.profileEditForm?.info_disclosure}}" :autoBinding="false" class="mt-0.5 text-blue-600 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500">
+                  <on type="change">
+                    <!-- 정보 공개 동의 — 저장값이 boolean 이 아닐 수 있어 체크 상태를 명시 바인딩하고, 바뀐 값은 여기서 직접 적는다 -->
+                    <set-state target="local" profileEditForm.info_disclosure="{{$event.target.checked}}"/>
+                  </on>
+                </checkbox>
                 <div class="flex-1 space-y-1">
                   <span class="block text-sm font-medium text-gray-900 dark:text-white">$t:sirsoft-marketing.info_disclosure</span>
                   <span class="block text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-marketing.info_disclosure_desc</span>
@@ -138,7 +148,7 @@
   <data-source id="marketing_settings" label_key="$t:sirsoft-marketing.editor.data_source.marketing_settings" type="api" endpoint="/api/plugins/sirsoft-marketing/settings" method="GET" :auto_fetch="true" :auth_required="false"/>
   <modal>
     <!-- 약관 본문 창 — 어떤 약관을 띄울지는 전역에 심어 둔 값으로 가른다 -->
-    <modal data-ref="marketing_terms_modal">
+    <modal data-type="composite" data-ref="marketing_terms_modal">
       <switch-value prop="title" on="{{_global.marketingTermsModalType}}">
         <case when="marketing_consent">$t:sirsoft-marketing.terms_modal_marketing_consent</case>
         <case when="third_party_consent">$t:sirsoft-marketing.terms_modal_third_party_consent</case>
@@ -153,7 +163,7 @@
           <span class="text-sm text-gray-500 dark:text-gray-400">$t:sirsoft-marketing.terms_published_at: {{_global.marketingTermsPageData?.published_at | date}}</span>
         </div>
         <div data-if="{{_global.marketingTermsPageData}}" class="flex-1 overflow-y-auto min-h-0 max-h-96">
-          <html-content content="{{_global.marketingTermsPageData?.content ?? ''}}" isHtml="{{(_global.marketingTermsPageData?.content_mode ?? 'html') === 'html'}}" class="prose dark:prose-invert prose-sm max-w-none text-gray-700 dark:text-gray-300"/>
+          <html-content data-type="composite" content="{{_global.marketingTermsPageData?.content ?? ''}}" isHtml="{{(_global.marketingTermsPageData?.content_mode ?? 'html') === 'html'}}" class="prose dark:prose-invert prose-sm max-w-none text-gray-700 dark:text-gray-300"/>
         </div>
         <div data-if="{{!_global.marketingTermsLoading &amp;&amp; !_global.marketingTermsPageData}}" class="py-8 text-center text-gray-500 dark:text-gray-400">$t:sirsoft-marketing.no_terms_content</div>
         <div class="flex-shrink-0 flex justify-end gap-3 mt-4 pt-4">

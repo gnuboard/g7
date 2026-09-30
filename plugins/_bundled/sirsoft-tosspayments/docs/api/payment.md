@@ -73,7 +73,7 @@ Location: /shop/checkout?error=PAY_PROCESS_CANCELED&orderId=20260711-1418336207
 
 주의사항:
 
-- 이 엔드포인트는 **주문 상태를 변경하지 않는다**. 인증도 서명도 없는 GET 이고 `orderId`·`code` 가 전부 쿼리스트링에서 오므로, 실패 처리를 수행하면 링크 하나로 남의 결제대기 주문을 취소시킬 수 있다. 결제 실패 기록은 구매자 정보를 대조하는 `POST /api/plugins/sirsoft-tosspayments/payment/close-report` 가 담당하며, 실패 화면에 도착한 프론트엔드가 그 경로로 보고한다.
+- 이 엔드포인트는 **주문 상태를 변경하지 않는다**. 인증도 서명도 없는 GET 이고 `orderId`·`code` 가 전부 쿼리스트링에서 오므로, 실패 처리를 수행하면 링크 하나로 남의 결제대기 주문을 취소시킬 수 있다. 결제 실패 기록은 주문 소유자를 확인하는 `POST /api/plugins/sirsoft-tosspayments/payment/close-report` 가 담당하며, 실패 화면에 도착한 프론트엔드가 그 경로로 보고한다.
 - 결제창을 띄우기 전 단계에서 사용자가 취소한 경우(SDK `USER_CANCEL`)는 이 콜백을 타지 않고 프론트엔드에서 직접 처리된다.
 
 
@@ -81,16 +81,15 @@ Location: /shop/checkout?error=PAY_PROCESS_CANCELED&orderId=20260711-1418336207
 <!-- @generated:start:api.plugins.sirsoft-tosspayments.payment.close-report -->
 - **라우트명**: `api.plugins.sirsoft-tosspayments.payment.close-report`
 - **컨트롤러**: `Plugins\Sirsoft\Tosspayments\Controllers\PaymentCloseReportController@store`
-- **인증/권한**: 공개 (인증 불필요)
+- **인증/권한**: 주문 소유자만 — 회원 주문은 주문한 회원 본인 로그인(Bearer, `optional.sanctum`), 비회원 주문은 `X-Guest-Order-Token` 헤더(주문 생성 응답의 `guest_order_token`). 주문자 이메일·전화번호는 제3자도 알 수 있어 소유 증명으로 쓰지 않는다 (KVE-2026-2434)
 
 **요청 파라미터**
 
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
+| X-Guest-Order-Token | header | string | 비회원 주문이면 예 | `{만료ts}|{HMAC-SHA256}` | 주문 생성 응답(`guest_order_token`)으로 받은 비회원 조회 토큰. 이 주문의 것이고 만료 전이어야 한다. 회원은 싣지 않고 로그인(Bearer)으로 증명한다. |
 | orderId | body | string | 예 | max 40 | 결제창을 닫거나 결제가 거절된 대상 주문의 주문번호. 서버가 이 값으로 주문을 조회해 결제 실패/취소 이력을 기록한다. |
 | amount | body | integer | 예 | min 1 | 결제 금액. 저장된 주문 청구액과 일치하는지 검증한다. |
-| buyer_email | body | string | 아니오 | max 255 | 구매자 이메일. 주문의 구매자 정보와 대조해 본인 요청인지 확인한다. |
-| buyer_phone | body | string | 아니오 | max 30 | 구매자 전화번호. 주문의 구매자 정보와 대조해 본인 요청인지 확인한다. |
 | code | body | string | 아니오 | max 60 | 토스 실패 코드. 값이 있으면 결제 거절로, 없으면 결제창 닫힘으로 기록한다. |
 | reason | body | string | 아니오 | max 160 | 사람이 읽을 실패 사유. 취소 이력에 남는다. |
 
@@ -101,12 +100,11 @@ POST /api/plugins/sirsoft-tosspayments/payment/close-report HTTP/1.1
 Host: api.example.com
 Accept: application/json
 Content-Type: application/json
+X-Guest-Order-Token: 1759999999|6f1c9a…(64자 HEX)
 
 {
     "orderId": "20260711-1418336207",
     "amount": 10000,
-    "buyer_email": "buyer@example.com",
-    "buyer_phone": "01012345678",
     "code": "REJECT_CARD_COMPANY",
     "reason": "카드사에서 승인을 거절했습니다."
 }
@@ -139,7 +137,7 @@ HTTP/1.1 200
 
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
-| 403 | Forbidden | 요청의 구매자 정보(`buyer_email` / `buyer_phone`)가 주문의 구매자와 일치하지 않는 경우 |
+| 403 | Forbidden | 주문 소유자 확인 실패 — 비로그인 요청이 회원 주문을 보고함 · 다른 회원이 보고함 · 비회원 조회 토큰이 없거나 만료·위조·다른 주문의 것임 (`errors.message.0` = `Order ownership verification failed.`). 주문자 이메일·전화번호를 맞춰 보내도 통과하지 않는다 |
 | 404 | Not Found | `orderId` 에 해당하는 주문이 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지), 주문 통화가 청구 불가, 금액이 주문 청구액과 불일치 |
 | 429 | Too Many Requests | 동일 IP·`orderId` 조합에서 분당 20회를 초과해 요청한 경우 |
@@ -148,7 +146,7 @@ HTTP/1.1 200
 
 **설명**
 
-**주문을 실패로 전이시키는 유일한 결제창 경로**입니다. 브라우저 리턴 콜백(`/payment/fail`)은 인증도 서명도 없고 주문번호가 쿼리스트링으로 오므로 주문 상태를 바꾸지 않습니다. 정당한 결제 실패는 구매자 이메일·전화 대조를 통과한 이 요청으로만 기록되며, 이는 다른 결제사 플러그인(KCP·KG이니시스·나이스페이)의 close-report 와 같은 계약입니다.
+**주문을 실패로 전이시키는 유일한 결제창 경로**입니다. 브라우저 리턴 콜백(`/payment/fail`)은 인증도 서명도 없고 주문번호가 쿼리스트링으로 오므로 주문 상태를 바꾸지 않습니다. 정당한 결제 실패는 주문 소유자(회원 본인 로그인 / 비회원 조회 토큰)가 보낸 이 요청으로만 기록되며 — 주문자 이메일·전화번호는 제3자도 알 수 있어 소유 증명이 아니다 (KVE-2026-2434) — 이는 다른 결제사 플러그인(KCP·KG이니시스·나이스페이)의 close-report 와 같은 계약입니다.
 
 프론트엔드는 결제창을 열기 직전에 구매자 정보를 브라우저 세션에 남겨 두었다가, 결제가 거절되어 실패 화면으로 돌아왔을 때 그 정보로 이 엔드포인트를 호출합니다. 결제창은 전체 페이지 이동으로 열리고 돌아오므로 화면의 컨텍스트는 그 사이 소실되기 때문입니다.
 

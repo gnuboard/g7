@@ -312,7 +312,9 @@ describe('plugin_settings.json — 리포트 수신 설정', () => {
         expect(raw).toContain('report_url?.data?.url');
         expect(raw).toContain('/api/plugins/sirsoft-message_bizppurio/webhook');
         expect(raw).toContain('"readOnly":true');
-        expect(raw).toContain('copyToClipboard');
+        // 복사 핸들러는 이 플러그인이 소유한다 — 네임스페이스 없는 이름은 코어·템플릿 어디에도 없어 버튼이 무반응이었다
+        expect(raw).toContain('"handler":"sirsoft-message_bizppurio.copyToClipboard"');
+        expect(raw).not.toContain('"handler":"copyToClipboard"');
     });
 });
 
@@ -347,10 +349,11 @@ describe('plugin_settings.json — 저장 버튼', () => {
         const handlers = collectHandlers(layout);
         const allowed = [
             'apiCall', 'setState', 'toast', 'navigate', 'sequence', 'switch',
-            'refetchDataSource', 'scrollIntoView', 'copyToClipboard',
+            'refetchDataSource', 'scrollIntoView',
             'openModal', 'closeModal', 'replaceUrl', 'suppress',
             'sirsoft-message_bizppurio.uploadTemplateImage',
             'sirsoft-message_bizppurio.insertVariable',
+            'sirsoft-message_bizppurio.copyToClipboard',
         ];
         for (const h of handlers) {
             expect(allowed).toContain(h);

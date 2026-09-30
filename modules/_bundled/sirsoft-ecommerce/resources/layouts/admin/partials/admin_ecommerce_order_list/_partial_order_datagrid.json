@@ -783,18 +783,23 @@
                                 "comment": "결제 플러그인이 이 칸에 배지(테스트 결제 등)를 덧붙인다. 래퍼 Div 와 결제수단 라벨은 **호스트가 소유**하고, 플러그인은 `columns._patch` → `cellChildren._patch`(by: id) → `children._append` 로 자기 배지만 더한다 — 셋 이상이 함께 설치돼도 서로 지우지 않는다. 라벨 자체를 바꿔야 하는 플러그인(간편결제 표시명 등)은 `children._patch`(by: id)로 `payment_method_label` 노드의 text 만 덮는다(#599). 두 `id` 는 확장이 지목하는 **공개 앵커**이므로 이름을 바꾸지 않는다.",
                                 "cellChildren": [
                                     {
+                                        "comment": "결제수단 칸. 이 모듈은 PG 를 모르므로 PG 별 표시는 두 경로로 받는다 — 컬럼을 통째로 넘겨주지 않는다\n              (플러그인이 컬럼 전체를 복사해 덮으면 여기 컬럼 개선이 그 사본에 묻혀 사라진다).\n              · 라벨: 간편결제 원 수단처럼 PG 만 아는 라벨은 결제 플러그인이 서버 필터 훅으로 display_label 을 채운다.\n              · 표시 자리: 라벨 아래 덧붙이는 표시(테스트 결제 등). 여러 플러그인이 같이 붙고, 각자 자기 주문에만 보인다.",
                                         "id": "payment_method_cell",
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "row-stack"
+                                            "className": "stack-flush"
                                         },
                                         "children": [
                                             {
                                                 "id": "payment_method_label",
                                                 "type": "basic",
                                                 "name": "Span",
-                                                "text": "{{row.payment?.payment_method_label}}"
+                                                "text": "{{row.payment?.payment_method_display_label ?? row.payment?.payment_method_label}}"
+                                            },
+                                            {
+                                                "type": "extension_point",
+                                                "name": "admin_order_list_payment_method_badges"
                                             }
                                         ]
                                     }

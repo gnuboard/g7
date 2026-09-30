@@ -116,6 +116,15 @@ export interface DataGridProps {
      *   하는 화면용.
      */
     selectionScope?: 'page' | 'free';
+    /**
+     * 선택할 수 없는 행의 id 목록 (`idField` 값).
+     *
+     * 이 행들은 체크박스가 비활성으로 그려지고 전체 선택·전체 선택 여부 판정에서 빠진다.
+     * 서버가 일괄 요청 전체를 거절하는 대상(예: 회원 일괄 상태 변경의 로그인한 본인)을
+     * 화면이 고를 수 없게 할 때 쓴다. `selectionScope: 'page'` 면 선택 목록에 남아 있던
+     * 이 행들의 선택도 함께 버린다.
+     */
+    nonSelectableIds?: (string | number)[];
     showColumnSelector?: boolean;
     visibleColumns?: string[];
     /**

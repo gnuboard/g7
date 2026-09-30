@@ -13,7 +13,7 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { ConsentBridge, consentGateRequired } from '../consent';
+import { ANALYTICS_CONSENT_CHANGED_EVENT, ConsentBridge, consentGateRequired } from '../consent';
 
 describe('consentGateRequired', () => {
   // @scenario mode=full|anonymous|consent
@@ -33,7 +33,7 @@ describe('ConsentBridge', () => {
   beforeEach(() => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
       ok: true,
-      json: async () => ({ data: { consents: { analytics: true } } }),
+      json: async () => ({ data: { consent_source: 'provider', has_consent: true } }),
     }));
   });
 
@@ -44,7 +44,7 @@ describe('ConsentBridge', () => {
 
   // @scenario mode=consent
   // @effects consent_bridge_does_not_block_when_there_is_no_consent_source
-  it('동의 관리 플러그인이 없으면 막지 않는다', async () => {
+  it('동의를 확인할 곳이 없으면 막지 않는다', async () => {
     const bridge = new ConsentBridge(false);
     await bridge.start();
 
@@ -56,12 +56,12 @@ describe('ConsentBridge', () => {
 
   // @scenario mode=consent
   // @effects consent_bridge_blocks_sending_until_consent_is_known
-  it('플러그인이 있으면 동의 상태를 읽는다', async () => {
+  it('확인할 곳이 있으면 코어 API 로 동의 상태를 읽는다', async () => {
     const bridge = new ConsentBridge(true);
     await bridge.start();
 
     expect(fetch).toHaveBeenCalledWith(
-      '/api/plugins/sirsoft-gdpr/consent/cookie/status',
+      '/api/analytics/consent',
       expect.objectContaining({ credentials: 'same-origin' }),
     );
     expect(bridge.allowsSending()).toBe(true);
@@ -73,7 +73,7 @@ describe('ConsentBridge', () => {
   it('동의하지 않았으면 보내지 않는다', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
       ok: true,
-      json: async () => ({ data: { consents: { analytics: false } } }),
+      json: async () => ({ data: { consent_source: 'provider', has_consent: false } }),
     }));
 
     const bridge = new ConsentBridge(true);
@@ -109,15 +109,15 @@ describe('ConsentBridge', () => {
   it('동의 변경 알림으로 갱신한다', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
       ok: true,
-      json: async () => ({ data: { consents: { analytics: false } } }),
+      json: async () => ({ data: { consent_source: 'provider', has_consent: false } }),
     }));
 
     const bridge = new ConsentBridge(true);
     await bridge.start();
     expect(bridge.allowsSending()).toBe(false);
 
-    window.dispatchEvent(new CustomEvent('gdpr:consent-changed', {
-      detail: { consents: { analytics: true } },
+    window.dispatchEvent(new CustomEvent(ANALYTICS_CONSENT_CHANGED_EVENT, {
+      detail: { has_consent: true },
     }));
 
     expect(bridge.allowsSending()).toBe(true);
@@ -132,8 +132,8 @@ describe('ConsentBridge', () => {
     await bridge.start();
     bridge.stop();
 
-    window.dispatchEvent(new CustomEvent('gdpr:consent-changed', {
-      detail: { consents: { analytics: false } },
+    window.dispatchEvent(new CustomEvent(ANALYTICS_CONSENT_CHANGED_EVENT, {
+      detail: { has_consent: false },
     }));
 
     expect(bridge.current().granted).toBe(true);
@@ -152,20 +152,30 @@ describe('ConsentBridge', () => {
 
   // @scenario mode=consent
   // @effects consent_bridge_updates_on_consent_change_events
-  it('동의 관리 플러그인이 보내는 스냅샷 모양(categories)도 반영한다', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({ data: { consents: { analytics: false } } }),
-    }));
+  it('값을 싣지 않은 변경 알림이면 코어 API 로 다시 묻는다 (확장의 내부 모양을 추측하지 않는다)', async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ data: { consent_source: 'provider', has_consent: false } }) })
+      .mockResolvedValue({ ok: true, json: async () => ({ data: { consent_source: 'provider', has_consent: true } }) });
+    vi.stubGlobal('fetch', fetchMock);
 
     const bridge = new ConsentBridge(true);
     await bridge.start();
     expect(bridge.allowsSending()).toBe(false);
 
-    window.dispatchEvent(new CustomEvent('gdpr:consent-changed', {
-      detail: { categories: { analytics: true }, needs_renewal: false },
+    // 확장 고유 모양(categories)은 코어 계약이 아니다 — 읽지 않고 다시 묻는다.
+    window.dispatchEvent(new CustomEvent(ANALYTICS_CONSENT_CHANGED_EVENT, {
+      detail: { categories: { analytics: true } },
     }));
+    await vi.waitFor(() => expect(bridge.allowsSending()).toBe(true));
 
-    expect(bridge.allowsSending()).toBe(true);
+    // 앞선 테스트가 남긴 구독자도 다시 물을 수 있으므로 하한만 본다.
+    expect(fetchMock.mock.calls.length).toBeGreaterThanOrEqual(2);
+    bridge.stop();
+  });
+
+  // @scenario mode=consent
+  // @effects consent_bridge_updates_on_consent_change_events
+  it('코어가 특정 확장의 이벤트·경로 이름을 쓰지 않는다', () => {
+    expect(ANALYTICS_CONSENT_CHANGED_EVENT).toBe('g7:analytics-permission-changed');
   });
 });

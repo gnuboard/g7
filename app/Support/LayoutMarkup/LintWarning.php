@@ -71,6 +71,30 @@ final class LintWarning
     }
 
     /**
+     * 메시지 치환 인자를 반환합니다.
+     *
+     * @return array<string, mixed> 치환 인자
+     */
+    public function getParams(): array
+    {
+        return $this->params;
+    }
+
+    /**
+     * 같은 경고를 소스 위치만 바꿔 새로 만듭니다.
+     *
+     * lint 는 산출 JSON 을 보므로 소스 줄·칸을 모른다 — 소스 트리를 가진 쪽이 위치를 찾아 채울 때 쓴다.
+     *
+     * @param  int  $line  시작 태그 라인 (1-base)
+     * @param  int  $column  시작 태그 칸 (1-base)
+     * @return self 위치가 채워진 경고
+     */
+    public function withPosition(int $line, int $column): self
+    {
+        return new self($this->code, $line, $column, $this->params, $this->path);
+    }
+
+    /**
      * 위치 접두어가 없는 경고 본문만 반환합니다.
      *
      * @return string 다국어 처리된 경고 본문

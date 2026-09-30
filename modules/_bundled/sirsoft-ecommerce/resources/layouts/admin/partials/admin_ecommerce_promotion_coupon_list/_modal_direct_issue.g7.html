@@ -7,17 +7,17 @@
   고른 회원은 배열이라 같은 사람을 두 번 담지 않도록 uuid 로 판정한다 — 검색 결과에서
   이미 고른 사람은 버튼 대신 "선택됨" 표시가 뜬다. -->
 <partial description="Coupon - Direct Issue Modal (관리자 회원 지정 즉시 발급)">
-  <modal data-ref="modal_direct_issue" title="$t:sirsoft-ecommerce.admin.promotion_coupon.modal.direct_issue.title" size="md">
+  <modal data-type="composite" data-ref="modal_direct_issue" title="$t:sirsoft-ecommerce.admin.promotion_coupon.modal.direct_issue.title" size="md">
     <p class="text-label mb-4">$t:sirsoft-ecommerce.admin.promotion_coupon.modal.direct_issue.subtitle|name={{_global.directIssueCoupon?.name}}</p>
     <!-- 회원 검색 입력 (타이핑 시 실시간 검색, 250ms 디바운스) -->
     <div class="mb-3">
       <input type="text" name="directIssueSearchKeyword" class="input w-full" placeholder="$t:sirsoft-ecommerce.admin.promotion_coupon.modal.direct_issue.search_placeholder" value="{{_global.directIssueSearchKeyword ?? ''}}">
         <prop name="debounce">250</prop>
         <on type="input">
-          <!-- 검색어를 담는 것과 회원을 찾는 것을 한 블록에서 한다. 검색어가 비면  가 요청을 막아 빈 조회로 전체 회원을 끌어오지 않는다. -->
+          <!-- 검색어를 담는 것과 회원을 찾는 것을 한 블록에서 한다. 검색어가 비거나 공백뿐이면 `if` 가 요청을 막고 이전 결과를 비운다 — 회원 검색은 빈 검색어를 422 로 거절하고(공백은 서버 요청 정리에서 지워진다) 길이만 보면 공백이 통과해 오류 토스트가 떴다. -->
           <sequence>
             <set-state target="global" directIssueSearchKeyword="{{$event.target.value}}"/>
-            <api-call if="{{($event.target.value ?? '').length > 0}}" auth_mode="required" target="/api/admin/users/search" method="GET">
+            <api-call if="{{String($event.target.value ?? '').trim() !== ''}}" auth_mode="required" target="/api/admin/users/search" method="GET">
               <success>
                 <!-- 결과를 만든 키워드는 **응답이 실어 온 값**(`meta.keyword`)을 쓴다 — `$event.target.value` 로 찍으면 그것은 **응답이 도착한 순간의 입력칸**이라, 가장 큰 옛 응답(한 글자가 부른 전체 회원)이 가장 늦게 와서 현재 키워드의 것으로 둔갑한다. 아래 가드가 그대로 통과해 엉뚱한 목록이 그려졌다(2026-09-22 #599 3차 실측 T2-D1 — `MEAS599T-S2` 를 친 화면에 전체 회원 83행). 서버가 자기 키워드를 답하므로 화면은 그것과 지금 입력값을 견주기만 한다. -->
                 <set-state target="global" directIssueSearchResults="{{(response.data ?? []).map(u => ({ uuid: u.uuid, name: u.name, email: u.email }))}}" directIssueSearchResultsKeyword="{{response?.meta?.keyword ?? ''}}"/>
@@ -27,7 +27,7 @@
               </fail>
               <query keyword="{{$event.target.value}}"/>
             </api-call>
-            <set-state if="{{($event.target.value ?? '').length === 0}}" target="global" :directIssueSearchResults="[]" :directIssueSearchResultsKeyword="null"/>
+            <set-state if="{{String($event.target.value ?? '').trim() === ''}}" target="global" :directIssueSearchResults="[]" :directIssueSearchResultsKeyword="null"/>
           </sequence>
         </on>
       </input>

@@ -1211,18 +1211,18 @@
                                         {
                                             "type": "basic",
                                             "name": "Span",
-                                            "props": {
-                                                "className": "px-2 py-0.5 rounded text-xs font-medium",
-                                                "classMap": {
-                                                    "key": "{{sitemap_status?.data?.progress?.status ?? ''}}",
-                                                    "variants": {
-                                                        "queued": "bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-200",
-                                                        "running": "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200",
-                                                        "writing": "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200",
-                                                        "completed": "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-200",
-                                                        "failed": "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-200"
-                                                    }
+                                            "classMap": {
+                                                "key": "{{sitemap_status?.data?.progress?.status ?? ''}}",
+                                                "variants": {
+                                                    "queued": "bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-200",
+                                                    "running": "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200",
+                                                    "writing": "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200",
+                                                    "completed": "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-200",
+                                                    "failed": "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-200"
                                                 }
+                                            },
+                                            "props": {
+                                                "className": "px-2 py-0.5 rounded text-xs font-medium"
                                             },
                                             "text": "{{(sitemap_status?.data?.progress?.status === 'queued' && $t('admin.settings.seo.sitemap_status_queued')) || (sitemap_status?.data?.progress?.status === 'running' && $t('admin.settings.seo.sitemap_status_running')) || (sitemap_status?.data?.progress?.status === 'writing' && $t('admin.settings.seo.sitemap_status_writing')) || (sitemap_status?.data?.progress?.status === 'completed' && $t('admin.settings.seo.sitemap_status_completed')) || (sitemap_status?.data?.progress?.status === 'failed' && $t('admin.settings.seo.sitemap_status_failed')) || ''}}"
                                         }

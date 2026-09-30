@@ -2555,7 +2555,7 @@
                                                                 "handler": "sequence",
                                                                 "actions": [
                                                                     {
-                                                                        "handler": "copyToClipboard",
+                                                                        "handler": "sirsoft-pay_kginicis.copyToClipboard",
                                                                         "params": {
                                                                             "text": "{{_local.vbankInfo?.url ?? '/plugins/sirsoft-pay_kginicis/payment/vbank-notify'}}"
                                                                         }

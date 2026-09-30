@@ -3,7 +3,7 @@
   각 판본은 몇 줄이 늘고 줄었는지, 글자 수가 얼마나 달라졌는지, 누가 저장했는지를 함께 보여 준다
   — 판본 이름이 없으므로 그 수치가 어느 시점인지 가려내는 단서다. -->
 <partial name="modal_version_history" editor_label="$t:admin.modal_label.admin_template_layout_edit.version_history_modal">
-  <modal data-ref="version_history_modal" size="medium" title="$t:admin.templates.modals.version_history.title">
+  <modal data-type="composite" data-ref="version_history_modal" size="medium" title="$t:admin.templates.modals.version_history.title">
     <!-- 되돌리기 전 경고(D6). 지금 편집 중인 미저장분이 있으면, 되돌린 판본이 서버에 실리는 순간
          내 버퍼와 서버가 어긋난다. 그 자체는 `<code-workspace>` 가 충돌 바로 잡아 주지만 — 자동
          덮어쓰기는 일어나지 않는다 — **누르기 전에 알고 있는 편이 낫다**. 되돌리기는 새 판본을 만드는

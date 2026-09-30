@@ -659,7 +659,7 @@ class PluginService
     /**
      * 플러그인 편집기 스펙(editor-spec.json) 디코드 결과를 반환합니다.
      *
-     * 활성 플러그인만 대상으로 하며, 활성 디렉토리 → _bundled 폴백 순으로 읽습니다.
+     * 활성 플러그인만 대상으로 하며, 설치본(`plugins/{id}`)만 읽습니다(배포 원본 폴백 없음).
      * editor-spec.json 은 수작업 작성 파일로 플러그인 루트(plugin.json 옆)에 둡니다.
      * 파일 미존재/미작성 시 spec=null 로 폴백합니다(편집 컨트롤 부재).
      *
@@ -689,8 +689,8 @@ class PluginService
      * 플러그인 컴포넌트 매니페스트(components.json) 디코드 결과를 반환합니다.
      *
      * components.json 은 plugin:build 산출물로 플러그인 루트에 둡니다.
-     * 활성 디렉토리 → _bundled 폴백 순으로 읽으며, 미생성(구버전 플러그인) 시
-     * components=null 로 폴백합니다(무손실 보존 디그레이드 — 원칙 4.6).
+     * 설치본(`plugins/{id}/components.json`)만 읽으며, 설치본에 없으면(구버전 플러그인 등)
+     * 배포 원본을 대신 읽지 않고 components=null 로 둡니다(무손실 보존 디그레이드 — 원칙 4.6).
      *
      * @param  string  $identifier  플러그인 식별자
      * @return array{success: bool, components: array<string, mixed>|null, error: string|null}
@@ -703,33 +703,30 @@ class PluginService
             return ['success' => false, 'components' => null, 'error' => 'plugin_not_found'];
         }
 
-        $components = $this->readJsonWithBundledFallback("plugins/{$identifier}/components.json");
+        $components = $this->readInstalledJson("plugins/{$identifier}/components.json");
 
         return ['success' => true, 'components' => $components, 'error' => null];
     }
 
     /**
-     * 활성 디렉토리 → _bundled 폴백 순으로 JSON 파일을 읽어 디코드합니다.
+     * 설치본의 JSON 파일을 읽어 디코드합니다.
+     *
+     * 배포 원본(`plugins/_bundled/{id}`)은 대신 읽지 않는다 — 런타임·편집기는 실제로 돌아가는
+     * 설치본만 기준으로 삼는다.
      *
      * @param  string  $relativePath  base_path 기준 상대 경로 (plugins/{id}/file.json)
      * @return array<string, mixed>|null 디코드된 배열, 미존재/파싱 실패 시 null
      */
-    private function readJsonWithBundledFallback(string $relativePath): ?array
+    private function readInstalledJson(string $relativePath): ?array
     {
-        $bundledPath = preg_replace('#^plugins/#', 'plugins/_bundled/', $relativePath, 1);
-        $candidates = [base_path($relativePath), base_path((string) $bundledPath)];
-
-        foreach ($candidates as $path) {
-            if (! file_exists($path) || ! is_file($path)) {
-                continue;
-            }
-            $decoded = json_decode((string) file_get_contents($path), true);
-            if (is_array($decoded)) {
-                return $decoded;
-            }
+        $path = base_path($relativePath);
+        if (! is_file($path)) {
+            return null;
         }
 
-        return null;
+        $decoded = json_decode((string) file_get_contents($path), true);
+
+        return is_array($decoded) ? $decoded : null;
     }
 
     /**

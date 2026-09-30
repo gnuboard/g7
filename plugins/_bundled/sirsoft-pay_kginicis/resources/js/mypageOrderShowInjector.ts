@@ -2,13 +2,14 @@
 import {
     canOpenKginicisReceipt,
     fetchKginicisReceiptInfo,
-    fetchKginicisReceiptInfoDetailed,
+    fetchKginicisReceiptInfoForOrderScreen,
     KginicisReceiptInfo,
     openKginicisReceipt,
     receiptButtonLabel,
     receiptRowLabel,
     translateKginicis,
 } from './receiptPopup';
+import { createOrderScreenPoller, enterOrderScreen, isOrderDataLoading } from './orderScreenPolling';
 
 const PLUGIN_ID = 'sirsoft-pay_kginicis';
 const FLAG = '__kginicisOrderShowInjectorInstalled';
@@ -16,7 +17,7 @@ const ROW_ID = 'kginicis-mp-receipt-row';
 
 // 회원 마이페이지(/mypage/orders/{N}) + 비회원 주문 상세(/shop/guest/orders/{N}) 두 URL 매칭.
 // 두 페이지가 동일 _payment.g7.html partial 을 공유하므로 DOM 구조도 동일 — 같은 injector 가 양쪽 처리.
-// 단 URL 세그먼트의 의미가 다르다: 회원 경로는 주문 ID, 비회원 경로는 주문번호.
+// 두 경로 모두 URL 세그먼트는 주문번호다(라우트 :order_number).
 const ORDER_SHOW_RE = /^(?:\/mypage\/orders\/([^/]+)|\/shop\/guest\/orders\/([^/]+))$/;
 // 클레임 신청서 상세도 같은 결제 정보 카드를 재사용한다(§6-2). 그 주소에 실린 것은 클레임
 // 번호라 주문번호도 주문 ID 도 뽑을 수 없으므로, 이 경로에서는 화면이 이미 읽어 둔 주문을
@@ -26,7 +27,7 @@ const ORDER_SHOW_RE = /^(?:\/mypage\/orders\/([^/]+)|\/shop\/guest\/orders\/([^/
 // 조회 토큰을 실어 보낸다(receiptPopup).
 const CLAIM_SHOW_RE = /^(?:\/mypage\/claims\/([^/]+)|\/shop\/guest\/claims\/([^/]+))$/;
 
-const activePolls = new Map<string, number>();
+const poller = createOrderScreenPoller();
 
 interface Payment {
     pg_provider?: string;
@@ -53,7 +54,7 @@ function getOrderFromState(routeSegment: string | null): OrderData | null {
         if (!data) return null;
         // 주소가 주문을 가리키지 않는 화면(클레임 신청서 상세)에서는 대조 없이 그대로 쓴다.
         if (routeSegment === null) return data.order_number ? data : null;
-        // 회원 경로 세그먼트는 주문 ID, 비회원 경로 세그먼트는 주문번호 — 양쪽 모두 허용.
+        // 세그먼트는 주문번호다. 주문 ID 로 들어온 옛 링크도 받아 준다.
         const matches = data.order_number === routeSegment
             || (data.id !== undefined && String(data.id) === routeSegment);
         return matches ? data : null;
@@ -129,7 +130,9 @@ function buildReceiptRow(orderNumber: string, receiptInfo: KginicisReceiptInfo):
     return row;
 }
 
-async function tryInject(routeSegment: string | null, isGuestRoute: boolean): Promise<boolean> {
+async function tryInject(routeSegment: string | null, isGuestRoute: boolean, isActive: () => boolean): Promise<boolean> {
+    // 주문을 불러오는 중이면 기다린다 — 그 사이 비회원 경로가 다른 결제대행사 주문의 영수증을 조회하지 않게.
+    if (isOrderDataLoading()) return false;
     const orderData = getOrderFromState(routeSegment);
     const payment = orderData?.payment;
     if (payment) {
@@ -137,8 +140,8 @@ async function tryInject(routeSegment: string | null, isGuestRoute: boolean): Pr
         if (!payment.transaction_id) return true;
     }
 
-    // 영수증 API 는 주문번호 기반인데 회원 경로 세그먼트는 주문 ID 라 그대로 쓰면 404 확정.
-    // 회원 경로는 state 에서 실제 주문번호를 확보하기 전까지 네트워크 호출 없이 재시도만 한다.
+    // 회원 경로는 state 에서 주문을 확인하기 전까지 네트워크 호출 없이 재시도만 한다.
+    // 비회원 경로는 state 를 못 읽는 환경에서도 경로의 주문번호로 조회한다.
     const receiptOrderNumber = orderData?.order_number ?? (isGuestRoute ? routeSegment : null);
     if (!receiptOrderNumber) return false;
 
@@ -148,10 +151,13 @@ async function tryInject(routeSegment: string | null, isGuestRoute: boolean): Pr
     const container = findPaymentContainer();
     if (!container) return false;
 
-    const { status, info: paymentInfo } = await fetchKginicisReceiptInfoDetailed(receiptOrderNumber);
+    // 조회는 화면 진입당 한 번 — 재렌더로 폴러가 다시 돌아도 같은 결과를 재사용한다.
+    const { status, info: paymentInfo } = await fetchKginicisReceiptInfoForOrderScreen(receiptOrderNumber);
+    if (!isActive()) return true;
 
     // 404 = kginicis 결제 이력 없음(확정 응답) → 회원 경로는 즉시 폴링 중단.
-    // 비회원 경로는 게스트 토큰 준비 지연으로 일시 404 가 가능해 기존 재시도를 유지한다.
+    // 비회원 경로는 게스트 토큰 준비 지연으로 일시 404 가 가능해 폴링을 이어 간다 —
+    // 같은 토큰으로는 다시 조회하지 않고, 토큰이 준비되면 그때 한 번 더 조회한다.
     if (!isGuestRoute && status === 404) return true;
 
     const isPaid = payment?.payment_status === 'paid';
@@ -176,41 +182,31 @@ async function tryInject(routeSegment: string | null, isGuestRoute: boolean): Pr
     return Boolean(document.getElementById(ROW_ID) || patched);
 }
 
-function startPolling(routeSegment: string | null, isGuestRoute: boolean): void {
-    // 주소가 주문을 가리키지 않는 화면은 세그먼트가 없다 — 중복 폴링 방지 키를 따로 둔다.
-    const pollKey = routeSegment ?? '__claim_detail__';
-
-    if (activePolls.has(pollKey)) return;
-
-    let attempts = 0;
-    const id = window.setInterval(() => {
-        attempts++;
-        void tryInject(routeSegment, isGuestRoute).then(done => {
-            if (done || attempts >= 30) {
-                window.clearInterval(id);
-                activePolls.delete(pollKey);
-            }
-        });
-    }, 400);
-    activePolls.set(pollKey, id);
-}
-
 function onRouteChange(): void {
+    enterOrderScreen();
     const match = location.pathname.match(ORDER_SHOW_RE);
-    if (match) {
-        // 회원 그룹(match[1] = 주문 ID) 또는 비회원 그룹(match[2] = 주문번호) 중 한 쪽이 채워진다.
-        const memberSegment = match[1];
-        const guestSegment = match[2];
-        const segment = memberSegment ?? guestSegment;
-        if (segment) startPolling(segment, guestSegment !== undefined);
+    // 회원 그룹(match[1]) 또는 비회원 그룹(match[2]) 중 한 쪽이 채워진다 — 둘 다 주문번호.
+    const memberSegment = match?.[1];
+    const guestSegment = match?.[2];
+    const segment = memberSegment ?? guestSegment;
+    if (segment) {
+        const isGuestRoute = guestSegment !== undefined;
+        poller.start(location.pathname, isActive => tryInject(segment, isGuestRoute, isActive));
 
         return;
     }
 
     // 클레임 신청서 상세 — 주소가 클레임 번호라 화면이 읽어 둔 주문을 그대로 쓴다.
-    // 비회원 경로(match[2])는 토큰 준비 지연으로 일시 404 가 날 수 있어 비회원 재시도 규칙을 탄다.
+    // 비회원 경로(claim[2])는 토큰 준비 지연으로 일시 404 가 날 수 있어 비회원 재시도 규칙을 탄다.
     const claim = location.pathname.match(CLAIM_SHOW_RE);
-    if (claim) startPolling(null, claim[2] !== undefined);
+    if (claim) {
+        const isGuestClaim = claim[2] !== undefined;
+        poller.start(location.pathname, isActive => tryInject(null, isGuestClaim, isActive));
+
+        return;
+    }
+
+    poller.stop();
 }
 
 export function installMypageOrderShowInjector(): void {

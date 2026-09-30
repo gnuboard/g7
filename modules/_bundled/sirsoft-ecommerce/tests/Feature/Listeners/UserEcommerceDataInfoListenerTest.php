@@ -8,6 +8,7 @@ use Modules\Sirsoft\Ecommerce\Models\Product;
 use Modules\Sirsoft\Ecommerce\Models\ProductInquiry;
 use Modules\Sirsoft\Ecommerce\Models\UserAddress;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
+use PHPUnit\Framework\Attributes\Group;
 
 /**
  * 회원 상세 쇼핑 데이터 요약 주입 리스너 테스트 (이슈 #524 §4.1)
@@ -21,10 +22,9 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  * @scenario surface=admin_user_detail,actor=admin
  *
  * @effects admin_user_detail_includes_ecommerce_summary, profile_endpoint_omits_ecommerce_summary
- *
- * @group ecommerce
- * @group admin
  */
+#[Group('ecommerce')]
+#[Group('admin')]
 class UserEcommerceDataInfoListenerTest extends ModuleTestCase
 {
     private User $admin;

@@ -3,7 +3,7 @@
   성공 뒤 대상(`selectedModule`)을 비우는 것은 이 창만의 처리다 — 되돌릴 수 없는 동작이라
   같은 대상으로 곧바로 한 번 더 누르는 길을 남기지 않는다. -->
 <partial description="모듈 레이아웃 갱신 확인 모달" editor_label="$t:admin.modal_label.admin_module_list.module_refresh_layouts_modal">
-  <modal data-ref="module_refresh_layouts_modal" title="$t:admin.modules.modals.refresh_layouts_title" size="sm">
+  <modal data-type="composite" data-ref="module_refresh_layouts_modal" title="$t:admin.modules.modals.refresh_layouts_title" size="sm">
     <div class="py-2">
       <div class="alert-warning">
         <icon name="exclamation-triangle" class="text-xl text-amber-600 dark:text-amber-400 flex-shrink-0"/>
@@ -19,7 +19,7 @@
         </on>
         <span>$t:common.cancel</span>
       </button>
-      <button class="flex-center gap-2 px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isModuleRefreshingLayouts}}">
+      <button class="flex-center gap-2 px-4 py-2 bg-amber-600 dark:bg-amber-500 text-white rounded-lg hover:bg-amber-700 dark:hover:bg-amber-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isModuleRefreshingLayouts}}">
         <on type="click">
           <!-- 다시 심기 실행. 성공 갈래가 대상을 비우므로 **요청 본문은 그 전에 조립된 값을 쓴다**. -->
           <sequence>

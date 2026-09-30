@@ -15,7 +15,7 @@
   </data-source>
   <permissions/>
   <slot name="content">
-    <container class="py-12">
+    <container data-type="layout" class="py-12">
       <responsive on="portable" class="py-6 px-4"/>
       <div class="max-w-3xl mx-auto">
         <div data-ref="page_content_card" data-if="{{page?.data}}" class="bg-white dark:bg-gray-800 rounded-lg shadow p-10">
@@ -44,7 +44,7 @@
           </p>
           <extension-point name="html_content" data-ref="page_html_content" content="{{page?.data?.content ?? ''}}" isHtml="{{(page?.data?.content_mode ?? 'html') === 'html'}}" class="text-gray-700 dark:text-gray-300">
             <default>
-              <html-content content="{{page?.data?.content ?? ''}}" isHtml="{{(page?.data?.content_mode ?? 'html') === 'html'}}" class="text-gray-700 dark:text-gray-300"/>
+              <html-content data-type="composite" content="{{page?.data?.content ?? ''}}" isHtml="{{(page?.data?.content_mode ?? 'html') === 'html'}}" class="text-gray-700 dark:text-gray-300"/>
             </default>
           </extension-point>
           <div data-ref="page_attachments_section" data-if="{{(page?.data?.attachments ?? []).length > 0}}" class="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">

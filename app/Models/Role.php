@@ -277,4 +277,24 @@ class Role extends Model
     {
         return in_array($this->extension_type, [ExtensionOwnerType::Module, ExtensionOwnerType::Plugin], true);
     }
+
+    /**
+     * 액터가 이 역할의 정보·권한·사용 여부를 바꿀 수 있는지 판정합니다.
+     *
+     * 보호된 역할(코어/확장 소유)은 슈퍼 관리자만 바꿀 수 있습니다. 인증 액터가 없으면
+     * (Artisan/내부 시더) 신뢰 경로로 보아 허용합니다. 서비스의 수정 가드와 응답의
+     * `abilities.can_update`/`can_toggle_status` 가 이 한 곳을 함께 읽습니다 — 둘이 따로
+     * 판정하면 화면은 버튼을 켜 두고 서버는 403 으로 거절하는 어긋남이 생깁니다.
+     *
+     * @param  User|null  $actor  행위자 (null 이면 신뢰 경로)
+     * @return bool 수정 가능 여부
+     */
+    public function isModifiableBy(?User $actor): bool
+    {
+        if ($actor === null || $actor->isSuperAdmin()) {
+            return true;
+        }
+
+        return ! $this->isCore() && ! $this->isExtensionOwned();
+    }
 }

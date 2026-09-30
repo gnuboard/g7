@@ -60,11 +60,12 @@
 | `database/migrations/` | 마이그레이션 | 한국어 comment + `down()` 필수, 기설치본은 업그레이드 스텝으로 백필 |
 | `database/seeders/` | 시더 | composer autoload 등록 + `extension:update-autoload` |
 | `upgrades/` | 업그레이드 스텝 | DB·설정 구조 변경 시 작성 (모듈/플러그인 전용) |
-| `resources/layouts/` | 레이아웃 소스 `.g7.html` (짝 `.json` 은 굽기 산출) | `php artisan module:update sirsoft-board --force` (빌드 불필요) |
+| `resources/layouts/` | 레이아웃 소스 `.g7.html` (짝 `.json` 은 굽기 산출. 컴포넌트 종류는 `data-type`, 컴파일은 템플릿과 무관) | `php artisan module:update sirsoft-board --force` (빌드 불필요) |
 | `resources/routes/` | 라우트 → 레이아웃 매핑 (분할) | `php artisan module:update sirsoft-board --force` |
 | `resources/js/` | 프론트 엔트리·핸들러 | `php artisan module:build` → `php artisan module:update sirsoft-board --force` |
 | `resources/extensions/` | 다른 확장 레이아웃에 주입하는 조각 | `php artisan module:update sirsoft-board --force` |
 | `editor-spec.json` | 레이아웃 편집기 스펙 | `php artisan module:update sirsoft-board --force` |
+| `dist/` | 커밋되는 빌드 산출물 | `--production` 으로 재빌드 (sourceMappingURL 잔존 금지) |
 | `config/` | 확장 config | 설정 기본값은 settings 스키마와 어긋나지 않게 |
 | `tests/` | 테스트 | 변경 범위만 필터 실행 |
 | `CHANGELOG.md` | 변경 이력 | 버전 상향 시 항목 추가 (미기재 시 버전 상향 불가) |
@@ -171,6 +172,7 @@ CRUD 흐름 자체를 **자기 도메인으로 대체**하는 가장 무거운 �
 | 일괄 적용 대상 설정 키를 `sectionMap` 에만 추가 | 같은 키의 `bulk_apply.field_labels` 라벨을 ko/en(+번들 ja)에 함께 추가 | 라벨이 없으면 확인 창에 원시 다국어 키가 그대로 노출된다 |
 | 게시판 권한(role_permissions)이나 게시판 관리자·스텝 명단을 바꾸는 새 경로를 `BoardPermissionService::assignRolesToPermission()`·`syncBoardRoleUsers()` 를 거치지 않고 직접 `attach`/`sync` | 기존 두 지점을 재사용하거나, 새 지점에서 `PermissionEscalationGuard`(권한은 `assertGrantWithinActorCeiling`, 역할 배정은 `assertRoleAssignmentWithinActorCeiling`)를 쓰기 전에 호출 | 한 경로만 상한을 걸면 나머지가 자기부여 우회로가 된다 — 권한 저장만 막았을 때 담당자 지정·일괄 적용이 같은 결과를 냈다 (KVE-2026-2367) |
 | 요청의 `temp_key` 를 형식 검증 없이 임시 경로(`{slug}/temp/{temp_key}`)에 넣거나, 조회된 임시 첨부가 없는데도 그 디렉토리를 `deleteDirectory` | `ValidatesTempKey`(UUID 만) + 현재 사용자가 올린 임시 첨부가 있을 때만 이동·정리 | `../../..` 같은 키가 정리 경로를 모듈 저장소 루트로 끌어올려 전 모듈 파일이 지워진다 (KVE-2026-2349 — 응답은 201 이라 드러나지 않았다) |
+| 임시 첨부를 본경로로 옮긴 뒤 임시 디렉토리 정리(`deleteDirectory`)의 예외를 그대로 던지게 두기 | `AttachmentService::linkTempAttachmentsWithMove()` 처럼 정리만 `try/catch` 로 감싸 경고 로그(`게시판 임시 첨부 디렉토리 정리 실패`)를 남기고 연결 결과는 그대로 반환 | 정리는 부수 작업이다. 막 옮긴 대용량 파일을 운영체제가 잠시 붙잡고 있으면 디렉토리 순회가 lstat 오류를 던지고, 그 예외가 글 저장 전체를 「게시글 등록에 실패했습니다」(500)로 되돌려 파일은 본경로·DB 는 임시 경로를 가리키는 어긋남이 남았다(#703). 정리에 실패해 남는 것은 빈 임시 디렉토리뿐이다 |
 <!-- @intent END -->
 
 ## 7. 테스트 실행

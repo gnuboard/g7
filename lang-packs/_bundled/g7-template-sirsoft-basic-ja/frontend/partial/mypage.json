@@ -265,7 +265,8 @@
     "charged_in_payment_currency": "決済通貨 {{currency}} {{amount}} 請求",
     "claim_additional_paid": "クレーム追加決済",
     "delivered_at": "配送完了日時",
-    "confirmed_at": "購入確定日時"
+    "confirmed_at": "購入確定日時",
+    "select_saved_address_required": "適用する配送先を選択してください。"
   },
   "addresses": {
     "title": "配送先の管理",

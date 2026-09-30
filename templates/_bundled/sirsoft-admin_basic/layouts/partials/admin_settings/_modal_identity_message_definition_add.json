@@ -155,10 +155,10 @@
                                 {
                                     "type": "basic",
                                     "name": "Select",
-                                    "if": "{{(adminIdentityPolicies?.data?.data ?? []).length > 0}}",
+                                    "if": "{{(adminIdentityPolicies?.data?.data ?? []).filter(p => !(identityMessagePolicyScopes?.data?.data ?? []).some(d => d.scope_value === p.key)).length > 0}}",
                                     "actions": [
                                         {
-                                            "comment": "어느 정책에 붙일 메시지인지 고른다. 선택지는 **관리자 정책 목록**에서 오고,\n                   그 목록이 비면 이 선택기 대신 안내 문구가 뜬다(정책부터 만들어야 한다).",
+                                            "comment": "어느 정책에 붙일 메시지인지 고른다. 선택지는 **관리자 정책 목록**에서 오되, 이미 메시지\n                   정의가 있는 정책은 뺀다 — 서버는 같은 정책에 두 번째 정의를 중복으로 거절한다(422).\n                   고를 정책이 없으면 이 선택기 대신 안내 문구가 뜬다.",
                                             "type": "change",
                                             "handler": "setState",
                                             "params": {
@@ -171,7 +171,7 @@
                                         "value": "{{_global.identity_message_definition_add_modal?.form?.scope_value ?? ''}}",
                                         "className": "text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800",
                                         "placeholder": "$t:admin.settings.identity.messages.add_modal.policy_key_placeholder",
-                                        "options": "{{(adminIdentityPolicies?.data?.data ?? []).map(p => ({ value: p.key, label: p.key }))}}"
+                                        "options": "{{(adminIdentityPolicies?.data?.data ?? []).filter(p => !(identityMessagePolicyScopes?.data?.data ?? []).some(d => d.scope_value === p.key)).map(p => ({ value: p.key, label: p.key }))}}"
                                     }
                                 },
                                 {
@@ -182,6 +182,15 @@
                                         "className": "text-warning-soft px-3 py-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-md"
                                     },
                                     "text": "$t:admin.settings.identity.messages.add_modal.policy_empty"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "if": "{{(adminIdentityPolicies?.data?.data ?? []).length > 0 && (adminIdentityPolicies?.data?.data ?? []).filter(p => !(identityMessagePolicyScopes?.data?.data ?? []).some(d => d.scope_value === p.key)).length === 0}}",
+                                    "props": {
+                                        "className": "text-warning-soft px-3 py-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-md"
+                                    },
+                                    "text": "$t:admin.settings.identity.messages.add_modal.policy_all_defined"
                                 }
                             ]
                         },
@@ -461,6 +470,8 @@
                             "text": "$t:common.cancel"
                         },
                         {
+                            "comment": "저장은 고를 수 있는 정책을 골랐을 때만 열린다 — 정책이 비었거나(운영자 정책 0건)\n             이미 정의가 있는 정책이 남아 있으면 서버가 422 로 거절한다.",
+                            "id": "identity_message_add_save_button",
                             "type": "basic",
                             "name": "Button",
                             "actions": [
@@ -538,6 +549,12 @@
                                                     }
                                                 },
                                                 {
+                                                    "handler": "refetchDataSource",
+                                                    "params": {
+                                                        "dataSourceId": "identityMessagePolicyScopes"
+                                                    }
+                                                },
+                                                {
                                                     "handler": "toast",
                                                     "params": {
                                                         "message": "$t:admin.settings.identity.messages.add_modal.save_success",
@@ -580,7 +597,7 @@
                             "props": {
                                 "type": "button",
                                 "className": "flex-center gap-2 text-sm px-4 py-2 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
-                                "disabled": "{{_global.identity_message_definition_add_modal?.isSaving ?? false}}"
+                                "disabled": "{{(_global.identity_message_definition_add_modal?.isSaving ?? false) || !(adminIdentityPolicies?.data?.data ?? []).filter(p => !(identityMessagePolicyScopes?.data?.data ?? []).some(d => d.scope_value === p.key)).some(p => p.key === (_global.identity_message_definition_add_modal?.form?.scope_value ?? ''))}}"
                             },
                             "children": [
                                 {

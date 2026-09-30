@@ -53,6 +53,6 @@ effects:
 test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Models/EcommerceUserProfileTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Feature/UserCurrencyControllerTest.php
-  - modules/_bundled/sirsoft-ecommerce/tests/Feature/AdminUserCurrencyControllerTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/UserPreferenceCoreSaveTest.php
   - templates/_bundled/sirsoft-basic/__tests__/layouts/mypageCurrencySettings.test.tsx
   - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/mp08-install-gate.spec.ts

@@ -261,6 +261,7 @@
         "manual_input": "직접 입력",
         "apply_change": "변경 적용",
         "shipping_address_changed": "배송지가 변경되었습니다.",
+        "select_saved_address_required": "적용할 배송지를 선택해 주세요.",
         "confirm_change_address": "배송지를 변경하시겠습니까?",
         "charged_in_payment_currency": "결제 통화 {{currency}} {{amount}} 청구",
         "claim_additional_paid": "클레임 추가결제",

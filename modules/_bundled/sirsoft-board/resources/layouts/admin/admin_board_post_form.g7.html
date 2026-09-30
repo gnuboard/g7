@@ -62,7 +62,7 @@
         <item>form_data</item>
         <item>form_meta</item>
       </blur-until-loaded>
-      <page-header data-ref="page_header" title="{{form_meta?.data?.board?.name}} {{route?.id ? '$t:sirsoft-board.admin.posts.form.edit_title' : (query?.parent_id ? '$t:sirsoft-board.admin.posts.reply.title' : '$t:sirsoft-board.admin.posts.form.create_title')}}" description="{{form_meta?.data?.board?.name}}$t:sirsoft-board.admin.posts.page_description_with_board">
+      <page-header data-type="composite" data-ref="page_header" title="{{form_meta?.data?.board?.name}} {{route?.id ? '$t:sirsoft-board.admin.posts.form.edit_title' : (query?.parent_id ? '$t:sirsoft-board.admin.posts.reply.title' : '$t:sirsoft-board.admin.posts.form.create_title')}}" description="{{form_meta?.data?.board?.name}}$t:sirsoft-board.admin.posts.page_description_with_board">
         <button data-ref="header_cancel_button" class="btn btn-secondary">
           <on type="click">
             <!-- 취소. 수정 중이면 그 글로, 새 글이면 게시판 글 목록으로 돌아가며 보던 목록 상태를 이고 간다 -->

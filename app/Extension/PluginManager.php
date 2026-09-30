@@ -1294,6 +1294,7 @@ class PluginManager implements PluginManagerInterface
                     'version' => $plugin->getVersion(),
                     'description' => $this->getLocalizedValue($plugin->getDescription(), $locale),
                     'dependencies' => $this->enrichDependencies($plugin->getDependencies()),
+                    'requires_core' => $plugin->getRequiredCoreVersion(),
                     'status' => 'uninstalled',
                     'is_pending' => false,
                     'is_bundled' => false,
@@ -1316,6 +1317,7 @@ class PluginManager implements PluginManagerInterface
                     'version' => $metadata['version'] ?? '0.0.0',
                     'description' => $this->getLocalizedValue($metadata['description'] ?? '', $locale),
                     'dependencies' => $this->enrichDependencies($metadata['dependencies'] ?? []),
+                    'requires_core' => $metadata['g7_version'] ?? null,
                     'status' => 'uninstalled',
                     'is_pending' => true,
                     'is_bundled' => false,
@@ -1338,6 +1340,7 @@ class PluginManager implements PluginManagerInterface
                     'version' => $metadata['version'] ?? '0.0.0',
                     'description' => $this->getLocalizedValue($metadata['description'] ?? '', $locale),
                     'dependencies' => $this->enrichDependencies($metadata['dependencies'] ?? []),
+                    'requires_core' => $metadata['g7_version'] ?? null,
                     'status' => 'uninstalled',
                     'is_pending' => false,
                     'is_bundled' => true,
@@ -1410,6 +1413,7 @@ class PluginManager implements PluginManagerInterface
                     'version' => $record->version,
                     'description' => $this->getLocalizedValue($descriptionJson, $locale),
                     'dependencies' => $this->enrichDependencies($plugin->getDependencies()),
+                    'requires_core' => $plugin->getRequiredCoreVersion(),
                     'status' => $record->status,
                     'update_available' => $updateAvailable,
                     'latest_version' => $latestVersion,
@@ -2424,6 +2428,42 @@ class PluginManager implements PluginManagerInterface
     }
 
     /**
+     * 설치·활성 상태인 플러그인 전체의 알림 정의만 다시 동기화합니다 (7.1.0).
+     *
+     * 알림 채널을 제공하는 확장이 켜지는 순간, 이미 저장된 다른 확장의 알림 정의에도 공통 시딩 훅
+     * (`NotificationSyncHelper::SEED_DEFINITIONS_FILTER`)이 다시 발화하도록 하는 공개 진입점이다.
+     * 설치본(활성 디렉토리에서 로드된 인스턴스)의 `getNotificationDefinitions()` 만 읽고 `_bundled` 는
+     * 읽지 않는다. 역할·권한·메뉴 같은 다른 선언형 산출물은 건드리지 않는다.
+     *
+     * 동기화는 user_overrides 보존 upsert 이므로 운영자가 고친 제목·본문·수신자는 그대로 남는다.
+     * 한 플러그인의 실패는 로그만 남기고 나머지를 계속 처리한다.
+     *
+     * @return array{synced: array<int, string>, failed: array<string, string>} 동기화한 식별자와 실패 사유
+     */
+    public function resyncActivePluginNotificationDefinitions(): array
+    {
+        $synced = [];
+        $failed = [];
+
+        foreach ($this->getActivePlugins() as $plugin) {
+            $identifier = $plugin->getIdentifier();
+
+            try {
+                $this->syncPluginNotificationDefinitions($plugin);
+                $synced[] = $identifier;
+            } catch (\Throwable $e) {
+                $failed[$identifier] = $e->getMessage();
+                Log::warning('[resyncActivePluginNotificationDefinitions] 알림 정의 재동기화 실패', [
+                    'plugin' => $identifier,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        return ['synced' => $synced, 'failed' => $failed];
+    }
+
+    /**
      * 플러그인이 선언한 IDV 정책을 `identity_policies` 테이블에 동기화합니다.
      *
      * `AbstractPlugin::getIdentityPolicies()` 결과를 순회하며
@@ -2547,6 +2587,9 @@ class PluginManager implements PluginManagerInterface
      * `extension_type='plugin'`, `extension_identifier=$plugin->getIdentifier()` 는 자동 주입.
      * 운영자 user_overrides 보존은 helper 내부 trait 가 처리.
      *
+     * 저장 직전 언어팩 필터(`seed.{id}.notifications.translations`) 다음에 공통 시딩 훅
+     * (`NotificationSyncHelper::SEED_DEFINITIONS_FILTER`)을 거친다 — 코어 시더와 같은 훅이다.
+     *
      * @param  PluginInterface  $plugin  알림 정의를 동기화할 플러그인 인스턴스
      * @return void 반환값 없음
      */
@@ -2581,6 +2624,10 @@ class PluginManager implements PluginManagerInterface
 
         $helper = app(NotificationSyncHelper::class);
         $definedTypes = [];
+
+        // 공통 시딩 훅 — 채널 제공 확장이 소유자와 무관하게 자기 채널 template 을 더한다.
+        // 도메인별 훅(seed.{id}.notifications.translations)은 언어팩 병합 전용이다.
+        $definitions = $helper->applySeedDefinitionsFilter($definitions, 'plugin', $plugin->getIdentifier());
 
         foreach ($definitions as $data) {
             $data['extension_type'] = 'plugin';
@@ -3504,7 +3551,7 @@ class PluginManager implements PluginManagerInterface
      * 플러그인의 레이아웃 확장을 등록합니다.
      *
      * 플러그인의 resources/extensions 디렉토리에서 fragment 소스를 읽어
-     * 활성화된 모든 템플릿(admin, user)에 확장을 등록합니다 — 템플릿마다 그 템플릿의 표로 컴파일하고 붙을 자리가 있는 곳에만.
+     * 활성화된 모든 템플릿(admin, user)에 확장을 등록합니다 — 붙을 자리가 있는 템플릿에만(컴파일은 템플릿 무관).
      *
      * 소스 선택·읽기는 {@see CollectsFragmentSources::loadFragmentDefinitions()}
      * 가 담당한다 — 종전에는 여기서 `File::get`+`json_decode` 로 직행해 소스(`.g7.html`)을
@@ -3530,10 +3577,13 @@ class PluginManager implements PluginManagerInterface
             return;
         }
 
-        // 템플릿마다 **그 템플릿의 표(`components.json`)** 로 조각을 컴파일하고, 붙을 자리(호스트 레이아웃·
-        // 확장점)가 없는 템플릿에는 등록하지 않는다 (C10). 종전엔 한 번 컴파일한 정의를 모든 활성 템플릿에
-        // 무조건 등록해 사용자 템플릿에 관리자 대상 조각(죽은 행)이 쌓였고, 사용자 조각도 관리자 표로 검사됐다.
-        // 호스트가 나중에 설치되는 순서 의존은 호출부가 `registerAllActiveExtensionsToTemplate` 재호출로 메운다.
+        // 붙을 자리(호스트 레이아웃·확장점)가 없는 템플릿에는 등록하지 않는다 (C10). 종전엔 모든 활성 템플릿에
+        // 무조건 등록해 사용자 템플릿에 관리자 대상 조각(죽은 행)이 쌓였다. 조각 컴파일 자체는 템플릿과 무관하다
+        // (JSON 과 동일 — 2026-09-28 결정). 호스트가 나중에 설치되는 순서 의존은 호출부가
+        // `registerAllActiveExtensionsToTemplate` 재호출로 메운다.
+        // 소스 디렉토리에 실재하는 조각 키 — 고아 정리는 이 집합으로 판정한다(컴파일 실패 조각의 행은 보존).
+        $liveKeys = $this->fragmentSourceKeys($plugin->getExtensionsPath(), $extensionFiles);
+
         foreach ($allTemplates as $template) {
             $backupFragments = $this->layoutSynchronizer()->compileBackupFragments($backupPath, $identifier, (string) $template->identifier);
             $definitions = $this->loadFragmentDefinitions(
@@ -3543,42 +3593,27 @@ class PluginManager implements PluginManagerInterface
                 (string) $template->identifier
             );
 
-            foreach ($definitions as $definition) {
-                $extensionFile = $definition['path'];
+            // 등록 + 백필된 옛 키 행 잇기 + 오등록·고아 행 정리를 한 번에 한다 (#703) — 등록만 하면 7.0.11 에서
+            // 올라온 설치의 옛 키 행과 재활성화가 되살린 행이 새 행과 함께 살아 같은 조각이 두 번 주입된다.
+            // 활성화는 keep(운영자 수정 보존), 업데이트는 그 업데이트의 전략(keep/overwrite)을 따르고 백업의 이전 판을 병합 기준으로 쓴다.
+            $stats = $this->layoutExtensionService->syncSourceFragmentsToTemplate(
+                $definitions,
+                $liveKeys,
+                LayoutSourceType::Plugin,
+                $identifier,
+                $template->id,
+                $preserveModified,
+                $backupFragments,
+                $report
+            );
 
-                try {
-                    if (! $this->layoutExtensionService->isExtensionApplicableToTemplate($definition['data'], $template->id)) {
-                        Log::info("플러그인 레이아웃 확장 등록 건너뜀 (대상 부재): {$extensionFile}", [
-                            'plugin' => $identifier,
-                            'template' => $template->identifier,
-                        ]);
-
-                        continue;
-                    }
-
-                    $this->layoutExtensionService->registerExtension(
-                        $definition['data'],
-                        LayoutSourceType::Plugin,
-                        $identifier,
-                        $template->id,
-                        $preserveModified,
-                        $definition['key'],
-                        $backupFragments[$definition['key']] ?? null,
-                        $report
-                    );
-
-                    Log::info("플러그인 레이아웃 확장 등록 완료: {$extensionFile}", [
-                        'plugin' => $identifier,
-                        'template' => $template->identifier,
-                    ]);
-                } catch (\Exception $e) {
-                    Log::error("플러그인 레이아웃 확장 등록 실패: {$extensionFile}", [
-                        'plugin' => $identifier,
-                        'template' => $template->identifier,
-                        'error' => $e->getMessage(),
-                    ]);
-                }
-            }
+            Log::info('플러그인 레이아웃 확장 등록 완료', [
+                'plugin' => $identifier,
+                'template' => $template->identifier,
+                'registered' => $stats['registered'],
+                'skipped_no_host' => $stats['inapplicable'],
+                'deleted' => $stats['deleted'],
+            ]);
         }
     }
 
@@ -3616,9 +3651,13 @@ class PluginManager implements PluginManagerInterface
     protected function restoreLayoutExtensions(PluginInterface $plugin): void
     {
         try {
+            // 소스에 실재하는 조각 키의 행만 되살린다 — 고아 정리가 지운 옛 행까지 살리면 두 번 주입된다 (#703).
+            // 키 집합은 조각 디렉토리를 규약(CollectsFragmentSources)으로 직접 훑어 얻는다. 목록 밖 행은 뒤따르는
+            // 등록이 withTrashed 조회로 필요한 만큼 되살린다.
             $restoredCount = $this->layoutExtensionService->restoreBySource(
                 LayoutSourceType::Plugin,
-                $plugin->getIdentifier()
+                $plugin->getIdentifier(),
+                $this->fragmentSourceKeys($plugin->getExtensionsPath(), [])
             );
 
             if ($restoredCount > 0) {

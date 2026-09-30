@@ -15,7 +15,7 @@
             <p class="text-label-subtle">$t:admin.settings.advanced.cache_enabled_desc</p>
             <span data-if="{{_local.errors?.['advanced.cache_enabled']}}" class="form-error">{{_local.errors?.['advanced.cache_enabled']?.[0] ?? ''}}</span>
           </div>
-          <toggle name="advanced.cache_enabled" size="md" disabled="{{_computed.isReadOnly}}"/>
+          <toggle data-type="composite" name="advanced.cache_enabled" size="md" disabled="{{_computed.isReadOnly}}"/>
         </div>
         <div class="">
           <p class="text-body font-medium mb-1">$t:admin.settings.advanced.cache_detail_settings</p>
@@ -24,7 +24,7 @@
             <div data-ref="cache_layout" class="flex-between gap-4">
               <responsive on="portable" class="row-stack py-2"/>
               <div class="flex-center gap-3">
-                <toggle name="advanced.layout_cache_enabled" size="sm" disabled="{{_computed.isReadOnly}}"/>
+                <toggle data-type="composite" name="advanced.layout_cache_enabled" size="sm" disabled="{{_computed.isReadOnly}}"/>
                 <div>
                   <div class="flex-center">
                     <span class="text-heading">$t:admin.settings.advanced.layout_cache</span>
@@ -48,7 +48,7 @@
             <div data-ref="cache_stats" class="flex-between gap-4">
               <responsive on="portable" class="row-stack py-2"/>
               <div class="flex-center gap-3">
-                <toggle name="advanced.stats_cache_enabled" size="sm" disabled="{{_computed.isReadOnly}}"/>
+                <toggle data-type="composite" name="advanced.stats_cache_enabled" size="sm" disabled="{{_computed.isReadOnly}}"/>
                 <div>
                   <div class="flex-center">
                     <span class="text-heading">$t:admin.settings.advanced.stats_cache</span>
@@ -72,7 +72,7 @@
             <div data-ref="cache_seo" class="flex-between gap-4">
               <responsive on="portable" class="row-stack py-2"/>
               <div class="flex-center gap-3">
-                <toggle name="advanced.seo_cache_enabled" size="sm" disabled="{{_computed.isReadOnly}}"/>
+                <toggle data-type="composite" name="advanced.seo_cache_enabled" size="sm" disabled="{{_computed.isReadOnly}}"/>
                 <div>
                   <div class="flex-center">
                     <span class="text-heading">$t:admin.settings.advanced.seo_cache</span>
@@ -132,14 +132,14 @@
             <div class="flex-center">
               <span class="text-heading">$t:admin.settings.advanced.debug_mode</span>
               <span class="text-red-500 ml-1">*</span>
-              <badge data-if="{{_computed.envLocked?.['advanced.debug_mode'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
+              <badge data-type="composite" data-if="{{_computed.envLocked?.['advanced.debug_mode'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
             </div>
             <p class="text-label-subtle">$t:admin.settings.advanced.debug_mode_desc</p>
             <span data-if="{{_local.errors?.['advanced.debug_mode']}}" class="form-error">{{_local.errors?.['advanced.debug_mode']?.[0] ?? ''}}</span>
           </div>
           <div class="flex-center gap-3">
             <a data-ref="btn_dev_dashboard" data-if="{{_local.form?.advanced?.debug_mode}}" href="/dev" target="_blank" rel="noopener noreferrer" class="px-3 py-1.5 bg-indigo-600 dark:bg-indigo-500 text-white dark:text-white text-xs font-medium rounded-md hover:bg-indigo-700 dark:hover:bg-indigo-600 transition-colors whitespace-nowrap no-underline">$t:admin.settings.advanced.dev_dashboard</a>
-            <toggle name="advanced.debug_mode" size="md" disabled="{{_computed.isReadOnly || _computed.envLocked?.['advanced.debug_mode'] === true}}"/>
+            <toggle data-type="composite" name="advanced.debug_mode" size="md" disabled="{{_computed.isReadOnly || _computed.envLocked?.['advanced.debug_mode'] === true}}"/>
           </div>
         </div>
         <div data-ref="toggle_sql_query_log" class="flex-between">
@@ -151,7 +151,7 @@
             <p class="text-label-subtle">$t:admin.settings.advanced.sql_query_log_desc</p>
             <span data-if="{{_local.errors?.['advanced.sql_query_log']}}" class="form-error">{{_local.errors?.['advanced.sql_query_log']?.[0] ?? ''}}</span>
           </div>
-          <toggle name="advanced.sql_query_log" size="md" disabled="{{_computed.isReadOnly}}"/>
+          <toggle data-type="composite" name="advanced.sql_query_log" size="md" disabled="{{_computed.isReadOnly}}"/>
         </div>
         <!-- 아웃바운드 프록시 — 디버그 모드일 때만 노출한다. 서버가 프록시를 실제로 적용하는 조건도 디버그 모드라,
           꺼 두면 값이 남아 있어도 적용되지 않는다. 「연결 테스트」는 저장 전에 입력값 그대로 서버에 보내
@@ -194,7 +194,7 @@
               <span class="text-heading">$t:admin.settings.advanced.outbound_proxy_bypass</span>
             </div>
             <p class="text-label-subtle">$t:admin.settings.advanced.outbound_proxy_bypass_desc</p>
-            <tag-input name="advanced.outbound_proxy_bypass" :creatable="true" placeholder="$t:admin.settings.advanced.outbound_proxy_bypass_placeholder" class="w-full" defaultVariant="blue" disabled="{{_computed.isReadOnly}}"/>
+            <tag-input data-type="composite" name="advanced.outbound_proxy_bypass" :creatable="true" placeholder="$t:admin.settings.advanced.outbound_proxy_bypass_placeholder" class="w-full" defaultVariant="blue" disabled="{{_computed.isReadOnly}}"/>
             <span data-if="{{_local.errors?.['advanced.outbound_proxy_bypass']}}" class="form-error">{{_local.errors?.['advanced.outbound_proxy_bypass']?.[0] ?? ''}}</span>
           </div>
         </div>
@@ -229,7 +229,7 @@
         <div data-ref="input_core_update_github_url">
           <div class="flex-center">
             <span class="text-heading">$t:admin.settings.advanced.core_update_github_url</span>
-            <badge data-if="{{_computed.envLocked?.['advanced.core_update_github_url'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
+            <badge data-type="composite" data-if="{{_computed.envLocked?.['advanced.core_update_github_url'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
           </div>
           <p class="text-label-subtle">$t:admin.settings.advanced.core_update_github_url_desc</p>
           <input type="url" name="advanced.core_update_github_url" placeholder="https://github.com/owner/repo" disabled="{{_computed.isReadOnly || _computed.envLocked?.['advanced.core_update_github_url'] === true}}" class="input {{_local.errors?.['advanced.core_update_github_url'] ? 'input-error' : ''}}"/>
@@ -238,7 +238,7 @@
         <div data-ref="input_core_update_github_token">
           <div class="flex-center">
             <span class="text-heading">$t:admin.settings.advanced.core_update_github_token</span>
-            <badge data-if="{{_computed.envLocked?.['advanced.core_update_github_token'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
+            <badge data-type="composite" data-if="{{_computed.envLocked?.['advanced.core_update_github_token'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
           </div>
           <p class="text-label-subtle">$t:admin.settings.advanced.core_update_github_token_desc</p>
           <input type="password" name="advanced.core_update_github_token" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" autoComplete="off" disabled="{{_computed.isReadOnly || _computed.envLocked?.['advanced.core_update_github_token'] === true}}" class="input {{_local.errors?.['advanced.core_update_github_token'] ? 'input-error' : ''}}"/>
@@ -254,15 +254,15 @@
           <div>
             <span class="text-heading">$t:admin.settings.advanced.geoip_enabled</span>
             <p class="text-label-subtle">$t:admin.settings.advanced.geoip_enabled_desc</p>
-            <badge data-if="{{_computed.envLocked?.['advanced.geoip_enabled'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
+            <badge data-type="composite" data-if="{{_computed.envLocked?.['advanced.geoip_enabled'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
           </div>
-          <toggle name="advanced.geoip_enabled" size="md" disabled="{{_computed.isReadOnly || _computed.envLocked?.['advanced.geoip_enabled'] === true}}"/>
+          <toggle data-type="composite" name="advanced.geoip_enabled" size="md" disabled="{{_computed.isReadOnly || _computed.envLocked?.['advanced.geoip_enabled'] === true}}"/>
         </div>
         <div data-ref="geoip_settings_detail" data-if="{{_local.form?.advanced?.geoip_enabled}}" class="ml-4 pl-4 border-l-2 border-blue-200 dark:border-blue-800 space-y-4">
           <div data-ref="input_geoip_license_key" class="row-stack">
             <div class="flex-center">
               <span class="text-heading">$t:admin.settings.advanced.geoip_license_key</span>
-              <badge data-if="{{_computed.envLocked?.['advanced.geoip_license_key'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
+              <badge data-type="composite" data-if="{{_computed.envLocked?.['advanced.geoip_license_key'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
             </div>
             <p class="text-label-subtle">$t:admin.settings.advanced.geoip_license_key_desc</p>
             <input type="password" name="advanced.geoip_license_key" placeholder="xxxxxxxxxxxxxxxx" autoComplete="off" disabled="{{_computed.isReadOnly || _computed.envLocked?.['advanced.geoip_license_key'] === true}}" class="{{_local.errors?.['advanced.geoip_license_key'] ? 'input-error' : ''}}"/>
@@ -272,9 +272,9 @@
             <div>
               <span class="text-heading">$t:admin.settings.advanced.geoip_auto_update_enabled</span>
               <p class="text-label-subtle">$t:admin.settings.advanced.geoip_auto_update_enabled_desc</p>
-              <badge data-if="{{_computed.envLocked?.['advanced.geoip_auto_update_enabled'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
+              <badge data-type="composite" data-if="{{_computed.envLocked?.['advanced.geoip_auto_update_enabled'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
             </div>
-            <toggle name="advanced.geoip_auto_update_enabled" size="md" disabled="{{_computed.isReadOnly || _computed.envLocked?.['advanced.geoip_auto_update_enabled'] === true}}"/>
+            <toggle data-type="composite" name="advanced.geoip_auto_update_enabled" size="md" disabled="{{_computed.isReadOnly || _computed.envLocked?.['advanced.geoip_auto_update_enabled'] === true}}"/>
           </div>
           <div data-ref="geoip_last_updated_block" class="row-stack">
             <span class="text-heading block">$t:admin.settings.advanced.geoip_last_updated_at</span>

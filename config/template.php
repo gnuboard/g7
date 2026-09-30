@@ -97,14 +97,14 @@ return [
     | 조정할 수 있게 한다.
     */
     'layout_markup' => [
-        // <script src> 외부 JS 로더가 실을 수 있는 호스트. 전 번들 실측(2026-07-18): 우편번호
-        // 검색(daum) + 리치 에디터(ckeditor) 두 곳뿐이다. 결제·본인인증 SDK 는 레이아웃이 아니라
-        // 핸들러(JS)에서 로드하므로 여기 없다. https 와 protocol-relative(//) 두 스킴만 허용하며
-        // (http 는 거부), 같은 origin 상대경로(/, /api/…)는 외부가 아니므로 검사에서 제외된다.
-        'script_src_allowlist' => [
-            't1.daumcdn.net',   // Daum 우편번호 API (주소 검색)
-            'cdn.ckeditor.com', // CKEditor 5 UMD (리치 텍스트 에디터)
-        ],
+        // <script src> 외부 JS 로더 허용 호스트 중 **운영자가 덧붙이는 몫**. 기본은 비어 있다.
+        //
+        // 호스트를 쓰는 주체는 그 레이아웃을 가진 확장·템플릿이고, 자기 매니페스트의
+        // `trusted_script_hosts` 로 선언한다(예: 우편번호 플러그인의 `t1.daumcdn.net`). 컴파일 판정은
+        // 그 선언 집계(`TrustedScriptHosts`) ∪ 문서 소유 확장의 선언 ∪ 이 목록이다 — 코어가 특정
+        // 확장의 호스트를 여기 적어 두지 않는다(2026-09-28 결정). https 와 protocol-relative(//)
+        // 두 스킴만 허용하며(http 는 거부), 같은 origin 상대경로(/, /api/…)는 검사에서 제외된다.
+        'script_src_allowlist' => [],
 
         // 설치 소스 선택 전략. 기본 `auto` = 소스 SSoT 인 `.g7.html` 이 있으면 그것을 설치 시점에
         // 메모리로 컴파일해 등록하고, 없으면 `.json` 을 직접 등록한다.

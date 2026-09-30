@@ -2,7 +2,7 @@
   거절하는 쪽이 "취소" 가 아니라 "건너뛰기" 인 것이 성격을 말해 준다 — 템플릿 활성은 이미 끝났고
   여기서 무엇을 하든 되돌아가지 않는다. 모듈 쪽 같은 이름 조각과 짝이다. -->
 <partial description="템플릿 재활성화 후 cascade 비활성화됐던 언어팩 일괄 활성화 확인 모달 (요구사항 #7)" editor_label="$t:admin.modal_label.admin_template_list.template_reactivate_language_packs_modal">
-  <modal data-ref="template_reactivate_language_packs_modal" title="$t:admin.templates.modals.reactivate_language_packs_title" size="sm">
+  <modal data-type="composite" data-ref="template_reactivate_language_packs_modal" title="$t:admin.templates.modals.reactivate_language_packs_title" size="sm">
     <div class="py-2">
       <p class="text-label mb-3">$t:admin.templates.modals.reactivate_language_packs_message</p>
       <div>
@@ -16,10 +16,12 @@
     <div class="modal-footer-buttons">
       <button class="btn btn-secondary" disabled="{{_global.isBulkActivatingLanguagePacks}}">
         <on type="click">
-          <!-- 건너뛰기 — 대상 목록만 비우고 닫는다(언어팩은 꺼진 채로 남는다). -->
+          <!-- 건너뛰기 — 대상 목록만 비우고 닫는다(언어팩은 꺼진 채로 남는다).
+               관리자 템플릿을 켠 직후라면 미뤄 둔 새로 고침을 여기서 한다(활성 창이 창을 띄우느라 미뤘다). -->
           <sequence>
             <set-state target="global" :reactivateLanguagePacksData="null"/>
             <close-modal/>
+            <refresh if="{{_global.reactivateLanguagePacksRefreshAfter === true}}" :delayMs="300"/>
           </sequence>
         </on>
         <span>$t:common.skip</span>
@@ -35,6 +37,7 @@
                 <set-state target="global" :isBulkActivatingLanguagePacks="false" :reactivateLanguagePacksData="null"/>
                 <toast message="$t:admin.templates.modals.reactivate_language_packs_success" type="success"/>
                 <close-modal/>
+                <refresh if="{{_global.reactivateLanguagePacksRefreshAfter === true}}" :delayMs="800"/>
               </success>
               <fail>
                 <set-state target="global" :isBulkActivatingLanguagePacks="false"/>

@@ -69,7 +69,7 @@
               <span class="font-mono text-body">{{row.code}}</span>
             </td>
             <td class="px-4 py-2">
-              <multilingual-input value="{{row.name ?? {}}}" layout="compact" placeholder="$t:sirsoft-board.admin.settings.reaction_types.form.name_placeholder" error="{{_local.errors?.['basic_defaults.reaction_types.' + row._idx + '.name.ko']?.[0] ?? _local.errors?.['basic_defaults.reaction_types.' + row._idx + '.name']?.[0] ?? ''}}" disabled="{{_computed.isReadOnly}}">
+              <multilingual-input data-type="composite" value="{{row.name ?? {}}}" layout="compact" placeholder="$t:sirsoft-board.admin.settings.reaction_types.form.name_placeholder" error="{{_local.errors?.['basic_defaults.reaction_types.' + row._idx + '.name.ko']?.[0] ?? _local.errors?.['basic_defaults.reaction_types.' + row._idx + '.name']?.[0] ?? ''}}" disabled="{{_computed.isReadOnly}}">
                 <on type="change">
                   <!-- 기존 행 — 이름(언어별). -->
                   <set-state target="local" form.basic_defaults.reaction_types="{{(_local.form?.basic_defaults?.reaction_types ?? []).map((r, i) => i === row._idx ? {...r, name: $event.target.value} : r)}}" :hasChanges="true"/>
@@ -81,7 +81,7 @@
                 <img data-testid="reaction-type-icon-{{row.code}}" data-if="{{!!row.icon_url}}" src="{{row.icon_url}}" alt="" class="w-5 h-5 object-contain"/>
                 <icon data-if="{{!row.icon_url}}" name="{{row.icon_name ?? 'fa-thumbs-up'}}" size="sm"/>
                 <div data-testid="reaction-type-uploader-{{row.code}}" class="flex-1 min-w-0">
-                  <file-uploader collection="reaction_type_icon" :maxFiles="1" :maxSize="1" accept=".png,.jpg,.jpeg,.gif,.webp" initialFiles="{{row.icon_attachment ? [row.icon_attachment] : []}}" :autoUpload="true" size="xs" disabled="{{_computed.isReadOnly}}">
+                  <file-uploader data-type="composite" collection="reaction_type_icon" :maxFiles="1" :maxSize="1" accept=".png,.jpg,.jpeg,.gif,.webp" initialFiles="{{row.icon_attachment ? [row.icon_attachment] : []}}" :autoUpload="true" size="xs" disabled="{{_computed.isReadOnly}}">
                     <prop name="apiEndpoints">
                       <field name="upload" value="/api/modules/sirsoft-board/admin/reaction-types/icons"/>
                       <field name="delete" value="/api/modules/sirsoft-board/admin/reaction-types/icons/:id"/>
@@ -108,7 +108,7 @@
             </td>
             <td class="px-4 py-2 text-center">
               <div data-testid="reaction-type-active-{{row.code}}">
-                <toggle checked="{{row.is_active ?? false}}" size="sm" disabled="{{_computed.isReadOnly}}">
+                <toggle data-type="composite" checked="{{row.is_active ?? false}}" size="sm" disabled="{{_computed.isReadOnly}}">
                   <on type="change">
                     <!-- 끄면 회원 화면의 반응 버튼에서 빠진다. 이미 쌓인 반응 행은 그대로다. -->
                     <set-state target="local" form.basic_defaults.reaction_types="{{(_local.form?.basic_defaults?.reaction_types ?? []).map((r, i) => i === row._idx ? {...r, is_active: !(r.is_active)} : r)}}" :hasChanges="true"/>
@@ -160,7 +160,7 @@
                 <span data-if="{{_local.reactionTypeFormErrors?.code === 'duplicate'}}" class="form-error">$t:sirsoft-board.admin.settings.reaction_types.validation.code_duplicate</span>
               </td>
               <td class="px-4 py-2 align-top">
-                <multilingual-input value="{{_local.reactionTypeForm?.name ?? {}}}" layout="compact" placeholder="$t:sirsoft-board.admin.settings.reaction_types.form.name_placeholder" error="{{_local.reactionTypeFormErrors?.name_ko ? '$t:sirsoft-board.admin.settings.reaction_types.validation.name_required' : ''}}" disabled="{{_computed.isReadOnly}}">
+                <multilingual-input data-type="composite" value="{{_local.reactionTypeForm?.name ?? {}}}" layout="compact" placeholder="$t:sirsoft-board.admin.settings.reaction_types.form.name_placeholder" error="{{_local.reactionTypeFormErrors?.name_ko ? '$t:sirsoft-board.admin.settings.reaction_types.validation.name_required' : ''}}" disabled="{{_computed.isReadOnly}}">
                   <on type="change">
                     <!-- 유형 이름(언어별). 회원 화면의 반응 버튼 문구가 된다. -->
                     <set-state target="local" reactionTypeForm.name="{{$event.target.value}}"/>
@@ -171,7 +171,7 @@
                 <!-- 유형이 아직 없어도 올릴 수 있다 — 업로드 API 의 `reaction_type_id` 가 선택이고
                   저장할 때 `syncTypes()` 가 이어 붙인다(docs/api/reaction-types.md). -->
                 <div data-testid="reaction-type-uploader-new" class="min-w-0">
-                  <file-uploader collection="reaction_type_icon" :maxFiles="1" :maxSize="1" accept=".png,.jpg,.jpeg,.gif,.webp" initialFiles="{{_local.reactionTypeForm?.icon_attachment ? [_local.reactionTypeForm.icon_attachment] : []}}" :autoUpload="true" size="xs" disabled="{{_computed.isReadOnly}}">
+                  <file-uploader data-type="composite" collection="reaction_type_icon" :maxFiles="1" :maxSize="1" accept=".png,.jpg,.jpeg,.gif,.webp" initialFiles="{{_local.reactionTypeForm?.icon_attachment ? [_local.reactionTypeForm.icon_attachment] : []}}" :autoUpload="true" size="xs" disabled="{{_computed.isReadOnly}}">
                     <prop name="apiEndpoints">
                       <field name="upload" value="/api/modules/sirsoft-board/admin/reaction-types/icons"/>
                       <field name="delete" value="/api/modules/sirsoft-board/admin/reaction-types/icons/:id"/>
@@ -197,7 +197,7 @@
               </td>
               <td class="px-4 py-2 text-center align-top">
                 <div data-testid="reaction-type-active-new">
-                  <toggle checked="{{_local.reactionTypeForm?.is_active ?? true}}" size="sm" disabled="{{_computed.isReadOnly}}">
+                  <toggle data-type="composite" checked="{{_local.reactionTypeForm?.is_active ?? true}}" size="sm" disabled="{{_computed.isReadOnly}}">
                     <on type="change">
                       <!-- 새 유형은 「사용」으로 시작한다. 여기서 바로 꺼 둘 수도 있다. -->
                       <set-state target="local" reactionTypeForm.is_active="{{!(_local.reactionTypeForm?.is_active ?? true)}}"/>

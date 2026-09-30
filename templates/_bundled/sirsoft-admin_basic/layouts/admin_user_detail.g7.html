@@ -66,7 +66,7 @@
           </button>
         </div>
       </div>
-      <tab-navigation-scroll data-ref="user_detail_tabs" class="sticky-tab-nav tab-nav-default" activeTabId="{{_local.activeTab ?? 'basic_info'}}" :enableScrollSpy="true" :scrollSpyOffset="56" sectionIdPrefix="">
+      <tab-navigation-scroll data-type="composite" data-ref="user_detail_tabs" class="sticky-tab-nav tab-nav-default" activeTabId="{{_local.activeTab ?? 'basic_info'}}" :enableScrollSpy="true" :scrollSpyOffset="56" sectionIdPrefix="">
         <prop name="tabs">
           <item id="basic_info" label="$t:admin.users.detail.tabs.basic_info"/>
           <item id="contact_info" label="$t:admin.users.detail.tabs.contact_info"/>

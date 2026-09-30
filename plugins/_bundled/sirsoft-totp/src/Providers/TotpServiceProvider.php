@@ -3,6 +3,7 @@
 namespace Plugins\Sirsoft\Totp\Providers;
 
 use App\Extension\BasePluginServiceProvider;
+use Plugins\Sirsoft\Totp\Console\Commands\PlaywrightSeedTotp;
 use Plugins\Sirsoft\Totp\Console\Commands\TotpResetCommand;
 use Plugins\Sirsoft\Totp\Repositories\Contracts\TotpCredentialRepositoryInterface;
 use Plugins\Sirsoft\Totp\Repositories\TotpCredentialRepository;
@@ -41,6 +42,7 @@ class TotpServiceProvider extends BasePluginServiceProvider
         if ($this->app->runningInConsole()) {
             $this->commands([
                 TotpResetCommand::class,
+                PlaywrightSeedTotp::class,
             ]);
         }
     }

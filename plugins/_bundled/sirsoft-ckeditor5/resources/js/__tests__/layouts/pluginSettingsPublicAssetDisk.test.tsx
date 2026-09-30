@@ -72,6 +72,7 @@ const translations = {
                     label: '공개 자산 디스크',
                     hint: '에디터 이미지 서빙 디스크를 오버라이드합니다.',
                     follow_core: '코어 설정 따름',
+                    unavailable: '저장했던 디스크({disk})를 지금은 쓸 수 없어 에디터 이미지를 스트리밍으로 제공하고 있습니다.',
                 },
             },
         },
@@ -163,6 +164,28 @@ describe('CKEditor5 공개 자산 디스크 필드 — 계약', () => {
     });
 });
 
+describe('CKEditor5 공개 자산 디스크 필드 — 저장 후 안내', () => {
+    /**
+     * 설정 재조회(initLocal)는 폼에 없는 키를 지우지 않는다 — 저장 성공 처리가 안내 키를 응답값으로 덮지 않으면
+     * 새 디스크를 골라 저장해 저장값이 바뀐 뒤에도 「쓸 수 없는 디스크」 안내가 남았다(#703 브라우저 실측).
+     *
+     * @scenario disk_setting=fake_cdn, override=module_override
+     * @effects stale_disk_normalized_with_notice
+     */
+    it('저장 성공 시 쓸 수 없는 디스크 안내 키를 응답값으로 덮는다', () => {
+        const saveButton = findNode(pluginSettings, (n) => n.id === 'save_button');
+        const sequence = (saveButton?.actions ?? []).find((a: any) => a.handler === 'sequence');
+        const apiCall = (sequence?.actions ?? []).find((a: any) => a.handler === 'apiCall');
+        const localReset = (apiCall?.onSuccess ?? []).find(
+            (a: any) => a.handler === 'setState' && a.params?.target === 'local',
+        );
+
+        expect(localReset?.params?.['form.public_asset_disk_unavailable']).toBe(
+            '{{response.data?.public_asset_disk_unavailable ?? null}}',
+        );
+    });
+});
+
 describe('CKEditor5 공개 자산 디스크 필드 — 렌더링', () => {
     let registry: ComponentRegistry;
     let testUtils: ReturnType<typeof createLayoutTest> | null = null;
@@ -187,9 +210,10 @@ describe('CKEditor5 공개 자산 디스크 필드 — 렌더링', () => {
     /**
      * 필드 렌더링용 테스트 유틸을 생성한다.
      *
+     * @param form 설정 응답 폼(카탈로그 제외)
      * @returns createLayoutTest 유틸
      */
-    function makeUtils() {
+    function makeUtils(form: Record<string, unknown> = { public_asset_disk: '' }) {
         return createLayoutTest(
             {
                 version: '1.0.0',
@@ -208,7 +232,7 @@ describe('CKEditor5 공개 자산 디스크 필드 — 렌더링', () => {
                     _local: {
                         // 플러그인 설정 GET 응답(initLocal: form)에 서버 부착되는 형태
                         form: {
-                            public_asset_disk: '',
+                            ...form,
                             available_public_asset_disks: CATALOG,
                         },
                     },
@@ -244,5 +268,29 @@ describe('CKEditor5 공개 자산 디스크 필드 — 렌더링', () => {
             '사용 안 함 (스트리밍)',
             '가짜 CDN',
         ]);
+    });
+
+    /**
+     * @scenario disk_setting=fake_cdn, override=module_override
+     * @effects stale_disk_normalized_with_notice
+     */
+    it('쓸 수 없게 된 디스크는 이유와 옛 이름을 선택 칸 아래에 알린다', async () => {
+        testUtils = makeUtils({ public_asset_disk: 'none', public_asset_disk_unavailable: 'gone_cdn' });
+        const { container } = await testUtils.render();
+
+        const notice = container.querySelector('p.text-warning-soft');
+        expect(notice?.textContent).toContain('gone_cdn');
+        expect(notice?.textContent).toContain('스트리밍');
+    });
+
+    /**
+     * @scenario disk_setting=public, override=follow_core
+     * @effects stale_disk_normalized_with_notice
+     */
+    it('쓸 수 있는 디스크면 안내를 띄우지 않는다', async () => {
+        testUtils = makeUtils({ public_asset_disk: 'fake_cdn' });
+        const { container } = await testUtils.render();
+
+        expect(container.querySelector('p.text-warning-soft')).toBeNull();
     });
 });

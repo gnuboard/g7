@@ -38,7 +38,7 @@
         </div>
         <div>
           <label class="text-secondary block text-xs font-medium mb-1">$t:sirsoft-ecommerce.admin.settings.shipping.types.form.name</label>
-          <multilingual-input value="{{_local.shippingTypeForm?.name ?? {}}}" layout="inline" placeholder="$t:sirsoft-ecommerce.admin.settings.shipping.types.form.name_ko_placeholder" error="{{_local.shippingTypeFormErrors?.name_ko ? '$t:sirsoft-ecommerce.admin.settings.shipping.types.validation.name_required' : ''}}" disabled="{{_computed.isReadOnly}}">
+          <multilingual-input data-type="composite" value="{{_local.shippingTypeForm?.name ?? {}}}" layout="inline" placeholder="$t:sirsoft-ecommerce.admin.settings.shipping.types.form.name_ko_placeholder" error="{{_local.shippingTypeFormErrors?.name_ko ? '$t:sirsoft-ecommerce.admin.settings.shipping.types.validation.name_required' : ''}}" disabled="{{_computed.isReadOnly}}">
             <on type="change">
               <!-- 유형 이름(언어별). -->
               <set-state target="local" shippingTypeForm.name="{{$event.target.value}}"/>
@@ -118,7 +118,7 @@
                 <span class="font-mono text-body">{{$type.code}}</span>
               </td>
               <td class="px-4 py-2">
-                <multilingual-input value="{{$type.name ?? {}}}" layout="compact" placeholder="$t:sirsoft-ecommerce.admin.settings.shipping.types.form.name_ko_placeholder" error="{{_local.errors?.['shipping.types.' + $type._idx + '.name.' + ($locale ?? 'ko')]?.[0] ?? _local.errors?.['shipping.types.' + $type._idx + '.name']?.[0] ?? ''}}" disabled="{{_computed.isReadOnly}}">
+                <multilingual-input data-type="composite" value="{{$type.name ?? {}}}" layout="compact" placeholder="$t:sirsoft-ecommerce.admin.settings.shipping.types.form.name_ko_placeholder" error="{{_local.errors?.['shipping.types.' + $type._idx + '.name.' + ($locale ?? 'ko')]?.[0] ?? _local.errors?.['shipping.types.' + $type._idx + '.name']?.[0] ?? ''}}" disabled="{{_computed.isReadOnly}}">
                   <on type="change">
                     <!-- 기존 줄 — 이름(언어별). -->
                     <set-state target="local" form.shipping.types="{{(_local.form?.shipping?.types ?? []).map((t, i) => i === $type._idx ? {...t, name: $event.target.value} : t)}}" :hasChanges="true"/>
@@ -139,7 +139,7 @@
                 </select>
               </td>
               <td class="px-4 py-2 text-center">
-                <toggle checked="{{$type.is_active ?? false}}" size="sm" disabled="{{_computed.isReadOnly}}">
+                <toggle data-type="composite" checked="{{$type.is_active ?? false}}" size="sm" disabled="{{_computed.isReadOnly}}">
                   <on type="change">
                     <!-- 기존 줄 — 사용 여부. -->
                     <set-state target="local" form.shipping.types="{{(_local.form?.shipping?.types ?? []).map((t, i) => i === $type._idx ? {...t, is_active: !(t.is_active)} : t)}}" :hasChanges="true"/>

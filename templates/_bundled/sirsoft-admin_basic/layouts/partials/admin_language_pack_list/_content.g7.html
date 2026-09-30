@@ -9,7 +9,7 @@
     설치가 막힌 팩은 왜 막혔는지(대상 미설치·비활성·버전 낮음 등)를 카드 안에 적어 준다. -->
 <partial description="언어팩 관리 본문 SSoT — 카드형 UI (모듈/플러그인/템플릿 관리와 일관 수준). PageHeader + 모바일 액션 영역 + 검색/필터 + CardGrid + 페이지네이션. 확장 컨텍스트 wrapper(partials/admin_extension_language_packs/_content.json) 가 back 버튼/배너만 추가하여 재사용.">
   <div data-ref="lang_pack_content">
-    <page-header data-ref="lp_page_header" title="$t:admin.language_packs.title" description="$t:admin.language_packs.description">
+    <page-header data-type="composite" data-ref="lp_page_header" title="$t:admin.language_packs.title" description="$t:admin.language_packs.description">
       <button data-ref="lp_btn_check_updates" data-if="{{language_packs?.data?.abilities?.can_check_updates}}" type="button" disabled="{{_global.isLanguagePackCheckingUpdates}}" class="flex-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
         <responsive on="portable" class="hidden"/>
         <on type="click">
@@ -203,7 +203,7 @@
         </input>
         <span>$t:admin.language_packs.filter.exclude_protected</span>
       </label>
-      <search-bar data-ref="lp_search" name="search" placeholder="$t:admin.language_packs.search_placeholder" value="{{_local.filterSearch ?? query.search ?? ''}}" :showButton="true" class="w-72">
+      <search-bar data-type="composite" data-ref="lp_search" name="search" placeholder="$t:admin.language_packs.search_placeholder" value="{{_local.filterSearch ?? query.search ?? ''}}" :showButton="true" class="w-72">
         <responsive on="portable" class="w-full"/>
         <on type="change">
           <!-- 검색어만은 즉시 조회하지 않고 담아 둔다 — 글자를 칠 때마다 주소가 바뀌면 뒤로 가기 이력이 글자 수만큼 쌓인다. -->
@@ -226,7 +226,7 @@
            언어팩은 대개 자기 그림이 없어 대상 확장·코어의 아이콘을 빌려 쓰므로, 무엇의 어떤
            언어인지 아이콘 위 로케일 표식으로 구분한다(국기는 쓰지 않는다 — 언어는 나라가
            아니다). 대상 식별자는 `identifier` 가 아니라 설치 행의 `id` 다. -->
-      <extension-card-grid data-ref="lp_card_grid" data-if="{{(language_packs?.data?.data?.length ?? 0) > 0}}" viewMode="{{(_global.extensionViewMode ?? 'gallery') === 'list' ? 'list' : 'gallery'}}" :minCardWidth="250" :maxColumns="5" loading="{{language_packs?.loading ?? false}}" :pagination="true" :alwaysShowPagination="true" currentPage="{{language_packs?.data?.pagination?.current_page ?? 1}}" totalPages="{{language_packs?.data?.pagination?.last_page ?? null}}" hasMorePages="{{language_packs?.data?.pagination?.has_more_pages ?? false}}" items="{{(language_packs?.data?.data ?? []).map(p => ({
+      <extension-card-grid data-type="composite" data-ref="lp_card_grid" data-if="{{(language_packs?.data?.data?.length ?? 0) > 0}}" viewMode="{{(_global.extensionViewMode ?? 'gallery') === 'list' ? 'list' : 'gallery'}}" :minCardWidth="250" :maxColumns="5" resyncKey="{{_global.extensionToggleResync ?? 0}}" loading="{{language_packs?.loading ?? false}}" :pagination="true" :alwaysShowPagination="true" currentPage="{{language_packs?.data?.pagination?.current_page ?? 1}}" totalPages="{{language_packs?.data?.pagination?.last_page ?? null}}" hasMorePages="{{language_packs?.data?.pagination?.has_more_pages ?? false}}" items="{{(language_packs?.data?.data ?? []).map(p => ({
         id: String(p.id ?? p.bundled_identifier ?? p.identifier),
         row: p,
         name: p.name ?? p.identifier,
@@ -279,11 +279,15 @@
             <fail>
               <sequence>
                 <toast type="error" message="{{error.message ?? '$t:admin.language_packs.messages.toggle_failed'}}"/>
+                <!-- 서버가 거절하면 값이 그대로 돌아와 스위치가 스스로 되돌아가지 못한다 — 재동기 신호를 올린다(#703). -->
+                <set-state target="global" extensionToggleResync="{{(_global.extensionToggleResync ?? 0) + 1}}"/>
                 <refetch-data-source dataSourceId="language_packs"/>
               </sequence>
             </fail>
             <error-handling>
               <on-code code="409">
+                <!-- 창에서 고르기 전까지 스위치는 서버 값에 둔다 — 창을 닫아도 뒤집힌 채 남지 않는다(#703). -->
+                <set-state target="global" extensionToggleResync="{{(_global.extensionToggleResync ?? 0) + 1}}"/>
                 <set-state target="global" slotConflictCurrent="{{error.errors?.current ?? null}}" slotConflictTarget="{{error.errors?.target ?? null}}" slotConflictTargetId="{{$args[1].id}}"/>
                 <open-modal target="language_pack_slot_conflict_modal"/>
               </on-code>

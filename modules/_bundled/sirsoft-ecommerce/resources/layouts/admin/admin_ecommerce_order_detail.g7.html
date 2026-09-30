@@ -152,9 +152,9 @@
               <span class="font-medium text-gray-900 dark:text-gray-100">{{order.data.ordered_at_formatted}}</span>
               <span class="text-gray-300 dark:text-gray-600">|</span>
               <span class="text-secondary">$t:sirsoft-ecommerce.admin.order.detail.status:</span>
-              <badge variant="{{order.data.order_status_variant}}">{{order.data.order_status_label}}</badge>
+              <badge data-type="composite" variant="{{order.data.order_status_variant}}">{{order.data.order_status_label}}</badge>
               <!-- 부분취소 보조 배지 — 일부 옵션만 취소된 주문(별도 주문상태 아님, 파생 플래그) -->
-              <badge data-if="{{order.data.is_partially_cancelled}}" variant="warning">$t:sirsoft-ecommerce.admin.order.detail.partial_cancelled_badge</badge>
+              <badge data-type="composite" data-if="{{order.data.is_partially_cancelled}}" variant="warning">$t:sirsoft-ecommerce.admin.order.detail.partial_cancelled_badge</badge>
             </div>
           </div>
           <div class="page-actions">
@@ -171,7 +171,7 @@
         </div>
         <include src="partials/admin_ecommerce_order_detail/_partial_order_progress.g7.html"/>
         <!-- 탭 클릭·스크롤 추적은 컴포넌트가 제 상태로 맡는다 — `onChange` 는 TabNavigationScroll 에 없는 이벤트라 걸어도 돌지 않고, `onTabChange` 를 걸면 내부 활성 탭 갱신이 꺼져(`activeTabId` 는 초기값 전용) 누른 탭 표시가 따라오지 않는다. -->
-        <tab-navigation-scroll data-ref="tab_navigation" activeTabId="{{_local.activeOrderTab ?? 'order_info'}}" :enableScrollSpy="true" :scrollSpyOffset="120" sectionIdPrefix="section_" tabs="{{_computed.orderDetailTabs ?? []}}"/>
+        <tab-navigation-scroll data-type="composite" data-ref="tab_navigation" activeTabId="{{_local.activeOrderTab ?? 'order_info'}}" :enableScrollSpy="true" :scrollSpyOffset="120" sectionIdPrefix="section_" tabs="{{_computed.orderDetailTabs ?? []}}"/>
       </div>
       <div data-ref="tab_content_area" class="tab-content">
         <include src="partials/admin_ecommerce_order_detail/_partial_order_info.g7.html"/>

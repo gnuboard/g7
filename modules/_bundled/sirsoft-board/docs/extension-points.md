@@ -131,6 +131,11 @@
 비회원 삭제 모드는 게시판 삭제 경로를 지나므로 `sirsoft-board.post.after_delete`·
 `sirsoft-board.comment.after_delete` 가 `trigger_type=system` 행에 대해 발화하지만
 **`before_delete` 는 발화하지 않습니다**(무인 배치에 본인인증 정책이 걸리면 법정 파기가 멈춤).
+
+`sirsoft-board.board.posts.before_force_delete` 는 게시판 영구 삭제 직전 1,000건 묶음마다
+`($board, array $postIds, string $postType)` 로 발화합니다. 셋째 인자 `$postType` 은 글 모델 타입
+(다형 참조 type)입니다 — 글을 다형 참조로 가리키는 확장(이커머스 문의 등)은 게시판 클래스 이름을 스스로
+적지 말고 이 값으로 자기 참조를 가려 지웁니다.
 <!-- @intent END -->
 
 ## 구독 훅
@@ -222,6 +227,8 @@
 | `sirsoft-ecommerce.inquiry.delete_reply` | filter | `EcommerceInquiryHookListener` | `deleteReplyPost` | 10 |
 | `sirsoft-ecommerce.inquiry.get_by_ids` | filter | `EcommerceInquiryHookListener` | `getByIds` | 10 |
 | `sirsoft-ecommerce.inquiry.get_settings` | filter | `EcommerceInquiryHookListener` | `getBoardSettings` | 10 |
+| `sirsoft-ecommerce.inquiry.purge_sample_posts` | filter | `EcommerceInquiryHookListener` | `purgeSamplePosts` | 10 |
+| `sirsoft-ecommerce.inquiry.seed_sample_post` | filter | `EcommerceInquiryHookListener` | `seedSamplePost` | 10 |
 | `sirsoft-ecommerce.inquiry.update` | filter | `EcommerceInquiryHookListener` | `updatePost` | 10 |
 | `sirsoft-ecommerce.inquiry.update_reply` | filter | `EcommerceInquiryHookListener` | `updateReplyPost` | 10 |
 <!-- @generated:hooks-subscribed END -->
@@ -231,8 +238,21 @@
 넣기 위해서입니다 — 이 필드는 `UserNotificationSetting` 모델(board 소유)에 저장되지만, 입력
 자체는 코어 회원 폼에서 받습니다. `sirsoft-ckeditor5.image.filter_reference_sources` 구독은
 board 글 본문(HTML 에디터)에 삽입된 이미지가 삭제 시 함께 정리되도록 참조 소스 목록에 게시글을
-등록하는 자리입니다. `sirsoft-ecommerce.inquiry.*` 8개는 이커머스 "상품 문의"가 board 의
-Post/Comment CRUD 를 그대로 재사용하되 저장 로직만 이커머스가 대신 처리하는 위임 지점입니다.
+등록하는 자리입니다. `sirsoft-ecommerce.inquiry.*` 는 이커머스 "상품 문의"가 board 의
+Post CRUD 를 재사용하는 위임 지점입니다 — 이커머스가 훅을 정의하고 board 가 답합니다. 운영 경로 8개
+(`create`·`update`·`delete`·`update_reply`·`delete_reply`·`get_by_ids`·`get_settings`·`count_replies`)와
+이커머스 샘플 시더 전용 2개(`seed_sample_post`·`purge_sample_posts`)입니다.
+
+두 모듈은 서로를 의존성으로 선언하지 않으므로 **각자 자기 것만 씁니다.** board 가 훅에 답하다 실패하면
+자기 문구(`sirsoft-board::messages.inquiry.*`)로 예외를 던지고, 이커머스는 그것을 자기 실패 응답으로
+바꿉니다. 이커머스가 알아야 할 board 쪽 값(글 ID·글 모델 타입·게시판 설정·비밀글 열람 판정)은 전부 훅
+반환값이나 인자로 건넵니다.
+
+| 샘플 시더 훅 | 인자 | 반환 |
+|---|---|---|
+| `sirsoft-ecommerce.inquiry.seed_sample_post` | `(null, string $slug, array $question, ?array $reply)` — question: title·content·user_id·author_name·password(평문, board 가 해시)·is_secret·created_at / reply: content·user_id·created_at | `['post_id' => int, 'inquirable_type' => string]` · 게시판 없으면 이전 값 |
+| `sirsoft-ecommerce.inquiry.purge_sample_posts` | `(0, string $slug, array<string, int[]> $inquirables)` — 타입별 글 ID 묶음 | 영구 삭제한 글 수 (자기 글 타입 묶음 + 문의 게시판 답변 글만) |
+
 `SeoBoardCacheListener` 가 `board.after_update`·`board.after_delete`·`board.posts.before_force_delete`
 를 구독하는 것은 사이트맵 색인이 게시판(부모)과 게시글(자식)의 생명주기를 함께 따르게 하기
 위해서입니다 — 게시판을 비활성화·삭제하면 게시글 URL 도 빠지고, 다시 활성화하면 공개 글만
@@ -254,7 +274,7 @@ Post/Comment CRUD 를 그대로 재사용하되 저장 로직만 이커머스가
 | `BoardPostsCountSyncListener` | 3개 | 명시 등록 | ✅ | `src/Listeners/BoardPostsCountSyncListener.php` |
 | `Ckeditor5ReferenceSourcesListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/Ckeditor5ReferenceSourcesListener.php` |
 | `CommentReplySyncListener` | 3개 | 명시 등록 | ✅ | `src/Listeners/CommentReplySyncListener.php` |
-| `EcommerceInquiryHookListener` | 8개 | 명시 등록 | ✅ | `src/Listeners/EcommerceInquiryHookListener.php` |
+| `EcommerceInquiryHookListener` | 10개 | 명시 등록 | ✅ | `src/Listeners/EcommerceInquiryHookListener.php` |
 | `PostAttachmentCountSyncListener` | 3개 | 명시 등록 | ✅ | `src/Listeners/PostAttachmentCountSyncListener.php` |
 | `PostCountSyncListener` | 3개 | 명시 등록 | ✅ | `src/Listeners/PostCountSyncListener.php` |
 | `PostReplySyncListener` | 3개 | 명시 등록 | ✅ | `src/Listeners/PostReplySyncListener.php` |

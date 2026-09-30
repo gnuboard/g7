@@ -380,7 +380,7 @@ HTTP/1.1 201
 
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
-| user_id | body | uuid | 예 | — | user 식별자 |
+| user_id | body | uuid | 아니오 | — | 회원 식별자. 생략하면 고른 lot 이 여러 회원에 걸쳐 있어도 전부 연장하고(관리자 마일리지 내역의 일괄 연장), 지정하면 그 회원의 lot 만 연장한다 |
 | lot_ids | body | array | 예 | min 1 | lot 식별자 배열 |
 | days | body | integer | 예 | min 1, max 3650 | 각 lot 만료일을 연장할 일수 (최대 3650일) |
 
@@ -394,7 +394,6 @@ Authorization: Bearer {YOUR_TOKEN}
 Content-Type: application/json
 
 {
-    "user_id": "9f8b2c1a-4d3e-4a2b-8c1d-0e1f2a3b4c5d",
     "lot_ids": [
         "예시값"
     ],

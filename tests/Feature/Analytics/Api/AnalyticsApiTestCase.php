@@ -36,6 +36,15 @@ abstract class AnalyticsApiTestCase extends TestCase
 
         config(['app.timezone' => 'UTC', 'g7_settings.core.general.timezone' => 'UTC']);
 
+        // 방문자 통계 설정 전체를 기본값(config/settings/defaults.json)으로 되돌린다 — 운영자가 관리자 화면에서 저장한
+        // 값(storage/app/settings/analytics.json)이 부팅 시 config 로 실려 테스트에 스며든다
+        // (mem:core-settings-boot-config-leaks-into-unit-tests). 모드를 바꾸는 테스트는 제 본문에서 다시 덮어쓴다.
+        $defaults = json_decode((string) file_get_contents(base_path('config/settings/defaults.json')), true);
+        config(['g7_settings.core.analytics' => array_replace(
+            (array) config('g7_settings.core.analytics', []),
+            $defaults['defaults']['analytics'] ?? []
+        )]);
+
         // 화면 열 때 집계는 요청마다 오늘치를 원장에서 다시 계산한다 — 집계 행을 직접 심어 목록·추이를
         // 검산하는 테스트에서는 그 행이 빈 원장으로 덮여 사라진다. 기본은 끄고, 그 동작을 보는 테스트
         // (ArchiveOnViewMiddlewareTest)만 켠다.

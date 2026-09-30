@@ -4,7 +4,7 @@
   누르면 강제로 밀어 켜고 먼저 켜져 있던 팩은 꺼진다. 취소해도 목록을 다시 받는데, 눌렀다가
   되돌아온 스위치를 서버 값으로 맞춰 놓기 위해서다. -->
 <partial description="동일 슬롯에 이미 활성 언어팩이 있을 때 교체 확인 모달 (모듈 force_activate 패턴)" editor_label="$t:admin.modal_label.admin_language_pack_list.language_pack_slot_conflict_modal">
-  <modal data-ref="language_pack_slot_conflict_modal" title="$t:admin.language_packs.slot_conflict_modal.title" size="sm">
+  <modal data-type="composite" data-ref="language_pack_slot_conflict_modal" title="$t:admin.language_packs.slot_conflict_modal.title" size="sm">
     <div class="row-stack">
       <p class="text-body">$t:admin.language_packs.slot_conflict_modal.description</p>
       <div class="rounded-md border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 p-3 space-y-2">

@@ -133,7 +133,7 @@
       </div>
     </div>
     <!-- 페이지네이션 -->
-    <pagination data-if="{{((myPosts?.data?.last_page ?? 0) > 1) || (myPosts?.data?.has_more_pages === true) || ((myPosts?.data?.current_page ?? 1) > 1)}}" currentPage="{{myPosts?.data?.current_page ?? 1}}" totalPages="{{myPosts?.data?.last_page ?? null}}" hasMorePages="{{myPosts?.data?.has_more_pages ?? false}}" class="mt-4 flex justify-center">
+    <pagination data-type="composite" data-if="{{((myPosts?.data?.last_page ?? 0) > 1) || (myPosts?.data?.has_more_pages === true) || ((myPosts?.data?.current_page ?? 1) > 1)}}" currentPage="{{myPosts?.data?.current_page ?? 1}}" totalPages="{{myPosts?.data?.last_page ?? null}}" hasMorePages="{{myPosts?.data?.has_more_pages ?? false}}" class="mt-4 flex justify-center">
       <on event="onPageChange">
         <set-state target="global" myPostsPage="{{$args[0]}}"/>
         <refetch-data-source dataSourceId="myPosts"/>

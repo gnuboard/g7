@@ -16,6 +16,15 @@ use Illuminate\Support\Facades\Log;
 class GenericNotification extends BaseNotification
 {
     /**
+     * 알림 data 에서 수신 전화번호를 싣는 코어 표준 키.
+     *
+     * 비회원처럼 수신자 객체에 전화번호(mobile)가 없는 알림은, 알림을 발행하는 도메인이
+     * `{hookPrefix}.notification.extract_data` 결과의 data 에 이 키로 수신 번호를 싣는다.
+     * 문자·알림톡 같은 채널 드라이버는 도메인을 모른 채 이 키만 읽는다.
+     */
+    public const RECIPIENT_PHONE_KEY = '_recipient_phone';
+
+    /**
      * @param  string  $type  알림 타입 (welcome, order_confirmed 등)
      * @param  string  $hookPrefix  훅 접두사 (core.auth, sirsoft-ecommerce 등)
      * @param  array  $data  변수 데이터 (['name' => '홍길동', ...])
@@ -41,6 +50,8 @@ class GenericNotification extends BaseNotification
 
     /**
      * 훅 접두사 반환.
+     *
+     * @return string 훅 접두사
      */
     protected function getHookPrefix(): string
     {
@@ -49,6 +60,8 @@ class GenericNotification extends BaseNotification
 
     /**
      * 알림 유형 반환.
+     *
+     * @return string 알림 유형
      */
     protected function getNotificationType(): string
     {
@@ -61,6 +74,9 @@ class GenericNotification extends BaseNotification
      * 1. definition.channels 조회
      * 2. 훅 필터 적용 (플러그인 채널 추가/제거)
      * 3. readiness 필터 (미설정 채널 제외 + skipped 로깅)
+     *
+     * @param  object  $notifiable  알림 수신자
+     * @return array 발송 채널 목록
      */
     public function via(object $notifiable): array
     {
@@ -119,8 +135,10 @@ class GenericNotification extends BaseNotification
         $definition = $definitionService->resolve($this->type);
         $channels = $definition?->channels ?? ['mail'];
 
-        $channels = HookManager::applyFilters(
-            "{$this->hookPrefix}.notification.channels",
+        // 채널 후보: 코어 단일 진입점 — 채널 제공 확장(core.notification.channels) → 도메인
+        // ({hookPrefix}.notification.channels) 순으로 거친다.
+        $channels = app(NotificationChannelService::class)->resolveChannelCandidates(
+            $this->hookPrefix,
             $channels,
             $this->type,
             $notifiable
@@ -231,7 +249,9 @@ class GenericNotification extends BaseNotification
     /**
      * 미설정 채널 건너뛰기를 notification_logs에 기록합니다.
      *
-     * @param  array  $skippedChannels  [{channel, reason}]
+     * @param  array  $skippedChannels  건너뛴 채널과 사유 목록 [{channel, reason}]
+     * @param  object  $notifiable  알림 수신자
+     * @return void 반환값 없음
      */
     private function logSkippedChannels(array $skippedChannels, object $notifiable): void
     {
@@ -265,6 +285,9 @@ class GenericNotification extends BaseNotification
 
     /**
      * 메일 채널 처리 — notification_templates에서 mail 채널 템플릿 조회.
+     *
+     * @param  object  $notifiable  알림 수신자
+     * @return DbTemplateMail 렌더된 메일 메시지
      */
     public function toMail(object $notifiable): DbTemplateMail
     {
@@ -300,6 +323,9 @@ class GenericNotification extends BaseNotification
 
     /**
      * 데이터베이스 채널 처리 — notification_templates에서 database 채널 템플릿 조회.
+     *
+     * @param  object  $notifiable  알림 수신자
+     * @return array 사이트 내 알림 데이터
      */
     public function toArray(object $notifiable): array
     {
@@ -334,9 +360,9 @@ class GenericNotification extends BaseNotification
     /**
      * 미래 채널 자동 위임 (fcm 등).
      *
-     * @param  string  $method
-     * @param  array  $parameters
-     * @return mixed
+     * @param  string  $method  호출된 메서드 이름
+     * @param  array  $parameters  호출 인자
+     * @return mixed 결과 값
      */
     public function __call($method, $parameters)
     {
@@ -356,6 +382,8 @@ class GenericNotification extends BaseNotification
 
     /**
      * 알림 데이터 반환.
+     *
+     * @return array 알림 변수 데이터
      */
     public function getData(): array
     {
@@ -364,6 +392,8 @@ class GenericNotification extends BaseNotification
 
     /**
      * 알림 타입 반환.
+     *
+     * @return string 알림 유형
      */
     public function getType(): string
     {
@@ -372,6 +402,8 @@ class GenericNotification extends BaseNotification
 
     /**
      * 확장 타입 반환.
+     *
+     * @return string 확장 타입
      */
     public function getExtensionType(): string
     {
@@ -380,6 +412,8 @@ class GenericNotification extends BaseNotification
 
     /**
      * 확장 식별자 반환.
+     *
+     * @return string 확장 식별자
      */
     public function getExtensionIdentifier(): string
     {

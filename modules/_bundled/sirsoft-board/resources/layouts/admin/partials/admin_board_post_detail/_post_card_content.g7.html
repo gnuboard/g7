@@ -18,7 +18,7 @@
             <!-- 제목 -->
             <span data-ref="title_text">{{post?.data?.title}}</span>
             <!-- 신규 배지 -->
-            <span data-ref="new_badge" data-if="{{post?.data?.is_new}}" class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-red-500 text-white">N</span>
+            <span data-ref="new_badge" data-if="{{post?.data?.is_new}}" class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-red-500 dark:bg-red-500 text-white">N</span>
             <!-- 삭제됨 배지 -->
             <span data-ref="status_badge_deleted" data-if="{{post?.data?.deleted_at}}" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-800 text-white dark:bg-gray-600 dark:text-gray-100">$t:sirsoft-board.admin.posts.detail.status_deleted</span>
           </h2>
@@ -54,7 +54,7 @@
             <icon name="flag" class="text-xs"/>
             <span>$t:sirsoft-board.admin.posts.detail.reported</span>
           </button>
-          <action-menu data-ref="action_menu" triggerLabel="" triggerIconName="ellipsis-vertical" position="right" items="{{post?.data?.deleted_at ? [{id: 'restore', label: '$t:sirsoft-board.admin.posts.actions.restore', iconName: 'sync-alt', variant: 'success', disabled: post?.data?.abilities?.can_manage !== true}] : [{id: 'edit', label: '$t:sirsoft-board.admin.posts.actions.edit', iconName: 'edit', disabled: !((post?.data?.is_author &amp;&amp; post?.data?.abilities?.can_write) || post?.data?.abilities?.can_manage)}, ...((post?.data?.status === 'published') ? [{id: 'blind', label: '$t:sirsoft-board.admin.posts.actions.blind', iconName: 'eye-slash', variant: 'warning', disabled: post?.data?.abilities?.can_manage !== true}] : []), ...((post?.data?.status === 'blinded') ? [{id: 'restore', label: '$t:sirsoft-board.admin.posts.actions.restore', iconName: 'sync-alt', variant: 'success', disabled: post?.data?.abilities?.can_manage !== true}] : []), {id: 'delete', label: '$t:common.delete', iconName: 'trash', variant: 'danger', disabled: !((post?.data?.is_author &amp;&amp; post?.data?.abilities?.can_write) || post?.data?.abilities?.can_manage)}]}}">
+          <action-menu data-type="composite" data-ref="action_menu" triggerLabel="" triggerIconName="ellipsis-vertical" position="right" items="{{post?.data?.deleted_at ? [{id: 'restore', label: '$t:sirsoft-board.admin.posts.actions.restore', iconName: 'sync-alt', variant: 'success', disabled: post?.data?.abilities?.can_manage !== true}] : [{id: 'edit', label: '$t:sirsoft-board.admin.posts.actions.edit', iconName: 'edit', disabled: !((post?.data?.is_author &amp;&amp; post?.data?.abilities?.can_write) || post?.data?.abilities?.can_manage)}, ...((post?.data?.status === 'published') ? [{id: 'blind', label: '$t:sirsoft-board.admin.posts.actions.blind', iconName: 'eye-slash', variant: 'warning', disabled: post?.data?.abilities?.can_manage !== true}] : []), ...((post?.data?.status === 'blinded') ? [{id: 'restore', label: '$t:sirsoft-board.admin.posts.actions.restore', iconName: 'sync-alt', variant: 'success', disabled: post?.data?.abilities?.can_manage !== true}] : []), {id: 'delete', label: '$t:common.delete', iconName: 'trash', variant: 'danger', disabled: !((post?.data?.is_author &amp;&amp; post?.data?.abilities?.can_write) || post?.data?.abilities?.can_manage)}]}}">
             <on type="action" event="onItemClick">
               <!-- 글 점 메뉴 — 편집은 그냥 이동이고, 가리기·되살리기·삭제 셋은 대상을 전역에 실은 뒤 부모 화면의 확인 창을 연다. 메뉴 항목 자체가 글 상태에 따라 다르게 조립되므로(지워졌으면 「되살리기」 하나뿐) 여기 갈래는 그때 있을 수 있는 것만 받는다 -->
               <switch>
@@ -98,7 +98,7 @@
         </div>
       </div>
       <div data-ref="card_meta" class="flex-center flex-wrap gap-2 text-label">
-        <action-menu data-ref="author_name_menu" data-if="{{!post?.data?.author?.is_guest}}" triggerLabel="{{post?.data?.author?.name}}" triggerIconName="" triggerClassName="font-medium text-gray-900 dark:text-white" position="right">
+        <action-menu data-type="composite" data-ref="author_name_menu" data-if="{{!post?.data?.author?.is_guest}}" triggerLabel="{{post?.data?.author?.name}}" triggerIconName="" triggerClassName="font-medium text-gray-900 dark:text-white" position="right">
           <prop name="items">
             <item id="view_user_info" label="$t:sirsoft-board.admin.posts.detail.user_info" iconName="user"/>
           </prop>
@@ -153,8 +153,12 @@
       <div data-ref="attachments_list_{{index}}" data-if="{{_local.showAttachments}}" data-each="attachment, index in post?.data?.attachments ?? []" class="mt-3 ml-4 space-y-2">
         <div data-ref="attachment_card_{{index}}" class="group flex-center gap-2 px-2 py-1.5 bg-gray-50 dark:bg-gray-800/50 rounded hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer">
           <on type="click">
-            <!-- 첨부 내려받기 — 링크로 열지 않고 전용 핸들러에 맡긴다. 원래 파일명을 함께 넘겨야 저장될 때 서버가 붙인 이름이 아니라 올린 이름으로 떨어진다 -->
-            <action handler="downloadAttachment" url="{{attachment?.download_url}}" filename="{{attachment?.original_filename}}"/>
+            <!-- 첨부 내려받기 — 링크로 열지 않고 이 모듈의 전용 핸들러에 맡긴다(로그인 토큰을 실어야 한다). 원래 파일명을 함께 넘겨야 저장될 때 서버가 붙인 이름이 아니라 올린 이름으로 떨어진다. 어느 관리자 템플릿으로 그려지든 같아야 하므로 템플릿이 아니라 이 모듈의 핸들러를 쓴다 -->
+            <action handler="sirsoft-board.downloadAttachment" url="{{attachment?.download_url}}" filename="{{attachment?.original_filename}}">
+              <fail>
+                <toast type="error" message="$t:sirsoft-board.admin.posts.detail.download_failed"/>
+              </fail>
+            </action>
           </on>
           <!-- 이미지 썸네일 (이미지 파일인 경우) - preview_url 사용 -->
           <div data-if="{{attachment?.is_image}}" class="flex-shrink-0 w-8 h-8 rounded overflow-hidden bg-white dark:bg-gray-700">
@@ -187,7 +191,7 @@
         </div>
         <!-- 오른쪽: 작성자 (ActionMenu) + 날짜 -->
         <div class="flex-center gap-2">
-          <action-menu data-ref="parent_author_name_menu" data-if="{{!post?.data?.parent?.author?.is_guest}}" triggerLabel="{{post?.data?.parent?.author?.name ?? '$t:sirsoft-board.admin.posts.unknown_author'}}" triggerIconName="" triggerClassName="text-gray-500 dark:text-gray-400" position="right">
+          <action-menu data-type="composite" data-ref="parent_author_name_menu" data-if="{{!post?.data?.parent?.author?.is_guest}}" triggerLabel="{{post?.data?.parent?.author?.name ?? '$t:sirsoft-board.admin.posts.unknown_author'}}" triggerIconName="" triggerClassName="text-gray-500 dark:text-gray-400" position="right">
             <prop name="items">
               <item id="view_user_info" label="$t:sirsoft-board.admin.posts.detail.user_info" iconName="user"/>
             </prop>
@@ -230,7 +234,7 @@
         <!-- 일반 글인 경우 - 내용 -->
         <extension-point name="html_content" data-if="{{!(post?.data?.parent?.is_secret &amp;&amp; post?.data?.parent?.content === null)}}" content="{{post?.data?.parent?.content ?? ''}}" isHtml="{{(post?.data?.parent?.content_mode ?? 'text') === 'html'}}" class="{{_local?.parentPostExpanded ? 'prose dark:prose-invert max-w-none' : '[&amp;_img]:hidden [&amp;_table]:hidden'}}">
           <default>
-            <html-content content="{{post?.data?.parent?.content ?? ''}}" isHtml="{{(post?.data?.parent?.content_mode ?? 'text') === 'html'}}" class="{{_local?.parentPostExpanded ? 'prose dark:prose-invert max-w-none' : '[&amp;_img]:hidden [&amp;_table]:hidden'}}"/>
+            <html-content data-type="composite" content="{{post?.data?.parent?.content ?? ''}}" isHtml="{{(post?.data?.parent?.content_mode ?? 'text') === 'html'}}" class="{{_local?.parentPostExpanded ? 'prose dark:prose-invert max-w-none' : '[&amp;_img]:hidden [&amp;_table]:hidden'}}"/>
           </default>
         </extension-point>
       </div>
@@ -274,14 +278,14 @@
           </div>
           <extension-point name="html_content" content="{{post?.data?.content}}" isHtml="{{(post?.data?.content_mode ?? 'text') === 'html'}}" class="text-secondary prose dark:prose-invert max-w-none">
             <default>
-              <html-content content="{{post?.data?.content}}" isHtml="{{(post?.data?.content_mode ?? 'text') === 'html'}}" class="text-secondary prose dark:prose-invert max-w-none"/>
+              <html-content data-type="composite" content="{{post?.data?.content}}" isHtml="{{(post?.data?.content_mode ?? 'text') === 'html'}}" class="text-secondary prose dark:prose-invert max-w-none"/>
             </default>
           </extension-point>
         </div>
       </div>
       <extension-point name="html_content" data-ref="normal_content" data-if="{{post?.data?.status !== 'blinded'}}" content="{{post?.data?.content}}" isHtml="{{(post?.data?.content_mode ?? 'text') === 'html'}}" class="prose dark:prose-invert max-w-none text-gray-900 dark:text-gray-100">
         <default>
-          <html-content content="{{post?.data?.content}}" isHtml="{{(post?.data?.content_mode ?? 'text') === 'html'}}" class="prose dark:prose-invert max-w-none text-gray-900 dark:text-gray-100"/>
+          <html-content data-type="composite" content="{{post?.data?.content}}" isHtml="{{(post?.data?.content_mode ?? 'text') === 'html'}}" class="prose dark:prose-invert max-w-none text-gray-900 dark:text-gray-100"/>
         </default>
       </extension-point>
     </div>

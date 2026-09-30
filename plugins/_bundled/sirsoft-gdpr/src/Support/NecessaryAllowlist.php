@@ -7,8 +7,9 @@ use Plugins\Sirsoft\Gdpr\Plugin;
 /**
  * strictly necessary 허용목록 해석기
  *
- * 허용목록은 운영자 설정(`necessary_storage_allowlist`)이고, 잠금 항목은 코드가 정한다.
- * 판정은 언제나 **운영자 목록 ∪ 잠금 집합**이며, 이 클래스가 그 합집합과 매칭 규칙의
+ * 허용목록은 운영자 설정(`necessary_storage_allowlist`)이고, 잠금 항목은 코드가 정하며, 확장이
+ * 계약 훅으로 제공하는 항목(`Plugin::PROVIDED_NECESSARY_STORAGE_HOOK`)이 요청마다 더해진다.
+ * 판정은 언제나 **운영자 목록 ∪ 잠금 집합 ∪ 확장 제공 집합**이며, 이 클래스가 그 합집합과 매칭 규칙의
  * 단일 출처다 — 서버(미들웨어)와 클라이언트(인터셉터 3종)가 같은 규칙을 쓰지 않으면
  * 한쪽에서만 살아 있는 항목이 생기고, 그 어긋남은 예외도 로그도 남기지 않는다.
  *
@@ -30,6 +31,11 @@ class NecessaryAllowlist
     public const SCOPES = ['localStorage', 'sessionStorage', 'cookie'];
 
     /**
+     * 확장 제공 집합의 요청 단위 메모 키 — 미들웨어는 쿠키마다 판정하므로 훅을 요청당 한 번만 부른다.
+     */
+    private const PROVIDED_REQUEST_ATTRIBUTE = 'sirsoft-gdpr.necessary_storage.provided';
+
+    /**
      * 잠금 항목 — 운영자가 지울 수 없는 최소 집합.
      *
      * 정의는 진입 파일(`Plugin::lockedNecessaryStorage()`)이 소유한다. `getConfigValues()` 가
@@ -44,10 +50,30 @@ class NecessaryAllowlist
     }
 
     /**
-     * 한 스코프의 판정 목록을 반환합니다 (운영자 설정 ∪ 잠금 집합).
+     * 확장이 계약 훅으로 제공한 항목을 반환합니다 (요청당 한 번 모음).
+     *
+     * @return array<string, array<int, string>> 스코프 => 항목 배열
+     */
+    public static function provided(): array
+    {
+        $request = app()->bound('request') ? app('request') : null;
+
+        if ($request !== null && $request->attributes->has(self::PROVIDED_REQUEST_ATTRIBUTE)) {
+            return $request->attributes->get(self::PROVIDED_REQUEST_ATTRIBUTE);
+        }
+
+        $provided = Plugin::providedNecessaryStorage();
+        $request?->attributes->set(self::PROVIDED_REQUEST_ATTRIBUTE, $provided);
+
+        return $provided;
+    }
+
+    /**
+     * 한 스코프의 판정 목록을 반환합니다 (운영자 설정 ∪ 잠금 집합 ∪ 확장 제공 집합).
      *
      * 설정 조회는 config 미러라 요청당 비용이 낮습니다. 조회가 비어도 잠금 집합은
-     * 코드에서 합치므로 남습니다.
+     * 코드에서 합치므로 남습니다. 확장 제공 집합은 설정 미러가 아니라 계약 훅에서 직접 모읍니다 —
+     * 미러는 캐시 시점에 굳으므로 확장 활성화·비활성화를 따라가지 못합니다.
      *
      * @param  string  $scope  스코프 (localStorage / sessionStorage / cookie)
      * @return array<int, string> 허용 패턴 배열
@@ -66,8 +92,9 @@ class NecessaryAllowlist
         ));
 
         $locked = self::locked()[$scope] ?? [];
+        $provided = self::provided()[$scope] ?? [];
 
-        return array_values(array_unique(array_merge($operator, $locked)));
+        return array_values(array_unique(array_merge($operator, $locked, $provided)));
     }
 
     /**

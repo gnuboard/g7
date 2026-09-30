@@ -1,7 +1,7 @@
 <!-- 장바구니에서 지우기 전 확인 창. 개별 삭제와 선택 삭제가 같은 창을 쓰고, 지울 대상은
      `_local.deleteModal.targetIds` 에 담겨 온다 — 창이 스스로 대상을 고르지 않는다. -->
 <partial description="장바구니 상품 삭제 확인 모달" editor_label="$t:user.modal_label.shop.cart_delete_confirm_modal">
-  <modal data-ref="cart_delete_confirm_modal" title="$t:shop.cart.delete_modal.title" size="sm">
+  <modal data-type="composite" data-ref="cart_delete_confirm_modal" title="$t:shop.cart.delete_modal.title" size="sm">
     <!-- 모달 내용 -->
     <div class="p-4">
       <div class="flex items-center gap-3 mb-4">

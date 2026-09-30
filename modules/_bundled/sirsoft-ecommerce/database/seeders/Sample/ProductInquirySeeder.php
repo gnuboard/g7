@@ -2,13 +2,10 @@
 
 namespace Modules\Sirsoft\Ecommerce\Database\Seeders\Sample;
 
+use App\Extension\HookManager;
 use App\Models\User;
 use App\Traits\HasSeederCounts;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\Hash;
-use Modules\Sirsoft\Board\Enums\PostStatus;
-use Modules\Sirsoft\Board\Models\Board;
-use Modules\Sirsoft\Board\Models\Post;
 use Modules\Sirsoft\Ecommerce\Models\Product;
 use Modules\Sirsoft\Ecommerce\Models\ProductInquiry;
 use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
@@ -17,7 +14,13 @@ use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
  * 상품 1:1 문의 더미 데이터 시더
  *
  * 이커머스 설정에 inquiry.board_slug가 설정된 경우에만 실행됩니다.
- * 게시판 모듈이 설치되어 있어야 합니다.
+ *
+ * 문의 글(질문·답변)은 게시판이 저장하므로 이 시더는 게시판 모델을 직접 만지지 않고,
+ * 이커머스가 정의한 훅에 게시판이 답하게 합니다(운영 경로와 같은 훅 전용 연동).
+ * - sirsoft-ecommerce.inquiry.get_settings       : 문의 게시판 존재 확인 (빈 배열 = 게시판 없음·응답 없음)
+ * - sirsoft-ecommerce.inquiry.purge_sample_posts : 재시드 전 기존 문의 글 정리
+ * - sirsoft-ecommerce.inquiry.seed_sample_post   : 문의 글(+답변) 생성 → post_id·inquirable_type 반환
+ * 이 시더가 직접 다루는 것은 자기 피벗(ProductInquiry)뿐입니다.
  */
 class ProductInquirySeeder extends Seeder
 {
@@ -121,17 +124,17 @@ class ProductInquirySeeder extends Seeder
             return;
         }
 
-        // 문의 게시판 조회
-        $board = Board::where('slug', $boardSlug)->first();
+        // 문의 게시판 존재 확인 — 게시판이 답하지 않으면(게시판 없음·게시판 모듈 미설치) 건너뛴다
+        $boardSettings = HookManager::applyFilters('sirsoft-ecommerce.inquiry.get_settings', [], $boardSlug);
 
-        if (! $board) {
+        if (empty($boardSettings)) {
             $this->command->warn("board_slug '{$boardSlug}'에 해당하는 게시판이 존재하지 않습니다. 시더를 건너뜁니다.");
 
             return;
         }
 
-        $this->deleteExistingInquiries($board);
-        $this->createInquiries($board);
+        $this->deleteExistingInquiries($boardSlug);
+        $this->createInquiries($boardSlug);
 
         $count = ProductInquiry::count();
         $this->command->info("상품 1:1 문의 더미 데이터 {$count}건이 성공적으로 생성되었습니다.");
@@ -140,7 +143,7 @@ class ProductInquirySeeder extends Seeder
     /**
      * 이커머스 설정에서 inquiry board_slug를 반환합니다.
      *
-     * @return string|null
+     * @return string|null 문의 게시판 슬러그 (미설정 시 null)
      */
     private function getInquiryBoardSlug(): ?string
     {
@@ -158,28 +161,26 @@ class ProductInquirySeeder extends Seeder
     /**
      * 기존 문의 데이터 삭제
      *
-     * @param  Board  $board
+     * 연결된 게시판 글은 피벗에 기록된 타입별 ID 묶음을 훅으로 넘겨 게시판이 지우게 하고,
+     * 이 시더는 자기 피벗만 지운다.
+     *
+     * @param  string  $boardSlug  문의 게시판 슬러그
      * @return void
      */
-    private function deleteExistingInquiries(Board $board): void
+    private function deleteExistingInquiries(string $boardSlug): void
     {
         // SoftDeletes 도입 여파: 소프트 삭제된 피벗 잔존물까지 포함해 전량 재시드한다
         $existingCount = ProductInquiry::withTrashed()->count();
 
         if ($existingCount > 0) {
-            // 연결된 게시판 Post도 함께 삭제
-            $inquirableIds = ProductInquiry::withTrashed()
-                ->where('inquirable_type', Post::class)
-                ->pluck('inquirable_id');
+            // 연결된 게시판 글(질문·답변)은 게시판이 정리한다 — 타입별 ID 묶음으로 넘긴다
+            $inquirables = ProductInquiry::withTrashed()
+                ->get(['inquirable_type', 'inquirable_id'])
+                ->groupBy('inquirable_type')
+                ->map(fn ($rows) => $rows->pluck('inquirable_id')->map(fn ($id) => (int) $id)->values()->all())
+                ->all();
 
-            if ($inquirableIds->isNotEmpty()) {
-                Post::whereIn('id', $inquirableIds)->forceDelete();
-            }
-
-            // 답변 게시글(parent_id 기준) 삭제
-            Post::where('board_id', $board->id)
-                ->whereNotNull('parent_id')
-                ->forceDelete();
+            HookManager::applyFilters('sirsoft-ecommerce.inquiry.purge_sample_posts', 0, $boardSlug, $inquirables);
 
             ProductInquiry::withTrashed()->forceDelete();
 
@@ -190,10 +191,10 @@ class ProductInquirySeeder extends Seeder
     /**
      * 문의 더미 데이터 생성
      *
-     * @param  Board  $board
+     * @param  string  $boardSlug  문의 게시판 슬러그
      * @return void
      */
-    private function createInquiries(Board $board): void
+    private function createInquiries(string $boardSlug): void
     {
         $products = Product::all();
 
@@ -223,48 +224,40 @@ class ProductInquirySeeder extends Seeder
 
                 $user = $isGuest ? null : $users->random();
 
-                // board_posts에 문의 게시글 생성
-                $post = Post::create([
-                    'board_id' => $board->id,
-                    'title' => $this->inquiryTitles[$titleIndex],
-                    'content' => $this->inquiryContents[$titleIndex],
-                    'content_mode' => 'text',
-                    'user_id' => $user?->id,
-                    'author_name' => $isGuest ? $this->guestNames[array_rand($this->guestNames)] : null,
-                    'password' => $isGuest ? Hash::make('1234') : null,
-                    'ip_address' => '127.0.0.1',
-                    'is_secret' => $isSecret,
-                    'status' => PostStatus::Published,
-                    'created_at' => now()->subDays(rand(1, 60))->subHours(rand(0, 23)),
-                ]);
-
+                $createdAt = now()->subDays(rand(1, 60))->subHours(rand(0, 23));
                 $hasReply = $admin && rand(1, 100) <= self::REPLY_RATE;
-                $answeredAt = null;
+                $answeredAt = $hasReply ? $createdAt->copy()->addDays(rand(0, 3)) : null;
 
-                // 답변 게시글 생성
-                if ($hasReply) {
-                    $answeredAt = $post->created_at->addDays(rand(0, 3));
-
-                    Post::create([
-                        'board_id' => $board->id,
-                        'title' => 'Re: '.$post->title,
+                // 문의 글(+답변 글)은 게시판이 만든다 — 돌려받은 참조로 피벗을 잇는다
+                $postResult = HookManager::applyFilters(
+                    'sirsoft-ecommerce.inquiry.seed_sample_post',
+                    null,
+                    $boardSlug,
+                    [
+                        'title' => $this->inquiryTitles[$titleIndex],
+                        'content' => $this->inquiryContents[$titleIndex],
+                        'user_id' => $user?->id,
+                        'author_name' => $isGuest ? $this->guestNames[array_rand($this->guestNames)] : null,
+                        'password' => $isGuest ? '1234' : null,
+                        'is_secret' => $isSecret,
+                        'created_at' => $createdAt,
+                    ],
+                    $hasReply ? [
                         'content' => $this->replyContents[$titleIndex],
-                        'content_mode' => 'text',
                         'user_id' => $admin->id,
-                        'ip_address' => '127.0.0.1',
-                        'is_secret' => false,
-                        'status' => PostStatus::Published,
-                        'parent_id' => $post->id,
-                        'depth' => 1,
                         'created_at' => $answeredAt,
-                    ]);
+                    ] : null
+                );
+
+                if (! is_array($postResult) || empty($postResult['post_id']) || empty($postResult['inquirable_type'])) {
+                    continue;
                 }
 
                 // ecommerce_product_inquiries 피벗 생성
                 ProductInquiry::create([
                     'product_id' => $product->id,
-                    'inquirable_type' => Post::class,
-                    'inquirable_id' => $post->id,
+                    'inquirable_type' => $postResult['inquirable_type'],
+                    'inquirable_id' => (int) $postResult['post_id'],
                     'user_id' => $user?->id,
                     'is_answered' => $hasReply,
                     'answered_at' => $answeredAt,

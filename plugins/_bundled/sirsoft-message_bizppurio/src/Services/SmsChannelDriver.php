@@ -47,8 +47,8 @@ class SmsChannelDriver
     /** 플러그인 식별자 (manifest 와 일치) */
     private const PLUGIN_IDENTIFIER = 'sirsoft-message_bizppurio';
 
-    /** 알림 data 에서 비회원 전화번호를 싣는 표준 키 (extract_data 리스너와 계약) */
-    public const RECIPIENT_PHONE_KEY = '_recipient_phone';
+    /** 알림 data 의 수신 전화번호 키 — 코어 표준 키의 별칭(도메인이 extract_data 로 싣고 이 드라이버는 읽기만 한다) */
+    public const RECIPIENT_PHONE_KEY = GenericNotification::RECIPIENT_PHONE_KEY;
 
     /**
      * @param  NotificationDefinitionService  $definitionService  알림 유형의 사람이 읽는 이름 조회(스킵 예외 메시지·LMS 제목용)

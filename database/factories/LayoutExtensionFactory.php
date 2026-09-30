@@ -98,7 +98,7 @@ class LayoutExtensionFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'source_type' => LayoutSourceType::Module,
-            'source_identifier' => $identifier ?? 'sirsoft-ecommerce',
+            'source_identifier' => $identifier ?? 'sample-module',
         ]);
     }
 
@@ -109,7 +109,7 @@ class LayoutExtensionFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'source_type' => LayoutSourceType::Plugin,
-            'source_identifier' => $identifier ?? 'sirsoft-analytics',
+            'source_identifier' => $identifier ?? 'sample-plugin',
         ]);
     }
 
@@ -120,7 +120,7 @@ class LayoutExtensionFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'source_type' => LayoutSourceType::Template,
-            'source_identifier' => $identifier ?? 'sirsoft-admin_basic',
+            'source_identifier' => $identifier ?? 'sample-template',
         ]);
     }
 

@@ -37,7 +37,7 @@
         </div>
         <div>
           <label class="text-secondary block text-xs font-medium mb-1">$t:sirsoft-ecommerce.admin.settings.claim.refund_reasons.form.name</label>
-          <multilingual-input value="{{_local.refundReasonForm?.name ?? {}}}" layout="inline" placeholder="$t:sirsoft-ecommerce.admin.settings.claim.refund_reasons.form.name_ko_placeholder" error="{{_local.refundReasonFormErrors?.name_ko ? '$t:sirsoft-ecommerce.admin.settings.claim.refund_reasons.validation.name_required' : ''}}" disabled="{{_computed.isReadOnly}}">
+          <multilingual-input data-type="composite" value="{{_local.refundReasonForm?.name ?? {}}}" layout="inline" placeholder="$t:sirsoft-ecommerce.admin.settings.claim.refund_reasons.form.name_ko_placeholder" error="{{_local.refundReasonFormErrors?.name_ko ? '$t:sirsoft-ecommerce.admin.settings.claim.refund_reasons.validation.name_required' : ''}}" disabled="{{_computed.isReadOnly}}">
             <on type="change">
               <!-- 사유 문구(언어별). -->
               <set-state target="local" refundReasonForm.name="{{$event.target.value}}"/>
@@ -123,7 +123,7 @@
               <span data-if="{{_local.errors?.['claim.refund_reasons.' + reason._idx + '.code']}}" class="form-error">{{_local.errors?.['claim.refund_reasons.' + reason._idx + '.code']?.[0] ?? ''}}</span>
             </td>
             <td class="px-4 py-2">
-              <multilingual-input value="{{reason.name ?? {}}}" layout="compact" placeholder="$t:sirsoft-ecommerce.admin.settings.claim.refund_reasons.form.name_ko_placeholder" error="{{_local.errors?.['claim.refund_reasons.' + reason._idx + '.name.' + ($locale ?? 'ko')]?.[0] ?? _local.errors?.['claim.refund_reasons.' + reason._idx + '.name']?.[0] ?? ''}}" disabled="{{_computed.isReadOnly}}">
+              <multilingual-input data-type="composite" value="{{reason.name ?? {}}}" layout="compact" placeholder="$t:sirsoft-ecommerce.admin.settings.claim.refund_reasons.form.name_ko_placeholder" error="{{_local.errors?.['claim.refund_reasons.' + reason._idx + '.name.' + ($locale ?? 'ko')]?.[0] ?? _local.errors?.['claim.refund_reasons.' + reason._idx + '.name']?.[0] ?? ''}}" disabled="{{_computed.isReadOnly}}">
                 <on type="change">
                   <!-- 기존 줄 — 사유 문구(언어별). -->
                   <set-state target="local" form.claim.refund_reasons="{{(_local.form?.claim?.refund_reasons ?? []).map((r, i) => i === reason._idx ? {...r, name: $event.target.value} : r)}}" :hasChanges="true"/>
@@ -152,7 +152,7 @@
               </input>
             </td>
             <td class="px-4 py-2 text-center">
-              <toggle checked="{{reason.is_active ?? false}}" size="sm" disabled="{{_computed.isReadOnly}}">
+              <toggle data-type="composite" checked="{{reason.is_active ?? false}}" size="sm" disabled="{{_computed.isReadOnly}}">
                 <on type="change">
                   <!-- 기존 줄 — 사용 여부. -->
                   <set-state target="local" form.claim.refund_reasons="{{(_local.form?.claim?.refund_reasons ?? []).map((r, i) => i === reason._idx ? {...r, is_active: !(r.is_active)} : r)}}" :hasChanges="true"/>

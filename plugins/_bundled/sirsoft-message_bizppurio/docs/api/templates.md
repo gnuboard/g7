@@ -427,6 +427,7 @@ Authorization: Bearer {YOUR_TOKEN}
 | sms_only | body | boolean | 아니오 | — | SMS 단독 발송 여부 |
 | is_active | body | boolean | 아니오 | — | 발송 활성 여부 |
 | content | body | object | 아니오 | nullable | 카카오 등록 페이로드 (아래 매트릭스). SMS 단독 알림은 content 없이 생성 가능 — 검수 신청 시점에 존재를 재검한다 |
+| draft | body | boolean | 아니오 | — | `true` 면 임시 저장 — 아래 매트릭스의 **필수 조건(필수·조건부 필수·아이템 최소 개수·링크 종류별 필수 칸)만 걷어 내고** 형식·길이 제약은 그대로 건다. 걷어 낸 필수값은 검수 신청(`POST /{id}/request`)이 저장된 content 에 전체 매트릭스를 걸어 422 로 알린다(본문에 draft 를 실어도 완화되지 않는다) |
 
 **content 검증 매트릭스** (`content` 를 보냈을 때만 적용. 서버가 선택 유형과 무관한 필드·빈 값을 검증 전에 제거(prune)하므로 화면은 폼 상태 전체를 그대로 보내도 된다)
 

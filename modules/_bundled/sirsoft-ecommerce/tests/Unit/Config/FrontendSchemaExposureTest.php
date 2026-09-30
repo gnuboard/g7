@@ -3,6 +3,7 @@
 namespace Modules\Sirsoft\Ecommerce\Tests\Unit\Config;
 
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
+use PHPUnit\Framework\Attributes\Group;
 
 /**
  * 프론트엔드 노출 스키마 계약 테스트 (이슈 #524 §4.3)
@@ -17,16 +18,17 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  * @scenario surface=mypage_tabs,setting=mileage_enabled
  *
  * @effects ecommerce_exposes_mileage_enabled_to_frontend
- *
- * @group ecommerce
- * @group settings
  */
+#[Group('ecommerce')]
+#[Group('settings')]
 class FrontendSchemaExposureTest extends ModuleTestCase
 {
     /**
      * frontend_schema 가 mileage.enabled 를 노출한다.
      *
      * @effects ecommerce_exposes_mileage_enabled_to_frontend
+     *
+     * @return void 반환값 없음
      */
     public function test_frontend_schema_exposes_mileage_enabled(): void
     {
@@ -44,6 +46,8 @@ class FrontendSchemaExposureTest extends ModuleTestCase
      * 회귀: 문의(inquiry) 노출은 그대로 유지된다 (같은 탭 바가 이 값도 읽는다).
      *
      * @effects ecommerce_keeps_inquiry_board_slug_exposure
+     *
+     * @return void 반환값 없음
      */
     public function test_frontend_schema_keeps_inquiry_exposure(): void
     {
@@ -57,6 +61,8 @@ class FrontendSchemaExposureTest extends ModuleTestCase
      * 마일리지 기본값은 꺼짐이다 — 노출해도 기본이 켜짐이면 의미가 뒤집힌다.
      *
      * @effects ecommerce_mileage_default_disabled
+     *
+     * @return void 반환값 없음
      */
     public function test_mileage_defaults_to_disabled(): void
     {
@@ -83,7 +89,7 @@ class FrontendSchemaExposureTest extends ModuleTestCase
     /**
      * frontend_schema 블록을 읽습니다.
      *
-     * @return array<string, mixed> frontend_schema
+     * @return array<string, 반환값
      */
     private function loadFrontendSchema(): array
     {
@@ -93,7 +99,7 @@ class FrontendSchemaExposureTest extends ModuleTestCase
     /**
      * defaults 블록을 읽습니다.
      *
-     * @return array<string, mixed> defaults
+     * @return array<string, 반환값
      */
     private function loadDefaults(): array
     {

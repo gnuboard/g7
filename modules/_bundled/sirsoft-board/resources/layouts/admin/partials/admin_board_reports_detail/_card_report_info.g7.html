@@ -36,7 +36,7 @@
         <div data-ref="field_author">
           <span class="text-tertiary block font-medium mb-1">{{report_detail?.data?.target_type === 'post' ? '$t:sirsoft-board.admin.reports.detail.content_author_label' : '$t:sirsoft-board.admin.reports.detail.comment_author_label'}}</span>
           <!-- 회원 작성자: ActionMenu로 사용자 정보 드롭다운 -->
-          <action-menu data-if="{{!(report_detail?.data?.target_type === 'post' ? report_detail?.data?.post?.author?.is_guest : report_detail?.data?.comment?.author?.is_guest)}}" triggerLabel="{{report_detail?.data?.target_type === 'post' ? report_detail?.data?.post?.author?.name : report_detail?.data?.comment?.author?.name}}" triggerIconName="" position="right">
+          <action-menu data-type="composite" data-if="{{!(report_detail?.data?.target_type === 'post' ? report_detail?.data?.post?.author?.is_guest : report_detail?.data?.comment?.author?.is_guest)}}" triggerLabel="{{report_detail?.data?.target_type === 'post' ? report_detail?.data?.post?.author?.name : report_detail?.data?.comment?.author?.name}}" triggerIconName="" position="right">
             <prop name="items">
               <item id="view_author" label="$t:sirsoft-board.admin.reports.detail.user_info" iconName="user"/>
             </prop>
@@ -51,7 +51,7 @@
           <!-- 비회원 작성자: 이름 + 배지 (드롭다운 없음) -->
           <div data-if="{{report_detail?.data?.target_type === 'post' ? report_detail?.data?.post?.author?.is_guest : report_detail?.data?.comment?.author?.is_guest}}" class="flex-center gap-2">
             <span class="text-heading">{{report_detail?.data?.target_type === 'post' ? report_detail?.data?.post?.author?.name : report_detail?.data?.comment?.author?.name}}</span>
-            <badge color="yellow" size="sm">$t:sirsoft-board.admin.reports.guest_badge</badge>
+            <badge data-type="composite" color="yellow" size="sm">$t:sirsoft-board.admin.reports.guest_badge</badge>
           </div>
           <span data-if="{{(report_detail?.data?.target_type === 'post' &amp;&amp; report_detail?.data?.post?.author?.email) || (report_detail?.data?.target_type === 'comment' &amp;&amp; report_detail?.data?.comment?.author?.email)}}" class="form-hint">{{report_detail?.data?.target_type === 'post' ? report_detail?.data?.post?.author?.email : report_detail?.data?.comment?.author?.email}}</span>
         </div>
@@ -104,7 +104,7 @@
         <div class="bg-gray-50 dark:bg-gray-900 rounded-lg p-4">
           <extension-point name="html_content" data-ref="report_target_html" content="{{report_detail?.data?.target_type === 'post' ? report_detail?.data?.post?.content : report_detail?.data?.comment?.content}}" isHtml="{{report_detail?.data?.target_type === 'post' &amp;&amp; (report_detail?.data?.post?.content_mode ?? 'text') === 'html'}}" class="text-sm text-gray-900 dark:text-gray-100">
             <default>
-              <html-content content="{{report_detail?.data?.target_type === 'post' ? report_detail?.data?.post?.content : report_detail?.data?.comment?.content}}" isHtml="{{report_detail?.data?.target_type === 'post' &amp;&amp; (report_detail?.data?.post?.content_mode ?? 'text') === 'html'}}" class="text-sm text-gray-900 dark:text-gray-100"/>
+              <html-content data-type="composite" content="{{report_detail?.data?.target_type === 'post' ? report_detail?.data?.post?.content : report_detail?.data?.comment?.content}}" isHtml="{{report_detail?.data?.target_type === 'post' &amp;&amp; (report_detail?.data?.post?.content_mode ?? 'text') === 'html'}}" class="text-sm text-gray-900 dark:text-gray-100"/>
             </default>
           </extension-point>
         </div>
@@ -121,7 +121,7 @@
             <div data-ref="card_inner_grid_{{reporterIdx}}" class="grid-2col lg:grid-cols-5">
               <div data-ref="reporter_field_{{reporterIdx}}">
                 <span class="text-tertiary block font-medium mb-1">$t:sirsoft-board.admin.reports.detail.reporter_label</span>
-                <action-menu data-if="{{reporter.reporter}}" triggerLabel="{{reporter.reporter?.name ?? '-'}}" triggerIconName="" position="right">
+                <action-menu data-type="composite" data-if="{{reporter.reporter}}" triggerLabel="{{reporter.reporter?.name ?? '-'}}" triggerIconName="" position="right">
                   <prop name="items">
                     <item id="view_reporter" label="$t:sirsoft-board.admin.reports.detail.user_info" iconName="user"/>
                   </prop>
@@ -152,7 +152,7 @@
             </div>
           </div>
         </div>
-        <pagination data-ref="reporters_pagination" data-if="{{((reporters_list?.data?.pagination?.last_page ?? 0) > 1) || (reporters_list?.data?.pagination?.has_more_pages === true) || ((reporters_list?.data?.pagination?.current_page ?? 1) > 1)}}" currentPage="{{reporters_list?.data?.pagination?.current_page ?? 1}}" totalPages="{{reporters_list?.data?.pagination?.last_page ?? null}}" hasMorePages="{{reporters_list?.data?.pagination?.has_more_pages ?? false}}" class="mt-4 justify-end">
+        <pagination data-type="composite" data-ref="reporters_pagination" data-if="{{((reporters_list?.data?.pagination?.last_page ?? 0) > 1) || (reporters_list?.data?.pagination?.has_more_pages === true) || ((reporters_list?.data?.pagination?.current_page ?? 1) > 1)}}" currentPage="{{reporters_list?.data?.pagination?.current_page ?? 1}}" totalPages="{{reporters_list?.data?.pagination?.last_page ?? null}}" hasMorePages="{{reporters_list?.data?.pagination?.has_more_pages ?? false}}" class="mt-4 justify-end">
           <on event="onPageChange">
             <!-- 신고자 목록만 페이지를 넘긴다 — 쪽수를 지역 상태에 적으면 데이터소스가 그것을 읽으므로 URL 은 건드리지 않는다(신고 상세 자체는 제자리에 머문다). 읽는 동안 목록을 흐리게 두려고 앞뒤로 표시를 켜고 끈다 -->
             <sequence>

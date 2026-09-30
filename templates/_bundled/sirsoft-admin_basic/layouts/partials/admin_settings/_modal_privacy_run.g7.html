@@ -4,14 +4,14 @@
   「대기기간 생략」은 휴면 전환·탈퇴 단계에만 보이고, 바꾸면 건수를 다시 센다 — 생략하면 안내를 받지 못한
   회원까지 대상이 되므로 숫자가 달라지는 것을 운영자가 보고 결정해야 한다.
   실행은 큐에 접수만 하고 곧바로 닫는다. 처리 결과는 카드의 상태 줄이 주기 조회로 보여 준다. -->
-<partial description="환경설정 개인정보 탭 - 직권 실행 확인 모달">
-  <modal data-ref="privacy_run_modal" title="$t:admin.settings.privacy.manual_run.modal_title|target={{_global.privacyRun?.label ?? ''}}" size="md">
+<partial description="환경설정 개인정보 탭 - 직권 실행 확인 모달" editor_label="$t:admin.settings.privacy.manual_run.editor_label">
+  <modal data-type="composite" data-ref="privacy_run_modal" title="$t:admin.settings.privacy.manual_run.modal_title|target={{_global.privacyRun?.label ?? ''}}" size="md">
     <div data-ref="privacy_run_content" class="space-y-3">
       <p class="text-body">$t:admin.settings.privacy.manual_run.confirm_desc</p>
       <div data-ref="privacy_run_summary" class="p-3 bg-gray-100 dark:bg-gray-700 rounded-lg space-y-2">
         <div class="flex-center gap-2">
           <span class="text-label-subtle">$t:admin.settings.privacy.manual_run.count_label</span>
-          <loading-spinner data-if="{{_global.privacyRun?.loading}}" size="sm" text="$t:admin.settings.privacy.manual_run.loading" color="text-blue-600 dark:text-blue-400"/>
+          <loading-spinner data-type="composite" data-if="{{_global.privacyRun?.loading}}" size="sm" text="$t:admin.settings.privacy.manual_run.loading" color="text-blue-600 dark:text-blue-400"/>
           <span data-ref="privacy_run_count" data-if="{{!_global.privacyRun?.loading &amp;&amp; _global.privacyRun?.preview}}" class="text-primary font-medium tabular-nums">$t:admin.settings.privacy.manual_run.count_value|count={{_global.privacyRun?.preview?.count ?? 0}}</span>
         </div>
         <div data-ref="privacy_run_mode" data-if="{{['anonymize', 'delete', 'erase_ip'].includes(_global.privacyRun?.preview?.mode ?? '')}}" class="flex-center gap-2">

@@ -65,9 +65,9 @@ final class NodeMarkupDecompiler
     private readonly NodeCompiler $compiler;
 
     /**
-     * @param  ComponentRegistry  $registry  대상 템플릿(+확장) 레지스트리 — 노드 name → 태그 해석
+     * @param  ComponentRegistry|null  $registry  검사용 템플릿 컴포넌트 레지스트리 (산출에는 쓰지 않는다)
      */
-    public function __construct(private readonly ComponentRegistry $registry)
+    public function __construct(private readonly ?ComponentRegistry $registry = null)
     {
         $this->actions = new ActionMarkupDecompiler;
         $this->state = new StateTreeMarkupDecompiler;
@@ -141,10 +141,12 @@ final class NodeMarkupDecompiler
      */
     private function component(array $node): MarkupElement
     {
-        // 레지스트리에 없는 컴포넌트(결함 `Foreach`·빈 name 등)는 태그를 만들 수 없다 — 노드 전체 `<json>`.
+        // 표기 규칙으로 태그를 만들 수 없는 이름(빈 name·연속 대문자 등)이나 종류가 셋 중 하나가 아닌 노드는
+        // 태그로 되돌릴 수 없다 — 노드 전체 `<json>`. 템플릿 컴포넌트 목록은 보지 않는다.
         $name = (string) ($node['name'] ?? '');
 
-        if ($name === '' || $this->registry->findByName($name) === null) {
+        if (! ComponentRegistry::isTagRoundTrippable($name)
+            || ! in_array($node['type'] ?? null, NodeCompiler::COMPONENT_TYPES, true)) {
             return $this->jsonNode($node);
         }
 
@@ -203,6 +205,13 @@ final class NodeMarkupDecompiler
         $isVoid = in_array($tag, self::VOID_TAGS, true);
         $attributes = [];
         $children = [];
+
+        // 종류는 basic 이 아니면 적는다 — 생략하면 basic 이다(NodeCompiler::componentType).
+        $type = (string) ($node['type'] ?? NodeCompiler::DEFAULT_COMPONENT_TYPE);
+
+        if ($type !== NodeCompiler::DEFAULT_COMPONENT_TYPE) {
+            $attributes[] = $this->attr(NodeCompiler::TYPE_ATTRIBUTE, $type);
+        }
 
         $this->applyDirectives($filtered, $attributes, $children);
         $this->applyStructural($filtered, $children);
@@ -333,16 +342,14 @@ final class NodeMarkupDecompiler
     }
 
     /**
-     * 노드 name 을 마크업 태그로 해석합니다 (레지스트리 우선, 미등록이면 명명 규칙 폴백).
+     * 노드 name 을 마크업 태그로 바꿉니다 (표기 규칙 — 템플릿과 무관).
      *
      * @param  string  $name  노드 name
      * @return string 태그명
      */
     private function tagFor(string $name): string
     {
-        $definition = $this->registry->findByName($name);
-
-        return $definition !== null ? $definition->tag : ComponentRegistry::toTag($name);
+        return ComponentRegistry::toTag($name);
     }
 
     /**
@@ -616,7 +623,7 @@ final class NodeMarkupDecompiler
      * props 를 속성/`<prop>`/임베딩 태그로 찍습니다.
      *
      * @param  array<string, mixed>  $props  props 객체
-     * @param  string  $componentName  소유 컴포넌트 name (Modal footer 판별용)
+     * @param  string  $componentName  소유 컴포넌트 name (임베딩 종전 부모 판별용)
      * @param  bool  $isVoid  소유 노드가 void 태그인지 (객체 props 를 `<prop>` 대신 타입 속성으로)
      * @param  array<int, MarkupAttribute>  $attributes  속성 (참조)
      * @param  array<int, MarkupElement>  $children  자식 (참조)
@@ -710,7 +717,7 @@ final class NodeMarkupDecompiler
      * @param  string  $key  props 키
      * @param  mixed  $value  값
      * @param  array<string, mixed>  $props  전체 props (options 리프트 판정용)
-     * @param  string  $componentName  소유 컴포넌트 name
+     * @param  string  $componentName  소유 컴포넌트 name (종전 부모 판별용 — responsive 오버라이드는 빈 문자열)
      * @param  array<int, MarkupElement>  $children  자식 (참조)
      * @return bool 임베딩으로 처리했으면 true
      */
@@ -735,20 +742,91 @@ final class NodeMarkupDecompiler
             return true;
         }
 
-        // DataGrid 전용 태그는 **부모가 DataGrid 일 때만** 임베딩으로 찍는다 — 컴파일러가 같은 게이트를
-        // 걸기 때문이다(EmbeddingCompiler::requireParent(['DataGrid'])). 게이트를 안 걸면 `columns`
-        // props 를 가진 다른 컴포넌트(ColumnSettings 등)에서 `<column>` 을 뱉고, 되컴파일이
-        // embedding_tag_wrong_parent 로 죽어 노드 props 전체가 통째로 `<json>` 탈출한다.
-        $isDataGrid = $componentName === 'DataGrid';
-
-        return match ($key) {
-            'columns' => $isDataGrid && $this->appendColumns($value, $children),
-            'cardColumns' => $this->appendCards($value, $children),
-            'footerCells' => $isDataGrid && $this->appendFooterCells($value, $children),
-            'footer' => $componentName === 'Modal' ? $this->appendWrap('footer', $value, $children) : false,
-            'options' => $componentName === 'Select' && $this->appendOptions($value, $props, $children),
+        // 종전 부모(DataGrid·그리드·Modal·Select)의 방출은 **한 글자도 바꾸지 않는다** — 기존 소스·산출
+        // 대조가 이 형태를 전제로 한다. 컴파일러는 이제 부모 이름을 보지 않으므로(2026-09-28 결정)
+        // 그 밖의 부모에도 같은 태그를 찍을 수 있지만, 거기서는 되컴파일로 이 키 하나를 확인한 뒤에만
+        // 찍는다(verifiedHoist) — 어긋나면 노드 전체 검증이 props 통째를 `<json>` 으로 빼기 때문이다.
+        $legacy = match ($key) {
+            'columns' => $componentName === 'DataGrid' ? $this->appendColumns($value, $children) : null,
+            'cardColumns' => in_array($componentName, EmbeddingCompiler::LEGACY_TAGS['card']['parents'], true) || $componentName === ''
+                ? $this->appendCards($value, $children)
+                : null,
+            'footerCells' => $componentName === 'DataGrid' ? $this->appendFooterCells($value, $children) : null,
+            'footer' => in_array($componentName, EmbeddingCompiler::LEGACY_TAGS['footer']['parents'], true)
+                ? $this->appendWrap('footer', $value, $children)
+                : null,
+            'options' => $componentName === 'Select' ? $this->appendOptions($value, $props, $children) : null,
             default => false,
         };
+
+        // responsive 오버라이드(`$componentName === ''`)는 임베딩 태그를 읽지 않는다 — 종전대로 `<prop>`.
+        if ($legacy !== null || $componentName === '') {
+            return (bool) $legacy;
+        }
+
+        $elements = match ($key) {
+            'columns' => $this->columnElements($value),
+            'cardColumns' => $this->hoistElements($value, fn (array &$out): bool => $this->appendCards($value, $out, 'prop-card')),
+            'footerCells' => $this->hoistElements($value, fn (array &$out): bool => $this->appendFooterCells($value, $out)),
+            'footer' => $this->hoistElements($value, fn (array &$out): bool => $this->appendWrap('prop-footer', $value, $out)),
+            'options' => $this->hoistElements($value, fn (array &$out): bool => $this->appendOptions($value, $props, $out)),
+            default => null,
+        };
+
+        if ($elements === null || ! $this->verifiedHoist((string) $key, $value, $elements)) {
+            return false;
+        }
+
+        array_push($children, ...$elements);
+
+        return true;
+    }
+
+    /**
+     * 종전 부모 밖에서 쓸 hoist 요소를 짓습니다 (값이 리스트가 아니면 짓지 않는다).
+     *
+     * @param  array<array-key, mixed>  $value  props 값
+     * @param  callable(array<int, MarkupElement>&): bool  $build  요소를 밀어 넣는 빌더
+     * @return array<int, MarkupElement>|null 요소 목록, 지을 수 없으면 null
+     */
+    private function hoistElements(array $value, callable $build): ?array
+    {
+        if ($value === [] || ! array_is_list($value)) {
+            return null;
+        }
+
+        $out = [];
+
+        try {
+            return $build($out) ? $out : null;
+        } catch (\Throwable) {
+            // 원소 shape 가 빌더 전제(객체 원소·노드 배열)와 다르면 태그로 되돌리지 않는다 — `<prop>` 폴백.
+            return null;
+        }
+    }
+
+    /**
+     * hoist 요소가 되컴파일에서 원본 props 값 하나를 그대로 재현하는지 확인합니다.
+     *
+     * 노드 단위 검증(component)은 어긋나는 키를 통째로 `<json>` 탈출시키므로, 표현 가능 여부가 불확실한
+     * 새 자리(종전 부모 밖)에서는 이 키만 먼저 대조해 어긋나면 종전 `<prop>` 표기로 물러선다.
+     *
+     * @param  string  $key  props 키
+     * @param  mixed  $value  원본 값
+     * @param  array<int, MarkupElement>  $elements  방출할 hoist 요소
+     * @return bool 재현되면 true
+     */
+    private function verifiedHoist(string $key, mixed $value, array $elements): bool
+    {
+        $source = ['type' => NodeCompiler::DEFAULT_COMPONENT_TYPE, 'name' => 'Div', 'props' => [$key => $value]];
+
+        try {
+            $recompiled = $this->compiler->compile($this->el('div', [], $elements));
+        } catch (\Throwable) {
+            return false;
+        }
+
+        return $this->encodeCanonical($source) === $this->encodeCanonical($recompiled);
     }
 
     /**
@@ -826,18 +904,19 @@ final class NodeMarkupDecompiler
     }
 
     /**
-     * `cardColumns` 를 `<card>` 자식으로 찍습니다.
+     * `cardColumns` 를 카드 태그 자식으로 찍습니다 (종전 부모는 `<card>`, 그 밖은 `<prop-card>`).
      *
      * @param  array<int, array<string, mixed>>  $cards  카드 목록
      * @param  array<int, MarkupElement>  $children  자식 (참조)
+     * @param  string  $tag  방출 태그
      * @return bool 항상 true
      */
-    private function appendCards(array $cards, array &$children): bool
+    private function appendCards(array $cards, array &$children, string $tag = 'card'): bool
     {
         foreach ($cards as $card) {
             $cell = $card['cellChildren'] ?? [];
             $attributes = [$this->attr('id', (string) ($card['id'] ?? ''))];
-            $children[] = $this->el('card', $attributes, $this->nodes($cell));
+            $children[] = $this->el($tag, $attributes, $this->nodes($cell));
         }
 
         return true;

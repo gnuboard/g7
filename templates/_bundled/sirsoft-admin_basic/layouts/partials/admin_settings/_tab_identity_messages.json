@@ -178,6 +178,13 @@
                                         {
                                             "handler": "openModal",
                                             "target": "modal_identity_message_definition_add"
+                                        },
+                                        {
+                                            "comment": "이미 메시지가 정의된 정책 목록을 새로 받는다 — 다른 화면에서 정의를 지웠거나 만든\n                   직후라도 창의 선택지가 서버의 중복 판정과 맞게(받는 동안은 저장이 잠겨 있다).",
+                                            "handler": "refetchDataSource",
+                                            "params": {
+                                                "dataSourceId": "identityMessagePolicyScopes"
+                                            }
                                         }
                                     ]
                                 }

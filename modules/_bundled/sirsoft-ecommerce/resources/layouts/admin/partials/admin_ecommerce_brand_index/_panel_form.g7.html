@@ -86,7 +86,7 @@
               <span>$t:sirsoft-ecommerce.admin.brand.form.name</span>
               <span class="text-required">*</span>
             </label>
-            <multilingual-input data-ref="form_name_input" name="name" placeholder="$t:sirsoft-ecommerce.admin.brand.form.name_placeholder" :maxLength="100" :required="true" layout="tabs" disabled="{{_global.panelMode === 'edit' &amp;&amp; brands?.data?.abilities?.can_update !== true}}"/>
+            <multilingual-input data-type="composite" data-ref="form_name_input" name="name" placeholder="$t:sirsoft-ecommerce.admin.brand.form.name_placeholder" :maxLength="100" :required="true" layout="tabs" disabled="{{_global.panelMode === 'edit' &amp;&amp; brands?.data?.abilities?.can_update !== true}}"/>
             <span data-if="{{_local.errors?.name}}" class="form-error-xs">{{_local.errors?.name?.[0] ?? ''}}</span>
           </div>
         </div>
@@ -104,7 +104,7 @@
       <div class="border-t border-gray-200 dark:border-gray-700"/>
       <div data-ref="form_status_section" class="space-y-4 pt-6">
         <h4 data-ref="form_status_title" class="text-table-header">$t:sirsoft-ecommerce.admin.brand.info.status</h4>
-        <toggle data-ref="form_toggle" label="$t:sirsoft-ecommerce.admin.brand.form.is_active" name="is_active" disabled="{{_global.panelMode === 'edit' &amp;&amp; brands?.data?.abilities?.can_update !== true}}"/>
+        <toggle data-type="composite" data-ref="form_toggle" label="$t:sirsoft-ecommerce.admin.brand.form.is_active" name="is_active" disabled="{{_global.panelMode === 'edit' &amp;&amp; brands?.data?.abilities?.can_update !== true}}"/>
       </div>
       <div data-ref="form_timestamps_section" data-if="{{_global.panelMode === 'edit'}}" class="pt-4 border-t border-gray-200 dark:border-gray-700">
         <div class="grid-2col-responsive">

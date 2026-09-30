@@ -2,15 +2,28 @@
 
 namespace Tests\Unit\Support\LayoutMarkup;
 
+use App\Enums\LayoutMarkupLintCode;
+use App\Support\LayoutMarkup\CompileContext;
 use App\Support\LayoutMarkup\ComponentRegistry;
+use App\Support\LayoutMarkup\LayoutMarkupCompiler;
 use App\Support\LayoutMarkup\LayoutMarkupDecompiler;
+use App\Support\LayoutMarkup\MarkupElement;
 use App\Support\LayoutMarkup\MarkupTokenizer;
 use App\Support\LayoutMarkup\MarkupTreeBuilder;
 use App\Support\LayoutMarkup\NodeCompiler;
 use PHPUnit\Framework\Attributes\DataProvider;
 
 /**
- * 노드 `type` 은 레지스트리에서 파생한다 — 소스 JSON 의 `type` 은 정본이 아니다 (D47).
+ * 노드 `type` 은 작성자가 `data-type` 으로 정한다 — 템플릿과 무관하다 (D47 → 2026-09-28 결정으로 개정).
+ *
+ * **개정 경위**: 종전(D47)에는 컴파일러가 대상 템플릿 레지스트리에서 type 을 파생했다. 그 결과 확장 레이아웃의
+ * 설치·업데이트·조각 주입이 번들 기본 템플릿 두 개에 고정됐다(합의 없는 중대 설계 결함). 결정으로 HTML
+ * 컴파일은 JSON 과 같이 템플릿 없이 동작한다 — 이름은 표기 규칙, 종류는 `data-type`(생략 시 basic). 번들 전량은
+ * 레지스트리 파생값을 `data-type` 으로 기계 이관해 산출 JSON 이 한 글자도 바뀌지 않았다.
+ *
+ * 아래 D47 서술은 **왜 종류가 중요한가**의 근거로 남긴다 — 종류를 잘못 적으면 렌더러가 다른 갈래를 탄다.
+ * 그래서 대상 템플릿이 분명한 자리(편집기·템플릿 자신의 레이아웃)에서는 선언과 다르면 경고한다
+ * (`LayoutMarkupLintCode::ComponentTypeMismatch`).
  *
  * `type`(basic/composite/layout)은 정규화 인벤토리에 "레지스트리 파생" 으로 등재돼 있었지만
  * "무해" 라는 서술은 틀렸다. [DynamicRenderer](resources/js/core/template-engine/DynamicRenderer.tsx)
@@ -37,6 +50,11 @@ class NodeTypeDerivationTest extends LayoutMarkupTestCase
 
     private ComponentRegistry $registry;
 
+    /**
+     * 테스트 준비 — 필요한 서비스와 임시 자원을 만듭니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -55,6 +73,10 @@ class NodeTypeDerivationTest extends LayoutMarkupTestCase
      * @scenario compile_unit=registry,source_health=valid
      *
      * @effects registry_type_matches_component_directory
+     *
+     * @param  string  $name  이름
+     * @param  string  $expected  기대값
+     * @return void 반환값 없음
      */
     #[DataProvider('driftingComponents')]
     public function test_registry_type_matches_component_file_location(string $name, string $expected): void
@@ -90,7 +112,7 @@ class NodeTypeDerivationTest extends LayoutMarkupTestCase
     /**
      * 출하 JSON 에서 실제로 어긋나 있던 컴포넌트와 레지스트리 정본.
      *
-     * @return array<string, array{0: string, 1: string}>
+     * @return array<string, 반환값
      */
     public static function driftingComponents(): array
     {
@@ -109,31 +131,62 @@ class NodeTypeDerivationTest extends LayoutMarkupTestCase
     }
 
     /**
-     * 컴파일러는 태그 → 레지스트리로만 `type` 을 정한다 (소스에 type 표기가 없다).
+     * 컴파일러는 `data-type` 으로 종류를 정한다 — 레지스트리가 있어도 산출은 바뀌지 않는다.
      *
      * @scenario compile_unit=node,source_health=valid
      *
-     * @effects node_type_is_derived_from_registry_not_source
+     * @effects node_type_comes_from_data_type_not_template
+     *
+     * @return void 반환값 없음
      */
-    public function test_compiler_derives_type_from_registry(): void
+    public function test_compiler_takes_type_from_data_type_not_registry(): void
     {
-        $this->assertSame('composite', $this->compile('<toggle data-ref="x"/>')['type']);
-        $this->assertSame('composite', $this->compile('<badge>on</badge>')['type']);
+        $this->assertSame('composite', $this->compile('<toggle data-type="composite" data-ref="x"/>')['type']);
+        $this->assertSame('composite', $this->compile('<badge data-type="composite">on</badge>')['type']);
         $this->assertSame('basic', $this->compile('<select/>')['type']);
         $this->assertSame('basic', $this->compile('<input type="text"/>')['type']);
+
+        // 레지스트리(Toggle=composite)가 주어져도 적지 않았으면 basic 이다 — 산출은 템플릿과 무관하다.
+        $this->assertSame('basic', $this->compile('<toggle data-ref="x"/>')['type']);
+        $this->assertSame('basic', (new NodeCompiler)->compile($this->root('<toggle data-ref="x"/>'), null)['type']);
     }
 
     /**
-     * 역변환기는 소스 JSON 의 `type` 을 태그 선택에 쓰지 않는다 — 어긋난 값이 실려도 태그는 name 기준.
+     * 대상 템플릿이 분명한 자리에서는 적은 종류가 템플릿 선언과 다르면 경고한다.
      *
-     * 이관 대상 JSON 이 `Toggle` 을 `basic` 으로 적고 있어도 `<toggle>` 로 찍혀야 하고, 되컴파일하면
-     * 레지스트리 정본(`composite`)이 나와야 한다. 이것이 "이관이 type 을 정정한다" 의 실체다.
+     * @scenario compile_unit=node,source_health=invalid
+     *
+     * @effects written_type_mismatch_is_linted_against_the_target_template
+     *
+     * @return void 반환값 없음
+     */
+    public function test_type_mismatch_against_target_template_is_linted(): void
+    {
+        $source = '<layout name="t" version="1.0.0"><div data-ref="root"><toggle data-ref="x"/></div></layout>';
+
+        $warned = (new LayoutMarkupCompiler($this->registry))->compile($source, null, new CompileContext);
+        $codes = array_map(static fn ($warning) => $warning->getCode(), $warned->warnings);
+        $this->assertContains(LayoutMarkupLintCode::ComponentTypeMismatch, $codes);
+
+        // 검사용 레지스트리가 없으면(설치 경로) 경고도 없다 — 산출은 같다.
+        $plain = (new LayoutMarkupCompiler)->compile($source, null, new CompileContext);
+        $this->assertNotContains(LayoutMarkupLintCode::ComponentTypeMismatch, array_map(static fn ($warning) => $warning->getCode(), $plain->warnings));
+        $this->assertSame($warned->json, $plain->json);
+    }
+
+    /**
+     * 역변환기는 JSON 의 `type` 을 그대로 `data-type` 으로 옮긴다 — 태그는 name 의 표기 규칙.
+     *
+     * JSON 과 동등해야 하므로 적힌 종류를 보존한다(템플릿으로 "정정" 하지 않는다). 어긋난 종류는 대상
+     * 템플릿이 분명한 자리의 lint 가 알린다.
      *
      * @scenario compile_unit=decompile,source_health=valid
      *
-     * @effects decompile_ignores_stale_source_type
+     * @effects decompile_preserves_source_type_as_data_type
+     *
+     * @return void 반환값 없음
      */
-    public function test_decompiler_ignores_stale_source_type(): void
+    public function test_decompiler_preserves_source_type_as_data_type(): void
     {
         $layout = [
             'layout_name' => 'stale_type',
@@ -147,11 +200,11 @@ class NodeTypeDerivationTest extends LayoutMarkupTestCase
             ],
         ];
 
-        $markup = (new LayoutMarkupDecompiler($this->registry))->decompile($layout);
+        $markup = (new LayoutMarkupDecompiler)->decompile($layout);
 
         $this->assertStringContainsString('<toggle', $markup);
-        $this->assertStringContainsString('<select', $markup);
-        // 어긋난 type 이 `<json>` 탈출구로 새지 않아야 한다 (정정이지 보존이 아니다).
+        $this->assertStringContainsString('<select data-type="composite"', $markup);
+        $this->assertStringNotContainsString('<toggle data-type', $markup);
         $this->assertStringNotContainsString('<json', $markup);
     }
 
@@ -163,8 +216,17 @@ class NodeTypeDerivationTest extends LayoutMarkupTestCase
      */
     private function compile(string $source): array
     {
-        $roots = (new MarkupTreeBuilder)->build((new MarkupTokenizer)->tokenize($source, null), null);
+        return $this->compiler->compile($this->root($source), null);
+    }
 
-        return $this->compiler->compile($roots[0], null);
+    /**
+     * 조각의 첫 요소를 만듭니다.
+     *
+     * @param  string  $source  `.g7.html` 조각
+     * @return MarkupElement 첫 요소
+     */
+    private function root(string $source): MarkupElement
+    {
+        return (new MarkupTreeBuilder)->build((new MarkupTokenizer)->tokenize($source, null), null)[0];
     }
 }

@@ -43,12 +43,12 @@ final class LayoutMarkupRoundTrip
      * 초록으로 통과했다 — 오라클이 설치보다 관대하면 게이트는 설치가 거부할 산출을 승인한다.
      *
      * @param  array<string, mixed>  $json  원본 JSON 레이아웃
-     * @param  ComponentRegistry  $registry  대상 레지스트리
+     * @param  ComponentRegistry|null  $registry  검사용 레지스트리 (산출에는 쓰지 않는다)
      * @param  string|null  $path  경로 (오류 메시지용)
      * @param  CompileContext|null  $context  검증·lint 문맥 (없으면 기본 문맥 = config 정책만)
      * @return array{ok: bool, error: string|null, markup: string|null, source: array<string, mixed>, recompiled: array<string, mixed>|null, warnings: array<int, LintWarning>}
      */
-    public function verify(array $json, ComponentRegistry $registry, ?string $path = null, ?CompileContext $context = null): array
+    public function verify(array $json, ?ComponentRegistry $registry = null, ?string $path = null, ?CompileContext $context = null): array
     {
         $source = $json;
         $warnings = [];

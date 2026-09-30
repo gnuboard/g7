@@ -4,6 +4,7 @@ namespace Modules\Sirsoft\Page\Services;
 
 use App\Contracts\Extension\ModuleSettingsInterface;
 use App\Support\ExtensionStoragePath;
+use App\Traits\FiltersFrontendSchema;
 use App\Traits\NormalizesSettingsData;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\File;
@@ -15,10 +16,13 @@ use Illuminate\Support\Facades\File;
  * 소비자(`PageAttachmentService`, `UploadPageAttachmentRequest`)는 항상 인자 기본값으로
  * 폴백했습니다 — 운영자가 설정을 바꿔도 첨부 상한이 반영되지 않았습니다 (공개이슈 #109).
  *
- * defaults.json 은 카테고리 맵(`{"attachment": {...}}`) 한 단계 구조입니다.
+ * defaults.json 은 다른 모듈과 같은 `{_meta, defaults, frontend_schema}` 구조입니다 — 관리자 페이지
+ * 폼의 업로더가 서버 검증과 같은 첨부 정책을 읽도록 `frontend_schema` 로 attachment.* 를 노출합니다.
+ * 평평한 카테고리 맵(`{"attachment": {...}}`) 형식도 계속 읽습니다.
  */
 class PageSettingsService implements ModuleSettingsInterface
 {
+    use FiltersFrontendSchema;
     use NormalizesSettingsData;
 
     /**
@@ -157,17 +161,22 @@ class PageSettingsService implements ModuleSettingsInterface
     /**
      * 프론트엔드용 설정 조회 (민감정보 제외)
      *
-     * defaults.json 에 frontend_schema 가 없으므로 노출 대상이 없습니다.
+     * defaults.json 의 frontend_schema 가 노출한 값(첨부 정책 attachment.*)만 반환합니다.
      *
      * @return array 프론트엔드에 노출 가능한 설정값
      */
     public function getFrontendSettings(): array
     {
-        return [];
+        return $this->filterByFrontendSchema(
+            $this->getAllSettings(),
+            $this->loadFrontendSchema($this->getSettingsDefaultsPath())
+        );
     }
 
     /**
      * 캐시 초기화
+     *
+     * @return void
      */
     public function clearCache(): void
     {

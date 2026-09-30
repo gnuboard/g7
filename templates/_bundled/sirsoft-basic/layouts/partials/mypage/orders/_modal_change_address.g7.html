@@ -1,7 +1,7 @@
 <!-- 주문 배송지 변경 창 — 배송이 시작되기 전까지만 열린다. 회원은 저장된 배송지에서 고르거나 직접 쓸 수
      있고 비회원은 주소록이 없어 직접 입력만 보인다. 창이 별도 컨텍스트라 고른 값이 `_global` 에 산다. -->
 <partial description="주문 배송지 변경 모달" editor_label="$t:user.modal_label.mypage_orders.changeAddressModal">
-  <modal data-ref="changeAddressModal" title="$t:mypage.order_detail.change_shipping_address" size="md" :closeOnBackdropClick="false">
+  <modal data-type="composite" data-ref="changeAddressModal" title="$t:mypage.order_detail.change_shipping_address" size="md" :closeOnBackdropClick="false">
     <div class="space-y-4">
       <!-- 탭: 저장된 배송지 / 직접 입력 — 회원만. 비회원은 주소록이 없어 탭 없이 직접입력 폼만 노출. -->
       <div data-if="{{_global.currentUser?.uuid}}" class="flex border-b border-gray-200 dark:border-gray-700">
@@ -104,10 +104,11 @@
           </on>
           $t:common.cancel
         </button>
-        <button type="button" class="flex items-center justify-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_local.isSubmittingAddress === true}}">
-          <responsive on="portable" type="button" class="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_local.isSubmittingAddress === true}}"/>
+        <button type="button" class="flex items-center justify-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_local.isSubmittingAddress === true || (_global.currentUser?.uuid &amp;&amp; (_global.changeAddressMode ?? 'saved') === 'saved' &amp;&amp; !_global.selectedAddressId)}}">
+          <responsive on="portable" type="button" class="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_local.isSubmittingAddress === true || (_global.currentUser?.uuid &amp;&amp; (_global.changeAddressMode ?? 'saved') === 'saved' &amp;&amp; !_global.selectedAddressId)}}"/>
           <on type="click">
-            <!-- 적용 — 회원/비회원 단일 커스텀 핸들러. 핸들러가 _global(changeAddressMode/selectedAddressId/editingShippingAddress/guestOrderToken) 을 읽어 endpoint(user vs guest)+body(address_id vs 직접입력)+토큰 헤더를 분기하고, isSubmittingAddress 처리중 상태·모달 닫기·order 리패치·토스트까지 모두 처리한다 (cancel/confirm-option 과 동일 패턴). confirm 1회는 핸들러 호출 액션에 둔다. -->
+            <!-- 적용 — 저장된 배송지 탭에서 아무것도 고르지 않았으면 잠겨 있다(address_id 없이 나가면 서버가 직접 입력 칸을 요구해 422, #703).
+                 회원/비회원 단일 커스텀 핸들러. 핸들러가 _global(changeAddressMode/selectedAddressId/editingShippingAddress/guestOrderToken) 을 읽어 endpoint(user vs guest)+body(address_id vs 직접입력)+토큰 헤더를 분기하고, isSubmittingAddress 처리중 상태·모달 닫기·order 리패치·토스트까지 모두 처리한다 (cancel/confirm-option 과 동일 패턴). confirm 1회는 핸들러 호출 액션에 둔다. -->
             <action handler="sirsoft-ecommerce.changeShippingAddress" confirm="$t:mypage.order_detail.confirm_change_address" orderId="{{order.data.id}}"/>
           </on>
           <icon data-if="{{_local.isSubmittingAddress}}" name="spinner" class="animate-spin" size="sm"/>

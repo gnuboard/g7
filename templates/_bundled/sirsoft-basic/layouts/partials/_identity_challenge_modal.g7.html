@@ -1,6 +1,6 @@
 <!-- 본인인증 창 — 코어 인터셉터가 428 응답을 만나면 어느 화면에서든 이것을 띄운다. 인증 수단이 코어 메일이면 여기 있는 코드 입력·재전송·확인이 그대로 쓰이고, 외부 인증기관이면 그 플러그인이 슬롯에 자기 화면을 넣고 확인까지 스스로 맡는다(그래서 코어 확인 버튼이 숨는다). 상태를 통째로 한 이름(identityChallenge) 아래 두어 launcher→창→결과 통보가 한 줄기로 흐른다. -->
 <partial description="본인인증 공통 모달 — 428 응답을 가로채는 IdentityGuardInterceptor launcher 가 사용. _global.identityChallenge 네임스페이스로 모든 상태를 관리하여 launcher → 모달 → resolveIdentityChallenge 핸들러 한 줄기로 흐름 통일." editor_label="$t:user.modal_label.identity_challenge_modal">
-  <modal data-ref="identity-challenge-modal" title="$t:user.identity.challenge.title" size="sm" :showCloseButton="false" :closeOnBackdropClick="false" :closeOnEscape="false">
+  <modal data-type="composite" data-ref="identity-challenge-modal" title="$t:user.identity.challenge.title" size="sm" :showCloseButton="false" :closeOnBackdropClick="false" :closeOnEscape="false">
     <!-- 코어 기본 OTP UI (text_code) — 코어 mail provider 또는 provider_id 미지정 케이스. 외부 provider 인 경우 아래 identity_provider_ui:provider 슬롯이 자기 UI 를 주입한다. -->
     <div data-if="{{(_global.identityChallenge?.render_hint ?? 'text_code') === 'text_code' &amp;&amp; (!_global.identityChallenge?.provider_id || _global.identityChallenge?.provider_id === 'g7:core.mail')}}" class="space-y-4">
       <p class="text-sm text-gray-600 dark:text-gray-400">$t:user.identity.challenge.code_subtitle</p>

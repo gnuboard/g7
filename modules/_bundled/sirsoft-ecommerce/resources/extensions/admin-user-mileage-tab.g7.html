@@ -24,7 +24,7 @@
             <icon name="coins" class="text-xl text-gray-600 dark:text-gray-400"/>
             <h3 class="text-lg font-semibold text-gray-900 dark:text-white">$t:sirsoft-ecommerce.admin.user_mileage.title</h3>
           </div>
-          <extension-badge type="module" identifier="sirsoft-ecommerce" installedModules="{{_global.installedModules}}"/>
+          <extension-badge data-type="composite" type="module" identifier="sirsoft-ecommerce" installedModules="{{_global.installedModules}}"/>
         </div>
         <!-- 비활성화 안내 (mileage.enabled=false) -->
         <div data-if="{{!user?.data?.ecommerce_mileage?.enabled}}" class="flex items-center gap-2 p-4 bg-gray-50 dark:bg-gray-900 rounded-lg text-sm text-gray-500 dark:text-gray-400">

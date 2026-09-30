@@ -10,8 +10,10 @@ use App\Rules\IpOrCidr;
 use App\Rules\ValidOutboundProxyUrl;
 use App\Search\Engines\DatabaseFulltextEngine;
 use App\Services\DriverRegistryService;
+use App\Services\SettingsService;
 use App\Support\AllowedExtensions;
 use App\Support\AssetUrl;
+use App\Support\EnvPriority;
 use App\Support\IpAccessMatcher;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Contracts\Validation\Validator;
@@ -567,7 +569,39 @@ class SaveSettingsRequest extends FormRequest
         $rules = array_merge($rules, $this->analyticsSettingsRules('analytics'));
 
         // 모듈/플러그인이 validation rules를 동적으로 추가할 수 있도록 훅 제공
-        return HookManager::applyFilters('core.settings.save_validation_rules', $rules, $this);
+        $rules = HookManager::applyFilters('core.settings.save_validation_rules', $rules, $this);
+
+        return $this->relaxEnvLockedRules($rules);
+    }
+
+    /**
+     * `.env` 로 잠긴 키의 검증 규칙을 「값 없음 허용」으로 바꿉니다.
+     *
+     * 잠긴 키는 값의 주인이 `.env` 이고, 저장 경로(`SettingsService::saveSettings`)가 그 키를
+     * 어차피 버립니다(`EnvPriority::rejectLockedForSave`). 그런데 민감 키는 화면에 값을 싣지
+     * 않으므로 폼이 빈 칸으로 보냅니다 — 여기서 필수(`required`·`requiredIf`)를 그대로 두면
+     * 드라이버·메일 탭 저장이 늘 422 로 끝납니다. 잠긴 키는 요청이 공급할 값이 아니므로
+     * 요청에서 요구하지 않습니다.
+     *
+     * 요청 키는 화면이 쓰는 프론트엔드 키(`advanced.debug_mode` 등)이므로 잠금 목록도 같은
+     * 형태(`SettingsService::envLockedMeta`)로 대조합니다.
+     *
+     * @param  array<string, mixed>  $rules  검증 규칙
+     * @return array<string, mixed> 잠긴 키의 규칙을 완화한 검증 규칙
+     */
+    private function relaxEnvLockedRules(array $rules): array
+    {
+        if (! EnvPriority::enabled()) {
+            return $rules;
+        }
+
+        foreach (array_keys(app(SettingsService::class)->envLockedMeta()) as $lockedKey) {
+            if (array_key_exists($lockedKey, $rules)) {
+                $rules[$lockedKey] = ['nullable'];
+            }
+        }
+
+        return $rules;
     }
 
     /**

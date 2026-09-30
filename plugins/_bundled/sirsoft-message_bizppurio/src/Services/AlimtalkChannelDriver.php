@@ -48,8 +48,8 @@ class AlimtalkChannelDriver
     /** 플러그인 식별자 (manifest 와 일치) */
     private const PLUGIN_IDENTIFIER = 'sirsoft-message_bizppurio';
 
-    /** 알림 data 에서 비회원 전화번호를 싣는 표준 키 (SmsChannelDriver 와 동일 계약) */
-    public const RECIPIENT_PHONE_KEY = '_recipient_phone';
+    /** 알림 data 의 수신 전화번호 키 — 코어 표준 키의 별칭(SmsChannelDriver 와 동일) */
+    public const RECIPIENT_PHONE_KEY = GenericNotification::RECIPIENT_PHONE_KEY;
 
     /**
      * @param  NotificationDefinitionService  $definitionService  알림 유형의 사람이 읽는 이름 조회(스킵 예외 메시지용)
@@ -97,6 +97,7 @@ class AlimtalkChannelDriver
      *
      * @param  object  $notifiable  수신자 (User 또는 GuestNotifiable)
      * @param  Notification  $notification  발송 대상 알림
+     * @return void 반환값 없음
      */
     public function send(object $notifiable, Notification $notification): void
     {

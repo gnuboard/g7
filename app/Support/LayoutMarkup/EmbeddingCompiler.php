@@ -14,10 +14,13 @@ use App\Enums\LayoutMarkupErrorCode;
  *
  * 이 층이 지키는 규칙은 셋이다.
  *
- * **① 부모 문맥이 태그를 정한다.** `<column>` 은 DataGrid 안에서만, `<title-prefix>` 는 Modal
- * 안에서만 뜻이 있다. 엉뚱한 부모 아래 오면 자리 오류로 안내한다 — 조용히 props 로 흘리면
- * 화면에 아무 영향도 주지 않은 채 사라진다. `<card>`·`<option>` 처럼 등록 컴포넌트와 이름이
- * 겹치는 태그는 부모가 그리드·Select 일 때만 임베딩이고 그 밖에서는 그냥 컴포넌트다(위치 분기).
+ * **① 태그가 자리를 정하고, 부모 이름은 보지 않는다 (2026-09-28 결정).** `<column>` 은 어느 부모
+ * 아래서든 `props.columns` 원소, `<title-prefix>` 는 어느 부모 아래서든 `props.titlePrefix` 다 — 부모
+ * 컴포넌트 이름(DataGrid·Modal)을 보면 번들 템플릿의 컴포넌트 이름에 문법이 묶여, 다른 템플릿의 같은
+ * 역할 컴포넌트가 이 표기를 쓸 수 없다. 그 prop 을 받는 컴포넌트인지는 대상 템플릿이 분명한 자리에서
+ * lint 가 선언으로 판정한다(LayoutLinter ⑧). 컴포넌트 이름과 겹치는 옛 표기(`<card>`·`<footer>`)만은
+ * 종전 부모 아래에서 hoist 로 읽고 그 밖에서는 컴포넌트다 — 부모와 무관한 새 표기는 `<prop-card>`·
+ * `<prop-footer>` 다(LEGACY_TAGS). 옵션 데이터는 처음부터 부모와 무관한 `<options>` 래퍼가 맡는다.
  *
  * **② 서브트리 hoist 와 표현식-리프 `<prop>` 은 다른 자리다.** `<expand>` 는 노드 트리를
  * `expandChildren` 으로 끌어올리지만, `expandContext`·`subRowCondition` 은 `{키: "{{식}}"}` 표현식
@@ -33,47 +36,62 @@ use App\Enums\LayoutMarkupErrorCode;
 final class EmbeddingCompiler
 {
     /**
-     * DataGrid 전용 자식 태그 → props 배열 키.
+     * 부모 이름과 무관하게 props 배열 키로 끌어올리는 자식 태그 → props 키.
      *
-     * `<column>` 만 자기 스칼라 필드(field/header/…)를 갖고, 나머지는 서브트리만 담는다.
+     * `<column>`·`<footer-cell>`·`<prop-card>` 는 자기 스칼라 필드를 갖는 객체 원소를 배열에 쌓고
+     * (ELEMENT_HOISTS), 나머지는 컴파일한 노드 배열을 통째로 그 키에 놓는다. 어느 쪽도 부모 컴포넌트
+     * 이름을 보지 않는다 — 그 prop 을 받는 컴포넌트인지는 템플릿 선언의 몫이다(LayoutLinter ⑧).
+     *
+     * **public 인 이유**: 역변환기(`NodeMarkupDecompiler`)와 lint 가 같은 표를 본다. 목록을 저쪽에
+     * 복제하면 hoist 를 하나 더하는 날 한쪽만 조용히 반쪽이 된다.
      *
      * @var array<string, string>
      */
-    private const DATAGRID_TAGS = [
+    public const HOIST_TAGS = [
         'column' => 'columns',
         'expand' => 'expandChildren',
         'sub-row' => 'subRowChildren',
         'footer-cell' => 'footerCells',
         'footer-card' => 'footerCardChildren',
+        'prop-card' => 'cardColumns',
+        'title-prefix' => 'titlePrefix',
+        'title-suffix' => 'titleSuffix',
+        'prop-footer' => 'footer',
+    ];
+
+    /** 원소 하나씩 배열에 쌓는 hoist 태그 (나머지 HOIST_TAGS 는 노드 배열을 통째로 한 번만 놓는다) */
+    private const ELEMENT_HOISTS = ['column', 'footer-cell', 'prop-card'];
+
+    /**
+     * 컴포넌트 이름과 겹치는 옛 hoist 표기 → 부모와 무관한 새 표기·옛 표기를 hoist 로 읽는 부모.
+     *
+     * `<card>`(Card)·`<footer>`(Footer, HTML `<footer>`)는 태그 이름이 컴포넌트와 겹쳐, 부모 이름 없이는
+     * 컴포넌트인지 hoist 인지 가를 수 없다. 기존 소스를 고치지 않도록 **종전 부모 아래에서만** 옛 뜻을
+     * 유지하고, 그 밖에서는 컴포넌트다. 새로 쓰는 소스는 어느 부모 아래서나 같은 뜻인 새 표기를 쓴다.
+     *
+     * @var array<string, array{tag: string, parents: array<int, string>}>
+     */
+    public const LEGACY_TAGS = [
+        'card' => ['tag' => 'prop-card', 'parents' => ['DataGrid', 'CardGrid']],
+        'footer' => ['tag' => 'prop-footer', 'parents' => ['Modal']],
     ];
 
     /**
-     * Modal 전용 자식 태그 → props 배열 키.
+     * 대상 템플릿의 선언으로 "받는 컴포넌트인가" 를 판정하는 hoist props 키 (LayoutLinter ⑧).
      *
-     * `title-prefix`/`title-suffix` 는 등록 컴포넌트와 이름이 겹치지 않아 문맥 자유(CONTEXT_FREE_TAGS)지만,
-     * `footer` 는 `Footer` 컴포넌트(사용자 템플릿 페이지 푸터)와 겹치므로 Modal 부모일 때만 임베딩이다
-     * (`<card>` 가 그리드 부모일 때만 임베딩인 것과 동일 — handlesChild 참조).
+     * 전 hoist 키로 넓히지 않는 이유는 실측이다(2026-09-28, 번들 레이아웃 전수 × 번들 두 템플릿) —
+     * `DataGrid.expandChildren`·`Select.options` 처럼 **선언하지 않고도 렌더하는** 조합이 수백 건이라
+     * 선언 대조가 곧 오탐이다(D19). 이 세 키는 거짓 양성 0 건이고, 양성(`sirsoft-basic` Modal 의
+     * `footer` 11 건·`titlePrefix` 1 건)은 실제로 렌더되지 않는 자리다.
      *
-     * **public 인 이유**: `LayoutLinter` 의 축 B(대상 템플릿 Modal 이 이 prop 을 선언했는가)가 같은
-     * 집합을 봐야 한다. 목록을 저쪽에 복제하면 여기 4번째 hoist 를 더하는 날 검사만 조용히 반쪽이
-     * 된다 — 판정기의 모집단을 손으로 고르지 않는다는 규율이 이 자리에도 적용된다.
-     *
-     * @var array<string, string>
+     * @var array<int, string>
      */
-    public const MODAL_TAGS = ['title-prefix' => 'titlePrefix', 'title-suffix' => 'titleSuffix', 'footer' => 'footer'];
+    public const DECLARATION_CHECKED_PROPS = ['footer', 'titlePrefix', 'titleSuffix'];
 
-    /** hoist 3종의 유일한 부모 컴포넌트 name — 이 밖의 부모 아래에서는 자리 오류다 (applyChild). */
-    public const MODAL_PARENT = 'Modal';
-
-    /** 부모 문맥 없이 항상 임베딩인 자식 태그 (등록 컴포넌트와 이름이 겹치지 않는다) */
+    /** 부모 문맥 없이 항상 임베딩인 자식 태그 (HOIST_TAGS 외 — 노드 키 hoist·홀로 오면 자리 오류인 태그) */
     private const CONTEXT_FREE_TAGS = [
-        'column', 'cell', 'expand', 'sub-row', 'footer-cell', 'footer-card',
-        'title-prefix', 'title-suffix', 'responsive', 'template', 'item-template',
-        'switch-value', 'default', 'callback',
+        'cell', 'responsive', 'template', 'item-template', 'switch-value', 'default', 'callback',
     ];
-
-    /** 부모가 그리드일 때만 임베딩인 태그 (그 밖에서는 Card 컴포넌트) */
-    private const GRID_PARENTS = ['DataGrid', 'CardGrid'];
 
     /**
      * @param  NodeCompiler  $nodes  서브트리를 노드로 컴파일할 노드 컴파일러 (역참조)
@@ -89,16 +107,39 @@ final class EmbeddingCompiler
      */
     public function handlesChild(string $tag, ComponentDefinition $parent): bool
     {
-        if (in_array($tag, self::CONTEXT_FREE_TAGS, true)) {
+        if (isset(self::HOIST_TAGS[$tag]) || in_array($tag, self::CONTEXT_FREE_TAGS, true)) {
             return true;
         }
 
-        if ($tag === 'card' && in_array($parent->name, self::GRID_PARENTS, true)) {
-            return true;
+        // 옛 표기(`<card>`·`<footer>`)는 종전 부모 아래에서만 hoist — 그 밖에서는 Card·Footer 컴포넌트다.
+        return isset(self::LEGACY_TAGS[$tag]) && in_array($parent->name, self::LEGACY_TAGS[$tag]['parents'], true);
+    }
+
+    /**
+     * props 키를 되돌릴 hoist 태그를 고릅니다 (역변환·lint 안내 공용).
+     *
+     * 옛 표기의 종전 부모면 옛 태그(`<card>`·`<footer>`)를, 그 밖이면 부모와 무관한 표기를 돌려준다 —
+     * 기존 소스의 역변환 산출이 한 글자도 바뀌지 않게 하는 자리다.
+     *
+     * @param  string  $prop  props 키 (`cardColumns`·`footer` 등)
+     * @param  string  $parentName  소유 컴포넌트 name
+     * @return string|null hoist 태그, hoist 키가 아니면 null
+     */
+    public static function tagForProp(string $prop, string $parentName): ?string
+    {
+        $tag = array_search($prop, self::HOIST_TAGS, true);
+
+        if ($tag === false) {
+            return null;
         }
 
-        // `<footer>` 는 Modal 부모일 때만 footer 임베딩 — 그 밖에서는 `Footer` 컴포넌트로 해석된다.
-        return $tag === 'footer' && $parent->name === self::MODAL_PARENT;
+        foreach (self::LEGACY_TAGS as $legacy => $spec) {
+            if ($spec['tag'] === $tag && in_array($parentName, $spec['parents'], true)) {
+                return $legacy;
+            }
+        }
+
+        return $tag;
     }
 
     /**
@@ -114,8 +155,9 @@ final class EmbeddingCompiler
      * @param  array<string, mixed>  $props  부모 props (참조)
      * @param  array<string, mixed>  $hoist  props 배열 hoist 누적 버퍼 (참조)
      * @param  string|null  $path  소스 파일 경로
+     * @return void 반환값 없음
      *
-     * @throws CompileError 부모 문맥이 맞지 않거나 표기 규칙을 벗어난 경우
+     * @throws CompileError 홀로 올 수 없는 태그이거나 표기 규칙을 벗어난 경우
      */
     public function applyChild(
         MarkupElement $child,
@@ -125,31 +167,16 @@ final class EmbeddingCompiler
         array &$hoist,
         ?string $path,
     ): void {
+        // 옛 표기는 handlesChild 가 종전 부모일 때만 여기로 보낸다 — 새 표기와 같은 규칙으로 컴파일한다.
+        $tag = self::LEGACY_TAGS[$child->name]['tag'] ?? $child->name;
+
+        if (isset(self::HOIST_TAGS[$tag])) {
+            $this->applyHoistChild($child, $tag, $hoist, $path);
+
+            return;
+        }
+
         switch ($child->name) {
-            case 'column':
-            case 'expand':
-            case 'sub-row':
-            case 'footer-cell':
-            case 'footer-card':
-                $this->requireParent($child, $parent, ['DataGrid'], 'data-grid', $path);
-                $this->applyDataGridChild($child, $hoist, $path);
-
-                return;
-
-            case 'card':
-                // handlesChild 가 그리드 부모일 때만 여기로 보낸다.
-                $hoist['cardColumns'][] = $this->compileCard($child, $path);
-
-                return;
-
-            case 'title-prefix':
-            case 'title-suffix':
-            case 'footer':
-                $this->requireParent($child, $parent, [self::MODAL_PARENT], 'modal', $path);
-                $hoist[self::MODAL_TAGS[$child->name]] = $this->compileChildNodes($child, $path);
-
-                return;
-
             case 'responsive':
                 $this->applyResponsive($child, $node, $path);
 
@@ -181,41 +208,44 @@ final class EmbeddingCompiler
     }
 
     /**
-     * DataGrid 서브트리 자식(`<column>`/`<expand>`/…)을 hoist 버퍼에 누적합니다.
+     * props 배열 hoist 자식(`<column>`/`<expand>`/`<prop-footer>`/…)을 hoist 버퍼에 누적합니다.
      *
      * @param  MarkupElement  $child  자식 요소
+     * @param  string  $tag  부모와 무관한 표기로 맞춘 태그명 (옛 표기면 새 표기)
      * @param  array<string, mixed>  $hoist  hoist 버퍼 (참조)
      * @param  string|null  $path  소스 파일 경로
+     * @return void 반환값 없음
      *
      * @throws CompileError 표기 규칙을 벗어난 경우
      */
-    private function applyDataGridChild(MarkupElement $child, array &$hoist, ?string $path): void
+    private function applyHoistChild(MarkupElement $child, string $tag, array &$hoist, ?string $path): void
     {
-        $key = self::DATAGRID_TAGS[$child->name];
+        $key = self::HOIST_TAGS[$tag];
 
-        // `<column>`·`<footer-cell>` 은 스칼라 필드를 함께 갖는 객체 원소이고, `<expand>`·
-        // `<sub-row>`·`<footer-card>` 는 노드 배열 자체다. 앞 둘은 원소를 배열에 밀어 넣고
-        // 뒤 셋은 컴파일한 노드 배열을 통째로 그 키에 놓는다.
-        if (in_array($child->name, ['expand', 'sub-row', 'footer-card'], true)) {
-            // 단일 배열 키 — 같은 태그를 두 번 쓰면 앞엣것이 조용히 사라진다.
-            if (isset($hoist[$key])) {
-                throw $this->error($child, LayoutMarkupErrorCode::DuplicateNodeKey, $path, ['key' => $key]);
-            }
-
-            $hoist[$key] = $this->compileChildNodes($child, $path);
+        // `<column>`·`<footer-cell>`·`<prop-card>` 는 스칼라 필드를 함께 갖는 객체 원소라 배열에 밀어
+        // 넣고, 나머지는 컴파일한 노드 배열을 통째로 그 키에 놓는다.
+        if (in_array($tag, self::ELEMENT_HOISTS, true)) {
+            $hoist[$key][] = match ($tag) {
+                'column' => $this->compileColumn($child, $path),
+                'footer-cell' => $this->compileFooterCell($child, $path),
+                default => $this->compileCard($child, $path),
+            };
 
             return;
         }
 
-        $hoist[$key][] = $child->name === 'column'
-            ? $this->compileColumn($child, $path)
-            : $this->compileFooterCell($child, $path);
+        // 단일 배열 키 — 같은 태그를 두 번 쓰면 앞엣것이 조용히 사라진다.
+        if (isset($hoist[$key])) {
+            throw $this->error($child, LayoutMarkupErrorCode::DuplicateNodeKey, $path, ['key' => $key]);
+        }
+
+        $hoist[$key] = $this->compileChildNodes($child, $path);
     }
 
     /**
      * `<column>` 자식들을 columns 배열로 컴파일합니다 (D42 G7 — 확장 주입 `<props>` 전용 진입점).
      *
-     * 노드 자리의 `<column>` 은 부모가 DataGrid 임을 소유자 게이트로 확인하지만(applyChild), 확장
+     * 노드 자리의 `<column>` 은 부모 노드의 `props.columns` 로 끌어올리지만(applyChild), 확장
      * 주입 fragment 에는 부모 컴포넌트가 없다 — 대상 노드가 **다른 레이아웃에** 있기 때문이다.
      * 그 자리에서는 `<prop name="columns">` 컨테이너가 소유자를 대신하고, 게이트는 그 컨테이너
      * 안으로만 열린다(`NodeCompiler::compilePropValue` 의 `$allowColumnTree`). 컬럼 원소를 만드는
@@ -320,9 +350,9 @@ final class EmbeddingCompiler
     }
 
     /**
-     * `<card>` 를 cardColumns 배열 원소(`{id, cellChildren}`)로 컴파일합니다.
+     * `<prop-card>`(옛 표기 `<card>`)를 cardColumns 배열 원소(`{id, cellChildren}`)로 컴파일합니다.
      *
-     * @param  MarkupElement  $element  `<card>` 요소
+     * @param  MarkupElement  $element  `<prop-card>`·`<card>` 요소
      * @param  string|null  $path  소스 파일 경로
      * @return array<string, mixed> 카드 컬럼 객체
      *
@@ -346,6 +376,7 @@ final class EmbeddingCompiler
      * @param  MarkupElement  $element  `<responsive>` 요소
      * @param  array<string, mixed>  $node  부모 노드 (참조)
      * @param  string|null  $path  소스 파일 경로
+     * @return void 반환값 없음
      *
      * @throws CompileError on 이 없거나 같은 브레이크포인트가 중복된 경우
      */
@@ -368,6 +399,7 @@ final class EmbeddingCompiler
      * @param  MarkupElement  $element  `<template>` 요소
      * @param  array<string, mixed>  $node  부모 노드 (참조)
      * @param  string|null  $path  소스 파일 경로
+     * @return void 반환값 없음
      *
      * @throws CompileError slot 이 없거나 같은 슬롯이 중복된 경우
      */
@@ -390,6 +422,7 @@ final class EmbeddingCompiler
      * @param  MarkupElement  $element  `<item-template>` 요소
      * @param  array<string, mixed>  $node  부모 노드 (참조)
      * @param  string|null  $path  소스 파일 경로
+     * @return void 반환값 없음
      *
      * @throws CompileError 이미 지정됐거나 자식이 정확히 하나가 아닌 경우
      */
@@ -415,6 +448,7 @@ final class EmbeddingCompiler
      * @param  MarkupElement  $element  `<switch-value>` 요소
      * @param  array<string, mixed>  $props  부모 props (참조)
      * @param  string|null  $path  소스 파일 경로
+     * @return void 반환값 없음
      *
      * @throws CompileError prop·on 이 없거나 자식이 `<case>`/`<default>` 가 아닌 경우
      */
@@ -525,6 +559,7 @@ final class EmbeddingCompiler
      * @param  mixed  $value  값
      * @param  MarkupElement  $element  값이 실린 요소 (오류 좌표용)
      * @param  string|null  $path  소스 파일 경로
+     * @return void 반환값 없음
      *
      * @throws CompileError 같은 자리를 두 표기가 다투는 경우
      */
@@ -541,24 +576,6 @@ final class EmbeddingCompiler
         }
 
         $props[$key] = $value;
-    }
-
-    /**
-     * 임베딩 태그가 요구하는 부모 컴포넌트인지 확인합니다.
-     *
-     * @param  MarkupElement  $child  임베딩 자식
-     * @param  ComponentDefinition  $parent  실제 부모 정의
-     * @param  array<int, string>  $expected  허용 부모 컴포넌트명
-     * @param  string  $expectedTag  안내에 실을 부모 마크업 태그명
-     * @param  string|null  $path  소스 파일 경로
-     *
-     * @throws CompileError 부모가 허용 목록 밖인 경우
-     */
-    private function requireParent(MarkupElement $child, ComponentDefinition $parent, array $expected, string $expectedTag, ?string $path): void
-    {
-        if (! in_array($parent->name, $expected, true)) {
-            throw $this->wrongParent($child, $expectedTag, $parent->tag, $path);
-        }
     }
 
     /**

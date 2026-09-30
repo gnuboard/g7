@@ -36,6 +36,11 @@ class CommentAttachmentGuardTest extends LayoutMarkupTestCase
 
     private LayoutMarkupCompiler $compiler;
 
+    /**
+     * 테스트 준비 — 필요한 서비스와 임시 자원을 만듭니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -46,9 +51,13 @@ class CommentAttachmentGuardTest extends LayoutMarkupTestCase
     }
 
     /**
+     * `<on>` 블록 앞 주석은 자리가 없어 거부된다.
+     *
      * @scenario compile_unit=facade,source_health=invalid
      *
      * @effects comment_before_on_block_is_a_compile_error
+     *
+     * @return void 반환값 없음
      */
     public function test_comment_before_on_block_is_rejected(): void
     {
@@ -71,9 +80,13 @@ class CommentAttachmentGuardTest extends LayoutMarkupTestCase
     }
 
     /**
+     * 자식 액션이 하나뿐인 블록의 주석이 보존된다.
+     *
      * @scenario compile_unit=facade,source_health=valid
      *
      * @effects comment_on_first_action_lands_in_actions_entry
+     *
+     * @return void 반환값 없음
      */
     public function test_comment_on_single_child_action_is_preserved(): void
     {
@@ -92,9 +105,13 @@ class CommentAttachmentGuardTest extends LayoutMarkupTestCase
     }
 
     /**
+     * 명시적 순차 실행 블록의 주석이 보존된다.
+     *
      * @scenario compile_unit=facade,source_health=valid
      *
      * @effects comment_on_explicit_sequence_lands_in_actions_entry
+     *
+     * @return void 반환값 없음
      */
     public function test_comment_on_explicit_sequence_is_preserved(): void
     {
@@ -117,9 +134,13 @@ class CommentAttachmentGuardTest extends LayoutMarkupTestCase
     }
 
     /**
+     * 모달 조각 참조 앞 주석이 보존된다.
+     *
      * @scenario compile_unit=document,source_health=valid
      *
      * @effects comment_before_modal_src_lands_in_modals_entry
+     *
+     * @return void 반환값 없음
      */
     public function test_comment_before_modal_src_is_preserved(): void
     {
@@ -136,9 +157,13 @@ class CommentAttachmentGuardTest extends LayoutMarkupTestCase
     }
 
     /**
+     * 인라인 모달 감싸개 앞 주석은 노드 주석으로 올라간다.
+     *
      * @scenario compile_unit=document,source_health=valid
      *
      * @effects wrapper_comment_hoists_onto_the_inline_modal_node
+     *
+     * @return void 반환값 없음
      */
     public function test_comment_before_inline_modal_wrapper_hoists_to_node(): void
     {
@@ -157,9 +182,13 @@ class CommentAttachmentGuardTest extends LayoutMarkupTestCase
     }
 
     /**
+     * 감싸개 주석과 노드 주석이 겹치면 거부된다.
+     *
      * @scenario compile_unit=document,source_health=invalid
      *
      * @effects wrapper_and_node_comment_collision_is_a_compile_error
+     *
+     * @return void 반환값 없음
      */
     public function test_wrapper_and_node_comment_collision_is_rejected(): void
     {
@@ -181,9 +210,13 @@ class CommentAttachmentGuardTest extends LayoutMarkupTestCase
     }
 
     /**
+     * 모달 조각 참조 주석이 왕복해도 그대로다.
+     *
      * @scenario compile_unit=document,source_health=valid
      *
      * @effects modals_reference_comment_survives_a_full_round_trip
+     *
+     * @return void 반환값 없음
      */
     public function test_modal_src_comment_round_trips(): void
     {
@@ -214,6 +247,8 @@ class CommentAttachmentGuardTest extends LayoutMarkupTestCase
      * @scenario compile_unit=facade,source_health=valid
      *
      * @effects no_tag_position_in_the_corpus_drops_a_comment_silently
+     *
+     * @return void 반환값 없음
      */
     public function test_no_corpus_tag_position_drops_a_comment_silently(): void
     {
@@ -258,8 +293,8 @@ class CommentAttachmentGuardTest extends LayoutMarkupTestCase
             $where = '<'.$tag.'> — '.str_replace(base_path().DIRECTORY_SEPARATOR, '', $absolute).':'.$site['line'];
 
             if (! array_key_exists($directory, $compilers)) {
-                $registry = $resolver->registryFor($absolute, null);
-                $compilers[$directory] = $registry === null ? null : new LayoutMarkupCompiler($registry);
+                // 검사용 레지스트리는 템플릿 자신의 파일에만 있다 — 없으면 템플릿 없이 컴파일한다(설치와 같은 조건).
+                $compilers[$directory] = new LayoutMarkupCompiler($resolver->registryFor($absolute, null));
             }
 
             // 아래 두 탈출구는 "위반 없음" 이 아니라 "판정 못 함" 이다 — 조용히 넘기면 그 태그는
@@ -333,6 +368,7 @@ class CommentAttachmentGuardTest extends LayoutMarkupTestCase
      *
      * @param  array<int, MarkupElement>  $elements  요소 목록
      * @param  array<int, array{tag: string, line: int, column: int}>  $out  수집 결과 (참조)
+     * @return void 반환값 없음
      */
     private function collectSites(array $elements, array &$out): void
     {

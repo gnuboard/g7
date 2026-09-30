@@ -13,6 +13,7 @@ use Modules\Sirsoft\Ecommerce\Enums\ClaimChargeMethodEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimReasonFaultTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimReasonTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
+use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ShippingFeeTaxPolicy;
 use Modules\Sirsoft\Ecommerce\Models\ClaimReason;
 use Modules\Sirsoft\Ecommerce\Models\ShippingCarrier;
@@ -33,6 +34,13 @@ use Modules\Sirsoft\Ecommerce\Support\MileageRounding;
 class StoreEcommerceSettingsRequest extends FormRequest
 {
     /**
+     * 저장 요청이 실을 수 있는 설정 구역(탭) 키 — `_tab` 허용값이자 「저장할 구역이 하나라도 있는가」 판정 기준.
+     *
+     * @var array<int, string>
+     */
+    private const SECTIONS = ['basic_info', 'language_currency', 'seo', 'order_settings', 'claim', 'shipping', 'review_settings', 'notification_definitions', 'notifications', 'inquiry', 'mileage', 'privacy_retention'];
+
+    /**
      * 사용자가 이 요청을 수행할 권한이 있는지 확인
      *
      * 권한 체크는 라우트의 permission 미들웨어에서 수행됩니다.
@@ -52,6 +60,7 @@ class StoreEcommerceSettingsRequest extends FormRequest
      * 이후 Carbon 같은 strict 타입 경계에서 TypeError 가 발생한다(무통장입금 주문 500 실패).
      *
      * 대상 필드는 rules() 에서 파생한다 — 손으로 열거하면 규칙이 추가될 때 누락된다.
+     * 설정 응답이 표시용으로만 싣는 `basic_info.public_asset_disk_unavailable` 은 여기서 걷어 내 저장되지 않게 한다.
      *
      * @return void 반환값 없음
      */
@@ -69,9 +78,63 @@ class StoreEcommerceSettingsRequest extends FormRequest
             $changed = $this->castNumericPath($data, explode('.', $field), $castType) || $changed;
         }
 
+        $changed = $this->fillOmittedManagedExchangeRates($data) || $changed;
+
+        // 쓸 수 없게 된 공개 자산 디스크 안내는 설정 응답이 화면에 싣는 표시용 값이라 저장하지 않는다
+        // (EcommerceSettingsController::withPublicAssetCatalog). 화면은 받은 기본정보를 통째로 돌려보낸다.
+        if (is_array($data['basic_info'] ?? null) && array_key_exists('public_asset_disk_unavailable', $data['basic_info'])) {
+            unset($data['basic_info']['public_asset_disk_unavailable']);
+            $changed = true;
+        }
+
         if ($changed) {
             $this->replace($data);
         }
+    }
+
+    /**
+     * 요청에서 빠진 관리 환율을 저장값으로 채웁니다.
+     *
+     * 환율 제공자가 관리하는 통화의 환율 칸은 화면에서 잠겨 있어 운영자가 바꿀 수 없으므로, 화면은
+     * 저장할 때 그 환율을 보내지 않는다. 화면이 받아 둔 값을 그대로 다시 보내면 그 사이 제공자가
+     * 환율을 갱신한 경우 저장값과 달라져 저장 전체가 「관리 환율 변경」 422 로 막히기 때문이다.
+     * 빠진 값만 저장값으로 채우고, 값을 명시해 바꾸려는 요청은 종전대로 거절한다
+     * (validateManagedExchangeRatesUnchanged).
+     *
+     * @param  array<string, mixed>  $data  요청 입력 (참조로 갱신)
+     * @return bool 채운 값이 있으면 true
+     */
+    private function fillOmittedManagedExchangeRates(array &$data): bool
+    {
+        $currencies = $data['language_currency']['currencies'] ?? null;
+        if (! is_array($currencies)) {
+            return false;
+        }
+
+        $service = app(EcommerceSettingsService::class);
+        $provider = $service->getActiveRateProvider();
+        if ($provider === null) {
+            return false;
+        }
+
+        $managedCodes = $provider['managed_codes'] ?? [];
+        $savedByCode = array_column($service->getSettings('language_currency')['currencies'] ?? [], null, 'code');
+
+        $changed = false;
+        foreach ($currencies as $index => $currency) {
+            $code = is_array($currency) ? ($currency['code'] ?? null) : null;
+            if (! is_string($code)
+                || array_key_exists('exchange_rate', $currency)
+                || ! in_array($code, $managedCodes, true)
+                || ! isset($savedByCode[$code])) {
+                continue;
+            }
+
+            $data['language_currency']['currencies'][$index]['exchange_rate'] = $savedByCode[$code]['exchange_rate'] ?? null;
+            $changed = true;
+        }
+
+        return $changed;
     }
 
     /**
@@ -193,7 +256,7 @@ class StoreEcommerceSettingsRequest extends FormRequest
         $locale = app()->getLocale();
 
         return [
-            '_tab' => ['sometimes', 'string', 'in:basic_info,language_currency,seo,order_settings,claim,shipping,review_settings,notification_definitions,notifications,inquiry,mileage,privacy_retention'],
+            '_tab' => ['sometimes', 'string', 'in:'.implode(',', self::SECTIONS)],
 
             'notifications' => ['sometimes', 'array'],
             'notifications.channels' => ['sometimes', 'array'],
@@ -591,6 +654,7 @@ class StoreEcommerceSettingsRequest extends FormRequest
     public function withValidator(Validator $validator): void
     {
         $validator->after(function (Validator $validator) {
+            $this->validateHasSettingsSection($validator);
             $this->validateRateProviderRegistered($validator);
             $this->validateManagedExchangeRatesUnchanged($validator);
             $this->validateBaseCurrencyChangeable($validator);
@@ -599,6 +663,7 @@ class StoreEcommerceSettingsRequest extends FormRequest
             $this->validateAtLeastOneActivePaymentMethod($validator);
             $this->validatePgRequiredForActivation($validator);
             $this->validateBankAccountDefaults($validator);
+            $this->validateDbankRequiresUsableAccount($validator);
             $this->validateUniqueCountryCodes($validator);
             $this->validateCountryNames($validator);
             $this->validateDefaultCountryExists($validator);
@@ -616,6 +681,26 @@ class StoreEcommerceSettingsRequest extends FormRequest
             $this->validateMileageCurrencyRules($validator);
             $this->validateMileageEarnRate($validator);
         });
+    }
+
+    /**
+     * 저장할 설정 구역이 하나라도 실렸는지 검증합니다.
+     *
+     * 구역이 하나도 없으면 저장할 것이 없는데도 「설정이 저장되었습니다」로 응답했다 — 화면의 본문 식이 평가에
+     * 실패해 식 원문 문자열이 본문으로 나갔을 때 운영자는 저장된 줄 알았다(#703 실측). 빈 요청은 거절한다.
+     *
+     * @param  Validator  $validator  Validator 인스턴스
+     * @return void 반환값 없음
+     */
+    protected function validateHasSettingsSection(Validator $validator): void
+    {
+        foreach (self::SECTIONS as $section) {
+            if (is_array($this->input($section))) {
+                return;
+            }
+        }
+
+        $validator->errors()->add('_tab', __('sirsoft-ecommerce::validation.settings.empty_payload'));
     }
 
     /**
@@ -972,6 +1057,52 @@ class StoreEcommerceSettingsRequest extends FormRequest
                     __('sirsoft-ecommerce::validation.custom.order_settings.payment_methods.pg_required_for_activation')
                 );
             }
+        }
+    }
+
+    /**
+     * 무통장입금 활성화 시 사용할 수 있는 입금 계좌 필수 검증
+     *
+     * 무통장입금(dbank)을 켠 상태로 사용 중인 계좌가 하나도 없으면 주문서가 고를 계좌가 없어
+     * 결제하기가 「입금 은행을 선택해주세요」 로만 끝난다. 이번 요청에 실린 값이 있으면 그것을,
+     * 없으면 저장값을 기준으로 판정한다(결제수단만 또는 계좌만 보내는 저장도 같은 결과가 되도록).
+     * 주문설정을 싣지 않은 다른 탭 저장에는 관여하지 않는다.
+     *
+     * @param  Validator  $validator  Validator 인스턴스
+     * @return void 반환값 없음
+     */
+    protected function validateDbankRequiresUsableAccount(Validator $validator): void
+    {
+        if (! $this->has('order_settings.payment_methods') && ! $this->has('order_settings.bank_accounts')) {
+            return;
+        }
+
+        $service = app(EcommerceSettingsService::class);
+        $saved = $service->getSettings('order_settings');
+
+        $methods = $this->has('order_settings.payment_methods')
+            ? $this->input('order_settings.payment_methods')
+            : ($saved['payment_methods'] ?? []);
+        $dbankActive = false;
+        foreach (is_array($methods) ? $methods : [] as $method) {
+            if (is_array($method) && ($method['id'] ?? null) === PaymentMethodEnum::DBANK->value && ! empty($method['is_active'])) {
+                $dbankActive = true;
+                break;
+            }
+        }
+        if (! $dbankActive) {
+            return;
+        }
+
+        $accounts = $this->has('order_settings.bank_accounts')
+            ? $this->input('order_settings.bank_accounts')
+            : ($saved['bank_accounts'] ?? []);
+
+        if (! $service->hasUsableBankAccount($accounts)) {
+            $validator->errors()->add(
+                'order_settings.bank_accounts',
+                __('sirsoft-ecommerce::validation.custom.order_settings.bank_accounts.dbank_requires_active_account')
+            );
         }
     }
 

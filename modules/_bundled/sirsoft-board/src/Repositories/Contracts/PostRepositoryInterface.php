@@ -234,7 +234,7 @@ interface PostRepositoryInterface
      * @param  string  $direction  정렬 방향 (asc, desc)
      * @param  int  $perPage  페이지당 항목 수
      * @param  int  $page  페이지 번호
-     * @return array{total: int, items: Collection}
+     * @return array{total: int, items: Collection} 결과 객체
      */
     public function searchAcrossBoards(
         array $boardIds,
@@ -338,6 +338,27 @@ interface PostRepositoryInterface
     public function forceDeleteByBoardId(int $boardId): int;
 
     /**
+     * ID 목록의 게시글을 영구 삭제합니다 (소프트 삭제된 글 포함).
+     *
+     * 이커머스 샘플 시더의 재시드 정리(`sirsoft-ecommerce.inquiry.purge_sample_posts` 훅)에서
+     * 사용합니다. 운영 경로의 삭제는 PostService 를 거칩니다.
+     *
+     * @param  array<int, int>  $ids  게시글 ID 목록
+     * @return int 삭제된 게시글 수
+     */
+    public function forceDeleteByIds(array $ids): int;
+
+    /**
+     * 게시판의 답변 글(parent_id 가 있는 글)을 영구 삭제합니다 (소프트 삭제된 글 포함).
+     *
+     * 이커머스 샘플 시더의 재시드 정리에서 문의 게시판의 답변 글을 비울 때 사용합니다.
+     *
+     * @param  int  $boardId  게시판 ID
+     * @return int 삭제된 게시글 수
+     */
+    public function forceDeleteRepliesByBoardId(int $boardId): int;
+
+    /**
      * ID로 게시글을 조회합니다 (게시판 슬러그 불필요, board 관계 포함).
      *
      * 게시판 슬러그를 알 수 없는 상황(예: 이커머스 훅 리스너)에서
@@ -418,6 +439,7 @@ interface PostRepositoryInterface
      * @param  int  $boardId  게시판 ID
      * @param  int  $size  청크 크기
      * @param  callable  $callback  청크마다 호출될 콜백 (int[] $postIds)
+     * @return void 반환값 없음
      */
     public function eachIdChunkByBoardId(int $boardId, int $size, callable $callback): void;
 

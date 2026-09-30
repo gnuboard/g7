@@ -211,7 +211,7 @@
         </button>
       </div>
       <!-- 페이지네이션 -->
-      <pagination currentPage="{{myInquiries.data.meta.current_page ?? 1}}" totalPages="{{myInquiries.data.meta.last_page ?? null}}" hasMorePages="{{myInquiries.data.meta.has_more_pages ?? false}}" class="pt-4 flex justify-center">
+      <pagination data-type="composite" currentPage="{{myInquiries.data.meta.current_page ?? 1}}" totalPages="{{myInquiries.data.meta.last_page ?? null}}" hasMorePages="{{myInquiries.data.meta.has_more_pages ?? false}}" class="pt-4 flex justify-center">
         <on event="onPageChange">
           <set-state target="local" inquiriesPage="{{$args[0]}}"/>
           <refetch-data-source dataSourceId="myInquiries"/>

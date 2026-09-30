@@ -33,7 +33,7 @@
             <p class="text-label-subtle">$t:admin.settings.privacy.withdrawn.enabled_desc</p>
             <span data-if="{{_local.errors?.['privacy.withdrawn_retention_enabled']}}" class="form-error">{{_local.errors?.['privacy.withdrawn_retention_enabled']?.[0] ?? ''}}</span>
           </div>
-          <toggle name="privacy.withdrawn_retention_enabled" size="md" disabled="{{_computed.isReadOnly}}"/>
+          <toggle data-type="composite" name="privacy.withdrawn_retention_enabled" size="md" disabled="{{_computed.isReadOnly}}"/>
         </div>
         <div data-ref="withdrawn_target_list" data-if="{{privacyPreview?.data?.retention?.['user-withdrawn'] || privacyManualRuns?.data?.targets?.['retention:user-withdrawn']?.can_run}}" class="rounded-lg border border-gray-200 dark:border-gray-700">
           <div data-ref="withdrawn_target_row" class="px-4 py-3">
@@ -104,7 +104,7 @@
             <p class="text-label-subtle">$t:admin.settings.privacy.dormant.enabled_desc</p>
             <span data-if="{{_local.errors?.['privacy.dormant_enabled']}}" class="form-error">{{_local.errors?.['privacy.dormant_enabled']?.[0] ?? ''}}</span>
           </div>
-          <toggle name="privacy.dormant_enabled" size="md" disabled="{{_computed.isReadOnly}}"/>
+          <toggle data-type="composite" name="privacy.dormant_enabled" size="md" disabled="{{_computed.isReadOnly}}"/>
         </div>
         <!-- 휴면 네 단계 — 단계마다 한 행. 탈퇴 쪽 두 단계는 계정이 사라지므로 배지를 붉게 둔다.
              「대기기간 생략」은 전환·탈퇴 단계만 지원한다(서버가 `supports_skip_waiting` 으로 알린다). -->
@@ -178,7 +178,7 @@
             <p class="text-label-subtle">$t:admin.settings.privacy.dormant.withdraw_enabled_desc</p>
             <span data-if="{{_local.errors?.['privacy.dormant_withdraw_enabled']}}" class="form-error">{{_local.errors?.['privacy.dormant_withdraw_enabled']?.[0] ?? ''}}</span>
           </div>
-          <toggle name="privacy.dormant_withdraw_enabled" size="md" disabled="{{_computed.isReadOnly}}"/>
+          <toggle data-type="composite" name="privacy.dormant_withdraw_enabled" size="md" disabled="{{_computed.isReadOnly}}"/>
         </div>
         <div data-ref="field_dormant_withdraw_days" data-if="{{!!_local.form?.privacy?.dormant_enabled &amp;&amp; _local.form?.privacy?.dormant_enabled !== '0' &amp;&amp; !!_local.form?.privacy?.dormant_withdraw_enabled &amp;&amp; _local.form?.privacy?.dormant_withdraw_enabled !== '0'}}" class="">
           <label class="form-label">$t:admin.settings.privacy.dormant.withdraw_days</label>

@@ -1,7 +1,8 @@
 {
   "editor": {
     "data_source": {
-      "settings": "決済設定"
+      "settings": "決済設定",
+      "webhook_info": "入金通知ウェブフック URL"
     }
   },
   "plugin_name": "Toss Payments",
@@ -58,9 +59,9 @@
     "escrow_shipping_info_notice": "配送情報はToss店舗管理者で登録してください。",
     "escrow_shipping_info_link": "リンク ↗",
     "webhook_secret_verify": "ウェブフック secret 検証",
-    "webhook_secret_verify_hint": "仮想口座入金通知ウェブフックの secret を決済承認レスポンスと照合し、不正なリクエストをブロックします。",
+    "webhook_secret_verify_hint": "仮想口座入金通知ウェブフックの secret を決済承認レスポンスと照合し、不正なリクエストをブロックします。オフにすると注文番号を知っている人なら誰でも入金なしで注文を決済完了にでき、オフの間に発生したセキュリティ事故は運営者の責任となります。",
     "webhook_url_label": "仮想口座入金通知ウェブフック URL",
-    "webhook_url_hint": "上記のパスの前に店舗全体のドメイン(https://myドメイン)を付けて、Toss開発者センター > ウェブフック メニューの DEPOSIT_CALLBACK イベントとして登録してください。",
+    "webhook_url_hint": "上記のアドレスをそのままコピーし、Toss開発者センター > ウェブフック メニューの DEPOSIT_CALLBACK イベントとして登録してください。",
     "webhook_url_copy": "コピー",
     "webhook_url_copied": "ウェブフック URL がコピーされました。"
   },

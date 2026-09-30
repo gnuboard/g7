@@ -39,6 +39,11 @@ class LayoutCheckInstalledCommandTest extends TestCase
 
     private string $tmp;
 
+    /**
+     * 테스트 준비 — 필요한 서비스와 임시 자원을 만듭니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -50,6 +55,11 @@ class LayoutCheckInstalledCommandTest extends TestCase
         $this->bindActiveExtensions([]);
     }
 
+    /**
+     * 테스트 정리 — 만든 임시 자원을 지웁니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         File::deleteDirectory($this->tmp);
@@ -58,9 +68,13 @@ class LayoutCheckInstalledCommandTest extends TestCase
     }
 
     /**
+     * 왕복이 맞는 설치본 행은 통과하고 JSON 출력도 ok 를 낸다.
+     *
      * @scenario compile_unit=command,source_health=valid
      *
      * @effects installed_rows_that_round_trip_pass_with_exit_zero
+     *
+     * @return void 반환값 없음
      */
     public function test_healthy_rows_pass_and_json_reports_ok(): void
     {
@@ -74,9 +88,39 @@ class LayoutCheckInstalledCommandTest extends TestCase
     }
 
     /**
+     * 옵션 없이 돌리면 번들 여부와 무관하게 설치된 템플릿 전부를 점검한다.
+     *
+     * @scenario compile_unit=command,source_health=invalid
+     *
+     * @effects default_target_is_every_installed_template_not_only_bundled
+     *
+     * @return void 반환값 없음
+     */
+    public function test_default_target_includes_non_bundled_templates(): void
+    {
+        // 배포 원본(`_bundled`)에 없는 제3자 템플릿 — 종전 기본 대상에서는 조용히 빠졌다.
+        $thirdParty = Template::factory()->create(['identifier' => 'probe-third-party-admin', 'type' => 'admin', 'status' => ExtensionStatus::Inactive->value]);
+        TemplateLayout::factory()->create([
+            'template_id' => $thirdParty->id,
+            'name' => 'probe_bad',
+            'content' => $this->validContent('probe_bad') + ['data_sources' => [['id' => 'd', 'endpoint' => '/nope/x']]],
+        ]);
+
+        $code = Artisan::call('layout:check-installed');
+        $output = Artisan::output();
+
+        $this->assertSame(1, $code, '제3자 템플릿의 거부되는 행이 기본 점검에서 잡혀야 합니다.');
+        $this->assertStringContainsString('probe-third-party-admin', $output);
+    }
+
+    /**
+     * 프로덕션 컴파일이 거부하는 행을 실패로 보고한다.
+     *
      * @scenario compile_unit=command,source_health=invalid
      *
      * @effects row_rejected_by_production_compile_fails_the_gate
+     *
+     * @return void 반환값 없음
      */
     public function test_row_that_fails_production_compile_is_reported(): void
     {
@@ -89,9 +133,13 @@ class LayoutCheckInstalledCommandTest extends TestCase
     }
 
     /**
+     * 역변환 왕복이 원본과 다르면 실패로 보고한다.
+     *
      * @scenario compile_unit=command,source_health=invalid
      *
      * @effects round_trip_mismatch_fails_the_gate
+     *
+     * @return void 반환값 없음
      */
     public function test_round_trip_mismatch_is_reported(): void
     {
@@ -114,9 +162,13 @@ class LayoutCheckInstalledCommandTest extends TestCase
     }
 
     /**
+     * 붙을 자리가 없는 확장 행을 보고한다.
+     *
      * @scenario compile_unit=command,source_health=invalid
      *
      * @effects inapplicable_registration_fails_the_gate
+     *
+     * @return void 반환값 없음
      */
     public function test_inapplicable_extension_row_is_reported(): void
     {
@@ -138,9 +190,13 @@ class LayoutCheckInstalledCommandTest extends TestCase
     }
 
     /**
+     * 빠진 조각과 고아 조각을 보고한다.
+     *
      * @scenario compile_unit=command,source_health=invalid
      *
      * @effects missing_and_orphan_fragments_fail_the_gate
+     *
+     * @return void 반환값 없음
      */
     public function test_missing_and_orphan_fragments_are_reported(): void
     {
@@ -178,7 +234,7 @@ class LayoutCheckInstalledCommandTest extends TestCase
      * 프로덕션 컴파일을 통과하는 최소 레이아웃 JSON.
      *
      * @param  string  $name  레이아웃 이름
-     * @return array<string, mixed>
+     * @return array<string, 반환값
      */
     private function validContent(string $name): array
     {
@@ -194,7 +250,8 @@ class LayoutCheckInstalledCommandTest extends TestCase
      * 템플릿에 레이아웃 행을 만듭니다.
      *
      * @param  string  $name  레이아웃 이름
-     * @param  array<string, mixed>  $content  content
+     * @param  array<string, mixed>  $content  레이아웃 JSON
+     * @return void 반환값 없음
      */
     private function createLayout(string $name, array $content): void
     {
@@ -205,6 +262,7 @@ class LayoutCheckInstalledCommandTest extends TestCase
      * 활성 모듈·플러그인 매니저를 대역으로 바인딩합니다.
      *
      * @param  array<int, ModuleInterface>  $modules  활성 모듈 목
+     * @return void 반환값 없음
      */
     private function bindActiveExtensions(array $modules): void
     {
@@ -227,6 +285,7 @@ class LayoutCheckInstalledCommandTest extends TestCase
      *
      * @param  string  $identifier  모듈 식별자
      * @param  string  $path  fragment 디렉토리
+     * @return ModuleInterface 반환값
      */
     private function module(string $identifier, string $path): ModuleInterface
     {

@@ -18,7 +18,7 @@
       </div>
     </div>
     <div data-ref="search_area" class="px-4 panel-header">
-      <search-bar placeholder="$t:sirsoft-ecommerce.admin.common_info.list.search_placeholder" value="{{query.search || ''}}" class="w-full">
+      <search-bar data-type="composite" placeholder="$t:sirsoft-ecommerce.admin.common_info.list.search_placeholder" value="{{query.search || ''}}" class="w-full">
         <on type="submit">
           <!-- 검색 — 조건을 URL 에 실어 다시 들어간다. 화면이 다시 뜨면서 무한 스크롤 상태도 함께 처음으로 돌아간다. -->
           <navigate path="/admin/ecommerce/common-info" :mergeQuery="true">
@@ -78,7 +78,7 @@
               <span class="text-primary text-sm font-medium truncate">{{$localized(item.name)}}</span>
               <span data-if="{{item.is_default}}" class="text-secondary px-1.5 py-0.5 text-xs rounded bg-gray-100 dark:bg-gray-700 flex-shrink-0">$t:sirsoft-ecommerce.admin.common_info.list.default</span>
             </div>
-            <toggle size="sm" checked="{{item.is_active}}" disabled="{{!item.abilities?.can_update}}">
+            <toggle data-type="composite" size="sm" checked="{{item.is_active}}" disabled="{{!item.abilities?.can_update}}">
               <on type="change">
                 <!-- 행의 노출 스위치. `stopPropagation` 이 없으면 이 클릭이 행 선택으로 번져, 스위치를 눌렀을 뿐인데 오른쪽 패널이 바뀐다. -->
                 <api-call :stopPropagation="true" :auth_required="true" target="/api/modules/sirsoft-ecommerce/admin/product-common-infos/{{item.id}}/toggle-active" method="PATCH">
@@ -105,7 +105,7 @@
           </div>
         </div>
       </div>
-      <loading-spinner data-ref="loading_indicator" data-if="{{_global.infiniteScroll.isLoadingMore}}" size="sm" text="$t:sirsoft-ecommerce.common.loading" color="text-blue-600 dark:text-blue-400" class="py-3"/>
+      <loading-spinner data-type="composite" data-ref="loading_indicator" data-if="{{_global.infiniteScroll.isLoadingMore}}" size="sm" text="$t:sirsoft-ecommerce.common.loading" color="text-blue-600 dark:text-blue-400" class="py-3"/>
     </div>
     <div data-ref="empty_state" data-if="{{(commonInfos?.data?.data?.length ?? 0) === 0}}" class="flex-center flex-1 justify-center gap-3 px-4 py-8">
       <icon name="info-circle" class="text-gray-400 dark:text-gray-500" size="md"/>

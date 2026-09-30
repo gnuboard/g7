@@ -158,7 +158,7 @@
         </on>
       </select>
       <div data-ref="period_excludes" data-if="{{_local.showExclude !== false}}" class="flex items-center gap-3">
-        <toggle data-ref="exclude_admin_toggle" checked="{{(query.exclude || '').split(',').filter(Boolean).includes('admin')}}" size="sm" label="$t:admin.analytics.period.exclude_admin">
+        <toggle data-type="composite" data-ref="exclude_admin_toggle" checked="{{(query.exclude || '').split(',').filter(Boolean).includes('admin')}}" size="sm" label="$t:admin.analytics.period.exclude_admin">
           <on type="change">
             <!-- 「관리자 제외」 — 합산에서 관리자 유형 행을 뺀다. 질의에는 콤마로 묶어 싣고, 비면 키를 지운다. -->
             <sequence>
@@ -168,7 +168,7 @@
             </sequence>
           </on>
         </toggle>
-        <toggle data-ref="exclude_member_toggle" checked="{{(query.exclude || '').split(',').filter(Boolean).includes('member')}}" size="sm" label="$t:admin.analytics.period.exclude_member">
+        <toggle data-type="composite" data-ref="exclude_member_toggle" checked="{{(query.exclude || '').split(',').filter(Boolean).includes('member')}}" size="sm" label="$t:admin.analytics.period.exclude_member">
           <on type="change">
             <!-- 「회원 제외」 — 관리자 제외와 같은 방식으로 질의 `exclude` 목록에 `member` 를 넣고 뺀다. 목록의 다른 값은 보존하므로
                  한쪽 토글을 꺼도 다른 쪽 제외는 남는다. -->

@@ -454,11 +454,39 @@ Extension Point는 레이아웃의 다음 섹션에서 사용할 수 있습니�
 |----------------|------|--------------------------------------|
 | `components`   | ✅   | 메인 컴포넌트 트리 (기본)            |
 | `modals`       | ✅   | 모달 내부 컴포넌트 트리 (v1.17.0+)   |
+| 반복 렌더 템플릿 | ✅ | DataGrid·CardGrid 의 셀 템플릿(`props.columns[].cellChildren`·`props.cardColumns[].cellChildren`), 확장 행·하위 행 템플릿(`props.expandChildren`·`props.subRowChildren`) (7.1.0+) |
 
 ```text
 v1.17.0 이전: modals 내부의 extension_point는 처리되지 않았음
 ✅ v1.17.0+: components와 modals 양쪽 모두 재귀적으로 extension_point 처리
+✅ 7.1.0+: 셀·확장 행 템플릿(props 안에 실리는 트리) 안의 extension_point 도 처리
+✅ engine-v1.73.0+: 프런트 반복 렌더러(renderItemChildren)가 셀 안 확장점을 행 컨텍스트로 그린다
+   (호스트 <div> 규칙은 DynamicRenderer 와 공용 — 그 이전 엔진은 「컴포넌트를 찾을 수 없습니다」 로 버렸다)
 ```
+
+#### 셀 템플릿 안의 확장점
+
+목록의 한 칸에 확장이 표시를 덧붙여야 할 때(예: 주문 목록 결제수단 칸의 결제 플러그인 배지), 컬럼 배열을
+`inject_props` 로 통째로 덮지 말고 호스트가 그 칸에 확장점을 연다. 컬럼 배열을 덮으면 확장이 컬럼 전체의
+사본을 들고 있어야 하고, 호스트가 컬럼을 고치면 그 사본에 묻혀 화면에서 사라진다. 여러 확장이 같은 배열을
+덮으면 우선순위가 가장 높은 하나만 남는다.
+
+```html
+<column field="payment_method" header="$t:sirsoft-ecommerce.admin.order.column.payment_method">
+  <cell>
+    <div class="stack-flush">
+      <span>{{row.payment?.payment_method_label}}</span>
+      <extension-point name="admin_order_list_payment_method_badges"/>
+    </div>
+  </cell>
+</column>
+```
+
+- 셀 템플릿은 행마다 렌더되므로 주입 컴포넌트는 `row` 문맥을 그대로 읽는다(`{{my_map.data?.[row.order_number]}}`).
+- 주입 조각의 `data_sources` 는 셀이 아니라 레이아웃에 한 번 병합된다 — 행마다 다시 부르지 않는다.
+- 확장점 호스트는 빈 `<div>` 로 렌더된다. 주입이 없는 행에서도 자리를 차지하지 않도록 간격·구분선은
+  호스트 셀이 아니라 주입 컴포넌트 쪽에 둔다.
+- 여러 확장이 같은 칸에 붙으므로 주입 컴포넌트는 자기 행에서만 보이게 조건(`data-if`)을 건다.
 
 ### 레이아웃에서 Extension Point 정의
 

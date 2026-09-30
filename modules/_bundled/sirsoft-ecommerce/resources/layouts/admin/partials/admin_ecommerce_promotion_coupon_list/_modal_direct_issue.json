@@ -33,7 +33,7 @@
                     "name": "Input",
                     "actions": [
                         {
-                            "comment": "검색어를 담는 것과 회원을 찾는 것을 한 블록에서 한다. 검색어가 비면  가 요청을 막아 빈 조회로 전체 회원을 끌어오지 않는다.",
+                            "comment": "검색어를 담는 것과 회원을 찾는 것을 한 블록에서 한다. 검색어가 비거나 공백뿐이면 `if` 가 요청을 막고 이전 결과를 비운다 — 회원 검색은 빈 검색어를 422 로 거절하고(공백은 서버 요청 정리에서 지워진다) 길이만 보면 공백이 통과해 오류 토스트가 떴다.",
                             "type": "input",
                             "handler": "sequence",
                             "actions": [
@@ -47,7 +47,7 @@
                                 {
                                     "handler": "apiCall",
                                     "target": "/api/admin/users/search",
-                                    "if": "{{($event.target.value ?? '').length > 0}}",
+                                    "if": "{{String($event.target.value ?? '').trim() !== ''}}",
                                     "auth_mode": "required",
                                     "params": {
                                         "method": "GET",
@@ -74,7 +74,7 @@
                                 },
                                 {
                                     "handler": "setState",
-                                    "if": "{{($event.target.value ?? '').length === 0}}",
+                                    "if": "{{String($event.target.value ?? '').trim() === ''}}",
                                     "params": {
                                         "target": "global",
                                         "directIssueSearchResults": [],

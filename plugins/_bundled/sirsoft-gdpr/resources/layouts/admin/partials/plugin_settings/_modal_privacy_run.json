@@ -2,7 +2,8 @@
     "comment": "개인정보 조치 직권 실행 확인 창 (#636 후속) — GDPR 플러그인 설정의 연간 통지 「지금 실행」이 연다. 파기가 아니라 통지 접수라 처리 방식 줄이 없고, 한 번에 발송 상한만큼만 접수된다.\n  코어 환경설정 개인정보 탭의 같은 창과 동작이 같다(`_global.privacyRun` 에 대상 키·이름을 넣고 연 뒤 건수를 받아 온다,\n  실행은 코어 직권 실행 API 로 큐에 접수만 하고 닫는다, 결과는 화면의 상태 줄이 주기 조회로 보여 준다).\n  문구는 이 확장의 다국어 키를 쓴다 — 확장 화면이 특정 관리자 템플릿의 문구에 기대지 않게 한다.",
     "meta": {
         "is_partial": true,
-        "description": "GDPR 플러그인 설정 연간 통지 - 직권 발송 확인 모달"
+        "description": "GDPR 플러그인 설정 연간 통지 - 직권 발송 확인 모달",
+        "editor_label": "$t:sirsoft-gdpr.annual_notice.manual_run.editor_label"
     },
     "id": "privacy_run_modal",
     "type": "composite",

@@ -12,7 +12,7 @@
           <label class="text-heading">$t:sirsoft-board.admin.form.fields.is_active</label>
           <p class="form-hint">$t:sirsoft-board.admin.form.descriptions.is_active</p>
         </div>
-        <toggle name="is_active" disabled="{{_computed.isReadOnly}}" class="flex-shrink-0 ml-4"/>
+        <toggle data-type="composite" name="is_active" disabled="{{_computed.isReadOnly}}" class="flex-shrink-0 ml-4"/>
       </div>
       <div data-ref="field_slug" class="space-y-2">
         <label data-ref="field_slug_label" :required="true" class="block text-heading mb-1">
@@ -50,7 +50,7 @@
               <p class="text-heading">$t:sirsoft-board.admin.form.menu.show_in_admin_menu</p>
               <p class="text-secondary text-xs mt-0.5">$t:sirsoft-board.admin.form.menu.show_in_admin_menu_desc</p>
             </div>
-            <toggle name="add_to_menu" disabled="{{_computed.isReadOnly}}" class="flex-shrink-0"/>
+            <toggle data-type="composite" name="add_to_menu" disabled="{{_computed.isReadOnly}}" class="flex-shrink-0"/>
           </div>
         </div>
       </div>
@@ -59,14 +59,14 @@
           <span>$t:sirsoft-board.admin.form.fields.name</span>
           <span class="text-required">*</span>
         </label>
-        <multilingual-input data-ref="field_name_input" name="name" layout="tabs" placeholder="$t:sirsoft-board.admin.form.placeholders.name" :maxLength="100" :required="true" disabled="{{_computed.isReadOnly}}"/>
+        <multilingual-input data-type="composite" data-ref="field_name_input" name="name" layout="tabs" placeholder="$t:sirsoft-board.admin.form.placeholders.name" :maxLength="100" :required="true" disabled="{{_computed.isReadOnly}}"/>
         <span data-if="{{_local.errors?.name}}" class="form-error-xs mt-1">{{_local.errors?.name?.[0] ?? ''}}</span>
       </div>
       <div data-ref="field_description" class="space-y-2">
         <label data-ref="field_description_label" class="block text-heading mb-1">
           <span>$t:sirsoft-board.admin.form.fields.description</span>
         </label>
-        <multilingual-input data-ref="field_description_input" name="description" layout="tabs" inputType="textarea" placeholder="$t:sirsoft-board.admin.form.placeholders.description" :rows="3" disabled="{{_computed.isReadOnly}}"/>
+        <multilingual-input data-type="composite" data-ref="field_description_input" name="description" layout="tabs" inputType="textarea" placeholder="$t:sirsoft-board.admin.form.placeholders.description" :rows="3" disabled="{{_computed.isReadOnly}}"/>
         <span data-if="{{_local.errors?.description}}" class="form-error-xs mt-1">{{_local.errors?.description?.[0] ?? ''}}</span>
         <p class="form-hint">$t:sirsoft-board.admin.form.descriptions.description</p>
       </div>
@@ -82,7 +82,7 @@
           <span>$t:sirsoft-board.admin.form.fields.categories</span>
         </label>
         <p data-ref="field_categories_description" class="text-tertiary mb-2">$t:sirsoft-board.admin.form.descriptions.categories</p>
-        <tag-input data-ref="field_categories_input" name="categories" options="{{_local.form?.category_options ?? []}}" :creatable="true" disabled="{{_computed.isReadOnly}}"/>
+        <tag-input data-type="composite" data-ref="field_categories_input" name="categories" options="{{_local.form?.category_options ?? []}}" :creatable="true" disabled="{{_computed.isReadOnly}}"/>
         <span data-if="{{_local.errors?.categories}}" class="form-error-xs mt-1">{{_local.errors?.categories?.[0] ?? ''}}</span>
         <p data-ref="field_categories_notice" class="text-xs text-amber-600 dark:text-amber-400 mt-2">$t:sirsoft-board.admin.form.descriptions.categories_notice</p>
       </div>
@@ -103,21 +103,21 @@
           <label class="text-heading">$t:sirsoft-board.admin.form.fields.show_view_count</label>
           <p class="form-hint">$t:sirsoft-board.admin.form.descriptions.show_view_count</p>
         </div>
-        <toggle name="show_view_count" disabled="{{_computed.isReadOnly}}" class="flex-shrink-0 ml-4"/>
+        <toggle data-type="composite" name="show_view_count" disabled="{{_computed.isReadOnly}}" class="flex-shrink-0 ml-4"/>
       </div>
       <div data-ref="field_use_report" class="flex-start justify-between">
         <div class="flex-1">
           <label class="text-heading">$t:sirsoft-board.admin.form.fields.use_report</label>
           <p class="form-hint">$t:sirsoft-board.admin.form.descriptions.use_report</p>
         </div>
-        <toggle name="use_report" disabled="{{_computed.isReadOnly}}" class="flex-shrink-0 ml-4"/>
+        <toggle data-type="composite" name="use_report" disabled="{{_computed.isReadOnly}}" class="flex-shrink-0 ml-4"/>
       </div>
       <div data-ref="field_use_scrap" class="flex-start justify-between">
         <div class="flex-1">
           <label class="text-heading">$t:sirsoft-board.admin.form.fields.use_scrap</label>
           <p class="form-hint">$t:sirsoft-board.admin.form.descriptions.use_scrap</p>
         </div>
-        <toggle name="use_scrap" disabled="{{_computed.isReadOnly}}" class="flex-shrink-0 ml-4"/>
+        <toggle data-type="composite" name="use_scrap" disabled="{{_computed.isReadOnly}}" class="flex-shrink-0 ml-4"/>
       </div>
       <div data-ref="field_use_reaction">
         <div class="flex-start justify-between">
@@ -125,9 +125,9 @@
             <label class="text-heading">$t:sirsoft-board.admin.form.fields.use_reaction</label>
             <p class="form-hint">$t:sirsoft-board.admin.form.descriptions.use_reaction</p>
           </div>
-          <toggle name="use_reaction" disabled="{{_computed.isReadOnly}}" class="flex-shrink-0 ml-4"/>
+          <toggle data-type="composite" name="use_reaction" disabled="{{_computed.isReadOnly}}" class="flex-shrink-0 ml-4"/>
         </div>
-        <!-- 사용할 반응 유형 선택 — 반응 사용 on 일 때만 노출. DB 등록 유형 전체(reactionTypes)를 순회해 체크박스로 active_reaction_types(code 배열) 를 토글. 게시판 환경설정 화면과 동일하게 배경 박스 + 좌측 들여쓰기로 시각적 구분 (PO 피드백). -->
+        <!-- 사용할 반응 유형 선택 — 반응 사용 on 일 때만 노출. DB 등록 유형 전체(reactionTypes)를 순회해 체크박스로 active_reaction_types(code 배열) 를 토글. 게시판 환경설정 화면과 동일하게 배경 박스 + 좌측 들여쓰기로 시각적 구분 (검수 피드백). -->
         <div data-if="{{_local.form?.use_reaction === true}}" class="ml-6 mt-2 p-3 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg">
           <div class="flex-between gap-2 mb-2">
             <p class="form-hint">$t:sirsoft-board.admin.form.fields.active_reaction_types</p>
@@ -169,7 +169,7 @@
             <p class="form-hint">$t:sirsoft-board.admin.form.descriptions.use_comment_reaction</p>
           </div>
           <div data-testid="board-form-use-comment-reaction" class="flex-shrink-0 ml-4">
-            <toggle name="use_comment_reaction" disabled="{{_computed.isReadOnly || _local.form?.use_reaction !== true}}"/>
+            <toggle data-type="composite" name="use_comment_reaction" disabled="{{_computed.isReadOnly || _local.form?.use_reaction !== true}}"/>
           </div>
         </div>
       </div>

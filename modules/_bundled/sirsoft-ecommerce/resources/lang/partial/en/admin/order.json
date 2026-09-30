@@ -737,6 +737,7 @@
     "description": "Select the range of orders to download",
     "download": "Download",
     "download_success": "Excel file has been downloaded",
+    "download_failed": "Failed to download the Excel file",
     "option_search": "Download with current search criteria",
     "option_search_desc": "Total {{count}} orders will be downloaded",
     "option_selected": "Download selected orders only",

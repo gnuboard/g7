@@ -1,0 +1,29 @@
+feature: 주문서·배송지 창의 배송국가 단일 출처 + 국내 상세주소 필수 표시 (#703)
+
+description: |
+  주문서 배송국가 선택 칸은 선호 배송국가(_global.preferredShippingCountry)를, 국내/해외 주소 폼·결제 버튼 잠금은
+  `_local.shipping.country_code ?? 'KR'` 을 봤고, 진입 시에는 배송비 계산용 `_local.checkout.country_code` 만 시드됐다.
+  선호 배송국가가 미국이면 선택 칸은 「미국」인데 주소 폼은 국내형이고 주문은 KR 로 저장됐다
+  (도입: 242869db50 · 2026-06-26 · #421 유저별 배송국가 / 시드 추가: 1feaafc89c · 2026-06-29 · #421 배송비 국가 연동).
+  진입 시 두 자리를 같은 값(해외배송 활성 + 활성 국가일 때만 선호 국가, 아니면 KR)으로 시드하고, 모든 분기가 같은
+  자리를 본다. 마이페이지 배송지 창·주문서 배송지 관리 창의 「새 배송지」도 같은 방식으로 맞춘다.
+  국내 상세주소 칸에 별표와 칸 아래 오류를 붙인다.
+  조합의 뜻: 선호 해외국가로 시작한 화면에서 국가를 국내로 바꾸고 상세주소를 비운 경우다. 주문서는 서버가
+  상세주소를 요구하므로 별표·칸 아래 오류가 보여야 하고, 두 배송지 창(배송지록 저장)은 서버가 상세주소를
+  비워도 받으므로 별표가 없어야 한다.
+
+axes:
+  screen: [checkout, checkout_address_modal, mypage_address_modal]
+  preferred_country: [active_overseas]
+  intl_shipping: [enabled]
+  shipping_region: [domestic]
+  address_detail_input: [missing]
+
+effects:
+  - checkout_country_single_source
+  - address_modal_country_single_source
+  - domestic_address_detail_marked_required
+  - address_book_detail_optional_matches_server
+
+test_files:
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/checkout-shipping-country-consistency.test.tsx

@@ -14,7 +14,7 @@
   늘 「패턴을 입력하세요」로 되돌아간다(브라우저 실측 확인). 이 창은 단추가 방금 친 값을 읽어야
   하므로 본문에 둔다 — 확인/닫기만 하는 창이라면 고정 하단이 맞다. -->
 <partial description="환경설정 > 보안 탭 IP 접근 제한 규칙 추가·편집 모달. _global.ip_restriction_rule_form_modal 단일 진실 — 목록이 여는 순간 통째 set, 적용 시 $parent._local 폼 배열로 1회 커밋" editor_label="$t:admin.modal_label.admin_settings.ip_restriction_rule_form_modal">
-  <modal data-ref="ip_restriction_rule_form_modal" title="{{(_global.ip_restriction_rule_form_modal?.row_index ?? null) === null ? '$t:admin.settings.security.ip_restriction.modal.create_title' : '$t:admin.settings.security.ip_restriction.modal.edit_title'}}" size="md" :closeOnOverlayClick="false">
+  <modal data-type="composite" data-ref="ip_restriction_rule_form_modal" title="{{(_global.ip_restriction_rule_form_modal?.row_index ?? null) === null ? '$t:admin.settings.security.ip_restriction.modal.create_title' : '$t:admin.settings.security.ip_restriction.modal.edit_title'}}" size="md" :closeOnOverlayClick="false">
     <div class="row-stack">
       <div data-ref="ip_rule_form_error" data-if="{{!!_global.ip_restriction_rule_form_modal?.error}}" class="alert-danger">
         <p class="text-error-strong">$t:admin.settings.security.ip_restriction.modal.{{_global.ip_restriction_rule_form_modal?.error ?? 'pattern_required'}}</p>
@@ -31,7 +31,7 @@
       </div>
       <div>
         <label class="form-label">$t:admin.settings.security.ip_restriction.modal.ips</label>
-        <tag-input data-ref="ip_rule_ips_input" value="{{_global.ip_restriction_rule_form_modal?.form?.ips ?? []}}" :creatable="true" placeholder="$t:admin.settings.security.ip_restriction.ip_placeholder" class="w-full" defaultVariant="blue">
+        <tag-input data-type="composite" data-ref="ip_rule_ips_input" value="{{_global.ip_restriction_rule_form_modal?.form?.ips ?? []}}" :creatable="true" placeholder="$t:admin.settings.security.ip_restriction.ip_placeholder" class="w-full" defaultVariant="blue">
           <on type="change">
             <!-- 허용 IP — 태그 입력이 준 배열을 통째로 담는다 -->
             <set-state target="global" ip_restriction_rule_form_modal.form.ips="{{$event.target.value}}"/>
@@ -49,7 +49,7 @@
       </div>
       <div class="flex-between">
         <!-- 라벨은 토글 자신이 단다 — 형제 <span> 은 스위치와 연결되지 않아 읽어 주는 이름이 없다. -->
-        <toggle label="$t:admin.settings.security.ip_restriction.modal.enabled" checked="{{_global.ip_restriction_rule_form_modal?.form?.enabled !== false}}" size="md">
+        <toggle data-type="composite" label="$t:admin.settings.security.ip_restriction.modal.enabled" checked="{{_global.ip_restriction_rule_form_modal?.form?.enabled !== false}}" size="md">
           <on type="change">
             <!-- 사용 여부 — 체크 상태가 아니라 현재 값을 뒤집어 담는다(값이 없으면 켜진 것으로 본다) -->
             <set-state target="global" ip_restriction_rule_form_modal.form.enabled="{{!(_global.ip_restriction_rule_form_modal?.form?.enabled !== false)}}"/>

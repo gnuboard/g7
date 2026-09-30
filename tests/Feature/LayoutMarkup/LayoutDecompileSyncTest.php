@@ -44,6 +44,11 @@ class LayoutDecompileSyncTest extends TestCase
     </layout>
     HTML;
 
+    /**
+     * 테스트 준비 — 필요한 서비스와 임시 자원을 만듭니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -51,6 +56,11 @@ class LayoutDecompileSyncTest extends TestCase
         File::ensureDirectoryExists(base_path(self::SCRATCH));
     }
 
+    /**
+     * 테스트 정리 — 만든 임시 자원을 지웁니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         File::deleteDirectory(base_path(self::SCRATCH));
@@ -64,6 +74,8 @@ class LayoutDecompileSyncTest extends TestCase
      * @scenario compile_unit=decompile,source_health=valid
      *
      * @effects decompile_sync_creates_missing_json_twin
+     *
+     * @return void 반환값 없음
      */
     public function test_sync_creates_the_missing_json_twin(): void
     {
@@ -91,6 +103,8 @@ class LayoutDecompileSyncTest extends TestCase
      * @scenario compile_unit=decompile,source_health=valid
      *
      * @effects decompile_sync_rewrites_stale_json_twin
+     *
+     * @return void 반환값 없음
      */
     public function test_sync_rewrites_a_stale_twin(): void
     {
@@ -115,6 +129,8 @@ class LayoutDecompileSyncTest extends TestCase
      * @scenario compile_unit=decompile,source_health=valid
      *
      * @effects decompile_sync_does_not_rewrite_an_up_to_date_twin
+     *
+     * @return void 반환값 없음
      */
     public function test_sync_leaves_an_up_to_date_twin_untouched(): void
     {
@@ -145,6 +161,8 @@ class LayoutDecompileSyncTest extends TestCase
      * @scenario compile_unit=decompile,source_health=valid
      *
      * @effects decompile_check_passes_when_twin_is_fresh
+     *
+     * @return void 반환값 없음
      */
     public function test_check_passes_when_the_twin_is_fresh(): void
     {
@@ -163,6 +181,8 @@ class LayoutDecompileSyncTest extends TestCase
      * @scenario compile_unit=decompile,source_health=valid
      *
      * @effects decompile_check_reports_stale_twins_without_writing
+     *
+     * @return void 반환값 없음
      */
     public function test_check_reports_stale_twins_and_does_not_write(): void
     {
@@ -186,6 +206,8 @@ class LayoutDecompileSyncTest extends TestCase
      * @scenario compile_unit=decompile,source_health=valid
      *
      * @effects decompile_check_treats_a_missing_twin_as_stale
+     *
+     * @return void 반환값 없음
      */
     public function test_check_treats_a_missing_twin_as_stale(): void
     {
@@ -204,6 +226,8 @@ class LayoutDecompileSyncTest extends TestCase
      * @scenario compile_unit=decompile,source_health=invalid
      *
      * @effects decompile_sync_and_check_are_mutually_exclusive
+     *
+     * @return void 반환값 없음
      */
     public function test_sync_and_check_cannot_be_combined(): void
     {
@@ -223,6 +247,8 @@ class LayoutDecompileSyncTest extends TestCase
      * @scenario compile_unit=decompile,source_health=valid
      *
      * @effects decompile_sync_output_is_line_feed_only_with_one_trailing_newline
+     *
+     * @return void 반환값 없음
      */
     public function test_sync_output_uses_line_feed_only(): void
     {
@@ -247,6 +273,8 @@ class LayoutDecompileSyncTest extends TestCase
      * @scenario compile_unit=decompile,source_health=valid
      *
      * @effects decompile_out_dump_shares_the_bake_serialization
+     *
+     * @return void 반환값 없음
      */
     public function test_out_dump_and_sync_produce_identical_bytes(): void
     {
@@ -278,12 +306,14 @@ class LayoutDecompileSyncTest extends TestCase
      *    이름만 바뀌어도 신호가 자동으로 따라온다.
      *  - 호출 신호 = 커맨드의 **등록된 이름**(`getName()`)을 Artisan 프로그램 호출 형태로 찾는다.
      *    **문자열로 이름을 언급하는 것은 호출이 아니다** — 작성 안내 문구에 커맨드를 적어 주는
-     *    `layout:add-permissions` 가 정확히 그 형태이고, 단순 부분문자열 판정이면 그 안내가
+     *    (지금은 삭제된) `layout:add-permissions` 가 정확히 그 형태였고, 단순 부분문자열 판정이면 그 안내가
      *    위반으로 잡혀 저자는 안내를 지우게 된다(19차 "설명을 지우게 만드는 가드" 형태).
      *
      * @scenario compile_unit=install,source_health=valid
      *
      * @effects install_and_serving_paths_never_bake_json_twins
+     *
+     * @return void 반환값 없음
      */
     public function test_install_and_serving_paths_do_not_bake_json(): void
     {
@@ -344,6 +374,8 @@ class LayoutDecompileSyncTest extends TestCase
      * @scenario compile_unit=install,source_health=valid
      *
      * @effects bake_boundary_predicate_detects_both_violation_forms
+     *
+     * @return void 반환값 없음
      */
     public function test_bake_boundary_predicate_detects_both_forms(): void
     {

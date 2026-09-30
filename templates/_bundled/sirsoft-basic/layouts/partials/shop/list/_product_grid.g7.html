@@ -5,7 +5,7 @@
     <!-- 상품 그리드 -->
     <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 mb-8">
       <div data-each="product in {{products?.data?.data ?? []}}">
-        <product-card product="{{product}}" shopBase="{{_global.shopBase ?? '/shop'}}" :preserveListQuery="true"/>
+        <product-card data-type="composite" product="{{product}}" shopBase="{{_global.shopBase ?? '/shop'}}" :preserveListQuery="true"/>
       </div>
     </div>
     <!-- 빈 상태 -->

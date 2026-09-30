@@ -99,7 +99,7 @@
       </div>
       <include src="partials/admin_analytics/_partial_status_alerts.g7.html"/>
       <include src="partials/admin_analytics/_partial_period_bar.g7.html"/>
-      <tab-navigation data-ref="report_tabs" class="mb-4" activeTabId="{{query.tab || 'browsers'}}" variant="underline">
+      <tab-navigation data-type="composite" data-ref="report_tabs" class="mb-4" activeTabId="{{query.tab || 'browsers'}}" variant="underline">
         <prop name="tabs">
           <item id="browsers" label="$t:admin.analytics.environment.tabs.browsers"/>
           <item id="os" label="$t:admin.analytics.environment.tabs.os"/>
@@ -118,7 +118,7 @@
       <div data-ref="device_chart_card" data-if="{{(query.tab || 'browsers') === 'devices' &amp;&amp; (analytics_report?.data?.data ?? []).length > 0}}" class="admin-card mb-4">
         <h2 class="section-heading mb-3">$t:admin.analytics.environment.device_share_title</h2>
         <div class="flex justify-center">
-          <donut-chart data-ref="device_chart" data="{{(analytics_report?.data?.data ?? []).map((row, i) => ({ name: row.label_display ?? row.label ?? '-', value: row.visits ?? 0, color: ['#7C3AED', '#0EA5E9', '#F59E0B', '#10B981'][i % 4] }))}}" :size="220" :showLegend="true"/>
+          <donut-chart data-type="composite" data-ref="device_chart" data="{{(analytics_report?.data?.data ?? []).map((row, i) => ({ name: row.label_display ?? row.label ?? '-', value: row.visits ?? 0, color: ['#7C3AED', '#0EA5E9', '#F59E0B', '#10B981'][i % 4] }))}}" :size="220" :showLegend="true"/>
         </div>
       </div>
       <include src="partials/admin_analytics/_partial_report_grid.g7.html"/>

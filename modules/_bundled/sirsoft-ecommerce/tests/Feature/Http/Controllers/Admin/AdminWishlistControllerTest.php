@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\DB;
 use Modules\Sirsoft\Ecommerce\Enums\ProductDisplayStatus;
 use Modules\Sirsoft\Ecommerce\Models\Product;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
+use PHPUnit\Framework\Attributes\Group;
 
 /**
  * 관리자 찜 관리 API Feature 테스트 (이슈 #524 §4.1)
@@ -25,11 +26,10 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  * @scenario surface=admin_wishlist_list,actor=admin
  *
  * @effects admin_wishlist_requires_read_permission, admin_wishlist_bulk_delete_writes_activity_log
- *
- * @group ecommerce
- * @group admin
- * @group wishlist
  */
+#[Group('ecommerce')]
+#[Group('admin')]
+#[Group('wishlist')]
 class AdminWishlistControllerTest extends ModuleTestCase
 {
     private string $apiBase = '/api/modules/sirsoft-ecommerce/admin/wishlists';
@@ -44,6 +44,11 @@ class AdminWishlistControllerTest extends ModuleTestCase
 
     private Product $product;
 
+    /**
+     * 각 테스트 전에 공통 준비를 합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -64,6 +69,8 @@ class AdminWishlistControllerTest extends ModuleTestCase
      * read 권한 없는 관리자 → 403.
      *
      * @effects admin_wishlist_requires_read_permission
+     *
+     * @return void 반환값 없음
      */
     public function test_index_requires_read_permission(): void
     {
@@ -76,6 +83,8 @@ class AdminWishlistControllerTest extends ModuleTestCase
      * 목록은 페이지네이션과 abilities 를 함께 낸다 (화면이 삭제 버튼 상태를 정할 근거).
      *
      * @effects admin_wishlist_returns_pagination_and_abilities
+     *
+     * @return void 반환값 없음
      */
     public function test_index_returns_pagination_and_abilities(): void
     {
@@ -93,6 +102,8 @@ class AdminWishlistControllerTest extends ModuleTestCase
      * read 만 있는 관리자는 목록은 보되 can_manage=false 로 받는다.
      *
      * @effects admin_wishlist_read_only_cannot_manage
+     *
+     * @return void 반환값 없음
      */
     public function test_index_read_only_admin_gets_can_manage_false(): void
     {
@@ -108,6 +119,8 @@ class AdminWishlistControllerTest extends ModuleTestCase
      * user_uuid 필터 — 없는 uuid 는 빈 결과여야 한다 (필터 무시 후 전체 노출 금지).
      *
      * @effects admin_wishlist_filters_by_user_uuid, admin_wishlist_unknown_uuid_returns_empty
+     *
+     * @return void 반환값 없음
      */
     public function test_index_filters_by_user_uuid(): void
     {
@@ -130,6 +143,8 @@ class AdminWishlistControllerTest extends ModuleTestCase
      * 검색 대상 분기 — member(이름) / email / member_id(uuid) / product(상품명).
      *
      * @effects admin_wishlist_search_field_branches
+     *
+     * @return void 반환값 없음
      */
     public function test_index_search_field_branches(): void
     {
@@ -153,6 +168,8 @@ class AdminWishlistControllerTest extends ModuleTestCase
      * manage 권한 없는 관리자의 삭제 → 403.
      *
      * @effects admin_wishlist_destroy_requires_manage_permission
+     *
+     * @return void 반환값 없음
      */
     public function test_destroy_requires_manage_permission(): void
     {
@@ -169,6 +186,8 @@ class AdminWishlistControllerTest extends ModuleTestCase
      * 일괄 삭제 → 건수 반환 + 행마다 관리자 활동 로그.
      *
      * @effects admin_wishlist_bulk_delete_writes_activity_log
+     *
+     * @return void 반환값 없음
      */
     public function test_bulk_destroy_deletes_and_writes_activity_log(): void
     {
@@ -208,6 +227,8 @@ class AdminWishlistControllerTest extends ModuleTestCase
      * 존재하지 않는 ID 가 섞이면 422 (목록이 낡았음을 드러낸다).
      *
      * @effects admin_wishlist_bulk_destroy_rejects_unknown_ids
+     *
+     * @return void 반환값 없음
      */
     public function test_bulk_destroy_rejects_unknown_ids(): void
     {

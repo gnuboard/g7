@@ -449,6 +449,7 @@ export interface DataGridProps {
   selectable?: boolean;             // 행 선택 기능
   selectedIds?: (string | number)[]; // 선택된 행 ID 배열
   selectionScope?: 'page' | 'free'; // 선택의 유효 범위 (아래 "선택의 유효 범위" 참조)
+  nonSelectableIds?: (string | number)[]; // 선택할 수 없는 행 ID (체크박스 비활성, 전체 선택 제외)
   className?: string;               // CSS 클래스
 
   // 정렬 (외부 제어)
@@ -492,6 +493,7 @@ export interface DataGridProps {
 | `selectable` | `boolean` | ❌ | `false` | 체크박스 선택 기능 활성화 |
 | `selectedIds` | `(string\|number)[]` | ❌ | `[]` | 선택된 행 ID 배열 |
 | `selectionScope` | `'page' \| 'free'` | ❌ | `'free'` | 선택의 유효 범위 (아래 참조) |
+| `nonSelectableIds` | `(string\|number)[]` | ❌ | - | 선택할 수 없는 행 ID. 체크박스가 비활성으로 그려지고 전체 선택·전체 선택 여부 판정에서 빠지며, `selectionScope: 'page'` 면 남아 있던 선택도 버린다. 서버가 일괄 요청 전체를 거절하는 대상(예: 회원 일괄 상태 변경의 로그인한 본인)에 쓴다 |
 | `sortField` | `string \| null` | ❌ | - | 정렬 기준 필드 (외부 제어) |
 | `sortDirection` | `'asc' \| 'desc'` | ❌ | - | 정렬 방향 |
 | `pagination` | `boolean` | ❌ | `false` | 페이지네이션 활성화 |

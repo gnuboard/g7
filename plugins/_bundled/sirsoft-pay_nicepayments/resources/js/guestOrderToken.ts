@@ -60,3 +60,46 @@ export function buildOrderRequestHeaders(): Record<string, string> | null {
 
     return headers;
 }
+
+/**
+ * 결제 도중 주문 상태를 바꾸는 요청(결제창 닫힘 보고 등)에 실을 소유자 증명 헤더를 만듭니다.
+ *
+ * 서버는 회원 주문을 로그인한 본인(Bearer)으로, 비회원 주문을 조회 토큰으로만 확인한다 —
+ * 주문자 이메일·전화번호는 제3자도 알 수 있어 소유 증명이 되지 못한다. 회원 Bearer 는
+ * G7Core.api 가 스스로 싣으므로 여기서는 비회원 조회 토큰만 다룬다. 로그인 상태면 싣지 않는다.
+ * 토큰이 없으면 빈 객체 — 서버가 보고를 거부하고, 결제대기 주문은 만료 정리 잡이 정리한다.
+ *
+ * @return 헤더 객체 (실을 것이 없으면 빈 객체)
+ */
+export function buildGuestOwnershipHeaders(): Record<string, string> {
+    let authToken: string | null = null;
+    try {
+        authToken = getAuthToken();
+    } catch {
+        // localStorage 접근 불가 환경 — 비로그인으로 간주
+    }
+
+    if (authToken) {
+        return {};
+    }
+
+    const guestToken = getGuestOrderToken();
+
+    return guestToken ? { 'X-Guest-Order-Token': guestToken } : {};
+}
+
+/**
+ * 요청 주소가 현재 문서와 같은 출처인지 판정합니다.
+ *
+ * G7Core.api 없이 fetch 로 직접 보낼 때 조회 토큰을 다른 출처로 흘리지 않기 위한 확인이다.
+ *
+ * @param url 요청 주소 (절대·상대 모두)
+ * @return 같은 출처면 true
+ */
+export function isSameOriginUrl(url: string): boolean {
+    try {
+        return new URL(url, window.location.origin).origin === window.location.origin;
+    } catch {
+        return false;
+    }
+}

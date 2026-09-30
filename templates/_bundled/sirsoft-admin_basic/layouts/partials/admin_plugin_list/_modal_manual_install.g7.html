@@ -4,7 +4,7 @@
   주소·형식·본문을 통째로 바꿔 보낸다.
   실패는 토스트가 아니라 창 안 붉은 띠와 각 칸 아래 문구로 남긴다 — 고칠 자리가 이 창 안이기 때문이다. -->
 <partial description="플러그인 수동 설치 모달" editor_label="$t:admin.modal_label.admin_plugin_list.plugin_manual_install_modal">
-  <modal data-ref="plugin_manual_install_modal" title="$t:admin.plugins.modals.manual_install_title" size="medium">
+  <modal data-type="composite" data-ref="plugin_manual_install_modal" title="$t:admin.plugins.modals.manual_install_title" size="medium">
     <p class="text-secondary mb-4">$t:admin.plugins.modals.manual_install_description</p>
     <div class="mb-4">
       <button type="button" class="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-indigo-700 dark:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-md">
@@ -24,7 +24,7 @@
         </div>
       </div>
     </div>
-    <tab-navigation data-ref="plugin_install_tabs" activeTabId="{{_global.pluginInstallTab || 'file_upload'}}" variant="underline">
+    <tab-navigation data-type="composite" data-ref="plugin_install_tabs" activeTabId="{{_global.pluginInstallTab || 'file_upload'}}" variant="underline">
       <prop name="tabs">
         <item id="file_upload" label="$t:admin.plugins.tabs.file_upload" iconName="upload"/>
         <item id="github" label="$t:admin.plugins.tabs.github" iconName="code-branch"/>

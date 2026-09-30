@@ -29,8 +29,8 @@
 | --- | --- | --- | --- | --- | --- |
 | status | query | string | 아니오 | — | 상태 필터 (해당 상태의 항목만 조회) |
 | trigger | query | string | 아니오 | — | 실행 계기: scheduled, retry, manual, dry_run, currency_changed |
-| date_from | query | date | 아니오 | — | 조회 기간 시작일 |
-| date_to | query | date | 아니오 | — | 조회 기간 종료일 |
+| date_from | query | date | 아니오 | Y-m-d | 조회 기간 시작일 |
+| date_to | query | date | 아니오 | Y-m-d, date_from 이상 | 조회 기간 종료일 (date_from 과 함께 오면 그보다 앞설 수 없다) |
 | page | query | integer | 아니오 | min 1 | 조회할 페이지 번호 (1부터 시작) |
 | per_page | query | integer | 아니오 | between 1,100 | 페이지당 항목 수 |
 
@@ -138,7 +138,7 @@ HTTP/1.1 200
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-koreaexim.exchange_rate.view`)이 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지). 메시지의 항목 이름은 요청 언어의 표시 이름(예: `date_to` → 「종료일」)으로 나간다 — 종료일이 시작일보다 앞서면 `date_to` 에 「종료일 필드는 시작일 이후 또는 같은 날짜여야 합니다.」 |
 
 <!-- @generated:end -->
 

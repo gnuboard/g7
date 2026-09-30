@@ -66,6 +66,7 @@ effects:
   - quick_replies_restricted_linktypes
   - highlight_length_depends_on_thumbnail_presence
   - server_prunes_irrelevant_type_fields_before_save
+  - draft_save_accepts_partial_content_and_request_validates_fully
   # 이미지 업로드 프록시 (S2 — 부록 A-7)
   - image_upload_proxies_to_kapi_and_returns_url
   - image_upload_rejects_out_of_spec_file_before_kapi
@@ -96,6 +97,22 @@ effects:
   - sms_modal_edits_body_per_locale_tab
   # 코어 [기본값 복원] — 플러그인이 시드한 alimtalk/sms 행도 복원된다 (§18.7 C2 실측 결함)
   - core_reset_restores_seeded_channel_template_defaults
+  # 시딩 — 코어 공통 시딩 훅(core.notification.filter_seed_definitions) 하나에만 답한다(코어 7.1.0).
+  # 도메인 언어팩 시딩 훅을 이름으로 고르던 때는 목록에 없는 새 모듈의 알림에 행이 생기지 않았다.
+  - seed_answered_via_single_core_hook_without_domain_names
+  - arbitrary_extension_definitions_augmented_via_core_seed_hook
+  - seeded_channel_templates_survive_resync
+  # 활성화 시 이미 설치·활성인 모듈·플러그인의 알림 정의만 코어 진입점으로 재동기화(2026-09-28 결정) —
+  # 설치본만 읽고(_bundled 아님) 권한·메뉴는 건드리지 않으며 운영자 수정(user_overrides)은 보존
+  - activation_resyncs_installed_plugin_definitions
+  - activation_resync_preserves_user_overrides
+  # 증강 규칙 (SeedChannelTemplatesListener — 소유자와 무관하게 동일)
+  - member_facing_definitions_gain_sms_and_alimtalk_templates
+  - augmented_body_reuses_database_plain_text
+  - augmented_body_strips_mail_html_when_no_database
+  - admin_only_definitions_not_augmented
+  - existing_channel_template_not_duplicated
+  - definitions_without_recipients_treated_as_member_facing
   # 업로드 진행 상태 배선 (라운드 5 — 이 축이 effect 에 없어 배선 단언만 지우면 룰이 조용했다)
   - upload_in_progress_locks_save_buttons_not_cancel
   - upload_rejects_concurrent_selection_while_in_flight
@@ -131,6 +148,8 @@ scenarios:
       - manage_list_mobile_card_view_and_unified_toolbar
 
 test_files:
+  - plugins/_bundled/sirsoft-message_bizppurio/tests/Unit/Http/Requests/TemplateDraftValidationTest.php
+  - plugins/_bundled/sirsoft-message_bizppurio/resources/js/__tests__/layouts/templateDraftSave.test.ts
   - plugins/_bundled/sirsoft-message_bizppurio/tests/Unit/Enums/BizppurioTemplateStatusTest.php
   - plugins/_bundled/sirsoft-message_bizppurio/tests/Unit/Models/BizppurioTemplateTest.php
   - plugins/_bundled/sirsoft-message_bizppurio/tests/Unit/Services/BizppurioTemplateServiceTest.php
@@ -138,6 +157,7 @@ test_files:
   - plugins/_bundled/sirsoft-message_bizppurio/tests/Feature/Template/SyncTemplateStatusCommandTest.php
   - plugins/_bundled/sirsoft-message_bizppurio/tests/Feature/Notification/CoreTemplateResetDefaultsTest.php
   - plugins/_bundled/sirsoft-message_bizppurio/tests/Unit/Listeners/SeedChannelTemplatesListenerTest.php
+  - plugins/_bundled/sirsoft-message_bizppurio/tests/Feature/Installation/ChannelTemplateSeedViaCoreHookTest.php
   - plugins/_bundled/sirsoft-message_bizppurio/resources/js/__tests__/handlers/uploadTemplateImage.test.ts
   - plugins/_bundled/sirsoft-message_bizppurio/resources/js/__tests__/layouts/notification_tab_lifecycle.test.tsx
   - plugins/_bundled/sirsoft-message_bizppurio/resources/js/__tests__/layouts/plugin_settings_manage.test.tsx

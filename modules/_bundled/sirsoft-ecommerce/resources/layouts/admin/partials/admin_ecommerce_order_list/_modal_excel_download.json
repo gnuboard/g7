@@ -82,7 +82,7 @@
                                                     "props": {
                                                         "className": "block text-tertiary mt-0.5"
                                                     },
-                                                    "text": "$t:sirsoft-ecommerce.admin.order.excel.option_search_desc:count={{_global.excelDownloadContext?.total ?? 0}}"
+                                                    "text": "$t:sirsoft-ecommerce.admin.order.excel.option_search_desc|count={{_global.excelDownloadContext?.total ?? 0}}"
                                                 }
                                             ]
                                         }
@@ -139,7 +139,7 @@
                                                     "props": {
                                                         "className": "block text-tertiary mt-0.5"
                                                     },
-                                                    "text": "$t:sirsoft-ecommerce.admin.order.excel.option_selected_desc:count={{(_global.excelDownloadContext?.selectedItems ?? []).length}}"
+                                                    "text": "$t:sirsoft-ecommerce.admin.order.excel.option_selected_desc|count={{(_global.excelDownloadContext?.selectedItems ?? []).length}}"
                                                 }
                                             ]
                                         }
@@ -185,7 +185,7 @@
                     "name": "Button",
                     "actions": [
                         {
-                            "comment": "내려받기. 응답이 JSON 이 아니라 blob 이라 성공 처리가 다른 화면과 다르다 — 서버는 파일\n            바이트만 주고 파일명은 이쪽이 붙인다(시각도 서버가 아닌 브라우저 시각이다). 그래서\n            `downloadFile` 이 성공 사슬의 첫 자리에 있고 토스트·창 닫기는 그 뒤다.",
+                            "comment": "내려받기. 응답이 JSON 이 아니라 파일(blob)이라 코어 apiCall 로는 받지 못한다(apiCall 은 응답을\n            JSON 으로만 읽는다) — 요청과 저장을 이 모듈의 `sirsoft-ecommerce.downloadFile` 이 한 번에 한다. 서버는\n            파일 바이트만 주고 파일명은 이쪽이 붙인다(시각도 서버가 아닌 브라우저 시각이다). 토스트·창 닫기는\n            저장이 시작된 뒤이고, 실패하면 진행 표시를 풀고 실패 안내를 띄운다.",
                             "type": "click",
                             "handler": "sequence",
                             "actions": [
@@ -197,26 +197,14 @@
                                     }
                                 },
                                 {
-                                    "handler": "apiCall",
-                                    "target": "/api/modules/sirsoft-ecommerce/admin/orders/export-excel",
-                                    "auth_required": true,
+                                    "handler": "sirsoft-ecommerce.downloadFile",
                                     "params": {
+                                        "url": "/api/modules/sirsoft-ecommerce/admin/orders/export-excel",
                                         "method": "POST",
-                                        "responseType": "blob",
-                                        "body": {
-                                            "type": "{{_global.excelDownloadContext?.type}}",
-                                            "order_ids": "{{_global.excelDownloadContext?.type === 'selected' ? (_global.excelDownloadContext?.selectedItems ?? []) : []}}",
-                                            "filters": "{{_global.excelDownloadContext?.type === 'search' ? { search_field: _global.excelDownloadContext?.filter?.searchField, search_keyword: _global.excelDownloadContext?.filter?.searchKeyword, date_type: _global.excelDownloadContext?.filter?.dateType, start_date: _global.excelDownloadContext?.filter?.startDate, end_date: _global.excelDownloadContext?.filter?.endDate, order_status: _global.excelDownloadContext?.filter?.orderStatus, claim_presence: _global.excelDownloadContext?.filter?.claimPresence, claim_exchange_statuses: _global.excelDownloadContext?.filter?.claimExchangeStatuses, claim_return_statuses: _global.excelDownloadContext?.filter?.claimReturnStatuses, claim_refund_statuses: _global.excelDownloadContext?.filter?.claimRefundStatuses, claim_cancel_types: _global.excelDownloadContext?.filter?.claimCancelTypes, claim_fault_types: _global.excelDownloadContext?.filter?.claimFaultTypes, claim_requested_from: _global.excelDownloadContext?.filter?.claimRequestedFrom, claim_requested_to: _global.excelDownloadContext?.filter?.claimRequestedTo, delivery_method: _global.excelDownloadContext?.filter?.deliveryMethods, payment_method: _global.excelDownloadContext?.filter?.paymentMethods, category_id: _global.excelDownloadContext?.filter?.category4 || _global.excelDownloadContext?.filter?.category3 || _global.excelDownloadContext?.filter?.category2 || _global.excelDownloadContext?.filter?.category1, min_price: _global.excelDownloadContext?.filter?.minPrice, max_price: _global.excelDownloadContext?.filter?.maxPrice, country: _global.excelDownloadContext?.filter?.countries, device: _global.excelDownloadContext?.filter?.devices } : {}}}"
-                                        }
+                                        "filename": "orders_{{$date.format('YYYYMMDD_HHmmss')}}.xlsx",
+                                        "body": "{{ { type: _global.excelDownloadContext?.type, order_ids: _global.excelDownloadContext?.type === 'selected' ? (_global.excelDownloadContext?.selectedItems ?? []) : [], filters: _global.excelDownloadContext?.type === 'search' ? { search_field: _global.excelDownloadContext?.filter?.searchField, search_keyword: _global.excelDownloadContext?.filter?.searchKeyword, date_type: _global.excelDownloadContext?.filter?.dateType, start_date: _global.excelDownloadContext?.filter?.startDate, end_date: _global.excelDownloadContext?.filter?.endDate, order_status: _global.excelDownloadContext?.filter?.orderStatus, claim_presence: _global.excelDownloadContext?.filter?.claimPresence, claim_exchange_statuses: _global.excelDownloadContext?.filter?.claimExchangeStatuses, claim_return_statuses: _global.excelDownloadContext?.filter?.claimReturnStatuses, claim_refund_statuses: _global.excelDownloadContext?.filter?.claimRefundStatuses, claim_cancel_types: _global.excelDownloadContext?.filter?.claimCancelTypes, claim_fault_types: _global.excelDownloadContext?.filter?.claimFaultTypes, claim_requested_from: _global.excelDownloadContext?.filter?.claimRequestedFrom, claim_requested_to: _global.excelDownloadContext?.filter?.claimRequestedTo, delivery_method: _global.excelDownloadContext?.filter?.deliveryMethods, payment_method: _global.excelDownloadContext?.filter?.paymentMethods, category_id: _global.excelDownloadContext?.filter?.category4 || _global.excelDownloadContext?.filter?.category3 || _global.excelDownloadContext?.filter?.category2 || _global.excelDownloadContext?.filter?.category1, min_price: _global.excelDownloadContext?.filter?.minPrice, max_price: _global.excelDownloadContext?.filter?.maxPrice, country: _global.excelDownloadContext?.filter?.countries, device: _global.excelDownloadContext?.filter?.devices } : {} } }}"
                                     },
                                     "onSuccess": [
-                                        {
-                                            "handler": "downloadFile",
-                                            "params": {
-                                                "blob": "{{response}}",
-                                                "filename": "orders_{{$date.format('YYYYMMDD_HHmmss')}}.xlsx"
-                                            }
-                                        },
                                         {
                                             "handler": "setState",
                                             "params": {
@@ -247,7 +235,7 @@
                                             "handler": "toast",
                                             "params": {
                                                 "type": "error",
-                                                "message": "{{error.message}}"
+                                                "message": "$t:sirsoft-ecommerce.admin.order.excel.download_failed"
                                             }
                                         }
                                     ]

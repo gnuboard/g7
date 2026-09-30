@@ -31,8 +31,10 @@ use Plugins\Sirsoft\PayKginicis\Controllers\UserReceiptController;
 Route::post('/payment/signature', [PaymentSignatureController::class, 'generate'])
     ->name('payment.signature');
 
-// PC 표준결제창 닫힘 보고 — 주문 컨텍스트 검증 후 결제 실패/취소 이력 기록
+// PC 표준결제창 닫힘 보고 — 주문 소유자(회원 Sanctum / 비회원 X-Guest-Order-Token) 확인 후 결제 실패/취소 이력 기록.
+// optional.sanctum 이 있어야 Bearer 토큰이 회원으로 인식된다 (주문자 연락처 대조는 소유 증명이 아니다).
 Route::post('/payment/close-report', [PaymentCloseReportController::class, 'store'])
+    ->middleware('optional.sanctum')
     ->name('payment.close-report');
 
 // CBT 해시 데이터 생성 — 인증 불필요, 프론트엔드에서 직접 호출

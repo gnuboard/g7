@@ -240,6 +240,9 @@ effects:
   - every_filter_area_has_a_reset_that_clears_its_keys
   - filter_reset_is_locked_when_nothing_to_clear
   - purge_confirm_warning_icon_is_centered_at_its_size
+  # 정보주체 요청 — 값 없이 찾기를 눌러도 화면이 그대로라 목록이 안 뜨는 고장으로 읽혔다
+  - subject_search_is_locked_without_a_value
+  - subject_search_prompt_is_shown_before_query
 
 test_files:
   - tests/Playwright/specs/admin/analytics-archive-on-view.spec.ts

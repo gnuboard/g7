@@ -159,11 +159,6 @@ enum LayoutMarkupErrorCode: string
     case ForVariantComponentUnknown = 'for_variant_component_unknown';
 
     /**
-     * 두 확장 식별자가 같은 태그 프리픽스로 정규화됨 (`a_b` 와 `a-b`).
-     */
-    case ExtensionIdTagCollision = 'extension_id_tag_collision';
-
-    /**
      * 열린 태그가 없는데 종료 태그를 만남 (`</div>` 단독).
      */
     case UnexpectedEndTag = 'unexpected_end_tag';
@@ -207,14 +202,9 @@ enum LayoutMarkupErrorCode: string
     case CommentNotAttachable = 'comment_not_attachable';
 
     /**
-     * 레지스트리에 없는 태그 (가까운 후보를 찾지 못함).
+     * 컴포넌트 종류 속성(`data-type`)의 값이 basic·composite·layout 이 아니거나 바인딩으로 적힘.
      */
-    case UnknownTag = 'unknown_tag';
-
-    /**
-     * 레지스트리에 없는 태그 (오타로 보이는 후보 있음).
-     */
-    case UnknownTagWithSuggestion = 'unknown_tag_with_suggestion';
+    case InvalidComponentType = 'invalid_component_type';
 
     /**
      * 문서 루트 전용 태그를 노드 위치에 사용함 (`<partial>`·`<layout>`·`<extension>`).
@@ -402,6 +392,11 @@ enum LayoutMarkupErrorCode: string
      * `<partial>` 의 루트 노드가 하나가 아님 (조각은 루트가 노드 하나).
      */
     case PartialRootNotSingleNode = 'partial_root_not_single_node';
+
+    /**
+     * `<partial>` 루트 노드 안에 `<meta>` 를 씀 (조각의 meta 는 `<partial>` 속성이 SSoT — 안쪽 meta 는 덮여 사라진다).
+     */
+    case PartialRootMetaNotAllowed = 'partial_root_meta_not_allowed';
 
     /**
      * `<modal src>` 에 본문을 함께 씀 (참조와 인라인은 배타적).

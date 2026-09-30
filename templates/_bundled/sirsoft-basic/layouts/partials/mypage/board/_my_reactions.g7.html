@@ -399,7 +399,7 @@
       </button>
     </div>
     <!-- 페이지네이션 — 쪽을 옮기면 화면에 없는 건이 선택에 남지 않도록 먼저 비운다 -->
-    <pagination currentPage="{{myReactions?.data?.pagination?.current_page ?? 1}}" totalPages="{{myReactions?.data?.pagination?.last_page ?? null}}" hasMorePages="{{myReactions?.data?.pagination?.has_more_pages ?? false}}" class="mt-4 flex justify-center">
+    <pagination data-type="composite" currentPage="{{myReactions?.data?.pagination?.current_page ?? 1}}" totalPages="{{myReactions?.data?.pagination?.last_page ?? null}}" hasMorePages="{{myReactions?.data?.pagination?.has_more_pages ?? false}}" class="mt-4 flex justify-center">
       <on event="onPageChange">
         <sequence>
           <set-state target="global" myReactionsPage="{{$args[0]}}"/>

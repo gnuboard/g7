@@ -124,7 +124,7 @@
         <p class="text-gray-500 dark:text-gray-400">$t:mypage.notifications.empty</p>
       </div>
       <!-- 페이지네이션 -->
-      <pagination data-if="{{((userNotifications.data.last_page ?? 0) > 1) || (userNotifications.data.has_more_pages === true) || ((userNotifications.data.current_page ?? 1) > 1)}}" currentPage="{{userNotifications.data.current_page}}" totalPages="{{userNotifications.data.last_page ?? null}}" hasMorePages="{{userNotifications.data.has_more_pages ?? false}}" class="p-4 border-t border-gray-200 dark:border-gray-700">
+      <pagination data-type="composite" data-if="{{((userNotifications.data.last_page ?? 0) > 1) || (userNotifications.data.has_more_pages === true) || ((userNotifications.data.current_page ?? 1) > 1)}}" currentPage="{{userNotifications.data.current_page}}" totalPages="{{userNotifications.data.last_page ?? null}}" hasMorePages="{{userNotifications.data.has_more_pages ?? false}}" class="p-4 border-t border-gray-200 dark:border-gray-700">
         <responsive on="portable" currentPage="{{userNotifications.data.current_page}}" totalPages="{{userNotifications.data.last_page ?? null}}" hasMorePages="{{userNotifications.data.has_more_pages ?? false}}" class="p-3 border-t border-gray-200 dark:border-gray-700"/>
         <on event="onPageChange">
           <set-state target="local" notificationsPage="{{$args[0]}}"/>

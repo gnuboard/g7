@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands\Layout;
 
+use App\Services\LayoutMarkupService;
 use App\Support\LayoutMarkup\CompileContext;
 use App\Support\LayoutMarkup\CompileError;
 use App\Support\LayoutMarkup\ComponentRegistry;
@@ -35,7 +36,6 @@ class LayoutCompileCommand extends Command
                             {path? : 컴파일할 .json 레이아웃 경로 (미지정 시 --all 필요)}
                             {--all : 모든 번들 .json 레이아웃을 대상}
                             {--roundtrip : 산출을 쓰지 않고 decompile(compile) 왕복만 검증}
-                            {--template= : 대상 템플릿 식별자 (기본: 경로로 판별)}
                             {--out= : 산출 .g7.html 출력 경로 (단일 파일)}
                             {--limit=15 : 왕복 실패 상세 출력 개수}';
 
@@ -101,12 +101,6 @@ class LayoutCompileCommand extends Command
 
         foreach ($files as $file) {
             $registry = $this->resolveRegistry($file);
-
-            if ($registry === null) {
-                $skipped++;
-
-                continue;
-            }
 
             $json = json_decode(File::get($file), true);
 
@@ -245,13 +239,6 @@ class LayoutCompileCommand extends Command
         foreach ($files as $file) {
             $registry = $this->resolveRegistry($file);
 
-            if ($registry === null) {
-                $this->error("대상 템플릿을 찾지 못했습니다: {$file} (--template 로 지정하세요)");
-                $failed++;
-
-                continue;
-            }
-
             $json = json_decode(File::get($file), true);
 
             if (! is_array($json)) {
@@ -287,14 +274,18 @@ class LayoutCompileCommand extends Command
     }
 
     /**
-     * 파일 경로에서 대상 템플릿 레지스트리를 만듭니다.
+     * 검사용 템플릿 컴포넌트 레지스트리를 만듭니다 (템플릿 자신의 파일일 때만).
+     *
+     * 산출은 템플릿과 무관하다 — 레지스트리는 템플릿 자신의 레이아웃에서 그 템플릿에 없는 컴포넌트를
+     * 세우는 검사에만 쓴다. 모듈·플러그인 레이아웃은 어떤 템플릿에 붙을지 모르므로 검사하지 않는다(JSON 과 동일).
+     * 검사 목록에는 편집기와 같이 설치된 확장 전부의 컴포넌트가 함께 실린다(없는 확장 컴포넌트는 경고).
      *
      * @param  string  $file  `.json` 경로
-     * @return ComponentRegistry|null 레지스트리, 대상 템플릿을 못 찾으면 null
+     * @return ComponentRegistry|null 레지스트리, 검사 대상 템플릿이 없으면 null
      */
     private function resolveRegistry(string $file): ?ComponentRegistry
     {
-        return $this->resolver->registryFor($file, $this->option('template') ? (string) $this->option('template') : null);
+        return $this->resolver->registryFor($file, null, app(LayoutMarkupService::class)->installedExtensionManifests());
     }
 
     /**
@@ -305,7 +296,7 @@ class LayoutCompileCommand extends Command
      */
     private function resolveContext(string $file): CompileContext
     {
-        return $this->resolver->contextFor($file, $this->option('template') ? (string) $this->option('template') : null);
+        return $this->resolver->contextFor($file);
     }
 
     /**

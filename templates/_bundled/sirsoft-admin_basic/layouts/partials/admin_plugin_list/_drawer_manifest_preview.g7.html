@@ -3,7 +3,7 @@
   돌려받는 것은 식별자·판본·만든 곳, 검사 통과 여부(실패면 사유 목록), 그리고 같은 플러그인이
   이미 깔려 있는지다. 이미 있다면 지금 깔린 판본을 함께 알려 준다. -->
 <partial description="플러그인 manifest 미리보기 드로어 — ZIP 업로드 후 설치 전 plugin.json 검증 결과 조회" editor_label="$t:admin.modal_label.admin_plugin_list.plugin_manifest_preview_drawer">
-  <modal data-ref="plugin_manifest_preview_drawer" title="$t:admin.plugins.modal.preview.title" size="large">
+  <modal data-type="composite" data-ref="plugin_manifest_preview_drawer" title="$t:admin.plugins.modal.preview.title" size="large">
     <p class="text-label mb-4">$t:admin.plugins.modal.preview.description</p>
     <file-input accept=".zip" buttonText="$t:common.browse" placeholder="$t:admin.plugins.tabs.no_file_selected" class="w-full">
       <on type="change">

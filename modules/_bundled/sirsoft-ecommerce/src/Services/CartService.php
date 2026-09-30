@@ -312,10 +312,11 @@ class CartService
 
                 $productOptionId = $matchedOption->id;
             } else {
-                // 옵션 없는 상품: 첫 번째(기본) 옵션 사용
-                $defaultOption = $productOptions->first();
+                // 옵션을 지정하지 않은 담기: 판매 중인(활성) 옵션 중 첫 번째를 쓴다. 옵션 행이 없거나
+                // 전부 비활성이면 구매할 수 있는 옵션이 없는 상품이므로 422 로 거절한다.
+                $defaultOption = $productOptions->first(fn ($option) => (bool) $option->is_active);
                 if (! $defaultOption) {
-                    throw new CartOperationException('option_not_found');
+                    throw new CartOperationException('no_purchasable_option');
                 }
                 $productOptionId = $defaultOption->id;
             }

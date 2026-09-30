@@ -2429,7 +2429,7 @@
                                             "name": "Button",
                                             "actions": [
                                                 {
-                                                    "comment": "에스크로 배송 등록 — 위에서 입력한 송장번호·택배사를 보내고, 끝나면 등록 상태를 다시 받는다",
+                                                    "comment": "에스크로 배송 등록 — 위에서 입력한 송장번호·택배사를 보내고, 끝나면 등록 상태를 다시 받는다. 둘 다 서버 필수값이라 비어 있으면 버튼이 잠긴다. 실패 문맥의 변수는 error 다(response 가 아니다) — 서버가 준 검증·PG 문구를 그대로 보인다",
                                                     "type": "click",
                                                     "handler": "sequence",
                                                     "actions": [
@@ -2480,7 +2480,7 @@
                                                                 "params": {
                                                                     "target": "local",
                                                                     "_ed_registering": false,
-                                                                    "_ed_error": "{{response?.errors?.message?.[0] ?? '$t:sirsoft-pay_kginicis.admin.escrow_delivery_error'}}"
+                                                                    "_ed_error": "{{Object.values(error.errors ?? {}).flat()[0] ?? '$t:sirsoft-pay_kginicis.admin.escrow_delivery_error'}}"
                                                                 }
                                                             }
                                                         }
@@ -2488,7 +2488,7 @@
                                                 }
                                             ],
                                             "props": {
-                                                "disabled": "{{_local._ed_registering}}",
+                                                "disabled": "{{_local._ed_registering || String(_local._ed_invoice ?? '').trim() === '' || String(_local._ed_ex_code ?? '').trim() === ''}}",
                                                 "className": "flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-purple-600 hover:bg-purple-700 text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                             },
                                             "children": [

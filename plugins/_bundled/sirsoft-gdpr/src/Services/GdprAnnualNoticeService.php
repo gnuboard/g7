@@ -17,6 +17,7 @@ use Illuminate\Support\Str;
 use Plugins\Sirsoft\Gdpr\Enums\PrivacyNoticeStatus;
 use Plugins\Sirsoft\Gdpr\Plugin;
 use Plugins\Sirsoft\Gdpr\Repositories\Contracts\GdprPrivacyNoticeRepositoryInterface;
+use Plugins\Sirsoft\Gdpr\Support\PrivacyPolicyUrl;
 
 /** 연간 통지 접수·결과 기록을 담당합니다. 접수 성공은 발송 완료가 아닙니다. */
 class GdprAnnualNoticeService
@@ -169,7 +170,9 @@ class GdprAnnualNoticeService
                 'locale' => $locale,
                 'sections' => $sections,
                 'introduction' => $this->settings->get('sirsoft-gdpr', 'annual_notice.introduction.'.$locale, ''),
-                'privacy_policy_url' => url('/page/'.$this->settings->get('sirsoft-gdpr', 'privacy_policy_slug', 'privacy')),
+                // 메일은 사이트 밖에서 열리므로 사이트 경로는 앱 주소를 붙인 절대 주소로 얼린다.
+                // 주소가 비었거나 허용 형식이 아니면 빈 값 — 메일은 링크 줄 없이 발송된다(privacy_policy_link).
+                'privacy_policy_url' => PrivacyPolicyUrl::toAbsolute($this->settings->get('sirsoft-gdpr', PrivacyPolicyUrl::SETTING_KEY, '')),
             ];
             $this->notices->append([
                 'user_id' => $userId, 'attempt_id' => $attempt, 'status' => PrivacyNoticeStatus::Queued,
@@ -245,6 +248,11 @@ class GdprAnnualNoticeService
                 'purpose' => __('sirsoft-gdpr::messages.annual_notice.purpose', [], $locale),
                 'retention' => __('sirsoft-gdpr::messages.annual_notice.retention', [], $locale),
                 'privacy_policy_url' => $snapshot['privacy_policy_url'],
+                // 주소가 비었으면 링크 줄 자체를 뺀다 — 기본 템플릿은 이 변수로 링크 줄을 싣는다.
+                'privacy_policy_link' => PrivacyPolicyUrl::mailLinkLine(
+                    (string) $snapshot['privacy_policy_url'],
+                    __('sirsoft-gdpr::messages.annual_notice.privacy_policy_link_label', [], $locale),
+                ),
                 'notice_sections' => $sections,
                 'privacy_notice_attempt' => $attempt,
             ],

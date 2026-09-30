@@ -142,7 +142,7 @@
     <set-state target="local" :selectedOptionItems="[]" :currentSelection="{}" :noOptionQuantity="1" :additionalOptions="{}" :wishlistLoading="false" :isOrdering="false" :downloadableCoupons="null" :downloadableCouponsLoading="false" :downloadingMore="false" :downloadingCouponId="null" :selectedCouponForDownload="null" :reviewsPage="1" reviewSortBy="created_at_desc" :reviewPhotoOnly="false" reviewRating="" :reviewOptionFilters="{}" activeTab="{{query.tab ?? 'info'}}" :starNums="[5,4,3,2,1]" :starList="[1,2,3,4,5]"/>
   </init>
   <slot name="content">
-    <container class="py-4">
+    <container data-type="layout" class="py-4">
       <responsive on="desktop" class="py-8"/>
       <!-- 뒤로가기 버튼 -->
       <button class="inline-flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-4 cursor-pointer">
@@ -162,7 +162,7 @@
         <!-- 이미지 갤러리 영역 -->
         <div class="w-full mb-4 transition-opacity duration-200 {{_local.isOrdering ? 'pointer-events-none opacity-50' : ''}}">
           <responsive on="desktop" class="w-1/2 mb-0 transition-opacity duration-200 {{_local.isOrdering ? 'pointer-events-none opacity-50' : ''}}"/>
-          <product-image-viewer images="{{product.data?.images ?? []}}"/>
+          <product-image-viewer data-type="composite" images="{{product.data?.images ?? []}}"/>
         </div>
         <!-- 상품 정보 + 구매 카드 영역 - responsive로 mobile/desktop 분기 -->
         <div class="w-full space-y-4">
@@ -190,7 +190,7 @@
         </div>
       </div>
       <!-- 탭 네비게이션 -->
-      <tab-navigation hiddenTabIds="{{_global.modules?.['sirsoft-ecommerce']?.inquiry?.board_slug ? [] : ['qna']}}" activeTabId="{{_local.activeTab ?? 'info'}}" variant="underline">
+      <tab-navigation data-type="composite" hiddenTabIds="{{_global.modules?.['sirsoft-ecommerce']?.inquiry?.board_slug ? [] : ['qna']}}" activeTabId="{{_local.activeTab ?? 'info'}}" variant="underline">
         <prop name="tabs">
           <item id="info" label="$t:shop.tabs.detail_info" iconName="file-text"/>
           <item id="reviews" label="$t:shop.tabs.reviews" badge="{{reviews.data?.total_count ?? 0}}" iconName="star"/>

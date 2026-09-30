@@ -46,6 +46,17 @@ import {
 const logger = createLogger('ActionDispatcher');
 
 /**
+ * 스크립트 로드가 미뤄졌음을 표시하는 코어 속성.
+ *
+ * 스크립트 로드를 미루는 확장(동의 전 추적 스크립트를 막는 확장 등)이 `<script>` 의 src setter 에서
+ * 이 속성을 붙이면, `loadScript` 는 태그를 붙이지 않고 미완료로 돌려준다. 코어는 어느 확장이 미루는지
+ * 모른다 — 속성 이름만이 계약이다(`docs/extension/hooks.md` 「스크립트 로드 지연 계약」).
+ *
+ * @since engine-v1.73.0
+ */
+export const SCRIPT_DEFERRED_ATTRIBUTE = 'data-g7-script-deferred';
+
+/**
  * 액션 실패 시 화면에 띄울 문구를 결정합니다.
  *
  * 우선순위는 (1) 서버가 준 메시지 → (2) 네트워크 실패 안내 → (3) 내부 식별 문구다.
@@ -6152,11 +6163,11 @@ export class ActionDispatcher {
     script.async = async;
     script.defer = defer;
 
-    // 동의 관리(gdpr) preblocker 가 src setter 에서 동기적으로 차단을 기록한다.
-    // 차단된 스크립트는 append 해도 영영 로드되지 않으므로, 태그를 붙이지 않고
-    // 미완료 상태(resolve(false))로 돌려준다 — 오류가 아니라 "동의 전" 이라는 상태다.
-    // 캐시·in-flight 에 기록하지 않으므로 동의 후 재디스패치하면 정상 로드된다.
-    if (script.hasAttribute('data-gdpr-blocked-src')) {
+    // 스크립트 로드를 미루는 확장(예: 동의 전 추적 스크립트를 막는 확장)은 src setter 에서 동기적으로
+    // 코어 속성 `data-g7-script-deferred` 를 붙인다(코어 계약). 미뤄진 스크립트는 append 해도 영영
+    // 로드되지 않으므로, 태그를 붙이지 않고 미완료 상태(resolve(false))로 돌려준다 — 오류가 아니라
+    // "아직 허용 전" 이라는 상태다. 캐시·in-flight 에 기록하지 않으므로 허용 후 재디스패치하면 정상 로드된다.
+    if (script.hasAttribute(SCRIPT_DEFERRED_ATTRIBUTE)) {
       logger.warn(`loadScript: script blocked by consent manager (not loaded): ${src}`);
       return false;
     }

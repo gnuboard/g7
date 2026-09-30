@@ -11,7 +11,7 @@
         "en": "Bizppurio SMS/LMS and KakaoTalk alimtalk plugin. Sends messages through core notification channels and receives delivery results via webhook."
     },
     "license": "MIT",
-    "g7_version": ">=7.0.6",
+    "g7_version": ">=7.1.0",
     "dependencies": {
         "modules": {},
         "plugins": {}

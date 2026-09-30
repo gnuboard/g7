@@ -659,7 +659,8 @@
                                                     "if": "{{_local.clearingCache ?? false}}",
                                                     "props": {
                                                         "name": "circle-notch",
-                                                        "className": "fa-spin mr-2"
+                                                        "spin": true,
+                                                        "className": "mr-2"
                                                     }
                                                 },
                                                 {

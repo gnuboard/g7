@@ -606,6 +606,12 @@ class TemplateManager implements TemplateManagerInterface
             throw new \Exception(__('templates.errors.not_installed', ['template' => $templateName]));
         }
 
+        // 상태 가드: 설치·삭제·업데이트가 진행 중이면 차단 (모듈·플러그인 활성화와 같은 가드)
+        ExtensionStatusGuard::assertNotInProgress(
+            ExtensionStatus::from($templateRecord->status),
+            $templateName
+        );
+
         // 필터 훅 — 직전 훅 뒤에 돈다(before → filter 순서). 직전 훅과 함께 Manager 로 옮겨 CLI·어드민 UI 공통으로
         // 한 번 발화한다(#138 후속 — 설계 결정). 결과 값은 종전처럼 쓰지 않는다(활성화 상태는 아래에서 정한다).
         HookManager::applyFilters('core.templates.filter_activate_data', ['status' => ExtensionStatus::Active->value], $templateRecord);
@@ -848,6 +854,15 @@ class TemplateManager implements TemplateManagerInterface
 
         $preservedBackups = [];
 
+        // 상태 가드: 설치·삭제·업데이트가 진행 중이면 차단 (모듈·플러그인 삭제와 같은 가드)
+        $existingRecord = $this->templateRepository->findByIdentifier($templateName);
+        if ($existingRecord) {
+            ExtensionStatusGuard::assertNotInProgress(
+                ExtensionStatus::from($existingRecord->status),
+                $templateName
+            );
+        }
+
         // after_uninstall 훅에 실을 정보는 파괴 단계(DB 행 삭제·디렉토리 삭제) 이전에 캡처한다.
         $templateInfo = $this->getTemplateInfo($templateName) ?? [];
 
@@ -978,6 +993,7 @@ class TemplateManager implements TemplateManagerInterface
                     'type' => $template['type'],
                     'description' => $this->getLocalizedValue($template['description'] ?? '', $locale),
                     'dependencies' => $template['dependencies'] ?? [],
+                    'requires_core' => $template['g7_version'] ?? null,
                     'status' => 'uninstalled',
                     'source' => 'active',
                     'hidden' => (bool) ($template['hidden'] ?? false),
@@ -999,6 +1015,7 @@ class TemplateManager implements TemplateManagerInterface
                     'type' => $metadata['type'] ?? 'admin',
                     'description' => $this->getLocalizedValue($description, $locale),
                     'dependencies' => $metadata['dependencies'] ?? [],
+                    'requires_core' => $metadata['g7_version'] ?? null,
                     'status' => 'uninstalled',
                     'source' => 'pending',
                     'hidden' => (bool) ($metadata['hidden'] ?? false),
@@ -1020,6 +1037,7 @@ class TemplateManager implements TemplateManagerInterface
                     'type' => $metadata['type'] ?? 'admin',
                     'description' => $this->getLocalizedValue($description, $locale),
                     'dependencies' => $metadata['dependencies'] ?? [],
+                    'requires_core' => $metadata['g7_version'] ?? null,
                     'status' => 'uninstalled',
                     'source' => 'bundled',
                     'hidden' => (bool) ($metadata['hidden'] ?? false),
@@ -1079,6 +1097,7 @@ class TemplateManager implements TemplateManagerInterface
                     'type' => $template['type'],
                     'description' => $this->getLocalizedValue($descriptionJson, $locale),
                     'dependencies' => $template['dependencies'] ?? [],
+                    'requires_core' => $template['g7_version'] ?? null,
                     'status' => $record->status,
                     'update_available' => $updateAvailable,
                     'latest_version' => $latestVersion,
@@ -1848,6 +1867,11 @@ class TemplateManager implements TemplateManagerInterface
      * 레이아웃을 삭제합니다. 이는 레이아웃 이름 변경이나 오버라이드 파일
      * 삭제 시 발생하는 고아 레코드를 방지합니다.
      *
+     * 편집기 「새 파일」 로 만든 레이아웃은 오버라이드와 같은 source_type·source_identifier 를 쓴다. 파일에서
+     * 등록된 행만 원본 정보(원본 해시·원본 본문)를 가지므로, 둘 다 없는 행은 운영자가 만든 것으로 보고
+     * 지우지 않는다(LayoutRowSynchronizer::hasFileOrigin) — 종전에는 그 행을 판본 이력째 영구 삭제했다 (#703).
+     * 7.0.x 에서 등록된 오버라이드 행은 7.1.0 업그레이드 스텝이 원본 정보를 채운다.
+     *
      * @param  int  $templateId  템플릿 DB ID
      * @param  string  $templateName  템플릿명 (identifier)
      * @param  array  $registeredLayoutNames  현재 파일에서 등록된 레이아웃 이름 목록
@@ -2334,7 +2358,7 @@ class TemplateManager implements TemplateManagerInterface
         $totalRefreshed = $stats['created'] + $stats['updated'];
 
         // 레이아웃 또는 Extension 오버라이드가 변경된 경우에만 캐시 버전 증가
-        $extensionChanged = ($extensionStats['created'] ?? 0) > 0 || ($extensionStats['updated'] ?? 0) > 0;
+        $extensionChanged = ($extensionStats['created'] ?? 0) > 0 || ($extensionStats['updated'] ?? 0) > 0 || ($extensionStats['deleted'] ?? 0) > 0;
         if ($totalRefreshed > 0 || $stats['deleted'] > 0 || $extensionChanged) {
             $this->incrementExtensionCacheVersion();
         }
@@ -2372,15 +2396,19 @@ class TemplateManager implements TemplateManagerInterface
      * @param  int  $templateId  템플릿 DB ID
      * @param  LayoutSyncMode  $mode  동기화 모드 (설치는 Keep, 갱신은 그 갱신의 모드)
      * @param  LayoutSyncReport|null  $report  결과를 모을 보고
-     * @return array{registered: int, created: int, updated: int} 등록 통계
+     * @return array{registered: int, created: int, updated: int, deleted: int} 등록 통계 (deleted = 정리한 옛 행)
      */
     protected function registerExtensionOverrides(string $templateIdentifier, int $templateId, LayoutSyncMode $mode = LayoutSyncMode::Keep, ?LayoutSyncReport $report = null): array
     {
-        $stats = ['registered' => 0, 'created' => 0, 'updated' => 0];
+        $stats = ['registered' => 0, 'created' => 0, 'updated' => 0, 'deleted' => 0];
         $extensionsPath = base_path("templates/{$templateIdentifier}/extensions");
+
+        // 대상별로 소스에 실재하는 조각 키 — 등록 뒤 이 집합에 없는 옛 행을 정리한다(removeOrphanTemplateOverrides).
+        $liveKeysByTarget = [];
 
         if (! is_dir($extensionsPath)) {
             Log::debug('Extension 오버라이드 디렉토리 없음', ['template' => $templateIdentifier]);
+            $stats['deleted'] = $this->layoutExtensionService->removeOrphanTemplateOverrides($templateIdentifier, $templateId, $liveKeysByTarget);
 
             return $stats;
         }
@@ -2390,12 +2418,16 @@ class TemplateManager implements TemplateManagerInterface
 
         if (empty($moduleDirectories)) {
             Log::debug('Extension 오버라이드 모듈 폴더 없음', ['template' => $templateIdentifier]);
+            $stats['deleted'] = $this->layoutExtensionService->removeOrphanTemplateOverrides($templateIdentifier, $templateId, $liveKeysByTarget);
 
             return $stats;
         }
 
         foreach ($moduleDirectories as $moduleDir) {
             $moduleIdentifier = basename($moduleDir);
+            // 소스 디렉토리에 실재하는 조각 키 — 컴파일 성공 여부와 무관하다(모듈·플러그인 갱신과 같은 기준).
+            // 컴파일에 한 번 실패했다고 오버라이드 행을 지우면 모듈 원본 조각이 대신 그려진다.
+            $liveKeysByTarget[$moduleIdentifier] = $this->fragmentSourceKeys($moduleDir, []);
 
             // 소스 선택 + 읽기 — 둘 다 규약 SSoT 가 끝낸다 (CollectsFragmentSources).
             // 읽기를 여기서 다시 구현하면 그것이 사본이 되고, 사본은 트레이트보다 반드시 약해진다
@@ -2439,6 +2471,9 @@ class TemplateManager implements TemplateManagerInterface
                 }
             }
         }
+
+        // 소스에 더는 없는 조각의 행 정리 — 백필된 옛 키 행(대상 이름 키)도 여기서 파일 키로 정정된다.
+        $stats['deleted'] = $this->layoutExtensionService->removeOrphanTemplateOverrides($templateIdentifier, $templateId, $liveKeysByTarget);
 
         if ($stats['registered'] > 0) {
             Log::info('템플릿 Extension 오버라이드 등록 완료', [

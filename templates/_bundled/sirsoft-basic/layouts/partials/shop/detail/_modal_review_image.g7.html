@@ -1,7 +1,7 @@
 <!-- 리뷰 사진을 크게 보는 창. 사진만 띄우지 않고 그 리뷰의 별점·본문을 함께 보여 준다 — 사진만 보면
      어떤 평가에 딸린 사진인지 알 수 없기 때문이다. -->
 <partial description="리뷰 이미지 미리보기 모달 (슬라이더 + 리뷰 정보)" editor_label="$t:user.modal_label.shop_detail.review_image_modal">
-  <modal data-ref="review_image_modal" title="$t:shop.product.review_image_preview" width="90vw" :closeOnBackdropClick="true">
+  <modal data-type="composite" data-ref="review_image_modal" title="$t:shop.product.review_image_preview" width="90vw" :closeOnBackdropClick="true">
     <div class="p-4 flex flex-col gap-4">
       <!-- 리뷰 정보 영역 -->
       <div class="flex flex-col gap-2 pb-3 border-b border-gray-200 dark:border-gray-700">
@@ -9,7 +9,7 @@
         <div class="flex items-center justify-between">
           <!-- 아바타 + 이름 -->
           <div class="flex items-center gap-2">
-            <avatar name="{{_global.reviewForModal?.userName ?? '?'}}" avatar="{{_global.reviewForModal?.userAvatar ?? null}}" size="sm"/>
+            <avatar data-type="composite" name="{{_global.reviewForModal?.userName ?? '?'}}" avatar="{{_global.reviewForModal?.userAvatar ?? null}}" size="sm"/>
             <span class="font-medium text-sm text-gray-900 dark:text-white">{{_global.reviewForModal?.userName ?? ''}}</span>
           </div>
           <div class="flex items-center gap-2">

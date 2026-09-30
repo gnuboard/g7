@@ -23,7 +23,6 @@
 | 메서드/URI | 라우트명 | 요구 권한 |
 | --- | --- | --- |
 | `GET /api/plugins/sirsoft-pay_nhnkcp/admin/orders/test-mode-map` | `...admin.orders.test-mode-map` | `sirsoft-ecommerce.orders.read` |
-| `GET /api/plugins/sirsoft-pay_nhnkcp/admin/orders/easy-pay-display-map` | `...admin.orders.easy-pay-display-map` | `sirsoft-ecommerce.orders.read` |
 | `GET /api/plugins/sirsoft-pay_nhnkcp/admin/orders/{orderNumber}/transaction-status` | `...admin.orders.transaction-status` | `sirsoft-ecommerce.orders.read` |
 | `GET /api/plugins/sirsoft-pay_nhnkcp/admin/orders/{orderNumber}/escrow-delivery` | `...admin.orders.escrow-delivery.form` | `sirsoft-ecommerce.orders.read` |
 | `POST /api/plugins/sirsoft-pay_nhnkcp/admin/orders/{orderNumber}/escrow-delivery` | `...admin.orders.escrow-delivery.register` | `sirsoft-ecommerce.orders.update` |
@@ -51,11 +50,9 @@
 
 관리자 주문 목록에서 어떤 주문이 테스트 결제인지 배지로 표시하기 위한 맵을 반환한다. 응답 `data` 는 주문번호를 키로 하는 객체다.
 
-### 간편결제 표시 맵
+### 간편결제 표시 라벨 (별도 경로 없음)
 
-`GET .../admin/orders/easy-pay-display-map`
-
-간편결제(PAYCO 등)로 결제된 주문의 원 결제수단 표시 라벨을 반환한다. 응답 `data` 는 주문번호를 키로 하며, 각 항목은 `embedded_pg_provider_label`·`payment_method_label`·`payment_method_display_label` 을 포함한다.
+간편결제(PAYCO 등)로 결제된 주문의 원 결제수단 표시 라벨은 이커머스 주문 목록 응답의 `payment.payment_method_display_label` 로 전달된다 — 이 플러그인은 필터 훅 `sirsoft-ecommerce.order.filter_payment_method_display_label` 을 구독해 라벨을 채운다. 종전의 `GET .../admin/orders/easy-pay-display-map` 은 1.1.0 에서 제거됐다.
 
 ### 거래 상태 조회
 

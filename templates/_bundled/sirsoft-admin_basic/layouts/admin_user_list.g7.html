@@ -216,8 +216,8 @@
           <set-state target="_local" visibleFilters="{{$args[0]}}"/>
         </on>
       </filter-visibility-selector>
-      <page-header data-ref="page_header" title="$t:admin.users.title" description="$t:admin.users.description">
-        <icon-button data-ref="refresh_button" iconName="refresh" variant="outline" size="md">
+      <page-header data-type="composite" data-ref="page_header" title="$t:admin.users.title" description="$t:admin.users.description">
+        <icon-button data-type="composite" data-ref="refresh_button" iconName="refresh" variant="outline" size="md">
           <on type="click">
             <!-- 새로고침은 보고 있던 목록을 그대로 다시 부르는 것이다 — 페이지와 걸어둔 검색 조건을 유지한다 (#75). -->
             <navigate path="/admin/users" :mergeQuery="true">
@@ -240,16 +240,17 @@
       <div data-ref="bulk_actions_area" data-if="{{users?.data?.abilities?.can_update === true}}" class="bulk-actions-bar">
         <responsive on="portable" class="bulk-actions-bar">
           <span data-ref="mobile_selected_count" class="text-body font-medium">$t:admin.users.selected_count|count={{(_global.selectedIds_admin_users || []).length}}</span>
-          <dropdown data-ref="mobile_bulk_action_dropdown" label="$t:admin.users.bulk_action_select" position="bottom-right" class="ml-auto">
+          <dropdown data-type="composite" data-ref="mobile_bulk_action_dropdown" label="$t:admin.users.bulk_action_select" position="bottom-right" class="ml-auto">
             <prop name="items">
-              <item value="activate" label="$t:admin.users.bulk_activate"/>
-              <item value="deactivate" label="$t:admin.users.bulk_deactivate"/>
-              <item value="block" label="$t:admin.users.bulk_block"/>
-              <item value="withdraw" label="$t:admin.users.bulk_withdraw"/>
+              <item value="activate" label="$t:admin.users.bulk_activate" disabled="{{!(_global.selectedIds_admin_users?.length &gt; 0)}}"/>
+              <item value="deactivate" label="$t:admin.users.bulk_deactivate" disabled="{{!(_global.selectedIds_admin_users?.length &gt; 0)}}"/>
+              <item value="block" label="$t:admin.users.bulk_block" disabled="{{!(_global.selectedIds_admin_users?.length &gt; 0)}}"/>
+              <item value="withdraw" label="$t:admin.users.bulk_withdraw" disabled="{{!(_global.selectedIds_admin_users?.length &gt; 0)}}"/>
             </prop>
             <on type="action" event="onItemClick">
               <!-- 모바일 일괄 처리 — 고른 항목에 따라 데스크톱 버튼 4개와 **같은 확인 창**을 연다.
-                   여기서 바로 처리하지 않는 이유는 되돌릴 수 없는 상태 변경이기 때문이다. -->
+                   여기서 바로 처리하지 않는 이유는 되돌릴 수 없는 상태 변경이기 때문이다.
+                   고른 회원이 없으면 항목이 잠긴다 — 서버는 빈 대상(`ids=[]`)을 422 로 거절한다. -->
               <switch>
                 <case when="activate">
                   <open-modal target="bulk_activate_confirm_modal"/>
@@ -335,7 +336,7 @@
           </select>
         </div>
       </div>
-      <data-grid selectedCountText="" data-ref="users_data_grid" :data-blur-until-loaded="true" data="{{users?.data?.data}}" :sortable="true" sortField="{{query.sort_by}}" sortDirection="{{query.sort_order || 'asc'}}" :pagination="true" :alwaysShowPagination="true" :pageSize="15" :serverSidePagination="true" serverCurrentPage="{{users?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{users?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{users?.data?.pagination?.has_more_pages ?? false}}" selectable="{{users?.data?.abilities?.can_update === true}}" selectionScope="page" selectedIds="{{_global.selectedIds_admin_users || []}}" idField="uuid" :showColumnSelector="false" visibleColumns="{{_global.visibleColumns_admin_users}}" :responsiveBreakpoint="768" actionsColumnHeader="$t:common.actions">
+      <data-grid data-type="composite" selectedCountText="" data-ref="users_data_grid" :data-blur-until-loaded="true" data="{{users?.data?.data}}" :sortable="true" sortField="{{query.sort_by}}" sortDirection="{{query.sort_order || 'asc'}}" :pagination="true" :alwaysShowPagination="true" :pageSize="15" :serverSidePagination="true" serverCurrentPage="{{users?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{users?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{users?.data?.pagination?.has_more_pages ?? false}}" selectable="{{users?.data?.abilities?.can_update === true}}" selectionScope="page" nonSelectableIds="{{current_user?.data?.uuid ? [current_user.data.uuid] : []}}" selectedIds="{{_global.selectedIds_admin_users || []}}" idField="uuid" :showColumnSelector="false" visibleColumns="{{_global.visibleColumns_admin_users}}" :responsiveBreakpoint="768" actionsColumnHeader="$t:common.actions">
         <column field="name" header="$t:admin.users.columns.name" :sortable="true" :required="true">
           <cell>
             <div>
@@ -394,7 +395,8 @@
         </prop>
         <on type="change" event="onSelectionChange">
           <!-- 선택한 행의 id 를 전역에 둔다 — 일괄 처리 버튼과 확인 창이 모두 이 값을 읽으므로
-               표 바깥(툴바·모달)에서 보여야 한다. -->
+               표 바깥(툴바·모달)에서 보여야 한다. 로그인한 본인의 행은 표가 고르지 못하게 막는다
+               (`nonSelectableIds`) — 본인이 섞인 일괄 요청은 서버가 통째로 422 로 거절한다. -->
           <set-state target="global" selectedIds_admin_users="{{$args[0]}}"/>
         </on>
         <on type="change" event="onColumnVisibilityChange">
@@ -448,7 +450,7 @@
   <modal>
     <!-- 선택한 회원을 한꺼번에 활성으로 바꾸는 확인 창. 아래 일괄 창 4개(활성·비활성·차단·탈퇴)는
          `status` 값과 성공 문구만 다른 같은 형태다. -->
-    <modal data-ref="bulk_activate_confirm_modal" title="$t:admin.users.modals.bulk_activate_title" size="sm">
+    <modal data-type="composite" data-ref="bulk_activate_confirm_modal" title="$t:admin.users.modals.bulk_activate_title" size="sm">
       <meta editor_label="$t:admin.modal_label.user_list.bulk_activate_confirm_modal"/>
       <div class="py-2">
         <p class="text-gray-700 dark:text-gray-300">$t:admin.users.modals.bulk_activate_confirm|count={{(_global.selectedIds_admin_users || []).length}}</p>
@@ -460,7 +462,7 @@
           </on>
           <span>$t:common.cancel</span>
         </button>
-        <button disabled="{{_global.isProcessing}}" class="flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed">
+        <button data-ref="bulk_activate_submit_button" disabled="{{_global.isProcessing || !(_global.selectedIds_admin_users?.length &gt; 0)}}" class="flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed">
           <on type="click">
             <!-- 일괄 활성 실행. 성공하면 선택을 비우고(처리된 id 가 남아 있으면 다음 일괄이 그것을
                  다시 보낸다) 빈 쿼리로 같은 URL 을 다시 밟아 목록을 새로 받는다 — 조건은 유지된다.
@@ -474,7 +476,8 @@
                   <navigate path="/admin/users" :mergeQuery="true">
                     <query/>
                   </navigate>
-                  <toast type="success" message="$t:admin.users.modals.bulk_activate_success"/>
+                  <!-- 서버는 슈퍼 관리자·관리 범위 밖 회원을 조용히 빼고 200 으로 끝낸다 — 그 수가 failed_count 로 오므로 읽지 않으면 일부만 바뀌었는데 전원 성공으로 안내된다. -->
+                  <toast type="{{(response.data?.failed_count ?? 0) === 0 ? 'success' : ((response.data?.updated_count ?? 0) === 0 ? 'error' : 'warning')}}" message="{{(response.data?.failed_count ?? 0) === 0 ? '$t:admin.users.modals.bulk_activate_success' : ((response.data?.updated_count ?? 0) === 0 ? '$t:admin.users.modals.bulk_status_all_failed|reason=' + (response.data?.failed_reasons ?? []).join(' / ') : '$t:admin.users.modals.bulk_status_partial|updated=' + (response.data?.updated_count ?? 0) + '|failed=' + (response.data?.failed_count ?? 0) + '|reason=' + (response.data?.failed_reasons ?? []).join(' / '))}}"/>
                 </success>
                 <fail>
                   <set-state target="global" :isProcessing="false" errorMessage="{{error.message}}"/>
@@ -492,7 +495,7 @@
   </modal>
   <modal>
     <!-- 선택한 회원을 한꺼번에 비활성으로 바꾸는 확인 창(활성 창과 같은 형태, `status` 만 다르다). -->
-    <modal data-ref="bulk_deactivate_confirm_modal" title="$t:admin.users.modals.bulk_deactivate_title" size="sm">
+    <modal data-type="composite" data-ref="bulk_deactivate_confirm_modal" title="$t:admin.users.modals.bulk_deactivate_title" size="sm">
       <meta editor_label="$t:admin.modal_label.user_list.bulk_deactivate_confirm_modal"/>
       <div class="py-2">
         <p class="text-gray-700 dark:text-gray-300">$t:admin.users.modals.bulk_deactivate_confirm|count={{(_global.selectedIds_admin_users || []).length}}</p>
@@ -504,7 +507,7 @@
           </on>
           <span>$t:common.cancel</span>
         </button>
-        <button disabled="{{_global.isProcessing}}" class="flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed">
+        <button data-ref="bulk_deactivate_submit_button" disabled="{{_global.isProcessing || !(_global.selectedIds_admin_users?.length &gt; 0)}}" class="flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed">
           <on type="click">
             <!-- 일괄 비활성 실행 — 활성 창과 갈래 구조가 같고 보내는 상태값(`inactive`)만 다르다. -->
             <sequence>
@@ -516,7 +519,8 @@
                   <navigate path="/admin/users" :mergeQuery="true">
                     <query/>
                   </navigate>
-                  <toast type="success" message="$t:admin.users.modals.bulk_deactivate_success"/>
+                  <!-- 서버는 슈퍼 관리자·관리 범위 밖 회원을 조용히 빼고 200 으로 끝낸다 — 그 수가 failed_count 로 오므로 읽지 않으면 일부만 바뀌었는데 전원 성공으로 안내된다. -->
+                  <toast type="{{(response.data?.failed_count ?? 0) === 0 ? 'success' : ((response.data?.updated_count ?? 0) === 0 ? 'error' : 'warning')}}" message="{{(response.data?.failed_count ?? 0) === 0 ? '$t:admin.users.modals.bulk_deactivate_success' : ((response.data?.updated_count ?? 0) === 0 ? '$t:admin.users.modals.bulk_status_all_failed|reason=' + (response.data?.failed_reasons ?? []).join(' / ') : '$t:admin.users.modals.bulk_status_partial|updated=' + (response.data?.updated_count ?? 0) + '|failed=' + (response.data?.failed_count ?? 0) + '|reason=' + (response.data?.failed_reasons ?? []).join(' / '))}}"/>
                 </success>
                 <fail>
                   <set-state target="global" :isProcessing="false" errorMessage="{{error.message}}"/>
@@ -535,7 +539,7 @@
   <modal>
     <!-- 회원 한 건 삭제 확인 창. 대상은 행 메뉴가 전역 `modal_data` 에 담아 준 행이다
          (일괄 창들이 쓰는 선택 목록과 다른 값을 본다). -->
-    <modal data-ref="delete_confirm_modal" title="$t:admin.users.modals.delete_title" size="sm">
+    <modal data-type="composite" data-ref="delete_confirm_modal" title="$t:admin.users.modals.delete_title" size="sm">
       <meta editor_label="$t:admin.modal_label.user_list.delete_confirm_modal"/>
       <div class="py-2">
         <p class="text-gray-700 dark:text-gray-300">$t:admin.users.modals.delete_confirm</p>
@@ -576,7 +580,7 @@
   <modal>
     <!-- 일괄 처리 실패를 띄우는 공용 오류 창. 일괄 창 4개가 실패 갈래에서 문구를 전역
          `errorMessage` 에 담고 이것을 연다 — 자기 창은 닫지 않으므로 오류 창이 그 위에 겹친다. -->
-    <modal data-ref="error_modal" title="$t:common.error" size="sm">
+    <modal data-type="composite" data-ref="error_modal" title="$t:common.error" size="sm">
       <meta editor_label="$t:admin.modal_label.user_list.error_modal"/>
       <div class="py-2">
         <p class="text-gray-700 dark:text-gray-300">{{_global.errorMessage || $t:common.error_occurred}}</p>
@@ -593,7 +597,7 @@
   </modal>
   <modal>
     <!-- 선택한 회원을 한꺼번에 차단하는 확인 창(활성 창과 같은 형태, `status` 만 다르다). -->
-    <modal data-ref="bulk_block_confirm_modal" title="$t:admin.users.modals.bulk_block_title" size="sm">
+    <modal data-type="composite" data-ref="bulk_block_confirm_modal" title="$t:admin.users.modals.bulk_block_title" size="sm">
       <meta editor_label="$t:admin.modal_label.user_list.bulk_block_confirm_modal"/>
       <div class="py-2">
         <p class="text-gray-700 dark:text-gray-300">$t:admin.users.modals.bulk_block_confirm|count={{(_global.selectedIds_admin_users || []).length}}</p>
@@ -605,7 +609,7 @@
           </on>
           <span>$t:common.cancel</span>
         </button>
-        <button disabled="{{_global.isProcessing}}" class="flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed">
+        <button data-ref="bulk_block_submit_button" disabled="{{_global.isProcessing || !(_global.selectedIds_admin_users?.length &gt; 0)}}" class="flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed">
           <on type="click">
             <!-- 일괄 차단 실행 — 활성 창과 갈래 구조가 같고 보내는 상태값(`blocked`)만 다르다. -->
             <sequence>
@@ -617,7 +621,8 @@
                   <navigate path="/admin/users" :mergeQuery="true">
                     <query/>
                   </navigate>
-                  <toast type="success" message="$t:admin.users.modals.bulk_block_success"/>
+                  <!-- 서버는 슈퍼 관리자·관리 범위 밖 회원을 조용히 빼고 200 으로 끝낸다 — 그 수가 failed_count 로 오므로 읽지 않으면 일부만 바뀌었는데 전원 성공으로 안내된다. -->
+                  <toast type="{{(response.data?.failed_count ?? 0) === 0 ? 'success' : ((response.data?.updated_count ?? 0) === 0 ? 'error' : 'warning')}}" message="{{(response.data?.failed_count ?? 0) === 0 ? '$t:admin.users.modals.bulk_block_success' : ((response.data?.updated_count ?? 0) === 0 ? '$t:admin.users.modals.bulk_status_all_failed|reason=' + (response.data?.failed_reasons ?? []).join(' / ') : '$t:admin.users.modals.bulk_status_partial|updated=' + (response.data?.updated_count ?? 0) + '|failed=' + (response.data?.failed_count ?? 0) + '|reason=' + (response.data?.failed_reasons ?? []).join(' / '))}}"/>
                 </success>
                 <fail>
                   <set-state target="global" :isProcessing="false" errorMessage="{{error.message}}"/>
@@ -635,7 +640,7 @@
   </modal>
   <modal>
     <!-- 선택한 회원을 한꺼번에 탈퇴 처리하는 확인 창(활성 창과 같은 형태, `status` 만 다르다). -->
-    <modal data-ref="bulk_withdraw_confirm_modal" title="$t:admin.users.modals.bulk_withdraw_title" size="sm">
+    <modal data-type="composite" data-ref="bulk_withdraw_confirm_modal" title="$t:admin.users.modals.bulk_withdraw_title" size="sm">
       <meta editor_label="$t:admin.modal_label.user_list.bulk_withdraw_confirm_modal"/>
       <div class="py-2">
         <p class="text-gray-700 dark:text-gray-300">$t:admin.users.modals.bulk_withdraw_confirm|count={{(_global.selectedIds_admin_users || []).length}}</p>
@@ -647,7 +652,7 @@
           </on>
           <span>$t:common.cancel</span>
         </button>
-        <button disabled="{{_global.isProcessing}}" class="flex-center gap-2 px-4 py-2 bg-yellow-600 dark:bg-yellow-700 text-white rounded-lg hover:bg-yellow-700 dark:hover:bg-yellow-800 disabled:opacity-50 disabled:cursor-not-allowed">
+        <button data-ref="bulk_withdraw_submit_button" disabled="{{_global.isProcessing || !(_global.selectedIds_admin_users?.length &gt; 0)}}" class="flex-center gap-2 px-4 py-2 bg-yellow-600 dark:bg-yellow-700 text-white rounded-lg hover:bg-yellow-700 dark:hover:bg-yellow-800 disabled:opacity-50 disabled:cursor-not-allowed">
           <on type="click">
             <!-- 일괄 탈퇴 실행 — 활성 창과 갈래 구조가 같고 보내는 상태값(`withdrawn`)만 다르다. -->
             <sequence>

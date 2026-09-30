@@ -6,6 +6,8 @@ use App\Enums\ExtensionOwnerType;
 use App\Extension\ModuleManager;
 use App\Extension\PluginManager;
 use App\Models\Permission;
+use App\Models\Role;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 
@@ -113,6 +115,35 @@ class RoleResource extends BaseApiResource
             'can_delete' => 'core.permissions.delete',
             'can_toggle_status' => 'core.permissions.update',
         ];
+    }
+
+    /**
+     * 역할 행의 능력(can_*)을 서버 가드와 같은 판정으로 해석합니다.
+     *
+     * 권한 보유만으로는 부족합니다 — 보호된 역할(코어/확장 소유)은 삭제가 누구에게나 막혀 있고
+     * (`Role::isDeletable()`), 수정·사용 여부 토글은 슈퍼 관리자만 할 수 있습니다
+     * (`Role::isModifiableBy()`). 화면은 이 값으로 행 메뉴·토글·수정 폼을 잠그므로, 서버 가드와
+     * 같은 판정을 싣지 않으면 누를 수 있는 버튼이 403 으로 끝납니다.
+     *
+     * @param  Request  $request  HTTP 요청 객체
+     * @return array<string, bool> 능력 불리언 맵
+     */
+    protected function resolveAbilities(Request $request): array
+    {
+        $abilities = parent::resolveAbilities($request);
+
+        if (! $this->resource instanceof Role) {
+            return $abilities;
+        }
+
+        $actor = $request->user();
+        $modifiable = $this->resource->isModifiableBy($actor instanceof User ? $actor : null);
+
+        $abilities['can_update'] = ($abilities['can_update'] ?? false) && $modifiable;
+        $abilities['can_toggle_status'] = ($abilities['can_toggle_status'] ?? false) && $modifiable;
+        $abilities['can_delete'] = ($abilities['can_delete'] ?? false) && $this->resource->isDeletable();
+
+        return $abilities;
     }
 
     /**

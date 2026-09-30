@@ -18,8 +18,9 @@ use PHPUnit\Framework\Attributes\DataProvider;
  *  1. **fixture 쌍** — 서브트리 hoist(cellChildren/expandChildren/…)·노드 키 hoist(responsive/
  *     component_layout/itemTemplate)·extension_point·`<options>` 데이터 래퍼가 실측 JSON shape 와
  *     키 순서까지 같은가.
- *  2. **부모 문맥** — `<column>` 은 DataGrid 안에서만, `<title-prefix>` 는 Modal 안에서만 뜻이
- *     있다. 엉뚱한 부모 아래 오면 자리 오류로 안내하는가(조용히 props 로 흘리지 않는가).
+ *  2. **부모 문맥** — hoist 태그(`<column>`·`<title-prefix>`·`<prop-footer>` 등)는 부모 컴포넌트 **이름과
+ *     무관하게** 같은 props 키로 끌어올린다(2026-09-28 결정). 이름이 겹치는 옛 표기(`<card>`·`<footer>`)는
+ *     종전 부모 아래에서만 hoist 이고, 홀로 뜻이 없는 태그(`<cell>`·`<default>`)는 자리 오류로 안내한다.
  *  3. **서브트리 hoist vs 표현식-리프 경계** — `<expand>` 는 노드 트리를 hoist 하지만
  *     expandContext 는 `<prop>` 이 맡는다. 둘을 섞지 않는가.
  *  4. **선평가 금지** — hoist 한 서브트리·switch-value·옵션 안의 `{{}}`/`$t:defer:` 를 어느
@@ -32,6 +33,11 @@ class EmbeddingCompilerTest extends LayoutMarkupTestCase
 {
     private NodeCompiler $compiler;
 
+    /**
+     * 테스트 준비 — 필요한 서비스와 임시 자원을 만듭니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -46,11 +52,16 @@ class EmbeddingCompilerTest extends LayoutMarkupTestCase
     // ---------------------------------------------------------------------
 
     /**
+     * 픽스처 마크업이 기대 JSON 으로 정확히 컴파일된다.
+     *
      * @scenario compile_unit=embedding,source_health=valid
      *
      * @effects subtree_is_hoisted_to_its_props_or_node_key,
      *          options_wrapper_always_compiles_to_options_prop,
      *          expressions_and_translation_keys_are_never_pre_evaluated
+     *
+     * @param  string  $fixture  픽스처 이름
+     * @return void 반환값 없음
      */
     #[DataProvider('fixtureProvider')]
     public function test_fixture_pair_compiles_to_expected_json(string $fixture): void
@@ -65,7 +76,9 @@ class EmbeddingCompilerTest extends LayoutMarkupTestCase
     }
 
     /**
-     * @return array<string, array{0: string}>
+     * 픽스처 쌍(마크업·기대 JSON) 목록.
+     *
+     * @return array<string, 반환값
      */
     public static function fixtureProvider(): array
     {
@@ -81,9 +94,15 @@ class EmbeddingCompilerTest extends LayoutMarkupTestCase
     // ---------------------------------------------------------------------
 
     /**
+     * 임베딩 태그가 제 부모 밖에 오면 거부된다.
+     *
      * @scenario compile_unit=embedding,source_health=invalid
      *
      * @effects embedding_tag_outside_its_parent_is_rejected
+     *
+     * @param  string  $source  마크업 소스
+     * @param  string  $parent  부모 태그
+     * @return void 반환값 없음
      */
     #[DataProvider('wrongParentProvider')]
     public function test_embedding_tag_outside_its_parent_is_rejected(string $source, string $parent): void
@@ -96,15 +115,13 @@ class EmbeddingCompilerTest extends LayoutMarkupTestCase
     }
 
     /**
-     * @return array<string, array{0: string, 1: string}>
+     * 제 부모가 아닌 곳에 온 임베딩 태그 사례 목록.
+     *
+     * @return array<string, 반환값
      */
     public static function wrongParentProvider(): array
     {
         return [
-            'column 은 data-grid 안' => ['<div><column field="x"/></div>', 'data-grid'],
-            'expand 는 data-grid 안' => ['<div><expand><span/></expand></div>', 'data-grid'],
-            'footer-cell 은 data-grid 안' => ['<div><footer-cell field="x"/></div>', 'data-grid'],
-            'title-prefix 는 modal 안' => ['<div><title-prefix><span/></title-prefix></div>', 'modal'],
             'cell 은 column 안' => ['<div><cell><span/></cell></div>', 'column'],
             'default 는 extension-point 안' => ['<div><default><span/></default></div>', 'extension-point'],
             'callback 은 extension-point 안' => ['<div><callback name="x"><navigate path="/y"/></callback></div>', 'extension-point'],
@@ -112,7 +129,11 @@ class EmbeddingCompilerTest extends LayoutMarkupTestCase
     }
 
     /**
+     * `<card>` 는 그리드 밖에서는 컴포넌트, 그리드 안에서는 끌어올림이다.
+     *
      * @effects card_is_a_hoist_only_under_a_grid_parent
+     *
+     * @return void 반환값 없음
      */
     public function test_card_is_the_component_outside_a_grid_but_a_hoist_inside_one(): void
     {
@@ -131,6 +152,8 @@ class EmbeddingCompilerTest extends LayoutMarkupTestCase
      * @scenario compile_unit=embedding,source_health=valid
      *
      * @effects subtree_is_hoisted_to_its_props_or_node_key
+     *
+     * @return void 반환값 없음
      */
     public function test_footer_is_a_modal_hoist_only_under_a_modal_parent(): void
     {
@@ -141,11 +164,84 @@ class EmbeddingCompilerTest extends LayoutMarkupTestCase
         $this->assertSame('Button', $modal['props']['footer'][0]['name']);
 
         // Modal 밖: 임베딩이 아니라 컴포넌트 해석 경로로 넘어간다(조용한 props 흡수가 아니다).
-        // admin_basic 레지스트리에 Footer 컴포넌트가 없어 미지 태그로 잡히는 것이 그 증거다.
-        $this->assertSame(
-            LayoutMarkupErrorCode::UnknownTagWithSuggestion,
-            $this->compileError('<div><footer><span/></footer></div>')->getErrorCode(),
+        // 템플릿과 무관하게 표기 규칙으로 `Footer` 컴포넌트 노드가 된다 — 그 컴포넌트가 있는지는 JSON 과
+        // 같이 런타임(활성 템플릿)이 판정한다.
+        $div = $this->compile('<div><footer><span/></footer></div>');
+        $this->assertArrayNotHasKey('props', $div);
+        $this->assertSame('Footer', $div['children'][0]['name']);
+        $this->assertSame('Span', $div['children'][0]['children'][0]['name']);
+    }
+
+    /**
+     * hoist 태그는 부모 컴포넌트 이름과 무관하게 같은 props 키로 끌어올린다.
+     *
+     * 번들 템플릿의 `DataGrid`·`Modal` 이 아닌 임의 이름(`<my-table>`) 아래에서도 결과가 같아야 다른 템플릿의
+     * 같은 역할 컴포넌트가 이 표기를 쓸 수 있다(2026-09-28 결정).
+     *
+     * @scenario compile_unit=embedding,source_health=valid
+     *
+     * @effects hoist_tags_compile_regardless_of_parent_name
+     *
+     * @return void 반환값 없음
+     */
+    public function test_hoist_tags_compile_under_any_parent_name(): void
+    {
+        $node = $this->compile(
+            '<my-table data-type="composite">'
+            .'<column field="name" header="이름"><cell><span text="{{row.name}}"/></cell></column>'
+            .'<expand><span text="{{row.detail}}"/></expand>'
+            .'<sub-row><span/></sub-row>'
+            .'<footer-cell field="total" text="합계"/>'
+            .'<footer-card><span/></footer-card>'
+            .'<prop-card id="c1"><span text="{{row.t}}"/></prop-card>'
+            .'<title-prefix><span/></title-prefix>'
+            .'<title-suffix><span/></title-suffix>'
+            .'<prop-footer><button text="저장"/></prop-footer>'
+            .'</my-table>',
         );
+
+        $this->assertSame('MyTable', $node['name']);
+        $this->assertArrayNotHasKey('children', $node, 'hoist 태그가 자식 컴포넌트로 새면 안 된다');
+        $this->assertSame(
+            ['columns', 'expandChildren', 'subRowChildren', 'footerCells', 'footerCardChildren', 'cardColumns', 'titlePrefix', 'titleSuffix', 'footer'],
+            array_keys($node['props']),
+        );
+        $this->assertSame('{{row.name}}', $node['props']['columns'][0]['cellChildren'][0]['props']['text']);
+        $this->assertSame(['id' => 'c1', 'cellChildren' => [['type' => 'basic', 'name' => 'Span', 'props' => ['text' => '{{row.t}}']]]], $node['props']['cardColumns'][0]);
+        $this->assertSame('Button', $node['props']['footer'][0]['name']);
+    }
+
+    /**
+     * 옛 표기 `<card>`·`<footer>` 는 종전 부모 아래에서 새 표기와 **같은 JSON** 을 낸다.
+     *
+     * 기존 소스를 고치지 않고도 산출이 한 글자도 바뀌지 않아야 하고, 새 표기로 옮겨 써도 결과가 같아야 한다.
+     * 종전 부모 밖에서는 옛 표기가 컴포넌트(Card·Footer)로 남는다.
+     *
+     * @scenario compile_unit=embedding,source_health=valid
+     *
+     * @effects legacy_card_and_footer_keep_their_meaning_under_legacy_parents
+     *
+     * @return void 반환값 없음
+     */
+    public function test_legacy_card_and_footer_equal_new_tags_under_legacy_parents(): void
+    {
+        $this->assertSame(
+            $this->encode($this->compile('<data-grid><card id="c1"><span/></card></data-grid>')),
+            $this->encode($this->compile('<data-grid><prop-card id="c1"><span/></prop-card></data-grid>')),
+        );
+        $this->assertSame(
+            $this->encode($this->compile('<card-grid><card id="c1"><span/></card></card-grid>')),
+            $this->encode($this->compile('<card-grid><prop-card id="c1"><span/></prop-card></card-grid>')),
+        );
+        $this->assertSame(
+            $this->encode($this->compile('<modal title="t"><footer><button/></footer></modal>')),
+            $this->encode($this->compile('<modal title="t"><prop-footer><button/></prop-footer></modal>')),
+        );
+
+        // 종전 부모 밖의 옛 표기는 컴포넌트 — 새 표기만 부모와 무관하게 hoist 한다.
+        $other = $this->compile('<my-table><card id="c1"/><footer><span/></footer></my-table>');
+        $this->assertArrayNotHasKey('props', $other);
+        $this->assertSame(['Card', 'Footer'], array_column($other['children'], 'name'));
     }
 
     // ---------------------------------------------------------------------
@@ -153,9 +249,14 @@ class EmbeddingCompilerTest extends LayoutMarkupTestCase
     // ---------------------------------------------------------------------
 
     /**
+     * 필수 속성이 빠진 임베딩 태그는 거부된다.
+     *
      * @scenario compile_unit=embedding,source_health=invalid
      *
      * @effects embedding_tag_requires_its_named_attribute
+     *
+     * @param  string  $source  마크업 소스
+     * @return void 반환값 없음
      */
     #[DataProvider('missingAttributeProvider')]
     public function test_embedding_tag_missing_required_attribute_is_rejected(string $source): void
@@ -167,7 +268,9 @@ class EmbeddingCompilerTest extends LayoutMarkupTestCase
     }
 
     /**
-     * @return array<string, array{0: string}>
+     * 필수 속성이 빠진 임베딩 태그 사례 목록.
+     *
+     * @return array<string, 반환값
      */
     public static function missingAttributeProvider(): array
     {
@@ -185,9 +288,13 @@ class EmbeddingCompilerTest extends LayoutMarkupTestCase
     }
 
     /**
+     * `<item-template>` 은 노드를 정확히 하나 담아야 한다.
+     *
      * @scenario compile_unit=embedding,source_health=invalid
      *
      * @effects item_template_holds_exactly_one_node
+     *
+     * @return void 반환값 없음
      */
     public function test_item_template_requires_exactly_one_node(): void
     {
@@ -206,9 +313,15 @@ class EmbeddingCompilerTest extends LayoutMarkupTestCase
     // ---------------------------------------------------------------------
 
     /**
+     * 같은 끌어올림 키를 두 번 쓰면 거부된다.
+     *
      * @scenario compile_unit=embedding,source_health=invalid
      *
      * @effects duplicate_hoist_key_is_rejected
+     *
+     * @param  string  $source  마크업 소스
+     * @param  LayoutMarkupErrorCode  $code  오류 코드
+     * @return void 반환값 없음
      */
     #[DataProvider('duplicateProvider')]
     public function test_duplicate_hoist_key_is_rejected(string $source, LayoutMarkupErrorCode $code): void
@@ -217,7 +330,9 @@ class EmbeddingCompilerTest extends LayoutMarkupTestCase
     }
 
     /**
-     * @return array<string, array{0: string, 1: LayoutMarkupErrorCode}>
+     * 같은 끌어올림 키를 두 번 쓰는 사례 목록.
+     *
+     * @return array<string, 반환값
      */
     public static function duplicateProvider(): array
     {
@@ -232,6 +347,10 @@ class EmbeddingCompilerTest extends LayoutMarkupTestCase
             ],
             'expand 두 번' => [
                 '<data-grid><expand><span/></expand><expand><span/></expand></data-grid>',
+                LayoutMarkupErrorCode::DuplicateNodeKey,
+            ],
+            'prop-footer 두 번' => [
+                '<my-dialog><prop-footer><span/></prop-footer><prop-footer><span/></prop-footer></my-dialog>',
                 LayoutMarkupErrorCode::DuplicateNodeKey,
             ],
             'switch-value 같은 case' => [
@@ -258,6 +377,8 @@ class EmbeddingCompilerTest extends LayoutMarkupTestCase
      * @scenario compile_unit=embedding,source_health=valid
      *
      * @effects options_wrapper_always_compiles_to_options_prop
+     *
+     * @return void 반환값 없음
      */
     public function test_options_wrapper_compiles_to_options_prop(): void
     {
@@ -280,6 +401,8 @@ class EmbeddingCompilerTest extends LayoutMarkupTestCase
      * @scenario compile_unit=embedding,source_health=valid
      *
      * @effects options_wrapper_lifts_alongside_sibling_actions
+     *
+     * @return void 반환값 없음
      */
     public function test_options_wrapper_lifts_even_with_sibling_action(): void
     {
@@ -304,6 +427,8 @@ class EmbeddingCompilerTest extends LayoutMarkupTestCase
      * @scenario compile_unit=embedding,source_health=valid
      *
      * @effects bare_option_children_stay_component_nodes
+     *
+     * @return void 반환값 없음
      */
     public function test_bare_option_children_are_never_lifted(): void
     {
@@ -320,6 +445,8 @@ class EmbeddingCompilerTest extends LayoutMarkupTestCase
      * @scenario compile_unit=embedding,source_health=invalid
      *
      * @effects options_wrapper_conflicts_with_options_attribute
+     *
+     * @return void 반환값 없음
      */
     public function test_options_wrapper_conflicts_with_options_attribute(): void
     {
@@ -334,9 +461,13 @@ class EmbeddingCompilerTest extends LayoutMarkupTestCase
     // ---------------------------------------------------------------------
 
     /**
+     * 끌어올린 하위 트리 안의 표현식은 손대지 않고 통과한다.
+     *
      * @scenario compile_unit=embedding,source_health=valid
      *
      * @effects expressions_and_translation_keys_are_never_pre_evaluated
+     *
+     * @return void 반환값 없음
      */
     public function test_expressions_in_hoisted_subtrees_pass_through_untouched(): void
     {

@@ -1,7 +1,7 @@
 <!-- 쇼핑몰 설정 — 알림 정의 초기화 확인 창. 손으로 고친 알림 설정을 모듈이 제공하는 기본값으로
   되돌린다. 되돌리면 그동안의 수정이 사라지므로 되묻는다. -->
 <partial description="이커머스 알림 정의 기본값 복원 확인 모달 (스피너 포함)">
-  <modal data-ref="modal_ecommerce_notification_definition_reset" title="$t:sirsoft-ecommerce.admin.settings.notification_definitions.reset_modal.title" size="sm">
+  <modal data-type="composite" data-ref="modal_ecommerce_notification_definition_reset" title="$t:sirsoft-ecommerce.admin.settings.notification_definitions.reset_modal.title" size="sm">
     <p class="text-gray-700 dark:text-gray-300">$t:sirsoft-ecommerce.admin.settings.notification_definitions.reset_modal.confirm_message</p>
     <div class="mt-4 p-3 bg-gray-100 dark:bg-gray-700 rounded-lg">
       <span class="form-sub-label">$t:sirsoft-ecommerce.admin.settings.notification_definitions.reset_modal.target_label</span>
@@ -17,7 +17,7 @@
         </on>
         $t:common.cancel
       </button>
-      <button type="button" class="flex-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isResettingNotification}}">
+      <button type="button" class="flex-center gap-2 px-4 py-2 bg-orange-600 dark:bg-orange-500 text-white rounded-lg hover:bg-orange-700 dark:hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isResettingNotification}}">
         <on type="click">
           <!-- 초기화. 성공하면 알림 목록을 다시 불러 되돌아간 값을 보여 준다. -->
           <sequence>

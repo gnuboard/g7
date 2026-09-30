@@ -2,7 +2,8 @@
     "comment": "개인정보 조치 대상 목록 창 (#636) — 개인정보 탭의 「대상 N건」 옆 버튼이 연다.\n  탈퇴 잔여정보 파기와 휴면 네 단계가 **같은 창 하나**를 돌려 쓴다. 여는 버튼이 `_global.privacyTargets` 에\n  목록 경로·제목을 넣고 첫 쪽을 다시 받은 뒤 연다 — 창은 스스로 조회하지 않는다.\n  명단은 배치와 같은 조건식에서 나오므로 여기 보이는 사람이 곧 다음 실행이 처리할 사람이다.\n  무한 스크롤은 도서산간 추가배송비 템플릿 창과 같은 방식(스크롤 끝 → 다음 쪽 → append)이고,\n  페이지 상태는 이 목록 전용 키(`privacyTargets.*`)에 둔다.",
     "meta": {
         "is_partial": true,
-        "description": "환경설정 개인정보 탭 - 조치 대상 목록 모달"
+        "description": "환경설정 개인정보 탭 - 조치 대상 목록 모달",
+        "editor_label": "$t:admin.settings.privacy.targets.editor_label"
     },
     "id": "privacy_targets_modal",
     "type": "composite",

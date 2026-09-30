@@ -55,6 +55,10 @@ effects:
   - editor_match_action_literal_handler_unaffected_regression
   - editor_placeholder_recipe_not_greedy_for_unrelated_actions
   - editor_response_chip_candidates_expose_pg_payment_handler_and_data
+  # KVE-2026-2434 — 결제창을 열기 전 비회원 조회 토큰 확보 순서 (close-report 소유자 증명)
+  - checkout_pg_branch_saves_order_response_guest_token_first
+  - checkout_pg_branch_falls_back_to_guest_verify_without_response_token
+  - checkout_pg_branch_member_skips_guest_token
 
 test_files:
   - resources/js/core/template-engine/__tests__/ActionDispatcher.dynamicHandler.test.ts

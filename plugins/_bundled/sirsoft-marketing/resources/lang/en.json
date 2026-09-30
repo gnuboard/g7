@@ -91,6 +91,9 @@
       "enabled": "Enabled",
       "key": "Channel Key",
       "key_hint": "Only lowercase letters, numbers, and underscores (_) are allowed.",
+      "key_invalid": "The channel key may only contain lowercase letters, numbers, and underscores (_).",
+      "key_duplicate": "This channel key already exists. Enter a different key.",
+      "label_required": "Enter the name in the current screen language.",
       "key_placeholder": "e.g. sms_subscription",
       "label_ko": "Name (Korean)",
       "label_en": "Name (English)",
@@ -104,7 +107,8 @@
     "channel_deactivate_modal": {
       "title": "Cannot Delete Channel",
       "message": "This channel has existing consent records and cannot be deleted. Would you like to deactivate it instead?",
-      "confirm": "Deactivate Instead"
+      "confirm": "Deactivate Instead",
+      "restored": "The channel was restored as disabled. Click Save to apply."
     }
   }
 }

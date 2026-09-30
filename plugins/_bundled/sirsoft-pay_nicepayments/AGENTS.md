@@ -47,7 +47,7 @@ API 와 동기화하는 역할만 합니다. 등록은 훅 기반입니다
 | `src/Listeners/` | 훅 리스너 | Repository 경유 (Model·DB 파사드 직접 접근 금지) |
 | `src/routes/` | 라우트 | 모든 라우트에 `name()` 필수 |
 | `upgrades/` | 업그레이드 스텝 | DB·설정 구조 변경 시 작성 (모듈/플러그인 전용) |
-| `resources/layouts/` | 레이아웃 소스 `.g7.html` (짝 `.json` 은 굽기 산출) | `php artisan plugin:update sirsoft-pay_nicepayments --force` (빌드 불필요) |
+| `resources/layouts/` | 레이아웃 소스 `.g7.html` (짝 `.json` 은 굽기 산출. 컴포넌트 종류는 `data-type`, 컴파일은 템플릿과 무관) | `php artisan plugin:update sirsoft-pay_nicepayments --force` (빌드 불필요) |
 | `resources/js/` | 프론트 엔트리·핸들러 | `php artisan plugin:build` → `php artisan plugin:update sirsoft-pay_nicepayments --force` |
 | `resources/extensions/` | 다른 확장 레이아웃에 주입하는 조각 | `php artisan plugin:update sirsoft-pay_nicepayments --force` |
 | `editor-spec.json` | 레이아웃 편집기 스펙 | `php artisan plugin:update sirsoft-pay_nicepayments --force` |
@@ -132,6 +132,9 @@ API 와 동기화하는 역할만 합니다. 등록은 훅 기반입니다
 | 라이브 가맹점 키를 로그·에러 메시지에 노출 | 운영 키는 항상 마스킹하거나 로그 대상에서 제외 | 노출되면 제3자가 결제 요청을 위조할 수 있다 |
 | 콜백이 넘겨준 `NextAppURL`/`NetCancelURL` 의 도메인을 원문 host 로 대조 (`str_ends_with` 등) | `OutboundUrlValidator::normalizeHost()` 로 정규화한 뒤 대조 (사본 금지 — 코어가 SSoT) | UTS#46 정규화에서 전각 문자가 ASCII 구분자로 바뀐다. `evil.example／.nicepay.co.kr`(U+FF0F)은 접미사 검사를 통과하지만 실제 연결 host 는 `evil.example` 이 되어, 인증 토큰과 MID 가 실린 POST 가 외부로 나간다 |
 | 그 URL 에 userinfo(`user@host`)가 있어도 통과 | userinfo 존재만으로 거부 | `@` 앞부분이 신뢰 도메인처럼 보이게 위장할 수 있다 |
+| 승인 콜백의 실패 분기(승인 거절·금액 불일치·통화 오류·예외)에서 `failPayment()` 호출 | 망취소만 하고 주문은 그대로 둔다. 정당한 실패는 주문 소유자를 확인하는 close-report 가 기록 | 콜백 서명(`AuthToken+MID+Amt`)은 주문번호를 묶지 않는다 — 자기 결제창의 인증값에 남의 `Moid` 를 붙이고 `NextAppURL` 만 바꿔도 예외 분기로 남의 결제대기 주문이 취소됐다 (KVE-2026-2434) |
+| 승인 성공 응답을 콜백 `Moid` 주문에 그대로 반영 | 승인 응답의 `Moid`·`Amt` 가 콜백과 같을 때만 반영, 다르면 망취소 | 다른 주문의 인증값으로 받은 승인이 엉뚱한 주문에 붙는다 |
+| sign-data 의 재결제 복구(취소→결제대기)를 주문자 연락처 대조로 허용 | 복구는 주문 소유자(`requestOwnsOrder`)만 — 서명 발급(상태 불변)만 연락처 대조 유지 | 연락처만 알면 남의 취소 주문이 결제대기로 되살아났다 (KVE-2026-2434) |
 | 레이아웃·TSX 에서 Lucide·Heroicons 식 아이콘 이름(`x-circle`·`refresh-cw`·`more-horizontal`·`alert-circle`·`chevrons-left`·`arrow-down-tray` 등) | Font Awesome 6.4.0 이름(`circle-xmark`·`arrows-rotate`·`ellipsis`·`circle-exclamation`·`angles-left`·`download`) | 관리자 템플릿 `Icon` 은 이름을 `fa-{이름}` 로만 바꾼다 — FA 에 없는 이름은 오류 없이 **빈칸**으로 그려진다. 가드: `tests/Unit/Extension/FontIconNameTest.php` |
 | 주문목록 「결제수단」 칸을 통째로 교체해 배지를 달기 | `columns._patch`(by: field) → `cellChildren._patch`(by: id) → `children._append` 로 자기 배지만 더한다 | 통째 교체는 함께 설치된 다른 결제 플러그인의 배지를 지운다 — priority 가 가장 높은 하나만 남는다. 호스트가 래퍼(`payment_method_cell`)와 라벨(`payment_method_label`)을 소유하므로 그 `id` 를 앵커로 쓴다(#599) |
 | 화면 확장의 표현식에서 **다른 결제 플러그인이 선언한 데이터소스**를 참조 | 자기 `data_sources[]` 에 선언한 것만 읽는다 | 그 플러그인이 없는 사이트에서 미정의 참조가 되고, 표현식은 오류 없이 조용히 undefined 를 내므로 판정이 어긋나도 드러나지 않는다 |

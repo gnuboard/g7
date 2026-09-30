@@ -262,10 +262,17 @@ class EcommerceSettingsService implements ModuleSettingsInterface
         $orderSettings = $this->getSettings('order_settings');
 
         if (isset($orderSettings['payment_methods']) && is_array($orderSettings['payment_methods'])) {
+            // 사용 중인 입금 계좌가 하나도 없으면 무통장입금(dbank)은 고를 계좌가 없는 수단이다.
+            // 그대로 내보내면 주문서가 dbank 를 기본 선택하고 결제하기가 「입금 은행 선택」 422 로만 끝난다
+            // (설치 기본값: dbank 활성 + 비어 있는 비활성 계좌 1건).
+            $hasUsableBankAccount = $this->hasUsableBankAccount($orderSettings['bank_accounts'] ?? []);
+
             // 비연속 키가 JSON 객체로 직렬화되지 않도록 array_values 로 재정렬
             $orderSettings['payment_methods'] = array_values(array_filter(
                 $orderSettings['payment_methods'],
-                fn ($method) => ! ($method['_orphaned'] ?? false) && ! ($method['_orphaned_pg'] ?? false)
+                fn ($method) => ! ($method['_orphaned'] ?? false)
+                    && ! ($method['_orphaned_pg'] ?? false)
+                    && (($method['id'] ?? null) !== PaymentMethodEnum::DBANK->value || $hasUsableBankAccount)
             ));
         }
 
@@ -294,6 +301,33 @@ class EcommerceSettingsService implements ModuleSettingsInterface
         }
 
         return $orderSettings;
+    }
+
+    /**
+     * 주문서에서 고를 수 있는 무통장 입금 계좌가 하나라도 있는지 판정합니다.
+     *
+     * 사용 중(is_active)이고 계좌번호가 채워진 계좌만 센다 — 설치 기본값처럼 비어 있는 비활성
+     * 계좌만 있으면 무통장입금은 주문을 받을 수 없는 수단이다. 공개 결제 설정 필터와 관리자 저장
+     * 검증이 같은 기준을 쓰도록 이 메서드 하나로 판정한다.
+     *
+     * @param  mixed  $bankAccounts  입금 계좌 목록 (order_settings.bank_accounts)
+     * @return bool 사용할 수 있는 계좌가 있으면 true
+     */
+    public function hasUsableBankAccount(mixed $bankAccounts): bool
+    {
+        if (! is_array($bankAccounts)) {
+            return false;
+        }
+
+        foreach ($bankAccounts as $account) {
+            if (is_array($account)
+                && ! empty($account['is_active'])
+                && trim((string) ($account['account_number'] ?? '')) !== '') {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

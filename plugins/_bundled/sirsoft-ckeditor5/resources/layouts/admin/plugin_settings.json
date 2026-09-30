@@ -503,6 +503,17 @@
                                                             "className": "w-full",
                                                             "options": "{{[{value: '', label: $t('sirsoft-ckeditor5.settings.fields.public_asset_disk.follow_core')}].concat((_local.form?.available_public_asset_disks ?? []).map(d => ({value: d.id, label: $localized(d.label)})))}}"
                                                         }
+                                                    },
+                                                    {
+                                                        "comment": "쓸 수 없게 된 디스크 안내 — 저장했던 디스크를 등록하던 확장이 꺼지면 서버가 값을 실제 동작(스트리밍)으로 바꿔 내려주고 옛 이름을 알린다. 선택 칸만 보면 이유 없이 값이 바뀐 것처럼 보이므로 무엇이 왜 바뀌었는지 적는다",
+                                                        "type": "basic",
+                                                        "name": "P",
+                                                        "if": "{{!!_local.form?.public_asset_disk_unavailable}}",
+                                                        "props": {
+                                                            "role": "status",
+                                                            "className": "text-warning-soft mt-2"
+                                                        },
+                                                        "text": "$t:sirsoft-ckeditor5.settings.fields.public_asset_disk.unavailable|disk={{_local.form?.public_asset_disk_unavailable}}"
                                                     }
                                                 ]
                                             }
@@ -926,11 +937,13 @@
                                                 },
                                                 "onSuccess": [
                                                     {
+                                                        "comment": "쓸 수 없게 된 디스크 안내는 응답값으로 덮는다 — 설정 재조회는 폼에 없는 키를 지우지 않아, 새 디스크를 골라 저장해도 옛 안내가 남았다",
                                                         "handler": "setState",
                                                         "params": {
                                                             "target": "local",
                                                             "isSaving": false,
-                                                            "hasChanges": false
+                                                            "hasChanges": false,
+                                                            "form.public_asset_disk_unavailable": "{{response.data?.public_asset_disk_unavailable ?? null}}"
                                                         }
                                                     },
                                                     {

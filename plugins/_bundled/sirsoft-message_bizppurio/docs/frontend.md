@@ -27,6 +27,19 @@
 `plugin_settings.g7.html` 은 **파일 이름이 계약**입니다. 코어가 플러그인 디렉토리의 이 고정 경로를
 찾아 설정 화면을 그리므로, 이름을 바꾸면 설정 화면이 사라집니다.
 
+제목이 식(`|name={{…}}`)인 모달 셋(`modal_bizppurio_template` · `modal_bizppurio_sms` ·
+`modal_bizppurio_rejection`)은 `<meta editor_label="…"/>` 로 레이아웃 편집기 전용 이름을 둡니다 —
+없으면 편집기 모달 목록에 제목 식 원문이 그대로 보입니다. 설정 화면의 복합 컴포넌트(`page-header` ·
+`toggle` · `pagination` · 모달)에는 `data-type="composite"` 가 붙어 컴파일이 템플릿의 컴포넌트
+목록과 무관하게 종류를 판정합니다. 리포트 주소 「복사」 버튼은 플러그인 핸들러를 네임스페이스째
+(`sirsoft-message_bizppurio.copyToClipboard`) 부릅니다 — 접두사 없는 `copyToClipboard` 는
+등록된 핸들러가 없어 눌러도 아무 일이 일어나지 않았습니다.
+
+작성 창의 「저장」(임시 저장) 두 버튼(신규 `POST` · 기존 `PUT`)은 body 에 `:draft="true"` 를
+싣습니다. 서버는 이 표시가 있을 때만 필수 조건을 걷어 내므로(→ [AGENTS.md](../AGENTS.md)
+「임시 저장과 검수 신청의 검증 분담」), 이 속성을 빼면 쓰다 만 초안이 다시 422 로 막힙니다.
+「저장 후 검수 신청」에는 싣지 않습니다.
+
 레이아웃·조각 JSON 만 고쳤다면 빌드는 필요 없고
 `php artisan plugin:update sirsoft-message_bizppurio --force` 로 반영합니다.
 빈 값도 **모양**이 계약입니다. 이름표로 값을 꺼내는 자리(`results?.[row.id]` 처럼)는 비어도 map(`{}`)이고,
@@ -38,21 +51,25 @@
 ## 액션 핸들러
 
 <!-- @generated:handlers START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-핸들러 2개 (정의: `resources/js/handlers/index.ts`).
+핸들러 3개 (정의: `resources/js/handlers/index.ts`).
 
 | 핸들러 | 레이아웃에서 부르는 이름 |
 |---|---|
 | `insertVariable` | `sirsoft-message_bizppurio.insertVariable` |
 | `uploadTemplateImage` | `sirsoft-message_bizppurio.uploadTemplateImage` |
+| `copyToClipboard` | `sirsoft-message_bizppurio.copyToClipboard` |
 <!-- @generated:handlers END -->
 
 <!-- @intent START -->
-둘뿐이며 **알림톡 템플릿 작성 폼**을 위한 것입니다.
+셋이며 둘은 **알림톡 템플릿 작성 폼**, 하나는 연결 설정 화면을 위한 것입니다.
 
 | 핸들러 | 하는 일 |
 |---|---|
 | `insertVariable` | 본문 입력 커서 위치에 `#{변수}` 형식의 알림 변수를 삽입 |
 | `uploadTemplateImage` | 강조 유형이 "이미지" 일 때 쓸 이미지를 업로드 |
+| `copyToClipboard` | 리포트(발송 결과 통보) 수신 주소를 클립보드에 복사 — 비즈뿌리오 콘솔에 그대로 붙여 넣는 값 |
+
+`copyToClipboard` 는 설정 화면이 어느 관리자 템플릿으로 그려지든 같게 동작해야 하므로 특정 템플릿의 핸들러에 기대지 않고 플러그인이 직접 둡니다(코어에는 클립보드 핸들러가 없습니다). `navigator.clipboard` 가 막힌 비보안(HTTP) 접속에서는 숨긴 입력칸 복사로 내려갑니다.
 
 `uploadTemplateImage` 는 **카카오 규격 검증**이 붙는 자리입니다 — jpg/png · 500KB 이하 ·
 가로 500px 이상 · 가로:세로 2:1. 규격 위반은 업로드 단계에서 사유와 함께 거부해야 합니다.

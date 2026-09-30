@@ -18,6 +18,11 @@ class LayoutCompileSelfCheckTest extends TestCase
 {
     private string $dir;
 
+    /**
+     * 테스트 준비 — 필요한 서비스와 임시 자원을 만듭니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -26,6 +31,11 @@ class LayoutCompileSelfCheckTest extends TestCase
         File::makeDirectory($this->dir, 0777, true);
     }
 
+    /**
+     * 테스트 정리 — 만든 임시 자원을 지웁니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         File::deleteDirectory($this->dir);
@@ -34,9 +44,13 @@ class LayoutCompileSelfCheckTest extends TestCase
     }
 
     /**
+     * 올바른 레이아웃은 자기검사를 통과한 뒤 파일로 쓴다.
+     *
      * @scenario compile_unit=command,source_health=valid
      *
      * @effects compile_command_writes_markup_that_passes_production_compile
+     *
+     * @return void 반환값 없음
      */
     public function test_valid_layout_is_written_after_self_check(): void
     {
@@ -52,7 +66,7 @@ class LayoutCompileSelfCheckTest extends TestCase
             'components' => [['type' => 'basic', 'name' => 'Div']],
         ]));
 
-        $this->artisan('layout:compile', ['path' => $json, '--template' => 'sirsoft-admin_basic', '--out' => $out])
+        $this->artisan('layout:compile', ['path' => $json, '--out' => $out])
             ->assertExitCode(0);
 
         $this->assertFileExists($out);
@@ -60,9 +74,13 @@ class LayoutCompileSelfCheckTest extends TestCase
     }
 
     /**
+     * 프로덕션 컴파일이 거부하는 레이아웃은 파일로 쓰지 않는다.
+     *
      * @scenario compile_unit=command,source_health=invalid
      *
      * @effects compile_command_refuses_to_write_markup_that_production_compile_rejects
+     *
+     * @return void 반환값 없음
      */
     public function test_layout_rejected_by_production_compile_is_not_written(): void
     {
@@ -77,7 +95,7 @@ class LayoutCompileSelfCheckTest extends TestCase
             'components' => [['type' => 'basic', 'name' => 'Div']],
         ]));
 
-        $this->artisan('layout:compile', ['path' => $json, '--template' => 'sirsoft-admin_basic', '--out' => $out])
+        $this->artisan('layout:compile', ['path' => $json, '--out' => $out])
             ->expectsOutputToContain('자기검사 실패')
             ->assertExitCode(1);
 

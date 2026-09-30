@@ -15,7 +15,7 @@
         <span data-if="{{_global.selectedTemplate?.is_active}}" class="px-2 py-0.5 text-xs bg-green-100 dark:bg-green-900/20 text-green-600 dark:text-green-400 rounded">$t:sirsoft-ecommerce.common.active</span>
         <span data-if="{{!_global.selectedTemplate?.is_active}}" class="text-secondary px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 rounded">$t:sirsoft-ecommerce.common.inactive</span>
       </div>
-      <tab-navigation data-ref="language_tabs" tabs="{{($locales ?? []).map(l => ({ id: l, label: _global.appConfig?.localeNames?.[l] ?? l }))}}" activeTabId="{{_local.viewLocale ?? $locale}}" variant="underline" class="mb-4">
+      <tab-navigation data-type="composite" data-ref="language_tabs" tabs="{{($locales ?? []).map(l => ({ id: l, label: _global.appConfig?.localeNames?.[l] ?? l }))}}" activeTabId="{{_local.viewLocale ?? $locale}}" variant="underline" class="mb-4">
         <on type="change" event="onTabChange">
           <!-- 보기 언어 탭 — 이 패널 안에서만 쓰는 값이다. -->
           <set-state target="local" viewLocale="{{$args[0]}}"/>

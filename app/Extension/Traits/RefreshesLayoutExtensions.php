@@ -5,7 +5,6 @@ namespace App\Extension\Traits;
 use App\Contracts\Extension\ModuleInterface;
 use App\Contracts\Extension\PluginInterface;
 use App\Enums\LayoutSourceType;
-use App\Enums\LayoutSyncMode;
 use App\Extension\Layout\LayoutSyncReport;
 use App\Services\LayoutExtensionService;
 use Illuminate\Support\Collection;
@@ -75,72 +74,25 @@ trait RefreshesLayoutExtensions
                 (string) $template->identifier
             );
 
-            foreach ($definitions as $definition) {
-                $extensionData = $definition['data'];
-                $fragmentKey = $definition['key'];
-                $targetKey = $extensionData['target_layout'] ?? $extensionData['extension_point'] ?? null;
-
-                if (! $targetKey) {
-                    continue;
-                }
-
-                try {
-                    // 대상(target_layout / extension_point)이 이 템플릿에 존재하지 않으면 등록하지 않는다.
-                    // 모든 활성 템플릿에 일괄 적용 시, admin 레이아웃 대상 확장이 user 템플릿에
-                    // (또는 그 반대로) 잘못 등록되는 것을 방지한다.
-                    if (! $this->layoutExtensionService->isExtensionApplicableToTemplate($extensionData, $template->id)) {
-                        // 과거 무차별 등록으로 잘못 생성된 행이 있으면 정리
-                        if ($this->layoutExtensionService->removeInapplicableExtension(
-                            $extensionData,
-                            $sourceType,
-                            $identifier,
-                            $template->id,
-                            $fragmentKey
-                        )) {
-                            $stats['deleted']++;
-                        }
-
-                        continue;
-                    }
-
-                    $result = $this->layoutExtensionService->registerExtension(
-                        $extensionData,
-                        $sourceType,
-                        $identifier,
-                        $template->id,
-                        $preserveModified,
-                        $fragmentKey,
-                        $backupFragments[$fragmentKey] ?? null,
-                        $report
-                    );
-
-                    if ($result === 'created') {
-                        $stats['created']++;
-                    } elseif ($result === 'updated') {
-                        $stats['updated']++;
-                    } elseif ($result === 'skipped') {
-                        $stats['skipped']++;
-                    }
-                    $stats['refreshed']++;
-                } catch (\Exception $e) {
-                    Log::error("레이아웃 확장 갱신 실패: {$targetKey}", [
-                        $extensionType => $identifier,
-                        'template' => $template->identifier,
-                        'fragment_key' => $fragmentKey,
-                        'error' => $e->getMessage(),
-                    ]);
-                }
-            }
-
-            // 소스에 더는 없는 조각의 행 정리 (같은 출처·같은 템플릿). 옛 5축 키(`target_name`) 행도 파일 키로 정정된다.
-            $stats['deleted'] += $this->layoutExtensionService->removeOrphanFragments(
+            // 등록 + 백필된 옛 키 행 잇기(운영자 수정본 유지) + 오등록·고아 행 정리 — 조각 행을 쓰는 모든 경로가 같은
+            // 수렴 절차를 탄다 (#703). 종전에는 이 갱신 경로만 고아를 정리했고, 옛 키 행은 새 행에 밀려 지워져
+            // 운영자가 고친 옛 행을 keep 전략이 보지 못했다.
+            $templateStats = $this->layoutExtensionService->syncSourceFragmentsToTemplate(
+                $definitions,
+                $liveKeys,
                 $sourceType,
                 $identifier,
                 $template->id,
-                $liveKeys,
-                LayoutSyncMode::fromPreserve($preserveModified),
+                $preserveModified,
+                $backupFragments,
                 $report
             );
+
+            $stats['refreshed'] += $templateStats['registered'];
+            $stats['created'] += $templateStats['created'];
+            $stats['updated'] += $templateStats['updated'];
+            $stats['skipped'] += $templateStats['skipped'];
+            $stats['deleted'] += $templateStats['deleted'];
         }
 
         if ($stats['refreshed'] > 0) {

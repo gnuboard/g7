@@ -5,7 +5,7 @@
       <variant when="readonly">opacity-60</variant>
       <variant when="normal"></variant>
     </class-map>
-    <section-layout data-ref="section_notification" class="admin-card">
+    <section-layout data-type="layout" data-ref="section_notification" class="admin-card">
       <h3 class="card-title">$t:sirsoft-board.admin.settings.sections.notification</h3>
       <div class="row-stack">
         <div data-ref="field_notify_author" class="">
@@ -22,7 +22,7 @@
                 <p class="text-field-hint">$t:sirsoft-board.admin.settings.fields.notify_author_description</p>
               </div>
             </label>
-            <toggle name="basic_defaults.notify_author" class="flex-shrink-0" disabled="{{_computed.isReadOnly}}"/>
+            <toggle data-type="composite" name="basic_defaults.notify_author" class="flex-shrink-0" disabled="{{_computed.isReadOnly}}"/>
           </div>
         </div>
         <div data-ref="field_notify_admin_on_post" class="">
@@ -39,7 +39,7 @@
                 <p class="text-field-hint">$t:sirsoft-board.admin.settings.fields.notify_admin_on_post_description</p>
               </div>
             </label>
-            <toggle name="basic_defaults.notify_admin_on_post" class="flex-shrink-0" disabled="{{_computed.isReadOnly}}"/>
+            <toggle data-type="composite" name="basic_defaults.notify_admin_on_post" class="flex-shrink-0" disabled="{{_computed.isReadOnly}}"/>
           </div>
         </div>
       </div>

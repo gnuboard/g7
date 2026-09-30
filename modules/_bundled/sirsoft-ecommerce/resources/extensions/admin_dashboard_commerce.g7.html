@@ -54,7 +54,7 @@
           </on>
           $t:sirsoft-ecommerce.admin.dashboard.today_badges.returns|count={{commerce_overview?.data?.returns ?? 0}}
         </span>
-        <extension-badge data-ref="commerce_section_badge" class="ml-auto" type="module" identifier="sirsoft-ecommerce" installedModules="{{_global.installedModules}}"/>
+        <extension-badge data-type="composite" data-ref="commerce_section_badge" class="ml-auto" type="module" identifier="sirsoft-ecommerce" installedModules="{{_global.installedModules}}"/>
       </div>
       <div data-ref="sales_graph_card" class="bg-slate-100 dark:bg-slate-800 p-4 md:p-6 rounded-xl md:rounded-2xl md:col-span-2 h-full flex flex-col">
         <blur-until-loaded>
@@ -89,7 +89,7 @@
             </div>
           </div>
         </div>
-        <bar-chart data-ref="sales_graph_chart" labels="{{(commerce_sales_graph?.data?.days ?? []).map(d => (d.date ?? '').slice(5).replace('-', '/'))}}" datasets="{{[{label: $t('sirsoft-ecommerce.admin.dashboard.community.quantity'), data: (commerce_sales_graph?.data?.days ?? []).map(d => d.sales_quantity ?? 0), backgroundColor: '#7C3AED', yAxisID: 'y'}, {label: $t('sirsoft-ecommerce.admin.dashboard.community.sales_amount'), data: (commerce_sales_graph?.data?.days ?? []).map(d => d.sales_amount ?? 0), backgroundColor: '#DDD6FE', yAxisID: 'y1'}]}}" :height="180" :showYGrid="true" :showYAxis="true"/>
+        <bar-chart data-type="composite" data-ref="sales_graph_chart" labels="{{(commerce_sales_graph?.data?.days ?? []).map(d => (d.date ?? '').slice(5).replace('-', '/'))}}" datasets="{{[{label: $t('sirsoft-ecommerce.admin.dashboard.community.quantity'), data: (commerce_sales_graph?.data?.days ?? []).map(d => d.sales_quantity ?? 0), backgroundColor: '#7C3AED', yAxisID: 'y'}, {label: $t('sirsoft-ecommerce.admin.dashboard.community.sales_amount'), data: (commerce_sales_graph?.data?.days ?? []).map(d => d.sales_amount ?? 0), backgroundColor: '#DDD6FE', yAxisID: 'y1'}]}}" :height="180" :showYGrid="true" :showYAxis="true"/>
         <p data-ref="sales_graph_updated_at_caption" data-if="{{!!commerce_sales_graph?.data?.updated_at_display}}" class="text-xs text-slate-400 dark:text-slate-500 mt-2 text-right">$t:sirsoft-ecommerce.admin.dashboard.community.updated_at|time={{commerce_sales_graph?.data?.updated_at_display ?? ''}}</p>
       </div>
       <div data-ref="latest_reviews_card" class="bg-slate-100 dark:bg-slate-800 p-4 md:p-6 rounded-xl md:rounded-2xl h-full flex flex-col">

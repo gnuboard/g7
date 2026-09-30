@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Admin\Analytics;
 
 use App\Extension\HookManager;
+use App\Services\Analytics\PrivacyService;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Validator;
 
@@ -51,7 +52,8 @@ class AnonymizeRequest extends FormRequest
     public function withValidator(Validator $validator): void
     {
         $validator->after(function (Validator $validator): void {
-            if ((int) $this->input('mask_octets', 0) === 0 && ! $this->boolean('hash')) {
+            // 소급 제안(PrivacyService::tightensPrivacy)과 같은 판정을 쓴다 — 띄운 창의 요청이 거부되지 않도록.
+            if (! PrivacyService::hasRetroTarget((int) $this->input('mask_octets', 0), $this->boolean('hash'))) {
                 $validator->errors()->add('mask_octets', __('validation.analytics.anonymize_target_required'));
             }
         });

@@ -1,0 +1,38 @@
+feature: 상품 폼 — 옵션값 다국어 태그 편집 창의 핸들러를 모듈이 소유
+
+description: |
+  상품 등록·수정 화면의 옵션값 입력(MultilingualTagInput, modalId="multilingual_tag_edit_modal")은 태그를 누르거나
+  새 값을 넣으면 편집 대상을 전역 `_global.multilingualTagEdit` 에 싣고 이 모듈의 편집 창을 연다. 창의 입력칸·
+  취소·저장은 접두어 없는 `updateMultilingualTagValue`·`cancelMultilingualTag`·`saveMultilingualTag` 를 불렀는데,
+  그 이름들은 관리자 템플릿(sirsoft-admin_basic)이 등록한 템플릿 핸들러라 다른 관리자 템플릿에서는 창이 모두
+  무반응이었다(레이아웃 검사 「미등록 핸들러」 경고).
+
+  계약(상태): 입력은 `_global.multilingualTagEdit.values[locale]` 만 고친다(다른 언어·편집 정보 보존).
+  취소는 창을 닫고 `_global.multilingualTagEdit` 를 비우며 태그 배열은 건드리지 않는다. 저장은 새 태그면 끝에
+  붙이고 고치는 중이면 그 자리를 바꾼 배열을 창을 연 상품 폼의 `_local` 에 `statePath`
+  (`ui.optionInputs.{n}.values`, 없으면 `form.{fieldName}`) 경로로 쓰고(setParentLocal) 창을 닫는다. 언어별
+  값이 모두 비었으면 반영하지 않는다.
+
+# axis 의미:
+#   창에서 하는 일 — 언어별 값 입력 / 취소 / 새 태그 저장 / 기존 태그 수정 저장 / 빈 값 저장.
+axes:
+  action: [update, cancel, save_new, save_edit, save_empty]
+
+effects:
+  - modal_calls_module_owned_tag_handlers                       # 창이 sirsoft-ecommerce.* 세 핸들러를 부르고 그 핸들러들이 모듈 맵에 있다
+  - option_tag_input_opens_this_modal_with_local_state_path     # 옵션값 입력이 이 창 id 와 _local 경로를 넘긴다
+  - update_writes_locale_value_into_global_edit_state
+  - cancel_closes_modal_and_clears_edit_state_without_touching_tags
+  - save_appends_new_tag_to_parent_local_state_path
+  - save_replaces_edited_tag_in_parent_local_state_path
+  - save_skips_when_all_locale_values_empty
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/handlers/__tests__/multilingualTagHandlers.test.ts
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/admin-product-multilingual-tag-modal-handlers.test.ts
+
+validation:
+  browser_check: Chrome MCP
+  note: |
+    실브라우저 확인: 상품 등록 화면 옵션값에 태그를 넣고 눌러 창을 연 뒤 언어별로 입력·저장·취소해 태그 칩과
+    옵션 조합이 바뀌는지 본다.

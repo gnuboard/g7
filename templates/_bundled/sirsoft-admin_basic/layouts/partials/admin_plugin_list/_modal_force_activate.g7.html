@@ -4,7 +4,7 @@
   빠진 것은 두 갈래로 나뉜다: 안 깔린 것과 깔렸지만 꺼져 있는 것. 밀어붙이면 그 상태로 켜지므로
   이 플러그인의 기능 일부가 동작하지 않을 수 있다. -->
 <partial description="플러그인 강제 활성화 확인 모달" editor_label="$t:admin.modal_label.admin_plugin_list.plugin_force_activate_modal">
-  <modal data-ref="plugin_force_activate_modal" title="$t:admin.plugins.modals.activate_warning_title" size="sm">
+  <modal data-type="composite" data-ref="plugin_force_activate_modal" title="$t:admin.plugins.modals.activate_warning_title" size="sm">
     <div class="py-2">
       <div class="alert-warning">
         <icon name="warning" class="text-xl text-yellow-600 dark:text-yellow-500 flex-shrink-0 mt-0.5"/>
@@ -48,7 +48,7 @@
         </on>
         <span>$t:common.cancel</span>
       </button>
-      <button class="flex-center gap-2 px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isForceActivating}}">
+      <button class="flex-center gap-2 px-4 py-2 bg-yellow-600 dark:bg-yellow-500 text-white rounded-lg hover:bg-yellow-700 dark:hover:bg-yellow-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isForceActivating}}">
         <on type="click">
           <!-- 같은 활성 요청에 「밀어붙임」 표시만 얹어 다시 보낸다. 성공 뒤 목록·관리자 메뉴를 함께 다시 받는 이유는 플러그인이 메뉴를 더할 수 있어서다(셋을 나란히 돌려 순서를 기다리지 않는다). -->
           <sequence>
@@ -59,10 +59,15 @@
                 <parallel>
                   <refetch-data-source dataSourceId="plugins"/>
                   <refetch-data-source dataSourceId="admin_menu"/>
-                  <reload-extensions pluginInfo="{{result}}" action="add"/>
+                  <reload-extensions pluginInfo="{{result.data?.plugin ?? result}}" action="add"/>
                 </parallel>
                 <toast type="success" message="$t:admin.plugins.activate_success"/>
                 <close-modal/>
+                <!-- 확장을 다시 켜면 서버가 그 확장과 함께 꺼졌던 언어팩 목록(`pending_language_packs`)을 실어 준다 —
+                     서버는 목록을 건넨 뒤 지우므로 여기서 묻지 않으면 되살릴 기회가 사라진다. 일괄 활성은
+                     언어팩 관리 권한이 있어야 서버가 받으므로 그 권한이 없으면 창을 열지 않는다. -->
+                <set-state target="global" reactivateLanguagePacksData="{{(response.data?.pending_language_packs ?? [])}}"/>
+                <open-modal if="{{(response.data?.pending_language_packs ?? []).length &gt; 0 &amp;&amp; (current_user?.data?.permissions ?? []).some(p =&gt; (p?.identifier ?? p) === 'core.language_packs.manage')}}" target="plugin_reactivate_language_packs_modal"/>
               </success>
               <fail>
                 <set-state target="global" :isForceActivating="false"/>

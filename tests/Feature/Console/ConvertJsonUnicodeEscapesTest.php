@@ -15,6 +15,10 @@ use Tests\TestCase;
  * 변환되지 않은 행을 건너뛴다.
  *
  * 250건 / 청크 100 기준으로 100건이 변환되지 않은 채 남는다.
+ *
+ * 대상 탐색: 코어가 확장 테이블 이름을 적어 두지 않고 DB 스키마의 FULLTEXT 인덱스에서 찾는다
+ * (2026-09-28 결정). 게시판 테이블은 게시판 모듈 소유이므로, 테이블 목록 없이도 찾아지는지가
+ * 곧 코어가 확장을 모르는 채로 동작하는지다.
  */
 class ConvertJsonUnicodeEscapesTest extends TestCase
 {
@@ -28,7 +32,7 @@ class ConvertJsonUnicodeEscapesTest extends TestCase
     /**
      * `\uXXXX` 이스케이프가 포함된 boards 행을 시드합니다.
      *
-     * @return void
+     * @return void 반환값 없음
      */
     private function seedEscapedBoards(): void
     {
@@ -59,6 +63,15 @@ class ConvertJsonUnicodeEscapesTest extends TestCase
         return DB::table('boards')->where('name', 'LIKE', '%\\\\u%')->count();
     }
 
+    /**
+     * 순회 중 필터 컬럼이 바뀌어도 이스케이프 행이 하나도 남지 않는다.
+     *
+     * @scenario target=single_table,mode=apply
+     *
+     * @effects keyset_iteration_converts_every_escaped_row
+     *
+     * @return void 반환값 없음
+     */
     public function test_conversion_leaves_no_escaped_rows_when_filter_column_is_mutated_during_iteration(): void
     {
         $this->seedEscapedBoards();
@@ -79,6 +92,15 @@ class ConvertJsonUnicodeEscapesTest extends TestCase
         );
     }
 
+    /**
+     * 변환 뒤에도 원래 값이 그대로 보존된다.
+     *
+     * @scenario target=single_table,mode=apply
+     *
+     * @effects converted_value_preserves_original_payload
+     *
+     * @return void 반환값 없음
+     */
     public function test_converted_values_preserve_original_payload(): void
     {
         $this->seedEscapedBoards();
@@ -99,6 +121,15 @@ class ConvertJsonUnicodeEscapesTest extends TestCase
         }
     }
 
+    /**
+     * 드라이런은 데이터를 바꾸지 않는다.
+     *
+     * @scenario target=single_table,mode=dry_run
+     *
+     * @effects dry_run_leaves_rows_untouched
+     *
+     * @return void 반환값 없음
+     */
     public function test_dry_run_does_not_modify_rows(): void
     {
         $this->seedEscapedBoards();
@@ -111,5 +142,39 @@ class ConvertJsonUnicodeEscapesTest extends TestCase
             $this->remainingEscapedCount(),
             'dry-run 은 실제 데이터를 변경하지 않아야 합니다.'
         );
+    }
+
+    /**
+     * 테이블을 지정하지 않아도 FULLTEXT 인덱스로 확장 테이블을 찾아 변환한다.
+     *
+     * @scenario target=discovered,mode=apply
+     *
+     * @effects targets_are_discovered_from_fulltext_indexes_without_table_list
+     *
+     * @return void 반환값 없음
+     */
+    public function test_extension_table_is_discovered_from_fulltext_index(): void
+    {
+        $this->seedEscapedBoards();
+
+        $this->artisan('json:convert-unicode', ['--chunk' => 100])
+            ->assertExitCode(0);
+
+        $this->assertSame(0, $this->remainingEscapedCount(), '게시판 테이블이 탐색 대상에 들지 않았습니다.');
+    }
+
+    /**
+     * FULLTEXT 인덱스가 없는 테이블을 지정하면 실패하고 아무것도 바꾸지 않는다.
+     *
+     * @scenario target=unknown_table,mode=apply
+     *
+     * @effects unknown_or_unindexed_table_is_rejected
+     *
+     * @return void 반환값 없음
+     */
+    public function test_table_without_fulltext_index_is_rejected(): void
+    {
+        $this->artisan('json:convert-unicode', ['--table' => 'migrations'])
+            ->assertExitCode(1);
     }
 }

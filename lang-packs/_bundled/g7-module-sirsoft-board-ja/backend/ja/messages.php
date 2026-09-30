@@ -289,6 +289,12 @@ return [
     ],
     'inquiry' => [
         'default_title' => '商品お問い合わせ',
+        'board_changed' => '掲示板の設定が変更されたため、該当の投稿が見つかりません。管理者にお問い合わせください。',
+        'update_failed' => 'お問い合わせの修正に失敗しました。',
+        'delete_failed' => 'お問い合わせの削除に失敗しました。',
+        'reply_not_found' => '回答が見つかりません。',
+        'reply_update_failed' => '回答の修正に失敗しました。',
+        'reply_delete_failed' => '回答の削除に失敗しました。',
     ],
     'dashboard' => [
         'fetch_success' => 'ダッシュボードデータを閲覧しました。',

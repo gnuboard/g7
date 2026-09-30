@@ -14,6 +14,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
+import { DataBindingEngine } from '@core/template-engine/DataBindingEngine';
 
 // 메인 레이아웃 JSON 임포트
 import mainLayout from '../../../layouts/admin/admin_ecommerce_settings.json';
@@ -280,5 +281,64 @@ describe('환경설정 탭별 개별 저장 패턴 검증', () => {
             expect(activeTabExpr).toContain('query.tab');
             expect(activeTabExpr).toContain("'basic_info'");
         });
+    });
+});
+
+describe('환경설정 저장 본문 — 실제 엔진 평가 (#703)', () => {
+    // 문자열 포함 검사만으로는 식이 평가되는지 알 수 없다. 평가기가 못 읽는 문법(구조분해 매개변수)이 들어가자
+    // 본문 전체가 식 원문 문자열로 전송돼 모든 탭 저장이 아무것도 저장하지 못했다 — 실제 엔진으로 평가한다.
+    const engine = new DataBindingEngine();
+    const content = (mainLayout as any).slots.content[0];
+    const body = String(findActionByHandler(findById(content, 'save_button').actions, 'apiCall').params.body);
+    const expr = body.trim().replace(/^\{\{/, '').replace(/\}\}$/, '');
+
+    const form = {
+        basic_info: { shop_name: 'shop' },
+        order_settings: { payment_methods: [{ id: 'card', is_active: true }] },
+        mileage: { enabled: true },
+        notifications: { channels: [{ id: 'mail' }] },
+        language_currency: {
+            default_currency: 'KRW',
+            currencies: [
+                { code: 'KRW', exchange_rate: null, is_default: true },
+                { code: 'USD', exchange_rate: 0.85, decimal_places: 2 },
+                { code: 'EUR', exchange_rate: 0.78, decimal_places: 2 },
+            ],
+        },
+        inquiry: {},
+    };
+    const ctx = (tab: string) => ({
+        _global: { activeEcommerceSettingsTab: tab },
+        _local: { form },
+        _computed: { managedRateCodes: ['USD'] },
+        query: {},
+        settings: { data: { language_currency: { currencies: [{ code: 'KRW' }, { code: 'USD' }, { code: 'EUR' }] } } },
+    });
+
+    /**
+     * @scenario order_state=confirmed, toggle=on, mode=anonymize
+     *
+     * @effects settings_save_sends_only_active_tab
+     */
+    it('탭마다 본문이 객체로 평가되고 그 탭 데이터만 싣는다', () => {
+        for (const tab of ['basic_info', 'order_settings', 'mileage', 'notification_definitions', 'language_currency']) {
+            const result = engine.evaluateExpression(expr, ctx(tab));
+            expect(typeof result, `${tab}: 본문이 객체가 아닙니다(평가 실패 시 식 원문 문자열).`).toBe('object');
+            expect(result._tab).toBe(tab === 'notification_definitions' ? 'notifications' : tab);
+        }
+    });
+
+    /**
+     * @scenario order_state=confirmed, toggle=on, mode=anonymize
+     *
+     * @effects settings_save_sends_only_active_tab
+     */
+    it('통화 탭은 관리 환율 통화의 환율만 빼고 나머지 값은 그대로 보낸다', () => {
+        const result = engine.evaluateExpression(expr, ctx('language_currency'));
+        const byCode = Object.fromEntries(result.language_currency.currencies.map((c: any) => [c.code, c]));
+        expect('exchange_rate' in byCode.USD).toBe(false);
+        expect(byCode.USD.decimal_places).toBe(2);
+        expect(byCode.EUR.exchange_rate).toBe(0.78);
+        expect(byCode.KRW.is_default).toBe(true);
     });
 });

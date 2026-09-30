@@ -71,7 +71,8 @@
     "errors": {
       "delete_failed": "페이지 삭제에 실패했습니다.",
       "restore_failed": "버전 복원에 실패했습니다.",
-      "publish_change_failed": "발행 상태 변경에 실패했습니다."
+      "publish_change_failed": "발행 상태 변경에 실패했습니다.",
+      "download_failed": "첨부파일을 내려받지 못했습니다."
     },
     "form": {
       "page_title_create": "페이지 등록",

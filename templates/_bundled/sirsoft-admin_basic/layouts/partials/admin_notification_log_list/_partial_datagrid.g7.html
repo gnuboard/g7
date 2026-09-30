@@ -4,7 +4,7 @@
   글자로만 보여 준다(비회원 발송과 시스템 발송이 그렇다). 줄을 펼치면 실패 사유와 본문이 나오는데,
   본문은 채널이 만든 HTML 그대로다. -->
 <partial description="Notification Log List DataGrid">
-  <data-grid data-ref="notification_log_datagrid" data="{{notificationLogs?.data?.data}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{notificationLogs?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{notificationLogs?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{notificationLogs?.data?.pagination?.has_more_pages ?? false}}" pageSize="{{+(query.per_page || 20)}}" :alwaysShowPagination="true" idField="id" selectable="{{notificationLogs?.data?.abilities?.can_delete === true}}" selectionScope="page" selectedIds="{{_global.selectedIds_admin_notification_logs || []}}" selectedCountText="" loading="{{notificationLogs?.loading}}" :expandable="true" actionsColumnHeader="$t:common.actions">
+  <data-grid data-type="composite" data-ref="notification_log_datagrid" data="{{notificationLogs?.data?.data}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{notificationLogs?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{notificationLogs?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{notificationLogs?.data?.pagination?.has_more_pages ?? false}}" pageSize="{{+(query.per_page || 20)}}" :alwaysShowPagination="true" idField="id" selectable="{{notificationLogs?.data?.abilities?.can_delete === true}}" selectionScope="page" selectedIds="{{_global.selectedIds_admin_notification_logs || []}}" selectedCountText="" loading="{{notificationLogs?.loading}}" :expandable="true" actionsColumnHeader="$t:common.actions">
     <expand>
       <div class="p-4 bg-gray-50 dark:bg-gray-900 space-y-3">
         <!-- 라벨 칸을 맞춰 값이 한 줄로 시작하게 kv-list(#682 S4 라운드 8 전수조사 — 라벨 폭마다 값이 들쭉날쭉). -->
@@ -24,7 +24,7 @@
         </div>
         <div>
           <span class="form-label">$t:admin.notification_log.detail.body_label</span>
-          <html-content data-if="{{row.body}}" content="{{row.body}}" :isHtml="true" class="admin-card"/>
+          <html-content data-type="composite" data-if="{{row.body}}" content="{{row.body}}" :isHtml="true" class="admin-card"/>
           <span data-if="{{!row.body}}" class="text-sm text-gray-400 dark:text-gray-500 italic">$t:admin.notification_log.detail.no_body</span>
         </div>
       </div>
@@ -34,7 +34,7 @@
     </prop>
     <column field="channel" header="$t:admin.notification_log.col_channel" width="100px">
       <cell>
-        <badge color="indigo" text="{{row.channel ?? '-'}}"/>
+        <badge data-type="composite" color="indigo" text="{{row.channel ?? '-'}}"/>
       </cell>
     </column>
     <column field="recipient" header="$t:admin.notification_log.col_recipient" width="180px">
@@ -43,7 +43,7 @@
           <span class="block text-heading">{{row.recipient_name ?? row.recipient_identifier ?? '-'}}</span>
           <span data-if="{{row.recipient_name &amp;&amp; row.recipient_identifier}}" class="block text-tertiary">{{row.recipient_identifier}}</span>
         </div>
-        <action-menu data-if="{{!!row.recipient}}" position="right">
+        <action-menu data-type="composite" data-if="{{!!row.recipient}}" position="right">
           <prop name="items">
             <item id="view_member" label="$t:admin.notification_log.action.view_member" iconName="user"/>
             <item id="search_by_recipient" label="$t:admin.notification_log.action.search_by_recipient" iconName="search"/>
@@ -74,7 +74,7 @@
     <column field="sender" header="$t:admin.notification_log.col_sender" width="150px">
       <cell>
         <span data-if="{{!row.sender}}" class="text-label-subtle italic">$t:admin.notification_log.system_sender</span>
-        <action-menu data-if="{{!!row.sender}}" position="right">
+        <action-menu data-type="composite" data-if="{{!!row.sender}}" position="right">
           <prop name="items">
             <item id="view_member" label="$t:admin.notification_log.action.view_member" iconName="user"/>
             <item id="search_by_sender" label="$t:admin.notification_log.action.search_by_sender" iconName="search"/>
@@ -110,7 +110,7 @@
     <column field="extension_type" header="$t:admin.notification_log.col_extension" width="120px">
       <cell>
         <div>
-          <badge color="blue" text="{{row.extension_type ?? '-'}}"/>
+          <badge data-type="composite" color="blue" text="{{row.extension_type ?? '-'}}"/>
           <span data-if="{{row.extension_identifier &amp;&amp; row.extension_identifier !== row.extension_type}}" class="block text-tertiary mt-0.5">{{row.extension_identifier}}</span>
         </div>
       </cell>

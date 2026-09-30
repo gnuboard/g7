@@ -4,7 +4,7 @@
      적립금은 마일리지 기능이 켜져 있어야 한다. 꺼진 기능의 탭을 눌러 안내문만 보게 두지 않는다
      (#524 §4.3). 두 값 모두 `frontend_schema` 로 노출된 설정이라 부팅 시 `_global.modules` 에 실린다. -->
 <partial description="마이페이지 공통 탭 네비게이션">
-  <tab-navigation data-ref="mypageTabNavigation" variant="underline" class="mb-6" hiddenTabIds="{{[...(_global.modules?.['sirsoft-ecommerce']?.inquiry?.board_slug ? [] : ['inquiries']), ...(_global.modules?.['sirsoft-ecommerce']?.mileage?.enabled ? [] : ['mileage'])]}}" activeTabId="{{_computed?.currentTab}}">
+  <tab-navigation data-type="composite" data-ref="mypageTabNavigation" variant="underline" class="mb-6" hiddenTabIds="{{[...(_global.modules?.['sirsoft-ecommerce']?.inquiry?.board_slug ? [] : ['inquiries']), ...(_global.modules?.['sirsoft-ecommerce']?.mileage?.enabled ? [] : ['mileage'])]}}" activeTabId="{{_computed?.currentTab}}">
     <prop name="tabs">
       <item id="profile" label="$t:mypage.tabs.profile" iconName="user"/>
       <item id="board" label="$t:mypage.tabs.board" iconName="message-square"/>

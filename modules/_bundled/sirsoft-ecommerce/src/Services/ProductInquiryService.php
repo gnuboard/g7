@@ -150,10 +150,11 @@ class ProductInquiryService
                 'user_id' => $userId,
                 'author_name' => $this->maskAuthorName($name),
                 // 비밀글이면 title 도 fail-closed 로 재마스킹한다(KVE-2026-1914 A2b).
-                // 훅이 신원 판정만 하고 title 치환을 누락하는 회귀에 대비 — 플레이스홀더 텍스트
-                // 자체는 게시판 lang 키(post.secret_post_title)가 SSoT 로, 훅의 마스킹 값과 동일하다.
+                // 훅이 신원 판정만 하고 title 치환을 누락하는 회귀에 대비 — 플레이스홀더는 이커머스
+                // 자기 문구(inquiries.secret_post_title)다. 게시판의 번역 키를 빌려 쓰지 않는다
+                // (훅 연동은 각자 자기 것만 — 게시판이 없거나 대체돼도 문구가 비지 않는다).
                 'title' => $secretMasked
-                    ? __('sirsoft-board::messages.post.secret_post_title')
+                    ? __('sirsoft-ecommerce::messages.inquiries.secret_post_title')
                     : ($post['title'] ?? null),
                 'category' => $post['category'] ?? null,
                 'content' => $secretMasked ? null : ($post['content'] ?? null),

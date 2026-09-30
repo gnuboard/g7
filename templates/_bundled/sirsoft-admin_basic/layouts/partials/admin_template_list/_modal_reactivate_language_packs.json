@@ -85,7 +85,7 @@
                     "name": "Button",
                     "actions": [
                         {
-                            "comment": "건너뛰기 — 대상 목록만 비우고 닫는다(언어팩은 꺼진 채로 남는다).",
+                            "comment": "건너뛰기 — 대상 목록만 비우고 닫는다(언어팩은 꺼진 채로 남는다).\n               관리자 템플릿을 켠 직후라면 미뤄 둔 새로 고침을 여기서 한다(활성 창이 창을 띄우느라 미뤘다).",
                             "type": "click",
                             "handler": "sequence",
                             "actions": [
@@ -98,6 +98,13 @@
                                 },
                                 {
                                     "handler": "closeModal"
+                                },
+                                {
+                                    "handler": "refresh",
+                                    "if": "{{_global.reactivateLanguagePacksRefreshAfter === true}}",
+                                    "params": {
+                                        "delayMs": 300
+                                    }
                                 }
                             ]
                         }
@@ -158,6 +165,13 @@
                                         },
                                         {
                                             "handler": "closeModal"
+                                        },
+                                        {
+                                            "handler": "refresh",
+                                            "if": "{{_global.reactivateLanguagePacksRefreshAfter === true}}",
+                                            "params": {
+                                                "delayMs": 800
+                                            }
                                         }
                                     ],
                                     "onError": [

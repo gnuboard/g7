@@ -1,7 +1,22 @@
+import {
+    createOrderScreenPoller,
+    enterOrderScreen,
+    readSharedDataSource,
+    rememberLeavingDataSources,
+    requestOncePerOrderScreen,
+} from './orderScreenPolling';
+
 const PLUGIN_ID = 'sirsoft-pay_nhnkcp';
 const FLAG = '__nhnkcpAdminPaymentDisplayInjectorInstalled';
 
 const ADMIN_ORDER_SHOW_RE = /^\/admin\/ecommerce\/orders\/([^/]+)$/;
+
+const poller = createOrderScreenPoller();
+
+/** 같은 주소를 받는 레이아웃 확장(admin_order_payment_query)의 데이터 소스 */
+const STATUS_DATA_SOURCE = 'kcp_status';
+/** 데이터 소스 값을 기다리는 최대 틱 수(400ms 간격) — 넘으면 직접 조회한다 */
+const SHARED_STATUS_WAIT_TICKS = 20;
 
 interface AdminTransactionStatus {
     _pay_method_label?: string | null;
@@ -24,10 +39,16 @@ async function fetchAdminTransactionStatus(orderNumber: string): Promise<AdminTr
         if (!res.ok) return null;
 
         const json = (await res.json()) as { data?: AdminTransactionStatus | null } | AdminTransactionStatus;
-        return ('data' in json ? json.data : json) ?? null;
+        return unwrapStatus(json);
     } catch {
         return null;
     }
+}
+
+function unwrapStatus(json: unknown): AdminTransactionStatus | null {
+    if (!json || typeof json !== 'object') return null;
+    const body = json as { data?: AdminTransactionStatus | null } | AdminTransactionStatus;
+    return ('data' in body ? body.data : body) ?? null;
 }
 
 function directElementChildren(el: Element): HTMLElement[] {
@@ -111,12 +132,21 @@ export function patchAdminPaymentMethodDisplay(
     return labeled || badge;
 }
 
-async function tryInject(orderNumber: string): Promise<boolean> {
+async function tryInject(orderNumber: string, isActive: () => boolean, waitedTicks: () => number): Promise<boolean> {
     const root = document.getElementById('section_payment_info') ?? document.getElementById('payment_info_card');
     if (!root) return false;
 
-    const status = await fetchAdminTransactionStatus(orderNumber);
-    if (!status) return true;
+    // 레이아웃 확장이 받은 값이 있으면 그대로 쓴다. 엔진이 있는데 아직 값이 없으면 잠시 기다리고,
+    // 그래도 없으면(확장 미적용·조회 실패) 직접 조회한다 — 화면 진입당 한 번, 실패(null)면 그대로 끝낸다.
+    const shared = readSharedDataSource(STATUS_DATA_SOURCE);
+    if (shared.state === 'waiting' && waitedTicks() < SHARED_STATUS_WAIT_TICKS) return false;
+    const status = shared.state === 'ready'
+        ? unwrapStatus(shared.value)
+        : await requestOncePerOrderScreen(
+            `admin-transaction-status:${orderNumber}`,
+            () => fetchAdminTransactionStatus(orderNumber),
+        );
+    if (!isActive() || !status) return true;
 
     const patched = patchAdminPaymentMethodDisplay(root, status);
     if (patched) {
@@ -126,19 +156,17 @@ async function tryInject(orderNumber: string): Promise<boolean> {
     return true;
 }
 
-function startPolling(orderNumber: string): void {
-    let attempts = 0;
-    const id = setInterval(() => {
-        attempts++;
-        void tryInject(orderNumber).then(done => {
-            if (done || attempts >= 30) clearInterval(id);
-        });
-    }, 400);
-}
-
 function onRouteChange(): void {
+    enterOrderScreen();
     const match = location.pathname.match(ADMIN_ORDER_SHOW_RE);
-    if (match) startPolling(match[1]);
+    if (!match) {
+        poller.stop();
+        return;
+    }
+
+    const orderNumber = match[1];
+    let ticks = 0;
+    poller.start(orderNumber, isActive => tryInject(orderNumber, isActive, () => ++ticks));
 }
 
 export function installAdminOrderPaymentDisplayInjector(): void {
@@ -159,8 +187,12 @@ export function installAdminOrderPaymentDisplayInjector(): void {
 
     const origPush = history.pushState.bind(history);
     history.pushState = (...args: Parameters<typeof history.pushState>) => {
+        rememberLeavingDataSources([STATUS_DATA_SOURCE]);
         origPush(...args);
         schedule(600);
     };
-    window.addEventListener('popstate', () => schedule(500));
+    window.addEventListener('popstate', () => {
+        rememberLeavingDataSources([STATUS_DATA_SOURCE]);
+        schedule(500);
+    });
 }

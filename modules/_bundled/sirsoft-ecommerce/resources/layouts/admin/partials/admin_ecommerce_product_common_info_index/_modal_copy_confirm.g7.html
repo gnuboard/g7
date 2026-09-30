@@ -4,7 +4,7 @@
   넘기는 값에서 **기본값 지정만 꺼서 보낸다** — 기본 공통정보는 하나뿐이라, 복사본이 그 표시를
   물고 태어나면 원본의 자리를 빼앗는다. -->
 <partial description="Common Info Copy Confirm Modal">
-  <modal data-ref="copy_confirm_modal" title="$t:sirsoft-ecommerce.admin.common_info.modal.copy.title" size="sm">
+  <modal data-type="composite" data-ref="copy_confirm_modal" title="$t:sirsoft-ecommerce.admin.common_info.modal.copy.title" size="sm">
     <p class="text-body text-center">$t:sirsoft-ecommerce.admin.common_info.modal.copy.message|name={{$localized(_global.selectedItem?.name)}}</p>
     <div class="modal-footer-buttons">
       <button class="px-4 py-2 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700">

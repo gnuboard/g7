@@ -38,6 +38,14 @@ use LogicException;
 final class MarkupTokenizer
 {
     /**
+     * 태그명 규칙 — 소문자 kebab, 또는 확장 컴포넌트의 `확장식별자.케밥`.
+     *
+     * 점 앞은 확장 식별자(`vendor-name`, 단어 구분 밑줄 허용)를 그대로 싣는다. 컴파일러는 점에서 나눠
+     * JSON 의 `식별자.이름` 을 목록 없이 만든다(ComponentRegistry::fromTag).
+     */
+    public const TAG_NAME_PATTERN = '/^(?:[a-z0-9_]+(?:-[a-z0-9_]+)+\\.)?[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/';
+
+    /**
      * 내용을 가질 수 없어 종료 태그 없이 자동으로 닫히는 요소.
      *
      * HTML5 표준 void 요소 14종에서 **`meta`·`img`·`input` 을 제외한 11종**이다. `<meta>` 는
@@ -333,7 +341,8 @@ final class MarkupTokenizer
 
         $lower = strtolower($raw);
 
-        if (preg_match('/^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/', $lower) !== 1) {
+        // 소문자 kebab. 확장 컴포넌트는 `확장식별자.케밥` — 점 앞은 확장 식별자 그대로(밑줄 허용)다.
+        if (preg_match(self::TAG_NAME_PATTERN, $lower) !== 1) {
             throw new CompileError(LayoutMarkupErrorCode::InvalidTagName, $line, $column, ['found' => $raw], $this->path);
         }
 
@@ -573,6 +582,7 @@ final class MarkupTokenizer
      * 오프셋을 전진시키며 라인 위치를 갱신합니다.
      *
      * @param  int  $count  전진할 바이트 수
+     * @return void 반환값 없음
      */
     private function advance(int $count): void
     {

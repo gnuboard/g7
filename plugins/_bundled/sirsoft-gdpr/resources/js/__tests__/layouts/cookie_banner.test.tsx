@@ -498,10 +498,24 @@ describe('extensions/cookie_banner.json — 쿠키 동의 배너', () => {
         });
     });
 
+    /**
+     * 처리방침 링크 — 운영자가 설정에 적은 주소를 그대로 쓴다. 1.0.x 는 페이지 모듈 주소 규칙
+     * (`/page/{slug}`)으로 화면에서 조합해, 페이지 모듈이 없거나 주소 규칙이 바뀌면 404 로 이어졌다.
+     *
+     * @scenario surface=public_show
+     * @effects banner_links_operator_privacy_policy_url
+     */
     describe('정책 링크', () => {
         it('privacy_policy_available일 때만 링크 표시', () => {
             const text = serializeForSearch(extension);
             expect(text).toContain('privacy_policy_available === true');
+        });
+
+        it('링크 href 는 공개 설정의 privacy_policy_url 을 그대로 쓰고 /page/ 를 조합하지 않는다', () => {
+            const text = JSON.stringify(extension);
+            expect(text).toContain(`"href":"{{gdprPublicSettings?.data?.privacy_policy_url ?? ''}}"`);
+            expect(text).not.toContain('/page/{{');
+            expect(text).not.toContain('privacy_policy_slug');
         });
     });
 

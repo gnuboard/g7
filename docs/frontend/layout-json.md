@@ -319,21 +319,6 @@ data_sources는 부모-자식 간 합집합 병합 (permissions와 동일 전략
 }
 ```
 
-### 일괄 업데이트 커맨드
-
-기존 레이아웃에 권한을 일괄 추가하려면 Artisan 커맨드를 사용합니다:
-
-```bash
-# 시뮬레이션 (실제 수정 없음)
-php artisan layout:add-permissions --dry-run
-
-# 실제 실행
-php artisan layout:add-permissions
-
-# 특정 레이아웃만
-php artisan layout:add-permissions --layout=admin_dashboard
-```
-
 ### 주의사항
 
 ```text

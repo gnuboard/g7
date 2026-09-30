@@ -1187,6 +1187,10 @@
                         "id": "gdpr_consent_log_datagrid",
                         "type": "composite",
                         "name": "DataGrid",
+                        "blur_until_loaded": {
+                            "enabled": true,
+                            "data_sources": "gdprConsentLog"
+                        },
                         "actions": [
                             {
                                 "comment": "페이지 이동 — 그리드 본문에만 오버레이를 걸어 필터 영역이 깜빡이지 않게 한다",
@@ -1215,9 +1219,8 @@
                             "alwaysShowPagination": true,
                             "idField": "id",
                             "selectable": false,
-                            "loading": "{{gdprConsentLog?.loading}}",
                             "expandable": true,
-                            "emptyText": "$t:sirsoft-gdpr.admin.consent_log.empty",
+                            "emptyMessage": "$t:sirsoft-gdpr.admin.consent_log.empty",
                             "expandChildren": [
                                 {
                                     "type": "basic",

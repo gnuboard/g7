@@ -24,7 +24,7 @@
             <span data-if="{{_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.shipping_method']}}" class="form-error-xs mt-0.5">{{_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.shipping_method']?.[0]}}</span>
             <div data-if="{{_computed.activeCountrySetting?.shipping_method === 'custom'}}" class="">
               <label class="text-secondary block text-xs font-medium mb-1">$t:sirsoft-ecommerce.admin.shipping_policy.form.custom_shipping_name</label>
-              <multilingual-input value="{{_computed.activeCountrySetting?.custom_shipping_name ?? {}}}" layout="inline" placeholder="$t:sirsoft-ecommerce.admin.shipping_policy.form.custom_shipping_name_placeholder" error="{{_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.custom_shipping_name.' + ($locale || 'ko')]?.[0] ?? ''}}" disabled="{{_computed.isReadOnly}}">
+              <multilingual-input data-type="composite" value="{{_computed.activeCountrySetting?.custom_shipping_name ?? {}}}" layout="inline" placeholder="$t:sirsoft-ecommerce.admin.shipping_policy.form.custom_shipping_name_placeholder" error="{{_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.custom_shipping_name.' + ($locale || 'ko')]?.[0] ?? ''}}" disabled="{{_computed.isReadOnly}}">
                 <on type="change">
                   <!-- 직접 입력한 배송 방법 이름 — 언어별 묶음을 통째로 받아 그대로 저장한다(언어 하나씩 쪼개지 않는다). -->
                   <action handler="sirsoft-ecommerce.updateCountryField" field="custom_shipping_name" value="{{$event.target.value}}"/>
@@ -42,11 +42,11 @@
               <span class="text-required">*</span>
             </label>
             <div class="input w-full opacity-60 cursor-not-allowed flex items-center">{{_computed.defaultCurrencyLabel}}</div>
-            <span class="form-hint-xs mt-0.5">$t:sirsoft-ecommerce.admin.shipping_policy.form.currency_code_fixed_hint</span>
+            <span class="text-field-hint block">$t:sirsoft-ecommerce.admin.shipping_policy.form.currency_code_fixed_hint</span>
           </div>
         </div>
         <div data-ref="field_country_is_active" class="flex items-end">
-          <toggle label="$t:sirsoft-ecommerce.admin.shipping_policy.form.country_active" checked="{{_computed.activeCountrySetting?.is_active ?? true}}" disabled="{{_computed.isReadOnly}}">
+          <toggle data-type="composite" label="$t:sirsoft-ecommerce.admin.shipping_policy.form.country_active" checked="{{_computed.activeCountrySetting?.is_active ?? true}}" disabled="{{_computed.isReadOnly}}">
             <on type="change">
               <!-- 그 나라 설정 사용 여부. 스위치가 준 값을 읽지 않고 **현재 값을 뒤집는다** — 기본이 켬(`?? true`)이라 아직 아무도 쓴 적 없는 상태에서도 첫 클릭이 끔으로 가야 한다. -->
               <action handler="sirsoft-ecommerce.updateCountryField" field="is_active" value="{{!(_computed.activeCountrySetting?.is_active ?? true)}}"/>

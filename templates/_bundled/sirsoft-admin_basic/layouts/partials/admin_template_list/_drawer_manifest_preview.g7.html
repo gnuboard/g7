@@ -2,7 +2,7 @@
   모듈 쪽 같은 이름 조각과 짝을 이루며 검사 대상 매니페스트만 다르다.
   결과는 정상 / 오류 목록 / 이미 설치됨 셋으로 갈려 보이고, 판정은 전부 서버가 한다. -->
 <partial description="템플릿 manifest 미리보기 드로어 — ZIP 업로드 후 설치 전 template.json 검증 결과 조회" editor_label="$t:admin.modal_label.admin_template_list.template_manifest_preview_drawer">
-  <modal data-ref="template_manifest_preview_drawer" title="$t:admin.templates.modal.preview.title" size="large">
+  <modal data-type="composite" data-ref="template_manifest_preview_drawer" title="$t:admin.templates.modal.preview.title" size="large">
     <p class="text-label mb-4">$t:admin.templates.modal.preview.description</p>
     <file-input accept=".zip" buttonText="$t:common.browse" placeholder="$t:admin.templates.tabs.no_file_selected" class="w-full">
       <on type="change">

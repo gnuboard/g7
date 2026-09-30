@@ -5,14 +5,16 @@
 ## 발행 훅
 
 <!-- @generated:hooks-published START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-발행 훅 4종 / 호출 지점 14곳. 이 중 1종은 `getHooks()` 선언에 없어 소스에서 자동 감지한 것입니다 — 선언에 추가하면 유형과 설명이 함께 실립니다. 훅 이름이 상수·변수로 조립된 호출이 12곳 있어 호출 위치가 표에 다 실리지 않을 수 있습니다.
+발행 훅 6종 / 호출 지점 16곳. 이 중 2종은 `getHooks()` 선언에 없어 소스에서 자동 감지한 것입니다 — 선언에 추가하면 유형과 설명이 함께 실립니다. 훅 이름이 상수·변수로 조립된 호출이 13곳 있어 호출 위치가 표에 다 실리지 않을 수 있습니다.
 
 | 훅 이름 | 유형 | 설명 | 발행 위치 |
 |---|---|---|---|
-| `core.privacy.notice_sections` | filter | — | `src/Services/GdprAnnualNoticeService.php:167` |
+| `core.analytics.consent_revoked` | action | — | `src/Listeners/GdprAnalyticsConsentListener.php:146` |
+| `core.privacy.notice_sections` | filter | — | `src/Services/GdprAnnualNoticeService.php:168` |
 | `sirsoft-gdpr.consent.granted` | action | 동의 부여 시 발화 | 선언 (호출 위치 미확인) |
 | `sirsoft-gdpr.consent.revoked` | action | 동의 철회 시 발화 | 선언 (호출 위치 미확인) |
-| `sirsoft-gdpr.privacy.annual_notice_due` | action | 개인정보 연간 통지 접수 후 발화 | `src/Services/GdprAnnualNoticeService.php:186` |
+| `sirsoft-gdpr.necessary_storage.filter_provided_keys` | filter | 확장이 쿠키 미동의 방문자에게도 필요한 자기 저장 키를 제공 (strictly necessary 허용목록에 합쳐진다) | 선언 (호출 위치 미확인) |
+| `sirsoft-gdpr.privacy.annual_notice_due` | action | 개인정보 연간 통지 접수 후 발화 | `src/Services/GdprAnnualNoticeService.php:189` |
 <!-- @generated:hooks-published END -->
 
 <!-- @intent START -->
@@ -28,6 +30,22 @@
 분기합니다. `revoked` 는 명시적 철회(마이페이지)뿐 아니라 회원탈퇴로 인한 일괄 철회
 (`source=withdraw`)에서도 발화됩니다 — "동의 취소" 이벤트를 하나로 통일해 구독자가 두 경로를
 따로 처리하지 않아도 되게 합니다.
+
+**필수 저장 키 제공 계약 — `sirsoft-gdpr.necessary_storage.filter_provided_keys` (filter)**
+
+이 플러그인은 쿠키 미동의 방문자의 브라우저에서 허용목록 밖의 저장 키를 부팅마다 지웁니다. 어떤
+확장이 설치돼 있는지 모르므로, 동의 전에도 필요한 키(결제창 복귀 기록 · 본인인증 입력 보관 · 비회원
+장바구니·주문 조회 토큰 등)는 **그 키를 쓰는 확장이 이 필터로 제공**합니다.
+
+- 인자: `array $keys` — `['localStorage' => string[], 'sessionStorage' => string[], 'cookie' => string[]]`.
+  앞선 리스너가 덧붙인 값이 들어 있으므로 **지우지 말고 덧붙여** 돌려줍니다.
+- 반환: 같은 모양의 배열. 항목은 운영자 입력과 같은 형식 규칙을 통과해야 받습니다(영숫자·`_ . : @ + -`,
+  끝의 `*` 하나만 앞부분 매칭, `*` 단독 불가, 128자 이하). 규칙을 벗어난 항목과 모르는 저장소 종류는 버립니다.
+- 시점: 판정(서버 쿠키 게이트)·인라인 페이로드 때마다 요청당 한 번 당겨 모읍니다. 설정에 저장하지 않으므로
+  확장을 켜고 끄면 다음 요청부터 반영됩니다.
+- 이 플러그인의 클래스를 참조하지 마십시오. 훅 이름과 배열 모양만이 계약이며, 이 플러그인이 없으면 훅이
+  발행되지 않을 뿐 제공 확장은 그대로 동작합니다.
+- 제공 키는 저장 코드가 실제로 쓰는 저장소 종류에 넣습니다 — 다른 종류에 넣으면 제공해도 지켜지지 않습니다.
 <!-- @intent END -->
 
 ## 구독 훅
@@ -36,6 +54,8 @@
 | 훅 이름 | 유형 | 리스너 | 메서드 | 우선순위 |
 |---|---|---|---|---|
 | `core.analytics.consent_session_id` | filter | `GdprAnalyticsConsentListener` | `resolveConsentSessionId` | 10 |
+| `core.analytics.tracking_permission` | filter | `GdprAnalyticsConsentListener` | `answerTrackingPermission` | 10 |
+| `core.analytics.visitor_has_consent` | filter | `GdprAnalyticsConsentListener` | `answerVisitorHasConsent` | 10 |
 | `core.auth.logout` | action (미선언) | `GdprAuthLogoutListener` | `forgetGdprCookies` | 10 |
 | `core.auth.record_consents` | action (미선언) | `GdprAuthConsentListener` | `recordRegisterConsents` | 10 |
 | `core.notification.after_channel_send` | action (미선언) | `GdprAnnualNoticeListener` | `sent` | - |
@@ -44,6 +64,7 @@
 | `core.privacy.manual_run_targets` | filter | `GdprAnnualNoticeListener` | `addManualRunTarget` | 20 |
 | `core.user.after_withdraw` | action (미선언) | `GdprUserWithdrawListener` | `handleWithdraw` | 10 |
 | `core.user.before_delete` | action (미선언) | `GdprUserDeleteListener` | `cascadePluginData` | 10 |
+| `sirsoft-gdpr.consent.revoked` | action (미선언) | `GdprAnalyticsConsentListener` | `relayConsentRevoked` | 10 |
 | `sirsoft-gdpr.notification.extract_data` | filter | `GdprAnnualNoticeListener` | `extract` | - |
 <!-- @generated:hooks-subscribed END -->
 
@@ -60,7 +81,7 @@
 <!-- @generated:listeners START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 리스너 | 구독 훅 | 등록 방식 | HookListenerInterface | 파일 |
 |---|---|---|---|---|
-| `GdprAnalyticsConsentListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/GdprAnalyticsConsentListener.php` |
+| `GdprAnalyticsConsentListener` | 4개 | 명시 등록 | ✅ | `src/Listeners/GdprAnalyticsConsentListener.php` |
 | `GdprAnnualNoticeListener` | 5개 | 명시 등록 | ✅ | `src/Listeners/GdprAnnualNoticeListener.php` |
 | `GdprAuthConsentListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/GdprAuthConsentListener.php` |
 | `GdprAuthLogoutListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/GdprAuthLogoutListener.php` |

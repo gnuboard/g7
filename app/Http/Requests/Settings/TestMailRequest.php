@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Settings;
 
 use App\Extension\HookManager;
+use App\Support\EnvPriority;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
@@ -57,7 +58,31 @@ class TestMailRequest extends FormRequest
         ];
 
         // 모듈/플러그인이 validation rules를 동적으로 추가할 수 있도록 훅 제공
-        return HookManager::applyFilters('core.settings.test_mail_validation_rules', $rules, $this);
+        $rules = HookManager::applyFilters('core.settings.test_mail_validation_rules', $rules, $this);
+
+        return $this->relaxEnvLockedRules($rules);
+    }
+
+    /**
+     * `.env` 로 잠긴 메일 키는 요청에서 요구하지 않습니다.
+     *
+     * 잠긴 민감 키(비밀번호·Mailgun 시크릿·SES 키)는 화면에 값을 싣지 않아 폼이 빈 칸으로
+     * 보냅니다. 발송은 그 키에 `.env` 유효값을 쓰므로(`SettingsService::sendTestMail`) 요청이
+     * 값을 공급할 필요가 없습니다 — 필수로 두면 테스트 메일이 늘 422 로 끝납니다.
+     * 이 요청의 필드명은 `mail` 카테고리 저장소 키와 같습니다(`mail.{필드}`).
+     *
+     * @param  array<string, mixed>  $rules  검증 규칙
+     * @return array<string, mixed> 잠긴 키의 규칙을 완화한 검증 규칙
+     */
+    private function relaxEnvLockedRules(array $rules): array
+    {
+        foreach (array_keys($rules) as $field) {
+            if ($field !== 'to_email' && EnvPriority::isLocked('mail.'.$field)) {
+                $rules[$field] = ['sometimes', 'nullable'];
+            }
+        }
+
+        return $rules;
     }
 
     /**

@@ -124,7 +124,6 @@ final class ComponentRegistry
         }
 
         self::assertExtensionKinds($extensions);
-        self::assertDistinctTagPrefixes($extensions);
 
         $definitions = (new ComponentOverrideResolver)->resolve($template, $extensions);
 
@@ -135,6 +134,7 @@ final class ComponentRegistry
      * 확장 자리에 온 매니페스트가 모두 확장 소유인지 확인합니다.
      *
      * @param  array<int, ComponentManifest>  $extensions  확장 매니페스트 목록
+     * @return void 반환값 없음
      *
      * @throws CompileError 템플릿 매니페스트가 확장 자리에 온 경우
      */
@@ -146,36 +146,6 @@ final class ComponentRegistry
                     'field' => ComponentOwnerKind::Extension->ownerField(),
                 ]);
             }
-        }
-    }
-
-    /**
-     * 확장 식별자들이 서로 다른 태그 프리픽스로 정규화되는지 확인합니다.
-     *
-     * 식별자는 시스템 유일이지만 태그 프리픽스는 `_` 를 `-` 로 접은 결과라 유일성이 보장되지
-     * 않는다 — `sirsoft-pay_kginicis` 와 가상의 `sirsoft-pay-kginicis` 는 같은 프리픽스가 된다.
-     * 그대로 두면 두 확장의 컴포넌트가 같은 태그 공간을 나눠 갖게 되므로 미리 거부한다.
-     *
-     * @param  array<int, ComponentManifest>  $extensions  확장 매니페스트 목록
-     *
-     * @throws CompileError 두 식별자가 같은 프리픽스로 정규화되는 경우
-     */
-    private static function assertDistinctTagPrefixes(array $extensions): void
-    {
-        $owners = [];
-
-        foreach ($extensions as $extension) {
-            $prefix = ComponentManifest::tagPrefix($extension->ownerId);
-
-            if (isset($owners[$prefix]) && $owners[$prefix] !== $extension->ownerId) {
-                throw CompileError::inFile(LayoutMarkupErrorCode::ExtensionIdTagCollision, $extension->path, [
-                    'first' => $owners[$prefix],
-                    'second' => $extension->ownerId,
-                    'prefix' => $prefix,
-                ]);
-            }
-
-            $owners[$prefix] = $extension->ownerId;
         }
     }
 
@@ -244,18 +214,66 @@ final class ComponentRegistry
      * `DataGrid` → `data-grid`, `H1` → `h1`, `RichSelect` → `rich-select`. 번들 템플릿 전수
      * (admin_basic 117종 / basic 65종 / hello_user 8종) 실측 결과 이 변환의 태그 충돌은 0건이다.
      *
-     * 확장 컴포넌트의 태그는 여기에 프리픽스가 앞에 붙는다(ComponentManifest::tagPrefix).
+     * 확장 컴포넌트(`식별자.이름`)는 `식별자.케밥` 이 된다 — 식별자는 그대로 둔다.
      *
      * @param  string  $name  컴포넌트명 (Pascal)
      * @return string 태그명 (소문자 kebab)
      */
     public static function toTag(string $name): string
     {
+        // 확장 컴포넌트 `식별자.이름` — 식별자는 그대로 두고 이름만 kebab 으로 바꾼다.
+        if (str_contains($name, '.')) {
+            [$owner, $local] = explode('.', $name, 2);
+
+            return $owner.'.'.self::toTag($local);
+        }
+
         // 두 경계를 나눈다: 소문자·숫자 다음의 대문자(`DataGrid` → `Data-Grid`)와,
         // 연속 대문자 뒤에 오는 단어 시작(`HTMLEditor` → `HTML-Editor`).
         $tag = preg_replace('/([a-z0-9])([A-Z])/', '$1-$2', $name) ?? $name;
         $tag = preg_replace('/([A-Z]+)([A-Z][a-z])/', '$1-$2', $tag) ?? $tag;
 
         return strtolower($tag);
+    }
+
+    /**
+     * 마크업 태그명을 컴포넌트명으로 되돌립니다 — 템플릿 없이 정해지는 표기 규칙.
+     *
+     * `data-grid` → `DataGrid`, `h1` → `H1`, `div` → `Div`. 컴파일은 이 규칙만으로 이름을 정한다 —
+     * JSON 시절 작성자가 `name` 을 직접 적던 것과 같이, 어떤 템플릿의 컴포넌트 목록도 보지 않는다.
+     * 번들·설치 템플릿 4종 392개 컴포넌트 전부가 `fromTag(toTag(name)) === name` 을 만족한다.
+     * 되돌릴 수 없는 이름(연속 대문자 등)은 역변환이 `<json>` 탈출구로 적는다.
+     *
+     * @param  string  $tag  태그명 (소문자 kebab)
+     * @return string 컴포넌트명 (Pascal)
+     */
+    public static function fromTag(string $tag): string
+    {
+        // 확장 컴포넌트 `식별자.케밥` → `식별자.이름` (JSON 표기와 같다).
+        if (str_contains($tag, '.')) {
+            [$owner, $local] = explode('.', $tag, 2);
+
+            return $owner.'.'.self::fromTag($local);
+        }
+
+        return implode('', array_map(
+            static fn (string $part): string => ucfirst($part),
+            explode('-', $tag),
+        ));
+    }
+
+    /**
+     * 이름이 표기 규칙으로 왕복되는지 판정합니다 (역변환이 태그로 적을 수 있는가).
+     *
+     * @param  string  $name  컴포넌트명
+     * @return bool 왕복되면 true
+     */
+    public static function isTagRoundTrippable(string $name): bool
+    {
+        if (preg_match('/^(?:[a-z0-9_]+(?:-[a-z0-9_]+)+\\.)?[A-Z][A-Za-z0-9]*$/', $name) !== 1) {
+            return false;
+        }
+
+        return self::fromTag(self::toTag($name)) === $name && preg_match(MarkupTokenizer::TAG_NAME_PATTERN, self::toTag($name)) === 1;
     }
 }

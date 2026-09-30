@@ -1,0 +1,16 @@
+feature: 비회원 글쓰기 화면의 공지 옵션 노출 (#703)
+
+description: |
+  guest 역할에 공지 등록 권한(posts.write-notice)을 주면 글쓰기 화면이 비회원에게 공지 체크박스를 보였지만
+  서버는 비회원의 공지 지정을 항상 거부했다. 비회원의 user_abilities.can_write_notice 는 false 다.
+
+axes:
+  actor: [guest]
+  guest_notice_permission: [granted, none]
+
+effects:
+  - guest_notice_option_hidden
+  - form_meta_max_file_size_falls_back_to_defaults
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Feature/User/GuestNoticeAbilityTest.php

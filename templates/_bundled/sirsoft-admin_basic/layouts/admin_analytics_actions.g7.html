@@ -117,7 +117,7 @@
       </div>
       <include src="partials/admin_analytics/_partial_status_alerts.g7.html"/>
       <include src="partials/admin_analytics/_partial_period_bar.g7.html"/>
-      <tab-navigation data-ref="report_tabs" class="mb-4" activeTabId="{{query.tab || 'search'}}" variant="underline">
+      <tab-navigation data-type="composite" data-ref="report_tabs" class="mb-4" activeTabId="{{query.tab || 'search'}}" variant="underline">
         <prop name="tabs">
           <item id="search" label="$t:admin.analytics.actions.tabs.search"/>
           <item id="downloads" label="$t:admin.analytics.actions.tabs.downloads"/>
@@ -148,11 +148,11 @@
           <p class="text-label-subtle">$t:admin.analytics.actions.dimensions_hint</p>
         </div>
       </div>
-      <empty-state data-ref="dimensions_empty" data-if="{{(query.tab || 'search') === 'dimensions' &amp;&amp; !query.dimension &amp;&amp; (analytics_registered?.data?.dimensions ?? []).length > 0}}" iconName="puzzle-piece" title="$t:admin.analytics.actions.dimensions_empty_title" description="$t:admin.analytics.actions.dimensions_empty_description" class="py-10"/>
-      <empty-state data-ref="dimensions_none" data-if="{{(query.tab || 'search') === 'dimensions' &amp;&amp; !query.dimension &amp;&amp; (analytics_registered?.data?.dimensions ?? []).length === 0}}" iconName="puzzle-piece" title="$t:admin.analytics.actions.dimensions_none_title" description="$t:admin.analytics.actions.dimensions_none_description" class="py-10"/>
+      <empty-state data-type="composite" data-ref="dimensions_empty" data-if="{{(query.tab || 'search') === 'dimensions' &amp;&amp; !query.dimension &amp;&amp; (analytics_registered?.data?.dimensions ?? []).length > 0}}" iconName="puzzle-piece" title="$t:admin.analytics.actions.dimensions_empty_title" description="$t:admin.analytics.actions.dimensions_empty_description" class="py-10"/>
+      <empty-state data-type="composite" data-ref="dimensions_none" data-if="{{(query.tab || 'search') === 'dimensions' &amp;&amp; !query.dimension &amp;&amp; (analytics_registered?.data?.dimensions ?? []).length === 0}}" iconName="puzzle-piece" title="$t:admin.analytics.actions.dimensions_none_title" description="$t:admin.analytics.actions.dimensions_none_description" class="py-10"/>
       <!-- 개인정보로 표시된 분류 기준은 집계하지 않는다(#682 S4 라운드 4) — 표가 늘 비어 「수집 진단」으로
            보내면 수집 고장으로 읽힌다. 고르면 표 대신 이유를 보인다(#682 S4 라운드 8). -->
-      <empty-state data-ref="dimensions_pii" data-if="{{(query.tab || 'search') === 'dimensions' &amp;&amp; !!query.dimension &amp;&amp; (analytics_registered?.data?.dimensions ?? []).some(d =&gt; d.key === query.dimension &amp;&amp; d.pii)}}" iconName="user-shield" title="$t:admin.analytics.actions.dimension_pii_title" description="$t:admin.analytics.actions.dimension_pii_description" class="py-10"/>
+      <empty-state data-type="composite" data-ref="dimensions_pii" data-if="{{(query.tab || 'search') === 'dimensions' &amp;&amp; !!query.dimension &amp;&amp; (analytics_registered?.data?.dimensions ?? []).some(d =&gt; d.key === query.dimension &amp;&amp; d.pii)}}" iconName="user-shield" title="$t:admin.analytics.actions.dimension_pii_title" description="$t:admin.analytics.actions.dimension_pii_description" class="py-10"/>
       <div data-ref="report_grid_wrap" data-if="{{(query.tab || 'search') !== 'dimensions' || (!!query.dimension &amp;&amp; !(analytics_registered?.data?.dimensions ?? []).some(d =&gt; d.key === query.dimension &amp;&amp; d.pii))}}">
         <include src="partials/admin_analytics/_partial_report_grid.g7.html"/>
       </div>

@@ -41,17 +41,29 @@
                             "name": "Button",
                             "actions": [
                                 {
-                                    "comment": "새 주소 폼을 null 로 열면 기본 배송지 체크박스가 자동바인딩할 boolean 이 없어, 손대지 않은 제출이 빈 문자열을 보낸다. 형제 화면(mypage/addresses/_list.json)이 같은 위젯을 이미 boolean 으로 시드한다.",
+                                    "comment": "새로 등록 — 같은 창을 폼 모드로 바꾼다. `editingAddress` 를 id 없는 새 객체로 열어야 수정이 아닌 등록이 되고,\n                 지난 오류 표시도 함께 지운다. 새 주소 폼을 null 로 열면 기본 배송지 체크박스가 자동바인딩할 boolean 이 없어,\n                 손대지 않은 제출이 빈 문자열을 보낸다 — 형제 화면(mypage/addresses/_list.json)이 같은 위젯을 이미 boolean 으로 시드한다.\n                 이어서 배송국가를 선호 배송국가(해외배송 활성·활성 국가일 때만, 아니면 KR)로 채운다 — 비워 두면 선택 칸은 선호 국가를\n                 보이는데 주소 칸은 국내형이고 저장값은 KR 이 된다(#703).",
                                     "type": "click",
-                                    "handler": "setState",
-                                    "params": {
-                                        "target": "local",
-                                        "addressModalMode": "form",
-                                        "addressErrors": null,
-                                        "editingAddress": {
-                                            "is_default": false
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "addressModalMode": "form",
+                                                "addressErrors": null,
+                                                "editingAddress": {
+                                                    "is_default": false
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "editingAddress.country_code": "{{(_global.modules?.['sirsoft-ecommerce']?.shipping?.international_shipping_enabled === true && (_global.modules?.['sirsoft-ecommerce']?.shipping?.available_countries ?? []).some(c => c.is_active && c.code === _global.preferredShippingCountry)) ? _global.preferredShippingCountry : 'KR'}}"
+                                            }
                                         }
-                                    }
+                                    ]
                                 }
                             ],
                             "props": {
@@ -320,39 +332,35 @@
                                             "if": "{{!addr.is_default}}",
                                             "actions": [
                                                 {
-                                                    "comment": "기본 배송지에는 이 버튼이 없다 — 지우면 대체할 기본값이 없어지기 때문. 수정과 같은 이유로 카드 클릭을 막는다",
+                                                    "comment": "기본 배송지에는 이 버튼이 없다(지우면 대체할 기본값이 없어진다). 수정과 같은 이유로 카드 클릭을 막는다. 확인 창은 액션 속성 confirm 이라 취소하면 요청이 나가지 않고, 회원 배송지 API 라 토큰을 싣는다",
                                                     "type": "click",
-                                                    "handler": "confirm",
+                                                    "handler": "apiCall",
+                                                    "target": "/api/modules/sirsoft-ecommerce/user/addresses/{{addr.id}}",
+                                                    "auth_required": true,
                                                     "params": {
-                                                        "message": "$t:shop.checkout.address_delete_confirm"
+                                                        "method": "DELETE"
                                                     },
-                                                    "onSuccess": {
-                                                        "handler": "apiCall",
-                                                        "target": "/api/modules/sirsoft-ecommerce/user/addresses/{{addr.id}}",
-                                                        "params": {
-                                                            "method": "DELETE"
-                                                        },
-                                                        "onSuccess": [
-                                                            {
-                                                                "handler": "refetchDataSource",
-                                                                "params": {
-                                                                    "dataSourceId": "userAddresses"
-                                                                }
-                                                            },
-                                                            {
-                                                                "handler": "toast",
-                                                                "params": {
-                                                                    "type": "success",
-                                                                    "message": "$t:shop.checkout.address_deleted"
-                                                                }
+                                                    "confirm": "$t:shop.checkout.address_delete_confirm",
+                                                    "onSuccess": [
+                                                        {
+                                                            "handler": "refetchDataSource",
+                                                            "params": {
+                                                                "dataSourceId": "userAddresses"
                                                             }
-                                                        ],
-                                                        "onError": {
+                                                        },
+                                                        {
                                                             "handler": "toast",
                                                             "params": {
-                                                                "type": "error",
-                                                                "message": "{{error.message}}"
+                                                                "type": "success",
+                                                                "message": "$t:shop.checkout.address_deleted"
                                                             }
+                                                        }
+                                                    ],
+                                                    "onError": {
+                                                        "handler": "toast",
+                                                        "params": {
+                                                            "type": "error",
+                                                            "message": "{{error.message}}"
                                                         }
                                                     },
                                                     "stopPropagation": true
@@ -557,7 +565,7 @@
                                     "name": "Select",
                                     "props": {
                                         "name": "country_code",
-                                        "value": "{{_local.editingAddress?.country_code ?? _global.preferredShippingCountry ?? 'KR'}}",
+                                        "value": "{{_local.editingAddress?.country_code ?? 'KR'}}",
                                         "options": "{{(_global.modules?.['sirsoft-ecommerce']?.shipping?.available_countries ?? []).filter(c => c.is_active).map(c => ({ value: c.code, label: ($localized(c.name) || c.code) }))}}",
                                         "className": "w-full"
                                     }
@@ -899,8 +907,21 @@
                                 {
                                     "type": "basic",
                                     "name": "Checkbox",
+                                    "actions": [
+                                        {
+                                            "comment": "기본 배송지 여부 — 저장값이 boolean 이 아닐 수 있어(미저장·null) 체크 상태를 명시 바인딩하고, 바뀐 값은 여기서 직접 적는다",
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "editingAddress.is_default": "{{$event.target.checked}}"
+                                            }
+                                        }
+                                    ],
                                     "props": {
                                         "name": "is_default",
+                                        "checked": "{{!!_local.editingAddress?.is_default}}",
+                                        "autoBinding": false,
                                         "className": "w-4 h-4 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600 rounded focus:ring-gray-900 dark:focus:ring-white"
                                     }
                                 },

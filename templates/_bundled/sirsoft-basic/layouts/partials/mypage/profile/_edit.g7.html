@@ -69,24 +69,11 @@
         <set-state target="local" :isSavingProfile="true" :profileErrors="null"/>
         <api-call :auth_required="true" target="/api/me" method="PUT" body="{{_local?.profileEditForm}}">
           <success>
-            <!-- 결제 통화 통합 저장 (D9 — 이커머스 설치 시에만. 회원정보 저장 성공 후 같은 흐름에서 통화도 영속 저장). 게이트=폼에 통화 필드가 있을 때만. -->
-            <api-call if="{{_local?.profileEditForm?.ecommerce_preferred_currency}}" :auth_required="true" target="/api/modules/sirsoft-ecommerce/user/currency" method="PUT" body="{{ { currency: _local.profileEditForm.ecommerce_preferred_currency } }}">
-              <success>
-                <set-state target="global" preferredCurrency="{{_local.profileEditForm.ecommerce_preferred_currency}}"/>
-              </success>
-              <fail>
-                <toast type="error" message="{{error.message}}"/>
-              </fail>
-            </api-call>
-            <!-- 배송국가 통합 저장 (MP08 후속 — 이커머스 설치 + 폼에 배송국가 필드가 있을 때만). 회원정보 저장 성공 후 같은 흐름에서 배송국가도 영속 저장. -->
-            <api-call if="{{_local?.profileEditForm?.ecommerce_preferred_shipping_country}}" :auth_required="true" target="/api/modules/sirsoft-ecommerce/user/shipping-country" method="PUT" body="{{ { shipping_country: _local.profileEditForm.ecommerce_preferred_shipping_country } }}">
-              <success>
-                <set-state target="global" preferredShippingCountry="{{_local.profileEditForm.ecommerce_preferred_shipping_country}}"/>
-              </success>
-              <fail>
-                <toast type="error" message="{{error.message}}"/>
-              </fail>
-            </api-call>
+            <!-- 결제 통화·배송국가는 위 회원정보 저장 요청에 함께 실려 이커머스가 코어 훅으로 저장했다. 여기서는
+                 화면 전역 선호값만 맞춘다 — 헤더 셀렉터·가격 표시가 새로고침 없이 바뀐 값을 따르게 하기 위해서다.
+                 이커머스가 없으면 폼에 두 칸이 없어 아무것도 하지 않는다. -->
+            <set-state if="{{_local?.profileEditForm?.ecommerce_preferred_currency}}" target="global" preferredCurrency="{{_local.profileEditForm.ecommerce_preferred_currency}}"/>
+            <set-state if="{{_local?.profileEditForm?.ecommerce_preferred_shipping_country}}" target="global" preferredShippingCountry="{{_local.profileEditForm.ecommerce_preferred_shipping_country}}"/>
             <set-state target="local" :isSavingProfile="false" :profileErrors="null"/>
             <refetch-data-source dataSourceId="user"/>
             <refetch-data-source dataSourceId="current_user"/>
@@ -110,7 +97,7 @@
                아래 [저장] 을 누르지 않아도 반영되고, 성공하면 두 데이터소스를 다시 부른다. -->
           <div data-ref="profile_edit_avatar" class="flex items-center gap-4 pb-4 border-b border-gray-200 dark:border-gray-700">
             <responsive on="portable" class="flex flex-col items-center gap-3 pb-4 border-b border-gray-200 dark:border-gray-700"/>
-            <avatar-uploader src="{{user.data?.avatar}}" fallbackText="{{user.data?.name?.charAt(0) ?? 'U'}}" size="xl" :showDeleteButton="true" :confirmDelete="true">
+            <avatar-uploader data-type="composite" src="{{user.data?.avatar}}" fallbackText="{{user.data?.name?.charAt(0) ?? 'U'}}" size="xl" :showDeleteButton="true" :confirmDelete="true">
               <responsive on="portable" size="lg"/>
               <prop name="uploadSuccessActions">
                 <item>
@@ -359,7 +346,7 @@
           </label>
         </div>
       </div>
-      <!-- 결제 통화 카드 (A3·A5·D9 — 이커머스 설치 시에만. 폼 필드로 통합 저장. 게이트=이커머스 모듈 설치(_global.modules) — 코어 노출값이라 user 리소스 병합 타이밍과 무관하게 안정적) -->
+      <!-- 결제 통화 카드 (A3·A5·D9 — 이커머스 설치 시에만). name 바인딩으로 profileEditForm 에 실려 회원정보 저장(PUT /api/me) 한 번에 함께 저장되고, 잘못된 값이면 그 요청의 검증 오류가 이 칸 아래에 뜬다. 게이트=이커머스 모듈 설치(_global.modules) — 코어 노출값이라 user 리소스 병합 타이밍과 무관하게 안정적 -->
       <div data-if="{{_global.modules?.['sirsoft-ecommerce'] !== undefined}}" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
         <responsive on="portable" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4"/>
         <div class="flex items-center gap-2 mb-4 pb-3 border-b border-gray-200 dark:border-gray-700">
@@ -368,8 +355,9 @@
         </div>
         <p class="text-sm text-gray-500 dark:text-gray-400 mb-3">$t:mypage.currency_settings.description</p>
         <select name="ecommerce_preferred_currency" value="{{user.data?.ecommerce_preferred_currency ?? _global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency}}" options="{{(_global.modules?.['sirsoft-ecommerce']?.language_currency?.currencies ?? []).filter(c => c.is_default || (c.exchange_rate ?? 0) > 0).map(c => ({ value: c.code, label: c.code + ' (' + (c.symbol ?? c.code) + ')' }))}}" class="w-full sm:w-64"/>
+        <p data-if="{{_local.profileErrors?.ecommerce_preferred_currency}}" class="mt-2 text-sm text-red-600 dark:text-red-400">{{_local.profileErrors?.ecommerce_preferred_currency?.[0] ?? ''}}</p>
       </div>
-      <!-- 배송국가 설정 카드 (MP08 후속 — 이커머스 설치 + 해외배송 활성 시에만). name 바인딩으로 profileEditForm 에 자동 포함, 회원정보 [저장] 시 onSuccess 체인이 PUT. -->
+      <!-- 배송국가 설정 카드 (MP08 후속 — 이커머스 설치 + 해외배송 활성 시에만). name 바인딩으로 profileEditForm 에 실려 회원정보 저장 요청에 함께 간다 — 별도 저장 호출이 없다. -->
       <div data-if="{{_global.modules?.['sirsoft-ecommerce']?.shipping?.international_shipping_enabled === true}}" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
         <responsive on="portable" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4"/>
         <div class="flex items-center gap-2 mb-4 pb-3 border-b border-gray-200 dark:border-gray-700">
@@ -378,6 +366,7 @@
         </div>
         <p class="text-sm text-gray-500 dark:text-gray-400 mb-3">$t:mypage.shipping_country_settings.description</p>
         <select name="ecommerce_preferred_shipping_country" value="{{user.data?.ecommerce_preferred_shipping_country ?? _global.modules?.['sirsoft-ecommerce']?.shipping?.default_country ?? 'KR'}}" options="{{(_global.modules?.['sirsoft-ecommerce']?.shipping?.available_countries ?? []).filter(c => c.is_active).map(c => ({ value: c.code, label: ($localized(c.name) || c.code) }))}}" class="w-full sm:w-64"/>
+        <p data-if="{{_local.profileErrors?.ecommerce_preferred_shipping_country}}" class="mt-2 text-sm text-red-600 dark:text-red-400">{{_local.profileErrors?.ecommerce_preferred_shipping_country?.[0] ?? ''}}</p>
       </div>
       <!-- 하단 버튼 그룹 -->
       <div class="flex justify-end gap-2">

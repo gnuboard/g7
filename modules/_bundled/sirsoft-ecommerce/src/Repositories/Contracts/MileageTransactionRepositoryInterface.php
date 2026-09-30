@@ -261,13 +261,16 @@ interface MileageTransactionRepositoryInterface
     public function getActiveLotsForUser(int $userId): Collection;
 
     /**
-     * 회원의 잔여 있는 특정 lot 들을 조회합니다 (유효기간 연장 대상).
+     * 잔여 있는 특정 lot 들을 조회합니다 (유효기간 연장 대상).
      *
-     * @param  int  $userId  회원 ID
+     * 회원을 지정하면 그 회원의 lot 만, null 이면 회원과 무관하게 지정한 lot 전부를 대상으로 한다
+     * (관리자 마일리지 내역에서 여러 회원의 적립건을 함께 고르는 일괄 연장).
+     *
+     * @param  int|null  $userId  회원 ID (null 이면 회원 제한 없음)
      * @param  array<int, int>  $lotIds  lot ID 목록
      * @return Collection<int, MileageTransaction> 대상 lot 컬렉션
      */
-    public function getRemainingLotsByIds(int $userId, array $lotIds): Collection;
+    public function getRemainingLotsByIds(?int $userId, array $lotIds): Collection;
 
     /**
      * 적립건의 만료일을 갱신합니다.

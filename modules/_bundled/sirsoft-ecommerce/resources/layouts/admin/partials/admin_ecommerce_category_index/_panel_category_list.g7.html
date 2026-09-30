@@ -13,7 +13,7 @@
       </div>
     </div>
     <div>
-      <sortable-menu-list data-ref="sortable_category_list" data-if="{{(categories?.data?.data?.length ?? 0) > 0}}" items="{{categories?.data?.data ?? []}}" selectedId="{{_global.selectedCategoryId}}" enableDrag="{{categories?.data?.abilities?.can_update === true}}" toggleDisabled="{{categories?.data?.abilities?.can_update !== true}}" class="p-2 max-h-[calc(90vh-140px)] overflow-y-auto" itemClassName="py-1 px-3 mb-1 rounded-lg border" itemSelectedClassName="bg-blue-50 dark:bg-blue-900/30 border-blue-500" itemDefaultClassName="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600" childrenContainerClassName="bg-gray-50 dark:bg-gray-900/50">
+      <sortable-menu-list data-type="composite" data-ref="sortable_category_list" data-if="{{(categories?.data?.data?.length ?? 0) > 0}}" items="{{categories?.data?.data ?? []}}" selectedId="{{_global.selectedCategoryId}}" enableDrag="{{categories?.data?.abilities?.can_update === true}}" toggleDisabled="{{categories?.data?.abilities?.can_update !== true}}" class="p-2 max-h-[calc(90vh-140px)] overflow-y-auto" itemClassName="py-1 px-3 mb-1 rounded-lg border" itemSelectedClassName="bg-blue-50 dark:bg-blue-900/30 border-blue-500" itemDefaultClassName="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600" childrenContainerClassName="bg-gray-50 dark:bg-gray-900/50">
         <on type="action" event="onSelect">
           <!-- 분류 선택 — 트리가 들고 있는 행 전체를 전역에 옮긴다. 오른쪽 보기 패널은 이 값만 읽고
             상세를 따로 부르지 않는다.

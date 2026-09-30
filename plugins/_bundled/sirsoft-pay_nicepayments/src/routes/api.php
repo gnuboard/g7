@@ -20,8 +20,10 @@ use Plugins\Sirsoft\PayNicepayments\Controllers\UserReceiptController;
 |
 */
 
-// PC 결제창 닫힘 보고 — 주문 컨텍스트 검증 후 결제 실패/취소 이력 기록
+// PC 결제창 닫힘 보고 — 주문 소유자(회원 Sanctum / 비회원 X-Guest-Order-Token) 확인 후 결제 실패/취소 이력 기록.
+// optional.sanctum 이 있어야 Bearer 토큰이 회원으로 인식된다 (주문자 연락처 대조는 소유 증명이 아니다).
 Route::post('/payment/close-report', [PaymentCloseReportController::class, 'store'])
+    ->middleware('optional.sanctum')
     ->name('payment.close-report');
 
 Route::get('/user/orders/{orderNumber}/receipt', [UserReceiptController::class, 'show'])
@@ -58,11 +60,6 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:sanctum', 'admin'])->g
     Route::get('/orders/test-mode-map', [AdminOrderListController::class, 'testModeMap'])
         ->middleware('permission:admin,sirsoft-ecommerce.orders.read')
         ->name('orders.test-mode-map');
-
-    // 주문 목록 간편결제 표시 맵 조회
-    Route::get('/orders/easy-pay-display-map', [AdminOrderListController::class, 'easyPayDisplayMap'])
-        ->middleware('permission:admin,sirsoft-ecommerce.orders.read')
-        ->name('orders.easy-pay-display-map');
 
     // 가상계좌 입금 완료 건 환불 (환불 계좌 정보 필요)
     Route::post('/vbank-refund', [AdminVbankRefundController::class, 'refund'])

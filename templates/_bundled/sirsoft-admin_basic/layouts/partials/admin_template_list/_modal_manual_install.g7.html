@@ -2,7 +2,7 @@
   탭 하나가 주소·전송 형식·요청 본문 셋을 함께 정하고, 오류는 전체 메시지와 필드별로 나눠 보여 준다.
   탭을 옮기거나 값을 고치면 오류를 지운다. 모듈 수동 설치 창과 같은 형태다. -->
 <partial description="템플릿 수동 설치 모달" editor_label="$t:admin.modal_label.admin_template_list.template_manual_install_modal">
-  <modal data-ref="template_manual_install_modal" title="$t:admin.templates.modals.manual_install_title" size="medium">
+  <modal data-type="composite" data-ref="template_manual_install_modal" title="$t:admin.templates.modals.manual_install_title" size="medium">
     <p class="text-secondary mb-4">$t:admin.templates.modals.manual_install_description</p>
     <div class="mb-4">
       <button type="button" class="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-indigo-700 dark:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-md">
@@ -22,7 +22,7 @@
         </div>
       </div>
     </div>
-    <tab-navigation data-ref="template_install_tabs" activeTabId="{{_global.templateInstallTab || 'file_upload'}}" variant="underline">
+    <tab-navigation data-type="composite" data-ref="template_install_tabs" activeTabId="{{_global.templateInstallTab || 'file_upload'}}" variant="underline">
       <prop name="tabs">
         <item id="file_upload" label="$t:admin.templates.tabs.file_upload" iconName="upload"/>
         <item id="github" label="$t:admin.templates.tabs.github" iconName="code-branch"/>

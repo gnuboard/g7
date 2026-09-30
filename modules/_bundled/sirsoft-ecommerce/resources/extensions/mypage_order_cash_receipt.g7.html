@@ -62,7 +62,7 @@
   </div>
   <modal>
     <!-- 발급 모달 — 상태 ③에서 열린다. 모달은 별도 컨텍스트라 부모 _local 을 참조할 수 없으므로 데이터소스(order)와 _global 만 쓴다. -->
-    <modal data-ref="ext_cash_receipt_issue_modal" title="$t:sirsoft-ecommerce.order.cash_receipt.issue_title" width="480px">
+    <modal data-type="composite" data-ref="ext_cash_receipt_issue_modal" title="$t:sirsoft-ecommerce.order.cash_receipt.issue_title" width="480px">
       <div class="space-y-4">
         <!-- 용도 -->
         <div>

@@ -17,5 +17,16 @@
         "plugins": {}
     },
     "github_url": "https://github.com/gnuboard/g7-module-sirsoft-board",
-    "github_changelog_url": "https://github.com/gnuboard/g7-module-sirsoft-board/blob/main/CHANGELOG.md"
+    "github_changelog_url": "https://github.com/gnuboard/g7-module-sirsoft-board/blob/main/CHANGELOG.md",
+    "assets": {
+        "js": {
+            "entry": "resources/js/index.ts",
+            "output": "dist/js/module.iife.js"
+        },
+        "handlers": true
+    },
+    "loading": {
+        "strategy": "global",
+        "priority": 100
+    }
 }

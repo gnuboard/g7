@@ -3,12 +3,14 @@
   <meta title="$t:sirsoft-tosspayments.settings.title" description="$t:sirsoft-tosspayments.settings.description"/>
   <!-- 저장된 플러그인 설정을 폼 초기값으로 싣는다. refetchOnMount 라 저장하고 돌아와도 서버 값이 다시 실린다 -->
   <data-source id="settings" label_key="$t:sirsoft-tosspayments.editor.data_source.settings" type="api" endpoint="/api/admin/plugins/{{route.identifier}}/settings" method="GET" :auto_fetch="true" :auth_required="true" initLocal="form" :refetchOnMount="true"/>
+  <!-- 가상계좌 입금통보 웹훅 URL — 토스 개발자센터에 그대로 붙여 넣는 값이라 사이트 주소까지 붙은 전체 URL 을 서버에서 받아 보여 준다 -->
+  <data-source id="webhook_info" label_key="$t:sirsoft-tosspayments.editor.data_source.webhook_info" type="api" endpoint="/api/plugins/sirsoft-tosspayments/admin/webhook-url" method="GET" :auto_fetch="true" :auth_required="true" initLocal="webhookInfo"/>
   <permissions>
     <permission>core.plugins.update</permission>
   </permissions>
   <slot name="content">
     <div data-ref="plugin_settings_content" data-key="form" data-track-changes class="admin-page-content-responsive">
-      <page-header data-ref="page_header" title="$t:sirsoft-tosspayments.settings.title" description="$t:sirsoft-tosspayments.settings.description" backPath="/admin/plugins" backLabel="$t:admin.plugins.back_to_list"/>
+      <page-header data-type="composite" data-ref="page_header" title="$t:sirsoft-tosspayments.settings.title" description="$t:sirsoft-tosspayments.settings.description" backPath="/admin/plugins" backLabel="$t:admin.plugins.back_to_list"/>
       <div data-ref="validation_error" data-if="{{_local.errors}}" class="alert-danger">
         <div class="flex gap-3">
           <icon name="triangle-exclamation" size="md" class="text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"/>
@@ -27,7 +29,7 @@
               <label class="form-label">$t:sirsoft-tosspayments.settings.test_mode</label>
               <p class="form-hint">$t:sirsoft-tosspayments.settings.test_mode_hint</p>
             </div>
-            <toggle name="is_test_mode"/>
+            <toggle data-type="composite" name="is_test_mode"/>
           </div>
         </div>
       </div>
@@ -115,7 +117,7 @@
               <label class="form-label">$t:sirsoft-tosspayments.settings.order_sheet_mode</label>
               <p class="form-hint">$t:sirsoft-tosspayments.settings.order_sheet_mode_hint</p>
             </div>
-            <toggle name="order_sheet_mode"/>
+            <toggle data-type="composite" name="order_sheet_mode"/>
           </div>
           <div data-ref="enabled_methods_group" data-if="{{_local.form?.order_sheet_mode}}" class="space-y-3 pt-2 border-t border-gray-100 dark:border-gray-700">
             <label class="form-label">$t:sirsoft-tosspayments.settings.enabled_methods</label>
@@ -251,12 +253,12 @@
             <label class="form-label">$t:sirsoft-tosspayments.settings.webhook_url_label</label>
             <div class="flex items-center gap-2">
               <responsive on="portable" class="flex flex-col items-stretch gap-2"/>
-              <div class="flex-1 overflow-x-auto font-mono text-sm bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded px-3 py-2 whitespace-nowrap">/plugins/sirsoft-tosspayments/webhook/deposit</div>
+              <div class="flex-1 overflow-x-auto font-mono text-sm bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded px-3 py-2 whitespace-nowrap">{{_local.webhookInfo?.url ?? '/plugins/sirsoft-tosspayments/webhook/deposit'}}</div>
               <button data-ref="webhook_copy_button" type="button" class="btn btn-secondary btn-sm flex-shrink-0">
                 <responsive on="portable" type="button" class="btn btn-secondary btn-sm w-full"/>
                 <on type="click">
                   <!-- 웹훅 주소는 운영자가 토스 상점관리자에 직접 등록해야 입금통보가 들어온다. 그래서 보여 주기만 하지 않고 복사까지 시켜 준다 -->
-                  <action handler="copyToClipboard" text="/plugins/sirsoft-tosspayments/webhook/deposit">
+                  <action handler="sirsoft-tosspayments.copyToClipboard" text="{{_local.webhookInfo?.url ?? '/plugins/sirsoft-tosspayments/webhook/deposit'}}">
                     <success>
                       <toast type="success" message="$t:sirsoft-tosspayments.settings.webhook_url_copied"/>
                     </success>
@@ -272,7 +274,7 @@
               <label class="form-label">$t:sirsoft-tosspayments.settings.webhook_secret_verify</label>
               <p class="form-hint">$t:sirsoft-tosspayments.settings.webhook_secret_verify_hint</p>
             </div>
-            <toggle name="webhook_secret_verify"/>
+            <toggle data-type="composite" name="webhook_secret_verify"/>
           </div>
         </div>
       </div>

@@ -3,6 +3,7 @@
 namespace App\Support\LayoutMarkup;
 
 use App\Enums\LayoutMarkupErrorCode;
+use App\Enums\LayoutMarkupLintCode;
 
 /**
  * `.g7.html` 소스 파일 하나를 검증된 JSON 레이아웃으로 만드는 최상위 파사드 (S6).
@@ -29,9 +30,13 @@ final class LayoutMarkupCompiler
     private readonly LayoutLinter $linter;
 
     /**
-     * @param  ComponentRegistry  $registry  대상 템플릿(+활성 확장) 컴포넌트 레지스트리
+     * 산출 JSON 은 템플릿과 무관하다 — 태그 이름·`data-type` 만으로 정한다. 레지스트리를 주면 그 템플릿
+     * 기준 검사(미등록 컴포넌트 강검증·템플릿 기준 lint)를 더한다. 설치·업데이트·조각 주입 경로는 주지
+     * 않는다(JSON 설치와 같이 템플릿을 보지 않는다).
+     *
+     * @param  ComponentRegistry|null  $registry  검사용 템플릿 컴포넌트 레지스트리
      */
-    public function __construct(private readonly ComponentRegistry $registry)
+    public function __construct(private readonly ?ComponentRegistry $registry = null)
     {
         $this->tokenizer = new MarkupTokenizer;
         $this->treeBuilder = new MarkupTreeBuilder;
@@ -64,9 +69,59 @@ final class LayoutMarkupCompiler
         $rootKind = $roots[0]->name;
 
         $this->validator->validate($json, $rootKind, $this->registry, $context, $path);
-        $warnings = $this->linter->lint($json, $rootKind, $context, $path);
+        $warnings = $this->locateWarnings($roots, $this->linter->lint($json, $rootKind, $context, $path));
 
         return new CompileResult($json, $warnings);
+    }
+
+    /**
+     * 산출 JSON 에서 찾은 lint 경고에 소스 줄·칸을 채웁니다.
+     *
+     * lint 는 산출 JSON 을 보므로 위치를 모른다(0:0). 설치되지 않은 확장 컴포넌트 경고는 편집기가 그
+     * 태그를 가리켜야 고칠 수 있으므로, 경고의 컴포넌트명을 태그명(`식별자.케밥`)으로 되돌려 소스 트리에서
+     * 처음 나오는 그 태그의 위치를 싣는다(2026-09-28 결정). 태그를 찾지 못하면 원래 경고를 그대로 둔다.
+     *
+     * @param  array<int, MarkupElement>  $roots  소스 트리 루트 목록
+     * @param  array<int, LintWarning>  $warnings  lint 경고 목록
+     * @return array<int, LintWarning> 위치가 채워진 경고 목록
+     */
+    private function locateWarnings(array $roots, array $warnings): array
+    {
+        return array_map(function (LintWarning $warning) use ($roots): LintWarning {
+            $name = $warning->getParams()['name'] ?? null;
+
+            if ($warning->getLine() !== 0 || $warning->getCode() !== LayoutMarkupLintCode::ExtensionComponentNotInstalled || ! is_string($name)) {
+                return $warning;
+            }
+
+            $element = $this->findElementByTag($roots, strtolower(ComponentRegistry::toTag($name)));
+
+            return $element === null ? $warning : $warning->withPosition($element->line, $element->column);
+        }, $warnings);
+    }
+
+    /**
+     * 소스 트리에서 주어진 태그명의 첫 요소를 찾습니다 (문서 순서).
+     *
+     * @param  array<int, MarkupElement>  $elements  탐색할 요소 목록
+     * @param  string  $tag  소문자 태그명
+     * @return MarkupElement|null 첫 요소, 없으면 null
+     */
+    private function findElementByTag(array $elements, string $tag): ?MarkupElement
+    {
+        foreach ($elements as $element) {
+            if (strtolower($element->name) === $tag) {
+                return $element;
+            }
+
+            $found = $this->findElementByTag($element->children, $tag);
+
+            if ($found !== null) {
+                return $found;
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -85,6 +140,7 @@ final class LayoutMarkupCompiler
      * @param  array<int, MarkupElement>  $roots  소스 트리 루트 목록
      * @param  array<string, mixed>  $json  산출 JSON
      * @param  string|null  $path  소스 파일 경로
+     * @return void 반환값 없음
      *
      * @throws CompileError 주석이 산출에 실리지 못한 경우
      */
@@ -125,6 +181,7 @@ final class LayoutMarkupCompiler
      *
      * @param  array<int, MarkupElement>  $elements  요소 목록
      * @param  array<int, array{element: MarkupElement}>  $out  수집 결과 (참조)
+     * @return void 반환값 없음
      */
     private function collectAuthoredComments(array $elements, array &$out): void
     {
@@ -142,6 +199,7 @@ final class LayoutMarkupCompiler
      *
      * @param  mixed  $node  JSON 조각
      * @param  array<int, string>  $out  수집 결과 (참조)
+     * @return void 반환값 없음
      */
     private function collectEmittedComments(mixed $node, array &$out): void
     {

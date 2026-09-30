@@ -15,10 +15,10 @@
           <!-- 게시판명 배지 -->
           <span data-if="{{post?.board_name}}" class="flex-shrink-0 text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 rounded">{{post?.board_name}}</span>
           <!-- 제목 (HTML 하이라이트 지원) -->
-          <html-content content="{{post?.title_highlighted ?? post?.title}}" class="font-medium text-gray-900 dark:text-white [&amp;_mark]:bg-yellow-200 [&amp;_mark]:dark:bg-yellow-500/40 [&amp;_mark]:px-0.5 [&amp;_mark]:rounded"/>
+          <html-content data-type="composite" content="{{post?.title_highlighted ?? post?.title}}" class="font-medium text-gray-900 dark:text-white [&amp;_mark]:bg-yellow-200 [&amp;_mark]:dark:bg-yellow-500/40 [&amp;_mark]:px-0.5 [&amp;_mark]:rounded"/>
         </div>
         <!-- 발췌 내용 (HTML 하이라이트 지원, 텍스트 모드 분기) -->
-        <html-content data-if="{{post?.content_preview}}" content="{{post?.content_preview_highlighted ?? post?.content_preview}}" isHtml="{{post?.content_preview_highlighted ? true : (post?.content_mode ?? 'text') === 'html'}}" class="text-sm text-gray-600 dark:text-gray-400 mb-2 line-clamp-2 [&amp;_mark]:bg-yellow-200 [&amp;_mark]:dark:bg-yellow-500/40 [&amp;_mark]:px-0.5 [&amp;_mark]:rounded"/>
+        <html-content data-type="composite" data-if="{{post?.content_preview}}" content="{{post?.content_preview_highlighted ?? post?.content_preview}}" isHtml="{{post?.content_preview_highlighted ? true : (post?.content_mode ?? 'text') === 'html'}}" class="text-sm text-gray-600 dark:text-gray-400 mb-2 line-clamp-2 [&amp;_mark]:bg-yellow-200 [&amp;_mark]:dark:bg-yellow-500/40 [&amp;_mark]:px-0.5 [&amp;_mark]:rounded"/>
         <!-- 메타 정보 -->
         <div class="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
           <span>{{post?.author_name}}</span>

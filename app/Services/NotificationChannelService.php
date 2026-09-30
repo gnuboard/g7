@@ -164,6 +164,51 @@ class NotificationChannelService
     }
 
     /**
+     * 알림 한 건의 발송 채널 후보를 결정합니다 (채널 후보의 코어 단일 진입점).
+     *
+     * 채널을 제공하는 확장(문자·알림톡·앱 푸시 등)은 도메인을 알지 못한 채 코어 훅 하나에만
+     * 답하고, 도메인(코어 인증·게시판·이커머스 등, 앞으로 생길 도메인 포함)은 이 메서드로 후보를
+     * 받습니다. 순서:
+     *
+     * 1. `core.notification.channels` (filter) — 채널 제공 확장이 모든 도메인 공통으로 후보를 더한다.
+     *    인자: `(array $channels, string $type, ?object $notifiable, string $hookPrefix)`.
+     * 2. `{hookPrefix}.notification.channels` (filter) — 도메인이 자기 설정으로 후보를 좁히거나 더한다.
+     *    인자: `(array $channels, string $type, ?object $notifiable)` (종전과 같음).
+     *
+     * 확장 단위 활성·준비 상태·게스트 허용 판정은 여기서 하지 않습니다 — 발송 경로가 이 결과에
+     * 이어서 적용합니다.
+     *
+     * @param  string  $hookPrefix  알림 정의의 훅 접두사 (core.auth, 도메인 확장 식별자 등)
+     * @param  array<int, string>  $channels  정의가 선언한 기본 채널 후보
+     * @param  string  $type  알림 정의 유형
+     * @param  object|null  $notifiable  수신자 (화면 표시용 계산처럼 수신자가 없으면 null)
+     * @return array<int, string> 최종 채널 후보
+     */
+    public function resolveChannelCandidates(
+        string $hookPrefix,
+        array $channels,
+        string $type,
+        ?object $notifiable = null
+    ): array {
+        $channels = HookManager::applyFilters(
+            'core.notification.channels',
+            $channels,
+            $type,
+            $notifiable,
+            $hookPrefix
+        );
+
+        $channels = HookManager::applyFilters(
+            "{$hookPrefix}.notification.channels",
+            is_array($channels) ? $channels : [],
+            $type,
+            $notifiable
+        );
+
+        return is_array($channels) ? array_values($channels) : [];
+    }
+
+    /**
      * 메모이제이션 캐시를 초기화합니다. (테스트 및 설정 변경 후 사용)
      *
      * @return void 반환값 없음

@@ -10,7 +10,7 @@
   </permissions>
   <slot name="content">
     <div data-ref="plugin_settings_content" data-key="form" data-track-changes class="p-4 sm:p-6 lg:p-8 min-h-screen bg-gray-50 dark:bg-gray-900">
-      <page-header data-ref="page_header" title="$t:sirsoft-pay_kginicis.settings.title" description="$t:sirsoft-pay_kginicis.settings.description" backPath="/admin/plugins" backLabel="$t:admin.plugins.back_to_list"/>
+      <page-header data-type="composite" data-ref="page_header" title="$t:sirsoft-pay_kginicis.settings.title" description="$t:sirsoft-pay_kginicis.settings.description" backPath="/admin/plugins" backLabel="$t:admin.plugins.back_to_list"/>
       <div data-ref="validation_error" data-if="{{_local.errors}}" id="kginicis_settings_validation_error" role="alert" aria-live="assertive" :tabIndex="-1" class="alert-danger scroll-mt-32">
         <div class="flex gap-3">
           <icon name="triangle-exclamation" class="text-xl text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"/>
@@ -29,7 +29,7 @@
               <label class="form-label">$t:sirsoft-pay_kginicis.settings.test_mode</label>
               <p class="form-hint">$t:sirsoft-pay_kginicis.settings.test_mode_hint</p>
             </div>
-            <toggle name="is_test_mode"/>
+            <toggle data-type="composite" name="is_test_mode"/>
           </div>
         </div>
       </div>
@@ -150,35 +150,35 @@
               <label class="form-label">$t:sirsoft-pay_kginicis.settings.easy_pay_allow_with_other_pg</label>
               <p class="form-hint">$t:sirsoft-pay_kginicis.settings.easy_pay_allow_with_other_pg_hint</p>
             </div>
-            <toggle name="easy_pay_allow_with_other_pg"/>
+            <toggle data-type="composite" name="easy_pay_allow_with_other_pg"/>
           </div>
           <div class="panel-header-row">
             <div>
               <label class="form-label">$t:sirsoft-pay_kginicis.settings.easy_pay_naverpay</label>
               <p class="form-hint">$t:sirsoft-pay_kginicis.settings.easy_pay_naverpay_hint</p>
             </div>
-            <toggle name="easy_pay_naverpay"/>
+            <toggle data-type="composite" name="easy_pay_naverpay"/>
           </div>
           <div class="panel-header-row">
             <div>
               <label class="form-label">$t:sirsoft-pay_kginicis.settings.easy_pay_samsung_pay</label>
               <p class="form-hint">$t:sirsoft-pay_kginicis.settings.easy_pay_samsung_pay_hint</p>
             </div>
-            <toggle name="easy_pay_samsung_pay"/>
+            <toggle data-type="composite" name="easy_pay_samsung_pay"/>
           </div>
           <div class="panel-header-row">
             <div>
               <label class="form-label">$t:sirsoft-pay_kginicis.settings.easy_pay_lpay</label>
               <p class="form-hint">$t:sirsoft-pay_kginicis.settings.easy_pay_lpay_hint</p>
             </div>
-            <toggle name="easy_pay_lpay"/>
+            <toggle data-type="composite" name="easy_pay_lpay"/>
           </div>
           <div class="panel-header-row">
             <div>
               <label class="form-label">$t:sirsoft-pay_kginicis.settings.easy_pay_kakaopay</label>
               <p class="mt-1 text-xs text-amber-600 dark:text-amber-400">$t:sirsoft-pay_kginicis.settings.easy_pay_kakaopay_hint</p>
             </div>
-            <toggle name="easy_pay_kakaopay"/>
+            <toggle data-type="composite" name="easy_pay_kakaopay"/>
           </div>
         </div>
       </div>
@@ -191,7 +191,7 @@
             <label class="form-label">$t:sirsoft-pay_kginicis.settings.use_credit_point</label>
             <p class="form-hint">$t:sirsoft-pay_kginicis.settings.use_credit_point_hint</p>
           </div>
-          <toggle name="use_credit_point"/>
+          <toggle data-type="composite" name="use_credit_point"/>
         </div>
       </div>
       <div data-ref="japan_section" class="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
@@ -205,7 +205,7 @@
               <label class="form-label">$t:sirsoft-pay_kginicis.settings.japan_enabled</label>
               <p class="form-hint">$t:sirsoft-pay_kginicis.settings.japan_enabled_hint</p>
             </div>
-            <toggle name="japan_enabled"/>
+            <toggle data-type="composite" name="japan_enabled"/>
           </div>
           <div data-ref="japan_fields" data-if="{{_local.form &amp;&amp; _local.form.japan_enabled}}" class="space-y-6 pt-4 border-t border-gray-100 dark:border-gray-700">
             <div data-ref="field_japan_restrict_jpy_payment_methods" class="flex items-center justify-between rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/40 p-4">
@@ -213,7 +213,7 @@
                 <label class="block text-body font-medium">$t:sirsoft-pay_kginicis.settings.japan_restrict_jpy_payment_methods</label>
                 <p class="text-tertiary mt-1">$t:sirsoft-pay_kginicis.settings.japan_restrict_jpy_payment_methods_hint</p>
               </div>
-              <toggle name="japan_restrict_jpy_payment_methods"/>
+              <toggle data-type="composite" name="japan_restrict_jpy_payment_methods"/>
             </div>
             <div data-ref="cbt_test_helper_card" class="rounded-lg border border-blue-200 dark:border-blue-700 bg-blue-50 dark:bg-blue-900/20 p-4">
               <div class="flex-start gap-3 mb-3">
@@ -415,7 +415,7 @@
               <label class="form-label">$t:sirsoft-pay_kginicis.settings.use_escrow</label>
               <p class="form-hint">$t:sirsoft-pay_kginicis.settings.use_escrow_hint</p>
             </div>
-            <toggle name="use_escrow"/>
+            <toggle data-type="composite" name="use_escrow"/>
           </div>
         </div>
       </div>
@@ -460,7 +460,7 @@
                 <on type="click">
                   <!-- 가상계좌 입금통보 URL 복사 — 상점 관리자에 그대로 붙여 넣는 값이다 -->
                   <sequence>
-                    <action handler="copyToClipboard" text="{{_local.vbankInfo?.url ?? '/plugins/sirsoft-pay_kginicis/payment/vbank-notify'}}"/>
+                    <action handler="sirsoft-pay_kginicis.copyToClipboard" text="{{_local.vbankInfo?.url ?? '/plugins/sirsoft-pay_kginicis/payment/vbank-notify'}}"/>
                     <toast type="success" message="$t:sirsoft-pay_kginicis.settings.vbank_notify_copied"/>
                   </sequence>
                 </on>

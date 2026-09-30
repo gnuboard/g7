@@ -6,7 +6,7 @@
 
      파일명이 계약이다 — `plugin_settings` 라야 코어 `AbstractPlugin::getSettingsLayout()` 이
      「플러그인 관리 → 설정」(/admin/plugins/sirsoft-totp/settings)으로 띄운다. 전용 메뉴도
-     routes.json 도 두지 않는다(PO 확정 2026-09-18 — 이 화면은 플러그인 환경설정이지 별도
+     routes.json 도 두지 않는다(확정 2026-09-18 — 이 화면은 플러그인 환경설정이지 별도
      메뉴로 세울 사항이 아니다). 이름을 바꾸면 설정 화면이 통째로 사라지므로 바꾸지 않는다. -->
 <layout name="plugin_settings" version="1.0.0" extends="_admin_base">
   <meta title="$t:sirsoft-totp.admin.security.title" description="$t:sirsoft-totp.admin.security.description"/>
@@ -63,9 +63,9 @@
           <p data-ref="totp_security_enrolled_hint" class="text-hint mt-1">$t:sirsoft-totp.admin.security.enrolled.code_hint</p>
         </div>
         <div data-ref="totp_security_enrolled_actions" class="flex flex-col sm:flex-row gap-2 mt-4">
-          <button data-ref="totp_security_regenerate" type="button" class="px-4 py-2 bg-white dark:bg-gray-700 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 font-medium transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{!_local.code || _local.busy}}">
+          <button data-ref="totp_security_regenerate" type="button" class="px-4 py-2 bg-white dark:bg-gray-700 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 font-medium transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{String(_local.code ?? '').trim().length &lt; 6 || _local.busy}}">
             <on type="click">
-              <!-- 백업 코드 재발급 — 성공하면 새 코드를 1회 노출 화면으로 띄우고 입력값을 비운다. -->
+              <!-- 백업 코드 재발급 — 성공하면 새 코드를 1회 노출 화면으로 띄우고 입력값을 비운다. 서버가 6자 이상만 받으므로(앞뒤 공백 제외) 그 전에는 버튼이 잠긴다(해제 버튼도 같다). -->
               <sequence>
                 <set-state target="local" :busy="true" :error="null"/>
                 <api-call :auth_required="true" method="POST" target="/api/plugins/sirsoft-totp/backup-codes/regenerate">
@@ -82,7 +82,7 @@
             </on>
             <span data-ref="totp_security_regenerate_text">$t:sirsoft-totp.admin.security.enrolled.regenerate</span>
           </button>
-          <button data-ref="totp_security_disable" type="button" class="px-4 py-2 bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 text-white rounded-lg font-medium transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{!_local.code || _local.busy}}">
+          <button data-ref="totp_security_disable" type="button" class="px-4 py-2 bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 text-white rounded-lg font-medium transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{String(_local.code ?? '').trim().length &lt; 6 || _local.busy}}">
             <on type="click">
               <!-- 해제 — 해제에도 현재 코드를 요구한다(열린 세션만으로 2단계 인증을 끄지 못하게). -->
               <sequence>

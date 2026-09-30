@@ -431,6 +431,6 @@ _단건 응답: `data` 객체의 필드 (`UserResource::toArray()` 산물 — GE
 
 **설명**
 
-현재 로그인한 사용자가 자신의 프로필을 수정한다. 프론트의 프로필 수정 화면(`partials/mypage/profile/_edit.g7.html`)이 사용한다. `name`·`email` 은 필수이며 `email` 은 본인을 제외한 중복이 허용되지 않는다. 비밀번호를 함께 변경하려면 `password`(+ `password_confirmation`)와 현재 비밀번호(`current_password`)를 함께 보내야 하며, `password` 가 빈 문자열이면 비밀번호 미변경으로 처리된다. `notify_*`·`marketing_consent`·`email_subscription` 등 확장 소유 파라미터는 게시판 모듈·마케팅 플러그인이 `core.user.update_profile_validation_rules` 훅으로 추가하며, 해당 확장이 비활성인 환경에서는 수용되지 않는다. 성공 시 갱신된 프로필이 `UserResource` 형태로 반환된다.
+현재 로그인한 사용자가 자신의 프로필을 수정한다. 프론트의 프로필 수정 화면(`partials/mypage/profile/_edit.g7.html`)이 사용한다. `name`·`email` 은 필수이며 `email` 은 본인을 제외한 중복이 허용되지 않는다. 비밀번호를 함께 변경하려면 `password`(+ `password_confirmation`)와 현재 비밀번호(`current_password`)를 함께 보내야 하며, `password` 가 빈 문자열이면 비밀번호 미변경으로 처리된다. `notify_*`·`marketing_consent`·`email_subscription` 등 확장 소유 파라미터는 게시판 모듈·마케팅 플러그인이, `ecommerce_preferred_currency`·`ecommerce_preferred_shipping_country`(결제 통화·배송국가)는 이커머스 모듈이 `core.user.update_profile_validation_rules` 훅으로 추가하며, 해당 확장이 비활성인 환경에서는 수용되지 않는다. 이커머스 두 필드는 이 요청 안에서 함께 저장되므로 프로필 수정 화면은 별도 저장 호출을 하지 않는다. 성공 시 갱신된 프로필이 `UserResource` 형태로 반환된다.
 
 

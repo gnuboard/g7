@@ -33,7 +33,6 @@
 | `core.layout_extension.after_apply` | filter | `AdjustEcommercePaymentMethodsLayoutListener` | `adjustPaymentMethodsLayout` | 20 |
 | `core.layout_extension.after_apply` | filter | `EnsureAdminOrderDetailPaymentQueryLayoutListener` | `ensurePaymentQueryLayout` | 66 |
 | `core.layout_extension.after_apply` | filter | `EnsureAdminOrderDetailTestModeLayoutListener` | `ensureTestModeLayout` | 65 |
-| `core.layout_extension.after_apply` | filter | `EnsureAdminOrderListTestBadgeLayoutListener` | `ensureTestBadgeLayout` | 60 |
 | `core.plugin_settings.before_save` | action (미선언) | `ValidateCbtSettingsListener` | `validateBeforeSave` | 10 |
 | `core.plugins.after_update` | action | `RestoreLayoutExtensionsAfterUpdateListener` | `restoreCurrentExtensionsAfterUpdate` | 20 |
 | `sirsoft-ecommerce.cash_receipt.cancel` | filter | `RegisterCashReceiptProviderListener` | `cancel` | 10 |
@@ -48,13 +47,15 @@
 | `sirsoft-ecommerce.payment.refund` | filter | `PaymentRefundListener` | `processRefund` | 10 |
 | `sirsoft-ecommerce.payment.registered_pg_providers` | filter | `RegisterPgProviderListener` | `registerProvider` | 10 |
 | `sirsoft-ecommerce.settings.filter_available_payment_methods` | filter | `RegisterEasyPayMethodsListener` | `injectEasyPayMethods` | 20 |
+| `sirsoft-gdpr.necessary_storage.filter_provided_keys` | filter | `ProvideNecessaryStorageKeysListener` | `provide` | 10 |
 <!-- @generated:hooks-subscribed END -->
 
 <!-- @intent START -->
-`core.layout_extension.after_apply`를 구독하는 3개 리스너(`Ensure*LayoutListener`)가 서로
-다른 우선순위(60/65/66)를 갖는 것은 우연이 아닙니다 — 관리자 주문 목록/상세 레이아웃에 여러
-확장이 조각을 주입할 수 있어, 이 플러그인의 조각들이 서로 겹치지 않는 순서로 배치되도록
-번호를 나눠 씁니다. `sirsoft-ecommerce.payment.refund`를 구독하는 두 리스너의 우선순위
+`core.layout_extension.after_apply`를 구독하는 상세 화면 리스너 2개(`Ensure*LayoutListener`)가 서로
+다른 우선순위(65/66)를 갖는 것은 우연이 아닙니다 — 관리자 주문 상세 레이아웃에 여러 확장이 조각을
+주입할 수 있어, 이 플러그인의 조각들이 서로 겹치지 않는 순서로 배치되도록 번호를 나눠 씁니다.
+관리자 주문 **목록**의 테스트 결제 배지는 리스너로 덧대지 않습니다 — 이커머스가 결제수단 칸에 연
+확장점(`admin_order_list_payment_method_badges`)에 조각으로 붙습니다. `sirsoft-ecommerce.payment.refund`를 구독하는 두 리스너의 우선순위
 (`PaymentRefundListener`=10, `CancelActivityLogListener`=20)는 §AGENTS.md 핵심 흐름에서
 설명한 대로 "취소 성공 후에만 로그 기록"을 강제하기 위한 순서입니다 — 뒤바뀌면 실패한 취소도
 로그에 성공처럼 남을 수 있습니다.
@@ -129,8 +130,8 @@ API 가 그 자리에서 환불하므로 `true` 입니다. 예외는 `kginicis_j
 | `ClaimPaymentRefundListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/ClaimPaymentRefundListener.php` |
 | `EnsureAdminOrderDetailPaymentQueryLayoutListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/EnsureAdminOrderDetailPaymentQueryLayoutListener.php` |
 | `EnsureAdminOrderDetailTestModeLayoutListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/EnsureAdminOrderDetailTestModeLayoutListener.php` |
-| `EnsureAdminOrderListTestBadgeLayoutListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/EnsureAdminOrderListTestBadgeLayoutListener.php` |
 | `PaymentRefundListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/PaymentRefundListener.php` |
+| `ProvideNecessaryStorageKeysListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/ProvideNecessaryStorageKeysListener.php` |
 | `RegisterCashReceiptProviderListener` | 3개 | 명시 등록 | ✅ | `src/Listeners/RegisterCashReceiptProviderListener.php` |
 | `RegisterEasyPayMethodsListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/RegisterEasyPayMethodsListener.php` |
 | `RegisterPgProviderListener` | 2개 | 명시 등록 | ✅ | `src/Listeners/RegisterPgProviderListener.php` |
@@ -151,7 +152,7 @@ KG 이니시스가 보이지 않습니다. 나머지는 전부 부가 UI(`Ensure
 <!-- @generated:layout-extensions START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 대상 | 설명 |
 |---|---|
-| `resources/extensions/admin_order_list_test_badge.g7.html` | 다른 확장/템플릿 레이아웃에 주입되는 조각 — 대상 레이아웃 `admin_ecommerce_order_list` |
+| `resources/extensions/admin_order_list_payment_method_badge.g7.html` | 다른 확장/템플릿 레이아웃에 주입되는 조각 — 확장점 `admin_order_list_payment_method_badges` |
 | `resources/extensions/admin_order_payment_query.g7.html` | 다른 확장/템플릿 레이아웃에 주입되는 조각 — 대상 레이아웃 `admin_ecommerce_order_detail` |
 | `resources/extensions/checkout_payment_error.g7.html` | 다른 확장/템플릿 레이아웃에 주입되는 조각 — 대상 레이아웃 `shop/checkout` |
 | `resources/extensions/user_order_show.g7.html` | 다른 확장/템플릿 레이아웃에 주입되는 조각 — 확장점 `mypage_order_payment_provider_slot` |
@@ -160,10 +161,14 @@ KG 이니시스가 보이지 않습니다. 나머지는 전부 부가 UI(`Ensure
 <!-- @intent START -->
 `checkout_payment_error.g7.html`은 체크아웃 화면에 KG 이니시스 특유의 오류 메시지(예: 계약되지
 않은 결제수단 선택 시 안내)를 끼워 넣고, `user_order_show.g7.html`은 주문 상세에 영수증 버튼을
-추가합니다. 관리자 쪽 두 조각(`admin_order_list_test_badge`/`admin_order_payment_query`)은
+추가합니다. 관리자 쪽 두 조각(`admin_order_list_payment_method_badge`/`admin_order_payment_query`)은
 "이 주문이 테스트 모드로 결제됐는가"와 "PG 거래 상태를 다시 조회"를 관리자 화면에서 바로
 확인하게 하는 운영 편의 기능입니다 — 실제 결제 로직과는 분리돼 있어 이 조각만 비활성화해도
 결제 자체는 영향받지 않습니다.
+
+목록 배지 조각은 **자기 배지와 자기 테스트 결제 맵(`kginicis_test_map`)만** 갖습니다. 주문 목록의
+컬럼은 이커머스 레이아웃이 단일 출처이므로 컬럼 배열을 복사해 덮지 않고, 다른 PG 의 테스트 결제
+여부도 읽지 않습니다(한 목록에 여러 PG 주문이 섞여도 PG 마다 자기 배지를 자기 주문에만 띄운다).
 
 조각의 **고유 키는 파일 이름**입니다(`fragment_key` — 확장자를 뗀 기본 이름). 같은 확장이 같은 대상
 화면에 조각을 둘 보낼 수 있어 DB 행이 대상만으로 갈리지 않기 때문입니다. 설치 경로와

@@ -2,7 +2,7 @@
   이 창이 그것을 읽는다(창끼리도 서로의 `_local` 을 보지 못한다). 이름까지 넘겨받는 이유는 확인
   문장에 넣어야 하는데 이 창이 프리셋 목록을 따로 조회하지 않기 때문이다. -->
 <partial description="Order List - Preset Delete Confirm Modal">
-  <modal data-ref="modal_preset_delete_confirm" title="$t:sirsoft-ecommerce.admin.order.modal.preset_delete.title" size="sm">
+  <modal data-type="composite" data-ref="modal_preset_delete_confirm" title="$t:sirsoft-ecommerce.admin.order.modal.preset_delete.title" size="sm">
     <p class="text-body">$t:sirsoft-ecommerce.admin.order.modal.preset_delete.confirm|name={{_global.deletingPresetName}}</p>
     <div class="modal-footer-buttons">
       <button type="button" class="px-4 py-2 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isDeleting}}">

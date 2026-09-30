@@ -101,7 +101,7 @@
                     ]
                 },
                 {
-                    "comment": "배송국가 (D10 — 해외배송 활성 시에만 표시. _global.editingAddress.country_code 저장. 선택에 따라 국내/해외 주소 입력 분기. 체크아웃 배송지 관리 모달과 동형.)",
+                    "comment": "배송국가 (D10 — 해외배송 활성 시에만 표시. _global.editingAddress.country_code 저장. 선택에 따라 국내/해외 주소 입력 분기. 체크아웃 배송지 관리 모달과 동형.)\n           선택 칸과 주소 칸이 같은 값(editingAddress.country_code, 없으면 KR)을 본다 — 새 배송지의 기본 국가는 「추가」 버튼이 채운다(#703).",
                     "type": "basic",
                     "name": "Div",
                     "if": "{{_global.modules?.['sirsoft-ecommerce']?.shipping?.international_shipping_enabled === true}}",
@@ -130,7 +130,7 @@
                             ],
                             "props": {
                                 "name": "country_code",
-                                "value": "{{_global.editingAddress?.country_code ?? _global.preferredShippingCountry ?? 'KR'}}",
+                                "value": "{{_global.editingAddress?.country_code ?? 'KR'}}",
                                 "options": "{{(_global.modules?.['sirsoft-ecommerce']?.shipping?.available_countries ?? []).filter(c => c.is_active).map(c => ({ value: c.code, label: ($localized(c.name) || c.code) }))}}",
                                 "className": "w-full"
                             }
@@ -527,12 +527,24 @@
                     },
                     "children": [
                         {
-                            "comment": "이 폼을 여는 모든 경로가 is_default 를 boolean 으로 시드한다 — 신규는 false 리터럴, 수정은 (bool) 캐스팅된 응답값(2026-09-01 진입 경로 전수 실측). 그래서 자동바인딩이 boolean 아닌 값을 볼 자리가 없다. 정적 검사는 이 시드까지 보지 못해 경고를 남긴다(면제 표식 미지원 룰).",
                             "type": "basic",
                             "name": "Checkbox",
+                            "actions": [
+                                {
+                                    "comment": "기본 배송지 여부 — 저장값이 boolean 이 아닐 수 있어(미저장·null) 체크 상태를 명시 바인딩하고, 바뀐 값은 여기서 직접 적는다",
+                                    "type": "change",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "editingAddress.is_default": "{{$event.target.checked}}"
+                                    }
+                                }
+                            ],
                             "props": {
                                 "id": "address_is_default",
                                 "name": "is_default",
+                                "checked": "{{!!_global.editingAddress?.is_default}}",
+                                "autoBinding": false,
                                 "className": "w-4 h-4 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600 rounded focus:ring-gray-900 dark:focus:ring-white"
                             }
                         },

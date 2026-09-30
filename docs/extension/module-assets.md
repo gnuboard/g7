@@ -758,8 +758,10 @@ AMD 로더나 워커처럼 디렉토리 접두 뒤에 파일명을 이어 붙이
 
 ### 레이아웃 scripts 섹션
 
+외부 호스트(CDN)의 스크립트를 실으려면 그 호스트를 확장 매니페스트 `trusted_script_hosts` 에 선언해야 한다(위 「`trusted_script_hosts`」). 선언 없는 외부 호스트는 컴파일·저장·런타임에서 모두 거부되므로, 가능하면 아래처럼 확장이 동봉한 같은 origin 경로를 쓴다.
+
 ```html
-<script src="https://cdn.ckeditor.com/ckeditor5/41.0.0/classic/ckeditor.js" id="external-lib" :async="true" data-if="{{_global.modules['sirsoft-ecommerce'].useExternalLib}}"/>
+<script src="/modules/vendor-sample/vendor/external-lib.js" id="external-lib" :async="true" data-if="{{_global.modules['vendor-sample'].useExternalLib}}"/>
 ```
 
 > 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
@@ -768,9 +770,9 @@ AMD 로더나 워커처럼 디렉토리 접두 뒤에 파일명을 이어 붙이
 {
     "scripts": [
         {
-            "src": "https://cdn.ckeditor.com/ckeditor5/41.0.0/classic/ckeditor.js",
+            "src": "/modules/vendor-sample/vendor/external-lib.js",
             "id": "external-lib",
-            "if": "{{_global.modules['sirsoft-ecommerce'].useExternalLib}}",
+            "if": "{{_global.modules['vendor-sample'].useExternalLib}}",
             "async": true
         }
     ]

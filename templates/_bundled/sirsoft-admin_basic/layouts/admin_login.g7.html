@@ -14,7 +14,7 @@
       </field>
     </set-state>
   </init>
-  <toast data-ref="global_toast" toasts="{{_global.toasts}}" position="bottom-center" :duration="5000"/>
+  <toast data-type="composite" data-ref="global_toast" toasts="{{_global.toasts}}" position="bottom-center" :duration="5000"/>
   <div data-ref="login_page_wrapper" class="flex-center min-h-screen justify-center bg-gray-50 dark:bg-gray-900 px-4 sm:px-6 lg:px-8">
     <on event="mount">
       <!-- 세션 만료로 튕겨 온 경우에만 안내를 띄운다. 직접 로그인 화면에 온 사람에게는 아무 말도 하지

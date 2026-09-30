@@ -21,7 +21,7 @@ export interface MemoCardProps {
  * 태그로 쓴다:
  *
  * ```html
- * <gnuboard7-hello-module-memo-card title="{{memo.title}}" body="{{memo.body}}"/>
+ * <gnuboard7-hello_module.memo-card data-type="composite" title="{{memo.title}}" body="{{memo.body}}"/>
  * ```
  *
  * 태그의 `gnuboard7-hello-module` 은 모듈 식별자 `gnuboard7-hello_module` 의 언더스코어를

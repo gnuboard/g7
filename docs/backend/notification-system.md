@@ -10,7 +10,7 @@
 3. notification_templates 테이블 = 채널별 독립 템플릿 + 수신자 (mail/database/fcm)
 4. 훅 기반 트리거: NotificationHookListener가 template별 독립 발송
 5. 수신자 설정: template.recipients JSON으로 채널별 독립 수신자 (4종 타입)
-6. 채널 확장: Filter 훅 `{hookPrefix}.notification.channels`로 채널 추가/제거
+6. 채널 확장: 채널 제공 확장은 코어 훅 `core.notification.channels` 하나에 답하고(도메인 비인지), 도메인은 `{hookPrefix}.notification.channels`로 좁힌다
 ```
 
 > **본인인증(IDV) 메시지는 별도 시스템**: 본 알림 시스템과 완전히 분리된 IDV 전용 인프라가 [identity-messages.md](identity-messages.md) 에 있습니다. IDV는 `notification_*` 테이블 / `GenericNotification` 을 사용하지 않고, 자체 `identity_message_definitions` / `identity_message_templates` + `IdentityMessageDispatcher` 를 사용합니다.
@@ -137,11 +137,33 @@ LanguagePackSeedInjector::injectNotifications($definitions)
     ↓ 활성 코어 ja 언어팩의 seed/notifications.g7.html 로드
     ↓ 각 entry 에 ja 키 병합 (이미 존재하는 ko/en 보존)
     ↓
+applyFilters('core.notification.filter_seed_definitions', $list, $context)   ← 공통 시딩 훅 (7.1.0)
+    ↓ type 을 담은 순차 배열 + 소유자 컨텍스트 — 채널 제공 확장이 자기 채널 template 을 더함
+    ↓
 NotificationSyncHelper::syncDefinition() — DB upsert
     ↑ user_overrides 마킹된 필드는 운영자 수정값 보존
 ```
 
-모듈/플러그인 측: `ModuleManager::syncModuleNotificationDefinitions` / `PluginManager::syncPluginNotificationDefinitions` 가 동일 패턴 (`seed.{id}.notifications.translations` 필터 발화).
+모듈/플러그인 측: `ModuleManager::syncModuleNotificationDefinitions` / `PluginManager::syncPluginNotificationDefinitions` 가 동일 패턴 (`seed.{id}.notifications.translations` 필터 → 공통 시딩 훅 순서로 발화).
+
+### 공통 시딩 훅 (7.1.0)
+
+`core.notification.filter_seed_definitions` 는 코어·모든 모듈·플러그인의 알림 정의가 저장되기 직전 한 번 발화하는
+코어 필터입니다(`NotificationSyncHelper::applySeedDefinitionsFilter()` 가 단일 진입점, 상수 `SEED_DEFINITIONS_FILTER`).
+
+- 인자: `(array $definitions, array $context)` — 정의는 `type`·`extension_type`·`extension_identifier` 를 담은 순차 배열,
+  컨텍스트는 `['extension_type' => 'core'|'module'|'plugin', 'extension_identifier' => 식별자]`.
+- 문자·알림톡처럼 채널을 제공하는 확장은 도메인 이름을 모른 채 이 훅 하나에 답해 회원 대상 정의에 자기 채널 template 을
+  더합니다. 도메인별 `seed.{id}.notifications.translations` 는 언어팩 병합 전용이라 채널 확장이 구독하지 않습니다.
+- 훅이 더한 template 은 시딩 주체가 자기 선언처럼 저장하므로 `cleanupStaleTemplates` 에서 지워지지 않습니다.
+- 리스너가 빈 목록이나 배열이 아닌 값을 돌려주면 원본으로 시딩합니다(소유자 정의 전량 삭제 방어). 소유자 필드는
+  시딩 주체가 다시 채우므로 리스너가 바꿀 수 없습니다.
+- 채널 확장을 켤 때 이미 저장된 정의에 훅을 다시 태우는 공개 진입점:
+  `ModuleManager::resyncActiveModuleNotificationDefinitions()` / `PluginManager::resyncActivePluginNotificationDefinitions()`.
+  설치·활성 확장의 알림 정의만 설치본 기준으로 재동기화하고(`_bundled`·역할·권한·메뉴 무관), `user_overrides` 는 보존합니다.
+  코어 정의는 `NotificationDefinitionSeeder` 를 다시 실행합니다. 반환값: `['synced' => 식별자[], 'failed' => [식별자 => 사유]]`.
+
+상세 계약: [훅 시스템 — 알림 정의 시딩 계약](../extension/hooks.md#알림-정의-시딩-계약-710).
 
 신규 lang pack 추가 시 운영자가 수정하지 않은 키만 자동 보강. 운영자 편집값은 user_overrides 로 보존되어 시더 재실행/lang pack 재설치에도 덮어써지지 않음.
 
@@ -602,19 +624,29 @@ public function contributeDefaultDefinitions(array $definitions, array $context 
 
 ## 채널 확장
 
-플러그인이 Filter 훅으로 채널을 추가할 수 있습니다:
+채널을 제공하는 플러그인은 **코어 훅 하나**(`core.notification.channels`)에 답해 모든 도메인의 채널
+후보에 자기 채널을 더합니다. 도메인 접두사(`core.auth`·게시판·이커머스 …)를 구독하지 않습니다 —
+목록에 없는 도메인에서 채널이 빠지기 때문입니다.
 
 ```php
-// 플러그인 리스너에서
+// 채널 제공 플러그인 리스너에서
 HookManager::addFilter(
-    'core.auth.notification.channels',
-    function (array $channels, string $type, object $notifiable) {
+    'core.notification.channels',
+    function (array $channels, string $type, ?object $notifiable, string $hookPrefix) {
         $channels[] = 'fcm';
         return $channels;
     },
-    priority: 10,
+    priority: 20,
 );
 ```
+
+코어는 `NotificationChannelService::resolveChannelCandidates($hookPrefix, $channels, $type, $notifiable)` 에서
+① `core.notification.channels`(채널 제공 확장) → ② `{hookPrefix}.notification.channels`(도메인이 자기 설정으로
+좁히거나 더함) 순으로 후보를 거칩니다. 도메인이 활성 채널을 화면에 보여 줘야 하면 자기 훅을 직접 발화하지
+말고 이 진입점을 부릅니다. 계약 표: [hooks.md — 알림 채널 후보 계약](../extension/hooks.md#알림-채널-후보-계약-710).
+
+채널 템플릿 행(알림 설정 화면에 그려지는 채널별 제목·본문·수신자)을 정의에 미리 넣어야 하면 마찬가지로 **코어
+시딩 훅 하나**(`core.notification.filter_seed_definitions`)에 답합니다 — 위 [공통 시딩 훅](#공통-시딩-훅-710) 참조.
 
 GenericNotification의 `__call()`이 `toFcm()` 호출을 `{hookPrefix}.notification.to_fcm` Filter 훅으로 위임합니다.
 
@@ -631,6 +663,7 @@ user_id 없는 비회원(주문자 이메일/이름만 보유)도 회원과 동�
 | `GuestNotifiable` | `app/Notifications/GuestNotifiable.php` | 비회원 1급 수신자. Laravel `Notifiable` 트레잇 + `HasLocalePreference` 구현 (User 와 동일 계약). email/name/locale 보유 |
 | `GuestRecipientInterface` | `app/Contracts/Notifications/GuestRecipientInterface.php` | 게스트 판별 코어 계약 (`isGuest()`). 게이트가 구체 타입(User) 검사 대신 이 계약 사용 |
 | 표준 context 키 `guest_recipient` | `{email, name, locale}` | resolver 의 `trigger_user` 규칙이 user_id 없을 때 이 키로 GuestNotifiable 생성 |
+| 표준 data 키 `GenericNotification::RECIPIENT_PHONE_KEY` | `'_recipient_phone'` | 수신자 객체에 전화번호가 없을 때 도메인이 extract_data 의 data 에 싣는 수신 번호. 문자·알림톡 채널은 이 키만 읽는다(번호 없으면 키 생략) |
 
 ### 수신자 해석 (NotificationRecipientResolver)
 
@@ -694,7 +727,7 @@ user_id 없는 비회원(주문자 이메일/이름만 보유)도 회원과 동�
 
 ## 채널 템플릿을 시드하는 확장의 [기본값 복원] 의무
 
-확장이 시딩 필터(`seed.notifications.translations` 등)로 자기 채널의 템플릿 행을 알림 정의에 끼워 넣으면, 같은 증강을
+확장이 공통 시딩 훅(`core.notification.filter_seed_definitions`)으로 자기 채널의 템플릿 행을 알림 정의에 끼워 넣으면, 같은 증강을
 `core.notification.filter_default_definitions` 에도 걸어야 한다. 관리자 화면의 [기본값 복원]은
 `NotificationTemplateService::getDefaultTemplateData()` 가 이 필터를 통과시킨 정의 배열에서 해당 채널의 template 을 찾아
 복원하므로, 시드 출처와 복원 출처가 같은 함수가 아니면 그 채널 행의 복원은 "기본 템플릿 데이터를 찾을 수 없습니다" 로 끝난다

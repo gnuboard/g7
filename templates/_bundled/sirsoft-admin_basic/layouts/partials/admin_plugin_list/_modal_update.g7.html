@@ -6,7 +6,7 @@
      몇 개인지 먼저 알려 주고, 「그대로 두기」를 고르면 어느 화면이 남는지 목록으로 편다.
   실패해도 창은 열린 채이고 사유가 창 안에 남는다. -->
 <partial description="플러그인 업데이트 확인 모달" editor_label="$t:admin.modal_label.admin_plugin_list.plugin_update_modal">
-  <modal data-ref="plugin_update_modal" title="$t:admin.plugins.modals.update_title" size="medium">
+  <modal data-type="composite" data-ref="plugin_update_modal" title="$t:admin.plugins.modals.update_title" size="medium">
     <div data-if="{{_global.selectedPlugin?.is_compatible === false}}" class="mb-3 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg" role="alert">
       <div class="flex-start gap-2">
         <icon name="exclamation-triangle" class="text-amber-600 dark:text-amber-400 mt-0.5 shrink-0"/>

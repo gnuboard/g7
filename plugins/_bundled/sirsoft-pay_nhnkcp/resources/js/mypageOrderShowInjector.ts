@@ -1,4 +1,10 @@
-import { buildOrderRequestHeaders } from './guestOrderToken';
+import { buildOrderRequestHeaders, getAuthToken } from './guestOrderToken';
+import {
+    createOrderScreenPoller,
+    enterOrderScreen,
+    isOrderDataLoading,
+    requestOncePerOrderScreen,
+} from './orderScreenPolling';
 import { translateNhnkcp as t } from './translate';
 
 const PLUGIN_ID = 'sirsoft-pay_nhnkcp';
@@ -17,6 +23,8 @@ const ORDER_SHOW_RE = /^(?:\/mypage\/orders\/([^/]+)|\/shop\/guest\/orders\/([^/
 // (/shop/guest/claims/{N}) 신청서 상세가 같은 카드를 쓰므로 둘을 함께 매칭한다 —
 // 비회원 쪽은 요청 헤더 도구가 비회원 주문 조회 토큰을 실어 준다.
 const CLAIM_SHOW_RE = /^(?:\/mypage\/claims\/([^/]+)|\/shop\/guest\/claims\/([^/]+))$/;
+
+const poller = createOrderScreenPoller();
 
 interface Payment {
     pg_provider?: string;
@@ -86,6 +94,8 @@ interface MockDepositInfo {
 }
 
 async function fetchMockDepositInfo(orderNumber: string): Promise<MockDepositInfo | null> {
+    // 모의입금 정보는 로그인 전용 주소(auth:sanctum)다 — 비회원 조회 토큰만으로는 늘 401 이므로 부르지 않는다.
+    if (!getAuthToken()) return null;
     const headers = buildOrderRequestHeaders();
     if (!headers) return null;
     try {
@@ -100,6 +110,17 @@ async function fetchMockDepositInfo(orderNumber: string): Promise<MockDepositInf
     } catch {
         return null;
     }
+}
+
+// 폴러용 조회 — 한 화면 진입당 한 번만 보내고 결과(실패 포함)를 재사용한다.
+// 블록을 하나 붙일 때마다 틱이 다시 돌므로 매번 조회하면 같은 주소를 여러 번 부르게 된다.
+// 영수증 버튼 클릭은 이 경로를 쓰지 않고 매번 새로 조회한다.
+function fetchReceiptUrlsForScreen(orderNumber: string): Promise<ReceiptInfo | null> {
+    return requestOncePerOrderScreen(`nhnkcp-receipt:${orderNumber}`, () => fetchReceiptUrls(orderNumber));
+}
+
+function fetchMockDepositInfoForScreen(orderNumber: string): Promise<MockDepositInfo | null> {
+    return requestOncePerOrderScreen(`nhnkcp-mock-deposit:${orderNumber}`, () => fetchMockDepositInfo(orderNumber));
 }
 
 function buildMockDepositBlock(info: MockDepositInfo): HTMLElement {
@@ -300,7 +321,9 @@ function buildReceiptRow(orderNumber: string): HTMLElement {
     return row;
 }
 
-async function tryInject(orderNumber: string | null): Promise<boolean> {
+async function tryInject(orderNumber: string | null, isActive: () => boolean): Promise<boolean> {
+    // 주문을 불러오는 중이면 기다린다 — 아래 「주문 정보 없음」 분기는 불러오기가 끝난 뒤에만 탄다.
+    if (isOrderDataLoading()) return false;
     const orderData = getOrderFromState(orderNumber);
 
     if (!orderData) {
@@ -313,7 +336,8 @@ async function tryInject(orderNumber: string | null): Promise<boolean> {
         if (!document.getElementById(MOCK_DEPOSIT_ID)) {
             const container = findPaymentRowsContainer();
             if (!container) return false; // 컨테이너 미렌더링 → 재시도
-            const info = await fetchMockDepositInfo(orderNumber);
+            const info = await fetchMockDepositInfoForScreen(orderNumber);
+            if (!isActive() || document.getElementById(MOCK_DEPOSIT_ID)) return true;
             if (info?.available) {
                 container.appendChild(buildMockDepositBlock(info));
                 console.info(`[${PLUGIN_ID}] mock deposit form injected on mypage order show`);
@@ -345,7 +369,8 @@ async function tryInject(orderNumber: string | null): Promise<boolean> {
     const container = findPaymentRowsContainer();
     if (!container) return false; // DOM 미렌더링 → 재시도
 
-    const receiptInfo = needsReceipt ? await fetchReceiptUrls(resolvedOrderNumber) : null;
+    const receiptInfo = needsReceipt ? await fetchReceiptUrlsForScreen(resolvedOrderNumber) : null;
+    if (!isActive()) return true;
     const displayPatched = patchMypagePaymentMethodDisplay(
         container,
         receiptInfo?.payment_method_display_label,
@@ -368,7 +393,8 @@ async function tryInject(orderNumber: string | null): Promise<boolean> {
     }
 
     if (!document.getElementById(MOCK_DEPOSIT_ID) && mightNeedMock) {
-        const info = await fetchMockDepositInfo(resolvedOrderNumber);
+        const info = await fetchMockDepositInfoForScreen(resolvedOrderNumber);
+        if (!isActive() || document.getElementById(MOCK_DEPOSIT_ID)) return true;
         if (info?.available) {
             container.appendChild(buildMockDepositBlock(info));
             console.info(`[${PLUGIN_ID}] mock deposit form injected on mypage order show`);
@@ -381,28 +407,25 @@ async function tryInject(orderNumber: string | null): Promise<boolean> {
     return true;
 }
 
-function startPolling(orderNumber: string | null): void {
-    let attempts = 0;
-    const id = setInterval(() => {
-        attempts++;
-        void tryInject(orderNumber).then(done => {
-            if (done || attempts >= 30) clearInterval(id);
-        });
-    }, 400);
-}
-
 function onRouteChange(): void {
+    enterOrderScreen();
     const match = location.pathname.match(ORDER_SHOW_RE);
     // 회원 그룹(match[1]) 또는 비회원 그룹(match[2]) 중 한쪽이 채워진다.
     const segment = match?.[1] ?? match?.[2];
     if (segment) {
-        startPolling(segment);
+        poller.start(location.pathname, isActive => tryInject(segment, isActive));
 
         return;
     }
 
     // 클레임 신청서 상세(회원·비회원) — 주소가 클레임 번호라 화면이 읽어 둔 주문을 그대로 쓴다.
-    if (CLAIM_SHOW_RE.test(location.pathname)) startPolling(null);
+    if (CLAIM_SHOW_RE.test(location.pathname)) {
+        poller.start(location.pathname, isActive => tryInject(null, isActive));
+
+        return;
+    }
+
+    poller.stop();
 }
 
 export function installMypageOrderShowInjector(): void {

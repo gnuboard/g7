@@ -25,7 +25,7 @@
   <permissions/>
   <slot name="content">
     <!-- blur_until_loaded: 지정한 데이터소스 응답이 도착하기 전까지 콘텐츠 가림. init_actions 가드(비로그인 + 토큰 부재)가 navigate 발화하기 전 한 프레임에서 빈 콘텐츠가 노출되는 깜빡임 회귀 방지. 객체 형태로 데이터소스 지정 — 로드 전 blur, 로드 후 해제. -->
-    <container class="py-12">
+    <container data-type="layout" class="py-12">
       <blur-until-loaded>
         <item>orderData</item>
       </blur-until-loaded>

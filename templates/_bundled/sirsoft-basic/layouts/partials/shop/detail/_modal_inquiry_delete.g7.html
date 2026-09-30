@@ -1,7 +1,7 @@
 <!-- 내가 쓴 상품 문의를 지우기 전 확인. 답변이 달린 뒤에도 지울 수 있어 «답변까지 함께 사라진다» 는
      것이 이 창이 알려야 하는 사실이다. -->
 <partial description="상품 1:1 문의 삭제 확인 모달" editor_label="$t:user.modal_label.shop_detail.inquiry_delete_modal">
-  <modal data-ref="inquiry_delete_modal" title="{{(_global.qnaDeleteIsReply ?? false) ? $t('shop.qna.reply_delete_modal_title') : ((_global.qnaDeleteIsAdmin ?? false) ? $t('shop.qna.admin_delete_modal_title') : $t('shop.qna.delete_modal_title'))}}" size="sm" :closeOnBackdropClick="false">
+  <modal data-type="composite" data-ref="inquiry_delete_modal" title="{{(_global.qnaDeleteIsReply ?? false) ? $t('shop.qna.reply_delete_modal_title') : ((_global.qnaDeleteIsAdmin ?? false) ? $t('shop.qna.admin_delete_modal_title') : $t('shop.qna.delete_modal_title'))}}" size="sm" :closeOnBackdropClick="false">
     <!-- 삭제 안내 아이콘 + 문구 -->
     <div class="flex flex-col items-center gap-4 py-2">
       <div class="w-12 h-12 rounded-full bg-red-100 dark:bg-red-900 flex items-center justify-center">

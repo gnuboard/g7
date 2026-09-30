@@ -7,7 +7,7 @@
   (그쪽은 검증까지 플러그인이 책임진다). 닫기 버튼·ESC·바깥 클릭을 모두 막아 두었으므로
   빠져나가는 길은 취소 버튼뿐이고, 그 길에서만 대기 중인 요청이 취소로 정리된다. -->
 <partial editor_label="$t:admin.modal_label.identity_challenge_modal" description="본인인증 공통 모달 (admin) — 428 응답을 가로채는 IdentityGuardInterceptor launcher 가 사용. _global.identityChallenge 네임스페이스로 모든 상태를 관리하여 launcher → 모달 → resolveIdentityChallenge 핸들러 한 줄기로 흐름 통일.">
-  <modal data-ref="identity-challenge-modal" title="$t:admin.identity.challenge.title" size="sm" :showCloseButton="false" :closeOnBackdropClick="false" :closeOnEscape="false">
+  <modal data-type="composite" data-ref="identity-challenge-modal" title="$t:admin.identity.challenge.title" size="sm" :showCloseButton="false" :closeOnBackdropClick="false" :closeOnEscape="false">
     <!-- 코어 기본 OTP UI (text_code) — 코어 mail provider 또는 provider_id 미지정 케이스. 외부 provider 인 경우 아래 identity_provider_ui:provider 슬롯이 자기 UI 를 주입한다. -->
     <div data-if="{{(_global.identityChallenge?.render_hint ?? 'text_code') === 'text_code' &amp;&amp; (!_global.identityChallenge?.provider_id || _global.identityChallenge?.provider_id === 'g7:core.mail')}}" class="row-stack">
       <p class="text-label">$t:admin.identity.challenge.code_subtitle</p>

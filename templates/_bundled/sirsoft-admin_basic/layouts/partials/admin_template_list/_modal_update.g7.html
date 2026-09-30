@@ -2,7 +2,7 @@
   ⑴ 코어 비호환 경고(강행 체크 전까지 실행 버튼 잠금) ⑵ 변경 이력 ⑶ 고친 레이아웃을 덮어쓸지 남길지.
   ⑵⑶ 의 값은 이 창이 묻지 않고 **여는 쪽이 미리 받아 전역에 담아 준다**. -->
 <partial description="템플릿 업데이트 확인 모달" editor_label="$t:admin.modal_label.admin_template_list.template_update_modal">
-  <modal data-ref="template_update_modal" title="$t:admin.templates.modals.update_title" size="medium">
+  <modal data-type="composite" data-ref="template_update_modal" title="$t:admin.templates.modals.update_title" size="medium">
     <div data-if="{{_global.selectedTemplate?.is_compatible === false}}" class="mb-3 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg" role="alert">
       <div class="flex-start gap-2">
         <icon name="exclamation-triangle" class="text-amber-600 dark:text-amber-400 mt-0.5 shrink-0"/>

@@ -485,7 +485,7 @@
                                                     ],
                                                     "props": {
                                                         "type": "date",
-                                                        "className": "input input-sm",
+                                                        "className": "input",
                                                         "value": "{{(_local.form.label_assignments ?? []).find(a => a.label_id === _local.ui.lastClickedLabelId)?.started_at ?? ''}}",
                                                         "placeholder": "$t:sirsoft-ecommerce.admin.product.labels.started_at",
                                                         "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
@@ -516,7 +516,7 @@
                                                     ],
                                                     "props": {
                                                         "type": "date",
-                                                        "className": "input input-sm",
+                                                        "className": "input",
                                                         "value": "{{(_local.form.label_assignments ?? []).find(a => a.label_id === _local.ui.lastClickedLabelId)?.ended_at ?? ''}}",
                                                         "placeholder": "$t:sirsoft-ecommerce.admin.product.labels.ended_at",
                                                         "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"

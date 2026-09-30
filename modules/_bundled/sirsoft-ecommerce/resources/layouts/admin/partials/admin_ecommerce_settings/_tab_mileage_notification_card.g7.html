@@ -8,7 +8,7 @@
         <label class="block text-sm font-medium text-gray-900 dark:text-white">$t:sirsoft-ecommerce.admin.mileage_settings.notification.enabled</label>
         <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">$t:sirsoft-ecommerce.admin.mileage_settings.notification.enabled_hint</p>
       </div>
-      <toggle name="mileage.expiry_notification_enabled" value="{{_local.form?.mileage?.expiry_notification_enabled ?? true}}" disabled="{{_computed.isReadOnly}}"/>
+      <toggle data-type="composite" name="mileage.expiry_notification_enabled" value="{{_local.form?.mileage?.expiry_notification_enabled ?? true}}" disabled="{{_computed.isReadOnly}}"/>
     </div>
     <div data-if="{{_local.form?.mileage?.expiry_notification_enabled ?? true}}" class="border-t border-gray-200 dark:border-gray-700 pt-4 space-y-4">
       <div>

@@ -26,8 +26,8 @@
         <div class="flex items-center justify-between pb-2 mb-2 border-b border-gray-100 dark:border-gray-700">
           <!-- 왼쪽: 아바타 + 작성자 정보 -->
           <div class="flex items-center gap-2">
-            <avatar author="{{reply?.author}}" size="sm"/>
-            <user-info author="{{reply?.author}}" layout="horizontal"/>
+            <avatar data-type="composite" author="{{reply?.author}}" size="sm"/>
+            <user-info data-type="composite" author="{{reply?.author}}" layout="horizontal"/>
           </div>
           <!-- 오른쪽: 작성일/조회수/댓글수 -->
           <div class="flex items-center gap-3 text-xs text-gray-400 dark:text-gray-500">
@@ -52,7 +52,7 @@
           <!-- 일반 글 내용 -->
           <extension-point name="html_content" data-ref="reply_html_content_{{replyIndex}}" data-if="{{reply?.status !== 'blinded' &amp;&amp; !reply?.is_secret}}" content="{{reply?.content ?? ''}}" isHtml="{{(reply?.content_mode ?? 'text') === 'html'}}" class="prose-sm dark:prose-invert max-w-none {{_local?.expandedReplyId === reply?.id ? '' : '[&amp;_img]:hidden [&amp;_table]:hidden'}}">
             <default>
-              <html-content content="{{reply?.content ?? ''}}" isHtml="{{(reply?.content_mode ?? 'text') === 'html'}}" class="prose-sm dark:prose-invert max-w-none {{_local?.expandedReplyId === reply?.id ? '' : '[&amp;_img]:hidden [&amp;_table]:hidden'}}"/>
+              <html-content data-type="composite" content="{{reply?.content ?? ''}}" isHtml="{{(reply?.content_mode ?? 'text') === 'html'}}" class="prose-sm dark:prose-invert max-w-none {{_local?.expandedReplyId === reply?.id ? '' : '[&amp;_img]:hidden [&amp;_table]:hidden'}}"/>
             </default>
           </extension-point>
         </div>

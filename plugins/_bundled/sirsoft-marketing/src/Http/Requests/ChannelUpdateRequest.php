@@ -2,8 +2,11 @@
 
 namespace Plugins\Sirsoft\Marketing\Http\Requests;
 
+use App\Helpers\ResponseHelper;
 use App\Rules\LocaleRequiredTranslatable;
+use Illuminate\Contracts\Validation\Validator as ValidatorContract;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\ValidationException;
 use Illuminate\Validation\Validator;
 use Plugins\Sirsoft\Marketing\Services\MarketingConsentService;
 
@@ -14,6 +17,13 @@ use Plugins\Sirsoft\Marketing\Services\MarketingConsentService;
  */
 class ChannelUpdateRequest extends FormRequest
 {
+    /**
+     * 동의한 회원이 있어 삭제가 막힌 채널 키 목록 (검증 중 채워진다)
+     *
+     * @var array<int, string>
+     */
+    private array $blockedChannelKeys = [];
+
     /**
      * @param MarketingConsentService $consentService 마케팅 동의 서비스
      */
@@ -111,6 +121,7 @@ class ChannelUpdateRequest extends FormRequest
                 // 삭제 대상 채널에 동의 데이터가 있는지 확인
                 $consentCount = $this->consentService->countConsentedByKey($key);
                 if ($consentCount > 0) {
+                    $this->blockedChannelKeys[] = $key;
                     $validator->errors()->add(
                         'channels',
                         __('sirsoft-marketing::messages.channel_has_consents', [
@@ -121,5 +132,33 @@ class ChannelUpdateRequest extends FormRequest
                 }
             }
         });
+    }
+
+    /**
+     * 검증 실패 응답 — 삭제가 막힌 채널이 있으면 그 키를 `errors.blocked_channel_keys` 에 싣는다
+     *
+     * 화면은 이 필드가 있을 때만 「비활성으로 전환」 창을 열고 그 키의 채널을 되살린다.
+     * 번역된 안내 문장은 언어마다 달라 채널을 가리키는 값으로 쓸 수 없고, 레이아웃이 읽을 수 있는
+     * 실패 문맥은 `error.errors` 뿐이라 구조화 값도 `errors` 안에 둔다.
+     *
+     * @param  ValidatorContract  $validator  실패한 검증기
+     * @return void
+     *
+     * @throws ValidationException 항상
+     */
+    protected function failedValidation(ValidatorContract $validator): void
+    {
+        if ($this->blockedChannelKeys === []) {
+            parent::failedValidation($validator);
+        }
+
+        $errors = $validator->errors()->toArray();
+        $errors['blocked_channel_keys'] = array_values(array_unique($this->blockedChannelKeys));
+
+        throw new ValidationException($validator, ResponseHelper::error(
+            $validator->errors()->first(),
+            422,
+            $errors
+        ));
     }
 }

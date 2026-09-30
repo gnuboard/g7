@@ -27,6 +27,7 @@ _이 확장은 훅을 발행하지 않습니다._
 | `core.plugin_settings.update_validation_rules` | filter | `ValidateKcpSettingsListener` | `addLiveModeRules` | 10 |
 | `core.user.after_withdraw` | action (미선언) | `CleanKcpRecordOnUserWithdraw` | `handle` | 50 |
 | `core.user.before_delete` | action (미선언) | `CleanKcpRecordOnUserDelete` | `handle` | 50 |
+| `sirsoft-gdpr.necessary_storage.filter_provided_keys` | filter | `ProvideNecessaryStorageKeysListener` | `provide` | 10 |
 <!-- @generated:hooks-subscribed END -->
 
 <!-- @intent START -->
@@ -48,6 +49,7 @@ _이 확장은 훅을 발행하지 않습니다._
 | `CleanKcpRecordOnUserDelete` | 1개 | 명시 등록 | ✅ | `src/Listeners/CleanKcpRecordOnUserDelete.php` |
 | `CleanKcpRecordOnUserWithdraw` | 1개 | 명시 등록 | ✅ | `src/Listeners/CleanKcpRecordOnUserWithdraw.php` |
 | `CompleteKcpRecordAfterRegister` | 1개 | 명시 등록 | ✅ | `src/Listeners/CompleteKcpRecordAfterRegister.php` |
+| `ProvideNecessaryStorageKeysListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/ProvideNecessaryStorageKeysListener.php` |
 | `RegisterKcpProviderListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/RegisterKcpProviderListener.php` |
 | `ValidateKcpSettingsListener` | 2개 | 명시 등록 | ✅ | `src/Listeners/ValidateKcpSettingsListener.php` |
 <!-- @generated:listeners END -->

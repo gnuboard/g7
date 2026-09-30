@@ -69,7 +69,7 @@
           <p class="page-description">$t:sirsoft-board.admin.form.description</p>
         </div>
       </div>
-      <tab-navigation-scroll data-ref="tab_navigation" class="sticky-tab-nav tab-nav-default" activeTabId="{{_local.activeTab ?? 'section_basic_card'}}" :enableScrollSpy="true" :scrollSpyOffset="56" sectionIdPrefix="">
+      <tab-navigation-scroll data-type="composite" data-ref="tab_navigation" class="sticky-tab-nav tab-nav-default" activeTabId="{{_local.activeTab ?? 'section_basic_card'}}" :enableScrollSpy="true" :scrollSpyOffset="56" sectionIdPrefix="">
         <prop name="tabs">
           <item id="section_basic_card" label="$t:sirsoft-board.admin.form.tabs.basic"/>
           <item id="section_permissions_card" label="$t:sirsoft-board.admin.form.tabs.permissions"/>

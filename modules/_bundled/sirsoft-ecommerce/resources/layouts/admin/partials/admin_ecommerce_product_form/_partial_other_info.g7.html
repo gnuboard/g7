@@ -38,7 +38,7 @@
         </div>
         <div data-ref="labels_chips" class="flex flex-wrap gap-2">
           <div data-each="label, labelIdx in {{product_labels?.data?.data ?? []}}" class="contents">
-            <chip-checkbox value="{{String(label.id)}}" checked="{{(_local.form.label_assignments ?? []).some(a => a.label_id === label.id)}}" label="{{$localized(label.name) + ((_local.form.label_assignments ?? []).find(a => a.label_id === label.id)?.started_at ? ' (' + (_local.form.label_assignments ?? []).find(a => a.label_id === label.id).started_at.substring(5) + '~' + ((_local.form.label_assignments ?? []).find(a => a.label_id === label.id)?.ended_at?.substring(5) ?? '') + ')' : '')}}" customColor="{{label.color ?? '#3B82F6'}}" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
+            <chip-checkbox data-type="composite" value="{{String(label.id)}}" checked="{{(_local.form.label_assignments ?? []).some(a => a.label_id === label.id)}}" label="{{$localized(label.name) + ((_local.form.label_assignments ?? []).find(a => a.label_id === label.id)?.started_at ? ' (' + (_local.form.label_assignments ?? []).find(a => a.label_id === label.id).started_at.substring(5) + '~' + ((_local.form.label_assignments ?? []).find(a => a.label_id === label.id)?.ended_at?.substring(5) ?? '') + ')' : '')}}" customColor="{{label.color ?? '#3B82F6'}}" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
               <on type="change">
                 <!-- 라벨 붙이기/떼기. 기간이 걸린 라벨을 뗄 때는 핸들러가 확인 창을 거치므로 여기서 바로 지우지 않는다 -->
                 <action handler="sirsoft-ecommerce.toggleLabelAssignment" labelId="{{label.id}}"/>
@@ -123,14 +123,14 @@
             </div>
             <div data-ref="period_date_inputs" class="flex-center gap-2">
               <responsive on="portable" class="row-stack"/>
-              <input type="date" class="input input-sm" value="{{(_local.form.label_assignments ?? []).find(a => a.label_id === _local.ui.lastClickedLabelId)?.started_at ?? ''}}" placeholder="$t:sirsoft-ecommerce.admin.product.labels.started_at" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
+              <input type="date" class="input" value="{{(_local.form.label_assignments ?? []).find(a => a.label_id === _local.ui.lastClickedLabelId)?.started_at ?? ''}}" placeholder="$t:sirsoft-ecommerce.admin.product.labels.started_at" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
                 <on type="change">
                   <!-- 노출 시작일 직접 지정 — 지금 고른 라벨의 배정에만 적용된다 -->
                   <action handler="sirsoft-ecommerce.updateLabelPeriodInline" labelId="{{_local.ui.lastClickedLabelId}}" field="started_at" value="{{$event.target.value}}"/>
                 </on>
               </input>
               <span class="text-gray-500 dark:text-gray-400">~</span>
-              <input type="date" class="input input-sm" value="{{(_local.form.label_assignments ?? []).find(a => a.label_id === _local.ui.lastClickedLabelId)?.ended_at ?? ''}}" placeholder="$t:sirsoft-ecommerce.admin.product.labels.ended_at" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
+              <input type="date" class="input" value="{{(_local.form.label_assignments ?? []).find(a => a.label_id === _local.ui.lastClickedLabelId)?.ended_at ?? ''}}" placeholder="$t:sirsoft-ecommerce.admin.product.labels.ended_at" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
                 <on type="change">
                   <!-- 노출 종료일 직접 지정 -->
                   <action handler="sirsoft-ecommerce.updateLabelPeriodInline" labelId="{{_local.ui.lastClickedLabelId}}" field="ended_at" value="{{$event.target.value}}"/>
@@ -191,7 +191,7 @@
         </div>
         <div data-ref="allowed_roles_section" data-if="{{_local.form.purchase_restriction === 'restricted'}}" class="mt-4 space-y-2">
           <label class="{{_local.errors?.allowed_roles ? 'form-label text-red-600 dark:text-red-400' : 'form-label'}}">$t:sirsoft-ecommerce.admin.product.fields.allowed_roles</label>
-          <tag-input name="allowed_roles" placeholder="$t:sirsoft-ecommerce.admin.product.placeholders.search_roles" options="{{(roles?.data?.data ?? []).map(r => ({ value: r.id, label: r.display_name ?? r.name, group: r.is_system ? $t('sirsoft-ecommerce.admin.product.roles.system') : $t('sirsoft-ecommerce.admin.product.roles.custom'), description: r.description ?? '' }))}}" value="{{_local.form.allowed_roles ?? []}}" :isMulti="true" :isSearchable="true" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
+          <tag-input data-type="composite" name="allowed_roles" placeholder="$t:sirsoft-ecommerce.admin.product.placeholders.search_roles" options="{{(roles?.data?.data ?? []).map(r => ({ value: r.id, label: r.display_name ?? r.name, group: r.is_system ? $t('sirsoft-ecommerce.admin.product.roles.system') : $t('sirsoft-ecommerce.admin.product.roles.custom'), description: r.description ?? '' }))}}" value="{{_local.form.allowed_roles ?? []}}" :isMulti="true" :isSearchable="true" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
             <on type="change">
               <!-- 살 수 있는 회원 등급 — 비워 두면 저장 때 걸린다(제한을 걸어 놓고 아무도 못 사는 상태를 막는다) -->
               <set-state target="local" form.allowed_roles="{{$event.target.value}}"/>

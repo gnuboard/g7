@@ -30,6 +30,7 @@ use Modules\Sirsoft\Board\Exceptions\MenuAlreadyExistsException;
 use Modules\Sirsoft\Board\Http\Requests\Admin\BulkApplySettingsRequest;
 use Modules\Sirsoft\Board\Http\Resources\BoardResource;
 use Modules\Sirsoft\Board\Models\Board;
+use Modules\Sirsoft\Board\Models\Post;
 use Modules\Sirsoft\Board\Repositories\Contracts\AttachmentRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\BoardRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\CommentRepositoryInterface;
@@ -101,7 +102,7 @@ class BoardService
      * 게시판 목록을 조회합니다.
      *
      * @param  array  $filters  필터 조건
-     * @return LengthAwarePaginator
+     * @return LengthAwarePaginator 결과 값
      */
     public function getBoards(array $filters = [])
     {
@@ -240,7 +241,7 @@ class BoardService
      * 인기 게시판 목록을 조회합니다 (게시글 수 기준).
      *
      * @param  int  $limit  조회 개수
-     * @return array<int, array<string, mixed>>
+     * @return array<int, array<string, mixed>> 결과 배열
      */
     public function getPopularBoards(int $limit): array
     {
@@ -264,7 +265,7 @@ class BoardService
     /**
      * 게시판 통계를 캐시와 함께 조회합니다.
      *
-     * @return array{users: int, boards: int, posts: int, comments: int}
+     * @return array{users: int, boards: int, posts: int, comments: int} 결과 배열
      */
     public function getCachedStats(): array
     {
@@ -288,7 +289,7 @@ class BoardService
      * 최근 게시글을 캐시와 함께 조회합니다.
      *
      * @param  int  $limit  조회 개수
-     * @return array<int, array<string, mixed>>
+     * @return array<int, array<string, mixed>> 결과 배열
      */
     public function getCachedRecentPosts(int $limit): array
     {
@@ -339,7 +340,7 @@ class BoardService
      * 인기 게시판을 캐시와 함께 조회합니다.
      *
      * @param  int  $limit  조회 개수
-     * @return array<int, array<string, mixed>>
+     * @return array<int, array<string, mixed>> 결과 배열
      */
     public function getCachedPopularBoards(int $limit): array
     {
@@ -629,8 +630,10 @@ class BoardService
             // withTrashed 전체를 1,000건 chunk 당 1회씩 다회 발화한다 — 리스너는 멱등 의무.
             // 트랜잭션 내부 발화라 게시판 삭제와 원자적이다. per-post after_delete 훅을
             // 재사용하지 않는 이유: 글마다 모델 로드 N회 + 소프트/하드 삭제 의미 불일치.
+            // 셋째 인자는 글 모델 타입(다형 참조 type) — 구독 확장이 게시판 클래스 이름을
+            // 스스로 적지 않고 이 값으로 자기 다형 참조를 가려 지운다.
             $this->postRepository->eachIdChunkByBoardId($board->id, 1000, function (array $postIds) use ($board) {
-                HookManager::doAction('sirsoft-board.board.posts.before_force_delete', $board, $postIds);
+                HookManager::doAction('sirsoft-board.board.posts.before_force_delete', $board, $postIds, Post::class);
             });
 
             $this->postRepository->forceDeleteByBoardId($board->id);
@@ -1017,7 +1020,7 @@ class BoardService
     /**
      * 활성 게시판의 통계를 조회합니다 (게시판 수, 게시글 수, 댓글 수).
      *
-     * @return array{boards: int, posts: int, comments: int}
+     * @return array{boards: int, posts: int, comments: int} 결과 배열
      */
     public function getActiveBoardStats(): array
     {
@@ -1034,7 +1037,7 @@ class BoardService
      * 최근 게시글을 조회합니다. (UNION)
      *
      * @param  int  $limit  조회 개수
-     * @return array<int, array<string, mixed>>
+     * @return array<int, array<string, mixed>> 결과 배열
      */
     public function getRecentPosts(int $limit): array
     {
@@ -1060,7 +1063,7 @@ class BoardService
      *
      * @param  string  $slug  게시판 슬러그
      * @param  int  $limit  조회 개수
-     * @return array<int, array<string, mixed>>
+     * @return array<int, array<string, mixed>> 결과 배열
      */
     public function getBoardRecentPosts(string $slug, int $limit): array
     {
@@ -1072,7 +1075,7 @@ class BoardService
      *
      * @param  int  $boardId  게시판 ID
      * @param  int  $limit  조회 개수
-     * @return array<int, array<string, mixed>>
+     * @return array<int, array<string, mixed>> 결과 배열
      */
     public function getBoardRecentPostsById(int $boardId, int $limit): array
     {

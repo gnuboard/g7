@@ -137,3 +137,57 @@ KCP 가 제공하는 `payplus_web.jsp` SDK 는 이 목록에 없습니다 — `r
 결제 안내·오류 문구(`payment.error.krw_only`·`applepay_ios_only`·`mobile_approval_key_failed`·`pg_error`)는 `translateNhnkcp(key, 대체 문구, 값)` 로 낸다 —
 `{{이름}}` 자리는 값으로 채우고, 번역 엔진이 없을 때만 한국어 대체 문구를 쓴다. 화면 언어(`documentElement.lang`)로 한국어/영어를 가르던 분기는 없앴다.
 PG 가 돌려준 오류 원문(`resMsg`)은 그대로 보여 준다. 플러그인은 ko·en 을 갖고 일본어는 언어팩이 채운다.
+
+## 결제창 닫힘 보고의 소유자 증명
+
+<!-- @intent START -->
+결제창 닫힘 보고(`POST /api/plugins/sirsoft-pay_nhnkcp/payment/close-report`)·재결제 준비(`/payment/retry`)는 결제대기 주문을
+실패·취소로 바꾸므로 서버가 **주문 소유자만** 받아 준다(KVE-2026-2434). 주문자 이메일·전화번호는
+제3자도 알 수 있어 소유 증명이 되지 못하므로 보내지 않는다.
+
+- 회원: `G7Core.api` 가 `Authorization: Bearer …` 를 스스로 싣는다 — 호출부는 아무것도 붙이지 않는다.
+- 비회원: 체크아웃이 주문 생성 응답에서 받아 저장한 조회 토큰을 `X-Guest-Order-Token` 헤더로 싣는다.
+
+헤더는 `resources/js/guestOrderToken.ts` 의 `buildGuestOwnershipHeaders()` 한 곳에서 만든다(로그인
+상태면 비회원 토큰을 싣지 않는다). `G7Core.api` 가 없어 `fetch` 로 직접 보내는 폴백은 같은 출처일 때만
+토큰을 싣는다(`isSameOriginUrl`). 토큰이 없으면 서버가 403 으로 거부하고 화면 흐름은 그대로 진행한다 —
+결제대기 주문은 이커머스 만료 정리 잡이 정리한다.
+<!-- @intent END -->
+
+## 주문 화면 주입의 폴링·조회 규약
+
+<!-- @intent START -->
+주문 상세 화면에 결제 정보를 덧붙이는 인젝터 둘 — 관리자 주문 상세 결제수단 표시
+(`adminOrderPaymentDisplayInjector.ts`), 마이페이지·비회원 주문 상세의 결제수단 표시·영수증 행·모의입금 안내
+(`mypageOrderShowInjector.ts`) — 는 대상 DOM 이 그려질 때까지 재시도하며, 폴링과 서버 조회를
+`resources/js/orderScreenPolling.ts` 에 맡긴다. 예전 `setInterval` 폴러는 틱이 앞선 비동기 조회를 기다리지 않아
+첫 응답이 올 때까지 400ms 마다 같은 조회를 새로 보냈고(조회마다 서버가 KCP API 까지 간다), 라우트가 바뀔 때마다
+폴러가 쌓였다. 마이페이지는 안내 블록을 하나 붙일 때마다 틱이 다시 돌아 영수증을 또 조회했다.
+
+- **직렬 폴러** — `createOrderScreenPoller()`(기본 400ms · 최대 30틱)는 한 틱의 비동기 작업이 끝난 뒤에야 다음
+  틱을 예약한다. 인젝터마다 폴러를 모듈 수준에 **하나만** 두고, `start(key, tick)` 은 같은 key 면 무시하고 다른
+  key 면 이전 폴러를 멈춘다. 대상 경로를 벗어나면 `stop()` 한다. 틱은 `isActive()` 를 받아, 응답을 기다리는 사이
+  폴러가 멈췄으면 DOM 을 건드리지 않고 끝낸다.
+- **화면 진입당 1회 조회** — 영수증(`nhnkcp-receipt:{주문번호}`)·모의입금(`nhnkcp-mock-deposit:{주문번호}`)·관리자
+  거래 조회는 `requestOncePerOrderScreen()` 으로만 보낸다. 한 화면 진입(같은 경로) 동안 key 별로 한 번 보내고
+  결과를 **실패까지 포함해** 재사용한다. 캐시 키에 회원·비회원 토큰이 들어가 토큰이 늦게 준비되면 그때 한 번 더
+  보낸다. 라우트 변경 처리 첫머리의 `enterOrderScreen()` 이 경로가 바뀌면 이전 결과를 버린다. 영수증 버튼 클릭은
+  이 경로를 쓰지 않고 매번 새로 조회한다.
+- **관리자 주문 상세는 레이아웃 확장의 데이터 소스를 재사용** — 같은 화면의 `admin_order_payment_query` 확장이
+  `transaction-status` 를 데이터 소스 `kcp_status` 로 이미 받으므로 인젝터는 `G7Core.dataSource.get('kcp_status')`
+  값을 쓴다(`readSharedDataSource`). 값이 아직 없으면 최대 20틱(약 8초) 기다리고, 그래도 없으면(확장 미적용·조회
+  실패) 화면 진입당 한 번만 직접 조회한다. 라우트 전환 직후 남아 있는 이전 주문 값을 새 값으로 오인하지 않도록
+  `history.pushState`·`popstate` 직후 `rememberLeavingDataSources(['kcp_status'])` 로 떠나는 값을 기억해 두고, 그
+  값과 같은 객체는 쓰지 않는다. 이 재사용 전에는 주문 상세를 열 때마다 거래 조회가 두 번 나갔다.
+- **주문 데이터 로딩 대기** — 마이페이지 인젝터는 `isOrderDataLoading()`(데이터 컨텍스트에 `order` 키가 있고 값이
+  아직 `undefined`)인 동안 기다린다. 「주문 정보 없음」 분기(다른 결제대행사 주문·비회원 화면에서 모의입금 안내를
+  찾는 분기)는 불러오기가 끝난 뒤에만 탄다.
+- **모의입금 조회는 로그인 전용** — `vbank-mock-deposit-info` 는 `auth:sanctum` 라우트라 비회원 조회 토큰으로는 늘
+  401 이다. `fetchMockDepositInfo()` 는 회원 인증 토큰(`getAuthToken()`)이 없으면 요청하지 않고 `null` 을 돌려준다.
+  이 두 가드가 없던 때는 비회원 주문 상세가 불러오는 도중 다른 결제대행사 주문에도 모의입금 조회를 보내 401 이 났다.
+
+**깨뜨리면 안 되는 것**: 인젝터 안에서 `setInterval` 이나 직접 `fetch` 루프로 되돌리지 않는다 · 결과 캐시에서
+실패를 빼지 않는다 · 레이아웃 확장의 데이터 소스 ID `kcp_status` 를 바꾸면 인젝터 상수 `STATUS_DATA_SOURCE` 도 함께
+바꾼다(어긋나면 매번 20틱을 기다린 뒤 직접 조회로 떨어져 중복 조회가 되살아난다) · 모의입금 라우트의 미들웨어를
+바꾸면 토큰 가드도 다시 맞춘다. 회귀는 Vitest `resources/js/__tests__/orderPaymentDisplayInjectors.test.ts` 가 지킨다.
+<!-- @intent END -->

@@ -40,6 +40,11 @@ class MarkupPartialResolutionTest extends TestCase
 
     private string $layouts;
 
+    /**
+     * 테스트 준비 — 필요한 서비스와 임시 자원을 만듭니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -53,6 +58,12 @@ class MarkupPartialResolutionTest extends TestCase
         {
             use ValidatesLayoutFiles;
 
+            /**
+             * 테스트 대역의 실행 진입점입니다.
+             *
+             * @param  string  $path  경로
+             * @return array 사례 목록
+             */
             public function run(string $path): array
             {
                 return $this->validateLayoutFiles($path, 'gnuboard7-hello_module', 'module', true);
@@ -64,6 +75,11 @@ class MarkupPartialResolutionTest extends TestCase
         File::ensureDirectoryExists($this->layouts.'/partials');
     }
 
+    /**
+     * 테스트 정리 — 만든 임시 자원을 지웁니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         File::deleteDirectory($this->root);
@@ -77,6 +93,8 @@ class MarkupPartialResolutionTest extends TestCase
      * @scenario compile_unit=install,source_health=valid
      *
      * @effects partial_markup_wins_over_json_sibling
+     *
+     * @return void 반환값 없음
      */
     public function test_partial_markup_wins_over_json_sibling(): void
     {
@@ -99,6 +117,8 @@ class MarkupPartialResolutionTest extends TestCase
      * @scenario compile_unit=install,source_health=valid
      *
      * @effects partial_json_reference_resolves_via_markup_sibling
+     *
+     * @return void 반환값 없음
      */
     public function test_partial_json_reference_resolves_via_markup_sibling(): void
     {
@@ -117,6 +137,8 @@ class MarkupPartialResolutionTest extends TestCase
      * @scenario compile_unit=install,source_health=valid
      *
      * @effects partial_direct_markup_reference_resolves
+     *
+     * @return void 반환값 없음
      */
     public function test_partial_direct_markup_reference_resolves(): void
     {
@@ -135,6 +157,8 @@ class MarkupPartialResolutionTest extends TestCase
      * @scenario compile_unit=install,source_health=valid
      *
      * @effects json_forced_source_makes_partial_json_win
+     *
+     * @return void 반환값 없음
      */
     public function test_json_forced_source_makes_partial_json_win(): void
     {
@@ -159,6 +183,8 @@ class MarkupPartialResolutionTest extends TestCase
      * @scenario compile_unit=install,source_health=valid
      *
      * @effects json_forced_source_keeps_markup_only_partials
+     *
+     * @return void 반환값 없음
      */
     public function test_json_forced_source_keeps_markup_only_partials(): void
     {
@@ -184,12 +210,15 @@ class MarkupPartialResolutionTest extends TestCase
      * @scenario compile_unit=install,source_health=invalid
      *
      * @effects partial_compile_failure_surfaces_as_install_error
+     *
+     * @return void 반환값 없음
      */
     public function test_partial_markup_compile_failure_surfaces_as_install_error(): void
     {
         $this->writeHost('partials/frag.g7.html');
+        // 컴파일은 템플릿과 무관하므로 "목록에 없는 태그" 는 오류가 아니다 — 문법 자체가 틀린 조각으로 실패를 만든다.
         File::put($this->layouts.'/partials/frag.g7.html',
-            "<partial>\n  <not-a-registered-component/>\n</partial>\n");
+            "<partial>\n  <div data-type=\"widget\"/>\n</partial>\n");
 
         $message = $this->expectInstallFailure();
 
@@ -206,6 +235,8 @@ class MarkupPartialResolutionTest extends TestCase
      * @scenario compile_unit=install,source_health=invalid
      *
      * @effects partial_missing_file_surfaces_as_install_error
+     *
+     * @return void 반환값 없음
      */
     public function test_partial_missing_file_surfaces_as_install_error(): void
     {
@@ -224,6 +255,8 @@ class MarkupPartialResolutionTest extends TestCase
      * @scenario compile_unit=install,source_health=invalid
      *
      * @effects partial_invalid_json_surfaces_as_install_error
+     *
+     * @return void 반환값 없음
      */
     public function test_partial_invalid_json_surfaces_as_install_error(): void
     {
@@ -242,6 +275,8 @@ class MarkupPartialResolutionTest extends TestCase
      * @scenario compile_unit=install,source_health=invalid
      *
      * @effects partial_circular_reference_surfaces_as_install_error
+     *
+     * @return void 반환값 없음
      */
     public function test_partial_circular_reference_surfaces_as_install_error(): void
     {
@@ -263,6 +298,8 @@ class MarkupPartialResolutionTest extends TestCase
      * @scenario compile_unit=install,source_health=invalid
      *
      * @effects partial_outside_layouts_surfaces_as_install_error
+     *
+     * @return void 반환값 없음
      */
     public function test_partial_outside_layouts_surfaces_as_install_error(): void
     {
@@ -286,6 +323,8 @@ class MarkupPartialResolutionTest extends TestCase
      * @scenario compile_unit=install,source_health=invalid
      *
      * @effects include_failure_kinds_are_mutually_distinguishable
+     *
+     * @return void 반환값 없음
      */
     public function test_include_failure_kinds_are_mutually_distinguishable(): void
     {
@@ -321,6 +360,7 @@ class MarkupPartialResolutionTest extends TestCase
      *
      * @param  string  $kind  `exceptions.layout.*` 키 이름
      * @param  string  $message  설치 오류 메시지
+     * @return void 반환값 없음
      */
     private function assertIncludeErrorKind(string $kind, string $message): void
     {
@@ -350,6 +390,8 @@ class MarkupPartialResolutionTest extends TestCase
      * @scenario compile_unit=install,source_health=valid
      *
      * @effects nested_partial_markup_resolves_recursively
+     *
+     * @return void 반환값 없음
      */
     public function test_nested_partial_markup_resolves_recursively(): void
     {
@@ -387,6 +429,7 @@ class MarkupPartialResolutionTest extends TestCase
      * 조각을 참조하는 호스트 레이아웃을 씁니다.
      *
      * @param  string  $src  `<include src>` 값
+     * @return void 반환값 없음
      */
     private function writeHost(string $src): void
     {
@@ -402,6 +445,7 @@ class MarkupPartialResolutionTest extends TestCase
      * 때문이다 — 그러면 이 축이 관측되지 않는다.
      *
      * @param  string  $partial  `partial` 참조 값
+     * @return void 반환값 없음
      */
     private function writeJsonHost(string $partial): void
     {
@@ -423,6 +467,8 @@ class MarkupPartialResolutionTest extends TestCase
      * @scenario compile_unit=install,source_health=valid
      *
      * @effects partial_compile_result_is_cached_per_request_and_invalidated_by_file_change
+     *
+     * @return void 반환값 없음
      */
     public function test_partial_compile_result_is_cached_and_invalidated_by_change(): void
     {
@@ -457,6 +503,7 @@ class MarkupPartialResolutionTest extends TestCase
      *
      * @param  string  $name  조각 베이스 이름
      * @param  string  $text  식별용 텍스트
+     * @return void 반환값 없음
      */
     private function writePartialMarkup(string $name, string $text): void
     {
@@ -469,6 +516,7 @@ class MarkupPartialResolutionTest extends TestCase
      *
      * @param  string  $name  조각 베이스 이름
      * @param  string  $text  식별용 텍스트
+     * @return void 반환값 없음
      */
     private function writePartialJson(string $name, string $text): void
     {

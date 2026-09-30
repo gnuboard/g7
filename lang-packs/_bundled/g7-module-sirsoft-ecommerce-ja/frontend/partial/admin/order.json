@@ -740,7 +740,8 @@
     "option_search": "現在の検索条件でダウンロード",
     "option_search_desc": "合計{{count}}件の注文書がダウンロードされます",
     "option_selected": "選択した注文書のみダウンロード",
-    "option_selected_desc": "{{count}}件の注文書がダウンロードされます"
+    "option_selected_desc": "{{count}}件の注文書がダウンロードされます",
+    "download_failed": "Excelファイルをダウンロードできませんでした"
   },
   "bulk": {
     "selected_count": "{{count}}件選択されています",

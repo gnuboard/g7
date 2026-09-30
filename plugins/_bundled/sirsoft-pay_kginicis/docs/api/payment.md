@@ -160,16 +160,15 @@ _이 엔드포인트는 `ResponseHelper` 봉투를 쓰지 않고 `response()->js
 <!-- @generated:start:api.plugins.sirsoft-pay_kginicis.payment.close-report -->
 - **라우트명**: `api.plugins.sirsoft-pay_kginicis.payment.close-report`
 - **컨트롤러**: `Plugins\Sirsoft\PayKginicis\Controllers\PaymentCloseReportController@store`
-- **인증/권한**: 공개 (인증 불필요)
+- **인증/권한**: 주문 소유자만 — 회원 주문은 주문한 회원 본인 로그인(Bearer, `optional.sanctum`), 비회원 주문은 `X-Guest-Order-Token` 헤더(주문 생성 응답의 `guest_order_token`). 주문자 이메일·전화번호는 제3자도 알 수 있어 소유 증명으로 쓰지 않는다 (KVE-2026-2434)
 
 **요청 파라미터**
 
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
+| X-Guest-Order-Token | header | string | 비회원 주문이면 예 | `{만료ts}|{HMAC-SHA256}` | 주문 생성 응답(`guest_order_token`)으로 받은 비회원 조회 토큰. 이 주문의 것이고 만료 전이어야 한다. 회원은 싣지 않고 로그인(Bearer)으로 증명한다. |
 | oid | body | string | 예 | max 40 | 결제창을 닫은 대상 주문의 주문번호. 서버가 이 값으로 주문을 조회해 결제 실패/취소 이력을 기록한다. |
 | price | body | integer | 예 | min 1 | 주문 결제 금액. 저장된 주문 청구액과 일치하는지 검증해 위변조된 닫힘 보고를 차단한다. |
-| buyer_email | body | string | 아니오 | max 255 | 구매자 이메일. 제공 시 주문의 구매자 정보와 대조해 본인 요청인지 확인하는 데 사용된다. |
-| buyer_phone | body | string | 아니오 | max 30 | 구매자 전화번호. 제공 시 주문의 구매자 정보와 대조해 본인 요청인지 확인하는 데 사용된다. |
 | payment_method | body | string | 아니오 | max 50 | 사용자가 결제창에서 선택했던 간편결제 등 결제수단 식별값. 결제 메타에 병합해 어떤 수단에서 창을 닫았는지 남긴다. |
 | reason | body | string | 아니오 | max 80 | 결제창 닫힘 사유 문자열. 실패/취소 이력에 참고 정보로 기록된다. |
 
@@ -180,12 +179,11 @@ POST /api/plugins/sirsoft-pay_kginicis/payment/close-report HTTP/1.1
 Host: api.example.com
 Accept: application/json
 Content-Type: application/json
+X-Guest-Order-Token: 1759999999|6f1c9a…(64자 HEX)
 
 {
     "oid": "예시값",
     "price": 1,
-    "buyer_email": "user@example.com",
-    "buyer_phone": "010-1234-5678",
     "payment_method": "예시값",
     "reason": "예시값"
 }
@@ -216,7 +214,7 @@ _단건 응답: `data` 객체의 필드._
 
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
-| 403 | Forbidden | 요청의 구매자 정보(`buyer_email` / `buyer_phone`)가 주문의 구매자와 일치하지 않는 경우 |
+| 403 | Forbidden | 주문 소유자 확인 실패 — 비로그인 요청이 회원 주문을 보고함 · 다른 회원이 보고함 · 비회원 조회 토큰이 없거나 만료·위조·다른 주문의 것임 (`errors.message.0` = `Order ownership verification failed.`). 주문자 이메일·전화번호를 맞춰 보내도 통과하지 않는다 |
 | 404 | Not Found | `oid` 에 해당하는 주문이 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지), 주문 통화가 KRW 가 아님, 금액이 주문 청구액과 불일치 |
 | 429 | Too Many Requests | 동일 IP·`oid` 조합에서 분당 20회를 초과해 요청한 경우 |
@@ -225,9 +223,9 @@ _단건 응답: `data` 객체의 필드._
 
 **설명**
 
-PC 표준결제창(KRW)에서 사용자가 결제를 완료하지 않고 창을 닫았을 때 프론트엔드가 이를 서버에 보고하는 엔드포인트로, 해당 주문의 결제 실패/취소 이력을 기록합니다. `OrderProcessingService::failPayment()` 로 주문을 `USER_CANCEL` 사유로 실패 처리하고 `recordPaymentCancellation()` 으로 취소 이력을 남기며, 간편결제 선택 정보가 있으면 결제 메타에 병합합니다. 인증은 불필요하나(결제창 컨텍스트에서 호출) FormRequest 검증과 `oid` 기준 IP별 분당 20회 레이트리밋, 주문 존재·통화 KRW·구매자 일치·금액 일치를 검증하고, 이미 결제 가능 상태가 아니거나(`order_not_payable`) 이미 결제 완료(`payment_already_paid`)면 성공 응답에 `status: ignored` 로 무시 처리해 결제 성공 콜백과의 경쟁 상태를 차단합니다. 검증 규칙 위반 시 422, 레이트리밋 초과 429, 주문 미존재 404, 구매자 검증 실패 403 으로 응답합니다.
+PC 표준결제창(KRW)에서 사용자가 결제를 완료하지 않고 창을 닫았을 때 프론트엔드가 이를 서버에 보고하는 엔드포인트로, 해당 주문의 결제 실패/취소 이력을 기록합니다. `OrderProcessingService::failPayment()` 로 주문을 `USER_CANCEL` 사유로 실패 처리하고 `recordPaymentCancellation()` 으로 취소 이력을 남기며, 간편결제 선택 정보가 있으면 결제 메타에 병합합니다. 로그인을 강제하지는 않지만(비회원도 결제창을 닫는다) FormRequest 검증과 `oid` 기준 IP별 분당 20회 레이트리밋, 주문 존재·통화 KRW·주문 소유자 확인(회원 본인 로그인 / 비회원 조회 토큰)·금액 일치를 검증하고, 이미 결제 가능 상태가 아니거나(`order_not_payable`) 이미 결제 완료(`payment_already_paid`)면 성공 응답에 `status: ignored` 로 무시 처리해 결제 성공 콜백과의 경쟁 상태를 차단합니다. 검증 규칙 위반 시 422, 레이트리밋 초과 429, 주문 미존재 404, 소유자 확인 실패 403 으로 응답합니다. 주문자 이메일·전화번호는 제3자도 알 수 있어 소유 증명이 되지 못하므로 받지 않습니다 (KVE-2026-2434 — 종전에는 이 대조만으로 남의 결제대기 주문을 취소할 수 있었다).
 
-이 엔드포인트가 **주문을 실패로 전이시키는 유일한 결제창 경로**입니다. 브라우저 리턴 콜백(PC `/payment/callback`, 모바일 `/payment/mobile/callback`, 해외결제 `/payment/cbt/callback`)은 PG 서명도 IP 증명도 없고 주문번호도 요청자가 고른 값이므로, 서버 승인이 실패해도 주문 상태를 바꾸지 않고 실패 URL 로 되돌려 보내기만 합니다. 정당한 결제창 닫힘은 구매자 대조를 통과한 이 요청으로만 기록됩니다.
+이 엔드포인트가 **주문을 실패로 전이시키는 유일한 결제창 경로**입니다. 브라우저 리턴 콜백(PC `/payment/callback`, 모바일 `/payment/mobile/callback`, 해외결제 `/payment/cbt/callback`)은 PG 서명도 IP 증명도 없고 주문번호도 요청자가 고른 값이므로, 서버 승인이 실패해도 주문 상태를 바꾸지 않고 실패 URL 로 되돌려 보내기만 합니다. 정당한 결제창 닫힘은 주문 소유자가 보낸 이 요청으로만 기록됩니다. 브라우저 리턴 콜백은 승인에 성공해도 PG 승인 응답의 주문번호(`MOID`·`P_OID`)와 승인 금액이 콜백 주문과 같을 때만 반영하며, 어긋나면 승인을 취소하고 주문을 건드리지 않습니다. 가상계좌 발급 결과는 결제대기 주문에만 기록합니다.
 `oid` 가 클레임 추가결제 결제번호(`CP` 채번)이면 기록할 주문 결제 이력이 없으므로 보고를 무시하고 성공(`recorded: false, reason: claim_payment`)으로 응답합니다 — 클레임 결제 건은 결제 대기로 남아 신청서 상세에서 재시도합니다.
 
 

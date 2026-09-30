@@ -542,7 +542,8 @@
       "total": "{{count}} in total",
       "empty": "There are no targets.",
       "loading": "Loading...",
-      "close": "Close"
+      "close": "Close",
+      "editor_label": "Board retention targets"
     },
     "manual_run": {
       "run": "Run now",
@@ -570,7 +571,8 @@
       "executing": "Queuing...",
       "queued_toast": "The run has been queued. The result will appear when it finishes.",
       "queue_failed": "Could not queue the run.",
-      "preview_failed": "Could not load the target count."
+      "preview_failed": "Could not load the target count.",
+      "editor_label": "Board retention manual run"
     }
   }
 }

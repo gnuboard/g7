@@ -2,7 +2,7 @@
   무엇이 없는지는 전역 `activateWarningData` 에 담긴 서버 오류를 읽는다.
   템플릿에는 강제 **비활성** 창이 없다 — 템플릿에 의존하는 확장이라는 방향이 없기 때문이다. -->
 <partial description="템플릿 강제 활성화 확인 모달" editor_label="$t:admin.modal_label.admin_template_list.template_force_activate_modal">
-  <modal data-ref="template_force_activate_modal" title="$t:admin.templates.modals.activate_warning_title" size="sm">
+  <modal data-type="composite" data-ref="template_force_activate_modal" title="$t:admin.templates.modals.activate_warning_title" size="sm">
     <div class="py-2">
       <div class="alert-warning">
         <icon name="warning" class="text-xl text-yellow-600 dark:text-yellow-500 flex-shrink-0 mt-0.5"/>
@@ -46,7 +46,7 @@
         </on>
         <span>$t:common.cancel</span>
       </button>
-      <button class="flex-center gap-2 px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isForceActivating}}">
+      <button class="flex-center gap-2 px-4 py-2 bg-yellow-600 dark:bg-yellow-500 text-white rounded-lg hover:bg-yellow-700 dark:hover:bg-yellow-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isForceActivating}}">
         <on type="click">
           <!-- 강제 활성 실행 — 요구 확장이 없는 채로 켠다. 성공하면 목록과 확장 번들을 갱신한다. -->
           <sequence>
@@ -58,6 +58,10 @@
                 <reload-extensions/>
                 <toast type="success" message="$t:admin.templates.activate_success"/>
                 <close-modal/>
+                <!-- 템플릿과 함께 꺼졌던 언어팩이 있으면 되살릴지 묻는다(서버는 목록을 건넨 뒤 지운다).
+                     강제 활성은 새로 고침을 하지 않으므로 창이 닫힐 때도 새로 고치지 않는다. -->
+                <set-state target="global" reactivateLanguagePacksData="{{(response.data?.pending_language_packs ?? [])}}" :reactivateLanguagePacksRefreshAfter="false"/>
+                <open-modal if="{{(response.data?.pending_language_packs ?? []).length &gt; 0 &amp;&amp; (current_user?.data?.permissions ?? []).some(p =&gt; (p?.identifier ?? p) === 'core.language_packs.manage')}}" target="template_reactivate_language_packs_modal"/>
               </success>
               <fail>
                 <set-state target="global" :isForceActivating="false"/>

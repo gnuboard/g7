@@ -1302,7 +1302,6 @@ _단건 응답: `data` 객체의 필드._
 | js | array | `["\/api\/templates\/assets\/sirsoft-admin_basic\/js\/comp…` | 프론트엔드 JS 에셋 목록 (manifest assets 파생) |
 | css | array | `["\/api\/admin\/templates\/sirsoft-admin_basic\/editor\/c…` | 프론트엔드 CSS 에셋 목록 (manifest assets 파생) |
 | manifest_present | boolean | `true` | manifest 파일 존재 여부 |
-| manifest_source | string | `active` | manifest 를 읽어온 출처 경로 (활성/_bundled 구분) |
 
 **응답 예시**
 
@@ -1324,8 +1323,7 @@ HTTP/1.1 200
         "css": [
             "/api/admin/templates/sirsoft-admin_basic/editor/component-styles"
         ],
-        "manifest_present": true,
-        "manifest_source": "active"
+        "manifest_present": true
     }
 }
 ```
@@ -1341,7 +1339,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 레이아웃 편집기 부팅용 자산 매니페스트(컴포넌트 IIFE JS / CSS URL)를 반환합니다. 비활성 템플릿도 편집할 수 있도록 활성 디렉토리 → `_bundled` 폴백으로 빌드 산출물을 탐색하며, 빌드가 없으면 빈 목록으로 폴백합니다. `core.templates.layouts.edit` 권한이 필요합니다.
+**설명** 레이아웃 편집기 부팅용 자산 매니페스트(컴포넌트 IIFE JS / CSS URL)를 반환합니다. 비활성 템플릿도 편집할 수 있도록 활성 상태와 무관하게 빌드 산출물을 탐색하되 **설치본(`templates/{identifier}/dist/`)만** 봅니다. 설치본에 빌드가 없으면 배포 원본을 대신 쓰지 않고 `manifest_present=false`·빈 목록과 함께 재업데이트 안내 메시지를 돌려줍니다. `core.templates.layouts.edit` 권한이 필요합니다.
 
 
 ### GET /api/admin/templates/{identifier}/editor/broadcast-catalog
@@ -1586,7 +1584,7 @@ Content-Type: text/css; charset=UTF-8
 
 <!-- @generated:end -->
 
-**설명** 레이아웃 편집기 프리뷰 전용 CSS를 서빙합니다. 편집기 진입 시에만 components.css의 다크 조상 셀렉터를 프리뷰 마커로 치환하고(editor-spec `darkMode.previewIsolation` 규칙), 필요 시 `@layer` 래퍼를 평탄화해 라이트/다크 프리뷰를 격리합니다. 변환 결과는 캐시 버전+파일 mtime 키로 캐시하며, CSS 부재 시 빈 응답으로 폴백합니다. `core.templates.layouts.edit` 권한이 필요합니다.
+**설명** 레이아웃 편집기 프리뷰 전용 CSS를 서빙합니다. 편집기 진입 시에만 components.css의 다크 조상 셀렉터를 프리뷰 마커로 치환하고(editor-spec `darkMode.previewIsolation` 규칙), 필요 시 `@layer` 래퍼를 평탄화해 라이트/다크 프리뷰를 격리합니다. 변환 결과는 캐시 버전+파일 mtime 키로 캐시하며, CSS 부재 시 빈 응답으로 폴백합니다. CSS 와 치환 규칙(editor-spec)은 설치본만 읽으며, 설치본에 CSS 가 없으면 배포 원본을 대신 서빙하지 않고 빈 응답을 돌려줍니다. `core.templates.layouts.edit` 권한이 필요합니다.
 
 URI 가 `editor/components.css` 가 아니라 `editor/component-styles.css` 인 이유는 [자산 URL 이중 모드](README.md#자산-url-이중-모드) 때문입니다. 확장자를 뗀 형태(`editor/components`)가 `editor/components.json` 의 확장자 없는 형태와 충돌하므로 CSS 쪽 URI 를 분리했습니다. 확장자 없는 형태는 `editor/component-styles` 입니다.
 
@@ -1684,7 +1682,7 @@ _`data` 는 템플릿의 `components.json` 내용을 그대로 담은 **컴포�
 | --- | --- | --- | --- |
 | (컴포넌트명) | object | `{"type":"basic","tag":"div"}` | 컴포넌트 정의. 키는 레이아웃 JSON 의 `name` 과 일치한다 |
 
-> 활성/`_bundled` 어디에도 `components.json` 이 없으면 `404`(`templates.layout_not_found`)다.
+> 설치본(`templates/{identifier}/components.json`)에 파일이 없거나 JSON 이 깨져 있으면 배포 원본을 대신 읽지 않고 `404`(`templates.messages.installed_file_missing` — 템플릿을 다시 업데이트하라는 안내)다.
 
 **응답 예시**
 
@@ -1713,7 +1711,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 편집기용 components.json(컴포넌트 정의)을 서빙합니다. 비활성 템플릿도 편집 가능하도록 활성 디렉토리 → `_bundled` 폴백으로 파일을 읽어 반환합니다. `core.templates.layouts.edit` 권한이 필요합니다.
+**설명** 편집기용 components.json(컴포넌트 정의)을 서빙합니다. 비활성 템플릿도 편집 가능하도록 활성 상태와 무관하게 **설치본만** 읽어 반환합니다. 설치본에 파일이 없으면 배포 원본으로 대신하지 않고 재업데이트 안내와 함께 404 를 돌려줍니다. `core.templates.layouts.edit` 권한이 필요합니다.
 
 
 ### GET /api/admin/templates/{identifier}/editor/editor-spec
@@ -93709,7 +93707,7 @@ _단건 응답: `data` 는 템플릿 `lang/{locale}.json` 의 내용을 그대�
 
 <!-- @generated:end -->
 
-**설명** 편집기용 다국어 데이터(lang/{locale}.json)를 서빙합니다. 활성 상태 검증 없이 활성 디렉토리 → `_bundled` 폴백으로 읽으며, 파일 부재 시 빈 객체로 폴백합니다. `core.templates.layouts.edit` 권한이 필요합니다.
+**설명** 편집기용 다국어 데이터(lang/{locale}.json)를 서빙합니다. 활성 상태 검증 없이 **설치본만** 읽으며, 설치본에 해당 로케일 파일이 없으면 배포 원본을 대신 읽지 않고 빈 객체로 응답합니다(그 로케일을 제공하지 않는 템플릿의 정상 상태). `core.templates.layouts.edit` 권한이 필요합니다.
 
 
 ### GET /api/admin/templates/{identifier}/editor/permission-candidates
@@ -94047,7 +94045,7 @@ _`data` 는 템플릿 `routes.json` 에 모듈·플러그인 라우트를 병합
 | version | string | `1.0.0` | routes.json 스키마 버전 |
 | routes | array | `[{"path":"/","layout":"home","source":{"kind":"template","identifier":"sirsoft-basic"}}]` | 라우트 목록. **`source` 태깅이 필수**다 — 편집기 라우트 트리가 `source.kind` 로 그룹핑하므로 태깅이 없으면 클라이언트가 라우트 트리 렌더에서 실패한다 |
 
-> 공개 라우트 엔드포인트와 달리 **비활성 템플릿도 조회 가능**하고 `_bundled` 폴백이 적용된다 (편집 대상이 활성일 필요가 없다).
+> 공개 라우트 엔드포인트와 달리 **비활성 템플릿도 조회 가능**하다 (편집 대상이 활성일 필요가 없다). routes.json 과 템플릿 레이아웃은 **설치본만** 읽으며, 설치본에 routes.json 이 없으면 배포 원본을 대신 읽지 않고 `404`(`templates.messages.installed_file_missing`)다.
 
 **응답 예시**
 
@@ -94084,7 +94082,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 편집기 라우트 트리용 routes.json을 서빙합니다. 각 라우트에 `source`(kind/identifier) 태깅과 모듈/플러그인 라우트 병합을 적용해(TemplateService::getEditorRoutesDataWithModules) 클라이언트가 출처별로 그룹핑할 수 있게 하며, 활성/비활성 무관 + `_bundled` 폴백으로 동작합니다. `core.templates.layouts.edit` 권한이 필요합니다.
+**설명** 편집기 라우트 트리용 routes.json을 서빙합니다. 각 라우트에 `source`(kind/identifier) 태깅과 모듈/플러그인 라우트 병합을 적용해(TemplateService::getEditorRoutesDataWithModules) 클라이언트가 출처별로 그룹핑할 수 있게 하며, 활성/비활성 무관으로 동작하되 설치본만 읽습니다(배포 원본 폴백 없음 — 설치본에 routes.json 이 없으면 재업데이트 안내와 함께 404). `core.templates.layouts.edit` 권한이 필요합니다.
 
 
 ### POST /api/admin/templates/{identifier}/editor/seo-bot-preview
@@ -97579,7 +97577,7 @@ _`data` 는 템플릿의 `components.json` 내용을 그대로 담은 **컴포�
 | --- | --- | --- | --- |
 | (컴포넌트명) | object | `{"type":"basic","tag":"div"}` | 컴포넌트 정의. 키는 레이아웃 JSON 의 `name` 과 일치한다 |
 
-> 활성/`_bundled` 어디에도 `components.json` 이 없으면 `404`(`templates.layout_not_found`)다.
+> 활성 템플릿의 설치본(`templates/{identifier}/components.json`)만 읽는다. 설치본에 파일이 없으면 `404`(`templates.errors.components_not_found`)다.
 
 **응답 예시**
 

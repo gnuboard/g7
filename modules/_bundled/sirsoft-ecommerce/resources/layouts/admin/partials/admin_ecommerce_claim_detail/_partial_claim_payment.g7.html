@@ -11,10 +11,10 @@
           <div data-ref="cp_card_{{payIdx}}" data-each="payment, payIdx in {{claim?.data?.order?.payments ?? []}}" class="border border-gray-200 dark:border-gray-700 rounded-lg p-5">
             <div class="flex-between mb-4">
               <div class="flex-center gap-3">
-                <badge variant="outline">{{payment.payment_type_label}}</badge>
+                <badge data-type="composite" variant="outline">{{payment.payment_type_label}}</badge>
                 <span class="font-semibold text-gray-900 dark:text-gray-100">{{payment.payment_number}}</span>
               </div>
-              <badge variant="{{payment.payment_status_variant}}">{{payment.payment_status_label}}</badge>
+              <badge data-type="composite" variant="{{payment.payment_status_variant}}">{{payment.payment_status_label}}</badge>
             </div>
             <hr class="border-gray-100 dark:border-gray-800 mb-4"/>
             <div class="row-stack">
@@ -230,7 +230,7 @@ partial 안의 partial 은 같은 디렉터리 기준 상대 경로여야 한다
             <div class="flex-center gap-2">
               <span class="font-medium text-gray-900 dark:text-gray-100">{{claimPayment.payment_number}}</span>
               <span class="text-secondary">{{claimPayment.payment_method_label ?? ''}}</span>
-              <badge variant="{{claimPayment.payment_status_variant ?? 'default'}}">{{claimPayment.payment_status_label ?? ''}}</badge>
+              <badge data-type="composite" variant="{{claimPayment.payment_status_variant ?? 'default'}}">{{claimPayment.payment_status_label ?? ''}}</badge>
             </div>
             <div class="flex-center gap-2">
               <span class="text-gray-900 dark:text-gray-100">{{claimPayment.total_amount_formatted ?? ''}}</span>
@@ -361,7 +361,7 @@ partial 안의 partial 은 같은 디렉터리 기준 상대 경로여야 한다
             <div>
               <div class="text-sm text-secondary mb-2">$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.method</div>
               <!-- 어휘는 서버가 준 목록만 쓴다 (`RefundMethodEnum`) — 화면이 셋을 다시 적으면 수단이 늘어도 화면만 낡은 채로 남는다. 자동바인딩을 끄고 로컬 상태를 명시적으로 읽는 것은 형제 모달(완료 처리)과 같은 규율이다. -->
-              <radio-group data-ref="cre_010_refund_method" name="refundMethod" :autoBinding="false" :inline="true" disabled="{{claim?.data?.abilities?.can_update_amounts !== true}}" value="{{_local.refundMethod ?? ''}}" options="{{claim?.data?.refund_methods ?? []}}">
+              <radio-group data-type="composite" data-ref="cre_010_refund_method" name="refundMethod" :autoBinding="false" :inline="true" disabled="{{claim?.data?.abilities?.can_update_amounts !== true}}" value="{{_local.refundMethod ?? ''}}" options="{{claim?.data?.refund_methods ?? []}}">
                 <on type="change">
                   <set-state target="_local" refundMethod="{{$event.target.value}}"/>
                 </on>

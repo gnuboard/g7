@@ -232,6 +232,10 @@
             "type": "composite",
             "name": "DataGrid",
             "if": "{{!_global.isPortable}}",
+            "blur_until_loaded": {
+                "enabled": true,
+                "data_sources": "coupons"
+            },
             "actions": [
                 {
                     "comment": "쪽 이동. `mergeQuery` 로 걸려 있던 검색조건을 유지하고 page 만 갈아 끼운다.",
