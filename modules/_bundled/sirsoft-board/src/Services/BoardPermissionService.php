@@ -118,6 +118,13 @@ class BoardPermissionService
         $basicDefaults = g7_module_settings('sirsoft-board', 'basic_defaults', []);
         $defaultPermissions = $basicDefaults['default_board_permissions'] ?? [];
 
+        // 설정을 읽지 못하면 게시판 생성 쪽(BoardService::injectBoardRolesToPermissions)과 같이 권한
+        // 정의 키마다 빈 역할로 채운다. 그래야 아래에서 주입하는 게시판 자기 관리자·스텝 역할이 기본
+        // ACL 로 분류돼, 「요청이 더 얹은 역할」로 권한 부여 상한 검사를 받지 않는다.
+        if (empty($defaultPermissions)) {
+            $defaultPermissions = array_fill_keys(array_keys($permissionDefinitions), []);
+        }
+
         // 게시판 생성/수정 시($onlyKeys=null)에만 manager/step 자동주입
         // 일괄적용 시($onlyKeys 지정)에는 해당 게시판의 기존 manager/step을 건드리지 않음
         if ($onlyKeys === null) {

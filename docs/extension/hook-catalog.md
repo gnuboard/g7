@@ -8,7 +8,7 @@
 
 ## 목차
 
-- [코어](#코어) (579)
+- [코어](#코어) (580)
 - [gnuboard7-hello_module](#gnuboard7-hello_module) (2)
 - [gnuboard7-hello_plugin](#gnuboard7-hello_plugin) (1)
 - [sirsoft-board](#sirsoft-board) (101)
@@ -406,6 +406,7 @@
 | `core.pagination.filter_max_page` | filter | 2 |  |
 | `core.pagination.filter_result_cap` | filter | 2 |  |
 | `core.permission.filter_tree_result` | filter | 1 |  |
+| `core.permission.query_scoped_permissions` | filter | 1 |  |
 | `core.permission.update_validation_rules` | filter | 2 |  |
 | `core.plugin.activate_validation_rules` | filter | 2 |  |
 | `core.plugin.deactivate_validation_rules` | filter | 2 |  |

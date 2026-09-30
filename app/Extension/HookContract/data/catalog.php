@@ -385,6 +385,7 @@ return [
         'core.pagination.filter_max_page' => ['type' => 'filter', 'args' => [2], 'owner' => 'core'],
         'core.pagination.filter_result_cap' => ['type' => 'filter', 'args' => [2], 'owner' => 'core'],
         'core.permission.filter_tree_result' => ['type' => 'filter', 'args' => [1], 'owner' => 'core'],
+        'core.permission.query_scoped_permissions' => ['type' => 'filter', 'args' => [1], 'owner' => 'core'],
         'core.permission.update_validation_rules' => ['type' => 'filter', 'args' => [2], 'owner' => 'core'],
         'core.plugin.activate_validation_rules' => ['type' => 'filter', 'args' => [2], 'owner' => 'core'],
         'core.plugin.deactivate_validation_rules' => ['type' => 'filter', 'args' => [2], 'owner' => 'core'],

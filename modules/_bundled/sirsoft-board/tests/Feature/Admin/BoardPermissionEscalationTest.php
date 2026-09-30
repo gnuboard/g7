@@ -351,6 +351,38 @@ class BoardPermissionEscalationTest extends ModuleTestCase
     }
 
     /**
+     * 과차단 회귀 축 — 환경설정의 게시판 기본 권한을 읽지 못해도(설정 미러가 빈 상태) 새 게시판에
+     * 자기 관리자·스텝 역할이 붙는 것은 시스템 기준이라 상한 검사를 받지 않는다. 게시판 생성 쪽은
+     * 권한 정의 키로 대체값을 만들어 두 역할을 싣는데 권한 쪽이 빈 기본값으로 판정하면, 두 역할이
+     * 「요청이 더 얹은 역할」로 분류돼 게시판 권한이 없는 액터의 생성이 403 으로 막혔다.
+     *
+     * @scenario case=create_without_default_settings_board_roles_allowed
+     *
+     * @effects board_own_roles_attach_without_default_settings
+     *
+     * @return void 반환값 없음
+     */
+    public function test_board_own_roles_attach_on_create_when_default_permissions_missing(): void
+    {
+        Config::set('g7_settings.modules.sirsoft-board.basic_defaults', []);
+        [$delegate] = $this->createDelegate(['sirsoft-board.boards.read', 'sirsoft-board.boards.create']);
+        $slug = 'kve2367-nodef-'.substr(md5(uniqid('', true)), 0, 8);
+
+        $this->actingAs($delegate);
+        $board = app(BoardService::class)->createBoard([
+            'name' => ['ko' => '기본값 없는 게시판', 'en' => 'No Default Board'],
+            'slug' => $slug,
+            'type' => 'basic',
+        ]);
+
+        $this->assertSame(
+            ["sirsoft-board.{$slug}.manager", "sirsoft-board.{$slug}.step"],
+            $this->boardPermissionRoles('posts.read', $board)
+        );
+        $this->assertSame(["sirsoft-board.{$slug}.manager"], $this->boardPermissionRoles('admin.manage', $board));
+    }
+
+    /**
      * 환경설정 기본 권한에 자기 역할을 넣어 두고(설정 수정 권한으로 가능) 일괄 적용으로 기존
      * 게시판의 admin.manage 에 붙이면 403 이고 전체가 되돌려진다(「일괄 적용 중단」 200 으로
      * 감싸지지 않는다).

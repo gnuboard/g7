@@ -3,11 +3,13 @@
 namespace Tests\Unit\Http\Resources;
 
 use App\Enums\ActivityLogType;
+use App\Http\Controllers\Api\Admin\ActivityLogController;
 use App\Http\Resources\ActivityLogResource;
 use App\Models\ActivityLog;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Route;
 use Tests\TestCase;
 
 /**
@@ -37,7 +39,9 @@ class ActivityLogResourceTest extends TestCase
      * 리소스에 모든 표준 필드가 포함됨
      *
      * @scenario actor=system
+     *
      * @effects resource_includes_standard_fields
+     *
      * @return void 반환값 없음
      */
     public function test_resource_includes_standard_fields(): void
@@ -76,7 +80,9 @@ class ActivityLogResourceTest extends TestCase
      * 리소스에 description 키가 아닌 localized_description이 포함됨
      *
      * @scenario actor=system
+     *
      * @effects resource_uses_localized_description_not_description
+     *
      * @return void 반환값 없음
      */
     public function test_resource_uses_localized_description_not_description(): void
@@ -100,7 +106,9 @@ class ActivityLogResourceTest extends TestCase
      * localized_description에 번역된 문자열이 반환됨
      *
      * @scenario actor=system
+     *
      * @effects resource_returns_translated_description
+     *
      * @return void 반환값 없음
      */
     public function test_resource_returns_translated_description(): void
@@ -127,7 +135,9 @@ class ActivityLogResourceTest extends TestCase
      * description_key에 raw 키가 그대로 반환됨
      *
      * @scenario actor=system
+     *
      * @effects resource_returns_raw_description_key
+     *
      * @return void 반환값 없음
      */
     public function test_resource_returns_raw_description_key(): void
@@ -147,7 +157,9 @@ class ActivityLogResourceTest extends TestCase
      * action_label에 번역된 액션 라벨이 반환됨
      *
      * @scenario actor=system
+     *
      * @effects resource_returns_action_label
+     *
      * @return void 반환값 없음
      */
     public function test_resource_returns_action_label(): void
@@ -176,7 +188,9 @@ class ActivityLogResourceTest extends TestCase
      * changes에 구조화된 변경 이력이 포함되고 label이 번역됨
      *
      * @scenario actor=system
+     *
      * @effects resource_includes_changes_with_translated_label
+     *
      * @return void 반환값 없음
      */
     public function test_resource_includes_changes_with_translated_label(): void
@@ -211,7 +225,9 @@ class ActivityLogResourceTest extends TestCase
      * changes에 enum 타입 필드의 old_label/new_label이 번역됨
      *
      * @scenario actor=system
+     *
      * @effects resource_translates_enum_labels_in_changes
+     *
      * @return void 반환값 없음
      */
     public function test_resource_translates_enum_labels_in_changes(): void
@@ -252,7 +268,9 @@ class ActivityLogResourceTest extends TestCase
      * changes에 boolean 타입 필드의 old_label/new_label이 예/아니오로 변환됨
      *
      * @scenario actor=system
+     *
      * @effects resource_translates_boolean_labels_in_changes
+     *
      * @return void 반환값 없음
      */
     public function test_resource_translates_boolean_labels_in_changes(): void
@@ -289,7 +307,9 @@ class ActivityLogResourceTest extends TestCase
      * changes에 json 타입 필드(다국어)가 현재 로케일 값으로 변환됨
      *
      * @scenario actor=system
+     *
      * @effects resource_extracts_locale_value_from_json_changes
+     *
      * @return void 반환값 없음
      */
     public function test_resource_extracts_locale_value_from_json_changes(): void
@@ -327,7 +347,9 @@ class ActivityLogResourceTest extends TestCase
      * changes에 json 타입 필드가 한국어 로케일로 변환됨
      *
      * @scenario actor=system
+     *
      * @effects resource_extracts_korean_locale_value_from_json_changes
+     *
      * @return void 반환값 없음
      */
     public function test_resource_extracts_korean_locale_value_from_json_changes(): void
@@ -367,7 +389,9 @@ class ActivityLogResourceTest extends TestCase
      * changes에 json 타입 필드의 old가 null이면 null 그대로 반환
      *
      * @scenario actor=system
+     *
      * @effects resource_handles_null_json_change_values
+     *
      * @return void 반환값 없음
      */
     public function test_resource_handles_null_json_change_values(): void
@@ -398,7 +422,9 @@ class ActivityLogResourceTest extends TestCase
      * bulk_changes에서도 json 타입 필드가 로케일 변환됨
      *
      * @scenario actor=system
+     *
      * @effects resource_extracts_locale_value_from_bulk_json_changes
+     *
      * @return void 반환값 없음
      */
     public function test_resource_extracts_locale_value_from_bulk_json_changes(): void
@@ -436,7 +462,9 @@ class ActivityLogResourceTest extends TestCase
      * changes가 null이면 changes, bulk_changes 모두 null로 반환됨
      *
      * @scenario actor=system
+     *
      * @effects resource_returns_null_changes_when_empty
+     *
      * @return void 반환값 없음
      */
     public function test_resource_returns_null_changes_when_empty(): void
@@ -457,7 +485,9 @@ class ActivityLogResourceTest extends TestCase
      * 단일 수정 changes는 changes에 반환, bulk_changes는 null
      *
      * @scenario actor=system
+     *
      * @effects resource_returns_single_changes_in_changes_field
+     *
      * @return void 반환값 없음
      */
     public function test_resource_returns_single_changes_in_changes_field(): void
@@ -483,7 +513,9 @@ class ActivityLogResourceTest extends TestCase
      * 일괄 수정 changes (모델ID 기준 그룹핑)는 bulk_changes에 반환, changes는 null
      *
      * @scenario actor=system
+     *
      * @effects resource_returns_bulk_changes_in_bulk_changes_field
+     *
      * @return void 반환값 없음
      */
     public function test_resource_returns_bulk_changes_in_bulk_changes_field(): void
@@ -529,7 +561,9 @@ class ActivityLogResourceTest extends TestCase
      * $activityLogFields에서 'enum'으로 정의된 필드는 동적으로 enum 라벨을 해석함
      *
      * @scenario actor=system
+     *
      * @effects resource_resolves_enum_labels_from_legacy_text_type
+     *
      * @return void 반환값 없음
      */
     public function test_resource_resolves_enum_labels_from_legacy_text_type(): void
@@ -573,7 +607,9 @@ class ActivityLogResourceTest extends TestCase
      * 기존 DB 레코드에서 type이 'text'이고 모델에서도 'text'인 필드는 변경 없이 유지됨
      *
      * @scenario actor=system
+     *
      * @effects resource_does_not_alter_genuine_text_type_fields
+     *
      * @return void 반환값 없음
      */
     public function test_resource_does_not_alter_genuine_text_type_fields(): void
@@ -608,7 +644,9 @@ class ActivityLogResourceTest extends TestCase
      * bulk changes 개수로 :count 플레이스홀더를 보정함
      *
      * @scenario actor=system
+     *
      * @effects resource_resolves_unreplaced_count_from_bulk_changes
+     *
      * @return void 반환값 없음
      */
     public function test_resource_resolves_unreplaced_count_from_bulk_changes(): void
@@ -649,7 +687,9 @@ class ActivityLogResourceTest extends TestCase
      * description_params에 count가 이미 있으면 그대로 사용됨 (이중 치환 없음)
      *
      * @scenario actor=system
+     *
      * @effects resource_does_not_double_replace_count
+     *
      * @return void 반환값 없음
      */
     public function test_resource_does_not_double_replace_count(): void
@@ -690,7 +730,9 @@ class ActivityLogResourceTest extends TestCase
      * 이메일은 관리자 응답과 본인 열람에만 실린다 — 아래 두 테스트가 그 축을 나눠 본다.
      *
      * @scenario actor=member
+     *
      * @effects resource_includes_user_info_when_user_exists
+     *
      * @return void 반환값 없음
      */
     public function test_resource_includes_user_info_when_user_exists(): void
@@ -719,7 +761,9 @@ class ActivityLogResourceTest extends TestCase
      * 관리자 컨트롤러로 라우팅된 요청에서는 이메일이 실린다
      *
      * @scenario actor=member
+     *
      * @effects resource_includes_user_email_on_admin_request
+     *
      * @return void 반환값 없음
      */
     public function test_resource_includes_user_email_on_admin_request(): void
@@ -737,10 +781,10 @@ class ActivityLogResourceTest extends TestCase
         $log->load('user');
 
         $request = $this->makeRequest();
-        $route = new \Illuminate\Routing\Route(
+        $route = new Route(
             ['GET'],
             '/api/admin/activity-logs',
-            ['uses' => \App\Http\Controllers\Api\Admin\ActivityLogController::class.'@index']
+            ['uses' => ActivityLogController::class.'@index']
         );
         $route->setContainer($this->app);
         $request->setRouteResolver(fn () => $route);
@@ -754,7 +798,9 @@ class ActivityLogResourceTest extends TestCase
      * 관리자 요청이 아니면 이메일이 가려진다 (공개 응답에서 회원 주소록 수집 차단)
      *
      * @scenario actor=member
+     *
      * @effects resource_masks_user_email_outside_admin_request
+     *
      * @return void 반환값 없음
      */
     public function test_resource_masks_user_email_outside_admin_request(): void
@@ -780,7 +826,9 @@ class ActivityLogResourceTest extends TestCase
      * user가 없으면 시스템 라벨만 포함된 객체 반환
      *
      * @scenario actor=system
+     *
      * @effects resource_returns_system_user_when_no_user
+     *
      * @return void 반환값 없음
      */
     public function test_resource_returns_system_user_when_no_user(): void
@@ -809,7 +857,9 @@ class ActivityLogResourceTest extends TestCase
      * log_type에 enum value 문자열이 반환됨
      *
      * @scenario actor=system
+     *
      * @effects resource_returns_log_type_as_string_value
+     *
      * @return void 반환값 없음
      */
     public function test_resource_returns_log_type_as_string_value(): void
@@ -828,7 +878,9 @@ class ActivityLogResourceTest extends TestCase
      * ip_address가 올바르게 반환됨
      *
      * @scenario actor=system
+     *
      * @effects resource_returns_ip_address
+     *
      * @return void 반환값 없음
      */
     public function test_resource_returns_ip_address(): void
@@ -848,7 +900,9 @@ class ActivityLogResourceTest extends TestCase
      * actor_name이 리소스에 포함됨
      *
      * @scenario actor=system
+     *
      * @effects resource_includes_actor_name
+     *
      * @return void 반환값 없음
      */
     public function test_resource_includes_actor_name(): void

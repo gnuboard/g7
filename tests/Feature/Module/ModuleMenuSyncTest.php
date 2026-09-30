@@ -139,7 +139,9 @@ class ModuleMenuSyncTest extends TestCase
      * 모듈 설치 시 메뉴가 올바르게 생성되는지 테스트
      *
      * @scenario lifecycle_event=install
+     *
      * @effects module_install_creates_menus
+     *
      * @return void 반환값 없음
      */
     public function test_module_install_creates_menus(): void
@@ -176,7 +178,9 @@ class ModuleMenuSyncTest extends TestCase
      * 최초 설치 시 메뉴에 user_overrides가 비어있는지 테스트
      *
      * @scenario lifecycle_event=install
+     *
      * @effects no_user_overrides_on_fresh_menu_install
+     *
      * @return void 반환값 없음
      */
     public function test_no_user_overrides_on_fresh_menu_install(): void
@@ -199,7 +203,9 @@ class ModuleMenuSyncTest extends TestCase
      * user_overrides에 "name"이 있으면 재설치 시 메뉴명이 보존되는지 테스트
      *
      * @scenario lifecycle_event=reinstall
+     *
      * @effects user_menu_name_override_preserved_on_reinstall
+     *
      * @return void 반환값 없음
      */
     public function test_user_menu_name_override_preserved_on_reinstall(): void
@@ -231,7 +237,9 @@ class ModuleMenuSyncTest extends TestCase
      * user_overrides에 "order"가 있으면 재설치 시 메뉴 순서가 보존되는지 테스트
      *
      * @scenario lifecycle_event=reinstall
+     *
      * @effects user_menu_order_override_preserved_on_reinstall
+     *
      * @return void 반환값 없음
      */
     public function test_user_menu_order_override_preserved_on_reinstall(): void
@@ -266,7 +274,9 @@ class ModuleMenuSyncTest extends TestCase
      * user_overrides가 없으면 재설치 시 메뉴가 확장 정의값으로 갱신되는지 테스트
      *
      * @scenario lifecycle_event=reinstall
+     *
      * @effects reinstall_updates_unmodified_menus
+     *
      * @return void 반환값 없음
      */
     public function test_reinstall_updates_unmodified_menus(): void
@@ -300,7 +310,9 @@ class ModuleMenuSyncTest extends TestCase
      * 따라서 uninstall 후에도 메뉴는 DB 에 남아있고, 재설치는 idempotent (user_overrides 비어있음 유지).
      *
      * @scenario lifecycle_event=reinstall
+     *
      * @effects reinstall_after_uninstall_creates_clean_menus
+     *
      * @return void 반환값 없음
      */
     public function test_reinstall_after_uninstall_creates_clean_menus(): void
@@ -336,7 +348,9 @@ class ModuleMenuSyncTest extends TestCase
      * 복수 필드 user_overrides 보존 테스트 (name + icon 동시 수정)
      *
      * @scenario lifecycle_event=reinstall
+     *
      * @effects multiple_user_overrides_preserved_on_reinstall
+     *
      * @return void 반환값 없음
      */
     public function test_multiple_user_overrides_preserved_on_reinstall(): void
@@ -382,7 +396,9 @@ class ModuleMenuSyncTest extends TestCase
      * 모듈 업데이트(createModuleMenus 재호출) 시 동적 메뉴가 삭제되지 않아야 함.
      *
      * @scenario lifecycle_event=update
+     *
      * @effects module_update_preserves_dynamic_menus
+     *
      * @return void 반환값 없음
      */
     public function test_module_update_preserves_dynamic_menus(): void
@@ -459,7 +475,9 @@ class ModuleMenuSyncTest extends TestCase
      * 모듈 업데이트(createModulePermissions 재호출) 시 동적 권한이 삭제되지 않아야 함.
      *
      * @scenario lifecycle_event=update
+     *
      * @effects module_update_preserves_dynamic_permissions
+     *
      * @return void 반환값 없음
      */
     public function test_module_update_preserves_dynamic_permissions(): void
@@ -547,7 +565,9 @@ class ModuleMenuSyncTest extends TestCase
      * deleteData=false (기본) 경로는 메뉴 보존 → test_module_uninstall_preserves_menus_by_default 참조.
      *
      * @scenario lifecycle_event=uninstall
+     *
      * @effects module_uninstall_removes_all_menus_including_dynamic
+     *
      * @return void 반환값 없음
      */
     public function test_module_uninstall_removes_all_menus_including_dynamic(): void

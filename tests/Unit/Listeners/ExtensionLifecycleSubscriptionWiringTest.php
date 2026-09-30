@@ -35,6 +35,7 @@ class ExtensionLifecycleSubscriptionWiringTest extends TestCase
      * 대시보드 리스너는 실제 발화되는 복수형 훅 이름을 구독한다.
      *
      * @effects dashboard_listeners_subscribe_plural_hook_names
+     *
      * @return void 반환값 없음
      */
     public function test_dashboard_listeners_subscribe_plural_hook_names(): void
@@ -57,6 +58,7 @@ class ExtensionLifecycleSubscriptionWiringTest extends TestCase
      * 레코드 수정 훅(after_update)에는 더 이상 반응하지 않는다.
      *
      * @effects template_language_pack_syncs_on_version_update_with_real_version
+     *
      * @return void 반환값 없음
      */
     public function test_template_language_pack_syncs_on_version_update_with_real_version(): void

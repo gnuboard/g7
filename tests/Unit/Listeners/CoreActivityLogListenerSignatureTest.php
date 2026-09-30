@@ -33,6 +33,7 @@ class CoreActivityLogListenerSignatureTest extends TestCase
      * 템플릿 after_deactivate 핸들러가 Manager 의 string identifier 1개 발화를 받는다.
      *
      * @effects deactivate_handler_accepts_string_identifier
+     *
      * @return void 반환값 없음
      */
     public function test_handle_template_after_deactivate_accepts_string_identifier(): void
@@ -50,6 +51,7 @@ class CoreActivityLogListenerSignatureTest extends TestCase
      * 모듈 after_deactivate 핸들러가 Manager 의 string identifier 1개 발화를 받는다.
      *
      * @effects deactivate_handler_accepts_string_identifier
+     *
      * @return void 반환값 없음
      */
     public function test_handle_module_after_deactivate_accepts_string_identifier(): void
@@ -67,6 +69,7 @@ class CoreActivityLogListenerSignatureTest extends TestCase
      * 플러그인 after_deactivate 핸들러가 Manager 의 string identifier 1개 발화를 받는다.
      *
      * @effects deactivate_handler_accepts_string_identifier
+     *
      * @return void 반환값 없음
      */
     public function test_handle_plugin_after_deactivate_accepts_string_identifier(): void
@@ -114,6 +117,7 @@ class CoreActivityLogListenerSignatureTest extends TestCase
      * 실제 인자로 TypeError 없이 호출된다. 부족하면 큐 리스너가 흔적 없이 실패한다.
      *
      * @effects canonical_hook_arguments_match_listener_signature
+     *
      * @param  string  $hook  정규 훅 이름
      * @param  string  $method  리스너 핸들러 메서드
      * @param  array<int, mixed>  $args  Manager 가 넘기는 인자
@@ -140,6 +144,7 @@ class CoreActivityLogListenerSignatureTest extends TestCase
      * 실제 호출 가능 여부 — TypeError 미발생 검증.
      *
      * @effects deactivate_handler_accepts_string_identifier
+     *
      * @return void 반환값 없음
      */
     public function test_handlers_are_callable_with_string_only(): void

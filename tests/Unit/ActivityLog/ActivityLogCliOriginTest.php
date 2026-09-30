@@ -46,7 +46,9 @@ class ActivityLogCliOriginTest extends TestCase
      * 캡처는 디스패치 시점의 진입점을 싣고, 복원은 워커 프로세스 대신 그 값을 판정 근거로 삼는다.
      *
      * @scenario entry_point=cli, execution=queued_worker
+     *
      * @effects origin_captured_at_dispatch_and_restored_in_worker
+     *
      * @return void 반환값 없음
      */
     public function test_origin_is_captured_at_dispatch_and_restored_in_worker(): void
@@ -69,7 +71,9 @@ class ActivityLogCliOriginTest extends TestCase
      * 데몬 워커는 컨테이너를 작업 간에 재사용한다 — 한 작업이 복원한 진입점이 다음 작업으로 새지 않는다.
      *
      * @scenario entry_point=http, execution=queued_worker
+     *
      * @effects restored_origin_does_not_leak_to_next_job
+     *
      * @return void 반환값 없음
      */
     public function test_restored_origin_does_not_leak_to_next_job(): void
@@ -95,7 +99,9 @@ class ActivityLogCliOriginTest extends TestCase
      * 기록됐다. restore() 는 user_id 가 비어 있으면 인증을 건드리지 않아, 앞 작업이 setUser() 한 사용자가 남았다.
      *
      * @scenario entry_point=cli, execution=queued_worker
+     *
      * @effects restored_user_does_not_leak_to_next_job
+     *
      * @return void 반환값 없음
      */
     public function test_restored_user_does_not_leak_to_next_job(): void
@@ -117,7 +123,9 @@ class ActivityLogCliOriginTest extends TestCase
      * CLI 진입점 로그에만 properties.via = 'cli' 를 남기고, 웹 로그의 properties 는 건드리지 않는다.
      *
      * @scenario entry_point=cli, execution=sync
+     *
      * @effects cli_log_marked_via_cli, http_log_properties_untouched
+     *
      * @return void 반환값 없음
      */
     public function test_processor_marks_only_cli_logs(): void
@@ -149,7 +157,9 @@ class ActivityLogCliOriginTest extends TestCase
      * 회원이 없는 로그의 행위자 라벨은 진입점에 따라 "시스템" 또는 "시스템(CLI)" 이다.
      *
      * @scenario entry_point=cli, execution=sync
+     *
      * @effects system_log_actor_shows_origin_label
+     *
      * @return void 반환값 없음
      */
     public function test_actor_name_distinguishes_cli_system_logs(): void
@@ -168,7 +178,9 @@ class ActivityLogCliOriginTest extends TestCase
      * 회원이 없는 로그의 user 폴백은 uuid 를 null 로 명시한다 — 화면이 회원 메뉴를 그리지 않는 근거.
      *
      * @scenario entry_point=cli, execution=sync
+     *
      * @effects system_log_actor_has_no_member_menu, system_log_actor_shows_origin_label
+     *
      * @return void 반환값 없음
      */
     public function test_resource_user_fallback_has_null_uuid_and_origin_label(): void

@@ -23,7 +23,7 @@ class ActivityLogProcessor implements ProcessorInterface
     /**
      * 로그 레코드에 요청 컨텍스트 정보를 자동 주입합니다.
      *
-     * @param LogRecord $record Monolog 로그 레코드
+     * @param  LogRecord  $record  Monolog 로그 레코드
      * @return LogRecord 컨텍스트가 주입된 로그 레코드
      */
     public function __invoke(LogRecord $record): LogRecord
