@@ -289,4 +289,7 @@ return [
         'archive_requested' => '訪問者統計手動集計実行 (:run_type)',
         'extension_purged' => '拡張統計データ整理 (:identifier)',
     ],
+    'layout_sync' => [
+        'operator_modified' => '運営者の修正版',
+    ],
 ];

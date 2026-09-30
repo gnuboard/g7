@@ -183,7 +183,8 @@ php artisan template:deactivate [identifier]
 php artisan template:uninstall [identifier]
 php artisan template:cache-clear [identifier?]
 php artisan template:check-updates [identifier?]
-php artisan template:update [identifier] [--layout-strategy=overwrite] [--force] [--source=auto|bundled|github]
+php artisan template:update [identifier] [--layout-strategy=overwrite|keep] [--force] [--source=auto|bundled|github]
+# --layout-strategy=keep: 운영자가 고친 부분은 유지하고 손대지 않은 조각·설정에 새 버전을 병합 + 결과 표 (3종 공통)
 
 # 언어팩
 php artisan language-pack:list
@@ -597,7 +598,7 @@ php artisan template:deactivate [identifier]
 php artisan template:uninstall [identifier]
 php artisan template:cache-clear
 php artisan template:check-updates [identifier?]
-php artisan template:update [identifier] [--layout-strategy=overwrite] [--force] [--source=auto|bundled|github]
+php artisan template:update [identifier] [--layout-strategy=overwrite|keep] [--force] [--source=auto|bundled|github]
 
 # Composer 의존성 (모듈/플러그인별 독립 vendor/)
 php artisan extension:composer-install

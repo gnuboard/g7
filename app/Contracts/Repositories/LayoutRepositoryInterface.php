@@ -37,7 +37,7 @@ interface LayoutRepositoryInterface
      *
      * @param  int  $templateId  템플릿 ID
      * @param  callable(TemplateLayout): (bool|null)  $callback  행마다 호출
-     * @return void
+     * @return void 반환값 없음
      */
     public function eachWithContent(int $templateId, callable $callback): void;
 
@@ -65,9 +65,17 @@ interface LayoutRepositoryInterface
      * 레이아웃을 soft delete 합니다 (행은 남고 조회에서 빠진다 — {@see deleteByName()} 은 영구 삭제).
      *
      * @param  TemplateLayout  $layout  지울 행
-     * @return void
+     * @return void 반환값 없음
      */
     public function softDelete(TemplateLayout $layout): void;
+
+    /**
+     * 레이아웃 행을 영구 삭제합니다 (이미 읽어 둔 행 — 지워진 행이어도 된다).
+     *
+     * @param  TemplateLayout  $layout  지울 행
+     * @return void 반환값 없음
+     */
+    public function forceDelete(TemplateLayout $layout): void;
 
     /**
      * 템플릿 안에서 이름으로 레이아웃 1건을 찾습니다.

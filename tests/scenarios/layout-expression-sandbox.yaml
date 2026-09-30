@@ -89,12 +89,28 @@ sub_flows:
         조기 반환하면 그 부착이 조용한 no-op 이 된다.
       - 부착 패리티: Store·Update·UpdateContent·UpdateExtensionContent 4 경로가 동일 강도여야
         한다. 편집기 저장 경로만 빠지면 그 경로가 우회로다.
+      - 안내 문구·링크 예외(#727): 입력 안내 문구(`placeholder`)·링크(`href`) prop 과 액션 요청 본문
+        (`params.body`)은 http(s) 웹 주소를 허용한다(2026-09-30 결정). 실행 스킴·프로토콜 상대 주소·`ftp:` 는
+        그 자리에서도 막고, 자원 prop(`src`)·액션 대상은 종전대로 막는다. 번들 화면 전수는 조각을 펼친 저장 형태로
+        검사한다 — 파일 한 장씩 보면 조각 안 값이 sink 검사를 받지 않아 관리자 화면 5개의 편집기 저장 422 를 놓쳤다.
     effects:
       - init_actions_external_url_rejected
       - same_origin_path_in_init_actions_allowed
       - plain_string_value_is_inspected_not_skipped
       - same_origin_plain_string_allowed
       - rule_attached_to_every_layout_content_form_request
+      - text_hint_and_link_props_accept_external_url
+      - request_body_example_url_accepted
+      - link_props_still_reject_executable_and_protocol_relative
+      - resource_and_action_target_external_url_still_rejected
+      - bundled_screens_with_partials_resolved_pass_storage_gate
+      - protocol_relative_url_rejected
+      - other_scheme_url_rejected
+      - external_url_rejected_in_every_sink_key
+      - same_origin_values_allowed_in_sink_keys
+      - violation_reports_modal_and_slot_paths
+      - web_url_allowance_is_limited_to_prop_and_action_body
+      - injection_components_follow_screen_rules
   - id: malicious_layout_json_gate
     description: |
       저장 규칙 넷(구조·엔드포인트 허용·외부 URL·컴포넌트 존재)을 한 번에 건 공격형 레이아웃 묶음.

@@ -139,6 +139,7 @@ effects:
   - spawnUpgradeStepsProcess_logs_manifest_files_it_could_not_remove
   - getCoreVersion_prefers_env_APP_VERSION_only_inside_update_tree
   - getCoreVersion_ignores_env_APP_VERSION_outside_update_tree
+  - extension_required_core_version_is_validated
   - getCoreVersion_falls_back_to_config_when_env_absent_inside_update_tree
   # #658 상주 큐 워커 재시작 신호
   - core_update_step11_signals_queue_restart
@@ -159,6 +160,7 @@ test_files:
   - tests/Unit/Support/PackageManifestCacheHelperTest.php
   - tests/Unit/Support/CoreUpdateContextTest.php
   - tests/Unit/Extension/CoreVersionCheckerEnvPriorityTest.php
+  - tests/Unit/Extension/PluginManagerVersionCheckTest.php
   - tests/Unit/Services/CoreUpdateServiceQueueRestartTest.php
 
 # 본 매니페스트의 axes cross product 는 800+ 케이스이나, 실제 회귀 가드는 test_files 의

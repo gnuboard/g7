@@ -204,6 +204,20 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
 ```
 
+### 기록된 예외 — 레이아웃 마크업 컴파일 트레이트 (7.1.0 스텝 04, 2026-09-30 승인)
+
+`upgrades/data/7.1.0/migrations/04_BackfillTemplateOverrideOriginals.php` 는 템플릿 오버라이드 `.g7.html` 을 컴파일하려고
+`App\Extension\Traits\ValidatesLayoutFiles` 를 쓴다. 마크업 컴파일러·partial 해석을 스텝 안에 사본으로 두기엔 규모가 커서
+예외로 인정했다. 성립 조건:
+
+- 부르는 메서드(`validateLayoutFiles(dir, basename, 'template', true)`)가 이 스텝이 도는 모든 출발 버전(7.0.x)에 같은 시그니처로
+  있다 — 7.0.x 판은 `original` 항목을 돌려주지 않으므로 그때는 `data` 를 원본으로 쓴다.
+- 뒤 버전이 컴파일 결과를 바꿔도 해가 "운영자 판 손실" 이 아니다 — 해시가 어긋난 행은 다음 keep 업데이트에서 「비교 기준 없음」
+  으로 통째 유지될 뿐이다.
+- `app(*Manager|*Service|*Repository)` 는 쓰지 않는다.
+
+같은 조건을 만족하지 않는 스텝이 이 예외를 선례로 삼지 않는다 — 새 예외는 승인을 받은 뒤 이 절에 추가한다.
+
 ### ✅ 허용 — 사용자 입력 (yes/no 프롬프트)
 
 upgrade step 에서 사용자 확인이 필요한 경우 `\App\Console\Helpers\ConsoleConfirm::ask()` 를 **FQN 직접 호출**한다. fgets(STDIN) 직접 사용 금지.

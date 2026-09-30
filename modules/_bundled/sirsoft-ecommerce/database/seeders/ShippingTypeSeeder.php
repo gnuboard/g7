@@ -69,10 +69,12 @@ class ShippingTypeSeeder extends Seeder implements TranslatableSeederInterface
         $definedCodes = [];
 
         foreach ($types as $type) {
+            // 시더가 새로 만드는 행은 created_by 를 명시적으로 비운다(stale 정리 범위가 `created_by IS NULL` 이다).
+            $existing = ShippingType::where('code', $type['code'])->exists();
             $helper->sync(
                 ShippingType::class,
                 ['code' => $type['code']],
-                $type,
+                $existing ? $type : $type + ['created_by' => null],
             );
             $definedCodes[] = $type['code'];
         }
@@ -97,9 +99,10 @@ class ShippingTypeSeeder extends Seeder implements TranslatableSeederInterface
             ->values()
             ->all();
 
+        // 정리 대상은 시더가 만든 행(created_by IS NULL)뿐이다 — 운영자가 만든 미사용 배송유형은 남긴다(#727 W7).
         $deleted = $helper->cleanupStale(
             ShippingType::class,
-            [],
+            ['created_by' => null],
             'code',
             [...$definedCodes, ...$inUseCodes],
         );

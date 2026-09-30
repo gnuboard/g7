@@ -216,10 +216,16 @@ trait CollectsFragmentSources
             throw new \RuntimeException(__('exceptions.layout_markup.registry_not_found'));
         }
 
+        // 업데이트 백업 경로(`{id}_{Ymd_His}`)처럼 경로로 소유 확장을 알 수 없는 읽기는 강제 지정값을 쓴다
+        // ({@see ValidatesLayoutFiles::$compileContextOverride} — 그 트레이트를 함께 쓰는 읽기만 채운다).
+        $identifierOverride = property_exists($this, 'compileContextOverride')
+            ? ($this->compileContextOverride['extension'] ?? null)
+            : null;
+
         $result = (new LayoutMarkupCompiler($registry))->compile(
             File::get($markupFile),
             $markupFile,
-            $resolver->contextFor($markupFile, $templateOverride),
+            $resolver->contextFor($markupFile, $templateOverride, $identifierOverride),
         );
 
         return self::$fragmentCompileCache[$cacheKey] = $result->json;

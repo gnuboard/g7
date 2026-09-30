@@ -119,7 +119,7 @@
           <label class="flex-start gap-2 p-2 rounded cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700">
             <input type="radio" name="plugin_layout_strategy" value="keep" checked="{{(_global.pluginLayoutStrategy ?? 'overwrite') === 'keep'}}" class="radio mt-0.5">
               <on type="change">
-                <!-- 「그대로 두기」를 고르면 손댄 화면 목록이 아래에 펼쳐진다 — 그 화면들은 새 판본의 정의를 받지 못한 채 남는다는 뜻이다. -->
+                <!-- 남기기 — 손댄 화면 목록이 아래에 펼쳐진다. 고친 부분은 두고 손대지 않은 조각·설정만 새 판본으로 바꾼다(겹치면 고친 쪽 유지). -->
                 <set-state target="global" pluginLayoutStrategy="keep"/>
               </on>
             </input>

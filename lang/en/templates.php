@@ -311,7 +311,7 @@ return [
             'latest_version' => 'Latest version: :version',
             'update_source' => 'Update source: :source',
             'layout_strategy' => 'Layout strategy: :strategy',
-            'modified_layouts_warning' => ':count modified layout(s) will be overwritten:',
+            'modified_layouts_warning' => ':count operator-modified layout(s)/extension fragment(s) will be overwritten:',
             'modified_layout_item' => '  - :name (modified: :date)',
             'confirm_question' => 'Do you want to proceed with the update?',
             'aborted' => 'Update cancelled.',

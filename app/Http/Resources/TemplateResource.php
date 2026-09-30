@@ -235,7 +235,8 @@ class TemplateResource extends BaseApiResource
                 $module = $moduleRepository->findByIdentifier($moduleIdentifier);
                 $modules[] = [
                     'identifier' => $moduleIdentifier,
-                    'name' => $module ? $this->getExtensionName($module) : $moduleIdentifier,
+                    // 이름이 비어 있으면(null·빈 문자열) 식별자로 대신한다 — 목록 카드는 이 값을 글자로 그린다(#727 React #31).
+                    'name' => ($module ? $this->getExtensionName($module) : null) ?: $moduleIdentifier,
                     'type' => 'module',
                 ];
             }
@@ -247,7 +248,8 @@ class TemplateResource extends BaseApiResource
                 $plugin = $pluginRepository->findByIdentifier($pluginIdentifier);
                 $plugins[] = [
                     'identifier' => $pluginIdentifier,
-                    'name' => $plugin ? $this->getExtensionName($plugin) : $pluginIdentifier,
+                    // 이름이 비어 있으면(null·빈 문자열) 식별자로 대신한다 — 목록 카드는 이 값을 글자로 그린다(#727 React #31).
+                    'name' => ($plugin ? $this->getExtensionName($plugin) : null) ?: $pluginIdentifier,
                     'type' => 'plugin',
                 ];
             }

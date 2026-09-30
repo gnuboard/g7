@@ -59,7 +59,7 @@ _목록 응답: `data.data[]` 배열 항목의 필드 + `data.pagination`._
 | type | string | `admin` | 템플릿 타입 (admin: 관리자용, user: 사용자용) |
 | status | string | `active` | 상태 (active: 활성화, inactive: 비활성화, installing: 설치 중, uninstalling: 제거 중, updating: 업데이트 중) |
 | description | string | `그누보드7 기본 관리자 템플릿` | 템플릿 설명 (다국어 JSON) |
-| dependencies | object | `{"modules":[],"plugins":[]}` | 의존하는 확장 맵 (manifest 파생 — {modules, plugins}) |
+| dependencies | object | `{"modules":[],"plugins":[]}` | 의존하는 확장 맵 (manifest 파생 — {modules, plugins}). 각 항목은 `{identifier, name, type}` 이고 `name` 은 항상 문자열이다 — 미설치이거나 이름이 비어 있으면 식별자 |
 | dependencies_met | boolean | `true` | 의존하는 모듈/플러그인이 모두 설치·활성 상태로 충족되었는지 여부 (activate 선행 검사 파생) |
 | icon_url | string\|null | `/api/extensions/template/sirsoft-admin_basic/icon?v=1.1.0` | 확장 아이콘을 내려받는 공개 주소 (없으면 null — 화면은 유형 글리프로 대체). `?v=` 는 캐시 무효화용 버전 |
 | icon_source | string | `convention` | 아이콘을 어디서 얻었는지 (`manifest` 선언 · `convention` 관례 파일 · `none` 없음) |
@@ -95034,7 +95034,7 @@ _단건 응답: `data` 객체의 필드._
 
 <!-- @generated:end -->
 
-**설명** 업데이트 전 사용자가 수정한 레이아웃이 있는지 확인합니다(TemplateService::checkModifiedLayouts). 업데이트 시 레이아웃 전략(overwrite/keep) 선택의 참고 자료로 사용합니다. `core.templates.read` 권한이 필요합니다.
+**설명** 업데이트 전 사용자가 수정한 레이아웃이 있는지 확인합니다(TemplateService::checkModifiedLayouts). 업데이트 시 레이아웃 전략(overwrite/keep) 선택의 참고 자료로 사용합니다. 목록 항목의 `kind` 는 `layout`(레이아웃·오버라이드) 또는 `extension`(확장 조각), 「수정됨」 판정은 원본과의 정규화 비교(키 순서·빈 map 차이 무시)입니다. `core.templates.read` 권한이 필요합니다.
 
 
 ### DELETE /api/admin/templates/{templateName}/custom-translations
@@ -97339,7 +97339,7 @@ _단건 응답: `data` 객체의 필드._
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
 | templateName | path | string | 예 | — | 대상 template의 이름 (식별자) |
-| layout_strategy | body | string | 아니오 | `overwrite`, `keep` | 업데이트 시 레이아웃 처리 전략 (overwrite: 새 파일로 전면 교체, keep: 사용자 수정 레이아웃 유지) |
+| layout_strategy | body | string | 아니오 | `overwrite`, `keep` | 업데이트 시 레이아웃 처리 전략 (overwrite: 새 파일로 전면 교체, keep: 운영자 수정본에 새 버전 3자 병합) |
 | force | body | boolean | 아니오 | — | 강제 실행 여부 (안전 확인/선행 검사 우회) |
 
 > 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.template.perform_update_validation_rules`).
@@ -97442,7 +97442,7 @@ _업데이트할 내용이 없거나 템플릿 정보를 다시 읽지 못한 �
 
 <!-- @generated:end -->
 
-**설명** 설치된 템플릿을 최신 버전으로 업데이트합니다. `layout_strategy`(overwrite: 레이아웃 전면 교체 / keep: 사용자 수정 레이아웃 유지)로 레이아웃 처리 방식을 결정하며, `force`로 강제 진행할 수 있습니다(TemplateService::performVersionUpdate). `core.templates.install` 권한이 필요합니다. `keep` 을 지정하면 사용자가 수정한 레이아웃(원본 해시와 현재 내용이 다른 레이아웃)은 갱신 대상에서 제외되어 현재 내용이 그대로 유지되고, 나머지 레이아웃만 파일 기준으로 갱신됩니다. 성공 응답 메시지에는 대상 식별자와 적용된 버전이 채워집니다. 업데이트할 것이 없으면(현재 버전이 최신) 200 으로 응답하되 메시지는 `templates.no_update_available`(「업데이트할 내용이 없습니다」)입니다. 같은 템플릿의 업데이트는 한 번에 하나만 수행되며, 진행 중에 들어온 요청(버튼 연속 클릭 등)은 아무 단계도 거치지 않고 409 로 거절됩니다.
+**설명** 설치된 템플릿을 최신 버전으로 업데이트합니다. `layout_strategy`(overwrite: 레이아웃 전면 교체 / keep: 운영자 수정본에 새 버전 3자 병합)로 레이아웃 처리 방식을 결정하며, `force`로 강제 진행할 수 있습니다(TemplateService::performVersionUpdate). `core.templates.install` 권한이 필요합니다. `keep` 을 지정하면 운영자가 수정한 레이아웃·확장 조각에 새 버전을 3자 병합합니다 — 고친 부분(조각·최상위 키·data_sources 항목 단위)은 운영자 것, 손대지 않은 부분은 새 버전이고, 같은 곳을 양쪽이 고쳤으면 운영자 것을 남깁니다. 운영자가 고치지 않은 레이아웃은 파일 기준으로 갱신됩니다. 보고할 행이 있으면 성공 메시지 뒤에 「레이아웃: 새 버전 변경 N곳 자동 반영, 운영자 수정과 겹친 M곳은 운영자 것 유지.」 요약이 붙고, 응답 `data.layout_sync` 에 `{strategy, applied_count, conflict_count, kept_no_base_count, kept_removed_count, kept_deleted_by_operator_count, kept_name_collision_count, kept_invalid_count, modified_count, entries[{kind, template, name, verdict, applied, conflicts}]}` 가 실립니다(규칙: docs/extension/extension-update-system.md §10). 성공 응답 메시지에는 대상 식별자와 적용된 버전이 채워집니다. 업데이트할 것이 없으면(현재 버전이 최신) 200 으로 응답하되 메시지는 `templates.no_update_available`(「업데이트할 내용이 없습니다」)입니다. 같은 템플릿의 업데이트는 한 번에 하나만 수행되며, 진행 중에 들어온 요청(버튼 연속 클릭 등)은 아무 단계도 거치지 않고 409 로 거절됩니다.
 
 
 ### GET /api/templates/assets/{identifier}
@@ -97714,7 +97714,7 @@ _단건 응답: `data` 객체의 필드._
 | author | object | `{"name":"sirsoft","email":"contact@sirsoft.com","url":"ht…` | 작성자 사용자 객체 (uuid/name — author 관계 파생) |
 | release_date | string | `2026-05-15` | 배포일 |
 | g7_version | string | `>=7.0.0` | 요구하는 코어 최소 버전 (manifest requires.g7_version) |
-| dependencies | object | `{"modules":[],"plugins":[]}` | 의존하는 확장 맵 (manifest 파생 — {modules, plugins}) |
+| dependencies | object | `{"modules":[],"plugins":[]}` | 의존하는 확장 맵 (manifest 파생 — {modules, plugins}). 각 항목은 `{identifier, name, type}` 이고 `name` 은 항상 문자열이다 — 미설치이거나 이름이 비어 있으면 식별자 |
 | assets | object | `{"css":["assets\/css\/main.css","assets\/css\/ui-system.c…` | 프론트엔드 에셋 매니페스트 (manifest 파생 — js/css 진입점·로딩 전략) |
 | components | object | `{"basic":["a","button","checkbox","div","form","h1","h2",…` | 컴포넌트 트리 (레이아웃이 렌더할 컴포넌트 정의) |
 | preview | object | `{"thumbnail":"preview\/thumbnail.png","screenshots":["pre…` | 미리보기 정보 객체 |

@@ -311,7 +311,7 @@ return [
             'latest_version' => '최신 버전: :version',
             'update_source' => '업데이트 소스: :source',
             'layout_strategy' => '레이아웃 전략: :strategy',
-            'modified_layouts_warning' => '수정된 레이아웃 :count개가 덮어씌워집니다:',
+            'modified_layouts_warning' => '관리자가 수정한 레이아웃·확장 조각 :count개가 덮어씌워집니다:',
             'modified_layout_item' => '  - :name (수정일: :date)',
             'confirm_question' => '업데이트를 진행하시겠습니까?',
             'aborted' => '업데이트가 취소되었습니다.',

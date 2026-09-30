@@ -30,6 +30,11 @@ class LayoutVersionRepositoryTest extends TestCase
 
     private TemplateLayout $layout;
 
+    /**
+     * 저장소와 테스트용 템플릿·레이아웃을 준비한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -41,6 +46,10 @@ class LayoutVersionRepositoryTest extends TestCase
 
     /**
      * saveVersion 메서드 테스트 - 첫 번째 버전
+     *
+     * @effects layout_version_repository_behavior_unchanged_after_trait_extraction
+     *
+     * @return void 반환값 없음
      */
     public function test_save_version_creates_first_version(): void
     {
@@ -64,6 +73,10 @@ class LayoutVersionRepositoryTest extends TestCase
 
     /**
      * saveVersion 메서드 테스트 - 버전 자동 증가
+     *
+     * @effects layout_version_repository_behavior_unchanged_after_trait_extraction
+     *
+     * @return void 반환값 없음
      */
     public function test_save_version_auto_increments_version_number(): void
     {
@@ -90,6 +103,10 @@ class LayoutVersionRepositoryTest extends TestCase
 
     /**
      * getVersions 메서드 테스트 - 최신순 정렬
+     *
+     * @effects layout_version_repository_behavior_unchanged_after_trait_extraction
+     *
+     * @return void 반환값 없음
      */
     public function test_get_versions_returns_latest_first(): void
     {
@@ -120,6 +137,10 @@ class LayoutVersionRepositoryTest extends TestCase
 
     /**
      * getVersions 메서드 테스트 - 빈 결과
+     *
+     * @effects layout_version_repository_behavior_unchanged_after_trait_extraction
+     *
+     * @return void 반환값 없음
      */
     public function test_get_versions_returns_empty_collection_when_no_versions(): void
     {
@@ -133,6 +154,10 @@ class LayoutVersionRepositoryTest extends TestCase
 
     /**
      * getVersion 메서드 테스트 - 성공
+     *
+     * @effects layout_version_repository_behavior_unchanged_after_trait_extraction
+     *
+     * @return void 반환값 없음
      */
     public function test_get_version_returns_specific_version(): void
     {
@@ -153,6 +178,10 @@ class LayoutVersionRepositoryTest extends TestCase
 
     /**
      * getVersion 메서드 테스트 - 존재하지 않는 버전
+     *
+     * @effects layout_version_repository_behavior_unchanged_after_trait_extraction
+     *
+     * @return void 반환값 없음
      */
     public function test_get_version_returns_null_when_not_found(): void
     {
@@ -165,6 +194,10 @@ class LayoutVersionRepositoryTest extends TestCase
 
     /**
      * getNextVersion 메서드 테스트 - 버전이 없을 때
+     *
+     * @effects layout_version_repository_behavior_unchanged_after_trait_extraction
+     *
+     * @return void 반환값 없음
      */
     public function test_get_next_version_returns_one_when_no_versions(): void
     {
@@ -177,6 +210,10 @@ class LayoutVersionRepositoryTest extends TestCase
 
     /**
      * getNextVersion 메서드 테스트 - 기존 버전이 있을 때
+     *
+     * @effects layout_version_repository_behavior_unchanged_after_trait_extraction
+     *
+     * @return void 반환값 없음
      */
     public function test_get_next_version_returns_max_plus_one(): void
     {
@@ -205,6 +242,10 @@ class LayoutVersionRepositoryTest extends TestCase
 
     /**
      * 다른 레이아웃의 버전은 영향을 주지 않는지 테스트
+     *
+     * @effects layout_version_repository_behavior_unchanged_after_trait_extraction
+     *
+     * @return void 반환값 없음
      */
     public function test_versions_are_isolated_by_layout(): void
     {
@@ -232,6 +273,8 @@ class LayoutVersionRepositoryTest extends TestCase
      * 대비 라인 단위로 정확히 갱신되는지 검증한다. 첫 버전은 baseline(빈 요약).
      *
      * @effects changes_summary_recalculated_for_existing_versions
+     *
+     * @return void 반환값 없음
      */
     public function test_recalculate_all_change_summaries_fixes_stale_summaries(): void
     {
@@ -292,6 +335,10 @@ class LayoutVersionRepositoryTest extends TestCase
      * 없는가? 복원은 복원 대상 버전의 content 를 레이아웃에 그대로 적용하고, changes_summary
      * 는 결과로 새로 계산할 뿐 복원 입력으로 읽지 않는다. 따라서 카운트 구조여도 복원된
      * content 가 정확하고, 새 버전의 changes_summary 는 카운트(정수)로 기록된다.
+     *
+     * @effects layout_version_repository_behavior_unchanged_after_trait_extraction
+     *
+     * @return void 반환값 없음
      */
     public function test_restore_version_restores_content_regardless_of_summary_structure(): void
     {
@@ -322,6 +369,10 @@ class LayoutVersionRepositoryTest extends TestCase
 
     /**
      * saveVersion 연속 호출 테스트
+     *
+     * @effects layout_version_repository_behavior_unchanged_after_trait_extraction
+     *
+     * @return void 반환값 없음
      */
     public function test_save_version_sequential_calls(): void
     {
@@ -349,6 +400,10 @@ class LayoutVersionRepositoryTest extends TestCase
      *
      * changes_summary 는 버전 비교 diff 뷰(프론트 lineDiff.ts)와 동일한 "라인" 단위로
      * 센다. 키 2개 추가 = pretty JSON 라인 2줄 추가(스칼라 값 키는 1키=1줄).
+     *
+     * @effects changes_summary_uses_line_lcs_unit_matching_diff_view
+     *
+     * @return void 반환값 없음
      */
     public function test_calculate_changes_counts_added_lines(): void
     {
@@ -363,6 +418,10 @@ class LayoutVersionRepositoryTest extends TestCase
 
     /**
      * calculateChanges 라인 단위 측정 - 키 삭제
+     *
+     * @effects changes_summary_uses_line_lcs_unit_matching_diff_view
+     *
+     * @return void 반환값 없음
      */
     public function test_calculate_changes_counts_removed_lines(): void
     {
@@ -380,6 +439,10 @@ class LayoutVersionRepositoryTest extends TestCase
      *
      * 라인 diff 에는 "수정" 개념이 없다 — 값이 바뀐 키는 옛 라인 삭제 + 새 라인 추가로
      * 나타난다(diff 뷰의 -/+ 와 동일). 스칼라 값 2개 변경 = removed 2 + added 2.
+     *
+     * @effects changes_summary_uses_line_lcs_unit_matching_diff_view
+     *
+     * @return void 반환값 없음
      */
     public function test_calculate_changes_value_change_is_remove_plus_add(): void
     {
@@ -394,6 +457,10 @@ class LayoutVersionRepositoryTest extends TestCase
 
     /**
      * calculateChanges 라인 단위 측정 - 변경 없음
+     *
+     * @effects changes_summary_uses_line_lcs_unit_matching_diff_view
+     *
+     * @return void 반환값 없음
      */
     public function test_calculate_changes_no_changes_yields_empty(): void
     {
@@ -411,6 +478,10 @@ class LayoutVersionRepositoryTest extends TestCase
      * calculateChanges 라인 단위 측정 - 키 순서 무관 동일성
      *
      * 키 정렬 직렬화이므로 같은 내용·다른 키순은 변경 없음으로 본다(노이즈 diff 방지).
+     *
+     * @effects changes_summary_uses_line_lcs_unit_matching_diff_view
+     *
+     * @return void 반환값 없음
      */
     public function test_calculate_changes_ignores_key_order(): void
     {
@@ -428,6 +499,10 @@ class LayoutVersionRepositoryTest extends TestCase
      *
      * 중첩 객체가 추가되면 그 객체의 모든 라인(여는/닫는 중괄호 포함)이 added 로 집계된다.
      * 키 경로 단위가 아니라 라인 단위이므로 구조 문자도 센다(diff 뷰와 동일).
+     *
+     * @effects changes_summary_uses_line_lcs_unit_matching_diff_view
+     *
+     * @return void 반환값 없음
      */
     public function test_calculate_changes_counts_nested_object_addition_lines(): void
     {
@@ -444,6 +519,10 @@ class LayoutVersionRepositoryTest extends TestCase
 
     /**
      * calculateChanges 라인 단위 측정 - 대용량 JSON 성능
+     *
+     * @effects changes_summary_memory_bounded_for_full_span_change
+     *
+     * @return void 반환값 없음
      */
     public function test_calculate_changes_performance_with_large_json(): void
     {
@@ -475,6 +554,10 @@ class LayoutVersionRepositoryTest extends TestCase
      * calculateChanges 라인 단위 측정 - 스칼라→배열 타입 변경
      *
      * 스칼라 1줄 삭제 + 배열 여러 줄 추가로 나타난다.
+     *
+     * @effects changes_summary_uses_line_lcs_unit_matching_diff_view
+     *
+     * @return void 반환값 없음
      */
     public function test_calculate_changes_scalar_to_array(): void
     {
@@ -496,6 +579,8 @@ class LayoutVersionRepositoryTest extends TestCase
      * 정확히 일치한다. 종전 키 경로 단위는 인덱스 1개만 세어(`children.1`) 불일치했다.
      *
      * @effects changes_summary_uses_line_lcs_unit_matching_diff_view
+     *
+     * @return void 반환값 없음
      */
     public function test_calculate_changes_list_element_removed_matches_diff_lines(): void
     {
@@ -520,6 +605,10 @@ class LayoutVersionRepositoryTest extends TestCase
      * 앞에 객체 1개를 삽입해도 뒤 요소는 인덱스만 밀릴 뿐 라인 내용이 동일하므로 삽입된
      * 객체 라인만 added 로 집계된다(밀린 요소 오판 없음). 종전 키 경로 단위는 인덱스
      * 밀림을 modified 로 오판했다.
+     *
+     * @effects changes_summary_uses_line_lcs_unit_matching_diff_view
+     *
+     * @return void 반환값 없음
      */
     public function test_calculate_changes_list_element_inserted_matches_diff_lines(): void
     {
@@ -545,6 +634,10 @@ class LayoutVersionRepositoryTest extends TestCase
      *
      * list 중간 요소의 필드 1개만 바뀌면 그 라인 1줄만 삭제+추가된다(앞뒤 동일 요소 영향
      * 없음). diff 뷰와 동일하게 -1/+1 로 표현된다.
+     *
+     * @effects changes_summary_uses_line_lcs_unit_matching_diff_view
+     *
+     * @return void 반환값 없음
      */
     public function test_calculate_changes_list_element_field_change_matches_diff_lines(): void
     {
@@ -569,6 +662,10 @@ class LayoutVersionRepositoryTest extends TestCase
      * getNextVersion 테스트 - 10 이상 버전에서 올바른 정렬 확인
      *
      * varchar 타입에서는 max('9') > max('10')으로 잘못 계산되던 버그 수정 확인
+     *
+     * @effects layout_version_repository_behavior_unchanged_after_trait_extraction
+     *
+     * @return void 반환값 없음
      */
     public function test_get_next_version_handles_double_digit_versions_correctly(): void
     {
@@ -591,6 +688,10 @@ class LayoutVersionRepositoryTest extends TestCase
      * getVersions 테스트 - 10 이상 버전에서 올바른 정렬 확인
      *
      * varchar 타입에서는 '9' > '10' > '11' 순으로 잘못 정렬되던 버그 수정 확인
+     *
+     * @effects layout_version_repository_behavior_unchanged_after_trait_extraction
+     *
+     * @return void 반환값 없음
      */
     public function test_get_versions_sorts_double_digit_versions_correctly(): void
     {
@@ -616,6 +717,10 @@ class LayoutVersionRepositoryTest extends TestCase
 
     /**
      * saveVersion 테스트 - 10번째 버전 이후에도 정상 저장
+     *
+     * @effects layout_version_repository_behavior_unchanged_after_trait_extraction
+     *
+     * @return void 반환값 없음
      */
     public function test_save_version_works_after_version_10(): void
     {
@@ -643,6 +748,10 @@ class LayoutVersionRepositoryTest extends TestCase
 
     /**
      * getCurrentVersionsByTemplateId — 레이아웃별 최신 버전 맵
+     *
+     * @effects editor_routes_response_includes_layout_versions_map
+     *
+     * @return void 반환값 없음
      */
     public function test_get_current_versions_by_template_id_returns_latest_version_map(): void
     {
@@ -681,6 +790,10 @@ class LayoutVersionRepositoryTest extends TestCase
 
     /**
      * getCurrentVersionsByTemplateId — 이력이 전무하면 빈 맵
+     *
+     * @effects layout_versions_map_only_contains_layouts_with_history
+     *
+     * @return void 반환값 없음
      */
     public function test_get_current_versions_by_template_id_returns_empty_when_no_history(): void
     {
@@ -692,6 +805,10 @@ class LayoutVersionRepositoryTest extends TestCase
     /**
      * saveVersion 은 인증 사용자를 created_by 로 기록한다 — 종전엔 항상 NULL 이라 버전 목록의
      * 저장자가 「알 수 없음」으로만 표시됐다.
+     *
+     * @effects version_resource_exposes_creator_name_not_id
+     *
+     * @return void 반환값 없음
      */
     public function test_save_version_records_authenticated_user_as_creator(): void
     {
@@ -706,6 +823,10 @@ class LayoutVersionRepositoryTest extends TestCase
     /**
      * restoreVersion 은 레이아웃 lock_version 을 올린다 — 복원 직전 화면을 열어 둔 다른 편집기가
      * 복원 결과를 409 없이 덮지 못하게 한다.
+     *
+     * @effects layout_version_repository_behavior_unchanged_after_trait_extraction
+     *
+     * @return void 반환값 없음
      */
     public function test_restore_version_increments_layout_lock_version(): void
     {
@@ -724,5 +845,32 @@ class LayoutVersionRepositoryTest extends TestCase
         $this->layout->refresh();
         $this->assertSame(5, (int) $this->layout->lock_version);
         $this->assertEquals(['components' => []], $this->layout->content);
+    }
+
+    /**
+     * saveVersion 의 부가 요약(병합 출처)은 계산된 카운트와 함께 저장되고, 재계산은 카운트만 다시 쓴다 (#727).
+     *
+     * @effects version_history_marks_extension_update_rows
+     *
+     * @return void 반환값 없음
+     */
+    public function test_summary_extra_is_saved_and_preserved_by_recalculation(): void
+    {
+        $this->repository->saveVersion($this->layout->id, ['a' => 1], null);
+        $version = $this->repository->saveVersion($this->layout->id, ['a' => 2], ['a' => 1], null, [
+            'source' => 'extension_update',
+            'applied' => [['unit' => 'key:a', 'kind' => 'key']],
+            'conflicts' => [],
+        ]);
+
+        $this->assertSame('extension_update', $version->changes_summary['source']);
+        $this->assertArrayHasKey('added', $version->changes_summary);
+
+        $this->repository->recalculateAllChangeSummaries();
+
+        $summary = $version->fresh()->changes_summary;
+        $this->assertSame('extension_update', $summary['source']);
+        $this->assertSame([['unit' => 'key:a', 'kind' => 'key']], $summary['applied']);
+        $this->assertArrayHasKey('char_diff', $summary);
     }
 }

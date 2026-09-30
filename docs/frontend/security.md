@@ -55,7 +55,7 @@
 | JSON 구조 | ValidLayoutStructure | 필수 필드, 깊이 10단계 제한, 타입 검증 |
 | 컴포넌트 | ComponentExists | components.json 매니페스트 대조 |
 | API 엔드포인트 | WhitelistedEndpoint | `/api/(admin\|auth\|public)/` 패턴만 허용 |
-| 외부 URL | NoExternalUrls | http, data, javascript 등 7개 위험 스킴 차단. 사이트 자기 host·선언된 공개 자산 디스크 host 의 http(s) 절대 URL 은 외부가 아니다(서버가 발급하는 첨부 주소) |
+| 외부 URL | NoExternalUrls | http, data, javascript 등 7개 위험 스킴 차단. 사이트 자기 host·선언된 공개 자산 디스크 host 의 http(s) 절대 URL 은 외부가 아니다(서버가 발급하는 첨부 주소). 컴포넌트 prop 의 입력 안내 문구(`placeholder`)·링크(`href`)와 액션 요청 본문(`params.body`)은 http(s) 웹 주소 허용(실행 스킴·`//`·`ftp:` 는 차단, 자리로 판정). 확장 조각 `injections[].components`·`props` 도 같은 규칙 |
 | 상속 | ValidParentLayout | 순환 참조 방지, 상속 깊이 10 제한 |
 | 슬롯 | ValidSlotStructure | 부모에서 정의된 슬롯만 허용 |
 | 데이터소스 | ValidDataSourceMerge | 상속 체인 ID 고유성 |

@@ -48,7 +48,6 @@ class BoardTypeSeeder extends Seeder implements TranslatableSeederInterface
     public function run(): void
     {
         $helper = app(GenericEntitySyncHelper::class);
-        $definedSlugs = [];
 
         foreach ($this->resolveTranslatedDefaults() as $boardTypeData) {
             $existing = BoardType::where('slug', $boardTypeData['slug'])->exists();
@@ -58,7 +57,6 @@ class BoardTypeSeeder extends Seeder implements TranslatableSeederInterface
                 ['slug' => $boardTypeData['slug']],
                 ['name' => $boardTypeData['name']],
             );
-            $definedSlugs[] = $boardTypeData['slug'];
 
             if ($existing) {
                 $this->command->info("  게시판 유형 '{$boardTypeData['slug']}' 동기화 (사용자 수정 보존).");
@@ -67,9 +65,9 @@ class BoardTypeSeeder extends Seeder implements TranslatableSeederInterface
             }
         }
 
-        $deleted = $helper->cleanupStale(BoardType::class, [], 'slug', $definedSlugs);
-        if ($deleted > 0) {
-            $this->command->warn("  stale 게시판 유형 {$deleted}건 삭제");
-        }
+        // stale 정리는 하지 않는다 — 이 표는 운영자가 「유형 추가」 로 직접 유형을 만드는 표인데, 운영자 행을 가를
+        // 표식(created_by 등)이 없어 "선언에 없는 slug" 를 지우면 운영자 유형까지 사라진다. 이 시더는 언어팩을 켜고
+        // 끌 때마다 다시 돌기 때문에 그 삭제가 흔적 없이 반복됐다(#727 D5-④). 선언 유형(basic·gallery·card)을
+        // 앞으로 없앨 일이 생기면 그 버전의 업그레이드 스텝이 명시적으로 처리한다.
     }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands\Core;
 
+use App\Console\Commands\Traits\RendersLayoutSyncResult;
 use App\Extension\ExtensionManager;
 use App\Extension\ModuleManager;
 use App\Extension\PluginManager;
@@ -44,6 +45,8 @@ use Illuminate\Support\Facades\Log;
  */
 class ExecuteBundledUpdatesCommand extends Command
 {
+    use RendersLayoutSyncResult;
+
     public const RESULT_PREFIX = '[BUNDLED-RESULT] ';
 
     protected $signature = 'core:execute-bundled-updates
@@ -53,11 +56,16 @@ class ExecuteBundledUpdatesCommand extends Command
 
     protected $description = '번들 확장 일괄 업데이트를 실행합니다 (CoreUpdateCommand 내부용 — fresh PHP 프로세스에서 호출)';
 
+    /**
+     * 매니페스트를 읽어 번들 확장·언어팩을 일괄 업데이트하고 결과 페이로드를 출력한다.
+     *
+     * @return int 매니페스트 누락 시 INVALID, 판독 실패 또는 1건 이상 실패 시 FAILURE, 전부 성공 시 SUCCESS
+     */
     public function handle(): int
     {
         $manifestPath = (string) $this->option('manifest');
         if ($manifestPath === '' || ! File::isFile($manifestPath)) {
-            $this->error('--manifest 옵션이 필수이며 존재하는 파일이어야 합니다.');
+            $this->error(__('extensions.commands.bundled_update.manifest_required'));
 
             return self::INVALID;
         }
@@ -76,7 +84,7 @@ class ExecuteBundledUpdatesCommand extends Command
 
         $manifest = json_decode(File::get($manifestPath), true);
         if (! is_array($manifest)) {
-            $this->error('매니페스트 JSON 파싱 실패: '.$manifestPath);
+            $this->error(__('extensions.commands.bundled_update.manifest_parse_failed', ['path' => $manifestPath]));
 
             return self::FAILURE;
         }
@@ -97,7 +105,7 @@ class ExecuteBundledUpdatesCommand extends Command
         $success = 0;
         $failed = 0;
 
-        $this->info('── 번들 일괄 업데이트 실행 (spawn child) ──');
+        $this->info(__('extensions.commands.bundled_update.child_running'));
 
         foreach ($modules as $entry) {
             $id = (string) ($entry['identifier'] ?? '');
@@ -105,13 +113,14 @@ class ExecuteBundledUpdatesCommand extends Command
             if ($id === '') {
                 continue;
             }
-            $this->line("→ [모듈] {$id} ({$strategy})");
+            $this->line(__('extensions.commands.bundled_update.running_items.module', ['identifier' => $id, 'strategy' => $strategy]));
             try {
-                $moduleManager->updateModule($id, true, null, VendorMode::Auto, $strategy, null, 'bundled');
+                $result = $moduleManager->updateModule($id, true, null, VendorMode::Auto, $strategy, null, 'bundled');
+                $this->lineLayoutSyncSummary($result);
                 $success++;
             } catch (\Throwable $e) {
                 $failed++;
-                $this->warn("  실패: {$e->getMessage()}");
+                $this->warn(__('extensions.commands.bundled_update.item_failed', ['message' => $e->getMessage()]));
                 Log::error('번들 일괄 업데이트 실패 (spawn)', ['type' => 'module', 'id' => $id, 'error' => $e->getMessage()]);
             }
         }
@@ -122,13 +131,14 @@ class ExecuteBundledUpdatesCommand extends Command
             if ($id === '') {
                 continue;
             }
-            $this->line("→ [플러그인] {$id} ({$strategy})");
+            $this->line(__('extensions.commands.bundled_update.running_items.plugin', ['identifier' => $id, 'strategy' => $strategy]));
             try {
-                $pluginManager->updatePlugin($id, true, null, VendorMode::Auto, $strategy, null, 'bundled');
+                $result = $pluginManager->updatePlugin($id, true, null, VendorMode::Auto, $strategy, null, 'bundled');
+                $this->lineLayoutSyncSummary($result);
                 $success++;
             } catch (\Throwable $e) {
                 $failed++;
-                $this->warn("  실패: {$e->getMessage()}");
+                $this->warn(__('extensions.commands.bundled_update.item_failed', ['message' => $e->getMessage()]));
                 Log::error('번들 일괄 업데이트 실패 (spawn)', ['type' => 'plugin', 'id' => $id, 'error' => $e->getMessage()]);
             }
         }
@@ -139,13 +149,14 @@ class ExecuteBundledUpdatesCommand extends Command
             if ($id === '') {
                 continue;
             }
-            $this->line("→ [템플릿] {$id} ({$strategy})");
+            $this->line(__('extensions.commands.bundled_update.running_items.template', ['identifier' => $id, 'strategy' => $strategy]));
             try {
-                $templateManager->updateTemplate($id, true, null, $strategy, 'bundled');
+                $result = $templateManager->updateTemplate($id, true, null, $strategy, 'bundled');
+                $this->lineLayoutSyncSummary($result);
                 $success++;
             } catch (\Throwable $e) {
                 $failed++;
-                $this->warn("  실패: {$e->getMessage()}");
+                $this->warn(__('extensions.commands.bundled_update.item_failed', ['message' => $e->getMessage()]));
                 Log::error('번들 일괄 업데이트 실패 (spawn)', ['type' => 'template', 'id' => $id, 'error' => $e->getMessage()]);
             }
         }
@@ -155,7 +166,7 @@ class ExecuteBundledUpdatesCommand extends Command
             if ($id === '') {
                 continue;
             }
-            $this->line("→ [언어팩] {$id}");
+            $this->line(__('extensions.commands.bundled_update.running_items.lang_pack', ['identifier' => $id]));
             try {
                 $pack = $langPackService->findByIdentifier($id);
                 if (! $pack) {
@@ -165,19 +176,19 @@ class ExecuteBundledUpdatesCommand extends Command
                 $success++;
             } catch (\Throwable $e) {
                 $failed++;
-                $this->warn("  실패: {$e->getMessage()}");
+                $this->warn(__('extensions.commands.bundled_update.item_failed', ['message' => $e->getMessage()]));
                 Log::error('번들 일괄 업데이트 실패 (spawn)', ['type' => 'lang_pack', 'id' => $id, 'error' => $e->getMessage()]);
             }
         }
 
         $this->newLine();
-        $this->info("업데이트 완료: 성공 {$success}, 실패 {$failed}");
+        $this->info(__('extensions.commands.bundled_update.completed', ['success' => $success, 'failed' => $failed]));
 
         // 검색 인덱스 재생성 — 운영자가 부모 단계에서 선택했을 때만 수행 (인덱스 잠금·재색인 비용)
         if ($rebuildSearchIndex) {
             $report = app(SearchIndexMaintenanceManager::class)->repairStale();
             $this->newLine();
-            $this->info('검색 인덱스: '.$report->summary());
+            $this->info(__('extensions.commands.bundled_update.search_index_result', ['summary' => $report->summary()]));
 
             foreach ($report->failed as $identifier => $message) {
                 $this->warn('  '.__('search.index.rebuild_failed_item', ['index' => $identifier, 'error' => $message]));

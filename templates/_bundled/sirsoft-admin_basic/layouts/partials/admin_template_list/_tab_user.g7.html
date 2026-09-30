@@ -87,8 +87,8 @@
         iconUrl: p.icon_url,
         fallbackIcon: 'palette',
         dependencies: [
-          ...((p.dependencies?.modules ?? []).map(d => ({ type: 'module', name: d.name ?? d }))),
-          ...((p.dependencies?.plugins ?? []).map(d => ({ type: 'plugin', name: d.name ?? d })))
+          ...((p.dependencies?.modules ?? []).map(d => ({ type: 'module', name: d.name ?? d.identifier ?? d }))),
+          ...((p.dependencies?.plugins ?? []).map(d => ({ type: 'plugin', name: d.name ?? d.identifier ?? d })))
         ],
         badges: [
           ...(p.status === 'active' ? [{ label: '$t:admin.templates.status.active', tone: 'success' }] : []),

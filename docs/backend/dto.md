@@ -38,6 +38,7 @@ DTO 는 계층 간 데이터 전달용 객체로, **Eloquent 모델이 아닌 �
 | 위치 | 개수 | 패턴 | 용도 |
 |------|------|------|------|
 | `app/Extension/IdentityVerification/DTO/` | 2 | Value Object | 본인인증 challenge/result — provider 가 만들어 한 번 전달 |
+| `app/Extension/Layout/DTO/` | 2 | Value Object | 레이아웃 3자 병합 결과(`LayoutMergeResult`)·행별 동기화 결과(`LayoutSyncEntry`) — 병합기·동기화기가 만들어 보고서·활동 로그로 전달 (#727) |
 | `modules/_bundled/sirsoft-ecommerce/src/DTO/` | 21 | Data Carrier | 주문 9단계 계산 파이프라인 — 단계마다 변형/누적, 캐시·스냅샷 재구성 |
 
 ---

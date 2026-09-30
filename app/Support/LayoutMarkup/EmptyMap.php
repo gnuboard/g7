@@ -65,6 +65,49 @@ final class EmptyMap implements JsonSerializable
     }
 
     /**
+     * JSON 원문을 연관 배열로 디코드하되 빈 map(`{}`) 자리를 이 표식으로 되살립니다.
+     *
+     * `json_decode($json, true)` 는 `{}` 와 `[]` 를 모두 빈 배열로 만든다. 레이아웃 파일을 읽을 때뿐
+     * 아니라 DB 에 저장된 본문(편집기 저장본·원본 본문)을 다시 조립해 저장할 때도 같은 소실이 일어나므로,
+     * 판정 규칙을 한 곳에 둔다 — 같은 원문을 객체로도 디코드해 빈 객체였던 자리만 표식으로 바꾼다.
+     *
+     * @param  string  $json  JSON 원문
+     * @return mixed 디코드 결과 (빈 map 자리는 표식). 원문이 JSON 이 아니면 null
+     */
+    public static function decodePreserving(string $json): mixed
+    {
+        return self::restore(json_decode($json, true), json_decode($json));
+    }
+
+    /**
+     * 연관 배열 디코드가 잃은 빈 map 을 **객체 디코드 결과를 기준으로** 되살립니다.
+     *
+     * @param  mixed  $value  연관 배열로 디코드한 값
+     * @param  mixed  $shaped  같은 원문을 객체로 디코드한 값 (빈 map 이 stdClass 로 남는다)
+     * @return mixed 빈 map 자리가 표식으로 바뀐 값
+     */
+    private static function restore(mixed $value, mixed $shaped): mixed
+    {
+        if (is_array($value) && $value === [] && $shaped instanceof \stdClass) {
+            return self::instance();
+        }
+
+        if (! is_array($value)) {
+            return $value;
+        }
+
+        foreach ($value as $key => $item) {
+            $child = is_array($shaped)
+                ? ($shaped[$key] ?? null)
+                : ($shaped instanceof \stdClass ? ($shaped->{(string) $key} ?? null) : null);
+
+            $value[$key] = self::restore($item, $child);
+        }
+
+        return $value;
+    }
+
+    /**
      * `json_encode` 가 `{}` 를 내도록 빈 객체로 직렬화합니다.
      *
      * @return object 빈 객체

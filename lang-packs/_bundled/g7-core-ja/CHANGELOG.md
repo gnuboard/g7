@@ -8,6 +8,9 @@
 
 ### Added
 
+- 확장 업데이트 명령어(`module:update`·`plugin:update`·`template:update`·번들 일괄 업데이트)의 터미널 안내 문구와 설치·업데이트·제거 진행 문구의 일본어 번역을 추가했습니다(`extensions.commands.update.*`·`extensions.commands.bundled_update.*`·`extensions.progress.*`, 71키).
+- 拡張を「修正を維持」で更新したときのレイアウト処理結果(更新完了通知の要約・CLI の結果表・アクティビティログの変更内容)の日本語訳を追加しました。
+
 - 활동 로그 행위자 라벨 「システム(CLI)」 일본어 번역을 추가했습니다(`common.system_cli`). Artisan 커맨드·스케줄러가 남긴 활동 로그의 행위자 칸에 쓰이며, 없으면 일본어 로케일에서 이 라벨만 한국어로 보입니다.
 - 활동 로그 목록 「동작」 칸의 방문자 통계 운영 행위 라벨 일본어 번역을 추가했습니다(`activity_log.action.analytics.*` 9종). 없으면 동작 칸에 `analytics.extension_purged` 같은 원문 키가 보입니다.
 - 켜진 확장이 의존하는 모듈·플러그인을 제거하려 할 때의 거절 문구 일본어 번역을 추가했습니다(`modules.errors.uninstall_blocked_by_dependents`·`plugins.errors.uninstall_blocked_by_dependents`). 없으면 일본어 로케일에서 제거가 막힐 때 이 안내만 한국어로 보입니다.
@@ -102,6 +105,8 @@
   추이 요청의 「項目」 항목명의 일본어 문구를 채웠습니다.
 
 ### Changed
+
+- モジュール・プラグイン・テンプレート更新時の上書き警告文を、レイアウトと拡張フラグメントの両方を指す表現に変更しました。
 
 - 휴면을 가리키는 일본어 낱말을 「休眠」 하나로 맞췄습니다 — 회원 상태 라벨(`user.status.dormant`), 휴면 전환·해제·자동 탈퇴 활동 로그 문구(`activity_log.action.dormant_*`·`activity_log.description.user_dormant_*`), 환경설정 > 개인정보의 검증 문구와 항목명(`validation.settings.privacy_dormant_*`·`validation.attributes.privacy_dormant_*`)이 「休止」였습니다. 알림 시드와 `auth.account_dormant` 는 이미 「休眠」이라, 일본어 회원이 메일로는 「休眠アカウントに転換されました」를 받고 화면에서는 「休止中」을 보는 상태였습니다. 휴면은 법정 사전 안내가 붙는 흐름이라, 받은 고지와 화면 표시가 같은 낱말이어야 되돌릴 기회(로그인 한 번)를 놓치지 않습니다.
 

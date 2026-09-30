@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\Admin;
 use App\Enums\LanguagePackScope;
 use App\Exceptions\ExtensionOperationInProgressException;
 use App\Exceptions\ModuleOperationException;
+use App\Extension\Layout\LayoutSyncSummary;
 use App\Extension\Vendor\VendorMode;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use App\Http\Controllers\Concerns\InjectsExtensionLanguagePacks;
@@ -30,6 +31,7 @@ use App\Services\ModuleService;
 use App\Services\TemplateService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -586,10 +588,19 @@ class ModuleController extends AdminBaseController
                 'version' => (string) ($result['to_version'] ?? data_get($moduleInfo, 'version') ?? ''),
             ];
 
+            // 레이아웃 처리 결과(D2) — 운영자가 고친 화면이 있으면 성공 문구 뒤에 요약 한 줄, data.layout_sync 에 상세.
+            $layoutSync = $result['layout_sync'] ?? null;
+            [$messageKey, $messageParams] = LayoutSyncSummary::messageFor($messageKey, $messageParams, $result);
+
             if ($moduleInfo) {
+                $data = (new ModuleResource($moduleInfo))->resolve($request);
+                if ($layoutSync !== null) {
+                    $data['layout_sync'] = $layoutSync;
+                }
+
                 return $this->successWithResource(
                     $messageKey,
-                    (new ModuleResource($moduleInfo))->additional(['search_index' => $searchIndex]),
+                    (new JsonResource($data))->additional(['search_index' => $searchIndex]),
                     200,
                     $messageParams
                 );

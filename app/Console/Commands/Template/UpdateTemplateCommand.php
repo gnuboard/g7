@@ -5,6 +5,7 @@ namespace App\Console\Commands\Template;
 use App\Console\Commands\Concerns\SelectsLayoutInstallSource;
 use App\Console\Commands\Traits\HasProgressBar;
 use App\Console\Commands\Traits\HasUnifiedConfirm;
+use App\Console\Commands\Traits\RendersLayoutSyncResult;
 use App\Contracts\Repositories\TemplateRepositoryInterface;
 use App\Extension\TemplateManager;
 use Illuminate\Console\Command;
@@ -14,6 +15,7 @@ class UpdateTemplateCommand extends Command
 {
     use HasProgressBar;
     use HasUnifiedConfirm;
+    use RendersLayoutSyncResult;
     use SelectsLayoutInstallSource;
 
     /**
@@ -34,6 +36,9 @@ class UpdateTemplateCommand extends Command
 
     /**
      * 템플릿 관리자 및 리포지토리
+     *
+     * @param  TemplateManager  $templateManager  템플릿 업데이트를 수행할 매니저
+     * @param  TemplateRepositoryInterface  $templateRepository  템플릿 설치 정보 조회 리포지토리
      */
     public function __construct(
         private TemplateManager $templateManager,
@@ -44,6 +49,8 @@ class UpdateTemplateCommand extends Command
 
     /**
      * Execute the console command.
+     *
+     * @return int 명령 실행 결과 코드 (Command::SUCCESS|Command::FAILURE)
      */
     public function handle(): int
     {
@@ -66,13 +73,13 @@ class UpdateTemplateCommand extends Command
         }
 
         if (! in_array($sourceOption, ['auto', 'bundled', 'github'], true)) {
-            $this->error('❌ --source 는 auto, bundled, github 중 하나여야 합니다.');
+            $this->error('❌ '.__('extensions.commands.update.invalid_source'));
 
             return Command::FAILURE;
         }
 
         if ($zipPath !== null && $sourceOption !== 'auto') {
-            $this->error('❌ --zip 은 --source 와 동시에 지정할 수 없습니다.');
+            $this->error('❌ '.__('extensions.commands.update.zip_source_conflict'));
 
             return Command::FAILURE;
         }
@@ -80,7 +87,7 @@ class UpdateTemplateCommand extends Command
         if ($zipPath !== null) {
             $resolvedZip = realpath($zipPath);
             if (! $resolvedZip || ! is_file($resolvedZip)) {
-                $this->error('❌ 지정된 ZIP 파일이 존재하지 않습니다: '.$zipPath);
+                $this->error('❌ '.__('extensions.commands.update.zip_not_found', ['path' => $zipPath]));
 
                 return Command::FAILURE;
             }
@@ -122,29 +129,15 @@ class UpdateTemplateCommand extends Command
                 }
             } else {
                 $this->info(__('templates.commands.update.current_version', ['version' => $template->version]));
-                $this->info('업데이트 소스: ZIP ('.$zipPath.')');
-                $this->info('업데이트 버전: (template.json 추출 후 판별)');
+                $this->info(__('extensions.commands.update.zip_source', ['path' => $zipPath]));
+                $this->info(__('extensions.commands.update.zip_version_pending', ['manifest' => 'template.json']));
             }
 
             $this->info(__('templates.commands.update.layout_strategy', ['strategy' => $layoutStrategy]));
 
-            // overwrite 전략일 때 수정된 레이아웃 경고
+            // overwrite 전략일 때 덮어쓰일 운영자 수정본 경고 — 레이아웃 + 확장 조각을 한 판정(isOperatorModified)으로 (§5.9)
             if ($layoutStrategy === 'overwrite') {
-                $modifiedResult = $this->templateManager->hasModifiedLayouts($identifier);
-
-                if ($modifiedResult['has_modified_layouts']) {
-                    $this->newLine();
-                    $this->warn('⚠️  '.__('templates.commands.update.modified_layouts_warning', [
-                        'count' => $modifiedResult['modified_count'],
-                    ]));
-
-                    foreach ($modifiedResult['modified_layouts'] as $layout) {
-                        $this->warn(__('templates.commands.update.modified_layout_item', [
-                            'name' => $layout['name'],
-                            'date' => $layout['updated_at'],
-                        ]));
-                    }
-                }
+                $this->warnModifiedLayoutsBeforeOverwrite($this->templateManager->hasModifiedLayouts($identifier), 'templates');
             }
 
             $this->newLine();
@@ -173,6 +166,9 @@ class UpdateTemplateCommand extends Command
                     'from' => $updateResult['from_version'],
                     'to' => $updateResult['to_version'],
                 ]));
+
+                // 레이아웃 처리 결과 (D2) — 운영자가 고친 화면이 있을 때만 표 + 요약 한 줄
+                $this->renderLayoutSyncResult($updateResult['layout_sync'] ?? null);
 
                 Log::info('템플릿 업데이트 완료', [
                     'template' => $identifier,

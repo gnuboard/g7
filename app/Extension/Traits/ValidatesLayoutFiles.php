@@ -3,9 +3,11 @@
 namespace App\Extension\Traits;
 
 use App\Exceptions\LayoutIncludeException;
+use App\Extension\Layout\BackupLayoutReader;
 use App\Support\LayoutMarkup\CompileError;
 use App\Support\LayoutMarkup\EmptyMap;
 use App\Support\LayoutMarkup\LayoutMarkupCompiler;
+use App\Support\LayoutMarkup\LayoutPartialOrigin;
 use App\Support\LayoutMarkup\MarkupCompileContextResolver;
 use App\Support\LayoutMarkup\NodeCompiler;
 use Illuminate\Support\Facades\File;
@@ -34,6 +36,25 @@ trait ValidatesLayoutFiles
     private static array $partialCompileCache = [];
 
     /**
+     * 조각 출처 표식을 남길 layouts 루트 — 설정돼 있을 때만 {@see resolvePartial()} 가 표식을 붙인다.
+     *
+     * {@see validateLayoutFiles()} 한 번 동안만 켠다. 다른 조각 해석 호출자(테스트 fixture 생성기 등)는
+     * 지금과 똑같은 결과를 받는다.
+     */
+    private ?string $partialOriginRoot = null;
+
+    /**
+     * 마크업 컴파일 문맥 강제 지정 — `['template' => 대상 템플릿|null, 'extension' => 소유 식별자|null]`.
+     *
+     * 컴파일 문맥(태그→컴포넌트 표·소유 확장)은 파일 경로에서 뽑는데, 업데이트 백업 경로
+     * (`storage/app/extension_backups/{type}/{id}_{Ymd_His}/…`)에서는 `{id}_{타임스탬프}` 가 뽑혀 표를 찾지
+     * 못한다. 백업을 다시 컴파일해 비교 기준을 만드는 읽기({@see BackupLayoutReader})만 채운다.
+     *
+     * @var array{template: string|null, extension: string|null}|null
+     */
+    protected ?array $compileContextOverride = null;
+
+    /**
      * 레이아웃 파일들을 검증합니다.
      *
      * @param  string  $layoutsPath  레이아웃 디렉토리 경로
@@ -46,12 +67,39 @@ trait ValidatesLayoutFiles
      */
     protected function validateLayoutFiles(string $layoutsPath, string $identifier, string $sourceType, bool $recursive = false): array
     {
+        if (! File::exists($layoutsPath)) {
+            return [];
+        }
+
+        // 조각 출처 표식은 이 검증 한 번 동안만 켠다 — 반환 항목의 `original` 에만 남고 `data` 에서는 걷힌다.
+        $previousRoot = $this->partialOriginRoot;
+        $this->partialOriginRoot = $this->getLayoutsBaseDirectory(rtrim($layoutsPath, '/\\').DIRECTORY_SEPARATOR.'_');
+
+        try {
+            return $this->validateLayoutFilesAnnotated($layoutsPath, $identifier, $sourceType, $recursive);
+        } finally {
+            $this->partialOriginRoot = $previousRoot;
+        }
+    }
+
+    /**
+     * {@see validateLayoutFiles()} 의 본문 — 조각 출처 표식이 켜진 상태에서 돈다.
+     *
+     * 반환 항목은 `file`·`data`·`layout_name` 에 더해 `original`(조각 출처 표식이 있는 판)을 싣는다.
+     * `data` 는 표식을 걷어낸 판이라 표식 도입 전과 바이트가 같다 — 서비스·편집기·해시는 `data` 만 본다.
+     *
+     * @param  string  $layoutsPath  레이아웃 디렉토리 경로
+     * @param  string  $identifier  소스 식별자
+     * @param  string  $sourceType  소스 타입
+     * @param  bool  $recursive  재귀 스캔 여부
+     * @return array<int, array{file: string, data: array<string, mixed>, original: array<string, mixed>, layout_name: string}> 검증된 레이아웃
+     *
+     * @throws \Exception 레이아웃 검증 실패 시
+     */
+    private function validateLayoutFilesAnnotated(string $layoutsPath, string $identifier, string $sourceType, bool $recursive): array
+    {
         $validatedLayouts = [];
         $errors = [];
-
-        if (! File::exists($layoutsPath)) {
-            return $validatedLayouts;
-        }
 
         // 레이아웃 소스 수집 — `.g7.html`(소스 SSoT · 있으면 우선) + 짝 `.g7.html` 이 없는 `.json`.
         // `.g7.html` 은 설치 시점에 메모리로 컴파일해 등록하고(디스크 산출 JSON 미기록), `.json` 은
@@ -135,6 +183,10 @@ trait ValidatesLayoutFiles
                 continue;
             }
 
+            // 조각 출처 표식이 있는 판(병합 기준 원본)과 걷어낸 판(서비스·해시)을 가른다.
+            $annotated = $layoutData;
+            $layoutData = LayoutPartialOrigin::strip($annotated);
+
             // data_sources ID 중복 검증 (현재 레이아웃 내부)
             $dataSourcesError = $this->validateDataSourceIds($layoutData['data_sources'] ?? [], $relativePath);
             if ($dataSourcesError) {
@@ -147,6 +199,7 @@ trait ValidatesLayoutFiles
             $validatedLayouts[] = [
                 'file' => $layoutFile,
                 'data' => $layoutData,
+                'original' => $annotated,
                 'layout_name' => $layoutName,
             ];
         }
@@ -468,7 +521,8 @@ trait ValidatesLayoutFiles
     protected function compileMarkupLayoutFile(string $markupFile): array
     {
         $resolver = new MarkupCompileContextResolver;
-        $registry = $resolver->registryFor($markupFile);
+        $templateOverride = $this->compileContextOverride['template'] ?? null;
+        $registry = $resolver->registryFor($markupFile, $templateOverride);
 
         if ($registry === null) {
             throw new \RuntimeException(__('exceptions.layout_markup.registry_not_found'));
@@ -477,7 +531,7 @@ trait ValidatesLayoutFiles
         $result = (new LayoutMarkupCompiler($registry))->compile(
             File::get($markupFile),
             $markupFile,
-            $resolver->contextFor($markupFile),
+            $resolver->contextFor($markupFile, $templateOverride, $this->compileContextOverride['extension'] ?? null),
         );
 
         return $result->json;
@@ -654,8 +708,14 @@ trait ValidatesLayoutFiles
 
             // 6. 로드된 데이터 내부의 partial도 재귀적으로 처리
             $newBasePath = dirname($absolutePath);
+            $resolved = $this->resolveAllPartials($data, $newBasePath, $depth + 1, $dataSources);
 
-            return $this->resolveAllPartials($data, $newBasePath, $depth + 1, $dataSources);
+            // 7. 조각 출처 표식 — 객체 루트 조각에만. 리스트 루트 조각은 부모 몸통의 일부로 취급한다.
+            if ($this->partialOriginRoot !== null && $resolved !== [] && ! array_is_list($resolved)) {
+                $resolved[LayoutPartialOrigin::KEY] = LayoutPartialOrigin::keyFor($absolutePath, $this->partialOriginRoot);
+            }
+
+            return $resolved;
         } finally {
             array_pop($this->partialStack);
         }
@@ -769,35 +829,7 @@ trait ValidatesLayoutFiles
      */
     private function decodeLayoutJson(string $json): mixed
     {
-        return $this->restoreEmptyMaps(json_decode($json, true), json_decode($json));
-    }
-
-    /**
-     * 연관 배열 디코드가 잃은 빈 map 을 **객체 디코드 결과를 기준으로** 되살립니다.
-     *
-     * @param  mixed  $value  연관 배열로 디코드한 값
-     * @param  mixed  $shaped  같은 원문을 객체로 디코드한 값 (빈 map 이 stdClass 로 남는다)
-     * @return mixed 빈 map 자리가 표식으로 바뀐 값
-     */
-    private function restoreEmptyMaps(mixed $value, mixed $shaped): mixed
-    {
-        if (is_array($value) && $value === [] && $shaped instanceof \stdClass) {
-            return EmptyMap::instance();
-        }
-
-        if (! is_array($value)) {
-            return $value;
-        }
-
-        foreach ($value as $key => $item) {
-            $child = is_array($shaped)
-                ? ($shaped[$key] ?? null)
-                : ($shaped instanceof \stdClass ? ($shaped->{(string) $key} ?? null) : null);
-
-            $value[$key] = $this->restoreEmptyMaps($item, $child);
-        }
-
-        return $value;
+        return EmptyMap::decodePreserving($json);
     }
 
     /**

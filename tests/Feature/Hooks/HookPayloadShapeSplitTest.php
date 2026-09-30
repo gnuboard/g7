@@ -76,7 +76,8 @@ class HookPayloadShapeSplitTest extends TestCase
     /**
      * 평탄한 메뉴 순서 변경은 ID 목록을 싣는 after_update_order_flat 을 발화하고, 운영자 수정(order)이 기록된다.
      *
-     * 이 경로는 대량 update 라 모델 이벤트가 돌지 않아, 계층 모양만 읽는 리스너가 기록을 놓쳤다.
+     * 이 경로는 대량 update 라 모델 이벤트가 돌지 않는다 — 기록은 `Menu::where()->update()` 를 가로채는
+     * UserOverridesAwareBuilder 가 실제로 순서가 바뀐 메뉴에만 남긴다(#727, 종전 리스너 구독은 제거).
      *
      * @scenario case=menu_order_flat
      *

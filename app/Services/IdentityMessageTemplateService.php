@@ -33,6 +33,7 @@ class IdentityMessageTemplateService
      * @param  IdentityMessageTemplateRepositoryInterface  $repository
      * @param  IdentityMessageDefinitionService  $definitionService
      * @param  CacheInterface  $cache
+     * @param  LanguagePackSeedInjector  $seedInjector  기본값 복원 시 기본 메시지 정의에 활성 언어팩 seed 로케일을 병합하는 인젝터
      */
     public function __construct(
         private readonly IdentityMessageTemplateRepositoryInterface $repository,
@@ -114,11 +115,15 @@ class IdentityMessageTemplateService
             $data['updated_by'] = Auth::id();
         }
 
-        $data['is_default'] = false;
-
         $updated = $this->repository->update($template, $data);
 
-        if ($updated->definition && $updated->definition->is_default) {
+        // 실제로 고친 칸이 있을 때만 「기본」 을 푼다(#727 D5-⑤ — 알림 템플릿과 같은 규칙).
+        $customized = ! empty($updated->user_overrides);
+        if ((bool) $updated->is_default === $customized) {
+            $updated = $this->repository->update($updated, ['is_default' => ! $customized]);
+        }
+
+        if ($customized && $updated->definition && $updated->definition->is_default) {
             $this->definitionService->updateDefinition($updated->definition, ['is_default' => false]);
         }
 

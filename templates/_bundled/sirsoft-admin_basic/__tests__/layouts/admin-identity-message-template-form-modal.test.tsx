@@ -41,6 +41,8 @@ function collectNodes(node: any, predicate: (n: any) => boolean): any[] {
 
 describe('IDV 메시지 템플릿 편집 모달 — 알림 템플릿 패리티 (#297)', () => {
     describe('모달 메타', () => {
+        // @scenario surface=identity_message
+        // @effects identity_message_template_form_modal_contract
         it('Modal composite + size=xl + closeOnOverlayClick=false', () => {
             expect(formModal.type).toBe('composite');
             expect(formModal.name).toBe('Modal');
@@ -50,6 +52,8 @@ describe('IDV 메시지 템플릿 편집 모달 — 알림 템플릿 패리티 (
             expect(formModal.props.id).toBeUndefined();
         });
 
+        // @scenario surface=identity_message
+        // @effects identity_message_template_form_modal_contract
         it('flex 컨테이너 + flex-shrink-0 footer 패턴', () => {
             const containers = collectNodes(formModal, (n) =>
                 typeof n.props?.className === 'string' && n.props.className.includes('flex flex-col')
@@ -63,6 +67,8 @@ describe('IDV 메시지 템플릿 편집 모달 — 알림 템플릿 패리티 (
     });
 
     describe('검증 에러 영역', () => {
+        // @scenario surface=identity_message
+        // @effects identity_message_template_form_modal_contract
         it('errors 키 iteration + 빨간 alert', () => {
             const errLists = collectNodes(formModal, (n) =>
                 n.iteration?.source && typeof n.iteration.source === 'string' &&
@@ -73,6 +79,8 @@ describe('IDV 메시지 템플릿 편집 모달 — 알림 템플릿 패리티 (
     });
 
     describe('언어 탭 + 단일 subject/body 필드', () => {
+        // @scenario surface=identity_message
+        // @effects identity_message_template_form_modal_contract
         it('$locales iteration 으로 언어 탭 생성 + editLang setState', () => {
             const tabBtns = collectNodes(formModal, (n) =>
                 n.iteration?.source === '{{$locales}}' && n.iteration?.item_var === 'loc'
@@ -83,6 +91,8 @@ describe('IDV 메시지 템플릿 편집 모달 — 알림 템플릿 패리티 (
             expect(action.params['identity_message_template_form_modal.editLang']).toBe('{{loc}}');
         });
 
+        // @scenario surface=identity_message
+        // @effects identity_message_template_form_modal_contract
         it('subject Input 이 editLang 인덱싱 + Object.assign 으로 다국어 객체 갱신', () => {
             // 분리 필드 금지 (로케일 하드코딩 회피 — 임의 _<locale> 접미사를 패턴으로 검출)
             const localeSuffixPattern = /^(name|subject|body)_[a-z]{2}(_[A-Z]{2})?$/;
@@ -107,6 +117,8 @@ describe('IDV 메시지 템플릿 편집 모달 — 알림 템플릿 패리티 (
             expect(updateExpr).toContain('editLang');
         });
 
+        // @scenario surface=identity_message
+        // @effects identity_message_template_form_modal_contract
         it('body HtmlEditor 가 editLang 인덱싱 + Object.assign 으로 다국어 객체 갱신', () => {
             const bodyEditor = collectNodes(formModal, (n) =>
                 n.name === 'HtmlEditor' &&
@@ -121,6 +133,8 @@ describe('IDV 메시지 템플릿 편집 모달 — 알림 템플릿 패리티 (
     });
 
     describe('Footer — common i18n 키 + 스피너', () => {
+        // @scenario surface=identity_message
+        // @effects identity_message_template_form_modal_contract
         it('취소 버튼이 $t:common.cancel 사용 (admin.common.cancel 금지)', () => {
             const cancels = collectNodes(formModal, (n) =>
                 n.name === 'Button' && n.text === '$t:common.cancel'
@@ -132,6 +146,8 @@ describe('IDV 메시지 템플릿 편집 모달 — 알림 템플릿 패리티 (
             });
         });
 
+        // @scenario surface=identity_message
+        // @effects identity_message_template_form_modal_contract
         it('저장 버튼이 $t:common.save / $t:common.saving 분기', () => {
             const saveLabels = collectNodes(formModal, (n) =>
                 typeof n.text === 'string' &&
@@ -141,6 +157,8 @@ describe('IDV 메시지 템플릿 편집 모달 — 알림 템플릿 패리티 (
             expect(saveLabels.length).toBe(1);
         });
 
+        // @scenario surface=identity_message
+        // @effects identity_message_template_form_modal_contract
         it('저장 버튼 클릭 시 apiCall PATCH /templates/{id} + onSuccess(refetch+toast+closeModal+state cleanup)', () => {
             const seqHandlers = collectNodes(formModal, (n) =>
                 n.handler === 'sequence' && callbacksOf(n, 'actions').some((a: any) =>
@@ -165,6 +183,21 @@ describe('IDV 메시지 템플릿 편집 모달 — 알림 템플릿 패리티 (
             }));
         });
 
+        // @scenario surface=identity_message
+        // @effects saving_template_keeps_active_state
+        it('저장 본문에 is_active 를 싣지 않는다 — 비활성 템플릿을 편집·저장해도 다시 켜지지 않는다 (#727 W13)', () => {
+            const apiCall = collectNodes(formModal, (n) =>
+                n.handler === 'apiCall' && n.params?.method === 'PATCH'
+                && typeof n.target === 'string' && n.target.includes('/templates/')
+            )[0];
+
+            expect(apiCall).toBeTruthy();
+            expect(Object.keys(apiCall.params.body).sort()).toEqual(['body', 'subject']);
+            expect(apiCall.params.body).not.toHaveProperty('is_active');
+        });
+
+        // @scenario surface=identity_message
+        // @effects identity_message_template_form_modal_contract
         it('미리보기 버튼: apiCall preview endpoint + onSuccess(setState + openModal target)', () => {
             const previewBtn = collectNodes(formModal, (n) =>
                 n.name === 'Button' && n.text === '$t:admin.settings.identity.messages.modal.preview'
@@ -179,12 +212,16 @@ describe('IDV 메시지 템플릿 편집 모달 — 알림 템플릿 패리티 (
 });
 
 describe('IDV 메시지 미리보기 모달', () => {
+    // @scenario surface=identity_message
+    // @effects identity_message_template_form_modal_contract
     it('Modal composite + size=lg', () => {
         expect(previewModal.type).toBe('composite');
         expect(previewModal.name).toBe('Modal');
         expect(previewModal.props.size).toBe('lg');
     });
 
+    // @scenario surface=identity_message
+    // @effects identity_message_template_form_modal_contract
     it('subject 영역이 평면 키 바인딩 사용', () => {
         const subjectSpans = collectNodes(previewModal, (n) =>
             typeof n.text === 'string' && n.text.includes('identity_message_template_preview_modal?.subject')
@@ -192,6 +229,8 @@ describe('IDV 메시지 미리보기 모달', () => {
         expect(subjectSpans.length).toBeGreaterThan(0);
     });
 
+    // @scenario surface=identity_message
+    // @effects identity_message_template_form_modal_contract
     it('body 영역이 HtmlContent 로 렌더된 본문을 표시', () => {
         const bodyNodes = collectNodes(previewModal, (n) =>
             n.name === 'HtmlContent'
@@ -202,6 +241,8 @@ describe('IDV 메시지 미리보기 모달', () => {
         expect(bodyNodes.length).toBeGreaterThan(0);
     });
 
+    // @scenario surface=identity_message
+    // @effects identity_message_template_form_modal_contract
     it('닫기 버튼: closeModal target 패턴', () => {
         const closeBtns = collectNodes(previewModal, (n) =>
             n.name === 'Button' && n.actions?.some((a: any) => a.handler === 'closeModal')

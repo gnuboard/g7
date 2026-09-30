@@ -6,11 +6,10 @@ use App\Console\Commands\Concerns\SelectsLayoutInstallSource;
 use App\Console\Commands\Traits\HasProgressBar;
 use App\Console\Commands\Traits\HasUnifiedConfirm;
 use App\Console\Commands\Traits\RebuildsSearchIndex;
+use App\Console\Commands\Traits\RendersLayoutSyncResult;
 use App\Contracts\Repositories\PluginRepositoryInterface;
-use App\Enums\LayoutSourceType;
 use App\Extension\PluginManager;
 use App\Extension\Vendor\VendorMode;
-use App\Services\LayoutExtensionService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 
@@ -19,6 +18,7 @@ class UpdatePluginCommand extends Command
     use HasProgressBar;
     use HasUnifiedConfirm;
     use RebuildsSearchIndex;
+    use RendersLayoutSyncResult;
     use SelectsLayoutInstallSource;
 
     /**
@@ -41,17 +41,21 @@ class UpdatePluginCommand extends Command
 
     /**
      * 플러그인 관리자 및 리포지토리
+     *
+     * @param  PluginManager  $pluginManager  플러그인 업데이트를 수행할 매니저
+     * @param  PluginRepositoryInterface  $pluginRepository  플러그인 설치 정보 조회 리포지토리
      */
     public function __construct(
         private PluginManager $pluginManager,
-        private PluginRepositoryInterface $pluginRepository,
-        private LayoutExtensionService $layoutExtensionService
+        private PluginRepositoryInterface $pluginRepository
     ) {
         parent::__construct();
     }
 
     /**
      * Execute the console command.
+     *
+     * @return int 명령 실행 결과 코드 (Command::SUCCESS|Command::FAILURE)
      */
     public function handle(): int
     {
@@ -67,19 +71,19 @@ class UpdatePluginCommand extends Command
         $zipPath = $this->option('zip');
 
         if (! in_array($layoutStrategy, ['overwrite', 'keep'], true)) {
-            $this->error('❌ --layout-strategy 는 overwrite 또는 keep 이어야 합니다.');
+            $this->error('❌ '.__('extensions.commands.update.invalid_layout_strategy'));
 
             return Command::FAILURE;
         }
 
         if (! in_array($sourceOption, ['auto', 'bundled', 'github'], true)) {
-            $this->error('❌ --source 는 auto, bundled, github 중 하나여야 합니다.');
+            $this->error('❌ '.__('extensions.commands.update.invalid_source'));
 
             return Command::FAILURE;
         }
 
         if ($zipPath !== null && $sourceOption !== 'auto') {
-            $this->error('❌ --zip 은 --source 와 동시에 지정할 수 없습니다.');
+            $this->error('❌ '.__('extensions.commands.update.zip_source_conflict'));
 
             return Command::FAILURE;
         }
@@ -87,7 +91,7 @@ class UpdatePluginCommand extends Command
         if ($zipPath !== null) {
             $resolvedZip = realpath($zipPath);
             if (! $resolvedZip || ! is_file($resolvedZip)) {
-                $this->error('❌ 지정된 ZIP 파일이 존재하지 않습니다: '.$zipPath);
+                $this->error('❌ '.__('extensions.commands.update.zip_not_found', ['path' => $zipPath]));
 
                 return Command::FAILURE;
             }
@@ -129,32 +133,15 @@ class UpdatePluginCommand extends Command
                 }
             } else {
                 $this->info(__('plugins.commands.update.current_version', ['version' => $plugin->version]));
-                $this->info('업데이트 소스: ZIP ('.$zipPath.')');
-                $this->info('업데이트 버전: (plugin.json 추출 후 판별)');
+                $this->info(__('extensions.commands.update.zip_source', ['path' => $zipPath]));
+                $this->info(__('extensions.commands.update.zip_version_pending', ['manifest' => 'plugin.json']));
             }
 
             $this->info(__('plugins.commands.update.layout_strategy', ['strategy' => $layoutStrategy]));
 
-            // overwrite 전략일 때 관리자가 편집한 레이아웃 확장 경고
+            // overwrite 전략일 때 덮어쓰일 운영자 수정본 경고 — 레이아웃 + 확장 조각을 한 판정(isOperatorModified)으로 (§5.9)
             if ($layoutStrategy === 'overwrite') {
-                $modifiedExtensions = $this->layoutExtensionService->getModifiedExtensionsBySource(
-                    LayoutSourceType::Plugin,
-                    $identifier
-                );
-
-                if (! empty($modifiedExtensions)) {
-                    $this->newLine();
-                    $this->warn('⚠️  '.__('plugins.commands.update.modified_extensions_warning', [
-                        'count' => count($modifiedExtensions),
-                    ]));
-
-                    foreach ($modifiedExtensions as $extension) {
-                        $this->warn(__('plugins.commands.update.modified_extension_item', [
-                            'target' => $extension['target_name'],
-                            'source' => $extension['source_identifier'],
-                        ]));
-                    }
-                }
+                $this->warnModifiedLayoutsBeforeOverwrite($this->pluginManager->hasModifiedLayouts($identifier), 'plugins');
             }
 
             $this->newLine();
@@ -175,7 +162,7 @@ class UpdatePluginCommand extends Command
                 if ($this->progressBar) {
                     $this->progressBar->clear();
                 }
-                $this->line("  • [{$identifier}] upgrade step 실행: {$version}");
+                $this->line(__('extensions.commands.update.upgrade_step_running', ['identifier' => $identifier, 'version' => $version]));
                 if ($this->progressBar) {
                     $this->progressBar->display();
                 }
@@ -205,6 +192,9 @@ class UpdatePluginCommand extends Command
                     'from' => $updateResult['from_version'],
                     'to' => $updateResult['to_version'],
                 ]));
+
+                // 레이아웃 처리 결과 (D2) — 운영자가 고친 화면이 있을 때만 표 + 요약 한 줄
+                $this->renderLayoutSyncResult($updateResult['layout_sync'] ?? null);
 
                 Log::info('플러그인 업데이트 완료', [
                     'plugin' => $identifier,

@@ -63,9 +63,21 @@ class LayoutExtension extends Model
         'content',
         'original_content_hash',
         'original_content_size',
+        'original_content',
         'priority',
         'is_active',
         'lock_version',
+    ];
+
+    /**
+     * 직렬화에서 숨길 속성 — 원본 본문은 3자 병합 기준 전용이라 API 응답·편집기로 내보내지 않는다.
+     *
+     * 캐스트를 두지 않는다: 문자열 그대로 두어야 빈 map(`{}`) 모양이 보존된다.
+     *
+     * @var array<int, string>
+     */
+    protected $hidden = [
+        'original_content',
     ];
 
     /**

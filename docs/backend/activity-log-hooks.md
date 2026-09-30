@@ -171,6 +171,8 @@ Service → doAction('hook.name') → ActivityLogListener → Log::channel('acti
 | `core.templates.after_version_update` | `handleTemplateAfterVersionUpdate` | `template.version_update` | Admin / System(CLI) | - |
 | `core.templates.after_refresh_layouts` | `handleTemplateAfterRefreshLayouts` | `template.refresh_layouts` | Admin | - |
 
+> **업데이트 기록의 레이아웃 처리 결과** — `module.update`·`plugin.update`·`template.version_update` 는 훅 `$result` 의 `layout_strategy`·`layout_sync` 를 읽어 `properties.layout_strategy`, `properties.layout_sync`(카운트만 — `applied_count`·`conflict_count`·`kept_*_count`·`modified_count`, entries 제외), `properties.layout_sync_conflicts`(겹친 단위 최대 50건 `{layout, unit, reason}`)를 싣는다. `changes` 에는 운영자 관련 화면마다 한 줄 — `field`·`label` = `{템플릿 식별자} · {화면 이름}`, `type: enum`, `old: operator_modified` → `new: {verdict}`, 라벨 키 `activity_log.layout_sync.operator_modified` / `extensions.layout_sync.verdict.{verdict}` — 이라 목록에서 행을 펼치면 변경 내역 표에 번역된 결과가 보인다. 보고할 화면이 없으면(덮어쓰기, 운영자 수정 없음) 붙지 않는다. 병합 규칙: [extension-update-system.md §10](../extension/extension-update-system.md#10-레이아웃-충돌-전략-3종-공통)
+
 ### Extension 공통 (1훅)
 
 템플릿·모듈·플러그인 세 타입이 같은 훅을 공유한다 (권한도 `core.extensions.custom_assets.manage` 하나다).

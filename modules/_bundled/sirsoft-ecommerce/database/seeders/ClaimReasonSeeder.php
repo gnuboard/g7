@@ -293,10 +293,12 @@ class ClaimReasonSeeder extends Seeder implements TranslatableSeederInterface
         foreach ($this->resolveTranslatedDefaults() as $reason) {
             $existing = ClaimReason::where('type', $reason['type'])->where('code', $reason['code'])->exists();
 
+            // 시더가 새로 만드는 행은 created_by 를 명시적으로 비운다 — 로그인한 요청 안에서 시더가 돌아도 시드 행이
+            // 운영자 행으로 보이지 않게(stale 정리 범위가 `created_by IS NULL` 이다).
             $helper->sync(
                 ClaimReason::class,
                 ['type' => $reason['type'], 'code' => $reason['code']],
-                $reason,
+                $existing ? $reason : $reason + ['created_by' => null],
             );
             $definedByType[$reason['type']][] = $reason['code'];
 
@@ -335,9 +337,11 @@ class ClaimReasonSeeder extends Seeder implements TranslatableSeederInterface
 
             $preserved += count($inUse);
 
+            // 정리 대상은 시더가 만든 행(created_by IS NULL)뿐이다 — 운영자가 설정 화면에서 만든 미사용 사유까지
+            // 지우면 언어팩을 켜고 끌 때마다 사라진다(#727 W7).
             $totalDeleted += $helper->cleanupStale(
                 ClaimReason::class,
-                ['type' => $type],
+                ['type' => $type, 'created_by' => null],
                 'code',
                 [...$codes, ...$inUse],
             );

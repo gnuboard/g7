@@ -14,6 +14,7 @@ use App\Extension\HookManager;
 use App\Extension\IdentityVerification\IdentityVerificationManager;
 use App\Extension\ModuleManager;
 use App\Extension\PluginManager;
+use App\Models\Concerns\UserOverrideValueComparator;
 use App\Models\IdentityPolicy;
 use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -29,6 +30,13 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
  */
 class IdentityPolicyService
 {
+    /**
+     * 본인인증 정책 서비스 생성자.
+     *
+     * @param  IdentityPolicyRepositoryInterface  $policyRepository  본인인증 정책 리포지토리
+     * @param  IdentityVerificationLogRepositoryInterface  $logRepository  본인인증 이력 조회 리포지토리
+     * @param  IdentityVerificationManager  $manager  본인인증 프로바이더 매니저
+     */
     public function __construct(
         protected IdentityPolicyRepositoryInterface $policyRepository,
         protected IdentityVerificationLogRepositoryInterface $logRepository,
@@ -81,7 +89,7 @@ class IdentityPolicyService
      * @param  IdentityPolicy  $policy  강제 대상 정책
      * @param  User|null  $user  현재 사용자 (게스트 가입 흐름에서는 null)
      * @param  array<string, mixed>  $context  요청 컨텍스트 (target_email, user_roles, return_request 등)
-     * @return void
+     * @return void 반환값 없음
      *
      * @throws IdentityVerificationRequiredException grace 내 verified 없고 fail_mode != log_only 일 때
      */
@@ -188,7 +196,7 @@ class IdentityPolicyService
      * 현재 구현은 로그에만 남기고, 필터 훅으로 소비되도록 설계.
      *
      * @param  IdentityPolicy  $policy  임시 정책 인스턴스
-     * @return void
+     * @return void 반환값 없음
      */
     public function registerRuntime(IdentityPolicy $policy): void
     {
@@ -243,9 +251,20 @@ class IdentityPolicyService
      */
     public function updatePolicy(IdentityPolicy $policy, array $attributes): bool
     {
-        $overrides = $policy->source_type !== IdentityPolicySourceType::Admin ? array_keys($attributes) : [];
+        // 값이 같은 칸은 빼고 저장한다 — 편집 창은 8칸 전부를 늘 보내고(`conditions` 는 null 대신 `{}`·
+        // `{signup_stage: null}`), 종전엔 보낸 키 전부를 수정으로 기록해 한 칸만 고쳐도 전 칸이 고정됐다
+        // (#727 D5-②). 수정 기록은 모델 updating 이벤트가 실제로 바뀐 칸만 한다(HasUserOverrides).
+        $attributes = array_filter(
+            $attributes,
+            fn ($value, $field) => ! UserOverrideValueComparator::same($policy->getAttribute($field), $value),
+            ARRAY_FILTER_USE_BOTH
+        );
 
-        return $this->policyRepository->updateByKey($policy->key, $attributes, $overrides);
+        if ($attributes === []) {
+            return true;
+        }
+
+        return $this->policyRepository->updateByKey($policy->key, $attributes);
     }
 
     /**
@@ -539,7 +558,7 @@ class IdentityPolicyService
      * @param  IdentityPolicy  $policy  위반된 정책
      * @param  User|null  $user  현재 사용자
      * @param  array<string, mixed>  $context  요청 컨텍스트 (origin_type, origin_identifier 등)
-     * @return void
+     * @return void 반환값 없음
      */
     protected function logPolicyViolation(IdentityPolicy $policy, ?User $user, array $context): void
     {

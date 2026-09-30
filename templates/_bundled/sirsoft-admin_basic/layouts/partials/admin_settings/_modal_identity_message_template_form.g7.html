@@ -134,7 +134,7 @@
                     <set-state target="global" :identity_message_template_form_modal.isSaving="false" identity_message_template_form_modal.errors="{{error.errors}}"/>
                     <toast message="{{error.message ?? '$t:admin.settings.identity.messages.modal.save_failed'}}" type="error"/>
                   </fail>
-                  <body subject="{{_global.identity_message_template_form_modal?.template?.subject}}" body="{{_global.identity_message_template_form_modal?.template?.body}}" :is_active="true"/>
+                  <body subject="{{_global.identity_message_template_form_modal?.template?.subject}}" body="{{_global.identity_message_template_form_modal?.template?.body}}"/>
                 </api-call>
               </sequence>
             </on>

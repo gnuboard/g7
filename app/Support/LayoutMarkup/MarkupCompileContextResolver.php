@@ -42,9 +42,10 @@ final class MarkupCompileContextResolver
      *
      * @param  string  $file  `.g7.html` 경로
      * @param  string|null  $templateOverride  대상 템플릿 강제 지정 (`--template`)
+     * @param  string|null  $identifierOverride  소유 확장·템플릿 식별자 강제 지정 — 경로에서 뽑을 수 없는 위치(업데이트 백업 `{id}_{Ymd_His}`)용
      * @return CompileContext 컴파일 문맥
      */
-    public function contextFor(string $file, ?string $templateOverride = null): CompileContext
+    public function contextFor(string $file, ?string $templateOverride = null, ?string $identifierOverride = null): CompileContext
     {
         $normalized = str_replace('\\', '/', $file);
         $sourceKind = match (true) {
@@ -58,7 +59,7 @@ final class MarkupCompileContextResolver
 
         return new CompileContext(
             sourceKind: $sourceKind,
-            identifier: $this->extensionIdentifier($normalized),
+            identifier: $identifierOverride ?? $this->extensionIdentifier($normalized),
             templateHandlers: $this->scanTemplateHandlers($templateId),
             nestingRules: $this->loadNestingRules($templateId),
         );

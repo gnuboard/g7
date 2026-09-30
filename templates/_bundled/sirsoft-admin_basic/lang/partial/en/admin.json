@@ -806,12 +806,12 @@
       "layout_strategy_overwrite": "Overwrite All",
       "layout_strategy_overwrite_desc": "Replace all layouts with the new version.",
       "layout_strategy_keep": "Keep Modifications",
-      "layout_strategy_keep_desc": "Preserve user-modified layouts.",
+      "layout_strategy_keep_desc": "Keep what you changed and update the untouched parts to the new version. Where both sides changed the same part, your change is kept.",
       "modified_layouts_warning": "{{count}} modified layout(s) exist. Choosing 'Overwrite All' will discard the modifications.",
       "no_modified_layouts": "No modified layouts.",
       "modified_layouts_check_failed": "Could not check for modified layouts. Check your connection and retry, or choose 'Keep changes' to be safe.",
-      "modified_layouts_list_title": "Modified layouts to keep ({{count}})",
-      "modified_layouts_keep_notice": "These layouts will retain their current content after the update."
+      "modified_layouts_list_title": "Modified layouts ({{count}})",
+      "modified_layouts_keep_notice": "Your changes in these layouts are kept, and the parts you did not change receive the new version. See the update notification and the activity log for the result."
     },
     "tabs": {
       "file_upload": "File Upload",
@@ -1015,12 +1015,12 @@
       "layout_strategy_overwrite": "Overwrite All",
       "layout_strategy_overwrite_desc": "Replace all layouts with the new version.",
       "layout_strategy_keep": "Keep Modifications",
-      "layout_strategy_keep_desc": "Preserve user-modified layouts.",
+      "layout_strategy_keep_desc": "Keep what you changed and update the untouched parts to the new version. Where both sides changed the same part, your change is kept.",
       "modified_layouts_warning": "{{count}} modified layout(s) exist. Choosing 'Overwrite All' will discard the modifications.",
       "no_modified_layouts": "No modified layouts.",
       "modified_layouts_check_failed": "Could not check for modified layouts. Check your connection and retry, or choose 'Keep changes' to be safe.",
-      "modified_layouts_list_title": "Modified layouts to keep ({{count}})",
-      "modified_layouts_keep_notice": "These layouts will retain their current content after the update."
+      "modified_layouts_list_title": "Modified layouts ({{count}})",
+      "modified_layouts_keep_notice": "Your changes in these layouts are kept, and the parts you did not change receive the new version. See the update notification and the activity log for the result."
     },
     "tabs": {
       "file_upload": "File Upload",
@@ -2422,12 +2422,12 @@
       "layout_strategy_overwrite": "Overwrite All",
       "layout_strategy_overwrite_desc": "Replace all layouts with the new version.",
       "layout_strategy_keep": "Keep Modified",
-      "layout_strategy_keep_desc": "Keep user-modified layouts.",
+      "layout_strategy_keep_desc": "Keep what you changed and update the untouched parts to the new version. Where both sides changed the same part, your change is kept.",
       "modified_layouts_warning": "{{count}} layout(s) have been modified. Selecting 'Overwrite All' will discard modifications.",
       "no_modified_layouts": "No modified layouts found.",
       "modified_layouts_check_failed": "Could not check for modified layouts. Check your connection and retry, or choose 'Keep changes' to be safe.",
-      "modified_layouts_list_title": "Modified layouts to be preserved ({{count}})",
-      "modified_layouts_keep_notice": "These layouts will retain their current content after the update.",
+      "modified_layouts_list_title": "Modified layouts ({{count}})",
+      "modified_layouts_keep_notice": "Your changes in these layouts are kept, and the parts you did not change receive the new version. See the update notification and the activity log for the result.",
       "activate_warning_title": "Template Activation Warning",
       "activate_warning_message": "Required dependencies must be met to activate this template.",
       "missing_modules": "Required Modules",

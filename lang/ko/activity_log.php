@@ -362,4 +362,8 @@ return [
         'archive_requested' => '방문자 통계 수동 집계 실행 (:run_type)',
         'extension_purged' => '확장 통계 데이터 정리 (:identifier)',
     ],
+    // 확장 업데이트 레이아웃 병합 결과의 변경 내역 라벨 (#727)
+    'layout_sync' => [
+        'operator_modified' => '운영자 수정본',
+    ],
 ];

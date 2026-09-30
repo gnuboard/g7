@@ -398,4 +398,69 @@ class LayoutExtensionRepository implements LayoutExtensionRepositoryInterface
             ->where('template_id', $templateId)
             ->forceDelete();
     }
+
+    /**
+     * 지워진(soft delete) 행까지 포함해 조회 조건에 일치하는 확장 1건을 찾습니다.
+     *
+     * @param  array<string, mixed>  $attributes  조회 조건 (템플릿·대상·출처·조각 식별자)
+     * @return LayoutExtension|null 없으면 null (지워진 행이면 `trashed()` 가 true)
+     */
+    public function findWithTrashedByAttributes(array $attributes): ?LayoutExtension
+    {
+        return LayoutExtension::withTrashed()->where($attributes)->first();
+    }
+
+    /**
+     * 지워진 확장 행을 되살립니다.
+     *
+     * @param  LayoutExtension  $extension  지워진 행
+     * @return LayoutExtension 되살린 행 (같은 인스턴스)
+     */
+    public function restoreTrashed(LayoutExtension $extension): LayoutExtension
+    {
+        $extension->restore();
+
+        return $extension;
+    }
+
+    /**
+     * 이미 읽어 둔 확장 행에 값을 채워 저장합니다 — 다시 조회하지 않고 같은 인스턴스를 갱신한다.
+     *
+     * @param  LayoutExtension  $extension  저장할 행
+     * @param  array<string, mixed>  $attributes  저장할 컬럼 값
+     * @return LayoutExtension 저장한 행 (같은 인스턴스)
+     */
+    public function saveModelAttributes(LayoutExtension $extension, array $attributes): LayoutExtension
+    {
+        $extension->forceFill($attributes)->save();
+
+        return $extension;
+    }
+
+    /**
+     * 확장 행 하나를 soft delete 합니다.
+     *
+     * @param  LayoutExtension  $extension  지울 행
+     * @return void 반환값 없음
+     */
+    public function softDelete(LayoutExtension $extension): void
+    {
+        $extension->delete();
+    }
+
+    /**
+     * 출처(모듈/플러그인)의 확장 중 원본 본문(`original_content`)이 비어 있는 행을 지워진 행까지 포함해 조회합니다.
+     *
+     * @param  LayoutSourceType  $sourceType  출처 타입
+     * @param  string  $identifier  출처 식별자
+     * @return Collection<int, LayoutExtension> 원본 본문이 없는 행 목록
+     */
+    public function getWithoutOriginalContentBySource(LayoutSourceType $sourceType, string $identifier): Collection
+    {
+        return LayoutExtension::withTrashed()
+            ->where('source_type', $sourceType)
+            ->where('source_identifier', $identifier)
+            ->whereNull('original_content')
+            ->get();
+    }
 }

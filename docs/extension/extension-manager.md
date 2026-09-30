@@ -407,14 +407,13 @@ public function register(): void
         return new ExtensionManager;
     });
 
-    // 모듈 매니저에 주입
+    // 모듈·플러그인 매니저는 저장소·레이아웃 동기화기(LayoutRowSynchronizer) 등 여러 의존을 받는다 —
+    // 실제 인자 목록은 CoreServiceProvider 를 보고, 코드에서는 직접 new 하지 말고 컨테이너로 받는다.
     $this->app->singleton(ModuleManager::class, function ($app) {
-        return new ModuleManager($app->make(ExtensionManager::class));
-    });
-
-    // 플러그인 매니저에 주입
-    $this->app->singleton(PluginManager::class, function ($app) {
-        return new PluginManager($app->make(ExtensionManager::class));
+        return new ModuleManager(
+            $app->make(ExtensionManager::class),
+            // … 저장소들 · LayoutExtensionService · LayoutRowSynchronizer · LayoutExtensionRepositoryInterface
+        );
     });
 }
 ```
