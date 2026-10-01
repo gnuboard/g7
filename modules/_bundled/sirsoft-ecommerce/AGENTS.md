@@ -323,7 +323,7 @@ CRUD 를 바꾸고 싶으면 이 4종 중 하나를 잡으면 되고, 이 모듈
 | 종류 | 개수 | 위치 |
 |---|---|---|
 | PHPUnit | 590개 | `modules/_bundled/sirsoft-ecommerce/tests` |
-| Vitest | 195개 | `vitest.config.ts` |
+| Vitest | 196개 | `vitest.config.ts` |
 | Playwright | 66개 | `tests/Playwright` |
 | 시나리오 매니페스트 | 240개 | `tests/scenarios` |
 

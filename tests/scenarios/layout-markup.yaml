@@ -447,6 +447,10 @@ effects:
   - empty_accepts_parent_is_not_checked
   # 확장점은 컴포넌트가 아니라 accepts 판정 대상이 아니다 — 거르지 않으면 번들 전수 14건이 거짓 경고였다.
   - extension_point_child_is_not_nesting_checked
+  # 열 선택기(ColumnSelector)를 받는 컨테이너는 필터 표시 선택기도 받는다 — 회원 목록 편집기 문맥 컴파일의 거짓 경고 회귀 방지.
+  - filter_visibility_selector_is_accepted_where_column_selector_is
+  # 번들 모듈·플러그인 화면은 템플릿 문맥 없이 lint 해도 미등록 핸들러 0 — 확장이 네임스페이스 없는 템플릿 핸들러를 부르지 않는다.
+  - bundled_extension_screens_call_no_template_handler
   - portable_mixed_with_split_presets_is_warned
   - consistent_breakpoints_are_not_warned
   - standalone_layout_firing_toast_without_host_is_warned

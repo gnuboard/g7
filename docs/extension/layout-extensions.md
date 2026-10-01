@@ -621,9 +621,9 @@ v1.17.0 이전: modals 내부의 extension_point는 처리되지 않았음
     <span class="block mb-2 w-32 text-sm text-gray-600 dark:text-gray-400 md:mb-0 shrink-0">$t:vendor-module.admin.user_filter.points</span>
     <input type="number" name="vendorPointMin" class="input w-32" value="{{((_local.userFilterExtraQuery || []).find(e => e.startsWith('vendor-module.point_min=')) || '').slice('vendor-module.point_min='.length)}}">
       <on type="change">
-        <!-- 값은 URL 에 직접 싣지 않는다 — 코어 핸들러가 확장 값 배열을 갱신하고, 코어 검색 버튼이 ext_filters[] 로 보낸다. -->
+        <!-- 값은 URL 에 직접 싣지 않는다 — 이 모듈의 핸들러가 확장 값 배열을 갱신하고, 확장점을 연 관리자 템플릿의 검색 버튼이 ext_filters[] 로 보낸다. -->
         <sequence>
-          <action handler="setUserFilterExt" key="vendor-module.point_min" value="{{$event.target.value}}" current="{{_local.userFilterExtraQuery || []}}"/>
+          <action handler="vendor-module.setUserFilterExt" key="vendor-module.point_min" value="{{$event.target.value}}" current="{{_local.userFilterExtraQuery || []}}"/>
           <set-state target="_local" userFilterExtraQuery="{{$prev}}"/>
         </sequence>
       </on>
@@ -633,6 +633,7 @@ v1.17.0 이전: modals 내부의 extension_point는 처리되지 않았음
 ```
 
 - 행은 평범한 유틸 클래스로 편다. 관리자 템플릿의 필터 행 클래스(`filter-row`·`filter-label`)는 그 템플릿 CSS 에만 있어, 다른 관리자 템플릿에 주입되면 행 배치가 무너진다.
+- 값 조립 핸들러는 모듈이 자기 네임스페이스로 등록한다(`vendor-module.setUserFilterExt` — 같은 키 교체, 빈 값 제거, `{확장id}.{키}={값}` 원소). 관리자 템플릿의 `setUserFilterExt` 는 그 템플릿 화면용이라 다른 관리자 템플릿에는 없다 — 조각이 부르면 그 템플릿에서 값이 검색에 실리지 않는다. 구현 예: `modules/_bundled/sirsoft-ecommerce/resources/js/handlers/userListFilterExtHandlers.ts`.
 - 표시값은 같은 배열(`_local.userFilterExtraQuery`)에서 되읽는다 — 새로고침·뒤로가기에서 URL 의 `ext_filters[]` 로 복원된다.
 - 코어의 필터 초기화는 이 배열을 비운다.
 - 서버 쪽 검증·조건은 [훅 문서의 관리자 회원 목록 확장 필터 훅](hooks.md#관리자-회원-목록-확장-필터-훅) 을 본다.

@@ -313,7 +313,7 @@
 ## 액션 핸들러
 
 <!-- @generated:handlers START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-핸들러 223개 (정의: `resources/js/handlers/index.ts`).
+핸들러 224개 (정의: `resources/js/handlers/index.ts`).
 
 | 핸들러 | 레이아웃에서 부르는 이름 |
 |---|---|
@@ -536,6 +536,7 @@
 | `closeClaimWithdraw` | `sirsoft-ecommerce.closeClaimWithdraw` |
 | `withdrawClaim` | `sirsoft-ecommerce.withdrawClaim` |
 | `payClaimOutstanding` | `sirsoft-ecommerce.payClaimOutstanding` |
+| `setUserFilterExt` | `sirsoft-ecommerce.setUserFilterExt` |
 | `initCategoryFromUrl` | `sirsoft-ecommerce.initCategoryFromUrl` |
 | `initBrandFromUrl` | `sirsoft-ecommerce.initBrandFromUrl` |
 | `initCommonInfoFromUrl` | `sirsoft-ecommerce.initCommonInfoFromUrl` |

@@ -8,6 +8,7 @@ use App\Support\LayoutMarkup\ComponentManifest;
 use App\Support\LayoutMarkup\ComponentRegistry;
 use App\Support\LayoutMarkup\LayoutLinter;
 use App\Support\LayoutMarkup\LintWarning;
+use App\Support\LayoutMarkup\MarkupCompileContextResolver;
 
 /**
  * LayoutLinter 단위 테스트 (`.g7.html` 마크업 형식 S6 — 정적 lint 5종).
@@ -210,6 +211,78 @@ class LayoutLinterTest extends LayoutMarkupTestCase
         $context = new CompileContext(nestingRules: ['Div' => ['Span']]);
 
         $this->assertNoLint(LayoutMarkupLintCode::NestingViolation, $json, $context);
+    }
+
+    /**
+     * 번들 모듈·플러그인의 조각·레이아웃은 템플릿 문맥 없이도 미등록 핸들러가 없다.
+     *
+     * 확장 화면은 어느 템플릿으로 그려질지 모르므로 네임스페이스 없는 템플릿 핸들러를 부르지 않는다 —
+     * 코어 내장 핸들러나 자기(또는 다른 확장의) 네임스페이스 핸들러만 쓴다. 템플릿 핸들러 목록 없이
+     * lint 하면 그 호출만 `unregistered_handler` 로 남는다.
+     *
+     * @scenario compile_unit=linter,source_health=valid
+     *
+     * @effects bundled_extension_screens_call_no_template_handler
+     *
+     * @return void 반환값 없음
+     */
+    public function test_bundled_extension_screens_call_no_template_handler(): void
+    {
+        $linter = new LayoutLinter;
+        $files = [];
+        foreach (glob(base_path('{modules,plugins}/_bundled/*/resources/{extensions,layouts}'), GLOB_BRACE | GLOB_ONLYDIR) as $dir) {
+            foreach (new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($dir, \FilesystemIterator::SKIP_DOTS)) as $file) {
+                if (str_ends_with((string) $file, '.json')) {
+                    $files[] = (string) $file;
+                }
+            }
+        }
+
+        $hits = [];
+        foreach ($files as $file) {
+            $json = json_decode((string) file_get_contents($file), true);
+            if (! is_array($json)) {
+                continue;
+            }
+            foreach ($linter->lint($json, 'layout', new CompileContext) as $warning) {
+                if ($warning->getCode() === LayoutMarkupLintCode::UnregisteredHandler) {
+                    $hits[] = str_replace(base_path().DIRECTORY_SEPARATOR, '', $file);
+                }
+            }
+        }
+
+        $this->assertGreaterThan(100, count($files), '번들 확장 화면 모집단이 비었다');
+        $this->assertSame([], array_values(array_unique($hits)));
+    }
+
+    /**
+     * 회원 목록의 필터 표시 선택기(FilterVisibilitySelector)는 실제 admin_basic nesting 규칙에서 경고하지 않는다.
+     *
+     * 선택기가 컨테이너 accepts 에 없어 편집기 문맥 컴파일마다 nesting 경고가 났다. 같은 자리에 서는
+     * 열 선택기(ColumnSelector)를 받는 컨테이너가 선택기도 받는다.
+     *
+     * @scenario compile_unit=linter,source_health=valid
+     *
+     * @effects filter_visibility_selector_is_accepted_where_column_selector_is
+     *
+     * @return void 반환값 없음
+     */
+    public function test_filter_visibility_selector_in_user_list_does_not_warn(): void
+    {
+        // 번들 트리 문서를 넘겨 번들 nesting.json 을 읽는다(문서 없이 부르면 설치본을 본다).
+        $document = base_path('templates/_bundled/sirsoft-admin_basic/layouts/admin_user_list.g7.html');
+        $rules = app(MarkupCompileContextResolver::class)->loadNestingRules('sirsoft-admin_basic', $document);
+        $json = json_decode(
+            (string) file_get_contents(base_path('templates/_bundled/sirsoft-admin_basic/layouts/admin_user_list.json')),
+            true,
+        );
+
+        foreach ($rules as $container => $accepts) {
+            if (in_array('ColumnSelector', $accepts, true)) {
+                $this->assertContains('FilterVisibilitySelector', $accepts, "{$container} 는 ColumnSelector 를 받으면서 FilterVisibilitySelector 를 받지 않는다");
+            }
+        }
+        $this->assertNoLint(LayoutMarkupLintCode::NestingViolation, $json, new CompileContext(nestingRules: $rules));
     }
 
     // ---------------------------------------------------------------------

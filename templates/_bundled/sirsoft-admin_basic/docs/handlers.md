@@ -170,9 +170,14 @@ JSON 이 `sequence` + `setState` 로 반환값(`$prev.startDate` 등)을 원하�
 결과를 `$prev` 로 받아 `_local.userFilterExtraQuery` 에 담습니다. 키가 형식(`[a-z0-9_-]+\.[a-z0-9_.-]+`)에
 맞지 않으면 기존 배열을 그대로 돌려줍니다. 값의 `&` 는 걷고 255자로 자릅니다(서버 검증과 같은 경계).
 
+이 템플릿의 핸들러입니다. 모듈·플러그인이 확장점 `admin_user_list_filters` 에 붙이는 조각은 어느 관리자
+템플릿에 주입될지 모르므로 이 핸들러를 부르지 않고, 같은 계약의 핸들러를 자기 네임스페이스로 등록해
+부릅니다(예: `sirsoft-ecommerce.setUserFilterExt`). 템플릿과 확장 조각이 공유하는 것은 상태 칸
+`_local.userFilterExtraQuery` 와 코어 API 의 `ext_filters[]` 원소 형식뿐입니다.
+
 ```html
 <sequence>
-  <action handler="setUserFilterExt" key="sirsoft-ecommerce.mileage_min" value="{{$event.target.value}}" current="{{_local.userFilterExtraQuery || []}}"/>
+  <action handler="setUserFilterExt" key="vendor-module.score_min" value="{{$event.target.value}}" current="{{_local.userFilterExtraQuery || []}}"/>
   <set-state target="_local" userFilterExtraQuery="{{$prev}}"/>
 </sequence>
 ```

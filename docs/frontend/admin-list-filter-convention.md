@@ -149,9 +149,11 @@ A 등급 화면에서 처음 펼쳐 둘 기본 필터(`defaultFilters`)는 **거
 | 층 | 코어가 여는 것 | 확장이 하는 것 |
 | --- | --- | --- |
 | ① 표시 | 상세 아웃렛 아래 `<extension-point name="…_filters" data-if="{{_local.showDetailFilter}}">` | `<extension extension-point="…" mode="append">` 로 필터 행을 붙인다 — 템플릿 전용 필터 행 클래스 대신 평범한 유틸로 편다(다른 템플릿에 주입돼도 배치가 유지되게). 노드 `<permissions>` 로 권한 보유자에게만 |
-| ② 값 수집 | 검색 액션의 `ext_filters="{{_local.userFilterExtraQuery \|\| []}}"`, 데이터소스의 `ext_filters="{{query['ext_filters[]'] \|\| []}}"` | `setUserFilterExt` 로 `{확장id}.{키}={값}` 원소를 넣고 뺀다 |
+| ② 값 수집 | 검색 액션의 `ext_filters="{{_local.userFilterExtraQuery \|\| []}}"`, 데이터소스의 `ext_filters="{{query['ext_filters[]'] \|\| []}}"` | 자기 네임스페이스로 등록한 핸들러(예: `sirsoft-ecommerce.setUserFilterExt`)로 `{확장id}.{키}={값}` 원소를 넣고 뺀다 — 관리자 템플릿 핸들러를 부르지 않는다 |
 | ③ 검증 | FormRequest 가 원소 형식을 1차 방어하고 `ext.{확장id}.{키}` 로 편다 | `core.user.list_validation_rules` 에 키별 규칙을, `core.user.list_validation_attributes` 에 항목명을 더한다 |
 | ④ 쿼리 | Service 가 `core.user.filter_list_params`(조건 정규화) 뒤 `core.user.list_query_extensions` 를 발화하고 저장소가 코어 조건 뒤에 클로저를 적용한다 | `core.user.list_query_extensions` 에 `fn(Builder $query, array $filters)` 클로저를 더한다(권한 없으면 무적용) |
+
+코어가 여는 것은 API 형식(`ext_filters[]`)이고, 값을 모으는 핸들러는 화면을 그리는 쪽의 몫이다. 관리자 템플릿은 자기 화면용 핸들러를 갖고, 확장 조각은 어느 관리자 템플릿에 주입될지 모르므로 같은 계약의 핸들러를 자기 네임스페이스로 등록해 부른다. 템플릿과 확장이 공유하는 것은 상태 칸 `_local.userFilterExtraQuery` 와 원소 형식뿐이다.
 
 확장 행은 **기본/상세 이동 대상이 아니다** — 코어가 모르는 키라 `visibleFilters` 순서에 넣을 수 없다. 엔진의 navigate `<query>` 와 데이터소스 `params` 는 속성 맵이라 확장이 키를 늘릴 수 없어서 배열 칸 하나를 쓰는 것이다. 서버 훅은 [hooks.md](../extension/hooks.md#관리자-회원-목록-확장-필터-훅), 조각 예시는 [layout-extensions.md](../extension/layout-extensions.md#예시-관리자-회원-목록-필터에-행-추가) 를 본다.
 
@@ -161,7 +163,7 @@ A 등급 화면에서 처음 펼쳐 둘 기본 필터(`defaultFilters`)는 **거
 | --- | --- | --- |
 | `loadVisibleFilters` | 관리자 템플릿 핸들러 | 검색편집 배치 되읽기 (모듈이 꺼져도 코어 화면이 깨지지 않게 코어 템플릿 소유) |
 | `setDateRange` `format` 인자 | 관리자 템플릿 핸들러 | `date`(YYYY-MM-DD) / `datetime`(기본) |
-| `setUserFilterExt` | 관리자 템플릿 핸들러 | 확장 필터 값 배열 조립 |
+| `setUserFilterExt` | 관리자 템플릿 핸들러 | 템플릿 자기 화면의 확장 필터 값 배열 조립 — 확장 조각은 같은 계약의 핸들러를 자기 네임스페이스로 둔다 |
 | 회원관리 필터 조각 | 관리자 템플릿 `templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_user_list/_partial_filter_section.g7.html` | 코어 화면용 참조 구현 |
 
 ## 하지 말 것

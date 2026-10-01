@@ -329,6 +329,9 @@ import {
     saveMultilingualTagHandler,
 } from './multilingualTagHandlers';
 
+// 회원 목록 확장 필터 값 조립 (관리자 템플릿 핸들러에 기대지 않도록 모듈이 소유)
+import { setUserFilterExtHandler } from './userListFilterExtHandlers';
+
 // URL 상태 복원 핸들러
 import { initCategoryFromUrlHandler } from './initCategoryFromUrl';
 import { initBrandFromUrlHandler } from './initBrandFromUrl';
@@ -624,6 +627,9 @@ export const handlerMap = {
     closeClaimWithdraw: closeClaimWithdrawHandler,
     withdrawClaim: withdrawClaimHandler,
     payClaimOutstanding: payClaimOutstandingHandler,
+
+    // ===== 회원 목록 확장 필터 (관리자 회원 목록 필터 확장점) =====
+    setUserFilterExt: setUserFilterExtHandler,
 
     // ===== URL 상태 복원 =====
     initCategoryFromUrl: initCategoryFromUrlHandler,
